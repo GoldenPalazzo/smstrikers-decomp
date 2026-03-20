@@ -126,10 +126,10 @@ void BlitImage(int arg0, int arg1, float arg2, float arg3, bool arg4)
     {
         int srcRow = (int)ySample;
         int dstRow = (arg1 + yOffset) * 0x500;
-        const u16* selectedRow = (const u16*)((const u8*)selectedBase + (srcRow << 6));
-        const u16* imageRow = (const u16*)((const u8*)imageBase + (srcRow << 6));
         float xSample = 0.0f;
         int xOffset = 0;
+        const u16* selectedRow = selectedBase + (srcRow << 5);
+        const u16* imageRow = imageBase + (srcRow << 5);
         int prev0;
         int older0;
         int prev1;

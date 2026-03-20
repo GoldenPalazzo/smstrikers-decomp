@@ -25,7 +25,7 @@ extern void* nlMalloc(unsigned long, unsigned int, bool);
 extern void nlFree(void*);
 extern void nlReadAsync(nlFile*, void*, unsigned int, void (*)(nlFile*, void*, unsigned int, unsigned long), unsigned long);
 extern void nlAsyncLoadFileToVirtualMemory(nlFile*, int, void*, void (*)(nlFile*, void*, unsigned int, unsigned long), unsigned long);
-extern void* nlLoadEntireFileToVirtualMemory(const char*, int*, unsigned int, void*, int);
+extern void* nlLoadEntireFileToVirtualMemory(const char*, int*, unsigned int, void*, eAllocType);
 extern void nlBreak();
 
 namespace Detail
@@ -93,15 +93,14 @@ public:
         }
     }
 
+    void AppendInPlace(const CharT* str);
+
     const CharT* c_str() const
     {
         static CharT emptyString = '\0';
         return m_data ? (CharT*)m_data->data : &emptyString;
     }
 };
-
-extern void AppendInPlace__45BasicString_c_Q26Detail19TempStringAllocator_FPCc(BasicString<char, Detail::TempStringAllocator>*,
-    const char*);
 
 static unsigned char useAsyncLoading;
 
@@ -199,7 +198,7 @@ bool NisPlayer::WorldIsFrozen() const
 
 /**
  * Offset/Address/Size: 0x2F64 | 0x80117C40 | size: 0x318
- * TODO: 94.67% match - register allocation and string literal scheduling diffs from -inline deferred vs -inline auto
+ * TODO: 95.38% match - register allocation diffs from -inline deferred string literal hoisting in BasicString ctor
  */
 void NisPlayer::HandleAsyncs()
 {
@@ -242,7 +241,7 @@ void NisPlayer::HandleAsyncs()
                 }
 
                 BasicString<char, Detail::TempStringAllocator> fileName("art/nis/");
-                AppendInPlace__45BasicString_c_Q26Detail19TempStringAllocator_FPCc(&fileName, mLoadQueue[i]->name);
+                fileName.AppendInPlace(mLoadQueue[i]->name);
 
                 if (useAsyncLoading)
                 {
@@ -259,8 +258,8 @@ void NisPlayer::HandleAsyncs()
                 else
                 {
                     int size = 0;
-                    nlLoadEntireFileToVirtualMemory(fileName.c_str(), &size, 0x2000, loadAt, 0);
-                    AsyncLoad(0, loadAt, mLoadQueue[i]->size, (unsigned long)mLoadQueue[i]);
+                    nlLoadEntireFileToVirtualMemory(fileName.c_str(), &size, 0x2000, loadAt, AllocateStart);
+                    AsyncLoad(0, loadAt + mLoadQueue[i]->size, mLoadQueue[i]->size, (unsigned long)mLoadQueue[i]);
                 }
             }
         }

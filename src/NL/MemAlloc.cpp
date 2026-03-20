@@ -109,187 +109,158 @@ void MemoryAllocator::Initialize(void* arg0, unsigned int arg1)
 
 /**
  * Offset/Address/Size: 0x1D8 | 0x801CD924 | size: 0x35C
+ * TODO: 93.42% match - r23/r24 register swap for size/offset parameters,
+ * plus r29/r30 swap for end/cur setup instructions. All 30 remaining diffs
+ * are register allocation differences from MWCC graph coloring.
  */
-void* MemoryAllocator::Allocate(unsigned long arg0, unsigned int arg1, bool arg2)
+void* MemoryAllocator::Allocate(unsigned long size, unsigned int alignment, bool fromEnd)
 {
-    s32 sp44;
-    s32 sp40;
-    TotalFreeMemCallback sp3C;
-    s32 sp38;
-    s32 sp34;
-    LargestFreeBlockCallback sp30;
-    s32 sp2C;
-    s32 sp28;
-    TotalFreeMemCallback sp24;
-    s32 sp20;
-    s32 sp1C;
-    LargestFreeBlockCallback sp18;
-    s32 sp14;
-    s32 sp10;
-    // s32 spC;
-    s32 sp8;
-    FreeBlockList** temp_r3_3;
-    FreeBlockList** var_r29;
-    FreeBlockList* temp_r25;
-    FreeBlockList* temp_r25_prev = NULL; // Added missing declaration
-    FreeBlockList* temp_r3 = NULL;
-    FreeBlockList* temp_r5_4 = NULL;
-    FreeBlockList* var_r30 = NULL;
-    s32 temp_r0;
-    s32 temp_r0_2;
-    s32 temp_r23;
-    u32 temp_r0_3;
-    u32 temp_r23_2;
-    u32 temp_r24;
-    u32 temp_r24_2;
-    u32 temp_r28;
-    u32 temp_r28_2;
-    u32 temp_r4;
-    u32 temp_r4_2;
-    u32 temp_r5_3;
-    u32 temp_r6;
-    u32 temp_r6_2;
-    u32 var_r23;
-    u32 var_r25;
-    u32 var_r25_2;
-    u32 var_r4;
-    u32 var_r4_2;
-    void* temp_r3_2;
-    void* temp_r5;
-    void* temp_r5_2;
+    TotalFreeMemCallback tfmcA;
+    LargestFreeBlockCallback lfbcA;
+    TotalFreeMemCallback tfmcB;
+    LargestFreeBlockCallback lfbcB;
 
-    var_r25 = arg1;
-    var_r23 = arg0;
-    if (var_r25 < 4)
+    if (alignment < 4)
+        alignment = 4;
+    if (size < 0xC)
+        size = 0xC;
+
+    if (fromEnd)
     {
-        var_r25 = 4;
-    }
-    if (var_r23 < 0xC)
-    {
-        var_r23 = 0xC;
-    }
-    if (arg2 != 0)
-    {
-        temp_r3 = nlDLRingGetEnd<FreeBlockList>(this->m_free_block_list);
-        temp_r0 = var_r25 - 1;
-        var_r30 = temp_r3;
-        temp_r28 = (var_r23 + 3) & 0xFFFFFFFC;
-    loop_6:
-        temp_r4 = var_r30->m_unk_0x08;
-        if (temp_r4 <= temp_r28)
+        FreeBlockList* cur = nlDLRingGetEnd<FreeBlockList>(m_free_block_list);
+        FreeBlockList* end = cur;
+        u32 alignedSize = (size + 3) & ~3u;
+        u32 alignMask = ~(alignment - 1);
+        u32 savedSize = size;
+        u32 blockSize;
+        u32 offset;
+
+        do
         {
-        block_8:
-            var_r30 = var_r30->m_next;
-            if (var_r30 == temp_r3)
+            blockSize = cur->m_unk_0x08;
+            if (blockSize > alignedSize)
             {
-                sp14 = 0;
-                sp3C.m_unk_0x00 = 0;
-                nlWalkDLRing<FreeBlockList, TotalFreeMemCallback>(this->m_free_block_list, &sp3C, &TotalFreeMemCallback::Callback);
-                nlPrintf("Total Free Memory: %d\n", sp3C.m_unk_0x00 = 0);
-                sp10 = 0;
-                sp30.m_unk_0x00 = 0;
-                nlWalkDLRing<FreeBlockList, LargestFreeBlockCallback>(this->m_free_block_list, &sp30, &LargestFreeBlockCallback::Callback);
-                nlPrintf("Largest Free Block: %d\n", sp30.m_unk_0x00);
+                u32 endAddr = (u32)cur + blockSize;
+                size = (endAddr - alignedSize) & alignMask;
+                offset = (endAddr - size) + 4;
+                if (offset <= blockSize)
+                    break;
+            }
+            cur = cur->m_next;
+            if (cur == end)
+            {
+                tfmcA.m_unk_0x00 = 0;
+                nlWalkDLRing<FreeBlockList, TotalFreeMemCallback>(m_free_block_list, &tfmcA, &TotalFreeMemCallback::Callback);
+                nlPrintf("Total Free Memory: %d\n", tfmcA.m_unk_0x00);
+                lfbcA.m_unk_0x00 = 0;
+                nlWalkDLRing<FreeBlockList, LargestFreeBlockCallback>(m_free_block_list, &lfbcA, &LargestFreeBlockCallback::Callback);
+                nlPrintf("Largest Free Block: %d\n", lfbcA.m_unk_0x00);
                 nlBreak();
             }
-            goto loop_6;
-        }
-        temp_r3_2 = (void*)((char*)var_r30 + temp_r4);
-        temp_r23 = ((u32)temp_r3_2 - temp_r28) & ~(temp_r0 | temp_r0);
-        temp_r24 = ((u32)temp_r3_2 - temp_r23) + 4;
-        if (temp_r24 > temp_r4)
+        } while (true);
+
         {
-            goto block_8;
+            u32 remaining = blockSize - offset;
+            alignment = 4;
+            if (remaining > 0xC)
+            {
+                cur->m_unk_0x08 = remaining;
+            }
+            else
+            {
+                alignment = remaining + 4;
+                nlDLRingRemove<FreeBlockList>(&m_free_block_list, cur);
+            }
+
+            u32 suffixBase = offset - alignedSize;
+            void* allocPtr = (char*)(size - alignment) + alignment;
+            u32 header = savedSize;
+            u32 suffixGap = suffixBase - 4;
+            if (alignment > 4)
+            {
+                header = savedSize | 0x80000000;
+                *(u32*)((char*)allocPtr - 8) = alignment - 4;
+            }
+            if (suffixGap != 0)
+            {
+                header |= 0x40000000;
+                *(u32*)(((u32)((char*)allocPtr + savedSize) + 3) & ~3u) = suffixGap;
+            }
+            *(u32*)((char*)allocPtr - 4) = header;
+            return allocPtr;
         }
-        temp_r5_3 = temp_r4 - temp_r24;
-        var_r25_2 = 4;
-        if (temp_r5_3 > 0xC)
-        {
-            var_r30->m_unk_0x08 = temp_r5_3;
-        }
-        else
-        {
-            var_r25_2 = temp_r5_3 + 4;
-            nlDLRingRemove<FreeBlockList>(&this->m_free_block_list, var_r30);
-        }
-        var_r4 = var_r23;
-        temp_r6 = (temp_r24 - temp_r28) - 4;
-        temp_r5_2 = (void*)((char*)temp_r23 - var_r25_2 + var_r25_2);
-        if (var_r25_2 > 4)
-        {
-            var_r4 = var_r23 | 0x80000000;
-            *(u32*)((char*)temp_r5_2 - 8) = var_r25_2 - 4;
-        }
-        if (temp_r6 != 0)
-        {
-            var_r4 |= 0x40000000;
-            *(u32*)((char*)temp_r5_2 + ((var_r23 + 3) & 0xFFFFFFFC)) = temp_r6; // Fixed casting issue
-        }
-        *(u32*)((char*)temp_r5_2 - 4) = var_r4;
-        return temp_r5_2;
     }
-    temp_r3_3 = &this->m_free_block_list; // Fixed: get address of member variable
-    temp_r0_2 = var_r25 - 1;
-    var_r29 = temp_r3_3;
-    temp_r28_2 = (var_r23 + 3) & 0xFFFFFFFC;
-loop_19:
-    temp_r4_2 = (*var_r29)->m_unk_0x08;
-    if (temp_r4_2 <= temp_r28_2)
+    else
     {
-    block_21:
-        var_r29 = &(*var_r29)->m_next;
-        if (var_r29 == temp_r3_3)
+        FreeBlockList* cur = nlDLRingGetStart<FreeBlockList>(m_free_block_list);
+        FreeBlockList* start = cur;
+        u32 alignedSize = (size + 3) & ~3u;
+        u32 alignMask = ~(alignment - 1);
+        u32 savedSize = size;
+        u32 blockSize;
+        u32 offset;
+
+        do
         {
-            // spC = 0;
-            sp24.m_unk_0x00 = 0;
-            nlWalkDLRing<FreeBlockList, TotalFreeMemCallback>(this->m_free_block_list, &sp24, &TotalFreeMemCallback::Callback);
-            nlPrintf("Total Free Memory: %d\n", sp24.m_unk_0x00);
-            // sp8 = 0;
-            sp18.m_unk_0x00 = 0;
-            nlWalkDLRing<FreeBlockList, LargestFreeBlockCallback>(this->m_free_block_list, &sp18, &LargestFreeBlockCallback::Callback);
-            nlPrintf("Largest Free Block: %d\n", sp18.m_unk_0x00);
-            nlBreak();
-        }
-        goto loop_19;
-    }
-    temp_r24_2 = (~(temp_r0_2 | temp_r0_2) & ((u32)*var_r29 + var_r25 + 3)) - (u32)*var_r29;
-    temp_r23_2 = temp_r24_2 + temp_r28_2;
-    if (temp_r23_2 > temp_r4_2)
-    {
-        goto block_21;
-    }
-    temp_r25_prev = (*var_r29)->m_prev;
-    nlDLRingRemove<FreeBlockList>(&this->m_free_block_list, *var_r29);
-    temp_r0_3 = (*var_r29)->m_unk_0x08 - temp_r23_2;
-    if (temp_r0_3 > 0xC)
-    {
-        temp_r5_4 = (FreeBlockList*)((char*)*var_r29 + temp_r23_2);
-        temp_r5_4->m_unk_0x08 = temp_r0_3;
-        if ((this->m_free_block_list == NULL) || (*var_r29 == temp_r3))
+            blockSize = cur->m_unk_0x08;
+            if (blockSize > alignedSize)
+            {
+                u32 alignedStart = alignMask & ((u32)cur + alignment + 3);
+                offset = alignedStart - (u32)cur;
+                size = offset + alignedSize;
+                if (size <= blockSize)
+                    break;
+            }
+            cur = cur->m_next;
+            if (cur == start)
+            {
+                tfmcB.m_unk_0x00 = 0;
+                nlWalkDLRing<FreeBlockList, TotalFreeMemCallback>(m_free_block_list, &tfmcB, &TotalFreeMemCallback::Callback);
+                nlPrintf("Total Free Memory: %d\n", tfmcB.m_unk_0x00);
+                lfbcB.m_unk_0x00 = 0;
+                nlWalkDLRing<FreeBlockList, LargestFreeBlockCallback>(m_free_block_list, &lfbcB, &LargestFreeBlockCallback::Callback);
+                nlPrintf("Largest Free Block: %d\n", lfbcB.m_unk_0x00);
+                nlBreak();
+            }
+        } while (true);
+
         {
-            nlDLRingAddStart<FreeBlockList>(&this->m_free_block_list, temp_r5_4);
+            FreeBlockList* prev = cur->m_prev;
+            nlDLRingRemove<FreeBlockList>(&m_free_block_list, cur);
+            u32 remaining = cur->m_unk_0x08 - size;
+            if (remaining > 0xC)
+            {
+                FreeBlockList* newFree = (FreeBlockList*)((char*)cur + size);
+                newFree->m_unk_0x08 = remaining;
+                if (m_free_block_list == NULL || cur == start)
+                {
+                    nlDLRingAddStart<FreeBlockList>(&m_free_block_list, newFree);
+                }
+                else
+                {
+                    nlDLRingInsert<FreeBlockList>(&m_free_block_list, prev, newFree);
+                }
+                cur->m_unk_0x08 = size;
+            }
+
+            u32 currentBlockSize = cur->m_unk_0x08;
+            u32 header = savedSize;
+            void* allocPtr = (void*)((char*)cur + offset);
+            u32 suffixSize = currentBlockSize - size;
+            if (offset > 4)
+            {
+                header = savedSize | 0x80000000;
+                *(u32*)((char*)allocPtr - 8) = offset - 4;
+            }
+            if (suffixSize != 0)
+            {
+                header |= 0x40000000;
+                *(u32*)(((u32)((char*)allocPtr + savedSize) + 3) & ~3u) = suffixSize;
+            }
+            *(u32*)((char*)allocPtr - 4) = header;
+            return allocPtr;
         }
-        else
-        {
-            nlDLRingInsert<FreeBlockList>(&this->m_free_block_list, temp_r25_prev, temp_r5_4);
-        }
-        (*var_r29)->m_unk_0x08 = temp_r23_2;
     }
-    var_r4_2 = var_r23;
-    temp_r5 = (void*)((char*)*var_r29 + temp_r24_2);
-    temp_r6_2 = (*var_r29)->m_unk_0x08 - temp_r23_2;
-    if (temp_r24_2 > 4)
-    {
-        var_r4_2 = var_r23 | 0x80000000;
-        *(u32*)((char*)temp_r5 - 8) = temp_r24_2 - 4;
-    }
-    if (temp_r6_2 != 0)
-    {
-        var_r4_2 |= 0x40000000;
-        *(u32*)((char*)temp_r5 + ((var_r23 + 3) & 0xFFFFFFFC)) = temp_r6_2; // Fixed casting issue
-    }
-    *(u32*)((char*)temp_r5 - 4) = var_r4_2;
-    return temp_r5;
 }
 
 /**

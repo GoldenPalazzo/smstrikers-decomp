@@ -131,9 +131,8 @@ int GetNumLeafNodesInHierarchy(cSHierarchy& hierarchy, int nodeIndex, int count)
 
 /**
  * Offset/Address/Size: 0x1BCC | 0x80203C90 | size: 0x294
- * TODO: 98.00% match - GPR renaming from int next var; first-loop volatile FPR
- * from CalculateDistanceSquared inline; direction f1/f4 scheduling - all likely
- * -inline deferred vs auto
+ * TODO: 98.88% match - remaining callee-saved GPR allocation drift in loop-carried
+ * index/offset registers (polygon base and outer-loop counters).
  */
 void ShuffleIntoOutline(Vector<nlVector3, DefaultAllocator>& polygon)
 {
@@ -159,12 +158,14 @@ void ShuffleIntoOutline(Vector<nlVector3, DefaultAllocator>& polygon)
         float max = 1.0f;
         nlRecipSqrt(dir.f.x * dir.f.x + dir.f.y * dir.f.y + dir.f.z * dir.f.z, true);
 
-        int prev = i - 1;
+        int prev = i;
+        prev -= 1;
         nlVec3Set(dir, polygon.mData[i].f.x - polygon.mData[prev].f.x, polygon.mData[i].f.y - polygon.mData[prev].f.y, polygon.mData[i].f.z - polygon.mData[prev].f.z);
 
-        int next = i + 1;
+        int next = i;
+        next += 1;
 
-        for (int j = i + 1; j < polygon.mSize; j++)
+        for (int j = next; j < polygon.mSize; j++)
         {
             float x, y, z;
             y = polygon.mData[i].f.y - polygon.mData[j].f.y;
@@ -187,15 +188,9 @@ void ShuffleIntoOutline(Vector<nlVector3, DefaultAllocator>& polygon)
 
 /**
  * Offset/Address/Size: 0x188C | 0x80203950 | size: 0x340
- * TODO: 95.17% match - GPR allocation drift: nextLeaf(r31) and node(r30) assigned
- * too-high registers, pushing ecs/pa/skeleton down. Likely -inline deferred context issue.
  */
-int UpdateEffectsFromLeafNodes(cPoseAccumulator& pa, EmissionController** ecs, cSHierarchy& skeleton, int leaf, int node)
+inline int UpdateEffectsFromLeafNodes(cPoseAccumulator& pa, EmissionController** ecs, cSHierarchy& skeleton, int leaf, int node)
 {
-    int i, j, k, l, m;
-    int child, grandChild, greatGrandChild, deeperChild;
-    int nextLeaf;
-
     if (skeleton.GetNumChildren(node) == 0)
     {
         EmissionController* ec = ecs[leaf];
@@ -203,124 +198,20 @@ int UpdateEffectsFromLeafNodes(cPoseAccumulator& pa, EmissionController** ecs, c
         {
             if (EmissionManager::IsStillAlive(ec))
             {
-                ecs[leaf]->SetPosition(*(nlVector3*)&pa.GetNodeMatrix(node).f.m41);
+                ecs[leaf]->SetPosition(pa.GetNodeMatrix(node).GetTranslation());
             }
             else
             {
                 ecs[leaf] = NULL;
             }
         }
-
         leaf++;
     }
     else
     {
-        for (i = 0; i < skeleton.GetNumChildren(node); i++)
+        for (int i = 0; i < skeleton.GetNumChildren(node); i++)
         {
-            child = skeleton.GetChild(node, i);
-            nextLeaf = leaf;
-
-            if (skeleton.GetNumChildren(child) == 0)
-            {
-                EmissionController* ec = ecs[leaf];
-                if (ec != NULL)
-                {
-                    if (EmissionManager::IsStillAlive(ec))
-                    {
-                        ecs[leaf]->SetPosition(*(nlVector3*)&pa.GetNodeMatrix(child).f.m41);
-                    }
-                    else
-                    {
-                        ecs[leaf] = NULL;
-                    }
-                }
-
-                nextLeaf++;
-            }
-            else
-            {
-                for (j = 0; j < skeleton.GetNumChildren(child); j++)
-                {
-                    grandChild = skeleton.GetChild(child, j);
-
-                    if (skeleton.GetNumChildren(grandChild) == 0)
-                    {
-                        EmissionController* ec = ecs[nextLeaf];
-                        if (ec != NULL)
-                        {
-                            if (EmissionManager::IsStillAlive(ec))
-                            {
-                                ecs[nextLeaf]->SetPosition(*(nlVector3*)&pa.GetNodeMatrix(grandChild).f.m41);
-                            }
-                            else
-                            {
-                                ecs[nextLeaf] = NULL;
-                            }
-                        }
-
-                        nextLeaf++;
-                    }
-                    else
-                    {
-                        for (k = 0; k < skeleton.GetNumChildren(grandChild); k++)
-                        {
-                            greatGrandChild = skeleton.GetChild(grandChild, k);
-
-                            if (skeleton.GetNumChildren(greatGrandChild) == 0)
-                            {
-                                EmissionController* ec = ecs[nextLeaf];
-                                if (ec != NULL)
-                                {
-                                    if (EmissionManager::IsStillAlive(ec))
-                                    {
-                                        ecs[nextLeaf]->SetPosition(*(nlVector3*)&pa.GetNodeMatrix(greatGrandChild).f.m41);
-                                    }
-                                    else
-                                    {
-                                        ecs[nextLeaf] = NULL;
-                                    }
-                                }
-
-                                nextLeaf++;
-                            }
-                            else
-                            {
-                                for (l = 0; l < skeleton.GetNumChildren(greatGrandChild); l++)
-                                {
-                                    deeperChild = skeleton.GetChild(greatGrandChild, l);
-
-                                    if (skeleton.GetNumChildren(deeperChild) == 0)
-                                    {
-                                        EmissionController* ec = ecs[nextLeaf];
-                                        if (ec != NULL)
-                                        {
-                                            if (EmissionManager::IsStillAlive(ec))
-                                            {
-                                                ecs[nextLeaf]->SetPosition(pa.GetNodeMatrix(deeperChild).GetTranslation());
-                                            }
-                                            else
-                                            {
-                                                ecs[nextLeaf] = NULL;
-                                            }
-                                        }
-
-                                        nextLeaf++;
-                                    }
-                                    else
-                                    {
-                                        for (m = 0; m < skeleton.GetNumChildren(deeperChild); m++)
-                                        {
-                                            nextLeaf = UpdateEffectsFromLeafNodes(pa, ecs, skeleton, nextLeaf, skeleton.GetChild(deeperChild, m));
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            leaf = nextLeaf;
+            leaf = UpdateEffectsFromLeafNodes(pa, ecs, skeleton, leaf, skeleton.GetChild(node, i));
         }
     }
 

@@ -110,10 +110,10 @@ void UpdateChainEmitter(EmissionController& controller)
 
 /**
  * Offset/Address/Size: 0x608 | 0x8015E30C | size: 0x2E0
+ * TODO: 99.24% match - remaining FPR allocation/scheduling mismatch in score weighting.
  */
 void ChainChomp::FindTarget(cTeam* pTeam)
 {
-    // TODO: 99.24% match - remaining FPR allocation/scheduling mismatch in score weighting.
     float fBestScore = 99999.9f;
     cFielder* pBestCandidate = NULL;
     cFielder* pFielder;

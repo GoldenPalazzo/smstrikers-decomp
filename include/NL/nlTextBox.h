@@ -37,7 +37,7 @@ public:
     }; // total size: 0x58
 
     static void DrawString(const nlTextBox::StringDrawInfo&, const nlVector2&, const nlColour&, eGLView view);
-    void ProcessString(const FontCharString*, const nlFont*, const nlVector2&, unsigned long, const nlMatrix4*, nlTextBox::StringDrawInfo&);
+    static void ProcessString(const FontCharString*, const nlFont*, const nlVector2&, unsigned long, const nlMatrix4*, nlTextBox::StringDrawInfo&);
 };
 
 #endif // _NLTEXTBOX_H_

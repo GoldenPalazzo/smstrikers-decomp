@@ -792,9 +792,9 @@ void FEResourceManager::TextureResourceLoadComplete(void*, unsigned long uReadSi
 
 /**
  * Offset/Address/Size: 0x0 | 0x8020BB40 | size: 0x29C
- * TODO: 95.46% match - result in r4 vs r5 due to 3 missing dead-store spill
- * instructions (lwz/stw) at switch entry - MWCC optimizer artifact that shifts
- * register allocation for key/cmpResult through the TEXTURE case
+ * TODO: 96.09% match - missing switch-entry dead-store spills still keep
+ * result in r4 (target uses r5), cascading through TEXTURE-case register
+ * allocation and stack slot layout.
  */
 void FEResourceManager::Update(float)
 {
@@ -938,8 +938,7 @@ void FEResourceManager::Update(float)
 
         case FERT_FONT:
         {
-            nlFont* pExistingFont = FontManager::Instance()->GetFontByHashID(pFeResourceHandle->m_hashID);
-            ((FEFontResource*)pFeResourceHandle)->SetFontReference(pExistingFont);
+            ((FEFontResource*)pFeResourceHandle)->SetFontReference(FontManager::Instance()->GetFontByHashID(pFeResourceHandle->m_hashID));
             result = FERR_AlreadyLoaded;
             pFeResourceHandle->m_bValid = true;
             break;

@@ -293,21 +293,23 @@ unsigned long LoadCallbacks::ReadDoneCB(unsigned long Slot, long Result, void* p
     new (functor.m_FunctorMem) MemCardFunctor::MCMemberFunctor<LoadCallbacks>(this, cb, pFile);
 
     MemCard::MC_FILE* pLoadFile = m_pLoadFile;
+    MemCard** memCards = g_MemCards;
     u8 bannerFmt = pLoadFile->IconCfg.BannerFormat;
     s8 iconFmt = pLoadFile->IconCfg.IconFormat;
     u8 iconCount = pLoadFile->IconCfg.IconCount;
 
-    u32 headerSize = 0;
-    headerSize += ((bannerFmt == 1) ? 0x200 : 0);
-    headerSize += bannerFmt * 0xC00;
-    headerSize += ((iconFmt == 1) ? 0x200 : 0);
-    headerSize += iconCount * (iconFmt << 10);
-    headerSize += 0x40;
+    u32 totalHeader = 0;
+    totalHeader += ((bannerFmt == 1) ? 0x200 : 0);
+    totalHeader += bannerFmt * 0xC00;
+    totalHeader += ((iconFmt == 1) ? 0x200 : 0);
+    totalHeader += iconCount * (iconFmt << 10);
+
+    u32 headerSize = totalHeader + 0x40;
     pLoadFile->IconCfg.HeaderSize = headerSize;
 
     u32 alignedSize = (headerSize + 0x1FF) & ~0x1FF;
 
-    long result = g_MemCards[Slot]->InternalReadFile(pLoadFile, m_pIconReadBuffer, alignedSize, 0, functor);
+    long result = memCards[Slot]->InternalReadFile(pLoadFile, m_pIconReadBuffer, alignedSize, 0, functor);
 
     if (result != 0)
     {
@@ -325,7 +327,7 @@ unsigned long LoadCallbacks::ReadDoneCB(unsigned long Slot, long Result, void* p
         return -1;
     }
 
-    return 0;
+    return result;
 }
 
 /**

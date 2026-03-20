@@ -966,10 +966,127 @@ float FarToTheirNet(cPlayer* pPlayer)
 
 /**
  * Offset/Address/Size: 0x4934 | 0x800833BC | size: 0x394
+ * TODO: 91.90% match - remaining diffs are f30/f31 accumulator/check register swap,
+ *       goalie action-state branch shape (cmp chain vs cntlzw/extrwi form), and
+ *       minor local FPR scheduling in the non-goalie distance path.
  */
-float Pressured(cFielder*)
+float Pressured(cFielder* pFielder)
 {
-    return 0.0f;
+    float fZero = 0.0f;
+
+    if (pFielder == NULL)
+    {
+        return fZero;
+    }
+
+    float fScore = fZero;
+    float fCheck = fZero;
+    const nlVector3* pFielderPos = &pFielder->m_v3Position;
+    const nlVector3* pFielderVel = &pFielder->m_v3Velocity;
+    int i = 0;
+
+    while (i < 4)
+    {
+        cFielder* pOpponent = pFielder->m_pTeam->GetOtherTeam()->GetFielder(i);
+
+        float fNearScore;
+        if (pFielder == NULL)
+        {
+            fNearScore = fCheck;
+        }
+        else if (pOpponent == NULL)
+        {
+            fNearScore = fCheck;
+        }
+        else if (pFielder->m_eClassType == GOALIE)
+        {
+            FuzzyTweaks* pFuzzyTweaks = g_pGame->m_pFuzzyTweaks;
+            float dy = pOpponent->m_v3Position.f.y - pFielderPos->f.y;
+            float dx = pOpponent->m_v3Position.f.x - pFielderPos->f.x;
+            fNearScore = NormalizeVal(nlSqrt(dx * dx + dy * dy, true), pFuzzyTweaks->vNearGoalieConfidenceDistance);
+        }
+        else if (pOpponent->m_eClassType == GOALIE)
+        {
+            FuzzyTweaks* pFuzzyTweaks = g_pGame->m_pFuzzyTweaks;
+            float dy = pFielderPos->f.y - pOpponent->m_v3Position.f.y;
+            float dx = pFielderPos->f.x - pOpponent->m_v3Position.f.x;
+            fNearScore = NormalizeVal(nlSqrt(dx * dx + dy * dy, true), pFuzzyTweaks->vNearGoalieConfidenceDistance);
+        }
+        else
+        {
+            const nlVector2* pNearConfidence;
+            if (pFielder->IsOnSameTeam(pOpponent))
+            {
+                pNearConfidence = &g_pGame->m_pFuzzyTweaks->vNearTeammateConfidenceDistance;
+            }
+            else
+            {
+                pNearConfidence = &g_pGame->m_pFuzzyTweaks->vNearOpponentConfidenceDistance;
+            }
+
+            float dx = pFielderPos->f.x - pOpponent->m_v3Position.f.x;
+            float dy = pFielderPos->f.y - pOpponent->m_v3Position.f.y;
+            fNearScore = NormalizeVal(nlSqrt(dx * dx + dy * dy, true), *pNearConfidence);
+        }
+
+        float fOpponentScore;
+        if (pOpponent == NULL)
+        {
+            fOpponentScore = 0.0f;
+        }
+        else
+        {
+            fOpponentScore = 0.0f;
+            if (pOpponent->m_eClassType == GOALIE)
+            {
+                Goalie* pGoalie = (Goalie*)pOpponent;
+                fOpponentScore = check_goalie(pGoalie, pGoalie->mGoalieActionState);
+            }
+            else if (pOpponent->m_eClassType == FIELDER)
+            {
+                fOpponentScore = check_fielder(pOpponent);
+            }
+        }
+
+        if ((fOpponentScore == fCheck) && (fNearScore >= 0.5f))
+        {
+            float fClosingWeight = 1.0f - g_pGame->m_pFuzzyTweaks->fPressuredNearWeight;
+            float fClosingScore;
+
+            if (pFielder == NULL)
+            {
+                fClosingScore = fCheck;
+            }
+            else if (pOpponent == NULL)
+            {
+                fClosingScore = fCheck;
+            }
+            else
+            {
+                float fClosingSpeed = GetClosingSpeed2D(*pFielderPos, *pFielderVel, pOpponent->m_v3Position, pOpponent->m_v3Velocity);
+                fClosingScore = NormalizeVal(fClosingSpeed, fCheck, g_pGame->m_pFuzzyTweaks->fClosingSpeedMax);
+            }
+
+            fScore += (fNearScore * g_pGame->m_pFuzzyTweaks->fPressuredNearWeight) + (fClosingScore * fClosingWeight);
+        }
+
+        i++;
+    }
+
+    fScore *= 0.25f;
+
+    float fResult = fCheck;
+    if (fScore >= fCheck)
+    {
+        fResult = fScore;
+    }
+
+    if (fResult <= 1.0f)
+    {
+        return fResult;
+    }
+
+    return 1.0f;
 }
 
 /**
@@ -1332,9 +1449,128 @@ float InFrontOfTheirNet(cFielder* pFielder)
 
 /**
  * Offset/Address/Size: 0x36FC | 0x80082184 | size: 0x3D0
+ * TODO: 94.86% match - FPR f31/f30/f28 swap, closestPt/hidden return stack swap, fmuls operand order
  */
-void OnBreakaway(cFielder*)
+float OnBreakaway(cFielder* pFielder)
 {
+    if (pFielder == NULL)
+    {
+        return 0.0f;
+    }
+    float fScore = 0.0f;
+    int i;
+    cFielder* pOpponent;
+    float fWeight = 1.0f;
+    for (i = 0; i < 4; i++)
+    {
+        pOpponent = pFielder->m_pTeam->GetOtherTeam()->GetFielder(i);
+        float fUpfieldScore;
+        if (pFielder == NULL)
+        {
+            fUpfieldScore = 0.0f;
+        }
+        else if (pOpponent == NULL)
+        {
+            fUpfieldScore = 0.0f;
+        }
+        else
+        {
+            nlVector3 v3OppPos;
+            nlVector3 v3MyPos = pFielder->m_v3Position;
+            v3OppPos = pOpponent->m_v3Position;
+            cNet* pOtherNet = pFielder->m_pTeam->GetOtherNet();
+            float sign = AIsgn(pOtherNet->m_baseLocation.f.x);
+            fUpfieldScore = NormalizeVal((v3MyPos.f.x - v3OppPos.f.x) * sign, 0.0f, g_pGame->m_pFuzzyTweaks->fUpfieldMaxDistance);
+        }
+        float fInterceptScore;
+        if (pOpponent == NULL)
+        {
+            fInterceptScore = 0.0f;
+        }
+        else if (pFielder == NULL)
+        {
+            fInterceptScore = 0.0f;
+        }
+        else
+        {
+            const nlVector3* pOppPos = &pOpponent->m_v3Position;
+            const nlVector3* pMyPos = &pFielder->m_v3Position;
+            cNet* pOppNet = pOpponent->m_pTeam->m_pNet;
+            const nlVector3* pNetPos = &pOppNet->m_baseLocation;
+            nlVector3 closestPt = GetClosestPointOnLineABFromPointC(*pMyPos, *pNetPos, *pOppPos);
+            fInterceptScore = 0.0f;
+            do
+            {
+                bool isMyPos = (pMyPos->f.x == closestPt.f.x && pMyPos->f.y == closestPt.f.y && pMyPos->f.z == closestPt.f.z);
+                if (isMyPos)
+                    break;
+                bool isNetPos = (pNetPos->f.x == closestPt.f.x && pNetPos->f.y == closestPt.f.y && pNetPos->f.z == closestPt.f.z);
+                if (isNetPos)
+                    break;
+                float dx1 = pMyPos->f.x - closestPt.f.x;
+                float dy1 = pMyPos->f.y - closestPt.f.y;
+                float dist1 = nlSqrt(dy1 * dy1 + dx1 * dx1, true);
+                fInterceptScore = InterpolateRangeClamped(g_pGame->m_pFuzzyTweaks->vInBetweenConeWidth, g_pGame->m_pFuzzyTweaks->vInBetweenInterceptRange, dist1);
+                float dy2 = closestPt.f.y - pOppPos->f.y;
+                float dx2 = closestPt.f.x - pOppPos->f.x;
+                float dist2 = nlSqrt(dx2 * dx2 + dy2 * dy2, true);
+                fInterceptScore = InterpolateRangeClamped(fWeight, 0.0f, 0.0f, fInterceptScore, dist2);
+            } while (false);
+        }
+        float fProximityScore;
+        if (pFielder == NULL)
+        {
+            fProximityScore = 0.0f;
+        }
+        else if (pOpponent == NULL)
+        {
+            fProximityScore = 0.0f;
+        }
+        else if (pFielder->m_eClassType == GOALIE)
+        {
+            float dy = pOpponent->m_v3Position.f.y - pFielder->m_v3Position.f.y;
+            float dx = pOpponent->m_v3Position.f.x - pFielder->m_v3Position.f.x;
+            FuzzyTweaks* pFuzzyTweaks = g_pGame->m_pFuzzyTweaks;
+            float dist = nlSqrt(dx * dx + dy * dy, true);
+            fProximityScore = NormalizeVal(dist, pFuzzyTweaks->vNearGoalieConfidenceDistance);
+        }
+        else if (pOpponent->m_eClassType == GOALIE)
+        {
+            float dy = pFielder->m_v3Position.f.y - pOpponent->m_v3Position.f.y;
+            float dx = pFielder->m_v3Position.f.x - pOpponent->m_v3Position.f.x;
+            FuzzyTweaks* pFuzzyTweaks = g_pGame->m_pFuzzyTweaks;
+            float dist = nlSqrt(dx * dx + dy * dy, true);
+            fProximityScore = NormalizeVal(dist, pFuzzyTweaks->vNearGoalieConfidenceDistance);
+        }
+        else
+        {
+            const nlVector2* pRange;
+            if (pFielder->IsOnSameTeam(pOpponent))
+            {
+                pRange = &g_pGame->m_pFuzzyTweaks->vNearTeammateConfidenceDistance;
+            }
+            else
+            {
+                pRange = &g_pGame->m_pFuzzyTweaks->vNearOpponentConfidenceDistance;
+            }
+            float dy = pFielder->m_v3Position.f.y - pOpponent->m_v3Position.f.y;
+            float dx = pFielder->m_v3Position.f.x - pOpponent->m_v3Position.f.x;
+            float dist = nlSqrt(dx * dx + dy * dy, true);
+            fProximityScore = NormalizeVal(dist, *pRange);
+        }
+        float maxScore;
+        if (fProximityScore >= fInterceptScore)
+        {
+            maxScore = fProximityScore;
+        }
+        else
+        {
+            maxScore = fInterceptScore;
+        }
+        fScore += fWeight * (fWeight - maxScore) + fUpfieldScore * maxScore;
+        fScore -= fInterceptScore;
+    }
+    return NormalizeVal(fScore, 0.0f, 4.0f);
 }
 
 /**

@@ -111,34 +111,32 @@ bool FEInput::IsConnected(eFEINPUT_PAD pad)
 
 /**
  * Offset/Address/Size: 0xBE8 | 0x8020F5F4 | size: 0x310
- * TODO: 86.2% match - register allocation and branch pattern differences
  */
 bool FEInput::IsPressed(eFEINPUT_PAD pad, int button, bool remap, eFEINPUT_PAD* pOutPad)
 {
-    if (m_bInputAllowed == false)
+    if (m_bInputAllowed)
     {
-        return false;
-    }
-
-    if (pad != FE_ALL_PADS)
-    {
-        if (!m_bEnableInput[pad])
+        if (pad != FE_ALL_PADS)
         {
-            return false;
-        }
-        cGlobalPad* pPad = cPadManager::GetPad(pad);
-        return pPad->IsPressed(button, remap);
-    }
-
-    for (int i = 0; i < 4; i++)
-    {
-        if (IsPressed((eFEINPUT_PAD)i, button, remap, (eFEINPUT_PAD*)0))
-        {
-            if (pOutPad)
+            if (!m_bEnableInput[pad])
             {
-                *pOutPad = (eFEINPUT_PAD)i;
+                return false;
             }
-            return true;
+            cGlobalPad* pPad = cPadManager::GetPad(pad);
+            bool ispressed = pPad->IsPressed(button, remap);
+            return ispressed;
+        }
+
+        for (int i = 0; i < 4; i++)
+        {
+            if (IsPressed((eFEINPUT_PAD)i, button, remap, (eFEINPUT_PAD*)0))
+            {
+                if (pOutPad)
+                {
+                    *pOutPad = (eFEINPUT_PAD)i;
+                }
+                return true;
+            }
         }
     }
     return false;
@@ -146,52 +144,52 @@ bool FEInput::IsPressed(eFEINPUT_PAD pad, int button, bool remap, eFEINPUT_PAD* 
 
 /**
  * Offset/Address/Size: 0x87C | 0x8020F288 | size: 0x36C
- * TODO: 85.1% match - register allocation and addressing mode differences
+ * TODO: 95.2% match - register allocation off by 1 (r23-r26 vs r22-r25),
+ *       compiler doesn't hoist g_aFEPadData base into register for outer loop
  */
 bool FEInput::IsAutoPressed(eFEINPUT_PAD pad, int button, bool remap, eFEINPUT_PAD* pOutPad)
 {
-    if (!m_bInputAllowed)
+    if (m_bInputAllowed)
     {
-        return false;
-    }
-
-    if (pad != FE_ALL_PADS)
-    {
-        if (!m_bEnableInput[pad])
+        if (pad != FE_ALL_PADS)
         {
-            return false;
-        }
-
-        cGlobalPad* pPad = cPadManager::GetPad(pad);
-        bool isPressed = pPad->IsPressed(button, remap);
-
-        int buttonIndex;
-        if (remap)
-        {
-            buttonIndex = GetButtonIndex(cPadManager::GetRemapArray()[button]);
-        }
-        else
-        {
-            buttonIndex = GetButtonIndex(button);
-        }
-
-        if (isPressed && !g_aFEPadData[pad].bIsPressed[buttonIndex])
-        {
-            isPressed = false;
-        }
-
-        return isPressed;
-    }
-
-    for (int i = 0; i < 4; i++)
-    {
-        if (IsAutoPressed((eFEINPUT_PAD)i, button, remap, nullptr))
-        {
-            if (pOutPad != nullptr)
+            if (!m_bEnableInput[pad])
             {
-                *pOutPad = (eFEINPUT_PAD)i;
+                return false;
             }
-            return true;
+
+            cGlobalPad* pPad = cPadManager::GetPad(pad);
+            bool ispressed = pPad->IsPressed(button, remap);
+
+            int mappedButton;
+            if (remap)
+            {
+                mappedButton = cPadManager::GetRemapArray()[button];
+            }
+            else
+            {
+                mappedButton = button;
+            }
+            u32 buttonIndex = GetButtonIndex(mappedButton);
+
+            if (ispressed && !g_aFEPadData[pad].bIsPressed[buttonIndex])
+            {
+                ispressed = false;
+            }
+
+            return ispressed;
+        }
+
+        for (int i = 0; i < 4; i++)
+        {
+            if (IsAutoPressed((eFEINPUT_PAD)i, button, remap, (eFEINPUT_PAD*)0))
+            {
+                if (pOutPad)
+                {
+                    *pOutPad = (eFEINPUT_PAD)i;
+                }
+                return true;
+            }
         }
     }
     return false;

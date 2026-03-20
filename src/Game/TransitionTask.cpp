@@ -1,5 +1,46 @@
 #include "Game/TransitionTask.h"
 #include "Game/Font/fontmanager.h"
+#include "Game/BaseGameSceneManager.h"
+#include "Game/OverlayManager.h"
+#include "Game/FE/feSceneManager.h"
+#include "Game/FE/feResourceManager.h"
+#include "Game/FE/feManager.h"
+#include "Game/GameInfo.h"
+#include "Game/DB/StatsTracker.h"
+#include "Game/Transitions/ScreenTransitionManager.h"
+#include "Game/Sys/eventman.h"
+#include "Game/Ball.h"
+#include "Game/Physics/Physics.h"
+#include "Game/Physics/PhysicsFakeBall.h"
+#include "Game/Render/FlareHandler.h"
+#include "Game/NisPlayer.h"
+#include "Game/ReplayChoreo.h"
+#include "Game/ReplayManager.h"
+#include "Game/Render/Jumbotron.h"
+#include "Game/Render/CrowdManager.h"
+#include "Game/SAnim/pnSAnimController.h"
+#include "Game/SAnim/pnBlender.h"
+#include "Game/SAnim/pnSingleAxisBlender.h"
+#include "Game/SAnim/pnFeather.h"
+#include "Game/Render/SidelineExplodable.h"
+#include "Game/BeginFrameTask.h"
+#include "Game/WorldManager.h"
+#include "Game/ObjectBlur.h"
+#include "Game/Camera/CameraMan.h"
+#include "Game/Effects/EmissionManager.h"
+#include "Game/Audio/AudioLoader.h"
+#include "Game/Audio/AudioScriptEventMgr.h"
+#include "Game/CharacterTemplate.h"
+#include "Game/Sys/PlatStream.h"
+#include "Game/Debug/TimeRegions.h"
+#include "Game/Render/ElectricFence.h"
+#include "Game/Game.h"
+#include "Game/Drawable/DrawableModel.h"
+#include "NL/nlMemory.h"
+#include "NL/gl/gl.h"
+#include "NL/gl/glView.h"
+#include "NL/glx/glxSwap.h"
+#include "NL/plat/plataudio.h"
 
 struct LocalizationObj
 {
@@ -12,6 +53,17 @@ struct LocalizationObj
 extern LocalizationObj* g_pLocalization;
 
 int nlSNPrintf(char*, unsigned long, const char*, ...);
+
+extern unsigned char g_bFrameStatsOnDisk;
+static unsigned long long s_FontResourceMark;
+extern unsigned char gSebringLoadPackageToVirtualMemory;
+extern PhysicsLoader ThePhysicsLoader;
+
+void glx_SetFog(int);
+bool fxParticleShutdown();
+bool fxUnloadGroups();
+bool fxUnloadTemplates();
+void glResourceRelease(unsigned long long);
 
 // /**
 //  * Offset/Address/Size: 0x0 | 0x801731FC | size: 0x10
@@ -149,6 +201,156 @@ void TransitionTask::InitializeGameState()
  */
 void TransitionTask::DestroyGameState()
 {
+    m_TransitionState = eTS_Destroying;
+
+    if (g_bFrameStatsOnDisk)
+    {
+        WriteFrameRateStatsToFile();
+    }
+
+    DestroyTimeRegions();
+
+    while (!nlSingleton<FESceneManager>::s_pInstance->AreAllScenesValid())
+    {
+        nlServiceFileSystem();
+        nlSingleton<FESceneManager>::s_pInstance->Update(0.0f);
+        nlSingleton<FEResourceManager>::s_pInstance->Run(0.0f);
+    }
+
+    nlSingleton<OverlayManager>::s_pInstance->PopEntireStack();
+    nlSingleton<FESceneManager>::s_pInstance->ForceImmediateStackProcessing();
+
+    glxSwapLoading(false, false);
+
+    nlSingleton<OverlayManager>::s_pInstance->Push((SceneList)0x4E, (ScreenMovement)0, false);
+
+    nlSingleton<FESceneManager>::s_pInstance->ForceImmediateStackProcessing();
+
+    while (!nlSingleton<FESceneManager>::s_pInstance->AreAllScenesValid())
+    {
+        nlServiceFileSystem();
+        nlSingleton<FESceneManager>::s_pInstance->Update(0.0f);
+        nlSingleton<FEResourceManager>::s_pInstance->Run(0.0f);
+    }
+
+    for (int i = 0; i < 2; i++)
+    {
+        glBeginFrame();
+        SetupMatrices();
+        nlSingleton<FEResourceManager>::s_pInstance->Run(1.0f / 30.0f);
+        nlSingleton<FESceneManager>::s_pInstance->Update(1.0f / 30.0f);
+        nlSingleton<FESceneManager>::s_pInstance->RenderActiveScenes();
+        glFinish();
+        glEndFrame();
+        glSendFrame();
+    }
+
+    glxSwapLoading(true, false);
+
+    PlatAudio::StopAllStreams();
+    AudioScriptEventMgr::Purge();
+    FlareHandler::instance.Cleanup();
+    NisPlayer::Instance()->Reset();
+    ReplayChoreo::Instance().Reset();
+    ReplayManager::Instance()->Uninitialize();
+
+    glx_SetFog(-1);
+
+    while (!nlSingleton<FESceneManager>::s_pInstance->AreAllScenesValid())
+    {
+        nlServiceFileSystem();
+        nlSingleton<FESceneManager>::s_pInstance->Update(0.0f);
+        nlSingleton<FEResourceManager>::s_pInstance->Run(0.0f);
+    }
+
+    if (nlSingleton<GameInfoManager>::s_pInstance->mCurrentMode != 0)
+    {
+        nlSingleton<OverlayManager>::s_pInstance->DestroyMessengerManager();
+    }
+
+    nlSingleton<OverlayManager>::s_pInstance->PopEntireStack();
+
+    if (nlSingleton<OverlayManager>::s_pInstance != NULL)
+    {
+        delete nlSingleton<OverlayManager>::s_pInstance;
+        nlSingleton<OverlayManager>::s_pInstance = NULL;
+    }
+
+    if (nlSingleton<FESceneManager>::s_pInstance != NULL)
+    {
+        delete nlSingleton<FESceneManager>::s_pInstance;
+        nlSingleton<FESceneManager>::s_pInstance = NULL;
+    }
+
+    nlSingleton<FEResourceManager>::s_pInstance->UnloadPermanentResourceBundle();
+
+    if (nlSingleton<FEResourceManager>::s_pInstance != NULL)
+    {
+        delete nlSingleton<FEResourceManager>::s_pInstance;
+        nlSingleton<FEResourceManager>::s_pInstance = NULL;
+    }
+
+    if (nlSingleton<FontManager>::s_pInstance != NULL)
+    {
+        delete nlSingleton<FontManager>::s_pInstance;
+        nlSingleton<FontManager>::s_pInstance = NULL;
+    }
+
+    nlFree(g_pLocalization->m_pFile);
+    glResourceRelease(s_FontResourceMark);
+
+    g_pEventManager->RemoveEventHandler(m_pAIHandler);
+    g_pEventManager->RemoveEventHandler(m_pGoalieHandler);
+    m_pAIHandler = NULL;
+    m_pGoalieHandler = NULL;
+
+    AudioLoader::UnloadInGame();
+    BeginFrameTask::s_FramerateLocked = 0;
+
+    DestroyPowerups();
+    DestroyCharacters();
+
+    delete g_pBall;
+    g_pBall = NULL;
+
+    FakeBallWorld::Destroy();
+    cCameraManager::Shutdown();
+    EmissionManager::Shutdown();
+    fxParticleShutdown();
+    fxUnloadGroups();
+    fxUnloadTemplates();
+
+    SidelineExplodableManager::DestroyAllActiveFragments(true);
+    WorldManager::DestroyWorld();
+
+    SlotPoolBase::BaseFreeBlocks(&SFXPlaySet::m_TrackedSFXSlotPool, 0x24);
+    SidelineExplodableManager::CleanUp();
+    ThePhysicsLoader.DestroyPhysics();
+    FrontEnd::Destroy();
+
+    Jumbotron::instance.Uninitialize();
+    CrowdManager::instance.Uninitialize();
+
+    FreeElectricFence();
+    DestroyGame();
+    BlurManager::Shutdown();
+    CleanBoundingBoxCache();
+
+    nlSingleton<StatsTracker>::s_pInstance->DestroyEventHandler();
+    glResourceRelease(m_GameResourceMark);
+
+    nlSingleton<ScreenTransitionManager>::s_pInstance->CancelAllTransitions();
+
+    gSebringLoadPackageToVirtualMemory = 0;
+
+    SlotPoolBase::BaseFreeBlocks(&cPN_SAnimController::m_SAnimControllerSlotPool, 0x54);
+    SlotPoolBase::BaseFreeBlocks(&cPN_Blender::m_BlenderSlotPool, 0x1c);
+    SlotPoolBase::BaseFreeBlocks(&cPN_SingleAxisBlender::m_SingleAxisBlenderSlotPool, 0x28);
+    SlotPoolBase::BaseFreeBlocks(&cPN_Feather::m_FeatherSlotPool, 0x30);
+
+    glViewCompact();
+
+    m_TransitionState = eTS_Unknown;
 }
 
 /**

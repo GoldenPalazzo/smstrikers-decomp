@@ -282,9 +282,90 @@ void DrawableCharacter::Render(cCharacter& character) const
 
 /**
  * Offset/Address/Size: 0x22EC | 0x8011B19C | size: 0x3D8
+ * TODO: 98.29% match - register allocation diff in center computation (span2.x reload)
  */
-void FindBoundingSphereAccurate(nlVector3*, float*, int, const nlVector3*)
+void FindBoundingSphereAccurate(nlVector3* pOutSphere, float* pOutRadius, int numVertices, const nlVector3* pVertices)
 {
+    nlVector3 minXPt, maxXPt, minYPt, maxYPt, minZPt, maxZPt;
+    nlVector3 span1, span2;
+    const nlVector3* p;
+    int i;
+    float radiusSq;
+
+    minZPt.f.z = 1e38f;
+    minYPt.f.y = 1e38f;
+    minXPt.f.x = 1e38f;
+    maxZPt.f.z = -1e38f;
+    maxYPt.f.y = -1e38f;
+    maxXPt.f.x = -1e38f;
+
+    p = pVertices;
+    for (i = 0; i < numVertices; i++, p++)
+    {
+        if (p->f.x < minXPt.f.x)
+        {
+            minXPt = *p;
+        }
+        if (p->f.x > maxXPt.f.x)
+        {
+            maxXPt = *p;
+        }
+        if (p->f.y < minYPt.f.y)
+        {
+            minYPt = *p;
+        }
+        if (p->f.y > maxYPt.f.y)
+        {
+            maxYPt = *p;
+        }
+        if (p->f.z < minZPt.f.z)
+        {
+            minZPt = *p;
+        }
+        if (p->f.z > maxZPt.f.z)
+        {
+            maxZPt = *p;
+        }
+    }
+
+    float xSpanDistSq = nlGetLengthSquared3D(maxXPt.f.x - minXPt.f.x, maxXPt.f.y - minXPt.f.y, maxXPt.f.z - minXPt.f.z);
+    float ySpanDistSq = nlGetLengthSquared3D(maxYPt.f.x - minYPt.f.x, maxYPt.f.y - minYPt.f.y, maxYPt.f.z - minYPt.f.z);
+    float zSpanDistSq = nlGetLengthSquared3D(maxZPt.f.x - minZPt.f.x, maxZPt.f.y - minZPt.f.y, maxZPt.f.z - minZPt.f.z);
+
+    span1 = minXPt;
+    span2 = maxXPt;
+    if (ySpanDistSq > xSpanDistSq)
+    {
+        xSpanDistSq = ySpanDistSq;
+        span1 = minYPt;
+        span2 = maxYPt;
+    }
+    if (zSpanDistSq > xSpanDistSq)
+    {
+        span1 = minZPt;
+        span2 = maxZPt;
+    }
+
+    pOutSphere->f.x = 0.5f * (span1.f.x + span2.f.x);
+    pOutSphere->f.y = 0.5f * (span1.f.y + span2.f.y);
+    pOutSphere->f.z = 0.5f * (span1.f.z + span2.f.z);
+    radiusSq = nlGetLengthSquared3D(span2.f.x - pOutSphere->f.x, span2.f.y - pOutSphere->f.y, span2.f.z - pOutSphere->f.z);
+    *pOutRadius = nlSqrt(radiusSq, false);
+
+    for (i = 0; i < numVertices; pVertices++, i++)
+    {
+        float distSq = nlGetLengthSquared3D(pVertices->f.x - pOutSphere->f.x, pVertices->f.y - pOutSphere->f.y, pVertices->f.z - pOutSphere->f.z);
+        if (distSq > radiusSq)
+        {
+            float dist = nlSqrt(distSq, false);
+            *pOutRadius = 0.5f * (*pOutRadius + dist);
+            float d = dist - *pOutRadius;
+            radiusSq = *pOutRadius * *pOutRadius;
+            pOutSphere->f.x = (*pOutRadius * pOutSphere->f.x + d * pVertices->f.x) / dist;
+            pOutSphere->f.y = (*pOutRadius * pOutSphere->f.y + d * pVertices->f.y) / dist;
+            pOutSphere->f.z = (*pOutRadius * pOutSphere->f.z + d * pVertices->f.z) / dist;
+        }
+    }
 }
 
 /**

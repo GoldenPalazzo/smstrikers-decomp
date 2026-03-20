@@ -456,6 +456,8 @@ void cCameraManager::Remove(eCameraType type, bool bDeleteAfterRemoving)
 
 /**
  * Offset/Address/Size: 0x200 | 0x801A6888 | size: 0x390
+ * TODO: 92.16% match - -inline deferred causes stmw r27 vs stw r28 (5 vs 4 GPRs),
+ * normalsBase r28 vs r0/sp, float reg allocation diffs in loop body and normalize
  */
 bool cCameraManager::IsObjectOccludingField(const DrawableObject* drawable)
 {
@@ -490,112 +492,96 @@ bool cCameraManager::IsObjectOccludingField(const DrawableObject* drawable)
     }
 
     if ((cameraPosition->f.x < -goalLineX) && (objectPosition.f.x > goalLineX))
-    {
         return false;
-    }
-
     if ((cameraPosition->f.x > goalLineX) && (objectPosition.f.x < -goalLineX))
-    {
         return false;
-    }
-
     if ((cameraPosition->f.y < -sidelineY) && (objectPosition.f.y > sidelineY))
-    {
         return false;
-    }
-
     if ((cameraPosition->f.y > sidelineY) && (objectPosition.f.y < -sidelineY))
-    {
         return false;
-    }
 
     if ((objectPosition.f.z - objectRadius) < 0.0f)
     {
         objectPosition.f.z += objectRadius - objectPosition.f.z;
     }
 
-    nlVector3 corners[4];
-    nlVector3 normals[4];
+    nlVector3 fieldCorners[4];
+    nlVector3 planeNormals[4];
 
-    corners[0].f.x = -goalLineX;
-    corners[0].f.y = -sidelineY;
-    corners[0].f.z = 0.0f;
-    corners[1].f.x = -goalLineX;
-    corners[1].f.y = sidelineY;
-    corners[1].f.z = 0.0f;
-    corners[2].f.x = goalLineX;
-    corners[2].f.y = sidelineY;
-    corners[2].f.z = 0.0f;
-    corners[3].f.x = goalLineX;
-    corners[3].f.y = -sidelineY;
-    corners[3].f.z = 0.0f;
+    fieldCorners[0].f.x = -goalLineX;
+    fieldCorners[0].f.y = -sidelineY;
+    fieldCorners[0].f.z = 0.0f;
+    fieldCorners[1].f.x = -goalLineX;
+    fieldCorners[1].f.y = sidelineY;
+    fieldCorners[1].f.z = 0.0f;
+    fieldCorners[2].f.x = goalLineX;
+    fieldCorners[2].f.y = sidelineY;
+    fieldCorners[2].f.z = 0.0f;
+    fieldCorners[3].f.x = goalLineX;
+    fieldCorners[3].f.y = -sidelineY;
+    fieldCorners[3].f.z = 0.0f;
 
-    nlVector3* currentCorner = corners;
-    nlVector3* currentNormal = normals;
-    for (int i = 0; i < 4; i++)
+    nlVector3* pNormals = &planeNormals[0];
+    nlVector3* pCorner = &fieldCorners[0];
+    nlVector3* pNormal = pNormals;
+    int i;
+    for (i = 0; i < 4; i++)
     {
         int next = (i + 1) % 4;
-        nlVector3* nextCorner = &corners[next];
+        nlVector3* pNextCorner = &fieldCorners[next];
 
-        float deltaY = currentCorner->f.y - cameraPosition->f.y;
-        float deltaX = currentCorner->f.x - cameraPosition->f.x;
-        float deltaZ = currentCorner->f.z - cameraPosition->f.z;
+        float deltaY = pCorner->f.y - cameraPosition->f.y;
+        float deltaX = pCorner->f.x - cameraPosition->f.x;
+        float deltaZ = pCorner->f.z - cameraPosition->f.z;
 
-        float edgeZ = nextCorner->f.z - currentCorner->f.z;
-        float edgeX = nextCorner->f.x - currentCorner->f.x;
-        float edgeY = nextCorner->f.y - currentCorner->f.y;
+        float edgeX = pNextCorner->f.x - pCorner->f.x;
+        float edgeY = pNextCorner->f.y - pCorner->f.y;
+        float edgeZ = pNextCorner->f.z - pCorner->f.z;
 
-        float tmp0 = edgeZ * deltaY;
-        float tmp1 = edgeZ * deltaX;
-        float negEdgeX = -edgeX;
-        float normalX = edgeY * deltaZ - tmp0;
-        float tmp2 = edgeY * deltaX;
-        float normalY = negEdgeX * deltaZ + tmp1;
-        float normalZ = edgeX * deltaY - tmp2;
-
-        currentNormal->f.x = normalX;
-        currentNormal->f.y = normalY;
-        currentNormal->f.z = normalZ;
+        pNormal->f.x = edgeY * deltaZ - edgeZ * deltaY;
+        pNormal->f.y = -(edgeX * deltaZ) + edgeZ * deltaX;
+        pNormal->f.z = edgeX * deltaY - edgeY * deltaX;
 
         float invLength = nlRecipSqrt(
-            currentNormal->f.x * currentNormal->f.x
-                + currentNormal->f.y * currentNormal->f.y
-                + currentNormal->f.z * currentNormal->f.z,
+            pNormal->f.x * pNormal->f.x
+                + pNormal->f.y * pNormal->f.y
+                + pNormal->f.z * pNormal->f.z,
             true);
 
-        currentNormal->f.x = invLength * currentNormal->f.x;
-        currentNormal->f.y = invLength * currentNormal->f.y;
-        currentNormal->f.z = invLength * currentNormal->f.z;
+        float nx = pNormal->f.x;
+        float ny = pNormal->f.y;
+        float nz = pNormal->f.z;
+        pNormal->f.x = invLength * nx;
+        pNormal->f.y = invLength * ny;
+        pNormal->f.z = invLength * nz;
 
-        currentCorner++;
-        currentNormal++;
+        pCorner++;
+        pNormal++;
     }
 
-    float objectDeltaY = objectPosition.f.y - cameraPosition->f.y;
     float objectDeltaX = objectPosition.f.x - cameraPosition->f.x;
+    float objectDeltaY = objectPosition.f.y - cameraPosition->f.y;
     float objectDeltaZ = objectPosition.f.z - cameraPosition->f.z;
 
-    if ((normals[0].f.x * objectDeltaX + normals[0].f.y * objectDeltaY + normals[0].f.z * objectDeltaZ) > objectRadius)
-    {
+    if ((pNormals[0].f.x * objectDeltaX + pNormals[0].f.y * objectDeltaY + pNormals[0].f.z * objectDeltaZ) > objectRadius)
         return false;
+    if ((pNormals[1].f.x * objectDeltaX + pNormals[1].f.y * objectDeltaY + pNormals[1].f.z * objectDeltaZ) > objectRadius)
+        return false;
+    if ((pNormals[2].f.x * objectDeltaX + pNormals[2].f.y * objectDeltaY + pNormals[2].f.z * objectDeltaZ) > objectRadius)
+        return false;
+
+    float lastDot = pNormals[3].f.x * objectDeltaX + pNormals[3].f.y * objectDeltaY + pNormals[3].f.z * objectDeltaZ;
+    unsigned char result;
+    if (lastDot > objectRadius)
+    {
+        result = 0;
+    }
+    else
+    {
+        result = 1;
     }
 
-    if ((normals[1].f.x * objectDeltaX + normals[1].f.y * objectDeltaY + normals[1].f.z * objectDeltaZ) > objectRadius)
-    {
-        return false;
-    }
-
-    if ((normals[2].f.x * objectDeltaX + normals[2].f.y * objectDeltaY + normals[2].f.z * objectDeltaZ) > objectRadius)
-    {
-        return false;
-    }
-
-    if ((normals[3].f.x * objectDeltaX + normals[3].f.y * objectDeltaY + normals[3].f.z * objectDeltaZ) > objectRadius)
-    {
-        return false;
-    }
-
-    return true;
+    return result;
 }
 
 /**

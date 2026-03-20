@@ -6,10 +6,14 @@
 
 #include "Game/AI/AvoidController.h"
 #include "Game/AI/Fielder.h"
+#include "Game/AI/Scripts/ScriptQuestions.h"
 #include "Game/AI/SpaceSearch.h"
 #include "Game/AnimInventory.h"
+#include "Game/GameTweaks.h"
 
 extern FuzzyVariant fvNotSet;
+extern cTeam* g_pCurrentlyUpdatingTeam;
+static float g_fLooseBallActionRethinkTime;
 
 CommonDesireData g_vDesireCommonData[NUM_FIELDERDESIRES];
 
@@ -222,9 +226,154 @@ void cFielder::CleanUpDesire(eFielderDesireState eNewDesireState)
 
 /**
  * Offset/Address/Size: 0x4204 | 0x80034F88 | size: 0x3C4
+ * TODO: 98.76% match - CanISlideAttack r4/r5 arg eval order (compiler register allocation artifact)
  */
-void cFielder::DesireInterceptBall(float)
+void cFielder::DesireInterceptBall(float fDeltaT)
 {
+    bool bTrackBall;
+    nlVector3 v3DesirePosition;
+    nlVector3 v3FutureTargetPosition;
+    float fTime;
+
+    switch (m_eDesireSubState)
+    {
+    case 0:
+    {
+        bTrackBall = true;
+
+        if (m_DesireCommonVars.tMiscTimer.m_uPackedTime == 0)
+        {
+            if (DoAILooseBallActionSelection())
+            {
+                m_DesireCommonVars.tMiscTimer.SetSeconds(0.0f);
+                bTrackBall = false;
+            }
+            else
+            {
+                m_DesireCommonVars.tMiscTimer.SetSeconds(g_fLooseBallActionRethinkTime);
+            }
+        }
+
+        if (bTrackBall)
+        {
+            cPlayer* pPassTarget = g_pBall->m_pPassTarget;
+            if (pPassTarget != NULL && pPassTarget->m_eClassType == FIELDER)
+            {
+                float fVolley = ReceivingVolleyPass(pPassTarget);
+                if (fVolley || High(g_pBall) >= 0.5f)
+                {
+                    ((cFielder*)pPassTarget)->CalcPointOnPerimeter(v3DesirePosition, m_v3Position, 2.0f);
+                }
+                else
+                {
+                    float fSeconds = g_pBall->m_tPassTargetTimer.GetSeconds();
+                    float fz = pPassTarget->m_v3Position.f.z + fSeconds * pPassTarget->m_v3Velocity.f.z;
+                    float fy = pPassTarget->m_v3Position.f.y + fSeconds * pPassTarget->m_v3Velocity.f.y;
+                    float fx = pPassTarget->m_v3Position.f.x + fSeconds * pPassTarget->m_v3Velocity.f.x;
+                    v3FutureTargetPosition.f.x = fx;
+                    v3FutureTargetPosition.f.y = fy;
+                    v3FutureTargetPosition.f.z = fz;
+
+                    v3DesirePosition = GetClosestPointOnLineABFromPointC(g_pBall->m_v3Position, v3FutureTargetPosition, m_v3Position);
+                }
+
+                SkillTweaks* pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide);
+                if (pSkillTweaks->Def_SlideAttackChance > 0.0f)
+                {
+                    if (CanISlideAttack(g_pBall->m_v3Position, g_pBall->m_v3Velocity, &fTime))
+                    {
+                        InitActionSlideAttack(NULL, fTime);
+                        m_eDesireSubState = 1;
+                        bTrackBall = false;
+                    }
+                }
+            }
+            else
+            {
+                float fRawTime = m_pTeam->mfBallInterceptTimes[m_ID];
+                float fInterceptTime = (0.5f <= fRawTime) ? 0.5f : fRawTime;
+
+                float fz = g_pBall->m_v3Position.f.z + fInterceptTime * g_pBall->m_v3Velocity.f.z;
+                float fy = g_pBall->m_v3Position.f.y + fInterceptTime * g_pBall->m_v3Velocity.f.y;
+                float fx = g_pBall->m_v3Position.f.x + fInterceptTime * g_pBall->m_v3Velocity.f.x;
+                v3DesirePosition.f.x = fx;
+                v3DesirePosition.f.y = fy;
+                v3DesirePosition.f.z = fz;
+            }
+        }
+
+        if (bTrackBall)
+        {
+            eTurboRequest turboRequest = TR_MOVING_TARGET;
+            float dx = v3DesirePosition.f.x - m_v3Position.f.x;
+            float dy = v3DesirePosition.f.y - m_v3Position.f.y;
+            if (nlSqrt(dx * dx + dy * dy, true) < 1.0f)
+            {
+                turboRequest = TR_FAR_DISTANCE;
+            }
+
+            SetDesiredSpeedAndDirectionToPosition(fDeltaT, v3DesirePosition, turboRequest, 1.0f, 1.0f);
+            m_pAvoidance->UseMinimumAvoidance(NULL);
+        }
+
+        if (m_pBall == NULL)
+        {
+            cPlayer* pOwner = g_pBall->m_pOwner;
+            if (pOwner == NULL || pOwner->m_eClassType != GOALIE)
+            {
+                break;
+            }
+        }
+        SetDesireDuration(0.0f, true);
+        break;
+    }
+    case 1:
+    {
+        SetDesireDuration(999999.9f, true);
+
+        if (m_tSlideAttackTimer.m_uPackedTime != 0)
+        {
+            if (mActionSlideAttackVars.bAttackSucceeded == 0)
+            {
+                float fBallSpeed = nlSqrt(
+                    g_pBall->m_v3Velocity.f.x * g_pBall->m_v3Velocity.f.x + g_pBall->m_v3Velocity.f.y * g_pBall->m_v3Velocity.f.y + g_pBall->m_v3Velocity.f.z * g_pBall->m_v3Velocity.f.z,
+                    true);
+
+                if (fBallSpeed > 0.05f)
+                {
+                    const nlVector3& v3BallVel = g_pBall->m_v3Velocity;
+                    float fBallClosingSpeed = GetClosingSpeed2D(
+                        GetJointPosition(m_nLeftFootJointIndex),
+                        m_v3Velocity,
+                        g_pBall->m_v3Position,
+                        v3BallVel);
+
+                    if (fBallClosingSpeed < 0.0f)
+                    {
+                        if (nlRandomf(1.0f, &nlDefaultSeed) > 0.5f)
+                        {
+                            m_tSlideAttackTimer.SetSeconds(0.0f);
+                            m_eDesireSubState = 2;
+                        }
+                    }
+                }
+            }
+        }
+        else
+        {
+            m_eDesireSubState = 2;
+        }
+        break;
+    }
+    case 2:
+    {
+        if (m_eActionState == ACTION_NEED_ACTION)
+        {
+            SetDesireDuration(0.0f, true);
+        }
+        break;
+    }
+    }
 }
 
 /**

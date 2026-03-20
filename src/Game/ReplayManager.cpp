@@ -1,11 +1,18 @@
 #include "Game/ReplayManager.h"
 #include "Game/Camera/CameraMan.h"
+#include "Game/FixedUpdateTask.h"
 #include "NL/nlTask.h"
 #include "NL/nlMemory.h"
+#include "NL/globalpad.h"
+#include "NL/nlConfig.h"
 #include "PowerPC_EABI_Support/Runtime/MWCPlusLib.h"
 #include "PowerPC_EABI_Support/Runtime/global_destructor_chain.h"
 
 extern float g_fSimulationTick;
+extern float g_fFixedUpdateTick;
+extern bool g_bEnableGamecubePadMonkey;
+extern bool g_bTweaking;
+extern bool g_bProfiling;
 
 // Forward declarations for constructor/destructor functions
 extern "C"
@@ -330,7 +337,88 @@ void ReplayManager::EventHandler(Event* event)
 
 /**
  * Offset/Address/Size: 0x0 | 0x80111D70 | size: 0x3C0
+ * TODO: 99.92% match - remaining diffs are `i` (SDA offset) on static local labels
  */
-void ReplayManager::RenderSnapshotAt(float)
+void ReplayManager::RenderSnapshotAt(float deltaTime)
 {
+    mBlend[0] = FixedUpdateTask::mAccumulatedDeltaT / g_fFixedUpdateTick;
+    mBlend[1] = FixedUpdateTask::mAccumulatedDeltaT / g_fFixedUpdateTick;
+    mBlend[2] = FixedUpdateTask::mAccumulatedDeltaT / g_fFixedUpdateTick;
+    mDeltaTime = FixedUpdateTask::mAccumulatedDeltaT;
+
+    if (!g_bEnableGamecubePadMonkey)
+    {
+        static bool debugReplay = GetConfigBool(Config::Global(), "debugReplay", false);
+
+        if (debugReplay && !g_bTweaking && !g_bProfiling)
+        {
+            if (cPadManager::GetPad(0)->JustPressed(4, true))
+            {
+                if (nlTaskManager::m_pInstance->m_CurrState == 0x20000)
+                {
+                    nlTaskManager::SetNextState(2);
+                }
+                else if (nlTaskManager::m_pInstance->m_CurrState == 2)
+                {
+                    mTime = mReplay->EndTime();
+                    nlTaskManager::SetNextState(0x20000);
+                }
+            }
+        }
+
+        if (nlTaskManager::m_pInstance->m_CurrState == 0x20000)
+        {
+            if (!cCameraManager::HasCamera(&mDebugCamera))
+            {
+                cCameraManager::PushCamera(&mDebugCamera);
+            }
+
+            mDeltaTime = 0.0f;
+            mDeltaTime -= 0.5f * cPadManager::GetPad(0)->GetPressure(5, true);
+            mDeltaTime += 0.5f * cPadManager::GetPad(0)->GetPressure(6, true);
+
+            f32 newTime = mTime + mDeltaTime;
+            if (newTime < mReplay->BeginTime())
+            {
+                newTime = mReplay->BeginTime();
+            }
+            if (newTime > mReplay->EndTime())
+            {
+                newTime = mReplay->EndTime();
+            }
+
+            mDeltaTime = newTime - mTime;
+            mTime = newTime;
+            mReplay->Play<RenderSnapshot>(mTime, *mPrevious, *mCurrent, mBlend);
+        }
+    }
+
+    if (nlTaskManager::m_pInstance->m_CurrState == 0x10)
+    {
+        mSpeed = mSpeedUp * deltaTime + mSpeed;
+        if (mSpeed < 0.0f)
+        {
+            mSpeed = 0.0f;
+        }
+        mDeltaTime = mSpeed * deltaTime;
+        mTime = mTime + mDeltaTime;
+        mReplay->Play<RenderSnapshot>(mTime, *mPrevious, *mCurrent, mBlend);
+    }
+
+    mRender = mCurrent;
+
+    bool transitioning = (nlTaskManager::m_pInstance->m_CurrState == 0x100) || (nlTaskManager::m_pInstance->m_PrevState == 0x100 && nlTaskManager::m_pInstance->m_CurrState == 1);
+
+    if (!transitioning && mPrevious->mValid)
+    {
+        Blend<RenderSnapshot>(mBlend, *mPrevious, *mCurrent, mSnapshots[2]);
+        mRender = &mSnapshots[2];
+    }
+
+    mRender->Render(deltaTime);
+
+    if (nlTaskManager::m_pInstance->m_CurrState == 0x20000)
+    {
+        mSnapshots[2].RenderDebugInfo(*mPrevious, *mCurrent, mBlend[0]);
+    }
 }

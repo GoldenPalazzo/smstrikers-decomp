@@ -545,24 +545,7 @@ PlatTexture* glx_MakeTexture(GXTextureHeader* header, unsigned long texhandle)
     // Copy texture data
     memcpy(pTex->m_SwizzledData, (const u8*)header + 0x20, textureSize);
 
-    // Prepare texture - inline from Prepare()
-    DCStoreRange(pTex->m_SwizzledData, GCTextureSize(pTex->m_Format, pTex->m_Width, pTex->m_Height, pTex->m_Levels, -1));
-
-    if (pTex->m_nPaletteEntries > 0)
-    {
-        DCStoreRange(pTex->m_PaletteData, pTex->m_nPaletteEntries * 2);
-        GXInitTlutObj(&pTex->m_TlutObj, pTex->m_PaletteData, GX_TL_RGB5A3, pTex->m_nPaletteEntries);
-    }
-
-    if (pTex->m_Format == GXTex_CI8)
-    {
-        GXInitTexObjCI(&pTex->m_TexObj, pTex->m_SwizzledData, pTex->m_Width, pTex->m_Height, (GXCITexFmt)gx_format[pTex->m_Format], GX_CLAMP, GX_CLAMP, pTex->m_Levels > 1 ? 1 : 0, 0);
-        GXInitTexObjLOD(&pTex->m_TexObj, (pTex->m_Levels == 1) ? GX_LINEAR : GX_LIN_MIP_NEAR, GX_LINEAR, 0.0f, (float)(pTex->m_MaxLevel - 1), 0.0f, GX_DISABLE, GX_DISABLE, GX_ANISO_1);
-        return pTex;
-    }
-
-    GXInitTexObj(&pTex->m_TexObj, pTex->m_SwizzledData, pTex->m_Width, pTex->m_Height, gx_format[pTex->m_Format], GX_CLAMP, GX_CLAMP, pTex->m_Levels > 1 ? 1 : 0);
-    GXInitTexObjLOD(&pTex->m_TexObj, (pTex->m_Levels == 1) ? GX_LINEAR : GX_LIN_MIP_LIN, GX_LINEAR, 0.0f, (float)(pTex->m_MaxLevel - 1), 0.0f, GX_DISABLE, GX_DISABLE, GX_ANISO_1);
+    pTex->Prepare();
 
     return pTex;
 }

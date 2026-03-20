@@ -3,6 +3,7 @@
 #include "NL/nlBSearch.h"
 
 void nlPrintf(const char*, ...);
+extern "C" void* memset(void*, int, unsigned long);
 
 // /**
 //  * Offset/Address/Size: 0x30 | 0x801CB798 | size: 0x24
@@ -532,21 +533,203 @@ s32 MemCard::BeginCardAccess(const MemCardFunctor& Callback)
 
 /**
  * Offset/Address/Size: 0xF28 | 0x801CA698 | size: 0x3B4
+ * TODO: 91.88% match - 13 register diffs in shift-up loop. MWCC reallocates
+ * high=low+1 from r6 to r4 after binary search, cascading all loop body
+ * registers. Same MWCC re-homing quirk as OpenFile's shift loop.
  */
-long MemCard::CreateFile(const char*, unsigned long, MemCard::ICON_CONFIG*, MemCard::MC_FILE*&, const MemCardFunctor&)
+long MemCard::CreateFile(const char* FileName, unsigned long FileSize, MemCard::ICON_CONFIG* pIconConfig, MemCard::MC_FILE*& pFile, const MemCardFunctor& Callback)
 {
-    return 0;
+    EntryLookup<MC_FILE>* nlBSearch(const unsigned long&, EntryLookup<MC_FILE>*, int);
+
+    if (m_State != IS_MOUNTED)
+    {
+        return -100;
+    }
+
+    if (m_CardInfo.FreeFiles <= 0)
+    {
+        return -8;
+    }
+
+    if (pIconConfig == NULL)
+    {
+        pIconConfig = (ICON_CONFIG*)__alloca(sizeof(ICON_CONFIG));
+        if (pIconConfig != NULL)
+        {
+            pIconConfig->BannerFormat = 0;
+            pIconConfig->IconCount = 0;
+            pIconConfig->IconFormat = 0;
+            pIconConfig->IconAnimType = 0;
+            memset(pIconConfig->IconSpeeds, 0, 8);
+        }
+    }
+
+    struct FunctorWords
+    {
+        unsigned long w0;
+        unsigned long w1;
+        unsigned long w2;
+        unsigned long w3;
+        unsigned long w4;
+        unsigned long w5;
+    };
+
+    volatile FunctorWords* fdst = (volatile FunctorWords*)&m_CB[5];
+    const volatile FunctorWords* fsrc = (const volatile FunctorWords*)&Callback;
+    unsigned long b;
+    unsigned long a;
+    unsigned long e;
+    unsigned long d;
+    unsigned long c;
+    unsigned long f;
+
+    a = fsrc->w0;
+    b = fsrc->w1;
+    fdst->w0 = a;
+    fdst->w1 = b;
+
+    d = fsrc->w2;
+    e = fsrc->w3;
+    fdst->w2 = d;
+    fdst->w3 = e;
+
+    f = fsrc->w4;
+    c = fsrc->w5;
+    fdst->w4 = f;
+    fdst->w5 = c;
+
+    unsigned long hash = nlStringHash(FileName);
+    MC_FILE* pNewFile = m_OpenFiles.GetNewEntry();
+
+    if (m_OpenFiles.m_EntryCount == m_OpenFiles.m_LookupAllocated)
+    {
+        m_OpenFiles.ExpandLookup();
+    }
+
+    long middle;
+    long low = -1;
+    long high;
+    unsigned long count = m_OpenFiles.m_EntryCount;
+    high = count;
+
+    while ((high - low) > 1)
+    {
+        middle = (high + low) >> 1;
+        if (m_OpenFiles.m_pEntryLookup[middle].Id > hash)
+        {
+            high = middle;
+        }
+        else
+        {
+            low = middle;
+        }
+    }
+
+    high = low + 1;
+    while (count != (unsigned long)high)
+    {
+        unsigned long prev = count - 1;
+        EntryLookup<MC_FILE>* lookup = m_OpenFiles.m_pEntryLookup;
+        EntryLookup<MC_FILE>* src2 = &lookup[prev];
+        EntryLookup<MC_FILE>* dst2 = &lookup[count];
+        count = prev;
+        unsigned long id = src2->Id;
+        MC_FILE* entry = src2->pEntry;
+        dst2->pEntry = entry;
+        dst2->Id = id;
+    }
+
+    m_OpenFiles.m_pEntryLookup[high].Id = hash;
+    m_OpenFiles.m_pEntryLookup[high].pEntry = pNewFile;
+    m_OpenFiles.m_EntryCount = m_OpenFiles.m_EntryCount + 1;
+
+    m_pFileCB = pNewFile;
+    m_pFileCB->FileInfo.fileNo = -1;
+
+    pFile = m_pFileCB;
+
+    pIconConfig->HeaderSize = pIconConfig->BannerFormat * 0xC00
+                            + ((pIconConfig->BannerFormat == 1) ? 0x200 : 0)
+                            + (pIconConfig->IconCount * ((s8)pIconConfig->IconFormat << 10))
+                            + (((s8)pIconConfig->IconFormat == 1) ? 0x200 : 0)
+                            + 0x40;
+
+    MC_FILE* mcFile = m_pFileCB;
+    mcFile->IconCfg.BannerFormat = pIconConfig->BannerFormat;
+    mcFile->IconCfg.IconCount = pIconConfig->IconCount;
+    mcFile->IconCfg.IconFormat = pIconConfig->IconFormat;
+    mcFile->IconCfg.IconAnimType = pIconConfig->IconAnimType;
+    *(unsigned long*)&mcFile->IconCfg.IconSpeeds[0] = *(unsigned long*)&pIconConfig->IconSpeeds[0];
+    *(unsigned long*)&mcFile->IconCfg.IconSpeeds[4] = *(unsigned long*)&pIconConfig->IconSpeeds[4];
+    mcFile->IconCfg.HeaderSize = pIconConfig->HeaderSize;
+
+    mcFile->TotalHeaderSize = (pIconConfig->HeaderSize + (m_CardInfo.SectorSize - 1)) & ~(m_CardInfo.SectorSize - 1);
+
+    unsigned long totalSize = mcFile->TotalHeaderSize + ((FileSize + (m_CardInfo.SectorSize - 1)) & ~(m_CardInfo.SectorSize - 1));
+
+    m_LastTransferSize = CARDGetXferredBytes(m_Slot);
+    m_TargetTransferSize = 0x4000;
+
+    m_State = IS_CREATING;
+    m_CardState = CS_CREATING;
+
+    long result = CARDCreateAsync(m_Slot, FileName, totalSize, (CARDFileInfo*)m_pFileCB, CreateFileDoneCB);
+
+    if (result != 0)
+    {
+        unsigned long searchKey = hash;
+        EntryLookup<MC_FILE>* pFound;
+
+        if (m_OpenFiles.m_EntryCount != 0)
+        {
+            pFound = nlBSearch(searchKey, m_OpenFiles.m_pEntryLookup, m_OpenFiles.m_EntryCount);
+        }
+        else
+        {
+            pFound = NULL;
+        }
+
+        if (pFound != NULL)
+        {
+            m_OpenFiles.FreeEntry(pFound->pEntry);
+
+            long idx = pFound - m_OpenFiles.m_pEntryLookup;
+            unsigned long total = m_OpenFiles.m_EntryCount;
+
+            while ((unsigned long)idx != total)
+            {
+                long next = idx + 1;
+                EntryLookup<MC_FILE>* lookup = m_OpenFiles.m_pEntryLookup;
+                EntryLookup<MC_FILE>* srcE = &lookup[next];
+                EntryLookup<MC_FILE>* dstE = &lookup[idx];
+                idx = next;
+                unsigned long id = srcE->Id;
+                MC_FILE* entry = srcE->pEntry;
+                dstE->pEntry = entry;
+                dstE->Id = id;
+            }
+
+            m_OpenFiles.m_EntryCount = m_OpenFiles.m_EntryCount - 1;
+        }
+
+        pFile = NULL;
+        m_State = IS_MOUNTED;
+        m_CardState = CS_MOUNTED;
+    }
+
+    return result;
 }
 
 /**
  * Offset/Address/Size: 0xBE8 | 0x801CA358 | size: 0x340
- * TODO: 95.94% match - shift-down loop insert variable gets r4 instead of target r6
- * (MWCC reuses freed middle register), nlBSearch/memset symbol name diffs.
+ * TODO: 95.96% match - shift-down loop insert variable gets r4 instead of target r6
+ * (MWCC register re-homing), nlBSearch mangled name diff (nested vs standalone EntryLookup type).
  */
+extern "C" void* memset(void*, int, unsigned long);
+
 long MemCard::OpenFile(const char* FileName, MemCard::MC_FILE*& pFile, unsigned long* pFileLength)
 {
     EntryLookup<MC_FILE>* nlBSearch(const unsigned long&, EntryLookup<MC_FILE>*, int);
-    void* memset(void*, int, unsigned long);
 
     long result;
 
@@ -990,10 +1173,77 @@ s32 MemCard::FileExists(const char* fileName)
 
 /**
  * Offset/Address/Size: 0x204 | 0x801C9974 | size: 0x3D8
+ * TODO: 95.2% match - register allocation differs in GetValidDataInfo inline section
+ * (bannerFormat r4 vs r11, cascading to all temporaries). -inline deferred file.
  */
-long MemCard::WriteFileIconData(MemCard::MC_FILE*, void*, const MemCardFunctor&)
+long MemCard::WriteFileIconData(MemCard::MC_FILE* pFile, void* pData, const MemCardFunctor& functor)
 {
-    return 0;
+    CARDStat stat;
+    ICON_DATA_INFO DataInfo;
+    unsigned long Icon;
+
+    CARDGetStatus(m_Slot, pFile->FileInfo.fileNo, &stat);
+
+    unsigned char bannerFormat = pFile->IconCfg.BannerFormat;
+
+    DataInfo.Comment1Offset = 0;
+    DataInfo.Comment2Offset = 0x20;
+    DataInfo.BannerOffset = 0x40;
+    DataInfo.BannerCLUTOffset = DataInfo.BannerOffset + ((bannerFormat == 1) ? 0xC00 : 0);
+    DataInfo.IconOffset[0] = DataInfo.BannerOffset + bannerFormat * 0xC00 + ((bannerFormat == 1) ? 0x200 : 0);
+
+    for (Icon = 1; Icon < pFile->IconCfg.IconCount; Icon++)
+    {
+        DataInfo.IconOffset[Icon] = DataInfo.IconOffset[Icon - 1] + ((s32)pFile->IconCfg.IconFormat << 10);
+    }
+
+    for (; Icon < 8; Icon++)
+    {
+        DataInfo.IconOffset[Icon] = DataInfo.IconOffset[pFile->IconCfg.IconCount - 1];
+    }
+
+    DataInfo.IconCLUTOffset = DataInfo.IconOffset[pFile->IconCfg.IconCount - 1] + ((s32)pFile->IconCfg.IconFormat << 10);
+
+    CARDSetCommentAddress(&stat, DataInfo.Comment1Offset);
+    CARDSetIconAddress(&stat, DataInfo.BannerOffset);
+    CARDSetBannerFormat(&stat, pFile->IconCfg.BannerFormat);
+
+    unsigned long i;
+    for (i = 0; i < pFile->IconCfg.IconCount; i++)
+    {
+        CARDSetIconFormat(&stat, i, (s8)pFile->IconCfg.IconFormat);
+        CARDSetIconSpeed(&stat, i, (s8)pFile->IconCfg.IconSpeeds[i]);
+    }
+
+    for (; i < 8; i++)
+    {
+        CARDSetIconFormat(&stat, i, 0);
+        CARDSetIconSpeed(&stat, i, 0);
+    }
+
+    CARDSetIconAnim(&stat, pFile->IconCfg.IconAnimType);
+
+    m_CB[8] = functor;
+
+    m_State = IS_WRITINGSTATUS;
+    m_CardState = CS_WRITING;
+    m_LastTransferSize = CARDGetXferredBytes(m_Slot);
+    m_TargetTransferSize = pFile->TotalHeaderSize + 0x4000;
+
+    s32 result = CARDSetStatusAsync(m_Slot, pFile->FileInfo.fileNo, &stat, SetStatusDoneCB);
+
+    if (result != 0)
+    {
+        m_State = IS_MOUNTED;
+        m_CardState = CS_MOUNTED;
+    }
+    else
+    {
+        m_pFileCB = pFile;
+        m_pDataCB = pData;
+    }
+
+    return result;
 }
 
 /**

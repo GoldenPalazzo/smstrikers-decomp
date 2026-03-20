@@ -286,7 +286,7 @@ public:
     float GetDistanceToDesiredPos();
     bool S2SShootWasPressed();
     void StartRunning();
-    void DoAILooseBallActionSelection();
+    bool DoAILooseBallActionSelection();
     void DoAIReceivePassActionSelection();
     void DoAIWindupActionSelection();
     void DoSpeedBoost();

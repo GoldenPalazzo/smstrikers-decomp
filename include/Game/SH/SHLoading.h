@@ -30,7 +30,8 @@ public:
     /* 0x026 */ unsigned short mStatsBuffers[4][64];    // size 0x200
     /* 0x228 */ TLImageInstance* mImageInstances[2][1]; // size 0x8
     /* 0x230 */ unsigned long mTextureHandles[2][1];    // size 0x8
-}; // total size: 0x238
+    /* 0x238 */ unsigned short mPlayerStrings[2][255];  // size 0x3FC
+}; // total size: 0x634
 
 // class BasicString<unsigned short, Detail
 // {

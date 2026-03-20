@@ -221,13 +221,16 @@ public:
     void NewFrame();
     bool IsReelValid(int) const;
     bool DidOccurInLastNumSeconds(unsigned int, float) const;
-    void LockReel(float, int, int);
+    bool LockReel(float, int, int);
     float BeginTime() const;
     float EndTime() const;
     void PlayReel(int);
 
     template <typename T>
     void Record(float time, T& snapshot, unsigned int events);
+
+    template <typename T>
+    void Play(float time, T& previous, T& current, float* blend) const;
 
     /* 0x00 */ Frame* mFree;            // offset 0x0, size 0x4
     /* 0x04 */ Reel mReels[4];          // offset 0x4, size 0x40

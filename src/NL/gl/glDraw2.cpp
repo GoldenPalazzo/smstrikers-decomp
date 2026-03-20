@@ -102,92 +102,103 @@ bool glPoly2::Attach(eGLView view, int layer, unsigned long* pMatrixHandle, unsi
  */
 bool glAttachPoly2(eGLView view, unsigned long count, glPoly2* polys, unsigned long* pMatrix, const void* user)
 {
-    const eGLStream streamsDesc[3] = { GLStream_Position, GLStream_Colour, GLStream_Diffuse };
-
-    if (*(unsigned char*)((char*)gl_GetCurrentStateBundle() + 0x30) != 1)
+    // TODO: Remaining mismatch is in fast-path register allocation and Begin-failure cleanup branch placement.
+    if (gl_GetCurrentStateBundle()->texconfig == 1)
     {
-        for (unsigned long i = 0; i < count; ++i)
+        eGLStream streamsDesc[3] = { GLStream_Position, GLStream_Colour, GLStream_Diffuse };
+        GLMeshWriter writer;
+
+        int* map;
+        int vertsPerPoly;
+        eGLPrimitive prim;
+        if (glHasQuads())
         {
-            if (!polys[i].Attach(view, 0, 0, 0xFFFFFFFFu))
-                return false;
+            map = QuadMap;
+            vertsPerPoly = 4;
+            prim = GLP_QuadList;
         }
-        return true;
-    }
+        else
+        {
+            map = TriListMap;
+            vertsPerPoly = 6;
+            prim = GLP_TriList;
+        }
 
-    GLMeshWriter writer;
+        unsigned long oldProg = glSetCurrentProgram(_defaultProgram);
+        unsigned long oldMat = glSetCurrentMatrix(pMatrix ? *pMatrix : glGetIdentityMatrix());
 
-    int* map;
-    int vertsPerPoly;
-    eGLPrimitive prim;
-    if (glHasQuads())
-    {
-        map = QuadMap;
-        vertsPerPoly = 4;
-        prim = GLP_QuadList;
-    }
-    else
-    {
-        map = TriListMap;
-        vertsPerPoly = 6;
-        prim = GLP_TriList;
-    }
+        if (writer.Begin((int)(vertsPerPoly * count), prim, 3, streamsDesc, false))
+        {
+            glPoly2* pPoly = polys;
+            unsigned long i = 0;
+            while (i < count)
+            {
+                int* pMap = map;
+                int j = 0;
+                while (j < vertsPerPoly)
+                {
+                    int index = *pMap;
+                    writer.Colour(pPoly->m_colour[index]);
+                    writer.Texcoord(pPoly->m_uv[index]);
 
-    unsigned long oldProg = glSetCurrentProgram(_defaultProgram);
-    unsigned long mat = pMatrix ? *pMatrix : glGetIdentityMatrix();
-    unsigned long oldMat = glSetCurrentMatrix(mat);
+                    nlVector3 pos;
+                    float y = pPoly->m_pos[index].f.y;
+                    float z = pPoly->depth;
+                    float x = pPoly->m_pos[index].f.x;
+                    pos.f.x = x;
+                    pos.f.y = y;
+                    pos.f.z = z;
+                    writer.Position(pos);
 
-    if (!writer.Begin((int)(vertsPerPoly * count), prim, 3, streamsDesc, false))
-    {
-        glSetCurrentMatrix(oldMat);
-        glSetCurrentProgram(oldProg);
+                    pMap++;
+                    j++;
+                }
+
+                i++;
+                pPoly++;
+            }
+
+            if (!writer.End())
+            {
+                return false;
+            }
+
+            if (user == NULL)
+            {
+                glViewAttachModel(view, writer.GetModel());
+            }
+            else
+            {
+                glModel* pDup = glModelDupNoStreams(writer.GetModel(), true, false);
+                glModelPacket* pPacket = pDup->packets;
+                while (pPacket < (glModelPacket*)((unsigned char*)pDup->packets + pDup->numPackets * sizeof(glModelPacket)))
+                {
+                    glUserAttach(user, pPacket, false);
+                    pPacket = (glModelPacket*)((unsigned char*)pPacket + sizeof(glModelPacket));
+                }
+                glViewAttachModel(view, pDup);
+            }
+
+            glSetCurrentProgram(oldProg);
+            glSetCurrentMatrix(oldMat);
+            return true;
+        }
+
         return false;
     }
 
-    for (unsigned long i = 0; i < count; ++i)
+    glPoly2* pPoly = polys;
+    unsigned long i = 0;
+    while (i < count)
     {
-        glPoly2* p = &polys[i];
-        for (int k = 0; k < vertsPerPoly; ++k)
+        if (!pPoly->Attach(view, 0, 0, 0xFFFFFFFFu))
         {
-            const unsigned long idx = map[k % (prim == (eGLPrimitive)3 ? 4 : 6)];
-
-            const nlColour& c = *(const nlColour*)((char*)p + 0x40 + (idx << 2));
-            writer.Colour(c);
-
-            const nlVector2& uv = *(const nlVector2*)((char*)p + 0x20 + (idx << 3));
-            writer.Texcoord(uv);
-
-            const float* pos2 = (const float*)((char*)p + (idx << 3));
-            nlVector3 v;
-            v.f.x = pos2[0];
-            v.f.y = pos2[1];
-            v.f.z = p->depth;
-            writer.Vertex(v);
+            return false;
         }
+        i++;
+        pPoly++;
     }
 
-    const glModel* model = writer.GetModel();
-
-    if (!user)
-    {
-        glViewAttachModel(view, model);
-    }
-    else
-    {
-        const glModel* dup = glModelDupNoStreams(model, true, false);
-        glModelPacket* pkt = *(glModelPacket**)((char*)dup + 0x0C);
-        const int num = *(int*)((char*)dup + 0x00);
-        char* it = (char*)pkt;
-        char* end = it + num * 0x4A;
-        while (it < end)
-        {
-            glUserAttach(user, (glModelPacket*)it, false);
-            it += 0x4A;
-        }
-        glViewAttachModel(view, dup);
-    }
-
-    glSetCurrentProgram(oldProg);
-    glSetCurrentMatrix(oldMat);
     return true;
 }
 

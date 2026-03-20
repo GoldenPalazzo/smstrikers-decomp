@@ -512,126 +512,107 @@ static u8* GetChunkDataPointer(nlChunk* chunk)
 
 /**
  * Offset/Address/Size: 0xC08 | 0x801C0828 | size: 0x2A0
+ * TODO: 90.27% match - register allocation still differs for mesh/chunk pointers and the boneMap constructor emits extra addic/beq checks.
  */
 GLSkinMesh* glx_MakeSkinMesh(nlChunk* outerChunk, glModel* models)
 {
-    ShaderSkinMesh* mesh = (ShaderSkinMesh*)nlMalloc(sizeof(ShaderSkinMesh), 8, false);
-    if (mesh != nullptr)
-    {
-        mesh = new (mesh) ShaderSkinMesh();
-    }
-    if (mesh == nullptr)
-    {
-        return nullptr;
-    }
+    ShaderSkinMesh* mesh = new (nlMalloc(sizeof(ShaderSkinMesh), 8, false)) ShaderSkinMesh();
 
     mesh->pModel = models;
 
-    u8* chunkEnd = (u8*)outerChunk + outerChunk->m_Size + 8;
     nlChunk* chunk = (nlChunk*)((u8*)outerChunk + 8);
+    nlChunk* chunkEnd = (nlChunk*)((u8*)outerChunk + outerChunk->m_Size + 8);
 
-    while ((u8*)chunk < chunkEnd)
+    while (chunk != chunkEnd)
     {
-        u32 chunkType = chunk->m_ID & 0x00FFFFFFu;
+        u32 id = chunk->m_ID;
         u32 chunkSize = chunk->m_Size;
-        u8* data = GetChunkDataPointer(chunk);
+        u32 chunkType = id & 0x00FFFFFF;
+        u32 alignBits = id & 0x7F000000;
+        u8* data = (u8*)chunk + 8;
 
-        // Switch on (chunkType - 0x1B009); valid range 0..7
-        u32 switchIdx = chunkType - 0x1B009u;
-        if (switchIdx > 7)
+        if (((-alignBits | alignBits) >> 31) != 0)
         {
-            chunk = (nlChunk*)((u8*)chunk + chunkSize + 8);
-            continue;
+            u32 align = 1 << (alignBits >> 24);
+            data = (u8*)(((u32)((u8*)chunk + align) + 7) & ~(align - 1));
         }
 
-        switch (switchIdx)
+        switch (chunkType - 0x1B009)
         {
-        case 1: // SKIN_CHUNK_BONE_MATRICES: each entry = bone id (4) + 4x4 matrix (0x40) = 0x44 bytes
+        case 1:
         {
-            unsigned int count = chunkSize / 0x44; // each entry: bone id (4) + matrix (0x40)
-            const u8* p = data;
-            for (unsigned int i = 0; i < count; i++)
+            u32 i = 0;
+            u32 count = chunkSize / 0x44;
+            while (i < count)
             {
-                u32 boneId = *(const u32*)p;
-                nlMatrix4 src, inv;
-                memcpy(&src, p + 4, sizeof(nlMatrix4));
+                u32 boneID = *(u32*)data;
+                nlMatrix4 src;
+                nlMatrix4 inv;
+                memcpy(&src, data + 4, 0x40);
+                data += 0x44;
                 nlInvertMatrix(inv, src);
-                mesh->SetBoneMatrix(boneId, &inv);
-                p += 0x44;
+                mesh->SetBoneMatrix(boneID, &inv);
+                i++;
             }
             break;
         }
-        case 2: // SKIN_CHUNK_BONE_MAP_LIST: AVLTree<Ul,Ul> from pairs, then nlRingAddEnd
+        case 2:
         {
             SkinMeshBoneMapNode* node = (SkinMeshBoneMapNode*)nlMalloc(sizeof(SkinMeshBoneMapNode), 8, false);
-            if (node != nullptr)
+            if (node != NULL)
             {
-                node->m_next = nullptr;
                 new (&node->boneMap) nlAVLTree<unsigned long, unsigned long, DefaultKeyCompare<unsigned long> >();
-                unsigned int numPairs = chunkSize / 8;
-                const u32* p = (const u32*)data;
-                for (unsigned int i = 0; i < numPairs; i++)
-                {
-                    unsigned long key = p[0];
-                    unsigned long value = p[1];
-                    AVLTreeNode* existingNode = nullptr;
-                    node->boneMap.AddAVLNode((AVLTreeNode**)&node->boneMap.m_Root, &key, &value, &existingNode, node->boneMap.m_NumElements);
-                    if (existingNode == nullptr)
-                    {
-                        node->boneMap.m_NumElements++;
-                    }
-                    p += 2;
-                }
-                nlRingAddEnd<BoneMapList>(&mesh->boneMaps, (BoneMapList*)node);
             }
+
+            u32 i = 0;
+            u32 count = chunkSize >> 3;
+            node->m_next = NULL;
+            AVLTreeNode** root = (AVLTreeNode**)&node->boneMap.m_Root;
+            while (i < count)
+            {
+                unsigned long key = *(u32*)(data + 0);
+                unsigned long value = *(u32*)(data + 4);
+                data += 8;
+                AVLTreeNode* existingNode;
+                node->boneMap.AddAVLNode(root, &key, &value, &existingNode, node->boneMap.m_NumElements);
+                if (existingNode == NULL)
+                {
+                    node->boneMap.m_NumElements++;
+                }
+                i++;
+            }
+            nlRingAddEnd<BoneMapList>(&mesh->boneMaps, (BoneMapList*)node);
             break;
         }
-        case 3: // SKIN_CHUNK_MORPH
+        case 4:
+            mesh->SetSoftwareVertices((int)(chunkSize >> 4), (const SkinVertex*)data);
+            break;
+        case 5:
+            mesh->AppendSkinPairList((int)(chunkSize >> 2), (const SkinPair*)data);
+            break;
+        case 3:
         {
-            u32 numMorphs = *(const u32*)data;
-            u32 numBaseVerts = *(const u32*)(data + 4);
-            mesh->numMorphs = numMorphs;
-            mesh->numBaseVerts = numBaseVerts;
-            const u32* morphIds = (const u32*)(data + 8);
-            mesh->SetMorphIDs(morphIds);
-            const u32* morphNumDeltas = (const u32*)(data + 8 + numMorphs * 4);
-            mesh->SetMorphNumDeltas(morphNumDeltas);
-            const u8* morphDeltasPtr = data + 8 + numMorphs * 4 + numMorphs * 4;
-            u32 numDeltas = *(const u32*)morphDeltasPtr;
-            const MorphDelta* deltas = (const MorphDelta*)(morphDeltasPtr + 4);
-            mesh->SetMorphDeltas((int)numDeltas, deltas);
+            u32 numMorphs = *(u32*)(data + 0);
+            u8* p = data + 8;
+            mesh->numMorphs = (int)numMorphs;
+            mesh->numBaseVerts = *(u32*)(data + 4);
+            mesh->SetMorphIDs((const u32*)p);
+            p += numMorphs * 4;
+            mesh->SetMorphNumDeltas((const u32*)p);
+            p += numMorphs * 4;
+            mesh->SetMorphDeltas(*(int*)p, (const MorphDelta*)(p + 4));
             break;
         }
-        case 4: // SKIN_CHUNK_SOFTWARE_VERTICES: count = size / 16
-        {
-            int num = (int)(chunkSize >> 4);
-            mesh->SetSoftwareVertices(num, (const SkinVertex*)data);
-            break;
-        }
-        case 5: // SKIN_CHUNK_SKIN_PAIRS: count = size / 4
-        {
-            int numPairs = (int)(chunkSize >> 2);
-            mesh->AppendSkinPairList(numPairs, (const SkinPair*)data);
-            break;
-        }
-        case 7: // SKIN_CHUNK_STITCHING
-        {
-            u32 numPackets = *(const u32*)data;
-            u32 packetIndex = *(const u32*)(data + 4);
-            int num = (int)(chunkSize - 8);
-            const unsigned char* pIndices = (const unsigned char*)(data + 8);
-            mesh->AppendStitchingInfo((int)packetIndex, (int)numPackets, num, pIndices);
-            break;
-        }
-        default:
+        case 7:
+            mesh->AppendStitchingInfo(*(int*)(data + 4), *(int*)(data + 0), (int)chunkSize - 8, data + 8);
             break;
         }
 
-        chunk = (nlChunk*)((u8*)chunk + chunkSize + 8);
+        chunk = (nlChunk*)((u8*)chunk + chunk->m_Size + 8);
     }
 
     mesh->StitchModel();
-    return (GLSkinMesh*)mesh;
+    return mesh;
 }
 
 /**

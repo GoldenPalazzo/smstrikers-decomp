@@ -542,91 +542,39 @@ void ChooseCupSceneV2::DisplayCup()
 
 /**
  * Offset/Address/Size: 0x438 | 0x800DA6BC | size: 0x374
- * TODO: 84.54% match - 4-byte stack offset shift from union (hashers at sp+0x20 vs target sp+0x1c),
- * r29/r30 register swap (text→r30/data→r29 instead of target text→r29/data→r30)
+ * TODO: 96.64% match - InlineHasher temps at sp+0x14 vs target sp+0x1c (8-byte stack shift),
+ * r30/r31 swap for locString/data (r30=locString/r31=data vs target r31=locString/r30=data)
  */
 void ChooseCupSceneV2::SetCurrentChamp(eTeamID teamID, bool hasChamp, TLComponentInstance* comp)
 {
-    typedef TLTextInstance* (*FindTextByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-    typedef TLTextInstance* (*FindTextByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
-
-    union
-    {
-        FindTextByValue byValue;
-        FindTextByRef byRef;
-    } findText;
-
-    volatile unsigned long hB, hA;
-    volatile unsigned long h9, h8;
-    volatile unsigned long h7, h6, h5, h4, h3, h2, h1, h0;
-
-    findText.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
-
-    h0 = 0;
-    h2 = 0;
-    h4 = 0;
-    h1 = 0;
-    h3 = 0;
-    h5 = 0;
-    h6 = 0;
-    h7 = 0;
-    h8 = 0;
-    h9 = 0;
-
-    unsigned long hashVal = nlStringLowerHash("Text");
-    hA = hashVal;
-    hB = hashVal;
-
-    TLTextInstance* text = findText.byRef(
+    TLTextInstance* text = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
         comp->GetActiveSlide(),
-        (InlineHasher&)hB,
-        (InlineHasher&)h9,
-        (InlineHasher&)h7,
-        (InlineHasher&)h5,
-        (InlineHasher&)h3,
-        (InlineHasher&)h1);
+        InlineHasher(nlStringLowerHash("Text")),
+        InlineHasher(0),
+        InlineHasher(0),
+        InlineHasher(0),
+        InlineHasher(0),
+        InlineHasher(0));
 
     if (hasChamp)
     {
         const unsigned short* locString = LookupLocString("CupChampion");
 
-        BasicStringInternal* data = (BasicStringInternal*)nlMalloc(0x10, 8, true);
+        BasicStringData<unsigned short>* data = (BasicStringData<unsigned short>*)nlMalloc(0x10, 8, true);
         if (data != 0)
         {
-            CopyWideString((BasicStringData<unsigned short>*)data, locString);
+            CopyWideString(data, locString);
         }
+
+        BasicString<unsigned short, Detail::TempStringAllocator> msg(data);
 
         unsigned long charHash = GetLOCCharacterName(teamID, false, false);
         const unsigned short* charName = LookupLocHash(charHash);
 
-        {
-            BasicStringInternal* champData = data;
-            BasicString<unsigned short, Detail::TempStringAllocator> formattedResult = Format(
-                *(const BasicString<unsigned short, Detail::TempStringAllocator>*)&champData,
-                charName);
+        BasicString<unsigned short, Detail::TempStringAllocator> formattedResult = Format(msg, charName);
 
-            memcpy(mChampBuffer, formattedResult.c_str(), 0x200);
-            text->SetString(mChampBuffer);
-        }
-
-        BasicStringInternal* msgData = data;
-        if (msgData != 0)
-        {
-            if (--msgData->mRefCount == 0)
-            {
-                if (msgData != 0)
-                {
-                    if (msgData != 0)
-                    {
-                        delete[] msgData->mData;
-                    }
-                    if (msgData != 0)
-                    {
-                        nlFree(msgData);
-                    }
-                }
-            }
-        }
+        memcpy(mChampBuffer, formattedResult.c_str(), 0x200);
+        text->SetString(mChampBuffer);
     }
     else
     {

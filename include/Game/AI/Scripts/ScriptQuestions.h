@@ -121,7 +121,7 @@ float Open(cFielder*);
 float WideOpenPosition(const nlVector3&, cTeam*, cPlayer*);
 float OpenPosition(const nlVector3&, cTeam*, cPlayer*, const nlVector2*);
 float OpenToPosition(const nlVector3&, const nlVector3&, const cTeam*, const cPlayer*, const cPlayer*, bool);
-void OnBreakaway(cFielder*);
+float OnBreakaway(cFielder*);
 float InFrontOfTheirNet(cFielder*);
 float PositionIsInFrontOfNet(const nlVector3&, const cNet*);
 float GoalieOutOfPosition(cFielder*);

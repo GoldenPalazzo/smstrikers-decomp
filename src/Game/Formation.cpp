@@ -323,28 +323,28 @@ void FormationManager::SetNewFormationEval(eFormationType formType, eFormationSe
 
 /**
  * Offset/Address/Size: 0x202C | 0x8003A27C | size: 0x2D4
- * TODO: 92.1% match - register allocation off by 1 (r19-r28 vs r20-r29)
+ * TODO: 98.6% match - r26/r27/r28 allocation swap (offset vs weight/position pointers) and one stfs/stw order mismatch in zero-init path
  */
 bool FormationManager::CalculateFielderPosition(nlVector3& v3DestPosition, cFielder* pFielder, bool bInPosition, float fBallPosFormationWeight)
 {
+    float fWeights[3];
+    nlVector3 v3FormationPosition[2][3];
+    nlVector3 v3FutureDesiredPosition;
+    float fFielderInPosition;
+
     int id = pFielder->m_ID;
     int offset = id << 4;
     CachedPosition* cached = (CachedPosition*)((u8*)&m_CachedPositions[0] + offset);
 
-    // Check if we have a cached position
     if (cached->bCacheIsValid)
     {
         v3DestPosition = cached->vPosition;
         return cached->bInPosition;
     }
 
-    // Initialize local variables
-    float fWeights[3];
-    nlVector3 v3FormationPosition[2][3];
-    nlVector3 v3FutureDesiredPosition = v3Zero;
-    float fFielderInPosition = 0.0f;
+    v3FutureDesiredPosition = v3Zero;
+    fFielderInPosition = 0.0f;
 
-    // First loop: get weights and positions from each formation
     for (int i = 0; i < 3; i++)
     {
         FormationEval* pFormation = m_pFormations[i];
@@ -362,43 +362,39 @@ bool FormationManager::CalculateFielderPosition(nlVector3& v3DestPosition, cFiel
         }
     }
 
-    // Ensure ball position weight doesn't go below 0
-    if (fWeights[2] < 0.0f)
+    if (fWeights[2] >= 0.0f)
     {
         fWeights[2] = 1.0f;
     }
 
-    // Scale weights by fBallPosFormationWeight
     float scaledBallWeight = fWeights[2] * fBallPosFormationWeight;
     float remainingWeight = 1.0f - scaledBallWeight;
     fWeights[2] = scaledBallWeight;
     fWeights[0] *= remainingWeight;
     fWeights[1] *= remainingWeight;
 
-    // Second loop: calculate final position
     for (int i = 0; i < 3; i++)
     {
         FormationEval* pFormation = m_pFormations[i];
         if (pFormation != nullptr && pFormation->m_pFormationSpec != nullptr)
         {
             nlVector3 pos = v3FormationPosition[0][i];
-            v3FutureDesiredPosition.f.x += fWeights[i] * v3FormationPosition[1][i].f.x;
-            v3FutureDesiredPosition.f.y += fWeights[i] * v3FormationPosition[1][i].f.y;
             v3FutureDesiredPosition.f.z += fWeights[i] * v3FormationPosition[1][i].f.z;
+            v3FutureDesiredPosition.f.y += fWeights[i] * v3FormationPosition[1][i].f.y;
+            v3FutureDesiredPosition.f.x += fWeights[i] * v3FormationPosition[1][i].f.x;
             float result = pFormation->IsFielderInPosition(pFielder, pos, bInPosition);
             fFielderInPosition += fWeights[i] * result;
         }
     }
 
     v3DestPosition = v3FutureDesiredPosition;
-    bool inPos = fFielderInPosition >= 0.5f;
+    bInPosition = fFielderInPosition >= 0.5f;
 
-    // Cache the result
-    cached->vPosition = v3DestPosition;
-    cached->bInPosition = inPos;
+    m_CachedPositions[id].vPosition = v3DestPosition;
+    m_CachedPositions[id].bInPosition = bInPosition;
     cached->bCacheIsValid = true;
 
-    return inPos;
+    return bInPosition;
 }
 
 /**
@@ -1028,7 +1024,7 @@ extern FormationPositionThresholds g_aDefensiveFormationThresholds[4];
 
 /**
  * Offset/Address/Size: 0xE70 | 0x800390C0 | size: 0x2E0
- * TODO: 91.90% match - remaining diffs are MWCC floating-point register allocation around fInPosition in the near-zero branch.
+ * TODO: 94.73% match - remaining diffs are MWCC floating-point register allocation around fInPosition in the near-zero branch and positive-score clamp temporaries.
  */
 float FormationDefensive::IsFielderInPosition(cFielder* pFielder, nlVector3 v3DesiredPosition, bool bInPosition)
 {
@@ -1085,9 +1081,10 @@ float FormationDefensive::IsFielderInPosition(cFielder* pFielder, nlVector3 v3De
         float fLateralScore = (float)fabs(v3FielderPos.f.y - v3DesiredPosition.f.y)
                             / (fPercent * pPositionThresholds->fOutLateral);
 
-        float fScore = nlMaxEquals(fUpScore, 0.0f);
-        fScore += nlMaxEquals(fDownScore, 0.0f);
-        fScore += nlMaxEquals(fLateralScore, 0.0f);
+        float fUpPos = (fUpScore >= 0.0f) ? fUpScore : 0.0f;
+        float fDownPos = (fDownScore >= 0.0f) ? fDownScore : 0.0f;
+        float fLateralPos = (fLateralScore >= 0.0f) ? fLateralScore : 0.0f;
+        float fScore = fUpPos + fDownPos + fLateralPos;
         fScore *= 0.33333334f;
         fScore = nlMinEquals(nlMaxEquals(fScore, 0.0f), 1.0f);
         fInPosition = 1.0f - fScore;
@@ -1162,7 +1159,10 @@ float FormationOffensive::IsFielderInPosition(cFielder* pFielder, nlVector3 v3De
         float fLateralScore = (float)fabs(v3FielderPos.f.y - v3DesiredPosition.f.y)
                             / (fPercent * pPositionThresholds->fOutLateral);
 
-        float fScore = (nlMaxEquals(fUpScore, 0.0f) + nlMaxEquals(fDownScore, 0.0f) + nlMaxEquals(fLateralScore, 0.0f)) * 0.33333334f;
+        float fScore = nlMaxEquals(fUpScore, 0.0f);
+        fScore += nlMaxEquals(fDownScore, 0.0f);
+        fScore += nlMaxEquals(fLateralScore, 0.0f);
+        fScore *= 0.33333334f;
         fScore = nlMinEquals(nlMaxEquals(fScore, 0.0f), 1.0f);
         fInPosition = 1.0f - fScore;
     }

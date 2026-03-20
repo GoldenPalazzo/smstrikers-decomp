@@ -17,7 +17,7 @@ class TLInstance;
 class FERender
 {
 public:
-    static void RenderImageInstance(const TLImageInstance*);
+    static unsigned char RenderImageInstance(const TLImageInstance*);
     static void RenderTextInstance(TLTextInstance*);
     static void RenderScene(FEScene*);
     static void RenderPresentation(const FEPresentation*);

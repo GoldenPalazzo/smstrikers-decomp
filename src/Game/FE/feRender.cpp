@@ -1,10 +1,16 @@
 #include "Game/FE/feRender.h"
 #include "Game/FE/tlInstance.h"
+#include "Game/FE/tlImageInstance.h"
 #include "Game/FE/tlTextInstance.h"
 #include "Game/FE/feScene.h"
 #include "Game/FE/fePackage.h"
 #include "Game/FE/fePresentation.h"
+#include "Game/FE/feImage.h"
+#include "Game/FE/feTextureResource.h"
 #include "NL/gl/glMatrixStack.h"
+#include "NL/gl/glState.h"
+#include "NL/gl/glMatrix.h"
+#include "NL/gl/gluMeshWriter.h"
 #include "NL/nlMemory.h"
 #include "NL/nlColour.h"
 #include "NL/platvmath.h"
@@ -14,13 +20,8 @@ GLMatrixStack* FERender::m_pMatrixStack = nullptr;
 FEScene* FERender::m_pRenderScene = nullptr;
 
 static nlFloatColour s_currentAssetColour;
-
-/**
- * Offset/Address/Size: 0x0 | 0x8020A288 | size: 0x3BC
- */
-void FERender::RenderImageInstance(const TLImageInstance*)
-{
-}
+static unsigned long drawQuadProgram;
+static unsigned long grabTex;
 
 inline void ConvertFloatColourToColour(nlColour& out, const nlFloatColour& in)
 {
@@ -36,6 +37,141 @@ inline void ConvertFloatColourToColour_(nlColour& out, const float r, const floa
     out.c[1] = g;
     out.c[2] = b;
     out.c[3] = a;
+}
+
+/**
+ * Offset/Address/Size: 0x0 | 0x8020A288 | size: 0x3BC
+ * TODO: 95.73% match - 3-way register cycle (texconfig r28/r29, program r29/r31, pMap r31/r28), Begin-fail destructor inlined instead of separate block, 4 cosmetic static var index diffs
+ */
+inline void GLMeshWriterCore::Position(const nlVector3& v)
+{
+    Vertex(v);
+}
+
+unsigned char FERender::RenderImageInstance(const TLImageInstance* pTLImageInstance)
+{
+    unsigned long program;
+
+    nlColour colour = pTLImageInstance->GetAssetColour();
+
+    const FEImage* pFEImage = (const FEImage*)pTLImageInstance->m_component;
+    FETextureResource* pTexRes = pFEImage->m_pFeTextureResource;
+
+    if (!pTexRes->m_bValid)
+        return 1;
+
+    ConvertFloatColourToColour(colour, s_currentAssetColour);
+
+    unsigned long textureHandle = pTexRes->m_glTextureHandle;
+    if (!textureHandle)
+        return 1;
+
+    nlMatrix4 matTM;
+    m_pMatrixStack->GetTop(matTM);
+    nlMultMatrices(matTM, matTM, m_pRenderScene->m_matView);
+
+    unsigned long matrixHandle = glAllocMatrix();
+    if (matrixHandle != 0xFFFFFFFF)
+        glSetMatrix(matrixHandle, matTM);
+
+    nlVector2 pos[4];
+    nlVector2 uv[4];
+
+    uv[0].e[0] = 0.0f;
+    uv[0].e[1] = 0.0f;
+    uv[1].e[0] = 0.0f;
+    uv[1].e[1] = 1.0f;
+    uv[2].e[0] = 1.0f;
+    uv[2].e[1] = 1.0f;
+    uv[3].e[0] = 1.0f;
+    uv[3].e[1] = 0.0f;
+
+    pos[0].e[0] = -0.5f;
+    pos[0].e[1] = 0.5f;
+    pos[1].e[0] = -0.5f;
+    pos[1].e[1] = -0.5f;
+    pos[2].e[0] = 0.5f;
+    pos[2].e[1] = -0.5f;
+    pos[3].e[0] = 0.5f;
+    pos[3].e[1] = 0.5f;
+
+    glSetDefaultState(false);
+
+    static signed char init;
+    static unsigned char bAlpha;
+    if (!init)
+    {
+        bAlpha = 1;
+        init = 1;
+    }
+
+    glSetRasterState(GLS_Culling, 0);
+
+    if (textureHandle != grabTex && bAlpha)
+    {
+        glSetRasterState(GLS_AlphaBlend, 1);
+        glSetRasterState(GLS_AlphaTest, 1);
+        glSetRasterState(GLS_AlphaTestRef, 0);
+    }
+
+    glSetTextureState(GLTS_DiffuseWrap, 3);
+
+    glSetCurrentRasterState(glHandleizeRasterState());
+    glSetCurrentTextureState(glHandleizeTextureState());
+
+    glSetCurrentTexture(textureHandle, GLTT_Diffuse);
+
+    eGLStream streams[] = { GLStream_Position, GLStream_Colour, GLStream_Diffuse };
+
+    GLMeshWriter meshWriter;
+
+    u8 texconfig = gl_GetCurrentStateBundle()->texconfig;
+
+    program = glSetCurrentProgram(drawQuadProgram);
+    matrixHandle = glSetCurrentMatrix(matrixHandle);
+
+    static int stripmap[4];
+    static int quadmap[4];
+
+    int* pMap;
+    eGLPrimitive prim;
+    if (glHasQuads())
+    {
+        pMap = quadmap;
+        prim = GLP_QuadList;
+    }
+    else
+    {
+        pMap = stripmap;
+        prim = GLP_TriStrip;
+    }
+
+    if (!meshWriter.Begin(4, prim, texconfig + 2, streams, false))
+        return 0;
+
+    for (int i = 0; i < 4; i++)
+    {
+        int index = pMap[i];
+        meshWriter.Colour(colour);
+        if (texconfig)
+            meshWriter.Texcoord(uv[index]);
+        nlVector3 vertex;
+        vertex.f.x = pos[index].e[0];
+        vertex.f.y = pos[index].e[1];
+        vertex.f.z = 0.0f;
+        meshWriter.Position(vertex);
+    }
+
+    if (!meshWriter.End())
+        return 0;
+
+    eGLView view = (eGLView)m_pRenderScene->m_uRenderView;
+    glViewAttachModel(view, 0, meshWriter.GetModel());
+
+    glSetCurrentProgram(program);
+    glSetCurrentMatrix(matrixHandle);
+
+    return 1;
 }
 
 /**

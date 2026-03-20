@@ -296,8 +296,8 @@ void Update3DSFXEmitter(SFXEmitter* pSFXEmitter, const nlVector3& position, cons
 
 /**
  * Offset/Address/Size: 0x588 | 0x801C4D84 | size: 0x2E4
- * TODO: 98.03% match - remaining MWCC f-register scheduling in reverb/volume conversion blocks
- * and pitch-frequency register allocation around debug print/filter branches.
+ * TODO: 98.49% match - remaining MWCC f-register scheduling in reverb conversion
+ * and pitch/debug-print register allocation (r5 vs r0 and lis/addi register choice).
  */
 void Add3DSFXEmitter(const EmitterStartInfo& info)
 {
@@ -395,22 +395,23 @@ void Add3DSFXEmitter(const EmitterStartInfo& info)
 
     if (info.fVolReverb != 0.0f)
     {
-        float f0 = 0.0f;
-        float f1v = 127.0f * info.fVolReverb;
-
+        float var_f1 = info.fVolReverb;
+        float var_f2 = 127.0f;
+        float var_f0 = 0.0f;
         pParaArray[0].ctrl = 0x5B;
-        if (f1v < f0)
+        var_f1 = var_f2 * var_f1;
+        if (var_f1 < var_f0)
         {
-            f0 = -0.5f;
+            var_f0 = -0.5f;
         }
         else
         {
-            f0 = 0.5f;
+            var_f0 = 0.5f;
         }
-        f0 = f1v + f0;
+        var_f0 = var_f1 + var_f0;
 
         currParaIndex = 1;
-        pParaArray[0].paraData.value7 = (u8)(s32)f0;
+        pParaArray[0].paraData.value7 = (u8)(s32)var_f0;
     }
 
     if (info.pitch != 0x2000)
@@ -455,39 +456,32 @@ void Add3DSFXEmitter(const EmitterStartInfo& info)
     }
 
     {
-        float f2 = 127.0f;
-        float f1 = info.minVol;
-        float f0 = 0.0f;
-
-        f1 = f2 * f1;
-        if (f1 < f0)
+        float var_f0;
+        float temp_f6 = 127.0f * info.minVol;
+        if (temp_f6 < 0.0f)
         {
-            f0 = -0.5f;
+            var_f0 = -0.5f;
         }
         else
         {
-            f0 = 0.5f;
+            var_f0 = 0.5f;
         }
+        temp_f6 += var_f0;
 
-        float f3 = f1 + f0;
+        u8 minVol = (u8)(s32)temp_f6;
 
-        f2 = 127.0f;
-        f1 = info.maxVol;
-        f0 = 0.0f;
-        u8 minVol = (u8)(s32)f3;
-
-        f1 = f2 * f1;
-        if (f1 < f0)
+        temp_f6 = 127.0f * info.maxVol;
+        if (temp_f6 < 0.0f)
         {
-            f0 = -0.5f;
+            var_f0 = -0.5f;
         }
         else
         {
-            f0 = 0.5f;
+            var_f0 = 0.5f;
         }
-        f0 = f1 + f0;
+        temp_f6 += var_f0;
 
-        sndAddEmitter2StudioPara((SND_EMITTER*)pSFXEmitter, &svPos, &svDir, info.maxDist, info.comp, flags, (u16)info.uSFXID, (u8)(s32)f0, minVol, 0, pParaInfo);
+        sndAddEmitter2StudioPara((SND_EMITTER*)pSFXEmitter, &svPos, &svDir, info.maxDist, info.comp, flags, (u16)info.uSFXID, (u8)(s32)temp_f6, minVol, 0, pParaInfo);
     }
 }
 

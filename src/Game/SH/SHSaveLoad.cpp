@@ -1,7 +1,9 @@
 #include "Game/SH/SHSaveLoad.h"
 
 #include "dolphin/card.h"
+#include "Game/Audio/AudioLoader.h"
 #include "Game/BaseGameSceneManager.h"
+#include "Game/GameInfo.h"
 #include "Game/GameSceneManager.h"
 #include "Game/DB/SaveLoad.h"
 #include "Game/FE/feFinder.h"
@@ -10,6 +12,7 @@
 #include "Game/FE/feSceneManager.h"
 #include "Game/FE/tlTextInstance.h"
 #include "Game/ResetTask.h"
+#include "Game/SH/SHMoviePlayer.h"
 #include "Game/Sys/gcmemcard.h"
 #include "NL/nlConfig.h"
 #include "types.h"
@@ -650,9 +653,213 @@ void SaveLoadScene::UpdateForAboutToSaveSlide()
 
 /**
  * Offset/Address/Size: 0x224 | 0x800B07AC | size: 0x3DC
+ * TODO: 97.94% match - r0/r3 register swap in FORMAT case (4 diffs), likely -inline deferred flag difference
  */
 void SaveLoadScene::HandleSaveLoadFinishedResult()
 {
+    eSaveLoad sceneType = gSceneTypeStack[gSceneTypeStackDepth - 1];
+
+    switch (sceneType)
+    {
+    case ST_SAVE:
+    case ST_FORMAT:
+    case ST_DELETE:
+    case ST_CONFIRM_FORMAT:
+    {
+        if (sceneType == ST_FORMAT)
+        {
+            int depth = *(volatile int*)&gSceneTypeStackDepth;
+            gSaveLoadStarted = false;
+            int stackIndex = depth - 1;
+            eSaveLoad prevScene = gSceneTypeStack[stackIndex];
+            gSaveLoadFinished = false;
+            gSceneTypeStackDepth = stackIndex;
+            ResetTask::s_resetPaused = (prevScene == 0);
+            gSceneTypeStackDepth = stackIndex + 1;
+            gSceneTypeStack[stackIndex] = (eSaveLoad)SCENE_CUP_BACKGROUND;
+            gSaveLoadStarted = false;
+            gSaveLoadFinished = false;
+            gCallbackMade = false;
+            gSceneTime = 0.0f;
+            ResetTask::s_resetPaused = false;
+        }
+        else
+        {
+            int stackIndex = --gSceneTypeStackDepth;
+            gSaveLoadStarted = false;
+            eSaveLoad prevScene = gSceneTypeStack[stackIndex];
+            gSaveLoadFinished = false;
+            if (prevScene == 0)
+            {
+                ResetTask::s_resetPaused = true;
+            }
+            else
+            {
+                ResetTask::s_resetPaused = false;
+            }
+        }
+        break;
+    }
+
+    case ST_LOAD:
+    {
+        int stackIndex = --gSceneTypeStackDepth;
+        gSaveLoadStarted = false;
+        eSaveLoad prevScene = gSceneTypeStack[stackIndex];
+        gSaveLoadFinished = false;
+        if (prevScene == 0)
+        {
+            ResetTask::s_resetPaused = true;
+        }
+        else
+        {
+            ResetTask::s_resetPaused = false;
+        }
+        break;
+    }
+
+    case ST_GAMESAVEIDTEST:
+    {
+        int stackIndex = --gSceneTypeStackDepth;
+        gSaveLoadStarted = false;
+        eSaveLoad prevScene = gSceneTypeStack[stackIndex];
+        gSaveLoadFinished = false;
+        if (prevScene == 0)
+        {
+            ResetTask::s_resetPaused = true;
+        }
+        else
+        {
+            ResetTask::s_resetPaused = false;
+        }
+        break;
+    }
+
+    case ST_ASK_SAVE:
+    case ST_ASK_LOAD:
+    {
+        if (mIsAutoSaving)
+        {
+            nlSingleton<GameSceneManager>::s_pInstance->Pop();
+        }
+        else
+        {
+            if (gContinueWithoutOperation)
+            {
+                SaveLoadScene::mLastSaveLoadSuccess = false;
+                if (mNextScene == SCENE_OPTIONS)
+                {
+                    if (sceneType != ST_FORMAT)
+                    {
+                        if (gResult != -8 && gResult != -9)
+                        {
+                            gSaveLoadEnabled = true;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                bool success = (gResult == 0);
+                SaveLoadScene::mLastSaveLoadSuccess = success;
+                if (success)
+                {
+                    gSaveLoadEnabled = true;
+                }
+            }
+
+            BaseSceneHandler* scene = nlSingleton<GameSceneManager>::s_pInstance->Push(mNextScene, SCREEN_NOTHING, true);
+
+            if (m_displayText != NULL)
+            {
+                m_displayText->m_bVisible = false;
+            }
+
+            if (gSceneTypeStack[gSceneTypeStackDepth - 1] == SCENE_MARIO_BACKGROUND)
+            {
+                if (mNextScene != SCENE_LEGAL)
+                {
+                    int oldMode = nlSingleton<GameInfoManager>::s_pInstance->mCurGameAudioSettings.Mode;
+                    AudioSettings& opts = nlSingleton<GameInfoManager>::s_pInstance->GetAudioOptions();
+                    bool playMusic = false;
+                    if (oldMode == 2 || opts.Mode == 2)
+                    {
+                        playMusic = true;
+                    }
+                    nlSingleton<GameInfoManager>::s_pInstance->mUserInfo.mAudioOptions.ForceApplySettings(false);
+                    if (playMusic)
+                    {
+                        AudioLoader::PlayFEMenuMusic();
+                    }
+                }
+            }
+
+            if (mNextScene == SCENE_MOVIE_PLAYER)
+            {
+                ((MoviePlayerScene*)scene)->SetMovieDetails("credits.thp", true, false);
+                ((MoviePlayerScene*)scene)->mNextScene = SCENE_TITLE;
+            }
+        }
+        break;
+    }
+
+    case ST_ABOUT_AUTOSAVE:
+    {
+        int stackIndex = --gSceneTypeStackDepth;
+        eSaveLoad prevScene = gSceneTypeStack[stackIndex];
+        gSaveLoadStarted = false;
+        gSaveLoadFinished = false;
+        ResetTask::s_resetPaused = (prevScene == 0);
+        gSceneTime = 0.0f;
+        gIgnoreMinWait = false;
+        break;
+    }
+
+    case ST_CHECKING:
+    {
+        gSaveLoadFinished = false;
+        int stackIndex = --gSceneTypeStackDepth;
+        eSaveLoad prevScene = gSceneTypeStack[stackIndex];
+        gSaveLoadStarted = false;
+        ResetTask::s_resetPaused = (prevScene == 0);
+        gSceneTime = 999.9f;
+        gSaveLoadFinished = false;
+        break;
+    }
+
+    case ST_SHOULD_LOAD_OR_SAVE:
+    {
+        if (gResult == 0)
+        {
+            int depth = gSceneTypeStackDepth;
+            gSaveLoadStarted = false;
+            int stackIndex = depth - 1;
+            eSaveLoad prevScene = gSceneTypeStack[stackIndex];
+            gSaveLoadFinished = false;
+            gSceneTypeStackDepth = stackIndex;
+            ResetTask::s_resetPaused = (prevScene == 0);
+            gSaveLoadFinished = false;
+            gSceneTypeStackDepth = stackIndex + 1;
+            gSceneTypeStack[stackIndex] = ST_LOAD;
+            gSaveLoadStarted = false;
+            gCallbackMade = false;
+            gSceneTime = 0.0f;
+            ResetTask::s_resetPaused = false;
+        }
+        else
+        {
+            nlSingleton<GameSceneManager>::s_pInstance->Push(mNextScene, SCREEN_NOTHING, true);
+        }
+        gSaveLoadFinished = false;
+        break;
+    }
+
+    case (eSaveLoad)11:
+    default:
+        break;
+    }
+
+    SaveLoad().FreeAllCallbackMemory();
 }
 
 /**

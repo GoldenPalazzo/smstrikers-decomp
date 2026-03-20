@@ -533,8 +533,8 @@ void glx_LoadLight(GLLightUserData* pLight, _GXLightID lightId)
         nlMultDirVectorMatrix(viewDir, worldDir, mview);
 
         viewDir.f.z = -1.0f * viewDir.f.z;
-        viewDir.f.x = -1.0f * viewDir.f.x;
         viewDir.f.y = -1.0f * viewDir.f.y;
+        viewDir.f.x = -1.0f * viewDir.f.x;
 
         GXInitLightPos(&light, viewDir.f.x, viewDir.f.y, viewDir.f.z);
         GXInitLightAttnA(&light, 1.0f, 0.0f, 0.0f);
@@ -853,42 +853,54 @@ void glx_SendReset()
     glx_NoFog = false;
 }
 
+static inline GXColor makeColor(f32 r, f32 g, f32 b, f32 a)
+{
+    GXColor c;
+    c.r = (u8)(r * 255.0f);
+    c.g = (u8)(g * 255.0f);
+    c.b = (u8)(b * 255.0f);
+    c.a = (u8)(a * 255.0f);
+    return c;
+}
+
 /**
  * Offset/Address/Size: 0x4E94 | 0x801BE994 | size: 0x310
- * TODO: 89.31% on decomp.me - stack frame 0x10 bytes too small (decomp.me MWCC eliminates
- *       unused vMult). All remaining diffs are stack offset markers. Real MWCC should do RVO.
+ * TODO: 99.18% match - 30 stack offset diffs from compiler GXColor temp ordering
+ *       (decomp.me interleaves col/tmp per scope, target groups all cols then all tmps)
  */
 void GetConstants()
 {
     nlVector4 vMult;
     nlVector4 vTexel;
     Mtx crowdMatrix;
-    f32 crowdOffsetV;
 
-    vMult = glConstantGet("shadow/pass0_colour");
-    rshadow_colour[0].r = vMult.f.x * 255.0f;
-    rshadow_colour[0].g = vMult.f.y * 255.0f;
-    rshadow_colour[0].b = vMult.f.z * 255.0f;
-    rshadow_colour[0].a = vMult.f.w * 255.0f;
+    {
+        const nlVector4& v = glConstantGet("shadow/pass0_colour");
+        rshadow_colour[0] = makeColor(v.f.x, v.f.y, v.f.z, v.f.w);
+    }
 
-    vMult = glConstantGet("shadow/pass1_colour");
-    rshadow_colour[1].r = vMult.f.x * 255.0f;
-    rshadow_colour[1].g = vMult.f.y * 255.0f;
-    rshadow_colour[1].b = vMult.f.z * 255.0f;
-    rshadow_colour[1].a = vMult.f.w * 255.0f;
+    {
+        const nlVector4& v = glConstantGet("shadow/pass1_colour");
+        rshadow_colour[1] = makeColor(v.f.x, v.f.y, v.f.z, v.f.w);
+    }
 
-    vMult = glConstantGet("lighting/ambient_colour");
-    world_ambient.c[0] = vMult.f.x * 255.0f;
-    world_ambient.c[1] = vMult.f.y * 255.0f;
-    world_ambient.c[2] = vMult.f.z * 255.0f;
-    world_ambient.c[3] = vMult.f.w * 255.0f;
+    {
+        const nlVector4& v = glConstantGet("lighting/ambient_colour");
+        GXColor tmp = makeColor(v.f.x, v.f.y, v.f.z, v.f.w);
+        world_ambient.c[0] = tmp.r;
+        world_ambient.c[1] = tmp.g;
+        world_ambient.c[2] = tmp.b;
+        world_ambient.c[3] = tmp.a;
+    }
 
     glConstantGet("water/scale", water_Scale);
     glConstantGet("water/trans", water_Trans);
     glConstantGet("water/follow", water_Follow);
 
-    nlVector4 warbleDivisor = glConstantGet("warble/divisor");
-    glx_IndDivisor = warbleDivisor.f.x;
+    {
+        const nlVector4& warbleDivisor = glConstantGet("warble/divisor");
+        glx_IndDivisor = warbleDivisor.f.x;
+    }
 
     vMult = glConstantGet("lighting/range");
     if (vMult.f.x == 0.0f)
@@ -905,11 +917,13 @@ void GetConstants()
         glx_SetGridMode(vTexel.f.x == 0.0f);
     }
 
-    nlVector4 crowdFrame = glConstantGet("crowd/frame");
-    crowdOffsetV = crowdFrame.f.x;
-    PSMTXIdentity(crowdMatrix);
-    crowdMatrix[1][3] = crowdOffsetV;
-    GXLoadTexMtxImm(crowdMatrix, 0x36, (_GXTexMtxType)1);
+    {
+        const nlVector4& crowdFrame = glConstantGet("crowd/frame");
+        f32 crowdOffsetV = crowdFrame.f.x;
+        PSMTXIdentity(crowdMatrix);
+        crowdMatrix[1][3] = crowdOffsetV;
+        GXLoadTexMtxImm(crowdMatrix, 0x36, (_GXTexMtxType)1);
+    }
 }
 
 /**

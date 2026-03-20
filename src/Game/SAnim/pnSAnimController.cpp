@@ -63,12 +63,13 @@ cPN_SAnimController::cPN_SAnimController(cSAnim* pSAnim, const AnimRetarget* pAn
 
 /**
  * Offset/Address/Size: 0xAF0 | 0x801EB14C | size: 0x2D0
+ * TODO: 99.29% match - synchronized ratio block still differs in
+ * f2/f3/f4/f7 register allocation.
  */
 cPoseNode* cPN_SAnimController::Update(float dt)
 {
     if (!m_bIsSynchronized)
     {
-        // Call playback speed callback if it exists
         if (m_funcPlaybackSpeedCallback != nullptr)
         {
             m_funcPlaybackSpeedCallback(m_nPlaybackSpeedCallbackParam, this);
@@ -76,85 +77,69 @@ cPoseNode* cPN_SAnimController::Update(float dt)
 
         float playbackSpeedScale = m_fPlaybackSpeedScale;
 
-        // Handle synchronized controller weight calculation
         if (m_pSynchronizedController != nullptr)
         {
-            // Call synchronized weight callback if it exists
             if (m_funcSychronizedWeightCallback != nullptr)
             {
                 m_funcSychronizedWeightCallback(m_nSynchronizedWeightCallbackParam, this);
             }
 
-            // Calculate synchronized weight ratio
-            cSAnim* pSyncSAnim = m_pSynchronizedController->m_pSAnim;
-            cSAnim* pThisSAnim = m_pSAnim;
+            cPN_SAnimController* pSyncController = m_pSynchronizedController;
+            float syncDuration = (float)pSyncController->m_pSAnim->m_nNumKeys / 30.0f;
+            float thisDuration = (float)m_pSAnim->m_nNumKeys / 30.0f;
+            float ratio = (thisDuration / m_fPlaybackSpeedScale)
+                        / (syncDuration / pSyncController->m_fPlaybackSpeedScale);
 
-            float syncNumKeys = (float)pSyncSAnim->m_nNumKeys;
-            float thisNumKeys = (float)pThisSAnim->m_nNumKeys;
-
-            float syncDuration = syncNumKeys / 30.0f;
-            float thisDuration = thisNumKeys / 30.0f;
-
-            float syncTime = m_pSynchronizedController->m_fTime;
-            float syncPlaybackSpeed = m_pSynchronizedController->m_fPlaybackSpeedScale;
-
-            float syncNormalizedSpeed = (syncTime / syncDuration) / (m_fTime / thisDuration);
-            float weightRatio = (syncNormalizedSpeed - 1.0f) * m_fSynchronizedWeight + 1.0f;
-
-            playbackSpeedScale *= weightRatio;
+            playbackSpeedScale *= m_fSynchronizedWeight * (ratio - 1.0f) + 1.0f;
         }
 
-        // Save previous time
         m_fPrevTime = m_fTime;
 
-        // Calculate animation duration
-        float numKeys = (float)m_pSAnim->m_nNumKeys;
-        float duration = numKeys / 30.0f;
+        float duration = (float)m_pSAnim->m_nNumKeys / 30.0f;
 
-        // Update time
         if (duration == 0.0f)
         {
             m_fTime = 1.0f;
         }
         else
         {
-            float timeDelta = (dt * playbackSpeedScale) / duration;
-            m_fTime += timeDelta;
+            m_fTime += (dt * playbackSpeedScale) / duration;
         }
 
         if (m_fTime > 1.0f)
         {
-            if (m_ePlayMode == PM_CYCLIC)
+            switch (m_ePlayMode)
             {
-                while (m_fTime > 1.0f)
+            case PM_CYCLIC:
+                do
                 {
                     m_fTime -= 1.0f;
-                }
-            }
-            else
-            {
+                } while (m_fTime > 1.0f);
+                break;
+            case PM_HOLD:
                 m_fTime = 1.0f;
+                break;
             }
         }
         else if (m_fTime < 0.0f)
         {
-            if (m_ePlayMode == PM_CYCLIC)
+            switch (m_ePlayMode)
             {
-                while (m_fTime < 0.0f)
+            case PM_CYCLIC:
+                do
                 {
                     m_fTime += 1.0f;
-                }
-            }
-            else
-            {
+                } while (m_fTime < 0.0f);
+                break;
+            case PM_HOLD:
                 m_fTime = 0.0f;
+                break;
             }
         }
 
-        // Process callbacks if dt >= 0.0f and not ignoring triggers
         if (dt >= 0.0f && !m_bIgnoreTriggers)
         {
-            cSAnimCallback* pCallback = m_pSAnim->GetCallbackList();
+            cSAnimCallback* pCallback = m_pSAnim->m_pCallbackList;
 
             while (pCallback != nullptr)
             {
@@ -196,12 +181,10 @@ cPoseNode* cPN_SAnimController::Update(float dt)
             }
         }
 
-        // Update synchronized controller if it exists
         if (m_pSynchronizedController != nullptr)
         {
             m_pSynchronizedController->UpdateSynchronized(m_fTime);
         }
-        // return this;
     }
 
     return this;
@@ -213,7 +196,7 @@ cPoseNode* cPN_SAnimController::Update(float dt)
 void cPN_SAnimController::UpdateSynchronized(float time)
 {
     /**
-     * TODO: 99.56% match - r30/r31 swap for this vs pCallback in first block, and pController in last block.
+     * TODO: 99.69% match - r30/r31 swap for this vs pCallback in first block.
      */
     cSAnimCallback* pCallback;
 
@@ -391,18 +374,18 @@ void cPN_SAnimController::UpdateSynchronized(float time)
         }
     }
 
-    pController = pController->m_pSynchronizedController;
-    if (pController == nullptr)
+    cPN_SAnimController* pTailController = pController->m_pSynchronizedController;
+    if (pTailController == nullptr)
     {
         return;
     }
 
-    pController->SetTime(time);
-    pController->ProcessCallbacks();
+    pTailController->SetTime(time);
+    pTailController->ProcessCallbacks();
 
-    if (pController->m_pSynchronizedController != nullptr)
+    if (pTailController->m_pSynchronizedController != nullptr)
     {
-        pController->m_pSynchronizedController->UpdateSynchronized(time);
+        pTailController->m_pSynchronizedController->UpdateSynchronized(time);
     }
 }
 

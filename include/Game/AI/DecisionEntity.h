@@ -32,7 +32,7 @@ public:
     sPlayParams& GetLastPlayParams();
     ScriptAction* QueueActionSetDesire(int, float, float, FuzzyVariant, FuzzyVariant);
     ScriptAction* QueueActionSetPlay(int, float, float);
-    void FindDesireAction(int, FuzzyVariant, FuzzyVariant);
+    ScriptAction* FindDesireAction(int, FuzzyVariant, FuzzyVariant);
     bool SelectAction(eScriptActionSelection, float);
 
     /* 0x00 */ eDecisionEntity m_type;                         // offset 0x0, size 0x4

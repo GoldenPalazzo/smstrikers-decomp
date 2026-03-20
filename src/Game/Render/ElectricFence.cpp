@@ -80,7 +80,7 @@ extern "C" double floor(double);
 void GetWallPoint(const nlVector3& impactPosition, float xOffset, float zOffset, nlVector3& outPosition)
 {
     /**
-     * TODO: 98.46% match - r29/r31 register allocation swap (impactPosition ptr vs yIsPositive) and fmuls operand order.
+     * TODO: 99.71% match - r29/r31 register allocation swap (impactPosition ptr vs yIsPositive).
      */
     extern float sfGridTextureSize;
     extern float sfNumGridSquares;
@@ -102,7 +102,8 @@ void GetWallPoint(const nlVector3& impactPosition, float xOffset, float zOffset,
     impactPositionPositive.f.z = pPoint->f.z;
 
     float straightLength = goalLineX - cornerRadius;
-    float cornerCircumference = cornerRadius * 1.5707964f;
+    float cornerCircumference = cornerRadius;
+    cornerCircumference *= 1.5707964f;
 
     float inCoordinate;
     if (impactPositionPositive.f.x >= straightLength && impactPositionPositive.f.y >= sidelineY - cornerRadius)
@@ -138,9 +139,9 @@ void GetWallPoint(const nlVector3& impactPosition, float xOffset, float zOffset,
     }
     else
     {
-        u16 angle = (u16)(s32)(10430.378f * (outCoordinate / cornerRadius));
-        float sinAngle = nlSin(angle);
-        float cosAngle = nlSin((u16)(angle + 0x4000));
+        s32 angle = (s32)(10430.378f * (outCoordinate / cornerRadius));
+        float sinAngle = nlSin((u16)angle);
+        float cosAngle = nlSin((u16)((u16)angle + 0x4000));
 
         outPosition.f.x = straightLength + (cornerRadius * cosAngle);
         outPosition.f.y = (sidelineY - cornerRadius) + (cornerRadius * sinAngle);

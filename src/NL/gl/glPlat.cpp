@@ -161,7 +161,7 @@ void glplatSendFrame()
     f32 sp10;
     f32 spC;
     nlColour sp8;
-    u32 temp_r5;
+    s32 temp_r5;
     s32 var_r30;
     s32 var_r31;
     u32 temp_r30;
@@ -185,7 +185,7 @@ void glplatSendFrame()
         glFontVirtualPosToScreenCoordPos(0.f, (f32)(var_r30 + 0x24), sp14, sp18);
         glSetDefaultState(false);
         sp1C.SetupRectangle(0.f, sp10 - 2.f, 640.f, 4.f + (sp18 - sp10), 10000000000.f);
-        // sp8 = @182;
+        *(volatile u32*)&sp8 = *(volatile u32*)&glx_FogColour;
         sp8.c[0] = 0x3A;
         sp8.c[1] = 0x6E;
         sp8.c[2] = 0xA5;
@@ -204,13 +204,15 @@ void glplatSendFrame()
             counter = temp_r5;
             if (temp_r5 >= 0x14)
             {
+                temp_r4 = total_val0;
                 temp_r3 = total_val1;
-                temp_r4 = (u32)total_val0 / (u32)temp_r5;
+                temp_r4 = temp_r4 / (u32)temp_r5;
                 total_val0 = 0;
                 total_val1 = 0;
                 counter = 0;
+                temp_r3 = temp_r3 / (u32)temp_r5;
                 print_val0 = temp_r4;
-                print_val1 = temp_r3 / (u32)temp_r5;
+                print_val1 = temp_r3;
             }
             glFontBegin(false);
             glFontPrintf((eGLView)0x21, 1, 0x24, "%u %s, %u %s", print_val0, str_perf0[glx_perf0], print_val1, str_perf1[glx_perf1]);

@@ -30,8 +30,8 @@
 
 bool LoadCharacterPhysicsElements(const char* pFileData, CharacterPhysicsData* pPhysicsData)
 {
-    u8* temp_r29;
     u8* var_r30;
+    u8* temp_r29;
 
     u32 dataSize;
     u8* rawData = (u8*)nlLoadEntireFile(pFileData, &dataSize, 0x20, AllocateStart);
@@ -40,24 +40,31 @@ bool LoadCharacterPhysicsElements(const char* pFileData, CharacterPhysicsData* p
         return false;
     }
 
+    /**
+     * TODO: 92.40% match - remaining diffs are alignment address formation and
+     * case 0x1D002 copy-loop register allocation (r3/r4/r5).
+     */
+    u32 temp_r4 = *((u32*)(rawData + 4));
     var_r30 = rawData + 8;
-    temp_r29 = rawData + (*((u32*)((u8*)rawData + 4)) + 8);
+    temp_r29 = rawData + temp_r4 + 8;
 
-    do
+    while (var_r30 < temp_r29)
     {
-        s32 temp_r5 = *(s32*)var_r30;       // chunk header
-        s32 temp_r4 = temp_r5 & 0x80FFFFFF; // masked kind (irregular switch domain)
+        s32 temp_r5 = *(s32*)var_r30;
+        s32 temp_r4_2 = temp_r5 & 0x80FFFFFF;
 
-        switch (temp_r4)
+        switch (temp_r4_2)
         {
         case 0x0001D001:
         {
-            s32 temp_r3_2 = temp_r5 & 0x7F000000;
+            s32 temp_r3 = temp_r5 & 0x7F000000;
             u8* var_r3;
-            if (((-temp_r3_2 | temp_r3_2) >> 31) != 0)
+            if ((((u32)(-temp_r3 | temp_r3)) >> 31) != 0)
             {
-                s32 temp_r4_2 = 1 << (s32)((u32)temp_r3_2 >> 24);
-                var_r3 = (u8*)(((u32)(var_r30 + temp_r4_2 + 7)) & ~(u32)(temp_r4_2 - 1));
+                s32 temp_r4_3 = 1 << ((u32)temp_r3 >> 24);
+                u8* ptr = var_r30 + temp_r4_3;
+                ptr += 7;
+                var_r3 = (u8*)((u32)ptr & ~(u32)(temp_r4_3 - 1));
             }
             else
             {
@@ -71,23 +78,35 @@ bool LoadCharacterPhysicsElements(const char* pFileData, CharacterPhysicsData* p
 
         case 0x0001D002:
         {
-            s32 temp_r3_3 = temp_r5 & 0x7F000000;
-
-            u8* var_r5 = (temp_r3_3 != 0)
-                           ? (u8*)(((u32)(var_r30 + (1 << (s32)((u32)temp_r3_3 >> 24)) + 7)) & ~(u32)((1 << (s32)((u32)temp_r3_3 >> 24)) - 1))
-                           : (var_r30 + 8);
-
-            for (u32 i = 0; i < pPhysicsData->physicsElementCount; i++)
+            s32 temp_r3 = temp_r5 & 0x7F000000;
+            u8* var_r5;
+            if ((((u32)(-temp_r3 | temp_r3)) >> 31) != 0)
             {
-                pPhysicsData->pPhysicsElements[i] = ((CharacterPhysicsElement*)var_r5)[i];
+                s32 temp_r4_3 = 1 << ((u32)temp_r3 >> 24);
+                u8* ptr = var_r30 + temp_r4_3;
+                ptr += 7;
+                var_r5 = (u8*)((u32)ptr & ~(u32)(temp_r4_3 - 1));
+            }
+            else
+            {
+                var_r5 = var_r30 + 8;
+            }
+
+            u32 i = 0;
+            u32 temp_r6 = i;
+            while (i < pPhysicsData->physicsElementCount)
+            {
+                *(CharacterPhysicsElement*)((u8*)pPhysicsData->pPhysicsElements + temp_r6) = *(CharacterPhysicsElement*)var_r5;
+                i++;
+                temp_r6 += sizeof(CharacterPhysicsElement);
+                var_r5 += sizeof(CharacterPhysicsElement);
             }
             break;
         }
         }
 
-        var_r30 += *((u32*)(var_r30 + 4)) + 8; // advance to next chunk
-
-    } while (var_r30 < temp_r29);
+        var_r30 += *((u32*)(var_r30 + 4)) + 8;
+    }
 
     delete rawData;
     return true;

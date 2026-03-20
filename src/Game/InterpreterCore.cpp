@@ -152,10 +152,12 @@ void InterpreterCore::Step()
     u16 instr;
     u16 op_high;
     u16 op_low;
+    u32* volatile saved_bp;
+    u16* volatile saved_ip;
 
     instr = *m_IP;
-    op_high = instr & 0xFC00;
-    op_low = instr & 0x03FF;
+    op_high = instr & 0xC000;
+    op_low = instr & 0x3FFF;
 
     switch (op_high)
     {
@@ -175,17 +177,18 @@ void InterpreterCore::Step()
         break;
 
     case 0xC000:
-        switch ((instr >> 8) & 0xFF)
+        switch ((op_low >> 8) & 0xFF)
         {
         case 0x0:
+            saved_bp = m_BP;
             *m_SP = (u32)m_BP;
             m_SP++;
             m_BP = m_SP;
-            m_SP += (instr & 0xFF);
+            m_SP += (op_low & 0xFF);
             break;
 
         case 0x1:
-            m_SP -= (instr & 0xFF);
+            m_SP -= (op_low & 0xFF);
             m_SP--;
             m_BP = (u32*)(*m_SP);
             break;
@@ -193,7 +196,7 @@ void InterpreterCore::Step()
         case 0x2:
             m_SP--;
             m_IP = (u16*)(*m_SP);
-            m_SP -= (instr & 0xFF);
+            m_SP -= (op_low & 0xFF);
             if (!m_IP)
             {
                 m_Stop = 1;
@@ -204,7 +207,7 @@ void InterpreterCore::Step()
 
         case 0x3:
         {
-            s8 offset = (s8)(instr & 0xFF);
+            s8 offset = (s8)(op_low & 0xFF);
             *m_SP = m_BP[offset];
             m_SP++;
             break;
@@ -212,7 +215,7 @@ void InterpreterCore::Step()
 
         case 0x4:
         {
-            s8 offset = (s8)(instr & 0xFF);
+            s8 offset = (s8)(op_low & 0xFF);
             m_SP--;
             m_BP[offset] = *m_SP;
             break;
@@ -230,37 +233,39 @@ void InterpreterCore::Step()
 
         case 0x7:
         {
-            s8 offset = (s8)(instr & 0xFF);
+            s8 offset = (s8)(op_low & 0xFF);
             m_BP[offset] = m_Return;
             break;
         }
 
         case 0x8:
         {
-            s8 offset = (s8)(instr & 0xFF);
+            s8 offset = (s8)(op_low & 0xFF);
             m_Return = m_BP[offset];
             break;
         }
 
         case 0x9:
-            *m_SP = (instr & 0xFF);
+            *m_SP = (op_low & 0xFF);
             m_SP++;
             break;
 
         case 0xA:
         {
             u8 index;
+            saved_ip = m_IP;
             *m_SP = (u32)m_IP;
             m_SP++;
-            index = (u8)m_IP[1];
+            index = (u8)(op_low & 0xFF);
             m_IP = (u16*)((u8*)m_Header->m_CodeSegment + (m_Header->m_FunctionTable[index].offset & ~1));
+            return;
+        }
+
+        default:
+            nlBreak();
             break;
         }
-        }
         break;
-
-    default:
-        nlBreak();
     }
 
     m_IP += 1;

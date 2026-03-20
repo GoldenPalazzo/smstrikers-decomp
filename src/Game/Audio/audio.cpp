@@ -228,11 +228,177 @@ void FadeFilterToFullStrength()
 
 /**
  * Offset/Address/Size: 0x474 | 0x8013C988 | size: 0x354
- * TODO: 96.92% match - register allocation in team/player for-loops (r28-r31 swapped)
+ * TODO: 97.61% match - register allocation in team/player loops (same as FadeFilter),
+ *       pitchBend u16 load register swap (r28/r0), search loop beq vs bne+b compiler peephole.
+ *       #pragma inline_depth(0) needed in decomp.me scratch to prevent nlListAddStart inlining.
  */
-void PitchBend(float, float, float, float)
+void PitchBend(float param1, float param2, float param3, float param4)
 {
-    FORCE_DONT_INLINE;
+    TransitionTask* pTask = TransitionTask::sm_pGlobalTask;
+    TRANSITION_STATE state;
+    if (pTask != NULL)
+    {
+        state = pTask->m_TransitionState;
+    }
+    else
+    {
+        state = (TRANSITION_STATE)0;
+    }
+    if (state == eTS_Destroying)
+    {
+        return;
+    }
+
+    float diff = param2 - param1;
+    float fadePerFrame;
+    if (param3 <= 0.0f)
+    {
+        fadePerFrame = diff;
+        if (0.0f != param4)
+        {
+            goto createFade;
+        }
+        if (0.5f == param2)
+        {
+            // Reset pitch bend to center (0x2000)
+            if (!gbPitchBent)
+            {
+                return;
+            }
+            if (g_pGame != NULL)
+            {
+                for (int t = 0; t < 2; t++)
+                {
+                    cTeam* team = g_pTeams[t];
+                    for (int p = 0; p < 5; p++)
+                    {
+                        team->GetPlayer(p)->m_pCharacterSFX->SetPitchBendOnAllDialogueSFX(0x2000);
+                    }
+                }
+                BasicStadium::GetCurrentStadium()->mpNPCManager->mpBowser->m_pCharacterSFX->SetPitchBendOnAllDialogueSFX(0x2000);
+            }
+            gbPitchBent = false;
+        }
+        else
+        {
+            // Set pitch bend from game tweaks
+            if (gbPitchBent)
+            {
+                return;
+            }
+            u16 pitchBend = (u16)(s32)(16384.0f * g_pGame->m_pGameTweaks->unk220);
+            if (pitchBend > 0x3FFF)
+            {
+                pitchBend = 0x3FFF;
+            }
+            if (g_pGame != NULL)
+            {
+                for (int t = 0; t < 2; t++)
+                {
+                    cTeam* team = g_pTeams[t];
+                    for (int p = 0; p < 5; p++)
+                    {
+                        team->GetPlayer(p)->m_pCharacterSFX->SetPitchBendOnAllDialogueSFX(pitchBend);
+                    }
+                }
+                BasicStadium::GetCurrentStadium()->mpNPCManager->mpBowser->m_pCharacterSFX->SetPitchBendOnAllDialogueSFX(pitchBend);
+            }
+            if (pitchBend != 0x2000)
+            {
+                gbPitchBent = true;
+            }
+            else
+            {
+                gbPitchBent = false;
+            }
+        }
+        return;
+    }
+    else
+    {
+        fadePerFrame = diff / param3;
+    }
+createFade:
+    if (pTask != NULL)
+    {
+        state = pTask->m_TransitionState;
+    }
+    else
+    {
+        state = (TRANSITION_STATE)0;
+    }
+    if (state == eTS_Destroying)
+    {
+        return;
+    }
+
+    // Search for existing fade with same type (3=pitch bend) and target
+    FadeAudioData* existing = g_pFadeList;
+    while (existing != NULL)
+    {
+        if (*(s32*)existing == 3)
+        {
+            if (*(float*)((char*)existing + 0x14) != param2)
+            {
+            }
+            else
+            {
+                goto foundExisting;
+            }
+        }
+        existing = existing->next;
+    }
+    existing = NULL;
+foundExisting:
+    if (existing != NULL)
+    {
+        nlListRemoveElement<FadeAudioData>(&g_pFadeList, existing, NULL);
+        delete existing;
+    }
+
+    // Allocate new FadeAudioData
+    FadeAudioData* newFade = (FadeAudioData*)nlMalloc(0x2C, 8, false);
+
+    // Constructor-like initialization (default values with dead stores)
+    *(s32*)((char*)newFade) = 0;
+    *(s32*)((char*)newFade + 0x04) = -1;
+    *(s32*)((char*)newFade + 0x04) = 0;
+    *(float*)((char*)newFade + 0x08) = 0.0f;
+    *(float*)((char*)newFade + 0x0C) = 0.0f;
+    *(float*)((char*)newFade + 0x10) = 0.0f;
+    *(float*)((char*)newFade + 0x14) = 0.0f;
+    *(float*)((char*)newFade + 0x18) = -1.0f;
+    *(s32*)((char*)newFade + 0x18) = 0;
+    *((char*)newFade + 0x1C) = 0;
+    *((char*)newFade + 0x1D) = 0;
+    *((char*)newFade + 0x1E) = 0;
+    *((char*)newFade + 0x1F) = 0;
+    *((char*)newFade + 0x20) = 0;
+    *((char*)newFade + 0x21) = 0;
+    *(float*)((char*)newFade + 0x24) = -1.0f;
+
+    // Set actual fade values
+    *(s32*)((char*)newFade) = 3;                     // type = 3 (pitch bend)
+    *(float*)((char*)newFade + 0x08) = fadePerFrame; // fade rate per frame
+    *(float*)((char*)newFade + 0x0C) = param4;       // delay
+    *(float*)((char*)newFade + 0x10) = param3;       // time
+    *(float*)((char*)newFade + 0x14) = param2;       // target
+    *(float*)((char*)newFade + 0x18) = param1;       // from/current
+
+    // Set direction flags based on target vs game tweaks
+    if (param2 == g_pGame->m_pGameTweaks->unk224)
+    {
+        *((char*)newFade + 0x20) = 0;
+        *((char*)newFade + 0x1C) = 1;
+    }
+    else
+    {
+        *((char*)newFade + 0x20) = 1;
+        *((char*)newFade + 0x1C) = 0;
+    }
+
+    newFade->next = NULL;
+    nlListAddStart<FadeAudioData>(&g_pFadeList, newFade, NULL);
 }
 
 /**

@@ -755,11 +755,195 @@ void World::AddToHyperSTSDrawables(unsigned long key, DrawableModel* pDrawableMo
     }
 }
 
+class GLInventory
+{
+public:
+    glModel* GetModel(unsigned long);
+    void* GetShadowVolume(unsigned long);
+    void* GetVertexAnim(unsigned long);
+
+    char _pad[0x1C8];
+};
+
+extern GLInventory glInventory;
+
 /**
  * Offset/Address/Size: 0x3084 | 0x80197D48 | size: 0x39C
+ * TODO: 96.00% match - remaining diffs are from ABI/signature context:
+ *       function is currently declared `void` in headers while target returns `bool`,
+ *       plus ctor-call symbol shape for `DrawableObject`.
  */
-void World::HandleObjectCreation(WorldObjectData*)
+u8 World::HandleObjectCreation(WorldObjectData* pObjectData)
 {
+    struct WorldObjectDataLocal
+    {
+        unsigned long m_uObjectCreationFlags;
+        unsigned long m_uHashID;
+        unsigned long m_uModelID;
+        unsigned long m_uShadowHashID;
+        unsigned long m_uRenderLayer;
+        nlMatrix4 m_worldMatrix;
+        float m_fRadius;
+        nlVector3 m_v3Offset;
+    };
+
+    struct DrawableSkinModelLocal
+    {
+        char _pad0[0x9C];
+        glModel* m_pModel;
+        void* m_pShadowVolume;
+        void* m_pAnimController;
+    };
+
+    struct DrawableModelLocal
+    {
+        char _pad0[0x9C];
+        glModel* m_pModel;
+        void* m_pShadowVolume;
+        unsigned char m_bVertexAnimated;
+        unsigned char m_bUnknownA5;
+        unsigned short _padA6;
+        void* pAABBDimensions;
+    };
+
+    struct DrawableTmModelLocal
+    {
+        DrawableModelLocal m_model;
+        void* m_pAnimController;
+        unsigned long m_uAnimBoneIndex;
+    };
+
+    struct DrawableShadowLocal
+    {
+        char _pad0[0x9C];
+        glModel* m_pModel;
+    };
+
+    extern unsigned long eOC_SHINY;
+    extern void __ct__14DrawableObjectFv(void*);
+    extern void* __vt__17DrawableSkinModel[];
+    extern void* __vt__15DrawableTmModel[];
+    extern void* __vt__13DrawableModel[];
+    extern void* __vt__14DrawableShadow[];
+
+    WorldObjectDataLocal* pData = (WorldObjectDataLocal*)pObjectData;
+    DrawableObject* pDrawable = NULL;
+    glModel* pModel = glInventory.GetModel(pData->m_uModelID);
+
+    if (pModel == NULL)
+    {
+        return 1;
+    }
+
+    if ((pData->m_uObjectCreationFlags & 0x10) == 0)
+    {
+        glModelPacket* pPacketEnd;
+        glModelPacket* pPacket = pModel->packets;
+        pPacketEnd = pPacket + pModel->numPackets;
+
+        while (pPacket < pPacketEnd)
+        {
+            if (pPacket->state.texconfig & 0x10)
+            {
+                pData->m_uObjectCreationFlags |= eOC_SHINY;
+                break;
+            }
+            pPacket++;
+        }
+    }
+
+    if (pData->m_uObjectCreationFlags & 0x2)
+    {
+        DrawableSkinModelLocal* pSkin = (DrawableSkinModelLocal*)nlMalloc(0xA8, 8, false);
+        if (pSkin)
+        {
+            __ct__14DrawableObjectFv(pSkin);
+            *(void**)pSkin = __vt__17DrawableSkinModel;
+            pSkin->m_pAnimController = NULL;
+        }
+
+        pSkin->m_pModel = pModel;
+        pSkin->m_pShadowVolume = glInventory.GetShadowVolume(pData->m_uShadowHashID);
+        ((DrawableObject*)pSkin)->m_uObjectFlags |= 0x4;
+        pDrawable = (DrawableObject*)pSkin;
+    }
+    else if (pData->m_uObjectCreationFlags & 0x20)
+    {
+        DrawableTmModelLocal* pTm = (DrawableTmModelLocal*)nlMalloc(0xB4, 8, false);
+        if (pTm)
+        {
+            __ct__14DrawableObjectFv(pTm);
+            *(void**)pTm = __vt__13DrawableModel;
+            pTm->m_model.m_pModel = NULL;
+            pTm->m_model.m_pShadowVolume = NULL;
+            pTm->m_model.m_bVertexAnimated = 0;
+            pTm->m_model.m_bUnknownA5 = 0;
+            *(void**)pTm = __vt__15DrawableTmModel;
+            pTm->m_pAnimController = NULL;
+        }
+
+        pTm->m_model.m_pModel = pModel;
+        pTm->m_model.m_pShadowVolume = glInventory.GetShadowVolume(pData->m_uShadowHashID);
+        ((DrawableObject*)pTm)->m_uObjectFlags |= 0x4;
+        pDrawable = (DrawableObject*)pTm;
+    }
+    else if (pData->m_uObjectCreationFlags & 0x1)
+    {
+        DrawableShadowLocal* pShadow = (DrawableShadowLocal*)nlMalloc(0xA0, 8, false);
+        if (pShadow)
+        {
+            __ct__14DrawableObjectFv(pShadow);
+            *(void**)pShadow = __vt__14DrawableShadow;
+        }
+
+        pShadow->m_pModel = pModel;
+        ((DrawableObject*)pShadow)->m_uObjectFlags &= ~0x4;
+        pDrawable = (DrawableObject*)pShadow;
+    }
+    else
+    {
+        DrawableModelLocal* pModelDrawable = (DrawableModelLocal*)nlMalloc(0xAC, 8, false);
+        if (pModelDrawable)
+        {
+            __ct__14DrawableObjectFv(pModelDrawable);
+            *(void**)pModelDrawable = __vt__13DrawableModel;
+            pModelDrawable->m_pModel = NULL;
+            pModelDrawable->m_pShadowVolume = NULL;
+            pModelDrawable->m_bVertexAnimated = 0;
+            pModelDrawable->m_bUnknownA5 = 0;
+        }
+
+        pModelDrawable->m_pModel = pModel;
+        pModelDrawable->m_pShadowVolume = glInventory.GetShadowVolume(pData->m_uShadowHashID);
+        pModelDrawable->m_bVertexAnimated = glInventory.GetVertexAnim(pModel->id) ? 1 : 0;
+        ((DrawableObject*)pModelDrawable)->m_uObjectFlags &= ~0x4;
+        pDrawable = (DrawableObject*)pModelDrawable;
+    }
+
+    if (pDrawable == NULL)
+    {
+        return 0;
+    }
+
+    pDrawable->m_pWorldContext = this;
+    pDrawable->m_uObjectFlags |= 0x1;
+    pDrawable->m_uHashID = pData->m_uHashID;
+    pDrawable->m_uObjectCreationFlags = pData->m_uObjectCreationFlags;
+    pDrawable->m_uRenderLayer = pData->m_uRenderLayer;
+    pDrawable->m_worldMatrix = pData->m_worldMatrix;
+    pDrawable->m_fBoundingRadius = pData->m_fRadius;
+
+    AVLTreeNode* pExistingNode;
+    AVLTreeNode** ppRoot = (AVLTreeNode**)&m_drawableMap.m_Root;
+
+    m_drawableMap.AddAVLNode(ppRoot, &pDrawable->m_uHashID, &pDrawable, &pExistingNode, m_drawableMap.m_NumElements);
+
+    if (pExistingNode == NULL)
+    {
+        m_drawableMap.m_NumElements++;
+    }
+
+    return 1;
 }
 
 /**

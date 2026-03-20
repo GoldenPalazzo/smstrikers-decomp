@@ -1282,9 +1282,8 @@ void cFielder::DoClearBall()
 
 /**
  * Offset/Address/Size: 0x8CA8 | 0x80021FE4 | size: 0x2B4
- * TODO: 89.88% match - remaining gap due to -inline deferred (jump table for
- * ACTION_SLIDE_FAIL_REACT switch, r4 vs r3 register allocation for ShotMeter*,
- * bne+b vs beq for ACTION_DEKE check, missing state reload instructions)
+ * TODO: 93.09% match - remaining gap in ACTION_SLIDE_FAIL_REACT jump-table
+ * lowering and early ShotMeter register assignment (r4/r3 order).
  */
 void cFielder::DoHandleActiveShotMeter()
 {
@@ -1330,7 +1329,8 @@ void cFielder::DoHandleActiveShotMeter()
 
     ShotMeter* pShotMeter = m_pShotMeter;
     bool bIsActive = false;
-    if (pShotMeter->m_eShotMeterState == SHOT_METER_ACTIVE || pShotMeter->m_eShotMeterState == SHOT_METER_STS_ACTIVE || pShotMeter->m_eShotMeterState == SHOT_METER_STS_TRANSISTION)
+    eShotMeterState meterState = pShotMeter->m_eShotMeterState;
+    if (meterState == SHOT_METER_ACTIVE || meterState == SHOT_METER_STS_ACTIVE || meterState == SHOT_METER_STS_TRANSISTION)
     {
         bIsActive = true;
     }
@@ -1355,7 +1355,8 @@ void cFielder::DoHandleActiveShotMeter()
 
     pShotMeter = m_pShotMeter;
     bIsActive = false;
-    if (pShotMeter->m_eShotMeterState == SHOT_METER_ACTIVE || pShotMeter->m_eShotMeterState == SHOT_METER_STS_ACTIVE || pShotMeter->m_eShotMeterState == SHOT_METER_STS_TRANSISTION)
+    meterState = pShotMeter->m_eShotMeterState;
+    if (meterState == SHOT_METER_ACTIVE || meterState == SHOT_METER_STS_ACTIVE || meterState == SHOT_METER_STS_TRANSISTION)
     {
         bIsActive = true;
     }
@@ -1383,23 +1384,27 @@ void cFielder::DoHandleActiveShotMeter()
         m_pShotMeter->ShotReleased(this);
         InitActionShot(mActionShotVars.bIsChipShot);
     }
-    else if (m_eActionState != ACTION_SHOT && pShotMeter->m_eShotMeterState == SHOT_METER_RELEASED)
+    else
     {
-        mActionShotVars.bIsChipShot = bIsChipShot;
-        m_pShotMeter->ShotReleased(this);
+        eFielderActionState actionState = m_eActionState;
+        if (actionState != ACTION_SHOT && pShotMeter->m_eShotMeterState == SHOT_METER_RELEASED)
+        {
+            mActionShotVars.bIsChipShot = bIsChipShot;
+            m_pShotMeter->ShotReleased(this);
 
-        if (GetGlobalPad() != NULL)
-        {
-            InitActionShot(mActionShotVars.bIsChipShot);
+            if (GetGlobalPad() != NULL)
+            {
+                InitActionShot(mActionShotVars.bIsChipShot);
+            }
+            else
+            {
+                InitActionShot(false);
+            }
         }
-        else
+        else if (actionState != ACTION_SHOT && pShotMeter->m_eShotMeterState == SHOT_METER_STS_RELEASED)
         {
-            InitActionShot(false);
+            InitActionShootToScore();
         }
-    }
-    else if (m_eActionState != ACTION_SHOT && pShotMeter->m_eShotMeterState == SHOT_METER_STS_RELEASED)
-    {
-        InitActionShootToScore();
     }
 }
 
@@ -2456,7 +2461,7 @@ eStrafeDirection cFielder::CalculateStrafeDirection(unsigned short aDesiredFacin
 
         if ((float)angleDelta < backwardsToStrafeRunDelta)
         {
-            if ((float)angleDelta >= -strafeToRunDelta)
+            if ((float)angleDelta >= strafeToRunDelta)
             {
                 return STRAFE_LEFT;
             }
@@ -2480,7 +2485,7 @@ eStrafeDirection cFielder::CalculateStrafeDirection(unsigned short aDesiredFacin
 
     if ((float)angleDelta < backwardsToStrafeRunDelta)
     {
-        if ((float)angleDelta >= -strafeToRunDelta)
+        if ((float)angleDelta >= strafeToRunDelta)
         {
             return STRAFE_LEFT;
         }
@@ -4358,7 +4363,7 @@ void cFielder::StartRunning()
 /**
  * Offset/Address/Size: 0xC14 | 0x80019F50 | size: 0x598
  */
-void cFielder::DoAILooseBallActionSelection()
+bool cFielder::DoAILooseBallActionSelection()
 {
 }
 

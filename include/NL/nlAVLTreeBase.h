@@ -285,12 +285,11 @@ void AVLTreeBase<KeyType, ValueType, AllocatorType, CompareType>::InorderWalk(AV
     // CallbackType* cbClass, void (CallbackType::*cb)(void*, void*, unsigned long&, unsigned long*))
     CallbackType* cbClass, void (CallbackType::*cb)(const KeyType&, ValueType*))
 {
-    FORCE_DONT_INLINE;
-    if (curr != nullptr)
+    while (curr != nullptr)
     {
-        InorderWalk((AVLTreeEntry<KeyType, ValueType>*)curr->node.left, cbClass, cb);
+        InorderWalk(CastUp(curr->node.left), cbClass, cb);
         (cbClass->*cb)(curr->key, &curr->value);
-        InorderWalk((AVLTreeEntry<KeyType, ValueType>*)curr->node.right, cbClass, cb);
+        curr = CastUp(curr->node.right);
     }
 }
 

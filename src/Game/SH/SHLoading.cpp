@@ -2,7 +2,20 @@
 #include "Game/Audio/AudioLoader.h"
 #include "Game/Audio/AudioStream.h"
 #include "Game/OverlayManager.h"
+#include "Game/FE/feInput.h"
+#include "Game/FE/FEAudio.h"
+#include "Game/GameInfo.h"
+#include "NL/nlBasicString.h"
 #include "NL/nlTask.h"
+#include "NL/nlLocalization.h"
+#include "NL/nlPrint.h"
+#include "NL/nlString.h"
+
+extern nlLocalization* g_pLocalization;
+extern unsigned char PAD_COLOURS[4][3];
+extern unsigned long CONTROLLER_TEXT[4];
+extern const unsigned short LocalizationTableNotFound[];
+extern const unsigned short MissingLocString[];
 
 // /**
 //  * Offset/Address/Size: 0xE08 | 0x800A9794 | size: 0x118
@@ -195,7 +208,52 @@ void SuperLoadingScene::DisplayCupInfo()
 
 /**
  * Offset/Address/Size: 0x0 | 0x800A6770 | size: 0x3C4
+ * TODO: 90.49% match - register allocation mismatch (r28-r31 vs r25-r28 for
+ * this/pTextInst/side/i), stack temp offset (sp+0x14 vs sp+0x10 for copy-ctor
+ * temporaries). File uses -inline deferred. Compiler-internal allocation.
  */
-void SuperLoadingScene::BuildPlayerStrings(TLTextInstance*, int, bool)
+void SuperLoadingScene::BuildPlayerStrings(TLTextInstance* pTextInst, int side, bool checkConnected)
 {
+    BasicString<unsigned short, Detail::TempStringAllocator> str;
+    char narrowBuf[255] = { };
+    unsigned short wideBuf[255] = { };
+
+    for (int i = 0; i < 4; i++)
+    {
+        if (checkConnected)
+        {
+            if (!g_pFEInput->IsConnected((eFEINPUT_PAD)i))
+                continue;
+        }
+
+        if (nlSingleton<GameInfoManager>::s_pInstance->GetPlayingSide((unsigned short)i) != side)
+            continue;
+
+        nlSNPrintf(narrowBuf, 255, "{c:%02x%02x%02x}", PAD_COLOURS[i][0], PAD_COLOURS[i][1], PAD_COLOURS[i][2]);
+        nlStrToWcs(narrowBuf, wideBuf, 255);
+        str = str.AppendInPlace(wideBuf);
+
+        unsigned long key = CONTROLLER_TEXT[i];
+        nlLocalization* loc = g_pLocalization;
+        const unsigned short* locText;
+
+        if (loc->m_LookupTable == NULL)
+            locText = LocalizationTableNotFound;
+        else
+        {
+            nlLocalization::StringLookup* result = nlBSearch<nlLocalization::StringLookup, unsigned long>(key, loc->m_LookupTable, loc->m_pFile->StringCount);
+            if (result != NULL)
+                locText = loc->m_FirstString + result->StringOffset;
+            else
+                locText = MissingLocString;
+        }
+
+        str = str.AppendInPlace(locText);
+
+        static const unsigned short sLineBreak[] = { (unsigned short)'\n', 0 };
+        str = str.AppendInPlace(sLineBreak);
+    }
+
+    memcpy(side == 0 ? mPlayerStrings[0] : mPlayerStrings[1], str.c_str(), 255);
+    pTextInst->SetString(side == 0 ? mPlayerStrings[0] : mPlayerStrings[1]);
 }

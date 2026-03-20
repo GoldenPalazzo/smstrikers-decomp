@@ -62,7 +62,7 @@ public:
     // void StopStream(GCAudioStreaming::StereoAudioStream*, bool);
     // void FadeOutDone(AudioStreamTrack::StreamTrack::QUEUED_STREAM*);
     // void FadeOutDoneStartNext(AudioStreamTrack::StreamTrack::QUEUED_STREAM*);
-    // void Pause(unsigned long, bool);
+    void Pause(unsigned long, bool);
     void Resume();
     // void AttachStream(GCAudioStreaming::StereoAudioStream*, Audio::MasterVolume::VOLUME_GROUP, unsigned long, unsigned long, bool, bool);
 

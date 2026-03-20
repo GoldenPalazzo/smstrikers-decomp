@@ -3,6 +3,7 @@
 
 #include "Game/AI/DecisionEntity.h"
 #include "Game/AI/Fielder.h"
+#include "Game/AI/FuzzyVariant.h"
 #include "Game/Team.h"
 
 // void PositionOf<cFielder*>(cFielder*);
@@ -17,7 +18,7 @@ public:
     void InGoodWindupPosition(cFielder*);
     void CutAndBreak(cFielder*);
     void DoShooting(float, cDecisionEntity*);
-    void FurthestBackOnMyTeam(cFielder*);
+    static FuzzyVariant FurthestBackOnMyTeam(cFielder*);
     void UsePowerupOffensive(float, cDecisionEntity*);
     void GetPowerupTargetOffensive(cTeam*);
 };

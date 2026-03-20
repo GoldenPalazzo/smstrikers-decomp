@@ -207,8 +207,25 @@ void SHChooseSides2::BindChooseSideInstances()
 {
 }
 
+static inline void GetAllSides()
+{
+    for (int i = 0; i < 4; i++)
+    {
+        nlSingleton<GameInfoManager>::s_pInstance->GetPlayingSide((u16)i);
+    }
+}
+
+static inline void SetAllSides(IChooseSide& cs)
+{
+    for (int i = 0; i < 4; i++)
+    {
+        nlSingleton<GameInfoManager>::s_pInstance->SetPlayingSide((u16)i, (short)cs.mPlayingSides[i]);
+    }
+}
+
 /**
  * Offset/Address/Size: 0x0 | 0x800C4BC0 | size: 0x350
+ * TODO: 99.58% match - r4/r5 register swap for SetDifficulty arguments
  */
 void SHChooseSides2::Update(float fDeltaT)
 {
@@ -225,16 +242,10 @@ void SHChooseSides2::Update(float fDeltaT)
 
             if (mContext == PAUSE)
             {
-                for (int i = 0; i < 4; i++)
-                {
-                    nlSingleton<GameInfoManager>::s_pInstance->GetPlayingSide((u16)i);
-                }
+                GetAllSides();
             }
 
-            for (int i = 0; i < 4; i++)
-            {
-                nlSingleton<GameInfoManager>::s_pInstance->SetPlayingSide((u16)i, (short)mChooseSide.mPlayingSides[i]);
-            }
+            SetAllSides(mChooseSide);
 
             if (mContext == PAUSE)
             {

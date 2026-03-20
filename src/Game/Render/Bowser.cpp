@@ -608,9 +608,137 @@ void Bowser::ActionFall()
 
 /**
  * Offset/Address/Size: 0x1CE4 | 0x8015AA58 | size: 0x39C
+ * TODO: 99.24% match - f31=vx vs target f31=0.0f register allocation diff,
+ * likely -inline deferred vs -inline auto on decomp.me.
  */
 void Bowser::ActionJump()
 {
+    meBowserState = BOWSER_STATE_JUMP;
+    mAnimID = BOWSER_ANIM_JUMP;
+
+    cPN_SAnimController* controller = NULL;
+
+    if (cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList == NULL)
+    {
+        SlotPoolBase::BaseAddNewBlock(&cPN_SAnimController::m_SAnimControllerSlotPool, sizeof(cPN_SAnimController));
+    }
+
+    if (cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList != NULL)
+    {
+        controller = (cPN_SAnimController*)cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList;
+        cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList = cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList->m_next;
+    }
+
+    if (controller != NULL)
+    {
+        controller = __ct__19cPN_SAnimControllerFP6cSAnimPC12AnimRetarget9ePlayModePFUiP19cPN_SAnimController_vUib(
+            controller,
+            mpAnim[BOWSER_ANIM_JUMP],
+            (const AnimRetarget*)0,
+            PM_HOLD,
+            (void (*)(unsigned int, cPN_SAnimController*))0,
+            (unsigned int)0,
+            (bool)0);
+    }
+
+    cPN_Blender* blender;
+
+    if (mpFeatherBlender->GetChild(0) != NULL)
+    {
+        blender = NULL;
+
+        if (cPN_Blender::m_BlenderSlotPool.m_FreeList == NULL)
+        {
+            SlotPoolBase::BaseAddNewBlock(&cPN_Blender::m_BlenderSlotPool, sizeof(cPN_Blender));
+        }
+
+        if (cPN_Blender::m_BlenderSlotPool.m_FreeList != NULL)
+        {
+            blender = (cPN_Blender*)cPN_Blender::m_BlenderSlotPool.m_FreeList;
+            cPN_Blender::m_BlenderSlotPool.m_FreeList = cPN_Blender::m_BlenderSlotPool.m_FreeList->m_next;
+        }
+
+        if (blender != NULL)
+        {
+            blender = __ct__11cPN_BlenderFP9cPoseNodeP9cPoseNodef(blender, *mpFeatherBlender->GetChildPtr(0), controller, 0.2f);
+        }
+    }
+    else
+    {
+        blender = (cPN_Blender*)controller;
+    }
+
+    mpFeatherBlender->SetChild(0, blender);
+    mpAnimController = controller;
+
+    nlVector3 v3JumpPos = g_pBall->m_v3Position;
+    v3JumpPos.f.x += nlRandomf(5.0f, &nlDefaultSeed) - 1.5f;
+
+    float fMaxTilt = g_pGame->m_pGameTweaks->unk32C;
+    if (v3JumpPos.f.x > 0.0f && mfYAxisTilt <= -fMaxTilt)
+    {
+        v3JumpPos.f.x *= -1.0f;
+    }
+    else if (v3JumpPos.f.x < 0.0f && mfYAxisTilt >= fMaxTilt)
+    {
+        v3JumpPos.f.x *= -1.0f;
+    }
+
+    if (v3JumpPos.f.y < 0.0f)
+    {
+        v3JumpPos.f.y += 1.0f + nlRandomf(5.0f, &nlDefaultSeed);
+    }
+    else
+    {
+        v3JumpPos.f.y -= 1.0f + nlRandomf(5.0f, &nlDefaultSeed);
+    }
+
+    float goalLineX = cField::GetGoalLineX(1U);
+    float limitX = goalLineX - 5.0f;
+    if ((float)fabs(v3JumpPos.f.x) > limitX)
+    {
+        if (v3JumpPos.f.x > 0.0f)
+        {
+            v3JumpPos.f.x = limitX;
+        }
+        else
+        {
+            v3JumpPos.f.x = -limitX;
+        }
+    }
+
+    float sidelineY = cField::GetSidelineY(1U);
+    float limitY = sidelineY - 5.0f;
+    if ((float)fabs(v3JumpPos.f.y) > limitY)
+    {
+        if (v3JumpPos.f.y < 0.0f)
+        {
+            v3JumpPos.f.y = -limitY;
+        }
+        else
+        {
+            v3JumpPos.f.y = limitY;
+        }
+    }
+
+    float vx = v3JumpPos.f.x - mv3Position.f.x;
+    float vy = v3JumpPos.f.y - mv3Position.f.y;
+
+    nlVector3 v3JumpVel;
+    v3JumpVel.f.x = vx;
+    v3JumpVel.f.y = vy;
+    v3JumpVel.f.z = v3JumpPos.f.z - mv3Position.f.z;
+    v3JumpVel.f.z = 0.0f;
+
+    float speed = nlGetLength3D(vx, vy, v3JumpVel.f.z);
+
+    v3JumpVel.f.y = vy * 0.5f;
+    v3JumpVel.f.x = vx * 0.5f;
+    v3JumpVel.f.z *= 0.5f;
+
+    mfDesiredSpeed = 2.2f * speed;
+    maDesiredFacingDirection = (u16)(s32)(10430.378f * nlATan2f(v3JumpVel.f.y, v3JumpVel.f.x));
+    mv3Velocity = v3JumpVel;
 }
 
 extern nlVector3 gv3BowserHomePosition;

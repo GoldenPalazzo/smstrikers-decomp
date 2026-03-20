@@ -60,8 +60,8 @@ UpdateResult IChooseSide::UpdateForFE(float, eFEINPUT_PAD*)
 
 /**
  * Offset/Address/Size: 0xCDC | 0x800C4120 | size: 0x2F8
- * TODO: 95.89% match - loop index/base pointer callee-save allocation (r29/r30/r31) and
- * ready-indicator unrolled branch layout still differ in disconnected path.
+ * TODO: 95.97% match - loop index/base pointer callee-save allocation (r29/r30/r31)
+ * and residual branch/register drift in disconnected ready-indicator flow.
  */
 UpdateResult IChooseSide::UpdateForPause(float, eFEINPUT_PAD* pad)
 {
@@ -151,24 +151,30 @@ UpdateResult IChooseSide::UpdateForPause(float, eFEINPUT_PAD* pad)
                 else if (mPlayingSides[0] != -1)
                 {
                     allReady = 0;
+                    goto done_ready;
                 }
-                else if (mPlayerReady[1])
+
+                if (mPlayerReady[1])
                 {
                     allReady = 1;
                 }
                 else if (mPlayingSides[1] != -1)
                 {
                     allReady = 0;
+                    goto done_ready;
                 }
-                else if (mPlayerReady[2])
+
+                if (mPlayerReady[2])
                 {
                     allReady = 1;
                 }
                 else if (mPlayingSides[2] != -1)
                 {
                     allReady = 0;
+                    goto done_ready;
                 }
-                else if (mPlayerReady[3])
+
+                if (mPlayerReady[3])
                 {
                     allReady = 1;
                 }
@@ -177,6 +183,7 @@ UpdateResult IChooseSide::UpdateForPause(float, eFEINPUT_PAD* pad)
                     allReady = 0;
                 }
 
+            done_ready:
                 if ((u8)allReady == 1)
                     readyIndicator->m_bVisible = true;
                 else
@@ -214,9 +221,9 @@ void IChooseSide::CheckControllers(int)
 
 /**
  * Offset/Address/Size: 0x4C0 | 0x800C3904 | size: 0x360
- * TODO: 96.98% match - extra loop base pointer register (`r31`) for instance-table
- * accesses; dual induction variable for mPlayingSides/mInstanceTable that decomp.me MWCC
- * doesn't merge into one (target uses single r30 for both).
+ * TODO: 97.05% match - extra loop base pointer register (r31) for instance-table accesses;
+ * -inline deferred merges mPlayingSides/mInstanceTable into single r30, decomp.me -inline auto does not.
+ * Also extra `li r4, 0` for allReady loop init (same -inline deferred issue as SetReady).
  */
 void IChooseSide::ResetAndPositionControllers(bool reset)
 {
@@ -233,47 +240,21 @@ void IChooseSide::ResetAndPositionControllers(bool reset)
         if (readyIndicator != NULL)
         {
             int allReady = 0;
-            if (mPlayerReady[0])
+            for (int j = 0; j < 4; j++)
             {
-                allReady = 1;
-            }
-            else if (mPlayingSides[0] != -1)
-            {
-                allReady = 0;
-            }
-            else if (mPlayerReady[1])
-            {
-                allReady = 1;
-            }
-            else if (mPlayingSides[1] != -1)
-            {
-                allReady = 0;
-            }
-            else if (mPlayerReady[2])
-            {
-                allReady = 1;
-            }
-            else if (mPlayingSides[2] != -1)
-            {
-                allReady = 0;
-            }
-            else if (mPlayerReady[3])
-            {
-                allReady = 1;
-            }
-            else if (mPlayingSides[3] != -1)
-            {
-                allReady = 0;
+                if (mPlayerReady[j])
+                    allReady = 1;
+                else if (mPlayingSides[j] != -1)
+                {
+                    allReady = 0;
+                    break;
+                }
             }
 
             if ((u8)allReady == 1)
-            {
                 readyIndicator->m_bVisible = true;
-            }
             else
-            {
                 readyIndicator->m_bVisible = false;
-            }
         }
 
         if (!g_pFEInput->IsConnected((eFEINPUT_PAD)i))

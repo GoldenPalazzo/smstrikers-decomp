@@ -82,25 +82,16 @@ void FEAnimation::Update(float arg0)
 
 /**
  * Offset/Address/Size: 0x19C | 0x8020E71C | size: 0x298
+ * TODO: 56.44% match - stack frame size and FP register allocation still differ.
  */
 void FEAnimation::AnimateTargetAtTimeWithVector3(float arg0)
 {
-    f32 sp34;
-    f32 sp30;
-    f32 sp2C;
-    f32 sp28;
-    f32 sp24;
-    f32 sp20;
-    f32 sp1C;
-    f32 sp18;
-    f32 sp14;
-    f32 sp10;
-    f32 spC;
-    f32 sp8;
+    nlVector4 sp28;
+    nlVector4 sp18;
+    nlVector4 sp8;
     f32 temp_f0;
-    f32 temp_f0_2;
-    f32 temp_f29;
     f32 temp_f2;
+    f32 temp_f29;
     f32 var_f29;
     f32 var_f30;
     f32 var_f31;
@@ -119,7 +110,7 @@ void FEAnimation::AnimateTargetAtTimeWithVector3(float arg0)
         var_f29 = temp_f0;
     }
 loop_4:
-    if ((var_f29 > var_r31->unkC) && ((var_r31->unk4 != -1.0f) || (var_r31->unk8 != -1.0f)))
+    if ((var_f29 > var_r31->unkC) && ((var_r31->unk4 != 0.0f) || (var_r31->unk8 != 0.0f)))
     {
         var_r31 = var_r31->m_next;
         if (nlDLRingIsEnd<v3AnimationKeyframe>((v3AnimationKeyframe*)this->m_DLRingHead, var_r31) == 0)
@@ -134,39 +125,42 @@ loop_4:
         var_f30 = var_r31->unk10;
         var_f3 = var_r31->unk20;
     }
-    else if (!(var_f29 > temp_f2) || (var_r31->unk4 != -1.0f))
+    else if (!(var_f29 > temp_f2) || (var_r31->unk4 != 0.0f))
     {
         temp_r29 = var_r31->m_prev;
-        temp_f0_2 = temp_r29->unkC;
-        // Initialize with zeros (equivalent to @211, @212, @213 constants)
-        sp28 = 0.0f;
-        sp2C = 0.0f;
-        temp_f29 = (var_f29 - temp_f0_2) / (temp_f2 - temp_f0_2);
-        sp30 = 0.0f;
-        sp34 = 0.0f;
-        sp28 = temp_r29->unk0;
-        sp2C = temp_r29->unk4;
-        sp30 = temp_r29->unk8;
-        sp34 = var_r31->unk0;
-        sp18 = 0.0f;
-        sp1C = 0.0f;
-        sp20 = 0.0f;
-        sp24 = 0.0f;
-        sp18 = temp_r29->unk10;
-        sp1C = temp_r29->unk14;
-        sp20 = temp_r29->unk18;
-        sp24 = var_r31->unk10;
-        sp8 = 0.0f;
-        spC = 0.0f;
-        sp10 = 0.0f;
-        sp14 = 0.0f;
-        sp8 = temp_r29->unk20;
-        spC = temp_r29->unk24;
-        sp10 = temp_r29->unk28;
-        sp14 = var_r31->unk20;
-        var_f31 = nlBezier(&sp28, 3, temp_f29);
-        var_f30 = nlBezier(&sp18, 3, temp_f29);
-        var_f3 = nlBezier(&sp8, 3, temp_f29);
+        temp_f0 = temp_r29->unkC;
+
+        sp28.f.x = 0.0f;
+        sp28.f.y = 0.0f;
+        temp_f29 = (var_f29 - temp_f0) / (temp_f2 - temp_f0);
+        sp28.f.z = 0.0f;
+        sp28.f.w = 0.0f;
+        sp28.f.x = temp_r29->unk0;
+        sp28.f.y = temp_r29->unk4;
+        sp28.f.z = temp_r29->unk8;
+        sp28.f.w = var_r31->unk0;
+
+        sp18.f.x = 0.0f;
+        sp18.f.y = 0.0f;
+        sp18.f.z = 0.0f;
+        sp18.f.w = 0.0f;
+        sp18.f.x = temp_r29->unk10;
+        sp18.f.y = temp_r29->unk14;
+        sp18.f.z = temp_r29->unk18;
+        sp18.f.w = var_r31->unk10;
+
+        sp8.f.x = 0.0f;
+        sp8.f.y = 0.0f;
+        sp8.f.z = 0.0f;
+        sp8.f.w = 0.0f;
+        sp8.f.x = temp_r29->unk20;
+        sp8.f.y = temp_r29->unk24;
+        sp8.f.z = temp_r29->unk28;
+        sp8.f.w = var_r31->unk20;
+
+        var_f31 = nlBezier(&sp28.f.x, 3, temp_f29);
+        var_f30 = nlBezier(&sp18.f.x, 3, temp_f29);
+        var_f3 = nlBezier(&sp8.f.x, 3, temp_f29);
     }
     else
     {

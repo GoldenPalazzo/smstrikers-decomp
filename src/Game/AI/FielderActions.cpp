@@ -946,11 +946,9 @@ void cFielder::ActionLateOneTimerFromVolley(float)
  * Offset/Address/Size: 0x5DF0 | 0x8002C928 | size: 0x36C
  */
 /**
- * TODO: 93.22% match on decomp.me (scratch 91bVQ) - remaining diffs are register
- * allocation and instruction scheduling caused by -inline deferred vs -inline auto.
- * File uses -inline deferred but decomp.me tests with -inline auto.
- * Remaining diffs: f0/f1/f2 swap in int-to-float, sin/cos f5/f7 swap,
- * playback speed register, moveAdjustment scheduling, goal section fMaxGoalX timing.
+ * TODO: 95.00% match (scratch hvdpW) - 10 register diffs in fMaxSimulatedTime
+ * int-to-float conversion (offsets 60-80): f0/f1/f2 cyclically rotated by 1.
+ * Deep MWCC register allocator quirk, not fixable via C-level changes.
  */
 void cFielder::DoCommonInitActionLooseBall(const nlVector3& rv3OneTimerTarget)
 {
@@ -1014,8 +1012,8 @@ void cFielder::DoCommonInitActionLooseBall(const nlVector3& rv3OneTimerTarget)
     nlSinCos(&fSin, &fCos, m_aActualFacingDirection);
 
     nlVector3* pContactOffsetWorld = &v3ContactOffsetWorld;
-    float ySin = v3ContactOffsetLocal.f.y * fSin;
     float xSin = v3ContactOffsetLocal.f.x * fSin;
+    float ySin = v3ContactOffsetLocal.f.y * fSin;
     pContactOffsetWorld->f.z = v3ContactOffsetLocal.f.z;
     pContactOffsetWorld->f.x = (v3ContactOffsetLocal.f.x * fCos) - ySin;
     pContactOffsetWorld->f.y = (v3ContactOffsetLocal.f.y * fCos) + xSin;
@@ -1035,9 +1033,8 @@ void cFielder::DoCommonInitActionLooseBall(const nlVector3& rv3OneTimerTarget)
 
     m_pPhysicsCharacter->m_pPlayerPlayerColumn->GetRadius(&fPhysicsRadius);
 
-    float fGoalLineX = cField::GetGoalLineX(1U);
+    float fMaxGoalX = cField::GetGoalLineX(1U) - 0.5f;
     float fNetWidth = cNet::m_fNetWidth;
-    float fMaxGoalX = fGoalLineX - 0.5f;
     float fMaxGoalY = (0.5f * fNetWidth) + 1.5f;
     float fMinGoalY = ((0.5f * fNetWidth) - cNet::GetPostRadius()) - fPhysicsRadius;
 
@@ -1548,8 +1545,152 @@ void cFielder::ActionRunningWB(float dt)
 /**
  * Offset/Address/Size: 0x3F28 | 0x8002AA60 | size: 0x3AC
  */
-void cFielder::ActionRunningWBTurbo(float)
+void cFielder::ActionRunningWBTurbo(float fDeltaT)
 {
+    cGlobalPad* pPad = GetGlobalPad();
+    if (pPad != NULL && m_pBall != NULL)
+    {
+        if (m_pController->IsTurboPressed())
+        {
+            if (m_pController->GetMovementStickMagnitude() > 0.001f)
+            {
+                bool bShotMeterActive = false;
+                eShotMeterState state = m_pShotMeter->m_eShotMeterState;
+                if (state == SHOT_METER_ACTIVE || state == SHOT_METER_STS_ACTIVE || state == SHOT_METER_STS_TRANSISTION)
+                {
+                    bShotMeterActive = true;
+                }
+
+                if (!bShotMeterActive)
+                    goto setTurboSpeed;
+            }
+        }
+
+        m_fDesiredSpeed = ((FielderTweaks*)m_pTweaks)->fRunningWBSpeed;
+        goto afterSpeed;
+
+    setTurboSpeed:
+        m_fDesiredSpeed = ((FielderTweaks*)m_pTweaks)->fRunningWBTurboSpeedLevel1;
+    }
+
+afterSpeed:
+    if (m_fDesiredSpeed > ((FielderTweaks*)m_pTweaks)->fRunningWBSpeed + 0.1f)
+    {
+        switch (m_eAnimID)
+        {
+        case 0x1D:
+        default:
+            m_fDesiredSpeed = ((FielderTweaks*)m_pTweaks)->fRunningWBTurboSpeedLevel1;
+            break;
+        case 0x1E:
+            m_fDesiredSpeed = ((FielderTweaks*)m_pTweaks)->fRunningWBTurboSpeedLevel2;
+            break;
+        case 0x1F:
+            m_fDesiredSpeed = ((FielderTweaks*)m_pTweaks)->fRunningWBTurboSpeedLevel3;
+            break;
+        }
+    }
+
+    if (m_pCurrentAnimController->m_fTime > 0.5f || m_pCurrentAnimController->m_fTime < -0.5f)
+    {
+        if (m_pBall != NULL)
+        {
+            u16 aNewFacingDirection = SeekDirection(
+                m_aActualFacingDirection,
+                m_aDesiredFacingDirection,
+                ((FielderTweaks*)m_pTweaks)->fRunningWBTurboDirectionSeekSpeed,
+                ((FielderTweaks*)m_pTweaks)->fRunningWBTurboDirectionSeekFalloff,
+                fDeltaT);
+
+            SetFacingDirection(aNewFacingDirection);
+            m_aActualMovementDirection = aNewFacingDirection;
+
+            s16 nFacingDelta = (s16)(m_aDesiredFacingDirection - m_aActualFacingDirection);
+
+            if (TestQueuedActions())
+            {
+                m_eLastPadAction = PAD_NONE;
+                goto done;
+            }
+
+            if (m_fDesiredSpeed < ((FielderTweaks*)m_pTweaks)->fRunningWBTurboSpeedLevel1 - 0.1f
+                || m_ePowerup == POWER_UP_MUSHROOM || m_ePowerup == POWER_UP_STAR)
+            {
+                SetAction(ACTION_RUNNING_WB);
+                mActionRunningWBVars.bWaitForAnimToFinish = false;
+                mActionRunningVars.eLastStrafeDirection = STRAFE_IDLE;
+                m_aActualMovementDirection = m_aActualFacingDirection;
+                goto done;
+            }
+
+            if (m_pCurrentAnimController->m_fTime > 0.5f)
+            {
+                int absDelta = nFacingDelta;
+                if (nFacingDelta < 0)
+                    absDelta = -nFacingDelta;
+
+                if ((u16)absDelta > 0x2000)
+                {
+                    SetAction(ACTION_RUNNING_WB_TURBO_TURN);
+
+                    static int RunningWBTurboTurnAnim[4] = { 0x21, 0x22, 0x23, 0x24 };
+
+                    m_fDesiredSpeed = ((FielderTweaks*)m_pTweaks)->fRunningWBTurboTurnSpeed;
+                    int facingDiff = m_aDesiredFacingDirection - m_aActualFacingDirection;
+                    SetAnimState(RunningWBTurboTurnAnim[((facingDiff + 0x2000) >> 14) & 3], true, 0.2f, false, false);
+
+                    InitMovementFromAnim(
+                        CalcAnimTurnAdjust(m_aActualFacingDirection, m_aDesiredFacingDirection, m_eAnimID),
+                        v3Zero,
+                        1.0f,
+                        false);
+                }
+                else
+                {
+                    switch (m_eAnimID)
+                    {
+                    case 0x1D:
+                        SetRunTurboAnimState(0x1E, mActionRunningWBTurboVars.bForcedMirrorSwap);
+                        break;
+                    case 0x1E:
+                        SetRunTurboAnimState(0x1F, mActionRunningWBTurboVars.bForcedMirrorSwap);
+                        break;
+                    case 0x1F:
+                        SetRunTurboAnimState(0x1F, mActionRunningWBTurboVars.bForcedMirrorSwap);
+                        break;
+                    default:
+                        SetRunTurboAnimState(0x1D, false);
+                        break;
+                    }
+                }
+            }
+
+            goto done;
+        }
+    }
+
+    if (m_pBall == NULL)
+    {
+        if (ShouldStartCrossBlend(7))
+        {
+            SetAction(ACTION_NEED_ACTION);
+        }
+    }
+
+done:
+    switch (m_eAnimID)
+    {
+    case 0x1D:
+    default:
+        m_fDesiredSpeed = ((FielderTweaks*)m_pTweaks)->fRunningWBTurboSpeedLevel1;
+        break;
+    case 0x1E:
+        m_fDesiredSpeed = ((FielderTweaks*)m_pTweaks)->fRunningWBTurboSpeedLevel2;
+        break;
+    case 0x1F:
+        m_fDesiredSpeed = ((FielderTweaks*)m_pTweaks)->fRunningWBTurboSpeedLevel3;
+        break;
+    }
 }
 
 /**

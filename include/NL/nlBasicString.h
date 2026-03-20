@@ -119,15 +119,15 @@ public:
 
     BasicString(const BasicString& other)
     {
-        BasicStringData<CharT>* data;
-        if (other.m_data)
+        BasicStringData<CharT>* data = other.m_data;
+        if (data != 0)
         {
-            other.m_data->mRefCount++;
+            data->mRefCount++;
             data = other.m_data;
         }
         else
         {
-            data = nullptr;
+            data = 0;
         }
         m_data = data;
     }
@@ -155,6 +155,8 @@ public:
     }
 
     BasicString& operator=(BasicString other);
+
+    BasicString& AppendInPlace(const CharT* str);
 
     const CharT* c_str() const
     {

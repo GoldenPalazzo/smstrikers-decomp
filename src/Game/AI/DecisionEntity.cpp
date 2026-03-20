@@ -205,16 +205,110 @@ sPlayParams& cDecisionEntity::GetLastPlayParams()
     return m_LastSelectedAction.m_sPlayParams;
 }
 
+extern "C" ScriptAction* __ct__12ScriptActionF17eScriptActionTypef(ScriptAction*, eScriptActionType, float);
+
 /**
  * Offset/Address/Size: 0x9D4 | 0x80018930 | size: 0x3E0
+ * TODO: 92.04% match - FuzzyVariant operator= scheduling differs from target
+ *       (2-register rotation vs target's 3-register rotation in opt1/opt2 copy,
+ *       prev register r4 vs target r5)
  */
-ScriptAction* cDecisionEntity::QueueActionSetDesire(int, float, float, FuzzyVariant, FuzzyVariant)
+ScriptAction* cDecisionEntity::QueueActionSetDesire(int eDesireType, float fConfidence, float fDuration, FuzzyVariant param1, FuzzyVariant param2)
 {
-    FORCE_DONT_INLINE;
-    return NULL;
-}
+    ScriptAction* pNewAction = FindDesireAction(eDesireType, param1, param2);
 
-extern "C" ScriptAction* __ct__12ScriptActionF17eScriptActionTypef(ScriptAction*, eScriptActionType, float);
+    if (pNewAction != NULL)
+    {
+        if (pNewAction->m_fConfidence < fConfidence)
+        {
+            nlListRemoveElement<ScriptAction>(&m_lQueuedActions.m_pStart, pNewAction, &m_lQueuedActions.m_pEnd);
+        }
+        else
+        {
+            pNewAction = NULL;
+        }
+    }
+    else
+    {
+        ScriptAction* action = NULL;
+
+        if (ScriptAction::m_ScriptActionSlotPool.m_FreeList == NULL)
+        {
+            SlotPoolBase::BaseAddNewBlock(&ScriptAction::m_ScriptActionSlotPool, sizeof(ScriptAction));
+        }
+
+        if (ScriptAction::m_ScriptActionSlotPool.m_FreeList != NULL)
+        {
+            action = (ScriptAction*)ScriptAction::m_ScriptActionSlotPool.m_FreeList;
+            ScriptAction::m_ScriptActionSlotPool.m_FreeList = ScriptAction::m_ScriptActionSlotPool.m_FreeList->m_next;
+        }
+
+        if (action != NULL)
+            action = __ct__12ScriptActionF17eScriptActionTypef(action, SAT_SET_DESIRE, fConfidence);
+
+        pNewAction = action;
+    }
+
+    if (pNewAction != NULL)
+    {
+        pNewAction->m_fConfidence = fConfidence;
+        ScriptAction* prev = NULL;
+        pNewAction->m_sDesireParams.eDesireType = (eFielderDesireState)eDesireType;
+        pNewAction->m_sDesireParams.opt1 = param1;
+        pNewAction->m_sDesireParams.fDuration = fDuration;
+        pNewAction->m_sDesireParams.opt2 = param2;
+
+        ScriptAction* cur = m_lQueuedActions.m_pStart;
+
+        if (cur == NULL)
+        {
+            nlListAddStart<ScriptAction>(&m_lQueuedActions.m_pStart, pNewAction, &m_lQueuedActions.m_pEnd);
+            goto done;
+        }
+
+        for (; cur != NULL; prev = cur, cur = cur->next)
+        {
+            float newConf = pNewAction->m_fConfidence;
+            float curConf = cur->m_fConfidence;
+            int cmp;
+            if (curConf == newConf)
+                cmp = 0;
+            else if (curConf > newConf)
+                cmp = -1;
+            else
+                cmp = 1;
+
+            if (cmp > 0)
+            {
+                if (prev == NULL)
+                {
+                    nlListAddStart<ScriptAction>(&m_lQueuedActions.m_pStart, pNewAction, &m_lQueuedActions.m_pEnd);
+                }
+                else if (prev == m_lQueuedActions.m_pEnd)
+                {
+                    nlListAddEnd<ScriptAction>(&m_lQueuedActions.m_pStart, &m_lQueuedActions.m_pEnd, pNewAction);
+                }
+                else
+                {
+                    ScriptAction* next = prev->next;
+                    prev->next = pNewAction;
+                    pNewAction->next = next;
+                }
+                break;
+            }
+        }
+
+        if (cur == NULL)
+        {
+            nlListAddEnd<ScriptAction>(&m_lQueuedActions.m_pStart, &m_lQueuedActions.m_pEnd, pNewAction);
+        }
+
+    done:
+        m_pLastQueuedAction = pNewAction;
+    }
+
+    return pNewAction;
+}
 
 /**
  * Offset/Address/Size: 0x830 | 0x8001878C | size: 0x1A4
@@ -294,14 +388,14 @@ done:
 /**
  * Offset/Address/Size: 0x304 | 0x80018260 | size: 0x52C
  */
-void cDecisionEntity::FindDesireAction(int, FuzzyVariant, FuzzyVariant)
+ScriptAction* cDecisionEntity::FindDesireAction(int, FuzzyVariant, FuzzyVariant)
 {
+    FORCE_DONT_INLINE;
+    return NULL;
 }
 
 /**
  * Offset/Address/Size: 0x0 | 0x80017F5C | size: 0x304
- * TODO: 94.72% match - MWCC CSE reuses r0 from initial NULL check across switch
- * dispatch instead of reloading from 0x94(r28); instruction order at case 3 entry
  */
 bool cDecisionEntity::SelectAction(eScriptActionSelection actionSelection, float)
 {
@@ -317,12 +411,12 @@ bool cDecisionEntity::SelectAction(eScriptActionSelection actionSelection, float
     switch (actionSelection)
     {
     case SAS_BEST_CONFIDENCE:
-        pSelectedAction = pQueuedActions->m_pStart;
+        pSelectedAction = m_lQueuedActions.m_pStart;
         break;
 
     case SAS_BEST_CHANCE:
     {
-        ScriptAction* pAction = pQueuedActions->m_pStart;
+        ScriptAction* pAction = m_lQueuedActions.m_pStart;
         while (pAction != NULL)
         {
             if (pAction->RollChanceDice())
@@ -349,7 +443,7 @@ bool cDecisionEntity::SelectAction(eScriptActionSelection actionSelection, float
     case SAS_BEST_CONFIDENCE_TIMES_CHANCE:
     {
         float bestChance = 0.0f;
-        ScriptAction* pAction = pQueuedActions->m_pStart;
+        ScriptAction* pAction = m_lQueuedActions.m_pStart;
 
         while (pAction != NULL)
         {
@@ -368,7 +462,7 @@ bool cDecisionEntity::SelectAction(eScriptActionSelection actionSelection, float
 
     case SAS_BEST_CONFIDENCE_MIN_CHANCE_THRESHOLD:
     {
-        ScriptAction* pAction = pQueuedActions->m_pStart;
+        ScriptAction* pAction = m_lQueuedActions.m_pStart;
         float minChance = 0.5f;
 
         while (pAction != NULL)
@@ -391,7 +485,8 @@ bool cDecisionEntity::SelectAction(eScriptActionSelection actionSelection, float
                 float bestValue = pAction->CalcSelectionChance();
                 bestValue *= confidence;
                 confidence = pAction->next->m_fConfidence;
-                if (pAction->next->CalcSelectionChance() * confidence > bestValue)
+                float chance = pAction->next->CalcSelectionChance();
+                if (chance * confidence > bestValue)
                 {
                     pSelectedAction = pAction->next;
                 }
@@ -401,7 +496,7 @@ bool cDecisionEntity::SelectAction(eScriptActionSelection actionSelection, float
     }
 
     case SAS_WORST_CONFIDENCE:
-        pSelectedAction = pQueuedActions->m_pEnd;
+        pSelectedAction = m_lQueuedActions.m_pEnd;
         break;
 
     default:

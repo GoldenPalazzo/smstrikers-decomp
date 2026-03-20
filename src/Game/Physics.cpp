@@ -226,14 +226,13 @@ PhysicsRoundedCorner::~PhysicsRoundedCorner()
 
 /**
  * Offset/Address/Size: 0x3F0 | 0x80132F00 | size: 0x338
- * TODO: 95.7% match - remaining diffs are -inline deferred vs -inline auto optimizer
- *       differences: i/offset r29/r28 register swap, f0/f1 for centre.x in nlVec3Set,
- *       m31 control flow (hoisted load + shared li vs duplicate), v1/v2 float register naming.
+ * TODO: 97.59% match - remaining diffs are -inline deferred vs -inline auto float register
+ *       allocation: f0/f1 swap for centre.x in nlVec3Set, m31 control flow (hoisted load
+ *       + shared li vs duplicate), v1/v2 float register naming. Integer regs now correct.
  */
 void PhysicsLoader::ConstructStaticPhysicsPrimitives(CharacterPhysicsData* pPhysicsData)
 {
     unsigned int i = 0;
-    unsigned int offset = 0;
     ListEntry<PhysicsObject*>** pStaticTail = &g_StaticPhysicsPrimitives.m_Tail;
     ListEntry<PhysicsObject*>** pStaticHead = &g_StaticPhysicsPrimitives.m_Head;
     ListEntry<PhysicsObject*>** pNetTail = &g_NetPhysicsObjects.m_Tail;
@@ -242,7 +241,7 @@ void PhysicsLoader::ConstructStaticPhysicsPrimitives(CharacterPhysicsData* pPhys
     while (i < pPhysicsData->physicsElementCount)
     {
         PhysicsObject* obj = NULL;
-        CharacterPhysicsElement* physElement = (CharacterPhysicsElement*)((char*)pPhysicsData->pPhysicsElements + offset);
+        CharacterPhysicsElement* physElement = &pPhysicsData->pPhysicsElements[i];
 
         switch (physElement->uPrimitiveType)
         {
@@ -346,7 +345,6 @@ void PhysicsLoader::ConstructStaticPhysicsPrimitives(CharacterPhysicsData* pPhys
 
         sbNonMovingAABBsInitialized = false;
         i++;
-        offset += 0xA0;
     }
 }
 

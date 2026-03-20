@@ -9,8 +9,8 @@ extern "C" void __ct__12SlotPoolBaseFv(void*);
 
 /**
  * Offset/Address/Size: 0x0 | 0x801D92C0 | size: 0x36C
- * TODO: 96.2% match - pModel/layer register swap (r25/r26), pPacket/pair_ptr/numPackets/index
- *       register rotation, extra mr before rlwimi, ternary beq+b vs bne
+ * TODO: 97.6% match - pModel/layer register swap (r25/r26), pPacket r31 vs r29,
+ *       extra mr before rlwimi, numPackets/index register rotation
  */
 s32 GLRenderList::AttachModel(const glModel* pModel, unsigned long layer)
 {
@@ -40,7 +40,7 @@ s32 GLRenderList::AttachModel(const glModel* pModel, unsigned long layer)
             for (unsigned long i = 0; i < numPackets; i++)
             {
                 glModelPacket* newPacket = gl_Modify(pPacket);
-                glplatAttachPacket((eGLView)m_unk_0x00, layer, newPacket != NULL ? newPacket : pPacket);
+                glplatAttachPacket((eGLView)m_unk_0x00, layer, newPacket == NULL ? pPacket : newPacket);
                 pPacket = (glModelPacket*)((u8*)pPacket + 0x4A);
             }
         }

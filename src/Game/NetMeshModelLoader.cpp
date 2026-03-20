@@ -487,7 +487,6 @@ void NetMeshModelLoader::AddTriangleFromGeometry(const glModelPacket& packet, un
 
 /**
  * Offset/Address/Size: 0x780 | 0x801308D8 | size: 0x300
- * TODO: 98.46% match - r29/r31 register swap between maxVertex/iter and maxVertex+1/readyIndicator
  */
 void NetMeshModelLoader::ProcessEdges(const glModelPacket& packet, int maxVertex)
 {
@@ -499,8 +498,11 @@ void NetMeshModelLoader::ProcessEdges(const glModelPacket& packet, int maxVertex
         unsigned int m_NumStackEntries;
     };
 
+    EdgeIter* iter;
+    unsigned char* allReady;
     unsigned char* readyIndicator;
-    unsigned char* allReady = (unsigned char*)nlMalloc(maxVertex + 1, 8, false);
+
+    allReady = (unsigned char*)nlMalloc(maxVertex + 1, 8, false);
     {
         int i = 0;
         while (i < maxVertex)
@@ -521,7 +523,7 @@ void NetMeshModelLoader::ProcessEdges(const glModelPacket& packet, int maxVertex
     }
 
     EdgeTree* edgeTree = (EdgeTree*)m_EdgeList;
-    EdgeIter* iter = (EdgeIter*)nlMalloc(sizeof(EdgeIter), 8, false);
+    iter = (EdgeIter*)nlMalloc(sizeof(EdgeIter), 8, false);
 
     if (iter != NULL)
     {
@@ -547,15 +549,16 @@ void NetMeshModelLoader::ProcessEdges(const glModelPacket& packet, int maxVertex
 
     while (iter->m_NumStackEntries != 0)
     {
+        unsigned short index1;
+        unsigned short index2;
         EdgeEntry* edgeEntry = iter->m_Stack[iter->m_NumStackEntries - 1];
 
         if (edgeEntry->key.mpPacket == &packet)
         {
-            int edgeCount = edgeEntry->value;
-            unsigned short index1 = edgeEntry->key.mpVertex1->mIndex;
-            unsigned short index2 = edgeEntry->key.mpVertex2->mIndex;
+            index1 = edgeEntry->key.mpVertex1->mIndex;
+            index2 = edgeEntry->key.mpVertex2->mIndex;
 
-            if (edgeCount == 1)
+            if (edgeEntry->value == 1)
             {
                 allReady[index1] = 1;
                 allReady[index2] = 1;

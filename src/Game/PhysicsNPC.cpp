@@ -1,7 +1,15 @@
 #include "Game/Physics/PhysicsNPC.h"
+#include "Game/Physics/PhysicsCharacter.h"
+#include "Game/Physics/PhysicsAIBall.h"
+#include "Game/Physics/PhysicsShell.h"
+#include "Game/Physics/PhysicsBanana.h"
+#include "Game/Physics/PhysicsFakeBall.h"
 #include "Game/Render/SkinAnimatedMovableNPC.h"
+#include "Game/Render/ChainChomp.h"
 
 #include "Game/Player.h"
+#include "Game/Ball.h"
+#include "Game/Powerups.h"
 
 extern CollisionSpace* g_CollisionSpace;
 
@@ -28,221 +36,176 @@ void PhysicsNPC::SetCallbackFunction(CallbackFn cb)
 
 /**
  * Offset/Address/Size: 0xC0 | 0x8013B578 | size: 0x378
+ * TODO: 99.05% match - r4/r28 register scheduling for aiChar, f2/f1 float load order in callbacks
  */
 ContactType PhysicsNPC::Contact(PhysicsObject* other, dContact* contact, int what)
 {
     nlVector3 position;
     GetPosition(&position);
-
+    cCharacter* aiChar;
+    cBall* ball;
     int objectType = other->GetObjectType();
-
-    switch (objectType - 4)
+    switch (objectType)
     {
-    case 0: // Object type 4 - PhysicsCharacterBase (0x08)
+    case 0x04:
+    case 0x0D:
+    case 0x0E:
     {
-        // Check if the other object is a player (type 2)
-        if (other->m_parentObject != nullptr)
+        PhysicsCharacter* physChar = (PhysicsCharacter*)other->m_parentObject;
+        if (physChar->m_pAICharacter->m_eClassType == FIELDER)
         {
-            cPlayer* player = (cPlayer*)(other->m_parentObject);
-            if (player->m_eClassType == 2) // Player type
+            aiChar = physChar->m_pAICharacter;
+            bool shouldTrigger = true;
+            if (mpAINPC->GetSkinAnimatedNPC_Type() == SkinAnimatedNPC_CHAIN_CHOMP)
             {
-                bool shouldTrigger = true;
-
-                // Check if this NPC is a Chain Chomp (type 3)
-                if (mpAINPC != nullptr)
+                if (!((cPlayer*)aiChar)->IsOnSameTeam((cPlayer*)((ChainChomp*)mpAINPC)->mpTarget))
                 {
-                    SkinAnimatedNPC_Type npcType = mpAINPC->GetSkinAnimatedNPC_Type();
-                    if (npcType == SkinAnimatedNPC_CHAIN_CHOMP) // 3
-                    {
-                        // Check if they're on the same team
-                        cPlayer* npcPlayer = (cPlayer*)(mpAINPC);
-                        if (!npcPlayer->IsOnSameTeam(player))
-                        {
-                            shouldTrigger = false;
-                        }
-                    }
+                    shouldTrigger = false;
                 }
-
-                if (shouldTrigger && mpTriggerCallbackFunc != nullptr)
+            }
+            if (shouldTrigger)
+            {
+                if (mpTriggerCallbackFunc != NULL)
                 {
-                    // Call the callback with contact position
+                    f32 px = contact->geom.pos[0];
+                    f32 py = contact->geom.pos[1];
+                    f32 pz = contact->geom.pos[2];
                     nlVector3 contactPos;
-                    contactPos.f.x = contact->geom.pos[0];
-                    contactPos.f.y = contact->geom.pos[1];
-                    contactPos.f.z = contact->geom.pos[2];
+                    contactPos.f.x = px;
+                    contactPos.f.y = py;
+                    contactPos.f.z = pz;
                     mpTriggerCallbackFunc(this, other, contactPos);
+                    break;
                 }
-
-                return shouldTrigger ? NO_CONTACT : NO_CONTACT;
             }
+            return NO_CONTACT;
         }
-
-        // Check if other object is type 3 (some other player type)
-        if (other->m_parentObject != nullptr)
+        else if (physChar->m_pAICharacter->m_eClassType == GOALIE)
         {
-            cPlayer* player = (cPlayer*)(other->m_parentObject);
-            if (player->m_eClassType == 3)
+            if (mpAINPC->GetSkinAnimatedNPC_Type() == SkinAnimatedNPC_BOWSER)
             {
-                // Check if this NPC is Bowser (type 4)
-                if (mpAINPC != nullptr)
-                {
-                    SkinAnimatedNPC_Type npcType = mpAINPC->GetSkinAnimatedNPC_Type();
-                    if (npcType == SkinAnimatedNPC_BOWSER) // 4
-                    {
-                        return ONE_WAY_CONTACT_OTHER;
-                    }
-                }
-            }
-        }
-        break;
-    }
-
-    case 1: // Object type 5 - PhysicsBall (0x0A)
-    {
-        // Get the ball object
-        cBall* ball = (cBall*)(other->m_parentObject);
-        if (ball != nullptr)
-        {
-            // Reset some ball state
-            // ball->m_bIsSupportedByGround = false;
-            // ball->m_bBallPathChangeCount = 0;
-
-            // Check if ball has a parent object (player holding it)
-            // if (ball->m_pParentObject != nullptr)
-            if (ball != nullptr)
-            {
-                cPlayer* ballOwner = nullptr;     //(cPlayer*)(ball->m_pParentObject);
-                if (ballOwner->m_eClassType == 2) // Player type
-                {
-                    bool shouldTrigger = true;
-
-                    // Check if this NPC is a Chain Chomp (type 3)
-                    if (mpAINPC != nullptr)
-                    {
-                        SkinAnimatedNPC_Type npcType = mpAINPC->GetSkinAnimatedNPC_Type();
-                        if (npcType == SkinAnimatedNPC_CHAIN_CHOMP) // 3
-                        {
-                            // Check if they're on the same team
-                            cPlayer* npcPlayer = (cPlayer*)(mpAINPC);
-                            if (!npcPlayer->IsOnSameTeam(ballOwner))
-                            {
-                                shouldTrigger = false;
-                            }
-                        }
-                    }
-
-                    if (shouldTrigger && mpTriggerCallbackFunc != nullptr)
-                    {
-                        // Call the callback with contact position
-                        nlVector3 contactPos;
-                        contactPos.f.x = contact->geom.pos[0];
-                        contactPos.f.y = contact->geom.pos[1];
-                        contactPos.f.z = contact->geom.pos[2];
-                        mpTriggerCallbackFunc(this, other, contactPos);
-                    }
-
-                    return shouldTrigger ? NO_CONTACT : NO_CONTACT;
-                }
-            }
-            else
-            {
-                // Ball is loose, check if it has a powerup or special state
-                // if (ball->m_pPowerupObject != nullptr && ball->m_bHasPowerup)
-                if (ball != nullptr)
-                {
-                    return NO_CONTACT; // Don't trigger if ball has powerup
-                }
-
-                if (mpTriggerCallbackFunc != nullptr)
-                {
-                    // Call the callback with contact position
-                    nlVector3 contactPos;
-                    contactPos.f.x = contact->geom.pos[0];
-                    contactPos.f.y = contact->geom.pos[1];
-                    contactPos.f.z = contact->geom.pos[2];
-                    mpTriggerCallbackFunc(this, other, contactPos);
-                }
-
-                // Reset ball state and invalidate cache
-                // other->m_bIsTriggered = false;
-                // FakeBallWorld::InvalidateBallCache();
                 return ONE_WAY_CONTACT_OTHER;
             }
         }
         break;
     }
-
-    case 2: // Object type 6 - PhysicsWall (0x19)
+    case 0x0F:
     {
-        // Check if wall has a parent object
-        if (other->m_parentObject != nullptr)
+        ball = ((PhysicsAIBall*)other)->m_pAIBall;
+        ball->m_unk_0xA6 = false;
+        ball->mpDamageTarget = NULL;
+        if (ball->m_pOwner != NULL)
         {
-            if (mpAINPC != nullptr)
+            if (ball->m_pOwner->m_eClassType != FIELDER)
+                break;
+            if (mpAINPC->GetSkinAnimatedNPC_Type() != SkinAnimatedNPC_CHAIN_CHOMP)
+                break;
+            if (ball->m_pOwner->IsOnSameTeam((cPlayer*)((ChainChomp*)mpAINPC)->mpTarget))
             {
-                SkinAnimatedNPC_Type npcType = mpAINPC->GetSkinAnimatedNPC_Type();
-                if (npcType == SkinAnimatedNPC_BOWSER) // 4
+                if (mpTriggerCallbackFunc != NULL)
                 {
-                    // Check if wall has no special state
-                    // if (other->m_specialState == 0)
-                    {
-                        return NO_CONTACT;
-                    }
+                    f32 px = contact->geom.pos[0];
+                    f32 py = contact->geom.pos[1];
+                    f32 pz = contact->geom.pos[2];
+                    nlVector3 contactPos;
+                    contactPos.f.x = px;
+                    contactPos.f.y = py;
+                    contactPos.f.z = pz;
+                    mpTriggerCallbackFunc(this, other, contactPos);
                 }
+                break;
+            }
+            else
+            {
+                return NO_CONTACT;
             }
         }
-
-        if (mpTriggerCallbackFunc != nullptr)
+        else
         {
-            // Call the callback with contact position
-            nlVector3 contactPos;
-            contactPos.f.x = contact->geom.pos[0];
-            contactPos.f.y = contact->geom.pos[1];
-            contactPos.f.z = contact->geom.pos[2];
-            mpTriggerCallbackFunc(this, other, contactPos);
-        }
-        break;
-    }
-
-    case 3: // Object type 7 - PhysicsFinitePlane (0x7)
-    {
-        if (other->m_parentObject != nullptr)
-        {
-            if (mpAINPC != nullptr)
+            bool cannotCollide = false;
+            if (((PhysicsAIBall*)other)->m_pAIBall->m_tShotTimer.m_uPackedTime != 0 && ((PhysicsAIBall*)other)->m_pAIBall->mbCanDamage)
             {
-                SkinAnimatedNPC_Type npcType = mpAINPC->GetSkinAnimatedNPC_Type();
-                if (npcType == SkinAnimatedNPC_BOWSER) // 4
-                {
-                    // if (other->m_specialState == 0)
-                    {
-                        return NO_CONTACT;
-                    }
-                }
+                cannotCollide = true;
             }
-        }
-
-        if (mpTriggerCallbackFunc != nullptr)
-        {
-            nlVector3 contactPos;
-            contactPos.f.x = contact->geom.pos[0];
-            contactPos.f.y = contact->geom.pos[1];
-            contactPos.f.z = contact->geom.pos[2];
-            mpTriggerCallbackFunc(this, other, contactPos);
-        }
-        break;
-    }
-
-    default:
-        break;
-    }
-
-    if (mpAINPC != nullptr)
-    {
-        if (mpAINPC->GetSkinAnimatedNPC_Type() == SkinAnimatedNPC_BOWSER)
-        {
+            if (cannotCollide)
+            {
+                return NO_CONTACT;
+            }
+            if (mpTriggerCallbackFunc != NULL)
+            {
+                f32 px = contact->geom.pos[0];
+                f32 py = contact->geom.pos[1];
+                f32 pz = contact->geom.pos[2];
+                nlVector3 contactPos;
+                contactPos.f.x = px;
+                contactPos.f.y = py;
+                contactPos.f.z = pz;
+                mpTriggerCallbackFunc(this, other, contactPos);
+            }
+            ((PhysicsBall*)other)->m_bUseMagnusEffect = false;
+            FakeBallWorld::InvalidateBallCache();
             return ONE_WAY_CONTACT_OTHER;
         }
     }
-
+    case 0x13:
+    {
+        PhysicsShell* shell = (PhysicsShell*)other;
+        if (shell->m_pPowerupObject->mtNoHitTimer.m_uPackedTime != 0)
+        {
+            if (mpAINPC->GetSkinAnimatedNPC_Type() == SkinAnimatedNPC_BOWSER)
+            {
+                if (shell->m_pPowerupObject->m_pThrower == NULL)
+                {
+                    return NO_CONTACT;
+                }
+            }
+        }
+        if (mpTriggerCallbackFunc != NULL)
+        {
+            f32 px = contact->geom.pos[0];
+            f32 py = contact->geom.pos[1];
+            f32 pz = contact->geom.pos[2];
+            nlVector3 contactPos;
+            contactPos.f.x = px;
+            contactPos.f.y = py;
+            contactPos.f.z = pz;
+            mpTriggerCallbackFunc(this, other, contactPos);
+        }
+        break;
+    }
+    case 0x14:
+    {
+        PhysicsBanana* banana = (PhysicsBanana*)other;
+        if (banana->m_pPowerupObject->mtNoHitTimer.m_uPackedTime != 0)
+        {
+            if (mpAINPC->GetSkinAnimatedNPC_Type() == SkinAnimatedNPC_BOWSER)
+            {
+                if (banana->m_pPowerupObject->m_pThrower == NULL)
+                {
+                    return NO_CONTACT;
+                }
+            }
+        }
+        if (mpTriggerCallbackFunc != NULL)
+        {
+            f32 px = contact->geom.pos[0];
+            f32 py = contact->geom.pos[1];
+            f32 pz = contact->geom.pos[2];
+            nlVector3 contactPos;
+            contactPos.f.x = px;
+            contactPos.f.y = py;
+            contactPos.f.z = pz;
+            mpTriggerCallbackFunc(this, other, contactPos);
+        }
+        break;
+    }
+    default:
+        break;
+    }
+    if (mpAINPC->GetSkinAnimatedNPC_Type() == SkinAnimatedNPC_BOWSER)
+    {
+        return ONE_WAY_CONTACT_OTHER;
+    }
     return NO_CONTACT;
 }
 

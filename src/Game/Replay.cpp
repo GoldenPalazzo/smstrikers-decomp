@@ -267,9 +267,146 @@ bool Replay::DidOccurInLastNumSeconds(unsigned int events, float seconds) const
 
 /**
  * Offset/Address/Size: 0x38 | 0x802138E4 | size: 0x39C
+ * TODO: 96.81% match (repo). Register allocation diffs from -inline deferred:
+ * r9/r10 swap (first do-while), r9/r12 swap (inner Next loops), r8/r10
+ * (post-valid frame loops). Also bgt- vs ble-+inline-return at size check.
  */
-void Replay::LockReel(float, int, int)
+bool Replay::LockReel(float numSeconds, int idx, int quality)
 {
+    if (mReels[idx].mAge > quality)
+    {
+        return false;
+    }
+
+    Frame* frame = mFree->mNext;
+    float beginTime = mReels[mReelIdx].mLast->mTime - numSeconds;
+    bool valid;
+
+    Frame* iter = frame;
+    do
+    {
+        if (iter->mTime >= beginTime)
+        {
+            if (iter->mReelIdx > 0)
+            {
+                if (mReels[iter->mReelIdx].mAge > quality)
+                {
+                    valid = false;
+                    goto afterLoops;
+                }
+            }
+        }
+
+        iter = iter->mNext;
+    } while (mFree != iter);
+
+    do
+    {
+        if (frame->mTime >= beginTime)
+        {
+            int reelIdx = frame->mReelIdx;
+            if (reelIdx > 0)
+            {
+                Frame* r = mReels[0].mBegin;
+
+                while (r != nullptr)
+                {
+                    if (r->mReelIdx == reelIdx)
+                    {
+                        r->mReelIdx = 0;
+                    }
+
+                    r = Next(r, 0);
+                }
+
+                r = mFree->mNext;
+                while (r != mFree)
+                {
+                    if (r->mReelIdx == reelIdx)
+                    {
+                        r->mReelIdx = -1;
+                    }
+
+                    r = r->mNext;
+                }
+
+                mReels[reelIdx].mBegin = nullptr;
+                mReels[reelIdx].mLast = nullptr;
+            }
+        }
+
+        frame = frame->mNext;
+    } while (frame != mFree);
+
+    valid = true;
+
+afterLoops:
+    if (!valid)
+    {
+        return false;
+    }
+
+    frame = mReels[0].mBegin;
+    while (frame != nullptr)
+    {
+        if (frame->mReelIdx == idx)
+        {
+            frame->mReelIdx = 0;
+        }
+
+        frame = Next(frame, 0);
+    }
+
+    frame = mFree->mNext;
+    while (frame != mFree)
+    {
+        if (frame->mReelIdx == idx)
+        {
+            frame->mReelIdx = -1;
+        }
+
+        frame = frame->mNext;
+    }
+
+    mReels[idx].mBegin = nullptr;
+    mReels[idx].mLast = nullptr;
+
+    int size = 0;
+    beginTime = mReels[mReelIdx].mLast->mTime - numSeconds;
+    frame = mReels[0].mBegin;
+    while (frame != nullptr)
+    {
+        if (frame->mTime >= beginTime)
+        {
+            size += frame->mSize;
+        }
+
+        frame = Next(frame, 0);
+    }
+
+    if (size > (int)(0.75f * (float)(mMemorySize / 4)))
+    {
+        return false;
+    }
+
+    mReels[idx].mAge = quality;
+    frame = mReels[0].mBegin;
+    while (frame != nullptr)
+    {
+        if (frame->mTime >= beginTime)
+        {
+            frame->mReelIdx = idx;
+            if (mReels[idx].mBegin == nullptr)
+            {
+                mReels[idx].mBegin = frame;
+            }
+            mReels[idx].mLast = frame;
+        }
+
+        frame = Next(frame, 0);
+    }
+
+    return true;
 }
 
 /**

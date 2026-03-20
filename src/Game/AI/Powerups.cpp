@@ -388,7 +388,103 @@ void PowerupBase::PreThrow(cFielder* pFielder, Bowser* pBowser)
  */
 void PowerupBase::UpdateTransform()
 {
-    FORCE_DONT_INLINE;
+    nlPolar pDirectionalSpeed;
+    float fSpeedNormalized;
+    float fActualRadius;
+    float fNormalRadius;
+
+    nlCartesianToPolar(pDirectionalSpeed, m_v3Velocity.f.x, m_v3Velocity.f.y);
+    fSpeedNormalized = NormalizeVal(pDirectionalSpeed.r, 0.0f, g_pGame->m_pGameTweaks->fGreenShellSpeed);
+
+    {
+        float z = 0.0f;
+        m_aOrientation += (int)(1875.0f * fSpeedNormalized + z);
+    }
+
+    switch (m_eType)
+    {
+    case POWER_UP_BANANA:
+        switch (meSize)
+        {
+        case POWERUPSIZE_LARGE:
+            fActualRadius = g_pGame->m_pGameTweaks->fBananaBigRadius;
+            break;
+        case POWERUPSIZE_MEDIUM:
+            fActualRadius = g_pGame->m_pGameTweaks->fBananaMediumRadius;
+            break;
+        case POWERUPSIZE_SMALL:
+            fActualRadius = g_pGame->m_pGameTweaks->fBananaSmallRadius;
+            break;
+        }
+        fNormalRadius = g_pGame->m_pGameTweaks->fBananaSmallRadius;
+        break;
+
+    case POWER_UP_BOBOMB:
+        switch (meSize)
+        {
+        case POWERUPSIZE_LARGE:
+            fActualRadius = g_pGame->m_pGameTweaks->fBobombBigRadius;
+            break;
+        case POWERUPSIZE_MEDIUM:
+            fActualRadius = g_pGame->m_pGameTweaks->fBobombMediumRadius;
+            break;
+        case POWERUPSIZE_SMALL:
+            fActualRadius = g_pGame->m_pGameTweaks->fBobombSmallRadius;
+            break;
+        }
+        fNormalRadius = g_pGame->m_pGameTweaks->fBobombSmallRadius;
+        break;
+
+    default:
+        switch (meSize)
+        {
+        case POWERUPSIZE_LARGE:
+            fActualRadius = g_pGame->m_pGameTweaks->fShellBigRadius;
+            break;
+        case POWERUPSIZE_MEDIUM:
+            fActualRadius = g_pGame->m_pGameTweaks->fShellMediumRadius;
+            break;
+        case POWERUPSIZE_SMALL:
+            fActualRadius = g_pGame->m_pGameTweaks->fShellSmallRadius;
+            break;
+        }
+        fNormalRadius = g_pGame->m_pGameTweaks->fShellSmallRadius;
+        break;
+    }
+
+    m_scale = fActualRadius / fNormalRadius;
+    ((PhysicsSphere*)m_pPhysicsObject)->SetRadius(fActualRadius);
+
+    if (m_eType != POWER_UP_BANANA && m_eType != POWER_UP_RED_SHELL)
+    {
+        if (mtNoHitTimer.m_uPackedTime != 0)
+        {
+            m_scale = InterpolateRangeClamped(0.33f, m_scale, 0.4f, 0.0f, mtNoHitTimer.GetSeconds());
+            ((PhysicsSphere*)m_pPhysicsObject)->SetRadius(m_scale * fNormalRadius);
+
+            if (m_pBlurHandler != NULL && m_scale <= 1.0f)
+            {
+                m_pBlurHandler->m_fLineWidth = m_scale * m_fBlurWidth;
+            }
+        }
+    }
+    else
+    {
+        float fBananaTimer = mtNoHitTimer.GetSeconds() - 0.6f;
+        if (fBananaTimer > 0.0f)
+        {
+            m_scale = InterpolateRangeClamped(0.33f, m_scale, 0.4f, 0.0f, fBananaTimer);
+            if (m_pBlurHandler != NULL && m_scale <= 1.0f)
+            {
+                m_pBlurHandler->m_fLineWidth = m_scale * m_fBlurWidth;
+            }
+        }
+    }
+
+    if (m_szStreakTexture != NULL && m_pBlurHandler == NULL)
+    {
+        m_pBlurHandler = BlurManager::GetNewHandler(m_szStreakTexture, m_scale * m_fBlurWidth, 15, true);
+    }
 }
 
 /**
@@ -1173,13 +1269,13 @@ Bobomb::~Bobomb()
  */
 void Bobomb::Update(float dt)
 {
-    // s32 soundID;
-    bool bShouldPlaySound;
+    ePowerUpType type;
+    PhysicsObject* pPhysObj;
+    u32 soundID;
     nlPolar polar;
     nlVector3 pos;
     EmissionController* pController;
     Audio::SoundAttributes attributes;
-    // PhysicsObject* pPhysObj;
 
     m_v3PrevPosition = m_v3Position;
     m_pPhysicsObject->GetPosition(&m_v3Position);
@@ -1214,45 +1310,46 @@ void Bobomb::Update(float dt)
     if ((m_uVoiceID == 0) && (!g_pGame->mbCaptainShotToScoreOn))
     {
         u32 errorCode;
-        PhysicsObject* pPhysObj = m_pPhysicsObject;
-        if (m_eType >= NUM_POWER_UPS)
+
+        type = m_eType;
+        pPhysObj = m_pPhysicsObject;
+
+        if (type >= NUM_POWER_UPS)
+        {
+            errorCode = Audio::GetSndIDError();
+        }
+        else if (!Audio::IsInited())
         {
             errorCode = Audio::GetSndIDError();
         }
         else
         {
-            if (!Audio::IsInited())
+            attributes.Init();
+            soundID = powerupSounds[type].sndInEffect;
+
+            if (soundID == 0xFFFFFFFF)
             {
-                errorCode = Audio::GetSndIDError();
+                errorCode = -1;
             }
             else
             {
-                attributes.Init();
-                u32 soundID = powerupSounds[m_eType].sndInEffect;
-
-                if (soundID == 0xFFFFFFFF)
+                attributes.SetSoundType(soundID, true);
+                if (type == POWER_UP_BOBOMB)
                 {
-                    errorCode = -1;
+                    attributes.UsePhysObj(pPhysObj);
+                    attributes.mf_ReturnEmitterOnPlay = true;
                 }
                 else
                 {
-                    attributes.SetSoundType(soundID, true);
-                    if (m_eType == POWER_UP_BOBOMB)
-                    {
-                        attributes.UsePhysObj(pPhysObj);
-                        m_bShouldDestroy = true;
-                    }
-                    else
-                    {
-                        attributes.UsePhysObj(pPhysObj);
-                        m_bShouldDestroy = true;
-                    }
-
-                    Audio::gPowerupSFX.GetSFXVol(soundID);
-                    errorCode = Audio::gPowerupSFX.Play(attributes);
+                    attributes.UsePhysObj(pPhysObj);
+                    attributes.mf_ReturnEmitterOnPlay = true;
                 }
+
+                Audio::gPowerupSFX.GetSFXVol(soundID);
+                errorCode = Audio::gPowerupSFX.Play(attributes);
             }
         }
+
         m_uVoiceID = errorCode;
     }
 
@@ -1275,9 +1372,143 @@ void Bobomb::Update(float dt)
 
 /**
  * Offset/Address/Size: 0x80 | 0x8005A96C | size: 0x3A8
+ * TODO: 98.64% match - min-selection branch layout differs: target has bge+b+fmr(intermediate)+fmr
+ *       pattern while compiler generates bge+fmr+b+fmr (direct assignment to t in both branches)
  */
 void Bobomb::ThrowAt(cFielder*, Bowser*)
 {
+    if (gBobombAnticipationVoiceID == -1)
+    {
+        if (Audio::IsSFXPlaying(gBobombAnticipationVoiceID))
+        {
+            goto skip_anticipation;
+        }
+    }
+
+    gBobombAnticipationVoiceID = Audio::gCrowdSFX.Play((Audio::eWorldSFX)0x9E, 1.0f, 0.5f, true, 1.0f);
+
+skip_anticipation:
+    if (m_pTarget->m_pTeam == g_pTeams[1])
+    {
+        Audio::gCrowdSFX.PlayRandomReaction(Audio::cWorldSFX::CROWD_REACTION_YEAH_SMALL, 1.0f, 0.5f, 0, 0.0f);
+    }
+    else
+    {
+        Audio::gCrowdSFX.PlayRandomReaction(Audio::cWorldSFX::CROWD_REACTION_OH_SMALL, 1.0f, 0.5f, 0, 0.0f);
+    }
+
+    int nNumSolutions;
+    float pSolutions[2];
+    nlVector3 v3TargetPos;
+    nlVector3 v3TargetVel;
+
+    v3TargetPos = m_pTarget->m_v3Position;
+    v3TargetVel = m_pTarget->m_v3Velocity;
+
+    CalcInterceptXY(m_v3Position, g_pGame->m_pGameTweaks->fBobombSpeed, 0.0f, v3TargetPos, v3TargetVel, nNumSolutions, pSolutions);
+
+    float dx, dy, dz;
+    float t;
+
+    if (nNumSolutions != 0)
+    {
+        if (nNumSolutions == 2)
+        {
+            if (pSolutions[0] < pSolutions[1])
+            {
+                t = pSolutions[0];
+            }
+            else
+            {
+                t = pSolutions[1];
+            }
+        }
+        else
+        {
+            t = pSolutions[0];
+        }
+
+        if (t > g_pGame->m_pGameTweaks->unk228)
+        {
+            ePowerUpType type = m_eType;
+            PhysicsObject* pPhysObj = m_pPhysicsObject;
+            unsigned long errorCode;
+
+            if (type >= NUM_POWER_UPS)
+            {
+                errorCode = Audio::GetSndIDError();
+            }
+            else if (!Audio::IsInited())
+            {
+                errorCode = Audio::GetSndIDError();
+            }
+            else
+            {
+                Audio::SoundAttributes attributes;
+                unsigned long soundID;
+
+                attributes.Init();
+                soundID = powerupSounds[type].sndActivate;
+
+                if (soundID == 0xFFFFFFFF)
+                {
+                    errorCode = -1;
+                }
+                else
+                {
+                    attributes.SetSoundType(soundID, true);
+
+                    if (type == POWER_UP_BOBOMB)
+                    {
+                        attributes.UsePhysObj(pPhysObj);
+                        attributes.mf_ReturnEmitterOnPlay = true;
+                    }
+                    else
+                    {
+                        attributes.UseStationaryPosVector(pPhysObj->GetPosition());
+                    }
+
+                    Audio::gPowerupSFX.GetSFXVol(soundID);
+                    errorCode = Audio::gPowerupSFX.Play(attributes);
+                }
+            }
+
+            pMovementEmitter = (SFXEmitter*)errorCode;
+        }
+
+        nlVector3 v3BobombVelocity;
+        float targetX = v3TargetVel.f.x * t + v3TargetPos.f.x;
+        float targetY = v3TargetVel.f.y * t + v3TargetPos.f.y;
+
+        v3BobombVelocity.f.x = (targetX - m_v3Position.f.x) / t;
+        v3BobombVelocity.f.y = (targetY - m_v3Position.f.y) / t;
+        v3BobombVelocity.f.z = -((0.5f * m_pPhysicsObject->m_gravity) * t);
+
+        if (v3BobombVelocity.f.z > g_pGame->m_pGameTweaks->fBobombMaxZSpeed)
+        {
+            v3BobombVelocity.f.z = g_pGame->m_pGameTweaks->fBobombMaxZSpeed;
+        }
+
+        m_v3Velocity = v3BobombVelocity;
+        m_pPhysicsObject->SetLinearVelocity(v3BobombVelocity);
+    }
+    else
+    {
+        dy = v3TargetPos.f.y - m_v3Position.f.y;
+        dx = v3TargetPos.f.x - m_v3Position.f.x;
+        dz = v3TargetPos.f.z - m_v3Position.f.z;
+        float invDist = nlRecipSqrt((dy * dy) + (dx * dx) + (dz * dz), true);
+        float speed = g_pGame->m_pGameTweaks->fBobombSpeed;
+        nlVector3 v3BobombVelocity;
+
+        v3BobombVelocity.f.x = speed * (invDist * dx);
+        v3BobombVelocity.f.y = speed * (invDist * dy);
+        v3BobombVelocity.f.z = speed * (invDist * dz);
+        v3BobombVelocity.f.z = g_pGame->m_pGameTweaks->fBobombMaxZSpeed;
+
+        m_v3Velocity = v3BobombVelocity;
+        m_pPhysicsObject->SetLinearVelocity(v3BobombVelocity);
+    }
 }
 
 /**

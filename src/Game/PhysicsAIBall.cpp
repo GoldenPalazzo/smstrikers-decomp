@@ -24,19 +24,26 @@ bool PhysicsAIBall::IsBallOutsideNet(const nlVector3& v3Pos)
     return fAbsX < threshold;
 }
 
+inline float nlVec3GetX(const nlVector3& v)
+{
+    return (float)fabs(v.f.x);
+}
+
 /**
  * Offset/Address/Size: 0x84 | 0x80133AB8 | size: 0x1A0
+ * TODO: 96.15% match - instruction scheduling diffs at prologue (lfs/mr interleaving).
+ * Caused by -inline deferred (scratch) vs -inline auto (build) scheduler difference.
  */
 bool PhysicsAIBall::DidBallJustEnterNet(const nlVector3& oldPos, nlVector3 newPos)
 {
-    f64 absOldX = (float)fabs(oldPos.f.x);
-    f32 absNewX = (float)fabs(newPos.f.x);
+    f32 absOldX = nlVec3GetX(oldPos);
+    f32 absNewX = nlVec3GetX(newPos);
     f32 radius = g_pBall->m_pPhysicsBall->GetRadius();
     f32 goalLineX = cField::GetGoalLineX((unsigned int)1);
     f32 threshold = (goalLineX + radius) - 0.2f;
     nlVector3 impactPos;
 
-    if (((f32)absOldX < threshold) && (absNewX >= threshold))
+    if ((absOldX < threshold) && (absNewX >= threshold))
     {
         f32 xDelta = newPos.f.x - oldPos.f.x;
 
@@ -76,10 +83,6 @@ bool PhysicsAIBall::DidBallJustEnterNet(const nlVector3& oldPos, nlVector3 newPo
         }
     }
 
-    /**
-     * TODO: 97.40% match - function prologue keeps `mr r31, r4` before
-     * first `lfs` instead of the target's interleaved argument save/load order.
-     */
     return false;
 }
 
@@ -206,9 +209,134 @@ bool PhysicsAIBall::CheckIfBallWentThroughGoalie()
 
 /**
  * Offset/Address/Size: 0x994 | 0x801343C8 | size: 0x3A4
+ * TODO: 99.15% match - remaining diffs are in the inlined net-entry block
+ * (old/new position load ordering and f29/f30 assignment around threshold tests).
  */
 void PhysicsAIBall::PostUpdate()
 {
+    extern bool gbEnableBallGoalieSweepTest;
+    extern float sfBallGoalieSweepTestVelocityThreshold;
+    extern void* __vt__9EventData[];
+    extern void* __vt__23CollisionBallGroundData[];
+
+    struct BallOffsetView
+    {
+        u32 x0;
+        u32 x4;
+        u32 x8;
+        u32 xC;
+        u8 pad10[0x94];
+        u8 xA4;
+        u8 xA5;
+        u8 xA6;
+        u8 xA7;
+        cPlayer* xA8;
+    };
+
+    struct CollisionBallGroundDataFields
+    {
+        void* vtbl;
+        cBall* pBall;
+        u8 bIsShot;
+        u8 pad[3];
+        nlVector3 position;
+        nlVector3 normal;
+        float fVecZComponent;
+    };
+
+    nlVector3 v3IncidentVel;
+    CollisionBallGroundData* pEventData;
+    nlVector3 ballPosition;
+    nlVector3 oldPosition;
+    nlVector3 newPosition;
+
+    GetLinearVelocity(&v3IncidentVel);
+    PhysicsBall::PostUpdate();
+
+    if (m_bIsSupportedByGround)
+    {
+        BallOffsetView* pBallFields = (BallOffsetView*)m_pAIBall;
+        if (pBallFields->xC == 0)
+        {
+            pBallFields->xA6 = 0;
+            pBallFields->xA8 = NULL;
+
+            if (v3IncidentVel.f.z < -1.0f)
+            {
+                pEventData = (CollisionBallGroundData*)((u8*)g_pEventManager->CreateValidEvent(0x24, 0x3C) + 0x10);
+                if (pEventData != NULL)
+                {
+                    *(void**)pEventData = __vt__9EventData;
+                    *(void**)pEventData = __vt__23CollisionBallGroundData;
+                }
+
+                CollisionBallGroundDataFields* pGroundData = (CollisionBallGroundDataFields*)pEventData;
+                s32 bIsShot = 0;
+
+                pGroundData->pBall = m_pAIBall;
+
+                BallOffsetView* pEventBallFields = (BallOffsetView*)pGroundData->pBall;
+                if (pEventBallFields->x8 != 0)
+                {
+                    if (pEventBallFields->xA4 != 0)
+                    {
+                        bIsShot = 1;
+                    }
+                }
+
+                if ((u8)bIsShot)
+                {
+                    pGroundData->bIsShot = 1;
+                    m_pAIBall->ClearBallBlur();
+                }
+                else
+                {
+                    pGroundData->bIsShot = 0;
+                }
+
+                GetPosition(&pGroundData->position);
+                pGroundData->normal.f.x = 0.0f;
+                pGroundData->normal.f.y = 0.0f;
+                pGroundData->normal.f.z = 1.0f;
+                pGroundData->fVecZComponent = v3IncidentVel.f.z;
+            }
+        }
+    }
+
+    if (gbEnableBallGoalieSweepTest)
+    {
+        ((void (*)(PhysicsAIBall*))CheckIfBallWentThroughGoalie)(this);
+    }
+
+    if (PhysicsNet::sbSweepTestEnabled)
+    {
+        CheckIfBallWentThroughGoalPost();
+    }
+
+    m_unk_0x59 = false;
+
+    GetRadius();
+    GetPosition(&ballPosition);
+
+    if (IsBallOutsideNet(ballPosition))
+    {
+        m_unk_0x58 = false;
+    }
+    else
+    {
+        GetPosition(&newPosition);
+        oldPosition = m_pAIBall->m_v3PrevPosition;
+
+        if (DidBallJustEnterNet(oldPosition, newPosition))
+        {
+            m_unk_0x58 = true;
+        }
+    }
+
+    const nlVector3& v3Vel = GetLinearVelocity();
+    const float velocitySq = (v3Vel.f.x * v3Vel.f.x) + (v3Vel.f.y * v3Vel.f.y) + (v3Vel.f.z * v3Vel.f.z);
+    bool& bSpeedBelowThreshold = *(bool*)((u8*)this + 0x5A);
+    bSpeedBelowThreshold = velocitySq < (sfBallGoalieSweepTestVelocityThreshold * sfBallGoalieSweepTestVelocityThreshold);
 }
 
 /**

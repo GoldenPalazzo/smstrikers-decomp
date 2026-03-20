@@ -1,5 +1,11 @@
 #include "Game/SH/SHChooseCaptains.h"
 
+#include "Game/BaseGameSceneManager.h"
+#include "Game/FE/feManager.h"
+#include "Game/FE/fePopupMenu.h"
+#include "Game/GameSceneManager.h"
+#include "NL/nlConfig.h"
+
 extern bool g_e3_Build;
 
 /**
@@ -417,10 +423,145 @@ void ChooseCaptainsSceneV2::ResetForCHOOSESIDES()
 
 /**
  * Offset/Address/Size: 0x560 | 0x800D6FA8 | size: 0x3D0
+ * TODO: 99.59% match - single extra unreachable branch from -inline deferred vs -inline auto
  */
-void ChooseCaptainsSceneV2::Update(float)
+void ChooseCaptainsSceneV2::Update(float fDeltaT)
 {
-    FORCE_DONT_INLINE;
+    BaseSceneHandler::Update(fDeltaT);
+    mButtons.CentreButtons();
+    mChooseCaptain.UpdateSound(fDeltaT);
+    FEPresentation* pPresentation = m_pFEScene->m_pFEPackage->GetPresentation();
+    TLSlide* pCurrentSlide = pPresentation->m_currentSlide;
+    if (mMoveForwardFrameDelay > 0)
+    {
+        mMoveForwardFrameDelay--;
+        if (mMoveForwardFrameDelay != 0)
+            return;
+        if (nlSingleton<GameInfoManager>::s_pInstance->mIsInStrikers101Mode)
+        {
+            nlSingleton<GameSceneManager>::s_pInstance->PushLoadingScene(true);
+            nlSingleton<GameInfoManager>::s_pInstance->SetStadium((eStadiumID)0);
+        }
+        else if (g_e3_Build)
+        {
+            nlSingleton<GameSceneManager>::s_pInstance->PushLoadingScene(true);
+            nlSingleton<GameInfoManager>::s_pInstance->SetStadium((eStadiumID)3);
+        }
+        else
+        {
+            nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_STADIUM_SELECT, SCREEN_FORWARD, true);
+        }
+        mChooseSide.SaveChanges();
+        FrontEnd::SetControllerState();
+        mMoveForwardFrameDelay = -1;
+        return;
+    }
+    if (pCurrentSlide->m_time >= 0.5)
+    {
+        mTicker->Update(fDeltaT);
+    }
+    if (pCurrentSlide->m_time <= 1.5 && mSceneType == SceneType_1)
+    {
+        mChooseCaptain.UpdateAsyncImages();
+        return;
+    }
+    switch (mSceneType)
+    {
+    case SceneType_0:
+        switch (mChooseCaptain.Update(fDeltaT))
+        {
+        case UPDATE_GO_BACK:
+            nlSingleton<GameSceneManager>::s_pInstance->PopEntireStack();
+            nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_MAIN_MENU, SCREEN_BACK, false);
+            return;
+        case UPDATE_GO_FORWARD:
+            ChangeSceneType(SceneType_1);
+            mChooseSide.ResetAndPositionControllers(true);
+        default:
+            return;
+        }
+    case SceneType_1:
+    {
+        eFEINPUT_PAD buttonPressed = FE_ALL_PADS;
+        if (!nlSingleton<GameInfoManager>::s_pInstance->mIsInStrikers101Mode)
+        {
+            if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x800, false, NULL))
+            {
+                if (!g_e3_Build)
+                {
+                    nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_QUICK_GAMEPLAY_OPTIONS, SCREEN_FORWARD, false);
+                    return;
+                }
+            }
+        }
+        UpdateResult sideResult = mChooseSide.Update(fDeltaT, &buttonPressed, -1);
+        switch (sideResult)
+        {
+        case UPDATE_GO_BACK:
+            ChangeSceneType(SceneType_0);
+            mChooseSide.SaveChanges();
+            mChooseCaptain.ResetPushPlayerData();
+            mChooseCaptain.PushPlayerWithGameInfoDB();
+            mChooseCaptain.SetupForLastPhase(buttonPressed);
+            break;
+        case UPDATE_GO_FORWARD:
+        {
+            if (mChooseSide.AllPlayersReady() || mChooseSide.AllPluggedInAreReady())
+            {
+                goto readyPath;
+            }
+            {
+                Config& cfg = Config::Global();
+                TagValuePair& tvp = cfg.FindTvp("allReady");
+                bool allReady;
+                if (tvp.tag == NULL)
+                {
+                    cfg.Set("allReady", false);
+                    allReady = false;
+                }
+                else if (tvp.type == _BOOL)
+                {
+                    allReady = LexicalCast<bool, bool>(tvp.value.b);
+                }
+                else if (tvp.type == _INT)
+                {
+                    allReady = LexicalCast<bool, int>(tvp.value.i);
+                }
+                else if (tvp.type == _FLOAT)
+                {
+                    allReady = LexicalCast<bool, float>(tvp.value.f);
+                }
+                else if (tvp.type == _STRING)
+                {
+                    allReady = LexicalCast<bool, const char*>(tvp.value.s);
+                }
+                else
+                {
+                    allReady = false;
+                }
+                if (allReady)
+                {
+                readyPath:
+                    TLInstance* inst = mChooseSide.mInstanceTable[16];
+                    if (inst != NULL)
+                    {
+                        inst->m_bVisible = false;
+                    }
+                    mMoveForwardFrameDelay = 2;
+                    return;
+                }
+            }
+            if (!mChooseSide.AtLeastOnePlayerReady())
+            {
+                ((FEPopupMenu*)nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false))->Create(POPUP_NO_SIDES_CHOSEN);
+            }
+            break;
+        }
+        }
+        mChooseCaptain.UpdateAsyncImages();
+        return;
+    }
+    }
 }
 
 /**

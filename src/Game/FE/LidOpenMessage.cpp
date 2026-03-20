@@ -4,14 +4,14 @@
 #include "Game/Audio/AudioStream.h"
 #include "Game/Audio/CrowdMood.h"
 #include "Game/Game.h"
+#include "Game/main.h"
 #include "Game/ResetTask.h"
+#include "Game/RumbleActions.h"
 #include "Game/TransitionTask.h"
 #include "Game/Sys/movie.h"
 #include "NL/nlFileGC.h"
 #include "NL/nlString.h"
 #include "NL/nlTask.h"
-
-extern int g_Language;
 
 struct LoadingTextEntry
 {
@@ -22,6 +22,7 @@ struct LoadingTextEntry
 };
 
 extern LoadingTextEntry LOADING_TEXT_DATA[];
+extern LoadingTextEntry LID_DATA[][5];
 
 static int lastImageWidth;
 static int lastImageHeight;
@@ -189,8 +190,154 @@ void DisplayMessage(int arg0, int arg1, const unsigned char* arg2, int arg3, uns
 /**
  * Offset/Address/Size: 0x278 | 0x80094194 | size: 0x3AC
  */
-void DisplayDVDMessageSebring(int)
+void DisplayDVDMessageSebring(int arg)
 {
+    int lang;
+    AudioStreamTrack::TrackManagerBase* trackMgr;
+
+    if (CanGetResetPauseState)
+    {
+        ResetWasPaused = ResetTask::s_resetPaused;
+        CanGetResetPauseState = false;
+    }
+
+    ResetTask::s_resetPaused = 0;
+    OpenCloseRefCount++;
+
+    int region = *(int*)GetRegion();
+    switch (region)
+    {
+    case 0:
+        lang = 0;
+        break;
+    case 1:
+        switch ((u8)OSGetLanguage())
+        {
+        case 1:
+            lang = 2;
+            break;
+        case 2:
+            lang = 1;
+            break;
+        case 3:
+            lang = 3;
+            break;
+        case 4:
+            lang = 4;
+            break;
+        default:
+            lang = 6;
+            break;
+        }
+        break;
+    case 2:
+        lang = 5;
+        break;
+    default:
+        lang = g_Language;
+        break;
+    }
+
+    if (lang > 6)
+        lang = 0;
+
+    switch (arg + 1)
+    {
+    case 0:
+        DisplayMessage(LID_DATA[lang][0].x, LID_DATA[lang][0].y, LID_DATA[lang][0].text, LID_DATA[lang][0].param, (unsigned long)-1, false);
+        break;
+    case 1:
+        DisplayMessage(LID_DATA[lang][1].x, LID_DATA[lang][1].y, LID_DATA[lang][1].text, LID_DATA[lang][1].param, (unsigned long)-1, false);
+        break;
+    case 2:
+        DisplayMessage(LID_DATA[lang][2].x, LID_DATA[lang][2].y, LID_DATA[lang][2].text, LID_DATA[lang][2].param, (unsigned long)-1, false);
+        break;
+    case 3:
+    case 5:
+    case 7:
+    case 9:
+    case 11:
+        DisplayMessage(LID_DATA[lang][3].x, LID_DATA[lang][3].y, LID_DATA[lang][3].text, LID_DATA[lang][3].param, (unsigned long)-1, false);
+        break;
+    case 4:
+    case 6:
+    case 8:
+    case 10:
+    case 12:
+        DisplayMessage(LID_DATA[lang][4].x, LID_DATA[lang][4].y, LID_DATA[lang][4].text, LID_DATA[lang][4].param, (unsigned long)-1, false);
+        break;
+    }
+
+    if (g_pGame != NULL)
+    {
+        TRANSITION_STATE transState = TransitionTask::sm_pGlobalTask != NULL
+                                        ? TransitionTask::sm_pGlobalTask->m_TransitionState
+                                        : eTS_Unknown;
+
+        if (transState == eTS_InState)
+        {
+            PriorityStream* ps = Audio::GetPriorityStream();
+            if (ps != NULL)
+            {
+                Audio::GetPriorityStream()->FakePause(0);
+            }
+            CrowdMood::Purge(true);
+
+            if (nlTaskManager::m_pInstance->m_CurrState == 1)
+            {
+                trackMgr = g_pTrackManager;
+                AudioStreamTrack::StreamTrack* track = trackMgr->GetTrack(nlStringLowerHash("sebring_music"));
+                if (track != NULL)
+                {
+                    track->Pause(0, false);
+                }
+            }
+        }
+        else
+        {
+            trackMgr = g_pTrackManager;
+            AudioStreamTrack::StreamTrack* track = trackMgr->GetTrack(nlStringLowerHash("music"));
+            if (track != NULL)
+            {
+                track->Pause(0, false);
+            }
+        }
+
+        if (g_pTrackManager != NULL)
+        {
+            g_pTrackManager->StopAllTracks(0);
+        }
+        Audio::Silence();
+    }
+    else
+    {
+        trackMgr = g_pTrackManager;
+        if (trackMgr != NULL)
+        {
+            AudioStreamTrack::StreamTrack* track = trackMgr->GetTrack(nlStringLowerHash("music"));
+            if (track != NULL)
+            {
+                track->Pause(0, false);
+            }
+            trackMgr = g_pTrackManager;
+            track = trackMgr->GetTrack(nlStringLowerHash("crowd"));
+            if (track != NULL)
+            {
+                track->Pause(0, false);
+            }
+        }
+    }
+
+    for (int i = 0; i < 4; i++)
+    {
+        cGlobalPad* pad = cPadManager::GetPad(i);
+        if (pad != NULL)
+        {
+            StopRumbleAction(pad);
+        }
+    }
+
+    ResetTask::s_checkCardRemoved = true;
 }
 
 /**

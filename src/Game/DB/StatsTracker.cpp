@@ -274,9 +274,54 @@ void StatsTracker::GetSortedStats(PlayerStats*, int, int*, int, ePlayerStats, eS
 
 /**
  * Offset/Address/Size: 0x3340 | 0x801848A0 | size: 0x3C8
+ * TODO: 99.73% match - 11 register-only diffs in e8-118 (r4/r6 swap for
+ *       constant 1 vs slwi temp, MWCC allocator coloring choice).
  */
-void StatsTracker::GetSortedTeamStats(TeamStats*, int, int*, int)
+void StatsTracker::GetSortedTeamStats(TeamStats* source, int numsource, int* dest, int numelements)
 {
+    int tempsorted[8];
+    for (int i = 0; i < numsource; i++)
+    {
+        tempsorted[i] = i;
+    }
+    unsigned char swapped;
+    do
+    {
+        swapped = 0;
+        for (int i = 0; i < numsource; i++)
+        {
+            if (i + 1 >= numsource)
+                break;
+            u16 humanTeams = nlSingleton<GameInfoManager>::s_pInstance->mCurrentCup->mHumanTeams;
+            int a = source[tempsorted[i]].mNumPoints;
+            unsigned int humanA = (humanTeams & (1 << source[tempsorted[i]].mTeamIndex)) != 0;
+            int b = source[tempsorted[i + 1]].mNumPoints;
+            unsigned int humanB = (humanTeams & (1 << source[tempsorted[i + 1]].mTeamIndex)) != 0;
+            if (a < b
+                || (a == b && a != 0 && !humanA && humanB)
+                || (a == b && a == 0 && humanA && !humanB))
+            {
+                int temp = tempsorted[i + 1];
+                tempsorted[i + 1] = tempsorted[i];
+                tempsorted[i] = temp;
+                swapped = 1;
+            }
+            else if (a == b && humanA && humanB)
+            {
+                if (MoveTeamBUp(source[tempsorted[i]], source[tempsorted[i + 1]]))
+                {
+                    int temp = tempsorted[i + 1];
+                    tempsorted[i + 1] = tempsorted[i];
+                    tempsorted[i] = temp;
+                    swapped = 1;
+                }
+            }
+        }
+    } while (swapped);
+    for (int i = 0; i < numelements; i++)
+    {
+        dest[i] = tempsorted[i];
+    }
 }
 
 /**
@@ -410,8 +455,132 @@ void StatsTracker::AddStat(ePlayerStats, int, int, int)
 /**
  * Offset/Address/Size: 0x1E5C | 0x801833BC | size: 0x3A4
  */
-void StatsTracker::AddUserStatByPad(ePlayerStats, int, int)
+void StatsTracker::AddUserStatByPad(ePlayerStats stat, int pad, int amount)
 {
+    if (pad < 0)
+    {
+        return;
+    }
+
+    switch (stat)
+    {
+    case STATS_SHOTS_ON_GOAL:
+        mCurrentUserStats[pad].mNumShotsOnGoal += amount;
+        break;
+    case STATS_GOALS_FOR:
+        mCurrentUserStats[pad].mNumGoalsFor += amount;
+        break;
+    case STATS_GOALS_FOR_STS:
+        mCurrentUserStats[pad].mNumShootToScoreGoals += amount;
+        break;
+    case STATS_GOALS_AGAINST:
+        mCurrentUserStats[pad].mNumGoalsAgainst += amount;
+        break;
+    case STATS_ASSISTS:
+        mCurrentUserStats[pad].mNumAssists += amount;
+        break;
+    case STATS_FOULS:
+        mCurrentUserStats[pad].mNumFouls += amount;
+        break;
+    case STATS_POWERUPS_USED:
+        mCurrentUserStats[pad].mNumPowerupsUsed += amount;
+        break;
+    case STATS_POWERUPS_HIT:
+        mCurrentUserStats[pad].mNumPowerupsHit += amount;
+        break;
+    case STATS_PASSES_MADE:
+        mCurrentUserStats[pad].mNumPassesMade += amount;
+        break;
+    case STATS_PASSES_RECEIVED:
+        mCurrentUserStats[pad].mNumPassesReceived += amount;
+        break;
+    case STATS_PASSES_INTERCEPTED:
+        mCurrentUserStats[pad].mNumPassesIntercepted += amount;
+        break;
+    case STATS_POSSESION_TIME:
+        mCurrentUserStats[pad].mBallPossessionTime += amount;
+        break;
+    case STATS_STEALS:
+        mCurrentUserStats[pad].mNumSteals += amount;
+        break;
+    case STATS_BUTTON_PRESSES:
+        mCurrentUserStats[pad].mNumButtonPresses += amount;
+        break;
+    case STATS_HITS_MADE:
+        mCurrentUserStats[pad].mNumHitsMade += amount;
+        break;
+    case STATS_GOALS_FOR_ONE_TIMERS:
+        mCurrentUserStats[pad].mNumGoalsOneTimers += amount;
+        break;
+    case STATS_STS_ATTEMPTS:
+        mCurrentUserStats[pad].mNumSTSAttempts += amount;
+        break;
+    case STATS_PERFECT_PASSES:
+        mCurrentUserStats[pad].mNumPerfectPasses += amount;
+        break;
+    default:
+        break;
+    }
+
+    switch (stat)
+    {
+    case STATS_SHOTS_ON_GOAL:
+        mCumulativeUserStats[pad].mNumShotsOnGoal += amount;
+        break;
+    case STATS_GOALS_FOR:
+        mCumulativeUserStats[pad].mNumGoalsFor += amount;
+        break;
+    case STATS_GOALS_FOR_STS:
+        mCumulativeUserStats[pad].mNumShootToScoreGoals += amount;
+        break;
+    case STATS_GOALS_AGAINST:
+        mCumulativeUserStats[pad].mNumGoalsAgainst += amount;
+        break;
+    case STATS_ASSISTS:
+        mCumulativeUserStats[pad].mNumAssists += amount;
+        break;
+    case STATS_FOULS:
+        mCumulativeUserStats[pad].mNumFouls += amount;
+        break;
+    case STATS_POWERUPS_USED:
+        mCumulativeUserStats[pad].mNumPowerupsUsed += amount;
+        break;
+    case STATS_POWERUPS_HIT:
+        mCumulativeUserStats[pad].mNumPowerupsHit += amount;
+        break;
+    case STATS_PASSES_MADE:
+        mCumulativeUserStats[pad].mNumPassesMade += amount;
+        break;
+    case STATS_PASSES_RECEIVED:
+        mCumulativeUserStats[pad].mNumPassesReceived += amount;
+        break;
+    case STATS_PASSES_INTERCEPTED:
+        mCumulativeUserStats[pad].mNumPassesIntercepted += amount;
+        break;
+    case STATS_POSSESION_TIME:
+        mCumulativeUserStats[pad].mBallPossessionTime += amount;
+        break;
+    case STATS_STEALS:
+        mCumulativeUserStats[pad].mNumSteals += amount;
+        break;
+    case STATS_BUTTON_PRESSES:
+        mCumulativeUserStats[pad].mNumButtonPresses += amount;
+        break;
+    case STATS_HITS_MADE:
+        mCumulativeUserStats[pad].mNumHitsMade += amount;
+        break;
+    case STATS_GOALS_FOR_ONE_TIMERS:
+        mCumulativeUserStats[pad].mNumGoalsOneTimers += amount;
+        break;
+    case STATS_STS_ATTEMPTS:
+        mCumulativeUserStats[pad].mNumSTSAttempts += amount;
+        break;
+    case STATS_PERFECT_PASSES:
+        mCumulativeUserStats[pad].mNumPerfectPasses += amount;
+        break;
+    default:
+        break;
+    }
 }
 
 /**
@@ -664,7 +833,7 @@ extern "C" unsigned long fwrite(const void*, unsigned long, unsigned long, void*
 
 /**
  * Offset/Address/Size: 0x3DC | 0x801816A8 | size: 0x2D0
- * TODO: 93.78% match - r29/r31 register swap for file/formatTemplate variables
+ * TODO: 95.61% match - remaining r29/r31 allocation in fopen/file and format-template paths
  */
 void StatsTracker::WriteCurrentlyPlaying() const
 {
@@ -696,7 +865,7 @@ void StatsTracker::WriteCurrentlyPlaying() const
         int i = 0;
         while (i < formatData->mSize)
         {
-            formatData->mData[i] = formatTemplate[i];
+            formatData->mData[i] = *formatTemplate++;
             i++;
         }
 
@@ -704,15 +873,13 @@ void StatsTracker::WriteCurrentlyPlaying() const
     }
 
     BasicStringInternal* retainedData;
-    BasicStringInternal* formatDataTmp;
+    BasicStringInternal* formatDataTmp = formatData;
     const char* homeTeamName;
     const char* homeSidekickName;
     const char* awayTeamName;
     const char* awaySidekickName;
     const char* stadiumName;
     BasicStringInternal* outputData;
-
-    formatDataTmp = formatData;
 
     stadiumName = GetStadiumFilename__11WorldLoaderCF10eStadiumID(
         &TheWorldLoader,
@@ -730,6 +897,7 @@ void StatsTracker::WriteCurrentlyPlaying() const
         awaySidekickName,
         stadiumName);
 
+    BasicStringInternal* toFree = outputData;
     if (outputData != 0)
     {
         outputData->mRefCount++;
@@ -740,37 +908,38 @@ void StatsTracker::WriteCurrentlyPlaying() const
         retainedData = 0;
     }
 
-    if (outputData != 0)
+    if (toFree != 0)
     {
-        if (--outputData->mRefCount == 0)
+        if (--toFree->mRefCount == 0)
         {
-            if (outputData != 0)
+            if (toFree != 0)
             {
-                if (outputData != 0)
+                if (toFree != 0)
                 {
-                    delete[] outputData->mData;
+                    delete[] toFree->mData;
                 }
-                if (outputData != 0)
+                if (toFree != 0)
                 {
-                    nlFree(outputData);
+                    nlFree(toFree);
                 }
             }
         }
     }
 
-    if (formatData != 0)
+    toFree = formatData;
+    if (toFree != 0)
     {
-        if (--formatData->mRefCount == 0)
+        if (--toFree->mRefCount == 0)
         {
-            if (formatData != 0)
+            if (toFree != 0)
             {
-                if (formatData != 0)
+                if (toFree != 0)
                 {
-                    delete[] formatData->mData;
+                    delete[] toFree->mData;
                 }
-                if (formatData != 0)
+                if (toFree != 0)
                 {
-                    nlFree(formatData);
+                    nlFree(toFree);
                 }
             }
         }
@@ -786,40 +955,24 @@ void StatsTracker::WriteCurrentlyPlaying() const
         len = 0;
     }
 
-    static char emptyString;
-    static bool init;
-    if (!init)
-    {
-        emptyString = 0;
-        init = true;
-    }
-
-    const char* str;
-    if (retainedData != 0)
-    {
-        str = retainedData->mData;
-    }
-    else
-    {
-        str = &emptyString;
-    }
-
+    const char* str = ((BasicString<char, Detail::TempStringAllocator>*)&retainedData)->c_str();
     fwrite(str, 1, len, file);
     fclose(file);
 
-    if (retainedData != 0)
+    toFree = retainedData;
+    if (toFree != 0)
     {
-        if (--retainedData->mRefCount == 0)
+        if (--toFree->mRefCount == 0)
         {
-            if (retainedData != 0)
+            if (toFree != 0)
             {
-                if (retainedData != 0)
+                if (toFree != 0)
                 {
-                    delete[] retainedData->mData;
+                    delete[] toFree->mData;
                 }
-                if (retainedData != 0)
+                if (toFree != 0)
                 {
-                    nlFree(retainedData);
+                    nlFree(toFree);
                 }
             }
         }

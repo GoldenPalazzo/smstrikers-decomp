@@ -90,9 +90,85 @@ void ShapeRender::CreateFlatCylinderEndGeometry(PrimitiveShape& prim)
 
 /**
  * Offset/Address/Size: 0xE14 | 0x801FC0A4 | size: 0x3AC
+ * TODO: 64.9% match - compiler CSEs texcoord Y floats to callee-saved FPRs
+ * instead of recomputing from GPR xoris values each inner iteration.
  */
-void ShapeRender::CreateCylinderGeometry(PrimitiveShape&)
+void ShapeRender::CreateCylinderGeometry(PrimitiveShape& prim)
 {
+    nlVector3 vNormal;
+    nlVector3* pdst;
+    nlVector3* ndst;
+    nlVector2* tdst;
+    int nRing;
+    float z0;
+    float z1;
+    int nSegment;
+    float x0;
+    float y0;
+    float x1;
+    float y1;
+
+    prim.vertCount = 0x40;
+    prim.position = (nlVector3*)glResourceAlloc(0x300, GLM_VertexData);
+    prim.normal = (nlVector3*)glResourceAlloc(0x300, GLM_VertexData);
+    prim.texcoord = (nlVector2*)glResourceAlloc(0x200, GLM_VertexData);
+
+    pdst = prim.position;
+    ndst = prim.normal;
+    tdst = prim.texcoord;
+
+    for (nRing = 0; nRing < 2; nRing++)
+    {
+        z0 = -0.5f + (float)nRing * 0.5f;
+        z1 = -0.5f + (float)(nRing + 1) * 0.5f;
+
+        nlSin((u16)((u16)(int)(10430.378f * ((float)nRing * 0.5f)) + 0x4000));
+        nlSin((u16)((u16)(int)(10430.378f * ((float)(nRing + 1) * 0.5f)) + 0x4000));
+
+        for (nSegment = 0; nSegment < 0x10; nSegment++)
+        {
+            int angle = (int)(10430.378f * ((float)nSegment * 0.3926991f));
+
+            x0 = 0.5f * nlSin((u16)angle);
+            y0 = 0.5f * nlSin((u16)((u16)angle + 0x4000));
+            x1 = 0.5f * nlSin((u16)angle);
+            y1 = 0.5f * nlSin((u16)((u16)angle + 0x4000));
+
+            pdst->f.x = x0;
+            pdst->f.y = y0;
+            pdst->f.z = z0;
+
+            {
+                float invLen = nlRecipSqrt(z0 * z0 + (x0 * x0 + y0 * y0), true);
+                vNormal.f.x = invLen * x0;
+                vNormal.f.y = invLen * y0;
+                vNormal.f.z = invLen * z0;
+            }
+            *ndst = vNormal;
+
+            tdst->f.x = (float)nSegment / 16.0f;
+            tdst->f.y = (float)nRing * 0.5f;
+
+            pdst[1].f.x = x1;
+            pdst[1].f.y = y1;
+            pdst[1].f.z = z1;
+
+            {
+                float invLen = nlRecipSqrt(z1 * z1 + (x1 * x1 + y1 * y1), true);
+                vNormal.f.x = invLen * x1;
+                vNormal.f.y = invLen * y1;
+                vNormal.f.z = invLen * z1;
+            }
+            ndst[1] = vNormal;
+
+            tdst[1].f.x = (float)nSegment / 16.0f;
+            tdst[1].f.y = (float)(nRing + 1) * 0.5f;
+
+            pdst += 2;
+            ndst += 2;
+            tdst += 2;
+        }
+    }
 }
 
 /**

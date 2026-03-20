@@ -1,4 +1,6 @@
 #include "Game/SH/SHCupCheater.h"
+#include "Game/FE/FEAudio.h"
+#include "Game/FE/feInput.h"
 
 // /**
 //  * Offset/Address/Size: 0x0 | 0x800E9970 | size: 0x38
@@ -127,8 +129,98 @@ void CupCheaterScene::SceneCreated()
 /**
  * Offset/Address/Size: 0x1140 | 0x800E8890 | size: 0x394
  */
-void CupCheaterScene::Update(float)
+void CupCheaterScene::Update(float dt)
 {
+    BaseSceneHandler::Update(dt);
+
+    if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x100, false, NULL))
+    {
+        if (m_SlideMenu->ApplyFunction())
+        {
+            FEAudio::PlayAnimAudioEvent("sfx_accept", false);
+        }
+    }
+    else if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xD, true, NULL))
+    {
+        if (m_SlideMenu->PrevItem())
+        {
+            FEAudio::PlayAnimAudioEvent("sfx_menu_move_up", false);
+        }
+    }
+    else if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xE, true, NULL))
+    {
+        if (m_SlideMenu->NextItem())
+        {
+            FEAudio::PlayAnimAudioEvent("sfx_menu_move_down", false);
+        }
+    }
+    else if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xB, true, NULL))
+    {
+        switch (m_SlideMenu->m_currentSlide)
+        {
+        case 5:
+            mSniper--;
+            mSniper &= ~(mSniper >> 31);
+            FEAudio::PlayAnimAudioEvent("sfx_option_scroll_left", false);
+            UpdateSlides();
+            break;
+        case 6:
+            mStriker--;
+            mStriker &= ~(mStriker >> 31);
+            FEAudio::PlayAnimAudioEvent("sfx_option_scroll_left", false);
+            UpdateSlides();
+            break;
+        case 7:
+            mTactician--;
+            mTactician &= ~(mTactician >> 31);
+            FEAudio::PlayAnimAudioEvent("sfx_option_scroll_left", false);
+            UpdateSlides();
+            break;
+        case 8:
+            mParamedic--;
+            mParamedic &= ~(mParamedic >> 31);
+            FEAudio::PlayAnimAudioEvent("sfx_option_scroll_left", false);
+            UpdateSlides();
+            break;
+        }
+    }
+    else if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xC, true, NULL))
+    {
+        switch (m_SlideMenu->m_currentSlide)
+        {
+        case 5:
+            mSniper++;
+            FEAudio::PlayAnimAudioEvent("sfx_option_scroll_right", false);
+            UpdateSlides();
+            break;
+        case 6:
+            mStriker++;
+            FEAudio::PlayAnimAudioEvent("sfx_option_scroll_right", false);
+            UpdateSlides();
+            break;
+        case 7:
+            mTactician++;
+            FEAudio::PlayAnimAudioEvent("sfx_option_scroll_right", false);
+            UpdateSlides();
+            break;
+        case 8:
+            mParamedic++;
+            FEAudio::PlayAnimAudioEvent("sfx_option_scroll_right", false);
+            UpdateSlides();
+            break;
+        }
+    }
+    else if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x40, false, NULL))
+    {
+        mVeteran--;
+        mVeteran &= ~(mVeteran >> 31);
+        UpdateSlides();
+    }
+    else if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x20, false, NULL))
+    {
+        mVeteran++;
+        UpdateSlides();
+    }
 }
 
 /**
@@ -585,4 +677,5 @@ void CupCheaterScene::OnSelectAwayOTWin()
  */
 void CupCheaterScene::UpdateSlides()
 {
+    FORCE_DONT_INLINE;
 }

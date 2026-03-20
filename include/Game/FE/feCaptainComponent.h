@@ -14,6 +14,13 @@ class FEPresentation;
 class AsyncImage;
 class ISidekickGridComponent;
 
+enum UpdateResult
+{
+    UPDATE_OK = 0,
+    UPDATE_GO_BACK = 1,
+    UPDATE_GO_FORWARD = 2,
+};
+
 enum Phase
 {
     PHASE_IDLE = 0,
@@ -54,7 +61,7 @@ public:
     ~IChooseCaptain();
     void Initialize(const char*, const char*);
     void UpdateSound(float);
-    void Update(float);
+    UpdateResult Update(float);
     void UpdateAsyncImages();
     void SceneCreated(FEPresentation*);
     void SetupCaptainComponent(TLComponentInstance*, int);

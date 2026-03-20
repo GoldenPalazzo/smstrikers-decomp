@@ -72,7 +72,8 @@ void TestTask::Run(float dt)
 
 /**
  * Offset/Address/Size: 0x424 | 0x8016CD20 | size: 0x2CC
- * TODO: 90.1% scratch match; remaining diffs are mostly r29/r30/r31 allocation.
+ * TODO: 97.7% match - remaining diffs are register-allocation around `this` and
+ * string temporaries (r29/r31), plus cleanup-path branch layout.
  */
 void TestTask::RunSmokeTest(float)
 {
@@ -80,11 +81,11 @@ void TestTask::RunSmokeTest(float)
     {
         if (mTestTimeOut <= 0.0f)
         {
-            const char* output = smokeTestSuccessOutput;
-            void* debugFile = nlOpenFileDebug(output, false, false);
+            const char* text = smokeTestSuccessOutput;
+            void* debugFile = nlOpenFileDebug(text, false, false);
             if (debugFile)
             {
-                nlWriteLineDebug(debugFile, output, false);
+                nlWriteLineDebug(debugFile, text, false);
                 nlFlushFileDebug(debugFile);
                 nlCloseFileDebug(debugFile);
             }
@@ -92,16 +93,15 @@ void TestTask::RunSmokeTest(float)
             BasicStringInternal* data = (BasicStringInternal*)nlMalloc(0x10, 8, true);
             if (data)
             {
-                const char* formatTemplate = "SUCCESS: smoke test successful, didn't crash for {0} seconds";
+                text = "SUCCESS: smoke test successful, didn't crash for {0} seconds";
                 data->mData = 0;
                 data->mSize = 0;
                 data->mCapacity = 0;
 
-                const char* p = formatTemplate;
-                while (*p != '\0')
+                const char* p = text;
+                while (*p++ != '\0')
                 {
                     data->mSize++;
-                    p++;
                 }
                 data->mSize++;
 
@@ -110,7 +110,7 @@ void TestTask::RunSmokeTest(float)
 
                 for (int i = 0; i < data->mSize; i++)
                 {
-                    data->mData[i] = formatTemplate[i];
+                    data->mData[i] = *text++;
                 }
                 data->mRefCount = 1;
             }
@@ -120,47 +120,50 @@ void TestTask::RunSmokeTest(float)
             BasicStringInternal* formattedData;
 
             Format(*(BasicString<char, Detail::TempStringAllocator>*)&formattedData,
-                   *(BasicString<char, Detail::TempStringAllocator>*)&formatData, configValue);
+                *(BasicString<char, Detail::TempStringAllocator>*)&formatData,
+                configValue);
 
+            const char* logText = ((BasicString<char, Detail::TempStringAllocator>*)&formattedData)->c_str();
             if (mTestLog)
             {
-                nlWriteLineDebug(mTestLog,
-                    ((BasicString<char, Detail::TempStringAllocator>*)&formattedData)->c_str(), false);
+                nlWriteLineDebug(mTestLog, logText, false);
                 nlWriteLineDebug(mTestLog, "\n", false);
                 nlFlushFileDebug(mTestLog);
             }
 
-            if (formattedData)
+            BasicStringInternal* toFree = formattedData;
+            if (toFree)
             {
-                if (--formattedData->mRefCount == 0)
+                if (--toFree->mRefCount == 0)
                 {
-                    if (formattedData)
+                    if (toFree)
                     {
-                        if (formattedData)
+                        if (toFree)
                         {
-                            delete[] formattedData->mData;
+                            delete[] toFree->mData;
                         }
-                        if (formattedData)
+                        if (toFree)
                         {
-                            nlFree(formattedData);
+                            nlFree(toFree);
                         }
                     }
                 }
             }
 
-            if (formatData)
+            toFree = formatData;
+            if (toFree)
             {
-                if (--formatData->mRefCount == 0)
+                if (--toFree->mRefCount == 0)
                 {
-                    if (formatData)
+                    if (toFree)
                     {
-                        if (formatData)
+                        if (toFree)
                         {
-                            delete[] formatData->mData;
+                            delete[] toFree->mData;
                         }
-                        if (formatData)
+                        if (toFree)
                         {
-                            nlFree(formatData);
+                            nlFree(toFree);
                         }
                     }
                 }
@@ -217,14 +220,15 @@ void TestTask::RunFrameRateTest(float dt)
         BasicStringInternal* formattedData;
 
         Format(*(BasicString<char, Detail::TempStringAllocator>*)&formattedData,
-               *(BasicString<char, Detail::TempStringAllocator>*)&formatData,
-               mMinimumFrameRate,
-               actualFrameRate);
+            *(BasicString<char, Detail::TempStringAllocator>*)&formatData,
+            mMinimumFrameRate,
+            actualFrameRate);
 
         if (mTestLog)
         {
             nlWriteLineDebug(mTestLog,
-                             ((BasicString<char, Detail::TempStringAllocator>*)&formattedData)->c_str(), false);
+                ((BasicString<char, Detail::TempStringAllocator>*)&formattedData)->c_str(),
+                false);
             nlWriteLineDebug(mTestLog, "\n", false);
             nlFlushFileDebug(mTestLog);
         }
@@ -307,13 +311,14 @@ void TestTask::RunFrameRateTest(float dt)
         BasicStringInternal* formattedData;
 
         Format(*(BasicString<char, Detail::TempStringAllocator>*)&formattedData,
-               *(BasicString<char, Detail::TempStringAllocator>*)&formatData,
-               mMinimumFrameRate);
+            *(BasicString<char, Detail::TempStringAllocator>*)&formatData,
+            mMinimumFrameRate);
 
         if (mTestLog)
         {
             nlWriteLineDebug(mTestLog,
-                             ((BasicString<char, Detail::TempStringAllocator>*)&formattedData)->c_str(), false);
+                ((BasicString<char, Detail::TempStringAllocator>*)&formattedData)->c_str(),
+                false);
             nlWriteLineDebug(mTestLog, "\n", false);
             nlFlushFileDebug(mTestLog);
         }

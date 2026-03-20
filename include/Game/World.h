@@ -58,7 +58,7 @@ public:
     /* 0x04 */ virtual ~World();
 
     /* 0x08 */ virtual eTerrain GetTerrainType(const nlVector3&) const = 0;
-    /* 0x10 */ virtual void HandleObjectCreation(WorldObjectData*);
+    /* 0x10 */ virtual u8 HandleObjectCreation(WorldObjectData*);
     /* 0x14 */ virtual void Render();
     /* 0x18 */ virtual void Update(float);
     /* 0x1C */ virtual void UpdateInReplay(float);

@@ -541,7 +541,7 @@ extern eStadiumID PickStadium__15GameInfoManagerCFb10eStadiumID(const GameInfoMa
 void GameInfoManager::SetupTournamentKnockout(eTeamID* pTeamIDs, eSidekickID* pSidekickIDs)
 {
     int zero = 0;
-    u16 numGames;
+    int numGames;
     s16 roundParam = mCurrentCup->mRoundNumber;
 
     if (roundParam == -4)
@@ -588,14 +588,15 @@ void GameInfoManager::SetupTournamentKnockout(eTeamID* pTeamIDs, eSidekickID* pS
     mCurrentCup->mGameNumber = zero;
     mLastHumanStadium = STAD_INVALID;
 
-    u16 numTeams = (u16)mCurrentCup->GetNumTeams();
+    int numTeams = (u16)mCurrentCup->GetNumTeams();
 
     *mCurrentCup->GetRoundResults(0) = 1;
     *mCurrentCup->GetRoundResults(1) = 1;
     *mCurrentCup->GetRoundResults(2) = 1;
 
-    eTeamID* pTeamInfo = pTeamIDs;
     eSidekickID* pSidekickInfo = pSidekickIDs;
+    eTeamID* pTeamInfo = pTeamIDs;
+    eTeamID* pTeamStatsID = pTeamIDs;
 
     for (int i = 0; i < numGamesCount; i++)
     {
@@ -641,7 +642,7 @@ void GameInfoManager::SetupTournamentKnockout(eTeamID* pTeamIDs, eSidekickID* pS
     }
 
     TeamStats* pStats = mCurrentCup->GetTeamStats(0);
-    eTeamID* pTeamStatsID = pTeamIDs;
+    pTeamStatsID = pTeamIDs;
 
     for (int i = 0; i < numTeams; i++)
     {
@@ -671,9 +672,101 @@ unsigned char GameInfoManager::SetupKnockoutRound(short)
 
 /**
  * Offset/Address/Size: 0x7534 | 0x8017CBD8 | size: 0x3A4
+ * TODO: 99.61% match - dnmflags r29 vs r27 register allocation diff cascades
+ * to flag extraction regs and inner temp regs (away r6 vs r8). All diffs register-only.
  */
-void GameInfoManager::DetermineNextMatchups(int)
+unsigned char GameInfoManager::DetermineNextMatchups(int dnmflags)
 {
+    int round = mCurrentCup->mRoundNumber;
+
+    if (round != -4)
+    {
+        if (round != -3)
+        {
+            if ((u32)(round + 2) > 1)
+            {
+                if (round != -5 || !mDoingKnockout)
+                {
+                    if (mDoingKnockout)
+                    {
+                        mPreviousCup->GetNumTeams();
+                    }
+                    else if (mCurrentMode != GM_BOWSER_CUP && mCurrentMode != GM_SUPER_BOWSER_CUP)
+                    {
+                        mCurrentCup->GetNumTeams();
+                    }
+                }
+            }
+        }
+    }
+
+    int userPad = mMainUserPadNumber;
+
+    while (round != -5)
+    {
+        u16 numRounds = mCurrentCup->GetNumRounds();
+
+        if (round == -4)
+        {
+            round = (u16)numRounds - 3;
+        }
+
+        if (round == -3)
+        {
+            round = (u16)numRounds - 2;
+        }
+
+        if (round == -2 || round == -1)
+        {
+            round = (u16)numRounds - 1;
+        }
+
+        BasicGameInfo* gameinfo = mCurrentCup->GetGameInfo(round, mCurrentCup->mGameNumber);
+        eTeamID home = gameinfo->mTeamIndex[0];
+        eTeamID away = gameinfo->mTeamIndex[1];
+        mGameInfo[mCurrentMode] = gameinfo;
+
+        if (dnmflags & 0x1)
+        {
+            u16 humanTeams = mCurrentCup->mHumanTeams;
+            if ((humanTeams & (1 << home)) || (humanTeams & (1 << away)))
+            {
+                mGameInfo[mCurrentMode]->mPadSides[(u16)userPad] = (home != mCurrentCup->mUserSelectedTeam);
+                return 1;
+            }
+        }
+
+        if (dnmflags & 0x10)
+        {
+            nlSingleton<StatsTracker>::s_pInstance->SetBasicGameInfoPointer(gameinfo, true);
+            nlSingleton<StatsTracker>::s_pInstance->SimulateGame();
+            nlSingleton<StatsTracker>::s_pInstance->CompileEndOfGameStats();
+        }
+
+        if (!(dnmflags & 0x2))
+        {
+            break;
+        }
+
+        mCurrentCup->mGameNumber++;
+
+        if (mCurrentCup->mGameNumber == GetNumGamesPerRound(mCurrentCup->mRoundNumber) && (dnmflags & 0x4))
+        {
+            IncreaseRoundNumber();
+        }
+
+        if (mCurrentCup->mGameNumber == GetNumGamesPerRound(mCurrentCup->mRoundNumber))
+        {
+            if (dnmflags & 0x8)
+            {
+                break;
+            }
+
+            round = mCurrentCup->mRoundNumber;
+        }
+    }
+
+    return 0;
 }
 
 /**
@@ -1653,8 +1746,8 @@ bool GameInfoManager::IsCustomFreezingUnlocked() const
 
 /**
  * Offset/Address/Size: 0x41C | 0x80175AC0 | size: 0x2B4
- * TODO: 96.79% match - prologue still differs on the redundant second mode check/load
- * sequence and one inlined GetNumGamesPerRound path keeps reloading mCurrentCup.
+ * TODO: 98.41% match - still missing the redundant second mode check/load in the
+ * prologue, and one inlined GetNumGamesPerRound path still reloads mCurrentCup.
  */
 bool GameInfoManager::HasHumanGameBeenPlayed() const
 {
@@ -1673,20 +1766,7 @@ bool GameInfoManager::HasHumanGameBeenPlayed() const
     currentRound = mCurrentCup->mRoundNumber;
     currentGame = mCurrentCup->mGameNumber;
 
-    if ((mCurrentMode == GM_TOURNAMENT) && (mCustomTournamentInfo.m_tournMode == TM_KNOCKOUT))
-    {
-        u16 numRounds = mCurrentCup->GetNumRounds();
-        round = -4;
-
-        if (numRounds == 2)
-        {
-            round = -3;
-        }
-    }
-    else
-    {
-        round = 0;
-    }
+    round = GetFirstRoundNumber();
 
     currentCup = mCurrentCup;
     mode = mCurrentMode;

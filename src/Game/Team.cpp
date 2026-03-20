@@ -13,12 +13,14 @@
 #include "Game/Effects/EmissionManager.h"
 #include "Game/Sys/audio.h"
 
+#include "Game/AI/Fuzzy.h"
 #include "Game/AI/Scripts/ScriptQuestions.h"
 
 #include "NL/nlMath.h"
 #include <stdlib.h>
 
 cTeam* g_pTeams[2] = { NULL, NULL };
+static nlVector2 g_vMarkDistanceConfidence;
 
 /**
  * Offset/Address/Size: 0x1CF0 | 0x8006609C | size: 0x138
@@ -430,11 +432,9 @@ static inline void UpdateBallInterceptTime(cTeam* pTeam)
 
         if (landingTime > 0.0f)
         {
-            float y = v3LandingSpot.f.y - pPlayer->m_v3Position.f.y;
             float x = v3LandingSpot.f.x - pPlayer->m_v3Position.f.x;
-            float y2 = y * y;
-            float sum = (x * x) + y2;
-            interceptTime = nlSqrt(sum, true) / speed;
+            float y = v3LandingSpot.f.y - pPlayer->m_v3Position.f.y;
+            interceptTime = nlSqrt((x * x) + (y * y), true) / speed;
         }
         else
         {
@@ -453,10 +453,7 @@ static inline void UpdateBallInterceptTime(cTeam* pTeam)
                 {
                     float solution1 = fSolutions[1];
                     interceptTime = fSolutions[0];
-                    if (interceptTime > solution1)
-                    {
-                        interceptTime = solution1;
-                    }
+                    interceptTime = (interceptTime <= solution1) ? interceptTime : solution1;
                 }
                 else
                 {
@@ -471,8 +468,8 @@ static inline void UpdateBallInterceptTime(cTeam* pTeam)
 
 /**
  * Offset/Address/Size: 0x132C | 0x800656D8 | size: 0x2CC
- * TODO: 96.35% match - remaining diffs are -inline deferred artifacts:
- *   r3/r4 swap, fcmpu order, stalling 1.0f CSE, loop counter r30/r28
+ * TODO: 98.77% match - remaining diffs are MWCC register allocation/CSE artifacts:
+ *   r3/r4 swap in gameplay gate, stalling 1.0f CSE, r30/r28 loop-counter swap
  */
 void cTeam::Update(float dt)
 {
@@ -505,7 +502,7 @@ void cTeam::Update(float dt)
         mtBallInterceptTimer.Countdown(dt, 0.0f);
 
         float offensive = Offensive(this);
-        if (offensive != 0.0f && InOffensiveZone(g_pBall->m_v3Position, (eTeamSide)m_nSide) < 1.0f)
+        if (offensive && InOffensiveZone(g_pBall->m_v3Position, (eTeamSide)m_nSide) < 1.0f)
         {
             float stalling = Stalling(this);
             if (stalling < 1.0f)
@@ -701,7 +698,7 @@ static inline void AbortAllFielderPlays(cTeam* pTeam)
 
 /**
  * Offset/Address/Size: 0x6F0 | 0x80064A9C | size: 0x378
- * TODO: 99.75% match - pBallOwner r29/r28 register swap and fcmpu operand order
+ * TODO: 99.80% match - pBallOwner r29/r28 register swap (scratch context-dependent)
  */
 void cTeam::UpdateTeamAI(float fDeltaT)
 {
@@ -722,7 +719,7 @@ void cTeam::UpdateTeamAI(float fDeltaT)
         pBallOwner = g_pBall->m_pPassTarget;
         if ((pBallOwner != NULL) && (pBallOwner->m_eClassType == FIELDER))
         {
-            if (ReceivingPass((cFielder*)pBallOwner) != 0.0f)
+            if (ReceivingPass((cFielder*)pBallOwner))
             {
             }
             else
@@ -899,10 +896,159 @@ int MostDefensivePlayer(const void* a, const void* b)
 
 /**
  * Offset/Address/Size: 0x120 | 0x800644CC | size: 0x3B0
+ * TODO: 96.93% match - register allocation diffs, fcmpu/fmuls operand order,
+ *       rlwinm mask diff, instruction scheduling (0.0f load placement).
+ *       Known -inline deferred compiler behavior difference.
  */
-void cTeam::AssignMarks(bool)
+void cTeam::AssignMarks(bool bForceReMark)
 {
-    FORCE_DONT_INLINE;
+    cTeam* pOpponentTeam;
+    cFielder* pMyFielder;
+    cFielder* pOppFielder;
+
+    if (mtMarkTimer.m_uPackedTime != 0 && !bForceReMark)
+    {
+        return;
+    }
+
+    for (int i = 0; i < 4; i++)
+    {
+        ((cFielder*)m_pPlayers[i])->SetMark(NULL);
+    }
+
+    if (mpCurrentSituation != SITUATION_OFFENSE)
+    {
+        pOpponentTeam = g_pTeams[!m_nSide];
+
+        float matrix[4][4];
+
+        for (int i = 0; i < 4; i++)
+        {
+            for (int j = 0; j < 4; j++)
+            {
+                pMyFielder = (cFielder*)m_pPlayers[i];
+                pOppFielder = (cFielder*)pOpponentTeam->m_pPlayers[j];
+
+                float fDownfieldMax = FGREATER(DownfieldFrom(pMyFielder, pOppFielder), 0.5f);
+                float fInBetween = InBetweenMyNetAnd(pMyFielder, pOppFielder);
+                if (fInBetween >= fDownfieldMax)
+                {
+                    fDownfieldMax = fInBetween;
+                }
+
+                float dy = pMyFielder->m_v3Position.f.y - pOppFielder->m_v3Position.f.y;
+                float dx = pMyFielder->m_v3Position.f.x - pOppFielder->m_v3Position.f.x;
+                float fDist = nlSqrt(dy * dy + dx * dx, true);
+                float fNormDist = NormalizeVal(fDist, g_vMarkDistanceConfidence);
+
+                float fConfidence = 0.0f;
+                bool bNeedsMark = true;
+
+                float fDefZone = InDefensiveZone(pOppFielder);
+                if (1.0f - fDefZone >= 0.75f)
+                {
+                    float fBreakaway = OnBreakaway(pOppFielder);
+                    if (fBreakaway > 0.5f)
+                    {
+                        float fDF = DownfieldFrom(pMyFielder, pOppFielder);
+                        if (fNormDist >= fDF)
+                        {
+                            fConfidence = fNormDist;
+                        }
+                        else
+                        {
+                            fConfidence = fDF;
+                        }
+                        bNeedsMark = false;
+                    }
+                    else
+                    {
+                        float fReceiving = ReceivingPass(pOppFielder);
+                        float fBallOwn = BallOwner(pOppFielder);
+                        float fMax;
+                        if (fBallOwn >= fReceiving)
+                        {
+                            fMax = fBallOwn;
+                        }
+                        else
+                        {
+                            fMax = fReceiving;
+                        }
+
+                        if (fMax != 0.0f)
+                        {
+                            bNeedsMark = false;
+                            fConfidence = fNormDist * 0.5f + fDownfieldMax * 0.5f;
+                        }
+                        else
+                        {
+                            float fChasing = ChasingBall(pOppFielder);
+                            if (fChasing != 0.0f)
+                            {
+                                float fIntercept = AbleToInterceptBall(pMyFielder);
+                                bNeedsMark = false;
+                                fConfidence = fIntercept;
+                            }
+                        }
+                    }
+                }
+
+                float fBallOwn2 = BallOwner(pOppFielder);
+                if (fBallOwn2 != 0.0f)
+                {
+                    fConfidence *= 2.0f;
+                }
+
+                if (bNeedsMark)
+                {
+                    fConfidence = fNormDist * 0.25f + fDownfieldMax * 0.75f;
+                }
+
+                if (Incapacitated(pMyFielder) != 0.0f)
+                {
+                    fConfidence *= 0.5f;
+                }
+
+                matrix[i][j] = fConfidence;
+            }
+        }
+
+        unsigned int sortedIndices[4];
+        SortToMinOrMaxTotalSum(sortedIndices, matrix, false);
+
+        for (int i = 0; i < 4; i++)
+        {
+            ((cFielder*)m_pPlayers[i])->SetMark((cFielder*)pOpponentTeam->m_pPlayers[sortedIndices[i]]);
+        }
+
+        cFielder* pBallOwner = g_pBall->GetOwnerFielder();
+        if (pBallOwner != NULL)
+        {
+            pBallOwner = g_pBall->GetOwnerFielder();
+            if (pBallOwner->m_pTeam != this)
+            {
+                cFielder* pMarker = g_pBall->GetOwnerFielder()->m_pMarker;
+                if (Incapacitated(pMarker) != 0.0f)
+                {
+                    pBallOwner = g_pBall->GetOwnerFielder();
+                    cFielder* pOldMarker = pBallOwner->m_pMarker;
+                    for (int k = 0; k < 4; k++)
+                    {
+                        cFielder* pFielder = m_pBallInterceptOrderedFielders[k];
+                        if (pFielder != pOldMarker)
+                        {
+                            cFielder* pOldMark = pFielder->m_pMark;
+                            pFielder->SetMark(g_pBall->GetOwnerFielder());
+                            pOldMarker->SetMark(pOldMark);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    mtMarkTimer.SetSeconds(0.5f);
 }
 
 /**

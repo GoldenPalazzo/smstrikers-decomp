@@ -314,8 +314,9 @@ void IChooseCaptain::UpdateSound(float dt)
 /**
  * Offset/Address/Size: 0x141C | 0x800BEDB8 | size: 0x694
  */
-void IChooseCaptain::Update(float)
+UpdateResult IChooseCaptain::Update(float)
 {
+    FORCE_DONT_INLINE;
 }
 
 /**

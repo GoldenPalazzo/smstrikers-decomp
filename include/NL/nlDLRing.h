@@ -129,9 +129,11 @@ T* nlDLRingRemoveStart(T** current)
 }
 
 template <typename T>
-void nlDLRingRemoveEnd(T** head)
+T* nlDLRingRemoveEnd(T** head)
 {
-    nlDLRingRemove<T>(head, *head);
+    T* node = *head;
+    nlDLRingRemove<T>(head, node);
+    return node;
 }
 
 template <typename T>

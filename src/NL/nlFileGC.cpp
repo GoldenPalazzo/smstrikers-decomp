@@ -114,8 +114,8 @@ bool nlAsyncReadsPending(nlFile* file)
 
 /**
  * Offset/Address/Size: 0x2F8 | 0x801CF04C | size: 0x2D0
- * TODO: 95.6% match - 1 extra mr instruction (uPos scheduling through r0
- * instead of direct to r23) and callee-saved register permutation
+ * TODO: 97.1% match - 1 extra mr instruction (uPos scheduling through r0
+ * instead of direct to r23) and remaining callee-saved register permutation
  */
 void* nlLoadEntireFileToVirtualMemory(const char* fileName, int* size, unsigned int transferSize, void* target, eAllocType allocType)
 {
@@ -219,8 +219,7 @@ void* nlLoadEntireFileToVirtualMemory(const char* fileName, int* size, unsigned 
     alloc_fallback:
     {
         unsigned int totalFree = nlVirtualTotalFree();
-        unsigned int largestBlock = nlVirtualLargestBlock();
-        OSReport("load into virtual memory failure %d %s %d %d\n", fileSize, fileName, largestBlock, totalFree);
+        OSReport("load into virtual memory failure %d %s %d %d\n", fileSize, fileName, nlVirtualLargestBlock(), totalFree);
         buffer = nlMalloc(fileSize, 0x20, false);
         nlRead(pGCFile, buffer, fileSize);
     }

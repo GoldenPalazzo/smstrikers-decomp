@@ -245,10 +245,12 @@ void CupHubScene::Update(float)
 
 /**
  * Offset/Address/Size: 0x670C | 0x800F0468 | size: 0x298
- * TODO: 94.92% match - first trophy condition keeps singleton in r4/r3 move pair; functor placement-new path still differs in null-check/vtable-init scheduling.
+ * TODO: 99.97% match - remaining i diff on the MemFun literal-label load pair (@1204/@562).
  */
 void CupHubScene::EndCup()
 {
+    CupHubScene* self = this;
+
     if (nlSingleton<GameInfoManager>::s_pInstance->mDisplayTrophy[0] && nlSingleton<GameInfoManager>::s_pInstance->IsInCupMode())
     {
         nlSingleton<GameSceneManager>::s_pInstance->PopEntireStack();
@@ -270,19 +272,13 @@ void CupHubScene::EndCup()
             FEPopupMenu* popup = (FEPopupMenu*)nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
 
             BindExp1_vfmfcp bind = Bind<void, MemFunImpl_CupHubScene_v, CupHubScene*>(
-                MemFun<CupHubScene, void>(&CupHubScene::ReturnToMainMenu), this);
+                MemFun<CupHubScene, void>(&CupHubScene::ReturnToMainMenu), self);
 
             {
                 Function<FnVoidVoid> yes;
                 yes.mTag = FUNCTOR;
 
-                FunctorImpl_vfmfcp* functor = (FunctorImpl_vfmfcp*)nlMalloc(sizeof(FunctorImpl_vfmfcp), 8, false);
-                if (functor != NULL)
-                {
-                    functor = new (functor) FunctorImpl_vfmfcp();
-                    functor->mBind.mFuncPtr = bind.mFuncPtr;
-                    functor->mBind.mArg = bind.mArg;
-                }
+                FunctorImpl_vfmfcp* functor = new ((FunctorImpl_vfmfcp*)nlMalloc(sizeof(FunctorImpl_vfmfcp), 8, false)) FunctorImpl_vfmfcp(bind);
                 yes.mFunctor = functor;
 
                 Function<FnVoidVoid> no;
@@ -693,6 +689,7 @@ void CupHubScene::HandleButtonComponent()
 
 /**
  * Offset/Address/Size: 0x12EC | 0x800EB048 | size: 0x2D8
+ * TODO: 99.59% match - remaining register allocation mismatch in round-index loop and current-cup pointer reuse
  */
 void CupHubScene::SetRoundColours(eHubColour* coloursArray, int sizeOfArray)
 {
@@ -742,9 +739,10 @@ void CupHubScene::SetRoundColours(eHubColour* coloursArray, int sizeOfArray)
         }
         else
         {
-            BaseCup* previousCup = gameInfo->mPreviousCup;
-            int numRounds = previousCup->GetNumRounds();
-            eHubColour* pColour = coloursArray;
+            eHubColour* pColour;
+            BaseCup* cup = gameInfo->mPreviousCup;
+            int numRounds = cup->GetNumRounds();
+            pColour = coloursArray;
             int k = 0;
             int green = 1;
             int red = 0;
@@ -752,7 +750,7 @@ void CupHubScene::SetRoundColours(eHubColour* coloursArray, int sizeOfArray)
 
             while (k < numRounds)
             {
-                int roundResult = *previousCup->GetRoundResults(k);
+                int roundResult = *cup->GetRoundResults(k);
                 if (roundResult == 0)
                 {
                     *pColour = (eHubColour)green;
@@ -770,11 +768,11 @@ void CupHubScene::SetRoundColours(eHubColour* coloursArray, int sizeOfArray)
                 k++;
             }
 
-            BaseCup* currentCup = gameInfo->mCurrentCup;
+            cup = gameInfo->mCurrentCup;
             int round = gameInfo->GetCurrentRoundNumber();
             if (((u32)(round + 2) <= 1) || (round == -5))
             {
-                int roundResult = *currentCup->GetRoundResults(0);
+                int roundResult = *cup->GetRoundResults(0);
                 if (roundResult == 0)
                 {
                     coloursArray[numRounds] = (eHubColour)1;
@@ -787,7 +785,7 @@ void CupHubScene::SetRoundColours(eHubColour* coloursArray, int sizeOfArray)
 
             if (round == -5)
             {
-                int roundResult = *currentCup->GetRoundResults(1);
+                int roundResult = *cup->GetRoundResults(1);
                 if (roundResult == 0)
                 {
                     coloursArray[numRounds + 1] = (eHubColour)1;

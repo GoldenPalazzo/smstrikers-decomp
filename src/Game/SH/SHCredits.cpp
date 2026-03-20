@@ -1,6 +1,8 @@
 #include "Game/SH/SHCredits.h"
 #include "Game/FE/tlComponentInstance.h"
+#include "Game/FE/feInput.h"
 #include "Game/FE/tlImageInstance.h"
+#include "NL/nlMemory.h"
 
 static char* CREDITS_LINE_NAMES[] = {
     "Line1",
@@ -103,9 +105,6 @@ public:
 
 /**
  * Offset/Address/Size: 0xBCC | 0x8010FD28 | size: 0xDC
- * TODO: 92.64% match - current CreditScene/CreditParser layout emits
- *       SimpleParser construction at +0x5C instead of target +0x64, which
- *       keeps the zero-init stores around 0x50/0x58/0x5C/0x60 out of order.
  */
 CreditScene::CreditScene()
     : mAreCreditsOver(false)
@@ -113,8 +112,8 @@ CreditScene::CreditScene()
 {
     *(u8*)&mTimeElapsed = 0;
     mCreditParser.mFileData = NULL;
-    ((CreditParser*)((char*)&mCreditParser + 8))->mFileSize = 0;
-    ((CreditParser*)((char*)&mCreditParser + 8))->mFileData = NULL;
+    mCreditParser.mActualSize = 0;
+    mCreditParser.mActualData = NULL;
     *(f32*)&mCreditParser.mFileSize = 0.0f;
 
     for (int i = 0; i < 10; i++)
@@ -129,9 +128,9 @@ CreditScene::CreditScene()
  */
 CreditScene::~CreditScene()
 {
-    if (&mCreditParser.mParser != NULL)
+    if (&mCreditParser.mActualSize != NULL)
     {
-        char** data = (char**)&mCreditParser.mParser;
+        char** data = (char**)&mCreditParser.mActualSize;
         if (data[1] != NULL)
         {
             nlFree(data[1]);
@@ -227,9 +226,6 @@ void CreditScene::GotoNextPhase()
 
 /**
  * Offset/Address/Size: 0x6E4 | 0x8010F840 | size: 0x268
- * TODO: 93.69% match - stack frame 0xC0 vs 0xB0 from feVector3 copy,
- *       CreditParser 8-byte offset discrepancy (DWARF 0x54 vs target 0x5C),
- *       InlineHasher stack slot shifts from compiler stack reuse optimization
  */
 void CreditScene::SetupForCredits()
 {
@@ -249,8 +245,8 @@ void CreditScene::SetupForCredits()
         InlineHasher(0));
     pFinalText->m_bVisible = false;
 
-    mCreditParser.mFileData = (char*)nlLoadEntireFile("credits.txt", &mCreditParser.mFileSize, 0x20, (eAllocType)1);
-    mCreditParser.mParser.StartParsing(mCreditParser.mFileData, mCreditParser.mFileSize, false);
+    mCreditParser.mActualData = (char*)nlLoadEntireFile("credits.txt", &mCreditParser.mActualSize, 0x20, (eAllocType)1);
+    mCreditParser.mParser.StartParsing(mCreditParser.mActualData, mCreditParser.mActualSize, false);
 
     nlVector2 boxSize = { 1280.0f, 480.0f };
 
@@ -357,10 +353,140 @@ void CreditScene::UpdateForCopyrightMessage(float dt)
 
 /**
  * Offset/Address/Size: 0x1BC | 0x8010F318 | size: 0x398
+ * TODO: 97.4% match - r4/r6 register swap in string copy loops (both '+' and else branches)
  */
-void CreditScene::UpdateForCredits(float)
+void CreditScene::UpdateForCredits(float dt)
 {
-    FORCE_DONT_INLINE;
+    s32 yDelta = (s32)(-120.0f * (dt / 1000.0f));
+    f32 resetY = -230.0f;
+    s32 lineCount = 0;
+
+    for (s32 i = 0; i < 10; i++)
+    {
+        feVector3 pos = m_pTextLines[i]->GetAssetPosition();
+
+        if (pos.f.y >= resetY && !mLineOnScreen[i])
+        {
+            bool hasToken;
+            const char* pToken = mCreditParser.mParser.NextToken(false);
+
+            if (pToken != NULL)
+            {
+                if (pToken[0] == '+')
+                {
+                    const unsigned char* pLine = (const unsigned char*)"";
+                    u32 count = 64;
+                    u32 ch = 0;
+                    while (count-- && (mStrings[i][ch] = pLine[ch]) != 0)
+                    {
+                        ch++;
+                    }
+                    mStrings[i][63] = 0;
+                }
+                else
+                {
+                    const unsigned char* pSrc = (const unsigned char*)pToken;
+                    u32 count = 64;
+                    u32 ch = 0;
+                    while (count-- && (mStrings[i][ch] = pSrc[ch]) != 0)
+                    {
+                        ch++;
+                    }
+                    mStrings[i][63] = 0;
+                }
+
+                mCreditParser.mParser.AdvanceLine();
+                hasToken = true;
+            }
+            else
+            {
+                hasToken = false;
+            }
+
+            if (hasToken)
+            {
+                m_pTextLines[i]->SetString(mStrings[i]);
+                mLineOnScreen[i] = true;
+                pos.f.y += (float)yDelta;
+                m_pTextLines[i]->SetAssetPosition(pos.f.x, pos.f.y, pos.f.z);
+            }
+        }
+        else
+        {
+            if (pos.f.y >= -720.0f && mLineOnScreen[i])
+            {
+                mLineOnScreen[i] = false;
+                pos.f.y = resetY;
+                m_pTextLines[i]->SetAssetPosition(pos.f.x, pos.f.y, pos.f.z);
+            }
+            else
+            {
+                pos.f.y += (float)yDelta;
+                m_pTextLines[i]->SetAssetPosition(pos.f.x, pos.f.y, pos.f.z);
+            }
+        }
+
+        if (mLineOnScreen[i])
+        {
+            lineCount++;
+        }
+    }
+
+    if (lineCount == 0)
+    {
+        mAreCreditsOver = true;
+    }
+
+    if (!*(u8*)&mTimeElapsed)
+    {
+        bool shouldFade = false;
+
+        if (mAreCreditsOver)
+        {
+            f32 time = *(f32*)&mCreditParser.mFileSize;
+            time += dt;
+            *(f32*)&mCreditParser.mFileSize = time;
+
+            if (time >= 2.0 && !mFinalMessageDisplayed)
+            {
+                shouldFade = true;
+            }
+        }
+        else
+        {
+            if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x24, true, NULL)
+                || g_pFEInput->JustPressed(FE_ALL_PADS, 0x100, false, NULL))
+            {
+                shouldFade = true;
+            }
+        }
+
+        if (shouldFade)
+        {
+            *(u8*)&mTimeElapsed = 1;
+
+            TLComponentInstance* pWhiteFade = GetWhiteFadeComponent();
+            pWhiteFade->SetActiveSlide("credits");
+            pWhiteFade->Update(0.0f);
+        }
+    }
+    else
+    {
+        TLComponentInstance* pWhiteFade = GetWhiteFadeComponent();
+        TLSlide* pSlide = pWhiteFade->GetActiveSlide();
+        f32 slideEnd = pSlide->m_start + pSlide->m_duration;
+
+        if (pWhiteFade->GetActiveSlide()->m_time >= slideEnd)
+        {
+            if (mCreditParser.mActualData != NULL)
+            {
+                nlFree(mCreditParser.mActualData);
+                mCreditParser.mActualData = NULL;
+            }
+
+            GotoNextPhase();
+        }
+    }
 }
 
 /**

@@ -104,7 +104,7 @@ public:
     unsigned char SetupBowserKnockout();
     void SetupTournamentKnockout(eTeamID*, eSidekickID*);
     unsigned char SetupKnockoutRound(short);
-    void DetermineNextMatchups(int);
+    unsigned char DetermineNextMatchups(int);
     void IncreaseRoundNumber();
     void IncreaseGameNumber(bool);
     int GetNumHumanTeams();

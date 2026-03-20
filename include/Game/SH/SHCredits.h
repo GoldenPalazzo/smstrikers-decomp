@@ -14,10 +14,12 @@ class TLImageInstance;
 
 struct CreditParser
 {
-    /* 0x00 */ unsigned long mFileSize; // size 0x4
-    /* 0x04 */ char* mFileData;         // size 0x4
-    /* 0x08 */ SimpleParser mParser;    // size 0x514
-}; // total size: 0x51C
+    /* 0x00 */ unsigned long mFileSize;   // size 0x4
+    /* 0x04 */ char* mFileData;           // size 0x4
+    /* 0x08 */ unsigned long mActualSize; // size 0x4
+    /* 0x0C */ char* mActualData;         // size 0x4
+    /* 0x10 */ SimpleParser mParser;      // size 0x514
+}; // total size: 0x524
 
 class CreditScene : public BaseSceneHandler
 {
@@ -43,9 +45,9 @@ public:
     /*  0x04E */ bool mAreCreditsOver;             // offset 0x4E, size 0x1
     /*  0x04F */ bool mFinalMessageDisplayed;      // offset 0x4F, size 0x1
     /*  0x050 */ float mTimeElapsed;               // offset 0x50, size 0x4
-    /*  0x054 */ CreditParser mCreditParser;       // offset 0x54, size 0x51C
-    /*  0x570 */ unsigned short mStrings[10][64];  // offset 0x570, size 0x500
-}; // total size: 0xA70
+    /*  0x054 */ CreditParser mCreditParser;       // offset 0x54, size 0x524
+    /*  0x578 */ unsigned short mStrings[10][64];  // offset 0x578, size 0x500
+}; // total size: 0xA78
 
 // class FEFinder<TLComponentInstance, 4>
 // {

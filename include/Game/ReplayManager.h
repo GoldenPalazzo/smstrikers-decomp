@@ -8,7 +8,9 @@
 #include "Game/RenderSnapshot.h"
 #include "Game/Replay.h"
 
-// void Blend<RenderSnapshot>(const float*, const RenderSnapshot&, const RenderSnapshot&, RenderSnapshot&);
+template <typename T>
+void Blend(const float* blendFactors, const T& lhs, const T& rhs, T& result);
+
 // void Replayable<0, SaveFrame, RenderSnapshot>(SaveFrame&, RenderSnapshot&);
 // void Replayable<0, LoadFrame, RenderSnapshot>(LoadFrame&, RenderSnapshot&);
 

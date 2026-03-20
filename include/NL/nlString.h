@@ -131,56 +131,29 @@ void nlToLower(CharT* str)
 
 /**
  * Offset/Address/Size: 0x0 | 0x8000DEFC | size: 0x40
- * Ball: void nlStrNCpy<char>(char*, const char*, unsigned long)
+ * TODO: 98.75% match - lbz/extsb r0/r7 register swap (3 register-only diffs)
  */
 template <typename CharT>
 CharT* nlStrNCpy(CharT* str1, const CharT* str2, unsigned long len)
-// void nlStrNCpy<c>__FPcPCcUl(u8 *arg0, u8 *arg1, u32 arg2)
 {
-    //     s32 temp_cr0_eq;
-    //     u32 var_r8;
-    //     CharT *var_r4;
-    //     CharT *var_r6;
-    //     CharT temp_r7;
-
-    //     var_r4 = str2;
-    //     var_r8 = len;
-    //     var_r6 = str1;
-    // loop_2:
-    //     temp_cr0_eq = var_r8 == 0U;
-    //     var_r8 -= 1;
-    //     if (temp_cr0_eq == 0) {
-    //         temp_r7 = *var_r4;
-    //         *var_r6 = temp_r7;
-    //         if ((s8) temp_r7 != 0) {
-    //             var_r6 += 1;
-    //             var_r4 += 1;
-    //             goto loop_2;
-    //         }
-    //     }
-    //     *(str1 + len - 1) = 0;
-
-    bool bVar1;
-    CharT cVar2;
-    CharT* pcVar3;
-    int iVar4;
-
-    pcVar3 = str1;
-    iVar4 = len;
-    while (true)
-    {
-        bVar1 = iVar4 == 0;
-        iVar4 = iVar4 + -1;
-        if (bVar1)
-            break;
-        cVar2 = *str2;
-        *pcVar3 = cVar2;
-        if (cVar2 == '\0')
-            break;
-        pcVar3 = pcVar3 + 1;
-        str2 = str2 + 1;
-    }
-    str1[len + -1] = '\0';
+    CharT* p;
+    CharT c;
+    unsigned long n;
+    n = len;
+    p = str1;
+    goto test;
+loop:
+    p++;
+    str2++;
+test:
+    if (n-- == 0)
+        goto done;
+    c = *str2;
+    *p = c;
+    if (c)
+        goto loop;
+done:
+    str1[len - 1] = '\0';
     return str1;
 }
 

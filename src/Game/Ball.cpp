@@ -484,9 +484,138 @@ void cBall::ShootRelease(const nlVector3& v3Velocity, eSpinType SpinType)
 
 /**
  * Offset/Address/Size: 0xD2C | 0x8000A700 | size: 0x3AC
+ * TODO: 92.79% match - FPR register coloring in FORWARD/BACK spin cross product:
+ *       Cross product temp registers (dirX/upX/upY/dirZ) assigned in cyclic permutation
+ *       vs target (f9/f5/f6/f7 vs f6/f9/f7/f5). MWCC graph coloring quirk.
  */
-void cBall::Shoot(const nlVector3&, const nlVector3&, eSpinType, bool, bool, bool)
+static inline float CalcSpinRand(eSpinType spin);
+
+void cBall::Shoot(const nlVector3& v3Dir, const nlVector3& v3Spin, eSpinType spinType, bool bCanDamage, bool bParam5, bool bParam6)
 {
+    nlVector3 v3PredPos;
+    nlVector3 v3PredVel;
+    nlVector3 v3ToDir;
+    nlVector3 v3FromDir;
+    nlQuaternion qRot;
+    nlVector3 v3Up;
+    nlVector3 v3AngVel;
+
+    Goalie* pGoalie = m_pPrevOwner->m_pTeam->GetOtherTeam()->GetGoalie();
+
+    m_v3Velocity = v3Dir;
+    m_pPhysicsBall->SetLinearVelocity(v3Dir);
+
+    if (spinType == SPINTYPE_NONE)
+    {
+        v3AngVel.f.x = 0.0f;
+        v3AngVel.f.y = 0.0f;
+        v3AngVel.f.z = 0.0f;
+    }
+    else if ((spinType == SPINTYPE_FORWARD) || (spinType == SPINTYPE_BACK))
+    {
+        float fSpinRand = CalcSpinRand(spinType);
+
+        static const nlVector3 kZero = { 0.0f, 0.0f, 0.0f };
+        v3Up = kZero;
+        v3Up.f.z = fSpinRand;
+
+        float upX = v3Up.f.x;
+        float upY = v3Up.f.y;
+        float dirZ = v3Dir.f.z;
+        float dirY = v3Dir.f.y;
+        float dirX = v3Dir.f.x;
+
+        v3AngVel.f.x = (upY * dirZ) - (v3Up.f.z * dirY);
+        v3AngVel.f.y = (-upX * dirZ) + (v3Up.f.z * dirX);
+        v3AngVel.f.z = (upX * dirY) - (upY * dirX);
+    }
+    else if (spinType == SPINTYPE_ROLLING)
+    {
+        m_pPhysicsBall->CalcAngularFromLinearVelocity(v3AngVel);
+        nlVec3Set(v3AngVel, 0.92f * v3AngVel.f.x, 0.92f * v3AngVel.f.y, 0.92f * v3AngVel.f.z);
+    }
+    else if (spinType == SPINTYPE_PARAMETER)
+    {
+        v3AngVel = v3Spin;
+    }
+
+    m_pPhysicsBall->SetAngularVelocity(v3AngVel);
+    m_pPhysicsBall->SetUseAngularVelocity(true);
+    m_pPhysicsBall->SetRotation(m3Ident);
+    FakeBallWorld::InvalidateBallCache();
+
+    m_bBallPathChangeCount = m_bBallPathChangeCount + 1;
+    m_v3ShotOrigin = m_v3Position;
+    m_tNoPickupTimer.SetSeconds(0.1f);
+    m_tBuzzerBeaterTimer.SetSeconds(0.0f);
+    m_tShotTimer.SetSeconds(0.3f);
+
+    m_unk_0xA3 = bParam6;
+    mbCanDamage = bCanDamage;
+    if (!m_unk_0xA3)
+    {
+        m_unk_0xA4 = bParam5;
+    }
+    else
+    {
+        m_unk_0xA4 = false;
+    }
+
+    m_pShooter = NULL;
+
+    if (m_pPhysicsBall->m_bUseMagnusEffect)
+    {
+        float dy = m_v3Position.f.y - m_v3ShotTarget.f.y;
+        float dx = m_v3Position.f.x - m_v3ShotTarget.f.x;
+        float dz = m_v3Position.f.z - m_v3ShotTarget.f.z;
+        float fDist = nlSqrt(dy * dy + dx * dx + dz * dz, true);
+
+        FakeBallWorld::GetPredictedPosAtDistance(fDist, v3PredPos, v3PredVel);
+
+        v3FromDir.f.x = v3PredPos.f.x - m_v3Position.f.x;
+        v3FromDir.f.y = v3PredPos.f.y - m_v3Position.f.y;
+        v3FromDir.f.z = v3PredPos.f.z - m_v3Position.f.z;
+
+        v3ToDir.f.x = m_v3ShotTarget.f.x - m_v3Position.f.x;
+        v3ToDir.f.y = m_v3ShotTarget.f.y - m_v3Position.f.y;
+        v3ToDir.f.z = m_v3ShotTarget.f.z - m_v3Position.f.z;
+
+        GetRotationBetweenVectors(qRot, v3FromDir, v3ToDir);
+        RotateVector(m_v3Velocity, v3Dir, qRot);
+
+        if (m_v3Velocity.f.z < 1.0f && m_v3Position.f.z < 1.0f)
+        {
+            m_v3Velocity.f.z = 1.0f;
+        }
+
+        float fSidelineY = cField::GetSidelineY(1);
+        if (m_v3Position.f.y > fSidelineY - 0.5f)
+        {
+            if (m_v3Velocity.f.y > -0.1f)
+            {
+                m_v3Velocity.f.y = -0.1f;
+            }
+        }
+        else if (m_v3Position.f.y < 0.5f - cField::GetSidelineY(1))
+        {
+            if (m_v3Velocity.f.y < 0.1f)
+            {
+                m_v3Velocity.f.y = 0.1f;
+            }
+        }
+
+        m_pPhysicsBall->SetLinearVelocity(m_v3Velocity);
+        FakeBallWorld::InvalidateBallCache();
+    }
+
+    if (bCanDamage)
+    {
+        pGoalie->InitActionSTSSetup();
+    }
+    else
+    {
+        pGoalie->InitActionSaveSetup(true);
+    }
 }
 
 /**
@@ -1030,6 +1159,122 @@ void cBall::CollideWithWallCallback()
  */
 void cBall::CollideWithGroundCallback()
 {
+    if (mbHyperSTS)
+    {
+        Audio::gWorldSFX.Stop(Audio::eWorldSFX(0x57), cGameSFX::SFX_STOP_FIRST);
+    }
+    Audio::FadeFilterFromCurrentToZero();
+
+    FixedUpdateTask::mTimeScale = 1.0f;
+    ParticleUpdateTask::SetTimeScale(1.0f);
+
+    if (m_pBlurHandler != 0)
+    {
+        m_pBlurHandler->Die(0.5f);
+        m_pBlurHandler = 0;
+    }
+
+    KillBallShot("ball_shot_perfect_glow", true);
+    KillBallShot("ball_pass_perfect_glow", true);
+    KillBallShot("shoot_to_score_shot", false);
+    KillBallShot("ball_shot_onetimer", false);
+
+    Audio::gStadGenSFX.Stop(Audio::eWorldSFX(0xB9), cGameSFX::SFX_STOP_FIRST);
+    Audio::gStadGenSFX.Stop(Audio::eWorldSFX(0xBA), cGameSFX::SFX_STOP_FIRST);
+    Audio::gStadGenSFX.Stop(Audio::eWorldSFX(0xBD), cGameSFX::SFX_STOP_FIRST);
+
+    if (mbHyperSTS)
+    {
+        void* data = (u8*)g_pEventManager->CreateValidEvent(0x47, 0x24) + 0x10;
+        PassBallData* eventdata = new (data) PassBallData();
+        eventdata->pPasser = m_pPrevOwner;
+        eventdata->pTarget = NULL;
+
+        bool pad = eventdata->pPasser->GetGlobalPad();
+        eventdata->mPasserControllerID = pad ? eventdata->pPasser->GetGlobalPad()->m_padIndex : -1;
+    }
+
+    mbHyperSTS = false;
+    mbIsPerfectShot = false;
+
+    gbCanFadeOutPerfectPassSFX = true;
+
+    if (AudioLoader::IsInited())
+    {
+        gfPerfectPassSFXVol = Audio::gStadGenSFX.GetSFXVol(0xBA);
+    }
+
+    if (m_pPassTarget)
+    {
+        m_pPassTarget = NULL;
+    }
+
+    m_v3PassIntercept.f.x = 0.f;
+    m_v3PassIntercept.f.y = 0.f;
+    m_v3PassIntercept.f.z = 0.f;
+
+    m_tPassTargetTimer.m_uPackedTime = 0;
+
+    if (m_uVoiceID)
+    {
+        Audio::StopSFX(m_uVoiceID);
+        m_uVoiceID = 0;
+    }
+
+    f32 fGameDuration = g_pGame->m_fGameDuration;
+    if (g_pGame->GetGameTime() >= fGameDuration && g_pGame->m_eGameState == GS_GAMEPLAY && m_tBuzzerBeaterTimer.m_uPackedTime == 0)
+    {
+        m_tBuzzerBeaterTimer.SetSeconds(0.5f);
+    }
+
+    m_tShotTimer.m_uPackedTime = 0;
+    mbCanDamage = false;
+    m_unk_0xA4 = false;
+
+    if (mbHyperSTS)
+    {
+        Audio::gWorldSFX.Stop(Audio::eWorldSFX(0x57), cGameSFX::SFX_STOP_FIRST);
+    }
+    Audio::FadeFilterFromCurrentToZero();
+
+    FixedUpdateTask::mTimeScale = 1.0f;
+    ParticleUpdateTask::SetTimeScale(1.0f);
+
+    if (m_pBlurHandler != 0)
+    {
+        m_pBlurHandler->Die(0.5f);
+        m_pBlurHandler = 0;
+    }
+
+    KillBallShot("ball_shot_perfect_glow", true);
+    KillBallShot("ball_pass_perfect_glow", true);
+    KillBallShot("shoot_to_score_shot", false);
+    KillBallShot("ball_shot_onetimer", false);
+
+    Audio::gStadGenSFX.Stop(Audio::eWorldSFX(0xB9), cGameSFX::SFX_STOP_FIRST);
+    Audio::gStadGenSFX.Stop(Audio::eWorldSFX(0xBA), cGameSFX::SFX_STOP_FIRST);
+    Audio::gStadGenSFX.Stop(Audio::eWorldSFX(0xBD), cGameSFX::SFX_STOP_FIRST);
+
+    if (mbHyperSTS)
+    {
+        void* data = (u8*)g_pEventManager->CreateValidEvent(0x47, 0x24) + 0x10;
+        PassBallData* eventdata = new (data) PassBallData();
+        eventdata->pPasser = m_pPrevOwner;
+        eventdata->pTarget = NULL;
+
+        bool pad = eventdata->pPasser->GetGlobalPad();
+        eventdata->mPasserControllerID = pad ? eventdata->pPasser->GetGlobalPad()->m_padIndex : -1;
+    }
+
+    mbHyperSTS = false;
+    mbIsPerfectShot = false;
+
+    gbCanFadeOutPerfectPassSFX = true;
+
+    if (AudioLoader::IsInited())
+    {
+        gfPerfectPassSFXVol = Audio::gStadGenSFX.GetSFXVol(0xBA);
+    }
 }
 
 /**

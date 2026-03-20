@@ -302,11 +302,13 @@ void EmitHemisphericalPosition(nlVector3& vPosition, nlVector3& vDirection, Effe
 
 /**
  * Offset/Address/Size: 0x1C90 | 0x801F6DE8 | size: 0x34C
+ * TODO: 94.83% match - register allocation diffs in tilt rotation and
+ * hackyFacingAngle blocks due to -inline deferred flag mismatch on decomp.me
  */
 void EmitSpindularPosition(nlVector3& vPosition, nlVector3& vDirection, EffectsTemplate* pTemplate, EffectsSpec* pSpec, const nlMatrix4& mLocalToWorld)
 {
-    nlVector3 localDir;
     nlVector3 localPos;
+    nlVector3 localDir;
     float sin;
     float cos;
     float randomAngle = RandomizedValue(0.0f, 6.2831855f);
@@ -315,10 +317,9 @@ void EmitSpindularPosition(nlVector3& vPosition, nlVector3& vDirection, EffectsT
 
     float radius = RandomizedValue(pTemplate->m_rRadius.base, pTemplate->m_rRadius.range);
 
-    float x = cos * radius;
-    float y = -sin * radius;
-    float z = 0.0f;
-    nlVec3Set(localDir, x, y, z);
+    localPos.f.x = cos * radius;
+    localPos.f.y = -sin * radius;
+    localPos.f.z = 0.0f;
 
     float tilt = RandomizedValue(pTemplate->m_rAngle.base, pTemplate->m_rAngle.range);
     if (tilt <= -1.0f)
@@ -330,10 +331,9 @@ void EmitSpindularPosition(nlVector3& vPosition, nlVector3& vDirection, EffectsT
         tilt = 1.0f;
     }
 
-    float tiltAngle = -tilt * 10430.378f;
-    // float tanTilt = nlTan((unsigned short)(int)tiltAngle);
-
-    nlVec3Set(localDir, localPos.f.x, localPos.f.y, nlTan((unsigned short)(int)tiltAngle));
+    localDir.f.z = nlTan((unsigned short)(((int)(-tilt * 65536.0f)) / 360));
+    localDir.f.x = cos;
+    localDir.f.y = -sin;
 
     float length = nlRecipSqrt((localDir.f.x * localDir.f.x) + (localDir.f.y * localDir.f.y) + (localDir.f.z * localDir.f.z), false);
 
@@ -343,6 +343,7 @@ void EmitSpindularPosition(nlVector3& vPosition, nlVector3& vDirection, EffectsT
         length * localDir.f.z);
 
     float tiltRotation = RandomizedValue(pTemplate->m_rTilt.base, pTemplate->m_rTilt.range);
+    tiltRotation = -tiltRotation * 3.14159265f / 180.0f;
 
     if (tiltRotation != 0.0f)
     {
@@ -351,13 +352,15 @@ void EmitSpindularPosition(nlVector3& vPosition, nlVector3& vDirection, EffectsT
         float dirX = localDir.f.x;
         float dirZ = localDir.f.z;
         float posX = localPos.f.x;
+        float posY = localPos.f.y;
         float posZ = localPos.f.z;
 
-        localDir.f.x = (dirX * sin) + (dirZ * cos);
-        localDir.f.z = (-dirX * cos) + (dirZ * sin);
+        localDir.f.z = (-dirX * sin) + (dirZ * cos);
+        localDir.f.x = (dirX * cos) + (dirZ * sin);
 
-        localPos.f.x = (posX * sin) + (posZ * cos);
-        localPos.f.z = (-posX * cos) + (posZ * sin);
+        localPos.f.x = (posX * cos) + (posZ * sin);
+        localPos.f.y = posY;
+        localPos.f.z = (-posX * sin) + (posZ * cos);
     }
 
     if (pSpec != nullptr)
@@ -375,7 +378,7 @@ void EmitSpindularPosition(nlVector3& vPosition, nlVector3& vDirection, EffectsT
     }
     else
     {
-        nlMultPosVectorMatrix(vPosition, localPos, mLocalToWorld);
+        nlMultDirVectorMatrix(vPosition, localPos, mLocalToWorld);
         nlMultDirVectorMatrix(vDirection, localDir, mLocalToWorld);
 
         extern unsigned short hackyFacingAngle;
@@ -383,29 +386,162 @@ void EmitSpindularPosition(nlVector3& vPosition, nlVector3& vDirection, EffectsT
         {
             nlSinCos(&sin, &cos, hackyFacingAngle);
 
-            float dirX = vDirection.f.x;
             float dirY = vDirection.f.y;
-            vDirection.f.x = (vDirection.f.x * cos) + (-dirY * sin);
-            vDirection.f.y = (vDirection.f.x * sin) + (dirY * cos);
+            float dirX = vDirection.f.x;
+            float newDirY = (dirX * sin) + (dirY * cos);
+            float newDirX = (dirX * cos) + (-dirY * sin);
+            vDirection.f.x = newDirX;
+            vDirection.f.y = newDirY;
 
-            float posX = vPosition.f.x;
             float posY = vPosition.f.y;
-            vPosition.f.x = (posX * cos) + (-posY * sin);
-            vPosition.f.y = (posX * sin) + (posY * cos);
+            float posX = vPosition.f.x;
+            float newPosY = (posX * sin) + (posY * cos);
+            float newPosX = (posX * cos) + (-posY * sin);
+            vPosition.f.x = newPosX;
+            vPosition.f.y = newPosY;
         }
 
-        vPosition.f.x += mLocalToWorld.m[0][3];
-        vPosition.f.y += mLocalToWorld.m[1][3];
-        vPosition.f.z += mLocalToWorld.m[2][3];
+        nlVec3Set(vPosition,
+            vPosition.f.x + mLocalToWorld.m[3][0],
+            vPosition.f.y + mLocalToWorld.m[3][1],
+            vPosition.f.z + mLocalToWorld.m[3][2]);
     }
 }
 
 /**
  * Offset/Address/Size: 0x1900 | 0x801F6A58 | size: 0x390
+ * TODO: 96.50% match - remaining diffs are register-allocation only
+ * (persistent this/numParticles/emitter regs and float temp register mapping).
  */
-void ParticleSystem::CreateNewParticles(int)
+void ParticleSystem::CreateNewParticles(int numParticles)
 {
-    FORCE_DONT_INLINE;
+    ParticleSystem* pSys = this;
+    int count = numParticles;
+
+    void (*emit)(nlVector3&, nlVector3&, EffectsTemplate*, EffectsSpec*, const nlMatrix4&);
+    float oneOverLife;
+    nlVector3 baseDir;
+    nlVector3 dir;
+    int i;
+    Particle* pPart;
+    nlMatrix4 mCoordSys;
+
+    pSys->UpdateCoordSys(mCoordSys);
+
+    if (pSys->m_pTemplate->m_bLocalSpace)
+    {
+        baseDir.f.x = 0.0f;
+        baseDir.f.y = 0.0f;
+        baseDir.f.z = 1.0f;
+    }
+    else
+    {
+        baseDir = pSys->m_vForward;
+    }
+
+    switch (pSys->m_pTemplate->m_eEmitter)
+    {
+    case Emitter_Circle:
+        emit = EmitCircularPosition;
+        break;
+    case Emitter_Sphere:
+        emit = EmitSphericalPosition;
+        break;
+    case Emitter_Spindle:
+    {
+        extern unsigned short hackyFacingAngle;
+        hackyFacingAngle = pSys->m_aFacing;
+        emit = EmitSpindularPosition;
+        break;
+    }
+    case Emitter_Hemisphere:
+        emit = EmitHemisphericalPosition;
+        break;
+    default:
+        emit = 0;
+        break;
+    }
+
+    for (i = 0; i < count; i++)
+    {
+        if (freeParticles.m_headNode == 0)
+        {
+            pPart = 0;
+        }
+        else
+        {
+            pPart = (Particle*)freeParticles.Remove();
+        }
+
+        if (pPart == 0)
+        {
+            break;
+        }
+
+        memset(pPart, 0, sizeof(Particle));
+        pSys->m_Particles.Insert(pPart);
+
+        dir = baseDir;
+        emit(pPart->position, dir, pSys->m_pTemplate, pSys->m_pSpec, mCoordSys);
+
+        pPart->position.f.x += pSys->m_vSourcePosition.f.x;
+        pPart->position.f.y += pSys->m_vSourcePosition.f.y;
+        pPart->position.f.z += pSys->m_vSourcePosition.f.z;
+
+        pPart->lifeSpan = RandomizedValue(pSys->m_pTemplate->m_rParticleLife.base, pSys->m_pTemplate->m_rParticleLife.range);
+        oneOverLife = 1.0f / pPart->lifeSpan;
+
+        pPart->dRot = RandomizedValue(pSys->m_pTemplate->m_rRotation.base, pSys->m_pTemplate->m_rRotation.range);
+        if (pPart->dRot == 0.0f)
+        {
+            pPart->rot = 0.0f;
+        }
+        else
+        {
+            pPart->rot = RandomizedValue(0.0f, 360.0f);
+        }
+
+        pPart->mass = RandomizedValue(pSys->m_pTemplate->m_rMass.base, pSys->m_pTemplate->m_rMass.range);
+
+        EffectsTemplate* pTemplate = pSys->m_pTemplate;
+        float sizeBegin = RandomizedValue(pTemplate->m_rSizeBegin.base, pTemplate->m_rSizeBegin.range);
+        float sizeEnd = RandomizedValue(pTemplate->m_rSizeEnd.base, pTemplate->m_rSizeEnd.range);
+
+        pPart->size = sizeBegin;
+        pPart->dSize = oneOverLife * (sizeEnd - sizeBegin);
+
+        float inheritVelocity = RandomizedValue(pSys->m_pTemplate->m_rInheritVelocity.base, pSys->m_pTemplate->m_rInheritVelocity.range);
+        float velZ = inheritVelocity * pSys->m_vVelocity.f.z;
+        float velY = inheritVelocity * pSys->m_vVelocity.f.y;
+        float velX = inheritVelocity * pSys->m_vVelocity.f.x;
+
+        float vel = RandomizedValue(pSys->m_pTemplate->m_rVelocity.base, pSys->m_pTemplate->m_rVelocity.range);
+
+        float velDirY = vel * dir.f.y + velY;
+        float velDirX = vel * dir.f.x + velX;
+        float velDirZ = vel * dir.f.z + velZ;
+        float speedSquared = (velDirY * velDirY) + (velDirX * velDirX) + (velDirZ * velDirZ);
+
+        pPart->velocity = nlSqrt(speedSquared, true);
+
+        if (pPart->velocity == 0.0f)
+        {
+            pPart->velDir.f.x = 0.0f;
+            pPart->velDir.f.y = 0.0f;
+            pPart->velDir.f.z = 0.0f;
+        }
+        else
+        {
+            float invSpeed = nlRecipSqrt(speedSquared, true);
+            pPart->velDir.f.x = invSpeed * velDirX;
+            pPart->velDir.f.y = invSpeed * velDirY;
+            pPart->velDir.f.z = invSpeed * velDirZ;
+        }
+
+        pPart->acceleration = RandomizedValue(pSys->m_pTemplate->m_rAcceleration.base, pSys->m_pTemplate->m_rAcceleration.range);
+        pPart->frame = 0.0f;
+        pPart->FPS = RandomizedValue(pSys->m_pTemplate->m_rFPS.base, pSys->m_pTemplate->m_rFPS.range);
+    }
 }
 
 /**

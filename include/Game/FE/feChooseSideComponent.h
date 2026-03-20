@@ -1,6 +1,7 @@
 #ifndef _FECHOOSESIDECOMPONENT_H_
 #define _FECHOOSESIDECOMPONENT_H_
 
+#include "Game/FE/feCaptainComponent.h"
 #include "Game/FE/feInput.h"
 #include "Game/FE/tlInstance.h"
 #include "Game/FE/feTweener.h"
@@ -10,13 +11,6 @@ enum Context
     CONTEXT_INVALID = -1,
     CONTEXT_FE = 0,
     CONTEXT_PAUSE = 1,
-};
-
-enum UpdateResult
-{
-    UPDATE_OK = 0,
-    UPDATE_GO_BACK = 1,
-    UPDATE_GO_FORWARD = 2,
 };
 
 class IChooseSide

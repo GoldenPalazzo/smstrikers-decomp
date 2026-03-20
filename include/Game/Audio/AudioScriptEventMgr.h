@@ -75,7 +75,7 @@ public:
     };
 
     void Init();
-    void Purge();
+    static void Purge();
     void Update();
     void FireEvent(AudioScriptEventMgr::AUDIO_EVENT, AudioScriptEventMgr::AUDIO_EVENT_TEAM);
 };

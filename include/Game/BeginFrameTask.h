@@ -15,6 +15,8 @@ class BeginFrameTask : public nlTask
 public:
     virtual const char* GetName() { return "Begin Frame"; };
     virtual void Run(float dt);
+
+    static int s_FramerateLocked;
 };
 
 // class Config

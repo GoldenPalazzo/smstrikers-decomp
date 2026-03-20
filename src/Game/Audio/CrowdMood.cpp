@@ -564,9 +564,205 @@ void CrowdMood::Init()
 
 /**
  * Offset/Address/Size: 0xF4C | 0x8014E660 | size: 0x3B4
+ * TODO: 94.79% match - register allocation diffs (r29/r31, r30/r28 swapped),
+ *       ble vs beq for m_BufferCount<=0 checks, r3/r4 swap in free-buffer loops,
+ *       stack offset diffs (0x0C vs 0x10). Same known MWCC quirks as UnlockStream.
  */
-void CrowdMood::Purge(bool)
+void CrowdMood::Purge(bool bJustStopSFX)
 {
+    g_CrowdSFXStopped = true;
+
+    Audio::StopSFX(g_CrowdAudio.NeutralVoiceId);
+    Audio::StopSFX(g_CrowdAudio.PositiveVoiceId);
+    Audio::StopSFX(g_CrowdAudio.NegativeVoiceId);
+
+    GCAudioStreaming::StereoAudioStream* pChant = g_CrowdAudio.pChantStream;
+    if (pChant != NULL)
+    {
+        pChant->m_Flags &= ~(1 << GCAudioStreaming::SF_Play);
+
+        if (pChant->m_State == GCAudioStreaming::SS_Playing)
+        {
+            GCAudioStreaming::AudioStreamBuffer* buf;
+            volatile unsigned long i = (unsigned long)(buf = NULL);
+
+            if (pChant->m_BufferCount <= 0)
+            {
+            }
+            else
+            {
+                buf = pChant->m_Buffers[0];
+            }
+
+            while (buf != NULL)
+            {
+                buf->m_Volume = 0;
+                sndStreamMixParameterEx(buf->m_StreamId, buf->m_Volume, buf->m_Pan, buf->m_SurroundPan, 0, 0);
+                sndStreamDeactivate(buf->m_StreamId);
+                pChant->m_State = GCAudioStreaming::SS_Warm;
+
+                unsigned long ci = i + 1;
+                i = ci;
+                if (ci < pChant->m_BufferCount)
+                {
+                    buf = pChant->m_Buffers[ci];
+                }
+                else
+                {
+                    buf = NULL;
+                }
+            }
+
+            pChant->m_StreamPos = 0;
+            pChant->m_State = GCAudioStreaming::SS_Warm;
+        }
+
+        pChant->CancelPendingReads();
+
+        if (pChant->m_Flags & (1 << GCAudioStreaming::SF_CoolOnStop))
+        {
+            pChant->m_Flags &= ~(1 << GCAudioStreaming::SF_CoolOnStop);
+
+            if (pChant->m_State > GCAudioStreaming::SS_Initd)
+            {
+                GCAudioStreaming::AudioStreamBuffer* buf;
+                volatile unsigned long i = (unsigned long)(buf = NULL);
+
+                pChant->m_Flags = (pChant->m_Flags & ~(1 << GCAudioStreaming::SF_SeriousStop)) | (1 << GCAudioStreaming::SF_SeriousStop);
+
+                if (pChant->m_BufferCount <= 0)
+                {
+                }
+                else
+                {
+                    buf = pChant->m_Buffers[0];
+                }
+
+                while (buf != NULL)
+                {
+                    pChant->m_BuffMgr.FreeBuffer(buf);
+
+                    unsigned long bi = i;
+                    unsigned long ci = bi + 1;
+                    i = ci;
+                    pChant->m_Buffers[bi] = NULL;
+
+                    if (ci < pChant->m_BufferCount)
+                    {
+                        buf = pChant->m_Buffers[ci];
+                    }
+                    else
+                    {
+                        buf = NULL;
+                    }
+                }
+
+                pChant->m_State = GCAudioStreaming::SS_Initd;
+            }
+        }
+    }
+
+    GCAudioStreaming::MonoAudioStream* pHeckle = g_CrowdAudio.pHeckleStream;
+    if (pHeckle != NULL)
+    {
+        pHeckle->m_Flags &= ~(1 << GCAudioStreaming::SF_Play);
+
+        if (pHeckle->m_State == GCAudioStreaming::SS_Playing)
+        {
+            GCAudioStreaming::AudioStreamBuffer* buf;
+            volatile unsigned long i = (unsigned long)(buf = NULL);
+
+            if (pHeckle->m_BufferCount <= 0)
+            {
+            }
+            else
+            {
+                buf = pHeckle->m_Buffers[0];
+            }
+
+            while (buf != NULL)
+            {
+                buf->m_Volume = 0;
+                sndStreamMixParameterEx(buf->m_StreamId, buf->m_Volume, buf->m_Pan, buf->m_SurroundPan, 0, 0);
+                sndStreamDeactivate(buf->m_StreamId);
+                pHeckle->m_State = GCAudioStreaming::SS_Warm;
+
+                unsigned long ci = i + 1;
+                i = ci;
+                if (ci < pHeckle->m_BufferCount)
+                {
+                    buf = pHeckle->m_Buffers[ci];
+                }
+                else
+                {
+                    buf = NULL;
+                }
+            }
+
+            pHeckle->m_StreamPos = 0;
+            pHeckle->m_State = GCAudioStreaming::SS_Warm;
+        }
+
+        pHeckle->CancelPendingReads();
+
+        if (pHeckle->m_Flags & (1 << GCAudioStreaming::SF_CoolOnStop))
+        {
+            pHeckle->m_Flags &= ~(1 << GCAudioStreaming::SF_CoolOnStop);
+
+            if (pHeckle->m_State > GCAudioStreaming::SS_Initd)
+            {
+                GCAudioStreaming::AudioStreamBuffer* buf;
+                volatile unsigned long i = (unsigned long)(buf = NULL);
+
+                pHeckle->m_Flags = (pHeckle->m_Flags & ~(1 << GCAudioStreaming::SF_SeriousStop)) | (1 << GCAudioStreaming::SF_SeriousStop);
+
+                if (pHeckle->m_BufferCount <= 0)
+                {
+                }
+                else
+                {
+                    buf = pHeckle->m_Buffers[0];
+                }
+
+                while (buf != NULL)
+                {
+                    pHeckle->m_BuffMgr.FreeBuffer(buf);
+
+                    unsigned long bi = i;
+                    unsigned long ci = bi + 1;
+                    i = ci;
+                    pHeckle->m_Buffers[bi] = NULL;
+
+                    if (ci < pHeckle->m_BufferCount)
+                    {
+                        buf = pHeckle->m_Buffers[ci];
+                    }
+                    else
+                    {
+                        buf = NULL;
+                    }
+                }
+
+                pHeckle->m_State = GCAudioStreaming::SS_Initd;
+            }
+        }
+    }
+
+    if (!bJustStopSFX)
+    {
+        if (g_CrowdAudio.pChantStream != NULL)
+        {
+            g_CrowdAudio.pChantStream->WarmReadDone((GCAudioStreaming::AudioStreamBuffer*)1);
+        }
+        if (g_CrowdAudio.pHeckleStream != NULL)
+        {
+            g_CrowdAudio.pHeckleStream->WarmReadDone((GCAudioStreaming::AudioStreamBuffer*)1);
+        }
+        g_CrowdAudio.pChantStream = NULL;
+        g_CrowdAudio.pHeckleStream = NULL;
+        memset(&g_CrowdState, 0, 0x8C);
+        g_Initd = false;
+    }
 }
 
 /**

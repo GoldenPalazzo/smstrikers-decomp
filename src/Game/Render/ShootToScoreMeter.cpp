@@ -192,7 +192,7 @@ void ShootToScoreMeter::DrawCaptainMeter()
     float sinVal = nlSin((u16)angleScaled);
     float cosVal = nlSin((u16)((u16)angleScaled + 0x4000));
 
-    matrix2.SetRow4_(0, 79.2f * cosVal, 79.2f * sinVal, 0.f, 1.0f);
+    matrix2.SetRow4_(3, 79.2f * cosVal, 79.2f * sinVal, 0.f, 1.0f);
     nlMultMatrices(matrix2, matrix2, matrix);
 
     glSetRasterState(GLS_AlphaBlend, 0);
@@ -202,7 +202,7 @@ void ShootToScoreMeter::DrawCaptainMeter()
     glSetCurrentTextureState(glHandleizeTextureState());
 
     glQuad3 whiteBarQuad;
-    whiteBarQuad.SetupRotatedRectangle(whiteBarWidthScaled, whiteBarHeightScaled, matrix2, false, false);
+    whiteBarQuad.SetupRotatedRectangle(whiteBarHeightScaled, whiteBarWidthScaled, matrix2, false, false);
     glAttachQuad3(GLV_FrontEnd, 1, &whiteBarQuad, true);
     glSetDefaultState(false);
 }

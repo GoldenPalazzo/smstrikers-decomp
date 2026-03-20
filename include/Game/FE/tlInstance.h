@@ -22,13 +22,13 @@ enum eTimeLineAssetType
 class TLInstance
 {
 public:
-#ifdef GET_TYPE_IN_TLINSTANCE_TU_DEF
-    eTimeLineAssetType GetType() const;
-#else
+#ifdef GET_TYPE_IN_TLINSTANCE_TU_IMPL
     eTimeLineAssetType GetType() const // only in feRender TU !
     {
         return m_type;
     }
+#else
+    eTimeLineAssetType GetType() const;
 #endif
     bool IsVisible() const
     {

@@ -507,7 +507,7 @@ FuzzyVariant Fuzzy::ShouldIStrafeBall(cFielder* TheFielder)
 
 /**
  * Offset/Address/Size: 0xD92C | 0x80077AFC | size: 0x34C
- * TODO: 88.1% match - MWCC store scheduling: mType/mData stores placed after ExtraData.Reset()
+ * TODO: 90.9% match - MWCC store scheduling: mType/mData stores placed after ExtraData.Reset()
  * bctrl instead of before. Same issue in all 3 FuzzyVariant template ctor inlines.
  */
 FuzzyVariant Fuzzy::ShouldIStrafeMark(cFielder* TheFielder)
@@ -525,6 +525,7 @@ FuzzyVariant Fuzzy::ShouldIStrafeMark(cFielder* TheFielder)
     FuzzyVariant fvResult(inBetween);
 
     bestValue = fvResult;
+    bestValue.Confidence = 1.0f;
 
     return bestValue;
 }

@@ -27,7 +27,7 @@ class cCameraManager
 {
 public:
     static void Startup();
-    void Shutdown();
+    static void Shutdown();
     void Update(float);
     void UpdateGameCameraType();
     static bool HasCamera(cBaseCamera* pCamera);

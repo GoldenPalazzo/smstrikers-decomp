@@ -780,27 +780,18 @@ GLSkinMesh* GLInventory::MakeSkinMesh(unsigned long hashID)
     return glx_MakeSkinMesh(pChunk, pModel);
 }
 
-/**
- * Offset/Address/Size: 0x0 | 0x801E2298 | size: 0x334
- * TODO: 98.20% match - remaining diff is an r29/r30/r31 role swap between level index, per-level pointer, and stack pointer in both update passes.
- */
-/**
- * Offset/Address/Size: 0x3DC | 0x801E2298 | size: 0x334
- * TODO: 99.56% match - r29/r31 register swap for level vs precomputed ptr in first loop only (-inline deferred artifact)
- */
-void GLInventory::Update(float deltaTime)
+struct NodeStack
 {
-    struct NodeStack
-    {
-        AVLTreeNode** m_Stack;
-        unsigned int m_Count;
-    };
+    AVLTreeNode** m_Stack;
+    unsigned int m_Count;
+};
 
-    int level;
+static inline void UpdateTextureAnims(GLInventory* self, float dt)
+{
     NodeStack* stack = NULL;
-    for (level = m_nLevel; level >= 0; level--)
+    for (int i = self->m_nLevel; i >= 0; i--)
     {
-        nlAVLTree<unsigned long, GLTextureAnim*, DefaultKeyCompare<unsigned long> >* tree = m_pTextureAnims[level]->m_pItems;
+        nlAVLTree<unsigned long, GLTextureAnim*, DefaultKeyCompare<unsigned long> >* tree = self->m_pTextureAnims[i]->m_pItems;
 
         if (tree->m_Root != NULL)
         {
@@ -829,7 +820,7 @@ void GLInventory::Update(float deltaTime)
 
             while (stack->m_Count != 0)
             {
-                ((AVLTreeEntry<unsigned long, GLTextureAnim*>*)stack->m_Stack[stack->m_Count - 1])->value->Update(deltaTime);
+                ((AVLTreeEntry<unsigned long, GLTextureAnim*>*)stack->m_Stack[stack->m_Count - 1])->value->Update(dt);
                 stack->m_Count--;
 
                 AVLTreeEntry<unsigned long, GLTextureAnim*>* right = (AVLTreeEntry<unsigned long, GLTextureAnim*>*)((AVLTreeEntry<unsigned long, GLTextureAnim*>*)stack->m_Stack[stack->m_Count])->node.right;
@@ -854,10 +845,15 @@ void GLInventory::Update(float deltaTime)
             }
         }
     }
+}
 
-    for (level = m_nLevel; level >= 0; level--)
+static inline void UpdateVertexAnims(GLInventory* self, float dt)
+{
+    int i;
+    NodeStack* stack = NULL;
+    for (i = self->m_nLevel; i >= 0; i--)
     {
-        nlAVLTree<unsigned long, GLVertexAnim*, DefaultKeyCompare<unsigned long> >* tree = m_pVertexAnims[level]->m_pItems;
+        nlAVLTree<unsigned long, GLVertexAnim*, DefaultKeyCompare<unsigned long> >* tree = self->m_pVertexAnims[i]->m_pItems;
 
         if (tree->m_Root != NULL)
         {
@@ -886,7 +882,7 @@ void GLInventory::Update(float deltaTime)
 
             while (stack->m_Count != 0)
             {
-                ((AVLTreeEntry<unsigned long, GLVertexAnim*>*)stack->m_Stack[stack->m_Count - 1])->value->Update(deltaTime);
+                ((AVLTreeEntry<unsigned long, GLVertexAnim*>*)stack->m_Stack[stack->m_Count - 1])->value->Update(dt);
                 stack->m_Count--;
 
                 AVLTreeEntry<unsigned long, GLVertexAnim*>* right = (AVLTreeEntry<unsigned long, GLVertexAnim*>*)((AVLTreeEntry<unsigned long, GLVertexAnim*>*)stack->m_Stack[stack->m_Count])->node.right;
@@ -911,4 +907,13 @@ void GLInventory::Update(float deltaTime)
             }
         }
     }
+}
+
+/**
+ * Offset/Address/Size: 0x3DC | 0x801E2298 | size: 0x334
+ */
+void GLInventory::Update(float deltaTime)
+{
+    UpdateTextureAnims(this, deltaTime);
+    UpdateVertexAnims(this, deltaTime);
 }

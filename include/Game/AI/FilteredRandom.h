@@ -18,6 +18,7 @@ class FilteredRandomChance
 {
 public:
     FilteredRandomChance();
+    ~FilteredRandomChance() { }
     bool genrand(float);
 
     /* 0x00 */ u8 m_hist[20]; // size 0x14

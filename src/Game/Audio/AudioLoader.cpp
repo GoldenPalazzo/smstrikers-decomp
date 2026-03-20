@@ -546,8 +546,8 @@ bool AudioLoader::IsInited()
 
 /**
  * Offset/Address/Size: 0x31D4 | 0x80146FA0 | size: 0x2F0
- * TODO: 96.68% match - branch form for `gbStream`, fade-in default register
- * assignment, and a temporary move before hashing `pSoundName` differ.
+ * TODO: 97.77% match - `gbStream` guard branch form and one temporary move
+ * before hashing `pSoundName` still differ.
  */
 void AudioLoader::StartFEStream(const char* pSoundName, bool bLoop, const char* pTrackName)
 {
@@ -556,31 +556,29 @@ void AudioLoader::StartFEStream(const char* pSoundName, bool bLoop, const char* 
         return;
     }
 
-    if (!gbStream)
+    if (gbStream)
     {
-        return;
-    }
+        char var_68[64];
+        nlSNPrintf(var_68, 64, "%s/%s", pSoundName, "Volume");
+        float volume = GetConfigFloat(g_FEStreamConfig, var_68, 0.0f);
+        volume /= 100.0f;
 
-    char var_68[64];
-    nlSNPrintf(var_68, 64, "%s/%s", pSoundName, "Volume");
-    float volume = GetConfigFloat(g_FEStreamConfig, var_68, 0.0f);
-    volume /= 100.0f;
+        nlSNPrintf(var_68, 64, "%s/%s", pSoundName, "FadeIn");
+        unsigned long fadeIn = GetConfigInt(g_FEStreamConfig, var_68, 0);
+        unsigned long interruptFadeOut = GetConfigInt(g_FEStreamConfig, "InterruptFadeOut", 0);
 
-    nlSNPrintf(var_68, 64, "%s/%s", pSoundName, "FadeIn");
-    s32 fadeIn = GetConfigInt(g_FEStreamConfig, var_68, 0);
-    s32 interruptFadeOut = GetConfigInt(g_FEStreamConfig, "InterruptFadeOut", 0);
-
-    if (volume > 0.0f)
-    {
-        AudioStreamTrack::TrackManagerBase* pTrackMgr = g_pTrackManager;
-        AudioStreamTrack::StreamTrack* track = pTrackMgr->GetTrack(nlStringLowerHash(pTrackName));
-        track->PlayStream(nlStringLowerHash(pSoundName), volume, bLoop, fadeIn, interruptFadeOut, "", Audio::MasterVolume::VG_Music);
-    }
-    else
-    {
-        AudioStreamTrack::TrackManagerBase* pTrackMgr = g_pTrackManager;
-        AudioStreamTrack::StreamTrack* track = pTrackMgr->GetTrack(nlStringLowerHash(pTrackName));
-        track->Stop(interruptFadeOut);
+        if (volume > 0.0f)
+        {
+            AudioStreamTrack::TrackManagerBase* pTrackMgr = g_pTrackManager;
+            AudioStreamTrack::StreamTrack* track = pTrackMgr->GetTrack(nlStringLowerHash(pTrackName));
+            track->PlayStream(nlStringLowerHash(pSoundName), volume, bLoop, fadeIn, interruptFadeOut, "", Audio::MasterVolume::VG_Music);
+        }
+        else
+        {
+            AudioStreamTrack::TrackManagerBase* pTrackMgr = g_pTrackManager;
+            AudioStreamTrack::StreamTrack* track = pTrackMgr->GetTrack(nlStringLowerHash(pTrackName));
+            track->Stop(interruptFadeOut);
+        }
     }
 }
 
@@ -1381,8 +1379,6 @@ SoundPropAccessor* GetSoundPropTableFromPlayerStadium(eStadiumID stadiumId, eCha
 
 /**
  * Offset/Address/Size: 0xC88 | 0x80144A54 | size: 0x308
- * TODO: 98.97% match - persistent r29/r30/r31 register assignment rotation
- * and prologue offset.
  */
 void AudioLoader::SetupCharStadiumSoundTable()
 {
@@ -1404,20 +1400,19 @@ void AudioLoader::SetupCharStadiumSoundTable()
     SoundPropAccessor* homeSidekickPropTable = GetSoundPropTableFromPlayerStadium(stadium, homeSidekickClass);
     SoundPropAccessor* awaySidekickPropTable = GetSoundPropTableFromPlayerStadium(stadium, awaySidekickClass);
 
-    cTeam** ppTeam = g_pTeams;
-    for (int team = 0; team < 2; team++, ppTeam++)
+    for (int team = 0; team < 2; team++)
     {
-        cTeam* pTeam = *ppTeam;
+        cTeam* pTeam = g_pTeams[team];
         for (int player = 0; player < 5; player++)
         {
             cPlayer* pPlayer = pTeam->GetPlayer(player);
             if (pPlayer->m_eClassType == GOALIE)
             {
-                SoundPropAccessor* goaliePropTable = GetSoundPropTableFromPlayerStadium(stadium, (*ppTeam)->GetGoalie()->m_eCharacterClass);
-                (*ppTeam)->GetGoalie()->m_pCharacterSFX->SetSFX(goaliePropTable);
-                if (((cCharacter*)(*ppTeam)->GetCaptain())->m_eCharacterClass == MYSTERY)
+                SoundPropAccessor* goaliePropTable = GetSoundPropTableFromPlayerStadium(stadium, g_pTeams[team]->GetGoalie()->m_eCharacterClass);
+                g_pTeams[team]->GetGoalie()->m_pCharacterSFX->SetSFX(goaliePropTable);
+                if (((cCharacter*)g_pTeams[team]->GetCaptain())->m_eCharacterClass == MYSTERY)
                 {
-                    (*ppTeam)->GetGoalie()->m_pCharacterSFX->SetSFX(gpCRITTERROBOTSoundPropAccessor);
+                    g_pTeams[team]->GetGoalie()->m_pCharacterSFX->SetSFX(gpCRITTERROBOTSoundPropAccessor);
                 }
             }
             else if (pPlayer->IsCaptain())
