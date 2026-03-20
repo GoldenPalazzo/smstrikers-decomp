@@ -67,7 +67,7 @@ void FEInGameMessengerManager::Update(float fDeltaT)
     }
     delete entry;
 
-    m_messenger->SetDisplayMessage(*(const BasicString<unsigned short, Detail::TempStringAllocator>*)&m_messageList[(int)msg]);
+    m_messenger->SetDisplayMessage(m_messageList[(int)msg]);
     m_messenger->OpenMessenger();
     m_waitingToDisplay = false;
 }
