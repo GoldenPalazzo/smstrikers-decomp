@@ -327,7 +327,7 @@ void PadStatus::Update(float dt)
 
     for (s32 i = 0; i < 4; ++i)
     {
-        const s8 err = PadStatus::s_Current[i].err;
+        s8 err = PadStatus::s_Current[i].err;
 
         if (err == 0)
         {
@@ -336,36 +336,34 @@ void PadStatus::Update(float dt)
             pad.fAnalogLeftY = (f32)PadStatus::s_Current[i].stickY / 56.0f;
             pad.fAnalogRightX = (f32)PadStatus::s_Current[i].substickX / 44.0f;
             pad.fAnalogRightY = (f32)PadStatus::s_Current[i].substickY / 44.0f;
-            pad.fTriggerLeft = (f32)PadStatus::s_Current[i].triggerLeft / 150.0f;
-            pad.fTriggerRight = (f32)PadStatus::s_Current[i].triggerRight / 150.0f;
+            pad.fTriggerLeft = (f32)(s32)PadStatus::s_Current[i].triggerLeft / 150.0f;
+            pad.fTriggerRight = (f32)(s32)PadStatus::s_Current[i].triggerRight / 150.0f;
 
-            // const u16 prev = m_previousButtons[i];
-            // const u16 now = PadStatus::s_Current[i].button;
-            m_justPressed[i] = (u16)((u16)~m_previousButtons[i] & PadStatus::s_Current[i].button);
-            m_justReleased[i] = (u16)(m_previousButtons[i] & (u16)~PadStatus::s_Current[i].button);
+            u16 button = PadStatus::s_Current[i].button;
+            m_justPressed[i] = button & ~m_previousButtons[i];
+            m_justReleased[i] = m_previousButtons[i] & ~PadStatus::s_Current[i].button;
             m_previousButtons[i] = PadStatus::s_Current[i].button;
-
-            m_previousErr[i] = err;
+            m_previousErr[i] = PadStatus::s_Current[i].err;
         }
         else if (err == -1)
         {
-            if ((s8)m_previousErr[i] == 0)
+            if (m_previousErr[i] == 0)
             {
                 memset(&m_GameCubePads[i], 0, sizeof(tGameCubePad));
             }
 
-            resetMask |= (0x80000000u >> i);
-
-            m_justPressed[i] = 0;
-            m_justReleased[i] = 0;
-            m_previousButtons[i] = 0;
+            u32 mask = g_nPadMasks[i];
+            int zero = 0;
+            m_justPressed[i] = zero;
+            resetMask |= mask;
+            m_justReleased[i] = zero;
+            m_previousButtons[i] = zero;
         }
 
         if (m_GameCubePads[i].bRumbleActive)
         {
-            f32 t = m_GameCubePads[i].fRumbleTimer - dt;
-            m_GameCubePads[i].fRumbleTimer = t;
-            if (t < 0.0f)
+            m_GameCubePads[i].fRumbleTimer -= dt;
+            if (m_GameCubePads[i].fRumbleTimer < 0.0f)
             {
                 m_GameCubePads[i].bRumbleActive = 0;
                 PADControlMotor(i, 0);
@@ -373,7 +371,7 @@ void PadStatus::Update(float dt)
         }
     }
 
-    if (resetMask != 0)
+    if (resetMask)
     {
         PADReset(resetMask);
     }

@@ -573,10 +573,166 @@ DrawableObject* DrawableModel::Clone() const
 
 /**
  * Offset/Address/Size: 0xD18 | 0x80120B24 | size: 0x38C
+ * TODO: 98.70% match - register allocation diff: dimensions r22 vs target r23,
+ *       bbCache r30 vs target r28. Cascading register diffs and commutative
+ *       operand order swaps in mullw/add.
  */
 void GetAABBDimensions(const glModel* model, AABBDimensions& dimensions, unsigned long boundingBoxCacheKey)
 {
-    FORCE_DONT_INLINE;
+    extern void* dlGetStruct(unsigned long);
+
+    AABBDimensions* foundValue = NULL;
+    AVLTreeEntry<unsigned long, AABBDimensions>* node = boundingBoxCache.m_Root;
+
+    while (node != NULL)
+    {
+        int cmpResult;
+        if (boundingBoxCacheKey == node->key)
+        {
+            cmpResult = 0;
+        }
+        else if (boundingBoxCacheKey < node->key)
+        {
+            cmpResult = -1;
+        }
+        else
+        {
+            cmpResult = 1;
+        }
+
+        if (cmpResult == 0)
+        {
+            if (&foundValue != NULL)
+            {
+                foundValue = &node->value;
+            }
+            break;
+        }
+
+        if (cmpResult < 0)
+        {
+            node = (AVLTreeEntry<unsigned long, AABBDimensions>*)node->node.left;
+        }
+        else
+        {
+            node = (AVLTreeEntry<unsigned long, AABBDimensions>*)node->node.right;
+        }
+    }
+
+    if (foundValue != NULL)
+    {
+        dimensions = *foundValue;
+        return;
+    }
+
+    u8* packets = (u8*)model->packets;
+    unsigned int numPackets = model->numPackets;
+    unsigned char first = 1;
+    unsigned int packetIndex = 0;
+    int packetOffset = 0;
+    int vertexIndex;
+    nlVector3 min;
+    nlVector3 max;
+
+    while (packetIndex < numPackets)
+    {
+        glModelPacket* packet = (glModelPacket*)(packets + packetOffset);
+        void* list = dlGetStruct(packet->indexBuffer);
+        vertexIndex = 0;
+
+        while (vertexIndex < packet->numVertices)
+        {
+            u16* pVert;
+            if (*(u16*)((u8*)list + 0x0E) != 0)
+            {
+                u16 ns = *(u16*)((u8*)list + 0x0C);
+                int offset = ((ns - 1) * 2 + 1) * vertexIndex + 4;
+                pVert = (u16*)((u8*)*(u32*)((u8*)list + 0x04) + offset);
+            }
+            else
+            {
+                u16 ns = *(u16*)((u8*)list + 0x0C);
+                int offset = (ns * 2) * vertexIndex + 3;
+                pVert = (u16*)((u8*)*(u32*)((u8*)list + 0x04) + offset);
+            }
+
+            glModelStream* stream = packet->streams;
+            u16 vert = *pVert;
+            u8 stride = stream->stride;
+            nlVector3 point;
+
+            if (stride == 12)
+            {
+                memcpy(&point, (u8*)stream->address + vert * stride, 12);
+            }
+            else
+            {
+                s16* src = (s16*)((u8*)stream->address + vert * stride);
+                float scale = 0.01f;
+
+                point.f.x = (float)src[0] * scale;
+                point.f.y = (float)src[1] * scale;
+                point.f.z = (float)src[2] * scale;
+            }
+
+            if (point.f.x < min.f.x || first)
+            {
+                min.f.x = point.f.x;
+            }
+
+            if (point.f.y < min.f.y || first)
+            {
+                min.f.y = point.f.y;
+            }
+
+            if (point.f.z < min.f.z || first)
+            {
+                min.f.z = point.f.z;
+            }
+
+            if (point.f.x > max.f.x || first)
+            {
+                max.f.x = point.f.x;
+            }
+
+            if (point.f.y > max.f.y || first)
+            {
+                max.f.y = point.f.y;
+            }
+
+            if (point.f.z > max.f.z || first)
+            {
+                max.f.z = point.f.z;
+            }
+
+            first = 0;
+            vertexIndex++;
+        }
+
+        packetOffset += sizeof(glModelPacket);
+        packetIndex++;
+    }
+
+    dimensions.mMin = min;
+    dimensions.mMax = max;
+    float dx = dimensions.mMax.f.x - dimensions.mMin.f.x;
+    float dy = dimensions.mMax.f.y - dimensions.mMin.f.y;
+    float dz = dimensions.mMax.f.z - dimensions.mMin.f.z;
+    dimensions.mDim.f.x = dx;
+    dimensions.mDim.f.y = dy;
+    dimensions.mDim.f.z = dz;
+
+    if (boundingBoxCacheKey != 0)
+    {
+        AVLTreeNode* existingNode;
+
+        boundingBoxCache.AddAVLNode((AVLTreeNode**)&boundingBoxCache.m_Root, &boundingBoxCacheKey, &dimensions, &existingNode, boundingBoxCache.m_NumElements);
+
+        if (existingNode == NULL)
+        {
+            boundingBoxCache.m_NumElements++;
+        }
+    }
 }
 
 /**
@@ -884,7 +1040,7 @@ float GetCoPlanar0Z()
 
 /**
  * Offset/Address/Size: 0x3C | 0x8011FE48 | size: 0x26C
- * TODO: 99.19% match - float register allocation cycle (f4/f6/f2/f3) in AABB corner setup, r26/r27 instruction order
+ * TODO: 99.35% match - float register allocation cycle (f4/f6/f2/f3) in AABB corner setup and remaining literal pool symbol mismatch for colour load
  */
 void RenderBoundingBox(const glModel* model, const nlMatrix4& matrix)
 {
@@ -896,8 +1052,10 @@ void RenderBoundingBox(const glModel* model, const nlMatrix4& matrix)
     nlVector4* p1 = &points[1];
     nlVector4* p2 = &points[2];
     nlVector4* p3 = &points[3];
-    nlVector4* p5 = &points[5];
-    nlVector4* p4 = &points[4];
+    nlVector4* p5;
+    nlVector4* p4;
+    p4 = &points[4];
+    p5 = &points[5];
     nlVector4* p6 = &points[6];
     nlVector4* p7 = &points[7];
     nlVector4* p0 = &points[0];
@@ -917,8 +1075,7 @@ void RenderBoundingBox(const glModel* model, const nlMatrix4& matrix)
         nlMultVectorMatrix(*p0, *p0, matrix);
     }
 
-    static const nlColour white = { 0xFF, 0xFF, 0xFF, 0xFF };
-    nlColour colour = white;
+    const nlColour colour = { 0xFF, 0xFF, 0xFF, 0xFF };
 
     g_ShapeRenderer.DrawLine3D((nlVector3&)points[0], (nlVector3&)*p1, colour, true);
     g_ShapeRenderer.DrawLine3D((nlVector3&)*p1, (nlVector3&)*p2, colour, true);

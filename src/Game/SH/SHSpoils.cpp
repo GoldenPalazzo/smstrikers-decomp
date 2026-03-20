@@ -1,5 +1,6 @@
 #include "Game/SH/SHSpoils.h"
 #include "Game/GameSceneManager.h"
+#include "Game/FE/feInput.h"
 #include "Game/SH/SHCupTrophy.h"
 #include "Game/SH/SHMilestoneTrophy.h"
 
@@ -111,8 +112,181 @@ SpoilsScene::~SpoilsScene()
 /**
  * Offset/Address/Size: 0x6B4 | 0x800D15A4 | size: 0x374
  */
-void SpoilsScene::Update(float)
+void SpoilsScene::Update(float dt)
 {
+    extern s32 mLastSelectedIndex__11SpoilsScene;
+
+    BaseSceneHandler::Update(dt);
+    mButtons.CentreButtons();
+
+    if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x100, false, NULL))
+    {
+        int currentIndex = mMenuItems.mCurrentIndex;
+        int tag = mMenuItems.mMenuItems[currentIndex].mCallbacks[0].mTag;
+
+        if (((u32)((-tag) | tag) >> 31) > 0)
+        {
+            if (mMenuItems.mMenuItems[currentIndex].mDisabled == 0)
+            {
+                TLComponentInstance* type = mMenuItems.mMenuItems[currentIndex].mType;
+
+                if (tag == FREE_FUNCTION)
+                {
+                    mMenuItems.mMenuItems[currentIndex].mCallbacks[0].mFreeFunction(type);
+                }
+                else
+                {
+                    (*mMenuItems.mMenuItems[currentIndex].mCallbacks[0].mFunctor)(type);
+                }
+            }
+        }
+
+        mLastSelectedIndex__11SpoilsScene = mMenuItems.mCurrentIndex;
+        FEAudio::PlayAnimAudioEvent("sfx_accept", false);
+        return;
+    }
+
+    if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x200, false, NULL))
+    {
+        nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_MAIN_MENU, SCREEN_BACK, true);
+        mLastSelectedIndex__11SpoilsScene = 0;
+        return;
+    }
+
+    if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xD, true, NULL))
+    {
+        int flags = mMenuItems.mFlags;
+        int wrapFlag = flags & 1;
+        int currentIndex = mMenuItems.mCurrentIndex;
+        int newIndex = currentIndex - 1;
+
+    loop_up:
+        if (wrapFlag)
+        {
+            if (newIndex < 0)
+            {
+                newIndex = mMenuItems.mNumItemsAdded - 1;
+            }
+        }
+        else
+        {
+            if (newIndex < 0)
+            {
+                return;
+            }
+        }
+
+        if (flags & 2)
+        {
+            if (mMenuItems.mMenuItems[newIndex].mDisabled)
+            {
+                newIndex--;
+                goto loop_up;
+            }
+        }
+
+        {
+            int tag = mMenuItems.mMenuItems[currentIndex].mCallbacks[2].mTag;
+            if (((u32)((-tag) | tag) >> 31) > 0)
+            {
+                TLComponentInstance* type = mMenuItems.mMenuItems[currentIndex].mType;
+                if (tag == FREE_FUNCTION)
+                {
+                    mMenuItems.mMenuItems[currentIndex].mCallbacks[2].mFreeFunction(type);
+                }
+                else
+                {
+                    (*mMenuItems.mMenuItems[currentIndex].mCallbacks[2].mFunctor)(type);
+                }
+            }
+        }
+
+        mMenuItems.mCurrentIndex = newIndex;
+
+        {
+            int selIdx = mMenuItems.mCurrentIndex;
+            int tag = mMenuItems.mMenuItems[selIdx].mCallbacks[1].mTag;
+            if (((u32)((-tag) | tag) >> 31) > 0)
+            {
+                TLComponentInstance* type = mMenuItems.mMenuItems[selIdx].mType;
+                if (tag == FREE_FUNCTION)
+                {
+                    mMenuItems.mMenuItems[selIdx].mCallbacks[1].mFreeFunction(type);
+                }
+                else
+                {
+                    (*mMenuItems.mMenuItems[selIdx].mCallbacks[1].mFunctor)(type);
+                }
+            }
+        }
+
+        return;
+    }
+
+    if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xE, true, NULL))
+    {
+        int flags = mMenuItems.mFlags;
+        int wrapFlag = flags & 1;
+        int currentIndex = mMenuItems.mCurrentIndex;
+        int newIndex = currentIndex + 1;
+
+    loop_down:
+        if (wrapFlag)
+        {
+            newIndex = newIndex % mMenuItems.mNumItemsAdded;
+        }
+        else
+        {
+            if (newIndex >= mMenuItems.mNumItemsAdded)
+            {
+                return;
+            }
+        }
+
+        if (flags & 2)
+        {
+            if (mMenuItems.mMenuItems[newIndex].mDisabled)
+            {
+                newIndex++;
+                goto loop_down;
+            }
+        }
+
+        {
+            int tag = mMenuItems.mMenuItems[currentIndex].mCallbacks[2].mTag;
+            if (((u32)((-tag) | tag) >> 31) > 0)
+            {
+                TLComponentInstance* type = mMenuItems.mMenuItems[currentIndex].mType;
+                if (tag == FREE_FUNCTION)
+                {
+                    mMenuItems.mMenuItems[currentIndex].mCallbacks[2].mFreeFunction(type);
+                }
+                else
+                {
+                    (*mMenuItems.mMenuItems[currentIndex].mCallbacks[2].mFunctor)(type);
+                }
+            }
+        }
+
+        mMenuItems.mCurrentIndex = newIndex;
+
+        {
+            int selIdx = mMenuItems.mCurrentIndex;
+            int tag = mMenuItems.mMenuItems[selIdx].mCallbacks[1].mTag;
+            if (((u32)((-tag) | tag) >> 31) > 0)
+            {
+                TLComponentInstance* type = mMenuItems.mMenuItems[selIdx].mType;
+                if (tag == FREE_FUNCTION)
+                {
+                    mMenuItems.mMenuItems[selIdx].mCallbacks[1].mFreeFunction(type);
+                }
+                else
+                {
+                    (*mMenuItems.mMenuItems[selIdx].mCallbacks[1].mFunctor)(type);
+                }
+            }
+        }
+    }
 }
 
 /**
@@ -125,14 +299,20 @@ void SpoilsScene::SceneCreated()
 /**
  * Offset/Address/Size: 0x0 | 0x800D0EF0 | size: 0xC4
  */
-void SpoilsScene::ShowSpoils(SpoilsScene::eSpoils spoils) {
-    if (spoils == SPOILS_CUP) {
+void SpoilsScene::ShowSpoils(SpoilsScene::eSpoils spoils)
+{
+    if (spoils == SPOILS_CUP)
+    {
         CupTrophyScene* pScene = (CupTrophyScene*)GameSceneManager::GetInstance()->Push(SCENE_CUP_TROPHY, SCREEN_FORWARD, true);
         pScene->CreateTrophyScene(TROPHY_MUSHROOM_CUP, ButtonComponent::BS_B_ONLY, false);
-    } else if (spoils == SPOILS_SUPER_CUP) {
+    }
+    else if (spoils == SPOILS_SUPER_CUP)
+    {
         CupTrophyScene* pScene = (CupTrophyScene*)GameSceneManager::GetInstance()->Push(SCENE_CUP_TROPHY, SCREEN_FORWARD, true);
         pScene->CreateTrophyScene(TROPHY_SUPER_MUSHROOM_CUP, ButtonComponent::BS_B_ONLY, false);
-    } else {
+    }
+    else
+    {
         MilestoneTrophyScene* pScene = (MilestoneTrophyScene*)GameSceneManager::GetInstance()->Push(SCENE_MILESTONE_TROPHY, SCREEN_FORWARD, true);
         pScene->CreateTrophyScene(NUM_BATTLE_TROPHIES, ButtonComponent::BS_B_ONLY, false);
     }

@@ -330,18 +330,21 @@ void SidelineExplodable::Update(float fDeltaT)
 
 /**
  * Offset/Address/Size: 0x1710 | 0x80168A70 | size: 0x290
- * TODO: 98.45% match - lbz r0 vs r3 CSE diff on first mbIsActive check (compiler
- * caches value in r3 instead of using r0+reload), causing extra li r0,0 and lwz r4 vs r0.
+ * TODO: 99.21% match - remaining diff is in the m_uObjectFlags/mpPhysicsObject
+ * cleanup path (r4/r0 vs target r0/r23 usage sequence).
  */
 void SidelineExplodable::DestroyAllActiveFragments(bool renewExplodables)
 {
     if (mNumActiveFragments != 0)
     {
         SlotPool<DrawableFragmentHandleNode>* pPool = &DrawableFragmentHandleNode::sDrawableFragmentHandleNodePool;
-        int fragmentOffset = 0;
+        int fragmentOffset;
         DrawableFragmentHandleNode** pTail = &SidelineExplodableManager::sUnusedDrawableFragments.m_pEnd;
         ExplosionFragment* fragment;
-        int i = 0;
+        int i;
+
+        i = 0;
+        fragmentOffset = 0;
 
         while (i < mNumFragmentModels)
         {
@@ -350,7 +353,7 @@ void SidelineExplodable::DestroyAllActiveFragments(bool renewExplodables)
             {
                 if (renewExplodables || !fragment->mbInfiniteLifespan)
                 {
-                    if (fragment->mbIsActive)
+                    if (*(volatile bool*)&fragment->mbIsActive)
                     {
                         if (fragment->mpPhysicsObject != NULL)
                         {

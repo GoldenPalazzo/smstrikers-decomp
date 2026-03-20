@@ -105,10 +105,139 @@ void PhysicsCharacter::PreCollide()
 /**
  * Offset/Address/Size: 0x708 | 0x80136920 | size: 0x384
  */
-PhysicsBoneID PhysicsCharacter::ResolvePhysicsBoneIDFromName(const char*)
+PhysicsBoneID PhysicsCharacter::ResolvePhysicsBoneIDFromName(const char* name)
 {
-    FORCE_DONT_INLINE;
-    return PHYSBONE_UNKNOWN;
+    if (strcmpi("PHYSBONE_R_ARM", name) == 0)
+    {
+        return PHYSBONE_FIELDER_R_ARM;
+    }
+
+    if (strcmpi("PHYSBONE_L_ARM", name) == 0)
+    {
+        return PHYSBONE_FIELDER_L_ARM;
+    }
+
+    if (strcmpi("PHYSBONE_R_LEG", name) == 0)
+    {
+        return PHYSBONE_FIELDER_R_LEG;
+    }
+
+    if (strcmpi("PHYSBONE_L_LEG", name) == 0)
+    {
+        return PHYSBONE_FIELDER_L_LEG;
+    }
+
+    if (strcmpi("PHYSBONE_HEAD", name) == 0)
+    {
+        return PHYSBONE_FIELDER_HEAD;
+    }
+
+    if (strcmpi("PhySphere_Lhand", name) == 0)
+    {
+        return PHYSBONE_GOALIE_L_HAND;
+    }
+
+    if (strcmpi("PhySphere_Lwrist", name) == 0)
+    {
+        return PHYSBONE_GOALIE_L_WRIST;
+    }
+
+    if (strcmpi("PhySphere_Lforearm", name) == 0)
+    {
+        return PHYSBONE_GOALIE_L_FOREARM;
+    }
+
+    if (strcmpi("PhySphere_Lbicep", name) == 0)
+    {
+        return PHYSBONE_GOALIE_L_BICEP;
+    }
+
+    if (strcmpi("PhySphere_Lshoulder", name) == 0)
+    {
+        return PHYSBONE_GOALIE_L_SHOULDER;
+    }
+
+    if (strcmpi("PhySphere_Lthigh", name) == 0)
+    {
+        return PHYSBONE_GOALIE_L_THIGH;
+    }
+
+    if (strcmpi("PhySphere_Lthighlower", name) == 0)
+    {
+        return PHYSBONE_GOALIE_L_THIGHLOWER;
+    }
+
+    if (strcmpi("PhySphere_Lcalfupper", name) == 0)
+    {
+        return PHYSBONE_GOALIE_L_CALFUPPER;
+    }
+
+    if (strcmpi("PhySphere_Lheel", name) == 0)
+    {
+        return PHYSBONE_GOALIE_L_HEEL;
+    }
+
+    if (strcmpi("PhySphere_Ltoe", name) == 0)
+    {
+        return PHYSBONE_GOALIE_L_TOE;
+    }
+
+    if (strcmpi("PhySphere_Rhand", name) == 0)
+    {
+        return PHYSBONE_GOALIE_R_HAND;
+    }
+
+    if (strcmpi("PhySphere_Rwrist", name) == 0)
+    {
+        return PHYSBONE_GOALIE_R_WRIST;
+    }
+
+    if (strcmpi("PhySphere_Rforearm", name) == 0)
+    {
+        return PHYSBONE_GOALIE_R_FOREARM;
+    }
+
+    if (strcmpi("PhySphere_Rbicep", name) == 0)
+    {
+        return PHYSBONE_GOALIE_R_BICEP;
+    }
+
+    if (strcmpi("PhySphere_Rshoulder", name) == 0)
+    {
+        return PHYSBONE_GOALIE_R_SHOULDER;
+    }
+
+    if (strcmpi("PhySphere_Rthigh", name) == 0)
+    {
+        return PHYSBONE_GOALIE_R_THIGH;
+    }
+
+    if (strcmpi("PhySphere_Rthighlower", name) == 0)
+    {
+        return PHYSBONE_GOALIE_R_THIGHLOWER;
+    }
+
+    if (strcmpi("PhySphere_Rcalfupper", name) == 0)
+    {
+        return PHYSBONE_GOALIE_R_CALFUPPER;
+    }
+
+    if (strcmpi("PhySphere_Rheel", name) == 0)
+    {
+        return PHYSBONE_GOALIE_R_HEEL;
+    }
+
+    if (strcmpi("PhySphere_Rtoe", name) == 0)
+    {
+        return PHYSBONE_GOALIE_R_TOE;
+    }
+
+    if (strcmpi("PhySphere_head", name) == 0)
+    {
+        return PHYSBONE_GOALIE_HEAD;
+    }
+
+    return strcmpi("PhySphere_stomach", name) != 0 ? PHYSBONE_UNKNOWN : PHYSBONE_GOALIE_STOMACH;
 }
 
 /**

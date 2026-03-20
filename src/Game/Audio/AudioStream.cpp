@@ -45,6 +45,9 @@ struct LastScorerInfo
 
 extern LastScorerInfo* g_pLastScorer__5Audio;
 
+template <typename CharT>
+int nlStrNICmp(const CharT*, const CharT*, unsigned long);
+
 // Team name strings
 static const char* s_TeamNames[] = {
     "Daisy",      // TEAM_DAISY = 0
@@ -168,8 +171,127 @@ static const char* s_ScorerNames[] = {
  */
 bool Audio::TrackMgrFileNameParamLookup(const char* param, char* out, unsigned long size)
 {
-    u32 hash = nlStringLowerHash(param);
-    return false;
+    s32 hash = nlStringLowerHash(param);
+    const char* value;
+
+    switch (hash)
+    {
+    case 0x3B762F28:
+        value = GetTeamName(nlSingleton<GameInfoManager>::s_pInstance->GetTeam(0));
+        nlStrNCpy(out, value, size);
+        break;
+
+    case (s32)0xB59118F1:
+    {
+        u32 outValue = (u32)GetTeamName(nlSingleton<GameInfoManager>::s_pInstance->GetTeam(1));
+        nlStrNCpy(out, (const char*)outValue, size);
+        break;
+    }
+
+    case (s32)0xBDD1CBB6:
+        switch (nlSingleton<GameInfoManager>::s_pInstance->GetStadium())
+        {
+        case 0:
+            nlStrNCpy(out, "pipeline", size);
+            break;
+        case 1:
+            nlStrNCpy(out, "palace", size);
+            break;
+        case 2:
+            nlStrNCpy(out, "konga", size);
+            break;
+        case 3:
+            nlStrNCpy(out, "underground", size);
+            break;
+        case 4:
+            nlStrNCpy(out, "yoshi", size);
+            break;
+        case 5:
+            nlStrNCpy(out, "super", size);
+            break;
+        case 6:
+            nlStrNCpy(out, "forbidden", size);
+            break;
+        default:
+            return false;
+        }
+        break;
+
+    case (s32)0xAEDB83D0:
+        switch (g_pLastScorer__5Audio->scorerID)
+        {
+        case 0:
+        case 3:
+        case 4:
+        case 8:
+        case 12:
+            nlStrNCpy(out, "Side", size);
+            break;
+
+        case 1:
+            nlStrNCpy(out, "Daisy", size);
+            break;
+
+        case 2:
+            nlStrNCpy(out, "DonkeyKong", size);
+            break;
+
+        case 5:
+            nlStrNCpy(out, "Luigi", size);
+            break;
+
+        case 6:
+            nlStrNCpy(out, "Mario", size);
+            break;
+
+        case 7:
+            nlStrNCpy(out, "Peach", size);
+            break;
+
+        case 9:
+            nlStrNCpy(out, "Waluigi", size);
+            break;
+
+        case 10:
+            nlStrNCpy(out, "Wario", size);
+            break;
+
+        case 11:
+            nlStrNCpy(out, "Yoshi", size);
+            break;
+
+        default:
+            return false;
+        }
+        break;
+
+    case 0x3F76E1B9:
+    {
+        int sideInt = g_pTeams[0]->m_nScore < g_pTeams[1]->m_nScore;
+        s16 side = (s16)sideInt;
+        u32 outValue = (u32)GetTeamName(nlSingleton<GameInfoManager>::s_pInstance->GetTeam(side));
+        nlStrNCpy(out, (const char*)outValue, size);
+        break;
+    }
+
+    default:
+        if (nlStrNICmp<char>(param, "RAND", 4) == 0)
+        {
+            u32 num = atoi(param + 4);
+            const char* format = "%02d";
+            if (num < 10)
+            {
+                format = "%d";
+            }
+            nlSNPrintf(out, size, format, nlRandom(num, &nlDefaultSeed) + 1);
+            break;
+        }
+
+        nlPrintf("Unknown stream param \"%s\"\n", param);
+        return false;
+    }
+
+    return true;
 }
 
 /**

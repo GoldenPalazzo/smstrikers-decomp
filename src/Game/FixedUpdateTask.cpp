@@ -48,9 +48,9 @@ const char* FixedUpdateTask::GetName()
 
 /**
  * Offset/Address/Size: 0x0 | 0x8016E330 | size: 0x280
- * TODO: 93.62% match - 1 extra mr instruction (addi r0 + mr r28 vs addi r28),
- * f30/f1 scheduling swap for fixedTick load, r29/r30 register swap in second
- * character loop and doGoalieNetTestPosX. Compiler scheduling quirks.
+ * TODO: 97.75% match - remaining diffs are register allocation/scheduling:
+ * g_pCharacters/g_pTeams base register assignment, fixedTick f30/f1 load order,
+ * and NetMesh update argument materialization order.
  */
 void FixedUpdateTask::Run(float dt)
 {
@@ -59,7 +59,6 @@ void FixedUpdateTask::Run(float dt)
         cTeam** pTeams = g_pTeams;
         cCharacter** pCharacter;
         int i;
-        cCharacter** pCharacters = g_pCharacters;
         float simulationTick;
 
         mAccumulatedDeltaT += dt * mTimeScale;
@@ -86,7 +85,7 @@ void FixedUpdateTask::Run(float dt)
             BasicStadium::GetCurrentStadium()->mpNPCManager->UpdateAINPCs(g_fSimulationTick);
 
             simulationTick = g_fSimulationTick;
-            pCharacter = pCharacters;
+            pCharacter = g_pCharacters;
             for (i = 0; i < 10; i++)
             {
                 (*pCharacter)->PrePhysicsUpdate(simulationTick);
@@ -96,7 +95,7 @@ void FixedUpdateTask::Run(float dt)
             PhysicsUpdate(g_PhysicsWorld, g_fSimulationTick);
 
             simulationTick = g_fSimulationTick;
-            pCharacter = pCharacters;
+            pCharacter = g_pCharacters;
             for (i = 0; i < 10; i++)
             {
                 (*pCharacter)->PostPhysicsUpdate();
@@ -109,10 +108,16 @@ void FixedUpdateTask::Run(float dt)
             {
                 bool doGoalieNetTestPosX = true;
                 float goalieX = (float)fabs(g_pTeams[0]->GetGoalie()->m_v3Position.f.x);
-                if (goalieX <= cField::GetGoalLineX(1U))
+                if (goalieX > cField::GetGoalLineX(1U))
+                {
+                }
+                else
                 {
                     goalieX = (float)fabs(pTeams[1]->GetGoalie()->m_v3Position.f.x);
-                    if (goalieX <= cField::GetGoalLineX(1U))
+                    if (goalieX > cField::GetGoalLineX(1U))
+                    {
+                    }
+                    else
                     {
                         doGoalieNetTestPosX = false;
                     }

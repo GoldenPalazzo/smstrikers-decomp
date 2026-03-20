@@ -39,8 +39,9 @@ int dCollideColumnColumn(dxGeom* geomID0, dxGeom* geomID1, int arg2, dContactGeo
     f32 sp8;
     f32 temp_f1;
     f32 temp_f2;
-    f32 radius_1;
+    f32 temp_f3;
     f32 radius_0;
+    f32 radius_1;
     f32 temp_f4;
     f32 temp_f4_2;
     f32 temp_f4_3;
@@ -54,38 +55,46 @@ int dCollideColumnColumn(dxGeom* geomID0, dxGeom* geomID1, int arg2, dContactGeo
     s32 var_r0;
     s32 var_r4;
     s32 var_r5;
-    float* pos_0;
-    float* pos_1;
-    float* temp_r7;
-    float* temp_r8;
+    f32* pos_0;
+    f32* pos_1;
+    f32* temp_r7;
+    f32* temp_r8;
 
-    radius_0 = *(float*)dGeomGetClassData(geomID0);
-    radius_1 = *(float*)dGeomGetClassData(geomID1);
-    pos_0 = (float*)dGeomGetPosition(geomID0);
-    pos_1 = (float*)dGeomGetPosition(geomID1);
+    radius_0 = *(f32*)dGeomGetClassData(geomID0);
+    radius_1 = *(f32*)dGeomGetClassData(geomID1);
+    pos_0 = (f32*)dGeomGetPosition(geomID0);
+    pos_1 = (f32*)dGeomGetPosition(geomID1);
     var_r4 = 0xFF;
     var_r5 = 0xFF;
-    if ((u8)lengthwiseAxis == 0)
+    if (lengthwiseAxis == 0)
     {
         var_r4 = 1;
         var_r5 = 2;
     }
-    if ((u8)lengthwiseAxis == 1)
+    if (lengthwiseAxis == 1)
     {
         var_r4 = 0;
         var_r5 = 2;
     }
-    if ((u8)lengthwiseAxis == 2)
+    if (lengthwiseAxis == 2)
     {
         var_r4 = 0;
         var_r5 = 1;
     }
-    temp_r6 = (var_r4 * 4) & 0x3FC;
-    temp_r5 = (var_r5 * 4) & 0x3FC;
+
+    temp_r6 = ((u8)var_r4) << 2;
+    temp_r5 = ((u8)var_r5) << 2;
     temp_f4 = radius_0 + radius_1;
-    temp_f2 = *(pos_0 + temp_r6) - *(pos_1 + temp_r6);
-    temp_f1 = *(pos_0 + temp_r5) - *(pos_1 + temp_r5);
-    temp_f4_2 = (temp_f2 * temp_f2) + (temp_f1 * temp_f1);
+
+    temp_f3 = *(f32*)((u8*)pos_0 + temp_r6);
+    temp_f2 = *(f32*)((u8*)pos_1 + temp_r6);
+    temp_f2 = temp_f3 - temp_f2;
+    temp_f1 = *(f32*)((u8*)pos_0 + temp_r5);
+    temp_f3 = *(f32*)((u8*)pos_1 + temp_r5);
+    temp_f1 = temp_f1 - temp_f3;
+    temp_f4_2 = temp_f2 * temp_f2;
+    temp_f4_2 = temp_f4_2 + (temp_f1 * temp_f1);
+
     if (temp_f4_2 < (temp_f4 * temp_f4))
     {
         if (temp_f4_2 > 0.0f)
@@ -97,17 +106,15 @@ int dCollideColumnColumn(dxGeom* geomID0, dxGeom* geomID1, int arg2, dContactGeo
         }
         else if (temp_f4_2 < 0.0)
         {
-            var_f5 = *(float*)&__float_nan;
+            var_f5 = *(f32*)&__float_nan;
         }
         else
         {
             sp8 = temp_f4_2;
             temp_r4 = *(s32*)&sp8 & 0x7F800000;
-            // temp_r4 = (bitwise s32) sp8 & 0x7F800000;
             switch (temp_r4)
-            { /* irregular */
+            {
             case 0x7F800000:
-                // if ((bitwise s32) sp8 & 0x7FFFFF) {
                 if (*(s32*)&sp8 & 0x7FFFFF)
                 {
                     var_r0 = 1;
@@ -118,7 +125,6 @@ int dCollideColumnColumn(dxGeom* geomID0, dxGeom* geomID1, int arg2, dContactGeo
                 }
                 break;
             case 0x0:
-                // if ((bitwise s32) sp8 & 0x7FFFFF) {
                 if (*(s32*)&sp8 & 0x7FFFFF)
                 {
                     var_r0 = 5;
@@ -134,7 +140,7 @@ int dCollideColumnColumn(dxGeom* geomID0, dxGeom* geomID1, int arg2, dContactGeo
             }
             if (var_r0 == 1)
             {
-                var_f5 = *(float*)&__float_nan;
+                var_f5 = *(f32*)&__float_nan;
             }
             else
             {
@@ -142,23 +148,23 @@ int dCollideColumnColumn(dxGeom* geomID0, dxGeom* geomID1, int arg2, dContactGeo
             }
         }
 
-        temp_r7 = (float*)(arg3 + temp_r6);
-        temp_r8 = (float*)(arg3 + temp_r5);
+        temp_r7 = (f32*)((u8*)arg3 + temp_r6);
+        temp_r8 = (f32*)((u8*)arg3 + temp_r5);
 
-        temp_r7[4] = (f32)((*(pos_0 + temp_r6) - *(pos_1 + temp_r6)) / var_f5);
+        temp_r7[4] = (*(f32*)((u8*)pos_0 + temp_r6) - *(f32*)((u8*)pos_1 + temp_r6)) / var_f5;
         temp_f4_3 = ((var_f5 + radius_1) - radius_0) * 0.5f;
+        temp_r8[4] = (*(f32*)((u8*)pos_0 + temp_r5) - *(f32*)((u8*)pos_1 + temp_r5)) / var_f5;
 
-        temp_r8[4] = (f32)((*(pos_0 + temp_r5) - *(pos_1 + temp_r5)) / var_f5);
-        *(float*)(arg3 + (lengthwiseAxis * 4) + 0x10) = 0.0f;
-
-        *(float*)(arg3 + temp_r6) = (temp_r7[4] * temp_f4_3) + *(float*)((u8*)pos_1 + temp_r6);
-        *(float*)(arg3 + temp_r5) = (temp_r8[4] * temp_f4_3) + *(float*)((u8*)pos_1 + temp_r5);
-        *(float*)(arg3 + (lengthwiseAxis * 4)) = 0.0f;
-        arg3->depth = (f32)(radius_1 - (var_f5 - radius_1));
+        *(f32*)((u8*)arg3 + (lengthwiseAxis * 4) + 0x10) = 0.0f;
+        *(f32*)((u8*)arg3 + temp_r6) = (temp_r7[4] * temp_f4_3) + *(f32*)((u8*)pos_1 + temp_r6);
+        *(f32*)((u8*)arg3 + temp_r5) = (temp_r8[4] * temp_f4_3) + *(f32*)((u8*)pos_1 + temp_r5);
+        *(f32*)((u8*)arg3 + (lengthwiseAxis * 4)) = 0.0f;
+        arg3->depth = radius_1 - (var_f5 - radius_1);
         arg3->g1 = geomID0;
         arg3->g2 = geomID1;
         return 1;
     }
+
     return 0;
 }
 
@@ -183,32 +189,40 @@ int dCollideColumnPlane(dxGeom* o1, dxGeom* o2, int flags, dContactGeom* contact
     ax1 = 0xFF;
     ax2 = 0xFF;
     perpendicular = 0;
-    if (lengthwiseAxis == 0) {
+    if (lengthwiseAxis == 0)
+    {
         ax1 = 1;
         ax2 = 2;
-        if (n[0] < 0.001f) {
+        if (n[0] < 0.001f)
+        {
             perpendicular = 1;
         }
     }
-    if (lengthwiseAxis == 1) {
+    if (lengthwiseAxis == 1)
+    {
         ax1 = 0;
         ax2 = 2;
-        if (n[1] < 0.001f) {
+        if (n[1] < 0.001f)
+        {
             perpendicular = 1;
         }
     }
-    if (lengthwiseAxis == 2) {
+    if (lengthwiseAxis == 2)
+    {
         ax1 = 0;
         ax2 = 1;
-        if (n[2] < 0.001f) {
+        if (n[2] < 0.001f)
+        {
             perpendicular = 1;
         }
     }
-    if (!perpendicular) {
+    if (!perpendicular)
+    {
         return 0;
     }
     distance = n[ax1] * pos[ax1] + n[ax2] * pos[ax2] - d;
-    if (distance < radius) {
+    if (distance < radius)
+    {
         contact->normal[0] = n[0];
         contact->normal[1] = n[1];
         contact->normal[2] = n[2];

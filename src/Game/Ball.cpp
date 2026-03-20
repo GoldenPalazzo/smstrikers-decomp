@@ -807,8 +807,89 @@ void cBall::ClearShotInProgress()
 /**
  * Offset/Address/Size: 0x194C | 0x8000B320 | size: 0x370
  */
-void cBall::InitiateBallBlur(eBallShotEffectType, cPlayer*)
+void cBall::InitiateBallBlur(eBallShotEffectType effectType, cPlayer* pPlayer)
 {
+    if (m_pBlurHandler != NULL)
+    {
+        BlurManager::DestroyHandler(m_pBlurHandler, 0.0f);
+        m_pBlurHandler = NULL;
+    }
+
+    switch (effectType)
+    {
+    case BALL_EFFECT_S2S_SUPER_SHOT:
+    {
+        char textureName[32] = "";
+        nlStrNCpy(textureName, "global/shoottoscorestreak", 0x20);
+        m_pBlurHandler = BlurManager::GetNewHandler(textureName, g_pGame->m_pGameTweaks->unk288, g_pGame->m_pGameTweaks->unk28C, true);
+        break;
+    }
+
+    case BALL_EFFECT_S2S_SHOT:
+        if (pPlayer != NULL)
+        {
+            if (pPlayer->IsCaptain() || nlSingleton<GameInfoManager>::s_pInstance->GetTeam((s16)pPlayer->m_pTeam->m_nSide) == TEAM_MYSTERY)
+            {
+                char textureName[32] = "";
+
+                switch (nlSingleton<GameInfoManager>::s_pInstance->GetTeam((s16)pPlayer->m_pTeam->m_nSide))
+                {
+                case TEAM_DAISY:
+                    nlStrNCpy(textureName, "global/daisyshoottoscorestreak", 0x20);
+                    break;
+                case TEAM_DONKEYKONG:
+                    nlStrNCpy(textureName, "global/dkshoottoscorestreak", 0x20);
+                    break;
+                case TEAM_LUIGI:
+                    nlStrNCpy(textureName, "global/luigishoottoscorestreak", 0x20);
+                    break;
+                case TEAM_MARIO:
+                    nlStrNCpy(textureName, "global/marioshoottoscorestreak", 0x20);
+                    break;
+                case TEAM_PEACH:
+                    nlStrNCpy(textureName, "global/peachshoottoscorestreak", 0x20);
+                    break;
+                case TEAM_WALUIGI:
+                    nlStrNCpy(textureName, "global/washoottoscorestreak", 0x20);
+                    break;
+                case TEAM_WARIO:
+                    nlStrNCpy(textureName, "global/warioshoottoscorestreak", 0x20);
+                    break;
+                case TEAM_YOSHI:
+                    nlStrNCpy(textureName, "global/yoshishoottoscorestreak", 0x20);
+                    break;
+                case TEAM_MYSTERY:
+                    nlStrNCpy(textureName, "global/mysshoottoscorestreak", 0x20);
+                    break;
+                default:
+                    nlStrNCpy(textureName, "global/shoottoscorestreak", 0x20);
+                    break;
+                }
+
+                m_pBlurHandler = BlurManager::GetNewHandler(textureName, g_pGame->m_pGameTweaks->unk288, g_pGame->m_pGameTweaks->unk28C, true);
+                break;
+            }
+        }
+
+        m_pBlurHandler = BlurManager::GetNewHandler("global/shoottoscorestreak", g_pGame->m_pGameTweaks->unk288, g_pGame->m_pGameTweaks->unk28C, true);
+        break;
+
+    case BALL_EFFECT_PERFECT_SHOT:
+        m_pBlurHandler = BlurManager::GetNewHandler("global/greenshotstreak", 0.35f, 0x1E, true);
+        break;
+
+    case BALL_EFFECT_PERFECT_PASS:
+        m_pBlurHandler = BlurManager::GetNewHandler("global/perfectpassstreak", 0.35f, 0x1E, true);
+        break;
+
+    case BALL_EFFECT_CHIP_SHOT:
+        m_pBlurHandler = BlurManager::GetNewHandler("global/blueshotstreak", 0.35f, 0x1E, true);
+        break;
+
+    default:
+        m_pBlurHandler = BlurManager::GetNewHandler("global/shotstreak", 0.35f, 0x1E, false);
+        break;
+    }
 }
 
 /**

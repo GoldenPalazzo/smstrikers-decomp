@@ -62,21 +62,25 @@ public:
 };
 } // namespace Detail
 
-// BasicString data storage struct
-struct BasicStringInternal
+// BasicString data storage - templated on character type
+template <typename CharT>
+struct BasicStringData
 {
-    char* mData;   // offset 0x0 - the actual char* buffer
+    CharT* mData;  // offset 0x0
     int mSize;     // offset 0x4
     int mCapacity; // offset 0x8
     int mRefCount; // offset 0xC
 };
 
-// BasicString template class - total size: 0x4 (pointer to BasicStringInternal)
+// Backward-compatible typedef for char specialization
+typedef BasicStringData<char> BasicStringInternal;
+
+// BasicString template class - total size: 0x4 (pointer to BasicStringData)
 template <typename CharT, typename Allocator>
 class BasicString
 {
 public:
-    BasicStringInternal* m_data; // offset 0x0 - pointer to data struct
+    BasicStringData<CharT>* m_data; // offset 0x0
 
     BasicString()
         : m_data(nullptr)
@@ -85,19 +89,19 @@ public:
 
     BasicString(const CharT* str)
     {
-        BasicStringInternal* data = (BasicStringInternal*)Allocator::allocate(sizeof(BasicStringInternal));
+        BasicStringData<CharT>* data = (BasicStringData<CharT>*)Allocator::allocate(sizeof(BasicStringData<CharT>));
         if (data != 0)
         {
             data->mData = 0;
             data->mSize = 0;
             data->mCapacity = 0;
             const CharT* s = str;
-            while ((signed char)*s++ != 0)
+            while (*s++ != 0)
             {
                 data->mSize++;
             }
             data->mSize++;
-            data->mData = (char*)Allocator::allocate(data->mSize + 1);
+            data->mData = (CharT*)Allocator::allocate((data->mSize + 1) * sizeof(CharT));
             data->mCapacity = data->mSize;
             for (int i = 0; i < data->mSize; i++)
             {
@@ -108,14 +112,14 @@ public:
         m_data = data;
     }
 
-    BasicString(BasicStringInternal* p)
+    BasicString(BasicStringData<CharT>* p)
         : m_data(p)
     {
     }
 
     BasicString(const BasicString& other)
     {
-        BasicStringInternal* data;
+        BasicStringData<CharT>* data;
         if (other.m_data)
         {
             other.m_data->mRefCount++;
@@ -132,7 +136,7 @@ public:
     {
         if (m_data)
         {
-            BasicStringInternal* data = m_data;
+            BasicStringData<CharT>* data = m_data;
             if (--data->mRefCount == 0)
             {
                 if (data)

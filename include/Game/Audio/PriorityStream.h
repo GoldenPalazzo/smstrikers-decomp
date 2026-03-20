@@ -45,7 +45,7 @@ public:
     void FakePause(unsigned long);
     void FakeResume(bool);
     void TrackIdleCB();
-    void GrabCrowdStream(unsigned long);
+    unsigned long GrabCrowdStream(unsigned long);
     static unsigned long GetNextStreamId(unsigned long SimpleStreamId);
 
     /* 0x00 */ bool m_InPause : 8;

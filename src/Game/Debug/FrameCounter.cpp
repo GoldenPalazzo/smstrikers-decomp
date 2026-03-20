@@ -315,9 +315,101 @@ void DrawSmile(nlVector3 p0, float fRadius, float fScaleX, nlColour colour, floa
 
 /**
  * Offset/Address/Size: 0x588 | 0x801FD124 | size: 0x37C
+ * TODO: 99.98% match - small literal pool/sdata21 offset differences remain.
  */
-void DrawBrow(const nlVector3&, const nlVector3&, float, float, float)
+void DrawBrow(const nlVector3& leftEyeCentre, const nlVector3& rightEyeCentre, float distanceAboveEye, float width, float height)
 {
+    extern float sfHappiness;
+
+    GLMeshWriter m0;
+    const eGLStream streams[2] = { GLStream_Position, GLStream_Colour };
+
+    glSetDefaultState(false);
+    glSetCurrentProgram(glGetProgram("2d unlit"));
+
+    float yScale = (2.0f * sfHappiness) + -1.0f;
+
+    if (m0.Begin(4, GLP_LineList, 2, streams, false))
+    {
+        nlVector3 p1;
+        nlVector3 p2;
+
+        float upper = -distanceAboveEye + (height * yScale);
+        float lower = -distanceAboveEye - (height * yScale);
+
+        p1 = leftEyeCentre;
+        p2 = leftEyeCentre;
+
+        p1.f.x = p1.f.x - width;
+        p2.f.x = p2.f.x + width;
+        p1.f.y = p1.f.y + upper;
+        p2.f.y = p2.f.y + lower;
+
+        nlColour c0;
+        c0.c[0] = 0;
+        c0.c[1] = 0;
+        c0.c[2] = 0;
+        c0.c[3] = 0xFF;
+        ((GLMeshWriterCore*)&m0)->Colour(c0);
+
+        nlVector3 v0;
+        v0.f.x = p1.f.x;
+        v0.f.y = p1.f.y;
+        v0.f.z = p1.f.z;
+        ((GLMeshWriterCore*)&m0)->Vertex(v0);
+
+        nlColour c1;
+        c1.c[0] = 0;
+        c1.c[1] = 0;
+        c1.c[2] = 0;
+        c1.c[3] = 0xFF;
+        ((GLMeshWriterCore*)&m0)->Colour(c1);
+
+        nlVector3 v1;
+        v1.f.x = p2.f.x;
+        v1.f.y = p2.f.y;
+        v1.f.z = p2.f.z;
+        ((GLMeshWriterCore*)&m0)->Vertex(v1);
+
+        p1 = rightEyeCentre;
+        p2 = rightEyeCentre;
+
+        p1.f.x = p1.f.x + width;
+        p2.f.x = p2.f.x - width;
+        p1.f.y = p1.f.y + upper;
+        p2.f.y = p2.f.y + lower;
+
+        nlColour c2;
+        c2.c[0] = 0;
+        c2.c[1] = 0;
+        c2.c[2] = 0;
+        c2.c[3] = 0xFF;
+        ((GLMeshWriterCore*)&m0)->Colour(c2);
+
+        nlVector3 v2;
+        v2.f.x = p1.f.x;
+        v2.f.y = p1.f.y;
+        v2.f.z = p1.f.z;
+        ((GLMeshWriterCore*)&m0)->Vertex(v2);
+
+        nlColour c3;
+        c3.c[0] = 0;
+        c3.c[1] = 0;
+        c3.c[2] = 0;
+        c3.c[3] = 0xFF;
+        ((GLMeshWriterCore*)&m0)->Colour(c3);
+
+        nlVector3 v3;
+        v3.f.x = p2.f.x;
+        v3.f.y = p2.f.y;
+        v3.f.z = p2.f.z;
+        ((GLMeshWriterCore*)&m0)->Vertex(v3);
+
+        if (m0.End())
+        {
+            glViewAttachModel(GLV_Debug, m0.GetModel());
+        }
+    }
 }
 
 /**

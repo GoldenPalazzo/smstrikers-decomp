@@ -1997,9 +1997,9 @@ long SaveLoad::StartFormat(int slot, void (*callback)(long))
 
 /**
  * Offset/Address/Size: 0x5EC | 0x80189F48 | size: 0x258
- * TODO: 87.4% scratch match - register allocation r29/r31/r30 shuffled,
- * extra cmpwi loop guard, missing nor/srawi/and clut chain (dead code elim).
- * Diffs in -4 block due to -inline deferred vs -inline auto.
+ * TODO: 89.93% scratch match - remaining diffs are in the -4 block:
+ * register allocation (r29/r31/r30 shuffle), extra cmpwi loop guard,
+ * and missing nor/srawi/and clut mask chain under -inline auto.
  */
 unsigned long FileExistsCallbacks::CardMountCB(unsigned long channel, long result, void* data)
 {
@@ -2060,14 +2060,19 @@ unsigned long FileExistsCallbacks::CardMountCB(unsigned long channel, long resul
 
         int iconFormat = IconCfg.IconFormat;
         int iconCount = IconCfg.IconCount;
-
-        int iconSize = (iconFormat << 10) * iconCount;
-        int temp = ~(iconCount | -1);
-        int bannerClut = (temp >> 31) & 0x200;
+        int iconPixelSize = iconFormat << 10;
+        int iconSize = iconCount * iconPixelSize;
+        int negOne = ~(iconCount | -1);
+        int clutSize = 0x200;
+        int bannerClutMask = negOne >> 31;
+        int iconClutMask = negOne >> 31;
+        int bannerClut = clutSize & bannerClutMask;
         int bannerSize = iconFormat * 0xC00;
-        int iconClut = (temp >> 31) & 0x200;
+        int iconClut = clutSize & iconClutMask;
 
-        int total = bannerClut + bannerSize + iconSize + iconClut;
+        int total = bannerClut + bannerSize;
+        total += iconSize;
+        total += iconClut;
 
         origSize = (int)(IconCfg.HeaderSize = total + 0x40);
         dataSize = (u32)(origSize + 0x1FFF) >> 13;

@@ -219,7 +219,290 @@ void PriorityStream::TrackIdleCB()
 
 /**
  * Offset/Address/Size: 0x0 | 0x80157AB4 | size: 0x380
+ * TODO: 88.83% match - register allocation and control-flow shape differ in
+ *       prologue/state dispatch; function still compiles as void while asm
+ *       carries a return register through r30/r3.
  */
-void PriorityStream::GrabCrowdStream(unsigned long)
+namespace GCAudioStreaming
 {
+class AudioStreamBuffer
+{
+public:
+    unsigned char* m_MRAMBuffer;
+    unsigned long m_BufferSize;
+    unsigned long m_BufferSamples;
+    unsigned long m_StreamId;
+    unsigned long m_UpdateOffset;
+    class AudioStream* m_pStream;
+    unsigned char m_Volume;
+    signed char m_Pan;
+    unsigned char m_SurroundPan;
+    unsigned char m_bLPFOn;
+    unsigned short m_LPFFreq;
+};
+
+class AudioBufferMgr
+{
+public:
+    void FreeBuffer(GCAudioStreaming::AudioStreamBuffer*);
+};
+
+enum STREAM_STATE
+{
+    SS_New = 0,
+    SS_Initd = 1,
+    SS_Warming = 2,
+    SS_Warm = 3,
+    SS_Playing = 4,
+};
+
+enum STREAM_FLAG
+{
+    SF_Play = 0,
+    SF_Loop = 1,
+    SF_CoolOnStop = 2,
+    SF_EndAtUpdate = 3,
+    SF_SeriousStop = 4,
+};
+
+class AudioStream
+{
+public:
+    virtual ~AudioStream();
+    virtual void WarmReadDone(AudioStreamBuffer*);
+    void Purge();
+    void Destructor();
+    virtual void Stop();
+    virtual void Warm(bool);
+    virtual void GetUpdateReadLength();
+    virtual void DoUpdateRead(unsigned long, unsigned long, unsigned long, unsigned long, AudioStreamBuffer*);
+    virtual void CancelPendingReads();
+    virtual bool SafeToPurge();
+
+    unsigned char m_FlagAtDelete;
+    STREAM_STATE m_State;
+    unsigned long m_StreamLength;
+    unsigned long m_StreamPos;
+    AudioStreamBuffer* m_Buffers[2];
+    unsigned long m_LastPlayable;
+    unsigned long m_Volume;
+    unsigned char m_LPFOn;
+    unsigned short m_LPFFreq;
+    unsigned long m_OldLength;
+    AudioBufferMgr& m_BuffMgr;
+    unsigned long m_Flags;
+    unsigned long m_BufferCount;
+};
+
+class StereoAudioStream : public AudioStream
+{
+};
+
+} // namespace GCAudioStreaming
+
+extern "C"
+{
+    void sndStreamMixParameterEx(unsigned long stid, unsigned char vol, unsigned char pan, unsigned char span, unsigned char auxa, unsigned char auxb);
+    void sndStreamDeactivate(unsigned long stid);
+    void AttachStream__Q216AudioStreamTrack11StreamTrackFPQ216GCAudioStreaming17StereoAudioStreamQ35Audio12MasterVolume12VOLUME_GROUPUlUlbb(
+        AudioStreamTrack::StreamTrack*, GCAudioStreaming::StereoAudioStream*, Audio::MasterVolume::VOLUME_GROUP, unsigned long, unsigned long, bool, bool);
+    void StopHead__Q216AudioStreamTrack11StreamTrackFUl(AudioStreamTrack::StreamTrack*, unsigned long);
+}
+
+/**
+ * Offset/Address/Size: 0x3DC | 0x800C3820 | size: 0x380
+ * TODO: 96.32% match - ble vs beq at 0xc0, stack offset 0xc vs 0x10 at 0x180 in case 4 free loop
+ */
+unsigned long PriorityStream::GrabCrowdStream(unsigned long Fadeout)
+{
+    GCAudioStreaming::StereoAudioStream* pStream;
+    unsigned long result = 0;
+
+    if (!CrowdMood::IsStreamLocked())
+    {
+        pStream = CrowdMood::LockStream();
+        if (pStream != NULL)
+        {
+            switch (pStream->m_State)
+            {
+            case GCAudioStreaming::SS_Playing:
+            {
+                if (Fadeout != 0)
+                {
+                    result = 1;
+                    AttachStream__Q216AudioStreamTrack11StreamTrackFPQ216GCAudioStreaming17StereoAudioStreamQ35Audio12MasterVolume12VOLUME_GROUPUlUlbb(
+                        &m_Track, pStream, (Audio::MasterVolume::VOLUME_GROUP)4, (unsigned long)-1, 0, 0, 0);
+                    StopHead__Q216AudioStreamTrack11StreamTrackFUl(&m_Track, Fadeout);
+                }
+                else
+                {
+                    pStream->m_Flags &= ~(1 << GCAudioStreaming::SF_Play);
+
+                    if (pStream->m_State == GCAudioStreaming::SS_Playing)
+                    {
+                        GCAudioStreaming::AudioStreamBuffer* pBuffer;
+                        volatile unsigned long i = (unsigned long)(pBuffer = NULL);
+
+                        if (pStream->m_BufferCount > 0)
+                        {
+                            pBuffer = pStream->m_Buffers[0];
+                        }
+
+                        while (pBuffer != NULL)
+                        {
+                            pBuffer->m_Volume = 0;
+                            sndStreamMixParameterEx(pBuffer->m_StreamId, pBuffer->m_Volume, pBuffer->m_Pan, pBuffer->m_SurroundPan, 0, 0);
+                            sndStreamDeactivate(pBuffer->m_StreamId);
+                            pStream->m_State = GCAudioStreaming::SS_Warm;
+
+                            {
+                                unsigned long ci = i + 1;
+                                i = ci;
+                                if (ci < pStream->m_BufferCount)
+                                {
+                                    pBuffer = pStream->m_Buffers[ci];
+                                }
+                                else
+                                {
+                                    pBuffer = NULL;
+                                }
+                            }
+                        }
+
+                        pStream->m_StreamPos = 0;
+                        pStream->m_State = GCAudioStreaming::SS_Warm;
+                    }
+
+                    pStream->CancelPendingReads();
+
+                    if (pStream->m_Flags & (1 << GCAudioStreaming::SF_CoolOnStop))
+                    {
+                        pStream->m_Flags &= ~(1 << GCAudioStreaming::SF_CoolOnStop);
+
+                        if (pStream->m_State > GCAudioStreaming::SS_Initd)
+                        {
+                            GCAudioStreaming::AudioStreamBuffer* pBuffer;
+                            volatile unsigned long i = (unsigned long)(pBuffer = NULL);
+
+                            pStream->m_Flags = (pStream->m_Flags & ~(1 << GCAudioStreaming::SF_SeriousStop)) | (1 << GCAudioStreaming::SF_SeriousStop);
+
+                            if (pStream->m_BufferCount > 0)
+                            {
+                                pBuffer = pStream->m_Buffers[0];
+                            }
+
+                            while (pBuffer != NULL)
+                            {
+                                pStream->m_BuffMgr.FreeBuffer(pBuffer);
+
+                                {
+                                    unsigned long idx = i;
+                                    pStream->m_Buffers[idx] = NULL;
+                                    idx = idx + 1;
+                                    i = idx;
+                                    if (idx < pStream->m_BufferCount)
+                                    {
+                                        pBuffer = pStream->m_Buffers[idx];
+                                    }
+                                    else
+                                    {
+                                        pBuffer = NULL;
+                                    }
+                                }
+                            }
+
+                            pStream->m_State = GCAudioStreaming::SS_Initd;
+                        }
+                    }
+                }
+                break;
+            }
+            case GCAudioStreaming::SS_Warming:
+            case GCAudioStreaming::SS_Warm:
+            {
+                pStream->m_Flags &= ~(1 << GCAudioStreaming::SF_Play);
+
+                if (pStream->m_State == GCAudioStreaming::SS_Playing)
+                {
+                    GCAudioStreaming::AudioStreamBuffer* pBuffer;
+                    volatile unsigned long i = (unsigned long)(pBuffer = NULL);
+
+                    if (pStream->m_BufferCount > 0)
+                    {
+                        pBuffer = pStream->m_Buffers[0];
+                    }
+
+                    while (pBuffer != NULL)
+                    {
+                        pBuffer->m_Volume = 0;
+                        sndStreamMixParameterEx(pBuffer->m_StreamId, pBuffer->m_Volume, pBuffer->m_Pan, pBuffer->m_SurroundPan, 0, 0);
+                        sndStreamDeactivate(pBuffer->m_StreamId);
+                        pStream->m_State = GCAudioStreaming::SS_Warm;
+
+                        {
+                            unsigned long ci = i + 1;
+                            i = ci;
+                            if (ci < pStream->m_BufferCount)
+                            {
+                                pBuffer = pStream->m_Buffers[ci];
+                            }
+                            else
+                            {
+                                pBuffer = NULL;
+                            }
+                        }
+                    }
+
+                    pStream->m_StreamPos = 0;
+                    pStream->m_State = GCAudioStreaming::SS_Warm;
+                }
+
+                pStream->CancelPendingReads();
+
+                if (pStream->m_Flags & (1 << GCAudioStreaming::SF_CoolOnStop))
+                {
+                    pStream->m_Flags &= ~(1 << GCAudioStreaming::SF_CoolOnStop);
+
+                    if (pStream->m_State > GCAudioStreaming::SS_Initd)
+                    {
+                        GCAudioStreaming::AudioStreamBuffer* pBuffer;
+                        volatile unsigned long i = (unsigned long)(pBuffer = NULL);
+
+                        pStream->m_Flags = (pStream->m_Flags & ~(1 << GCAudioStreaming::SF_SeriousStop)) | (1 << GCAudioStreaming::SF_SeriousStop);
+
+                        if (pStream->m_BufferCount > 0)
+                        {
+                            pBuffer = pStream->m_Buffers[0];
+                        }
+
+                        while (pBuffer != NULL)
+                        {
+                            pStream->m_BuffMgr.FreeBuffer(pBuffer);
+
+                            {
+                                unsigned long idx = i;
+                                pStream->m_Buffers[idx] = NULL;
+                                idx = idx + 1;
+                                i = idx;
+                                if (idx < pStream->m_BufferCount)
+                                {
+                                    pBuffer = pStream->m_Buffers[idx];
+                                }
+                                else
+                                {
+                                    pBuffer = NULL;
+                                }
+                            }
+                        }
+
+                        pStream->m_State = GCAudioStreaming::SS_Initd;
+                    }
+                }
+                break;
+            }
+            }
+        }
+    }
+
+    return result;
 }

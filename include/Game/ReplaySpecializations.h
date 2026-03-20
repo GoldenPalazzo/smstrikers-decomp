@@ -101,6 +101,7 @@ void ReplayableImpl(FrameType& frame, T& manager)
 template <>
 void Replayable<1, LoadFrame, CrowdManager>(LoadFrame& frame, CrowdManager& manager)
 {
+    FORCE_DONT_INLINE;
     if (frame.mInterval == 1)
     {
         if (frame.mInterval == 1)
@@ -126,6 +127,7 @@ void Replayable<1, SaveFrame, CrowdManager>(SaveFrame& frame, CrowdManager& mana
 template <>
 void Replayable<3, LoadFrame, EmissionManager>(LoadFrame& frame, EmissionManager& manager)
 {
+    FORCE_DONT_INLINE;
     if (frame.mInterval == 3)
     {
         if (frame.mInterval == 3)
@@ -151,6 +153,7 @@ void Replayable<3, SaveFrame, EmissionManager>(SaveFrame& frame, EmissionManager
 template <>
 void Replayable<1, LoadFrame, DrawableNetMesh>(LoadFrame& frame, DrawableNetMesh& manager)
 {
+    FORCE_DONT_INLINE;
     if (frame.mInterval == 1)
     {
         if (frame.mInterval == 1)

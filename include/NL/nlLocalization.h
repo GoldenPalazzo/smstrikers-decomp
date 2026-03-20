@@ -15,7 +15,7 @@ class nlLocalization
 public:
     struct StringLookup
     {
-        unsigned long HashValue;
+        unsigned long hash;
         unsigned long StringOffset;
     };
 

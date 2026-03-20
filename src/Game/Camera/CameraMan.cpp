@@ -7,6 +7,9 @@
 
 #include "Game/Camera/animcam.h"
 #include "Game/Camera/rumblefilter.h"
+#include "Game/Drawable/DrawableObj.h"
+#include "Game/Field.h"
+#include "Game/Net.h"
 
 #include "math.h"
 
@@ -61,12 +64,6 @@ void cCameraManager::Update(float)
 {
 }
 
-class World
-{
-public:
-    void HandleCameraSwitch();
-};
-
 extern eCameraType g_eCurrentCameraType;
 extern World* s_World__12WorldManager;
 
@@ -95,10 +92,6 @@ template <typename T, typename U>
 T LexicalCast(const U&);
 
 void* nlMalloc(unsigned long, unsigned int, bool);
-inline void* operator new(unsigned long, void* p)
-{
-    return p;
-}
 
 class cDebugCamera
 {
@@ -466,7 +459,143 @@ void cCameraManager::Remove(eCameraType type, bool bDeleteAfterRemoving)
  */
 bool cCameraManager::IsObjectOccludingField(const DrawableObject* drawable)
 {
-    return false;
+    const nlMatrix4& worldMatrix = drawable->GetWorldMatrix();
+    nlVector3 objectPosition = *(const nlVector3*)&worldMatrix.f.m41;
+    const nlVector3* cameraPosition = &m_cameraPosition;
+
+    float objectRadius = drawable->m_fBoundingRadius;
+    float netDepth = cNet::m_fNetDepth;
+    float goalLineX = cField::GetGoalLineX(1U);
+    goalLineX = goalLineX + netDepth;
+    float sidelineY = cField::GetSidelineY(1U);
+
+    if ((cameraPosition->f.x > -goalLineX)
+        && (cameraPosition->f.x < goalLineX)
+        && (cameraPosition->f.y > -sidelineY)
+        && (cameraPosition->f.y < sidelineY))
+    {
+        bool objectInBounds = false;
+        if ((objectPosition.f.x > -goalLineX)
+            && (objectPosition.f.x < goalLineX)
+            && (objectPosition.f.y > -sidelineY)
+            && (objectPosition.f.y < sidelineY))
+        {
+            objectInBounds = true;
+        }
+
+        if (objectInBounds == false)
+        {
+            return false;
+        }
+    }
+
+    if ((cameraPosition->f.x < -goalLineX) && (objectPosition.f.x > goalLineX))
+    {
+        return false;
+    }
+
+    if ((cameraPosition->f.x > goalLineX) && (objectPosition.f.x < -goalLineX))
+    {
+        return false;
+    }
+
+    if ((cameraPosition->f.y < -sidelineY) && (objectPosition.f.y > sidelineY))
+    {
+        return false;
+    }
+
+    if ((cameraPosition->f.y > sidelineY) && (objectPosition.f.y < -sidelineY))
+    {
+        return false;
+    }
+
+    if ((objectPosition.f.z - objectRadius) < 0.0f)
+    {
+        objectPosition.f.z += objectRadius - objectPosition.f.z;
+    }
+
+    nlVector3 corners[4];
+    nlVector3 normals[4];
+
+    corners[0].f.x = -goalLineX;
+    corners[0].f.y = -sidelineY;
+    corners[0].f.z = 0.0f;
+    corners[1].f.x = -goalLineX;
+    corners[1].f.y = sidelineY;
+    corners[1].f.z = 0.0f;
+    corners[2].f.x = goalLineX;
+    corners[2].f.y = sidelineY;
+    corners[2].f.z = 0.0f;
+    corners[3].f.x = goalLineX;
+    corners[3].f.y = -sidelineY;
+    corners[3].f.z = 0.0f;
+
+    nlVector3* currentCorner = corners;
+    nlVector3* currentNormal = normals;
+    for (int i = 0; i < 4; i++)
+    {
+        int next = (i + 1) % 4;
+        nlVector3* nextCorner = &corners[next];
+
+        float deltaY = currentCorner->f.y - cameraPosition->f.y;
+        float deltaX = currentCorner->f.x - cameraPosition->f.x;
+        float deltaZ = currentCorner->f.z - cameraPosition->f.z;
+
+        float edgeZ = nextCorner->f.z - currentCorner->f.z;
+        float edgeX = nextCorner->f.x - currentCorner->f.x;
+        float edgeY = nextCorner->f.y - currentCorner->f.y;
+
+        float tmp0 = edgeZ * deltaY;
+        float tmp1 = edgeZ * deltaX;
+        float negEdgeX = -edgeX;
+        float normalX = edgeY * deltaZ - tmp0;
+        float tmp2 = edgeY * deltaX;
+        float normalY = negEdgeX * deltaZ + tmp1;
+        float normalZ = edgeX * deltaY - tmp2;
+
+        currentNormal->f.x = normalX;
+        currentNormal->f.y = normalY;
+        currentNormal->f.z = normalZ;
+
+        float invLength = nlRecipSqrt(
+            currentNormal->f.x * currentNormal->f.x
+                + currentNormal->f.y * currentNormal->f.y
+                + currentNormal->f.z * currentNormal->f.z,
+            true);
+
+        currentNormal->f.x = invLength * currentNormal->f.x;
+        currentNormal->f.y = invLength * currentNormal->f.y;
+        currentNormal->f.z = invLength * currentNormal->f.z;
+
+        currentCorner++;
+        currentNormal++;
+    }
+
+    float objectDeltaY = objectPosition.f.y - cameraPosition->f.y;
+    float objectDeltaX = objectPosition.f.x - cameraPosition->f.x;
+    float objectDeltaZ = objectPosition.f.z - cameraPosition->f.z;
+
+    if ((normals[0].f.x * objectDeltaX + normals[0].f.y * objectDeltaY + normals[0].f.z * objectDeltaZ) > objectRadius)
+    {
+        return false;
+    }
+
+    if ((normals[1].f.x * objectDeltaX + normals[1].f.y * objectDeltaY + normals[1].f.z * objectDeltaZ) > objectRadius)
+    {
+        return false;
+    }
+
+    if ((normals[2].f.x * objectDeltaX + normals[2].f.y * objectDeltaY + normals[2].f.z * objectDeltaZ) > objectRadius)
+    {
+        return false;
+    }
+
+    if ((normals[3].f.x * objectDeltaX + normals[3].f.y * objectDeltaY + normals[3].f.z * objectDeltaZ) > objectRadius)
+    {
+        return false;
+    }
+
+    return true;
 }
 
 /**

@@ -1405,11 +1405,6 @@ void cFielder::DoHandleActiveShotMeter()
 
 /**
  * Offset/Address/Size: 0x8A18 | 0x80021D54 | size: 0x290
- * TODO: 81.20% match - extra f25 lifetime forces 0xE0 frame (target 0xD0) and shifts loop distance compare/update registers
- */
-/**
- * Offset/Address/Size: 0x85AC | 0x800218E8 | size: 0x1FC
- * TODO: 86.61% match - 12 volatile register diffs (f0/f1, f2/f3 swap) in delta computation region
  */
 bool cFielder::DoLooseBallContactFromIdle(nlVector3& v3AnimStartPosition, float& fAnimStartTime, nlVector3& v3BallContactPosition, float& fBallContactTime,
     unsigned short aFutureFacingDirection, const LooseBallContactAnimInfo* pBestBallContactAnimInfo)
@@ -1456,11 +1451,16 @@ bool cFielder::DoLooseBallContactFromIdle(nlVector3& v3AnimStartPosition, float&
         nlVector3 v3SimulatedBallPos;
         FakeBallWorld::GetNextBallPosition(v3SimulatedBallPos);
 
-        float deltaY = fBallContactTargetY - v3SimulatedBallPos.f.y;
-        float distSq = deltaY * deltaY;
-        float deltaX = fBallContactTargetX - v3SimulatedBallPos.f.x;
+        float distSq;
+        float deltaX;
+        float deltaY;
+        float deltaZ;
+
+        deltaY = fBallContactTargetY - v3SimulatedBallPos.f.y;
+        deltaZ = fBallContactTargetZ - v3SimulatedBallPos.f.z;
+        deltaX = fBallContactTargetX - v3SimulatedBallPos.f.x;
+        distSq = deltaY * deltaY;
         distSq += deltaX * deltaX;
-        float deltaZ = fBallContactTargetZ - v3SimulatedBallPos.f.z;
         distSq += deltaZ * deltaZ;
 
         if (fSimulatedTime > fPrevBestDistToContactSquared)
@@ -1483,12 +1483,21 @@ bool cFielder::DoLooseBallContactFromIdle(nlVector3& v3AnimStartPosition, float&
         }
     }
 
-    v3AnimStartPosition.f.x = v3BallContactPosition.f.x - pContactOffsetWorld->f.x;
-    v3AnimStartPosition.f.y = v3BallContactPosition.f.y - pContactOffsetWorld->f.y;
-    v3AnimStartPosition.f.z = v3BallContactPosition.f.z - pContactOffsetWorld->f.z;
+    float startX;
+    float startY;
+    float startZ;
 
-    fAnimStartTime = fSimulatedTime
-                   - ((pBestBallContactAnimInfo->fAnimContactFrame / (float)pGuessContactAnim->m_nNumKeys) * ((float)pGuessContactAnim->m_nNumKeys / 30.0f));
+    startX = v3BallContactPosition.f.x - pContactOffsetWorld->f.x;
+    startZ = v3BallContactPosition.f.z - pContactOffsetWorld->f.z;
+    startY = v3BallContactPosition.f.y - pContactOffsetWorld->f.y;
+    v3AnimStartPosition.f.x = startX;
+    v3AnimStartPosition.f.y = startY;
+    v3AnimStartPosition.f.z = startZ;
+
+    unsigned int nNumKeys = pGuessContactAnim->m_nNumKeys;
+    float fContactTimeNorm = pBestBallContactAnimInfo->fAnimContactFrame / (float)nNumKeys;
+    float fAnimLength = (float)nNumKeys / 30.0f;
+    fAnimStartTime = fSimulatedTime - (fContactTimeNorm * fAnimLength);
     fBallContactTime = fSimulatedTime;
 
     if (!m_bHasBeenUpdated)
@@ -2542,8 +2551,8 @@ void cFielder::ClearVolleyPass()
 
 /**
  * Offset/Address/Size: 0x5B34 | 0x8001EE70 | size: 0x26C
- * TODO: 97.26% match - r29/r31 register swap (this vs str param in BasicString ctor),
- * inherent to -inline deferred scratch context difference
+ * TODO: 98.00% match - r29/r31 register swap (this vs team-name str pointer)
+ * through BasicString construction/copy loop
  */
 void cFielder::CleanActionShootToScore()
 {
@@ -2579,7 +2588,8 @@ void cFielder::CleanActionShootToScore()
 
     BasicString<char, Detail::TempStringAllocator> effectName(GetTeamName__F7eTeamID(nlSingleton<GameInfoManager>::s_pInstance->GetTeam((s16)pSelf->m_pTeam->m_nSide)));
     AppendInPlace__45BasicString_c_Q26Detail19TempStringAllocator_FPCc(&effectName, "shoot_to_score_shot");
-    pSelf->KillEffect(fxGetGroup(effectName.c_str()));
+    EffectsGroup* pGroup = fxGetGroup(effectName.c_str());
+    pSelf->KillEffect(pGroup);
     pSelf->KillEffect(fxGetGroup("shoot_to_score_hyper"));
 
     if (pSelf->mActionShootToScoreVars.captainStsCamera != NULL)

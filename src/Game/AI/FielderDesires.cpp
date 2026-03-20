@@ -748,6 +748,24 @@ void cFielder::DesireUserControlled(float)
  */
 void cFielder::DesireUsePowerup(float)
 {
+    extern float Offensive(cTeam*);
+
+    if (Offensive(this != NULL ? m_pTeam : NULL))
+    {
+        SetDesireDuration(0.0f, true);
+        return;
+    }
+
+    switch (m_ePrevFielderDesireState)
+    {
+    case FIELDERDESIRE_INTERCEPT_BALL:
+        InitDesire(FIELDERDESIRE_INTERCEPT_BALL, 1.0f, 0.5f, fvNotSet, fvNotSet);
+        break;
+
+    default:
+        InitDesire(FIELDERDESIRE_MARK, 1.0f, 0.5f, fvNotSet, fvNotSet);
+        break;
+    }
 }
 
 /**

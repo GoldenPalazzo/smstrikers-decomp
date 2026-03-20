@@ -150,8 +150,185 @@ void PausePostGameScene::SceneCreated()
 /**
  * Offset/Address/Size: 0x28C | 0x80107390 | size: 0x37C
  */
-void PausePostGameScene::Update(float)
+void PausePostGameScene::Update(float dt)
 {
+    BaseSceneHandler::Update(dt);
+    mButtons.CentreButtons();
+
+    if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x100, false, (eFEINPUT_PAD*)&gPadThatQuit))
+    {
+        int currentIndex = mMenuItems.mCurrentIndex;
+        int tag = mMenuItems.mMenuItems[currentIndex].mCallbacks[0].mTag;
+
+        if (((u32)((-tag) | tag) >> 31) > 0)
+        {
+            if (mMenuItems.mMenuItems[currentIndex].mDisabled == 0)
+            {
+                TLComponentInstance* type = mMenuItems.mMenuItems[currentIndex].mType;
+
+                if (tag == FREE_FUNCTION)
+                {
+                    mMenuItems.mMenuItems[currentIndex].mCallbacks[0].mFreeFunction(type);
+                }
+                else
+                {
+                    (*mMenuItems.mMenuItems[currentIndex].mCallbacks[0].mFunctor)(type);
+                }
+            }
+        }
+
+        FEAudio::PlayAnimAudioEvent("sfx_accept", false);
+        return;
+    }
+
+    if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x200, false, NULL))
+    {
+        BaseSceneHandler* summary = nlSingleton<OverlayManager>::s_pInstance->Push(OVERLAY_SUMMARY, SCREEN_NOTHING, true);
+        *(ButtonComponent::ButtonState*)((u8*)summary + 0xC3C) = (ButtonComponent::ButtonState)1;
+        FEAudio::PlayAnimAudioEvent("sfx_back", false);
+        return;
+    }
+
+    if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xD, true, NULL))
+    {
+        int flags = mMenuItems.mFlags;
+        int skipDisabledFlag;
+        int wrapFlag;
+        int currentIndex;
+        wrapFlag = flags & 1;
+        skipDisabledFlag = flags & 2;
+        currentIndex = mMenuItems.mCurrentIndex;
+        int newIndex = currentIndex - 1;
+
+        while (true)
+        {
+            if (wrapFlag)
+            {
+                if (newIndex < 0)
+                {
+                    newIndex = mMenuItems.mNumItemsAdded - 1;
+                }
+            }
+            else if (newIndex < 0)
+            {
+                return;
+            }
+
+            if (skipDisabledFlag && mMenuItems.mMenuItems[newIndex].mDisabled)
+            {
+                newIndex--;
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        {
+            int tag = mMenuItems.mMenuItems[currentIndex].mCallbacks[2].mTag;
+            if (((u32)((-tag) | tag) >> 31) > 0)
+            {
+                TLComponentInstance* type = mMenuItems.mMenuItems[currentIndex].mType;
+                if (tag == FREE_FUNCTION)
+                {
+                    mMenuItems.mMenuItems[currentIndex].mCallbacks[2].mFreeFunction(type);
+                }
+                else
+                {
+                    (*mMenuItems.mMenuItems[currentIndex].mCallbacks[2].mFunctor)(type);
+                }
+            }
+        }
+
+        mMenuItems.mCurrentIndex = newIndex;
+
+        {
+            int selIdx = mMenuItems.mCurrentIndex;
+            int tag = mMenuItems.mMenuItems[selIdx].mCallbacks[1].mTag;
+            if (((u32)((-tag) | tag) >> 31) > 0)
+            {
+                TLComponentInstance* type = mMenuItems.mMenuItems[selIdx].mType;
+                if (tag == FREE_FUNCTION)
+                {
+                    mMenuItems.mMenuItems[selIdx].mCallbacks[1].mFreeFunction(type);
+                }
+                else
+                {
+                    (*mMenuItems.mMenuItems[selIdx].mCallbacks[1].mFunctor)(type);
+                }
+            }
+        }
+
+        return;
+    }
+
+    if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xE, true, NULL))
+    {
+        int flags = mMenuItems.mFlags;
+        int skipDisabledFlag;
+        int wrapFlag;
+        int currentIndex;
+        wrapFlag = flags & 1;
+        skipDisabledFlag = flags & 2;
+        currentIndex = mMenuItems.mCurrentIndex;
+        int newIndex = currentIndex + 1;
+
+        while (true)
+        {
+            if (wrapFlag)
+            {
+                newIndex = newIndex % mMenuItems.mNumItemsAdded;
+            }
+            else if (newIndex >= mMenuItems.mNumItemsAdded)
+            {
+                return;
+            }
+
+            if (skipDisabledFlag && mMenuItems.mMenuItems[newIndex].mDisabled)
+            {
+                newIndex++;
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        {
+            int tag = mMenuItems.mMenuItems[currentIndex].mCallbacks[2].mTag;
+            if (((u32)((-tag) | tag) >> 31) > 0)
+            {
+                TLComponentInstance* type = mMenuItems.mMenuItems[currentIndex].mType;
+                if (tag == FREE_FUNCTION)
+                {
+                    mMenuItems.mMenuItems[currentIndex].mCallbacks[2].mFreeFunction(type);
+                }
+                else
+                {
+                    (*mMenuItems.mMenuItems[currentIndex].mCallbacks[2].mFunctor)(type);
+                }
+            }
+        }
+
+        mMenuItems.mCurrentIndex = newIndex;
+
+        {
+            int selIdx = mMenuItems.mCurrentIndex;
+            int tag = mMenuItems.mMenuItems[selIdx].mCallbacks[1].mTag;
+            if (((u32)((-tag) | tag) >> 31) > 0)
+            {
+                TLComponentInstance* type = mMenuItems.mMenuItems[selIdx].mType;
+                if (tag == FREE_FUNCTION)
+                {
+                    mMenuItems.mMenuItems[selIdx].mCallbacks[1].mFreeFunction(type);
+                }
+                else
+                {
+                    (*mMenuItems.mMenuItems[selIdx].mCallbacks[1].mFunctor)(type);
+                }
+            }
+        }
+    }
 }
 
 /**

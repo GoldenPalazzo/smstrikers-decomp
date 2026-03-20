@@ -44,15 +44,142 @@ loop_5:
  */
 void TLSlide::UpdateAsset(TLInstance* instance, float time)
 {
-    for (TLInstance* child = instance->pChildren; child != NULL && !nlDLRingIsEnd<TLInstance>(this->m_instances, child); child = child->m_next)
-    {
-        TLComponentInstance* component = (TLComponentInstance*)nlDLRingGetStart<TLInstance>(child);
+    TLComponentInstance* var_r28;
+    TLComponentInstance* var_r27;
+    TLComponentInstance* var_r26;
+    TLComponentInstance* var_r25;
+    TLComponentInstance* var_r24;
+    TLComponentInstance* var_r23;
+    TLInstance* var_r22;
 
-        if (component->GetType() == FEOT_GROUP)
+    if (instance->pChildren == NULL)
+    {
+        return;
+    }
+
+    TLComponentInstance* var_r31 = (TLComponentInstance*)nlDLRingGetStart<TLInstance>(instance->pChildren);
+loop_1:
+    if (var_r31->m_type == TLAT_COMPONENT)
+    {
+        var_r31->Update(time);
+    }
+
+    if (var_r31->pChildren != NULL)
+    {
+        var_r28 = (TLComponentInstance*)nlDLRingGetStart<TLInstance>(var_r31->pChildren);
+    loop_2:
+        if (var_r28->m_type == TLAT_COMPONENT)
         {
-            component->Update(time);
+            var_r28->Update(time);
         }
 
-        UpdateAsset(child, time);
+        if (var_r28->pChildren != NULL)
+        {
+            var_r27 = (TLComponentInstance*)nlDLRingGetStart<TLInstance>(var_r28->pChildren);
+        loop_3:
+            if (var_r27->m_type == TLAT_COMPONENT)
+            {
+                var_r27->Update(time);
+            }
+
+            if (var_r27->pChildren != NULL)
+            {
+                var_r26 = (TLComponentInstance*)nlDLRingGetStart<TLInstance>(var_r27->pChildren);
+            loop_4:
+                if (var_r26->m_type == TLAT_COMPONENT)
+                {
+                    var_r26->Update(time);
+                }
+
+                if (var_r26->pChildren != NULL)
+                {
+                    var_r25 = (TLComponentInstance*)nlDLRingGetStart<TLInstance>(var_r26->pChildren);
+                loop_5:
+                    if (var_r25->m_type == TLAT_COMPONENT)
+                    {
+                        var_r25->Update(time);
+                    }
+
+                    if (var_r25->pChildren != NULL)
+                    {
+                        var_r24 = (TLComponentInstance*)nlDLRingGetStart<TLInstance>(var_r25->pChildren);
+                    loop_6:
+                        if (var_r24->m_type == TLAT_COMPONENT)
+                        {
+                            var_r24->Update(time);
+                        }
+
+                        if (var_r24->pChildren != NULL)
+                        {
+                            var_r23 = (TLComponentInstance*)nlDLRingGetStart<TLInstance>(var_r24->pChildren);
+                        loop_7:
+                            if (var_r23->m_type == TLAT_COMPONENT)
+                            {
+                                var_r23->Update(time);
+                            }
+
+                            if (var_r23->pChildren != NULL)
+                            {
+                                var_r22 = nlDLRingGetStart<TLInstance>(var_r23->pChildren);
+                            loop_8:
+                                if (var_r22->GetType() == TLAT_COMPONENT)
+                                {
+                                    ((TLComponentInstance*)var_r22)->Update(time);
+                                }
+
+                                UpdateAsset(var_r22, time);
+                                if (nlDLRingIsEnd<TLInstance>(var_r23->pChildren, var_r22) == 0)
+                                {
+                                    var_r22 = var_r22->m_next;
+                                    goto loop_8;
+                                }
+                            }
+
+                            if (nlDLRingIsEnd<TLInstance>(var_r24->pChildren, var_r23) == 0)
+                            {
+                                var_r23 = (TLComponentInstance*)var_r23->m_next;
+                                goto loop_7;
+                            }
+                        }
+
+                        if (nlDLRingIsEnd<TLInstance>(var_r25->pChildren, var_r24) == 0)
+                        {
+                            var_r24 = (TLComponentInstance*)var_r24->m_next;
+                            goto loop_6;
+                        }
+                    }
+
+                    if (nlDLRingIsEnd<TLInstance>(var_r26->pChildren, var_r25) == 0)
+                    {
+                        var_r25 = (TLComponentInstance*)var_r25->m_next;
+                        goto loop_5;
+                    }
+                }
+
+                if (nlDLRingIsEnd<TLInstance>(var_r27->pChildren, var_r26) == 0)
+                {
+                    var_r26 = (TLComponentInstance*)var_r26->m_next;
+                    goto loop_4;
+                }
+            }
+
+            if (nlDLRingIsEnd<TLInstance>(var_r28->pChildren, var_r27) == 0)
+            {
+                var_r27 = (TLComponentInstance*)var_r27->m_next;
+                goto loop_3;
+            }
+        }
+
+        if (nlDLRingIsEnd<TLInstance>(var_r31->pChildren, var_r28) == 0)
+        {
+            var_r28 = (TLComponentInstance*)var_r28->m_next;
+            goto loop_2;
+        }
+    }
+
+    if (nlDLRingIsEnd<TLInstance>(instance->pChildren, var_r31) == 0)
+    {
+        var_r31 = (TLComponentInstance*)var_r31->m_next;
+        goto loop_1;
     }
 }

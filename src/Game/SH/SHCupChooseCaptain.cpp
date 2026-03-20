@@ -145,7 +145,7 @@ CupChooseCaptainSceneV2::~CupChooseCaptainSceneV2()
 
             if ((char*)ticker + 4)
             {
-                BasicStringInternal* data = ticker->m_message.m_data;
+                BasicStringData<unsigned short>* data = ticker->m_message.m_data;
                 if (data != NULL)
                 {
                     if (--data->mRefCount == 0)

@@ -144,7 +144,7 @@ StadiumSelectSceneV2::~StadiumSelectSceneV2()
         delete[] mTempTextureBuffer;
     }
 
-    BasicStringInternal* data;
+    BasicStringData<unsigned short>* data;
     FEScrollText* ticker = m_pTicker;
     if (ticker != NULL)
     {

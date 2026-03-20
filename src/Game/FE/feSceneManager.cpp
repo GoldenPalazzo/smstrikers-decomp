@@ -271,8 +271,8 @@ void FESceneManager::QueueScenePush(BaseSceneHandler* pSceneHandler, const char*
 
 /**
  * Offset/Address/Size: 0x540 | 0x8020DB8C | size: 0x270
- * TODO: 99.04% match - r24/r27 register swap for szFilename/pFEScene in push block,
- * r25/r26 swap for sceneEntry_pop/msg in pop block
+ * TODO: 99.62% match - remaining r24/r27 swap for szFilename/pFEScene in push block,
+ * and r26/r27 mismatch for pop-block msg pointer
  */
 void FESceneManager::ProcessPushPopQueue()
 {
@@ -345,8 +345,10 @@ void FESceneManager::ProcessPushPopQueue()
         else
         {
             DLListEntry<BaseSceneHandler*>* headEntry;
+            DLListEntry<BaseSceneHandler*>* sceneEntry;
             PackagePushPopMessage* msg;
-            DLListEntry<BaseSceneHandler*>* sceneEntry = nlDLRingGetStart(pSceneManager->m_sceneHandlerStack.m_Head);
+
+            sceneEntry = nlDLRingGetStart(pSceneManager->m_sceneHandlerStack.m_Head);
             headEntry = pSceneManager->m_sceneHandlerStack.m_Head;
             msg = pPackagePushPopMessage;
 
@@ -379,8 +381,11 @@ void FESceneManager::ProcessPushPopQueue()
             delete pFEScene;
         }
 
-        ((SlotPoolEntry*)pPackagePushPopMessage)->m_next = m_PushPopMessageSlotPool__21PackagePushPopMessage.m_FreeList;
-        m_PushPopMessageSlotPool__21PackagePushPopMessage.m_FreeList = (SlotPoolEntry*)pPackagePushPopMessage;
+        {
+            SlotPoolEntry* freeEntry = (SlotPoolEntry*)pPackagePushPopMessage;
+            freeEntry->m_next = m_PushPopMessageSlotPool__21PackagePushPopMessage.m_FreeList;
+            m_PushPopMessageSlotPool__21PackagePushPopMessage.m_FreeList = freeEntry;
+        }
     }
 }
 

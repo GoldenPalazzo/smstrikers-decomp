@@ -200,9 +200,8 @@ bool AvoidController::CalcFielderRepulsionVector(nlVector3& v3OutRepulsion)
 
 /**
  * Offset/Address/Size: 0xE08 | 0x8000845C | size: 0x258
- * TODO: 98.63% match - volatile FP temp register allocation (f1/f2 swap at delta loads)
- * and integer register r7 vs r4 for m_pFielder temp in GetClosingSpeed2D arg setup.
- * All 11 diffs are register-only, no instruction or structural differences.
+ * TODO: 98.97% match - remaining register-only diffs are in delta load FPR assignment,
+ * r7 vs r4 setup for GetClosingSpeed2D(m_pFielder->...), and fContribution/output FPR allocation.
  */
 bool AvoidController::CalcPowerupRepulsionVector(nlVector3& v3OutRepulsion)
 {
@@ -270,7 +269,8 @@ bool AvoidController::CalcPowerupRepulsionVector(nlVector3& v3OutRepulsion)
 
                 if (m_pFielder->m_pBall != NULL)
                 {
-                    fMagnitude *= 2.0f * SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide)->Off_Avoidance;
+                    SkillTweaks* pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide);
+                    fMagnitude *= 2.0f * pSkillTweaks->Off_Avoidance;
                 }
             }
 
@@ -285,11 +285,11 @@ bool AvoidController::CalcPowerupRepulsionVector(nlVector3& v3OutRepulsion)
                 fContribution = fMagnitude;
             }
 
-            float fOutX = v3OutRepulsion.f.x;
             float fOutY = v3OutRepulsion.f.y;
-            fOutX = fContribution * fDeltaX + fOutX;
-            float fOutZ = v3OutRepulsion.f.z;
+            float fOutX = v3OutRepulsion.f.x;
             fOutY = fContribution * fDeltaY + fOutY;
+            float fOutZ = v3OutRepulsion.f.z;
+            fOutX = fContribution * fDeltaX + fOutX;
             fOutZ = fContribution * fDeltaZ + fOutZ;
             v3OutRepulsion.f.x = fOutX;
             v3OutRepulsion.f.y = fOutY;

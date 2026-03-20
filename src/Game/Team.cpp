@@ -691,11 +691,123 @@ int BestAbleToInterceptBall(const void* a, const void* b)
     return 1;
 }
 
+static inline void AbortAllFielderPlays(cTeam* pTeam)
+{
+    for (int i = 0; i < 4; i++)
+    {
+        pTeam->m_pAIOrderedFielders[i]->AbortPlay();
+    }
+}
+
 /**
  * Offset/Address/Size: 0x6F0 | 0x80064A9C | size: 0x378
+ * TODO: 99.75% match - pBallOwner r29/r28 register swap and fcmpu operand order
  */
-void cTeam::UpdateTeamAI(float)
+void cTeam::UpdateTeamAI(float fDeltaT)
 {
+    if (mtTeamStyleTimer.m_uPackedTime == 0)
+    {
+        meCurrentTeamStyle = TEAM_STYLE_AGGRESSIVE;
+        mtTeamStyleTimer.SetSeconds(1.0f);
+        AbortAllFielderPlays(this);
+    }
+
+    m_pFormationManager->Update(fDeltaT);
+
+    eSituation eLastSituation = mpCurrentSituation;
+    cPlayer* pBallOwner = g_pBall->m_pOwner;
+
+    if (pBallOwner == NULL)
+    {
+        pBallOwner = g_pBall->m_pPassTarget;
+        if ((pBallOwner != NULL) && (pBallOwner->m_eClassType == FIELDER))
+        {
+            if (ReceivingPass((cFielder*)pBallOwner) != 0.0f)
+            {
+            }
+            else
+            {
+                nlPrintf("cTeam::AssignSituation - caught bad pass case, with no proper receiver.\n");
+                g_pBall->ClearPassTarget();
+                pBallOwner = NULL;
+            }
+        }
+    }
+
+    if (pBallOwner != NULL)
+    {
+        if (pBallOwner->m_pTeam == this)
+        {
+            if (mpCurrentSituation != SITUATION_OFFENSE)
+            {
+                mpCurrentSituation = SITUATION_OFFENSE;
+                meCurrentTeamStyle = TEAM_STYLE_AGGRESSIVE;
+                mtTeamStyleTimer.SetSeconds(1.0f);
+                AbortAllFielderPlays(this);
+            }
+        }
+        else if (mpCurrentSituation != SITUATION_DEFENSE)
+        {
+            mpCurrentSituation = SITUATION_DEFENSE;
+            meCurrentTeamStyle = TEAM_STYLE_AGGRESSIVE;
+            mtTeamStyleTimer.SetSeconds(1.0f);
+            AbortAllFielderPlays(this);
+        }
+    }
+    else if (mpCurrentSituation != SITUATION_LOOSE)
+    {
+        mpCurrentSituation = SITUATION_LOOSE;
+        meCurrentTeamStyle = TEAM_STYLE_AGGRESSIVE;
+        mtTeamStyleTimer.SetSeconds(1.0f);
+        AbortAllFielderPlays(this);
+    }
+
+    bool bSituationChanged = (eLastSituation != mpCurrentSituation);
+
+    if ((mtRoleTimer.m_uPackedTime == 0) || bSituationChanged)
+    {
+        switch (mpCurrentSituation)
+        {
+        case SITUATION_OFFENSE:
+            m_pAIOrderedFielders[0] = m_pPlayers[0];
+            m_pAIOrderedFielders[1] = m_pPlayers[1];
+            m_pAIOrderedFielders[2] = m_pPlayers[2];
+            m_pAIOrderedFielders[3] = m_pPlayers[3];
+            qsort(m_pAIOrderedFielders, 4, 4, MostOffensiveThreat);
+            m_pAIOrderedFielders[0]->m_eRole = ROLE_STRIKER;
+            m_pAIOrderedFielders[1]->m_eRole = ROLE_WINGER;
+            m_pAIOrderedFielders[2]->m_eRole = ROLE_MIDFIELD;
+            m_pAIOrderedFielders[3]->m_eRole = ROLE_DEFENCE;
+            break;
+
+        case SITUATION_DEFENSE:
+            m_pAIOrderedFielders[0] = m_pPlayers[0];
+            m_pAIOrderedFielders[1] = m_pPlayers[1];
+            m_pAIOrderedFielders[2] = m_pPlayers[2];
+            m_pAIOrderedFielders[3] = m_pPlayers[3];
+            qsort(m_pAIOrderedFielders, 4, 4, MostDefensivePlayer);
+            m_pAIOrderedFielders[0]->m_eRole = ROLE_STRIKER;
+            m_pAIOrderedFielders[1]->m_eRole = ROLE_WINGER;
+            m_pAIOrderedFielders[2]->m_eRole = ROLE_MIDFIELD;
+            m_pAIOrderedFielders[3]->m_eRole = ROLE_DEFENCE;
+            break;
+
+        case SITUATION_LOOSE:
+            m_pAIOrderedFielders[0] = m_pBallInterceptOrderedFielders[0];
+            m_pAIOrderedFielders[1] = m_pBallInterceptOrderedFielders[1];
+            m_pAIOrderedFielders[2] = m_pBallInterceptOrderedFielders[2];
+            m_pAIOrderedFielders[3] = m_pBallInterceptOrderedFielders[3];
+            m_pAIOrderedFielders[0]->m_eRole = ROLE_STRIKER;
+            m_pAIOrderedFielders[1]->m_eRole = ROLE_WINGER;
+            m_pAIOrderedFielders[2]->m_eRole = ROLE_MIDFIELD;
+            m_pAIOrderedFielders[3]->m_eRole = ROLE_DEFENCE;
+            break;
+        }
+
+        mtRoleTimer.SetSeconds(0.33f);
+    }
+
+    AssignMarks(bSituationChanged);
 }
 
 /**
@@ -790,6 +902,7 @@ int MostDefensivePlayer(const void* a, const void* b)
  */
 void cTeam::AssignMarks(bool)
 {
+    FORCE_DONT_INLINE;
 }
 
 /**

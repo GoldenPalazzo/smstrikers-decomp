@@ -30,7 +30,7 @@ extern GLRenderBuffer glRenderBuffer;
 class GLRenderList // size: 0x30
 {
 public:
-    void AttachModel(const glModel*, unsigned long);
+    s32 AttachModel(const glModel*, unsigned long);
     void Iterate(eGLView, void (*)(eGLView, unsigned long, const glModelPacket*));
     bool IsEmpty() const;
     void Compact();
@@ -49,17 +49,34 @@ public:
 class PacketCallbackManager
 {
 public:
+    /* 0x00 */ eGLView m_View;
+    /* 0x04 */ void (*m_Cb)(eGLView, unsigned long, const glModelPacket*);
+    /* 0x08 */ unsigned long m_LastProgram;
+    /* 0x0C */ unsigned long m_LastRaster;
+    /* 0x10 */ unsigned long long m_LastTextureState;
+    /* 0x18 */ unsigned long m_LastMatrix;
+    /* 0x1C */ unsigned long m_LastTexconfig;
+    /* 0x20 */ unsigned long m_LastUserdata;
+    /* 0x24 */ unsigned long m_LastNumStreams;
+    /* 0x28 */ glModelStream* m_LastStreams;
+    /* 0x2C */ unsigned long m_LastTexture[6];
+    /* 0x44 */ unsigned long m_LastUserStateKey;
+    /* 0x48 */ unsigned long m_LastMaterialSet;
+
     void ListCallback(const glModelPacket**);
     void DepthCallback(const DepthPacketPair&, unsigned int*);
     void TexCallback(const glModelPacket* const&, unsigned int*);
     void DoCallback(const glModelPacket*, unsigned int);
 };
 
-// class WalkHelper<const glModelPacket*, DLListEntry<const glModelPacket*>, PacketCallbackManager>
-// {
-// public:
-//     void Callback(DLListEntry<const glModelPacket*>*);
-// };
+template <typename KeyType, typename EntryType, typename CallbackType>
+class WalkHelper
+{
+public:
+    CallbackType* m_CBClass;
+    void (CallbackType::*m_CB)(KeyType*);
+    void Callback(EntryType*);
+};
 
 // class AVLTreeBase<const glModelPacket*, unsigned int, BasicSlotPool<AVLTreeEntry<const glModelPacket*, unsigned int>>, TextureTreeCompare>
 // {

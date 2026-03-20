@@ -2393,10 +2393,118 @@ PhysicsGoalie* Goalie::GetPhysicsGoalie()
 
 /**
  * Offset/Address/Size: 0x5B8 | 0x800430B4 | size: 0x384
+ * TODO: 87.46% match - remaining diffs are FP register allocation (MWCC loads by memory address
+ * not source order), missing frsp on fsubs results in branches, and fmadds fusion vs separate
+ * fmuls+fadds in normalize block.
  */
 void Goalie::SetDesiredSaveFacing(const nlVector3& v3BallPosition)
 {
-    FORCE_DONT_INLINE;
+    if (m_v3Position.f.x > (cField::GetGoalLineX(1U) - 0.1f))
+    {
+        m_aDesiredFacingDirection = 0x8000;
+        return;
+    }
+
+    if (m_v3Position.f.x < (0.1f - cField::GetGoalLineX(1U)))
+    {
+        m_aDesiredFacingDirection = 0;
+        return;
+    }
+
+    nlVector3 v3TargetFacing;
+    nlVector3 v3BallOffset;
+    nlVector3 v3LeftPost;
+    nlVector3 v3RightPost;
+
+    v3BallOffset.f.x = v3BallPosition.f.x - m_v3Position.f.x;
+    v3BallOffset.f.y = v3BallPosition.f.y - m_v3Position.f.y;
+    v3BallOffset.f.z = v3BallPosition.f.z - m_v3Position.f.z;
+
+    m_pTeam->m_pNet->GetPostLocation(v3LeftPost, 0, 0.5f);
+    m_pTeam->m_pNet->GetPostLocation(v3RightPost, 1, 0.5f);
+
+    float fLeftX = v3LeftPost.f.x - m_v3Position.f.x;
+    float fLeftY = v3LeftPost.f.y - m_v3Position.f.y;
+    float fLeftZ = v3LeftPost.f.z - m_v3Position.f.z;
+
+    float fRightX = v3RightPost.f.x - m_v3Position.f.x;
+    float fRightY = v3RightPost.f.y - m_v3Position.f.y;
+    float fRightZ = v3RightPost.f.z - m_v3Position.f.z;
+
+    float fLeftDot = v3BallOffset.f.y * fLeftY + v3BallOffset.f.x * fLeftX + v3BallOffset.f.z * fLeftZ;
+    float fRightDot = v3BallOffset.f.y * fRightY + v3BallOffset.f.x * fRightX + v3BallOffset.f.z * fRightZ;
+
+    v3LeftPost.f.x = fLeftX;
+    v3LeftPost.f.y = fLeftY;
+    v3LeftPost.f.z = fLeftZ;
+
+    v3RightPost.f.x = fRightX;
+    v3RightPost.f.y = fRightY;
+    v3RightPost.f.z = fRightZ;
+
+    if ((fLeftDot > -1.0f) || (fRightDot > -1.0f))
+    {
+        if (fLeftDot > fRightDot)
+        {
+            v3TargetFacing.f.x = fLeftY;
+            v3TargetFacing.f.y = -fLeftX;
+            v3TargetFacing.f.z = -1.0f;
+
+            if (((v3TargetFacing.f.y * fRightY) + (v3TargetFacing.f.x * fRightX) + (v3TargetFacing.f.z * fRightZ)) > -1.0f)
+            {
+                v3TargetFacing.f.x *= 0.5f;
+                v3TargetFacing.f.y *= 0.5f;
+                v3TargetFacing.f.z *= 0.5f;
+            }
+        }
+        else
+        {
+            v3TargetFacing.f.x = fRightY;
+            v3TargetFacing.f.y = -fRightX;
+            v3TargetFacing.f.z = -1.0f;
+
+            if (((v3TargetFacing.f.y * fLeftY) + (v3TargetFacing.f.x * fLeftX) + (v3TargetFacing.f.z * fLeftZ)) > -1.0f)
+            {
+                v3TargetFacing.f.x *= 0.5f;
+                v3TargetFacing.f.y *= 0.5f;
+                v3TargetFacing.f.z *= 0.5f;
+            }
+        }
+    }
+    else
+    {
+        v3TargetFacing = v3BallOffset;
+    }
+
+    float fBallOffMagSq = v3BallOffset.f.x * v3BallOffset.f.x + v3BallOffset.f.y * v3BallOffset.f.y + v3BallOffset.f.z * v3BallOffset.f.z;
+
+    if (fBallOffMagSq < 0.0001f)
+    {
+        float fTfY = v3TargetFacing.f.y;
+        float fTfZ = v3TargetFacing.f.z;
+
+        float fBtgZ = v3BallPosition.f.z - m_pTeam->m_pNet->m_baseLocation.f.z;
+        float fBtgY = v3BallPosition.f.y - m_pTeam->m_pNet->m_baseLocation.f.y;
+        float fBtgX = v3BallPosition.f.x - m_pTeam->m_pNet->m_baseLocation.f.x;
+
+        float fRecip = nlRecipSqrt(v3TargetFacing.f.x * v3TargetFacing.f.x + fTfY * fTfY + fTfZ * fTfZ, true);
+
+        v3TargetFacing.f.y = fRecip * fTfY;
+        v3TargetFacing.f.x = fRecip * v3TargetFacing.f.x;
+        v3TargetFacing.f.z = fRecip * fTfZ;
+
+        float fRecip2 = nlRecipSqrt(fBtgY * fBtgY + fBtgX * fBtgX + fBtgZ * fBtgZ, true);
+
+        fBtgX *= fRecip2;
+        fBtgY *= fRecip2;
+        fBtgZ *= fRecip2;
+
+        v3TargetFacing.f.x = 0.5f * fBtgX + 0.5f * v3TargetFacing.f.x;
+        v3TargetFacing.f.y = 0.5f * fBtgY + 0.5f * v3TargetFacing.f.y;
+        v3TargetFacing.f.z = 0.5f * fBtgZ + 0.5f * v3TargetFacing.f.z;
+    }
+
+    m_aDesiredFacingDirection = (s16)(nlATan2f(v3TargetFacing.f.y, v3TargetFacing.f.x) * (32768.0f / 3.14159265f));
 }
 
 /**

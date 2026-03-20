@@ -1,13 +1,176 @@
 #include "NL/gl/glRenderList.h"
+#include "NL/gl/glAppAttach.h"
+#include "NL/gl/glMatrix.h"
+#include "NL/gl/glModify.h"
+#include "NL/platvmath.h"
 #include "NL/nlSlotPool.h"
 
 extern "C" void __ct__12SlotPoolBaseFv(void*);
 
 /**
  * Offset/Address/Size: 0x0 | 0x801D92C0 | size: 0x36C
+ * TODO: 96.2% match - pModel/layer register swap (r25/r26), pPacket/pair_ptr/numPackets/index
+ *       register rotation, extra mr before rlwimi, ternary beq+b vs bne
  */
-void GLRenderList::AttachModel(const glModel*, unsigned long)
+s32 GLRenderList::AttachModel(const glModel* pModel, unsigned long layer)
 {
+    glModelPacket* pPacket;
+    DepthPacketPair pair;
+    nlMatrix4 m;
+    GLDepthPacketTree* pTree;
+    AVLTreeNode* existingNode;
+    unsigned int* pCount;
+    unsigned long sortKey;
+    nlVector3 out;
+    GLPacketList* pList;
+    DLListEntry<const glModelPacket*>* p;
+
+    if ((s32)m_unk_0x00 < 0x1A && glRenderBuffer.m_bEnabled && glRenderBuffer.m_bExclusive && !glRenderBuffer.m_bSending)
+    {
+        return 1;
+    }
+
+    pPacket = pModel->packets;
+
+    if (m_unk_0x04 == GLVSort_Texture)
+    {
+        if ((s32)gl_ModifyGetNum() > 0)
+        {
+            unsigned long numPackets = pModel->numPackets;
+            for (unsigned long i = 0; i < numPackets; i++)
+            {
+                glModelPacket* newPacket = gl_Modify(pPacket);
+                glplatAttachPacket((eGLView)m_unk_0x00, layer, newPacket != NULL ? newPacket : pPacket);
+                pPacket = (glModelPacket*)((u8*)pPacket + 0x4A);
+            }
+        }
+        else
+        {
+            unsigned long numPackets = pModel->numPackets;
+            for (unsigned long i = 0; i < numPackets; i++)
+            {
+                glplatAttachPacket((eGLView)m_unk_0x00, layer, pPacket);
+                pPacket = (glModelPacket*)((u8*)pPacket + 0x4A);
+            }
+        }
+    }
+    else if (m_unk_0x04 == GLVSort_TransformedDepth || m_unk_0x04 == GLVSort_TransformedMatrixDepth)
+    {
+        glGetIdentityMatrix();
+        glGetMatrix((unsigned long)glViewGetViewMatrix((eGLView)m_unk_0x00), m);
+        unsigned long numPackets = pModel->numPackets;
+
+        for (unsigned long i = 0; i < numPackets; i++)
+        {
+            pair.packet = pPacket;
+
+            if (m_unk_0x04 == GLVSort_TransformedMatrixDepth)
+            {
+                sortKey = uDepthInsertNumber;
+                nlMatrix4 packetMatrix;
+                glGetMatrix(pPacket->state.matrix, packetMatrix);
+                nlMultPosVectorMatrix(out, *(nlVector3*)&packetMatrix.m[3][0], m);
+                sortKey = ((s32)(-out.f.z * 256.0f) << 12) | (sortKey & 0xFFF);
+                pair.sortKey = sortKey;
+                uDepthInsertNumber++;
+            }
+            else
+            {
+                nlMatrix4 packetMatrix2;
+                glGetMatrix(pPacket->state.matrix, packetMatrix2);
+                nlVector3 out2;
+                nlMultPosVectorMatrix(out2, *(nlVector3*)pPacket->streams->address, m);
+                pair.sortKey = (s32)(-out2.f.z * 256.0f);
+            }
+
+            pTree = depthPacketTree;
+            const unsigned int& one = 1;
+            pTree->AddAVLNode((AVLTreeNode**)&pTree->m_Root, &pair, (void*)&one, &existingNode, pTree->m_NumElements);
+
+            if (existingNode == NULL)
+            {
+                pTree->m_NumElements++;
+                pCount = NULL;
+            }
+            else
+            {
+                pCount = &((AVLTreeEntry<DepthPacketPair, unsigned int>*)existingNode)->value;
+            }
+
+            if (pCount != NULL)
+            {
+                *pCount = *pCount + 1;
+            }
+
+            pPacket = (glModelPacket*)((u8*)pPacket + 0x4A);
+        }
+    }
+    else if (m_unk_0x04 == GLVSort_Reverse)
+    {
+        unsigned long numPackets = pModel->numPackets;
+        for (unsigned long i = 0; i < numPackets; i++)
+        {
+            glModelPacket* modified = glplatModifyPacket((eGLView)m_unk_0x00, pPacket);
+            pList = packetList;
+            p = NULL;
+
+            if (pList->m_Allocator.m_FreeList == NULL)
+            {
+                SlotPoolBase::BaseAddNewBlock((SlotPoolBase*)pList, 0xC);
+            }
+
+            DLListEntry<const glModelPacket*>* entry = (DLListEntry<const glModelPacket*>*)pList->m_Allocator.m_FreeList;
+            if (entry != NULL)
+            {
+                p = entry;
+                pList->m_Allocator.m_FreeList = (SlotPoolEntry*)entry->m_next;
+            }
+
+            if (p != NULL)
+            {
+                p->m_next = NULL;
+                p->m_prev = NULL;
+                p->m_data = modified;
+            }
+
+            nlDLRingAddStart(&pList->m_Head, p);
+            pPacket = (glModelPacket*)((u8*)pPacket + 0x4A);
+        }
+    }
+    else if (m_unk_0x04 == GLVSort_None)
+    {
+        unsigned long numPackets = pModel->numPackets;
+        for (unsigned long i = 0; i < numPackets; i++)
+        {
+            glModelPacket* modified = glplatModifyPacket((eGLView)m_unk_0x00, pPacket);
+            pList = packetList;
+            p = NULL;
+
+            if (pList->m_Allocator.m_FreeList == NULL)
+            {
+                SlotPoolBase::BaseAddNewBlock((SlotPoolBase*)pList, 0xC);
+            }
+
+            DLListEntry<const glModelPacket*>* entry = (DLListEntry<const glModelPacket*>*)pList->m_Allocator.m_FreeList;
+            if (entry != NULL)
+            {
+                p = entry;
+                pList->m_Allocator.m_FreeList = (SlotPoolEntry*)entry->m_next;
+            }
+
+            if (p != NULL)
+            {
+                p->m_next = NULL;
+                p->m_prev = NULL;
+                p->m_data = modified;
+            }
+
+            nlDLRingAddEnd(&pList->m_Head, p);
+            pPacket = (glModelPacket*)((u8*)pPacket + 0x4A);
+        }
+    }
+
+    return 1;
 }
 
 /**
@@ -47,9 +210,88 @@ void gl_ViewAttachPacket(eGLView view, unsigned long layer, const glModelPacket*
 
 /**
  * Offset/Address/Size: 0x440 | 0x801D9700 | size: 0x290
+ * TODO: 87.27% match - callback/member-pointer temporaries still land in different
+ * stack slots than target in texture/depth and list-walk branches.
  */
-void GLRenderList::Iterate(eGLView, void (*)(eGLView, unsigned long, const glModelPacket*))
+void GLRenderList::Iterate(eGLView view, void (*cb)(eGLView, unsigned long, const glModelPacket*))
 {
+    typedef WalkHelper<const glModelPacket*, DLListEntry<const glModelPacket*>, PacketCallbackManager> PacketWalkHelper;
+    typedef void (PacketCallbackManager::*TexCallbackType)(const glModelPacket* const&, unsigned int*);
+    typedef void (PacketCallbackManager::*DepthCallbackType)(const DepthPacketPair&, unsigned int*);
+    typedef void (PacketWalkHelper::*WalkCallbackType)(DLListEntry<const glModelPacket*>*);
+
+    PacketCallbackManager pkCallback;
+    TexCallbackType texCb;
+    DepthCallbackType depthCb;
+    WalkCallbackType walkCb;
+    PacketWalkHelper helper;
+    WalkCallbackType walkCb2;
+    PacketWalkHelper helper2;
+
+    pkCallback.m_View = view;
+    pkCallback.m_Cb = cb;
+    pkCallback.m_LastProgram = (unsigned long)-1;
+    pkCallback.m_LastRaster = (unsigned long)-1;
+    pkCallback.m_LastTextureState = 0xFFFFFFFF;
+    pkCallback.m_LastMatrix = (unsigned long)-1;
+    pkCallback.m_LastTexconfig = (unsigned long)-1;
+    pkCallback.m_LastUserdata = (unsigned long)-1;
+    pkCallback.m_LastUserStateKey = (unsigned long)-1;
+    pkCallback.m_LastNumStreams = 0;
+    pkCallback.m_LastStreams = NULL;
+    pkCallback.m_LastMaterialSet = (unsigned long)-1;
+    pkCallback.m_LastTexture[0] = (unsigned long)-1;
+    pkCallback.m_LastTexture[1] = (unsigned long)-1;
+    pkCallback.m_LastTexture[2] = (unsigned long)-1;
+    pkCallback.m_LastTexture[3] = (unsigned long)-1;
+    pkCallback.m_LastTexture[4] = (unsigned long)-1;
+    pkCallback.m_LastTexture[5] = (unsigned long)-1;
+
+    if (m_unk_0x04 == GLVSort_Texture)
+    {
+        for (int layer = 0; layer < 7; layer++)
+        {
+            if (texPacketTree[layer]->m_Root != NULL)
+            {
+                cb(view, 1, NULL);
+                texCb = &PacketCallbackManager::TexCallback;
+                texPacketTree[layer]->Walk(&pkCallback, texCb);
+            }
+        }
+    }
+    else if (m_unk_0x04 == GLVSort_TransformedDepth || m_unk_0x04 == GLVSort_TransformedMatrixDepth)
+    {
+        if (depthPacketTree->m_Root != NULL)
+        {
+            cb(view, 1, NULL);
+            depthCb = &PacketCallbackManager::DepthCallback;
+            depthPacketTree->Walk(&pkCallback, depthCb);
+        }
+    }
+    else if (m_unk_0x04 == GLVSort_Reverse)
+    {
+        GLPacketList* pList = packetList;
+        if (pList->m_Head != NULL)
+        {
+            cb(view, 1, NULL);
+            helper.m_CBClass = &pkCallback;
+            helper.m_CB = &PacketCallbackManager::ListCallback;
+            walkCb = &PacketWalkHelper::Callback;
+            nlWalkDLRing(pList->m_Head, &helper, walkCb);
+        }
+    }
+    else
+    {
+        GLPacketList* pList2 = packetList;
+        if (pList2->m_Head != NULL)
+        {
+            cb(view, 1, NULL);
+            helper2.m_CBClass = &pkCallback;
+            helper2.m_CB = &PacketCallbackManager::ListCallback;
+            walkCb2 = &PacketWalkHelper::Callback;
+            nlWalkDLRing(pList2->m_Head, &helper2, walkCb2);
+        }
+    }
 }
 
 /**

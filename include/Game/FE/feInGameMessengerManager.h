@@ -7,7 +7,7 @@
 class FEIMessenger;
 
 // 4-byte wrapper matching DWARF BasicString at offset 0xC, size 0x24 (9 elements)
-struct BasicStringData
+struct FEStringData
 {
     u16* m_data;
 };
@@ -49,7 +49,7 @@ public:
     /* 0x00 */ FEIMessenger* m_messenger;
     /* 0x04 */ eTimeStates m_curTimeState;
     /* 0x08 */ int m_numWatchGames;
-    /* 0x0C */ BasicStringData m_messageList[9];
+    /* 0x0C */ FEStringData m_messageList[9];
     /* 0x30 */ nlListContainer<eInGameMessages> m_messageQueue;
     /* 0x3C */ float m_openFor;
     /* 0x40 */ u8 m_isOpen;

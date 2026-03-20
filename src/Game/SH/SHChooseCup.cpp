@@ -4,6 +4,73 @@
 #include "Game/FE/fePopupMenu.h"
 #include "Game/FE/feFinder.h"
 #include "NL/gl/glStruct.h"
+#include "NL/nlLocalization.h"
+
+extern void* g_pLocalization;
+extern const unsigned short LocalizationTableNotFound[];
+extern const unsigned short MissingLocString[];
+
+unsigned long GetLOCCharacterName(eTeamID, bool, bool);
+
+template <typename StringType, typename ValueType>
+StringType Format(const StringType& format, const ValueType& value);
+
+static inline const unsigned short* LookupLocString(const char* id)
+{
+    nlLocalization* loc = (nlLocalization*)g_pLocalization;
+    unsigned long hash = nlStringLowerHash(id);
+    if (loc->m_LookupTable == 0)
+    {
+        return LocalizationTableNotFound;
+    }
+    nlLocalization::StringLookup* entry = nlBSearch(hash, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
+    if (entry)
+        return loc->m_FirstString + entry->StringOffset;
+    return MissingLocString;
+}
+
+static inline const unsigned short* LookupLocHash(unsigned long hash)
+{
+    nlLocalization* loc = (nlLocalization*)g_pLocalization;
+    if (loc->m_LookupTable == 0)
+    {
+        return LocalizationTableNotFound;
+    }
+    nlLocalization::StringLookup* entry = nlBSearch(hash, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
+    if (entry)
+        return loc->m_FirstString + entry->StringOffset;
+    return MissingLocString;
+}
+
+static inline void CopyWideString(BasicStringData<unsigned short>* data, const unsigned short* text)
+{
+    data->mData = 0;
+    data->mSize = 0;
+    data->mCapacity = 0;
+
+    const unsigned short* ptr = text;
+    while (*ptr++ != 0)
+    {
+        data->mSize++;
+    }
+
+    data->mSize++;
+    data->mData = (unsigned short*)nlMalloc((data->mSize + 1) * 2, 8, true);
+    data->mCapacity = data->mSize;
+
+    int j;
+    int i = 0;
+    j = i;
+    while (i < data->mSize)
+    {
+        *(unsigned short*)((char*)data->mData + j) = *text;
+        i++;
+        text++;
+        j += 2;
+    }
+
+    data->mRefCount = 1;
+}
 
 // /**
 //  * Offset/Address/Size: 0x2C4 | 0x800DCE10 | size: 0xBC
@@ -294,7 +361,7 @@ ChooseCupSceneV2::~ChooseCupSceneV2()
 
             if ((char*)ticker + 4)
             {
-                BasicStringInternal* data = ticker->m_message.m_data;
+                BasicStringData<unsigned short>* data = ticker->m_message.m_data;
                 if (data != NULL)
                 {
                     if (--data->mRefCount == 0)
@@ -475,9 +542,96 @@ void ChooseCupSceneV2::DisplayCup()
 
 /**
  * Offset/Address/Size: 0x438 | 0x800DA6BC | size: 0x374
+ * TODO: 84.54% match - 4-byte stack offset shift from union (hashers at sp+0x20 vs target sp+0x1c),
+ * r29/r30 register swap (text→r30/data→r29 instead of target text→r29/data→r30)
  */
-void ChooseCupSceneV2::SetCurrentChamp(eTeamID, bool, TLComponentInstance*)
+void ChooseCupSceneV2::SetCurrentChamp(eTeamID teamID, bool hasChamp, TLComponentInstance* comp)
 {
+    typedef TLTextInstance* (*FindTextByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
+    typedef TLTextInstance* (*FindTextByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
+
+    union
+    {
+        FindTextByValue byValue;
+        FindTextByRef byRef;
+    } findText;
+
+    volatile unsigned long hB, hA;
+    volatile unsigned long h9, h8;
+    volatile unsigned long h7, h6, h5, h4, h3, h2, h1, h0;
+
+    findText.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
+
+    h0 = 0;
+    h2 = 0;
+    h4 = 0;
+    h1 = 0;
+    h3 = 0;
+    h5 = 0;
+    h6 = 0;
+    h7 = 0;
+    h8 = 0;
+    h9 = 0;
+
+    unsigned long hashVal = nlStringLowerHash("Text");
+    hA = hashVal;
+    hB = hashVal;
+
+    TLTextInstance* text = findText.byRef(
+        comp->GetActiveSlide(),
+        (InlineHasher&)hB,
+        (InlineHasher&)h9,
+        (InlineHasher&)h7,
+        (InlineHasher&)h5,
+        (InlineHasher&)h3,
+        (InlineHasher&)h1);
+
+    if (hasChamp)
+    {
+        const unsigned short* locString = LookupLocString("CupChampion");
+
+        BasicStringInternal* data = (BasicStringInternal*)nlMalloc(0x10, 8, true);
+        if (data != 0)
+        {
+            CopyWideString((BasicStringData<unsigned short>*)data, locString);
+        }
+
+        unsigned long charHash = GetLOCCharacterName(teamID, false, false);
+        const unsigned short* charName = LookupLocHash(charHash);
+
+        {
+            BasicStringInternal* champData = data;
+            BasicString<unsigned short, Detail::TempStringAllocator> formattedResult = Format(
+                *(const BasicString<unsigned short, Detail::TempStringAllocator>*)&champData,
+                charName);
+
+            memcpy(mChampBuffer, formattedResult.c_str(), 0x200);
+            text->SetString(mChampBuffer);
+        }
+
+        BasicStringInternal* msgData = data;
+        if (msgData != 0)
+        {
+            if (--msgData->mRefCount == 0)
+            {
+                if (msgData != 0)
+                {
+                    if (msgData != 0)
+                    {
+                        delete[] msgData->mData;
+                    }
+                    if (msgData != 0)
+                    {
+                        nlFree(msgData);
+                    }
+                }
+            }
+        }
+    }
+    else
+    {
+        text->SetStringId("");
+    }
 }
 
 /**

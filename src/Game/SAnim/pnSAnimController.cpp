@@ -482,8 +482,6 @@ static inline void GetRootTransDelta(cPN_SAnimController* pController, nlVector3
 
 /**
  * Offset/Address/Size: 0x3DC | 0x801EA9B8 | size: 0x280
- * TODO: 94.96% match - pointer alias keeps 0xa0 frame/non-overlap without volatile,
- * but sin/cos rotation scheduling still differs around accumulated-weight compare.
  */
 void cPN_SAnimController::BlendRootTrans(nlVector3* pRootTrans, float fNodeWeight, float* fAccumulatedWeight)
 {
@@ -525,11 +523,10 @@ void cPN_SAnimController::BlendRootTrans(nlVector3* pRootTrans, float fNodeWeigh
 
         nlSinCos(&fSin, &fCos, aMirrorAdjust - aLastFrameFacing);
 
+        pV3RootTransLocal->f.x = v3RootTrans.f.x * fCos - v3RootTrans.f.y * fSin;
+        pV3RootTransLocal->f.y = v3RootTrans.f.y * fCos + v3RootTrans.f.x * fSin;
+        pV3RootTransLocal->f.z = v3RootTrans.f.z;
         *fAccumulatedWeight += fNodeWeight;
-
-        v3RootTransLocal.f.z = v3RootTrans.f.z;
-        v3RootTransLocal.f.x = v3RootTrans.f.x * fCos - v3RootTrans.f.y * fSin;
-        v3RootTransLocal.f.y = v3RootTrans.f.y * fCos + v3RootTrans.f.x * fSin;
     }
 
     if (*fAccumulatedWeight != 0.0f)

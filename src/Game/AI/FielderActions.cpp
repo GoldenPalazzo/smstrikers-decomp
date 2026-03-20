@@ -1244,7 +1244,7 @@ bool cFielder::DoCalcCanDoPerfectPass(cFielder* pPassTarget, const nlVector3& v3
 
 /**
  * Offset/Address/Size: 0x50A4 | 0x8002BBDC | size: 0x268
- * TODO: Just one reg mismatch on SetFacingAnim
+ * TODO: 99.87% match - `PassingAnims` address load still uses `r4` base instead of `r3`
  */
 void cFielder::InitActionPass(cPlayer* pPassTarget, bool bVolleyPass, bool bAllowLeadPass)
 {
@@ -1260,9 +1260,11 @@ void cFielder::InitActionPass(cPlayer* pPassTarget, bool bVolleyPass, bool bAllo
     {
         nlVector3 delta;
         nlVec3Sub(delta, m_v3Position, pPassTarget->m_v3Position);
-        float minDistSq = g_pGame->m_pGameTweaks->fVolleyPassMinDistance * g_pGame->m_pGameTweaks->fVolleyPassMinDistance;
+        float minDistSq = g_pGame->m_pGameTweaks->fVolleyPassMinDistance;
+        minDistSq *= minDistSq;
+        float distSq = delta.GetLengthSq3D();
 
-        if (minDistSq < delta.GetLengthSq3D())
+        if (distSq < minDistSq)
         {
             bVolleyPass = false;
         }

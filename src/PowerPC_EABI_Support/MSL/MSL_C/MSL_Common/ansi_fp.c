@@ -124,19 +124,26 @@ inline void __ull2dec(decimal* result, unsigned long long integer)
 
 static void __timesdec(decimal* result, const decimal* x, const decimal* y)
 {
-    unsigned long accumulator = 0;
+    /* TODO: 96.17% match - setup block scheduling for y/x length loads still differs. */
     unsigned char mantissa[2 * SIGDIGLEN];
-    int i = x->sig.length + y->sig.length - 1;
+    int y_len = y->sig.length;
+    int x_len = x->sig.length;
+    unsigned long accumulator;
+    int i = x_len + y_len - 1;
     unsigned char* ip = mantissa + i + 1;
     unsigned char* ep = ip;
+
+    accumulator = 0;
     result->sign = 0;
+
     for (; i > 0; --i)
     {
-        int k = y->sig.length - 1;
+        int k = y_len - 1;
         int j = i - k - 1;
         int l;
         int t;
-        unsigned char const *jp, *kp;
+        const unsigned char* jp;
+        const unsigned char* kp;
         if (j < 0)
         {
             j = 0;
@@ -145,7 +152,7 @@ static void __timesdec(decimal* result, const decimal* x, const decimal* y)
         jp = x->sig.text + j;
         kp = y->sig.text + k;
         l = k + 1;
-        t = x->sig.length - j;
+        t = x_len - j;
         if (l > t)
             l = t;
         for (; l > 0; --l, ++jp, --kp)

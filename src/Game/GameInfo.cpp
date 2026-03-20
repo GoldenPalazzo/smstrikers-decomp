@@ -157,6 +157,15 @@ TeamStats* GameInfoManager::pGetTeamStatsByIndex(unsigned short index)
  */
 void GameInfoManager::SetPreviousTeamStats()
 {
+    int i;
+
+    if (IsInCupOrTournamentMode())
+    {
+        for (i = 0; i < GetNumPlayingTeams(); i++)
+        {
+            mPreviousTeamStats[i] = GetTeamStatsByIndex(i);
+        }
+    }
 }
 
 /**
@@ -1229,10 +1238,7 @@ bool GameInfoManager::IsInSuperCupMode() const
  */
 bool GameInfoManager::IsInCupMode() const
 {
-    bool result = IsInRegularCupMode();
-    if (result)
-        return result;
-    return IsInSuperCupMode();
+    return IsInRegularCupMode() || IsInSuperCupMode();
 }
 
 /**
@@ -1240,10 +1246,7 @@ bool GameInfoManager::IsInCupMode() const
  */
 bool GameInfoManager::IsInCupOrTournamentMode() const
 {
-    bool result = this->IsInTournamentMode();
-    if (result)
-        return result;
-    return this->IsInCupMode();
+    return IsInTournamentMode() || IsInCupMode();
 }
 
 /**

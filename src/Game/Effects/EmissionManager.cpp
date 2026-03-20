@@ -491,8 +491,8 @@ void EmissionManager::AddError(const char*, ...)
 
 /**
  * Offset/Address/Size: 0x24C | 0x801F8B6C | size: 0x284
- * TODO: 98.57% match - register allocation diffs (r3/r4 swap in controllers swap section,
- * r28/r29 swap in inner loop, cmpw operand order) likely due to -inline deferred vs -inline auto
+ * TODO: 99.04% match - remaining register allocation diffs in the inner replay/new path
+ * (r28/r29 role swap) plus cmpw operand order in initial recording cleanup
  */
 void EmissionManager::Replay(LoadFrame& frame)
 {
@@ -527,7 +527,7 @@ void EmissionManager::Replay(LoadFrame& frame)
     oldControllers.m_tailNode = nullptr;
     oldControllers.m_numNodes = 0;
 
-    efList* ctrl = controllers;
+    efList* const ctrl = controllers;
 
     efBaseNode* head = ctrl->m_headNode;
     ctrl->m_headNode = oldControllers.m_headNode;
@@ -591,7 +591,7 @@ void EmissionManager::Replay(LoadFrame& frame)
     current = (EmissionController*)oldControllers.m_headNode;
     while (current != nullptr)
     {
-        next = (EmissionController*)current->m_nextNode;
+        EmissionController* loopNext = (EmissionController*)current->m_nextNode;
         if (defaultView != current->m_GlView)
         {
             oldControllers.Remove(current);
@@ -602,7 +602,7 @@ void EmissionManager::Replay(LoadFrame& frame)
             oldControllers.Remove(current);
             delete current;
         }
-        current = next;
+        current = loopNext;
     }
 }
 

@@ -22,7 +22,22 @@ enum eTimeLineAssetType
 class TLInstance
 {
 public:
-    eFELibObjectType GetType() const { return FEOT_UNKNOWN; };
+#ifdef GET_TYPE_IN_TLINSTANCE_TU_DEF
+    eTimeLineAssetType GetType() const;
+#else
+    eTimeLineAssetType GetType() const // only in feRender TU !
+    {
+        return m_type;
+    }
+#endif
+    bool IsVisible() const
+    {
+        return m_bVisible;
+    }
+    FELibObject* GetLibRefObject() const
+    {
+        return m_component;
+    }
 
     void SetAssetColour(const nlColour&);
     void SetAssetScale(float, float, float);

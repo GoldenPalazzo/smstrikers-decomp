@@ -46,6 +46,8 @@
 #include "Game/OverlayHandlerDemo.h"
 #include "Game/OverlayHandlerSTSX2.h"
 
+#include "Game/BaseSceneHandler.h"
+
 #include "NL/nlConfig.h"
 
 // Define the scene entry struct
