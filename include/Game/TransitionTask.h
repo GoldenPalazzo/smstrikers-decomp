@@ -23,8 +23,8 @@ class TransitionTask : public nlTask
 public:
     TransitionTask();
 
-    virtual void Run(float);
-    virtual const char* GetName() { return "Transition"; };
+    virtual const char* GetName() { return "Transition Manager"; };
+    virtual void Run(float) { };
 
     void Initialize(LoadingManager&);
     void StateTransition(unsigned int, unsigned int);

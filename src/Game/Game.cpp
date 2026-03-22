@@ -16,6 +16,9 @@
 #include "NL/nlConfig.h"
 #include "NL/nlLexicalCast.h"
 #include "NL/nlMath.h"
+#include "Game/AI/FilteredRandom.h"
+#include "Game/Render/SidelineExplodable.h"
+#include "Game/Render/ElectricFence.h"
 
 extern cTeam* g_pTeams[];
 extern PowerupBase* g_pPowerups[];
@@ -390,10 +393,113 @@ float cGame::GetGameTime()
 
 /**
  * Offset/Address/Size: 0x1720 | 0x8003DC94 | size: 0x3EC
+ * TODO: 91.98% match - this in r29 vs r30 (register allocation shift due to
+ * -inline deferred), nlVector3 stack offsets swapped (sp+0x14/0x20)
  */
 void cGame::ResetForKickOff()
 {
-    FORCE_DONT_INLINE;
+    cFielder* pBallCarrier;
+    g_pEventManager->CreateValidEvent(9, 0x14);
+    int i;
+    for (i = 0; i < 5; i++)
+    {
+        m_pRandomPlayersArray[i] = g_pTeams[0]->GetPlayer(i);
+    }
+    for (i = 0; i < 5; i++)
+    {
+        m_pRandomPlayersArray[5 + i] = g_pTeams[1]->GetPlayer(i);
+    }
+    static FilteredRandomRange randgen;
+    for (i = 0; i < 10; i++)
+    {
+        int j = randgen.genrand(10);
+        if (j != i)
+        {
+            cPlayer* temp = m_pRandomPlayersArray[i];
+            m_pRandomPlayersArray[i] = m_pRandomPlayersArray[j];
+            m_pRandomPlayersArray[j] = temp;
+        }
+    }
+    for (i = 0; i < 2; i++)
+    {
+        g_pTeams[i]->ResetCharacters();
+    }
+    nlVector3 position = { 0.0f, 0.0f, 0.0f };
+    nlVector3 velocity = { 0.0f, 0.0f, 0.0f };
+    if (g_pBall->m_pOwner != NULL)
+    {
+        g_pBall->m_pOwner->ReleaseBall();
+    }
+    g_pBall->WarpTo(position);
+    g_pBall->SetVelocity(velocity, SPINTYPE_NONE, NULL);
+    g_pBall->mbCanDamage = 0;
+    g_pBall->mpDamageTarget = NULL;
+    m_bBallInNet = false;
+    g_pBall->ClearBallEffects();
+    g_pBall->HandleBuzzerBeater(-1.0f);
+    if (g_pTeams[0] != NULL)
+    {
+        g_pTeams[0]->mfPowerupMeter = 0.0f;
+    }
+    if (g_pTeams[1] != NULL)
+    {
+        g_pTeams[1]->mfPowerupMeter = 0.0f;
+    }
+    for (i = 0; i < 25; i++)
+    {
+        if (g_pPowerups[i] != NULL)
+        {
+            g_pPowerups[i]->Destroy(true);
+            g_pPowerups[i] = NULL;
+        }
+    }
+    if (BasicStadium::GetCurrentStadium()->mpNPCManager != NULL)
+    {
+        if (BasicStadium::GetCurrentStadium()->mpNPCManager->mpChainChomp != NULL)
+        {
+            if (mbCaptainShotToScoreOn == false)
+            {
+                BasicStadium::GetCurrentStadium()->mpNPCManager->mpChainChomp->Hide(true);
+            }
+        }
+    }
+    m_pScorer = NULL;
+    m_pAssister = NULL;
+    for (i = 0; i < 2; i++)
+    {
+        m_pTeamTouch[i] = g_pTeams[i]->GetCaptain();
+    }
+    Bowser::SetTiltParameters(0.0f);
+    nlWalkList(mThoughtsQueue.m_Head, (ListContainerBase<unsigned long, NewAdapter<ListEntry<unsigned long> > >*)&mThoughtsQueue, &ListContainerBase<unsigned long, NewAdapter<ListEntry<unsigned long> > >::DeleteEntry);
+    mThoughtsQueue.m_Head = NULL;
+    mThoughtsQueue.m_Tail = NULL;
+    BasicStadium::GetCurrentStadium()->mpNPCManager->mpBowser->ActionHide();
+    if (mBowserTimer.m_uPackedTime != 0)
+    {
+        if (mBowserTimer.GetSeconds() < 5.0f)
+        {
+            mBowserTimer.SetSeconds(5.0f);
+        }
+    }
+    m_pPostResetClock->Reset(0.0f, 1.0f, 0.0f);
+    m_pPostResetClock->Start();
+    cCameraManager::Remove(eCameraType_MatrixEffect, true);
+    GameplayCamera* gpc = cCameraManager::GetCamera<GameplayCamera>(eCameraType_Gameplay);
+    if (gpc != NULL)
+    {
+        gpc->m_ForceNeutralAndNearZoom = true;
+    }
+    SidelineExplodableManager::DestroyAllActiveFragments(false);
+    StopDisplayingElectricFence();
+    if (g_pTeams[m_nLastTeamToScore] != NULL)
+    {
+        pBallCarrier = g_pTeams[!m_nLastTeamToScore]->GetFielder(0);
+        if (pBallCarrier->m_pBall == NULL)
+        {
+            pBallCarrier->PickupBall(g_pBall);
+            pBallCarrier->InitActionRunningWB(false);
+        }
+    }
 }
 
 /**

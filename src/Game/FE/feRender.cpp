@@ -48,10 +48,13 @@ inline void GLMeshWriterCore::Position(const nlVector3& v)
     Vertex(v);
 }
 
+/**
+ * Offset/Address/Size: 0x0 | 0x8020A288 | size: 0x3BC
+ * TODO: 99.58% match - r28/r29/r30 cyclic register swap for texconfig/pMap/matrixHandle.
+ * MWCC allocator heuristic, not controllable from source.
+ */
 unsigned char FERender::RenderImageInstance(const TLImageInstance* pTLImageInstance)
 {
-    unsigned long program;
-
     nlColour colour = pTLImageInstance->GetAssetColour();
 
     const FEImage* pFEImage = (const FEImage*)pTLImageInstance->m_component;
@@ -127,7 +130,7 @@ unsigned char FERender::RenderImageInstance(const TLImageInstance* pTLImageInsta
 
     u8 texconfig = gl_GetCurrentStateBundle()->texconfig;
 
-    program = glSetCurrentProgram(drawQuadProgram);
+    unsigned long program = glSetCurrentProgram(drawQuadProgram);
     matrixHandle = glSetCurrentMatrix(matrixHandle);
 
     static int stripmap[4];
@@ -146,27 +149,31 @@ unsigned char FERender::RenderImageInstance(const TLImageInstance* pTLImageInsta
         prim = GLP_TriStrip;
     }
 
-    if (!meshWriter.Begin(4, prim, texconfig + 2, streams, false))
-        return 0;
-
-    for (int i = 0; i < 4; i++)
+    if (meshWriter.Begin(4, prim, texconfig + 2, streams, false))
     {
-        int index = pMap[i];
-        meshWriter.Colour(colour);
-        if (texconfig)
-            meshWriter.Texcoord(uv[index]);
-        nlVector3 vertex;
-        vertex.f.x = pos[index].e[0];
-        vertex.f.y = pos[index].e[1];
-        vertex.f.z = 0.0f;
-        meshWriter.Position(vertex);
+        for (int i = 0; i < 4; i++)
+        {
+            int index = pMap[i];
+            meshWriter.Colour(colour);
+            if (texconfig)
+                meshWriter.Texcoord(uv[index]);
+            nlVector3 vertex;
+            vertex.f.x = pos[index].e[0];
+            vertex.f.y = pos[index].e[1];
+            vertex.f.z = 0.0f;
+            meshWriter.Position(vertex);
+        }
+
+        if (!meshWriter.End())
+            return 0;
+
+        eGLView view = (eGLView)m_pRenderScene->m_uRenderView;
+        glViewAttachModel(view, 0, meshWriter.GetModel());
     }
-
-    if (!meshWriter.End())
+    else
+    {
         return 0;
-
-    eGLView view = (eGLView)m_pRenderScene->m_uRenderView;
-    glViewAttachModel(view, 0, meshWriter.GetModel());
+    }
 
     glSetCurrentProgram(program);
     glSetCurrentMatrix(matrixHandle);

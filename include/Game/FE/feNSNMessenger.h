@@ -62,7 +62,7 @@ public:
     virtual void OpenMessenger();
     virtual void OpenMessengerNow();
     virtual void SetDisplayMessage(const BasicString<unsigned short, Detail::TempStringAllocator>&);
-    virtual void SetMessageFinishedCB(const Function<void*>& cb);
+    virtual void SetMessageFinishedCB(const Function<FnVoidVoid>& cb);
     virtual void CloseMessenger();
     virtual void CloseMessengerNow();
     virtual bool IsMessengerOpen() const;

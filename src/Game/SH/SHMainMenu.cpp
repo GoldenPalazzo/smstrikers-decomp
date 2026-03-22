@@ -200,7 +200,7 @@ static void onSelectFriendly(TLComponentInstance*)
 /**
  * Offset/Address/Size: 0x1AD0 | 0x800AB52C | size: 0x44
  */
-void onSelectCup(TLComponentInstance*)
+static void onSelectCup(TLComponentInstance*)
 {
     GameSceneManager::s_pInstance->PopEntireStack();
     GameSceneManager::s_pInstance->Push(SCENE_CUP_CHOOSE_CUP, SCREEN_FORWARD, false);
@@ -209,7 +209,7 @@ void onSelectCup(TLComponentInstance*)
 /**
  * Offset/Address/Size: 0x1A50 | 0x800AB4AC | size: 0x80
  */
-void onSelectSuperCup(TLComponentInstance*)
+static void onSelectSuperCup(TLComponentInstance*)
 {
     if (!GameInfoManager::Instance()->IsSuperCupModeUnlocked())
     {
@@ -226,7 +226,7 @@ void onSelectSuperCup(TLComponentInstance*)
 /**
  * Offset/Address/Size: 0x19C4 | 0x800AB420 | size: 0x8C
  */
-void onSelect101(TLComponentInstance*)
+static void onSelect101(TLComponentInstance*)
 {
     GameInfoManager::Instance()->SetMode(GameInfoManager::GM_FRIENDLY);
     GameInfoManager::Instance()->SetTeam(0, (eTeamID)3);
@@ -241,7 +241,7 @@ void onSelect101(TLComponentInstance*)
 /**
  * Offset/Address/Size: 0x1964 | 0x800AB3C0 | size: 0x60
  */
-void newTourn()
+static void newTourn()
 {
     GameSceneManager::s_pInstance->PopEntireStack();
     GameSceneManager::s_pInstance->Push(SCENE_TOURN_SETPARAMS, SCREEN_FORWARD, false);
@@ -254,7 +254,7 @@ void newTourn()
 /**
  * Offset/Address/Size: 0x1914 | 0x800AB370 | size: 0x50
  */
-void continueTourn()
+static void continueTourn()
 {
     GameInfoManager::s_pInstance->SetMode(GameInfoManager::GM_TOURNAMENT);
     GameSceneManager::s_pInstance->PopEntireStack();
@@ -265,7 +265,7 @@ void continueTourn()
  * Offset/Address/Size: 0x182C | 0x800AB288 | size: 0xE8
  * TODO: 99.9% match - i diff on bl Create (branch offset, relocation)
  */
-void confirmNewTourn()
+static void confirmNewTourn()
 {
     FEPopupMenu* menu = (FEPopupMenu*)nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
 
@@ -288,7 +288,7 @@ void confirmNewTourn()
  * TODO: 92.1% match - Function0 default constructor dead stores not eliminated
  *       with -inline auto (decomp.me). File uses -inline deferred which eliminates them.
  */
-void onSelectTournament(TLComponentInstance*)
+static void onSelectTournament(TLComponentInstance*)
 {
     if (GameInfoManager::s_pInstance->mCustomTournamentInfo.m_cupConstructed
         && GameInfoManager::s_pInstance->mCustomTournamentInfo.m_cup->mCupStarted)
@@ -332,7 +332,7 @@ void onSelectTournament(TLComponentInstance*)
 /**
  * Offset/Address/Size: 0x1634 | 0x800AB090 | size: 0x4C
  */
-void onSelectTrophies(TLComponentInstance*)
+static void onSelectTrophies(TLComponentInstance*)
 {
     GameSceneManager::s_pInstance->PopEntireStack();
     GameSceneManager::s_pInstance->Push(SCENE_TROPHY_ROOM, SCREEN_FORWARD, false);
@@ -342,19 +342,19 @@ void onSelectTrophies(TLComponentInstance*)
 /**
  * Offset/Address/Size: 0x15E8 | 0x800AB044 | size: 0x4C
  */
-void onSelectOptions(TLComponentInstance*)
+static void onSelectOptions(TLComponentInstance*)
 {
     GameSceneManager::s_pInstance->PopEntireStack();
     GameSceneManager::s_pInstance->Push(SCENE_OPTIONS, SCREEN_FORWARD, false);
     FEMusic::StartStreamIfDifferent(7);
 }
 
-// /**
-//  * Offset/Address/Size: 0x1538 | 0x800AAF94 | size: 0xB0
-//  */
-// SHMainMenu::SHMainMenu()
-// {
-// }
+/**
+ * Offset/Address/Size: 0x1538 | 0x800AAF94 | size: 0xB0
+ */
+SHMainMenu::SHMainMenu()
+{
+}
 
 // /**
 //  * Offset/Address/Size: 0x14D8 | 0x800AAF34 | size: 0x60
@@ -363,37 +363,37 @@ void onSelectOptions(TLComponentInstance*)
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0x1380 | 0x800AADDC | size: 0x158
-//  */
-// SHMainMenu::~SHMainMenu()
-// {
-// }
+/**
+ * Offset/Address/Size: 0x1380 | 0x800AADDC | size: 0x158
+ */
+SHMainMenu::~SHMainMenu()
+{
+}
 
-// /**
-//  * Offset/Address/Size: 0xA3C | 0x800AA498 | size: 0x8C0
-//  */
-// void SHMainMenu::SceneCreated()
-// {
-// }
+/**
+ * Offset/Address/Size: 0xA3C | 0x800AA498 | size: 0x8C0
+ */
+void SHMainMenu::SceneCreated()
+{
+}
 
-// /**
-//  * Offset/Address/Size: 0x60C | 0x800AA068 | size: 0x430
-//  */
-// void SHMainMenu::OpenItem(TLComponentInstance*)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x60C | 0x800AA068 | size: 0x430
+ */
+void SHMainMenu::OpenItem(TLComponentInstance*)
+{
+}
 
-// /**
-//  * Offset/Address/Size: 0x404 | 0x800A9E60 | size: 0x208
-//  */
-// void SHMainMenu::CloseItem(TLComponentInstance*)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x404 | 0x800A9E60 | size: 0x208
+ */
+void SHMainMenu::CloseItem(TLComponentInstance*)
+{
+}
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800A9A5C | size: 0x404
-//  */
-// void SHMainMenu::Update(float)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x0 | 0x800A9A5C | size: 0x404
+ */
+void SHMainMenu::Update(float)
+{
+}

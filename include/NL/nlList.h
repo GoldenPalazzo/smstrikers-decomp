@@ -56,7 +56,15 @@ template <typename T>
 class nlListContainer : public ListContainerBase<T, NewAdapter<ListEntry<T> > >
 {
 public:
-    // todo: ...
+    ~nlListContainer()
+    {
+        if (this != NULL)
+        {
+            nlWalkList(this->m_Head, static_cast<ListContainerBase<T, NewAdapter<ListEntry<T> > >*>(this), &ListContainerBase<T, NewAdapter<ListEntry<T> > >::DeleteEntry);
+            this->m_Head = NULL;
+            this->m_Tail = NULL;
+        }
+    }
 }; // total size: 0xC
 
 template <typename T>

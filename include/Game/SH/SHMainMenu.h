@@ -10,18 +10,6 @@
 #include "Game/FE/tlComponentInstance.h"
 #include "NL/nlColour.h"
 
-// void onSelectOptions(TLComponentInstance*);
-// void onSelectTrophies(TLComponentInstance*);
-// void onSelectTournament(TLComponentInstance*);
-// void confirmNewTourn();
-// void continueTourn();
-// void newTourn();
-// void onSelect101(TLComponentInstance*);
-// void onSelectSuperCup(TLComponentInstance*);
-// void onSelectCup(TLComponentInstance*);
-// void onSelectFriendly(TLComponentInstance*);
-// void 0x800AC504..0x800AC560 | size: 0x5C;
-
 class SHMainMenu : public BaseSceneHandler
 {
 public:

@@ -76,7 +76,7 @@ public:
     void ActionLeave();
     void Move(float);
     void ActionIdle();
-    void SetTiltParameters(float);
+    static void SetTiltParameters(float);
     bool CheckForAbort();
     static void UpdateFireEmitter(EmissionController& controller);
     static void UpdateBowserLandEmitter(EmissionController& controller);

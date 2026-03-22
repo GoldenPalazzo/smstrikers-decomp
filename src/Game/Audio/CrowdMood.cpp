@@ -8,6 +8,7 @@
 #include "NL/nlMath.h"
 #include "NL/nlString.h"
 
+extern GCAudioStreaming::AudioBufferMgr g_BufferMgr;
 extern void ___blank(const char*, ...);
 extern "C" void sndStreamMixParameterEx(unsigned long stid, unsigned char vol, unsigned char pan, unsigned char span, unsigned char auxa, unsigned char auxb);
 extern "C" void sndStreamLPFParameter(unsigned long, unsigned long, unsigned long);
@@ -555,11 +556,98 @@ void CrowdMood::ReadConfig()
 {
 }
 
+inline GCAudioStreaming::AudioStream::AudioStream(GCAudioStreaming::AudioBufferMgr& mgr, unsigned long bufCount)
+    : m_BuffMgr(mgr)
+{
+    m_FlagAtDelete = 0;
+    m_State = GCAudioStreaming::SS_New;
+    m_StreamLength = (unsigned long)-1;
+    m_StreamPos = 0;
+    memset(m_Buffers, 0, sizeof(m_Buffers));
+    m_OldLength = 0;
+    m_Flags = 0;
+    m_BufferCount = bufCount;
+}
+
+inline GCAudioStreaming::StereoAudioStream::StereoAudioStream(GCAudioStreaming::AudioBufferMgr& mgr)
+    : AudioStream(mgr, 2)
+{
+    m_pFile = NULL;
+    m_Interleave = 0;
+}
+
+inline GCAudioStreaming::MonoAudioStream::MonoAudioStream(GCAudioStreaming::AudioBufferMgr& mgr)
+    : AudioStream(mgr, 1)
+{
+    m_pFile = NULL;
+}
+
 /**
  * Offset/Address/Size: 0x1300 | 0x8014EA14 | size: 0x3E4
+ * TODO: 92.23% match - instruction scheduling diffs from -inline deferred vs
+ *       -inline auto; beq-/b vs bne- branch pattern; Config/loop register swaps
  */
 void CrowdMood::Init()
 {
+    if (g_Initd)
+        return;
+
+    bool crowdOff = GetConfigBool(Config::Global(), "CrowdOff", false);
+    if (crowdOff)
+        return;
+
+    memset(&g_CrowdState, 0, sizeof(g_CrowdState));
+
+    Audio::MasterVolume::SetVolume((Audio::MasterVolume::VOLUME_GROUP)4, g_CrowdState.CrowdVolume);
+
+    g_CrowdState.DestMood = CM_Neutral;
+    g_CrowdState.AtDestination = true;
+
+    g_CrowdState.ChantState.NextAt = (float)nlRandom(1, &nlDefaultSeed);
+    g_CrowdState.HeckleState.NextAt = (float)nlRandom(1, &nlDefaultSeed);
+
+    struct LOOP_LOAD
+    {
+        const char* SampleName;
+        unsigned long AudioId;
+        unsigned long* pVoiceId;
+    };
+
+    LOOP_LOAD LoadData[3] = {
+        { 0, 0, &g_CrowdAudio.NeutralVoiceId },
+        { 0, 0, &g_CrowdAudio.PositiveVoiceId },
+        { 0, 0, &g_CrowdAudio.NegativeVoiceId },
+    };
+
+    for (u32 i = 0; i < 3; i++)
+    {
+        Audio::SoundAttributes sndAtr;
+        sndAtr.Init();
+        sndAtr.SetSoundType(LoadData[i].AudioId, false);
+        sndAtr.mf_Volume = 0.0f;
+        *LoadData[i].pVoiceId = Audio::gCrowdSFX.Play(sndAtr);
+        PlatAudio::SetSFXVolume(*LoadData[i].pVoiceId, 0.0f);
+    }
+
+    g_CrowdSFXStopped = false;
+    g_CrowdAudio.CurrentSaturationSFXId = (unsigned long)-1;
+
+    if (!g_Settings.NoStreaming)
+    {
+        GCAudioStreaming::StereoAudioStream* pChant = new (nlMalloc(sizeof(GCAudioStreaming::StereoAudioStream), 8, false)) GCAudioStreaming::StereoAudioStream(g_BufferMgr);
+        g_CrowdAudio.pChantStream = pChant;
+
+        GCAudioStreaming::MonoAudioStream* pHeckle = new (nlMalloc(sizeof(GCAudioStreaming::MonoAudioStream), 8, false)) GCAudioStreaming::MonoAudioStream(g_BufferMgr);
+        g_CrowdAudio.pHeckleStream = pHeckle;
+    }
+
+    g_CrowdAudio.CurrentSaturationSampleName = NULL;
+    CrowdMood::SetCrowdVolume(0, 0);
+
+    g_CrowdState.LPFOn = false;
+    g_CrowdState.LPFOn = false;
+    g_CrowdState.LPFFreq = 0;
+    g_Initd = true;
 }
 
 /**

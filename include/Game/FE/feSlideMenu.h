@@ -53,8 +53,8 @@ public:
         ~MenuItem() { };
 
         /* 0x0 */ unsigned long ItemSlide;
-        /* 0x4 */ Function<FESlideMenu*> ItemCBFuncs[2];
-    }; // total size: 0x20
+        /* 0x4 */ Function<FnVoidVoid> ItemCBFuncs[2];
+    }; // total size: 0x14
 
     void UpdatePresentation();
     bool PrevItem();

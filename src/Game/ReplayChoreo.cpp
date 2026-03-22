@@ -69,11 +69,12 @@ public:
     void UpdateUntilRelaxed();
 };
 
-extern "C" void CalcAutoReplayScriptName__12ReplayChoreoCF10ReplayType(
-    BasicString<char, Detail::TempStringAllocator>*, const ReplayChoreo*, ReplayType);
-
 template <typename StringType, typename Arg0, typename Arg1, typename Arg2, typename Arg3>
 void Format(StringType&, const StringType&, const Arg0&, const Arg1&, const Arg2&, const Arg3&);
+
+unsigned int nlRandom(unsigned int range, unsigned int* seed);
+extern unsigned int nlDefaultSeed;
+double fabs(double);
 
 namespace
 {
@@ -81,7 +82,10 @@ char* replayTypeNames[9];
 char* zoneDepthNames[3];
 char* zoneInWidthNames[3];
 char scriptName[128];
+int cameraPick;
 } // namespace
+
+extern "C" void CalcAutoReplayScriptName__12ReplayChoreoCF10ReplayType(BasicString<char, Detail::TempStringAllocator>*, const ReplayChoreo*, ReplayType);
 
 // /**
 //  * Offset/Address/Size: 0xEC4 | 0x80129A38 | size: 0xD74
@@ -461,9 +465,130 @@ void ReplayChoreo::Reset()
 
 /**
  * Offset/Address/Size: 0x698 | 0x80127D04 | size: 0x3E0
+ * TODO: 95.2% match - register allocation: stmw r26 vs r27.
+ * With -inline deferred, data/goalType share r30 and src/zoneInWidth share r31,
+ * but decomp.me uses -inline auto which prevents this register reuse.
  */
-void ReplayChoreo::CalcAutoReplayScriptName(ReplayType) const
+extern "C" void CalcAutoReplayScriptName__12ReplayChoreoCF10ReplayType(
+    BasicString<char, Detail::TempStringAllocator>* __return, const ReplayChoreo* __this, ReplayType)
 {
+    BasicStringDataHack* data = (BasicStringDataHack*)nlMalloc(0x10, 8, true);
+    if (data != 0)
+    {
+        const char* src = "{0}_{1}_{2}_{3}";
+        data->mData = 0;
+        const char* p = src;
+        data->mSize = 0;
+        data->mCapacity = 0;
+
+        while ((signed char)*p++ != 0)
+        {
+            data->mSize++;
+        }
+
+        data->mSize++;
+        data->mData = (char*)nlMalloc(data->mSize + 1, 8, true);
+        data->mCapacity = data->mSize;
+
+        for (int i = 0; i < data->mSize; i++)
+        {
+            data->mData[i] = *src++;
+        }
+
+        data->mRefCount = 1;
+    }
+
+    BasicString<char, Detail::TempStringAllocator> format;
+    format.m_data = data;
+
+    int zoneInWidth = 0;
+    int zoneDepth = 0;
+    int goalType = __this->mGoalScoredData.uGoalType;
+
+    f32 halfField = 0.5f * cField::mv3FieldPosition.f.y;
+    f32 adjustedY = -1.0f * halfField + __this->mGoalScoredData.v3ShotPosition.f.y;
+
+    if (adjustedY > 0.1f * halfField)
+    {
+        zoneInWidth = 2;
+    }
+    else if (adjustedY < -0.33f * halfField)
+    {
+        zoneInWidth = 1;
+    }
+
+    f32 negGoalLineX = -cField::GetGoalLineX((unsigned int)__this->mGoalScoredData.uTeamIndex);
+
+    if ((f32)fabs(negGoalLineX - __this->mGoalScoredData.v3ShotPosition.f.x) < -0.33f * (f32)fabs(negGoalLineX))
+    {
+        zoneDepth = 1;
+    }
+    if ((f32)fabs(negGoalLineX - __this->mGoalScoredData.v3ShotPosition.f.x) > 0.1f * (f32)fabs(negGoalLineX))
+    {
+        zoneDepth = 2;
+    }
+
+    while (true)
+    {
+        if (__this->mNumScripts[zoneDepth][zoneInWidth][goalType] > 0)
+            break;
+
+        if (__this->mNumScripts[zoneDepth][0][goalType] > 0)
+        {
+            zoneInWidth = 0;
+            break;
+        }
+        if (__this->mNumScripts[0][zoneInWidth][goalType] > 0)
+        {
+            zoneDepth = 0;
+            break;
+        }
+        if (__this->mNumScripts[0][0][goalType] > 0)
+        {
+            zoneDepth = 0;
+            zoneInWidth = 0;
+            break;
+        }
+        goalType = 0;
+    }
+
+    if (!__this->mReplay->DidOccurInLastNumSeconds(2, 3.0f))
+    {
+        BasicStringDataHack* d2 = (BasicStringDataHack*)nlMalloc(0x10, 8, true);
+        if (d2 != 0)
+        {
+            const char* src2 = "default_replay";
+            d2->mData = 0;
+            const char* p2 = src2;
+            d2->mSize = 0;
+            d2->mCapacity = 0;
+
+            while ((signed char)*p2++ != 0)
+            {
+                d2->mSize++;
+            }
+
+            d2->mSize++;
+            d2->mData = (char*)nlMalloc(d2->mSize + 1, 8, true);
+            d2->mCapacity = d2->mSize;
+
+            for (int i = 0; i < d2->mSize; i++)
+            {
+                d2->mData[i] = *src2++;
+            }
+
+            d2->mRefCount = 1;
+        }
+        __return->m_data = d2;
+        return;
+    }
+
+    int pick = nlRandom(__this->mNumScripts[zoneDepth][zoneInWidth][goalType], &nlDefaultSeed);
+    if (cameraPick > -1)
+    {
+        pick = cameraPick % __this->mNumScripts[zoneDepth][zoneInWidth][goalType];
+    }
+    Format(*__return, format, zoneDepthNames[zoneDepth], zoneInWidthNames[zoneInWidth], replayTypeNames[goalType], pick);
 }
 
 /**

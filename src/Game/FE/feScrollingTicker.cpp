@@ -232,6 +232,9 @@ ScrollingTickerScene::~ScrollingTickerScene()
 
 /**
  * Offset/Address/Size: 0xE00 | 0x800A0A58 | size: 0x88
+ * TODO: 97% match - missing stw r5,0x88(r31) for m_cbFunc.mTag zeroing.
+ *       Adding mTag=EMPTY to Function<FnVoidVoid> ctor fixes this to 100%
+ *       but regresses 5 -inline deferred functions from 100% (dead store not eliminated).
  */
 ScrollingTickerScene::ScrollingTickerScene()
     : BaseSceneHandler()

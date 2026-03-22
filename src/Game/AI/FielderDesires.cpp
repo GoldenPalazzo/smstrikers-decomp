@@ -226,7 +226,7 @@ void cFielder::CleanUpDesire(eFielderDesireState eNewDesireState)
 
 /**
  * Offset/Address/Size: 0x4204 | 0x80034F88 | size: 0x3C4
- * TODO: 98.76% match - CanISlideAttack r4/r5 arg eval order (compiler register allocation artifact)
+ * TODO: 99.85% match - CanISlideAttack r4/r5 arg eval order (scratch-only compiler register allocation artifact)
  */
 void cFielder::DesireInterceptBall(float fDeltaT)
 {
@@ -312,7 +312,7 @@ void cFielder::DesireInterceptBall(float fDeltaT)
                 turboRequest = TR_FAR_DISTANCE;
             }
 
-            SetDesiredSpeedAndDirectionToPosition(fDeltaT, v3DesirePosition, turboRequest, 1.0f, 1.0f);
+            SetDesiredSpeedAndDirectionToPosition(fDeltaT, v3DesirePosition, turboRequest, 0.3f, 0.6f);
             m_pAvoidance->UseMinimumAvoidance(NULL);
         }
 

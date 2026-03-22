@@ -62,6 +62,7 @@ enum STREAM_FLAG
 class AudioStream
 {
 public:
+    AudioStream(AudioBufferMgr& mgr, unsigned long bufCount);
     virtual ~AudioStream() { };
     virtual void WarmReadDone(AudioStreamBuffer*);
     void Purge() { };
@@ -95,6 +96,7 @@ public:
 class MonoAudioStream : public AudioStream
 {
 public:
+    MonoAudioStream(AudioBufferMgr& mgr);
     void _AsyncCancelCB(nlFile*, void*, unsigned int, unsigned long, void (*)(nlFile*, void*, unsigned int, unsigned long));
     virtual void CancelPendingReads();
     virtual void GetUpdateReadLength();
@@ -109,6 +111,7 @@ public:
 class StereoAudioStream : public AudioStream
 {
 public:
+    StereoAudioStream(AudioBufferMgr& mgr);
     virtual ~StereoAudioStream();
     virtual void GetUpdateReadLength();
     void _InterleavedHdrReadCB(nlFile*, void*, unsigned int, unsigned long);

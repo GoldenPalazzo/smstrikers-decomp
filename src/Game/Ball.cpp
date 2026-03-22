@@ -484,9 +484,8 @@ void cBall::ShootRelease(const nlVector3& v3Velocity, eSpinType SpinType)
 
 /**
  * Offset/Address/Size: 0xD2C | 0x8000A700 | size: 0x3AC
- * TODO: 92.79% match - FPR register coloring in FORWARD/BACK spin cross product:
- *       Cross product temp registers (dirX/upX/upY/dirZ) assigned in cyclic permutation
- *       vs target (f9/f5/f6/f7 vs f6/f9/f7/f5). MWCC graph coloring quirk.
+ * TODO: 98.69% match - register coloring diffs in cross product, distance calc,
+ *       direction vectors, and sideline check. MWCC register allocator quirks.
  */
 static inline float CalcSpinRand(eSpinType spin);
 
@@ -572,13 +571,19 @@ void cBall::Shoot(const nlVector3& v3Dir, const nlVector3& v3Spin, eSpinType spi
 
         FakeBallWorld::GetPredictedPosAtDistance(fDist, v3PredPos, v3PredVel);
 
-        v3FromDir.f.x = v3PredPos.f.x - m_v3Position.f.x;
-        v3FromDir.f.y = v3PredPos.f.y - m_v3Position.f.y;
-        v3FromDir.f.z = v3PredPos.f.z - m_v3Position.f.z;
+        float tZ = m_v3ShotTarget.f.z - m_v3Position.f.z;
+        float fZ = v3PredPos.f.z - m_v3Position.f.z;
+        float tY = m_v3ShotTarget.f.y - m_v3Position.f.y;
+        float fY = v3PredPos.f.y - m_v3Position.f.y;
+        float tX = m_v3ShotTarget.f.x - m_v3Position.f.x;
+        float fX = v3PredPos.f.x - m_v3Position.f.x;
 
-        v3ToDir.f.x = m_v3ShotTarget.f.x - m_v3Position.f.x;
-        v3ToDir.f.y = m_v3ShotTarget.f.y - m_v3Position.f.y;
-        v3ToDir.f.z = m_v3ShotTarget.f.z - m_v3Position.f.z;
+        v3ToDir.f.z = tZ;
+        v3ToDir.f.y = tY;
+        v3ToDir.f.x = tX;
+        v3FromDir.f.x = fX;
+        v3FromDir.f.y = fY;
+        v3FromDir.f.z = fZ;
 
         GetRotationBetweenVectors(qRot, v3FromDir, v3ToDir);
         RotateVector(m_v3Velocity, v3Dir, qRot);
@@ -589,19 +594,13 @@ void cBall::Shoot(const nlVector3& v3Dir, const nlVector3& v3Spin, eSpinType spi
         }
 
         float fSidelineY = cField::GetSidelineY(1);
-        if (m_v3Position.f.y > fSidelineY - 0.5f)
+        if (m_v3Position.f.y > fSidelineY - 0.5f && m_v3Velocity.f.y > -0.1f)
         {
-            if (m_v3Velocity.f.y > -0.1f)
-            {
-                m_v3Velocity.f.y = -0.1f;
-            }
+            m_v3Velocity.f.y = -0.1f;
         }
-        else if (m_v3Position.f.y < 0.5f - cField::GetSidelineY(1))
+        else if (m_v3Position.f.y < 0.5f - cField::GetSidelineY(1) && m_v3Velocity.f.y < 0.1f)
         {
-            if (m_v3Velocity.f.y < 0.1f)
-            {
-                m_v3Velocity.f.y = 0.1f;
-            }
+            m_v3Velocity.f.y = 0.1f;
         }
 
         m_pPhysicsBall->SetLinearVelocity(m_v3Velocity);

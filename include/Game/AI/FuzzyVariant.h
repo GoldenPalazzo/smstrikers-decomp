@@ -17,9 +17,8 @@ public:
 
     template <typename T>
     FuzzyVariant(const T& value)
+        : Variant(VariantTypeOf(value), value)
     {
-        *(T*)&mData = value;
-        mType = VariantTypeOf(value);
         ExtraData.Reset();
         Confidence = 0.0f;
         SelectionChance = 1.0f;

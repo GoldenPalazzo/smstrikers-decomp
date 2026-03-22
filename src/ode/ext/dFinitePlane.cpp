@@ -15,40 +15,24 @@ struct FinitePlane
 
 /**
  * Offset/Address/Size: 0x314 | 0x8021D718 | size: 0x3B0
+ * TODO: 99.49% match - r29/r31 and r30/r31 register swap for sp18 pointer temporaries
  */
 void dFinitePlaneAABB(dxGeom* geomID, float* aabb)
 {
     dVector3 sp18[4];
     dVector3 sp8;
 
-    f32* var_r31;
-    f32* var_r3;
-    f32 temp_f1;
-    f32 temp_f1_10;
-    f32 temp_f1_11;
-    f32 temp_f1_12;
-    f32 temp_f1_2;
-    f32 temp_f1_3;
-    f32 temp_f1_4;
-    f32 temp_f1_5;
-    f32 temp_f1_6;
-    f32 temp_f1_7;
-    f32 temp_f1_8;
-    f32 temp_f1_9;
-    f32 plane_param;
-    f32 temp_f27_2;
-    f32 plane_d;
-    f32 plane_c;
-    f32 plane_b;
     f32 plane_a;
-    s32 var_ctr;
-    s32 var_ctr_2;
+    f32 plane_b;
+    f32 plane_c;
+    f32 plane_d;
     u32 plane_flag;
-
+    f32 plane_param;
     float* rotation;
     float* position;
-
     FinitePlane* planeData;
+    f32* ptr;
+    int i;
 
     planeData = (FinitePlane*)dGeomGetClassData(geomID);
     plane_a = planeData->a;
@@ -65,7 +49,6 @@ void dFinitePlaneAABB(dxGeom* geomID, float* aabb)
     dVector3Add(sp18[0], position);
 
     dVector3Set(sp8, plane_a, plane_d, 0.0f);
-    // var_r31 = &sp28;
     dMultiplyMatrix3Vector3(sp18[1], rotation, sp8, 0);
     dVector3Add(sp18[1], position);
 
@@ -84,95 +67,59 @@ void dFinitePlaneAABB(dxGeom* geomID, float* aabb)
     aabb[4] = sp18[0][2];
     aabb[5] = sp18[0][2];
 
-    var_r3 = sp18[1];
-    for (int i = 3; i != 0; i--)
+    ptr = sp18[1];
+    for (i = 3; i != 0; i--)
     {
-        temp_f1 = var_r3[0];
-        if (temp_f1 < aabb[0])
-        {
-            aabb[0] = temp_f1;
-        }
-        temp_f1_2 = var_r3[0];
-        if (temp_f1_2 > aabb[1])
-        {
-            aabb[1] = temp_f1_2;
-        }
-        temp_f1_3 = var_r3[1];
-        if (temp_f1_3 < aabb[2])
-        {
-            aabb[2] = temp_f1_3;
-        }
-        temp_f1_4 = var_r3[1];
-        if (temp_f1_4 > aabb[3])
-        {
-            aabb[3] = temp_f1_4;
-        }
-        temp_f1_5 = var_r3[2];
-        if (temp_f1_5 < aabb[4])
-        {
-            aabb[4] = temp_f1_5;
-        }
-        temp_f1_6 = var_r3[2];
-        if (temp_f1_6 > aabb[5])
-        {
-            aabb[5] = temp_f1_6;
-        }
-        var_r3 += 4;
+        if (ptr[0] < aabb[0])
+            aabb[0] = ptr[0];
+        if (ptr[0] > aabb[1])
+            aabb[1] = ptr[0];
+        if (ptr[1] < aabb[2])
+            aabb[2] = ptr[1];
+        if (ptr[1] > aabb[3])
+            aabb[3] = ptr[1];
+        if (ptr[2] < aabb[4])
+            aabb[4] = ptr[2];
+        if (ptr[2] > aabb[5])
+            aabb[5] = ptr[2];
+        ptr += 4;
     }
 
     if (plane_flag != 0)
     {
-        temp_f27_2 = -plane_param;
-        dVector3Set(sp8, plane_a, plane_c, temp_f27_2);
+        f32 negParam = -plane_param;
+        dVector3Set(sp8, plane_a, plane_c, negParam);
         dMultiplyMatrix3Vector3(sp18[0], rotation, sp8, 0);
         dVector3Add(sp18[0], position);
 
-        dVector3Set(sp8, plane_a, plane_d, temp_f27_2);
+        dVector3Set(sp8, plane_a, plane_d, negParam);
         dMultiplyMatrix3Vector3(sp18[1], rotation, sp8, 0);
-        dVector3Add(sp18[0], position);
+        dVector3Add(sp18[1], position);
 
-        dVector3Set(sp8, plane_b, plane_d, temp_f27_2);
+        dVector3Set(sp8, plane_b, plane_d, negParam);
         dMultiplyMatrix3Vector3(sp18[2], rotation, sp8, 0);
         dVector3Add(sp18[2], position);
 
-        dVector3Set(sp8, plane_b, plane_c, temp_f27_2);
+        dVector3Set(sp8, plane_b, plane_c, negParam);
         dMultiplyMatrix3Vector3(sp18[3], rotation, sp8, 0);
         dVector3Add(sp18[3], position);
 
-        var_r3 = sp18[1];
-        for (int i = 3; i != 0; i--)
+        ptr = sp18[1];
+        for (i = 3; i != 0; i--)
         {
-            temp_f1 = var_r3[0];
-            if (temp_f1 < aabb[0])
-            {
-                aabb[0] = temp_f1;
-            }
-            temp_f1_2 = var_r3[0];
-            if (temp_f1_2 > aabb[1])
-            {
-                aabb[1] = temp_f1_2;
-            }
-            temp_f1_3 = var_r3[1];
-            if (temp_f1_3 < aabb[2])
-            {
-                aabb[2] = temp_f1_3;
-            }
-            temp_f1_4 = var_r3[1];
-            if (temp_f1_4 > aabb[3])
-            {
-                aabb[3] = temp_f1_4;
-            }
-            temp_f1_5 = var_r3[2];
-            if (temp_f1_5 < aabb[4])
-            {
-                aabb[4] = temp_f1_5;
-            }
-            temp_f1_6 = var_r3[2];
-            if (temp_f1_6 > aabb[5])
-            {
-                aabb[5] = temp_f1_6;
-            }
-            var_r3 += 4;
+            if (ptr[0] < aabb[0])
+                aabb[0] = ptr[0];
+            if (ptr[0] > aabb[1])
+                aabb[1] = ptr[0];
+            if (ptr[1] < aabb[2])
+                aabb[2] = ptr[1];
+            if (ptr[1] > aabb[3])
+                aabb[3] = ptr[1];
+            if (ptr[2] < aabb[4])
+                aabb[4] = ptr[2];
+            if (ptr[2] > aabb[5])
+                aabb[5] = ptr[2];
+            ptr += 4;
         }
     }
 }

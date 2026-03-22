@@ -495,10 +495,10 @@ static void __num2dec_internal(decimal* d, double x)
     {
         int exp;
         double frac = frexp(x, &exp);
-        short num_bits_extract = (short)(DBL_MANT_DIG - __count_trailing_zero(frac));
+        int num_bits_extract = DBL_MANT_DIG - __count_trailing_zero(frac);
         double integer;
         decimal int_d, pow2_d;
-        __two_exp(&pow2_d, (short)(exp - num_bits_extract));
+        __two_exp(&pow2_d, exp - num_bits_extract);
         frac = modf(ldexp(frac, num_bits_extract), &integer);
         __ull2dec(&int_d, (unsigned long long)integer);
         __timesdec(d, &int_d, &pow2_d);

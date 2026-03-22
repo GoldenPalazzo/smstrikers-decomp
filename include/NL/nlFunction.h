@@ -2,6 +2,7 @@
 #define _FEFUNCTION_H_
 
 #include "NL/nlMemory.h"
+#include "types.h"
 
 enum Tag
 {

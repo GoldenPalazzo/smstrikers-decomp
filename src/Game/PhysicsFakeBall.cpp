@@ -29,8 +29,9 @@ ContactType FakePhysicsBall::Contact(PhysicsObject* object, dContact* contact, i
 /**
  * Offset/Address/Size: 0x98 | 0x80137484 | size: 0x3EC
  */
-void FakeBallWorld::FindBallIntercept(const nlVector3&, float, float, nlVector3&, nlVector3&, float&, float&, float)
+bool FakeBallWorld::FindBallIntercept(const nlVector3&, float, float, nlVector3&, nlVector3&, float&, float&, float)
 {
+    return false;
 }
 
 /**

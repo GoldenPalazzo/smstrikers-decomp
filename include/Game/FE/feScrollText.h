@@ -27,7 +27,7 @@ public:
     /* 0x14, */ float m_leftEdge;
     /* 0x18, */ float m_msgTime;
     /* 0x1C, */ unsigned short m_textBuffer[256];
-    /* 0x21C */ Function<void*> m_messageFinishedCB;
+    /* 0x21C */ Function<FnVoidVoid> m_messageFinishedCB;
     /* 0x224 */ unsigned char m_visible;
     /* 0x228 */ nlFont* m_textFont;
 }; // total size: 0x22C

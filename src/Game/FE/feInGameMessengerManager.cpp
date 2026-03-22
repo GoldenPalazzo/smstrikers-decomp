@@ -85,7 +85,8 @@ void FEInGameMessengerManager::EnterNewTimeState(FEInGameMessengerManager::eTime
  */
 FEInGameMessengerManager::~FEInGameMessengerManager()
 {
-    FORCE_DONT_INLINE;
+    Function<FnVoidVoid> cb;
+    m_messenger->SetMessageFinishedCB(cb);
 }
 
 // /**

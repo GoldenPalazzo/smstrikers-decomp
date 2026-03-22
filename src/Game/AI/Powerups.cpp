@@ -1372,8 +1372,8 @@ void Bobomb::Update(float dt)
 
 /**
  * Offset/Address/Size: 0x80 | 0x8005A96C | size: 0x3A8
- * TODO: 98.64% match - min-selection branch layout differs: target has bge+b+fmr(intermediate)+fmr
- *       pattern while compiler generates bge+fmr+b+fmr (direct assignment to t in both branches)
+ * TODO: 99.89% match - 4 register diffs at 0x29c-0x2b0: frsp dest register f0 vs f1,
+ *       cascading to maxZSpeed load/compare/store registers. MWCC ternary compiler state artifact.
  */
 void Bobomb::ThrowAt(cFielder*, Bowser*)
 {
@@ -1414,14 +1414,7 @@ skip_anticipation:
     {
         if (nNumSolutions == 2)
         {
-            if (pSolutions[0] < pSolutions[1])
-            {
-                t = pSolutions[0];
-            }
-            else
-            {
-                t = pSolutions[1];
-            }
+            t = (pSolutions[0] < pSolutions[1]) ? pSolutions[0] : pSolutions[1];
         }
         else
         {
@@ -1482,7 +1475,7 @@ skip_anticipation:
 
         v3BobombVelocity.f.x = (targetX - m_v3Position.f.x) / t;
         v3BobombVelocity.f.y = (targetY - m_v3Position.f.y) / t;
-        v3BobombVelocity.f.z = -((0.5f * m_pPhysicsObject->m_gravity) * t);
+        v3BobombVelocity.f.z = -(t * (0.5f * m_pPhysicsObject->m_gravity));
 
         if (v3BobombVelocity.f.z > g_pGame->m_pGameTweaks->fBobombMaxZSpeed)
         {
@@ -1497,7 +1490,7 @@ skip_anticipation:
         dy = v3TargetPos.f.y - m_v3Position.f.y;
         dx = v3TargetPos.f.x - m_v3Position.f.x;
         dz = v3TargetPos.f.z - m_v3Position.f.z;
-        float invDist = nlRecipSqrt((dy * dy) + (dx * dx) + (dz * dz), true);
+        float invDist = nlRecipSqrt((dx * dx) + (dy * dy) + (dz * dz), true);
         float speed = g_pGame->m_pGameTweaks->fBobombSpeed;
         nlVector3 v3BobombVelocity;
 

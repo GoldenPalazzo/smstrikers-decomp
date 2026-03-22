@@ -663,6 +663,51 @@ void AudioLoader::PlayFEMenuMusic()
  */
 void AudioLoader::PlayLoadLoopMusic()
 {
+    if (gbDisableAudio || !gbStream)
+    {
+        return;
+    }
+
+    AudioStreamTrack::TrackManagerBase* pTrackMgr = g_pTrackManager;
+    AudioStreamTrack::StreamTrack* track = pTrackMgr->GetTrack(nlStringLowerHash("FE"));
+    track->Stop(0);
+
+    if (GetConfigBool(Config::Global(), "LoadLoopMusicDisable", false))
+    {
+        return;
+    }
+
+    if (gbDisableAudio)
+    {
+        return;
+    }
+
+    if (!gbStream)
+    {
+        return;
+    }
+
+    char var_68[64];
+    nlSNPrintf(var_68, 64, "%s/%s", "FE_Load_Loop", "Volume");
+    float volume = GetConfigFloat(g_FEStreamConfig, var_68, 0.0f);
+    volume /= 100.0f;
+
+    nlSNPrintf(var_68, 64, "%s/%s", "FE_Load_Loop", "FadeIn");
+    unsigned long fadeIn = GetConfigInt(g_FEStreamConfig, var_68, 0);
+    unsigned long interruptFadeOut = GetConfigInt(g_FEStreamConfig, "InterruptFadeOut", 0);
+
+    if (volume > 0.0f)
+    {
+        AudioStreamTrack::TrackManagerBase* pTrackMgr = g_pTrackManager;
+        AudioStreamTrack::StreamTrack* track = pTrackMgr->GetTrack(nlStringLowerHash("FE"));
+        track->PlayStream(nlStringLowerHash("FE_Load_Loop"), volume, true, fadeIn, interruptFadeOut, "", Audio::MasterVolume::VG_Music);
+    }
+    else
+    {
+        AudioStreamTrack::TrackManagerBase* pTrackMgr = g_pTrackManager;
+        AudioStreamTrack::StreamTrack* track = pTrackMgr->GetTrack(nlStringLowerHash("FE"));
+        track->Stop(interruptFadeOut);
+    }
 }
 
 /**

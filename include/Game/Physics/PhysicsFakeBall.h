@@ -23,7 +23,7 @@ struct BallCacheInfo
 class FakeBallWorld
 {
 public:
-    static void FindBallIntercept(const nlVector3&, float, float, nlVector3&, nlVector3&, float&, float&, float);
+    static bool FindBallIntercept(const nlVector3&, float, float, nlVector3&, nlVector3&, float&, float&, float);
     static void GetNextBallPosition(nlVector3&);
     static void ResetBallIterator();
     static void GetPredictedPosAtDistance(float, nlVector3&, nlVector3&);

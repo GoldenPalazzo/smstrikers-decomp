@@ -59,6 +59,14 @@ class Variant
 public:
     Variant() { Reset(); };
 
+    template <typename T>
+    Variant(eVariantType type, const T& value)
+    {
+        Reset();
+        *(T*)&mData = value;
+        mType = type;
+    }
+
     virtual void Reset()
     {
         mType = FT_UNSPECIFIED;

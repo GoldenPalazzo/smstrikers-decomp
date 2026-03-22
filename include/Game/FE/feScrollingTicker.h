@@ -22,7 +22,7 @@ public:
     void OpenMessenger();
     void Update(float);
     void SetDisplayMessage(const BasicString<unsigned short, Detail::TempStringAllocator>&);
-    void SetMessageFinishedCB(const Function<void*>& cb);
+    void SetMessageFinishedCB(const Function<FnVoidVoid>& cb);
     void SceneCreated();
     ~ScrollingTickerScene();
     ScrollingTickerScene();
@@ -46,7 +46,7 @@ public:
     /* 0x07C */ TLInstance* m_leftBall;
     /* 0x080 */ TLInstance* m_rightBall;
     /* 0x084 */ TLInstance* m_backRectangle;
-    /* 0x088 */ Function<void*> m_cbFunc;
+    /* 0x088 */ Function<FnVoidVoid> m_cbFunc;
     /* 0x090 */ FEScrollText* m_textScroller;
     /* 0x094 */ FETweenManager m_pFETweenManager;
 }; // total size: 0xCC

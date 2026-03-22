@@ -779,12 +779,16 @@ GLRenderList::GLRenderList()
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x801DBA94 | size: 0x3C
-//  */
-// void nlWalkDLRing<DLListEntry<const glModelPacket*>, WalkHelper<const glModelPacket*, DLListEntry<const glModelPacket*>, PacketCallbackManager>>(DLListEntry<const glModelPacket*>*, WalkHelper<const glModelPacket*, DLListEntry<const glModelPacket*>, PacketCallbackManager>*, void (WalkHelper<const glModelPacket*, DLListEntry<const glModelPacket*>, PacketCallbackManager>::*)(DLListEntry<const glModelPacket*>*))
-// {
-// }
+/**
+ * Offset/Address/Size: 0x0 | 0x801DBA94 | size: 0x3C
+ * TODO: 96% match - stw LR save scheduling differs by one slot
+ * (target emits first lwz from callbackFunc before stw r0,0x24(r1)).
+ */
+typedef WalkHelper<const glModelPacket*, DLListEntry<const glModelPacket*>, PacketCallbackManager> PacketWalkHelper_t;
+template void nlWalkDLRing<DLListEntry<const glModelPacket*>, PacketWalkHelper_t>(
+    DLListEntry<const glModelPacket*>* head,
+    PacketWalkHelper_t* callback,
+    void (PacketWalkHelper_t::*callbackFunc)(DLListEntry<const glModelPacket*>*));
 
 /**
  * Offset/Address/Size: 0x3C | 0x801DBAD0 | size: 0x3C

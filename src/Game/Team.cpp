@@ -896,9 +896,10 @@ int MostDefensivePlayer(const void* a, const void* b)
 
 /**
  * Offset/Address/Size: 0x120 | 0x800644CC | size: 0x3B0
- * TODO: 96.93% match - register allocation diffs, fcmpu/fmuls operand order,
- *       rlwinm mask diff, instruction scheduling (0.0f load placement).
- *       Known -inline deferred compiler behavior difference.
+ * TODO: 97.99% match - register allocation diffs (r24-r30 swapped vs target),
+ *       fmuls/fmadds commutative operand order, rlwinm mask diff, 1 missing lfs
+ *       for fBallOwn2 (compiler reuses f31 instead of reloading 0.0f).
+ *       Root cause: context-dependent register allocation in -inline deferred mode.
  */
 void cTeam::AssignMarks(bool bForceReMark)
 {
@@ -975,7 +976,7 @@ void cTeam::AssignMarks(bool bForceReMark)
                             fMax = fReceiving;
                         }
 
-                        if (fMax != 0.0f)
+                        if (fMax)
                         {
                             bNeedsMark = false;
                             fConfidence = fNormDist * 0.5f + fDownfieldMax * 0.5f;
@@ -983,7 +984,7 @@ void cTeam::AssignMarks(bool bForceReMark)
                         else
                         {
                             float fChasing = ChasingBall(pOppFielder);
-                            if (fChasing != 0.0f)
+                            if (fChasing)
                             {
                                 float fIntercept = AbleToInterceptBall(pMyFielder);
                                 bNeedsMark = false;
@@ -994,7 +995,7 @@ void cTeam::AssignMarks(bool bForceReMark)
                 }
 
                 float fBallOwn2 = BallOwner(pOppFielder);
-                if (fBallOwn2 != 0.0f)
+                if (fBallOwn2)
                 {
                     fConfidence *= 2.0f;
                 }
@@ -1004,7 +1005,7 @@ void cTeam::AssignMarks(bool bForceReMark)
                     fConfidence = fNormDist * 0.25f + fDownfieldMax * 0.75f;
                 }
 
-                if (Incapacitated(pMyFielder) != 0.0f)
+                if (Incapacitated(pMyFielder))
                 {
                     fConfidence *= 0.5f;
                 }
@@ -1028,7 +1029,7 @@ void cTeam::AssignMarks(bool bForceReMark)
             if (pBallOwner->m_pTeam != this)
             {
                 cFielder* pMarker = g_pBall->GetOwnerFielder()->m_pMarker;
-                if (Incapacitated(pMarker) != 0.0f)
+                if (Incapacitated(pMarker))
                 {
                     pBallOwner = g_pBall->GetOwnerFielder();
                     cFielder* pOldMarker = pBallOwner->m_pMarker;

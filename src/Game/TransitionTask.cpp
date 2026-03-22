@@ -37,10 +37,21 @@
 #include "Game/Game.h"
 #include "Game/Drawable/DrawableModel.h"
 #include "NL/nlMemory.h"
+#include "NL/MemAlloc.h"
 #include "NL/gl/gl.h"
 #include "NL/gl/glView.h"
 #include "NL/glx/glxSwap.h"
 #include "NL/plat/plataudio.h"
+#include "NL/gl/glMemory.h"
+#include "NL/nlLocalization.h"
+#include "Game/GameSceneManager.h"
+#include "Game/FE/feMusic.h"
+#include "Game/FE/feAnimModelManager.h"
+#include "Game/FE/feHelpFuncs.h"
+#include "Game/SH/SHSaveLoad.h"
+#include "Game/SH/SHMainMenu.h"
+#include "Game/SH/SHCupHub.h"
+#include "Game/Sys/debug.h"
 
 struct LocalizationObj
 {
@@ -55,7 +66,7 @@ extern LocalizationObj* g_pLocalization;
 int nlSNPrintf(char*, unsigned long, const char*, ...);
 
 extern unsigned char g_bFrameStatsOnDisk;
-static unsigned long long s_FontResourceMark;
+static unsigned long long s_FontResourceMark = -1;
 extern unsigned char gSebringLoadPackageToVirtualMemory;
 extern PhysicsLoader ThePhysicsLoader;
 
@@ -64,6 +75,9 @@ bool fxParticleShutdown();
 bool fxUnloadGroups();
 bool fxUnloadTemplates();
 void glResourceRelease(unsigned long long);
+
+extern nlLocalization::nlLanguage g_Language;
+extern bool g_e3_Build;
 
 // /**
 //  * Offset/Address/Size: 0x0 | 0x801731FC | size: 0x10
@@ -75,9 +89,9 @@ void glResourceRelease(unsigned long long);
 /**
  * Offset/Address/Size: 0xC | 0x801731F8 | size: 0x4
  */
-void TransitionTask::Run(float)
-{
-}
+// void TransitionTask::Run(float)
+// {
+// }
 
 // /**
 //  * Offset/Address/Size: 0x0 | 0x801731EC | size: 0xC
@@ -98,8 +112,8 @@ void TransitionTask::Run(float)
  */
 void LoadFonts()
 {
-    const char* fontFileName1 = "game_font.fnt";
-    const char* fontFileName2 = "fe_font.fnt";
+    const char* fontFileName1 = "fot-rodinprob18";
+    const char* fontFileName2 = "cepoitalic24";
     char langCode[4] = "eng";
 
     unsigned long lang = g_pLocalization->m_Language;
@@ -154,10 +168,10 @@ void LoadFonts()
     char bundlePath2[64];
     char fontName2[64];
 
-    nlSNPrintf(bundlePath1, 64, "fonts/%s/game_font.bnl", langCode);
-    nlSNPrintf(fontName1, 64, "fonts/%s/game_font", langCode);
-    nlSNPrintf(bundlePath2, 64, "fonts/%s/fe_font.bnl", langCode);
-    nlSNPrintf(fontName2, 64, "fonts/%s/fe_font", langCode);
+    nlSNPrintf(bundlePath1, 64, "art/fe/fonts/%sfonttext18.res", langCode);
+    nlSNPrintf(fontName1, 64, "fe/fonts/%sfonttext18", langCode);
+    nlSNPrintf(bundlePath2, 64, "art/fe/fonts/%sfontheading24.res", langCode);
+    nlSNPrintf(fontName2, 64, "fot-rodinprob18", langCode);
 
     nlSingleton<FontManager>::s_pInstance->LoadFont(bundlePath1, fontName1, fontFileName1);
     nlSingleton<FontManager>::s_pInstance->LoadFont(bundlePath2, fontName2, fontFileName2);
@@ -237,8 +251,8 @@ void TransitionTask::DestroyGameState()
     {
         glBeginFrame();
         SetupMatrices();
-        nlSingleton<FEResourceManager>::s_pInstance->Run(1.0f / 30.0f);
-        nlSingleton<FESceneManager>::s_pInstance->Update(1.0f / 30.0f);
+        nlSingleton<FEResourceManager>::s_pInstance->Run(1.0f);
+        nlSingleton<FESceneManager>::s_pInstance->Update(1.0f);
         nlSingleton<FESceneManager>::s_pInstance->RenderActiveScenes();
         glFinish();
         glEndFrame();
@@ -355,7 +369,144 @@ void TransitionTask::DestroyGameState()
 
 /**
  * Offset/Address/Size: 0x0 | 0x801715D0 | size: 0x4BC
+ * TODO: 96.85% match - "---\n" string uses sda21 addressing in scratch vs ha/lo in target (linker section placement)
  */
 void TransitionTask::InitializeFEState()
 {
+    m_TransitionState = eTS_Initializing;
+
+    tDebugPrintManager::Print(DC_MEMORY, "--- InitializeFEState ---\n");
+    tDebugPrintManager::Print(DC_MEMORY, "Total free memory: %d\n", StandardAllocator.TotalFreeMemory());
+    tDebugPrintManager::Print(DC_MEMORY, "Largest free block: %d\n", StandardAllocator.LargestFreeBlock());
+    tDebugPrintManager::Print(DC_MEMORY, "---\n");
+
+    s_FontResourceMark = glResourceMark();
+    ((nlLocalization*)g_pLocalization)->Load(g_Language, false);
+    EnableAutoPressed();
+
+    if (nlSingleton<FontManager>::s_pInstance == NULL)
+    {
+        nlSingleton<FontManager>::s_pInstance = new (nlMalloc(sizeof(FontManager), 8, false)) FontManager();
+    }
+
+    LoadFonts();
+
+    if (nlSingleton<FEResourceManager>::s_pInstance == NULL)
+    {
+        nlSingleton<FEResourceManager>::s_pInstance = new (nlMalloc(sizeof(FEResourceManager), 8, false)) FEResourceManager();
+    }
+
+    nlSingleton<FEResourceManager>::s_pInstance->Initialize();
+    nlSingleton<FEResourceManager>::s_pInstance->LoadPermanentResourceBundle("art/fe/fepermanent.res");
+
+    if (nlSingleton<FESceneManager>::s_pInstance == NULL)
+    {
+        nlSingleton<FESceneManager>::s_pInstance = new (nlMalloc(sizeof(FESceneManager), 8, false)) FESceneManager();
+    }
+
+    nlSingleton<FESceneManager>::s_pInstance->m_uDefaultRenderView = 31;
+
+    nlSingleton<GameInfoManager>::s_pInstance->OnPostGameState();
+
+    if (nlSingleton<GameSceneManager>::s_pInstance == NULL)
+    {
+        nlSingleton<GameSceneManager>::s_pInstance = new (nlMalloc(sizeof(GameSceneManager), 8, false)) GameSceneManager();
+    }
+
+    if (nlSingleton<FEAnimModelManager>::s_pInstance == NULL)
+    {
+        nlSingleton<FEAnimModelManager>::s_pInstance = new (nlMalloc(sizeof(FEAnimModelManager), 8, false)) FEAnimModelManager();
+    }
+
+    nlSingleton<FEAnimModelManager>::s_pInstance->Initialize();
+
+    FEMusic::ResetCurrentFEStreamHash();
+
+    static bool gAlreadyBooted;
+
+    if (!gAlreadyBooted)
+    {
+        gAlreadyBooted = true;
+        if (SaveLoadScene::IsIOEnabled())
+        {
+            SaveLoadScene* scene = (SaveLoadScene*)nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_SHOULD_LOAD_OR_SAVE, (ScreenMovement)0, false);
+            scene->mNextScene = SCENE_POPUP_MENU;
+        }
+        else
+        {
+            nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_POPUP_MENU, (ScreenMovement)0, false);
+        }
+    }
+    else
+    {
+        AudioLoader::LoadFE(true);
+
+        if (g_e3_Build)
+        {
+            for (int i = 0; i < 4; i++)
+            {
+                nlSingleton<GameInfoManager>::s_pInstance->SetPlayingSide(i, -1);
+            }
+        }
+
+        if (nlSingleton<GameInfoManager>::s_pInstance->IsInDemoMode())
+        {
+            nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_TITLE, (ScreenMovement)0, false);
+            nlSingleton<GameInfoManager>::s_pInstance->SetMode(GameInfoManager::GM_DEMO);
+        }
+        else if (nlSingleton<GameInfoManager>::s_pInstance->IsInCupOrTournamentMode())
+        {
+            GameInfoManager* pGameInfo = nlSingleton<GameInfoManager>::s_pInstance;
+            if (pGameInfo->IsInTournamentMode())
+            {
+                pGameInfo->IncreaseGameNumber(true);
+                while (pGameInfo->GetCurrentRoundNumber() != -5)
+                {
+                    if (pGameInfo->DetermineNextMatchups(0x1b))
+                        break;
+                    pGameInfo->IncreaseRoundNumber();
+                }
+
+                CupHubScene* scene = (CupHubScene*)nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_TOURNAMENT_STANDINGS, (ScreenMovement)0, false);
+                scene->mDoAutoSave = true;
+                FEMusic::StartStreamIfDifferent(4);
+            }
+            else
+            {
+                pGameInfo->OnPostCupGameState();
+                if (nlSingleton<GameInfoManager>::s_pInstance->IsInRegularCupMode())
+                {
+                    FEMusic::StartStreamIfDifferent(2);
+                }
+                else if (nlSingleton<GameInfoManager>::s_pInstance->IsInSuperCupMode())
+                {
+                    FEMusic::StartStreamIfDifferent(3);
+                }
+            }
+        }
+        else
+        {
+            if (nlSingleton<GameInfoManager>::s_pInstance->mGoToChooseCaptains)
+            {
+                nlSingleton<GameInfoManager>::s_pInstance->mGoToChooseCaptains = false;
+                nlSingleton<GameInfoManager>::s_pInstance->SetMode(GameInfoManager::GM_FRIENDLY);
+                nlSingleton<GameInfoManager>::s_pInstance->ResetPlayingSides();
+                nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_CHOOSE_CAPTAINS, (ScreenMovement)0, false);
+            }
+            else
+            {
+                nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_MAIN_MENU, (ScreenMovement)0, false);
+                SHMainMenu::mSnapMenuIntoPosition = true;
+                SHMainMenu::mLastMenuItem = 0;
+            }
+            FEMusic::StartStreamIfDifferent(0);
+        }
+    }
+
+    tDebugPrintManager::Print(DC_MEMORY, "--- InitializeFEState end ---\n");
+    tDebugPrintManager::Print(DC_MEMORY, "Total free memory: %d\n", StandardAllocator.TotalFreeMemory());
+    tDebugPrintManager::Print(DC_MEMORY, "Largest free block: %d\n", StandardAllocator.LargestFreeBlock());
+    tDebugPrintManager::Print(DC_MEMORY, "---\n");
+
+    m_TransitionState = eTS_InState;
 }

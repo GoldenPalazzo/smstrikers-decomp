@@ -16,7 +16,7 @@ public:
     virtual const char* GetName() { return "Begin Frame"; };
     virtual void Run(float dt);
 
-    static int s_FramerateLocked;
+    static u8 s_FramerateLocked;
 };
 
 // class Config

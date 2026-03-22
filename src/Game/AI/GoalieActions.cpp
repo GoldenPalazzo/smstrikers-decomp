@@ -712,7 +712,7 @@ void Goalie::ActionPreCrouch(float deltaTime)
 
 /**
  * Offset/Address/Size: 0xF9C | 0x8004F4D8 | size: 0x3C0
- * TODO: Work in progress
+ * TODO: 98.81% match - f4/f6, f5/f7 register swap in distance section (CalculateDistanceSquared2D interleaving)
  */
 void Goalie::ActionPursueBallCarrier(float)
 {
@@ -742,17 +742,17 @@ void Goalie::ActionPursueBallCarrier(float)
         unsigned short desiredAngle;
         FindDesiredGoaliePosition(desiredPos, desiredDir, desiredOffset, desiredAngle, NULL);
 
-        float thresholdDist;
-        float ballDistSq = ballDelta.GetLengthSq3D();
-
         float pickupDistance = mpLooseBallInfo->mfPickupDistance;
         float pounceRange = 0.5f * pickupDistance;
-
-        if (ballDistSq > (pickupDistance * pickupDistance))
+        float ballDistSq = ballDelta.GetLengthSq3D();
+        float pickupDistSq = pickupDistance * pickupDistance;
+        float pounceRangeSq = pounceRange * pounceRange;
+        float thresholdDist;
+        if (ballDistSq > pickupDistSq)
         {
             thresholdDist = pickupDistance;
         }
-        else if (ballDistSq < (pounceRange * pounceRange))
+        else if (ballDistSq < pounceRangeSq)
         {
             thresholdDist = pounceRange;
         }
@@ -763,14 +763,13 @@ void Goalie::ActionPursueBallCarrier(float)
 
         float scale = -thresholdDist / nlSqrt(desiredDir.GetLengthSq3D(), true);
 
-        nlVector3 adjustedPos;
-        nlVec3Set(adjustedPos,
+        nlVec3Set(desiredPos,
             (scale * desiredDir.f.x) + desiredOffset.f.x,
             (scale * desiredDir.f.y) + desiredOffset.f.y,
             (scale * desiredDir.f.z) + desiredOffset.f.z);
 
         nlVector3 moveDir;
-        nlVec3Sub(moveDir, adjustedPos, m_v3Position);
+        nlVec3Sub(moveDir, desiredPos, m_v3Position);
 
         float dotProduct = (moveDir.f.x * ballDelta.f.x) + (moveDir.f.y * ballDelta.f.y) + (moveDir.f.z * ballDelta.f.z);
 
@@ -780,22 +779,22 @@ void Goalie::ActionPursueBallCarrier(float)
         }
 
         float angle = nlATan2f(ballDelta.f.y, ballDelta.f.x);
-        m_aDesiredFacingDirection = (u16)(s32)(10430.378f * angle); // @1734 constant
+        m_aDesiredFacingDirection = (u16)(s32)(10430.378f * angle);
 
         float pickupDistanceSq = mpLooseBallInfo->mfPickupDistance * mpLooseBallInfo->mfPickupDistance;
 
         nlVector3 opponentLocalPos;
         GetLocalPoint(opponentLocalPos, pOwnerFielder->m_v3Position, m_v3Position, m_aActualFacingDirection);
 
+        float dist3Sq = mv3LocalContactPosition.GetLengthSq2D();
         float dist1Sq = CalculateDistanceSquared2D(mv3LocalContactPosition, mpLooseBallInfo->mv3PickupPos);
         float dist2Sq = CalculateDistanceSquared2D(opponentLocalPos, mpLooseBallInfo->mv3PickupPos);
-        float dist3Sq = mv3LocalContactPosition.GetLengthSq2D();
         float dist4Sq = CalculateDistanceSquared2D(pOwnerFielder->m_v3Position, m_v3Position);
 
         if ((mv3LocalContactPosition.f.x < -0.35f) || (dist1Sq > 0.36f && dist2Sq > 0.36f && dist3Sq > pickupDistanceSq && dist4Sq > pickupDistanceSq))
         {
             s16 angleDiff = (s16)(m_aDesiredFacingDirection - m_aActualFacingDirection);
-            int animID = ChooseRunAnim(angleDiff, ballPos, 1.0f); // @1577 constant
+            int animID = ChooseRunAnim(angleDiff, ballPos, 1.0f);
             PlayNewAnim(animID);
 
             int opponentActionState = pOwnerFielder->m_eActionState;

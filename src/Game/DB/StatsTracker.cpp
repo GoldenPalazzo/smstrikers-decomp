@@ -267,15 +267,226 @@ void StatsTracker::TrackStat(ePlayerStats, int, int, int, int, int, int)
 
 /**
  * Offset/Address/Size: 0x3708 | 0x80184C68 | size: 0x7E8
+ * TODO: 56.94% match - compiler version issue: target uses GC/2.0 which generates
+ * xor/srawi/and/subf/srwi for unsigned comparison, but decomp.me only has
+ * mwcc_247_92 (GC/1.3.2) which generates subf/srwi. This 3-instruction difference
+ * per comparison (x32 branches) accounts for ~19% of the function.
+ * Also: register allocation differs (r29 not used as callee-saved for shouldSwap).
  */
-void StatsTracker::GetSortedStats(PlayerStats*, int, int*, int, ePlayerStats, eSortOrder)
+void StatsTracker::GetSortedStats(PlayerStats* source, int numsource, int* dest, int numelements, ePlayerStats statType, eSortOrder sortOrder)
 {
+    int tempsorted[66];
+    int i;
+
+    for (i = 0; i < numsource; i++)
+    {
+        tempsorted[i] = i;
+    }
+
+    unsigned char swapped;
+    unsigned char shouldSwap;
+    do
+    {
+        swapped = 0;
+        for (i = 0; i < numsource; i++)
+        {
+            if (i + 1 >= numsource)
+                break;
+
+            shouldSwap = 0;
+
+            switch (statType)
+            {
+            case STATS_SHOTS_ON_GOAL:
+            {
+                unsigned short a = source[tempsorted[i]].mNumShotsOnGoal;
+                unsigned short b = source[tempsorted[i + 1]].mNumShotsOnGoal;
+                if (sortOrder == SORT_DESCENDING)
+                    shouldSwap = a < b;
+                else
+                    shouldSwap = b < a;
+                break;
+            }
+            case STATS_GOALS_FOR:
+            {
+                unsigned short a = source[tempsorted[i]].mNumGoalsFor;
+                unsigned short b = source[tempsorted[i + 1]].mNumGoalsFor;
+                if (sortOrder == SORT_DESCENDING)
+                    shouldSwap = a < b;
+                else
+                    shouldSwap = b < a;
+                break;
+            }
+            case STATS_GOALS_AGAINST:
+            {
+                unsigned short a = source[tempsorted[i]].mNumGoalsAgainst;
+                unsigned short b = source[tempsorted[i + 1]].mNumGoalsAgainst;
+                if (sortOrder == SORT_DESCENDING)
+                    shouldSwap = a < b;
+                else
+                    shouldSwap = b < a;
+                break;
+            }
+            case STATS_GOALS_FOR_STS:
+            {
+                unsigned short a = source[tempsorted[i]].mNumShootToScoreGoals;
+                unsigned short b = source[tempsorted[i + 1]].mNumShootToScoreGoals;
+                if (sortOrder == SORT_DESCENDING)
+                    shouldSwap = a < b;
+                else
+                    shouldSwap = b < a;
+                break;
+            }
+            case STATS_ASSISTS:
+            {
+                unsigned short a = source[tempsorted[i]].mNumAssists;
+                unsigned short b = source[tempsorted[i + 1]].mNumAssists;
+                if (sortOrder == SORT_DESCENDING)
+                    shouldSwap = a < b;
+                else
+                    shouldSwap = b < a;
+                break;
+            }
+            case STATS_FOULS:
+            {
+                unsigned short a = source[tempsorted[i]].mNumFouls;
+                unsigned short b = source[tempsorted[i + 1]].mNumFouls;
+                if (sortOrder == SORT_DESCENDING)
+                    shouldSwap = a < b;
+                else
+                    shouldSwap = b < a;
+                break;
+            }
+            case STATS_WIN:
+            case STATS_OT_WIN:
+            case STATS_LOSS:
+            case STATS_OT_LOSS:
+                break;
+            case STATS_POWERUPS_USED:
+            {
+                unsigned short a = source[tempsorted[i]].mNumPowerupsUsed;
+                unsigned short b = source[tempsorted[i + 1]].mNumPowerupsUsed;
+                if (sortOrder == SORT_DESCENDING)
+                    shouldSwap = a < b;
+                else
+                    shouldSwap = b < a;
+                break;
+            }
+            case STATS_POWERUPS_HIT:
+            {
+                unsigned short a = source[tempsorted[i]].mNumPowerupsHit;
+                unsigned short b = source[tempsorted[i + 1]].mNumPowerupsHit;
+                if (sortOrder == SORT_DESCENDING)
+                    shouldSwap = a < b;
+                else
+                    shouldSwap = b < a;
+                break;
+            }
+            case STATS_PASSES_MADE:
+            {
+                unsigned short a = source[tempsorted[i]].mNumPassesMade;
+                unsigned short b = source[tempsorted[i + 1]].mNumPassesMade;
+                if (sortOrder == SORT_DESCENDING)
+                    shouldSwap = a < b;
+                else
+                    shouldSwap = b < a;
+                break;
+            }
+            case STATS_PASSES_RECEIVED:
+            {
+                unsigned short a = source[tempsorted[i]].mNumPassesMade;
+                unsigned short b = source[tempsorted[i + 1]].mNumPassesMade;
+                if (sortOrder == SORT_DESCENDING)
+                    shouldSwap = a < b;
+                else
+                    shouldSwap = b < a;
+                break;
+            }
+            case STATS_PASSES_INTERCEPTED:
+            {
+                unsigned short a = source[tempsorted[i]].mNumPassesIntercepted;
+                unsigned short b = source[tempsorted[i + 1]].mNumPassesIntercepted;
+                if (sortOrder == SORT_DESCENDING)
+                    shouldSwap = a < b;
+                else
+                    shouldSwap = b < a;
+                break;
+            }
+            case STATS_POSSESION_TIME:
+            {
+                unsigned long a = source[tempsorted[i]].mBallPossessionTime;
+                unsigned long b = source[tempsorted[i + 1]].mBallPossessionTime;
+                if (sortOrder == SORT_DESCENDING)
+                    shouldSwap = a < b;
+                else
+                    shouldSwap = b < a;
+                break;
+            }
+            case STATS_GAMES_PLAYED:
+            {
+                unsigned short a = source[tempsorted[i]].mNumGamesPlayed;
+                unsigned short b = source[tempsorted[i + 1]].mNumGamesPlayed;
+                if (sortOrder == SORT_DESCENDING)
+                    shouldSwap = a < b;
+                else
+                    shouldSwap = b < a;
+                break;
+            }
+            case STATS_STEALS:
+            {
+                unsigned short a = source[tempsorted[i]].mNumSteals;
+                unsigned short b = source[tempsorted[i + 1]].mNumSteals;
+                if (sortOrder == SORT_DESCENDING)
+                    shouldSwap = a < b;
+                else
+                    shouldSwap = b < a;
+                break;
+            }
+            case STATS_BUTTON_PRESSES:
+            {
+                unsigned long a = source[tempsorted[i]].mNumButtonPresses;
+                unsigned long b = source[tempsorted[i + 1]].mNumButtonPresses;
+                if (sortOrder == SORT_DESCENDING)
+                    shouldSwap = a < b;
+                else
+                    shouldSwap = b < a;
+                break;
+            }
+            case STATS_HITS_MADE:
+            {
+                unsigned short a = source[tempsorted[i]].mNumHitsMade;
+                unsigned short b = source[tempsorted[i + 1]].mNumHitsMade;
+                if (sortOrder == SORT_DESCENDING)
+                    shouldSwap = a < b;
+                else
+                    shouldSwap = b < a;
+                break;
+            }
+            }
+
+            if (shouldSwap)
+            {
+                int temp = tempsorted[i + 1];
+                tempsorted[i + 1] = tempsorted[i];
+                tempsorted[i] = temp;
+                swapped = 1;
+            }
+        }
+    } while (swapped);
+
+    for (i = 0; i < numelements; i++)
+    {
+        dest[i] = tempsorted[i];
+    }
+}
+
+static inline unsigned int IsHumanControlled(u16 humanTeams, eTeamID teamIdx)
+{
+    return (humanTeams & (1 << teamIdx)) != 0;
 }
 
 /**
  * Offset/Address/Size: 0x3340 | 0x801848A0 | size: 0x3C8
- * TODO: 99.73% match - 11 register-only diffs in e8-118 (r4/r6 swap for
- *       constant 1 vs slwi temp, MWCC allocator coloring choice).
  */
 void StatsTracker::GetSortedTeamStats(TeamStats* source, int numsource, int* dest, int numelements)
 {
@@ -294,9 +505,9 @@ void StatsTracker::GetSortedTeamStats(TeamStats* source, int numsource, int* des
                 break;
             u16 humanTeams = nlSingleton<GameInfoManager>::s_pInstance->mCurrentCup->mHumanTeams;
             int a = source[tempsorted[i]].mNumPoints;
-            unsigned int humanA = (humanTeams & (1 << source[tempsorted[i]].mTeamIndex)) != 0;
             int b = source[tempsorted[i + 1]].mNumPoints;
-            unsigned int humanB = (humanTeams & (1 << source[tempsorted[i + 1]].mTeamIndex)) != 0;
+            unsigned int humanA = IsHumanControlled(humanTeams, source[tempsorted[i]].mTeamIndex);
+            unsigned int humanB = IsHumanControlled(humanTeams, source[tempsorted[i + 1]].mTeamIndex);
             if (a < b
                 || (a == b && a != 0 && !humanA && humanB)
                 || (a == b && a == 0 && humanA && !humanB))
@@ -327,9 +538,141 @@ void StatsTracker::GetSortedTeamStats(TeamStats* source, int numsource, int* des
 /**
  * Offset/Address/Size: 0x2E00 | 0x80184360 | size: 0x540
  */
+/**
+ * TODO: 92.4% match - MWCC strength-reduces mFinalScore[homeaway] index
+ * into a persistent register accumulator (extra callee-saved register r24-r31
+ * instead of r25-r31), causing all register assignments to shift by 1.
+ * Target computes mFinalScore index inline (extsh+slwi+addi) each iteration.
+ */
 void StatsTracker::CompileEndOfGameStats()
 {
-    FORCE_DONT_INLINE;
+    int homeAwayIndex[2] = { 0, 0 };
+    eTeamID homeid = mBasicGameInfo->mTeamIndex[0];
+    eTeamID awayid = mBasicGameInfo->mTeamIndex[1];
+    GameInfoManager* gameInfoMgr = nlSingleton<GameInfoManager>::s_pInstance;
+    int numTeams = gameInfoMgr->GetNumPlayingTeams();
+
+    for (int i = 0; i < numTeams; i++)
+    {
+        if (gameInfoMgr->GetTeamStatsByIndex(i).mTeamIndex == homeid)
+        {
+            homeAwayIndex[0] = i;
+        }
+        if (gameInfoMgr->GetTeamStatsByIndex(i).mTeamIndex == awayid)
+        {
+            homeAwayIndex[1] = i;
+        }
+    }
+
+    int tempStat;
+    for (int homeaway = 0; homeaway < 2; homeaway++)
+    {
+        int team = homeAwayIndex[homeaway];
+
+        if (mBasicGameInfo->mFinalScore[homeaway] != -5)
+        {
+            tempStat = mCurrentTeamStats[homeaway].mPlayerTotalStats.mNumShotsOnGoal;
+            gameInfoMgr->pGetTeamStatsByIndex(team)->mPlayerTotalStats.mNumShotsOnGoal += tempStat;
+
+            tempStat = mCurrentTeamStats[homeaway].mPlayerTotalStats.mNumGoalsFor;
+            gameInfoMgr->pGetTeamStatsByIndex(team)->mPlayerTotalStats.mNumGoalsFor += tempStat;
+
+            tempStat = mCurrentTeamStats[homeaway].mPlayerTotalStats.mNumGoalsAgainst;
+            gameInfoMgr->pGetTeamStatsByIndex(team)->mPlayerTotalStats.mNumGoalsAgainst += tempStat;
+
+            tempStat = mCurrentTeamStats[homeaway].mPlayerTotalStats.mNumAssists;
+            gameInfoMgr->pGetTeamStatsByIndex(team)->mPlayerTotalStats.mNumAssists += tempStat;
+
+            tempStat = mCurrentTeamStats[homeaway].mPlayerTotalStats.mNumFouls;
+            gameInfoMgr->pGetTeamStatsByIndex(team)->mPlayerTotalStats.mNumFouls += tempStat;
+
+            tempStat = mCurrentTeamStats[homeaway].mPlayerTotalStats.mNumPowerupsUsed;
+            gameInfoMgr->pGetTeamStatsByIndex(team)->mPlayerTotalStats.mNumPowerupsUsed += tempStat;
+
+            tempStat = mCurrentTeamStats[homeaway].mPlayerTotalStats.mNumPowerupsHit;
+            gameInfoMgr->pGetTeamStatsByIndex(team)->mPlayerTotalStats.mNumPowerupsHit += tempStat;
+
+            tempStat = mCurrentTeamStats[homeaway].mPlayerTotalStats.mNumShootToScoreGoals;
+            gameInfoMgr->pGetTeamStatsByIndex(team)->mPlayerTotalStats.mNumShootToScoreGoals += tempStat;
+
+            tempStat = mCurrentTeamStats[homeaway].mPlayerTotalStats.mNumPassesMade;
+            gameInfoMgr->pGetTeamStatsByIndex(team)->mPlayerTotalStats.mNumPassesMade += tempStat;
+
+            tempStat = mCurrentTeamStats[homeaway].mPlayerTotalStats.mNumPassesReceived;
+            gameInfoMgr->pGetTeamStatsByIndex(team)->mPlayerTotalStats.mNumPassesReceived += tempStat;
+
+            tempStat = mCurrentTeamStats[homeaway].mPlayerTotalStats.mNumPassesIntercepted;
+            gameInfoMgr->pGetTeamStatsByIndex(team)->mPlayerTotalStats.mNumPassesIntercepted += tempStat;
+
+            tempStat = mCurrentTeamStats[homeaway].mPlayerTotalStats.mNumHitsMade;
+            gameInfoMgr->pGetTeamStatsByIndex(team)->mPlayerTotalStats.mNumHitsMade += tempStat;
+
+            tempStat = mCurrentTeamStats[homeaway].mPlayerTotalStats.mNumSteals;
+            gameInfoMgr->pGetTeamStatsByIndex(team)->mPlayerTotalStats.mNumSteals += tempStat;
+
+            tempStat = mCurrentTeamStats[homeaway].mPlayerTotalStats.mNumGoalsOneTimers;
+            gameInfoMgr->pGetTeamStatsByIndex(team)->mPlayerTotalStats.mNumGoalsOneTimers += tempStat;
+
+            gameInfoMgr->pGetTeamStatsByIndex(team)->mPlayerTotalStats.mBallPossessionTime += mCurrentTeamStats[homeaway].mPlayerTotalStats.mBallPossessionTime;
+
+            gameInfoMgr->pGetTeamStatsByIndex(team)->mPlayerTotalStats.mNumButtonPresses += mCurrentTeamStats[homeaway].mPlayerTotalStats.mNumButtonPresses;
+
+            tempStat = mCurrentTeamStats[homeaway].mPlayerTotalStats.mNumSTSAttempts;
+            gameInfoMgr->pGetTeamStatsByIndex(team)->mPlayerTotalStats.mNumSTSAttempts += tempStat;
+
+            gameInfoMgr->pGetTeamStatsByIndex(team)->mPlayerTotalStats.mNumPerfectPasses += mCurrentTeamStats[homeaway].mPlayerTotalStats.mNumPerfectPasses;
+
+            gameInfoMgr->pGetTeamStatsByIndex(team)->mPlayerTotalStats.mNumGamesPlayed++;
+
+            if (nlSingleton<GameInfoManager>::s_pInstance->IsInCupMode())
+            {
+                if (gameInfoMgr->pGetTeamStatsByIndex(team)->mTeamIndex == nlSingleton<GameInfoManager>::s_pInstance->GetUserSelectedCupTeam())
+                {
+                    AddMilestoneUserStat(STATS_GAMES_PLAYED, 1);
+                    AddMilestoneUserStat(STATS_HITS_MADE, mCurrentTeamStats[homeaway].mPlayerTotalStats.mNumHitsMade);
+                    AddMilestoneUserStat(STATS_GOALS_FOR, mCurrentTeamStats[homeaway].mPlayerTotalStats.mNumGoalsFor);
+                    AddMilestoneUserStat(STATS_PERFECT_PASSES, mCurrentTeamStats[homeaway].mPlayerTotalStats.mNumPerfectPasses);
+                    AddMilestoneUserStat(STATS_STS_ATTEMPTS, mCurrentTeamStats[homeaway].mPlayerTotalStats.mNumSTSAttempts);
+                }
+            }
+        }
+        else
+        {
+            mBasicGameInfo->mFinalScore[homeaway] = 0;
+        }
+
+        tempStat = mCurrentTeamStats[homeaway].mNumWins;
+        gameInfoMgr->pGetTeamStatsByIndex(team)->mNumWins += tempStat;
+        tempStat = mCurrentTeamStats[homeaway].mNumLosses;
+        gameInfoMgr->pGetTeamStatsByIndex(team)->mNumLosses += tempStat;
+        tempStat = mCurrentTeamStats[homeaway].mNumOTLosses;
+        gameInfoMgr->pGetTeamStatsByIndex(team)->mNumOTLosses += tempStat;
+        gameInfoMgr->pGetTeamStatsByIndex(team)->mNumPoints += mCurrentTeamStats[homeaway].mNumPoints;
+    }
+
+    for (int i = 0; i < 4; i++)
+    {
+        PlayerStats* us = &nlSingleton<GameInfoManager>::s_pInstance->mUserStats[i];
+        us->mNumShotsOnGoal += mCurrentUserStats[i].mNumShotsOnGoal;
+        us->mNumGoalsFor += mCurrentUserStats[i].mNumGoalsFor;
+        us->mNumGoalsAgainst = mCurrentUserStats[i].mNumGoalsAgainst;
+        us->mNumAssists += mCurrentUserStats[i].mNumAssists;
+        us->mNumFouls += mCurrentUserStats[i].mNumFouls;
+        us->mNumPowerupsUsed += mCurrentUserStats[i].mNumPowerupsUsed;
+        us->mNumPowerupsHit += mCurrentUserStats[i].mNumPowerupsHit;
+        us->mNumShootToScoreGoals += mCurrentUserStats[i].mNumShootToScoreGoals;
+        us->mNumPassesMade += mCurrentUserStats[i].mNumPassesMade;
+        us->mNumPassesReceived += mCurrentUserStats[i].mNumPassesReceived;
+        us->mNumPassesIntercepted += mCurrentUserStats[i].mNumPassesIntercepted;
+        us->mNumHitsMade += mCurrentUserStats[i].mNumHitsMade;
+        us->mNumSteals += mCurrentUserStats[i].mNumSteals;
+        us->mBallPossessionTime += mCurrentUserStats[i].mBallPossessionTime;
+        us->mNumButtonPresses += mCurrentUserStats[i].mNumButtonPresses;
+        us->mNumGoalsOneTimers += mCurrentUserStats[i].mNumGoalsOneTimers;
+        us->mNumSTSAttempts += mCurrentUserStats[i].mNumSTSAttempts;
+        us->mNumPerfectPasses += mCurrentUserStats[i].mNumPerfectPasses;
+        us->mNumGamesPlayed = mCurrentUserStats[i].mNumGamesPlayed;
+    }
 }
 
 /**
@@ -448,8 +791,217 @@ void StatsTracker::SimulateGame()
 /**
  * Offset/Address/Size: 0x2200 | 0x80183760 | size: 0x774
  */
-void StatsTracker::AddStat(ePlayerStats, int, int, int)
+void StatsTracker::AddStat(ePlayerStats stat, int team, int player, int value)
 {
+    switch (stat)
+    {
+    case STATS_SHOTS_ON_GOAL:
+        mCurrentPlayerStats[team][player].mNumShotsOnGoal += value;
+        break;
+    case STATS_GOALS_FOR:
+        mCurrentPlayerStats[team][player].mNumGoalsFor += value;
+        break;
+    case STATS_GOALS_FOR_STS:
+        mCurrentPlayerStats[team][player].mNumShootToScoreGoals += value;
+        break;
+    case STATS_GOALS_AGAINST:
+    {
+        int start = (player == -1) ? 0 : player;
+        int end = (player == -1) ? 5 : start + 1;
+        for (int i = start; i < end; i++)
+        {
+            mCurrentPlayerStats[team][i].mNumGoalsAgainst += value;
+        }
+        break;
+    }
+    case STATS_ASSISTS:
+        mCurrentPlayerStats[team][player].mNumAssists += value;
+        break;
+    case STATS_FOULS:
+        mCurrentPlayerStats[team][player].mNumFouls += value;
+        break;
+    case STATS_POWERUPS_USED:
+        mCurrentPlayerStats[team][player].mNumPowerupsUsed += value;
+        break;
+    case STATS_POWERUPS_HIT:
+        mCurrentPlayerStats[team][player].mNumPowerupsHit += value;
+        break;
+    case STATS_PASSES_MADE:
+        mCurrentPlayerStats[team][player].mNumPassesMade += value;
+        break;
+    case STATS_PASSES_RECEIVED:
+        mCurrentPlayerStats[team][player].mNumPassesReceived += value;
+        break;
+    case STATS_PASSES_INTERCEPTED:
+        mCurrentPlayerStats[team][player].mNumPassesIntercepted += value;
+        break;
+    case STATS_POSSESION_TIME:
+        mCurrentPlayerStats[team][player].mBallPossessionTime += value;
+        break;
+    case STATS_STEALS:
+        mCurrentPlayerStats[team][player].mNumSteals += value;
+        break;
+    case STATS_HITS_MADE:
+        mCurrentPlayerStats[team][player].mNumHitsMade += value;
+        break;
+    case STATS_GOALS_FOR_ONE_TIMERS:
+        mCurrentPlayerStats[team][player].mNumGoalsOneTimers += value;
+        break;
+    case STATS_STS_ATTEMPTS:
+        mCurrentPlayerStats[team][player].mNumSTSAttempts += value;
+        break;
+    case STATS_PERFECT_PASSES:
+        mCurrentPlayerStats[team][player].mNumPerfectPasses += value;
+        break;
+    default:
+        break;
+    }
+
+    switch (stat)
+    {
+    case STATS_SHOTS_ON_GOAL:
+        mCurrentTeamStats[team].mPlayerTotalStats.mNumShotsOnGoal += value;
+        break;
+    case STATS_GOALS_FOR:
+        mCurrentTeamStats[team].mPlayerTotalStats.mNumGoalsFor += value;
+        break;
+    case STATS_GOALS_FOR_STS:
+        mCurrentTeamStats[team].mPlayerTotalStats.mNumShootToScoreGoals += value;
+        break;
+    case STATS_GOALS_AGAINST:
+        mCurrentTeamStats[team].mPlayerTotalStats.mNumGoalsAgainst += value;
+        break;
+    case STATS_ASSISTS:
+        mCurrentTeamStats[team].mPlayerTotalStats.mNumAssists += value;
+        break;
+    case STATS_FOULS:
+        mCurrentTeamStats[team].mPlayerTotalStats.mNumFouls += value;
+        break;
+    case STATS_WIN:
+        mCurrentTeamStats[team].mNumWins++;
+        mCurrentTeamStats[team].mNumPoints += 3;
+        break;
+    case STATS_OT_WIN:
+        mCurrentTeamStats[team].mNumWins++;
+        mCurrentTeamStats[team].mNumPoints += 3;
+        break;
+    case STATS_LOSS:
+        mCurrentTeamStats[team].mNumLosses++;
+        break;
+    case STATS_OT_LOSS:
+        mCurrentTeamStats[team].mNumOTLosses++;
+        mCurrentTeamStats[team].mNumPoints++;
+        break;
+    case STATS_POWERUPS_USED:
+        mCurrentTeamStats[team].mPlayerTotalStats.mNumPowerupsUsed += value;
+        break;
+    case STATS_POWERUPS_HIT:
+        mCurrentTeamStats[team].mPlayerTotalStats.mNumPowerupsHit += value;
+        break;
+    case STATS_PASSES_MADE:
+        mCurrentTeamStats[team].mPlayerTotalStats.mNumPassesMade += value;
+        break;
+    case STATS_PASSES_RECEIVED:
+        mCurrentTeamStats[team].mPlayerTotalStats.mNumPassesReceived += value;
+        break;
+    case STATS_PASSES_INTERCEPTED:
+        mCurrentTeamStats[team].mPlayerTotalStats.mNumPassesIntercepted += value;
+        break;
+    case STATS_POSSESION_TIME:
+        mCurrentTeamStats[team].mPlayerTotalStats.mBallPossessionTime += value;
+        break;
+    case STATS_STEALS:
+        mCurrentTeamStats[team].mPlayerTotalStats.mNumSteals += value;
+        break;
+    case STATS_HITS_MADE:
+        mCurrentTeamStats[team].mPlayerTotalStats.mNumHitsMade += value;
+        break;
+    case STATS_GOALS_FOR_ONE_TIMERS:
+        mCurrentTeamStats[team].mPlayerTotalStats.mNumGoalsOneTimers += value;
+        break;
+    case STATS_BUTTON_PRESSES:
+        mCurrentTeamStats[team].mPlayerTotalStats.mNumButtonPresses += value;
+        break;
+    case STATS_STS_ATTEMPTS:
+        mCurrentTeamStats[team].mPlayerTotalStats.mNumSTSAttempts += value;
+        break;
+    case STATS_PERFECT_PASSES:
+        mCurrentTeamStats[team].mPlayerTotalStats.mNumPerfectPasses += value;
+        break;
+    default:
+        break;
+    }
+
+    switch (stat)
+    {
+    case STATS_SHOTS_ON_GOAL:
+        mCumulativeTeamStats[team].mPlayerTotalStats.mNumShotsOnGoal += value;
+        break;
+    case STATS_GOALS_FOR:
+        mCumulativeTeamStats[team].mPlayerTotalStats.mNumGoalsFor += value;
+        break;
+    case STATS_GOALS_FOR_STS:
+        mCumulativeTeamStats[team].mPlayerTotalStats.mNumShootToScoreGoals += value;
+        break;
+    case STATS_GOALS_AGAINST:
+        mCumulativeTeamStats[team].mPlayerTotalStats.mNumGoalsAgainst += value;
+        break;
+    case STATS_ASSISTS:
+        mCumulativeTeamStats[team].mPlayerTotalStats.mNumAssists += value;
+        break;
+    case STATS_FOULS:
+        mCumulativeTeamStats[team].mPlayerTotalStats.mNumFouls += value;
+        break;
+    case STATS_WIN:
+        mCumulativeTeamStats[team].mNumWins++;
+        mCumulativeTeamStats[team].mNumPoints += 3;
+        break;
+    case STATS_OT_WIN:
+        mCumulativeTeamStats[team].mNumWins++;
+        mCumulativeTeamStats[team].mNumPoints += 3;
+        break;
+    case STATS_LOSS:
+        mCumulativeTeamStats[team].mNumLosses++;
+        break;
+    case STATS_OT_LOSS:
+        mCumulativeTeamStats[team].mNumPoints++;
+        break;
+    case STATS_POWERUPS_USED:
+        mCumulativeTeamStats[team].mPlayerTotalStats.mNumPowerupsUsed += value;
+        break;
+    case STATS_POWERUPS_HIT:
+        mCumulativeTeamStats[team].mPlayerTotalStats.mNumPowerupsHit += value;
+        break;
+    case STATS_PASSES_MADE:
+        mCumulativeTeamStats[team].mPlayerTotalStats.mNumPassesMade += value;
+        break;
+    case STATS_PASSES_RECEIVED:
+        mCumulativeTeamStats[team].mPlayerTotalStats.mNumPassesReceived += value;
+        break;
+    case STATS_PASSES_INTERCEPTED:
+        mCumulativeTeamStats[team].mPlayerTotalStats.mNumPassesIntercepted += value;
+        break;
+    case STATS_POSSESION_TIME:
+        mCumulativeTeamStats[team].mPlayerTotalStats.mBallPossessionTime += value;
+        break;
+    case STATS_STEALS:
+        mCumulativeTeamStats[team].mPlayerTotalStats.mNumSteals += value;
+        break;
+    case STATS_HITS_MADE:
+        mCumulativeTeamStats[team].mPlayerTotalStats.mNumHitsMade += value;
+        break;
+    case STATS_GOALS_FOR_ONE_TIMERS:
+        mCumulativeTeamStats[team].mPlayerTotalStats.mNumGoalsOneTimers += value;
+        break;
+    case STATS_STS_ATTEMPTS:
+        mCumulativeTeamStats[team].mPlayerTotalStats.mNumSTSAttempts += value;
+        break;
+    case STATS_PERFECT_PASSES:
+        mCumulativeTeamStats[team].mPlayerTotalStats.mNumPerfectPasses += value;
+        break;
+    default:
+        break;
+    }
 }
 
 /**
