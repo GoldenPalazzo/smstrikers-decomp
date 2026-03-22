@@ -191,7 +191,7 @@ public:
     int ChooseRunAnim(short, const nlVector3&, float);
     void ChooseSwatAnim(int);
     void DoPassRelease();
-    void EventHandler(Event*, void*);
+    static void EventHandler(Event*, void*);
     void FindSTSStunData();
     bool FindSTSMissData(const nlVector3&);
     void FindSTSSpinData(bool);

@@ -74,7 +74,7 @@ public:
         AET_Special = 3,
     };
 
-    void Init();
+    static void Init();
     static void Purge();
     void Update();
     void FireEvent(AudioScriptEventMgr::AUDIO_EVENT, AudioScriptEventMgr::AUDIO_EVENT_TEAM);

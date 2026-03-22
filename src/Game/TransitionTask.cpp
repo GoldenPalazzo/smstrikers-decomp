@@ -13,11 +13,13 @@
 #include "Game/Physics/Physics.h"
 #include "Game/Physics/PhysicsFakeBall.h"
 #include "Game/Render/FlareHandler.h"
+#include "Game/Render/GraphicsLoader.h"
 #include "Game/NisPlayer.h"
 #include "Game/ReplayChoreo.h"
 #include "Game/ReplayManager.h"
 #include "Game/Render/Jumbotron.h"
 #include "Game/Render/CrowdManager.h"
+#include "Game/Render/NPCLoader.h"
 #include "Game/SAnim/pnSAnimController.h"
 #include "Game/SAnim/pnBlender.h"
 #include "Game/SAnim/pnSingleAxisBlender.h"
@@ -27,17 +29,32 @@
 #include "Game/WorldManager.h"
 #include "Game/ObjectBlur.h"
 #include "Game/Camera/CameraMan.h"
+#include "Game/CameraLoader.h"
 #include "Game/Effects/EmissionManager.h"
+#include "Game/AI/AILoader.h"
+#include "Game/Loader/LoadingManager.h"
+#include "Game/World/WorldLoader.h"
 #include "Game/Audio/AudioLoader.h"
 #include "Game/Audio/AudioScriptEventMgr.h"
+#include "Game/Audio/AudioStream.h"
+#include "Game/Audio/CrowdMood.h"
+#include "Game/Audio/StreamTrack.h"
 #include "Game/CharacterTemplate.h"
 #include "Game/Sys/PlatStream.h"
 #include "Game/Debug/TimeRegions.h"
 #include "Game/Render/ElectricFence.h"
+#include "Game/Render/Presentation.h"
 #include "Game/Game.h"
+#include "Game/Goalie.h"
 #include "Game/Drawable/DrawableModel.h"
+#include "Game/SH/SHLoading.h"
+#include "Game/SH/SHPause.h"
+#include "Game/FE/feScene.h"
+#include "Game/DB/UserOptions.h"
 #include "NL/nlMemory.h"
 #include "NL/MemAlloc.h"
+#include "NL/nlConfig.h"
+#include "NL/platpad.h"
 #include "NL/gl/gl.h"
 #include "NL/gl/glView.h"
 #include "NL/glx/glxSwap.h"
@@ -47,11 +64,13 @@
 #include "Game/GameSceneManager.h"
 #include "Game/FE/feMusic.h"
 #include "Game/FE/feAnimModelManager.h"
+#include "Game/FE/FELoader.h"
 #include "Game/FE/feHelpFuncs.h"
 #include "Game/SH/SHSaveLoad.h"
 #include "Game/SH/SHMainMenu.h"
 #include "Game/SH/SHCupHub.h"
 #include "Game/Sys/debug.h"
+#include "dolphin/os.h"
 
 struct LocalizationObj
 {
@@ -78,6 +97,30 @@ void glResourceRelease(unsigned long long);
 
 extern nlLocalization::nlLanguage g_Language;
 extern bool g_e3_Build;
+
+void PrintAvailableARAMMemory();
+void InitializeGameObjectLighting();
+void AIEventHandler(Event*, void*);
+void GoalieEventHandler(Event*, void*);
+
+extern GraphicsLoader TheGraphicsLoader;
+extern FELoader TheFELoader;
+extern AudioLoader TheAudioLoader;
+extern NPCLoader TheNPCLoader;
+extern AILoader TheAILoader;
+extern CameraLoader TheCameraLoader;
+
+namespace Detail
+{
+class SwitchToStartScreenLoader : public Loader
+{
+public:
+    virtual bool StartLoad(LoadingManager*);
+    virtual bool Update() { return false; }
+    virtual const char* GetName() { return "SwitchToStartScreenLoader"; }
+};
+static SwitchToStartScreenLoader switchToStartScreen;
+} // namespace Detail
 
 // /**
 //  * Offset/Address/Size: 0x0 | 0x801731FC | size: 0x10
@@ -422,7 +465,7 @@ void TransitionTask::InitializeFEState()
 
     FEMusic::ResetCurrentFEStreamHash();
 
-    static bool gAlreadyBooted;
+    static bool gAlreadyBooted = false;
 
     if (!gAlreadyBooted)
     {
@@ -503,10 +546,10 @@ void TransitionTask::InitializeFEState()
         }
     }
 
-    tDebugPrintManager::Print(DC_MEMORY, "--- InitializeFEState end ---\n");
-    tDebugPrintManager::Print(DC_MEMORY, "Total free memory: %d\n", StandardAllocator.TotalFreeMemory());
-    tDebugPrintManager::Print(DC_MEMORY, "Largest free block: %d\n", StandardAllocator.LargestFreeBlock());
-    tDebugPrintManager::Print(DC_MEMORY, "---\n");
+    tDebugPrintManager::Print(DC_MEMORY, "-- Memory upon Exiting InitializeFEState \n");
+    tDebugPrintManager::Print(DC_MEMORY, "Free Memory: %u\n", StandardAllocator.TotalFreeMemory());
+    tDebugPrintManager::Print(DC_MEMORY, "Largest Free Block: %u\n", StandardAllocator.LargestFreeBlock());
+    tDebugPrintManager::Print(DC_MEMORY, "-----------------------------------------\n\n");
 
     m_TransitionState = eTS_InState;
 }
