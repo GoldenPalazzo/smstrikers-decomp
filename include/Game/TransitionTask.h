@@ -3,6 +3,8 @@
 
 #include "NL/nlTask.h"
 #include "NL/nlMemory.h"
+#include "Game/Loader.h"
+#include "Game/FE/feManager.h"
 
 void LoadFonts();
 // void 0x8028D338..0x8028D33C | size: 0x4;
@@ -41,10 +43,19 @@ public:
     static TransitionTask* sm_pGlobalTask;
 }; // total size: 0x30
 
-// class Detail
-// {
-// public:
-//     void SwitchToStartScreenLoader::StartLoad(LoadingManager*);
-// };
+namespace Detail
+{
+class SwitchToStartScreenLoader : public Loader
+{
+public:
+    virtual bool StartLoad(LoadingManager*)
+    {
+        FrontEnd::EnterStartScreen(false);
+        return true;
+    }
+    virtual bool Update() { return false; }
+    virtual const char* GetName() { return "SwitchToStartScreenLoader"; }
+};
+} // namespace Detail
 
 #endif // _TRANSITIONTASK_H_

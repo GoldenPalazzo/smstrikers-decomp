@@ -6,7 +6,7 @@ namespace PlatAudio
 
 static void InitStreaming();
 static void ShutdownStreaming();
-static void ConfigureStreamBuffers(unsigned long);
+void ConfigureStreamBuffers(unsigned long);
 static bool IsStreamingInited();
 static void StopAllStreams();
 

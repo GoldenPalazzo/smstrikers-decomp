@@ -49,21 +49,13 @@ unsigned long GetLOCSidekickName(eSidekickID);
 unsigned long GetLOCCharacterName(eTeamID, bool, bool);
 unsigned long GetStadiumStringID(eStadiumID);
 
-// class TakeGameMemSnapshot
-// {
-// public:
-//     void WriteToDisk();
-//     void ResetTimers();
-//     void Update(float);
-//     void Format<BasicString<char, Detail::TempStringAllocator>, unsigned long, unsigned int, unsigned int>(const BasicString<char, Detail::TempStringAllocator>&, const unsigned long&, const unsigned int&, const unsigned int&);
-//     void FormatImpl<BasicString<char, Detail::TempStringAllocator> >::operator BasicString<char, Detail::TempStringAllocator>() const;
-//     void FormatImpl<BasicString<char, Detail::TempStringAllocator> >::operator% <unsigned int>(const unsigned int&);
-//     void FormatImpl<BasicString<char, Detail::TempStringAllocator> >::operator% <unsigned long>(const unsigned long&);
-//     void LexicalCast<BasicString<char, Detail::TempStringAllocator>, unsigned long>(const unsigned long&);
-//     void Detail::LexicalCastImpl<BasicString<char, Detail::TempStringAllocator>, unsigned long>::Do(unsigned long);
-//     void LexicalCast<BasicString<char, Detail::TempStringAllocator>, unsigned int>(const unsigned int&);
-//     void Detail::LexicalCastImpl<BasicString<char, Detail::TempStringAllocator>, unsigned int>::Do(unsigned int);
-// };
+class TakeGameMemSnapshot
+{
+public:
+    static void WriteToDisk();
+    static void ResetTimers();
+    static void Update(float);
+};
 
 class FECharacterSound
 {
