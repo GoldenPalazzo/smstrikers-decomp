@@ -587,10 +587,98 @@ FuzzyVariant Fuzzy::GetBestHitTarget(cFielder*)
 /**
  * Offset/Address/Size: 0x8D80 | 0x80072F50 | size: 0x820
  */
-FuzzyVariant Fuzzy::GetPassDirection(cPlayer*, cPlayer*)
+/**
+ * Offset/Address/Size: 0x798 | 0x80072F50 | size: 0x620
+ * TODO: 85.68% match - f29 register allocation for fBranchRatio (stuck in f3),
+ *       stmw r27 vs stw r28-r31 (stack frame 0x180 vs 0x170),
+ *       r28 constant pre-load scheduling before bctrl
+ */
+FuzzyVariant Fuzzy::GetPassDirection(cPlayer* pFromPlayer, cPlayer* pTargetPlayer)
 {
-    FORCE_DONT_INLINE;
-    return FuzzyVariant();
+    extern float CloseToTheirNet(cPlayer*);
+    extern float InDefensiveZone(cPlayer*);
+    extern float InOffensiveZone(cPlayer*);
+    extern float FarTo(cPlayer*, cPlayer*);
+    extern float FGREATER(float, float);
+
+    FuzzyVariant bestValue;
+    float fConfidence = 1.0f;
+    float fBestConfidence = 0.0f;
+
+    float fTrueConfidence = CloseToTheirNet(pTargetPlayer);
+    float fFalseConfidence = 1.0f - fTrueConfidence;
+    float fBranchRatio = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+    fBranchRatio = fBranchRatio / ((fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence);
+
+    if (fTrueConfidence > 0.0f)
+    {
+        SaveConfidence PushDOM(&fConfidence);
+        fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
+        if ((fConfidence < fTrueConfidence) && (fTrueConfidence < 0.5f))
+            fConfidence = fConfidence * fBranchRatio;
+        if (fConfidence > fBestConfidence)
+        {
+            fBestConfidence = fConfidence;
+            bestValue = FuzzyVariant(2);
+        }
+        if (fFalseConfidence > 0.0f)
+        {
+            SaveConfidence PushDOM(&fConfidence);
+            float inDefensiveZone = FGREATER(InDefensiveZone(pTargetPlayer), 0.7f);
+            float inOffensiveZone = FGREATER(InOffensiveZone(pTargetPlayer), 0.5f);
+            float fTrueConfidence = (inOffensiveZone >= inDefensiveZone) ? inOffensiveZone : inDefensiveZone;
+            float fFalseConfidence = 1.0f - fTrueConfidence;
+            float fBranchRatio = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+            fBranchRatio = fBranchRatio / ((fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence);
+            if (fTrueConfidence > 0.0f)
+            {
+                SaveConfidence PushDOM(&fConfidence);
+                fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
+                if ((fConfidence < fTrueConfidence) && (fTrueConfidence < 0.5f))
+                    fConfidence = fConfidence * fBranchRatio;
+                if (fConfidence > fBestConfidence)
+                {
+                    fBestConfidence = fConfidence;
+                    bestValue = FuzzyVariant(0);
+                }
+                if (fFalseConfidence > 0.0f)
+                {
+                    SaveConfidence PushDOM(&fConfidence);
+                    float fTrueConfidence = FarTo(pFromPlayer, pTargetPlayer);
+                    float fFalseConfidence = 1.0f - fTrueConfidence;
+                    float fBranchRatio = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+                    fBranchRatio = fBranchRatio / ((fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence);
+                    if (fTrueConfidence > 0.0f)
+                    {
+                        SaveConfidence PushDOM(&fConfidence);
+                        fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
+                        if ((fConfidence < fTrueConfidence) && (fTrueConfidence < 0.5f))
+                            fConfidence = fConfidence * fBranchRatio;
+                        if (fConfidence > fBestConfidence)
+                        {
+                            fBestConfidence = fConfidence;
+                            bestValue = FuzzyVariant(3);
+                        }
+                        if (fFalseConfidence > 0.0f)
+                        {
+                            SaveConfidence PushDOM(&fConfidence);
+                            fConfidence = (fConfidence <= fFalseConfidence) ? fConfidence : fFalseConfidence;
+                            if ((fConfidence < fFalseConfidence) && (fFalseConfidence < 0.5f))
+                                fConfidence = fConfidence * fBranchRatio;
+                            if (fConfidence > fBestConfidence)
+                            {
+                                fBestConfidence = fConfidence;
+                                bestValue = FuzzyVariant(1);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    bestValue.Confidence = fBestConfidence;
+    return bestValue;
 }
 
 /**

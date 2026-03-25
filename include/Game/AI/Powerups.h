@@ -92,8 +92,8 @@ public:
     /* 0x08 */ virtual ~PowerupBase();
     /* 0x0C */ virtual void Destroy(bool);
     /* 0x10 */ virtual void PreThrow(cFielder*, Bowser*);
-    /* 0x14 */ virtual void Init(cFielder*, Bowser*);
     /* 0x18 */ virtual void ThrowAt(cFielder*, Bowser*);
+    /* 0x14 */ virtual void Init(cFielder*, Bowser*);
     /* 0x1C */ virtual void Update(float);
 
     float GetRadius() const;

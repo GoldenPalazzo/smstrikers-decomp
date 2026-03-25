@@ -372,18 +372,367 @@ void CupTrophyScene::CreateTrophyScene(eTrophyType trophy, ButtonComponent::Butt
     mButtonState = buttonState;
 }
 
+namespace Detail
+{
+class TempStringAllocator;
+}
+
+template <typename CharT>
+struct BasicStringData
+{
+    CharT* mData;
+    int mSize;
+    int mCapacity;
+    int mRefCount;
+};
+
+template <typename CharT, typename Allocator>
+class BasicString
+{
+public:
+    BasicStringData<CharT>* m_data;
+
+    BasicString()
+        : m_data(0)
+    {
+    }
+
+    BasicString(BasicStringData<CharT>* p)
+        : m_data(p)
+    {
+    }
+
+    BasicString(const BasicString& other)
+    {
+        BasicStringData<CharT>* data = other.m_data;
+        if (data != 0)
+        {
+            data->mRefCount++;
+            data = other.m_data;
+        }
+        else
+        {
+            data = 0;
+        }
+        m_data = data;
+    }
+
+    ~BasicString()
+    {
+        if (m_data)
+        {
+            BasicStringData<CharT>* data = m_data;
+            if (--data->mRefCount == 0)
+            {
+                if (data)
+                {
+                    if (data)
+                    {
+                        delete[] data->mData;
+                    }
+                    if (data)
+                    {
+                        nlFree(data);
+                    }
+                }
+            }
+        }
+    }
+
+    const CharT* c_str() const
+    {
+        static CharT emptyString = '\0';
+        return m_data ? m_data->mData : &emptyString;
+    }
+};
+
+template <typename To, typename From>
+To LexicalCast(const From&);
+
+template <typename StringType, typename ValueType>
+StringType Format(const StringType& format, const ValueType& value);
+
+template <typename T, typename Key>
+T* nlBSearch(const Key& key, T* base, int count);
+
+struct LOCHeader
+{
+    char Thumbprint[4];
+    unsigned long Version;
+    unsigned long Language;
+    unsigned long StringCount;
+    unsigned long Flags;
+};
+
+class nlLocalization
+{
+public:
+    struct StringLookup
+    {
+        unsigned long hash;
+        unsigned long StringOffset;
+    };
+
+    LOCHeader* m_pFile;
+    StringLookup* m_LookupTable;
+    unsigned short* m_FirstString;
+    int m_CurrentLanguage;
+};
+
+class TLTextInstance
+{
+public:
+    void SetString(const unsigned short* utf16);
+};
+
+struct SpoilNumWinsView
+{
+    unsigned char mPad[0x20A];
+    unsigned short mNumWins;
+};
+
+struct SpoilNumLossesView
+{
+    unsigned char mPad[0x20C];
+    unsigned short mNumLosses;
+};
+
+extern nlLocalization* g_pLocalization;
+extern const unsigned short LocalizationTableNotFound[];
+extern const unsigned short MissingLocString[];
+
+static const char* CUP_FIRST_TEXT_NAME_LEFT = "FIRST WON TIME";
+
 /**
  * Offset/Address/Size: 0x1524 | 0x800CABD8 | size: 0x3F8
+ * TODO: 94.57% match - register allocation (this=r28/r30, locString=r31/r28) and stack offset
+ * shift are -inline deferred artifacts; file compiled with -inline deferred but scratch uses -inline auto
  */
-void CupTrophyScene::SetWinRecord(Spoil&)
+void CupTrophyScene::SetWinRecord(Spoil& spoil)
 {
+    typedef TLTextInstance* (*FindCompByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
+    typedef TLTextInstance* (*FindCompByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
+
+    FEPresentation* pres = m_pFEPresentation;
+    BasicString<char, Detail::TempStringAllocator> winString = LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(((SpoilNumWinsView&)spoil).mNumWins);
+    unsigned short winBuf[16];
+    nlStrToWcs(winString.c_str(), winBuf, 16);
+
+    unsigned long locHash = 0x49466bc6;
+    nlLocalization* loc = g_pLocalization;
+    const unsigned short* locString;
+
+    if (loc->m_LookupTable == 0)
+    {
+        locString = LocalizationTableNotFound;
+    }
+    else
+    {
+        nlLocalization::StringLookup* entry = nlBSearch(locHash, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
+        if (entry != 0)
+        {
+            locString = loc->m_FirstString + entry->StringOffset;
+        }
+        else
+        {
+            locString = MissingLocString;
+        }
+    }
+
+    BasicStringData<unsigned short>* data = (BasicStringData<unsigned short>*)nlMalloc(0x10, 8, true);
+    if (data != 0)
+    {
+        data->mData = 0;
+        data->mSize = 0;
+        data->mCapacity = 0;
+
+        const unsigned short* ptr = locString;
+        while (*ptr++ != 0)
+        {
+            data->mSize++;
+        }
+
+        data->mSize++;
+        data->mData = (unsigned short*)nlMalloc((data->mSize + 1) * 2, 8, true);
+        data->mCapacity = data->mSize;
+
+        int i = 0;
+        int j = i;
+        while (i < data->mSize)
+        {
+            *(unsigned short*)((char*)data->mData + j) = *locString;
+            i++;
+            locString++;
+            j += 2;
+        }
+
+        data->mRefCount = 1;
+    }
+
+    BasicString<unsigned short, Detail::TempStringAllocator> msg(data);
+    BasicString<unsigned short, Detail::TempStringAllocator> formattedResult = Format(msg, winBuf);
+
+    memcpy(mFirstWinBuffer, formattedResult.c_str(), 0x100);
+
+    union
+    {
+        FindCompByValue byValue;
+        FindCompByRef byRef;
+    } findComp;
+
+    volatile InlineHasher hLayerA, hLayerB;
+    volatile InlineHasher hNameB, hNameA;
+    volatile InlineHasher h7, h6;
+    volatile InlineHasher h5, h4, h3, h2, h1, h0;
+
+    unsigned long hash;
+
+    findComp.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
+
+    h0.m_Hash = 0;
+    h1.m_Hash = 0;
+    h2.m_Hash = 0;
+    h3.m_Hash = 0;
+    h4.m_Hash = 0;
+    h5.m_Hash = 0;
+    h6.m_Hash = 0;
+    h7.m_Hash = 0;
+
+    hash = nlStringLowerHash(CUP_FIRST_TEXT_NAME_LEFT);
+    hNameA.m_Hash = hash;
+    hNameB.m_Hash = hash;
+
+    hash = nlStringLowerHash("Layer");
+    hLayerB.m_Hash = hash;
+    hLayerA.m_Hash = hash;
+
+    TLTextInstance* text = findComp.byRef(
+        pres->m_currentSlide,
+        (InlineHasher&)hLayerB,
+        (InlineHasher&)hNameB,
+        (InlineHasher&)h7,
+        (InlineHasher&)h5,
+        (InlineHasher&)h3,
+        (InlineHasher&)h1);
+
+    text->SetString(mFirstWinBuffer);
 }
+
+static const char* CUP_FIRST_TEXT_NAME_RIGHT = "FIRST WON TIME2";
 
 /**
  * Offset/Address/Size: 0x112C | 0x800CA7E0 | size: 0x3F8
+ * TODO: 93.04% match - register allocation (this=r28/r30, locString=r31/r28) and stack offset
+ * shift are -inline deferred artifacts; file compiled with -inline deferred but scratch uses -inline auto
  */
-void CupTrophyScene::SetLossRecord(Spoil&)
+void CupTrophyScene::SetLossRecord(Spoil& spoil)
 {
+    typedef TLTextInstance* (*FindCompByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
+    typedef TLTextInstance* (*FindCompByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
+
+    FEPresentation* pres = m_pFEPresentation;
+    BasicString<char, Detail::TempStringAllocator> lossString = LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(((SpoilNumLossesView&)spoil).mNumLosses);
+    unsigned short lossBuf[16];
+    nlStrToWcs(lossString.c_str(), lossBuf, 16);
+
+    unsigned long locHash = 0x720DF6F9;
+    nlLocalization* loc = g_pLocalization;
+    const unsigned short* locString;
+
+    if (loc->m_LookupTable == 0)
+    {
+        locString = LocalizationTableNotFound;
+    }
+    else
+    {
+        nlLocalization::StringLookup* entry = nlBSearch(locHash, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
+        if (entry != 0)
+        {
+            locString = loc->m_FirstString + entry->StringOffset;
+        }
+        else
+        {
+            locString = MissingLocString;
+        }
+    }
+
+    BasicStringData<unsigned short>* data = (BasicStringData<unsigned short>*)nlMalloc(0x10, 8, true);
+    if (data != 0)
+    {
+        data->mData = 0;
+        data->mSize = 0;
+        data->mCapacity = 0;
+
+        const unsigned short* ptr = locString;
+        while (*ptr++ != 0)
+        {
+            data->mSize++;
+        }
+
+        data->mSize++;
+        data->mData = (unsigned short*)nlMalloc((data->mSize + 1) * 2, 8, true);
+        data->mCapacity = data->mSize;
+
+        int i = 0;
+        int j = i;
+        while (i < data->mSize)
+        {
+            *(unsigned short*)((char*)data->mData + j) = *locString;
+            i++;
+            locString++;
+            j += 2;
+        }
+
+        data->mRefCount = 1;
+    }
+
+    BasicString<unsigned short, Detail::TempStringAllocator> msg(data);
+    BasicString<unsigned short, Detail::TempStringAllocator> formattedResult = Format(msg, lossBuf);
+
+    memcpy(mHistoryBuffer, formattedResult.c_str(), 0x100);
+
+    union
+    {
+        FindCompByValue byValue;
+        FindCompByRef byRef;
+    } findComp;
+
+    volatile InlineHasher hLayerA, hLayerB;
+    volatile InlineHasher hNameB, hNameA;
+    volatile InlineHasher h7, h6;
+    volatile InlineHasher h5, h4, h3, h2, h1, h0;
+
+    unsigned long hash;
+
+    findComp.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
+
+    h0.m_Hash = 0;
+    h1.m_Hash = 0;
+    h2.m_Hash = 0;
+    h3.m_Hash = 0;
+    h4.m_Hash = 0;
+    h5.m_Hash = 0;
+    h6.m_Hash = 0;
+    h7.m_Hash = 0;
+
+    hash = nlStringLowerHash(CUP_FIRST_TEXT_NAME_RIGHT);
+    hNameA.m_Hash = hash;
+    hNameB.m_Hash = hash;
+
+    hash = nlStringLowerHash("Layer");
+    hLayerA.m_Hash = hash;
+    hLayerB.m_Hash = hash;
+
+    TLTextInstance* text = findComp.byRef(
+        pres->m_currentSlide,
+        (InlineHasher&)hLayerB,
+        (InlineHasher&)hNameB,
+        (InlineHasher&)h7,
+        (InlineHasher&)h5,
+        (InlineHasher&)h3,
+        (InlineHasher&)h1);
+
+    text->SetString(mHistoryBuffer);
 }
 
 /**

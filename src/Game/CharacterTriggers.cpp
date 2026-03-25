@@ -190,6 +190,183 @@ EmissionController* EmitGeneric(cCharacter* pCharacter, const char* baseName, co
  */
 void CharacterTriggerHandler(unsigned int uParam)
 {
+    class AnimTriggerCallbackInfo
+    {
+    public:
+        /* 0x0 */ unsigned long m_uEventID;
+        /* 0x4 */ float m_fIntensity;
+    }; // total size: 0x8
+
+    extern cCharacter* g_pCurrentlyUpdatingCharacter;
+
+    // TODO: 38.15% match - dispatch tree and per-trigger action blocks still need
+    // exact case-level behavior, call ordering, and register allocation.
+    AnimTriggerCallbackInfo* pInfo = (AnimTriggerCallbackInfo*)uParam;
+    cCharacter* pCharacter = g_pCurrentlyUpdatingCharacter;
+    switch (pInfo->m_uEventID)
+    {
+    case 0x002EF345:
+    case 0x1333263B:
+        break;
+
+    case 0xC9F4F4B0:
+    case 0x50DF765D:
+    case 0x3741435B:
+    case 0xE36392C8:
+    case 0x25642360:
+    case 0x35B0F74E:
+        if (pCharacter->m_pCharacterSFX != NULL)
+        {
+            pCharacter->m_pCharacterSFX->PlayRandomWalkFootstep(pInfo->m_fIntensity, false);
+        }
+        break;
+
+    case 0x0F3E9247:
+    case 0xC5408AC8:
+        ((cPlayer*)pCharacter)->ClearPowerupAnimState(false);
+        break;
+
+    case 0x9DE91576:
+        ((cFielder*)pCharacter)->DoSpeedBoost();
+        break;
+
+    case 0x4DDC1C64:
+        ((cFielder*)pCharacter)->ThrowPowerup();
+        pCharacter->Play3DSFX((Audio::eCharSFX)0x2A, (PosUpdateMethod)2, 1.0f);
+        break;
+
+    case 0xB26140F5:
+        g_pEventManager->CreateValidEvent(0x12, 0x38);
+        break;
+
+    case 0x0618ECF3:
+    case 0x09656D24:
+    case 0x8758B65A:
+    case 0x8F5ED456:
+    case 0x95014E78:
+    case 0x9913FAA3:
+    case 0x9F338B11:
+    case 0xD4DEDCAF:
+    {
+        Audio::SoundAttributes attrs;
+        attrs.Init();
+        attrs.SetSoundType(0x36, true);
+        attrs.UseStationaryPosVector(pCharacter->m_v3Position);
+        Audio::gStadGenSFX.Play(attrs);
+        break;
+    }
+
+    case 0xC28E3737:
+        Audio::gStadGenSFX.Stop((Audio::eWorldSFX)0xB9, cGameSFX::SFX_STOP_FIRST);
+        break;
+
+    case 0x6D249451:
+        pCharacter->EndEffect(fxGetGroup("freeze"));
+        break;
+
+    case 0xFD96314E:
+        pCharacter->StopSFX((Audio::eCharSFX)0x16);
+        pCharacter->StopSFX((Audio::eCharSFX)0x1D);
+        break;
+
+    case 0x1DB5C7FF:
+        pCharacter->StopSFX((Audio::eCharSFX)0x16);
+        break;
+
+    case 0x0A9AD93F:
+    {
+        const nlVector3 normal = { 0.0f, 0.0f, 1.0f };
+        CharacterElectrocutionEffect(pCharacter, pCharacter->m_v3Position, normal);
+        break;
+    }
+
+    case 0xEE2E062C:
+        KillWindups(pCharacter);
+        break;
+
+    case 0x00266A23:
+    case 0x73819990:
+        EmitStar((cFielder*)pCharacter);
+        break;
+
+    case 0x77935C1C:
+    case 0x97831FA1:
+        EmitMushroom((cFielder*)pCharacter);
+        break;
+
+    case 0xD4C678A2:
+    case 0xA1638ABB:
+        EmitFreeze((cPlayer*)pCharacter);
+        break;
+
+    case 0x0E4E0F3F:
+    case 0x64D870A7:
+    case 0xAC6452C8:
+        EmitDaze((cPlayer*)pCharacter);
+        break;
+
+    case 0x1DF278FA:
+    case 0x5251A784:
+        EmitUnFreeze((cPlayer*)pCharacter);
+        break;
+
+    case 0xB631C31A:
+        EmitBallPass((cPlayer*)pCharacter);
+        break;
+
+    case 0x6580E428:
+    case 0x7D452499:
+    case 0x8F6B5826:
+    case 0x18F99186:
+    case 0x71FED95E:
+        BeginRumbleAction(RUMBLE_SMALL_CONTACT, ((cPlayer*)pCharacter)->GetGlobalPad());
+        break;
+
+    case 0x0C3A8B39:
+        BeginRumbleAction(RUMBLE_SOLID_CONTACT, ((cPlayer*)pCharacter)->GetGlobalPad());
+        pCharacter->Play3DSFX((Audio::eCharSFX)0x36, (PosUpdateMethod)2, 1.0f);
+        break;
+
+    case 0x19076C94:
+    case 0xA89AC233:
+    case 0x884CBC6E:
+        pCharacter->Play3DSFX((Audio::eCharSFX)0x36, (PosUpdateMethod)2, 1.0f);
+        pCharacter->PlayRandomCharDialogue(4, (PosUpdateMethod)2, 100.0f, -1.0f);
+        break;
+
+    case 0x7BEE7EA1:
+    case 0x8758B729:
+    case 0xC7114630:
+    case 0x05120C87:
+    case 0x12D0B9BF:
+    case 0x31DDC064:
+    case 0x42E9F9CF:
+    case 0x479F48A7:
+    case 0xA9BF9E5A:
+    case 0xF2DA216B:
+    case 0xFCE1230C:
+        pCharacter->PlayRandomCharDialogue(6, (PosUpdateMethod)2, 100.0f, -1.0f);
+        break;
+
+    case 0x21001B24:
+    case 0x2EF4FA11:
+    case 0x4C59A919:
+    case 0xACDB2215:
+    case 0xB8684601:
+    case 0xC19CB638:
+    case 0xD900F524:
+    case 0x93E76D8E:
+    case 0xEF7B7383:
+        pCharacter->Play3DSFX((Audio::eCharSFX)0x36, (PosUpdateMethod)2, 1.0f);
+        break;
+
+    case 0x5F5115CE:
+        EmitSolidRumble((cPlayer*)pCharacter);
+        break;
+
+    default:
+        break;
+    }
 }
 
 /**

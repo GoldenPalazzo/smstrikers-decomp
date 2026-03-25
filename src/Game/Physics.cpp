@@ -552,6 +552,59 @@ void* ODEAlloc(unsigned long size)
 /**
  * Offset/Address/Size: 0x0 | 0x80133854 | size: 0x1E0
  */
-// void cInventory<LoadablePhysicsMesh>::~cInventory()
+// template <>
+// cInventory<LoadablePhysicsMesh>::~cInventory()
 // {
+//     ListEntry<LoadablePhysicsMesh*>* meshEntry = m_lItemList.m_Head;
+//     while (meshEntry != NULL)
+//     {
+//         meshEntry->data->Destroy();
+//         meshEntry = meshEntry->next;
+//     }
+
+//     {
+//         typedef ListContainerBase<LoadablePhysicsMesh*, NewAdapter<ListEntry<LoadablePhysicsMesh*> > > MeshListBase;
+//         void (MeshListBase::*cb)(ListEntry<LoadablePhysicsMesh*>*) = &MeshListBase::DeleteEntry;
+//         meshEntry = m_lItemList.m_Head;
+//         while (meshEntry != NULL)
+//         {
+//             ListEntry<LoadablePhysicsMesh*>* next = meshEntry->next;
+//             (((MeshListBase*)this)->*cb)(meshEntry);
+//             meshEntry = next;
+//         }
+//     }
+//     m_lItemList.m_Head = NULL;
+//     m_lItemList.m_Tail = NULL;
+
+//     ListEntry<LoadablePhysicsMesh*>** pTail = &m_lMemList.m_Tail;
+//     while (m_lMemList.m_Head != NULL)
+//     {
+//         ListEntry<LoadablePhysicsMesh*>* first = m_lMemList.m_Head;
+//         if (first == NULL)
+//         {
+//             first = NULL;
+//         }
+//         else
+//         {
+//             if (pTail != NULL)
+//             {
+//                 if (m_lMemList.m_Tail == first)
+//                 {
+//                     m_lMemList.m_Tail = NULL;
+//                 }
+//             }
+//             ListEntry<LoadablePhysicsMesh*>* tmp = m_lMemList.m_Head;
+//             m_lMemList.m_Head = tmp->next;
+//             first = tmp;
+//         }
+//         void* mesh;
+//         if (&mesh != NULL)
+//         {
+//             mesh = first->data;
+//         }
+//         ::operator delete(first);
+//         ::operator delete(mesh);
+//     }
+
+//     m_nItemCount = 0;
 // }

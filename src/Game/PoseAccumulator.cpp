@@ -233,105 +233,102 @@ void cPoseAccumulator::BuildNodeMatrices(const nlMatrix4& world)
         m_NodeMatrices.mData = tmp_mat;
     }
 
-    int parentStack[32];
-    int parentTop = -1;
+    int ParentStack[32];
+    int nStackIndex = -1;
 
-    for (int idx = 0; idx < m_BaseSHierarchy->m_nodeCount; ++idx)
+    for (int i = 0; i < m_BaseSHierarchy->m_nodeCount; i++)
     {
-        nlMatrix4* local = &m_NodeMatrices.mData[idx + 1];
+        nlMatrix4* pLocalMatrix = &m_NodeMatrices.mData[i + 1];
 
-        RotAccum* r = &m_rot.mData[idx];
-        if (!r->bIdentity)
+        RotAccum* pRotAccum = &m_rot.mData[i];
+        if (!pRotAccum->bIdentity)
         {
-            if (r->quatAccumulatedWeight == 0.0f)
+            if (pRotAccum->quatAccumulatedWeight == 0.0f)
             {
-                nlMakeRotationMatrixZ(*local, 0.0000958738f * r->rotAroundZ);
+                nlMakeRotationMatrixZ(*pLocalMatrix, 0.0000958738f * pRotAccum->rotAroundZ);
             }
             else
             {
-                if (r->rotAroundZAccumulatedWeight != 0.0f)
+                if (pRotAccum->rotAroundZAccumulatedWeight != 0.0f)
                 {
-                    float s, c;
-                    nlSinCos(&s, &c, r->rotAroundZ);
+                    float sin;
+                    float cos;
+                    nlSinCos(&sin, &cos, pRotAccum->rotAroundZ);
 
-                    nlQuaternion qz;
-                    qz.f.x = 0.0f;
-                    qz.f.y = 0.0f;
-                    qz.f.z = s;
-                    qz.f.w = c;
+                    nlQuaternion quatAroundZ;
+                    quatAroundZ.f.x = 0.0f;
+                    quatAroundZ.f.y = 0.0f;
+                    quatAroundZ.f.z = sin;
+                    quatAroundZ.f.w = cos;
 
-                    float t = r->rotAroundZAccumulatedWeight / (r->quatAccumulatedWeight + r->rotAroundZAccumulatedWeight);
-                    nlQuatNLerp(r->q, r->q, qz, t);
+                    float t = pRotAccum->rotAroundZAccumulatedWeight /
+                              (pRotAccum->quatAccumulatedWeight + pRotAccum->rotAroundZAccumulatedWeight);
+                    nlQuatNLerp(pRotAccum->q, pRotAccum->q, quatAroundZ, t);
                 }
 
-                nlQuatToMatrix(*local, r->q);
+                nlQuatToMatrix(*pLocalMatrix, pRotAccum->q);
             }
         }
         else
         {
-            local->SetIdentity();
+            pLocalMatrix->SetIdentity();
         }
 
-        TransAccum* ta = &m_trans.mData[idx];
-        if (!ta->bIdentity)
+        TransAccum* pTransAccum = &m_trans.mData[i];
+        if (!pTransAccum->bIdentity)
         {
-            local->m[3][0] = ta->t.f.x;
-            local->m[3][1] = ta->t.f.y;
-            local->m[3][2] = ta->t.f.z;
+            pLocalMatrix->f.m41 = pTransAccum->t.f.x;
+            pLocalMatrix->f.m42 = pTransAccum->t.f.y;
+            pLocalMatrix->f.m43 = pTransAccum->t.f.z;
         }
 
-        int parentIdx = -1;
-        if (idx > 0 && parentTop >= 0)
+        int nParentIndex = -1;
+        if (i > 0)
         {
-            parentIdx = parentStack[parentTop];
-            const ScaleAccum* ps = &m_scale.mData[parentIdx];
-
-            local->m[3][0] *= ps->s.f.x;
-            local->m[3][1] *= ps->s.f.y;
-            local->m[3][2] *= ps->s.f.z;
+            nParentIndex = ParentStack[nStackIndex];
+            pLocalMatrix->f.m41 *= m_scale.mData[nParentIndex].s.f.x;
+            pLocalMatrix->f.m42 *= m_scale.mData[nParentIndex].s.f.y;
+            pLocalMatrix->f.m43 *= m_scale.mData[nParentIndex].s.f.z;
         }
 
-        nlMatrix4* out = &m_NodeMatrices.mData[idx];
-        if (parentIdx >= 0)
+        if (i > 0)
         {
-            const nlMatrix4* parentWorld = &m_NodeMatrices.mData[parentIdx];
-            nlMultMatrices(*out, *local, *parentWorld);
+            nlMultMatrices(m_NodeMatrices.mData[i], *pLocalMatrix, m_NodeMatrices.mData[nParentIndex]);
         }
         else
         {
-            nlMultMatrices(*out, *local, world);
+            nlMultMatrices(m_NodeMatrices.mData[i], *pLocalMatrix, world);
         }
 
-        int delta = m_BaseSHierarchy->GetPushPop(idx);
-        parentTop += delta;
-        if (delta > 0)
+        int nPushPop = m_BaseSHierarchy->GetPushPop(i);
+        nStackIndex += nPushPop;
+        if (nPushPop > 0)
         {
-            parentStack[parentTop] = idx;
+            ParentStack[nStackIndex] = i;
         }
 
-        cBuildNodeMatrixCallbackInfo* cb = &m_cb.mData[idx];
-        if (cb->fn)
+        cBuildNodeMatrixCallbackInfo* pCallback = &m_cb.mData[i];
+        if (pCallback->fn)
         {
-            int parentForCallback = (parentIdx >= 0) ? parentIdx : -1;
-            cb->fn(cb->a, cb->b, this, idx, parentForCallback);
+            pCallback->fn(pCallback->a, pCallback->b, this, i, nParentIndex);
         }
     }
 
-    for (int idx = 0; idx < m_BaseSHierarchy->m_nodeCount; ++idx)
+    for (int i = 0; i < m_BaseSHierarchy->m_nodeCount; i++)
     {
-        const ScaleAccum* s = &m_scale.mData[idx];
-        if (!s->bIdentity)
+        if (!m_scale.mData[i].bIdentity)
         {
-            nlMatrix4* mtx = &m_NodeMatrices.mData[idx];
-            mtx->m[0][0] *= s->s.f.x;
-            mtx->m[0][1] *= s->s.f.x;
-            mtx->m[0][2] *= s->s.f.x;
-            mtx->m[1][0] *= s->s.f.y;
-            mtx->m[1][1] *= s->s.f.y;
-            mtx->m[1][2] *= s->s.f.y;
-            mtx->m[2][0] *= s->s.f.z;
-            mtx->m[2][1] *= s->s.f.z;
-            mtx->m[2][2] *= s->s.f.z;
+            m_NodeMatrices.mData[i].f.m11 *= m_scale.mData[i].s.f.x;
+            m_NodeMatrices.mData[i].f.m12 *= m_scale.mData[i].s.f.x;
+            m_NodeMatrices.mData[i].f.m13 *= m_scale.mData[i].s.f.x;
+
+            m_NodeMatrices.mData[i].f.m21 *= m_scale.mData[i].s.f.y;
+            m_NodeMatrices.mData[i].f.m22 *= m_scale.mData[i].s.f.y;
+            m_NodeMatrices.mData[i].f.m23 *= m_scale.mData[i].s.f.y;
+
+            m_NodeMatrices.mData[i].f.m31 *= m_scale.mData[i].s.f.z;
+            m_NodeMatrices.mData[i].f.m32 *= m_scale.mData[i].s.f.z;
+            m_NodeMatrices.mData[i].f.m33 *= m_scale.mData[i].s.f.z;
         }
     }
 }

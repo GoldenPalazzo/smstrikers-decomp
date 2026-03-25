@@ -7,6 +7,8 @@
 #include "Game/FE/fePopupMenu.h"
 #include "Game/FE/tlImageInstance.h"
 
+extern nlColour MenuHighliteColour;
+
 // /**
 //  * Offset/Address/Size: 0x0 | 0x800AC57C | size: 0x40
 //  */
@@ -356,7 +358,12 @@ static void onSelectOptions(TLComponentInstance*)
  * Offset/Address/Size: 0x1538 | 0x800AAF94 | size: 0xB0
  */
 SHMainMenu::SHMainMenu()
+    : BaseSceneHandler()
+    , m_itemDescriptions(NULL)
+    , mMenuItems()
+    , mButtons()
 {
+    mHighlightColour = MenuHighliteColour;
 }
 
 // /**
@@ -371,6 +378,10 @@ SHMainMenu::SHMainMenu()
  */
 SHMainMenu::~SHMainMenu()
 {
+    if (m_itemDescriptions != NULL)
+    {
+        delete m_itemDescriptions;
+    }
 }
 
 /**
