@@ -197,8 +197,124 @@ cFielder* FindPowerupTarget(cFielder* pThrower, Bowser* pBowser)
 /**
  * Offset/Address/Size: 0x5998 | 0x80060284 | size: 0x524
  */
-void PowerupThrowPosition(int, eThrowStyle, PowerupBase*, PowerupBase*)
+void PowerupThrowPosition(int nThrowOrder, eThrowStyle eStyle, PowerupBase* pNewPowerup, PowerupBase* pFirstPowerup)
 {
+    f32 fPowerupOffSet = 2.0f * ((PhysicsSphere*)pFirstPowerup->m_pPhysicsObject)->GetRadius();
+    fPowerupOffSet += 0.5f;
+
+    switch (eStyle)
+    {
+    case THROW_HORIZONTAL_LINE:
+    {
+        nlVector3 v3StartPosition;
+        nlVector3 v3VelocityDirection;
+        nlVector3 v3PerpToVelocity;
+
+        pNewPowerup->m_v3Velocity = pFirstPowerup->m_v3Velocity;
+        pNewPowerup->m_pPhysicsObject->SetLinearVelocity(pFirstPowerup->m_v3Velocity);
+
+        v3VelocityDirection = pFirstPowerup->m_v3Velocity;
+        v3VelocityDirection.f.z = 0.0f;
+        f32 invLen = nlRecipSqrt(v3VelocityDirection.f.x * v3VelocityDirection.f.x + v3VelocityDirection.f.y * v3VelocityDirection.f.y + v3VelocityDirection.f.z * v3VelocityDirection.f.z, true);
+        nlVec3Set(v3VelocityDirection, invLen * v3VelocityDirection.f.x, invLen * v3VelocityDirection.f.y, invLen * v3VelocityDirection.f.z);
+
+        if (nThrowOrder % 2 == 0)
+        {
+            RotateVectorZAxis(v3PerpToVelocity, v3VelocityDirection, 0x4000);
+        }
+        else
+        {
+            RotateVectorZAxis(v3PerpToVelocity, v3VelocityDirection, 0xC000);
+        }
+
+        fPowerupOffSet *= (f32)((nThrowOrder + 1) / 2);
+        nlVec3Set(v3PerpToVelocity, fPowerupOffSet * v3PerpToVelocity.f.x, fPowerupOffSet * v3PerpToVelocity.f.y, fPowerupOffSet * v3PerpToVelocity.f.z);
+        nlVec3Set(v3StartPosition, pFirstPowerup->m_v3Position.f.x + v3PerpToVelocity.f.x, pFirstPowerup->m_v3Position.f.y + v3PerpToVelocity.f.y, pFirstPowerup->m_v3Position.f.z + v3PerpToVelocity.f.z);
+
+        pNewPowerup->m_v3Position = v3StartPosition;
+        pNewPowerup->m_pPhysicsObject->SetPosition(pNewPowerup->m_v3Position, PhysicsObject::WORLD_COORDINATES);
+        break;
+    }
+    case THROW_ARROW:
+    {
+        nlVector3 v3StartPosition;
+        nlVector3 v3VelocityDirection;
+        nlVector3 v3PerpToVelocity;
+
+        pNewPowerup->m_v3Velocity = pFirstPowerup->m_v3Velocity;
+        pNewPowerup->m_pPhysicsObject->SetLinearVelocity(pFirstPowerup->m_v3Velocity);
+
+        v3VelocityDirection = pFirstPowerup->m_v3Velocity;
+        v3VelocityDirection.f.z = 0.0f;
+        f32 invLen = nlRecipSqrt(v3VelocityDirection.f.x * v3VelocityDirection.f.x + v3VelocityDirection.f.y * v3VelocityDirection.f.y + v3VelocityDirection.f.z * v3VelocityDirection.f.z, true);
+        nlVec3Set(v3VelocityDirection, invLen * v3VelocityDirection.f.x, invLen * v3VelocityDirection.f.y, invLen * v3VelocityDirection.f.z);
+
+        if (nThrowOrder % 2 == 0)
+        {
+            RotateVectorZAxis(v3PerpToVelocity, v3VelocityDirection, 0x4000);
+        }
+        else
+        {
+            RotateVectorZAxis(v3PerpToVelocity, v3VelocityDirection, 0xC000);
+        }
+
+        fPowerupOffSet *= (f32)((nThrowOrder + 1) / 2);
+
+        nlVec3Set(v3PerpToVelocity, fPowerupOffSet * v3PerpToVelocity.f.x, fPowerupOffSet * v3PerpToVelocity.f.y, fPowerupOffSet * v3PerpToVelocity.f.z);
+        nlVec3Set(v3VelocityDirection, fPowerupOffSet * v3VelocityDirection.f.x, fPowerupOffSet * v3VelocityDirection.f.y, fPowerupOffSet * v3VelocityDirection.f.z);
+
+        RotateVectorZAxis(v3VelocityDirection, v3VelocityDirection, 0x8000);
+
+        nlVec3Set(v3StartPosition,
+            pFirstPowerup->m_v3Position.f.x + (v3PerpToVelocity.f.x + v3VelocityDirection.f.x),
+            pFirstPowerup->m_v3Position.f.y + (v3PerpToVelocity.f.y + v3VelocityDirection.f.y),
+            pFirstPowerup->m_v3Position.f.z + (v3PerpToVelocity.f.z + v3VelocityDirection.f.z));
+
+        pNewPowerup->m_v3Position = v3StartPosition;
+        pNewPowerup->m_pPhysicsObject->SetPosition(pNewPowerup->m_v3Position, PhysicsObject::WORLD_COORDINATES);
+        break;
+    }
+    case THROW_SURROUND:
+    {
+        pNewPowerup->m_v3Position = pFirstPowerup->m_v3Position;
+        pNewPowerup->m_pPhysicsObject->SetPosition(pNewPowerup->m_v3Position, PhysicsObject::WORLD_COORDINATES);
+
+        nlVector3 v3CurrentVelocity;
+        v3CurrentVelocity = pFirstPowerup->m_v3Velocity;
+
+        s16 nFlipAngle = (s16)(((nThrowOrder + 1) / 2) * 0x3333);
+        if (nThrowOrder % 2 != 0)
+        {
+            nFlipAngle = -nFlipAngle;
+        }
+        RotateVectorZAxis(v3CurrentVelocity, v3CurrentVelocity, (u16)nFlipAngle);
+
+        pNewPowerup->m_v3Velocity = v3CurrentVelocity;
+        pNewPowerup->m_pPhysicsObject->SetLinearVelocity(v3CurrentVelocity);
+        break;
+    }
+    case THROW_SPREAD:
+    {
+        pNewPowerup->m_v3Position = pFirstPowerup->m_v3Position;
+        pNewPowerup->m_pPhysicsObject->SetPosition(pNewPowerup->m_v3Position, PhysicsObject::WORLD_COORDINATES);
+
+        nlVector3 v3CurrentVelocity;
+        v3CurrentVelocity = pFirstPowerup->m_v3Velocity;
+
+        s16 nFlipAngle = (s16)(((nThrowOrder + 1) / 2) * 0x1999);
+        if (nThrowOrder % 2 != 0)
+        {
+            nFlipAngle = -nFlipAngle;
+        }
+        RotateVectorZAxis(v3CurrentVelocity, v3CurrentVelocity, (u16)nFlipAngle);
+
+        pNewPowerup->m_v3Velocity = v3CurrentVelocity;
+        pNewPowerup->m_pPhysicsObject->SetLinearVelocity(v3CurrentVelocity);
+        break;
+    }
+    default:
+        break;
+    }
 }
 
 /**
