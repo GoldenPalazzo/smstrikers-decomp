@@ -344,6 +344,18 @@ cGame::cGame()
  */
 cGame::~cGame()
 {
+    nlWalkList(mThoughtsQueue.m_Head,
+        static_cast<ListContainerBase<unsigned long, NewAdapter<ListEntry<unsigned long> > >*>(&mThoughtsQueue),
+        &ListContainerBase<unsigned long, NewAdapter<ListEntry<unsigned long> > >::DeleteEntry);
+    mThoughtsQueue.m_Head = NULL;
+    mThoughtsQueue.m_Tail = NULL;
+
+    delete m_pPostResetClock;
+    delete m_pGameClock;
+    delete m_pGameTweaks;
+    delete m_pFuzzyTweaks;
+    delete m_pPostGameDoneClock;
+    delete[] m_pRandomPlayersArray;
 }
 
 #include "Game/FixedUpdateTask.h"

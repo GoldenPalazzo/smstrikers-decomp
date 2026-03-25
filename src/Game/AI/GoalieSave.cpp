@@ -547,12 +547,108 @@ void GoalieSave::AddAreaToGrid(SaveData*)
     FORCE_DONT_INLINE;
 }
 
+static inline void AddPointToGrid(SaveData* pSaveData, const nlVector3& v3Point)
+{
+    float z = v3Point.f.z;
+    float y = v3Point.f.y;
+
+    float netWidth = cField::GetNet(1.0f)->GetNetWidth();
+    float netHeight = cField::GetNet(1.0f)->GetNetHeight();
+
+    int i = (int)(7.0f * (0.5f * netWidth + y) / netWidth);
+    if (i < 0)
+        i = 0;
+    else if (i >= 7)
+        i = 6;
+
+    int j = (int)(5.0f * z / netHeight);
+    if (j < 0)
+        j = 0;
+    else if (j >= 5)
+        j = 4;
+
+    nlListContainer<SaveData*>& cell = gSaveGrid[i][j];
+
+    ListEntry<SaveData*>* entry = cell.m_Head;
+    if (entry != NULL)
+    {
+        while (entry != NULL)
+        {
+            if (entry->data == pSaveData)
+                return;
+            entry = entry->next;
+        }
+    }
+
+    {
+        ListEntry<SaveData*>* newEntry = (ListEntry<SaveData*>*)nlMalloc(sizeof(ListEntry<SaveData*>), 8, false);
+        if (newEntry != NULL)
+        {
+            newEntry->next = NULL;
+            newEntry->data = pSaveData;
+        }
+        nlListAddStart<ListEntry<SaveData*> >(&cell.m_Head, newEntry, &cell.m_Tail);
+    }
+}
+
+static inline void Local2GridCoords(float y, float z, int& i, int& j)
+{
+    float netWidth = cField::GetNet(1.0f)->GetNetWidth();
+    float netHeight = cField::GetNet(1.0f)->GetNetHeight();
+    i = (int)(7.0f * (0.5f * netWidth + y) / netWidth);
+    if (i < 0)
+        i = 0;
+    else if (i >= 7)
+        i = 6;
+    j = (int)(5.0f * z / netHeight);
+    if (j < 0)
+        j = 0;
+    else if (j >= 5)
+        j = 4;
+}
+
 /**
  * Offset/Address/Size: 0x390 | 0x800537B0 | size: 0x3F0
+ * TODO: 95.81% match - r27/r28 vs r28/r29 register shift for pSaveData1/pSaveData2.
+ * MWCC -inline deferred register allocation quirk (same issue as FindBestSave).
  */
-void GoalieSave::AddSegmentToGrid(SaveData*, SaveData*)
+void GoalieSave::AddSegmentToGrid(SaveData* pSaveData1, SaveData* pSaveData2)
 {
-    FORCE_DONT_INLINE;
+    int divisions;
+    SaveData* pCurSaveData;
+    int count;
+    int i, j, m, n;
+    nlVector3 v3CurPos;
+
+    Local2GridCoords(pSaveData1->mv3SavePos.f.y, pSaveData1->mv3SavePos.f.z, i, j);
+    Local2GridCoords(pSaveData2->mv3SavePos.f.y, pSaveData2->mv3SavePos.f.z, m, n);
+    float dz = pSaveData2->mv3SavePos.f.z - pSaveData1->mv3SavePos.f.z;
+    float dy = pSaveData2->mv3SavePos.f.y - pSaveData1->mv3SavePos.f.y;
+    float dx = pSaveData2->mv3SavePos.f.x - pSaveData1->mv3SavePos.f.x;
+    divisions = abs(j - n) + abs(i - m);
+    if (divisions > 0)
+    {
+        float inv = 1.0f / (float)divisions;
+        dx *= inv;
+        dy *= inv;
+        dz *= inv;
+    }
+    v3CurPos = pSaveData1->mv3SavePos;
+    for (count = 0; count <= divisions; count++)
+    {
+        float d2z = pSaveData2->mv3SavePos.f.z - v3CurPos.f.z;
+        float d1z = pSaveData1->mv3SavePos.f.z - v3CurPos.f.z;
+        float d2y = pSaveData2->mv3SavePos.f.y - v3CurPos.f.y;
+        float d1y = pSaveData1->mv3SavePos.f.y - v3CurPos.f.y;
+        if (d1z * d1z + d1y * d1y < d2z * d2z + d2y * d2y)
+            pCurSaveData = pSaveData1;
+        else
+            pCurSaveData = pSaveData2;
+        AddPointToGrid(pCurSaveData, v3CurPos);
+        v3CurPos.f.z += dz;
+        v3CurPos.f.y += dy;
+        v3CurPos.f.x += dx;
+    }
 }
 
 /**
@@ -618,50 +714,6 @@ void GoalieSave::AddChainToGrid(SaveData* pSaveData, bool bVertical)
         pLast->mv3GroupMaxCoords = pSaveData->mv3GroupMaxCoords;
         pLast->mv3GroupMinCoords = pSaveData->mv3GroupMinCoords;
         pLast = pLast->mpConnectedSaveData[oppdir];
-    }
-}
-
-static inline void AddPointToGrid(SaveData* pSaveData, const nlVector3& v3Point)
-{
-    float z = v3Point.f.z;
-    float y = v3Point.f.y;
-
-    float netWidth = cField::GetNet(1.0f)->GetNetWidth();
-    float netHeight = cField::GetNet(1.0f)->GetNetHeight();
-
-    int i = (int)(7.0f * (0.5f * netWidth + y) / netWidth);
-    if (i < 0)
-        i = 0;
-    else if (i >= 7)
-        i = 6;
-
-    int j = (int)(5.0f * z / netHeight);
-    if (j < 0)
-        j = 0;
-    else if (j >= 5)
-        j = 4;
-
-    nlListContainer<SaveData*>& cell = gSaveGrid[i][j];
-
-    ListEntry<SaveData*>* entry = cell.m_Head;
-    if (entry != NULL)
-    {
-        while (entry != NULL)
-        {
-            if (entry->data == pSaveData)
-                return;
-            entry = entry->next;
-        }
-    }
-
-    {
-        ListEntry<SaveData*>* newEntry = (ListEntry<SaveData*>*)nlMalloc(sizeof(ListEntry<SaveData*>), 8, false);
-        if (newEntry != NULL)
-        {
-            newEntry->next = NULL;
-            newEntry->data = pSaveData;
-        }
-        nlListAddStart<ListEntry<SaveData*> >(&cell.m_Head, newEntry, &cell.m_Tail);
     }
 }
 

@@ -1,5 +1,6 @@
 #include "dolphin/types.h"
 #include "NL/nlMemory.h"
+#include "NL/nlConfig.h"
 #include "NL/glx/glxMemory.h"
 #include "NL/glx/glxTexture.h"
 #include "NL/gl/glMatrix.h"
@@ -23,10 +24,10 @@ u32 g_uResourceMarker = 0;
 
 u32 p_frame[4];
 u32 n_frame[4];
-u32 FrameMemSizes[2];
+u32 FrameMemSizes[2] = { 0, 0 };
 GLXMemoryInfo g_uResourceAlloc[16];
 
-GLInventory glInventory;
+// GLInventory glInventory;
 
 const char* szMemoryNames[] = {
     "header",
@@ -62,9 +63,9 @@ void glplatFrameAllocNextFrame()
 {
     if (glx_MemoryDump)
     {
-        tDebugPrintManager::Print(DC_GLPLAT, "phys %dK frame %dK virt %dK\n", n_phys >> 10, n_frame[i_frame * 2] >> 10, n_frame[i_frame * 2 + 1] >> 10);
+        tDebugPrintManager::Print(DC_GLPLAT, "memory used: %uKB resource, %uKB frame real, %uKB frame virt\n", n_phys >> 10, n_frame[i_frame * 2] >> 10, n_frame[i_frame * 2 + 1] >> 10);
 
-        tDebugPrintManager::Print(DC_GLPLAT, "free %dK real %dK virt %dK\n", (ResourceMemSize - n_phys) >> 10, (FrameMemSizes[0] - n_frame[i_frame * 2]) >> 10, (FrameMemSizes[1] - n_frame[i_frame * 2 + 1]) >> 10);
+        tDebugPrintManager::Print(DC_GLPLAT, "       free: %uKB resource, %uKB frame real, %uKB frame virt\n", (ResourceMemSize - n_phys) >> 10, (FrameMemSizes[0] - n_frame[i_frame * 2]) >> 10, (FrameMemSizes[1] - n_frame[i_frame * 2 + 1]) >> 10);
 
         glx_MemoryDump = false;
     }
@@ -169,7 +170,7 @@ void glplatResourceRelease(unsigned long long resourceId)
 
     f32 fConst = 1.0f / 1024.0f;
     f32 fMB = (f32)totalAlloc * fConst;
-    tDebugPrintManager::Print(DC_GLPLAT, "res release: %dK tex %dK (%.2fM)\n", totalAlloc >> 10, totalTex >> 10, fMB * fConst);
+    tDebugPrintManager::Print(DC_GLPLAT, "total : (%0.3fMB) %uKB .. %uKB dTex\n", totalAlloc >> 10, totalTex >> 10, fMB * fConst);
 }
 
 /**
@@ -230,7 +231,7 @@ unsigned long long glplatResourceMark()
 
     f32 fConst = 1.0f / 1024.0f;
     f32 fMB = (f32)totalAlloc * fConst;
-    tDebugPrintManager::Print(DC_GLPLAT, "res mark: %dK tex %dK (%.2fM)\n", totalAlloc >> 10, totalTex >> 10, fMB * fConst);
+    tDebugPrintManager::Print(DC_GLPLAT, "total : (%0.3fMB) %uKB .. %uKB dTex\n", totalAlloc >> 10, totalTex >> 10, fMB * fConst);
 
     return resourceId;
 }
@@ -257,6 +258,80 @@ unsigned long glplatResourceAlloc(unsigned long uSize, eGLMemory eMemory)
  */
 bool glxInitMemory()
 {
+    bool bDeveloper = GetConfigBool(Config::Global(), "e3_build", false);
+    const char* szResourceKey = bDeveloper ? "e3 resource total memory" : "resource total memory";
+
+    u32 resMemSize;
+    {
+        u32 oldSize = ResourceMemSize;
+        if (Config::Global().Exists(szResourceKey))
+        {
+            f32 fValue = GetConfigFloat(Config::Global(), szResourceKey, 0.0f);
+            resMemSize = (u32)(1024.0f * (1024.0f * fValue));
+        }
+        else
+        {
+            resMemSize = oldSize;
+        }
+    }
+    ResourceMemSize = resMemSize;
+
+    u32 pMem = (u32)nlMalloc(ResourceMemSize, 32, false);
+    if (pMem == 0)
+        return false;
+    p_phys = pMem;
+
+    u32 frameMemReal;
+    {
+        u32 oldSize = FrameMemSizeReal;
+        if (Config::Global().Exists("frame vertex memory"))
+        {
+            f32 fValue = GetConfigFloat(Config::Global(), "frame vertex memory", 0.0f);
+            frameMemReal = (u32)(1024.0f * (1024.0f * fValue));
+        }
+        else
+        {
+            frameMemReal = oldSize;
+        }
+    }
+    FrameMemSizeReal = frameMemReal;
+
+    pMem = (u32)nlMalloc(frameMemReal * 2, 32, false);
+    if (pMem == 0)
+        return false;
+    p_frame[0] = pMem;
+    p_frame[2] = pMem + FrameMemSizeReal;
+
+    u32 frameMemVirt;
+    {
+        u32 oldSize = FrameMemSizeVirt;
+        if (Config::Global().Exists("frame header memory"))
+        {
+            f32 fValue = GetConfigFloat(Config::Global(), "frame header memory", 0.0f);
+            frameMemVirt = (u32)(1024.0f * (1024.0f * fValue));
+        }
+        else
+        {
+            frameMemVirt = oldSize;
+        }
+    }
+    FrameMemSizeVirt = frameMemVirt;
+
+    u32 pVirt = (u32)nlVirtualAlloc(frameMemVirt * 2, false);
+    if (pVirt == 0)
+        return false;
+
+    p_frame[1] = pVirt;
+    p_frame[3] = pVirt + FrameMemSizeVirt;
+    i_frame = 0;
+    n_phys = 0;
+    n_frame[2] = 0;
+    n_frame[0] = 0;
+    n_frame[3] = 0;
+    n_frame[1] = 0;
+    FrameMemSizes[0] = FrameMemSizeReal;
+    FrameMemSizes[1] = FrameMemSizeVirt;
+
     return true;
 }
 
@@ -294,21 +369,4 @@ GLXMemoryInfo::GLXMemoryInfo()
         m_uBytes[i] = 0;
     }
     m_uTexBundle = 0;
-}
-
-typedef void (*ConstructorDestructor)(void*);
-extern "C" void __ct__13GLXMemoryInfoFv(void*);
-extern "C" void __construct_array(void* ptr, ConstructorDestructor ctor, ConstructorDestructor dtor, unsigned long size, unsigned long n);
-
-/**
- * Offset/Address/Size: 0x930 | 0x801B7258 | size: 0x64
- */
-extern "C" void __sinit_glxMemory_cpp()
-{
-    ResourceMemSize = 0xBFD000;
-    FrameMemSizeReal = 0xE0000;
-    FrameMemSizeVirt = 0xA0000;
-    FrameMemSizes[0] = 0xE0000;
-    FrameMemSizes[1] = 0xA0000;
-    __construct_array(g_uResourceAlloc, __ct__13GLXMemoryInfoFv, 0, 0x1C, 0x10);
 }

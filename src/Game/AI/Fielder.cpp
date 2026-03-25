@@ -2350,8 +2350,118 @@ void cFielder::SetFrozen(float seconds)
 /**
  * Offset/Address/Size: 0x6310 | 0x8001F64C | size: 0x3F0
  */
-void cFielder::DoFindBestSlideAttackTarget(nlVector3&, nlVector3&)
+float cFielder::DoFindBestSlideAttackTarget(nlVector3& v3PositionOut, nlVector3& v3VelocityOut)
 {
+    int nNumSolutions;
+    float pSolutions[2];
+    nlVector3 v3BallVelocity;
+    nlVector3 v3BallPosition;
+    nlVector3 v3LandingSpot;
+
+    v3BallVelocity = g_pBall->m_v3Velocity;
+    v3BallPosition = g_pBall->m_v3Position;
+
+    if (g_pBall->GetOwnerFielder() != NULL && g_pBall->GetOwnerFielder()->m_eActionState == ACTION_DEKE)
+    {
+        v3BallVelocity = v3Zero;
+    }
+    else if (g_pBall->GetOwnerFielder() != NULL && g_pBall->GetOwnerFielder()->m_eActionState == ACTION_SHOOT_TO_SCORE)
+    {
+        v3BallVelocity = v3Zero;
+        v3BallPosition = g_pBall->GetOwnerFielder()->m_v3Position;
+    }
+
+    FielderTweaks* pTweaks = (FielderTweaks*)m_pTweaks;
+    const nlVector3& myPos = m_v3Position;
+    float fSpeed = 1.0f;
+    float fSlideSpeed = pTweaks->fRunningWBTurboSpeedLevel2;
+
+    if (fSlideSpeed >= 0.0f)
+    {
+        switch (m_ePowerup)
+        {
+        case POWER_UP_MUSHROOM:
+            fSpeed *= g_pGame->m_pGameTweaks->fMushroomSpeed;
+            break;
+        case POWER_UP_STAR:
+            fSpeed *= g_pGame->m_pGameTweaks->fStarSpeed;
+            break;
+        }
+    }
+
+    fSpeed *= fSlideSpeed;
+
+    switch (m_ePowerup)
+    {
+    case POWER_UP_MUSHROOM:
+    case POWER_UP_STAR:
+        fSpeed *= 1.4f;
+        break;
+    }
+
+    CalcInterceptXY(myPos, fSpeed, pTweaks->fPhysCapsuleRadius, v3BallPosition, v3BallVelocity, nNumSolutions, pSolutions);
+
+    float t;
+
+    if (nNumSolutions != 0)
+    {
+        if (nNumSolutions == 2)
+        {
+            t = (pSolutions[0] < pSolutions[1]) ? pSolutions[0] : pSolutions[1];
+        }
+        else
+        {
+            t = pSolutions[0];
+        }
+
+        if (g_pBall->m_pPassTarget != NULL)
+        {
+            if (g_pBall->m_pPrevOwner->m_tBallUnPossessionTimer.GetSeconds() > 0.5f)
+            {
+                float dx1 = g_pBall->m_v3Position.f.x - g_pBall->m_v3PassIntercept.f.x;
+                float dy1 = g_pBall->m_v3Position.f.y - g_pBall->m_v3PassIntercept.f.y;
+                float fDistToPassIntercept = nlSqrt(dx1 * dx1 + dy1 * dy1, true);
+
+                float predX = g_pBall->m_v3Position.f.x + t * g_pBall->m_v3Velocity.f.x;
+                float predY = g_pBall->m_v3Position.f.y + t * g_pBall->m_v3Velocity.f.y;
+                float dx2 = g_pBall->m_v3Position.f.x - predX;
+                float dy2 = g_pBall->m_v3Position.f.y - predY;
+                float fDistToPredicted = nlSqrt(dx2 * dx2 + dy2 * dy2, true);
+
+                if (fDistToPassIntercept < fDistToPredicted || g_pBall->m_v3Position.f.z > 1.0f)
+                {
+                    v3PositionOut = g_pBall->m_v3PassIntercept;
+                    v3VelocityOut = v3Zero;
+                    return 0.0f;
+                }
+            }
+        }
+
+        if (v3BallPosition.f.z > 1.0f)
+        {
+            float fLandingTime = g_pBall->PredictLandingSpotAndTime(v3LandingSpot);
+            v3PositionOut = v3LandingSpot;
+            v3VelocityOut = v3Zero;
+            return fLandingTime;
+        }
+    }
+    else
+    {
+        GameTweaks* pGameTweaks = g_pGame->m_pGameTweaks;
+        cPlayer* pPassTarget = g_pBall->m_pPassTarget;
+        t = pGameTweaks->unk2A4 + pGameTweaks->unk2A8;
+
+        if (pPassTarget != NULL)
+        {
+            v3PositionOut = pPassTarget->m_v3Position;
+            v3VelocityOut = g_pBall->m_pPassTarget->m_v3Velocity;
+            return t;
+        }
+    }
+
+    v3PositionOut = v3BallPosition;
+    v3VelocityOut = v3BallVelocity;
+    return t;
 }
 
 /**

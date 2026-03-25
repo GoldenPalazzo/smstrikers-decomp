@@ -33,6 +33,12 @@ class ListContainerBase
 public:
     typedef typename Adapter::EntryType EntryType;
 
+    ListContainerBase()
+        : m_Head(NULL)
+        , m_Tail(NULL)
+    {
+    }
+
     void DeleteEntry(EntryType* entry) { Adapter::DeleteEntry(entry); }
 
     // Add more list operations as needed

@@ -47,7 +47,6 @@ public:
     int GetEndPhase(int i);
     u8 GetMatchCharacterSpeed(int i);
 
-private:
     /* 0x00 */ int m_count;
     /* 0x04 */ SAnimContainer* m_cont;
     /* 0x08 */ cSAnim** m_anims;

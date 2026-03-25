@@ -15,10 +15,10 @@ struct tCharacterTemplate
     /* 0x08 */ unsigned long uAnimInventoryHashID;
     /* 0x0C */ unsigned char bAnimInventoryCopy;
     /* 0x0D */ char pad_0xD[3];
-    /* 0x10 */ cInventory<cSHierarchy*>* pHierarchyInventory;
+    /* 0x10 */ cInventory<cSHierarchy>* pHierarchyInventory;
     /* 0x14 */ cAnimInventory* pAnimInventory;
     /* 0x18 */ const CharacterPhysicsData* pPhysicsData;
-    /* 0x1C */ cInventory<AnimRetargetList*>* pAnimRetargetListInventory;
+    /* 0x1C */ cInventory<AnimRetargetList>* pAnimRetargetListInventory;
 }; // total size: 0x20
 
 struct tGoalieTemplateInfo

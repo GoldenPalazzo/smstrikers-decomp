@@ -3,6 +3,10 @@
 #include "Game/AI/Fielder.h"
 #include "Game/CharacterTweaks.h"
 #include "Game/Audio/AudioLoader.h"
+#include "Game/AnimInventory.h"
+#include "Game/Physics/CharacterPhysicsElement.h"
+#include "Game/Triggers/SebringAnimScript.h"
+#include "NL/nlFile.h"
 #include "NL/nlString.h"
 #include "NL/nlMemory.h"
 #include "NL/gl/gl.h"
@@ -170,7 +174,7 @@ cPlayer* CreateCharacter(int nPlayerID, int nTeamID, eCharacterClass cc, bool bF
         CharacterLoadingGuts(g_aCharacterTemplates[cc], g_aCharacterTemplateInfo[cc], cc, bForViewer);
     }
 
-    cInventory<cSHierarchy*>* pHierInv = g_aCharacterTemplates[cc]->pHierarchyInventory;
+    cInventory<cSHierarchy>* pHierInv = g_aCharacterTemplates[cc]->pHierarchyInventory;
     u32 hash = nlStringHash(g_aCharacterTemplateInfo[cc].szHierarchy);
 
     AnimRetargetList* pAnimRetarget;
@@ -235,12 +239,204 @@ hierFound:
     return pPlayer;
 }
 
+extern "C" cSHierarchy* Initialize__11cSHierarchyFP7nlChunk(nlChunk*);
+extern "C" AnimRetargetList* Initialize__16AnimRetargetListFP7nlChunk(nlChunk*);
+
+extern SebringAnimTagScriptInterpreter* g_pAnimScriptInterp;
+
+static cAnimInventory* FindDuplicateAnimInventory(int nCurIndex, unsigned long uHashID);
+static char* GetCharacterTriggerFileName(eCharacterClass cc);
+
 /**
  * Offset/Address/Size: 0x1CFC | 0x80013FE4 | size: 0x3F0
+ * TODO: 94.27% match - 2 scheduling diffs (lwz pHierInv2 hoisted before nlLoadEntireFile in target)
  */
-void CharacterLoadingGuts(tCharacterTemplate*, const tCharacterTemplateInfo&, eCharacterClass, bool)
+void CharacterLoadingGuts(tCharacterTemplate* pCharacterTemplate, const tCharacterTemplateInfo& charTemplateInfo, eCharacterClass cc, bool bForViewer)
 {
-    FORCE_DONT_INLINE;
+    glModel* pRigidCharacterModel = glLoadModel(charTemplateInfo.szModelFilename, NULL);
+    glModel* pBlendCharacterModel = glLoadModel(charTemplateInfo.szBlendedModelFilename, NULL);
+
+    pCharacterTemplate->nCharacterModelID[0] = pRigidCharacterModel->id;
+    pCharacterTemplate->nCharacterModelID[1] = pBlendCharacterModel->id;
+
+    cInventory<cSHierarchy>* pHierInv = new (nlMalloc(sizeof(cInventory<cSHierarchy>), 8, false)) cInventory<cSHierarchy>();
+    pCharacterTemplate->pHierarchyInventory = pHierInv;
+
+    u32 hierFileSize;
+    cInventory<cSHierarchy>* pHierInv2;
+    nlChunk* hierData = (nlChunk*)nlLoadEntireFile(charTemplateInfo.szHierarchyFilename, &hierFileSize, 0x20, AllocateStart);
+    pHierInv2 = pCharacterTemplate->pHierarchyInventory;
+
+    ListEntry<char*>* memEntry = (ListEntry<char*>*)nlMalloc(8, 8, false);
+    if (memEntry != NULL)
+    {
+        memEntry->next = NULL;
+        memEntry->data = (char*)hierData;
+    }
+    nlListAddStart<ListEntry<char*> >(
+        (ListEntry<char*>**)&pHierInv2->m_lMemList.m_Head,
+        memEntry,
+        (ListEntry<char*>**)&pHierInv2->m_lMemList.m_Tail);
+
+    nlChunk* hierEnd = (nlChunk*)((char*)hierData + hierFileSize);
+    while (hierData != hierEnd)
+    {
+        if ((hierData->m_ID & 0x80FFFFFF) == 0x80018000)
+        {
+            cSHierarchy* hier = Initialize__11cSHierarchyFP7nlChunk(hierData);
+
+            ListEntry<cSHierarchy*>* itemEntry = (ListEntry<cSHierarchy*>*)nlMalloc(8, 8, false);
+            if (itemEntry != NULL)
+            {
+                itemEntry->next = NULL;
+                itemEntry->data = hier;
+            }
+            nlListAddStart<ListEntry<cSHierarchy*> >(
+                &pHierInv2->m_lItemList.m_Head,
+                itemEntry,
+                &pHierInv2->m_lItemList.m_Tail);
+            pHierInv2->m_nItemCount++;
+        }
+        else
+        {
+            nlPrintf("Warning: inventory encountered an unknown chunk type\n");
+        }
+        hierData = (nlChunk*)((char*)hierData + hierData->m_Size + 8);
+    }
+
+    if (!bForViewer)
+    {
+        CharacterPhysicsData* pPhys = new (nlMalloc(sizeof(CharacterPhysicsData), 8, false)) CharacterPhysicsData();
+        pCharacterTemplate->pPhysicsData = pPhys;
+        LoadCharacterPhysicsElements(charTemplateInfo.szPhysicsFilename, (CharacterPhysicsData*)pCharacterTemplate->pPhysicsData);
+    }
+    else
+    {
+        pCharacterTemplate->pPhysicsData = NULL;
+    }
+
+    pCharacterTemplate->uAnimInventoryHashID = nlStringLowerHash(charTemplateInfo.szAnimFilename);
+
+    cAnimInventory* found = NULL;
+    s32 i = 0;
+    while (i < NUM_FIELDER_CLASSES)
+    {
+        if (i != (s32)cc)
+        {
+            if (g_aCharacterTemplates[i] != NULL)
+            {
+                if (pCharacterTemplate->uAnimInventoryHashID == g_aCharacterTemplates[i]->uAnimInventoryHashID)
+                {
+                    found = g_aCharacterTemplates[i]->pAnimInventory;
+                    break;
+                }
+            }
+        }
+        i++;
+    }
+
+    if (found != NULL)
+    {
+        pCharacterTemplate->pAnimInventory = found;
+        pCharacterTemplate->bAnimInventoryCopy = true;
+    }
+    else
+    {
+        cAnimInventory* pAnim = new (nlMalloc(sizeof(cAnimInventory), 8, false))
+            cAnimInventory(charTemplateInfo.pAnimProperties, charTemplateInfo.nNumAnimProperties);
+        pCharacterTemplate->pAnimInventory = pAnim;
+        pCharacterTemplate->pAnimInventory->AddAnimBundle(charTemplateInfo.szAnimFilename);
+        pCharacterTemplate->bAnimInventoryCopy = false;
+
+        cAnimInventory* pAI = pCharacterTemplate->pAnimInventory;
+        cInventory<cSAnim>* pAnimCont = (cInventory<cSAnim>*)pAI->m_cont;
+        SebringAnimTagScriptInterpreter* pInterp = g_pAnimScriptInterp;
+        const char* triggerFilename;
+        if (cc < NUM_FIELDER_CLASSES)
+        {
+            triggerFilename = g_aCharacterTemplateInfo[cc].szTriggerFilename;
+        }
+        else
+        {
+            triggerFilename = g_GoalieTemplateInfo.szTriggerFilename;
+        }
+        pInterp->SetupAnimationTriggers(triggerFilename, pAnimCont);
+    }
+
+    if (charTemplateInfo.szAnimRetargetFilename != NULL)
+    {
+        cInventory<AnimRetargetList>* pRetargetInv = new (nlMalloc(sizeof(cInventory<AnimRetargetList>), 8, false)) cInventory<AnimRetargetList>();
+        pCharacterTemplate->pAnimRetargetListInventory = pRetargetInv;
+
+        u32 retargetFileSize;
+        nlChunk* retargetData = (nlChunk*)nlLoadEntireFile(charTemplateInfo.szAnimRetargetFilename, &retargetFileSize, 0x20, AllocateStart);
+        cInventory<AnimRetargetList>* pRetInv = pCharacterTemplate->pAnimRetargetListInventory;
+
+        ListEntry<char*>* retMemEntry = (ListEntry<char*>*)nlMalloc(8, 8, false);
+        if (retMemEntry != NULL)
+        {
+            retMemEntry->next = NULL;
+            retMemEntry->data = (char*)retargetData;
+        }
+        nlListAddStart<ListEntry<char*> >(
+            (ListEntry<char*>**)&pRetInv->m_lMemList.m_Head,
+            retMemEntry,
+            (ListEntry<char*>**)&pRetInv->m_lMemList.m_Tail);
+
+        nlChunk* retargetEnd = (nlChunk*)((char*)retargetData + retargetFileSize);
+        while (retargetData != retargetEnd)
+        {
+            if ((retargetData->m_ID & 0x80FFFFFF) == 0x80017104)
+            {
+                AnimRetargetList* retarget = Initialize__16AnimRetargetListFP7nlChunk(retargetData);
+
+                ListEntry<AnimRetargetList*>* retItemEntry = (ListEntry<AnimRetargetList*>*)nlMalloc(8, 8, false);
+                if (retItemEntry != NULL)
+                {
+                    retItemEntry->next = NULL;
+                    retItemEntry->data = retarget;
+                }
+                nlListAddStart<ListEntry<AnimRetargetList*> >(
+                    &pRetInv->m_lItemList.m_Head,
+                    retItemEntry,
+                    &pRetInv->m_lItemList.m_Tail);
+                pRetInv->m_nItemCount++;
+            }
+            else
+            {
+                nlPrintf("Warning: inventory encountered an unknown chunk type\n");
+            }
+            retargetData = (nlChunk*)((char*)retargetData + retargetData->m_Size + 8);
+        }
+    }
+    else
+    {
+        pCharacterTemplate->pAnimRetargetListInventory = NULL;
+    }
+}
+
+static cAnimInventory* FindDuplicateAnimInventory(int nCurIndex, unsigned long uHashID)
+{
+    for (int index = 0; index < NUM_FIELDER_CLASSES; index++)
+    {
+        if (index == nCurIndex)
+            continue;
+        if (g_aCharacterTemplates[index] == NULL)
+            continue;
+        if (uHashID != g_aCharacterTemplates[index]->uAnimInventoryHashID)
+            continue;
+        return g_aCharacterTemplates[index]->pAnimInventory;
+    }
+    return NULL;
+}
+
+static char* GetCharacterTriggerFileName(eCharacterClass cc)
+{
+    if (cc < NUM_FIELDER_CLASSES)
+    {
+        return (char*)g_aCharacterTemplateInfo[cc].szTriggerFilename;
+    }
+    return (char*)g_GoalieTemplateInfo.szTriggerFilename;
 }
 
 /**

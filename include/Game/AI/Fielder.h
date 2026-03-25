@@ -224,7 +224,7 @@ public:
     bool IsDefense() const;
     bool IsFrozen() const;
     void SetFrozen(float);
-    void DoFindBestSlideAttackTarget(nlVector3&, nlVector3&);
+    float DoFindBestSlideAttackTarget(nlVector3&, nlVector3&);
     bool CanBeBlownUp();
     void CanBreakOutOfSlideTackle();
     eStrafeDirection CalculateStrafeDirection(unsigned short, unsigned short);

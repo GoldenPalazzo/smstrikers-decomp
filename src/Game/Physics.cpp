@@ -11,12 +11,13 @@
 #include "ode/NLGAdditions.h"
 
 extern PhysicsWorld* g_PhysicsWorld;
-extern nlListContainer<PhysicsObject*> g_NetPhysicsObjects;
-extern nlListContainer<PhysicsObject*> g_StaticPhysicsPrimitives;
+nlListContainer<PhysicsObject*> g_StaticPhysicsPrimitives;
+nlListContainer<PhysicsObject*> g_NetPhysicsObjects;
 extern CollisionSpace* g_CollisionSpace;
 extern PhysicsMesh* g_TerrainMesh;
 static PhysicsRoundedCorner* corners[4];
-static cInventory<LoadablePhysicsMesh*> s_PhysicsMeshes;
+PhysicsLoader ThePhysicsLoader;
+static cInventory<LoadablePhysicsMesh> s_PhysicsMeshes;
 static bool sbDisableCollisionDetection;
 static bool sbNonMovingAABBsInitialized;
 static float sfStaticFinitePlaneThinDepth;

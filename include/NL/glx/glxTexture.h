@@ -102,6 +102,23 @@ struct GXTextureHeader
 class PlatTexture
 {
 public:
+    PlatTexture()
+        : m_unk8(0x50544558)
+        , m_Width(0)
+        , m_Height(0)
+        , m_Levels(0)
+        , m_MaxLevel(0)
+        , m_Format(GXTex_Num)
+        , m_nPaletteEntries(0)
+        , m_bMissingTexture(false)
+        , m_SwizzledData(NULL)
+        , m_LinearData(NULL)
+        , m_PaletteData(NULL)
+    {
+        memset(&m_TexObj, 0, sizeof(m_TexObj));
+        memset(&m_TlutObj, 0, sizeof(m_TlutObj));
+        memset(m_Bits, 0xFF, sizeof(m_Bits));
+    }
     ~PlatTexture();
 
     void Prepare();
