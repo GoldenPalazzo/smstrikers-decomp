@@ -35,10 +35,10 @@ public:
         m_lItemList.m_Head = NULL;
         m_lItemList.m_Tail = NULL;
 
-        ListEntry<T*>** pTail = &m_lMemList.m_Tail;
+        ListEntry<char*>** pTail = &m_lMemList.m_Tail;
         while (m_lMemList.m_Head != NULL)
         {
-            ListEntry<T*>* first = m_lMemList.m_Head;
+            ListEntry<char*>* first = m_lMemList.m_Head;
             if (first == NULL)
             {
                 first = NULL;
@@ -52,7 +52,7 @@ public:
                         m_lMemList.m_Tail = NULL;
                     }
                 }
-                ListEntry<T*>* tmp = m_lMemList.m_Head;
+                ListEntry<char*>* tmp = m_lMemList.m_Head;
                 m_lMemList.m_Head = tmp->next;
                 first = tmp;
             }
@@ -69,7 +69,7 @@ public:
     }
 
     /* 0x0 */ nlListContainer<T*> m_lItemList;
-    /* 0xC */ nlListContainer<T*> m_lMemList;
+    /* 0xC */ nlListContainer<char*> m_lMemList;
     /* 0x18 */ int m_nItemCount;
 }; // total size: 0x1C
 
