@@ -21,7 +21,7 @@ struct CharacterPhysicsElement
 class CharacterPhysicsData
 {
 public:
-    virtual ~CharacterPhysicsData() { };
+    virtual ~CharacterPhysicsData();
 
     /* 0x04 */ u32 physicsElementCount;
     /* 0x08 */ CharacterPhysicsElement* pPhysicsElements;

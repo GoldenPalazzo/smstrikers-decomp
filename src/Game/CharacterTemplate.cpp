@@ -512,12 +512,13 @@ char* GetCharacterName(eCharacterClass cc)
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800145B8 | size: 0x60
-//  */
-// CharacterPhysicsData::~CharacterPhysicsData()
-// {
-// }
+/**
+ * Offset/Address/Size: 0x0 | 0x800145B8 | size: 0x60
+ */
+CharacterPhysicsData::~CharacterPhysicsData()
+{
+    delete[] pPhysicsElements;
+}
 
 // /**
 //  * Offset/Address/Size: 0x60 | 0x80014618 | size: 0xE0
