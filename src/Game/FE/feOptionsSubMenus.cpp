@@ -89,12 +89,24 @@ void TempDisableSound();
 
 /**
  * Offset/Address/Size: 0x210 | 0x800B5254 | size: 0x410
+ * TODO: 78.83% match - stmw r24 vs r25 register allocation (extra callee-saved reg for
+ * buttonstate), missing li r0,0 before stmw, prologue store reordering (m_pres/m_buttons/
+ * m_currentButtonState not hoisted before ButtonComponent ctor by MWCC -O4)
  */
 OptionsSaveLoad::OptionsSaveLoad(FEPresentation* presentation, ButtonComponent::ButtonState buttonstate)
 {
     m_pres = presentation;
     m_buttons = NULL;
     m_currentButtonState = buttonstate;
+    mSettingsCRC = 0;
+    mSlideMenuLists[0] = NULL;
+    mSlideMenuLists[1] = NULL;
+    mSlideMenuLists[2] = NULL;
+    mSlideMenuLists[3] = NULL;
+    mSlideMenuLists[4] = NULL;
+    mSlideMenuLists[5] = NULL;
+    mSlideMenuLists[6] = NULL;
+    mSlideMenuLists[7] = NULL;
 
     presentation->SetActiveSlide(SAVE_LOAD_SLIDE);
     presentation->Update(0.0f);
@@ -102,70 +114,50 @@ OptionsSaveLoad::OptionsSaveLoad(FEPresentation* presentation, ButtonComponent::
     SetButtonState(buttonstate);
     mButtons.CentreButtons();
 
-    TLSlide* slide = presentation->m_slides;
+    TLSlide* slide = presentation->m_currentSlide;
 
     void (*openItem)(TLComponentInstance*) = DoubleHighlite::OpenItem;
     void (*closeItem)(TLComponentInstance*) = DoubleHighlite::CloseItem;
 
     for (int i = 0; i < 2; i++)
     {
-        InlineHasher hashers[8] = {};
-        hashers[4].m_Hash = nlStringLowerHash(MENU_ITEMS_OSL[i]);
-        hashers[5].m_Hash = hashers[4].m_Hash;
-        hashers[6].m_Hash = nlStringLowerHash("");
-        hashers[7].m_Hash = hashers[6].m_Hash;
-
         TLComponentInstance* instance = FEFinder<TLComponentInstance, 4>::Find(
             slide,
-            hashers[7],
-            hashers[6],
-            hashers[5],
-            hashers[4],
-            hashers[3],
-            hashers[2]);
+            InlineHasher(nlStringLowerHash("Layer")),
+            InlineHasher(nlStringLowerHash(MENU_ITEMS_OSL[i])),
+            InlineHasher(0),
+            InlineHasher(0),
+            InlineHasher(0),
+            InlineHasher(0));
 
-        if (i == 0)
-        {
-            instance->SetActiveSlide(DoubleHighlite::SLIDE_IN);
-        }
-        else
-        {
-            instance->SetActiveSlide(DoubleHighlite::SLIDE_OUT);
-        }
+        instance->SetActiveSlide((i == 0) ? DoubleHighlite::SLIDE_IN : DoubleHighlite::SLIDE_OUT);
         instance->Update(0.0f);
 
         MenuItem<TLComponentInstance>* menuItem = &mMenuItems.mMenuItems[mMenuItems.mNumItemsAdded];
         menuItem->mType = instance;
         mMenuItems.mNumItemsAdded++;
 
-        menuItem->mCallbacks[0].mTag = FREE_FUNCTION;
-        menuItem->mCallbacks[0].mFreeFunction = (void (*)(TLComponentInstance*))openItem;
+        {
+            Function<TLComponentInstance*> openFunc;
+            openFunc.mTag = FREE_FUNCTION;
+            openFunc.mFreeFunction = openItem;
+            menuItem->mCallbacks[1] = openFunc;
+        }
 
-        menuItem->mCallbacks[1].mTag = FREE_FUNCTION;
-        menuItem->mCallbacks[1].mFreeFunction = (void (*)(TLComponentInstance*))closeItem;
-
-        menuItem->mDisabled = false;
+        {
+            Function<TLComponentInstance*> closeFunc;
+            closeFunc.mTag = FREE_FUNCTION;
+            closeFunc.mFreeFunction = closeItem;
+            menuItem->mCallbacks[2] = closeFunc;
+        }
 
         if (i == 0)
-        {
             DoubleHighlite::TempDisableSound();
-        }
 
-        // Call open callback if valid
-        if (i == 0)
-        {
-            if (menuItem->mCallbacks[0].mTag == FREE_FUNCTION)
-            {
-                menuItem->mCallbacks[0].mFreeFunction(menuItem->mType);
-            }
-            else if (menuItem->mCallbacks[0].mTag == FUNCTOR)
-            {
-                ((FunctorBase*)menuItem->mCallbacks[0].mFunctor)->Invoke();
-            }
-        }
+        menuItem->mCallbacks[(i == 0) ? 1 : 2](menuItem->mType);
     }
 
-    mMenuItems.mCurrentIndex = 1;
+    mMenuItems.mFlags = 1;
 }
 
 /**
@@ -873,8 +865,96 @@ void OptionsSubMenu::SetButtonState(ButtonComponent::ButtonState buttonState)
 /**
  * Offset/Address/Size: 0x504C | 0x800BA090 | size: 0x434
  */
-void OptionsSubMenu::BuildSubMenuList(int, TLComponentInstance*, bool, int)
+void OptionsSubMenu::BuildSubMenuList(int listIndex, TLComponentInstance* compInstance, bool setFlag, int currentIndex)
 {
+    extern int nlSNPrintf(char*, unsigned long, const char*, ...);
+
+    class SetSlideFunctor : public Function1<void, SlideMenuItem*>::FunctorBase
+    {
+    public:
+        void (SlideMenuList::*mMemFun)();
+        SlideMenuList* mList;
+
+        SetSlideFunctor(SlideMenuList* list)
+            : mMemFun(&SlideMenuList::SetSlide)
+            , mList(list)
+        {
+        }
+
+        virtual ~SetSlideFunctor()
+        {
+        }
+
+        virtual void operator()(SlideMenuItem*)
+        {
+            (mList->*mMemFun)();
+        }
+
+        virtual Function1<void, SlideMenuItem*>::FunctorBase* Clone() const
+        {
+            return new ((SetSlideFunctor*)nlMalloc(sizeof(SetSlideFunctor), 8, false)) SetSlideFunctor(*this);
+        }
+    };
+
+    SlideMenuList* list = (SlideMenuList*)nlMalloc(sizeof(SlideMenuList), 8, false);
+    if (list != NULL)
+    {
+        new ((MenuList<SlideMenuItem>*)list) MenuList<SlideMenuItem>();
+        list->mInputLocked = 0;
+        list->mComponentInstance = compInstance;
+    }
+    mSlideMenuLists[listIndex] = (MenuList<SlideMenuList>*)list;
+
+    char menuName[64] = { 0 };
+
+    int i = 0;
+    while (true)
+    {
+        nlSNPrintf(menuName, 64, "MENU ITEM%d", i + 1);
+        compInstance->SetActiveSlide(menuName);
+
+        if (compInstance->GetActiveSlide() == NULL)
+        {
+            break;
+        }
+
+        unsigned long slideHash = compInstance->GetActiveSlide()->m_hash;
+
+        SlideMenuItem* item = (SlideMenuItem*)nlMalloc(sizeof(SlideMenuItem), 8, true);
+        if (item != NULL)
+        {
+            item->mSlideMenuHash = (unsigned long)-1;
+            item->mComponentInstance = list->mComponentInstance;
+            item->mUserEnumType = i;
+        }
+        item->mSlideMenuHash = slideHash;
+
+        MenuItem<SlideMenuItem>* menuItem = &list->mMenuItems[list->mNumItemsAdded];
+        menuItem->mType = item;
+        list->mNumItemsAdded++;
+
+        if (menuItem->mCallbacks[1].mTag == FUNCTOR && menuItem->mCallbacks[1].mFunctor != NULL)
+        {
+            delete menuItem->mCallbacks[1].mFunctor;
+        }
+        menuItem->mCallbacks[1].mTag = FUNCTOR;
+        menuItem->mCallbacks[1].mFunctor = new ((SetSlideFunctor*)nlMalloc(sizeof(SetSlideFunctor), 8, false)) SetSlideFunctor(list);
+
+        i++;
+    }
+
+    MenuItem<SlideMenuItem>* menuItem = &list->mMenuItems[list->mCurrentIndex];
+    menuItem->mCallbacks[2](menuItem->mType);
+
+    list->mCurrentIndex = currentIndex;
+
+    menuItem = &list->mMenuItems[list->mCurrentIndex];
+    menuItem->mCallbacks[1](menuItem->mType);
+
+    if (setFlag)
+    {
+        list->mFlags = 1;
+    }
 }
 
 /**

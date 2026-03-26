@@ -3,6 +3,7 @@
 
 #include "types.h"
 
+#include "NL/gl/gl.h"
 #include "Game/FE/fePackage.h"
 #include "Game/FE/feResourceManager.h"
 #include "Game/FE/feSceneResource.h"
@@ -17,6 +18,8 @@ public:
     bool LoadPackage(const char*);
     void UnloadPackage();
     void Update(float);
+    const nlMatrix4& GetCameraMatrix() const;
+    eGLView GetRenderView() const;
 
     /* 0x00 */ FEPackage* m_pFEPackage;
     /* 0x04 */ unsigned long m_uHashID;

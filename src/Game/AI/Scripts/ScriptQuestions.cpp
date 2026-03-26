@@ -30,6 +30,22 @@ inline float min_float(float a, float b)
     return (a <= b) ? a : b;
 }
 
+static inline float clampGe0(float x)
+{
+    if (x >= 0.0f)
+        return x;
+    else
+        return 0.0f;
+}
+
+static inline float clampLe1(float x)
+{
+    if (x <= 1.0f)
+        return x;
+    else
+        return 1.0f;
+}
+
 static inline float IsPassInPlay(cBall* pBall)
 {
     if (pBall->m_fTotalPassTime > 0.0f)
@@ -1575,11 +1591,120 @@ float OnBreakaway(cFielder* pFielder)
 
 /**
  * Offset/Address/Size: 0x32DC | 0x80081D64 | size: 0x420
+ * TODO: 99.78% match - 6 register diffs remaining: f1/f30 at fDist comparison
+ * (MWCC optimizer chooses saved register over return register), cascading to
+ * fDepth and fDoDepthScale sections
  */
-float OpenToPosition(const nlVector3&, const nlVector3&, const cTeam*, const cPlayer*, const cPlayer*, bool)
+float OpenToPosition(const nlVector3& v3From, const nlVector3& v3To, const cTeam* pTeam, const cPlayer* pCurrentPlayer, const cPlayer* pIgnorePlayer, bool bNoGoalies)
 {
-    FORCE_DONT_INLINE;
-    return 0.0f;
+    extern cFielder* g_pScriptBallOwner;
+    float dx, dy, dz;
+    dy = v3To.f.y - v3From.f.y;
+    dx = v3To.f.x - v3From.f.x;
+    dz = v3To.f.z - v3From.f.z;
+    float sqrDist = dx * dx + dy * dy + dz * dz;
+    float fScore = 0.0f;
+    float isZeroDist = (float)(fabsf(sqrDist - fScore) <= 0.0001f);
+    if (isZeroDist != fScore)
+    {
+        return 1.0f;
+    }
+    int i_team = 0;
+    do
+    {
+        cTeam* pLoopTeam = g_pTeams[i_team];
+        int i_start = 0;
+        int i_max = 4;
+        if (pTeam != NULL)
+        {
+            if (pTeam != pLoopTeam)
+            {
+                i_start = 4;
+            }
+        }
+        if (bNoGoalies)
+        {
+            i_max = 3;
+        }
+        for (int i = i_start; i <= i_max; i++)
+        {
+            cPlayer* pPlayer = pLoopTeam->GetPlayer(i);
+            if (pPlayer == pCurrentPlayer)
+                continue;
+            if (pPlayer == pIgnorePlayer)
+                continue;
+            nlVector3 closestPt = GetClosestPointOnLineABFromPointC(v3From, v3To, pPlayer->m_v3Position);
+            float pdy = pPlayer->m_v3Position.f.y - closestPt.f.y;
+            float pdx = pPlayer->m_v3Position.f.x - closestPt.f.x;
+            float fDist;
+            if (!((fDist = nlSqrt(pdx * pdx + pdy * pdy, true)) <= g_pGame->m_pFuzzyTweaks->vGetOpenPassLaneOffset.f.y))
+                continue;
+            bool isClosestFrom = (v3From.f.x == closestPt.f.x) && (v3From.f.y == closestPt.f.y) && (v3From.f.z == closestPt.f.z);
+            if (isClosestFrom)
+                continue;
+            bool isClosestTo = (v3To.f.x == closestPt.f.x) && (v3To.f.y == closestPt.f.y) && (v3To.f.z == closestPt.f.z);
+            if (isClosestTo)
+                continue;
+            float fOpenDist = g_pGame->m_pFuzzyTweaks->vGetOpenPassLaneDist.f.x;
+            if (pCurrentPlayer != NULL)
+            {
+                if (g_pScriptBallOwner == pCurrentPlayer)
+                {
+                    float fBallHeight = NormalizeVal(pCurrentPlayer->GetJointPosition(pCurrentPlayer->m_nBip01JointIndex_0xA4).f.z, 0.0f, 2.0f);
+                    fOpenDist = Interpolate(fOpenDist, 3.5f, fBallHeight);
+                }
+            }
+            float ldy = v3From.f.y - closestPt.f.y;
+            float ldx = v3From.f.x - closestPt.f.x;
+            float fFromDist = nlSqrt(ldy * ldy + ldx * ldx, true);
+            fOpenDist = InterpolateRangeClamped(
+                g_pGame->m_pFuzzyTweaks->vGetOpenPassLaneOffset.f.x,
+                g_pGame->m_pFuzzyTweaks->vGetOpenPassLaneOffset.f.y,
+                fOpenDist,
+                g_pGame->m_pFuzzyTweaks->vGetOpenPassLaneDist.f.y,
+                fFromDist);
+            float sign = AIsgn(pPlayer->GetAIDefNetLocation(NULL).f.x);
+            float fDepth = (pPlayer->m_v3Position.f.x - v3To.f.x) * sign;
+            if (fDepth < 0.0f)
+            {
+                float fDoDepthScale;
+                if (pPlayer->m_pTeam == NULL)
+                {
+                    fDoDepthScale = 0.0f;
+                }
+                else if (pPlayer->m_pTeam->mpCurrentSituation == SITUATION_DEFENSE)
+                {
+                    fDoDepthScale = 1.0f;
+                }
+                else
+                {
+                    fDoDepthScale = 0.0f;
+                }
+                if (fDoDepthScale != 0.0f)
+                {
+                    fDepth = NormalizeVal(-fDepth, 0.0f, 8.0f);
+                    fDist *= fDepth;
+                }
+            }
+            float fNorm = clampLe1(clampGe0(fDist / fOpenDist));
+            float fOpen = 1.0f - fNorm;
+            if (pCurrentPlayer != NULL)
+            {
+                if (pCurrentPlayer->m_pTeam == pPlayer->m_pTeam)
+                    fOpen *= 0.5f;
+            }
+            if (fOpen > 0.0f)
+                fScore += fOpen * fOpen;
+            if (fScore >= 1.0f)
+                break;
+        }
+        if (fScore >= 1.0f)
+            break;
+        i_team++;
+    } while (i_team < 2);
+    fScore = clampGe0(fScore);
+    fScore = clampLe1(fScore);
+    return 1.0f - fScore;
 }
 
 /**

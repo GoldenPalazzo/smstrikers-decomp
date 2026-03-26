@@ -9,13 +9,64 @@
 #include "Game/AI/Scripts/ScriptQuestions.h"
 #include "Game/AI/SpaceSearch.h"
 #include "Game/AnimInventory.h"
+#include "Game/FormationDefines.h"
 #include "Game/GameTweaks.h"
 
 extern FuzzyVariant fvNotSet;
 extern cTeam* g_pCurrentlyUpdatingTeam;
 static float g_fLooseBallActionRethinkTime;
+extern cFielder* g_pScriptCurrentFielder;
+
+enum eShotMeterState
+{
+    SHOT_METER_INACTIVE = 0,
+    SHOT_METER_ACTIVE = 1,
+    SHOT_METER_RELEASED = 2,
+    SHOT_METER_STS_ACTIVE = 3,
+    SHOT_METER_STS_TRANSISTION = 4,
+    SHOT_METER_STS_RELEASED = 5,
+};
+
+class ShotMeter
+{
+public:
+    eShotMeterState m_eShotMeterState;
+    float GetTotalDuration() const;
+};
 
 CommonDesireData g_vDesireCommonData[NUM_FIELDERDESIRES];
+
+struct SupportBallAILocation
+{
+    float x0;
+    float y0;
+    float x1;
+    float y1;
+};
+
+static const nlVector3 v3Zero = {
+    0.0f,
+    0.0f,
+    0.0f,
+};
+
+static const SupportBallAILocation g_vSupportBallDefensiveAILocations[6] = {
+    { 0.0f, 1.0f, 0.6f, 0.45f },
+    { 0.0f, -1.0f, 0.6f, -0.45f },
+    { 4.0f, 1.0f, 3.4f, 0.45f },
+    { 4.0f, -1.0f, 3.4f, -0.45f },
+    { 2.0f, 1.0f, 1.4f, 0.4f },
+    { 2.0f, -1.0f, 1.4f, -0.4f },
+};
+
+static const SupportBallAILocation g_vSupportBallOffensiveAILocations[6] = {
+    { 0.0f, 1.0f, 0.6f, 0.45f },
+    { 0.0f, -1.0f, 0.6f, -0.45f },
+    { 4.0f, 1.0f, 3.4f, 0.45f },
+    { 4.0f, -1.0f, 3.4f, -0.45f },
+    { 2.0f, 1.0f, 2.6f, 0.4f },
+    { 2.0f, -1.0f, 2.6f, -0.4f },
+};
 
 static inline void CalcDeltaToTarget(nlVector3& outDelta, const nlVector3& target, const nlVector3& origin)
 {
@@ -385,9 +436,144 @@ void cFielder::DesireMark(float)
 
 /**
  * Offset/Address/Size: 0x35E4 | 0x80034368 | size: 0x408
+ * TODO: 84.11% match - second loop uses do-while countdown to prevent unrolling; remaining gap is mtctr/bdnz vs cmpwi/blt due to -inline auto vs -inline deferred flags
  */
-void cFielder::DesireSupportBall(float, bool)
+void cFielder::DesireSupportBall(float fDeltaT, bool bDefensive)
 {
+    if (g_pBall->m_pOwner == this)
+    {
+        SetDesireDuration(0.0f, true);
+        return;
+    }
+
+    const SupportBallAILocation* pAILocations = bDefensive ? g_vSupportBallDefensiveAILocations : g_vSupportBallOffensiveAILocations;
+    int iNumSupportLocs = bDefensive ? 6 : 6;
+
+    nlVector3 v3FutureBallFieldLocation;
+    nlVector3 v3FutureBallAILocation;
+
+    cBall* pBall = g_pBall;
+    v3FutureBallFieldLocation.f.x = pBall->m_v3Position.f.x + (0.2f * pBall->GetAIVelocity()->f.x);
+
+    pBall = g_pBall;
+    v3FutureBallFieldLocation.f.y = pBall->m_v3Position.f.y + (0.2f * pBall->GetAIVelocity()->f.y);
+    v3FutureBallFieldLocation.f.z = 0.0f;
+
+    FieldLocToAILoc(v3FutureBallAILocation, v3FutureBallFieldLocation, (eTeamSide)m_pTeam->m_nSide);
+
+    int nearestIndices[2] = { -1, -1 };
+    float nearestDists[2] = { 1000000000.0f, 1000000000.0f };
+
+    for (int i = 0; i < iNumSupportLocs; i++)
+    {
+        float dy = v3FutureBallAILocation.f.y - pAILocations[i].y0;
+        float dx = v3FutureBallAILocation.f.x - pAILocations[i].x0;
+        float dist = nlSqrt(dx * dx + dy * dy, true);
+
+        if (dist < nearestDists[0])
+        {
+            nearestDists[1] = nearestDists[0];
+            nearestIndices[1] = nearestIndices[0];
+            nearestIndices[0] = i;
+            nearestDists[0] = dist;
+        }
+        else if (dist < nearestDists[1])
+        {
+            nearestIndices[1] = i;
+            nearestDists[1] = dist;
+        }
+    }
+
+    nlVector2 v2LocationOffsets[2];
+    nlVector2 v2SupportBallAILocs[2];
+
+    int n = 2;
+    int i = 0;
+    do
+    {
+        const SupportBallAILocation* pLocation = &pAILocations[nearestIndices[i]];
+
+        v2LocationOffsets[i].f.x = pLocation->x1 - pLocation->x0;
+        v2LocationOffsets[i].f.y = pLocation->y1 - pLocation->y0;
+
+        float x = v3FutureBallAILocation.f.x + v2LocationOffsets[i].f.x;
+        if (x < 0.0f)
+        {
+            x = 0.0f;
+        }
+        if (x > 4.0f)
+        {
+            x = 4.0f;
+        }
+        v2SupportBallAILocs[i].f.x = x;
+
+        float y = v3FutureBallAILocation.f.y + v2LocationOffsets[i].f.y;
+        if (y < -1.0f)
+        {
+            y = -1.0f;
+        }
+        if (y > 1.0f)
+        {
+            y = 1.0f;
+        }
+        v2SupportBallAILocs[i].f.y = y;
+
+        i++;
+    } while (--n > 0);
+
+    nlVector3 v3TargetAILoc = {
+        0.0f,
+        0.0f,
+        0.0f,
+    };
+
+    float fWeight0 = nearestDists[1] / (nearestDists[0] + nearestDists[1]);
+    float fWeight1 = 1.0f - fWeight0;
+
+    v3TargetAILoc.f.x = (fWeight1 * v2SupportBallAILocs[1].f.x) + (fWeight0 * v2SupportBallAILocs[0].f.x);
+    v3TargetAILoc.f.y = (fWeight1 * v2SupportBallAILocs[1].f.y) + (fWeight0 * v2SupportBallAILocs[0].f.y);
+
+    AILocToFieldLoc(v3TargetAILoc, v3TargetAILoc, (eTeamSide)m_pTeam->m_nSide);
+
+    float fTotalWeight = 0.0f;
+    float fAIBallLocationWeight = 0.7f;
+
+    nlVector3 v3DesiredPosition = v3Zero;
+    v3DesiredPosition.f.x = (fAIBallLocationWeight * v3TargetAILoc.f.x) + v3DesiredPosition.f.x;
+    v3DesiredPosition.f.y = (fAIBallLocationWeight * v3TargetAILoc.f.y) + v3DesiredPosition.f.y;
+    v3DesiredPosition.f.z = (fAIBallLocationWeight * v3TargetAILoc.f.z) + v3DesiredPosition.f.z;
+
+    fTotalWeight = fTotalWeight + fAIBallLocationWeight;
+
+    nlVector3 v3FormationPosition;
+    m_DesireCommonVars.bInPosition = GetFormationPosition(v3FormationPosition, 0.0f);
+    if (m_DesireCommonVars.bInPosition)
+    {
+        v3FormationPosition = m_v3Position;
+    }
+
+    float fFormationWeight = 0.3f;
+    fTotalWeight = fTotalWeight + fFormationWeight;
+
+    v3DesiredPosition.f.x = (fFormationWeight * v3FormationPosition.f.x) + v3DesiredPosition.f.x;
+    v3DesiredPosition.f.y = (fFormationWeight * v3FormationPosition.f.y) + v3DesiredPosition.f.y;
+    v3DesiredPosition.f.z = (fFormationWeight * v3FormationPosition.f.z) + v3DesiredPosition.f.z;
+
+    nlVector3 v3FinalDesiredPosition;
+    if (fTotalWeight > 0.0f)
+    {
+        float fInvWeight = 1.0f / fTotalWeight;
+        v3FinalDesiredPosition.f.x = fInvWeight * v3DesiredPosition.f.x;
+        v3FinalDesiredPosition.f.y = fInvWeight * v3DesiredPosition.f.y;
+        v3FinalDesiredPosition.f.z = fInvWeight * v3DesiredPosition.f.z;
+    }
+    else
+    {
+        v3FinalDesiredPosition = v3Zero;
+    }
+
+    SetDesiredSpeedAndDirectionToPosition(fDeltaT, v3FinalDesiredPosition, TR_FAR_DISTANCE, 1.0f, 1.0f);
+    ShouldIStrafe();
 }
 
 /**
@@ -795,9 +981,96 @@ void cFielder::DesireReceivePassFromRun(float)
 
 /**
  * Offset/Address/Size: 0xEE4 | 0x80031C68 | size: 0x428
+ * TODO: 91.25% match - normalization instruction scheduling (fmuls/fadds swap) cascades to callee-saved FPR allocation diffs in turbo/reaction sections
  */
-void cFielder::InitDesireRunToNet()
+u8 cFielder::InitDesireRunToNet()
 {
+    if (m_pBall == NULL)
+    {
+        if (m_sQueuedDesireParams.eDesireType == FIELDERDESIRE_RUN_TO_NET)
+        {
+            m_sQueuedDesireParams.fDuration = 0.0f;
+            m_sQueuedDesireParams.eDesireType = FIELDERDESIRE_NEED_DESIRE;
+            m_sQueuedDesireParams.opt1 = fvNotSet;
+            m_sQueuedDesireParams.opt2 = fvNotSet;
+        }
+        return 0;
+    }
+
+    SpaceSearch* pSpaceSearch = new (nlMalloc(0x4C, 8, false)) SSearchRunToNet(this);
+    SetSpaceSearch(pSpaceSearch);
+
+    m_pSpaceSearch->m_bDebugOn = false;
+
+    nlVector3 v3BestPosition;
+    m_pSpaceSearch->FindBestPosition(v3BestPosition, m_v3Position, DIR_NONE, NULL, 4.0f, 0x8000);
+
+    nlVector3 v3DesiredVelDirection;
+    nlVec3Sub(v3DesiredVelDirection, v3BestPosition, m_v3Position);
+
+    float fInvDistance = nlRecipSqrt(
+        (v3DesiredVelDirection.f.x * v3DesiredVelDirection.f.x) + (v3DesiredVelDirection.f.y * v3DesiredVelDirection.f.y) + (v3DesiredVelDirection.f.z * v3DesiredVelDirection.f.z), true);
+
+    _nlVec3Scale(v3DesiredVelDirection, fInvDistance);
+
+    float fInvVelocity = nlRecipSqrt(
+        (m_v3Velocity.f.x * m_v3Velocity.f.x) + (m_v3Velocity.f.y * m_v3Velocity.f.y) + (m_v3Velocity.f.z * m_v3Velocity.f.z), true);
+
+    float fNormVelY = fInvVelocity * m_v3Velocity.f.y;
+    float fNormVelX = fInvVelocity * m_v3Velocity.f.x;
+    float fNormVelZ = fInvVelocity * m_v3Velocity.f.z;
+
+    float fDot = (fNormVelX * v3DesiredVelDirection.f.x) + (fNormVelY * v3DesiredVelDirection.f.y) + (fNormVelZ * v3DesiredVelDirection.f.z);
+
+    m_DesireCommonVars.v3DesiredPosition = v3DesiredVelDirection;
+    m_DesireCommonVars.turboRequest = TR_FAR_DISTANCE;
+
+    if (fDot >= 0.8f)
+    {
+        nlVector3 v3ToPosition;
+        v3ToPosition.f.z = m_v3Position.f.z + (8.0f * v3DesiredVelDirection.f.z);
+        v3ToPosition.f.x = m_v3Position.f.x + (8.0f * v3DesiredVelDirection.f.x);
+        v3ToPosition.f.y = m_v3Position.f.y + (8.0f * v3DesiredVelDirection.f.y);
+
+        float bTurboChance = (float)g_vDesireCommonData[m_eFielderDesireState].m_RandomChanceGen.genrand(
+            SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide)->Off_TurboChance);
+
+        float fOpenToPosition = OpenToPosition(m_v3Position, v3ToPosition, m_pTeam->GetOtherTeam(), this, NULL, false);
+        float fOpen = Open(g_pScriptCurrentFielder);
+        float fBreakaway = OnBreakaway(g_pScriptCurrentFielder);
+        float fInvincible = Invincible(g_pScriptCurrentFielder);
+
+        fOpen = (fOpen < fOpenToPosition) ? fOpenToPosition : fOpen;
+        fBreakaway = (fBreakaway < fOpen) ? fOpen : fBreakaway;
+
+        if (fInvincible >= fBreakaway)
+        {
+            fBreakaway = fInvincible;
+        }
+
+        float fFarToGoalie = FarToTheirGoalie(g_pScriptCurrentFielder);
+
+        u8 bForceTurbo = 0;
+        if (bTurboChance != 0.0f)
+        {
+            fFarToGoalie = (fFarToGoalie > fBreakaway) ? fBreakaway : fFarToGoalie;
+
+            if (fFarToGoalie >= 0.7f)
+            {
+                bForceTurbo = 1;
+            }
+        }
+
+        m_DesireCommonVars.turboRequest = (bForceTurbo != 0) ? TR_FORCED_ON : TR_FAR_DISTANCE;
+    }
+
+    float fReaction = SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide)->Off_Reaction;
+    float fReactionRandom = 0.7f * (0.3f * (1.0f - fReaction));
+    float fReactionOffset = nlRandomf(fReactionRandom, &nlDefaultSeed) - (0.5f * fReactionRandom);
+    m_DesireCommonVars.fMisc = 0.7f + fReactionOffset;
+
+    m_pAvoidance->SetThingsToAvoid(0x1F);
+    return 1;
 }
 
 /**
@@ -919,7 +1192,106 @@ void cFielder::DesireUsePowerup(float)
 
 /**
  * Offset/Address/Size: 0x0 | 0x80030D84 | size: 0x41C
+ * TODO: 99.26% match - r3/r4 register swap for m_pShotMeter ptr vs shotMeterState, instruction scheduling in FuzzyVariant construction
  */
 void cFielder::DesireWindupShot(float)
 {
+    if (m_pBall == NULL)
+    {
+        SetDesireDuration(0.0f, true);
+        return;
+    }
+
+    float fDesiredSpeed = m_fActualSpeed;
+    float fMaxSpeed = ((FielderTweaks*)m_pTweaks)->fRunningWBSpeed;
+    fDesiredSpeed = (fDesiredSpeed <= fMaxSpeed) ? fDesiredSpeed : fMaxSpeed;
+    m_fDesiredSpeed = fDesiredSpeed;
+
+    if (m_DesireWindupForShotVars.bIsBallAwayFromCarrier)
+    {
+        if (!IsBallAwayFromCarrier())
+        {
+            DoResetShotMeter(0.0f);
+            SetDesireDuration(m_pShotMeter->GetTotalDuration(), false);
+
+            m_DesireWindupForShotVars.bIsBallAwayFromCarrier = false;
+
+            m_DesireCommonVars.tMiscTimer.SetSeconds(g_pGame->m_pGameTweaks->unk2D0 / 3.0f);
+        }
+        else
+        {
+            return;
+        }
+    }
+
+    bool bShootToScore = false;
+    unsigned char bSwitchToShootDesire = 0;
+
+    if (m_DesireCommonVars.tMiscTimer.m_uPackedTime == 0)
+    {
+        if (DoAIWindupActionSelection())
+        {
+            m_DesireCommonVars.tMiscTimer.SetSeconds(10000000.0f);
+        }
+        else
+        {
+            float fTimer = (g_pGame->m_pGameTweaks->unk2D0 / 3.0f) - 0.05f;
+            float fMinTimer = 0.1f;
+            fMinTimer = (fMinTimer >= fTimer) ? fMinTimer : fTimer;
+            m_DesireCommonVars.tMiscTimer.SetSeconds(fMinTimer);
+        }
+    }
+
+    bool bMeterWindupState = false;
+    eShotMeterState shotMeterState = m_pShotMeter->m_eShotMeterState;
+    if (shotMeterState == SHOT_METER_ACTIVE || shotMeterState == SHOT_METER_STS_ACTIVE || shotMeterState == SHOT_METER_STS_TRANSISTION)
+    {
+        bMeterWindupState = true;
+    }
+
+    if (bMeterWindupState)
+    {
+        if (m_pShotMeter->m_eShotMeterState == SHOT_METER_STS_TRANSISTION)
+        {
+            static FilteredRandomChance s2sChanceGen;
+            bool bS2SChance = s2sChanceGen.genrand(SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide)->Off_CaptainS2SChance);
+
+            float fInvincible = Invincible(g_pScriptCurrentFielder);
+            float fOpen = Open(g_pScriptCurrentFielder);
+            fOpen = (fOpen >= fInvincible) ? fOpen : fInvincible;
+
+            if (fOpen >= 0.8f && NearToTheirGoalie(g_pScriptCurrentFielder) <= 0.65f && bS2SChance)
+            {
+                KillWindup(this, "ball_shot_windup", true);
+                EmitWindupAtCharacter(this, "ball_sts_windup");
+            }
+            else
+            {
+                bSwitchToShootDesire = 1;
+            }
+        }
+    }
+    else
+    {
+        if (m_pShotMeter->m_eShotMeterState == SHOT_METER_RELEASED)
+        {
+            bSwitchToShootDesire = 1;
+        }
+        else if (m_pShotMeter->m_eShotMeterState == SHOT_METER_STS_RELEASED)
+        {
+            bShootToScore = true;
+            bSwitchToShootDesire = 1;
+        }
+    }
+
+    if (m_tDesireDuration.m_uPackedTime == 0)
+    {
+        bSwitchToShootDesire = 1;
+    }
+
+    if (bSwitchToShootDesire)
+    {
+        SetDesireDuration(0.0f, true);
+        InitDesire(FIELDERDESIRE_SHOOT, m_fDesireConfidence, -1.0f, FuzzyVariant(bShootToScore), fvNotSet);
+    }
 }

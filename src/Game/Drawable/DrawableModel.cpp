@@ -992,10 +992,157 @@ void DrawCoPlanarReference(eGLView view, const glModel& model, const nlMatrix4& 
 
 /**
  * Offset/Address/Size: 0x2D0 | 0x801200DC | size: 0x460
+ * TODO: 79.67% match - GPR register allocation shifted by 2 (model=r23 vs r25,
+ *       worldMatrix=r24 vs r26, ignorePacketMatrices=r29 vs r31), causing:
+ *       1) f29 callee-saved (frame 0x1B0 vs 0x1A0) - named float temps needed
+ *          for correct fmadds/fdivs scheduling trigger 3rd callee-saved FPR
+ *       2) interleaved 2-at-a-time struct copy vs bulk 16-at-once (too few free GPRs)
+ *       3) clrlwi. (combined mask+test) inside loop vs hoisted clrlwi + cmplwi
  */
-void DrawPlanarShadow(const glModel*, const nlMatrix4&, float, bool, bool, bool, unsigned long)
+static inline void ComputeShadowMtx(nlMatrix4& dst, const nlMatrix4& src, u32 lightPtr)
 {
-    FORCE_DONT_INLINE;
+    float m13 = src.f.m13;
+    float m11 = src.f.m11;
+    float lightX = *(float*)(lightPtr + 4);
+    float lightY = *(float*)(lightPtr + 8);
+    float xRatioNeg = -lightX;
+    float lightZ = *(float*)(lightPtr + 0xC);
+    float yRatioNeg = -lightY;
+    float zero = 0.0f;
+    float one = 1.0f;
+    float xOverZ = xRatioNeg / lightZ;
+    float m23 = src.f.m23;
+    float m21 = src.f.m21;
+    float m33 = src.f.m33;
+    float m31 = src.f.m31;
+    float m43 = src.f.m43;
+    float m41 = src.f.m41;
+    float m12 = src.f.m12;
+    float yOverZ = yRatioNeg / lightZ;
+    float m22 = src.f.m22;
+    float m32 = src.f.m32;
+    float m42 = src.f.m42;
+
+    dst.f.m11 = xOverZ * m13 + m11;
+    dst.f.m21 = xOverZ * m23 + m21;
+    dst.f.m13 = zero;
+    dst.f.m23 = zero;
+    dst.f.m31 = xOverZ * m33 + m31;
+    dst.f.m41 = xOverZ * m43 + m41;
+    dst.f.m12 = yOverZ * m13 + m12;
+    dst.f.m22 = yOverZ * m23 + m22;
+    dst.f.m32 = yOverZ * m33 + m32;
+    dst.f.m42 = yOverZ * m43 + m42;
+    dst.f.m33 = zero;
+    dst.f.m43 = zero;
+    dst.f.m14 = zero;
+    dst.f.m24 = zero;
+    dst.f.m34 = zero;
+    dst.f.m44 = one;
+}
+
+void DrawPlanarShadow(const glModel* model, const nlMatrix4& worldMatrix, float shadowTranslucency, bool ignorePacketMatrices, bool isModelPosed, bool bFieldOnlyShadow, unsigned long boundingBoxCacheKey)
+{
+    extern unsigned char g_bDrawBoundingBoxes;
+    extern unsigned char g_bDrawPlanarShadows;
+    extern unsigned char g_bCoPlanarPerObject;
+    extern unsigned char g_bCoPlanarIgnoreIdentity;
+    extern unsigned long ResolvedBlackTexture;
+    extern World* s_World__12WorldManager;
+
+    nlMatrix4 packetMatrix;
+    nlMatrix4 packetShadowMatrix;
+    nlMatrix4 transformedPacketMatrix;
+    nlMatrix4 packetMat;
+    nlMatrix4 mat;
+    glModelPacket* pPacketEnd;
+    glModelPacket* pPacket;
+    void* pTransData;
+    unsigned long program;
+
+    if (g_bDrawBoundingBoxes)
+    {
+        RenderBoundingBox(model, worldMatrix);
+    }
+
+    if (!g_bDrawPlanarShadows)
+    {
+        return;
+    }
+
+    eGLView view = GLV_CoPlanar;
+    if (bFieldOnlyShadow)
+    {
+        view = GLV_CoPlanar0;
+    }
+
+    pTransData = glUserAlloc(GLUD_Translucent, 4, false);
+    *(float*)glUserGetData(pTransData) = shadowTranslucency;
+
+    if (g_bCoPlanarPerObject)
+    {
+        if (g_bCoPlanarIgnoreIdentity && worldMatrix.f.m41 == 0.0f && worldMatrix.f.m42 == 0.0f && worldMatrix.f.m43 == 0.0f)
+        {
+            return;
+        }
+
+        if (ignorePacketMatrices)
+        {
+            mat = worldMatrix;
+        }
+        else
+        {
+            glGetMatrix(model->packets->state.matrix, packetMat);
+            nlMultMatrices(mat, worldMatrix, packetMat);
+        }
+
+        DrawCoPlanarReference(view, *model, mat, boundingBoxCacheKey);
+    }
+
+    pPacket = model->packets;
+    pPacketEnd = pPacket + model->numPackets;
+    program = UnlitProgram;
+
+    while (pPacket < pPacketEnd)
+    {
+        if (!ignorePacketMatrices)
+        {
+            glGetMatrix(pPacket->state.matrix, packetMatrix);
+
+            if (isModelPosed)
+            {
+                transformedPacketMatrix = packetMatrix;
+            }
+            else
+            {
+                nlMultMatrices(transformedPacketMatrix, worldMatrix, packetMatrix);
+            }
+
+            ComputeShadowMtx(packetShadowMatrix, transformedPacketMatrix, *(u32*)((u8*)s_World__12WorldManager + 0x138));
+        }
+        else
+        {
+            ComputeShadowMtx(packetShadowMatrix, worldMatrix, *(u32*)((u8*)s_World__12WorldManager + 0x138));
+        }
+
+        unsigned long shadowMatrix = glAllocMatrix();
+        if (shadowMatrix + 0x10000 != 0xFFFF)
+        {
+            glSetMatrix(shadowMatrix, packetShadowMatrix);
+        }
+
+        pPacket->state.matrix = shadowMatrix;
+        pPacket->state.texture[0] = ResolvedBlackTexture;
+        pPacket->state.program = program;
+
+        glUserAttach(pTransData, pPacket, false);
+        glUserDetach(GLUD_Light, pPacket);
+        glSetRasterState(pPacket->state.raster, GLS_AlphaBlend, 1);
+
+        pPacket++;
+    }
+
+    glViewAttachModel(view, model);
 }
 
 /**

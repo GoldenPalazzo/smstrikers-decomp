@@ -584,7 +584,158 @@ void ChooseCupSceneV2::SetCurrentChamp(eTeamID teamID, bool hasChamp, TLComponen
 
 /**
  * Offset/Address/Size: 0x0 | 0x800DA284 | size: 0x438
+ * TODO: 95.13% match - popup callback Function<FnVoidVoid>/Bind stack-slot layout
+ * still differs from target (0x40/0x50/0x60 vs 0x58/0x40 pattern), and FEPopupMenu
+ * call sites still resolve to ref-signature symbols instead of by-value symbols.
  */
 void ChooseCupSceneV2::Proceed()
 {
+    switch (mCupToDisplay)
+    {
+    case TROPHY_MUSHROOM_CUP:
+        nlSingleton<GameInfoManager>::s_pInstance->SetMode(GameInfoManager::GM_MUSHROOM_CUP);
+        break;
+    case TROPHY_FLOWER_CUP:
+        nlSingleton<GameInfoManager>::s_pInstance->SetMode(GameInfoManager::GM_FLOWER_CUP);
+        break;
+    case TROPHY_STAR_CUP:
+        nlSingleton<GameInfoManager>::s_pInstance->SetMode(GameInfoManager::GM_STAR_CUP);
+        break;
+    case TROPHY_BOWSER_CUP:
+        nlSingleton<GameInfoManager>::s_pInstance->SetMode(GameInfoManager::GM_BOWSER_CUP);
+        break;
+    case TROPHY_SUPER_MUSHROOM_CUP:
+        nlSingleton<GameInfoManager>::s_pInstance->SetMode(GameInfoManager::GM_SUPER_MUSHROOM_CUP);
+        break;
+    case TROPHY_SUPER_FLOWER_CUP:
+        nlSingleton<GameInfoManager>::s_pInstance->SetMode(GameInfoManager::GM_SUPER_FLOWER_CUP);
+        break;
+    case TROPHY_SUPER_STAR_CUP:
+        nlSingleton<GameInfoManager>::s_pInstance->SetMode(GameInfoManager::GM_SUPER_STAR_CUP);
+        break;
+    case TROPHY_SUPER_BOWSER_CUP:
+        nlSingleton<GameInfoManager>::s_pInstance->SetMode(GameInfoManager::GM_SUPER_BOWSER_CUP);
+        break;
+    }
+
+    nlSingleton<GameInfoManager>::s_pInstance->GetCurrentRoundNumber();
+
+    GameInfoManager* gim = nlSingleton<GameInfoManager>::s_pInstance;
+    BaseCup* cup = gim->mCurrentCup;
+
+    if (!cup->mCupStarted)
+    {
+        bool isSuperCup = mIsSuperCup;
+
+        if (gim->mCurrentMode == GameInfoManager::GM_BOWSER_CUP)
+        {
+            gim->mCurrentCup = (BaseCup*)&gim->mBowserCupSeries;
+            gim->mDoingKnockout = false;
+            gim->mBowserCupKnockout.mRoundNumber = -5;
+        }
+        else if (gim->mCurrentMode == GameInfoManager::GM_SUPER_BOWSER_CUP)
+        {
+            gim->mCurrentCup = (BaseCup*)&gim->mSuperBowserCupSeries;
+            gim->mDoingKnockout = false;
+            gim->mSuperBowserCupKnockout.mRoundNumber = -5;
+        }
+
+        cup = nlSingleton<GameInfoManager>::s_pInstance->mCurrentCup;
+        cup->mCupStarted = false;
+
+        GameInfoManager* gim2 = nlSingleton<GameInfoManager>::s_pInstance;
+        cup->mCupSettings.SkillLevel = gim2->mUserInfo.mGameplayOptions.SkillLevel;
+        cup->mCupSettings.GameTime = gim2->mUserInfo.mGameplayOptions.GameTime;
+        cup->mCupSettings.PowerUps = gim2->mUserInfo.mGameplayOptions.PowerUps;
+        cup->mCupSettings.Shoot2Score = gim2->mUserInfo.mGameplayOptions.Shoot2Score;
+        cup->mCupSettings.BowserAttackEnabled = gim2->mUserInfo.mGameplayOptions.BowserAttackEnabled;
+        cup->mCupSettings.RumbleEnabled = gim2->mUserInfo.mGameplayOptions.RumbleEnabled;
+
+        if (!isSuperCup)
+        {
+            nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_CUP_OPTIONS_INITIAL_CUP, SCREEN_NOTHING, true);
+        }
+        else
+        {
+            if (cup->mCupSettings.SkillLevel == GameplaySettings::ROOKIE)
+            {
+                cup->mCupSettings.SkillLevel = GameplaySettings::PROFESSIONAL;
+            }
+            nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_CUP_OPTIONS_INITIAL_SUPER, SCREEN_NOTHING, true);
+        }
+    }
+    else
+    {
+        typedef TLComponentInstance* (*FindCompByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
+        typedef TLComponentInstance* (*FindCompByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
+
+        union
+        {
+            FindCompByValue byValue;
+            FindCompByRef byRef;
+        } findComp;
+
+        volatile unsigned long hB, hA;
+        volatile unsigned long h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
+        unsigned long hash;
+
+        FEPopupMenu* menu = (FEPopupMenu*)nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
+
+        {
+            BindExp1_vfb bindContinue = Bind<void, void (*)(bool), bool>(continueCup, mIsSuperCup);
+
+            Function<FnVoidVoid> yes;
+            yes.mTag = FUNCTOR;
+            FunctorImpl_vfb* yesFunctor = new ((FunctorImpl_vfb*)nlMalloc(sizeof(FunctorImpl_vfb), 8, false)) FunctorImpl_vfb(bindContinue);
+            yes.mFunctor = yesFunctor;
+
+            BindExp1_vfb bindNew = Bind<void, void (*)(bool), bool>(startNewCup, mIsSuperCup);
+
+            Function<FnVoidVoid> no;
+            no.mTag = FUNCTOR;
+            FunctorImpl_vfb* noFunctor = new ((FunctorImpl_vfb*)nlMalloc(sizeof(FunctorImpl_vfb), 8, false)) FunctorImpl_vfb(bindNew);
+            no.mFunctor = noFunctor;
+
+            menu->Create(POPUP_START_NEW_CUP, yes, no);
+        }
+
+        {
+            Function<FnVoidVoid> back;
+            back.mTag = FREE_FUNCTION;
+            back.mFreeFunction = FEPopupMenu::Nothing;
+            menu->SetBackButtonCallback(back);
+        }
+
+        findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
+
+        h0 = 0;
+        h1 = 0;
+        h2 = 0;
+        h3 = 0;
+        h4 = 0;
+        h5 = 0;
+        h6 = 0;
+        h7 = 0;
+
+        hash = nlStringLowerHash("cup in progress");
+        h8 = hash;
+        h9 = hash;
+
+        hash = nlStringLowerHash("Layer");
+        hB = hash;
+        hA = hash;
+
+        TLComponentInstance* text = findComp.byRef(
+            m_pFEPresentation->m_currentSlide,
+            (InlineHasher&)hB,
+            (InlineHasher&)h9,
+            (InlineHasher&)h7,
+            (InlineHasher&)h5,
+            (InlineHasher&)h3,
+            (InlineHasher&)h1);
+
+        ((u8*)this)[0x480] = text->m_bVisible;
+        text->m_bVisible = false;
+        ((u8*)this)[0x481] = 1;
+    }
 }

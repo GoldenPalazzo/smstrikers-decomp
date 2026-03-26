@@ -18,7 +18,10 @@
 #include "Game/Physics/PhysicsColumn.h"
 #include "Game/MathHelpers.h"
 #include "Game/DB/StatsTracker.h"
+#include "Game/GameInfo.h"
+#include "Game/FE/feHelpFuncs.h"
 #include "Game/Field.h"
+#include "NL/nlBasicString.h"
 #include "NL/plat/plataudio.h"
 #include "types.h"
 
@@ -57,6 +60,12 @@ HitReactInfo g_HitReactInfo[4] = {
 // extern HitReactInfo g_HitReactInfo[4];
 
 static const nlVector3 v3Zero = { 0.0f, 0.0f, 0.0f };
+static nlVector3 captainStsTargetPos = { 0.0f, 0.0f, 0.0f };
+static bool setCaptainStscaptainStsTargetPos;
+static float sfHyperStrikeAnimCamStartTime = 0.4f;
+
+template <typename StringType, typename ValueType>
+StringType Format(const StringType&, const ValueType&);
 
 u16 g_IdleTurnCompletionDelta = 0xB6;
 
@@ -1967,9 +1976,71 @@ void MatrixCamFinishedCallback(MatrixEffectCam*)
 
 /**
  * Offset/Address/Size: 0x2D08 | 0x80029840 | size: 0x450
+ * TODO: 95.26% match - persistent r28/r29/r30 register-allocation drift around
+ *       BasicString construction and a remaining Flash symbol relocation mismatch.
  */
-void cFielder::SetupCaptainSTSAnimCam(bool)
+void cFielder::SetupCaptainSTSAnimCam(bool arg1)
 {
+    extern void Flash__10PhotoFlashFv();
+
+    mActionShootToScoreVars.captainStsCamera = new ((cAnimCamera*)nlMalloc(sizeof(cAnimCamera), 8, false)) cAnimCamera();
+
+    BasicString<char, Detail::TempStringAllocator> cameraName = Format(BasicString<char, Detail::TempStringAllocator>("{0}_ShootToScoreCamera"),
+        GetTeamName(nlSingleton<GameInfoManager>::s_pInstance
+                ->mGameInfo[nlSingleton<GameInfoManager>::s_pInstance->mCurrentMode]
+                ->mTeamIndex[(s16)m_pTeam->m_nSide]));
+
+    if (mActionShootToScoreVars.captainStsCamera->CameraAnimationExists(cameraName.c_str()))
+    {
+        mActionShootToScoreVars.captainStsCamera->SelectCameraAnimation(cameraName.c_str());
+    }
+    else
+    {
+        mActionShootToScoreVars.captainStsCamera->SelectCameraAnimation("ShootToScoreCamera");
+    }
+
+    mActionShootToScoreVars.captainStsCamera->m_bCyclic = false;
+
+    captainStsTargetPos = m_v3Position;
+    captainStsTargetPos.f.z = 0.0f;
+
+    if (captainStsTargetPos.f.x < cField::GetGoalLineX(0U) + 6.0f)
+    {
+        captainStsTargetPos.f.x = cField::GetGoalLineX(0U) + 6.0f;
+    }
+
+    if (captainStsTargetPos.f.x > cField::GetGoalLineX(1U) - 6.0f)
+    {
+        captainStsTargetPos.f.x = cField::GetGoalLineX(1U) - 6.0f;
+    }
+
+    setCaptainStscaptainStsTargetPos = true;
+    mActionShootToScoreVars.captainStsCamera->m_OffsetPos = captainStsTargetPos;
+
+    if (captainStsTargetPos.f.x >= 0.0f)
+    {
+        mActionShootToScoreVars.captainStsCamera->mFacingAngle = m_aActualFacingDirection;
+    }
+    else
+    {
+        nlVector3 mirror = { -1.0f, 1.0f, 1.0f };
+        mActionShootToScoreVars.captainStsCamera->m_Mirror = mirror;
+        mActionShootToScoreVars.captainStsCamera->mFacingAngle = m_aActualFacingDirection + 0x8000;
+    }
+
+    mActionShootToScoreVars.captainStsCamera->m_bUseSimulationTime = true;
+
+    if (arg1)
+    {
+        mActionShootToScoreVars.captainStsCamera->m_fAnimationTime = sfHyperStrikeAnimCamStartTime;
+        mActionShootToScoreVars.captainStsCamera->BuildAnimViewMatrix(mActionShootToScoreVars.captainStsCamera->m_matView);
+        Flash__10PhotoFlashFv();
+        cCameraManager::PushCamera(mActionShootToScoreVars.captainStsCamera);
+    }
+    else
+    {
+        cCameraManager::PushCamera(mActionShootToScoreVars.captainStsCamera);
+    }
 }
 
 /**
@@ -2015,9 +2086,145 @@ void cFielder::ActionShootToScore(float)
 
 /**
  * Offset/Address/Size: 0x13C8 | 0x80027F00 | size: 0x408
+ * TODO: 96.00% match - remaining instruction mismatches in time-window branch shape and
+ * float register allocation around distance/normalization math.
  */
-void cFielder::InitActionSlideAttack(cFielder*, float)
+void cFielder::InitActionSlideAttack(cFielder* pTarget, float fTime)
 {
+    nlPolar polarFacing;
+    nlPolar polarSpeed;
+    nlVector3 v3SlideAttackVelocity;
+    nlVector3 v3TargetPosition;
+    nlVector3 v3TargetVelocity;
+    float fTargetX;
+    float fTargetY;
+    float fMaxTime;
+    float fInterceptTime;
+    float fDeltaX;
+    float fDeltaY;
+    float fDeltaZ;
+
+    if (IsFrozen())
+    {
+        return;
+    }
+
+    v3SlideAttackVelocity = m_v3Velocity;
+
+    SetAction(ACTION_SLIDE_ATTACK);
+    SetAnimState(0x64, true, 0.2f, false, false);
+    InitMovementCoast();
+
+    m_tSlideAttackTimer.SetSeconds(g_pGame->m_pGameTweaks->unk2A4);
+
+    mActionSlideAttackVars.eSlideAttackState = SLIDE_ATTACK_DOWN;
+    mActionSlideAttackVars.bAttackSucceeded = false;
+    mActionSlideAttackVars.bIsBButtonReset = true;
+    mActionSlideAttackVars.bWasStarMushroomUsedDuring = false;
+
+    if (GetGlobalPad() != NULL)
+    {
+        if (GetGlobalPad()->IsPressed(0x1C, true))
+        {
+            mActionSlideAttackVars.bIsBButtonReset = false;
+        }
+    }
+
+    if (fTime < 0.0f)
+    {
+        fInterceptTime = DoFindBestSlideAttackTarget(v3TargetPosition, v3TargetVelocity);
+    }
+    else
+    {
+        if (pTarget != NULL)
+        {
+            v3TargetPosition = pTarget->m_v3Position;
+            v3TargetVelocity = pTarget->m_v3Velocity;
+        }
+        else
+        {
+            v3TargetPosition = g_pBall->m_v3Position;
+            v3TargetVelocity = g_pBall->m_v3Velocity;
+        }
+
+        fInterceptTime = fTime;
+    }
+
+    fMaxTime = g_pGame->m_pGameTweaks->unk2A4 + g_pGame->m_pGameTweaks->unk2A8;
+
+    if (fInterceptTime >= 0.0f && fInterceptTime <= fMaxTime)
+    {
+        fTargetX = v3TargetPosition.f.x + v3TargetVelocity.f.x * fInterceptTime;
+        fTargetY = v3TargetPosition.f.y + v3TargetVelocity.f.y * fInterceptTime;
+    }
+    else
+    {
+        fTargetX = v3TargetPosition.f.x + v3TargetVelocity.f.x * fMaxTime;
+        fTargetY = v3TargetPosition.f.y + v3TargetVelocity.f.y * fMaxTime;
+    }
+
+    fDeltaY = m_v3Position.f.y - g_pBall->m_v3Position.f.y;
+    fDeltaX = m_v3Position.f.x - g_pBall->m_v3Position.f.x;
+    fDeltaZ = m_v3Position.f.z - g_pBall->m_v3Position.f.z;
+
+    if (nlSqrt(fDeltaX * fDeltaX + fDeltaY * fDeltaY + fDeltaZ * fDeltaZ, true) < (0.1f + m_pTweaks->fPhysCapsuleRadius))
+    {
+        float fLenSq = v3SlideAttackVelocity.f.x * v3SlideAttackVelocity.f.x
+                     + v3SlideAttackVelocity.f.y * v3SlideAttackVelocity.f.y
+                     + v3SlideAttackVelocity.f.z * v3SlideAttackVelocity.f.z;
+
+        if (fLenSq > 0.0001f)
+        {
+            float fInvLen = nlRecipSqrt(fLenSq, true);
+            _nlVec3Scale(v3SlideAttackVelocity, fInvLen);
+        }
+
+        v3SlideAttackVelocity.f.x *= GetSlideAttackSpeed();
+        v3SlideAttackVelocity.f.y *= GetSlideAttackSpeed();
+        v3SlideAttackVelocity.f.z = 0.0f;
+    }
+    else
+    {
+        v3SlideAttackVelocity.f.x = fTargetX - m_v3Position.f.x;
+        v3SlideAttackVelocity.f.y = fTargetY - m_v3Position.f.y;
+        v3SlideAttackVelocity.f.z = 0.0f;
+
+        {
+            float fLenSq = v3SlideAttackVelocity.f.x * v3SlideAttackVelocity.f.x
+                         + v3SlideAttackVelocity.f.y * v3SlideAttackVelocity.f.y
+                         + v3SlideAttackVelocity.f.z * v3SlideAttackVelocity.f.z;
+
+            if (fLenSq > 0.0001f)
+            {
+                float fInvLen = nlRecipSqrt(fLenSq, true);
+                _nlVec3Scale(v3SlideAttackVelocity, fInvLen);
+            }
+        }
+
+        v3SlideAttackVelocity.f.x *= GetSlideAttackSpeed();
+        v3SlideAttackVelocity.f.y *= GetSlideAttackSpeed();
+
+        nlCartesianToPolar(polarFacing, v3SlideAttackVelocity.f.x, v3SlideAttackVelocity.f.y);
+
+        m_aDesiredFacingDirection = polarFacing.a;
+        SetFacingDirection(m_aDesiredFacingDirection);
+        m_aActualMovementDirection = m_aDesiredFacingDirection;
+    }
+
+    v3SlideAttackVelocity.f.z = 0.0f;
+
+    SetVelocity(v3SlideAttackVelocity);
+
+    nlCartesianToPolar(polarSpeed, v3SlideAttackVelocity.f.x, v3SlideAttackVelocity.f.y);
+
+    {
+        float fSpeed = polarSpeed.r;
+        m_fDesiredSpeed = fSpeed;
+        m_fActualSpeed = fSpeed;
+    }
+
+    Play3DSFX(Audio::eCharSFX(0xC), PHYSOBJ, 100.0f);
+    PlayRandomCharDialogue(0, VECTORS, 100.0f, -1.0f);
 }
 
 /**

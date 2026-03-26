@@ -115,8 +115,8 @@ void FETweenManager::clearTweens()
 
 /**
  * Offset/Address/Size: 0x288 | 0x800A24DC | size: 0x468
- * TODO: 96.04% match - remaining blockers are nonvolatile register allocation (r23/r24 vs r25/r31),
- * initial setup scheduling (extra `mr r29, r3` before `addi r28`), and static-local symbol offset diffs for `m_tempValArray`.
+ * TODO: 99.86% match - remaining blockers are static-local symbol index diffs for `m_tempValArray`
+ * (`m_tempValArray$181` vs compiler-emitted local index in scratch context).
  */
 void FETweenManager::Update(float fDeltaT)
 {
@@ -125,16 +125,18 @@ void FETweenManager::Update(float fDeltaT)
     FETweener* nextTween;
     DLListEntry<FETweener*>* head;
     DLListEntry<FETweener*>* entry;
+    DLListEntry<FETweener*>* startEntry;
     DLListEntry<FETweener*>** activeListHead;
     FETweener* curTween;
     DLListEntry<FETweener*>* pEntry;
+    DLListEntry<FETweener*>* savedEntry;
     DLListEntry<FETweener*>* tweenHead;
     DLListEntry<FETweener*>* tweenEntry;
-    DLListEntry<FETweener*>* savedEntry;
 
-    entry = nlDLRingGetStart(m_activeTweenList.m_Head);
+    startEntry = nlDLRingGetStart(m_activeTweenList.m_Head);
     head = m_activeTweenList.m_Head;
     activeListHead = &m_activeTweenList.m_Head;
+    entry = startEntry;
 
     while (entry != NULL)
     {
@@ -236,8 +238,8 @@ void FETweenManager::Update(float fDeltaT)
                 head = m_activeTweenList.m_Head;
             }
 
-            pEntry = entry;
             savedEntry = entry;
+            pEntry = entry;
 
             if (nlDLRingIsEnd(head, entry) || entry == NULL)
             {
@@ -261,8 +263,8 @@ void FETweenManager::Update(float fDeltaT)
             {
                 if (tweenEntry->m_data == curTween)
                 {
-                    pEntry = tweenEntry;
                     savedEntry = tweenEntry;
+                    pEntry = tweenEntry;
 
                     if (nlDLRingIsEnd(tweenHead, tweenEntry) || tweenEntry == NULL)
                     {
@@ -276,7 +278,6 @@ void FETweenManager::Update(float fDeltaT)
                     nlDLRingRemove(&m_tweenList.m_Head, savedEntry);
                     pEntry->m_next = (DLListEntry<FETweener*>*)((SlotPoolBase*)&m_tweenList)->m_FreeList;
                     ((SlotPoolBase*)&m_tweenList)->m_FreeList = (SlotPoolEntry*)pEntry;
-                    break;
                 }
                 else
                 {

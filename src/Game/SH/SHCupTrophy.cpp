@@ -342,8 +342,183 @@ void CupTrophyScene::HandleUnlockedTriggers()
 /**
  * Offset/Address/Size: 0x1970 | 0x800CB024 | size: 0x400
  */
-void CupTrophyScene::Update(float)
+enum eFEINPUT_PAD
 {
+    FE_ALL_PADS = 8,
+};
+
+struct FEInput
+{
+    bool JustPressed(eFEINPUT_PAD, int, bool, eFEINPUT_PAD*);
+    bool IsAutoPressed(eFEINPUT_PAD, int, bool, eFEINPUT_PAD*);
+};
+
+extern FEInput* g_pFEInput;
+extern "C" void HandleUnlockedTriggers__14CupTrophySceneFv(CupTrophyScene*);
+
+struct CupTrophySpoilView
+{
+    unsigned char mPad[0x208];
+    unsigned char mNumRecords;
+    unsigned char mTailPad[0x0F];
+};
+
+void CupTrophyScene::Update(float fDeltaT)
+{
+    BaseSceneHandler::Update(fDeltaT);
+    mButtons.CentreButtons();
+    mButtons2.CentreButtons();
+    (*(AsyncImage**)&unk_gap[125])->Update(true);
+
+    FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
+    bool canAccept = true;
+    int buttonState = mButtonState;
+
+    GameInfoManager* gameInfo = nlSingleton<GameInfoManager>::s_pInstance;
+    gameInfo = (GameInfoManager*)((char*)gameInfo + mTrophy * 0x218);
+    Spoil* spoil = (Spoil*)((char*)gameInfo + 0x2F24);
+
+    if (buttonState != ButtonComponent::BS_A_AND_B && buttonState != ButtonComponent::BS_A_ONLY)
+    {
+        canAccept = false;
+    }
+
+    bool canBack = true;
+    if (buttonState != ButtonComponent::BS_A_AND_B && buttonState != ButtonComponent::BS_B_ONLY)
+    {
+        canBack = false;
+    }
+
+    TLSlide* slide = presentation->m_currentSlide;
+    if (presentation->m_fadeDuration < slide->m_start + slide->m_duration)
+    {
+        return;
+    }
+
+    if (mIsNew == true && canAccept)
+    {
+        if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x100, false, NULL))
+        {
+            if (nlSingleton<GameInfoManager>::s_pInstance->mUnlockedTriggers != 0)
+            {
+                HandleUnlockedTriggers__14CupTrophySceneFv(this);
+            }
+            else
+            {
+                nlSingleton<GameSceneManager>::s_pInstance->Push(0x2E, 1, true);
+            }
+
+            FEAudio::PlayAnimAudioEvent("sfx_accept", false);
+            return;
+        }
+    }
+
+    if (mIsNew == false && canBack)
+    {
+        if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x200, false, NULL))
+        {
+            nlSingleton<GameSceneManager>::s_pInstance->Push(0x1C, 2, true);
+            FEAudio::PlayAnimAudioEvent("sfx_back", false);
+            return;
+        }
+    }
+
+    if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xE, true, NULL))
+    {
+        if (((CupTrophySpoilView*)spoil)->mNumRecords > 3)
+        {
+            gameInfo = nlSingleton<GameInfoManager>::s_pInstance;
+            gameInfo = (GameInfoManager*)((char*)gameInfo + mTrophy * 0x218);
+            Spoil* curSpoil = (Spoil*)((char*)gameInfo + 0x2F24);
+            unsigned char numRecords = ((CupTrophySpoilView*)curSpoil)->mNumRecords;
+
+            if (numRecords > 1)
+            {
+                if (mRow < 2 && mRow < (int)(numRecords - 1))
+                {
+                    mRow += 1;
+                    FEAudio::PlayAnimAudioEvent("sfx_option_scroll_down", false);
+                }
+                else if (numRecords > 3 && mScrollOffset < (int)(numRecords - 3))
+                {
+                    mScrollOffset += 1;
+                    FEAudio::PlayAnimAudioEvent("sfx_option_scroll_down", false);
+                }
+                else
+                {
+                    FEAudio::PlayAnimAudioEvent("sfx_deny", false);
+                }
+
+                SetHistory(*curSpoil);
+                return;
+            }
+        }
+    }
+
+    if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xD, true, NULL))
+    {
+        unsigned char numRecords = ((CupTrophySpoilView*)spoil)->mNumRecords;
+        if (numRecords > 3)
+        {
+            if (numRecords > 1)
+            {
+                if (mRow > 0)
+                {
+                    mRow -= 1;
+                    FEAudio::PlayAnimAudioEvent("sfx_option_scroll_up", false);
+                }
+                else if (mScrollOffset > 0)
+                {
+                    mScrollOffset -= 1;
+                    FEAudio::PlayAnimAudioEvent("sfx_option_scroll_up", false);
+                }
+                else
+                {
+                    FEAudio::PlayAnimAudioEvent("sfx_deny", false);
+                }
+
+                SetHistory(*spoil);
+                return;
+            }
+        }
+    }
+
+    if (mIsNew == false)
+    {
+        if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xC, true, NULL))
+        {
+            if (mTrophy == mLastTrophy)
+            {
+                mTrophy = mFirstTrophy;
+            }
+            else
+            {
+                mTrophy = (eTrophyType)((int)mTrophy + 1);
+            }
+
+            ChangeSlides();
+            FEAudio::PlayAnimAudioEvent("sfx_cup_toggle_right", false);
+            return;
+        }
+    }
+
+    if (mIsNew == false)
+    {
+        if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xB, true, NULL))
+        {
+            if (mTrophy == mFirstTrophy)
+            {
+                mTrophy = mLastTrophy;
+            }
+            else
+            {
+                mTrophy = (eTrophyType)((int)mTrophy - 1);
+            }
+
+            ChangeSlides();
+            FEAudio::PlayAnimAudioEvent("sfx_cup_toggle_left", false);
+        }
+    }
 }
 
 /**

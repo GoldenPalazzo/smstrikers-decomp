@@ -288,7 +288,7 @@ public:
     void StartRunning();
     bool DoAILooseBallActionSelection();
     void DoAIReceivePassActionSelection();
-    void DoAIWindupActionSelection();
+    bool DoAIWindupActionSelection();
     void DoSpeedBoost();
 
     inline bool IsRunningState()
@@ -335,7 +335,7 @@ public:
     void DesireReceivePassFromIdle(float);
     void InitDesireReceivePassFromRun(const LooseBallContactAnimInfo*, const nlVector3&, bool, const nlVector3&);
     void DesireReceivePassFromRun(float);
-    void InitDesireRunToNet();
+    u8 InitDesireRunToNet();
     void DesireSlideAttack(float);
     void DesireUserControlled(float);
     void DesireUsePowerup(float);

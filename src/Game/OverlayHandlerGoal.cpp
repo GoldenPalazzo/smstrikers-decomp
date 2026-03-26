@@ -4,6 +4,67 @@
 #include "Game/Goalie.h"
 #include "NL/nlBundleFile.h"
 
+struct InlineHasher
+{
+    InlineHasher() { }
+    InlineHasher(unsigned long h)
+        : m_Hash(h)
+    {
+    }
+    unsigned long m_Hash;
+};
+
+template <typename T, int N>
+class FEFinder
+{
+public:
+    template <typename U>
+    static T* Find(U*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
+};
+
+template <typename To, typename From>
+To LexicalCast(const From&);
+
+template <typename StringType, typename ValueType>
+StringType Format(const StringType&, const ValueType&);
+
+template <typename T, typename Key>
+T* nlBSearch(const Key&, T*, int);
+
+struct LOCHeader
+{
+    char Thumbprint[4];
+    unsigned long Version;
+    unsigned long Language;
+    unsigned long StringCount;
+    unsigned long Flags;
+};
+
+class nlLocalization
+{
+public:
+    struct StringLookup
+    {
+        unsigned long hash;
+        unsigned long StringOffset;
+    };
+
+    LOCHeader* m_pFile;
+    StringLookup* m_LookupTable;
+    unsigned short* m_FirstString;
+    int m_CurrentLanguage;
+};
+
+template <>
+nlLocalization::StringLookup* nlBSearch<nlLocalization::StringLookup, unsigned long>(const unsigned long&, nlLocalization::StringLookup*, int);
+
+extern nlLocalization* g_pLocalization;
+extern const unsigned short LocalizationTableNotFound[];
+extern const unsigned short MissingLocString[];
+
+void MakeTextBoxReallyWide(TLTextInstance&);
+extern "C" void SetWinnerTitle__11GoalOverlayFv(GoalOverlay*);
+
 /**
  * Offset/Address/Size: 0x106C | 0x80104868 | size: 0xCF0
  */
@@ -189,9 +250,130 @@ void GoalOverlay::UpdateGoalInfo(int, int, bool, int)
 
 /**
  * Offset/Address/Size: 0x1590 | 0x80101600 | size: 0x418
+ * TODO: 92.05% match - systematic register rotation by 1 (r28=this vs r27=this) and +0x0C stack offset shift, likely caused by volatile+union trick for InlineHasher by-ref calling under -inline deferred.
  */
-void GoalOverlay::SetHighlightNumber(int)
+void GoalOverlay::SetHighlightNumber(int highlightNumber)
 {
+    typedef TLTextInstance* (*FindCompByValue)(FEPresentation*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
+    typedef TLTextInstance* (*FindCompByRef)(FEPresentation*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
+
+    union
+    {
+        FindCompByValue byValue;
+        FindCompByRef byRef;
+    } findComp;
+
+    volatile InlineHasher hSlideB, hSlideA;
+    volatile InlineHasher hLayerB, hLayerA;
+    volatile InlineHasher hDescB, hDescA;
+    volatile InlineHasher h5, h4, h3, h2, h1, h0;
+
+    unsigned long hash;
+
+    SetWinnerTitle__11GoalOverlayFv(this);
+
+    findComp.byValue = FEFinder<TLTextInstance, 3>::Find<FEPresentation>;
+
+    h0.m_Hash = 0;
+    h1.m_Hash = 0;
+    h2.m_Hash = 0;
+    h3.m_Hash = 0;
+    h4.m_Hash = 0;
+    h5.m_Hash = 0;
+
+    hash = nlStringLowerHash("Description");
+    hDescA.m_Hash = hash;
+    hDescB.m_Hash = hash;
+
+    hash = nlStringLowerHash("Layer");
+    hLayerA.m_Hash = hash;
+    hLayerB.m_Hash = hash;
+
+    hash = nlStringLowerHash("Slide1");
+    hSlideA.m_Hash = hash;
+    hSlideB.m_Hash = hash;
+
+    TLTextInstance* text = findComp.byRef(
+        m_pFEPresentation,
+        (InlineHasher&)hSlideB,
+        (InlineHasher&)hLayerB,
+        (InlineHasher&)hDescB,
+        (InlineHasher&)h5,
+        (InlineHasher&)h3,
+        (InlineHasher&)h1);
+
+    MakeTextBoxReallyWide(*text);
+
+    if (highlightNumber == 0)
+    {
+        text->SetStringId("HIGHLIGHTS1");
+        return;
+    }
+
+    const unsigned short* locString;
+    unsigned long key = 0xF3DDE99C;
+    nlLocalization* loc = g_pLocalization;
+
+    if (loc->m_LookupTable == 0)
+    {
+        locString = LocalizationTableNotFound;
+    }
+    else
+    {
+        nlLocalization::StringLookup* entry = nlBSearch<nlLocalization::StringLookup, unsigned long>(key, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
+        if (entry)
+        {
+            locString = loc->m_FirstString + entry->StringOffset;
+        }
+        else
+        {
+            locString = MissingLocString;
+        }
+    }
+
+    BasicStringData<unsigned short>* data = (BasicStringData<unsigned short>*)nlMalloc(0x10, 8, true);
+    if (data)
+    {
+        data->mData = 0;
+        data->mSize = 0;
+        data->mCapacity = 0;
+
+        const unsigned short* ptr = locString;
+        while (*ptr++)
+        {
+            data->mSize++;
+        }
+
+        data->mSize++;
+        data->mData = (unsigned short*)nlMalloc((data->mSize + 1) * 2, 8, true);
+        data->mCapacity = data->mSize;
+
+        int i = 0;
+        int j = 0;
+        while (i < data->mSize)
+        {
+            *(unsigned short*)((char*)data->mData + j) = *locString;
+            i++;
+            locString++;
+            j += 2;
+        }
+
+        data->mRefCount = 1;
+    }
+
+    BasicString<unsigned short, Detail::TempStringAllocator> format(data);
+
+    int displayNumber = highlightNumber + 1;
+    BasicString<char, Detail::TempStringAllocator> numberString(
+        LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(displayNumber));
+    unsigned short numberBuffer[16];
+    nlStrToWcs(numberString.c_str(), numberBuffer, 16);
+
+    BasicString<unsigned short, Detail::TempStringAllocator> formatted(
+        Format(format, numberBuffer));
+
+    memcpy(mDescriptionBuffer, formatted.c_str(), 0x100);
+    text->SetString(mDescriptionBuffer);
 }
 
 /**

@@ -519,7 +519,187 @@ void AvoidController::AvoidSidelines()
 
 /**
  * Offset/Address/Size: 0x0 | 0x80007654 | size: 0x41C
+ * TODO: 91.40% match - FPR f7 vs f5 for repulsionY cascading through function,
+ * addic. r0 vs r4 CSE in v3Zero section, rotation fmadds/fmsubs ordering,
+ * speed section register allocation.
  */
-void AvoidController::ApplyRepulsionVector(nlVector3)
+void AvoidController::ApplyRepulsionVector(nlVector3 v3Repulsion)
 {
+    struct LocalVectors
+    {
+        nlVector3 repulsionDir;
+        nlVector3 desiredVelDir;
+    } v;
+
+    f32 fCos;
+    f32 fSin;
+    f32 fDesiredSpeed;
+
+    if (m_pFielder->GetDistanceToDesiredPos() <= 0.5f)
+    {
+        return;
+    }
+
+    f32 fRepulsionMag = nlSqrt(
+        v3Repulsion.f.x * v3Repulsion.f.x + v3Repulsion.f.y * v3Repulsion.f.y + v3Repulsion.f.z * v3Repulsion.f.z,
+        true);
+    if (fRepulsionMag <= 0.0f)
+    {
+        return;
+    }
+
+    v.desiredVelDir = v3Zero;
+    if (&v.desiredVelDir != NULL)
+    {
+        nlSinCos(&v.desiredVelDir.f.y, &v.desiredVelDir.f.x, m_pFielder->m_aDesiredMovementDirection);
+    }
+
+    v.desiredVelDir.f.z = 0.0f;
+
+    f32 fInvRepulsionMag = nlRecipSqrt(
+        v3Repulsion.f.x * v3Repulsion.f.x + v3Repulsion.f.y * v3Repulsion.f.y + v3Repulsion.f.z * v3Repulsion.f.z,
+        true);
+
+    f32 fRepulsionY = fInvRepulsionMag * v3Repulsion.f.y;
+    f32 fRepulsionX = fInvRepulsionMag * v3Repulsion.f.x;
+    f32 fRepulsionZ = fInvRepulsionMag * v3Repulsion.f.z;
+
+    v.repulsionDir.f.x = fRepulsionX;
+    v.repulsionDir.f.y = fRepulsionY;
+    v.repulsionDir.f.z = fRepulsionZ;
+
+    f32 fDot = v.desiredVelDir.f.y * fRepulsionY;
+    fDot = v.desiredVelDir.f.x * fRepulsionX + fDot;
+    fDot = v.desiredVelDir.f.z * fRepulsionZ + fDot;
+
+    if (fDot <= -0.75f || fDot >= 0.7f)
+    {
+        f32 fRepulsionAngle = nlATan2f(fRepulsionY, fRepulsionX);
+        f32 fDesiredAngle = nlATan2f(v.desiredVelDir.f.y, v.desiredVelDir.f.x);
+
+        u16 aDesired = (u16)(s32)(10430.378f * fDesiredAngle);
+        u16 aRepulsion = (u16)(s32)(10430.378f * fRepulsionAngle);
+        s16 aDelta = (s16)(aRepulsion - aDesired);
+
+        s16 aAdjust;
+        if ((f32)aDelta > 0.0f)
+        {
+            aAdjust = 0x4000;
+        }
+        else
+        {
+            aAdjust = -0x4000;
+        }
+
+        nlSinCos(&fSin, &fCos, (u16)aAdjust);
+
+        f32 fDesX = v.desiredVelDir.f.x;
+        f32 fDesY = v.desiredVelDir.f.y;
+        f32 fParallelY = fDesX * fSin + fDesY * fCos;
+        f32 fParallelX = fDesX * fCos - fDesY * fSin;
+
+        v.repulsionDir.f.y = fParallelY;
+        v.repulsionDir.f.x = fParallelX;
+
+        v3Repulsion.f.x = fRepulsionMag * fParallelX;
+        v3Repulsion.f.y = fRepulsionMag * fParallelY;
+        v3Repulsion.f.z = fRepulsionMag * v.repulsionDir.f.z;
+    }
+
+    if (m_VeryCloseToSideline)
+    {
+        f32 fNormalY = m_SidelineNormal.f.y;
+        f32 fNormalX = m_SidelineNormal.f.x;
+        f32 fDotNormalVel = v.repulsionDir.f.y * fNormalY;
+        fDotNormalVel = v.repulsionDir.f.x * fNormalX + fDotNormalVel;
+
+        if (fDotNormalVel < -0.1f)
+        {
+            f32 fSidelineDirX = m_SidelineDirection.f.x;
+            f32 fSidelineDirY = m_SidelineDirection.f.y;
+            f32 fSidelineLenSq = fSidelineDirX * fSidelineDirX;
+            fSidelineLenSq = fSidelineLenSq + fSidelineDirY * fSidelineDirY;
+
+            if (fSidelineLenSq > 0.0f)
+            {
+                f32 fDotDirVel = v.repulsionDir.f.y * fSidelineDirY;
+                f32 fRepulsionDirZ = v.repulsionDir.f.z;
+                f32 fSidelineDirZ = 0.0f;
+                f32 fMinusOne = -1.0f;
+
+                fDotDirVel = v.repulsionDir.f.x * fSidelineDirX + fDotDirVel;
+                v3Repulsion.f.z = fRepulsionMag * fSidelineDirZ;
+
+                fSidelineLenSq = fSidelineDirX * fSidelineDirX + fSidelineDirY * fSidelineDirY + fSidelineDirZ * fSidelineDirZ;
+                fDotDirVel = fRepulsionDirZ * fSidelineDirZ + fDotDirVel;
+
+                f32 fScale = fDotDirVel / fSidelineLenSq;
+                f32 fParallelY = fScale * fSidelineDirY;
+                f32 fParallelX = fScale * fSidelineDirX;
+                f32 fParallelZ = fScale * fSidelineDirZ;
+
+                f32 fPerpY = v.repulsionDir.f.y - fParallelY;
+                f32 fPerpX = v.repulsionDir.f.x - fParallelX;
+                f32 fPerpZ = fRepulsionDirZ - fParallelZ;
+
+                fParallelY = fMinusOne * fPerpY + fParallelY;
+                fParallelX = fMinusOne * fPerpX + fParallelX;
+                fParallelZ = fMinusOne * fPerpZ + fParallelZ;
+
+                v.repulsionDir.f.y = fParallelY;
+                v.repulsionDir.f.z = fParallelZ;
+                v.repulsionDir.f.x = fParallelX;
+                v.repulsionDir.f.z = fSidelineDirZ;
+
+                v3Repulsion.f.x = fRepulsionMag * fParallelX;
+                v3Repulsion.f.y = fRepulsionMag * fParallelY;
+            }
+            else
+            {
+                v3Repulsion.f.x = fRepulsionMag * fNormalX;
+                v3Repulsion.f.y = fRepulsionMag * fNormalY;
+            }
+        }
+    }
+
+    f32 fCurrentDesiredSpeed = m_pFielder->m_fDesiredSpeed;
+    f32 fResultantX = fCurrentDesiredSpeed * v.desiredVelDir.f.x + v3Repulsion.f.x;
+    f32 fResultantY = fCurrentDesiredSpeed * v.desiredVelDir.f.y + v3Repulsion.f.y;
+    f32 fResultantZ = fCurrentDesiredSpeed * v.desiredVelDir.f.z + v3Repulsion.f.z;
+
+    f32 fResultantMag = nlSqrt(fResultantX * fResultantX + fResultantY * fResultantY + fResultantZ * fResultantZ, true);
+
+    m_pFielder->m_aDesiredMovementDirection = (u16)(s32)(10430.378f * nlATan2f(fResultantY, fResultantX));
+    if (m_pFielder->m_eMovementState != MOVEMENT_STRAFING)
+    {
+        m_pFielder->m_aDesiredFacingDirection = m_pFielder->m_aDesiredMovementDirection;
+    }
+
+    if (m_pFielder->m_pBall != NULL)
+    {
+        fDesiredSpeed = m_pFTweaks->fRunningWBSpeed;
+    }
+    else
+    {
+        f32 fRunningDiff = (float)fabs(fResultantMag - m_pFTweaks->fRunningSpeed);
+        f32 fJoggingDiff = (float)fabs(fResultantMag - m_pFTweaks->fJoggingSpeed);
+        if (fJoggingDiff < fRunningDiff)
+        {
+            fDesiredSpeed = m_pFTweaks->fJoggingSpeed;
+        }
+        else
+        {
+            fDesiredSpeed = m_pFTweaks->fRunningSpeed;
+        }
+    }
+
+    f32 speed = m_pFielder->m_fDesiredSpeed;
+    if (speed >= fDesiredSpeed)
+    {
+    }
+    else
+    {
+        speed = fDesiredSpeed;
+    }
+    m_pFielder->m_fDesiredSpeed = speed;
 }

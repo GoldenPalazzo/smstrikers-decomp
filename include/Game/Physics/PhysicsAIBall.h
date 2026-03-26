@@ -24,7 +24,7 @@ public:
     static bool IsBallOutsideNet(const nlVector3&);
     static bool DidBallJustEnterNet(const nlVector3&, nlVector3);
     void CheckIfBallWentThroughGoalPost();
-    static bool CheckIfBallWentThroughGoalie();
+    void CheckIfBallWentThroughGoalie();
 
     /* 0x40 */ cBall* m_pAIBall;
     /* 0x44 */ nlVector3 m_unk_0x44;

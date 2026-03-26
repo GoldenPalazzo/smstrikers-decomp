@@ -46,20 +46,20 @@ enum PhysicsBoneID
     PHYSBONE_ID_INVALID = 29,
 };
 
-class PhysicsBoneVolume
-{
-public:
-    /* 0x00 */ PhysicsObject* m_pObject;
-    /* 0x04 */ unsigned int m_BoneIndex;
-    /* 0x08 */ nlMatrix4 m_Transform;
-    /* 0x48 */ unsigned int m_TransformHandle;
-    /* 0x4C */ nlVector3 m_PrevPosition;
-    /* 0x58 */ PhysicsBoneID m_ID;
-}; // total size: 0x5C
-
 class PhysicsCharacterBase : public PhysicsCompositeObject
 {
 public:
+    class PhysicsBoneVolume
+    {
+    public:
+        /* 0x00 */ PhysicsObject* m_pObject;
+        /* 0x04 */ unsigned int m_BoneIndex;
+        /* 0x08 */ nlMatrix4 m_Transform;
+        /* 0x48 */ unsigned int m_TransformHandle;
+        /* 0x4C */ nlVector3 m_PrevPosition;
+        /* 0x58 */ PhysicsBoneID m_ID;
+    }; // total size: 0x5C
+
     class PhysicsSphereBone : public PhysicsSphere
     {
     public:

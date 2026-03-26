@@ -7,7 +7,12 @@
 #include "NL/gl/glState.h"
 #include "NL/gl/glUserData.h"
 
+extern int g_nMotionBlurDivs;
+extern float g_fMotionBlurAlpha0;
+extern float g_fMotionBlurAlphaScale;
 extern float g_fBallBlur;
+extern const unsigned long eOC_NO_LIGHT;
+extern unsigned char sbBallShadowDisabled__13DrawableModel;
 
 /**
  * Offset/Address/Size: 0x0 | 0x8011DD50 | size: 0x80
@@ -46,9 +51,100 @@ void DrawableBall::Blend(const float* alpha, const DrawableBall& a, const Drawab
 
 /**
  * Offset/Address/Size: 0x1C0 | 0x8011DF10 | size: 0x47C
+ * TODO: 98.78% match - remaining diffs are integer register allocation (r18-r24 shift
+ * for savedWorldMatrix and blurMatrix word copies, r18/r20 swap in post-loop section)
  */
 void DrawableBall::Render() const
 {
+    unsigned long savedBlurCreationFlags;
+    int i;
+    DrawableObject* pDrawableBall;
+    glModel* (*savedBlurCB)(glModel*, eGLView&, unsigned long&);
+    u8 savedBallShadowDisabled;
+
+    DrawableObject* drawable = g_pBall->m_pDrawableBall;
+    if (mVisible)
+    {
+        drawable->m_uObjectFlags |= 1;
+    }
+    else
+    {
+        drawable->m_uObjectFlags &= ~1;
+    }
+    if (!mVisible)
+    {
+        return;
+    }
+
+    pDrawableBall = g_pBall->m_pDrawableBall;
+    pDrawableBall->m_orientation = mOrientation;
+    pDrawableBall->m_worldMatrixUpToDate = 0;
+    pDrawableBall->m_translation = mPosition;
+    pDrawableBall->m_worldMatrixUpToDate = 0;
+
+    unsigned long savedCreationFlags = pDrawableBall->m_uObjectCreationFlags;
+    pDrawableBall->m_uObjectCreationFlags &= ~0x80;
+    pDrawableBall->Draw();
+    pDrawableBall->m_uObjectCreationFlags = savedCreationFlags;
+
+    nlMatrix4 savedWorldMatrix;
+    nlMatrix4 blurMatrix;
+    nlMatrix4 viewMatrix;
+    glViewGetViewMatrix(GLV_Unshadowed, viewMatrix);
+
+    const float blurOffsetScale = 0.0078125f;
+    float blurOffsetX, blurOffsetY, blurOffsetZ;
+    blurOffsetZ = blurOffsetScale * viewMatrix.f.m33;
+    blurOffsetY = blurOffsetScale * viewMatrix.f.m23;
+    blurOffsetX = blurOffsetScale * viewMatrix.f.m13;
+
+    savedBallShadowDisabled = sbBallShadowDisabled__13DrawableModel;
+    sbBallShadowDisabled__13DrawableModel = 1;
+
+    savedWorldMatrix = pDrawableBall->GetWorldMatrix();
+    savedBlurCB = pDrawableBall->m_CB;
+    pDrawableBall->m_CB = BallBlurCB;
+
+    savedBlurCreationFlags = pDrawableBall->m_uObjectCreationFlags;
+    pDrawableBall->m_uObjectCreationFlags = savedBlurCreationFlags | eOC_NO_LIGHT;
+
+    for (i = 0; i < g_nMotionBlurDivs; i++)
+    {
+        float alpha = (float)i / (float)g_nMotionBlurDivs;
+        g_fBallBlur = g_fMotionBlurAlphaScale * (1.0f - alpha) + g_fMotionBlurAlpha0;
+
+        nlQuaternion orientation;
+        nlQuatNLerp(orientation, mPrevOrientation, mOrientation, alpha);
+        pDrawableBall->m_orientation = orientation;
+        pDrawableBall->m_worldMatrixUpToDate = 0;
+
+        blurMatrix = pDrawableBall->GetWorldMatrix();
+        blurMatrix.f.m41 += blurOffsetX;
+        blurMatrix.f.m42 += blurOffsetY;
+        blurMatrix.f.m43 += blurOffsetZ;
+        pDrawableBall->m_worldMatrix = blurMatrix;
+
+        pDrawableBall->Draw();
+    }
+
+    sbBallShadowDisabled__13DrawableModel = savedBallShadowDisabled;
+    pDrawableBall->m_worldMatrix = savedWorldMatrix;
+    pDrawableBall->m_CB = savedBlurCB;
+    pDrawableBall->m_uObjectCreationFlags = savedBlurCreationFlags;
+
+    u8 savedBallShadowDisabled2 = sbBallShadowDisabled__13DrawableModel;
+    sbBallShadowDisabled__13DrawableModel = 1;
+
+    glModel* (*savedLightingCB)(glModel*, eGLView&, unsigned long&) = pDrawableBall->m_CB;
+    pDrawableBall->m_CB = BallLightingCB;
+
+    unsigned long savedLightingFlags = pDrawableBall->m_uObjectCreationFlags;
+    pDrawableBall->m_uObjectCreationFlags &= ~0x80;
+    pDrawableBall->Draw();
+
+    sbBallShadowDisabled__13DrawableModel = savedBallShadowDisabled2;
+    pDrawableBall->m_CB = savedLightingCB;
+    pDrawableBall->m_uObjectCreationFlags = savedLightingFlags;
 }
 
 /**

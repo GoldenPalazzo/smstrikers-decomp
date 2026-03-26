@@ -1197,9 +1197,163 @@ bool Goalie::CheckForSTSAttack()
 
 /**
  * Offset/Address/Size: 0x659C | 0x80049098 | size: 0x43C
+ * TODO: 99.65% match - register allocation diffs: 8 FPR in pass-target
+ * distance math and 6 FPR in inner ballPosX/fabs block.
  */
-bool Goalie::IsLooseBallClose(float)
+extern float GonnaGetBall(cTeam*);
+
+bool Goalie::IsLooseBallClose(float fDistFromBox)
 {
+    bool bBallIsLoose = true;
+    cBall* pBall = g_pBall;
+    if (pBall->m_pPassTarget != NULL)
+    {
+        nlVector3 leftPost;
+        nlVector3 rightPost;
+        bool coneResult;
+        if (pBall->m_pOwner != NULL)
+        {
+            coneResult = false;
+        }
+        else
+        {
+            nlVector3 ballVelocity = pBall->m_v3Velocity;
+            float velMagSq = (ballVelocity.f.x * ballVelocity.f.x) + (ballVelocity.f.y * ballVelocity.f.y) + (ballVelocity.f.z * ballVelocity.f.z);
+            if (velMagSq < 0.01f)
+            {
+                coneResult = false;
+            }
+            else
+            {
+                m_pTeam->m_pNet->GetPostLocation(rightPost, 0, 0.0f);
+                m_pTeam->m_pNet->GetPostLocation(leftPost, 1, 0.0f);
+                const nlVector3& ballPos = g_pBall->m_v3Position;
+                nlVec3Add(ballVelocity, ballVelocity, ballPos);
+                coneResult = IsPointInCone(ballVelocity, ballPos, rightPost, leftPost);
+            }
+        }
+        do
+        {
+            if (coneResult)
+            {
+                cPlayer* pPassTarget = g_pBall->m_pPassTarget;
+                float dxToTarget = m_v3Position.f.x - pPassTarget->m_v3Position.f.x;
+                float dyToTarget = m_v3Position.f.y - pPassTarget->m_v3Position.f.y;
+                float dyToBall = m_v3Position.f.y - pBall->m_v3Position.f.y;
+                float dxToBall = m_v3Position.f.x - pBall->m_v3Position.f.x;
+                float distToPassTargetSq = (dxToTarget * dxToTarget) + (dyToTarget * dyToTarget);
+                float distToBallSq = (dxToBall * dxToBall) + (dyToBall * dyToBall);
+                if (distToBallSq > distToPassTargetSq)
+                {
+                }
+                else
+                {
+                    break;
+                }
+            }
+            bBallIsLoose = false;
+        } while (false);
+    }
+    pBall = g_pBall;
+    if ((pBall->m_pOwner == NULL) && bBallIsLoose)
+    {
+        float sideSign = m_pTeam->m_pNet->m_baseLocation.f.x;
+        if (sideSign * pBall->m_v3Position.f.x < 0.0f)
+        {
+            return false;
+        }
+        float goalLineX = cField::GetGoalLineX(1U);
+        float penaltyY = cField::GetPenaltyBoxY();
+        float absBallX = (float)fabs(pBall->m_v3Position.f.x);
+        float absBallY = (float)fabs(pBall->m_v3Position.f.y);
+        if ((absBallX > (goalLineX - 2.0f)) && (absBallY < penaltyY))
+        {
+            return true;
+        }
+        if ((GonnaGetBall(m_pTeam) > 0.75f) && (absBallX < (goalLineX - 3.0f)) && (absBallY > penaltyY))
+        {
+            return false;
+        }
+        {
+            float ballPosX = pBall->m_v3Position.f.x;
+            float ballAbsXNew = (float)fabs(ballPosX);
+            bool innerCheck;
+            do
+            {
+                if (ballAbsXNew > cField::GetPenaltyBoxX(1U) - fDistFromBox)
+                {
+                    if (ballPosX * m_v3Position.f.x > 0.0f)
+                    {
+                        float ballAbsYNew = (float)fabs(pBall->m_v3Position.f.y);
+                        if (ballAbsYNew < fDistFromBox + cField::GetPenaltyBoxY())
+                        {
+                            innerCheck = true;
+                            break;
+                        }
+                    }
+                }
+                innerCheck = false;
+            } while (false);
+            if (innerCheck)
+            {
+                return true;
+            }
+        }
+        float netSideSign = m_pTeam->m_pNet->m_sideSign;
+        cBall* pBallVel = g_pBall;
+        {
+            float t = cField::GetPenaltyBoxX(1U) - fDistFromBox;
+            float penaltyBoxXLimit = (0.0f >= t) ? 0.0f : t;
+            float t2 = penaltyY + fDistFromBox;
+            float penaltyBoxYLimit = (0.0f >= t2) ? 0.0f : t2;
+            if (absBallX < penaltyBoxXLimit)
+            {
+                float fForwardVelX = pBallVel->m_v3Velocity.f.x * netSideSign;
+                if (fForwardVelX < 1.0f)
+                {
+                    return false;
+                }
+                float fXtime = (penaltyBoxXLimit - absBallX) / fForwardVelX;
+                if (fXtime > 0.3f)
+                {
+                    return false;
+                }
+                float projectedY = fXtime * pBallVel->m_v3Velocity.f.y + pBall->m_v3Position.f.y;
+                if ((float)fabs(projectedY) < penaltyBoxYLimit)
+                {
+                    return true;
+                }
+            }
+            if (absBallY > penaltyBoxYLimit)
+            {
+                float ballY = pBall->m_v3Position.f.y;
+                float ySign;
+                if (ballY > 0.0f)
+                {
+                    ySign = 1.0f;
+                }
+                else
+                {
+                    ySign = -1.0f;
+                }
+                float fForwardVelY = pBallVel->m_v3Velocity.f.y * ySign;
+                if (fForwardVelY > -1.0f)
+                {
+                    return false;
+                }
+                float fYtime = (penaltyBoxYLimit - absBallY) / fForwardVelY;
+                if (fYtime > 0.3f)
+                {
+                    return false;
+                }
+                float projectedX = fYtime * pBallVel->m_v3Velocity.f.x + pBall->m_v3Position.f.x;
+                if (projectedX * netSideSign > penaltyBoxXLimit)
+                {
+                    return true;
+                }
+            }
+        }
+    }
     return false;
 }
 
@@ -1549,10 +1703,185 @@ cPoseNode* Goalie::SetupBlender(bool bPrimary, const float* fStartPercent, int n
 
 /**
  * Offset/Address/Size: 0x58E4 | 0x800483E0 | size: 0x458
+ * TODO: 87.30% match - this-pointer register allocation remains shifted (r28 vs r29),
+ * and milestone array loads still compile as add+lfs instead of addi+lfsx in several blocks.
  */
-void Goalie::PlayBlendedAnims(float, int)
+class cPN_Blender : public cPoseNode
 {
-    FORCE_DONT_INLINE;
+public:
+    cPN_Blender(cPoseNode*, cPoseNode*, float);
+    virtual ~cPN_Blender() { };
+    virtual void Evaluate(float, cPoseAccumulator*) const;
+    virtual void Evaluate(int, float, cPoseAccumulator*) const;
+    virtual cPoseNode* Update(float);
+    virtual int GetType() { return 0x0; };
+    virtual void BlendRootTrans(nlVector3*, float, float*);
+    virtual void BlendRootRot(unsigned short*, float, float*);
+
+    static SlotPool<cPN_Blender> m_BlenderSlotPool;
+};
+
+inline cPN_Blender* AllocateBlender()
+{
+    cPN_Blender* pBlender = NULL;
+    if (cPN_Blender::m_BlenderSlotPool.m_FreeList == NULL)
+    {
+        SlotPoolBase::BaseAddNewBlock(&cPN_Blender::m_BlenderSlotPool, 0x1C);
+    }
+    if (cPN_Blender::m_BlenderSlotPool.m_FreeList != NULL)
+    {
+        pBlender = (cPN_Blender*)cPN_Blender::m_BlenderSlotPool.m_FreeList;
+        cPN_Blender::m_BlenderSlotPool.m_FreeList = cPN_Blender::m_BlenderSlotPool.m_FreeList->m_next;
+    }
+    return pBlender;
+}
+
+/**
+ * Offset/Address/Size: 0x58E4 | 0x800483E0 | size: 0x458
+ * TODO: 87.63% match - this=r28 vs r29 (dual pool alloc shifts register), slwi r0 vs r4 (prevents lfsx pattern)
+ */
+void Goalie::PlayBlendedAnims(float fStartTime, int nMilestone)
+{
+    static float fDefaultStartPercent[] = { 0.4f, 0.7f };
+
+    float fStartPercent[4];
+    int nMainAnimID;
+    int milestone;
+
+    if (mBlendInfo.mfSaveBlendComposite <= 0.001f && mBlendInfo.mfSaveBlendPrimary <= 0.001f)
+    {
+        SetAnimState(mpSaveData->mnAnimID, true, 0.2f, false, false);
+
+        if (nMilestone >= 0 && nMilestone < 2)
+        {
+            fStartTime = mBlendInfo.mfMilestoneTime[nMilestone];
+            if (fStartTime <= 0.0f)
+            {
+                fStartTime = fDefaultStartPercent[nMilestone] * (mpSaveData->mfMilestonePercent[2] * mpSaveData->mfDuration);
+            }
+        }
+
+        if (fStartTime > 0.0f && fStartTime < mpSaveData->mfDuration)
+        {
+            cPN_SAnimController* pController = m_pCurrentAnimController;
+            f32 fAnimTime = fStartTime / mpSaveData->mfDuration;
+
+            pController->m_fPrevTime = pController->m_fTime;
+            pController->m_fTime = fAnimTime;
+        }
+    }
+    else
+    {
+        nMainAnimID = mpSaveData->mnAnimID;
+
+        if (nMilestone >= 0)
+        {
+            milestone = nMilestone;
+
+            if (mBlendInfo.mfMilestoneTime[nMilestone] > 0.0f)
+            {
+                if (mBlendInfo.mpSaveData[0] != NULL)
+                {
+                    fStartPercent[0] = mBlendInfo.mpSaveData[0]->mfMilestonePercent[nMilestone];
+                }
+                if (mBlendInfo.mpSaveData[1] != NULL)
+                {
+                    fStartPercent[1] = mBlendInfo.mpSaveData[1]->mfMilestonePercent[nMilestone];
+                }
+                if (mBlendInfo.mpSaveData[2] != NULL)
+                {
+                    fStartPercent[2] = mBlendInfo.mpSaveData[2]->mfMilestonePercent[nMilestone];
+                }
+                if (mBlendInfo.mpSaveData[3] != NULL)
+                {
+                    fStartPercent[3] = mBlendInfo.mpSaveData[3]->mfMilestonePercent[nMilestone];
+                }
+            }
+            else
+            {
+                if (mBlendInfo.mpSaveData[0] != NULL)
+                {
+                    fStartPercent[0] = fDefaultStartPercent[nMilestone] * mBlendInfo.mpSaveData[0]->mfMilestonePercent[2];
+                }
+                if (mBlendInfo.mpSaveData[1] != NULL)
+                {
+                    fStartPercent[1] = fDefaultStartPercent[nMilestone] * mBlendInfo.mpSaveData[1]->mfMilestonePercent[2];
+                }
+                if (mBlendInfo.mpSaveData[2] != NULL)
+                {
+                    fStartPercent[2] = fDefaultStartPercent[nMilestone] * mBlendInfo.mpSaveData[2]->mfMilestonePercent[2];
+                }
+                if (mBlendInfo.mpSaveData[3] != NULL)
+                {
+                    fStartPercent[3] = fDefaultStartPercent[nMilestone] * mBlendInfo.mpSaveData[3]->mfMilestonePercent[2];
+                }
+            }
+        }
+        else if (fStartTime > 0.0f)
+        {
+            float fPrevMilestone = 0.0f;
+
+            milestone = 0;
+            while (milestone < 4 && fStartTime >= mBlendInfo.mfMilestoneTime[milestone])
+            {
+                if (mBlendInfo.mfMilestoneTime[milestone] > fPrevMilestone)
+                {
+                    fPrevMilestone = mBlendInfo.mfMilestoneTime[milestone];
+                }
+                milestone++;
+            }
+
+            fStartTime = NormalizeVal(fStartTime, fPrevMilestone, mBlendInfo.mfMilestoneTime[milestone]);
+
+            int prevMilestone = milestone - 1;
+            int currMilestone = milestone;
+
+            for (int i = 0; i < 4; i++)
+            {
+                SaveData* pData = mBlendInfo.mpSaveData[i];
+                if (pData != NULL)
+                {
+                    float fStart = 0.0f;
+                    if (milestone > 0)
+                    {
+                        fStart = pData->mfMilestonePercent[prevMilestone];
+                    }
+
+                    fStartPercent[i] = Interpolate(fStart, pData->mfMilestonePercent[currMilestone], fStartTime);
+                }
+            }
+        }
+        else
+        {
+            fStartPercent[0] = 0.0f;
+            fStartPercent[1] = 0.0f;
+            fStartPercent[2] = 0.0f;
+            fStartPercent[3] = 0.0f;
+            milestone = 0;
+        }
+
+        cPoseNode* pMainNode = SetupBlender(true, fStartPercent, nMainAnimID, milestone);
+
+        if (mBlendInfo.mfSaveBlendComposite >= 0.001f)
+        {
+            cPoseNode* pOther = SetupBlender(false, fStartPercent, nMainAnimID, milestone);
+            cPN_SingleAxisBlender* pBlend = new (AllocateSingleAxisBlender()) cPN_SingleAxisBlender(2, NULL, 0, 0.1f);
+
+            pBlend->m_fDesiredWeight = mBlendInfo.mfSaveBlendComposite;
+            pBlend->m_fSmoothedWeight = mBlendInfo.mfSaveBlendComposite;
+            pBlend->SetChild(0, pMainNode);
+            pBlend->SetChild(1, pOther);
+
+            pMainNode = pBlend;
+        }
+
+        cPN_Blender* pBlender = new (AllocateBlender()) cPN_Blender(m_pAILayer[0], pMainNode, 0.1f);
+
+        m_pAILayer[0] = pBlender;
+        SetAnimID(nMainAnimID);
+    }
+
+    InitMovementFromAnim(0, v3Zero, 1.0f, true);
 }
 
 /**
@@ -2563,9 +2892,192 @@ void Goalie::DoPassRelease()
 
 /**
  * Offset/Address/Size: 0xAD0 | 0x800435CC | size: 0x460
+ * TODO: 99.46% match - case 3 keeps owner pointer in r31 instead of r30 and uses
+ * local float labels (@1320/@1321/@1322) instead of target SDA labels
+ * (@3669/@3289/@3290).
  */
-void Goalie::EventHandler(Event*, void*)
+void Goalie::EventHandler(Event* event, void*)
 {
+    extern cCharacter* g_pCharacters[10];
+
+    switch (event->m_uEventID)
+    {
+    case 3:
+    {
+        register cPlayer* pPlayer = g_pBall->m_pOwner;
+        g_pBall->m_tNoPickupTimer.SetSeconds(3.0f);
+
+        if (pPlayer != NULL)
+        {
+            pPlayer->ReleaseBall();
+
+            if (pPlayer->m_eClassType == GOALIE)
+            {
+                Goalie* pGoalie = (Goalie*)pPlayer;
+
+                pGoalie->CleanGoalieAction();
+
+                pGoalie->mPrevGoalieActionState = pGoalie->mGoalieActionState;
+                pGoalie->mGoalieActionState = GOALIEACTION_MOVE;
+                pGoalie->mnSubstate = 0;
+
+                pGoalie->SetAnimState(8, true, 0.2f, false, false);
+                pGoalie->InitMovementFromAnim(0, v3Zero, 1.0f, false);
+
+                pGoalie->mnSubstate = 1;
+                pGoalie->mMoveDirection = GOALIEDIR_IDLE;
+
+                pGoalie->m_pPhysicsCharacter->m_CanCollideWithBall = true;
+                pGoalie->mbShouldMiss = false;
+                pGoalie->mbDoNavigate = false;
+                pGoalie->m_pPhysicsCharacter->m_CanCollidedWithGoalLine = true;
+                pGoalie->m_pPhysicsCharacter->m_CanCollideWithWall = true;
+
+                if (pGoalie->mbStunEffectActive)
+                {
+                    KillDaze(pGoalie);
+                    pGoalie->mbStunEffectActive = false;
+                }
+
+                pGoalie->mpShooter = NULL;
+                pGoalie->mUrgency = URGENCY_LOW;
+                pGoalie->mfSpeedScale = 1.0f;
+                mbPosGoalieNetCheck = false;
+                mbNegGoalieNetCheck = false;
+                pGoalie->mbDoHeadTrack = true;
+                pGoalie->mbBallImpacted = false;
+                pGoalie->mbNoUserControl = false;
+                pGoalie->mbPickedUp = false;
+            }
+            else if (pPlayer->m_eClassType == FIELDER)
+            {
+                cFielder* pFielder = (cFielder*)pPlayer;
+                pFielder->EndDesire(false);
+                pFielder->EndAction();
+            }
+        }
+
+        Goalie* pHomeGoalie = (Goalie*)g_pCharacters[8];
+
+        pHomeGoalie->CleanGoalieAction();
+
+        pHomeGoalie->mPrevGoalieActionState = pHomeGoalie->mGoalieActionState;
+        pHomeGoalie->mGoalieActionState = GOALIEACTION_MOVE;
+        pHomeGoalie->mnSubstate = 0;
+
+        pHomeGoalie->SetAnimState(8, true, 0.2f, false, false);
+        pHomeGoalie->InitMovementFromAnim(0, v3Zero, 1.0f, false);
+
+        pHomeGoalie->mnSubstate = 1;
+        pHomeGoalie->mMoveDirection = GOALIEDIR_IDLE;
+
+        pHomeGoalie->m_pPhysicsCharacter->m_CanCollideWithBall = true;
+        pHomeGoalie->mbShouldMiss = false;
+        pHomeGoalie->mbDoNavigate = false;
+        pHomeGoalie->m_pPhysicsCharacter->m_CanCollidedWithGoalLine = true;
+        pHomeGoalie->m_pPhysicsCharacter->m_CanCollideWithWall = true;
+
+        if (pHomeGoalie->mbStunEffectActive)
+        {
+            KillDaze(pHomeGoalie);
+            pHomeGoalie->mbStunEffectActive = false;
+        }
+
+        pHomeGoalie->mpShooter = NULL;
+        pHomeGoalie->mUrgency = URGENCY_LOW;
+        pHomeGoalie->mfSpeedScale = 1.0f;
+        mbPosGoalieNetCheck = false;
+        mbNegGoalieNetCheck = false;
+        pHomeGoalie->mbDoHeadTrack = true;
+        pHomeGoalie->mbBallImpacted = false;
+        pHomeGoalie->mbNoUserControl = false;
+        pHomeGoalie->mbPickedUp = false;
+
+        Goalie* pAwayGoalie = (Goalie*)g_pCharacters[9];
+
+        pAwayGoalie->CleanGoalieAction();
+
+        pAwayGoalie->mPrevGoalieActionState = pAwayGoalie->mGoalieActionState;
+        pAwayGoalie->mGoalieActionState = GOALIEACTION_MOVE;
+        pAwayGoalie->mnSubstate = 0;
+
+        pAwayGoalie->SetAnimState(8, true, 0.2f, false, false);
+        pAwayGoalie->InitMovementFromAnim(0, v3Zero, 1.0f, false);
+
+        pAwayGoalie->mnSubstate = 1;
+        pAwayGoalie->mMoveDirection = GOALIEDIR_IDLE;
+
+        pAwayGoalie->m_pPhysicsCharacter->m_CanCollideWithBall = true;
+        pAwayGoalie->mbShouldMiss = false;
+        pAwayGoalie->mbDoNavigate = false;
+        pAwayGoalie->m_pPhysicsCharacter->m_CanCollidedWithGoalLine = true;
+        pAwayGoalie->m_pPhysicsCharacter->m_CanCollideWithWall = true;
+
+        if (pAwayGoalie->mbStunEffectActive)
+        {
+            KillDaze(pAwayGoalie);
+            pAwayGoalie->mbStunEffectActive = false;
+        }
+
+        pAwayGoalie->mpShooter = NULL;
+        pAwayGoalie->mUrgency = URGENCY_LOW;
+        pAwayGoalie->mfSpeedScale = 1.0f;
+        mbPosGoalieNetCheck = false;
+        mbNegGoalieNetCheck = false;
+        pAwayGoalie->mbDoHeadTrack = true;
+        pAwayGoalie->mbBallImpacted = false;
+        pAwayGoalie->mbNoUserControl = false;
+        pAwayGoalie->mbPickedUp = false;
+
+        break;
+    }
+
+    case 5:
+    {
+        GoalScoredData* data;
+
+        s32 id = event->m_data.GetID();
+
+        if (id == -1)
+        {
+            nlPrintf("Error: Trying to get event data on event with none!\n");
+            data = 0;
+        }
+        else
+        {
+            id = event->m_data.GetID();
+
+            if (id != 0x18A)
+            {
+                nlPrintf("Error: GetData() failed! Data types do not match!\n");
+                data = 0;
+            }
+            else
+            {
+                data = (GoalScoredData*)&event->m_data;
+            }
+        }
+
+        Goalie* pGoalie = g_pTeams[data->uTeamIndex]->GetGoalie();
+        Goalie* pOtherGoalie = g_pTeams[1 - data->uTeamIndex]->GetGoalie();
+
+        if (g_pGame->m_eGameState != GS_KICKOFF)
+        {
+            pGoalie->mnOffplayPending = GOALIE_OFFPLAY_GOAL_FOR;
+            pGoalie->mbPickedUp = false;
+            pOtherGoalie->mnOffplayPending = GOALIE_OFFPLAY_GOAL_AGAINST;
+            pOtherGoalie->mbPickedUp = false;
+        }
+
+        pGoalie->mFatigue.Reset();
+        pOtherGoalie->mFatigue.Reset();
+        break;
+    }
+
+    case 10:
+    default:
+        break;
+    }
 }
 
 /**

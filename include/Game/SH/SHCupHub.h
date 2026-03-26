@@ -40,7 +40,7 @@ public:
     void CreateKnockout();
     unsigned char UpdateLeague(float);
     void UpdateKnockout8(float);
-    void UpdateKnockout4(float);
+    s32 UpdateKnockout4(float);
     void UpdateKnockout2(float);
     void UpdateProgressIndicator();
     void ColourUserRow();

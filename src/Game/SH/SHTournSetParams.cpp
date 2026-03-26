@@ -54,9 +54,98 @@ TournSetParamsScene::~TournSetParamsScene()
 
 /**
  * Offset/Address/Size: 0x1CD0 | 0x800E16A4 | size: 0x434
+ * TODO: 62.95% match - callback functor construction path still differs
+ * (local SetSlideFunctor vs target Bind/MemFun FunctorImpl shape),
+ * causing prologue/register allocation and callback setup mismatches.
  */
-void TournSetParamsScene::BuildSubMenuList(int, TLComponentInstance*, bool, int)
+void TournSetParamsScene::BuildSubMenuList(int menuitem, TLComponentInstance* compinstance, bool wraps, int startindex)
 {
+    extern int nlSNPrintf(char*, unsigned long, const char*, ...);
+
+    class SetSlideFunctor : public Function1<void, SlideMenuItem*>::FunctorBase
+    {
+    public:
+        void (SlideMenuList::*mMemFun)();
+        SlideMenuList* mList;
+
+        SetSlideFunctor(SlideMenuList* list)
+            : mMemFun(&SlideMenuList::SetSlide)
+            , mList(list)
+        {
+        }
+
+        virtual ~SetSlideFunctor()
+        {
+        }
+
+        virtual void operator()(SlideMenuItem*)
+        {
+            (mList->*mMemFun)();
+        }
+
+        virtual Function1<void, SlideMenuItem*>::FunctorBase* Clone() const
+        {
+            return new ((SetSlideFunctor*)nlMalloc(sizeof(SetSlideFunctor), 8, false)) SetSlideFunctor(*this);
+        }
+    };
+
+    SlideMenuList* list = (SlideMenuList*)nlMalloc(sizeof(SlideMenuList), 8, false);
+    if (list != NULL)
+    {
+        new ((MenuList<SlideMenuItem>*)list) MenuList<SlideMenuItem>();
+        list->mInputLocked = 0;
+        list->mComponentInstance = compinstance;
+    }
+    mSlideMenuLists[menuitem] = list;
+
+    char slidename[64] = { 0 };
+
+    int slidenum = 0;
+    while (true)
+    {
+        nlSNPrintf(slidename, 64, "Slide%d", slidenum + 1);
+        compinstance->SetActiveSlide(slidename);
+
+        if (compinstance->GetActiveSlide() == NULL)
+        {
+            break;
+        }
+
+        unsigned long slideHash = compinstance->GetActiveSlide()->m_hash;
+
+        SlideMenuItem* item = (SlideMenuItem*)nlMalloc(sizeof(SlideMenuItem), 8, true);
+        if (item != NULL)
+        {
+            item->mSlideMenuHash = (unsigned long)-1;
+            item->mComponentInstance = list->mComponentInstance;
+            item->mUserEnumType = slidenum;
+        }
+        item->mSlideMenuHash = slideHash;
+
+        MenuItem<SlideMenuItem>* menuItem = &list->mMenuItems[list->mNumItemsAdded];
+        menuItem->mType = item;
+        list->mNumItemsAdded++;
+
+        Function<SlideMenuItem*> callback;
+        callback.mTag = FUNCTOR;
+        callback.mFunctor = new ((SetSlideFunctor*)nlMalloc(sizeof(SetSlideFunctor), 8, false)) SetSlideFunctor(list);
+        menuItem->mCallbacks[1] = callback;
+
+        slidenum++;
+    }
+
+    MenuItem<SlideMenuItem>* menuItem = &list->mMenuItems[list->mCurrentIndex];
+    menuItem->mCallbacks[2](menuItem->mType);
+
+    list->mCurrentIndex = startindex;
+
+    menuItem = &list->mMenuItems[list->mCurrentIndex];
+    menuItem->mCallbacks[1](menuItem->mType);
+
+    if (wraps)
+    {
+        list->mFlags = 1;
+    }
 }
 
 /**

@@ -1139,11 +1139,129 @@ nlVector3* cBall::GetAIVelocity() const
     return (nlVector3*)&(m_v3Velocity);
 }
 
+static inline float clampAbove(float minVal, float x)
+{
+    if (minVal >= x)
+    {
+        return minVal;
+    }
+    return x;
+}
+
 /**
  * Offset/Address/Size: 0x1E54 | 0x8000B828 | size: 0x400
+ * TODO: 97.0% match - saved FPR allocation: prevPos.y/z get f31/f30 instead of f22/f23, causing register cascade
  */
-void cBall::PostPhysicsUpdate(float)
+void cBall::PostPhysicsUpdate(float fDeltaT)
 {
+    m_v3PrevPosition = m_v3Position;
+    m_pPhysicsBall->GetPosition(&m_v3Position);
+    m_pPhysicsBall->GetLinearVelocity(&m_v3Velocity);
+
+    if (m_unk_0xA6 && mpDamageTarget != NULL)
+    {
+        float targetDist;
+        float targetDeltaX, targetDeltaY, targetDeltaZ;
+        float currentDeltaX, currentDeltaY, currentDeltaZ;
+
+        nlVector3 targetPosition = mpDamageTarget->GetJointPosition(mpDamageTarget->m_pPoseAccumulator->m_BaseSHierarchy->m_nPelvisNodeIndex);
+        targetPosition.f.z = clampAbove(0.3f, targetPosition.f.z + 0.05f);
+
+        nlVector3 position = m_v3Position;
+        nlVector3 prevPosition = m_v3PrevPosition;
+
+        if (position.f.z < 0.3f)
+        {
+            position.f.z = 0.3f;
+        }
+
+        if (prevPosition.f.z < 0.3f)
+        {
+            prevPosition.f.z = 0.3f;
+        }
+
+        targetDeltaX = targetPosition.f.x - prevPosition.f.x;
+        targetDeltaY = targetPosition.f.y - prevPosition.f.y;
+        targetDeltaZ = targetPosition.f.z - prevPosition.f.z;
+
+        currentDeltaX = position.f.x - prevPosition.f.x;
+        currentDeltaY = position.f.y - prevPosition.f.y;
+        currentDeltaZ = position.f.z - prevPosition.f.z;
+
+        targetDist = nlSqrt(targetDeltaX * targetDeltaX + targetDeltaY * targetDeltaY + targetDeltaZ * targetDeltaZ, true);
+        float currentDist = nlSqrt(currentDeltaX * currentDeltaX + currentDeltaY * currentDeltaY + currentDeltaZ * currentDeltaZ, true);
+
+        float targetWeight = 0.5f;
+        if (targetDist < currentDist)
+        {
+            float scale = targetDist / targetDist;
+            currentDeltaX = scale * currentDeltaX;
+            currentDeltaY = scale * currentDeltaY;
+            currentDeltaZ = scale * currentDeltaZ;
+        }
+        else
+        {
+            float scale = currentDist / targetDist;
+            targetDeltaX = scale * targetDeltaX;
+            targetDeltaY = scale * targetDeltaY;
+            targetDeltaZ = scale * targetDeltaZ;
+        }
+
+        if (targetDist < 5.0f)
+        {
+            float falloff = 1.0f - targetDist / 5.0f;
+            targetWeight = 0.5f + 0.5f * falloff;
+        }
+
+        float currentWeight = 1.0f - targetWeight;
+        currentDeltaX = currentWeight * currentDeltaX + targetWeight * targetDeltaX;
+        currentDeltaY = currentWeight * currentDeltaY + targetWeight * targetDeltaY;
+        currentDeltaZ = currentWeight * currentDeltaZ + targetWeight * targetDeltaZ;
+
+        nlVec3Set(position, prevPosition.f.x + currentDeltaX, prevPosition.f.y + currentDeltaY, prevPosition.f.z + currentDeltaZ);
+
+        m_v3Position = position;
+        m_pPhysicsBall->SetPosition(position, PhysicsObject::WORLD_COORDINATES);
+        m_pPhysicsBall->SetRotation(m3Ident);
+
+        FakeBallWorld::InvalidateBallCache();
+        m_bBallPathChangeCount = m_bBallPathChangeCount + 1;
+
+        float distanceSq = currentDeltaX * currentDeltaX + currentDeltaY * currentDeltaY + currentDeltaZ * currentDeltaZ;
+        float projectedScale = (m_v3Velocity.f.x * currentDeltaX + m_v3Velocity.f.y * currentDeltaY + m_v3Velocity.f.z * currentDeltaZ) / distanceSq;
+
+        nlVector3 velocity;
+        nlVec3Set(velocity, projectedScale * currentDeltaX, projectedScale * currentDeltaY, projectedScale * currentDeltaZ);
+        // velocity.f.x = projectedScale * currentDeltaX;
+        // velocity.f.y = projectedScale * currentDeltaY;
+        // velocity.f.z = projectedScale * currentDeltaZ;
+
+        float zVelocity = m_v3Velocity.f.z;
+        velocity.f.z = zVelocity;
+
+        float speedSq = velocity.f.x * velocity.f.x + velocity.f.y * velocity.f.y + zVelocity * zVelocity;
+        if (speedSq < 400.0f)
+        {
+            float speed = nlSqrt(speedSq, true);
+            float scale = 20.0f / speed;
+            nlVec3Set(velocity, scale * velocity.f.x, scale * velocity.f.y, scale * velocity.f.z);
+        }
+
+        if (position.f.z < 0.4f && velocity.f.z < 0.0f)
+        {
+            velocity.f.z = 0.0f;
+        }
+
+        m_v3Velocity = velocity;
+        m_pPhysicsBall->SetLinearVelocity(velocity);
+    }
+
+    UpdateOrientation(fDeltaT);
+
+    if (m_pBlurHandler != NULL)
+    {
+        m_pBlurHandler->AddViewOrientedPoint(m_v3Position, m_v3Velocity);
+    }
 }
 
 /**

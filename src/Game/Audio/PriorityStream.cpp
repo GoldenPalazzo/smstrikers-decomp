@@ -3,8 +3,8 @@
 #include "NL/nlPrint.h"
 #include "NL/nlString.h"
 
-unsigned char PLAY_RECORD::s_BowserAttackNext = true;
-unsigned char PLAY_RECORD::s_SuddenDeathNext = true;
+unsigned char PriorityStream::PLAY_RECORD::s_BowserAttackNext = true;
+unsigned char PriorityStream::PLAY_RECORD::s_SuddenDeathNext = true;
 
 /**
  * Offset/Address/Size: 0xEA8 | 0x8015895C | size: 0x10
@@ -17,9 +17,249 @@ void PriorityStream::Reset()
 
 /**
  * Offset/Address/Size: 0xA34 | 0x801584E8 | size: 0x474
+ * TODO: 97.96% match - register allocation drift: pSlot r5→r9, volGroup r6→r7,
+ *   queue r7→r8, streamHash r3↔r4 swap, causing 3 extra instructions (11 diffs)
  */
-void PriorityStream::PlayStream(unsigned long, float, bool, unsigned long, unsigned long, const char*)
+enum Type
 {
+    _BOOL = 0,
+    _INT = 1,
+    _FLOAT = 2,
+    _STRING = 3,
+};
+
+union Value
+{
+    const char* s;
+    int i;
+    bool b;
+    float f;
+};
+
+class Config
+{
+public:
+    struct TagValuePair
+    {
+        const char* tag;
+        Type type;
+        Value value;
+    };
+
+    static Config& Global();
+    TagValuePair& FindTvp(const char*);
+    void Set(const char*, bool);
+};
+
+template <typename To, typename From>
+To LexicalCast(const From&);
+
+class cGame
+{
+public:
+    unsigned char _pad[0x42];
+    bool mInSuddenDeath;
+};
+
+extern cGame* g_pGame;
+
+void PriorityStream::PlayStream(unsigned long StreamId, float Volume, bool Looping, unsigned long FadeIn, unsigned long ExistingFadeOut, const char* StreamParam)
+{
+    char StreamName[64];
+
+    Config& cfg = Config::Global();
+    Config::TagValuePair& tvp = cfg.FindTvp("no_stream");
+    bool noStream;
+
+    if (tvp.tag == NULL)
+    {
+        cfg.Set("no_stream", false);
+        noStream = false;
+    }
+    else if (tvp.type == _BOOL)
+    {
+        noStream = LexicalCast<bool, bool>(tvp.value.b);
+    }
+    else if (tvp.type == _INT)
+    {
+        noStream = LexicalCast<bool, int>(tvp.value.i);
+    }
+    else if (tvp.type == _FLOAT)
+    {
+        noStream = LexicalCast<bool, float>(tvp.value.f);
+    }
+    else if (tvp.type == _STRING)
+    {
+        noStream = LexicalCast<bool, const char*>(tvp.value.s);
+    }
+    else
+    {
+        noStream = false;
+    }
+
+    if (noStream == true)
+    {
+        return;
+    }
+
+    if (g_pGame->mInSuddenDeath)
+    {
+        switch (StreamId)
+        {
+        case 0x09451A58:
+        case 0xA207B1AE:
+        case 0x436E3953:
+            return;
+        }
+    }
+
+    unsigned long active = GrabCrowdStream(ExistingFadeOut);
+    unsigned long volGroup = 0;
+    unsigned long queue = 1;
+
+    switch (StreamId)
+    {
+    case 0xE38B5407:
+        volGroup = 3;
+        break;
+    case 0x436E3953:
+        volGroup = 1;
+        break;
+    case 0x09451A58:
+        volGroup = 1;
+        queue = 0;
+        break;
+    case 0xA207B1AE:
+        volGroup = 1;
+        queue = 0;
+        break;
+    case 0x57CB5A12:
+        volGroup = 1;
+        break;
+    }
+
+    unsigned long* pSlot;
+    if (StreamId == 0xE38B5407)
+    {
+        pSlot = &m_PStream.m_OrigStreamId;
+    }
+    else
+    {
+        pSlot = &m_HasCrowdStream;
+    }
+
+    if ((StreamId == 0xA207B1AE) && m_PStream.m_OrigStreamId)
+    {
+        *pSlot = 0;
+    }
+    else
+    {
+        *pSlot = StreamId;
+        ((PLAY_RECORD*)(pSlot + 1))->m_StreamId = StreamId;
+        ((PLAY_RECORD*)(pSlot + 1))->m_Volume = Volume;
+        ((PLAY_RECORD*)(pSlot + 1))->m_Looping = Looping;
+        ((PLAY_RECORD*)(pSlot + 1))->m_FadeIn = FadeIn;
+        ((PLAY_RECORD*)(pSlot + 1))->m_ExistingFadeOut = ExistingFadeOut;
+        ((PLAY_RECORD*)(pSlot + 1))->m_VolGroup = (VOLUME_GROUP)volGroup;
+        ((PLAY_RECORD*)(pSlot + 1))->m_Queue = active;
+        ((PLAY_RECORD*)(pSlot + 1))->m_Active = queue;
+
+        if (StreamParam)
+        {
+            nlStrNCpy<char>(((PLAY_RECORD*)(pSlot + 1))->m_StreamParam, StreamParam, 32);
+        }
+        else
+        {
+            ((PLAY_RECORD*)(pSlot + 1))->m_StreamParam[0] = '\0';
+        }
+    }
+
+    if (m_PStream.m_OrigStreamId)
+    {
+        if (!m_PStream.m_OrigStreamId)
+        {
+            goto end_playstream;
+        }
+        if (m_CapChant.m_Queue)
+        {
+            m_CapChant.m_Queue = 0;
+            m_CapChant.m_Track.QueueStream(
+                m_PStream.m_OrigStreamId,
+                m_CapChant.m_Volume,
+                (m_CapChant.m_Looping & 1),
+                m_CapChant.m_FadeIn,
+                m_CapChant.m_StreamParam[0] ? m_CapChant.m_StreamParam : (const char*)0,
+                (Audio::MasterVolume::VOLUME_GROUP)m_CapChant.m_VolGroup);
+        }
+        else
+        {
+            m_CapChant.m_Track.PlayStream(
+                m_PStream.m_OrigStreamId,
+                m_CapChant.m_Volume,
+                (m_CapChant.m_Looping & 1),
+                m_CapChant.m_FadeIn,
+                m_CapChant.m_ExistingFadeOut,
+                m_CapChant.m_StreamParam[0] ? m_CapChant.m_StreamParam : (const char*)0,
+                (Audio::MasterVolume::VOLUME_GROUP)m_CapChant.m_VolGroup);
+        }
+    }
+    else if (m_HasCrowdStream)
+    {
+        unsigned long streamHash = m_PStream.m_StreamId;
+        unsigned char* pCounter;
+        const char* Format;
+
+        switch (streamHash)
+        {
+        case 0x436E3953:
+            pCounter = &PLAY_RECORD::s_BowserAttackNext;
+            Format = "STAD_Bowser_Attack_%02d";
+            break;
+        case 0x57CB5A12:
+            pCounter = &PLAY_RECORD::s_SuddenDeathNext;
+            Format = "STAD_Sudden_Death_%02d";
+            break;
+        default:
+            m_HasCrowdStream = streamHash;
+            goto skip_format;
+        }
+
+        nlSNPrintf(StreamName, 64, Format, *pCounter);
+        *pCounter = *pCounter + 1;
+        if (*pCounter == 4)
+        {
+            *pCounter = 1;
+        }
+        m_HasCrowdStream = nlStringLowerHash(StreamName);
+
+    skip_format:
+
+        if (m_PStream.m_Queue)
+        {
+            m_PStream.m_Queue = 0;
+            m_PStream.m_Track.QueueStream(
+                m_HasCrowdStream,
+                m_PStream.m_Volume,
+                (m_PStream.m_Looping & 1),
+                m_PStream.m_FadeIn,
+                m_PStream.m_StreamParam[0] ? m_PStream.m_StreamParam : (const char*)0,
+                (Audio::MasterVolume::VOLUME_GROUP)m_PStream.m_VolGroup);
+        }
+        else
+        {
+            m_PStream.m_Track.PlayStream(
+                m_HasCrowdStream,
+                m_PStream.m_Volume,
+                (m_PStream.m_Looping & 1),
+                m_PStream.m_FadeIn,
+                m_PStream.m_ExistingFadeOut,
+                m_PStream.m_StreamParam[0] ? m_PStream.m_StreamParam : (const char*)0,
+                (Audio::MasterVolume::VOLUME_GROUP)m_PStream.m_VolGroup);
+        }
+    }
+
+end_playstream:
+    m_InPause = false;
 }
 
 /**

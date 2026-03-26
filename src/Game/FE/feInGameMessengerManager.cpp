@@ -2,6 +2,7 @@
 #include "Game/FE/feIMessenger.h"
 #include "Game/Game.h"
 #include "Game/Ball.h"
+#include "Game/GameInfo.h"
 
 /**
  * Offset/Address/Size: 0x0 | 0x800FF91C | size: 0x140
@@ -74,11 +75,219 @@ void FEInGameMessengerManager::Update(float fDeltaT)
 
 /**
  * Offset/Address/Size: 0x140 | 0x800FFA5C | size: 0x414
+ * TODO: 96.19% match - remaining diffs are this/timeState register swap
+ * (r30/r31), stack frame size (0x60 vs 0x50), and EARLYMID constructor
+ * pattern (decomp.me MWCC volatile reload vs build MWCC callee-saved reuse).
  */
-void FEInGameMessengerManager::EnterNewTimeState(FEInGameMessengerManager::eTimeStates)
+#pragma opt_common_subs off
+void FEInGameMessengerManager::EnterNewTimeState(FEInGameMessengerManager::eTimeStates timeState)
 {
-    FORCE_DONT_INLINE;
+    int i;
+
+    switch (timeState)
+    {
+    case TS_GAME_BEGINNING:
+        break;
+
+    case TS_GAME_EARLYMID:
+    {
+        ListEntry<eInGameMessages>** pTail = &m_messageQueue.m_Tail;
+        ListEntry<eInGameMessages>** pHead = &m_messageQueue.m_Head;
+
+        for (i = 0; i < m_numWatchGames; i++)
+        {
+            eInGameMessages msg = (eInGameMessages)i;
+            int hasMessage;
+
+            if (m_messageList[(int)msg].m_data != NULL)
+            {
+                hasMessage = m_messageList[(int)msg].m_data->mSize - 1;
+            }
+            else
+            {
+                hasMessage = 0;
+            }
+
+            if (hasMessage != 0)
+            {
+                if (m_messageQueue.m_Head == NULL)
+                {
+                    m_waitingToDisplay = true;
+                    m_waitedToDisplay = 0.0f;
+                }
+
+                volatile eInGameMessages stackMsg = msg;
+
+                ListEntry<eInGameMessages>* entry = new (nlMalloc(sizeof(ListEntry<eInGameMessages>), 8, false)) ListEntry<eInGameMessages>(msg);
+                nlListAddEnd<ListEntry<eInGameMessages> >(pHead, pTail, entry);
+            }
+        }
+        break;
+    }
+
+    case TS_GAME_MIDLATE:
+    {
+        ListEntry<eInGameMessages>** pTail = &m_messageQueue.m_Tail;
+        ListEntry<eInGameMessages>** pHead = &m_messageQueue.m_Head;
+
+        for (i = 0; i < m_numWatchGames; i++)
+        {
+            eInGameMessages msg = (eInGameMessages)(i + 2);
+            int hasMessage;
+
+            if (m_messageList[(int)msg].m_data != NULL)
+            {
+                hasMessage = m_messageList[(int)msg].m_data->mSize - 1;
+            }
+            else
+            {
+                hasMessage = 0;
+            }
+
+            if (hasMessage != 0)
+            {
+                if (m_messageQueue.m_Head == NULL)
+                {
+                    m_waitingToDisplay = true;
+                    m_waitedToDisplay = 0.0f;
+                }
+
+                volatile eInGameMessages stackMsg = msg;
+
+                ListEntry<eInGameMessages>* entry = new (nlMalloc(sizeof(ListEntry<eInGameMessages>), 8, false)) ListEntry<eInGameMessages>((eInGameMessages)stackMsg);
+                nlListAddEnd<ListEntry<eInGameMessages> >(pHead, pTail, entry);
+            }
+        }
+        break;
+    }
+
+    case TS_GAME_LATE:
+    {
+        int sequence[4] = { 0, 1, 2, 3 };
+
+        for (i = 0; i < 4; i++)
+        {
+            int swapInd = i + nlRandom(4 - i, &nlDefaultSeed);
+            int temp = sequence[i];
+            sequence[i] = sequence[swapInd];
+            sequence[swapInd] = temp;
+        }
+
+        ListEntry<eInGameMessages>** pTail = &m_messageQueue.m_Tail;
+        ListEntry<eInGameMessages>** pHead = &m_messageQueue.m_Head;
+
+        int numDisplayed = 0;
+        for (i = 0; i < 4; i++)
+        {
+            eInGameMessages msg;
+            int hasMessage;
+
+            if (numDisplayed >= 2)
+            {
+                break;
+            }
+
+            msg = (eInGameMessages)(i + 4);
+
+            if (m_messageList[(int)msg].m_data != NULL)
+            {
+                hasMessage = m_messageList[(int)msg].m_data->mSize - 1;
+            }
+            else
+            {
+                hasMessage = 0;
+            }
+
+            if (hasMessage != 0)
+            {
+                if (m_messageList[(int)msg].m_data != NULL)
+                {
+                    hasMessage = m_messageList[(int)msg].m_data->mSize - 1;
+                }
+                else
+                {
+                    hasMessage = 0;
+                }
+
+                if (hasMessage != 0)
+                {
+                    if (m_messageQueue.m_Head == NULL)
+                    {
+                        m_waitingToDisplay = true;
+                        m_waitedToDisplay = 0.0f;
+                    }
+
+                    volatile eInGameMessages stackMsg = msg;
+
+                    ListEntry<eInGameMessages>* entry = new (nlMalloc(sizeof(ListEntry<eInGameMessages>), 8, false)) ListEntry<eInGameMessages>(msg);
+                    nlListAddEnd<ListEntry<eInGameMessages> >(pHead, pTail, entry);
+                }
+
+                if (m_messageList[(int)msg].m_data != NULL)
+                {
+                    hasMessage = m_messageList[(int)msg].m_data->mSize - 1;
+                }
+                else
+                {
+                    hasMessage = 0;
+                }
+
+                if (hasMessage != 0)
+                {
+                    if (m_messageQueue.m_Head == NULL)
+                    {
+                        m_waitingToDisplay = true;
+                        m_waitedToDisplay = 0.0f;
+                    }
+
+                    volatile eInGameMessages stackMsg = msg;
+
+                    ListEntry<eInGameMessages>* entry = new (nlMalloc(sizeof(ListEntry<eInGameMessages>), 8, false)) ListEntry<eInGameMessages>(msg);
+                    nlListAddEnd<ListEntry<eInGameMessages> >(pHead, pTail, entry);
+                }
+
+                numDisplayed++;
+            }
+        }
+
+        if (nlSingleton<GameInfoManager>::s_pInstance->mCurrentMode == GameInfoManager::GM_TOURNAMENT)
+        {
+            eInGameMessages msg = MSG_CUSTOMTOURNNEXTMATCHUP;
+            int hasMessage;
+
+            if (m_messageList[(int)msg].m_data != NULL)
+            {
+                hasMessage = m_messageList[(int)msg].m_data->mSize - 1;
+            }
+            else
+            {
+                hasMessage = 0;
+            }
+
+            if (hasMessage != 0)
+            {
+                if (m_messageQueue.m_Head == NULL)
+                {
+                    m_waitingToDisplay = true;
+                    m_waitedToDisplay = 0.0f;
+                }
+
+                volatile eInGameMessages stackMsg = msg;
+
+                ListEntry<eInGameMessages>* entry = new (nlMalloc(sizeof(ListEntry<eInGameMessages>), 8, false)) ListEntry<eInGameMessages>((eInGameMessages)stackMsg);
+                nlListAddEnd<ListEntry<eInGameMessages> >(pHead, pTail, entry);
+            }
+        }
+        break;
+    }
+
+    default:
+        break;
+    }
+
+    m_curTimeState = timeState;
 }
+#pragma opt_common_subs on
 
 /**
  * Offset/Address/Size: 0x554 | 0x800FFE70 | size: 0x104

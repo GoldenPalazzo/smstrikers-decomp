@@ -1008,9 +1008,123 @@ void cFielder::CleanUpPowerupEffect()
 
 /**
  * Offset/Address/Size: 0x9DFC | 0x80023138 | size: 0x45C
+ * TODO: 99.82% match - remaining f0/f1 register coloring diff in Y/Z accuracy
+ * updates caused by -inline deferred flag (scratch matches 100% with -inline auto)
  */
-void cFielder::CalcRegularShot(nlVector3&, nlVector3&)
+void cFielder::CalcRegularShot(nlVector3& rv3Vel, nlVector3& rv3Target)
 {
+    u32 uSaveType = 0x10000 - 4;
+    float fShotValue = m_pShotMeter->m_fScoreValue;
+    Goalie* pGoalie = m_pTeam->GetOtherTeam()->GetGoalie();
+    float fGoalieEnergy = pGoalie->mFatigue.mfEnergyLevel;
+    GoalieTweaks* pGoalieTweaks = (GoalieTweaks*)pGoalie->m_pTweaks;
+
+    bool bIsChipShot = false;
+    if (mActionShotVars.bIsChipShot || mActionLooseBallShotVars.bIsChipShot)
+    {
+        bIsChipShot = true;
+    }
+
+    if (bIsChipShot
+        || ((fGoalieEnergy >= pGoalieTweaks->fFatigueCatchThreshold)
+            && (m_pShotMeter->m_fSpeedValue < pGoalieTweaks->fCatchSaveMaxSpeed)))
+    {
+        uSaveType = 0x10000 - 1;
+    }
+
+    pGoalie->muSaveType = uSaveType;
+
+    cBall* pBall = g_pBall;
+    float fShotTime;
+
+    extern void DoFindBestShotTarget__8cFielderFR9nlVector3Rfb(cFielder*, nlVector3&, float&, bool);
+    DoFindBestShotTarget__8cFielderFR9nlVector3Rfb(this, rv3Target, fShotTime, false);
+
+    float fDesiredTime = 1.0f / fShotTime;
+    float fDeltaX = pBall->m_v3Position.f.x - rv3Target.f.x;
+    float fDeltaY = pBall->m_v3Position.f.y - rv3Target.f.y;
+    float fDistance = nlSqrt((fDeltaX * fDeltaX) + (fDeltaY * fDeltaY), true);
+    fDesiredTime = fDistance * fDesiredTime;
+
+    bool bIsChipShot2 = false;
+    if (mActionShotVars.bIsChipShot || mActionLooseBallShotVars.bIsChipShot)
+    {
+        bIsChipShot2 = true;
+    }
+
+    float fAccuracyScale;
+    if (bIsChipShot2)
+    {
+        fAccuracyScale = (1.1f - fShotValue) * (1.5f * fDistance);
+    }
+    else
+    {
+        fAccuracyScale = fShotTime * (1.1f - fShotValue);
+    }
+
+    GameTweaks* pGameTweaks = g_pGame->m_pGameTweaks;
+    float fYAccuracy = fAccuracyScale * pGameTweaks->unk2FC;
+    float fZAccuracy = fAccuracyScale * pGameTweaks->unk300;
+
+    static FilteredRandomReal randgenYAccuracy;
+    static FilteredRandomReal randgenZAccuracy;
+
+    float fYRand = fYAccuracy * randgenYAccuracy.genrand();
+    rv3Target.f.y += 0.5f * fYAccuracy - fYRand;
+    float fZOffset = fZAccuracy * randgenZAccuracy.genrand();
+    rv3Target.f.z += fZOffset;
+
+    g_pBall->ShootAtFast(rv3Vel, rv3Target, fDesiredTime);
+
+    extern cTeam* g_pCurrentlyUpdatingTeam;
+
+    if (fShotValue < SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide)->fShotValue1)
+    {
+        fShotValue = InterpolateRangeClamped(
+            SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide)->fShotChance0,
+            SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide)->fShotChance1,
+            0.0f,
+            SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide)->fShotValue1,
+            fShotValue);
+    }
+    else if (fShotValue < SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide)->fShotValue2)
+    {
+        fShotValue = InterpolateRangeClamped(
+            SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide)->fShotChance1,
+            SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide)->fShotChance2,
+            SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide)->fShotValue1,
+            SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide)->fShotValue2,
+            fShotValue);
+    }
+    else if (fShotValue < SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide)->fShotValue3)
+    {
+        fShotValue = InterpolateRangeClamped(
+            SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide)->fShotChance2,
+            SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide)->fShotChance3,
+            SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide)->fShotValue2,
+            SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide)->fShotValue3,
+            fShotValue);
+    }
+    else
+    {
+        fShotValue = InterpolateRangeClamped(
+            SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide)->fShotChance3,
+            SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide)->fShotChance4,
+            SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide)->fShotValue3,
+            1.0f,
+            fShotValue);
+    }
+
+    static FilteredRandomReal randgenMiss;
+
+    if ((100.0f * randgenMiss.genrand()) < fShotValue)
+    {
+        pGoalie->mbShouldMiss = true;
+    }
+    else
+    {
+        pGoalie->mbShouldMiss = false;
+    }
 }
 
 /**
@@ -4379,9 +4493,193 @@ void cFielder::UpdateHeadTracking(float)
 
 /**
  * Offset/Address/Size: 0x13C4 | 0x8001A700 | size: 0x408
+ * TODO: 98.99% match - MWCC generates blt instead of bge+b for SkillLevel >= SUPERSTAR check (compiler code layout quirk)
  */
+struct ShootToScoreMeterScratch
+{
+    u8 pad[0x28];
+    u8 m_bMeterVisible;
+};
+
+extern "C" ShootToScoreMeterScratch instance__17ShootToScoreMeter;
+extern "C" void RumbleMeter__17ShootToScoreMeterFfff(ShootToScoreMeterScratch*, float, float, float);
+
 void cFielder::UpdateController(float)
 {
+    extern cTeam* g_pCurrentlyUpdatingTeam;
+
+    int nNumUsers;
+    int i;
+    float yPercentage;
+    float xPercentage;
+
+    switch (m_eActionState)
+    {
+    case ACTION_NEED_ACTION:
+    case ACTION_PASS:
+    case ACTION_POST_WHISTLE:
+        if (m_tFrozenTimer.m_uPackedTime != 0)
+        {
+            if (GetGlobalPad() != NULL)
+            {
+                if (GetGlobalPad()->JustPressed(PAD_SWITCH, true))
+                {
+                    if (m_pBall == NULL)
+                    {
+                        SwapController();
+                    }
+                }
+            }
+        }
+        break;
+
+    case ACTION_RUNNING_WB:
+    case ACTION_RUNNING_WB_TURBO:
+    case ACTION_RUNNING_WB_TURBO_TURN:
+    case ACTION_SHOOT_TO_SCORE:
+        if (GetGlobalPad() != NULL)
+        {
+            if (GetGlobalPad()->JustPressed(PAD_SWITCH, true))
+            {
+                if (m_tFrozenTimer.m_uPackedTime != 0)
+                {
+                    if (m_pBall == NULL)
+                    {
+                        SwapController();
+                        break;
+                    }
+                }
+
+                if (m_pBall == NULL)
+                {
+                    SwapController();
+                }
+            }
+        }
+        break;
+
+    case ACTION_DEKE:
+    case ACTION_ELECTROCUTION:
+    case ACTION_HIT:
+    case ACTION_HIT_REACT:
+    case ACTION_IDLE_TURN:
+    case ACTION_LATE_ONETIMER_FROM_VOLLEY:
+    case ACTION_LOOSE_BALL_PASS:
+    case ACTION_LOOSE_BALL_SHOT:
+    case ACTION_ONETIMER:
+    case ACTION_ONETOUCH_PASS_FROM_VOLLEY:
+    case ACTION_RECEIVE_PASS:
+    case ACTION_RUNNING:
+    case ACTION_SHOT:
+    case ACTION_SLIDE_ATTACK:
+    case ACTION_SLIDE_ATTACK_REACT:
+    case ACTION_BOMB_REACT:
+    case ACTION_SHELL_REACT:
+    case ACTION_BANANA_REACT:
+    case ACTION_STS_HIT_REACT:
+    case ACTION_SQUISH_REACT:
+    case ACTION_SLIDE_FAIL_REACT:
+    case ACTION_WAIT:
+        if (GetGlobalPad() != NULL)
+        {
+            if (GetGlobalPad()->JustPressed(PAD_SWITCH, true))
+            {
+                if (m_pBall == NULL)
+                {
+                    SwapController();
+                }
+            }
+        }
+        break;
+    }
+
+    if ((g_pBall->GetOwnerFielder() != NULL)
+        && !IsOnSameTeam(g_pBall->GetOwnerFielder())
+        && (g_pBall->GetOwnerFielder()->m_eActionState == ACTION_SHOOT_TO_SCORE))
+    {
+        if (instance__17ShootToScoreMeter.m_bMeterVisible != 0)
+        {
+            nNumUsers = 0;
+            i = 0;
+            while (i < 4)
+            {
+                if (m_pTeam->GetFielder(i)->GetGlobalPad() != NULL)
+                {
+                    nNumUsers++;
+                }
+                i++;
+            }
+
+            if (GetGlobalPad() == NULL)
+            {
+                const GameplaySettings& gameplayOptions = nlSingleton<GameInfoManager>::s_pInstance->GetGameplayOptions();
+                if (gameplayOptions.SkillLevel >= GameplaySettings::SUPERSTAR)
+                {
+                    if ((gameplayOptions.SkillLevel < (GameplaySettings::eSkillLevel)5)
+                        && (nNumUsers == 0))
+                    {
+                        SkillTweaks* pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide);
+                        if (nlRandomf(1.0f, &nlDefaultSeed) < pSkillTweaks->Shoot_CaptainS2SSecondButtonChance)
+                        {
+                            EmitSolidRumble(g_pBall->GetOwnerFielder());
+
+                            pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide);
+                            yPercentage = (float)nlRandom(2, &nlDefaultSeed) - 1.0f;
+                            RumbleMeter__17ShootToScoreMeterFfff(
+                                &instance__17ShootToScoreMeter,
+                                pSkillTweaks->Shoot_CaptainS2SSecondButtonChance,
+                                (float)nlRandom(2, &nlDefaultSeed) - 1.0f,
+                                yPercentage);
+                        }
+                    }
+                }
+                else
+                {
+                    return;
+                }
+            }
+            else if (m_pController->GetCStickMovementStickMagnitude() > 0.0f)
+            {
+                mActionRumbleVars.fRumbleDirection = (float)(u16)m_pController->GetCStickMovementStickDirection();
+
+                EmitSolidRumble(g_pBall->GetOwnerFielder());
+                EmitSolidRumble(this);
+
+                if (mActionRumbleVars.fRumbleDirection < 32768.0f)
+                {
+                    yPercentage = InterpolateRangeClamped(-1.0f, 1.0f, 32768.0f, 0.0f, mActionRumbleVars.fRumbleDirection);
+                }
+                else
+                {
+                    yPercentage = InterpolateRangeClamped(-1.0f, 1.0f, 32768.0f, 65000.0f, mActionRumbleVars.fRumbleDirection);
+                }
+
+                if ((mActionRumbleVars.fRumbleDirection > 16384.0f)
+                    && (mActionRumbleVars.fRumbleDirection < 49152.0f))
+                {
+                    xPercentage = InterpolateRangeClamped(-1.0f, 1.0f, 49152.0f, 16384.0f, mActionRumbleVars.fRumbleDirection);
+                }
+                else if (mActionRumbleVars.fRumbleDirection <= 16384.0f)
+                {
+                    xPercentage = InterpolateRangeClamped(1.0f, 0.0f, 16384.0f, 0.0f, mActionRumbleVars.fRumbleDirection);
+                }
+                else
+                {
+                    xPercentage = InterpolateRangeClamped(-1.0f, 0.0f, 49152.0f, 65000.0f, mActionRumbleVars.fRumbleDirection);
+                }
+
+                RumbleMeter__17ShootToScoreMeterFfff(
+                    &instance__17ShootToScoreMeter,
+                    m_pController->GetCStickMovementStickMagnitude(),
+                    yPercentage,
+                    xPercentage);
+            }
+        }
+    }
+    else
+    {
+        mActionRumbleVars.fRumbleDirection = 0.0f;
+    }
 }
 
 /**
@@ -4487,7 +4785,7 @@ void cFielder::DoAIReceivePassActionSelection()
 /**
  * Offset/Address/Size: 0x3C | 0x80019378 | size: 0x680
  */
-void cFielder::DoAIWindupActionSelection()
+bool cFielder::DoAIWindupActionSelection()
 {
 }
 

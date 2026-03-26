@@ -229,7 +229,7 @@ u64 __strtoull(int base, int max_width, int (*ReadProc)(void*, int, int), void* 
         case start:
             if (isspace(c))
             {
-                c = fetch();
+                c = (*ReadProc)(ReadProcArg, 0, __GetAChar);
                 spaces++;
                 break;
             }
@@ -346,13 +346,13 @@ u64 __strtoull(int base, int max_width, int (*ReadProc)(void*, int, int), void* 
 
     if (!success(scan_state))
     {
-        count = value = 0;
+        value = 0;
+        *chars_scanned = 0;
     }
     else
     {
-        count--;
+        *chars_scanned = count + spaces - 1;
     }
-    *chars_scanned = count;
 
     unfetch(c);
     return value;

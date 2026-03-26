@@ -566,10 +566,341 @@ void ChooseCaptainsSceneV2::Update(float fDeltaT)
 
 /**
  * Offset/Address/Size: 0xE4 | 0x800D6B2C | size: 0x47C
+ * TODO: 98.28% match - -inline deferred flag mismatch still causes persistent r30/r29 and r28/r27 register swaps
  */
 void ChooseCaptainsSceneV2::BindChooseSideInstances()
 {
-    FORCE_DONT_INLINE;
+    extern unsigned char PAD_COLOURS[4][3];
+    extern int nlSNPrintf(char*, unsigned long, const char*, ...);
+
+    FEPresentation* pPres = m_pFEPresentation;
+    nlColour colour;
+
+    volatile unsigned long hB, hA;
+    volatile unsigned long h9, h8;
+    volatile unsigned long h7, h6, h5, h4, h3, h2, h1, h0;
+
+    h0 = 0;
+    h2 = 0;
+    h4 = 0;
+    h6 = 0;
+    h1 = 0;
+    h3 = 0;
+    h5 = 0;
+    h7 = 0;
+
+    unsigned long hash = nlStringLowerHash("CHOOSE_SIDE");
+    h8 = hash;
+    h9 = hash;
+    hash = nlStringLowerHash("Layer");
+    hB = hash;
+    hA = hash;
+
+    TLComponentInstance* chooseSideComponent;
+    {
+        typedef TLInstance* (*FBV)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
+        typedef TLInstance* (*FBR)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
+        union
+        {
+            FBV byValue;
+            FBR byRef;
+        } find;
+        find.byValue = FEFinder<TLInstance, 4>::Find<TLSlide>;
+        chooseSideComponent = (TLComponentInstance*)find.byRef(
+            pPres->m_currentSlide,
+            (InlineHasher&)hB,
+            (InlineHasher&)h9,
+            (InlineHasher&)h7,
+            (InlineHasher&)h5,
+            (InlineHasher&)h3,
+            (InlineHasher&)h1);
+    }
+
+    TLSlide* activeSlide = chooseSideComponent->GetActiveSlide();
+    unsigned char* pPadColour = (unsigned char*)PAD_COLOURS;
+
+    for (int i = 0; i < 4; i++)
+    {
+        char tempString[64];
+
+        nlSNPrintf(tempString, 64, "controller%d", i + 1);
+        {
+            volatile unsigned long hB, hA;
+            volatile unsigned long h9, h8;
+            volatile unsigned long h6, h4, h2, h0;
+            h0 = 0;
+            h1 = 0;
+            h2 = 0;
+            h3 = 0;
+            h4 = 0;
+            h5 = 0;
+            h6 = 0;
+            h7 = 0;
+            hash = nlStringLowerHash(tempString);
+            h8 = hash;
+            h9 = hash;
+            hash = nlStringLowerHash("group");
+            hA = hash;
+            hB = hash;
+            typedef TLInstance* (*FBV)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
+            typedef TLInstance* (*FBR)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
+            union
+            {
+                FBV byValue;
+                FBR byRef;
+            } find;
+            find.byValue = FEFinder<TLInstance, 5>::Find<TLSlide>;
+            mChooseSide.mInstanceTable[i] = find.byRef(
+                activeSlide,
+                (InlineHasher&)hB,
+                (InlineHasher&)h9,
+                (InlineHasher&)h7,
+                (InlineHasher&)h5,
+                (InlineHasher&)h3,
+                (InlineHasher&)h1);
+        }
+
+        {
+            volatile unsigned long hB, hA;
+            volatile unsigned long h9, h8;
+            volatile unsigned long h6, h4, h2, h0;
+            h0 = 0;
+            h1 = 0;
+            h2 = 0;
+            h3 = 0;
+            h4 = 0;
+            h5 = 0;
+            h6 = 0;
+            h7 = 0;
+            h8 = 0;
+            h9 = 0;
+            hash = nlStringLowerHash("ready");
+            hB = hash;
+            hA = hash;
+            typedef TLInstance* (*FBV)(TLInstance*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
+            typedef TLInstance* (*FBR)(TLInstance*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
+            union
+            {
+                FBV byValue;
+                FBR byRef;
+            } find;
+            find.byValue = FEFinder<TLInstance, 3>::Find<TLInstance>;
+            mChooseSide.mInstanceTable[i + 4] = find.byRef(
+                mChooseSide.mInstanceTable[i],
+                (InlineHasher&)hB,
+                (InlineHasher&)h9,
+                (InlineHasher&)h7,
+                (InlineHasher&)h5,
+                (InlineHasher&)h3,
+                (InlineHasher&)h1);
+        }
+
+        if (mChooseSide.mInstanceTable[i + 4] != NULL)
+        {
+            mChooseSide.mInstanceTable[i + 4]->m_bVisible = false;
+        }
+
+        nlSNPrintf(tempString, 64, "arrows%d", i + 1);
+        {
+            volatile unsigned long hB, hA;
+            volatile unsigned long h9, h8;
+            volatile unsigned long h6, h4, h2, h0;
+            h0 = 0;
+            h1 = 0;
+            h2 = 0;
+            h3 = 0;
+            h4 = 0;
+            h5 = 0;
+            h6 = 0;
+            h7 = 0;
+            hash = nlStringLowerHash(tempString);
+            h8 = hash;
+            h9 = hash;
+            hash = nlStringLowerHash("group");
+            hA = hash;
+            hB = hash;
+            typedef TLComponentInstance* (*FBV)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
+            typedef TLComponentInstance* (*FBR)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
+            union
+            {
+                FBV byValue;
+                FBR byRef;
+            } find;
+            find.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
+            mChooseSide.mInstanceTable[i + 12] = (TLInstance*)find.byRef(
+                activeSlide,
+                (InlineHasher&)hB,
+                (InlineHasher&)h9,
+                (InlineHasher&)h7,
+                (InlineHasher&)h5,
+                (InlineHasher&)h3,
+                (InlineHasher&)h1);
+        }
+
+        nlSNPrintf(tempString, 64, "p%d", i + 1);
+        {
+            volatile unsigned long hB, hA;
+            volatile unsigned long h9, h8;
+            volatile unsigned long h6, h4, h2, h0;
+            h0 = 0;
+            h1 = 0;
+            h2 = 0;
+            h3 = 0;
+            h4 = 0;
+            h5 = 0;
+            h6 = 0;
+            h7 = 0;
+            hash = nlStringLowerHash(tempString);
+            h8 = hash;
+            h9 = hash;
+            hash = nlStringLowerHash("group");
+            hA = hash;
+            hB = hash;
+            typedef TLTextInstance* (*FBV)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
+            typedef TLTextInstance* (*FBR)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
+            union
+            {
+                FBV byValue;
+                FBR byRef;
+            } find;
+            find.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
+            mChooseSide.mInstanceTable[i + 8] = (TLInstance*)find.byRef(
+                activeSlide,
+                (InlineHasher&)hB,
+                (InlineHasher&)h9,
+                (InlineHasher&)h7,
+                (InlineHasher&)h5,
+                (InlineHasher&)h3,
+                (InlineHasher&)h1);
+        }
+
+        colour.c[0] = pPadColour[0];
+        colour.c[1] = pPadColour[1];
+        colour.c[2] = pPadColour[2];
+        colour.c[3] = 0xFF;
+        mChooseSide.mInstanceTable[i + 8]->SetAssetColour(colour);
+
+        pPadColour += 3;
+    }
+
+    TLInstance* object;
+    {
+        volatile unsigned long hB, hA;
+        volatile unsigned long h9, h8;
+        volatile unsigned long h6, h4, h2, h0;
+        h0 = 0;
+        h1 = 0;
+        h2 = 0;
+        h3 = 0;
+        h4 = 0;
+        h5 = 0;
+        h6 = 0;
+        h7 = 0;
+        hash = nlStringLowerHash("homex");
+        h8 = hash;
+        h9 = hash;
+        hash = nlStringLowerHash("group");
+        hA = hash;
+        hB = hash;
+        typedef TLInstance* (*FBV)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
+        typedef TLInstance* (*FBR)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
+        union
+        {
+            FBV byValue;
+            FBR byRef;
+        } find;
+        find.byValue = FEFinder<TLInstance, 2>::Find<TLSlide>;
+        object = find.byRef(
+            activeSlide,
+            (InlineHasher&)hB,
+            (InlineHasher&)h9,
+            (InlineHasher&)h7,
+            (InlineHasher&)h5,
+            (InlineHasher&)h3,
+            (InlineHasher&)h1);
+    }
+
+    mChooseSide.mControllerDestPos[0] = object->GetAssetPosition().f.x;
+    object->m_bVisible = false;
+
+    {
+        volatile unsigned long hB, hA;
+        volatile unsigned long h9, h8;
+        volatile unsigned long h6, h4, h2, h0;
+        h0 = 0;
+        h1 = 0;
+        h2 = 0;
+        h3 = 0;
+        h4 = 0;
+        h5 = 0;
+        h6 = 0;
+        h7 = 0;
+        hash = nlStringLowerHash("awayx");
+        h8 = hash;
+        h9 = hash;
+        hash = nlStringLowerHash("group");
+        hA = hash;
+        hB = hash;
+        typedef TLInstance* (*FBV)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
+        typedef TLInstance* (*FBR)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
+        union
+        {
+            FBV byValue;
+            FBR byRef;
+        } find;
+        find.byValue = FEFinder<TLInstance, 2>::Find<TLSlide>;
+        object = find.byRef(
+            activeSlide,
+            (InlineHasher&)hB,
+            (InlineHasher&)h9,
+            (InlineHasher&)h7,
+            (InlineHasher&)h5,
+            (InlineHasher&)h3,
+            (InlineHasher&)h1);
+    }
+
+    mChooseSide.mControllerDestPos[1] = object->GetAssetPosition().f.x;
+    object->m_bVisible = false;
+
+    mChooseSide.mControllerDestPos[2] = mChooseSide.mInstanceTable[0]->GetAssetPosition().f.x;
+
+    {
+        volatile unsigned long hB, hA;
+        volatile unsigned long h9, h8;
+        volatile unsigned long h6, h4, h2, h0;
+        h0 = 0;
+        h1 = 0;
+        h2 = 0;
+        h3 = 0;
+        h4 = 0;
+        h5 = 0;
+        h6 = 0;
+        h7 = 0;
+        hash = nlStringLowerHash("continue");
+        h8 = hash;
+        h9 = hash;
+        hash = nlStringLowerHash("Layer");
+        hB = hash;
+        hA = hash;
+        typedef TLInstance* (*FBV)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
+        typedef TLInstance* (*FBR)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
+        union
+        {
+            FBV byValue;
+            FBR byRef;
+        } find;
+        find.byValue = FEFinder<TLInstance, 4>::Find<TLSlide>;
+        mChooseSide.mInstanceTable[16] = find.byRef(
+            pPres->m_currentSlide,
+            (InlineHasher&)hB,
+            (InlineHasher&)h9,
+            (InlineHasher&)h7,
+            (InlineHasher&)h5,
+            (InlineHasher&)h3,
+            (InlineHasher&)h1);
+    }
+
+    mChooseSide.ResetAndPositionControllers(mChooseCaptain.mNumTotalPushedPlayers != 1);
 }
 
 extern "C" FEScrollText* __ct__12FEScrollTextFP14TLTextInstanceii(FEScrollText*, TLTextInstance*, int, int);

@@ -1,6 +1,8 @@
 #include "Game/Camera/GameplayCam.h"
 
+#include "Game/Ball.h"
 #include "Game/GameInfo.h"
+#include "Game/ReplayManager.h"
 #include "Game/Team.h"
 #include "Game/AI/Fielder.h"
 #include "Game/AI/AiUtil.h"
@@ -198,17 +200,282 @@ void GameplayCamera::Reactivate()
 
 /**
  * Offset/Address/Size: 0x470 | 0x801A9AB0 | size: 0x404
+ * TODO: 89.01% match - this in r29 vs r28 (100 diffs), -inline deferred vs -inline auto limitation
  */
 void GameplayCameraZoomLevel::CalcDesiredTarget()
 {
-    FORCE_DONT_INLINE;
+    int i;
+    nlVector3 v3OOIPos = { 0.0f, 0.0f, 0.0f };
+    float fKnotTableBlendWeights[3];
+    float fCurrWeight;
+    float fDampenedBlendRiser;
+    float fAccumulatedWeight;
+    float fBlendPercent;
+    float* pKnotTableBlendWeights = fKnotTableBlendWeights;
+
+    if (gGameplayCameraInReplay == false)
+    {
+        cBall* pBall = g_pBall;
+        if (pBall != NULL)
+        {
+            cPlayer* pBallOwner = pBall->m_pOwner;
+            if (pBallOwner != NULL)
+            {
+                v3OOIPos = pBallOwner->m_v3Position;
+            }
+            else
+            {
+                v3OOIPos = pBall->m_v3Position;
+            }
+        }
+    }
+    else
+    {
+        ReplayManager* pReplayManager = ReplayManager::Instance();
+        if (pReplayManager->mRender != NULL)
+        {
+            v3OOIPos = ReplayManager::Instance()->mRender->mBall.mPosition;
+        }
+    }
+
+    pKnotTableBlendWeights[0] = 0.0f;
+    pKnotTableBlendWeights[1] = 0.0f;
+    pKnotTableBlendWeights[2] = 0.0f;
+
+    fCurrWeight = 1.0f;
+    for (int j = 0; j < 5; j++)
+    {
+        fDampenedBlendRiser = m_KnotTableBlendQueue[j].fBlendRiser;
+        pKnotTableBlendWeights[m_KnotTableBlendQueue[j].nKnotTable] += fCurrWeight * fDampenedBlendRiser;
+        if (1.0f == fDampenedBlendRiser)
+        {
+            break;
+        }
+        fCurrWeight *= 1.0f - fDampenedBlendRiser;
+    }
+
+    fAccumulatedWeight = 0.0f;
+    m_fDesiredTargetX = 0.0f;
+    m_fDesiredTargetY = 0.0f;
+
+    for (i = 0; i < 3; i++, pKnotTableBlendWeights++)
+    {
+        if (*pKnotTableBlendWeights > 0.0f)
+        {
+            fAccumulatedWeight += *pKnotTableBlendWeights;
+
+            const float* pFieldKnotsX = m_CameraData->fieldKnotsX[i];
+            const float* pTargetKnotsX = m_CameraData->targetKnotsX[i];
+            int nNumKnotsX = m_CameraData->numKnotsX;
+
+            float fFieldPosX = v3OOIPos.f.x;
+            float fXMin = pFieldKnotsX[0];
+            float fXMax = pFieldKnotsX[nNumKnotsX - 1] - 0.001f;
+
+            if (fFieldPosX < fXMin)
+            {
+                fFieldPosX = fXMin;
+            }
+
+            if (fFieldPosX > fXMax)
+            {
+                fFieldPosX = fXMax;
+            }
+
+            int nXKnot = 0;
+            for (int n = nNumKnotsX - 1; n > 0; n--)
+            {
+                if (fFieldPosX < pFieldKnotsX[nXKnot + 1])
+                {
+                    break;
+                }
+                nXKnot++;
+            }
+
+            float fXKnotPercent;
+            if (pFieldKnotsX[nXKnot] == pFieldKnotsX[nXKnot + 1])
+            {
+                fXKnotPercent = 0.0f;
+            }
+            else
+            {
+                fXKnotPercent = (fFieldPosX - pFieldKnotsX[nXKnot]) / (pFieldKnotsX[nXKnot + 1] - pFieldKnotsX[nXKnot]);
+            }
+
+            float fMappedX = Interpolate(pTargetKnotsX[nXKnot], pTargetKnotsX[nXKnot + 1], fXKnotPercent);
+
+            const float* pFieldKnotsY = m_CameraData->fieldKnotsY[i];
+            const float* pTargetKnotsY = m_CameraData->targetKnotsY[i];
+            int nNumKnotsY = m_CameraData->numKnotsY;
+
+            float fFieldPosY = v3OOIPos.f.y;
+            float fYMin = pFieldKnotsY[0];
+            float fYMax = pFieldKnotsY[nNumKnotsY - 1] - 0.001f;
+
+            if (fFieldPosY < fYMin)
+            {
+                fFieldPosY = fYMin;
+            }
+
+            if (fFieldPosY > fYMax)
+            {
+                fFieldPosY = fYMax;
+            }
+
+            int nYKnot = 0;
+            for (int n = nNumKnotsY - 1; n > 0; n--)
+            {
+                if (fFieldPosY < pFieldKnotsY[nYKnot + 1])
+                {
+                    break;
+                }
+                nYKnot++;
+            }
+
+            float fYKnotPercent;
+            if (pFieldKnotsY[nYKnot] == pFieldKnotsY[nYKnot + 1])
+            {
+                fYKnotPercent = 0.0f;
+            }
+            else
+            {
+                fYKnotPercent = (fFieldPosY - pFieldKnotsY[nYKnot]) / (pFieldKnotsY[nYKnot + 1] - pFieldKnotsY[nYKnot]);
+            }
+
+            float fMappedY = Interpolate(pTargetKnotsY[nYKnot], pTargetKnotsY[nYKnot + 1], fYKnotPercent);
+            fBlendPercent = *pKnotTableBlendWeights / fAccumulatedWeight;
+
+            m_fDesiredTargetX = Interpolate(m_fDesiredTargetX, fMappedX, fBlendPercent);
+            m_fDesiredTargetY = Interpolate(m_fDesiredTargetY, fMappedY, fBlendPercent);
+        }
+    }
 }
 
 /**
  * Offset/Address/Size: 0x5C | 0x801A969C | size: 0x414
+ * TODO: 99.58% decomp.me match (100% instruction match, offset-only diffs from
+ * standalone CalcCurrentKnotTable copy). Real build should be 100%.
  */
-void GameplayCameraZoomLevel::Update(float, bool)
+static inline void CalcCurrentKnotTable(GameplayCameraZoomLevel* self, bool forceNeutral)
 {
+    cPlayer* pBallOwner;
+    int nNewKnotTable;
+    int i;
+
+    if (g_pBall != NULL)
+    {
+        pBallOwner = g_pBall->m_pOwner;
+    }
+    else
+    {
+        pBallOwner = NULL;
+    }
+
+    if (pBallOwner == NULL)
+    {
+        pBallOwner = g_pBall->m_pPassTarget;
+    }
+
+    if (pBallOwner != NULL && !forceNeutral)
+    {
+        if (pBallOwner->m_pTeam->GetOtherNet()->m_baseLocation.f.x > 0.0f)
+        {
+            nNewKnotTable = 1;
+        }
+        else
+        {
+            nNewKnotTable = 2;
+        }
+    }
+    else
+    {
+        nNewKnotTable = 0;
+    }
+
+    if (nNewKnotTable != self->m_KnotTableBlendQueue[0].nKnotTable)
+    {
+        for (i = 4; i > 0; i--)
+        {
+            self->m_KnotTableBlendQueue[i] = self->m_KnotTableBlendQueue[i - 1];
+        }
+
+        self->m_KnotTableBlendQueue[0].nKnotTable = nNewKnotTable;
+        self->m_KnotTableBlendQueue[0].fBlendRiser = 0.0f;
+    }
+}
+
+void GameplayCameraZoomLevel::Update(float fDeltaT, bool forceNeutral)
+{
+    float fSin;
+    float fCos;
+    float fOrientSin;
+    float fOrientCos;
+    float fXYDist;
+    int i;
+
+    if (gGameplayCameraInReplay)
+    {
+        forceNeutral = true;
+    }
+
+    CalcCurrentKnotTable(this, forceNeutral);
+
+    if (forceNeutral)
+    {
+        m_KnotTableBlendQueue[0].fBlendRiser = 1.0f;
+    }
+
+    float t = fDeltaT / 0.75f;
+    for (i = 0; i < 5; i++)
+    {
+        m_KnotTableBlendQueue[i].fBlendRiser += t;
+        if (m_KnotTableBlendQueue[i].fBlendRiser >= 1.0f)
+        {
+            m_KnotTableBlendQueue[i].fBlendRiser = 1.0f;
+            break;
+        }
+    }
+
+    CalcDesiredTarget();
+
+    {
+        float omega = 2.0f / m_fTargetSeekTime;
+        float x = omega * fDeltaT;
+        float exp = 1.0f / ((x * (0.235f * x * x)) + ((0.48f * x * x) + (1.0f + x)));
+        float change = m_fDampenedTargetX - m_fDesiredTargetX;
+        float currentVelocity = m_fTargetSeekSpeedX;
+        float temp = fDeltaT * ((change * omega) + currentVelocity);
+
+        m_fTargetSeekSpeedX = exp * (currentVelocity - (omega * temp));
+        m_fDampenedTargetX = (exp * (change + temp)) + m_fDesiredTargetX;
+    }
+
+    {
+        float omega = 2.0f / m_fTargetSeekTime;
+        float x = omega * fDeltaT;
+        float exp = 1.0f / ((x * (0.235f * x * x)) + ((0.48f * x * x) + (1.0f + x)));
+        float change = m_fDampenedTargetY - m_fDesiredTargetY;
+        float currentVelocity = m_fTargetSeekSpeedY;
+        float temp = fDeltaT * ((change * omega) + currentVelocity);
+
+        m_fTargetSeekSpeedY = exp * (currentVelocity - (omega * temp));
+        m_fDampenedTargetY = (exp * (change + temp)) + m_fDesiredTargetY;
+    }
+
+    nlSinCos(&fSin, &fCos, ((s32)(65536.0f * m_CameraData->pitch)) / 360);
+    nlSinCos(&fOrientSin, &fOrientCos, ((s32)(65536.0f * m_CameraData->orientation)) / 360);
+
+    fXYDist = fCos * m_CameraData->distance;
+
+    m_v3Camera.f.x = (fOrientCos * fXYDist) + m_fDampenedTargetX;
+    m_v3Camera.f.y = (fOrientSin * fXYDist) + m_fDampenedTargetY;
+    m_v3Camera.f.z = fSin * m_CameraData->distance;
+
+    float dampenedY = m_fDampenedTargetY;
+    float dampenedX = m_fDampenedTargetX;
+    m_v3Target.f.x = dampenedX;
+    m_v3Target.f.y = dampenedY;
+    m_v3Target.f.z = 0.0f;
 }
 
 /**

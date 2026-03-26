@@ -9,6 +9,8 @@
 class feVector3
 {
 public:
+    void GetNLVector3(nlVector3&) const;
+
     union
     {               // inferred
         float e[3]; // offset 0x0, size 0xC

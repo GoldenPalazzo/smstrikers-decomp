@@ -16,28 +16,28 @@ enum VOLUME_GROUP
     VG_Voice = 3,
 };
 
-class PLAY_RECORD
-{
-public:
-    /* 0x00 */ unsigned long m_StreamId;
-    /* 0x04 */ float m_Volume;
-    /* 0x08 */ unsigned long m_FadeIn : 15;
-    /* 0x08 */ unsigned long m_ExistingFadeOut : 14;
-    /* 0x08 */ unsigned long m_Looping : 1;
-    /* 0x08 */ unsigned long m_Queue : 1;
-    /* 0x08 */ unsigned long m_Active : 1;
-    /* 0x0C */ char m_StreamParam[32];
-    /* 0x2C */ AudioStreamTrack::StreamTrack& m_Track;
-    /* 0x30 */ VOLUME_GROUP m_VolGroup;
-    /* 0x34 */ unsigned long m_OrigStreamId;
-
-    static unsigned char s_BowserAttackNext;
-    static unsigned char s_SuddenDeathNext;
-}; // total size: 0x38
-
 class PriorityStream
 {
 public:
+    class PLAY_RECORD
+    {
+    public:
+        /* 0x00 */ unsigned long m_StreamId;
+        /* 0x04 */ float m_Volume;
+        /* 0x08 */ unsigned long m_FadeIn : 15;
+        /* 0x08 */ unsigned long m_ExistingFadeOut : 14;
+        /* 0x08 */ unsigned long m_Looping : 1;
+        /* 0x08 */ unsigned long m_Queue : 1;
+        /* 0x08 */ unsigned long m_Active : 1;
+        /* 0x0C */ char m_StreamParam[32];
+        /* 0x2C */ AudioStreamTrack::StreamTrack& m_Track;
+        /* 0x30 */ VOLUME_GROUP m_VolGroup;
+        /* 0x34 */ unsigned long m_OrigStreamId;
+
+        static unsigned char s_BowserAttackNext;
+        static unsigned char s_SuddenDeathNext;
+    }; // total size: 0x38
+
     PriorityStream(AudioStreamTrack::StreamTrack&);
     void Reset();
     void PlayStream(unsigned long, float, bool, unsigned long, unsigned long, const char*);

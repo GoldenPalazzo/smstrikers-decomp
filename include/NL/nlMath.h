@@ -358,6 +358,8 @@ struct nlMatrix4
         return *(nlVector3*)&f.m41;
     }
 
+    void SetTranslation(const nlVector3&);
+
     inline nlVector4 operator*(const nlVector4& v_in) const
     {
         nlVector4 tmp;

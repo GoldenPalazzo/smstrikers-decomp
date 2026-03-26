@@ -13,9 +13,110 @@ static unsigned long LitProgram;
 
 /**
  * Offset/Address/Size: 0x149C | 0x801FC72C | size: 0x418
+ * TODO: 80.73% match - FPR allocation and instruction scheduling still differ in inner-loop trig/normal code.
  */
-void ShapeRender::CreateHemisphereGeometry(PrimitiveShape&)
+void ShapeRender::CreateHemisphereGeometry(PrimitiveShape& prim)
 {
+    nlVector3 vNormal;
+    nlVector3* pdst;
+    nlVector3* ndst;
+    nlVector2* tdst;
+    int nRing;
+    float z0;
+    float z1;
+    int nSegment;
+    float x0;
+    float y0;
+    float x1;
+    float y1;
+    float ring0;
+    float ring1;
+    float z0Sq;
+    float z1Sq;
+
+    prim.vertCount = 0xA0;
+    prim.position = (nlVector3*)glResourceAlloc(0x780, GLM_VertexData);
+    prim.normal = (nlVector3*)glResourceAlloc(0x780, GLM_VertexData);
+    prim.texcoord = (nlVector2*)glResourceAlloc(0x500, GLM_VertexData);
+
+    pdst = prim.position;
+    ndst = prim.normal;
+    tdst = prim.texcoord;
+
+    for (nRing = 0; nRing < 5; nRing++)
+    {
+        int angle0;
+        int angle1;
+
+        angle0 = (int)(10430.378f * ((float)nRing * 0.31415927f));
+        z0 = 0.5f * nlSin((u16)angle0);
+
+        angle1 = (int)(10430.378f * ((float)(nRing + 1) * 0.31415927f));
+        z1 = 0.5f * nlSin((u16)angle1);
+
+        ring0 = nlSin((u16)((u16)angle0 + 0x4000));
+        ring1 = nlSin((u16)((u16)angle1 + 0x4000));
+
+        z0Sq = z0 * z0;
+        z1Sq = z1 * z1;
+
+        for (nSegment = 0; nSegment < 0x10; nSegment++)
+        {
+            int angle;
+            int angle90;
+            float x0Sq;
+            float y0Sq;
+            float x1Sq;
+            float y1Sq;
+            float invLen;
+
+            angle = (int)(10430.378f * ((float)nSegment * 0.41887903f));
+
+            x0 = 0.5f * (ring0 * nlSin((u16)angle));
+
+            angle90 = (u16)angle + 0x4000;
+            y0 = 0.5f * (ring0 * nlSin((u16)angle90));
+
+            x1 = 0.5f * (ring1 * nlSin((u16)angle));
+            y1 = 0.5f * (ring1 * nlSin((u16)angle90));
+
+            x0Sq = x0 * x0;
+            y0Sq = y0 * y0;
+            invLen = nlRecipSqrt(z0Sq + (x0Sq + y0Sq), true);
+
+            pdst->f.x = x0;
+            pdst->f.y = y0;
+            pdst->f.z = z0;
+
+            vNormal.f.x = invLen * x0;
+            vNormal.f.y = invLen * y0;
+            vNormal.f.z = invLen * z0;
+            *ndst = vNormal;
+
+            tdst->f.x = (float)nSegment / 15.0f;
+            tdst->f.y = (float)nRing / 5.0f;
+
+            x1Sq = x1 * x1;
+            y1Sq = y1 * y1;
+            invLen = nlRecipSqrt(z1Sq + (x1Sq + y1Sq), true);
+
+            pdst[1].f.x = x1;
+            pdst[1].f.y = y1;
+            pdst[1].f.z = z1;
+
+            vNormal.f.x = invLen * x1;
+            vNormal.f.y = invLen * y1;
+            vNormal.f.z = invLen * z1;
+            ndst[1] = vNormal;
+
+            tdst[1].f.x = (float)nSegment / 15.0f;
+            tdst[1].f.y = (float)(nRing + 1) / 5.0f;
+
+            pdst += 2;
+            ndst += 2;
+            tdst += 2;
+        }
+    }
 }
 
 /**

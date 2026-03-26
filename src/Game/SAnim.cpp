@@ -35,6 +35,89 @@ cSAnim* cSAnim::Initialize(nlChunk* arg0)
  */
 void cSAnim::BlendRot(int nodeIndex, int remappedNodeIndex, float tNorm, float weight, cPoseAccumulator* acc, bool additive) const
 {
+    void* pRawKeys = ((void**)m_pRotKeys)[remappedNodeIndex];
+    if (pRawKeys != NULL && (unsigned int)remappedNodeIndex < m_nNumNodes)
+    {
+        unsigned int props = m_pNodeProperties[remappedNodeIndex];
+
+        if (props & 0x2)
+        {
+            if (props & 0x1)
+            {
+                acc->BlendRotAroundZ(nodeIndex, ((unsigned short*)pRawKeys)[0], weight);
+                return;
+            }
+
+            nlQuaternion q;
+            q.f.x = 0.000061035156f * ((signed short*)pRawKeys)[0];
+            q.f.y = 0.000061035156f * ((signed short*)pRawKeys)[1];
+            q.f.z = 0.000061035156f * ((signed short*)pRawKeys)[2];
+            q.f.w = 0.000061035156f * ((signed short*)pRawKeys)[3];
+            acc->BlendRot(nodeIndex, &q, weight, additive);
+            return;
+        }
+
+        if (1.0f == tNorm)
+        {
+            int lastIndex = m_nNumKeys - 1;
+
+            if (props & 0x1)
+            {
+                acc->BlendRotAroundZ(nodeIndex, ((unsigned short*)pRawKeys)[lastIndex], weight);
+                return;
+            }
+
+            signed short* pLast = ((signed short*)pRawKeys) + (lastIndex * 4);
+            nlQuaternion q;
+            q.f.x = 0.000061035156f * pLast[0];
+            q.f.y = 0.000061035156f * pLast[1];
+            q.f.z = 0.000061035156f * pLast[2];
+            q.f.w = 0.000061035156f * pLast[3];
+            acc->BlendRot(nodeIndex, &q, weight, additive);
+            return;
+        }
+
+        float fRealIndex = tNorm * (m_nNumKeys - 1);
+        int nKeyIndex = (int)fRealIndex;
+        float fFrac = fRealIndex - nKeyIndex;
+        float fWeight2 = weight * fFrac;
+        float fWeight1 = weight - fWeight2;
+
+        if (props & 0x1)
+        {
+            unsigned short* pKeys = (unsigned short*)pRawKeys;
+            acc->BlendRotAroundZ(nodeIndex, pKeys[nKeyIndex], fWeight1);
+        }
+        else
+        {
+            signed short* pKey = ((signed short*)pRawKeys) + (nKeyIndex * 4);
+            nlQuaternion q1;
+            q1.f.x = 0.000061035156f * pKey[0];
+            q1.f.y = 0.000061035156f * pKey[1];
+            q1.f.z = 0.000061035156f * pKey[2];
+            q1.f.w = 0.000061035156f * pKey[3];
+            acc->BlendRot(nodeIndex, &q1, fWeight1, additive);
+        }
+
+        if (m_pNodeProperties[remappedNodeIndex] & 0x1)
+        {
+            unsigned short* pKeys = (unsigned short*)(((void**)m_pRotKeys)[remappedNodeIndex]);
+            unsigned short* pKey = &pKeys[nKeyIndex];
+            acc->BlendRotAroundZ(nodeIndex, pKey[1], fWeight2);
+            return;
+        }
+
+        signed short* pKey = ((signed short*)(((void**)m_pRotKeys)[remappedNodeIndex])) + ((nKeyIndex + 1) * 4);
+        nlQuaternion q2;
+        q2.f.x = 0.000061035156f * pKey[0];
+        q2.f.y = 0.000061035156f * pKey[1];
+        q2.f.z = 0.000061035156f * pKey[2];
+        q2.f.w = 0.000061035156f * pKey[3];
+        acc->BlendRot(nodeIndex, &q2, fWeight2, additive);
+        return;
+    }
+
+    acc->BlendRotIdentity(nodeIndex, weight);
 }
 
 /**

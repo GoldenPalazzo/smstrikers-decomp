@@ -11,6 +11,7 @@ class TLSlide;
 class TLComponent : public FELibObject
 {
 public:
+    TLSlide* GetActiveSlide();
     void SetActiveSlide(unsigned long);
     void SetActiveSlide(const char*);
 

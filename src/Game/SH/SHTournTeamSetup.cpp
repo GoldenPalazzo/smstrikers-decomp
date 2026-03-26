@@ -2,6 +2,8 @@
 #include "types.h"
 #include "Game/FE/feFinder.h"
 #include "Game/FE/feHelpFuncs.h"
+#include "Game/GameSceneManager.h"
+#include "Game/SH/SHCupHub.h"
 
 // Temporary dummy object for reference member initialization
 static CustomTournament s_dummyTourn;
@@ -757,6 +759,106 @@ void TournTeamSetupSceneV2::UpdateSKName()
  */
 void TournTeamSetupSceneV2::Proceed()
 {
+    GameInfoManager* pGameInfo = nlSingleton<GameInfoManager>::s_pInstance;
+    int i = 0;
+
+    mTournInfo.m_cup->mHumanTeams = 0;
+
+    for (; i < mTournInfo.m_numTeams; i++)
+    {
+        if (mTeamData[i].isHumanPlayer)
+        {
+            mTournInfo.m_cup->mHumanTeams = (u16)(mTournInfo.m_cup->mHumanTeams | (1 << mTeamData[i].captain));
+        }
+    }
+
+    pGameInfo->SetMode(GameInfoManager::GM_TOURNAMENT);
+    nlSingleton<GameInfoManager>::s_pInstance->GetCurrentRoundNumber();
+
+    if (mTournInfo.m_tournMode == TM_LEAGUE)
+    {
+        GameInfoManager* const pTournamentInfo = nlSingleton<GameInfoManager>::s_pInstance;
+        u16 numPlayingTeams = pTournamentInfo->GetNumPlayingTeams();
+
+        eSidekickID sklineup[8];
+        eTeamID lineup[8];
+
+        int idx = 0;
+        for (; idx < numPlayingTeams; idx++)
+        {
+            lineup[idx] = mTeamData[idx].captain;
+            sklineup[idx] = mTeamData[idx].sidekick;
+        }
+
+        pTournamentInfo->SetupRoundRobinSchedule(lineup, sklineup);
+        pGameInfo->SetPreviousTeamStats();
+        pGameInfo->IncreaseRoundNumber();
+    }
+    else
+    {
+        BaseCup* pCup = pGameInfo->mCurrentCup;
+
+        pCup->mRoundNumber = -4;
+
+        if (pCup->GetNumRounds() == 2)
+        {
+            pCup->mRoundNumber = -3;
+        }
+
+        GameInfoManager* const pTournamentInfo = nlSingleton<GameInfoManager>::s_pInstance;
+        u16 numPlayingTeams = pTournamentInfo->GetNumPlayingTeams();
+
+        eSidekickID sklineup[8];
+        eTeamID lineup[8];
+
+        int idx = 0;
+        for (; idx < numPlayingTeams; idx++)
+        {
+            lineup[idx] = mTeamData[idx].captain;
+            sklineup[idx] = mTeamData[idx].sidekick;
+        }
+
+        pTournamentInfo->SetupTournamentKnockout(lineup, sklineup);
+    }
+
+    while (pGameInfo->GetCurrentRoundNumber() != -5)
+    {
+        if (pGameInfo->DetermineNextMatchups(0x1B))
+        {
+            break;
+        }
+
+        pGameInfo->IncreaseRoundNumber();
+    }
+
+    pGameInfo->SetResultsOfLastUserGame(RESULT_CUP_START);
+
+    nlSingleton<GameSceneManager>::s_pInstance->Pop();
+
+    if (pGameInfo->GetNumHumanTeams() == 1)
+    {
+        int j = 0;
+
+        for (; j < mTournInfo.m_numTeams; j++)
+        {
+            if (mTeamData[j].isHumanPlayer)
+            {
+                pGameInfo->SetUserSelectedCupTeam(mTeamData[j].captain);
+                break;
+            }
+        }
+    }
+
+    GameSceneManager* pSceneMgr = nlSingleton<GameSceneManager>::s_pInstance;
+    SceneList nextScene = SCENE_TOURNAMENT_STANDINGS;
+
+    if (mTournInfo.m_tournMode == TM_LEAGUE)
+    {
+        nextScene = SCENE_TOURNAMENT_STANDINGS_ANIM;
+    }
+
+    CupHubScene* pHubScene = (CupHubScene*)pSceneMgr->Push(nextScene, SCREEN_FORWARD, false);
+    pHubScene->mDoAutoSave = true;
 }
 
 /**

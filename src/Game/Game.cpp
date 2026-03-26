@@ -6,22 +6,28 @@
 #include "Game/AI/ScriptAction.h"
 #include "Game/AI/Powerups.h"
 #include "Game/AI/AISandbox.h"
+#include "Game/AI/Scripts/ScriptDefines.h"
 #include "Game/AI/Scripts/ScriptQuestions.h"
 #include "Game/GameInfo.h"
 #include "Game/Camera/CameraMan.h"
 #include "Game/Camera/GameplayCam.h"
 #include "Game/BasicStadium.h"
+#include "Game/CharacterTemplate.h"
 #include "Game/DB/StatsTracker.h"
 #include "Game/Formation.h"
+#include "Game/NisPlayer.h"
 #include "NL/nlConfig.h"
 #include "NL/nlLexicalCast.h"
 #include "NL/nlMath.h"
 #include "Game/AI/FilteredRandom.h"
 #include "Game/Render/SidelineExplodable.h"
 #include "Game/Render/ElectricFence.h"
+#include "Game/Render/Presentation.h"
 
 extern cTeam* g_pTeams[];
 extern PowerupBase* g_pPowerups[];
+extern cCharacter* g_pCurrentlyUpdatingCharacter;
+extern cTeam* g_pCurrentlyUpdatingTeam;
 
 // /**
 //  * Offset/Address/Size: 0x24 | 0x800401E8 | size: 0x4
@@ -799,9 +805,195 @@ void cGame::PreUpdate(float deltaTime)
 
 /**
  * Offset/Address/Size: 0x5A4 | 0x8003CB18 | size: 0x47C
+ * TODO: 94.74% match - r29/r31 swap in teams loop setup (optimizer quirk),
+ * sda21 label offset difference for 1.0f literal (scratch artifact).
  */
-void cGame::Update(float)
+void cGame::Update(float deltaTime)
 {
+    mThoughtsAllowedThisUpdate = 1;
+
+    if (m_pGameClock->m_fTimer >= m_fGameDuration)
+    {
+        if (!g_pBall->IsBuzzerBeaterSet())
+        {
+            if (g_pTeams[0]->m_nScore == g_pTeams[1]->m_nScore)
+            {
+                if (m_eGameState == GS_GAMEPLAY)
+                {
+                    if (*(volatile eGameState*)&m_eGameState != GS_OVERTIME)
+                    {
+                        InitGameState(GS_OVERTIME);
+                    }
+
+                    nlSingleton<StatsTracker>::s_pInstance->mIsOvertime = true;
+                    mInSuddenDeath = true;
+                }
+            }
+            else
+            {
+                if (m_eGameState != GS_END_GAME)
+                {
+                    if (m_eGameState != GS_END_GAME)
+                    {
+                        InitGameState(GS_END_GAME);
+                    }
+
+                    nlSingleton<StatsTracker>::s_pInstance->TrackWinner(-1);
+                    Audio::FadeFilterFromCurrentToZero();
+                    FixedUpdateTask::mTimeScale = 1.0f;
+                    ParticleUpdateTask::SetTimeScale(1.0f);
+                }
+            }
+        }
+    }
+
+    cTeam** pTeams = g_pTeams;
+    for (int i = 0; i < 2; i++)
+    {
+        FuzzyScriptSetCurrentTeam(pTeams[i]);
+        pTeams[i]->Update(deltaTime);
+        FuzzyScriptClearGlobals();
+    }
+
+    for (int i = 0; i < 10; i++)
+    {
+        g_pCurrentlyUpdatingCharacter = m_pRandomPlayersArray[i];
+
+        if (m_pRandomPlayersArray[i]->m_eClassType == FIELDER)
+        {
+            FuzzyScriptSetCurrentFielder((cFielder*)m_pRandomPlayersArray[i]);
+        }
+        else
+        {
+            FuzzyScriptSetCurrentTeam(m_pRandomPlayersArray[i]->m_pTeam);
+        }
+
+        g_pCurrentlyUpdatingTeam = m_pRandomPlayersArray[i]->m_pTeam;
+        m_pRandomPlayersArray[i]->Update(deltaTime);
+        FuzzyScriptClearGlobals();
+    }
+
+    g_pCurrentlyUpdatingCharacter = nullptr;
+    g_pBall->Update(deltaTime);
+
+    bool shouldCheckForGoal = false;
+    if (m_eGameState == GS_GAMEPLAY || m_eGameState == GS_OVERTIME)
+    {
+        shouldCheckForGoal = true;
+    }
+
+    if (shouldCheckForGoal)
+    {
+        CheckForGoal();
+    }
+
+    int powerupIndex = 0;
+    PowerupBase** ppPowerup = g_pPowerups;
+    while (powerupIndex < 25)
+    {
+        if (*ppPowerup != nullptr)
+        {
+            (*ppPowerup)->Update(deltaTime);
+        }
+
+        powerupIndex++;
+        ppPowerup++;
+    }
+
+    if (nlSingleton<GameInfoManager>::s_pInstance->IsTiltingFieldOn())
+    {
+        float tilt = 2.0f * (float)(g_pTeams[0]->m_nScore - g_pTeams[1]->m_nScore);
+
+        if (!(tilt >= -6.0f))
+        {
+            tilt = -6.0f;
+        }
+
+        float currentTilt = mfCheatTilt;
+        if (!(tilt <= 6.0f))
+        {
+            tilt = 6.0f;
+        }
+
+        mfCheatTilt = ((cCharacter*)this)->SeekSpeedExponential(currentTilt, tilt, 2.0f, deltaTime);
+        Bowser::SetTiltParameters(mfCheatTilt);
+    }
+
+    if (mBowserTimer.m_uPackedTime != 0 && m_eGameState != GS_END_GAME)
+    {
+        bool shouldSkipBowser = false;
+
+        cFielder* pOwnerFielder = g_pBall->GetOwnerFielder();
+        if (pOwnerFielder != nullptr)
+        {
+            if (g_pBall->GetOwnerFielder()->m_eActionState == ACTION_SHOOT_TO_SCORE)
+            {
+                shouldSkipBowser = true;
+            }
+        }
+
+        cCharacter** ppCharacter = g_pCharacters;
+        cCharacter* pAwayGoalie = ppCharacter[9];
+        int goalieActionState = ((Goalie*)ppCharacter[8])->mGoalieActionState;
+
+        for (int i = 0; !shouldSkipBowser && i < 2; i++)
+        {
+            if (goalieActionState < GOALIEACTION_PASS)
+            {
+                if (goalieActionState >= GOALIEACTION_STS_SETUP)
+                {
+                    shouldSkipBowser = true;
+                }
+            }
+
+            goalieActionState = ((Goalie*)pAwayGoalie)->mGoalieActionState;
+        }
+
+        if (!shouldSkipBowser)
+        {
+            shouldSkipBowser = BasicStadium::GetCurrentStadium()->mpNPCManager->mpChainChomp->IsHidden();
+
+            for (int i = 0; shouldSkipBowser && i < 2; i++)
+            {
+                int j = 0;
+                while (j < 2)
+                {
+                    if ((*pTeams)->GetPowerUpByIndex(j).eType == POWER_UP_CHAIN_CHOMP)
+                    {
+                        shouldSkipBowser = false;
+                        break;
+                    }
+                    j++;
+                }
+                pTeams++;
+            }
+
+            if (shouldSkipBowser)
+            {
+                if (mBowserTimer.Countdown(deltaTime, 0.0f))
+                {
+                    BasicStadium::GetCurrentStadium()->mpNPCManager->mpBowser->ActionInit();
+                }
+            }
+        }
+    }
+
+    if (m_pPostGameDoneClock->m_clockState == CLOCK_DONE)
+    {
+        m_pPostGameDoneClock->Reset(0.0f, 1.4f, 1.0f);
+        SidelineExplodableManager::DestroyAllActiveFragments(false);
+
+        int awayScore = g_pTeams[1]->m_nScore;
+        int homeScore = g_pTeams[0]->m_nScore;
+        NisPlayer* pNisPlayer = NisPlayer::Instance();
+        pNisPlayer->mWinnerSide[0] = awayScore > homeScore;
+
+        if (!Presentation::Instance().DuringEndOfGamePresentation())
+        {
+            NisPlayer::Instance()->Reset();
+            Presentation::Instance().Call("GameEndNoSuddenDeath", "");
+        }
+    }
 }
 
 /**

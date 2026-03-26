@@ -1,5 +1,8 @@
 #include "Game/Physics/PhysicsGoalie.h"
 #include "Game/Physics/PhysicsBall.h"
+#include "Game/Player.h"
+#include "Game/Team.h"
+#include "Game/AI/AiUtil.h"
 #include "Game/FixedUpdateTask.h"
 #include "NL/utility.h"
 #include "types.h"
@@ -154,8 +157,128 @@ bool PhysicsGoalie::SweepTestEveryBone(float ballRadius, const nlVector3& ballPr
 
 /**
  * Offset/Address/Size: 0x70 | 0x80139AF0 | size: 0x438
+ * TODO: 93.67% match - callee-saved float register allocation (f28/f27 vs f31/f30) cannot be controlled from C source.
  */
 void PhysicsGoalie::CollideGoalieWithPost()
 {
-    FORCE_DONT_INLINE;
+    cPlayer* pGoalie = (cPlayer*)m_pAICharacter;
+    nlVector3 v3GoaliePos = GetPosition();
+    v3GoaliePos.f.z = 0.0f;
+
+    cNet* pNet = pGoalie->m_pTeam->m_pNet;
+    nlVector3 v3PostPos;
+    nlVector3 v3PrevHeadJointPos = pGoalie->GetPrevJointPosition(pGoalie->m_nHeadJointIndex);
+
+    if (v3PrevHeadJointPos.f.y > 0.0f)
+    {
+        pNet->GetPostLocation(v3PostPos, 1, 0.0f);
+    }
+    else
+    {
+        pNet->GetPostLocation(v3PostPos, 0, 0.0f);
+    }
+
+    float postToHeadY = v3PostPos.f.y - v3PrevHeadJointPos.f.y;
+    float postToHeadYSq = postToHeadY * postToHeadY;
+    float postToHeadX = v3PostPos.f.x - v3PrevHeadJointPos.f.x;
+    float postToHeadDistSq = postToHeadYSq + (postToHeadX * postToHeadX);
+
+    if (postToHeadDistSq < 4.0f)
+    {
+        float postRadius = cNet::m_fNetPostRadius;
+        float headDistLimitSq = (1.0f + postRadius) * (1.0f + postRadius);
+
+        float fJointRadius[3] = { 0.15f, 0.2f, 0.2f };
+        nlVector3 v3JointPos[3];
+
+        v3JointPos[0] = pGoalie->GetJointPosition(pGoalie->m_nHeadJointIndex);
+        v3JointPos[1] = pGoalie->GetJointPosition(pGoalie->m_nRightHandJointIndex);
+        v3JointPos[2] = pGoalie->GetJointPosition(pGoalie->m_nLeftHandJointIndex);
+
+        float fSin;
+        float fCos;
+        nlSinCos(&fSin, &fCos, pGoalie->m_aActualFacingDirection);
+
+        float onePlusPostRadius = 1.0f + postRadius;
+
+        u8 bMoved = 0;
+        for (int i = 0; i < 3; i++)
+        {
+            float x = v3JointPos[i].f.x;
+            float y = v3JointPos[i].f.y;
+
+            nlVector3 v3JointWorldPos;
+            v3JointWorldPos.f.y = v3GoaliePos.f.y + ((fCos * y) + (fSin * x));
+            v3JointWorldPos.f.x = v3GoaliePos.f.x + ((fCos * x) - (fSin * y));
+            v3JointWorldPos.f.z = v3PostPos.f.z;
+
+            float postToJointY = v3PostPos.f.y - v3JointWorldPos.f.y;
+            float postToJointX = v3PostPos.f.x - v3JointWorldPos.f.x;
+            float jointDistSq = (postToJointY * postToJointY) + (postToJointX * postToJointX);
+            float fMinDist = postRadius + fJointRadius[i];
+
+            if (i == 0)
+            {
+                if (jointDistSq < headDistLimitSq)
+                {
+                    nlVector3 v3Norm;
+                    v3Norm.f.x = v3JointWorldPos.f.y - v3PrevHeadJointPos.f.y;
+                    v3Norm.f.y = v3PrevHeadJointPos.f.x - v3JointWorldPos.f.x;
+                    v3Norm.f.z = 0.0f;
+
+                    if ((v3PostPos.f.x * v3Norm.f.x) < 0.0f)
+                    {
+                        v3Norm.f.x = v3Norm.f.x * -1.0f;
+                        v3Norm.f.y = v3Norm.f.y * -1.0f;
+                    }
+
+                    nlVector4 v4Plane;
+                    MakePerpendicularPlane(v3JointWorldPos, v3Norm, v4Plane, 0.0f);
+
+                    float fCurDist = ((v3PostPos.f.y * v4Plane.f.y) + (v3PostPos.f.x * v4Plane.f.x) + (v3PostPos.f.z * v4Plane.f.z)) - v4Plane.f.w;
+                    float fCurDistAbs = (float)fabs(fCurDist);
+
+                    if (fCurDistAbs < fMinDist)
+                    {
+                        float fMoveDist = InterpolateRangeClamped(0.0f, fMinDist - fCurDistAbs, onePlusPostRadius, 0.0f, nlSqrt(jointDistSq, true));
+
+                        if ((fCurDist > 0.0f) || m_CanCollidedWithGoalLine)
+                        {
+                            fMoveDist = fMoveDist * -1.0f;
+                        }
+
+                        v3GoaliePos.f.z = v3GoaliePos.f.z + (fMoveDist * v4Plane.f.z);
+                        v3GoaliePos.f.y = v3GoaliePos.f.y + (fMoveDist * v4Plane.f.y);
+                        v3GoaliePos.f.x = v3GoaliePos.f.x + (fMoveDist * v4Plane.f.x);
+                        bMoved = 1;
+                    }
+                }
+            }
+            else
+            {
+                if (jointDistSq < (fMinDist * fMinDist))
+                {
+                    float fJointDistY = v3JointWorldPos.f.y - v3PostPos.f.y;
+                    float fJointDistX = v3JointWorldPos.f.x - v3PostPos.f.x;
+                    float fJointDistZ = v3JointWorldPos.f.z - v3PostPos.f.z;
+
+                    if (jointDistSq > 0.00001f)
+                    {
+                        float fJointDist = nlSqrt(jointDistSq, true);
+                        float fScale = (fMinDist - fJointDist) / fJointDist;
+
+                        v3GoaliePos.f.z = v3GoaliePos.f.z + (fScale * fJointDistZ);
+                        v3GoaliePos.f.x = v3GoaliePos.f.x + (fScale * fJointDistX);
+                        v3GoaliePos.f.y = v3GoaliePos.f.y + (fScale * fJointDistY);
+                        bMoved = 1;
+                    }
+                }
+            }
+        }
+
+        if (bMoved)
+        {
+            SetCharacterPosition(v3GoaliePos);
+        }
+    }
 }

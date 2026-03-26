@@ -548,6 +548,101 @@ bool World::IsSphereInFrustum(const nlMatrix4& mat, float radius)
  */
 void World::ExtractFrustumPlanes()
 {
+    nlMatrix4 viewProjection;
+    nlMatrix4 projection = *glViewGetProjectionMatrix(GLV_Unshadowed);
+
+    float m33 = projection.f.m33;
+    float m34 = projection.f.m34;
+    float m43 = projection.f.m43;
+    projection.f.m43 = m34;
+    projection.f.m34 = m43;
+    projection.f.m33 = m33 - 1.0f;
+
+    nlMultMatrices(viewProjection, *glViewGetViewMatrix(GLV_Unshadowed), projection);
+
+    m_frustumPlane[0].f.x = viewProjection.f.m14 - viewProjection.f.m11;
+    m_frustumPlane[0].f.y = viewProjection.f.m24 - viewProjection.f.m21;
+    m_frustumPlane[0].f.z = viewProjection.f.m34 - viewProjection.f.m31;
+    m_frustumPlane[0].f.w = viewProjection.f.m44 - viewProjection.f.m41;
+    {
+        float length = nlSqrt(
+            m_frustumPlane[0].f.x * m_frustumPlane[0].f.x + m_frustumPlane[0].f.y * m_frustumPlane[0].f.y + m_frustumPlane[0].f.z * m_frustumPlane[0].f.z,
+            true);
+        m_frustumPlane[0].f.x /= length;
+        m_frustumPlane[0].f.y /= length;
+        m_frustumPlane[0].f.z /= length;
+        m_frustumPlane[0].f.w /= length;
+    }
+
+    m_frustumPlane[1].f.x = viewProjection.f.m14 + viewProjection.f.m11;
+    m_frustumPlane[1].f.y = viewProjection.f.m24 + viewProjection.f.m21;
+    m_frustumPlane[1].f.z = viewProjection.f.m34 + viewProjection.f.m31;
+    m_frustumPlane[1].f.w = viewProjection.f.m44 + viewProjection.f.m41;
+    {
+        float length = nlSqrt(
+            m_frustumPlane[1].f.x * m_frustumPlane[1].f.x + m_frustumPlane[1].f.y * m_frustumPlane[1].f.y + m_frustumPlane[1].f.z * m_frustumPlane[1].f.z,
+            true);
+        m_frustumPlane[1].f.x /= length;
+        m_frustumPlane[1].f.y /= length;
+        m_frustumPlane[1].f.z /= length;
+        m_frustumPlane[1].f.w /= length;
+    }
+
+    m_frustumPlane[2].f.x = viewProjection.f.m14 + viewProjection.f.m12;
+    m_frustumPlane[2].f.y = viewProjection.f.m24 + viewProjection.f.m22;
+    m_frustumPlane[2].f.z = viewProjection.f.m34 + viewProjection.f.m32;
+    m_frustumPlane[2].f.w = viewProjection.f.m44 + viewProjection.f.m42;
+    {
+        float length = nlSqrt(
+            m_frustumPlane[2].f.x * m_frustumPlane[2].f.x + m_frustumPlane[2].f.y * m_frustumPlane[2].f.y + m_frustumPlane[2].f.z * m_frustumPlane[2].f.z,
+            true);
+        m_frustumPlane[2].f.x /= length;
+        m_frustumPlane[2].f.y /= length;
+        m_frustumPlane[2].f.z /= length;
+        m_frustumPlane[2].f.w /= length;
+    }
+
+    m_frustumPlane[3].f.x = viewProjection.f.m14 - viewProjection.f.m12;
+    m_frustumPlane[3].f.y = viewProjection.f.m24 - viewProjection.f.m22;
+    m_frustumPlane[3].f.z = viewProjection.f.m34 - viewProjection.f.m32;
+    m_frustumPlane[3].f.w = viewProjection.f.m44 - viewProjection.f.m42;
+    {
+        float length = nlSqrt(
+            m_frustumPlane[3].f.x * m_frustumPlane[3].f.x + m_frustumPlane[3].f.y * m_frustumPlane[3].f.y + m_frustumPlane[3].f.z * m_frustumPlane[3].f.z,
+            true);
+        m_frustumPlane[3].f.x /= length;
+        m_frustumPlane[3].f.y /= length;
+        m_frustumPlane[3].f.z /= length;
+        m_frustumPlane[3].f.w /= length;
+    }
+
+    m_frustumPlane[4].f.x = viewProjection.f.m13;
+    m_frustumPlane[4].f.y = viewProjection.f.m23;
+    m_frustumPlane[4].f.z = viewProjection.f.m33;
+    m_frustumPlane[4].f.w = viewProjection.f.m43;
+    {
+        float length = nlSqrt(
+            m_frustumPlane[4].f.x * m_frustumPlane[4].f.x + m_frustumPlane[4].f.y * m_frustumPlane[4].f.y + m_frustumPlane[4].f.z * m_frustumPlane[4].f.z,
+            true);
+        m_frustumPlane[4].f.x /= length;
+        m_frustumPlane[4].f.y /= length;
+        m_frustumPlane[4].f.z /= length;
+        m_frustumPlane[4].f.w /= length;
+    }
+
+    m_frustumPlane[5].f.x = viewProjection.f.m14 - viewProjection.f.m13;
+    m_frustumPlane[5].f.y = viewProjection.f.m24 - viewProjection.f.m23;
+    m_frustumPlane[5].f.z = viewProjection.f.m34 - viewProjection.f.m33;
+    m_frustumPlane[5].f.w = viewProjection.f.m44 - viewProjection.f.m43;
+    {
+        float length = nlSqrt(
+            m_frustumPlane[5].f.x * m_frustumPlane[5].f.x + m_frustumPlane[5].f.y * m_frustumPlane[5].f.y + m_frustumPlane[5].f.z * m_frustumPlane[5].f.z,
+            true);
+        m_frustumPlane[5].f.x /= length;
+        m_frustumPlane[5].f.y /= length;
+        m_frustumPlane[5].f.z /= length;
+        m_frustumPlane[5].f.w /= length;
+    }
 }
 
 /**

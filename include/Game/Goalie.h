@@ -278,6 +278,7 @@ public:
     /* 0x2FC */ GoalieFatigue mFatigue;
     /* 0x30C */ eGoalieOffplayType mnOffplayPending;
 
+    static f32 mfGoalieStepDist;
     static bool mbPosGoalieNetCheck;
     static bool mbNegGoalieNetCheck;
 }; // total size: 0x310

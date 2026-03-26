@@ -60,6 +60,23 @@ typedef DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE
 typedef DLListContainerBase<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL, BasicSlotPool<FadeDLListEntry> > FadeDLListContainer;
 typedef DLListEntry<GCAudioStreaming::StereoAudioStream*> StreamDLListEntry;
 
+class BaseSceneHandler;
+
+class BaseGameSceneManager
+{
+public:
+    void* _vtable;
+    u32 mCurrentStackDepth;
+    int m_sceneStack[32];
+    BaseSceneHandler* mBaseSceneHandlerStack[32];
+    int GetSceneType(BaseSceneHandler*);
+};
+
+class GameSceneManager;
+
+extern bool gUsingDolbyProLogic2__9PlatAudio;
+extern bool gReverbOn__11AudioLoader;
+
 // /**
 //  * Offset/Address/Size: 0x0 | 0x801490F4 | size: 0x60
 //  */
@@ -460,9 +477,242 @@ void AudioLoader::SetupSoundGroups()
 
 /**
  * Offset/Address/Size: 0x35EC | 0x801473B8 | size: 0x408
+ * TODO: 98.43% match - only offset diffs remain (decomp.me compilation artifact)
  */
-void AudioLoader::ActivateDPL2(bool, bool)
+bool AudioLoader::ActivateDPL2(bool bEnableDPL2, bool bLoadSampleFile)
 {
+    bool dpl2Result;
+
+    if (bEnableDPL2)
+    {
+        if (!gUsingDolbyProLogic2__9PlatAudio)
+        {
+            goto state_change;
+        }
+    }
+    if (bEnableDPL2)
+    {
+        goto no_change;
+    }
+    if (!gUsingDolbyProLogic2__9PlatAudio)
+    {
+        goto no_change;
+    }
+
+state_change:
+    if (!gbDisableReverb)
+    {
+        if (gReverbOn__11AudioLoader)
+        {
+            nlPrintf("AudioLoader::ActivateDPL2(), shutting down reverb...\n");
+            if (!Audio::ShutdownReverb())
+            {
+                nlPrintf("AudioLoader::ActivateDPL2(), Audio::ShutdownReverb() returned false.\n");
+                return false;
+            }
+        }
+    }
+
+    g_pTrackManager->StopAllTracks(0);
+
+    AudioStreamTrack::TrackManagerBase* pTM = g_pTrackManager;
+    pTM->StopAllTracks(0);
+
+    GCAudioStreaming::StereoAudioStream* pStream;
+    StreamDLListEntry* pFree;
+    StreamDLListEntry* pRemove;
+    StreamDLListEntry* pHead;
+    StreamDLListEntry* pCur;
+    StreamDLListEntry** ppHead;
+
+    nlWalkDLRing(
+        *(FadeDLListEntry**)(pTM->_pad_0x18 + 0x18),
+        (FadeDLListContainer*)pTM->_pad_0x18,
+        &FadeDLListContainer::DeleteEntry);
+    *(FadeDLListEntry**)(pTM->_pad_0x18 + 0x18) = NULL;
+    SlotPoolBase::BaseFreeBlocks((SlotPoolBase*)pTM->_pad_0x18, sizeof(FadeDLListEntry));
+
+    StreamDLListEntry* tmp = nlDLRingGetStart(*(StreamDLListEntry**)(pTM->_pad_0x50 + 0x18));
+    pHead = *(StreamDLListEntry**)(pTM->_pad_0x50 + 0x18);
+    ppHead = (StreamDLListEntry**)(pTM->_pad_0x50 + 0x18);
+    pCur = tmp;
+
+    while (pCur != NULL)
+    {
+        pStream = pCur->m_data;
+        pStream->~StereoAudioStream();
+
+        *(unsigned long*)pStream = *(unsigned long*)(pTM->_pad_0x38 + 0x0C);
+        *(unsigned long*)(pTM->_pad_0x38 + 0x0C) = (unsigned long)pStream;
+
+        pRemove = pCur;
+        pFree = pCur;
+
+        if (nlDLRingIsEnd(pHead, pCur) || pCur == NULL)
+        {
+            pCur = NULL;
+        }
+        else
+        {
+            pCur = pCur->m_next;
+        }
+
+        nlDLRingRemove(ppHead, pRemove);
+
+        *(unsigned long*)pFree = *(unsigned long*)(pTM->_pad_0x50 + 0x0C);
+        *(unsigned long*)(pTM->_pad_0x50 + 0x0C) = (unsigned long)pFree;
+    }
+
+    SlotPoolBase::BaseFreeBlocks((SlotPoolBase*)pTM->_pad_0x38, 0x40);
+    SlotPoolBase::BaseFreeBlocks((SlotPoolBase*)pTM->_pad_0x50, 0x0C);
+    PlatAudio::ShutdownStreaming();
+    Audio::Silence();
+    Audio::UnloadWorldSFX();
+    PlatAudio::UnloadAllSoundGroups(sebringAudioFileData);
+
+    goto after_no_change;
+
+no_change:
+    return true;
+
+after_no_change:
+    if (bEnableDPL2)
+    {
+        dpl2Result = PlatAudio::ActivateDPL2();
+    }
+    else
+    {
+        dpl2Result = PlatAudio::DeactivateDPL2();
+    }
+
+    Audio::Shutdown();
+    Audio::Initialize(bEnableDPL2);
+
+    if (bEnableDPL2)
+    {
+        PlatAudio::SetOutputMode(MusyXOutputType_SURROUND);
+    }
+
+    Audio::LoadWorldSFX();
+
+    if (!gbDisableAudio)
+    {
+        PlatAudio::SetupSoundBuffers(sebringAudioFileData, true);
+    }
+
+    bool onScene = false;
+    BaseGameSceneManager* mgr = (BaseGameSceneManager*)nlSingleton<GameSceneManager>::s_pInstance;
+    if (mgr != NULL)
+    {
+        BaseSceneHandler* handler;
+        if (mgr->mCurrentStackDepth != 0)
+        {
+            handler = mgr->mBaseSceneHandlerStack[mgr->mCurrentStackDepth - 1];
+        }
+        else
+        {
+            handler = NULL;
+        }
+
+        if (handler != NULL)
+        {
+            onScene = (mgr->GetSceneType(handler) == 0x27);
+        }
+    }
+
+    if (onScene)
+    {
+        bool bAlreadyLoaded = false;
+        if (sebringAudioGroups[2].uLoadOrder > -1 && sebringAudioGroups[2].stackEnum > -1)
+        {
+            bAlreadyLoaded = true;
+        }
+
+        if (!bAlreadyLoaded)
+        {
+            if (!gbDisableAudio)
+            {
+                bool isInited;
+                if (gbDisableAudio)
+                {
+                    isInited = false;
+                }
+                else
+                {
+                    isInited = Audio::IsInited();
+                }
+
+                if (isInited)
+                {
+                    PlatAudio::LoadSoundGroup(sebringAudioFileData, 2, 0, true);
+                }
+            }
+        }
+    }
+    else
+    {
+        LoadPermanentSoundGroups(bLoadSampleFile);
+    }
+
+    bool bAlreadyLoaded = false;
+    if (sebringAudioGroups[0].uLoadOrder > -1 && sebringAudioGroups[0].stackEnum > -1)
+    {
+        bAlreadyLoaded = true;
+    }
+
+    if (!bAlreadyLoaded)
+    {
+        if (!gbDisableAudio)
+        {
+            bool isInited;
+            if (gbDisableAudio)
+            {
+                isInited = false;
+            }
+            else
+            {
+                isInited = Audio::IsInited();
+            }
+
+            if (isInited)
+            {
+                PlatAudio::LoadSoundGroup(sebringAudioFileData, 0, 1, !bLoadSampleFile);
+            }
+        }
+    }
+
+    bAlreadyLoaded = false;
+    if (sebringAudioGroups[1].uLoadOrder > -1 && sebringAudioGroups[1].stackEnum > -1)
+    {
+        bAlreadyLoaded = true;
+    }
+
+    if (!bAlreadyLoaded)
+    {
+        if (!gbDisableAudio)
+        {
+            bool isInited;
+            if (gbDisableAudio)
+            {
+                isInited = false;
+            }
+            else
+            {
+                isInited = Audio::IsInited();
+            }
+
+            if (isInited)
+            {
+                PlatAudio::LoadSoundGroup(sebringAudioFileData, 1, 1, !bLoadSampleFile);
+            }
+        }
+    }
+
+    ARQSetChunkSize(0x1000);
+    Audio::InitStreaming();
+    PlatAudio::ConfigureStreamBuffers(4);
+
+    return dpl2Result;
 }
 
 /**

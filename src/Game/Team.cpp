@@ -15,12 +15,29 @@
 
 #include "Game/AI/Fuzzy.h"
 #include "Game/AI/Scripts/ScriptQuestions.h"
+#include "Game/FormationDefines.h"
 
 #include "NL/nlMath.h"
 #include <stdlib.h>
 
 cTeam* g_pTeams[2] = { NULL, NULL };
 static nlVector2 g_vMarkDistanceConfidence;
+static const unsigned short g_aNeutralPlayerFacingDirections[5] = {
+    0,
+    0,
+    0,
+    0,
+    0,
+};
+static const unsigned short g_aAdvantagePlayerFacingDirections[5] = {
+    0x00B4,
+    0x00B4,
+    0x00B4,
+    0x00B4,
+    0,
+};
+
+extern FormationSpec* GetFormationSpec__16FormationManagerF10eFormation(eFormation);
 
 /**
  * Offset/Address/Size: 0x1CF0 | 0x8006609C | size: 0x138
@@ -611,10 +628,154 @@ void cTeam::UpdateControllers()
 }
 
 /**
- * Offset/Address/Size: 0xC98 | 0x80065044 | size: 0x468
+ * Offset/Address/Size: 0x3DC | 0x80065044 | size: 0x468
+ * TODO: 65.32% match - all 19 remaining diffs cascade from this=r31 vs target r23.
+ * Swap section uses for-loop (MWCC unrolls correctly with addi+lwzx).
+ * Blocker: -inline deferred puts this in r31 (highest callee-saved) instead of r23.
  */
 void cTeam::ResetCharacters()
 {
+    u16 j;
+    int nAssignedControllers;
+    int nAssignmentOrder[5];
+    const unsigned short* pFacingDirectionTable;
+    const FormationSpec* pFormation;
+    unsigned char bFlipPositions;
+    cFielder* pFielder;
+
+    for (int i = 0; i < 5; i++)
+    {
+        m_pPlayers[i]->SetAIPad(NULL);
+    }
+
+    UpdateControllers();
+
+    nAssignmentOrder[0] = 0;
+    nAssignmentOrder[1] = 1;
+    nAssignmentOrder[2] = 2;
+    nAssignmentOrder[3] = 3;
+    nAssignmentOrder[4] = 4;
+
+    nAssignedControllers = 0;
+
+    j = 0;
+    while ((u16)j < 4)
+    {
+        int nSide = m_nSide;
+        if ((s16)nlSingleton<GameInfoManager>::s_pInstance->GetPlayingSide(j) == nSide)
+        {
+            nAssignedControllers++;
+        }
+        j++;
+    }
+
+    if (nAssignedControllers > 0)
+    {
+        if (m_pPlayers[nAssignmentOrder[0]]->m_pController == NULL)
+        {
+            int swapIndex;
+            for (swapIndex = 0; swapIndex <= 4; swapIndex++)
+            {
+                if (m_pPlayers[nAssignmentOrder[swapIndex]]->m_pController != NULL)
+                {
+                    break;
+                }
+            }
+            nAssignmentOrder[0] = swapIndex;
+            nAssignmentOrder[swapIndex] = 0;
+        }
+    }
+
+    if (g_pGame->m_nLastTeamToScore == g_pTeams[m_nSide == 0 ? 1 : 0]->m_nSide)
+    {
+        pFacingDirectionTable = g_aAdvantagePlayerFacingDirections;
+        pFormation = GetFormationSpec__16FormationManagerF10eFormation(FORMATION_OFF_DEF_KICKOFF_ADVANTAGE);
+    }
+    else
+    {
+        pFacingDirectionTable = g_aNeutralPlayerFacingDirections;
+        pFormation = GetFormationSpec__16FormationManagerF10eFormation(FORMATION_OFF_DEF_KICKOFF_NEUTRAL);
+    }
+
+    bFlipPositions = 0;
+    if (g_pTeams[m_nSide == 0 ? 1 : 0]->m_pNet->m_baseLocation.f.x < 0.0f)
+    {
+        bFlipPositions = 1;
+    }
+
+    for (int i = 0; i < 5; i++)
+    {
+        pFielder = m_pPlayers[nAssignmentOrder[i]];
+        unsigned short aNewFacingDirection = pFacingDirectionTable[i];
+        nlVector3 v3NewPosition;
+
+        if (i < 4)
+        {
+            nlVector2 v2Position;
+            pFormation->m_Positions[i].GetLocationForTeam(v2Position, pFielder->m_pTeam->m_nSide);
+            v3NewPosition.f.x = v2Position.f.x;
+            v3NewPosition.f.y = v2Position.f.y;
+            v3NewPosition.f.z = 0.0f;
+        }
+        else
+        {
+            if (bFlipPositions)
+                v3NewPosition.f.x = 18.0f;
+            else
+                v3NewPosition.f.x = -18.0f;
+            v3NewPosition.f.y = 0.0f;
+            v3NewPosition.f.z = 0.0f;
+        }
+
+        if (bFlipPositions)
+        {
+            aNewFacingDirection = (unsigned short)(aNewFacingDirection + (((s16)(0x4000 - aNewFacingDirection)) * 2));
+        }
+        else
+        {
+            v3NewPosition.f.y = -v3NewPosition.f.y;
+        }
+
+        pFielder->SetPosition(v3NewPosition);
+        pFielder->SetFacingDirection(aNewFacingDirection);
+        pFielder->m_aActualMovementDirection = aNewFacingDirection;
+        pFielder->ResetDesiredDirections(aNewFacingDirection);
+        pFielder->m_ePositionSeekState = PSS_ARRIVED;
+        pFielder->ResetEffects();
+        pFielder->EndBlur();
+        pFielder->InitActionPostWhistle();
+        pFielder->ClearSwapControllerTimer();
+        pFielder->ResetUnPossessionTimer();
+
+        if (pFielder->m_eClassType == FIELDER)
+        {
+            pFielder->ClearQueuedDesire();
+            pFielder->CleanUpDesire((eFielderDesireState)0);
+            pFielder->CleanUpAction();
+            pFielder->ClearTimers();
+            pFielder->ClearPowerupAnimState(true);
+            pFielder->SetPowerup(POWER_UP_NONE, 1, NULL);
+
+            if (pFielder->IsCaptain() == false)
+            {
+                cPlayer* pCaptain = m_pPlayers[0];
+                ((FielderTweaks*)pFielder->m_pTweaks)->fAggression = ((FielderTweaks*)pCaptain->m_pTweaks)->fAggression;
+                ((FielderTweaks*)pFielder->m_pTweaks)->fDekeing = ((FielderTweaks*)pCaptain->m_pTweaks)->fDekeing;
+                ((FielderTweaks*)pFielder->m_pTweaks)->fPassing = ((FielderTweaks*)pCaptain->m_pTweaks)->fPassing;
+                ((FielderTweaks*)pFielder->m_pTweaks)->fShotMinSpeed = ((FielderTweaks*)pCaptain->m_pTweaks)->fShotMinSpeed;
+                ((FielderTweaks*)pFielder->m_pTweaks)->fShotMaxSpeed = ((FielderTweaks*)pCaptain->m_pTweaks)->fShotMaxSpeed;
+                ((FielderTweaks*)pFielder->m_pTweaks)->fShotChipMinSpeed = ((FielderTweaks*)pCaptain->m_pTweaks)->fShotChipMinSpeed;
+                ((FielderTweaks*)pFielder->m_pTweaks)->fShotChipMaxSpeed = ((FielderTweaks*)pCaptain->m_pTweaks)->fShotChipMaxSpeed;
+                pFielder->m_pTweaks->fPassGroundSpeedMin = pCaptain->m_pTweaks->fPassGroundSpeedMin;
+                pFielder->m_pTweaks->fPassGroundSpeedMax = pCaptain->m_pTweaks->fPassGroundSpeedMax;
+                pFielder->m_pTweaks->fPassVolleySpeedMin = pCaptain->m_pTweaks->fPassVolleySpeedMin;
+                pFielder->m_pTweaks->fPassVolleySpeedMax = pCaptain->m_pTweaks->fPassVolleySpeedMax;
+            }
+        }
+    }
+
+    StopGameplayEffectsAndSounds();
+    mfPowerupTimer = 0.0f;
 }
 
 /**

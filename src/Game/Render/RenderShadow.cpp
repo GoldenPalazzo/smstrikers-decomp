@@ -152,9 +152,166 @@ u8 ShouldShadowBeUpdated(const ProjectedShadowParams& params)
 
 /**
  * Offset/Address/Size: 0xF9C | 0x80123FD0 | size: 0x470
+ * TODO: 99.00% match - remaining diffs are local/static symbol labels
+ *       (e.g. @343/init$345 numbering) and associated address-label references.
  */
-void RenderCharacterIntoTexture(const ProjectedShadowParams&)
+void RenderCharacterIntoTexture(const ProjectedShadowParams& params)
 {
+    extern u8 g_bShadowBlobs;
+    extern u8 g_bShadowPositionOverride;
+    extern u8 g_bProjectDirectional;
+    extern nlVector3 g_vShadowPosition;
+    extern unsigned long ResolvedBlackTexture;
+
+    struct ShadowTextureUserData
+    {
+        s16 x;
+        s16 y;
+        s16 width;
+        s16 height;
+        u32 viewMatrix;
+        u32 projectionMatrix;
+    };
+
+    nlVector3 targetPos;
+    nlVector3 eyePos;
+    nlVector3 shadowPos;
+    nlVector3 up = { 0.0f, 0.0f, 1.0f };
+
+    static float s_fFarPlane = 8.0f;
+    static float s_fLightDist = -0.125f;
+
+    if (g_bShadowBlobs)
+    {
+        return;
+    }
+
+    float radius = params.fRadius;
+    if (g_bShadowPositionOverride)
+    {
+        shadowPos = g_vShadowPosition;
+    }
+    else
+    {
+        shadowPos.f.x = params.vLight.f.x;
+        shadowPos.f.y = params.vLight.f.y;
+        shadowPos.f.z = params.vLight.f.z;
+    }
+
+    targetPos = params.vPosition;
+
+    if (g_bProjectDirectional)
+    {
+        float lx = -shadowPos.f.x;
+        float ly = -shadowPos.f.y;
+        float lz = -shadowPos.f.z;
+        float lenSq = lx * lx + ly * ly + lz * lz;
+        float len = nlSqrt(lenSq, true);
+        float invLen = nlRecipSqrt(lenSq, false);
+
+        float scale = len * (s_fLightDist * radius);
+        eyePos.f.x = targetPos.f.x + scale * (invLen * lx);
+        eyePos.f.y = targetPos.f.y + scale * (invLen * ly);
+        eyePos.f.z = targetPos.f.z + scale * (invLen * lz);
+    }
+    else
+    {
+        float scale = s_fLightDist * radius;
+        float tx = targetPos.f.x;
+        float ty = targetPos.f.y;
+        float tz = targetPos.f.z;
+        float dx = tx - shadowPos.f.x;
+        float dy = ty - shadowPos.f.y;
+        float dz = tz - shadowPos.f.z;
+
+        eyePos.f.x = dx;
+        eyePos.f.y = dy;
+        eyePos.f.z = dz;
+
+        eyePos.f.x = tx + scale * eyePos.f.x;
+        eyePos.f.y = ty + scale * eyePos.f.y;
+        eyePos.f.z = tz + scale * eyePos.f.z;
+    }
+
+    float dx = targetPos.f.x - eyePos.f.x;
+    float dy = targetPos.f.y - eyePos.f.y;
+    float dz = targetPos.f.z - eyePos.f.z;
+    float eyeDistance = nlSqrt(dx * dx + dy * dy + dz * dz, true);
+
+    float ratio = radius / eyeDistance;
+    float nearPlane = eyeDistance - radius;
+    float farPlane = nearPlane + s_fFarPlane;
+
+    float fovY;
+    if ((float)__fabs(ratio) < 0.01f)
+    {
+        fovY = 1.0f;
+    }
+    else
+    {
+        u16 angle = (u16)(0x4000 - nlACos(ratio));
+        fovY = 2.0f * (9.58738e-5f * (float)angle);
+    }
+
+    nlMatrix4 view;
+    nlMatrix4 projection;
+
+    glMatrixPerspective(projection, fovY, 1.0f, nearPlane, farPlane);
+    glMatrixLookAt(view, eyePos, targetPos, up);
+
+    u32 viewMatrix = glAllocMatrix();
+    if (viewMatrix != 0xFFFFFFFF)
+    {
+        glSetMatrix(viewMatrix, view);
+    }
+
+    u32 projectionMatrix = glAllocMatrix();
+    if (projectionMatrix != 0xFFFFFFFF)
+    {
+        glSetMatrix(projectionMatrix, projection);
+    }
+
+    void* userData = glUserAlloc(GLUD_Viewport, sizeof(ShadowTextureUserData), false);
+    ShadowTextureUserData* pViewportData = (ShadowTextureUserData*)glUserGetData(userData);
+    pViewportData->viewMatrix = viewMatrix;
+    pViewportData->projectionMatrix = projectionMatrix;
+    pViewportData->x = (s16)((params.nPartitionIndex % 4) * 0xA0);
+    pViewportData->y = (s16)((params.nPartitionIndex / 4) * 0x94);
+    pViewportData->width = 0xA0;
+    pViewportData->height = 0x94;
+
+    glModel* pModel = glModelDup(params.pModel, true);
+    glModelPacket* pPacket = pModel->packets;
+
+    while (pPacket < pModel->packets + pModel->numPackets)
+    {
+        if (glUserHasType(GLUD_Light, pPacket))
+        {
+            glUserDetach(GLUD_Light, pPacket);
+        }
+
+        if (userData)
+        {
+            glUserAttach(userData, pPacket, false);
+        }
+
+        pPacket->state.texture[0] = ResolvedBlackTexture;
+        glSetTextureState(pPacket->state.texturestate, (eGLTextureState)0xC, 0x3F);
+
+        pPacket++;
+    }
+
+    glViewAttachModel(GLV_ShadowTexture, pModel);
+
+    char buffer[32];
+    nlSNPrintf(buffer, 32, "target/pshadow_updated%02d", params.nPartitionIndex);
+
+    nlVector4 v;
+    v.f.x = 1.0f;
+    v.f.y = 0.0f;
+    v.f.z = 0.0f;
+    v.f.w = 0.0f;
+    glConstantSet(buffer, v);
 }
 
 /**

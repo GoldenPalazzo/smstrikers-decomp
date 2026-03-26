@@ -18,6 +18,14 @@ struct FunctorBase
     virtual FunctorBase* Clone() const = 0;
 };
 
+// Placeholder for Bind argument forwarding
+template <int N>
+struct Placeholder
+{
+};
+
+extern Placeholder<0> placeholder0;
+
 template <typename ReturnType, typename ParamType>
 class Function1
 {
@@ -27,6 +35,20 @@ public:
         virtual ~FunctorBase() { };
         virtual ReturnType operator()(ParamType) = 0;
         virtual FunctorBase* Clone() const = 0;
+    };
+
+    template <typename BindType>
+    struct FunctorImpl : public FunctorBase
+    {
+        BindType mBind;
+        FunctorImpl() { }
+        FunctorImpl(const BindType& b)
+            : mBind(b)
+        {
+        }
+        virtual ~FunctorImpl() { }
+        virtual ReturnType operator()(ParamType arg) { (mBind.mT0->*mBind.mFunction.mMemFun)(arg); }
+        virtual FunctorBase* Clone() const { return new (nlMalloc(sizeof(FunctorImpl), 8, false)) FunctorImpl(*this); }
     };
 
     enum Tag mTag; // offset 0x0, size 0x4
@@ -116,6 +138,17 @@ template <typename T>
 class Function : public Function1<void, T>
 {
 public:
+    Function() { }
+
+    template <typename BindType>
+    Function(const BindType& bind)
+    {
+        typedef typename Function1<void, T>::template FunctorImpl<BindType> ImplType;
+        ImplType* impl = new (nlMalloc(sizeof(ImplType), 8, false)) ImplType(bind);
+        mTag = FUNCTOR;
+        mFunctor = impl;
+    }
+
     ~Function()
     {
         if (mTag == FUNCTOR)
@@ -124,7 +157,70 @@ public:
         }
         mTag = EMPTY;
     }
+
+    Function& operator=(const Function& other)
+    {
+        if (mTag == FUNCTOR)
+        {
+            delete mFunctor;
+        }
+        mTag = EMPTY;
+        mTag = other.mTag;
+        if (mTag == FREE_FUNCTION)
+        {
+            mFreeFunction = other.mFreeFunction;
+        }
+        else if (mTag == FUNCTOR)
+        {
+            mFunctor = other.mFunctor->Clone();
+        }
+        return *this;
+    }
 }; // total size: 0x8
+
+template <typename R, typename P>
+class Function<R(P)> : public Function1<R, P>
+{
+public:
+    Function() { }
+
+    template <typename BindType>
+    Function(const BindType& bind)
+    {
+        typedef typename Function1<R, P>::template FunctorImpl<BindType> ImplType;
+        ImplType* impl = new (nlMalloc(sizeof(ImplType), 8, false)) ImplType(bind);
+        mTag = FUNCTOR;
+        mFunctor = impl;
+    }
+
+    ~Function()
+    {
+        if (mTag == FUNCTOR)
+        {
+            delete mFunctor;
+        }
+        mTag = EMPTY;
+    }
+
+    Function& operator=(const Function& other)
+    {
+        if (mTag == FUNCTOR)
+        {
+            delete mFunctor;
+        }
+        mTag = EMPTY;
+        mTag = other.mTag;
+        if (mTag == FREE_FUNCTION)
+        {
+            mFreeFunction = other.mFreeFunction;
+        }
+        else if (mTag == FUNCTOR)
+        {
+            mFunctor = other.mFunctor->Clone();
+        }
+        return *this;
+    }
+};
 
 typedef void FnVoidVoid();
 

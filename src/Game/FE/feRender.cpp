@@ -245,16 +245,324 @@ void FERender::RenderPresentation(const FEPresentation* presentation)
 
 /**
  * Offset/Address/Size: 0x528 | 0x8020A7B0 | size: 0x42C
+ * TODO: 94% match - MWCC inline budget causes grandchild operator= to be inlined
+ * (5 extra instructions) instead of calling bl __as__13nlFloatColourFRC13nlFloatColour.
+ * Register allocation cascade and stack offset diffs all trace to this root cause.
+ * Also need IsVisible and GetLibRefObject body stripping in scratch context.
  */
-void FERender::RenderComponentInstance(TLComponentInstance*)
+void FERender::RenderComponentInstance(TLComponentInstance* componentInstance)
 {
+    TLComponent* component = ((TLInstance*)componentInstance)->m_component;
+    if (component == 0)
+    {
+        return;
+    }
+
+    TLSlide* activeSlide = component->m_pActiveSlide;
+    if (activeSlide == 0)
+    {
+        return;
+    }
+
+    if (activeSlide == 0)
+    {
+        return;
+    }
+
+    if (activeSlide->m_instances == 0)
+    {
+        return;
+    }
+
+    TLInstance* instance = activeSlide->m_instances->m_next;
+
+    while (true)
+    {
+        float time = activeSlide->m_time;
+        nlFloatColour oldSlideColour = s_currentAssetColour;
+        TLInstance* nextInstance = instance->m_next;
+
+        if (instance->IsValidAtTime(time) && instance->m_bVisible)
+        {
+            nlMatrix4 rotationMatrix;
+            nlMatrix4 scaleMatrix;
+            nlMatrix4 combinedMatrix;
+
+            const feVector3& rotZ = instance->GetRotation();
+            const feVector3& rotY = instance->GetRotation();
+            nlMakeRotationMatrixEulerAngles(
+                rotationMatrix,
+                instance->GetRotation().f.x,
+                rotY.f.y,
+                rotZ.f.z);
+
+            const feVector3& scaleZ = instance->GetScale();
+            const feVector3& scaleY = instance->GetScale();
+            nlMakeScaleMatrix(
+                scaleMatrix,
+                instance->GetScale().f.x,
+                scaleY.f.y,
+                scaleZ.f.z);
+
+            nlMultMatrices(combinedMatrix, scaleMatrix, rotationMatrix);
+
+            nlVector3 v3Pos;
+            instance->GetPosition().GetNLVector3(v3Pos);
+            combinedMatrix.SetTranslation(v3Pos);
+            combinedMatrix.f.m43 *= -1.0f;
+
+            m_pMatrixStack->PushMatrix();
+            m_pMatrixStack->MultMatrix(combinedMatrix);
+
+            nlFloatColour* curAssetColour = &s_currentAssetColour;
+            for (u32 i = 0; i < 4; i++)
+            {
+                curAssetColour->c[i] = (instance->GetColour().c[i] * curAssetColour->c[i]) / 255.0f;
+            }
+
+            switch (instance->m_type)
+            {
+            case TLAT_IMAGE:
+                RenderImageInstance((const TLImageInstance*)instance);
+                break;
+            case TLAT_TEXT:
+            {
+                nlMatrix4 textMatrix;
+                m_pMatrixStack->GetTop(textMatrix);
+                nlMultMatrices(textMatrix, textMatrix, m_pRenderScene->GetCameraMatrix());
+                ((TLTextInstance*)instance)->SetMatrix(&textMatrix);
+
+                nlColour colour;
+                ConvertColour(colour, s_currentAssetColour);
+
+                ((TLTextInstance*)instance)->Render((eGLView)m_pRenderScene->GetRenderView(), colour);
+                break;
+            }
+            case TLAT_COMPONENT:
+            {
+                TLComponent* componentRef = (TLComponent*)instance->GetLibRefObject();
+                if (componentRef != 0)
+                {
+                    if (componentRef->GetActiveSlide() != 0)
+                    {
+                        RenderSlide(componentRef->GetActiveSlide());
+                    }
+                }
+                break;
+            }
+            default:
+                break;
+            }
+
+            if (instance->pChildren != 0)
+            {
+                TLInstance* child = instance->pChildren->m_next;
+
+                while (true)
+                {
+                    nlFloatColour oldChildColour = s_currentAssetColour;
+                    TLInstance* nextChild = child->m_next;
+
+                    if (child->IsValidAtTime(time) && child->IsVisible())
+                    {
+                        PushTransformMatrix(child);
+                        CalculateCurrentAssetColour(child);
+
+                        switch (child->GetType())
+                        {
+                        case TLAT_IMAGE:
+                            RenderImageInstance((const TLImageInstance*)child);
+                            break;
+                        case TLAT_TEXT:
+                            RenderTextInstance((TLTextInstance*)child);
+                            break;
+                        case TLAT_COMPONENT:
+                            RenderComponentInstance((TLComponentInstance*)child);
+                            break;
+                        default:
+                            break;
+                        }
+
+                        if (child->pChildren != 0)
+                        {
+                            TLInstance* grandchild = child->pChildren->m_next;
+
+                            while (true)
+                            {
+                                TLInstance* nextGrandchild = grandchild->m_next;
+                                nlFloatColour oldGrandchildColour = s_currentAssetColour;
+
+                                RenderTimeLineAsset(grandchild, time);
+
+                                s_currentAssetColour = oldGrandchildColour;
+
+                                if (grandchild == child->pChildren)
+                                {
+                                    break;
+                                }
+
+                                grandchild = nextGrandchild;
+                            }
+                        }
+
+                        PopTransformMatrix();
+                    }
+
+                    s_currentAssetColour = oldChildColour;
+
+                    if (child == instance->pChildren)
+                    {
+                        break;
+                    }
+
+                    child = nextChild;
+                }
+            }
+
+            m_pMatrixStack->PopMatrix();
+        }
+
+        s_currentAssetColour = oldSlideColour;
+
+        if (instance == activeSlide->m_instances)
+        {
+            break;
+        }
+
+        instance = nextInstance;
+    }
 }
 
 /**
  * Offset/Address/Size: 0x978 | 0x8020AC00 | size: 0x418
  */
-void FERender::RenderSlide(const TLSlide*)
+void FERender::RenderSlide(const TLSlide* slide)
 {
+    if (slide == nullptr)
+    {
+        return;
+    }
+
+    if (slide->m_instances == nullptr)
+    {
+        return;
+    }
+
+    TLInstance* instance = slide->m_instances->m_next;
+
+    while (true)
+    {
+        float time = slide->m_time;
+        nlFloatColour oldSlideColour = s_currentAssetColour;
+        TLInstance* nextInstance = instance->m_next;
+
+        if (instance->IsValidAtTime(time) && instance->m_bVisible)
+        {
+            nlMatrix4 combinedMatrix;
+            nlMatrix4 scaleMatrix;
+            nlMatrix4 rotationMatrix;
+
+            const feVector3& rotZ = instance->GetRotation();
+            const feVector3& rotY = instance->GetRotation();
+            nlMakeRotationMatrixEulerAngles(
+                rotationMatrix,
+                instance->GetRotation().f.x,
+                rotY.f.y,
+                rotZ.f.z);
+
+            const feVector3& scaleZ = instance->GetScale();
+            const feVector3& scaleY = instance->GetScale();
+            nlMakeScaleMatrix(
+                scaleMatrix,
+                instance->GetScale().f.x,
+                scaleY.f.y,
+                scaleZ.f.z);
+
+            nlMultMatrices(combinedMatrix, scaleMatrix, rotationMatrix);
+
+            const feVector3& pos = instance->GetPosition();
+            float z = pos.f.z;
+            float negOne = -1.0f;
+            nlVec3Set(combinedMatrix.GetTranslation(), pos.f.x, pos.f.y, z);
+            combinedMatrix.f.m44 = 1.0f;
+            combinedMatrix.f.m43 = z * negOne;
+
+            m_pMatrixStack->PushMatrix();
+            m_pMatrixStack->MultMatrix(combinedMatrix);
+
+            nlFloatColour* curAssetColour = &s_currentAssetColour;
+            for (u32 i = 0; i < 4; i++)
+            {
+                curAssetColour->c[i] = (instance->GetColour().c[i] * curAssetColour->c[i]) / 255.0f;
+            }
+
+            switch (instance->m_type)
+            {
+            case TLAT_IMAGE:
+                RenderImageInstance((const TLImageInstance*)instance);
+                break;
+            case TLAT_TEXT:
+            {
+                nlMatrix4 textMatrix;
+                m_pMatrixStack->GetTop(textMatrix);
+                nlMultMatrices(textMatrix, textMatrix, m_pRenderScene->m_matView);
+                ((TLTextInstance*)instance)->m_DrawInfo.pMatrix = &textMatrix;
+
+                nlColour colour;
+                ConvertColour(colour, s_currentAssetColour);
+
+                ((TLTextInstance*)instance)->Render((eGLView)m_pRenderScene->m_uRenderView, colour);
+                break;
+            }
+            case TLAT_COMPONENT:
+            {
+                TLComponent* component = (TLComponent*)instance->GetLibRefObject();
+                if (component != nullptr)
+                {
+                    if (component->m_pActiveSlide != nullptr)
+                    {
+                        RenderSlide(component->m_pActiveSlide);
+                    }
+                }
+                break;
+            }
+            default:
+                break;
+            }
+
+            if (instance->pChildren != nullptr)
+            {
+                TLInstance* child = instance->pChildren->m_next;
+                while (true)
+                {
+                    TLInstance* nextChild = child->m_next;
+                    nlFloatColour oldChildColour = s_currentAssetColour;
+
+                    RenderTimeLineAsset(child, time);
+
+                    s_currentAssetColour = oldChildColour;
+
+                    if (child == instance->pChildren)
+                    {
+                        break;
+                    }
+
+                    child = nextChild;
+                }
+            }
+
+            PopTransformMatrix();
+        }
+
+        s_currentAssetColour = oldSlideColour;
+
+        if (instance == slide->m_instances)
+        {
+            break;
+        }
+
+        instance = nextInstance;
+    }
 }
 
 /**

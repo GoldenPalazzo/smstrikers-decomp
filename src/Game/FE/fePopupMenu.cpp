@@ -1,8 +1,12 @@
 #include "Game/FE/fePopupMenu.h"
 
+#include "Game/BaseGameSceneManager.h"
+#include "Game/GameSceneManager.h"
+#include "Game/OverlayManager.h"
 #include "Game/FE/feFinder.h"
 #include "Game/FE/tlTextInstance.h"
 #include "Game/FE/feTemplates.h"
+#include "NL/gl/gl.h"
 
 extern char* optionNames[4];
 
@@ -11,6 +15,7 @@ extern char* optionNames[4];
  */
 void FEPopupMenu::SetOptionTextColourOnCurrent(bool)
 {
+    FORCE_DONT_INLINE;
     FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
 
     FEFinder<TLTextInstance, 3>::Find<FEPresentation>(
@@ -25,8 +30,8 @@ void FEPopupMenu::SetOptionTextColourOnCurrent(bool)
 
 /**
  * Offset/Address/Size: 0x164 | 0x80098410 | size: 0x2FC
- * TODO: 53.25% match - extra saved register/stack layout differences and missing
- * StringDrawInfo copy loop before the highlite component lookup.
+ * TODO: 87.32% match - stack frame 0x150 vs 0x130: MWCC not reusing InlineHasher(0)
+ * argument copy stack locations across Find calls (all diffs are stack offsets only).
  */
 void FEPopupMenu::ResizeHighlight()
 {
@@ -35,7 +40,6 @@ void FEPopupMenu::ResizeHighlight()
     TLComponentInstance* pHighlight;
     feVector3 textPosition;
     feVector3 highlightPosition;
-    u16 rowCount;
 
     presentation = m_pFEScene->m_pFEPackage->GetPresentation();
 
@@ -58,7 +62,7 @@ void FEPopupMenu::ResizeHighlight()
         InlineHasher(0),
         InlineHasher(0));
 
-    rowCount = pText->m_DrawInfo.RowCount;
+    StringDrawInfo drawInfo = pText->m_DrawInfo;
 
     pHighlight = FEFinder<TLComponentInstance, 4>::Find<FEPresentation>(
         presentation,
@@ -85,7 +89,7 @@ void FEPopupMenu::ResizeHighlight()
          InlineHasher(0)))
         ->SetAssetScale(
             mHighlightSize.e[0],
-            mHighlightSize.e[1] * (float)rowCount,
+            mHighlightSize.e[1] * (float)drawInfo.RowCount,
             mHighlightSize.e[2]);
 
     SetOptionTextColourOnCurrent(true);
@@ -143,13 +147,173 @@ void FEPopupMenu::CentrePopup(float totalHeight, float topOfMessageBox)
  */
 void FEPopupMenu::SetPositions()
 {
+    FORCE_DONT_INLINE;
 }
 
 /**
  * Offset/Address/Size: 0x2B24 | 0x8009ADD0 | size: 0x400
+ * TODO: 98.4% match - 4 missing instructions (b+lwz merge pattern) in
+ * decrement/increment wrap-around blocks due to -inline deferred scratch flag
  */
-void FEPopupMenu::Update(float)
+void FEPopupMenu::Update(float fDeltaT)
 {
+    if (!mMenuCreated)
+    {
+        return;
+    }
+
+    if (!mMenuDisplayed)
+    {
+        SetPositions();
+
+        if (mUnknownA64 == 0)
+        {
+            if (mButtons.mButtonInstance != NULL)
+            {
+                mButtons.mButtonInstance->m_bVisible = false;
+            }
+        }
+        else
+        {
+            if (mButtons.mButtonInstance != NULL)
+            {
+                mButtons.mButtonInstance->m_bVisible = true;
+            }
+            mButtons.SetState(ButtonComponent::BS_A_AND_B);
+            mButtons.CentreButtons();
+        }
+
+        if (!mUnknownAA4)
+        {
+            m_pFEPresentation->m_fadeDuration = 999.9f;
+        }
+    }
+
+    BaseSceneHandler::Update(fDeltaT);
+
+    if (m_pFEPresentation->m_currentSlide->m_time < m_pFEPresentation->m_currentSlide->m_start + m_pFEPresentation->m_currentSlide->m_duration)
+    {
+        return;
+    }
+
+    if (mAcceptDelayTime > 0.0f)
+    {
+        mAcceptDelayTime -= fDeltaT;
+        if (mAcceptDelayTime <= 0.0f)
+        {
+            mAcceptDelayTime = 0.0f;
+
+            BaseGameSceneManager* manager = nlSingleton<GameSceneManager>::s_pInstance;
+            if (manager != NULL)
+            {
+                manager->Pop();
+            }
+            else
+            {
+                manager = nlSingleton<OverlayManager>::s_pInstance;
+                if (manager != NULL)
+                {
+                    manager->Pop();
+                }
+            }
+
+            mRunCallBack = true;
+            glDiscardFrame(3);
+        }
+
+        return;
+    }
+
+    if (mPopup.numOptions <= 0)
+    {
+        return;
+    }
+
+    if (g_pFEInput->JustPressed(mControlInput, 0x100, false, NULL))
+    {
+        TLComponentInstance* pComponent = FEFinder<TLComponentInstance, 4>::Find<FEPresentation>(
+            m_pFEPresentation,
+            InlineHasher(nlStringLowerHash("Slide1")),
+            InlineHasher(nlStringLowerHash("Layer")),
+            InlineHasher(nlStringLowerHash("highlite")),
+            InlineHasher(0),
+            InlineHasher(0),
+            InlineHasher(0));
+
+        pComponent->SetActiveSlide("accept");
+        pComponent->Update(0.0f);
+        TLSlide* pSlide = pComponent->GetActiveSlide();
+        mAcceptDelayTime = pSlide->m_start + pSlide->m_duration;
+
+        ResizeHighlight();
+        FEAudio::EnableSounds(true);
+        FEAudio::PlayAnimAudioEvent("sfx_popup_accept", false);
+        FEAudio::EnableSounds(false);
+        return;
+    }
+
+    if (g_pFEInput->JustPressed(mControlInput, 0x200, false, NULL))
+    {
+        if (mUnknownA64 == 0)
+        {
+            return;
+        }
+
+        FEAudio::EnableSounds(true);
+        FEAudio::PlayAnimAudioEvent("sfx_back", false);
+        FEAudio::EnableSounds(false);
+
+        BaseGameSceneManager* manager = nlSingleton<GameSceneManager>::s_pInstance;
+        if (manager != NULL)
+        {
+            manager->Pop();
+        }
+        else
+        {
+            manager = nlSingleton<OverlayManager>::s_pInstance;
+            if (manager != NULL)
+            {
+                manager->Pop();
+            }
+        }
+
+        mUnknownA1F = true;
+        return;
+    }
+
+    if (mPopup.numOptions <= 1)
+    {
+        return;
+    }
+
+    if (g_pFEInput->IsAutoPressed(mControlInput, 0xD, true, NULL))
+    {
+        SetOptionTextColourOnCurrent(false);
+
+        int option = mHighlightedOption - 1;
+        mHighlightedOption = option;
+        mHighlightedOption = (option < 0) ? (mPopup.numOptions - 1) : mHighlightedOption;
+
+        ResizeHighlight();
+        FEAudio::EnableSounds(true);
+        FEAudio::PlayAnimAudioEvent("sfx_popup_toggle_up", false);
+        FEAudio::EnableSounds(false);
+        return;
+    }
+
+    if (g_pFEInput->IsAutoPressed(mControlInput, 0xE, true, NULL))
+    {
+        SetOptionTextColourOnCurrent(false);
+
+        int option = mHighlightedOption + 1;
+        mHighlightedOption = option;
+        mHighlightedOption = (option > mPopup.numOptions - 1) ? 0 : mHighlightedOption;
+
+        ResizeHighlight();
+        FEAudio::EnableSounds(true);
+        FEAudio::PlayAnimAudioEvent("sfx_popup_toggle_down", false);
+        FEAudio::EnableSounds(false);
+    }
 }
 
 /**

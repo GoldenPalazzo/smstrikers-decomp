@@ -95,7 +95,7 @@ public:
     u16 GetNumGamesPerRound(int) const;
     eTeamID GetUserSelectedCupTeam() const;
     void SetStadium(eStadiumID);
-    void PickStadium(bool, eStadiumID) const;
+    eStadiumID PickStadium(bool, eStadiumID) const;
     short GetPlayingSide(unsigned short) const;
     void SetPlayingSide(unsigned short, short);
     u16 GetNumPlayers() const;
@@ -135,9 +135,9 @@ public:
     void OnPreCupGameState();
     void OnPostCupGameState();
     void DetermineNextCupScreen();
-    void DetermineUserPlacement(Spoil*);
+    signed char DetermineUserPlacement(Spoil*);
     void TimeStampCupEnd();
-    void FindWinningTeam();
+    eTeamID FindWinningTeam();
     bool IsKongaUnlocked() const;
     bool IsYoshiUnlocked() const;
     bool IsForbiddenUnlocked() const;

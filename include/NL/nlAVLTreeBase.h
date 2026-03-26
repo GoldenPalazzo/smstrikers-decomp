@@ -213,11 +213,11 @@ void AVLTreeBase<KeyType, ValueType, AllocatorType, CompareType>::PostorderTrave
 {
     if (curr->node.left != NULL)
     {
-        PostorderTraversal((AVLTreeEntry<KeyType, ValueType>*)curr->node.left, cb);
+        PostorderTraversal(CastUp(curr->node.left), cb);
     }
     if (curr->node.right != NULL)
     {
-        PostorderTraversal((AVLTreeEntry<KeyType, ValueType>*)curr->node.right, cb);
+        PostorderTraversal(CastUp(curr->node.right), cb);
     }
     (this->*cb)(curr);
 }
@@ -240,24 +240,29 @@ int AVLTreeBase<KeyType, ValueType, AllocatorType, CompareType>::CompareNodes(AV
 template <typename KeyType, typename ValueType, typename AllocatorType, typename CompareType>
 int AVLTreeBase<KeyType, ValueType, AllocatorType, CompareType>::CompareKey(void* key, AVLTreeNode* node)
 {
-    if (*(KeyType*)key == CastUp(node)->key)
-        return 0;
-    if (*(KeyType*)key < CastUp(node)->key)
-        return -1;
-    if (*(KeyType*)key > CastUp(node)->key)
-        return 1;
-    return 1;
+    const KeyType& k = *(KeyType*)key;
+    AVLTreeEntry<KeyType, ValueType>* entry = CastUp(node);
+    int result;
+    if (k == entry->key)
+        result = 0;
+    else if (k < entry->key)
+        result = -1;
+    else
+        result = 1;
+    return result;
 }
 
 template <typename KeyType, typename ValueType, typename AllocatorType, typename CompareType>
 AVLTreeNode* AVLTreeBase<KeyType, ValueType, AllocatorType, CompareType>::AllocateEntry(void* key, void* value)
 {
-    AVLTreeEntry<KeyType, ValueType>* newNode = (AVLTreeEntry<KeyType, ValueType>*)nlMalloc(0x14, 8, false);
+    AVLTreeEntry<KeyType, ValueType>* newNode = NULL;
 
-    newNode->node.left = nullptr;
-    newNode->node.right = nullptr;
+    m_Allocator.Allocate(newNode);
+
+    newNode->node.left = NULL;
+    newNode->node.right = NULL;
     newNode->node.heavy = 0;
-    newNode->key = *(unsigned long*)key;
+    newNode->key = *(KeyType*)key;
     newNode->value = *(ValueType*)value;
 
     return (AVLTreeNode*)newNode;

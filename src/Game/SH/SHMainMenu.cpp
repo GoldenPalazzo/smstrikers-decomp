@@ -9,6 +9,26 @@
 
 extern nlColour MenuHighliteColour;
 
+static unsigned long sUnlockedTickerMessages[7] = {
+    0x10B8D08F,
+    0xDB24E3FA,
+    0x0755A109,
+    0x35AABB0D,
+    0x1B176F3B,
+    0x268EF6F5,
+    0x7B1F3B7E,
+};
+
+static unsigned long sLockedTickerMessages[7] = {
+    0x10B8D08F,
+    0xDB24E3FA,
+    0x0F4F37A4,
+    0x35AABB0D,
+    0x1B176F3B,
+    0x268EF6F5,
+    0x7B1F3B7E,
+};
+
 // /**
 //  * Offset/Address/Size: 0x0 | 0x800AC57C | size: 0x40
 //  */
@@ -393,9 +413,289 @@ void SHMainMenu::SceneCreated()
 
 /**
  * Offset/Address/Size: 0x60C | 0x800AA068 | size: 0x430
+ * TODO: 99.7% match - r0/r4/r5 register allocation mismatch around the locked text overload setup
  */
-void SHMainMenu::OpenItem(TLComponentInstance*)
+void SHMainMenu::OpenItem(TLComponentInstance* compinstance)
 {
+    typedef TLComponentInstance* (*FindComponentByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
+    typedef TLComponentInstance* (*FindComponentByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
+    typedef TLImageInstance* (*FindImageByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
+    typedef TLImageInstance* (*FindImageByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
+    typedef TLTextInstance* (*FindTextByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
+    typedef TLTextInstance* (*FindTextByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
+
+    unsigned long hash;
+    volatile InlineHasher hC, hB, hA, h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
+
+    compinstance->SetActiveSlide("in");
+    compinstance->Update(0.0f);
+
+    h0.m_Hash = 0;
+    h1.m_Hash = 0;
+    h2.m_Hash = 0;
+    h3.m_Hash = 0;
+    h4.m_Hash = 0;
+    h5.m_Hash = 0;
+    h6.m_Hash = 0;
+    h7.m_Hash = 0;
+    h8.m_Hash = 0;
+    h9.m_Hash = 0;
+
+    hash = nlStringLowerHash("high");
+    hB.m_Hash = hash;
+    hC.m_Hash = hash;
+
+    union
+    {
+        FindComponentByValue byValue;
+        FindComponentByRef byRef;
+    } fc1;
+    fc1.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
+    TLComponentInstance* highlight = fc1.byRef(
+        compinstance->GetActiveSlide(),
+        (InlineHasher&)hC,
+        (InlineHasher&)h9,
+        (InlineHasher&)h7,
+        (InlineHasher&)h5,
+        (InlineHasher&)h3,
+        (InlineHasher&)h1);
+
+    highlight->SetActiveSlide("in");
+    highlight->Update(0.0f);
+
+    volatile InlineHasher g9, g8, g7, g6, g5, g4, g3, g2, g1, g0;
+
+    g0.m_Hash = 0;
+    h1.m_Hash = 0;
+    g1.m_Hash = 0;
+    h3.m_Hash = 0;
+    g2.m_Hash = 0;
+    h5.m_Hash = 0;
+    g3.m_Hash = 0;
+    h7.m_Hash = 0;
+    g4.m_Hash = 0;
+    h9.m_Hash = 0;
+
+    hash = nlStringLowerHash("flasher");
+    g6.m_Hash = hash;
+    g7.m_Hash = hash;
+
+    union
+    {
+        FindComponentByValue byValue;
+        FindComponentByRef byRef;
+    } fc2;
+    fc2.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
+    TLComponentInstance* flasher = fc2.byRef(
+        compinstance->GetActiveSlide(),
+        (InlineHasher&)g7,
+        (InlineHasher&)h9,
+        (InlineHasher&)h7,
+        (InlineHasher&)h5,
+        (InlineHasher&)h3,
+        (InlineHasher&)h1);
+
+    flasher->SetActiveSlide("Slide1");
+    flasher->Update(0.0f);
+
+    volatile InlineHasher i7, i6, i5, i4, i3, i2, i1, i0;
+
+    i0.m_Hash = 0;
+    h1.m_Hash = 0;
+    i1.m_Hash = 0;
+    h3.m_Hash = 0;
+    i2.m_Hash = 0;
+    h5.m_Hash = 0;
+    i3.m_Hash = 0;
+    h7.m_Hash = 0;
+    i4.m_Hash = 0;
+    h9.m_Hash = 0;
+
+    hash = nlStringLowerHash("may_highlite");
+    i6.m_Hash = hash;
+    i7.m_Hash = hash;
+
+    union
+    {
+        FindImageByValue byValue;
+        FindImageByRef byRef;
+    } fi1;
+    fi1.byValue = FEFinder<TLImageInstance, 2>::Find<TLSlide>;
+    fi1.byRef(
+           highlight->GetActiveSlide(),
+           (InlineHasher&)i7,
+           (InlineHasher&)h9,
+           (InlineHasher&)h7,
+           (InlineHasher&)h5,
+           (InlineHasher&)h3,
+           (InlineHasher&)h1)
+        ->SetAssetColour(mHighlightColour);
+
+    if (mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mDisabled)
+    {
+        volatile InlineHasher j7, j6, j5, j4, j3, j2, j1, j0;
+
+        j0.m_Hash = 0;
+        h1.m_Hash = 0;
+        j1.m_Hash = 0;
+        h3.m_Hash = 0;
+        j2.m_Hash = 0;
+        h5.m_Hash = 0;
+        j3.m_Hash = 0;
+        h7.m_Hash = 0;
+        j4.m_Hash = 0;
+        h9.m_Hash = 0;
+
+        hash = nlStringLowerHash("R JUST");
+        j6.m_Hash = hash;
+        j7.m_Hash = hash;
+
+        union
+        {
+            FindTextByValue byValue;
+            FindTextByRef byRef;
+        } ft1;
+        ft1.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
+        TLTextInstance* text = ft1.byRef(
+            compinstance->GetActiveSlide(),
+            (InlineHasher&)j7,
+            (InlineHasher&)h9,
+            (InlineHasher&)h7,
+            (InlineHasher&)h5,
+            (InlineHasher&)h3,
+            (InlineHasher&)h1);
+
+        text->m_LocStrId = 0x38202C30;
+        text->m_OverloadFlags |= 8;
+    }
+
+    if (mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mLocked)
+    {
+        volatile InlineHasher k8, k7, k6, k5, k4, k3, k2, k1, k0;
+        volatile InlineHasher l7, l6, l5, l4, l3, l2, l1, l0;
+
+        k0.m_Hash = 0;
+        h1.m_Hash = 0;
+        k1.m_Hash = 0;
+        h3.m_Hash = 0;
+        k2.m_Hash = 0;
+        h5.m_Hash = 0;
+        k3.m_Hash = 0;
+        h7.m_Hash = 0;
+        k4.m_Hash = 0;
+        h9.m_Hash = 0;
+
+        hash = nlStringLowerHash("R JUST");
+        k6.m_Hash = hash;
+        k7.m_Hash = hash;
+
+        union
+        {
+            FindTextByValue byValue;
+            FindTextByRef byRef;
+        } ft2;
+        ft2.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
+        TLTextInstance* text = ft2.byRef(
+            compinstance->GetActiveSlide(),
+            (InlineHasher&)k7,
+            (InlineHasher&)h9,
+            (InlineHasher&)h7,
+            (InlineHasher&)h5,
+            (InlineHasher&)h3,
+            (InlineHasher&)h1);
+
+        text->m_LocStrId = 0x2A68AC55;
+        text->m_OverloadFlags |= 8;
+        l0.m_Hash = 0;
+        l1.m_Hash = 0;
+
+        h1.m_Hash = 0;
+        h3.m_Hash = 0;
+        l2.m_Hash = 0;
+        h5.m_Hash = 0;
+        l3.m_Hash = 0;
+        h7.m_Hash = 0;
+        l4.m_Hash = 0;
+        h9.m_Hash = 0;
+
+        hash = nlStringLowerHash("locked");
+        l6.m_Hash = hash;
+        l7.m_Hash = hash;
+
+        union
+        {
+            FindComponentByValue byValue;
+            FindComponentByRef byRef;
+        } fc3;
+        fc3.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
+        TLComponentInstance* lockedComp = fc3.byRef(
+            compinstance->GetActiveSlide(),
+            (InlineHasher&)l7,
+            (InlineHasher&)h9,
+            (InlineHasher&)h7,
+            (InlineHasher&)h5,
+            (InlineHasher&)h3,
+            (InlineHasher&)h1);
+
+        if (lockedComp != NULL)
+        {
+            lockedComp->m_bVisible = true;
+        }
+    }
+    else
+    {
+        volatile InlineHasher m7, m6, m5, m4, m3, m2, m1, m0;
+
+        m0.m_Hash = 0;
+        h1.m_Hash = 0;
+        m1.m_Hash = 0;
+        h3.m_Hash = 0;
+        m2.m_Hash = 0;
+        h5.m_Hash = 0;
+        m3.m_Hash = 0;
+        h7.m_Hash = 0;
+        m4.m_Hash = 0;
+        h9.m_Hash = 0;
+
+        hash = nlStringLowerHash("locked");
+        m6.m_Hash = hash;
+        m7.m_Hash = hash;
+
+        union
+        {
+            FindComponentByValue byValue;
+            FindComponentByRef byRef;
+        } fc4;
+        fc4.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
+        TLComponentInstance* lockedComp = fc4.byRef(
+            compinstance->GetActiveSlide(),
+            (InlineHasher&)m7,
+            (InlineHasher&)h9,
+            (InlineHasher&)h7,
+            (InlineHasher&)h5,
+            (InlineHasher&)h3,
+            (InlineHasher&)h1);
+
+        if (lockedComp != NULL)
+        {
+            lockedComp->m_bVisible = false;
+        }
+    }
+
+    if (mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mLocked)
+    {
+        m_itemDescriptions->SetDisplayMessage(sLockedTickerMessages[mMenuItems.mCurrentIndex]);
+    }
+    else
+    {
+        m_itemDescriptions->SetDisplayMessage(sUnlockedTickerMessages[mMenuItems.mCurrentIndex]);
+    }
+
+    BaseSceneHandler* scene = nlSingleton<GameSceneManager>::s_pInstance->GetScene(SCENE_MARIO_BACKGROUND);
+    if (scene->m_bVisible)
+    {
+        FEAudio::PlayAnimAudioEvent("sfx_main_menu_highlight_open", false);
+    }
 }
 
 /**
@@ -535,6 +835,212 @@ void SHMainMenu::CloseItem(TLComponentInstance* compinstance)
 /**
  * Offset/Address/Size: 0x0 | 0x800A9A5C | size: 0x404
  */
-void SHMainMenu::Update(float)
+void SHMainMenu::Update(float dt)
 {
+    BaseSceneHandler::Update(dt);
+    mButtons.CentreButtons();
+
+    FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
+    TLSlide* slide = presentation->m_currentSlide;
+
+    if (presentation->m_fadeDuration >= slide->m_start + slide->m_duration)
+    {
+        m_itemDescriptions->Update(dt);
+    }
+    else
+    {
+        return;
+    }
+
+    if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xE, true, NULL))
+    {
+        int flags = mMenuItems.mFlags;
+        int wrapFlag = flags & 1;
+        int currentIndex = mMenuItems.mCurrentIndex;
+        int newIndex = currentIndex + 1;
+
+    loop_down:
+        if (wrapFlag)
+        {
+            newIndex = newIndex % mMenuItems.mNumItemsAdded;
+        }
+        else
+        {
+            if (newIndex >= mMenuItems.mNumItemsAdded)
+            {
+                return;
+            }
+        }
+
+        if (flags & 2)
+        {
+            if (mMenuItems.mMenuItems[newIndex].mDisabled)
+            {
+                newIndex++;
+                goto loop_down;
+            }
+        }
+
+        {
+            int tag = mMenuItems.mMenuItems[currentIndex].mCallbacks[2].mTag;
+            if (((u32)((-tag) | tag) >> 31) > 0)
+            {
+                TLComponentInstance* type = mMenuItems.mMenuItems[currentIndex].mType;
+                if (tag == FREE_FUNCTION)
+                {
+                    mMenuItems.mMenuItems[currentIndex].mCallbacks[2].mFreeFunction(type);
+                }
+                else
+                {
+                    (*mMenuItems.mMenuItems[currentIndex].mCallbacks[2].mFunctor)(type);
+                }
+            }
+        }
+
+        mMenuItems.mCurrentIndex = newIndex;
+
+        {
+            int selIdx = mMenuItems.mCurrentIndex;
+            int tag = mMenuItems.mMenuItems[selIdx].mCallbacks[1].mTag;
+            if (((u32)((-tag) | tag) >> 31) > 0)
+            {
+                TLComponentInstance* type = mMenuItems.mMenuItems[selIdx].mType;
+                if (tag == FREE_FUNCTION)
+                {
+                    mMenuItems.mMenuItems[selIdx].mCallbacks[1].mFreeFunction(type);
+                }
+                else
+                {
+                    (*mMenuItems.mMenuItems[selIdx].mCallbacks[1].mFunctor)(type);
+                }
+            }
+        }
+
+        return;
+    }
+
+    if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xD, true, NULL))
+    {
+        int flags = mMenuItems.mFlags;
+        int wrapFlag = flags & 1;
+        int currentIndex = mMenuItems.mCurrentIndex;
+        int newIndex = currentIndex - 1;
+
+    loop_up:
+        if (wrapFlag)
+        {
+            if (newIndex < 0)
+            {
+                newIndex = mMenuItems.mNumItemsAdded - 1;
+            }
+        }
+        else
+        {
+            if (newIndex < 0)
+            {
+                return;
+            }
+        }
+
+        if (flags & 2)
+        {
+            if (mMenuItems.mMenuItems[newIndex].mDisabled)
+            {
+                newIndex--;
+                goto loop_up;
+            }
+        }
+
+        {
+            int tag = mMenuItems.mMenuItems[currentIndex].mCallbacks[2].mTag;
+            if (((u32)((-tag) | tag) >> 31) > 0)
+            {
+                TLComponentInstance* type = mMenuItems.mMenuItems[currentIndex].mType;
+                if (tag == FREE_FUNCTION)
+                {
+                    mMenuItems.mMenuItems[currentIndex].mCallbacks[2].mFreeFunction(type);
+                }
+                else
+                {
+                    (*mMenuItems.mMenuItems[currentIndex].mCallbacks[2].mFunctor)(type);
+                }
+            }
+        }
+
+        mMenuItems.mCurrentIndex = newIndex;
+
+        {
+            int selIdx = mMenuItems.mCurrentIndex;
+            int tag = mMenuItems.mMenuItems[selIdx].mCallbacks[1].mTag;
+            if (((u32)((-tag) | tag) >> 31) > 0)
+            {
+                TLComponentInstance* type = mMenuItems.mMenuItems[selIdx].mType;
+                if (tag == FREE_FUNCTION)
+                {
+                    mMenuItems.mMenuItems[selIdx].mCallbacks[1].mFreeFunction(type);
+                }
+                else
+                {
+                    (*mMenuItems.mMenuItems[selIdx].mCallbacks[1].mFunctor)(type);
+                }
+            }
+        }
+
+        return;
+    }
+
+    eFEINPUT_PAD pressedPad;
+    if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x100, false, &pressedPad))
+    {
+        int currentIndex = mMenuItems.mCurrentIndex;
+        int callbackResult;
+
+        {
+            int tag = mMenuItems.mMenuItems[currentIndex].mCallbacks[0].mTag;
+            if (((u32)((-tag) | tag) >> 31) > 0)
+            {
+                if (mMenuItems.mMenuItems[currentIndex].mDisabled)
+                {
+                    callbackResult = 3;
+                }
+                else
+                {
+                    TLComponentInstance* type = mMenuItems.mMenuItems[currentIndex].mType;
+                    if (tag == FREE_FUNCTION)
+                    {
+                        mMenuItems.mMenuItems[currentIndex].mCallbacks[0].mFreeFunction(type);
+                    }
+                    else
+                    {
+                        (*mMenuItems.mMenuItems[currentIndex].mCallbacks[0].mFunctor)(type);
+                    }
+
+                    callbackResult = 1;
+                }
+            }
+            else
+            {
+                callbackResult = 4;
+            }
+        }
+
+        if (callbackResult == 1)
+        {
+            GameInfoManager::s_pInstance->mMainUserPadNumber = pressedPad;
+            FEAudio::PlayAnimAudioEvent("sfx_accept", false);
+            mLastMenuItem = mMenuItems.mCurrentIndex;
+        }
+        else
+        {
+            FEAudio::PlayAnimAudioEvent("sfx_deny", false);
+        }
+
+        return;
+    }
+
+    if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x200, false, NULL))
+    {
+        GameSceneManager::s_pInstance->PopEntireStack();
+        GameSceneManager::s_pInstance->Push(SCENE_TITLE, SCREEN_BACK, false);
+    }
 }

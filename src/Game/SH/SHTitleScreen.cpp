@@ -1,10 +1,16 @@
 #include "Game/SH/SHTitleScreen.h"
 #include "Game/GameSceneManager.h"
+#include "Game/GameInfo.h"
 #include "Game/FE/feSceneManager.h"
 #include "Game/FE/feFinder.h"
 #include "Game/FE/feMusic.h"
 #include "Game/Audio/AudioLoader.h"
 #include "Game/FE/tlComponentInstance.h"
+#include "Game/SH/SHLoading.h"
+#include "Game/SH/SHMainMenu.h"
+#include "Game/main.h"
+
+extern eStadiumID PickStadium__15GameInfoManagerCFb10eStadiumID(const GameInfoManager*, bool, eStadiumID);
 
 // /**
 //  * Offset/Address/Size: 0x2D4 | 0x800AD39C | size: 0x15C
@@ -199,9 +205,126 @@ void TitleScene::SceneCreated()
 
 /**
  * Offset/Address/Size: 0x254 | 0x800AC810 | size: 0x434
+ * TODO: 99.89% match - +0x14 instruction address offset in diff listing and
+ * branch target relocation around demo timeout path; remaining differences are
+ * non-functional codegen placement.
  */
-void TitleScene::Update(float)
+void TitleScene::Update(float dt)
 {
+    BaseSceneHandler::Update(dt);
+
+    m_fTimeElapsed += dt;
+    if (m_fTimeElapsed < 1.0f)
+    {
+        mTextPressStart->m_bVisible = false;
+        return;
+    }
+
+    mTextPressStart->m_bVisible = true;
+    if (mStartedDemo)
+    {
+        mTextPressStart->m_bVisible = false;
+        return;
+    }
+
+    float demoTimeout = GetConfigFloat(Config::Global(), "fe_demo_mode_time_out", 60.0f);
+
+    if (!mStartedDemo && m_fTimeElapsed >= demoTimeout)
+    {
+        if (nlSingleton<GameInfoManager>::s_pInstance->mDemoEnabled)
+        {
+            bool doSoak = GetConfigBool(Config::Global(), "dosoak", false);
+
+            if (doSoak)
+            {
+                eSidekickID awaySidekick;
+                eSidekickID homeSidekick;
+                eTeamID awayTeam;
+                eTeamID homeTeam;
+                GameInfoManager* gim = nlSingleton<GameInfoManager>::s_pInstance;
+
+                gim->SetMode(GameInfoManager::GM_DEMO);
+
+                homeTeam = (eTeamID)nlRandom(8, &nlDefaultSeed);
+                awayTeam = homeTeam;
+                while (homeTeam == awayTeam)
+                {
+                    awayTeam = (eTeamID)nlRandom(8, &nlDefaultSeed);
+                }
+
+                if (g_e3_Build)
+                {
+                    do
+                    {
+                        homeTeam = (eTeamID)nlRandom(8, &nlDefaultSeed);
+                    } while (homeTeam != TEAM_MARIO && homeTeam != TEAM_DONKEYKONG && homeTeam != TEAM_PEACH && homeTeam != TEAM_WARIO);
+
+                    while (true)
+                    {
+                        eTeamID randomTeam = (eTeamID)nlRandom(8, &nlDefaultSeed);
+
+                        if (randomTeam != TEAM_MARIO && randomTeam != TEAM_DONKEYKONG && randomTeam != TEAM_PEACH && randomTeam != TEAM_WARIO)
+                        {
+                            continue;
+                        }
+
+                        if ((homeTeam != TEAM_INVALID) && (homeTeam == randomTeam))
+                        {
+                            continue;
+                        }
+
+                        awayTeam = randomTeam;
+                        break;
+                    }
+                }
+
+                homeSidekick = (eSidekickID)nlRandom(4, &nlDefaultSeed);
+                awaySidekick = homeSidekick;
+                while (homeSidekick == awaySidekick)
+                {
+                    awaySidekick = (eSidekickID)nlRandom(4, &nlDefaultSeed);
+                }
+
+                if (g_e3_Build)
+                {
+                    homeSidekick = SK_TOAD;
+                    awaySidekick = SK_KOOPA;
+                }
+
+                gim->SetStadium(PickStadium__15GameInfoManagerCFb10eStadiumID(gim, false, STAD_INVALID));
+                gim->SetTeam(0, homeTeam);
+                gim->SetTeam(1, awayTeam);
+                gim->SetSidekick(0, homeSidekick);
+                gim->SetSidekick(1, awaySidekick);
+                gim->ResetPlayingSides();
+
+                SuperLoadingScene* scene = (SuperLoadingScene*)nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_SUPER_LOADING, SCREEN_NOTHING, true);
+                scene->mType = SuperLoadingScene::TT_IN;
+            }
+            else
+            {
+                ((void (*)(TitleScene*))StartIntroMovie)(this);
+            }
+        }
+
+        m_fTimeElapsed = 0.0f;
+        mStartedDemo = true;
+        return;
+    }
+
+    if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x24, true, NULL)
+        || g_pFEInput->JustPressed(FE_ALL_PADS, 0x100, false, NULL))
+    {
+        FEAudio::PlayAnimAudioEvent("sfx_accept", false);
+        nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_MAIN_MENU, SCREEN_FORWARD, true);
+
+        SHMainMenu::mSnapMenuIntoPosition = false;
+        SHMainMenu::mLastMenuItem = 0;
+
+        nlSingleton<GameInfoManager>::s_pInstance->mUserInfo.mGameplayOptions.OnSettingsUpdated();
+        nlSingleton<GameInfoManager>::s_pInstance->mUserInfo.mPowerupOptions.OnSettingsUpdated();
+        nlSingleton<GameInfoManager>::s_pInstance->mUserInfo.mCheatOptions.OnSettingsUpdated();
+    }
 }
 
 /**

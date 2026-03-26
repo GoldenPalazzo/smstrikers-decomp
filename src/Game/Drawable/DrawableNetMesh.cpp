@@ -122,9 +122,250 @@ void DrawableNetMesh::RenderInvisiblePlanes() const
 
 /**
  * Offset/Address/Size: 0x4B8 | 0x80114414 | size: 0x464
+ * TODO: 77.01% match - early guard branch polarity and stream-table/vtable
+ *       setup ordering still differ from target.
+ */
+enum eGLPrimitive
+{
+    GLP_TriList = 0,
+    GLP_TriStrip = 1,
+    GLP_TriFan = 2,
+    GLP_QuadList = 3,
+    GLP_LineList = 4,
+    GLP_LineStrip = 5,
+    GLP_Num = 6,
+};
+
+enum eGLStream
+{
+    GLStream_Position = 0,
+    GLStream_Colour = 2,
+    GLStream_Diffuse = 3,
+};
+
+enum eGLMemory
+{
+    GLM_Header = 0,
+    GLM_Matrix = 1,
+    GLM_IndexData = 2,
+    GLM_VertexData = 3,
+    GLM_TextureData = 4,
+    GLM_Target = 5,
+    GLM_Num = 6,
+};
+
+class GLMeshWriterCore
+{
+public:
+    GLMeshWriterCore();
+    ~GLMeshWriterCore();
+
+    virtual bool Begin(int, eGLPrimitive, int, const eGLStream*, bool);
+    virtual bool End();
+    virtual void Colour(const nlColour&);
+    virtual void ColourPlat(unsigned long);
+    virtual void Normal(const nlVector3&) = 0;
+    virtual void Texcoord(const nlVector2&);
+    virtual void Vertex(const nlVector3&);
+    virtual void Vertex(const nlVector4&);
+
+    glModel* GetModel();
+
+    glModel* pModel;
+    glModelStream stream[15];
+    int currentIndex;
+    int maximumVerts;
+    int elementCount;
+};
+
+class GLMeshWriter : public GLMeshWriterCore
+{
+public:
+    GLMeshWriter()
+        : GLMeshWriterCore()
+    {
+    }
+
+    virtual bool End();
+    virtual void Normal(const nlVector3&);
+    virtual void Texcoord(const nlVector2&);
+    void Texcoord(short, short);
+};
+
+class WorldDarkening
+{
+public:
+    float mRate;
+    float mPos;
+    float mTo;
+    bool mActive;
+};
+
+extern WorldDarkening* Instance__14WorldDarkeningFv();
+
+struct DisplayList;
+
+void* glFrameAlloc(unsigned long, eGLMemory);
+DisplayList* dlMakeDisplayList(const glModelPacket*, bool);
+void nlZeroMemory(void*, unsigned long);
+void DCFlushRange(void*, unsigned long);
+
+/**
+ * Offset/Address/Size: 0x3DC | 0x80114414 | size: 0x464
+ * TODO: 90.66% match - bne+b vs beq branch pattern (2x, -inline deferred quirk),
+ * vtable scheduling after constructor, lwzu vs lwz+addi for streams,
+ * f30/f31 and r25/r27 loop register allocation diffs (all -inline deferred scheduling)
  */
 void DrawableNetMesh::Render() const
 {
+    extern unsigned char sbRenderAnimatedNetMesh;
+    extern unsigned char sbAccelerateMeshWriter;
+    extern unsigned char sbCopyVertices;
+    extern unsigned char sbUseCheckerTexture;
+    extern unsigned char sbUseDisplayLists;
+    extern unsigned char sbShowPositiveXNetDuringHyperStrike__5World;
+
+    if (!sbRenderAnimatedNetMesh)
+    {
+        return;
+    }
+    if (!mbInitialized)
+    {
+        return;
+    }
+    if (NetMesh::s_bAnimatedNetMeshEnabled)
+    {
+    }
+    else
+    {
+        return;
+    }
+
+    if (World::sbIsHyperShootToScoreRenderingEnabled)
+    {
+        int netIndex = miNetIndex;
+        if (netIndex == 1)
+        {
+            if (sbShowPositiveXNetDuringHyperStrike__5World)
+            {
+                return;
+            }
+        }
+        if (netIndex == 0 && !sbShowPositiveXNetDuringHyperStrike__5World)
+        {
+            return;
+        }
+    }
+
+    eGLStream streamDecl[3] = { GLStream_Position, GLStream_Colour, GLStream_Diffuse };
+    GLMeshWriter meshWriter;
+    nlVector3* pPosition = mpPosition;
+    shortVector2* pTexcoord = spTexcoord[miNetIndex];
+
+    glSetDefaultState(true);
+    glSetRasterState(GLS_Culling, 0);
+    glSetRasterState(GLS_AlphaBlend, 1);
+    glSetRasterState(GLS_AlphaTest, 1);
+    glSetRasterState(GLS_DepthTest, 1);
+    glSetRasterState(GLS_DepthWrite, 0);
+    glSetCurrentRasterState(glHandleizeRasterState());
+    glSetCurrentMatrix(glGetIdentityMatrix());
+
+    unsigned long texture = NetMesh::sNetTextureHandle;
+    if (sbUseCheckerTexture)
+    {
+        texture = CheckerTexture;
+    }
+    glSetCurrentTexture(texture, GLTT_Diffuse);
+    glSetCurrentProgram(UnlitProgram);
+
+    unsigned short* pTriIndices = spTriIndices[miNetIndex];
+
+    if (sbAccelerateMeshWriter)
+    {
+        glModel* pModel = (glModel*)glFrameAlloc(0x10, GLM_Header);
+        nlZeroMemory(pModel, 0x10);
+        glModelPacket* pPacket = (glModelPacket*)glFrameAlloc(0x4A, GLM_Header);
+        nlZeroMemory(pPacket, 0x4A);
+        glModelStream* pStreams = (glModelStream*)glFrameAlloc(0x12, GLM_Header);
+        nlZeroMemory(pStreams, 0x12);
+
+        pModel->id = (u32)-1;
+        pModel->numPackets = 1;
+        pModel->packets = pPacket;
+        pPacket->indexBuffer = (u32)pTriIndices;
+        pPacket->numStreams = 3;
+        pPacket->numVertices = (u16)m_unk18;
+        pPacket->primType = 1;
+        pPacket->streams = pStreams;
+        glStateSave(pPacket->state);
+
+        if (sbCopyVertices)
+        {
+            unsigned long nBytes = (unsigned long)mJolt * (unsigned long)sizeof(nlVector3);
+            nlVector3* pNewPosition = (nlVector3*)glFrameAlloc(nBytes, GLM_VertexData);
+            memcpy(pNewPosition, pPosition, nBytes);
+            pPosition = pNewPosition;
+        }
+        if (sbUseDisplayLists)
+        {
+            if ((u32)((DrawableNetMesh*)this)->mNumVertices == 0)
+            {
+                ((DrawableNetMesh*)this)->mNumQuads = pPacket->indexBuffer;
+                ((DrawableNetMesh*)this)->mNumVertices = (int)dlMakeDisplayList(pPacket, true);
+            }
+            pPacket->indexBuffer = (u32)((DrawableNetMesh*)this)->mNumVertices;
+        }
+        DCFlushRange(pPosition, (unsigned long)mJolt * (unsigned long)sizeof(nlVector3));
+
+        pStreams[0].id = GLStream_Position;
+        pStreams[0].address = (u32)pPosition;
+        pStreams[0].stride = 0x0C;
+        pStreams[1].id = GLStream_Colour;
+        pStreams[1].address = (u32)spColour[miNetIndex];
+        pStreams[1].stride = 4;
+        pStreams[2].id = GLStream_Diffuse;
+        pStreams[2].address = (u32)pTexcoord;
+        pStreams[2].stride = 4;
+
+        void* pUserDataHandle = glUserAlloc(GLUD_ConstantColour, 4, false);
+        u8* pColourData = (u8*)glUserGetData(pUserDataHandle);
+        u8 dark = (u8)(int)(255.0f * (1.0f - Instance__14WorldDarkeningFv()->mPos));
+        pColourData[0] = dark;
+        pColourData[1] = dark;
+        pColourData[2] = dark;
+        pColourData[3] = dark;
+        glUserAttach(pUserDataHandle, pPacket, false);
+        glViewAttachModel(GLV_UnsortedPerspective, pModel);
+    }
+    else
+    {
+        if (meshWriter.Begin(m_unk18, GLP_TriStrip, 3, streamDecl, false))
+        {
+            unsigned short* pIndex = pTriIndices;
+            for (int i = 0; i < m_unk18; i++, pIndex++)
+            {
+                unsigned short index = *pIndex;
+                float fDark = 1.0f - Instance__14WorldDarkeningFv()->mPos;
+                u8 dark = (u8)(int)(255.0 * fDark);
+                shortVector2* pUV = &pTexcoord[index];
+                meshWriter.Texcoord(pUV->e[0], pUV->e[1]);
+                nlColour c;
+                c.c[0] = dark;
+                c.c[1] = dark;
+                c.c[2] = dark;
+                c.c[3] = 0xFF;
+                ((GLMeshWriterCore*)&meshWriter)->Colour(c);
+                meshWriter.Vertex(pPosition[index]);
+            }
+            if (!meshWriter.End())
+            {
+                return;
+            }
+            glViewAttachModel(GLV_UnsortedPerspective, meshWriter.GetModel());
+        }
+    }
+    RenderInvisiblePlanes();
 }
 
 /**

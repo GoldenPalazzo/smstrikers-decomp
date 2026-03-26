@@ -137,8 +137,6 @@ PhysicsCharacterBase::PhysicsCharacterBase(CollisionSpace* collisionSpace, Physi
 
 /**
  * Offset/Address/Size: 0x69C | 0x801FF198 | size: 0xE8
- * TODO: 99.57% match - nlWalkList callback resolves to the global PhysicsBoneVolume template
- * instantiation, while target uses the nested PhysicsCharacterBase::PhysicsBoneVolume symbol.
  */
 PhysicsCharacterBase::~PhysicsCharacterBase()
 {
@@ -149,17 +147,6 @@ PhysicsCharacterBase::~PhysicsCharacterBase()
     {
         delete entry->data;
         entry = entry->next;
-    }
-
-    if (&m_BoneVolumes != NULL)
-    {
-        if (&m_BoneVolumes != NULL)
-        {
-            typedef ListContainerBase<PhysicsBoneVolume*, NewAdapter<ListEntry<PhysicsBoneVolume*> > > BoneVolumesListBase;
-            nlWalkList(m_BoneVolumes.m_Head, (BoneVolumesListBase*)&m_BoneVolumes, &BoneVolumesListBase::DeleteEntry);
-            m_BoneVolumes.m_Head = NULL;
-            m_BoneVolumes.m_Tail = NULL;
-        }
     }
 }
 

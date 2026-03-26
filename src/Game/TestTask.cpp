@@ -174,186 +174,185 @@ void TestTask::RunSmokeTest(float)
 
 /**
  * Offset/Address/Size: 0x0 | 0x8016C8FC | size: 0x424
- * TODO: 88.2% scratch match; remaining diffs are mostly r29/r30/r31 allocation.
+ * TODO: 97.9% scratch match; remaining diffs are r29/r31 allocation and
+ * cleanup branch-shape drift.
  */
 void TestTask::RunFrameRateTest(float dt)
 {
-    if (!mRunFrameRateTest)
+    if (mRunFrameRateTest)
     {
-        return;
-    }
+        float frameRateThreshold = 1.0f / mMinimumFrameRate;
 
-    float frameRateThreshold = 1.0f / mMinimumFrameRate;
-
-    if (dt > frameRateThreshold)
-    {
-        mFrameRateTestFailure = true;
-
-        BasicStringInternal* data = (BasicStringInternal*)nlMalloc(0x10, 8, true);
-        if (data)
+        if (dt > frameRateThreshold)
         {
-            const char* formatTemplate = "FAILURE: frame rate dropped below {0}, namely {1}";
-            data->mData = 0;
-            data->mSize = 0;
-            data->mCapacity = 0;
+            mFrameRateTestFailure = true;
 
-            const char* p = formatTemplate;
-            while (*p != '\0')
+            BasicStringInternal* data = (BasicStringInternal*)nlMalloc(0x10, 8, true);
+            if (data)
             {
+                const char* text = "FAILURE: frame rate dropped below {0}, namely {1}";
+                data->mData = 0;
+                data->mSize = 0;
+                data->mCapacity = 0;
+
+                const char* p = text;
+                while (*p++ != '\0')
+                {
+                    data->mSize++;
+                }
                 data->mSize++;
-                p++;
-            }
-            data->mSize++;
 
-            data->mData = (char*)nlMalloc(data->mSize + 1, 8, true);
-            data->mCapacity = data->mSize;
+                data->mData = (char*)nlMalloc(data->mSize + 1, 8, true);
+                data->mCapacity = data->mSize;
 
-            for (int i = 0; i < data->mSize; i++)
-            {
-                data->mData[i] = formatTemplate[i];
-            }
-            data->mRefCount = 1;
-        }
-
-        BasicStringInternal* formatData = data;
-        float actualFrameRate = 1.0f / dt;
-        BasicStringInternal* formattedData;
-
-        Format(*(BasicString<char, Detail::TempStringAllocator>*)&formattedData,
-            *(BasicString<char, Detail::TempStringAllocator>*)&formatData,
-            mMinimumFrameRate,
-            actualFrameRate);
-
-        if (mTestLog)
-        {
-            nlWriteLineDebug(mTestLog,
-                ((BasicString<char, Detail::TempStringAllocator>*)&formattedData)->c_str(),
-                false);
-            nlWriteLineDebug(mTestLog, "\n", false);
-            nlFlushFileDebug(mTestLog);
-        }
-
-        if (formattedData)
-        {
-            if (--formattedData->mRefCount == 0)
-            {
-                if (formattedData)
+                for (int i = 0; i < data->mSize; i++)
                 {
-                    if (formattedData)
+                    data->mData[i] = *text++;
+                }
+                data->mRefCount = 1;
+            }
+
+            BasicStringInternal* formatData = data;
+            float actualFrameRate = 1.0f / dt;
+            BasicStringInternal* formattedData;
+
+            Format(*(BasicString<char, Detail::TempStringAllocator>*)&formattedData,
+                *(BasicString<char, Detail::TempStringAllocator>*)&formatData,
+                mMinimumFrameRate,
+                actualFrameRate);
+
+            const char* logText = ((BasicString<char, Detail::TempStringAllocator>*)&formattedData)->c_str();
+            if (mTestLog)
+            {
+                nlWriteLineDebug(mTestLog, logText, false);
+                nlWriteLineDebug(mTestLog, "\n", false);
+                nlFlushFileDebug(mTestLog);
+            }
+
+            BasicStringInternal* toFree = formattedData;
+            if (toFree)
+            {
+                if (--toFree->mRefCount == 0)
+                {
+                    if (toFree)
                     {
-                        delete[] formattedData->mData;
+                        if (toFree)
+                        {
+                            delete[] toFree->mData;
+                        }
+                        if (toFree)
+                        {
+                            nlFree(toFree);
+                        }
                     }
-                    if (formattedData)
+                }
+            }
+
+            toFree = formatData;
+            if (toFree)
+            {
+                if (--toFree->mRefCount == 0)
+                {
+                    if (toFree)
                     {
-                        nlFree(formattedData);
+                        if (toFree)
+                        {
+                            delete[] toFree->mData;
+                        }
+                        if (toFree)
+                        {
+                            nlFree(toFree);
+                        }
                     }
                 }
             }
         }
 
-        if (formatData)
+        if (mTestTimeOut <= 0.0f && !mFrameRateTestFailure)
         {
-            if (--formatData->mRefCount == 0)
+            const char* text = frameRateTestSuccessOutput;
+            void* debugFile = nlOpenFileDebug(text, false, false);
+            if (debugFile)
             {
-                if (formatData)
-                {
-                    if (formatData)
-                    {
-                        delete[] formatData->mData;
-                    }
-                    if (formatData)
-                    {
-                        nlFree(formatData);
-                    }
-                }
+                nlWriteLineDebug(debugFile, text, false);
+                nlFlushFileDebug(debugFile);
+                nlCloseFileDebug(debugFile);
             }
-        }
-    }
 
-    if (mTestTimeOut <= 0.0f && !mFrameRateTestFailure)
-    {
-        const char* output = frameRateTestSuccessOutput;
-        void* debugFile = nlOpenFileDebug(output, false, false);
-        if (debugFile)
-        {
-            nlWriteLineDebug(debugFile, output, false);
-            nlFlushFileDebug(debugFile);
-            nlCloseFileDebug(debugFile);
-        }
-
-        BasicStringInternal* data = (BasicStringInternal*)nlMalloc(0x10, 8, true);
-        if (data)
-        {
-            const char* formatTemplate = "SUCCES: frame rate test successful, never dropped below {0}";
-            data->mData = 0;
-            data->mSize = 0;
-            data->mCapacity = 0;
-
-            const char* p = formatTemplate;
-            while (*p != '\0')
+            BasicStringInternal* data = (BasicStringInternal*)nlMalloc(0x10, 8, true);
+            if (data)
             {
+                text = "SUCCES: frame rate test successful, never dropped below {0}";
+                data->mData = 0;
+                data->mSize = 0;
+                data->mCapacity = 0;
+
+                const char* p = text;
+                while (*p++ != '\0')
+                {
+                    data->mSize++;
+                }
                 data->mSize++;
-                p++;
-            }
-            data->mSize++;
 
-            data->mData = (char*)nlMalloc(data->mSize + 1, 8, true);
-            data->mCapacity = data->mSize;
+                data->mData = (char*)nlMalloc(data->mSize + 1, 8, true);
+                data->mCapacity = data->mSize;
 
-            for (int i = 0; i < data->mSize; i++)
-            {
-                data->mData[i] = formatTemplate[i];
-            }
-            data->mRefCount = 1;
-        }
-
-        BasicStringInternal* formatData = data;
-        BasicStringInternal* formattedData;
-
-        Format(*(BasicString<char, Detail::TempStringAllocator>*)&formattedData,
-            *(BasicString<char, Detail::TempStringAllocator>*)&formatData,
-            mMinimumFrameRate);
-
-        if (mTestLog)
-        {
-            nlWriteLineDebug(mTestLog,
-                ((BasicString<char, Detail::TempStringAllocator>*)&formattedData)->c_str(),
-                false);
-            nlWriteLineDebug(mTestLog, "\n", false);
-            nlFlushFileDebug(mTestLog);
-        }
-
-        if (formattedData)
-        {
-            if (--formattedData->mRefCount == 0)
-            {
-                if (formattedData)
+                for (int i = 0; i < data->mSize; i++)
                 {
-                    if (formattedData)
+                    data->mData[i] = *text++;
+                }
+                data->mRefCount = 1;
+            }
+
+            BasicStringInternal* formatData = data;
+            BasicStringInternal* formattedData;
+
+            Format(*(BasicString<char, Detail::TempStringAllocator>*)&formattedData,
+                *(BasicString<char, Detail::TempStringAllocator>*)&formatData,
+                mMinimumFrameRate);
+
+            const char* logText = ((BasicString<char, Detail::TempStringAllocator>*)&formattedData)->c_str();
+            if (mTestLog)
+            {
+                nlWriteLineDebug(mTestLog, logText, false);
+                nlWriteLineDebug(mTestLog, "\n", false);
+                nlFlushFileDebug(mTestLog);
+            }
+
+            BasicStringInternal* toFree = formattedData;
+            if (toFree)
+            {
+                if (--toFree->mRefCount == 0)
+                {
+                    if (toFree)
                     {
-                        delete[] formattedData->mData;
-                    }
-                    if (formattedData)
-                    {
-                        nlFree(formattedData);
+                        if (toFree)
+                        {
+                            delete[] toFree->mData;
+                        }
+                        if (toFree)
+                        {
+                            nlFree(toFree);
+                        }
                     }
                 }
             }
-        }
 
-        if (formatData)
-        {
-            if (--formatData->mRefCount == 0)
+            toFree = formatData;
+            if (toFree)
             {
-                if (formatData)
+                if (--toFree->mRefCount == 0)
                 {
-                    if (formatData)
+                    if (toFree)
                     {
-                        delete[] formatData->mData;
-                    }
-                    if (formatData)
-                    {
-                        nlFree(formatData);
+                        if (toFree)
+                        {
+                            delete[] toFree->mData;
+                        }
+                        if (toFree)
+                        {
+                            nlFree(toFree);
+                        }
                     }
                 }
             }

@@ -467,8 +467,165 @@ void GameInfoManager::SetStadium(eStadiumID stadiumID)
 /**
  * Offset/Address/Size: 0x8C28 | 0x8017E2CC | size: 0x460
  */
-void GameInfoManager::PickStadium(bool, eStadiumID) const
+eStadiumID GameInfoManager::PickStadium(bool isLastRound, eStadiumID excludeStadium) const
 {
+    eStadiumID returnValue;
+    eStadiumID lastRoundStadium;
+
+    if (g_e3_Build)
+    {
+        return STAD_WARIO_STADIUM;
+    }
+
+    lastRoundStadium = STAD_INVALID;
+
+    bool kongaUnlocked = CheckUnlockStatus(isKongaUnlocked, mUserInfo.mTrophies[0], 0);
+    bool yoshiUnlocked = CheckUnlockStatus(isYoshiUnlocked, mUserInfo.mTrophies[0], 1);
+    bool forbiddenUnlocked = CheckUnlockStatus(isForbiddenUnlocked, mUserInfo.mTrophies[0], 2);
+    bool superStadiumUnlocked = CheckUnlockStatus(isSuperStadUnlocked, mUserInfo.mTrophies[0], 3);
+
+    eGameModes mode = mCurrentMode;
+    if (mode == GM_TOURNAMENT)
+    {
+        isLastRound = false;
+    }
+
+    switch (mCurrentMode)
+    {
+    case GM_MUSHROOM_CUP:
+        lastRoundStadium = STAD_PEACH_TOAD_STADIUM;
+        break;
+    case GM_FLOWER_CUP:
+        lastRoundStadium = STAD_MARIO_STADIUM;
+        break;
+    case GM_STAR_CUP:
+        lastRoundStadium = STAD_WARIO_STADIUM;
+        break;
+    case GM_SUPER_MUSHROOM_CUP:
+        lastRoundStadium = STAD_YOSHI_STADIUM;
+        break;
+    case GM_SUPER_FLOWER_CUP:
+        lastRoundStadium = STAD_DK_DAISY;
+        break;
+    case GM_SUPER_STAR_CUP:
+        lastRoundStadium = STAD_FORBIDDEN_DOME;
+        break;
+    case GM_BOWSER_CUP:
+    case GM_SUPER_BOWSER_CUP:
+        lastRoundStadium = STAD_SUPER_STADIUM;
+        break;
+    default:
+        break;
+    }
+
+    if (isLastRound)
+    {
+        return lastRoundStadium;
+    }
+
+    while (true)
+    {
+        returnValue = (eStadiumID)nlRandom(7, &nlDefaultSeed);
+
+        if (returnValue == lastRoundStadium)
+        {
+            bool shouldRepick;
+            eGameModes mode2 = mCurrentMode;
+
+            if (mode2 < GM_SUPER_MUSHROOM_CUP)
+            {
+                if (mode2 >= GM_MUSHROOM_CUP)
+                {
+                    shouldRepick = true;
+                }
+                else
+                {
+                    shouldRepick = false;
+                }
+            }
+            else
+            {
+                shouldRepick = false;
+            }
+
+            if (shouldRepick == false)
+            {
+                if (mode2 < GM_TOURNAMENT)
+                {
+                    if (mode2 >= GM_SUPER_MUSHROOM_CUP)
+                    {
+                        shouldRepick = true;
+                    }
+                    else
+                    {
+                        shouldRepick = false;
+                    }
+                }
+                else
+                {
+                    shouldRepick = false;
+                }
+            }
+
+            if (shouldRepick)
+            {
+                continue;
+            }
+        }
+
+        if (returnValue == excludeStadium)
+        {
+            continue;
+        }
+
+        if ((u32)returnValue <= STAD_PEACH_TOAD_STADIUM)
+        {
+            break;
+        }
+
+        if (returnValue == STAD_WARIO_STADIUM)
+        {
+            break;
+        }
+
+        if (returnValue == STAD_DK_DAISY)
+        {
+            if (kongaUnlocked)
+            {
+                break;
+            }
+        }
+
+        if (returnValue == STAD_YOSHI_STADIUM)
+        {
+            if (yoshiUnlocked)
+            {
+                break;
+            }
+        }
+
+        if (returnValue == STAD_FORBIDDEN_DOME)
+        {
+            if (forbiddenUnlocked)
+            {
+                break;
+            }
+        }
+
+        if (returnValue != STAD_SUPER_STADIUM)
+        {
+            continue;
+        }
+
+        if (superStadiumUnlocked == false)
+        {
+            continue;
+        }
+
+        break;
+    }
+
+    return returnValue;
 }
 
 /**
@@ -528,9 +685,103 @@ void GameInfoManager::SetupRoundRobinSchedule(eTeamID*, eSidekickID*)
 /**
  * Offset/Address/Size: 0x81CC | 0x8017D870 | size: 0x46C
  */
+/**
+ * Offset/Address/Size: 0x7EF0 + 0x380 | 0x8017D870 | size: 0x46C
+ * TODO: 99.89% match - first loop body uses r5/r4/r0 register assignment order for
+ * sidekick/team loads instead of target r4/r0/r5 order.
+ */
+static const int BOWSER_KNOCKOUT_ORDER[4] = { 0, 3, 1, 2 };
+
 unsigned char GameInfoManager::SetupBowserKnockout()
 {
-    FORCE_DONT_INLINE;
+    int teamIndices[8];
+    eSidekickID sidekicks[9];
+    unsigned char returnValue = 0;
+    int numPreviousTeams;
+    int numTeams;
+    StatsTracker* pStatsTracker;
+
+    mLastHumanStadium = STAD_INVALID;
+
+    for (int i = 0; i < (u16)mPreviousCup->GetNumTeams() / 2; i++)
+    {
+        BasicGameInfo* g = mPreviousCup->GetGameInfo(0, i);
+        eTeamID index = g->mTeamIndex[0];
+        sidekicks[index] = g->mSidekickIndex[0];
+        index = g->mTeamIndex[1];
+        sidekicks[index] = g->mSidekickIndex[1];
+    }
+
+    *mCurrentCup->GetRoundResults(0) = 1;
+    *mCurrentCup->GetRoundResults(1) = 1;
+    *mCurrentCup->GetRoundResults(2) = 1;
+
+    mCurrentCup->mUserSelectedTeam = mPreviousCup->mUserSelectedTeam;
+    mCurrentCup->mUserSelectedSidekick = mPreviousCup->mUserSelectedSidekick;
+
+    pStatsTracker = nlSingleton<StatsTracker>::s_pInstance;
+    numTeams = mCurrentCup->GetNumTeams();
+    numPreviousTeams = mPreviousCup->GetNumTeams();
+
+    pStatsTracker->GetSortedTeamStats(mPreviousCup->GetTeamStats(0), numPreviousTeams, teamIndices, numTeams);
+
+    for (int i = 0; i < (u16)mCurrentCup->GetNumTeams(); i++)
+    {
+        TeamStats* pSourceStats = mPreviousCup->GetTeamStats(teamIndices[BOWSER_KNOCKOUT_ORDER[i]]);
+        TeamStats* pDestStats = mCurrentCup->GetTeamStats(i);
+        *pDestStats = *pSourceStats;
+
+        if (mCurrentCup->GetTeamStats(i)->mTeamIndex == mCurrentCup->mUserSelectedTeam)
+        {
+            returnValue = 1;
+        }
+    }
+
+    BasicGameInfo* g = mCurrentCup->GetGameInfo(0, 0);
+    g->mTeamIndex[0] = TEAM_MARIO;
+    g->mTeamIndex[1] = TEAM_LUIGI;
+    g->mSidekickIndex[0] = SK_TOAD;
+    g->mSidekickIndex[1] = SK_KOOPA;
+    g->mFinalScore[1] = 0;
+    g->mFinalScore[0] = 0;
+    g->mPadSides[0] = -1;
+    g->mPadSides[1] = -1;
+    g->mPadSides[2] = -1;
+    g->mPadSides[3] = -1;
+    g->mStadiumIndex = STAD_MARIO_STADIUM;
+
+    eTeamID home = mCurrentCup->GetTeamStats(0)->mTeamIndex;
+    eTeamID away = mCurrentCup->GetTeamStats(1)->mTeamIndex;
+    g->mTeamIndex[0] = home;
+    g->mTeamIndex[1] = away;
+    g->mSidekickIndex[0] = sidekicks[home];
+    g->mSidekickIndex[1] = sidekicks[away];
+    g->mStadiumIndex = PickStadium(true, STAD_INVALID);
+
+    g = mCurrentCup->GetGameInfo(0, 1);
+    g->mTeamIndex[0] = TEAM_MARIO;
+    g->mTeamIndex[1] = TEAM_LUIGI;
+    g->mSidekickIndex[0] = SK_TOAD;
+    g->mSidekickIndex[1] = SK_KOOPA;
+    g->mFinalScore[1] = 0;
+    g->mFinalScore[0] = 0;
+    g->mPadSides[0] = -1;
+    g->mPadSides[1] = -1;
+    g->mPadSides[2] = -1;
+    g->mPadSides[3] = -1;
+    g->mStadiumIndex = STAD_MARIO_STADIUM;
+
+    home = mCurrentCup->GetTeamStats(2)->mTeamIndex;
+    away = mCurrentCup->GetTeamStats(3)->mTeamIndex;
+    g->mTeamIndex[0] = home;
+    g->mTeamIndex[1] = away;
+    g->mSidekickIndex[0] = sidekicks[home];
+    g->mSidekickIndex[1] = sidekicks[away];
+    g->mStadiumIndex = PickStadium(true, STAD_INVALID);
+
+    mCurrentCup->mCupStarted = true;
+
+    return returnValue;
 }
 
 extern eStadiumID PickStadium__15GameInfoManagerCFb10eStadiumID(const GameInfoManager*, bool, eStadiumID);
@@ -1002,10 +1253,87 @@ BaseCup* GameInfoManager::GetCup(GameInfoManager::eGameModes mode)
 /**
  * Offset/Address/Size: 0x6908 | 0x8017BFAC | size: 0x468
  */
-bool GameInfoManager::IsUserQualified(GameInfoManager::eGameModes) const
+bool GameInfoManager::IsUserQualified(GameInfoManager::eGameModes mode) const
 {
-    FORCE_DONT_INLINE;
-    return false;
+    bool qualified = false;
+
+    switch (mode)
+    {
+    case GM_FLOWER_CUP:
+        qualified = mUserInfo.mIsFlowerCupUnlocked || GetConfigBool(Config::Global(), "givealltrophies", false);
+        break;
+
+    case GM_STAR_CUP:
+        qualified = mUserInfo.mIsStarCupUnlocked;
+
+        if (qualified == false)
+        {
+            qualified = GetConfigBool(Config::Global(), "givealltrophies", false);
+        }
+
+        break;
+
+    case GM_BOWSER_CUP:
+        qualified = GetConfigBool(Config::Global(), "givealltrophies", false);
+
+        if (qualified)
+        {
+            qualified = true;
+        }
+        else
+        {
+            qualified = (mUserInfo.mTrophies[0] >> 0) & 0x1;
+        }
+
+        if (qualified)
+        {
+            qualified = GetConfigBool(Config::Global(), "givealltrophies", false);
+
+            if (qualified)
+            {
+                qualified = true;
+            }
+            else
+            {
+                qualified = (mUserInfo.mTrophies[0] >> 1) & 0x1;
+            }
+        }
+
+        if (qualified)
+        {
+            qualified = GetConfigBool(Config::Global(), "givealltrophies", false);
+
+            if (qualified)
+            {
+                qualified = true;
+            }
+            else
+            {
+                qualified = (mUserInfo.mTrophies[0] >> 2) & 0x1;
+            }
+        }
+
+        break;
+
+    case GM_NUM_MODES:
+        qualified = GetConfigBool(Config::Global(), "givealltrophies", false);
+
+        if (qualified)
+        {
+            qualified = true;
+        }
+        else
+        {
+            qualified = (mUserInfo.mTrophies[0] >> 3) & 0x1;
+        }
+
+        break;
+
+    default:
+        break;
+    }
+
+    return qualified;
 }
 
 /**
@@ -1597,23 +1925,130 @@ void GameInfoManager::DetermineNextCupScreen()
 /**
  * Offset/Address/Size: 0x1DA8 | 0x8017744C | size: 0x654
  */
-void GameInfoManager::DetermineUserPlacement(Spoil*)
-{
-}
-
-/**
- * Offset/Address/Size: 0x196C | 0x80177010 | size: 0x43C
- */
-void GameInfoManager::TimeStampCupEnd()
+signed char GameInfoManager::DetermineUserPlacement(Spoil*)
 {
     FORCE_DONT_INLINE;
 }
 
 /**
+ * Offset/Address/Size: 0x196C | 0x80177010 | size: 0x43C
+ * TODO: 84.71% match - stmw r26 vs r27, stack frame 0x80 vs 0x90.
+ * Compiler puts userTeam in callee-saved r26 instead of spilling to stack.
+ * Likely register allocation heuristic difference in decomp.me context.
+ */
+void GameInfoManager::TimeStampCupEnd()
+{
+    eTrophyType trophy = INVALID_TROPHY;
+
+    switch (mCurrentMode)
+    {
+    case GM_MUSHROOM_CUP:
+        trophy = TROPHY_MUSHROOM_CUP;
+        break;
+    case GM_FLOWER_CUP:
+        trophy = TROPHY_FLOWER_CUP;
+        break;
+    case GM_STAR_CUP:
+        trophy = TROPHY_STAR_CUP;
+        break;
+    case GM_BOWSER_CUP:
+        trophy = TROPHY_BOWSER_CUP;
+        break;
+    case GM_SUPER_MUSHROOM_CUP:
+        trophy = TROPHY_SUPER_MUSHROOM_CUP;
+        break;
+    case GM_SUPER_FLOWER_CUP:
+        trophy = TROPHY_SUPER_FLOWER_CUP;
+        break;
+    case GM_SUPER_STAR_CUP:
+        trophy = TROPHY_SUPER_STAR_CUP;
+        break;
+    case GM_SUPER_BOWSER_CUP:
+        trophy = TROPHY_SUPER_BOWSER_CUP;
+        break;
+    default:
+        break;
+    }
+
+    Spoil* pSpoil = &mUserInfo.mSpoils[trophy];
+    OSCalendarTime calendar;
+    signed char userPlace = 0;
+    eTeamID userTeam = TEAM_INVALID;
+    GameplaySettings::eSkillLevel skill = GameplaySettings::ROOKIE;
+    CupRecord record;
+
+    memset(&calendar, 0, sizeof(calendar));
+    OSTicksToCalendarTime(OSGetTime(), &calendar);
+
+    userTeam = mCurrentCup->mUserSelectedTeam;
+
+    userPlace = DetermineUserPlacement(pSpoil);
+
+    skill = mCurrentCup->mCupSettings.SkillLevel;
+
+    record.mDate = calendar;
+    record.mPlace = userPlace;
+    record.mTeam = userTeam;
+    record.mDifficulty = skill;
+
+    if (pSpoil->mNumRecords < 10)
+    {
+        pSpoil->mNumRecords++;
+    }
+
+    for (int i = pSpoil->mNumRecords - 1; i > 0; --i)
+    {
+        pSpoil->mCupHistory[i] = pSpoil->mCupHistory[i - 1];
+    }
+
+    pSpoil->mCupHistory[0] = record;
+
+    if (pSpoil->mNumWins > 999)
+    {
+        pSpoil->mNumWins = 999;
+    }
+
+    if (pSpoil->mNumLosses > 999)
+    {
+        pSpoil->mNumLosses = 999;
+    }
+
+    if (pSpoil->mNumCupWins > 999)
+    {
+        pSpoil->mNumCupWins = 999;
+    }
+
+    pSpoil->mCurrentChamp = FindWinningTeam();
+
+    pSpoil->mIsCPUChamp = (mCurrentCup->mUserSelectedTeam != pSpoil->mCurrentChamp);
+
+    if (mCurrentCup->mUserSelectedTeam == pSpoil->mCurrentChamp)
+    {
+        pSpoil->mNumCupWins++;
+
+        if (pSpoil->mNumWins > 999)
+        {
+            pSpoil->mNumWins = 999;
+        }
+
+        if (pSpoil->mNumLosses > 999)
+        {
+            pSpoil->mNumLosses = 999;
+        }
+
+        if (pSpoil->mNumCupWins > 999)
+        {
+            pSpoil->mNumCupWins = 999;
+        }
+    }
+}
+
+/**
  * Offset/Address/Size: 0x13E4 | 0x80176A88 | size: 0x588
  */
-void GameInfoManager::FindWinningTeam()
+eTeamID GameInfoManager::FindWinningTeam()
 {
+    FORCE_DONT_INLINE;
 }
 
 /**

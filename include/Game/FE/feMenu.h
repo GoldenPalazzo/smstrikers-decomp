@@ -8,13 +8,15 @@
 template <typename T>
 struct MenuItem
 {
-    // nlFunction::Function expects the parameter type (e.g. T*).
     /*  0x00 */ Function<T*> mCallbacks[3];
     /*  0x18 */ T* mType;
     /*  0x1C */ bool mDisabled;
     /*  0x1D */ bool mLocked;
 
-    MenuItem() { };
+    MenuItem()
+        : mType(0)
+        , mDisabled(false)
+        , mLocked(false) { };
     ~MenuItem() { };
 }; // total size: 0x20
 

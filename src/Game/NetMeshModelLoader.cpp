@@ -1,69 +1,18 @@
 #include "Game/Physics/NetMeshModelLoader.h"
+#include "Game/WorldManager.h"
+#include "Game/Drawable/DrawableModel.h"
 #include "NL/glx/glxDisplayList.h"
 
-// Local AVL tree type definitions for AddEdge inline tree access
-struct AVLTreeNode
-{
-    AVLTreeNode* left;
-    AVLTreeNode* right;
-    s8 heavy;
-};
-
-class NetMeshVertex
-{
-public:
-    const glModelPacket* mpPacket;
-    unsigned short mIndex;
-    int mParticleIndex;
-    unsigned char mbIsConstrained;
-};
-
-class NetMeshEdge
-{
-public:
-    const glModelPacket* mpPacket;
-    NetMeshVertex* mpVertex1;
-    NetMeshVertex* mpVertex2;
-};
-
-struct VertexEntry
-{
-    AVLTreeNode node;
-    NetMeshVertex key;
-    int value;
-};
-
-struct EdgeEntry
-{
-    AVLTreeNode node;
-    NetMeshEdge key;
-    int value;
-};
-
-class AVLTreeUntemplated
-{
-public:
-    virtual ~AVLTreeUntemplated();
-    void AddAVLNode(AVLTreeNode**, void*, void*, AVLTreeNode**, unsigned int);
-};
-
-struct VertexTree : public AVLTreeUntemplated
-{
-    char allocator[0x18];
-    VertexEntry* m_Root;
-    void* m_Compare;
-    unsigned int m_NumElements;
-};
-
-struct EdgeTree : public AVLTreeUntemplated
-{
-    char allocator[0x18];
-    EdgeEntry* m_Root;
-    void* m_Compare;
-    unsigned int m_NumElements;
-};
+// Use typedefs from header for convenience
+typedef NetMeshModelLoader::NetMeshVertex NetMeshVertex;
+typedef NetMeshModelLoader::NetMeshEdge NetMeshEdge;
+typedef NetMeshModelLoader::VertexTree VertexTree;
+typedef NetMeshModelLoader::EdgeTree EdgeTree;
+typedef NetMeshModelLoader::VertexEntry VertexEntry;
+typedef NetMeshModelLoader::EdgeEntry EdgeEntry;
 
 static int s_initialEdgeCount = 1;
+static int s_initialVertexCount = 1;
 
 // /**
 //  * Offset/Address/Size: 0x1554 | 0x80132B00 | size: 0x10
@@ -244,6 +193,117 @@ NetMeshModelLoader::~NetMeshModelLoader()
  */
 void NetMeshModelLoader::LoadGeometryFromModel()
 {
+    extern void* nlMalloc(unsigned long, unsigned int, bool);
+
+    m_EdgeList = new (nlMalloc(sizeof(EdgeTree), 8, false)) EdgeTree(0x10, 0x10);
+    m_VertexList = new (nlMalloc(sizeof(VertexTree), 8, false)) VertexTree(0x10, 0x10);
+
+    DrawableModel* pDrawable = (DrawableModel*)WorldManager::s_World->FindDrawableObject(m_NetMeshDrawableObjectID);
+    u16 maxVertex = 0;
+    u16 vertexOffset = 0;
+    glModelPacket* pPacket = NULL;
+    u16 numPackets = (u16)pDrawable->m_pModel->numPackets;
+    s32 packetCount = 0;
+    s32 packetSumIndex = 0;
+
+    m_NumTriStripIndices = packetCount;
+    m_CurrentTriStripIndex = packetCount;
+
+    for (packetSumIndex = 0; packetSumIndex < numPackets; packetSumIndex++)
+    {
+        m_NumTriStripIndices += pDrawable->m_pModel->packets[packetSumIndex].numVertices;
+    }
+
+    m_TriStripIndices = (u16*)nlMalloc((unsigned long)(m_NumTriStripIndices * 2), 8, false);
+    for (s32 i = 0; i < m_NumTriStripIndices; i++)
+    {
+        m_TriStripIndices[i] = 0xFFFF;
+    }
+
+    s32 packetIndex = 0;
+    s32 packetOffset = 0;
+    while (packetIndex < numPackets)
+    {
+        maxVertex = 0;
+        vertexOffset = (u16)m_NumParticles;
+        pPacket = (glModelPacket*)((u8*)pDrawable->m_pModel->packets + packetOffset);
+
+        DisplayList* pList = dlGetStruct(pPacket->indexBuffer);
+        s32 i = 0;
+        s32 triStripOffset = 0;
+
+        while (i < pPacket->numVertices)
+        {
+            u16* ptr;
+            if (((u16*)&pList->indices)[1] != 0)
+            {
+                u16 ns = ((u16*)&pList->indices)[0];
+                s32 stride = (ns - 1) * 2 + 1;
+                s32 offset = stride * i;
+                u8* ptr8 = (u8*)pList->list + offset;
+                ptr = (u16*)ptr8;
+                ptr8 = (u8*)ptr;
+                ptr8 += 4;
+                ptr = (u16*)ptr8;
+            }
+            else
+            {
+                u16 ns = ((u16*)&pList->indices)[0];
+                s32 stride = ns * 2;
+                s32 offset = stride * i;
+                u8* ptr8 = (u8*)pList->list;
+                ptr8 += offset;
+                ptr = (u16*)ptr8;
+                ptr = (u16*)((u8*)ptr + 3);
+            }
+
+            u16 idx = *ptr;
+            if (idx > maxVertex)
+            {
+                maxVertex = idx;
+            }
+
+            *(u16*)((u8*)m_TriStripIndices + triStripOffset) = idx + vertexOffset;
+            i++;
+            triStripOffset += 2;
+            m_CurrentTriStripIndex++;
+        }
+
+        m_NetMesh.SetTexture(pPacket->state.texture[0]);
+
+        u16 maxV = maxVertex;
+        s32 i2 = 0;
+        while (i2 <= maxV)
+        {
+            NetMeshVertex vertex;
+            vertex.mpPacket = pPacket;
+            vertex.mIndex = i2;
+            vertex.mParticleIndex = m_NumParticles;
+
+            VertexTree* vertexList = m_VertexList;
+            AVLTreeNode* existing;
+            vertexList->AddAVLNode(
+                (AVLTreeNode**)&vertexList->m_Root,
+                &vertex,
+                &s_initialVertexCount,
+                &existing,
+                vertexList->m_NumElements);
+
+            if (existing == NULL)
+            {
+                vertexList->m_NumElements++;
+            }
+
+            m_NumParticles++;
+            i2++;
+        }
+
+        ReadEdgesFromGeometryPacket(*pPacket);
+        packetOffset += sizeof(glModelPacket);
+        packetIndex++;
+    }
+
+    CreateNetMeshFromVertexList();
 }
 
 /**
@@ -262,7 +322,7 @@ void NetMeshModelLoader::AddEdge(const glModelPacket& packet, unsigned short idx
 
     // First vertex lookup - find vertex entry for (packet, idx1)
     {
-        VertexEntry* vnode = ((VertexTree*)m_VertexList)->m_Root;
+        VertexEntry* vnode = m_VertexList->m_Root;
         while (vnode != NULL)
         {
             const glModelPacket* nodePacket = vnode->key.mpPacket;
@@ -312,7 +372,7 @@ void NetMeshModelLoader::AddEdge(const glModelPacket& packet, unsigned short idx
 
     // Second vertex lookup - find vertex entry for (packet, idx2)
     {
-        VertexEntry* vnode = ((VertexTree*)m_VertexList)->m_Root;
+        VertexEntry* vnode = m_VertexList->m_Root;
         while (vnode != NULL)
         {
             const glModelPacket* nodePacket = vnode->key.mpPacket;
@@ -376,7 +436,7 @@ void NetMeshModelLoader::AddEdge(const glModelPacket& packet, unsigned short idx
     }
 
     // Insert edge into edge tree
-    EdgeTree* edgeTree = (EdgeTree*)m_EdgeList;
+    EdgeTree* edgeTree = m_EdgeList;
     AVLTreeNode* existing;
     edgeTree->AddAVLNode((AVLTreeNode**)&edgeTree->m_Root, &edge, &s_initialEdgeCount, &existing, edgeTree->m_NumElements);
 
@@ -522,7 +582,7 @@ void NetMeshModelLoader::ProcessEdges(const glModelPacket& packet, int maxVertex
         }
     }
 
-    EdgeTree* edgeTree = (EdgeTree*)m_EdgeList;
+    EdgeTree* edgeTree = m_EdgeList;
     iter = (EdgeIter*)nlMalloc(sizeof(EdgeIter), 8, false);
 
     if (iter != NULL)
@@ -603,4 +663,5 @@ void NetMeshModelLoader::ProcessEdges(const glModelPacket& packet, int maxVertex
  */
 void NetMeshModelLoader::CreateNetMeshFromVertexList()
 {
+    FORCE_DONT_INLINE;
 }

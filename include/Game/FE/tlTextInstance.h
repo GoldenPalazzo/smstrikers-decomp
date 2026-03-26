@@ -50,6 +50,7 @@ public:
     void SetString(const unsigned short* utf16);
     void SetStringId(const char* name);
     const unsigned short* GetString() const;
+    void SetMatrix(nlMatrix4*);
     void Render(eGLView, const nlColour&) const;
 
     /* 0x80 */ unsigned long m_LocStrId;

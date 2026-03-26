@@ -250,40 +250,28 @@ void glplatSendFrame()
 void glx_SendViews()
 {
     GLRenderList* renderList;
-    nlVector4 const_v;
-    nlVector4 local;
-    u32 temp_r5;
-    s32 var_r30;
-    s32 var_r31;
-    u32 temp_r30;
-    u32 temp_r3;
-    u32 temp_r4;
-    bool cVar6;
-    u32* iVar4;
-    double dVar8;
-    GXColor local_c8;
-    u8 uStack_44;
-    u8 uStack_34;
-    u8 uStack_24;
-    double local_48;
-    double local_38;
-    s32 local_40;
-    double local_28;
-    s32 iVar1;
-    s32 local_30;
-    s32 iVar2;
-    s32 local_20;
-    u32 local_c4;
-    GXColor local_c0;
-    u32* uVar5;
-    u32 local_d8;
-    u32 local_d4[1];
-    nlMatrix4 auStack_88;
-    GXFogAdjTable auStack_9c;
+    nlVector4 dofRange;
+    nlVector4 dofRangeCopy;
+    bool isEmpty;
+    bool useFog;
+    PlatTexture* tex;
+    u32 textureHandle;
+    u16 fenceMetricPending;
+    s32 view;
+    u32 loopPerf1;
+    u32 loopPerf0;
+    GXColor fogColour;
+    u32 perf1;
+    u32 perf0;
+    nlMatrix4 projection;
+    GXFogAdjTable fogAdjTable;
+
+    static u32 fogtype[5] = { GX_FOG_PERSP_LIN, GX_FOG_PERSP_EXP, GX_FOG_PERSP_EXP2, GX_FOG_PERSP_REVEXP, GX_FOG_PERSP_REVEXP2 };
 
     glx_SendReset();
+
     renderList = gl_ViewGetRenderList((eGLView)9);
-    if (renderList->IsEmpty())
+    if (!renderList->IsEmpty())
     {
         glx_UpdateWarble();
     }
@@ -298,170 +286,179 @@ void glx_SendViews()
         GXSetGPMetric(glx_perf0, glx_perf1);
     }
 
-    glConstantGet("dof/range", const_v);
-    int iVar7 = 0;
-    local = const_v;
+    dofRange = glConstantGet("dof/range");
+    dofRangeCopy = dofRange;
 
-    do
+    for (view = 0; view < 0x22; view++)
     {
-        if (glViewGetEnable((eGLView)iVar7))
+        if (!glViewGetEnable((eGLView)view))
         {
-            renderList = gl_ViewGetRenderList((eGLView)iVar7);
-            cVar6 = renderList->IsEmpty();
-            if (((cVar6 != false) && (glViewGetFilter((eGLView)iVar7) == 0)) && (iVar7 != 0x19))
+            continue;
+        }
+
+        renderList = gl_ViewGetRenderList((eGLView)view);
+        isEmpty = renderList->IsEmpty();
+        if (isEmpty && (glViewGetFilter((eGLView)view) == 0) && (view != 0x19))
+        {
+            if (view == 0)
             {
-                if (iVar7 == 0)
-                {
-                    glx_ShadowTextureGrab();
-                }
-                goto switchD_801b4d2c_caseD_5;
+                glx_ShadowTextureGrab();
+            }
+            continue;
+        }
+
+        fenceMetricPending = 0;
+        if (glx_bFog)
+        {
+            switch (view)
+            {
+            case 3:
+            case 6:
+            case 7:
+            case 11:
+                useFog = true;
+                break;
+            case 2:
+                useFog = glx_bFogSky;
+                break;
+            default:
+                useFog = false;
+                break;
             }
 
-            if (glx_bFog == false)
+            if (!useFog)
             {
-            LAB_801b4ca4:
-                dVar8 = 0.0;
-                local_c8 = glx_FogColour;
-                GXSetFog(GX_FOG_NONE, 0.0, 0.0, 0.0, 0.0, local_c8);
+                goto no_fog;
             }
-            else
+
             {
-                if (iVar7 < 6)
+                s32 r = (s32)(glx_FogIntensity * glx_FogColour.r);
+                s32 g = (s32)(glx_FogIntensity * glx_FogColour.g);
+                s32 b = (s32)(glx_FogIntensity * glx_FogColour.b);
+
+                fogColour.r = r;
+                fogColour.g = g;
+                fogColour.b = b;
+                fogColour.a = glx_FogColour.a;
+                GXSetFog((GXFogType)fogtype[glx_FogType], glx_FogStart, glx_FogEnd, 0.25f, 130.0f, fogColour);
+
+                if (glx_bFogAdjust)
                 {
-                    if (iVar7 == 3)
-                    {
-                    LAB_801b4b78:
-                        cVar6 = true;
-                    }
-                    else if ((2 < iVar7) || (cVar6 = glx_bFogSky, iVar7 < 2))
-                        goto LAB_801b4b88;
+                    glViewGetProjectionMatrix((eGLView)view, projection);
+                    GXInitFogAdjTable(&fogAdjTable, 0x280, projection.m);
+                    GXSetFogRangeAdj(1, 0x140, &fogAdjTable);
                 }
                 else
-                {
-                    if ((iVar7 == 0xb) || ((iVar7 < 0xb && (iVar7 < 8))))
-                        goto LAB_801b4b78;
-                LAB_801b4b88:
-                    cVar6 = false;
-                }
-                if (cVar6 == false)
-                    goto LAB_801b4ca4;
-
-                // uStack_44 = glx_FogColour >> 0x18;
-                // uStack_34 = glx_FogColour >> 0x10 & 0xff;
-                // uStack_24 = glx_FogColour >> 8 & 0xff;
-                // local_48 = 0x43300000;
-                // local_38 = 0x43300000;
-                // iVar4 = (int)(glx_FogIntensity * (float)((double)CONCAT44(0x43300000, uStack_44) - 0x4330000000000000));
-                // local_40 = (longlong)iVar4;
-                // local_28 = 0x43300000;
-                // iVar1 = (int)(glx_FogIntensity * (float)((double)CONCAT44(0x43300000, uStack_34) - 0x4330000000000000));
-                // local_30 = (longlong)iVar1;
-                // iVar2 = (int)(glx_FogIntensity * (float)((double)CONCAT44(0x43300000, uStack_24) - 0x4330000000000000));
-                // local_20 = (longlong)iVar2;
-                // local_c4 = CONCAT22(CONCAT11((char)iVar4, (char)iVar1), CONCAT11((char)iVar2, (char)glx_FogColour));
-                // local_c0 = local_c4;
-                local_c0.r = 0x0;
-                local_c0.g = 0x0;
-                local_c0.b = 0x0;
-                local_c0.a = 0xff;
-
-                GXSetFog((GXFogType)fogtype[glx_FogType], glx_FogStart, glx_FogEnd, 0.25f, 130.0f, local_c0);
-                if (glx_bFogAdjust == false)
                 {
                     GXSetFogRangeAdj(0, 0, 0);
                 }
-                else
-                {
-                    glViewGetProjectionMatrix((eGLView)iVar7, auStack_88);
-                    GXInitFogAdjTable(&auStack_9c, 0x280, auStack_88.m);
-                    GXSetFogRangeAdj(1, 0x140, &auStack_9c);
-                }
             }
+            goto fog_done;
+        }
 
-            if ((iVar7 == glx_ViewFence) && (gld_ViewName((eGLView)iVar7), glx_Perf != false))
+    no_fog:
+        GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, glx_FogColour);
+
+    fog_done:
+        if (view == glx_ViewFence)
+        {
+            gld_ViewName((eGLView)view);
+            fenceMetricPending = 0;
+            if (glx_Perf)
             {
-                if (glx_PerfSync != false)
+                if (glx_PerfSync)
                 {
                     GXDrawDone();
                 }
                 GXClearGPMetric();
                 GXSetGPMetric(glx_perf0, glx_perf1);
             }
-
-            switch (iVar7)
-            {
-            case 5:
-                break;
-            default:
-                goto switchD_801b4d2c_caseD_6;
-            case 9:
-                glx_ColourGrab();
-                goto switchD_801b4d2c_caseD_6;
-            case 10:
-                renderList = gl_ViewGetRenderList((eGLView)9);
-                cVar6 = renderList->IsEmpty();
-                if (cVar6 == false)
-                {
-                    glx_OffsetGrab();
-                    goto switchD_801b4d2c_caseD_6;
-                }
-                break;
-            case 0xf:
-                renderList = gl_ViewGetRenderList((eGLView)0xe);
-                cVar6 = renderList->IsEmpty();
-                if (cVar6 == false)
-                {
-                    glx_ShadowGrab();
-                    goto switchD_801b4d2c_caseD_6;
-                }
-                break;
-            case 0x11:
-                glx_DOFUpdate((double)local.f.x);
-                glx_DOFGrab();
-            switchD_801b4d2c_caseD_6:
-
-                if (glViewGetDepthClear((eGLView)iVar7) != false)
-                {
-                    glx_ClearZBuffer();
-                }
-                gl_ViewIterate((eGLView)iVar7, glx_SendFrame_cb);
-
-                if (iVar7 == 0)
-                {
-                    glx_ShadowTextureGrab();
-                }
-
-                if (glViewGetFilter((eGLView)iVar7) == (eGLFilter)6)
-                {
-                    cVar6 = glx_GetSharedLock();
-                    if (cVar6 != false)
-                    {
-                        return;
-                    }
-                    uVar5 = (u32*)glGetTexture("target/grab_texture");
-                    iVar4 = (u32*)glx_GetTex((u32)uVar5, false, true);
-                    glGrabFrameBufferToTexture((u32)uVar5, *(u32*)(iVar4 + 4), *(u32*)(iVar4 + 6), 0, 0, 0x280, 0x1c0);
-                }
-            }
         }
-    switchD_801b4d2c_caseD_5:
-        iVar7 = iVar7 + 1;
-        if (0x21 < iVar7)
+
+        switch (view)
         {
-            glx_SendEnd();
-            if (glx_ViewFence < 0)
+        case 5:
+            continue;
+
+        case 0x11:
+            glx_DOFUpdate(dofRangeCopy.f.x);
+            glx_DOFGrab();
+            break;
+
+        case 0xF:
+            renderList = gl_ViewGetRenderList((eGLView)0xE);
+            if (renderList->IsEmpty())
             {
-                if (glx_PerfSync != false)
-                {
-                    GXDrawDone();
-                }
-                GXReadGPMetric(&local_d8, local_d4);
-                total_val0 = total_val0 + local_d8;
-                total_val1 = total_val1 + local_d4[0];
+                continue;
             }
-            return;
+            glx_ShadowGrab();
+            break;
+
+        case 9:
+            glx_ColourGrab();
+            break;
+
+        case 10:
+            renderList = gl_ViewGetRenderList((eGLView)9);
+            if (renderList->IsEmpty())
+            {
+                continue;
+            }
+            glx_OffsetGrab();
+            break;
+
+        default:
+            break;
         }
-    } while (true);
+
+        if (glViewGetDepthClear((eGLView)view))
+        {
+            glx_ClearZBuffer();
+        }
+
+        gl_ViewIterate((eGLView)view, glx_SendFrame_cb);
+
+        if (view == 0)
+        {
+            glx_ShadowTextureGrab();
+        }
+
+        if ((u16)fenceMetricPending != 0)
+        {
+            if (glx_PerfSync)
+            {
+                GXDrawDone();
+            }
+            GXReadGPMetric(&loopPerf0, &loopPerf1);
+            total_val0 += loopPerf0;
+            total_val1 += loopPerf1;
+        }
+
+        if (glViewGetFilter((eGLView)view) == (eGLFilter)6)
+        {
+            if (glx_GetSharedLock())
+            {
+                return;
+            }
+
+            textureHandle = glGetTexture("target/grab_texture");
+            tex = glx_GetTex(textureHandle, false, true);
+            glGrabFrameBufferToTexture(textureHandle, tex->m_Width, tex->m_Height, 0, 0, 0x280, 0x1C0);
+        }
+    }
+
+    glx_SendEnd();
+    if (glx_ViewFence < 0)
+    {
+        if (glx_PerfSync)
+        {
+            GXDrawDone();
+        }
+
+        GXReadGPMetric(&perf0, &perf1);
+        total_val0 += perf0;
+        total_val1 += perf1;
+    }
 }
 
 /**

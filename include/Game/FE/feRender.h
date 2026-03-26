@@ -2,9 +2,9 @@
 #define _FERENDER_H_
 
 #include "NL/gl/glMatrixStack.h"
+#include "NL/nlColour.h"
 
-// void ConvertColour(nlColour&, const nlFloatColour&);
-// void 0x8028D570..0x8028D574 | size: 0x4;
+void ConvertColour(nlColour&, const nlFloatColour&);
 
 class TLImageInstance;
 class TLTextInstance;

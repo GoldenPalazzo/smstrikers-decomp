@@ -266,9 +266,119 @@ float CalcIdealShootingPositionScore(const nlVector3& v3TestPosition, const nlVe
 
 /**
  * Offset/Address/Size: 0x594 | 0x80062EE4 | size: 0x47C
+ * TODO: 97.67% match - f27/f28 callee-saved register cascade from sideline
+ * temp allocation, fabsf subtraction optimization, fcmpu operand order
  */
-float SSearchBestPass::EvaluatePosition(const nlVector3&, const nlVector3&, eFieldDirection, unsigned short)
+float SSearchBestPass::EvaluatePosition(const nlVector3& position, const nlVector3& v3OtherPosition, eFieldDirection eSearchDir, unsigned short aDirection)
 {
+    float fWeightedSum = 0.0f;
+    float fTotalWeight = 0.0f;
+
+    float fOpenLane = m_SSearchOpenLane.EvaluatePosition(position, v3OtherPosition, eSearchDir, aDirection);
+    fWeightedSum += 0.7f * fOpenLane;
+    fTotalWeight += 0.7f;
+
+    float fSidelineDist = fabsf(fabsf(position.f.y) - cField::GetSidelineY(1));
+    float fSidelineNorm = NormalizeVal(fSidelineDist, 1.0f, 5.0f);
+    float fSidelineInv = 1.0f - fSidelineNorm;
+    fWeightedSum += 0.2f * (fSidelineNorm * fSidelineInv);
+    fTotalWeight += 0.2f * fSidelineInv;
+
+    float fInOffensiveZone = InOffensiveZone(position, m_fNetDirection < 0.0f ? (eTeamSide)0 : (eTeamSide)1);
+
+    float fIdealShot = m_SSearchIdealShot.EvaluatePosition(position, v3OtherPosition, eSearchDir, aDirection);
+    fWeightedSum += fInOffensiveZone * (0.15f * fIdealShot);
+    fTotalWeight += 0.15f * fInOffensiveZone;
+
+    nlVector2 v2GoalLine = { 0.0f, 0.0f };
+    v2GoalLine.f.x = cField::GetGoalLineX(-m_fNetDirection);
+
+    float fIdealPositionScore = CalcIdealShootingPositionScore(position, v3OtherPosition, v2GoalLine, m_unk_0x0C);
+    float fIdealPositionWeight = InterpolateRangeClamped(1.0f, 1.5f, 0.0f, 1.0f, 1.0f - fInOffensiveZone);
+    fWeightedSum += 0.2f * (fIdealPositionScore * fIdealPositionWeight);
+    fTotalWeight += 0.2f * fIdealPositionWeight;
+
+    if (m_SSearchOpenLane.m_pPassTarget != NULL)
+    {
+        nlVector3 v3PassTargetVelocity = m_SSearchOpenLane.m_pPassTarget->m_v3Velocity;
+        float fVelY = v3PassTargetVelocity.f.y;
+        float fVelZ = v3PassTargetVelocity.f.z;
+        float fVxSq = v3PassTargetVelocity.f.x * v3PassTargetVelocity.f.x;
+        float fVySq = fVelY * fVelY;
+        float fVzSq = fVelZ * fVelZ;
+        float fPassTargetVelocitySq = fVxSq + fVySq + fVzSq;
+
+        if (fPassTargetVelocitySq >= 12.25f)
+        {
+            float fInvPassTargetVelocity = nlRecipSqrt(fPassTargetVelocitySq, true);
+
+            float fDy = position.f.y - v3OtherPosition.f.y;
+            v3PassTargetVelocity.f.y = fInvPassTargetVelocity * fVelY;
+            v3PassTargetVelocity.f.z = fInvPassTargetVelocity * fVelZ;
+            v3PassTargetVelocity.f.x *= fInvPassTargetVelocity;
+
+            float fDx = position.f.x - v3OtherPosition.f.x;
+            float fDz = position.f.z - v3OtherPosition.f.z;
+            float fDistSq = fDx * fDx + fDy * fDy + fDz * fDz;
+
+            if (fDistSq > 0.2f)
+            {
+                float fInvDist = nlRecipSqrt(fDistSq, true);
+                float fDot = (fInvDist * fDy) * v3PassTargetVelocity.f.y
+                           + (fInvDist * fDx) * v3PassTargetVelocity.f.x
+                           + (fInvDist * fDz) * v3PassTargetVelocity.f.z;
+
+                fWeightedSum += 0.15f * (0.0f >= fDot ? 0.0f : fDot);
+                fTotalWeight += 0.15f;
+            }
+        }
+
+        if (m_SSearchOpenLane.m_pBallOwner != NULL)
+        {
+            float fDy2 = position.f.y - m_SSearchOpenLane.m_pBallOwner->m_v3Position.f.y;
+            float fDx2 = position.f.x - m_SSearchOpenLane.m_pBallOwner->m_v3Position.f.x;
+            float fDistToOwner = nlSqrt(fDx2 * fDx2 + fDy2 * fDy2, true);
+
+            if (m_bIsPerfectPass)
+            {
+                float fPerfectPassDist = NormalizeVal(fDistToOwner, g_pGame->m_pFuzzyTweaks->vFarTeammateConfidenceDistance);
+                fWeightedSum += 0.5f * fPerfectPassDist;
+                fTotalWeight += 0.5f;
+            }
+            else
+            {
+                float fNearPassDist = NormalizeVal(fDistToOwner, g_pGame->m_pFuzzyTweaks->vNearTeammateConfidenceDistance);
+                fWeightedSum += 0.15f * (1.0f - fNearPassDist);
+                fTotalWeight += 0.15f;
+            }
+
+            float fPassSpeed = m_bAllowLeadPass ? m_SSearchOpenLane.m_pBallOwner->m_pTweaks->fPassVolleySpeedMax : m_SSearchOpenLane.m_pBallOwner->m_pTweaks->fPassGroundSpeedMax;
+
+            float fDy3 = m_SSearchOpenLane.m_pBallOwner->m_v3Position.f.y - position.f.y;
+            float fDx3 = m_SSearchOpenLane.m_pBallOwner->m_v3Position.f.x - position.f.x;
+            float fOwnerDistNorm = nlSqrt(fDx3 * fDx3 + fDy3 * fDy3, true) / fPassSpeed;
+
+            float fDy4 = m_SSearchOpenLane.m_pPassTarget->m_v3Position.f.y - position.f.y;
+            float fDx4 = m_SSearchOpenLane.m_pPassTarget->m_v3Position.f.x - position.f.x;
+            float fDistToTarget = nlSqrt(fDx4 * fDx4 + fDy4 * fDy4, true);
+
+            float fNearZero = (float)(fabsf(fOwnerDistNorm - 0.0f) <= 0.0001f);
+            if (fNearZero == 0.0f)
+            {
+                float fLeadPass = NormalizeVal(fDistToTarget / fOwnerDistNorm, 0.0f, m_SSearchOpenLane.m_pPassTarget->m_pTweaks->fJoggingSpeed);
+                fLeadPass *= (float)m_bIsPerfectPass;
+
+                fWeightedSum += fLeadPass != 0.0f ? 0.2f : 0.1f;
+                fTotalWeight += m_bIsPerfectPass ? 0.2f : 0.1f;
+            }
+        }
+    }
+
+    if (fTotalWeight > 0.0f)
+    {
+        return fWeightedSum / fTotalWeight;
+    }
+
     return 0.0f;
 }
 

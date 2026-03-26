@@ -11,7 +11,7 @@ public:
         : m_nItemCount(0)
     {
     }
-    
+
     ~cInventory()
     {
         ListEntry<T*>* meshEntry = m_lItemList.m_Head;
@@ -21,17 +21,16 @@ public:
             meshEntry = meshEntry->next;
         }
 
+        typedef ListContainerBase<T*, NewAdapter<ListEntry<T*> > > ItemListBase;
+        void (ItemListBase::*cb)(ListEntry<T*>*) = &ItemListBase::DeleteEntry;
+        meshEntry = m_lItemList.m_Head;
+        while (meshEntry != NULL)
         {
-            typedef ListContainerBase<T*, NewAdapter<ListEntry<T*> > > ItemListBase;
-            void (ItemListBase::*cb)(ListEntry<T*>*) = &ItemListBase::DeleteEntry;
-            meshEntry = m_lItemList.m_Head;
-            while (meshEntry != NULL)
-            {
-                ListEntry<T*>* next = meshEntry->next;
-                (((ItemListBase*)this)->*cb)(meshEntry);
-                meshEntry = next;
-            }
+            ListEntry<T*>* next = meshEntry->next;
+            (((ItemListBase*)this)->*cb)(meshEntry);
+            meshEntry = next;
         }
+
         m_lItemList.m_Head = NULL;
         m_lItemList.m_Tail = NULL;
 

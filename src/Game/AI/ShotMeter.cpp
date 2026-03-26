@@ -9,6 +9,10 @@
 #include "Game/CharacterTriggers.h"
 
 extern cTeam* g_pCurrentlyUpdatingTeam;
+static const nlVector3 v3Zero = { 0.0f, 0.0f, 0.0f };
+
+static inline void CalcShotAim(cFielder* pFielder, ShotMeter* pMeter);
+static inline void CalcScoreValue(cFielder* pFielder, ShotMeter* pMeter);
 
 /**
  * Offset/Address/Size: 0x6C4 | 0x800627E4 | size: 0x16C
@@ -90,10 +94,96 @@ void ShotMeter::Abort(cFielder* pFielder)
 
 /**
  * Offset/Address/Size: 0x258 | 0x80062378 | size: 0x42C
+ * TODO: 97.73% match - remaining allocator diffs are concentrated in the two
+ * vector-normalization blocks (f30/f28 swap) and nearby fused multiply-add
+ * ordering in the distance/dot-product setup.
  */
 void ShotMeter::CalcOneTimerValue(cFielder* pFielder, bool bWasPerfectPass)
 {
-    FORCE_DONT_INLINE;
+    m_eShotMeterState = SHOT_METER_INACTIVE;
+
+    if (!bWasPerfectPass)
+    {
+        nlVector3 v3BallDirection;
+        float fBallDirectionLengthSq;
+        float a, b, c;
+
+        float fBallDirectionX = g_pBall->m_v3Position.f.x - g_pBall->m_v3PrevPosition.f.x;
+        float fBallDirectionY = g_pBall->m_v3Position.f.y - g_pBall->m_v3PrevPosition.f.y;
+        float fBallDirectionZ = g_pBall->m_v3Position.f.z - g_pBall->m_v3PrevPosition.f.z;
+
+        v3BallDirection.f.x = fBallDirectionX;
+        v3BallDirection.f.y = fBallDirectionY;
+        v3BallDirection.f.z = fBallDirectionZ;
+
+        a = fBallDirectionX * fBallDirectionX;
+        b = fBallDirectionY * fBallDirectionY;
+        c = fBallDirectionZ * fBallDirectionZ;
+        fBallDirectionLengthSq = a + b + c;
+
+        if (nlSqrt(fBallDirectionLengthSq, true) > 0.0001f)
+        {
+            float fBallDirectionInvLength = nlRecipSqrt(fBallDirectionLengthSq, true);
+            v3BallDirection.f.y = fBallDirectionInvLength * fBallDirectionY;
+            v3BallDirection.f.x = fBallDirectionInvLength * v3BallDirection.f.x;
+            v3BallDirection.f.z = fBallDirectionInvLength * fBallDirectionZ;
+        }
+        else
+        {
+            v3BallDirection = v3Zero;
+        }
+
+        nlVector3 v3FielderToNet;
+        float fFielderToNetLengthSq;
+        const nlVector3& v3OffNetLocation = pFielder->GetAIOffNetLocation(NULL);
+
+        float fFielderToNetX = v3OffNetLocation.f.x - pFielder->m_v3Position.f.x;
+        float fFielderToNetY = v3OffNetLocation.f.y - pFielder->m_v3Position.f.y;
+        float fFielderToNetZ = v3OffNetLocation.f.z - pFielder->m_v3Position.f.z;
+
+        v3FielderToNet.f.x = fFielderToNetX;
+        v3FielderToNet.f.y = fFielderToNetY;
+        v3FielderToNet.f.z = fFielderToNetZ;
+
+        a = fFielderToNetX * fFielderToNetX;
+        b = fFielderToNetY * fFielderToNetY;
+        c = fFielderToNetZ * fFielderToNetZ;
+        fFielderToNetLengthSq = a + b + c;
+
+        if (nlSqrt(fFielderToNetLengthSq, true) > 0.0001f)
+        {
+            float fFielderToNetInvLength = nlRecipSqrt(fFielderToNetLengthSq, true);
+            v3FielderToNet.f.y = fFielderToNetInvLength * fFielderToNetY;
+            v3FielderToNet.f.x = fFielderToNetInvLength * v3FielderToNet.f.x;
+            v3FielderToNet.f.z = fFielderToNetInvLength * fFielderToNetZ;
+        }
+        else
+        {
+            v3FielderToNet = v3Zero;
+        }
+
+        const nlVector3& v3OffNetLocation2 = pFielder->GetAIOffNetLocation(NULL);
+        float fDistY = g_pBall->m_v3Position.f.y - v3OffNetLocation2.f.y;
+        float fDistX = g_pBall->m_v3Position.f.x - v3OffNetLocation2.f.x;
+        float fDistZ = g_pBall->m_v3Position.f.z - v3OffNetLocation2.f.z;
+        float fDistance = nlSqrt((fDistX * fDistX) + (fDistY * fDistY) + (fDistZ * fDistZ), true);
+
+        float fDistanceValue = InterpolateRangeClamped(0.0f, 1.0f, 20.0f, 7.5f, fDistance);
+        float fDot = (v3FielderToNet.f.y * v3BallDirection.f.y) + (v3FielderToNet.f.x * v3BallDirection.f.x) + (v3FielderToNet.f.z * v3BallDirection.f.z);
+        float fDirectionValue = InterpolateRangeClamped(0.0f, 1.0f, 1.0f, 0.0f, fDot);
+
+        m_fSpeedValue = nlRandomf(0.2f * g_pGame->m_pGameTweaks->unk2EC, &nlDefaultSeed);
+
+        float fCombinedValue = (fDirectionValue + fDistanceValue) * 0.5f;
+        m_fSpeedValue += InterpolateRangeClamped(0.25f, 0.8f * g_pGame->m_pGameTweaks->unk2EC, 0.0f, 1.0f, fCombinedValue);
+    }
+    else
+    {
+        m_fSpeedValue = 1.0f;
+    }
+
+    CalcScoreValue(pFielder, this);
+    CalcShotAim(pFielder, this);
 }
 
 /**

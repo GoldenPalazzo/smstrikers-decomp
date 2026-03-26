@@ -93,7 +93,7 @@ public:
     static void StartFEStream(const char*, bool, const char*);
     static bool IsInited();
     static bool Initialize();
-    static void ActivateDPL2(bool, bool);
+    static bool ActivateDPL2(bool, bool);
     static void SetupSoundGroups();
     static unsigned long GetWorldSFXTypeFromStr(const char*);
     static unsigned long GetCharSFXTypeFromStr(const char*);

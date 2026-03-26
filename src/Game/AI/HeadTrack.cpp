@@ -22,18 +22,17 @@ cHeadTrack::cHeadTrack()
 
 /**
  * Offset/Address/Size: 0x160 | 0x80056F64 | size: 0x450
+ * TODO: 96.02% match - FP register allocation diffs (f0/f3 swap) in matrix copy and normalize
+ * sections due to -inline deferred vs -inline auto compiler flag difference
  */
 void cHeadTrack::Update(const nlMatrix4& m4HeadMatrix, const nlMatrix4& m4ConstraintMatrix, float fDeltaT, unsigned short aOOIConstraint, int nHeadSpinMax, int nHeadTiltMax, float fSmoothTime)
 {
-    nlMatrix4 m4Constrain;                   // r1+0x54
-    nlMatrix4 m4WorldSpaceToConstraintSpace; // r1+0x14
-    nlVector3 v3OOIConstraintSpace;          // r1+0x8
-    int nHeadSpin;                           // r19
-    int nHeadTilt;                           // r6
-    int nAmountOfDeadZoneBehindHeadtrack;    // r5
-
-    s32 halfTilt;
-    s32 tmpSpin16;
+    nlMatrix4 m4Constrain;
+    nlMatrix4 m4WorldSpaceToConstraintSpace;
+    nlVector3 v3OOIConstraintSpace;
+    int nHeadSpin;
+    int nHeadTilt;
+    int nAmountOfDeadZoneBehindHeadtrack;
 
     if (m_bTrackOOI)
     {
@@ -46,87 +45,83 @@ void cHeadTrack::Update(const nlMatrix4& m4HeadMatrix, const nlMatrix4& m4Constr
         nlInvertRotTransMatrix(m4WorldSpaceToConstraintSpace, m4Constrain);
         nlMultPosVectorMatrix(v3OOIConstraintSpace, m_v3OOI, m4WorldSpaceToConstraintSpace);
 
-        float xx = v3OOIConstraintSpace.f.x * v3OOIConstraintSpace.f.x;
-        float yy = v3OOIConstraintSpace.f.y * v3OOIConstraintSpace.f.y;
-        float zz = v3OOIConstraintSpace.f.z * v3OOIConstraintSpace.f.z;
-
-        float len = nlRecipSqrt(xx + yy + zz, true);
-
-        nlVec3Set(v3OOIConstraintSpace, len * v3OOIConstraintSpace.f.x, len * v3OOIConstraintSpace.f.y, len * v3OOIConstraintSpace.f.z);
-        // v3OOIConstraintSpace.f.z = len * v3OOIConstraintSpace.f.z;
-        // v3OOIConstraintSpace.f.x = len * v3OOIConstraintSpace.f.x;
-        // v3OOIConstraintSpace.f.y = len * v3OOIConstraintSpace.f.y;
-
-        s32 desiredSpin16 = (s32)(10430.378f * nlATan2f(v3OOIConstraintSpace.f.z, v3OOIConstraintSpace.f.x));
-        s32 desiredTilt16 = 0x4000 - (s32)nlACos(-v3OOIConstraintSpace.f.x);
-        int s = desiredSpin16 >> 31;
-        int absSpin16 = ((desiredSpin16 ^ s) - s);
-
-        if ((absSpin16 < (int)(unsigned int)aOOIConstraint) || (m_v3OOI.f.z > 1.5f))
         {
-            int softenStart = (((int)(unsigned int)aOOIConstraint - nHeadSpinMax) * 3) / 4;
+            float x2 = v3OOIConstraintSpace.f.x * v3OOIConstraintSpace.f.x;
+            float y2 = v3OOIConstraintSpace.f.y * v3OOIConstraintSpace.f.y;
+            float z2 = v3OOIConstraintSpace.f.z * v3OOIConstraintSpace.f.z;
+            float invLen = nlRecipSqrt(x2 + y2 + z2, true);
+            float z = invLen * v3OOIConstraintSpace.f.z;
+            float y = invLen * v3OOIConstraintSpace.f.y;
+            float x = invLen * v3OOIConstraintSpace.f.x;
 
-            tmpSpin16 = desiredSpin16;              // var_r31
-            int t2 = tmpSpin16 >> 31;               // temp_r3_2
-            halfTilt = 0.5f * (float)desiredTilt16; // var_r30
+            v3OOIConstraintSpace.f.z = z;
+            v3OOIConstraintSpace.f.x = x;
+            v3OOIConstraintSpace.f.y = y;
+        }
 
-            int absSpin16_b = (tmpSpin16 ^ t2) - t2;
-            if (absSpin16_b >= nHeadSpinMax)
+        nHeadSpin = ((int)(10430.378f * nlATan2f(v3OOIConstraintSpace.f.z, v3OOIConstraintSpace.f.y)) << 16) >> 16;
+        nHeadTilt = ((0x4000 - nlACos(-v3OOIConstraintSpace.f.x)) << 16) >> 16;
+
+        {
+            int sign = nHeadSpin >> 31;
+            int absSpin = (nHeadSpin ^ sign) - sign;
+
+            if ((absSpin < (int)(unsigned int)aOOIConstraint) || (m_v3OOI.f.z > 1.5f))
             {
-                if (tmpSpin16 > 0)
+                nAmountOfDeadZoneBehindHeadtrack = (((int)(unsigned int)aOOIConstraint - nHeadSpinMax) * 3) / 4;
+
+                nHeadSpin = (int)(float)nHeadSpin;
+                nHeadTilt = (int)(0.5f * (float)nHeadTilt);
+
+                sign = nHeadSpin >> 31;
+                absSpin = (nHeadSpin ^ sign) - sign;
+                if ((unsigned int)absSpin >= (unsigned int)nHeadSpinMax)
                 {
-                    if (m_fDesiredHeadSpin < 0.0f)
+                    if (nHeadSpin > 0)
                     {
-                        if (tmpSpin16 > (nHeadSpinMax + softenStart))
+                        if (m_fDesiredHeadSpin < 0.0f)
                         {
-                            tmpSpin16 = -nHeadSpinMax;
+                            if (nHeadSpin > (nHeadSpinMax + nAmountOfDeadZoneBehindHeadtrack))
+                                nHeadSpin = -nHeadSpinMax;
+                            else
+                                nHeadSpin = nHeadSpinMax;
                         }
                         else
-                        {
-                            tmpSpin16 = nHeadSpinMax;
-                        }
+                            nHeadSpin = nHeadSpinMax;
+                    }
+                    else if (m_fDesiredHeadSpin > 0.0f)
+                    {
+                        if (nHeadSpin < -(nHeadSpinMax + nAmountOfDeadZoneBehindHeadtrack))
+                            nHeadSpin = nHeadSpinMax;
+                        else
+                            nHeadSpin = -nHeadSpinMax;
                     }
                     else
-                    {
-                        tmpSpin16 = nHeadSpinMax;
-                    }
-                }
-                else if (m_fDesiredHeadSpin > 0.0f)
-                {
-                    if (tmpSpin16 < -(nHeadSpinMax + softenStart))
-                    {
-                        tmpSpin16 = nHeadSpinMax;
-                    }
-                    else
-                    {
-                        tmpSpin16 = -nHeadSpinMax;
-                    }
-                }
-                else
-                {
-                    tmpSpin16 = -nHeadSpinMax;
+                        nHeadSpin = -nHeadSpinMax;
                 }
             }
-        }
-        else
-        {
-            tmpSpin16 = 0;
-            halfTilt = 0;
-        }
-        if (halfTilt > nHeadTiltMax)
-        {
-            halfTilt = nHeadTiltMax;
+            else
+            {
+                nHeadSpin = 0;
+                nHeadTilt = 0;
+            }
         }
 
-        if (m4HeadMatrix.f.m11 != m4ConstraintMatrix.f.m11)
+        if (nHeadTilt > nHeadTiltMax)
+            nHeadTilt = nHeadTiltMax;
+
+        if (&m4HeadMatrix != &m4ConstraintMatrix)
         {
-            float temp_f27 = m4HeadMatrix.f.m22;
-            float temp_f28 = m4HeadMatrix.f.m21;
-            float temp_f29 = nlATan2f(m4Constrain.f.m21, m4Constrain.f.m21);
-            tmpSpin16 += (10430.378f * temp_f29) - (10430.378f * nlATan2f(temp_f27, temp_f28));
+            float headM22 = m4HeadMatrix.f.m22;
+            float headM21 = m4HeadMatrix.f.m21;
+            float constraintAtan = nlATan2f(m4Constrain.f.m22, m4Constrain.f.m21);
+            float headAtan = nlATan2f(headM22, headM21);
+            unsigned short spinConstraint = (unsigned short)(int)(10430.378f * constraintAtan);
+            unsigned short spinHead = (unsigned short)(int)(10430.378f * headAtan);
+            nHeadSpin += ((spinConstraint - spinHead) << 16) >> 16;
         }
-        m_fDesiredHeadSpin = tmpSpin16;
-        m_fDesiredHeadTilt = halfTilt;
+        m_fDesiredHeadSpin = nHeadSpin;
+        m_fDesiredHeadTilt = nHeadTilt;
     }
     else
     {

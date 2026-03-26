@@ -1,7 +1,10 @@
 #include "Game/SH/SHOptions.h"
+#include "Game/FE/FEAudio.h"
+#include "Game/FE/feInput.h"
 #include "Game/FE/feMusic.h"
 #include "Game/GameInfo.h"
 #include "Game/SH/SHCredits.h"
+#include "Game/SH/SHSaveLoad.h"
 
 extern bool DidContinueWithoutOperation();
 extern u8 mLastSaveLoadSuccess__13SaveLoadScene;
@@ -209,7 +212,200 @@ void OptionsScene::Update(float dt)
  */
 void OptionsScene::UpdateForMain(float)
 {
-    FORCE_DONT_INLINE;
+    if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x100, false, NULL))
+    {
+        FEAudio::PlayAnimAudioEvent("sfx_accept", false);
+        FEAudio::PlayAnimAudioEvent("sfx_screen_forward", false);
+
+        int currentIndex = mMenuItems.mCurrentIndex;
+        int tag = mMenuItems.mMenuItems[currentIndex].mCallbacks[0].mTag;
+
+        if (((u32)((-tag) | tag) >> 31) > 0)
+        {
+            if (mMenuItems.mMenuItems[currentIndex].mDisabled == 0)
+            {
+                TLComponentInstance* type = mMenuItems.mMenuItems[currentIndex].mType;
+
+                if (tag == FREE_FUNCTION)
+                {
+                    mMenuItems.mMenuItems[currentIndex].mCallbacks[0].mFreeFunction(type);
+                }
+                else
+                {
+                    (*mMenuItems.mMenuItems[currentIndex].mCallbacks[0].mFunctor)(type);
+                }
+            }
+        }
+
+        mLastSelectedIndex = mMenuItems.mCurrentIndex;
+    }
+    else if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x200, false, NULL))
+    {
+        nlSingleton<GameSceneManager>::s_pInstance->PopEntireStack();
+
+        if (SaveLoadScene::IsIOEnabled())
+        {
+            unsigned long currentcrc = nlChecksum32(&(nlSingleton<GameInfoManager>::s_pInstance->mUserInfo), 0x113C);
+
+            if (currentcrc != mUserInfoCRC__12OptionsScene)
+            {
+                SaveLoadScene* scene = (SaveLoadScene*)nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_SAVE, SCREEN_NOTHING, false);
+                scene->mNextScene = SCENE_MAIN_MENU;
+            }
+            else
+            {
+                nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_MAIN_MENU, SCREEN_BACK, false);
+            }
+        }
+        else
+        {
+            nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_MAIN_MENU, SCREEN_BACK, false);
+        }
+
+        mLastSelectedIndex = 0;
+        FEAudio::PlayAnimAudioEvent("sfx_back", false);
+    }
+    else if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xD, true, NULL))
+    {
+        int flags = mMenuItems.mFlags;
+        int wrapFlag = flags & 1;
+        int skipDisabledFlag = flags & 2;
+        int currentIndex = mMenuItems.mCurrentIndex;
+        int newIndex = currentIndex - 1;
+
+    loop_up:
+        if (wrapFlag)
+        {
+            if (newIndex < 0)
+            {
+                newIndex = mMenuItems.mNumItemsAdded - 1;
+            }
+        }
+        else
+        {
+            if (newIndex < 0)
+            {
+                return;
+            }
+        }
+
+        if (skipDisabledFlag)
+        {
+            if (mMenuItems.mMenuItems[newIndex].mDisabled)
+            {
+                newIndex--;
+                goto loop_up;
+            }
+        }
+
+        {
+            int tag = mMenuItems.mMenuItems[currentIndex].mCallbacks[2].mTag;
+
+            if (((u32)((-tag) | tag) >> 31) > 0)
+            {
+                TLComponentInstance* type = mMenuItems.mMenuItems[currentIndex].mType;
+
+                if (tag == FREE_FUNCTION)
+                {
+                    mMenuItems.mMenuItems[currentIndex].mCallbacks[2].mFreeFunction(type);
+                }
+                else
+                {
+                    (*mMenuItems.mMenuItems[currentIndex].mCallbacks[2].mFunctor)(type);
+                }
+            }
+        }
+
+        mMenuItems.mCurrentIndex = newIndex;
+
+        {
+            int selIdx = mMenuItems.mCurrentIndex;
+            int tag = mMenuItems.mMenuItems[selIdx].mCallbacks[1].mTag;
+
+            if (((u32)((-tag) | tag) >> 31) > 0)
+            {
+                TLComponentInstance* type = mMenuItems.mMenuItems[selIdx].mType;
+
+                if (tag == FREE_FUNCTION)
+                {
+                    mMenuItems.mMenuItems[selIdx].mCallbacks[1].mFreeFunction(type);
+                }
+                else
+                {
+                    (*mMenuItems.mMenuItems[selIdx].mCallbacks[1].mFunctor)(type);
+                }
+            }
+        }
+    }
+    else if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xE, true, NULL))
+    {
+        int flags = mMenuItems.mFlags;
+        int wrapFlag = flags & 1;
+        int skipDisabledFlag = flags & 2;
+        int currentIndex = mMenuItems.mCurrentIndex;
+        int newIndex = currentIndex + 1;
+
+    loop_down:
+        if (wrapFlag)
+        {
+            newIndex = newIndex % mMenuItems.mNumItemsAdded;
+        }
+        else
+        {
+            if (newIndex >= mMenuItems.mNumItemsAdded)
+            {
+                return;
+            }
+        }
+
+        if (skipDisabledFlag)
+        {
+            if (mMenuItems.mMenuItems[newIndex].mDisabled)
+            {
+                newIndex++;
+                goto loop_down;
+            }
+        }
+
+        {
+            int tag = mMenuItems.mMenuItems[currentIndex].mCallbacks[2].mTag;
+
+            if (((u32)((-tag) | tag) >> 31) > 0)
+            {
+                TLComponentInstance* type = mMenuItems.mMenuItems[currentIndex].mType;
+
+                if (tag == FREE_FUNCTION)
+                {
+                    mMenuItems.mMenuItems[currentIndex].mCallbacks[2].mFreeFunction(type);
+                }
+                else
+                {
+                    (*mMenuItems.mMenuItems[currentIndex].mCallbacks[2].mFunctor)(type);
+                }
+            }
+        }
+
+        mMenuItems.mCurrentIndex = newIndex;
+
+        {
+            int selIdx = mMenuItems.mCurrentIndex;
+            int tag = mMenuItems.mMenuItems[selIdx].mCallbacks[1].mTag;
+
+            if (((u32)((-tag) | tag) >> 31) > 0)
+            {
+                TLComponentInstance* type = mMenuItems.mMenuItems[selIdx].mType;
+
+                if (tag == FREE_FUNCTION)
+                {
+                    mMenuItems.mMenuItems[selIdx].mCallbacks[1].mFreeFunction(type);
+                }
+                else
+                {
+                    (*mMenuItems.mMenuItems[selIdx].mCallbacks[1].mFunctor)(type);
+                }
+            }
+        }
+    }
 }
 
 /**

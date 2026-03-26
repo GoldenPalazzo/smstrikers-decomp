@@ -6,11 +6,11 @@
  */
 const nlVector3* NetMeshModelLoader::NetMeshVertex::GetPosition() const
 {
-    u8* layout = *(u8**)((char*)m_owner + 0x0C);
+    u8* layout = *(u8**)((char*)mpPacket + 0x0C);
     u8 stride = *(u8*)(layout + 0x05);
     s8* base = *(s8**)(layout + 0x00);
 
-    return (const nlVector3*)(base + stride * m_index);
+    return (const nlVector3*)(base + stride * mIndex);
 }
 
 /**
@@ -21,13 +21,13 @@ void NetMeshModelLoader::NetMeshVertex::GetNormal(nlVector3& normal) const
 {
     float f = 0.015625f;
 
-    u8* layout = *(u8**)((u8*)m_owner + 0x0C);
+    u8* layout = *(u8**)((u8*)mpPacket + 0x0C);
     u8 stride = *(u8*)(layout + 0x0B);
     s8* base = *(s8**)(layout + 0x06);
 
-    s8 normalX = (base + stride * m_index)[0];
-    s8 normalY = (base + stride * m_index)[1];
-    s8 normalZ = (base + stride * m_index)[2];
+    s8 normalX = (base + stride * mIndex)[0];
+    s8 normalY = (base + stride * mIndex)[1];
+    s8 normalZ = (base + stride * mIndex)[2];
 
     normal.f.x = (float)normalX * f;
     normal.f.y = (float)normalY * f;
@@ -40,11 +40,11 @@ void NetMeshModelLoader::NetMeshVertex::GetNormal(nlVector3& normal) const
  */
 void NetMeshModelLoader::NetMeshVertex::GetTextureCoord(nlVector2& txtCoord) const
 {
-    u8* layout = *(u8**)((u8*)m_owner + 0x0C);
+    u8* layout = *(u8**)((u8*)mpPacket + 0x0C);
     u8 stride = *(u8*)(layout + 0x17);
     s8* base = *(s8**)(layout + 0x12);
 
-    s16* offset = (s16*)(base + stride * m_index);
+    s16* offset = (s16*)(base + stride * mIndex);
 
     s16 texCoordX = offset[0];
     s16 texCoordY = offset[1];

@@ -17,7 +17,7 @@
 cTeam* g_pCurrentlyUpdatingTeam;
 extern cBall* g_pBall;
 extern FakeBallWorld* g_pFakeBallWorld;
-f32 mfGoalieStepDist;
+f32 Goalie::mfGoalieStepDist;
 f32 mfGoalieStrafeDist;
 f32 mfGoalieRunDist;
 f32 mfGoalieUrgentDist;
@@ -200,9 +200,176 @@ void Goalie::StrafeSynchronizedSpeedCallback(unsigned int nParam, cPN_SAnimContr
 
 /**
  * Offset/Address/Size: 0x30E0 | 0x8005161C | size: 0x458
+ * TODO: 99.86% match - remaining diffs are local static/literal-pool label IDs.
  */
-void Goalie::ActionMove(float)
+void Goalie::ActionMove(float deltaTime)
 {
+    float dt = deltaTime;
+
+    if (mnOffplayPending != GOALIE_OFFPLAY_NONE)
+    {
+        static FilteredRandomRange randgenDejected;
+        int animID = -1;
+
+        switch (mnOffplayPending)
+        {
+        case GOALIE_OFFPLAY_NONE:
+        case GOALIE_OFFPLAY_GOAL_FOR:
+            break;
+
+        case GOALIE_OFFPLAY_GOAL_AGAINST:
+            animID = gOffplayDejected[randgenDejected.genrand(5)];
+            break;
+
+        case GOALIE_OFFPLAY_ENDGAME_WIN:
+            break;
+
+        case GOALIE_OFFPLAY_ENDGAME_LOSE:
+            animID = gOffplayDejected[randgenDejected.genrand(5)];
+            break;
+
+        case GOALIE_OFFPLAY_HALFTIME:
+        case GOALIE_OFFPLAY_PENALTY:
+            break;
+
+        default:
+            break;
+        }
+
+        if (animID >= 0)
+        {
+            mbDoHeadTrack = false;
+            SetGoalieAction(GOALIEACTION_OFFPLAY, 0);
+            SetAnimState(animID, true, 0.2f, false, false);
+            InitMovementFromAnim(0, v3Zero, 1.0f, false);
+            return;
+        }
+    }
+
+    if (g_pBall->m_pOwner != this)
+    {
+        if (GetGlobalPad() != NULL)
+        {
+            SwapController();
+        }
+    }
+
+    bool isPassThreat = IsPassThreat();
+
+    nlVector3 desiredDir;
+    nlVector3 targetPos;
+    nlVector3 desiredOffset;
+    u16 desiredFacing;
+
+    if (isPassThreat)
+    {
+        if (CanInterceptPass())
+        {
+            InitActionPassIntercept();
+            return;
+        }
+
+        cFielder* pPassTarget = (cFielder*)g_pBall->GetPassTargetFielder();
+        targetPos = g_pBall->m_v3PassIntercept;
+        FindDesiredGoaliePosition(mv3TargetPosition, desiredDir, desiredOffset, desiredFacing, &targetPos);
+
+        if (pPassTarget->m_eFielderDesireState == FIELDERDESIRE_ONETIMER)
+        {
+            float crouchDuration = GoalieSave::mfCrouchDuration;
+            if (g_pBall->m_tPassTargetTimer.GetSeconds() < crouchDuration
+                && IsCloseToPlane(mv3TargetPosition, m_v3Position, 1.5f))
+            {
+                InitActionPreCrouch(GOALIECROUCH_PASS);
+                return;
+            }
+
+            mUrgency = URGENCY_HIGH;
+        }
+
+        mbDoIntercept = true;
+    }
+    else
+    {
+        mbDoIntercept = false;
+        FindDesiredGoaliePosition(mv3TargetPosition, desiredDir, desiredOffset, desiredFacing, NULL);
+        targetPos = g_pBall->m_v3Position;
+    }
+
+    mv3NavTarget = mv3TargetPosition;
+    m_aDesiredFacingDirection = desiredFacing;
+
+    DoNavigation(dt, 0.2f + mfGoalieStepDist, NAVI_FACE_BALL);
+
+    if (CheckForSTSAttack())
+    {
+        return;
+    }
+
+    if (CheckForLooseBallShotInProgress())
+    {
+        return;
+    }
+
+    if (IsInsideGoalieBox(g_pBall->m_v3Position, 1.0f, 1.0f))
+    {
+        if (mUrgency == URGENCY_LOW)
+        {
+            mUrgency = URGENCY_MED;
+        }
+    }
+    else if (mUrgency == URGENCY_MED)
+    {
+        mUrgency = URGENCY_LOW;
+    }
+
+    if (IsLooseBallClose(SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide)->fLooseBallChaseDistance))
+    {
+        if (!isPassThreat)
+        {
+            InitActionLooseBallSetup();
+        }
+        return;
+    }
+
+    if (IsOpponentBallCarrierInRange())
+    {
+        if (IsWithinPounceRange())
+        {
+            InitActionPursueBallCarrier();
+            InitActionPursueBallPounce();
+            return;
+        }
+
+        cFielder* pOwnerFielder = g_pBall->GetOwnerFielder();
+
+        bool shouldPreCrouch = false;
+        s32 shotMeterState = *(s32*)pOwnerFielder->m_pShotMeter;
+        if (shotMeterState == 1 || shotMeterState == 3 || shotMeterState == 4)
+        {
+            shouldPreCrouch = true;
+        }
+
+        if (shouldPreCrouch)
+        {
+            if (IsCloseToPlane(mv3TargetPosition, m_v3Position, 1.2f))
+            {
+                InitActionPreCrouch(GOALIECROUCH_SHOT);
+            }
+            else
+            {
+                mUrgency = URGENCY_HIGH;
+            }
+            return;
+        }
+
+        InitActionPursueBallCarrier();
+        return;
+    }
+
+    if (IsTeammateHoardingBall())
+    {
+        InitActionGrabBall();
+    }
 }
 
 inline s16 ClampMin(const s16 diff, const s16 min)
@@ -1121,9 +1288,117 @@ void Goalie::ActionSTSAttackSetup(float deltaTime)
 
 /**
  * Offset/Address/Size: 0x2B8 | 0x8004E7F4 | size: 0x414
+ * TODO: 99.59% match - remaining diffs: 0.306f compare/subtract f0/f2 swap,
+ *   GetJointPosition copy/load x/y order in both foot-distance checks,
+ *   fabs register choice (f29 vs f30) before goal-line push test
  */
-void Goalie::ActionSTSAttack(float)
+void Goalie::ActionSTSAttack(float deltaTime)
 {
+    float animTime = m_pCurrentAnimController->m_fTime;
+
+    if (IsOpponentInSTS())
+    {
+        if (animTime < mpLooseBallInfo->mfPickupTime)
+        {
+            u16 actualFacing = m_aActualFacingDirection;
+            GetLocalPoint(mv3LocalContactPosition, mpShooter->m_v3Position, m_v3Position, actualFacing);
+
+            if (animTime > 0.1f)
+            {
+                float t = (animTime - 0.1f) / (mpLooseBallInfo->mfPickupTime - 0.1f);
+                float angle = nlATan2f(mv3LocalContactPosition.f.y, mv3LocalContactPosition.f.x);
+                u16 aNewAng = (u16)(actualFacing + ((s32)(1024.0f * (t * (t * ((-2.0f * t) + 3.0f)))) * (s16)(u16)(s32)(10430.378f * angle)) / 1024);
+
+                SetFacingDirection(aNewAng);
+                m_aDesiredFacingDirection = aNewAng;
+            }
+
+            if (animTime > 0.306f)
+            {
+                float stepScale = deltaTime / (mpLooseBallInfo->mfAnimDuration * (mpLooseBallInfo->mfPickupTime - 0.306f));
+                nlVector3 movement = { 0.0f, 0.0f, 0.0f };
+
+                movement.f.x = mfTargetDist;
+                RotateVectorZAxis(movement, movement, actualFacing);
+
+                float newX = (stepScale * movement.f.x) + m_v3Position.f.x;
+                float newZ = (stepScale * movement.f.z) + m_v3Position.f.z;
+                float newY = (stepScale * movement.f.y) + m_v3Position.f.y;
+                movement.f.x = newX;
+                movement.f.y = newY;
+                movement.f.z = newZ;
+                SetPosition(movement);
+            }
+        }
+
+        if (animTime > 0.306f)
+        {
+            nlVector3 rightFootPos = GetJointPosition(m_nRightFootJointIndex);
+            float dy = rightFootPos.f.y - mpShooter->m_v3Position.f.y;
+            float dx = rightFootPos.f.x - mpShooter->m_v3Position.f.x;
+
+            if (((dy * dy) + (dx * dx)) < 1.0f)
+            {
+                WhackSTSPlayer(mpShooter);
+            }
+        }
+    }
+    else
+    {
+        if (animTime <= 0.1f)
+        {
+            InitActionMove(true);
+            return;
+        }
+    }
+
+    if (animTime > 0.95f)
+    {
+        InitActionMove(true);
+        return;
+    }
+
+    if ((mpShooter->m_eAnimID == 0x73) && (animTime < 0.45f))
+    {
+        cFielder* pShooter = mpShooter;
+        nlVector3 rightFootPos = GetJointPosition(m_nRightFootJointIndex);
+        float dy = rightFootPos.f.y - pShooter->m_v3Position.f.y;
+        float dx = rightFootPos.f.x - pShooter->m_v3Position.f.x;
+        float pushDist = 1.0f - nlSqrt((dy * dy) + (dx * dx), true);
+
+        if (pushDist > 0.0f)
+        {
+            nlVector3 pushVec = { 0.0f, 0.0f, 0.0f };
+            pushVec.f.x = pushDist;
+
+            RotateVectorZAxis(pushVec, pushVec, m_aActualFacingDirection);
+
+            float radius;
+            mpShooter->m_pPhysicsCharacter->GetRadius(&radius);
+            radius += 0.2f;
+
+            if ((float)fabs(pShooter->m_v3Position.f.x) > (cField::GetGoalLineX(1U) - radius))
+            {
+                float posX = m_v3Position.f.x - pushVec.f.x;
+                float posZ = m_v3Position.f.z - pushVec.f.z;
+                float posY = m_v3Position.f.y - pushVec.f.y;
+                pushVec.f.x = posX;
+                pushVec.f.y = posY;
+                pushVec.f.z = posZ;
+                SetPosition(pushVec);
+            }
+            else
+            {
+                float posX = pushVec.f.x + pShooter->m_v3Position.f.x;
+                float posZ = pushVec.f.z + pShooter->m_v3Position.f.z;
+                float posY = pushVec.f.y + pShooter->m_v3Position.f.y;
+                pushVec.f.x = posX;
+                pushVec.f.y = posY;
+                pushVec.f.z = posZ;
+                mpShooter->SetPosition(pushVec);
+            }
+        }
+    }
 }
 
 /**

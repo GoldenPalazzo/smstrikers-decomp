@@ -47,6 +47,9 @@ AudioSettings::AudioSettings()
 
 /**
  * Offset/Address/Size: 0xBB0 | 0x801902BC | size: 0x438
+ * TODO: 98.37% match - r29/r30 register-allocation swap in the "undefined"
+ * BasicString data construction/destruction path (data→r30/str→r29 vs
+ * target data→r29/str→r30); extra mr instruction and copy-ctor reload diff.
  */
 void AudioSettings::InitializeDefaults()
 {
@@ -57,129 +60,55 @@ void AudioSettings::InitializeDefaults()
     SFXVolume = GetConfigInt(cfg, "SFX Volume", 0xA);
     VoiceVolume = GetConfigInt(cfg, "Voice Volume", 0xA);
 
-    // temp_r3_4 = nlMalloc__FUlUib(0x10, 8, 1);
-    // if (temp_r3_4 != NULL)
-    // {
-    //     temp_r3_4->unk0 = NULL;
-    //     var_r30 = @1371;
-    //     var_r4 = @1371;
-    //     temp_r3_4->unk4 = 0;
-    //     temp_r3_4->unk8 = 0;
-    // loop_36:
-    //     temp_r0_4 = *var_r4;
-    //     var_r4 += 1;
-    //     if (temp_r0_4 != 0)
-    //     {
-    //         temp_r3_4->unk4 = temp_r3_4->unk4 + 1;
-    //         goto loop_36;
-    //     }
-    //     temp_r3_4->unk4 = temp_r3_4->unk4 + 1;
-    //     temp_r3_4->unk0 = nlMalloc__FUlUib(temp_r3_4->unk4 + 1, 8, 1);
-    //     var_r4_2 = 0;
-    //     temp_r3_4->unk8 = temp_r3_4->unk4;
-    // loop_39:
-    //     if (var_r4_2 < temp_r3_4->unk4)
-    //     {
-    //         temp_r0_5 = *var_r30;
-    //         var_r30 += 1;
-    //         *(temp_r3_4->unk0 + var_r4_2) = temp_r0_5;
-    //         var_r4_2 += 1;
-    //         goto loop_39;
-    //     }
-    //     temp_r3_4->unkC = 1;
-    // }
-    // spC = temp_r3_4;
-    // Get < 45BasicString < c, Q26Detail19TempStringAllocator >> __6ConfigFPCc45BasicString<c, Q26Detail19TempStringAllocator>(&sp8, &sp14.unk0, "Mode");
-    // if (sp8 != NULL)
-    // {
-    //     (sp8)->unkC = (sp8)->unkC + 1;
-    //     var_r0 = sp8;
-    // }
-    // else
-    // {
-    //     var_r0 = NULL;
-    // }
-    // sp10 = var_r0;
-    // if (sp8 != NULL)
-    // {
-    //     temp_r0_6 = (sp8)->unkC - 1;
-    //     (sp8)->unkC = temp_r0_6;
-    //     if (temp_r0_6 == 0)
-    //     {
-    //         temp_cr0_eq = sp8 == NULL;
-    //         if (temp_cr0_eq == 0)
-    //         {
-    //             if (temp_cr0_eq == 0)
-    //             {
-    //                 __dla__FPv((sp8)->unk0);
-    //             }
-    //             if (sp8 != NULL)
-    //             {
-    //                 nlFree__FPv(sp8);
-    //             }
-    //         }
-    //     }
-    // }
-    // if (spC != NULL)
-    // {
-    //     temp_r0_7 = spC->unkC - 1;
-    //     spC->unkC = temp_r0_7;
-    //     if (temp_r0_7 == 0)
-    //     {
-    //         temp_cr0_eq_2 = spC == NULL;
-    //         if (temp_cr0_eq_2 == 0)
-    //         {
-    //             if (temp_cr0_eq_2 == 0)
-    //             {
-    //                 __dla__FPv(spC->unk0);
-    //             }
-    //             if (spC != NULL)
-    //             {
-    //                 nlFree__FPv(spC);
-    //             }
-    //         }
-    //     }
-    // }
+    BasicStringInternal* data = (BasicStringInternal*)nlMalloc(0x10, 8, true);
+    if (data != 0)
+    {
+        const char* str = "undefined";
+        const char* p = str;
+        data->mData = 0;
+        data->mSize = 0;
+        data->mCapacity = 0;
 
-    // if (__eq<c, Q26Detail19TempStringAllocator> __FRC45BasicString<c, Q26Detail19TempStringAllocator> PCc(&sp10, "STEREO") != 0)
-    // {
-    //     this->unkC = 0;
-    // }
-    // else if (__eq<c, Q26Detail19TempStringAllocator> __FRC45BasicString<c, Q26Detail19TempStringAllocator> PCc(&sp10, "MONO") != 0)
-    // {
-    //     this->unkC = 1;
-    // }
-    // else if (__eq<c, Q26Detail19TempStringAllocator> __FRC45BasicString<c, Q26Detail19TempStringAllocator> PCc(&sp10, "DOLBY") != 0)
-    // {
-    //     this->unkC = 2;
-    // }
-    // else
-    // {
-    //     this->unkC = OSGetSoundMode() == 0;
-    // }
+        while ((signed char)*p++ != 0)
+        {
+            data->mSize = data->mSize + 1;
+        }
 
-    // if (sp10 != NULL)
-    // {
-    //     temp_r0_8 = sp10->unkC - 1;
-    //     sp10->unkC = temp_r0_8;
-    //     if (temp_r0_8 == 0)
-    //     {
-    //         temp_cr0_eq_3 = sp10 == NULL;
-    //         if (temp_cr0_eq_3 == 0)
-    //         {
-    //             if (temp_cr0_eq_3 == 0)
-    //             {
-    //                 __dla__FPv(sp10->unk0);
-    //             }
-    //             if (sp10 != NULL)
-    //             {
-    //                 nlFree__FPv(sp10);
-    //             }
-    //         }
-    //     }
-    // }
+        data->mSize = data->mSize + 1;
+        data->mData = (char*)nlMalloc(data->mSize + 1, 8, true);
 
-    FORCE_DONT_INLINE;
+        s32 i = 0;
+        data->mCapacity = data->mSize;
+        while (i < data->mSize)
+        {
+            data->mData[i] = *str;
+            str++;
+            i++;
+        }
+
+        data->mRefCount = 1;
+    }
+
+    BasicString<char, Detail::TempStringAllocator> mode(
+        cfg.Get<BasicString<char, Detail::TempStringAllocator> >(
+            "Mode", BasicString<char, Detail::TempStringAllocator>(data)));
+
+    if (mode == "STEREO")
+    {
+        Mode = STEREO;
+    }
+    else if (mode == "MONO")
+    {
+        Mode = MONO;
+    }
+    else if (mode == "DOLBY")
+    {
+        Mode = DOLBY;
+    }
+    else
+    {
+        Mode = OSGetSoundMode() == 0 ? MONO : STEREO;
+    }
 }
 
 /**

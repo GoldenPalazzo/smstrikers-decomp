@@ -79,36 +79,46 @@ public:
 };
 
 extern unsigned long cupTrophyHash;
+char trophyFileName[0xFF];
 static const char* idleFun = "Idle";
 static bool loopPresentation;
 
-// /**
-//  * Offset/Address/Size: 0x60 | 0x80127308 | size: 0x8
-//  */
-// void LexicalCast<const char*, const char*>(const char* const&)
-// {
-// }
+enum Type
+{
+    _BOOL = 0,
+    _INT = 1,
+    _FLOAT = 2,
+    _STRING = 3,
+};
 
-// /**
-//  * Offset/Address/Size: 0x48 | 0x801272F0 | size: 0x18
-//  */
-// void LexicalCast<const char*, bool>(const bool&)
-// {
-// }
+union Value
+{
+    const char* s;
+    int i;
+    bool b;
+    float f;
+};
 
-// /**
-//  * Offset/Address/Size: 0x24 | 0x801272CC | size: 0x24
-//  */
-// void LexicalCast<const char*, int>(const int&)
-// {
-// }
+struct TagValuePair
+{
+    const char* tag;
+    Type type;
+    Value value;
+};
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x801272A8 | size: 0x24
-//  */
-// void LexicalCast<const char*, float>(const float&)
-// {
-// }
+class Config
+{
+public:
+    static Config& Global();
+    bool Exists(const char*) const;
+    TagValuePair& FindTvp(const char*);
+    void Set(const char*, const char*);
+};
+
+template <typename To, typename From>
+To LexicalCast(const From&);
+
+int nlSNPrintf(char*, unsigned long, const char*, ...);
 
 // /**
 //  * Offset/Address/Size: 0x0 | 0x801272A0 | size: 0x8
@@ -197,9 +207,71 @@ void ReadTrophyModel(void* data, unsigned long size, void* userData)
 
 /**
  * Offset/Address/Size: 0x1848 | 0x8012602C | size: 0x460
+ * TODO: 67.90% match - -inline deferred codegen diff: target has destructor flag pattern
+ * (3 zero-inits + flag-checked cleanup), inline dtor after bl __as__ vs deferred cleanup,
+ * extra mr r31,r3 after each LexicalCast (cupName in saved register vs target r3 pass-through)
  */
 void Presentation::LoadTrophyModel()
 {
+    extern bool IsPossibleCupMatch__15GameInfoManagerCFv(const GameInfoManager*);
+    extern int GetTrophyTypeByCurrentMode__15GameInfoManagerCFv(const GameInfoManager*);
+    extern const char* GetThrophyModelName__F11eTrophyType(int);
+
+    cupTrophyHash = 0;
+
+    bool hasCupOverride = Config::Global().Exists("gimme_cup_trophy");
+    if (!hasCupOverride)
+    {
+        if (!IsPossibleCupMatch__15GameInfoManagerCFv(nlSingleton<GameInfoManager>::s_pInstance))
+        {
+            return;
+        }
+    }
+
+    cupTrophyHash = 1;
+
+    BasicString<char, Detail::TempStringAllocator> trophyName;
+    const char* cupName = NULL;
+    if (hasCupOverride)
+    {
+        BasicString<char, Detail::TempStringAllocator> prefix("Gameplay/");
+        Config& cfg = Config::Global();
+        TagValuePair& tvp = cfg.FindTvp("gimme_cup_trophy");
+
+        if (tvp.tag == NULL)
+        {
+            cfg.Set("gimme_cup_trophy", "FlowerCup");
+            cupName = "FlowerCup";
+        }
+        else if (tvp.type == _BOOL)
+        {
+            cupName = LexicalCast<const char*, bool>(tvp.value.b);
+        }
+        else if (tvp.type == _INT)
+        {
+            cupName = LexicalCast<const char*, int>(tvp.value.i);
+        }
+        else if (tvp.type == _FLOAT)
+        {
+            cupName = LexicalCast<const char*, float>(tvp.value.f);
+        }
+        else if (tvp.type == _STRING)
+        {
+            cupName = LexicalCast<const char*, const char*>(tvp.value.s);
+        }
+
+        trophyName = prefix.Append(cupName);
+    }
+    else
+    {
+        trophyName = BasicString<char, Detail::TempStringAllocator>(
+            GetThrophyModelName__F11eTrophyType(
+                GetTrophyTypeByCurrentMode__15GameInfoManagerCFv(
+                    nlSingleton<GameInfoManager>::s_pInstance)));
+    }
+
+    nlSNPrintf(trophyFileName, 0xFF, "%s.glg", trophyName.c_str());
+    glBeginLoadModel(trophyFileName, ReadTrophyModel, NULL);
 }
 
 /**

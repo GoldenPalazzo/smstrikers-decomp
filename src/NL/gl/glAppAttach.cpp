@@ -62,9 +62,186 @@ const char* view_names[0x22] = {
 
 /**
  * Offset/Address/Size: 0x0 | 0x80191948 | size: 0x41C
+ * TODO: 73.48% match - remaining diffs are saved-register allocation/order and
+ * rlwinm-vs-andi texconfig bitmask instruction form in several branches.
  */
-void glplatAttachPacket(eGLView, unsigned long, const glModelPacket*)
+/**
+ * Offset/Address/Size: 0x0 | 0x80191948 | size: 0x41C
+ * TODO: 87.0% match - r29/r31 register swap (pFinal/newLayer). Decomp.me MWCC assigns
+ * pPacket pointer to r31, but target has layer in r31. Causes cascading register diffs
+ * and structural differences (merged p/pFinal vs separate r28/r0 intermediate).
+ */
+void glplatAttachPacket(eGLView view, unsigned long layer, const glModelPacket* pPacket)
 {
+    extern void gl_ViewAttachPacket(eGLView, unsigned long, const glModelPacket*);
+    extern void* Instance__14WorldDarkeningFv();
+
+    eGLView newView = view;
+    unsigned long newLayer = layer;
+    glModelPacket* pFinal = (glModelPacket*)pPacket;
+    s32 desiredMode;
+    glModelPacket* p;
+
+    if ((s32)newView >= 0x13)
+    {
+        if (newLayer >= 7)
+            newLayer = 6;
+        gl_ViewAttachPacket(newView, newLayer, pFinal);
+        return;
+    }
+
+    if (glUserHasType((eGLUserData)5, pFinal))
+    {
+        switch ((s32)glGetRasterState(pFinal->state.raster, (eGLState)5))
+        {
+        case 0:
+            desiredMode = 1;
+            break;
+        case 2:
+            desiredMode = 3;
+            break;
+        default:
+            desiredMode = 0;
+            break;
+        }
+
+        if (desiredMode != 0)
+        {
+            p = glModelPacketDup(pFinal, true);
+            glSetRasterState(p->state.raster, (eGLState)5, desiredMode);
+            pFinal = p;
+        }
+
+        if ((pFinal->state.texconfig == 0x39) || (pFinal->state.texconfig == 0x31))
+        {
+            p = glModelPacketDup(pFinal, true);
+            p->state.texconfig &= ~0x18;
+            if (glUserHasType((eGLUserData)6, p))
+            {
+                glUserDetach((eGLUserData)6, p);
+            }
+            pFinal = p;
+        }
+    }
+
+    if (pFinal->state.texconfig == 0x33)
+    {
+        glModelPacket* p0 = glModelPacketDup(pFinal, true);
+        pFinal = glModelPacketDup(pFinal, true);
+
+        p0->state.texconfig &= ~0x10;
+        glUserDetach((eGLUserData)3, p0);
+
+        {
+            unsigned long l = newLayer;
+            if (l >= 7)
+                l = 6;
+            gl_ViewAttachPacket(newView, l, p0);
+        }
+
+        if (glUserHasType((eGLUserData)1, pFinal))
+        {
+            glUserDetach((eGLUserData)1, pFinal);
+        }
+
+        pFinal->state.texconfig &= ~0x02;
+        pFinal->state.texconfig &= ~0x20;
+        pFinal->state.texture[0] = (u32)ResolvedBlackTexture;
+        glSetRasterState(pFinal->state.raster, (eGLState)5, 2);
+
+        newLayer++;
+    }
+
+    if ((pFinal->state.texconfig == 0x17) || (pFinal->state.texconfig == 0x37))
+    {
+        glModelPacket* p0 = glModelPacketDup(pFinal, true);
+        pFinal = glModelPacketDup(pFinal, true);
+
+        if (glUserHasType((eGLUserData)1, p0))
+        {
+            glUserDetach((eGLUserData)1, p0);
+        }
+
+        p0->state.texconfig = 0x11;
+        p0->state.texture[0] = (u32)ResolvedBlackTexture;
+        glSetRasterState(p0->state.raster, (eGLState)5, 2);
+
+        pFinal->state.texconfig &= ~0x10;
+        glUserDetach((eGLUserData)3, pFinal);
+
+        {
+            unsigned long l = newLayer;
+            if (l >= 7)
+                l = 6;
+            gl_ViewAttachPacket(newView, l, pFinal);
+        }
+
+        pFinal = p0;
+        newLayer++;
+    }
+
+    if ((s32)newView < 8)
+    {
+        if (((s32)newView == 3) || ((s32)newView >= 6))
+        {
+            if (glGetRasterState(pFinal->state.raster, (eGLState)5) != 0)
+            {
+                if (*(u8*)((u8*)Instance__14WorldDarkeningFv() + 0xC) != 0)
+                {
+                    newView = (eGLView)7;
+                    newLayer++;
+                }
+                else
+                {
+                    newView = (eGLView)11;
+                    newLayer += 2;
+                }
+            }
+        }
+    }
+    else if ((s32)newView == 0xB)
+    {
+        if (glGetRasterState(pFinal->state.raster, (eGLState)5) != 0)
+        {
+            newLayer++;
+        }
+    }
+
+    if (glUserHasType((eGLUserData)6, pFinal))
+    {
+        p = glModelPacketDup(pFinal, true);
+        p->state.texture[4] = (u32)ResolvedBlackTexture;
+        p->state.texture[3] = (u32)ResolvedBlackTexture;
+        glUserDetach((eGLUserData)6, p);
+        glUserAttach(glapp_NoRasterizedAlphaUserData, p, false);
+
+        {
+            unsigned long l = newLayer;
+            if (l >= 7)
+                l = 6;
+            gl_ViewAttachPacket(newView, l, p);
+        }
+
+        p = glModelPacketDup(pFinal, true);
+        p->state.texture[0] = (u32)ResolvedBlackTexture;
+        glSetRasterState(p->state.raster, (eGLState)5, 3);
+        glUserDetach((eGLUserData)1, p);
+
+        if (!glUserHasType((eGLUserData)15, p))
+        {
+            glUserAttach(glapp_NoFogUserData, p, false);
+        }
+
+        pFinal = p;
+        newLayer++;
+    }
+
+    {
+        unsigned long l = newLayer;
+        if (l >= 7)
+            l = 6;
+        gl_ViewAttachPacket(newView, l, pFinal);
+    }
 }
 
 inline glModelStream* getDetail(glModelStream* start, const glModelStream* end)

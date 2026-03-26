@@ -312,10 +312,138 @@ void FakeBallWorld::GetPredictedPosAtDistance(float, nlVector3&, nlVector3&)
 
 /**
  * Offset/Address/Size: 0xDB0 | 0x8013819C | size: 0x3FC
+ * TODO: 87.03% match - remaining diffs are MWCC register allocation drift and
+ *       speed-squared instruction shape (fmadds vs fmuls/fadds) in the opening block.
  */
-float FakeBallWorld::GetPredictedHeightLimitTime(float, float, nlVector3&, nlVector3&, bool)
+float FakeBallWorld::GetPredictedHeightLimitTime(float fHeightLimit, float fTime, nlVector3& v3ContactPoint, nlVector3& v3ContactVelocity, bool bRequireDownward)
 {
-    return 0.0f;
+    extern nlVector3 v3Zero;
+
+    cBall* pBall = mpPredictWorld->mpBall;
+
+    float speedSq = pBall->m_v3Velocity.f.x * pBall->m_v3Velocity.f.x;
+    speedSq += pBall->m_v3Velocity.f.y * pBall->m_v3Velocity.f.y;
+    speedSq += pBall->m_v3Velocity.f.z * pBall->m_v3Velocity.f.z;
+
+    if (speedSq < 0.0001f)
+    {
+        v3ContactPoint = pBall->m_v3Position;
+        v3ContactVelocity = v3Zero;
+        return fTime;
+    }
+
+    bool hasPredictedPos = GetPredictedBallPosition(fTime, v3ContactPoint, v3ContactVelocity);
+    if (v3ContactPoint.f.z <= fHeightLimit)
+    {
+        if (bRequireDownward == false || v3ContactVelocity.f.z <= 0.0f)
+        {
+            return fTime;
+        }
+    }
+
+    if (hasPredictedPos == false)
+    {
+        return -2.0f;
+    }
+
+    float fTick = FixedUpdateTask::GetPhysicsUpdateTick();
+    float fSimulationTime = FixedUpdateTask::mSimulationTime;
+    float fStartTime = fSimulationTime + fTime;
+    float fPrevZVel = 0.0f;
+
+    DLListEntry<BallCacheInfo*>* pHead = mBallCacheList.m_Head;
+    DLListEntry<BallCacheInfo*>* pEntry = nlDLRingGetStart(pHead);
+
+    while (pEntry)
+    {
+        BallCacheInfo* pInfo = pEntry->m_data;
+
+        if (pInfo->mfTime >= fStartTime)
+        {
+            float zPos = pInfo->mv3Position.f.z;
+            float zVel = pInfo->mv3LinearVelocity.f.z;
+
+            if ((zPos <= fHeightLimit && (bRequireDownward == false || zVel <= 0.0f)) || (fPrevZVel < 0.0f && zVel > 0.0f))
+            {
+                v3ContactPoint = pInfo->mv3Position;
+                v3ContactVelocity = pInfo->mv3LinearVelocity;
+                return pInfo->mfTime - fSimulationTime;
+            }
+
+            fPrevZVel = zVel;
+        }
+
+        if (nlDLRingIsEnd(pHead, pEntry) || pEntry == NULL)
+        {
+            pEntry = NULL;
+        }
+        else
+        {
+            pEntry = pEntry->m_next;
+        }
+    }
+
+    float fMaxTime = fSimulationTime + 6.0f;
+
+    while (mfLastCacheTime < fMaxTime)
+    {
+        PhysicsUpdate(mpPredictWorld->mpPhysicsWorld, fTick);
+        mfLastCacheTime += fTick;
+
+        SlotPool<BallCacheInfo>* pBCIPool = &BallCacheInfo::mBallCacheInfoSlotPool;
+        BallCacheInfo* pNewInfo = NULL;
+
+        if (pBCIPool->m_FreeList == NULL)
+        {
+            SlotPoolBase::BaseAddNewBlock((SlotPoolBase*)pBCIPool, sizeof(BallCacheInfo));
+        }
+        if (pBCIPool->m_FreeList)
+        {
+            pNewInfo = (BallCacheInfo*)pBCIPool->m_FreeList;
+            pBCIPool->m_FreeList = pBCIPool->m_FreeList->m_next;
+        }
+
+        PhysicsObject* pPhysObj = mpPredictWorld->mpPhysicsBall;
+        pNewInfo->mfTime = mfLastCacheTime;
+        pNewInfo->mv3Position = pPhysObj->GetPosition();
+        pNewInfo->mv3LinearVelocity = pPhysObj->GetLinearVelocity();
+
+        nlDLListSlotPool<BallCacheInfo*>* pCacheList = &mBallCacheList;
+        DLListEntry<BallCacheInfo*>* pNewEntry = NULL;
+
+        if (pCacheList->m_Allocator.m_FreeList == NULL)
+        {
+            SlotPoolBase::BaseAddNewBlock((SlotPoolBase*)&pCacheList->m_Allocator, sizeof(DLListEntry<BallCacheInfo*>));
+        }
+        if (pCacheList->m_Allocator.m_FreeList)
+        {
+            pNewEntry = (DLListEntry<BallCacheInfo*>*)pCacheList->m_Allocator.m_FreeList;
+            pCacheList->m_Allocator.m_FreeList = pCacheList->m_Allocator.m_FreeList->m_next;
+        }
+
+        if (pNewEntry)
+        {
+            pNewEntry->m_next = NULL;
+            pNewEntry->m_prev = NULL;
+            pNewEntry->m_data = pNewInfo;
+        }
+
+        nlDLRingAddEnd(&pCacheList->m_Head, pNewEntry);
+
+        float zPos = pNewInfo->mv3Position.f.z;
+        float zVel = pNewInfo->mv3LinearVelocity.f.z;
+
+        if ((zPos <= fHeightLimit && (bRequireDownward == false || zVel <= 0.0f)) || (fPrevZVel < 0.0f && zVel > 0.0f))
+        {
+            v3ContactPoint = pNewInfo->mv3Position;
+            v3ContactVelocity = pNewInfo->mv3LinearVelocity;
+            return pNewInfo->mfTime - fSimulationTime;
+        }
+
+        fPrevZVel = zVel;
+    }
+
+    return -1.0f;
 }
 
 /**
