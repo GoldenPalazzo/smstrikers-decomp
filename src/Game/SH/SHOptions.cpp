@@ -5,6 +5,7 @@
 #include "Game/GameInfo.h"
 #include "Game/SH/SHCredits.h"
 #include "Game/SH/SHSaveLoad.h"
+#include "NL/glx/glxSwap.h"
 
 extern bool DidContinueWithoutOperation();
 extern u8 mLastSaveLoadSuccess__13SaveLoadScene;
@@ -410,10 +411,164 @@ void OptionsScene::UpdateForMain(float)
 
 /**
  * Offset/Address/Size: 0x268 | 0x800B3824 | size: 0x484
+ * TODO: 99.0% match - only `i` (symbol naming) diffs from static locals, -inline deferred file
  */
-void OptionsScene::UpdateForSubOptionMenus(float)
+void OptionsScene::UpdateForSubOptionMenus(float fDeltaT)
 {
-    FORCE_DONT_INLINE;
+    static bool gStartLoadingBar = false;
+
+    if (mPopupResult != PR_DO_NOTHING)
+    {
+        if (mPopupResult == PR_APPLY_CHANGES)
+        {
+            if (gStartLoadingBar)
+            {
+                glxSwapLoading(true, false);
+            }
+            m_subMenu->Save();
+            if (gStartLoadingBar)
+            {
+                glxSwapLoading(false, false);
+            }
+            gStartLoadingBar = false;
+        }
+        else if (mPopupResult == PR_REVERT_CHANGES)
+        {
+            m_subMenu->Revert();
+        }
+        else if (mPopupResult == PR_APPLY_DELAYED_AUDIO_CHANGES)
+        {
+            GameSceneManager* gsm = nlSingleton<GameSceneManager>::s_pInstance;
+            FEPopupMenu* scene;
+            if (gsm->mCurrentStackDepth != 0)
+            {
+                scene = (FEPopupMenu*)gsm->mBaseSceneHandlerStack[gsm->mCurrentStackDepth - 1];
+            }
+            else
+            {
+                scene = NULL;
+            }
+
+            if (!scene->m_pFEScene->m_bValid)
+            {
+                return;
+            }
+
+            TLSlide* slide = scene->m_pFEPresentation->m_currentSlide;
+            f32 endTime = slide->m_start + slide->m_duration;
+            f32 curTime = slide->m_time;
+
+            static float HACK_DELAY_UNTIL_APPLY = 0.0f;
+
+            if (curTime != endTime)
+            {
+                scene->m_pFEPresentation->m_fadeDuration = 999.9f;
+                scene->m_pFEPresentation->Update(0.0f);
+                HACK_DELAY_UNTIL_APPLY = 0.0f;
+                return;
+            }
+
+            HACK_DELAY_UNTIL_APPLY += fDeltaT;
+            if (HACK_DELAY_UNTIL_APPLY >= 0.5f)
+            {
+                mPopupResult = PR_APPLY_CHANGES;
+                nlSingleton<GameSceneManager>::s_pInstance->Pop();
+                gStartLoadingBar = true;
+            }
+            return;
+        }
+
+        m_subMenu->GoBack();
+        m_pFEScene->m_pFEPackage->GetPresentation();
+
+        if (m_subMenu != NULL)
+        {
+            delete m_subMenu;
+        }
+        m_subMenu = NULL;
+
+        mMenuItems.mCurrentIndex = mLastSelectedIndex;
+
+        int selIdx = mMenuItems.mCurrentIndex;
+        Tag tag = mMenuItems.mMenuItems[selIdx].mCallbacks[1].mTag;
+        if (((u32)((-((s32)tag)) | tag) >> 31) != 0)
+        {
+            TLComponentInstance* type = mMenuItems.mMenuItems[selIdx].mType;
+            if (tag == FREE_FUNCTION)
+            {
+                mMenuItems.mMenuItems[selIdx].mCallbacks[1].mFreeFunction(type);
+            }
+            else
+            {
+                (*mMenuItems.mMenuItems[selIdx].mCallbacks[1].mFunctor)(type);
+            }
+        }
+
+        m_curMenuState = MS_MAIN;
+
+        const char* sfx = "sfx_back";
+        if (mPopupResult == PR_APPLY_CHANGES)
+        {
+            sfx = "sfx_accept";
+        }
+        FEAudio::PlayAnimAudioEvent(sfx, false);
+
+        mPopupResult = PR_DO_NOTHING;
+        return;
+    }
+
+    if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x200, false, NULL))
+    {
+        if (m_subMenu->ChangesMade())
+        {
+            FEPopupMenu* popup = (FEPopupMenu*)nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
+
+            Function<FnVoidVoid> applyFn;
+            applyFn.mTag = FREE_FUNCTION;
+            applyFn.mFreeFunction = ApplyChangesCB;
+
+            Function<FnVoidVoid> revertFn;
+            revertFn.mTag = FREE_FUNCTION;
+            revertFn.mFreeFunction = RevertChangesCB;
+
+            popup->Create(POPUP_REVERT_OPTION_CHANGES, applyFn, revertFn);
+        }
+        else
+        {
+            m_subMenu->GoBack();
+            m_pFEScene->m_pFEPackage->GetPresentation();
+
+            if (m_subMenu != NULL)
+            {
+                delete m_subMenu;
+            }
+            m_subMenu = NULL;
+
+            mMenuItems.mCurrentIndex = mLastSelectedIndex;
+
+            int selIdx = mMenuItems.mCurrentIndex;
+            Tag tag = mMenuItems.mMenuItems[selIdx].mCallbacks[1].mTag;
+            if (((u32)((-((s32)tag)) | tag) >> 31) != 0)
+            {
+                TLComponentInstance* type = mMenuItems.mMenuItems[selIdx].mType;
+                if (tag == FREE_FUNCTION)
+                {
+                    mMenuItems.mMenuItems[selIdx].mCallbacks[1].mFreeFunction(type);
+                }
+                else
+                {
+                    (*mMenuItems.mMenuItems[selIdx].mCallbacks[1].mFunctor)(type);
+                }
+            }
+
+            m_curMenuState = MS_MAIN;
+            FEAudio::PlayAnimAudioEvent("sfx_back", false);
+            FEAudio::PlayAnimAudioEvent("sfx_screen_back", false);
+            return;
+        }
+    }
+
+    m_subMenu->Update(fDeltaT);
 }
 
 /**

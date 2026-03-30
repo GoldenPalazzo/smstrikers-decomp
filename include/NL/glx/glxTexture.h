@@ -57,6 +57,22 @@ enum eGLTextureState
     GLTS_Num = 18,
 };
 
+enum eGLTextureMode
+{
+    GLTM_WrapWrap = 0,
+    GLTM_WrapClamp = 1,
+    GLTM_ClampWrap = 2,
+    GLTM_ClampClamp = 3,
+    GLTM_Num = 4,
+};
+
+enum eGLTextureFilter
+{
+    GLTF_Linear = 0,
+    GLTF_Point = 1,
+    GLTF_Num = 2,
+};
+
 enum eGLTextureFormatType
 {
     eGLTextureFormatType_0,

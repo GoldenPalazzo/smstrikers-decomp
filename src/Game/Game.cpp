@@ -803,10 +803,22 @@ void cGame::PreUpdate(float deltaTime)
     }
 }
 
+static inline void UpdatePowerUpObjects(float fDeltaT)
+{
+    for (int i = 0; i < 25; i++)
+    {
+        if (g_pPowerups[i] != nullptr)
+        {
+            g_pPowerups[i]->Update(fDeltaT);
+        }
+    }
+}
+
 /**
  * Offset/Address/Size: 0x5A4 | 0x8003CB18 | size: 0x47C
- * TODO: 94.74% match - r29/r31 swap in teams loop setup (optimizer quirk),
- * sda21 label offset difference for 1.0f literal (scratch artifact).
+ * TODO: 98.55% match - conversion section f-register shift (f1/f2/f3 rotated),
+ *       goalie r3/r4 swap for g_pCharacters base + blt vs bge branch inversion,
+ *       end section r27/r28 vs r29/r30 for score variables
  */
 void cGame::Update(float deltaTime)
 {
@@ -847,11 +859,10 @@ void cGame::Update(float deltaTime)
         }
     }
 
-    cTeam** pTeams = g_pTeams;
     for (int i = 0; i < 2; i++)
     {
-        FuzzyScriptSetCurrentTeam(pTeams[i]);
-        pTeams[i]->Update(deltaTime);
+        FuzzyScriptSetCurrentTeam(g_pTeams[i]);
+        g_pTeams[i]->Update(deltaTime);
         FuzzyScriptClearGlobals();
     }
 
@@ -876,99 +887,88 @@ void cGame::Update(float deltaTime)
     g_pCurrentlyUpdatingCharacter = nullptr;
     g_pBall->Update(deltaTime);
 
-    bool shouldCheckForGoal = false;
-    if (m_eGameState == GS_GAMEPLAY || m_eGameState == GS_OVERTIME)
-    {
-        shouldCheckForGoal = true;
-    }
-
-    if (shouldCheckForGoal)
+    if (IsGameplayOrOvertime())
     {
         CheckForGoal();
     }
 
-    int powerupIndex = 0;
-    PowerupBase** ppPowerup = g_pPowerups;
-    while (powerupIndex < 25)
-    {
-        if (*ppPowerup != nullptr)
-        {
-            (*ppPowerup)->Update(deltaTime);
-        }
-
-        powerupIndex++;
-        ppPowerup++;
-    }
+    UpdatePowerUpObjects(deltaTime);
 
     if (nlSingleton<GameInfoManager>::s_pInstance->IsTiltingFieldOn())
     {
-        float tilt = 2.0f * (float)(g_pTeams[0]->m_nScore - g_pTeams[1]->m_nScore);
+        float tilt = (float)(g_pTeams[0]->m_nScore - g_pTeams[1]->m_nScore);
+        tilt *= 2.0f;
 
-        if (!(tilt >= -6.0f))
+        float clampedLower;
+        if (tilt >= -6.0f)
         {
-            tilt = -6.0f;
+            clampedLower = tilt;
         }
+        else
+        {
+            clampedLower = -6.0f;
+        }
+        tilt = clampedLower;
 
         float currentTilt = mfCheatTilt;
-        if (!(tilt <= 6.0f))
-        {
-            tilt = 6.0f;
-        }
 
-        mfCheatTilt = ((cCharacter*)this)->SeekSpeedExponential(currentTilt, tilt, 2.0f, deltaTime);
+        float clampedUpper;
+        if (tilt <= 6.0f)
+        {
+            clampedUpper = tilt;
+        }
+        else
+        {
+            clampedUpper = 6.0f;
+        }
+        tilt = clampedUpper;
+
+        mfCheatTilt = ((cCharacter*)g_pTeams[0])->SeekSpeedExponential(currentTilt, tilt, 2.0f, deltaTime);
         Bowser::SetTiltParameters(mfCheatTilt);
     }
 
     if (mBowserTimer.m_uPackedTime != 0 && m_eGameState != GS_END_GAME)
     {
-        bool shouldSkipBowser = false;
-
+        bool bSTSActive = false;
         cFielder* pOwnerFielder = g_pBall->GetOwnerFielder();
         if (pOwnerFielder != nullptr)
         {
             if (g_pBall->GetOwnerFielder()->m_eActionState == ACTION_SHOOT_TO_SCORE)
             {
-                shouldSkipBowser = true;
+                bSTSActive = true;
             }
         }
 
-        cCharacter** ppCharacter = g_pCharacters;
-        cCharacter* pAwayGoalie = ppCharacter[9];
-        int goalieActionState = ((Goalie*)ppCharacter[8])->mGoalieActionState;
+        eGoalieActionState goalieState = (eGoalieActionState)((Goalie*)g_pCharacters[8])->mGoalieActionState;
+        cCharacter* pAwayGoalie = g_pCharacters[9];
 
-        for (int i = 0; !shouldSkipBowser && i < 2; i++)
+        for (int goalie = 0; !bSTSActive && goalie < 2; goalie++)
         {
-            if (goalieActionState < GOALIEACTION_PASS)
+            if (goalieState < GOALIEACTION_PASS)
             {
-                if (goalieActionState >= GOALIEACTION_STS_SETUP)
+                if (goalieState >= GOALIEACTION_STS_SETUP)
                 {
-                    shouldSkipBowser = true;
+                    bSTSActive = true;
                 }
             }
-
-            goalieActionState = ((Goalie*)pAwayGoalie)->mGoalieActionState;
+            goalieState = (eGoalieActionState)((Goalie*)pAwayGoalie)->mGoalieActionState;
         }
 
-        if (!shouldSkipBowser)
+        if (!bSTSActive)
         {
-            shouldSkipBowser = BasicStadium::GetCurrentStadium()->mpNPCManager->mpChainChomp->IsHidden();
-
-            for (int i = 0; shouldSkipBowser && i < 2; i++)
+            bool bChainChompInactive = BasicStadium::GetCurrentStadium()->mpNPCManager->mpChainChomp->IsHidden();
+            for (int team = 0; bChainChompInactive && team < 2; team++)
             {
-                int j = 0;
-                while (j < 2)
+                for (int i = 0; i < 2; i++)
                 {
-                    if ((*pTeams)->GetPowerUpByIndex(j).eType == POWER_UP_CHAIN_CHOMP)
+                    if (g_pTeams[team]->GetPowerUpByIndex(i).eType == POWER_UP_CHAIN_CHOMP)
                     {
-                        shouldSkipBowser = false;
+                        bChainChompInactive = false;
                         break;
                     }
-                    j++;
                 }
-                pTeams++;
             }
-
-            if (shouldSkipBowser)
+            if (bChainChompInactive)
             {
                 if (mBowserTimer.Countdown(deltaTime, 0.0f))
                 {

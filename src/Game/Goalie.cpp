@@ -738,10 +738,186 @@ void Goalie::HandleSTSContact(cBall*)
 
 /**
  * Offset/Address/Size: 0x75B4 | 0x8004A0B0 | size: 0x494
+ * TODO: 83.86% match - 9 branch offset diffs from 1 extra instruction (4 bytes) in
+ * if(m_pBall==NULL) wrapping pattern for KICK block. Target uses flat bne- far branch
+ * but MWCC generates beq-+inline return for if(m_pBall!=NULL)return false, requiring
+ * wrapping which adds a trailing branch instruction shifting all subsequent branch targets.
  */
 bool Goalie::InitiatePickup()
 {
-    FORCE_DONT_INLINE;
+    if (mpLooseBallInfo->mAnimType == LOOSEBALL_ANIM_KICK)
+    {
+        if (mbPickedUp)
+        {
+            return false;
+        }
+
+        if (m_pBall == NULL)
+        {
+            mbNoUserControl = true;
+
+            cFielder* pFldr = g_pBall->GetOwnerFielder();
+            if (pFldr != NULL)
+            {
+                if (IsOnSameTeam(pFldr))
+                {
+                    CleanGoalieAction();
+
+                    mPrevGoalieActionState = mGoalieActionState;
+                    mGoalieActionState = GOALIEACTION_MOVE;
+                    mnSubstate = 0;
+
+                    SetAnimState(8, true, 0.2f, false, false);
+                    InitMovementFromAnim(0, v3Zero, 1.0f, false);
+
+                    mnSubstate = 1;
+                    mMoveDirection = GOALIEDIR_IDLE;
+
+                    m_pPhysicsCharacter->m_CanCollideWithBall = true;
+                    mbShouldMiss = false;
+                    mbDoNavigate = false;
+
+                    m_pPhysicsCharacter->m_CanCollidedWithGoalLine = true;
+                    m_pPhysicsCharacter->m_CanCollideWithWall = true;
+
+                    if (mbStunEffectActive)
+                    {
+                        KillDaze(this);
+                        mbStunEffectActive = false;
+                    }
+
+                    mpShooter = NULL;
+                    mfSpeedScale = 1.0f;
+                    mUrgency = URGENCY_LOW;
+
+                    mbPosGoalieNetCheck = false;
+                    mbNegGoalieNetCheck = false;
+                    mbDoHeadTrack = true;
+                    mbBallImpacted = false;
+                    mbNoUserControl = false;
+                    mbPickedUp = false;
+
+                    return false;
+                }
+
+                if (pFldr != NULL && pFldr->m_eClassType == FIELDER)
+                {
+                    if (!pFldr->IsFallenDown(0.0f))
+                    {
+                        pFldr->PlayRandomCharDialogue(CHAR_DIALOGUE_HIT, VECTORS, 100.0f, -1.0f);
+
+                        if (pFldr->m_pBall != NULL)
+                        {
+                            pFldr->ReleaseBall();
+                        }
+
+                        if (IsOnSameTeam(pFldr))
+                        {
+                            pFldr->EndDesire(false);
+                            pFldr->EndAction();
+                        }
+                        else
+                        {
+                            pFldr->InitActionSlideAttackReact(this, false);
+                        }
+                    }
+                }
+            }
+            else
+            {
+                if (g_pBall->m_tNoPickupTimer.m_uPackedTime != 0)
+                {
+                    return false;
+                }
+            }
+
+            nlVector3 v3Pos;
+            v3Pos.f.x = g_pBall->m_v3Position.f.x;
+            v3Pos.f.y = g_pBall->m_v3Position.f.y;
+            v3Pos.f.z = g_pBall->m_v3Position.f.z;
+
+            PickupBall(g_pBall);
+            mbPickedUp = true;
+            g_pBall->SetPosition(v3Pos);
+
+            if (mpLooseBallInfo->mnAnimID == 5 || mpLooseBallInfo->mnAnimID == 4)
+            {
+                mpPassTarget = NULL;
+            }
+            else
+            {
+                if (GetGlobalPad() != NULL)
+                {
+                    mpPassTarget = DoFindBestPassTarget(false, false);
+                }
+                else
+                {
+                    FuzzyVariant fvTarget = Fuzzy::GetBestPassTarget(this);
+                    if (fvTarget.Confidence >= 0.5f)
+                    {
+                        mpPassTarget = fvTarget.mData.pPlayer;
+                    }
+                    else
+                    {
+                        mpPassTarget = DoFindBestPassTarget(false, false);
+                    }
+                }
+            }
+
+            if (mpPassTarget != NULL)
+            {
+                mbDoHeadTrack = true;
+            }
+            else
+            {
+                mbDoHeadTrack = false;
+            }
+
+            if (g_pBall->m_tShotTimer.m_uPackedTime != 0)
+            {
+                g_pBall->ClearShotInProgress();
+            }
+
+            return true;
+        }
+    }
+    else
+    {
+        if (mfWaitTime <= 0.0f)
+        {
+            if (g_pBall->m_tNoPickupTimer.m_uPackedTime != 0)
+            {
+                return false;
+            }
+
+            mfWaitTime = 0.1f;
+            SetNoPickUpTime(mfWaitTime);
+
+            nlVector3 v3BallVel;
+            v3BallVel.f.x = g_pBall->m_v3Velocity.f.x;
+            v3BallVel.f.y = g_pBall->m_v3Velocity.f.y;
+            v3BallVel.f.z = g_pBall->m_v3Velocity.f.z;
+
+            float fSpeedSq = v3BallVel.f.x * v3BallVel.f.x + v3BallVel.f.y * v3BallVel.f.y + v3BallVel.f.z * v3BallVel.f.z;
+            if (fSpeedSq > 64.0f)
+            {
+                v3BallVel.f.x *= 0.5f;
+                v3BallVel.f.y *= 0.5f;
+                v3BallVel.f.z *= 0.5f;
+                g_pBall->SetVelocity(v3BallVel, SPINTYPE_NONE, NULL);
+            }
+
+            mbDoHeadTrack = false;
+
+            if (g_pBall->m_tShotTimer.m_uPackedTime != 0)
+            {
+                g_pBall->ClearShotInProgress();
+            }
+
+            return true;
+        }
+    }
+
     return false;
 }
 

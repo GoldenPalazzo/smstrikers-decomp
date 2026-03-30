@@ -15,6 +15,7 @@
 #include "NL/glx/glxGX.h"
 #include "NL/glx/glxMatrix.h"
 #include "NL/glx/glxTexture.h"
+#include "dolphin/gx/GXTexture.h"
 #include "NL/nlColour.h"
 #include "NL/platvmath.h"
 #include "types.h"
@@ -62,6 +63,11 @@ static bool glx_mobilediffuse;
 static bool glx_constantcolour;
 static bool glx_viewport;
 static bool glx_CoPlanar;
+static u32 glx_program;
+static u32 prog_2d_movie;
+static f32 glx_konstlevel[4];
+static int glx_aniso;
+static u32 glx_texconfig;
 static bool glx_translucent;
 static bool glx_norasterizedalpha;
 static s32 glx_RasterizedAlphaStage;
@@ -762,9 +768,142 @@ void glx_SwitchRaster(const glModelPacket* p)
 
 /**
  * Offset/Address/Size: 0x2690 | 0x801BC190 | size: 0x48C
+ * TODO: 95.8% match - stack offset diffs for GXColor locals (MWCC allocates
+ * 2d_movie GXColors at lower offsets than konst GXColor work area, target has
+ * them reversed). All instructions and registers correct.
  */
-void glx_SwitchTextureState(const glModelPacket*)
+void glx_SwitchTextureState(const glModelPacket* p)
 {
+    glUnHandleizeTextureState(p->state.texturestate);
+
+    if (glx_program == prog_2d_movie)
+    {
+        GXColor c0 = { 0x00, 0x00, 0xE2, 0x58 };
+        GXSetTevKColor(GX_KCOLOR0, c0);
+        GXColor c1 = { 0xB3, 0x00, 0x00, 0xB6 };
+        GXSetTevKColor(GX_KCOLOR1, c1);
+        GXColor c2 = { 0xFF, 0x00, 0xFF, 0x80 };
+        GXSetTevKColor(GX_KCOLOR2, c2);
+        glx_konstlevel[0] = -1.0f;
+        glx_konstlevel[1] = -1.0f;
+        glx_konstlevel[2] = -1.0f;
+        glx_konstlevel[3] = -1.0f;
+        return;
+    }
+
+    u8 raw;
+    raw = (u8)glGetTextureState(GLTS_DiffuseLevel);
+    f32 level = (f32)raw * (1.0f / 63.0f);
+    if (level != glx_konstlevel[0])
+    {
+        int val = (int)(255.5f * level);
+        GXColor c = { (u8)val, (u8)val, (u8)val, (u8)val };
+        GXSetTevKColor(GX_KCOLOR0, c);
+        glx_konstlevel[0] = level;
+    }
+
+    raw = (u8)glGetTextureState(GLTS_ShadowLevel);
+    level = (f32)raw * (1.0f / 63.0f);
+    if (level != glx_konstlevel[1])
+    {
+        int val = (int)(255.5f * level);
+        GXColor c = { (u8)val, (u8)val, (u8)val, (u8)val };
+        GXSetTevKColor(GX_KCOLOR1, c);
+        glx_konstlevel[1] = level;
+    }
+
+    raw = (u8)glGetTextureState(GLTS_ShadowLevel);
+    level = 1.0f - (f32)raw * (1.0f / 63.0f);
+    if (level != glx_konstlevel[2])
+    {
+        int val = (int)(255.5f * level);
+        GXColor c = { (u8)val, (u8)val, (u8)val, (u8)val };
+        GXSetTevKColor(GX_KCOLOR2, c);
+        glx_konstlevel[2] = level;
+    }
+
+    raw = (u8)glGetTextureState(GLTS_GlossLevel);
+    level = (f32)raw * (1.0f / 63.0f);
+    if (level != glx_konstlevel[3])
+    {
+        int val = (int)(255.5f * level);
+        GXColor c = { (u8)val, (u8)val, (u8)val, (u8)val };
+        GXSetTevKColor(GX_KCOLOR3, c);
+        glx_konstlevel[3] = level;
+    }
+
+    int texnum = 0;
+    for (int bit = 0; bit < 6; bit++)
+    {
+        if (!(glx_texconfig & (1 << bit)))
+            continue;
+
+        GXTexWrapMode mode[2];
+        if (bit == 5)
+        {
+            mode[1] = GX_CLAMP;
+            mode[0] = GX_CLAMP;
+        }
+        else
+        {
+            eGLTextureMode tmode = (eGLTextureMode)glGetTextureState((eGLTextureState)bit);
+            switch (tmode)
+            {
+            case GLTM_WrapWrap:
+                mode[0] = GX_REPEAT;
+                mode[1] = GX_REPEAT;
+                break;
+            case GLTM_WrapClamp:
+                mode[0] = GX_REPEAT;
+                mode[1] = GX_CLAMP;
+                break;
+            case GLTM_ClampWrap:
+                mode[0] = GX_CLAMP;
+                mode[1] = GX_REPEAT;
+                break;
+            case GLTM_ClampClamp:
+                mode[0] = GX_CLAMP;
+                mode[1] = GX_CLAMP;
+                break;
+            default:
+                break;
+            }
+        }
+
+        GXInitTexObjWrapMode(&glx_texobj[texnum], mode[0], mode[1]);
+
+        eGLTextureFilter filter = (eGLTextureFilter)glGetTextureState((eGLTextureState)(bit + 6));
+        switch (filter)
+        {
+        case GLTF_Linear:
+        {
+            PlatTexture* tex = (PlatTexture*)glx_texture[texnum];
+            if (tex->m_Levels == 1)
+                GXInitTexObjFilter(&glx_texobj[texnum], GX_LINEAR, GX_LINEAR);
+            else if (tex->m_Format == GXTex_CI8)
+                GXInitTexObjFilter(&glx_texobj[texnum], GX_LIN_MIP_NEAR, GX_LINEAR);
+            else
+            {
+                static GXAnisotropy aniso[] = { GX_ANISO_1, GX_ANISO_2, GX_ANISO_4 };
+                GXInitTexObjFilter(&glx_texobj[texnum], GX_LIN_MIP_LIN, GX_LINEAR);
+                GXInitTexObjMaxAniso(&glx_texobj[texnum], aniso[glx_aniso]);
+            }
+            break;
+        }
+        case GLTF_Point:
+        {
+            PlatTexture* tex = (PlatTexture*)glx_texture[texnum];
+            GXTexFilter minFilt = GX_NEAR_MIP_NEAR;
+            if (tex->m_Levels == 1)
+                minFilt = GX_NEAR;
+            GXInitTexObjFilter(&glx_texobj[texnum], minFilt, GX_NEAR);
+            break;
+        }
+        }
+
+        glx_texdirty |= (1 << texnum);
+        texnum++;
+    }
 }
 
 /**

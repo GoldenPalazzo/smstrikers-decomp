@@ -520,10 +520,226 @@ void PhysicsAIBall::PreUpdate()
 
 /**
  * Offset/Address/Size: 0xD84 | 0x801347B8 | size: 0x47C
+ * TODO: 93.27% match - register allocation shift: this=r27 vs target r26,
+ *       obj=r28 vs r27, info=r29 vs r28, numContacts=r30 vs r29,
+ *       pFielder=r26 vs r30. All 100 diffs are register-only.
  */
-ContactType PhysicsAIBall::Contact(PhysicsObject*, dContact*, int)
+ContactType PhysicsAIBall::Contact(PhysicsObject* obj, dContact* info, int numContacts)
 {
-    return NO_CONTACT;
+    extern bool gbEnableBallGoalieSweepTest;
+    extern void* __vt__9EventData[];
+    extern void* __vt__35CollisionPlayerShootToScoreBallData[];
+    extern void* __vt__21CollisionBallWallData[];
+    extern float sfMaxBallBounceSpeed;
+
+    int objID;
+    cCharacter* pFielder;
+    nlVector3 ballPosition;
+    float radius;
+    unsigned char hitWall;
+    int i;
+    nlVector3 ballVelocity;
+    nlPolar aBallSpeed;
+    CollisionBallWallData* pEventData;
+    float scale;
+    nlVector3 vel;
+
+    objID = obj->GetObjectType();
+
+    if (objID == 0xD || objID == 0xE)
+    {
+        if (gbEnableBallGoalieSweepTest)
+        {
+            pFielder = ((PhysicsCharacter*)obj->m_parentObject)->m_pAICharacter;
+
+            if (pFielder->m_eClassType == 3)
+            {
+                if (*(u8*)((u8*)this + 0x5A) == 0)
+                {
+                    return NO_CONTACT;
+                }
+            }
+            else if (pFielder->m_eClassType == 2)
+            {
+                cBall* pBall = m_pAIBall;
+                bool isShootToScore = false;
+                if (pBall->m_tShotTimer.m_uPackedTime != 0)
+                {
+                    if (pBall->mbCanDamage)
+                    {
+                        isShootToScore = true;
+                    }
+                }
+
+                if (isShootToScore)
+                {
+                    if (((cPlayer*)pFielder)->m_tNoPickupTimer.m_uPackedTime == 0)
+                    {
+                        pEventData = (CollisionBallWallData*)((u8*)g_pEventManager->CreateValidEvent(0x28, 0x20) + 0x10);
+                        if (pEventData != NULL)
+                        {
+                            *(void**)pEventData = __vt__9EventData;
+                            *(void**)pEventData = __vt__35CollisionPlayerShootToScoreBallData;
+                        }
+
+                        *(void**)((u8*)pEventData + 0x4) = pFielder;
+                        *(cBall**)((u8*)pEventData + 0x8) = m_pAIBall;
+                    }
+                    return NO_CONTACT;
+                }
+            }
+        }
+    }
+
+    if (objID == 0x1A)
+    {
+        cBall* pBall = m_pAIBall;
+        bool canDamage = false;
+        if (pBall->m_tShotTimer.m_uPackedTime != 0)
+        {
+            if (pBall->mbCanDamage)
+            {
+                canDamage = true;
+            }
+        }
+
+        if (canDamage)
+        {
+            return NO_CONTACT;
+        }
+    }
+
+    if (PhysicsNet::sbSweepTestEnabled)
+    {
+        if (PhysicsNet::IsAGoalPost(obj))
+        {
+            return NO_CONTACT;
+        }
+    }
+
+    if (m_parentObject == NULL)
+    {
+        if (objID == 0x19 || objID == 0x5)
+        {
+            if (m_unk_0x58)
+            {
+                return NO_CONTACT;
+            }
+
+            GetPosition(&ballPosition);
+            radius = GetRadius();
+
+            f64 absX = fabs(ballPosition.f.x);
+            float goalLineX = cField::GetGoalLineX(1u);
+
+            if ((float)absX > goalLineX - 2.0f * radius)
+            {
+                if ((float)fabs(ballPosition.f.y) < 0.5f * cNet::m_fNetWidth - radius)
+                {
+                    if ((float)fabs(ballPosition.f.z) < cNet::m_fNetHeight - radius)
+                    {
+                        return NO_CONTACT;
+                    }
+                }
+                m_unk_0x59 = true;
+            }
+
+            cBall* pBall = m_pAIBall;
+            if (pBall->m_tNoPickupTimer.m_uPackedTime != 0)
+            {
+                if (pBall->m_pPassTarget != NULL || pBall->m_tShotTimer.m_uPackedTime != 0)
+                {
+                    return NO_CONTACT;
+                }
+            }
+
+            dContact* pContact = info;
+            hitWall = 0;
+            for (i = 0; i < numContacts; i++)
+            {
+                if (pContact->geom.normal[2] < 0.08f)
+                {
+                    hitWall = 1;
+                    break;
+                }
+                pContact++;
+            }
+
+            if (hitWall || objID == 0x5)
+            {
+                pBall->m_unk_0xA6 = false;
+                pBall->mpDamageTarget = NULL;
+
+                ballVelocity = GetLinearVelocity();
+                float velY = ballVelocity.f.y;
+
+                nlCartesianToPolar(aBallSpeed, ballVelocity.f.x, velY);
+
+                if (aBallSpeed.r > 1.0f)
+                {
+                    pEventData = (CollisionBallWallData*)((u8*)g_pEventManager->CreateValidEvent(0x20, 0x3C) + 0x10);
+                    if (pEventData != NULL)
+                    {
+                        *(void**)pEventData = __vt__9EventData;
+                        *(void**)pEventData = __vt__21CollisionBallWallData;
+                    }
+
+                    *(cBall**)((u8*)pEventData + 0x4) = m_pAIBall;
+
+                    cBall* pBallShot = m_pAIBall;
+                    bool bIsShot = false;
+                    if (pBallShot->m_tShotTimer.m_uPackedTime != 0)
+                    {
+                        if (pBallShot->m_unk_0xA4)
+                        {
+                            bIsShot = true;
+                        }
+                    }
+
+                    *(u8*)((u8*)pEventData + 0x8) = bIsShot;
+
+                    float speedSq = velY * velY + ballVelocity.f.x * ballVelocity.f.x + ballVelocity.f.z * ballVelocity.f.z;
+
+                    *(u8*)((u8*)pEventData + 0x9) = (m_pAIBall->m_tShotTimer.m_uPackedTime != 0);
+
+                    *(float*)((u8*)pEventData + 0x0C) = info->geom.pos[0];
+                    *(float*)((u8*)pEventData + 0x10) = info->geom.pos[1];
+                    *(float*)((u8*)pEventData + 0x14) = info->geom.pos[2];
+                    *(float*)((u8*)pEventData + 0x18) = info->geom.normal[0];
+                    *(float*)((u8*)pEventData + 0x1C) = info->geom.normal[1];
+                    *(float*)((u8*)pEventData + 0x20) = info->geom.normal[2];
+
+                    *(float*)((u8*)pEventData + 0x24) = nlSqrt(speedSq, true);
+
+                    ScaleAngularVelocity(0.9f);
+                    m_pAIBall->ClearBallBlur();
+                }
+
+                if (aBallSpeed.r > sfMaxBallBounceSpeed)
+                {
+                    scale = sfMaxBallBounceSpeed / aBallSpeed.r;
+                    vel.f.x = scale * ballVelocity.f.x;
+                    vel.f.y = scale * velY;
+                    vel.f.z = scale * ballVelocity.f.z;
+                    SetLinearVelocity(vel);
+                }
+            }
+        }
+        else if (objID == 0x7)
+        {
+            if (!m_unk_0x58)
+            {
+                return NO_CONTACT;
+            }
+
+            if (PhysicsNet::IsAGoalWall(obj))
+            {
+                info->surface.soft_cfm = PhysicsNet::sfWallSoftness;
+            }
+        }
+    }
+
+    return PhysicsBall::Contact(obj, info, numContacts);
 }
 
 /**
