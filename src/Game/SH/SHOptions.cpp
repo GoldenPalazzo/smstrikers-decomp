@@ -269,8 +269,9 @@ void OptionsScene::UpdateForMain(float)
     else if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xD, true, NULL))
     {
         int flags = mMenuItems.mFlags;
+        int skipDisabledFlag;
         int wrapFlag = flags & 1;
-        int skipDisabledFlag = flags & 2;
+        skipDisabledFlag = flags & 2;
         int currentIndex = mMenuItems.mCurrentIndex;
         int newIndex = currentIndex - 1;
 
@@ -341,8 +342,9 @@ void OptionsScene::UpdateForMain(float)
     else if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xE, true, NULL))
     {
         int flags = mMenuItems.mFlags;
+        int skipDisabledFlag;
         int wrapFlag = flags & 1;
-        int skipDisabledFlag = flags & 2;
+        skipDisabledFlag = flags & 2;
         int currentIndex = mMenuItems.mCurrentIndex;
         int newIndex = currentIndex + 1;
 
@@ -411,7 +413,6 @@ void OptionsScene::UpdateForMain(float)
 
 /**
  * Offset/Address/Size: 0x268 | 0x800B3824 | size: 0x484
- * TODO: 99.0% match - only `i` (symbol naming) diffs from static locals, -inline deferred file
  */
 void OptionsScene::UpdateForSubOptionMenus(float fDeltaT)
 {
@@ -484,8 +485,8 @@ void OptionsScene::UpdateForSubOptionMenus(float fDeltaT)
         if (m_subMenu != NULL)
         {
             delete m_subMenu;
+            m_subMenu = NULL;
         }
-        m_subMenu = NULL;
 
         mMenuItems.mCurrentIndex = mLastSelectedIndex;
 
@@ -506,12 +507,7 @@ void OptionsScene::UpdateForSubOptionMenus(float fDeltaT)
 
         m_curMenuState = MS_MAIN;
 
-        const char* sfx = "sfx_back";
-        if (mPopupResult == PR_APPLY_CHANGES)
-        {
-            sfx = "sfx_accept";
-        }
-        FEAudio::PlayAnimAudioEvent(sfx, false);
+        FEAudio::PlayAnimAudioEvent((mPopupResult == PR_APPLY_CHANGES) ? "sfx_accept" : "sfx_back", false);
 
         mPopupResult = PR_DO_NOTHING;
         return;
@@ -541,8 +537,8 @@ void OptionsScene::UpdateForSubOptionMenus(float fDeltaT)
             if (m_subMenu != NULL)
             {
                 delete m_subMenu;
+                m_subMenu = NULL;
             }
-            m_subMenu = NULL;
 
             mMenuItems.mCurrentIndex = mLastSelectedIndex;
 
