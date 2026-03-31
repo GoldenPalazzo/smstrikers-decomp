@@ -47,7 +47,7 @@ public:
         {
         }
         virtual ~FunctorImpl() { }
-        virtual ReturnType operator()(ParamType arg) { (mBind.mT0->*mBind.mFunction.mMemFun)(arg); }
+        virtual ReturnType operator()(ParamType arg);
         virtual FunctorBase* Clone() const { return new (nlMalloc(sizeof(FunctorImpl), 8, false)) FunctorImpl(*this); }
     };
 
