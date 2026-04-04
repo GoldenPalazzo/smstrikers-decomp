@@ -864,15 +864,36 @@ void TournTeamSetupSceneV2::Proceed()
 /**
  * Offset/Address/Size: 0xC34 | 0x800E2AD8 | size: 0x9C0
  */
-void TournTeamSetupSceneV2::FindCaptainSlideName(eTeamID)
+BasicString<char, Detail::TempStringAllocator> TournTeamSetupSceneV2::FindCaptainSlideName(eTeamID)
 {
 }
 
 /**
  * Offset/Address/Size: 0x76C | 0x800E2610 | size: 0x4C8
+ * TODO: 93.1% match - r29/r30 register swap: MWCC hoists string literal address
+ * before nlMalloc in inlined BasicString constructor, swapping data/str registers
  */
-void TournTeamSetupSceneV2::FindSidekickSlideName(eSidekickID)
+BasicString<char, Detail::TempStringAllocator> TournTeamSetupSceneV2::FindSidekickSlideName(eSidekickID sidekick)
 {
+    BasicString<char, Detail::TempStringAllocator> returnValue;
+
+    switch (sidekick)
+    {
+    case SK_TOAD:
+        returnValue = BasicString<char, Detail::TempStringAllocator>("toad");
+        break;
+    case SK_KOOPA:
+        returnValue = BasicString<char, Detail::TempStringAllocator>("koopa");
+        break;
+    case SK_HAMMERBROS:
+        returnValue = BasicString<char, Detail::TempStringAllocator>("hammer");
+        break;
+    case SK_BIRDO:
+        returnValue = BasicString<char, Detail::TempStringAllocator>("birdo");
+        break;
+    }
+
+    return returnValue;
 }
 
 /**

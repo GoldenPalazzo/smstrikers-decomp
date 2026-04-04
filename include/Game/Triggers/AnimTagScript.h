@@ -23,12 +23,19 @@ struct AnimTagCBInfo
 class AnimTagScriptInterpreter : private InterpreterCore
 {
 public:
+    AnimTagScriptInterpreter(unsigned int stackSize)
+        : InterpreterCore(stackSize)
+        , m_AnimTagSlotPool(16, 16)
+    {
+        m_BytecodeCount = 0;
+    }
+
     void AnimControllerCB(unsigned int);
     u8 SetupAnimationTriggers(const char*, cInventory<cSAnim>*);
 
-    /* 0x24 */ SlotPool<unsigned long> m_AnimTagSlotPool; // size 0x18
-    /* 0x3C */ void* m_ppBytecode[32];                    // size 0x80
-    /* 0xBC */ int m_BytecodeCount;                       // size 0x4
+    /* 0x24 */ BasicSlotPool<AnimTagCBInfo> m_AnimTagSlotPool; // size 0x18
+    /* 0x3C */ void* m_ppBytecode[32];                         // size 0x80
+    /* 0xBC */ int m_BytecodeCount;                            // size 0x4
 }; // total size: 0xC0
 
 // class nlBSearch<BinaryTriggerFile

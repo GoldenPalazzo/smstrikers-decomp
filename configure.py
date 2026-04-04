@@ -732,7 +732,7 @@ config.libs = [
 
             Object(Matching, "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/e_acos.c", extra_cflags=["-inline off"]),
             Object(Matching, "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/e_fmod.c"),
-            Object(NonMatching, "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/e_pow.c"),
+            Object(NonMatching, "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/e_pow.c", extra_cflags=["-inline off"]),
             Object(Matching, "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/e_rem_pio2.c"),
             Object(Matching, "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/k_cos.c"),
             Object(Matching, "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/k_rem_pio2.c"),

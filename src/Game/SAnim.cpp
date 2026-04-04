@@ -22,13 +22,162 @@ void nlListAddStart<cSAnimCallback>(cSAnimCallback** head, cSAnimCallback* entry
     *head = entry;
 }
 
+static inline void* nlGetChunkData(nlChunk* chunk)
+{
+    u32 alignField = chunk->m_ID & 0x7F000000;
+    u32 isAligned = ((-alignField) | alignField) >> 31;
+    if (isAligned != 0)
+    {
+        u32 alignment = 1u << (alignField >> 24);
+        u32 ptr = (u32)chunk + alignment;
+        ptr += 7;
+        ptr &= ~(alignment - 1);
+        return (void*)ptr;
+    }
+    return (void*)((u8*)chunk + 8);
+}
+
+static inline nlChunk* nlGetNextChunk(nlChunk* chunk)
+{
+    return (nlChunk*)((u8*)chunk + chunk->m_Size + 8);
+}
+
 /**
  * Offset/Address/Size: 0xD40 | 0x801E9F54 | size: 0x68C
+ * TODO: 83.58% match - 40 register allocation diffs in inlined nlGetChunkData expansions
+ * (r3/r5 swap for alignment, r5/r7 swap for chunk pointer). Known -inline deferred
+ * scratch limitation - register allocator sees different context vs full TU.
  */
-cSAnim* cSAnim::Initialize(nlChunk* arg0)
+#pragma inline_depth(smart)
+cSAnim* cSAnim::Initialize(nlChunk* pChunk)
 {
-    return nullptr;
+    nlChunk* chunk = (nlChunk*)((u8*)pChunk + 8);
+    nlChunk* end = nlGetNextChunk(pChunk);
+
+    cSAnim* pRetval = (cSAnim*)nlGetChunkData(chunk);
+    pRetval->m_pCallbackList = NULL;
+
+    chunk = nlGetNextChunk(chunk);
+    pRetval->m_szName = (const char*)nlGetChunkData(chunk);
+
+    chunk = nlGetNextChunk(chunk);
+    pRetval->m_pRotKeys = nlGetChunkData(chunk);
+
+    chunk = nlGetNextChunk(chunk);
+    pRetval->m_pTransKeys = (PackedTrans**)nlGetChunkData(chunk);
+
+    chunk = nlGetNextChunk(chunk);
+    pRetval->m_pScaleKeys = (PackedScale**)nlGetChunkData(chunk);
+
+    chunk = nlGetNextChunk(chunk);
+    pRetval->m_pRootRot = (unsigned short*)nlGetChunkData(chunk);
+
+    chunk = nlGetNextChunk(chunk);
+    pRetval->m_pRootTrans = (nlVector3*)nlGetChunkData(chunk);
+
+    u32 nodeIndex = 0;
+    nlChunk* nodeChunk = nlGetNextChunk(chunk);
+
+    while (nodeChunk != end)
+    {
+        u32 type = nodeChunk->m_ID & 0x80FFFFFF;
+        if (type != 0x80017100 && type != 0x1001)
+            break;
+
+        if (type == 0x80017100)
+        {
+            nlChunk* subChunk = (nlChunk*)((u8*)nodeChunk + 8);
+            nlChunk* subEnd = nlGetNextChunk(nodeChunk);
+
+            while (subChunk != subEnd)
+            {
+                u32 subType = subChunk->m_ID & 0x80FFFFFF;
+                if (subType == 0x17101)
+                {
+                    ((void**)pRetval->m_pRotKeys)[nodeIndex] = nlGetChunkData(subChunk);
+                }
+                else if (subType == 0x17102)
+                {
+                    pRetval->m_pTransKeys[nodeIndex] = (PackedTrans*)nlGetChunkData(subChunk);
+                }
+                else if (subType == 0x17103)
+                {
+                    pRetval->m_pScaleKeys[nodeIndex] = (PackedScale*)nlGetChunkData(subChunk);
+                }
+                subChunk = nlGetNextChunk(subChunk);
+            }
+            nodeIndex++;
+        }
+        nodeChunk = nlGetNextChunk(nodeChunk);
+    }
+
+    nlVector3* rootTrans = pRetval->m_pRootTrans;
+    nlVector3 v3PosStart;
+    nlVector3 v3PosEnd;
+
+    if (rootTrans != NULL)
+    {
+        u32 numRootKeys = pRetval->m_nNumRootKeys;
+
+        if (numRootKeys == 0)
+        {
+            v3PosStart.f.x = 0.0f;
+            v3PosStart.f.y = 0.0f;
+            v3PosStart.f.z = 0.0f;
+        }
+        else if (numRootKeys == 1)
+        {
+            v3PosStart = rootTrans[numRootKeys - 1];
+        }
+        else
+        {
+            float fRealIndex = 0.0f * (numRootKeys - 1);
+            int nIndex = (int)fRealIndex;
+            float fFrac = fRealIndex - (float)nIndex;
+            float fInvFrac = 1.0f - fFrac;
+            nlVector3* pVal0 = &rootTrans[nIndex];
+            nlVector3* pVal1 = &rootTrans[nIndex + 1];
+            v3PosStart.f.x = fFrac * pVal1->f.x + fInvFrac * pVal0->f.x;
+            v3PosStart.f.y = fFrac * pVal1->f.y + fInvFrac * pVal0->f.y;
+            v3PosStart.f.z = fFrac * pVal1->f.z + fInvFrac * pVal0->f.z;
+        }
+
+        if (numRootKeys == 0)
+        {
+            v3PosEnd.f.x = 0.0f;
+            v3PosEnd.f.y = 0.0f;
+            v3PosEnd.f.z = 0.0f;
+        }
+        else
+        {
+            v3PosEnd = rootTrans[numRootKeys - 1];
+        }
+
+        float dist = nlSqrt(
+            (v3PosEnd.f.y - v3PosStart.f.y) * (v3PosEnd.f.y - v3PosStart.f.y) + (v3PosEnd.f.x - v3PosStart.f.x) * (v3PosEnd.f.x - v3PosStart.f.x) + (v3PosEnd.f.z - v3PosStart.f.z) * (v3PosEnd.f.z - v3PosStart.f.z),
+            true);
+
+        pRetval->m_fLinearSpeed = dist / ((float)pRetval->m_nNumKeys / 30.0f);
+    }
+    else
+    {
+        pRetval->m_fLinearSpeed = 0.0f;
+    }
+
+    pRetval->m_pNumMorphKeys = (const unsigned int*)nlGetChunkData(nodeChunk);
+
+    nodeChunk = nlGetNextChunk(nodeChunk);
+    pRetval->m_nMorphIds = (unsigned long*)nlGetChunkData(nodeChunk);
+
+    nodeChunk = nlGetNextChunk(nodeChunk);
+    pRetval->m_pMorphKeys = (unsigned char*)nlGetChunkData(nodeChunk);
+
+    nodeChunk = nlGetNextChunk(nodeChunk);
+    pRetval->m_pNodeProperties = (const unsigned int*)nlGetChunkData(nodeChunk);
+
+    return pRetval;
 }
+#pragma inline_depth()
 
 /**
  * Offset/Address/Size: 0x91C | 0x801E9B30 | size: 0x424

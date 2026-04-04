@@ -44,6 +44,10 @@ void Format(StringType& result, const StringType& format, const float& value);
 template <typename StringType>
 void Format(StringType& result, const StringType& format, const float& value1, const float& value2);
 
+// Format function returning result (SRP), with generic second param
+template <typename StringType, typename T>
+StringType Format(const StringType& format, const T& value);
+
 // Detail namespace with TempStringAllocator
 namespace Detail
 {
@@ -123,11 +127,6 @@ public:
         if (data != 0)
         {
             data->mRefCount++;
-            data = other.m_data;
-        }
-        else
-        {
-            data = 0;
         }
         m_data = data;
     }
@@ -158,6 +157,9 @@ public:
 
     BasicString& AppendInPlace(const CharT* str);
 
+    template <typename OtherAllocator>
+    BasicString& AppendInPlace(const BasicString<CharT, OtherAllocator>& rhs);
+
     const CharT* c_str() const
     {
         static CharT emptyString = '\0';
@@ -167,6 +169,61 @@ public:
     u32 size() const
     {
         return m_data ? m_data->mSize : 0;
+    }
+
+    CharT& operator[](int index)
+    {
+        if (m_data == 0)
+        {
+            BasicStringData<CharT>* data = (BasicStringData<CharT>*)Allocator::allocate(sizeof(BasicStringData<CharT>));
+            if (data != 0)
+            {
+                data->mData = (CharT*)Allocator::allocate(1);
+                int sz = 1;
+                data->mSize = sz;
+                data->mCapacity = sz;
+                data->mData[0] = 0;
+                data->mRefCount = 1;
+            }
+            m_data = data;
+        }
+        else
+        {
+            if (m_data->mRefCount == 1)
+            {
+            }
+            else
+            {
+                BasicStringData<CharT>* newData = (BasicStringData<CharT>*)Allocator::allocate(sizeof(BasicStringData<CharT>));
+                if (newData != 0)
+                {
+                    newData->mData = (CharT*)Allocator::allocate(m_data->mSize);
+                    newData->mSize = m_data->mSize;
+                    newData->mCapacity = m_data->mSize;
+                    for (int j = 0; j < newData->mSize; j++)
+                    {
+                        newData->mData[j] = m_data->mData[j];
+                    }
+                    newData->mRefCount = 1;
+                }
+                if (--m_data->mRefCount == 0)
+                {
+                    if (m_data)
+                    {
+                        if (m_data)
+                        {
+                            delete[] m_data->mData;
+                        }
+                        if (m_data)
+                        {
+                            nlFree(m_data);
+                        }
+                    }
+                }
+                m_data = newData;
+            }
+        }
+        return m_data->mData[index];
     }
 
     BasicString Append(const char* rhs) const;

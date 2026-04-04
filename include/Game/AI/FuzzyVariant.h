@@ -40,4 +40,6 @@ public:
     Variant ExtraData;     // offset 0x1C, size 0x14
 }; // total size: 0x30
 
+extern FuzzyVariant fvNotSet;
+
 #endif // _FUZZYVARIANT_H_

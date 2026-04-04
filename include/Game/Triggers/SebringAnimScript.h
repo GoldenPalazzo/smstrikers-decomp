@@ -6,6 +6,12 @@
 class SebringAnimTagScriptInterpreter : public AnimTagScriptInterpreter
 {
 public:
+    SebringAnimTagScriptInterpreter()
+        : AnimTagScriptInterpreter(10)
+    {
+        m_FireTriggers = true;
+    }
+
     void DoFunctionCall(unsigned int);
     void TriggerFired(unsigned long);
 

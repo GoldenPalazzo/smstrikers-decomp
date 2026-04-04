@@ -1,6 +1,7 @@
 #include "Game/AI/GoalieLooseBall.h"
 
 #include "Game/AI/FilteredRandom.h"
+#include "Game/CharacterTriggers.h"
 #include "NL/nlMath.h"
 #include "PowerPC_EABI_Support/Runtime/global_destructor_chain.h"
 
@@ -15,7 +16,7 @@ LooseBallInfo* LooseBallAnims::mpLooseBallInfo = NULL;
 unsigned int LooseBallAnims::muNumLooseBallAnims = 0;
 
 static LooseBallInfo gCatches[8];
-static int gLooseBallAnimIDs[8] = {
+static int gLooseBallAnims[8] = {
     0x00000033,
     0x00000076,
     0x0000007F,
@@ -45,9 +46,53 @@ static bool LooseBallCallback(float fTime, float fDuration, unsigned long uEvent
 
 /**
  * Offset/Address/Size: 0x1D8 | 0x80052EE0 | size: 0x524
+ * TODO: 95.4% match - kick loop instruction scheduling (6 diffs), lfsu not generated for trap/attack/dive single-entry sections (15 diffs)
  */
-void LooseBallAnims::Init(cPlayer*)
+static inline void InitLooseBallAnim(cPlayer* pPlayer, LooseBallInfo* pInfo, int animID, int animType)
 {
+    pInfo->mfPickupTime = 0.0f;
+    pInfo->mfAnimDuration = 0.0f;
+    pInfo->mnAnimID = animID;
+    pInfo->mAnimType = (eLooseBallAnimType)animType;
+    GetAnimTriggerInfo(pPlayer, animID, LooseBallCallback, pInfo);
+    pPlayer->GetJointPositionFuture(&pInfo->mv3PickupPos, animID, pPlayer->m_nBallJointIndex, pInfo->mfPickupTime, true, true, false);
+    pInfo->mfPickupDistance = nlSqrt(pInfo->mv3PickupPos.f.x * pInfo->mv3PickupPos.f.x + pInfo->mv3PickupPos.f.y * pInfo->mv3PickupPos.f.y, true);
+    pInfo->maPickupAngle = (unsigned short)(s16)(10430.378f * nlATan2f(pInfo->mv3PickupPos.f.y, pInfo->mv3PickupPos.f.x));
+}
+
+void LooseBallAnims::Init(cPlayer* pPlayer)
+{
+    if (mpLooseBallInfo != NULL)
+        return;
+
+    muNumLooseBallAnims = 8;
+    mpLooseBallInfo = gCatches;
+    int i;
+
+    for (i = 0; (unsigned int)i < muNumLooseBallAnims; i++)
+    {
+        InitLooseBallAnim(pPlayer, &mpLooseBallInfo[i], gLooseBallAnims[i], LOOSEBALL_ANIM_PICKUP);
+    }
+
+    for (i = 0; i < 3; i++)
+    {
+        InitLooseBallAnim(pPlayer, &(&mLooseBallKickInfo)[i], gLooseBallKickAnims[i], LOOSEBALL_ANIM_KICK);
+    }
+
+    InitLooseBallAnim(pPlayer, &mTrapBallInfo, 0x7C, LOOSEBALL_ANIM_TRAP);
+    InitLooseBallAnim(pPlayer, &mAttackSTSInfo, 0x71, LOOSEBALL_ANIM_ATTACK);
+
+    for (i = 0; i < 2; i++)
+    {
+        InitLooseBallAnim(pPlayer, &mSwatSTSInfo[i], gSwatSTSAnim[i], LOOSEBALL_ANIM_SWAT);
+    }
+
+    InitLooseBallAnim(pPlayer, &mDiveBallInfo, 0x77, LOOSEBALL_ANIM_PICKUP);
+
+    mLooseBallDesperationInfo[0] = &mTrapBallInfo;
+    mLooseBallDesperationInfo[1] = &mDiveBallInfo;
+    mLooseBallDesperationInfo[2] = &mpLooseBallInfo[6];
+    mLooseBallDesperationInfo[3] = &mpLooseBallInfo[7];
 }
 
 /**

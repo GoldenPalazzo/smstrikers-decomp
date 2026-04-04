@@ -65,11 +65,15 @@ public:
     static const char* PlayCaptainName(eTeamID);
 };
 
-// class CaptainSidekickFilename
-// {
-// public:
-//     void Build(CaptainSidekickFilename::Type, char*, int, int, int);
-// };
+class CaptainSidekickFilename
+{
+public:
+    enum Type
+    {
+        TYPE_0 = 0,
+    };
+    static void Build(Type, char*, int, int, int);
+};
 
 namespace SingleHighlite
 {

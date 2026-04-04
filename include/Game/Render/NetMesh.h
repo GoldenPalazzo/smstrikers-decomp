@@ -49,6 +49,10 @@ public:
     static float s_fVelocityDampingCoefficient;
     static float s_fNetStretchLimit;
     static bool s_bUseStretchLimit;
+    static float s_fLooseness;
+    static float s_fBallRadiusExaggerationFactor;
+    static float s_fBallRadiusExaggerationFactor2;
+    static int s_NumConstraintIterations;
 
     static unsigned long sNetTextureHandle;
     static bool sbDontUseLowestNetTextureLOD;

@@ -275,10 +275,155 @@ void NetMesh::JoltNet(float zDisplacement)
 
 /**
  * Offset/Address/Size: 0x550 | 0x8012F370 | size: 0x510
+ * TODO: 87.48% match - dz register f28 vs f27, float scratch reg diffs, SDA label index diffs (19 total)
  */
-void NetMesh::SatisfyConstraints(const nlVector3&, bool)
+void NetMesh::SatisfyConstraints(const nlVector3& ballPosition, bool bExaggerateBallSize)
 {
-    FORCE_DONT_INLINE;
+    static float fDeltaZero = 0.001f;
+
+    for (int j = 0; j < s_NumConstraintIterations; j++)
+    {
+        int i;
+        for (i = 0; i < m_NumDistanceConstraints; i++)
+        {
+            cDistanceConstraint& c = m_aDistanceConstraints[i];
+            nlVector3& x1 = m_v3Position[c.nParticleA];
+            nlVector3& x2 = m_v3Position[c.nParticleB];
+
+            float dx = x1.f.x - x2.f.x;
+            float dy = x1.f.y - x2.f.y;
+            float dz = x1.f.z - x2.f.z;
+
+            float length = nlSqrt(dx * dx + dy * dy + dz * dz, true);
+
+            if ((float)fabs(length) > fDeltaZero)
+            {
+                float restLength = c.fDistance * (1.0f + s_fLooseness);
+                float diff = (length - restLength) / length;
+                float halfDiff = 0.5f * diff;
+
+                x1.f.x -= dx * halfDiff;
+                x1.f.y -= dy * halfDiff;
+                x1.f.z -= dz * halfDiff;
+
+                x2.f.x += dx * halfDiff;
+                x2.f.y += dy * halfDiff;
+                x2.f.z += dz * halfDiff;
+            }
+        }
+
+        m_fBallPenetrationDepth = 0.0f;
+        m_bPenetratingFixedParticle = false;
+
+        if (mbBallIsInsideNet)
+        {
+            int numParticlesAffected = 0;
+            int iClosestParticle;
+            float closestParticleDistSq;
+
+            for (i = 0; i < m_NumParticles; i++)
+            {
+                if (m_bPenetratingFixedParticle && !m_bIsParticleFixed[i])
+                    continue;
+
+                nlVector3& particlePosition = m_v3Position[i];
+                const nlVector3& particleNormal = m_v3Normal[i];
+
+                float radius = s_fBallRadiusExaggerationFactor * g_pBall->m_pPhysicsBall->GetRadius();
+
+                if (bExaggerateBallSize)
+                {
+                    radius = s_fBallRadiusExaggerationFactor2 * g_pBall->m_pPhysicsBall->GetRadius();
+                }
+
+                float dy = ballPosition.f.y - particlePosition.f.y;
+                float dx = ballPosition.f.x - particlePosition.f.x;
+                float dz = ballPosition.f.z - particlePosition.f.z;
+
+                float dot = dy * particleNormal.f.y + dx * particleNormal.f.x + dz * particleNormal.f.z;
+                float ndot = -dot;
+                float perpY = ndot * particleNormal.f.y + dy;
+                float perpX = ndot * particleNormal.f.x + dx;
+                float perpZ = ndot * particleNormal.f.z + dz;
+                float perpDistSq = perpY * perpY + perpX * perpX + perpZ * perpZ;
+
+                if (perpDistSq < closestParticleDistSq || i == 0)
+                {
+                    closestParticleDistSq = perpDistSq;
+                    iClosestParticle = i;
+                }
+
+                float radiusSq = radius * radius;
+                if (perpDistSq >= 4.0f * radiusSq)
+                    continue;
+
+                nlVector3 pointOnOutsideOfBall = ballPosition;
+                pointOnOutsideOfBall.f.z += radius * particleNormal.f.z;
+                pointOnOutsideOfBall.f.y += radius * particleNormal.f.y;
+                pointOnOutsideOfBall.f.x += radius * particleNormal.f.x;
+
+                float dispZ = pointOnOutsideOfBall.f.z - particlePosition.f.z;
+                float dispY = pointOnOutsideOfBall.f.y - particlePosition.f.y;
+                float dispX = pointOnOutsideOfBall.f.x - particlePosition.f.x;
+
+                numParticlesAffected++;
+
+                float falloffFactor = 1.0f;
+                if (perpDistSq > radiusSq)
+                {
+                    float dist = nlSqrt(perpDistSq, false);
+                    falloffFactor = 1.0f - (dist - radius) / radius;
+                }
+
+                float penetration = dispY * particleNormal.f.y + dispX * particleNormal.f.x + dispZ * particleNormal.f.z;
+
+                if (penetration <= 0.0f)
+                    continue;
+
+                if (penetration > m_fBallPenetrationDepth)
+                {
+                    m_fBallPenetrationDepth = penetration;
+                    m_v3BallPenetrationNormal = particleNormal;
+                }
+
+                float displacementMag = penetration * falloffFactor;
+                particlePosition.f.x += displacementMag * particleNormal.f.x;
+                particlePosition.f.y += displacementMag * particleNormal.f.y;
+                particlePosition.f.z += displacementMag * particleNormal.f.z;
+            }
+
+            m_iClosestParticle = iClosestParticle;
+            m_numAffectedParticles = numParticlesAffected;
+
+            if (mbBallIsInsideNet && m_numAffectedParticles == 0)
+            {
+                float centerY = 0.5f * (mfMinY + mfMaxY);
+                float centerX = 0.5f * (mfMinX + mfMaxX);
+                float dy = ballPosition.f.y - centerY;
+                float dx = ballPosition.f.x - centerX;
+                float dz = ballPosition.f.z - 0.0f;
+                m_fBallPenetrationDepth = nlSqrt(dy * dy + dx * dx + dz * dz, true);
+            }
+        }
+
+        for (i = 0; i < m_NumPositionConstraints; i++)
+        {
+            cPositionConstraint& c = m_aPositionConstraints[i];
+            nlVector3& x = m_v3Position[c.nParticle];
+            x = c.v3Position;
+        }
+
+        {
+            static float fGroundHeight = 0.01f;
+            for (i = 0; i < m_NumParticles; i++)
+            {
+                if (m_v3Position[i].f.z < fGroundHeight)
+                {
+                    m_v3Position[i].f.z = fGroundHeight;
+                }
+            }
+        }
+    }
 }
 
 /**

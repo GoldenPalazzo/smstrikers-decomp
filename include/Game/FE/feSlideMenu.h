@@ -5,14 +5,6 @@
 // #include "NL/nlFunction.h"
 #include "Game/FE/feMenu.h"
 
-enum ItemStates
-{
-    ON_INVALID = -1,
-    ON_APPLY = 0,
-    ON_HIGHLIGHT = 1,
-    NUM_STATES = 2,
-};
-
 class SlideMenuItem
 {
 public:
@@ -30,7 +22,10 @@ public:
 class SlideMenuList : public MenuList<SlideMenuItem>
 {
 public:
-    SlideMenuList();
+    SlideMenuList()
+    {
+        mInputLocked = 0;
+    }
     virtual ~SlideMenuList();
     virtual void Update(float dt);
 

@@ -3,6 +3,9 @@
 
 #include "Game/BaseSceneHandler.h"
 #include "Game/FE/feButtonComponent.h"
+#include "Game/FE/feMenu.h"
+
+class FEScrollText;
 
 class BraggingRightsScene : public BaseSceneHandler
 {
@@ -29,6 +32,14 @@ public:
     void TournamentSceneCreated();
     void Update(float);
     void ChangeTicker(int);
+
+    /* 0x001C */ u16 mBuffer[256];
+    /* 0x021C */ MenuList<TLComponentInstance> mMenuItems;
+    /* 0x0430 */ FEScrollText* mTicker;
+    /* 0x0434 */ int mHighestStats[5];
+    /* 0x0448 */ int mAwardWinners[5];
+    /* 0x045C */ u8 mIsTournamentScene;
+    /* 0x0460 */ ButtonComponent mButtons;
 };
 
 // class FEFinder<TLComponentInstance, 4>

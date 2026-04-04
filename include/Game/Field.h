@@ -5,8 +5,6 @@
 #include "Game/Net.h"
 #include "Game/Ball.h"
 
-#pragma push
-#pragma pack(1)
 struct sCornerSegment
 {
     /* 0x0 */ nlVector2 vCenter;
@@ -20,7 +18,6 @@ struct sSideLinePlane
     /* 0x00 */ nlVector2 vNormal;
     /* 0x08 */ float fDistance;
 }; // total size: 0xC
-#pragma pop
 
 class cField
 {

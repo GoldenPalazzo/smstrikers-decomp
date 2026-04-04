@@ -26,6 +26,8 @@ static const nlVector3 v3Zero = { 0.0f, 0.0f, 0.0f };
 
 float Bowser::mfYAxisTilt = 0.0f;
 
+extern nlVector3 gv3BowserHomePosition;
+
 /**
  * Offset/Address/Size: 0x4BBC | 0x8015D930 | size: 0x2C
  */
@@ -173,9 +175,160 @@ void Bowser::CollisionCallback(PhysicsObject* pObjA, PhysicsObject*, const nlVec
 
 /**
  * Offset/Address/Size: 0x2B64 | 0x8015B8D8 | size: 0x4F0
+ * TODO: 94.11% match - beq/b vs bne branch pattern for mIsInStrikers101Mode check
+ *       and r30/r31 register swap (savedVisible/savedAttackType). Likely -inline deferred artifact.
  */
 void Bowser::ActionInit()
 {
+    eBowserAttackType savedAttackType;
+    u8 savedVisible;
+
+    if (nlSingleton<GameInfoManager>::s_pInstance->IsTiltingFieldOn())
+        return;
+    if (!nlSingleton<GameInfoManager>::s_pInstance->IsBowserAttackEnabled())
+        return;
+    if (nlSingleton<GameInfoManager>::s_pInstance->mIsInStrikers101Mode != false)
+    {
+        return;
+    }
+
+    mbIsVisible = false;
+    mbFirstTime = true;
+
+    if (mAttackType == BOWSER_ATTACK_STOMP)
+    {
+        mStompStage++;
+        if (fabsf(cCameraManager::m_UpVectorStack[cCameraManager::m_UpVectorStackSize].f.x) < 0.001f
+            && fabsf(cCameraManager::m_UpVectorStack[cCameraManager::m_UpVectorStackSize].f.y) < 0.001f
+            && mStompStage == 2)
+        {
+            mAttackType = BOWSER_ATTACK_ROLL;
+            EmissionManager::Destroy((unsigned long)this, fxGetGroup("bowser_fire"));
+            g_pEventManager->CreateValidEvent(0x65, 0x14);
+            savedVisible = mbIsVisible;
+            mbIsVisible = false;
+            meBowserState = BOWSER_STATE_HIDDEN;
+            mfDesiredSpeed = 0.0f;
+            if (mpFeatherBlender->GetChild(1) != NULL)
+            {
+                delete mpFeatherBlender->GetChild(1);
+                mpFeatherBlender->SetChild(1, NULL);
+            }
+            mpFeatherController = NULL;
+            SetPosition(gv3BowserHomePosition);
+            mv3Velocity = v3Zero;
+            maFacingDirection = 0;
+            mpPhysObj->DisableCollisions();
+            if (mAttackType == BOWSER_ATTACK_STOMP && mStompStage != 2)
+            {
+                g_pGame->ResetBowserTimer(g_pGame->m_pGameTweaks->unk31C);
+                return;
+            }
+            savedAttackType = mAttackType;
+            mfYAxisTilt = 0.0f;
+            cCameraManager::SetWorldUpVectorTilt(0.0f, 0.0f);
+            if (g_pBall != NULL)
+            {
+                PhysicsAIBall* pPhys = g_pBall->m_pPhysicsBall;
+                if (pPhys != NULL)
+                {
+                    if (fabsf(mfYAxisTilt) > 0.01f)
+                    {
+                        nlVector3 tiltForce = { 0.0f, 0.0f, 0.0f };
+                        tiltForce.f.x = -mfYAxisTilt * g_pGame->m_pGameTweaks->unk338;
+                        pPhys->m_v3TiltForce = tiltForce;
+                        g_pBall->m_pPhysicsBall->m_bUseTiltForce = true;
+                    }
+                    else
+                    {
+                        pPhys->m_bUseTiltForce = false;
+                    }
+                }
+            }
+            mAttackType = BOWSER_ATTACK_ROLL;
+            if (g_pGame->m_pGameTweaks->unk310 < 0.0f)
+                g_pGame->ResetBowser();
+            if (!mbAlive)
+                return;
+            mbAlive = false;
+            if (!nlSingleton<GameInfoManager>::s_pInstance->IsBowserAttackEnabled())
+                return;
+            if (savedAttackType == BOWSER_ATTACK_STOMP)
+                return;
+            if (savedVisible == 0)
+                return;
+            g_pEventManager->CreateValidEvent(0x37, 0x14);
+            return;
+        }
+    }
+    else
+    {
+        float savedDuration = g_pGame->m_fGameDuration;
+        float gameTime = g_pGame->GetGameTime();
+        if (savedDuration - gameTime < 15.0f)
+            return;
+        mbAlive = true;
+        mAttackType = (eBowserAttackType)nlRandom(NUM_BOWSER_ATTACKS, &nlDefaultSeed);
+        mbDoTilt = true;
+        switch (mAttackType)
+        {
+        case BOWSER_ATTACK_ROLL:
+            ActionFall();
+            mbDoTilt = false;
+            break;
+        case BOWSER_ATTACK_JUMP:
+        case BOWSER_ATTACK_CRAZY:
+            ActionFall();
+            break;
+        case BOWSER_ATTACK_STOMP:
+            mStompStage = 0;
+            break;
+        }
+    }
+
+    if (mAttackType != BOWSER_ATTACK_STOMP)
+        return;
+    if (mStompStage == 0)
+    {
+        cBaseCamera* cam = nlDLRingGetStart(cCameraManager::m_cameraStack);
+        const nlVector3& target = cam->GetTargetPosition();
+        mv3TargetPos = target;
+    }
+    else
+    {
+        mv3TargetPos = v3Zero;
+        if (mfYAxisTilt > 0.0f)
+            mv3TargetPos.f.x = 8.0f;
+        else
+            mv3TargetPos.f.x = -8.0f;
+    }
+    if (mStompStage != 2)
+    {
+        float clampX = cField::GetGoalLineX(1u) - 3.0f;
+        if (fabsf(mv3TargetPos.f.x) > clampX)
+        {
+            if (mv3TargetPos.f.x > 0.0f)
+                mv3TargetPos.f.x = clampX;
+            else
+                mv3TargetPos.f.x = -clampX;
+        }
+        float clampY = cField::GetSidelineY(1u) - 3.0f;
+        if (fabsf(mv3TargetPos.f.y) > clampY)
+        {
+            if (mv3TargetPos.f.y < 0.0f)
+                mv3TargetPos.f.y = -clampY;
+            else
+                mv3TargetPos.f.y = clampY;
+        }
+        if (fabsf(mv3TargetPos.f.x) < 8.0f)
+        {
+            if (mv3TargetPos.f.x < 0.0f)
+                mv3TargetPos.f.x = -8.0f;
+            else
+                mv3TargetPos.f.x = 8.0f;
+        }
+    }
+    ActionStomp();
 }
 
 /**
@@ -741,8 +894,6 @@ void Bowser::ActionJump()
     mv3Velocity = v3JumpVel;
 }
 
-extern nlVector3 gv3BowserHomePosition;
-
 /**
  * Offset/Address/Size: 0x1A90 | 0x8015A804 | size: 0x254
  */
@@ -1120,11 +1271,255 @@ void Bowser::SetTiltParameters(float fYAxisTilt)
 
 /**
  * Offset/Address/Size: 0x954 | 0x801596C8 | size: 0x6F0
+ * TODO: 93.03% match - r29/r31 register swap for 'this' pointer due to dead code
+ * GS_END_GAME block's savedVisible/savedAttackType variables changing MWCC graph coloring
  */
 bool Bowser::CheckForAbort()
 {
-    FORCE_DONT_INLINE;
-    return false;
+    bool isGameplayOrOvertime = false;
+    eGameState gameState = g_pGame->m_eGameState;
+    if (gameState == GS_GAMEPLAY || gameState == GS_OVERTIME)
+        isGameplayOrOvertime = true;
+
+    if (!isGameplayOrOvertime)
+    {
+        if (meBowserState == BOWSER_STATE_LEAVE)
+            return true;
+
+        if (nlSingleton<GameInfoManager>::s_pInstance->IsBowserAttackEnabled())
+        {
+            g_pEventManager->CreateValidEvent(0x3b, 0x14);
+        }
+
+        meBowserState = BOWSER_STATE_LEAVE;
+        mAnimID = BOWSER_ANIM_JUMP;
+
+        cPN_SAnimController* controller = NULL;
+
+        if (cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList == NULL)
+        {
+            SlotPoolBase::BaseAddNewBlock(&cPN_SAnimController::m_SAnimControllerSlotPool, sizeof(cPN_SAnimController));
+        }
+
+        if (cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList != NULL)
+        {
+            controller = (cPN_SAnimController*)cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList;
+            cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList = cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList->m_next;
+        }
+
+        controller = new (controller) cPN_SAnimController(
+            mpAnim[BOWSER_ANIM_JUMP],
+            (const AnimRetarget*)0,
+            PM_HOLD,
+            (void (*)(unsigned int, cPN_SAnimController*))0,
+            (unsigned int)0,
+            (bool)0);
+
+        cPN_Blender* blender;
+
+        if (mpFeatherBlender->GetChild(0) != NULL)
+        {
+            blender = NULL;
+
+            if (cPN_Blender::m_BlenderSlotPool.m_FreeList == NULL)
+            {
+                SlotPoolBase::BaseAddNewBlock(&cPN_Blender::m_BlenderSlotPool, sizeof(cPN_Blender));
+            }
+
+            if (cPN_Blender::m_BlenderSlotPool.m_FreeList != NULL)
+            {
+                blender = (cPN_Blender*)cPN_Blender::m_BlenderSlotPool.m_FreeList;
+                cPN_Blender::m_BlenderSlotPool.m_FreeList = cPN_Blender::m_BlenderSlotPool.m_FreeList->m_next;
+            }
+
+            if (blender != NULL)
+            {
+                blender = __ct__11cPN_BlenderFP9cPoseNodeP9cPoseNodef(blender, *mpFeatherBlender->GetChildPtr(0), controller, 0.2f);
+            }
+        }
+        else
+        {
+            blender = (cPN_Blender*)controller;
+        }
+
+        mpFeatherBlender->SetChild(0, blender);
+        mpAnimController = controller;
+
+        cBaseCamera* camera = nlDLRingGetStart<cBaseCamera>(cCameraManager::m_cameraStack);
+        nlVector3 v3CameraTarget = camera->GetTargetPosition();
+
+        nlVector3 v3Velocity = { 25.0f, 0.0f, 25.0f };
+        unsigned short aDesired = 0;
+
+        if (v3CameraTarget.f.x > mv3Position.f.x)
+        {
+            v3Velocity.f.x *= -1.0f;
+            aDesired = 0x8000;
+        }
+
+        maDesiredFacingDirection = aDesired;
+        mv3Velocity = v3Velocity;
+
+        mtStateTimer.SetSeconds(2.0f);
+
+        if (mpFeatherBlender->GetChild(1) != NULL)
+        {
+            mpFeatherBlender->BeginBlendOut(0.1f);
+        }
+
+        mpFeatherController = NULL;
+        return true;
+    }
+
+    if (gameState == GS_END_GAME)
+    {
+        EmissionManager::Destroy((unsigned long)this, fxGetGroup("bowser_fire"));
+        g_pEventManager->CreateValidEvent(0x65, 0x14);
+
+        u8 savedVisible = mbIsVisible;
+        mbIsVisible = false;
+        meBowserState = BOWSER_STATE_HIDDEN;
+        mfDesiredSpeed = 0.0f;
+
+        if (mpFeatherBlender->GetChild(1) != NULL)
+        {
+            delete mpFeatherBlender->GetChild(1);
+            mpFeatherBlender->SetChild(1, NULL);
+        }
+
+        mpFeatherController = NULL;
+        SetPosition(gv3BowserHomePosition);
+
+        mv3Velocity = v3Zero;
+        maFacingDirection = 0;
+
+        mpPhysObj->DisableCollisions();
+
+        if (!(mAttackType == BOWSER_ATTACK_STOMP && mStompStage != 2))
+        {
+            eBowserAttackType savedAttackType = mAttackType;
+
+            SetTiltParameters(0.0f);
+            mAttackType = BOWSER_ATTACK_ROLL;
+
+            if (g_pGame->m_pGameTweaks->unk310 < 0.0f)
+            {
+                g_pGame->ResetBowser();
+            }
+
+            if (mbAlive)
+            {
+                mbAlive = false;
+
+                if (nlSingleton<GameInfoManager>::s_pInstance->IsBowserAttackEnabled()
+                    && savedAttackType != BOWSER_ATTACK_STOMP
+                    && savedVisible)
+                {
+                    g_pEventManager->CreateValidEvent(0x37, 0x14);
+                }
+            }
+        }
+        else
+        {
+            g_pGame->ResetBowserTimer(g_pGame->m_pGameTweaks->unk31C);
+        }
+        return true;
+    }
+
+    float fDuration = g_pGame->m_fGameDuration;
+    float fRemainingTime = fDuration - g_pGame->GetGameTime();
+    if (fRemainingTime >= 15.0f)
+        return false;
+
+    if (mAttackType == BOWSER_ATTACK_STOMP)
+        return false;
+
+    if (meBowserState == BOWSER_STATE_LEAVE)
+        return true;
+
+    if (nlSingleton<GameInfoManager>::s_pInstance->IsBowserAttackEnabled())
+    {
+        g_pEventManager->CreateValidEvent(0x3b, 0x14);
+    }
+
+    meBowserState = BOWSER_STATE_LEAVE;
+    mAnimID = BOWSER_ANIM_JUMP;
+
+    cPN_SAnimController* controller = NULL;
+
+    if (cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList == NULL)
+    {
+        SlotPoolBase::BaseAddNewBlock(&cPN_SAnimController::m_SAnimControllerSlotPool, sizeof(cPN_SAnimController));
+    }
+
+    if (cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList != NULL)
+    {
+        controller = (cPN_SAnimController*)cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList;
+        cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList = cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList->m_next;
+    }
+
+    controller = new (controller) cPN_SAnimController(
+        mpAnim[BOWSER_ANIM_JUMP],
+        (const AnimRetarget*)0,
+        PM_HOLD,
+        (void (*)(unsigned int, cPN_SAnimController*))0,
+        (unsigned int)0,
+        (bool)0);
+
+    cPN_Blender* blender;
+
+    if (mpFeatherBlender->GetChild(0) != NULL)
+    {
+        blender = NULL;
+
+        if (cPN_Blender::m_BlenderSlotPool.m_FreeList == NULL)
+        {
+            SlotPoolBase::BaseAddNewBlock(&cPN_Blender::m_BlenderSlotPool, sizeof(cPN_Blender));
+        }
+
+        if (cPN_Blender::m_BlenderSlotPool.m_FreeList != NULL)
+        {
+            blender = (cPN_Blender*)cPN_Blender::m_BlenderSlotPool.m_FreeList;
+            cPN_Blender::m_BlenderSlotPool.m_FreeList = cPN_Blender::m_BlenderSlotPool.m_FreeList->m_next;
+        }
+
+        if (blender != NULL)
+        {
+            blender = __ct__11cPN_BlenderFP9cPoseNodeP9cPoseNodef(blender, *mpFeatherBlender->GetChildPtr(0), controller, 0.2f);
+        }
+    }
+    else
+    {
+        blender = (cPN_Blender*)controller;
+    }
+
+    mpFeatherBlender->SetChild(0, blender);
+    mpAnimController = controller;
+
+    cBaseCamera* camera = nlDLRingGetStart<cBaseCamera>(cCameraManager::m_cameraStack);
+    nlVector3 v3CameraTarget = camera->GetTargetPosition();
+
+    nlVector3 v3Velocity = { 25.0f, 0.0f, 25.0f };
+    unsigned short aDesired = 0;
+
+    if (v3CameraTarget.f.x > mv3Position.f.x)
+    {
+        v3Velocity.f.x *= -1.0f;
+        aDesired = 0x8000;
+    }
+
+    maDesiredFacingDirection = aDesired;
+    mv3Velocity = v3Velocity;
+
+    mtStateTimer.SetSeconds(2.0f);
+
+    if (mpFeatherBlender->GetChild(1) != NULL)
+    {
+        mpFeatherBlender->BeginBlendOut(0.1f);
+    }
+
+    mpFeatherController = NULL;
+    return true;
 }
 
 /**

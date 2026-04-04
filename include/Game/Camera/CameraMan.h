@@ -72,6 +72,9 @@ public:
     static nlVector3 m_cameraPosition;
     static nlMatrix4 m_matPrevView;
 
+    static float m_fFOV;
+    static int m_pBeginFrameCameraType;
+
     static nlVector3 m_UpVectorStack[2];
     static int m_UpVectorStackSize;
 };

@@ -53,11 +53,17 @@ public:
     /* 0x3C */ f32 m_fLingerEnd;
 };
 
+struct UserEffectInfo
+{
+    nlVector3* pv3Position;
+    nlVector3* pv3Direction;
+};
+
 class UserEffectSpec
 {
 public:
     virtual ~UserEffectSpec();
-    virtual void fn_0x08();
+    virtual void Update(float dt, UserEffectInfo* info);
     virtual void Render(const nlVector3** pVectors, s32 view);
     virtual bool IsFinished();
 };

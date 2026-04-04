@@ -382,11 +382,90 @@ OptionsGameplayMenuV2::~OptionsGameplayMenuV2()
 {
 }
 
+namespace Detail
+{
+template <typename R, typename F>
+struct MemFunImpl
+{
+    F mFuncPtr;
+};
+} // namespace Detail
+
+template <typename T, typename R>
+Detail::MemFunImpl<R, void (T::*)()> MemFun(void (T::*)());
+
+extern char __vt__13SlideMenuItem[];
+
 /**
  * Offset/Address/Size: 0xAA8 | 0x800B5AEC | size: 0x438
+ * TODO: 88.84% match - one duplicate beq from SlideMenuList placement new (known MWCC quirk)
  */
-void OptionsGameplayMenuV2::BuildSkillLevelMenu(TLComponentInstance*, int, int)
+void OptionsGameplayMenuV2::BuildSkillLevelMenu(TLComponentInstance* compinstance, int startindex, int skilltoskip)
 {
+    extern int nlSNPrintf(char*, unsigned long, const char*, ...);
+    typedef Detail::MemFunImpl<void, void (SlideMenuList::*)()> MemFunImpl_SML;
+    typedef BindExp1<void, MemFunImpl_SML, SlideMenuList*> BindExp1_SML;
+
+    SlideMenuList* list = (SlideMenuList*)nlMalloc(sizeof(SlideMenuList), 8, false);
+    if (list != NULL)
+    {
+        new (list) SlideMenuList();
+        list->mComponentInstance = compinstance;
+    }
+    mSlideMenuLists[0] = (MenuList<SlideMenuList>*)list;
+
+    char slidename[64] = { 0 };
+    MenuItem<SlideMenuItem>* menuItem;
+    int slidenum = 1;
+    while (true)
+    {
+        nlSNPrintf(slidename, 64, "Slide%d", slidenum);
+        compinstance->SetActiveSlide(slidename);
+        if (compinstance->GetActiveSlide() == NULL)
+        {
+            break;
+        }
+        unsigned long slideHash = compinstance->GetActiveSlide()->m_hash;
+
+        SlideMenuList* sml = (SlideMenuList*)mSlideMenuLists[0];
+
+        SlideMenuItem* item = (SlideMenuItem*)nlMalloc(sizeof(SlideMenuItem), 8, true);
+        if (item != NULL)
+        {
+            TLComponentInstance* comp = sml->mComponentInstance;
+            *(char**)item = __vt__13SlideMenuItem;
+            item->mSlideMenuHash = (unsigned long)-1;
+            item->mComponentInstance = comp;
+            item->mUserEnumType = slidenum;
+        }
+        item->mSlideMenuHash = slideHash;
+
+        menuItem = &sml->mMenuItems[sml->mNumItemsAdded];
+        menuItem->mType = item;
+        sml->mNumItemsAdded++;
+
+        {
+            BindExp1_SML bind = Bind<void, MemFunImpl_SML, SlideMenuList*>(
+                MemFun<SlideMenuList, void>(&SlideMenuList::SetSlide), sml);
+            Function<SlideMenuItem*> callback(bind);
+            menuItem->mCallbacks[1] = callback;
+        }
+
+        if (skilltoskip == slidenum)
+            menuItem->mDisabled = true;
+        else
+            menuItem->mDisabled = false;
+
+        slidenum++;
+    }
+
+    SlideMenuList* sml = (SlideMenuList*)mSlideMenuLists[0];
+    menuItem = &sml->mMenuItems[sml->mCurrentIndex];
+    menuItem->mCallbacks[2](menuItem->mType);
+    sml->mCurrentIndex = startindex - 1;
+    menuItem = &sml->mMenuItems[sml->mCurrentIndex];
+    menuItem->mCallbacks[1](menuItem->mType);
+    sml->mFlags = 3;
 }
 
 /**

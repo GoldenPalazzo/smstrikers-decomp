@@ -227,8 +227,9 @@ char* SimpleParser::NextToken(bool bToLower)
         }
 
         m_TokenBuffer[m_CurrentBuffer][bufferIndex] = 0;
-        currentToken = m_TokenBuffer[m_CurrentBuffer];
-        m_CurrentBuffer = (m_CurrentBuffer + 1) % 5;
+        int nPrevBuffer = m_CurrentBuffer;
+        m_CurrentBuffer = (nPrevBuffer + 1) % 5;
+        currentToken = m_TokenBuffer[nPrevBuffer];
     }
 
 skip_1:
@@ -440,8 +441,9 @@ skip_1:
             }
 
             m_TokenBuffer[m_CurrentBuffer][tokenLength] = 0;
-            nextToken = m_TokenBuffer[m_CurrentBuffer];
-            m_CurrentBuffer = (m_CurrentBuffer + 1) % 5;
+            int nPrevBuffer2 = m_CurrentBuffer;
+            m_CurrentBuffer = (nPrevBuffer2 + 1) % 5;
+            nextToken = m_TokenBuffer[nPrevBuffer2];
         }
     skip_3:
         result = nextToken;

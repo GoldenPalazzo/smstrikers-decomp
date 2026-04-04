@@ -4,12 +4,21 @@
 #include "Game/OverlayManager.h"
 #include "Game/FE/feInput.h"
 #include "Game/FE/FEAudio.h"
+#include "Game/FE/feHelpFuncs.h"
+#include "Game/FE/feFinder.h"
+#include "Game/FE/feMusic.h"
+#include "Game/FE/fePresentation.h"
+#include "Game/FE/tlComponentInstance.h"
 #include "Game/GameInfo.h"
+#include "Game/main.h"
 #include "NL/nlBasicString.h"
+#include "NL/nlBundleFile.h"
 #include "NL/nlTask.h"
 #include "NL/nlLocalization.h"
 #include "NL/nlPrint.h"
 #include "NL/nlString.h"
+#include "NL/gl/glState.h"
+#include "NL/gl/glTexture.h"
 
 extern nlLocalization* g_pLocalization;
 extern unsigned char PAD_COLOURS[4][3];
@@ -147,9 +156,108 @@ SuperLoadingScene::~SuperLoadingScene()
 
 /**
  * Offset/Address/Size: 0x1428 | 0x800A7B98 | size: 0x520
+ * TODO: 47.58% match - r28/r29 register swap (team1 vs bundleFile),
+ * InlineHasher argument copy pattern differs from target.
+ * File uses -inline deferred. Compiler-internal allocation.
  */
 void SuperLoadingScene::SceneCreated()
 {
+    FEPresentation* pres = m_pFEScene->m_pFEPackage->GetPresentation();
+    if (mType == TT_IN)
+    {
+        pres->SetActiveSlide("appear");
+    }
+    else if (mType == TT_OUT)
+    {
+        pres->SetActiveSlide("disappear");
+    }
+
+    eTeamID team1 = nlSingleton<GameInfoManager>::s_pInstance->GetTeam(1);
+    eTeamID team0 = nlSingleton<GameInfoManager>::s_pInstance->GetTeam(0);
+
+    BundleFile* bundleFile = new (nlMalloc(sizeof(BundleFile), 0x20, true)) BundleFile();
+    bundleFile->Open("art/fe/LoadingScreensUI.Res");
+
+    {
+        char filename[128] = { };
+        BundleFileDirectoryEntry dirEntry;
+        CaptainSidekickFilename::Build((CaptainSidekickFilename::Type)0, filename, 0x80, team0, 0);
+        bundleFile->GetFileInfo(filename, &dirEntry, true);
+        u8* fileData = (u8*)nlMalloc(dirEntry.m_length, 0x20, true);
+        bundleFile->ReadFile(filename, fileData, dirEntry.m_length);
+        u32 hash = nlStringHash(filename);
+        glTextureAdd(hash, fileData, dirEntry.m_length);
+        u32 texHandle = glGetTexture(filename);
+        delete[] fileData;
+        mTextureHandles[0][0] = texHandle;
+    }
+    {
+        char filename[128] = { };
+        BundleFileDirectoryEntry dirEntry;
+        CaptainSidekickFilename::Build((CaptainSidekickFilename::Type)0, filename, 0x80, team1, 1);
+        bundleFile->GetFileInfo(filename, &dirEntry, true);
+        u8* fileData = (u8*)nlMalloc(dirEntry.m_length, 0x20, true);
+        bundleFile->ReadFile(filename, fileData, dirEntry.m_length);
+        u32 hash = nlStringHash(filename);
+        glTextureAdd(hash, fileData, dirEntry.m_length);
+        u32 texHandle = glGetTexture(filename);
+        delete[] fileData;
+        mTextureHandles[1][0] = texHandle;
+    }
+
+    bundleFile->Close();
+    delete bundleFile;
+
+    TLSlide* slide = pres->m_currentSlide;
+    InlineHasher h1, h2, h3(0), h4(0), h5(0), h6(0);
+
+    h2.m_Hash = nlStringLowerHash("leftimage");
+    h1.m_Hash = nlStringLowerHash("Layer");
+    mImageInstances[0][0] = FEFinder<TLImageInstance, 2>::Find<TLSlide>(slide, h1, h2, h3, h4, h5, h6);
+
+    h2.m_Hash = nlStringLowerHash("rightimage");
+    h1.m_Hash = nlStringLowerHash("Layer");
+    mImageInstances[1][0] = FEFinder<TLImageInstance, 2>::Find<TLSlide>(slide, h1, h2, h3, h4, h5, h6);
+
+    h2.m_Hash = nlStringLowerHash("stadiumname");
+    h1.m_Hash = nlStringLowerHash("Layer");
+    TLTextInstance* stadiumText = FEFinder<TLTextInstance, 3>::Find<TLSlide>(slide, h1, h2, h3, h4, h5, h6);
+    if (stadiumText != NULL)
+    {
+        stadiumText->m_LocStrId = GetStadiumStringID(nlSingleton<GameInfoManager>::s_pInstance->GetStadium());
+        stadiumText->m_OverloadFlags |= 0x8;
+    }
+
+    DisplayCupInfo();
+
+    h2.m_Hash = nlStringLowerHash("period");
+    h1.m_Hash = nlStringLowerHash("Layer");
+    TLComponentInstance* periodComp = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(slide, h1, h2, h3, h4, h5, h6);
+    if (periodComp != NULL)
+    {
+        if (g_Language == 2)
+            periodComp->m_bVisible = true;
+        else
+            periodComp->m_bVisible = false;
+    }
+
+    h2.m_Hash = nlStringLowerHash("playersleft");
+    h1.m_Hash = nlStringLowerHash("Layer");
+    TLTextInstance* playersLeft = FEFinder<TLTextInstance, 3>::Find<TLSlide>(slide, h1, h2, h3, h4, h5, h6);
+    if (playersLeft != NULL)
+    {
+        BuildPlayerStrings(playersLeft, 0, false);
+    }
+
+    h2.m_Hash = nlStringLowerHash("playersright");
+    h1.m_Hash = nlStringLowerHash("Layer");
+    TLTextInstance* playersRight = FEFinder<TLTextInstance, 3>::Find<TLSlide>(slide, h1, h2, h3, h4, h5, h6);
+    if (playersRight != NULL)
+    {
+        BuildPlayerStrings(playersRight, 1, false);
+    }
+
+    FEMusic::StopStream();
 }
 
 /**

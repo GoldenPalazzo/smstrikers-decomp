@@ -78,6 +78,47 @@ public:
     virtual unsigned long GetHash() const;
     virtual void ToString() const;
 
+    inline bool operator==(const Variant& other) const
+    {
+        bool bEqual = (mType == other.mType);
+        if (bEqual)
+        {
+            switch (mType)
+            {
+            case FT_UNSPECIFIED:
+                break;
+            case FT_BOOL:
+                bEqual = (mData.b == other.mData.b);
+                break;
+            case FT_CHAR:
+                bEqual = (mData.c == other.mData.c);
+                break;
+            case FT_SHORT:
+                bEqual = (mData.s == other.mData.s);
+                break;
+            case FT_INT:
+                bEqual = (mData.i == other.mData.i);
+                break;
+            case FT_U32:
+                bEqual = (mData.u == other.mData.u);
+                break;
+            case FT_FLOAT:
+                bEqual = (mData.f == other.mData.f);
+                break;
+            case FT_PLAYER:
+                bEqual = (mData.pPlayer == other.mData.pPlayer);
+                break;
+            case FT_TEAM:
+                bEqual = (mData.pTeam == other.mData.pTeam);
+                break;
+            case FT_VECTOR:
+                bEqual = (other.mData.vector.f.x == mData.vector.f.x && other.mData.vector.f.y == mData.vector.f.y && other.mData.vector.f.z == mData.vector.f.z);
+                break;
+            }
+        }
+        return bEqual;
+    }
+
     /* 0x4 */ enum eVariantType mType;
     /* 0x8 */ union
     {

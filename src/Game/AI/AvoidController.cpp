@@ -512,9 +512,136 @@ bool AvoidController::CalcDesiredVelocityToAvoidCorner(
 
 /**
  * Offset/Address/Size: 0x41C | 0x80007A70 | size: 0x4AC
+ * TODO: 93.98% match - 4 register-only diffs: r26/r27/r28 3-way rotation for
+ * loop counter, base pointer, and byte offset variables in both loops.
  */
-void AvoidController::AvoidSidelines()
+bool AvoidController::AvoidSidelines()
 {
+    bool bHitSideline;
+    bool bTurboAllowed;
+    nlVector2 vCurrentVelDir;
+    nlVector2 vCurrentDesiredVelDir;
+    nlVector2 vNewDesiredVelDir;
+    int i;
+    sCornerSegment corner;
+
+    if (m_pFielder->GetDistanceToDesiredPos() <= 0.25f)
+    {
+        m_CurrentlyAvoiding &= ~AVOID_SIDELINES;
+        m_LastRepulsionVector[AvoidableEnumToIndex(AVOID_SIDELINES)] = v3Zero;
+        return false;
+    }
+
+    bTurboAllowed = true;
+
+    nlSinCos(&vCurrentVelDir.f.y, &vCurrentVelDir.f.x, m_pFielder->m_aActualMovementDirection);
+    nlSinCos(&vCurrentDesiredVelDir.f.y, &vCurrentDesiredVelDir.f.x, m_pFielder->m_aDesiredMovementDirection);
+
+    vNewDesiredVelDir = vCurrentDesiredVelDir;
+
+    {
+        u8* pBase = (u8*)cField::mCorners;
+        int byteOffset = 0;
+        for (i = 0; i < 4; i++)
+        {
+            u32* pSrc = (u32*)(pBase + byteOffset);
+            ((u32*)&corner)[0] = pSrc[0];
+            ((u32*)&corner)[1] = pSrc[1];
+            ((u32*)&corner)[2] = pSrc[2];
+            ((u32*)&corner)[3] = pSrc[3];
+            bHitSideline = CalcDesiredVelocityToAvoidCorner(vNewDesiredVelDir, corner, vCurrentDesiredVelDir, vCurrentVelDir);
+            if (bHitSideline)
+                break;
+            byteOffset += sizeof(sCornerSegment);
+        }
+    }
+
+    if (!bHitSideline)
+    {
+        u8* pBase = (u8*)cField::mSidelines;
+        int byteOffset = 0;
+        for (i = 0; i < 4; i++)
+        {
+            sSideLinePlane* pSide = (sSideLinePlane*)(pBase + byteOffset);
+            nlVector2 vSidelineNormal;
+            vSidelineNormal.f.x = v2Zero.f.x - pSide->vNormal.f.x;
+            vSidelineNormal.f.y = v2Zero.f.y - pSide->vNormal.f.y;
+
+            nlVector2 vSidelinePos = *(nlVector2*)&m_pFielder->m_v3Position;
+
+            if (vSidelineNormal.f.x == 0.0f)
+            {
+                vSidelinePos.f.y = pSide->fDistance * pSide->vNormal.f.y;
+            }
+            else
+            {
+                vSidelinePos.f.x = pSide->fDistance * pSide->vNormal.f.x;
+            }
+
+            bHitSideline = CalcDesiredVelocityToAvoidSideline(
+                vNewDesiredVelDir, vCurrentDesiredVelDir, vCurrentVelDir, vSidelinePos, vSidelineNormal);
+            if (bHitSideline)
+                break;
+            byteOffset += sizeof(sSideLinePlane);
+        }
+    }
+
+    if (bHitSideline)
+    {
+        bool isZero = false;
+        if (v2Zero.f.x == vNewDesiredVelDir.f.x)
+            if (v2Zero.f.y == vNewDesiredVelDir.f.y)
+                isZero = true;
+        if (isZero)
+            bTurboAllowed = false;
+        else
+        {
+            float fDot = vNewDesiredVelDir.f.y * vCurrentVelDir.f.y;
+            fDot = vNewDesiredVelDir.f.x * vCurrentVelDir.f.x + fDot;
+            if (fDot < 0.99f)
+                bTurboAllowed = false;
+            m_pFielder->m_aDesiredMovementDirection = (u16)(s32)(10430.378f * nlATan2f(vNewDesiredVelDir.f.y, vNewDesiredVelDir.f.x));
+            m_pFielder->m_aDesiredFacingDirection = m_pFielder->m_aDesiredMovementDirection;
+        }
+    }
+
+    if (!bTurboAllowed)
+    {
+        if (m_pFielder->IsRunning())
+        {
+            if (m_pFielder->m_pBall != NULL)
+            {
+                f32 fDesiredSpeed = m_pFielder->m_fDesiredSpeed;
+                if (fDesiredSpeed <= m_pFTweaks->fRunningWBSpeed)
+                {
+                }
+                else
+                {
+                    fDesiredSpeed = m_pFTweaks->fRunningWBSpeed;
+                }
+                u16 aDesiredMovementDir = m_pFielder->m_aDesiredMovementDirection;
+                if (m_pFielder->IsTurboing())
+                {
+                    m_pFielder->InitActionRunningWB(false);
+                    m_pFielder->InitMovementRunning(
+                        m_pFTweaks->fRunningWBDirectionSeekSpeed,
+                        m_pFTweaks->fRunningWBDirectionSeekFalloff,
+                        m_pFTweaks->fRunningWBAccel,
+                        m_pFTweaks->fRunningWBDecel);
+                }
+                m_pFielder->m_fDesiredSpeed = fDesiredSpeed;
+                m_pFielder->m_aDesiredMovementDirection = aDesiredMovementDir;
+                m_pFielder->m_aDesiredFacingDirection = aDesiredMovementDir;
+            }
+        }
+    }
+
+    if (bHitSideline)
+        m_CurrentlyAvoiding |= AVOID_SIDELINES;
+    else
+        m_CurrentlyAvoiding &= ~AVOID_SIDELINES;
+    m_LastRepulsionVector[AvoidableEnumToIndex(AVOID_SIDELINES)] = v3Zero;
+    return bHitSideline;
 }
 
 /**

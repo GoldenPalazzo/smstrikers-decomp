@@ -24,6 +24,7 @@ struct EventData;
 
 // Forward declarations
 class Bowser;
+class cBall;
 class cSHierarchy;
 class cAnimInventory;
 class CharacterPhysicsData;
@@ -388,18 +389,23 @@ public:
     virtual u32 GetID();
 };
 
-class CollisionPlayerBallData
+class CollisionPlayerBallData : public EventData
 {
 public:
     virtual u32 GetID();
+
+    /* 0x04 */ cPlayer* pPlayer;
+    /* 0x08 */ cBall* pBall;
+    /* 0x0C */ nlVector3 velocity;
+    /* 0x18 */ PhysicsBoneID boneID;
 };
 
-class CollisionPlayerWallData
+class CollisionPlayerWallData : public EventData
 {
 public:
     virtual u32 GetID();
 
-    /* 0x04 */ u32 pad_04;
+    /* 0x04 */ cPlayer* pPlayer;
     /* 0x08 */ nlVector3 contactPoint;
     /* 0x14 */ nlVector3 wallNormal;
 };
@@ -428,10 +434,15 @@ public:
     virtual u32 GetID();
 };
 
-class CollisionPlayerPlayerData
+class CollisionPlayerPlayerData : public EventData
 {
 public:
     virtual u32 GetID();
+
+    /* 0x04 */ cPlayer* player1;
+    /* 0x08 */ cPlayer* player2;
+    /* 0x0C */ nlVector3 velocity1;
+    /* 0x18 */ nlVector3 velocity2;
 };
 
 #endif // _CHARACTER_H_

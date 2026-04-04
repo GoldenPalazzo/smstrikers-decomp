@@ -32,7 +32,7 @@ public:
     bool CalcPowerupRepulsionVector(nlVector3&);
     bool CalcDesiredVelocityToAvoidSideline(nlVector2&, const nlVector2&, const nlVector2&, const nlVector2&, const nlVector2&);
     bool CalcDesiredVelocityToAvoidCorner(nlVector2&, const sCornerSegment&, const nlVector2&, const nlVector2&);
-    void AvoidSidelines();
+    bool AvoidSidelines();
     void ApplyRepulsionVector(nlVector3);
 
     /* 0x00 */ cFielder* m_pFielder;

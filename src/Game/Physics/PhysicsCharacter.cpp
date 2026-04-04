@@ -1,6 +1,10 @@
 #include "Game/Physics/PhysicsCharacter.h"
 #include "Game/Physics/PhysicsColumn.h"
+#include "Game/Physics/PhysicsFakeBall.h"
 #include "Game/Ball.h"
+#include "Game/Net.h"
+#include "Game/AI/Fielder.h"
+#include "Game/Sys/eventman.h"
 #include "NL/nlMemory.h"
 
 extern CollisionSpace* g_CollisionSpace;
@@ -79,9 +83,139 @@ bool PhysicsCharacter::SetContactInfo(dContact* contact, PhysicsObject* other, b
 /**
  * Offset/Address/Size: 0xB24 | 0x80136D3C | size: 0x518
  */
-ContactType PhysicsCharacter::Contact(PhysicsObject*, dContact*, int, PhysicsObject*)
+ContactType PhysicsCharacter::Contact(PhysicsObject* pOther, dContact* contacts,
+    int numContacts, PhysicsObject* pOtherOrig)
 {
-    return NO_CONTACT;
+    int objectType = pOther->GetObjectType();
+    if (objectType == 0x12)
+        return NO_CONTACT;
+    if (objectType == 0x7)
+        return NO_CONTACT;
+    if (!m_CanCollidedWithGoalLine && objectType == 0x19)
+    {
+        nlVector3 pos;
+        GetPosition(&pos);
+        float radius;
+        m_pPlayerPlayerColumn->GetRadius(&radius);
+        float netWidth = cNet::m_fNetWidth;
+        float half = 0.5f;
+        if (fabsf(pos.f.y) < netWidth * half - radius)
+            return NO_CONTACT;
+    }
+    if (objectType == 0x19 || objectType == 0x5)
+    {
+        for (int i = 0; i < numContacts; i++)
+        {
+            if (contacts[i].geom.normal[2] < 0.08f)
+            {
+                Event* event = g_pEventManager->CreateValidEvent(0x1F, 0x34);
+                CollisionPlayerWallData* wallData = new (&event->m_data) CollisionPlayerWallData();
+                wallData->pPlayer = (cPlayer*)m_pAICharacter;
+                nlVec3Set(wallData->contactPoint, contacts->geom.pos[0], contacts->geom.pos[1], contacts->geom.pos[2]);
+                nlVec3Set(wallData->wallNormal, contacts->geom.normal[0], contacts->geom.normal[1], contacts->geom.normal[2]);
+            }
+        }
+        if (!m_CanCollideWithWall)
+            return NO_CONTACT;
+    }
+    if (objectType == 0xF)
+    {
+        if (contacts->geom.normal[2] > contacts->geom.normal[0] && contacts->geom.normal[2] > contacts->geom.normal[1])
+            m_unk88 = 1;
+        if (!m_CanCollideWithBall)
+            return NO_CONTACT;
+        cBall* ball = ((PhysicsAIBall*)pOther)->m_pAIBall;
+        bool canDamage = false;
+        if (ball->m_tShotTimer.m_uPackedTime != 0 && ball->mbCanDamage)
+            canDamage = true;
+        if (canDamage)
+            return NO_CONTACT;
+        if (!m_HasCollidedWithBall)
+        {
+            Event* event = g_pEventManager->CreateValidEvent(0x27, 0x30);
+            CollisionPlayerBallData* ballData = new (&event->m_data) CollisionPlayerBallData();
+            ballData->pPlayer = (cPlayer*)m_pAICharacter;
+            ballData->pBall = ((PhysicsAIBall*)pOther)->m_pAIBall;
+            ballData->velocity = pOther->GetLinearVelocity();
+            ballData->boneID = GetBoneIDForSubObject(pOtherOrig);
+            m_HasCollidedWithBall = 1;
+        }
+        if (pOther->m_parentObject == NULL)
+            FakeBallWorld::InvalidateBallCache();
+        if (ball->m_pOwner != NULL)
+        {
+            cFielder* fielder = (cFielder*)m_pAICharacter;
+            if (fielder->IsFallenDown(0.0f))
+            {
+                if (fielder->IsCharacterInAir(true))
+                    return NO_CONTACT;
+                if (fielder->m_eAnimID == 0x74 || fielder->m_eAnimID == 0x75)
+                    return ONE_WAY_CONTACT_OTHER;
+                return ONE_WAY_CONTACT_THIS;
+            }
+        }
+        return ONE_WAY_CONTACT_OTHER;
+    }
+    ContactType contactType = TWO_WAY_CONTACT;
+    if (objectType == 0x4)
+    {
+        PhysicsCharacter* otherPhysChar = (PhysicsCharacter*)pOther->m_parentObject;
+        if (m_pAICharacter->m_eClassType == FIELDER && otherPhysChar->m_pAICharacter->m_eClassType == FIELDER)
+        {
+            cFielder* fielder = (cFielder*)m_pAICharacter;
+            cFielder* otherFielder = (cFielder*)otherPhysChar->m_pAICharacter;
+            if (fielder->IsCharacterInAir(true))
+            {
+                if (!otherFielder->IsCharacterInAir(true))
+                    return NO_CONTACT;
+            }
+            else if (otherFielder->IsCharacterInAir(true))
+            {
+                if (!fielder->IsCharacterInAir(true))
+                    return NO_CONTACT;
+            }
+            else
+            {
+                if (fielder->IsFrozen())
+                    return ONE_WAY_CONTACT_OTHER;
+                if (otherFielder->IsFrozen())
+                    return ONE_WAY_CONTACT_THIS;
+                if (fielder->IsFallenDown(0.0f))
+                {
+                    if (!otherFielder->IsHitting())
+                    {
+                        if (fielder->m_eAnimID == 0x74 || fielder->m_eAnimID == 0x75)
+                            return ONE_WAY_CONTACT_OTHER;
+                        return ONE_WAY_CONTACT_THIS;
+                    }
+                    return TWO_WAY_CONTACT;
+                }
+                if (otherFielder->IsFallenDown(0.0f))
+                {
+                    if (!fielder->IsHitting())
+                    {
+                        if (otherFielder->m_eAnimID == 0x74 || otherFielder->m_eAnimID == 0x75)
+                            return ONE_WAY_CONTACT_THIS;
+                        return ONE_WAY_CONTACT_OTHER;
+                    }
+                    return TWO_WAY_CONTACT;
+                }
+                if (fielder->IsInvincible())
+                    contactType = ONE_WAY_CONTACT_OTHER;
+                else if (otherFielder->IsInvincible())
+                    contactType = ONE_WAY_CONTACT_THIS;
+            }
+        }
+        {
+            Event* event = g_pEventManager->CreateValidEvent(0x25, 0x38);
+            CollisionPlayerPlayerData* playerData = new (&event->m_data) CollisionPlayerPlayerData();
+            playerData->player1 = (cPlayer*)m_pAICharacter;
+            playerData->player2 = (cPlayer*)otherPhysChar->m_pAICharacter;
+            playerData->velocity1 = m_pAICharacter->m_v3Velocity;
+            playerData->velocity2 = otherPhysChar->m_pAICharacter->m_v3Velocity;
+        }
+    }
+    return contactType;
 }
 
 /**

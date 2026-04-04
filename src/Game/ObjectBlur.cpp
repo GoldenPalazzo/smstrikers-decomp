@@ -144,74 +144,59 @@ BlurHandler* BlurManager::GetNewHandler(const char* szTextureName, float fLineWi
 
 /**
  * Offset/Address/Size: 0x2AC | 0x80162A80 | size: 0x514
+ * TODO: 88.92% match - MWCC in decomp.me devirtualizes Texcoord calls (direct bl)
+ * while target uses virtual dispatch (lwz+lwz+mtctr+bctrl). 12 extra target instructions
+ * from vtable dispatch + 4 from v3Bottom pointer pre-computation + lwz vs li for 0xFFFFFFFF.
  */
-void BlurHandler::RenderMesh(unsigned long textureID)
+void BlurHandler::RenderMesh(unsigned long uTexID)
 {
-    f32 sp88;
-    nlMatrix4 sp50;
-    eGLStream stream_decl[3];
-    nlVector3 sp38;
-    nlVector3 sp2C;
-    nlVector2 sp24;
-    nlVector2 sp1C;
-    nlVector2 sp14;
-    nlVector2 spC;
+    u32 count;
+    u32 uPointIndex;
+    u32 matHandle;
+    nlColour colour;
+    f32 nonAdditiveAlpha;
+    BlurPointEntry* BPEntry;
 
-    nlColour sp8;
-    f32 temp_f2;
-    f32 temp_f3;
-    f32 var_f30;
-    f32 var_f31;
-    BlurPointEntry* temp_r27;
-    s32 var_r26;
-    s32 var_r27;
-    s32 var_r30;
-    s8 temp_r0;
-    u32 temp_r3_2;
-    u32 var_r29;
-    u32 var_r31;
-    BlurPointEntry* temp_r0_2;
-    nlVector3* temp_r5_2;
-    nlVector3* temp_r6;
-    nlVector3* temp_r7_2;
-    nlVector3* temp_r8;
-
-    var_r31 = 0;
+    count = 0;
     if (m_nTrailEndPointer != m_nInsertIndex)
     {
         if (m_nTrailEndPointer < m_nInsertIndex)
         {
-            var_r31 = m_nInsertIndex - m_nTrailEndPointer;
+            count = m_nInsertIndex - m_nTrailEndPointer;
         }
         else
         {
-            var_r31 = (m_maxPositionEntries - m_nTrailEndPointer) + m_nInsertIndex;
+            count = m_maxPositionEntries - m_nTrailEndPointer;
+            count += m_nInsertIndex;
         }
     }
 
-    if (var_r31 < 2)
+    if (count < 2)
     {
         return;
     }
 
+    eGLStream stream_decl[3];
     stream_decl[0] = stream_decl_[0];
     stream_decl[1] = stream_decl_[1];
     stream_decl[2] = stream_decl_[2];
 
-    GLMeshWriter meshWriter;
+    GLMeshWriter mesh;
 
-    glSetDefaultState(1);
-    sp50.SetIdentity();
+    glSetDefaultState(true);
 
-    sp50.f.m43 += fFlimmerOffset;
-    temp_r3_2 = glAllocMatrix();
-    if (temp_r3_2 != -0x1)
+    nlMatrix4 matWorld;
+    matWorld.SetIdentity();
+    matWorld.f.m43 += fFlimmerOffset;
+
+    matHandle = glAllocMatrix();
+    if (matHandle != (u32)-1)
     {
-        glSetMatrix(temp_r3_2, sp50);
+        glSetMatrix(matHandle, matWorld);
     }
-    glSetCurrentMatrix(temp_r3_2);
+    glSetCurrentMatrix(matHandle);
 
-    if (m_bAdditive != 0)
+    if (m_bAdditive)
     {
         glSetRasterState(GLS_AlphaBlend, 2);
     }
@@ -224,107 +209,126 @@ void BlurHandler::RenderMesh(unsigned long textureID)
     glSetRasterState(GLS_DepthWrite, 0);
     glSetRasterState(GLS_Culling, 0);
     glSetCurrentRasterState(glHandleizeRasterState());
-    glSetCurrentTexture(textureID, GLTT_Diffuse);
+    glSetCurrentTexture(uTexID, GLTT_Diffuse);
     glSetCurrentProgram(glGetProgram("3d unlit"));
-    var_f31 = 0.0f;
-    // *(u32*)&sp8 = 0xFFFFFFFF;
-    if (m_bAdditive != 0)
+
+    nonAdditiveAlpha = 0.0f;
+    *(u32*)&colour.c[0] = 0xFFFFFFFF;
+
+    if (m_bAdditive)
     {
-        nlColourSet(sp8, 0xFF, 0xFF, 0xFF, 0xFF);
-        if (m_bDying != 0)
+        nlColourSet(colour, 0xFF, 0xFF, 0xFF, 0xFF);
+        if (m_bDying)
         {
-            temp_r0 = 255.0f * (m_fDyingTimer / m_fTimeToDie);
-            nlColourSeReversed(sp8, temp_r0, temp_r0, temp_r0, temp_r0);
+            int fadeVal = 255.0f * (m_fDyingTimer / m_fTimeToDie);
+            nlColourSeReversed(colour, fadeVal, fadeVal, fadeVal, fadeVal);
         }
     }
-    else if (m_bDying != 0)
+    else if (m_bDying)
     {
-        var_f31 = 90.0f * (m_fDyingTimer / m_fTimeToDie);
+        nonAdditiveAlpha = 90.0f * (m_fDyingTimer / m_fTimeToDie);
     }
     else
     {
-        var_f31 = 90.0f;
+        nonAdditiveAlpha = 90.0f;
     }
-    var_r30 = m_nTrailEndPointer;
-    var_f30 = 0.0f;
-    if (meshWriter.Begin(var_r31 * 2, GLP_TriStrip, 3, stream_decl, false) != 0)
+
+    uPointIndex = m_nTrailEndPointer;
+    f32 texU = 0.0f;
+    f32 texUIncrement = 1.0f / (f32)count;
+
+    if (mesh.Begin(count * 2, GLP_TriStrip, 3, stream_decl, false))
     {
-        for (int var_r29 = 0; var_r29 < var_r31; var_r29++)
+        for (u32 i = 0; i < count; i++)
         {
-            temp_r27 = &m_pointRingBuffer[var_r30];
-            if (m_bAdditive == 0)
+            BPEntry = &m_pointRingBuffer[uPointIndex];
+            if (!m_bAdditive)
             {
-                sp8.c[3] = var_f31 * var_f30;
+                colour.c[3] = nonAdditiveAlpha * texU;
             }
-            if (((var_r29 == 0) || (var_r29 == (var_r31 - 1))) && (m_bDying == 0))
+
+            if ((i == 0 || i == count - 1) && !m_bDying)
             {
-                if (var_r29 == 0)
+                int pointIndexA, pointIndexB;
+                if (i == 0)
                 {
-                    var_r26 = var_r30 + 1;
-                    var_r27 = var_r30;
-                    if (var_r26 == m_maxPositionEntries)
+                    pointIndexB = uPointIndex + 1;
+                    pointIndexA = uPointIndex;
+                    if (pointIndexB == m_maxPositionEntries)
                     {
-                        var_r26 = 0;
+                        pointIndexB = 0;
                     }
                 }
                 else
                 {
-                    var_r27 = var_r30 - 1;
-                    var_r26 = var_r30;
-                    if (var_r27 < 0)
+                    pointIndexA = uPointIndex - 1;
+                    pointIndexB = uPointIndex;
+                    if (pointIndexA < 0)
                     {
-                        var_r27 = m_maxPositionEntries - 1;
+                        pointIndexA = m_maxPositionEntries - 1;
                     }
                 }
-                temp_r0_2 = m_pointRingBuffer;
-                temp_f2 = ReplayManager::Instance()->mRender->mFrameBlendPercent; // m_unk1ABC;
-                temp_r6 = &temp_r0_2[var_r26].v3Top;
-                temp_r5_2 = &temp_r0_2[var_r27].v3Top;
-                temp_f3 = 1.0f - temp_f2;
-                temp_r8 = &temp_r0_2[var_r26].v3Bottom;
-                temp_r7_2 = &temp_r0_2[var_r27].v3Bottom;
-                sp38.f.x = (temp_f3 * temp_r5_2->f.x) + (temp_f2 * temp_r6->f.x);
-                sp38.f.y = (temp_f3 * temp_r5_2->f.y) + (temp_f2 * temp_r6->f.y);
-                sp38.f.z = (temp_f3 * temp_r5_2->f.z) + (temp_f2 * temp_r6->f.z);
-                sp2C.f.x = (temp_f3 * temp_r7_2->f.x) + (temp_f2 * temp_r8->f.x);
-                sp2C.f.y = (temp_f3 * temp_r7_2->f.y) + (temp_f2 * temp_r8->f.y);
-                sp2C.f.z = (temp_f3 * temp_r7_2->f.z) + (temp_f2 * temp_r8->f.z);
-                meshWriter.Colour(sp8);
-                sp24.f.x = var_f30;
-                sp24.f.y = 0.0f;
-                meshWriter.Texcoord(sp24);
-                meshWriter.Vertex(sp38);
-                meshWriter.Colour(sp8);
-                sp1C.f.x = var_f30;
-                sp1C.f.y = 1.0f;
-                meshWriter.Texcoord(sp1C);
-                meshWriter.Vertex(sp2C);
+
+                f32 blendPct = ReplayManager::Instance()->mRender->mFrameBlendPercent;
+                BlurPointEntry* pB = &m_pointRingBuffer[pointIndexB];
+                BlurPointEntry* pA = &m_pointRingBuffer[pointIndexA];
+
+                f32 invBlend = 1.0f - blendPct;
+
+                nlVector3 v3Top;
+                v3Top.f.x = blendPct * pB->v3Top.f.x + invBlend * pA->v3Top.f.x;
+                v3Top.f.y = blendPct * pB->v3Top.f.y + invBlend * pA->v3Top.f.y;
+                v3Top.f.z = blendPct * pB->v3Top.f.z + invBlend * pA->v3Top.f.z;
+
+                nlVector3 v3Bottom;
+                v3Bottom.f.x = blendPct * pB->v3Bottom.f.x + invBlend * pA->v3Bottom.f.x;
+                v3Bottom.f.y = blendPct * pB->v3Bottom.f.y + invBlend * pA->v3Bottom.f.y;
+                v3Bottom.f.z = blendPct * pB->v3Bottom.f.z + invBlend * pA->v3Bottom.f.z;
+
+                mesh.Colour(colour);
+                nlVector2 tc0;
+                tc0.f.x = texU;
+                tc0.f.y = 0.0f;
+                mesh.Texcoord(tc0);
+                mesh.Vertex(v3Top);
+
+                mesh.Colour(colour);
+                nlVector2 tc1;
+                tc1.f.x = texU;
+                tc1.f.y = 1.0f;
+                mesh.Texcoord(tc1);
+                mesh.Vertex(v3Bottom);
             }
             else
             {
-                meshWriter.Colour(sp8);
-                sp14.f.x = var_f30;
-                sp14.f.y = 0.0f;
-                meshWriter.Texcoord(sp14);
-                meshWriter.Vertex(temp_r27->v3Top);
-                meshWriter.Colour(sp8);
-                spC.f.x = var_f30;
-                spC.f.y = 1.0f;
-                meshWriter.Texcoord(spC);
-                meshWriter.Vertex(temp_r27->v3Bottom);
+                mesh.Colour(colour);
+                nlVector2 tc0;
+                tc0.f.x = texU;
+                tc0.f.y = 0.0f;
+                mesh.Texcoord(tc0);
+                mesh.Vertex(BPEntry->v3Top);
+
+                mesh.Colour(colour);
+                nlVector2 tc1;
+                tc1.f.x = texU;
+                tc1.f.y = 1.0f;
+                mesh.Texcoord(tc1);
+                mesh.Vertex(BPEntry->v3Bottom);
             }
-            var_r30 += 1;
-            if (var_r30 == m_maxPositionEntries)
+
+            uPointIndex++;
+            if (uPointIndex == (u32)m_maxPositionEntries)
             {
-                var_r30 = 0;
+                uPointIndex = 0;
             }
+            texU += texUIncrement;
         }
 
-        if (meshWriter.End() == 0)
+        if (!mesh.End())
         {
             return;
         }
-        glViewAttachModel(GLV_Particles, 5, meshWriter.GetModel());
+        glViewAttachModel(GLV_Particles, 5, mesh.GetModel());
     }
 }
 

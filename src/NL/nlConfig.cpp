@@ -1,6 +1,7 @@
 #include "NL/nlConfig.h"
 #include "Game/Sys/debug.h"
 #include "NL/nlFileGC.h"
+#include "PowerPC_EABI_Support/MSL_C/MSL_Common/ctype.h"
 
 // static Config* sGlobal = nullptr;
 
@@ -65,11 +66,261 @@ void Config::Set(const char* key, const BasicString<char, Detail::TempStringAllo
     Set(key, value.c_str());
 }
 
+static bool IsIntValue(const char* str, int& out)
+{
+    const char* s = str;
+    while (*s != 0)
+    {
+        if (isdigit(*s) || *s == '-')
+            s++;
+        else
+            return false;
+    }
+    out = LexicalCast<int, const char*>(str);
+    return true;
+}
+
+static bool IsFloatValue(const char* str, float& out)
+{
+    bool seenPeriod = false;
+    const char* s = str;
+    while (*s != 0)
+    {
+        char c = *s;
+        if (c == '.' || c == ',')
+            seenPeriod = true;
+        else if (isdigit(c) || c == '-')
+            ;
+        else
+            return false;
+        s++;
+    }
+    out = LexicalCast<float, const char*>(str);
+    return seenPeriod;
+}
+
 /**
  * Offset/Address/Size: 0x165C | 0x801D42C0 | size: 0x56C
+ * TODO: 87.5% match - r28/r30/r31/r28/r27/r29/r29/r31 register allocation swap,
+ * nlToUpper<Uc> vs nlToUpper<c> template instantiation (u8 cast needed for byte load pattern),
+ * __ctype_map not hoisted to prologue, IsInteger bne+beq vs bne+bne+b branch pattern,
+ * copy loop bge vs blt/b branch pattern
  */
-void Config::Set(const char*, const char*)
+void Config::Set(const char* tag, const char* value)
 {
+    bool b = false;
+    float f = 0.0f;
+    int i = 0;
+
+    if (IsIntValue(value, i))
+    {
+        const char* p = tag;
+        u32 hash = 0x1505;
+        while (*p != 0)
+        {
+            s8 c = (s8)nlToUpper((u8)*p++);
+            hash = hash + (hash << 5) + c;
+        }
+        u32 idx = hash & 0x3FF;
+
+        TagValuePair* tvp;
+        while (true)
+        {
+            u32 offset = idx * 12;
+            if (mTvpHash[idx].tag == NULL || nlStrICmp(mTvpHash[idx].tag, tag) == 0)
+            {
+                tvp = (TagValuePair*)((char*)mTvpHash + offset);
+                break;
+            }
+            idx++;
+            idx &= 0x3FF;
+        }
+
+        tvp->type = _INT;
+        tvp->value.i = i;
+
+        if (tvp->tag == NULL)
+        {
+            char* dest = mStringEnd;
+            while (*tag != 0)
+            {
+                if (mStringEnd - mStringMemory < 0x27FF)
+                {
+                    *mStringEnd = nlToUpper(*tag);
+                    tag++;
+                    mStringEnd++;
+                }
+                else
+                {
+                    break;
+                }
+            }
+            *mStringEnd = 0;
+            mStringEnd++;
+            tvp->tag = dest;
+        }
+    }
+    else if (IsFloatValue(value, f))
+    {
+        const char* p = tag;
+        u32 hash = 0x1505;
+        while (*p != 0)
+        {
+            s8 c = (s8)nlToUpper((u8)*p++);
+            hash = hash + (hash << 5) + c;
+        }
+        u32 idx = hash & 0x3FF;
+
+        TagValuePair* tvp;
+        while (true)
+        {
+            u32 offset = idx * 12;
+            if (mTvpHash[idx].tag == NULL || nlStrICmp(mTvpHash[idx].tag, tag) == 0)
+            {
+                tvp = (TagValuePair*)((char*)mTvpHash + offset);
+                break;
+            }
+            idx++;
+            idx &= 0x3FF;
+        }
+
+        tvp->type = _FLOAT;
+        tvp->value.f = f;
+
+        if (tvp->tag == NULL)
+        {
+            char* dest = mStringEnd;
+            while (*tag != 0)
+            {
+                if (mStringEnd - mStringMemory < 0x27FF)
+                {
+                    *mStringEnd = nlToUpper(*tag);
+                    tag++;
+                    mStringEnd++;
+                }
+                else
+                {
+                    break;
+                }
+            }
+            *mStringEnd = 0;
+            mStringEnd++;
+            tvp->tag = dest;
+        }
+    }
+    else if (IsBool(value, b))
+    {
+        const char* p = tag;
+        u32 hash = 0x1505;
+        while (*p != 0)
+        {
+            s8 c = (s8)nlToUpper((u8)*p++);
+            hash = hash + (hash << 5) + c;
+        }
+        u32 idx = hash & 0x3FF;
+
+        TagValuePair* tvp;
+        while (true)
+        {
+            u32 offset = idx * 12;
+            if (mTvpHash[idx].tag == NULL || nlStrICmp(mTvpHash[idx].tag, tag) == 0)
+            {
+                tvp = (TagValuePair*)((char*)mTvpHash + offset);
+                break;
+            }
+            idx++;
+            idx &= 0x3FF;
+        }
+
+        tvp->type = _BOOL;
+        tvp->value.b = b;
+
+        if (tvp->tag == NULL)
+        {
+            char* dest = mStringEnd;
+            while (*tag != 0)
+            {
+                if (mStringEnd - mStringMemory < 0x27FF)
+                {
+                    *mStringEnd = nlToUpper(*tag);
+                    tag++;
+                    mStringEnd++;
+                }
+                else
+                {
+                    break;
+                }
+            }
+            *mStringEnd = 0;
+            mStringEnd++;
+            tvp->tag = dest;
+        }
+    }
+    else
+    {
+        const char* p = tag;
+        u32 hash = 0x1505;
+        while (*p != 0)
+        {
+            s8 c = (s8)nlToUpper((u8)*p++);
+            hash = hash + (hash << 5) + c;
+        }
+        u32 idx = hash & 0x3FF;
+
+        TagValuePair* tvp;
+        while (true)
+        {
+            u32 offset = idx * 12;
+            if (mTvpHash[idx].tag == NULL || nlStrICmp(mTvpHash[idx].tag, tag) == 0)
+            {
+                tvp = (TagValuePair*)((char*)mTvpHash + offset);
+                break;
+            }
+            idx++;
+            idx &= 0x3FF;
+        }
+
+        tvp->type = _STRING;
+
+        char* valDest = mStringEnd;
+        while (*value != 0)
+        {
+            if (mStringEnd - mStringMemory < 0x27FF)
+            {
+                *mStringEnd = *value;
+                value++;
+                mStringEnd++;
+            }
+            else
+            {
+                break;
+            }
+        }
+        *mStringEnd = 0;
+        mStringEnd++;
+        tvp->value.s = valDest;
+
+        if (tvp->tag == NULL)
+        {
+            char* dest = mStringEnd;
+            while (*tag != 0)
+            {
+                if (mStringEnd - mStringMemory < 0x27FF)
+                {
+                    *mStringEnd = nlToUpper(*tag);
+                    tag++;
+                    mStringEnd++;
+                }
+                else
+                {
+                    break;
+                }
+            }
+            *mStringEnd = 0;
+            mStringEnd++;
+            tvp->tag = dest;
+        }
+    }
 }
 
 /**
@@ -266,10 +517,28 @@ TagValuePair& Config::FindTvp(const char* tag)
 
 /**
  * Offset/Address/Size: 0x1FEC | 0x801D4C50 | size: 0x534
+ * TODO: 81.18% match - 4 vs 5 callee-saved register allocation (stw individual vs stmw r27),
+ * dead loop in operator[] null case not reproducible (MWCC optimizes self-assignment away),
+ * bne+b vs beq branch pattern for refcount==1 check
  */
-bool Config::IsBool(const char*, bool&) const
+bool Config::IsBool(const char* str, bool& b) const
 {
-    FORCE_DONT_INLINE;
+    BasicString<char, Detail::TempStringAllocator> s(str);
+    for (int i = 0; i < (int)s.size() - 1; i++)
+    {
+        char& r = s[i];
+        r = _tolower(s[i]);
+    }
+    if (s == "true" || s == "yes" || s == "on" || s == "enable")
+    {
+        b = true;
+        return true;
+    }
+    if (s == "false" || s == "no" || s == "off" || s == "disable")
+    {
+        b = false;
+        return false;
+    }
     return false;
 }
 

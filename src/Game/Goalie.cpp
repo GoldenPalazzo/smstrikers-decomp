@@ -15,6 +15,7 @@
 #include "Game/GameTweaks.h"
 #include "Game/Team.h"
 #include "Game/AI/FilteredRandom.h"
+#include "Game/FixedUpdateTask.h"
 #include "NL/plat/plataudio.h"
 #include "types.h"
 
@@ -3002,9 +3003,187 @@ float Goalie::CalcTimeToPlane()
 /**
  * Offset/Address/Size: 0x18C8 | 0x800443C4 | size: 0x4AC
  */
+/**
+ * TODO: 96.51% match - r4/r5 pBall register swap, missing addi r3 hoisting,
+ * cascading float register diffs due to -inline deferred vs -inline auto
+ */
 bool Goalie::CanInterceptPass()
 {
-    FORCE_DONT_INLINE;
+    GoalieTweaks* pTweaks = (GoalieTweaks*)m_pTweaks;
+    f32 fInterceptRangeSq = pTweaks->fInterceptSaveTolerance * pTweaks->fInterceptSaveTolerance;
+
+    SkillTweaks* pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide);
+    if (pSkillTweaks->fGoalieCanInterceptPass < 0.5f)
+    {
+        return false;
+    }
+
+    do
+    {
+        if (mpPassTarget == NULL)
+        {
+            break;
+        }
+        if (IsOnSameTeam(mpPassTarget))
+        {
+            break;
+        }
+
+        cBall* pBall = g_pBall;
+        if (pBall->m_bBallDeflectCount != muBallDeflectCount)
+        {
+            break;
+        }
+
+        mpSaveData = NULL;
+
+        f32 dyBallToTarget = pBall->m_v3Position.f.y - mpPassTarget->m_v3Position.f.y;
+        f32 dyBallToGoalie = pBall->m_v3Position.f.y - m_v3Position.f.y;
+        f32 dxBallToTarget = pBall->m_v3Position.f.x - mpPassTarget->m_v3Position.f.x;
+        f32 dxBallToGoalie = pBall->m_v3Position.f.x - m_v3Position.f.x;
+
+        f32 distTargetSq = dxBallToTarget * dxBallToTarget + dyBallToTarget * dyBallToTarget;
+        f32 distGoalieSq = dxBallToGoalie * dxBallToGoalie + dyBallToGoalie * dyBallToGoalie;
+
+        u16 saveAngle;
+        u32 uSaveType;
+
+        if (distGoalieSq < distTargetSq)
+        {
+            nlVector3 v3PassNorm;
+            nlVec3Scale(v3PassNorm, g_pBall->m_v3Velocity, -1.0f);
+            v3PassNorm.f.z = 0.0f;
+
+            nlVector4 v4Plane;
+            MakePerpendicularPlane(m_v3Position, v3PassNorm, v4Plane, 0.2f);
+
+            nlVector3 contactVel;
+            mfTimeTilSave = FakeBallWorld::GetPredictedPlaneIntersectTime(v4Plane, mv3TargetPosition, contactVel);
+
+            saveAngle = (u16)(s32)(10430.378f * nlATan2f(v3PassNorm.f.y, v3PassNorm.f.x));
+
+            uSaveType = 0xFFFF;
+
+            f32 fAbsTargetX = (f32)fabs(mv3TargetPosition.f.x);
+            f32 fTargetX = mv3TargetPosition.f.x;
+            bool bInPenaltyBox;
+            if (fAbsTargetX > cField::GetPenaltyBoxX(1) - (-2.0f)
+                && fTargetX * m_v3Position.f.x > 0.0f
+                && (f32)fabs(mv3TargetPosition.f.y) < (-2.0f) + cField::GetPenaltyBoxY())
+            {
+                bInPenaltyBox = true;
+            }
+            else
+            {
+                bInPenaltyBox = false;
+            }
+
+            if (!bInPenaltyBox)
+            {
+                uSaveType = 0xFFFC;
+            }
+
+            GetLocalPoint(mv3LocalContactPosition, mv3TargetPosition, m_v3Position, saveAngle);
+
+            mpSaveData = GoalieSave::FindBestSave(mBlendInfo, mv3LocalContactPosition, mfTimeTilSave, false, uSaveType, false);
+
+            if (mpSaveData != NULL)
+            {
+                f32 dy = mBlendInfo.mv3BlendedSavePos.f.y - mv3LocalContactPosition.f.y;
+                f32 dx = mBlendInfo.mv3BlendedSavePos.f.x - mv3LocalContactPosition.f.x;
+                f32 dz = mBlendInfo.mv3BlendedSavePos.f.z - mv3LocalContactPosition.f.z;
+                if (dx * dx + dy * dy + dz * dz > fInterceptRangeSq)
+                {
+                    mpSaveData = NULL;
+                }
+            }
+        }
+
+        if (mpSaveData == NULL)
+        {
+            f32 fLeadTime = 2.0f * FixedUpdateTask::GetPhysicsUpdateTick();
+            mfTimeTilSave = g_pBall->m_tPassTargetTimer.GetSeconds() - fLeadTime;
+
+            if (mfTimeTilSave > 0.05f)
+            {
+                nlVector3 v3BallVel;
+                FakeBallWorld::GetPredictedBallPosition(mfTimeTilSave, mv3TargetPosition, v3BallVel);
+
+                f32 dx = mv3TargetPosition.f.x - m_v3Position.f.x;
+                f32 dy = m_v3Position.f.y - mv3TargetPosition.f.y;
+                f32 dot = dx * g_pBall->m_v3Velocity.f.y + dy * g_pBall->m_v3Velocity.f.x + 0.0f * g_pBall->m_v3Velocity.f.z;
+
+                if (dot > 0.0f)
+                {
+                    dy = -1.0f * dy;
+                    dx = -1.0f * dx;
+                }
+
+                saveAngle = (u16)(s32)(10430.378f * nlATan2f(dx, dy));
+
+                uSaveType = 0xFFFF;
+
+                f32 fAbsTargetX = (f32)fabs(mv3TargetPosition.f.x);
+                f32 fTargetX = mv3TargetPosition.f.x;
+                bool bInPenaltyBox;
+                if (fAbsTargetX > cField::GetPenaltyBoxX(1) - (-2.0f)
+                    && fTargetX * m_v3Position.f.x > 0.0f
+                    && (f32)fabs(mv3TargetPosition.f.y) < (-2.0f) + cField::GetPenaltyBoxY())
+                {
+                    bInPenaltyBox = true;
+                }
+                else
+                {
+                    bInPenaltyBox = false;
+                }
+
+                if (!bInPenaltyBox)
+                {
+                    uSaveType = 0xFFFC;
+                }
+
+                GetLocalPoint(mv3LocalContactPosition, mv3TargetPosition, m_v3Position, saveAngle);
+
+                mpSaveData = GoalieSave::FindBestSave(mBlendInfo, mv3LocalContactPosition, mfTimeTilSave, false, uSaveType, false);
+
+                if (mpSaveData != NULL)
+                {
+                    f32 dy2 = mBlendInfo.mv3BlendedSavePos.f.y - mv3LocalContactPosition.f.y;
+                    f32 dx2 = mBlendInfo.mv3BlendedSavePos.f.x - mv3LocalContactPosition.f.x;
+                    f32 dz2 = mBlendInfo.mv3BlendedSavePos.f.z - mv3LocalContactPosition.f.z;
+                    if (dx2 * dx2 + dy2 * dy2 + dz2 * dz2 > fInterceptRangeSq)
+                    {
+                        mpSaveData = NULL;
+                    }
+                }
+            }
+        }
+
+        if (mpSaveData != NULL)
+        {
+            if (mBlendInfo.mfMilestoneTime[2] <= mfTimeTilSave)
+            {
+                mBlendInfo.mfStartTime = 0.0f;
+                mfWaitTime = mfTimeTilSave - mBlendInfo.mfMilestoneTime[2];
+            }
+            else
+            {
+                f32 diff = mBlendInfo.mfMilestoneTime[2] - mfTimeTilSave;
+                if (diff <= mBlendInfo.mfMilestoneTime[1])
+                {
+                    mBlendInfo.mfStartTime = diff;
+                }
+                else
+                {
+                    mBlendInfo.mfStartTime = mBlendInfo.mfMilestoneTime[1];
+                }
+                mfWaitTime = 0.0f;
+            }
+            m_aDesiredFacingDirection = saveAngle;
+            return true;
+        }
+    } while (0);
+
     return false;
 }
 

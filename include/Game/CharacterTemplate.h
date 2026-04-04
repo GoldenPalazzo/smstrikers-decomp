@@ -56,7 +56,7 @@ s32 GetCharacterIndex(const cCharacter*);
 void DestroyCharacters();
 void CreateCharacters();
 cPlayer* CreateGoalie(eCharacterClass, bool);
-void CreateSidekick(int, int, eCharacterClass, eCharacterClass, bool);
+cPlayer* CreateSidekick(int, int, eCharacterClass, eCharacterClass, bool);
 s32 SidekickTexture_cb(unsigned long);
 cPlayer* CreateCharacter(int, int, eCharacterClass, bool);
 void CharacterLoadingGuts(tCharacterTemplate*, const tCharacterTemplateInfo&, eCharacterClass, bool);

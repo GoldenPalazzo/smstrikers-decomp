@@ -1,6 +1,7 @@
 #include "Game/Effects/EmissionController.h"
 #include "Game/Effects/ParticleSystem.h"
 #include "Game/Effects/EmissionManager.h"
+#include "Game/SAnim/pnSAnimController.h"
 #include "NL/nlFile.h"
 #include "NL/nlFileGC.h"
 #include "NL/nlMemory.h"
@@ -292,10 +293,247 @@ bool EmissionController::IsLingering() const
 
 /**
  * Offset/Address/Size: 0x32C | 0x801F7C1C | size: 0x5EC
+ * TODO: 96.17% match - register allocation diffs (r26/r30 numSys, r27/r29 numDel, r29/r26 pSpec,
+ * r30/r27 pNext, r20/r24 pTerrain, f1/f2 float swap) from -inline deferred vs -inline auto.
  */
-bool EmissionController::Update(float)
+bool EmissionController::Update(float dt)
 {
-    return true;
+    if (m_bDisabled)
+    {
+        return true;
+    }
+
+    int numSys = 0;
+    int numDel = 0;
+
+    if (m_Replaying)
+    {
+        dt = m_ReplayDeltaTime;
+    }
+    else
+    {
+        m_Age += dt;
+    }
+
+    if (mUpdateCallback.mTag != EMPTY)
+    {
+        if (mUpdateCallback.mTag == FREE_FUNCTION)
+        {
+            mUpdateCallback.mFreeFunction(*this);
+        }
+        else
+        {
+            ((EmissionFunctor*)mUpdateCallback.mFunctor)->Invoke(*this);
+        }
+    }
+
+    if (dt <= 0.0f)
+    {
+        return true;
+    }
+
+    ParticleSystem* pSys = (ParticleSystem*)m_Systems.m_headNode;
+
+    while (pSys != NULL)
+    {
+        ParticleSystem* pNext = (ParticleSystem*)pSys->m_nextNode;
+
+        pSys->m_aFacing = m_aFacing;
+
+        EffectsSpec* pSpec = pSys->m_pSpec;
+        EffectsTerrainSpec* pTerrain = pSpec->m_pTerrainSpec;
+
+        if (pTerrain != NULL)
+        {
+            if (fxGetTerrain() != 0)
+            {
+                if (!pTerrain->HasTerrain(fxGetTerrain()))
+                {
+                    pSys = pNext;
+                    continue;
+                }
+            }
+        }
+
+        numSys++;
+        pSys->m_uLayer = pSpec->m_uLayer;
+
+        nlVector3 pos = m_vPosition;
+        nlVector3 vel = m_vVelocity;
+
+        if (pSpec->m_eAttach == FXBind_Joint)
+        {
+            if (pSpec->m_eJointBinding == JB_Ascend && m_pPose != NULL)
+            {
+                u32 jointID = m_uJointIDOverride;
+                float fAge = m_Age;
+                vel.f.x = 0.0f;
+                float fJointVelocity = pSpec->m_fJointVelocity;
+                vel.f.y = 0.0f;
+                vel.f.z = 0.0f;
+
+                if (jointID == 0)
+                {
+                    jointID = pSpec->m_uJointID;
+                }
+
+                const cPoseAccumulator* pPose = m_pPose;
+                float fDist = fAge * fJointVelocity;
+                cSHierarchy* pHier = pPose->m_BaseSHierarchy;
+
+                int jointIndex = pHier->GetNodeIndexByID(jointID);
+                int parentIndex = pHier->GetParent(jointIndex);
+
+                while (parentIndex != -1)
+                {
+                    const nlMatrix4& currentMat = pPose->GetNodeMatrix(jointIndex);
+                    const nlMatrix4& parentMat = pPose->GetNodeMatrix(parentIndex);
+
+                    float dy = parentMat.m[3][1] - currentMat.m[3][1];
+                    float dx = parentMat.m[3][0] - currentMat.m[3][0];
+                    float dz = parentMat.m[3][2] - currentMat.m[3][2];
+                    float dist = nlSqrt(dx * dx + dy * dy + dz * dz, true);
+
+                    if (dist >= fDist)
+                    {
+                        float ratio = fDist / dist;
+                        float invRatio = 1.0f - ratio;
+                        pos.f.x = ratio * parentMat.m[3][0] + invRatio * currentMat.m[3][0];
+                        pos.f.y = ratio * parentMat.m[3][1] + invRatio * currentMat.m[3][1];
+                        pos.f.z = ratio * parentMat.m[3][2] + invRatio * currentMat.m[3][2];
+                        break;
+                    }
+
+                    fDist -= dist;
+                    jointIndex = parentIndex;
+                    parentIndex = pHier->GetParent(parentIndex);
+                }
+
+                if (parentIndex == -1)
+                {
+                    const nlMatrix4& mat = pPose->GetNodeMatrix(jointIndex);
+                    pos.as_u32[0] = ((u32*)&mat.m[3][0])[0];
+                    pos.as_u32[1] = ((u32*)&mat.m[3][0])[1];
+                    pos.as_u32[2] = ((u32*)&mat.m[3][0])[2];
+                }
+            }
+            else if (m_pPose != NULL)
+            {
+                u32 jointID = pSpec->m_uJointID;
+
+                if (m_pAnimController != NULL && m_pAnimController->m_bMirror)
+                {
+                    cSHierarchy* pHier = m_pPose->m_BaseSHierarchy;
+                    int nodeIndex = pHier->GetNodeIndexByID(jointID);
+                    int mirroredIndex = pHier->GetMirroredNode(nodeIndex);
+                    jointID = pHier->GetNodeID(mirroredIndex);
+                }
+
+                u32 finalJointID = m_uJointIDOverride;
+                if (finalJointID == 0)
+                {
+                    finalJointID = jointID;
+                }
+
+                const nlMatrix4& mat = m_pPose->GetNodeMatrixByHashID(finalJointID);
+                pos.as_u32[0] = ((u32*)&mat.m[3][0])[0];
+                pos.as_u32[1] = ((u32*)&mat.m[3][0])[1];
+                pos.as_u32[2] = ((u32*)&mat.m[3][0])[2];
+            }
+            else
+            {
+                if (!m_bPoseErrorDisplayed)
+                {
+                    EmissionManager::AddError("No Pose Buffer To Play Effect - playing at default position");
+                    m_bPoseErrorDisplayed = true;
+                }
+            }
+        }
+
+        if (pSpec->m_bGround)
+        {
+            pos.f.z = m_fGround;
+        }
+
+        pos.f.z += pSpec->m_fOffset;
+
+        pSys->m_vPosition = pos;
+        pSys->m_vVelocity = vel;
+        pSys->m_vForward = m_vDirection;
+        pSys->m_Mirror = m_Mirror;
+
+        pSys->UpdateCoordSys();
+
+        pSys->m_bVisible = m_bVisible;
+
+        if (!pSys->Update(dt))
+        {
+            m_Systems.Remove(pSys);
+            delete pSys;
+            numDel++;
+        }
+
+        pSys = pNext;
+    }
+
+    int isFinished = (numSys == numDel);
+
+    if (isFinished && mFinishedCallback.mTag != EMPTY)
+    {
+        if (mFinishedCallback.mTag == FREE_FUNCTION)
+        {
+            mFinishedCallback.mFreeFunction(*this);
+        }
+        else
+        {
+            ((EmissionFunctor*)mFinishedCallback.mFunctor)->Invoke(*this);
+        }
+
+        Function1<void, EmissionController&> empty;
+        empty.mTag = EMPTY;
+
+        if (mFinishedCallback.mTag == FUNCTOR)
+        {
+            delete mFinishedCallback.mFunctor;
+        }
+
+        mFinishedCallback.mTag = EMPTY;
+        mFinishedCallback.mTag = empty.mTag;
+
+        if (mFinishedCallback.mTag == FREE_FUNCTION)
+        {
+            mFinishedCallback.mFreeFunction = empty.mFreeFunction;
+        }
+        else if (mFinishedCallback.mTag == FUNCTOR)
+        {
+            mFinishedCallback.mFunctor = empty.mFunctor->Clone();
+        }
+
+        if (empty.mTag == FUNCTOR)
+        {
+            delete empty.mFunctor;
+        }
+        *(volatile int*)&empty.mTag = EMPTY;
+    }
+
+    if (m_nUserEffects > 0)
+    {
+        UserEffectInfo info;
+        info.pv3Position = &m_vPosition;
+        info.pv3Direction = &m_vDirection;
+
+        int i = 0;
+        int ofs = 0;
+        while (i < m_nUserEffects)
+        {
+            m_pUserEffects[ofs]->Update(dt, &info);
+            isFinished = isFinished & m_pUserEffects[ofs]->IsFinished();
+            ofs++;
+            i++;
+        }
+    }
+
+    return !isFinished;
 }
 
 /**

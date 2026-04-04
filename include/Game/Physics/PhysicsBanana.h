@@ -7,24 +7,24 @@
 
 class PowerupBase;
 
-// Forward declarations for collision data structures
 struct CollisionPowerupGroundData : public EventData
 {
     virtual u32 GetID() { return 0x85; }
 
-    /* 0x04 */ nlVector3 m_position;
-    /* 0x10 */ float m_velocityY;
-    /* 0x14 */ PowerupBase* m_pPowerupObject;
+    /* 0x04 */ nlVector3 position;
+    /* 0x10 */ float fVecZComponent;
+    /* 0x14 */ ePowerUpType eType;
 };
 
 struct CollisionPowerupWallData : public EventData
 {
     virtual u32 GetID() const { return 0x9B; }
 
-    /* 0x04 */ PowerupBase* m_pPowerupObject;
-    /* 0x08 */ cFielder* m_pThrower;
-    /* 0x0C */ nlVector3 m_contactPos;
-    /* 0x18 */ nlVector3 m_contactNormal;
+    /* 0x04 */ PowerupBase* pPowerup;
+    /* 0x08 */ ePowerupSize eSize;
+    /* 0x0C */ ePowerUpType eType;
+    /* 0x10 */ nlVector3 position;
+    /* 0x1C */ nlVector3 normal;
 };
 
 class PhysicsBanana : public PhysicsSphere

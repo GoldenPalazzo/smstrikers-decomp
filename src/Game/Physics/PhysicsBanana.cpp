@@ -4,15 +4,12 @@
 #include "Game/AI/Powerups.h"
 #include "Game/Character.h"
 #include "Game/Player.h"
+#include "Game/Physics/PhysicsCharacter.h"
 
 #include "NL/nlMemory.h"
 
 extern CollisionSpace* g_CollisionSpace;
 extern PhysicsWorld* g_PhysicsWorld;
-
-// VTable declarations
-extern void* CollisionPowerupGroundData_vtable;
-extern void* CollisionPowerupWallData_vtable;
 
 /**
  * Offset/Address/Size: 0x75C | 0x80136190 | size: 0x78
@@ -69,263 +66,228 @@ void PhysicsBanana::PreCollide()
 
 /**
  * Offset/Address/Size: 0xFC | 0x80135B30 | size: 0x540
+ * TODO: 94.69% match - all remaining diffs are pure offset shifts (0 register/instruction diffs)
  */
 ContactType PhysicsBanana::Contact(PhysicsObject* other, dContact* contact, int numContacts)
 {
     nlVector3 bananaPos;
     GetPosition(&bananaPos);
 
-    // Check if colliding with ground (object type 0x11)
-    if (other->GetObjectType() == 0x11) // PhysicsGroundPlane
+    if (other->GetObjectType() == 0x11)
     {
-        // Loop through all contact points
         for (int i = 0; i < numContacts; i++)
         {
-            // Check if contact point is below banana position and has positive depth
-            if ((contact[i].geom.pos[1] <= bananaPos.f.y) && (contact[i].geom.depth > 0.0f))
+            if (contact[i].geom.pos[2] <= bananaPos.f.z && contact[i].geom.normal[2] > 0.9f)
             {
-                // Mark banana as supported by ground
                 if (!m_bIsSupportedByGround)
                 {
                     m_bIsSupportedByGround = true;
                 }
 
-                // Get banana's linear velocity
                 nlVector3 linVel;
                 GetLinearVelocity(&linVel);
 
-                // Check if banana is moving downward (negative Y velocity)
-                if (linVel.f.y < 0.0f)
+                if (linVel.f.z < -1.0f)
                 {
-                    // Create collision event for banana hitting ground
                     Event* event = g_pEventManager->CreateValidEvent(0x22, 0x2C);
-                    // if (event != nullptr)
-                    {
-                        CollisionPowerupGroundData* eventData = (CollisionPowerupGroundData*)(&event->m_data);
-
-                        eventData = new (eventData) CollisionPowerupGroundData();
-
-                        // Set banana position
-                        GetPosition(&eventData->m_position);
-                        eventData->m_velocityY = linVel.f.y;
-
-                        // Set powerup object reference
-                        eventData->m_pPowerupObject = m_pPowerupObject;
-                    }
+                    CollisionPowerupGroundData* eventData = new (&event->m_data) CollisionPowerupGroundData();
+                    GetPosition(&eventData->position);
+                    eventData->fVecZComponent = linVel.f.z;
+                    eventData->eType = m_pPowerupObject->m_eType;
                 }
 
-                // Call trigger callback if set
-                if (m_pTriggerCallbackFunc != nullptr)
+                if (m_pTriggerCallbackFunc != NULL)
                 {
                     nlVector3 contactPos;
-                    contactPos.f.x = contact[i].geom.pos[0];
-                    contactPos.f.y = contact[i].geom.pos[1];
-                    contactPos.f.z = contact[i].geom.pos[2];
-
+                    nlVec3Set(contactPos, contact->geom.pos[0], contact->geom.pos[1], contact->geom.pos[2]);
                     m_pTriggerCallbackFunc(this, other, contactPos, m_pCallbackParam);
                 }
-
-                return TWO_WAY_CONTACT; // Contact handled
+                break;
             }
         }
     }
 
-    // Handle other object types
-    int objectType = other->GetObjectType();
-
-    // Switch on object type (0x0D to 0x19 range)
-    switch (objectType)
+    bool hasWallContact = false;
+    switch (other->GetObjectType())
     {
-    case 0x0D: // Player
+    case 0x0D:
+    case 0x0E:
     {
-        // Check if player is in possession state
-        cPlayer* player = (cPlayer*)other->m_parentObject;
-        if (player->m_eClassType == FIELDER)
+        if (((PhysicsCharacter*)other->m_parentObject)->m_pAICharacter->m_eClassType == FIELDER)
         {
-            cFielder* fielder = (cFielder*)player;
-            if (fielder->m_eMovementState == MOVEMENT_FROM_ANIM)
+            if (m_pPowerupObject->mtNoHitTimer.m_uPackedTime != 0 && m_pPowerupObject->m_pThrower == (cFielder*)((PhysicsCharacter*)other->m_parentObject)->m_pAICharacter)
             {
-                // Check if banana is already assigned to this player
-                if (m_pPowerupObject != nullptr && m_pPowerupObject->m_pThrower == fielder)
-                {
-                    return NO_CONTACT; // Ignore collision
-                }
-
-                // Call trigger callback
-                if (m_pTriggerCallbackFunc != nullptr)
-                {
-                    nlVector3 contactPos;
-                    contactPos.f.x = contact[0].geom.pos[0];
-                    contactPos.f.y = contact[0].geom.pos[1];
-                    contactPos.f.z = contact[0].geom.pos[2];
-
-                    m_pTriggerCallbackFunc(this, other, contactPos, m_pCallbackParam);
-                }
+                return NO_CONTACT;
             }
-        }
-        return NO_CONTACT; // Contact handled
-    }
-
-    case 0x0E: // Fielder
-    {
-        cFielder* fielder = (cFielder*)other->m_parentObject;
-
-        // Check if fielder is in possession state
-        if (fielder->m_eMovementState == MOVEMENT_FROM_ANIM)
-        {
-            // Check if banana is already assigned to this fielder
-            if (m_pPowerupObject != nullptr && m_pPowerupObject->m_pThrower == fielder)
+            if (m_pTriggerCallbackFunc != NULL)
             {
-                return NO_CONTACT; // Ignore collision
-            }
-
-            // Check if fielder is away from ball carrier
-            if (fielder->IsBallAwayFromCarrier())
-            {
-                return NO_CONTACT; // Ignore collision
-            }
-
-            // Check if fielder has ball
-            if (fielder->m_pBall != nullptr /*&& fielder->m_bHasBall*/)
-            {
-                // Mark powerup as collected
-                if (m_pPowerupObject != nullptr)
-                {
-                    m_pPowerupObject->m_bShouldDestroy = true;
-                }
-                return NO_CONTACT; // Contact handled
-            }
-
-            // Call trigger callback
-            if (m_pTriggerCallbackFunc != nullptr)
-            {
+                float py = contact->geom.pos[1];
+                float pz = contact->geom.pos[2];
+                float px = contact->geom.pos[0];
                 nlVector3 contactPos;
-                contactPos.f.x = contact[0].geom.pos[0];
-                contactPos.f.y = contact[0].geom.pos[1];
-                contactPos.f.z = contact[0].geom.pos[2];
-
+                contactPos.f.x = px;
+                contactPos.f.y = py;
+                contactPos.f.z = pz;
                 m_pTriggerCallbackFunc(this, other, contactPos, m_pCallbackParam);
             }
+            return NO_CONTACT;
         }
-        return NO_CONTACT; // Contact handled
-    }
-
-    case 0x0F: // Goalie
-    {
-        // Check if banana is already assigned to this goalie
-        if (m_pPowerupObject != nullptr /*&& m_pPowerupObject->m_pThrower == other->m_parentObject*/)
+        if (m_pTriggerCallbackFunc != NULL)
         {
-            return NO_CONTACT; // Ignore collision
-        }
-
-        // Call trigger callback
-        if (m_pTriggerCallbackFunc != nullptr)
-        {
+            float py = contact->geom.pos[1];
+            float pz = contact->geom.pos[2];
+            float px = contact->geom.pos[0];
             nlVector3 contactPos;
-            contactPos.f.x = contact[0].geom.pos[0];
-            contactPos.f.y = contact[0].geom.pos[1];
-            contactPos.f.z = contact[0].geom.pos[2];
-
+            contactPos.f.x = px;
+            contactPos.f.y = py;
+            contactPos.f.z = pz;
             m_pTriggerCallbackFunc(this, other, contactPos, m_pCallbackParam);
         }
-        return NO_CONTACT; // Contact handled
-    }
-
-    case 0x10: // Ball
-    {
-        // Check if banana is already assigned to this ball
-        if (m_pPowerupObject != nullptr /*&& m_pPowerupObject->m_pThrower == other->m_parentObject*/)
-        {
-            return NO_CONTACT; // Ignore collision
-        }
-
-        // Call trigger callback
-        if (m_pTriggerCallbackFunc != nullptr)
-        {
-            nlVector3 contactPos;
-            contactPos.f.x = contact[0].geom.pos[0];
-            contactPos.f.y = contact[0].geom.pos[1];
-            contactPos.f.z = contact[0].geom.pos[2];
-
-            m_pTriggerCallbackFunc(this, other, contactPos, m_pCallbackParam);
-        }
-        return NO_CONTACT; // Contact handled
-    }
-
-    case 0x11: // Wall
-    {
-        // Check if banana is already assigned to this wall
-        if (m_pPowerupObject != nullptr /*&& m_pPowerupObject->m_pThrower == other->m_parentObject*/)
-        {
-            return NO_CONTACT; // Ignore collision
-        }
-
-        // Call trigger callback
-        if (m_pTriggerCallbackFunc != nullptr)
-        {
-            nlVector3 contactPos;
-            contactPos.f.x = contact[0].geom.pos[0];
-            contactPos.f.y = contact[0].geom.pos[1];
-            contactPos.f.z = contact[0].geom.pos[2];
-
-            m_pTriggerCallbackFunc(this, other, contactPos, m_pCallbackParam);
-        }
-        return NO_CONTACT; // Contact handled
-    }
-
-    default:
         break;
     }
-
-    // Check for wall collision with high velocity
-    bool hasWallContact = false;
-    for (int i = 0; i < numContacts; i++)
+    case 0x0F:
     {
-        if (contact[i].geom.depth < 0.0f)
+        cCharacter* charData = *(cCharacter**)((u8*)other + 0x40);
+        cCharacter* character = *(cCharacter**)((u8*)charData + 0x24);
+        if (character != NULL && character->m_eClassType == FIELDER)
         {
-            hasWallContact = true;
-            break;
-        }
-    }
-
-    if (hasWallContact)
-    {
-        // Get banana's linear velocity magnitude
-        nlVector3 linVel = GetLinearVelocity();
-        float velocitySquared = (linVel.f.x * linVel.f.x) + (linVel.f.y * linVel.f.y) + (linVel.f.z * linVel.f.z);
-
-        // Check if velocity is above threshold
-        if (velocitySquared > 225.0f) // 15.0f squared
-        {
-            // Check if colliding with wall (object type 0x19)
-            if (other->GetObjectType() == 0x19) // PhysicsWall
+            if (m_pPowerupObject->mtNoHitTimer.m_uPackedTime != 0 && m_pPowerupObject->m_pThrower == (cFielder*)character)
             {
-                // Create collision event for banana hitting wall
-                Event* event = g_pEventManager->CreateValidEvent(0x21, 0x3C);
-                // if (event != nullptr)
-                // {
-                CollisionPowerupWallData* eventData = (CollisionPowerupWallData*)(&event->m_data);
-                eventData = new (eventData) CollisionPowerupWallData();
-
-                // Set powerup object references
-                eventData->m_pPowerupObject = m_pPowerupObject;
-                eventData->m_pThrower = m_pPowerupObject->m_pThrower;
-
-                // Set contact position
-                eventData->m_contactPos.f.x = contact[0].geom.pos[0];
-                eventData->m_contactPos.f.y = contact[0].geom.pos[1];
-                eventData->m_contactPos.f.z = contact[0].geom.pos[2];
-
-                // Set contact normal
-                eventData->m_contactNormal.f.x = contact[0].geom.normal[0];
-                eventData->m_contactNormal.f.y = contact[0].geom.normal[1];
-                eventData->m_contactNormal.f.z = contact[0].geom.normal[2];
-                // }
+                return NO_CONTACT;
+            }
+            if (((cFielder*)character)->IsBallAwayFromCarrier())
+            {
+                return NO_CONTACT;
             }
         }
+        {
+            bool hasBall = false;
+            void* ballPtr = *(void**)((u8*)charData + 0x08);
+            if (ballPtr != NULL)
+            {
+                u8 ballFlag = *((u8*)charData + 0xA2);
+                if (ballFlag != 0)
+                {
+                    hasBall = true;
+                }
+            }
+            if (hasBall)
+            {
+                m_pPowerupObject->m_bShouldDestroy = true;
+                return NO_CONTACT;
+            }
+        }
+        if (m_pTriggerCallbackFunc != NULL)
+        {
+            float py = contact->geom.pos[1];
+            float pz = contact->geom.pos[2];
+            float px = contact->geom.pos[0];
+            nlVector3 contactPos;
+            contactPos.f.x = px;
+            contactPos.f.y = py;
+            contactPos.f.z = pz;
+            m_pTriggerCallbackFunc(this, other, contactPos, m_pCallbackParam);
+        }
+        break;
+    }
+    case 0x13:
+    {
+        if (m_pPowerupObject->mtNoHitTimer.m_uPackedTime != 0)
+        {
+            PowerupBase* otherPowerup = ((PhysicsBanana*)other)->m_pPowerupObject;
+            if (m_pPowerupObject->m_pThrower == otherPowerup->m_pThrower)
+            {
+                return NO_CONTACT;
+            }
+        }
+        if (m_pTriggerCallbackFunc != NULL)
+        {
+            float py = contact->geom.pos[1];
+            float pz = contact->geom.pos[2];
+            float px = contact->geom.pos[0];
+            nlVector3 contactPos;
+            contactPos.f.x = px;
+            contactPos.f.y = py;
+            contactPos.f.z = pz;
+            m_pTriggerCallbackFunc(this, other, contactPos, m_pCallbackParam);
+        }
+        return NO_CONTACT;
+    }
+    case 0x14:
+    {
+        if (m_pPowerupObject->mtNoHitTimer.m_uPackedTime != 0)
+        {
+            PowerupBase* otherPowerup = ((PhysicsBanana*)other)->m_pPowerupObject;
+            if (m_pPowerupObject->m_pThrower == otherPowerup->m_pThrower)
+            {
+                return NO_CONTACT;
+            }
+        }
+        if (m_pTriggerCallbackFunc != NULL)
+        {
+            float py = contact->geom.pos[1];
+            float pz = contact->geom.pos[2];
+            float px = contact->geom.pos[0];
+            nlVector3 contactPos;
+            contactPos.f.x = px;
+            contactPos.f.y = py;
+            contactPos.f.z = pz;
+            m_pTriggerCallbackFunc(this, other, contactPos, m_pCallbackParam);
+        }
+        return NO_CONTACT;
+    }
+    case 0x1A:
+    {
+        if (m_pPowerupObject->mtNoHitTimer.m_uPackedTime != 0)
+        {
+            PhysicsObject* innerObj = *(PhysicsObject**)((u8*)other + 0x30);
+            if (innerObj->GetObjectType() == 0x4)
+            {
+                if (m_pPowerupObject->m_pThrower == NULL)
+                {
+                    return NO_CONTACT;
+                }
+            }
+        }
+        break;
+    }
+    default:
+    {
+        for (int i = 0; i < numContacts; i++)
+        {
+            if (contact[i].geom.normal[2] < 0.08f)
+            {
+                hasWallContact = true;
+            }
+        }
+        break;
+    }
     }
 
-    return TWO_WAY_CONTACT; // Contact handled
+    nlVector3& linVel = GetLinearVelocity();
+    float velSq = (linVel.f.x * linVel.f.x) + (linVel.f.y * linVel.f.y) + (linVel.f.z * linVel.f.z);
+
+    if (hasWallContact && velSq > 1.0f)
+    {
+        if (other->GetObjectType() == 0x19)
+        {
+            Event* event = g_pEventManager->CreateValidEvent(0x21, 0x3C);
+            CollisionPowerupWallData* eventData = new (&event->m_data) CollisionPowerupWallData();
+
+            eventData->eSize = m_pPowerupObject->meSize;
+            eventData->eType = m_pPowerupObject->m_eType;
+
+            eventData->position.f.x = contact->geom.pos[0];
+            eventData->position.f.y = contact->geom.pos[1];
+            eventData->position.f.z = contact->geom.pos[2];
+
+            eventData->normal.f.x = contact->geom.normal[0];
+            eventData->normal.f.y = contact->geom.normal[1];
+            eventData->normal.f.z = contact->geom.normal[2];
+        }
+    }
+
+    return TWO_WAY_CONTACT;
 }
 
 /**

@@ -2,6 +2,7 @@
 #define _SHTOURNTEAMSETUP_H_
 
 #include "types.h"
+#include "NL/nlBasicString.h"
 #include "Game/BaseSceneHandler.h"
 #include "Game/DB/Cup.h"
 #include "Game/DB/CustomTournament.h"
@@ -46,8 +47,8 @@ public:
     void UpdateCaptainName();
     void UpdateSKName();
     void Proceed();
-    void FindCaptainSlideName(eTeamID);
-    void FindSidekickSlideName(eSidekickID);
+    BasicString<char, Detail::TempStringAllocator> FindCaptainSlideName(eTeamID);
+    BasicString<char, Detail::TempStringAllocator> FindSidekickSlideName(eSidekickID);
     void AutoFill();
     void UpdateForCurrentRow();
     void ScrollUp(bool);

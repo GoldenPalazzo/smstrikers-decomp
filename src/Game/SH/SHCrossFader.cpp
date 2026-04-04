@@ -1,18 +1,22 @@
 #include "Game/SH/SHCrossFader.h"
 
-#include "NL/nlConfig.h"
 #include "NL/nlColour.h"
+#include "NL/nlConfig.h"
 #include "NL/nlFileGC.h"
+#include "NL/nlMath.h"
 #include "NL/nlMemory.h"
 #include "NL/nlPrint.h"
 #include "NL/nlString.h"
+#include "NL/plat/plataudio.h"
 #include "Game/Audio/AudioLoader.h"
 #include "Game/BaseGameSceneManager.h"
-#include "Game/GameSceneManager.h"
+#include "Game/FE/FEAudio.h"
 #include "Game/FE/feFinder.h"
 #include "Game/FE/fePresentation.h"
 #include "Game/FE/feResourceManager.h"
 #include "Game/FE/feSceneManager.h"
+#include "Game/GameInfo.h"
+#include "Game/GameSceneManager.h"
 
 // /**
 //  * Offset/Address/Size: 0x0 | 0x800BCB38 | size: 0x20
@@ -256,7 +260,163 @@ void CrossFaderScene::SceneCreated()
 
 /**
  * Offset/Address/Size: 0x0 | 0x800BBF04 | size: 0x510
+ * TODO: 97.76% match - ForceApplySettings call eliminated by compiler in scratch env
+ * (body in separate TU UserOptions.cpp, works correctly in actual build)
  */
-void CrossFaderScene::Update(float)
+void CrossFaderScene::Update(float fDeltaT)
 {
+    nlColour colWhite = { 0xFF, 0xFF, 0xFF, 0xFF };
+    nlColour colTransparent = { 0xFF, 0xFF, 0xFF, 0x00 };
+
+    BaseSceneHandler::Update(fDeltaT);
+
+    switch (mFadeState)
+    {
+    case FS_FADE_IN_INIT:
+    {
+        for (int i = 0; i < mNumImages; i++)
+        {
+            if (i == 0)
+                mImageInstances[i]->SetAssetColour(colWhite);
+            else
+                mImageInstances[i]->SetAssetColour(colTransparent);
+        }
+        mCurrentImageInstance->SetAssetColour(colWhite);
+        mAlpha = 255.0f;
+        mFadeState = FS_FADE_IN;
+        break;
+    }
+    case FS_FADE_IN:
+    {
+        mAlpha = mAlpha - 510.0f * fDeltaT;
+        if (mAlpha <= 0.0f)
+        {
+            mAlpha = 0.0f;
+            mFadeState = FS_WAIT;
+        }
+        nlColour col = { 0xFF, 0xFF, 0xFF, 0x00 };
+        col.c[3] = (u8)(int)mAlpha;
+        mCurrentImageInstance->SetAssetColour(col);
+        break;
+    }
+    case FS_WAIT:
+    {
+        static bool triggeraudioload;
+        static s8 init;
+        if (!init)
+        {
+            triggeraudioload = true;
+            init = 1;
+        }
+        if (triggeraudioload)
+        {
+            switch (mCurrentImage)
+            {
+            case 0:
+            {
+                AudioLoader::LoadNintendoDialogueGroup(true);
+                const char* nintendoSounds[] = {
+                    "sfx_nintendo_mario", "sfx_nintendo_wario", "sfx_nintendo_luigi", "sfx_nintendo_waluigi", "sfx_nintendo_peach", "sfx_nintendo_daisy", NULL, NULL, "sfx_nintendo_toad", NULL, NULL, NULL, NULL
+                };
+                const char* sound;
+                do
+                {
+                    sound = nintendoSounds[nlRandom(13, &nlDefaultSeed)];
+                } while (sound == NULL);
+                FEAudio::PlayAnimAudioEvent(sound, false);
+                AudioLoader::LoadNLGDialogueGroup(true);
+                AudioLoader::ReadEntireSampleFileIntoMem(false);
+                break;
+            }
+            case 1:
+            {
+                const char* nlgSounds[] = {
+                    "sfx_nlg_mario", "sfx_nlg_wario", "sfx_nlg_luigi", "sfx_nlg_waluigi", "sfx_nlg_peach", "sfx_nlg_daisy", NULL, NULL, "sfx_nlg_toad", NULL, NULL, NULL, NULL
+                };
+                const char* sound;
+                do
+                {
+                    sound = nlgSounds[nlRandom(13, &nlDefaultSeed)];
+                } while (sound == NULL);
+                FEAudio::PlayAnimAudioEvent(sound, false);
+                break;
+            }
+            case 2:
+                nlSingleton<GameInfoManager>::s_pInstance->mUserInfo.mAudioOptions.ForceApplySettings(true);
+                break;
+            }
+            triggeraudioload = false;
+        }
+        mTimer += fDeltaT;
+        if (mCurrentImage == 2)
+        {
+            static bool LoadIsDone;
+            static s8 init;
+            if (!init)
+            {
+                LoadIsDone = false;
+                init = 1;
+            }
+            if (!PlatAudio::IsEntireSampleFileInMem())
+            {
+                if (!LoadIsDone)
+                    break;
+            }
+            else
+            {
+                AudioLoader::LoadFEAudioData(false);
+                AudioLoader::LoadPermanentSoundGroups(false);
+                LoadIsDone = true;
+            }
+        }
+        if (mTimer >= 2.0f)
+        {
+            if (mCurrentImage < mNumImages - 1)
+                mFadeState = FS_CROSS_FADE;
+            else
+                mFadeState = FS_FADE_TO_BLACK;
+            mTimer = 0.0f;
+            mAlpha = 0.0f;
+            triggeraudioload = true;
+        }
+        break;
+    }
+    case FS_CROSS_FADE:
+    {
+        mAlpha = mAlpha + 849.0f * fDeltaT;
+        if (mAlpha >= 255.0f)
+            mAlpha = 255.0f;
+        nlColour col = { 0xFF, 0xFF, 0xFF, 0x00 };
+        col.c[3] = (u8)(int)mAlpha;
+        mCurrentImageInstance->SetAssetColour(col);
+        if (mAlpha >= 255.0f)
+        {
+            mImageInstances[mCurrentImage]->SetAssetColour(colTransparent);
+            mCurrentImage++;
+            mImageInstances[mCurrentImage]->SetAssetColour(colWhite);
+            mFadeState = FS_FADE_IN;
+        }
+        break;
+    }
+    case FS_FADE_TO_BLACK:
+    {
+        mAlpha = mAlpha + 510.0f * fDeltaT;
+        if (mAlpha >= 255.0f)
+            mAlpha = 255.0f;
+        nlColour col = { 0xFF, 0xFF, 0xFF, 0x00 };
+        col.c[3] = (u8)(int)mAlpha;
+        mCurrentImageInstance->SetAssetColour(col);
+        if (mAlpha >= 255.0f)
+        {
+            mFadeToBlackTimer += fDeltaT;
+            if (mFadeToBlackTimer >= 0.2f)
+            {
+                nlSingleton<GameSceneManager>::s_pInstance->PopEntireStack();
+                nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_INTRO_MOVIE, SCREEN_NOTHING, false);
+                mFadeToBlackTimer = 0.0f;
+            }
+        }
+        break;
+    }
+    }
 }

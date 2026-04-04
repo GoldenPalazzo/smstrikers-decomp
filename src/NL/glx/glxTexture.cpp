@@ -722,15 +722,14 @@ PlatTexture* glx_GetGridTexture(int width, int height)
 
 /**
  * Offset/Address/Size: 0x12EC | 0x801B85A8 | size: 0x53C
- * TODO: 90.2% match - register allocation (r28/r29 swapped vs r29/r30 for w/h),
- *       kDefaultBits load timing (target loads after stw r28, current loads earlier),
- *       loop variable allocation differences, gridColor constant loading pattern
+ * TODO: ~90% match - kDefaultBits load scheduling (context-dependent),
+ *       gridColor 0xFFFF not materialized as lis+addi (compiler folds u16 constant),
+ *       loop register allocation shifted by missing gridColor register
  */
 PlatTexture* glx_MakeGridTexture(int w, int h)
 {
-    u8 bits[4];
     PlatTexture* pTex;
-    int textureSize;
+    u8 bits[4];
 
     // Store default bits
     *(u32*)bits = *(u32*)kDefaultBits;
@@ -771,7 +770,7 @@ PlatTexture* glx_MakeGridTexture(int w, int h)
     pTex->m_Format = GXTex_RGB565;
 
     // Allocate texture data
-    textureSize = GCTextureSize(GXTex_RGB565, w, h, 1, -1);
+    u32 textureSize = GCTextureSize(GXTex_RGB565, w, h, 1, -1);
     pTex->m_SwizzledData = nlMalloc(textureSize, 0x20, false);
     pTex->m_LinearData = nlMalloc(textureSize, 0x20, false);
 
@@ -805,8 +804,8 @@ PlatTexture* glx_MakeGridTexture(int w, int h)
     }
 
     // Update grid memory counter - includes sizeof(PlatTexture)
-    nGridMemory += textureSize + 0x50;
-    nlPrintf("grid [%d %d] now using %uKB\n", w, h, nGridMemory / 1024);
+    nGridMemory += w * h * 2 + 0x50;
+    tDebugPrintManager::Print(DC_GL, "grid [%d %d] now using %uKB\n", w, h, nGridMemory / 1024);
 
     // Swizzle and prepare texture
     pTex->Swizzle(true);

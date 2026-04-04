@@ -512,9 +512,219 @@ void Goalie::ActionSaveReposition(float deltaTime)
 
 /**
  * Offset/Address/Size: 0x20BC | 0x800505F8 | size: 0x51C
+ * TODO: 92.94% match - fAnimTime in f29 instead of target f31, cascading volatile reg diffs
  */
 void Goalie::ActionSave(float)
 {
+    Audio::SoundAttributes sndAtr;
+    nlVector3 v3AdjPos;
+    nlVector3 v3HeadCopy;
+    nlVector3 v3LHandCopy;
+    nlVector3 v3RHandCopy;
+
+    const nlVector3& v3LHandPos = GetJointPosition(m_nHeadJointIndex);
+    v3HeadCopy = v3LHandPos;
+    float fAbsX = (float)fabs(v3HeadCopy.f.x);
+    float fDX = 0.0f;
+    float fLimit = cField::GetGoalLineX(1U) - 0.5f;
+    float fNetY = 0.5f * cNet::m_fNetWidth;
+
+    if (fAbsX > fLimit)
+    {
+        if ((float)fabs(v3HeadCopy.f.y) > fNetY)
+        {
+            fDX = fAbsX - fLimit;
+        }
+    }
+
+    const nlVector3& v3RHandPos = GetJointPosition(m_nRightHandJointIndex);
+    v3RHandCopy = v3RHandPos;
+    fAbsX = (float)fabs(v3RHandCopy.f.x);
+    float fLimit2 = cField::GetGoalLineX(1U) - 0.4f;
+
+    if (fAbsX > fLimit2)
+    {
+        if ((float)fabs(v3RHandCopy.f.y) > fNetY)
+        {
+            float fDiff = fAbsX - fLimit2;
+            if (fDiff > fDX)
+            {
+                fDX = fDiff;
+            }
+        }
+    }
+
+    const nlVector3& v3LHandPos2 = GetJointPosition(m_nLeftHandJointIndex);
+    v3LHandCopy = v3LHandPos2;
+    float fAbsX3 = (float)fabs(v3LHandCopy.f.x);
+
+    if (fAbsX3 > fLimit2)
+    {
+        if ((float)fabs(v3LHandCopy.f.y) > fNetY)
+        {
+            float fDiff = fAbsX3 - fLimit2;
+            if (fDiff > fDX)
+            {
+                fDX = fDiff;
+            }
+        }
+    }
+
+    if (fDX > 0.0f)
+    {
+        v3AdjPos = m_v3Position;
+        if (v3AdjPos.f.x > 0.0f)
+        {
+            fDX *= -1.0f;
+        }
+        v3AdjPos.f.x = v3AdjPos.f.x + fDX;
+        SetPosition(v3AdjPos);
+    }
+
+    float fCrouchTime;
+    SaveData* pSaveData = mpSaveData;
+    float fTakeoffTime = pSaveData->mfMilestonePercent[1];
+    float fAnimTime = m_pCurrentAnimController->m_fTime;
+    fCrouchTime = pSaveData->mfMilestonePercent[0];
+
+    if (fTakeoffTime <= 0.0f)
+    {
+        float fGoalTime = pSaveData->mfMilestonePercent[2];
+        fTakeoffTime = 0.7f * fGoalTime;
+        fCrouchTime = 0.4f * fGoalTime;
+    }
+
+    if (fAnimTime <= fTakeoffTime)
+    {
+        if (m_pBall == NULL)
+        {
+            float deflectResult = CheckForDelflectAwayFromNet();
+            if (deflectResult < 0.0f)
+            {
+                return;
+            }
+            if (deflectResult > 0.0f)
+            {
+                if (fAnimTime < fCrouchTime)
+                {
+                    mGoalieActionState = GOALIEACTION_SAVE_REPOSITION;
+                }
+                else
+                {
+                    mGoalieActionState = GOALIEACTION_PRE_CROUCH;
+                }
+                InitActionSaveSetup(false);
+                return;
+            }
+        }
+    }
+
+    if (mbDoHeadTrack)
+    {
+        float dZ = g_pBall->m_v3Position.f.y - m_v3Position.f.y;
+        float dX = g_pBall->m_v3Position.f.x - m_v3Position.f.x;
+        float distSq = dZ * dZ;
+        distSq = dX * dX + distSq;
+        distSq = 0.0f + distSq;
+        if (distSq < 9.0f)
+        {
+            mbDoHeadTrack = false;
+        }
+        else
+        {
+            float dot = dX * m_m4WorldMatrix.m[0][0] + dZ * m_m4WorldMatrix.m[0][1] + 0.0f * m_m4WorldMatrix.m[0][2];
+            if (dot < 0.0f)
+            {
+                mbDoHeadTrack = false;
+            }
+        }
+    }
+
+    if (fAnimTime < mpSaveData->mfMilestonePercent[2])
+    {
+        float t = fAnimTime / mpSaveData->mfMilestonePercent[2];
+        float smoothstep = -2.0f * t + 3.0f;
+        smoothstep = t * smoothstep;
+        smoothstep = t * smoothstep;
+        smoothstep = 1024.0f * smoothstep;
+        s16 delta = (s16)(m_aDesiredFacingDirection - m_aActualFacingDirection);
+        s32 iSmooth = (s32)smoothstep;
+        u16 newFacing = (u16)(m_aActualFacingDirection + (iSmooth * delta) / 1024);
+        SetFacingDirection(newFacing);
+    }
+
+    if (g_pBall->m_tShotTimer.m_uPackedTime != 0 || g_pBall->m_pPassTarget != NULL)
+    {
+        if (g_pBall->m_pOwner != this)
+        {
+            if ((mpSaveData->muSaveType & 3) != 0)
+            {
+                GoalieTweaks* pTweaks = (GoalieTweaks*)m_pTweaks;
+                float fReachSq = pTweaks->fSaveCatchTolerance * pTweaks->fSaveCatchTolerance;
+                const nlVector3& v3LHand = GetJointPosition(m_nLeftHandJointIndex);
+                const nlVector3& v3RHand = GetJointPosition(m_nRightHandJointIndex);
+
+                float dY = g_pBall->m_v3Position.f.y - v3LHand.f.y;
+                float dX = g_pBall->m_v3Position.f.x - v3LHand.f.x;
+                float dZ = g_pBall->m_v3Position.f.z - v3LHand.f.z;
+                float distSqL = dY * dY;
+                distSqL = dX * dX + distSqL;
+                distSqL = dZ * dZ + distSqL;
+
+                if (distSqL < fReachSq)
+                {
+                    goto do_catch;
+                }
+
+                dY = g_pBall->m_v3Position.f.y - v3RHand.f.y;
+                dX = g_pBall->m_v3Position.f.x - v3RHand.f.x;
+                dZ = g_pBall->m_v3Position.f.z - v3RHand.f.z;
+                float distSqR = dY * dY;
+                distSqR = dX * dX + distSqR;
+                distSqR = dZ * dZ + distSqR;
+
+                if (distSqR < fReachSq)
+                {
+                do_catch:
+                    TacklePlayer(g_pBall->m_pOwner);
+                    MakeSaveEvent(false);
+
+                    sndAtr.Init();
+                    sndAtr.SetSoundType(0xC0, true);
+                    sndAtr.UseStationaryPosVector(m_v3Position);
+                    Audio::gStadGenSFX.Play(sndAtr);
+
+                    bool bIsPerfect = false;
+                    if (g_pBall->m_tShotTimer.m_uPackedTime != 0 && g_pBall->m_unk_0xA4)
+                    {
+                        bIsPerfect = true;
+                    }
+
+                    if (bIsPerfect)
+                    {
+                        EmitGoalieCatch(this, "perfect_shot_catch", false);
+                    }
+                    else
+                    {
+                        EmitGoalieCatch(this, "goalie_catch", false);
+                    }
+
+                    PickupBall(g_pBall);
+                    g_pBall->ClearShotInProgress();
+                    if (g_pBall->m_pPassTarget != NULL)
+                    {
+                        g_pBall->ClearPassTarget();
+                    }
+                    mbBallImpacted = true;
+                }
+            }
+        }
+    }
+
+    if (m_pCurrentAnimController->m_fTime > 0.95f)
+    {
+        InitActionDiveRecover();
+    }
 }
 
 /**

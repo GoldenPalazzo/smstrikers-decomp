@@ -21,6 +21,7 @@
 #include "Game/GameInfo.h"
 #include "Game/FE/feHelpFuncs.h"
 #include "Game/Field.h"
+#include "Game/Render/ShootToScoreMeter.h"
 #include "NL/nlBasicString.h"
 #include "NL/plat/plataudio.h"
 #include "types.h"
@@ -1959,9 +1960,150 @@ void cFielder::ActionShot(float)
 
 /**
  * Offset/Address/Size: 0x3180 | 0x80029CB8 | size: 0x538
+ * TODO: 95.63% match - f30/f31 callee-saved register swap for fAbsPosX vs fMinAmount/fMaxAmount
  */
 void cFielder::InitActionShootToScore()
 {
+    ActionShootToScoreVars stsVars;
+    memset(&stsVars, 0, sizeof(stsVars));
+    mActionShootToScoreVars = stsVars;
+
+    m_pCharacterSFX->StopMovementLoop();
+
+    if (m_pBall == NULL)
+    {
+        m_pShotMeter->Abort(this);
+        m_pHeadTrack->m_bTrackOOI = true;
+
+        if (m_eActionState != ACTION_RUNNING)
+        {
+            mActionRunningVars.eLastStrafeDirection = STRAFE_IDLE;
+            m_aActualMovementDirection = m_aActualFacingDirection;
+            m_aDesiredFacingDirection = m_aActualFacingDirection;
+            m_aDesiredMovementDirection = m_aActualMovementDirection;
+            m_fDesiredSpeed = m_fActualSpeed;
+            mActionRunningVars.bFirstCycleOfTurbo = false;
+        }
+
+        SetAction(ACTION_RUNNING);
+        return;
+    }
+
+    bool bCloseToGoalLine = false;
+    f32 fAbsPosX = fabs(m_v3Position.f.x);
+    f32 fGoalLineX = cField::GetGoalLineX(1U);
+    if (fAbsPosX > fGoalLineX - 2.0f)
+    {
+        f32 fAbsPosY = fabs(m_v3Position.f.y);
+        if (fAbsPosY < 0.5f * cNet::m_fNetWidth + 1.0f)
+        {
+            bCloseToGoalLine = true;
+        }
+    }
+
+    if (g_pGame->m_eGameState == GS_END_GAME || bCloseToGoalLine)
+    {
+        KillWindup(this, "ball_sts_windup", true);
+        InitActionShot(false);
+        return;
+    }
+
+    KillWindup(this, "ball_sts_windup", true);
+
+    if (IsCaptain() || nlSingleton<GameInfoManager>::s_pInstance->GetTeam((s16)m_pTeam->m_nSide) == 8)
+    {
+        mActionShootToScoreVars.isCaptainSts = true;
+    }
+    else
+    {
+        mActionShootToScoreVars.isCaptainSts = false;
+    }
+
+    mActionShootToScoreVars.isCurrentlyInvincible = false;
+    mActionShootToScoreVars.isInUnbreakablePart = false;
+    mActionShootToScoreVars.captainStsCamera = NULL;
+    SetAction(ACTION_SHOOT_TO_SCORE);
+
+    if (m_eAnimID == 0x56)
+    {
+        SetAnimState(0x5D, true, 0.2f, false, false);
+    }
+    else
+    {
+        SetAnimState(0x5E, true, 0.2f, false, false);
+    }
+
+    nlVector3 v3NetLocation = m_pTeam->GetOtherNet()->m_baseLocation;
+    f32 fAngleRad = nlATan2f(v3NetLocation.f.y - m_v3Position.f.y, v3NetLocation.f.x - m_v3Position.f.x);
+    u16 nAngleUnits = (u16)(s32)(10430.378f * fAngleRad);
+    s16 nTurnAdjust = CalcAnimTurnAdjust(m_aActualFacingDirection, nAngleUnits, m_eAnimID);
+
+    s32 nTotalFrames = (s32)m_pCurrentAnimController->m_pSAnim->m_nNumKeys;
+    f32 fSpeed = 12.0f / (f32)nTotalFrames;
+    InitMovementFromAnim(nTurnAdjust, v3Zero, fSpeed, false);
+
+    Play3DSFX(Audio::eCharSFX(0x1C), PHYSOBJ, 100.0f);
+
+    mActionShootToScoreVars.fShootToScoreActiveTime = 0.0f;
+    mActionShootToScoreVars.fFrameButtonDownTime1 = -1.0f;
+    mActionShootToScoreVars.fFrameButtonDownTime2 = -1.0f;
+    mActionShootToScoreVars.fGreenRegionWidth = g_pGame->m_pGameTweaks->unk29C;
+    mActionShootToScoreVars.fMeterFractionTime = 0.0f;
+    mActionShootToScoreVars.v3MeterPosition.f.x = 0.0f;
+    mActionShootToScoreVars.v3MeterPosition.f.y = 0.0f;
+    mActionShootToScoreVars.v3MeterPosition.f.z = 0.0f;
+    mActionShootToScoreVars.bShootWasPressed = false;
+
+    FielderTweaks* pTweaks = (FielderTweaks*)m_pTweaks;
+    s32 nTotalFrames2 = (s32)m_pCurrentAnimController->m_pSAnim->m_nNumKeys;
+    f32 fFraction = pTweaks->fS2S1stJumpFrame / (f32)nTotalFrames2;
+    nlVector3 v3Dummy;
+    u16 aDummy;
+    GetCurrentAnimFuture(-1, fFraction, v3Dummy, mActionShootToScoreVars.v3MeterPosition, aDummy);
+
+    mActionShootToScoreVars.v3MeterPosition.f.z += 0.01f;
+    ShootToScoreMeter::instance.m_v3OriginalMeterPosition = mActionShootToScoreVars.v3MeterPosition;
+    ShootToScoreMeter::instance.m_v3MeterPosition = mActionShootToScoreVars.v3MeterPosition;
+
+    mActionShootToScoreVars.fCaptainYellowWidth = g_pGame->m_pGameTweaks->unk290;
+
+    switch (m_eCharacterClass)
+    {
+    case DAISY:
+    case PEACH:
+        mActionShootToScoreVars.fCaptainYellowWidth *= 1.5f;
+        break;
+    case DONKEYKONG:
+    case WARIO:
+    case MYSTERY:
+        mActionShootToScoreVars.fCaptainYellowWidth *= 0.75f;
+        break;
+    case WALUIGI:
+    case YOSHI:
+        mActionShootToScoreVars.fCaptainYellowWidth *= 1.25f;
+        break;
+    default:
+        break;
+    }
+
+    ShootToScoreMeter::instance.TurnOnMeter(ShootToScoreMeter::REGULAR_SHOOT_TO_SCORE_PHASE1, mActionShootToScoreVars.fCaptainYellowWidth);
+
+    f32 fMinAmount = g_pGame->m_pGameTweaks->unk1E8;
+    f32 fMaxAmount = g_pGame->m_pGameTweaks->unk1EC;
+    v3Dummy = GetAIOffNetLocation(NULL);
+
+    f32 dx = m_v3Position.f.x - v3Dummy.f.x;
+    f32 dy = m_v3Position.f.y - v3Dummy.f.y;
+    f32 dz = m_v3Position.f.z - v3Dummy.f.z;
+    f32 fDist = nlSqrt(dx * dx + dy * dy + dz * dz, true);
+
+    f32 fTimeScale = InterpolateRangeClamped(fMinAmount, fMaxAmount, 9.0f, 18.0f, fDist);
+    FixedUpdateTask::mTimeScale = fTimeScale;
+    ParticleUpdateTask::SetTimeScale(fTimeScale);
+
+    const Event* pEvent = g_pEventManager->CreateValidEvent(0x3F, 0x1C);
+    ShotAtGoalData* pData = new ((u8*)pEvent + 0x10) ShotAtGoalData();
+    pData->pShooter = this;
 }
 
 /**
@@ -2229,10 +2371,184 @@ void cFielder::InitActionSlideAttack(cFielder* pTarget, float fTime)
 
 /**
  * Offset/Address/Size: 0xE2C | 0x80027964 | size: 0x59C
+ * TODO: 97.40% match - 20 register-level diffs in star powerup velocity correction section:
+ *   distSq f30 vs f26, vel.y/invDist f2/f3 swap, slideVel dy/dx processing order
  */
-void cFielder::ActionSlideAttack(float)
+void cFielder::ActionSlideAttack(float fDeltaTime)
 {
-    m_fDesiredSpeed = 8.5f;
+    if (!g_pGame->IsGameplayOrOvertime())
+    {
+        SetAction(ACTION_NEED_ACTION);
+    }
+
+    if (!mActionSlideAttackVars.bAttackSucceeded && mActionSlideAttackVars.eSlideAttackState == SLIDE_ATTACK_DOWN && m_ePowerup == POWER_UP_STAR)
+    {
+        float dx = g_pBall->m_v3Position.f.x - m_v3Position.f.x;
+        float dy = g_pBall->m_v3Position.f.y - m_v3Position.f.y;
+        float dist = dx * dx + dy * dy;
+        nlSqrt(dist, true);
+        dist = nlSqrt(dist, true);
+        float invDist = 1.0f / dist;
+
+        dy = invDist * dy;
+        dx = invDist * dx;
+        float speed = nlGetLength2D(m_v3Velocity.f.x, m_v3Velocity.f.y);
+
+        float scaledDy = 8.5f * dy;
+        float scaledDx = 8.5f * dx;
+        float slideVelY = scaledDy + m_v3Velocity.f.y;
+        float slideVelX = scaledDx + m_v3Velocity.f.x;
+
+        float slideMag = nlSqrt(slideVelY * slideVelY + slideVelX * slideVelX, true);
+        float invSlideMag = 1.0f / slideMag;
+        float normSlideY = invSlideMag * slideVelY;
+        float normSlideX = invSlideMag * slideVelX;
+
+        float dot = normSlideY * dy + normSlideX * dx;
+
+        if (dot >= 0.0f)
+        {
+            float vx = speed * normSlideX;
+            float vy = speed * normSlideY;
+            nlVector3 vel;
+            vel.f.z = 0.0f;
+            vel.f.x = vx;
+            vel.f.y = vy;
+
+            nlPolar polar;
+            nlCartesianToPolar(polar, vx, vy);
+            m_aDesiredFacingDirection = polar.a;
+            m_aActualFacingDirection = m_aDesiredFacingDirection;
+            m_aActualMovementDirection = m_aActualFacingDirection;
+            SetVelocity(vel);
+        }
+    }
+
+    cBall* pBall = g_pBall;
+    if (pBall->m_pOwner == NULL && !pBall->m_unk_0xA6 && pBall->m_tShotTimer.m_uPackedTime == 0)
+    {
+        if (pBall->m_tNoPickupTimer.m_uPackedTime == 0 || pBall->m_pPrevOwner == NULL || pBall->m_pPrevOwner->m_eClassType != GOALIE)
+        {
+            nlVector3& jointPos = GetJointPosition(m_nBallJointIndex);
+            nlVector3& prevJointPos = GetPrevJointPosition(m_nBallJointIndex);
+
+            mActionSlideAttackVars.bAttackSucceeded = TestCollision(0.05f, prevJointPos, jointPos, 0.18f, pBall->m_v3PrevPosition, pBall->m_v3Position);
+            if (mActionSlideAttackVars.bAttackSucceeded)
+            {
+                cPlayer* pPrevOwner = g_pBall->m_pPrevOwner;
+                if (pPrevOwner != NULL && pPrevOwner->m_eClassType == FIELDER)
+                {
+                    if (!IsOnSameTeam(pPrevOwner))
+                    {
+                        if (((cFielder*)g_pBall->m_pPrevOwner)->m_eActionState == ACTION_SLIDE_ATTACK_REACT)
+                        {
+                            PlayerAttackData* pData = new (&g_pEventManager->CreateValidEvent(0x19, 0x28)->m_data) PlayerAttackData();
+                            pData->pAttacker = this;
+                            pData->nAttackerPadID = GetGlobalPad() ? GetGlobalPad()->m_padIndex : -1;
+                            pData->pTarget = NULL;
+                        }
+                        else if (g_pBall->m_pPassTarget != NULL)
+                        {
+                            PlayerAttackData* pData = new (&g_pEventManager->CreateValidEvent(0x19, 0x28)->m_data) PlayerAttackData();
+                            pData->pAttacker = this;
+                            pData->nAttackerPadID = GetGlobalPad() ? GetGlobalPad()->m_padIndex : -1;
+                            pData->pTarget = NULL;
+                        }
+                    }
+                }
+
+                PickupBall(g_pBall);
+            }
+        }
+    }
+
+    float fSpeed = m_fActualSpeed;
+    if (mActionSlideAttackVars.bAttackSucceeded)
+    {
+        fSpeed = GetSlideAttackSpeed();
+
+        if (GetGlobalPad() != NULL && mActionSlideAttackVars.bIsBButtonReset)
+        {
+            TestButtonsToQueueActions(fDeltaTime);
+        }
+        else
+        {
+            if (GetGlobalPad() != NULL)
+            {
+                if (GetGlobalPad()->JustReleased(PAD_SHOOT, true))
+                {
+                    if (!mActionSlideAttackVars.bIsBButtonReset)
+                    {
+                        mActionSlideAttackVars.bIsBButtonReset = true;
+                    }
+                }
+            }
+        }
+    }
+
+    {
+        nlVector3 vel;
+        nlPolarToCartesian(vel.f.x, vel.f.y, m_aActualFacingDirection, fSpeed);
+        vel.f.z = 0.0f;
+        SetVelocity(vel);
+    }
+
+    switch (mActionSlideAttackVars.eSlideAttackState)
+    {
+    case SLIDE_ATTACK_DOWN:
+    {
+        if (m_pCurrentAnimController->TestFrameTrigger(2.0f))
+        {
+            EmitSlideTackleTrail(this);
+        }
+
+        bool bShouldDecelerate = false;
+        if (GetGlobalPad() != NULL)
+        {
+            if (!GetGlobalPad()->IsPressed(PAD_SLIDE_ATTACK, true))
+            {
+                bShouldDecelerate = true;
+            }
+        }
+
+        if (m_tSlideAttackTimer.m_uPackedTime == 0 || bShouldDecelerate)
+        {
+            mActionSlideAttackVars.eSlideAttackState = SLIDE_ATTACK_DECELERATE;
+            InitMovementDecelerateExponential(g_pGame->m_pGameTweaks->unk2AC);
+            m_tSlideAttackTimer.SetSeconds(g_pGame->m_pGameTweaks->unk2A8);
+            m_fDesiredSpeed = 0.0f;
+        }
+        break;
+    }
+
+    case SLIDE_ATTACK_DECELERATE:
+    {
+        if (m_tSlideAttackTimer.m_uPackedTime != 0)
+        {
+            break;
+        }
+
+        if (!mActionSlideAttackVars.bWasStarMushroomUsedDuring && m_ePowerup != POWER_UP_STAR)
+        {
+            CleanUpPowerupEffect();
+        }
+
+        if (m_pBall != NULL)
+        {
+            if (!TestQueuedActions())
+            {
+                SetAction(ACTION_NEED_ACTION);
+            }
+        }
+        else
+        {
+            SetAction(ACTION_NEED_ACTION);
+        }
+
+        m_eLastPadAction = PAD_NONE;
+        break;
+    }
+    }
 }
 
 /**

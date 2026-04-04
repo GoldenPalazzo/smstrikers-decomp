@@ -2,6 +2,10 @@
 #include "Game/AI/Fielder.h"
 #include "Game/AI/AiUtil.h"
 #include "Game/Render/Bowser.h"
+#include "Game/Render/ChainChomp.h"
+#include "Game/Render/NPCManager.h"
+#include "Game/BasicStadium.h"
+#include "Game/GameInfo.h"
 #include "Game/Physics/PhysicsSphere.h"
 #include "Game/Effects/EmissionManager.h"
 #include "Game/Effects/EffectsGroup.h"
@@ -461,10 +465,263 @@ void PowerupBase::Update(float dt)
 
 /**
  * Offset/Address/Size: 0x3DFC | 0x8005E6E8 | size: 0x608
+ * TODO: 95.0% match - register-only diffs (30 r-diffs), code structure 100% correct
  */
-int PowerupBase::AwardPowerup(cTeam*)
+int PowerupBase::AwardPowerup(cTeam* pTeam)
 {
-    return 0;
+    if (g_pGame->mIsPure)
+    {
+        return -1;
+    }
+
+    if (!nlSingleton<GameInfoManager>::s_pInstance->GetGameplayOptions().PowerUps)
+    {
+        return -1;
+    }
+
+    unsigned char bEmptySpot = false;
+    for (int i = 0; i < 2; i++)
+    {
+        if (pTeam->GetPowerUpByIndex(i).eType == POWER_UP_NONE)
+        {
+            bEmptySpot = true;
+        }
+    }
+
+    if (!bEmptySpot)
+    {
+        return -1;
+    }
+
+    int nDifference = pTeam->m_nScore - pTeam->GetOtherTeam()->m_nScore;
+
+    int absDiff = nDifference < 0 ? -nDifference : nDifference;
+    if ((u32)absDiff <= (u32)g_pGame->m_pGameTweaks->nScoreDifferenceMinimum)
+    {
+        nDifference = 0;
+    }
+    else
+    {
+        int nMax = g_pGame->m_pGameTweaks->nScoreDifferenceMaximum;
+        if (nDifference < -nMax)
+        {
+            nDifference = -nMax;
+        }
+        else if (nDifference > nMax)
+        {
+            nDifference = nMax;
+        }
+    }
+
+    if (nDifference < 0)
+    {
+        nDifference *= nDifference;
+        nDifference = -nDifference;
+    }
+    else
+    {
+        nDifference *= nDifference;
+    }
+
+    int nChanceForChainChomp = g_pGame->m_pGameTweaks->nChanceForChainChomp - nDifference;
+
+    cTeam* pOtherTeam = pTeam->GetOtherTeam();
+    for (int i = 0; i < 2; i++)
+    {
+        if (pOtherTeam->GetPowerUpByIndex(i).eType == POWER_UP_CHAIN_CHOMP)
+        {
+            nChanceForChainChomp = 0;
+        }
+        if (pTeam->GetPowerUpByIndex(i).eType == POWER_UP_CHAIN_CHOMP)
+        {
+            nChanceForChainChomp = 0;
+        }
+    }
+
+    if (!BasicStadium::GetCurrentStadium()->mpNPCManager->mpChainChomp->IsHidden() || BasicStadium::GetCurrentStadium()->mpNPCManager->mpBowser->meBowserState != BOWSER_STATE_HIDDEN)
+    {
+        nChanceForChainChomp = 0;
+    }
+
+    cFielder* pCaptain = pTeam->GetCaptain();
+    cFielder* pSideKick = pTeam->GetFielder(1);
+
+    int nChanceForStar = (nChanceForChainChomp > 0 ? nChanceForChainChomp : 0) + g_pGame->m_pGameTweaks->nChanceForStar - nDifference;
+
+    if (nDifference >= -1)
+    {
+        nChanceForChainChomp = 0;
+        nChanceForStar = 0;
+    }
+
+    FielderTweaks* pCapTweaks = (FielderTweaks*)pCaptain->m_pTweaks;
+    FielderTweaks* pSkTweaks = (FielderTweaks*)pSideKick->m_pTweaks;
+
+    int nChanceForSpinyShell = g_pGame->m_pGameTweaks->nChanceForSpinyShell + pCapTweaks->nChanceForSpinyShell + pSkTweaks->nChanceForSpinyShell + (nChanceForStar > 0 ? nChanceForStar : 0) - nDifference;
+    int nChanceForRedShell = g_pGame->m_pGameTweaks->nChanceForRedShell + pCapTweaks->nChanceForRedShell + pSkTweaks->nChanceForRedShell + (nChanceForSpinyShell > 0 ? nChanceForSpinyShell : 0) - nDifference;
+    int nChanceForBanana = g_pGame->m_pGameTweaks->nChanceForBanana + pCapTweaks->nChanceForBanana + pSkTweaks->nChanceForBanana + (nChanceForRedShell > 0 ? nChanceForRedShell : 0) + nDifference;
+    int nChanceForBoBomb = g_pGame->m_pGameTweaks->nChanceForBoBomb + pCapTweaks->nChanceForBoBomb + pSkTweaks->nChanceForBoBomb + (nChanceForBanana > 0 ? nChanceForBanana : 0);
+    int nChanceForMushroom = g_pGame->m_pGameTweaks->nChanceForMushroom + pCapTweaks->nChanceForMushroom + pSkTweaks->nChanceForMushroom + (nChanceForBoBomb > 0 ? nChanceForBoBomb : 0) + nDifference;
+    int nChanceForGreenShell = g_pGame->m_pGameTweaks->nChanceForGreenShell + pCapTweaks->nChanceForGreenShell + pSkTweaks->nChanceForGreenShell + (nChanceForMushroom > 0 ? nChanceForMushroom : 0) + nDifference;
+    int nChanceForFreezeShell = g_pGame->m_pGameTweaks->nChanceForFreezeShell + pCapTweaks->nChanceForFreezeShell + pSkTweaks->nChanceForFreezeShell + (nChanceForGreenShell > 0 ? nChanceForGreenShell : 0) + nDifference;
+
+    int nChance = nlRandom(nChanceForFreezeShell, &nlDefaultSeed);
+
+    ePowerUpType powerUpType;
+    switch (nlSingleton<GameInfoManager>::s_pInstance->GetCustomPowerups())
+    {
+    case CP_FREEZING:
+        nChanceForGreenShell = 0;
+        nChanceForMushroom = 0;
+        nChanceForBoBomb = 0;
+        nChanceForBanana = 0;
+        nChanceForRedShell = 0;
+        nChanceForSpinyShell = 0;
+        nChanceForStar = 0;
+        nChanceForChainChomp = 0;
+        powerUpType = POWER_UP_FREEZE_SHELL;
+        break;
+    case CP_SHELLS:
+        nChanceForMushroom = 0;
+        nChanceForBoBomb = 0;
+        nChanceForBanana = 0;
+        nChanceForStar = 0;
+        nChanceForChainChomp = 0;
+        powerUpType = POWER_UP_GREEN_SHELL;
+        break;
+    case CP_GIANT:
+        nChanceForBanana = 0;
+        nChanceForMushroom = 0;
+        nChanceForStar = 0;
+        powerUpType = POWER_UP_GREEN_SHELL;
+        break;
+    case CP_ENCHANCEMENT:
+        nChanceForFreezeShell = 0;
+        nChanceForGreenShell = 0;
+        nChanceForBoBomb = 0;
+        nChanceForBanana = 0;
+        nChanceForRedShell = 0;
+        nChanceForSpinyShell = 0;
+        nChanceForChainChomp = 0;
+        powerUpType = POWER_UP_MUSHROOM;
+        break;
+    case CP_EXPLOSIVE:
+        nChanceForFreezeShell = 0;
+        nChanceForGreenShell = 0;
+        nChanceForMushroom = 0;
+        nChanceForBanana = 0;
+        nChanceForRedShell = 0;
+        nChanceForSpinyShell = 0;
+        nChanceForStar = 0;
+        nChanceForChainChomp = 0;
+        powerUpType = POWER_UP_BOBOMB;
+        break;
+    default:
+        powerUpType = POWER_UP_MUSHROOM;
+        break;
+    }
+
+    if (nChance < nChanceForChainChomp)
+    {
+        powerUpType = POWER_UP_CHAIN_CHOMP;
+    }
+    else if (nChance < nChanceForStar)
+    {
+        powerUpType = POWER_UP_STAR;
+    }
+    else if (nChance < nChanceForSpinyShell)
+    {
+        powerUpType = POWER_UP_SPINY_SHELL;
+    }
+    else if (nChance < nChanceForRedShell)
+    {
+        powerUpType = POWER_UP_RED_SHELL;
+    }
+    else if (nChance < nChanceForBanana)
+    {
+        powerUpType = POWER_UP_BANANA;
+    }
+    else if (nChance < nChanceForBoBomb)
+    {
+        powerUpType = POWER_UP_BOBOMB;
+    }
+    else if (nChance < nChanceForMushroom)
+    {
+        powerUpType = POWER_UP_MUSHROOM;
+    }
+    else if (nChance < nChanceForGreenShell)
+    {
+        powerUpType = POWER_UP_GREEN_SHELL;
+    }
+    else if (nChance <= nChanceForFreezeShell)
+    {
+        powerUpType = POWER_UP_FREEZE_SHELL;
+    }
+
+    int nNumOfPowerups = 1;
+    float fMultiplesBonus = ((FielderTweaks*)pCaptain->m_pTweaks)->fChanceForMultiples * 0.5f;
+    float fRandom = nlRandomf(1.0f, &nlDefaultSeed);
+    float fFiveChance;
+    float fThreeChance;
+
+    switch (powerUpType)
+    {
+    case POWER_UP_GREEN_SHELL:
+    case POWER_UP_FREEZE_SHELL:
+        fFiveChance = fMultiplesBonus + g_pGame->m_pGameTweaks->fShellFiveChance;
+        fThreeChance = fMultiplesBonus + fFiveChance + g_pGame->m_pGameTweaks->fShellThreeChance;
+        if (fThreeChance > fRandom)
+        {
+            nNumOfPowerups = 3;
+        }
+        else if (fFiveChance > fRandom)
+        {
+            nNumOfPowerups = 5;
+        }
+        break;
+    case POWER_UP_RED_SHELL:
+    case POWER_UP_SPINY_SHELL:
+        fThreeChance = ((FielderTweaks*)pCaptain->m_pTweaks)->fChanceForMultiples + g_pGame->m_pGameTweaks->fShellFiveChance + g_pGame->m_pGameTweaks->fShellThreeChance;
+        if (fThreeChance > fRandom)
+        {
+            nNumOfPowerups = 3;
+        }
+        break;
+    case POWER_UP_BANANA:
+        fFiveChance = fMultiplesBonus + g_pGame->m_pGameTweaks->fBananaFiveChance;
+        fThreeChance = fMultiplesBonus + fFiveChance + g_pGame->m_pGameTweaks->fBananaThreeChance;
+        if (fThreeChance > fRandom)
+        {
+            nNumOfPowerups = 3;
+        }
+        else
+        {
+            nNumOfPowerups = 5;
+        }
+        break;
+    case POWER_UP_BOBOMB:
+        fFiveChance = fMultiplesBonus + g_pGame->m_pGameTweaks->fBobombFiveChance;
+        fThreeChance = fMultiplesBonus + fFiveChance + g_pGame->m_pGameTweaks->fBobombThreeChance;
+        if (fThreeChance > fRandom)
+        {
+            nNumOfPowerups = 3;
+        }
+        else if (fFiveChance > fRandom)
+        {
+            nNumOfPowerups = 5;
+        }
+        break;
+    default:
+        break;
+    }
+
+    if (nlSingleton<GameInfoManager>::s_pInstance->GetCustomPowerups() == CP_GIANT)
+    {
+        nNumOfPowerups = 1;
+    }
+
+    pTeam->SetCurrentPowerUp(powerUpType, nNumOfPowerups);
+    return (int)powerUpType;
 }
 
 /**

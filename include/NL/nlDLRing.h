@@ -100,6 +100,16 @@ bool nlDLRingIsEnd(T* head, T* current)
 }
 
 template <typename T>
+bool nlDLRingIsStart(T* head, T* current)
+{
+    if (head == NULL)
+    {
+        return true;
+    }
+    return head->m_next == current;
+}
+
+template <typename T>
 void nlDLRingRemove(T** head, T* current)
 {
     T* tmp_node = current->m_next;

@@ -23,6 +23,8 @@
 #include "dolphin/os/OSCache.h"
 #include "dolphin/os/OSThread.h"
 #include "dolphin/os/OSReset.h"
+#include "dolphin/vm/VM.h"
+#include "Game/Sys/debug.h"
 
 // Performance metric string array
 static const char* str_perf0[]
@@ -501,69 +503,27 @@ bool glplatPostStartup()
     return true;
 }
 
+// Forward declaration for virt_cb (defined later in this file)
+void virt_cb(unsigned long, unsigned long, unsigned long, unsigned long, int);
+
 /**
  * Offset/Address/Size: 0xA08 | 0x801B4FFC | size: 0x524
+ * TODO: 94.85% match - r30/r29 register swap for arg0 and rmode
  */
 bool glplatStartup(gl_ScreenInfo* arg0)
 {
-    GXColor sp8;
-    GXRenderModeObj* var_r29;
-    f32 var_f1;
-    void* temp_r3_3;
-    void* temp_r3_4;
-    u32* var_r5;
-    u32* var_r5_2;
-    s32 temp_r0;
-    void* temp_r31;
-    s32 temp_r3_2;
-    s32 var_r28_2;
-    s32 var_r6;
-    s32 var_r6_2;
-    u32 temp_r29;
-    u32 temp_r4;
-    u32 var_r28;
-    void* temp_r3;
+    GXRenderModeObj* rmode;
 
-    if (glxInitMemory() == 0)
+    if (!glxInitMemory())
     {
         return false;
     }
-    Config::Global();
 
-    // TODO: Implement this
-    // if (Exists__6ConfigCFPCc(CONFIG_FIFO_SIZE_KEY) != 0)
-    // {
-    //     temp_r31 = Global__6ConfigFv();
-    //     temp_r3 = FindTvp__6ConfigFPCc(CONFIG_FIFO_SIZE_KEY);
-    //     if (temp_r3->unk0 == 0)
-    //     {
-    //         Set__6ConfigFPCcf(temp_r31, CONFIG_FIFO_SIZE_KEY, 1.0f);
-    //         var_f1 = 1.0f;
-    //     }
-    //     else
-    //     {
-    //         temp_r0 = temp_r3->unk4;
-    //         switch (temp_r0)
-    //         { /* irregular */
-    //         case 0:
-    //             var_f1 = LexicalCast_f_b(temp_r3 + 8);
-    //             break;
-    //         case 1:
-    //             var_f1 = LexicalCast_f_i(temp_r3 + 8);
-    //             break;
-    //         case 2:
-    //             var_f1 = LexicalCast_f_f(temp_r3 + 8);
-    //             break;
-    //         case 3:
-    //             var_f1 = LexicalCast_f_PCc(temp_r3 + 8);
-    //             break;
-    //         default:
-    //             var_f1 = 1.0f;
-    //             break;
-    //         }
-    //     }
-    //     glx_FIFOSize = 256 * (256 * var_f1);
-    // }
+    if (Config::Global().Exists("gpu fifo"))
+    {
+        f32 var_f1 = GetConfigFloat(Config::Global(), "gpu fifo", 0.0f);
+        glx_FIFOSize = (u32)(1024.0f * (1024.0f * var_f1));
+    }
 
     arg0->ScreenWidth = 640;
     arg0->ScreenHeight = 448;
@@ -573,42 +533,42 @@ bool glplatStartup(gl_ScreenInfo* arg0)
     arg0->ColourDepth[3] = 6;
     arg0->ZDepth = 24;
     arg0->StencilDepth = 0;
-    arg0->PixelCentre = 1.0f;
+    arg0->PixelCentre = 0.5f;
     arg0->FSAA = false;
     glx_CopyDispScaleFactor = 1.0f;
 
-    // temp_r3_2 = VIGetTvFormat(24, 6, 448, 1.0f);
-    temp_r3_2 = VIGetTvFormat();
-
-    switch (temp_r3_2)
-    {       /* switch 1; irregular */
-    case 0: /* switch 1 */
+    switch (VIGetTvFormat())
+    {
+    case 0:
         glx_VideoMode = VideoMode_NTSC;
-        var_r29 = &GXNtsc480IntDf;
+        rmode = &GXNtsc480IntDf;
         break;
-    case 5: /* switch 1 */
-    case 1: /* switch 1 */
+    case 5:
+    case 1:
         glx_VideoMode = VideoMode_PAL;
-        var_r29 = &glPal480IntDf;
+        rmode = &glPal480IntDf;
         break;
-    case 2: /* switch 1 */
+    case 2:
         glx_VideoMode = VideoMode_MPAL;
-        var_r29 = &GXMpal480IntDf;
+        rmode = &GXMpal480IntDf;
         break;
-    default: /* switch 1 */
+    default:
         nlBreak();
         break;
     }
+
     if (((OSGetResetCode() >> 0x1F) != 0) && (OSGetResetCode() == 0x17) && (VIGetDTVStatus() != 0))
     {
         glx_bProgressiveMode = true;
-        var_r29 = &GXNtsc480Prog;
+        rmode = &GXNtsc480Prog;
     }
     else
     {
         glx_bProgressiveMode = false;
     }
-    GXAdjustForOverscan(var_r29, &glx_rmode, 0, 16);
+
+    GXAdjustForOverscan(rmode, &glx_rmode, 0, 16);
+
     if (glx_VideoMode == VideoMode_PAL)
     {
         glx_rmode.efbHeight = 448;
@@ -619,7 +579,8 @@ bool glplatStartup(gl_ScreenInfo* arg0)
     {
         glx_TargetFPS = 60;
     }
-    temp_r4 = 720 - glx_VIWidth;
+
+    u32 temp_r4 = 720 - glx_VIWidth;
     glx_rmode.viWidth = (s16)glx_VIWidth;
     glx_rmode.viXOrigin = (s16)((s32)((temp_r4 >> 0x1F) + temp_r4) >> 1);
     VIConfigure(&glx_rmode);
@@ -633,40 +594,39 @@ bool glplatStartup(gl_ScreenInfo* arg0)
     }
     glx_FIFO = GXInit(glx_FIFOMem, glx_FIFOSize);
 
-    var_r28 = ((glx_rmode.fbWidth + 15) & 0xFFF0) * glx_rmode.xfbHeight * 2;
-    if (var_r28 < 0x9F600)
+    u32 fbSize = ((glx_rmode.fbWidth + 15) & 0xFFF0) * glx_rmode.xfbHeight * 2;
+    if (fbSize < 0x9F600u)
     {
-        var_r28 = 0x9F600;
+        fbSize = 0x9F600u;
     }
-    temp_r29 = var_r28 * 2;
-    temp_r3_4 = nlMalloc(temp_r29, 32, false);
-    glx_FrameBuffer.unk4 = (u8*)temp_r3_4 + var_r28;
-    var_r5 = (u32*)temp_r3_4;
-    glx_FrameBuffer.unk0 = temp_r3_4;
-    var_r6 = 0;
-    glx_FBSize = var_r28;
-loop_40:
-    if (var_r6 < glx_FBSize)
+    u32 totalSize = fbSize * 2;
+    void* fbMem = nlMalloc(totalSize, 32, false);
+    glx_FrameBuffer.unk4 = (void*)((u8*)fbMem + fbSize);
+    u32* ptr = (u32*)fbMem;
+    glx_FrameBuffer.unk0 = fbMem;
+    s32 i = 0;
+    glx_FBSize = fbSize;
+    while (i < glx_FBSize)
     {
-        *var_r5 = 0x10801080;
-        var_r6 += 4;
-        var_r5 += 1;
-        goto loop_40;
+        *ptr++ = 0x10801080;
+        i += 4;
     }
-    DCFlushRange(var_r5, var_r6);
-    var_r6_2 = 0;
-    var_r5_2 = (u32*)glx_FrameBuffer.unk4;
-loop_43:
-    if (var_r6_2 < glx_FBSize)
+    DCFlushRange(fbMem, glx_FBSize);
+
+    void* buf1 = glx_FrameBuffer.unk4;
+    ptr = (u32*)buf1;
+    i = 0;
+    while (i < glx_FBSize)
     {
-        *var_r5_2 = 0x10801080;
-        var_r6_2 += 4;
-        var_r5_2 += 1;
-        goto loop_43;
+        *ptr++ = 0x10801080;
+        i += 4;
     }
-    DCFlushRange(var_r5_2, var_r6_2);
-    // Print(1, DEBUG_MEMORY_MSG, temp_r29 >> 10, glx_FIFOSize >> 10);
+    DCFlushRange(buf1, glx_FBSize);
+
+    tDebugPrintManager::Print(DC_GL, "%uKB used for FB and FIFO\n", totalSize >> 10, glx_FIFOSize >> 10);
+
     gxInit();
+
     GXSetViewport(0.0f, 0.0f, (f32)glx_rmode.fbWidth, (f32)glx_rmode.efbHeight, 0.0f, 1.0f);
     GXSetScissor(0, 0, glx_rmode.fbWidth, glx_rmode.efbHeight);
     GXSetDispCopySrc(0, 0, glx_rmode.fbWidth, glx_rmode.efbHeight);
@@ -676,20 +636,19 @@ loop_43:
     gxSetDither(true);
     gxSetColourUpdate(true);
     gxSetAlphaUpdate(true);
-    sp8.r = 0x00;
-    sp8.g = 0x00;
-    sp8.b = 0x00;
-    sp8.a = 0x40;
-    // { 0x00, 0x00, 0x00, 0x40 };
+
+    GXColor sp8 = { 0, 0, 0, 0x40 };
     GXSetCopyClear(sp8, 0xFFFFFF);
     GXSetDispCopyGamma(GX_GM_1_0);
-    var_r28_2 = 0;
+
+    s32 j = 0;
     do
     {
-        gxSetTevColourOp(var_r28_2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, true, GX_TEVPREV);
-        gxSetTevAlphaOp(var_r28_2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, true, GX_TEVPREV);
-        var_r28_2 += 1;
-    } while (var_r28_2 < 16);
+        gxSetTevColourOp(j, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, true, GX_TEVPREV);
+        gxSetTevAlphaOp(j, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, true, GX_TEVPREV);
+        j++;
+    } while (j < 16);
+
     GXFlush();
     VISetNextFrameBuffer(glx_FrameBuffer.unk0);
     glxSwapSetBlack(true);
@@ -702,7 +661,7 @@ loop_43:
     glxInitSwap(glx_FrameBuffer.unk0, glx_FrameBuffer.unk4);
     glxInitTex();
     glxInitTargets();
-    // VMSetLogStatsCallback(&virt_cb);
+    VMSetLogStatsCallback((VMLogStatsCallback)virt_cb);
     return true;
 }
 

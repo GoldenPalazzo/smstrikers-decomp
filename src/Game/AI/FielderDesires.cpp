@@ -32,6 +32,7 @@ class ShotMeter
 public:
     eShotMeterState m_eShotMeterState;
     float GetTotalDuration() const;
+    void CalcOneTimerValue(cFielder* pFielder, bool bWasPerfectPass);
 };
 
 CommonDesireData g_vDesireCommonData[NUM_FIELDERDESIRES];
@@ -1160,9 +1161,159 @@ void cFielder::DesireSlideAttack(float fDeltaT)
 
 /**
  * Offset/Address/Size: 0x794 | 0x80031518 | size: 0x514
+ * TODO: 96.57% match - mr r0,r3 intermediate at a0 instead of direct mr r30,r3
  */
-void cFielder::DesireUserControlled(float)
+void cFielder::DesireUserControlled(float fDeltaT)
 {
+    bool bWasActionTaken;
+    nlPolar p;
+    nlVector3 v3Velocity;
+
+    if (GetGlobalPad() == NULL)
+    {
+        SetDesireDuration(0.0f, true);
+        return;
+    }
+
+    if (g_pGame->m_eGameState == GS_KICKOFF)
+    {
+        if (mbCanKickoff && m_pBall != NULL)
+        {
+            bWasActionTaken = false;
+
+            if (GetGlobalPad()->JustPressed(PAD_PASS, true))
+            {
+                bWasActionTaken = GetGlobalPad()->JustPressed(PAD_AIM, true);
+                InitActionPass(DoFindBestPassTarget(GetGlobalPad()->JustPressed(PAD_AIM, true), false), bWasActionTaken, true);
+                bWasActionTaken = true;
+            }
+            else if (GetGlobalPad()->JustPressed(PAD_DEKE, true) || m_pController->GetCStickMovementStickMagnitude() > 0.0f)
+            {
+                InitActionDeke(PAD_DEKE);
+                bWasActionTaken = true;
+            }
+            else if (GetGlobalPad()->JustPressed(PAD_SHOOT, true))
+            {
+                DoResetShotMeter(0.0f);
+                ShotMeter* pShotMeter = m_pShotMeter;
+                pShotMeter->CalcOneTimerValue(this, UsePerfectPass());
+                InitActionShot(GetGlobalPad()->JustPressed(PAD_AIM, true));
+                bWasActionTaken = true;
+            }
+            else if (GetGlobalPad()->JustPressed(PAD_USE, true))
+            {
+                if (!IsPlayingPowerupAnim())
+                {
+                    UseTeamPowerup(NULL);
+                }
+                StartRunning();
+                bWasActionTaken = true;
+            }
+            else if (m_pController->GetMovementStickMagnitude() > 0.001f)
+            {
+                if (mtKickOffWaitTimer.GetSeconds() > 0.15f)
+                {
+                    mtKickOffWaitTimer.SetSeconds(0.15f);
+                }
+                else if (mtKickOffWaitTimer.GetSeconds() < 0.05f)
+                {
+                    StartRunning();
+                    bWasActionTaken = true;
+                }
+            }
+
+            if (bWasActionTaken)
+            {
+                g_pEventManager->CreateValidEvent(0xb, 0x14);
+                mtKickOffWaitTimer.SetSeconds(0.0f);
+                mbCanKickoff = false;
+            }
+        }
+
+        m_fDesiredSpeed = 0.0f;
+        m_aDesiredFacingDirection = m_aActualFacingDirection;
+        m_aDesiredMovementDirection = m_aActualFacingDirection;
+
+        if (GetGlobalPad()->JustPressed(PAD_TOGGLE_POWERUP, true))
+        {
+            m_pTeam->TogglePowerup(false);
+        }
+    }
+    else
+    {
+        if (!g_pGame->mbCaptainShotToScoreOn && GetGlobalPad()->JustPressed(PAD_USE, true) && !IsPlayingPowerupAnim())
+        {
+            UseTeamPowerup(NULL);
+        }
+
+        if (GetGlobalPad()->JustPressed(PAD_TOGGLE_POWERUP, true))
+        {
+            m_pTeam->TogglePowerup(false);
+        }
+
+        if (m_eActionState == ACTION_SHOOT_TO_SCORE)
+        {
+            return;
+        }
+
+        if (m_eActionState == ACTION_NEED_ACTION)
+        {
+            StartRunning();
+        }
+
+        SetDesiredFacingDirection();
+
+        if (m_eActionState == ACTION_RUNNING)
+        {
+            TestButtonsRunning();
+            if (m_pController->IsTurboPressed())
+                SetDesiredSpeed(m_pTweaks->fRunningSpeed, ((FielderTweaks*)m_pTweaks)->fRunningTurboSpeed);
+            else
+                SetDesiredSpeed(m_pTweaks->fJoggingSpeed, m_pTweaks->fRunningSpeed);
+            if (g_pBall->m_pOwner == NULL)
+                DoPositioningInterceptBall();
+        }
+        else if (m_eActionState == ACTION_RUNNING_WB)
+        {
+            TestButtonsRunningWB(fDeltaT);
+            if (m_pController->IsTurboPressed())
+                SetDesiredSpeed(((FielderTweaks*)m_pTweaks)->fRunningWBSpeed, ((FielderTweaks*)m_pTweaks)->fRunningWBTurboSpeedLevel1);
+            else
+                SetDesiredSpeed(m_pTweaks->fJoggingSpeed, ((FielderTweaks*)m_pTweaks)->fRunningWBSpeed);
+        }
+        else if (m_eActionState == ACTION_RUNNING_WB_TURBO)
+        {
+            if (IsBallAwayFromCarrier())
+            {
+                TestButtonsToQueueActions(fDeltaT);
+            }
+            else if (!TestQueuedActions())
+            {
+                TestButtonsRunningWB(fDeltaT);
+                u8 bIsShotActive = false;
+                eShotMeterState state = m_pShotMeter->m_eShotMeterState;
+                if (state == SHOT_METER_ACTIVE || state == SHOT_METER_STS_ACTIVE || state == SHOT_METER_STS_TRANSISTION)
+                    bIsShotActive = true;
+                if (bIsShotActive)
+                {
+                    m_fActualSpeed = ((FielderTweaks*)m_pTweaks)->fRunningWBSpeed;
+                    InitActionRunningWB(false);
+                }
+            }
+        }
+
+        p.a = m_aDesiredMovementDirection;
+        p.r = m_fDesiredSpeed;
+        nlPolarToCartesian(v3Velocity, p);
+        v3Velocity.f.z = 0.0f;
+        m_v3DesiredPosition.f.x = 0.25f * v3Velocity.f.x + m_v3Position.f.x;
+        m_v3DesiredPosition.f.y = 0.25f * v3Velocity.f.y + m_v3Position.f.y;
+        m_v3DesiredPosition.f.z = 0.25f * v3Velocity.f.z + m_v3Position.f.z;
+
+        if (m_pTeam->mpCurrentSituation != SITUATION_LOOSE)
+            ShouldIStrafe();
+        ShouldIWave();
+    }
 }
 
 /**

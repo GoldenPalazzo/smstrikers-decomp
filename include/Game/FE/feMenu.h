@@ -3,6 +3,24 @@
 
 #include "NL/nlFunction.h"
 
+enum MenuAction
+{
+    ON_INVALID = -1,
+    ON_APPLY = 0,
+    ON_HIGHLIGHT = 1,
+    ON_UNHIGHLIGHT = 2,
+    NUM_ACTIONS = 3,
+};
+
+enum MenuResult
+{
+    RES_ERROR = 0,
+    RES_OK = 1,
+    RES_NOT_CHANGED = 2,
+    RES_ITEM_DISABLED = 3,
+    RES_NO_CALLBACK_FUNC = 4,
+};
+
 // #pragma push
 // #pragma pack(1)
 template <typename T>
@@ -18,6 +36,15 @@ struct MenuItem
         , mDisabled(false)
         , mLocked(false) { };
     ~MenuItem() { };
+
+    inline void ApplyAction(MenuAction action)
+    {
+        if (mCallbacks[action].mTag == EMPTY)
+            return;
+        if (action == ON_APPLY && mDisabled)
+            return;
+        mCallbacks[action](mType);
+    }
 }; // total size: 0x20
 
 template <typename T>

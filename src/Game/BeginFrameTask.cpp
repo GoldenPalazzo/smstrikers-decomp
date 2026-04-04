@@ -11,17 +11,49 @@
 
 #include "NL/nlConfig.h"
 #include "NL/nlFileGC.h"
+#include "NL/nlDLRing.h"
 #include "NL/gl/gl.h"
 #include "NL/gl/glConstant.h"
 #include "NL/gl/glDraw3.h"
 #include "NL/gl/glFont.h"
+#include "NL/gl/glMatrix.h"
+#include "NL/gl/glView.h"
 #include "NL/glx/glxTexture.h"
+
+#include "Game/Camera/BaseCamera.h"
+#include "Game/GameInfo.h"
 
 class cCameraManager
 {
 public:
     static void Update(float);
+
+    static cBaseCamera* m_cameraStack;
+    static nlMatrix4 m_matView;
+    static float m_fFOV;
+    static int m_pBeginFrameCameraType;
 };
+
+extern glModel* (*m_LightingCallback__14ParticleSystem)(glModel*);
+
+static inline float GetAspectRatio()
+{
+    if (GameInfoManager::s_pInstance->mUserInfo.mVisualOptions.mIsWidescreen)
+    {
+        return 1.666f;
+    }
+    bool bWide = false;
+    u32 currState = nlTaskManager::m_pInstance->m_CurrState;
+    if (currState == 0x100 || (currState == 1 && nlTaskManager::m_pInstance->m_PrevState == 0x100))
+    {
+        bWide = true;
+    }
+    if (bWide)
+    {
+        return 1.3323944f;
+    }
+    return 1.25f;
+}
 
 const u32 GLTT_BumpLocal_bit = 1 << (int)GLTT_BumpLocal;
 static float dimx = 48.0f;
@@ -80,7 +112,125 @@ glModel* cb_ParticleLighting(glModel* pModel)
  */
 void SetupMatrices()
 {
-    FORCE_DONT_INLINE;
+    nlMatrix4 ortho;
+    glMatrixOrthographicCentered(ortho, 640.0f, 480.0f, 0.0f, 5000.0f);
+    u32 hOrtho = glAllocMatrix();
+    if (hOrtho != 0xFFFFFFFF)
+    {
+        glSetMatrix(hOrtho, ortho);
+    }
+    glViewSetProjectionMatrix(GLV_Anark, hOrtho);
+
+    glMatrixOrthographic(ortho, 640.0f, 480.0f);
+    u32 hFlat = glAllocMatrix();
+    if (hFlat != 0xFFFFFFFF)
+    {
+        glSetMatrix(hFlat, ortho);
+    }
+    glViewSetProjectionMatrix(GLV_ShadowBlend0, hFlat);
+    glViewSetProjectionMatrix(GLV_ShadowBlend1, hFlat);
+    glViewSetProjectionMatrix(GLV_FrontEnd, hFlat);
+    glViewSetProjectionMatrix(GLV_Debug, hFlat);
+    glViewSetProjectionMatrix(GLV_Transitions, hFlat);
+    glViewSetProjectionMatrix(GLV_WarbleBlend, hFlat);
+    glViewSetProjectionMatrix(GLV_DepthOfField, hFlat);
+    glViewSetProjectionMatrix(GLV_BigBlackPolygon, hFlat);
+    glViewSetProjectionMatrix(GLV_UnsortedOrtho, hFlat);
+
+    float fAspect = GetAspectRatio();
+
+    nlMatrix4 proj;
+    glMatrixPerspective(proj, 0.4712389f, fAspect, 0.25f, 1024.0f);
+    u32 hPersp = glAllocMatrix();
+    if (hPersp != 0xFFFFFFFF)
+    {
+        glSetMatrix(hPersp, proj);
+    }
+    glViewSetProjectionMatrix(GLV_Anark3D_BG, hPersp);
+    glViewSetProjectionMatrix(GLV_Anark3D_FG, hPersp);
+    glViewSetProjectionMatrix(GLV_Transitions3D, hPersp);
+
+    nlVector3 at = { 0.0f, 0.0f, 0.0f };
+    nlVector3 to = { 0.0f, 0.0f, -1.0f };
+    nlVector3 up = { 0.0f, 1.0f, 0.0f };
+    nlMatrix4 view;
+    glMatrixLookAt(view, at, to, up);
+    u32 hView1 = glAllocMatrix();
+    if (hView1 != 0xFFFFFFFF)
+    {
+        glSetMatrix(hView1, view);
+    }
+    glViewSetViewMatrix(GLV_Transitions3D, hView1);
+
+    nlVector3 at2 = { 0.0f, 12.0f, 0.0f };
+    nlVector3 to2 = { 0.0f, 0.0f, -1.0f };
+    nlVector3 up2 = { 0.0f, 0.0f, 1.0f };
+    nlMatrix4 view2;
+    glMatrixLookAt(view2, at2, to2, up2);
+    u32 hView2 = glAllocMatrix();
+    if (hView2 != 0xFFFFFFFF)
+    {
+        glSetMatrix(hView2, view2);
+    }
+    glViewSetViewMatrix(GLV_Anark3D_BG, hView2);
+    glViewSetViewMatrix(GLV_Anark3D_FG, hView2);
+
+    float fFOV = 3.1415927f * cCameraManager::m_fFOV / 180.0f;
+    glMatrixPerspective(proj, fFOV, fAspect, 0.25f, 1024.0f);
+    u32 hCamProj = glAllocMatrix();
+    if (hCamProj != 0xFFFFFFFF)
+    {
+        glSetMatrix(hCamProj, proj);
+    }
+    glViewSetProjectionMatrix(GLV_Skybox, hCamProj);
+    glViewSetProjectionMatrix(GLV_CameraSpace, hCamProj);
+    glViewSetProjectionMatrix(GLV_Shadowed, hCamProj);
+    glViewSetProjectionMatrix(GLV_Shadow0, hCamProj);
+    glViewSetProjectionMatrix(GLV_Shadow1, hCamProj);
+    glViewSetProjectionMatrix(GLV_WorldShadowed, hCamProj);
+    glViewSetProjectionMatrix(GLV_Characters, hCamProj);
+    glViewSetProjectionMatrix(GLV_Unshadowed, hCamProj);
+    glViewSetProjectionMatrix(GLV_LingeringParticles, hCamProj);
+    glViewSetProjectionMatrix(GLV_Particles, hCamProj);
+    glViewSetProjectionMatrix(GLV_Warble, hCamProj);
+    glViewSetProjectionMatrix(GLV_UnsortedPerspective, hCamProj);
+    glViewSetProjectionMatrix(GLV_InvisiblePlane, hCamProj);
+    glViewSetProjectionMatrix(GLV_ElectricFence, hCamProj);
+    glViewSetProjectionMatrix(GLV_CoPlanar0, hCamProj);
+    glViewSetProjectionMatrix(GLV_CoPlanar, hCamProj);
+
+    u32 hCamView = glAllocMatrix();
+    if (hCamView != 0xFFFFFFFF)
+    {
+        glSetMatrix(hCamView, cCameraManager::m_matView);
+    }
+
+    cBaseCamera* pCamera = nlDLRingGetStart<cBaseCamera>(cCameraManager::m_cameraStack);
+    if (pCamera != NULL)
+    {
+        pCamera = nlDLRingGetStart<cBaseCamera>(cCameraManager::m_cameraStack);
+        cCameraManager::m_pBeginFrameCameraType = pCamera->GetType();
+    }
+
+    glViewSetViewMatrix(GLV_Skybox, hCamView);
+    glViewSetViewMatrix(GLV_Shadowed, hCamView);
+    glViewSetViewMatrix(GLV_Shadow0, hCamView);
+    glViewSetViewMatrix(GLV_Shadow1, hCamView);
+    glViewSetViewMatrix(GLV_WorldShadowed, hCamView);
+    glViewSetViewMatrix(GLV_Characters, hCamView);
+    glViewSetViewMatrix(GLV_Unshadowed, hCamView);
+    glViewSetViewMatrix(GLV_Warble, hCamView);
+    glViewSetViewMatrix(GLV_LingeringParticles, hCamView);
+    glViewSetViewMatrix(GLV_Particles, hCamView);
+    glViewSetViewMatrix(GLV_UnsortedPerspective, hCamView);
+    glViewSetViewMatrix(GLV_InvisiblePlane, hCamView);
+    glViewSetViewMatrix(GLV_ElectricFence, hCamView);
+    glViewSetViewMatrix(GLV_CoPlanar0, hCamView);
+    glViewSetViewMatrix(GLV_CoPlanar, hCamView);
+
+    glViewSetViewMatrix(GLV_CameraSpace, glGetIdentityMatrix());
+
+    m_LightingCallback__14ParticleSystem = cb_ParticleLighting;
 }
 
 /**

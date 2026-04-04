@@ -388,9 +388,36 @@ done:
 /**
  * Offset/Address/Size: 0x304 | 0x80018260 | size: 0x52C
  */
-ScriptAction* cDecisionEntity::FindDesireAction(int, FuzzyVariant, FuzzyVariant)
+ScriptAction* cDecisionEntity::FindDesireAction(int eDesireType, FuzzyVariant param1, FuzzyVariant param2)
 {
-    FORCE_DONT_INLINE;
+    if (m_lQueuedActions.m_pStart == NULL)
+        return NULL;
+
+    ScriptAction* pAction = m_lQueuedActions.m_pStart;
+
+    const Variant& fvRef = fvNotSet;
+    eVariantType fvType = fvRef.mType;
+    bool fvBool = fvRef.mData.b;
+    signed short fvShort = fvRef.mData.s;
+    int fvInt = fvRef.mData.i;
+    float fvFloat = fvRef.mData.f;
+    float fvVecY = fvRef.mData.vector.f.y;
+    float fvVecZ = fvRef.mData.vector.f.z;
+
+    while (pAction != NULL)
+    {
+        if (eDesireType == pAction->m_sDesireParams.eDesireType)
+        {
+            if (param1 == fvNotSet || pAction->m_sDesireParams.opt1 == param1)
+            {
+                if (param2 == fvNotSet || pAction->m_sDesireParams.opt2 == param2)
+                {
+                    return pAction;
+                }
+            }
+        }
+        pAction = pAction->next;
+    }
     return NULL;
 }
 

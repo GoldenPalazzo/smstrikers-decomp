@@ -1,4 +1,6 @@
 #include "Game/FE/feScrollText.h"
+#include "Game/FE/feFontResource.h"
+#include "NL/nlTextEscape.h"
 
 struct LOCHeader
 {

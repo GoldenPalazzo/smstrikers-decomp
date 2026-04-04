@@ -2,6 +2,7 @@
 #include "Game/Player.h"
 #include "Game/AI/Fielder.h"
 #include "Game/CharacterTweaks.h"
+#include "Game/Goalie.h"
 #include "Game/Audio/AudioLoader.h"
 #include "Game/AnimInventory.h"
 #include "Game/Physics/CharacterPhysicsElement.h"
@@ -26,10 +27,13 @@ extern SoundPropAccessor* gpYOSHISoundPropAccessor;
 extern SoundPropAccessor* gpSUPERSoundPropAccessor;
 extern SoundPropAccessor* gpCRITTERSoundPropAccessor;
 
+extern SebringAnimTagScriptInterpreter* g_pAnimScriptInterp;
+
 cCharacter* g_pCharacters[10];
 static tCharacterTemplateInfo g_aCharacterTemplateInfo[13];
 static tCharacterTemplate* g_aCharacterTemplates[13];
 static tCharacterTemplateInfo g_GoalieTemplateInfo;
+static tCharacterTemplate* g_GoalieTemplate;
 
 s32 skiptexture = 0xFFFFFFFF;
 
@@ -120,25 +124,331 @@ void DestroyCharacters()
 
 /**
  * Offset/Address/Size: 0x954 | 0x80012C3C | size: 0x51C
+ * TODO: 97.23% match - register allocation diffs throughout both loops (r21<>r28 for g_pCharacters,
+ * r23<>r21 for teami, r27<>r30 for captain values). Inner loop compare loads sidekick/captain into
+ * r5/r6 (reused as args) vs target r3/r0 (reloads into r5/r6), causing 2 instruction size difference.
  */
+extern eCharacterClass ConvertToCharacterClass(eTeamID);
+extern eCharacterClass ConvertToCharacterClass(eSidekickID);
+
+static eCharacterClass GetGoalieFromCaptain(eCharacterClass captain)
+{
+    switch (captain)
+    {
+    case DAISY:
+        return DAISY_GOALIE;
+    case DONKEYKONG:
+        return DONKEYKONG_GOALIE;
+    case LUIGI:
+        return LUIGI_GOALIE;
+    case MARIO:
+        return MARIO_GOALIE;
+    case PEACH:
+        return PEACH_GOALIE;
+    case WALUIGI:
+        return WALUIGI_GOALIE;
+    case WARIO:
+        return WARIO_GOALIE;
+    case YOSHI:
+        return YOSHI_GOALIE;
+    case MYSTERY:
+        return SUPERTEAM_GOALIE;
+    default:
+        return MARIO_GOALIE;
+    }
+}
+
+struct PosBlock
+{
+    nlVector3 v[8];
+};
+struct GoaliePosBlock
+{
+    nlVector3 v[2];
+};
+
 void CreateCharacters()
 {
+    eCharacterClass captain[2];
+    eCharacterClass sidekick[2];
+    eCharacterClass goalie[2];
+    PosBlock posBlock;
+    GoaliePosBlock goaliePosBlock;
+    int plrindex;
+    int teami;
+
+    captain[0] = ConvertToCharacterClass(nlSingleton<GameInfoManager>::s_pInstance->GetTeam(0));
+    captain[1] = ConvertToCharacterClass(nlSingleton<GameInfoManager>::s_pInstance->GetTeam(1));
+    sidekick[0] = ConvertToCharacterClass(nlSingleton<GameInfoManager>::s_pInstance->GetSidekick(0));
+    sidekick[1] = ConvertToCharacterClass(nlSingleton<GameInfoManager>::s_pInstance->GetSidekick(1));
+
+    goalie[0] = GetGoalieFromCaptain(captain[0]);
+    goalie[1] = GetGoalieFromCaptain(captain[1]);
+
+    bool allcaptains = GetConfigBool(Config::Global(), "allcaptains", false);
+    if (allcaptains)
+    {
+        sidekick[0] = captain[0];
+        sidekick[1] = captain[1];
+    }
+
+    if (captain[0] == MYSTERY)
+    {
+        sidekick[0] = MYSTERY;
+    }
+    else if (captain[1] == MYSTERY)
+    {
+        sidekick[1] = MYSTERY;
+    }
+
+    static const PosBlock s_Positions = { {
+        { 1.5f, 1.5f, 0.0f },
+        { 1.5f, -1.5f, 0.0f },
+        { 1.5f, 0.0f, 0.0f },
+        { 1.5f, 2.5f, 0.0f },
+        { -1.5f, 1.5f, 0.0f },
+        { -1.5f, -1.5f, 0.0f },
+        { -1.5f, 0.0f, 0.0f },
+        { -1.5f, 2.5f, 0.0f },
+    } };
+
+    static const GoaliePosBlock s_GoaliePositions = { {
+        { 18.0f, 0.0f, 0.0f },
+        { -18.0f, 0.0f, 0.0f },
+    } };
+
+    posBlock = s_Positions;
+    goaliePosBlock = s_GoaliePositions;
+
+    SebringAnimTagScriptInterpreter* pInterp = new (nlMalloc(sizeof(SebringAnimTagScriptInterpreter), 8, false)) SebringAnimTagScriptInterpreter();
+
+    g_pAnimScriptInterp = pInterp;
+
+    for (teami = 0; teami < 2; teami++)
+    {
+        if (captain[0] > captain[1])
+        {
+            plrindex = !teami;
+        }
+        else
+        {
+            plrindex = teami;
+        }
+
+        g_pCharacters[plrindex * 4] = CreateCharacter(0, plrindex, captain[plrindex], false);
+        g_pCharacters[plrindex * 4]->SetPosition(posBlock.v[plrindex * 4]);
+        ((Audio::cCharacterSFX*)g_pCharacters[plrindex * 4]->m_pCharacterSFX)->mGroup = plrindex * 4;
+
+        g_pTeams[plrindex]->SetPlayer((cPlayer*)g_pCharacters[plrindex * 4], 0);
+        ((cPlayer*)g_pCharacters[plrindex * 4])->m_pTeam = g_pTeams[plrindex];
+
+        g_pCharacters[plrindex + 8] = CreateGoalie(goalie[plrindex], false);
+        g_pCharacters[plrindex + 8]->SetPosition(goaliePosBlock.v[plrindex]);
+
+        g_pTeams[plrindex]->SetGoalie((Goalie*)g_pCharacters[plrindex + 8]);
+        ((cPlayer*)g_pCharacters[plrindex + 8])->m_pTeam = g_pTeams[plrindex];
+    }
+
+    for (teami = 0; teami < 2; teami++)
+    {
+        if (sidekick[0] > sidekick[1])
+        {
+            plrindex = !teami;
+        }
+        else
+        {
+            plrindex = teami;
+        }
+
+        int charIdx = plrindex * 4 + 1;
+        cCharacter** pChar = &g_pCharacters[charIdx];
+        nlVector3* pPos = &posBlock.v[charIdx];
+
+        for (int index = 1; index < 4; index++)
+        {
+            if (sidekick[plrindex] == captain[plrindex])
+            {
+                *pChar = CreateCharacter(index, plrindex, captain[plrindex], false);
+            }
+            else
+            {
+                *pChar = (cCharacter*)CreateSidekick(index, plrindex, sidekick[plrindex], captain[plrindex], false);
+            }
+
+            (*pChar)->SetPosition(*pPos);
+            ((Audio::cCharacterSFX*)(*pChar)->m_pCharacterSFX)->mGroup = charIdx;
+
+            g_pTeams[plrindex]->SetPlayer((cPlayer*)*pChar, index);
+            ((cPlayer*)*pChar)->m_pTeam = g_pTeams[plrindex];
+
+            pChar++;
+            pPos++;
+            charIdx++;
+        }
+
+        g_pTeams[plrindex]->UpdateControllers();
+    }
 }
 
 /**
  * Offset/Address/Size: 0xE70 | 0x80013158 | size: 0x634
+ * TODO: 66.69% match - scan loops unroll by 5 instead of target's 10 (MWCC build difference),
+ * lbzu vs lbz pattern, bne+b vs beq branch in hierarchy search, register allocation diffs
  */
-cPlayer* CreateGoalie(eCharacterClass, bool)
+cPlayer* CreateGoalie(eCharacterClass gcc, bool bForViewer)
 {
-    FORCE_DONT_INLINE;
-    return nullptr;
+    s32 goalieIdx = gcc - NUM_FIELDER_CLASSES;
+    tGoalieTemplateInfo* pTexInfo = &g_GoalieTextureInfo[goalieIdx];
+    if (!pTexInfo->bLoaded)
+    {
+        glLoadTextureBundle(pTexInfo->szTextureFilename);
+        pTexInfo->bLoaded = 1;
+    }
+
+    if (g_GoalieTemplate == NULL)
+    {
+        g_GoalieTemplate = (tCharacterTemplate*)nlMalloc(sizeof(tCharacterTemplate), 8, false);
+        CharacterLoadingGuts(g_GoalieTemplate, g_GoalieTemplateInfo, gcc, bForViewer);
+    }
+
+    cSHierarchy* pHierarchy;
+    AnimRetargetList* pAnimRetarget;
+
+    cInventory<cSHierarchy>* pHierInv = g_GoalieTemplate->pHierarchyInventory;
+    u32 hash = nlStringHash(g_GoalieTemplateInfo.szHierarchy);
+
+    ListEntry<cSHierarchy*>* hEntry = pHierInv->m_lItemList.m_Head;
+    while (hEntry != NULL)
+    {
+        pHierarchy = hEntry->data;
+        if (hash != pHierarchy->m_uHashID)
+        {
+            hEntry = hEntry->next;
+        }
+        else
+        {
+            goto hierFound;
+        }
+    }
+    pHierarchy = NULL;
+hierFound:
+
+    pAnimRetarget = NULL;
+    if (g_GoalieTemplate->pAnimRetargetListInventory != NULL)
+    {
+        int idx = 0;
+        ListEntry<AnimRetargetList*>* retEntry = g_GoalieTemplate->pAnimRetargetListInventory->m_lItemList.m_Head;
+        AnimRetargetList* retResult;
+        while (retEntry != NULL)
+        {
+            if (idx == 0)
+            {
+                retResult = retEntry->data;
+                goto retDone;
+            }
+            retEntry = retEntry->next;
+            idx++;
+        }
+        retResult = NULL;
+    retDone:
+        pAnimRetarget = retResult;
+    }
+
+    GoalieTweaks* pTweaks = new (nlMalloc(0xF4, 8, false)) GoalieTweaks(g_GoalieTemplateInfo.szTweaksFilename);
+
+    cPlayer* pPlayer;
+    if (!bForViewer)
+    {
+        Goalie* pGoalie = new (nlMalloc(0x310, 8, false)) Goalie(
+            gcc, (const int*)g_GoalieTemplate, pHierarchy, g_GoalieTemplate->pAnimInventory, g_GoalieTemplate->pPhysicsData, pTweaks, pAnimRetarget);
+        pPlayer = pGoalie;
+    }
+    else
+    {
+        cPlayer* p = new (nlMalloc(0x1D4, 8, false)) cPlayer(
+            4, gcc, (const int*)g_GoalieTemplate, pHierarchy, g_GoalieTemplate->pAnimInventory, g_GoalieTemplate->pPhysicsData, (PlayerTweaks*)pTweaks, pAnimRetarget, (eClassTypes)3);
+        pPlayer = p;
+    }
+
+    pPlayer->m_szEffectsName = g_GoalieTemplateInfo.szEffectsName;
+
+    char buf1[200];
+    char buf2[200];
+    const char* szPath;
+    const char* pStart;
+    char* pDst;
+    int i;
+    u32 texHash;
+
+    szPath = g_GoalieTemplateInfo.szTextureFilename;
+    pStart = NULL;
+    for (i = 0; i < 100; i++)
+    {
+        char c = szPath[i];
+        if (c == '\\' || c == '/')
+        {
+            pStart = &szPath[i + 1];
+            break;
+        }
+    }
+
+    pDst = buf1;
+    for (i = 0; i < 100; i++)
+    {
+        if (*pStart == '\0' || *pStart == '.')
+        {
+            *pDst = '\0';
+            texHash = nlStringLowerHash(buf1);
+            goto copyDone1;
+        }
+        *pDst++ = *pStart++;
+    }
+    texHash = 0;
+copyDone1:
+    pPlayer->m_uNormalTextureID = texHash;
+
+    szPath = g_GoalieTextureInfo[goalieIdx].szTextureFilename;
+    pStart = NULL;
+    for (i = 0; i < 100; i++)
+    {
+        char c = szPath[i];
+        if (c == '\\' || c == '/')
+        {
+            pStart = &szPath[i + 1];
+            break;
+        }
+    }
+
+    pDst = buf2;
+    for (i = 0; i < 100; i++)
+    {
+        if (*pStart == '\0' || *pStart == '.')
+        {
+            *pDst = '\0';
+            texHash = nlStringLowerHash(buf2);
+            goto copyDone2;
+        }
+        *pDst++ = *pStart++;
+    }
+    texHash = 0;
+copyDone2:
+    pPlayer->m_uSwapTextureID = texHash;
+
+    if (!AudioLoader::gbDisableAudio)
+    {
+        pPlayer->SetSFX(g_GoalieTemplateInfo.pSFXPropAccessor);
+    }
+
+    return pPlayer;
 }
 
 /**
  * Offset/Address/Size: 0x14A4 | 0x8001378C | size: 0x5FC
  */
-void CreateSidekick(int, int, eCharacterClass, eCharacterClass, bool)
+cPlayer* CreateSidekick(int, int, eCharacterClass, eCharacterClass, bool)
 {
+    FORCE_DONT_INLINE;
+    return nullptr;
 }
 
 /**

@@ -3,13 +3,31 @@
 #include "NL/nlMath.h"
 #include "NL/nlMemory.h"
 #include "NL/nlSlotPool.h"
+#include "NL/nlFile.h"
+#include "NL/nlPrint.h"
+#include "NL/nlString.h"
+#include "NL/nlAVLTree.h"
+
+#include "PowerPC_EABI_Support/MSL_C/MSL_Common/stdlib.h"
 #include "Game/SAnim/pnSAnimController.h"
 #include "Game/Effects/EffectsGroup.h"
 #include "Game/Effects/EmissionManager.h"
 #include "NL/gl/gl.h"
+#include "NL/gl/glModel.h"
 #include "NL/gl/glMatrix.h"
 #include "NL/gl/glState.h"
 #include "NL/gl/glView.h"
+#include "NL/glx/glxLoadModel.h"
+
+extern "C" cSHierarchy* Initialize__11cSHierarchyFP7nlChunk(nlChunk*);
+
+struct TransitionModelStore
+{
+    glModel* pModels;
+    u32 nModels;
+};
+
+static nlAVLTree<unsigned long, TransitionModelStore, DefaultKeyCompare<unsigned long> > g_ModelInventory;
 
 eGLView ModeledScreenTransition::s_3DView = GLV_Transitions;
 
@@ -476,10 +494,159 @@ void ModeledScreenTransition::Cancel()
 
 /**
  * Offset/Address/Size: 0x44 | 0x80202108 | size: 0x6C8
+ * TODO: 85.87% match - FindGet boolean vs pointer test pattern differs,
+ * inner loop lwzx optimization not matched, r24/r27 register allocation for pToken/name
  */
-ModeledScreenTransition* ModeledScreenTransition::LoadFromParser(SimpleParser*)
+ModeledScreenTransition* ModeledScreenTransition::LoadFromParser(SimpleParser* parser)
 {
-    return nullptr;
+    char* pToken = parser->NextToken(true);
+
+    while (pToken != NULL)
+    {
+        if (nlStrCmp(pToken, "texture") == 0)
+        {
+            m_nTexture = glHash(parser->NextTokenOnLine(true));
+        }
+        else if (nlStrCmp(pToken, "name") == 0)
+        {
+            pToken = parser->NextTokenOnLine(true);
+            u32 fileSize = 0;
+            char buf[128];
+            u32 hash = glHash(pToken);
+
+            TransitionModelStore* store = g_ModelInventory.FindGet(hash);
+            if (store != NULL)
+            {
+                m_nModels = store->nModels;
+                m_pModels = (glModel*)glModelDupArrayNoStreams(store->pModels, store->nModels, false, true);
+
+                for (u32 i = 0; i < m_nModels; i++)
+                {
+                    for (u32 j = 0; j < m_pModels[i].numPackets; j++)
+                    {
+                        m_pModels[i].packets[j].userData = 0;
+                    }
+                }
+            }
+            else
+            {
+                glSetIgnoreDuplicateModels(true);
+
+                nlSNPrintf(buf, 128, "transitions/%s.glg", pToken);
+                m_pModels = glLoadModel(buf, &m_nModels);
+
+                glSetIgnoreDuplicateModels(false);
+
+                TransitionModelStore newStore;
+                newStore.pModels = m_pModels;
+                newStore.nModels = m_nModels;
+                AVLTreeNode* existingNode;
+                g_ModelInventory.AddAVLNode(&((AVLTreeNode*&)g_ModelInventory.m_Root), (void*)&hash, (void*)&newStore, &existingNode, g_ModelInventory.m_NumElements);
+                if (existingNode == NULL)
+                {
+                    g_ModelInventory.m_NumElements++;
+                }
+            }
+
+            nlSNPrintf(buf, 128, "art/transitions/%s.sanim", pToken);
+            m_pAnimFile = (char*)nlLoadEntireFile(buf, &fileSize, 0x20, AllocateStart);
+            m_pAnim = cSAnim::Initialize((nlChunk*)m_pAnimFile);
+
+            nlSNPrintf(buf, 128, "art/transitions/%s.shier", pToken);
+            m_pSkelFile = (char*)nlLoadEntireFile(buf, &fileSize, 0x20, AllocateStart);
+            m_pSkeleton = Initialize__11cSHierarchyFP7nlChunk((nlChunk*)m_pSkelFile);
+
+            m_pModelMap = (int*)nlMalloc(m_nModels * 4, 8, false);
+            for (u32 i = 0; i < m_nModels; i++)
+            {
+                m_pModelMap[i] = m_pSkeleton->GetNodeIndexByID(m_pModels[i].id);
+            }
+        }
+        else if (nlStrCmp(pToken, "screengrab") == 0)
+        {
+            m_bScreenGrab = true;
+        }
+        else if (nlStrCmp(pToken, "effect") == 0)
+        {
+            nlStrNCpy(m_EffectName, parser->NextTokenOnLine(true), 64);
+        }
+        else if (nlStrCmp(pToken, "outline") == 0)
+        {
+            m_RenderOutline = true;
+        }
+        else if (nlStrCmp(pToken, "outline_colour") == 0)
+        {
+            m_OutlineColour.c[0] = atoi(parser->NextTokenOnLine(true));
+            m_OutlineColour.c[1] = atoi(parser->NextTokenOnLine(true));
+            m_OutlineColour.c[2] = atoi(parser->NextTokenOnLine(true));
+            m_OutlineColour.c[3] = atoi(parser->NextTokenOnLine(true));
+        }
+        else if (nlStrCmp(pToken, "program") == 0)
+        {
+            const char* effect = parser->NextTokenOnLine(true);
+            char buf[128];
+            nlStrNCpy(buf, effect, 128);
+            for (int i = 0; buf[i] != '\0'; i++)
+            {
+                if (buf[i] == '_')
+                    buf[i] = ' ';
+            }
+            m_nProgram = glGetProgram(buf);
+        }
+        else if (nlStrCmp(pToken, "light") == 0)
+        {
+            m_pLight = new (nlMalloc(sizeof(TransitionLight), 8, false)) TransitionLight();
+            m_pLight->LoadFromParser(parser);
+        }
+        else if (nlStrCmp(pToken, "end") == 0)
+        {
+            break;
+        }
+
+        pToken = parser->NextToken(true);
+    }
+
+    m_pPoseAccumulator = new (nlMalloc(0x58, 8, false)) cPoseAccumulator(m_pSkeleton, false);
+
+    u64 savedTextureState = glGetCurrentTextureState();
+    u32 savedRasterState = glGetCurrentRasterState();
+
+    for (u32 i = 0; i < m_nModels; i++)
+    {
+        if (m_pLight != NULL)
+        {
+            m_pLight->AttachToModel(&m_pModels[i]);
+        }
+
+        for (u32 j = 0; j < m_pModels[i].numPackets; j++)
+        {
+            glSetCurrentTextureState(m_pModels[i].packets[j].state.texturestate);
+            glSetTextureState(GLTS_DiffuseWrap, 3);
+
+            glSetCurrentRasterState(m_pModels[i].packets[j].state.raster);
+            glSetRasterState(GLS_AlphaBlend, 0);
+            glSetRasterState(GLS_Culling, 0);
+            glSetRasterState(GLS_DepthTest, 1);
+            glSetRasterState(GLS_DepthWrite, 1);
+
+            glSetCurrentProgram(m_nProgram);
+
+            if (m_nTexture != 0xFFFFFFFF)
+            {
+                m_pModels[i].packets[j].state.texture[0] = m_nTexture;
+            }
+
+            m_pModels[i].packets[j].state.raster = glHandleizeRasterState();
+
+            u64 texHandle = glHandleizeTextureState();
+            m_pModels[i].packets[j].state.texturestate = texHandle;
+
+            m_pModels[i].packets[j].state.program = m_nProgram;
+        }
+    }
+
+    glSetCurrentTextureState(savedTextureState);
+    glSetCurrentRasterState(savedRasterState);
 }
 
 /**

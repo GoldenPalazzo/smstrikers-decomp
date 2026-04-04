@@ -36,6 +36,13 @@ class FontCharString
 {
 public:
     FontCharString() { }
+    ~FontCharString()
+    {
+        if (m_InternalBuffer != 0)
+        {
+            delete[] m_pString;
+        }
+    }
     template <typename T>
     FontCharString(const T*, const nlFont*, T*);
 

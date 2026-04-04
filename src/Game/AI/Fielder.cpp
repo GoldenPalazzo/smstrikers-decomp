@@ -1,7 +1,9 @@
 #include "Game/AI/Fielder.h"
 #include "Game/AI/AIPlay.h"
 #include "Game/AI/AiUtil.h"
+#include "Game/AI/AvoidController.h"
 #include "Game/AI/FielderDesires.h"
+#include "Game/AI/Fuzzy.h"
 #include "Game/AI/ShotMeter.h"
 #include "Game/AI/Scripts/ScriptQuestions.h"
 #include "Game/AnimInventory.h"
@@ -195,6 +197,7 @@ void cFielder::AbortPendingThoughts()
  */
 void cFielder::CalculateNewDesire()
 {
+    FORCE_DONT_INLINE;
 }
 
 /**
@@ -4156,9 +4159,168 @@ void cFielder::PostPhysicsUpdate()
 
 /**
  * Offset/Address/Size: 0x234C | 0x8001B688 | size: 0x4A0
+ * TODO: 95.95% match - bool materialization (missing b/li r0,0 false branch)
+ *       and switch binary search vs sequential comparison for bIsActive
  */
-void cFielder::Update(float)
+void cFielder::Update(float fDeltaT)
 {
+    if (mtKickOffWaitTimer.m_uPackedTime != 0)
+    {
+        if (mtKickOffWaitTimer.Countdown(fDeltaT, 0.0f))
+        {
+            InitActionPass(DoFindBestPassTarget(false, false), false, true);
+            g_pEventManager->CreateValidEvent(0xB, 0x14);
+            mbCanKickoff = false;
+        }
+    }
+
+    bool bIsGameplay = g_pGame->IsGameplayOrOvertime();
+
+    if (bIsGameplay)
+    {
+        m_DesireCommonVars.tAge.Countup(fDeltaT, 10.0f);
+        m_DesireCommonVars.tMiscTimer.Countdown(fDeltaT, 0.0f);
+        m_tDesireDuration.Countdown(fDeltaT, 0.0f);
+
+        if (m_tFrozenTimer.m_uPackedTime != 0)
+        {
+            if (m_tFrozenTimer.Countdown(fDeltaT, 0.0f))
+            {
+                EmitUnFreeze(this);
+            }
+        }
+
+        if (m_tPowerupEffectTime.m_uPackedTime != 0)
+        {
+            if (m_tPowerupEffectTime.Countdown(fDeltaT, 0.0f))
+            {
+                switch (m_ePowerup)
+                {
+                case POWER_UP_STAR:
+                    KillStar(this);
+                    m_ePowerup = POWER_UP_NONE;
+                    mnNumPowerups = 0;
+                    m_tPowerupEffectTime.m_uPackedTime = 0;
+                    break;
+                case POWER_UP_MUSHROOM:
+                    KillMushroom(this);
+                    m_ePowerup = POWER_UP_NONE;
+                    mnNumPowerups = 0;
+                    m_tPowerupEffectTime.m_uPackedTime = 0;
+                    break;
+                default:
+                    break;
+                }
+            }
+        }
+
+        if (mtBombImpactTime.m_uPackedTime != 0)
+        {
+            if (mtBombImpactTime.Countdown(fDeltaT, 0.0f))
+            {
+                float fBombRadius = mfBombImpactRadius;
+                if (m_eActionState != ACTION_POST_WHISTLE)
+                {
+                    bool bSkip = (m_ePowerup == POWER_UP_STAR && m_tPowerupEffectTime.m_uPackedTime != 0) || mActionShootToScoreVars.isCurrentlyInvincible;
+                    if (!bSkip)
+                    {
+                        AddRandomDirt();
+                        if (g_pBall->m_pPassTarget != NULL && g_pBall->m_pPassTarget == this)
+                        {
+                            g_pBall->ClearPassTarget();
+                        }
+                        InitActionBombReact(mv3BombImpactLocation, fBombRadius);
+                    }
+                }
+            }
+        }
+    }
+
+    cPlayer::Update(fDeltaT);
+
+    m_fDistanceToDesiredPosition = -9999.9f;
+    m_v3AccumDesiredPos.f.x = 0.0f;
+    m_v3AccumDesiredPos.f.y = 0.0f;
+    m_v3AccumDesiredPos.f.z = 0.0f;
+    m_fAccumDesiredPosWeight = 0.0f;
+
+    if (m_tFrozenTimer.m_uPackedTime == 0)
+    {
+        eFielderActionState eAction = m_eActionState;
+        bool bHoldTime = false;
+        ShotMeter* pMeter = m_pShotMeter;
+
+        bool bCheckState = (eAction == ACTION_RUNNING_WB_TURBO && m_pCurrentAnimController->m_fTime > 0.2f && m_pCurrentAnimController->m_fTime < 0.975f);
+
+        if (bCheckState || eAction == ACTION_DEKE || eAction == ACTION_SLIDE_ATTACK)
+        {
+            int shotState = pMeter->m_eShotMeterState;
+            if (shotState == 1 || shotState == 3)
+            {
+                bHoldTime = true;
+            }
+        }
+
+        pMeter->Update(fDeltaT, bHoldTime);
+    }
+
+    if (m_tFrozenTimer.m_uPackedTime == 0)
+    {
+        bool bNeedDesire = (m_eFielderDesireState == FIELDERDESIRE_NEED_DESIRE || m_tDesireDuration.m_uPackedTime == 0);
+        if (bNeedDesire)
+        {
+            CalculateNewDesire();
+        }
+
+        UpdateDesireState(fDeltaT);
+        m_pAvoidance->Update(fDeltaT);
+        UpdateActionState(fDeltaT);
+        UpdateHeadTracking(fDeltaT);
+        cCharacter::Update(fDeltaT);
+    }
+
+    {
+        eFielderActionState eAction = m_eActionState;
+        Audio::cCharacterSFX* pSFX = m_pCharacterSFX;
+        bool bIsActive = false;
+
+        switch (eAction)
+        {
+        case ACTION_RUNNING_WB:
+        case ACTION_RUNNING_WB_TURBO:
+        case ACTION_RUNNING_WB_TURBO_TURN:
+            bIsActive = true;
+            break;
+        default:
+            break;
+        }
+
+        if (bIsActive || eAction == ACTION_DEKE || (eAction == ACTION_NEED_ACTION && GetGlobalPad() != NULL))
+        {
+            if (m_fActualSpeed >= 4.5f && m_fDesiredSpeed > 0.0f && !g_pGame->mbCaptainShotToScoreOn)
+            {
+                if (!pSFX->IsMovementLoopStarted() || (pSFX->IsMovementLoopStarted() && !pSFX->IsMovementLoopPlaying()))
+                {
+                    pSFX->StartMovementLoop();
+                }
+            }
+            else
+            {
+                if (pSFX->IsMovementLoopStarted() && m_fDesiredSpeed < 0.001f && m_fActualSpeed < 0.5f && m_eActionState != ACTION_RUNNING_WB_TURBO_TURN)
+                {
+                    pSFX->StopMovementLoop();
+                }
+            }
+        }
+        else
+        {
+            pSFX->StopMovementLoop();
+        }
+    }
+
+    UpdateController(fDeltaT);
+    m_bHasBeenUpdated = true;
+    RandomChance(0.0f);
 }
 
 /**
@@ -4217,12 +4379,145 @@ void cFielder::ThrowPowerup()
     }
 }
 
+inline void ExecutePowerupEffect(cFielder* pFielder)
+{
+    if (g_pGame->mbCaptainShotToScoreOn)
+        return;
+
+    switch (pFielder->m_ePowerup)
+    {
+    case POWER_UP_NONE:
+        return;
+    case POWER_UP_STAR:
+        pFielder->m_tPowerupEffectTime.SetSeconds(g_pGame->m_pGameTweaks->fStarEffectTime);
+        EmitStar(pFielder);
+        break;
+    case POWER_UP_MUSHROOM:
+    {
+        f32 fTime = g_pGame->m_pGameTweaks->fMushroomEffectTime;
+        if (pFielder->m_eCharacterClass >= LUIGI && pFielder->m_eCharacterClass < PEACH)
+        {
+            fTime *= 1.33f;
+        }
+        pFielder->m_tPowerupEffectTime.SetSeconds(fTime);
+        EmitMushroom(pFielder);
+        pFielder->InitBlur(0);
+        break;
+    }
+    case POWER_UP_GREEN_SHELL:
+    case POWER_UP_RED_SHELL:
+    case POWER_UP_SPINY_SHELL:
+    case POWER_UP_FREEZE_SHELL:
+    case POWER_UP_BANANA:
+    case POWER_UP_BOBOMB:
+        pFielder->m_pPowerupTarget = FindPowerupTarget(pFielder, NULL);
+        PowerupCreateAndThrow(pFielder, pFielder->m_ePowerup, pFielder->mnNumPowerups, NULL);
+        break;
+    case POWER_UP_CHAIN_CHOMP:
+    {
+        cFielder* pTgt = pFielder->m_pPowerupTarget;
+        BasicStadium::GetCurrentStadium()->mpNPCManager->mpChainChomp->Fall(pFielder, pTgt);
+        break;
+    }
+    }
+    if (g_pGame->IsGameplayOrOvertime())
+    {
+        nlSingleton<StatsTracker>::s_pInstance->TrackStat(STATS_POWERUPS_USED, pFielder->m_pTeam->m_nSide, pFielder->m_ID, 0, 0, 0, 0);
+    }
+    pFielder->m_pPowerupTarget = NULL;
+}
+
 /**
  * Offset/Address/Size: 0x1D18 | 0x8001B054 | size: 0x4C0
+ * TODO: 94.28% match - MWCC CSEs m_ePowerup across dispatch switch and inlined ExecutePowerupEffect,
+ * using r3 instead of r0 for dispatch (~20 register diffs). Target validation switch also missing
+ * explicit -1 check (~6 diffs) - adding case POWER_UP_NONE changes MWCC binary search pivot order.
  */
-void cFielder::SetPowerup(ePowerUpType, int, cFielder*)
+void cFielder::SetPowerup(ePowerUpType eNewPowerup, int nnumOfPowerups, cFielder* pTarget)
 {
-    FORCE_DONT_INLINE;
+    switch (m_ePowerup)
+    {
+    case POWER_UP_STAR:
+        KillStar(this);
+        m_ePowerup = POWER_UP_NONE;
+        mnNumPowerups = 0;
+        m_tPowerupEffectTime.m_uPackedTime = 0;
+        break;
+    case POWER_UP_MUSHROOM:
+        KillMushroom(this);
+        m_ePowerup = POWER_UP_NONE;
+        mnNumPowerups = 0;
+        m_tPowerupEffectTime.m_uPackedTime = 0;
+        break;
+    }
+
+    switch (eNewPowerup)
+    {
+    case POWER_UP_GREEN_SHELL:
+    case POWER_UP_RED_SHELL:
+    case POWER_UP_SPINY_SHELL:
+    case POWER_UP_FREEZE_SHELL:
+    case POWER_UP_BANANA:
+    case POWER_UP_BOBOMB:
+    case POWER_UP_CHAIN_CHOMP:
+        if (pTarget == NULL)
+        {
+            pTarget = FindPowerupTarget(this, NULL);
+        }
+        break;
+    default:
+        pTarget = NULL;
+        break;
+    }
+
+    m_ePowerup = eNewPowerup;
+    mnNumPowerups = nnumOfPowerups;
+    m_pPowerupTarget = pTarget;
+
+    if (m_ePowerup == POWER_UP_NONE)
+        return;
+
+    int dir = 0;
+    if (m_pPowerupTarget != NULL)
+    {
+        dir = (GetFacingDeltaToPosition(m_pPowerupTarget->m_v3Position) >> 14) & 3;
+    }
+
+    static int ThrowAnims[] = { 95, 98, 97, 96 };
+    SetPowerupAnimState(ThrowAnims[dir]);
+    m_nPowerupAnimID = ThrowAnims[dir];
+
+    if (m_eActionState == ACTION_SLIDE_ATTACK)
+    {
+        mActionSlideAttackVars.bWasStarMushroomUsedDuring = true;
+    }
+
+    if (m_tFrozenTimer.m_uPackedTime != 0)
+        return;
+
+    switch (m_ePowerup)
+    {
+    case POWER_UP_CHAIN_CHOMP:
+        ExecutePowerupEffect(this);
+        if (g_pGame->IsGameplayOrOvertime())
+        {
+            nlSingleton<StatsTracker>::s_pInstance->TrackStat(STATS_POWERUPS_USED, m_pTeam->m_nSide, m_ID, 0, 0, 0, 0);
+        }
+        m_pPowerupTarget = NULL;
+        ClearPowerupAnimState(false);
+        m_ePowerup = POWER_UP_NONE;
+        return;
+    case POWER_UP_MUSHROOM:
+    case POWER_UP_STAR:
+        ExecutePowerupEffect(this);
+        if (g_pGame->IsGameplayOrOvertime())
+        {
+            nlSingleton<StatsTracker>::s_pInstance->TrackStat(STATS_POWERUPS_USED, m_pTeam->m_nSide, m_ID, 0, 0, 0, 0);
+        }
+        m_pPowerupTarget = NULL;
+        ClearPowerupAnimState(false);
+        break;
+    }
 }
 
 /**

@@ -30,123 +30,117 @@ cPlatPad::~cPlatPad()
 
 /**
  * Offset/Address/Size: 0x5C | 0x801C300C | size: 0x524
+ * TODO: 95.14% match - beq vs bne+b deadzone (MWCC version diff), r4/r6 timer loop register swap,
+ * setup scheduling diffs, division r0/r3 swap
  */
 void VBlankPadUpdate()
 {
     PADRead(PadStatus::s_Next);
     PADClampCircle(PadStatus::s_Next);
 
-    int connectedControllerCount = 0;
-    for (int i = 0; i < 4; i++)
+    int i;
+    for (i = 0; i < 4; i++)
     {
-        if (PadStatus::s_Next[i].err != -3)
-        {
-            connectedControllerCount = i + 1;
-        }
+        if (PadStatus::s_Next[i].err == -3)
+            break;
     }
 
-    if (connectedControllerCount == 4)
-    {
+    if (i != 4)
         return;
-    }
 
-    PADStatus* temp = PadStatus::s_Current;
-    PadStatus::s_Current = PadStatus::s_Next;
-    PadStatus::s_Next = temp;
-
-    float frameTime = 1.0f / (float)glx_GetTargetFPS();
+    PADStatus* temp = PadStatus::s_Next;
+    PadStatus::s_Next = PadStatus::s_Current;
+    PadStatus::s_Current = temp;
 
     for (int controllerIndex = 0; controllerIndex < 4; controllerIndex++)
     {
         cGlobalPad* pad = cPadManager::GetPad(controllerIndex);
 
-        if (pad->m_isConnected == false)
+        if (pad->m_isLeftAnalogToDPadMapEnabled)
         {
-            continue;
-        }
+            float normalizedX = (float)PadStatus::s_Current[controllerIndex].stickX / 56.0f;
+            float normalizedY = (float)PadStatus::s_Current[controllerIndex].stickY / 56.0f;
 
-        float normalizedX = (float)PadStatus::s_Current[controllerIndex].stickX / 56.0f;
-        float normalizedY = (float)PadStatus::s_Current[controllerIndex].stickY / 56.0f;
-
-        float absX = fabs(normalizedX);
-        float absY = fabs(normalizedY);
-        bool hasInput = (absX > 0.1f) || (absY > 0.1f);
-
-        if (hasInput)
-        {
-            if (absX < 0.1f)
-                normalizedX = 0.0f;
-            if (absY < 0.1f)
-                normalizedY = 0.0f;
-
-            float angle = nlATan2f(normalizedY, normalizedX);
-
-            float degrees = angle * (180.0f / 3.1415927f);
-            int direction = (int)(degrees / 45.0f + 0.5f) % 8;
-
-            u16 directionFlags = 0;
-            switch (direction)
+            if (fabsf(normalizedX) >= 0.6f || fabsf(normalizedY) >= 0.6f)
             {
-            case 0:
-                directionFlags = 0x02;
-                break;
-            case 1:
-                directionFlags = 0x0A;
-                break;
-            case 2:
-                directionFlags = 0x08;
-                break;
-            case 3:
-                directionFlags = 0x09;
-                break;
-            case 4:
-                directionFlags = 0x01;
-                break;
-            case 5:
-                directionFlags = 0x05;
-                break;
-            case 6:
-                directionFlags = 0x04;
-                break;
-            case 7:
-                directionFlags = 0x06;
-                break;
-            }
-
-            PadStatus::s_Current[controllerIndex].button |= directionFlags;
-        }
-
-        for (int category = 0; category < 2; category++)
-        {
-            PadStatus* padStatus = &padCategories[category];
-            tGameCubePad* gameCubePad = &padStatus->m_GameCubePads[controllerIndex];
-
-            for (int buttonIndex = 0; buttonIndex < 12; buttonIndex++)
-            {
-                u16 buttonMask = 1 << buttonIndex;
-                if (PadStatus::s_Current[controllerIndex].button & buttonMask)
+                if (fabsf(normalizedX) >= 0.6f)
                 {
-                    gameCubePad->fButtonStateTime[buttonIndex] += frameTime;
                 }
                 else
                 {
-                    gameCubePad->fButtonStateTime[buttonIndex] = 0.0f;
-                    gameCubePad->fButtonTimeSinceLastRepeat[buttonIndex] = 0.0f;
+                    normalizedX = 0.0f;
                 }
-            }
-
-            for (int buttonIndex = 12; buttonIndex < 16; buttonIndex++)
-            {
-                u16 buttonMask = 1 << buttonIndex;
-                if (PadStatus::s_Current[controllerIndex].button & buttonMask)
+                if (fabsf(normalizedY) >= 0.6f)
                 {
-                    gameCubePad->fButtonInitialDelay[buttonIndex - 12] += frameTime;
                 }
                 else
                 {
-                    gameCubePad->fButtonInitialDelay[buttonIndex - 12] = 0.0f;
-                    gameCubePad->fButtonRepeatRate[buttonIndex - 12] = 0.0f;
+                    normalizedY = 0.0f;
                 }
+
+                float angle = nlATan2f(normalizedY, normalizedX);
+                u16 angleU16 = (u16)(int)(angle * 10430.378f);
+                float degrees = (float)angleU16 * 0.005493164f;
+                int roundedDeg = ((int)degrees / 45) * 45;
+
+                switch (roundedDeg)
+                {
+                case 0:
+                    PadStatus::s_Current[controllerIndex].button |= PAD_BUTTON_RIGHT;
+                    break;
+                case 45:
+                    PadStatus::s_Current[controllerIndex].button |= (PAD_BUTTON_UP | PAD_BUTTON_RIGHT);
+                    break;
+                case 90:
+                    PadStatus::s_Current[controllerIndex].button |= PAD_BUTTON_UP;
+                    break;
+                case 135:
+                    PadStatus::s_Current[controllerIndex].button |= (PAD_BUTTON_UP | PAD_BUTTON_LEFT);
+                    break;
+                case 180:
+                    PadStatus::s_Current[controllerIndex].button |= PAD_BUTTON_LEFT;
+                    break;
+                case 225:
+                    PadStatus::s_Current[controllerIndex].button |= (PAD_BUTTON_DOWN | PAD_BUTTON_LEFT);
+                    break;
+                case 270:
+                    PadStatus::s_Current[controllerIndex].button |= PAD_BUTTON_DOWN;
+                    break;
+                case 315:
+                    PadStatus::s_Current[controllerIndex].button |= (PAD_BUTTON_DOWN | PAD_BUTTON_RIGHT);
+                    break;
+                }
+            }
+        }
+
+        {
+            float frameTime = 1.0f / (float)glx_GetTargetFPS();
+            int buttonMask = 1;
+            for (int j = 0; j < 12; j++)
+            {
+                if (PadStatus::s_Current[controllerIndex].button & buttonMask)
+                    padCategories[0].m_GameCubePads[controllerIndex].fButtonStateTime[j] += frameTime;
+                else
+                {
+                    padCategories[0].m_GameCubePads[controllerIndex].fButtonStateTime[j] = 0.0f;
+                    padCategories[0].m_GameCubePads[controllerIndex].fButtonTimeSinceLastRepeat[j] = 0.0f;
+                }
+                buttonMask <<= 1;
+            }
+        }
+        {
+            float frameTime = 1.0f / (float)glx_GetTargetFPS();
+            int buttonMask = 1;
+            for (int j = 0; j < 12; j++)
+            {
+                if (PadStatus::s_Current[controllerIndex].button & buttonMask)
+                    padCategories[1].m_GameCubePads[controllerIndex].fButtonStateTime[j] += frameTime;
+                else
+                {
+                    padCategories[1].m_GameCubePads[controllerIndex].fButtonStateTime[j] = 0.0f;
+                    padCategories[1].m_GameCubePads[controllerIndex].fButtonTimeSinceLastRepeat[j] = 0.0f;
+                }
+                buttonMask <<= 1;
             }
         }
     }
