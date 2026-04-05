@@ -128,6 +128,10 @@ public:
         {
             data->mRefCount++;
         }
+        else
+        {
+            data = 0;
+        }
         m_data = data;
     }
 

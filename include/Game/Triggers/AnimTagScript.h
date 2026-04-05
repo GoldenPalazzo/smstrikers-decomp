@@ -29,6 +29,7 @@ public:
     {
         m_BytecodeCount = 0;
     }
+    ~AnimTagScriptInterpreter();
 
     void AnimControllerCB(unsigned int);
     u8 SetupAnimationTriggers(const char*, cInventory<cSAnim>*);

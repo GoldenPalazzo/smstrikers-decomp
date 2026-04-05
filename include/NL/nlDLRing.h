@@ -104,7 +104,7 @@ bool nlDLRingIsStart(T* head, T* current)
 {
     if (head == NULL)
     {
-        return true;
+        return false;
     }
     return head->m_next == current;
 }
