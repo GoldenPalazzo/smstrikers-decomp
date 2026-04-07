@@ -58,10 +58,10 @@ struct CupRecord
 {
     CupRecord()
     {
-        memset(&mDate, 0, sizeof(mDate));
         mPlace = 0;
         mTeam = TEAM_INVALID;
         mDifficulty = (GameplaySettings::eSkillLevel)1;
+        memset(&mDate, 0, sizeof(mDate));
     }
 
     /* 0x00 */ OSCalendarTime mDate;
