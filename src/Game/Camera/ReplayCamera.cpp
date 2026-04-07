@@ -2,8 +2,11 @@
 #include "types.h"
 #include "NL/nlConfig.h"
 #include "NL/nlMath.h"
+#include "NL/nlTask.h"
 #include "Game/Field.h"
 #include "Game/ReplayManager.h"
+#include "Game/CharacterTemplate.h"
+#include "Game/Render/depthoffield.h"
 
 // /**
 //  * Offset/Address/Size: 0x18 | 0x801ACB7C | size: 0x8
@@ -85,8 +88,107 @@ void ReplayCamera::Update(float)
 /**
  * Offset/Address/Size: 0x16E8 | 0x801AC3EC | size: 0x49C
  */
-void ReplayCamera::ManualUpdate(float)
+void ReplayCamera::ManualUpdate(float deltaT)
 {
+    if (!mFrozen)
+    {
+        nlVector3 lookAt = { 0.0f, 0.0f, 0.0f };
+        int numFocusPoints = 0;
+
+        if (ReplayManager::Instance()->mRender == NULL)
+        {
+            return;
+        }
+
+        RenderSnapshot* render = ReplayManager::Instance()->mRender;
+
+        if (mFocus & 0x1)
+        {
+            numFocusPoints++;
+            nlVec3Add(lookAt, lookAt, render->mBall.mPosition);
+        }
+
+        if (mFocus & 0x8)
+        {
+            DrawableCharacter* goalie = &render->mCharacters[GetGoalieIndex(mSideOfInterest)];
+            nlVector3 bip01Pos = goalie->mPosition;
+            bip01Pos.f.z += goalie->mHeight;
+            nlVec3Add(lookAt, lookAt, bip01Pos);
+        }
+
+        if (mFocus & 0x2)
+        {
+            DrawableCharacter* player = render->mBall.IndexToPlayer(render->mBall.mOwnerIndex);
+            if (player != NULL)
+            {
+                numFocusPoints++;
+                nlVector3 bip01Pos = player->mPosition;
+                bip01Pos.f.z += player->mHeight;
+                nlVec3Add(lookAt, lookAt, bip01Pos);
+            }
+            else
+            {
+                player = render->mBall.IndexToPlayer(render->mBall.mPrevOwnerIndex);
+                if (player != NULL)
+                {
+                    numFocusPoints++;
+                    nlVector3 bip01Pos = player->mPosition;
+                    bip01Pos.f.z += player->mHeight;
+                    nlVec3Add(lookAt, lookAt, bip01Pos);
+                }
+            }
+        }
+
+        if (mFocus & 0x4)
+        {
+            nlVector3 netPos = { 0.0f, 0.0f, 0.0f };
+            netPos.f.x = cField::GetGoalLineX(mSideOfInterest == 0 ? -1.0f : 1.0f);
+            numFocusPoints++;
+            nlVec3Add(lookAt, lookAt, netPos);
+        }
+
+        if (numFocusPoints != 0)
+        {
+            float invCount = 1.0f / (float)numFocusPoints;
+            _nlVec3Scale(lookAt, invCount);
+        }
+
+        nlVector3 position = GetPosition(mCamPos, mSideOfInterest == 0 ? -1.0f : 1.0f);
+
+        if (mNoDampenForOneUpdate)
+        {
+            mLookAt = lookAt;
+            mPosition = position;
+            mNoDampenForOneUpdate = false;
+        }
+        else
+        {
+            mLookAt.f.x = 0.85f * mLookAt.f.x + 0.15f * lookAt.f.x;
+            mLookAt.f.y = 0.85f * mLookAt.f.y + 0.15f * lookAt.f.y;
+            mLookAt.f.z = 0.85f * mLookAt.f.z + 0.15f * lookAt.f.z;
+
+            mPosition.f.x = 0.9f * mPosition.f.x + 0.1f * position.f.x;
+            mPosition.f.y = 0.9f * mPosition.f.y + 0.1f * position.f.y;
+            mPosition.f.z = 0.9f * mPosition.f.z + 0.1f * position.f.z;
+        }
+
+        mFov -= deltaT * mDeltaFov;
+        if (mFov < 10.0f)
+        {
+            mFov = 10.0f;
+        }
+        if (mFov > 120.0f)
+        {
+            mFov = 120.0f;
+        }
+    }
+
+    if (nlTaskManager::m_pInstance->m_CurrState == 0x10)
+    {
+        nlVector3 dir;
+        nlVec3Sub(dir, mPosition, mLookAt);
+        DepthOfFieldManager::instance.m_fDistanceFromCamera = 4.0f + nlSqrt(dir.GetLengthSq3D(), true);
+    }
 }
 
 /**
