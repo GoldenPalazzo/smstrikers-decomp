@@ -107,14 +107,23 @@ BOOL __VMIsARAMPageDirty(u32 virtualPage)
 
 void __VMAllocVirtualToARAMLUT(void)
 {
-    u32 i;
+    s32 i;
+    s32 j;
 
     g_baseVMtoARAM = (u32*)OSGetArenaLo();
     OSSetArenaLo((void*)((u8*)g_baseVMtoARAM + 0x8000));
 
-    for (i = 0; i < 0x2000; ++i)
+    j = 0;
+    for (i = 0; i < 0x400; i++)
     {
-        g_baseVMtoARAM[i] = 0;
+        g_baseVMtoARAM[j++] = 0;
+        g_baseVMtoARAM[j++] = 0;
+        g_baseVMtoARAM[j++] = 0;
+        g_baseVMtoARAM[j++] = 0;
+        g_baseVMtoARAM[j++] = 0;
+        g_baseVMtoARAM[j++] = 0;
+        g_baseVMtoARAM[j++] = 0;
+        g_baseVMtoARAM[j++] = 0;
     }
 }
 

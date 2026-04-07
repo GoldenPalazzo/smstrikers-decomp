@@ -194,19 +194,35 @@ StadiumSelectSceneV2::~StadiumSelectSceneV2()
  * TODO: 80.31% match - volatile InlineHasher copy-back to parameter area before Find calls,
  * r26/r27 vs r27/r28 register allocation in loop, stack frame 0x10 too small
  */
+/**
+ * Offset/Address/Size: 0x384 | 0x800D8D54 | size: 0xA5C
+ * TODO: 89.52% scratch match - r28/r29 register swap (format string vs img) and dead hasher
+ * store elimination due to union byRef trick + non-volatile narrow-scope hashers.
+ * File uses -inline deferred which may affect build match differently.
+ */
 void StadiumSelectSceneV2::SceneCreated()
 {
     unsigned long hash;
     FEPresentation* pres = m_pFEScene->m_pFEPackage->GetPresentation();
 
-    volatile InlineHasher hB, hA;
-    volatile InlineHasher h9, h8;
-    volatile InlineHasher h7, h6, h5, h4, h3, h2, h1, h0;
-
     for (int i = 0; i < 7; i++)
     {
+        typedef TLImageInstance* (*FindByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
+        typedef TLImageInstance* (*FindByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
+        union
+        {
+            FindByValue byValue;
+            FindByRef byRef;
+        } findImg;
+        findImg.byValue = FEFinder<TLImageInstance, 2>::Find<TLSlide>;
+
         char buf[64];
         nlSNPrintf(buf, 64, "stadium_%c", i + 'A');
+
+        volatile InlineHasher hB, hA;
+        volatile InlineHasher h9, h8;
+        volatile InlineHasher h7, h6, h5, h4, h3, h2, h1, h0;
+
         h0.m_Hash = 0;
         h1.m_Hash = 0;
         h2.m_Hash = 0;
@@ -221,7 +237,7 @@ void StadiumSelectSceneV2::SceneCreated()
         hash = nlStringLowerHash("Layer");
         hA.m_Hash = hash;
         hB.m_Hash = hash;
-        TLImageInstance* img = FEFinder<TLImageInstance, 2>::Find<TLSlide>(
+        TLImageInstance* img = findImg.byRef(
             pres->m_currentSlide, (InlineHasher&)hB, (InlineHasher&)h9, (InlineHasher&)h7, (InlineHasher&)h5, (InlineHasher&)h3, (InlineHasher&)h1);
         AsyncImage* asyncImg = new (nlMalloc(0x1C, 0x20, true)) AsyncImage("art/fe/StadiumsUI.res", NULL);
         mImages[i] = asyncImg;
@@ -230,24 +246,37 @@ void StadiumSelectSceneV2::SceneCreated()
 
     mStadiumIndex = 0;
 
-    h0.m_Hash = 0;
-    h1.m_Hash = 0;
-    h2.m_Hash = 0;
-    h3.m_Hash = 0;
-    h4.m_Hash = 0;
-    h5.m_Hash = 0;
-    h6.m_Hash = 0;
-    h7.m_Hash = 0;
-    hash = nlStringLowerHash("TickerText");
-    h8.m_Hash = hash;
-    h9.m_Hash = hash;
-    hash = nlStringLowerHash("Layer");
-    hA.m_Hash = hash;
-    hB.m_Hash = hash;
-    TLTextInstance* tickerText = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
-        pres->m_currentSlide, (InlineHasher&)hB, (InlineHasher&)h9, (InlineHasher&)h7, (InlineHasher&)h5, (InlineHasher&)h3, (InlineHasher&)h1);
-
     {
+        typedef TLTextInstance* (*FindByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
+        typedef TLTextInstance* (*FindByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
+        union
+        {
+            FindByValue byValue;
+            FindByRef byRef;
+        } findTxt;
+        findTxt.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
+
+        InlineHasher hB, hA;
+        InlineHasher h9, h8;
+        InlineHasher h7, h6, h5, h4, h3, h2, h1, h0;
+
+        h0.m_Hash = 0;
+        h1.m_Hash = 0;
+        h2.m_Hash = 0;
+        h3.m_Hash = 0;
+        h4.m_Hash = 0;
+        h5.m_Hash = 0;
+        h6.m_Hash = 0;
+        h7.m_Hash = 0;
+        hash = nlStringLowerHash("TickerText");
+        h8.m_Hash = hash;
+        h9.m_Hash = hash;
+        hash = nlStringLowerHash("Layer");
+        hA.m_Hash = hash;
+        hB.m_Hash = hash;
+        TLTextInstance* tickerText = findTxt.byRef(
+            pres->m_currentSlide, hB, h9, h7, h5, h3, h1);
+
         gl_ScreenInfo* screenInfo = glGetScreenInfo();
         FEScrollText* ticker = new (nlMalloc(0x22C, 0x8, false)) FEScrollText(tickerText, 0, screenInfo->ScreenWidth + 50);
         m_pTicker = ticker;
@@ -295,23 +324,36 @@ void StadiumSelectSceneV2::SceneCreated()
     mTempTextureBuffer = NULL;
     mTempTextureBufferSize = -1;
 
-    h0.m_Hash = 0;
-    h1.m_Hash = 0;
-    h2.m_Hash = 0;
-    h3.m_Hash = 0;
-    h4.m_Hash = 0;
-    h5.m_Hash = 0;
-    h6.m_Hash = 0;
-    h7.m_Hash = 0;
-    hash = nlStringLowerHash("stadiumname");
-    h8.m_Hash = hash;
-    h9.m_Hash = hash;
-    hash = nlStringLowerHash("Layer");
-    hA.m_Hash = hash;
-    hB.m_Hash = hash;
     {
-        TLTextInstance* nameText = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
-            m_pFEPresentation->m_currentSlide, (InlineHasher&)hB, (InlineHasher&)h9, (InlineHasher&)h7, (InlineHasher&)h5, (InlineHasher&)h3, (InlineHasher&)h1);
+        typedef TLTextInstance* (*FindByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
+        typedef TLTextInstance* (*FindByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
+        union
+        {
+            FindByValue byValue;
+            FindByRef byRef;
+        } findTxt;
+        findTxt.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
+
+        InlineHasher hB, hA;
+        InlineHasher h9, h8;
+        InlineHasher h7, h6, h5, h4, h3, h2, h1, h0;
+
+        h0.m_Hash = 0;
+        h1.m_Hash = 0;
+        h2.m_Hash = 0;
+        h3.m_Hash = 0;
+        h4.m_Hash = 0;
+        h5.m_Hash = 0;
+        h6.m_Hash = 0;
+        h7.m_Hash = 0;
+        hash = nlStringLowerHash("stadiumname");
+        h8.m_Hash = hash;
+        h9.m_Hash = hash;
+        hash = nlStringLowerHash("Layer");
+        hA.m_Hash = hash;
+        hB.m_Hash = hash;
+        TLTextInstance* nameText = findTxt.byRef(
+            m_pFEPresentation->m_currentSlide, hB, h9, h7, h5, h3, h1);
 
         eStadiumID currentStadium = StadiumEntries[mStadiumIndex].stadiumID;
         bool isUnlocked = true;
@@ -343,65 +385,104 @@ void StadiumSelectSceneV2::SceneCreated()
         }
     }
 
-    h0.m_Hash = 0;
-    h1.m_Hash = 0;
-    h2.m_Hash = 0;
-    h3.m_Hash = 0;
-    h4.m_Hash = 0;
-    h5.m_Hash = 0;
-    h6.m_Hash = 0;
-    h7.m_Hash = 0;
-    hash = nlStringLowerHash("day night");
-    h8.m_Hash = hash;
-    h9.m_Hash = hash;
-    hash = nlStringLowerHash("Layer");
-    hA.m_Hash = hash;
-    hB.m_Hash = hash;
     {
-        TLComponentInstance* dayNightComp = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
-            pres->m_currentSlide, (InlineHasher&)hB, (InlineHasher&)h9, (InlineHasher&)h7, (InlineHasher&)h5, (InlineHasher&)h3, (InlineHasher&)h1);
+        typedef TLComponentInstance* (*FindByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
+        typedef TLComponentInstance* (*FindByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
+        union
+        {
+            FindByValue byValue;
+            FindByRef byRef;
+        } findComp;
+        findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
+
+        InlineHasher hB, hA;
+        InlineHasher h9, h8;
+        InlineHasher h7, h6, h5, h4, h3, h2, h1, h0;
+
+        h0.m_Hash = 0;
+        h1.m_Hash = 0;
+        h2.m_Hash = 0;
+        h3.m_Hash = 0;
+        h4.m_Hash = 0;
+        h5.m_Hash = 0;
+        h6.m_Hash = 0;
+        h7.m_Hash = 0;
+        hash = nlStringLowerHash("day night");
+        h8.m_Hash = hash;
+        h9.m_Hash = hash;
+        hash = nlStringLowerHash("Layer");
+        hA.m_Hash = hash;
+        hB.m_Hash = hash;
+        TLComponentInstance* dayNightComp = findComp.byRef(
+            pres->m_currentSlide, hB, h9, h7, h5, h3, h1);
         dayNightComp->m_bVisible = false;
         pres->SetActiveSlide("RIGHT");
     }
 
-    h0.m_Hash = 0;
-    h1.m_Hash = 0;
-    h2.m_Hash = 0;
-    h3.m_Hash = 0;
-    h4.m_Hash = 0;
-    h5.m_Hash = 0;
-    h6.m_Hash = 0;
-    h7.m_Hash = 0;
-    hash = nlStringLowerHash("day night");
-    h8.m_Hash = hash;
-    h9.m_Hash = hash;
-    hash = nlStringLowerHash("Layer");
-    hA.m_Hash = hash;
-    hB.m_Hash = hash;
     {
-        TLComponentInstance* dayNightComp2 = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
-            pres->m_currentSlide, (InlineHasher&)hB, (InlineHasher&)h9, (InlineHasher&)h7, (InlineHasher&)h5, (InlineHasher&)h3, (InlineHasher&)h1);
+        typedef TLComponentInstance* (*FindByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
+        typedef TLComponentInstance* (*FindByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
+        union
+        {
+            FindByValue byValue;
+            FindByRef byRef;
+        } findComp;
+        findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
+
+        InlineHasher hB, hA;
+        InlineHasher h9, h8;
+        InlineHasher h7, h6, h5, h4, h3, h2, h1, h0;
+
+        h0.m_Hash = 0;
+        h1.m_Hash = 0;
+        h2.m_Hash = 0;
+        h3.m_Hash = 0;
+        h4.m_Hash = 0;
+        h5.m_Hash = 0;
+        h6.m_Hash = 0;
+        h7.m_Hash = 0;
+        hash = nlStringLowerHash("day night");
+        h8.m_Hash = hash;
+        h9.m_Hash = hash;
+        hash = nlStringLowerHash("Layer");
+        hA.m_Hash = hash;
+        hB.m_Hash = hash;
+        TLComponentInstance* dayNightComp2 = findComp.byRef(
+            pres->m_currentSlide, hB, h9, h7, h5, h3, h1);
         dayNightComp2->m_bVisible = false;
         pres->SetActiveSlide("LEFT");
     }
 
-    h0.m_Hash = 0;
-    h1.m_Hash = 0;
-    h2.m_Hash = 0;
-    h3.m_Hash = 0;
-    h4.m_Hash = 0;
-    h5.m_Hash = 0;
-    h6.m_Hash = 0;
-    h7.m_Hash = 0;
-    hash = nlStringLowerHash("buttons");
-    h8.m_Hash = hash;
-    h9.m_Hash = hash;
-    hash = nlStringLowerHash("Layer");
-    hA.m_Hash = hash;
-    hB.m_Hash = hash;
     {
-        TLComponentInstance* buttonsComp = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
-            m_pFEPresentation->m_currentSlide, (InlineHasher&)hB, (InlineHasher&)h9, (InlineHasher&)h7, (InlineHasher&)h5, (InlineHasher&)h3, (InlineHasher&)h1);
+        typedef TLComponentInstance* (*FindByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
+        typedef TLComponentInstance* (*FindByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
+        union
+        {
+            FindByValue byValue;
+            FindByRef byRef;
+        } findComp;
+        findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
+
+        InlineHasher hB, hA;
+        InlineHasher h9, h8;
+        InlineHasher h7, h6, h5, h4, h3, h2, h1, h0;
+
+        h0.m_Hash = 0;
+        h1.m_Hash = 0;
+        h2.m_Hash = 0;
+        h3.m_Hash = 0;
+        h4.m_Hash = 0;
+        h5.m_Hash = 0;
+        h6.m_Hash = 0;
+        h7.m_Hash = 0;
+        hash = nlStringLowerHash("buttons");
+        h8.m_Hash = hash;
+        h9.m_Hash = hash;
+        hash = nlStringLowerHash("Layer");
+        hA.m_Hash = hash;
+        hB.m_Hash = hash;
+        TLComponentInstance* buttonsComp = findComp.byRef(
+            m_pFEPresentation->m_currentSlide, hB, h9, h7, h5, h3, h1);
         mButtons.mButtonInstance = buttonsComp;
         mButtons.SetState(ButtonComponent::BS_A_AND_B);
     }

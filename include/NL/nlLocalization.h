@@ -35,7 +35,7 @@ public:
 
     unsigned char Load(nlLanguage Language, bool ingameloc);
     void Destroy();
-    void Initialize();
+    static void Initialize();
 
     LOCHeader* m_pFile;
     StringLookup* m_LookupTable;

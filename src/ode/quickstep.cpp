@@ -552,6 +552,12 @@ static void SOR_LCP(int m, int nb, dRealMutablePtr J, int* jb, dxBody* const* bo
     }
 }
 
+/**
+ * Offset/Address/Size: 0x21E9B4 | 0x80221A74 | size: 0x134C
+ * TODO: 86.8% match - register allocation (world in r16 vs stack, nj/nb/body register shift)
+ * and body tag loop unrolling pattern difference (pre-compute vs sequential increment).
+ * Both are decomp.me compiler behavior differences vs actual build compiler.
+ */
 void dxQuickStepper(dxWorld* world, dxBody* const* body, int nb,
     dxJoint* const* _joint, int nj, dReal stepsize)
 {
@@ -568,7 +574,7 @@ void dxQuickStepper(dxWorld* world, dxBody* const* body, int nb,
     // (the "dxJoint *const*" declaration says we're allowed to modify the joints
     // but not the joint array, because the caller might need it unchanged).
     //@@@ do we really need to do this? we'll be sorting constraint rows individually, not joints
-    dxJoint** joint = (dxJoint**)malloc(nj * sizeof(dxJoint*));
+    dxJoint** joint = (dxJoint**)__alloca(nj * sizeof(dxJoint*));
     memcpy(joint, _joint, nj * sizeof(dxJoint*));
 
     // for all bodies, compute the inertia tensor and its inverse in the global
@@ -605,7 +611,7 @@ void dxQuickStepper(dxWorld* world, dxBody* const* body, int nb,
     // joints with m=0 are inactive and are removed from the joints array
     // entirely, so that the code that follows does not consider them.
     //@@@ do we really need to save all the info1's
-    dxJoint::Info1* info = (dxJoint::Info1*)malloc(nj * sizeof(dxJoint::Info1));
+    dxJoint::Info1* info = (dxJoint::Info1*)__alloca(nj * sizeof(dxJoint::Info1));
     for (i = 0, j = 0; j < nj; j++)
     { // i=dest, j=src
         joint[j]->vtable->getInfo1(joint[j], info + i);
@@ -620,7 +626,7 @@ void dxQuickStepper(dxWorld* world, dxBody* const* body, int nb,
 
     // create the row offset array
     int m = 0;
-    int* ofs = (int*)malloc(nj * sizeof(int));
+    int* ofs = (int*)__alloca(nj * sizeof(int));
     for (i = 0; i < nj; i++)
     {
         ofs[i] = m;
@@ -629,7 +635,7 @@ void dxQuickStepper(dxWorld* world, dxBody* const* body, int nb,
 
     // if there are constraints, compute the constraint force
     dRealAllocaArray(J, m * 12);
-    int* jb = (int*)malloc(m * 2 * sizeof(int));
+    int* jb = (int*)__alloca(m * 2 * sizeof(int));
     if (m > 0)
     {
         // create a constraint equation right hand side vector `c', a constraint
@@ -639,7 +645,7 @@ void dxQuickStepper(dxWorld* world, dxBody* const* body, int nb,
         dRealAllocaArray(cfm, m);
         dRealAllocaArray(lo, m);
         dRealAllocaArray(hi, m);
-        int* findex = (int*)malloc(m * sizeof(int));
+        int* findex = (int*)__alloca(m * sizeof(int));
         dSetZero(c, m);
         dSetValue(cfm, m, world->global_cfm);
         dSetValue(lo, m, -dInfinity);

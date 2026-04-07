@@ -1,5 +1,10 @@
 #include "Game/Render/NPCManager.h"
 
+#include "Game/Game.h"
+#include "Game/GameInfo.h"
+#include "Game/Render/AnimatedModelExplodable.h"
+#include "Game/Render/CameraGuy.h"
+#include "Game/WorldManager.h"
 #include "NL/nlFile.h"
 #include "NL/nlFileGC.h"
 #include "NL/nlMemory.h"
@@ -50,9 +55,242 @@ extern "C" cSHierarchy* Initialize__11cSHierarchyFP7nlChunk(nlChunk*);
 
 /**
  * Offset/Address/Size: 0x8AC | 0x80166770 | size: 0xB3C
+ * TODO: 96.50% match - decomp.me generates beq for while+break instead of target's
+ * bne+b pattern, causing li r26,0 placement diff (before loop vs fall-through).
+ * Also r26/r27 swap for animInv in else-if blocks 1-4. Likely inherent decomp.me
+ * compiler optimization difference.
  */
 NPCManager::NPCManager()
+    : mpInventorySAnim(NULL)
+    , mpInventorySHierarchy(NULL)
 {
+    mpInventorySHierarchy = new (nlMalloc(sizeof(cInventory<cSHierarchy>), 8, false)) cInventory<cSHierarchy>();
+    mpInventorySAnim = new (nlMalloc(sizeof(cInventory<cSAnim>), 8, false)) cInventory<cSAnim>();
+
+    mNPCTemplate[0].loaded = false;
+    mNPCTemplate[1].loaded = false;
+    mNPCTemplate[2].loaded = false;
+    mNPCTemplate[3].loaded = false;
+    mNPCTemplate[4].loaded = false;
+    mNPCTemplate[5].loaded = false;
+    mNPCTemplate[6].loaded = false;
+
+    World* world = WorldManager::s_World;
+
+    u32* stack = (u32*)nlMalloc(8, 8, false);
+    if (stack != NULL)
+    {
+        AVLTreeEntry<unsigned long, HelperObject*>* node = world->m_helperMap.m_Root;
+        stack[0] = (u32)nlMalloc((world->m_helperMap.m_NumElements + 1) * 4, 8, false);
+        stack[1] = 0;
+        if (node != NULL)
+        {
+            while (node->node.left != NULL)
+            {
+                ((AVLTreeEntry<unsigned long, HelperObject*>**)stack[0])[stack[1]] = node;
+                stack[1]++;
+                node = (AVLTreeEntry<unsigned long, HelperObject*>*)node->node.left;
+            }
+            ((AVLTreeEntry<unsigned long, HelperObject*>**)stack[0])[stack[1]] = node;
+            stack[1]++;
+        }
+    }
+
+    while (stack[1] > 0)
+    {
+        if (world->CompareNameToGenericName(((AVLTreeEntry<unsigned long, HelperObject*>**)stack[0])[stack[1] - 1]->value->m_szName, "cameraguy") == 0)
+        {
+            CreateNPCTemplate(0, true);
+            cInventory<cSAnim>* animInv = mpInventorySAnim;
+            u32 hash = nlStringHash("camera_idle");
+            ListEntry<cSAnim*>* animEntry = animInv->m_lItemList.m_Head;
+            cSAnim* foundAnim = NULL;
+            while (animEntry != NULL)
+            {
+                foundAnim = animEntry->data;
+                if (hash == foundAnim->m_uHashID)
+                    break;
+                animEntry = animEntry->next;
+            }
+            if (animEntry == NULL)
+                foundAnim = NULL;
+            CameraGuy* guy = new (nlMalloc(sizeof(CameraGuy), 8, false)) CameraGuy(*mNPCTemplate[0].hierarchy, mNPCTemplate[0].modelID);
+            guy->Init();
+            guy->SetIdleAnim(*foundAnim);
+            guy->mWorldMatrix = ((AVLTreeEntry<unsigned long, HelperObject*>**)stack[0])[stack[1] - 1]->value->m_worldMatrix;
+            ListEntry<SkinAnimatedNPC*>* listEntry = (ListEntry<SkinAnimatedNPC*>*)nlMalloc(8, 8, false);
+            if (listEntry != NULL)
+            {
+                listEntry->next = NULL;
+                listEntry->data = guy;
+            }
+            nlListAddStart<ListEntry<SkinAnimatedNPC*> >(&mNPCList.m_Head, listEntry, &mNPCList.m_Tail);
+            new (nlMalloc(sizeof(AnimatedModelExplodable), 8, false)) AnimatedModelExplodable(EXPLODABLE_CAMERAGUY, guy);
+        }
+        else if (world->CompareNameToGenericName(((AVLTreeEntry<unsigned long, HelperObject*>**)stack[0])[stack[1] - 1]->value->m_szName, "standupcamera") == 0)
+        {
+            CreateNPCTemplate(1, true);
+            cInventory<cSAnim>* animInv = mpInventorySAnim;
+            u32 hash = nlStringHash("standupcamera_idle");
+            ListEntry<cSAnim*>* animEntry = animInv->m_lItemList.m_Head;
+            cSAnim* foundAnim = NULL;
+            while (animEntry != NULL)
+            {
+                foundAnim = animEntry->data;
+                if (hash == foundAnim->m_uHashID)
+                    break;
+                animEntry = animEntry->next;
+            }
+            if (animEntry == NULL)
+                foundAnim = NULL;
+            CameraGuy* guy = new (nlMalloc(sizeof(CameraGuy), 8, false)) CameraGuy(*mNPCTemplate[1].hierarchy, mNPCTemplate[1].modelID);
+            guy->Init();
+            guy->SetIdleAnim(*foundAnim);
+            guy->mWorldMatrix = ((AVLTreeEntry<unsigned long, HelperObject*>**)stack[0])[stack[1] - 1]->value->m_worldMatrix;
+            ListEntry<SkinAnimatedNPC*>* listEntry = (ListEntry<SkinAnimatedNPC*>*)nlMalloc(8, 8, false);
+            if (listEntry != NULL)
+            {
+                listEntry->next = NULL;
+                listEntry->data = guy;
+            }
+            nlListAddStart<ListEntry<SkinAnimatedNPC*> >(&mNPCList.m_Head, listEntry, &mNPCList.m_Tail);
+            new (nlMalloc(sizeof(AnimatedModelExplodable), 8, false)) AnimatedModelExplodable(EXPLODABLE_STANDUPCAMERA, guy);
+        }
+        else if (world->CompareNameToGenericName(((AVLTreeEntry<unsigned long, HelperObject*>**)stack[0])[stack[1] - 1]->value->m_szName, "medic") == 0)
+        {
+            CreateNPCTemplate(2, true);
+            cInventory<cSAnim>* animInv = mpInventorySAnim;
+            u32 hash = nlStringHash("medic_idle");
+            ListEntry<cSAnim*>* animEntry = animInv->m_lItemList.m_Head;
+            cSAnim* foundAnim = NULL;
+            while (animEntry != NULL)
+            {
+                foundAnim = animEntry->data;
+                if (hash == foundAnim->m_uHashID)
+                    break;
+                animEntry = animEntry->next;
+            }
+            if (animEntry == NULL)
+                foundAnim = NULL;
+            SkinAnimatedNPC* npc = new (nlMalloc(sizeof(SkinAnimatedNPC), 8, false)) SkinAnimatedNPC(*mNPCTemplate[2].hierarchy, mNPCTemplate[2].modelID);
+            npc->SetAnimState(*foundAnim, 0.2f, (ePlayMode)0);
+            npc->mWorldMatrix = ((AVLTreeEntry<unsigned long, HelperObject*>**)stack[0])[stack[1] - 1]->value->m_worldMatrix;
+            ListEntry<SkinAnimatedNPC*>* listEntry = (ListEntry<SkinAnimatedNPC*>*)nlMalloc(8, 8, false);
+            if (listEntry != NULL)
+            {
+                listEntry->next = NULL;
+                listEntry->data = npc;
+            }
+            nlListAddStart<ListEntry<SkinAnimatedNPC*> >(&mNPCList.m_Head, listEntry, &mNPCList.m_Tail);
+        }
+        else if (world->CompareNameToGenericName(((AVLTreeEntry<unsigned long, HelperObject*>**)stack[0])[stack[1] - 1]->value->m_szName, "securityguard") == 0)
+        {
+            CreateNPCTemplate(3, true);
+            cInventory<cSAnim>* animInv = mpInventorySAnim;
+            u32 hash = nlStringHash("securityguard_idle");
+            ListEntry<cSAnim*>* animEntry = animInv->m_lItemList.m_Head;
+            cSAnim* foundAnim = NULL;
+            while (animEntry != NULL)
+            {
+                foundAnim = animEntry->data;
+                if (hash == foundAnim->m_uHashID)
+                    break;
+                animEntry = animEntry->next;
+            }
+            if (animEntry == NULL)
+                foundAnim = NULL;
+            SkinAnimatedNPC* npc = new (nlMalloc(sizeof(SkinAnimatedNPC), 8, false)) SkinAnimatedNPC(*mNPCTemplate[3].hierarchy, mNPCTemplate[3].modelID);
+            npc->SetAnimState(*foundAnim, 0.2f, (ePlayMode)0);
+            npc->mWorldMatrix = ((AVLTreeEntry<unsigned long, HelperObject*>**)stack[0])[stack[1] - 1]->value->m_worldMatrix;
+            ListEntry<SkinAnimatedNPC*>* listEntry = (ListEntry<SkinAnimatedNPC*>*)nlMalloc(8, 8, false);
+            if (listEntry != NULL)
+            {
+                listEntry->next = NULL;
+                listEntry->data = npc;
+            }
+            nlListAddStart<ListEntry<SkinAnimatedNPC*> >(&mNPCList.m_Head, listEntry, &mNPCList.m_Tail);
+        }
+        else if (world->CompareNameToGenericName(((AVLTreeEntry<unsigned long, HelperObject*>**)stack[0])[stack[1] - 1]->value->m_szName, "blimp") == 0)
+        {
+            CreateNPCTemplate(4, true);
+            cInventory<cSAnim>* animInv = mpInventorySAnim;
+            u32 hash = nlStringHash("blimp_idle");
+            ListEntry<cSAnim*>* animEntry = animInv->m_lItemList.m_Head;
+            cSAnim* foundAnim = NULL;
+            while (animEntry != NULL)
+            {
+                foundAnim = animEntry->data;
+                if (hash == foundAnim->m_uHashID)
+                    break;
+                animEntry = animEntry->next;
+            }
+            if (animEntry == NULL)
+                foundAnim = NULL;
+            SkinAnimatedNPC* npc = new (nlMalloc(sizeof(SkinAnimatedNPC), 8, false)) SkinAnimatedNPC(*mNPCTemplate[4].hierarchy, mNPCTemplate[4].modelID);
+            npc->SetAnimState(*foundAnim, 0.2f, (ePlayMode)0);
+            npc->mWorldMatrix = ((AVLTreeEntry<unsigned long, HelperObject*>**)stack[0])[stack[1] - 1]->value->m_worldMatrix;
+            ListEntry<SkinAnimatedNPC*>* listEntry = (ListEntry<SkinAnimatedNPC*>*)nlMalloc(8, 8, false);
+            if (listEntry != NULL)
+            {
+                listEntry->next = NULL;
+                listEntry->data = npc;
+            }
+            nlListAddStart<ListEntry<SkinAnimatedNPC*> >(&mNPCList.m_Head, listEntry, &mNPCList.m_Tail);
+        }
+
+        stack[1]--;
+        AVLTreeEntry<unsigned long, HelperObject*>* popped = ((AVLTreeEntry<unsigned long, HelperObject*>**)stack[0])[stack[1]];
+        AVLTreeEntry<unsigned long, HelperObject*>* rightChild = (AVLTreeEntry<unsigned long, HelperObject*>*)popped->node.right;
+        if (rightChild != NULL)
+        {
+            while (rightChild->node.left != NULL)
+            {
+                ((AVLTreeEntry<unsigned long, HelperObject*>**)stack[0])[stack[1]] = rightChild;
+                stack[1]++;
+                rightChild = (AVLTreeEntry<unsigned long, HelperObject*>*)rightChild->node.left;
+            }
+            ((AVLTreeEntry<unsigned long, HelperObject*>**)stack[0])[stack[1]] = rightChild;
+            stack[1]++;
+        }
+    }
+
+    if (stack != NULL)
+    {
+        ::operator delete[]((void*)stack[0]);
+        ::operator delete(stack);
+    }
+
+    CreateNPCTemplate(5, true);
+    PhysicsNPC* chainPhysics = new (nlMalloc(sizeof(PhysicsNPC), 8, false)) PhysicsNPC(g_pGame->m_pGameTweaks->fChainChompRadius);
+    ChainChomp* chainChomp = new (nlMalloc(sizeof(ChainChomp), 8, false)) ChainChomp(*mNPCTemplate[5].hierarchy, mNPCTemplate[5].modelID, *chainPhysics, mpInventorySAnim);
+    mpChainChomp = chainChomp;
+    {
+        union
+        {
+            void (ChainChomp::*mfp)(PhysicsObject*, PhysicsObject*, const nlVector3&);
+            PhysicsNPC::CallbackFn fp;
+        } u;
+        u.mfp = &ChainChomp::CollisionCallback;
+        chainPhysics->SetCallbackFunction(u.fp);
+    }
+
+    if (nlSingleton<GameInfoManager>::s_pInstance->mIsInStrikers101Mode)
+        CreateNPCTemplate(6, false);
+    else
+        CreateNPCTemplate(6, true);
+
+    PhysicsNPC* bowserPhysics = new (nlMalloc(sizeof(PhysicsNPC), 8, false)) PhysicsNPC(g_pGame->m_pGameTweaks->unk304);
+    Bowser* bowser = new (nlMalloc(sizeof(Bowser), 8, false)) Bowser(*mNPCTemplate[6].hierarchy, mNPCTemplate[6].modelID, *bowserPhysics, mpInventorySAnim);
+    mpBowser = bowser;
+    {
+        union
+        {
+            void (Bowser::*mfp)(PhysicsObject*, PhysicsObject*, const nlVector3&);
+            PhysicsNPC::CallbackFn fp;
+        } u;
+        u.mfp = &Bowser::CollisionCallback;
+        bowserPhysics->SetCallbackFunction(u.fp);
+    }
 }
 
 /**

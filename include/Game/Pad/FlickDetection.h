@@ -26,7 +26,7 @@ public:
 class FlickDetection
 {
 public:
-    void Initialize();
+    static void Initialize();
     void Update();
 };
 

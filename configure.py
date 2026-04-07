@@ -823,7 +823,7 @@ config.libs = [
             Object(Matching, "Game/Net.cpp", extra_cflags=["-inline deferred"]),
             Object(Matching, "Game/Field.cpp", extra_cflags=["-inline deferred"]),
             Object(NonMatching, "Game/Character.cpp"),
-            Object(NonMatching, "Game/CharacterTemplate.cpp"),
+            Object(NonMatching, "Game/CharacterTemplate.cpp", extra_cflags=["-inline deferred"]),
             Object(Matching, "Game/CharacterEffects.cpp"),
             Object(NonMatching, "Game/Player.cpp"),
 

@@ -8,9 +8,13 @@
 #include "Game/Physics/CharacterPhysicsElement.h"
 #include "Game/Triggers/SebringAnimScript.h"
 #include "NL/nlFile.h"
+#include "NL/nlFileGC.h"
+#include "NL/nlPrint.h"
 #include "NL/nlString.h"
 #include "NL/nlMemory.h"
 #include "NL/gl/gl.h"
+#include "NL/gl/glTexture.h"
+#include "NL/glx/glxTexture.h"
 
 extern SoundPropAccessor* gpBIRDOSoundPropAccessor;
 extern SoundPropAccessor* gpDAISYSoundPropAccessor;
@@ -445,10 +449,86 @@ copyDone2:
 /**
  * Offset/Address/Size: 0x14A4 | 0x8001378C | size: 0x5FC
  */
-cPlayer* CreateSidekick(int, int, eCharacterClass, eCharacterClass, bool)
+cPlayer* CreateSidekick(int nPlayerID, int nTeamID, eCharacterClass cc, eCharacterClass captainCC, bool bForViewer)
 {
-    FORCE_DONT_INLINE;
-    return nullptr;
+    char szTexPath[64];
+    char szArtPath[64];
+    char szBundlePath[64];
+    char szPlayerPath[64];
+
+    glxTextureLoadCallback_t oldCallback = glx_SetLoadCallback((glxTextureLoadCallback_t)SidekickTexture_cb);
+
+    if (cc == HAMMERBROS)
+    {
+        nlSNPrintf(szTexPath, 64, "hammerbro/hammer_mario");
+    }
+    else
+    {
+        nlSNPrintf(szTexPath, 64, "%s/%s_mario", GetCharacterName(cc), GetCharacterName(cc));
+    }
+
+    skiptexture = glGetTexture(szTexPath);
+
+    cPlayer* pPlayer = CreateCharacter(nPlayerID, nTeamID, cc, bForViewer);
+
+    glx_SetLoadCallback(oldCallback);
+
+    bool bLoaded = false;
+
+    if (cc == HAMMERBROS)
+    {
+        nlSNPrintf(szBundlePath, 64, "characters/%s/hammer_%s.glt", GetCharacterName(cc), GetCharacterName(captainCC));
+        nlSNPrintf(szArtPath, 64, "art/characters/%s/hammer_%s.glt", GetCharacterName(cc), GetCharacterName(captainCC));
+    }
+    else
+    {
+        nlSNPrintf(szBundlePath, 64, "characters/%s/%s_%s.glt", GetCharacterName(cc), GetCharacterName(cc), GetCharacterName(captainCC));
+        nlSNPrintf(szArtPath, 64, "art/characters/%s/%s_%s.glt", GetCharacterName(cc), GetCharacterName(cc), GetCharacterName(captainCC));
+    }
+
+    if (cc == HAMMERBROS)
+    {
+        nlSNPrintf(szPlayerPath, 64, "hammer_%s/hammer_%s", GetCharacterName(captainCC), GetCharacterName(captainCC));
+    }
+    else
+    {
+        nlSNPrintf(szPlayerPath, 64, "%s_%s/%s_%s", GetCharacterName(cc), GetCharacterName(captainCC), GetCharacterName(cc), GetCharacterName(captainCC));
+    }
+
+    if (glTextureLoad(glGetTexture(szPlayerPath)))
+    {
+        bLoaded = true;
+    }
+    else
+    {
+        nlFile* fp = nlOpen(szArtPath);
+        if (fp != NULL)
+        {
+            nlClose(fp);
+            bLoaded = glLoadTextureBundle(szBundlePath);
+        }
+    }
+
+    if (bLoaded)
+    {
+        if (cc == HAMMERBROS)
+        {
+            nlSNPrintf(szBundlePath, 64, "%s/hammer_mario", GetCharacterName(cc));
+        }
+        else
+        {
+            nlSNPrintf(szBundlePath, 64, "%s/%s_mario", GetCharacterName(cc), GetCharacterName(cc));
+        }
+        pPlayer->m_uNormalTextureID = glGetTexture(szBundlePath);
+        pPlayer->m_uSwapTextureID = glGetTexture(szPlayerPath);
+    }
+    else
+    {
+        pPlayer->m_uNormalTextureID = (u32)-1;
+        pPlayer->m_uSwapTextureID = (u32)-1;
+    }
+
+    return pPlayer;
 }
 
 /**
@@ -837,12 +917,18 @@ CharacterPhysicsData::~CharacterPhysicsData()
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800146F8 | size: 0xD0
-//  */
-// AnimTagScriptInterpreter::~AnimTagScriptInterpreter()
-// {
-// }
+/**
+ * Offset/Address/Size: 0x0 | 0x800146F8 | size: 0xD0
+ * TODO: 96.15% match - missing duplicate addic./beq null check for embedded member destructor (MWCC compiler quirk)
+ */
+AnimTagScriptInterpreter::~AnimTagScriptInterpreter()
+{
+    SlotPoolBase::BaseFreeBlocks(&m_AnimTagSlotPool, sizeof(AnimTagCBInfo));
+    for (int i = 0; i < m_BytecodeCount; i++)
+    {
+        nlFree(m_ppBytecode[i]);
+    }
+}
 
 // /**
 //  * Offset/Address/Size: 0xD0 | 0x800147C8 | size: 0x4

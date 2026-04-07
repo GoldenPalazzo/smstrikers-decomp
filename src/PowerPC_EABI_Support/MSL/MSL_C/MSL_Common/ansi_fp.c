@@ -197,6 +197,8 @@ inline void __str2dec(decimal* d, const char* s, short exp)
     {
         if (*s < 5)
             return;
+        if (*s > 5)
+            goto round;
         {
             const char* p = s + 1;
             for (; *p != 0; ++p)
@@ -212,6 +214,8 @@ inline void __str2dec(decimal* d, const char* s, short exp)
 
 static void __two_exp(decimal* result, long exp)
 {
+    decimal x2;
+
     switch (exp)
     {
     case -64:
@@ -278,26 +282,16 @@ static void __two_exp(decimal* result, long exp)
         __str2dec(result, "256", 2);
         return;
     }
-    {
-        decimal x2;
-        __two_exp(&x2, (short)(exp / 2));
-        __timesdec(result, &x2, &x2);
-    }
+    __two_exp(&x2, exp / 2);
+    __timesdec(result, &x2, &x2);
     if (exp & 1)
     {
         decimal temp = *result;
         if (exp > 0)
-        {
-            decimal two;
-            __str2dec(&two, "2", 0);
-            __timesdec(result, &temp, &two);
-        }
+            __str2dec(&x2, "2", 0);
         else
-        {
-            decimal one_half;
-            __str2dec(&one_half, "5", -1);
-            __timesdec(result, &temp, &one_half);
-        }
+            __str2dec(&x2, "5", -1);
+        __timesdec(result, &temp, &x2);
     }
 }
 
@@ -557,7 +551,7 @@ double __dec2num(const decimal* d)
                 if (isdigit(c))
                     c -= '0';
                 else
-                    c = (unsigned char)(tolower(c) - 'a' + 10);
+                    c = (unsigned char)(_tolower(c) - 'a' + 10);
                 if (c != 0)
                     placed_non_zero = 1;
                 if (low)
@@ -624,7 +618,8 @@ double __dec2num(const decimal* d)
             {
 
                 decimal feedback2, difflow, diffhigh;
-                double next_guess = nextafter(first_guess, (double)INFINITY);
+                double next_guess = first_guess;
+                (*(unsigned long long*)&next_guess)++;
                 if (isinf(next_guess))
                 {
                     first_guess = next_guess;
@@ -635,7 +630,7 @@ double __dec2num(const decimal* d)
                 {
                     feedback1 = feedback2;
                     first_guess = next_guess;
-                    next_guess = nextafter(next_guess, (double)INFINITY);
+                    (*(unsigned long long*)&next_guess)++;
                     if (isinf(next_guess))
                     {
                         first_guess = next_guess;
@@ -656,13 +651,14 @@ double __dec2num(const decimal* d)
             else
             {
                 decimal feedback2, difflow, diffhigh;
-                double next_guess = nextafter(first_guess, (double)(-INFINITY));
+                double next_guess = first_guess;
+                (*(unsigned long long*)&next_guess)--;
                 __num2dec_internal(&feedback2, next_guess);
                 while (__less_dec(&dec, &feedback2))
                 {
                     feedback1 = feedback2;
                     first_guess = next_guess;
-                    next_guess = nextafter(next_guess, (double)(-INFINITY));
+                    (*(unsigned long long*)&next_guess)--;
                     __num2dec_internal(&feedback2, next_guess);
                 }
                 __minus_dec(&difflow, &dec, &feedback2);

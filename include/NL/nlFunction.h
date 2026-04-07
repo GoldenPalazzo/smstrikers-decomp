@@ -234,7 +234,12 @@ public:
     }
 
     template <typename T>
-    Function(T);
+    Function(T bind)
+    {
+        typedef typename Function0<void>::FunctorImpl<T> ImplType;
+        mTag = FUNCTOR;
+        mFunctor = new (nlMalloc(sizeof(ImplType), 8, false)) ImplType(bind);
+    }
 
     Function& operator=(const Function& other)
     {
@@ -255,6 +260,16 @@ public:
         return *this;
     }
 }; // total size: 0x8
+
+// MemFun template
+namespace Detail
+{
+template <typename R, typename MemPtr>
+struct MemFunImpl;
+} // namespace Detail
+
+template <typename T, typename R>
+Detail::MemFunImpl<R, void (T::*)()> MemFun(void (T::*fn)());
 
 // Bind template
 template <typename R, typename F, typename A>

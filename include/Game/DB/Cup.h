@@ -56,6 +56,14 @@ struct BasicGameInfo
 
 struct CupRecord
 {
+    CupRecord()
+    {
+        memset(&mDate, 0, sizeof(mDate));
+        mPlace = 0;
+        mTeam = TEAM_INVALID;
+        mDifficulty = (GameplaySettings::eSkillLevel)1;
+    }
+
     /* 0x00 */ OSCalendarTime mDate;
     /* 0x28 */ signed char mPlace;
     /* 0x2C */ eTeamID mTeam;

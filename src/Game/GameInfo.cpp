@@ -43,9 +43,127 @@ bool inline CheckUnlockStatus(const bool& globalFlag, const unsigned char& troph
 
 /**
  * Offset/Address/Size: 0x9E90 | 0x8017F534 | size: 0xB84
+ * TODO: 95.55% repo match (93.8% decomp.me). Remaining diff: -inline deferred
+ *       interleaves body stores (mCurrentMode, mDemoEnabled, etc.) between implicit
+ *       member ctor calls (CustomTournament, TeamStats, AudioSettings). Also
+ *       placement new beq pattern and Friendly/Demo re-store register allocation.
  */
 GameInfoManager::GameInfoManager()
+    : mDoingKnockout(false)
+    , mDidRoundJustEnd(false)
 {
+    mCurrentMode = GM_INVALID;
+    mDemoEnabled = true;
+    mIsInStrikers101Mode = false;
+    mGoToChooseCaptains = false;
+    mMainUserPadNumber = (eFEINPUT_PAD)0;
+    mCurrentCup = NULL;
+    mPreviousCup = NULL;
+
+    mUseCurGameSettings = false;
+    mLastHumanStadium = (eStadiumID)-1;
+
+    for (int i = 0; i < GM_NUM_MODES; i++)
+    {
+        mGameInfo[i] = NULL;
+    }
+
+    for (int i = 0; i < 8; i++)
+    {
+        mUserInfo.mSpoils[i].mNumRecords = 0;
+        mUserInfo.mSpoils[i].mCurrentChamp = (eTeamID)-1;
+        mUserInfo.mSpoils[i].mNumLosses = 0;
+        mUserInfo.mSpoils[i].mNumWins = 0;
+    }
+
+    BasicGameInfo* pFriendly = new (nlMalloc(sizeof(BasicGameInfo), 8, false)) BasicGameInfo();
+    mGameInfo[GM_FRIENDLY] = pFriendly;
+    pFriendly->mTeamIndex[0] = (eTeamID)3;
+    pFriendly->mTeamIndex[1] = (eTeamID)2;
+    pFriendly->mSidekickIndex[0] = (eSidekickID)0;
+    pFriendly->mSidekickIndex[1] = (eSidekickID)1;
+    pFriendly->mStadiumIndex = (eStadiumID)0;
+    pFriendly->mPadSides[0] = -1;
+    pFriendly->mPadSides[1] = -1;
+    pFriendly->mPadSides[2] = -1;
+    pFriendly->mPadSides[3] = -1;
+    pFriendly->mFinalScore[0] = 0;
+    pFriendly->mFinalScore[1] = 0;
+
+    BasicGameInfo* pDemo = new (nlMalloc(sizeof(BasicGameInfo), 8, false)) BasicGameInfo();
+    mGameInfo[GM_DEMO] = pDemo;
+    pDemo->mTeamIndex[0] = (eTeamID)3;
+    pDemo->mTeamIndex[1] = (eTeamID)2;
+    pDemo->mSidekickIndex[0] = (eSidekickID)0;
+    pDemo->mSidekickIndex[1] = (eSidekickID)1;
+    pDemo->mStadiumIndex = (eStadiumID)0;
+    pDemo->mPadSides[0] = -1;
+    pDemo->mPadSides[1] = -1;
+    pDemo->mPadSides[2] = -1;
+    pDemo->mPadSides[3] = -1;
+    pDemo->mFinalScore[0] = 0;
+    pDemo->mFinalScore[1] = 0;
+
+    mMushroomCupSeries.mRoundNumber = -6;
+    mFlowerCupSeries.mRoundNumber = -6;
+    mStarCupSeries.mRoundNumber = -6;
+    mBowserCupSeries.mRoundNumber = -6;
+    mSuperMushroomCupSeries.mRoundNumber = -6;
+    mSuperFlowerCupSeries.mRoundNumber = -6;
+    mSuperStarCupSeries.mRoundNumber = -6;
+    mSuperBowserCupSeries.mRoundNumber = -6;
+
+    bool skipFE = GetConfigBool(Config::Global(), "skipfe", false);
+    if (skipFE)
+    {
+        SetMode(GM_FRIENDLY);
+        mGameInfo[mCurrentMode]->mTeamIndex[0] = (eTeamID)3;
+        mGameInfo[mCurrentMode]->mTeamIndex[1] = (eTeamID)2;
+        mGameInfo[mCurrentMode]->mStadiumIndex = (eStadiumID)1;
+        bool dontSetSides = GetConfigBool(Config::Global(), "dont_set_sides_when_skipfe", false);
+        if (!dontSetSides)
+        {
+            if (g_pFEInput->IsConnected((eFEINPUT_PAD)0))
+            {
+                mGameInfo[mCurrentMode]->mPadSides[0] = 0;
+            }
+            if (g_pFEInput->IsConnected((eFEINPUT_PAD)1))
+            {
+                mGameInfo[mCurrentMode]->mPadSides[1] = 1;
+            }
+            if (g_pFEInput->IsConnected((eFEINPUT_PAD)2))
+            {
+                mGameInfo[mCurrentMode]->mPadSides[2] = 0;
+            }
+            if (g_pFEInput->IsConnected((eFEINPUT_PAD)3))
+            {
+                mGameInfo[mCurrentMode]->mPadSides[3] = 1;
+            }
+        }
+    }
+
+    mUserInfo.mSaveID = nlRandom(0xFFFFFFFF, &nlDefaultSeed);
+    memset(mUserInfo.mTrophies, 0, sizeof(mUserInfo.mTrophies));
+    mUserInfo.mIsFlowerCupUnlocked = false;
+    mUserInfo.mIsStarCupUnlocked = false;
+    mUserInfo.mNumGamesPlayed = 0;
+    mUserInfo.mNumGoalsScored = 0;
+    mUserInfo.mNumHits = 0;
+    mUserInfo.mNumPerfectPasses = 0;
+    mUserInfo.mNumSTSAttempts = 0;
+
+    for (int i = 0; i < 4; i++)
+    {
+        memset(&mUserStats[i], 0, sizeof(PlayerStats));
+        mUserStats[i].mRecordType.mControllerID = i;
+        mUserStats[i].mType = TYPE_USER;
+    }
+
+    mUserInfo.mAudioOptions.InitializeDefaults();
+    mUserInfo.mVisualOptions.InitializeDefaults();
+    mUserInfo.mGameplayOptions.InitializeDefaults();
+    mUserInfo.mPowerupOptions.InitializeDefaults();
+    mUserInfo.mCheatOptions.InitializeDefaults();
 }
 
 /**

@@ -20,6 +20,16 @@
 
 struct Spoil
 {
+    Spoil()
+        : mNumRecords(0)
+        , mNumWins(0)
+        , mNumLosses(0)
+        , mNumCupWins(0)
+        , mCurrentChamp(TEAM_INVALID)
+        , mIsCPUChamp(false)
+    {
+    }
+
     /* 0x000 */ CupRecord mCupHistory[10];
     /* 0x208 */ unsigned char mNumRecords;
     /* 0x20A */ unsigned short mNumWins;
@@ -31,6 +41,30 @@ struct Spoil
 
 struct UserInfo
 {
+    UserInfo()
+        : mSaveID(0)
+        , mIsFlowerCupUnlocked(false)
+        , mIsStarCupUnlocked(false)
+        , mNumGamesPlayed(0)
+        , mNumGoalsScored(0)
+        , mNumSTSAttempts(0)
+        , mNumPerfectPasses(0)
+        , mNumHits(0)
+    {
+        memset(mTrophies, 0, sizeof(mTrophies));
+        mBowserCupFinalRound.mTeamIndex[0] = (eTeamID)3;
+        mBowserCupFinalRound.mTeamIndex[1] = (eTeamID)2;
+        mBowserCupFinalRound.mSidekickIndex[0] = (eSidekickID)0;
+        mBowserCupFinalRound.mSidekickIndex[1] = (eSidekickID)1;
+        mBowserCupFinalRound.mFinalScore[1] = 0;
+        mBowserCupFinalRound.mFinalScore[0] = 0;
+        mBowserCupFinalRound.mPadSides[0] = -1;
+        mBowserCupFinalRound.mPadSides[1] = -1;
+        mBowserCupFinalRound.mPadSides[2] = -1;
+        mBowserCupFinalRound.mPadSides[3] = -1;
+        mBowserCupFinalRound.mStadiumIndex = (eStadiumID)0;
+    }
+
     /* 0x0000 */ unsigned long mSaveID;
     /* 0x0004 */ AudioSettings mAudioOptions;
     /* 0x0024 */ VisualSettings mVisualOptions;
