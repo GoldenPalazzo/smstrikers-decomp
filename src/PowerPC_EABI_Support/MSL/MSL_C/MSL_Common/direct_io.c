@@ -6,6 +6,17 @@
 #include "string.h"
 #include "FILE_POS.h"
 
+size_t fread(const void* buffer, size_t size, size_t count, FILE* stream)
+{
+    size_t retval;
+
+    __begin_critical_region(stdin_access);
+    retval = __fread(buffer, size, count, stream);
+    __end_critical_region(stdin_access);
+
+    return retval;
+}
+
 size_t __fread(const void* buffer, size_t size, size_t count, FILE* stream)
 {
     int always_buffer, ioresult;
@@ -166,17 +177,6 @@ size_t __fread(const void* buffer, size_t size, size_t count, FILE* stream)
     }
 
     return (bytes_read / size);
-}
-
-size_t fread(const void* buffer, size_t size, size_t count, FILE* stream)
-{
-    size_t retval;
-
-    __begin_critical_region(stdin_access);
-    retval = __fread(buffer, size, count, stream);
-    __end_critical_region(stdin_access);
-
-    return retval;
 }
 
 size_t fwrite(const void* buffer, size_t size, size_t count, FILE* stream)
