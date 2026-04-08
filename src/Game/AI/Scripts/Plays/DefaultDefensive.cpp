@@ -88,11 +88,9 @@ FuzzyVariant Fuzzy::AbortDefencePlay(cDecisionEntity*)
 
 /**
  * Offset/Address/Size: 0x48B4 | 0x80089F6C | size: 0xCDC
- * TODO: 79.45% match - -inline deferred file compiled with -inline auto on decomp.me.
- * FuzzyVariant return temporaries (.mData.f access) generate extra constructor code
- * with -inline auto (inlined Reset) that doesn't exist with -inline deferred (RVO).
- * Stack frame 0x2E0 vs 0x2B0 (+0x30 from extra FuzzyVariant temporary).
- * @4106 unknown float constant (guessed 0.3f) for positional branch confidence floor.
+ * TODO: 97.69% match - compiler optimizes 2-branch ternary to 1-branch at
+ * UsePowerupDefensive result clamp (f31 already holds 0.0f, else branch elided).
+ * -inline deferred file; scratch shows 96.74% due to register allocation diff.
  */
 FuzzyVariant Fuzzy::DefaultDefencePlay(cDecisionEntity* pDecision)
 {

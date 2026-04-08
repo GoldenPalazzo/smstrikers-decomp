@@ -8,103 +8,104 @@ static const nlQuaternion qRotIdentity = { 0, 0, 0, 1 };
 static nlVector3 v3ScaleIdentity = { 1.0f, 1.0f, 1.0f };
 static nlVector3 v3TransIdentity = { 0.0f, 0.0f, 0.0f };
 
-extern const nlMatrix4 kPose64Template;
-extern const RotAccum kRotAccumTemplate;
-extern const ScaleAccum kScaleAccumTemplate;
-extern const TransAccum kTransAccumTemplate;
-
 /**
  * Offset/Address/Size: 0xCD8 | 0x801EC278 | size: 0x1D74
+ * TODO: 93.4% match - register allocation off by 1 (stmw r17 vs target stmw r16).
+ *       All remaining diffs are register-only. Target assigns this=r27, hier=r28, bool=r29
+ *       but compiler assigns this=r29, hier=r30, bool=r28.
  */
-cPoseAccumulator::cPoseAccumulator(cSHierarchy* h, bool withSecondary)
+cPoseAccumulator::cPoseAccumulator(cSHierarchy* pSHierarchy, bool bStorePrevNodeMatrices)
 {
     FORCE_DONT_INLINE;
 
-    m_BaseSHierarchy = h;
+    m_BaseSHierarchy = pSHierarchy;
 
-    const int n = h->m_nodeCount; // boneCount
     int i;
 
     {
-        const int count = n + 1;
+        const int count = pSHierarchy->m_nodeCount + 1;
         m_NodeMatrices.mData = (nlMatrix4*)nlMalloc(count * sizeof(nlMatrix4), 8, 0);
         m_NodeMatrices.mSize = count;
         m_NodeMatrices.mCapacity = count;
 
         for (i = 0; i < count; ++i)
         {
-            m_NodeMatrices.mData[i] = kPose64Template; // copy 0x40 bytes template
+            m_NodeMatrices.mData[i] = nlMatrix4();
         }
     }
 
     {
-        const int countB = withSecondary ? (n + 1) : 0;
-        m_PrevNodeMatrices.mData = (nlMatrix4*)nlMalloc((unsigned long)(countB * sizeof(nlMatrix4)), 8, 0);
+        int countB;
+        if (bStorePrevNodeMatrices)
+        {
+            countB = pSHierarchy->m_nodeCount + 1;
+        }
+        else
+        {
+            countB = 0;
+        }
+        m_PrevNodeMatrices.mData = (nlMatrix4*)nlMalloc(countB * sizeof(nlMatrix4), 8, 0);
         m_PrevNodeMatrices.mSize = countB;
         m_PrevNodeMatrices.mCapacity = countB;
 
         for (i = 0; i < countB; ++i)
         {
-            m_PrevNodeMatrices.mData[i] = kPose64Template;
+            m_PrevNodeMatrices.mData[i] = nlMatrix4();
         }
     }
 
     {
-        m_rot.mData = (RotAccum*)nlMalloc((unsigned long)(n * sizeof(RotAccum)), 8, 0);
+        int n = pSHierarchy->m_nodeCount;
+        m_rot.mData = (RotAccum*)nlMalloc(n * sizeof(RotAccum), 8, 0);
         m_rot.mSize = n;
         m_rot.mCapacity = n;
 
         for (i = 0; i < n; ++i)
         {
-            m_rot.mData[i] = kRotAccumTemplate;
+            m_rot.mData[i] = RotAccum();
         }
     }
 
     {
-        m_scale.mData = (ScaleAccum*)nlMalloc((unsigned long)(n * sizeof(ScaleAccum)), 8, 0);
+        int n = pSHierarchy->m_nodeCount;
+        m_scale.mData = (ScaleAccum*)nlMalloc(n * sizeof(ScaleAccum), 8, 0);
         m_scale.mSize = n;
         m_scale.mCapacity = n;
-        // m_unk_0x2C = n;
-        // m_unk_0x30 = n;
 
         for (i = 0; i < n; ++i)
         {
-            m_scale.mData[i] = kScaleAccumTemplate;
+            m_scale.mData[i] = ScaleAccum();
         }
     }
 
     {
-        m_trans.mData = (TransAccum*)nlMalloc((unsigned long)(n * sizeof(TransAccum)), 8, 0);
+        int n = pSHierarchy->m_nodeCount;
+        m_trans.mData = (TransAccum*)nlMalloc(n * sizeof(TransAccum), 8, 0);
         m_trans.mSize = n;
         m_trans.mCapacity = n;
-        // m_unk_0x38 = n;
-        // m_unk_0x3C = n;
 
         for (i = 0; i < n; ++i)
         {
-            m_trans.mData[i] = kTransAccumTemplate; // zero/locked baseline
+            m_trans.mData[i] = TransAccum();
         }
     }
 
     {
-        void* buffer = nlMalloc(n * sizeof(cBuildNodeMatrixCallbackInfo), 8, 0);
-        m_cb.mData = new (buffer) cBuildNodeMatrixCallbackInfo[n];
+        int n = pSHierarchy->m_nodeCount;
+        m_cb.mData = new (nlMalloc(n * sizeof(cBuildNodeMatrixCallbackInfo) + 0x10, 8, 0)) cBuildNodeMatrixCallbackInfo[n];
         m_cb.mSize = n;
         m_cb.mCapacity = n;
 
-        // m_unk_0x44 = n;
-        // m_unk_0x48 = n;
-
         for (i = 0; i < n; ++i)
         {
-            new (&m_cb.mData[i]) cBuildNodeMatrixCallbackInfo(); // Call constructor manually
+            m_cb.mData[i] = cBuildNodeMatrixCallbackInfo();
         }
     }
 
     {
-        m_MorphWeights.mData = (float*)nlMalloc((unsigned long)(8 * sizeof(float)), 8, 0);
+        m_MorphWeights.mData = (float*)nlMalloc(8 * sizeof(float), 8, 0);
         m_MorphWeights.mSize = 8;
-        // m_floatCount = 8;
+        m_MorphWeights.mCapacity = 8;
 
         for (i = 0; i < 8; ++i)
         {
@@ -112,7 +113,7 @@ cPoseAccumulator::cPoseAccumulator(cSHierarchy* h, bool withSecondary)
         }
     }
 
-    for (i = 0; i < n; ++i)
+    for (i = 0; i < m_BaseSHierarchy->m_nodeCount; ++i)
     {
         if (m_BaseSHierarchy->PreserveBoneLength(i))
         {
@@ -261,8 +262,7 @@ void cPoseAccumulator::BuildNodeMatrices(const nlMatrix4& world)
                     quatAroundZ.f.z = sin;
                     quatAroundZ.f.w = cos;
 
-                    float t = pRotAccum->rotAroundZAccumulatedWeight /
-                              (pRotAccum->quatAccumulatedWeight + pRotAccum->rotAroundZAccumulatedWeight);
+                    float t = pRotAccum->rotAroundZAccumulatedWeight / (pRotAccum->quatAccumulatedWeight + pRotAccum->rotAroundZAccumulatedWeight);
                     nlQuatNLerp(pRotAccum->q, pRotAccum->q, quatAroundZ, t);
                 }
 

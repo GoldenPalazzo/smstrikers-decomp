@@ -76,163 +76,109 @@ void PhysicsBall::ScaleAngularVelocity(float scale)
  */
 void PhysicsBall::AddResistanceForces()
 {
-    nlVector3 local_88;
-    nlVector3 local_7c; // 7c, 80, 84
-    nlVector3 local_94; // 94, 98, 9c
-    nlVector3 local_b8;
-    // nlVector3 local_ac;
-    nlVector3 local_a0;
-    nlVector3 local_58;
-    nlVector3 local_d0;
-    nlVector3 local_c4;
-    nlVector3 local_64;
-    nlVector3 local_70;
-    nlVector3 sp98; // sp98 sp9C spA0
-    nlVector3 sp8C; // sp8C sp90 sp94
-    nlVector3 sp38; // sp38 sp3C sp40
-    nlVector3 sp2C; // sp2C sp30 sp34
-    nlVector3 sp20; // sp20 sp24 sp28
-    f32 temp_f1;
-    f32 temp_f1_2;
-    f32 temp_f1_3;
-    f32 temp_f29;
-    f32 temp_f2;
-    f32 temp_f2_2;
-    f32 temp_f2_3;
-    f32 temp_f3;
-    f32 temp_f3_2;
-    s8 var_r3;
+    nlVector3 v3Vel;
+    nlVector3 v3Force;
+    nlVector3 v3AngVel;
+    nlVector3 v3CrossForce;
+    nlVector3 v3LinVel2;
+    nlVector3 v3LinVelM;
+    nlVector3 v3MagnusForce;
+    nlVector3 v3AngVelM;
+    nlVector3 v3LinVel1;
+    nlVector3 v3AngVel2;
+    u8 bApply;
 
-    // nlVector3* temp_r3 = GetLinearVelocity();
-    // sp98.f.x = temp_r3->f.x;
-    // sp98.f.y = temp_r3->f.y;
-    // sp98.f.z = temp_r3->f.z;
-    sp98 = GetLinearVelocity();
+    v3Vel = GetLinearVelocity();
     if (m_parentObject == NULL)
     {
-        if ((m_bIsSupportedByGround != 0) && (m_bUseAngularVel == 0))
+        if (m_bIsSupportedByGround != 0 && m_bUseAngularVel == 0)
         {
-            temp_f2 = sp98.f.z * sp98.f.z;
-            temp_f1 = nlSqrt(temp_f2 + ((sp98.f.x * sp98.f.x) + (sp98.f.y * sp98.f.x)), 1);
-            if (temp_f1 > 0.01f)
+            f32 speed = nlSqrt(v3Vel.f.z * v3Vel.f.z + (v3Vel.f.x * v3Vel.f.x + v3Vel.f.y * v3Vel.f.y), true);
+            if (speed > 0.01f)
             {
-                temp_f3 = -g_BallRollingResistance / temp_f1;
-                temp_f2_2 = temp_f3 * sp98.f.x;
-                temp_f1_2 = temp_f3 * sp98.f.y;
-                sp8C.f.x = temp_f2_2;
-                sp8C.f.y = temp_f1_2;
-                sp8C.f.z = temp_f3 * sp98.f.z;
-                AddForceAtCentreOfMass(sp8C);
+                f32 factor = -g_BallRollingResistance / speed;
+                v3Force.f.x = factor * v3Vel.f.x;
+                v3Force.f.y = factor * v3Vel.f.y;
+                v3Force.f.z = factor * v3Vel.f.z;
+                AddForceAtCentreOfMass(v3Force);
             }
         }
-        temp_f3_2 = -g_BallAirResistance;
-        temp_f2_3 = temp_f3_2 * sp98.f.x;
-        temp_f1_3 = temp_f3_2 * sp98.f.y;
-        sp8C.f.x = temp_f2_3;
-        sp8C.f.y = temp_f1_3;
-        sp8C.f.z = temp_f3_2 * sp98.f.z; // sp94=z
-        AddForceAtCentreOfMass(sp8C);
+        f32 drag = -g_BallAirResistance;
+        v3Force.f.x = drag * v3Vel.f.x;
+        v3Force.f.y = drag * v3Vel.f.y;
+        v3Force.f.z = drag * v3Vel.f.z;
+        AddForceAtCentreOfMass(v3Force);
     }
-
-    if ((m_bUseTiltForce != 0) && (g_pBall->m_pShooter == NULL))
+    if (m_bUseTiltForce != 0 && g_pBall->m_pPassTarget == NULL)
     {
-        var_r3 = 0;
-        if ((g_pBall->m_tShotTimer.m_uPackedTime != 0) && (g_pBall->mbCanDamage != 0))
-        {
-            var_r3 = 1;
-        }
-        if (var_r3 == 0)
-        {
+        bApply = 0;
+        if (g_pBall->m_tShotTimer.m_uPackedTime != 0 && g_pBall->mbCanDamage != 0)
+            bApply = 1;
+        if (bApply == 0)
             AddForceAtCentreOfMass(m_v3TiltForce);
-        }
     }
-
     if (m_fSpinTimer > 0.f)
     {
         m_fSpinTimer = m_fSpinTimer - FixedUpdateTask::GetPhysicsUpdateTick();
         if (m_fSpinTimer <= 0.f)
-        {
             m_bUseAngularVel = 1;
+    }
+    if (m_parentObject == NULL && m_bUseAngularVel != 0)
+    {
+        f32 threshold = 0.02f + GetRadius();
+        if (GetPosition().f.z < threshold)
+        {
+            GetLinearVelocity(&v3LinVel1);
+            nlVector3 localNorm = { 0.f, 0.f, 0.f };
+            f32 invR = 1.0f / GetRadius();
+            nlVector3 localGndVel = { 0.f, 0.f, 0.f };
+            localNorm.f.z = invR;
+            localGndVel.f.x = v3LinVel1.f.x;
+            localGndVel.f.y = v3LinVel1.f.y;
+            f32 crossX = localNorm.f.y * localGndVel.f.z - localNorm.f.z * localGndVel.f.y;
+            f32 crossY = localNorm.f.z * localGndVel.f.x - localNorm.f.x * localGndVel.f.z;
+            f32 crossZ = localNorm.f.x * localGndVel.f.y - localNorm.f.y * localGndVel.f.x;
+            GetAngularVelocity(&v3AngVel);
+            f32 torqueX = 0.25f * (crossX - v3AngVel.f.x);
+            f32 torqueY = 0.25f * (crossY - v3AngVel.f.y);
+            f32 torqueZ = 0.25f * (crossZ - v3AngVel.f.z);
+            dBodyAddTorque(m_bodyID, torqueX, torqueY, torqueZ);
+            GetAngularVelocity(&v3AngVel2);
+            v3AngVel2.f.z = 0.f;
+            nlVector3 localRad = { 0.f, 0.f, 0.f };
+            localRad.f.z = GetRadius();
+            v3CrossForce.f.x = v3AngVel2.f.y * localRad.f.z - v3AngVel2.f.z * localRad.f.y;
+            v3CrossForce.f.y = v3AngVel2.f.z * localRad.f.x - v3AngVel2.f.x * localRad.f.z;
+            v3CrossForce.f.z = v3AngVel2.f.x * localRad.f.y - v3AngVel2.f.y * localRad.f.x;
+            GetLinearVelocity(&v3LinVel2);
+            v3CrossForce.f.x = 5.f * (v3CrossForce.f.x - v3LinVel2.f.x);
+            v3CrossForce.f.y = 5.f * (v3CrossForce.f.y - v3LinVel2.f.y);
+            v3CrossForce.f.z = 5.f * (v3CrossForce.f.z - v3LinVel2.f.z);
+            AddForceAtCentreOfMass(v3CrossForce);
+            v3CrossForce.f.z = 0.f;
+            if (torqueX * torqueX + torqueZ * torqueZ + torqueY * torqueY < 0.0001f
+                && v3CrossForce.f.x * v3CrossForce.f.x + v3CrossForce.f.y * v3CrossForce.f.y + v3CrossForce.f.z * v3CrossForce.f.z < 0.00003f)
+                m_bUseAngularVel = 0;
         }
     }
-
-    if ((m_parentObject == NULL) && (m_bUseAngularVel != 0))
+    if (m_parentObject == NULL && m_bUseMagnusEffect != 0)
     {
-        temp_f29 = 0.02 + GetRadius();
-        if (GetPosition().f.z < temp_f29)
+        f32 threshold = 0.02f + GetRadius();
+        nlVector3& pos = GetPosition();
+        if (threshold < pos.f.z)
         {
-            float dVar4 = GetRadius();
-            dVar4 = 0.02f + dVar4;
-            nlVector3& iVar2 = GetPosition();
-            if (iVar2.f.z < dVar4)
+            GetLinearVelocity(&v3LinVelM);
+            if (v3LinVelM.f.x * v3LinVelM.f.x + v3LinVelM.f.z * v3LinVelM.f.z + v3LinVelM.f.y * v3LinVelM.f.y > 1.f)
             {
-                GetLinearVelocity((nlVector3*)&local_b8); // b8 bc c0
-
-                // local_ac.f.z = 0.0;
-                // local_ac.f.y = 0.0;
-                // local_ac.f.x = 0.0; // ac, b0, b4
-                nlVector3 local_ac = { 0.f, 0.f, 0.f };
-
-                dVar4 = GetRadius();
-
-                local_ac.f.x = 1.f / dVar4;
-
-                local_a0.f.x = 0; // a0, a4, a8
-                float dVar7 = (local_ac.f.y * 0.0 - local_ac.f.x * local_b8.f.y);
-                float dVar6 = (-local_ac.f.z * 0.0 + local_ac.f.x * local_b8.f.z);
-                float dVar4 = (local_ac.f.z * local_b8.f.y - local_ac.f.y * local_b8.f.z);
-                local_a0.f.z = local_b8.f.z;
-                local_a0.f.y = local_b8.f.y;
-
-                GetAngularVelocity(&local_58); // 58, 5c, 60
-
-                float dVar5 = (0.25f * (float)(dVar4 - local_58.f.x));
-                dVar6 = (0.25f * (float)(dVar6 - local_58.f.y));
-                dVar7 = (0.25f * (float)(dVar7 - local_58.f.z));
-                dBodyAddTorque(m_bodyID, dVar5, dVar6, dVar7);
-
-                GetAngularVelocity(&local_d0); // d0, d4, d8
-                local_d0.f.x = 0.f;
-
-                local_c4.f.z = 0.f;
-                local_c4.f.y = 0.f;
-                local_c4.f.x = GetRadius(); // c4, c8, cc
-
-                local_64.f.x = local_d0.f.z * local_c4.f.y - local_d0.f.y * local_c4.f.z;
-                local_64.f.y = -local_d0.f.z * local_c4.f.x + local_d0.f.x * local_c4.f.z;
-                local_64.f.z = local_d0.f.y * local_c4.f.x - local_d0.f.x * local_c4.f.y;
-
-                GetLinearVelocity(&local_70); // 70 74 78
-                local_64.f.x = 5.f * (local_64.f.x - local_70.f.x);
-                local_64.f.y = 5.f * (local_64.f.y - local_70.f.y);
-                local_64.f.z = 5.f * (local_64.f.z - local_70.f.z);
-
-                AddForceAtCentreOfMass(local_64); // 64, 68, 6c
-
-                local_64.f.x = 0.f;
-                if (((dVar5 * dVar5) + (dVar7 * dVar7) + (dVar6 * dVar6) < 0.0001f)
-                    && ((local_64.f.x * local_64.f.x) + (local_64.f.z * local_64.f.z) + (local_64.f.y * local_64.f.y) < 0.00003f))
+                GetAngularVelocity(&v3AngVelM);
+                if (v3AngVelM.f.x * v3AngVelM.f.x + v3AngVelM.f.z * v3AngVelM.f.z + v3AngVelM.f.y * v3AngVelM.f.y > 1.f)
                 {
-                    m_bUseAngularVel = 0;
+                    v3MagnusForce.f.x = (v3AngVelM.f.z * v3LinVelM.f.y - v3AngVelM.f.y * v3LinVelM.f.z) * 0.04f;
+                    v3MagnusForce.f.z = (v3AngVelM.f.y * v3LinVelM.f.x - v3AngVelM.f.x * v3LinVelM.f.y) * 0.075f;
+                    v3MagnusForce.f.y = (-v3AngVelM.f.z * v3LinVelM.f.x + v3AngVelM.f.x * v3LinVelM.f.z) * 0.075f;
+                    AddForceAtCentreOfMass(v3MagnusForce);
                 }
             }
-        }
-    }
-
-    if ((m_parentObject == NULL) && (m_bUseMagnusEffect != 0))
-    {
-        float dVar4 = GetRadius();
-        dVar4 = 0.02f + dVar4;
-
-        nlVector3& iVar2 = GetPosition();
-        if ((dVar4 < iVar2.f.z)
-            && (GetLinearVelocity(&local_7c), 1.f < local_7c.f.x * local_7c.f.x + local_7c.f.z * local_7c.f.z + local_7c.f.y * local_7c.f.y)
-            && (GetAngularVelocity(&local_94), 1.f < local_94.f.x * local_94.f.x + local_94.f.z * local_94.f.z + local_94.f.y * local_94.f.y))
-        {
-            local_88.f.x = (local_94.f.z * local_7c.f.y - local_94.f.y * local_7c.f.z) * 0.04f;
-            local_88.f.z = (local_94.f.y * local_7c.f.x - local_94.f.x * local_7c.f.y) * 0.075f;
-            local_88.f.y = (-local_94.f.z * local_7c.f.x + local_94.f.x * local_7c.f.z) * 0.075f;
-            AddForceAtCentreOfMass(local_88);
         }
     }
 }

@@ -14,12 +14,17 @@
 
 #include "NL/nlString.h"
 #include "NL/nlPrint.h"
+#include "NL/nlFile.h"
 #include "NL/gl/glPlat.h"
 #include "NL/gl/glState.h"
 #include "NL/gl/glTexture.h"
 #include "string.h"
 
-// extern WorldLoader TheWorldLoader;
+#include "Game/World/WorldLoader.h"
+#include "Game/Physics/PhysicsNet.h"
+#include "Game/Effects/EmissionManager.h"
+
+extern u32 eOC_OPTIMIZE_OUT_FROM_GAMEPLAY;
 extern bool g_GoalLightEnabled;
 float g_fSkyboxRotationTime = 1420.0f;
 float g_fCloudRotationTime = 720.0f;
@@ -746,11 +751,130 @@ loop_11:
         AddToHyperSTSDrawables(hash, pObject->AsDrawableModel());
     }
 
-    HelperObject* pFieldHelper = FindHelperObject(uFieldHelperHashID); // temp_r3_148
+    HelperObject* pFieldHelper = FindHelperObject(uFieldHelperHashID);
     if (pFieldHelper != NULL)
     {
         cField::SetFieldDimensions(pFieldHelper->m_worldMatrix.f.m41, pFieldHelper->m_worldMatrix.f.m42, 0.0f);
-        // cField::SetFieldDimensions(pFieldHelper->m_worldMatrix.m[3][0], pFieldHelper->m_worldMatrix.m[3][1], 0.0f);
+    }
+
+    // Stadium.ini Config
+    {
+        Config stadConfig(Config::ALLOCATE_HIGH);
+        eStadiumID stadiumid = nlSingleton<GameInfoManager>::s_pInstance->GetStadium();
+        stadConfig.LoadFromFile("Stadium.ini");
+        char szKey[256];
+        nlStrNCat<char>(szKey, m_szBaseName, " pitch", 0x100);
+        BasicString<char, Detail::TempStringAllocator> terrain = stadConfig.Get<BasicString<char, Detail::TempStringAllocator> >(szKey, BasicString<char, Detail::TempStringAllocator>("grass"));
+        TheWorldLoader.SetStadiumTerrain(stadiumid, terrain.c_str());
+        m_TerrainType = TheWorldLoader.GetStadiumTerrain(stadiumid);
+        fxSetTerrain(g_TerrainTypeHashes[m_TerrainType]);
+    }
+
+    // GoalPostDimensions.ini Config
+    {
+        Config gpConfig(Config::ALLOCATE_HIGH);
+        gpConfig.LoadFromFile("GoalPostDimensions.ini");
+        char szKey[256];
+        nlStrNCat<char>(szKey, m_szBaseName, " goalpost radius", 0x100);
+        float fGoalpostRadius = GetConfigFloat(gpConfig, szKey, 0.0f);
+        nlStrNCat<char>(szKey, m_szBaseName, " goalpost offset", 0x100);
+        float fGoalpostOffset = GetConfigFloat(gpConfig, szKey, 0.0f);
+        nlStrNCat<char>(szKey, m_szBaseName, " net width", 0x100);
+        float fNetWidth = GetConfigFloat(gpConfig, szKey, 0.0f);
+        nlStrNCat<char>(szKey, m_szBaseName, " net height", 0x100);
+        float fNetHeight = GetConfigFloat(gpConfig, szKey, 0.0f);
+        cField::mpNet[0]->SetNetDimensions(fNetWidth, fNetHeight, fGoalpostRadius, fGoalpostOffset);
+        nlStrNCat<char>(szKey, m_szBaseName, " physics net width", 0x100);
+        float fPhysNetWidth = GetConfigFloat(gpConfig, szKey, 0.0f);
+        nlStrNCat<char>(szKey, m_szBaseName, " physics net height", 0x100);
+        float fPhysNetHeight = GetConfigFloat(gpConfig, szKey, 0.0f);
+        nlStrNCat<char>(szKey, m_szBaseName, " physics net depth", 0x100);
+        float fPhysNetDepth = GetConfigFloat(gpConfig, szKey, 0.0f);
+        PhysicsNet::sfPhysicsNetWidth = fPhysNetWidth;
+        PhysicsNet::sfPhysicsNetHeight = fPhysNetHeight;
+        PhysicsNet::sfPhysicsNetDepth = fPhysNetDepth;
+        nlStrNCat<char>(szKey, m_szBaseName, " physics net softness", 0x100);
+        float fSoftness = GetConfigFloat(gpConfig, szKey, -1.0f);
+        if (fSoftness >= 0.0f)
+        {
+            PhysicsNet::sfWallSoftness = fSoftness;
+        }
+        nlStrNCat<char>(szKey, m_szBaseName, " dont use lowest net texture LOD", 0x100);
+        bool bDontUseLowest = GetConfigBool(gpConfig, szKey, false);
+        NetMesh::SetDontUseLowestNetTextureLOD(bDontUseLowest);
+    }
+
+    // PlanarShadow.ini Config
+    {
+        Config psConfig(Config::ALLOCATE_HIGH);
+        psConfig.LoadFromFile("PlanarShadow.ini");
+        char szKey[256];
+        nlStrNCat<char>(szKey, m_szBaseName, " Shadow Height", 0x100);
+        float fShadowHeight = GetConfigFloat(psConfig, szKey, 0.1f);
+        SetCoPlanarZ(fShadowHeight);
+        nlStrNCat<char>(szKey, m_szBaseName, " Shadow Opacity", 0x100);
+        float fShadowOpacity = GetConfigFloat(psConfig, szKey, 0.3f);
+        SetPlanarShadowOpacity(fShadowOpacity);
+    }
+
+    // PenaltyHelper
+    HelperObject* pPenBoxHelper = FindHelperObject(uPenaltyHelperHashID);
+    if (pPenBoxHelper != NULL)
+    {
+        cField::mfPenaltyBoxX = pPenBoxHelper->m_worldMatrix.f.m41;
+        cField::mfPenaltyBoxY = pPenBoxHelper->m_worldMatrix.f.m42;
+    }
+
+    /**
+     * TODO: 90.12% match - Camera flash tree traversal stubbed out.
+     * The target code does an iterative inorder AVL tree traversal of m_helperMap
+     * looking for helpers named "fx_camera_flash*", first counting them, then
+     * allocating an array and extracting their world matrix translations.
+     * Currently stubbed to set count=0.
+     */
+    m_NumCameraFlashPositions = 0;
+    m_CameraFlashPositions = (nlVector3*)nlMalloc(0, 8, false);
+    m_NumCameraFlashPositions = 0;
+
+    // Extra ball loop
+    {
+        const DrawableObject* ball = FindDrawableObject(nlStringHash("gameplay/ball"));
+        if (ball != NULL)
+        {
+            for (int i = 0; i < 2; i++)
+            {
+                DrawableObject* extraBall = ball->Clone();
+                extraBall->m_uObjectFlags &= 0xFFFFFFFE;
+                BasicString<char, Detail::TempStringAllocator> name = Format(BasicString<char, Detail::TempStringAllocator>("extra_ball_{0}"), i);
+                unsigned long extraHash = nlStringHash(name.c_str());
+                AddDrawableObject(extraHash, extraBall);
+            }
+        }
+    }
+
+    // Optimization file loading
+    {
+        char szOptBin[80];
+        nlSNPrintf(szOptBin, 0x50, "%s-GameplayInvisibleModels.bin", m_szBaseName);
+        unsigned long fileSize;
+        u32* pData = (u32*)nlLoadEntireFile(szOptBin, &fileSize, 0x20, AllocateEnd);
+        if (pData != NULL)
+        {
+            u32* pCur = pData;
+            u32 uFlags = eOC_OPTIMIZE_OUT_FROM_GAMEPLAY;
+            unsigned long numEntries = fileSize >> 2;
+            for (unsigned long j = 0; j < numEntries; j++)
+            {
+                DrawableObject* pObj = FindDrawableObject(*pCur);
+                if (pObj != NULL)
+                {
+                    DrawableModel* pModel = pObj->AsDrawableModel();
+                    pModel->m_uObjectCreationFlags |= uFlags;
+                }
+                pCur++;
+            }
+            nlFree(pData);
+        }
     }
 
     return true;

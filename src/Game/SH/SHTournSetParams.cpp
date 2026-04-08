@@ -1,5 +1,19 @@
 #include "Game/SH/SHTournSetParams.h"
 
+namespace Detail
+{
+template <typename R, typename F>
+struct MemFunImpl
+{
+    F mFuncPtr;
+};
+} // namespace Detail
+
+template <typename T, typename R>
+Detail::MemFunImpl<R, void (T::*)()> MemFun(void (T::*fn)());
+
+extern char __vt__13SlideMenuItem[];
+
 // /**
 //  * Offset/Address/Size: 0xBC | 0x800E1D48 | size: 0x15C
 //  */
@@ -54,46 +68,19 @@ TournSetParamsScene::~TournSetParamsScene()
 
 /**
  * Offset/Address/Size: 0x1CD0 | 0x800E16A4 | size: 0x434
- * TODO: 62.95% match - callback functor construction path still differs
- * (local SetSlideFunctor vs target Bind/MemFun FunctorImpl shape),
- * causing prologue/register allocation and callback setup mismatches.
+ * TODO: 88.56% match - remaining diffs are -inline deferred vs -inline auto artifacts:
+ * 4 extra placement new beq instructions, register allocation shifts (r27/r28/r29).
  */
 void TournSetParamsScene::BuildSubMenuList(int menuitem, TLComponentInstance* compinstance, bool wraps, int startindex)
 {
     extern int nlSNPrintf(char*, unsigned long, const char*, ...);
-
-    class SetSlideFunctor : public Function1<void, SlideMenuItem*>::FunctorBase
-    {
-    public:
-        void (SlideMenuList::*mMemFun)();
-        SlideMenuList* mList;
-
-        SetSlideFunctor(SlideMenuList* list)
-            : mMemFun(&SlideMenuList::SetSlide)
-            , mList(list)
-        {
-        }
-
-        virtual ~SetSlideFunctor()
-        {
-        }
-
-        virtual void operator()(SlideMenuItem*)
-        {
-            (mList->*mMemFun)();
-        }
-
-        virtual Function1<void, SlideMenuItem*>::FunctorBase* Clone() const
-        {
-            return new ((SetSlideFunctor*)nlMalloc(sizeof(SetSlideFunctor), 8, false)) SetSlideFunctor(*this);
-        }
-    };
+    typedef Detail::MemFunImpl<void, void (SlideMenuList::*)()> MemFunImpl_SML;
+    typedef BindExp1<void, MemFunImpl_SML, SlideMenuList*> BindExp1_SML;
 
     SlideMenuList* list = (SlideMenuList*)nlMalloc(sizeof(SlideMenuList), 8, false);
     if (list != NULL)
     {
-        new ((MenuList<SlideMenuItem>*)list) MenuList<SlideMenuItem>();
-        list->mInputLocked = 0;
+        new (list) SlideMenuList();
         list->mComponentInstance = compinstance;
     }
     mSlideMenuLists[menuitem] = list;
@@ -113,27 +100,34 @@ void TournSetParamsScene::BuildSubMenuList(int menuitem, TLComponentInstance* co
 
         unsigned long slideHash = compinstance->GetActiveSlide()->m_hash;
 
+        SlideMenuList* sml = mSlideMenuLists[menuitem];
+
         SlideMenuItem* item = (SlideMenuItem*)nlMalloc(sizeof(SlideMenuItem), 8, true);
         if (item != NULL)
         {
+            TLComponentInstance* comp = sml->mComponentInstance;
+            *(char**)item = __vt__13SlideMenuItem;
             item->mSlideMenuHash = (unsigned long)-1;
-            item->mComponentInstance = list->mComponentInstance;
+            item->mComponentInstance = comp;
             item->mUserEnumType = slidenum;
         }
         item->mSlideMenuHash = slideHash;
 
-        MenuItem<SlideMenuItem>* menuItem = &list->mMenuItems[list->mNumItemsAdded];
+        MenuItem<SlideMenuItem>* menuItem = &sml->mMenuItems[sml->mNumItemsAdded];
         menuItem->mType = item;
-        list->mNumItemsAdded++;
+        sml->mNumItemsAdded++;
 
-        Function<SlideMenuItem*> callback;
-        callback.mTag = FUNCTOR;
-        callback.mFunctor = new ((SetSlideFunctor*)nlMalloc(sizeof(SetSlideFunctor), 8, false)) SetSlideFunctor(list);
-        menuItem->mCallbacks[1] = callback;
+        {
+            BindExp1_SML bind = Bind<void, MemFunImpl_SML, SlideMenuList*>(
+                MemFun<SlideMenuList, void>(&SlideMenuList::SetSlide), sml);
+            Function<SlideMenuItem*> callback(bind);
+            menuItem->mCallbacks[1] = callback;
+        }
 
         slidenum++;
     }
 
+    list = mSlideMenuLists[menuitem];
     MenuItem<SlideMenuItem>* menuItem = &list->mMenuItems[list->mCurrentIndex];
     menuItem->mCallbacks[2](menuItem->mType);
 

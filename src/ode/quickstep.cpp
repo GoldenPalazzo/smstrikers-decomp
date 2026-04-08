@@ -554,9 +554,11 @@ static void SOR_LCP(int m, int nb, dRealMutablePtr J, int* jb, dxBody* const* bo
 
 /**
  * Offset/Address/Size: 0x21E9B4 | 0x80221A74 | size: 0x134C
- * TODO: 86.8% match - register allocation (world in r16 vs stack, nj/nb/body register shift)
- * and body tag loop unrolling pattern difference (pre-compute vs sequential increment).
- * Both are decomp.me compiler behavior differences vs actual build compiler.
+ * TODO: 92.3% match (decomp.me w/ mwcc_247_107) - register allocation (world in r16
+ * vs stack, nj/nb/body register shift) and body tag loop unrolling pattern difference
+ * (pre-compute vs sequential increment). ODE configure.py uses mw_version="GC/2.0"
+ * (mwcc_247_92) but mwcc_247_107 produces 92.3% vs 86.8%. All remaining 71 diffs are
+ * in prologue registers + body tag loop; rest of function matches 100%.
  */
 void dxQuickStepper(dxWorld* world, dxBody* const* body, int nb,
     dxJoint* const* _joint, int nj, dReal stepsize)

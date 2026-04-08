@@ -48,7 +48,7 @@ static inline nlChunk* nlGetNextChunk(nlChunk* chunk)
  * (r3/r5 swap for alignment, r5/r7 swap for chunk pointer). Known -inline deferred
  * scratch limitation - register allocator sees different context vs full TU.
  */
-#pragma inline_depth(smart)
+// #pragma inline_depth(smart)
 cSAnim* cSAnim::Initialize(nlChunk* pChunk)
 {
     nlChunk* chunk = (nlChunk*)((u8*)pChunk + 8);
@@ -177,7 +177,7 @@ cSAnim* cSAnim::Initialize(nlChunk* pChunk)
 
     return pRetval;
 }
-#pragma inline_depth()
+// #pragma inline_depth()
 
 /**
  * Offset/Address/Size: 0x91C | 0x801E9B30 | size: 0x424
@@ -474,7 +474,6 @@ void cSAnim::CreateCallback(float time, unsigned int param1, void (*funcCallback
 
     nlListAddStart<cSAnimCallback>(&m_pCallbackList, temp_r3, NULL);
 }
-#pragma inline_depth()
 
 /**
  * Offset/Address/Size: 0x0 | 0x801E9214 | size: 0x160

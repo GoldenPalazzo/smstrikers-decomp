@@ -175,13 +175,13 @@ void Bowser::CollisionCallback(PhysicsObject* pObjA, PhysicsObject*, const nlVec
 
 /**
  * Offset/Address/Size: 0x2B64 | 0x8015B8D8 | size: 0x4F0
- * TODO: 94.11% match - beq/b vs bne branch pattern for mIsInStrikers101Mode check
- *       and r30/r31 register swap (savedVisible/savedAttackType). Likely -inline deferred artifact.
+ * TODO: 94.79% match - beq/b vs bne branch pattern, ResetBowserTimer code placement,
+ *       and lfd constant propagation vs lfs reload for fabsf(mfYAxisTilt). All -inline deferred artifacts.
  */
 void Bowser::ActionInit()
 {
     eBowserAttackType savedAttackType;
-    u8 savedVisible;
+    u32 savedVisible;
 
     if (nlSingleton<GameInfoManager>::s_pInstance->IsTiltingFieldOn())
         return;
