@@ -97,10 +97,14 @@ template <typename T>
 class SlotPool : public BasicSlotPool<T>
 {
 public:
-    // SlotPool()
-    //     : BasicSlotPool<T>(0x400, 0x80)
-    // {
-    // }
+    SlotPool()
+        : BasicSlotPool<T>()
+    {
+    }
+    SlotPool(const int initial, const int delta)
+        : BasicSlotPool<T>(initial, delta)
+    {
+    }
 }; // total size: 0x18
 
 #endif // _NLSLOTPOOL_H_

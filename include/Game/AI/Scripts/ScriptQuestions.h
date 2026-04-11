@@ -71,7 +71,7 @@ float Offensive(cTeam*);
 float Winning(cTeam*);
 float Tied(cTeam*);
 float Losing(cTeam*);
-void GonnaGetBall(cTeam*);
+float GonnaGetBall(cTeam*);
 float UserControlledT(cTeam*);
 float Passive(cTeam*);
 float Moderate(cTeam*);

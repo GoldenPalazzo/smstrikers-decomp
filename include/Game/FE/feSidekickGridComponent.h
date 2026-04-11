@@ -1,6 +1,7 @@
 #ifndef _FESIDEKICKGRIDCOMPONENT_H_
 #define _FESIDEKICKGRIDCOMPONENT_H_
 #include "Game/FE/feInput.h"
+#include "Game/FE/feMapMenu.h"
 
 #include "Game/DB/Cup.h"
 
@@ -9,16 +10,24 @@ class TLInstance;
 class TLSlide;
 class InlineHasher;
 
-class FEMapMenu;
-
+template <typename T>
 class IGridComponent
 {
 public:
-    virtual ~IGridComponent() { }
+    virtual ~IGridComponent()
+    {
+        if (mInstanceTable != NULL)
+        {
+            delete[] mInstanceTable;
+            mInstanceTable = NULL;
+        }
+        delete mMapMenu;
+        mMapMenu = NULL;
+    }
     virtual void vfunc_0C() { }
     virtual void vfunc_10() { }
     virtual void vfunc_14() { }
-    virtual void MoveHighlightToTarget(eTeamID target) { }
+    virtual void MoveHighlightToTarget(T target) { }
 
     /* 0x00 */ // vtable
     /* 0x04 */ TLInstance** mInstanceTable;
@@ -30,7 +39,7 @@ public:
     /* 0x19 */ bool mHasChangedSinceLastUpdate;
 }; // total size: 0x1C
 
-class ISidekickGridComponent : public IGridComponent
+class ISidekickGridComponent : public IGridComponent<eSidekickID>
 {
 public:
     void SetVisibleInstanceTable(bool);

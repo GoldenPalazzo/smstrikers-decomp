@@ -71,7 +71,7 @@ class SSearchIdealShot : public SpaceSearch
 {
 public:
     SSearchIdealShot(cPlayer* pBallOwner)
-        : SpaceSearch(pBallOwner)
+        : SpaceSearch(pBallOwner->m_pTeam->m_pNet->m_sideSign)
         , m_SSearchOpenLane(pBallOwner, NULL)
     {
         m_pGoalie = pBallOwner->m_pTeam->GetOtherTeam()->GetGoalie();

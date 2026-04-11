@@ -117,9 +117,6 @@ PhysicsCharacterBase::PhysicsCharacterBase(CollisionSpace* collisionSpace, Physi
     : PhysicsCompositeObject(physicsWorld)
     , m_CentreOfMassHeight(centreOfMassHeight)
 {
-    m_BoneVolumes.m_Head = NULL;
-    m_BoneVolumes.m_Tail = NULL;
-
     dBodySetUpdateMode(m_bodyID, 1, 0);
     dBodySetGravityMode(m_bodyID, 0);
 

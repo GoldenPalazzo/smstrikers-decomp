@@ -24,6 +24,9 @@
 #include "Game/Physics/PhysicsNet.h"
 #include "Game/Effects/EmissionManager.h"
 
+template <typename CharT>
+int nlStrNICmp(const CharT* str1, const CharT* str2, unsigned long len);
+
 extern u32 eOC_OPTIMIZE_OUT_FROM_GAMEPLAY;
 extern bool g_GoalLightEnabled;
 float g_fSkyboxRotationTime = 1420.0f;
@@ -826,15 +829,108 @@ loop_11:
     }
 
     /**
-     * TODO: 90.12% match - Camera flash tree traversal stubbed out.
-     * The target code does an iterative inorder AVL tree traversal of m_helperMap
-     * looking for helpers named "fx_camera_flash*", first counting them, then
-     * allocating an array and extracting their world matrix translations.
-     * Currently stubbed to set count=0.
+     * TODO: 96.94% match - stmw r25 vs r26 (one extra callee-saved register, pre-existing)
      */
+    // Camera flash - Pass 1: Count
     m_NumCameraFlashPositions = 0;
-    m_CameraFlashPositions = (nlVector3*)nlMalloc(0, 8, false);
+    u32* pIterStack = (u32*)nlMalloc(8, 8, false);
+    if (pIterStack != NULL)
+    {
+        AVLTreeNode* pNode = (AVLTreeNode*)m_helperMap.m_Root;
+        pIterStack[0] = (u32)nlMalloc((m_helperMap.m_NumElements + 1) * 4, 8, false);
+        pIterStack[1] = 0;
+        if (pNode != NULL)
+        {
+            while (pNode->left != NULL)
+            {
+                ((AVLTreeNode**)pIterStack[0])[pIterStack[1]] = pNode;
+                pIterStack[1]++;
+                pNode = pNode->left;
+            }
+            ((AVLTreeNode**)pIterStack[0])[pIterStack[1]] = pNode;
+            pIterStack[1]++;
+        }
+    }
+    const char* flashString = "fx_camera_flash";
+    while (pIterStack[1] > 0)
+    {
+        HelperObject* pHelper = ((AVLTreeEntry<unsigned long, HelperObject*>*)((AVLTreeNode**)pIterStack[0])[pIterStack[1] - 1])->value;
+        if (nlStrNICmp<char>(pHelper->m_szName, flashString, nlStrLen<char>(flashString)) == 0)
+        {
+            m_NumCameraFlashPositions++;
+        }
+        pIterStack[1]--;
+        AVLTreeNode* pPopped = ((AVLTreeNode**)pIterStack[0])[pIterStack[1]];
+        AVLTreeNode* pRight = pPopped->right;
+        if (pRight != NULL)
+        {
+            while (pRight->left != NULL)
+            {
+                ((AVLTreeNode**)pIterStack[0])[pIterStack[1]] = pRight;
+                pIterStack[1]++;
+                pRight = pRight->left;
+            }
+            ((AVLTreeNode**)pIterStack[0])[pIterStack[1]] = pRight;
+            pIterStack[1]++;
+        }
+    }
+    if (pIterStack != NULL)
+    {
+        delete[] (char*)pIterStack[0];
+        delete pIterStack;
+    }
+
+    // Camera flash - Pass 2: Extract positions
+    m_CameraFlashPositions = (nlVector3*)nlMalloc(m_NumCameraFlashPositions * sizeof(nlVector3), 8, false);
     m_NumCameraFlashPositions = 0;
+    pIterStack = (u32*)nlMalloc(8, 8, false);
+    if (pIterStack != NULL)
+    {
+        AVLTreeNode* pNode = (AVLTreeNode*)m_helperMap.m_Root;
+        pIterStack[0] = (u32)nlMalloc((m_helperMap.m_NumElements + 1) * 4, 8, false);
+        pIterStack[1] = 0;
+        if (pNode != NULL)
+        {
+            while (pNode->left != NULL)
+            {
+                ((AVLTreeNode**)pIterStack[0])[pIterStack[1]] = pNode;
+                pIterStack[1]++;
+                pNode = pNode->left;
+            }
+            ((AVLTreeNode**)pIterStack[0])[pIterStack[1]] = pNode;
+            pIterStack[1]++;
+        }
+    }
+    while (pIterStack[1] > 0)
+    {
+        HelperObject* pHelper = ((AVLTreeEntry<unsigned long, HelperObject*>*)((AVLTreeNode**)pIterStack[0])[pIterStack[1] - 1])->value;
+        if (nlStrNICmp<char>(pHelper->m_szName, flashString, nlStrLen<char>(flashString)) == 0)
+        {
+            m_CameraFlashPositions[m_NumCameraFlashPositions].f.x = pHelper->m_worldMatrix.f.m41;
+            m_CameraFlashPositions[m_NumCameraFlashPositions].f.y = pHelper->m_worldMatrix.f.m42;
+            m_CameraFlashPositions[m_NumCameraFlashPositions].f.z = pHelper->m_worldMatrix.f.m43;
+            m_NumCameraFlashPositions++;
+        }
+        pIterStack[1]--;
+        AVLTreeNode* pPopped = ((AVLTreeNode**)pIterStack[0])[pIterStack[1]];
+        AVLTreeNode* pRight = pPopped->right;
+        if (pRight != NULL)
+        {
+            while (pRight->left != NULL)
+            {
+                ((AVLTreeNode**)pIterStack[0])[pIterStack[1]] = pRight;
+                pIterStack[1]++;
+                pRight = pRight->left;
+            }
+            ((AVLTreeNode**)pIterStack[0])[pIterStack[1]] = pRight;
+            pIterStack[1]++;
+        }
+    }
+    if (pIterStack != NULL)
+    {
+        delete[] (char*)pIterStack[0];
+        delete pIterStack;
+    }
 
     // Extra ball loop
     {

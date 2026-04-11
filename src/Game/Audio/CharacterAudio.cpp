@@ -353,22 +353,303 @@ void cCharacterSFX::Stop(eCharSFX sfxType, cGameSFX::StopFlag flag)
     cGameSFX::Stop(sfxType, flag);
 }
 
+static inline bool isElectrocuteSFXPlaying(Audio::cCharacterSFX* self)
+{
+    for (s32 i = charDialogueSFXInfo[CHAR_DIALOGUE_ELECTROCUTE].charDialogueSFXIndex;
+        i < charDialogueSFXInfo[CHAR_DIALOGUE_ELECTROCUTE].charDialogueSFXIndex + charDialogueSFXInfo[CHAR_DIALOGUE_ELECTROCUTE].numRandomSFX;
+        i++)
+    {
+        if (self->IsKeepingTrackOf(charDialogueSFX[i], NULL))
+            return true;
+    }
+    return false;
+}
+
 /**
  * Offset/Address/Size: 0xC5C | 0x8014D000 | size: 0x4D0
+ * TODO: 98.38% match - r6/r7 register swap in walk/run clear loops (MWCC quirk),
+ *       volume section addi+lfsx vs add+lfs addressing mode diff
  */
-unsigned long cCharacterSFX::PlayRandomCharDialogue(CharDialogueType, PosUpdateMethod, float, float, bool)
+unsigned long cCharacterSFX::PlayRandomCharDialogue(CharDialogueType dType, PosUpdateMethod posUpdateMethod, float fVol, float fDelay, bool bAvoidCurrent)
 {
-    FORCE_DONT_INLINE;
-    return -1;
+    Audio::SoundAttributes sfxAtr;
+
+    if (mbInited == 0)
+    {
+        return -1;
+    }
+
+    if (dType == CHAR_FOOTSTEP_WALK)
+    {
+        if (mbInited == 0)
+            return -1;
+        if (mbInited == 0)
+            return -1;
+
+        Audio::SoundAttributes walkAtr;
+        walkAtr.Init();
+        walkAtr.me_ClassType = 1;
+
+        s32 randomIndex = nlRandom(5, &nlDefaultSeed);
+        Audio::eCharSFX* walkSFX = charFootstepSFX[1];
+        Audio::eCharSFX sfxType = walkSFX[randomIndex];
+
+        if (mCharSFX[sfxType].m_unk_0x40 != 0)
+        {
+            sfxType = walkSFX[(randomIndex + 1) % 5];
+        }
+
+        for (int i = walkSFX[0]; i < (int)charFootstepSFX[1][2]; i++)
+        {
+            mCharSFX[i].m_unk_0x40 = false;
+        }
+
+        mCharSFX[sfxType].m_unk_0x40 = true;
+        walkAtr.SetSoundType(sfxType, true);
+        walkAtr.UseStationaryPosVector(mpPhysObj->GetPosition());
+        return Play(walkAtr);
+    }
+    else if (dType == CHAR_FOOTSTEP_RUN)
+    {
+        if (mbInited == 0)
+            return -1;
+        if (mbInited == 0)
+            return -1;
+
+        Audio::SoundAttributes runAtr;
+        runAtr.Init();
+        runAtr.me_ClassType = 1;
+
+        s32 randomIndex = nlRandom(5, &nlDefaultSeed);
+        Audio::eCharSFX* runSFX = charFootstepSFX[0];
+        Audio::eCharSFX sfxType = runSFX[randomIndex];
+
+        if (mCharSFX[sfxType].m_unk_0x40 != 0)
+        {
+            sfxType = runSFX[(randomIndex + 1) % 5];
+        }
+
+        for (int i = runSFX[0]; i < (int)charFootstepSFX[0][2]; i++)
+        {
+            mCharSFX[i].m_unk_0x40 = false;
+        }
+
+        mCharSFX[sfxType].m_unk_0x40 = true;
+        runAtr.SetSoundType(sfxType, true);
+        runAtr.UseStationaryPosVector(mpPhysObj->GetPosition());
+        return Play(runAtr);
+    }
+
+    if (dType != CHAR_DIALOGUE_ELECTROCUTE)
+    {
+        if (isElectrocuteSFXPlaying(this))
+        {
+            return -1;
+        }
+    }
+
+    {
+        s32 i = 0;
+        s32 limit = charDialogueSFXInfo[6].numRandomSFX + 0x14;
+        for (; i < limit; i++)
+        {
+            if (IsKeepingTrackOf(charDialogueSFX[i], NULL))
+            {
+                cGameSFX::Stop(charDialogueSFX[i], cGameSFX::SFX_STOP_FIRST);
+            }
+        }
+    }
+
+    if (mpMovementLoopSound != NULL)
+    {
+        StopEmitter(mpMovementLoopSound, 0);
+        mpMovementLoopSound = NULL;
+        m_unk_0x33A0 = false;
+    }
+
+    sfxAtr.Init();
+    sfxAtr.me_ClassType = 1;
+
+    s32 baseIndex = charDialogueSFXInfo[dType].charDialogueSFXIndex;
+    s32 numRandom = charDialogueSFXInfo[dType].numRandomSFX;
+    s32 randomOffset = nlRandom(numRandom, &nlDefaultSeed);
+
+    Audio::eCharSFX sfxType = charDialogueSFX[baseIndex + randomOffset];
+
+    if (bAvoidCurrent)
+    {
+        if (mCharSFX[sfxType].m_unk_0x40 != 0)
+        {
+            sfxType = charDialogueSFX[baseIndex + (randomOffset + 1) % numRandom];
+        }
+    }
+
+    for (int i = charDialogueSFX[baseIndex]; i < (int)charDialogueSFX[baseIndex + numRandom]; i++)
+    {
+        mCharSFX[i].m_unk_0x40 = false;
+    }
+
+    mCharSFX[sfxType].m_unk_0x40 = true;
+    sfxAtr.SetSoundType(sfxType, true);
+
+    sfxAtr.mf_Volume = fVol;
+    if (fVol != 100.0f)
+    {
+        sfxAtr.mf_Volume = sfxAtr.mf_Volume * mpSFX[sfxAtr.mu_Type].fVolume;
+    }
+
+    sfxAtr.mf_DelayTime = fDelay;
+    sfxAtr.posUpdateMethod = posUpdateMethod;
+
+    if (posUpdateMethod == VECTORS)
+    {
+        sfxAtr.UseStationaryPosVector(mpPhysObj->GetPosition());
+    }
+
+    return Play(sfxAtr);
 }
 
 /**
  * Offset/Address/Size: 0x7C4 | 0x8014CB68 | size: 0x498
+ * TODO: 98.32% match - register-only diffs (this=r30/sndAttributes=r31 swap,
+ *       bAvoidCurrent/pOutSfx register mismatch). Likely -inline deferred context issue.
  */
-unsigned long cCharacterSFX::PlayRandomCharDialogue(CharDialogueType, Audio::SoundAttributes&, bool, unsigned long*)
+unsigned long cCharacterSFX::PlayRandomCharDialogue(CharDialogueType dType, Audio::SoundAttributes& sndAttributes, bool bAvoidCurrent, unsigned long* pOutSfx)
 {
-    FORCE_DONT_INLINE;
-    return -1;
+    s32 randomIndex;
+    eCharSFX sfxType;
+    eCharSFX* pSFX;
+
+    if (mbInited == 0)
+    {
+        return -1;
+    }
+
+    if (dType == CHAR_FOOTSTEP_WALK)
+    {
+        if (mbInited == 0)
+            return -1;
+        if (mbInited == 0)
+            return -1;
+
+        sndAttributes.me_ClassType = 1;
+        randomIndex = nlRandom(5, &nlDefaultSeed);
+        pSFX = charFootstepSFX[1];
+        sfxType = pSFX[randomIndex];
+
+        if (mCharSFX[sfxType].m_unk_0x40 != 0)
+        {
+            sfxType = pSFX[(randomIndex + 1) % 5];
+        }
+
+        for (int i = pSFX[0]; i < (int)charFootstepSFX[1][2]; i++)
+        {
+            mCharSFX[i].m_unk_0x40 = false;
+        }
+
+        mCharSFX[sfxType].m_unk_0x40 = true;
+        sndAttributes.SetSoundType(sfxType, true);
+
+        if (sndAttributes.posUpdateMethod == NONE)
+        {
+            sndAttributes.UseStationaryPosVector(mpPhysObj->GetPosition());
+        }
+
+        return Play(sndAttributes);
+    }
+    else if (dType == CHAR_FOOTSTEP_RUN)
+    {
+        if (mbInited == 0)
+            return -1;
+        if (mbInited == 0)
+            return -1;
+
+        sndAttributes.me_ClassType = 1;
+        randomIndex = nlRandom(5, &nlDefaultSeed);
+        pSFX = charFootstepSFX[0];
+        sfxType = pSFX[randomIndex];
+
+        if (mCharSFX[sfxType].m_unk_0x40 != 0)
+        {
+            sfxType = pSFX[(randomIndex + 1) % 5];
+        }
+
+        for (int i = pSFX[0]; i < (int)charFootstepSFX[0][2]; i++)
+        {
+            mCharSFX[i].m_unk_0x40 = false;
+        }
+
+        mCharSFX[sfxType].m_unk_0x40 = true;
+        sndAttributes.SetSoundType(sfxType, true);
+
+        if (sndAttributes.posUpdateMethod == NONE)
+        {
+            sndAttributes.UseStationaryPosVector(mpPhysObj->GetPosition());
+        }
+
+        return Play(sndAttributes);
+    }
+
+    if (dType != CHAR_DIALOGUE_ELECTROCUTE)
+    {
+        if (isElectrocuteSFXPlaying(this))
+        {
+            return -1;
+        }
+    }
+
+    {
+        s32 i = 0;
+        s32 limit = charDialogueSFXInfo[6].numRandomSFX + 0x14;
+        for (; i < limit; i++)
+        {
+            if (IsKeepingTrackOf(charDialogueSFX[i], NULL))
+            {
+                cGameSFX::Stop(charDialogueSFX[i], cGameSFX::SFX_STOP_FIRST);
+            }
+        }
+    }
+
+    if (mpMovementLoopSound != NULL)
+    {
+        StopEmitter(mpMovementLoopSound, 0);
+        mpMovementLoopSound = NULL;
+        m_unk_0x33A0 = false;
+    }
+
+    s32 baseIndex = charDialogueSFXInfo[dType].charDialogueSFXIndex;
+    s32 numRandom = charDialogueSFXInfo[dType].numRandomSFX;
+    randomIndex = nlRandom(numRandom, &nlDefaultSeed);
+    sfxType = charDialogueSFX[baseIndex + randomIndex];
+
+    if (bAvoidCurrent)
+    {
+        if (mCharSFX[sfxType].m_unk_0x40 != 0)
+        {
+            randomIndex = (randomIndex + 1) % numRandom;
+            sfxType = charDialogueSFX[baseIndex + randomIndex];
+        }
+    }
+
+    for (int i = charDialogueSFX[baseIndex]; i < (int)charDialogueSFX[baseIndex + numRandom]; i++)
+    {
+        mCharSFX[i].m_unk_0x40 = false;
+    }
+
+    mCharSFX[sfxType].m_unk_0x40 = true;
+    sndAttributes.SetSoundType(sfxType, sndAttributes.mb_Is3D);
+
+    if (pOutSfx != NULL)
+    {
+        *pOutSfx = charDialogueSFX[charDialogueSFXInfo[dType].charDialogueSFXIndex + randomIndex];
+    }
+
+    if (sndAttributes.posUpdateMethod == VECTORS)
+    {
+        sndAttributes.UseStationaryPosVector(mpPhysObj->GetPosition());
+    }
+
+    return Play(sndAttributes);
 }
 
 /**

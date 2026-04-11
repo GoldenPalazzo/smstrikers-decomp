@@ -1220,14 +1220,6 @@ u32 TDEVChunkFile::GetDiscPosition()
 }
 
 /**
- * Offset/Address/Size: 0x124 | 0x801D0CF8 | size: 0x60
- */
-GCFile::~GCFile()
-{
-    // EMPTY
-}
-
-/**
  * Offset/Address/Size: 0x184 | 0x801D0D58 | size: 0x88
  */
 DolphinFile::~DolphinFile()

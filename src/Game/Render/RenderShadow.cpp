@@ -18,6 +18,9 @@ int MaxProjectedShadows;
 static int g_Alpha[3];
 static int g_AlphaRef;
 static unsigned char g_bCoPlanarProjectedShadows;
+static float g_AntiFlimmer;
+static eGLView g_CharacterShadowView;
+static u8 g_bSubdivideShadow;
 
 // /**
 //  * Offset/Address/Size: 0x1734 | 0x80124768 | size: 0x7C
@@ -429,8 +432,148 @@ void SubdivideAndRender(glQuad3& quad, eGLView view)
 /**
  * Offset/Address/Size: 0x750 | 0x80123784 | size: 0x3F4
  */
-void RenderBlobShadow(const nlVector3&, const nlVector3*, int, const int*, const nlColour*)
+void RenderBlobShadow(const nlVector3& vPosition, const nlVector3* pPoints, int index, const int* uvOrder, const nlColour* pColour)
 {
+    static float half_w = 0.625f;
+    static float half_h = 0.625f;
+    static int alpha = 0x80;
+
+    glQuad3 quad;
+    nlColour c;
+    nlColour cfade;
+    unsigned long texture;
+
+    float posX, posY, antiFlimmer;
+    antiFlimmer = g_AntiFlimmer;
+    posY = vPosition.f.y;
+    posX = vPosition.f.x;
+
+    if (pColour == NULL)
+    {
+        nlColourSet(c, 0xFF, 0xFF, 0xFF, (u8)alpha);
+        cfade = c;
+    }
+    else
+    {
+        cfade = *pColour;
+        c = *pColour;
+        cfade.c[3] = (u8)g_Alpha[2];
+    }
+
+    if (pPoints == NULL)
+    {
+        texture = glGetTexture("global/shadeblob");
+        float hw = half_w;
+        float hh = half_h;
+
+        quad.m_pos[0].f.x = posX - hw;
+        quad.m_pos[0].f.y = posY - hh;
+        quad.m_pos[0].f.z = antiFlimmer;
+        quad.m_pos[1].f.x = posX - hw;
+        quad.m_pos[1].f.y = posY + hh;
+        quad.m_pos[1].f.z = antiFlimmer;
+        quad.m_pos[2].f.x = posX + hw;
+        quad.m_pos[2].f.y = posY + hh;
+        quad.m_pos[2].f.z = antiFlimmer;
+        quad.m_pos[3].f.x = posX + hw;
+        quad.m_pos[3].f.y = posY - hh;
+        quad.m_pos[3].f.z = antiFlimmer;
+
+        quad.m_uv[0].f.x = 1.0f;
+        quad.m_uv[0].f.y = 1.0f;
+        quad.m_uv[1].f.x = 0.0f;
+        quad.m_uv[1].f.y = 1.0f;
+        quad.m_uv[2].f.x = 0.0f;
+        quad.m_uv[2].f.y = 0.0f;
+        quad.m_uv[3].f.x = 1.0f;
+        quad.m_uv[3].f.y = 0.0f;
+    }
+    else
+    {
+        char texturename[32] = "target/pshadow00";
+        texturename[14] = '0' + (index / 10);
+        texturename[15] = '0' + (index % 10);
+        texture = glGetTexture(texturename);
+
+        quad.m_pos[0] = pPoints[0];
+        quad.m_pos[1] = pPoints[1];
+        quad.m_pos[2] = pPoints[2];
+        quad.m_pos[3] = pPoints[3];
+
+        int idx;
+        nlVector2* pUV;
+
+        if (uvOrder == NULL)
+        {
+            idx = 0;
+        }
+        else
+        {
+            idx = uvOrder[0];
+        }
+        pUV = &quad.m_uv[idx];
+        pUV->f.x = 0.75f;
+        pUV->f.y = 0.666f;
+
+        if (uvOrder == NULL)
+        {
+            idx = 1;
+        }
+        else
+        {
+            idx = uvOrder[1];
+        }
+        pUV = &quad.m_uv[idx];
+        pUV->f.x = 0.25f;
+        pUV->f.y = 0.666f;
+
+        if (uvOrder == NULL)
+        {
+            idx = 2;
+        }
+        else
+        {
+            idx = uvOrder[2];
+        }
+        pUV = &quad.m_uv[idx];
+        pUV->f.x = 0.25f;
+        pUV->f.y = 0.125f;
+
+        if (uvOrder == NULL)
+        {
+            idx = 3;
+        }
+        else
+        {
+            idx = uvOrder[3];
+        }
+        pUV = &quad.m_uv[idx];
+        pUV->f.x = 0.75f;
+        pUV->f.y = 0.125f;
+    }
+
+    quad.m_colour[1] = c;
+    quad.m_colour[0] = c;
+    quad.m_colour[3] = cfade;
+    quad.m_colour[2] = cfade;
+
+    glSetDefaultState(true);
+    glSetRasterState(GLS_AlphaBlend, 1);
+    glSetRasterState(GLS_Culling, 0);
+    glSetRasterState(GLS_DepthWrite, 0);
+    glSetCurrentRasterState(glHandleizeRasterState());
+    glSetCurrentTexture(texture, GLTT_Diffuse);
+    glSetTextureState(GLTS_DiffuseWrap, 3);
+    glSetCurrentTextureState(glHandleizeTextureState());
+
+    if (pPoints == NULL || !g_bSubdivideShadow)
+    {
+        quad.Attach(g_CharacterShadowView, 0, true);
+    }
+    else
+    {
+        SubdivideAndRender(quad, g_CharacterShadowView);
+    }
 }
 
 /**

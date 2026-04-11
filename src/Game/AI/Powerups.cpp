@@ -733,9 +733,194 @@ void PowerupBase::CollisionCallback(PhysicsObject*, PhysicsObject*, const nlVect
 
 /**
  * Offset/Address/Size: 0x3374 | 0x8005DC60 | size: 0x540
+ * TODO: 94.25% match - GPR r27/r28/r29 and FPR f27 register allocation
+ * differ due to -inline deferred vs -inline auto compiler flag difference
  */
-void PowerupBase::ThrowAt(cFielder*, Bowser*)
+void PowerupBase::ThrowAt(cFielder* pThrower, Bowser*)
 {
+    unsigned long voiceID = m_uVoiceID;
+    if (voiceID != 0)
+    {
+        if (voiceID != Audio::GetSndIDError())
+        {
+            Audio::gPowerupSFX.StopEmitter((SFXEmitter*)m_uVoiceID, 0);
+            m_uVoiceID = 0;
+        }
+    }
+
+    ePowerUpType type = m_eType;
+    PhysicsObject* pPhysObj = m_pPhysicsObject;
+
+    if (type >= NUM_POWER_UPS)
+    {
+        Audio::GetSndIDError();
+    }
+    else if (!Audio::IsInited())
+    {
+        Audio::GetSndIDError();
+    }
+    else
+    {
+        Audio::SoundAttributes attributes;
+        attributes.Init();
+        unsigned long soundID = powerupSounds[type].sndActivate;
+        if (soundID != 0xFFFFFFFF)
+        {
+            attributes.SetSoundType(soundID, true);
+            if (type == POWER_UP_BOBOMB)
+            {
+                attributes.UsePhysObj(pPhysObj);
+                attributes.mf_ReturnEmitterOnPlay = true;
+            }
+            else
+            {
+                attributes.UseStationaryPosVector(pPhysObj->GetPosition());
+            }
+            Audio::gPowerupSFX.GetSFXVol(soundID);
+            Audio::gPowerupSFX.Play(attributes);
+        }
+    }
+
+    if (m_pTarget->m_pTeam == g_pTeams[1])
+    {
+        Audio::gCrowdSFX.PlayRandomReaction(Audio::cWorldSFX::CROWD_REACTION_YEAH_SMALL, 100.0f, -1.0f, 0, 0.0f);
+    }
+    else
+    {
+        Audio::gCrowdSFX.PlayRandomReaction(Audio::cWorldSFX::CROWD_REACTION_OH_SMALL, 100.0f, -1.0f, 0, 0.0f);
+    }
+
+    ePowerUpType type2 = m_eType;
+    if (type2 == POWER_UP_CHAIN_CHOMP && !g_pGame->mbCaptainShotToScoreOn)
+    {
+        PhysicsObject* pPhysObj2 = m_pPhysicsObject;
+        unsigned long errorCode;
+        if (type2 >= NUM_POWER_UPS)
+        {
+            errorCode = Audio::GetSndIDError();
+        }
+        else if (!Audio::IsInited())
+        {
+            errorCode = Audio::GetSndIDError();
+        }
+        else
+        {
+            Audio::SoundAttributes attributes2;
+            attributes2.Init();
+            unsigned long soundID2 = powerupSounds[type2].sndInEffect;
+            if (soundID2 == 0xFFFFFFFF)
+            {
+                errorCode = (unsigned long)-1;
+            }
+            else
+            {
+                attributes2.SetSoundType(soundID2, true);
+                if (type2 == POWER_UP_BOBOMB)
+                {
+                    attributes2.UsePhysObj(pPhysObj2);
+                    attributes2.mf_ReturnEmitterOnPlay = true;
+                }
+                else
+                {
+                    attributes2.UsePhysObj(pPhysObj2);
+                    attributes2.mf_ReturnEmitterOnPlay = true;
+                }
+                Audio::gPowerupSFX.GetSFXVol(soundID2);
+                errorCode = Audio::gPowerupSFX.Play(attributes2);
+            }
+        }
+        m_uVoiceID = errorCode;
+    }
+
+    nlVector3 v3TargetPos = m_pTarget->m_v3Position;
+    nlVector3 v3TargetVel = m_pTarget->m_v3Velocity;
+
+    float fSpeed = 0.0f;
+    switch (m_eType)
+    {
+    case POWER_UP_GREEN_SHELL:
+        fSpeed += g_pGame->m_pGameTweaks->fGreenShellSpeed;
+        break;
+    case POWER_UP_RED_SHELL:
+        fSpeed += g_pGame->m_pGameTweaks->fRedShellSpeed;
+        break;
+    case POWER_UP_SPINY_SHELL:
+        fSpeed += g_pGame->m_pGameTweaks->fSpinyShellSpeed;
+        break;
+    case POWER_UP_FREEZE_SHELL:
+        fSpeed += g_pGame->m_pGameTweaks->fFreezeShellSpeed;
+        break;
+    case POWER_UP_BANANA:
+        if (pThrower != NULL)
+        {
+            s16 fFacingDelta = pThrower->GetFacingDeltaToPosition(m_pTarget->m_v3Position);
+            float fMinSpeed = g_pGame->m_pGameTweaks->fBananaSpeed;
+            float fMaxSpeed = fMinSpeed + pThrower->m_fActualSpeed;
+            s16 absDelta = fFacingDelta;
+            if (fFacingDelta < 0)
+                absDelta = -fFacingDelta;
+            fSpeed = InterpolateRangeClamped(fMinSpeed, fMaxSpeed, 32000.0f, 12500.0f, (float)(u16)absDelta);
+        }
+        else
+        {
+            fSpeed += g_pGame->m_pGameTweaks->fBananaSpeed;
+        }
+        break;
+    default:
+        break;
+    }
+
+    if (m_eType != POWER_UP_BANANA)
+    {
+        if (meSize == POWERUPSIZE_LARGE)
+        {
+            fSpeed -= 1.0f;
+        }
+    }
+
+    float dy = v3TargetPos.f.y - m_v3Position.f.y;
+    float dx = v3TargetPos.f.x - m_v3Position.f.x;
+    float dz = v3TargetPos.f.z - m_v3Position.f.z;
+    float invDist = nlRecipSqrt(dx * dx + dy * dy + dz * dz, true);
+    float normDz = invDist * dz;
+    float normDy = invDist * dy;
+    float normDx = invDist * dx;
+
+    int nNumSolutions;
+    float pSolutions[2];
+    CalcInterceptXY(m_v3Position, fSpeed, 0.0f, v3TargetPos, v3TargetVel, nNumSolutions, pSolutions);
+
+    if (nNumSolutions != 0)
+    {
+        float t;
+        if (nNumSolutions == 2)
+        {
+            t = (pSolutions[0] < pSolutions[1]) ? pSolutions[0] : pSolutions[1];
+        }
+        else
+        {
+            t = pSolutions[0];
+        }
+
+        nlVector3 v3ShellVelocity;
+        float predictedX = v3TargetVel.f.x * t + v3TargetPos.f.x;
+        float predictedY = v3TargetVel.f.y * t + v3TargetPos.f.y;
+        v3ShellVelocity.f.x = (predictedX - m_v3Position.f.x) / t;
+        v3ShellVelocity.f.y = (predictedY - m_v3Position.f.y) / t;
+        v3ShellVelocity.f.z = 0.0f;
+        m_v3Velocity = v3ShellVelocity;
+        m_pPhysicsObject->SetLinearVelocity(v3ShellVelocity);
+    }
+    else
+    {
+        nlVector3 v3Velocity;
+        v3Velocity.f.x = fSpeed * normDx;
+        v3Velocity.f.y = fSpeed * normDy;
+        v3Velocity.f.z = fSpeed * normDz;
+        v3Velocity.f.z = 0.0f;
+        m_v3Velocity = v3Velocity;
+        m_pPhysicsObject->SetLinearVelocity(v3Velocity);
+    }
 }
 
 /**

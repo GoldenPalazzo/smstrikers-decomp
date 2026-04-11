@@ -995,7 +995,7 @@ void TournTeamSetupSceneV2::AutoFill()
         mCurrentSK = mTeamData[mCurrentRow].sidekick;
 
         mCaptainGrid->MoveHighlightToTarget(mCurrentCaptain);
-        ((IGridComponent*)mSKGrid)->MoveHighlightToTarget((eTeamID)mCurrentSK);
+        ((IGridComponent<eTeamID>*)mSKGrid)->MoveHighlightToTarget((eTeamID)mCurrentSK);
         UpdateCaptainName();
 
         int j = 0;
@@ -1026,7 +1026,7 @@ void TournTeamSetupSceneV2::UpdateForCurrentRow()
     mCurrentSK = mTeamData[mCurrentRow].sidekick;
 
     mCaptainGrid->MoveHighlightToTarget(mCurrentCaptain);
-    ((IGridComponent*)mSKGrid)->MoveHighlightToTarget((eTeamID)mCurrentSK);
+    ((IGridComponent<eTeamID>*)mSKGrid)->MoveHighlightToTarget((eTeamID)mCurrentSK);
     UpdateCaptainName();
 }
 

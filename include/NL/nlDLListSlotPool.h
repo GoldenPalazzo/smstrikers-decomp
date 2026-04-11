@@ -17,8 +17,11 @@ public:
     }
 
     nlDLListSlotPool(const int initial, const int delta)
-        : DLListContainerBase<T, BasicSlotPool<DLListEntry<T> > >(initial, delta)
     {
+        this->m_Head = NULL;
+        this->m_Allocator.m_Initial = initial;
+        SlotPoolBase::BaseAddNewBlock((SlotPoolBase*)&this->m_Allocator, sizeof(DLListEntry<T>));
+        this->m_Allocator.m_Delta = delta;
     }
 
     ~nlDLListSlotPool()

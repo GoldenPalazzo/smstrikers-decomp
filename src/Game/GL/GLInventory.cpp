@@ -29,11 +29,6 @@ nlAVLTree<unsigned long, GLShadowVolume*, DefaultKeyCompare<unsigned long> >::~n
 }
 
 template <>
-nlAVLTree<unsigned long, glModel*, DefaultKeyCompare<unsigned long> >::~nlAVLTree()
-{
-}
-
-template <>
 clearing_GLInventory<glModel>::~clearing_GLInventory()
 {
     m_pItems->Clear();

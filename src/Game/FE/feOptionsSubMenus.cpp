@@ -72,6 +72,20 @@ void OptionsSaveLoad::Update(float dt)
 }
 
 /**
+ * Offset/Address/Size: 0x5FD4 | 0x800BB018 | size: 0xDC
+ */
+OptionsSubMenu::~OptionsSubMenu()
+{
+    for (int i = 0; i < 8; i++)
+    {
+        if (mSlideMenuLists[i] != NULL)
+        {
+            delete mSlideMenuLists[i];
+        }
+    }
+}
+
+/**
  * Offset/Address/Size: 0x124 | 0x800B5168 | size: 0xEC
  */
 OptionsSaveLoad::~OptionsSaveLoad()
@@ -1098,20 +1112,6 @@ void OptionsSubMenu::GoBack()
  */
 void OptionsSubMenu::Update(float)
 {
-}
-
-/**
- * Offset/Address/Size: 0x5FD4 | 0x800BB018 | size: 0xDC
- */
-OptionsSubMenu::~OptionsSubMenu()
-{
-    for (int i = 0; i < 8; i++)
-    {
-        if (mSlideMenuLists[i] != NULL)
-        {
-            delete mSlideMenuLists[i];
-        }
-    }
 }
 
 // /**

@@ -472,8 +472,10 @@ FESceneManager::~FESceneManager()
 
 /**
  * Offset/Address/Size: 0x9C4 | 0x8020E010 | size: 0x70
- * TODO: 73.21% match - m_sceneHandlerStack ctor ordering and register allocation differ
- * (r31/r30 usage and m_Head/m_Delta store order around BaseAddNewBlock).
+ * TODO: 92.68% match - r30/r31 register swap in inlined nlDLListSlotPool ctor.
+ * Known MWCC quirk: inlined template constructor assigns r31 to subobject this
+ * instead of outer this. Same issue as FontManager ctor (91.25%) and
+ * FETweenManager ctor (94.62%).
  */
 FESceneManager::FESceneManager()
     : m_sceneHandlerStack(0x14, 0)

@@ -96,7 +96,7 @@ public:
         PendingAsync.m_Count = 0;
         m_Position = 0;
     }
-    virtual ~GCFile();
+    virtual ~GCFile() { }
     virtual u32 FileSize(unsigned int*) = 0;
     virtual void Read(void*, unsigned int);
     virtual s32 GetReadStatus() = 0;

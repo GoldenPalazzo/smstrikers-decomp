@@ -393,7 +393,7 @@ static void SOR_LCP(int m, int nb, dRealMutablePtr J, int* jb, dxBody* const* bo
         Ad[i] *= cfm[i];
 
     // order to solve constraint rows in
-    IndexError* order = (IndexError*)ALLOCA(m * sizeof(IndexError));
+    IndexError* order = (IndexError*)__alloca(m * sizeof(IndexError));
 
 #ifndef REORDER_CONSTRAINTS
     // make sure constraints with findex < 0 come first.

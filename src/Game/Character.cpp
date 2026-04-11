@@ -1051,12 +1051,6 @@ void AIEventHandler(Event*, void*)
 {
 }
 
-void cPN_SAnimController::operator delete(void* ptr)
-{
-    ((SlotPoolEntry*)ptr)->m_next = m_SAnimControllerSlotPool.m_FreeList;
-    m_SAnimControllerSlotPool.m_FreeList = (SlotPoolEntry*)ptr;
-}
-
 // /**
 //  * Offset/Address/Size: 0x0 | 0x80012044 | size: 0x6C
 //  */

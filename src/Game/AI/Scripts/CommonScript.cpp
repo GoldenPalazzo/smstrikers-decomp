@@ -440,8 +440,8 @@ FuzzyVariant Fuzzy::GetSwapControllerScore(cPlayer* ThePlayer)
 
 /**
  * Offset/Address/Size: 0xDC78 | 0x80077E48 | size: 0x794
- * TODO: 87.0% match - MWCC store scheduling: mType/mData stores placed after ExtraData.Reset()
- * bctrl instead of before. Same issue in all FuzzyVariant template ctor inlines.
+ * TODO: 98.36% match - context-induced diffs: fcmpu operand order (6x),
+ * FuzzyVariant ctor f29/.sdata scheduling (2x), fmuls/fmadds operand order (2x)
  */
 FuzzyVariant Fuzzy::ShouldIStrafeBall(cFielder* TheFielder)
 {
@@ -459,13 +459,13 @@ FuzzyVariant Fuzzy::ShouldIStrafeBall(cFielder* TheFielder)
         if (BallOwner(g_pScriptCurrentTeam->GetGoalie()) != 0.0f || BallOwner(g_pScriptOtherTeam->GetGoalie()) != 0.0f)
         {
             confidence = 1.0f;
-            FuzzyVariant fvResult(0.25f);
+            FuzzyVariant fvResult(confidence);
             bestValue = fvResult;
         }
         else if (UserControlled(TheFielder) == 0.0f && TheFielder->m_fDesiredSpeed < 0.1f)
         {
             confidence = 1.0f;
-            FuzzyVariant fvResult(0.75f);
+            FuzzyVariant fvResult(1.0f);
             bestValue = fvResult;
         }
         else
@@ -476,8 +476,8 @@ FuzzyVariant Fuzzy::ShouldIStrafeBall(cFielder* TheFielder)
                 confidence = 1.0f;
                 float farToMyNet = FarToMyNet(TheFielder);
                 float inBetween = InBetweenMyNetAnd(TheFielder, g_pScriptBall);
-                float val = (1.0f - farToMyNet) * 0.5f + inBetween * 0.5f;
-                FuzzyVariant fvResult(val);
+                float a = (1.0f - farToMyNet) * 0.5f;
+                FuzzyVariant fvResult(a + inBetween * 0.5f);
                 bestValue = fvResult;
             }
             else

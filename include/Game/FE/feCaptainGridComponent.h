@@ -11,7 +11,7 @@ class TLInstance;
 class TLSlide;
 class InlineHasher;
 
-class ICaptainGridComponent : public IGridComponent
+class ICaptainGridComponent : public IGridComponent<eTeamID>
 {
 public:
     void SetAllItemsActive();

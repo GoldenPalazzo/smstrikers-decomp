@@ -242,16 +242,6 @@ void ISidekickGridComponent::BuildMapMenu()
  */
 ISidekickGridComponent::~ISidekickGridComponent()
 {
-    IGridComponent::~IGridComponent();
-
-    if (mInstanceTable != NULL)
-    {
-        delete[] mInstanceTable;
-        mInstanceTable = NULL;
-    }
-
-    delete mMapMenu;
-    mMapMenu = NULL;
 }
 
 /**

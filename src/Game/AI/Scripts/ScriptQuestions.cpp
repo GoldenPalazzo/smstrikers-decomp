@@ -3513,9 +3513,198 @@ float UserControlledT(cTeam* pTeam)
 
 /**
  * Offset/Address/Size: 0x744 | 0x8007F1CC | size: 0x494
+ * TODO: 93.46% match - f0/f1 register swap for fScore after fdivs (MWCC allocator quirk),
+ *       bne+b vs beq for USER_CONTROLLED null check (MWCC branch pattern)
  */
-void GonnaGetBall(cTeam*)
+float GonnaGetBall(cTeam* team)
 {
+    if (team == NULL)
+    {
+        return 0.0f;
+    }
+
+    cFielder* pOpponent;
+    float fClosing, fDist, fAvg;
+    cFielder* pPlayer = team->m_pBallInterceptOrderedFielders[0];
+    cTeam* pOtherTeam = team->GetOtherTeam();
+    float score[2] = { 0.0f, 0.0f };
+    pOpponent = pOtherTeam->m_pBallInterceptOrderedFielders[0];
+
+    if (pPlayer == NULL)
+    {
+        fDist = 0.0f;
+    }
+    else
+    {
+        float dx = g_pScriptBall->m_v3Position.f.x - pPlayer->m_v3Position.f.x;
+        float dy = g_pScriptBall->m_v3Position.f.y - pPlayer->m_v3Position.f.y;
+        fDist = NormalizeVal(nlSqrt(dx * dx + dy * dy, true), g_pGame->m_pFuzzyTweaks->vNearBallConfidenceDistance);
+    }
+
+    cBall* pBall = g_pBall;
+    if (pPlayer == NULL)
+        fClosing = 0.0f;
+    else if (pBall == NULL)
+        fClosing = 0.0f;
+    else
+    {
+        fClosing = NormalizeVal(GetClosingSpeed2D(pPlayer->m_v3Position, pPlayer->m_v3Velocity, pBall->m_v3Position, pBall->m_v3Velocity), 0.0f, g_pGame->m_pFuzzyTweaks->fClosingSpeedMax);
+    }
+
+    float fScore = AbleToInterceptBall(pPlayer);
+    fScore += fClosing;
+    fScore = fDist + fScore;
+    fAvg = fScore / 3.0f;
+
+    if (pPlayer == NULL)
+    {
+        fScore = 0.0f;
+    }
+    else
+    {
+        fScore = 0.0f;
+        if (pPlayer->m_eClassType == GOALIE)
+        {
+        }
+        else if (pPlayer->m_eClassType == FIELDER)
+        {
+            if (pPlayer->m_eFielderDesireState == FIELDERDESIRE_INTERCEPT_BALL)
+                fScore = 1.0f;
+            else if (pPlayer->m_eFielderDesireState == FIELDERDESIRE_USER_CONTROLLED)
+            {
+                float fScore_;
+                if (pPlayer == NULL)
+                {
+                    fScore_ = 0.0f;
+                }
+                else
+                {
+                    s32 nIndex = -1;
+                    cTeam* pTeam = pPlayer->m_pTeam;
+                    if (pTeam->m_pBallInterceptOrderedFielders[0] == pPlayer)
+                        nIndex = 0;
+                    else if (pTeam->m_pBallInterceptOrderedFielders[1] == pPlayer)
+                        nIndex = 1;
+                    else if (pTeam->m_pBallInterceptOrderedFielders[2] == pPlayer)
+                        nIndex = 2;
+                    else if (pTeam->m_pBallInterceptOrderedFielders[3] == pPlayer)
+                        nIndex = 3;
+                    fScore_ = (float)(3 - nIndex) / 3.0f;
+                }
+                fScore = fScore_;
+            }
+            else if (pPlayer->m_eFielderDesireState == FIELDERDESIRE_MARK)
+            {
+                if (pPlayer->m_pMark != NULL && pPlayer->m_pMark->m_pBall != NULL)
+                    fScore = 0.5f;
+            }
+        }
+    }
+
+    fScore = min_float(fScore, fAvg);
+
+    float fHasBall;
+    if (pPlayer == NULL)
+        fHasBall = 0.0f;
+    else if (pPlayer->m_pBall != NULL)
+        fHasBall = 1.0f;
+    else
+        fHasBall = 0.0f;
+
+    fHasBall = max_float(fHasBall, fScore);
+    score[0] = fHasBall;
+
+    // === OPPONENT SECTION ===
+    if (pOpponent == NULL)
+    {
+        fDist = 0.0f;
+    }
+    else
+    {
+        float dx = g_pScriptBall->m_v3Position.f.x - pOpponent->m_v3Position.f.x;
+        float dy = g_pScriptBall->m_v3Position.f.y - pOpponent->m_v3Position.f.y;
+        fDist = NormalizeVal(nlSqrt(dx * dx + dy * dy, true), g_pGame->m_pFuzzyTweaks->vNearBallConfidenceDistance);
+    }
+
+    pBall = g_pBall;
+    if (pOpponent == NULL)
+        fClosing = 0.0f;
+    else if (pBall == NULL)
+        fClosing = 0.0f;
+    else
+    {
+        fClosing = NormalizeVal(GetClosingSpeed2D(pOpponent->m_v3Position, pOpponent->m_v3Velocity, pBall->m_v3Position, pBall->m_v3Velocity), 0.0f, g_pGame->m_pFuzzyTweaks->fClosingSpeedMax);
+    }
+
+    fScore = AbleToInterceptBall(pOpponent);
+    fScore += fClosing;
+    fScore = fDist + fScore;
+    fAvg = fScore / 3.0f;
+
+    if (pOpponent == NULL)
+    {
+        fScore = 0.0f;
+    }
+    else
+    {
+        fScore = 0.0f;
+        if (pOpponent->m_eClassType == GOALIE)
+        {
+        }
+        else if (pOpponent->m_eClassType == FIELDER)
+        {
+            if (pOpponent->m_eFielderDesireState == FIELDERDESIRE_INTERCEPT_BALL)
+                fScore = 1.0f;
+            else if (pOpponent->m_eFielderDesireState == FIELDERDESIRE_USER_CONTROLLED)
+            {
+                float fScore_;
+                if (pOpponent == NULL)
+                {
+                    fScore_ = 0.0f;
+                }
+                else
+                {
+                    s32 nIndex = -1;
+                    cTeam* pTeam = pOpponent->m_pTeam;
+                    if (pTeam->m_pBallInterceptOrderedFielders[0] == pOpponent)
+                        nIndex = 0;
+                    else if (pTeam->m_pBallInterceptOrderedFielders[1] == pOpponent)
+                        nIndex = 1;
+                    else if (pTeam->m_pBallInterceptOrderedFielders[2] == pOpponent)
+                        nIndex = 2;
+                    else if (pTeam->m_pBallInterceptOrderedFielders[3] == pOpponent)
+                        nIndex = 3;
+                    fScore_ = (float)(3 - nIndex) / 3.0f;
+                }
+                fScore = fScore_;
+            }
+            else if (pOpponent->m_eFielderDesireState == FIELDERDESIRE_MARK)
+            {
+                if (pOpponent->m_pMark != NULL && pOpponent->m_pMark->m_pBall != NULL)
+                    fScore = 0.5f;
+            }
+        }
+    }
+
+    fScore = min_float(fScore, fAvg);
+
+    float fHasBall2;
+    if (pOpponent == NULL)
+        fHasBall2 = 0.0f;
+    else if (pOpponent->m_pBall != NULL)
+        fHasBall2 = 1.0f;
+    else
+        fHasBall2 = 0.0f;
+
+    fHasBall2 = max_float(fHasBall2, fScore);
+    score[1] = fHasBall2;
+
+    float total = score[0] + score[1];
+    if (total > 0.0f)
+    {
+        return score[0] / total;
+    }
+    return 0.0f;
 }
 
 /**

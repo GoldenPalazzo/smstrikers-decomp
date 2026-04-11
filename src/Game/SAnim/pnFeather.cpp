@@ -2,47 +2,11 @@
 
 #include "math.h"
 #include "NL/nlMemory.h"
+#include "NL/nlSlotPool.h"
 
 f32 CANT_COLLIDE = *(f32*)__float_max;
 
-SlotPool<cPN_Feather> cPN_Feather::m_FeatherSlotPool;
-
-extern "C"
-{
-    void __ct__12SlotPoolBaseFv(void*);
-    void* __register_global_object(void* object, void* destructor, void* registration);
-}
-
-struct FeatherDestructorChain
-{
-    FeatherDestructorChain* next;
-    void* destructor;
-    void* object;
-};
-
-void FeatherSlotPoolDtor(void* obj, int)
-{
-    ((SlotPool<cPN_Feather>*)obj)->~SlotPool<cPN_Feather>();
-}
-
-/**
- * Offset/Address/Size: 0x8FC | 0x801EFEB0 | size: 0x74
- * TODO: 89.83% match - register ordering around __float_max/m_FeatherSlotPool
- * setup and destructor/registration relocation symbols differ.
- */
-extern "C" void __sinit_pnFeather_cpp()
-{
-    static FeatherDestructorChain chain;
-    SlotPoolBase* pool = (SlotPoolBase*)&cPN_Feather::m_FeatherSlotPool;
-
-    CANT_COLLIDE = *(f32*)__float_max;
-
-    __ct__12SlotPoolBaseFv(pool);
-    pool->m_Initial = 0x10;
-    SlotPoolBase::BaseAddNewBlock(pool, 0x30);
-    pool->m_Delta = 0x10;
-    __register_global_object(pool, (void*)FeatherSlotPoolDtor, &chain);
-}
+SlotPool<cPN_Feather> cPN_Feather::m_FeatherSlotPool(0x10, 0x10);
 
 void cPN_Feather::operator delete(void* ptr)
 {

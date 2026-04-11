@@ -28,7 +28,11 @@ class cPN_SAnimController : public cPoseNode
 public:
     cPN_SAnimController(cSAnim*, const AnimRetarget*, ePlayMode, void (*)(unsigned int, cPN_SAnimController*), unsigned int, bool);
     /* 0x08 */ virtual ~cPN_SAnimController() { };
-    static void operator delete(void* ptr);
+    static void operator delete(void* ptr)
+    {
+        ((SlotPoolEntry*)ptr)->m_next = m_SAnimControllerSlotPool.m_FreeList;
+        m_SAnimControllerSlotPool.m_FreeList = (SlotPoolEntry*)ptr;
+    }
     /* 0x10 */ virtual void Evaluate(float, cPoseAccumulator*) const;
     /* 0x14 */ virtual void Evaluate(int, float, cPoseAccumulator*) const;
     /* 0x18 */ virtual cPoseNode* Update(float);
