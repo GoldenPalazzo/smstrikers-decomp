@@ -11,19 +11,29 @@ extern char* fgets(char*, int, FILE*);
 
 static const char* SIM_FILE = "";
 
-// /**
-//  * Offset/Address/Size: 0x3D0 | 0x80191868 | size: 0x38
-//  */
-// void Tokenizer<BasicString<char, Detail::TempStringAllocator> >::begin() const
-// {
-// }
+/**
+ * Offset/Address/Size: 0x3D0 | 0x80191868 | size: 0x38
+ */
+Tokenizer<BasicString<char, Detail::TempStringAllocator> >::iterator Tokenizer<BasicString<char, Detail::TempStringAllocator> >::begin() const
+{
+    FORCE_DONT_INLINE;
+}
 
-// /**
-//  * Offset/Address/Size: 0x398 | 0x80191830 | size: 0x38
-//  */
-// void Tokenizer<BasicString<char, Detail::TempStringAllocator> >::iterator::operator++()
-// {
-// }
+/**
+ * Offset/Address/Size: 0x0 | 0x80191498 | size: 0x44
+ */
+Tokenizer<BasicString<char, Detail::TempStringAllocator> >::iterator Tokenizer<BasicString<char, Detail::TempStringAllocator> >::end() const
+{
+    FORCE_DONT_INLINE;
+}
+
+/**
+ * Offset/Address/Size: 0x398 | 0x80191830 | size: 0x38
+ */
+Tokenizer<BasicString<char, Detail::TempStringAllocator> >::iterator& Tokenizer<BasicString<char, Detail::TempStringAllocator> >::iterator::operator++()
+{
+    FORCE_DONT_INLINE;
+}
 
 // /**
 //  * Offset/Address/Size: 0x88 | 0x80191520 | size: 0x310
@@ -39,13 +49,6 @@ static const char* SIM_FILE = "";
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x80191498 | size: 0x44
-//  */
-// void Tokenizer<BasicString<char, Detail::TempStringAllocator> >::end() const
-// {
-// }
-
 /**
  * Offset/Address/Size: 0xC18 | 0x80191494 | size: 0x4
  */
@@ -56,7 +59,8 @@ Simulator::Simulator()
 
 /**
  * Offset/Address/Size: 0x0 | 0x8019087C | size: 0xC18
- * TODO: 46.26% match - tokenizer iteration/stat writes and exact constants remain incomplete.
+ * TODO: 72.88% match - register allocation differs (this=r22 vs r31, booleans shifted by 2)
+ *       due to MWCC -O4 -inline deferred stack address hoisting optimization.
  */
 void Simulator::InitializeStats()
 {
@@ -82,21 +86,21 @@ void Simulator::InitializeStats()
 
     BasicString<char, Detail::TempStringAllocator> searchString = LexicalCast<BasicString<char, Detail::TempStringAllocator> >(diff);
 
-    if (length <= 0x78)
+    if (length <= 120)
     {
-        searchString = searchString.Append("A");
+        searchString = searchString.Append(" 120");
     }
-    else if (length <= 0x12C)
+    else if (length <= 300)
     {
-        searchString = searchString.Append("B");
+        searchString = searchString.Append(" 300");
     }
     else
     {
-        searchString = searchString.Append("C");
+        searchString = searchString.Append(" 600");
     }
 
-    BasicString<char, Detail::TempStringAllocator> meanString = searchString.Append("M");
-    BasicString<char, Detail::TempStringAllocator> SDString = searchString.Append("S");
+    BasicString<char, Detail::TempStringAllocator> meanString = searchString.Append(" Average");
+    BasicString<char, Detail::TempStringAllocator> SDString = searchString.Append(" StdDev");
     BasicString<char, Detail::TempStringAllocator> statString;
 
     FILE* pFile = fopen(SIM_FILE, "r");
@@ -109,69 +113,53 @@ void Simulator::InitializeStats()
     while (fgets(line, 0x100, pFile) != 0)
     {
         bool isLineFound = false;
-
-        unsigned long meanLen;
-        if (meanString.m_data != 0)
-        {
-            meanLen = (unsigned long)(*(int*)((char*)meanString.m_data + 4) - 1);
-        }
-        else
-        {
-            meanLen = 0;
-        }
-
-        const char* meanCstr;
-        if (meanString.m_data != 0)
-        {
-            meanCstr = *(const char**)meanString.m_data;
-        }
-        else
-        {
-            static char emptyString = 0;
-            meanCstr = &emptyString;
-        }
+        unsigned long meanLen = meanString.m_data ? (unsigned long)(meanString.m_data->mSize - 1) : 0;
+        const char* meanCstr = meanString.m_data ? meanString.m_data->mData : "";
 
         if (nlStrNCmp<char>(meanCstr, line, meanLen) == 0)
         {
             isMeanFound = true;
             doMean = true;
-            statString = statString.Append(line);
+            statString = BasicString<char, Detail::TempStringAllocator>(line);
             isLineFound = true;
         }
         else
         {
-            unsigned long sdLen;
-            if (SDString.m_data != 0)
-            {
-                sdLen = (unsigned long)(*(int*)((char*)SDString.m_data + 4) - 1);
-            }
-            else
-            {
-                sdLen = 0;
-            }
-
-            const char* sdCstr;
-            if (SDString.m_data != 0)
-            {
-                sdCstr = *(const char**)SDString.m_data;
-            }
-            else
-            {
-                static char emptyString2 = 0;
-                sdCstr = &emptyString2;
-            }
+            unsigned long sdLen = SDString.m_data ? (unsigned long)(SDString.m_data->mSize - 1) : 0;
+            const char* sdCstr = SDString.m_data ? SDString.m_data->mData : "";
 
             if (nlStrNCmp<char>(sdCstr, line, sdLen) == 0)
             {
                 isSDFound = true;
                 doMean = false;
-                statString = statString.Append(line);
+                statString = BasicString<char, Detail::TempStringAllocator>(line);
                 isLineFound = true;
             }
         }
 
         if (isLineFound)
         {
+            BasicString<char, Detail::TempStringAllocator> comma(",");
+            Tokenizer<BasicString<char, Detail::TempStringAllocator> > tokenizer(statString, comma);
+            int idx = 0;
+
+            for (Tokenizer<BasicString<char, Detail::TempStringAllocator> >::iterator it = tokenizer.begin(); it != tokenizer.end(); ++it)
+            {
+                if (idx != 2 && idx != 6 && idx != 7 && idx != 8 && idx != 9 && idx != 16 && idx != 18)
+                {
+                    float val = (float)atof(it.m_token.c_str());
+                    if (doMean)
+                    {
+                        ((float*)this)[idx * 2] = val;
+                    }
+                    else
+                    {
+                        ((float*)this)[idx * 2 + 1] = val;
+                    }
+                }
+                idx++;
+            }
+
             if (isMeanFound && isSDFound)
             {
                 break;

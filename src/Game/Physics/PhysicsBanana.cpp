@@ -66,7 +66,6 @@ void PhysicsBanana::PreCollide()
 
 /**
  * Offset/Address/Size: 0xFC | 0x80135B30 | size: 0x540
- * TODO: 94.69% match - all remaining diffs are pure offset shifts (0 register/instruction diffs)
  */
 ContactType PhysicsBanana::Contact(PhysicsObject* other, dContact* contact, int numContacts)
 {
@@ -121,26 +120,16 @@ ContactType PhysicsBanana::Contact(PhysicsObject* other, dContact* contact, int 
             }
             if (m_pTriggerCallbackFunc != NULL)
             {
-                float py = contact->geom.pos[1];
-                float pz = contact->geom.pos[2];
-                float px = contact->geom.pos[0];
                 nlVector3 contactPos;
-                contactPos.f.x = px;
-                contactPos.f.y = py;
-                contactPos.f.z = pz;
+                nlVec3Set(contactPos, contact->geom.pos[0], contact->geom.pos[1], contact->geom.pos[2]);
                 m_pTriggerCallbackFunc(this, other, contactPos, m_pCallbackParam);
             }
             return NO_CONTACT;
         }
         if (m_pTriggerCallbackFunc != NULL)
         {
-            float py = contact->geom.pos[1];
-            float pz = contact->geom.pos[2];
-            float px = contact->geom.pos[0];
             nlVector3 contactPos;
-            contactPos.f.x = px;
-            contactPos.f.y = py;
-            contactPos.f.z = pz;
+            nlVec3Set(contactPos, contact->geom.pos[0], contact->geom.pos[1], contact->geom.pos[2]);
             m_pTriggerCallbackFunc(this, other, contactPos, m_pCallbackParam);
         }
         break;
@@ -171,44 +160,34 @@ ContactType PhysicsBanana::Contact(PhysicsObject* other, dContact* contact, int 
                     hasBall = true;
                 }
             }
-            if (hasBall)
+            if (!hasBall)
             {
-                m_pPowerupObject->m_bShouldDestroy = true;
-                return NO_CONTACT;
+                if (m_pTriggerCallbackFunc != NULL)
+                {
+                    nlVector3 contactPos;
+                    nlVec3Set(contactPos, contact->geom.pos[0], contact->geom.pos[1], contact->geom.pos[2]);
+                    m_pTriggerCallbackFunc(this, other, contactPos, m_pCallbackParam);
+                }
+                break;
             }
+            m_pPowerupObject->m_bShouldDestroy = true;
+            return NO_CONTACT;
         }
-        if (m_pTriggerCallbackFunc != NULL)
-        {
-            float py = contact->geom.pos[1];
-            float pz = contact->geom.pos[2];
-            float px = contact->geom.pos[0];
-            nlVector3 contactPos;
-            contactPos.f.x = px;
-            contactPos.f.y = py;
-            contactPos.f.z = pz;
-            m_pTriggerCallbackFunc(this, other, contactPos, m_pCallbackParam);
-        }
-        break;
     }
     case 0x13:
     {
         if (m_pPowerupObject->mtNoHitTimer.m_uPackedTime != 0)
         {
             PowerupBase* otherPowerup = ((PhysicsBanana*)other)->m_pPowerupObject;
-            if (m_pPowerupObject->m_pThrower == otherPowerup->m_pThrower)
+            if (otherPowerup->m_pThrower == m_pPowerupObject->m_pThrower)
             {
                 return NO_CONTACT;
             }
         }
         if (m_pTriggerCallbackFunc != NULL)
         {
-            float py = contact->geom.pos[1];
-            float pz = contact->geom.pos[2];
-            float px = contact->geom.pos[0];
             nlVector3 contactPos;
-            contactPos.f.x = px;
-            contactPos.f.y = py;
-            contactPos.f.z = pz;
+            nlVec3Set(contactPos, contact->geom.pos[0], contact->geom.pos[1], contact->geom.pos[2]);
             m_pTriggerCallbackFunc(this, other, contactPos, m_pCallbackParam);
         }
         return NO_CONTACT;
@@ -218,20 +197,15 @@ ContactType PhysicsBanana::Contact(PhysicsObject* other, dContact* contact, int 
         if (m_pPowerupObject->mtNoHitTimer.m_uPackedTime != 0)
         {
             PowerupBase* otherPowerup = ((PhysicsBanana*)other)->m_pPowerupObject;
-            if (m_pPowerupObject->m_pThrower == otherPowerup->m_pThrower)
+            if (otherPowerup->m_pThrower == m_pPowerupObject->m_pThrower)
             {
                 return NO_CONTACT;
             }
         }
         if (m_pTriggerCallbackFunc != NULL)
         {
-            float py = contact->geom.pos[1];
-            float pz = contact->geom.pos[2];
-            float px = contact->geom.pos[0];
             nlVector3 contactPos;
-            contactPos.f.x = px;
-            contactPos.f.y = py;
-            contactPos.f.z = pz;
+            nlVec3Set(contactPos, contact->geom.pos[0], contact->geom.pos[1], contact->geom.pos[2]);
             m_pTriggerCallbackFunc(this, other, contactPos, m_pCallbackParam);
         }
         return NO_CONTACT;
@@ -277,13 +251,8 @@ ContactType PhysicsBanana::Contact(PhysicsObject* other, dContact* contact, int 
             eventData->eSize = m_pPowerupObject->meSize;
             eventData->eType = m_pPowerupObject->m_eType;
 
-            eventData->position.f.x = contact->geom.pos[0];
-            eventData->position.f.y = contact->geom.pos[1];
-            eventData->position.f.z = contact->geom.pos[2];
-
-            eventData->normal.f.x = contact->geom.normal[0];
-            eventData->normal.f.y = contact->geom.normal[1];
-            eventData->normal.f.z = contact->geom.normal[2];
+            nlVec3Set(eventData->position, contact->geom.pos[0], contact->geom.pos[1], contact->geom.pos[2]);
+            nlVec3Set(eventData->normal, contact->geom.normal[0], contact->geom.normal[1], contact->geom.normal[2]);
         }
     }
 

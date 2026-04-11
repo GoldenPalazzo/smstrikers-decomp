@@ -59,6 +59,7 @@ public:
         : SlotPoolBase()
     {
     }
+
     BasicSlotPool(const int initial, const int delta)
         : SlotPoolBase()
     {
@@ -101,6 +102,7 @@ public:
         : BasicSlotPool<T>()
     {
     }
+
     SlotPool(const int initial, const int delta)
         : BasicSlotPool<T>(initial, delta)
     {

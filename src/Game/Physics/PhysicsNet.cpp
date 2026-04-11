@@ -446,7 +446,7 @@ bool PhysicsNet::SweepTestForBallContact(const nlVector3& startPos, const nlVect
         }
 
         cBall* ball = g_pBall;
-        ball->mbCanDamage = false;
+        ball->m_unk_0xA6 = false;
         ball->mpDamageTarget = NULL;
 
         nlVector3 ballLinearVelocity = g_pBall->m_pPhysicsBall->GetLinearVelocity();

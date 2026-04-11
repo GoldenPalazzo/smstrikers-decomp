@@ -16,9 +16,7 @@ template <>
 void Replayable<0, LoadFrame, EmissionController>(LoadFrame& frame, EmissionController& controller);
 
 template <>
-nlAVLTree<unsigned long, LingerMessage*, DefaultKeyCompare<unsigned long> >::~nlAVLTree()
-{
-}
+nlAVLTree<unsigned long, LingerMessage*, DefaultKeyCompare<unsigned long> >::~nlAVLTree();
 
 static class efList* controllers = nullptr;
 static class efList* errors = nullptr;
