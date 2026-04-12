@@ -413,9 +413,8 @@ void cCameraManager::Remove(eCameraType type, bool bDeleteAfterRemoving)
 
 /**
  * Offset/Address/Size: 0x590 | 0x801A6C18 | size: 0x268
- * TODO: 98.67% match - local string label relocation (@1258 vs @250) on nlPrintf literal.
  */
-/* static */ void cCameraManager::PopCameraWithTransition(float fDuration, eCameraTransition transition, void (*pCallback)(eCameraMessage))
+/* static */ cBaseCamera* cCameraManager::PopCameraWithTransition(float fDuration, eCameraTransition transition, void (*pCallback)(eCameraMessage))
 {
     extern float m_fTransitionSpeed__14cCameraManager;
     extern float m_fTransitionTime__14cCameraManager;
@@ -445,13 +444,15 @@ void cCameraManager::Remove(eCameraType type, bool bDeleteAfterRemoving)
     m_fTransitionSpeed__14cCameraManager = 1.0f / fDuration;
     m_fTransitionTime__14cCameraManager = 1.0f - m_fTransitionTime__14cCameraManager;
 
-    nlDLRingRemoveStart<cBaseCamera>(&cCameraManager::m_cameraStack);
+    cBaseCamera* pRemoved = nlDLRingRemoveStart<cBaseCamera>(&cCameraManager::m_cameraStack);
 
     if (nlDLRingGetStart<cBaseCamera>(cCameraManager::m_cameraStack)->m_pFilter != NULL)
     {
         nlDLRingGetStart<cBaseCamera>(cCameraManager::m_cameraStack)->m_pFilter->Reset();
         nlDLRingGetStart<cBaseCamera>(cCameraManager::m_cameraStack)->Reactivate();
     }
+
+    return pRemoved;
 }
 
 /**

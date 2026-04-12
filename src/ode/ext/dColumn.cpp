@@ -33,136 +33,121 @@ void dColumnAABB(dxGeom* geomID, float* aabb)
 
 /**
  * Offset/Address/Size: 0x28C | 0x8021D0B8 | size: 0x288
+ * TODO: 99.29% match - ax1/ax2 register r5/r6 swapped (r6 for ax1_shifted, r5 for ax2_shifted)
  */
-int dCollideColumnColumn(dxGeom* geomID0, dxGeom* geomID1, int arg2, dContactGeom* arg3, int arg4)
+int dCollideColumnColumn(dxGeom* o1, dxGeom* o2, int flags, dContactGeom* contact, int skip)
 {
-    f32 sp8;
-    f32 temp_f1;
-    f32 temp_f2;
-    f32 temp_f3;
-    f32 radius_0;
-    f32 radius_1;
-    f32 temp_f4;
-    f32 temp_f4_2;
-    f32 temp_f4_3;
-    f32 var_f5;
-    f64 temp_f1_2;
-    f64 temp_f1_3;
-    f64 temp_f1_4;
-    s32 temp_r4;
-    s32 temp_r5;
-    s32 temp_r6;
-    s32 var_r0;
-    s32 var_r4;
-    s32 var_r5;
-    f32* pos_0;
-    f32* pos_1;
-    f32* temp_r7;
-    f32* temp_r8;
+    f32 radius1;
+    f32 radius2;
+    const dReal* pos1;
+    const dReal* pos2;
+    u8 ax1;
+    u8 ax2;
+    f32 x;
 
-    radius_0 = *(f32*)dGeomGetClassData(geomID0);
-    radius_1 = *(f32*)dGeomGetClassData(geomID1);
-    pos_0 = (f32*)dGeomGetPosition(geomID0);
-    pos_1 = (f32*)dGeomGetPosition(geomID1);
-    var_r4 = 0xFF;
-    var_r5 = 0xFF;
+    radius1 = *(f32*)dGeomGetClassData(o1);
+    radius2 = *(f32*)dGeomGetClassData(o2);
+    pos1 = dGeomGetPosition(o1);
+    pos2 = dGeomGetPosition(o2);
+    ax1 = 0xFF;
+    ax2 = 0xFF;
     if (lengthwiseAxis == 0)
     {
-        var_r4 = 1;
-        var_r5 = 2;
+        ax1 = 1;
+        ax2 = 2;
     }
     if (lengthwiseAxis == 1)
     {
-        var_r4 = 0;
-        var_r5 = 2;
+        ax1 = 0;
+        ax2 = 2;
     }
     if (lengthwiseAxis == 2)
     {
-        var_r4 = 0;
-        var_r5 = 1;
+        ax1 = 0;
+        ax2 = 1;
     }
 
-    temp_r6 = ((u8)var_r4) << 2;
-    temp_r5 = ((u8)var_r5) << 2;
-    temp_f4 = radius_0 + radius_1;
-
-    temp_f3 = *(f32*)((u8*)pos_0 + temp_r6);
-    temp_f2 = *(f32*)((u8*)pos_1 + temp_r6);
-    temp_f2 = temp_f3 - temp_f2;
-    temp_f1 = *(f32*)((u8*)pos_0 + temp_r5);
-    temp_f3 = *(f32*)((u8*)pos_1 + temp_r5);
-    temp_f1 = temp_f1 - temp_f3;
-    temp_f4_2 = temp_f2 * temp_f2;
-    temp_f4_2 = temp_f4_2 + (temp_f1 * temp_f1);
-
-    if (temp_f4_2 < (temp_f4 * temp_f4))
     {
-        if (temp_f4_2 > 0.0f)
+        f32 sumR = radius1 + radius2;
+        f32 val_a = pos1[ax1];
+        f32 val_b = pos2[ax1];
+        f32 val_c = pos1[ax2];
+        f32 val_d = pos2[ax2];
+        f32 dx = val_a - val_b;
+        f32 dy = val_c - val_d;
+        f32 dx2 = dx * dx;
+        f32 dy2 = dy * dy;
+        f32 dist2 = dx2 + dy2;
+
+        if (dist2 < (sumR * sumR))
         {
-            temp_f1_2 = __frsqrte(temp_f4_2);
-            temp_f1_3 = 0.5 * temp_f1_2 * -(((f64)temp_f4_2 * (temp_f1_2 * temp_f1_2)) - 3.0);
-            temp_f1_4 = 0.5 * temp_f1_3 * -(((f64)temp_f4_2 * (temp_f1_3 * temp_f1_3)) - 3.0);
-            var_f5 = (f32)((f64)temp_f4_2 * (0.5 * temp_f1_4 * -(((f64)temp_f4_2 * (temp_f1_4 * temp_f1_4)) - 3.0)));
-        }
-        else if (temp_f4_2 < 0.0)
-        {
-            var_f5 = *(f32*)&__float_nan;
-        }
-        else
-        {
-            sp8 = temp_f4_2;
-            temp_r4 = *(s32*)&sp8 & 0x7F800000;
-            switch (temp_r4)
+            if (dist2 > 0.0f)
             {
-            case 0x7F800000:
-                if (*(s32*)&sp8 & 0x7FFFFF)
-                {
-                    var_r0 = 1;
-                }
-                else
-                {
-                    var_r0 = 2;
-                }
-                break;
-            case 0x0:
-                if (*(s32*)&sp8 & 0x7FFFFF)
-                {
-                    var_r0 = 5;
-                }
-                else
-                {
-                    var_r0 = 3;
-                }
-                break;
-            default:
-                var_r0 = 4;
-                break;
+                f64 temp_f1_2 = __frsqrte(dist2);
+                f64 temp_f1_3 = 0.5 * temp_f1_2 * -(((f64)dist2 * (temp_f1_2 * temp_f1_2)) - 3.0);
+                f64 temp_f1_4 = 0.5 * temp_f1_3 * -(((f64)dist2 * (temp_f1_3 * temp_f1_3)) - 3.0);
+                x = (f32)((f64)dist2 * (0.5 * temp_f1_4 * -(((f64)dist2 * (temp_f1_4 * temp_f1_4)) - 3.0)));
             }
-            if (var_r0 == 1)
+            else if (dist2 < 0.0)
             {
-                var_f5 = *(f32*)&__float_nan;
+                x = *(f32*)&__float_nan;
             }
             else
             {
-                var_f5 = temp_f4_2;
+                f32 sp8 = dist2;
+                s32 temp_r4 = *(s32*)&sp8 & 0x7F800000;
+                s32 var_r0;
+                switch (temp_r4)
+                {
+                case 0x7F800000:
+                    if (*(s32*)&sp8 & 0x7FFFFF)
+                    {
+                        var_r0 = 1;
+                    }
+                    else
+                    {
+                        var_r0 = 2;
+                    }
+                    break;
+                case 0x0:
+                    if (*(s32*)&sp8 & 0x7FFFFF)
+                    {
+                        var_r0 = 5;
+                    }
+                    else
+                    {
+                        var_r0 = 3;
+                    }
+                    break;
+                default:
+                    var_r0 = 4;
+                    break;
+                }
+                if (var_r0 == 1)
+                {
+                    x = *(f32*)&__float_nan;
+                }
+                else
+                {
+                    x = dist2;
+                }
             }
+
+            contact->normal[ax1] = (pos1[ax1] - pos2[ax1]) / x;
+            {
+                f32 temp_f4_3 = ((x + radius2) - radius1) * 0.5f;
+                contact->normal[ax2] = (pos1[ax2] - pos2[ax2]) / x;
+
+                contact->normal[lengthwiseAxis] = 0.0f;
+                contact->pos[ax1] = (contact->normal[ax1] * temp_f4_3) + pos2[ax1];
+                contact->pos[ax2] = (contact->normal[ax2] * temp_f4_3) + pos2[ax2];
+                contact->pos[lengthwiseAxis] = 0.0f;
+            }
+            contact->depth = radius2 - (x - radius2);
+            contact->g1 = o1;
+            contact->g2 = o2;
+            return 1;
         }
-
-        temp_r7 = (f32*)((u8*)arg3 + temp_r6);
-        temp_r8 = (f32*)((u8*)arg3 + temp_r5);
-
-        temp_r7[4] = (*(f32*)((u8*)pos_0 + temp_r6) - *(f32*)((u8*)pos_1 + temp_r6)) / var_f5;
-        temp_f4_3 = ((var_f5 + radius_1) - radius_0) * 0.5f;
-        temp_r8[4] = (*(f32*)((u8*)pos_0 + temp_r5) - *(f32*)((u8*)pos_1 + temp_r5)) / var_f5;
-
-        *(f32*)((u8*)arg3 + (lengthwiseAxis * 4) + 0x10) = 0.0f;
-        *(f32*)((u8*)arg3 + temp_r6) = (temp_r7[4] * temp_f4_3) + *(f32*)((u8*)pos_1 + temp_r6);
-        *(f32*)((u8*)arg3 + temp_r5) = (temp_r8[4] * temp_f4_3) + *(f32*)((u8*)pos_1 + temp_r5);
-        *(f32*)((u8*)arg3 + (lengthwiseAxis * 4)) = 0.0f;
-        arg3->depth = radius_1 - (var_f5 - radius_1);
-        arg3->g1 = geomID0;
-        arg3->g2 = geomID1;
-        return 1;
     }
 
     return 0;

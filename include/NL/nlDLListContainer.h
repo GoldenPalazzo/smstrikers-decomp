@@ -8,18 +8,28 @@ template <typename T, typename Adapter>
 class DLListContainerBase
 {
 public:
-    DLListContainerBase() {}
-    DLListContainerBase(const int initial, const int delta) : m_Allocator(initial, delta), m_Head(NULL) {}
+    DLListContainerBase()
+        : m_Head(NULL)
+    {
+    }
+    DLListContainerBase(const int initial, const int delta)
+        : m_Allocator(initial, delta)
+        , m_Head(NULL)
+    {
+    }
 
     ~DLListContainerBase()
     {
-        nlWalkDLRing(m_Head, this, &DLListContainerBase::DeleteEntry);
+        typedef void (*WalkFn)(DLListEntry<T>*, DLListContainerBase*, void (DLListContainerBase::*)(DLListEntry<T>*));
+        void (DLListContainerBase::*func)(DLListEntry<T>*) = &DLListContainerBase::DeleteEntry;
+        WalkFn walk = &nlWalkDLRing<DLListEntry<T>, DLListContainerBase>;
+        walk(m_Head, this, func);
         m_Head = NULL;
     }
 
     void DeleteEntry(DLListEntry<T>* entry);
 
-    /* 0x0 */ Adapter m_Allocator;    // offset 0x0, size 0x18
+    /* 0x0 */ Adapter m_Allocator;     // offset 0x0, size 0x18
     /* 0x18 */ DLListEntry<T>* m_Head; // offset 0x18, size 0x4
 }; // total size: 0x1C
 

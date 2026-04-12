@@ -6,6 +6,10 @@
 #include "Game/AI/Fielder.h"
 #include "Game/Sys/eventman.h"
 #include "NL/nlMemory.h"
+#include "NL/nlBasicString.h"
+#include "NL/nlSingleton.h"
+#include "Game/GameInfo.h"
+#include "Game/FE/feHelpFuncs.h"
 
 extern CollisionSpace* g_CollisionSpace;
 extern PhysicsWorld* g_PhysicsWorld;
@@ -376,9 +380,158 @@ PhysicsBoneID PhysicsCharacter::ResolvePhysicsBoneIDFromName(const char* name)
 
 /**
  * Offset/Address/Size: 0x100 | 0x80136318 | size: 0x608
+ * TODO: 96.1% match - register allocation diffs (r26/r28/r29 vs r29/r30/r31 for this/pFldr/pBall, f30/f31 swap for dy/dx)
  */
 void PhysicsCharacter::PostUpdate()
 {
+    nlVector3 characterPosition;
+    cFielder* pFldr;
+
+    PhysicsObject::PostUpdate();
+
+    GetPosition(&characterPosition);
+
+    nlVector3 charPos;
+    charPos.f.x = characterPosition.f.x;
+    charPos.f.y = characterPosition.f.y;
+    charPos.f.z = 0.0f;
+    SetCharacterPosition(charPos);
+
+    if (m_HasCollidedWithBall)
+    {
+        cBall* pBall = g_pBall;
+        if (pBall->m_unk_0xA6)
+        {
+            pFldr = (cFielder*)m_pAICharacter;
+            if (pFldr->m_eClassType == FIELDER)
+            {
+                cPlayer* prevOwner = pBall->m_pPrevOwner;
+
+                float dy = pBall->m_v3Position.f.y - prevOwner->m_v3Position.f.y;
+                float dx = pBall->m_v3Position.f.x - prevOwner->m_v3Position.f.x;
+                float dz = pBall->m_v3Position.f.z - prevOwner->m_v3Position.f.z;
+
+                u16 angle = (u16)(10430.378f * nlATan2f(dy, dx));
+
+                if (!pFldr->IsInvincible())
+                {
+                    if (pFldr->m_pBall)
+                    {
+                        pFldr->ReleaseBall();
+                    }
+
+                    pBall->ClearBallEffects();
+
+                    bool goalieCaught = false;
+                    if (pBall->m_tShotTimer.m_uPackedTime != 0)
+                    {
+                        if (pBall->m_unk_0xA4)
+                        {
+                            goalieCaught = true;
+                        }
+                    }
+
+                    if (goalieCaught)
+                    {
+                        EmitGoalieCatch(pFldr, "perfect_shot_catch", false);
+                    }
+                    else
+                    {
+                        cPlayer* prevOwner2 = g_pBall->m_pPrevOwner;
+                        if (prevOwner2 != NULL && prevOwner2->m_eClassType == GOALIE)
+                        {
+                            cTeam* otherTeam = prevOwner2->m_pTeam->GetOtherTeam();
+                            eTeamID teamID = nlSingleton<GameInfoManager>::s_pInstance->GetTeam((short)otherTeam->m_nSide);
+                            const char* teamName = GetTeamName(teamID);
+
+                            BasicString<char, Detail::TempStringAllocator> effectName(teamName);
+                            effectName.AppendInPlace("_shoot_to_score_catch");
+                            EmitGoalieCatch(pFldr, effectName.c_str(), false);
+                        }
+                    }
+
+                    if (pFldr->InitActionHitReact(pBall->m_pPrevOwner, angle, true))
+                    {
+                        pFldr->PlayAttackReactionSounds(100.0f);
+                    }
+                }
+                else
+                {
+                    pFldr->SetNoPickUpTime(0.3f);
+
+                    pBall->ClearBallEffects();
+
+                    bool goalieCaught = false;
+                    if (pBall->m_tShotTimer.m_uPackedTime != 0)
+                    {
+                        if (pBall->m_unk_0xA4)
+                        {
+                            goalieCaught = true;
+                        }
+                    }
+
+                    if (goalieCaught)
+                    {
+                        EmitGoalieCatch(pFldr, "perfect_shot_catch", false);
+                    }
+                    else
+                    {
+                        eTeamID teamID = nlSingleton<GameInfoManager>::s_pInstance->GetTeam((short)pFldr->m_pTeam->m_nSide);
+                        const char* teamName = GetTeamName(teamID);
+
+                        BasicString<char, Detail::TempStringAllocator> effectName(teamName);
+                        effectName.AppendInPlace("_shoot_to_score_catch");
+                        EmitGoalieCatch(pFldr, effectName.c_str(), true);
+                    }
+                }
+
+                pBall->m_tNoPickupTimer.SetSeconds(0.0f);
+                pBall->m_unk_0xA6 = false;
+                pBall->mpDamageTarget = NULL;
+
+                nlVector3 v3BallVel;
+                float dot = dy * pBall->m_v3Velocity.f.y + dx * pBall->m_v3Velocity.f.x + dz * pBall->m_v3Velocity.f.z;
+
+                if (dot > 0.0f)
+                {
+                    v3BallVel.f.z = -0.1f * pBall->m_v3Velocity.f.z;
+                    v3BallVel.f.x = -0.1f * pBall->m_v3Velocity.f.x;
+                    v3BallVel.f.y = -0.1f * pBall->m_v3Velocity.f.y;
+
+                    float dot2 = (pBall->m_v3Position.f.y - characterPosition.f.y) * v3BallVel.f.y
+                               + (pBall->m_v3Position.f.x - characterPosition.f.x) * v3BallVel.f.x
+                               + (pBall->m_v3Position.f.z - characterPosition.f.z) * v3BallVel.f.z;
+
+                    if (dot2 < 0.0f)
+                    {
+                        pBall->SetPosition(pBall->m_v3PrevPosition);
+                    }
+                }
+                else
+                {
+                    v3BallVel.f.z = 0.1f * pBall->m_v3Velocity.f.z;
+                    v3BallVel.f.x = 0.1f * pBall->m_v3Velocity.f.x;
+                    v3BallVel.f.y = 0.1f * pBall->m_v3Velocity.f.y;
+                }
+
+                v3BallVel.f.z += 4.0f + nlRandomf(3.0f, &nlDefaultSeed);
+                v3BallVel.f.y += -4.0f + nlRandomf(8.0f, &nlDefaultSeed);
+
+                nlVector3 v3BallSpin;
+                pBall->m_pPhysicsBall->GetAngularVelocity(&v3BallSpin);
+                pBall->SetVelocity(v3BallVel, SPINTYPE_PARAMETER, &v3BallSpin);
+            }
+        }
+    }
+
+    if (m_unk88)
+    {
+        m_nDKBallStuckHackCounter++;
+    }
+    else
+    {
+        m_nDKBallStuckHackCounter = 0;
+    }
 }
 
 /**

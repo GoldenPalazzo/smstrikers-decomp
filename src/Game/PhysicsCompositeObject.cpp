@@ -76,22 +76,24 @@ int PhysicsCompositeObject::AddObject(PhysicsObject* object)
  */
 PhysicsCompositeObject::~PhysicsCompositeObject()
 {
+    DLListEntry<PhysicsTransform*>* start;
     DLListEntry<PhysicsTransform*>* head;
     DLListEntry<PhysicsTransform*>* current;
 
-    current = nlDLRingGetStart<DLListEntry<PhysicsTransform*> >(m_Components.m_Head);
+    start = nlDLRingGetStart<DLListEntry<PhysicsTransform*> >(m_Components.m_Head);
     head = m_Components.m_Head;
+    current = start;
 
-    while (current != nullptr)
+    while (current != NULL)
     {
-        PhysicsTransform* transform = (PhysicsTransform*)current->m_data;
+        PhysicsTransform* physObj = (PhysicsTransform*)current->m_data;
 
-        transform->m_bodyID = nullptr;
-        delete transform;
+        physObj->m_bodyID = NULL;
+        delete physObj;
 
-        if (nlDLRingIsEnd<DLListEntry<PhysicsTransform*> >(head, current) || current == nullptr)
+        if (nlDLRingIsEnd<DLListEntry<PhysicsTransform*> >(head, current) || current == NULL)
         {
-            current = nullptr;
+            current = NULL;
         }
         else
         {

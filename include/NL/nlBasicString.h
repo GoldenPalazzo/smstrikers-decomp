@@ -127,6 +127,7 @@ public:
         if (data != 0)
         {
             data->mRefCount++;
+            data = other.m_data;
         }
         else
         {

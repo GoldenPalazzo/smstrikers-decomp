@@ -109,18 +109,6 @@ extern nlVector3 sharedMorphBuffer[];
 // }
 
 /**
- * Offset/Address/Size: 0x0 | 0x801E1434 | size: 0x44
- * TODO: 96.47% match - prologue scheduling differs (`lwz r8, 0(r5)` placement).
- */
-template <>
-void AVLTreeBase<unsigned long, unsigned long, NewAdapter<AVLTreeEntry<unsigned long, unsigned long> >, DefaultKeyCompare<unsigned long> >::Walk<UserDataBuilder>(
-    UserDataBuilder* cbClass, void (UserDataBuilder::*cb)(const unsigned long&, unsigned long*))
-{
-    FORCE_DONT_INLINE;
-    InorderWalk(m_Root, cbClass, cb);
-}
-
-/**
  * Offset/Address/Size: 0xD28 | 0x801E136C | size: 0xC8
  * TODO: 78.70% match - prologue/register allocation differs (vtable pointer setup and r5/r8 zero register usage).
  */
@@ -151,14 +139,6 @@ ShaderSkinMesh::ShaderSkinMesh()
     skinPairs = NULL;
     stitchArray = NULL;
     numPackets = 0;
-}
-
-/**
- * Offset/Address/Size: 0xCC8 | 0x801E130C | size: 0x60
- */
-template <>
-nlAVLTree<unsigned long, SkinMatrix, DefaultKeyCompare<unsigned long> >::~nlAVLTree()
-{
 }
 
 /**

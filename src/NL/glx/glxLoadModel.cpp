@@ -512,7 +512,8 @@ static u8* GetChunkDataPointer(nlChunk* chunk)
 
 /**
  * Offset/Address/Size: 0xC08 | 0x801C0828 | size: 0x2A0
- * TODO: 90.27% match - register allocation still differs for mesh/chunk pointers and the boneMap constructor emits extra addic/beq checks.
+ * TODO: 97.59% match - chunkType volatile register r4 vs target r5 causes cascading register diffs
+ * in alignment computation, switch dispatch, and case-local variables (i, count, boneID)
  */
 GLSkinMesh* glx_MakeSkinMesh(nlChunk* outerChunk, glModel* models)
 {
@@ -520,28 +521,35 @@ GLSkinMesh* glx_MakeSkinMesh(nlChunk* outerChunk, glModel* models)
 
     mesh->pModel = models;
 
-    nlChunk* chunk = (nlChunk*)((u8*)outerChunk + 8);
+    u32 i;
     nlChunk* chunkEnd = (nlChunk*)((u8*)outerChunk + outerChunk->m_Size + 8);
+    u32 chunkSize;
+    u8* data;
 
-    while (chunk != chunkEnd)
+    for (nlChunk* chunk = (nlChunk*)((u8*)outerChunk + 8); chunk != chunkEnd; chunk = (nlChunk*)((u8*)chunk + chunk->m_Size + 8))
     {
         u32 id = chunk->m_ID;
-        u32 chunkSize = chunk->m_Size;
-        u32 chunkType = id & 0x00FFFFFF;
+        chunkSize = chunk->m_Size;
         u32 alignBits = id & 0x7F000000;
-        u8* data = (u8*)chunk + 8;
+        u32 chunkType = id & ~0x7F000000u;
 
+        u8* result;
         if (((-alignBits | alignBits) >> 31) != 0)
         {
             u32 align = 1 << (alignBits >> 24);
-            data = (u8*)(((u32)((u8*)chunk + align) + 7) & ~(align - 1));
+            result = (u8*)(((u32)((u8*)chunk + align) + 7) & ~(align - 1));
         }
+        else
+        {
+            result = (u8*)chunk + 8;
+        }
+        data = result;
 
         switch (chunkType - 0x1B009)
         {
         case 1:
         {
-            u32 i = 0;
+            i = 0;
             u32 count = chunkSize / 0x44;
             while (i < count)
             {
@@ -558,13 +566,9 @@ GLSkinMesh* glx_MakeSkinMesh(nlChunk* outerChunk, glModel* models)
         }
         case 2:
         {
-            SkinMeshBoneMapNode* node = (SkinMeshBoneMapNode*)nlMalloc(sizeof(SkinMeshBoneMapNode), 8, false);
-            if (node != NULL)
-            {
-                new (&node->boneMap) nlAVLTree<unsigned long, unsigned long, DefaultKeyCompare<unsigned long> >();
-            }
+            SkinMeshBoneMapNode* node = new (nlMalloc(sizeof(SkinMeshBoneMapNode), 8, false)) SkinMeshBoneMapNode;
 
-            u32 i = 0;
+            i = 0;
             u32 count = chunkSize >> 3;
             node->m_next = NULL;
             AVLTreeNode** root = (AVLTreeNode**)&node->boneMap.m_Root;
@@ -607,8 +611,6 @@ GLSkinMesh* glx_MakeSkinMesh(nlChunk* outerChunk, glModel* models)
             mesh->AppendStitchingInfo(*(int*)(data + 4), *(int*)(data + 0), (int)chunkSize - 8, data + 8);
             break;
         }
-
-        chunk = (nlChunk*)((u8*)chunk + chunk->m_Size + 8);
     }
 
     mesh->StitchModel();

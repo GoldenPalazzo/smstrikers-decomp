@@ -196,31 +196,6 @@ bool BasicStadium::DoLoad()
 bool BasicStadium::DoInitialize()
 {
     DrawableObject* pObject;
-    char szTemp1[256];
-    char szTemp2[256];
-
-    // int counter; // r28
-    // unsigned char keepLooking; // r29
-    // class DrawableModel * model; // r0
-    // struct glModel * pGlModel; // r30
-    // struct glModelPacket * pPacket; // r26
-    // class HelperObject * pFieldHelper; // r0
-    // class Config config; // r1+0x3C
-    // char szTemp[256]; // r1+0x248
-    // enum eStadiumID stadiumid; // r28
-    // class BasicString terrain; // r1+0x20
-    // class Config config; // r1+0x30
-    // char szTemp[256]; // r1+0x148
-    // class Config config; // r1+0x24
-    // char szTemp[256]; // r1+0x48
-    // class HelperObject * pPenBoxHelper; // r0
-    // const char * flashString; // r28
-    // class HelperObject * pHelper; // r26
-    // const class DrawableObject * ball; // r28
-    // int i; // r1+0x1C
-    // class DrawableObject * extraBall; // r27
-    // class BasicString name; // r1+0x18
-    // unsigned long hash; // r4
 
     FindDrawableObject(nlStringLowerHash("gameplay/ball"));
     m_pSkyboxObject = FindDrawableObject(uSkyBoxHashID);
@@ -253,36 +228,38 @@ bool BasicStadium::DoInitialize()
     pObject = FindDrawableObject(nlStringLowerHash("gameplay/star"));
     pObject->m_uObjectFlags &= 0xFFFFFFFE;
 
-    int var_r28 = 1;
-    int var_r29 = 1;
-loop_11:
-    if (var_r29 != 0)
+    /**
+     * Offset/Address/Size: 0x3DC | 0x800C3820 | size: 0x2608
+     * TODO: 98.14% match - register allocation shift: pPacket=r30 (target r26),
+     * pGlModel=r27 (target r30), formatStr=r26 (target r27). 397 register diffs,
+     * 6 extra instructions from hash save pattern.
+     */
+    glModel* pGlModel;
+    int counter = 1;
+    u8 keepLooking = 1;
+    while (keepLooking)
     {
         char szTemp1[256];
         char szTemp2[256];
-
-        nlSNPrintf(szTemp1, 0x100, "/InvisiblePoly0%d", var_r28);
+        nlSNPrintf(szTemp1, 0x100, "/InvisiblePoly0%d", counter);
         nlStrNCat<char>(szTemp2, m_szBaseName, szTemp1, 0x100);
-        pObject = FindDrawableObject(nlStringLowerHash(szTemp2)); // temp_r3_13
+        pObject = FindDrawableObject(nlStringLowerHash(szTemp2));
         if (pObject != NULL)
         {
-            DrawableModel* model = pObject->AsDrawableModel(); // temp_ret_3
-            glModel* pGlModel = model->m_pModel;               // temp_r30
-            glModelPacket* pPacket = pGlModel->packets;        // var_r26
-            for (int i = 0; i < pGlModel->numPackets; i++)
+            DrawableModel* model = pObject->AsDrawableModel();
+            pGlModel = model->m_pModel;
+            for (glModelPacket* pPacket = pGlModel->packets; pPacket < pGlModel->packets + pGlModel->numPackets; pPacket++)
             {
                 glSetRasterState(pPacket->state.raster, GLS_DepthWrite, 1);
                 glSetRasterState(pPacket->state.raster, GLS_AlphaTest, 0);
                 glSetRasterState(pPacket->state.raster, GLS_AlphaBlend, 1);
-                pPacket++;
             }
-            var_r28 += 1;
+            counter += 1;
         }
         else
         {
-            var_r29 = 0;
+            keepLooking = 0;
         }
-        goto loop_11;
     }
 
     u32 hash = nlStringLowerHash("gameplay/ball");
@@ -828,9 +805,6 @@ loop_11:
         cField::mfPenaltyBoxY = pPenBoxHelper->m_worldMatrix.f.m42;
     }
 
-    /**
-     * TODO: 96.94% match - stmw r25 vs r26 (one extra callee-saved register, pre-existing)
-     */
     // Camera flash - Pass 1: Count
     m_NumCameraFlashPositions = 0;
     u32* pIterStack = (u32*)nlMalloc(8, 8, false);
@@ -906,9 +880,7 @@ loop_11:
         HelperObject* pHelper = ((AVLTreeEntry<unsigned long, HelperObject*>*)((AVLTreeNode**)pIterStack[0])[pIterStack[1] - 1])->value;
         if (nlStrNICmp<char>(pHelper->m_szName, flashString, nlStrLen<char>(flashString)) == 0)
         {
-            m_CameraFlashPositions[m_NumCameraFlashPositions].f.x = pHelper->m_worldMatrix.f.m41;
-            m_CameraFlashPositions[m_NumCameraFlashPositions].f.y = pHelper->m_worldMatrix.f.m42;
-            m_CameraFlashPositions[m_NumCameraFlashPositions].f.z = pHelper->m_worldMatrix.f.m43;
+            m_CameraFlashPositions[m_NumCameraFlashPositions] = *(nlVector3*)&pHelper->m_worldMatrix.f.m41;
             m_NumCameraFlashPositions++;
         }
         pIterStack[1]--;

@@ -12,6 +12,7 @@
 #include "NL/gl/glModel.h"
 #include "NL/gl/glState.h"
 #include "NL/gl/glUserData.h"
+#include "NL/gl/glTexture.h"
 #include "NL/glx/glxTexture.h"
 #include "Game/Sys/debug.h"
 #include "Game/Drawable/DrawableObj.h"
@@ -1234,20 +1235,19 @@ nlAVLTree<unsigned long, LightObject*, DefaultKeyCompare<unsigned long> >::~nlAV
 
 /**
  * Offset/Address/Size: 0x3DB4 | 0x80198A78 | size: 0x19C
+ * TODO: 99.66% match - r5/r7 vs r6/r0 register allocation for len/slash around nlMalloc arg interleaving
  */
 World::World(const char* szWorldName)
     : m_pWorldAnimManager(NULL)
     , m_Locked(false)
     , m_pModels(NULL)
-    , m_uNumModels((m_animControllerList.m_Head = NULL, 0))
+    , m_uNumModels(0)
 {
-    bool glTextureLoad(unsigned long);
-
     m_WorldNameLength = nlStrLen<char>(szWorldName);
     nlStrNCpy<char>(m_WorldNamePrefix, szWorldName, 0x40);
 
-    char slash = '/';
     int len = m_WorldNameLength;
+    char slash = '/';
     m_WorldNameLength = len + 1;
     m_WorldNamePrefix[len] = slash;
 

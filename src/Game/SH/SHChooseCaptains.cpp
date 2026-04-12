@@ -253,6 +253,7 @@ void ChooseCaptainsSceneV2::SceneCreated()
  */
 void ChooseCaptainsSceneV2::ChangeSceneType(ChooseCaptainsSceneV2::SceneType sceneType)
 {
+    FORCE_DONT_INLINE;
     mSceneType = sceneType;
     switch (mSceneType)
     {
@@ -423,7 +424,6 @@ void ChooseCaptainsSceneV2::ResetForCHOOSESIDES()
 
 /**
  * Offset/Address/Size: 0x560 | 0x800D6FA8 | size: 0x3D0
- * TODO: 99.59% match - single extra unreachable branch from -inline deferred vs -inline auto
  */
 void ChooseCaptainsSceneV2::Update(float fDeltaT)
 {
@@ -954,3 +954,5 @@ void ChooseCaptainsSceneV2::CreateTicker()
 
     mTicker = ticker;
 }
+
+#pragma inline_depth(8)

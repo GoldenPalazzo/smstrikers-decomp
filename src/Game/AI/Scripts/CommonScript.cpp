@@ -228,7 +228,7 @@ SaveConfidence::~SaveConfidence()
 
 /**
  * Offset/Address/Size: 0xF1B0 | 0x80079380 | size: 0x7D4
- * TODO: 67.3% match - blocked by -inline deferred (Lookup/AddToCache inlined in target)
+ * TODO: blocked by -inline deferred (Lookup/AddToCache inlined in target)
  */
 FuzzyVariant Fuzzy::GetStrategicBallCarrier(cTeam* TheTeam)
 {
@@ -260,7 +260,7 @@ FuzzyVariant Fuzzy::GetStrategicBallCarrier(cTeam* TheTeam)
             SaveConfidence sc(&confidence);
             if (confidence > score)
                 confidence = score;
-            if (confidence < score && score < 1.0f)
+            if (confidence < score && score < 0.5f)
                 confidence = (float)confidence * ratio;
             if (confidence > bestConfidence)
             {
@@ -277,7 +277,7 @@ FuzzyVariant Fuzzy::GetStrategicBallCarrier(cTeam* TheTeam)
 
 /**
  * Offset/Address/Size: 0xE9DC | 0x80078BAC | size: 0x7D4
- * TODO: 67.3% match - blocked by -inline deferred (Lookup/AddToCache inlined in target)
+ * TODO: blocked by -inline deferred (Lookup/AddToCache inlined in target)
  */
 FuzzyVariant Fuzzy::GetBestBallInterceptor(cTeam* TheTeam)
 {
@@ -309,7 +309,7 @@ FuzzyVariant Fuzzy::GetBestBallInterceptor(cTeam* TheTeam)
             SaveConfidence sc(&confidence);
             if (confidence > score)
                 confidence = score;
-            if (confidence < score && score < 1.0f)
+            if (confidence < score && score < 0.5f)
                 confidence = (float)confidence * ratio;
             if (confidence > bestConfidence)
             {
@@ -359,7 +359,7 @@ FuzzyVariant Fuzzy::GetSwapControllerScore(cPlayer* ThePlayer)
             }
             else
             {
-                passWeight = 1.0f;
+                passWeight = 1.5f;
             }
         }
     }
@@ -380,7 +380,7 @@ FuzzyVariant Fuzzy::GetSwapControllerScore(cPlayer* ThePlayer)
 
     if (flag)
     {
-        float dt = 1.0f;
+        float dt = 0.1f;
         float pz = ThePlayer->m_v3Position.f.y + dt * ThePlayer->m_v3Velocity.f.y;
         float tz = passTarget->m_v3Position.f.y + dt * passTarget->m_v3Velocity.f.y;
         float px = ThePlayer->m_v3Position.f.x + dt * ThePlayer->m_v3Velocity.f.x;
@@ -409,7 +409,7 @@ FuzzyVariant Fuzzy::GetSwapControllerScore(cPlayer* ThePlayer)
         if (defResult != 0.0f)
         {
             float inBetween = InBetweenMyNetAnd((cFielder*)ThePlayer, g_pBall);
-            float weight = 0.5f;
+            float weight = 0.175f;
             weightedSum += weight * inBetween;
             totalWeight += weight;
         }
@@ -769,7 +769,7 @@ FuzzyVariant Fuzzy::GetPowerupToUseForWindupDefence(cFielder* TheFielder)
         if (bestConfidence > conf)
             bestConfidence = conf;
 
-        if (bestConfidence < conf && conf < 1.0f)
+        if (bestConfidence < conf && conf < 0.5f)
             bestConfidence = (float)bestConfidence * ratio;
 
         if (bestConfidence > 0.0f)

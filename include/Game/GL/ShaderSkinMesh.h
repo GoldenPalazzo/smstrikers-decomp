@@ -12,7 +12,7 @@ class BoneMapList
 {
 public:
     /* 0x00 */ BoneMapList* m_next;
-    /* 0x04 */ nlAVLTree<unsigned long, SkinMatrix, DefaultKeyCompare<unsigned long> > boneMap;
+    /* 0x04 */ nlAVLTree<unsigned long, unsigned long, DefaultKeyCompare<unsigned long> > boneMap;
 
     ~BoneMapList() { };
 }; // total size: 0x18
@@ -37,8 +37,8 @@ class cPoseAccumulator;
 
 struct GLSkinMeshMatrix
 {
-    unsigned long boneID;  // offset 0x0
-    nlMatrix4 matrix;      // offset 0x4
+    unsigned long boneID; // offset 0x0
+    nlMatrix4 matrix;     // offset 0x4
 }; // total size: 0x44
 
 class GLSkinMesh

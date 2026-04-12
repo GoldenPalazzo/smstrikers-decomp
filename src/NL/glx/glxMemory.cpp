@@ -14,8 +14,6 @@
 
 bool glx_MemoryDump;
 u32 ResourceMemSize;
-u32 FrameMemSizeReal;
-u32 FrameMemSizeVirt;
 u32 p_phys;
 u32 n_phys;
 u32 i_frame;
@@ -24,7 +22,11 @@ u32 g_uResourceMarker = 0;
 
 u32 p_frame[4];
 u32 n_frame[4];
-u32 FrameMemSizes[2] = { 0, 0 };
+
+u32 FrameMemSizeVirt = 0xA;
+u32 FrameMemSizeReal = 0xE;
+u32 FrameMemSizes[2] = { FrameMemSizeReal, FrameMemSizeVirt };
+
 GLXMemoryInfo g_uResourceAlloc[16];
 
 // GLInventory glInventory;

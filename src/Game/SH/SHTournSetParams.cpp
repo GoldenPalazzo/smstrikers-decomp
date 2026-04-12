@@ -68,8 +68,8 @@ TournSetParamsScene::~TournSetParamsScene()
 
 /**
  * Offset/Address/Size: 0x1CD0 | 0x800E16A4 | size: 0x434
- * TODO: 88.56% match - remaining diffs are -inline deferred vs -inline auto artifacts:
- * 4 extra placement new beq instructions, register allocation shifts (r27/r28/r29).
+ * TODO: 90.38% match - remaining diffs are r27/r28/r29 register allocation swap,
+ * MenuItem address folding (+4 base offset), and minor stack layout differences.
  */
 void TournSetParamsScene::BuildSubMenuList(int menuitem, TLComponentInstance* compinstance, bool wraps, int startindex)
 {
@@ -77,18 +77,13 @@ void TournSetParamsScene::BuildSubMenuList(int menuitem, TLComponentInstance* co
     typedef Detail::MemFunImpl<void, void (SlideMenuList::*)()> MemFunImpl_SML;
     typedef BindExp1<void, MemFunImpl_SML, SlideMenuList*> BindExp1_SML;
 
-    SlideMenuList* list = (SlideMenuList*)nlMalloc(sizeof(SlideMenuList), 8, false);
-    if (list != NULL)
-    {
-        new (list) SlideMenuList();
-        list->mComponentInstance = compinstance;
-    }
+    SlideMenuList* list = new (nlMalloc(sizeof(SlideMenuList), 8, false)) SlideMenuList(compinstance);
     mSlideMenuLists[menuitem] = list;
 
     char slidename[64] = { 0 };
 
     int slidenum = 0;
-    while (true)
+    do
     {
         nlSNPrintf(slidename, 64, "Slide%d", slidenum + 1);
         compinstance->SetActiveSlide(slidename);
@@ -123,9 +118,7 @@ void TournSetParamsScene::BuildSubMenuList(int menuitem, TLComponentInstance* co
             Function<SlideMenuItem*> callback(bind);
             menuItem->mCallbacks[1] = callback;
         }
-
-        slidenum++;
-    }
+    } while (++slidenum);
 
     list = mSlideMenuLists[menuitem];
     MenuItem<SlideMenuItem>* menuItem = &list->mMenuItems[list->mCurrentIndex];

@@ -295,6 +295,7 @@ void FEInGameMessengerManager::EnterNewTimeState(FEInGameMessengerManager::eTime
 FEInGameMessengerManager::~FEInGameMessengerManager()
 {
     Function<FnVoidVoid> cb;
+    cb.mTag = EMPTY;
     m_messenger->SetMessageFinishedCB(cb);
 }
 

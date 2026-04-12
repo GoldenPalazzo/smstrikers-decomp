@@ -26,6 +26,11 @@ public:
     {
         mInputLocked = 0;
     }
+    SlideMenuList(TLComponentInstance* comp)
+    {
+        mInputLocked = 0;
+        mComponentInstance = comp;
+    }
     virtual ~SlideMenuList();
     virtual void Update(float dt);
 
