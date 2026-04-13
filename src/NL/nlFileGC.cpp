@@ -409,7 +409,7 @@ void nlServiceFileSystem()
                         }
                         else
                         {
-                            g_CheckForResetCB.mFunctor->Invoke();
+                            g_CheckForResetCB.mFunctor->operator()();
                         }
                     }
                 }
@@ -442,7 +442,7 @@ void nlServiceFileSystem()
                             }
                             else
                             {
-                                g_CheckForResetCB.mFunctor->Invoke();
+                                g_CheckForResetCB.mFunctor->operator()();
                             }
                         }
                     }
@@ -599,7 +599,7 @@ loop_wait:
         }
         else
         {
-            checkForResetCB->mFunctor->Invoke();
+            checkForResetCB->mFunctor->operator()();
         }
     }
 
@@ -671,7 +671,7 @@ loop_check:
                             }
                             else
                             {
-                                checkForResetCB->mFunctor->Invoke();
+                                checkForResetCB->mFunctor->operator()();
                             }
                         }
                     }
@@ -704,7 +704,7 @@ loop_check:
                                 }
                                 else
                                 {
-                                    checkForResetCB->mFunctor->Invoke();
+                                    checkForResetCB->mFunctor->operator()();
                                 }
                             }
                         }
@@ -851,7 +851,7 @@ static unsigned char GameCubeReadAsync(GCFile* pFile, ReadAsyncCallback callback
                                     }
                                     else
                                     {
-                                        g_CheckForResetCB.mFunctor->Invoke();
+                                        g_CheckForResetCB.mFunctor->operator()();
                                     }
                                 }
                             }
@@ -884,7 +884,7 @@ static unsigned char GameCubeReadAsync(GCFile* pFile, ReadAsyncCallback callback
                                         }
                                         else
                                         {
-                                            g_CheckForResetCB.mFunctor->Invoke();
+                                            g_CheckForResetCB.mFunctor->operator()();
                                         }
                                     }
                                 }

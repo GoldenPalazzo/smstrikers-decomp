@@ -14,7 +14,7 @@ enum Tag
 struct FunctorBase
 {
     virtual ~FunctorBase() { };
-    virtual void Invoke() = 0;
+    virtual void operator()() = 0;
     virtual FunctorBase* Clone() const = 0;
 };
 
@@ -81,7 +81,7 @@ public:
     struct FunctorBase
     {
         virtual ~FunctorBase() { };
-        virtual void Invoke() = 0;
+        virtual ReturnType operator()() = 0;
         virtual FunctorBase* Clone() const = 0;
     };
 
@@ -95,7 +95,7 @@ public:
         {
         }
         virtual ~FunctorImpl() { }
-        virtual void Invoke() { }
+        virtual ReturnType operator()() { }
         virtual FunctorBase* Clone() const { return new (nlMalloc(sizeof(FunctorImpl), 8, false)) FunctorImpl(*this); }
     };
 

@@ -53,7 +53,7 @@ bool FESlideMenu::PrevItem()
             }
             else
             {
-                ((FunctorBase*)item->ItemCBFuncs[1].mFunctor)->Invoke();
+                (*((FunctorBase*)item->ItemCBFuncs[1].mFunctor))();
             }
         }
 
@@ -111,7 +111,7 @@ bool FESlideMenu::NextItem()
         }
         else
         {
-            ((FunctorBase*)item->ItemCBFuncs[1].mFunctor)->Invoke();
+            (*((FunctorBase*)item->ItemCBFuncs[1].mFunctor))();
         }
 
         return true;
@@ -140,7 +140,7 @@ void FESlideMenu::SetSlideByIndex(unsigned char index)
         }
         else
         {
-            ((FunctorBase*)item.ItemCBFuncs[ON_HIGHLIGHT].mFunctor)->Invoke();
+            (*((FunctorBase*)item.ItemCBFuncs[ON_HIGHLIGHT].mFunctor))();
         }
     }
 
@@ -179,7 +179,7 @@ bool FESlideMenu::ApplyFunction()
     goto ret1;
 
 functor:
-    ((FunctorBase*)item->ItemCBFuncs[0].mFunctor)->Invoke();
+    (*((FunctorBase*)item->ItemCBFuncs[0].mFunctor))();
 
 ret1:
     return true;
