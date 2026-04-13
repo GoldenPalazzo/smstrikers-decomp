@@ -171,6 +171,11 @@ struct GoaliePosBlock
     nlVector3 v[2];
 };
 
+/**
+ * Offset/Address/Size: 0x3DC | 0x80012C3C | size: 0x51C
+ * TODO: 97.26% match - register allocation diffs in both loops, 2 instruction
+ * size difference from CSE of comparison values in inner loop
+ */
 void CreateCharacters()
 {
     eCharacterClass captain[2];
@@ -239,12 +244,13 @@ void CreateCharacters()
             plrindex = teami;
         }
 
-        g_pCharacters[plrindex * 4] = CreateCharacter(0, plrindex, captain[plrindex], false);
-        g_pCharacters[plrindex * 4]->SetPosition(posBlock.v[plrindex * 4]);
-        ((Audio::cCharacterSFX*)g_pCharacters[plrindex * 4]->m_pCharacterSFX)->mGroup = plrindex * 4;
+        int idx = plrindex * 4;
+        g_pCharacters[idx] = CreateCharacter(0, plrindex, captain[plrindex], false);
+        g_pCharacters[idx]->SetPosition(posBlock.v[idx]);
+        ((Audio::cCharacterSFX*)g_pCharacters[idx]->m_pCharacterSFX)->mGroup = idx;
 
-        g_pTeams[plrindex]->SetPlayer((cPlayer*)g_pCharacters[plrindex * 4], 0);
-        ((cPlayer*)g_pCharacters[plrindex * 4])->m_pTeam = g_pTeams[plrindex];
+        g_pTeams[plrindex]->SetPlayer((cPlayer*)g_pCharacters[idx], 0);
+        ((cPlayer*)g_pCharacters[idx])->m_pTeam = g_pTeams[plrindex];
 
         g_pCharacters[plrindex + 8] = CreateGoalie(goalie[plrindex], false);
         g_pCharacters[plrindex + 8]->SetPosition(goaliePosBlock.v[plrindex]);

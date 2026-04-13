@@ -34,6 +34,7 @@ public:
     bool IsMirrored(NisTarget, const char*, NisWinnerType) const;
     int TargetToIndex(NisTarget, int, NisWinnerType) const;
     void EventHandler(Event*);
+    static void EventHandler(Event* event, void* userData) { ((NisPlayer*)userData)->EventHandler(event); }
     void PlayCharacterDirection();
     void Load(const char*, NisTarget, NisUseStadiumOffset, NisUseFilter, NisWinnerType);
     void GetTargetFilter(NisTarget, NisWinnerType) const;

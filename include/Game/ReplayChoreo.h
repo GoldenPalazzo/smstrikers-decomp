@@ -57,6 +57,7 @@ public:
     static ReplayChoreo& Instance();
     void LoadScript();
     void EventHandler(Event*);
+    static void EventHandler(Event* event, void* userData) { ((ReplayChoreo*)userData)->EventHandler(event); }
     void Reset();
     void CalcAutoReplayScriptName(ReplayType) const;
     void StartAutoReplay(ReplayType);

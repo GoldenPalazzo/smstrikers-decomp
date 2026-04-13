@@ -29,6 +29,7 @@ public:
     void SetState(eCrowdState, bool);
     void Update(float);
     void EventHandler(Event*);
+    static void EventHandler(Event* event, void* userData) { ((CrowdManager*)userData)->EventHandler(event); }
     inline void SetFrameConstant();
 
     /* 0x00 */ eCrowdState m_State;

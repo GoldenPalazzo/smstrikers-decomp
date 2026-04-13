@@ -28,7 +28,7 @@ public:
     virtual void Pop();
     void SetCurrentTextOverlaySlide(OverlaySlideName);
     void Update(float);
-    void FEEventHandler(Event*, void*);
+    static void FEEventHandler(Event*, void*);
     void SetVisible(SceneList, bool, bool);
     void HandleStateTransition(u32, u32);
     void DestroyMessengerManager();

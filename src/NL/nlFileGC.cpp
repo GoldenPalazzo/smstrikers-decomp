@@ -1,6 +1,7 @@
 #include "NL/nlFileGC.h"
 #include "NL/nlFile.h"
 #include "NL/nlMemory.h"
+#include "NL/nlFunction.h"
 #include "FILE_POS.h"
 #include "direct_io.h"
 #include "types.h"
@@ -8,6 +9,11 @@
 
 static AsyncManager* s_pAsyncManager;
 static GCFileSystem fileSystem;
+
+static Function<void(int)> g_HandleDVDMessageCallback;
+static Function<void(int)> g_HandleDVDAllClearCallback;
+static Function<void(int)> g_HandleDVDRetryCB;
+static Function<FnVoidVoid> g_CheckForResetCB;
 
 static AsyncEntry* nlDLRingRemoveStartAsyncEntry(AsyncEntry** head)
 {
@@ -315,42 +321,10 @@ void nlServiceFileSystem()
     extern void glxLoadSaveState(void);
     extern void glxLoadRestoreState(void);
 
-    struct Fn1Base
-    {
-        virtual ~Fn1Base() { }
-        virtual void operator()(s32) = 0;
-    };
-
-    struct Fn0Base
-    {
-        virtual ~Fn0Base() { }
-        virtual void Invoke() = 0;
-    };
-
-    struct Function1Int
-    {
-        s32 mTag;
-        union
-        {
-            void (*mFreeFunction)(s32);
-            Fn1Base* mFunctor;
-        };
-    };
-
-    struct Function0Void
-    {
-        s32 mTag;
-        union
-        {
-            void (*mFreeFunction)(void);
-            Fn0Base* mFunctor;
-        };
-    };
-
-    extern Function1Int g_HandleDVDMessageCallback;
-    extern Function1Int g_HandleDVDAllClearCallback;
-    extern Function1Int g_HandleDVDRetryCB;
-    extern Function0Void g_CheckForResetCB;
+    extern Function<void(int)> g_HandleDVDMessageCallback;
+    extern Function<void(int)> g_HandleDVDAllClearCallback;
+    extern Function<void(int)> g_HandleDVDRetryCB;
+    extern Function<FnVoidVoid> g_CheckForResetCB;
 
     AsyncManager* manager = s_pAsyncManager;
     AsyncEntry* entry = manager->m_activeEntryList;
@@ -601,48 +575,16 @@ unsigned char GameCubeReadBlocking(GCFile* pFile, void* pBuffer, unsigned long u
     extern void glxLoadSaveState(void);
     extern void glxLoadRestoreState(void);
 
-    struct Fn1Base
-    {
-        virtual ~Fn1Base() { }
-        virtual void operator()(s32) = 0;
-    };
-
-    struct Fn0Base
-    {
-        virtual ~Fn0Base() { }
-        virtual void Invoke() = 0;
-    };
-
-    struct Function1Int
-    {
-        s32 mTag;
-        union
-        {
-            void (*mFreeFunction)(s32);
-            Fn1Base* mFunctor;
-        };
-    };
-
-    struct Function0Void
-    {
-        s32 mTag;
-        union
-        {
-            void (*mFreeFunction)(void);
-            Fn0Base* mFunctor;
-        };
-    };
-
-    extern Function1Int g_HandleDVDMessageCallback;
-    extern Function1Int g_HandleDVDAllClearCallback;
-    extern Function1Int g_HandleDVDRetryCB;
-    extern Function0Void g_CheckForResetCB;
+    extern Function<void(int)> g_HandleDVDMessageCallback;
+    extern Function<void(int)> g_HandleDVDAllClearCallback;
+    extern Function<void(int)> g_HandleDVDRetryCB;
+    extern Function<FnVoidVoid> g_CheckForResetCB;
     GameCubeReadAsync(pFile, NULL, pBuffer, uSize, 0);
 
-    Function0Void* checkForResetCB = &g_CheckForResetCB;
-    Function1Int* handleDVDMessageCallback = &g_HandleDVDMessageCallback;
-    Function1Int* handleDVDRetryCB = &g_HandleDVDRetryCB;
-    Function1Int* handleDVDAllClearCallback = &g_HandleDVDAllClearCallback;
+    Function<FnVoidVoid>* checkForResetCB = &g_CheckForResetCB;
+    Function<void(int)>* handleDVDMessageCallback = &g_HandleDVDMessageCallback;
+    Function<void(int)>* handleDVDRetryCB = &g_HandleDVDRetryCB;
+    Function<void(int)>* handleDVDAllClearCallback = &g_HandleDVDAllClearCallback;
 
     goto loop_check;
 
@@ -812,42 +754,10 @@ static unsigned char GameCubeReadAsync(GCFile* pFile, ReadAsyncCallback callback
     extern void glxLoadSaveState(void);
     extern void glxLoadRestoreState(void);
 
-    struct Fn1Base
-    {
-        virtual ~Fn1Base() { }
-        virtual void operator()(s32) = 0;
-    };
-
-    struct Fn0Base
-    {
-        virtual ~Fn0Base() { }
-        virtual void Invoke() = 0;
-    };
-
-    struct Function1Int
-    {
-        s32 mTag;
-        union
-        {
-            void (*mFreeFunction)(s32);
-            Fn1Base* mFunctor;
-        };
-    };
-
-    struct Function0Void
-    {
-        s32 mTag;
-        union
-        {
-            void (*mFreeFunction)(void);
-            Fn0Base* mFunctor;
-        };
-    };
-
-    extern Function1Int g_HandleDVDMessageCallback;
-    extern Function1Int g_HandleDVDAllClearCallback;
-    extern Function1Int g_HandleDVDRetryCB;
-    extern Function0Void g_CheckForResetCB;
+    extern Function<void(int)> g_HandleDVDMessageCallback;
+    extern Function<void(int)> g_HandleDVDAllClearCallback;
+    extern Function<void(int)> g_HandleDVDRetryCB;
+    extern Function<FnVoidVoid> g_CheckForResetCB;
 
     u8 loadedSaveState = 0;
     AsyncManager* manager = s_pAsyncManager;
@@ -1168,6 +1078,30 @@ void TDEVChunkFile::ReadAsync(void* buffer, unsigned long length, unsigned long 
 void GCFile::Read(void* buffer, unsigned int size)
 {
     GameCubeReadBlocking(this, buffer, size);
+}
+
+/**
+ * Offset/Address/Size: 0x1C88 | 0x801D09DC | size: 0xA4
+ */
+void nlRegCheckForResetFromFSCB(const Function<FnVoidVoid>& cb)
+{
+    g_CheckForResetCB = cb;
+}
+
+/**
+ * Offset/Address/Size: 0x1D2C | 0x801D0A80 | size: 0xA4
+ */
+void nlRegHandleDVDAllClearCB(const Function<void(int)>& cb)
+{
+    g_HandleDVDAllClearCallback = cb;
+}
+
+/**
+ * Offset/Address/Size: 0x1DD0 | 0x801D0B24 | size: 0xA4
+ */
+void nlRegHandleDVDMessageCB(const Function<void(int)>& cb)
+{
+    g_HandleDVDMessageCallback = cb;
 }
 
 namespace nlFileGC

@@ -54,7 +54,7 @@ namespace Detail
 class TempStringAllocator
 {
 public:
-    static void* allocate(size_t size)
+    static inline void* allocate(size_t size)
     {
         return nlMalloc(size, 8, true);
     }

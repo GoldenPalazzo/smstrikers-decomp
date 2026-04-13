@@ -3,10 +3,9 @@
 
 #include "Game/Sys/eventman.h"
 
-class Audio
+namespace Audio
 {
-public:
-    void AudioEventHandler(Event*, void*);
-};
+void AudioEventHandler(Event*, void*);
+} // namespace Audio
 
 #endif // _AUDIOEVENTHANDLER_H_

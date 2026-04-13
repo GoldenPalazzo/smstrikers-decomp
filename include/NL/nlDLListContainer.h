@@ -9,7 +9,6 @@ class DLListContainerBase
 {
 public:
     DLListContainerBase()
-        : m_Head(NULL)
     {
     }
     DLListContainerBase(const int initial, const int delta)

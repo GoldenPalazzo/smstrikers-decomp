@@ -3,7 +3,8 @@
 
 #include "Game/Sys/audio.h"
 
-// void FEAudioEventHandler(Event*, void*);
+class Event;
+void FEAudioEventHandler(Event*, void*);
 // void nlQSort<AnimAudioEventLookup>(AnimAudioEventLookup*, int, int (*)(const AnimAudioEventLookup*, const AnimAudioEventLookup*));
 // void nlDefaultQSortComparer<AnimAudioEventLookup>(const AnimAudioEventLookup*, const AnimAudioEventLookup*);
 // void nlBSearch<AnimAudioEventLookup, unsigned long>(const unsigned long&, AnimAudioEventLookup*, int);

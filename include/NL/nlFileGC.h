@@ -2,6 +2,7 @@
 #define _NLFILEGC_H_
 
 #include "NL/nlFile.h"
+#include "NL/nlFunction.h"
 #include "dolphin/dvd.h"
 
 #include "NL/nlArrayAllocator.h"
@@ -63,6 +64,9 @@ static unsigned char GameCubeReadAsync(GCFile*, ReadAsyncCallback, void*, unsign
 void UpdateReadState(AsyncEntry*);
 void nlFlushFileCash();
 nlFile* nlOpen(const char*);
+void nlRegHandleDVDMessageCB(const Function<void(int)>&);
+void nlRegHandleDVDAllClearCB(const Function<void(int)>&);
+void nlRegCheckForResetFromFSCB(const Function<FnVoidVoid>&);
 
 // void nlDLRingRemoveStart<AsyncEntry>(AsyncEntry**);
 // void nlDLRingGetStart<AsyncEntry>(AsyncEntry*);

@@ -41,6 +41,7 @@ public:
     bool DuringEndOfGamePresentation() const;
     void Call(const char*, const char*);
     void EventHandler(Event*);
+    static void EventHandler(Event* event, void* userData) { ((Presentation*)userData)->EventHandler(event); }
     void PlayOverlay(const char*, float, float);
     void StopOverlay();
     void Reset();

@@ -59,6 +59,7 @@ public:
     void PrepareForRecording();
     void SetCurrentTime(float);
     void EventHandler(Event*);
+    static void EventHandler(Event* event, void* userData) { ((ReplayManager*)userData)->EventHandler(event); }
     void RenderSnapshotAt(float);
 
     /* 0x0000 */ RenderSnapshot mSnapshots[3]; // size: 0x5040

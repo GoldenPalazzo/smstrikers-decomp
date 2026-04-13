@@ -10,7 +10,7 @@
 #include "Game/Transitions/ModelTransition.h"
 #include "NL/nlConfig.h"
 #include "NL/nlMain.h"
-#include "NL/nlFunction.h"
+#include "NL/nlFileGC.h"
 #include "NL/nlLocalization.h"
 #include "NL/nlString.h"
 #include "NL/platpad.h"
@@ -21,6 +21,7 @@
 #include "Game/Sys/gcmemcard.h"
 #include "Game/Sys/debug.h"
 #include "Game/Audio/AudioLoader.h"
+#include "Game/Audio/AudioEventHandler.h"
 #include "Game/Audio/CrowdMood.h"
 #include "Game/FE/LidOpenMessage.h"
 #include "Game/FE/FEAudio.h"
@@ -43,6 +44,7 @@
 #include "Game/Loader/LoadingManager.h"
 #include "Game/GL/GLInventory.h"
 #include "Game/Debug/ShapeRender.h"
+#include "Game/Debug/FrameCounter.h"
 #include "Game/GameInfo.h"
 #include "Game/DB/StatsTracker.h"
 #include "Game/DB/SaveLoad.h"
@@ -104,8 +106,25 @@ static bool g_bFranticPausing = false;
 int g_Language = 0;
 static void* g_pTheLoadingManagerTask = nullptr;
 
+FrameCounter g_FrameCounter("Frame", "send");
+
+ComUpdateTask comUpdateTask;
+TransitionTask transitionTask;
+DispatchEventsTask dispatchEventsTask;
+PlatPadUpdateTask platPadUpdateTask;
+FrontEndTask frontEndTask;
+WorldUpdateTask worldUpdateTask;
+GameRenderTask gameRenderTask;
+ParticleUpdateTask particleUpdateTask;
 ClockUpdateTask clockUpdateTask;
+BeginFrameTask beginFrameTask;
 AudioUpdateTask audioUpdateTask;
+EndFrameTask endFrameTask;
+TweakerTask tweakerTask;
+FixedUpdateTask fixedUpdateTask;
+
+TestTask testTask;
+ResetTask resetTask;
 
 static void Initialize();
 
@@ -147,6 +166,7 @@ int main(void)
 
 static void SetupViews()
 {
+    FORCE_DONT_INLINE;
     static eGLView sort_none[] = {
         GLV_Shadow0, GLV_Shadow1, GLV_UnsortedPerspective, GLV_InvisiblePlane, GLV_ElectricFence, GLV_UnsortedOrtho, GLV_ShadowBlend0, GLV_ShadowBlend1, GLV_Debug, GLV_Transitions, GLV_CoPlanar0, GLV_CoPlanar
     };
@@ -199,23 +219,9 @@ static void SetupViews()
     ModeledScreenTransition::s_3DView = GLV_Transitions3D;
 }
 
-extern void nlRegHandleDVDMessageCB(Function<void(int)>&);
-extern void nlRegHandleDVDAllClearCB(Function<void(int)>&);
-extern void nlRegCheckForResetFromFSCB(Function<FnVoidVoid>&);
-extern void FEEventHandler__14OverlayManagerFP5EventPv(Event*, void*);
-extern void FEAudioEventHandler(Event*, void*);
-extern void AudioEventHandler__5AudioFP5EventPv(Event*, void*);
-extern bool g_BGM_Off__11AudioLoader;
-extern void EventHandler__13ReplayManagerFP5EventPv(Event*, void*);
-extern void EventHandler__12ReplayChoreoFP5EventPv(Event*, void*);
-extern void EventHandler__9NisPlayerFP5EventPv(Event*, void*);
-extern void EventHandler__12PresentationFP5EventPv(Event*, void*);
-extern void EventHandler__12CrowdManagerFP5EventPv(Event*, void*);
-
 /**
  * Offset/Address/Size: 0x3DC | 0x80173864 | size: 0x1858
- * TODO: 88.1% match - nlStrICmp inlined in target but called as function;
- *       skinning config section generates extra code; register alloc diffs
+ * TODO: 99.1% match - r30/r31 register swap in BasicString(const char*) constructor inlining
  */
 static void Initialize()
 {
@@ -269,9 +275,9 @@ static void Initialize()
 
     EventManager::Create(128, 64);
     g_pEventManager->AddEventHandler(FrontEnd::FEEventHandler, NULL, 2);
-    g_pEventManager->AddEventHandler(FEEventHandler__14OverlayManagerFP5EventPv, NULL, (u32)-1);
+    g_pEventManager->AddEventHandler(OverlayManager::FEEventHandler, NULL, (u32)-1);
     g_pEventManager->AddEventHandler(FEAudioEventHandler, NULL, 2);
-    g_pEventManager->AddEventHandler(AudioEventHandler__5AudioFP5EventPv, NULL, 0x16);
+    g_pEventManager->AddEventHandler(Audio::AudioEventHandler, NULL, 0x16);
 
     nlTaskManager::Startup(0x10000);
     tDebugPrintManager::Initialize();
@@ -279,7 +285,7 @@ static void Initialize()
 
     AudioLoader::gbDisableAudio = GetConfigBool(Config::Global(), "no_audio", false);
     AudioLoader::gbStream = !GetConfigBool(Config::Global(), "no_stream", false);
-    g_BGM_Off__11AudioLoader = GetConfigBool(Config::Global(), "no_bgm", false);
+    AudioLoader::g_BGM_Off = GetConfigBool(Config::Global(), "no_bgm", false);
     AudioLoader::gbDisableCrowd = GetConfigBool(Config::Global(), "no_crowd", false);
     AudioLoader::gbDisableReverb = GetConfigBool(Config::Global(), "no_reverb", false);
 
@@ -293,11 +299,11 @@ static void Initialize()
         Audio::InitStreaming();
     }
 
-    g_pEventManager->AddEventHandler(EventHandler__13ReplayManagerFP5EventPv, ReplayManager::Instance(), (u32)-1);
-    g_pEventManager->AddEventHandler(EventHandler__12ReplayChoreoFP5EventPv, &ReplayChoreo::Instance(), (u32)-1);
-    g_pEventManager->AddEventHandler(EventHandler__9NisPlayerFP5EventPv, NisPlayer::Instance(), (u32)-1);
-    g_pEventManager->AddEventHandler(EventHandler__12PresentationFP5EventPv, &Presentation::Instance(), (u32)-1);
-    g_pEventManager->AddEventHandler(EventHandler__12CrowdManagerFP5EventPv, &CrowdManager::instance, (u32)-1);
+    g_pEventManager->AddEventHandler(ReplayManager::EventHandler, ReplayManager::Instance(), (u32)-1);
+    g_pEventManager->AddEventHandler(ReplayChoreo::EventHandler, &ReplayChoreo::Instance(), (u32)-1);
+    g_pEventManager->AddEventHandler(NisPlayer::EventHandler, NisPlayer::Instance(), (u32)-1);
+    g_pEventManager->AddEventHandler(Presentation::EventHandler, &Presentation::Instance(), (u32)-1);
+    g_pEventManager->AddEventHandler(CrowdManager::EventHandler, &CrowdManager::instance, (u32)-1);
 
     glResourceMark();
     glInventory.Create();
@@ -347,11 +353,11 @@ static void Initialize()
         }
         g_Europe = true;
     }
-    else if ((s8)diskId[0] == 'G' && diskId[1] == '4' && diskId[2] == 'Q' && diskId[3] == 'J')
+    else if (diskId[0] == 'G' && diskId[1] == '4' && diskId[2] == 'Q' && diskId[3] == 'J')
     {
         g_Language = 5;
     }
-    else if ((s8)diskId[0] == 'G' && diskId[1] == '4' && diskId[2] == 'Q' && diskId[3] == 'E')
+    else if (diskId[0] == 'G' && diskId[1] == '4' && diskId[2] == 'Q' && diskId[3] == 'E')
     {
         g_Language = 0;
     }
@@ -359,16 +365,39 @@ static void Initialize()
     {
         typedef BasicString<char, Detail::TempStringAllocator> TempString;
         TempString langStr = Config::Global().Get<TempString>("Language", TempString("eng"));
-        const char* langCStr = langStr.c_str();
 
-        if (nlStrICmp(langCStr, "eng") == 0) { g_Language = 0; }
-        else if (nlStrICmp(langCStr, "jpn") == 0) { g_Language = 5; }
-        else if (nlStrICmp(langCStr, "deu") == 0) { g_Language = 2; }
-        else if (nlStrICmp(langCStr, "fre") == 0) { g_Language = 1; }
-        else if (nlStrICmp(langCStr, "ita") == 0) { g_Language = 4; }
-        else if (nlStrICmp(langCStr, "spa") == 0) { g_Language = 3; }
-        else if (nlStrICmp(langCStr, "uke") == 0) { g_Language = 6; }
-        else if (nlStrICmp(langCStr, "longest") == 0) { g_Language = 7; }
+        if (nlStrICmp(langStr.c_str(), "eng") == 0)
+        {
+            g_Language = 0;
+        }
+        else if (nlStrICmp(langStr.c_str(), "jpn") == 0)
+        {
+            g_Language = 5;
+        }
+        else if (nlStrICmp(langStr.c_str(), "deu") == 0)
+        {
+            g_Language = 2;
+        }
+        else if (nlStrICmp(langStr.c_str(), "fre") == 0)
+        {
+            g_Language = 1;
+        }
+        else if (nlStrICmp(langStr.c_str(), "ita") == 0)
+        {
+            g_Language = 4;
+        }
+        else if (nlStrICmp(langStr.c_str(), "spa") == 0)
+        {
+            g_Language = 3;
+        }
+        else if (nlStrICmp(langStr.c_str(), "uke") == 0)
+        {
+            g_Language = 6;
+        }
+        else if (nlStrICmp(langStr.c_str(), "longest") == 0)
+        {
+            g_Language = 7;
+        }
     }
 
     LoadMemoryCardIconData();
@@ -420,12 +449,30 @@ static void Initialize()
         extern s32 s_ReplaySkin__14BeginFrameTask;
         TempString skinStr = Config::Global().Get<TempString>("Skinning", TempString("both"));
         TempString replaySkinStr = Config::Global().Get<TempString>("UserReplaySkinning", TempString("blend"));
-        if (skinStr == "both") { s_GameplaySkin__14BeginFrameTask = 2; }
-        else if (skinStr == "rigid") { s_GameplaySkin__14BeginFrameTask = 0; }
-        else { s_GameplaySkin__14BeginFrameTask = 1; }
-        if (replaySkinStr == "both") { s_ReplaySkin__14BeginFrameTask = 2; }
-        else if (replaySkinStr == "rigid") { s_ReplaySkin__14BeginFrameTask = 0; }
-        else { s_ReplaySkin__14BeginFrameTask = 1; }
+        if (skinStr == "both")
+        {
+            s_GameplaySkin__14BeginFrameTask = 2;
+        }
+        else if (skinStr == "rigid")
+        {
+            s_GameplaySkin__14BeginFrameTask = 0;
+        }
+        else
+        {
+            s_GameplaySkin__14BeginFrameTask = 1;
+        }
+        if (replaySkinStr == "both")
+        {
+            s_ReplaySkin__14BeginFrameTask = 2;
+        }
+        else if (replaySkinStr == "rigid")
+        {
+            s_ReplaySkin__14BeginFrameTask = 0;
+        }
+        else
+        {
+            s_ReplaySkin__14BeginFrameTask = 1;
+        }
     }
 }
 

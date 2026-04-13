@@ -1,5 +1,6 @@
 #include "Game/Physics/PhysicsAIBall.h"
 #include "Game/AI/AiUtil.h"
+#include "Game/AI/Fielder.h"
 #include "Game/Ball.h"
 #include "Game/Field.h"
 #include "Game/FixedUpdateTask.h"
@@ -520,9 +521,9 @@ void PhysicsAIBall::PreUpdate()
 
 /**
  * Offset/Address/Size: 0xD84 | 0x801347B8 | size: 0x47C
- * TODO: 93.27% match - register allocation shift: this=r27 vs target r26,
- *       obj=r28 vs r27, info=r29 vs r28, numContacts=r30 vs r29,
- *       pFielder=r26 vs r30. All 100 diffs are register-only.
+ * TODO: 93.27% match - all 100 diffs are register-only (r-type).
+ *       this=r27 vs r26, obj/info/numContacts shifted +1, pFielder=r26 vs r30.
+ *       MWCC register allocator assigns pFielder before parameters, shifting all.
  */
 ContactType PhysicsAIBall::Contact(PhysicsObject* obj, dContact* info, int numContacts)
 {
@@ -533,7 +534,7 @@ ContactType PhysicsAIBall::Contact(PhysicsObject* obj, dContact* info, int numCo
     extern float sfMaxBallBounceSpeed;
 
     int objID;
-    cCharacter* pFielder;
+    cFielder* pFielder;
     nlVector3 ballPosition;
     float radius;
     unsigned char hitWall;
@@ -550,7 +551,7 @@ ContactType PhysicsAIBall::Contact(PhysicsObject* obj, dContact* info, int numCo
     {
         if (gbEnableBallGoalieSweepTest)
         {
-            pFielder = ((PhysicsCharacter*)obj->m_parentObject)->m_pAICharacter;
+            pFielder = (cFielder*)((PhysicsCharacter*)obj->m_parentObject)->m_pAICharacter;
 
             if (pFielder->m_eClassType == 3)
             {
