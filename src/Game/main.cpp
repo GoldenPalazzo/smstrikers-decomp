@@ -106,7 +106,7 @@ static bool g_bFranticPausing = false;
 int g_Language = 0;
 static void* g_pTheLoadingManagerTask = nullptr;
 
-FrameCounter g_FrameCounter("Frame", "send");
+FrameCounter g_FrameCounter("frame", "send");
 
 ComUpdateTask comUpdateTask;
 TransitionTask transitionTask;
@@ -221,7 +221,7 @@ static void SetupViews()
 
 /**
  * Offset/Address/Size: 0x3DC | 0x80173864 | size: 0x1858
- * TODO: 99.1% match - r30/r31 register swap in BasicString(const char*) constructor inlining
+ * TODO: 99.08% match - r30/r31 register swap in 3x inlined BasicString(const char*) constructors and 2x GetConfigBool calls
  */
 static void Initialize()
 {
@@ -363,38 +363,37 @@ static void Initialize()
     }
     else
     {
-        typedef BasicString<char, Detail::TempStringAllocator> TempString;
-        TempString langStr = Config::Global().Get<TempString>("Language", TempString("eng"));
+        BasicString<char, Detail::TempStringAllocator> userlanguage = Config::Global().Get<BasicString<char, Detail::TempStringAllocator> >("Language", BasicString<char, Detail::TempStringAllocator>("eng"));
 
-        if (nlStrICmp(langStr.c_str(), "eng") == 0)
+        if (nlStrICmp(userlanguage.c_str(), "eng") == 0)
         {
             g_Language = 0;
         }
-        else if (nlStrICmp(langStr.c_str(), "jpn") == 0)
+        else if (nlStrICmp(userlanguage.c_str(), "jpn") == 0)
         {
             g_Language = 5;
         }
-        else if (nlStrICmp(langStr.c_str(), "deu") == 0)
+        else if (nlStrICmp(userlanguage.c_str(), "deu") == 0)
         {
             g_Language = 2;
         }
-        else if (nlStrICmp(langStr.c_str(), "fre") == 0)
+        else if (nlStrICmp(userlanguage.c_str(), "fre") == 0)
         {
             g_Language = 1;
         }
-        else if (nlStrICmp(langStr.c_str(), "ita") == 0)
+        else if (nlStrICmp(userlanguage.c_str(), "ita") == 0)
         {
             g_Language = 4;
         }
-        else if (nlStrICmp(langStr.c_str(), "spa") == 0)
+        else if (nlStrICmp(userlanguage.c_str(), "spa") == 0)
         {
             g_Language = 3;
         }
-        else if (nlStrICmp(langStr.c_str(), "uke") == 0)
+        else if (nlStrICmp(userlanguage.c_str(), "uke") == 0)
         {
             g_Language = 6;
         }
-        else if (nlStrICmp(langStr.c_str(), "longest") == 0)
+        else if (nlStrICmp(userlanguage.c_str(), "longest") == 0)
         {
             g_Language = 7;
         }
@@ -443,41 +442,36 @@ static void Initialize()
     FlareHandler::instance.Initialize();
     glAppStartup();
 
+    BasicString<char, Detail::TempStringAllocator> skinString = Config::Global().Get<BasicString<char, Detail::TempStringAllocator> >("Skinning", BasicString<char, Detail::TempStringAllocator>("both"));
+    BasicString<char, Detail::TempStringAllocator> replaySkin = Config::Global().Get<BasicString<char, Detail::TempStringAllocator> >("UserReplaySkinning", BasicString<char, Detail::TempStringAllocator>("blend"));
+    if (skinString == "both")
     {
-        typedef BasicString<char, Detail::TempStringAllocator> TempString;
-        extern s32 s_GameplaySkin__14BeginFrameTask;
-        extern s32 s_ReplaySkin__14BeginFrameTask;
-        TempString skinStr = Config::Global().Get<TempString>("Skinning", TempString("both"));
-        TempString replaySkinStr = Config::Global().Get<TempString>("UserReplaySkinning", TempString("blend"));
-        if (skinStr == "both")
-        {
-            s_GameplaySkin__14BeginFrameTask = 2;
-        }
-        else if (skinStr == "rigid")
-        {
-            s_GameplaySkin__14BeginFrameTask = 0;
-        }
-        else
-        {
-            s_GameplaySkin__14BeginFrameTask = 1;
-        }
-        if (replaySkinStr == "both")
-        {
-            s_ReplaySkin__14BeginFrameTask = 2;
-        }
-        else if (replaySkinStr == "rigid")
-        {
-            s_ReplaySkin__14BeginFrameTask = 0;
-        }
-        else
-        {
-            s_ReplaySkin__14BeginFrameTask = 1;
-        }
+        BeginFrameTask::s_GameplaySkin = eModelSkin_Both;
+    }
+    else if (skinString == "rigid")
+    {
+        BeginFrameTask::s_GameplaySkin = eModelSkin_Rigid;
+    }
+    else
+    {
+        BeginFrameTask::s_GameplaySkin = eModelSkin_Blend;
+    }
+    if (replaySkin == "both")
+    {
+        BeginFrameTask::s_ReplaySkin = eModelSkin_Both;
+    }
+    else if (replaySkin == "rigid")
+    {
+        BeginFrameTask::s_ReplaySkin = eModelSkin_Rigid;
+    }
+    else
+    {
+        BeginFrameTask::s_ReplaySkin = eModelSkin_Blend;
     }
 }
 
 int GetRegion()
 {
-    static const int g_Region = 1;
+    static const int g_Region = 0;
     return (int)&g_Region;
 }

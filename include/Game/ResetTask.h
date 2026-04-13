@@ -25,7 +25,7 @@ public:
     static bool s_resetPaused;
     static bool s_checkCardRemoved;
 
-    void FSCheckForReset();
+    void FSCheckForReset() { Run(1.0f / 60.0f); };
 };
 
 #endif // _RESETTASK_H_

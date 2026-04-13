@@ -1294,7 +1294,7 @@ config.libs = [
             Object(NonMatching, "NL/nlFileGC.cpp"),
             Object(NonMatching, "NL/nlFont.cpp"),
             Object(NonMatching, "NL/nlLocalization.cpp"),
-            Object(NonMatching, "NL/nlMain.cpp"),
+            Object(Matching, "NL/nlMain.cpp", extra_cflags=["-inline deferred"]),
             Object(NonMatching, "NL/nlMath.cpp"),
             Object(NonMatching, "NL/MemAlloc.cpp"),
             Object(NonMatching, "NL/nlMemory.cpp"),

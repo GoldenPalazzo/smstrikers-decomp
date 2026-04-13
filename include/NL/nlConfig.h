@@ -27,6 +27,13 @@ public:
     struct TagValuePair
     {
         TagValuePair();
+
+        template <typename T>
+        T Get() const
+        {
+            FORCE_DONT_INLINE;
+        }
+
         /* 0x00 */ const char* tag;
         /* 0x04 */ Type type;
         /* 0x08 */ Value value;
@@ -177,6 +184,41 @@ struct SetTagValuePair : public Config::Parser
 //     Detail::TempStringAllocator>&) const; BasicString<char,
 //     Detail::TempStringAllocator>::AppendInPlace<Detail::TempStringAllocator>(const BasicString<char, Detail::TempStringAllocator>&);
 // };
+
+template <>
+inline BasicString<char, Detail::TempStringAllocator> Config::TagValuePair::Get<BasicString<char, Detail::TempStringAllocator> >() const
+{
+    if (type == _BOOL)
+    {
+        return LexicalCast<BasicString<char, Detail::TempStringAllocator>, bool>(value.b);
+    }
+    else if (type == _INT)
+    {
+        return LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(value.i);
+    }
+    else if (type == _FLOAT)
+    {
+        return LexicalCast<BasicString<char, Detail::TempStringAllocator>, float>(value.f);
+    }
+    else if (type == _STRING)
+    {
+        return LexicalCast<BasicString<char, Detail::TempStringAllocator>, const char*>(value.s);
+    }
+    return BasicString<char, Detail::TempStringAllocator>();
+}
+
+template <>
+inline BasicString<char, Detail::TempStringAllocator> Config::Get<BasicString<char, Detail::TempStringAllocator> >(
+    const char* key, BasicString<char, Detail::TempStringAllocator> defaultValue)
+{
+    TagValuePair& tvp = FindTvp(key);
+    if (tvp.tag == NULL)
+    {
+        Set(key, defaultValue);
+        return defaultValue;
+    }
+    return tvp.Get<BasicString<char, Detail::TempStringAllocator> >();
+}
 
 inline float GetConfigFloat(Config& cfg, const char* key, float defaultValue)
 {

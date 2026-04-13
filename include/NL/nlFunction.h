@@ -95,7 +95,7 @@ public:
         {
         }
         virtual ~FunctorImpl() { }
-        virtual ReturnType operator()() { }
+        virtual ReturnType operator()() { FORCE_DONT_INLINE; }
         virtual FunctorBase* Clone() const { return new (nlMalloc(sizeof(FunctorImpl), 8, false)) FunctorImpl(*this); }
     };
 
