@@ -11,6 +11,8 @@
 #include "Game/Ball.h"
 #include "Game/Powerups.h"
 
+class cFielder;
+
 extern CollisionSpace* g_CollisionSpace;
 
 /**
@@ -36,51 +38,43 @@ void PhysicsNPC::SetCallbackFunction(CallbackFn cb)
 
 /**
  * Offset/Address/Size: 0xC0 | 0x8013B578 | size: 0x378
- * TODO: 99.05% match - r4/r28 register scheduling for aiChar, f2/f1 float load order in callbacks
  */
-ContactType PhysicsNPC::Contact(PhysicsObject* other, dContact* contact, int what)
+ContactType PhysicsNPC::Contact(PhysicsObject* obj, dContact* info, int what)
 {
-    nlVector3 position;
-    GetPosition(&position);
-    cCharacter* aiChar;
+    nlVector3 myPos;
+    GetPosition(&myPos);
+    cFielder* pFielder;
     cBall* ball;
-    int objectType = other->GetObjectType();
-    switch (objectType)
+    switch (obj->GetObjectType())
     {
     case 0x04:
     case 0x0D:
     case 0x0E:
     {
-        PhysicsCharacter* physChar = (PhysicsCharacter*)other->m_parentObject;
-        if (physChar->m_pAICharacter->m_eClassType == FIELDER)
+        if (((PhysicsCharacter*)obj->m_parentObject)->m_pAICharacter->m_eClassType == FIELDER)
         {
-            aiChar = physChar->m_pAICharacter;
-            bool shouldTrigger = true;
+            pFielder = (cFielder*)((PhysicsCharacter*)obj->m_parentObject)->m_pAICharacter;
+            u8 bDoCallback = 1;
             if (mpAINPC->GetSkinAnimatedNPC_Type() == SkinAnimatedNPC_CHAIN_CHOMP)
             {
-                if (!((cPlayer*)aiChar)->IsOnSameTeam((cPlayer*)((ChainChomp*)mpAINPC)->mpTarget))
+                if (!((cPlayer*)pFielder)->IsOnSameTeam((cPlayer*)((ChainChomp*)mpAINPC)->mpTarget))
                 {
-                    shouldTrigger = false;
+                    bDoCallback = 0;
                 }
             }
-            if (shouldTrigger)
+            if (bDoCallback)
             {
                 if (mpTriggerCallbackFunc != NULL)
                 {
-                    f32 px = contact->geom.pos[0];
-                    f32 py = contact->geom.pos[1];
-                    f32 pz = contact->geom.pos[2];
-                    nlVector3 contactPos;
-                    contactPos.f.x = px;
-                    contactPos.f.y = py;
-                    contactPos.f.z = pz;
-                    mpTriggerCallbackFunc(this, other, contactPos);
+                    nlVector3 v3Pos;
+                    nlVec3Set(v3Pos, info->geom.pos[0], info->geom.pos[1], info->geom.pos[2]);
+                    mpTriggerCallbackFunc(this, obj, v3Pos);
                     break;
                 }
             }
             return NO_CONTACT;
         }
-        else if (physChar->m_pAICharacter->m_eClassType == GOALIE)
+        else if (((PhysicsCharacter*)obj->m_parentObject)->m_pAICharacter->m_eClassType == GOALIE)
         {
             if (mpAINPC->GetSkinAnimatedNPC_Type() == SkinAnimatedNPC_BOWSER)
             {
@@ -91,7 +85,7 @@ ContactType PhysicsNPC::Contact(PhysicsObject* other, dContact* contact, int wha
     }
     case 0x0F:
     {
-        ball = ((PhysicsAIBall*)other)->m_pAIBall;
+        ball = ((PhysicsAIBall*)obj)->m_pAIBall;
         ball->m_unk_0xA6 = false;
         ball->mpDamageTarget = NULL;
         if (ball->m_pOwner != NULL)
@@ -104,14 +98,9 @@ ContactType PhysicsNPC::Contact(PhysicsObject* other, dContact* contact, int wha
             {
                 if (mpTriggerCallbackFunc != NULL)
                 {
-                    f32 px = contact->geom.pos[0];
-                    f32 py = contact->geom.pos[1];
-                    f32 pz = contact->geom.pos[2];
-                    nlVector3 contactPos;
-                    contactPos.f.x = px;
-                    contactPos.f.y = py;
-                    contactPos.f.z = pz;
-                    mpTriggerCallbackFunc(this, other, contactPos);
+                    nlVector3 v3Pos;
+                    nlVec3Set(v3Pos, info->geom.pos[0], info->geom.pos[1], info->geom.pos[2]);
+                    mpTriggerCallbackFunc(this, obj, v3Pos);
                 }
                 break;
             }
@@ -123,7 +112,7 @@ ContactType PhysicsNPC::Contact(PhysicsObject* other, dContact* contact, int wha
         else
         {
             bool cannotCollide = false;
-            if (((PhysicsAIBall*)other)->m_pAIBall->m_tShotTimer.m_uPackedTime != 0 && ((PhysicsAIBall*)other)->m_pAIBall->mbCanDamage)
+            if (((PhysicsAIBall*)obj)->m_pAIBall->m_tShotTimer.m_uPackedTime != 0 && ((PhysicsAIBall*)obj)->m_pAIBall->mbCanDamage)
             {
                 cannotCollide = true;
             }
@@ -133,28 +122,23 @@ ContactType PhysicsNPC::Contact(PhysicsObject* other, dContact* contact, int wha
             }
             if (mpTriggerCallbackFunc != NULL)
             {
-                f32 px = contact->geom.pos[0];
-                f32 py = contact->geom.pos[1];
-                f32 pz = contact->geom.pos[2];
-                nlVector3 contactPos;
-                contactPos.f.x = px;
-                contactPos.f.y = py;
-                contactPos.f.z = pz;
-                mpTriggerCallbackFunc(this, other, contactPos);
+                nlVector3 v3Pos;
+                nlVec3Set(v3Pos, info->geom.pos[0], info->geom.pos[1], info->geom.pos[2]);
+                mpTriggerCallbackFunc(this, obj, v3Pos);
             }
-            ((PhysicsBall*)other)->m_bUseMagnusEffect = false;
+            ((PhysicsBall*)obj)->m_bUseMagnusEffect = false;
             FakeBallWorld::InvalidateBallCache();
             return ONE_WAY_CONTACT_OTHER;
         }
     }
     case 0x13:
     {
-        PhysicsShell* shell = (PhysicsShell*)other;
-        if (shell->m_pPowerupObject->mtNoHitTimer.m_uPackedTime != 0)
+        PhysicsShell* pShell = (PhysicsShell*)obj;
+        if (pShell->m_pPowerupObject->mtNoHitTimer.m_uPackedTime != 0)
         {
             if (mpAINPC->GetSkinAnimatedNPC_Type() == SkinAnimatedNPC_BOWSER)
             {
-                if (shell->m_pPowerupObject->m_pThrower == NULL)
+                if (pShell->m_pPowerupObject->m_pThrower == NULL)
                 {
                     return NO_CONTACT;
                 }
@@ -162,25 +146,20 @@ ContactType PhysicsNPC::Contact(PhysicsObject* other, dContact* contact, int wha
         }
         if (mpTriggerCallbackFunc != NULL)
         {
-            f32 px = contact->geom.pos[0];
-            f32 py = contact->geom.pos[1];
-            f32 pz = contact->geom.pos[2];
-            nlVector3 contactPos;
-            contactPos.f.x = px;
-            contactPos.f.y = py;
-            contactPos.f.z = pz;
-            mpTriggerCallbackFunc(this, other, contactPos);
+            nlVector3 v3Pos;
+            nlVec3Set(v3Pos, info->geom.pos[0], info->geom.pos[1], info->geom.pos[2]);
+            mpTriggerCallbackFunc(this, obj, v3Pos);
         }
         break;
     }
     case 0x14:
     {
-        PhysicsBanana* banana = (PhysicsBanana*)other;
-        if (banana->m_pPowerupObject->mtNoHitTimer.m_uPackedTime != 0)
+        PhysicsBanana* pBanana = (PhysicsBanana*)obj;
+        if (pBanana->m_pPowerupObject->mtNoHitTimer.m_uPackedTime != 0)
         {
             if (mpAINPC->GetSkinAnimatedNPC_Type() == SkinAnimatedNPC_BOWSER)
             {
-                if (banana->m_pPowerupObject->m_pThrower == NULL)
+                if (pBanana->m_pPowerupObject->m_pThrower == NULL)
                 {
                     return NO_CONTACT;
                 }
@@ -188,14 +167,9 @@ ContactType PhysicsNPC::Contact(PhysicsObject* other, dContact* contact, int wha
         }
         if (mpTriggerCallbackFunc != NULL)
         {
-            f32 px = contact->geom.pos[0];
-            f32 py = contact->geom.pos[1];
-            f32 pz = contact->geom.pos[2];
-            nlVector3 contactPos;
-            contactPos.f.x = px;
-            contactPos.f.y = py;
-            contactPos.f.z = pz;
-            mpTriggerCallbackFunc(this, other, contactPos);
+            nlVector3 v3Pos;
+            nlVec3Set(v3Pos, info->geom.pos[0], info->geom.pos[1], info->geom.pos[2]);
+            mpTriggerCallbackFunc(this, obj, v3Pos);
         }
         break;
     }

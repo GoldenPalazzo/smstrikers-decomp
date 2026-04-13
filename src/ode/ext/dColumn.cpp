@@ -1,8 +1,8 @@
 #include "ode/ext/dColumn.h"
 #include "math.h"
 
-s32 dColumnClassUser = -1;
 u8 lengthwiseAxis = 0x2;
+s32 dColumnClassUser = -1;
 
 /**
  * Offset/Address/Size: 0x5A4 | 0x8021D3D0 | size: 0x34
@@ -33,22 +33,23 @@ void dColumnAABB(dxGeom* geomID, float* aabb)
 
 /**
  * Offset/Address/Size: 0x28C | 0x8021D0B8 | size: 0x288
- * TODO: 99.29% match - ax1/ax2 register r5/r6 swapped (r6 for ax1_shifted, r5 for ax2_shifted)
+ * TODO: 99.94% match - f1/f2 register swap at fsubs/lfs for temp_f4_3 computation
  */
 int dCollideColumnColumn(dxGeom* o1, dxGeom* o2, int flags, dContactGeom* contact, int skip)
 {
     f32 radius1;
     f32 radius2;
-    const dReal* pos1;
-    const dReal* pos2;
+    const float* pos1;
+    const float* pos2;
     u8 ax1;
     u8 ax2;
+    f32 distSquared;
     f32 x;
 
     radius1 = *(f32*)dGeomGetClassData(o1);
     radius2 = *(f32*)dGeomGetClassData(o2);
-    pos1 = dGeomGetPosition(o1);
-    pos2 = dGeomGetPosition(o2);
+    pos1 = (const float*)dGeomGetPosition(o1);
+    pos2 = (const float*)dGeomGetPosition(o2);
     ax1 = 0xFF;
     ax2 = 0xFF;
     if (lengthwiseAxis == 0)
@@ -67,87 +68,76 @@ int dCollideColumnColumn(dxGeom* o1, dxGeom* o2, int flags, dContactGeom* contac
         ax2 = 1;
     }
 
-    {
-        f32 sumR = radius1 + radius2;
-        f32 val_a = pos1[ax1];
-        f32 val_b = pos2[ax1];
-        f32 val_c = pos1[ax2];
-        f32 val_d = pos2[ax2];
-        f32 dx = val_a - val_b;
-        f32 dy = val_c - val_d;
-        f32 dx2 = dx * dx;
-        f32 dy2 = dy * dy;
-        f32 dist2 = dx2 + dy2;
+    distSquared = (pos1[ax1] - pos2[ax1]) * (pos1[ax1] - pos2[ax1]) + (pos1[ax2] - pos2[ax2]) * (pos1[ax2] - pos2[ax2]);
 
-        if (dist2 < (sumR * sumR))
+    if (distSquared < ((radius1 + radius2) * (radius1 + radius2)))
+    {
+        if (distSquared > 0.0f)
         {
-            if (dist2 > 0.0f)
+            f64 temp_f1_2 = __frsqrte(distSquared);
+            f64 temp_f1_3 = 0.5 * temp_f1_2 * -(((f64)distSquared * (temp_f1_2 * temp_f1_2)) - 3.0);
+            f64 temp_f1_4 = 0.5 * temp_f1_3 * -(((f64)distSquared * (temp_f1_3 * temp_f1_3)) - 3.0);
+            x = (f32)((f64)distSquared * (0.5 * temp_f1_4 * -(((f64)distSquared * (temp_f1_4 * temp_f1_4)) - 3.0)));
+        }
+        else if (distSquared < 0.0)
+        {
+            x = *(f32*)&__float_nan;
+        }
+        else
+        {
+            f32 sp8 = distSquared;
+            s32 temp_r4 = *(s32*)&sp8 & 0x7F800000;
+            s32 var_r0;
+            switch (temp_r4)
             {
-                f64 temp_f1_2 = __frsqrte(dist2);
-                f64 temp_f1_3 = 0.5 * temp_f1_2 * -(((f64)dist2 * (temp_f1_2 * temp_f1_2)) - 3.0);
-                f64 temp_f1_4 = 0.5 * temp_f1_3 * -(((f64)dist2 * (temp_f1_3 * temp_f1_3)) - 3.0);
-                x = (f32)((f64)dist2 * (0.5 * temp_f1_4 * -(((f64)dist2 * (temp_f1_4 * temp_f1_4)) - 3.0)));
+            case 0x7F800000:
+                if (*(s32*)&sp8 & 0x7FFFFF)
+                {
+                    var_r0 = 1;
+                }
+                else
+                {
+                    var_r0 = 2;
+                }
+                break;
+            case 0x0:
+                if (*(s32*)&sp8 & 0x7FFFFF)
+                {
+                    var_r0 = 5;
+                }
+                else
+                {
+                    var_r0 = 3;
+                }
+                break;
+            default:
+                var_r0 = 4;
+                break;
             }
-            else if (dist2 < 0.0)
+            if (var_r0 == 1)
             {
                 x = *(f32*)&__float_nan;
             }
             else
             {
-                f32 sp8 = dist2;
-                s32 temp_r4 = *(s32*)&sp8 & 0x7F800000;
-                s32 var_r0;
-                switch (temp_r4)
-                {
-                case 0x7F800000:
-                    if (*(s32*)&sp8 & 0x7FFFFF)
-                    {
-                        var_r0 = 1;
-                    }
-                    else
-                    {
-                        var_r0 = 2;
-                    }
-                    break;
-                case 0x0:
-                    if (*(s32*)&sp8 & 0x7FFFFF)
-                    {
-                        var_r0 = 5;
-                    }
-                    else
-                    {
-                        var_r0 = 3;
-                    }
-                    break;
-                default:
-                    var_r0 = 4;
-                    break;
-                }
-                if (var_r0 == 1)
-                {
-                    x = *(f32*)&__float_nan;
-                }
-                else
-                {
-                    x = dist2;
-                }
+                x = distSquared;
             }
-
-            contact->normal[ax1] = (pos1[ax1] - pos2[ax1]) / x;
-            {
-                f32 temp_f4_3 = ((x + radius2) - radius1) * 0.5f;
-                contact->normal[ax2] = (pos1[ax2] - pos2[ax2]) / x;
-
-                contact->normal[lengthwiseAxis] = 0.0f;
-                contact->pos[ax1] = (contact->normal[ax1] * temp_f4_3) + pos2[ax1];
-                contact->pos[ax2] = (contact->normal[ax2] * temp_f4_3) + pos2[ax2];
-                contact->pos[lengthwiseAxis] = 0.0f;
-            }
-            contact->depth = radius2 - (x - radius2);
-            contact->g1 = o1;
-            contact->g2 = o2;
-            return 1;
         }
+
+        contact->normal[ax1] = (pos1[ax1] - pos2[ax1]) / x;
+        {
+            f32 temp_f4_3 = ((x + radius2) - radius1) * 0.5f;
+            contact->normal[ax2] = (pos1[ax2] - pos2[ax2]) / x;
+
+            contact->normal[lengthwiseAxis] = 0.0f;
+            contact->pos[ax1] = (contact->normal[ax1] * temp_f4_3) + pos2[ax1];
+            contact->pos[ax2] = (contact->normal[ax2] * temp_f4_3) + pos2[ax2];
+            contact->pos[lengthwiseAxis] = 0.0f;
+        }
+        contact->depth = radius2 - (x - radius2);
+        contact->g1 = o1;
+        contact->g2 = o2;
+        return 1;
     }
 
     return 0;

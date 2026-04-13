@@ -260,8 +260,6 @@ void CrossFaderScene::SceneCreated()
 
 /**
  * Offset/Address/Size: 0x0 | 0x800BBF04 | size: 0x510
- * TODO: 97.76% match - ForceApplySettings call eliminated by compiler in scratch env
- * (body in separate TU UserOptions.cpp, works correctly in actual build)
  */
 void CrossFaderScene::Update(float fDeltaT)
 {
@@ -312,6 +310,9 @@ void CrossFaderScene::Update(float fDeltaT)
         {
             switch (mCurrentImage)
             {
+            case 2:
+                nlSingleton<GameInfoManager>::s_pInstance->mUserInfo.mAudioOptions.ForceApplySettings(true);
+                break;
             case 0:
             {
                 AudioLoader::LoadNintendoDialogueGroup(true);
@@ -341,9 +342,6 @@ void CrossFaderScene::Update(float fDeltaT)
                 FEAudio::PlayAnimAudioEvent(sound, false);
                 break;
             }
-            case 2:
-                nlSingleton<GameInfoManager>::s_pInstance->mUserInfo.mAudioOptions.ForceApplySettings(true);
-                break;
             }
             triggeraudioload = false;
         }
@@ -408,8 +406,9 @@ void CrossFaderScene::Update(float fDeltaT)
         mCurrentImageInstance->SetAssetColour(col);
         if (mAlpha >= 255.0f)
         {
-            mFadeToBlackTimer += fDeltaT;
-            if (mFadeToBlackTimer >= 0.2f)
+            f32 timer = mFadeToBlackTimer + fDeltaT;
+            mFadeToBlackTimer = timer;
+            if (timer >= 0.2f)
             {
                 nlSingleton<GameSceneManager>::s_pInstance->PopEntireStack();
                 nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_INTRO_MOVIE, SCREEN_NOTHING, false);

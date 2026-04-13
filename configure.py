@@ -910,7 +910,7 @@ config.libs = [
             Object(Matching, "Game/PhysicsPlane.cpp"),
             Object(Matching, "Game/PhysicsRoundedCorner.cpp", extra_cflags=["-inline deferred"]),
             Object(Matching, "Game/PhysicsWall.cpp", extra_cflags=["-inline deferred"]),
-            Object(NonMatching, "Game/PhysicsNPC.cpp", extra_cflags=["-inline deferred"]),
+            Object(Equivalent, "Game/PhysicsNPC.cpp", extra_cflags=["-inline deferred"]),
             Object(Matching, "Game/PhysicsObject.cpp", extra_cflags=["-inline noauto, deferred"]),
             Object(NonMatching, "Game/PhysicsCompositeObject.cpp"),
             Object(NonMatching, "Game/Physics/PhysicsCharacterBase.cpp", extra_cflags=["-inline deferred"]),

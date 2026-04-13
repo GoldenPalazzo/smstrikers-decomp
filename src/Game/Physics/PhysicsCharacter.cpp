@@ -384,11 +384,14 @@ PhysicsBoneID PhysicsCharacter::ResolvePhysicsBoneIDFromName(const char* name)
  */
 void PhysicsCharacter::PostUpdate()
 {
-    nlVector3 characterPosition;
+    cBall* pBall;
     cFielder* pFldr;
+    const char* teamName;
+    nlVector3 characterPosition;
+    nlVector3 v3BallVel;
+    nlVector3 v3BallSpin;
 
     PhysicsObject::PostUpdate();
-
     GetPosition(&characterPosition);
 
     nlVector3 charPos;
@@ -399,19 +402,19 @@ void PhysicsCharacter::PostUpdate()
 
     if (m_HasCollidedWithBall)
     {
-        cBall* pBall = g_pBall;
+        pBall = g_pBall;
         if (pBall->m_unk_0xA6)
         {
             pFldr = (cFielder*)m_pAICharacter;
             if (pFldr->m_eClassType == FIELDER)
             {
                 cPlayer* prevOwner = pBall->m_pPrevOwner;
-
-                float dy = pBall->m_v3Position.f.y - prevOwner->m_v3Position.f.y;
-                float dx = pBall->m_v3Position.f.x - prevOwner->m_v3Position.f.x;
-                float dz = pBall->m_v3Position.f.z - prevOwner->m_v3Position.f.z;
-
-                u16 angle = (u16)(10430.378f * nlATan2f(dy, dx));
+                float dx, dy, dz;
+                dy = pBall->m_v3Position.f.y - prevOwner->m_v3Position.f.y;
+                dx = pBall->m_v3Position.f.x - prevOwner->m_v3Position.f.x;
+                dz = pBall->m_v3Position.f.z - prevOwner->m_v3Position.f.z;
+                s32 rawAngle = (s32)(10430.378f * nlATan2f(dy, dx));
+                u16 angle = (u16)rawAngle;
 
                 if (!pFldr->IsInvincible())
                 {
@@ -442,7 +445,7 @@ void PhysicsCharacter::PostUpdate()
                         {
                             cTeam* otherTeam = prevOwner2->m_pTeam->GetOtherTeam();
                             eTeamID teamID = nlSingleton<GameInfoManager>::s_pInstance->GetTeam((short)otherTeam->m_nSide);
-                            const char* teamName = GetTeamName(teamID);
+                            teamName = GetTeamName(teamID);
 
                             BasicString<char, Detail::TempStringAllocator> effectName(teamName);
                             effectName.AppendInPlace("_shoot_to_score_catch");
@@ -477,7 +480,7 @@ void PhysicsCharacter::PostUpdate()
                     else
                     {
                         eTeamID teamID = nlSingleton<GameInfoManager>::s_pInstance->GetTeam((short)pFldr->m_pTeam->m_nSide);
-                        const char* teamName = GetTeamName(teamID);
+                        teamName = GetTeamName(teamID);
 
                         BasicString<char, Detail::TempStringAllocator> effectName(teamName);
                         effectName.AppendInPlace("_shoot_to_score_catch");
@@ -489,7 +492,6 @@ void PhysicsCharacter::PostUpdate()
                 pBall->m_unk_0xA6 = false;
                 pBall->mpDamageTarget = NULL;
 
-                nlVector3 v3BallVel;
                 float dot = dy * pBall->m_v3Velocity.f.y + dx * pBall->m_v3Velocity.f.x + dz * pBall->m_v3Velocity.f.z;
 
                 if (dot > 0.0f)
@@ -517,7 +519,6 @@ void PhysicsCharacter::PostUpdate()
                 v3BallVel.f.z += 4.0f + nlRandomf(3.0f, &nlDefaultSeed);
                 v3BallVel.f.y += -4.0f + nlRandomf(8.0f, &nlDefaultSeed);
 
-                nlVector3 v3BallSpin;
                 pBall->m_pPhysicsBall->GetAngularVelocity(&v3BallSpin);
                 pBall->SetVelocity(v3BallVel, SPINTYPE_PARAMETER, &v3BallSpin);
             }

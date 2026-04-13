@@ -7,27 +7,9 @@
 
 /**
  * Offset/Address/Size: 0x0 | 0x801FE13C | size: 0x2AC
+ * TODO: 93.68% match - alignment address formation add folding (both cases)
+ * and copy-loop r3/r4 register swap (-inline deferred scratch limitation).
  */
-
-// bool LoadCharacterPhysicsElements(const char* pFileData, CharacterPhysicsData* pPhysicsData)
-// {
-//     u32 _dataSize;
-//     void* rawdata = nlLoadEntireFile(pFileData, &_dataSize, 0x20, AllocateStart);
-//     if (rawdata == 0)
-//     {
-//         return false;
-//     }
-
-//     nlChunk* pChunk = (nlChunk*)(((u8*)rawdata + 8));
-//     u32 totalChunks = pChunk->m_Size;
-//     for (u32 i = 0; i < totalChunks; i++)
-//     {
-//         pChunk++;
-//     }
-
-//     return true;
-// }
-
 bool LoadCharacterPhysicsElements(const char* pFileData, CharacterPhysicsData* pPhysicsData)
 {
     u8* var_r30;
@@ -40,10 +22,6 @@ bool LoadCharacterPhysicsElements(const char* pFileData, CharacterPhysicsData* p
         return false;
     }
 
-    /**
-     * TODO: 92.40% match - remaining diffs are alignment address formation and
-     * case 0x1D002 copy-loop register allocation (r3/r4/r5).
-     */
     u32 temp_r4 = *((u32*)(rawData + 4));
     var_r30 = rawData + 8;
     temp_r29 = rawData + temp_r4 + 8;
@@ -78,6 +56,7 @@ bool LoadCharacterPhysicsElements(const char* pFileData, CharacterPhysicsData* p
 
         case 0x0001D002:
         {
+            u32 n;
             s32 temp_r3 = temp_r5 & 0x7F000000;
             u8* var_r5;
             if ((((u32)(-temp_r3 | temp_r3)) >> 31) != 0)
@@ -92,20 +71,21 @@ bool LoadCharacterPhysicsElements(const char* pFileData, CharacterPhysicsData* p
                 var_r5 = var_r30 + 8;
             }
 
-            u32 i = 0;
-            u32 temp_r6 = i;
-            while (i < pPhysicsData->physicsElementCount)
+            n = 0;
+            unsigned long i = n;
+            while (n < pPhysicsData->physicsElementCount)
             {
-                *(CharacterPhysicsElement*)((u8*)pPhysicsData->pPhysicsElements + temp_r6) = *(CharacterPhysicsElement*)var_r5;
-                i++;
-                temp_r6 += sizeof(CharacterPhysicsElement);
+                *(CharacterPhysicsElement*)((u8*)pPhysicsData->pPhysicsElements + i) = *(CharacterPhysicsElement*)var_r5;
+                n++;
+                i += sizeof(CharacterPhysicsElement);
                 var_r5 += sizeof(CharacterPhysicsElement);
             }
             break;
         }
         }
 
-        var_r30 += *((u32*)(var_r30 + 4)) + 8;
+        u32 chunkSize = *(u32*)(var_r30 + 4);
+        var_r30 += chunkSize + 8;
     }
 
     delete rawData;

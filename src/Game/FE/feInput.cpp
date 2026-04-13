@@ -144,8 +144,11 @@ bool FEInput::IsPressed(eFEINPUT_PAD pad, int button, bool remap, eFEINPUT_PAD* 
 
 /**
  * Offset/Address/Size: 0x87C | 0x8020F288 | size: 0x36C
- * TODO: 95.2% match - register allocation off by 1 (r23-r26 vs r22-r25),
- *       compiler doesn't hoist g_aFEPadData base into register for outer loop
+ * TODO: 96.5% match - with -inline deferred recursive inlining, MWCC hoists
+ *       g_aFEPadData base into r28 at the first inlining level in the target
+ *       but our build keeps it as a separate offset register, shifting all
+ *       parameter registers by 1 (r22-r25 vs r23-r26). This is a compiler-
+ *       internal strength-reduction decision that cannot be controlled from source.
  */
 bool FEInput::IsAutoPressed(eFEINPUT_PAD pad, int button, bool remap, eFEINPUT_PAD* pOutPad)
 {
@@ -319,33 +322,24 @@ bool FEInput::HasInputLock(BaseSceneHandler* pRequestingSceneHandler) const
 
 /**
  * Offset/Address/Size: 0x494 | 0x8020EEA0 | size: 0x188
- * TODO: 99.4% match - register allocation differences (r29/r31 swapped for pad base vs byte cursor)
  */
 void FEInput::Update(float dt)
 {
-    FEPadData* padData;
-    float* pFloat;
-    char* pByte;
-
     for (int padIndex = 0; padIndex < 4; padIndex++)
     {
-        padData = &g_aFEPadData[padIndex];
-        pByte = (char*)padData;
-        pFloat = (float*)padData;
-
-        for (int buttonMask = 1, buttonIndex = 0; buttonIndex < 12; buttonIndex++, buttonMask <<= 1, pByte++, pFloat++)
+        for (int buttonMask = 1, buttonIndex = 0; buttonIndex < 12; buttonIndex++, buttonMask <<= 1)
         {
-            pByte[0x90] = false;
+            g_aFEPadData[padIndex].bIsPressed[buttonIndex] = false;
 
             if (cPadManager::GetPad(padIndex)->IsPressed(buttonMask, false))
             {
-                if (pFloat[0x60 / 4] != 0.0f)
+                if (g_aFEPadData[padIndex].fButtonTimeSinceLastRepeat[buttonIndex] != 0.0f)
                 {
                     float buttonStateTime = cPadManager::GetPad(padIndex)->GetButtonStateTime(buttonMask, false);
-                    float diff = buttonStateTime - pFloat[0];
+                    float diff = buttonStateTime - g_aFEPadData[padIndex].fButtonInitialDelay[buttonIndex];
                     bool bShouldRepeat = true;
-                    float timeSinceRepeat = pFloat[0x60 / 4];
-                    float repeatRate = pFloat[0x30 / 4];
+                    float timeSinceRepeat = g_aFEPadData[padIndex].fButtonTimeSinceLastRepeat[buttonIndex];
+                    float repeatRate = g_aFEPadData[padIndex].fButtonRepeatRate[buttonIndex];
 
                     if (!(diff > 0.0001f) && !((float)fabs(diff) <= 0.0001f))
                     {
@@ -364,20 +358,20 @@ void FEInput::Update(float dt)
 
                         if (bShouldRepeat2)
                         {
-                            pFloat[0x60 / 4] = buttonStateTime;
-                            pByte[0x90] = true;
+                            g_aFEPadData[padIndex].fButtonTimeSinceLastRepeat[buttonIndex] = buttonStateTime;
+                            g_aFEPadData[padIndex].bIsPressed[buttonIndex] = true;
                         }
                     }
                 }
                 else
                 {
-                    pFloat[0x60 / 4] = cPadManager::GetPad(padIndex)->GetButtonStateTime(buttonMask, false);
-                    pByte[0x90] = true;
+                    g_aFEPadData[padIndex].fButtonTimeSinceLastRepeat[buttonIndex] = cPadManager::GetPad(padIndex)->GetButtonStateTime(buttonMask, false);
+                    g_aFEPadData[padIndex].bIsPressed[buttonIndex] = true;
                 }
             }
             else
             {
-                pFloat[0x60 / 4] = 0.0f;
+                g_aFEPadData[padIndex].fButtonTimeSinceLastRepeat[buttonIndex] = 0.0f;
             }
         }
     }
@@ -385,7 +379,10 @@ void FEInput::Update(float dt)
 
 /**
  * Offset/Address/Size: 0x274 | 0x8020EC80 | size: 0x220
- * TODO: 94.0% match - recursive call inlining causes register allocation differences
+ * TODO: 95.1% match - same issue as IsAutoPressed: with -inline deferred,
+ *       MWCC hoists g_aFEPadData base into r27 at the first inlining level
+ *       in the target but our build uses a separate offset register, shifting
+ *       parameter registers by 2. Compiler-internal optimization decision.
  */
 void FEInput::SetAutoRepeatParams(eFEINPUT_PAD pad, int button, float initialdelay, float repeatrate)
 {

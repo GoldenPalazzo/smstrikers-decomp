@@ -874,9 +874,9 @@ FuzzyVariant Fuzzy::AttackBallOwner(float fConfidence, cDecisionEntity* pEntity)
 
 /**
  * Offset/Address/Size: 0x5C4 | 0x80085C7C | size: 0x14CC
- * TODO: 88.0% match on decomp.me (-inline auto) - all diffs are stack offsets (0x30 byte
- * frame size difference) from -inline deferred vs -inline auto. No instruction/register diffs.
- * Original code has FuzzyVariant bestValue(target) copy which inlines differently with deferred.
+ * TODO: 94.75% match on decomp.me (-inline auto) - remaining diffs from r28 register
+ * allocation difference: target caches FuzzyVariant copy ctor this pointers in r28,
+ * decomp.me recomputes addresses. Caused by -inline deferred vs -inline auto.
  */
 FuzzyVariant Fuzzy::UsePowerupDefensive(float fConfidence, cDecisionEntity* pEntity)
 {
@@ -994,8 +994,7 @@ FuzzyVariant Fuzzy::UsePowerupDefensive(float fConfidence, cDecisionEntity* pEnt
                 }
             }
             {
-                FuzzyVariant windupResult = InGoodWindupPosition(g_pScriptCurrentFielder);
-                float fWindup = FGREATER(windupResult.mData.f, 0.5f);
+                float fWindup = FGREATER(InGoodWindupPosition(g_pScriptCurrentFielder).mData.f, 0.5f);
                 float fWindupFalse = 1.0f - fWindup;
                 float fWindupMin = (fWindup <= fWindupFalse) ? fWindup : fWindupFalse;
                 float fWindupMax = (fWindup >= fWindupFalse) ? fWindup : fWindupFalse;

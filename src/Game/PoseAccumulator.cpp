@@ -216,6 +216,7 @@ void cPoseAccumulator::InitAccumulators()
 
 /**
  * Offset/Address/Size: 0x644 | 0x801EBBE4 | size: 0x3F4
+ * TODO: 99.11% match - pLocalMatrix in r27 vs target r31, strength-reduced counters shifted by 1
  */
 void cPoseAccumulator::BuildNodeMatrices(const nlMatrix4& world)
 {
@@ -224,96 +225,71 @@ void cPoseAccumulator::BuildNodeMatrices(const nlMatrix4& world)
         s32 tmp = m_PrevNodeMatrices.mSize;
         m_PrevNodeMatrices.mSize = m_NodeMatrices.mSize;
         m_NodeMatrices.mSize = tmp;
-
         tmp = m_PrevNodeMatrices.mCapacity;
         m_PrevNodeMatrices.mCapacity = m_NodeMatrices.mCapacity;
         m_NodeMatrices.mCapacity = tmp;
-
         nlMatrix4* tmp_mat = m_PrevNodeMatrices.mData;
         m_PrevNodeMatrices.mData = m_NodeMatrices.mData;
         m_NodeMatrices.mData = tmp_mat;
     }
-
+    nlMatrix4* pLocalMatrix;
     int ParentStack[32];
     int nStackIndex = -1;
-
     for (int i = 0; i < m_BaseSHierarchy->m_nodeCount; i++)
     {
-        nlMatrix4* pLocalMatrix = &m_NodeMatrices.mData[i + 1];
-
-        RotAccum* pRotAccum = &m_rot.mData[i];
-        if (!pRotAccum->bIdentity)
+        pLocalMatrix = &m_NodeMatrices.mData[i + 1];
+        if (!m_rot.mData[i].bIdentity)
         {
-            if (pRotAccum->quatAccumulatedWeight == 0.0f)
-            {
-                nlMakeRotationMatrixZ(*pLocalMatrix, 0.0000958738f * pRotAccum->rotAroundZ);
-            }
+            if (m_rot.mData[i].quatAccumulatedWeight == 0.0f)
+                nlMakeRotationMatrixZ(*pLocalMatrix, 0.0000958738f * m_rot.mData[i].rotAroundZ);
             else
             {
-                if (pRotAccum->rotAroundZAccumulatedWeight != 0.0f)
+                if (m_rot.mData[i].rotAroundZAccumulatedWeight != 0.0f)
                 {
-                    float sin;
-                    float cos;
-                    nlSinCos(&sin, &cos, pRotAccum->rotAroundZ);
-
+                    float sin, cos;
+                    nlSinCos(&sin, &cos, (u16)((u32)m_rot.mData[i].rotAroundZ >> 1));
                     nlQuaternion quatAroundZ;
                     quatAroundZ.f.x = 0.0f;
                     quatAroundZ.f.y = 0.0f;
                     quatAroundZ.f.z = sin;
                     quatAroundZ.f.w = cos;
-
-                    float t = pRotAccum->rotAroundZAccumulatedWeight / (pRotAccum->quatAccumulatedWeight + pRotAccum->rotAroundZAccumulatedWeight);
-                    nlQuatNLerp(pRotAccum->q, pRotAccum->q, quatAroundZ, t);
+                    float t = m_rot.mData[i].rotAroundZAccumulatedWeight / (m_rot.mData[i].rotAroundZAccumulatedWeight + m_rot.mData[i].quatAccumulatedWeight);
+                    nlQuatNLerp(m_rot.mData[i].q, m_rot.mData[i].q, quatAroundZ, t);
                 }
-
-                nlQuatToMatrix(*pLocalMatrix, pRotAccum->q);
+                nlQuatToMatrix(*pLocalMatrix, m_rot.mData[i].q);
             }
         }
         else
-        {
             pLocalMatrix->SetIdentity();
-        }
-
-        TransAccum* pTransAccum = &m_trans.mData[i];
-        if (!pTransAccum->bIdentity)
+        if (!m_trans.mData[i].bIdentity)
         {
-            pLocalMatrix->f.m41 = pTransAccum->t.f.x;
-            pLocalMatrix->f.m42 = pTransAccum->t.f.y;
-            pLocalMatrix->f.m43 = pTransAccum->t.f.z;
+            pLocalMatrix->f.m41 = m_trans.mData[i].t.f.x;
+            pLocalMatrix->f.m42 = m_trans.mData[i].t.f.y;
+            pLocalMatrix->f.m43 = m_trans.mData[i].t.f.z;
         }
-
+        if (i > 0)
+        {
+            int parentIdx = ParentStack[nStackIndex];
+            pLocalMatrix->f.m41 *= m_scale.mData[parentIdx].s.f.x;
+            pLocalMatrix->f.m42 *= m_scale.mData[parentIdx].s.f.y;
+            pLocalMatrix->f.m43 *= m_scale.mData[parentIdx].s.f.z;
+        }
         int nParentIndex = -1;
         if (i > 0)
         {
             nParentIndex = ParentStack[nStackIndex];
-            pLocalMatrix->f.m41 *= m_scale.mData[nParentIndex].s.f.x;
-            pLocalMatrix->f.m42 *= m_scale.mData[nParentIndex].s.f.y;
-            pLocalMatrix->f.m43 *= m_scale.mData[nParentIndex].s.f.z;
-        }
-
-        if (i > 0)
-        {
             nlMultMatrices(m_NodeMatrices.mData[i], *pLocalMatrix, m_NodeMatrices.mData[nParentIndex]);
         }
         else
-        {
             nlMultMatrices(m_NodeMatrices.mData[i], *pLocalMatrix, world);
-        }
-
         int nPushPop = m_BaseSHierarchy->GetPushPop(i);
         nStackIndex += nPushPop;
         if (nPushPop > 0)
-        {
             ParentStack[nStackIndex] = i;
-        }
-
         cBuildNodeMatrixCallbackInfo* pCallback = &m_cb.mData[i];
         if (pCallback->fn)
-        {
             pCallback->fn(pCallback->a, pCallback->b, this, i, nParentIndex);
-        }
     }
-
     for (int i = 0; i < m_BaseSHierarchy->m_nodeCount; i++)
     {
         if (!m_scale.mData[i].bIdentity)
@@ -321,11 +297,9 @@ void cPoseAccumulator::BuildNodeMatrices(const nlMatrix4& world)
             m_NodeMatrices.mData[i].f.m11 *= m_scale.mData[i].s.f.x;
             m_NodeMatrices.mData[i].f.m12 *= m_scale.mData[i].s.f.x;
             m_NodeMatrices.mData[i].f.m13 *= m_scale.mData[i].s.f.x;
-
             m_NodeMatrices.mData[i].f.m21 *= m_scale.mData[i].s.f.y;
             m_NodeMatrices.mData[i].f.m22 *= m_scale.mData[i].s.f.y;
             m_NodeMatrices.mData[i].f.m23 *= m_scale.mData[i].s.f.y;
-
             m_NodeMatrices.mData[i].f.m31 *= m_scale.mData[i].s.f.z;
             m_NodeMatrices.mData[i].f.m32 *= m_scale.mData[i].s.f.z;
             m_NodeMatrices.mData[i].f.m33 *= m_scale.mData[i].s.f.z;

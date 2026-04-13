@@ -737,7 +737,8 @@ void glx_SwitchVideoMode(_GXRenderModeObj* rmode, eVideoMode mode)
     VIFlush();
     VIWaitForRetrace();
 
-    glx_SetVIWidth(glx_VIWidth, 720);
+    glx_rmode.viWidth = glx_VIWidth;
+    glx_rmode.viXOrigin = (720 - glx_VIWidth) / 2;
 
     VIConfigure(&glx_rmode);
     VIFlush();

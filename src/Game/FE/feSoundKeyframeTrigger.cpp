@@ -11,7 +11,7 @@ inline fAnimationKeyframe* GetAnimationKeyframe(fAnimationKeyframe* start, float
     fAnimationKeyframe* it = start;
     do
     {
-        if (t <= it->unkC)
+        if (t <= it->pKeyFrameData.m_fTime)
         {
             return it;
         }
@@ -40,14 +40,14 @@ loop_start:
     if (animnode == NULL)
         goto loop_end;
 
-    if (animnode->unk10 == 0 && animnode->unk14 == 6)
+    if (animnode->m_cast_type == 0 && animnode->m_type == eAnimOpacity)
     {
         fAnimationKeyframe* keyframehead = nlDLRingGetStart((fAnimationKeyframe*)animnode->m_DLRingHead);
         fAnimationKeyframe* testkey = keyframehead;
 
         do
         {
-            if (previoustime <= testkey->unkC)
+            if (previoustime <= testkey->pKeyFrameData.m_fTime)
             {
                 startkey = testkey;
                 goto found_startkey;
@@ -61,22 +61,22 @@ loop_start:
         iter = startkey;
         while (startkey != NULL)
         {
-            if (previoustime > currenttime && currenttime > iter->unkC)
+            if (previoustime > currenttime && currenttime > iter->pKeyFrameData.m_fTime)
             {
                 previoustime = 0.0f;
             }
 
-            if (!(previoustime <= iter->unkC))
+            if (!(previoustime <= iter->pKeyFrameData.m_fTime))
                 break;
-            if (!(currenttime >= iter->unkC))
+            if (!(currenttime >= iter->pKeyFrameData.m_fTime))
                 break;
 
-            if (iter->unk0.f.x >= threshold)
+            if (iter->pKeyFrameData.m_fPoint >= threshold)
             {
                 char* name;
                 TLInstance* instance;
 
-                instance = animnode->m_instance;
+                instance = animnode->m_pTLInstanceTarget;
                 name = instance->m_szName;
                 if (name != NULL)
                 {

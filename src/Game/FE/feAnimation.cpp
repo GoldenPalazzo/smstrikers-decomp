@@ -12,13 +12,13 @@ void FEAnimation::Update(float arg0)
     f32 temp_f0;
     f32 temp_f2;
     f32 var_f31;
-    fAnimationKeyframe* var_r31;
+    fAnimationKeyframe* currentFrame;
     u16 temp_r0;
     fAnimationKeyframe* temp_r9;
     nlVector4 spC;
     static const nlVector4 sZero = { 0.0f, 0.0f, 0.0f, 0.0f };
 
-    temp_r0 = this->unk10;
+    temp_r0 = this->m_cast_type;
     switch (temp_r0)
     {
     case 1:
@@ -26,53 +26,53 @@ void FEAnimation::Update(float arg0)
         return;
 
     case 0:
-        var_r31 = nlDLRingGetStart<fAnimationKeyframe>((fAnimationKeyframe*)this->m_DLRingHead);
-        if (var_r31 != var_r31->m_next)
+        currentFrame = nlDLRingGetStart<fAnimationKeyframe>((fAnimationKeyframe*)this->m_DLRingHead);
+        if (currentFrame != currentFrame->m_next)
         {
-            if (arg0 >= var_r31->unkC)
+            if (arg0 >= currentFrame->pKeyFrameData.m_fTime)
             {
                 goto loop_check;
 
             loop_body:
-                var_r31 = var_r31->m_next;
-                if (nlDLRingIsEnd<fAnimationKeyframe>((fAnimationKeyframe*)this->m_DLRingHead, var_r31) != 0)
+                currentFrame = currentFrame->m_next;
+                if (nlDLRingIsEnd<fAnimationKeyframe>((fAnimationKeyframe*)this->m_DLRingHead, currentFrame) != 0)
                 {
                     goto loop_end;
                 }
 
             loop_check:
-                if (arg0 > var_r31->unkC)
+                if (arg0 > currentFrame->pKeyFrameData.m_fTime)
                 {
                     goto loop_body;
                 }
 
             loop_end:
-                temp_f2 = var_r31->unkC;
+                temp_f2 = currentFrame->pKeyFrameData.m_fTime;
                 if (arg0 == temp_f2)
                 {
-                    var_f31 = var_r31->unk0.f.x;
+                    var_f31 = currentFrame->pKeyFrameData.m_fPoint;
                 }
-                else if (!(arg0 > temp_f2) || (var_r31->unk0.f.y != -1.0f))
+                else if (!(arg0 > temp_f2) || (currentFrame->pKeyFrameData.m_fControl1 != -1.0f))
                 {
-                    temp_r9 = var_r31->m_prev;
-                    temp_f0 = temp_r9->unkC;
+                    temp_r9 = currentFrame->m_prev;
+                    temp_f0 = temp_r9->pKeyFrameData.m_fTime;
                     spC = sZero;
-                    spC.f.x = temp_r9->unk0.f.x;
-                    spC.f.y = temp_r9->unk0.f.y;
-                    spC.f.z = temp_r9->unk0.f.z;
-                    spC.f.w = var_r31->unk0.f.x;
+                    spC.f.x = temp_r9->pKeyFrameData.m_fPoint;
+                    spC.f.y = temp_r9->pKeyFrameData.m_fControl1;
+                    spC.f.z = temp_r9->pKeyFrameData.m_fControl2;
+                    spC.f.w = currentFrame->pKeyFrameData.m_fPoint;
                     var_f31 = nlBezier(&spC.f.x, 3, (arg0 - temp_f0) / (temp_f2 - temp_f0));
                 }
                 else
                 {
-                    var_f31 = var_r31->unk0.f.x;
+                    var_f31 = currentFrame->pKeyFrameData.m_fPoint;
                 }
 
-                if ((var_f31 != -1.0f) && (this->unk14 == 6))
+                if ((var_f31 != -1.0f) && (this->m_type == eAnimOpacity))
                 {
-                    nlColour newColor = m_instance->GetAssetColour();
+                    nlColour newColor = m_pTLInstanceTarget->GetAssetColour();
                     newColor.c[3] = (u8)var_f31;
-                    m_instance->SetAssetColour(newColor);
+                    m_pTLInstanceTarget->SetAssetColour(newColor);
                 }
             }
         }
@@ -82,104 +82,94 @@ void FEAnimation::Update(float arg0)
 
 /**
  * Offset/Address/Size: 0x19C | 0x8020E71C | size: 0x298
- * TODO: 56.44% match - stack frame size and FP register allocation still differ.
+ * TODO: 97.98% match - f29/f31 FPR register swap: compiler puts fCurrentTime in f31 (should be f29) and sentinel/X in f29 (should be f31)
  */
-void FEAnimation::AnimateTargetAtTimeWithVector3(float arg0)
+void FEAnimation::AnimateTargetAtTimeWithVector3(float fCurrentTime)
 {
-    nlVector4 sp28;
-    nlVector4 sp18;
-    nlVector4 sp8;
+    nlVector4 controlPointsX;
+    nlVector4 controlPointsY;
+    nlVector4 controlPointsZ;
     f32 temp_f0;
     f32 temp_f2;
-    f32 temp_f29;
-    f32 var_f29;
     f32 var_f30;
     f32 var_f31;
     f32 var_f3;
-    s32 temp_r0;
-    v3AnimationKeyframe* temp_r3;
-    v3AnimationKeyframe* var_r31;
-    v3AnimationKeyframe* temp_r29;
+    v3AnimationKeyframe* currentFrame;
+    v3AnimationKeyframe* prevFrame;
+    static const nlVector4 sZeroX = { 0.0f, 0.0f, 0.0f, 0.0f };
+    static const nlVector4 sZeroY = { 0.0f, 0.0f, 0.0f, 0.0f };
+    static const nlVector4 sZeroZ = { 0.0f, 0.0f, 0.0f, 0.0f };
 
-    var_f29 = arg0;
-    temp_r3 = nlDLRingGetStart<v3AnimationKeyframe>((v3AnimationKeyframe*)this->m_DLRingHead);
-    temp_f0 = temp_r3->unkC;
-    var_r31 = temp_r3;
-    if (var_f29 < temp_f0)
+    currentFrame = nlDLRingGetStart<v3AnimationKeyframe>((v3AnimationKeyframe*)this->m_DLRingHead);
+    temp_f0 = currentFrame->pKeyFrameDataX.m_fTime;
+    if (fCurrentTime < temp_f0)
     {
-        var_f29 = temp_f0;
+        fCurrentTime = temp_f0;
     }
-loop_4:
-    if ((var_f29 > var_r31->unkC) && ((var_r31->unk4 != 0.0f) || (var_r31->unk8 != 0.0f)))
+
+    var_f31 = -1.0f;
+    while (fCurrentTime > currentFrame->pKeyFrameDataX.m_fTime && (var_f31 != currentFrame->pKeyFrameDataX.m_fControl1 || var_f31 != currentFrame->pKeyFrameDataX.m_fControl2))
     {
-        var_r31 = var_r31->m_next;
-        if (nlDLRingIsEnd<v3AnimationKeyframe>((v3AnimationKeyframe*)this->m_DLRingHead, var_r31) == 0)
+        currentFrame = currentFrame->m_next;
+        if (nlDLRingIsEnd<v3AnimationKeyframe>((v3AnimationKeyframe*)this->m_DLRingHead, currentFrame))
         {
-            goto loop_4;
+            break;
         }
     }
-    temp_f2 = var_r31->unkC;
-    if (var_f29 == temp_f2)
+
+    temp_f2 = currentFrame->pKeyFrameDataX.m_fTime;
+    if (fCurrentTime == temp_f2)
     {
-        var_f31 = var_r31->unk0;
-        var_f30 = var_r31->unk10;
-        var_f3 = var_r31->unk20;
+        var_f31 = currentFrame->pKeyFrameDataX.m_fPoint;
+        var_f30 = currentFrame->pKeyFrameDataY.m_fPoint;
+        var_f3 = currentFrame->pKeyFrameDataZ.m_fPoint;
     }
-    else if (!(var_f29 > temp_f2) || (var_r31->unk4 != 0.0f))
+    else if (!(fCurrentTime > temp_f2) || (currentFrame->pKeyFrameDataX.m_fControl1 != -1.0f))
     {
-        temp_r29 = var_r31->m_prev;
-        temp_f0 = temp_r29->unkC;
+        prevFrame = currentFrame->m_prev;
+        temp_f0 = prevFrame->pKeyFrameDataX.m_fTime;
 
-        sp28.f.x = 0.0f;
-        sp28.f.y = 0.0f;
-        temp_f29 = (var_f29 - temp_f0) / (temp_f2 - temp_f0);
-        sp28.f.z = 0.0f;
-        sp28.f.w = 0.0f;
-        sp28.f.x = temp_r29->unk0;
-        sp28.f.y = temp_r29->unk4;
-        sp28.f.z = temp_r29->unk8;
-        sp28.f.w = var_r31->unk0;
+        controlPointsX = sZeroX;
+        controlPointsX.f.x = prevFrame->pKeyFrameDataX.m_fPoint;
+        controlPointsX.f.y = prevFrame->pKeyFrameDataX.m_fControl1;
+        controlPointsX.f.z = prevFrame->pKeyFrameDataX.m_fControl2;
+        controlPointsX.f.w = currentFrame->pKeyFrameDataX.m_fPoint;
 
-        sp18.f.x = 0.0f;
-        sp18.f.y = 0.0f;
-        sp18.f.z = 0.0f;
-        sp18.f.w = 0.0f;
-        sp18.f.x = temp_r29->unk10;
-        sp18.f.y = temp_r29->unk14;
-        sp18.f.z = temp_r29->unk18;
-        sp18.f.w = var_r31->unk10;
+        controlPointsY = sZeroY;
+        controlPointsY.f.x = prevFrame->pKeyFrameDataY.m_fPoint;
+        controlPointsY.f.y = prevFrame->pKeyFrameDataY.m_fControl1;
+        controlPointsY.f.z = prevFrame->pKeyFrameDataY.m_fControl2;
+        controlPointsY.f.w = currentFrame->pKeyFrameDataY.m_fPoint;
 
-        sp8.f.x = 0.0f;
-        sp8.f.y = 0.0f;
-        sp8.f.z = 0.0f;
-        sp8.f.w = 0.0f;
-        sp8.f.x = temp_r29->unk20;
-        sp8.f.y = temp_r29->unk24;
-        sp8.f.z = temp_r29->unk28;
-        sp8.f.w = var_r31->unk20;
+        controlPointsZ = sZeroZ;
+        controlPointsZ.f.x = prevFrame->pKeyFrameDataZ.m_fPoint;
+        controlPointsZ.f.y = prevFrame->pKeyFrameDataZ.m_fControl1;
+        controlPointsZ.f.z = prevFrame->pKeyFrameDataZ.m_fControl2;
+        controlPointsZ.f.w = currentFrame->pKeyFrameDataZ.m_fPoint;
 
-        var_f31 = nlBezier(&sp28.f.x, 3, temp_f29);
-        var_f30 = nlBezier(&sp18.f.x, 3, temp_f29);
-        var_f3 = nlBezier(&sp8.f.x, 3, temp_f29);
+        fCurrentTime = (fCurrentTime - temp_f0) / (temp_f2 - temp_f0);
+        var_f31 = nlBezier(&controlPointsX.f.x, 3, fCurrentTime);
+        var_f30 = nlBezier(&controlPointsY.f.x, 3, fCurrentTime);
+        var_f3 = nlBezier(&controlPointsZ.f.x, 3, fCurrentTime);
     }
     else
     {
-        var_f31 = var_r31->unk0;
-        var_f30 = var_r31->unk10;
-        var_f3 = var_r31->unk20;
+        var_f31 = currentFrame->pKeyFrameDataX.m_fPoint;
+        var_f30 = currentFrame->pKeyFrameDataY.m_fPoint;
+        var_f3 = currentFrame->pKeyFrameDataZ.m_fPoint;
     }
-    temp_r0 = this->unk14;
-    switch (temp_r0)
+
+    switch (this->m_type)
     {
-    case 1:
-        this->m_instance->SetAssetPosition(var_f31, var_f30, var_f3);
-        return;
-    case 2:
-        this->m_instance->SetAssetRotation(var_f31, var_f30, var_f3);
-        return;
-    case 3:
-        this->m_instance->SetAssetScale(var_f31, var_f30, var_f3);
-        return;
+    case eAnimPosition:
+        m_pTLInstanceTarget->SetAssetPosition(var_f31, var_f30, var_f3);
+        break;
+    case eAnimRotation:
+        m_pTLInstanceTarget->SetAssetRotation(var_f31, var_f30, var_f3);
+        break;
+    case eAnimScale:
+        m_pTLInstanceTarget->SetAssetScale(var_f31, var_f30, var_f3);
+        break;
     }
 }
 

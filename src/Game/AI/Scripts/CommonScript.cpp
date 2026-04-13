@@ -277,7 +277,9 @@ FuzzyVariant Fuzzy::GetStrategicBallCarrier(cTeam* TheTeam)
 
 /**
  * Offset/Address/Size: 0xE9DC | 0x80078BAC | size: 0x7D4
- * TODO: blocked by -inline deferred (Lookup/AddToCache inlined in target)
+ * TODO: 92.39% match - stack layout +4 offset, r30/r31 register swap for hash
+ * vs bestValue ptr, hash computation ordering (funcAddr after GetHash), all
+ * from -inline deferred inlining Lookup/AddToCache/SaveConfidence
  */
 FuzzyVariant Fuzzy::GetBestBallInterceptor(cTeam* TheTeam)
 {
@@ -326,8 +328,8 @@ FuzzyVariant Fuzzy::GetBestBallInterceptor(cTeam* TheTeam)
 
 /**
  * Offset/Address/Size: 0xE40C | 0x800785DC | size: 0x5D0
- * TODO: 87.88% match - blocked by -inline deferred store scheduling:
- * mType/mData stores placed after ExtraData.Reset() bctrl instead of before
+ * TODO: 93.54% match - distance calc register allocation and fabs f0/f1 swap
+ * from -inline deferred scheduling; stack offset diffs for FuzzyVariant temps
  */
 FuzzyVariant Fuzzy::GetSwapControllerScore(cPlayer* ThePlayer)
 {
@@ -345,7 +347,7 @@ FuzzyVariant Fuzzy::GetSwapControllerScore(cPlayer* ThePlayer)
 
     cFielder* passTarget = (cFielder*)g_pBall->GetPassTargetFielder();
 
-    if (ReceivingPass(passTarget) != 0.0f && passTarget != (cFielder*)ThePlayer)
+    if (ReceivingPass(passTarget) && passTarget != (cFielder*)ThePlayer)
     {
         cTeam* targetTeam = passTarget != NULL ? passTarget->m_pTeam : NULL;
         cTeam* playerTeam = ThePlayer != NULL ? ThePlayer->m_pTeam : NULL;
@@ -353,7 +355,7 @@ FuzzyVariant Fuzzy::GetSwapControllerScore(cPlayer* ThePlayer)
         if (playerTeam != targetTeam)
         {
             flag = 1;
-            if (ReceivingVolleyPass((cPlayer*)passTarget) != 0.0f)
+            if (ReceivingVolleyPass((cPlayer*)passTarget))
             {
                 passWeight = 2.0f;
             }
@@ -368,7 +370,7 @@ FuzzyVariant Fuzzy::GetSwapControllerScore(cPlayer* ThePlayer)
     if (team->GetNumAssignedControllers() > 1)
     {
         team = ThePlayer != NULL ? ThePlayer->m_pTeam : NULL;
-        if (BallOwnerT(team) != 0.0f && ThePlayer->m_eClassType == FIELDER)
+        if (BallOwnerT(team) && ThePlayer->m_eClassType == FIELDER)
         {
             Fuzzy::GoodToShoot((cFielder*)ThePlayer);
             float weight = 0.5f;
@@ -406,7 +408,7 @@ FuzzyVariant Fuzzy::GetSwapControllerScore(cPlayer* ThePlayer)
         float defResult = Defensive(team);
         if (defResult > defense)
             defResult = defense;
-        if (defResult != 0.0f)
+        if (defResult)
         {
             float inBetween = InBetweenMyNetAnd((cFielder*)ThePlayer, g_pBall);
             float weight = 0.175f;
@@ -415,7 +417,7 @@ FuzzyVariant Fuzzy::GetSwapControllerScore(cPlayer* ThePlayer)
         }
         team = ThePlayer != NULL ? ThePlayer->m_pTeam : NULL;
         float notBallOwner = 1.0f - BallOwnerT(team);
-        if (notBallOwner != 0.0f)
+        if (notBallOwner)
             ClosingTo(ThePlayer, g_pBall);
     }
 
@@ -737,49 +739,47 @@ FuzzyVariant Fuzzy::GetPowerupToUseForPassReceiveDefence(cFielder*)
 
 /**
  * Offset/Address/Size: 0x1620 | 0x8006B7F0 | size: 0x428
- * TODO: 81.85% match - blocked by -inline deferred store scheduling +
- * tempResult construction order (declared before fvFielder for stack layout)
+ * TODO: 97.06% match - remaining diffs likely from -inline deferred
+ * copy ctor behavior for usePowerup (RVO vs no-RVO stack layout)
  */
 FuzzyVariant Fuzzy::GetPowerupToUseForWindupDefence(cFielder* TheFielder)
 {
     FuzzyVariant bestValue;
-
-    float confidence = 0.0f;
-    float bestConfidence = 0.0f;
-    FuzzyVariant tempResult;
+    float fConfidence = 1.0f;
+    float fBestConfidence = 0.0f;
 
     FuzzyVariant fvFielder((cPlayer*)TheFielder);
     ((Variant*)&fvFielder)->GetHash();
 
     FuzzyVariant fvFielder2((cPlayer*)TheFielder);
 
-    tempResult = Fuzzy::GetPowerupToUseForPassReceiveDefence(TheFielder);
+    FuzzyVariant usePowerup = Fuzzy::GetPowerupToUseForPassReceiveDefence(TheFielder);
 
-    float conf = tempResult.Confidence;
-    float negConf = -conf;
+    float fTrueConfidence = usePowerup.Confidence;
+    float fFalseConfidence = 1.0f - fTrueConfidence;
 
-    float minC = (conf <= negConf) ? conf : negConf;
-    float maxC = (conf >= negConf) ? conf : negConf;
-    float ratio = minC / maxC;
+    float minC = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+    float maxC = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+    float fBranchRatio = minC / maxC;
 
-    if (conf > 0.0f)
+    if (fTrueConfidence > 0.0f)
     {
-        SaveConfidence save(&bestConfidence);
+        SaveConfidence PushDOM(&fConfidence);
 
-        if (bestConfidence > conf)
-            bestConfidence = conf;
+        if (fConfidence > fTrueConfidence)
+            fConfidence = fTrueConfidence;
 
-        if (bestConfidence < conf && conf < 0.5f)
-            bestConfidence = (float)bestConfidence * ratio;
+        if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
+            fConfidence = (float)fConfidence * fBranchRatio;
 
-        if (bestConfidence > 0.0f)
+        if (fConfidence > 0.0f)
         {
-            confidence = bestConfidence;
-            bestValue = tempResult;
+            fBestConfidence = fConfidence;
+            bestValue = usePowerup;
         }
     }
 
-    bestValue.Confidence = confidence;
+    bestValue.Confidence = fBestConfidence;
     return bestValue;
 }
 

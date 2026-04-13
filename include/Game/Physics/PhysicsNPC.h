@@ -12,7 +12,7 @@ public:
     typedef void (*CallbackFn)(PhysicsObject*, PhysicsObject*, const nlVector3&);
 
     PhysicsNPC(float);
-    virtual ~PhysicsNPC() { };
+    // virtual ~PhysicsNPC() { };
     virtual int GetObjectType() const { return 0x1A; };
     virtual bool SetContactInfo(dContact* contact, PhysicsObject* other, bool first);
     virtual ContactType Contact(PhysicsObject*, dContact*, int);
