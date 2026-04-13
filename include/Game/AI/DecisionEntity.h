@@ -1,6 +1,7 @@
 #ifndef _DECISIONENTITY_H_
 #define _DECISIONENTITY_H_
 
+#include "NL/nlList.h"
 #include "Game/AI/Fielder.h"
 #include "Game/AI/FuzzyVariant.h"
 
@@ -16,16 +17,23 @@ enum eDecisionEntity
     NUM_DECISION_ENTITIES = 2,
 };
 
-// void nlListRemoveElement<ScriptAction>(ScriptAction**, ScriptAction*, ScriptAction**);
-// void nlListRemoveStart<ScriptAction>(ScriptAction**, ScriptAction**);
-// void nlListAddEnd<ScriptAction>(ScriptAction**, ScriptAction**, ScriptAction*);
-// void nlListAddStart<ScriptAction>(ScriptAction**, ScriptAction*, ScriptAction**);
-
 class cDecisionEntity
 {
 public:
     cDecisionEntity() { };
-    cDecisionEntity(eDecisionEntity, unsigned long, FuzzyVariant (*)(cDecisionEntity*), FuzzyVariant (*)(cDecisionEntity*));
+    cDecisionEntity(eDecisionEntity type, unsigned long id, FuzzyVariant (*dtf)(cDecisionEntity*), FuzzyVariant (*af)(cDecisionEntity*));
+    cDecisionEntity(const cDecisionEntity& other)
+    {
+        m_type = other.m_type;
+        m_id = other.m_id;
+        m_pDTF = other.m_pDTF;
+        m_pAF = other.m_pAF;
+        m_pLastQueuedAction = other.m_pLastQueuedAction;
+        m_LastSelectedAction = other.m_LastSelectedAction;
+        m_lQueuedActions = other.m_lQueuedActions;
+        m_iNumDTFCalls = other.m_iNumDTFCalls;
+    }
+
     float CallDTF(cFielder*);
     bool DoAbort(cFielder*);
     sDesireParams& GetLastDesireParams();

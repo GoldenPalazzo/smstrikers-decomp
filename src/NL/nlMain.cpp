@@ -50,7 +50,7 @@ u32 nlChecksum32(const void* data, unsigned long size)
  */
 RunningChecksum::RunningChecksum()
 {
-    m_unk_0x00 = -1;
+    m_nChecksum = -1;
 }
 
 /**
@@ -61,14 +61,14 @@ void RunningChecksum::ChecksumInt(unsigned long value)
     u8* sp8 = (u8*)&value;
     u32 temp;
 
-    temp = m_unk_0x00;
-    m_unk_0x00 = (temp >> 8U) ^ crcTable[sp8[0] ^ (u8)m_unk_0x00];
-    temp = m_unk_0x00;
-    m_unk_0x00 = (temp >> 8U) ^ crcTable[sp8[1] ^ (u8)temp];
-    temp = m_unk_0x00;
-    m_unk_0x00 = (temp >> 8U) ^ crcTable[sp8[2] ^ (u8)temp];
-    temp = m_unk_0x00;
-    m_unk_0x00 = (temp >> 8U) ^ crcTable[sp8[3] ^ (u8)temp];
+    temp = m_nChecksum;
+    m_nChecksum = (temp >> 8U) ^ crcTable[sp8[0] ^ (u8)m_nChecksum];
+    temp = m_nChecksum;
+    m_nChecksum = (temp >> 8U) ^ crcTable[sp8[1] ^ (u8)temp];
+    temp = m_nChecksum;
+    m_nChecksum = (temp >> 8U) ^ crcTable[sp8[2] ^ (u8)temp];
+    temp = m_nChecksum;
+    m_nChecksum = (temp >> 8U) ^ crcTable[sp8[3] ^ (u8)temp];
 }
 
 /**
@@ -81,10 +81,10 @@ void RunningChecksum::ChecksumData(const void* pData, unsigned long nDataLen)
 
     while (((u32)pByte & 3) && nDataLen != 0)
     {
-        u32 temp = m_unk_0x00;
+        u32 temp = m_nChecksum;
         nDataLen--;
         u8 b = *pByte++;
-        m_unk_0x00 = (temp >> 8) ^ crcTable[b ^ (u8)temp];
+        m_nChecksum = (temp >> 8) ^ crcTable[b ^ (u8)temp];
     }
 
     p32 = (const unsigned long*)pByte;
@@ -92,22 +92,22 @@ void RunningChecksum::ChecksumData(const void* pData, unsigned long nDataLen)
     {
         u32 nData = (u32)*p32;
         nDataLen -= 4;
-        u32 temp = m_unk_0x00;
+        u32 temp = m_nChecksum;
         p32++;
-        m_unk_0x00 = (temp >> 8) ^ crcTable[((u8*)&nData)[0] ^ (u8)temp];
-        temp = m_unk_0x00;
-        m_unk_0x00 = (temp >> 8) ^ crcTable[((u8*)&nData)[1] ^ (u8)temp];
-        temp = m_unk_0x00;
-        m_unk_0x00 = (temp >> 8) ^ crcTable[((u8*)&nData)[2] ^ (u8)temp];
-        temp = m_unk_0x00;
-        m_unk_0x00 = (temp >> 8) ^ crcTable[((u8*)&nData)[3] ^ (u8)temp];
+        m_nChecksum = (temp >> 8) ^ crcTable[((u8*)&nData)[0] ^ (u8)temp];
+        temp = m_nChecksum;
+        m_nChecksum = (temp >> 8) ^ crcTable[((u8*)&nData)[1] ^ (u8)temp];
+        temp = m_nChecksum;
+        m_nChecksum = (temp >> 8) ^ crcTable[((u8*)&nData)[2] ^ (u8)temp];
+        temp = m_nChecksum;
+        m_nChecksum = (temp >> 8) ^ crcTable[((u8*)&nData)[3] ^ (u8)temp];
     }
     pByte = (const u8*)p32;
 
     for (unsigned long m = nDataLen; m != 0; m--)
     {
-        u32 temp = m_unk_0x00;
+        u32 temp = m_nChecksum;
         u8 b = *pByte++;
-        m_unk_0x00 = (temp >> 8) ^ crcTable[b ^ (u8)temp];
+        m_nChecksum = (temp >> 8) ^ crcTable[b ^ (u8)temp];
     }
 }

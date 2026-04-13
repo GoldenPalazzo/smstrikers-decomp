@@ -26,6 +26,8 @@
 #include "NL/nlSlotPool.h"
 #include "math.h"
 
+static f32 CANT_COLLIDE = *(f32*)__float_max;
+
 namespace Audio
 {
 enum eWorldSFX
@@ -64,10 +66,6 @@ public:
 
 const nlVector3 v3Zero = { 0.0f, 0.0f, 0.0f };
 
-// Constants from .sdata2 for IsBallAwayFromCarrier
-// @4959 = .sdata2:0x80374EF0
-// @4960 = .sdata2:0x80374EF4
-// TODO: Extract actual float values from binary
 static const float fBallAwayFromCarrierMinTime = 0.0f; // @4959
 static const float fBallAwayFromCarrierMaxTime = 1.0f; // @4960
 

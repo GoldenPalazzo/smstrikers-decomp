@@ -670,7 +670,7 @@ EffectsTerrainSpec* parse_terrain_spec(SimpleParser* parser)
     checksum.ChecksumData(pSpec->m_pTerrainIDs, pSpec->m_uNumTerrains * 4);
 
     AVLTreeEntry<unsigned long, EffectsTerrainSpec*>* node = pTerrainSpecMap->m_Root;
-    unsigned long hashID = ~checksum.m_unk_0x00;
+    unsigned long hashID = ~checksum.m_nChecksum;
     unsigned char found;
     EffectsTerrainSpec** foundValue;
 
@@ -728,7 +728,7 @@ EffectsTerrainSpec* parse_terrain_spec(SimpleParser* parser)
 
         checksum2.ChecksumInt(pSpec->m_uNumTerrains);
         checksum2.ChecksumData(pSpec->m_pTerrainIDs, pSpec->m_uNumTerrains * 4);
-        key = ~checksum2.m_unk_0x00;
+        key = ~checksum2.m_nChecksum;
 
         nlAVLTree<unsigned long, EffectsTerrainSpec*, DefaultKeyCompare<unsigned long> >* map = pTerrainSpecMap;
         map->AddAVLNode((AVLTreeNode**)&map->m_Root, &key, &pNewSpec, &existingNode, map->m_NumElements);

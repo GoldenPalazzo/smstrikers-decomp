@@ -179,10 +179,11 @@ void PhysicsLoader::DestroyPhysics()
     g_StaticPhysicsPrimitives.m_Tail = NULL;
 
     nlWalkList(g_NetPhysicsObjects.m_Head, (PhysListBase*)&g_NetPhysicsObjects, &PhysListBase::DeleteEntry);
+    ListEntry<LoadablePhysicsMesh*>* meshEntry = s_PhysicsMeshes.m_lItemList.m_Head;
+
     g_NetPhysicsObjects.m_Head = NULL;
     g_NetPhysicsObjects.m_Tail = NULL;
 
-    ListEntry<LoadablePhysicsMesh*>* meshEntry = s_PhysicsMeshes.m_lItemList.m_Head;
     while (meshEntry != NULL)
     {
         meshEntry->data->Destroy();
@@ -196,7 +197,7 @@ void PhysicsLoader::DestroyPhysics()
 
     while (s_PhysicsMeshes.m_lMemList.m_Head != NULL)
     {
-        ListEntry<char*>* removed = nlListRemoveStart((ListEntry<char*>**)&s_PhysicsMeshes.m_lMemList.m_Head, (ListEntry<char*>**)&s_PhysicsMeshes.m_lMemList.m_Tail);
+        ListEntry<char*>* removed = nlListRemoveStart<ListEntry<char*> >(&s_PhysicsMeshes.m_lMemList.m_Head, &s_PhysicsMeshes.m_lMemList.m_Tail);
         void* mesh;
         if (&mesh != NULL)
         {

@@ -10,10 +10,10 @@ class RunningChecksum
 {
 public:
     void ChecksumData(const void*, unsigned long);
-    void ChecksumInt(unsigned long);    
+    void ChecksumInt(unsigned long);
     RunningChecksum();
 
-    /* 0x00 */ u32 m_unk_0x00;
+    /* 0x00 */ u32 m_nChecksum;
 };
 
 #endif // _NLMAIN_H_

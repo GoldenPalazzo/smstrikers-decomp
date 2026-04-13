@@ -771,6 +771,7 @@ void NisPlayer::Render() const
  */
 void NisPlayer::Load(char* buffer, unsigned int size, NisHeader& nisHeader)
 {
+    FORCE_DONT_INLINE;
     if (!mActive)
         return;
 
@@ -850,8 +851,8 @@ void NisPlayer::PlayCharacterDirection()
     pData->away = &mBeginPositions[4];
     for (int i = 0; i < 10; i++)
     {
-        mBeginPositions[i].f.x = nlRandomf(-20.0f, 20.0f, &nlDefaultSeed);
-        mBeginPositions[i].f.y = nlRandomf(-50.0f, 10.0f, &nlDefaultSeed);
+        mBeginPositions[i].f.x = nlRandomf(-8.0f, 8.0f, &nlDefaultSeed);
+        mBeginPositions[i].f.y = nlRandomf(-4.0f, 4.0f, &nlDefaultSeed);
         mBeginPositions[i].f.z = 0.0f;
     }
 }
