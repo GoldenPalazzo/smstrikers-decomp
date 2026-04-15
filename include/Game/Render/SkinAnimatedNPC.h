@@ -27,7 +27,7 @@ class SkinAnimatedNPC
 public:
     SkinAnimatedNPC(cSHierarchy& pHierarchy, int nModelID);
     /* 0x08 */ virtual ~SkinAnimatedNPC();
-    /* 0x0C */ virtual SkinAnimatedNPC_Type GetSkinAnimatedNPC_Type() const { return SkinAnimatedNPC_BASE; };
+    /* 0x0C */ virtual SkinAnimatedNPC_Type GetSkinAnimatedNPC_Type() const;
     /* 0x10 */ virtual void Render();
     /* 0x14 */ virtual void RenderFromReplay(const cPoseAccumulator&, const nlMatrix4*);
     /* 0x18 */ virtual void Update(float);

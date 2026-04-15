@@ -37,6 +37,9 @@ template <>
 bool LexicalCast<bool, const char*>(const char* const& value);
 
 template <>
+const char* LexicalCast<const char*, const char*>(const char* const& value);
+
+template <>
 BasicString<char, Detail::TempStringAllocator> LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(const int& value);
 
 #ifdef NL_LEXICALCAST_DEFINE

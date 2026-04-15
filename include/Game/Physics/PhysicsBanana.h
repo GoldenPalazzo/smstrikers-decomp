@@ -18,7 +18,7 @@ struct CollisionPowerupGroundData : public EventData
 
 struct CollisionPowerupWallData : public EventData
 {
-    virtual u32 GetID() const { return 0x9B; }
+    virtual u32 GetID();
 
     /* 0x04 */ PowerupBase* pPowerup;
     /* 0x08 */ ePowerupSize eSize;

@@ -2,6 +2,7 @@
 #define _CAMERAMAN_H_
 
 #include "types.h"
+#include "NL/nlDLRing.h"
 #include "NL/nlMath.h"
 
 #include "Game/Camera/BaseCamera.h"
@@ -28,15 +29,16 @@ class cCameraManager
 public:
     static void Startup();
     static void Shutdown();
-    void Update(float);
-    void UpdateGameCameraType();
+    static void Update(float);
+    static void UpdateGameCameraType();
     static bool HasCamera(cBaseCamera* pCamera);
     static void PushCamera(cBaseCamera* pCamera);
     static void Remove(const cBaseCamera& camera);
     static void Remove(eCameraType type, bool bDeleteAfterRemoving);
     static void PushCameraWithTransition(cBaseCamera*, float, eCameraTransition, void (*)(eCameraMessage));
     static cBaseCamera* PopCameraWithTransition(float, eCameraTransition, void (*)(eCameraMessage));
-    static bool IsObjectOccludingField(const DrawableObject*);
+    static unsigned char IsObjectOccludingField(const DrawableObject*);
+    static unsigned char IsPointOccludingField(const nlVector3& pos);
     static float GetDistanceFromCameraToObject(const nlVector3& objectPosition);
     static void GetViewVector(nlVector3& viewVector);
     static void GetUpVector(nlVector3& upVector);
@@ -44,24 +46,14 @@ public:
     static void PushWorldUpVector();
     static void PopWorldUpVector();
 
+    static inline cBaseCamera* PeekCamera()
+    {
+        cBaseCamera* pCamera = nlDLRingGetStart<cBaseCamera>(m_cameraStack);
+        return pCamera;
+    }
+
     template <typename T>
     static T* GetCamera(eCameraType type);
-    // {
-    //     if (m_cameraStack == nullptr)
-    //     {
-    //         return nullptr;
-    //     }
-    //     cBaseCamera* pCamera = m_cameraStack;
-    //     do
-    //     {
-    //         pCamera = pCamera->m_next;
-    //         if (pCamera->GetType() == type)
-    //         {
-    //             return static_cast<T*>(pCamera);
-    //         }
-    //     } while (pCamera != m_cameraStack);
-    //     return nullptr;
-    // }
 
     static u16 m_aJoystickRemap;
     static cBaseCamera* m_cameraStack;
@@ -71,6 +63,9 @@ public:
     static nlMatrix4 m_matView;
     static nlVector3 m_cameraPosition;
     static nlMatrix4 m_matPrevView;
+    static float m_fTransitionSpeed;
+    static float m_fTransitionTime;
+    static float m_fPrevFOV;
 
     static float m_fFOV;
     static int m_pBeginFrameCameraType;

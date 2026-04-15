@@ -68,10 +68,11 @@ public:
     /* 0xA0 */ HighlightQuality mGoalQuality;
 }; // total size: 0xA4
 
-// class NISData
-// {
-// public:
-//     void GetID();
-// };
+struct NISData : public EventData
+{
+    /* 0x04 */ const char* Type;
+    /* 0x08 */ const char* Param;
+    virtual u32 GetID();
+}; // total size: 0xC
 
 #endif // _PRESENTATION_H_

@@ -181,16 +181,16 @@ void ShootToScoreMeter::DrawCaptainMeter()
     quad.SetupRotatedRectangle(400.0f, 400.0f, matrix, false, false);
     glAttachQuad3(GLV_FrontEnd, 1, &quad, true);
 
-    float whiteBarHeightScaled = 400.0f * (0.0035f / MeterWidth);
-    float whiteBarWidthScaled = 400.0f * (0.039f / MeterWidth);
-    float whiteBarAngle = (3.1415927f * m_fWhiteBarAngle) / 180.0f;
+    float whiteBarAngle;
+    float whiteBarHeightScaled = 400.0f * (0.039f / MeterWidth);
+    float whiteBarWidthScaled = 400.0f * (0.0035f / MeterWidth);
+    whiteBarAngle = (3.1415927f * m_fWhiteBarAngle) / 180.0f;
 
     nlMatrix4 matrix2;
     nlMakeRotationMatrixZ(matrix2, whiteBarAngle);
 
-    s32 angleScaled = (s32)(10430.378f * whiteBarAngle);
-    float sinVal = nlSin((u16)angleScaled);
-    float cosVal = nlSin((u16)((u16)angleScaled + 0x4000));
+    float sinVal = nlSin((u16)(s32)(10430.378f * whiteBarAngle));
+    float cosVal = nlSin((u16)((u16)(s32)(10430.378f * whiteBarAngle) + 0x4000));
 
     matrix2.SetRow4_(3, 79.2f * cosVal, 79.2f * sinVal, 0.f, 1.0f);
     nlMultMatrices(matrix2, matrix2, matrix);

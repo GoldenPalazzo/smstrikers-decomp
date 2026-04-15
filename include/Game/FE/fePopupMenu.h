@@ -71,7 +71,7 @@ public:
     void Create(ePopupMenu);
     void Create(ePopupMenu, Function<FnVoidVoid>&, Function<FnVoidVoid>&);
     void SetBackButtonCallback(Function<FnVoidVoid>&);
-    static void Nothing();
+    static void Nothing() { }
 
     // /* 0x0 */ TLSlide* m_slides;
 

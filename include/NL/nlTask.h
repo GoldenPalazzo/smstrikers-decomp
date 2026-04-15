@@ -2,6 +2,7 @@
 #define _NLTASK_H_
 
 #include "types.h"
+#include "NL/nlBasicString.h"
 
 class nlTask
 {

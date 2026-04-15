@@ -22,12 +22,15 @@ public:
 static bool sFalse = false;
 static bool sTrue = true;
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x80093A64 | size: 0x8
-//  */
-// void PositionOf<cFielder*>(cFielder*)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x0 | 0x80093A64 | size: 0x8
+ */
+template <typename T>
+nlVector3& PositionOf(T pObject)
+{
+    return pObject->m_v3Position;
+}
+template nlVector3& PositionOf<cFielder*>(cFielder*);
 
 /**
  * Offset/Address/Size: 0x6B9C | 0x80093628 | size: 0x43C

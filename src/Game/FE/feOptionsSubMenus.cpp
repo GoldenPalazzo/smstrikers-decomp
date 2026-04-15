@@ -1166,12 +1166,12 @@ void OptionsSubMenu::Update(float)
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0x26C | 0x800BB584 | size: 0x4
-//  */
-// void SlideMenuList::Update(float)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x26C | 0x800BB584 | size: 0x4
+ */
+void SlideMenuList::Update(float dt)
+{
+}
 
 // /**
 //  * Offset/Address/Size: 0x0 | 0x800BB588 | size: 0x38

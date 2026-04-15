@@ -390,7 +390,7 @@ void DrawableCharacter::Grab(SkinAnimatedMovableNPC& character)
 {
     mCharacter = nullptr;
 
-    if (character.GetSkinAnimatedNPC_Type() == SkinAnimatedNPC_BOWSER)
+    if (static_cast<SkinAnimatedNPC&>(character).GetSkinAnimatedNPC_Type() == SkinAnimatedNPC_BOWSER)
     {
         mBowser = (Bowser*)&character;
     }

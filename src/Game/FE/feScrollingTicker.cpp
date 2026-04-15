@@ -1,4 +1,5 @@
 #include "Game/FE/feScrollingTicker.h"
+#include "Game/FE/feFinder.h"
 
 /**
  * Offset/Address/Size: 0x0 | 0x8009FC58 | size: 0x8
@@ -59,8 +60,8 @@ void ScrollingTickerScene::CloseMessenger()
 {
     m_pFETweenManager.clearTweensOnObj(this);
 
-    f32 endScale = 0.0f;
-    f32 startScale = 1.0f;
+    f32 endScale = 1.0f;
+    f32 startScale = 0.0f;
 
     FETweener* scaleTween = m_pFETweenManager.createTween(
         &endScale, &startScale, 0.3f, 0.1f, 1, TweenFunctions::easeinelastic, this, setScaleTweenCallback);
@@ -201,32 +202,136 @@ void ScrollingTickerScene::Update(float fDeltaT)
 /**
  * Offset/Address/Size: 0x630 | 0x800A0288 | size: 0x24
  */
-// void ScrollingTickerScene::SetDisplayMessage(const BasicString<unsigned short, Detail::TempStringAllocator>&)
-// {
-// }
+void ScrollingTickerScene::SetDisplayMessage(const BasicString<unsigned short, Detail::TempStringAllocator>& msg)
+{
+    m_textScroller->SetDisplayMessage(msg);
+}
 
 /**
  * Offset/Address/Size: 0x654 | 0x800A02AC | size: 0x634
  */
 void ScrollingTickerScene::SceneCreated()
 {
+    FEPresentation* pres = m_pFEScene->m_pFEPackage->GetPresentation();
+
+    TLInstance* temp = FEFinder<TLInstance, 2>::Find(
+        pres,
+        InlineHasher(nlStringLowerHash("ticker_ball_left")),
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("closed")),
+        InlineHasher(0),
+        InlineHasher(0),
+        InlineHasher(0));
+    m_leftBallClosedPos = temp->GetPosition();
+
+    temp = FEFinder<TLInstance, 2>::Find(
+        pres,
+        InlineHasher(nlStringLowerHash("ticker_ball_right")),
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("closed")),
+        InlineHasher(0),
+        InlineHasher(0),
+        InlineHasher(0));
+    m_rightBallClosedPos = temp->GetPosition();
+    m_ballClosedScale = temp->GetScale();
+
+    temp = FEFinder<TLInstance, 2>::Find(
+        pres,
+        InlineHasher(nlStringLowerHash("Rectangle")),
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("closed")),
+        InlineHasher(0),
+        InlineHasher(0),
+        InlineHasher(0));
+    m_grayClosedScale = temp->GetScale();
+
+    pres->SetActiveSlide("open");
+
+    m_textBox = (TLTextInstance*)FEFinder<TLInstance, 3>::Find(
+        pres,
+        InlineHasher(nlStringLowerHash("Text")),
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("open")),
+        InlineHasher(0),
+        InlineHasher(0),
+        InlineHasher(0));
+
+    m_leftBall = FEFinder<TLInstance, 2>::Find(
+        pres,
+        InlineHasher(nlStringLowerHash("ticker_ball_left")),
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("open")),
+        InlineHasher(0),
+        InlineHasher(0),
+        InlineHasher(0));
+
+    m_rightBall = FEFinder<TLInstance, 2>::Find(
+        pres,
+        InlineHasher(nlStringLowerHash("ticker_ball_right")),
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("open")),
+        InlineHasher(0),
+        InlineHasher(0),
+        InlineHasher(0));
+
+    m_backRectangle = FEFinder<TLInstance, 2>::Find(
+        pres,
+        InlineHasher(nlStringLowerHash("Rectangle")),
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("open")),
+        InlineHasher(0),
+        InlineHasher(0),
+        InlineHasher(0));
+
+    m_leftBallOpenPos = m_leftBall->GetPosition();
+    m_rightBallOpenPos = m_rightBall->GetPosition();
+    m_grayOpenScale = m_backRectangle->GetScale();
+
+    float zero = 0.0f;
+    float closedY = m_leftBallClosedPos.f.y;
+    float open = m_leftBallOpenPos.f.x;
+    float x = zero * (open - m_leftBallClosedPos.f.x) + m_leftBallClosedPos.f.x;
+    m_leftBall->SetAssetPosition(x, closedY, zero);
+
+    open = m_rightBallOpenPos.f.x;
+    x = open - m_rightBallClosedPos.f.x;
+    x = zero * x + m_rightBallClosedPos.f.x;
+    m_rightBall->SetAssetPosition(x, closedY, zero);
+
+    open = m_grayOpenScale.f.x;
+    x = open - m_grayClosedScale.f.x;
+    x = zero * x + m_grayClosedScale.f.x;
+    m_backRectangle->SetAssetScale(x, m_grayOpenScale.f.y, 1.0f);
+
+    float sx = m_ballClosedScale.f.x * zero;
+    float sy = m_ballClosedScale.f.y * zero;
+    float sz = m_ballClosedScale.f.z * zero;
+    m_leftBall->SetAssetScale(sx, sy, sz);
+    m_rightBall->SetAssetScale(sx, sy, sz);
+
+    m_backRectangle->SetAssetScale(
+        m_grayClosedScale.f.x * zero,
+        m_grayClosedScale.f.y * zero,
+        m_grayClosedScale.f.z * zero);
+
+    m_textBox->m_bVisible = false;
+
+    m_textScroller = new (nlMalloc(0x22C, 8, false))
+        FEScrollText(m_textBox, 0, (int)(m_rightBallOpenPos.f.x - m_leftBallOpenPos.f.x));
+
+    m_textScroller->m_messageFinishedCB = m_cbFunc;
+
+    SetVisible(false);
 }
 
 /**
  * Offset/Address/Size: 0xC88 | 0x800A08E0 | size: 0x178
- * TODO: 92.82% match - FEIMessenger vtable layout in this TU still produces
- * `addi r0, r3, 0xC` + explicit FEIMessenger dtor call instead of target
- * `addi r0, r3, 0x24`; also one `addic.` null-check shape differs around
- * m_textScroller->m_messageFinishedCB teardown.
  */
 ScrollingTickerScene::~ScrollingTickerScene()
 {
-    if (m_textScroller != NULL)
+    if (m_textScroller)
     {
-        if (&m_textScroller->m_messageFinishedCB != NULL)
-        {
-            delete m_textScroller;
-        }
+        delete m_textScroller;
     }
 }
 

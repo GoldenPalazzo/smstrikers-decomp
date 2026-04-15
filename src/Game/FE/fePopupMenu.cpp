@@ -454,19 +454,15 @@ FEPopupMenu::FEPopupMenu()
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0x788 | 0x8009C364 | size: 0x8
-//  */
-// void CastToSomeType<TLInstance>(TLInstance*, void*)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x788 | 0x8009C364 | size: 0x8
+ */
+template TLInstance* CastToSomeType<TLInstance>(TLInstance*, void*);
 
-// /**
-//  * Offset/Address/Size: 0x790 | 0x8009C36C | size: 0x8
-//  */
-// void CastToSomeType<TLSlide>(TLSlide*, void*)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x790 | 0x8009C36C | size: 0x8
+ */
+template TLSlide* CastToSomeType<TLSlide>(TLSlide*, void*);
 
 // /**
 //  * Offset/Address/Size: 0x798 | 0x8009C374 | size: 0x44
@@ -482,12 +478,18 @@ FEPopupMenu::FEPopupMenu()
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x8009C3FC | size: 0x14
-//  */
-// void BasicString<unsigned short, Detail::TempStringAllocator>::operator=(BasicString<unsigned short, Detail::TempStringAllocator>)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x0 | 0x8009C3FC | size: 0x14
+ */
+template <>
+BasicString<unsigned short, Detail::TempStringAllocator>&
+BasicString<unsigned short, Detail::TempStringAllocator>::operator=(BasicString<unsigned short, Detail::TempStringAllocator> other)
+{
+    BasicStringData<unsigned short>* tmp = m_data;
+    m_data = other.m_data;
+    other.m_data = tmp;
+    return *this;
+}
 
 // /**
 //  * Offset/Address/Size: 0x14 | 0x8009C410 | size: 0x94

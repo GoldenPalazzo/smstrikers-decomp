@@ -718,8 +718,8 @@ void TransitionTask::InitializeGameState()
         if (nlSingleton<GameInfoManager>::s_pInstance->mIsInStrikers101Mode)
         {
             char langCode[4] = "jpn";
-            const char* fontFileName1 = "fot-rodinprob18";
             const char* fontFileName2 = "cepoitalic24";
+            const char* fontFileName1 = "fot-rodinprob18";
             char fontName2[64];
             char bundlePath2[64];
             char fontName1[64];

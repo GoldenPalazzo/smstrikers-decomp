@@ -6,8 +6,10 @@
 #include "Game/Physics/PhysicsObject.h"
 #include "Game/Drawable/DrawableObj.h"
 #include "Game/ObjectBlur.h"
+#include "Game/Sys/eventman.h"
 
 class cFielder;
+class cPlayer;
 class cTeam;
 class BlurHandler;
 class SFXEmitter;
@@ -218,17 +220,21 @@ cFielder* FindPowerupTarget(cFielder*, Bowser*);
 //     void Clone() const;
 // };
 
-// class PowerupUsedEventData
-// {
-// public:
-//     void GetID();
-// };
+struct PowerupUsedEventData : public EventData
+{
+    /* 0x04 */ ePowerUpType Type;
+    /* 0x08 */ cPlayer* Thrower;
+    /* 0x0C */ cPlayer* Target;
+    u32 GetID();
+};
 
-// class PowerupHitPlayerEventData
-// {
-// public:
-//     void GetID();
-// };
+struct PowerupHitPlayerEventData : public EventData
+{
+    /* 0x04 */ ePowerUpType Type;
+    /* 0x08 */ cPlayer* Thrower;
+    /* 0x0C */ cPlayer* Target;
+    u32 GetID();
+};
 
 // class Format < BasicString < char, Detail
 // {

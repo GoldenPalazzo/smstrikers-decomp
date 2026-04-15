@@ -30,14 +30,8 @@ public:
 #else
     eTimeLineAssetType GetType() const;
 #endif
-    bool IsVisible() const
-    {
-        return m_bVisible;
-    }
-    FELibObject* GetLibRefObject() const
-    {
-        return m_component;
-    }
+    bool IsVisible() const;
+    FELibObject* GetLibRefObject() const;
 
     void SetAssetColour(const nlColour&);
     void SetAssetScale(float, float, float);

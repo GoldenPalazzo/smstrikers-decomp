@@ -2,6 +2,12 @@
 #define _STREAMTRACK_H_
 
 #include "NL/nlFunction.h"
+#include "NL/nlDLListContainer.h"
+
+namespace GCAudioStreaming
+{
+class StereoAudioStream;
+}
 
 namespace Audio
 {
@@ -43,6 +49,26 @@ public:
         void UpdateFade(STREAM_FADE_CTRL*);
     };
 
+    class StreamFileLookup
+    {
+    public:
+        struct STREAM_FILE_LIST_LOOKUP
+        {
+            /* 0x00 */ unsigned long key;
+            /* 0x04 */ const char* value;
+            /* 0x08 */ unsigned long length;
+        }; // total size: 0xC
+
+        struct STREAM_FILE_LOOKUP
+        {
+            /* 0x00 */ unsigned long key;
+            /* 0x04 */ char* value;
+        }; // total size: 0x8
+
+        StreamFileLookup(const char* name,
+            const Function<bool(const char*, char*, unsigned long)>& fn);
+    }; // total size: 0x14
+
     /* 0x04 */ char _pad_0x04[0x14]; // StreamFileLookup m_FileLookup
     /* 0x18 */ char _pad_0x18[0x20]; // FadeManager m_FadeMgr
     /* 0x38 */ char _pad_0x38[0x18]; // SlotPool m_StreamPool
@@ -52,22 +78,33 @@ public:
 class StreamTrack
 {
 public:
+    struct QUEUED_STREAM
+    {
+        /* 0x0 */ unsigned long StreamId;
+        /* 0x4 */ GCAudioStreaming::StereoAudioStream* pStream;
+        /* 0x8 */ unsigned long FadeIn : 16;
+        /* 0x8 */ unsigned long StartVolume : 10;
+        /* 0x8 */ Audio::MasterVolume::VOLUME_GROUP VolGroup : 2;
+        /* 0xB */ unsigned char Loop : 1;
+        /* 0xB */ unsigned char TrackOwnsStream : 1;
+    }; // total size: 0xC
+
     void Update(float);
     void PlayStream(unsigned long, float, bool, unsigned long, unsigned long, const char*, Audio::MasterVolume::VOLUME_GROUP);
     void QueueStream(unsigned long, float, bool, unsigned long, const char*, Audio::MasterVolume::VOLUME_GROUP);
     // void ProcessNewHeadStream();
     // void StopHead(unsigned long);
     void Stop(unsigned long);
-    // void StopQStream(AudioStreamTrack::StreamTrack::QUEUED_STREAM*);
+    // void StopQStream(QUEUED_STREAM*);
     // void StopStream(GCAudioStreaming::StereoAudioStream*, bool);
-    // void FadeOutDone(AudioStreamTrack::StreamTrack::QUEUED_STREAM*);
-    // void FadeOutDoneStartNext(AudioStreamTrack::StreamTrack::QUEUED_STREAM*);
+    // void FadeOutDone(QUEUED_STREAM*);
+    // void FadeOutDoneStartNext(QUEUED_STREAM*);
     void Pause(unsigned long, bool);
     void Resume();
     // void AttachStream(GCAudioStreaming::StereoAudioStream*, Audio::MasterVolume::VOLUME_GROUP, unsigned long, unsigned long, bool, bool);
 
     /* 0x00 */ TrackManagerBase& m_TrackMgr;
-    /* 0x04 */ char _pad_0x04[0x58]; // DLListContainerBase m_QueuedStreams
+    /* 0x04 */ DLListContainerBase<QUEUED_STREAM, nlStaticArrayAllocator<DLListEntry<QUEUED_STREAM>, 4> > m_QueuedStreams;
     /* 0x5C */ unsigned long m_LPFFreq;
     /* 0x60 */ unsigned char m_LPFOn : 1;
     /* 0x60 */ unsigned char m_InFakePause : 1;

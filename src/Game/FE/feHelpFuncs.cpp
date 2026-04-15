@@ -909,12 +909,20 @@ void EnableAutoPressed()
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0x634 | 0x800A36F0 | size: 0x14
-//  */
-// void TakeGameMemSnapshot::ResetTimers()
-// {
-// }
+namespace TakeGameMemSnapshot
+{
+unsigned char gTakenSnapshot;
+float gTimeElapsed;
+} // namespace TakeGameMemSnapshot
+
+/**
+ * Offset/Address/Size: 0x634 | 0x800A36F0 | size: 0x14
+ */
+void TakeGameMemSnapshot::ResetTimers()
+{
+    gTakenSnapshot = 0;
+    gTimeElapsed = 0.0f;
+}
 
 // /**
 //  * Offset/Address/Size: 0x130 | 0x800A31EC | size: 0x504

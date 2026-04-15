@@ -5,6 +5,7 @@
 #include "Game/Net.h"
 
 #include "Game/AI/Fielder.h"
+#include "Game/AI/ShotMeter.h"
 #include "Game/AI/SpaceSearch.h"
 #include "Game/AI/AiUtil.h"
 #include "Game/AI/Scripts/CommonScript.h"
@@ -599,10 +600,56 @@ bool cPlayer::IsOnSameTeam(cPlayer* other)
 
 /**
  * Offset/Address/Size: 0x197C | 0x80058ECC | size: 0x4A4
+ * TODO: 97.91% match - 4-byte instruction offset throughout (scratch artifact)
  */
-void cPlayer::SetAIPad(cAIPad*)
+void cPlayer::SetAIPad(cAIPad* pPad)
 {
-    FORCE_DONT_INLINE;
+    m_pController = pPad;
+    if (m_eClassType != FIELDER)
+        return;
+    cFielder* pFielder = (cFielder*)this;
+
+    if (pFielder->m_pBall != NULL)
+    {
+        u8 bShotInProgress = 0;
+        eShotMeterState state;
+        ShotMeter* pMeter = pFielder->m_pShotMeter;
+        state = pMeter->m_eShotMeterState;
+        if (state == SHOT_METER_ACTIVE || state == SHOT_METER_STS_ACTIVE || state == SHOT_METER_STS_TRANSISTION)
+            bShotInProgress = 1;
+        if (!bShotInProgress)
+        {
+            if (pFielder->m_eActionState == ACTION_SHOT)
+                goto pad;
+            if (pMeter->m_eShotMeterState != SHOT_METER_RELEASED)
+                goto pad;
+        }
+        pMeter->ShotReleased(pFielder);
+        pFielder->InitActionShot(false);
+        return;
+    }
+pad:
+    if (m_pController != NULL && pFielder->m_eFielderDesireState < FIELDERDESIRE_USER_CONTROLLED)
+    {
+        if (g_pGame->IsGameplayOrOvertime() && pFielder->m_eActionState == ACTION_SHOOT_TO_SCORE)
+        {
+            pFielder->InitDesire(FIELDERDESIRE_FINISH_ACTION, 0.5f, -1.0f, fvNotSet, fvNotSet);
+            return;
+        }
+        pFielder->EndDesire(false);
+        return;
+    }
+    if (m_pController == NULL)
+    {
+        if (g_pGame->IsGameplayOrOvertime() && (pFielder->m_eActionState == ACTION_SLIDE_ATTACK || pFielder->m_eActionState == ACTION_SHOOT_TO_SCORE))
+        {
+            pFielder->InitDesire(FIELDERDESIRE_FINISH_ACTION, 0.5f, -1.0f, fvNotSet, fvNotSet);
+            return;
+        }
+    }
+    pFielder->EndDesire(false);
+    if (pFielder->m_eFielderDesireState == FIELDERDESIRE_WAIT && g_pGame->m_eGameState == GS_KICKOFF)
+        pFielder->EndDesire(false);
 }
 
 /**

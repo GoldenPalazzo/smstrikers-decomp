@@ -62,6 +62,8 @@ public:
         /* 0xB */ unsigned char Page : 4;
         /* 0xB */ unsigned char HasKernPairs : 1;
         /* 0xC */ unsigned short UnicodeChar;
+
+        static int SortProc(const GlyphInfo* pa, const GlyphInfo* pb);
     }; // total size: 0x10
 
     struct KernPair
@@ -78,6 +80,7 @@ public:
         /* 0x4 */ int Kern;
 
         operator unsigned long() const { return hash; }
+        static int SortProc(const KernPair* pa, const KernPair* pb);
     }; // total size: 0x8
 
     unsigned long GetCharWidth(unsigned short FontChar, unsigned short PrevFontChar) const;

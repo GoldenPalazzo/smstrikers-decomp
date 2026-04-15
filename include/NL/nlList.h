@@ -31,32 +31,36 @@ template <typename T, typename Adapter>
 class ListContainerBase
 {
 public:
-    typedef typename Adapter::EntryType EntryType;
-
     ListContainerBase()
         : m_Head(NULL)
         , m_Tail(NULL)
     {
     }
 
-    void DeleteEntry(EntryType* entry) { Adapter::DeleteEntry(entry); }
+    void DeleteEntry(ListEntry<T>* entry);
 
     // Add more list operations as needed
-    void AddEntry(EntryType* entry)
+    void AddEntry(ListEntry<T>* entry)
     {
         // Implementation for adding entries
     }
 
-    void RemoveEntry(EntryType* entry)
+    void RemoveEntry(ListEntry<T>* entry)
     {
         // Implementation for removing entries
     }
 
     // offsets and sizes are dependent on the adapter
-    /* 0x0 */ NewAdapter<ListEntry<T> > m_Allocator;
-    /* 0x4 */ ListEntry<T>* m_Head;
-    /* 0x8 */ ListEntry<T>* m_Tail;
+    /* 0x0 */ Adapter m_Allocator;
+    ListEntry<T>* m_Head;
+    ListEntry<T>* m_Tail;
 };
+
+template <typename T, typename Adapter>
+void ListContainerBase<T, Adapter>::DeleteEntry(ListEntry<T>* entry)
+{
+    m_Allocator.DeleteEntry(entry);
+}
 
 template <typename T>
 class nlListContainer : public ListContainerBase<T, NewAdapter<ListEntry<T> > >

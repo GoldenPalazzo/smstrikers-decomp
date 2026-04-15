@@ -20,19 +20,17 @@ public:
     void CloseMessenger();
     void OpenMessengerNow();
     void OpenMessenger();
-    void Update(float);
     void SetDisplayMessage(const BasicString<unsigned short, Detail::TempStringAllocator>&);
-    void SetMessageFinishedCB(const Function<FnVoidVoid>& cb);
-    void SceneCreated();
-    ~ScrollingTickerScene();
+    void SetMessageFinishedCB(const Function<FnVoidVoid>& cb) { };
+    virtual ~ScrollingTickerScene();
+    virtual void SceneCreated();
+    virtual void Update(float);
     ScrollingTickerScene();
 
     static void tickerClosed(void*);
     static void tickerOpened(void*);
     static void setScaleTweenCallback(void*, const float*);
     static void setSizeTweenCallback(void*, const float*);
-    // void @4@SceneCreated();
-    // void @4@Update(float);
 
     /* 0x020 */ unsigned char m_active;
     /* 0x024 */ feVector3 m_leftBallClosedPos;

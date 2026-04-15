@@ -1,3 +1,4 @@
+#define NL_LEXICALCAST_DEFINE_BOOL
 #include "Game/CharacterTemplate.h"
 #include "Game/Player.h"
 #include "Game/AI/Fielder.h"
@@ -943,33 +944,7 @@ void AnimTagScriptInterpreter::TriggerFired(unsigned long)
 {
 }
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800147CC | size: 0x34
-//  */
-// void LexicalCast<bool, const char*>(const char* const&)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x34 | 0x80014800 | size: 0x20
-//  */
-// void LexicalCast<bool, float>(const float&)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x54 | 0x80014820 | size: 0x14
-//  */
-// void LexicalCast<bool, int>(const int&)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x68 | 0x80014834 | size: 0x8
-//  */
-// void LexicalCast<bool, bool>(const bool&)
-// {
-// }
+// LexicalCast<bool, *> specializations are emitted via NL_LEXICALCAST_DEFINE_BOOL
 
 /**
  * Offset/Address/Size: 0x70 | 0x8001483C | size: 0x94

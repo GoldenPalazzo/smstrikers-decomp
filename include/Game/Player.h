@@ -107,7 +107,7 @@ public:
     cPlayer* DoFindBestPassTarget(bool bAllowLeadPass, bool bIsPerfectPass);
     bool IsCaptain() const;
     bool IsOnSameTeam(cPlayer*);
-    void SetAIPad(cAIPad*);
+    void SetAIPad(cAIPad* pPad);
     void PlayAttackReactionSounds(float);
     void PickupBall(cBall*);
     cFielder* GetClosestOpponentFielder(nlVector3*);

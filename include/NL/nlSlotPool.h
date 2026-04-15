@@ -2,6 +2,7 @@
 #define _NLSLOTPOOL_H_
 
 #include "types.h"
+#include "NL/nlMemory.h"
 
 typedef void* (*SlotPoolAllocatorFunc)(unsigned long size);
 typedef void (*SlotPoolFreeFunc)(void* data);
@@ -90,7 +91,14 @@ public:
     // Return an entry back to the free list
     void Free(T* entry)
     {
-        nlListAddStart(&m_FreeList, (SlotPoolEntry*)entry, (SlotPoolEntry**)NULL);
+        SlotPoolEntry* e = (SlotPoolEntry*)entry;
+        e->m_next = m_FreeList;
+        m_FreeList = e;
+    }
+
+    void DeleteEntry(T* entry)
+    {
+        Free(entry);
     }
 }; // total size: 0x18
 

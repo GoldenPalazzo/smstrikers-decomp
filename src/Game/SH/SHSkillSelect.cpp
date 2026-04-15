@@ -1,11 +1,10 @@
 #include "Game/SH/SHSkillSelect.h"
+#include "NL/nlFunction.h"
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800B0578 | size: 0x10
-//  */
-// void Bind<void, void (*)(bool), bool>(void (*)(bool), const bool&)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x0 | 0x800B0578 | size: 0x10
+ */
+template BindExp1<void, void (*)(bool), bool> Bind<void, void (*)(bool), bool>(void (*)(bool), const bool&);
 
 // /**
 //  * Offset/Address/Size: 0x0 | 0x800B051C | size: 0x5C

@@ -30,77 +30,8 @@ extern void nlBreak();
 
 namespace Detail
 {
-class TempStringAllocator
-{
-};
+class TempStringAllocator;
 } // namespace Detail
-
-template <typename CharT, typename Allocator>
-class BasicString
-{
-public:
-    TempStringData* m_data;
-
-    BasicString(const CharT* str)
-    {
-        TempStringData* data = (TempStringData*)nlMalloc(sizeof(TempStringData), 8, true);
-        if (data != 0)
-        {
-            data->data = 0;
-            data->size = 0;
-            data->capacity = 0;
-
-            const CharT* s = str;
-            while ((signed char)*s++ != 0)
-            {
-                data->size++;
-            }
-
-            data->size++;
-            data->data = (char*)nlMalloc(data->size + 1, 8, true);
-            data->capacity = data->size;
-
-            for (int i = 0; i < data->size; i++)
-            {
-                data->data[i] = *str++;
-            }
-
-            data->refCount = 1;
-        }
-
-        m_data = data;
-    }
-
-    ~BasicString()
-    {
-        if (m_data)
-        {
-            TempStringData* data = m_data;
-            if (--data->refCount == 0)
-            {
-                if (data)
-                {
-                    if (data)
-                    {
-                        delete[] data->data;
-                    }
-                    if (data)
-                    {
-                        nlFree(data);
-                    }
-                }
-            }
-        }
-    }
-
-    void AppendInPlace(const CharT* str);
-
-    const CharT* c_str() const
-    {
-        static CharT emptyString = '\0';
-        return m_data ? (CharT*)m_data->data : &emptyString;
-    }
-};
 
 static unsigned char useAsyncLoading;
 

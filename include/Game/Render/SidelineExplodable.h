@@ -14,7 +14,7 @@ class cFielder;
 class CollisionExplosionFragmentPlayerData : public EventData
 {
 public:
-    virtual u32 GetID() { return 0xFA; };
+    virtual u32 GetID();
 
     /* 0x04 */ cFielder* pPlayer;
     /* 0x08 */ nlVector3 v3CollisionLocation;

@@ -205,17 +205,6 @@ struct MemFunImpl
 template <typename T, typename R, typename P>
 Detail::MemFunImpl<R, void (T::*)(P)> MemFun(void (T::*)(P));
 
-template <typename R, typename F, typename T0, typename T1>
-struct BindExp2
-{
-    F mFunction;
-    T0 mT0;
-    T1 mT1;
-};
-
-template <typename R, typename F, typename T0, typename T1>
-BindExp2<R, F, T0, T1> Bind(F fn, const T0& t0, const T1& t1);
-
 typedef Detail::MemFunImpl<void, void (OptionsScene::*)(eMenuState)> MemFunImpl_Options_t;
 typedef BindExp2<void, MemFunImpl_Options_t, OptionsScene*, eMenuState> BindExp2_Options_t;
 typedef Function1<void, TLComponentInstance*>::FunctorImpl<BindExp2_Options_t> FunctorImpl_Options_t;

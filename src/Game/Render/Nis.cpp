@@ -2,9 +2,17 @@
 #include "Game/ReplayManager.h"
 #include "Game/NisPlayer.h"
 #include "Game/Sys/audio.h"
+#include "NL/nlFunction.h"
 #include "NL/nlList.h"
 
 #include "types.h"
+
+class EmissionController;
+
+typedef void (*NisEmissionFn)(EmissionController&, int);
+typedef BindExp2<void, NisEmissionFn, Placeholder<0>, int> (*NisBindPtr)(NisEmissionFn, const Placeholder<0>&, const int&);
+
+NisBindPtr gNisBindPtr = &Bind<void, NisEmissionFn, Placeholder<0>, int>;
 
 // /**
 //  * Offset/Address/Size: 0xEA0 | 0x8012E074 | size: 0xD74
@@ -24,13 +32,6 @@
 //  * Offset/Address/Size: 0x0 | 0x8012D1D4 | size: 0x12C
 //  */
 // void Format<BasicString<char, Detail::TempStringAllocator>, char[64], int>(const BasicString<char, Detail::TempStringAllocator>&, const char(&)[64], const int&)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x8012D1BC | size: 0x18
-//  */
-// void Bind<void, void (*)(EmissionController&, int), Placeholder<0>, int>(void (*)(EmissionController&, int), const Placeholder<0>&, const int&)
 // {
 // }
 

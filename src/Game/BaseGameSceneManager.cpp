@@ -570,3 +570,10 @@ void BaseGameSceneManager::PushLoadingScene(bool clearStack)
     BackgroundScene* handler = (BackgroundScene*)Push((SceneList)0x2B, SCREEN_FORWARD, false);
     handler->mPlayMode = PM_STOPPED;
 }
+
+/**
+ * Offset/Address/Size: 0x64 | 0x80096B94 | size: 0x4
+ */
+void IntroMovieScene::PlayScreenBackSFX()
+{
+}

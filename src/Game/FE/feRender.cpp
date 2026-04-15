@@ -714,47 +714,53 @@ void FERender::CalculateCurrentAssetColour(const TLInstance* instance)
 //     }
 // }
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x8020BA14 | size: 0x8
-//  */
-// void TLInstance::GetType() const
-// {
-// }
+/**
+ * Offset/Address/Size: 0x0 | 0x8020BA14 | size: 0x8
+ */
+eTimeLineAssetType TLInstance::GetType() const
+{
+    return m_type;
+}
 
-// /**
-//  * Offset/Address/Size: 0x8 | 0x8020BA1C | size: 0x8
-//  */
-// void TLInstance::IsVisible() const
-// {
-// }
+/**
+ * Offset/Address/Size: 0x8 | 0x8020BA1C | size: 0x8
+ */
+bool TLInstance::IsVisible() const
+{
+    return m_bVisible;
+}
 
-// /**
-//  * Offset/Address/Size: 0x10 | 0x8020BA24 | size: 0x8
-//  */
-// void TLInstance::GetLibRefObject() const
-// {
-// }
+/**
+ * Offset/Address/Size: 0x10 | 0x8020BA24 | size: 0x8
+ */
+FELibObject* TLInstance::GetLibRefObject() const
+{
+    return m_component;
+}
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x8020BA2C | size: 0x8
-//  */
-// void TLComponent::GetActiveSlide()
-// {
-// }
+/**
+ * Offset/Address/Size: 0x0 | 0x8020BA2C | size: 0x8
+ */
+TLSlide* TLComponent::GetActiveSlide()
+{
+    return m_pActiveSlide;
+}
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x8020BA34 | size: 0x8
-//  */
-// void FEScene::GetRenderView() const
-// {
-// }
+/**
+ * Offset/Address/Size: 0x0 | 0x8020BA34 | size: 0x8
+ */
+eGLView FEScene::GetRenderView() const
+{
+    return (eGLView)m_uRenderView;
+}
 
-// /**
-//  * Offset/Address/Size: 0x8 | 0x8020BA3C | size: 0x8
-//  */
-// void FEScene::GetCameraMatrix() const
-// {
-// }
+/**
+ * Offset/Address/Size: 0x8 | 0x8020BA3C | size: 0x8
+ */
+const nlMatrix4& FEScene::GetCameraMatrix() const
+{
+    return m_matView;
+}
 
 // /**
 //  * Offset/Address/Size: 0x0 | 0x8020BA44 | size: 0x70
@@ -763,12 +769,13 @@ void FERender::CalculateCurrentAssetColour(const TLInstance* instance)
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x8020BAB4 | size: 0x8
-//  */
-// void TLTextInstance::SetMatrix(nlMatrix4*)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x0 | 0x8020BAB4 | size: 0x8
+ */
+void TLTextInstance::SetMatrix(nlMatrix4* pMatrix)
+{
+    m_DrawInfo.pMatrix = pMatrix;
+}
 
 // /**
 //  * Offset/Address/Size: 0x0 | 0x8020BABC | size: 0x24
@@ -784,12 +791,13 @@ void FERender::CalculateCurrentAssetColour(const TLInstance* instance)
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x8020BAFC | size: 0x8
-//  */
-// void TLSlide::GetCurrentTime() const
-// {
-// }
+/**
+ * Offset/Address/Size: 0x0 | 0x8020BAFC | size: 0x8
+ */
+f32 TLSlide::GetCurrentTime() const
+{
+    return m_time;
+}
 
 // /**
 //  * Offset/Address/Size: 0x0 | 0x8020BB04 | size: 0x3C

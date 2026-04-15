@@ -632,9 +632,9 @@ Config::~Config()
 /**
  * Offset/Address/Size: 0x2900 | 0x801D5564 | size: 0x4
  */
-// SetTagValuePair::Comment(const BasicString<char, Detail::TempStringAllocator>&)
-// {
-// }
+void SetTagValuePair::Comment(const BasicString<char, Detail::TempStringAllocator>&)
+{
+}
 
 /**
  * Offset/Address/Size: 0x2904 | 0x801D5568 | size: 0x94

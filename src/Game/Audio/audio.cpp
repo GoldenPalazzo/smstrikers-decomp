@@ -10,6 +10,7 @@
 
 #include "NL/nlList.h"
 #include "NL/nlMemory.h"
+#include "NL/nlSortedSlot.h"
 #include "NL/nlTimer.h"
 #include "NL/plat/plataudio.h"
 
@@ -1097,72 +1098,109 @@ int IsDelayedCharSFX(unsigned long sfxType, cGameSFX* pOwner)
 /**
  * Offset/Address/Size: 0x2A3C | 0x8013EF50 | size: 0x3E4
  */
-int AddDelayedSFX(const SoundAttributes& attr, unsigned long sfxType, float volume, float delay, cGameSFX* owner)
+int AddDelayedSFX(const SoundAttributes& sfxData, unsigned long uSFXID, float volume, float delay, cGameSFX* pOwnerSFX)
 {
     if (!g_bAudioInitialized)
     {
         return -1;
     }
 
-    if (sfxType == (unsigned long)-1)
+    if (uSFXID == (unsigned long)-1)
         goto error;
 
     {
-        // Search for a free slot in gDelayedSFX[15]
-        int freeSlot = -1;
+        int slot = -1;
         for (int i = 0; i < 15; i++)
         {
             if (gDelayedSFX[i].mu_Type == (unsigned long)-1)
             {
-                freeSlot = i;
+                slot = i;
                 break;
             }
         }
 
-        if (freeSlot == -1)
+        if (slot == -1)
         {
-            // No free slot - find the one with smallest mf_DebugTimer
-            tDebugPrintManager::Print(DC_SOUND, "AddDelayedSFX: No free delayed SFX slots available!\n");
+            tDebugPrintManager::Print(DC_SOUND, "Too many delayed sfx - finding oldest slot and killing it\n");
 
-            float minTimer = gDelayedSFX[0].mf_DebugTimer;
-            freeSlot = 0;
-            for (int j = 1; j < 15; j++)
+            float min = gDelayedSFX[0].mf_DebugTimer;
+            slot = 0;
+            for (int i = 1; i < 15; i++)
             {
-                if (gDelayedSFX[j].mf_DebugTimer < minTimer)
+                if (gDelayedSFX[i].mf_DebugTimer < min)
                 {
-                    minTimer = gDelayedSFX[j].mf_DebugTimer;
-                    freeSlot = j;
+                    min = gDelayedSFX[i].mf_DebugTimer;
+                    slot = i;
                 }
             }
         }
 
-        if (freeSlot < 0)
+        if (slot < 0)
             goto error;
 
-        // Init the slot and copy attributes
-        gDelayedSFX[freeSlot].Init();
-        gDelayedSFX[freeSlot] = attr;
+        gDelayedSFX[slot].Init();
+        gDelayedSFX[slot].me_ClassType = sfxData.me_ClassType;
+        gDelayedSFX[slot].mu_Type = sfxData.mu_Type;
+        gDelayedSFX[slot].mu_SfxID = sfxData.mu_SfxID;
+        gDelayedSFX[slot].mu_VoiceID = sfxData.mu_VoiceID;
+        gDelayedSFX[slot].mf_Volume = sfxData.mf_Volume;
+        gDelayedSFX[slot].mf_VolReverb = sfxData.mf_VolReverb;
+        gDelayedSFX[slot].mf_Attenuate = sfxData.mf_Attenuate;
+        gDelayedSFX[slot].mf_VolAdjustment = sfxData.mf_VolAdjustment;
+        gDelayedSFX[slot].mf_Panning = sfxData.mf_Panning;
+        gDelayedSFX[slot].mf_DelayTime = sfxData.mf_DelayTime;
+        gDelayedSFX[slot].mf_DebugTimer = sfxData.mf_DebugTimer;
+        gDelayedSFX[slot].mb_Is3D = sfxData.mb_Is3D;
+        gDelayedSFX[slot].mb_IsPlaying = sfxData.mb_IsPlaying;
+        gDelayedSFX[slot].mb_KeepTrack = sfxData.mb_KeepTrack;
+        gDelayedSFX[slot].mb_HasCutoff = sfxData.mb_HasCutoff;
+        gDelayedSFX[slot].mb_Update3DContinuously = sfxData.mb_Update3DContinuously;
+        gDelayedSFX[slot].mb_Pausable = sfxData.mb_Pausable;
+        gDelayedSFX[slot].mb_Restartable = sfxData.mb_Restartable;
+        gDelayedSFX[slot].mb_UseDoppler = sfxData.mb_UseDoppler;
+        gDelayedSFX[slot].mf_ReturnEmitterOnPlay = sfxData.mf_ReturnEmitterOnPlay;
+        gDelayedSFX[slot].mf_CutoffTime = sfxData.mf_CutoffTime;
+        gDelayedSFX[slot].mp_OwnerSFX = sfxData.mp_OwnerSFX;
+        gDelayedSFX[slot].mp_PhysObj = sfxData.mp_PhysObj;
+        gDelayedSFX[slot].pos.vPos.as_u32[0] = sfxData.pos.vPos.as_u32[0];
+        gDelayedSFX[slot].pos.vPos.as_u32[1] = sfxData.pos.vPos.as_u32[1];
+        gDelayedSFX[slot].pos.vPos.as_u32[2] = sfxData.pos.vPos.as_u32[2];
+        gDelayedSFX[slot].dir.vDir.as_u32[0] = sfxData.dir.vDir.as_u32[0];
+        gDelayedSFX[slot].dir.vDir.as_u32[1] = sfxData.dir.vDir.as_u32[1];
+        gDelayedSFX[slot].dir.vDir.as_u32[2] = sfxData.dir.vDir.as_u32[2];
+        gDelayedSFX[slot].posUpdateMethod = sfxData.posUpdateMethod;
+        gDelayedSFX[slot].ms_EventName = sfxData.ms_EventName;
+        gDelayedSFX[slot].mi_SFXPriority = sfxData.mi_SFXPriority;
+        gDelayedSFX[slot].mi_GroupPriority = sfxData.mi_GroupPriority;
+        gDelayedSFX[slot].mi_VolGroup = sfxData.mi_VolGroup;
+        gDelayedSFX[slot].mi_EmitterGroup = sfxData.mi_EmitterGroup;
+        gDelayedSFX[slot].mb_FilterOn = sfxData.mb_FilterOn;
+        gDelayedSFX[slot].mu_FilterFreq = sfxData.mu_FilterFreq;
+        gDelayedSFX[slot].mu_Pitch = sfxData.mu_Pitch;
+        gDelayedSFX[slot].mb_NoPhasingFilter = sfxData.mb_NoPhasingFilter;
+        gDelayedSFX[slot].m_unk_0x7B = sfxData.m_unk_0x7B;
+        gDelayedSFX[slot].m_unk_0x7C = sfxData.m_unk_0x7C;
 
-        if (owner != NULL)
+        if (pOwnerSFX != NULL)
         {
-            gDelayedSFX[freeSlot].mp_OwnerSFX = owner;
+            gDelayedSFX[slot].mp_OwnerSFX = pOwnerSFX;
         }
 
-        if (attr.mf_CutoffTime >= 256.0f)
+        if (sfxData.mf_CutoffTime >= 0.0f)
         {
-            gDelayedSFX[freeSlot].mb_HasCutoff = true;
+            gDelayedSFX[slot].mb_HasCutoff = true;
         }
 
         if (g_pGame != NULL)
         {
-            gDelayedSFX[freeSlot].mf_DebugTimer = g_pGame->GetGameTime();
+            gDelayedSFX[slot].mf_DebugTimer = g_pGame->GetGameTime();
         }
         else
         {
-            gDelayedSFX[freeSlot].mf_DebugTimer = g_fAudioTimer;
+            gDelayedSFX[slot].mf_DebugTimer = g_fAudioTimer;
         }
 
-        return sfxType;
+        return uSFXID;
     }
 
 error:
@@ -1542,13 +1580,13 @@ void SoundAttributes::Init()
     m_unk_0x7C = true;
 }
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x8014122C | size: 0x8
-//  */
-// u32 cGameSFX::GetClassType() const
-// {
-//     return m_classType;
-// }
+/**
+ * Offset/Address/Size: 0x0 | 0x8014122C | size: 0x8
+ */
+eClassType cGameSFX::GetClassType() const
+{
+    return meClassType;
+}
 
 // /**
 //  * Offset/Address/Size: 0x0 | 0x80141234 | size: 0x8C
@@ -1643,8 +1681,9 @@ void SoundAttributes::Init()
 // /**
 //  * Offset/Address/Size: 0x128 | 0x80141500 | size: 0x18
 //  */
-// void
-// nlDLRingGetStart<DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>>(DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>*)
+// DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>*
+// nlDLRingGetStart<DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>>(
+//     DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>*)
 // {
 // }
 
@@ -1711,33 +1750,7 @@ void SoundAttributes::Init()
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x801421E0 | size: 0x14
-//  */
-// void nlStaticSortedSlot<AudioStreamTrack::StreamTrack, 3>::ExpandLookup()
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x14 | 0x801421F4 | size: 0xC
-//  */
-// void nlStaticSortedSlot<AudioStreamTrack::StreamTrack, 3>::FreeLookup()
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x20 | 0x80142200 | size: 0x10
-//  */
-// void nlStaticSortedSlot<AudioStreamTrack::StreamTrack, 3>::FreeEntry(AudioStreamTrack::StreamTrack*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x30 | 0x80142210 | size: 0x24
-//  */
-// void nlStaticSortedSlot<AudioStreamTrack::StreamTrack, 3>::GetNewEntry()
-// {
-// }
+template class nlStaticSortedSlot<AudioStreamTrack::StreamTrack, 3>;
 
 // /**
 //  * Offset/Address/Size: 0x0 | 0x80142234 | size: 0x60
@@ -1793,3 +1806,9 @@ void SoundAttributes::Init()
 // }
 
 } // namespace Audio
+
+/**
+ * Offset/Address/Size: 0x128 | 0x80141500 | size: 0x18
+ */
+template DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>*
+nlDLRingGetStart(DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>*);

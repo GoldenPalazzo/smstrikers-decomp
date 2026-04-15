@@ -1321,7 +1321,7 @@ config.libs = [
             Object(NonMatching, "NL/gc/gcSwizzler.cpp", extra_cflags=["-inline deferred"]),
 
             # Ext/Game-Specific?
-            Object(NonMatching, "NL/StatsGatherer.cpp"),     
+            Object(Matching, "NL/StatsGatherer.cpp", extra_cflags=["-inline deferred"]),     
             Object(Matching, "NL/math.cpp", extra_cflags=["-inline deferred"]),     
             Object(NonMatching, "NL/utility.cpp", extra_cflags=["-inline deferred"]),     
 

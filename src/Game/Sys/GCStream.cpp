@@ -1,5 +1,12 @@
 #include "Game/Sys/GCStream.h"
 
+namespace GCAudioStreaming
+{
+
+nlArrayAllocator<AudioStream::READ_CB_INFO> AudioStream::READ_CB_INFO::s_AllocPool;
+
+}
+
 // /**
 //  * Offset/Address/Size: 0x4AC | 0x801C9630 | size: 0x140
 //  */
@@ -7,12 +14,15 @@
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0x49C | 0x801C9620 | size: 0x10
-//  */
-// void GCAudioStreaming::MonoAudioStream::_AsyncCancelCB(nlFile*, void*, unsigned int, unsigned long, void (*)(nlFile*, void*, unsigned int, unsigned long))
-// {
-// }
+/**
+ * Offset/Address/Size: 0x49C | 0x801C9620 | size: 0x10
+ */
+void GCAudioStreaming::MonoAudioStream::_AsyncCancelCB(nlFile*, void*, unsigned int, unsigned long uParam, void (*)(nlFile*, void*, unsigned int, unsigned long))
+{
+    AudioStream::READ_CB_INFO* pCBInfo = (AudioStream::READ_CB_INFO*)uParam;
+    pCBInfo->m_next = AudioStream::READ_CB_INFO::s_AllocPool.m_pFree;
+    AudioStream::READ_CB_INFO::s_AllocPool.m_pFree = pCBInfo;
+}
 
 // /**
 //  * Offset/Address/Size: 0x470 | 0x801C95F4 | size: 0x2C

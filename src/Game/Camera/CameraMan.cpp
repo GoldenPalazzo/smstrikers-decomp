@@ -2,22 +2,31 @@
 
 #include "NL/nlDLRing.h"
 #include "NL/nlString.h"
+#include "NL/platqmath.h"
 
 #include "Game/Sys/eventman.h"
 
 #include "Game/Camera/animcam.h"
 #include "Game/Camera/rumblefilter.h"
+#include "Game/Camera/GameplayCam.h"
+#include "NL/nlBasicString.h"
 #include "Game/Drawable/DrawableObj.h"
 #include "Game/Field.h"
 #include "Game/Net.h"
+#include "Game/AI/AiUtil.h"
 
 #include "math.h"
+
+extern float g_fSimulationTick;
 
 f32 CANT_COLLIDE = *(f32*)__float_max;
 
 nlMatrix4 cCameraManager::m_matView;
 nlVector3 cCameraManager::m_cameraPosition;
 nlMatrix4 cCameraManager::m_matPrevView;
+float cCameraManager::m_fTransitionSpeed;
+float cCameraManager::m_fTransitionTime;
+float cCameraManager::m_fPrevFOV;
 eCameraTransition cCameraManager::m_transition;
 void (*cCameraManager::m_pCallback)(enum eCameraMessage);
 
@@ -39,11 +48,73 @@ void FireCameraRumbleFilter(float fRumbleX, float fRumbleY)
     }
 }
 
+enum eTeamID
+{
+    TEAM_INVALID = -1,
+    TEAM_DAISY = 0,
+    TEAM_DONKEYKONG = 1,
+    TEAM_LUIGI = 2,
+    TEAM_MARIO = 3,
+    TEAM_PEACH = 4,
+    TEAM_WALUIGI = 5,
+    TEAM_WARIO = 6,
+    TEAM_YOSHI = 7,
+    TEAM_MYSTERY = 8,
+    NUM_TEAMS = 9,
+};
+char* GetTeamName(eTeamID);
+
+extern eCameraType g_eCurrentCameraType;
+
 /**
  * Offset/Address/Size: 0x1768 | 0x801A7DF0 | size: 0x59C
+ * TODO: 91.99% match - MWCC hoists BasicString format string addresses before loop
+ * into extra callee-saved registers (stmw r27 vs stw r31/r30/r29)
  */
 void cCameraManager::Startup()
 {
+    GameplayCamera* pCamera = new (nlMalloc(sizeof(GameplayCamera), 8, false)) GameplayCamera();
+    pCamera->m_pFilter = pRumbleFilter = new (nlMalloc(sizeof(cRumbleFilter), 8, false)) cRumbleFilter();
+
+    if (m_transition != eCT_NONE)
+    {
+        nlPrintf("Camera Transition In Progress\n");
+        if (m_pCallback != NULL)
+            m_pCallback(eCM_ABORTED_BY_PUSH);
+    }
+    m_transition = eCT_NONE;
+
+    if (nlDLRingGetStart<cBaseCamera>(m_cameraStack) != NULL)
+    {
+        if (nlDLRingGetStart<cBaseCamera>(m_cameraStack)->m_pFilter != NULL)
+        {
+            cRumbleFilter* pFilter1 = nlDLRingGetStart<cBaseCamera>(m_cameraStack)->m_pFilter;
+            cRumbleFilter* pFilter2 = nlDLRingGetStart<cBaseCamera>(m_cameraStack)->m_pFilter;
+            float dy = pFilter2->v2Pos0.f.y - pFilter1->v2Pos1.f.y;
+            float dx = pFilter2->v2Pos0.f.x - pFilter1->v2Pos1.f.x;
+            if (nlSqrt(dx * dx + dy * dy, true) > 0.0f)
+            {
+                g_pEventManager->CreateValidEvent(0x58, 0x14);
+            }
+        }
+    }
+
+    nlDLRingAddStart<cBaseCamera>(&m_cameraStack, static_cast<cBaseCamera*>(pCamera));
+    g_eCurrentCameraType = pCamera->GetType();
+
+    cAnimCamera::LoadCameraAnimation("art/cameras/startscreen.cam", "startscreen", true);
+    cAnimCamera::LoadCameraAnimation("art/cameras/ShootToScoreCamera.cam", "ShootToScoreCamera", true);
+
+    for (int i = 0; i < NUM_TEAMS; i++)
+    {
+        BasicString<char, Detail::TempStringAllocator> fileName = Format(BasicString<char, Detail::TempStringAllocator>("art/cameras/{0}_shoottoscorecamera.cam"), GetTeamName((eTeamID)i));
+        BasicString<char, Detail::TempStringAllocator> camName = Format(BasicString<char, Detail::TempStringAllocator>("{0}_ShootToScoreCamera"), GetTeamName((eTeamID)i));
+        cAnimCamera::LoadCameraAnimation(fileName.c_str(), camName.c_str(), true);
+    }
+
+    cAnimCamera::LoadCameraAnimation("art/cameras/pause.cam", "pause", true);
+
+    Update(0.017f);
 }
 
 /**
@@ -59,12 +130,106 @@ void cCameraManager::Shutdown()
 
 /**
  * Offset/Address/Size: 0x10CC | 0x801A7754 | size: 0x664
+ * TODO: 83.48% match - integer-mode float spills (lwz/stw for prevTx/y/z and curTx/y/z)
+ * and branch layout (beq+b vs bne) differ due to MWCC version code generation
  */
-void cCameraManager::Update(float)
+void cCameraManager::Update(float fDeltaT)
 {
+    nlQuaternion qSlerped;
+    nlQuaternion qCur;
+    nlQuaternion qPrev;
+    nlMatrix4 cameraToWorldMatrix;
+    nlMatrix4 prevViewCopy;
+    nlMatrix4 curViewCopy;
+    nlMatrix4 filteredViewNone;
+    nlMatrix4 filteredViewEase;
+
+    if (m_cameraStack == NULL)
+        return;
+    UpdateGameCameraType();
+
+    cBaseCamera* pCamera = nlDLRingGetStart<cBaseCamera>(m_cameraStack);
+    pCamera->mUpVector = m_UpVectorStack[m_UpVectorStackSize];
+    pCamera->Update(fDeltaT);
+    if (pCamera->m_pFilter != NULL)
+        pCamera->m_pFilter->Update(fDeltaT);
+
+    if (m_transition == eCT_NONE)
+        goto handle_none;
+    if (m_transition == eCT_EASE_IN)
+        goto handle_ease_in;
+    goto handle_end;
+
+handle_ease_in:
+{
+    float fSimTick = g_fSimulationTick;
+    pCamera = nlDLRingGetStart<cBaseCamera>(m_cameraStack);
+    if (pCamera != NULL)
+    {
+        prevViewCopy = m_matPrevView;
+        nlMatrixToQuat(qPrev, prevViewCopy);
+
+        curViewCopy = PeekCamera()->GetViewMatrix();
+        if (PeekCamera()->m_pFilter != NULL)
+        {
+            PeekCamera()->m_pFilter->Filter(curViewCopy, filteredViewEase);
+            curViewCopy = filteredViewEase;
+        }
+        nlMatrixToQuat(qCur, curViewCopy);
+
+        float t = m_fTransitionTime;
+        float smoothT = t * t * t * (t * (6.0f * t - 15.0f) + 10.0f);
+        nlQuatSlerp(qSlerped, qPrev, qCur, smoothT);
+        float oneMinusT = 1.0f - smoothT;
+
+        nlQuatToMatrix(m_matView, qSlerped);
+        m_matView.f.m44 = 1.0f;
+        m_matView.f.m41 = smoothT * curViewCopy.f.m41 + oneMinusT * prevViewCopy.f.m41;
+        m_matView.f.m42 = smoothT * curViewCopy.f.m42 + oneMinusT * prevViewCopy.f.m42;
+        m_matView.f.m43 = smoothT * curViewCopy.f.m43 + oneMinusT * prevViewCopy.f.m43;
+
+        float curFOV = pCamera->GetFOV();
+        m_fFOV = Interpolate(m_fPrevFOV, curFOV, smoothT);
+        if (m_fFOV < 1.0f)
+            m_fFOV = 1.0f;
+
+        m_fTransitionTime = m_fTransitionTime + fSimTick * m_fTransitionSpeed;
+        if (m_fTransitionTime > 1.0f)
+        {
+            m_transition = eCT_NONE;
+            if (m_pCallback != NULL)
+            {
+                m_pCallback(eCM_COMPLETE);
+                m_pCallback = NULL;
+            }
+        }
+    }
+    nlInvertRotTransMatrix(cameraToWorldMatrix, m_matView);
+    m_cameraPosition.f.x = cameraToWorldMatrix.f.m41;
+    m_cameraPosition.f.y = cameraToWorldMatrix.f.m42;
+    m_cameraPosition.f.z = cameraToWorldMatrix.f.m43;
+    goto handle_end;
 }
 
-extern eCameraType g_eCurrentCameraType;
+handle_none:
+{
+    m_matView = pCamera->GetViewMatrix();
+    m_cameraPosition = pCamera->GetCameraPosition();
+    m_fFOV = pCamera->GetFOV();
+    if (m_fFOV < 1.0f)
+        m_fFOV = 1.0f;
+    if (PeekCamera()->m_pFilter != NULL)
+    {
+        PeekCamera()->m_pFilter->Filter(m_matView, filteredViewNone);
+        m_matView = filteredViewNone;
+    }
+}
+
+handle_end:
+    m_aJoystickRemap = (u16)(int)(nlATan2f(m_matView.f.m23, m_matView.f.m13) * 10430.378f);
+    m_aJoystickRemap += 0x8000;
+}
+
 extern World* s_World__12WorldManager;
 
 class Config
@@ -129,12 +294,6 @@ class cKickOffCamera
 {
 public:
     cKickOffCamera();
-};
-
-class GameplayCamera
-{
-public:
-    GameplayCamera();
 };
 
 class GoalCamera
@@ -366,10 +525,6 @@ void cCameraManager::Remove(eCameraType type, bool bDeleteAfterRemoving)
  */
 /* static */ void cCameraManager::PushCameraWithTransition(cBaseCamera* pCamera, float fDuration, eCameraTransition transition, void (*pCallback)(eCameraMessage))
 {
-    extern float m_fTransitionSpeed__14cCameraManager;
-    extern float m_fTransitionTime__14cCameraManager;
-    extern float m_fPrevFOV__14cCameraManager;
-
     if (cCameraManager::m_transition != eCT_NONE)
     {
         nlPrintf("Camera Transition In Progress\n");
@@ -379,26 +534,26 @@ void cCameraManager::Remove(eCameraType type, bool bDeleteAfterRemoving)
         }
     }
 
-    cCameraManager::m_matPrevView = nlDLRingGetStart<cBaseCamera>(cCameraManager::m_cameraStack)->GetViewMatrix();
-    m_fPrevFOV__14cCameraManager = nlDLRingGetStart<cBaseCamera>(cCameraManager::m_cameraStack)->GetFOV();
+    cCameraManager::m_matPrevView = cCameraManager::PeekCamera()->GetViewMatrix();
+    cCameraManager::m_fPrevFOV = cCameraManager::PeekCamera()->GetFOV();
 
-    if (nlDLRingGetStart<cBaseCamera>(cCameraManager::m_cameraStack)->m_pFilter != NULL)
+    if (cCameraManager::PeekCamera()->m_pFilter != NULL)
     {
         nlMatrix4 matView;
-        nlDLRingGetStart<cBaseCamera>(cCameraManager::m_cameraStack)->m_pFilter->Filter(cCameraManager::m_matPrevView, matView);
+        cCameraManager::PeekCamera()->m_pFilter->Filter(cCameraManager::m_matPrevView, matView);
         cCameraManager::m_matPrevView = matView;
     }
 
     cCameraManager::m_transition = transition;
     cCameraManager::m_pCallback = pCallback;
-    m_fTransitionSpeed__14cCameraManager = 1.0f / fDuration;
-    m_fTransitionTime__14cCameraManager = 0.0f;
+    cCameraManager::m_fTransitionSpeed = 1.0f / fDuration;
+    cCameraManager::m_fTransitionTime = 0.0f;
 
-    if ((nlDLRingGetStart<cBaseCamera>(cCameraManager::m_cameraStack) != NULL)
-        && (nlDLRingGetStart<cBaseCamera>(cCameraManager::m_cameraStack)->m_pFilter != 0))
+    if ((cCameraManager::PeekCamera() != NULL)
+        && (cCameraManager::PeekCamera()->m_pFilter != 0))
     {
-        cRumbleFilter* filter1 = nlDLRingGetStart<cBaseCamera>(cCameraManager::m_cameraStack)->m_pFilter;
-        cRumbleFilter* filter2 = nlDLRingGetStart<cBaseCamera>(cCameraManager::m_cameraStack)->m_pFilter;
+        cRumbleFilter* filter1 = cCameraManager::PeekCamera()->m_pFilter;
+        cRumbleFilter* filter2 = cCameraManager::PeekCamera()->m_pFilter;
 
         nlVector2 diff_pos;
         nlVec2Set(diff_pos, filter2->v2Pos0.f.x - filter1->v2Pos1.f.x, filter2->v2Pos0.f.y - filter1->v2Pos1.f.y);
@@ -416,10 +571,6 @@ void cCameraManager::Remove(eCameraType type, bool bDeleteAfterRemoving)
  */
 /* static */ cBaseCamera* cCameraManager::PopCameraWithTransition(float fDuration, eCameraTransition transition, void (*pCallback)(eCameraMessage))
 {
-    extern float m_fTransitionSpeed__14cCameraManager;
-    extern float m_fTransitionTime__14cCameraManager;
-    extern float m_fPrevFOV__14cCameraManager;
-
     if (cCameraManager::m_transition != eCT_NONE)
     {
         nlPrintf("Camera Transition In Progress\n");
@@ -429,27 +580,27 @@ void cCameraManager::Remove(eCameraType type, bool bDeleteAfterRemoving)
         }
     }
 
-    cCameraManager::m_matPrevView = nlDLRingGetStart<cBaseCamera>(cCameraManager::m_cameraStack)->GetViewMatrix();
-    m_fPrevFOV__14cCameraManager = nlDLRingGetStart<cBaseCamera>(cCameraManager::m_cameraStack)->GetFOV();
+    cCameraManager::m_matPrevView = cCameraManager::PeekCamera()->GetViewMatrix();
+    cCameraManager::m_fPrevFOV = cCameraManager::PeekCamera()->GetFOV();
 
-    if (nlDLRingGetStart<cBaseCamera>(cCameraManager::m_cameraStack)->m_pFilter != NULL)
+    if (cCameraManager::PeekCamera()->m_pFilter != NULL)
     {
         nlMatrix4 matView;
-        nlDLRingGetStart<cBaseCamera>(cCameraManager::m_cameraStack)->m_pFilter->Filter(cCameraManager::m_matPrevView, matView);
+        cCameraManager::PeekCamera()->m_pFilter->Filter(cCameraManager::m_matPrevView, matView);
         cCameraManager::m_matPrevView = matView;
     }
 
     cCameraManager::m_transition = transition;
     cCameraManager::m_pCallback = pCallback;
-    m_fTransitionSpeed__14cCameraManager = 1.0f / fDuration;
-    m_fTransitionTime__14cCameraManager = 1.0f - m_fTransitionTime__14cCameraManager;
+    cCameraManager::m_fTransitionSpeed = 1.0f / fDuration;
+    cCameraManager::m_fTransitionTime = 1.0f - cCameraManager::m_fTransitionTime;
 
     cBaseCamera* pRemoved = nlDLRingRemoveStart<cBaseCamera>(&cCameraManager::m_cameraStack);
 
-    if (nlDLRingGetStart<cBaseCamera>(cCameraManager::m_cameraStack)->m_pFilter != NULL)
+    if (cCameraManager::PeekCamera()->m_pFilter != NULL)
     {
-        nlDLRingGetStart<cBaseCamera>(cCameraManager::m_cameraStack)->m_pFilter->Reset();
-        nlDLRingGetStart<cBaseCamera>(cCameraManager::m_cameraStack)->Reactivate();
+        cCameraManager::PeekCamera()->m_pFilter->Reset();
+        cCameraManager::PeekCamera()->Reactivate();
     }
 
     return pRemoved;
@@ -457,10 +608,8 @@ void cCameraManager::Remove(eCameraType type, bool bDeleteAfterRemoving)
 
 /**
  * Offset/Address/Size: 0x200 | 0x801A6888 | size: 0x390
- * TODO: 92.16% match - -inline deferred causes stmw r27 vs stw r28 (5 vs 4 GPRs),
- * normalsBase r28 vs r0/sp, float reg allocation diffs in loop body and normalize
  */
-bool cCameraManager::IsObjectOccludingField(const DrawableObject* drawable)
+unsigned char cCameraManager::IsObjectOccludingField(const DrawableObject* drawable)
 {
     const nlMatrix4& worldMatrix = drawable->GetWorldMatrix();
     nlVector3 objectPosition = *(const nlVector3*)&worldMatrix.f.m41;
@@ -572,17 +721,9 @@ bool cCameraManager::IsObjectOccludingField(const DrawableObject* drawable)
         return false;
 
     float lastDot = pNormals[3].f.x * objectDeltaX + pNormals[3].f.y * objectDeltaY + pNormals[3].f.z * objectDeltaZ;
-    unsigned char result;
     if (lastDot > objectRadius)
-    {
-        result = 0;
-    }
-    else
-    {
-        result = 1;
-    }
-
-    return result;
+        return 0;
+    return 1;
 }
 
 /**

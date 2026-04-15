@@ -49,7 +49,7 @@ public:
     {
         virtual void TagValuePair(const BasicString<char, Detail::TempStringAllocator>&, const BasicString<char, Detail::TempStringAllocator>&) { FORCE_DONT_INLINE; }
         virtual void Section(const BasicString<char, Detail::TempStringAllocator>&) { FORCE_DONT_INLINE; }
-        virtual void Comment() { FORCE_DONT_INLINE; }
+        virtual void Comment(const BasicString<char, Detail::TempStringAllocator>&) { FORCE_DONT_INLINE; }
         virtual void EmptyLine() { FORCE_DONT_INLINE; }
     }; // total size: 0x4
 
@@ -172,7 +172,7 @@ struct SetTagValuePair : public Config::Parser
 
     virtual void TagValuePair(const BasicString<char, Detail::TempStringAllocator>&, const BasicString<char, Detail::TempStringAllocator>&);
     virtual void Section(const BasicString<char, Detail::TempStringAllocator>&);
-    virtual void Comment();
+    virtual void Comment(const BasicString<char, Detail::TempStringAllocator>&);
 }; // total size: 0x1C
 
 // class BasicString<char, Detail

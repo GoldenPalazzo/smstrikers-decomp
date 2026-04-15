@@ -168,10 +168,7 @@ public:
 
     virtual AVLTreeNode* AllocateEntry(void* key, void* value);
 
-    AVLTreeEntry<KeyType, ValueType>* CastUp(AVLTreeNode* node) const
-    {
-        return (AVLTreeEntry<KeyType, ValueType>*)node;
-    };
+    AVLTreeEntry<KeyType, ValueType>* CastUp(AVLTreeNode* node) const;
 
 public:
     /* 0x04 */ AllocatorType m_Allocator;
@@ -179,6 +176,12 @@ public:
     /* 0x0C */ CompareType* m_Compare;
     /* 0x10 */ unsigned int m_NumElements;
 }; // total size: 0x14
+
+template <typename KeyType, typename ValueType, typename AllocatorType, typename CompareType>
+inline AVLTreeEntry<KeyType, ValueType>* AVLTreeBase<KeyType, ValueType, AllocatorType, CompareType>::CastUp(AVLTreeNode* node) const
+{
+    return (AVLTreeEntry<KeyType, ValueType>*)node;
+}
 
 template <typename KeyType, typename ValueType, typename AllocatorType, typename CompareType>
 void AVLTreeBase<KeyType, ValueType, AllocatorType, CompareType>::DeleteEntry(AVLTreeEntry<KeyType, ValueType>* entry)
@@ -267,13 +270,6 @@ AVLTreeNode* AVLTreeBase<KeyType, ValueType, AllocatorType, CompareType>::Alloca
 
     return (AVLTreeNode*)newNode;
 }
-
-// // Fix CastUp return type (line 179)
-// template <typename KeyType, typename ValueType, typename AllocatorType, typename CompareType>
-// AVLTreeEntry<KeyType, ValueType>* AVLTreeBase<KeyType, ValueType, AllocatorType, CompareType>::CastUp(AVLTreeNode* node) const
-// {
-//     return (AVLTreeEntry<KeyType, ValueType>*)node;
-// }
 
 template <typename KeyType, typename ValueType, typename AllocatorType, typename CompareType>
 template <typename CallbackType>

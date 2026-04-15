@@ -1,5 +1,16 @@
 #include "Game/Audio/AudioScriptEventMgr.h"
 
+#include "NL/nlList.h"
+#include "NL/nlSlotPool.h"
+
+struct AUDIO_EVENT_RECORD
+{
+    /* 0x0 */ AudioScriptEventMgr::AUDIO_EVENT Event : 16;
+    /* 0x2 */ AudioScriptEventMgr::AUDIO_EVENT_TEAM Team : 16;
+};
+
+template class ListContainerBase<AUDIO_EVENT_RECORD, BasicSlotPool<ListEntry<AUDIO_EVENT_RECORD> > >;
+
 // /**
 //  * Offset/Address/Size: 0xD0 | 0x8014B7EC | size: 0x2C
 //  */

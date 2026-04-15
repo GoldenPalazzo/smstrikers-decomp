@@ -367,8 +367,9 @@ EffectsSpec::EffectsSpec()
 
 /**
  * Offset/Address/Size: 0xA30 | 0x801F3478 | size: 0x540
- * TODO: 93.0% match - stack frame/local layout still diverges (0xB0 vs 0xE0),
- * mainly from initialization staging for local/default spec data before token parsing.
+ * TODO: 94.45% match - the init default struct's per-field stores for m_eAttach
+ * through m_fLingerEnd are optimized away (the values are never read); the target
+ * retains those stores.
  */
 struct EffectsSpecShadow
 {
@@ -385,9 +386,7 @@ struct EffectsSpecShadow
     u8 m_bLight;
     u8 _pad23;
     f32 m_fOffset;
-    u32 m_vLocalOffsetX;
-    u32 m_vLocalOffsetY;
-    u32 m_vLocalOffsetZ;
+    nlVector3 m_vLocalOffset;
     EffectsTerrainSpec* m_pTerrainSpec;
     f32 m_fLingerStart;
     f32 m_fLingerEnd;
@@ -398,13 +397,12 @@ bool parse_spec(SimpleParser* parser, EffectsSpec& spec)
     char* token;
     char* lingerStartToken = nullptr;
     char* nextToken = nullptr;
-    nlVector3 localOffset;
     EffectsSpecShadow init;
     char jointName[128];
 
-    localOffset.f.x = 0.0f;
-    localOffset.f.y = 0.0f;
-    localOffset.f.z = 0.0f;
+    init.m_vLocalOffset.f.x = 0.0f;
+    init.m_vLocalOffset.f.y = 0.0f;
+    init.m_vLocalOffset.f.z = 0.0f;
 
     spec.m_uHashID = 0;
     spec.m_pTemplate = nullptr;
@@ -418,15 +416,12 @@ bool parse_spec(SimpleParser* parser, EffectsSpec& spec)
     spec.m_bGround = false;
     spec.m_bLight = false;
     spec.m_fOffset = 0.0f;
-    spec.m_vLocalOffset.as_u32[0] = localOffset.as_u32[0];
-    spec.m_vLocalOffset.as_u32[1] = localOffset.as_u32[1];
-    spec.m_vLocalOffset.as_u32[2] = localOffset.as_u32[2];
+    spec.m_vLocalOffset.as_u32[0] = init.m_vLocalOffset.as_u32[0];
+    spec.m_vLocalOffset.as_u32[1] = init.m_vLocalOffset.as_u32[1];
+    spec.m_vLocalOffset.as_u32[2] = init.m_vLocalOffset.as_u32[2];
     spec.m_pTerrainSpec = nullptr;
     spec.m_fLingerStart = -1.0f;
-    spec.m_fLingerEnd = -1.0f;
 
-    init.m_uHashID = 0;
-    init.m_pTemplate = nullptr;
     init.m_eAttach = FXBind_Emitter;
     init.m_uJointID = 0;
     init.m_fDelay = 0.0f;
@@ -436,14 +431,12 @@ bool parse_spec(SimpleParser* parser, EffectsSpec& spec)
     init.m_bInFront = false;
     init.m_bGround = false;
     init.m_bLight = false;
-    init._pad23 = 0;
     init.m_fOffset = 0.0f;
-    init.m_vLocalOffsetX = localOffset.as_u32[0];
-    init.m_vLocalOffsetY = localOffset.as_u32[1];
-    init.m_vLocalOffsetZ = localOffset.as_u32[2];
     init.m_pTerrainSpec = nullptr;
     init.m_fLingerStart = -1.0f;
     init.m_fLingerEnd = -1.0f;
+
+    spec.m_fLingerEnd = -1.0f;
 
     token = parser->NextToken(true);
     if (token == nullptr)

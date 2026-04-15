@@ -14,6 +14,12 @@ class TLImageInstance;
 
 struct CreditParser
 {
+    CreditParser()
+        : mFileData(NULL)
+        , mActualSize(0)
+        , mActualData(NULL)
+    {
+    }
     /* 0x00 */ unsigned long mFileSize;   // size 0x4
     /* 0x04 */ char* mFileData;           // size 0x4
     /* 0x08 */ unsigned long mActualSize; // size 0x4
@@ -44,7 +50,7 @@ public:
     /*  0x044 */ bool mLineOnScreen[10];           // offset 0x44, size 0xA
     /*  0x04E */ bool mAreCreditsOver;             // offset 0x4E, size 0x1
     /*  0x04F */ bool mFinalMessageDisplayed;      // offset 0x4F, size 0x1
-    /*  0x050 */ float mTimeElapsed;               // offset 0x50, size 0x4
+    /*  0x050 */ bool mTimeElapsed;                // offset 0x50, size 0x1
     /*  0x054 */ CreditParser mCreditParser;       // offset 0x54, size 0x524
     /*  0x578 */ unsigned short mStrings[10][64];  // offset 0x578, size 0x500
 }; // total size: 0xA78

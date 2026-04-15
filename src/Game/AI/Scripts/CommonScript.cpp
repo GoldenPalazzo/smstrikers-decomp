@@ -402,8 +402,8 @@ FuzzyVariant Fuzzy::GetBestBallInterceptor(cTeam* TheTeam)
 
 /**
  * Offset/Address/Size: 0xE40C | 0x800785DC | size: 0x5D0
- * TODO: 93.54% match - distance calc register allocation and fabs f0/f1 swap
- * from -inline deferred scheduling; stack offset diffs for FuzzyVariant temps
+ * TODO: 95.26% match - stack offset diffs for FuzzyVariant temps and SRP
+ * slot from -inline deferred vs -inline auto compilation
  */
 FuzzyVariant Fuzzy::GetSwapControllerScore(cPlayer* ThePlayer)
 {
@@ -457,12 +457,12 @@ FuzzyVariant Fuzzy::GetSwapControllerScore(cPlayer* ThePlayer)
     if (flag)
     {
         float dt = 0.1f;
-        float pz = ThePlayer->m_v3Position.f.y + dt * ThePlayer->m_v3Velocity.f.y;
-        float tz = passTarget->m_v3Position.f.y + dt * passTarget->m_v3Velocity.f.y;
         float px = ThePlayer->m_v3Position.f.x + dt * ThePlayer->m_v3Velocity.f.x;
         float tx = passTarget->m_v3Position.f.x + dt * passTarget->m_v3Velocity.f.x;
-        float dy = pz - tz;
+        float pz = ThePlayer->m_v3Position.f.y + dt * ThePlayer->m_v3Velocity.f.y;
+        float tz = passTarget->m_v3Position.f.y + dt * passTarget->m_v3Velocity.f.y;
         float dx = px - tx;
+        float dy = pz - tz;
         float dist = nlSqrt(dx * dx + dy * dy, true);
         float maxDist = 2.0f * cField::mv3FieldPosition.f.x;
         float range = 0.5f * maxDist;
@@ -480,7 +480,7 @@ FuzzyVariant Fuzzy::GetSwapControllerScore(cPlayer* ThePlayer)
         float defense = 1.0f - offensive;
         team = ThePlayer != NULL ? ThePlayer->m_pTeam : NULL;
         float defResult = Defensive(team);
-        if (defResult > defense)
+        if (!(defResult <= defense))
             defResult = defense;
         if (defResult)
         {

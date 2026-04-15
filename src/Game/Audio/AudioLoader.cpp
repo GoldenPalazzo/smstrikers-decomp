@@ -168,12 +168,8 @@ extern bool gReverbOn__11AudioLoader;
 //  {
 //  }
 
-//  /**
-//   * Offset/Address/Size: 0x0 | 0x801482CC | size: 0x58
-//   */
-//  void AVLTreeBase<int, SoundStrToIDNode*, BasicSlotPool<AVLTreeEntry<int, SoundStrToIDNode*>>, DefaultKeyCompare<int>>::Clear()
-//  {
-//  }
+// Force template instantiation for AVLTreeBase<int, SoundStrToIDNode*, ...>
+template class AVLTreeBase<int, SoundStrToIDNode*, BasicSlotPool<AVLTreeEntry<int, SoundStrToIDNode*> >, DefaultKeyCompare<int> >;
 
 /**
  * Offset/Address/Size: 0x398 | 0x801481F8 | size: 0xD4
@@ -231,12 +227,13 @@ void GCAudioStreaming::AudioStream::WarmReadDone(GCAudioStreaming::AudioStreamBu
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0x344 | 0x801481A4 | size: 0xC
-//  */
-// void GCAudioStreaming::AudioStream::Purge()
-// {
-// }
+/**
+ * Offset/Address/Size: 0x344 | 0x801481A4 | size: 0xC
+ */
+void GCAudioStreaming::AudioStream::Purge()
+{
+    m_State = SS_New;
+}
 
 // /**
 //  * Offset/Address/Size: 0x70 | 0x80147ED0 | size: 0x2D4

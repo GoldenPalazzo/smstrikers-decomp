@@ -41,6 +41,8 @@ struct PassBallData : public EventData
     /* 0x00 */ cPlayer* pPasser;
     /* 0x04 */ cPlayer* pTarget;
     /* 0x08 */ s32 mPasserControllerID;
+
+    virtual u32 GetID();
 };
 
 class cBall

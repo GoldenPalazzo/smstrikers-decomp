@@ -44,6 +44,30 @@ extern "C" void* memcpy(void*, const void*, unsigned long);
 extern "C" void* memset(void*, int, unsigned long);
 
 /**
+ * Offset/Address/Size: 0x0 | 0x801CBF64 | size: 0x10
+ */
+extern "C" s32 THPSimpleGetCurrentFrame()
+{
+    return ((THPSimpleControlWork*)&SimpleControl)->textureSet.mFrameNumber;
+}
+
+/**
+ * Offset/Address/Size: 0xB74 | 0x801CCAD8 | size: 0x14
+ */
+extern "C" void THPSimpleAudioStop()
+{
+    ((THPSimpleControlWork*)&SimpleControl)->audioState = 0;
+}
+
+/**
+ * Offset/Address/Size: 0xB88 | 0x801CCAEC | size: 0x14
+ */
+extern "C" void THPSimpleAudioStart()
+{
+    ((THPSimpleControlWork*)&SimpleControl)->audioState = 1;
+}
+
+/**
  * Offset/Address/Size: 0x17E4 | 0x801CD748 | size: 0x4
  */
 void __THPAsyncCancelCB(nlFile*, void*, unsigned int, unsigned long, void (*)(nlFile*, void*, unsigned int, unsigned long))

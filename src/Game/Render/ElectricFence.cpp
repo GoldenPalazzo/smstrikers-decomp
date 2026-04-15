@@ -297,10 +297,36 @@ void glSetMatrix(unsigned long, const nlMatrix4&);
 bool glAttachQuad3(eGLView, unsigned long, glQuad3*, bool);
 void glViewAttachModel(eGLView, const glModel*);
 
+static inline void RenderElectricFenceFlat(const nlVector3& position, const nlVector3& normal, float intensity)
+{
+    extern float sfGridTextureSize;
+    extern unsigned long GridTexture;
+
+    nlMatrix4 matrix;
+    nlMakeRotationMatrixX(matrix, 1.5707964f);
+
+    float angle = nlATan2f(normal.f.y, normal.f.x);
+    nlMatrix4 matrix2;
+    nlMakeRotationMatrixZ(matrix2, 0.0000958738f * (float)(u16)(s32)(10430.378f * angle));
+    nlMultMatrices(matrix, matrix, matrix2);
+
+    matrix.f.m41 = position.f.x;
+    matrix.f.m42 = position.f.y;
+    matrix.f.m43 = position.f.z;
+    matrix.f.m44 = 1.0f;
+
+    glQuad3 quad;
+    quad.SetupRotatedRectangle(sfGridTextureSize, sfGridTextureSize, matrix, false, false);
+
+    u8 lightenAmount = (u8)(255.0f * intensity);
+    quad.SetColour(lightenAmount, lightenAmount, lightenAmount, 0xFF);
+    glAttachQuad3(GLV_ElectricFence, 1, &quad, true);
+}
+
 /**
  * Offset/Address/Size: 0x89C | 0x8016B8CC | size: 0x420
- * TODO: 90.4% match - register allocation diffs (ec r28→r29, pElectricFenceData r31→r28)
- *       due to -inline deferred vs -inline auto; placement new extra beq; matrix stack offset 0xa4→0x24
+ * TODO: 91.5% match - register allocation diffs (ec r28→r29, pElectricFenceData r31→r28),
+ *       search loop r4→r31, placement new extra beq; all due to -inline deferred vs -inline auto
  */
 void RenderElectricFence(EmissionController& ec)
 {
@@ -376,25 +402,7 @@ void RenderElectricFence(EmissionController& ec)
         glSetTextureState(GLTS_DiffuseWrap, 0);
         glSetCurrentTextureState(glHandleizeTextureState());
 
-        nlMatrix4 matrix;
-        nlMakeRotationMatrixX(matrix, 1.5707964f);
-
-        float angle = nlATan2f(normal.f.y, normal.f.x);
-        nlMatrix4 matrix2;
-        nlMakeRotationMatrixZ(matrix2, 0.0000958738f * (float)(u16)(s32)(10430.378f * angle));
-        nlMultMatrices(matrix, matrix, matrix2);
-
-        matrix.f.m41 = pElectricFenceData->mPosition.f.x;
-        matrix.f.m42 = pElectricFenceData->mPosition.f.y;
-        matrix.f.m43 = pElectricFenceData->mPosition.f.z;
-        matrix.f.m44 = 1.0f;
-
-        glQuad3 quad;
-        quad.SetupRotatedRectangle(sfGridTextureSize, sfGridTextureSize, matrix, false, false);
-
-        u8 lightenAmount = (u8)(255.0f * intensity);
-        quad.SetColour(lightenAmount, lightenAmount, lightenAmount, 0xFF);
-        glAttachQuad3(GLV_ElectricFence, 1, &quad, true);
+        RenderElectricFenceFlat(pElectricFenceData->mPosition, normal, intensity);
 
         glSetDefaultState(false);
         return;

@@ -118,14 +118,33 @@ public:
 template <typename To, typename From>
 To LexicalCast(const From&);
 
+/**
+ * Offset/Address/Size: 0x68 | 0x80127308 | size: 0x8
+ */
+template <>
+const char* LexicalCast<const char*, const char*>(const char* const& from)
+{
+    return from;
+}
+
+/**
+ * Offset/Address/Size: 0x50 | 0x801272F0 | size: 0x18
+ */
+template <>
+const char* LexicalCast<const char*, bool>(const bool& from)
+{
+    return from ? "true" : "false";
+}
+
 int nlSNPrintf(char*, unsigned long, const char*, ...);
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x801272A0 | size: 0x8
-//  */
-// void NISData::GetID()
-// {
-// }
+/**
+ * Offset/Address/Size: 0x3DC | 0x801272A0 | size: 0x8
+ */
+u32 NISData::GetID()
+{
+    return 0x1a5;
+}
 
 // /**
 //  * Offset/Address/Size: 0x0 | 0x801267BC | size: 0xAE4

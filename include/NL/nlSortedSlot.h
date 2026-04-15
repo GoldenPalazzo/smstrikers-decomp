@@ -38,4 +38,39 @@ public:
     /* 0x64 */ nlArrayAllocator<T> m_ArrayAllocator;
 }; // total size: depends on T, N
 
+template <typename T, int N>
+void nlStaticSortedSlot<T, N>::ExpandLookup()
+{
+    this->m_pEntryLookup = m_LookupData;
+    this->m_LookupAllocated = N;
+}
+
+template <typename T, int N>
+void nlStaticSortedSlot<T, N>::FreeLookup()
+{
+    this->m_LookupAllocated = 0;
+}
+
+template <typename T, int N>
+void nlStaticSortedSlot<T, N>::FreeEntry(T* entry)
+{
+    *(T**)entry = m_ArrayAllocator.m_pFree;
+    m_ArrayAllocator.m_pFree = entry;
+}
+
+template <typename T, int N>
+T* nlStaticSortedSlot<T, N>::GetNewEntry()
+{
+    T* pEntry = m_ArrayAllocator.m_pFree;
+    if (pEntry == 0)
+    {
+        pEntry = 0;
+    }
+    else
+    {
+        m_ArrayAllocator.m_pFree = *(T**)pEntry;
+    }
+    return pEntry;
+}
+
 #endif // _NLSORTEDSLOT_H_

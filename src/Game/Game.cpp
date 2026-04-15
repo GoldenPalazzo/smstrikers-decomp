@@ -52,12 +52,86 @@ void std::allocator<std::pair<const unsigned long, FuzzyVariant> >::destroy(std:
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800401BC | size: 0x4
-//  */
-// void Metrowerks::details::compressed_pair_imp<std::allocator<std::__tree<std::pair<const unsigned long, FuzzyVariant>, std::map<unsigned long, FuzzyVariant, std::less<unsigned long>, std::allocator<std::pair<const unsigned long, FuzzyVariant> > >::value_compare, std::allocator<std::pair<const unsigned long, FuzzyVariant> > >::node>, std::__red_black_tree<1>::anchor, 1>::first()
-// {
-// }
+/**
+ * Offset/Address/Size: 0x0 | 0x800401BC | size: 0x4
+ */
+namespace std
+{
+
+template <class Arg1, class Arg2, class Result>
+struct binary_function
+{
+};
+
+template <class T>
+struct less : public binary_function<T, T, bool>
+{
+};
+
+template <class Key, class Value, class Compare, class Allocator>
+class map
+{
+public:
+    class value_compare : public binary_function<Value, Value, bool>
+    {
+    protected:
+        Compare comp;
+    };
+};
+
+template <int N>
+class __red_black_tree
+{
+public:
+    struct anchor
+    {
+    };
+};
+
+template <class T, class Compare, class Allocator>
+class __tree
+{
+public:
+    struct node
+    {
+    };
+
+private:
+    Metrowerks::details::compressed_pair_imp<Allocator, unsigned long, 1> alloc_;
+    Metrowerks::details::compressed_pair_imp<std::allocator<node>, __red_black_tree<1>::anchor, 1> node_alloc_;
+
+public:
+    void alloc();
+    std::allocator<node>& node_alloc();
+};
+
+} // namespace std
+
+typedef std::pair<const unsigned long, FuzzyVariant> _PairT;
+typedef std::map<unsigned long, FuzzyVariant, std::less<unsigned long>, std::allocator<_PairT> > _MapT;
+typedef std::__tree<_PairT, _MapT::value_compare, std::allocator<_PairT> > _TreeT;
+typedef std::allocator<_TreeT::node> _NodeAllocT;
+typedef std::__red_black_tree<1>::anchor _AnchorT;
+
+#pragma dont_inline on
+namespace Metrowerks
+{
+namespace details
+{
+template <>
+_NodeAllocT& compressed_pair_imp<_NodeAllocT, _AnchorT, 1>::first()
+{
+    return *this;
+}
+} // namespace details
+} // namespace Metrowerks
+#pragma dont_inline reset
+
+static void _dummy_compressed_pair_first()
+{
+    Metrowerks::details::compressed_pair_imp<_NodeAllocT, _AnchorT, 1> obj;
+    obj.first();
+}
 
 // /**
 //  * Offset/Address/Size: 0xAC | 0x80040190 | size: 0x2C
@@ -108,19 +182,20 @@ void std::allocator<std::pair<const unsigned long, FuzzyVariant> >::destroy(std:
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0x3D0 | 0x8003FFF4 | size: 0x4
-//  */
-// void std::__tree<std::pair<const unsigned long, FuzzyVariant>, std::map<unsigned long, FuzzyVariant, std::less<unsigned long>, std::allocator<std::pair<const unsigned long, FuzzyVariant> > >::value_compare, std::allocator<std::pair<const unsigned long, FuzzyVariant> > >::alloc()
-// {
-// }
+/**
+ * Offset/Address/Size: 0x3D0 | 0x8003FFF4 | size: 0x4
+ */
+void std::__tree<std::pair<const unsigned long, FuzzyVariant>, std::map<unsigned long, FuzzyVariant, std::less<unsigned long>, std::allocator<std::pair<const unsigned long, FuzzyVariant> > >::value_compare, std::allocator<std::pair<const unsigned long, FuzzyVariant> > >::alloc()
+{
+}
 
-// /**
-//  * Offset/Address/Size: 0x3C8 | 0x8003FFEC | size: 0x8
-//  */
-// void std::__tree<std::pair<const unsigned long, FuzzyVariant>, std::map<unsigned long, FuzzyVariant, std::less<unsigned long>, std::allocator<std::pair<const unsigned long, FuzzyVariant> > >::value_compare, std::allocator<std::pair<const unsigned long, FuzzyVariant> > >::node_alloc()
-// {
-// }
+/**
+ * Offset/Address/Size: 0x3C8 | 0x8003FFEC | size: 0x8
+ */
+_NodeAllocT& _TreeT::node_alloc()
+{
+    return (_NodeAllocT&)node_alloc_;
+}
 
 // /**
 //  * Offset/Address/Size: 0x0 | 0x8003FC24 | size: 0x3C8
@@ -220,12 +295,12 @@ void std::allocator<std::pair<const unsigned long, FuzzyVariant> >::destroy(std:
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x8003EF84 | size: 0x80
-//  */
-// ScriptQuestionCache::~ScriptQuestionCache()
-// {
-// }
+/**
+ * Offset/Address/Size: 0x0 | 0x8003EF84 | size: 0x80
+ */
+ScriptQuestionCache::~ScriptQuestionCache()
+{
+}
 
 // /**
 //  * Offset/Address/Size: 0x0 | 0x8003EF4C | size: 0x38

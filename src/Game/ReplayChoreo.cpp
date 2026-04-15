@@ -12,53 +12,7 @@ struct GoalScoredDataExt
     int sideOfInterest;
 };
 
-namespace Detail
-{
-class TempStringAllocator;
-}
-
-struct BasicStringDataHack
-{
-    char* mData;
-    int mSize;
-    int mCapacity;
-    int mRefCount;
-};
-
-template <typename CharT, typename Allocator>
-class BasicString
-{
-public:
-    BasicStringDataHack* m_data;
-
-    ~BasicString()
-    {
-        if (m_data)
-        {
-            BasicStringDataHack* data = m_data;
-            if (--data->mRefCount == 0)
-            {
-                if (data)
-                {
-                    if (data)
-                    {
-                        delete[] data->mData;
-                    }
-                    if (data)
-                    {
-                        nlFree(data);
-                    }
-                }
-            }
-        }
-    }
-
-    const CharT* c_str() const
-    {
-        static CharT emptyString = '\0';
-        return m_data ? (const CharT*)m_data->mData : &emptyString;
-    }
-};
+typedef BasicStringData<char> BasicStringDataHack;
 
 class NetMesh
 {

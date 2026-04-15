@@ -3,6 +3,7 @@
 
 #include "NL/nlDLRing.h"
 #include "NL/nlAdapter.h"
+#include "NL/nlArrayAllocator.h"
 
 template <typename T, typename Adapter>
 class DLListContainerBase
@@ -32,6 +33,12 @@ public:
     /* 0x0 */ Adapter m_Allocator;     // offset 0x0, size 0x18
     /* 0x18 */ DLListEntry<T>* m_Head; // offset 0x18, size 0x4
 }; // total size: 0x1C
+
+template <typename T, typename Adapter>
+void DLListContainerBase<T, Adapter>::DeleteEntry(DLListEntry<T>* entry)
+{
+    m_Allocator.DeleteEntry(entry);
+}
 
 template <typename T>
 class nlDLListContainer : public DLListContainerBase<T, NewAdapter<DLListEntry<T> > >

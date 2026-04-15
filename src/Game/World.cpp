@@ -373,7 +373,7 @@ class cCameraManager
 public:
     static int m_pBeginFrameCameraType;
     static cBaseCamera* m_cameraStack;
-    static bool IsObjectOccludingField(const DrawableObject*);
+    static unsigned char IsObjectOccludingField(const DrawableObject*);
 };
 
 struct MatrixEffectCamStub
@@ -1267,19 +1267,19 @@ World::World(const char* szWorldName)
     m_GlobalLightRampSTSTex = m_LightRampTexA;
 }
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x80198C14 | size: 0x4
-//  */
-// void World::FixedUpdate(float)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x0 | 0x80198C14 | size: 0x4
+ */
+void World::FixedUpdate(float dt)
+{
+}
 
-// /**
-//  * Offset/Address/Size: 0x4 | 0x80198C18 | size: 0x4
-//  */
-// void World::HandleEvent(Event*, void*)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x4 | 0x80198C18 | size: 0x4
+ */
+void World::HandleEvent(Event*, void*)
+{
+}
 
 // /**
 //  * Offset/Address/Size: 0x0 | 0x80198C1C | size: 0x24
@@ -1289,13 +1289,15 @@ World::World(const char* szWorldName)
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0x24 | 0x80198C40 | size: 0x5C
-//  */
-// void AVLTreeBase<unsigned long, LightObject*, NewAdapter<AVLTreeEntry<unsigned long, LightObject*>>, DefaultKeyCompare<unsigned
-// long>>::~AVLTreeBase()
-// {
-// }
+/**
+ * Offset/Address/Size: 0x24 | 0x80198C40 | size: 0x5C
+ */
+template <>
+AVLTreeBase<unsigned long, LightObject*, NewAdapter<AVLTreeEntry<unsigned long, LightObject*> >, DefaultKeyCompare<unsigned long> >::~AVLTreeBase()
+{
+    FORCE_DONT_INLINE;
+    Clear();
+}
 
 /**
  * Offset/Address/Size: 0x80 | 0x80198C9C | size: 0x60
@@ -1305,13 +1307,15 @@ nlAVLTree<unsigned long, DrawableObject*, DefaultKeyCompare<unsigned long> >::~n
 {
 }
 
-// /**
-//  * Offset/Address/Size: 0xE0 | 0x80198CFC | size: 0x5C
-//  */
-// void AVLTreeBase<unsigned long, DrawableObject*, NewAdapter<AVLTreeEntry<unsigned long, DrawableObject*>>, DefaultKeyCompare<unsigned
-// long>>::~AVLTreeBase()
-// {
-// }
+/**
+ * Offset/Address/Size: 0xE0 | 0x80198CFC | size: 0x5C
+ */
+template <>
+AVLTreeBase<unsigned long, DrawableObject*, NewAdapter<AVLTreeEntry<unsigned long, DrawableObject*> >, DefaultKeyCompare<unsigned long> >::~AVLTreeBase()
+{
+    FORCE_DONT_INLINE;
+    Clear();
+}
 
 /**
  * Offset/Address/Size: 0x13C | 0x80198D58 | size: 0x60

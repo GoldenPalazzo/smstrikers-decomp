@@ -15,6 +15,7 @@ enum eTimeLinePlayMode
 class TLSlide
 {
 public:
+    f32 GetCurrentTime() const;
     void Update(float);
     void UpdateAsset(TLInstance*, float);
 

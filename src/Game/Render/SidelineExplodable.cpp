@@ -461,6 +461,15 @@ void SidelineExplodable::Explode()
 }
 
 /**
+ * Offset/Address/Size: 0x2C24 | 0x8016A0A8 | size: 0x18
+ * TODO: 65.83% match - placeholder byte load uses r0 instead of r4, causing
+ * sequential load/store instead of interleaved load/load/store/store.
+ */
+template BindExp2<void, void (*)(EmissionController&, ExplosionFragment*), Placeholder<0>, ExplosionFragment*>
+Bind<void, void (*)(EmissionController&, ExplosionFragment*), Placeholder<0>, ExplosionFragment*>(
+    void (*fn)(EmissionController&, ExplosionFragment*), const Placeholder<0>& t0, ExplosionFragment* const& t1);
+
+/**
  * Offset/Address/Size: 0xC08 | 0x80167F68 | size: 0x27C
  * TODO: 98.40% match - remaining diffs are late-function register allocation/order in the two final nlAddPolarToCartesian setups and min/max output stores.
  */
@@ -818,6 +827,14 @@ struct PhysicsCharacterProxy
 
 extern void* __vt__9EventData[];
 extern void* __vt__36CollisionExplosionFragmentPlayerData[];
+
+/**
+ * Offset/Address/Size: 0x3DC | 0x80169F6C | size: 0x8
+ */
+u32 CollisionExplosionFragmentPlayerData::GetID()
+{
+    return 0xFA;
+}
 
 ContactType SidelineExplosionPhysicsObject::Contact(PhysicsObject* other, dContact* contact, int what, PhysicsObject* otherObject)
 {

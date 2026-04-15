@@ -1,4 +1,20 @@
 #include "Game/Audio/StreamTrack.h"
+#include "NL/nlList.h"
+#include "NL/nlSlotPoolHigh.h"
+
+namespace AudioStreamTrack
+{
+TrackManagerBase::StreamFileLookup::StreamFileLookup(
+    const char* /*name*/,
+    const Function<bool(const char*, char*, unsigned long)>& /*fn*/)
+{
+    typedef TrackManagerBase::StreamFileLookup::STREAM_FILE_LIST_LOOKUP LookupT;
+    typedef BasicSlotPoolHigh<ListEntry<LookupT> > AdapterT;
+    typedef ListContainerBase<LookupT, AdapterT> ContainerT;
+    ContainerT container;
+    nlWalkList(container.m_Head, &container, &ContainerT::DeleteEntry);
+}
+} // namespace AudioStreamTrack
 
 // /**
 //  * Offset/Address/Size: 0x0 | 0x80157A98 | size: 0x1C

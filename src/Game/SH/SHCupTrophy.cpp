@@ -274,15 +274,6 @@ typedef BindExp1<void, MemFunImpl_CupTrophyScene_v, CupTrophyScene*> BindExp1_vf
 typedef Function0<void>::FunctorImpl<BindExp1_vfmfcp> FunctorImpl_vfmfcp;
 
 /**
- * Offset/Address/Size: 0x0 | 0x800CC8DC | size: 0x78
- */
-Function0<void>::FunctorBase*
-Function0<void>::FunctorImpl<BindExp1_vfmfcp>::Clone() const
-{
-    return new (nlMalloc(sizeof(FunctorImpl_vfmfcp), 8, false)) FunctorImpl_vfmfcp(*this);
-}
-
-/**
  * Offset/Address/Size: 0x1D70 | 0x800CB424 | size: 0x1E4
  * TODO: 99.88% match - only minor instruction/label diffs remain around PopupMap/Create relocation.
  */
@@ -546,80 +537,6 @@ void CupTrophyScene::CreateTrophyScene(eTrophyType trophy, ButtonComponent::Butt
 
     mButtonState = buttonState;
 }
-
-namespace Detail
-{
-class TempStringAllocator;
-}
-
-template <typename CharT>
-struct BasicStringData
-{
-    CharT* mData;
-    int mSize;
-    int mCapacity;
-    int mRefCount;
-};
-
-template <typename CharT, typename Allocator>
-class BasicString
-{
-public:
-    BasicStringData<CharT>* m_data;
-
-    BasicString()
-        : m_data(0)
-    {
-    }
-
-    BasicString(BasicStringData<CharT>* p)
-        : m_data(p)
-    {
-    }
-
-    BasicString(const BasicString& other)
-    {
-        BasicStringData<CharT>* data = other.m_data;
-        if (data != 0)
-        {
-            data->mRefCount++;
-            data = other.m_data;
-        }
-        else
-        {
-            data = 0;
-        }
-        m_data = data;
-    }
-
-    ~BasicString()
-    {
-        if (m_data)
-        {
-            BasicStringData<CharT>* data = m_data;
-            if (--data->mRefCount == 0)
-            {
-                if (data)
-                {
-                    if (data)
-                    {
-                        delete[] data->mData;
-                    }
-                    if (data)
-                    {
-                        nlFree(data);
-                    }
-                }
-            }
-        }
-    }
-
-    const CharT* c_str() const
-    {
-        static CharT emptyString = '\0';
-        return m_data ? m_data->mData : &emptyString;
-    }
-};
 
 template <typename To, typename From>
 To LexicalCast(const From&);

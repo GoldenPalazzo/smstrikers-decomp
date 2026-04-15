@@ -1,5 +1,7 @@
 #include "NL/nlFont.h"
 #include "NL/nlBSearch.h"
+#include "NL/nlList.h"
+#include "NL/nlSlotPoolHigh.h"
 #include "NL/nlString.h"
 
 /**
@@ -110,30 +112,28 @@ nlFont::nlFont()
 /**
  * Offset/Address/Size: 0x0 | 0x80211BD4 | size: 0x10
  */
-// ListContainerBase<nlFont::GlyphInfo, BasicSlotPoolHigh<ListEntry<nlFont::GlyphInfo>>>::DeleteEntry(ListEntry<nlFont::GlyphInfo>*)
-// {
-// }
+template class ListContainerBase<nlFont::GlyphInfo, BasicSlotPoolHigh<ListEntry<nlFont::GlyphInfo> > >;
 
 /**
  * Offset/Address/Size: 0x10 | 0x80211BE4 | size: 0x10
  */
-// ListContainerBase<nlFont::KernPair, BasicSlotPoolHigh<ListEntry<nlFont::KernPair>>>::DeleteEntry(ListEntry<nlFont::KernPair>*)
-// {
-// }
+template class ListContainerBase<nlFont::KernPair, BasicSlotPoolHigh<ListEntry<nlFont::KernPair> > >;
 
 /**
  * Offset/Address/Size: 0x0 | 0x80211BF4 | size: 0x10
  */
-// nlFont::GlyphInfo::SortProc(const nlFont::GlyphInfo*, const nlFont::GlyphInfo*)
-// {
-// }
+int nlFont::GlyphInfo::SortProc(const nlFont::GlyphInfo* pa, const nlFont::GlyphInfo* pb)
+{
+    return pa->UnicodeChar - pb->UnicodeChar;
+}
 
 /**
  * Offset/Address/Size: 0x10 | 0x80211C04 | size: 0x10
  */
-// nlFont::KernPair::SortProc(const nlFont::KernPair*, const nlFont::KernPair*)
-// {
-// }
+int nlFont::KernPair::SortProc(const nlFont::KernPair* pa, const nlFont::KernPair* pb)
+{
+    return pa->hash - pb->hash;
+}
 
 /**
  * Offset/Address/Size: 0x0 | 0x80211C14 | size: 0x20

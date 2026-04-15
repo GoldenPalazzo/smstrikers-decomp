@@ -21,7 +21,7 @@ class DrawableObject
 public:
     DrawableObject();
     /* 0x08 */ virtual ~DrawableObject();
-    /* 0x0C */ virtual DrawableObject* Clone() const { return NULL; };
+    /* 0x0C */ virtual DrawableObject* Clone() const;
     /* 0x10 */ virtual void Draw() = 0;
     /* 0x14 */ virtual void DrawPlanarShadow() { };
     /* 0x18 */ virtual bool IsDrawableModel() { return false; };

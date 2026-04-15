@@ -8,6 +8,17 @@
 #include "Game/Game.h"
 #include "Game/AI/Fielder.h"
 #include "NL/nlSingleton.h"
+#include "NL/nlAVLTreeSlotPool.h"
+#include "Game/AI/FuzzyVariant.h"
+
+// Stub for std::map<unsigned long, FuzzyVariant> - size 0x10
+#ifndef _STDMAPSTUB_DEFINED_
+#define _STDMAPSTUB_DEFINED_
+struct StdMapStub
+{
+    u8 _data[0x10];
+};
+#endif
 
 enum eScriptFielderDesire
 {
@@ -40,17 +51,20 @@ enum eScriptFielderDesire
     edWait = 28,
 };
 
+#ifndef _SCRIPTQUESTIONCACHE_DEFINED_
+#define _SCRIPTQUESTIONCACHE_DEFINED_
 class ScriptQuestionCache : public nlSingleton<ScriptQuestionCache>
 {
 public:
     ~ScriptQuestionCache();
     void Clear();
 
-    // nlAVLTreeSlotPool mQuestionCacheMap; // offset 0x0, size 0x28
-    // map mQuestionCacheMapSTD;            // offset 0x28, size 0x10
-    int mTotalLookups; // offset 0x38, size 0x4
-    int mCacheHits;    // offset 0x3C, size 0x4
+    /* 0x00 */ nlAVLTreeSlotPool<unsigned long, FuzzyVariant, DefaultKeyCompare<unsigned long> > mQuestionCacheMap;
+    /* 0x28 */ StdMapStub mQuestionCacheMapSTD;
+    /* 0x38 */ int mTotalLookups;
+    /* 0x3C */ int mCacheHits;
 }; // total size: 0x40
+#endif
 
 float InOffensiveZoneOfPlayer(cBall*, cPlayer*);
 float InDefensiveZoneOfPlayer(cBall*, cPlayer*);

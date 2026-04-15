@@ -11,7 +11,7 @@
 
 struct PlayerAttackData : public EventData
 {
-    virtual u32 GetID() { return 0x19; }
+    virtual u32 GetID();
 
     /* 0x04 */ const cFielder* pAttacker;
     /* 0x08 */ int nAttackerPadID;

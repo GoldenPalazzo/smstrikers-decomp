@@ -38,7 +38,7 @@ public:
     ~cAnimInventory();
 
     // bundle ingest and lookups
-    void AddAnimBundle(const char* bundlePath);
+    void AddAnimBundle(const char* szFilename);
     cSAnim* GetAnim(int i);
     ePlayMode GetPlayMode(int i);
     float GetBlendTime(int i);

@@ -14,9 +14,7 @@
 // /**
 //  * Offset/Address/Size: 0x20 | 0x801B64A8 | size: 0x18
 //  */
-// void nlRingGetStart<SkinPairList>(SkinPairList*)
-// {
-// }
+// Implemented via template in NL/nlDLRing.h; instantiated when AttachSkinData calls nlRingGetStart<SkinPairList>.
 
 // /**
 //  * Offset/Address/Size: 0x0 | 0x801B6488 | size: 0x20
@@ -25,13 +23,15 @@
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0x310 | 0x801B6480 | size: 0x8
-//  */
-// void AVLTreeBase<unsigned long, unsigned long, NewAdapter<AVLTreeEntry<unsigned long, unsigned long>>, DefaultKeyCompare<unsigned
-// long>>::CastUp(AVLTreeNode*) const
-// {
-// }
+/**
+ * Offset/Address/Size: 0x310 | 0x801B6480 | size: 0x8
+ */
+static AVLTreeEntry<unsigned long, unsigned long>* force_CastUp(
+    const AVLTreeBase<unsigned long, unsigned long, NewAdapter<AVLTreeEntry<unsigned long, unsigned long> >, DefaultKeyCompare<unsigned long> >* t,
+    AVLTreeNode* n)
+{
+    return t->CastUp(n);
+}
 
 // /**
 //  * Offset/Address/Size: 0x44 | 0x801B61B4 | size: 0x2CC

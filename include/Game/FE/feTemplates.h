@@ -26,4 +26,10 @@ T* FindItemByHashID(T* head, unsigned long hash)
     return 0;
 }
 
+template <class T>
+T* CastToSomeType(T*, void* pValue)
+{
+    return (T*)pValue;
+}
+
 #endif // _FETEMPLATES_H_

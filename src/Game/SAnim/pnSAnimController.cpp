@@ -23,6 +23,14 @@ void SAnimControllerSlotPoolDtor(void* obj, int)
 }
 
 /**
+ * Offset/Address/Size: 0x1138 | 0x801EB598 | size: 0x8
+ */
+cSAnimCallback* cSAnim::GetCallbackList() const
+{
+    return m_pCallbackList;
+}
+
+/**
  * Offset/Address/Size: 0x1064 | 0x801EB4B4 | size: 0x68
  * TODO: 99.23% match - relocation symbols differ for slot-pool destructor and
  * @185 registration chain.

@@ -7,8 +7,7 @@ class SkinPairList;
 class BoneMapList;
 
 // void nlRingIsEnd<SkinPairList>(SkinPairList*, SkinPairList*);
-// void nlRingGetStart<SkinPairList>(SkinPairList*);
-// void nlRingGetStart<BoneMapList>(BoneMapList*);
+// nlRingGetStart<T> is defined as a template in NL/nlDLRing.h.
 
 class ShaderSkinMesh
 {
@@ -17,13 +16,11 @@ public:
     void StitchModel();
 };
 
-
 // class TempMatrixCopier
 // {
 // public:
 //     void CopyMatrix(const unsigned long&, unsigned long*);
 // };
-
 
 // class AVLTreeBase<unsigned long, unsigned long, NewAdapter<AVLTreeEntry<unsigned long, unsigned long>>, DefaultKeyCompare<unsigned long>>
 // {

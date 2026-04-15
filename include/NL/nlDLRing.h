@@ -283,6 +283,16 @@ void nlRingAddEnd(T** list, T* item)
     *list = item;
 }
 
+template <typename T>
+T* nlRingGetStart(T* head)
+{
+    if (head == NULL)
+    {
+        return NULL;
+    }
+    return head->m_next;
+}
+
 template <typename T, typename CallbackType>
 void nlWalkDLRing(T* head, CallbackType* callback, void (CallbackType::*callbackFunc)(T*))
 {

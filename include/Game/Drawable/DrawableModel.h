@@ -51,7 +51,7 @@ public:
     /* 0x0C */ virtual void Draw();
     /* 0x10 */ virtual void DrawPlanarShadow();
     /* 0x14 */ virtual bool IsDrawableModel() { return true; };
-    /* 0x18 */ virtual DrawableModel* AsDrawableModel() { return NULL; };
+    /* 0x18 */ virtual DrawableModel* AsDrawableModel() { return this; };
     /* 0x1C */ virtual void GetAABBDimensions(AABBDimensions&, bool) const;
 
     void DrawModel(const nlMatrix4&);

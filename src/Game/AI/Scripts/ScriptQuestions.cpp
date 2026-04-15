@@ -4043,7 +4043,11 @@ float InOffensiveZone(cPlayer* pPlayer)
  * Offset/Address/Size: 0x6C | 0x8007EAF4 | size: 0x6C
  */
 template <typename T>
-nlVector3& PositionOf(T pObject);
+nlVector3& PositionOf(T pObject)
+{
+    return pObject->m_v3Position;
+}
+template nlVector3& PositionOf<cPlayer*>(cPlayer*);
 
 float InDefensiveZoneOfPlayer(cBall* pBall, cPlayer* pPlayer)
 {

@@ -82,7 +82,7 @@ public:
     virtual void DeInit();
     virtual void SetSFX(SoundPropAccessor*);
     virtual unsigned long Play(Audio::SoundAttributes&);
-    virtual eClassType GetClassType() const { return meClassType; };
+    virtual eClassType GetClassType() const;
 
     void ShutdownPlaySet();
     float GetSFXVol(unsigned long) const;

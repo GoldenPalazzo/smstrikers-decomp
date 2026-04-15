@@ -1,6 +1,7 @@
 #ifndef _GCSTREAM_H_
 #define _GCSTREAM_H_
 
+#include "NL/nlArrayAllocator.h"
 #include "NL/nlFile.h"
 
 namespace GCAudioStreaming
@@ -65,7 +66,7 @@ public:
     AudioStream(AudioBufferMgr& mgr, unsigned long bufCount);
     virtual ~AudioStream() { };
     virtual void WarmReadDone(AudioStreamBuffer*);
-    void Purge() { };
+    void Purge();
     void Destructor();
     virtual void Stop();
     virtual void Warm(bool) { };
@@ -77,6 +78,15 @@ public:
     void _HdrReadCB(nlFile*, void*, unsigned int, unsigned long);
     void _WarmReadCB(nlFile*, void*, unsigned int, unsigned long);
     void _UpdateReadCB(nlFile*, void*, unsigned int, unsigned long);
+
+    class READ_CB_INFO
+    {
+    public:
+        /* 0x0 */ READ_CB_INFO* m_next;
+        /* 0x4 */ class AudioStreamBuffer* pBuffer;
+
+        static nlArrayAllocator<READ_CB_INFO> s_AllocPool;
+    };
 
     /* 0x04 */ unsigned char m_FlagAtDelete;
     /* 0x08 */ STREAM_STATE m_State;
@@ -97,7 +107,7 @@ class MonoAudioStream : public AudioStream
 {
 public:
     MonoAudioStream(AudioBufferMgr& mgr);
-    void _AsyncCancelCB(nlFile*, void*, unsigned int, unsigned long, void (*)(nlFile*, void*, unsigned int, unsigned long));
+    static void _AsyncCancelCB(nlFile*, void*, unsigned int, unsigned long, void (*)(nlFile*, void*, unsigned int, unsigned long));
     virtual void CancelPendingReads();
     virtual void GetUpdateReadLength();
     virtual void Warm(bool);
@@ -115,7 +125,7 @@ public:
     virtual ~StereoAudioStream();
     virtual void GetUpdateReadLength();
     void _InterleavedHdrReadCB(nlFile*, void*, unsigned int, unsigned long);
-    void _AsyncCancelCB(nlFile*, void*, unsigned int, unsigned long, void (*)(nlFile*, void*, unsigned int, unsigned long));
+    static void _AsyncCancelCB(nlFile*, void*, unsigned int, unsigned long, void (*)(nlFile*, void*, unsigned int, unsigned long));
     virtual void CancelPendingReads();
     virtual void Warm(bool);
     void InterleavedHdrReadCB(nlFile*, void*, unsigned int);

@@ -109,11 +109,8 @@ public:
 CreditScene::CreditScene()
     : mAreCreditsOver(false)
     , mFinalMessageDisplayed(false)
+    , mTimeElapsed(false)
 {
-    *(u8*)&mTimeElapsed = 0;
-    mCreditParser.mFileData = NULL;
-    mCreditParser.mActualSize = 0;
-    mCreditParser.mActualData = NULL;
     *(f32*)&mCreditParser.mFileSize = 0.0f;
 
     for (int i = 0; i < 10; i++)
@@ -178,7 +175,7 @@ void CreditScene::Update(float dt)
 void CreditScene::SetupForPhase()
 {
     FORCE_DONT_INLINE;
-    *(u8*)&mTimeElapsed = 0;
+    mTimeElapsed = 0;
     *(f32*)&mCreditParser.mFileSize = 0.0f;
 
     switch ((s32)mCreditParser.mFileData)
@@ -339,10 +336,10 @@ void CreditScene::UpdateForCopyrightMessage(float dt)
     TLSlide* pSlide2 = pWhiteFade->GetActiveSlide();
     if (pSlide2->m_time >= slideEnd)
     {
-        if (!*(u8*)&mTimeElapsed)
+        if (!mTimeElapsed)
         {
             pWhiteFade->SetActiveSlide("credits");
-            *(u8*)&mTimeElapsed = 1;
+            mTimeElapsed = 1;
         }
         else
         {
@@ -437,7 +434,7 @@ void CreditScene::UpdateForCredits(float dt)
         mAreCreditsOver = true;
     }
 
-    if (!*(u8*)&mTimeElapsed)
+    if (!mTimeElapsed)
     {
         bool shouldFade = false;
 
@@ -463,7 +460,7 @@ void CreditScene::UpdateForCredits(float dt)
 
         if (shouldFade)
         {
-            *(u8*)&mTimeElapsed = 1;
+            mTimeElapsed = 1;
 
             TLComponentInstance* pWhiteFade = GetWhiteFadeComponent();
             pWhiteFade->SetActiveSlide("credits");
@@ -507,10 +504,10 @@ void CreditScene::UpdateForNintendoLogo(float dt)
     TLSlide* pSlide2 = pWhiteFade->GetActiveSlide();
     if (pSlide2->m_time >= slideEnd)
     {
-        if (!*(u8*)&mTimeElapsed)
+        if (!mTimeElapsed)
         {
             pWhiteFade->SetActiveSlide("FADEIN");
-            *(u8*)&mTimeElapsed = 1;
+            mTimeElapsed = 1;
         }
         else
         {

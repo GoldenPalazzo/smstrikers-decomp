@@ -49,13 +49,14 @@ unsigned long GetLOCSidekickName(eSidekickID);
 unsigned long GetLOCCharacterName(eTeamID, bool, bool);
 unsigned long GetStadiumStringID(eStadiumID);
 
-class TakeGameMemSnapshot
+namespace TakeGameMemSnapshot
 {
-public:
-    static void WriteToDisk();
-    static void ResetTimers();
-    static void Update(float);
-};
+extern unsigned char gTakenSnapshot;
+extern float gTimeElapsed;
+void WriteToDisk();
+void ResetTimers();
+void Update(float);
+} // namespace TakeGameMemSnapshot
 
 class FECharacterSound
 {

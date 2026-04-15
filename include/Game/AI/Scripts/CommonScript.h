@@ -13,10 +13,13 @@ extern unsigned char g_bScriptQuestionCachingOn;
 extern unsigned char g_bScriptQuestionCachingUseSTD;
 
 // Stub for std::map<unsigned long, FuzzyVariant> - size 0x10
+#ifndef _STDMAPSTUB_DEFINED_
+#define _STDMAPSTUB_DEFINED_
 struct StdMapStub
 {
     u8 _data[0x10];
 };
+#endif
 
 class Fuzzy
 {
@@ -68,9 +71,12 @@ public:
     float* m_pFloat;
 };
 
+#ifndef _SCRIPTQUESTIONCACHE_DEFINED_
+#define _SCRIPTQUESTIONCACHE_DEFINED_
 class ScriptQuestionCache : public nlSingleton<ScriptQuestionCache>
 {
 public:
+    ~ScriptQuestionCache();
     unsigned char Lookup(unsigned long, FuzzyVariant&, const char*);
     const FuzzyVariant& AddToCache(unsigned long, const FuzzyVariant&, const char*);
     void Clear();
@@ -80,6 +86,7 @@ public:
     /* 0x38 */ int mTotalLookups;
     /* 0x3C */ int mCacheHits;
 };
+#endif
 
 // class std
 // {

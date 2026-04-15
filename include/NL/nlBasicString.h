@@ -237,6 +237,17 @@ public:
     BasicString Append(const BasicString<CharT, OtherAllocator>& rhs) const;
 };
 
+#ifndef NO_BASICSTRING_IMPL
+template <typename CharT, typename Allocator>
+BasicString<CharT, Allocator>& BasicString<CharT, Allocator>::operator=(BasicString other)
+{
+    BasicStringData<CharT>* tmp = m_data;
+    m_data = other.m_data;
+    other.m_data = tmp;
+    return *this;
+}
+#endif
+
 // Format template function for single float argument
 template <typename StringType>
 void Format(StringType& result, const StringType& format, const float& value)

@@ -98,13 +98,13 @@ cAnimInventory::~cAnimInventory()
 
 /**
  * Offset/Address/Size: 0x88 | 0x80007004 | size: 0x214
- * TODO: 88.2% match in scratch (0n75n) - this/path callee-saved register
- * allocation differs from target in prologue/chunk loop and anim lookup loops.
+ * TODO: 91.2% match - callee-saved register allocation differs (params r28/r27
+ * vs target r31/r30), search loop pFound placement, pMem increment codegen
  */
-void cAnimInventory::AddAnimBundle(const char* path)
+void cAnimInventory::AddAnimBundle(const char* szFilename)
 {
     int len;
-    char* pMem = (char*)nlLoadEntireFileToVirtualMemory(path, &len, 0x10000, 0, AllocateStart);
+    char* pMem = (char*)nlLoadEntireFileToVirtualMemory(szFilename, &len, 0x10000, 0, AllocateStart);
     int bundleLen = len;
     SAnimContainer* inv = m_cont;
 
@@ -145,8 +145,9 @@ void cAnimInventory::AddAnimBundle(const char* path)
     int animOffset = propOffset;
     while (i < m_count)
     {
+        SAnimContainer* pInv = m_cont;
         unsigned int hash = nlStringHash(*(const char**)((char*)m_props + propOffset + 4));
-        ListEntry<cSAnim*>* pList = m_cont->animHead;
+        ListEntry<cSAnim*>* pList = pInv->animHead;
         cSAnim* pFound = 0;
 
         while (pList != 0)
@@ -163,9 +164,12 @@ void cAnimInventory::AddAnimBundle(const char* path)
         *(cSAnim**)((char*)m_anims + animOffset) = pFound;
         if (*(cSAnim**)((char*)m_anims + animOffset) == 0)
         {
-            nlPrintf("Warning! Could not find \"%s\" in bundle \"%s\"\n", *(const char**)((char*)m_props + propOffset + 4), path);
-            pList = g_pDefaultSAnimInventory->animHead;
+            nlPrintf("Warning! Could not find \"%s\" in bundle \"%s\"\n",
+                *(const char**)((char*)m_props + propOffset + 4),
+                szFilename);
+            SAnimContainer* pDefaultInv = g_pDefaultSAnimInventory;
             hash = nlStringHash(*(const char**)((char*)m_props + propOffset + 4));
+            pList = pDefaultInv->animHead;
             pFound = 0;
             while (pList != 0)
             {

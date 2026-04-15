@@ -125,26 +125,29 @@ static const nlVector3 v3Zero = { 0.0f, 0.0f, 0.0f };
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0x8 | 0x80060958 | size: 0x8
-//  */
-// void PowerupHitPlayerEventData::GetID()
-// {
-// }
+/**
+ * Offset/Address/Size: 0x8 | 0x80060958 | size: 0x8
+ */
+u32 PowerupHitPlayerEventData::GetID()
+{
+    return 0x1b9;
+}
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x80060950 | size: 0x8
-//  */
-// void PowerupUsedEventData::GetID()
-// {
-// }
+/**
+ * Offset/Address/Size: 0x0 | 0x80060950 | size: 0x8
+ */
+u32 PowerupUsedEventData::GetID()
+{
+    return 0x1af;
+}
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x80060948 | size: 0x8
-//  */
-// void DrawableObject::Clone() const
-// {
-// }
+/**
+ * Offset/Address/Size: 0x0 | 0x80060948 | size: 0x8
+ */
+DrawableObject* DrawableObject::Clone() const
+{
+    return NULL;
+}
 
 /**
  * Offset/Address/Size: 0x5EBC | 0x800607A8 | size: 0x1A0

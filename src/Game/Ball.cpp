@@ -1802,12 +1802,13 @@ cBall::cBall()
 //     return 0;
 // }
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x8000DEEC | size: 0x8
-//  */
-// void PassBallData::GetID()
-// {
-// }
+/**
+ * Offset/Address/Size: 0x0 | 0x8000DEEC | size: 0x8
+ */
+u32 PassBallData::GetID()
+{
+    return 0x131;
+}
 
 // /**
 //  * Offset/Address/Size: 0x0 | 0x8000DEF4 | size: 0x8

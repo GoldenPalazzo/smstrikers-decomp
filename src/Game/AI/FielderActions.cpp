@@ -119,12 +119,10 @@ int PassingAnims[4] = {
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x8002FEBC | size: 0x18
-//  */
-// void nlDLRingGetStart<cBaseCamera>(cBaseCamera*)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x0 | 0x8002FEBC | size: 0x18
+ */
+template cBaseCamera* nlDLRingGetStart<cBaseCamera>(cBaseCamera*);
 
 // /**
 //  * Offset/Address/Size: 0x118 | 0x8002FE7C | size: 0x40

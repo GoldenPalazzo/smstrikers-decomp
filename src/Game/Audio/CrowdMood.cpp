@@ -32,7 +32,10 @@ struct CROWD_SETTINGS
 static bool g_Initd;
 
 template <typename T>
-void Increment(T& Value);
+void Increment(T& Value)
+{
+    Value = (T)(Value + 1);
+}
 
 static bool g_DoDecay = true;
 static bool g_CrowdSFXStopped;

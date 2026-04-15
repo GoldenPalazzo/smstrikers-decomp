@@ -1,4 +1,5 @@
 #include "Game/AI/Fielder.h"
+#include "Game/AI/FielderActions.h"
 #include "Game/AI/AIPlay.h"
 #include "Game/AI/AiUtil.h"
 #include "Game/AI/AvoidController.h"
@@ -116,12 +117,13 @@ static LooseBallContactAnimInfo LeadVolleyContactAnims[3] = {
 //     return result;
 // }
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x80026B20 | size: 0x8
-//  */
-// void PlayerAttackData::GetID()
-// {
-// }
+/**
+ * Offset/Address/Size: 0x0 | 0x80026B20 | size: 0x8
+ */
+u32 PlayerAttackData::GetID()
+{
+    return 0x19a;
+}
 
 // /**
 //  * Offset/Address/Size: 0x8 | 0x80026B18 | size: 0x8
@@ -908,7 +910,7 @@ void cFielder::CleanUpAction()
         break;
 
     case ACTION_ELECTROCUTION:
-        m_pCurrentAnimController->m_fPlaybackSpeedScale = 0.0f;
+        m_pCurrentAnimController->m_fPlaybackSpeedScale = 1.0f;
         break;
 
     case ACTION_HIT:
@@ -2059,8 +2061,6 @@ void cFielder::DoCalcShootToScoreResult(float f1, float f2, float f3, float f4, 
 
 /**
  * Offset/Address/Size: 0x7C34 | 0x80020F70 | size: 0x244
- * TODO: 99.93% match - remaining codegen differences are in the stick-magnitude
- * compare operand order and small-data constant symbol selection.
  */
 cFielder* cFielder::DoFindBestHitTarget()
 {
@@ -2075,7 +2075,7 @@ cFielder* cFielder::DoFindBestHitTarget()
     cTeam* pTeam = m_pTeam->GetOtherTeam();
     u16 aDirection = m_aActualFacingDirection;
 
-    if (0.0f != m_pController->GetMovementStickMagnitude())
+    if (m_pController->GetMovementStickMagnitude())
     {
         aDirection = m_pController->GetMovementStickDirection();
     }
@@ -2238,6 +2238,24 @@ LooseBallContactAnimInfo* cFielder::GetOneTimerBallContactAnimInfo(unsigned shor
         }
     }
     return pBestBallContactAnimInfo;
+}
+
+/**
+ * Offset/Address/Size: 0x6A00 | 0x8001FD3C | size: 0xEC
+ */
+void cFielder::GetReceivePassBallContactOffset(nlVector3& v3Offset, unsigned short aFacingDirection, const LooseBallContactAnimInfo* pBestBallContactAnimInfo)
+{
+    nlVector3 v3ContactOffsetLocal;
+    const cSAnim* guessContactAnim = m_pAnimInventory->GetAnim(pBestBallContactAnimInfo->nAnimID);
+
+    GetJointPositionFuture(&v3ContactOffsetLocal, pBestBallContactAnimInfo->nAnimID, m_nBallJointIndex, pBestBallContactAnimInfo->fAnimContactFrame / (float)guessContactAnim->m_nNumKeys, false, true, false);
+
+    float cos, sin;
+    nlSinCos(&sin, &cos, aFacingDirection);
+
+    v3Offset.f.x = v3ContactOffsetLocal.f.x * cos - v3ContactOffsetLocal.f.y * sin;
+    v3Offset.f.y = v3ContactOffsetLocal.f.y * cos + v3ContactOffsetLocal.f.x * sin;
+    v3Offset.f.z = v3ContactOffsetLocal.f.z;
 }
 
 /**
@@ -2789,6 +2807,7 @@ void cFielder::ClearVolleyPass()
  */
 void cFielder::CleanActionShootToScore()
 {
+    FORCE_DONT_INLINE;
     extern void SetTimeScale__18ParticleUpdateTaskFf(float);
     extern void* Instance__14WorldDarkeningFv();
     extern void Fade__14WorldDarkeningFff(void*, float, float);
@@ -4019,9 +4038,68 @@ bool cFielder::TestQueuedActions()
 
 /**
  * Offset/Address/Size: 0x2BB0 | 0x8001BEEC | size: 0x8BC
+ * TODO: 99.48% match - register allocation artifact in inlined SetAttemptOneTouchPass
+ * (target reuses r28/this for pPassTarget2; scratch compiler picks r26 instead).
  */
 void cFielder::TestButtonsRunning()
 {
+    if (!m_bCanTestController)
+    {
+        return;
+    }
+
+    if (GetGlobalPad()->JustPressed(PAD_PASS, true))
+    {
+        cFielder* pPassTarget = (cFielder*)g_pBall->GetPassTargetFielder();
+        bool bIsVolleyPassToMe = (pPassTarget != NULL
+                                  && pPassTarget != this
+                                  && pPassTarget->m_pTeam == m_pTeam
+                                  && pPassTarget->GetGlobalPad() == NULL
+                                  && (pPassTarget->m_eFielderDesireState == FIELDERDESIRE_RECEIVE_PASS_FROM_IDLE
+                                      || pPassTarget->m_eFielderDesireState == FIELDERDESIRE_RECEIVE_PASS_FROM_RUN)
+                                  && g_pBall->m_pPrevOwner == this);
+
+        if (bIsVolleyPassToMe)
+        {
+            ((cFielder*)g_pBall->GetPassTargetFielder())->SetAttemptOneTouchPass();
+        }
+        else if (CanLooseBallPass())
+        {
+            GameTweaks* tweaks = g_pGame->m_pGameTweaks;
+            bool bAllowLeadPass = GetGlobalPad()->GetPressure(PAD_AIM, true) > tweaks->unk2B0;
+            InitActionLooseBallPass(NULL, bAllowLeadPass);
+        }
+    }
+    else if (GetGlobalPad()->JustPressed(PAD_HIT, true))
+    {
+        InitActionHit(DoFindBestHitTarget());
+    }
+    else if (GetGlobalPad()->JustPressed(PAD_SLIDE_ATTACK, true) || GetGlobalPad()->JustPressed(PAD_SHOOT, true))
+    {
+        cFielder* pPassTarget = (cFielder*)g_pBall->GetPassTargetFielder();
+        bool bIsVolleyShotToMe = (pPassTarget != NULL
+                                  && pPassTarget != this
+                                  && pPassTarget->m_pTeam == m_pTeam
+                                  && pPassTarget->GetGlobalPad() == NULL
+                                  && (pPassTarget->m_eFielderDesireState == FIELDERDESIRE_RECEIVE_PASS_FROM_IDLE
+                                      || pPassTarget->m_eFielderDesireState == FIELDERDESIRE_RECEIVE_PASS_FROM_RUN)
+                                  && g_pBall->m_pPrevOwner == this);
+
+        if (bIsVolleyShotToMe)
+        {
+            ((cFielder*)g_pBall->GetPassTargetFielder())->SetAttemptOneTouchShot();
+        }
+        else if (CanLooseBallShoot())
+        {
+            GameTweaks* tweaks = g_pGame->m_pGameTweaks;
+            bool bChipShot = GetGlobalPad()->GetPressure(PAD_AIM, true) > tweaks->unk2B0;
+            InitActionLooseBallShot(bChipShot);
+        }
+        else if (!IsOnSameTeam(g_pBall->m_pOwner))
+        {
+            InitActionSlideAttack(NULL, -1.0f);
+        }
+    }
 }
 
 /**

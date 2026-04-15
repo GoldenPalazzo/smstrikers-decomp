@@ -102,6 +102,19 @@ void DrawableCharacter::Replay<SaveFrame>(SaveFrame&);
 template <>
 void DrawableCharacter::Replay<LoadFrame>(LoadFrame&);
 
+inline SkinAnimatedNPC_Type SkinAnimatedNPC::GetSkinAnimatedNPC_Type() const
+{
+    return SkinAnimatedNPC_BASE;
+}
+inline float SkinAnimatedMovableNPC::GetHeadSpin() const
+{
+    return 0.0f;
+}
+inline float SkinAnimatedMovableNPC::GetHeadTilt() const
+{
+    return 0.0f;
+}
+
 // class cPoseAccumulator
 // {
 // public:

@@ -2,12 +2,7 @@
 #define _AISANDBOX_H_
 
 #include "NL/nlSingleton.h"
-
-// class AVLTreeBase<unsigned long, FuzzyVariant, BasicSlotPool<AVLTreeEntry<unsigned long, FuzzyVariant>>, DefaultKeyCompare<unsigned long>>
-// {
-// public:
-//     void DeleteEntry(AVLTreeEntry<unsigned long, FuzzyVariant>*);
-// };
+#include "Game/AI/Scripts/CommonScript.h"
 
 class AISandbox : public nlSingleton<AISandbox>
 {

@@ -43,10 +43,15 @@ u32 GCTextureSize(eGXTextureFormat fmt, int w, int h, int levels, unsigned long 
 
 /**
  * Offset/Address/Size: 0x0 | 0x801C21C4 | size: 0x4A4
+ * TODO: 73.85% match - register allocation chain after w*4/w computation:
+ *   target puts w*4 in r0 (scratch) and w in r7 (reused fmt slot), but
+ *   compiler swaps these (w*4 -> r7, w -> r5). All 73 remaining diffs are
+ *   register-only and cascade from this single swap, including stmw r22
+ *   vs r23 (one extra callee-saved).
  */
 void GCSwizzle(void* dst_, const void* src_, unsigned short w, unsigned short h, eGXTextureFormat fmt, bool swap16)
 {
-    unsigned int pitch_by_fmt;
+    int pitch_by_fmt;
     if ((int)fmt == 2)
     {
         pitch_by_fmt = w >> 1;
@@ -67,18 +72,17 @@ void GCSwizzle(void* dst_, const void* src_, unsigned short w, unsigned short h,
         }
     }
 
-    unsigned char* d = (unsigned char*)dst_;
-    const unsigned char* s = (const unsigned char*)src_;
-    unsigned char* const d0 = d;
-
     if (pitch_by_fmt == (w << 2))
     {
-        unsigned int row_advance_after_strip = w * 12;
-        unsigned int y = 0;
+        unsigned int ww = w;
+        unsigned int row_advance_after_strip = ww * 12;
+        unsigned char* d = (unsigned char*)dst_;
+        const unsigned char* s = (const unsigned char*)src_;
+        int y = 0;
         while (y < h)
         {
-            unsigned int x = 0;
-            while (x < w)
+            int x = 0;
+            while (x < (int)ww)
             {
                 unsigned int d_off = 0;
                 const unsigned char* rs = s;
@@ -122,12 +126,15 @@ void GCSwizzle(void* dst_, const void* src_, unsigned short w, unsigned short h,
 
     if (pitch_by_fmt == (w << 1))
     {
-        unsigned int row_advance_after_strip = w * 6;
-        unsigned int y = 0;
+        unsigned int ww = w;
+        unsigned int row_advance_after_strip = ww * 6;
+        unsigned char* d = (unsigned char*)dst_;
+        const unsigned char* s = (const unsigned char*)src_;
+        int y = 0;
         while (y < h)
         {
-            unsigned int x = 0;
-            while (x < w)
+            int x = 0;
+            while (x < (int)ww)
             {
                 const unsigned char* rs = s;
                 unsigned int rindex = 0;
@@ -163,29 +170,34 @@ void GCSwizzle(void* dst_, const void* src_, unsigned short w, unsigned short h,
 
         if (swap16)
         {
-            unsigned int count = w * h;
-            if ((int)count > 0)
+            int count = ww * h;
+            if (count > 0)
             {
-                unsigned char* p = d0;
-                while (count--)
+                unsigned short* p = (unsigned short*)dst_;
+                while (count > 0)
                 {
-                    unsigned char a = p[0];
-                    unsigned char b = p[1];
-                    p[0] = b;
-                    p[1] = a;
-                    p += 2;
+                    unsigned short in_val = *p;
+                    unsigned short out_val;
+                    ((unsigned char*)&out_val)[0] = ((unsigned char*)&in_val)[1];
+                    ((unsigned char*)&out_val)[1] = ((unsigned char*)&in_val)[0];
+                    *p = out_val;
+                    p++;
+                    count--;
                 }
             }
         }
         return;
     }
 
-    if (pitch_by_fmt != (w >> 1) && pitch_by_fmt == w)
+    if (pitch_by_fmt != (w >> 1) && pitch_by_fmt == (int)(unsigned int)w)
     {
-        unsigned int row_advance_after_strip = w * 3;
-        for (unsigned int y = 0; y < h; y += 4)
+        unsigned int ww = w;
+        unsigned int row_advance_after_strip = ww * 3;
+        unsigned char* d = (unsigned char*)dst_;
+        const unsigned char* s = (const unsigned char*)src_;
+        for (int y = 0; y < h; y += 4)
         {
-            for (unsigned int x = 0; x < w; x += 8)
+            for (int x = 0; x < (int)ww; x += 8)
             {
                 const unsigned char* rs = s;
 
@@ -200,7 +212,7 @@ void GCSwizzle(void* dst_, const void* src_, unsigned short w, unsigned short h,
                     d[6] = rs[6];
                     d[7] = rs[7];
 
-                    rs += w;
+                    rs += ww;
 
                     d[8] = rs[0];
                     d[9] = rs[1];
@@ -211,7 +223,7 @@ void GCSwizzle(void* dst_, const void* src_, unsigned short w, unsigned short h,
                     d[14] = rs[6];
                     d[15] = rs[7];
 
-                    rs += w;
+                    rs += ww;
                     d += 16;
                 }
 
