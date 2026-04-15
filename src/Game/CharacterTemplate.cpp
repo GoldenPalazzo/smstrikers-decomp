@@ -936,12 +936,12 @@ AnimTagScriptInterpreter::~AnimTagScriptInterpreter()
     }
 }
 
-// /**
-//  * Offset/Address/Size: 0xD0 | 0x800147C8 | size: 0x4
-//  */
-// void AnimTagScriptInterpreter::TriggerFired(unsigned long)
-// {
-// }
+/**
+ * Offset/Address/Size: 0xD0 | 0x800147C8 | size: 0x4
+ */
+void AnimTagScriptInterpreter::TriggerFired(unsigned long)
+{
+}
 
 // /**
 //  * Offset/Address/Size: 0x0 | 0x800147CC | size: 0x34

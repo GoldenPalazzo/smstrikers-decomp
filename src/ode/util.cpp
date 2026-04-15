@@ -30,7 +30,7 @@
 //****************************************************************************
 // Auto disabling
 
-void dInternalHandleAutoDisabling(dxWorld* world, dReal stepsize)
+inline void dInternalHandleAutoDisabling(dxWorld* world, dReal stepsize)
 {
     dxBody* bb;
     for (bb = world->firstbody; bb; bb = (dxBody*)bb->next)
@@ -100,12 +100,12 @@ static inline dReal sinc(dReal x)
 void dxStepBody(dxBody* b, dReal h)
 {
     int j;
-    int modified = 0;
+    unsigned char changed = 0;
 
     // handle linear velocity
     if (!(b->flags & 0x20))
     {
-        modified = 1;
+        changed = 1;
         b->pos[0] += h * b->lvel[0];
         b->pos[1] += h * b->lvel[1];
         b->pos[2] += h * b->lvel[2];
@@ -201,11 +201,11 @@ void dxStepBody(dxBody* b, dReal h)
         // normalize the quaternion and convert it to a rotation matrix
         dNormalize4(b->q);
         dQtoR(b->q, b->R);
-        modified = 1;
+        changed = 1;
     }
 
     // notify all attached geoms that this body has moved
-    if (modified)
+    if (changed)
     {
         for (dxGeom* geom = b->geom; geom; geom = dGeomGetBodyNext(geom))
             dGeomMoved(geom);

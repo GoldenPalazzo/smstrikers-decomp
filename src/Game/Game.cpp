@@ -23,18 +23,20 @@
 #include "Game/Render/SidelineExplodable.h"
 #include "Game/Render/ElectricFence.h"
 #include "Game/Render/Presentation.h"
+#include "PowerPC_EABI_Support/MSL_C++/MSL_Common/utility.h"
+#include "PowerPC_EABI_Support/MSL_C++/MSL_Common/msl_memory.h"
 
 extern cTeam* g_pTeams[];
 extern PowerupBase* g_pPowerups[];
 extern cCharacter* g_pCurrentlyUpdatingCharacter;
 extern cTeam* g_pCurrentlyUpdatingTeam;
 
-// /**
-//  * Offset/Address/Size: 0x24 | 0x800401E8 | size: 0x4
-//  */
-// void std::allocator<std::pair<const unsigned long, FuzzyVariant> >::destroy(std::pair<const unsigned long, FuzzyVariant>*)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x24 | 0x800401E8 | size: 0x4
+ */
+void std::allocator<std::pair<const unsigned long, FuzzyVariant> >::destroy(std::pair<const unsigned long, FuzzyVariant>*)
+{
+}
 
 // /**
 //  * Offset/Address/Size: 0x0 | 0x800401C4 | size: 0x24

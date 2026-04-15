@@ -1388,7 +1388,7 @@ config.libs = [
             Object(Matching, "ode/obstack.cpp"),
             Object(NonMatching, "ode/quickstep.cpp"),
             Object(NonMatching, "ode/rotation.cpp", extra_cflags=["-inline off"]),
-            Object(NonMatching, "ode/util.cpp"),
+            Object(Matching, "ode/util.cpp"),
 
             Object(NonMatching, "ode/ext/dColumn.cpp", extra_cflags=["-inline off"]),
             Object(NonMatching, "ode/ext/dFinitePlane.cpp"),

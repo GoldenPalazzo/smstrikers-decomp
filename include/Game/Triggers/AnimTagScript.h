@@ -31,6 +31,7 @@ public:
     }
     ~AnimTagScriptInterpreter();
 
+    void TriggerFired(unsigned long);
     void AnimControllerCB(unsigned int);
     u8 SetupAnimationTriggers(const char*, cInventory<cSAnim>*);
 

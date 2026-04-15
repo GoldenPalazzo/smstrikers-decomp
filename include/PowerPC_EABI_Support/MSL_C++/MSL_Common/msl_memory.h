@@ -1,51 +1,91 @@
 #ifndef MSL_MEMORY_H_
 #define MSL_MEMORY_H_
 
-namespace std {
+namespace std
+{
 
-template<class ForwardIt, class Size, class T>
-inline ForwardIt uninitialized_fill_n(ForwardIt first, Size count, const T& value) {
-    for (; count--; ++first) {
-        if (first != NULL) {
+template <class T>
+class allocator
+{
+public:
+    void destroy(T*);
+    void deallocate(T*, unsigned long);
+};
+
+template <class ForwardIt, class Size, class T>
+inline ForwardIt uninitialized_fill_n(ForwardIt first, Size count, const T& value)
+{
+    for (; count--; ++first)
+    {
+        if (first != NULL)
+        {
             *first = value;
         }
     }
     return first;
 }
 
-template<class InputIterator, class ForwardIterator>
-inline ForwardIterator __uninitialized_copy(InputIterator first, InputIterator last, ForwardIterator result) {
+template <class InputIterator, class ForwardIterator>
+inline ForwardIterator __uninitialized_copy(InputIterator first, InputIterator last, ForwardIterator result)
+{
     ForwardIterator __save = result;
 
-    for (; first != last; ++first, ++result) {
+    for (; first != last; ++first, ++result)
+    {
         *result = *first;
     }
     return result;
 }
 
 template <class T, bool A, bool B>
-struct __uninitialized_copy_helper {
-	static T* uninitialized_copy(T* first, T* last, T* result) {
-		return __uninitialized_copy(first, last, result);
-	}
+struct __uninitialized_copy_helper
+{
+    static T* uninitialized_copy(T* first, T* last, T* result)
+    {
+        return __uninitialized_copy(first, last, result);
+    }
 };
 
 template <class T>
 struct __uninitialized_copy_helper<T, true, false>
 {
-	static T* uninitialized_copy(T* first, T* last, T* result)
-	{
-		for (; first < last; ++result, ++first)
-			*result = *first;
-		return result;
-	}
+    static T* uninitialized_copy(T* first, T* last, T* result)
+    {
+        for (; first < last; ++result, ++first)
+            *result = *first;
+        return result;
+    }
 };
 
 template <class T>
-inline T* uninitialized_copy(T* first, T* last, T* result) {
-	return __uninitialized_copy_helper<T, true, false>::uninitialized_copy(first, last, result);
+inline T* uninitialized_copy(T* first, T* last, T* result)
+{
+    return __uninitialized_copy_helper<T, true, false>::uninitialized_copy(first, last, result);
 }
 
+} // namespace std
+
+namespace Metrowerks
+{
+namespace details
+{
+
+template <class First, class Second, int tag>
+class compressed_pair_imp : private First
+{
+    Second second_;
+
+public:
+    First& first();
+};
+
+template <class First, class Second, int tag>
+First& compressed_pair_imp<First, Second, tag>::first()
+{
+    return *this;
 }
+
+} // namespace details
+} // namespace Metrowerks
 
 #endif
