@@ -76,18 +76,34 @@ FormationManager::~FormationManager()
     ClearFormationEvals((FormationEval**)this);
 }
 
+static inline void ClearFormationEvaluators()
+{
+    if (g_pTeams[0] != nullptr && g_pTeams[1] != nullptr)
+    {
+        FormationEval** pp;
+        s32 j;
+        for (s32 i = 0; i < 2; i++)
+        {
+            pp = (FormationEval**)g_pTeams[i]->m_pFormationManager;
+            for (j = 0; j < 3; j++)
+            {
+                FormationEval* pEval = pp[1];
+                delete pEval;
+                *++pp = nullptr;
+            }
+        }
+    }
+}
+
 /**
  * Offset/Address/Size: 0x281C | 0x8003AA6C | size: 0x158
- * TODO: 96.3% match - MWCC register allocation: r26/r28/r29 three-way swap
- * for g_pTeams pointer, outer loop i, inner loop j. All instructions match.
- * Likely -inline deferred context issue; repo builds at 97.9%.
  */
 void FormationManager::LoadFormationSets()
 {
-    int numFormationSets = 0;
-    FormationSet* pFormationSets = FormationSet::LoadFormationSets("FormationSets.ini", numFormationSets);
+    int numSets = 0;
+    FormationSet* pFormationSets = FormationSet::LoadFormationSets("FormationSets.ini", numSets);
 
-    if (numFormationSets == 0)
+    if (numSets == 0)
     {
         if (m_FormationSetArray != nullptr)
         {
@@ -98,32 +114,20 @@ void FormationManager::LoadFormationSets()
 
     if (g_pGame != nullptr)
     {
-        if (g_pTeams[0] != nullptr && g_pTeams[1] != nullptr)
-        {
-            for (s32 i = 0; i < 2; i++)
-            {
-                FormationEval** pp = (FormationEval**)g_pTeams[i]->m_pFormationManager;
-                for (s32 j = 0; j < 3; j++)
-                {
-                    FormationEval* pEval = pp[1];
-                    delete pEval;
-                    *++pp = nullptr;
-                }
-            }
-        }
+        ClearFormationEvaluators();
     }
 
     delete[] m_FormationSetArray;
     m_FormationSetArray = pFormationSets;
-    m_NumFormationSets = numFormationSets;
+    m_NumFormationSets = numSets;
 
     if (g_pGame != nullptr)
     {
         if (g_pTeams[0] != nullptr && g_pTeams[1] != nullptr)
         {
-            for (s32 i = 0; i < 2; i++)
+            for (s32 i_team = 0; i_team < 2; i_team++)
             {
-                g_pTeams[i]->m_pFormationManager->ChooseNewFormations();
+                g_pTeams[i_team]->m_pFormationManager->ChooseNewFormations();
             }
         }
     }
@@ -323,7 +327,7 @@ void FormationManager::SetNewFormationEval(eFormationType formType, eFormationSe
 
 /**
  * Offset/Address/Size: 0x202C | 0x8003A27C | size: 0x2D4
- * TODO: 98.6% match - r26/r27/r28 allocation swap (offset vs weight/position pointers) and one stfs/stw order mismatch in zero-init path
+ * TODO: 98.9% match - r26/r27/r28 circular register allocation swap (offset vs fWeightsBase/formPosBase)
  */
 bool FormationManager::CalculateFielderPosition(nlVector3& v3DestPosition, cFielder* pFielder, bool bInPosition, float fBallPosFormationWeight)
 {
@@ -357,12 +361,12 @@ bool FormationManager::CalculateFielderPosition(nlVector3& v3DestPosition, cFiel
         else
         {
             v3FormationPosition[0][i] = v3Zero;
-            v3FormationPosition[1][i] = v3Zero;
             fWeights[i] = 0.0f;
+            v3FormationPosition[1][i] = v3Zero;
         }
     }
 
-    if (fWeights[2] >= 0.0f)
+    if (fWeights[2] >= 0.5f)
     {
         fWeights[2] = 1.0f;
     }
@@ -1022,9 +1026,21 @@ struct FormationPositionThresholds
 
 extern FormationPositionThresholds g_aDefensiveFormationThresholds[4];
 
+static inline float CalcScore(float fUpScore, float fDownScore, float fLateralScore)
+{
+    float fUpPos = 0.0f;
+    if (fUpScore >= 0.0f)
+        fUpPos = fUpScore;
+    float fDownPos = (fDownScore >= 0.0f) ? fDownScore : 0.0f;
+    float fLateralPos = (fLateralScore >= 0.0f) ? fLateralScore : 0.0f;
+    float fScore = (fUpPos + fDownPos + fLateralPos) * 0.5f;
+    fScore = (fScore >= 0.0f) ? fScore : 0.0f;
+    fScore = (fScore <= 1.0f) ? fScore : 1.0f;
+    return 1.0f - fScore;
+}
+
 /**
  * Offset/Address/Size: 0xE70 | 0x800390C0 | size: 0x2E0
- * TODO: 94.73% match - remaining diffs are MWCC floating-point register allocation around fInPosition in the near-zero branch and positive-score clamp temporaries.
  */
 float FormationDefensive::IsFielderInPosition(cFielder* pFielder, nlVector3 v3DesiredPosition, bool bInPosition)
 {
@@ -1052,42 +1068,37 @@ float FormationDefensive::IsFielderInPosition(cFielder* pFielder, nlVector3 v3De
 
     float distY = v3FielderPos.f.y - v3DesiredPosition.f.y;
     float distX = v3FielderPos.f.x - v3DesiredPosition.f.x;
+    float dist = nlSqrt(distX * distX + distY * distY, true);
 
     float fInPosition = 0.0f;
 
-    if (nlSqrt(distX * distX + distY * distY, true) <= pPositionThresholds->fInRadius)
+    if (dist <= pPositionThresholds->fInRadius)
     {
         fInPosition = 1.0f;
     }
-    else if ((double)((float)fabs(fPercent - fInPosition) <= 0.00001f) != (double)fInPosition)
+    else
     {
-        if (pFielder == GetKeyPlayer())
+        float fNearZero = (float)((float)fabs(fPercent - fInPosition) <= 0.0001f);
+        if (fNearZero != fInPosition)
         {
-            fInPosition = 1.0f;
+            if (pFielder == GetKeyPlayer())
+                fInPosition = 1.0f;
+            else
+                fInPosition = 0.0f;
         }
-        else
+        else if (bInPosition)
         {
-            fInPosition = 0.0f;
+            float fUpScore = ((v3DesiredPosition.f.x - v3FielderPos.f.x) * AIsgn(v3NetLocation.f.x))
+                           / (fPercent * pPositionThresholds->fOutUpField);
+
+            float fDownScore = ((v3FielderPos.f.x - v3DesiredPosition.f.x) * AIsgn(v3NetLocation.f.x))
+                             / (fPercent * pPositionThresholds->fOutDownField);
+
+            float fLateralScore = (float)fabs(v3FielderPos.f.y - v3DesiredPosition.f.y)
+                                / (fPercent * pPositionThresholds->fOutLateral);
+
+            fInPosition = CalcScore(fUpScore, fDownScore, fLateralScore);
         }
-    }
-    else if (bInPosition)
-    {
-        float fUpScore = ((v3DesiredPosition.f.x - v3FielderPos.f.x) * AIsgn(v3NetLocation.f.x))
-                       / (fPercent * pPositionThresholds->fOutUpField);
-
-        float fDownScore = ((v3FielderPos.f.x - v3DesiredPosition.f.x) * AIsgn(v3NetLocation.f.x))
-                         / (fPercent * pPositionThresholds->fOutDownField);
-
-        float fLateralScore = (float)fabs(v3FielderPos.f.y - v3DesiredPosition.f.y)
-                            / (fPercent * pPositionThresholds->fOutLateral);
-
-        float fUpPos = (fUpScore >= 0.0f) ? fUpScore : 0.0f;
-        float fDownPos = (fDownScore >= 0.0f) ? fDownScore : 0.0f;
-        float fLateralPos = (fLateralScore >= 0.0f) ? fLateralScore : 0.0f;
-        float fScore = fUpPos + fDownPos + fLateralPos;
-        fScore *= 0.33333334f;
-        fScore = nlMinEquals(nlMaxEquals(fScore, 0.0f), 1.0f);
-        fInPosition = 1.0f - fScore;
     }
 
     return fInPosition;
@@ -1099,6 +1110,20 @@ float FormationDefensive::IsFielderInPosition(cFielder* pFielder, nlVector3 v3De
 float FormationDefensive::GetWeight()
 {
     return NormalizeVal(m_pFormationManager->m_v2AIFielderCenter.f.x, 25.0f, -25.0f);
+}
+
+static inline float fMax(float a, float b)
+{
+    if (a >= b)
+        return a;
+    return b;
+}
+
+static inline float fMin(float a, float b)
+{
+    if (a <= b)
+        return a;
+    return b;
 }
 
 /**
@@ -1130,41 +1155,37 @@ float FormationOffensive::IsFielderInPosition(cFielder* pFielder, nlVector3 v3De
 
     float distY = v3FielderPos.f.y - v3DesiredPosition.f.y;
     float distX = v3FielderPos.f.x - v3DesiredPosition.f.x;
+    float dist = nlSqrt(distX * distX + distY * distY, true);
 
     float fInPosition = 0.0f;
 
-    if (nlSqrt(distX * distX + distY * distY, true) <= pPositionThresholds->fInRadius)
+    if (dist <= pPositionThresholds->fInRadius)
     {
         fInPosition = 1.0f;
     }
-    else if ((double)((float)fabs(fPercent - fInPosition) <= 0.00001f) != (double)fInPosition)
+    else
     {
-        if (pFielder == GetKeyPlayer())
+        float fNearZero = (float)((float)fabs(fPercent - fInPosition) <= 0.00001f);
+        if (fNearZero != fInPosition)
         {
-            fInPosition = 1.0f;
+            if (pFielder == GetKeyPlayer())
+                fInPosition = 1.0f;
+            else
+                fInPosition = 0.0f;
         }
-        else
+        else if (bInPosition)
         {
-            fInPosition = 0.0f;
+            float fUpScore = ((v3DesiredPosition.f.x - v3FielderPos.f.x) * AIsgn(v3NetLocation.f.x))
+                           / (fPercent * pPositionThresholds->fOutUpField);
+
+            float fDownScore = ((v3FielderPos.f.x - v3DesiredPosition.f.x) * AIsgn(v3NetLocation.f.x))
+                             / (fPercent * pPositionThresholds->fOutDownField);
+
+            float fLateralScore = (float)fabs(v3FielderPos.f.y - v3DesiredPosition.f.y)
+                                / (fPercent * pPositionThresholds->fOutLateral);
+
+            fInPosition = CalcScore(fUpScore, fDownScore, fLateralScore);
         }
-    }
-    else if (bInPosition)
-    {
-        float fUpScore = ((v3DesiredPosition.f.x - v3FielderPos.f.x) * AIsgn(v3NetLocation.f.x))
-                       / (fPercent * pPositionThresholds->fOutUpField);
-
-        float fDownScore = ((v3FielderPos.f.x - v3DesiredPosition.f.x) * AIsgn(v3NetLocation.f.x))
-                         / (fPercent * pPositionThresholds->fOutDownField);
-
-        float fLateralScore = (float)fabs(v3FielderPos.f.y - v3DesiredPosition.f.y)
-                            / (fPercent * pPositionThresholds->fOutLateral);
-
-        float fScore = nlMaxEquals(fUpScore, 0.0f);
-        fScore += nlMaxEquals(fDownScore, 0.0f);
-        fScore += nlMaxEquals(fLateralScore, 0.0f);
-        fScore *= 0.33333334f;
-        fScore = nlMinEquals(nlMaxEquals(fScore, 0.0f), 1.0f);
-        fInPosition = 1.0f - fScore;
     }
 
     return fInPosition;

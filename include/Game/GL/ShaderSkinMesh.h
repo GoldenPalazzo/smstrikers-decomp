@@ -44,6 +44,10 @@ struct GLSkinMeshMatrix
 class GLSkinMesh
 {
 public:
+    GLSkinMesh()
+        : pModel(NULL)
+    {
+    }
     virtual ~GLSkinMesh() { };
     virtual void ConnectToPose(cPoseAccumulator*) = 0;
     virtual void Pose(cPoseAccumulator*) = 0;

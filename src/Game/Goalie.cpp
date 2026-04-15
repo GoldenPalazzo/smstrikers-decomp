@@ -2421,8 +2421,9 @@ void Goalie::InitActionSTSSetup()
 
     nlVector3 localVelocity;
     float time = FakeBallWorld::GetPredictedPlaneIntersectTime(plane, mv3TargetPosition, localVelocity);
+    double absX = __fabs(mv3TargetPosition.f.x);
 
-    if ((float)fabs(mv3TargetPosition.f.x) > cField::GetGoalLineX(1U))
+    if ((float)absX > cField::GetGoalLineX(1U))
     {
         time = -1.0f;
     }

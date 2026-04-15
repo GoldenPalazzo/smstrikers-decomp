@@ -11,20 +11,90 @@
 #include "math.h"
 
 f32 CANT_COLLIDE = *(f32*)__float_max;
-extern CameraData gCameraData[];
-extern bool gGameplayCameraInReplay;
 
-/**
- * Offset/Address/Size: 0x28 | 0x801AA440 | size: 0x14
- */
-KnotTableBlendEntry::KnotTableBlendEntry()
+static float nearZoomPositiveTargetKnotsY[3] = { -5.2f, 0.0f, 4.0f };
+static float nearZoomPositiveFieldKnotsY[3] = { -5.6f, 0.0f, 11.65f };
+static float farZoomPositiveTargetKnotsY[3] = { -2.6f, -2.6f, 2.0f };
+static float farZoomPositiveFieldKnotsY[3] = { 0.0f, 0.0f, 11.65f };
+
+static float nearZoomPositiveTargetKnotsX[2] = { -16.8f, 16.8f };
+static float nearZoomPositiveFieldKnotsX[2] = { -17.0f, 14.5f };
+static float nearZoomNegativeFieldKnotsX[2] = { -14.5f, 17.0f };
+static float nearZoomNeutralFieldKnotsX[2] = { -15.75f, 15.75f };
+static float farZoomPositiveTargetKnotsX[2] = { -13.3f, 13.3f };
+static float farZoomPositiveFieldKnotsX[2] = { -13.0f, 8.0f };
+static float farZoomNegativeFieldKnotsX[2] = { -8.0f, 13.0f };
+static float farZoomNeutralFieldKnotsX[2] = { -10.5f, 10.5f };
+static float nearZoomWidePositiveTargetKnotsX[2] = { -15.5f, 15.5f };
+static float farZoomWidePositiveTargetKnotsX[2] = { -10.1f, 10.1f };
+
+static CameraData gCameraData[4] = {
+    {
+        2,
+        3,
+        { nearZoomPositiveTargetKnotsX, nearZoomPositiveTargetKnotsX, nearZoomPositiveTargetKnotsX },
+        { nearZoomNeutralFieldKnotsX, nearZoomPositiveFieldKnotsX, nearZoomNegativeFieldKnotsX },
+        { nearZoomPositiveTargetKnotsY, nearZoomPositiveTargetKnotsY, nearZoomPositiveTargetKnotsY },
+        { nearZoomPositiveFieldKnotsY, nearZoomPositiveFieldKnotsY, nearZoomPositiveFieldKnotsY },
+        33.4f,
+        20.0f,
+        25.0f,
+        270.0f,
+    },
+    {
+        2,
+        3,
+        { farZoomPositiveTargetKnotsX, farZoomPositiveTargetKnotsX, farZoomPositiveTargetKnotsX },
+        { farZoomNeutralFieldKnotsX, farZoomPositiveFieldKnotsX, farZoomNegativeFieldKnotsX },
+        { farZoomPositiveTargetKnotsY, farZoomPositiveTargetKnotsY, farZoomPositiveTargetKnotsY },
+        { farZoomPositiveFieldKnotsY, farZoomPositiveFieldKnotsY, farZoomPositiveFieldKnotsY },
+        33.4f,
+        35.0f,
+        38.0f,
+        270.0f,
+    },
+    {
+        2,
+        3,
+        { nearZoomWidePositiveTargetKnotsX, nearZoomWidePositiveTargetKnotsX, nearZoomWidePositiveTargetKnotsX },
+        { nearZoomNeutralFieldKnotsX, nearZoomPositiveFieldKnotsX, nearZoomNegativeFieldKnotsX },
+        { nearZoomPositiveTargetKnotsY, nearZoomPositiveTargetKnotsY, nearZoomPositiveTargetKnotsY },
+        { nearZoomPositiveFieldKnotsY, nearZoomPositiveFieldKnotsY, nearZoomPositiveFieldKnotsY },
+        44.3f,
+        20.0f,
+        25.0f,
+        270.0f,
+    },
+    {
+        2,
+        3,
+        { farZoomWidePositiveTargetKnotsX, farZoomWidePositiveTargetKnotsX, farZoomWidePositiveTargetKnotsX },
+        { farZoomNeutralFieldKnotsX, farZoomPositiveFieldKnotsX, farZoomNegativeFieldKnotsX },
+        { farZoomPositiveTargetKnotsY, farZoomPositiveTargetKnotsY, farZoomPositiveTargetKnotsY },
+        { farZoomPositiveFieldKnotsY, farZoomPositiveFieldKnotsY, farZoomPositiveFieldKnotsY },
+        44.3f,
+        35.0f,
+        38.0f,
+        270.0f,
+    },
+};
+
+bool gGameplayCameraInReplay = false;
+
+GameplayCameraZoomLevel::GameplayCameraZoomLevel()
+    : m_CameraData(NULL)
+    , m_fDesiredTargetX(0.0f)
+    , m_fDesiredTargetY(0.0f)
+    , m_fDampenedTargetX(0.0f)
+    , m_fDampenedTargetY(0.0f)
+    , m_fTargetSeekSpeedX(0.0f)
+    , m_fTargetSeekSpeedY(0.0f)
+    , m_fTargetSeekTime(0.15f)
 {
 }
 
 /**
  * Offset/Address/Size: 0xCC8 | 0x801AA308 | size: 0x110
- * TODO: 59.26% match - near/far zoom scalar initialization ordering around
- * __construct_array still differs.
  */
 GameplayCamera::GameplayCamera()
 {

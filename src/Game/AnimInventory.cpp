@@ -164,8 +164,8 @@ void cAnimInventory::AddAnimBundle(const char* path)
         if (*(cSAnim**)((char*)m_anims + animOffset) == 0)
         {
             nlPrintf("Warning! Could not find \"%s\" in bundle \"%s\"\n", *(const char**)((char*)m_props + propOffset + 4), path);
-            hash = nlStringHash(*(const char**)((char*)m_props + propOffset + 4));
             pList = g_pDefaultSAnimInventory->animHead;
+            hash = nlStringHash(*(const char**)((char*)m_props + propOffset + 4));
             pFound = 0;
             while (pList != 0)
             {

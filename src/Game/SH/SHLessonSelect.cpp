@@ -2,8 +2,17 @@
 #include "Game/OverlayManager.h"
 #include "Game/SH/SHLesson.h"
 #include "Game/FE/feNSNMessenger.h"
+#include "Game/FE/feFinder.h"
+#include "Game/FE/FEAudio.h"
+#include "Game/FE/feHelpFuncs.h"
+#include "Game/FE/fePresentation.h"
+#include "Game/FE/tlSlide.h"
+#include "Game/FE/tlTextInstance.h"
 
 #include "NL/nlPrint.h"
+#include "NL/nlString.h"
+#include "NL/nlLexicalCast.h"
+#include "NL/nlBasicString.h"
 
 // /**
 //  * Offset/Address/Size: 0x0 | 0x8010CE0C | size: 0x38
@@ -162,14 +171,107 @@ void LessonSelectScene::Update(float)
 {
 }
 
+extern int sRowOffset;
+extern int sCurrentRow;
+
 /**
  * Offset/Address/Size: 0x334 | 0x8010B184 | size: 0x4AC
+ * TODO: 96.1% match - stack frame 0x1B0 vs target 0x160; compiler does not reuse
+ * InlineHasher arg copy stack slots across FEFinder::Find calls
  */
-void LessonSelectScene::UpdateRow(int, bool)
+void LessonSelectScene::UpdateRow(int onScreenRow, bool playsound)
 {
-}
+    if (!playsound)
+    {
+        FEAudio::EnableSounds(false);
+    }
 
-extern int sCurrentRow;
+    int currentRow = onScreenRow + sRowOffset;
+    FEPresentation* presentation = m_pFEPresentation;
+    char menuname[64];
+    nlSNPrintf(menuname, 64, "MENU ITEM%d", onScreenRow + 1);
+
+    TLComponentInstance* pComp = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
+        presentation->m_currentSlide,
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash(menuname)),
+        InlineHasher(0),
+        InlineHasher(0),
+        InlineHasher(0),
+        InlineHasher(0));
+
+    pComp->SetActiveSlide("IN");
+    TLSlide* slide = pComp->GetActiveSlide();
+    pComp->Update(slide->m_start + slide->m_duration);
+
+    TLTextInstance* pText1 = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
+        pComp->GetActiveSlide(),
+        InlineHasher(nlStringLowerHash("Text")),
+        InlineHasher(0),
+        InlineHasher(0),
+        InlineHasher(0),
+        InlineHasher(0),
+        InlineHasher(0));
+
+    TLTextInstance* pNameText1 = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
+        pComp->GetActiveSlide(),
+        InlineHasher(nlStringLowerHash("pauseresume")),
+        InlineHasher(0),
+        InlineHasher(0),
+        InlineHasher(0),
+        InlineHasher(0),
+        InlineHasher(0));
+
+    pComp->SetActiveSlide("OUT");
+    slide = pComp->GetActiveSlide();
+    pComp->Update(slide->m_start + slide->m_duration);
+
+    TLTextInstance* pText2 = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
+        pComp->GetActiveSlide(),
+        InlineHasher(nlStringLowerHash("Text")),
+        InlineHasher(0),
+        InlineHasher(0),
+        InlineHasher(0),
+        InlineHasher(0),
+        InlineHasher(0));
+
+    TLTextInstance* pNameText2 = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
+        pComp->GetActiveSlide(),
+        InlineHasher(nlStringLowerHash("pauseresume")),
+        InlineHasher(0),
+        InlineHasher(0),
+        InlineHasher(0),
+        InlineHasher(0),
+        InlineHasher(0));
+
+    if (onScreenRow == sCurrentRow - sRowOffset)
+    {
+        pComp->SetActiveSlide("IN");
+        if (!playsound)
+        {
+            DoubleHighlite::TempDisableSound();
+        }
+        mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].ApplyAction(ON_HIGHLIGHT);
+    }
+
+    BasicString<char, Detail::TempStringAllocator> rowString = LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(currentRow + 1);
+
+    unsigned short* numBuf = mNumberBuffers[onScreenRow];
+    nlStrToWcs(rowString.c_str(), numBuf, 16);
+
+    pText1->SetString(numBuf);
+    pText2->SetString(numBuf);
+
+    char lessonTitleName[64];
+    nlSNPrintf(lessonTitleName, 64, "TUTORIAL_INSTRUCTION_TITLE_%d", currentRow + 1);
+    pNameText1->SetStringId(lessonTitleName);
+    pNameText2->SetStringId(lessonTitleName);
+
+    if (!playsound)
+    {
+        FEAudio::EnableSounds(true);
+    }
+}
 
 /**
  * Offset/Address/Size: 0x2E4 | 0x8010B134 | size: 0x50

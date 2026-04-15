@@ -5,8 +5,6 @@
 #include "NL/platvmath.h"
 #include "NL/nlSlotPool.h"
 
-extern "C" void __ct__12SlotPoolBaseFv(void*);
-
 /**
  * Offset/Address/Size: 0x0 | 0x801D92C0 | size: 0x36C
  * TODO: 97.6% match - pModel/layer register swap (r25/r26), pPacket r31 vs r29,
@@ -558,71 +556,20 @@ void GLRenderList::Clear()
  */
 GLRenderList::GLRenderList()
 {
-    u32* self = (u32*)this;
-    u32* treeWrite = self;
-    int i = 0;
+    int layer;
+    uDepthInsertNumber = 0;
 
-    self[2] = 0;
-
-    for (i = 0; i < 7; i++)
+    for (layer = 0; layer < 7; layer++)
     {
-        u32* textureTree = (u32*)nlMalloc(0x28, 8, FALSE);
-        if (textureTree == NULL)
-        {
-        }
-        else
-        {
-            textureTree[0] = 0x802A4B5C;
-            textureTree[0] = 0x80301ED8;
-            __ct__12SlotPoolBaseFv((void*)(textureTree + 1));
-            textureTree[9] = 0;
-            textureTree[7] = 0;
-            textureTree[8] = 0;
-            textureTree[0] = 0x80301EEC;
-            textureTree[1] = 0x10;
-            SlotPoolBase::BaseAddNewBlock((SlotPoolBase*)(textureTree + 1), 0x14);
-            textureTree[2] = 0x10;
-            textureTree[0] = 0x80301F00;
-        }
-        treeWrite[3] = (u32)textureTree;
-        treeWrite++;
+        GLTexturePacketTree* tree = new (nlMalloc(0x28, 8, false)) GLTexturePacketTree(16, 16);
+        texPacketTree[layer] = tree;
     }
 
-    u32* depthTree30 = (u32*)nlMalloc(0x28, 8, FALSE);
-    if (depthTree30 == NULL)
-    {
-    }
-    else
-    {
-        u32* depthTree28 = depthTree30;
-        depthTree30[0] = 0x802A4B5C;
-        depthTree30[0] = 0x80301F14;
-        __ct__12SlotPoolBaseFv((void*)(depthTree30 + 1));
-        depthTree30[9] = 0;
-        depthTree30[7] = 0;
-        depthTree30[8] = 0;
-        depthTree28[0] = 0x80301F28;
-        depthTree28[1] = 0x10;
-        SlotPoolBase::BaseAddNewBlock((SlotPoolBase*)(depthTree28 + 1), 0x18);
-        depthTree28[2] = 0x10;
-        depthTree30[0] = 0x80301F3C;
-    }
-    self[10] = (u32)depthTree30;
+    GLDepthPacketTree* dTree = new (nlMalloc(0x28, 8, false)) GLDepthPacketTree(16, 16);
+    depthPacketTree = dTree;
 
-    u32* list30 = (u32*)nlMalloc(0x1C, 8, FALSE);
-    if (list30 == NULL)
-    {
-    }
-    else
-    {
-        u32* list28 = list30;
-        __ct__12SlotPoolBaseFv(list30);
-        list30[6] = 0;
-        list28[0] = 0x10;
-        SlotPoolBase::BaseAddNewBlock((SlotPoolBase*)list28, 0xC);
-        list28[1] = 0x10;
-    }
-    self[11] = (u32)list30;
+    GLPacketList* list = new (nlMalloc(0x1C, 8, false)) GLPacketList();
+    packetList = list;
 }
 
 // /**

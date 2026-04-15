@@ -154,6 +154,8 @@ void glplatAbortFrame()
 
 /**
  * Offset/Address/Size: 0x160 | 0x801B4754 | size: 0x2FC
+ * TODO: 97.33% match - first static init block generates extra instruction
+ * (doesn't reuse r31 for init flag), counter increment register is r3 instead of r5
  */
 void glplatSendFrame()
 {
@@ -163,12 +165,9 @@ void glplatSendFrame()
     f32 sp10;
     f32 spC;
     nlColour sp8;
-    s32 temp_r5;
     s32 var_r30;
     s32 var_r31;
     u32 temp_r30;
-    u32 temp_r3;
-    u32 temp_r4;
 
     glxSwapPre(true);
     var_r30 = 0;
@@ -201,20 +200,20 @@ void glplatSendFrame()
             var_r31 = 1;
             static u32 print_val0 = 0;
             static u32 print_val1 = 0;
-            static u32 counter = 0;
-            temp_r5 = counter + 1;
-            counter = temp_r5;
-            if (temp_r5 >= 0x14)
+            static int counter = 0;
+            s32 cnt = counter + 1;
+            counter = cnt;
+            if (cnt >= 0x14)
             {
-                temp_r4 = total_val0;
-                temp_r3 = total_val1;
-                temp_r4 = temp_r4 / (u32)temp_r5;
+                u32 tv0 = total_val0;
+                u32 tv1 = total_val1;
+                tv0 = tv0 / (u32)cnt;
                 total_val0 = 0;
                 total_val1 = 0;
                 counter = 0;
-                temp_r3 = temp_r3 / (u32)temp_r5;
-                print_val0 = temp_r4;
-                print_val1 = temp_r3;
+                tv1 = tv1 / (u32)cnt;
+                print_val0 = tv0;
+                print_val1 = tv1;
             }
             glFontBegin(false);
             glFontPrintf((eGLView)0x21, 1, 0x24, "%u %s, %u %s", print_val0, str_perf0[glx_perf0], print_val1, str_perf1[glx_perf1]);
@@ -508,9 +507,9 @@ void virt_cb(unsigned long, unsigned long, unsigned long, unsigned long, int);
 
 /**
  * Offset/Address/Size: 0xA08 | 0x801B4FFC | size: 0x524
- * TODO: 94.85% match - r30/r29 register swap for arg0 and rmode
+ * TODO: 98.45% match - r0/r5 VIWidth load, r5/r6 first loop scheduling and register swap
  */
-bool glplatStartup(gl_ScreenInfo* arg0)
+bool glplatStartup(gl_ScreenInfo* screenInfo)
 {
     GXRenderModeObj* rmode;
 
@@ -525,32 +524,32 @@ bool glplatStartup(gl_ScreenInfo* arg0)
         glx_FIFOSize = (u32)(1024.0f * (1024.0f * var_f1));
     }
 
-    arg0->ScreenWidth = 640;
-    arg0->ScreenHeight = 448;
-    arg0->ColourDepth[0] = 6;
-    arg0->ColourDepth[1] = 6;
-    arg0->ColourDepth[2] = 6;
-    arg0->ColourDepth[3] = 6;
-    arg0->ZDepth = 24;
-    arg0->StencilDepth = 0;
-    arg0->PixelCentre = 0.5f;
-    arg0->FSAA = false;
+    screenInfo->ScreenWidth = 640;
+    screenInfo->ScreenHeight = 448;
+    screenInfo->ColourDepth[0] = 6;
+    screenInfo->ColourDepth[1] = 6;
+    screenInfo->ColourDepth[2] = 6;
+    screenInfo->ColourDepth[3] = 6;
+    screenInfo->ZDepth = 24;
+    screenInfo->StencilDepth = 0;
+    screenInfo->PixelCentre = 0.5f;
+    screenInfo->FSAA = false;
     glx_CopyDispScaleFactor = 1.0f;
 
     switch (VIGetTvFormat())
     {
     case 0:
-        glx_VideoMode = VideoMode_NTSC;
         rmode = &GXNtsc480IntDf;
+        glx_VideoMode = VideoMode_NTSC;
         break;
     case 5:
     case 1:
-        glx_VideoMode = VideoMode_PAL;
         rmode = &glPal480IntDf;
+        glx_VideoMode = VideoMode_PAL;
         break;
     case 2:
-        glx_VideoMode = VideoMode_MPAL;
         rmode = &GXMpal480IntDf;
+        glx_VideoMode = VideoMode_MPAL;
         break;
     default:
         nlBreak();
@@ -559,8 +558,8 @@ bool glplatStartup(gl_ScreenInfo* arg0)
 
     if (((OSGetResetCode() >> 0x1F) != 0) && (OSGetResetCode() == 0x17) && (VIGetDTVStatus() != 0))
     {
-        glx_bProgressiveMode = true;
         rmode = &GXNtsc480Prog;
+        glx_bProgressiveMode = true;
     }
     else
     {
@@ -580,9 +579,8 @@ bool glplatStartup(gl_ScreenInfo* arg0)
         glx_TargetFPS = 60;
     }
 
-    u32 temp_r4 = 720 - glx_VIWidth;
     glx_rmode.viWidth = (s16)glx_VIWidth;
-    glx_rmode.viXOrigin = (s16)((s32)((temp_r4 >> 0x1F) + temp_r4) >> 1);
+    glx_rmode.viXOrigin = (s16)((720 - glx_VIWidth) / 2);
     VIConfigure(&glx_rmode);
     VIFlush();
     VIConfigure(&glx_rmode);

@@ -1960,7 +1960,7 @@ void cFielder::ActionShot(float)
 
 /**
  * Offset/Address/Size: 0x3180 | 0x80029CB8 | size: 0x538
- * TODO: 95.63% match - f30/f31 callee-saved register swap for fAbsPosX vs fMinAmount/fMaxAmount
+ * TODO: 99.76% match - f30/f31 callee-saved FP register allocation swap for fAbsPosX
  */
 void cFielder::InitActionShootToScore()
 {
@@ -2038,8 +2038,7 @@ void cFielder::InitActionShootToScore()
     u16 nAngleUnits = (u16)(s32)(10430.378f * fAngleRad);
     s16 nTurnAdjust = CalcAnimTurnAdjust(m_aActualFacingDirection, nAngleUnits, m_eAnimID);
 
-    s32 nTotalFrames = (s32)m_pCurrentAnimController->m_pSAnim->m_nNumKeys;
-    f32 fSpeed = 12.0f / (f32)nTotalFrames;
+    f32 fSpeed = 12.0f / (f32)m_pCurrentAnimController->m_pSAnim->m_nNumKeys;
     InitMovementFromAnim(nTurnAdjust, v3Zero, fSpeed, false);
 
     Play3DSFX(Audio::eCharSFX(0x1C), PHYSOBJ, 100.0f);
@@ -2055,8 +2054,7 @@ void cFielder::InitActionShootToScore()
     mActionShootToScoreVars.bShootWasPressed = false;
 
     FielderTweaks* pTweaks = (FielderTweaks*)m_pTweaks;
-    s32 nTotalFrames2 = (s32)m_pCurrentAnimController->m_pSAnim->m_nNumKeys;
-    f32 fFraction = pTweaks->fS2S1stJumpFrame / (f32)nTotalFrames2;
+    f32 fFraction = pTweaks->fS2S1stJumpFrame / (f32)m_pCurrentAnimController->m_pSAnim->m_nNumKeys;
     nlVector3 v3Dummy;
     u16 aDummy;
     GetCurrentAnimFuture(-1, fFraction, v3Dummy, mActionShootToScoreVars.v3MeterPosition, aDummy);
@@ -2090,14 +2088,11 @@ void cFielder::InitActionShootToScore()
 
     f32 fMinAmount = g_pGame->m_pGameTweaks->unk1E8;
     f32 fMaxAmount = g_pGame->m_pGameTweaks->unk1EC;
-    v3Dummy = GetAIOffNetLocation(NULL);
-
-    f32 dx = m_v3Position.f.x - v3Dummy.f.x;
-    f32 dy = m_v3Position.f.y - v3Dummy.f.y;
-    f32 dz = m_v3Position.f.z - v3Dummy.f.z;
-    f32 fDist = nlSqrt(dx * dx + dy * dy + dz * dz, true);
-
-    f32 fTimeScale = InterpolateRangeClamped(fMinAmount, fMaxAmount, 9.0f, 18.0f, fDist);
+    const nlVector3& v3OffNet = GetAIOffNetLocation(NULL);
+    f32 dx = m_v3Position.f.x - v3OffNet.f.x;
+    f32 dy = m_v3Position.f.y - v3OffNet.f.y;
+    f32 dz = m_v3Position.f.z - v3OffNet.f.z;
+    f32 fTimeScale = InterpolateRangeClamped(fMinAmount, fMaxAmount, 9.0f, 18.0f, nlSqrt(dx * dx + dy * dy + dz * dz, true));
     FixedUpdateTask::mTimeScale = fTimeScale;
     ParticleUpdateTask::SetTimeScale(fTimeScale);
 

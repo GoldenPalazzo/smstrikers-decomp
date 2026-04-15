@@ -4,10 +4,263 @@
 
 /**
  * Offset/Address/Size: 0x0 | 0x801CE120 | size: 0x490
+ * TODO: 97.93% match - r3 used as loop temp instead of holding return value before rebalance loop
  */
 AVLTreeNode* AVLTreeUntemplated::RemoveAVLNode(AVLTreeNode** root, void* key, unsigned int height)
 {
-    return nullptr;
+    AVLTreeNode** stack;
+    signed char* pathInfo;
+    unsigned int stackTop;
+    unsigned int savedStackTop;
+    int comp;
+    AVLTreeNode* deleted;
+    AVLTreeNode* curr;
+    AVLTreeNode* prev;
+    AVLTreeNode* min;
+    AVLTreeNode* kid;
+    AVLTreeNode* grandkid;
+
+    if (*root == NULL)
+    {
+        return NULL;
+    }
+
+    stack = (AVLTreeNode**)__alloca((height + 1) * sizeof(AVLTreeNode*));
+    pathInfo = (signed char*)__alloca(height + 1);
+
+    stackTop = 0;
+    curr = *root;
+
+    while (true)
+    {
+        comp = CompareKey(key, curr);
+        if (comp < 0)
+        {
+            pathInfo[stackTop] = -1;
+            stack[stackTop] = curr;
+            stackTop++;
+            curr = curr->left;
+        }
+        else if (comp > 0)
+        {
+            pathInfo[stackTop] = 1;
+            stack[stackTop] = curr;
+            stackTop++;
+            curr = curr->right;
+        }
+        else
+        {
+            break;
+        }
+        if (curr == NULL)
+        {
+            return NULL;
+        }
+    }
+
+    if (curr->left == NULL)
+    {
+        if (stackTop == 0)
+        {
+            *root = curr->right;
+        }
+        else
+        {
+            prev = stack[stackTop - 1];
+            if (curr == prev->left)
+                prev->left = curr->right;
+            else
+                prev->right = curr->right;
+        }
+    }
+    else if (curr->right == NULL)
+    {
+        if (stackTop == 0)
+        {
+            *root = curr->left;
+        }
+        else
+        {
+            prev = stack[stackTop - 1];
+            if (curr == prev->left)
+                prev->left = curr->left;
+            else
+                prev->right = curr->left;
+        }
+    }
+    else
+    {
+        savedStackTop = stackTop;
+        pathInfo[stackTop] = 1;
+        stack[stackTop] = curr;
+        stackTop++;
+        min = curr->right;
+
+        do
+        {
+            pathInfo[stackTop] = -1;
+            stack[stackTop] = min;
+            stackTop++;
+            min = min->left;
+        } while (min != NULL);
+
+        stackTop--;
+        min = stack[stackTop];
+
+        if (savedStackTop == 0)
+        {
+            *root = min;
+        }
+        else
+        {
+            prev = stack[savedStackTop - 1];
+            if (curr == prev->left)
+                prev->left = min;
+            else
+                prev->right = min;
+        }
+
+        prev = stack[stackTop - 1];
+        if (prev != curr)
+        {
+            prev->left = min->right;
+            min->right = curr->right;
+        }
+
+        min->left = curr->left;
+        min->heavy = curr->heavy;
+        stack[savedStackTop] = min;
+    }
+
+    deleted = curr;
+
+    while (stackTop > 0)
+    {
+        stackTop--;
+        AVLTreeNode* node = stack[stackTop];
+
+        if (node->heavy == 0)
+        {
+            node->heavy -= pathInfo[stackTop];
+            break;
+        }
+
+        node->heavy -= pathInfo[stackTop];
+        if (node->heavy == 0)
+            continue;
+
+        s8 dir = pathInfo[stackTop];
+
+        if (dir == 1)
+            kid = node->left;
+        else
+            kid = node->right;
+
+        if (kid->heavy != dir)
+        {
+            if (dir != 1)
+            {
+                node->right = kid->left;
+                kid->left = node;
+            }
+            else
+            {
+                node->left = kid->right;
+                kid->right = node;
+            }
+
+            if (stackTop != 0)
+            {
+                if (pathInfo[stackTop - 1] == 1)
+                    stack[stackTop - 1]->right = kid;
+                else
+                    stack[stackTop - 1]->left = kid;
+            }
+            else
+            {
+                *root = kid;
+            }
+
+            if (kid->heavy == 0)
+            {
+                node->heavy = (node->heavy > 0) ? 1 : -1;
+                kid->heavy = -node->heavy;
+                break;
+            }
+            else
+            {
+                kid->heavy = 0;
+                node->heavy = 0;
+            }
+        }
+        else
+        {
+            if (dir != 1)
+            {
+                grandkid = kid->left;
+                kid->left = grandkid->right;
+                node->right = grandkid->left;
+                grandkid->right = kid;
+                grandkid->left = node;
+
+                if (grandkid->heavy == 1)
+                {
+                    node->heavy = -1;
+                    kid->heavy = 0;
+                }
+                else if (grandkid->heavy == -1)
+                {
+                    node->heavy = 0;
+                    kid->heavy = 1;
+                }
+                else
+                {
+                    node->heavy = 0;
+                    kid->heavy = 0;
+                }
+            }
+            else
+            {
+                grandkid = kid->right;
+                kid->right = grandkid->left;
+                node->left = grandkid->right;
+                grandkid->left = kid;
+                grandkid->right = node;
+
+                if (grandkid->heavy == 1)
+                {
+                    node->heavy = 0;
+                    kid->heavy = -1;
+                }
+                else if (grandkid->heavy == -1)
+                {
+                    node->heavy = 1;
+                    kid->heavy = 0;
+                }
+                else
+                {
+                    node->heavy = 0;
+                    kid->heavy = 0;
+                }
+            }
+
+            grandkid->heavy = 0;
+
+            if (stackTop != 0)
+            {
+                if (pathInfo[stackTop - 1] == 1)
+                    stack[stackTop - 1]->right = grandkid;
+                else
+                    stack[stackTop - 1]->left = grandkid;
+            }
+            else
+            {
+                *root = grandkid;
+            }
+        }
+    }
+
+    return deleted;
 }
 
 /**

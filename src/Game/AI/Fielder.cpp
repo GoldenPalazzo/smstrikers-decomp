@@ -214,6 +214,8 @@ bool cFielder::CanDoCaptainShootToScore()
 
 /**
  * Offset/Address/Size: 0xC648 | 0x80025984 | size: 0x1CC
+ * TODO: 99.91% match - remaining contact-frame source register in the first
+ * ratio divide (`lfs f1` target vs `lfs f9` current).
  */
 bool cFielder::CanLooseBallShoot()
 {
@@ -224,7 +226,8 @@ bool cFielder::CanLooseBallShoot()
     {
         u32 nNumKeys = m_pAnimInventory->GetAnim(gOneTimerLeadGroundContactAnims[0].nAnimID)->m_nNumKeys;
         const cBall* pBall = g_pBall;
-        float ratio = gOneTimerLeadGroundContactAnims[0].fAnimContactFrame / (float)nNumKeys;
+        float ratio = gOneTimerLeadGroundContactAnims[0].fAnimContactFrame;
+        ratio /= (float)nNumKeys;
         float frames = (float)nNumKeys / 30.0f;
         float contactTime = ratio * frames;
 

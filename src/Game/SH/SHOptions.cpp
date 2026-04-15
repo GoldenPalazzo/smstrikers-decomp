@@ -20,7 +20,7 @@ namespace DoubleHighlite
 {
 extern const char* SLIDE_IN;
 extern const char* SLIDE_OUT;
-}
+} // namespace DoubleHighlite
 
 static const eMenuState MenuToMenuStateMap[] = {
     MS_AUDIO,
@@ -200,7 +200,7 @@ struct MemFunImpl
 {
     F mMemFun;
 };
-}
+} // namespace Detail
 
 template <typename T, typename R, typename P>
 Detail::MemFunImpl<R, void (T::*)(P)> MemFun(void (T::*)(P));
@@ -234,8 +234,8 @@ typedef TLComponentInstance* (*FindCompByRef)(TLSlide*, InlineHasher&, InlineHas
 
 /**
  * Offset/Address/Size: 0xB5C | 0x800B4118 | size: 0x6E0
- * TODO: 87.29% match - stack frame 0x130 vs 0x120 (+0x10 from union inside loop),
- * register allocation shifted by 1 (r27-r31 vs target r26-r30)
+ * TODO: 88.20% match - stack frame 0x130 vs 0x120 (+0x10 from union inside loop),
+ * register shift by 1 (r27-r31 vs r26-r30), item pointer stwx vs stw addressing
  */
 void OptionsScene::SceneCreated()
 {
@@ -248,7 +248,11 @@ void OptionsScene::SceneCreated()
         char menuname[64];
         nlSNPrintf(menuname, 64, "MENU ITEM%d", i + 1);
 
-        union { FindInstByValue byValue; FindInstByRef byRef; } findInst;
+        union
+        {
+            FindInstByValue byValue;
+            FindInstByRef byRef;
+        } findInst;
         findInst.byValue = FEFinder<TLInstance, 4>::Find<TLSlide>;
 
         volatile InlineHasher hB, hA, h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
@@ -288,14 +292,7 @@ void OptionsScene::SceneCreated()
             }
         }
 
-        if (i == mLastSelectedIndex)
-        {
-            instance->SetActiveSlide(DoubleHighlite::SLIDE_IN);
-        }
-        else
-        {
-            instance->SetActiveSlide(DoubleHighlite::SLIDE_OUT);
-        }
+        instance->SetActiveSlide(i == mLastSelectedIndex ? DoubleHighlite::SLIDE_IN : DoubleHighlite::SLIDE_OUT);
 
         MenuItem<TLComponentInstance>* item = &mMenuItems.mMenuItems[mMenuItems.mNumItemsAdded];
         item->mType = instance;
@@ -368,7 +365,11 @@ void OptionsScene::SceneCreated()
     }
 
     {
-        union { FindCompByValue byValue; FindCompByRef byRef; } findComp;
+        union
+        {
+            FindCompByValue byValue;
+            FindCompByRef byRef;
+        } findComp;
         findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
 
         volatile InlineHasher hB, hA, h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;

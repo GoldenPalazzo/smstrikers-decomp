@@ -110,11 +110,9 @@ extern nlVector3 sharedMorphBuffer[];
 
 /**
  * Offset/Address/Size: 0xD28 | 0x801E136C | size: 0xC8
- * TODO: 78.70% match - prologue/register allocation differs (vtable pointer setup and r5/r8 zero register usage).
  */
 ShaderSkinMesh::ShaderSkinMesh()
 {
-    pModel = NULL;
     numBaseVerts = 0;
     numMorphs = 0;
     morphNumDeltas = NULL;

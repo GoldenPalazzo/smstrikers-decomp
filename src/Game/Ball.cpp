@@ -22,6 +22,7 @@
 #include "Game/Audio/AudioLoader.h"
 #include "Game/Audio/WorldAudio.h"
 #include "Game/AI/AiUtil.h"
+#include "Game/FE/feHelpFuncs.h"
 
 extern float gfPerfectPassSFXVol;
 extern bool gbCanFadeOutPerfectPassSFX;
@@ -1122,7 +1123,7 @@ cFielder* cBall::GetOwnerFielder()
  */
 nlVector3* cBall::GetDrawablePosition() const
 {
-    nlMatrix4 mtx = m_pDrawableBall->GetWorldMatrix();
+    const nlMatrix4& mtx = m_pDrawableBall->GetWorldMatrix();
     return (nlVector3*)&(mtx.m[3][0]);
 }
 
@@ -1266,9 +1267,178 @@ void cBall::PostPhysicsUpdate(float fDeltaT)
 
 /**
  * Offset/Address/Size: 0x2254 | 0x8000BC28 | size: 0x5BC
+ * TODO: 99.71% match - r29/r30 register swap in inlined BasicString(const char*)
+ *       constructor (str vs data allocation order); plus label-index diffs.
  */
 void cBall::CollideWithWallCallback()
 {
+    if (m_tNoPickupTimer.m_uPackedTime != 0)
+    {
+        return;
+    }
+
+    if (m_pPassTarget != NULL)
+    {
+        if (mbHyperSTS)
+        {
+            Audio::gWorldSFX.Stop(Audio::eWorldSFX(0x57), cGameSFX::SFX_STOP_FIRST);
+        }
+        Audio::FadeFilterFromCurrentToZero();
+
+        FixedUpdateTask::mTimeScale = 1.0f;
+        ParticleUpdateTask::SetTimeScale(1.0f);
+
+        if (m_pBlurHandler != 0)
+        {
+            m_pBlurHandler->Die(0.5f);
+            m_pBlurHandler = 0;
+        }
+
+        KillBallShot("ball_shot_perfect_glow", true);
+        KillBallShot("ball_pass_perfect_glow", true);
+        KillBallShot("shoot_to_score_shot", false);
+        KillBallShot("ball_shot_onetimer", false);
+
+        Audio::gStadGenSFX.Stop(Audio::eWorldSFX(0xB9), cGameSFX::SFX_STOP_FIRST);
+        Audio::gStadGenSFX.Stop(Audio::eWorldSFX(0xBA), cGameSFX::SFX_STOP_FIRST);
+        Audio::gStadGenSFX.Stop(Audio::eWorldSFX(0xBD), cGameSFX::SFX_STOP_FIRST);
+
+        if (mbHyperSTS)
+        {
+            void* data = (u8*)g_pEventManager->CreateValidEvent(0x47, 0x24) + 0x10;
+            PassBallData* eventdata = new (data) PassBallData();
+            eventdata->pPasser = m_pPrevOwner;
+            eventdata->pTarget = NULL;
+
+            bool pad = eventdata->pPasser->GetGlobalPad();
+            eventdata->mPasserControllerID = pad ? eventdata->pPasser->GetGlobalPad()->m_padIndex : -1;
+        }
+
+        mbHyperSTS = false;
+        mbIsPerfectShot = false;
+
+        gbCanFadeOutPerfectPassSFX = true;
+
+        if (AudioLoader::IsInited())
+        {
+            gfPerfectPassSFXVol = Audio::gStadGenSFX.GetSFXVol(0xBA);
+        }
+
+        if (m_pPassTarget)
+        {
+            m_pPassTarget = NULL;
+        }
+
+        m_v3PassIntercept.f.x = 0.0f;
+        m_v3PassIntercept.f.y = 0.0f;
+        m_v3PassIntercept.f.z = 0.0f;
+
+        m_tPassTargetTimer.m_uPackedTime = 0;
+
+        if (m_uVoiceID)
+        {
+            Audio::StopSFX(m_uVoiceID);
+            m_uVoiceID = 0;
+        }
+    }
+
+    bool perfectCatch;
+    u32 shotTimer = m_tShotTimer.m_uPackedTime;
+    if (shotTimer != 0)
+    {
+        perfectCatch = false;
+        if (shotTimer != 0)
+        {
+            if (m_unk_0xA4)
+            {
+                perfectCatch = true;
+            }
+        }
+
+        if (perfectCatch)
+        {
+            EmitBallWallHit("perfect_shot_catch");
+        }
+        else
+        {
+            bool scoredShot = false;
+            if (shotTimer != 0)
+            {
+                if (mbCanDamage)
+                {
+                    scoredShot = true;
+                }
+            }
+
+            if (scoredShot)
+            {
+                if (m_pPrevOwner != NULL && m_pPrevOwner->m_eClassType == FIELDER)
+                {
+                    BasicString<char, Detail::TempStringAllocator> effectName(
+                        GetTeamName(nlSingleton<GameInfoManager>::s_pInstance->GetTeam((s16)m_pPrevOwner->m_pTeam->m_nSide)));
+                    effectName.AppendInPlace("_shoot_to_score_catch");
+                    cPlayer* prevOwner = m_pPrevOwner;
+                    EmissionController* pController = EmitGeneric(prevOwner, effectName.c_str(), NULL);
+                    pController->SetPosition(m_v3Position);
+                }
+            }
+        }
+
+        f32 fGameDuration = g_pGame->m_fGameDuration;
+        if (g_pGame->GetGameTime() >= fGameDuration && g_pGame->m_eGameState == GS_GAMEPLAY && m_tBuzzerBeaterTimer.m_uPackedTime == 0)
+        {
+            m_tBuzzerBeaterTimer.SetSeconds(0.5f);
+        }
+
+        m_tShotTimer.m_uPackedTime = 0;
+        mbCanDamage = false;
+        m_unk_0xA4 = false;
+
+        if (mbHyperSTS)
+        {
+            Audio::gWorldSFX.Stop(Audio::eWorldSFX(0x57), cGameSFX::SFX_STOP_FIRST);
+        }
+        Audio::FadeFilterFromCurrentToZero();
+
+        FixedUpdateTask::mTimeScale = 1.0f;
+        ParticleUpdateTask::SetTimeScale(1.0f);
+
+        if (m_pBlurHandler != 0)
+        {
+            m_pBlurHandler->Die(0.5f);
+            m_pBlurHandler = 0;
+        }
+
+        KillBallShot("ball_shot_perfect_glow", true);
+        KillBallShot("ball_pass_perfect_glow", true);
+        KillBallShot("shoot_to_score_shot", false);
+        KillBallShot("ball_shot_onetimer", false);
+
+        Audio::gStadGenSFX.Stop(Audio::eWorldSFX(0xB9), cGameSFX::SFX_STOP_FIRST);
+        Audio::gStadGenSFX.Stop(Audio::eWorldSFX(0xBA), cGameSFX::SFX_STOP_FIRST);
+        Audio::gStadGenSFX.Stop(Audio::eWorldSFX(0xBD), cGameSFX::SFX_STOP_FIRST);
+
+        if (mbHyperSTS)
+        {
+            void* data = (u8*)g_pEventManager->CreateValidEvent(0x47, 0x24) + 0x10;
+            PassBallData* eventdata = new (data) PassBallData();
+            eventdata->pPasser = m_pPrevOwner;
+            eventdata->pTarget = NULL;
+
+            bool pad = eventdata->pPasser->GetGlobalPad();
+            eventdata->mPasserControllerID = pad ? eventdata->pPasser->GetGlobalPad()->m_padIndex : -1;
+        }
+
+        mbHyperSTS = false;
+        mbIsPerfectShot = false;
+
+        gbCanFadeOutPerfectPassSFX = true;
+
+        if (AudioLoader::IsInited())
+        {
+            gfPerfectPassSFXVol = Audio::gStadGenSFX.GetSFXVol(0xBA);
+        }
+    }
 }
 
 /**

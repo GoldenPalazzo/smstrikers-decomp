@@ -20,7 +20,10 @@ struct CameraData
 class KnotTableBlendEntry
 {
 public:
-    KnotTableBlendEntry();
+    KnotTableBlendEntry()
+        : nKnotTable(0)
+        , fBlendRiser(1.0f) {
+        };
 
     /* 0x00 */ int nKnotTable;
     /* 0x04 */ float fBlendRiser;
@@ -29,6 +32,7 @@ public:
 class GameplayCameraZoomLevel
 {
 public:
+    GameplayCameraZoomLevel();
     void CalcDesiredTarget();
     void Update(float, bool);
 

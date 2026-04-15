@@ -59,7 +59,10 @@ public:
         , m_pFloat(pFloat)
     {
     }
-    ~SaveConfidence();
+    ~SaveConfidence()
+    {
+        *m_pFloat = m_savedValue;
+    }
 
     float m_savedValue;
     float* m_pFloat;

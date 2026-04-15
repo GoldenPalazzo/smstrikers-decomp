@@ -18,12 +18,59 @@ struct DepthPacketPair
     /* 0x0 */ unsigned long sortKey;
     /* 0x4 */ const glModelPacket* packet;
 }; // total size: 0x8
+
+inline bool operator==(const DepthPacketPair& a, const DepthPacketPair& b)
+{
+    return a.sortKey == b.sortKey;
+}
+inline bool operator<(const DepthPacketPair& a, const DepthPacketPair& b)
+{
+    return a.sortKey < b.sortKey;
+}
+
 class DepthTreeCompare;
 
-typedef nlAVLTreeSlotPool<const glModelPacket*, unsigned int, TextureTreeCompare> GLTexturePacketTree;
-typedef nlAVLTreeSlotPool<DepthPacketPair, unsigned int, DepthTreeCompare> GLDepthPacketTree;
+class GLTexturePacketTree : public nlAVLTreeSlotPool<const glModelPacket*, unsigned int, TextureTreeCompare>
+{
+public:
+    GLTexturePacketTree()
+        : nlAVLTreeSlotPool<const glModelPacket*, unsigned int, TextureTreeCompare>()
+    {
+    }
+    GLTexturePacketTree(int initial, int delta)
+        : nlAVLTreeSlotPool<const glModelPacket*, unsigned int, TextureTreeCompare>(initial, delta)
+    {
+    }
+    ~GLTexturePacketTree() { }
+};
 
-typedef nlDLListSlotPool<const glModelPacket*> GLPacketList;
+class GLDepthPacketTree : public nlAVLTreeSlotPool<DepthPacketPair, unsigned int, DepthTreeCompare>
+{
+public:
+    GLDepthPacketTree()
+        : nlAVLTreeSlotPool<DepthPacketPair, unsigned int, DepthTreeCompare>()
+    {
+    }
+    GLDepthPacketTree(int initial, int delta)
+        : nlAVLTreeSlotPool<DepthPacketPair, unsigned int, DepthTreeCompare>(initial, delta)
+    {
+    }
+    ~GLDepthPacketTree() { }
+};
+
+class GLPacketList : public nlDLListSlotPool<const glModelPacket*>
+{
+public:
+    GLPacketList()
+        : nlDLListSlotPool<const glModelPacket*>()
+    {
+    }
+    GLPacketList(int initial, int delta)
+        : nlDLListSlotPool<const glModelPacket*>(initial, delta)
+    {
+    }
+    ~GLPacketList() { }
+};
 
 extern GLRenderBuffer glRenderBuffer;
 

@@ -403,9 +403,10 @@ foundExisting:
 
 /**
  * Offset/Address/Size: 0x7C8 | 0x8013CCDC | size: 0x510
- * TODO: 97.7% match - register allocation in team/player loops (r28-r31 swapped)
+ * TODO: 97.99% match - register allocation in team/player loops (r28-r31 swapped),
+ *       while loop beq vs bne+b branch pattern
  */
-void FadeFilter(float param1, float param2, float param3, float param4)
+void FadeFilter(float currentVal, float fadeToVal, float fadeDuration, float fadeTimeStart)
 {
     TransitionTask* pTask = TransitionTask::sm_pGlobalTask;
     TRANSITION_STATE state;
@@ -422,18 +423,17 @@ void FadeFilter(float param1, float param2, float param3, float param4)
         return;
     }
 
-    float diff = param2 - param1;
-    float fadePerFrame;
-    if (param3 <= 0.0f)
+    float volDiff = fadeToVal - currentVal;
+    float stepSize;
+    if (fadeDuration <= 0.0f)
     {
-        fadePerFrame = diff;
-        if (0.0f != param4)
+        stepSize = volDiff;
+        if (0.0f != fadeTimeStart)
         {
             goto createFade;
         }
-        if (0.0f == param2)
+        if (0.0f == fadeToVal)
         {
-            // param2 == 0 -> turn OFF filter
             if (!gbFilterOn)
             {
                 return;
@@ -476,7 +476,6 @@ void FadeFilter(float param1, float param2, float param3, float param4)
         }
         else
         {
-            // param2 != 0 -> turn ON filter
             if (gbFilterOn)
             {
                 return;
@@ -521,10 +520,9 @@ void FadeFilter(float param1, float param2, float param3, float param4)
     }
     else
     {
-        fadePerFrame = diff / param3;
+        stepSize = volDiff / fadeDuration;
     }
 createFade:
-    // Check transition state again
     if (pTask != NULL)
     {
         state = pTask->m_TransitionState;
@@ -538,31 +536,28 @@ createFade:
         return;
     }
 
-    // Search for existing fade with same type (2=filter) and target
     FadeAudioData* existing = g_pFadeList;
     while (existing != NULL)
     {
         if (*(s32*)existing == 2)
         {
-            if (*(float*)((char*)existing + 0x14) == param2)
+            if (*(float*)((char*)existing + 0x14) == fadeToVal)
             {
-                break;
+                goto foundExisting;
             }
         }
         existing = existing->next;
     }
-
-    // Remove existing if found
+    existing = NULL;
+foundExisting:
     if (existing != NULL)
     {
         nlListRemoveElement<FadeAudioData>(&g_pFadeList, existing, NULL);
         delete existing;
     }
 
-    // Allocate new FadeAudioData
     FadeAudioData* newFade = (FadeAudioData*)nlMalloc(0x2C, 8, false);
 
-    // Constructor-like initialization (default values with dead stores)
     *(s32*)((char*)newFade) = 0;
     *(s32*)((char*)newFade + 0x04) = -1;
     *(s32*)((char*)newFade + 0x04) = 0;
@@ -580,16 +575,14 @@ createFade:
     *((char*)newFade + 0x21) = 0;
     *(float*)((char*)newFade + 0x24) = -1.0f;
 
-    // Set actual fade values
-    *(s32*)((char*)newFade) = 2;                     // type = 2 (filter)
-    *(float*)((char*)newFade + 0x08) = fadePerFrame; // fade rate per frame
-    *(float*)((char*)newFade + 0x0C) = param4;       // delay
-    *(float*)((char*)newFade + 0x10) = param3;       // time
-    *(float*)((char*)newFade + 0x14) = param2;       // target
-    *(float*)((char*)newFade + 0x18) = param1;       // from/current
+    *(s32*)((char*)newFade) = 2;
+    *(float*)((char*)newFade + 0x08) = stepSize;
+    *(float*)((char*)newFade + 0x0C) = fadeTimeStart;
+    *(float*)((char*)newFade + 0x10) = fadeDuration;
+    *(float*)((char*)newFade + 0x14) = fadeToVal;
+    *(float*)((char*)newFade + 0x18) = currentVal;
 
-    // Set direction flags based on target
-    if (0.0f == param2)
+    if (0.0f == fadeToVal)
     {
         *((char*)newFade + 0x1E) = 0;
         *((char*)newFade + 0x1C) = 1;
@@ -601,7 +594,9 @@ createFade:
     }
 
     newFade->next = NULL;
+#pragma inline_depth(0)
     nlListAddStart<FadeAudioData>(&g_pFadeList, newFade, NULL);
+#pragma inline_depth
 }
 
 /**
