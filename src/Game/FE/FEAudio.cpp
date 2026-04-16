@@ -603,9 +603,7 @@ int nlStrICmp(const char* a, const char* b);
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0xC4 | 0x8009FC38 | size: 0x20
-//  */
-// void nlToUpper<char>(char)
-// {
-// }
+/**
+ * Offset/Address/Size: 0xC4 | 0x8009FC38 | size: 0x20
+ */
+template char nlToUpper<char>(char);

@@ -777,19 +777,26 @@ void TLTextInstance::SetMatrix(nlMatrix4* pMatrix)
     m_DrawInfo.pMatrix = pMatrix;
 }
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x8020BABC | size: 0x24
-//  */
-// void nlMatrix4::SetTranslation(const nlVector3&)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x0 | 0x8020BABC | size: 0x24
+ */
+void nlMatrix4::SetTranslation(const nlVector3& v)
+{
+    f.m41 = v.f.x;
+    f.m42 = v.f.y;
+    f.m43 = v.f.z;
+    f.m44 = 1.0f;
+}
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x8020BAE0 | size: 0x1C
-//  */
-// void feVector3::GetNLVector3(nlVector3&) const
-// {
-// }
+/**
+ * Offset/Address/Size: 0x0 | 0x8020BAE0 | size: 0x1C
+ */
+void feVector3::GetNLVector3(nlVector3& out) const
+{
+    out.f.x = f.x;
+    out.f.y = f.y;
+    out.f.z = f.z;
+}
 
 /**
  * Offset/Address/Size: 0x0 | 0x8020BAFC | size: 0x8

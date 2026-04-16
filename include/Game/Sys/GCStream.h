@@ -113,6 +113,7 @@ public:
     virtual void Warm(bool);
     virtual void DoUpdateRead(unsigned long, unsigned long, unsigned long, unsigned long, GCAudioStreaming::AudioStreamBuffer*);
     virtual bool SafeToPurge();
+    void Purge();
 
     /* 0x38 */ class nlFile* m_pFile;
     /* 0x3C */ unsigned long m_UpdateLen;
@@ -131,6 +132,7 @@ public:
     void InterleavedHdrReadCB(nlFile*, void*, unsigned int);
     virtual void DoUpdateRead(unsigned long, unsigned long, unsigned long, unsigned long, GCAudioStreaming::AudioStreamBuffer*);
     virtual bool SafeToPurge();
+    void Purge();
 
     /* 0x38 */ nlFile* m_pFile;
     /* 0x3C */ unsigned long m_Interleave;

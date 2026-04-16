@@ -211,6 +211,7 @@ cflags_base = [
     f"-i build/{config.version}/include",
     f"-DBUILD_VERSION={version_num}",
     f"-DVERSION_{config.version}",
+    '-pragma "supress_warnings on"',
 ]
 
 # Debug flags
@@ -504,6 +505,7 @@ def GameLib(lib_name: str, objects: Objects) -> Library:
             "-DMUSY_VERSION_MAJOR=2",
             "-DMUSY_VERSION_MINOR=0",
             "-DMUSY_VERSION_PATCH=3",
+            # '-pragma "supress_warnings on"',
         ],            
         category="game",
     )

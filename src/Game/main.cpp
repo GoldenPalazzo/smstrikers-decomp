@@ -126,6 +126,15 @@ FixedUpdateTask fixedUpdateTask;
 TestTask testTask;
 ResetTask resetTask;
 
+/**
+ * Offset/Address/Size: 0x0 | 0x80175210 | size: 0x30
+ */
+template <>
+void Function0<void>::FunctorImpl<BindExp1<void, Detail::MemFunImpl<void, void (ResetTask::*)()>, ResetTask*> >::operator()()
+{
+    (mBind.mArg->*mBind.mFuncPtr.mFuncPtr)();
+}
+
 static void Initialize();
 
 int main(void)

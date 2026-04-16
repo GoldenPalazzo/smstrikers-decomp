@@ -100,12 +100,14 @@ typedef Function0<void>::FunctorImpl<BindExp1_vfmfcp> FunctorImpl_vfmfcp;
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0x78 | 0x800F1E84 | size: 0x30
-//  */
-// void Function0<void>::FunctorImpl<BindExp1<void, Detail::MemFunImpl<void, void (CupHubScene::*)()>, CupHubScene*>>::operator()()
-// {
-// }
+/**
+ * Offset/Address/Size: 0x78 | 0x800F1E84 | size: 0x30
+ */
+template <>
+void Function0<void>::FunctorImpl<BindExp1<void, Detail::MemFunImpl<void, void (CupHubScene::*)()>, CupHubScene*> >::operator()()
+{
+    (mBind.mArg->*mBind.mFuncPtr.mFuncPtr)();
+}
 
 /**
  * Offset/Address/Size: 0x0 | 0x800F1E0C | size: 0x78

@@ -44,19 +44,23 @@ static CROWD_SETTINGS g_Settings;
 CROWD_AUDIO_INIT g_CrowdAudio;
 CROWD_STATE g_CrowdState;
 
-// /**
-//  * Offset/Address/Size: 0x134 | 0x801514D0 | size: 0x2C
-//  */
-// void GCAudioStreaming::MonoAudioStream::Purge()
-// {
-// }
+/**
+ * Offset/Address/Size: 0x134 | 0x801514D0 | size: 0x2C
+ */
+void GCAudioStreaming::MonoAudioStream::Purge()
+{
+    m_State = SS_New;
+    nlClose(m_pFile);
+}
 
-// /**
-//  * Offset/Address/Size: 0x108 | 0x801514A4 | size: 0x2C
-//  */
-// void GCAudioStreaming::StereoAudioStream::Purge()
-// {
-// }
+/**
+ * Offset/Address/Size: 0x108 | 0x801514A4 | size: 0x2C
+ */
+void GCAudioStreaming::StereoAudioStream::Purge()
+{
+    m_State = SS_New;
+    nlClose(m_pFile);
+}
 
 // /**
 //  * Offset/Address/Size: 0x98 | 0x80151434 | size: 0x70

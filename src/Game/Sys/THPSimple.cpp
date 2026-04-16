@@ -52,6 +52,16 @@ extern "C" s32 THPSimpleGetCurrentFrame()
 }
 
 /**
+ * Offset/Address/Size: 0x2B0 | 0x801CC214 | size: 0x24
+ */
+extern "C" s32 THPSimpleGetTotalFrame()
+{
+    if (((THPSimpleControlWork*)&SimpleControl)->open)
+        return SimpleControl.numFrames;
+    return 0;
+}
+
+/**
  * Offset/Address/Size: 0xB74 | 0x801CCAD8 | size: 0x14
  */
 extern "C" void THPSimpleAudioStop()

@@ -48,8 +48,8 @@ AudioSettings::AudioSettings()
 /**
  * Offset/Address/Size: 0xBB0 | 0x801902BC | size: 0x438
  * TODO: 98.37% match - r29/r30 register-allocation swap in the "undefined"
- * BasicString data construction/destruction path (data→r30/str→r29 vs
- * target data→r29/str→r30); extra mr instruction and copy-ctor reload diff.
+ * BasicString data construction/destruction path (data->r30/str->r29 vs
+ * target data->r29/str->r30); extra mr instruction and copy-ctor reload diff.
  */
 void AudioSettings::InitializeDefaults()
 {

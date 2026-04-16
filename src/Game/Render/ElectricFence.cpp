@@ -325,8 +325,8 @@ static inline void RenderElectricFenceFlat(const nlVector3& position, const nlVe
 
 /**
  * Offset/Address/Size: 0x89C | 0x8016B8CC | size: 0x420
- * TODO: 91.5% match - register allocation diffs (ec r28→r29, pElectricFenceData r31→r28),
- *       search loop r4→r31, placement new extra beq; all due to -inline deferred vs -inline auto
+ * TODO: 91.5% match - register allocation diffs (ec r28->r29, pElectricFenceData r31->r28),
+ *       search loop r4->r31, placement new extra beq; all due to -inline deferred vs -inline auto
  */
 void RenderElectricFence(EmissionController& ec)
 {

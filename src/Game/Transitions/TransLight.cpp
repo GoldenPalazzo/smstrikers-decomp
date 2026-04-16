@@ -39,7 +39,7 @@ inline float clamp_ge0(float x)
     if (x >= 0.0f)
         return x;
     else
-        return 0.0f; // forces an else body → unconditional branch to skip it
+        return 0.0f; // forces an else body -> unconditional branch to skip it
 }
 
 inline float clamp_le1(float x)

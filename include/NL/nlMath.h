@@ -381,7 +381,7 @@ inline void ConvertNLMat3ToDMat3(const nlMatrix3& src, float* dest)
  *
  * Input 4x4 Matrix:     Output 4x3 Matrix:
  * [m00 m01 m02 m03]     [m00 m01 m02]
- * [m10 m11 m12 m13]  →  [m10 m11 m12]
+ * [m10 m11 m12 m13]  ->  [m10 m11 m12]
  * [m20 m21 m22 m23]     [m20 m21 m22]
  * [m30 m31 m32 m33]     [m30 m31 m32]
  *
@@ -400,7 +400,7 @@ inline void ConvertNLMat4ToDMat3(const nlMatrix4& src, float* dest)
  *
  * Input 4x4 Matrix:     Output 4x3 Matrix:
  * [m00 m01 m02 m03]     [m00 m10 m20]
- * [m10 m11 m12 m13]  →  [m01 m11 m21]
+ * [m10 m11 m12 m13]  ->  [m01 m11 m21]
  * [m20 m21 m22 m23]     [m02 m12 m22]
  * [m30 m31 m32 m33]     [m03 m13 m23]
  *

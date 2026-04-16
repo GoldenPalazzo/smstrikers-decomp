@@ -95,9 +95,9 @@ public:
     // void ProcessNewHeadStream();
     // void StopHead(unsigned long);
     void Stop(unsigned long);
-    // void StopQStream(QUEUED_STREAM*);
+    void StopQStream(QUEUED_STREAM*);
     // void StopStream(GCAudioStreaming::StereoAudioStream*, bool);
-    // void FadeOutDone(QUEUED_STREAM*);
+    void FadeOutDone(QUEUED_STREAM*);
     // void FadeOutDoneStartNext(QUEUED_STREAM*);
     void Pause(unsigned long, bool);
     void Resume();

@@ -18,18 +18,38 @@ u32 p_phys;
 u32 n_phys;
 u32 i_frame;
 u32 glx_mem0;
-u32 g_uResourceMarker = 0;
+u32 g_uResourceMarker;
 
 u32 p_frame[4];
 u32 n_frame[4];
 
-u32 FrameMemSizeVirt = 0xA;
-u32 FrameMemSizeReal = 0xE;
-u32 FrameMemSizes[2] = { FrameMemSizeReal, FrameMemSizeVirt };
+u32 FrameMemSizeVirt;
+u32 FrameMemSizeReal;
+u32 FrameMemSizes[2];
 
 GLXMemoryInfo g_uResourceAlloc[16];
 
 // GLInventory glInventory;
+
+extern "C"
+{
+    typedef void (*ConstructorDestructor)(void*);
+    void __construct_array(void* ptr, ConstructorDestructor ctor, ConstructorDestructor dtor, unsigned long size, unsigned long n);
+    void __ct__13GLXMemoryInfoFv(void*);
+}
+
+/**
+ * Offset/Address/Size: 0x930 | 0x801B7258 | size: 0x64
+ */
+extern "C" void __sinit_glxMemory_cpp(void)
+{
+    ResourceMemSize = 0xBFD000;
+    FrameMemSizeReal = 0xE0000;
+    FrameMemSizeVirt = 0xA0000;
+    FrameMemSizes[0] = FrameMemSizeReal;
+    FrameMemSizes[1] = FrameMemSizeVirt;
+    __construct_array(g_uResourceAlloc, (ConstructorDestructor)__ct__13GLXMemoryInfoFv, 0, sizeof(GLXMemoryInfo), 16);
+}
 
 const char* szMemoryNames[] = {
     "header",

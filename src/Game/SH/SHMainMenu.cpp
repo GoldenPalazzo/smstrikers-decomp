@@ -2,10 +2,30 @@
 #include "Game/GameInfo.h"
 #include "Game/GameSceneManager.h"
 #include "Game/Audio/WorldAudio.h"
+#include "Game/FE/FEAudio.h"
 #include "Game/FE/feFinder.h"
 #include "Game/FE/feMusic.h"
 #include "Game/FE/fePopupMenu.h"
+#include "Game/FE/feScene.h"
 #include "Game/FE/tlImageInstance.h"
+#include "Game/main.h"
+#include "NL/gl/glStruct.h"
+#include "NL/nlPrint.h"
+
+namespace Detail
+{
+template <typename R, typename MemFunType>
+struct MemFunImpl
+{
+    MemFunType mMemFun;
+};
+} // namespace Detail
+
+template <typename Class, typename R, typename P>
+Detail::MemFunImpl<R, void (Class::*)(P)> MemFun(void (Class::*fn)(P))
+{
+    FORCE_DONT_INLINE;
+}
 
 extern nlColour MenuHighliteColour;
 
@@ -406,9 +426,212 @@ SHMainMenu::~SHMainMenu()
 
 /**
  * Offset/Address/Size: 0xA3C | 0x800AA498 | size: 0x8C0
+ * TODO: 81.5% match - compiler caches `this` in r24 (stmw r21 vs target stmw r22),
+ *       shifting all local stack offsets by 4 bytes
  */
 void SHMainMenu::SceneCreated()
 {
+    typedef TLTextInstance* (*FindTextByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
+    typedef TLTextInstance* (*FindTextByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
+    typedef TLInstance* (*FindInstByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
+    typedef TLInstance* (*FindInstByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
+    typedef TLComponentInstance* (*FindComponentByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
+    typedef TLComponentInstance* (*FindComponentByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
+
+    static const char* MenuNameTable[] = { "MENU ITEM1", "MENU ITEM2", "MENU ITEM3", "MENU ITEM4", "MENU ITEM7", "MENU ITEM5", "MENU ITEM6" };
+    static void (*ApplyFuncTable[])(TLComponentInstance*)
+        = { onSelectFriendly, onSelectCup, onSelectSuperCup, onSelectTournament, onSelect101, onSelectTrophies, onSelectOptions };
+
+    FEMusic::StartStreamIfDifferent(0);
+
+    FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
+
+    volatile InlineHasher hB, hA, h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
+    h0.m_Hash = 0;
+    h1.m_Hash = 0;
+    h2.m_Hash = 0;
+    h3.m_Hash = 0;
+    h4.m_Hash = 0;
+    h5.m_Hash = 0;
+    h6.m_Hash = 0;
+    h7.m_Hash = 0;
+
+    unsigned long hash = nlStringLowerHash("TickerText");
+    h9.m_Hash = hash;
+    h8.m_Hash = hash;
+
+    hash = nlStringLowerHash("Layer");
+    hB.m_Hash = hash;
+    hA.m_Hash = hash;
+
+    union
+    {
+        FindTextByValue byValue;
+        FindTextByRef byRef;
+    } ft0;
+    ft0.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
+    TLTextInstance* scrollText
+        = ft0.byRef(presentation->m_currentSlide, (InlineHasher&)hB, (InlineHasher&)h9, (InlineHasher&)h7, (InlineHasher&)h5, (InlineHasher&)h3, (InlineHasher&)h1);
+
+    gl_ScreenInfo* screenInfo = glGetScreenInfo();
+
+    FEScrollText* feST = new (nlMalloc(sizeof(FEScrollText), 8, false)) FEScrollText(scrollText, 0, screenInfo->ScreenWidth + 50);
+    m_itemDescriptions = feST;
+
+    BaseSceneHandler* scene = nlSingleton<GameSceneManager>::s_pInstance->GetScene(SCENE_MARIO_BACKGROUND);
+    scene->SetVisible(false);
+
+    int i;
+    for (i = 0; i < 7; i++)
+    {
+        char buf[64];
+        nlSNPrintf(buf, 64, "MENU ITEM%d", i + 1);
+
+        volatile InlineHasher a7, a6, a5, a4, a3, a2, a1, a0;
+        a0.m_Hash = 0;
+        h1.m_Hash = 0;
+        a1.m_Hash = 0;
+        h3.m_Hash = 0;
+        a2.m_Hash = 0;
+        h5.m_Hash = 0;
+        a3.m_Hash = 0;
+        h7.m_Hash = 0;
+
+        hash = nlStringLowerHash(MenuNameTable[i]);
+        a5.m_Hash = hash;
+        a4.m_Hash = hash;
+
+        hash = nlStringLowerHash("Layer");
+        a7.m_Hash = hash;
+        a6.m_Hash = hash;
+
+        union
+        {
+            FindInstByValue byValue;
+            FindInstByRef byRef;
+        } fi0;
+        fi0.byValue = FEFinder<TLInstance, 4>::Find<TLSlide>;
+        TLComponentInstance* compinstance = (TLComponentInstance*)fi0.byRef(
+            presentation->m_currentSlide, (InlineHasher&)a7, (InlineHasher&)a5, (InlineHasher&)h7, (InlineHasher&)h5, (InlineHasher&)h3, (InlineHasher&)h1);
+
+        MenuItem<TLComponentInstance>& item = mMenuItems.mMenuItems[mMenuItems.mNumItemsAdded];
+        item.mType = compinstance;
+        mMenuItems.mNumItemsAdded++;
+
+        BindExp2<void, Detail::MemFunImpl<void, void (SHMainMenu::*)(TLComponentInstance*)>, SHMainMenu*, Placeholder<0> > bindOpen
+            = Bind<void>(MemFun<SHMainMenu, void, TLComponentInstance*>(&SHMainMenu::OpenItem), this, placeholder0);
+        item.mCallbacks[1] = Function<TLComponentInstance*>(bindOpen);
+
+        BindExp2<void, Detail::MemFunImpl<void, void (SHMainMenu::*)(TLComponentInstance*)>, SHMainMenu*, Placeholder<0> > bindClose
+            = Bind<void>(MemFun<SHMainMenu, void, TLComponentInstance*>(&SHMainMenu::CloseItem), this, placeholder0);
+        item.mCallbacks[2] = Function<TLComponentInstance*>(bindClose);
+
+        Function<TLComponentInstance*> applyFunc;
+        applyFunc.mTag = FREE_FUNCTION;
+        applyFunc.mFreeFunction = ApplyFuncTable[i];
+        item.mCallbacks[0] = applyFunc;
+
+        item.mLocked = false;
+
+        if (i == mLastMenuItem)
+        {
+            OpenItem(compinstance);
+            item.mDisabled = false;
+        }
+        else if (i == 2 && !g_e3_Build && !nlSingleton<GameInfoManager>::s_pInstance->IsSuperCupModeUnlocked())
+        {
+            CloseItem(compinstance);
+            item.mLocked = true;
+        }
+        else
+        {
+            CloseItem(compinstance);
+            if (g_e3_Build)
+            {
+                item.mDisabled = true;
+            }
+        }
+
+        if (i == 2)
+        {
+            volatile InlineHasher b6, b5, b4, b3, b2, b1, b0;
+            b0.m_Hash = 0;
+            h1.m_Hash = 0;
+            b1.m_Hash = 0;
+            h3.m_Hash = 0;
+            b2.m_Hash = 0;
+            h5.m_Hash = 0;
+            b3.m_Hash = 0;
+            h7.m_Hash = 0;
+            b4.m_Hash = 0;
+
+            hash = nlStringLowerHash("locked");
+            b6.m_Hash = hash;
+            b5.m_Hash = hash;
+
+            union
+            {
+                FindComponentByValue byValue;
+                FindComponentByRef byRef;
+            } fc0;
+            fc0.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
+            TLComponentInstance* lockedComp = fc0.byRef(
+                item.mType->GetActiveSlide(), (InlineHasher&)b6, (InlineHasher&)b4, (InlineHasher&)h7, (InlineHasher&)h5, (InlineHasher&)h3, (InlineHasher&)h1);
+
+            lockedComp->m_bVisible = (bool)item.mLocked;
+        }
+    }
+
+    mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[2](mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mType);
+
+    mMenuItems.mCurrentIndex = mLastMenuItem;
+
+    mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[1](mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mType);
+
+    mMenuItems.mFlags = 1;
+    scene->SetVisible(true);
+    scene->m_uHashID = 2;
+
+    volatile InlineHasher c7, c6, c5, c4, c3, c2, c1, c0;
+    c0.m_Hash = 0;
+    h1.m_Hash = 0;
+    c1.m_Hash = 0;
+    h3.m_Hash = 0;
+    c2.m_Hash = 0;
+    h5.m_Hash = 0;
+    c3.m_Hash = 0;
+    h7.m_Hash = 0;
+
+    hash = nlStringLowerHash("buttons");
+    c5.m_Hash = hash;
+    c4.m_Hash = hash;
+
+    hash = nlStringLowerHash("Layer");
+    c7.m_Hash = hash;
+    c6.m_Hash = hash;
+
+    union
+    {
+        FindComponentByValue byValue;
+        FindComponentByRef byRef;
+    } fc1;
+    fc1.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
+    mButtons.mButtonInstance = fc1.byRef(
+        presentation->m_currentSlide, (InlineHasher&)c7, (InlineHasher&)c5, (InlineHasher&)h7, (InlineHasher&)h5, (InlineHasher&)h3, (InlineHasher&)h1);
+
+    mButtons.SetState(ButtonComponent::BS_A_AND_B);
+
+    if (mSnapMenuIntoPosition)
+    {
+        FEAudio::EnableSounds(false);
+        TLSlide* slide = presentation->m_currentSlide;
+        Update(slide->m_start + slide->m_duration);
+        FEAudio::EnableSounds(true);
+    }
+
+    mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[1](mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mType);
+
+    mSnapMenuIntoPosition = true;
 }
 
 /**

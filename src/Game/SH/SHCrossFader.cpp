@@ -18,12 +18,13 @@
 #include "Game/GameInfo.h"
 #include "Game/GameSceneManager.h"
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800BCB38 | size: 0x20
-//  */
-// void FEResourceManager::Run(float)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x0 | 0x800BCB38 | size: 0x20
+ */
+void FEResourceManager::Run(float dt)
+{
+    Update(dt);
+}
 
 // /**
 //  * Offset/Address/Size: 0x140 | 0x800BC9DC | size: 0x15C

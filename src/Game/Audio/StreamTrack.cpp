@@ -261,12 +261,13 @@ TrackManagerBase::StreamFileLookup::StreamFileLookup(
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0x590 | 0x801552E8 | size: 0x20
-//  */
-// void AudioStreamTrack::StreamTrack::FadeOutDone(AudioStreamTrack::StreamTrack::QUEUED_STREAM*)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x590 | 0x801552E8 | size: 0x20
+ */
+void AudioStreamTrack::StreamTrack::FadeOutDone(AudioStreamTrack::StreamTrack::QUEUED_STREAM* qs)
+{
+    StopQStream(qs);
+}
 
 // /**
 //  * Offset/Address/Size: 0x55C | 0x801552B4 | size: 0x34

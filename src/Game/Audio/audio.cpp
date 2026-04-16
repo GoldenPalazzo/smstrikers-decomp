@@ -733,9 +733,10 @@ void SetOutputMode(MusyXOutputType outputType)
 /**
  * Offset/Address/Size: 0x1320 | 0x8013D834 | size: 0x20
  */
-// void SetSFXVolume(unsigned long, float)
-// {
-// }
+void SetSFXVolume(unsigned long voiceID, float volume)
+{
+    PlatAudio::SetSFXVolume(voiceID, volume);
+}
 
 /**
  * Offset/Address/Size: 0x1340 | 0x8013D854 | size: 0x25C
@@ -1475,7 +1476,9 @@ bool IsInited()
  */
 void SoundAttributes::UseStationaryPosVector(const nlVector3& position)
 {
-    pos.vPos = position;
+    pos.vPos.as_u32[0] = position.as_u32[0];
+    pos.vPos.as_u32[1] = position.as_u32[1];
+    pos.vPos.as_u32[2] = position.as_u32[2];
     posUpdateMethod = VECTORS;
     mb_Update3DContinuously = true;
 }
@@ -1485,8 +1488,12 @@ void SoundAttributes::UseStationaryPosVector(const nlVector3& position)
  */
 void SoundAttributes::UseVectors(const nlVector3& v1, const nlVector3& v2)
 {
-    pos.vPos = v1;
-    dir.vDir = v2;
+    pos.vPos.as_u32[0] = v1.as_u32[0];
+    pos.vPos.as_u32[1] = v1.as_u32[1];
+    pos.vPos.as_u32[2] = v1.as_u32[2];
+    dir.vDir.as_u32[0] = v2.as_u32[0];
+    dir.vDir.as_u32[1] = v2.as_u32[1];
+    dir.vDir.as_u32[2] = v2.as_u32[2];
     posUpdateMethod = VECTORS;
     mb_Update3DContinuously = true;
 }
@@ -1533,13 +1540,13 @@ void SoundAttributes::Init()
     mu_SfxID = -1;
     mu_VoiceID = PlatAudio::GetSndIDError();
 
-    mf_Volume = 1.0f;          // from "@3248"
-    mf_VolReverb = 1.0f;       // same as above
-    mf_Attenuate = 0.0f;       // from "@2159"
-    mf_VolAdjustment = 256.0f; // from "@1976"
-    mf_Panning = 1.0f;         // same as "@3248"
-    mf_DelayTime = 0.5f;       // from "@1977"
-    mf_DebugTimer = 256.0f;    // same as "@1976"
+    mf_Volume = 100.0f;
+    mf_VolReverb = 100.0f;
+    mf_Attenuate = 1.0f;
+    mf_VolAdjustment = 0.0f;
+    mf_Panning = 100.0f;
+    mf_DelayTime = -1.0f;
+    mf_DebugTimer = 0.0f;
 
     mb_Is3D = false;
     mb_IsPlaying = false;
@@ -1562,8 +1569,12 @@ void SoundAttributes::Init()
     pos.pvPos = NULL;
     dir.pvDir = NULL;
 
-    nlVec3Set(pos.vPos, 256.0f, 256.0f, 256.0f);
-    nlVec3Set(dir.vDir, 256.0f, 256.0f, 256.0f);
+    pos.vPos.f.x = 256.0f;
+    pos.vPos.f.y = 256.0f;
+    pos.vPos.f.z = 256.0f;
+    dir.vDir.f.x = 256.0f;
+    dir.vDir.f.y = 256.0f;
+    dir.vDir.f.z = 256.0f;
 
     posUpdateMethod = NONE;
     ms_EventName = 0;
@@ -1658,15 +1669,6 @@ eClassType cGameSFX::GetClassType() const
 // (WalkHelper<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL,
 // DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>,
 // AudioStreamTrack::TrackManagerBase::FadeManager>::*)(DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>*))
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0xF0 | 0x801414C8 | size: 0x20
-//  */
-// void
-// nlDLRingIsEnd<DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>>(DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>*,
-// DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>*)
 // {
 // }
 
@@ -1806,6 +1808,13 @@ template class nlStaticSortedSlot<AudioStreamTrack::StreamTrack, 3>;
 // }
 
 } // namespace Audio
+
+/**
+ * Offset/Address/Size: 0xF0 | 0x801414C8 | size: 0x20
+ */
+template bool nlDLRingIsEnd<DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL> >(
+    DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>*,
+    DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>*);
 
 /**
  * Offset/Address/Size: 0x128 | 0x80141500 | size: 0x18

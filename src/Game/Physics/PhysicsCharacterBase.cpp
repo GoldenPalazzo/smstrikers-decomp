@@ -292,7 +292,7 @@ extern "C" void __ct__14PhysicsCapsuleFP14CollisionSpaceP12PhysicsWorldff(Physic
 
 /**
  * Offset/Address/Size: 0x80 | 0x801FEB7C | size: 0x280
- * TODO: 95.34% match - remaining 100 diffs are register-only (pose→r31 vs target r21),
+ * TODO: 95.34% match - remaining 100 diffs are register-only (pose->r31 vs target r21),
  * caused by -inline deferred vs -inline auto register allocator difference.
  */
 void PhysicsCharacterBase::AddBoneVolumes(PhysicsWorld* physicsWorld, CollisionSpace* collisionSpace, cPoseAccumulator* pose, const CharacterPhysicsData* physicsData, unsigned long category, unsigned long collideMask)

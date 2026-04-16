@@ -147,7 +147,7 @@ static inline BasicStringInternal* BuildScrollString(const unsigned short* text)
 
 /**
  * Offset/Address/Size: 0x1C8 | 0x800C8B9C | size: 0x198
- * TODO: 95.1% match - MWCC keeps this in r30 and loc/data in r29 (target is this→r29, loc/data→r30)
+ * TODO: 95.1% match - MWCC keeps this in r30 and loc/data in r29 (target is this->r29, loc/data->r30)
  */
 void FEScrollText::SetDisplayMessage(const char* id)
 {
@@ -195,7 +195,7 @@ static inline const unsigned short* LookupLocText(unsigned long hash)
 
 /**
  * Offset/Address/Size: 0x360 | 0x800C8D34 | size: 0x190
- * TODO: 95.4% match - MWCC register allocation: this→r31/text→r29 instead of this→r29/text→r31, li r5,0 instead of mr r5,r4
+ * TODO: 95.4% match - MWCC register allocation: this->r31/text->r29 instead of this->r29/text->r31, li r5,0 instead of mr r5,r4
  */
 void FEScrollText::SetDisplayMessage(unsigned long hash)
 {

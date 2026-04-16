@@ -201,12 +201,12 @@ int dGeomGetGFlags(dxGeom* geom)
 /**
  * Offset/Address/Size: 0x3D8 | 0x802246A0 | size: 0x1C
  */
-void dJointSetCharacterNoMotionDirection(dxJoint* joint, nlVector3* v3)
+void dJointSetCharacterNoMotionDirection(dxJoint* joint, float* v3)
 {
-    // *(undefined4 *)(param_1 + 0x50) = *param_2;
-    // *(undefined4 *)(param_1 + 0x54) = param_2[1];
-    // *(undefined4 *)(param_1 + 0x58) = param_2[2];
-    // joint->node[0].
+    dxJointCharacter* c = (dxJointCharacter*)joint;
+    c->m_unk_0x50[0] = v3[0];
+    c->m_unk_0x50[1] = v3[1];
+    c->m_unk_0x50[2] = v3[2];
 }
 
 extern dxJoint::Vtable __dcharacter_vtable;

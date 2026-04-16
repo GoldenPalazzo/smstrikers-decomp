@@ -46,6 +46,9 @@ enum ReplayNonBlendables
 class LoadFrame
 {
 public:
+    template <int N, typename T>
+    void ReplayablePolymorphicPtr(T*& ptr);
+
     /* 0x0 */ int mInterval;
     /* 0x4 */ ReadByteStream mStream;
     /* 0xC */ ReplayNonBlendables mReplayNonBlendables;

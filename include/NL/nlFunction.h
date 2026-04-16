@@ -110,6 +110,14 @@ public:
     {
     }
 
+    template <typename BindType>
+    Function0(const BindType& bind)
+    {
+        typedef FunctorImpl<BindType> ImplType;
+        mTag = FUNCTOR;
+        mFunctor = new (nlMalloc(sizeof(ImplType), 8, false)) ImplType(bind);
+    }
+
     Function0(const Function0& other)
         : mTag(other.mTag)
     {
@@ -235,10 +243,8 @@ public:
 
     template <typename T>
     Function(T bind)
+        : Function0<void>(bind)
     {
-        typedef typename Function0<void>::FunctorImpl<T> ImplType;
-        mTag = FUNCTOR;
-        mFunctor = new (nlMalloc(sizeof(ImplType), 8, false)) ImplType(bind);
     }
 
     Function& operator=(const Function& other)

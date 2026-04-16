@@ -63,6 +63,7 @@ public:
     static FuzzyVariant ShouldIStrafeBall(cFielder*);
     static FuzzyVariant ShouldIStrafeMark(cFielder*);
     static FuzzyVariant GetBestHitTarget(cFielder*);
+    static FuzzyVariant GetBestWindupShotAction(cFielder*);
 };
 
 const nlVector3 v3Zero = { 0.0f, 0.0f, 0.0f };
@@ -5398,9 +5399,121 @@ void cFielder::DoAIReceivePassActionSelection()
 
 /**
  * Offset/Address/Size: 0x3C | 0x80019378 | size: 0x680
+ * TODO: 97.8% match - r30/r31 swapped for this/bDidSomething, minor FP scheduling
+ * and stack-slot differences in USE_POWERUP branch temps
  */
 bool cFielder::DoAIWindupActionSelection()
 {
+    extern cFielder* g_pScriptCurrentFielder;
+    extern cTeam* g_pCurrentlyUpdatingTeam;
+    static FilteredRandomChance randchancegen;
+
+    FuzzyVariant looseBallAction = Fuzzy::GetBestWindupShotAction(this);
+
+    bool bSelectChance = randchancegen.genrand(looseBallAction.SelectionChance);
+    bool bDidSomething = false;
+    float fActionScore = looseBallAction.Confidence;
+    eFielderDesireState action = (eFielderDesireState)looseBallAction.mData.i;
+    float fReaction = SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide)->Off_Reaction;
+    float fPerturbPercent = 0.5f * (1.0f - fReaction);
+
+    if (bSelectChance)
+    {
+        switch (action)
+        {
+        case 0:
+        case 1:
+        case 3:
+        case 4:
+        case 5:
+        case 6:
+        case 7:
+        case 8:
+        case 9:
+        case 10:
+        case 11:
+        case 12:
+        case 15:
+        case 16:
+        case 17:
+            break;
+        case FIELDERDESIRE_PASS:
+        {
+            float fReactionRandom = 0.6f * fPerturbPercent;
+            float fReactionOffset = nlRandomf(fReactionRandom, &nlDefaultSeed) - 0.5f * fReactionRandom;
+            if (!(fActionScore >= 0.6f + fReactionOffset))
+                break;
+            cPlayer* pTarget = looseBallAction.ExtraData.mData.pPlayer;
+            EndDesire(false);
+            InitDesire(FIELDERDESIRE_PASS, looseBallAction.Confidence, -1.0f, FuzzyVariant(pTarget), FuzzyVariant(OpenTo(g_pScriptCurrentFielder, pTarget) < 0.5f));
+            bDidSomething = true;
+            break;
+        }
+        case FIELDERDESIRE_DEKE:
+        {
+            float fReactionRandom = 0.4f * fPerturbPercent;
+            float fReactionOffset = nlRandomf(fReactionRandom, &nlDefaultSeed) - 0.5f * fReactionRandom;
+            if (!(fActionScore >= 0.4f + fReactionOffset))
+                break;
+            EndDesire(false);
+            InitDesire(FIELDERDESIRE_DEKE, 0.5f, -1.0f, fvNotSet, fvNotSet);
+            bDidSomething = true;
+            break;
+        }
+        case FIELDERDESIRE_USE_POWERUP:
+        {
+            float fReactionRandom = 0.4f * fPerturbPercent;
+            float fReactionOffset = nlRandomf(fReactionRandom, &nlDefaultSeed) - 0.5f * fReactionRandom;
+            if (!(fActionScore >= 0.4f + fReactionOffset))
+                break;
+            ePowerUpType powerupType = (ePowerUpType)looseBallAction.ExtraData.mData.i;
+            if (powerupType != m_pTeam->GetCurrentPowerUp().eType)
+                break;
+            if (m_nPowerupAnimID >= 0)
+                break;
+            if (m_ePowerup == POWER_UP_STAR)
+                break;
+            if (m_tFrozenTimer.m_uPackedTime != 0)
+                break;
+            if (IsFallenDown(0.0f) && (m_pTeam->IsCurrentStar() || m_pTeam->IsCurrentMushroom()))
+                break;
+            if (m_pTeam->IsCurrentNoPowerup())
+            {
+                cTeam* pTeam = m_pTeam;
+                SetPowerup(pTeam->GetCurrentPowerUp().eType,
+                    pTeam->GetCurrentPowerUp().nnumOfPowerups,
+                    NULL);
+                m_pTeam->ClearCurrentPowerUp();
+            }
+            else
+            {
+                if (m_pTeam->GetPowerUpByIndex(1).eType == POWER_UP_NONE)
+                    break;
+                m_pTeam->TogglePowerup(true);
+                cTeam* pTeam = m_pTeam;
+                SetPowerup(pTeam->GetCurrentPowerUp().eType,
+                    pTeam->GetCurrentPowerUp().nnumOfPowerups,
+                    NULL);
+                m_pTeam->ClearCurrentPowerUp();
+            }
+            break;
+        }
+        case FIELDERDESIRE_SHOOT:
+        {
+            float fReactionRandom = 0.6f * fPerturbPercent;
+            float fReactionOffset = nlRandomf(fReactionRandom, &nlDefaultSeed) - 0.5f * fReactionRandom;
+            if (!(fActionScore >= 0.6f + fReactionOffset))
+                break;
+            m_pShotMeter->ShotReleased(this);
+            bDidSomething = true;
+            break;
+        }
+        default:
+            break;
+        }
+    }
+
+    return bDidSomething;
 }
 
 /**

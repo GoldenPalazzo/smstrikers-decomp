@@ -100,6 +100,35 @@ bool nlDLRingIsEnd(T* head, T* current)
 }
 
 template <typename T>
+u32 nlRingCountElements(T* head)
+{
+    u32 count = 0;
+    if (head == NULL)
+    {
+        return 0;
+    }
+
+    T* current = head->m_next;
+    while (true)
+    {
+        T* next = current->m_next;
+        count++;
+        if (current == head)
+        {
+            break;
+        }
+        current = next;
+    }
+    return count;
+}
+
+template <typename T>
+u32 nlDLRingCountElements(T* head)
+{
+    return nlRingCountElements(head);
+}
+
+template <typename T>
 bool nlDLRingIsStart(T* head, T* current)
 {
     if (head == NULL)

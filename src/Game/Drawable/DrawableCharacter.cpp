@@ -8,6 +8,9 @@
 cCharacter* DrawableCharacter::spRenderOnlyThisCharacter = nullptr;
 bool DrawableCharacter::sbRenderOpposingGoalieToo = false;
 
+template <>
+void ReplayablePolymorphic<1, LoadFrame, cPoseNode>(LoadFrame& frame, cPoseNode*& ptr);
+
 /**
  * Offset/Address/Size: 0x2C0 | 0x8011C5EC | size: 0x178
  */
@@ -94,6 +97,24 @@ void DrawableCharacter::Replay<LoadFrame>(LoadFrame& frame)
         delete mPoseTree;
         mPoseTree = nullptr;
     }
+}
+
+/**
+ * Offset/Address/Size: 0x3DC | 0x8011D3F4 | size: 0x20
+ */
+template <>
+void ReplayablePolymorphic<0, LoadFrame, cPoseNode>(LoadFrame& frame, cPoseNode*& ptr)
+{
+    frame.ReplayablePolymorphicPtr<0, cPoseNode>(ptr);
+}
+
+/**
+ * Address/Size: 0x8011CBE4 | size: 0x20
+ */
+template <>
+void ReplayablePolymorphic<1, LoadFrame, cPoseNode>(LoadFrame& frame, cPoseNode*& ptr)
+{
+    frame.ReplayablePolymorphicPtr<1, cPoseNode>(ptr);
 }
 
 /**

@@ -3,7 +3,7 @@
 
 #define qr0 0
 
-// Conversion factor from radians to 16-bit fixed-point format: 65536.0f / (2π) ≈ 10430.378f
+// Conversion factor from radians to 16-bit fixed-point format: 65536.0f / (2*pi) ~= 10430.378f
 #define RAD_TO_FIXED16 10430.378f
 
 /**
@@ -152,10 +152,10 @@ void nlMakeRotationMatrixX(nlMatrix4& m, float angle)
 
     nlSinCos(&spC, &sp8, (short)(RAD_TO_FIXED16 * angle));
     PSMTX44Identity(m.m);
-    m.m[1][1] = sp8;        // cos(θ) at offset 0x14
-    m.m[1][2] = spC;        // sin(θ) at offset 0x18
-    m.m[2][1] = -m.m[1][2]; // -sin(θ) at offset 0x24
-    m.m[2][2] = m.m[1][1];  // cos(θ) at offset 0x28
+    m.m[1][1] = sp8;        // cos(theta) at offset 0x14
+    m.m[1][2] = spC;        // sin(theta) at offset 0x18
+    m.m[2][1] = -m.m[1][2]; // -sin(theta) at offset 0x24
+    m.m[2][2] = m.m[1][1];  // cos(theta) at offset 0x28
 }
 
 /**
@@ -168,10 +168,10 @@ void nlMakeRotationMatrixY(nlMatrix4& m, float angle)
 
     nlSinCos(&spC, &sp8, (short)(RAD_TO_FIXED16 * angle));
     PSMTX44Identity(m.m);
-    m.m[0][0] = sp8;        // cos(θ) at offset 0x00
-    m.m[0][2] = -spC;       // sin(θ) at offset 0x08
-    m.m[2][0] = -m.m[0][2]; // -sin(θ) at offset 0x18
-    m.m[2][2] = m.m[0][0];  // cos(θ) at offset 0x20
+    m.m[0][0] = sp8;        // cos(theta) at offset 0x00
+    m.m[0][2] = -spC;       // sin(theta) at offset 0x08
+    m.m[2][0] = -m.m[0][2]; // -sin(theta) at offset 0x18
+    m.m[2][2] = m.m[0][0];  // cos(theta) at offset 0x20
 }
 /**
  * Offset/Address/Size: 0x278 | 0x801C3DF4 | size: 0x78
@@ -184,10 +184,10 @@ void nlMakeRotationMatrixZ(nlMatrix4& m, float angle)
     nlSinCos(&sn, &cs, (short)(RAD_TO_FIXED16 * angle));
     PSMTX44Identity(m.m);
 
-    m.m[0][0] = cs;         // cos(θ) at offset 0x00
-    m.m[0][1] = sn;         // sin(θ) at offset 0x04
-    m.m[1][0] = -m.m[0][1]; // -sin(θ) at offset 0x10
-    m.m[1][1] = m.m[0][0];  // cos(θ) at offset 0x14
+    m.m[0][0] = cs;         // cos(theta) at offset 0x00
+    m.m[0][1] = sn;         // sin(theta) at offset 0x04
+    m.m[1][0] = -m.m[0][1]; // -sin(theta) at offset 0x10
+    m.m[1][1] = m.m[0][0];  // cos(theta) at offset 0x14
 }
 
 /**

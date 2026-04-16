@@ -965,7 +965,7 @@ const char* GetMemCardDescription()
     case LangItalian:
         return "File di Dati";
     case LangJapanese:
-        return "\x83\x74\x83\x40\x83\x8B\x82\xF0\x8F\x9C\x82\xAF\x82\xCE"; // Japanese: "セーブファイル"
+        return "\x83\x74\x83\x40\x83\x8B\x82\xF0\x8F\x9C\x82\xAF\x82\xCE"; // Japanese (SJIS): "Save File"
     case LangUKEnglish:
         return "Save File";
     default:

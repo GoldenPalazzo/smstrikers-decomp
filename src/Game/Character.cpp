@@ -926,7 +926,7 @@ s16 cCharacter::GetFacingDeltaToPosition(const nlVector3& position)
     float dx = position.f.x - m_v3Position.f.x;
     float angleRad = nlATan2f(dy, dx);
 
-    // Convert radians to 16-bit angle format (65536.0f / (2π) ≈ 10430.378f)
+    // Convert radians to 16-bit angle format (65536.0f / (2*pi) ~= 10430.378f)
     float angle16 = 10430.378f * angleRad;
     u16 targetAngle = (u16)(s32)angle16;
 

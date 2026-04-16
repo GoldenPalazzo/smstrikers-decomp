@@ -17,8 +17,8 @@ void PriorityStream::Reset()
 
 /**
  * Offset/Address/Size: 0xA34 | 0x801584E8 | size: 0x474
- * TODO: 97.96% match - register allocation drift: pSlot r5→r9, volGroup r6→r7,
- *   queue r7→r8, streamHash r3↔r4 swap, causing 3 extra instructions (11 diffs)
+ * TODO: 97.96% match - register allocation drift: pSlot r5->r9, volGroup r6->r7,
+ *   queue r7->r8, streamHash r3<->r4 swap, causing 3 extra instructions (11 diffs)
  */
 enum Type
 {

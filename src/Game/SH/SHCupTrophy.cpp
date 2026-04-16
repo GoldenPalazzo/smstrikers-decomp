@@ -67,13 +67,6 @@
 // }
 
 // /**
-//  * Offset/Address/Size: 0x78 | 0x800CC954 | size: 0x30
-//  */
-// void Function0<void>::FunctorImpl<BindExp1<void, Detail::MemFunImpl<void, void (CupTrophyScene::*)()>, CupTrophyScene*>>::operator()()
-// {
-// }
-
-// /**
 //  * Offset/Address/Size: 0x0 | 0x800CC8DC | size: 0x78
 //  */
 // void Function0<void>::FunctorImpl<BindExp1<void, Detail::MemFunImpl<void, void (CupTrophyScene::*)()>, CupTrophyScene*>>::Clone() const
@@ -272,6 +265,15 @@ public:
 typedef Detail::MemFunImpl<void, void (CupTrophyScene::*)()> MemFunImpl_CupTrophyScene_v;
 typedef BindExp1<void, MemFunImpl_CupTrophyScene_v, CupTrophyScene*> BindExp1_vfmfcp;
 typedef Function0<void>::FunctorImpl<BindExp1_vfmfcp> FunctorImpl_vfmfcp;
+
+/**
+ * Offset/Address/Size: 0x78 | 0x800CC954 | size: 0x30
+ */
+template <>
+void Function0<void>::FunctorImpl<BindExp1_vfmfcp>::operator()()
+{
+    (mBind.mArg->*(mBind.mFuncPtr.mFuncPtr))();
+}
 
 /**
  * Offset/Address/Size: 0x1D70 | 0x800CB424 | size: 0x1E4

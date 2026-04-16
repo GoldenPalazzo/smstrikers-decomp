@@ -27,7 +27,7 @@ cPoseNode::~cPoseNode()
         cPoseNode* ch = m_children[i];
         if (ch)
         {
-            delete ch; // virtual delete via child’s vtable
+            delete ch; // virtual delete via child's vtable
         }
     }
 }

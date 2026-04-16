@@ -25,7 +25,9 @@ public:
         u32 m_field2;
         StringType m_token;
 
+        iterator(const Tokenizer& tokenizer, const char* endPtr);
         iterator& operator++();
+        void FindNextToken();
 
         bool operator!=(const iterator& other) const
         {

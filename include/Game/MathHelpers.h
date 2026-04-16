@@ -5,8 +5,8 @@
 #include "NL/nlMath.h"
 
 /*
- * Converts a 2D direction vector to a u16 angle (0x10000 = 360°)
- * offset: angle offset to add (0x4000 = 90°, 0x8000 = 180°, etc.)
+ * Converts a 2D direction vector to a u16 angle (0x10000 = 360 deg)
+ * offset: angle offset to add (0x4000 = 90 deg, 0x8000 = 180 deg, etc.)
  */
 static inline u16 nlVector3ToAngle(const nlVector3& dir, u16 offset = 0)
 {
@@ -14,7 +14,7 @@ static inline u16 nlVector3ToAngle(const nlVector3& dir, u16 offset = 0)
 }
 
 /*
- * Converts radians to a u16 angle (0x10000 = 360°)
+ * Converts radians to a u16 angle (0x10000 = 360 deg)
  */
 static inline u16 RadToAng16(f32 r)
 {

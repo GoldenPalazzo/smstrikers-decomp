@@ -3618,7 +3618,7 @@ void Goalie::SetDesiredSaveFacing(const nlVector3& v3BallPosition)
 
 /**
  * Offset/Address/Size: 0x3C4 | 0x80042EC0 | size: 0x1F4
- * TODO: 96.26% match - volatile FP register allocation differs: 10430.378f→f0 instead of f3,
+ * TODO: 96.26% match - volatile FP register allocation differs: 10430.378f->f0 instead of f3,
  * cascading through angle section (r4/r5 swap) and velocity clamp section (fVelX/fVelY in
  * f0/f1 instead of f4/f5, missing 2 branch instructions in ternary codegen).
  */

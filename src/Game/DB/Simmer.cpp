@@ -16,7 +16,7 @@ static const char* SIM_FILE = "";
  */
 Tokenizer<BasicString<char, Detail::TempStringAllocator> >::iterator Tokenizer<BasicString<char, Detail::TempStringAllocator> >::begin() const
 {
-    FORCE_DONT_INLINE;
+    return iterator(*this, m_source.m_data ? m_source.m_data->mData : NULL);
 }
 
 /**
@@ -24,7 +24,16 @@ Tokenizer<BasicString<char, Detail::TempStringAllocator> >::iterator Tokenizer<B
  */
 Tokenizer<BasicString<char, Detail::TempStringAllocator> >::iterator Tokenizer<BasicString<char, Detail::TempStringAllocator> >::end() const
 {
-    FORCE_DONT_INLINE;
+    const char* endPtr;
+    if (m_source.m_data)
+    {
+        endPtr = m_source.m_data->mData + m_source.m_data->mSize - 1;
+    }
+    else
+    {
+        endPtr = NULL;
+    }
+    return iterator(*this, endPtr);
 }
 
 /**
@@ -32,15 +41,19 @@ Tokenizer<BasicString<char, Detail::TempStringAllocator> >::iterator Tokenizer<B
  */
 Tokenizer<BasicString<char, Detail::TempStringAllocator> >::iterator& Tokenizer<BasicString<char, Detail::TempStringAllocator> >::iterator::operator++()
 {
-    FORCE_DONT_INLINE;
+    m_field1 = m_field2;
+    FindNextToken();
+    return *this;
 }
 
-// /**
-//  * Offset/Address/Size: 0x88 | 0x80191520 | size: 0x310
-//  */
-// void Tokenizer<BasicString<char, Detail::TempStringAllocator> >::iterator::FindNextToken()
-// {
-// }
+/**
+ * Offset/Address/Size: 0x88 | 0x80191520 | size: 0x310
+ * TODO: Stub for FindNextToken - not yet decompiled.
+ */
+void Tokenizer<BasicString<char, Detail::TempStringAllocator> >::iterator::FindNextToken()
+{
+    FORCE_DONT_INLINE;
+}
 
 // /**
 //  * Offset/Address/Size: 0x44 | 0x801914DC | size: 0x44

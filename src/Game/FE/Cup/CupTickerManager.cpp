@@ -83,12 +83,14 @@ extern gl_ScreenInfo* glGetScreenInfo();
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0x78 | 0x800F40A4 | size: 0x30
-//  */
-// void Function0<void>::FunctorImpl<BindExp1<void, Detail::MemFunImpl<void, void (CupTickerManager::*)()>, CupTickerManager*>>::operator()()
-// {
-// }
+/**
+ * Offset/Address/Size: 0x78 | 0x800F40A4 | size: 0x30
+ */
+template <>
+void Function0<void>::FunctorImpl<BindExp1_vfmfcp>::operator()()
+{
+    (mBind.mArg->*(mBind.mFuncPtr.mFuncPtr))();
+}
 
 // /**
 //  * Offset/Address/Size: 0x0 | 0x800F402C | size: 0x78

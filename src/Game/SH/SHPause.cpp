@@ -19,6 +19,31 @@ namespace DoubleHighlite
 void OpenItem(TLComponentInstance*);
 }
 
+namespace Detail
+{
+template <typename R, typename F>
+struct MemFunImpl
+{
+    F mFuncPtr;
+    MemFunImpl(F fn)
+        : mFuncPtr(fn)
+    {
+    }
+};
+} // namespace Detail
+
+template <typename T, typename R>
+Detail::MemFunImpl<R, void (T::*)()> MemFun(void (T::*fn)())
+{
+    return Detail::MemFunImpl<R, void (T::*)()>(fn);
+}
+
+template <typename T, typename R, typename A>
+Detail::MemFunImpl<R, void (T::*)(A)> MemFun(void (T::*fn)(A))
+{
+    return Detail::MemFunImpl<R, void (T::*)(A)>(fn);
+}
+
 // /**
 //  * Offset/Address/Size: 0x38 | 0x800B01B4 | size: 0x40
 //  */
@@ -36,19 +61,19 @@ void OpenItem(TLComponentInstance*);
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0x1C | 0x800B0160 | size: 0x1C
-//  */
-// void MemFun<PauseMenuScene, void>(void (PauseMenuScene::*)())
-// {
-// }
+/**
+ * Offset/Address/Size: 0x1C | 0x800B0160 | size: 0x1C
+ * TODO: 69.29% match - r0/r5 register allocation swap and load/store interleaving
+ */
+template Detail::MemFunImpl<void, void (PauseMenuScene::*)()>
+MemFun<PauseMenuScene, void>(void (PauseMenuScene::*)());
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800B0144 | size: 0x1C
-//  */
-// void MemFun<PauseMenuScene, void, TLComponentInstance*>(void (PauseMenuScene::*)(TLComponentInstance*))
-// {
-// }
+/**
+ * Offset/Address/Size: 0x0 | 0x800B0144 | size: 0x1C
+ * TODO: 69.29% match - r0/r5 register allocation swap and load/store interleaving
+ */
+template Detail::MemFunImpl<void, void (PauseMenuScene::*)(TLComponentInstance*)>
+MemFun<PauseMenuScene, void, TLComponentInstance*>(void (PauseMenuScene::*)(TLComponentInstance*));
 
 // /**
 //  * Offset/Address/Size: 0x5C | 0x800B00E8 | size: 0x5C

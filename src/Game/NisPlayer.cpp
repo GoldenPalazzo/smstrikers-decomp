@@ -42,12 +42,10 @@ static unsigned char useAsyncLoading;
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0x54 | 0x80118E64 | size: 0x20
-//  */
-// void nlToLower<char>(char)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x54 | 0x80118E64 | size: 0x20
+ */
+template char nlToLower<char>(char c);
 
 // /**
 //  * Offset/Address/Size: 0x0 | 0x80118E10 | size: 0x54
