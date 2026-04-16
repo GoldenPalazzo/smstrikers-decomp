@@ -1208,9 +1208,15 @@ u32 DolphinFile::GetDiscPosition()
 /**
  * Offset/Address/Size: 0x38 | 0x801D0E84 | size: 0x18
  */
-// nlDLRingGetStart<AsyncEntry>(AsyncEntry*)
-// {
-// }
+template <>
+AsyncEntry* nlDLRingGetStart<AsyncEntry>(AsyncEntry* current)
+{
+    if (current == NULL)
+    {
+        return NULL;
+    }
+    return current->next;
+}
 
 /**
  * Offset/Address/Size: 0x50 | 0x801D0E9C | size: 0x44

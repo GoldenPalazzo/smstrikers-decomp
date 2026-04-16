@@ -40,7 +40,14 @@ template <typename T>
 void nlDLRingAddEnd(T** head, T* newNode);
 
 template <typename T>
-T* nlDLRingGetStart(T* current);
+T* nlDLRingGetStart(T* current)
+{
+    if (current == NULL)
+    {
+        return NULL;
+    }
+    return current->m_next;
+}
 
 template <typename T>
 bool nlDLRingIsEnd(T* head, T* current);
@@ -107,13 +114,6 @@ struct EffectsSpecRaw
 //  * Offset/Address/Size: 0x94 | 0x801F504C | size: 0x3C
 //  */
 // void nlDLRingAddEnd<DLListEntry<UserEffectSpec*>>(DLListEntry<UserEffectSpec*>**, DLListEntry<UserEffectSpec*>*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x7C | 0x801F5034 | size: 0x18
-//  */
-// void nlDLRingGetStart<DLListEntry<UserEffectSpec*>>(DLListEntry<UserEffectSpec*>*)
 // {
 // }
 

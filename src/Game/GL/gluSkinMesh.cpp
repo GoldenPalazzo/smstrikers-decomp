@@ -3,13 +3,12 @@
 #include "NL/gl/glModel.h"
 #include "NL/gl/glState.h"
 #include "NL/glx/glxDisplayList.h"
+#include "NL/nlDLRing.h"
 
-// /**
-//  * Offset/Address/Size: 0x38 | 0x801B64C0 | size: 0x18
-//  */
-// void nlRingGetStart<BoneMapList>(BoneMapList*)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x38 | 0x801B64C0 | size: 0x18
+ */
+template BoneMapList* nlRingGetStart<BoneMapList>(BoneMapList*);
 
 // /**
 //  * Offset/Address/Size: 0x20 | 0x801B64A8 | size: 0x18

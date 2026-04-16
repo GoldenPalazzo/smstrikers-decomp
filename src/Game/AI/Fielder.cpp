@@ -2125,8 +2125,248 @@ cFielder* cFielder::DoFindBestHitTarget()
 /**
  * Offset/Address/Size: 0x73B8 | 0x800206F4 | size: 0x87C
  */
-void cFielder::DoFindBestShotTarget(nlVector3&, float&, bool)
+void cFielder::DoFindBestShotTarget(nlVector3& v3PositionOut, float& fShotSpeed, bool bIsSTS)
 {
+    cBall* pBall = g_pBall;
+    Goalie* pGoalie = m_pTeam->GetOtherTeam()->GetGoalie();
+
+    float kBallAllowance = 0.18f + cNet::m_fNetPostRadius;
+    bool bIsChipShot = false;
+    if (mActionShotVars.bIsChipShot || mActionLooseBallShotVars.bIsChipShot)
+    {
+        bIsChipShot = true;
+    }
+    if (bIsChipShot)
+    {
+        kBallAllowance += g_pGame->m_pGameTweaks->unk2F4;
+    }
+    else
+    {
+        kBallAllowance += g_pGame->m_pGameTweaks->unk2F0;
+    }
+
+    float fDist2NetSide = 0.5f * cNet::m_fNetWidth - kBallAllowance;
+    cNet* pNet = m_pTeam->GetOtherNet();
+    float fNetBaseX = pNet->m_baseLocation.f.x;
+
+    float fBallYClamped = (pBall->m_v3Position.f.y >= -fDist2NetSide) ? pBall->m_v3Position.f.y : -fDist2NetSide;
+    fBallYClamped = (fBallYClamped <= fDist2NetSide) ? fBallYClamped : fDist2NetSide;
+
+    float fBallZClamped;
+    if (bIsSTS)
+    {
+        fBallZClamped = pBall->m_v3Position.f.z;
+        fBallZClamped = (fBallZClamped >= 0.18f) ? fBallZClamped : 0.18f;
+        fBallZClamped = (fBallZClamped <= kBallAllowance) ? fBallZClamped : kBallAllowance;
+    }
+    else
+    {
+        float fHeightLimit = cNet::m_fNetHeight - kBallAllowance;
+        fBallZClamped = pBall->m_v3Position.f.z;
+        fBallZClamped = (fBallZClamped >= 0.18f) ? fBallZClamped : 0.18f;
+        fBallZClamped = (fBallZClamped <= fHeightLimit) ? fBallZClamped : fHeightLimit;
+    }
+
+    float fDY = pBall->m_v3Position.f.y - fBallYClamped;
+    float fDX = pBall->m_v3Position.f.x - fNetBaseX;
+    float fShotDist = nlSqrt((fDX * fDX) + (fDY * fDY), true);
+
+    bool bIsChipShot2 = false;
+    if (mActionShotVars.bIsChipShot || mActionLooseBallShotVars.bIsChipShot)
+    {
+        bIsChipShot2 = true;
+    }
+
+    float speedFactor;
+    float fShotMinSpeed;
+    float fShotMaxSpeed;
+    if (bIsChipShot2)
+    {
+        speedFactor = fShotDist;
+        fShotMinSpeed = ((FielderTweaks*)m_pTweaks)->fShotChipMinSpeed;
+        fShotMaxSpeed = ((FielderTweaks*)m_pTweaks)->fShotChipMaxSpeed;
+    }
+    else
+    {
+        speedFactor = fShotDist * (0.3f + m_pShotMeter->m_fSpeedValue);
+        fShotMinSpeed = ((FielderTweaks*)m_pTweaks)->fShotMinSpeed;
+        fShotMaxSpeed = ((FielderTweaks*)m_pTweaks)->fShotMaxSpeed;
+    }
+
+    fShotSpeed = InterpolateRangeClamped(fShotMinSpeed, fShotMaxSpeed, 3.0f, 18.0f, speedFactor);
+
+    float fAbsBallY = (f32)fabs(pBall->m_v3Position.f.y);
+    float fAbsBallX = (f32)fabs(pBall->m_v3Position.f.x);
+    float fAimValue = m_pShotMeter->mfSShotAimValue;
+    float fAbsAimValue = (f32)fabs(fAimValue);
+
+    if (fAbsBallY < 1.5f + fDist2NetSide
+        && (fAbsBallX > (f32)fabs(pGoalie->m_v3Position.f.x)
+            || fAbsBallX > cField::GetGoalLineX(1u) - 1.5f))
+    {
+        v3PositionOut.f.x = 1.005f * pNet->m_baseLocation.f.x;
+        v3PositionOut.f.y = 0.9f * fBallYClamped;
+        v3PositionOut.f.z = fBallZClamped + nlRandomf(0.2f, &nlDefaultSeed);
+        if (fShotDist < 2.0f)
+        {
+            fShotSpeed = 10.0f;
+        }
+    }
+    else
+    {
+        float fNetBaseY = pNet->m_baseLocation.f.y;
+        nlVector3 v3Post1 = pNet->m_baseLocation;
+        nlVector3 v3Post2 = pNet->m_baseLocation;
+        v3Post1.f.y = fNetBaseY - fDist2NetSide;
+        v3Post2.f.y = fNetBaseY + fDist2NetSide;
+
+        float fPost1DY = v3Post1.f.y - pBall->m_v3Position.f.y;
+        float fPost2DY = v3Post2.f.y - pBall->m_v3Position.f.y;
+        float fPost1DX = v3Post1.f.x - pBall->m_v3Position.f.x;
+        float fPost2DX = v3Post2.f.x - pBall->m_v3Position.f.x;
+        float fPost1DZ = v3Post1.f.z - pBall->m_v3Position.f.z;
+        float fPost2DZ = v3Post2.f.z - pBall->m_v3Position.f.z;
+        float fGoalieDY = pGoalie->m_v3Position.f.y - pBall->m_v3Position.f.y;
+        float fGoalieDX = pGoalie->m_v3Position.f.x - pBall->m_v3Position.f.x;
+
+        float fAngPost1 = nlATan2f(fPost1DY, fPost1DX);
+        float fAngPost2 = nlATan2f(fPost2DY, fPost2DX);
+        u16 aAngPost2 = (u16)(s32)(10430.378f * fAngPost2);
+        float fAngGoalie = nlATan2f(fGoalieDY, fGoalieDX);
+        u16 aAngGoalie = (u16)(s32)(10430.378f * fAngGoalie);
+        u16 aAngPost1 = (u16)(s32)(10430.378f * fAngPost1);
+
+        s16 sDiffP1G = (s16)(aAngPost1 - aAngGoalie);
+        if (sDiffP1G < 0)
+        {
+            sDiffP1G = -sDiffP1G;
+        }
+        u16 uAbsP1G = (u16)sDiffP1G;
+
+        s16 sDiffP2G = (s16)(aAngPost2 - aAngGoalie);
+        if (sDiffP2G < 0)
+        {
+            sDiffP2G = -sDiffP2G;
+        }
+        u16 uAbsP2G = (u16)sDiffP2G;
+
+        s16 sDiffP1P2 = (s16)(aAngPost1 - aAngPost2);
+        if (sDiffP1P2 < 0)
+        {
+            sDiffP1P2 = -sDiffP1P2;
+        }
+        u16 uAbsP1P2 = (u16)sDiffP1P2;
+
+        v3PositionOut.f.x = 1.005f * pNet->m_baseLocation.f.x;
+
+        float fProbability;
+        if (fAbsAimValue > 0.01f)
+        {
+            fProbability = 0.5f - 0.5f * fAimValue;
+        }
+        else if (uAbsP1G >= uAbsP1P2)
+        {
+            fProbability = 1.0f;
+        }
+        else if (uAbsP2G >= uAbsP1P2)
+        {
+            fProbability = 0.0f;
+        }
+        else
+        {
+            float fAngToNet = nlATan2f(pNet->m_baseLocation.f.y - pBall->m_v3Position.f.y,
+                pNet->m_baseLocation.f.x - pBall->m_v3Position.f.x);
+            u16 angle2Net = (u16)(s32)(10430.378f * fAngToNet);
+            if (pNet->m_baseLocation.f.x < 0.0f)
+            {
+                angle2Net += 0x8000;
+            }
+            s16 sAng2Net = (s16)angle2Net;
+            if (sAng2Net < 0)
+            {
+                sAng2Net = -sAng2Net;
+            }
+
+            if ((u16)sAng2Net > 0x2000)
+            {
+                float fGD1X = pGoalie->m_v3Position.f.x - v3Post1.f.x;
+                float fGD1Y = pGoalie->m_v3Position.f.y - v3Post1.f.y;
+                float fGD2X = pGoalie->m_v3Position.f.x - v3Post2.f.x;
+                float fGD2Y = pGoalie->m_v3Position.f.y - v3Post2.f.y;
+                float fGD1Sq = (fGD1X * fGD1X) + (fGD1Y * fGD1Y);
+                float fGD2Sq = (fGD2X * fGD2X) + (fGD2Y * fGD2Y);
+                float fRatio = fGD1Sq / (fGD1Sq + fGD2Sq);
+                fRatio = (fRatio >= 0.03f) ? fRatio : 0.03f;
+                fProbability = (fRatio <= 0.97f) ? fRatio : 0.97f;
+            }
+            else if (3 * uAbsP1G < uAbsP2G || 3 * uAbsP2G < uAbsP1G)
+            {
+                if (uAbsP1G < uAbsP2G)
+                {
+                    float fRatio = 0.5f * (int)(3 * uAbsP1G - uAbsP2G) / (int)(uAbsP1G + uAbsP2G);
+                    fProbability = (0.05f >= fRatio) ? 0.05f : fRatio;
+                }
+                else
+                {
+                    float fRatio = 1.0f - 0.5f * (int)(3 * uAbsP2G - uAbsP1G) / (int)(uAbsP1G + uAbsP2G);
+                    fProbability = (0.95f <= fRatio) ? 0.95f : fRatio;
+                }
+            }
+            else
+            {
+                fProbability = InterpolateRangeClamped(0.15f, 0.85f, -8192.0f, 8192.0f, -(float)(s32)sAng2Net);
+            }
+        }
+
+        static FilteredRandomChance randgenPost;
+
+        if (randgenPost.genrand(fProbability))
+        {
+            v3PositionOut.f.y = pBall->m_v3Position.f.y + fPost1DY;
+            float fDistPost1Sq = (fPost1DX * fPost1DX) + (fPost1DY * fPost1DY) + (fPost1DZ * fPost1DZ);
+            float fDistPost2Sq = (fPost2DX * fPost2DX) + (fPost2DY * fPost2DY) + (fPost2DZ * fPost2DZ);
+            if (fDistPost1Sq < fDistPost2Sq)
+            {
+                v3PositionOut.f.x = 0.985f * pNet->m_baseLocation.f.x;
+            }
+        }
+        else
+        {
+            v3PositionOut.f.y = pBall->m_v3Position.f.y + fPost2DY;
+            float fDistPost2Sq = (fPost2DX * fPost2DX) + (fPost2DY * fPost2DY) + (fPost2DZ * fPost2DZ);
+            float fDistPost1Sq = (fPost1DX * fPost1DX) + (fPost1DY * fPost1DY) + (fPost1DZ * fPost1DZ);
+            if (fDistPost2Sq < fDistPost1Sq)
+            {
+                v3PositionOut.f.x = 0.985f * pNet->m_baseLocation.f.x;
+            }
+        }
+
+        if (bIsSTS)
+        {
+            v3PositionOut.f.z = kBallAllowance + nlRandomf(0.5f, &nlDefaultSeed);
+        }
+        else if (fShotDist > g_pGame->m_pGameTweaks->unk2F8)
+        {
+            v3PositionOut.f.z = cNet::m_fNetHeight - kBallAllowance;
+        }
+        else
+        {
+            bool bIsChip = false;
+            if (mActionShotVars.bIsChipShot || mActionLooseBallShotVars.bIsChipShot)
+            {
+                bIsChip = true;
+            }
+            if (bIsChip)
+            {
+                float fAllowableHeight = cNet::m_fNetHeight - kBallAllowance;
+                v3PositionOut.f.z = 0.9f * fAllowableHeight + nlRandomf(0.100000024f * fAllowableHeight, &nlDefaultSeed);
+            }
+            else
+            {
+                v3PositionOut.f.z = kBallAllowance + nlRandomf(cNet::m_fNetHeight - 2.0f * kBallAllowance, &nlDefaultSeed);
+            }
+        }
+    }
 }
 
 /**
