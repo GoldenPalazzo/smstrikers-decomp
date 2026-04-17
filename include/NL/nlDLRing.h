@@ -16,7 +16,7 @@ public:
     DLListEntry()
         : m_next(nullptr)
         , m_prev(nullptr)
-        , m_data(nullptr)
+        , m_data()
     {
     }
 

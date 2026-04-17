@@ -15,12 +15,27 @@
 #include "NL/glx/glxSwap.h"
 #include "NL/nlTask.h"
 
+extern float g_AllActorsHidden;
+extern unsigned char g_e3_Build;
+
+cAnimCamera* FrontEnd::m_pPauseMenuCamera = nullptr;
+bool FrontEnd::m_bGameOver = false;
+bool FrontEnd::m_bInPauseMenuState = false;
+float FrontEnd::m_fDemoTimeElapsed = 0.0f;
+unsigned char FrontEnd::m_ctrlConnectedState[4];
+float FrontEnd::m_pauseDelay = 0.0f;
+
 // Global variables
 static unsigned char AlreadyStartedStrikers101Menu;
 static unsigned char DontCheckForControllerRemovalHack;
-extern float g_AllActorsHidden;
-extern unsigned char g_e3_Build;
-extern unsigned char g_JaapAndJacksNastyHackBecauseWeDoNotKnowDifferenceBetweenPausePauseAndPostGamePause;
+unsigned char g_JaapAndJacksNastyHackBecauseWeDoNotKnowDifferenceBetweenPausePauseAndPostGamePause;
+
+eFEState FrontEnd::m_feStateCurrent = eFE_INVALID;
+eFEState FrontEnd::m_feStatePending = eFE_INVALID;
+eFEState FrontEnd::m_feStatePrevious = eFE_INVALID;
+unsigned int FrontEnd::m_lastTaskState = -1;
+eFEINPUT_PAD FrontEnd::m_hitStartPad = FE_ALL_PADS;
+FrontEnd::MenuEnterType FrontEnd::m_menuType = MET_INVALID;
 
 /**
  * Offset/Address/Size: 0x0 | 0x80094C84 | size: 0x44
@@ -52,7 +67,7 @@ void FrontEnd::UpdateForGame(float)
             {
                 if (g_pFEInput->JustPressed((eFEINPUT_PAD)i, 0x1000, false, NULL))
                 {
-                    m_hitStartPad = i;
+                    m_hitStartPad = (eFEINPUT_PAD)i;
                     EnterMenuState(MET_PAUSE);
                 }
                 if (m_bInPauseMenuState)
@@ -111,7 +126,7 @@ void FrontEnd::Update(float fTimeDelta)
     if (nlSingleton<GameInfoManager>::s_pInstance->IsInDemoMode())
     {
         m_fDemoTimeElapsed += fTimeDelta;
-        if (m_fDemoTimeElapsed < 30.0f)
+        if (m_fDemoTimeElapsed < 3.0f)
         {
         }
         else
@@ -134,7 +149,7 @@ void FrontEnd::Update(float fTimeDelta)
 
                 if (!init)
                 {
-                    maxBackendDemoTime = GetConfigFloat(Config::Global(), "max_backend_demo_time", 60.0f);
+                    maxBackendDemoTime = GetConfigFloat(Config::Global(), "be_demo_mode_time_out", 60.0f);
                     init = 1;
                 }
 
@@ -183,13 +198,13 @@ void FrontEnd::Update(float fTimeDelta)
                 ((NSNMessengerScene*)(void*)scene)->EnableScrolling(true);
                 SetTickerLesson(-1);
                 m_lastTaskState = 2;
-                m_feStatePrevious = 4;
+                m_feStatePrevious = eFE_INGAME;
                 AlreadyStartedStrikers101Menu = 1;
             }
         }
         else
         {
-            m_feStatePending = 4;
+            m_feStatePending = eFE_INGAME;
         }
 
         m_bGameOver = false;
@@ -204,8 +219,8 @@ void FrontEnd::Update(float fTimeDelta)
         m_pPauseMenuCamera = new (nlMalloc(0xAC, 8, false)) cAnimCamera();
         ((cAnimCamera*)m_pPauseMenuCamera)->SelectCameraAnimation("pause");
         cCameraManager::PushCamera((cBaseCamera*)m_pPauseMenuCamera);
-        ((cAnimCamera*)m_pPauseMenuCamera)->m_fAnimationSpeed = 0.5f;
-        m_feStatePending = 7;
+        ((cAnimCamera*)m_pPauseMenuCamera)->m_fAnimationSpeed = 0.3f;
+        m_feStatePending = eFE_WAIT_USER_END_GAME_INPUT;
         break;
     }
 
@@ -227,14 +242,14 @@ void FrontEnd::ExitMenuState()
         return;
 
     m_bInPauseMenuState = false;
-    m_menuType = -1;
+    m_menuType = MET_INVALID;
     m_feStatePending = m_feStatePrevious;
     nlTaskManager::m_pInstance->m_Locked = false;
     nlTaskManager::SetNextState(m_lastTaskState);
     OverlayManager::s_pInstance->Pop();
     g_pEventManager->CreateValidEvent(1, 0x14);
     g_pFEInput->EnableAnalogToDPadMapping(FE_ALL_PADS, false);
-    m_pauseDelay = 1.5f;
+    m_pauseDelay = 0.25f;
 }
 
 /**
@@ -293,7 +308,7 @@ void FrontEnd::EnterMenuState(FrontEnd::MenuEnterType menuType)
     default:
         break;
     }
-    m_feStatePending = FE_ALL_PADS;
+    m_feStatePending = eFE_PROCESS_MENU_INPUT;
     g_pEventManager->CreateValidEvent(0, 0x14);
     g_pFEInput->EnableAnalogToDPadMapping(FE_ALL_PADS, true);
 }
@@ -335,7 +350,7 @@ void FrontEnd::EnterStartScreen(bool)
         isInStrikers101 = true;
     }
     g_pGame->BeginGame(false, isInStrikers101);
-    m_feStatePending = 6;
+    m_feStatePending = eFE_WAIT_FOR_LOAD;
 }
 
 /**
@@ -354,8 +369,8 @@ void FrontEnd::SetControllerState()
  */
 void FrontEnd::Destroy()
 {
-    m_feStateCurrent = -1;
-    m_feStatePending = -1;
+    m_feStateCurrent = eFE_INVALID;
+    m_feStatePending = eFE_INVALID;
 }
 
 /**
@@ -363,11 +378,11 @@ void FrontEnd::Destroy()
  */
 bool FrontEnd::Initialize()
 {
-    m_feStateCurrent = -1;
-    m_feStatePending = -1;
+    m_feStateCurrent = eFE_INVALID;
+    m_feStatePending = eFE_INVALID;
     m_pPauseMenuCamera = 0;
-    m_hitStartPad = 8;
-    m_menuType = -1;
+    m_hitStartPad = FE_ALL_PADS;
+    m_menuType = MET_INVALID;
     m_bGameOver = 0;
     m_bInPauseMenuState = 0;
     m_fDemoTimeElapsed = 0.0f;
@@ -386,10 +401,10 @@ void FrontEnd::FEEventHandler(Event* pEvent, void* pParam)
     {
     case 3:
         m_bGameOver = true;
-        m_feStatePending = 5;
+        m_feStatePending = eFE_END_GAME;
         break;
     case 9:
-        m_feStatePending = 3;
+        m_feStatePending = eFE_PRE_GAME_START;
         break;
     case 0x1C:
         if (nlSingleton<OverlayManager>::s_pInstance != NULL)

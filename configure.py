@@ -1034,7 +1034,7 @@ config.libs = [
             Object(Matching, "Game/FE/FELoader.cpp", extra_cflags=["-inline deferred"]),
             Object(NonMatching, "Game/FE/feNSNMessenger.cpp"),
             Object(NonMatching, "Game/FE/fePopupMenu.cpp"),
-            Object(NonMatching, "Game/FE/feManager.cpp"),
+            Object(Matching, "Game/FE/feManager.cpp"),
             Object(NonMatching, "Game/FE/feCaptainComponent.cpp", extra_cflags=["-inline deferred"]),
             Object(NonMatching, "Game/FE/feTweener.cpp"),
             Object(NonMatching, "Game/FE/feSceneManager.cpp"),

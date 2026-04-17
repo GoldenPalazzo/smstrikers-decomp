@@ -793,9 +793,69 @@ void Audio::SetPitchBendOnAllDialogueSFX(unsigned short pitch)
 /**
  * Offset/Address/Size: 0x1108 | 0x8013D61C | size: 0x1CC
  */
-// void SetVolGroupVolume(int, float, int)
-// {
-// }
+void SetVolGroupVolume(int volGroup, float fVol, int fadeTime)
+{
+    unsigned char group;
+    unsigned short fade;
+
+    volGroup = (volGroup >= 0) ? volGroup : 0;
+    volGroup = (volGroup > 255) ? 255 : volGroup;
+    group = (unsigned char)volGroup;
+
+    fadeTime = (fadeTime >= 0) ? fadeTime : 0;
+    fadeTime = (fadeTime > 65535) ? 65535 : fadeTime;
+    fade = (unsigned short)fadeTime;
+
+    if (group == 0x20)
+    {
+        PlatAudio::SetVolGroupVolume(0x1e, fVol, fade);
+        PlatAudio::SetVolGroupVolume(0x1f, fVol, fade);
+        PlatAudio::SetVolGroupVolume(0x04, fVol, fade);
+    }
+    else if (group == 0x04)
+    {
+        PlatAudio::SetVolGroupVolume(0x04, fVol, fade);
+    }
+    else
+    {
+        u8 inRange = ((int)group >= 5 && (int)group <= 0x13);
+        if (inRange)
+        {
+            PlatAudio::SetVolGroupVolume(group, fVol, fade);
+        }
+        else
+        {
+            switch (group)
+            {
+            case 2:
+                PlatAudio::SetVolGroupVolume(2, fVol, fade);
+                break;
+            case 1:
+            case 0x1e:
+            {
+                float vol = fVol;
+                if (group == 0x1e)
+                    vol = fVol * gfVolumeGroups[2];
+                PlatAudio::SetVolGroupVolume(1, 0.9f * vol, fade);
+                if (group == 1)
+                    return;
+            }
+            case 3:
+            {
+                float vol = fVol;
+                if (group == 0x1e)
+                    vol = fVol * gfVolumeGroups[6];
+                PlatAudio::SetVolGroupVolume(3, vol, fade);
+                if (group == 3)
+                    return;
+            }
+            }
+
+            if (group != 0x1e)
+                PlatAudio::SetVolGroupVolume(group, fVol, fade);
+        }
+    }
+}
 
 /**
  * Offset/Address/Size: 0x12D4 | 0x8013D7E8 | size: 0x4C

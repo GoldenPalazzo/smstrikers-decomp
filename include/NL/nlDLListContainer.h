@@ -28,8 +28,9 @@ public:
         m_Head = NULL;
     }
 
-    DLListEntry<T>* Allocate(T data)
+    DLListEntry<T>* Allocate(const T& data)
     {
+        T localData = data;
         DLListEntry<T>* entry = m_Allocator.m_pFree;
         if (entry != NULL)
         {
@@ -39,7 +40,7 @@ public:
         {
             entry->m_next = NULL;
             entry->m_prev = NULL;
-            entry->m_data = data;
+            entry->m_data = localData;
         }
         return entry;
     }

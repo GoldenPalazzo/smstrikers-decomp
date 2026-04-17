@@ -410,9 +410,39 @@ void AudioStreamTrack::StreamTrack::Resume()
     ProcessNewHeadStream();
 }
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x80154D58 | size: 0x1B8
-//  */
-// void AudioStreamTrack::StreamTrack::AttachStream(GCAudioStreaming::StereoAudioStream*, Audio::MasterVolume::VOLUME_GROUP, unsigned long, unsigned long, bool, bool)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x0 | 0x80154D58 | size: 0x1B8
+ * TODO: 91.3% match - missing double QUEUED_STREAM stack copy, register allocation shift, null check pattern
+ */
+void AudioStreamTrack::StreamTrack::AttachStream(
+    GCAudioStreaming::StereoAudioStream* pStream,
+    Audio::MasterVolume::VOLUME_GROUP VolGroup,
+    unsigned long StreamId,
+    unsigned long FadeIn,
+    bool Looping,
+    bool TrackOwnsStream)
+{
+    if (m_State != TS_Idle)
+    {
+        return;
+    }
+
+    if (GetConfigBool(Config::Global(), "no_stream", false) == true)
+    {
+        return;
+    }
+
+    QUEUED_STREAM qs = { };
+    DLListEntry<QUEUED_STREAM>* entry = m_QueuedStreams.Allocate(qs);
+    nlDLRingAddEnd(&m_QueuedStreams.m_Head, entry);
+
+    entry->m_data.StreamId = StreamId;
+    entry->m_data.pStream = pStream;
+    entry->m_data.FadeIn = FadeIn;
+    entry->m_data.StartVolume = (u8)pStream->m_Volume;
+    entry->m_data.Loop = Looping;
+    entry->m_data.VolGroup = VolGroup;
+    entry->m_data.TrackOwnsStream = TrackOwnsStream;
+
+    m_State = TS_Playing;
+}

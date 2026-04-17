@@ -95,7 +95,7 @@ public:
         /* 0x4 */ GCAudioStreaming::StereoAudioStream* pStream;
         /* 0x8 */ unsigned long FadeIn : 16;
         /* 0x8 */ unsigned long StartVolume : 10;
-        /* 0x8 */ Audio::MasterVolume::VOLUME_GROUP VolGroup : 3;
+        /* 0x8 */ unsigned long VolGroup : 3;
         /* 0xB */ unsigned long Loop : 1;
         /* 0xB */ unsigned long TrackOwnsStream : 1;
     }; // total size: 0xC
