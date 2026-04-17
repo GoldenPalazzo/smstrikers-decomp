@@ -252,6 +252,7 @@ extern Audio::cWorldSFX gCrowdSFX;
 extern bool g_bWorldSFXInitialized;
 extern bool g_bAudioInitialized;
 extern SoundStrToIDNode gWorldSFXInfo[];
+extern int gWorldSoundTypeEnumMap[];
 extern const char* gWorldSoundTable[];
 
 } // namespace Audio

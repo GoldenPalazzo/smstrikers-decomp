@@ -20,7 +20,12 @@ struct THPSimpleControlWork
     /* 0x04 */ unsigned char _pad04[0x08];
     /* 0x0C */ unsigned long bufSize;
     /* 0x10 */ unsigned long audioMaxSamples;
-    /* 0x14 */ unsigned char _pad14[0x34];
+    /* 0x14 */ unsigned char _pad14[0x04];
+    /* 0x18 */ unsigned long numFrames;
+    /* 0x1C */ unsigned long firstFrameSize;
+    /* 0x20 */ unsigned char _pad20[0x0C];
+    /* 0x2C */ unsigned long movieDataOffsets;
+    /* 0x30 */ unsigned char _pad30[0x18];
     /* 0x48 */ THPVideoInfo videoInfo;
     /* 0x54 */ unsigned char _pad54[0x14];
     /* 0x68 */ int open;
@@ -59,6 +64,58 @@ extern "C" s32 THPSimpleGetCurrentFrame()
     return ((THPSimpleControlWork*)&SimpleControl)->textureSet.mFrameNumber;
 }
 
+static long THPSimpleGetVolume()
+{
+    return (long)((THPSimpleControlWork*)&SimpleControl)->curVolume;
+}
+
+/**
+ * Offset/Address/Size: 0x10 | 0x801CBF74 | size: 0x128
+ * TODO: 99.3% match - r4/r5 register swap for ctrl pointer and rampCount
+ */
+extern "C" int THPSimpleSetVolume(long vol, long time)
+{
+    THPSimpleControlWork* ctrl = (THPSimpleControlWork*)&SimpleControl;
+
+    if (ctrl->open && ctrl->audioExist)
+    {
+        u32 rate = AIGetDSPSampleRate();
+        long samplePerMs = 0x30;
+        if (!rate)
+            samplePerMs = 0x20;
+
+        if (vol > 127)
+            vol = 127;
+        if (vol < 0)
+            vol = 0;
+        if (time > 60000)
+            time = 60000;
+        if (time < 0)
+            time = 0;
+
+        int old = OSDisableInterrupts();
+        ctrl = (THPSimpleControlWork*)&SimpleControl;
+
+        ctrl->targetVolume = (float)vol;
+
+        if (time != 0)
+        {
+            long rampCount = samplePerMs * time;
+            ctrl->rampCount = rampCount;
+            ctrl->deltaVolume = (ctrl->targetVolume - ctrl->curVolume) / (float)rampCount;
+        }
+        else
+        {
+            ctrl->curVolume = ctrl->targetVolume;
+            ctrl->rampCount = 0;
+        }
+
+        OSRestoreInterrupts(old);
+        return 1;
+    }
+    return 0;
+}
+
 /**
  * Offset/Address/Size: 0x2B0 | 0x801CC214 | size: 0x24
  */
@@ -66,6 +123,67 @@ extern "C" s32 THPSimpleGetTotalFrame()
 {
     if (((THPSimpleControlWork*)&SimpleControl)->open)
         return SimpleControl.numFrames;
+    return 0;
+}
+
+/**
+ * Offset/Address/Size: 0xA14 | 0x801CC978 | size: 0x160
+ * TODO: 97.7% match - r4/r5/r0 register swap for zero/base/-1 in final reset block
+ */
+extern "C" int THPSimpleLoadStop()
+{
+    long i;
+    THPSimpleControlWork* ctrl = (THPSimpleControlWork*)&SimpleControl;
+
+    if (ctrl->open && ctrl->audioState == 0)
+    {
+        ctrl->preFetchState = 0;
+
+        if (ctrl->readProgress != 0)
+        {
+            nlCancelPendingAsyncReads(ctrl->fileInfo, __THPAsyncCancelCB);
+
+            THPSimpleControlWork* ctrl2 = (THPSimpleControlWork*)&SimpleControl;
+            while (nlAsyncReadsPending(ctrl2->fileInfo))
+            {
+                nlServiceFileSystem();
+                OSYieldThread();
+            }
+
+            ctrl->readProgress = 0;
+        }
+
+        for (i = 0; i < 16; i++)
+        {
+            ((THPSimpleControlWork*)&SimpleControl)->readBuffer[i].mIsValid = 0;
+        }
+
+        THPSimpleControlWork* sc = (THPSimpleControlWork*)&SimpleControl;
+        unsigned long movieOfs = sc->movieDataOffsets;
+        unsigned long frameSize = sc->firstFrameSize;
+        float targetVol = sc->targetVolume;
+
+        sc->audioBuffer[0].mValidSample = 0;
+        sc->audioBuffer[1].mValidSample = 0;
+        sc->audioBuffer[2].mValidSample = 0;
+        sc->audioBuffer[3].mValidSample = 0;
+        sc->audioBuffer[4].mValidSample = 0;
+        sc->audioBuffer[5].mValidSample = 0;
+        sc->textureSet.mFrameNumber = -1;
+        sc->curOffset = movieOfs;
+        sc->readSize = frameSize;
+        sc->readIndex = 0;
+        sc->totalReadFrame = 0;
+        sc->dvdError = 0;
+        sc->nextDecodeIndex = 0;
+        sc->audioDecodeIndex = 0;
+        sc->audioOutputIndex = 0;
+        sc->curVolume = targetVol;
+        sc->rampCount = 0;
+
+        return 1;
+    }
+
     return 0;
 }
 
@@ -83,6 +201,57 @@ extern "C" void THPSimpleAudioStop()
 extern "C" void THPSimpleAudioStart()
 {
     ((THPSimpleControlWork*)&SimpleControl)->audioState = 1;
+}
+
+/**
+ * Offset/Address/Size: 0xB9C | 0x801CCB00 | size: 0x170
+ * TODO: 80.27% match - MWCC readBuffer addressing mode: add+lwz vs addi+lwzx for struct array access generates extra instruction and cascading register swaps
+ */
+extern "C" int THPSimplePreLoad(long loop)
+{
+    unsigned long i;
+    unsigned long readNum;
+    THPSimpleControlWork* ctrl = (THPSimpleControlWork*)&SimpleControl;
+
+    if (ctrl->open && ctrl->preFetchState == 0)
+    {
+        readNum = NumReadBuffers;
+        if (loop == 0 && ctrl->numFrames < (unsigned long)NumReadBuffers)
+        {
+            readNum = ctrl->numFrames;
+        }
+
+        THPSimpleControlWork* sc = (THPSimpleControlWork*)&SimpleControl;
+        for (i = 0; i < readNum; i++)
+        {
+            nlSeek(sc->fileInfo, sc->curOffset, 0);
+            nlRead(sc->fileInfo, sc->readBuffer[sc->readIndex].mPtr, sc->readSize);
+
+            sc->curOffset += sc->readSize;
+            sc->readSize = *(long*)sc->readBuffer[sc->readIndex].mPtr;
+            sc->readBuffer[sc->readIndex].mIsValid = 1;
+            sc->readBuffer[sc->readIndex].mFrameNumber = sc->totalReadFrame;
+
+            sc->totalReadFrame++;
+            sc->readIndex = (sc->readIndex + 1 >= NumReadBuffers) ? 0 : sc->readIndex + 1;
+
+            if ((unsigned long)sc->totalReadFrame > sc->numFrames - 1)
+            {
+                if (sc->loop == 1)
+                {
+                    sc->totalReadFrame = 0;
+                    sc->curOffset = sc->movieDataOffsets;
+                    sc->readSize = sc->firstFrameSize;
+                }
+            }
+        }
+
+        sc->loop = loop;
+        ctrl->preFetchState = 1;
+        return 1;
+    }
+
+    return 0;
 }
 
 /**

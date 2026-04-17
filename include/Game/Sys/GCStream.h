@@ -31,7 +31,7 @@ namespace GCAudioStreaming
 class AudioStreamBuffer
 {
 public:
-    void _UpdateHandler(void*, unsigned long, void*, unsigned long, unsigned long);
+    static unsigned long _UpdateHandler(void*, unsigned long, void*, unsigned long, unsigned long);
 
     /* 0x00 */ unsigned char* m_MRAMBuffer;   // offset 0x0, size 0x4
     /* 0x04 */ unsigned long m_BufferSize;    // offset 0x4, size 0x4

@@ -277,6 +277,9 @@ struct MemFunImpl;
 template <typename T, typename R>
 Detail::MemFunImpl<R, void (T::*)()> MemFun(void (T::*fn)());
 
+template <typename T, typename R, typename P>
+Detail::MemFunImpl<R, void (T::*)(P)> MemFun(void (T::*fn)(P));
+
 // Bind template
 template <typename R, typename F, typename A>
 struct BindExp1

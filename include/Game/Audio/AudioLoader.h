@@ -69,7 +69,7 @@ public:
     static void ResetForRematch();
     static void ResetForNewGame();
     static void ReadEntireSampleFileIntoMem(bool);
-    static void LoadInGameAudioData();
+    static bool LoadInGameAudioData();
     static unsigned char LoadStadiumSpecificSoundGroups(eStadiumID);
     static void SetupBowserStadiumSoundTable(Bowser*);
     static void SetupCharStadiumSoundTable();
@@ -108,7 +108,6 @@ public:
     static bool gbDisableReverb;
     static bool gReverbOn;
     static bool g_BGM_Off;
-    static bool gbAsyncLoadEntireSampleFileIntoMemRequestMade;
     static AudioFileData sebringAudioFileData;
     static nlAVLTreeSlotPool<int, SoundStrToIDNode*, DefaultKeyCompare<int> > gMusyXSoundDefineMap;
     static nlAVLTreeSlotPool<int, SoundStrToIDNode*, DefaultKeyCompare<int> > gWorldSoundDefineMap;

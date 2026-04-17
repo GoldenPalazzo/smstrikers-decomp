@@ -94,6 +94,6 @@ bool ScriptAction::RollChanceDice()
     }
     else
     {
-        return RandomChance(m_fSelectionChance) >= 0.0f;
+        return RandomChance(m_fSelectionChance) >= 0.5f;
     }
 }

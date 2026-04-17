@@ -2,6 +2,8 @@
 #include "NL/nlFileGC.h"
 #include "NL/nlMemory.h"
 
+extern void ___blank(const char*, ...);
+
 struct SND_ADPCMSTREAM_INFO;
 
 extern "C"
@@ -12,6 +14,7 @@ extern "C"
     void sndStreamARAMUpdate(unsigned long stid, unsigned long off1, unsigned long len1, unsigned long off2, unsigned long len2);
     void sndStreamFrq(unsigned long stid, unsigned long frq);
     void sndStreamADPCMParameter(unsigned long stid, SND_ADPCMSTREAM_INFO* adpcmInfo);
+    unsigned long sndStreamAllocEx(unsigned char prio, void* buffer, unsigned long samples, unsigned long frq, unsigned char vol, unsigned char pan, unsigned char span, unsigned char auxa, unsigned char auxb, unsigned char studio, unsigned long flags, unsigned long (*updateFunction)(void*, unsigned long, void*, unsigned long, unsigned long), unsigned long user, SND_ADPCMSTREAM_INFO* adpcmInfo);
 }
 
 namespace GCAudioStreaming
@@ -65,12 +68,51 @@ unsigned long GCAudioStreaming::MonoAudioStream::GetUpdateReadLength()
     return length;
 }
 
-// /**
-//  * Offset/Address/Size: 0x2E4 | 0x801C9468 | size: 0x150
-//  */
-// void GCAudioStreaming::AudioStreamBuffer::_UpdateHandler(void*, unsigned long, void*, unsigned long, unsigned long)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x2E4 | 0x801C9468 | size: 0x150
+ */
+unsigned long GCAudioStreaming::AudioStreamBuffer::_UpdateHandler(void*, unsigned long len1, void*, unsigned long len2, unsigned long user)
+{
+    AudioStreamBuffer* pBuffer = (AudioStreamBuffer*)user;
+
+    if (!len1 && !len2)
+    {
+        return 0;
+    }
+
+    unsigned long readLen = pBuffer->m_pStream->GetUpdateReadLength();
+
+    if ((len1 + len2) / 14 * 8 < readLen)
+    {
+        return 0;
+    }
+
+    len2 = pBuffer->m_UpdateOffset;
+    pBuffer->m_UpdateOffset = len2 + readLen;
+
+    unsigned long secondLen;
+    unsigned long firstLen;
+
+    if (pBuffer->m_UpdateOffset >= pBuffer->m_BufferSize)
+    {
+        unsigned long wrapped = pBuffer->m_UpdateOffset - pBuffer->m_BufferSize;
+        pBuffer->m_UpdateOffset = wrapped;
+        firstLen = readLen - wrapped;
+        secondLen = pBuffer->m_UpdateOffset & ~31;
+    }
+    else
+    {
+        firstLen = readLen;
+        secondLen = 0;
+    }
+
+    ___blank(pBuffer->m_pStream->m_Buffers[0] == pBuffer ? "Left " : "Right ");
+    ___blank("Asking for %d %d and %d %d\n", len2, firstLen, 0, secondLen);
+
+    pBuffer->m_pStream->DoUpdateRead(len2, firstLen, 0, secondLen, pBuffer);
+
+    return (firstLen + secondLen) / 8 * 14;
+}
 
 /**
  * Offset/Address/Size: 0x2B8 | 0x801C943C | size: 0x2C
@@ -289,12 +331,58 @@ void GCAudioStreaming::AudioBufferMgr::Init(unsigned long BufferPoolSize)
     m_MRAMBuffer = (unsigned char*)nlMalloc(BufferPoolSize, 0x20, false);
 }
 
-// /**
-//  * Offset/Address/Size: 0x134 | 0x801C78E4 | size: 0x134
-//  */
-// void GCAudioStreaming::AudioBufferMgr::CreateBuffers(unsigned long)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x134 | 0x801C78E4 | size: 0x134
+ */
+void GCAudioStreaming::AudioBufferMgr::CreateBuffers(unsigned long Count)
+{
+    unsigned long buffer;
+
+    m_BufferCount = Count;
+    m_BufferSize = (m_PoolSize / Count) & ~31u;
+
+    for (buffer = 0; buffer < m_BufferCount; buffer++)
+    {
+        unsigned long tmp = m_BuffersFree & ~(1u << buffer);
+        m_BuffersFree = tmp | (1u << buffer);
+
+        unsigned char* bufAddr = m_MRAMBuffer + m_BufferSize * buffer;
+        m_Buffers[buffer].m_BufferSize = m_BufferSize;
+        m_Buffers[buffer].m_BufferSamples = (m_Buffers[buffer].m_BufferSize / 8) * 14;
+        m_Buffers[buffer].m_MRAMBuffer = bufAddr;
+
+        m_Buffers[buffer].m_Volume = 0x7F;
+        m_Buffers[buffer].m_Pan = 0x40;
+        m_Buffers[buffer].m_bLPFOn = 0;
+        m_Buffers[buffer].m_LPFFreq = 0x3FFF;
+        m_Buffers[buffer].m_UpdateOffset = 0;
+        m_Buffers[buffer].m_pStream = 0;
+
+        m_Buffers[buffer].m_StreamId = sndStreamAllocEx(
+            0xFF,
+            m_Buffers[buffer].m_MRAMBuffer,
+            m_Buffers[buffer].m_BufferSamples,
+            0x7D00,
+            0,
+            0x40,
+            0x40,
+            0,
+            0,
+            0,
+            0x30001,
+            AudioStreamBuffer::_UpdateHandler,
+            (unsigned long)&m_Buffers[buffer],
+            NULL);
+
+        sndStreamMixParameterEx(
+            m_Buffers[buffer].m_StreamId,
+            m_Buffers[buffer].m_Volume,
+            m_Buffers[buffer].m_Pan,
+            m_Buffers[buffer].m_SurroundPan,
+            0,
+            0);
+    }
+}
 
 /**
  * Offset/Address/Size: 0x98 | 0x801C7848 | size: 0x9C

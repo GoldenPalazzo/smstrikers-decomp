@@ -8,7 +8,7 @@
 #include "Game/Render/Nis.h"
 #include "Game/Audio/StreamTrack.h"
 
-// void ReadVolGroupSettings();
+void ReadVolGroupSettings();
 // void nlDeleteList<FadeAudioData>(FadeAudioData**);
 // void nlListRemoveElement<FadeAudioData>(FadeAudioData**, FadeAudioData*, FadeAudioData**);
 // void nlListAddStart<FadeAudioData>(FadeAudioData**, FadeAudioData*, FadeAudioData**);
@@ -191,10 +191,12 @@ void LoadWorldSFX();
 void UnloadInGameSFX();
 void LoadInGameSFX();
 bool IsInited();
-void Initialize(bool);
+bool Initialize(bool);
 bool ShutdownReverb();
 // void InitializeReverb(eStadiumID, unsigned char);
-// void CreateTrackMgr<3>();
+
+template <int N>
+void CreateTrackMgr();
 
 // eCharSFX enum is defined in CharacterAudio.h
 

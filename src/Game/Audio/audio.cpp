@@ -1559,9 +1559,62 @@ bool ShutdownReverb()
 /**
  * Offset/Address/Size: 0x4A10 | 0x80140F24 | size: 0x15C
  */
-// void Initialize(bool)
-// {
-// }
+bool Initialize(bool bInit)
+{
+    if (!PlatAudio::Initialize(bInit))
+    {
+        return false;
+    }
+
+    if (g_pTrackManager == NULL)
+    {
+        CreateTrackMgr<3>();
+    }
+
+    for (int i = 0; i < 15; i++)
+    {
+        gDelayedSFX[i].Init();
+    }
+
+    static bool bAlreadySetupSoundAVLTrees = false;
+
+    if (!bAlreadySetupSoundAVLTrees)
+    {
+        for (int i = 0; i < 211; i++)
+        {
+            gWorldSoundTypeEnumMap[i] = -1;
+            gWorldSFXInfo[i].typeID = (unsigned long)-1;
+            gWorldSFXInfo[i].typeStr = NULL;
+            gWorldSFXInfo[i].musyxStr = NULL;
+            gWorldSFXInfo[i].musyxID = (unsigned long)-1;
+            gWorldSFXInfo[i].fVolume = 100.0f;
+            gWorldSFXInfo[i].fDelay = -1.0f;
+            gWorldSFXInfo[i].fVolReverb = 100.0f;
+            gWorldSFXInfo[i].volGrp = -1;
+            gWorldSFXInfo[i].sfxPriority = 0;
+            gWorldSFXInfo[i].uHashVal = 0;
+            gWorldSFXInfo[i].pSoundPropAccessor = NULL;
+            gWorldSFXInfo[i].bSoundPropTableReloaded = 0;
+            gWorldSFXInfo[i].pSoundProp = NULL;
+            gWorldSFXInfo[i].pOwner = NULL;
+            gWorldSFXInfo[i].lastVoiceID = (unsigned long)-1;
+            gWorldSFXInfo[i].pLastEmitter = NULL;
+            gWorldSFXInfo[i].m_unk_0x40 = false;
+            gWorldSFXInfo[i].typeID = i;
+        }
+
+        AudioLoader::SetupSoundDefinesAVLTree();
+        AudioLoader::SetupCharSoundTypesAVLTree();
+        AudioLoader::SetupWorldSoundTypesAVLTree();
+        AudioLoader::SetupSoundGroups();
+        bAlreadySetupSoundAVLTrees = true;
+    }
+
+    ReadVolGroupSettings();
+    Config::Global().LoadFromFile("audio/CrowdScript.ini");
+    g_bAudioInitialized = true;
+    return true;
+}
 
 /**
  * Offset/Address/Size: 0x4B6C | 0x80141080 | size: 0x2C

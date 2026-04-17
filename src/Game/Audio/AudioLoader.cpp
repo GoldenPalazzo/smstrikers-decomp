@@ -5,9 +5,12 @@
 #include "Game/Game.h"
 #include "Game/Sys/PlatStream.h"
 #include "Game/Sys/debug.h"
+#include "NL/nlFileGC.h"
 #include "dolphin/arq.h"
 
 int nlSNPrintf(char*, unsigned long, const char*, ...);
+
+static bool gbAsyncLoadEntireSampleFileIntoMemRequestMade;
 
 /**
  * Helper struct for inlining FindGet with bool return to match target assembly.
@@ -1367,11 +1370,121 @@ void AudioLoader::LoadFEButtonSoundGroup()
 }
 
 /**
- * Offset/Address/Size: 0x1630 | 0x801453FC | size: 0x75C
+ * Inline helper for LoadPermanentSoundGroups. Encapsulates the per-group
+ * "check already loaded / guard / IsInited ternary / LoadSoundGroup" pattern.
+ * Must be `static inline` so MWCC inlines it into the caller and reproduces
+ * the unrolled target assembly.
  */
-void AudioLoader::LoadPermanentSoundGroups(bool)
+static inline void LoadOnePermanentGroup(int g, bool bUseReadFromDiscCallback)
 {
-    FORCE_DONT_INLINE;
+    bool bAlreadyLoaded = false;
+    if (sebringAudioGroups[g].uLoadOrder > -1 && sebringAudioGroups[g].stackEnum > -1)
+    {
+        bAlreadyLoaded = true;
+    }
+
+    if (!bAlreadyLoaded)
+    {
+        if (!AudioLoader::gbDisableAudio)
+        {
+            bool isInited;
+            if (AudioLoader::gbDisableAudio)
+            {
+                isInited = false;
+            }
+            else
+            {
+                isInited = Audio::IsInited();
+            }
+
+            if (isInited)
+            {
+                PlatAudio::LoadSoundGroup(AudioLoader::sebringAudioFileData, g, 0, bUseReadFromDiscCallback);
+            }
+        }
+    }
+}
+
+/**
+ * Offset/Address/Size: 0x1630 | 0x801453FC | size: 0x75C
+ *
+ * The repeated `if (!gbDisableAudio)` wrappers and `if (gbDisableAudio) isInited = false;
+ * else isInited = Audio::IsInited();` ternary-expansion are load-bearing: MWCC 2.0 with
+ * `-O4,p` only emits the target's double-test / dead-branch pattern when the source is
+ * spelled this way. Simplified forms (`if (!x && Audio::IsInited())`) collapse the
+ * branches and drop match quality.
+ */
+void AudioLoader::LoadPermanentSoundGroups(bool bLoadEntireSampleFileIntoMem)
+{
+    if (gbDisableAudio)
+        return;
+
+    if (!gbDisableAudio)
+    {
+        bool bAlreadyLoaded = false;
+        if (sebringAudioGroups[2].uLoadOrder > -1 && sebringAudioGroups[2].stackEnum > -1)
+        {
+            bAlreadyLoaded = true;
+        }
+
+        if (!bAlreadyLoaded)
+        {
+            if (!gbDisableAudio)
+            {
+                bool isInited;
+                if (gbDisableAudio)
+                {
+                    isInited = false;
+                }
+                else
+                {
+                    isInited = Audio::IsInited();
+                }
+
+                if (isInited)
+                {
+                    PlatAudio::LoadSoundGroup(sebringAudioFileData, 2, 0, true);
+                }
+            }
+        }
+    }
+
+    bool bUseReadFromDiscCallback = !bLoadEntireSampleFileIntoMem;
+    if (bUseReadFromDiscCallback)
+    {
+        if (PlatAudio::IsEntireSampleFileInMem() || gbAsyncLoadEntireSampleFileIntoMemRequestMade)
+        {
+            bUseReadFromDiscCallback = false;
+        }
+    }
+
+    if (gbAsyncLoadEntireSampleFileIntoMemRequestMade)
+    {
+        while (!PlatAudio::IsEntireSampleFileInMem())
+        {
+            nlServiceFileSystem();
+        }
+    }
+
+    LoadOnePermanentGroup(5, bUseReadFromDiscCallback);
+    LoadOnePermanentGroup(6, bUseReadFromDiscCallback);
+    LoadOnePermanentGroup(19, bUseReadFromDiscCallback);
+    LoadOnePermanentGroup(20, bUseReadFromDiscCallback);
+    LoadOnePermanentGroup(34, bUseReadFromDiscCallback);
+    LoadOnePermanentGroup(35, bUseReadFromDiscCallback);
+    LoadOnePermanentGroup(36, bUseReadFromDiscCallback);
+    LoadOnePermanentGroup(37, bUseReadFromDiscCallback);
+    LoadOnePermanentGroup(38, bUseReadFromDiscCallback);
+    LoadOnePermanentGroup(39, bUseReadFromDiscCallback);
+    LoadOnePermanentGroup(40, bUseReadFromDiscCallback);
+    LoadOnePermanentGroup(41, bUseReadFromDiscCallback);
+    LoadOnePermanentGroup(42, bUseReadFromDiscCallback);
+    LoadOnePermanentGroup(43, bUseReadFromDiscCallback);
+    LoadOnePermanentGroup(44, bUseReadFromDiscCallback);
+
+    ARQSetChunkSize(0x1000);
+    PlatAudio::PurgeSampleFileBuffer();
+    gbAsyncLoadEntireSampleFileIntoMemRequestMade = false;
 }
 
 /**
@@ -1915,17 +2028,446 @@ unsigned char AudioLoader::LoadStadiumSpecificSoundGroups(eStadiumID stadiumID)
     return true;
 }
 
+namespace Audio
+{
+bool InitializeReverb(eStadiumID, unsigned char);
+}
+
 /**
  * Offset/Address/Size: 0x1F8 | 0x80143FC4 | size: 0x6EC
+ *
+ * TODO: 99.73% match - r4/r5 register swap in captain/sidekick load blocks
+ *       (same MWCC `-O4,p` register-allocation quirk as
+ *       LoadStadiumSpecificSoundGroups). Scoped `const int g` blocks around the
+ *       away captain/sidekick reloads are load-bearing to avoid an extra
+ *       `lwz r0; mr r31, r0` sequence on gLoaded{Away}{Captain,Sidekick}Group.
  */
-void AudioLoader::LoadInGameAudioData()
+bool AudioLoader::LoadInGameAudioData()
 {
-    FORCE_DONT_INLINE;
+    bool bAlreadyLoaded;
+    bool loaded;
+    int loadedGroup;
+
+    bAlreadyLoaded = false;
+    if (sebringAudioGroups[45].uLoadOrder > -1 && sebringAudioGroups[45].stackEnum > -1)
+    {
+        bAlreadyLoaded = true;
+    }
+
+    if (bAlreadyLoaded == false)
+    {
+        if (gbDisableAudio)
+        {
+            loaded = true;
+        }
+        else
+        {
+            if (AudioLoader::IsInited() == false)
+            {
+                loaded = false;
+            }
+            else
+            {
+                loaded = PlatAudio::LoadSoundGroup(sebringAudioFileData, 45, 1, true);
+            }
+        }
+
+        if (loaded == false)
+        {
+            tDebugPrintManager::Print(DC_SOUND, "Could not load crash sound group onto secondary sound stack.\n");
+            return false;
+        }
+    }
+
+    LoadStadiumSpecificSoundGroups(nlSingleton<GameInfoManager>::s_pInstance->GetStadium());
+
+    if (!gbDisableReverb)
+    {
+        if (Audio::InitializeReverb(nlSingleton<GameInfoManager>::s_pInstance->GetStadium(), 0) == false)
+        {
+            nlPrintf("Audio::InitializeReverb() failed.\n");
+        }
+        else
+        {
+            gReverbOn = true;
+        }
+    }
+
+    eCharacterClass homeCaptainClass = ConvertToCharacterClass(nlSingleton<GameInfoManager>::s_pInstance->GetTeam(0));
+    eCharacterClass awayCaptainClass = ConvertToCharacterClass(nlSingleton<GameInfoManager>::s_pInstance->GetTeam(1));
+
+    int homeCaptainGroup;
+    switch (homeCaptainClass)
+    {
+    case BIRDO:
+        homeCaptainGroup = 0x18;
+        break;
+    case DAISY:
+        homeCaptainGroup = 0x16;
+        break;
+    case DONKEYKONG:
+        homeCaptainGroup = 0x15;
+        break;
+    case HAMMERBROS:
+        homeCaptainGroup = 0x17;
+        break;
+    case KOOPA:
+        homeCaptainGroup = 0x1a;
+        break;
+    case LUIGI:
+        homeCaptainGroup = 0x19;
+        break;
+    case MARIO:
+        homeCaptainGroup = 0x1b;
+        break;
+    case PEACH:
+        homeCaptainGroup = 0x1c;
+        break;
+    case TOAD:
+        homeCaptainGroup = 0x21;
+        break;
+    case WALUIGI:
+        homeCaptainGroup = 0x20;
+        break;
+    case WARIO:
+        homeCaptainGroup = 0x1e;
+        break;
+    case YOSHI:
+        homeCaptainGroup = 0x1f;
+        break;
+    case MYSTERY:
+        homeCaptainGroup = 0x1d;
+        break;
+    default:
+        homeCaptainGroup = -1;
+        break;
+    }
+    gLoadedHomeCaptainGroup = homeCaptainGroup;
+
+    int awayCaptainGroup;
+    switch (awayCaptainClass)
+    {
+    case BIRDO:
+        awayCaptainGroup = 0x18;
+        break;
+    case DAISY:
+        awayCaptainGroup = 0x16;
+        break;
+    case DONKEYKONG:
+        awayCaptainGroup = 0x15;
+        break;
+    case HAMMERBROS:
+        awayCaptainGroup = 0x17;
+        break;
+    case KOOPA:
+        awayCaptainGroup = 0x1a;
+        break;
+    case LUIGI:
+        awayCaptainGroup = 0x19;
+        break;
+    case MARIO:
+        awayCaptainGroup = 0x1b;
+        break;
+    case PEACH:
+        awayCaptainGroup = 0x1c;
+        break;
+    case TOAD:
+        awayCaptainGroup = 0x21;
+        break;
+    case WALUIGI:
+        awayCaptainGroup = 0x20;
+        break;
+    case WARIO:
+        awayCaptainGroup = 0x1e;
+        break;
+    case YOSHI:
+        awayCaptainGroup = 0x1f;
+        break;
+    case MYSTERY:
+        awayCaptainGroup = 0x1d;
+        break;
+    default:
+        awayCaptainGroup = -1;
+        break;
+    }
+    gLoadedAwayCaptainGroup = awayCaptainGroup;
+
+    if (homeCaptainGroup < 0 || awayCaptainGroup < 0)
+    {
+        tDebugPrintManager::Print(DC_SOUND, "Invalid captain character class in LoadInGameAudioData.\n");
+        return false;
+    }
+
+    loadedGroup = homeCaptainGroup;
+    if (loadedGroup < 0)
+    {
+        bAlreadyLoaded = false;
+    }
+    else
+    {
+        bAlreadyLoaded = false;
+        if (sebringAudioGroups[loadedGroup].uLoadOrder > -1 && sebringAudioGroups[loadedGroup].stackEnum > -1)
+        {
+            bAlreadyLoaded = true;
+        }
+    }
+
+    if (bAlreadyLoaded == false)
+    {
+        if (gbDisableAudio)
+        {
+            loaded = true;
+        }
+        else
+        {
+            if (AudioLoader::IsInited() == false)
+            {
+                loaded = false;
+            }
+            else
+            {
+                loaded = PlatAudio::LoadSoundGroup(sebringAudioFileData, loadedGroup, 1, true);
+            }
+        }
+
+        if (loaded == false)
+        {
+            tDebugPrintManager::Print(DC_SOUND, "Could not load home captain sound group %d onto secondary sound stack.\n", gLoadedHomeCaptainGroup);
+            return false;
+        }
+    }
+
+    {
+        const int g = gLoadedAwayCaptainGroup;
+        if (g < 0)
+        {
+            bAlreadyLoaded = false;
+        }
+        else
+        {
+            bAlreadyLoaded = false;
+            if (sebringAudioGroups[g].uLoadOrder > -1 && sebringAudioGroups[g].stackEnum > -1)
+            {
+                bAlreadyLoaded = true;
+            }
+        }
+
+        if (bAlreadyLoaded == false)
+        {
+            if (gbDisableAudio)
+            {
+                loaded = true;
+            }
+            else
+            {
+                if (AudioLoader::IsInited() == false)
+                {
+                    loaded = false;
+                }
+                else
+                {
+                    loaded = PlatAudio::LoadSoundGroup(sebringAudioFileData, g, 1, true);
+                }
+            }
+
+            if (loaded == false)
+            {
+                tDebugPrintManager::Print(DC_SOUND, "Could not load away captain sound group %d onto secondary sound stack.\n", gLoadedAwayCaptainGroup);
+                return false;
+            }
+        }
+    }
+
+    eCharacterClass homeSidekickClass = ConvertToCharacterClass(nlSingleton<GameInfoManager>::s_pInstance->GetSidekick(0));
+    eCharacterClass awaySidekickClass = ConvertToCharacterClass(nlSingleton<GameInfoManager>::s_pInstance->GetSidekick(1));
+
+    int homeSidekickGroup;
+    switch (homeSidekickClass)
+    {
+    case BIRDO:
+        homeSidekickGroup = 0x18;
+        break;
+    case DAISY:
+        homeSidekickGroup = 0x16;
+        break;
+    case DONKEYKONG:
+        homeSidekickGroup = 0x15;
+        break;
+    case HAMMERBROS:
+        homeSidekickGroup = 0x17;
+        break;
+    case KOOPA:
+        homeSidekickGroup = 0x1a;
+        break;
+    case LUIGI:
+        homeSidekickGroup = 0x19;
+        break;
+    case MARIO:
+        homeSidekickGroup = 0x1b;
+        break;
+    case PEACH:
+        homeSidekickGroup = 0x1c;
+        break;
+    case TOAD:
+        homeSidekickGroup = 0x21;
+        break;
+    case WALUIGI:
+        homeSidekickGroup = 0x20;
+        break;
+    case WARIO:
+        homeSidekickGroup = 0x1e;
+        break;
+    case YOSHI:
+        homeSidekickGroup = 0x1f;
+        break;
+    case MYSTERY:
+        homeSidekickGroup = 0x1d;
+        break;
+    default:
+        homeSidekickGroup = -1;
+        break;
+    }
+    gLoadedHomeSidekickGroup = homeSidekickGroup;
+
+    int awaySidekickGroup;
+    switch (awaySidekickClass)
+    {
+    case BIRDO:
+        awaySidekickGroup = 0x18;
+        break;
+    case DAISY:
+        awaySidekickGroup = 0x16;
+        break;
+    case DONKEYKONG:
+        awaySidekickGroup = 0x15;
+        break;
+    case HAMMERBROS:
+        awaySidekickGroup = 0x17;
+        break;
+    case KOOPA:
+        awaySidekickGroup = 0x1a;
+        break;
+    case LUIGI:
+        awaySidekickGroup = 0x19;
+        break;
+    case MARIO:
+        awaySidekickGroup = 0x1b;
+        break;
+    case PEACH:
+        awaySidekickGroup = 0x1c;
+        break;
+    case TOAD:
+        awaySidekickGroup = 0x21;
+        break;
+    case WALUIGI:
+        awaySidekickGroup = 0x20;
+        break;
+    case WARIO:
+        awaySidekickGroup = 0x1e;
+        break;
+    case YOSHI:
+        awaySidekickGroup = 0x1f;
+        break;
+    case MYSTERY:
+        awaySidekickGroup = 0x1d;
+        break;
+    default:
+        awaySidekickGroup = -1;
+        break;
+    }
+    gLoadedAwaySidekickGroup = awaySidekickGroup;
+
+    if (homeSidekickGroup < 0 || awaySidekickGroup < 0)
+    {
+        tDebugPrintManager::Print(DC_SOUND, "Invalid sidekick character class in LoadInGameAudioData.\n");
+        return false;
+    }
+
+    loadedGroup = homeSidekickGroup;
+    if (loadedGroup < 0)
+    {
+        bAlreadyLoaded = false;
+    }
+    else
+    {
+        bAlreadyLoaded = false;
+        if (sebringAudioGroups[loadedGroup].uLoadOrder > -1 && sebringAudioGroups[loadedGroup].stackEnum > -1)
+        {
+            bAlreadyLoaded = true;
+        }
+    }
+
+    if (bAlreadyLoaded == false)
+    {
+        if (gbDisableAudio)
+        {
+            loaded = true;
+        }
+        else
+        {
+            if (AudioLoader::IsInited() == false)
+            {
+                loaded = false;
+            }
+            else
+            {
+                loaded = PlatAudio::LoadSoundGroup(sebringAudioFileData, loadedGroup, 1, true);
+            }
+        }
+
+        if (loaded == false)
+        {
+            tDebugPrintManager::Print(DC_SOUND, "Could not load home sidekick sound group %d onto secondary sound stack.\n", gLoadedHomeSidekickGroup);
+            return false;
+        }
+    }
+
+    {
+        const int g = gLoadedAwaySidekickGroup;
+        if (g < 0)
+        {
+            bAlreadyLoaded = false;
+        }
+        else
+        {
+            bAlreadyLoaded = false;
+            if (sebringAudioGroups[g].uLoadOrder > -1 && sebringAudioGroups[g].stackEnum > -1)
+            {
+                bAlreadyLoaded = true;
+            }
+        }
+
+        if (bAlreadyLoaded == false)
+        {
+            if (gbDisableAudio)
+            {
+                loaded = true;
+            }
+            else
+            {
+                if (AudioLoader::IsInited() == false)
+                {
+                    loaded = false;
+                }
+                else
+                {
+                    loaded = PlatAudio::LoadSoundGroup(sebringAudioFileData, g, 1, true);
+                }
+            }
+
+            if (loaded == false)
+            {
+                tDebugPrintManager::Print(DC_SOUND, "Could not load away sidekick sound group %d onto secondary sound stack.\n", gLoadedAwaySidekickGroup);
+                return false;
+            }
+        }
+    }
+
+    return true;
 }
 
 /**
  * Offset/Address/Size: 0x1A8 | 0x80143F74 | size: 0x50
- * TODO: 96.5% match - register scheduling difference (r3 vs r4)
  */
 void AudioLoader::ReadEntireSampleFileIntoMem(bool sync)
 {
