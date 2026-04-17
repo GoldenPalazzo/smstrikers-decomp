@@ -27,6 +27,12 @@ enum VOLUME_GROUP
 namespace AudioStreamTrack
 {
 
+enum TRACK_STATE
+{
+    TS_Idle = 0,
+    TS_Playing = 1,
+};
+
 class StreamTrack;
 
 class TrackManagerBase
@@ -89,7 +95,7 @@ public:
         /* 0x4 */ GCAudioStreaming::StereoAudioStream* pStream;
         /* 0x8 */ unsigned long FadeIn : 16;
         /* 0x8 */ unsigned long StartVolume : 10;
-        /* 0x8 */ Audio::MasterVolume::VOLUME_GROUP VolGroup : 2;
+        /* 0x8 */ Audio::MasterVolume::VOLUME_GROUP VolGroup : 3;
         /* 0xB */ unsigned long Loop : 1;
         /* 0xB */ unsigned long TrackOwnsStream : 1;
     }; // total size: 0xC
@@ -107,7 +113,7 @@ public:
     void StartQStreamFadeout(QUEUED_STREAM*, unsigned long, const Function<FnVoidVoid>&);
     void Pause(unsigned long, bool);
     void Resume();
-    // void AttachStream(GCAudioStreaming::StereoAudioStream*, Audio::MasterVolume::VOLUME_GROUP, unsigned long, unsigned long, bool, bool);
+    void AttachStream(GCAudioStreaming::StereoAudioStream*, Audio::MasterVolume::VOLUME_GROUP, unsigned long, unsigned long, bool, bool);
 
     /* 0x00 */ TrackManagerBase& m_TrackMgr;
     /* 0x04 */ DLListContainerBase<QUEUED_STREAM, nlStaticArrayAllocator<DLListEntry<QUEUED_STREAM>, 4> > m_QueuedStreams;
@@ -115,7 +121,7 @@ public:
     /* 0x60 */ unsigned char m_LPFOn : 1;
     /* 0x60 */ unsigned char m_InFakePause : 1;
     /* 0x60 */ unsigned char m_TrackOwnsStreams : 1;
-    /* 0x64 */ unsigned long m_State; // enum TRACK_STATE
+    /* 0x64 */ TRACK_STATE m_State;
     /* 0x68 */ Audio::MasterVolume::VOLUME_GROUP m_VolumeGroup;
     /* 0x6C */ Function<FnVoidVoid> m_IdleCallback;
 }; // total size: 0x74

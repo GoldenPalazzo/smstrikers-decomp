@@ -11,6 +11,7 @@
 #include "Game/DB/UserOptions.h"
 #include "NL/nlColour.h"
 #include "NL/nlMath.h"
+#include "NL/nlPrint.h"
 #include "NL/nlString.h"
 
 extern nlColour MenuHighliteColour;
@@ -857,12 +858,59 @@ void SingleHighlite::CloseItem(TLComponentInstance* component)
         ->SetAssetColour(MenuHighliteColour);
 }
 
-// /**
-//  * Offset/Address/Size: 0x7DC | 0x800A3898 | size: 0x1B4
-//  */
-// void CaptainSidekickFilename::Build(CaptainSidekickFilename::Type, char*, int, int, int)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x7DC | 0x800A3898 | size: 0x1B4
+ * TODO: 99.6% match - r8/r9 register swap for suffix and NameTeamTable temp in team path
+ */
+void CaptainSidekickFilename::Build(CaptainSidekickFilename::Type type, char* buf, int size, int id, int flag)
+{
+    char suffix = 'r';
+    if (!flag)
+    {
+        suffix = 'l';
+    }
+
+    if (type == TYPE_3 || type == TYPE_4)
+    {
+        const char* name = (id == -2) ? "myst_sidekick" : NameSidekickTable[id].name;
+        switch (type)
+        {
+        case TYPE_3:
+            nlSNPrintf(buf, size, "fe/loadingscreens/%s_%c", name, suffix);
+            break;
+        case TYPE_4:
+            nlSNPrintf(buf, size, "fe/loadingscreens/%s_%c_bg", name, suffix);
+            break;
+        default:
+            nlSNPrintf(buf, size, "fe/loadingscreens/%s_%c", name, suffix);
+            break;
+        }
+    }
+    else
+    {
+        const char* name = (char*)NameTeamTable[id].name;
+        suffix = 'r';
+        if (!flag)
+        {
+            suffix = 'l';
+        }
+        switch (type)
+        {
+        case TYPE_0:
+            nlSNPrintf(buf, size, "fe/loadingscreens/%s_%c", name, suffix);
+            break;
+        case TYPE_2:
+            nlSNPrintf(buf, size, "fe/loadingscreens/%s_%c_white", name, suffix);
+            break;
+        case TYPE_1:
+            nlSNPrintf(buf, size, "fe/loadingscreens/%s_%c_bg", name, suffix);
+            break;
+        default:
+            nlSNPrintf(buf, size, "fe/loadingscreens/%s_%c", name, suffix);
+            break;
+        }
+    }
+}
 
 /**
  * Offset/Address/Size: 0x748 | 0x800A3804 | size: 0x94

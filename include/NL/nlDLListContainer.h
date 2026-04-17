@@ -28,6 +28,22 @@ public:
         m_Head = NULL;
     }
 
+    DLListEntry<T>* Allocate(T data)
+    {
+        DLListEntry<T>* entry = m_Allocator.m_pFree;
+        if (entry != NULL)
+        {
+            m_Allocator.m_pFree = entry->m_next;
+        }
+        if (entry != NULL)
+        {
+            entry->m_next = NULL;
+            entry->m_prev = NULL;
+            entry->m_data = data;
+        }
+        return entry;
+    }
+
     void DeleteEntry(DLListEntry<T>* entry);
 
     /* 0x0 */ Adapter m_Allocator;     // offset 0x0, size 0x18

@@ -111,9 +111,11 @@ public:
     {
     }
 
-    SlotPool(const int initial, const int delta)
-        : BasicSlotPool<T>(initial, delta)
+    SlotPool(int initial, int delta)
     {
+        this->m_Initial = initial;
+        SlotPoolBase::BaseAddNewBlock(this, sizeof(T));
+        this->m_Delta = delta;
     }
 }; // total size: 0x18
 

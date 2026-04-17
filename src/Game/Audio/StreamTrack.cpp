@@ -1,5 +1,6 @@
 #include "Game/Audio/StreamTrack.h"
 #include "Game/Sys/GCStream.h"
+#include "NL/nlConfig.h"
 #include "NL/nlList.h"
 #include "NL/nlSlotPoolHigh.h"
 
@@ -16,6 +17,20 @@ TrackManagerBase::StreamFileLookup::StreamFileLookup(
     nlWalkList(container.m_Head, &container, &ContainerT::DeleteEntry);
 }
 } // namespace AudioStreamTrack
+
+namespace Detail
+{
+template <typename R, typename F>
+struct MemFunImpl
+{
+    F mFuncPtr;
+};
+} // namespace Detail
+
+typedef AudioStreamTrack::StreamTrack::QUEUED_STREAM QS_T;
+typedef Detail::MemFunImpl<void, void (AudioStreamTrack::StreamTrack::*)(QS_T*)> MemFunImpl_T;
+typedef BindExp2<void, MemFunImpl_T, AudioStreamTrack::StreamTrack*, QS_T*> BindExp2_T;
+typedef Function0<void>::FunctorImpl<BindExp2_T> FunctorImpl_T;
 
 // /**
 //  * Offset/Address/Size: 0x0 | 0x80157A98 | size: 0x1C
@@ -312,12 +327,33 @@ void AudioStreamTrack::StreamTrack::Update(float)
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0xC90 | 0x801559E8 | size: 0x190
-//  */
-// void AudioStreamTrack::StreamTrack::StopHead(unsigned long)
-// {
-// }
+/**
+ * Offset/Address/Size: 0xC90 | 0x801559E8 | size: 0x190
+ * TODO: 97.0% match - lwz r0,8(r1) scheduled before bne in target but after in current
+ */
+void AudioStreamTrack::StreamTrack::StopHead(unsigned long Fadeout)
+{
+    DLListEntry<QUEUED_STREAM>* entry = nlDLRingGetStart(m_QueuedStreams.m_Head);
+
+    if (Fadeout == 0)
+    {
+        StopQStream(&entry->m_data);
+    }
+    else
+    {
+        QUEUED_STREAM* qs = &entry->m_data;
+        BindExp2_T bind = Bind<void>(
+            MemFun<StreamTrack, void, QUEUED_STREAM*>(&StreamTrack::FadeOutDoneStartNext), this, qs);
+
+        Function<FnVoidVoid> callback;
+        callback.mTag = FUNCTOR;
+        FunctorImpl_T* functor = new ((FunctorImpl_T*)nlMalloc(sizeof(FunctorImpl_T), 8, false))
+            FunctorImpl_T(bind);
+        callback.mFunctor = functor;
+
+        StartQStreamFadeout(&entry->m_data, Fadeout, callback);
+    }
+}
 
 // /**
 //  * Offset/Address/Size: 0xA28 | 0x80155780 | size: 0x268

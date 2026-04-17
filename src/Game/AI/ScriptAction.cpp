@@ -6,49 +6,7 @@
 
 extern FuzzyVariant fvNotSet;
 
-extern "C"
-{
-    void __ct__12SlotPoolBaseFv(void*);
-    void* __register_global_object(void* object, void* destructor, void* registration);
-}
-
-struct ScriptActionDestructorChain
-{
-    ScriptActionDestructorChain* next;
-    void* destructor;
-    void* object;
-};
-
-void ScriptActionSlotPoolDtor(void* obj, int)
-{
-    ((SlotPool<ScriptAction>*)obj)->~SlotPool<ScriptAction>();
-}
-
-// /**
-//  * Offset/Address/Size: 0x68 | 0x800620BC | size: 0x64
-//  */
-// void SlotPool<ScriptAction>::~SlotPool()
-// {
-// }
-
-SlotPool<ScriptAction> ScriptAction::m_ScriptActionSlotPool;
-
-/**
- * Offset/Address/Size: 0x0 | 0x80062054 | size: 0x68
- * TODO: 99.23% match - relocation symbols differ for slot-pool destructor and
- * @200 registration chain.
- */
-extern "C" void __sinit_ScriptAction_cpp()
-{
-    static ScriptActionDestructorChain chain;
-    SlotPoolBase* pool = (SlotPoolBase*)&ScriptAction::m_ScriptActionSlotPool;
-
-    __ct__12SlotPoolBaseFv(pool);
-    pool->m_Initial = 0xA;
-    SlotPoolBase::BaseAddNewBlock(pool, 0x80);
-    pool->m_Delta = 0xA;
-    __register_global_object(pool, (void*)ScriptActionSlotPoolDtor, &chain);
-}
+SlotPool<ScriptAction> ScriptAction::m_ScriptActionSlotPool(0xA, 0xA);
 
 /**
  * Offset/Address/Size: 0xB4 | 0x80061E68 | size: 0x1EC
