@@ -2,7 +2,7 @@
 #define _FESLIDEMENU_H_
 
 #include "Game/FE/tlComponentInstance.h"
-// #include "NL/nlFunction.h"
+#include "NL/nlFunction.h"
 #include "Game/FE/feMenu.h"
 
 class SlideMenuItem
@@ -62,6 +62,7 @@ public:
     void SetSlideByIndex(unsigned char);
     bool ApplyFunction();
     MenuItem* AddMenuItem(const char*);
+    MenuItem* AddMenuItem(const char*, const Function<FnVoidVoid>&);
     ~FESlideMenu();
     FESlideMenu(TLComponentInstance*);
 

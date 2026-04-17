@@ -25,6 +25,13 @@ struct sDSPADPCM
     /* 0x4A */ unsigned short pad[11];
 }; // total size: 0x60
 
+struct INTERLEAVED_ADPCM_HEADER
+{
+    /* 0x0 */ char Thumbprint[4];
+    /* 0x4 */ unsigned long Interleave;
+    /* 0x8 */ unsigned long StreamLength;
+}; // total size: 0xC
+
 namespace GCAudioStreaming
 {
 

@@ -874,10 +874,97 @@ void SetSFXVolume(unsigned long voiceID, float volume)
 
 /**
  * Offset/Address/Size: 0x1340 | 0x8013D854 | size: 0x25C
+ * TODO: 99.88% match - store order swap in PHYSOBJ velocity copy (stw r4/r0 at 0x13c/0x140)
  */
-// void Update3DSFXEmitters()
-// {
-// }
+void Update3DSFXEmitters()
+{
+    SFXEmitter* emitter;
+    int i;
+    float fVol;
+    nlVector3 vel;
+
+    for (i = 0; i < 64; i++)
+    {
+        emitter = PlatAudio::GetSFXEmitter(i);
+        if (!emitter)
+            continue;
+
+        if (!PlatAudio::IsEmitterActive(emitter))
+        {
+            if (emitter->pOwner)
+            {
+                emitter->pOwner = NULL;
+            }
+            continue;
+        }
+
+        if (!emitter->pOwner)
+            continue;
+        bool stopping = emitter->bIsStopping;
+        cGameSFX* pSFXOwner = (cGameSFX*)emitter->pOwner;
+
+        if (!stopping)
+        {
+            fVol = pSFXOwner->GetSFXVol(emitter->soundType);
+
+            if (emitter->m_unk_0x5F)
+            {
+                cBaseCamera* pCamera = nlDLRingGetStart<cBaseCamera>(cCameraManager::m_cameraStack);
+                nlVector3 pos = pCamera->GetCameraPosition();
+                nlVector3 camVel = { 0.0f, 0.0f, 0.0f };
+                PlatAudio::Update3DSFXEmitter(emitter, pos, camVel, fVol);
+            }
+            else if (emitter->posUpdateMethod == PHYSOBJ)
+            {
+                nlVector3 vel = { 0.0f, 0.0f, 0.0f };
+                if (emitter->pPhysObj->m_bodyID)
+                {
+                    nlVector3& linVel = emitter->pPhysObj->GetLinearVelocity();
+                    u32 b = linVel.as_u32[1];
+                    u32 a = linVel.as_u32[0];
+                    vel.as_u32[1] = b;
+                    vel.as_u32[0] = a;
+                    vel.as_u32[2] = linVel.as_u32[2];
+                }
+                PlatAudio::Update3DSFXEmitter(emitter, emitter->pPhysObj->GetPosition(), vel, fVol);
+            }
+            else if (emitter->posUpdateMethod == PTRS_TO_VECTORS)
+            {
+                PlatAudio::Update3DSFXEmitter(emitter, *emitter->pos.pvPos, *emitter->dir.pvDir, fVol);
+                if (gbTestPrintout)
+                {
+                    nlPrintf("3D Sound Type: %d, Pos: %0.2f,%0.2f,%0.2f Heading: %0.2f,%0.2f,%0.2f Up: %0.2f,%0.2f,%0.2f\n",
+                        emitter->soundType,
+                        emitter->pos.pvPos->f.x,
+                        emitter->pos.pvPos->f.y,
+                        emitter->pos.pvPos->f.z);
+                }
+            }
+            else if (emitter->posUpdateMethod == VECTORS)
+            {
+                PlatAudio::Update3DSFXEmitter(emitter, emitter->pos.vPos, emitter->dir.vDir, fVol);
+            }
+        }
+        else
+        {
+            if (emitter->bKeepTrack)
+            {
+                switch (pSFXOwner->GetClassType())
+                {
+                case WORLD:
+                    pSFXOwner->StopEmitter(emitter, 0);
+                    break;
+                case CHAR:
+                {
+                    cCharacterSFX* pCharSFX = (cCharacterSFX*)pSFXOwner;
+                    pCharSFX->Stop((eCharSFX)emitter->soundType, cGameSFX::SFX_STOP_FIRST);
+                    break;
+                }
+                }
+            }
+        }
+    }
+}
 
 /**
  * Offset/Address/Size: 0x159C | 0x8013DAB0 | size: 0xA34
@@ -1047,9 +1134,71 @@ bool StopSFX(unsigned long sfxID)
 /**
  * Offset/Address/Size: 0x23AC | 0x8013E8C0 | size: 0x214
  */
-void PlaySFXEventFromScript(const SoundEventData&, const char*, float, float)
+unsigned long PlaySFXEventFromScript(const SoundEventData& sfxEventData, const char* szSFXType, float fVol, float fDelay)
 {
-    FORCE_DONT_INLINE;
+    if (!g_bAudioInitialized || !g_bWorldSFXInitialized)
+    {
+        return -1;
+    }
+
+    eWorldSFX uSFXType = (eWorldSFX)AudioLoader::GetWorldSFXTypeFromStr(szSFXType);
+    if ((unsigned long)(uSFXType + 0x10000) == 0xFFFF)
+    {
+        return -1;
+    }
+
+    SoundAttributes sndAtr;
+    sndAtr.Init();
+    sndAtr.mu_Type = uSFXType;
+    sndAtr.mb_Is3D = false;
+    sndAtr.mf_Volume = fVol;
+    sndAtr.mf_DelayTime = fDelay;
+    sndAtr.ms_EventName = sfxEventData.eventName;
+    sndAtr.mi_GroupPriority = sfxEventData.eventPriority;
+
+    char* pdest = strstr(szSFXType, "CROWDSFX");
+    int loc = pdest - szSFXType;
+    if (pdest != NULL && loc == 0)
+    {
+        return gCrowdSFX.Play(sndAtr);
+    }
+
+    pdest = strstr(szSFXType, "NISSFX");
+    loc = pdest - szSFXType;
+    if (pdest != NULL && loc == 0)
+    {
+        return gWorldSFX.Play(sndAtr);
+    }
+
+    pdest = strstr(szSFXType, "BALLSFX");
+    loc = pdest - szSFXType;
+    if (pdest != NULL && loc == 0)
+    {
+        return gStadGenSFX.Play(sndAtr);
+    }
+
+    pdest = strstr(szSFXType, "STADSFX");
+    loc = pdest - szSFXType;
+    if (pdest != NULL && loc == 0)
+    {
+        return gStadGenSFX.Play(sndAtr);
+    }
+
+    pdest = strstr(szSFXType, "WORLDSFX");
+    loc = pdest - szSFXType;
+    if (pdest != NULL && loc == 0)
+    {
+        return gWorldSFX.Play(sndAtr);
+    }
+
+    pdest = strstr(szSFXType, "PWRUPSFX");
+    loc = pdest - szSFXType;
+    if (pdest != NULL && loc == 0)
+    {
+        return gPowerupSFX.Play(sndAtr);
+    }
+
+    return gWorldSFX.Play(sndAtr);
 }
 
 /**

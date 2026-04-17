@@ -430,29 +430,13 @@ void FEMapMenu::ChangeItem(int itemID, TLInstance* pInstance)
     m_items[result].Icon = pInstance;
 }
 
-// /**
-//  * This function is not called and exists solely to ensure string literals
-//  * are placed in the correct order in the data segment to match the original binary.
-
-// # .sdata2:0x0 | 0x80375A68 | size: 0x8
-// .obj "@352", local
-//     .double 4503599627370496
-// .endobj "@352"
-
-// # .sdata2:0x8 | 0x80375A70 | size: 0x4
-// .obj "@421", local
-//     .float 0
-// .endobj "@421"
-
-// # .sdata2:0xC | 0x80375A74 | size: 0x4
-// .obj "@597", local
-//     .float 0.05
-// .endobj "@597"
-//  */
-
-// static void _EnsureDataSegmentOrder(float& avar1, float& avar2, float& avar3, float& avar4)
-// {
-//     avar2 = 0.0f;
-//     avar3 = (u8)avar4;
-//     avar1 = 0.05f;
-// }
+/**
+ * Stub only for field order; unreferenced so the linker drops it.
+ * Forces emission of specific constants/operations so the compiler lays out the related fields to match the original binary.
+ */
+void feMapMenu_stub(double& v0, float& v1, float& v2)
+{
+    v0 = 4503599627370496;
+    v1 = 0.0f;
+    v2 = 0.05f;
+}

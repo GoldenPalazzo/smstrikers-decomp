@@ -1,6 +1,10 @@
 #include "file_io.h"
 #include "ctype.h"
 
+FILE* __find_unopened_file(void);
+void __begin_critical_region(int region);
+void __end_critical_region(int region);
+
 /**
  * Offset/Address/Size: 0x17C | 0x80230854 | size: 0x17C
  * TODO: 96.21% match - register allocation: mode_char r7 vs r6, open_mode r5 vs r7 swap;
@@ -77,6 +81,65 @@ int __get_file_modes(const char* mode, file_modes* modes)
 
     modes->io_mode = io_mode;
     return 1;
+}
+
+/**
+ * Offset/Address/Size: 0x3DC | 0x802309D0 | size: 0x250
+ * TODO: 99.01% match - dead beq from inlined fflush NULL check not generated;
+ * stack offset swap (modes at sp+0x10 vs sp+0x08)
+ */
+FILE* fopen(const char* filename, const char* mode)
+{
+    FILE* file;
+    file_modes modes;
+
+    __begin_critical_region(2);
+
+    file = __find_unopened_file();
+    __stdio_atexit();
+
+    if (!file)
+    {
+        file = NULL;
+    }
+    else
+    {
+        if (file->file_mode.file_kind != __closed_file)
+        {
+            fflush(file);
+            (*file->close_fn)(file->handle);
+            file->file_mode.file_kind = __closed_file;
+            file->handle = 0;
+            if (file->file_state.free_buffer)
+                free(file->buffer);
+        }
+
+        clearerr(file);
+
+        if (!__get_file_modes(mode, &modes))
+        {
+            file = NULL;
+        }
+        else
+        {
+            __init_file(file, modes, NULL, 0x400);
+
+            if (__open_file(filename, modes, (__file_handle*)file))
+            {
+                file->file_mode.file_kind = __closed_file;
+                if (file->file_state.free_buffer)
+                    free(file->buffer);
+                file = NULL;
+            }
+            else if (modes.io_mode & __append)
+            {
+                fseek(file, 0, SEEK_END);
+            }
+        }
+    }
+
+    __end_critical_region(2);
+    return file;
 }
 
 /* 803659F8-80365BB4 360338 01BC+00 0/0 1/1 0/0 .text            fclose */

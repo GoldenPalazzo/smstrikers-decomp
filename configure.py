@@ -1045,7 +1045,7 @@ config.libs = [
             Object(NonMatching, "Game/FE/feSidekickGridComponent.cpp"),
             Object(NonMatching, "Game/FE/FEAudio.cpp"),
             Object(NonMatching, "Game/FE/fePresentation.cpp"),
-            Object(NonMatching, "Game/FE/feMapMenu.cpp", extra_cflags=["-inline deferred"]),
+            Object(Matching, "Game/FE/feMapMenu.cpp", extra_cflags=["-inline deferred"]),
             Object(NonMatching, "Game/FE/feResourceManager.cpp"),
             Object(NonMatching, "Game/FE/feCaptainGridComponent.cpp"),
             Object(NonMatching, "Game/FE/feInput.cpp", extra_cflags=["-inline deferred"]),

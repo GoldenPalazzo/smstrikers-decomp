@@ -16,14 +16,14 @@ void ReadVolGroupSettings();
 class PhysicsObject;
 class cGameSFX;
 
-namespace Audio
-{
-
 struct SoundEventData
 {
     const char* eventName; // offset 0x0, size 0x4
     int eventPriority;     // offset 0x4, size 0x4
 }; // total size: 0x8
+
+namespace Audio
+{
 
 struct SoundAttributes
 {
@@ -170,7 +170,7 @@ void Update(float);
 int GetSndIDError();
 bool IsSFXPlaying(unsigned long);
 bool StopSFX(unsigned long);
-// void PlaySFXEventFromScript(const SoundEventData&, const char*, float, float);
+unsigned long PlaySFXEventFromScript(const SoundEventData&, const char*, float, float);
 void StopCharSFXbyStr(const char* szSFXType, NisCharacterClass charIdentifier);
 void StopWorldSFXbyStr(const char* szSFXType);
 int PlayCharSFXbyStr(const char* szSFXType, NisCharacterClass charIdentifier, float fVol, float fDelay, bool bIs3D, bool bKeepTrack, const nlVector3* pInitialPosVector, const nlVector3* pInitialDirVector, unsigned long* unkPtr);

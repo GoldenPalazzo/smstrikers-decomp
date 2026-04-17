@@ -189,6 +189,18 @@ ret0:
 }
 
 /**
+ * Offset/Address/Size: 0x328 | 0x80096F7C | size: 0xF8
+ */
+FESlideMenu::MenuItem* FESlideMenu::AddMenuItem(const char* name, const Function<FnVoidVoid>& func)
+{
+    MenuItem* item = &m_menuItems[m_size];
+    m_menuItems[m_size].ItemSlide = nlStringLowerHash(name);
+    m_menuItems[m_size].ItemCBFuncs[0] = func;
+    m_size++;
+    return item;
+}
+
+/**
  * Offset/Address/Size: 0x420 | 0x80097074 | size: 0x60
  */
 FESlideMenu::MenuItem* FESlideMenu::AddMenuItem(const char* name)
@@ -241,4 +253,4 @@ FESlideMenu::FESlideMenu(TLComponentInstance* pWorkPres)
  * Offset/Address/Size: 0x0 | 0x800972F4 | size: 0xC
  */
 // Force instantiation
-Function<FnVoidVoid> __dummy_inst;
+// Function<FnVoidVoid> __dummy_inst;
