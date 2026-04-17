@@ -75,10 +75,10 @@ inline void nlFloatColourSet(nlFloatColour& c0, float _r, float _g, float _b, fl
 
 inline void ConvertColour(nlColour& out, const nlFloatColour& in)
 {
-    out.c[0] = in.c[0] * 255.0f;
-    out.c[1] = in.c[1] * 255.0f;
-    out.c[2] = in.c[2] * 255.0f;
-    out.c[3] = in.c[3] * 255.0f;
+    out.c[0] = (s32)(in.c[0] * 255.0f);
+    out.c[1] = (s32)(in.c[1] * 255.0f);
+    out.c[2] = (s32)(in.c[2] * 255.0f);
+    out.c[3] = (s32)(in.c[3] * 255.0f);
 }
 
 #endif // _NLCOLOUR_H_

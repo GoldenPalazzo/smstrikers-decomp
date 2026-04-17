@@ -79,12 +79,16 @@ static unsigned long sLockedTickerMessages[7] = {
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0x384 | 0x800AC398 | size: 0x6C
-//  */
-// void FEPopupMenu::Create(ePopupMenu)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x384 | 0x800AC398 | size: 0x6C
+ */
+void FEPopupMenu::Create(ePopupMenu type)
+{
+    Function<FnVoidVoid> nothing;
+    nothing.mTag = FREE_FUNCTION;
+    nothing.mFreeFunction = Nothing;
+    Create(type, nothing);
+}
 
 // /**
 //  * Offset/Address/Size: 0x0 | 0x800AC014 | size: 0x4

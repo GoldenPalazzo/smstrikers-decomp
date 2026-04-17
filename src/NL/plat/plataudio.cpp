@@ -1,6 +1,7 @@
 #include "NL/plat/plataudio.h"
 #include "NL/nlMemory.h"
 #include "NL/nlFile.h"
+#include "NL/nlString.h"
 #include "NL/nlTicker.h"
 #include "NL/nlFileGC.h"
 #include "NL/gl/glMemory.h"
@@ -8,7 +9,6 @@
 #include "Game/Audio/AudioLoader.h"
 #include "types.h"
 
-extern void nlPrintf(const char*, ...);
 extern u32 sndStackGetAvailableSampleMemory(unsigned long id);
 extern "C" u32 sndStackSetCurrent(u32 id);
 extern "C" u32 sndStackGetSize(void);

@@ -762,12 +762,9 @@ const nlMatrix4& FEScene::GetCameraMatrix() const
     return m_matView;
 }
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x8020BA44 | size: 0x70
-//  */
-// void ConvertColour(nlColour&, const nlFloatColour&)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x0 | 0x8020BA44 | size: 0x70
+ */
 
 /**
  * Offset/Address/Size: 0x0 | 0x8020BAB4 | size: 0x8

@@ -1,6 +1,7 @@
 #include "Game/FE/tlTextInstance.h"
 #include "NL/nlFont.h"
 #include "NL/nlLocalization.h"
+#include "NL/nlTextBox.h"
 
 extern nlLocalization* g_pLocalization;
 extern const unsigned short LocalizationTableNotFound[];
@@ -10,10 +11,6 @@ template <typename T, typename U>
 T* nlBSearch(const U& key, T* table, int count);
 template <typename T>
 unsigned long nlStrLen(const T*);
-
-extern "C" void ProcessString__9nlTextBoxFPC14FontCharStringPC6nlFontRC9nlVector2UlPC9nlMatrix4RQ29nlTextBox14StringDrawInfo(const FontCharString*, const nlFont*, const nlVector2&, unsigned long, const nlMatrix4*, StringDrawInfo&);
-extern "C" void DrawString__9nlTextBoxFRCQ29nlTextBox14StringDrawInfoRC9nlVector2RC8nlColour7eGLView(const StringDrawInfo&, const nlVector2&, const nlColour&, eGLView);
-extern "C" void SetScissorBox__6nlFontCFRCQ26nlFont10ScissorBox(const nlFont*, const ScissorBox&);
 
 /**
  * Offset/Address/Size: 0x0 | 0x802101D8 | size: 0x1C
@@ -110,7 +107,7 @@ void TLTextInstance::Render(eGLView view, const nlColour& colour) const
         FontCharString charString(pWideTextString, pFont, buffer);
 
         ((TLTextInstance*)this)->m_DrawInfo.String = charString.m_pString;
-        ProcessString__9nlTextBoxFPC14FontCharStringPC6nlFontRC9nlVector2UlPC9nlMatrix4RQ29nlTextBox14StringDrawInfo(&charString, pFont, m_OverloadedAttributes.BoxSize, m_DrawOptions | 0x800, m_DrawInfo.pMatrix, (StringDrawInfo&)m_DrawInfo);
+        nlTextBox::ProcessString(&charString, pFont, m_OverloadedAttributes.BoxSize, m_DrawOptions | 0x800, m_DrawInfo.pMatrix, (nlTextBox::StringDrawInfo&)m_DrawInfo);
 
         if (charString.m_InternalBuffer)
         {
@@ -162,11 +159,11 @@ void TLTextInstance::Render(eGLView view, const nlColour& colour) const
 
     if (m_UseScissorRect)
     {
-        SetScissorBox__6nlFontCFRCQ26nlFont10ScissorBox(m_DrawInfo.pFont, m_ScissorRect);
+        m_DrawInfo.pFont->SetScissorBox(m_ScissorRect);
     }
 
     drawAt.f.x = x;
-    DrawString__9nlTextBoxFRCQ29nlTextBox14StringDrawInfoRC9nlVector2RC8nlColour7eGLView((const StringDrawInfo&)m_DrawInfo, drawAt, colour, view);
+    nlTextBox::DrawString(m_DrawInfo, drawAt, colour, view);
 
     if (m_UseScissorRect)
     {

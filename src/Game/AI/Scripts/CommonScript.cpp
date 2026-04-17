@@ -813,8 +813,7 @@ FuzzyVariant Fuzzy::GetPowerupToUseForPassReceiveDefence(cFielder*)
 
 /**
  * Offset/Address/Size: 0x1620 | 0x8006B7F0 | size: 0x428
- * TODO: 97.06% match - remaining diffs likely from -inline deferred
- * copy ctor behavior for usePowerup (RVO vs no-RVO stack layout)
+ * TODO: 99.64% match - remaining diffs are stack offset mismatches from FuzzyVariant copy ctor inlining
  */
 FuzzyVariant Fuzzy::GetPowerupToUseForWindupDefence(cFielder* TheFielder)
 {
@@ -840,11 +839,13 @@ FuzzyVariant Fuzzy::GetPowerupToUseForWindupDefence(cFielder* TheFielder)
     {
         SaveConfidence PushDOM(&fConfidence);
 
-        if (fConfidence > fTrueConfidence)
-            fConfidence = fTrueConfidence;
+        fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
 
         if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
-            fConfidence = (float)fConfidence * fBranchRatio;
+        {
+            double d = fConfidence;
+            fConfidence = (float)d * fBranchRatio;
+        }
 
         if (fConfidence > 0.0f)
         {

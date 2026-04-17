@@ -1,4 +1,5 @@
 #include "Game/Audio/StreamTrack.h"
+#include "Game/Sys/GCStream.h"
 #include "NL/nlList.h"
 #include "NL/nlSlotPoolHigh.h"
 
@@ -191,12 +192,61 @@ TrackManagerBase::StreamFileLookup::StreamFileLookup(
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0x24E4 | 0x8015723C | size: 0x100
-//  */
-// void AudioStreamTrack::TrackManagerBase::Update(float)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x24E4 | 0x8015723C | size: 0x100
+ */
+void AudioStreamTrack::TrackManagerBase::Update(float)
+{
+    typedef DLListEntry<GCAudioStreaming::StereoAudioStream*> Entry;
+
+    GCAudioStreaming::StereoAudioStream* pStream;
+    Entry* toFree;
+    Entry* toRemove;
+    Entry* head;
+    Entry* entry;
+    Entry** headAddr;
+
+    Entry* tmp = nlDLRingGetStart(m_StreamDeleteList.m_Head);
+    head = m_StreamDeleteList.m_Head;
+    headAddr = &m_StreamDeleteList.m_Head;
+    entry = tmp;
+
+    while (entry != NULL)
+    {
+        if (entry->m_data->SafeToPurge())
+        {
+            pStream = entry->m_data;
+            pStream->~StereoAudioStream();
+            m_StreamPool.Free(pStream);
+
+            toRemove = entry;
+            toFree = entry;
+
+            if (nlDLRingIsEnd(head, entry) || entry == NULL)
+            {
+                entry = NULL;
+            }
+            else
+            {
+                entry = entry->m_next;
+            }
+
+            nlDLRingRemove(headAddr, toRemove);
+            m_StreamDeleteList.m_Allocator.Free(toFree);
+        }
+        else
+        {
+            if (nlDLRingIsEnd(head, entry) || entry == NULL)
+            {
+                entry = NULL;
+            }
+            else
+            {
+                entry = entry->m_next;
+            }
+        }
+    }
+}
 
 // /**
 //  * Offset/Address/Size: 0x1970 | 0x801566C8 | size: 0x3F0
@@ -205,12 +255,41 @@ TrackManagerBase::StreamFileLookup::StreamFileLookup(
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0x18FC | 0x80156654 | size: 0x74
-//  */
-// void AudioStreamTrack::StreamTrack::Update(float)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x18FC | 0x80156654 | size: 0x74
+ */
+void AudioStreamTrack::StreamTrack::Update(float)
+{
+    DLListEntry<QUEUED_STREAM>* head = m_QueuedStreams.m_Head;
+    if (!head)
+    {
+        return;
+    }
+
+    struct Iter
+    {
+        DLListEntry<QUEUED_STREAM>* m_head;
+        DLListEntry<QUEUED_STREAM>* m_current;
+        ~Iter() { }
+    };
+
+    DLListEntry<QUEUED_STREAM>* entry = nlDLRingGetStart(head);
+    Iter iter;
+    iter.m_head = m_QueuedStreams.m_Head;
+    iter.m_current = entry;
+    QUEUED_STREAM* qs = &entry->m_data;
+
+    if (m_InFakePause)
+    {
+        return;
+    }
+
+    if (qs->pStream->m_State == 1)
+    {
+        StopQStream(qs);
+        ProcessNewHeadStream();
+    }
+}
 
 // /**
 //  * Offset/Address/Size: 0x14D4 | 0x8015622C | size: 0x428
@@ -266,15 +345,18 @@ TrackManagerBase::StreamFileLookup::StreamFileLookup(
  */
 void AudioStreamTrack::StreamTrack::FadeOutDone(AudioStreamTrack::StreamTrack::QUEUED_STREAM* qs)
 {
+    FORCE_DONT_INLINE;
     StopQStream(qs);
 }
 
-// /**
-//  * Offset/Address/Size: 0x55C | 0x801552B4 | size: 0x34
-//  */
-// void AudioStreamTrack::StreamTrack::FadeOutDoneStartNext(AudioStreamTrack::StreamTrack::QUEUED_STREAM*)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x55C | 0x801552B4 | size: 0x34
+ */
+void AudioStreamTrack::StreamTrack::FadeOutDoneStartNext(AudioStreamTrack::StreamTrack::QUEUED_STREAM* qs)
+{
+    FadeOutDone(qs);
+    ProcessNewHeadStream();
+}
 
 // /**
 //  * Offset/Address/Size: 0x1E8 | 0x80154F40 | size: 0x374
@@ -283,12 +365,14 @@ void AudioStreamTrack::StreamTrack::FadeOutDone(AudioStreamTrack::StreamTrack::Q
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0x1B8 | 0x80154F10 | size: 0x30
-//  */
-// void AudioStreamTrack::StreamTrack::Resume()
-// {
-// }
+/**
+ * Offset/Address/Size: 0x1B8 | 0x80154F10 | size: 0x30
+ */
+void AudioStreamTrack::StreamTrack::Resume()
+{
+    m_InFakePause = 0;
+    ProcessNewHeadStream();
+}
 
 // /**
 //  * Offset/Address/Size: 0x0 | 0x80154D58 | size: 0x1B8

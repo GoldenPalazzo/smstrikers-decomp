@@ -5,7 +5,7 @@
 #include "strtold.h"
 
 #ifndef nlPrintf
-extern void nlPrintf(const char*, ...);
+extern int nlPrintf(const char*, ...);
 #endif
 
 struct nlString

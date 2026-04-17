@@ -2,7 +2,6 @@
 #include "NL/nlString.h"
 #include "NL/nlBSearch.h"
 
-void nlPrintf(const char*, ...);
 extern "C" void* memset(void*, int, unsigned long);
 
 // /**

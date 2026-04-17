@@ -62,7 +62,7 @@ void FEPopupMenu::ResizeHighlight()
         InlineHasher(0),
         InlineHasher(0));
 
-    StringDrawInfo drawInfo = pText->m_DrawInfo;
+    nlTextBox::StringDrawInfo drawInfo = pText->m_DrawInfo;
 
     pHighlight = FEFinder<TLComponentInstance, 4>::Find<FEPresentation>(
         presentation,

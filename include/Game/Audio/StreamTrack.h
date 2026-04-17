@@ -3,6 +3,7 @@
 
 #include "NL/nlFunction.h"
 #include "NL/nlDLListContainer.h"
+#include "NL/nlSlotPool.h"
 
 namespace GCAudioStreaming
 {
@@ -69,10 +70,14 @@ public:
             const Function<bool(const char*, char*, unsigned long)>& fn);
     }; // total size: 0x14
 
+    typedef DLListEntry<GCAudioStreaming::StereoAudioStream*> StreamDeleteEntry;
+    typedef BasicSlotPool<StreamDeleteEntry> StreamDeleteAllocator;
+    typedef DLListContainerBase<GCAudioStreaming::StereoAudioStream*, StreamDeleteAllocator> StreamDeleteList;
+
     /* 0x04 */ char _pad_0x04[0x14]; // StreamFileLookup m_FileLookup
     /* 0x18 */ char _pad_0x18[0x20]; // FadeManager m_FadeMgr
-    /* 0x38 */ char _pad_0x38[0x18]; // SlotPool m_StreamPool
-    /* 0x50 */ char _pad_0x50[0x1C]; // nlDLListSlotPool m_StreamDeleteList
+    /* 0x38 */ SlotPool<GCAudioStreaming::StereoAudioStream> m_StreamPool;
+    /* 0x50 */ StreamDeleteList m_StreamDeleteList;
 }; // total size: 0x6C
 
 class StreamTrack
@@ -85,20 +90,20 @@ public:
         /* 0x8 */ unsigned long FadeIn : 16;
         /* 0x8 */ unsigned long StartVolume : 10;
         /* 0x8 */ Audio::MasterVolume::VOLUME_GROUP VolGroup : 2;
-        /* 0xB */ unsigned char Loop : 1;
-        /* 0xB */ unsigned char TrackOwnsStream : 1;
+        /* 0xB */ unsigned long Loop : 1;
+        /* 0xB */ unsigned long TrackOwnsStream : 1;
     }; // total size: 0xC
 
     void Update(float);
     void PlayStream(unsigned long, float, bool, unsigned long, unsigned long, const char*, Audio::MasterVolume::VOLUME_GROUP);
     void QueueStream(unsigned long, float, bool, unsigned long, const char*, Audio::MasterVolume::VOLUME_GROUP);
-    // void ProcessNewHeadStream();
+    void ProcessNewHeadStream();
     // void StopHead(unsigned long);
     void Stop(unsigned long);
     void StopQStream(QUEUED_STREAM*);
     // void StopStream(GCAudioStreaming::StereoAudioStream*, bool);
     void FadeOutDone(QUEUED_STREAM*);
-    // void FadeOutDoneStartNext(QUEUED_STREAM*);
+    void FadeOutDoneStartNext(QUEUED_STREAM*);
     void Pause(unsigned long, bool);
     void Resume();
     // void AttachStream(GCAudioStreaming::StereoAudioStream*, Audio::MasterVolume::VOLUME_GROUP, unsigned long, unsigned long, bool, bool);

@@ -35,10 +35,12 @@ inline SaveConfidence::~SaveConfidence()
 
 float Defensive(cTeam*);
 
+static bool sFalse = false;
+static bool sTrue = true;
+
 /**
  * Offset/Address/Size: 0x5590 | 0x8008AC48 | size: 0x43C
- * TODO: 97.0% match - lbz r30,@956 scheduling before bctrl (SDA) vs li r6,1 after (immediate),
- * causing r29/r30 register allocation cascade. -inline deferred file.
+ * TODO: 99.7% match - r29/r30 register swap for bResult and ExtraData temp pointer
  */
 FuzzyVariant Fuzzy::AbortDefencePlay(cDecisionEntity*)
 {
@@ -58,12 +60,12 @@ FuzzyVariant Fuzzy::AbortDefencePlay(cDecisionEntity*)
     {
         SaveConfidence PushDOM(&fConfidence);
         fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
-        if (fConfidence < fTrueConfidence && fTrueConfidence < 1.0f)
+        if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
             fConfidence = fConfidence * fBranchRatio;
         if (fConfidence > 0.0f)
         {
             fBestConfidence = fConfidence;
-            bResult = true;
+            bResult = sFalse;
             bestValue = FuzzyVariant(bResult);
         }
     }
@@ -72,12 +74,12 @@ FuzzyVariant Fuzzy::AbortDefencePlay(cDecisionEntity*)
     {
         SaveConfidence PushDOM(&fConfidence);
         fConfidence = (fConfidence <= fFalseConfidence) ? fConfidence : fFalseConfidence;
-        if (fConfidence < fFalseConfidence && fFalseConfidence < 1.0f)
+        if (fConfidence < fFalseConfidence && fFalseConfidence < 0.5f)
             fConfidence = fConfidence * fBranchRatio;
         if (fConfidence > fBestConfidence)
         {
             fBestConfidence = fConfidence;
-            bResult = false;
+            bResult = sTrue;
             bestValue = FuzzyVariant(bResult);
         }
     }

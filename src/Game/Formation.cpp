@@ -55,9 +55,8 @@ FormationEval::~FormationEval()
  * Offset/Address/Size: 0x29F4 | 0x8003AC44 | size: 0x60
  */
 FormationManager::FormationManager(cTeam* pTeam)
+    : m_pTeam(pTeam)
 {
-    m_pTeam = pTeam;
-    m_tSelectFormationsTimer.SetSeconds(0.0f);
     m_pFormations[0] = nullptr;
     m_pFormations[1] = nullptr;
     m_pFormations[2] = nullptr;

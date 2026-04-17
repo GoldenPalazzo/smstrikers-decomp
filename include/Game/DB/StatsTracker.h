@@ -127,6 +127,7 @@ public:
     void DestroyEventHandler();
     static void eventHandler(Event*, void*);
     void TrackStat(ePlayerStats, int, int, int, int, int, int);
+    static void Track(ePlayerStats, int, int, int, int, int, int);
     void GetSortedStats(PlayerStats*, int, int*, int, ePlayerStats, eSortOrder);
     void GetSortedTeamStats(TeamStats*, int, int*, int);
     void CompileEndOfGameStats();
@@ -155,6 +156,11 @@ public:
     /* 0x4C1 */ bool mIsOvertime;
     /* 0x4C2 */ bool mHasGameEnded;
 }; // total size: 0x4C4
+
+inline void StatsTracker::Track(ePlayerStats stat, int homeaway, int playerindex, int param0, int param1, int param2, int param3)
+{
+    s_pInstance->TrackStat(stat, homeaway, playerindex, param0, param1, param2, param3);
+}
 
 // class BasicString < char, Detail
 // {

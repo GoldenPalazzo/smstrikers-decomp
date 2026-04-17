@@ -33,6 +33,7 @@ void cGameSFX::UpdateAllTrackedSFX(float)
  */
 void cGameSFX::StopPlayingAllTrackedSFX()
 {
+    FORCE_DONT_INLINE;
     if (!mbCurPlaySetIsValid)
     {
         return;
@@ -193,6 +194,7 @@ cleanup_list:
  */
 bool cGameSFX::StopTrackedSFX(SFXPlaySet* pPlaySet)
 {
+    FORCE_DONT_INLINE;
     if (!mbCurPlaySetIsValid)
     {
         return true;
@@ -469,20 +471,20 @@ unsigned long cGameSFX::Play(Audio::SoundAttributes& attributes)
 /**
  * Offset/Address/Size: 0x1BD0 | 0x80153114 | size: 0xA8
  */
-bool TrackedSFXPriorityCallback(SFXPlaySet* pPlaySet, unsigned long priority, cGameSFX* pGameSFX)
+bool TrackedSFXPriorityCallback(SFXPlaySet* pSFXPlaySet, unsigned long param, cGameSFX* pGameSFX)
 {
-    if (pPlaySet->bIs3D != 0)
+    if (pSFXPlaySet->bIs3D != 0)
     {
-        if (Audio::IsEmitterActive(pPlaySet->emitter) && pPlaySet->sfxPriority > priority)
+        if (Audio::IsEmitterActive(pSFXPlaySet->emitter) && pSFXPlaySet->sfxPriority > param)
         {
-            return pGameSFX->StopTrackedSFX(pPlaySet);
+            return pGameSFX->StopTrackedSFX(pSFXPlaySet);
         }
     }
     else
     {
-        if (Audio::IsSFXPlaying(pPlaySet->voiceID) && pPlaySet->sfxPriority > priority)
+        if (Audio::IsSFXPlaying(pSFXPlaySet->voiceID) && pSFXPlaySet->sfxPriority > param)
         {
-            return pGameSFX->StopTrackedSFX(pPlaySet);
+            return pGameSFX->StopTrackedSFX(pSFXPlaySet);
         }
     }
     return true;
@@ -930,12 +932,11 @@ void cGameSFX::SetSFX(SoundPropAccessor* pSoundPropAccessor)
  */
 void cGameSFX::ShutdownPlaySet()
 {
-    FORCE_DONT_INLINE;
     mbCurPlaySetIsValid = false;
     StopPlayingAllTrackedSFX();
 
-    nlWalkDLRing<DLListEntry<SFXPlaySet*>, nlDLListContainer<SFXPlaySet*> >(
-        mpCurPlaySet.m_Head, &mpCurPlaySet, &nlDLListContainer<SFXPlaySet*>::DeleteEntry);
+    nlWalkDLRing<DLListEntry<SFXPlaySet*>, DLListContainerBase<SFXPlaySet*, NewAdapter<DLListEntry<SFXPlaySet*> > > >(
+        mpCurPlaySet.m_Head, &mpCurPlaySet, &DLListContainerBase<SFXPlaySet*, NewAdapter<DLListEntry<SFXPlaySet*> > >::DeleteEntry);
 
     mpCurPlaySet.m_Head = NULL;
 }
@@ -1008,6 +1009,7 @@ void nlWalkDLRing<DLListEntry<SFXPlaySet*>, DLListContainerBase<SFXPlaySet*, New
     DLListContainerBase<SFXPlaySet*, NewAdapter<DLListEntry<SFXPlaySet*> > >* callback,
     void (DLListContainerBase<SFXPlaySet*, NewAdapter<DLListEntry<SFXPlaySet*> > >::*callbackFunc)(DLListEntry<SFXPlaySet*>*))
 {
+    FORCE_DONT_INLINE;
     void (DLListContainerBase<SFXPlaySet*, NewAdapter<DLListEntry<SFXPlaySet*> > >::*func)(DLListEntry<SFXPlaySet*>*) = callbackFunc;
     nlWalkRing(head, callback, func);
 }

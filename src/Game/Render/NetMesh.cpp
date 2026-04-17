@@ -491,14 +491,15 @@ void NetMesh::AddForcesToBall(const nlVector3& position, PhysicsSphere* sphere)
 
             sphere->GetAngularVelocity(&currentAngularVelocity);
 
-            float fx = velocity.f.y * m_v3BallPenetrationNormal.f.z - velocity.f.z * m_v3BallPenetrationNormal.f.y;
-            float fy = -velocity.f.x * m_v3BallPenetrationNormal.f.z + velocity.f.z * m_v3BallPenetrationNormal.f.x;
-            float fz = velocity.f.x * m_v3BallPenetrationNormal.f.y - velocity.f.y * m_v3BallPenetrationNormal.f.x;
+            nlVector3 crossProduct;
+            crossProduct.f.x = velocity.f.y * m_v3BallPenetrationNormal.f.z - velocity.f.z * m_v3BallPenetrationNormal.f.y;
+            crossProduct.f.y = -velocity.f.x * m_v3BallPenetrationNormal.f.z + velocity.f.z * m_v3BallPenetrationNormal.f.x;
+            crossProduct.f.z = velocity.f.x * m_v3BallPenetrationNormal.f.y - velocity.f.y * m_v3BallPenetrationNormal.f.x;
 
             float invR = 1.0f / g_pBall->m_pPhysicsBall->GetRadius();
-            float tx = invR * fx;
-            float ty = invR * fy;
-            float tz = invR * fz;
+            float tx = invR * crossProduct.f.x;
+            float ty = invR * crossProduct.f.y;
+            float tz = invR * crossProduct.f.z;
 
             dBodyAddTorque(sphere->m_bodyID,
                 0.1f * (tx - currentAngularVelocity.f.x),

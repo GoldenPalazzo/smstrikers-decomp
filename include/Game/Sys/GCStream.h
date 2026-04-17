@@ -4,6 +4,27 @@
 #include "NL/nlArrayAllocator.h"
 #include "NL/nlFile.h"
 
+struct sDSPADPCM
+{
+    /* 0x00 */ unsigned long num_samples;
+    /* 0x04 */ unsigned long num_adpcm_nibbles;
+    /* 0x08 */ unsigned long sample_rate;
+    /* 0x0C */ unsigned short loop_flag;
+    /* 0x0E */ unsigned short format;
+    /* 0x10 */ unsigned long sa;
+    /* 0x14 */ unsigned long ea;
+    /* 0x18 */ unsigned long ca;
+    /* 0x1C */ unsigned short coef[16];
+    /* 0x3C */ unsigned short gain;
+    /* 0x3E */ unsigned short ps;
+    /* 0x40 */ unsigned short yn1;
+    /* 0x42 */ unsigned short yn2;
+    /* 0x44 */ unsigned short lps;
+    /* 0x46 */ unsigned short lyn1;
+    /* 0x48 */ unsigned short lyn2;
+    /* 0x4A */ unsigned short pad[11];
+}; // total size: 0x60
+
 namespace GCAudioStreaming
 {
 
@@ -65,19 +86,19 @@ class AudioStream
 public:
     AudioStream(AudioBufferMgr& mgr, unsigned long bufCount);
     virtual ~AudioStream() { };
-    virtual void WarmReadDone(AudioStreamBuffer*);
-    void Purge();
-    void Destructor();
-    virtual void Stop();
     virtual void Warm(bool) { };
-    virtual void GetUpdateReadLength() { };
-    virtual void DoUpdateRead(unsigned long, unsigned long, unsigned long, unsigned long, AudioStreamBuffer*) { };
-    virtual void CancelPendingReads() { };
     virtual bool SafeToPurge() { return false; };
+    virtual void Purge();
+    virtual void DoUpdateRead(unsigned long, unsigned long, unsigned long, unsigned long, AudioStreamBuffer*) { };
+    virtual unsigned long GetUpdateReadLength() { return 0; };
+    virtual void CancelPendingReads() { };
+    virtual void WarmReadDone(AudioStreamBuffer*);
+    void Stop();
+    void Destructor();
 
-    void _HdrReadCB(nlFile*, void*, unsigned int, unsigned long);
-    void _WarmReadCB(nlFile*, void*, unsigned int, unsigned long);
-    void _UpdateReadCB(nlFile*, void*, unsigned int, unsigned long);
+    static void _HdrReadCB(nlFile*, void*, unsigned int, unsigned long);
+    static void _WarmReadCB(nlFile*, void*, unsigned int, unsigned long);
+    static void _UpdateReadCB(nlFile*, void*, unsigned int, unsigned long);
 
     class READ_CB_INFO
     {
@@ -109,11 +130,11 @@ public:
     MonoAudioStream(AudioBufferMgr& mgr);
     static void _AsyncCancelCB(nlFile*, void*, unsigned int, unsigned long, void (*)(nlFile*, void*, unsigned int, unsigned long));
     virtual void CancelPendingReads();
-    virtual void GetUpdateReadLength();
+    virtual unsigned long GetUpdateReadLength();
     virtual void Warm(bool);
     virtual void DoUpdateRead(unsigned long, unsigned long, unsigned long, unsigned long, GCAudioStreaming::AudioStreamBuffer*);
     virtual bool SafeToPurge();
-    void Purge();
+    virtual void Purge();
 
     /* 0x38 */ class nlFile* m_pFile;
     /* 0x3C */ unsigned long m_UpdateLen;
@@ -124,15 +145,15 @@ class StereoAudioStream : public AudioStream
 public:
     StereoAudioStream(AudioBufferMgr& mgr);
     virtual ~StereoAudioStream();
-    virtual void GetUpdateReadLength();
-    void _InterleavedHdrReadCB(nlFile*, void*, unsigned int, unsigned long);
+    virtual unsigned long GetUpdateReadLength();
+    static void _InterleavedHdrReadCB(nlFile*, void*, unsigned int, unsigned long);
     static void _AsyncCancelCB(nlFile*, void*, unsigned int, unsigned long, void (*)(nlFile*, void*, unsigned int, unsigned long));
     virtual void CancelPendingReads();
     virtual void Warm(bool);
     void InterleavedHdrReadCB(nlFile*, void*, unsigned int);
     virtual void DoUpdateRead(unsigned long, unsigned long, unsigned long, unsigned long, GCAudioStreaming::AudioStreamBuffer*);
     virtual bool SafeToPurge();
-    void Purge();
+    virtual void Purge();
 
     /* 0x38 */ nlFile* m_pFile;
     /* 0x3C */ unsigned long m_Interleave;

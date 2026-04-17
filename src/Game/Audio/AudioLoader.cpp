@@ -74,9 +74,6 @@ public:
 
 class GameSceneManager;
 
-extern bool gUsingDolbyProLogic2__9PlatAudio;
-extern bool gReverbOn__11AudioLoader;
-
 // /**
 //  * Offset/Address/Size: 0x0 | 0x801490F4 | size: 0x60
 //  */
@@ -474,7 +471,12 @@ void AudioLoader::SetupSoundGroups()
 
 /**
  * Offset/Address/Size: 0x35EC | 0x801473B8 | size: 0x408
- * TODO: 98.43% match - only offset diffs remain (decomp.me compilation artifact)
+ *
+ * The `goto state_change / no_change / after_no_change` structure is load-bearing:
+ * MWCC preserves the original two-test / shared-label shape only via explicit gotos.
+ * Structured rewrites (nested if/else, combined boolean, equality) drop 3-5% match
+ * because MWCC either duplicates the `return true` block or hoists the repeated
+ * loads of `bEnableDPL2` / `PlatAudio::gUsingDolbyProLogic2`.
  */
 bool AudioLoader::ActivateDPL2(bool bEnableDPL2, bool bLoadSampleFile)
 {
@@ -482,7 +484,7 @@ bool AudioLoader::ActivateDPL2(bool bEnableDPL2, bool bLoadSampleFile)
 
     if (bEnableDPL2)
     {
-        if (!gUsingDolbyProLogic2__9PlatAudio)
+        if (!PlatAudio::gUsingDolbyProLogic2)
         {
             goto state_change;
         }
@@ -491,7 +493,7 @@ bool AudioLoader::ActivateDPL2(bool bEnableDPL2, bool bLoadSampleFile)
     {
         goto no_change;
     }
-    if (!gUsingDolbyProLogic2__9PlatAudio)
+    if (!PlatAudio::gUsingDolbyProLogic2)
     {
         goto no_change;
     }
@@ -499,7 +501,7 @@ bool AudioLoader::ActivateDPL2(bool bEnableDPL2, bool bLoadSampleFile)
 state_change:
     if (!gbDisableReverb)
     {
-        if (gReverbOn__11AudioLoader)
+        if (gReverbOn)
         {
             nlPrintf("AudioLoader::ActivateDPL2(), shutting down reverb...\n");
             if (!Audio::ShutdownReverb())
@@ -522,16 +524,15 @@ state_change:
     StreamDLListEntry* pCur;
     StreamDLListEntry** ppHead;
 
-    nlWalkDLRing(
-        *(FadeDLListEntry**)(pTM->_pad_0x18 + 0x18),
+    nlWalkDLRing(((FadeDLListContainer*)pTM->_pad_0x18)->m_Head,
         (FadeDLListContainer*)pTM->_pad_0x18,
         &FadeDLListContainer::DeleteEntry);
-    *(FadeDLListEntry**)(pTM->_pad_0x18 + 0x18) = NULL;
-    SlotPoolBase::BaseFreeBlocks((SlotPoolBase*)pTM->_pad_0x18, sizeof(FadeDLListEntry));
+    ((FadeDLListContainer*)pTM->_pad_0x18)->m_Head = NULL;
+    SlotPoolBase::BaseFreeBlocks(&((FadeDLListContainer*)pTM->_pad_0x18)->m_Allocator, sizeof(FadeDLListEntry));
 
-    StreamDLListEntry* tmp = nlDLRingGetStart(*(StreamDLListEntry**)(pTM->_pad_0x50 + 0x18));
-    pHead = *(StreamDLListEntry**)(pTM->_pad_0x50 + 0x18);
-    ppHead = (StreamDLListEntry**)(pTM->_pad_0x50 + 0x18);
+    StreamDLListEntry* tmp = nlDLRingGetStart(pTM->m_StreamDeleteList.m_Head);
+    pHead = pTM->m_StreamDeleteList.m_Head;
+    ppHead = &pTM->m_StreamDeleteList.m_Head;
     pCur = tmp;
 
     while (pCur != NULL)
@@ -539,8 +540,8 @@ state_change:
         pStream = pCur->m_data;
         pStream->~StereoAudioStream();
 
-        *(unsigned long*)pStream = *(unsigned long*)(pTM->_pad_0x38 + 0x0C);
-        *(unsigned long*)(pTM->_pad_0x38 + 0x0C) = (unsigned long)pStream;
+        ((SlotPoolEntry*)pStream)->m_next = pTM->m_StreamPool.m_FreeList;
+        pTM->m_StreamPool.m_FreeList = (SlotPoolEntry*)pStream;
 
         pRemove = pCur;
         pFree = pCur;
@@ -556,12 +557,12 @@ state_change:
 
         nlDLRingRemove(ppHead, pRemove);
 
-        *(unsigned long*)pFree = *(unsigned long*)(pTM->_pad_0x50 + 0x0C);
-        *(unsigned long*)(pTM->_pad_0x50 + 0x0C) = (unsigned long)pFree;
+        ((SlotPoolEntry*)pFree)->m_next = pTM->m_StreamDeleteList.m_Allocator.m_FreeList;
+        pTM->m_StreamDeleteList.m_Allocator.m_FreeList = (SlotPoolEntry*)pFree;
     }
 
-    SlotPoolBase::BaseFreeBlocks((SlotPoolBase*)pTM->_pad_0x38, 0x40);
-    SlotPoolBase::BaseFreeBlocks((SlotPoolBase*)pTM->_pad_0x50, 0x0C);
+    SlotPoolBase::BaseFreeBlocks(&pTM->m_StreamPool, 0x40);
+    SlotPoolBase::BaseFreeBlocks(&pTM->m_StreamDeleteList.m_Allocator, 0x0C);
     PlatAudio::ShutdownStreaming();
     Audio::Silence();
     Audio::UnloadWorldSFX();
@@ -619,29 +620,32 @@ after_no_change:
 
     if (onScene)
     {
-        bool bAlreadyLoaded = false;
-        if (sebringAudioGroups[2].uLoadOrder > -1 && sebringAudioGroups[2].stackEnum > -1)
+        if (!gbDisableAudio)
         {
-            bAlreadyLoaded = true;
-        }
-
-        if (!bAlreadyLoaded)
-        {
-            if (!gbDisableAudio)
+            bool bAlreadyLoaded = false;
+            if (sebringAudioGroups[2].uLoadOrder > -1 && sebringAudioGroups[2].stackEnum > -1)
             {
-                bool isInited;
-                if (gbDisableAudio)
-                {
-                    isInited = false;
-                }
-                else
-                {
-                    isInited = Audio::IsInited();
-                }
+                bAlreadyLoaded = true;
+            }
 
-                if (isInited)
+            if (!bAlreadyLoaded)
+            {
+                if (!gbDisableAudio)
                 {
-                    PlatAudio::LoadSoundGroup(sebringAudioFileData, 2, 0, true);
+                    bool isInited;
+                    if (gbDisableAudio)
+                    {
+                        isInited = false;
+                    }
+                    else
+                    {
+                        isInited = Audio::IsInited();
+                    }
+
+                    if (isInited)
+                    {
+                        PlatAudio::LoadSoundGroup(sebringAudioFileData, 2, 0, true);
+                    }
                 }
             }
         }
@@ -1455,18 +1459,14 @@ void AudioLoader::UnloadInGame()
     StreamDLListEntry* pCur;
     StreamDLListEntry** ppHead;
 
-    // nlWalkDLRing on FadeManager
-    nlWalkDLRing(
-        *(FadeDLListEntry**)(pTM->_pad_0x18 + 0x18),
-        (FadeDLListContainer*)pTM->_pad_0x18,
-        &FadeDLListContainer::DeleteEntry);
-    *(FadeDLListEntry**)(pTM->_pad_0x18 + 0x18) = NULL;
-    SlotPoolBase::BaseFreeBlocks((SlotPoolBase*)pTM->_pad_0x18, sizeof(FadeDLListEntry));
+    FadeDLListContainer* pFadeMgr = (FadeDLListContainer*)pTM->_pad_0x18;
+    nlWalkDLRing(pFadeMgr->m_Head, pFadeMgr, &FadeDLListContainer::DeleteEntry);
+    pFadeMgr->m_Head = NULL;
+    SlotPoolBase::BaseFreeBlocks(&pFadeMgr->m_Allocator, sizeof(FadeDLListEntry));
 
-    // StereoAudioStream DLRing loop - use _pad_0x50 + 0x18 for offset 0x68
-    StreamDLListEntry* tmp = nlDLRingGetStart(*(StreamDLListEntry**)(pTM->_pad_0x50 + 0x18));
-    pHead = *(StreamDLListEntry**)(pTM->_pad_0x50 + 0x18);
-    ppHead = (StreamDLListEntry**)(pTM->_pad_0x50 + 0x18);
+    StreamDLListEntry* tmp = nlDLRingGetStart(pTM->m_StreamDeleteList.m_Head);
+    pHead = pTM->m_StreamDeleteList.m_Head;
+    ppHead = &pTM->m_StreamDeleteList.m_Head;
     pCur = tmp;
 
     while (pCur != NULL)
@@ -1474,9 +1474,8 @@ void AudioLoader::UnloadInGame()
         pStream = pCur->m_data;
         pStream->~StereoAudioStream();
 
-        // Link freed stream memory into StreamPool free list (offset 0x44)
-        *(unsigned long*)pStream = *(unsigned long*)(pTM->_pad_0x38 + 0x0C);
-        *(unsigned long*)(pTM->_pad_0x38 + 0x0C) = (unsigned long)pStream;
+        ((SlotPoolEntry*)pStream)->m_next = pTM->m_StreamPool.m_FreeList;
+        pTM->m_StreamPool.m_FreeList = (SlotPoolEntry*)pStream;
 
         pRemove = pCur;
         pFree = pCur;
@@ -1492,13 +1491,12 @@ void AudioLoader::UnloadInGame()
 
         nlDLRingRemove(ppHead, pRemove);
 
-        // Link removed entry into StreamDeleteList free list (offset 0x5C)
-        *(unsigned long*)pFree = *(unsigned long*)(pTM->_pad_0x50 + 0x0C);
-        *(unsigned long*)(pTM->_pad_0x50 + 0x0C) = (unsigned long)pFree;
+        ((SlotPoolEntry*)pFree)->m_next = pTM->m_StreamDeleteList.m_Allocator.m_FreeList;
+        pTM->m_StreamDeleteList.m_Allocator.m_FreeList = (SlotPoolEntry*)pFree;
     }
 
-    SlotPoolBase::BaseFreeBlocks((SlotPoolBase*)pTM->_pad_0x38, 0x40);
-    SlotPoolBase::BaseFreeBlocks((SlotPoolBase*)pTM->_pad_0x50, 0x0C);
+    SlotPoolBase::BaseFreeBlocks(&pTM->m_StreamPool, 0x40);
+    SlotPoolBase::BaseFreeBlocks(&pTM->m_StreamDeleteList.m_Allocator, 0x0C);
 
     PlatAudio::UnloadAllSoundGroupsOnStack(sebringAudioFileData, 1);
 

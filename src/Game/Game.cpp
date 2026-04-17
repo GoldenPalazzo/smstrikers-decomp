@@ -103,6 +103,7 @@ private:
 public:
     void alloc();
     std::allocator<node>& node_alloc();
+    void clear();
 };
 
 } // namespace std
@@ -281,12 +282,16 @@ _NodeAllocT& _TreeT::node_alloc()
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0xE0 | 0x8003F064 | size: 0x40
-//  */
-// void ScriptQuestionCache::Clear()
-// {
-// }
+/**
+ * Offset/Address/Size: 0xE0 | 0x8003F064 | size: 0x40
+ */
+void ScriptQuestionCache::Clear()
+{
+    mQuestionCacheMap.Clear();
+    ((_TreeT&)mQuestionCacheMapSTD).clear();
+    mCacheHits = 0;
+    mTotalLookups = 0;
+}
 
 // /**
 //  * Offset/Address/Size: 0x80 | 0x8003F004 | size: 0x60

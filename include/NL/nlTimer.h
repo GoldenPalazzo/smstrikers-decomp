@@ -6,6 +6,7 @@
 class Timer
 {
 public:
+    Timer(f32 seconds = 0.0f) { SetSeconds(seconds); }
     bool Countup(float, float);
     bool Countdown(float, float);
     f32 GetSeconds() const;

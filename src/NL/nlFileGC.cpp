@@ -15,6 +15,8 @@ static Function<void(int)> g_HandleDVDAllClearCallback;
 static Function<void(int)> g_HandleDVDRetryCB;
 static Function<FnVoidVoid> g_CheckForResetCB;
 
+static void AsyncToVirMemBufferCallback(nlFile*, void*, unsigned int, unsigned long);
+
 static AsyncEntry* nlDLRingRemoveStartAsyncEntry(AsyncEntry** head)
 {
     AsyncEntry* entry = (*head)->next;
@@ -37,11 +39,8 @@ static AsyncEntry* nlDLRingRemoveStartAsyncEntry(AsyncEntry** head)
     return entry;
 }
 
-namespace nlFileGC
-{
-AsyncToVirMemBufferLoad asyncToVirMemBufferLoad[4];
-u8 asyncToVirMemBuffer[0x4000];
-} // namespace nlFileGC
+static AsyncToVirMemBufferLoad asyncToVirMemBufferLoad[4];
+static u8 asyncToVirMemBuffer[0x4000];
 
 /**
  * Offset/Address/Size: 0x0 | 0x801CED54 | size: 0xEC
@@ -52,29 +51,30 @@ u8 asyncToVirMemBuffer[0x4000];
 void nlReadAsyncToVirtualMemory(nlFile* file, void* buffer, int size, ReadAsyncCallback callback, unsigned long param,
     unsigned long chunkSize, void* userData)
 {
+    FORCE_DONT_INLINE;
     int i;
     for (i = 0; i < 4; i++)
     {
-        if (nlFileGC::asyncToVirMemBufferLoad[i].numChunksLeft == 0)
+        if (asyncToVirMemBufferLoad[i].numChunksLeft == 0)
         {
             unsigned int numChunks = (unsigned int)size / (unsigned int)chunkSize;
             unsigned long counter2 = i;
             unsigned long counter1 = i;
             unsigned int sz = chunkSize;
-            nlFileGC::asyncToVirMemBufferLoad[i].numChunksLeft = numChunks + 1;
-            nlFileGC::asyncToVirMemBufferLoad[i].param = param;
-            nlFileGC::asyncToVirMemBufferLoad[i].callback = callback;
-            nlFileGC::asyncToVirMemBufferLoad[i].size = size;
+            asyncToVirMemBufferLoad[i].numChunksLeft = numChunks + 1;
+            asyncToVirMemBufferLoad[i].param = param;
+            asyncToVirMemBufferLoad[i].callback = callback;
+            asyncToVirMemBufferLoad[i].size = size;
             int remainder = size - numChunks * chunkSize;
-            nlFileGC::asyncToVirMemBufferLoad[i].target = (char*)buffer;
+            asyncToVirMemBufferLoad[i].target = (char*)buffer;
 
             int j;
             for (j = 0; j < (int)numChunks; j++)
             {
-                nlReadAsync(file, userData, sz, nlFileGC::AsyncToVirMemBufferCallback, counter1);
+                nlReadAsync(file, userData, sz, AsyncToVirMemBufferCallback, counter1);
             }
 
-            nlReadAsync(file, userData, remainder, nlFileGC::AsyncToVirMemBufferCallback, counter2);
+            nlReadAsync(file, userData, remainder, AsyncToVirMemBufferCallback, counter2);
             return;
         }
     }
@@ -85,18 +85,22 @@ void nlReadAsyncToVirtualMemory(nlFile* file, void* buffer, int size, ReadAsyncC
  */
 void nlAsyncLoadFileToVirtualMemory(nlFile* file, int size, void* buffer, ReadAsyncCallback callback, unsigned long alignment)
 {
-    nlReadAsyncToVirtualMemory(file, buffer, size, callback, alignment, 0x4000, nlFileGC::asyncToVirMemBuffer);
+    nlReadAsyncToVirtualMemory(file, buffer, size, callback, alignment, 0x4000, asyncToVirMemBuffer);
 }
 
-namespace nlFileGC
-{
 /**
  * Offset/Address/Size: 0x124 | 0x801CEE78 | size: 0xAC
  */
-void AsyncToVirMemBufferCallback(nlFile*, void*, unsigned int, unsigned long)
+static void AsyncToVirMemBufferCallback(nlFile* pFile, void* buffer, unsigned int size, unsigned long param)
 {
+    memcpy(asyncToVirMemBufferLoad[param].target, (char*)buffer - size, size);
+    asyncToVirMemBufferLoad[param].target += size;
+    asyncToVirMemBufferLoad[param].numChunksLeft--;
+    if (asyncToVirMemBufferLoad[param].numChunksLeft == 0)
+    {
+        asyncToVirMemBufferLoad[param].callback(pFile, asyncToVirMemBufferLoad[param].target, asyncToVirMemBufferLoad[param].size, asyncToVirMemBufferLoad[param].param);
+    }
 }
-} // namespace nlFileGC
 
 /**
  * Offset/Address/Size: 0x1D0 | 0x801CEF24 | size: 0xF4
@@ -1104,15 +1108,12 @@ void nlRegHandleDVDMessageCB(const Function<void(int)>& cb)
     g_HandleDVDMessageCallback = cb;
 }
 
-namespace nlFileGC
-{
 /**
  * Offset/Address/Size: 0x1E74 | 0x801D0BC8 | size: 0xC
  */
-void AsyncToVirMemBufferLoad()
+AsyncToVirMemBufferLoad::AsyncToVirMemBufferLoad()
 {
 }
-} // namespace nlFileGC
 
 /**
  * Offset/Address/Size: 0x0 | 0x801D0BD4 | size: 0x90

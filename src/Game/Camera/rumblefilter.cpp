@@ -29,6 +29,18 @@ void cRumbleFilter::Filter(const nlMatrix4& matViewIn, nlMatrix4& matViewOut)
 }
 
 /**
+ * Offset/Address/Size: 0x284 | 0x801A64A0 | size: 0x50
+ */
+void cRumbleFilter::Rumble(float x, float y)
+{
+    nlVec2Set(v2Pos0, 0.0f, 0.0f);
+    nlVec2Set(v2Pos1, x, y);
+    nlVec2Set(v2Vel0, 0.0f, 0.0f);
+    nlVec2Set(v2Vel1, 0.0f, 0.0f);
+    g_pEventManager->CreateValidEvent(0x57, 0x14);
+}
+
+/**
  * Offset/Address/Size: 0x2D4 | 0x801A64F0 | size: 0x60
  */
 void cRumbleFilter::Reset()

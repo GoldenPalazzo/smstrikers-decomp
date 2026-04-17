@@ -133,8 +133,14 @@ void cCameraManager::Shutdown()
  * TODO: 83.48% match - integer-mode float spills (lwz/stw for prevTx/y/z and curTx/y/z)
  * and branch layout (beq+b vs bne) differ due to MWCC version code generation
  */
+/**
+ * Offset/Address/Size: 0x3DC | 0x801A7754 | size: 0x63C
+ * TODO: 98.52% match - beq+b vs bne branch pattern at offset 0xb8 (MWCC peephole optimization difference)
+ */
 void cCameraManager::Update(float fDeltaT)
 {
+    nlVector3 v3TransTo;
+    nlVector3 v3TransFrom;
     nlQuaternion qSlerped;
     nlQuaternion qCur;
     nlQuaternion qPrev;
@@ -169,6 +175,8 @@ handle_ease_in:
         prevViewCopy = m_matPrevView;
         nlMatrixToQuat(qPrev, prevViewCopy);
 
+        v3TransFrom = prevViewCopy.GetTranslation();
+
         curViewCopy = PeekCamera()->GetViewMatrix();
         if (PeekCamera()->m_pFilter != NULL)
         {
@@ -178,15 +186,16 @@ handle_ease_in:
         nlMatrixToQuat(qCur, curViewCopy);
 
         float t = m_fTransitionTime;
-        float smoothT = t * t * t * (t * (6.0f * t - 15.0f) + 10.0f);
+        float smoothT = t * t * t * (t * (6.0f * t + (-15.0f)) + 10.0f);
+        v3TransTo = curViewCopy.GetTranslation();
         nlQuatSlerp(qSlerped, qPrev, qCur, smoothT);
         float oneMinusT = 1.0f - smoothT;
 
         nlQuatToMatrix(m_matView, qSlerped);
         m_matView.f.m44 = 1.0f;
-        m_matView.f.m41 = smoothT * curViewCopy.f.m41 + oneMinusT * prevViewCopy.f.m41;
-        m_matView.f.m42 = smoothT * curViewCopy.f.m42 + oneMinusT * prevViewCopy.f.m42;
-        m_matView.f.m43 = smoothT * curViewCopy.f.m43 + oneMinusT * prevViewCopy.f.m43;
+        m_matView.f.m41 = smoothT * v3TransTo.f.x + oneMinusT * v3TransFrom.f.x;
+        m_matView.f.m42 = smoothT * v3TransTo.f.y + oneMinusT * v3TransFrom.f.y;
+        m_matView.f.m43 = smoothT * v3TransTo.f.z + oneMinusT * v3TransFrom.f.z;
 
         float curFOV = pCamera->GetFOV();
         m_fFOV = Interpolate(m_fPrevFOV, curFOV, smoothT);
@@ -205,9 +214,7 @@ handle_ease_in:
         }
     }
     nlInvertRotTransMatrix(cameraToWorldMatrix, m_matView);
-    m_cameraPosition.f.x = cameraToWorldMatrix.f.m41;
-    m_cameraPosition.f.y = cameraToWorldMatrix.f.m42;
-    m_cameraPosition.f.z = cameraToWorldMatrix.f.m43;
+    m_cameraPosition = cameraToWorldMatrix.GetTranslation();
     goto handle_end;
 }
 

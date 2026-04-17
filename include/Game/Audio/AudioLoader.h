@@ -106,6 +106,7 @@ public:
     static bool gbDisableCrowd;
     static bool gbStream;
     static bool gbDisableReverb;
+    static bool gReverbOn;
     static bool g_BGM_Off;
     static bool gbAsyncLoadEntireSampleFileIntoMemRequestMade;
     static AudioFileData sebringAudioFileData;

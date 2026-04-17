@@ -4,9 +4,9 @@
 #include "types.h"
 #include "dolphin/os.h"
 #include "dolphin/gx.h"
-#include "THP/THPBuffer.h"
-#include "THP/THPFile.h"
-#include "THP/THPInfo.h"
+#include "dolphin/thp/THPBuffer.h"
+#include "dolphin/thp/THPFile.h"
+#include "dolphin/thp/THPInfo.h"
 
 #ifdef __cplusplus
 extern "C"

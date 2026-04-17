@@ -184,14 +184,14 @@ void CreditScene::SetupForPhase()
         SetupForNLGMovie();
         break;
     case 1:
-        m_pFEPresentation->SetActiveSlide("copyright");
+        m_pFEPresentation->SetActiveSlide("NINTENDO");
         m_pFEPresentation->m_currentSlide->Update(0.0f);
         break;
     case 2:
         SetupForCredits();
         break;
     case 3:
-        m_pFEPresentation->SetActiveSlide("nintendologo");
+        m_pFEPresentation->SetActiveSlide("COPYRIGHTS");
         m_pFEPresentation->m_currentSlide->Update(0.0f);
         break;
     case 4:
@@ -226,6 +226,7 @@ void CreditScene::GotoNextPhase()
  */
 void CreditScene::SetupForCredits()
 {
+    FORCE_DONT_INLINE;
     m_pFEPresentation->SetActiveSlide("CREDITS");
     m_pFEPresentation->m_currentSlide->Update(0.0f);
 

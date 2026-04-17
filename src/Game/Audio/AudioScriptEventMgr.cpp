@@ -1,7 +1,10 @@
 #include "Game/Audio/AudioScriptEventMgr.h"
+#include "Game/Audio/SoundEventScript.h"
+#include "Game/Sys/eventman.h"
 
 #include "NL/nlList.h"
 #include "NL/nlSlotPool.h"
+#include "NL/nlString.h"
 
 struct AUDIO_EVENT_RECORD
 {
@@ -9,7 +12,14 @@ struct AUDIO_EVENT_RECORD
     /* 0x2 */ AudioScriptEventMgr::AUDIO_EVENT_TEAM Team : 16;
 };
 
+extern char* AUDIO_EVENT_FUNC_NAMES[];
+
+typedef ListContainerBase<AUDIO_EVENT_RECORD, BasicSlotPool<ListEntry<AUDIO_EVENT_RECORD> > > AudioEventList;
+
 template class ListContainerBase<AUDIO_EVENT_RECORD, BasicSlotPool<ListEntry<AUDIO_EVENT_RECORD> > >;
+
+extern AudioEventList g_PendingEvents;
+extern EventHandler* g_pAudioEventHandler;
 
 // /**
 //  * Offset/Address/Size: 0xD0 | 0x8014B7EC | size: 0x2C
@@ -102,12 +112,22 @@ template class ListContainerBase<AUDIO_EVENT_RECORD, BasicSlotPool<ListEntry<AUD
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0x1B18 | 0x8014AC6C | size: 0x94
-//  */
-// void AudioScriptEventMgr::Purge()
-// {
-// }
+/**
+ * Offset/Address/Size: 0x1B18 | 0x8014AC6C | size: 0x94
+ */
+void AudioScriptEventMgr::Purge()
+{
+    nlWalkList(g_PendingEvents.m_Head, &g_PendingEvents, &AudioEventList::DeleteEntry);
+    g_PendingEvents.m_Head = NULL;
+    g_PendingEvents.m_Tail = NULL;
+    SlotPoolBase::BaseFreeBlocks(&g_PendingEvents.m_Allocator, sizeof(ListEntry<AUDIO_EVENT_RECORD>));
+
+    if (g_pAudioEventHandler != NULL)
+    {
+        g_pEventManager->RemoveEventHandler(g_pAudioEventHandler);
+    }
+    g_pAudioEventHandler = NULL;
+}
 
 // /**
 //  * Offset/Address/Size: 0x1A48 | 0x8014AB9C | size: 0xD0
@@ -116,19 +136,48 @@ template class ListContainerBase<AUDIO_EVENT_RECORD, BasicSlotPool<ListEntry<AUD
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0x19B8 | 0x8014AB0C | size: 0x90
-//  */
-// void _AudioEventRaiser::RaiseEvent(AUDIO_EVENT_RECORD*)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x19B8 | 0x8014AB0C | size: 0x90
+ */
+void _AudioEventRaiser::RaiseEvent(AUDIO_EVENT_RECORD* pEvent)
+{
+    char FuncName[64];
+    memcpy(FuncName, "Crowd", 5);
+    nlStrNCpy(FuncName + 5, AUDIO_EVENT_FUNC_NAMES[pEvent->Event], 0x3b);
+    if (pEvent->Team != 0)
+    {
+        const char* suffix = "Away";
+        if (pEvent->Team == 1)
+        {
+            suffix = "Home";
+        }
+        nlStrNCat(FuncName, FuncName, suffix, 0x40);
+    }
+    SoundEventScript::Instance().Call(FuncName);
+}
 
-// /**
-//  * Offset/Address/Size: 0x1904 | 0x8014AA58 | size: 0xB4
-//  */
-// void AudioScriptEventMgr::FireEvent(AudioScriptEventMgr::AUDIO_EVENT, AudioScriptEventMgr::AUDIO_EVENT_TEAM)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x1904 | 0x8014AA58 | size: 0xB4
+ * TODO: 99.8% match - stack offset for temp copy at r1+0xC instead of r1+0x10
+ */
+void AudioScriptEventMgr::FireEvent(AudioScriptEventMgr::AUDIO_EVENT Event, AudioScriptEventMgr::AUDIO_EVENT_TEAM Team)
+{
+    AUDIO_EVENT_RECORD temp;
+    u32 _pad;
+    AUDIO_EVENT_RECORD aer = { Event, Team };
+    temp = aer;
+
+    ListEntry<AUDIO_EVENT_RECORD>* entry = NULL;
+    g_PendingEvents.m_Allocator.Allocate(entry);
+
+    if (entry != NULL)
+    {
+        entry->next = NULL;
+        entry->data = temp;
+    }
+
+    nlListAddEnd(&g_PendingEvents.m_Head, &g_PendingEvents.m_Tail, entry);
+}
 
 // /**
 //  * Offset/Address/Size: 0x10F8 | 0x8014A24C | size: 0x80C

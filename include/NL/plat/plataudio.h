@@ -215,6 +215,8 @@ struct EmitterStartInfo
 namespace PlatAudio
 {
 
+extern bool gUsingDolbyProLogic2;
+
 // public:
 u32 GetSndIDError();
 bool IsSFXPlaying(unsigned long);

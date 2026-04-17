@@ -265,12 +265,13 @@ u8 cAnimInventory::GetMatchCharacterSpeed(int i)
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x8000749C | size: 0x54
-//  */
-// void nlPrintf(const char*, ...)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x3DC | 0x8000749C | size: 0x54
+ */
+int nlPrintf(const char*, ...)
+{
+    return 0;
+}
 
 // /**
 //  * Offset/Address/Size: 0x0 | 0x800074F0 | size: 0x68

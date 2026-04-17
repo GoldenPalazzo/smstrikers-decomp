@@ -774,6 +774,10 @@ void glx_SwitchRaster(const glModelPacket* p)
  */
 void glx_SwitchTextureState(const glModelPacket* p)
 {
+    int bit;
+    int texnum;
+    GXTexWrapMode mode[2];
+
     glUnHandleizeTextureState(p->state.texturestate);
 
     if (glx_program == prog_2d_movie)
@@ -788,57 +792,57 @@ void glx_SwitchTextureState(const glModelPacket* p)
         glx_konstlevel[1] = -1.0f;
         glx_konstlevel[2] = -1.0f;
         glx_konstlevel[3] = -1.0f;
-        return;
     }
-
-    u8 raw;
-    raw = (u8)glGetTextureState(GLTS_DiffuseLevel);
-    f32 level = (f32)raw * (1.0f / 63.0f);
-    if (level != glx_konstlevel[0])
+    else
     {
-        int val = (int)(255.5f * level);
-        GXColor c = { (u8)val, (u8)val, (u8)val, (u8)val };
-        GXSetTevKColor(GX_KCOLOR0, c);
-        glx_konstlevel[0] = level;
+        u8 raw;
+        raw = (u8)glGetTextureState(GLTS_DiffuseLevel);
+        f32 level = (f32)raw * (1.0f / 63.0f);
+        if (level != glx_konstlevel[0])
+        {
+            int val = (int)(255.5f * level);
+            GXColor c = { (u8)val, (u8)val, (u8)val, (u8)val };
+            GXSetTevKColor(GX_KCOLOR0, c);
+            glx_konstlevel[0] = level;
+        }
+
+        raw = (u8)glGetTextureState(GLTS_ShadowLevel);
+        level = (f32)raw * (1.0f / 63.0f);
+        if (level != glx_konstlevel[1])
+        {
+            int val = (int)(255.5f * level);
+            GXColor c = { (u8)val, (u8)val, (u8)val, (u8)val };
+            GXSetTevKColor(GX_KCOLOR1, c);
+            glx_konstlevel[1] = level;
+        }
+
+        raw = (u8)glGetTextureState(GLTS_ShadowLevel);
+        level = 1.0f - (f32)raw * (1.0f / 63.0f);
+        if (level != glx_konstlevel[2])
+        {
+            int val = (int)(255.5f * level);
+            GXColor c = { (u8)val, (u8)val, (u8)val, (u8)val };
+            GXSetTevKColor(GX_KCOLOR2, c);
+            glx_konstlevel[2] = level;
+        }
+
+        raw = (u8)glGetTextureState(GLTS_GlossLevel);
+        level = (f32)raw * (1.0f / 63.0f);
+        if (level != glx_konstlevel[3])
+        {
+            int val = (int)(255.5f * level);
+            GXColor c = { (u8)val, (u8)val, (u8)val, (u8)val };
+            GXSetTevKColor(GX_KCOLOR3, c);
+            glx_konstlevel[3] = level;
+        }
     }
 
-    raw = (u8)glGetTextureState(GLTS_ShadowLevel);
-    level = (f32)raw * (1.0f / 63.0f);
-    if (level != glx_konstlevel[1])
-    {
-        int val = (int)(255.5f * level);
-        GXColor c = { (u8)val, (u8)val, (u8)val, (u8)val };
-        GXSetTevKColor(GX_KCOLOR1, c);
-        glx_konstlevel[1] = level;
-    }
-
-    raw = (u8)glGetTextureState(GLTS_ShadowLevel);
-    level = 1.0f - (f32)raw * (1.0f / 63.0f);
-    if (level != glx_konstlevel[2])
-    {
-        int val = (int)(255.5f * level);
-        GXColor c = { (u8)val, (u8)val, (u8)val, (u8)val };
-        GXSetTevKColor(GX_KCOLOR2, c);
-        glx_konstlevel[2] = level;
-    }
-
-    raw = (u8)glGetTextureState(GLTS_GlossLevel);
-    level = (f32)raw * (1.0f / 63.0f);
-    if (level != glx_konstlevel[3])
-    {
-        int val = (int)(255.5f * level);
-        GXColor c = { (u8)val, (u8)val, (u8)val, (u8)val };
-        GXSetTevKColor(GX_KCOLOR3, c);
-        glx_konstlevel[3] = level;
-    }
-
-    int texnum = 0;
-    for (int bit = 0; bit < 6; bit++)
+    texnum = 0;
+    for (bit = 0; bit < 6; bit++)
     {
         if (!(glx_texconfig & (1 << bit)))
             continue;
 
-        GXTexWrapMode mode[2];
         if (bit == 5)
         {
             mode[1] = GX_CLAMP;

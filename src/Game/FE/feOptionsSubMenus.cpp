@@ -957,54 +957,25 @@ void OptionsSubMenu::SetButtonState(ButtonComponent::ButtonState buttonState)
 
 /**
  * Offset/Address/Size: 0x504C | 0x800BA090 | size: 0x434
+ * TODO: 88.99% match - r28/r29 register swap for this+listIndex offset and bulk copy temp
  */
 void OptionsSubMenu::BuildSubMenuList(int listIndex, TLComponentInstance* compInstance, bool setFlag, int currentIndex)
 {
     extern int nlSNPrintf(char*, unsigned long, const char*, ...);
+    typedef Detail::MemFunImpl<void, void (SlideMenuList::*)()> MemFunImpl_SML;
+    typedef BindExp1<void, MemFunImpl_SML, SlideMenuList*> BindExp1_SML;
 
-    class SetSlideFunctor : public Function1<void, SlideMenuItem*>::FunctorBase
-    {
-    public:
-        void (SlideMenuList::*mMemFun)();
-        SlideMenuList* mList;
-
-        SetSlideFunctor(SlideMenuList* list)
-            : mMemFun(&SlideMenuList::SetSlide)
-            , mList(list)
-        {
-        }
-
-        virtual ~SetSlideFunctor()
-        {
-        }
-
-        virtual void operator()(SlideMenuItem*)
-        {
-            (mList->*mMemFun)();
-        }
-
-        virtual Function1<void, SlideMenuItem*>::FunctorBase* Clone() const
-        {
-            return new ((SetSlideFunctor*)nlMalloc(sizeof(SetSlideFunctor), 8, false)) SetSlideFunctor(*this);
-        }
-    };
-
-    SlideMenuList* list = (SlideMenuList*)nlMalloc(sizeof(SlideMenuList), 8, false);
-    if (list != NULL)
-    {
-        new ((MenuList<SlideMenuItem>*)list) MenuList<SlideMenuItem>();
-        list->mInputLocked = 0;
-        list->mComponentInstance = compInstance;
-    }
+    MenuItem<SlideMenuItem>* menuItem;
+    SlideMenuList* list = new ((SlideMenuList*)nlMalloc(sizeof(SlideMenuList), 8, false)) SlideMenuList(compInstance);
     mSlideMenuLists[listIndex] = (MenuList<SlideMenuList>*)list;
 
-    char menuName[64] = { 0 };
+    char slidename[64] = { 0 };
 
-    int i = 0;
+    int slidenum = 0;
     while (true)
     {
-        nlSNPrintf(menuName, 64, "MENU ITEM%d", i + 1);
-        compInstance->SetActiveSlide(menuName);
+        nlSNPrintf(slidename, 64, "Slide%d", slidenum + 1);
+        compInstance->SetActiveSlide(slidename);
 
         if (compInstance->GetActiveSlide() == NULL)
         {
@@ -1013,40 +984,45 @@ void OptionsSubMenu::BuildSubMenuList(int listIndex, TLComponentInstance* compIn
 
         unsigned long slideHash = compInstance->GetActiveSlide()->m_hash;
 
+        SlideMenuList* sml = (SlideMenuList*)mSlideMenuLists[listIndex];
+
         SlideMenuItem* item = (SlideMenuItem*)nlMalloc(sizeof(SlideMenuItem), 8, true);
         if (item != NULL)
         {
+            TLComponentInstance* comp = sml->mComponentInstance;
+            *(char**)item = __vt__13SlideMenuItem;
             item->mSlideMenuHash = (unsigned long)-1;
-            item->mComponentInstance = list->mComponentInstance;
-            item->mUserEnumType = i;
+            item->mComponentInstance = comp;
+            item->mUserEnumType = slidenum;
         }
         item->mSlideMenuHash = slideHash;
 
-        MenuItem<SlideMenuItem>* menuItem = &list->mMenuItems[list->mNumItemsAdded];
+        menuItem = &sml->mMenuItems[sml->mNumItemsAdded];
         menuItem->mType = item;
-        list->mNumItemsAdded++;
+        sml->mNumItemsAdded++;
 
-        if (menuItem->mCallbacks[1].mTag == FUNCTOR && menuItem->mCallbacks[1].mFunctor != NULL)
         {
-            delete menuItem->mCallbacks[1].mFunctor;
+            BindExp1_SML bind = Bind<void, MemFunImpl_SML, SlideMenuList*>(
+                MemFun<SlideMenuList, void>(&SlideMenuList::SetSlide), sml);
+            Function<SlideMenuItem*> callback(bind);
+            menuItem->mCallbacks[1] = callback;
         }
-        menuItem->mCallbacks[1].mTag = FUNCTOR;
-        menuItem->mCallbacks[1].mFunctor = new ((SetSlideFunctor*)nlMalloc(sizeof(SetSlideFunctor), 8, false)) SetSlideFunctor(list);
 
-        i++;
+        slidenum++;
     }
 
-    MenuItem<SlideMenuItem>* menuItem = &list->mMenuItems[list->mCurrentIndex];
+    SlideMenuList* sml = (SlideMenuList*)mSlideMenuLists[listIndex];
+    menuItem = &sml->mMenuItems[sml->mCurrentIndex];
     menuItem->mCallbacks[2](menuItem->mType);
 
-    list->mCurrentIndex = currentIndex;
+    sml->mCurrentIndex = currentIndex;
 
-    menuItem = &list->mMenuItems[list->mCurrentIndex];
+    menuItem = &sml->mMenuItems[sml->mCurrentIndex];
     menuItem->mCallbacks[1](menuItem->mType);
 
     if (setFlag)
     {
-        list->mFlags = 1;
+        sml->mFlags = 1;
     }
 }
 

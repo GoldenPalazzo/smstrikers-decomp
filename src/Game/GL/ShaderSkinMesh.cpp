@@ -10,19 +10,18 @@
 
 extern nlVector3 sharedMorphBuffer[];
 
-// /**
-//  * Offset/Address/Size: 0x14C | 0x801E2240 | size: 0x58
-//  */
-// BoneMapList::~BoneMapList()
-// {
-// }
+/**
+ * Offset/Address/Size: 0x14C | 0x801E2240 | size: 0x58
+ */
+BoneMapList::~BoneMapList()
+{
+    FORCE_DONT_INLINE;
+}
 
-// /**
-//  * Offset/Address/Size: 0xD8 | 0x801E21CC | size: 0x74
-//  */
-// void nlDeleteRing<BoneMapList>(BoneMapList**)
-// {
-// }
+/**
+ * Offset/Address/Size: 0xD8 | 0x801E21CC | size: 0x74
+ */
+template void nlDeleteRing<BoneMapList>(BoneMapList** head);
 
 // /**
 //  * Offset/Address/Size: 0xAC | 0x801E21A0 | size: 0x2C

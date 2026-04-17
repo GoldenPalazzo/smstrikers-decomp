@@ -684,30 +684,104 @@ void SetOutputMode(MusyXOutputType outputType)
 /**
  * Offset/Address/Size: 0xDF4 | 0x8013D308 | size: 0x78
  */
-// void SetPitchBendOnSFX(unsigned long, unsigned short)
-// {
-// }
+bool SetPitchBendOnSFX(unsigned long uVoiceID, unsigned short pitch)
+{
+    bool isPlaying;
+    if (g_bAudioInitialized)
+    {
+        isPlaying = PlatAudio::IsSFXPlaying(uVoiceID);
+    }
+    else
+    {
+        isPlaying = false;
+    }
+    if (!isPlaying)
+    {
+        return true;
+    }
+    if (pitch > 0x3FFF)
+    {
+        pitch = 0x3FFF;
+    }
+    return PlatAudio::SetPitchBendOnSFX(uVoiceID, pitch);
+}
 
 /**
  * Offset/Address/Size: 0xE6C | 0x8013D380 | size: 0x78
  */
-// void SetFilterFreqOnSFX(unsigned long, unsigned short)
-// {
-// }
+bool SetFilterFreqOnSFX(unsigned long uVoiceID, unsigned short freq)
+{
+    bool isPlaying;
+    if (g_bAudioInitialized)
+    {
+        isPlaying = PlatAudio::IsSFXPlaying(uVoiceID);
+    }
+    else
+    {
+        isPlaying = false;
+    }
+    if (!isPlaying)
+    {
+        return true;
+    }
+    if (freq > 0x3FFF)
+    {
+        freq = 0x3FFF;
+    }
+    return PlatAudio::SetFilterFreqOnSFX(uVoiceID, freq);
+}
 
 /**
  * Offset/Address/Size: 0xEE4 | 0x8013D3F8 | size: 0x88
  */
-// void ActivateFilterOnSFX(unsigned long, bool)
-// {
-// }
+bool ActivateFilterOnSFX(unsigned long uVoiceID, bool bOn)
+{
+    bool isPlaying;
+    if (::g_bAudioInitialized)
+    {
+        isPlaying = PlatAudio::IsSFXPlaying(uVoiceID);
+    }
+    else
+    {
+        isPlaying = false;
+    }
+    if (!isPlaying)
+    {
+        return true;
+    }
+    if (bOn)
+    {
+        return PlatAudio::SetMIDIControllerVal14Bit(uVoiceID, 0x4F, 0x2000);
+    }
+    else
+    {
+        return PlatAudio::SetMIDIControllerVal14Bit(uVoiceID, 0x4F, 0x1FFF);
+    }
+}
 
 /**
  * Offset/Address/Size: 0xF6C | 0x8013D480 | size: 0xBC
  */
-// void SetPitchBendOnAllDialogueSFX(unsigned short)
-// {
-// }
+void Audio::SetPitchBendOnAllDialogueSFX(unsigned short pitch)
+{
+    if (pitch > 0x3FFF)
+    {
+        pitch = 0x3FFF;
+    }
+    if (g_pGame != NULL)
+    {
+        for (int i = 0; i < 2; i++)
+        {
+            cTeam* pTeam = g_pTeams[i];
+            for (int j = 0; j < 5; j++)
+            {
+                pTeam->GetPlayer(j)->m_pCharacterSFX->SetPitchBendOnAllDialogueSFX(pitch);
+            }
+        }
+        BasicStadium::GetCurrentStadium()->mpNPCManager->mpBowser->m_pCharacterSFX->SetPitchBendOnAllDialogueSFX(pitch);
+    }
+    gbPitchBent = (pitch != 0x2000);
+}
 
 /**
  * Offset/Address/Size: 0x1028 | 0x8013D53C | size: 0xE0
@@ -1446,9 +1520,27 @@ bool IsInited()
 /**
  * Offset/Address/Size: 0x32E0 | 0x8013F7F4 | size: 0x9C
  */
-// void ShutdownReverb()
-// {
-// }
+bool ShutdownReverb()
+{
+    long long currTime = OSGetTime();
+    nlPrintf("Audio::ShutdownReverb(), turning reverb off at %d\n", currTime);
+
+    if (!AudioLoader::gReverbOn)
+    {
+        nlPrintf("Audio::ShutdownReverb(), gReverbOn should never be off.\n");
+        return false;
+    }
+
+    nlPrintf("Audio::ShutdownReverb(), now shutting reverb down...\n");
+    if (!PlatAudio::ShutdownAuxEffectA())
+    {
+        nlPrintf("Audio::ShutdownReverb(), PlatAudio::ShutdownAuxEffectA() returned false.\n");
+        return false;
+    }
+
+    AudioLoader::gReverbOn = false;
+    return true;
+}
 
 /**
  * Offset/Address/Size: 0x337C | 0x8013F890 | size: 0x734
@@ -1540,13 +1632,13 @@ void SoundAttributes::Init()
     mu_SfxID = -1;
     mu_VoiceID = PlatAudio::GetSndIDError();
 
-    mf_Volume = 100.0f;
-    mf_VolReverb = 100.0f;
-    mf_Attenuate = 1.0f;
-    mf_VolAdjustment = 0.0f;
-    mf_Panning = 100.0f;
-    mf_DelayTime = -1.0f;
-    mf_DebugTimer = 0.0f;
+    mf_Volume = 1.0f;
+    mf_VolReverb = 1.0f;
+    mf_Attenuate = 0.0f;
+    mf_VolAdjustment = 256.0f;
+    mf_Panning = 1.0f;
+    mf_DelayTime = 0.5f;
+    mf_DebugTimer = 256.0f;
 
     mb_Is3D = false;
     mb_IsPlaying = false;
@@ -1558,13 +1650,9 @@ void SoundAttributes::Init()
     mb_UseDoppler = false;
     mf_ReturnEmitterOnPlay = false;
 
-    mf_CutoffTime = 0.5f; // from "@1977"
+    mf_CutoffTime = 0.5f;
     mp_OwnerSFX = NULL;
     mp_PhysObj = NULL;
-
-    // Clear both vector slots
-    // m_unk_0x44.f = { 256.0f, 256.0f, 256.0f };
-    // m_unk_0x50.f = { 256.0f, 256.0f, 256.0f };
 
     pos.pvPos = NULL;
     dir.pvDir = NULL;
@@ -1585,7 +1673,7 @@ void SoundAttributes::Init()
 
     mb_FilterOn = false;
     mu_FilterFreq = 0;
-    mu_Pitch = 0x2000; // li r0, 0x2000
+    mu_Pitch = 0x2000;
     mb_NoPhasingFilter = true;
     m_unk_0x7B = false;
     m_unk_0x7C = true;

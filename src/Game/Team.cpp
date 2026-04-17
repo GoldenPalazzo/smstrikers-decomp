@@ -43,21 +43,14 @@ extern FormationSpec* GetFormationSpec__16FormationManagerF10eFormation(eFormati
  * Offset/Address/Size: 0x1CF0 | 0x8006609C | size: 0x138
  */
 cTeam::cTeam(int side)
+    : m_nSide(side)
+    , m_nScore(0)
+    , m_nCurrentPowerUp(0)
+    , mfPowerupMeter(0.0f)
+    , mfPowerupTimer(0.0f)
+    , meCurrentTeamStyle(TEAM_STYLE_MODERATE)
+    , mbHasToggledPowerup(false)
 {
-    m_nSide = side;
-    m_nScore = 0;
-    m_nCurrentPowerUp = 0;
-    mfPowerupMeter = 0.0f;
-    mfPowerupTimer = 0.0f;
-    meCurrentTeamStyle = TEAM_STYLE_MODERATE;
-
-    mtTeamStyleTimer.SetSeconds(0.0f);
-    mtMarkTimer.SetSeconds(0.0f);
-    mtRoleTimer.SetSeconds(0.0f);
-    mtDefensiveZoneTimer.SetSeconds(0.0f);
-    mbHasToggledPowerup = false;
-    mtBallInterceptTimer.SetSeconds(0.0f);
-
     m_ePowerupList[0].nnumOfPowerups = 0;
     m_ePowerupList[0].eType = POWER_UP_NONE;
     m_ePowerupList[1].nnumOfPowerups = 0;

@@ -22,14 +22,6 @@ enum Distribution
     InOrder = 2,
 };
 
-struct ScissorBox
-{
-    /* 0x0 */ unsigned short X;
-    /* 0x2 */ unsigned short Y;
-    /* 0x4 */ unsigned short Width;
-    /* 0x6 */ unsigned short Height;
-}; // total size: 0x8
-
 struct TextMetrics
 {
     /* 0x00 */ unsigned long FontName;
@@ -52,6 +44,14 @@ public:
         PASS_Effect = 2,
         PASS_TextAndEffect = 3,
     };
+
+    struct ScissorBox
+    {
+        /* 0x0 */ unsigned short X;
+        /* 0x2 */ unsigned short Y;
+        /* 0x4 */ unsigned short Width;
+        /* 0x6 */ unsigned short Height;
+    }; // total size: 0x8
 
     struct GlyphInfo
     {
@@ -85,7 +85,7 @@ public:
 
     unsigned long GetCharWidth(unsigned short FontChar, unsigned short PrevFontChar) const;
     void DisableScissorBox() const;
-    // void SetScissorBox(const nlFont::ScissorBox&) const;
+    void SetScissorBox(const ScissorBox& other) const;
     void DrawString(eGLView, const FontCharString&, const nlVector2&, const nlColour&, const nlColour&, int, nlFont::TextPass, bool, unsigned long*, nlColour*) const;
     void Load(const char*, char*, unsigned long);
     // void GlyphInfo::SortProc(const nlFont::GlyphInfo*, const nlFont::GlyphInfo*);
@@ -99,7 +99,7 @@ public:
     /* 0x044 */ unsigned long m_EffectTextureHandles[16];
     /* 0x084 */ TextureType m_TextureType;
     /* 0x088 */ mutable unsigned char m_bScissorBox;
-    /* 0x08A */ ScissorBox m_scissorBox;
+    /* 0x08A */ mutable ScissorBox m_scissorBox;
     /* 0x094 */ Distribution m_Distribution;
     /* 0x098 */ unsigned long m_CharacterSet;
     /* 0x09C */ unsigned long m_PageSize;

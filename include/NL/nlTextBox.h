@@ -8,7 +8,6 @@
 #include "NL/gl/glMatrix.h"
 
 struct nlColour;
-class FontCharString;
 
 struct Row
 {
@@ -16,8 +15,20 @@ struct Row
     /* 0x2 */ unsigned short FirstChar;
 }; // total size: 0x4
 
-struct FontCharString
+class FontCharString
 {
+public:
+    FontCharString() { }
+    ~FontCharString()
+    {
+        if (m_InternalBuffer != 0)
+        {
+            delete[] m_pString;
+        }
+    }
+    template <typename T>
+    FontCharString(const T*, const nlFont*, T*);
+
     /* 0x0 */ unsigned short* m_pString;
     /* 0x4 */ unsigned char m_InternalBuffer;
 }; // total size: 0x8

@@ -14,7 +14,7 @@ public:
     /* 0x00 */ BoneMapList* m_next;
     /* 0x04 */ nlAVLTree<unsigned long, unsigned long, DefaultKeyCompare<unsigned long> > boneMap;
 
-    ~BoneMapList() { };
+    ~BoneMapList();
 }; // total size: 0x18
 
 struct GLSkinUserData

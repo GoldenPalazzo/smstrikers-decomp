@@ -36,8 +36,8 @@ public:
 
     void SetSlide()
     {
-        unsigned long mSlideMenuHash = mMenuItems[mCurrentIndex].mType->mSlideMenuHash;
-        mComponentInstance->SetActiveSlide(mSlideMenuHash);
+        MenuItem<SlideMenuItem>& mi = mMenuItems[mCurrentIndex];
+        mi.mType->mComponentInstance->SetActiveSlide(mi.mType->mSlideMenuHash);
     }
 
     /* 0x214 */ unsigned char mInputLocked;

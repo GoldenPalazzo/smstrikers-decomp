@@ -70,9 +70,11 @@ void nlFont::DisableScissorBox() const
 /**
  * Offset/Address/Size: 0x150 | 0x80210A8C | size: 0x2C
  */
-// void nlFont::SetScissorBox(const nlFont::ScissorBox&) const
-// {
-// }
+void nlFont::SetScissorBox(const ScissorBox& other) const
+{
+    m_scissorBox = other;
+    m_bScissorBox = true;
+}
 
 /**
  * Offset/Address/Size: 0x17C | 0x80210AB8 | size: 0x6B4

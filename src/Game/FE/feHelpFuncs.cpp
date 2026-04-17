@@ -902,12 +902,22 @@ void EnableAutoPressed()
     FEAudio::PlayAnimAudioEvent(CAPTAIN_SLIDE_SOUNDS[teamID], false);
 }
 
-// /**
-//  * Offset/Address/Size: 0x648 | 0x800A3704 | size: 0x50
-//  */
-// void TakeGameMemSnapshot::Update(float)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x648 | 0x800A3704 | size: 0x50
+ */
+void TakeGameMemSnapshot::Update(float dt)
+{
+    if (gTakenSnapshot)
+    {
+        return;
+    }
+    gTimeElapsed += dt;
+    if (gTimeElapsed >= 5.0f)
+    {
+        WriteToDisk();
+        gTakenSnapshot = 1;
+    }
+}
 
 namespace TakeGameMemSnapshot
 {
