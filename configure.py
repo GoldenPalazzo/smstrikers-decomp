@@ -1019,7 +1019,7 @@ config.libs = [
             Object(Matching, "Game/OverlayHandlerDemo.cpp", extra_cflags=["-inline deferred"]),
             Object(NonMatching, "Game/OverlayHandlerGoal.cpp", extra_cflags=["-inline deferred"]),
 
-            Object(NonMatching, "Game/FE/feTweenFuncs.cpp"),
+            Object(Matching, "Game/FE/feTweenFuncs.cpp", extra_cflags=["-inline deferred"]),
             Object(NonMatching, "Game/FE/feOptionsSubMenus.cpp"),
             Object(NonMatching, "Game/FE/feScene.cpp"),
             Object(NonMatching, "Game/FE/feRender.cpp"),

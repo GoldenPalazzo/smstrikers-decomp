@@ -320,12 +320,156 @@ void AudioStreamTrack::StreamTrack::Update(float)
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0xE20 | 0x80155B78 | size: 0x29C
-//  */
-// void AudioStreamTrack::StreamTrack::ProcessNewHeadStream()
-// {
-// }
+extern "C" void sndStreamMixParameterEx(unsigned long stid, unsigned char vol, unsigned char pan,
+    unsigned char span, unsigned char auxa, unsigned char auxb);
+extern "C" void sndStreamActivate(unsigned long stid);
+extern "C" void sndStreamDeactivate(unsigned long stid);
+
+/**
+ * Offset/Address/Size: 0xE20 | 0x80155B78 | size: 0x29C
+ * TODO: 96.2% match - volatile counter causes extra li per loop init, ble vs beq, r3/r4 register diffs
+ */
+void AudioStreamTrack::StreamTrack::ProcessNewHeadStream()
+{
+    if (m_QueuedStreams.m_Head == NULL)
+    {
+        if (m_State != TS_Idle)
+        {
+            m_State = TS_Idle;
+            if ((bool)m_IdleCallback.mTag)
+            {
+                if (m_IdleCallback.mTag == FREE_FUNCTION)
+                {
+                    m_IdleCallback.mFreeFunction();
+                }
+                else
+                {
+                    (*m_IdleCallback.mFunctor)();
+                }
+            }
+        }
+        return;
+    }
+
+    DLListEntry<QUEUED_STREAM>* pEntry = nlDLRingGetStart(m_QueuedStreams.m_Head);
+
+    struct Iter
+    {
+        DLListEntry<QUEUED_STREAM>* m_head;
+        DLListEntry<QUEUED_STREAM>* m_current;
+        ~Iter() { }
+    };
+    Iter iter;
+    iter.m_current = pEntry;
+    iter.m_head = m_QueuedStreams.m_Head;
+
+    if (pEntry->m_data.StartVolume != 0)
+    {
+        Function<FnVoidVoid> callback;
+        callback.mTag = EMPTY;
+
+        m_TrackMgr.m_FadeMgr.AddFade(
+            pEntry->m_data.pStream,
+            0,
+            pEntry->m_data.StartVolume,
+            (Audio::MasterVolume::VOLUME_GROUP)pEntry->m_data.VolGroup,
+            pEntry->m_data.FadeIn,
+            callback);
+    }
+
+    GCAudioStreaming::StereoAudioStream* pStream = pEntry->m_data.pStream;
+
+    if (pStream->m_State >= GCAudioStreaming::SS_Warming)
+    {
+        GCAudioStreaming::AudioStreamBuffer* buf = NULL;
+        volatile unsigned long bufCounter = (unsigned long)buf;
+        if (pStream->m_BufferCount > 0)
+        {
+            buf = pStream->m_Buffers[0];
+        }
+
+        while (buf != NULL)
+        {
+            buf->m_Volume = 0;
+            sndStreamMixParameterEx(buf->m_StreamId, buf->m_Volume, buf->m_Pan, buf->m_SurroundPan, 0, 0);
+            unsigned long ci = bufCounter + 1;
+            bufCounter = ci;
+            if (ci < pStream->m_BufferCount)
+            {
+                buf = pStream->m_Buffers[ci];
+            }
+            else
+            {
+                buf = NULL;
+            }
+        }
+    }
+
+    pStream->m_Volume = 0;
+    GCAudioStreaming::StereoAudioStream* pStreamActive = pEntry->m_data.pStream;
+
+    {
+        unsigned long flags = pStreamActive->m_Flags;
+        unsigned long loopBit = (pEntry->m_data.Loop);
+        flags = (flags & ~(1 << 1)) | (loopBit << 1);
+        pStreamActive->m_Flags = flags;
+    }
+
+    {
+        unsigned long flags = pStreamActive->m_Flags;
+        flags = (flags & ~(1 << 2)) | (1 << 2);
+        pStreamActive->m_Flags = flags;
+    }
+
+    switch (pStreamActive->m_State)
+    {
+    case GCAudioStreaming::SS_Initd:
+    {
+        unsigned long flags = pStreamActive->m_Flags;
+        flags = (flags & ~1) | 1;
+        pStreamActive->m_Flags = flags;
+        pStreamActive->Warm(true);
+        break;
+    }
+    case GCAudioStreaming::SS_Warming:
+    {
+        unsigned long flags = pStreamActive->m_Flags;
+        flags = (flags & ~1) | 1;
+        pStreamActive->m_Flags = flags;
+        break;
+    }
+    case GCAudioStreaming::SS_Warm:
+    {
+        GCAudioStreaming::AudioStreamBuffer* buf = NULL;
+        volatile unsigned long bufCounter2 = (unsigned long)buf;
+        if (pStreamActive->m_BufferCount > 0)
+        {
+            buf = pStreamActive->m_Buffers[0];
+        }
+
+        while (buf != NULL)
+        {
+            sndStreamActivate(buf->m_StreamId);
+            unsigned long cj = bufCounter2 + 1;
+            bufCounter2 = cj;
+            if (cj < pStreamActive->m_BufferCount)
+            {
+                buf = pStreamActive->m_Buffers[cj];
+            }
+            else
+            {
+                buf = NULL;
+            }
+        }
+        pStreamActive->m_State = GCAudioStreaming::SS_Playing;
+        break;
+    }
+    default:
+        break;
+    }
+
+    m_State = TS_Playing;
+}
 
 /**
  * Offset/Address/Size: 0xC90 | 0x801559E8 | size: 0x190
@@ -333,6 +477,7 @@ void AudioStreamTrack::StreamTrack::Update(float)
  */
 void AudioStreamTrack::StreamTrack::StopHead(unsigned long Fadeout)
 {
+    FORCE_DONT_INLINE;
     DLListEntry<QUEUED_STREAM>* entry = nlDLRingGetStart(m_QueuedStreams.m_Head);
 
     if (Fadeout == 0)
@@ -355,26 +500,234 @@ void AudioStreamTrack::StreamTrack::StopHead(unsigned long Fadeout)
     }
 }
 
-// /**
-//  * Offset/Address/Size: 0xA28 | 0x80155780 | size: 0x268
-//  */
-// void AudioStreamTrack::StreamTrack::Stop(unsigned long)
-// {
-// }
+/**
+ * Offset/Address/Size: 0xA28 | 0x80155780 | size: 0x268
+ * TODO: 90.8% match - r-diffs: qs in r8 vs r30, Fadeout in r30 vs r29; compiler uses 3 callee-saved registers instead of 4
+ */
+void AudioStreamTrack::StreamTrack::Stop(unsigned long Fadeout)
+{
+    DLListEntry<QUEUED_STREAM>* entry;
+    DLListEntry<QUEUED_STREAM>* head;
 
-// /**
-//  * Offset/Address/Size: 0x888 | 0x801555E0 | size: 0xC4
-//  */
-// void AudioStreamTrack::StreamTrack::StopQStream(AudioStreamTrack::StreamTrack::QUEUED_STREAM*)
-// {
-// }
+    if (m_InFakePause)
+        return;
 
-// /**
-//  * Offset/Address/Size: 0x5B0 | 0x80155308 | size: 0x2D8
-//  */
-// void AudioStreamTrack::StreamTrack::StopStream(GCAudioStreaming::StereoAudioStream*, bool)
-// {
-// }
+    if (Fadeout == 0)
+    {
+        while (m_QueuedStreams.m_Head != NULL)
+        {
+            entry = nlDLRingGetStart(m_QueuedStreams.m_Head);
+            head = m_QueuedStreams.m_Head;
+            StopQStream(&entry->m_data);
+        }
+        return;
+    }
+
+    if (m_QueuedStreams.m_Head == NULL)
+        return;
+
+    entry = nlDLRingGetStart(m_QueuedStreams.m_Head);
+    QUEUED_STREAM* qs = &entry->m_data;
+
+    {
+        BindExp2_T bind = Bind<void>(
+            MemFun<StreamTrack, void, QUEUED_STREAM*>(&StreamTrack::FadeOutDone), this, qs);
+
+        Function<FnVoidVoid> callback;
+        callback.mTag = FUNCTOR;
+        FunctorImpl_T* functor = new ((FunctorImpl_T*)nlMalloc(sizeof(FunctorImpl_T), 8, false))
+            FunctorImpl_T(bind);
+        callback.mFunctor = functor;
+
+        StartQStreamFadeout(&entry->m_data, Fadeout, callback);
+    }
+
+    head = m_QueuedStreams.m_Head;
+    DLListEntry<QUEUED_STREAM>* iter = nlDLRingGetStart(head);
+    head = m_QueuedStreams.m_Head;
+
+    if (&iter->m_data == qs)
+    {
+        if (nlDLRingIsEnd(head, iter) || iter == NULL)
+        {
+            iter = NULL;
+        }
+        else
+        {
+            iter = iter->m_next;
+        }
+    }
+
+    while (iter != NULL)
+    {
+        QUEUED_STREAM* curQs = &iter->m_data;
+
+        if (nlDLRingIsEnd(head, iter) || iter == NULL)
+        {
+            iter = NULL;
+        }
+        else
+        {
+            iter = iter->m_next;
+        }
+
+        StopQStream(curQs);
+    }
+}
+
+/**
+ * Offset/Address/Size: 0x888 | 0x801555E0 | size: 0xC4
+ */
+void AudioStreamTrack::StreamTrack::StopQStream(QUEUED_STREAM* pQueuedStream)
+{
+    FORCE_DONT_INLINE;
+    unsigned char flags = *((unsigned char*)pQueuedStream + 0xB);
+    StopStream(pQueuedStream->pStream, (flags >> 1) & 1);
+
+    DLListEntry<QUEUED_STREAM>* entry = (DLListEntry<QUEUED_STREAM>*)((char*)pQueuedStream - 8);
+
+    nlDLRingIsEnd(m_QueuedStreams.m_Head, entry);
+    nlDLRingRemove(&m_QueuedStreams.m_Head, entry);
+    entry->m_next = m_QueuedStreams.m_Allocator.m_pFree;
+    m_QueuedStreams.m_Allocator.m_pFree = entry;
+
+    if (m_QueuedStreams.m_Head == NULL)
+    {
+        if (m_State != TS_Idle)
+        {
+            m_State = TS_Idle;
+            if ((bool)m_IdleCallback.mTag)
+            {
+                if (m_IdleCallback.mTag == FREE_FUNCTION)
+                {
+                    m_IdleCallback.mFreeFunction();
+                }
+                else
+                {
+                    (*m_IdleCallback.mFunctor)();
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Offset/Address/Size: 0x5B0 | 0x80155308 | size: 0x2D8
+ * TODO: 94.08% match - fadeCtrl in callee-saved r25 vs volatile r3, volatile counter init reuse, ble vs beq, second loop r3/r4 swap
+ */
+void AudioStreamTrack::StreamTrack::StopStream(GCAudioStreaming::StereoAudioStream* pStream, bool TrackOwns)
+{
+    pStream->m_Flags = pStream->m_Flags & ~1;
+
+    if (pStream->m_State == GCAudioStreaming::SS_Playing)
+    {
+        GCAudioStreaming::AudioStreamBuffer* buf = NULL;
+        volatile unsigned long bufCounter = (unsigned long)buf;
+        if (pStream->m_BufferCount > 0)
+            buf = pStream->m_Buffers[0];
+
+        while (buf != NULL)
+        {
+            buf->m_Volume = 0;
+            sndStreamMixParameterEx(buf->m_StreamId, buf->m_Volume, buf->m_Pan, buf->m_SurroundPan, 0, 0);
+            sndStreamDeactivate(buf->m_StreamId);
+            pStream->m_State = GCAudioStreaming::SS_Warm;
+            unsigned long ci = bufCounter + 1;
+            bufCounter = ci;
+            if (ci < pStream->m_BufferCount)
+                buf = pStream->m_Buffers[ci];
+            else
+                buf = NULL;
+        }
+
+        pStream->m_StreamPos = 0;
+        pStream->m_State = GCAudioStreaming::SS_Warm;
+    }
+
+    pStream->CancelPendingReads();
+
+    unsigned long flags = pStream->m_Flags;
+    if (flags & 4)
+    {
+        pStream->m_Flags = flags & ~4;
+
+        if (pStream->m_State > GCAudioStreaming::SS_Initd)
+        {
+            unsigned long fl = pStream->m_Flags;
+            GCAudioStreaming::AudioStreamBuffer* buf = NULL;
+            volatile unsigned long bufCounter = (unsigned long)buf;
+            pStream->m_Flags = (fl & ~0x10) | 0x10;
+            if (pStream->m_BufferCount > 0)
+                buf = pStream->m_Buffers[0];
+
+            while (buf != NULL)
+            {
+                pStream->m_BuffMgr.FreeBuffer(buf);
+                unsigned long ci = bufCounter;
+                unsigned long nextCI = ci + 1;
+                bufCounter = nextCI;
+                pStream->m_Buffers[ci] = NULL;
+                if (nextCI < pStream->m_BufferCount)
+                    buf = pStream->m_Buffers[nextCI];
+                else
+                    buf = NULL;
+            }
+
+            pStream->m_State = GCAudioStreaming::SS_Initd;
+        }
+    }
+
+    typedef TrackManagerBase::FadeManager::STREAM_FADE_CTRL FadeCtrl;
+    typedef DLListEntry<FadeCtrl> FadeEntry;
+
+    TrackManagerBase& mgr = m_TrackMgr;
+    FadeEntry* fadeIter = nlDLRingGetStart(mgr.m_FadeMgr.m_Fades.m_Head);
+    FadeEntry* fadeHead = mgr.m_FadeMgr.m_Fades.m_Head;
+    FadeCtrl* fadeCtrl = NULL;
+
+    while (fadeIter != NULL)
+    {
+        if (fadeIter->m_data.pStream == pStream)
+        {
+            fadeCtrl = &fadeIter->m_data;
+            break;
+        }
+
+        if (nlDLRingIsEnd(fadeHead, fadeIter) || fadeIter == NULL)
+            fadeIter = NULL;
+        else
+            fadeIter = fadeIter->m_next;
+    }
+
+    if (fadeCtrl != NULL)
+    {
+        FadeEntry* fadeEntry = (FadeEntry*)((char*)fadeCtrl - 8);
+        nlDLRingIsEnd(mgr.m_FadeMgr.m_Fades.m_Head, fadeEntry);
+        nlDLRingRemove(&mgr.m_FadeMgr.m_Fades.m_Head, fadeEntry);
+
+        if (fadeEntry != NULL)
+        {
+            fadeEntry->m_data.~FadeCtrl();
+        }
+
+        mgr.m_FadeMgr.m_Fades.m_Allocator.Free(fadeEntry);
+    }
+
+    if (TrackOwns)
+    {
+        typedef DLListEntry<GCAudioStreaming::StereoAudioStream*> StreamEntry;
+        TrackManagerBase& delMgr = m_TrackMgr;
+        StreamEntry* entry = NULL;
+        delMgr.m_StreamDeleteList.m_Allocator.Allocate(entry);
+        if (entry != NULL)
+        {
+            entry->m_next = NULL;
+            entry->m_prev = NULL;
+            entry->m_data = pStream;
+        }
+        nlDLRingAddEnd(&delMgr.m_StreamDeleteList.m_Head, entry);
+    }
+}
 
 /**
  * Offset/Address/Size: 0x590 | 0x801552E8 | size: 0x20

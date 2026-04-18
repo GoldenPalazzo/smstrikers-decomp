@@ -235,12 +235,144 @@ void GCAudioStreaming::AudioStream::Purge()
     m_State = SS_New;
 }
 
-// /**
-//  * Offset/Address/Size: 0x70 | 0x80147ED0 | size: 0x2D4
-//  */
-// void GCAudioStreaming::AudioStream::Destructor()
-// {
-// }
+/**
+ * Offset/Address/Size: 0x70 | 0x80147ED0 | size: 0x2D4
+ * TODO: 96.55% match - ble- vs beq- for m_BufferCount > 0 checks, stack offset
+ * ordering for volatile loop counters
+ */
+void GCAudioStreaming::AudioStream::Destructor()
+{
+    m_Flags = (m_Flags & ~(1 << SF_SeriousStop)) | (1 << SF_SeriousStop);
+    m_Flags &= ~(1 << SF_Play);
+
+    if (m_State == SS_Playing)
+    {
+        AudioStreamBuffer* pBuffer;
+        volatile unsigned long i = (unsigned long)(pBuffer = NULL);
+
+        if (m_BufferCount > 0)
+        {
+            pBuffer = m_Buffers[0];
+        }
+
+        while (pBuffer != NULL)
+        {
+            pBuffer->m_Volume = 0;
+            sndStreamMixParameterEx(pBuffer->m_StreamId, pBuffer->m_Volume, pBuffer->m_Pan, pBuffer->m_SurroundPan, 0, 0);
+            sndStreamDeactivate(pBuffer->m_StreamId);
+            m_State = SS_Warm;
+
+            {
+                unsigned long ci = i + 1;
+                i = ci;
+                if (ci < m_BufferCount)
+                {
+                    pBuffer = m_Buffers[ci];
+                }
+                else
+                {
+                    pBuffer = NULL;
+                }
+            }
+        }
+
+        m_StreamPos = 0;
+        m_State = SS_Warm;
+    }
+
+    CancelPendingReads();
+
+    if (m_Flags & (1 << SF_CoolOnStop))
+    {
+        m_Flags &= ~(1 << SF_CoolOnStop);
+
+        if (m_State > SS_Initd)
+        {
+            AudioStreamBuffer* pBuffer;
+            volatile unsigned long i = (unsigned long)(pBuffer = NULL);
+
+            m_Flags = (m_Flags & ~(1 << SF_SeriousStop)) | (1 << SF_SeriousStop);
+
+            if (m_BufferCount > 0)
+            {
+                pBuffer = m_Buffers[0];
+            }
+
+            while (pBuffer != NULL)
+            {
+                m_BuffMgr.FreeBuffer(pBuffer);
+
+                {
+                    unsigned long idx = i;
+                    m_Buffers[idx] = NULL;
+                    idx = idx + 1;
+                    i = idx;
+                    if (idx < m_BufferCount)
+                    {
+                        pBuffer = m_Buffers[idx];
+                    }
+                    else
+                    {
+                        pBuffer = NULL;
+                    }
+                }
+            }
+
+            m_State = SS_Initd;
+        }
+    }
+
+    if (m_State > SS_Initd)
+    {
+        AudioStreamBuffer* pBuffer;
+        volatile unsigned long i = (unsigned long)(pBuffer = NULL);
+
+        m_Flags = (m_Flags & ~(1 << SF_SeriousStop)) | (1 << SF_SeriousStop);
+
+        if (m_BufferCount > 0)
+        {
+            pBuffer = m_Buffers[0];
+        }
+
+        while (pBuffer != NULL)
+        {
+            m_BuffMgr.FreeBuffer(pBuffer);
+
+            {
+                unsigned long idx = i;
+                m_Buffers[idx] = NULL;
+                idx = idx + 1;
+                i = idx;
+                if (idx < m_BufferCount)
+                {
+                    pBuffer = m_Buffers[idx];
+                }
+                else
+                {
+                    pBuffer = NULL;
+                }
+            }
+        }
+
+        m_State = SS_Initd;
+    }
+
+    long long startTime = OSGetTime();
+
+    while (!SafeToPurge())
+    {
+        nlServiceFileSystem();
+        OSYieldThread();
+        long long elapsed = OSGetTime() - startTime;
+        if (OSTicksToMilliseconds(elapsed) > 250)
+        {
+            nlPrintf("WARNING! Breaking out of audio stream d'tor early!\n");
+            break;
+        }
+    }
+
+    Purge();
+}
 
 /**
  * Offset/Address/Size: 0x0 | 0x80147E60 | size: 0x70
@@ -527,11 +659,11 @@ state_change:
     StreamDLListEntry* pCur;
     StreamDLListEntry** ppHead;
 
-    nlWalkDLRing(((FadeDLListContainer*)pTM->_pad_0x18)->m_Head,
-        (FadeDLListContainer*)pTM->_pad_0x18,
+    nlWalkDLRing(((FadeDLListContainer*)&pTM->m_FadeMgr)->m_Head,
+        (FadeDLListContainer*)&pTM->m_FadeMgr,
         &FadeDLListContainer::DeleteEntry);
-    ((FadeDLListContainer*)pTM->_pad_0x18)->m_Head = NULL;
-    SlotPoolBase::BaseFreeBlocks(&((FadeDLListContainer*)pTM->_pad_0x18)->m_Allocator, sizeof(FadeDLListEntry));
+    ((FadeDLListContainer*)&pTM->m_FadeMgr)->m_Head = NULL;
+    SlotPoolBase::BaseFreeBlocks(&((FadeDLListContainer*)&pTM->m_FadeMgr)->m_Allocator, sizeof(FadeDLListEntry));
 
     StreamDLListEntry* tmp = nlDLRingGetStart(pTM->m_StreamDeleteList.m_Head);
     pHead = pTM->m_StreamDeleteList.m_Head;
@@ -1572,7 +1704,7 @@ void AudioLoader::UnloadInGame()
     StreamDLListEntry* pCur;
     StreamDLListEntry** ppHead;
 
-    FadeDLListContainer* pFadeMgr = (FadeDLListContainer*)pTM->_pad_0x18;
+    FadeDLListContainer* pFadeMgr = (FadeDLListContainer*)&pTM->m_FadeMgr;
     nlWalkDLRing(pFadeMgr->m_Head, pFadeMgr, &FadeDLListContainer::DeleteEntry);
     pFadeMgr->m_Head = NULL;
     SlotPoolBase::BaseFreeBlocks(&pFadeMgr->m_Allocator, sizeof(FadeDLListEntry));

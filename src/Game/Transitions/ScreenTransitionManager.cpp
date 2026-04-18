@@ -246,6 +246,7 @@ void ScreenTransitionManager::DeleteAllTransitions()
  */
 void ScreenTransitionManager::AddTransitionToMap(char* name, ScreenTransition* pTransition)
 {
+    FORCE_DONT_INLINE;
     u32 transitionHash = glHash(name);
     AVLTreeNode* outNode;
 

@@ -786,9 +786,31 @@ void Audio::SetPitchBendOnAllDialogueSFX(unsigned short pitch)
 /**
  * Offset/Address/Size: 0x1028 | 0x8013D53C | size: 0xE0
  */
-// void ActivateFilterOnAllCurrentSFX(bool)
-// {
-// }
+void Audio::ActivateFilterOnAllCurrentSFX(bool bOn)
+{
+    gWorldSFX.ActivateFilterOnAllTrackedSFX(bOn);
+    gPowerupSFX.ActivateFilterOnAllTrackedSFX(bOn);
+    gStadGenSFX.ActivateFilterOnAllTrackedSFX(bOn);
+    gCrowdSFX.ActivateFilterOnAllTrackedSFX(bOn);
+
+    if (g_pGame)
+    {
+        for (int i = 0; i < 2; i++)
+        {
+            cTeam* pTeam = g_pTeams[i];
+            for (int j = 0; j < 5; j++)
+            {
+                cPlayer* pPlayer = pTeam->GetPlayer(j);
+                pPlayer->m_pCharacterSFX->ActivateFilterOnAllTrackedSFX(bOn);
+            }
+        }
+
+        BasicStadium::GetCurrentStadium()->mpNPCManager->mpBowser->m_pCharacterSFX->ActivateFilterOnAllTrackedSFX(bOn);
+    }
+
+    CrowdMood::ActivateLPF(bOn);
+    gbFilterOn = bOn;
+}
 
 /**
  * Offset/Address/Size: 0x1108 | 0x8013D61C | size: 0x1CC
@@ -860,9 +882,21 @@ void SetVolGroupVolume(int volGroup, float fVol, int fadeTime)
 /**
  * Offset/Address/Size: 0x12D4 | 0x8013D7E8 | size: 0x4C
  */
-// void SetSFXVolumeGroup(unsigned long, int)
-// {
-// }
+void SetSFXVolumeGroup(unsigned long uSFXID, int volGroup)
+{
+    if (volGroup < 0)
+    {
+        PlatAudio::SetSFXVolumeGroup(uSFXID, 0);
+    }
+    else if (volGroup > 255)
+    {
+        PlatAudio::SetSFXVolumeGroup(uSFXID, 255);
+    }
+    else
+    {
+        PlatAudio::SetSFXVolumeGroup(uSFXID, (unsigned char)volGroup);
+    }
+}
 
 /**
  * Offset/Address/Size: 0x1320 | 0x8013D834 | size: 0x20

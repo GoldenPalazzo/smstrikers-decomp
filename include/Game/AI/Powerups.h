@@ -102,7 +102,7 @@ public:
     static int AwardPowerup(cTeam*);
     void CollisionCallback(PhysicsObject*, PhysicsObject*, const nlVector3&, void*);
     void UpdateTransform();
-    void PlayPowerupSound(ePowerUpType, PowerupBase::PowerupSound, const nlVector3&, float);
+    static unsigned long PlayPowerupSound(ePowerUpType, PowerupBase::PowerupSound, const nlVector3&, float);
     static unsigned long PlayPowerupSound(ePowerUpType, PowerupBase::PowerupSound, PhysicsObject*, float);
     static void StopPowerupInEffectSound(SFXEmitter*);
 

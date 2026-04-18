@@ -4,12 +4,17 @@
 #include "NL/nlFile.h"
 #include "dolphin/thp/THPBuffer.h"
 
-struct THPSimpleControl {
+struct THPSimpleControl
+{
     /* 0x00 */ nlFile* file;
-    /* 0x04 */ u8 _pad04[0x14];
+    /* 0x04 */ u8 _pad04[0x04];
+    /* 0x08 */ u32 version;
+    /* 0x0C */ u8 _pad0C[0x0C];
     /* 0x18 */ u32 numFrames;
     /* 0x1C */ u32 firstFrameSize;
-    /* 0x20 */ u8 _pad20[0x0C];
+    /* 0x20 */ u8 _pad20[0x04];
+    /* 0x24 */ u32 compInfoDataOffsets;
+    /* 0x28 */ u8 _pad28[0x04];
     /* 0x2C */ u32 movieDataOffsets;
     /* 0x30 */ u8 _pad30[0x3C];
     /* 0x6C */ u8 playing;

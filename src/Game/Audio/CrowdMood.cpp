@@ -5,6 +5,7 @@
 #include "Game/Sys/GCStream.h"
 
 #include "NL/nlConfig.h"
+#include "NL/nlFileGC.h"
 #include "NL/nlMath.h"
 #include "NL/nlString.h"
 
@@ -69,19 +70,37 @@ void GCAudioStreaming::StereoAudioStream::Purge()
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0x4C | 0x801513E8 | size: 0x4C
-//  */
-// void GCAudioStreaming::StereoAudioStream::SafeToPurge()
-// {
-// }
+/**
+ * Offset/Address/Size: 0x4C | 0x801513E8 | size: 0x4C
+ */
+bool GCAudioStreaming::StereoAudioStream::SafeToPurge()
+{
+    bool result = false;
+    if (m_State <= SS_Initd)
+    {
+        if (!nlAsyncReadsPending(m_pFile))
+        {
+            result = true;
+        }
+    }
+    return result;
+}
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x8015139C | size: 0x4C
-//  */
-// void GCAudioStreaming::MonoAudioStream::SafeToPurge()
-// {
-// }
+/**
+ * Offset/Address/Size: 0x0 | 0x8015139C | size: 0x4C
+ */
+bool GCAudioStreaming::MonoAudioStream::SafeToPurge()
+{
+    bool result = false;
+    if (m_State <= SS_Initd)
+    {
+        if (!nlAsyncReadsPending(m_pFile))
+        {
+            result = true;
+        }
+    }
+    return result;
+}
 
 // /**
 //  * Offset/Address/Size: 0x3C78 | 0x8015138C | size: 0x10

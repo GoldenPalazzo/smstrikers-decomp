@@ -1,10 +1,26 @@
 #include "Game/Audio/AudioScriptEventMgr.h"
 #include "Game/Audio/SoundEventScript.h"
+#include "Game/Game.h"
 #include "Game/Sys/eventman.h"
 
 #include "NL/nlList.h"
 #include "NL/nlSlotPool.h"
 #include "NL/nlString.h"
+
+class cTeam;
+
+struct AUDIO_SCRIPT_POLL_STATE
+{
+    /* 0x00 */ float NextPossibleGoodPositionTime;
+    /* 0x04 */ cTeam* pLastBallOwnerTeam;
+    /* 0x08 */ float NoOwnerTime;
+    /* 0x0C */ unsigned long GameTimeToggle;
+    /* 0x10 */ float LastExcitementTime;
+    /* 0x14 */ unsigned char AmBored : 1;
+    /* 0x18 */ cTeam* LastOwningTeam;
+};
+
+extern AUDIO_SCRIPT_POLL_STATE g_ScriptPollState;
 
 struct AUDIO_EVENT_RECORD
 {
@@ -20,6 +36,20 @@ template class ListContainerBase<AUDIO_EVENT_RECORD, BasicSlotPool<ListEntry<AUD
 
 extern AudioEventList g_PendingEvents;
 extern EventHandler* g_pAudioEventHandler;
+extern _AudioEventRaiser g_AudioEventRaiser;
+
+void Poll();
+
+template <typename KeyType, typename EntryType, typename CallbackType>
+class WalkHelper
+{
+public:
+    CallbackType* m_CBClass;
+    void (CallbackType::*m_CB)(KeyType*);
+    void Callback(EntryType*);
+};
+
+typedef WalkHelper<AUDIO_EVENT_RECORD, ListEntry<AUDIO_EVENT_RECORD>, _AudioEventRaiser> AudioEventWalkHelper;
 
 // /**
 //  * Offset/Address/Size: 0xD0 | 0x8014B7EC | size: 0x2C
@@ -129,12 +159,23 @@ void AudioScriptEventMgr::Purge()
     g_pAudioEventHandler = NULL;
 }
 
-// /**
-//  * Offset/Address/Size: 0x1A48 | 0x8014AB9C | size: 0xD0
-//  */
-// void AudioScriptEventMgr::Update()
-// {
-// }
+/**
+ * Offset/Address/Size: 0x1A48 | 0x8014AB9C | size: 0xD0
+ * TODO: 97.96% match - WalkHelper and Callback method pointer stack offsets swapped
+ */
+void AudioScriptEventMgr::Update()
+{
+    Poll();
+
+    AudioEventWalkHelper helper;
+    helper.m_CBClass = &g_AudioEventRaiser;
+    helper.m_CB = &_AudioEventRaiser::RaiseEvent;
+
+    nlWalkList(g_PendingEvents.m_Head, &helper, &AudioEventWalkHelper::Callback);
+    nlWalkList(g_PendingEvents.m_Head, &g_PendingEvents, &AudioEventList::DeleteEntry);
+    g_PendingEvents.m_Head = NULL;
+    g_PendingEvents.m_Tail = NULL;
+}
 
 /**
  * Offset/Address/Size: 0x19B8 | 0x8014AB0C | size: 0x90
@@ -186,12 +227,21 @@ void AudioScriptEventMgr::FireEvent(AudioScriptEventMgr::AUDIO_EVENT Event, Audi
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0xFF8 | 0x8014A14C | size: 0x100
-//  */
-// void RecordExcitingEvent()
-// {
-// }
+/**
+ * Offset/Address/Size: 0xFF8 | 0x8014A14C | size: 0x100
+ * TODO: 99.77% match - _pad optimized away shifting temp stack offset
+ */
+void RecordExcitingEvent()
+{
+    g_ScriptPollState.LastExcitementTime = g_pGame->GetGameTime();
+
+    if (g_ScriptPollState.AmBored)
+    {
+        nlPrintf("END bored\n");
+        g_ScriptPollState.AmBored = 0;
+        AudioScriptEventMgr::FireEvent(AudioScriptEventMgr::AE_BoredEnd, AudioScriptEventMgr::AET_Neutral);
+    }
+}
 
 // /**
 //  * Offset/Address/Size: 0x0 | 0x80149154 | size: 0xFF8

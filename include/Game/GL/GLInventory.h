@@ -25,6 +25,7 @@ public:
 
     void Release()
     {
+        FORCE_DONT_INLINE;
         typedef AVLTreeEntry<unsigned long, ValueType*> Entry;
         typedef nlAVLTree<unsigned long, ValueType*, DefaultKeyCompare<unsigned long> > Tree;
 
@@ -100,6 +101,7 @@ public:
 
     void Release()
     {
+        FORCE_DONT_INLINE;
         m_pItems->Clear();
     }
 
@@ -119,6 +121,7 @@ public:
 
     void Release()
     {
+        FORCE_DONT_INLINE;
         typedef AVLTreeEntry<unsigned long, ValueType*> Entry;
 
         struct NodeStack

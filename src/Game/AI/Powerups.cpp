@@ -7,9 +7,11 @@
 #include "Game/BasicStadium.h"
 #include "Game/GameInfo.h"
 #include "Game/Physics/PhysicsSphere.h"
+#include "Game/Physics/PhysicsShell.h"
 #include "Game/Effects/EmissionManager.h"
 #include "Game/Effects/EffectsGroup.h"
 #include "Game/Game.h"
+#include "Game/WorldManager.h"
 #include "Game/Sys/audio.h"
 #include "Game/Audio/WorldAudio.h"
 #include "NL/nlMath.h"
@@ -373,9 +375,33 @@ PowerupBase* FindPowerUp(unsigned long hashOfDrawable)
 // /**
 //  * Offset/Address/Size: 0x4C00 | 0x8005F4EC | size: 0x2B4
 //  */
-// void PowerupModelPool::Initialize(int, unsigned long)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x4C00 | 0x8005F4EC | size: 0x2B4
+ * TODO: 92.6% match - compiler hoists string literal lis/addi outside loop, using one extra callee-saved register (stmw r24 vs r25)
+ */
+void PowerupModelPool::Initialize(int type, unsigned long objHashName)
+{
+    DrawableObject* obj = WorldManager::s_World->FindDrawableObject(objHashName);
+    int i;
+
+    obj->m_uObjectFlags &= ~1;
+    obj->m_uObjectFlags |= 0x80;
+
+    for (i = 0; i < 25; i++)
+    {
+        mObjs[type][i] = obj->Clone();
+
+        BasicString<char, Detail::TempStringAllocator> name = Format(BasicString<char, Detail::TempStringAllocator>("powerup_generated_{0}"), mNum);
+
+        mObjs[type][i]->m_uHashID = nlStringLowerHash(name.c_str());
+        mObjs[type][i]->m_uObjectFlags &= ~1;
+
+        WorldManager::s_World->AddDrawableObject(mObjs[type][i]->m_uHashID, mObjs[type][i]);
+
+        mFree[type][i] = 1;
+        mNum++;
+    }
+}
 
 /**
  * Offset/Address/Size: 0x4B68 | 0x8005F454 | size: 0x98
@@ -1236,6 +1262,110 @@ unsigned long PowerupBase::PlayPowerupSound(ePowerUpType type, PowerupBase::Powe
 void PowerupBase::StopPowerupInEffectSound(SFXEmitter* pSFXEmitter)
 {
     Audio::gPowerupSFX.StopEmitter(pSFXEmitter, 0);
+}
+
+/**
+ * Offset/Address/Size: 0x2050 | 0x8005C93C | size: 0x2A0
+ */
+unsigned long PowerupBase::PlayPowerupSound(ePowerUpType type, PowerupBase::PowerupSound powerupSnd, const nlVector3& v3Pos, float fVol)
+{
+    PhysicsShell dummyShell(1.0f);
+    dummyShell.SetPosition(v3Pos, PhysicsObject::WORLD_COORDINATES);
+
+    if (type >= NUM_POWER_UPS)
+    {
+        type = (ePowerUpType)Audio::GetSndIDError();
+    }
+    else if (!Audio::IsInited())
+    {
+        type = (ePowerUpType)Audio::GetSndIDError();
+    }
+    else
+    {
+        Audio::SoundAttributes sndAtr;
+        sndAtr.Init();
+
+        unsigned long sndType;
+        switch (powerupSnd)
+        {
+        case PWRUP_SOUND_ACQUIRE:
+            sndType = powerupSounds[type].sndAcquire;
+            break;
+        case PWRUP_SOUND_ACTIVATE:
+            sndType = powerupSounds[type].sndActivate;
+            break;
+        case PWRUP_SOUND_IN_EFFECT:
+            sndType = powerupSounds[type].sndInEffect;
+            break;
+        case PWRUP_SOUND_HIT:
+            sndType = powerupSounds[type].sndHit;
+            break;
+        case PWRUP_SOUND_BOUNCE_WALL:
+            sndType = powerupSounds[type].sndBounceWall;
+            break;
+        case PWRUP_SOUND_BOUNCE_GROUND:
+            sndType = powerupSounds[type].sndBounceGround;
+            break;
+        case PWRUP_SOUND_EXPLODE:
+            sndType = powerupSounds[type].sndExplode;
+            break;
+        case PWRUP_SOUND_END:
+            sndType = powerupSounds[type].sndEnd;
+            break;
+        }
+
+        if (sndType == 0xFFFFFFFF)
+        {
+            type = (ePowerUpType)-1;
+        }
+        else
+        {
+            if (powerupSnd == PWRUP_SOUND_ACQUIRE)
+            {
+                sndAtr.SetSoundType(sndType, false);
+            }
+            else
+            {
+                sndAtr.SetSoundType(sndType, true);
+
+                if (type == POWER_UP_BOBOMB)
+                {
+                    if ((powerupSnd == PWRUP_SOUND_IN_EFFECT) || (powerupSnd == PWRUP_SOUND_ACTIVATE))
+                    {
+                        sndAtr.UsePhysObj(&dummyShell);
+                        sndAtr.mf_ReturnEmitterOnPlay = true;
+                    }
+                    else
+                    {
+                        sndAtr.UseStationaryPosVector(dummyShell.GetPosition());
+                    }
+                }
+                else
+                {
+                    if (powerupSnd == PWRUP_SOUND_IN_EFFECT)
+                    {
+                        sndAtr.UsePhysObj(&dummyShell);
+                        sndAtr.mf_ReturnEmitterOnPlay = true;
+                    }
+                    else
+                    {
+                        sndAtr.UseStationaryPosVector(dummyShell.GetPosition());
+                    }
+                }
+            }
+
+            float fDefaultVol = Audio::gPowerupSFX.GetSFXVol(sndType);
+
+            if (100.0f != fVol)
+            {
+                sndAtr.mf_Volume = fVol * fDefaultVol;
+            }
+
+            type = (ePowerUpType)Audio::gPowerupSFX.Play(sndAtr);
+        }
+    }
+
+    return (unsigned long)type;
 }
 
 /**

@@ -105,9 +105,67 @@ static void AsyncToVirMemBufferCallback(nlFile* pFile, void* buffer, unsigned in
 /**
  * Offset/Address/Size: 0x1D0 | 0x801CEF24 | size: 0xF4
  */
-// nlCancelPendingAsyncReads(nlFile*, void (*)(nlFile*, void*, unsigned int, unsigned long, LoadAsyncCallback))
-void nlCancelPendingAsyncReads(nlFile*)
+void nlCancelPendingAsyncReads(nlFile* pFile, void (*callback)(nlFile*, void*, unsigned int, unsigned long, void (*)(nlFile*, void*, unsigned int, unsigned long)))
 {
+    AsyncEntry* pEntry;
+    AsyncEntry* pNextEntry;
+
+    if (pFile == NULL)
+    {
+        return;
+    }
+
+    AsyncManager* pMgr = s_pAsyncManager;
+
+    if (((GCFile*)pFile)->PendingAsync.m_Count == 0)
+    {
+        return;
+    }
+
+    if (pMgr->m_activeEntryList == NULL)
+    {
+        return;
+    }
+
+    pNextEntry = nlDLRingGetStart<AsyncEntry>(pMgr->m_activeEntryList);
+
+    do
+    {
+        pEntry = pNextEntry->next;
+
+        if (pNextEntry->m_pFile == (GCFile*)pFile)
+        {
+            u8 beingServiced;
+            if (pNextEntry != NULL)
+            {
+                beingServiced = (u8)(pNextEntry->Phase != 0);
+            }
+            else
+            {
+                beingServiced = 0;
+            }
+
+            if (!beingServiced)
+            {
+                ((GCFile*)pFile)->PendingAsync.m_Count--;
+
+                if (callback != NULL)
+                {
+                    callback((nlFile*)pNextEntry->m_pFile, pNextEntry->m_pBuffer, pNextEntry->m_uSize, pNextEntry->m_uParam, pNextEntry->m_pFunc);
+                }
+
+                nlDLRingRemove<AsyncEntry>(&pMgr->m_activeEntryList, pNextEntry);
+                nlDLRingAddEnd<AsyncEntry>(&pMgr->m_freeEntryList, pNextEntry);
+            }
+        }
+
+        if (nlRingIsEnd<AsyncEntry>(pMgr->m_activeEntryList, pNextEntry))
+        {
+            break;
+        }
+
+        pNextEntry = pEntry;
+    } while (true);
 }
 
 /**
@@ -313,6 +371,8 @@ template <>
 void nlDLRingAddEnd<AsyncEntry>(AsyncEntry**, AsyncEntry*);
 template <>
 void nlDLRingAddStart<AsyncEntry>(AsyncEntry**, AsyncEntry*);
+template <>
+AsyncEntry* nlDLRingGetStart<AsyncEntry>(AsyncEntry* current);
 
 /**
  * Offset/Address/Size: 0x72C | 0x801CF480 | size: 0x27C

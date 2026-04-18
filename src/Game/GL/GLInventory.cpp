@@ -163,34 +163,32 @@ void GLInventory::Delete()
 
 /**
  * Offset/Address/Size: 0xB68 | 0x801E2E00 | size: 0xE4
+ * TODO: 94.91% match - r30/r31 register swap for nLevel index vs current pointer
  */
 void GLInventory::ReleaseLevel(int nLevel)
 {
-    FORCE_DONT_INLINE;
-    nlListContainer<void*>* fileData = m_pFileData[nLevel];
-
-    if (fileData != nullptr)
+    ListEntry<void*>* current = m_pFileData[nLevel]->m_Head;
+    while (current != NULL)
     {
-        ListEntry<void*>* current = fileData->m_Head;
-        while (current != nullptr)
-        {
-            ListEntry<void*>* next = current->next;
-            delete current->data; // Delete the actual data
-            current = next;
-        }
-
-        // nlWalkList<ListEntry<void*>, ListContainerBase<void*, NewAdapter<ListEntry<void*> > > >(fileData->m_Head, fileData, &ListContainerBase<void*, NewAdapter<ListEntry<void*> > >::DeleteEntry);
-
-        fileData->m_Head = nullptr;
-        fileData->m_Tail = nullptr;
+        delete current->data;
+        current = current->next;
     }
 
-    m_pSkinData[nLevel]->Release();      // freeing_GLInventory<nlChunk>
-    m_pModels[nLevel]->Release();        // clearing_GLInventory<glModel>
-    m_pShadowVolumes[nLevel]->Release(); // deleting_GLInventory<GLShadowVolume>
-    m_pTextureAnims[nLevel]->Release();  // deleting_GLInventory<GLTextureAnim>
-    m_pVertexAnims[nLevel]->Release();   // deleting_GLInventory<GLVertexAnim>
-    m_pMaterialLists[nLevel]->Release(); // deleting_GLInventory<GLMaterialList>
+    nlListContainer<void*>* fileData = m_pFileData[nLevel];
+    nlWalkList<ListEntry<void*>, ListContainerBase<void*, NewAdapter<ListEntry<void*> > > >(
+        fileData->m_Head,
+        fileData,
+        &ListContainerBase<void*, NewAdapter<ListEntry<void*> > >::DeleteEntry);
+
+    fileData->m_Head = NULL;
+    fileData->m_Tail = NULL;
+
+    m_pSkinData[nLevel]->Release();
+    m_pModels[nLevel]->Release();
+    m_pShadowVolumes[nLevel]->Release();
+    m_pTextureAnims[nLevel]->Release();
+    m_pVertexAnims[nLevel]->Release();
+    m_pMaterialLists[nLevel]->Release();
 }
 
 /**

@@ -3,6 +3,7 @@
 
 #include "NL/nlFunction.h"
 #include "NL/nlDLListContainer.h"
+#include "NL/nlDLListSlotPool.h"
 #include "NL/nlSlotPool.h"
 
 namespace GCAudioStreaming
@@ -51,10 +52,24 @@ public:
     public:
         struct STREAM_FADE_CTRL
         {
-            char data[0x14];
-        };
+            /* 0x00 */ Function<FnVoidVoid> Callback;
+            /* 0x08 */ GCAudioStreaming::StereoAudioStream* pStream;
+            /* 0x0C */ float Interp;
+            /* 0x10 */ unsigned long FadeLength : 14;
+            /* 0x10 */ unsigned long StartVol : 7;
+            /* 0x10 */ unsigned long EndVol : 7;
+            /* 0x10 */ unsigned long VolumeGroup : 4;
+        }; // total size: 0x14
+
+        typedef nlDLListSlotPool<STREAM_FADE_CTRL> FadeList;
+
         void UpdateFade(STREAM_FADE_CTRL*);
-    };
+        void AddFade(GCAudioStreaming::StereoAudioStream*, unsigned long, unsigned long,
+            Audio::MasterVolume::VOLUME_GROUP, unsigned long, const Function<FnVoidVoid>&);
+
+        /* 0x00 */ FadeList m_Fades;
+        /* 0x1C */ float m_dT;
+    }; // total size: 0x20
 
     class StreamFileLookup
     {
@@ -81,7 +96,7 @@ public:
     typedef DLListContainerBase<GCAudioStreaming::StereoAudioStream*, StreamDeleteAllocator> StreamDeleteList;
 
     /* 0x04 */ char _pad_0x04[0x14]; // StreamFileLookup m_FileLookup
-    /* 0x18 */ char _pad_0x18[0x20]; // FadeManager m_FadeMgr
+    /* 0x18 */ FadeManager m_FadeMgr;
     /* 0x38 */ SlotPool<GCAudioStreaming::StereoAudioStream> m_StreamPool;
     /* 0x50 */ StreamDeleteList m_StreamDeleteList;
 }; // total size: 0x6C
@@ -107,7 +122,7 @@ public:
     void StopHead(unsigned long);
     void Stop(unsigned long);
     void StopQStream(QUEUED_STREAM*);
-    // void StopStream(GCAudioStreaming::StereoAudioStream*, bool);
+    void StopStream(GCAudioStreaming::StereoAudioStream*, bool);
     void FadeOutDone(QUEUED_STREAM*);
     void FadeOutDoneStartNext(QUEUED_STREAM*);
     void StartQStreamFadeout(QUEUED_STREAM*, unsigned long, const Function<FnVoidVoid>&);

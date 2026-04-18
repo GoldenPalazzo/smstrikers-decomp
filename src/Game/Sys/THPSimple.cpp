@@ -13,21 +13,27 @@ static void (*OldAIDCallback)();
 static s16* LastAudioBuffer;
 static s16* CurAudioBuffer;
 static s32 AudioSystem;
+static long WorkBuffer[16];
 
 struct THPSimpleControlWork
 {
     /* 0x00 */ nlFile* fileInfo;
-    /* 0x04 */ unsigned char _pad04[0x08];
+    /* 0x04 */ char magic[4];
+    /* 0x08 */ unsigned long version;
     /* 0x0C */ unsigned long bufSize;
     /* 0x10 */ unsigned long audioMaxSamples;
-    /* 0x14 */ unsigned char _pad14[0x04];
+    /* 0x14 */ float frameRate;
     /* 0x18 */ unsigned long numFrames;
     /* 0x1C */ unsigned long firstFrameSize;
-    /* 0x20 */ unsigned char _pad20[0x0C];
+    /* 0x20 */ unsigned long movieDataSize;
+    /* 0x24 */ unsigned long compInfoDataOffsets;
+    /* 0x28 */ unsigned long offsetDataOffsets;
     /* 0x2C */ unsigned long movieDataOffsets;
-    /* 0x30 */ unsigned char _pad30[0x18];
+    /* 0x30 */ unsigned long finalFrameDataOffsets;
+    /* 0x34 */ THPFrameCompInfo compInfo;
     /* 0x48 */ THPVideoInfo videoInfo;
-    /* 0x54 */ unsigned char _pad54[0x14];
+    /* 0x54 */ THPAudioInfo audioInfo;
+    /* 0x64 */ void* thpWork;
     /* 0x68 */ int open;
     /* 0x6C */ unsigned char preFetchState;
     /* 0x6D */ unsigned char audioState;
@@ -55,6 +61,7 @@ extern int NumAudioBuffers;
 extern unsigned short VolumeTable[128];
 extern "C" void* memcpy(void*, const void*, unsigned long);
 extern "C" void* memset(void*, int, unsigned long);
+extern "C" int strcmp(const char*, const char*);
 
 /**
  * Offset/Address/Size: 0x0 | 0x801CBF64 | size: 0x10
@@ -618,6 +625,144 @@ extern "C" unsigned long THPSimpleCalcNeedMemory(int numReadBuffers, int numAudi
     }
 
     return 0;
+}
+
+/**
+ * Offset/Address/Size: 0x1298 | 0x801CD1FC | size: 0xCC
+ */
+extern "C" int THPSimpleClose()
+{
+    THPSimpleControlWork* ctrl = (THPSimpleControlWork*)&SimpleControl;
+
+    if (ctrl->open && ctrl->preFetchState == 0)
+    {
+        if (ctrl->audioExist)
+        {
+            if (ctrl->audioState == 1)
+            {
+                return 0;
+            }
+        }
+        else
+        {
+            ctrl->audioState = 0;
+        }
+
+        THPSimpleControlWork* sc = (THPSimpleControlWork*)&SimpleControl;
+
+        if (sc->readProgress == 0)
+        {
+            ctrl->open = 0;
+
+            while (nlAsyncReadsPending(sc->fileInfo))
+            {
+                nlServiceFileSystem();
+            }
+
+            nlClose(((THPSimpleControlWork*)&SimpleControl)->fileInfo);
+
+            ((THPSimpleControlWork*)&SimpleControl)->fileInfo = NULL;
+
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+/**
+ * Offset/Address/Size: 0x1364 | 0x801CD2C8 | size: 0x300
+ * TODO: 97.4% match - 8 instruction scheduling diffs in init block setup (li/lwz/lfs ordering)
+ */
+extern "C" int THPSimpleOpen(const char* fileName)
+{
+    long offset;
+    long i;
+
+    if (!Initialized)
+    {
+        return 0;
+    }
+
+    if (((THPSimpleControlWork*)&SimpleControl)->open)
+    {
+        return 0;
+    }
+
+    memset(&((THPSimpleControlWork*)&SimpleControl)->videoInfo, 0, sizeof(THPVideoInfo));
+    memset(&((THPSimpleControlWork*)&SimpleControl)->audioInfo, 0, sizeof(THPAudioInfo));
+
+    SimpleControl.file = nlOpen(fileName);
+    if (!SimpleControl.file)
+    {
+        return 0;
+    }
+
+    nlRead(SimpleControl.file, WorkBuffer, sizeof(WorkBuffer));
+    memcpy(((THPSimpleControlWork*)&SimpleControl)->magic, WorkBuffer, 0x30);
+
+    if (strcmp(((THPSimpleControlWork*)&SimpleControl)->magic, "THP") != 0)
+    {
+        nlClose(((THPSimpleControlWork*)&SimpleControl)->fileInfo);
+        ((THPSimpleControlWork*)&SimpleControl)->fileInfo = NULL;
+        return 0;
+    }
+
+    if (((THPSimpleControlWork*)&SimpleControl)->version != 0x00011000)
+    {
+        nlClose(((THPSimpleControlWork*)&SimpleControl)->fileInfo);
+        ((THPSimpleControlWork*)&SimpleControl)->fileInfo = NULL;
+        return 0;
+    }
+
+    offset = ((THPSimpleControlWork*)&SimpleControl)->compInfoDataOffsets;
+    nlSeek(((THPSimpleControlWork*)&SimpleControl)->fileInfo, offset, 0);
+    nlRead(((THPSimpleControlWork*)&SimpleControl)->fileInfo, WorkBuffer, 0x20);
+    memcpy(&((THPSimpleControlWork*)&SimpleControl)->compInfo, WorkBuffer, sizeof(THPFrameCompInfo));
+
+    offset += sizeof(THPFrameCompInfo);
+    ((THPSimpleControlWork*)&SimpleControl)->audioExist = 0;
+
+    for (i = 0; i < ((THPSimpleControlWork*)&SimpleControl)->compInfo.mNumComponents; i++)
+    {
+        switch (((THPSimpleControlWork*)&SimpleControl)->compInfo.mFrameComp[i])
+        {
+        case 0:
+            nlSeek(((THPSimpleControlWork*)&SimpleControl)->fileInfo, offset, 0);
+            nlRead(((THPSimpleControlWork*)&SimpleControl)->fileInfo, WorkBuffer, 0x20);
+            memcpy(&((THPSimpleControlWork*)&SimpleControl)->videoInfo, WorkBuffer, sizeof(THPVideoInfo));
+            offset += sizeof(THPVideoInfo);
+            break;
+        case 1:
+            nlSeek(((THPSimpleControlWork*)&SimpleControl)->fileInfo, offset, 0);
+            nlRead(((THPSimpleControlWork*)&SimpleControl)->fileInfo, WorkBuffer, 0x20);
+            memcpy(&((THPSimpleControlWork*)&SimpleControl)->audioInfo, WorkBuffer, sizeof(THPAudioInfo));
+            offset += sizeof(THPAudioInfo);
+            ((THPSimpleControlWork*)&SimpleControl)->audioExist = 1;
+            break;
+        default:
+            return 0;
+        }
+    }
+
+    ((THPSimpleControlWork*)&SimpleControl)->curOffset = ((THPSimpleControlWork*)&SimpleControl)->movieDataOffsets;
+    ((THPSimpleControlWork*)&SimpleControl)->readSize = ((THPSimpleControlWork*)&SimpleControl)->firstFrameSize;
+    ((THPSimpleControlWork*)&SimpleControl)->readIndex = 0;
+    ((THPSimpleControlWork*)&SimpleControl)->totalReadFrame = 0;
+    ((THPSimpleControlWork*)&SimpleControl)->dvdError = 0;
+    ((THPSimpleControlWork*)&SimpleControl)->textureSet.mFrameNumber = -1;
+    ((THPSimpleControlWork*)&SimpleControl)->nextDecodeIndex = 0;
+    ((THPSimpleControlWork*)&SimpleControl)->audioDecodeIndex = 0;
+    ((THPSimpleControlWork*)&SimpleControl)->audioOutputIndex = 0;
+    ((THPSimpleControlWork*)&SimpleControl)->preFetchState = 0;
+    ((THPSimpleControlWork*)&SimpleControl)->audioState = 0;
+    ((THPSimpleControlWork*)&SimpleControl)->loop = 0;
+    ((THPSimpleControlWork*)&SimpleControl)->open = 1;
+    ((THPSimpleControlWork*)&SimpleControl)->curVolume = 127.0f;
+    ((THPSimpleControlWork*)&SimpleControl)->targetVolume = 127.0f;
+    ((THPSimpleControlWork*)&SimpleControl)->rampCount = 0;
+
+    return 1;
 }
 
 /**
