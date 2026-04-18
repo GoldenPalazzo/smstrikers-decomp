@@ -335,7 +335,6 @@ T* nlRingGetStart(T* head)
 template <typename T, typename CallbackType>
 void nlWalkDLRing(T* head, CallbackType* callback, void (CallbackType::*callbackFunc)(T*))
 {
-    FORCE_DONT_INLINE;
     void (CallbackType::*func)(T*) = callbackFunc;
     nlWalkRing(head, callback, func);
 }

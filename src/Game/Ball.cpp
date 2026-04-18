@@ -123,7 +123,7 @@ void cBall::ClearPassTarget()
         eventdata->pPasser = m_pPrevOwner;
         eventdata->pTarget = NULL;
 
-        bool pad = eventdata->pPasser->GetGlobalPad();
+        bool pad = eventdata->pPasser->GetGlobalPad() != NULL;
         eventdata->mPasserControllerID = pad ? eventdata->pPasser->GetGlobalPad()->m_padIndex : -1;
     }
 
@@ -361,7 +361,7 @@ void cBall::Update(float fDeltaT)
                     eventdata->pPasser = m_pPrevOwner;
                     eventdata->pTarget = NULL;
 
-                    bool pad = eventdata->pPasser->GetGlobalPad();
+                    bool pad = eventdata->pPasser->GetGlobalPad() != NULL;
                     eventdata->mPasserControllerID = pad ? eventdata->pPasser->GetGlobalPad()->m_padIndex : -1;
                 }
 
@@ -715,7 +715,7 @@ void cBall::SetPerfectPass(bool bFlag, bool bNoEvent)
             eventdata->pTarget = NULL;
         }
 
-        bool pad = eventdata->pPasser->GetGlobalPad();
+        bool pad = eventdata->pPasser->GetGlobalPad() != NULL;
         eventdata->mPasserControllerID = (pad != NULL) ? eventdata->pPasser->GetGlobalPad()->m_padIndex : -1;
     }
 
@@ -774,7 +774,7 @@ void cBall::SetOwner(cPlayer* pOwner)
         eventdata->pPasser = m_pPrevOwner;
         eventdata->pTarget = NULL;
 
-        bool pad = eventdata->pPasser->GetGlobalPad();
+        bool pad = eventdata->pPasser->GetGlobalPad() != NULL;
         eventdata->mPasserControllerID = pad ? eventdata->pPasser->GetGlobalPad()->m_padIndex : -1;
     }
 
@@ -918,7 +918,7 @@ void cBall::ClearShotInProgress()
         eventdata->pPasser = m_pPrevOwner;
         eventdata->pTarget = NULL;
 
-        bool pad = eventdata->pPasser->GetGlobalPad();
+        bool pad = eventdata->pPasser->GetGlobalPad() != NULL;
         eventdata->mPasserControllerID = pad ? eventdata->pPasser->GetGlobalPad()->m_padIndex : -1;
     }
 
@@ -1310,7 +1310,7 @@ void cBall::CollideWithWallCallback()
             eventdata->pPasser = m_pPrevOwner;
             eventdata->pTarget = NULL;
 
-            bool pad = eventdata->pPasser->GetGlobalPad();
+            bool pad = eventdata->pPasser->GetGlobalPad() != NULL;
             eventdata->mPasserControllerID = pad ? eventdata->pPasser->GetGlobalPad()->m_padIndex : -1;
         }
 
@@ -1425,7 +1425,7 @@ void cBall::CollideWithWallCallback()
             eventdata->pPasser = m_pPrevOwner;
             eventdata->pTarget = NULL;
 
-            bool pad = eventdata->pPasser->GetGlobalPad();
+            bool pad = eventdata->pPasser->GetGlobalPad() != NULL;
             eventdata->mPasserControllerID = pad ? eventdata->pPasser->GetGlobalPad()->m_padIndex : -1;
         }
 
@@ -1477,7 +1477,7 @@ void cBall::CollideWithGroundCallback()
         eventdata->pPasser = m_pPrevOwner;
         eventdata->pTarget = NULL;
 
-        bool pad = eventdata->pPasser->GetGlobalPad();
+        bool pad = eventdata->pPasser->GetGlobalPad() != NULL;
         eventdata->mPasserControllerID = pad ? eventdata->pPasser->GetGlobalPad()->m_padIndex : -1;
     }
 
@@ -1549,7 +1549,7 @@ void cBall::CollideWithGroundCallback()
         eventdata->pPasser = m_pPrevOwner;
         eventdata->pTarget = NULL;
 
-        bool pad = eventdata->pPasser->GetGlobalPad();
+        bool pad = eventdata->pPasser->GetGlobalPad() != NULL;
         eventdata->mPasserControllerID = pad ? eventdata->pPasser->GetGlobalPad()->m_padIndex : -1;
     }
 
@@ -1607,7 +1607,7 @@ void cBall::ClearBallEffects()
         eventdata->pPasser = m_pPrevOwner;
         eventdata->pTarget = NULL;
 
-        bool pad = eventdata->pPasser->GetGlobalPad();
+        bool pad = eventdata->pPasser->GetGlobalPad() != NULL;
         eventdata->mPasserControllerID = pad ? eventdata->pPasser->GetGlobalPad()->m_padIndex : -1;
     }
 

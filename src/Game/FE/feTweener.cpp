@@ -115,8 +115,6 @@ void FETweenManager::clearTweens()
 
 /**
  * Offset/Address/Size: 0x288 | 0x800A24DC | size: 0x468
- * TODO: 99.86% match - remaining blockers are static-local symbol index diffs for `m_tempValArray`
- * (`m_tempValArray$181` vs compiler-emitted local index in scratch context).
  */
 void FETweenManager::Update(float fDeltaT)
 {
@@ -413,9 +411,6 @@ FETweenManager::~FETweenManager()
 
 /**
  * Offset/Address/Size: 0x9DC | 0x800A2C30 | size: 0x9C
- * TODO: 94.62% match - MWCC inline constructor scheduling quirk: `mr r31, r30` scheduled
- * after `stw r29` instead of before (prologue scheduling), and missing `mr r31, r29` for
- * second nlDLListSlotPool member's inline body (compiler doesn't reuse r31 for subobject this).
  */
 FETweenManager::FETweenManager()
 {
@@ -444,65 +439,3 @@ void FETweener::setNextTween(FETweener* next)
 FETweener::~FETweener()
 {
 }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800A2D28 | size: 0x10
-//  */
-// void DLListContainerBase<FETweener*, BasicSlotPool<DLListEntry<FETweener*>>>::DeleteEntry(DLListEntry<FETweener*>*)
-// {
-// }
-
-/**
- * Offset/Address/Size: 0x0 | 0x800A2D38 | size: 0x3C
- * TODO: 96.00% match - prologue scheduling mismatch remains.
- * Target orders `lwz r7, 0(r5)` before `stw r0, 0x24(r1)`.
- */
-template void nlWalkDLRing<DLListEntry<FETweener*>, DLListContainerBase<FETweener*, BasicSlotPool<DLListEntry<FETweener*> > > >(
-    DLListEntry<FETweener*>* head,
-    DLListContainerBase<FETweener*, BasicSlotPool<DLListEntry<FETweener*> > >* callback,
-    void (DLListContainerBase<FETweener*, BasicSlotPool<DLListEntry<FETweener*> > >::*callbackFunc)(DLListEntry<FETweener*>*));
-
-// /**
-//  * Offset/Address/Size: 0x3C | 0x800A2D74 | size: 0x20
-//  */
-// void nlDLRingIsEnd<DLListEntry<FETweener*>>(DLListEntry<FETweener*>*, DLListEntry<FETweener*>*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x5C | 0x800A2D94 | size: 0x18
-//  */
-// void nlDLRingGetStart<DLListEntry<FETweener*>>(DLListEntry<FETweener*>*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x74 | 0x800A2DAC | size: 0x44
-//  */
-// void nlDLRingRemove<DLListEntry<FETweener*>>(DLListEntry<FETweener*>**, DLListEntry<FETweener*>*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0xB8 | 0x800A2DF0 | size: 0x3C
-//  */
-// void nlDLRingAddEnd<DLListEntry<FETweener*>>(DLListEntry<FETweener*>**, DLListEntry<FETweener*>*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0xF4 | 0x800A2E2C | size: 0x38
-//  */
-// void nlDLRingAddStart<DLListEntry<FETweener*>>(DLListEntry<FETweener*>**, DLListEntry<FETweener*>*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800A2E64 | size: 0x60
-//  */
-// void nlWalkRing<DLListEntry<FETweener*>, DLListContainerBase<FETweener*,
-// BasicSlotPool<DLListEntry<FETweener*>>>>(DLListEntry<FETweener*>*, DLListContainerBase<FETweener*,
-// BasicSlotPool<DLListEntry<FETweener*>>>*, void (DLListContainerBase<FETweener*,
-// BasicSlotPool<DLListEntry<FETweener*>>>::*)(DLListEntry<FETweener*>*))
-// {
-// }

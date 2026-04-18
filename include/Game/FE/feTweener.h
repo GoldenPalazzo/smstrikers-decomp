@@ -4,12 +4,6 @@
 #include "NL/nlDLListSlotPool.h"
 #include "NL/nlMemory.h"
 
-// void nlDLRingIsEnd<DLListEntry<FETweener*>>(DLListEntry<FETweener*>*, DLListEntry<FETweener*>*);
-// void nlDLRingGetStart<DLListEntry<FETweener*>>(DLListEntry<FETweener*>*);
-// void nlDLRingRemove<DLListEntry<FETweener*>>(DLListEntry<FETweener*>**, DLListEntry<FETweener*>*);
-// void nlDLRingAddEnd<DLListEntry<FETweener*>>(DLListEntry<FETweener*>**, DLListEntry<FETweener*>*);
-// void nlDLRingAddStart<DLListEntry<FETweener*>>(DLListEntry<FETweener*>**, DLListEntry<FETweener*>*);
-
 class FETweener
 {
 public:

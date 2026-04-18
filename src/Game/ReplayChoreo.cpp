@@ -783,7 +783,8 @@ int ReplayChoreo::NumHighlights() const
     ReplayChoreo* self = const_cast<ReplayChoreo*>(this);
     self->mReplayManager = ReplayManager::Instance();
     int count = 0;
-    self->mReplay = mReplayManager->mReplay;
+    ReplayManager* volatile* pMgr = &self->mReplayManager;
+    self->mReplay = (*pMgr)->mReplay;
     for (int i = 0; i < 3; i++)
     {
         if (mReplay->IsReelValid(i + 1))
