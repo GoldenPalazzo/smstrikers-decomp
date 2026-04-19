@@ -57,7 +57,7 @@ loop_start:
         startkey = NULL;
     found_startkey:
 
-        f32 threshold = 0.0f;
+        f32 threshold = 255.0f;
         iter = startkey;
         while (startkey != NULL)
         {

@@ -1027,7 +1027,7 @@ config.libs = [
             Object(Matching, "Game/FE/feFontResource.cpp", extra_cflags=["-inline deferred"]),
             Object(Matching, "Game/FE/feSceneResource.cpp", extra_cflags=["-inline deferred"]),
             Object(Matching, "Game/FE/fePackage.cpp", extra_cflags=["-inline deferred"]),
-            Object(NonMatching, "Game/FE/feSoundKeyframeTrigger.cpp"),
+            Object(Matching, "Game/FE/feSoundKeyframeTrigger.cpp"),
             Object(Matching, "Game/FE/feTextureResource.cpp", extra_cflags=["-inline deferred"]),
             Object(NonMatching, "Game/FE/feScrollText.cpp"),
             Object(Matching, "Game/FE/feAsyncImage.cpp", extra_cflags=["-inline deferred"]),
