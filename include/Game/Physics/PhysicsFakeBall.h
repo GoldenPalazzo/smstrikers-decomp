@@ -26,7 +26,7 @@ public:
     static bool FindBallIntercept(const nlVector3&, float, float, nlVector3&, nlVector3&, float&, float&, float);
     static void GetNextBallPosition(nlVector3&);
     static void ResetBallIterator();
-    static void GetPredictedPosAtDistance(float, nlVector3&, nlVector3&);
+    static float GetPredictedPosAtDistance(float, nlVector3&, nlVector3&);
     static float GetPredictedHeightLimitTime(float, float, nlVector3&, nlVector3&, bool);
     static float GetPredictedPlaneIntersectTime(const nlVector4&, nlVector3&, nlVector3&);
     static bool GetPredictedBallPosition(float, nlVector3&, nlVector3&);

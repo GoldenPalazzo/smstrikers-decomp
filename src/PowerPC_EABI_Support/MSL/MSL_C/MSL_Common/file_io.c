@@ -5,22 +5,19 @@ FILE* __find_unopened_file(void);
 void __begin_critical_region(int region);
 void __end_critical_region(int region);
 
-/**
- * Offset/Address/Size: 0x17C | 0x80230854 | size: 0x17C
- * TODO: 96.21% match - register allocation: mode_char r7 vs r6, open_mode r5 vs r7 swap;
- * also missing addi r5,r3,2 pointer materialization for mode[2] access
- */
+/* 80230854-802309D0 360194 017C+00 0/0 1/1 0/0 .text            __get_file_modes */
 int __get_file_modes(const char* mode, file_modes* modes)
 {
     int mode_char;
-    int open_mode;
+    const char* mode_str;
+    unsigned char open_mode;
     int io_mode;
 
     modes->file_kind = __disk_file;
     modes->file_orientation = 0;
     modes->binary_io = 0;
 
-    mode_char = *mode;
+    mode_char = *mode++;
 
     switch (mode_char)
     {
@@ -37,20 +34,21 @@ int __get_file_modes(const char* mode, file_modes* modes)
         return 0;
     }
 
+    mode_str = mode + 1;
     modes->open_mode = open_mode;
 
-    switch (mode[1])
+    switch (*mode)
     {
     case 'b':
         modes->binary_io = 1;
-        if (mode[2] == '+')
+        if (*mode_str == '+')
         {
             mode_char = (mode_char << 8) | '+';
         }
         break;
     case '+':
         mode_char = (mode_char << 8) | '+';
-        if (mode[2] == 'b')
+        if (*mode_str == 'b')
         {
             modes->binary_io = 1;
         }
@@ -85,8 +83,7 @@ int __get_file_modes(const char* mode, file_modes* modes)
 
 /**
  * Offset/Address/Size: 0x3DC | 0x802309D0 | size: 0x250
- * TODO: 99.01% match - dead beq from inlined fflush NULL check not generated;
- * stack offset swap (modes at sp+0x10 vs sp+0x08)
+ * TODO: 99.72% match - stack offset swap (modes at sp+0x10 vs sp+0x08)
  */
 FILE* fopen(const char* filename, const char* mode)
 {
@@ -104,7 +101,7 @@ FILE* fopen(const char* filename, const char* mode)
     }
     else
     {
-        if (file->file_mode.file_kind != __closed_file)
+        if (file && file->file_mode.file_kind != __closed_file)
         {
             fflush(file);
             (*file->close_fn)(file->handle);

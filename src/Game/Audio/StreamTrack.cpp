@@ -1,8 +1,13 @@
 #include "Game/Audio/StreamTrack.h"
 #include "Game/Sys/GCStream.h"
+#include "NL/nlBSearch.h"
 #include "NL/nlConfig.h"
+#include "NL/nlFileGC.h"
 #include "NL/nlList.h"
 #include "NL/nlSlotPoolHigh.h"
+#include "NL/nlString.h"
+
+extern GCAudioStreaming::AudioBufferMgr g_BufferMgr;
 
 namespace AudioStreamTrack
 {
@@ -313,12 +318,145 @@ void AudioStreamTrack::StreamTrack::Update(float)
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0x10BC | 0x80155E14 | size: 0x418
-//  */
-// void AudioStreamTrack::StreamTrack::QueueStream(unsigned long, float, bool, unsigned long, const char*, Audio::MasterVolume::VOLUME_GROUP)
-// {
-// }
+inline GCAudioStreaming::AudioStream::AudioStream(GCAudioStreaming::AudioBufferMgr& mgr,
+    unsigned long bufCount)
+    : m_BuffMgr(mgr)
+{
+    m_FlagAtDelete = 0;
+    m_State = GCAudioStreaming::SS_New;
+    m_StreamLength = (unsigned long)-1;
+    m_StreamPos = 0;
+    m_OldLength = 0;
+    m_Flags = 0;
+    m_BufferCount = bufCount;
+    memset(m_Buffers, 0, sizeof(m_Buffers));
+}
+
+inline GCAudioStreaming::StereoAudioStream::StereoAudioStream(
+    GCAudioStreaming::AudioBufferMgr& mgr)
+    : AudioStream(mgr, 2)
+{
+    m_pFile = NULL;
+    m_Interleave = 0;
+}
+
+/**
+ * Offset/Address/Size: 0x10BC | 0x80155E14 | size: 0x418
+ * TODO: 86.8% match - double QUEUED_STREAM copy elided by MWCC, constructor register cascade,
+ * placement new duplicate beq, memset arg swap
+ */
+void AudioStreamTrack::StreamTrack::QueueStream(
+    unsigned long StreamId, float Volume, bool Looping,
+    unsigned long FadeIn, const char* StreamParam,
+    Audio::MasterVolume::VOLUME_GROUP OverrideVolGroup)
+{
+    char FileName[256];
+
+    if (GetConfigBool(Config::Global(), "no_stream", false) == true)
+    {
+        return;
+    }
+
+    QUEUED_STREAM qs = { };
+    DLListEntry<QUEUED_STREAM>* entry = m_QueuedStreams.Allocate(qs);
+    nlDLRingAddEnd(&m_QueuedStreams.m_Head, entry);
+
+    entry->m_data.StreamId = StreamId;
+
+    GCAudioStreaming::StereoAudioStream* pStream = NULL;
+    TrackManagerBase& mgr = m_TrackMgr;
+    mgr.m_StreamPool.Allocate(pStream);
+    if (pStream != NULL)
+    {
+        new (pStream) GCAudioStreaming::StereoAudioStream(g_BufferMgr);
+    }
+
+    entry->m_data.pStream = pStream;
+    entry->m_data.FadeIn = FadeIn;
+    entry->m_data.StartVolume = (int)(127.0f * Volume);
+
+    Audio::MasterVolume::VOLUME_GROUP volGroup;
+    if (OverrideVolGroup == 0)
+    {
+        volGroup = m_VolumeGroup;
+    }
+    else
+    {
+        volGroup = OverrideVolGroup;
+    }
+    entry->m_data.VolGroup = volGroup;
+    entry->m_data.Loop = Looping;
+    entry->m_data.TrackOwnsStream = m_TrackOwnsStreams;
+
+    nlStrNCpy<char>(FileName, "audio/data/streams/", 0x100);
+    TrackManagerBase::StreamFileLookup::STREAM_FILE_LOOKUP* lookup = nlBSearch<TrackManagerBase::StreamFileLookup::STREAM_FILE_LOOKUP, unsigned long>(
+        StreamId, mgr.m_FileLookup.m_pLookup, mgr.m_FileLookup.m_StreamCount);
+
+    char* percentPos = strchr(lookup->value, '%');
+    if (percentPos != NULL)
+    {
+        unsigned long prefixLen = (unsigned long)(percentPos - lookup->value);
+        char* dest = &FileName[19];
+        nlStrNCpy<char>(dest, lookup->value, prefixLen + 1);
+        unsigned long remainLen = 0xed - prefixLen;
+        dest += prefixLen;
+        Tag tag = mgr.m_FileLookup.m_ParamCBTag;
+        if (tag == FREE_FUNCTION)
+        {
+            mgr.m_FileLookup.m_ParamCBFunc(StreamParam, dest, remainLen);
+        }
+        else
+        {
+            (*mgr.m_FileLookup.m_ParamCBFunctor)(StreamParam, dest, remainLen);
+        }
+        unsigned long cbLen = nlStrLen(dest);
+        nlStrNCpy<char>(dest + cbLen, percentPos + 3, remainLen - cbLen);
+    }
+    else
+    {
+        nlStrNCpy<char>(&FileName[19], lookup->value, 0xed);
+    }
+
+    GCAudioStreaming::StereoAudioStream* stream = entry->m_data.pStream;
+    stream->m_StreamLength = 0;
+    stream->m_OldLength = 0;
+    stream->m_StreamPos = 0;
+
+    volatile unsigned long bufIdx = 0;
+    GCAudioStreaming::AudioStreamBuffer* buf = NULL;
+    if (stream->m_BufferCount > 0)
+    {
+        buf = stream->m_Buffers[0];
+    }
+    while (buf != NULL)
+    {
+        unsigned long i = bufIdx;
+        unsigned long next = i + 1;
+        bufIdx = next;
+        stream->m_Buffers[i] = NULL;
+        if (next < stream->m_BufferCount)
+        {
+            buf = stream->m_Buffers[next];
+        }
+        else
+        {
+            buf = NULL;
+        }
+    }
+
+    stream->m_LastPlayable = 0;
+    stream->m_Flags = 0;
+    stream->m_Volume = 64;
+    stream->m_LPFOn = 0;
+    stream->m_LPFFreq = 0x3FFF;
+    nlFile* file = nlOpen(FileName);
+    stream->m_pFile = file;
+    stream->m_State = GCAudioStreaming::SS_Initd;
+    if (m_State == TS_Idle)
+    {
+        ProcessNewHeadStream();
+    }
+}
 
 extern "C" void sndStreamMixParameterEx(unsigned long stid, unsigned char vol, unsigned char pan,
     unsigned char span, unsigned char auxa, unsigned char auxb);

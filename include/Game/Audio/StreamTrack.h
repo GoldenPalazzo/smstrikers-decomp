@@ -58,7 +58,7 @@ public:
             /* 0x10 */ unsigned long FadeLength : 14;
             /* 0x10 */ unsigned long StartVol : 7;
             /* 0x10 */ unsigned long EndVol : 7;
-            /* 0x10 */ unsigned long VolumeGroup : 4;
+            /* 0x10 */ unsigned long VolumeGroup : 3;
         }; // total size: 0x14
 
         typedef nlDLListSlotPool<STREAM_FADE_CTRL> FadeList;
@@ -83,19 +83,38 @@ public:
 
         struct STREAM_FILE_LOOKUP
         {
-            /* 0x00 */ unsigned long key;
+            /* 0x00 */ unsigned long hash;
             /* 0x04 */ char* value;
         }; // total size: 0x8
 
+        typedef bool (*ParamCallbackFn)(const char*, char*, unsigned long);
+
+        struct ParamFunctorBase
+        {
+            virtual ~ParamFunctorBase() { }
+            virtual bool operator()(const char*, char*, unsigned long) = 0;
+            virtual ParamFunctorBase* Clone() const = 0;
+        };
+
         StreamFileLookup(const char* name,
             const Function<bool(const char*, char*, unsigned long)>& fn);
+
+        /* 0x00 */ Tag m_ParamCBTag;
+        /* 0x04 */ union
+        {
+            ParamCallbackFn m_ParamCBFunc;
+            ParamFunctorBase* m_ParamCBFunctor;
+        };
+        /* 0x08 */ STREAM_FILE_LOOKUP* m_pLookup;
+        /* 0x0C */ unsigned long m_StreamCount;
+        /* 0x10 */ char* m_pStrings;
     }; // total size: 0x14
 
     typedef DLListEntry<GCAudioStreaming::StereoAudioStream*> StreamDeleteEntry;
     typedef BasicSlotPool<StreamDeleteEntry> StreamDeleteAllocator;
     typedef DLListContainerBase<GCAudioStreaming::StereoAudioStream*, StreamDeleteAllocator> StreamDeleteList;
 
-    /* 0x04 */ char _pad_0x04[0x14]; // StreamFileLookup m_FileLookup
+    /* 0x04 */ StreamFileLookup m_FileLookup;
     /* 0x18 */ FadeManager m_FadeMgr;
     /* 0x38 */ SlotPool<GCAudioStreaming::StereoAudioStream> m_StreamPool;
     /* 0x50 */ StreamDeleteList m_StreamDeleteList;

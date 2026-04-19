@@ -96,7 +96,7 @@ public:
     virtual void Warm(bool) { };
     virtual bool SafeToPurge() { return false; };
     virtual void Purge();
-    virtual void DoUpdateRead(unsigned long, unsigned long, unsigned long, unsigned long, AudioStreamBuffer*) { };
+    virtual unsigned long DoUpdateRead(unsigned long, unsigned long, unsigned long, unsigned long, AudioStreamBuffer*) { return 0; };
     virtual unsigned long GetUpdateReadLength() { return 0; };
     virtual void CancelPendingReads() { };
     virtual void WarmReadDone(AudioStreamBuffer*);
@@ -139,7 +139,7 @@ public:
     virtual void CancelPendingReads();
     virtual unsigned long GetUpdateReadLength();
     virtual void Warm(bool);
-    virtual void DoUpdateRead(unsigned long, unsigned long, unsigned long, unsigned long, GCAudioStreaming::AudioStreamBuffer*);
+    virtual unsigned long DoUpdateRead(unsigned long, unsigned long, unsigned long, unsigned long, GCAudioStreaming::AudioStreamBuffer*);
     virtual bool SafeToPurge();
     virtual void Purge();
 
@@ -158,7 +158,7 @@ public:
     virtual void CancelPendingReads();
     virtual void Warm(bool);
     void InterleavedHdrReadCB(nlFile*, void*, unsigned int);
-    virtual void DoUpdateRead(unsigned long, unsigned long, unsigned long, unsigned long, GCAudioStreaming::AudioStreamBuffer*);
+    virtual unsigned long DoUpdateRead(unsigned long, unsigned long, unsigned long, unsigned long, GCAudioStreaming::AudioStreamBuffer*);
     virtual bool SafeToPurge();
     virtual void Purge();
 

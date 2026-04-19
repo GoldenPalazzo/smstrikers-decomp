@@ -30,7 +30,7 @@ void FEPopupMenu::SetOptionTextColourOnCurrent(bool)
 
 /**
  * Offset/Address/Size: 0x164 | 0x80098410 | size: 0x2FC
- * TODO: 87.32% match - stack frame 0x150 vs 0x130: MWCC not reusing InlineHasher(0)
+ * TODO: 99.5% match - stack frame 0x150 vs 0x130: MWCC not reusing InlineHasher(0)
  * argument copy stack locations across Find calls (all diffs are stack offsets only).
  */
 void FEPopupMenu::ResizeHighlight()
@@ -51,7 +51,7 @@ void FEPopupMenu::ResizeHighlight()
         InlineHasher(0),
         InlineHasher(0),
         InlineHasher(0));
-    pText->SetAssetColour(*(nlColour*)((u8*)this + 0xA6C));
+    pText->SetAssetColour(mHighlightedOptionColour);
 
     pText = FEFinder<TLTextInstance, 3>::Find<FEPresentation>(
         presentation,

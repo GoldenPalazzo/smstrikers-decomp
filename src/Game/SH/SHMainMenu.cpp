@@ -82,6 +82,7 @@ static unsigned long sLockedTickerMessages[7] = {
 /**
  * Offset/Address/Size: 0x384 | 0x800AC398 | size: 0x6C
  */
+#pragma dont_inline on
 void FEPopupMenu::Create(ePopupMenu type)
 {
     Function<FnVoidVoid> nothing;
@@ -89,6 +90,7 @@ void FEPopupMenu::Create(ePopupMenu type)
     nothing.mFreeFunction = Nothing;
     Create(type, nothing);
 }
+#pragma dont_inline reset
 
 // /**
 //  * Offset/Address/Size: 0x0 | 0x800AC014 | size: 0x4

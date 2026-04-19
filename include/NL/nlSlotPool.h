@@ -111,6 +111,8 @@ public:
     {
     }
 
+    ~SlotPool() { }
+
     SlotPool(int initial, int delta)
     {
         this->m_Initial = initial;

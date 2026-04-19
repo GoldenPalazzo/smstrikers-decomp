@@ -12,6 +12,7 @@ class FEScrollText
 {
 public:
     FEScrollText(TLTextInstance*, int, int);
+    ~FEScrollText() { }
 
     void ApplyNewTextInstancePointer(TLTextInstance*, float, float);
     void Update(float);

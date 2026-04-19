@@ -335,35 +335,58 @@ public:
     virtual u32 GetID();
 };
 
-class CollisionPlayerBananaData
+class CollisionPlayerBananaData : public EventData
 {
 public:
     virtual u32 GetID();
-};
 
-class CollisionBallShellData
-{
-public:
-    virtual u32 GetID();
-};
+    /* 0x04 */ cFielder* pPlayer;
+    /* 0x08 */ cFielder* pThrower;
+    /* 0x0C */ s32 nThrowerPadID;
+    /* 0x10 */ nlVector3 v3CollisionLocation;
+}; // total size: 0x1C
 
-class CollisionPlayerFreezeData
+class CollisionBallShellData : public EventData
 {
 public:
     virtual u32 GetID();
-};
 
-class CollisionPowerupStatsData
-{
-public:
-    virtual u32 GetID();
-};
+    /* 0x04 */ nlVector3 v3CollisionVelocity;
+}; // total size: 0x10
 
-class CollisionPlayerShellData
+class CollisionPlayerFreezeData : public EventData
 {
 public:
     virtual u32 GetID();
-};
+
+    /* 0x04 */ cFielder* pPlayer;
+    /* 0x08 */ cFielder* pThrower;
+    /* 0x0C */ s32 nThrowerPadID;
+    /* 0x10 */ int eSize;
+}; // total size: 0x14
+
+class CollisionPowerupStatsData : public EventData
+{
+public:
+    virtual u32 GetID();
+
+    /* 0x04 */ cFielder* pThrower;
+    /* 0x08 */ s32 nThrowerPadID;
+}; // total size: 0x0C
+
+class CollisionPlayerShellData : public EventData
+{
+public:
+    virtual u32 GetID();
+
+    /* 0x04 */ cFielder* pPlayer;
+    /* 0x08 */ cFielder* pThrower;
+    /* 0x0C */ u8 nThrowerPadID;
+    /* 0x0D */ bool bIsExploder;
+    /* 0x10 */ int eSize;
+    /* 0x14 */ nlVector3 v3CollisionLocation;
+    /* 0x20 */ nlVector3 v3CollisionVelocity;
+}; // total size: 0x2C
 
 class CollisionBowserPlayerData : public EventData
 {

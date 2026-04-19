@@ -1,10 +1,14 @@
 #include "Game/Sys/THPSimple.h"
+#include "NL/gl/glState.h"
+#include "NL/glx/glxTexture.h"
 #include "NL/nlFileGC.h"
 #include "dolphin/ai.h"
 #include "dolphin/os.h"
 #include "dolphin/os/OSCache.h"
+#include "dolphin/thp/THPAudio.h"
 #include "dolphin/thp/THPInfo.h"
 #include "dolphin/thp/THPPlayer.h"
+#include "dolphin/thp/THPVideoDecode.h"
 
 static s16 SoundBuffer[2][320];
 static int Initialized;
@@ -78,7 +82,6 @@ static long THPSimpleGetVolume()
 
 /**
  * Offset/Address/Size: 0x10 | 0x801CBF74 | size: 0x128
- * TODO: 99.3% match - r4/r5 register swap for ctrl pointer and rampCount
  */
 extern "C" int THPSimpleSetVolume(long vol, long time)
 {
@@ -107,9 +110,8 @@ extern "C" int THPSimpleSetVolume(long vol, long time)
 
         if (time != 0)
         {
-            long rampCount = samplePerMs * time;
-            ctrl->rampCount = rampCount;
-            ctrl->deltaVolume = (ctrl->targetVolume - ctrl->curVolume) / (float)rampCount;
+            ctrl->rampCount = samplePerMs * time;
+            ctrl->deltaVolume = (ctrl->targetVolume - ctrl->curVolume) / (float)ctrl->rampCount;
         }
         else
         {
@@ -212,7 +214,7 @@ extern "C" void THPSimpleAudioStart()
 
 /**
  * Offset/Address/Size: 0xB9C | 0x801CCB00 | size: 0x170
- * TODO: 80.27% match - MWCC readBuffer addressing mode: add+lwz vs addi+lwzx for struct array access generates extra instruction and cascading register swaps
+ * TODO: 91.41% match - addi+lwzx vs add+lwz for nlRead readBuffer arg, r4/r5 swap on xoris/readSize load and ternary
  */
 extern "C" int THPSimplePreLoad(long loop)
 {
@@ -234,10 +236,11 @@ extern "C" int THPSimplePreLoad(long loop)
             nlSeek(sc->fileInfo, sc->curOffset, 0);
             nlRead(sc->fileInfo, sc->readBuffer[sc->readIndex].mPtr, sc->readSize);
 
+            long idx = sc->readIndex;
             sc->curOffset += sc->readSize;
-            sc->readSize = *(long*)sc->readBuffer[sc->readIndex].mPtr;
-            sc->readBuffer[sc->readIndex].mIsValid = 1;
-            sc->readBuffer[sc->readIndex].mFrameNumber = sc->totalReadFrame;
+            sc->readSize = *(long*)sc->readBuffer[idx].mPtr;
+            sc->readBuffer[idx].mIsValid = 1;
+            sc->readBuffer[idx].mFrameNumber = sc->totalReadFrame;
 
             sc->totalReadFrame++;
             sc->readIndex = (sc->readIndex + 1 >= NumReadBuffers) ? 0 : sc->readIndex + 1;
@@ -553,6 +556,137 @@ void MixAudio(short* destination, short* source, unsigned long sample)
     }
 }
 
+static int VideoDecode(unsigned char* videoFrame)
+{
+    long ret = THPVideoDecode(videoFrame,
+        ((THPSimpleControlWork*)&SimpleControl)->textureSet.mYTexture,
+        ((THPSimpleControlWork*)&SimpleControl)->textureSet.mUTexture,
+        ((THPSimpleControlWork*)&SimpleControl)->textureSet.mVTexture,
+        ((THPSimpleControlWork*)&SimpleControl)->thpWork);
+    if (ret == 0)
+    {
+        ((THPSimpleControlWork*)&SimpleControl)->textureSet.mFrameNumber = ((THPSimpleControlWork*)&SimpleControl)->readBuffer[((THPSimpleControlWork*)&SimpleControl)->nextDecodeIndex].mFrameNumber;
+        return 1;
+    }
+    return 0;
+}
+
+/**
+ * Offset/Address/Size: 0x684 | 0x801CC5E8 | size: 0x390
+ * TODO: 87.69% match - compiler doesn't precompute readBuffer field base pointers
+ * (addi r29,r31,0xa4 / addi r28,r31,0x9c), causing stmw r25 vs r23 and cascading
+ * register diffs throughout. Also ret3 placement and audioDecodeIndex increment ordering.
+ */
+extern "C" long THPSimpleDecode(long audioTrack)
+{
+    int old;
+    unsigned long i;
+    unsigned char* ptr;
+    unsigned long* compSizePtr;
+    unsigned long sample;
+
+    if (((THPSimpleControlWork*)&SimpleControl)->readBuffer[((THPSimpleControlWork*)&SimpleControl)->nextDecodeIndex].mIsValid == 0)
+    {
+        goto ret2;
+    }
+
+    compSizePtr = (unsigned long*)(((THPSimpleControlWork*)&SimpleControl)->readBuffer[((THPSimpleControlWork*)&SimpleControl)->nextDecodeIndex].mPtr + 8);
+    ptr = ((THPSimpleControlWork*)&SimpleControl)->readBuffer[((THPSimpleControlWork*)&SimpleControl)->nextDecodeIndex].mPtr + ((THPSimpleControlWork*)&SimpleControl)->compInfo.mNumComponents * 4 + 8;
+
+    if (((THPSimpleControlWork*)&SimpleControl)->audioExist != 0 && AudioSystem != 1)
+    {
+        if (audioTrack < 0 || (unsigned long)audioTrack >= ((THPSimpleControlWork*)&SimpleControl)->audioInfo.mSndNumTracks)
+        {
+            return 4;
+        }
+
+        if (((THPSimpleControlWork*)&SimpleControl)->audioBuffer[((THPSimpleControlWork*)&SimpleControl)->audioDecodeIndex].mValidSample != 0)
+        {
+            goto ret3;
+        }
+
+        for (i = 0; i < ((THPSimpleControlWork*)&SimpleControl)->compInfo.mNumComponents; i++)
+        {
+            switch (((THPSimpleControlWork*)&SimpleControl)->compInfo.mFrameComp[i])
+            {
+            case 0:
+                if (!VideoDecode(ptr))
+                {
+                    return 1;
+                }
+                break;
+            case 1:
+                sample = THPAudioDecode(
+                    ((THPSimpleControlWork*)&SimpleControl)->audioBuffer[((THPSimpleControlWork*)&SimpleControl)->audioDecodeIndex].mBuffer,
+                    ptr + *compSizePtr * audioTrack,
+                    0);
+                old = OSDisableInterrupts();
+                ((THPSimpleControlWork*)&SimpleControl)->audioBuffer[((THPSimpleControlWork*)&SimpleControl)->audioDecodeIndex].mValidSample = sample;
+                ((THPSimpleControlWork*)&SimpleControl)->audioBuffer[((THPSimpleControlWork*)&SimpleControl)->audioDecodeIndex].mCurPtr = ((THPSimpleControlWork*)&SimpleControl)->audioBuffer[((THPSimpleControlWork*)&SimpleControl)->audioDecodeIndex].mBuffer;
+                OSRestoreInterrupts(old);
+                if (++((THPSimpleControlWork*)&SimpleControl)->audioDecodeIndex >= NumAudioBuffers)
+                {
+                    ((THPSimpleControlWork*)&SimpleControl)->audioDecodeIndex = 0;
+                }
+                break;
+            }
+            ptr += *compSizePtr;
+            compSizePtr++;
+        }
+    }
+    else
+    {
+        for (i = 0; i < ((THPSimpleControlWork*)&SimpleControl)->compInfo.mNumComponents; i++)
+        {
+            switch (((THPSimpleControlWork*)&SimpleControl)->compInfo.mFrameComp[i])
+            {
+            case 0:
+                if (!VideoDecode(ptr))
+                {
+                    return 1;
+                }
+                break;
+            }
+            ptr += *compSizePtr;
+            compSizePtr++;
+        }
+    }
+
+    ((THPSimpleControlWork*)&SimpleControl)->readBuffer[((THPSimpleControlWork*)&SimpleControl)->nextDecodeIndex].mIsValid = 0;
+    ((THPSimpleControlWork*)&SimpleControl)->nextDecodeIndex = (((THPSimpleControlWork*)&SimpleControl)->nextDecodeIndex + 1 >= NumReadBuffers) ? 0 : ((THPSimpleControlWork*)&SimpleControl)->nextDecodeIndex + 1;
+
+    old = OSDisableInterrupts();
+
+    if (((THPSimpleControlWork*)&SimpleControl)->readBuffer[((THPSimpleControlWork*)&SimpleControl)->readIndex].mIsValid == 0 && ((THPSimpleControlWork*)&SimpleControl)->readProgress == 0 && ((THPSimpleControlWork*)&SimpleControl)->dvdError == 0 && ((THPSimpleControlWork*)&SimpleControl)->preFetchState == 1)
+    {
+        if ((unsigned long)((THPSimpleControlWork*)&SimpleControl)->totalReadFrame > ((THPSimpleControlWork*)&SimpleControl)->numFrames - 1)
+        {
+            if (((THPSimpleControlWork*)&SimpleControl)->loop != 1)
+            {
+                goto done;
+            }
+            ((THPSimpleControlWork*)&SimpleControl)->totalReadFrame = 0;
+            ((THPSimpleControlWork*)&SimpleControl)->curOffset = ((THPSimpleControlWork*)&SimpleControl)->movieDataOffsets;
+            ((THPSimpleControlWork*)&SimpleControl)->readSize = ((THPSimpleControlWork*)&SimpleControl)->firstFrameSize;
+        }
+
+        ((THPSimpleControlWork*)&SimpleControl)->readProgress = 1;
+        nlSeek(((THPSimpleControlWork*)&SimpleControl)->fileInfo, ((THPSimpleControlWork*)&SimpleControl)->curOffset, 0);
+        nlReadAsync(((THPSimpleControlWork*)&SimpleControl)->fileInfo,
+            ((THPSimpleControlWork*)&SimpleControl)->readBuffer[((THPSimpleControlWork*)&SimpleControl)->readIndex].mPtr,
+            ((THPSimpleControlWork*)&SimpleControl)->readSize,
+            __THPSimpleDVDCallback,
+            0);
+    }
+done:
+    OSRestoreInterrupts(old);
+    return 0;
+ret3:
+    return 3;
+ret2:
+    return 2;
+}
+
 /**
  * Offset/Address/Size: 0x138 | 0x801CC09C | size: 0x178
  */
@@ -625,6 +759,56 @@ extern "C" unsigned long THPSimpleCalcNeedMemory(int numReadBuffers, int numAudi
     }
 
     return 0;
+}
+
+/**
+ * Offset/Address/Size: 0x116C | 0x801CCDD0 | size: 0x3CC
+ * TODO: 94.7% match - r6/r7/r8 register shift in unrolled loop body
+ */
+extern "C" int THPSimpleSetBuffer(unsigned char* buffer)
+{
+    unsigned long i;
+    unsigned char* ptr;
+    unsigned long numRead;
+    unsigned long numAudio;
+
+    if (((THPSimpleControlWork*)&SimpleControl)->open && ((THPSimpleControlWork*)&SimpleControl)->preFetchState == 0)
+    {
+        if (((THPSimpleControlWork*)&SimpleControl)->audioState == 1)
+        {
+            return 0;
+        }
+
+        ptr = buffer;
+
+        ((THPSimpleControlWork*)&SimpleControl)->textureSet.mYTexture = (u8*)glx_GetTex(glGetTexture("movie"), 1, 1)->m_SwizzledData;
+        ((THPSimpleControlWork*)&SimpleControl)->textureSet.mUTexture = (u8*)glx_GetTex(glGetTexture("movie_u"), 1, 1)->m_SwizzledData;
+        ((THPSimpleControlWork*)&SimpleControl)->textureSet.mVTexture = (u8*)glx_GetTex(glGetTexture("movie_v"), 1, 1)->m_SwizzledData;
+
+        numRead = NumReadBuffers;
+        for (i = 0; i < numRead; i++)
+        {
+            ((THPSimpleControlWork*)&SimpleControl)->readBuffer[i].mPtr = ptr;
+            ptr += (((THPSimpleControlWork*)&SimpleControl)->bufSize + 31) & ~31;
+            ((THPSimpleControlWork*)&SimpleControl)->readBuffer[i].mIsValid = 0;
+        }
+
+        if (((THPSimpleControlWork*)&SimpleControl)->audioExist)
+        {
+            numAudio = NumAudioBuffers;
+            for (i = 0; i < numAudio; i++)
+            {
+                ((THPSimpleControlWork*)&SimpleControl)->audioBuffer[i].mBuffer = (s16*)ptr;
+                ((THPSimpleControlWork*)&SimpleControl)->audioBuffer[i].mCurPtr = (s16*)ptr;
+                ((THPSimpleControlWork*)&SimpleControl)->audioBuffer[i].mValidSample = 0;
+                ptr += (((THPSimpleControlWork*)&SimpleControl)->audioMaxSamples * 4 + 31) & ~31;
+            }
+        }
+
+        ((THPSimpleControlWork*)&SimpleControl)->thpWork = ptr;
+    }
+
+    return 1;
 }
 
 /**

@@ -90,7 +90,8 @@ public:
     /* 0xA40 */ eFEINPUT_PAD mControlInput;           // size 0x4
     /* 0xA44 */ Function<FnVoidVoid> callBacks[4];    // size 0x20
     /* 0xA64 */ int mUnknownA64;                      // size 0x4
-    /* 0xA68 */ u8 pad_A68[8];                        // size 0x8
+    /* 0xA68 */ u8 pad_A68[4];                        // size 0x4
+    /* 0xA6C */ nlColour mHighlightedOptionColour;    // size 0x4
     /* 0xA70 */ feVector3 mHighlightSize;             // size 0xC
     /* 0xA7C */ ePopupMenu mType;                     // size 0x4
     /* 0xA80 */ ButtonComponent mButtons;             // size 0x24

@@ -100,7 +100,7 @@ public:
 
     float GetRadius() const;
     static int AwardPowerup(cTeam*);
-    void CollisionCallback(PhysicsObject*, PhysicsObject*, const nlVector3&, void*);
+    static void CollisionCallback(PhysicsObject*, PhysicsObject*, const nlVector3&, void*);
     void UpdateTransform();
     static unsigned long PlayPowerupSound(ePowerUpType, PowerupBase::PowerupSound, const nlVector3&, float);
     static unsigned long PlayPowerupSound(ePowerUpType, PowerupBase::PowerupSound, PhysicsObject*, float);

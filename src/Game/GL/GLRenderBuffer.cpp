@@ -53,8 +53,6 @@ template void nlWalkDLRing<DLListEntry<GLDrawableData*>, DLListContainerBase<GLD
 
 /**
  * Offset/Address/Size: 0x0 | 0x801E7FB0 | size: 0x124
- * TODO: 95.21% match - post-loop cleanup still emits nlWalkRing calls
- * instead of nlWalkDLRing with target argument setup.
  */
 GLRenderBuffer::~GLRenderBuffer()
 {
@@ -76,10 +74,10 @@ GLRenderBuffer::~GLRenderBuffer()
         }
     }
 
-    nlWalkDLRing<DLListEntry<GLDrawableData*>, DLListContainerBase<GLDrawableData*, NewAdapter<DLListEntry<GLDrawableData*> > > >(
-        m_drawableData.m_Head,
-        &m_drawableData,
-        &DLListContainerBase<GLDrawableData*, NewAdapter<DLListEntry<GLDrawableData*> > >::DeleteEntry);
+    typedef void (*WalkFn)(DLListEntry<GLDrawableData*>*, DLListContainerBase<GLDrawableData*, NewAdapter<DLListEntry<GLDrawableData*> > >*, void (DLListContainerBase<GLDrawableData*, NewAdapter<DLListEntry<GLDrawableData*> > >::*)(DLListEntry<GLDrawableData*>*));
+    void (DLListContainerBase<GLDrawableData*, NewAdapter<DLListEntry<GLDrawableData*> > >::*func)(DLListEntry<GLDrawableData*>*) = &DLListContainerBase<GLDrawableData*, NewAdapter<DLListEntry<GLDrawableData*> > >::DeleteEntry;
+    WalkFn walk = &nlWalkDLRing<DLListEntry<GLDrawableData*>, DLListContainerBase<GLDrawableData*, NewAdapter<DLListEntry<GLDrawableData*> > > >;
+    walk(m_drawableData.m_Head, &m_drawableData, func);
 
     m_drawableData.m_Head = 0;
 }

@@ -554,23 +554,26 @@ static void SOR_LCP(int m, int nb, dRealMutablePtr J, int* jb, dxBody* const* bo
 
 /**
  * Offset/Address/Size: 0x21E9B4 | 0x80221A74 | size: 0x134C
- * TODO: 92.3% match (decomp.me w/ mwcc_247_107) - register allocation (world in r16
- * vs stack, nj/nb/body register shift) and body tag loop unrolling pattern difference
- * (pre-compute vs sequential increment). ODE configure.py uses mw_version="GC/2.0"
- * (mwcc_247_92) but mwcc_247_107 produces 92.3% vs 86.8%. All remaining 71 diffs are
- * in prologue registers + body tag loop; rest of function matches 100%.
+ * TODO: 95.3% match - register allocation (world in r16 vs stack, nj/nb/body
+ * register shift r15/r18/r17 vs r18/r17/r16). Body tag loop and rest of
+ * function match 100%.
  */
 void dxQuickStepper(dxWorld* world, dxBody* const* body, int nb,
     dxJoint* const* _joint, int nj, dReal stepsize)
 {
     int i, j;
+    dxQuickStepParameters* w_qs = &world->qs;
     IFTIMING(dTimerStart("preprocessing");)
 
     dReal stepsize1 = dRecip(stepsize);
 
     // number all bodies in the body list - set their tag values
-    for (i = 0; i < nb; i++)
-        body[i]->tag = i;
+    {
+        dxBody* const* bp = body;
+        int tag = 0;
+        for (i = 0; i < nb; i++, bp++)
+            (*bp)->tag = tag++;
+    }
 
     // make a local copy of the joint array, because we might want to modify it.
     // (the "dxJoint *const*" declaration says we're allowed to modify the joints
@@ -748,7 +751,7 @@ void dxQuickStepper(dxWorld* world, dxBody* const* body, int nb,
         // solve the LCP problem and get lambda and invM*constraint_force
         IFTIMING(dTimerNow("solving LCP problem");)
         dRealAllocaArray(cforce, nb * 6);
-        SOR_LCP(m, nb, J, jb, body, invI, lambda, cforce, rhs, lo, hi, cfm, findex, &world->qs);
+        SOR_LCP(m, nb, J, jb, body, invI, lambda, cforce, rhs, lo, hi, cfm, findex, w_qs);
 
 #ifdef WARM_STARTING
         // save lambda for the next iteration

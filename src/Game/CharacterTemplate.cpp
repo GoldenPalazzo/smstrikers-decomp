@@ -926,7 +926,6 @@ CharacterPhysicsData::~CharacterPhysicsData()
 
 /**
  * Offset/Address/Size: 0x0 | 0x800146F8 | size: 0xD0
- * TODO: 96.15% match - missing duplicate addic./beq null check for embedded member destructor (MWCC compiler quirk)
  */
 AnimTagScriptInterpreter::~AnimTagScriptInterpreter()
 {

@@ -5,9 +5,14 @@
 #include "Game/Render/ChainChomp.h"
 #include "Game/Render/NPCManager.h"
 #include "Game/BasicStadium.h"
+#include "Game/CharacterTriggers.h"
 #include "Game/GameInfo.h"
 #include "Game/Physics/PhysicsSphere.h"
 #include "Game/Physics/PhysicsShell.h"
+#include "Game/Physics/PhysicsBanana.h"
+#include "Game/Physics/PhysicsAIBall.h"
+#include "Game/Physics/PhysicsCharacter.h"
+#include "Game/Ball.h"
 #include "Game/Effects/EmissionManager.h"
 #include "Game/Effects/EffectsGroup.h"
 #include "Game/Game.h"
@@ -756,8 +761,199 @@ int PowerupBase::AwardPowerup(cTeam* pTeam)
 /**
  * Offset/Address/Size: 0x38B4 | 0x8005E1A0 | size: 0x548
  */
-void PowerupBase::CollisionCallback(PhysicsObject*, PhysicsObject*, const nlVector3&, void*)
+void PowerupBase::CollisionCallback(PhysicsObject* pObjA, PhysicsObject* pObjB, const nlVector3& v3Pos, void* pParam)
 {
+    PowerupBase* pObj = (PowerupBase*)pParam;
+    cCharacter* pCharacter = NULL;
+    cPlayer* pPlayerTarget = NULL;
+
+    int type = pObjB->GetObjectType();
+    switch (type)
+    {
+    case 0x0D:
+    case 0x0E:
+        pCharacter = ((PhysicsCharacter*)pObjB->m_parentObject)->m_pAICharacter;
+        break;
+    case 0x0F:
+    {
+        cBall* pBall = ((PhysicsAIBall*)pObjB)->m_pAIBall;
+        cFielder* pFielder = (cFielder*)pBall->m_pOwner;
+        if (pFielder != NULL)
+        {
+            pCharacter = (cCharacter*)pFielder;
+            if (((cCharacter*)pFielder)->m_eClassType != FIELDER)
+                break;
+            if (pBall->GetOwnerFielder()->IsBallAwayFromCarrier())
+            {
+                Event* pEvent = g_pEventManager->CreateValidEvent(0x2D, 0x24);
+                CollisionBallShellData* pData = new ((u8*)pEvent + 0x10) CollisionBallShellData();
+                pData->v3CollisionVelocity = pObj->m_v3Velocity;
+            }
+        }
+        else
+        {
+            bool bPerfectShot = (pBall->m_tShotTimer.m_uPackedTime != 0) && pBall->m_unk_0xA4;
+            if (bPerfectShot)
+                EmitBallWallHit("perfect_shot_catch");
+            else if (pObj->m_pTarget != NULL)
+                EmitBallWallHit("goalie_catch");
+            pObj->m_pTarget = NULL;
+            pBall->ClearShotInProgress();
+            pBall->ClearPassTarget();
+            pBall->m_unk_0xA6 = false;
+            pBall->mpDamageTarget = NULL;
+        }
+        break;
+    }
+    case 0x13:
+        if (pObj->meSize > ((PhysicsShell*)pObjB)->m_pPowerupObject->meSize)
+        {
+            ((PhysicsShell*)pObjB)->m_pPowerupObject->m_bShouldDestroy = true;
+        }
+        else if (pObj->meSize == ((PhysicsShell*)pObjB)->m_pPowerupObject->meSize)
+        {
+            if (pObj->m_eType == POWER_UP_BANANA)
+            {
+                pObj->m_bShouldDestroy = true;
+            }
+            else if (pObj->m_eType == POWER_UP_SPINY_SHELL && ((PhysicsShell*)pObjB)->m_pPowerupObject->m_eType == POWER_UP_SPINY_SHELL)
+            {
+                ((PhysicsShell*)pObjB)->m_pPowerupObject->m_bShouldDestroy = true;
+                pObj->m_bShouldDestroy = true;
+            }
+            else if (pObj->m_eType == POWER_UP_SPINY_SHELL)
+            {
+                ((PhysicsShell*)pObjB)->m_pPowerupObject->m_bShouldDestroy = true;
+            }
+            else if (((PhysicsShell*)pObjB)->m_pPowerupObject->m_eType == POWER_UP_SPINY_SHELL)
+            {
+                pObj->m_bShouldDestroy = true;
+            }
+            else
+            {
+                ((PhysicsShell*)pObjB)->m_pPowerupObject->m_bShouldDestroy = true;
+                pObj->m_bShouldDestroy = true;
+            }
+        }
+        else
+        {
+            pObj->m_bShouldDestroy = true;
+        }
+        break;
+    case 0x14:
+    {
+        PowerupBase* pOther = ((PhysicsBanana*)pObjB)->m_pPowerupObject;
+        if (pObj->meSize > pOther->meSize)
+        {
+            pOther->m_bShouldDestroy = true;
+        }
+        else if (pObj->meSize == pOther->meSize)
+        {
+            pOther->m_bShouldDestroy = true;
+            if (pObj->m_eType != POWER_UP_SPINY_SHELL)
+                pObj->m_bShouldDestroy = true;
+        }
+        else
+        {
+            pObj->m_bShouldDestroy = true;
+        }
+        break;
+    }
+    default:
+        if (pObj->m_eType == POWER_UP_BOBOMB && !((Bobomb*)pObj)->mbIsMine && ((PhysicsShell*)pObjA)->mbIsInNet)
+            pObj->m_bShouldDestroy = true;
+        break;
+    }
+
+    if (pCharacter == NULL)
+        goto check_event;
+    if (pCharacter->m_eClassType == GOALIE)
+    {
+        pObj->m_bShouldDestroy = true;
+        goto check_event;
+    }
+    pPlayerTarget = (cPlayer*)pCharacter;
+    if (((cFielder*)pCharacter)->mbWasHitByPowerupThisFrame)
+        return;
+    ((cFielder*)pCharacter)->mbWasHitByPowerupThisFrame = true;
+
+    {
+        ePowerUpType eType = pObj->m_eType;
+        if (eType == POWER_UP_BANANA)
+        {
+            Event* pEvent = g_pEventManager->CreateValidEvent(0x2B, 0x30);
+            CollisionPlayerBananaData* pData = new ((u8*)pEvent + 0x10) CollisionPlayerBananaData();
+            pData->pPlayer = (cFielder*)pCharacter;
+            pData->pThrower = pObj->m_pThrower;
+            pData->nThrowerPadID = pObj->m_nThrowerPadID;
+            pData->v3CollisionLocation = v3Pos;
+            pObj->m_bShouldDestroy = true;
+        }
+        else if (eType != POWER_UP_BOBOMB)
+        {
+            if (eType != POWER_UP_FREEZE_SHELL)
+            {
+                Event* pEvent = g_pEventManager->CreateValidEvent(0x29, 0x40);
+                CollisionPlayerShellData* pData = new ((u8*)pEvent + 0x10) CollisionPlayerShellData();
+                pData->pPlayer = (cFielder*)pCharacter;
+                pData->eSize = (int)pObj->meSize;
+                pData->pThrower = pObj->m_pThrower;
+                pData->nThrowerPadID = (u8)pObj->m_nThrowerPadID;
+                if (pObj->mbExploder)
+                {
+                    pData->bIsExploder = true;
+                }
+                else
+                {
+                    pData->bIsExploder = false;
+                }
+                pData->v3CollisionLocation = v3Pos;
+                pData->v3CollisionVelocity = pObj->m_v3Velocity;
+            }
+            else
+            {
+                Event* pEvent = g_pEventManager->CreateValidEvent(0x2A, 0x28);
+                CollisionPlayerFreezeData* pData = new ((u8*)pEvent + 0x10) CollisionPlayerFreezeData();
+                pData->pPlayer = (cFielder*)pCharacter;
+                pData->eSize = (int)pObj->meSize;
+                pData->pThrower = pObj->m_pThrower;
+                pData->nThrowerPadID = pObj->m_nThrowerPadID;
+            }
+            if (pObj->meSize != POWERUPSIZE_LARGE)
+            {
+                pObj->m_bShouldDestroy = true;
+            }
+            else
+            {
+                nlVector3 v3NewVelocity = pObj->m_v3Velocity;
+                nlPolar aSpeedOut;
+                nlCartesianToPolar(aSpeedOut, v3NewVelocity.f.x, v3NewVelocity.f.y);
+                v3NewVelocity.f.z = 0.5f * aSpeedOut.r;
+                pObj->m_v3Velocity = v3NewVelocity;
+                pObj->m_pPhysicsObject->SetLinearVelocity(v3NewVelocity);
+                pObj->m_pTarget = NULL;
+            }
+        }
+        else
+        {
+            pObj->m_bShouldDestroy = true;
+        }
+    }
+
+    if (pObj->m_eType == POWER_UP_SPINY_SHELL)
+        pObj->m_bShouldDestroy = false;
+    if (((cFielder*)pCharacter)->IsInvincible())
+        pObj->m_bShouldDestroy = true;
+
+check_event:
+    if (pPlayerTarget != NULL)
+    {
+        Event* pEvent = g_pEventManager->CreateValidEvent(0x1E, 0x24);
+        PowerupHitPlayerEventData* pData = new ((u8*)pEvent + 0x10) PowerupHitPlayerEventData();
+        pData->Type = pObj->m_eType;
+        pData->Thrower = (cPlayer*)pObj->m_pThrower;
+        pData->Target = pPlayerTarget;
+    }
 }
 
 /**

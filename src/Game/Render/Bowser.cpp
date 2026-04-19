@@ -1067,7 +1067,10 @@ void Bowser::ActionLeave()
             cPN_Blender::m_BlenderSlotPool.m_FreeList = cPN_Blender::m_BlenderSlotPool.m_FreeList->m_next;
         }
 
-        new (blender) cPN_Blender(*mpFeatherBlender->GetChildPtr(0), controller, 0.2f);
+        if (blender != NULL)
+        {
+            blender = __ct__11cPN_BlenderFP9cPoseNodeP9cPoseNodef(blender, *mpFeatherBlender->GetChildPtr(0), controller, 1.0f);
+        }
     }
     else
     {

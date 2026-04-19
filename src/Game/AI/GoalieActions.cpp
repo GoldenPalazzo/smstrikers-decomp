@@ -38,15 +38,6 @@ inline float CalculateDistanceSquared2D(const nlVector3& pos1, const nlVector3& 
 {
     nlVector3 delta;
     nlVec3Sub(delta, pos1, pos2);
-
-    // float dx, dy;
-    // dx = pos1.f.x - pos2.f.x;
-    // dy = pos1.f.y - pos2.f.y;
-
-    // nlVector2 delta;
-    // nlVec2Set(delta, pos1.f.x - pos2.f.x, pos1.f.y - pos2.f.y);
-    // nlVec2Sub(delta, pos1, pos2);
-    // return nlGetLengthSquared2D(dx, dy);
     return delta.GetLengthSq2D();
 }
 

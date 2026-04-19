@@ -23,6 +23,8 @@
 #include "Game/Render/SidelineExplodable.h"
 #include "Game/Render/ElectricFence.h"
 #include "Game/Render/Presentation.h"
+#include "Game/ReplayChoreo.h"
+#include "Game/Audio/AudioLoader.h"
 #include "PowerPC_EABI_Support/MSL_C++/MSL_Common/utility.h"
 #include "PowerPC_EABI_Support/MSL_C++/MSL_Common/msl_memory.h"
 
@@ -617,9 +619,186 @@ void cGame::PostResetCallback(unsigned long, unsigned long)
 
 /**
  * Offset/Address/Size: 0x113C | 0x8003D6B0 | size: 0x5A0
+ * TODO: 96.40% match - register allocation uses one fewer non-volatile register
+ * (stmw r25 vs r24), causing cascading r-diffs and extra g_pTeams reload at end.
  */
-void cGame::BeginGame(bool, bool)
+void cGame::BeginGame(bool bRematch, bool bStraightToKickoff)
 {
+    int i;
+
+    if (m_eGameState != GS_PRE_GAME)
+    {
+        InitGameState(GS_PRE_GAME);
+    }
+
+    m_bBallInNet = false;
+    mInSuddenDeath = false;
+
+    for (i = 0; i < 5; i++)
+    {
+        m_pRandomPlayersArray[i] = g_pTeams[0]->GetPlayer(i);
+    }
+    for (i = 0; i < 5; i++)
+    {
+        m_pRandomPlayersArray[5 + i] = g_pTeams[1]->GetPlayer(i);
+    }
+    m_nLastTeamToScore = 1;
+
+    static FilteredRandomRange randgen;
+    for (i = 0; i < 10; i++)
+    {
+        int j = randgen.genrand(10);
+        if (j != i)
+        {
+            cPlayer* temp = m_pRandomPlayersArray[i];
+            m_pRandomPlayersArray[i] = m_pRandomPlayersArray[j];
+            m_pRandomPlayersArray[j] = temp;
+        }
+    }
+
+    for (i = 0; i < 2; i++)
+    {
+        g_pTeams[i]->ResetCharacters();
+    }
+
+    nlVector3 velocity = { 0.0f, 0.0f, 0.0f };
+    nlVector3 position = { 0.0f, 0.0f, 0.18f };
+
+    if (g_pBall->m_pOwner != NULL)
+    {
+        g_pBall->m_pOwner->ReleaseBall();
+    }
+    g_pBall->WarpTo(position);
+    g_pBall->SetVelocity(velocity, SPINTYPE_NONE, NULL);
+    g_pBall->m_unk_0xA6 = false;
+    g_pBall->mpDamageTarget = NULL;
+    m_bBallInNet = false;
+    g_pBall->ClearBallEffects();
+    g_pBall->HandleBuzzerBeater(-1.0f);
+
+    for (i = 0; i < 2; i++)
+    {
+        cTeam* pTeam = g_pTeams[i];
+        if (pTeam != NULL)
+        {
+            pTeam->ClearAllPowerUps();
+            pTeam->ClearCurrentPowerUp();
+            pTeam->mfPowerupMeter = 0.0f;
+        }
+    }
+
+    for (i = 0; i < 25; i++)
+    {
+        if (g_pPowerups[i] != NULL)
+        {
+            g_pPowerups[i]->Destroy(true);
+            g_pPowerups[i] = NULL;
+        }
+    }
+
+    if (BasicStadium::GetCurrentStadium()->mpNPCManager != NULL)
+    {
+        if (BasicStadium::GetCurrentStadium()->mpNPCManager->mpChainChomp != NULL)
+        {
+            if (!mbCaptainShotToScoreOn)
+            {
+                BasicStadium::GetCurrentStadium()->mpNPCManager->mpChainChomp->Hide(true);
+            }
+        }
+    }
+    BasicStadium::GetCurrentStadium()->mpNPCManager->mpBowser->ActionReset();
+
+    if (GameInfoManager::s_pInstance->IsTiltingFieldOn() || GameInfoManager::s_pInstance->mIsInStrikers101Mode)
+    {
+        mBowserTimer.m_uPackedTime = 0;
+    }
+    else
+    {
+        if (GetConfigBool(Config::Global(), "bowser_repeat", false))
+        {
+            g_pGame->m_pGameTweaks->unk308 = 1.0f;
+            g_pGame->m_pGameTweaks->unk30C = 4.0f;
+            g_pGame->m_pGameTweaks->unk310 = -1.0f;
+        }
+
+        GameTweaks* pTweaks_ = g_pGame->m_pGameTweaks;
+        if (nlRandomf(1.0f, &nlDefaultSeed) < pTweaks_->unk308)
+        {
+            GameTweaks* pTweaks = g_pGame->m_pGameTweaks;
+            float fMinTime = pTweaks->unk30C;
+            float fMaxTime = pTweaks->unk310;
+
+            if (fMinTime < 0.0f)
+            {
+                fMinTime = 0.0f;
+            }
+            else if (fMinTime > m_fGameDuration)
+            {
+                fMinTime = m_fGameDuration - 10.f;
+            }
+
+            float fThreshold = 0.0f;
+            float fTimeRange = fThreshold;
+
+            if (fMaxTime > fThreshold)
+            {
+                fTimeRange = m_fGameDuration - fMaxTime - fMinTime;
+            }
+
+            if (fTimeRange > fThreshold)
+            {
+                mBowserTimer.SetSeconds(fMinTime + nlRandomf(fTimeRange, &nlDefaultSeed));
+            }
+            else
+            {
+                mBowserTimer.SetSeconds(fMinTime);
+            }
+        }
+        else
+        {
+            mBowserTimer.m_uPackedTime = 0;
+        }
+    }
+
+    m_pGameClock->Reset(0.0f, 60000.0f, 1.0f);
+    m_pPostGameDoneClock->Reset(0.0f, 1.4f, 1.0f);
+    m_pPostGameDoneClock->Stop();
+
+    mfCheatTilt = 0.0f;
+    g_pTeams[0]->m_nScore = 0;
+    g_pTeams[1]->m_nScore = 0;
+
+    for (i = 0; i < 10; i++)
+    {
+        g_pCharacters[i]->m_Dirt = 0.0f;
+    }
+
+    SidelineExplodableManager::DestroyAllActiveFragments(true);
+    Presentation::Instance().Reset();
+    ReplayChoreo::Instance().FlushHighlights();
+
+    if (bRematch)
+    {
+        AudioLoader::ResetForRematch();
+    }
+    else
+    {
+        AudioLoader::ResetForNewGame();
+    }
+
+    if (bStraightToKickoff)
+    {
+        if (m_eGameState != GS_KICKOFF)
+        {
+            InitGameState(GS_KICKOFF);
+        }
+    }
+    else
+    {
+        Presentation::Instance().Call("GameBegin", "");
+    }
+
+    ReplayManager::Instance()->ResetSnapshots();
 }
 
 /**

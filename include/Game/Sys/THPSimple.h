@@ -35,6 +35,7 @@ struct THPSimpleControl
 extern THPSimpleControl SimpleControl;
 extern s32 NumReadBuffers;
 
+int THPSimpleSetBuffer(unsigned char* buffer);
 void THPAudioMixCallback();
 void MixAudio(short*, short*, unsigned long);
 void __THPSimpleDVDCallback(nlFile*, void*, unsigned int, unsigned long);

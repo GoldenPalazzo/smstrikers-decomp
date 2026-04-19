@@ -932,6 +932,7 @@ void cGameSFX::SetSFX(SoundPropAccessor* pSoundPropAccessor)
  */
 void cGameSFX::ShutdownPlaySet()
 {
+    FORCE_DONT_INLINE;
     mbCurPlaySetIsValid = false;
     StopPlayingAllTrackedSFX();
 

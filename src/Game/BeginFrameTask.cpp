@@ -19,6 +19,7 @@
 #include "NL/gl/glMatrix.h"
 #include "NL/gl/glView.h"
 #include "NL/glx/glxTexture.h"
+#include "Game/GL/gluMeshWriter.h"
 
 #include "Game/Camera/BaseCamera.h"
 #include "Game/GameInfo.h"
@@ -396,10 +397,140 @@ void DrawSafeFrame()
 
 /**
  * Offset/Address/Size: 0x410 | 0x8016EAF0 | size: 0x540
+ * TODO: 98.62% match - stack offset diffs (0x18) on nlVector3 vars; MWCC not
+ * generating ~GLMeshWriterCore() destructor cleanup, causing stack slot reuse
+ * where target has 3 separate mesh/streams allocations
  */
-void DrawGrid(int)
+static inline void meshTexcoord(GLMeshWriterCore& w, const nlVector2& tc)
 {
-    FORCE_DONT_INLINE;
+    w.Texcoord(tc);
+}
+
+static inline void meshVertex(GLMeshWriterCore& w, const nlVector3& v)
+{
+    w.Vertex(v);
+}
+
+void DrawGrid(int spacing)
+{
+    nlColour gridColour = { 0x40, 0x40, 0xFF, 0xFF };
+    nlColour centerColour = { 0xFF, 0x40, 0x40, 0xFF };
+
+    for (int y = 0; y < 480; y += spacing)
+    {
+        GLMeshWriter mesh;
+        eGLStream streams[] = { GLStream_Position, GLStream_Colour, GLStream_Diffuse };
+        glSetDefaultState(false);
+        glSetCurrentTexture(glGetTexture("global/white"), GLTT_Diffuse);
+        glSetCurrentProgram(glGetProgram("2d unlit"));
+
+        if (mesh.Begin(2, GLP_LineList, 3, streams, false))
+        {
+            nlVector2 tc;
+            tc.f.x = 0.0f;
+            tc.f.y = 0.0f;
+            meshTexcoord(mesh, tc);
+            mesh.Colour(gridColour);
+            nlVector3 v;
+            v.f.x = 0.0f;
+            v.f.y = (float)y;
+            v.f.z = 0.0f;
+            meshVertex(mesh, v);
+
+            nlVector2 tc2;
+            tc2.f.x = 0.0f;
+            tc2.f.y = 0.0f;
+            meshTexcoord(mesh, tc2);
+            mesh.Colour(gridColour);
+            nlVector3 v2;
+            v2.f.x = 640.0f;
+            v2.f.y = (float)y;
+            v2.f.z = 0.0f;
+            meshVertex(mesh, v2);
+
+            if (mesh.End())
+            {
+                glViewAttachModel(GLV_Debug, 5, mesh.GetModel());
+            }
+        }
+    }
+
+    for (int x = 0; x < 640; x += spacing)
+    {
+        GLMeshWriter mesh;
+        eGLStream streams[] = { GLStream_Position, GLStream_Colour, GLStream_Diffuse };
+        glSetDefaultState(false);
+        glSetCurrentTexture(glGetTexture("global/white"), GLTT_Diffuse);
+        glSetCurrentProgram(glGetProgram("2d unlit"));
+
+        if (mesh.Begin(2, GLP_LineList, 3, streams, false))
+        {
+            nlVector2 tc;
+            tc.f.x = 0.0f;
+            tc.f.y = 0.0f;
+            meshTexcoord(mesh, tc);
+            mesh.Colour(gridColour);
+            nlVector3 v;
+            v.f.x = (float)x;
+            v.f.y = 0.0f;
+            v.f.z = 0.0f;
+            meshVertex(mesh, v);
+
+            nlVector2 tc2;
+            tc2.f.x = 0.0f;
+            tc2.f.y = 0.0f;
+            meshTexcoord(mesh, tc2);
+            mesh.Colour(gridColour);
+            nlVector3 v2;
+            v2.f.x = (float)x;
+            v2.f.y = 480.0f;
+            v2.f.z = 0.0f;
+            meshVertex(mesh, v2);
+
+            if (mesh.End())
+            {
+                glViewAttachModel(GLV_Debug, 5, mesh.GetModel());
+            }
+        }
+    }
+
+    {
+        GLMeshWriter mesh;
+        eGLStream streams[] = { GLStream_Position, GLStream_Colour, GLStream_Diffuse };
+        glSetDefaultState(false);
+        glSetCurrentTexture(glGetTexture("global/white"), GLTT_Diffuse);
+        glSetCurrentProgram(glGetProgram("2d unlit"));
+
+        if (mesh.Begin(2, GLP_LineList, 3, streams, false))
+        {
+            nlVector2 tc;
+            tc.f.x = 0.0f;
+            tc.f.y = 0.0f;
+            meshTexcoord(mesh, tc);
+            mesh.Colour(centerColour);
+            nlVector3 v;
+            v.f.x = 320.0f;
+            v.f.y = 0.0f;
+            v.f.z = 0.0f;
+            meshVertex(mesh, v);
+
+            nlVector2 tc2;
+            tc2.f.x = 0.0f;
+            tc2.f.y = 0.0f;
+            meshTexcoord(mesh, tc2);
+            mesh.Colour(centerColour);
+            nlVector3 v2;
+            v2.f.x = 320.0f;
+            v2.f.y = 480.0f;
+            v2.f.z = 0.0f;
+            meshVertex(mesh, v2);
+
+            if (mesh.End())
+            {
+                glViewAttachModel(GLV_Debug, 5, mesh.GetModel());
+            }
+        }
+    }
 }
 
 /**
