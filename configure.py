@@ -1016,7 +1016,7 @@ config.libs = [
             Object(NonMatching, "Game/OverlayManager.cpp", extra_cflags=["-inline deferred"]),
             Object(NonMatching, "Game/OverlayHandlerHUD.cpp", extra_cflags=["-inline deferred"]),
             Object(NonMatching, "Game/OverlayHandlerInGameText.cpp", extra_cflags=["-inline deferred"]),
-            Object(NonMatching, "Game/OverlayHandlerSTSX2.cpp", extra_cflags=["-inline deferred"]),
+            Object(Matching, "Game/OverlayHandlerSTSX2.cpp", extra_cflags=["-inline deferred"]),
             Object(Matching, "Game/OverlayHandlerDemo.cpp", extra_cflags=["-inline deferred"]),
             Object(NonMatching, "Game/OverlayHandlerGoal.cpp", extra_cflags=["-inline deferred"]),
 

@@ -40,7 +40,7 @@ public:
     float GetNormalizedGameTime();
     float GetGameTime();
     void ResetForKickOff();
-    void PostResetCallback(unsigned long, unsigned long);
+    static void PostResetCallback(unsigned long, unsigned long);
     void BeginGame(bool, bool);
     void CheckForGoal();
     void BlowUpPowerups(const nlVector3&, float);

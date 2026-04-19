@@ -56,6 +56,12 @@ enum eScriptFielderDesire
 class ScriptQuestionCache : public nlSingleton<ScriptQuestionCache>
 {
 public:
+    ScriptQuestionCache()
+        : mQuestionCacheMap(16, 16)
+        , mTotalLookups(0)
+        , mCacheHits(0)
+    {
+    }
     ~ScriptQuestionCache();
     void Clear();
 

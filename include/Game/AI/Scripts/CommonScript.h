@@ -76,6 +76,12 @@ public:
 class ScriptQuestionCache : public nlSingleton<ScriptQuestionCache>
 {
 public:
+    ScriptQuestionCache()
+        : mQuestionCacheMap(16, 16)
+        , mTotalLookups(0)
+        , mCacheHits(0)
+    {
+    }
     ~ScriptQuestionCache();
     unsigned char Lookup(unsigned long, FuzzyVariant&, const char*);
     const FuzzyVariant& AddToCache(unsigned long, const FuzzyVariant&, const char*);

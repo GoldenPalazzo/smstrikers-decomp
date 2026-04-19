@@ -332,9 +332,122 @@ ScriptQuestionCache::~ScriptQuestionCache()
 
 /**
  * Offset/Address/Size: 0x2274 | 0x8003E7E8 | size: 0x6E0
+ * TODO: 9.4% match - incomplete, needs Config/SkillTweaks/difficulty initialization
+ */
+/**
+ * Offset/Address/Size: 0x1FC4 | 0x8003E7E8 | size: 0x6E0
+ * TODO: 69.9% match - StdMapStub missing std::__tree ctor call, AISandbox cmplwi pattern,
+ *       ScriptQuestionCache r29/r28 register allocation, stack frame 0x10 too small
  */
 void CreateGame()
 {
+    g_pGame = new (nlMalloc(sizeof(cGame), 8, false)) cGame();
+    g_pTeams[0] = new (nlMalloc(sizeof(cTeam), 8, false)) cTeam(0);
+    g_pTeams[1] = new (nlMalloc(sizeof(cTeam), 8, false)) cTeam(1);
+    cField::Init(g_pTeams[0]->m_pNet, g_pTeams[1]->m_pNet);
+    FormationManager::LoadFormationSets();
+
+    if (nlSingleton<AISandbox>::s_pInstance == NULL)
+    {
+        nlSingleton<AISandbox>::s_pInstance = new (nlMalloc(1, 8, false)) AISandbox();
+    }
+
+    if (nlSingleton<ScriptQuestionCache>::s_pInstance == NULL)
+    {
+        nlSingleton<ScriptQuestionCache>::s_pInstance = new (nlMalloc(0x40, 8, false)) ScriptQuestionCache();
+    }
+
+    if (nlSingleton<GameInfoManager>::s_pInstance->GetGameplayOptions().SkillLevel == 0)
+    {
+        g_pGame->m_fGameDuration = 10800.0f;
+    }
+
+    if (Config::Global().Exists("DifficultyOverride"))
+    {
+        eDifficultyID diff = DIFF_MEDIUM;
+        BasicString<char, Detail::TempStringAllocator> defaultStr("Professional");
+        BasicString<char, Detail::TempStringAllocator> diffStr = Config::Global().Get<BasicString<char, Detail::TempStringAllocator> >("DifficultyOverride", defaultStr);
+        if (diffStr == "Rookie")
+        {
+            diff = DIFF_EASY;
+        }
+        else if (diffStr == "Professional")
+        {
+            diff = DIFF_MEDIUM;
+        }
+        else if (diffStr == "Superstar")
+        {
+            diff = DIFF_HARD;
+        }
+        else if (diffStr == "Legendary")
+        {
+            diff = DIFF_VERYHARD;
+        }
+        if (diff != DIFF_DEFAULT)
+        {
+            g_pTeams[0]->SetDifficulty(diff);
+        }
+        if (diff != DIFF_DEFAULT)
+        {
+            g_pTeams[1]->SetDifficulty(diff);
+        }
+        if (diff != DIFF_DEFAULT)
+        {
+            SkillTweaks localTweaks;
+            localTweaks.Init(diff, false);
+            for (int i = 0; i < 2; i++)
+            {
+                SkillTweaks* pTweaks = SkillTweaks::GetSkillTweaks(g_pTeams[i]->m_nSide);
+                pTweaks->fShotValue1 = localTweaks.fShotValue1;
+                pTweaks->fShotValue2 = localTweaks.fShotValue2;
+                pTweaks->fShotValue3 = localTweaks.fShotValue3;
+                pTweaks->fShotChance0 = localTweaks.fShotChance0;
+                pTweaks->fShotChance1 = localTweaks.fShotChance1;
+                pTweaks->fShotChance2 = localTweaks.fShotChance2;
+                pTweaks->fShotChance3 = localTweaks.fShotChance3;
+                pTweaks->fShotChance4 = localTweaks.fShotChance4;
+                pTweaks->fSTSWindupTime = localTweaks.fSTSWindupTime;
+                pTweaks->fAttackCarrierDistance = localTweaks.fAttackCarrierDistance;
+                pTweaks->fLooseBallChaseDistance = localTweaks.fLooseBallChaseDistance;
+                pTweaks->fGoalieCanInterceptPass = localTweaks.fGoalieCanInterceptPass;
+            }
+        }
+    }
+    else
+    {
+        eDifficultyID retVal = nlSingleton<GameInfoManager>::s_pInstance->GetSkillLevelAsDifficultyID();
+        eDifficultyID diff0 = nlSingleton<GameInfoManager>::s_pInstance->mCurrentDifficulty[0];
+        eDifficultyID diff1 = nlSingleton<GameInfoManager>::s_pInstance->mCurrentDifficulty[1];
+        if (diff0 != DIFF_DEFAULT)
+        {
+            g_pTeams[0]->SetDifficulty(diff0);
+        }
+        if (diff1 != DIFF_DEFAULT)
+        {
+            g_pTeams[1]->SetDifficulty(diff1);
+        }
+        if (retVal != DIFF_DEFAULT)
+        {
+            SkillTweaks localTweaks;
+            localTweaks.Init(retVal, false);
+            for (int i = 0; i < 2; i++)
+            {
+                SkillTweaks* pTweaks = SkillTweaks::GetSkillTweaks(g_pTeams[i]->m_nSide);
+                pTweaks->fShotValue1 = localTweaks.fShotValue1;
+                pTweaks->fShotValue2 = localTweaks.fShotValue2;
+                pTweaks->fShotValue3 = localTweaks.fShotValue3;
+                pTweaks->fShotChance0 = localTweaks.fShotChance0;
+                pTweaks->fShotChance1 = localTweaks.fShotChance1;
+                pTweaks->fShotChance2 = localTweaks.fShotChance2;
+                pTweaks->fShotChance3 = localTweaks.fShotChance3;
+                pTweaks->fShotChance4 = localTweaks.fShotChance4;
+                pTweaks->fSTSWindupTime = localTweaks.fSTSWindupTime;
+                pTweaks->fAttackCarrierDistance = localTweaks.fAttackCarrierDistance;
+                pTweaks->fLooseBallChaseDistance = localTweaks.fLooseBallChaseDistance;
+                pTweaks->fGoalieCanInterceptPass = localTweaks.fGoalieCanInterceptPass;
+            }
+        }
+    }
 }
 
 /**
@@ -426,7 +539,36 @@ void DestroyPowerups()
  * Offset/Address/Size: 0x1D30 | 0x8003E2A4 | size: 0x2F4
  */
 cGame::cGame()
+    : m_bBallInNet(false)
+    , m_eGameState(GS_NONE)
+    , m_pScorer(NULL)
+    , m_pAssister(NULL)
+    , mbCaptainShotToScoreOn(false)
+    , mIsPure(false)
+    , mInSuddenDeath(false)
 {
+    m_pPostResetClock = new (nlMalloc(sizeof(Clock), 8, false)) Clock(0.0f, 2.0f, 1.0f, 2, cGame::PostResetCallback);
+    m_pPostResetClock->m_uParam1 = (unsigned long)this;
+
+    m_pGameTweaks = new (nlMalloc(sizeof(GameTweaks), 8, false)) GameTweaks("GameTweaks.ini");
+    m_pFuzzyTweaks = new (nlMalloc(sizeof(FuzzyTweaks), 8, false)) FuzzyTweaks("FuzzyTweaks.ini");
+
+    m_fGameDuration = m_pGameTweaks->fGameDuration;
+
+    m_pGameClock = new (nlMalloc(sizeof(Clock), 8, false)) Clock(0.0f, 60000.0f, 1.0f, 2, NULL);
+    m_pPostGameDoneClock = new (nlMalloc(sizeof(Clock), 8, false)) Clock(0.0f, 1.4f, 1.0f, 2, NULL);
+
+    m_pTarget = NULL;
+    m_pTeamTouch[1] = NULL;
+    m_pTeamTouch[0] = NULL;
+    m_pRandomPlayersArray = (cPlayer**)nlMalloc(sizeof(cPlayer*) * 10, 8, false);
+
+    Config& cfg = Config::Global();
+    mIsPure = GetConfigBool(cfg, "pure_game", false);
+    if (GetConfigBool(Config::Global(), "save_stats", false) != false)
+    {
+        nlSingleton<StatsTracker>::s_pInstance->WriteCurrentlyPlaying();
+    }
 }
 
 /**

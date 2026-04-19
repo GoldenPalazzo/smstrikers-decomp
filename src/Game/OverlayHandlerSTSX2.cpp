@@ -83,7 +83,7 @@ void STSX2Overlay::EventHandlerFunc(Event* event, void* arg1)
             id = event->m_data.GetID();
             if (id != 0x18A)
             {
-                nlPrintf("Error: Event data ID mismatch!\n");
+                nlPrintf("Error: GetData() failed! Data types do not match!\n");
                 data = NULL;
             }
             else
@@ -97,7 +97,7 @@ void STSX2Overlay::EventHandlerFunc(Event* event, void* arg1)
         {
             FEPresentation* pres = self->m_pFEPresentation;
             pres->m_fadeDuration = pres->m_currentSlide->m_start;
-            self->m_pFEPresentation->Update(1.0f);
+            self->m_pFEPresentation->Update(0.0f);
             self->SetVisible(true);
         }
     }
