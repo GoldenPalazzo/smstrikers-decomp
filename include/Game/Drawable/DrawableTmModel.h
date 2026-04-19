@@ -15,8 +15,6 @@ public:
         , m_uAnimBoneIndex(other.m_uAnimBoneIndex) {
         };
 
-    virtual ~DrawableTmModel() { };
-
     virtual DrawableObject* Clone() const;
     virtual void Draw();
 

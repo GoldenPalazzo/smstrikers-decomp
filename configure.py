@@ -1368,7 +1368,7 @@ config.libs = [
         [
             Object(Matching, "Game/Drawable/DrawableObj.cpp", extra_cflags=["-inline deferred"]),
             Object(NonMatching, "Game/Drawable/DrawableModel.cpp", extra_cflags=["-inline deferred"]),
-            Object(NonMatching, "Game/Drawable/DrawableTmModel.cpp", extra_cflags=["-inline deferred"]),
+            Object(Matching, "Game/Drawable/DrawableTmModel.cpp", extra_cflags=["-inline deferred"]),
             Object(Matching, "Game/Drawable/DrawableSkinModel.cpp"),
         ],
     ),

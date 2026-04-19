@@ -2,38 +2,6 @@
 
 static bool g_bEnableDrawableTMModel = true;
 
-// /**
-//  * Offset/Address/Size: 0x54 | 0x80122D38 | size: 0x24
-//  */
-// void DrawableTmModel::SetAnimationTime(float time)
-// {
-//     m_pAnimController->SetAnimationTime(time);
-// }
-
-// /**
-//  * Offset/Address/Size: 0x30 | 0x80122D14 | size: 0x24
-//  */
-// void DrawableTmModel::GetAnimationTime()
-// {
-//     m_pAnimController->GetAnimationTime();
-// }
-
-// /**
-//  * Offset/Address/Size: 0x24 | 0x80122D08 | size: 0xC
-//  */
-// void DrawableTmModel::SetAnimationSpeed(float speed)
-// {
-//     m_pAnimController->m_fSpeed = speed;
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x80122CE4 | size: 0x24
-//  */
-// void DrawableTmModel::SetAnimation(const char* name, unsigned long playMode)
-// {
-//     m_pAnimController->SetAnimation(name, (ePlayMode)playMode);
-// }
-
 /**
  * Offset/Address/Size: 0xD4 | 0x80122B00 | size: 0x1E4
  */
