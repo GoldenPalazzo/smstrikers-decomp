@@ -61,6 +61,8 @@ public:
         return (m_eGameState == GS_GAMEPLAY || m_eGameState == GS_OVERTIME);
     }
 
+    inline eGameState GetGameState() const { return m_eGameState; }
+
     /* 0x04 */ GameTweaks* m_pGameTweaks;
     /* 0x08 */ FuzzyTweaks* m_pFuzzyTweaks;
     /* 0x0C */ Clock* m_pGameClock;

@@ -112,6 +112,7 @@ enum eSlideAttackState
 
 struct ActionShootToScoreVars
 {
+    ActionShootToScoreVars() { memset(this, 0, sizeof(ActionShootToScoreVars)); }
     /* 0x00 */ float fFrameButtonDownTime2;
     /* 0x04 */ float fFrameButtonDownTime1;
     /* 0x08 */ float fGreenRegionWidth;

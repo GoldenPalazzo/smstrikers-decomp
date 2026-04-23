@@ -1,7 +1,10 @@
 #include "Game/AI/FielderActions.h"
 #include "Game/Camera/CameraMan.h"
+#include "Game/Camera/animcam.h"
+#include "Game/Camera/rumblefilter.h"
 #include "Game/RumbleActions.h"
 #include "Game/Sys/eventman.h"
+#include "Game/Sys/audio.h"
 #include "Game/ReplayManager.h"
 #include "Game/Drawable/DrawableCharacter.h"
 #include "Game/FixedUpdateTask.h"
@@ -10,6 +13,7 @@
 #include "Game/AnimInventory.h"
 #include "Game/Game.h"
 #include "Game/Ball.h"
+#include "Game/CharacterTriggers.h"
 #include "Game/AI/Scripts/ScriptQuestions.h"
 #include "Game/AI/ShotMeter.h"
 #include "Game/AI/FuzzyVariant.h"
@@ -22,29 +26,23 @@
 #include "Game/FE/feHelpFuncs.h"
 #include "Game/Field.h"
 #include "Game/Render/ShootToScoreMeter.h"
+#include "Game/Render/ShootToScoreArrow.h"
+#include "Game/Render/Wiper.h"
+#include "Game/Effects/EffectsGroup.h"
+#include "Game/World.h"
 #include "NL/nlBasicString.h"
+#include "NL/nlConfig.h"
+#include "NL/nlFunction.h"
 #include "NL/plat/plataudio.h"
 #include "types.h"
+
+f32 CANT_COLLIDE = *(f32*)__float_max;
 
 extern unsigned int nlDefaultSeed;
 extern FuzzyVariant fvNotSet;
 extern cBall* g_pBall;
 
-// class FakeBallWorld
-// {
-// public:
-//     static void ResetBallIterator();
-//     static void GetNextBallPosition(nlVector3&);
-// };
-
-// class PhysicsColumn
-// {
-// public:
-//     void GetRadius(float*);
-// };
-
 const LooseBallContactAnimInfo* GetOneTimerLeadGroundContactAnims();
-// float GetPostRadius__4cNetFv();
 
 struct HitReactInfo
 {
@@ -53,22 +51,63 @@ struct HitReactInfo
 }; // total size: 0x8
 
 HitReactInfo g_HitReactInfo[4] = {
-    { 0x6F, 0x0 },
-    { 0x72, 0x0 },
-    { 0x71, 0x0 },
-    { 0x70, 0x0 },
+    { 0x6F, 0x8000 },
+    { 0x72, 0x4000 },
+    { 0x71, 0x0000 },
+    { 0x70, 0xc000 },
 };
 // extern HitReactInfo g_HitReactInfo[4];
+// static unsigned short g_IdleTurnCompletionDelta = 0xB6; // size: 0x2, address: 0x803976D2
 
 static const nlVector3 v3Zero = { 0.0f, 0.0f, 0.0f };
 static nlVector3 captainStsTargetPos = { 0.0f, 0.0f, 0.0f };
 static bool setCaptainStscaptainStsTargetPos;
+
+static cRumbleFilter rumbleFilter;
+static float sfMatrixCamDuration = 4.25f;
+static float sfMatrixCamZoomTime = 3.35f;
+static float sfMatrixCamInitialDistanceFromTarget = 2.0f;
+static float sfMatrixCamFinalDistanceFromTarget = 10.0f;
+static float sfMatrixCamFinalHeightAboveTarget = 4.5f;
+static float sfMatrixCamInitialAngle = -15.0f;
+static float sfMatrixCamNumRevolutions = 0.61f;
+static float sfMatrixCamStartFrame = 103.9f;
+static float sfFirstKickFrame = 103.9f;
+static float sfMatrixCamTimeScale = 0.005f;
+static float sfMatrixCamParticleTimeScale = 0.06f;
+static bool sbMatrixCamTurnOffModelRendering = true;
+static float sfMatrixCamFOV = 50.0f;
+static float sfHyperStrikeFadeOutSpeed = 1.0f;
+static float sfHyperStrikeFadeInSpeed = 0.01f;
+static float sfOtherMatrixCamDuration = 3.0f;
+static float sfOtherMatrixCamSpinRate = 172.0f;
+static float sfOtherMatrixCamFinalDistanceFromTarget = 7.0f;
+static float sfOtherMatrixCamTransitionTime = 0.2f;
+static float sfHyperStrikeAnimCamBeginFrame = 63.0f;
 static float sfHyperStrikeAnimCamStartTime = 0.4f;
+static float sfOtherMatrixCamTimeScale = 0.5f;
+static float sfTimeBetweenApplyingRumbleFilters = 0.04f;
+static float sfRumblePauseTime = 0.12f;
+static float sfHyperStrikeRumbleSpringConstant = 8000.0f;
+static float sfHyperStrikeRumbleDampingConstant = 15.0f;
+static float sfMatrixCamInitialHeightAboveTarget;
+static bool sbMatrixCamUseWorldDarkening;
+static float sfMatrixCamPauseAfterSpin;
+static float sfOtherMatrixCamZoomTime;
+static float sfHyperStrikeMaxRumbleIntensity;
+static bool sbDoShatteredGlassTransition;
+
+extern cCharacter* g_pCurrentlyUpdatingCharacter;
+extern float g_fFixedUpdateTick;
+extern unsigned char sSTSLighting__17DrawableCharacter;
+extern unsigned char sbIsHyperShootToScoreRenderingEnabled__5World;
+extern unsigned char sbShowPositiveXNetDuringHyperStrike__5World;
+extern void Flash__10PhotoFlashFv();
 
 template <typename StringType, typename ValueType>
 StringType Format(const StringType&, const ValueType&);
 
-u16 g_IdleTurnCompletionDelta = 0xB6;
+static u16 g_IdleTurnCompletionDelta = 0x00;
 
 int SlideAttackReactAnims[4] = {
     0x66,
@@ -85,10 +124,10 @@ int SlideAttackReactAnims[4] = {
 // };
 
 const static int ShellAttackReactAnims[4] = {
-    0x75,
-    0x78,
-    0x77,
-    0x76,
+    0x66,
+    0x69,
+    0x68,
+    0x67,
 };
 
 int PassingAnims[4] = {
@@ -161,18 +200,906 @@ template cBaseCamera* nlDLRingGetStart<cBaseCamera>(cBaseCamera*);
 
 /**
  * Offset/Address/Size: 0x8654 | 0x8002F18C | size: 0xB88
+ * TODO: 91.5% match - 2 extra extsh after neg in abs computation (MWCC peephole opt)
  */
 void cFielder::asmRunning()
 {
-    FORCE_DONT_INLINE;
+    s16 nAbsActualToDesiredFacingDirection;
+    s16 nAbsActualToDesiredMovementDirection;
+    eStrafeDirection strafeDir;
+    u8 bFirstTime;
+    int nNewAnimState;
+
+    nAbsActualToDesiredFacingDirection = (s16)(u16)abs_s16((s16)(m_aDesiredFacingDirection - m_aActualFacingDirection));
+    nAbsActualToDesiredMovementDirection = (s16)(u16)abs_s16((s16)(m_aDesiredMovementDirection - m_aActualMovementDirection));
+
+    mActionRunningVars.eLastStrafeDirection = CalculateStrafeDirection(m_aDesiredFacingDirection, m_aDesiredMovementDirection);
+
+    do
+    {
+        bFirstTime = false;
+
+        switch (m_eAnimID)
+        {
+        default:
+            SetIdleAnimState();
+            bFirstTime = true;
+            break;
+
+        case 0x04:
+        case 0x05:
+        case 0x06:
+            if (ShouldStartCrossBlend(0))
+            {
+                if (m_fDesiredSpeed <= m_pTweaks->fJoggingSpeed)
+                {
+                    SetIdleAnimState();
+                }
+                else
+                {
+                    m_fActualSpeed = m_pTweaks->fRunningSpeed;
+                    SetRunningAnimState(0.1f);
+                }
+            }
+            break;
+
+        case 0x27:
+            switch (mActionRunningVars.eLastStrafeDirection)
+            {
+            case STRAFE_RIGHT:
+                SetStrafeRightAnimState();
+                break;
+            case STRAFE_LEFT:
+                SetStrafeLeftAnimState();
+                break;
+            case STRAFE_IDLE:
+            case STRAFE_FORWARD:
+                if (m_fActualSpeed > 3.1f)
+                {
+                    if (nAbsActualToDesiredFacingDirection >= 0x3a98)
+                    {
+                        SetBackRunningToRunAnimState();
+                    }
+                    else
+                    {
+                        SetBackRunningStopAnimState();
+                    }
+                }
+                else
+                {
+                    SetIdleStrafeAnimState();
+                }
+                break;
+            case STRAFE_BACK:
+            {
+                FielderTweaks* pTweaks = (FielderTweaks*)m_pTweaks;
+                m_fDesiredSpeed = pTweaks->fRunningBackwardsSpeed;
+                break;
+            }
+            }
+            break;
+
+        case 0x2E:
+            if (ShouldStartCrossBlend(7))
+            {
+                SetRunningAnimState(0.1f);
+            }
+            break;
+
+        case 0x2F:
+            switch (mActionRunningVars.eLastStrafeDirection)
+            {
+            case STRAFE_IDLE:
+                if (m_pCurrentAnimController->m_fTime >= 0.5f)
+                {
+                    SetIdleStrafeAnimState();
+                }
+                break;
+            case STRAFE_RIGHT:
+                if (ShouldStartCrossBlend(0))
+                {
+                    SetIdleStrafeAnimState();
+                }
+                break;
+            case STRAFE_LEFT:
+                if (ShouldStartCrossBlend(0x28))
+                {
+                    SetStrafeLeftAnimState();
+                }
+                break;
+            case STRAFE_FORWARD:
+                if (ShouldStartCrossBlend(7))
+                {
+                    if (m_fActualSpeed < 2.0f)
+                    {
+                        SetStartAnimState(-1);
+                    }
+                    else
+                    {
+                        SetRunningAnimState(0.1f);
+                    }
+                }
+                break;
+            case STRAFE_BACK:
+                if (ShouldStartCrossBlend(0x27))
+                {
+                    SetRunBackwardsAnimState();
+                }
+                break;
+            }
+            break;
+
+        case 0x30:
+            switch (mActionRunningVars.eLastStrafeDirection)
+            {
+            case STRAFE_IDLE:
+                if (m_pCurrentAnimController->m_fTime >= 0.5f)
+                {
+                    SetIdleStrafeAnimState();
+                }
+                break;
+            case STRAFE_LEFT:
+                if (ShouldStartCrossBlend(0))
+                {
+                    SetIdleStrafeAnimState();
+                }
+                break;
+            case STRAFE_RIGHT:
+                if (ShouldStartCrossBlend(0x29))
+                {
+                    SetStrafeRightAnimState();
+                }
+                break;
+            case STRAFE_FORWARD:
+                if (ShouldStartCrossBlend(7))
+                {
+                    if (m_fActualSpeed < 2.0f)
+                    {
+                        SetStartAnimState(-1);
+                    }
+                    else
+                    {
+                        SetRunningAnimState(0.1f);
+                    }
+                }
+                break;
+            case STRAFE_BACK:
+                if (ShouldStartCrossBlend(0x27))
+                {
+                    SetRunBackwardsAnimState();
+                }
+                break;
+            }
+            break;
+
+        case 0x2A:
+        {
+            bool animFinished = false;
+            if (m_pCurrentAnimController->m_ePlayMode == PM_HOLD && m_pCurrentAnimController->m_fTime == 1.0f)
+            {
+                animFinished = true;
+            }
+            if (animFinished)
+            {
+                switch (mActionRunningVars.eLastStrafeDirection)
+                {
+                case STRAFE_IDLE:
+                case STRAFE_RIGHT:
+                case STRAFE_LEFT:
+                case STRAFE_BACK:
+                    SetBackRunningStopRecoverAnimState();
+                    break;
+                case STRAFE_FORWARD:
+                    nNewAnimState = ((m_aDesiredFacingDirection - m_aActualFacingDirection + 0x2000) >> 14) & 3;
+                    if (nNewAnimState != 0)
+                    {
+                        SetStartAnimState(nNewAnimState);
+                    }
+                    else
+                    {
+                        SetBackRunningStopStartAnimState();
+                    }
+                    break;
+                }
+            }
+            break;
+        }
+
+        case 0x2B:
+            if (ShouldStartCrossBlend(7))
+            {
+                switch (mActionRunningVars.eLastStrafeDirection)
+                {
+                case STRAFE_RIGHT:
+                case STRAFE_LEFT:
+                case STRAFE_BACK:
+                    SetStopAnimState();
+                    break;
+                case STRAFE_IDLE:
+                    SetIdleStrafeAnimState();
+                    break;
+                case STRAFE_FORWARD:
+                    SetRunningAnimState(0.1f);
+                    break;
+                }
+            }
+            break;
+
+        case 0x2C:
+        {
+            bool animFinished = false;
+            if (m_pCurrentAnimController->m_ePlayMode == PM_HOLD && m_pCurrentAnimController->m_fTime == 1.0f)
+            {
+                animFinished = true;
+            }
+            if (animFinished)
+            {
+                switch (mActionRunningVars.eLastStrafeDirection)
+                {
+                case STRAFE_BACK:
+                    SetRunBackwardsAnimState();
+                    break;
+                case STRAFE_RIGHT:
+                    SetStrafeRightAnimState();
+                    break;
+                case STRAFE_LEFT:
+                    SetStrafeLeftAnimState();
+                    break;
+                case STRAFE_IDLE:
+                    SetIdleAnimState();
+                    break;
+                case STRAFE_FORWARD:
+                    SetStartAnimState(-1);
+                    break;
+                }
+            }
+            break;
+        }
+
+        case 0x28:
+            switch (mActionRunningVars.eLastStrafeDirection)
+            {
+            case STRAFE_IDLE:
+            case STRAFE_RIGHT:
+                if (m_fActualSpeed > 3.1f)
+                {
+                    SetAnimState(0x30, true, 0.2f, false, false);
+                    InitMovementFromAnim(0, v3Zero, 1.0f, false);
+                    m_pCurrentAnimController->m_fPlaybackSpeedScale = 1.5f;
+                }
+                else
+                {
+                    SetIdleStrafeAnimState();
+                }
+                break;
+            case STRAFE_LEFT:
+            {
+                FielderTweaks* pTweaks = (FielderTweaks*)m_pTweaks;
+                m_fDesiredSpeed = pTweaks->fRunningStrafeSpeed;
+                break;
+            }
+            case STRAFE_FORWARD:
+                SetRunningAnimState(0.1f);
+                m_aDesiredFacingDirection = m_aDesiredMovementDirection;
+                m_aActualFacingDirection = m_aDesiredFacingDirection;
+                break;
+            case STRAFE_BACK:
+                SetRunBackwardsAnimState();
+                break;
+            }
+            break;
+
+        case 0x29:
+            switch (mActionRunningVars.eLastStrafeDirection)
+            {
+            case STRAFE_IDLE:
+            case STRAFE_LEFT:
+                if (m_fActualSpeed > 3.1f)
+                {
+                    SetAnimState(0x2f, true, 0.2f, false, false);
+                    InitMovementFromAnim(0, v3Zero, 1.0f, false);
+                    m_pCurrentAnimController->m_fPlaybackSpeedScale = 1.5f;
+                }
+                else
+                {
+                    SetIdleStrafeAnimState();
+                }
+                EmitDust(this, "stop");
+                break;
+            case STRAFE_RIGHT:
+            {
+                FielderTweaks* pTweaks = (FielderTweaks*)m_pTweaks;
+                m_fDesiredSpeed = pTweaks->fRunningStrafeSpeed;
+                break;
+            }
+            case STRAFE_FORWARD:
+                SetRunningAnimState(0.1f);
+                m_aDesiredFacingDirection = m_aDesiredMovementDirection;
+                m_aActualFacingDirection = m_aDesiredFacingDirection;
+                break;
+            case STRAFE_BACK:
+                SetRunBackwardsAnimState();
+                break;
+            }
+            break;
+
+        case 0x0B:
+            switch (mActionRunningVars.eLastStrafeDirection)
+            {
+            case STRAFE_IDLE:
+                if (ShouldStartCrossBlend(0))
+                {
+                    SetIdleAnimState();
+                }
+                break;
+            case STRAFE_RIGHT:
+                if (ShouldStartCrossBlend(0x29))
+                {
+                    SetStrafeRightAnimState();
+                }
+                break;
+            case STRAFE_LEFT:
+                if (ShouldStartCrossBlend(0x28))
+                {
+                    SetStrafeLeftAnimState();
+                }
+                break;
+            case STRAFE_FORWARD:
+                if (nAbsActualToDesiredFacingDirection >= 0x639c)
+                {
+                    if (m_fActualSpeed > 2.1f)
+                    {
+                        if (!m_tSwapFacingTimer.GetSeconds())
+                        {
+                            SetHardStopAnimState();
+                        }
+                    }
+                    else
+                    {
+                        SetStartAnimState(-1);
+                    }
+                }
+                else
+                {
+                    if (ShouldStartCrossBlend(0))
+                    {
+                        SetStartAnimState(-1);
+                    }
+                }
+                break;
+            case STRAFE_BACK:
+                if (m_pCurrentAnimController->m_fTime > 0.4f)
+                {
+                    SetRunBackwardsAnimState();
+                    m_fActualSpeed = 0.0f;
+                }
+                break;
+            }
+            break;
+
+        case 0x31:
+        case 0x32:
+            if (ShouldStartCrossBlend(0))
+            {
+                SetIdleAnimState();
+            }
+            break;
+
+        case 0x00:
+            switch (mActionRunningVars.eLastStrafeDirection)
+            {
+            case STRAFE_IDLE:
+                m_fDesiredSpeed = 0.0f;
+                break;
+            case STRAFE_RIGHT:
+                SetStrafeRightAnimState();
+                break;
+            case STRAFE_LEFT:
+                SetStrafeLeftAnimState();
+                break;
+            case STRAFE_FORWARD:
+                if (m_fActualSpeed < 2.0f)
+                {
+                    SetStartAnimState(-1);
+                }
+                else
+                {
+                    SetRunningAnimState(0.1f);
+                }
+                break;
+            case STRAFE_BACK:
+                SetRunBackwardsAnimState();
+                break;
+            }
+            break;
+
+        case 0x07:
+            switch (mActionRunningVars.eLastStrafeDirection)
+            {
+            case STRAFE_IDLE:
+                if (m_fActualSpeed > 3.1f)
+                {
+                    SetStopAnimState();
+                }
+                else
+                {
+                    SetIdleAnimState();
+                }
+                break;
+            case STRAFE_FORWARD:
+                if (nAbsActualToDesiredFacingDirection >= 0x639c)
+                {
+                    if (m_fActualSpeed > 2.1f)
+                    {
+                        if (!m_tSwapFacingTimer.GetSeconds())
+                        {
+                            SetHardStopAnimState();
+                        }
+                    }
+                    else
+                    {
+                        SetStartAnimState(-1);
+                    }
+                }
+                else
+                {
+                    if (m_fDesiredSpeed > ((FielderTweaks*)m_pTweaks)->fRunningTurboSpeed - 0.1f)
+                    {
+                        SetRunningTurboAnimState();
+                    }
+                }
+                break;
+            case STRAFE_RIGHT:
+                SetStrafeRightAnimState();
+                break;
+            case STRAFE_LEFT:
+                SetStrafeLeftAnimState();
+                break;
+            case STRAFE_BACK:
+                if (m_fDesiredSpeed > m_pTweaks->fJoggingSpeed)
+                {
+                    if (nAbsActualToDesiredMovementDirection < 0x4000)
+                    {
+                        SetRunToBackRunningAnimState();
+                    }
+                    else
+                    {
+                        SetStopAnimState();
+                    }
+                }
+                else
+                {
+                    SetStopAnimState();
+                }
+                break;
+            }
+            break;
+
+        case 0x2D:
+            if (ShouldStartCrossBlend(0x27))
+            {
+                SetRunBackwardsAnimState();
+            }
+            break;
+
+        case 0x0F:
+        {
+            switch (mActionRunningVars.eLastStrafeDirection)
+            {
+            case STRAFE_IDLE:
+            case STRAFE_RIGHT:
+            case STRAFE_LEFT:
+            case STRAFE_BACK:
+                SetStopAnimState();
+                break;
+            case STRAFE_FORWARD:
+                if (nAbsActualToDesiredFacingDirection >= 0x639c)
+                {
+                    SetStopAnimState();
+                }
+                else
+                {
+                    if (m_fDesiredSpeed <= m_pTweaks->fRunningSpeed && !mActionRunningVars.bFirstCycleOfTurbo)
+                    {
+                        SetRunningAnimState(0.1f);
+                    }
+                }
+                break;
+            }
+            if (ShouldStartCrossBlend(7))
+            {
+                if (mActionRunningVars.bFirstCycleOfTurbo)
+                {
+                    mActionRunningVars.bFirstCycleOfTurbo = false;
+                }
+            }
+            break;
+        }
+
+        case 0x12:
+        {
+            bool animFinished = false;
+            if (m_pCurrentAnimController->m_ePlayMode == PM_HOLD && m_pCurrentAnimController->m_fTime == 1.0f)
+            {
+                animFinished = true;
+            }
+            if (animFinished)
+            {
+                if (nAbsActualToDesiredMovementDirection >= 0x639c && m_fDesiredSpeed > m_pTweaks->fJoggingSpeed)
+                {
+                    SetHardStopTurnAnimState();
+                }
+                else
+                {
+                    SetHardStopRecoverAnimState();
+                }
+            }
+            break;
+        }
+
+        case 0x13:
+            if (ShouldStartCrossBlend(0))
+            {
+                if (m_fDesiredSpeed >= m_pTweaks->fJoggingSpeed)
+                {
+                    m_fActualSpeed = m_pTweaks->fRunningSpeed;
+                    SetRunningAnimState(0.1f);
+                }
+                else
+                {
+                    SetStopAnimState();
+                }
+            }
+            break;
+
+        case 0x14:
+            if (ShouldStartCrossBlend(7))
+            {
+                SetIdleAnimState();
+            }
+            break;
+        }
+    } while (bFirstTime);
 }
 
 /**
  * Offset/Address/Size: 0x7F3C | 0x8002EA74 | size: 0x718
  */
-void cFielder::asmRunningWB(float)
+void cFielder::asmRunningWB(float fDeltaT)
 {
-    FORCE_DONT_INLINE;
+    float fIdleToRunWBDesiredSpeed = 0.1f + m_pTweaks->fJoggingSpeed;
+    s16 nAbsActualToDesiredFacingDirection = (s16)(u16)abs_s16((s16)(m_aDesiredFacingDirection - m_aActualFacingDirection));
+    bool bFirstTime;
+
+    do
+    {
+        bFirstTime = false;
+
+        switch (m_eAnimID)
+        {
+        default:
+        {
+            if (mActionRunningWBVars.bWaitForAnimToFinish)
+            {
+                bool bAnimFinished = false;
+                if (m_pCurrentAnimController->m_ePlayMode == PM_HOLD && m_pCurrentAnimController->m_fTime == 1.0f)
+                {
+                    bAnimFinished = true;
+                }
+                if (bAnimFinished || m_fDesiredSpeed >= fIdleToRunWBDesiredSpeed)
+                {
+                    mActionRunningWBVars.bWaitForAnimToFinish = false;
+                }
+            }
+
+            if (mActionRunningWBVars.bWaitForAnimToFinish)
+            {
+                break;
+            }
+
+            bool bShotMeterActive = false;
+            eShotMeterState state = m_pShotMeter->m_eShotMeterState;
+            if (state == SHOT_METER_ACTIVE || state == SHOT_METER_STS_ACTIVE || state == SHOT_METER_STS_TRANSISTION)
+            {
+                bShotMeterActive = true;
+            }
+
+            if (bShotMeterActive)
+            {
+                SetWindupWBAnimState();
+            }
+            else if (m_eAnimID == 0x54)
+            {
+                SetRunningWBAnimState(0.1f);
+            }
+            else
+            {
+                SetIdleWBAnimState();
+            }
+            bFirstTime = true;
+            break;
+        }
+
+        case 0x16:
+        case 0x17:
+        case 0x18:
+        {
+            if (ShouldStartCrossBlend(0x23))
+            {
+                if (m_fDesiredSpeed <= m_pTweaks->fJoggingSpeed)
+                {
+                    SetIdleWBAnimState();
+                }
+                else
+                {
+                    m_fActualSpeed = m_pTweaks->fRunningSpeed;
+                    SetRunningWBAnimState(0.1f);
+                }
+            }
+            break;
+        }
+
+        case 0x23:
+        {
+            bool bShotMeterActive = false;
+            eShotMeterState state = m_pShotMeter->m_eShotMeterState;
+            if (state == SHOT_METER_ACTIVE || state == SHOT_METER_STS_ACTIVE || state == SHOT_METER_STS_TRANSISTION)
+            {
+                bShotMeterActive = true;
+            }
+
+            if (bShotMeterActive)
+            {
+                SetWindupWBAnimState();
+                break;
+            }
+
+            if (ShouldStartCrossBlend(0x15))
+            {
+                SetIdleWBAnimState();
+                m_fActualSpeed = 0.0f;
+                m_aActualMovementDirection = m_aActualFacingDirection;
+                break;
+            }
+
+            if (nAbsActualToDesiredFacingDirection >= 0x639C)
+            {
+                if (m_fActualSpeed > 2.1f)
+                {
+                    SetHardStopAnimState();
+                }
+                else if (m_fActualSpeed < 2.0f)
+                {
+                    SetStartWBAnimState();
+                }
+                break;
+            }
+
+            if (m_fDesiredSpeed > m_pTweaks->fJoggingSpeed)
+            {
+                if (m_fActualSpeed < 2.0f)
+                {
+                    SetStartWBAnimState();
+                }
+            }
+            break;
+        }
+
+        case 0x56:
+        case 0x57:
+        {
+            cNet* pOtherNet = m_pTeam->GetOtherNet();
+            float fAngle = nlATan2f(pOtherNet->m_baseLocation.f.y - m_v3Position.f.y, pOtherNet->m_baseLocation.f.x - m_v3Position.f.x);
+            m_aDesiredFacingDirection = (u16)(s32)(10430.378f * fAngle);
+
+            u16 aNewFacingDirection = SeekDirection(
+                m_aActualFacingDirection,
+                m_aDesiredFacingDirection,
+                ((FielderTweaks*)m_pTweaks)->fShotWindupDirectionSeekSpeed,
+                ((FielderTweaks*)m_pTweaks)->fShotWindupDirectionSeekFalloff,
+                fDeltaT);
+            SetFacingDirection(aNewFacingDirection);
+
+            m_fDesiredSpeed = 0.0f;
+
+            float fTotalDuration = !IsCaptain() ? g_pGame->m_pGameTweaks->unk2D0 : m_pShotMeter->GetTotalDuration();
+
+            float fTimeLeft = fTotalDuration - m_pShotMeter->m_fTime;
+            if (fTimeLeft < 0.01f)
+            {
+                fTimeLeft = 0.01f;
+            }
+
+            m_fDecel = (m_fActualSpeed - m_fDesiredSpeed) / fTimeLeft;
+            if (m_fDecel > 50.0f)
+            {
+                m_fDecel = 50.0f;
+                break;
+            }
+
+            if (m_fDecel < ((FielderTweaks*)m_pTweaks)->fShotWindupDecel)
+            {
+                m_fDecel = ((FielderTweaks*)m_pTweaks)->fShotWindupDecel;
+                break;
+            }
+
+            break;
+        }
+
+        case 0x15:
+        {
+            bool bShotMeterActive = false;
+            eShotMeterState state = m_pShotMeter->m_eShotMeterState;
+            if (state == SHOT_METER_ACTIVE || state == SHOT_METER_STS_ACTIVE || state == SHOT_METER_STS_TRANSISTION)
+            {
+                bShotMeterActive = true;
+            }
+
+            if (bShotMeterActive)
+            {
+                SetWindupWBAnimState();
+                break;
+            }
+
+            if (m_fDesiredSpeed > 1.0f)
+            {
+                if (m_fActualSpeed < 2.0f)
+                {
+                    SetStartWBAnimState();
+                }
+                else
+                {
+                    SetRunningWBAnimState(0.1f);
+                }
+                break;
+            }
+
+            if (m_fActualSpeed > 3.1f)
+            {
+                SetStopWBAnimState();
+                break;
+            }
+
+            m_fDesiredSpeed = 0.0f;
+            break;
+        }
+
+        case 0x1a:
+        {
+            bool bShotMeterActive = false;
+            eShotMeterState state = m_pShotMeter->m_eShotMeterState;
+            if (state == SHOT_METER_ACTIVE || state == SHOT_METER_STS_ACTIVE || state == SHOT_METER_STS_TRANSISTION)
+            {
+                bShotMeterActive = true;
+            }
+
+            if (bShotMeterActive)
+            {
+                SetWindupWBAnimState();
+                break;
+            }
+
+            if (m_fDesiredSpeed > ((FielderTweaks*)m_pTweaks)->fRunningWBSpeed + 0.15f
+                && m_tBallPossessionTimer.GetSeconds() > 0.4f)
+            {
+                if (m_ePowerup == 0x7 || m_ePowerup == 0x8)
+                {
+                    SetAction(ACTION_RUNNING_WB);
+                    mActionRunningWBVars.bWaitForAnimToFinish = false;
+                    mActionRunningVars.eLastStrafeDirection = STRAFE_IDLE;
+                    m_aActualMovementDirection = m_aActualFacingDirection;
+                }
+                else
+                {
+                    SetAction(ACTION_RUNNING_WB_TURBO);
+                    InitMovementRunningNoTurn(((FielderTweaks*)m_pTweaks)->fRunningWBTurboAccel, ((FielderTweaks*)m_pTweaks)->fRunningWBTurboDecel);
+
+                    bool bForceMirrorSwap;
+                    cPN_SAnimController* pController = m_pCurrentAnimController;
+                    if (!pController->m_bMirror)
+                    {
+                        bForceMirrorSwap = false;
+                        if (m_eAnimID == 0x1A)
+                        {
+                            if (pController->m_fTime > 0.25f && pController->m_fTime < 0.75)
+                            {
+                                bForceMirrorSwap = true;
+                            }
+                        }
+                        mActionRunningWBTurboVars.bForcedMirrorSwap = bForceMirrorSwap;
+                    }
+                    else
+                    {
+                        bForceMirrorSwap = false;
+                        if (m_eAnimID == 0x1A)
+                        {
+                            if (pController->m_fTime < 0.25f || pController->m_fTime > 0.75)
+                            {
+                                bForceMirrorSwap = true;
+                            }
+                        }
+                        mActionRunningWBTurboVars.bForcedMirrorSwap = bForceMirrorSwap;
+                    }
+
+                    SetRunTurboAnimState(0x1D, mActionRunningWBTurboVars.bForcedMirrorSwap);
+                }
+                break;
+            }
+
+            if (nAbsActualToDesiredFacingDirection >= 0x639C)
+            {
+                if (m_fActualSpeed > 3.1f)
+                {
+                    SetHardStopAnimState();
+                }
+                else
+                {
+                    SetStartWBAnimState();
+                }
+                break;
+            }
+
+            if (m_fDesiredSpeed < m_pTweaks->fJoggingSpeed - 0.15f)
+            {
+                if (m_fActualSpeed > 3.1f)
+                {
+                    SetStopWBAnimState();
+                }
+                else
+                {
+                    SetIdleWBAnimState();
+                }
+                break;
+            }
+
+            break;
+        }
+
+        case 0x24:
+        {
+            bool bAnimFinished = false;
+            if (m_pCurrentAnimController->m_ePlayMode == PM_HOLD && m_pCurrentAnimController->m_fTime == 1.0f)
+            {
+                bAnimFinished = true;
+            }
+            if (bAnimFinished)
+            {
+                if (m_fDesiredSpeed < m_pTweaks->fJoggingSpeed)
+                {
+                    SetHardStopRecoverAnimState();
+                }
+                else
+                {
+                    SetHardStopTurnAnimState();
+                }
+            }
+            break;
+        }
+
+        case 0x25:
+            if (ShouldStartCrossBlend(0x15))
+            {
+                if (m_fDesiredSpeed >= m_pTweaks->fJoggingSpeed)
+                {
+                    m_fActualSpeed = m_pTweaks->fRunningSpeed;
+                    SetRunningWBAnimState(0.1f);
+                }
+                else
+                {
+                    SetStopWBAnimState();
+                }
+            }
+            break;
+
+        case 0x26:
+            if (ShouldStartCrossBlend(0x1A))
+            {
+                SetIdleWBAnimState();
+                m_fActualSpeed = 0.0f;
+            }
+            break;
+        }
+    } while (bFirstTime);
 }
 
 /**
@@ -1641,7 +2568,7 @@ afterSpeed:
                 {
                     SetAction(ACTION_RUNNING_WB_TURBO_TURN);
 
-                    static int RunningWBTurboTurnAnim[4] = { 0x21, 0x22, 0x23, 0x24 };
+                    static int RunningWBTurboTurnAnim[4] = { 0x22, 0x21, 0x22, 0x20 };
 
                     m_fDesiredSpeed = ((FielderTweaks*)m_pTweaks)->fRunningWBTurboTurnSpeed;
                     int facingDiff = m_aDesiredFacingDirection - m_aActualFacingDirection;
@@ -2215,8 +3142,668 @@ void HyperStrikeEffectUpdate(EmissionController& controller)
 /**
  * Offset/Address/Size: 0x17D0 | 0x80028308 | size: 0x147C
  */
+/**
+ * Offset/Address/Size: 0x16D0 | 0x80028308 | size: 0x1480
+ * TODO: 90.12% match - f30/f31 register swap (fHalfAnimationTime/fGreenRegionMaxWidth),
+ * missing f25 callee-saved for fMinOverMax, missing r26 for g_pTeams iteration,
+ * r4/r5 swap for pTweaks/isCaptainSts
+ */
 void cFielder::ActionShootToScore(float)
 {
+    if (setCaptainStscaptainStsTargetPos)
+    {
+        setCaptainStscaptainStsTargetPos = false;
+        SetPosition(captainStsTargetPos);
+    }
+
+    unsigned int nTotalFrames = m_pCurrentAnimController->m_pSAnim->m_nNumKeys;
+    FielderTweaks* pTweaks = (FielderTweaks*)m_pTweaks;
+    float fTotalTime = (float)nTotalFrames;
+
+    float fHalfAnimationTime;
+    float fGreenRegionMaxWidth;
+    float fShootToScore1stJumpTime = pTweaks->fS2S1stJumpFrame / fTotalTime;
+
+    if (mActionShootToScoreVars.isCaptainSts)
+    {
+        fHalfAnimationTime = (1.0f + pTweaks->fCaptainS2SNisBeginFrame) / fTotalTime;
+    }
+    else
+    {
+        fHalfAnimationTime = (1.0f + pTweaks->fS2SKickFrame) / fTotalTime;
+    }
+
+    float fCaptainPercentage = pTweaks->fCaptainS2SNisBeginFrame / fTotalTime;
+
+    if (mActionShootToScoreVars.isCaptainSts)
+    {
+        fGreenRegionMaxWidth = pTweaks->fCaptainS2SNisEndFrame / fTotalTime;
+    }
+    else
+    {
+        fGreenRegionMaxWidth = pTweaks->fS2SKickFrame / fTotalTime;
+    }
+
+    float fSweetSpotDiff = fShootToScore1stJumpTime - fCaptainPercentage;
+
+    static bool bShotNISCaptainS2S;
+    static signed char init;
+    fSweetSpotDiff = (float)fabs(fSweetSpotDiff);
+    float fSweetSpotHalfWidth = fSweetSpotDiff * 0.5f;
+    float fSweetSpotCenter = fShootToScore1stJumpTime + fSweetSpotHalfWidth;
+    if (!init)
+    {
+        bShotNISCaptainS2S = false;
+        init = 1;
+    }
+
+    if (m_pCurrentAnimController->TestTrigger(fShootToScore1stJumpTime))
+    {
+        if (m_ePowerup == 8)
+        {
+            CleanUpPowerupEffect();
+        }
+    }
+
+    float fAnimTime = m_pCurrentAnimController->m_fTime;
+    if (fAnimTime <= fHalfAnimationTime)
+    {
+        if (fAnimTime <= fShootToScore1stJumpTime)
+        {
+            mActionShootToScoreVars.fMeterFractionTime = 0.0f;
+        }
+        else if (fAnimTime <= fSweetSpotCenter)
+        {
+            mActionShootToScoreVars.fMeterFractionTime = (fAnimTime - fShootToScore1stJumpTime) / (fSweetSpotCenter - fShootToScore1stJumpTime);
+        }
+        else
+        {
+            float fResult = 1.0f - (fAnimTime - fSweetSpotCenter) / (fCaptainPercentage - fSweetSpotCenter);
+            mActionShootToScoreVars.fMeterFractionTime = fResult;
+
+            if (mActionShootToScoreVars.fFrameButtonDownTime1 < 0.0f)
+            {
+                mActionShootToScoreVars.fFrameButtonDownTime1 = 1.0f;
+            }
+
+            if (m_pCurrentAnimController->m_fTime > fCaptainPercentage)
+            {
+                FixedUpdateTask::mTimeScale = 0.1f;
+                ParticleUpdateTask::SetTimeScale(0.1f);
+                mActionShootToScoreVars.fMeterFractionTime = 0.0f;
+
+                if (mActionShootToScoreVars.fFrameButtonDownTime2 < 0.0f)
+                {
+                    mActionShootToScoreVars.fFrameButtonDownTime2 = 0.0f;
+                }
+            }
+            else
+            {
+                float fShootToScoreSlowMoMax = g_pGame->m_pGameTweaks->unk1EC;
+                float fShootToScoreSlowMoMin = g_pGame->m_pGameTweaks->unk1E8;
+                nlVector3 v3OffNet = GetAIOffNetLocation(NULL);
+                float dy = m_v3Position.f.y - v3OffNet.f.y;
+                float dx = m_v3Position.f.x - v3OffNet.f.x;
+                float dz = m_v3Position.f.z - v3OffNet.f.z;
+                float fDist = nlSqrt(dy * dy + dx * dx + dz * dz, true);
+                float fTimeScale = InterpolateRangeClamped(fShootToScoreSlowMoMin, fShootToScoreSlowMoMax, 9.0f, 18.0f, fDist);
+                FixedUpdateTask::mTimeScale = fTimeScale;
+                ParticleUpdateTask::SetTimeScale(fTimeScale);
+            }
+        }
+    }
+
+    fAnimTime = m_pCurrentAnimController->m_fTime;
+    if (fAnimTime <= fSweetSpotCenter)
+    {
+        ShootToScoreMeter::instance.SetWhiteBarPosition(mActionShootToScoreVars.fMeterFractionTime);
+    }
+    else
+    {
+        if (mActionShootToScoreVars.fShootToScoreActiveTime > 0.0f)
+        {
+            ShootToScoreMeter::instance.SetWhiteBarPosition(mActionShootToScoreVars.fShootToScoreActiveTime);
+        }
+        else
+        {
+            ShootToScoreMeter::instance.SetWhiteBarPosition(mActionShootToScoreVars.fMeterFractionTime);
+        }
+    }
+
+    if (S2SShootWasPressed())
+    {
+        if (mActionShootToScoreVars.fFrameButtonDownTime1 < 0.0f)
+        {
+            float fMeterPos = mActionShootToScoreVars.fMeterFractionTime;
+            if (fMeterPos > g_pGame->m_pGameTweaks->unk298)
+            {
+                float fSweetSpotOffset = g_pGame->m_pGameTweaks->unk294;
+                float fGreenWidth = g_pGame->m_pGameTweaks->unk29C;
+                float fDiff = fSweetSpotOffset - fMeterPos;
+                fDiff = fabs(fDiff);
+                fDiff = (float)fDiff;
+
+                if (fDiff < fGreenWidth)
+                {
+                    mActionShootToScoreVars.fFrameButtonDownTime1 = fSweetSpotOffset;
+                    BeginRumbleAction((eRumbleActionPreset)3, GetGlobalPad());
+                    ShootToScoreMeter::instance.meHyper = STS_POSSIBLE_HYPER;
+                }
+                else
+                {
+                    mActionShootToScoreVars.fFrameButtonDownTime1 = fMeterPos;
+                    BeginRumbleAction((eRumbleActionPreset)0, GetGlobalPad());
+                }
+
+                Play3DSFX(Audio::eCharSFX(0x15), PHYSOBJ, 100.0f);
+            }
+        }
+        else if (mActionShootToScoreVars.fFrameButtonDownTime2 < 0.0f)
+        {
+            float fMeterPos2 = mActionShootToScoreVars.fMeterFractionTime;
+            if (fMeterPos2 < 0.6f)
+            {
+                if (m_pCurrentAnimController->m_fTime >= fSweetSpotCenter && m_pCurrentAnimController->m_fTime < fCaptainPercentage)
+                {
+                    float fYellowWidth = mActionShootToScoreVars.fGreenRegionWidth;
+                    float fCenter = g_pGame->m_pGameTweaks->unk298;
+                    float fDiffFromCenter = fCenter - fMeterPos2;
+                    fDiffFromCenter = fabs(fDiffFromCenter);
+                    fDiffFromCenter = (float)fDiffFromCenter;
+
+                    if (fDiffFromCenter < fYellowWidth)
+                    {
+                        mActionShootToScoreVars.fFrameButtonDownTime2 = fMeterPos2;
+                        if (mActionShootToScoreVars.fFrameButtonDownTime1 == g_pGame->m_pGameTweaks->unk294)
+                        {
+                            BeginRumbleAction((eRumbleActionPreset)5, GetGlobalPad());
+                            ShootToScoreMeter::instance.meHyper = STS_GOT_HYPER;
+                            ShootToScoreMeter::instance.m_MeterType = ShootToScoreMeter::REGULAR_SHOOT_TO_SCORE_PHASE2;
+                            Play3DSFX(Audio::eCharSFX(0x17), PHYSOBJ, 100.0f);
+                        }
+                        else
+                        {
+                            BeginRumbleAction((eRumbleActionPreset)3, GetGlobalPad());
+                        }
+                    }
+                    else
+                    {
+                        mActionShootToScoreVars.fFrameButtonDownTime2 = fMeterPos2;
+                        BeginRumbleAction((eRumbleActionPreset)0, GetGlobalPad());
+                    }
+
+                    Play3DSFX(Audio::eCharSFX(0x15), PHYSOBJ, 100.0f);
+                }
+            }
+        }
+    }
+
+    if (mActionShootToScoreVars.fFrameButtonDownTime1 > 0.0f)
+    {
+        float fSweetSpotOffset = g_pGame->m_pGameTweaks->unk294;
+        float fSweetSpotPercent = fSweetSpotOffset - mActionShootToScoreVars.fFrameButtonDownTime1;
+        fSweetSpotPercent = fabs(fSweetSpotPercent);
+        float fAbsSweetSpotPercent = (float)fSweetSpotPercent;
+
+        float fMultiplier;
+        if (m_eCharacterClass > 12)
+        {
+            fMultiplier = 1.0f;
+        }
+        else
+        {
+            switch (m_eCharacterClass)
+            {
+            case DONKEYKONG:
+            case WARIO:
+            case MYSTERY:
+                fMultiplier = 1.1f;
+                break;
+            case WALUIGI:
+            case YOSHI:
+                fMultiplier = 0.92f;
+                break;
+            case DAISY:
+            case PEACH:
+                fMultiplier = 0.84f;
+                break;
+            default:
+                fMultiplier = 1.0f;
+                break;
+            }
+        }
+
+        GameTweaks* pGameTweaks = g_pGame->m_pGameTweaks;
+        fMultiplier = fMultiplier * pGameTweaks->unk2A0;
+
+        if (fAbsSweetSpotPercent >= pGameTweaks->unk29C)
+        {
+            mActionShootToScoreVars.fGreenRegionWidth = pGameTweaks->unk29C;
+        }
+        else
+        {
+            float fNewWidth = InterpolateRangeClamped(pGameTweaks->unk29C, fMultiplier, mActionShootToScoreVars.fCaptainYellowWidth, pGameTweaks->unk29C, fAbsSweetSpotPercent);
+            float fMinOverMax = g_pGame->m_pGameTweaks->unk29C / g_pGame->m_pGameTweaks->unk2A0;
+            nlVector3 v3OffNet2 = GetAIOffNetLocation(NULL);
+            float dy2 = m_v3Position.f.y - v3OffNet2.f.y;
+            float dx2 = m_v3Position.f.x - v3OffNet2.f.x;
+            float dz2 = m_v3Position.f.z - v3OffNet2.f.z;
+            float fDist2 = nlSqrt(dy2 * dy2 + dx2 * dx2 + dz2 * dz2, true);
+            InterpolateRangeClamped(1.0f, fMinOverMax, 9.0f, 18.0f, fDist2);
+
+            mActionShootToScoreVars.fGreenRegionWidth = fNewWidth;
+
+            if (mActionShootToScoreVars.fGreenRegionWidth < g_pGame->m_pGameTweaks->unk29C)
+            {
+                mActionShootToScoreVars.fGreenRegionWidth = g_pGame->m_pGameTweaks->unk29C;
+            }
+        }
+
+        ShootToScoreMeter::instance.SetSavedWhiteBarPosition(mActionShootToScoreVars.fFrameButtonDownTime1);
+        ShootToScoreMeter::instance.mbShowSavedWhiteBar = true;
+    }
+
+    if (m_pCurrentAnimController->TestTrigger(fSweetSpotCenter) || mActionShootToScoreVars.fFrameButtonDownTime1 > 0.0f)
+    {
+        if (ShootToScoreMeter::instance.m_MeterType != ShootToScoreMeter::REGULAR_SHOOT_TO_SCORE_PHASE2)
+        {
+            ShootToScoreMeter::instance.SetGreenBarPosition(g_pGame->m_pGameTweaks->unk298);
+            ShootToScoreMeter::instance.SetGreenRegionWidth(2.0f * mActionShootToScoreVars.fGreenRegionWidth);
+        }
+    }
+
+    if (m_pCurrentAnimController->TestTrigger(fHalfAnimationTime))
+    {
+        DoCalcShootToScoreResult(
+            g_pGame->m_pGameTweaks->unk294,
+            g_pGame->m_pGameTweaks->unk298,
+            mActionShootToScoreVars.fFrameButtonDownTime1,
+            mActionShootToScoreVars.fFrameButtonDownTime2,
+            mActionShootToScoreVars.fGreenRegionWidth);
+    }
+
+    unsigned int nTotalFrames2 = m_pCurrentAnimController->m_pSAnim->m_nNumKeys;
+    static signed char init2;
+    static float sfTimeSinceLastRumbleFilter;
+    float fTotalTime2 = (float)nTotalFrames2;
+    float lightOffTime = 94.0f / fTotalTime2;
+    float firstKickTime = sfFirstKickFrame / (float)nTotalFrames2;
+    float shaolinTime = 67.0f / (float)nTotalFrames2;
+    float hyperStrikeAnimCamBeginTime = sfHyperStrikeAnimCamBeginFrame / (float)nTotalFrames2;
+
+    if (!init2)
+    {
+        sfTimeSinceLastRumbleFilter = 0.0f;
+        init2 = 1;
+    }
+
+    if (mActionShootToScoreVars.isCaptainSts)
+    {
+        if (m_pCurrentAnimController->TestTrigger(0.08f))
+        {
+            if (m_v3Position.f.x < 0.0f)
+            {
+                SetAnimState(0x5E, false, 0.0f, false, false);
+            }
+            else
+            {
+                SetAnimState(0x5D, false, 0.0f, false, false);
+            }
+
+            m_pCurrentAnimController->m_fPrevTime = m_pCurrentAnimController->m_fTime;
+            m_pCurrentAnimController->m_fTime = 0.08f;
+        }
+
+        if (mActionShootToScoreVars.captainStsCamera == NULL)
+        {
+            if (m_pCurrentAnimController->TestTrigger(fHalfAnimationTime))
+            {
+                EmissionManager::DestroyAll(true);
+
+                if (meS2SResult == S2S_SUPER_SHOT)
+                {
+                    EmitShootToScoreHyperStrike(this);
+
+                    for (int t = 0; t < 2; t++)
+                    {
+                        for (int f = 0; f < 4; f++)
+                        {
+                            cFielder* pFielder = g_pTeams[t]->GetFielder(f);
+                            if (pFielder != this)
+                            {
+                                if (pFielder->IsFrozen())
+                                {
+                                    EmitUnFreeze(pFielder);
+                                }
+                                if (pFielder->IsInvincible())
+                                {
+                                    pFielder->CleanUpPowerupEffect();
+                                }
+                                pFielder->ClearPowerupAnimState(false);
+                                pFielder->SetFrozen(10000000.0f);
+                            }
+                        }
+                    }
+
+                    g_pGame->ResetPowerups(false);
+                }
+
+                float fFadeToDarkAmount = GetConfigFloat(Config::Global(), "captain_sts/fade_to_dark_amount", 1.0f);
+                WorldDarkening::Instance().Fade(sfHyperStrikeFadeOutSpeed, fFadeToDarkAmount);
+                ClearPowerupAnimState(false);
+                mActionShootToScoreVars.isCurrentlyInvincible = true;
+                ShootToScoreMeter::instance.m_bMeterVisible = false;
+                g_pGame->mbCaptainShotToScoreOn = true;
+                g_pBall->m_pDrawableBall->m_uObjectFlags |= 0x40;
+
+                if (FixedUpdateTask::mTimeScale < 1.0f)
+                {
+                    Audio::FadeFilterFromCurrentToZero();
+                }
+
+                if (meS2SResult == S2S_SUPER_SHOT && sbDoShatteredGlassTransition)
+                {
+                    MatrixEffectCam* pMatrixCam = new (nlMalloc(0x140, 8, false)) MatrixEffectCam();
+                    pMatrixCam->mbUseGameplayTransparencyFlags = true;
+                    pMatrixCam->m_pFilter = &rumbleFilter;
+                    pMatrixCam->mfSpinDuration = sfOtherMatrixCamDuration;
+                    pMatrixCam->mfZoomTime = sfOtherMatrixCamZoomTime;
+                    FixedUpdateTask::mTimeScale = sfOtherMatrixCamTimeScale;
+                    ParticleUpdateTask::SetTimeScale(sfOtherMatrixCamTimeScale);
+
+                    bool bIsSpinMirrored = m_v3Position.f.x < 0.0f;
+                    pMatrixCam->mfFOV = sfMatrixCamFOV;
+                    float fSpinRate = sfOtherMatrixCamSpinRate * (bIsSpinMirrored ? -1.0f : 1.0f);
+                    pMatrixCam->mfSpinRate = fSpinRate;
+
+                    cBaseCamera* pCurrentCam = nlDLRingGetStart<cBaseCamera>(cCameraManager::m_cameraStack);
+                    const nlVector3& cameraPos = pCurrentCam->GetCameraPosition();
+
+                    m_pPoseAccumulator->GetNodeMatrix(g_pCurrentlyUpdatingCharacter->m_nHeadJointIndex);
+                    nlVector3* pBallPos = &g_pBall->m_v3Position;
+
+                    pMatrixCam->Reset(cameraPos, *pBallPos, *pBallPos);
+                    pMatrixCam->mbFollowBall = true;
+                    pMatrixCam->mfDesiredDistanceFromTarget = sfOtherMatrixCamFinalDistanceFromTarget;
+                    pMatrixCam->mfDesiredDistanceFromTarget = sfOtherMatrixCamFinalDistanceFromTarget;
+                    pMatrixCam->mfDesiredHeightAboveTarget = 0.0f;
+
+                    cCameraManager::PushCameraWithTransition(pMatrixCam, sfOtherMatrixCamTransitionTime, (eCameraTransition)1, NULL);
+                    pMatrixCam->mFinishedCallback = (void (*)(MatrixEffectCam*))OtherMatrixCamFinishedCallback;
+                    sfTimeSinceLastRumbleFilter = 2.0f * sfTimeBetweenApplyingRumbleFilters;
+                }
+                else
+                {
+                    Audio::FadeFilterFromCurrentToZero();
+                    FixedUpdateTask::mTimeScale = 1.0f;
+                    ParticleUpdateTask::SetTimeScale(1.0f);
+
+                    if (meS2SResult == S2S_SUPER_SHOT && sbDoShatteredGlassTransition)
+                    {
+                        Wiper::Instance().DoWipe("break_glass");
+                        m_pCurrentAnimController->m_fPrevTime = m_pCurrentAnimController->m_fTime;
+                        m_pCurrentAnimController->m_fTime = hyperStrikeAnimCamBeginTime;
+                    }
+
+                    SetupCaptainSTSAnimCam(false);
+                }
+
+                DrawableCharacter::RenderOnlyOneCharacter(*this, false);
+                mActionShootToScoreVars.preCaptainStsPlaybackSpeed = m_pCurrentAnimController->m_fPlaybackSpeedScale;
+                m_pCurrentAnimController->m_fPlaybackSpeedScale = 1.0f;
+            }
+        }
+
+        if (meS2SResult == S2S_SUPER_SHOT)
+        {
+            float fAnimTime2 = m_pCurrentAnimController->m_fTime;
+            if (fAnimTime2 > fHalfAnimationTime)
+            {
+                float fRumbleEnd = hyperStrikeAnimCamBeginTime - sfRumblePauseTime;
+                if (fAnimTime2 < fRumbleEnd)
+                {
+                    if (sfTimeSinceLastRumbleFilter > sfTimeBetweenApplyingRumbleFilters)
+                    {
+                        float fProgress = (fAnimTime2 - fHalfAnimationTime) / (fRumbleEnd - fHalfAnimationTime);
+                        float fIntensity = fProgress * sfHyperStrikeMaxRumbleIntensity;
+                        FireCameraRumbleFilter(0.0f, fIntensity);
+                        sfTimeSinceLastRumbleFilter = 0.0f;
+
+                        cBaseCamera* pTopCam = nlDLRingGetStart<cBaseCamera>(cCameraManager::m_cameraStack);
+                        if (pTopCam->m_pFilter != NULL)
+                        {
+                            nlDLRingGetStart<cBaseCamera>(cCameraManager::m_cameraStack)->m_pFilter->Ks = sfHyperStrikeRumbleSpringConstant;
+                            nlDLRingGetStart<cBaseCamera>(cCameraManager::m_cameraStack)->m_pFilter->Kd = sfHyperStrikeRumbleDampingConstant;
+                        }
+                    }
+
+                    sfTimeSinceLastRumbleFilter += g_fFixedUpdateTick * FixedUpdateTask::mTimeScale;
+                }
+            }
+        }
+
+        if (mActionShootToScoreVars.captainStsCamera == NULL && meS2SResult == S2S_SUPER_SHOT)
+        {
+            if (m_pCurrentAnimController->TestTrigger(hyperStrikeAnimCamBeginTime))
+            {
+                Audio::FadeFilterFromCurrentToZero();
+                FixedUpdateTask::mTimeScale = 1.0f;
+                ParticleUpdateTask::SetTimeScale(1.0f);
+                SetupCaptainSTSAnimCam(true);
+            }
+        }
+
+        GetConfigFloat(Config::Global(), "captain_sts/fade_to_dark_frame_begin", 33.0f);
+
+        if (mActionShootToScoreVars.captainStsCamera != NULL || meS2SResult == S2S_SUPER_SHOT)
+        {
+            if (m_pCurrentAnimController->TestTrigger(firstKickTime))
+            {
+                const char* teamName = GetTeamName(nlSingleton<GameInfoManager>::s_pInstance->GetTeam((s16)m_pTeam->m_nSide));
+                BasicString<char, Detail::TempStringAllocator> effectName(teamName);
+                effectName.AppendInPlace("_captain_sts_effect");
+
+                EffectsGroup* pGroup = fxGetGroup(effectName.c_str());
+                if (pGroup != NULL)
+                {
+                    EmissionController* pEmitCtrl = EmitGeneric(this, effectName.c_str(), NULL);
+                    if (pEmitCtrl != NULL)
+                    {
+                        Function1<void, EmissionController&> callback;
+                        callback.mTag = FREE_FUNCTION;
+                        callback.mFreeFunction = HyperStrikeEffectUpdate;
+                        pEmitCtrl->SetUpdateCallback(callback);
+                        if (callback.mTag == FUNCTOR && callback.mFunctor != NULL)
+                        {
+                            callback.mFunctor->~FunctorBase();
+                        }
+                    }
+                }
+
+                sSTSLighting__17DrawableCharacter = 1;
+            }
+        }
+
+        {
+            unsigned int nTotalFrames3 = m_pCurrentAnimController->m_pSAnim->m_nNumKeys;
+            float fTotalTime3 = (float)nTotalFrames3;
+            float matrixCamStartTime = sfMatrixCamStartFrame / fTotalTime3;
+
+            if (meS2SResult == S2S_SUPER_SHOT)
+            {
+                if (m_pCurrentAnimController->TestTrigger(matrixCamStartTime))
+                {
+                    cBaseCamera* pCurrentCam = nlDLRingGetStart<cBaseCamera>(cCameraManager::m_cameraStack);
+                    const nlVector3& cameraPos = pCurrentCam->GetCameraPosition();
+                    nlVector3* pBallPos = &g_pBall->m_v3Position;
+
+                    Flash__10PhotoFlashFv();
+
+                    if (sbMatrixCamTurnOffModelRendering)
+                    {
+                        bool bShowPositiveXNet = pBallPos->f.x > 0.0f;
+                        sbIsHyperShootToScoreRenderingEnabled__5World = 1;
+                        sbShowPositiveXNetDuringHyperStrike__5World = bShowPositiveXNet;
+                    }
+
+                    FixedUpdateTask::mTimeScale = sfMatrixCamTimeScale;
+                    ParticleUpdateTask::SetTimeScale(sfMatrixCamParticleTimeScale);
+
+                    MatrixEffectCam* pMatrixCam2 = new (nlMalloc(0x140, 8, false)) MatrixEffectCam();
+                    cCameraManager::PushCamera(pMatrixCam2);
+                    pMatrixCam2->m_pFilter = &rumbleFilter;
+
+                    pMatrixCam2->mfSpinDuration = sfMatrixCamDuration;
+                    pMatrixCam2->mfPauseAfterSpin = sfMatrixCamPauseAfterSpin;
+                    pMatrixCam2->mfZoomTime = sfMatrixCamZoomTime;
+
+                    float fSpinAngle = 360.0f * sfMatrixCamNumRevolutions;
+                    cAnimCamera* pStsCamera = mActionShootToScoreVars.captainStsCamera;
+                    float fSpinRate = fSpinAngle / sfMatrixCamDuration;
+
+                    bool bIsMirrored = false;
+                    if (pStsCamera->m_Mirror.f.x < 0.0f || pStsCamera->m_Mirror.f.y < 0.0f || pStsCamera->m_Mirror.f.z < 0.0f)
+                    {
+                        bIsMirrored = true;
+                    }
+                    pMatrixCam2->mfSpinRate = fSpinRate * (bIsMirrored ? -1.0f : 1.0f);
+
+                    pMatrixCam2->mfDesiredDistanceFromTarget = sfMatrixCamFinalDistanceFromTarget;
+                    pMatrixCam2->mfDesiredHeightAboveTarget = sfMatrixCamFinalHeightAboveTarget;
+                    pMatrixCam2->mfFOV = sfMatrixCamFOV;
+                    pMatrixCam2->mbFollowBall = true;
+
+                    cTeam* pOtherTeam = m_pTeam->GetOtherTeam();
+                    nlVector3* pGoalPos = &pOtherTeam->m_pNet->m_baseLocation;
+                    pMatrixCam2->Reset(cameraPos, *pBallPos, *pGoalPos);
+
+                    pMatrixCam2->SetInitialDistance(sfMatrixCamInitialDistanceFromTarget);
+
+                    float fAngle = 3.1415927f * sfMatrixCamInitialAngle / 180.0f;
+                    float fFacingAngle = 0.0000958738f * (float)m_aActualFacingDirection;
+                    pMatrixCam2->SetInitialAngle(fAngle + fFacingAngle);
+
+                    pMatrixCam2->SetInitialHeightAboveTarget(sfMatrixCamInitialHeightAboveTarget);
+
+                    pMatrixCam2->mFinishedCallback = (void (*)(MatrixEffectCam*))MatrixCamFinishedCallback;
+                    DrawableCharacter::RenderOnlyOneCharacter(*this, true);
+                }
+            }
+        }
+
+        if (mActionShootToScoreVars.captainStsCamera != NULL || meS2SResult == S2S_SUPER_SHOT)
+        {
+            if (m_pCurrentAnimController->TestTrigger(lightOffTime))
+            {
+                sSTSLighting__17DrawableCharacter = 0;
+            }
+        }
+
+        if (mActionShootToScoreVars.captainStsCamera != NULL || meS2SResult == S2S_SUPER_SHOT)
+        {
+            if (m_pCurrentAnimController->TestTrigger(firstKickTime))
+            {
+                if (sbMatrixCamUseWorldDarkening && meS2SResult == S2S_SUPER_SHOT)
+                {
+                }
+                else
+                {
+                    float fFadeFromDarkSpeed = GetConfigFloat(Config::Global(), "captain_sts/fade_from_dark_speed", 100.0f);
+                    WorldDarkening::Instance().Fade(fFadeFromDarkSpeed, 0.0f);
+                }
+
+                mActionShootToScoreVars.isInUnbreakablePart = true;
+
+                bool bIsSuperShot = (meS2SResult == S2S_SUPER_SHOT);
+                g_pBall->m_unk_0xA5 = bIsSuperShot;
+                EmitBallShot(this, (eBallShotEffectType)1, NULL, false);
+
+                bShotNISCaptainS2S = true;
+                sSTSLighting__17DrawableCharacter = 0;
+                g_pBall->m_pDrawableBall->m_uObjectFlags &= ~0x40;
+            }
+        }
+
+        if (mActionShootToScoreVars.captainStsCamera != NULL)
+        {
+            if (m_pCurrentAnimController->TestTrigger(fGreenRegionMaxWidth))
+            {
+                cCharacter::m_ModelType = CharModel_Rigid;
+                cCameraManager::Remove(*mActionShootToScoreVars.captainStsCamera);
+                if (mActionShootToScoreVars.captainStsCamera != NULL)
+                {
+                    mActionShootToScoreVars.captainStsCamera->~cAnimCamera();
+                }
+                mActionShootToScoreVars.captainStsCamera = NULL;
+                m_pCurrentAnimController->m_fPlaybackSpeedScale = mActionShootToScoreVars.preCaptainStsPlaybackSpeed;
+            }
+        }
+    }
+    else
+    {
+        if (m_pCurrentAnimController->TestTrigger(fGreenRegionMaxWidth))
+        {
+            EmitBallShot(this, (eBallShotEffectType)1, NULL, false);
+        }
+    }
+
+    if (m_pCurrentAnimController->TestTrigger(fGreenRegionMaxWidth))
+    {
+        DoRegularShooting();
+        Audio::FadeFilterFromCurrentToZero();
+        FixedUpdateTask::mTimeScale = 1.0f;
+        ParticleUpdateTask::SetTimeScale(1.0f);
+
+        if (meS2SResult != S2S_SUPER_SHOT)
+        {
+            g_pBall->InitiateBallBlur((eBallShotEffectType)1, this);
+            DrawableCharacter::RenderAllCharacters();
+            sSTSLighting__17DrawableCharacter = 0;
+        }
+        else
+        {
+            WorldDarkening::Instance().Fade(sfHyperStrikeFadeInSpeed, 0.0f);
+
+            for (int t = 0; t < 2; t++)
+            {
+                for (int f = 0; f < 4; f++)
+                {
+                    cFielder* pFielder = g_pTeams[t]->GetFielder(f);
+                    if (pFielder != this)
+                    {
+                        pFielder->SetFrozen(0.0f);
+                    }
+                }
+            }
+        }
+
+        if (meS2SResult != S2S_SUPER_SHOT && meS2SResult != S2S_SCORE)
+        {
+            g_pGame->mbCaptainShotToScoreOn = false;
+        }
+
+        if (FixedUpdateTask::mTimeScale < 1.0f)
+        {
+            Audio::FadeFilterFromCurrentToZero();
+        }
+
+        bShotNISCaptainS2S = false;
+        FireCameraRumbleFilter(0.0f, 0.2f);
+        mActionShootToScoreVars.isCurrentlyInvincible = false;
+        mActionShootToScoreVars.isInUnbreakablePart = false;
+        ShootToScoreMeter::instance.m_bMeterVisible = false;
+
+        const Event* pEvent = g_pEventManager->CreateValidEvent(0x40, 0x1C);
+        ShotAtGoalData* pData = new ((u8*)pEvent + 0x10) ShotAtGoalData();
+        pData->pShooter = this;
+
+        g_pEventManager->CreateValidEvent(0x42, 0x14);
+    }
+
+    if (ShouldStartCrossBlend(7))
+    {
+        SetAction((eFielderActionState)-1);
+    }
 }
 
 /**
