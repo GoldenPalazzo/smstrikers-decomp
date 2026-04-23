@@ -253,4 +253,4 @@ FESlideMenu::FESlideMenu(TLComponentInstance* pWorkPres)
  * Offset/Address/Size: 0x0 | 0x800972F4 | size: 0xC
  */
 // Force instantiation
-// Function<FnVoidVoid> __dummy_inst;
+Function<FnVoidVoid> __dummy_inst;

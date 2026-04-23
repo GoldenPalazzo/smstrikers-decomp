@@ -4,9 +4,6 @@
 #include "Game/Drawable/DrawableObj.h"
 #include "NL/nlMath.h"
 
-glModel* BallLightingCB(glModel* pModel, eGLView& view, unsigned long& uLayer);
-glModel* BallBlurCB(glModel* pModel, eGLView& view, unsigned long& uLayer);
-
 // void Replayable<1, SaveFrame, char>(SaveFrame&, char&);
 // void Replayable<1, LoadFrame, char>(LoadFrame&, char&);
 // void Replayable<1, SaveFrame, FloatCompressor<-127, 127, 7>>(SaveFrame&, const FloatCompressor<-127, 127, 7>&);
@@ -33,8 +30,6 @@ public:
     void Render() const;
     void Grab();
     DrawableCharacter* IndexToPlayer(int) const;
-    // void Replay<LoadFrame>(LoadFrame&);
-    // void Replay<SaveFrame>(SaveFrame&);
 
     /* 0x00 */ RenderSnapshot* mRenderSnapshot; // offset 0x0, size 0x4
     /* 0x04 */ bool mVisible;                   // offset 0x4, size 0x1
@@ -49,9 +44,9 @@ public:
 }; // total size: 0x44
 
 template <>
-void DrawableBall::Replay<SaveFrame>(SaveFrame&);
+void DrawableBall::Replay<LoadFrame>(LoadFrame&);
 
 template <>
-void DrawableBall::Replay<LoadFrame>(LoadFrame&);
+void DrawableBall::Replay<SaveFrame>(SaveFrame&);
 
 #endif // _DRAWABLEBALL_H_

@@ -470,12 +470,97 @@ void cFielder::SetMark(cFielder* pMark)
     }
 }
 
+static inline float CalcPenaltyWorth(ePenaltyType eType)
+{
+    float fMinAmount = 0.0f;
+    float fMaxAmount = 0.0f;
+
+    switch (eType)
+    {
+    case PEN_TYPE_HIT_WITH_BALL:
+    {
+        GameTweaks* pTweaks = g_pGame->m_pGameTweaks;
+        fMinAmount = pTweaks->fPowerupHitWithBallMinAmount;
+        fMaxAmount = pTweaks->fPowerupHitWithBallMaxAmount;
+        break;
+    }
+    case PEN_TYPE_HIT_NO_BALL:
+    {
+        GameTweaks* pTweaks = g_pGame->m_pGameTweaks;
+        fMinAmount = pTweaks->fPowerupHitNoBallMinAmount;
+        fMaxAmount = pTweaks->fPowerupHitNoBallMaxAmount;
+        break;
+    }
+    case PEN_TYPE_SLIDE_WITH_BALL:
+    {
+        GameTweaks* pTweaks = g_pGame->m_pGameTweaks;
+        fMinAmount = pTweaks->fPowerupSlideWithBallMinAmount;
+        fMaxAmount = pTweaks->fPowerupSlideWithBallMaxAmount;
+        break;
+    }
+    case PEN_TYPE_SLIDE_NO_BALL:
+    {
+        GameTweaks* pTweaks = g_pGame->m_pGameTweaks;
+        fMinAmount = pTweaks->fPowerupSlideNoBallMinAmount;
+        fMaxAmount = pTweaks->fPowerupSlideNoBallMaxAmount;
+        break;
+    }
+    }
+
+    return InterpolateRangeClamped(fMinAmount, fMaxAmount, 0.0f, 1.0f, nlRandomf(1.0f, &nlDefaultSeed));
+}
+
+static inline void DoPenaltyCardBookingInline(cFielder* pFouler, cFielder* pFoulee, ePenaltyType eType)
+{
+    int ePenaltyTypeAdjusted = eType;
+    if (pFoulee->m_tBallUnPossessionTimer.GetSeconds() < 0.5f)
+    {
+        if (ePenaltyTypeAdjusted == 1)
+        {
+            ePenaltyTypeAdjusted = 0;
+        }
+        else if (ePenaltyTypeAdjusted == 3)
+        {
+            ePenaltyTypeAdjusted = 2;
+        }
+    }
+
+    switch (pFouler->m_ePenaltyCardStatus)
+    {
+    case PENALTY_CARD_NONE:
+        pFouler->m_ePenaltyCardStatus = PENALTY_CARD_YELLOW_1;
+        break;
+    case PENALTY_CARD_YELLOW_1:
+        pFouler->m_ePenaltyCardStatus = PENALTY_CARD_YELLOW_2;
+        break;
+    case PENALTY_CARD_RED:
+        break;
+    case PENALTY_CARD_YELLOW_2:
+        pFouler->m_ePenaltyCardStatus = PENALTY_CARD_RED;
+        break;
+    }
+
+    PenaltyData* pData;
+    if (ePenaltyTypeAdjusted == PEN_TYPE_HIT_NO_BALL)
+    {
+        Event* pEvent = g_pEventManager->CreateValidEvent(0x3D, 0x24);
+        pData = new ((u8*)pEvent + 0x10) PenaltyData();
+    }
+    else
+    {
+        Event* pEvent = g_pEventManager->CreateValidEvent(0x3C, 0x24);
+        pData = new ((u8*)pEvent + 0x10) PenaltyData();
+    }
+
+    pData->fPenaltyWorth = CalcPenaltyWorth((ePenaltyType)ePenaltyTypeAdjusted);
+    pData->pFouler = pFouler;
+    pData->pFoulee = pFoulee;
+}
+
 /**
  * Offset/Address/Size: 0xAEBC | 0x800241F8 | size: 0x151C
- * TODO: 75.99% match (scratch) - register allocation diffs (r3/r4/r6 rotation in hit
- * section, f30/f31 swap for combinedRadius), missing neg/or/srwi bool normalization
- * for canPickup and GetGlobalPad ternary, prologue scheduling differences.
- * DoPenaltyCardBooking is auto-inlined 8x in full build; scratch uses macro to match.
+ * TODO: 89.13% match - 4 of 8 CalcPenaltyWorth copies not second-level inlined
+ * inside DoPenaltyCardBookingInline (MWCC inline budget limit: 4884 vs 5404 bytes).
  */
 void cFielder::CollideWithCharacterCallback(CollisionPlayerPlayerData* pData)
 {
@@ -632,21 +717,22 @@ done:
         {
             u16 uAbsHitterDelta = (nHitterToHitteeFacingDelta < 0) ? -nHitterToHitteeFacingDelta : nHitterToHitteeFacingDelta;
 
-            if (uAbsHitterDelta >= 0x4000)
+            if (uAbsHitterDelta < 0x4000)
             {
                 if (m_fActualSpeed < pFielderCollidedWith->m_fActualSpeed)
                 {
+                    // Block B1: pFielderCollidedWith attacks this (slower player fouled)
                     if (m_pBall != 0)
-                        pFielderCollidedWith->DoPenaltyCardBooking(this, PEN_TYPE_SLIDE_WITH_BALL);
+                        DoPenaltyCardBookingInline(pFielderCollidedWith, this, PEN_TYPE_SLIDE_WITH_BALL);
                     else
-                        pFielderCollidedWith->DoPenaltyCardBooking(this, PEN_TYPE_SLIDE_NO_BALL);
+                        DoPenaltyCardBookingInline(pFielderCollidedWith, this, PEN_TYPE_SLIDE_NO_BALL);
 
                     InitActionSlideAttackReact(pFielderCollidedWith, false);
                     pFielderCollidedWith->mActionSlideAttackVars.bAttackSucceeded = true;
                     BeginRumbleAction(RUMBLE_MEDIUM_CONTACT, pFielderCollidedWith->GetGlobalPad());
 
-                    u16 uAbsDelta2 = (nHitterToHitteeFacingDelta < 0) ? -nHitterToHitteeFacingDelta : nHitterToHitteeFacingDelta;
-                    if (uAbsDelta2 >= 0x4000)
+                    u16 uAbsDelta = (nHitterToHitteeFacingDelta < 0) ? -nHitterToHitteeFacingDelta : nHitterToHitteeFacingDelta;
+                    if (uAbsDelta >= 0x4000)
                     {
                         if (pFielderCollidedWith->m_pBall == 0)
                             pFielderCollidedWith->InitActionSlideAttackFailReact();
@@ -662,17 +748,18 @@ done:
                 }
                 else
                 {
+                    // Block B2: this attacks pFielderCollidedWith (faster player fouled)
                     if (pFielderCollidedWith->m_pBall != 0)
-                        DoPenaltyCardBooking(pFielderCollidedWith, PEN_TYPE_SLIDE_WITH_BALL);
+                        DoPenaltyCardBookingInline(this, pFielderCollidedWith, PEN_TYPE_SLIDE_WITH_BALL);
                     else
-                        DoPenaltyCardBooking(pFielderCollidedWith, PEN_TYPE_SLIDE_NO_BALL);
+                        DoPenaltyCardBookingInline(this, pFielderCollidedWith, PEN_TYPE_SLIDE_NO_BALL);
 
                     pFielderCollidedWith->InitActionSlideAttackReact(this, false);
                     mActionSlideAttackVars.bAttackSucceeded = true;
                     BeginRumbleAction(RUMBLE_MEDIUM_CONTACT, GetGlobalPad());
 
-                    u16 uAbsDelta3 = (nHitterToHitteeFacingDelta < 0) ? -nHitterToHitteeFacingDelta : nHitterToHitteeFacingDelta;
-                    if (uAbsDelta3 >= 0x4000)
+                    u16 uAbsDelta = (nHitterToHitteeFacingDelta < 0) ? -nHitterToHitteeFacingDelta : nHitterToHitteeFacingDelta;
+                    if (uAbsDelta >= 0x4000)
                     {
                         if (m_pBall == 0)
                             InitActionSlideAttackFailReact();
@@ -687,19 +774,20 @@ done:
                     }
                 }
             }
-            else if (m_fActualSpeed < pFielderCollidedWith->m_fActualSpeed)
+            else
             {
+                // Block A: >= 0x4000, pFielderCollidedWith attacks this (no speed comparison)
                 if (m_pBall != 0)
-                    pFielderCollidedWith->DoPenaltyCardBooking(this, PEN_TYPE_SLIDE_WITH_BALL);
+                    DoPenaltyCardBookingInline(pFielderCollidedWith, this, PEN_TYPE_SLIDE_WITH_BALL);
                 else
-                    pFielderCollidedWith->DoPenaltyCardBooking(this, PEN_TYPE_SLIDE_NO_BALL);
+                    DoPenaltyCardBookingInline(pFielderCollidedWith, this, PEN_TYPE_SLIDE_NO_BALL);
 
                 InitActionSlideAttackReact(pFielderCollidedWith, false);
                 pFielderCollidedWith->mActionSlideAttackVars.bAttackSucceeded = true;
                 BeginRumbleAction(RUMBLE_MEDIUM_CONTACT, pFielderCollidedWith->GetGlobalPad());
 
-                u16 uAbsDelta4 = (nHitterToHitteeFacingDelta < 0) ? -nHitterToHitteeFacingDelta : nHitterToHitteeFacingDelta;
-                if (uAbsDelta4 >= 0x4000)
+                u16 uAbsDelta = (nHitterToHitteeFacingDelta < 0) ? -nHitterToHitteeFacingDelta : nHitterToHitteeFacingDelta;
+                if (uAbsDelta >= 0x4000)
                 {
                     if (pFielderCollidedWith->m_pBall == 0)
                         pFielderCollidedWith->InitActionSlideAttackFailReact();
@@ -713,46 +801,21 @@ done:
                     }
                 }
             }
-            else
-            {
-                if (pFielderCollidedWith->m_pBall != 0)
-                    DoPenaltyCardBooking(pFielderCollidedWith, PEN_TYPE_SLIDE_WITH_BALL);
-                else
-                    DoPenaltyCardBooking(pFielderCollidedWith, PEN_TYPE_SLIDE_NO_BALL);
-
-                pFielderCollidedWith->InitActionSlideAttackReact(this, false);
-                mActionSlideAttackVars.bAttackSucceeded = true;
-                BeginRumbleAction(RUMBLE_MEDIUM_CONTACT, GetGlobalPad());
-
-                u16 uAbsDelta5 = (nHitterToHitteeFacingDelta < 0) ? -nHitterToHitteeFacingDelta : nHitterToHitteeFacingDelta;
-                if (uAbsDelta5 >= 0x4000)
-                {
-                    if (m_pBall == 0)
-                        InitActionSlideAttackFailReact();
-                }
-                else
-                {
-                    if (CanPickupBall(g_pBall))
-                    {
-                        PickupBall(g_pBall);
-                        DoSlideAttackStats();
-                    }
-                }
-            }
         }
         else
         {
+            // Block C: pFielderCollidedWith attacks this (opponent is slide attacking)
             if (m_pBall != 0)
-                pFielderCollidedWith->DoPenaltyCardBooking(this, PEN_TYPE_SLIDE_WITH_BALL);
+                DoPenaltyCardBookingInline(pFielderCollidedWith, this, PEN_TYPE_SLIDE_WITH_BALL);
             else
-                pFielderCollidedWith->DoPenaltyCardBooking(this, PEN_TYPE_SLIDE_NO_BALL);
+                DoPenaltyCardBookingInline(pFielderCollidedWith, this, PEN_TYPE_SLIDE_NO_BALL);
 
             InitActionSlideAttackReact(pFielderCollidedWith, false);
             pFielderCollidedWith->mActionSlideAttackVars.bAttackSucceeded = true;
             BeginRumbleAction(RUMBLE_MEDIUM_CONTACT, pFielderCollidedWith->GetGlobalPad());
 
-            u16 uAbsDelta6 = (nHitterToHitteeFacingDelta < 0) ? -nHitterToHitteeFacingDelta : nHitterToHitteeFacingDelta;
-            if (uAbsDelta6 >= 0x4000)
+            u16 uAbsDelta = (nHitterToHitteeFacingDelta < 0) ? -nHitterToHitteeFacingDelta : nHitterToHitteeFacingDelta;
+            if (uAbsDelta >= 0x4000)
             {
                 if (pFielderCollidedWith->m_pBall == 0)
                     pFielderCollidedWith->InitActionSlideAttackFailReact();
@@ -6374,3 +6437,4 @@ void cFielder::DoSpeedBoost()
 
     m_fActualSpeed = 0.0f;
 }
+

@@ -1,5 +1,6 @@
 #include "Game/FE/FEResourceManager.h"
 #include "Game/FE/feFontResource.h"
+#include "Game/FE/feResourceManager.h"
 #include "Game/FE/feScene.h"
 #include "Game/FE/feSceneResource.h"
 #include "Game/FE/feTextureResource.h"
@@ -950,4 +951,9 @@ void FEResourceManager::Update(float)
 
         bQueueNextResource = (result == FERR_AlreadyLoaded);
     }
+}
+
+void feResourceManager_stub()
+{
+    FEResourceManager::Instance()->GetName();
 }

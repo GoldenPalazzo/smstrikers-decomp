@@ -324,6 +324,7 @@ void CreditScene::SetupForNLGMovie()
  */
 void CreditScene::UpdateForCopyrightMessage(float dt)
 {
+    FORCE_DONT_INLINE;
     TLComponentInstance* pWhiteFade = GetWhiteFadeComponent();
     f32 timeElapsed = *(f32*)&mCreditParser.mFileSize;
     timeElapsed += dt;
@@ -492,6 +493,7 @@ void CreditScene::UpdateForCredits(float dt)
  */
 void CreditScene::UpdateForNintendoLogo(float dt)
 {
+    FORCE_DONT_INLINE;
     TLComponentInstance* pWhiteFade = GetWhiteFadeComponent();
     f32 timeElapsed = *(f32*)&mCreditParser.mFileSize;
     timeElapsed += dt;

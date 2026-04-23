@@ -432,8 +432,8 @@ SHMainMenu::~SHMainMenu()
 
 /**
  * Offset/Address/Size: 0xA3C | 0x800AA498 | size: 0x8C0
- * TODO: 81.5% match - compiler caches `this` in r24 (stmw r21 vs target stmw r22),
- *       shifting all local stack offsets by 4 bytes
+ * TODO: 85.8% match - r30/r26 register mismatch for scene variable cascades to all
+ *       loop-carried vars; BindExp2 copy uses stb for Placeholder tail instead of stw
  */
 void SHMainMenu::SceneCreated()
 {

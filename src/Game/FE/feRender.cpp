@@ -809,3 +809,16 @@ f32 TLSlide::GetCurrentTime() const
 // void 0x8028D570..0x8028D574 | size: 0x4
 // {
 // }
+
+/**
+ * Stub only for field order; unreferenced so the linker drops it.
+ * Forces emission of specific constants/operations so the compiler
+ * lays out the related fields to match the original binary.
+ */
+void feRender_stub()
+{
+    void (nlFloatColour::* volatile forceAssign)(const nlFloatColour&) = &nlFloatColour::operator=;
+    void (*volatile forceConvertColour)(nlColour&, const nlFloatColour&) = &ConvertColour;
+    (void)forceAssign;
+    (void)forceConvertColour;
+}

@@ -867,19 +867,24 @@ char* GetCharacterName(eCharacterClass cc)
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0x10 | 0x80014454 | size: 0x90
-//  */
-// void DLListContainerBase<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL, BasicSlotPool<DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>>>::DeleteEntry(DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>*)
-// {
-// }
+// Force weak symbol emission for DLListContainerBase::DeleteEntry<StereoAudioStream*>
+typedef DLListContainerBase<GCAudioStreaming::StereoAudioStream*, BasicSlotPool<DLListEntry<GCAudioStreaming::StereoAudioStream*> > > _StereoStreamDLList;
 
-// /**
-//  * Offset/Address/Size: 0xA0 | 0x800144E4 | size: 0x10
-//  */
-// void DLListContainerBase<AudioStreamTrack::StreamTrack::QUEUED_STREAM, nlStaticArrayAllocator<DLListEntry<AudioStreamTrack::StreamTrack::QUEUED_STREAM>, 4>>::DeleteEntry(DLListEntry<AudioStreamTrack::StreamTrack::QUEUED_STREAM>*)
-// {
-// }
+// Force weak symbol emission for DLListContainerBase::DeleteEntry<QUEUED_STREAM>
+typedef DLListContainerBase<AudioStreamTrack::StreamTrack::QUEUED_STREAM, nlStaticArrayAllocator<DLListEntry<AudioStreamTrack::StreamTrack::QUEUED_STREAM>, 4> > _QueuedStreamDLList;
+
+/**
+ * Stub only for field order; unreferenced so the linker drops it.
+ * Forces emission of specific constants/operations so the compiler
+ * lays out the related fields to match the original binary.
+ */
+void CharacterTemplate_stub()
+{
+    void (_StereoStreamDLList::* volatile forceStereoDelete)(DLListEntry<GCAudioStreaming::StereoAudioStream*>*) = &_StereoStreamDLList::DeleteEntry;
+    void (_QueuedStreamDLList::* volatile forceQueuedDelete)(DLListEntry<AudioStreamTrack::StreamTrack::QUEUED_STREAM>*) = &_QueuedStreamDLList::DeleteEntry;
+    (void)forceStereoDelete;
+    (void)forceQueuedDelete;
+}
 
 // /**
 //  * Offset/Address/Size: 0x0 | 0x800144F4 | size: 0x34

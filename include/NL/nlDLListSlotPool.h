@@ -9,6 +9,7 @@ class nlDLListSlotPool : public DLListContainerBase<T, BasicSlotPool<DLListEntry
 {
 public:
     nlDLListSlotPool()
+        : DLListContainerBase<T, BasicSlotPool<DLListEntry<T> > >(0)
     {
         this->m_Allocator.m_Initial = 16;
         SlotPoolBase::BaseAddNewBlock((SlotPoolBase*)&this->m_Allocator, sizeof(DLListEntry<T>));

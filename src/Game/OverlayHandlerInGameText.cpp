@@ -139,10 +139,16 @@ void BasicString<unsigned short, Detail::TempStringAllocator>::AppendInPlace<Det
 /**
  * Offset/Address/Size: 0x0 | 0x800FC098 | size: 0x70
  */
-/*
-void StatsTracker::Track(ePlayerStats, int, int, int, int, int, int)
+/**
+ * Stub only for field order; unreferenced so the linker drops it.
+ * Forces emission of specific constants/operations so the compiler
+ * lays out the related fields to match the original binary.
+ */
+void OverlayHandlerInGameText_stub()
 {
-}*/
+    void (*volatile forceTrack)(ePlayerStats, int, int, int, int, int, int) = &StatsTracker::Track;
+    (void)forceTrack;
+}
 
 /**
  * Offset/Address/Size: 0xF44 | 0x800FBFF0 | size: 0xA8

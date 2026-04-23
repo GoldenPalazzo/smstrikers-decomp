@@ -12,6 +12,14 @@ public:
     DLListContainerBase()
     {
     }
+
+protected:
+    DLListContainerBase(int)
+        : m_Head(NULL)
+    {
+    }
+
+public:
     DLListContainerBase(const int initial, const int delta)
         : m_Allocator(initial, delta)
     {
@@ -41,6 +49,16 @@ public:
             entry->m_data = localData;
         }
         return entry;
+    }
+
+    void Deallocate(DLListEntry<T>* entry, T* outData)
+    {
+        if (outData)
+        {
+            *outData = entry->m_data;
+        }
+        entry->m_next = m_Allocator.m_pFree;
+        m_Allocator.m_pFree = entry;
     }
 
     void DeleteEntry(DLListEntry<T>* entry);

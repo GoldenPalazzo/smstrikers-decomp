@@ -2205,3 +2205,9 @@ template bool nlDLRingIsEnd<DLListEntry<AudioStreamTrack::TrackManagerBase::Fade
  */
 template DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>*
 nlDLRingGetStart(DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>*);
+
+/**
+ * Offset/Address/Size: 0x110 | 0x801414E8 | size: 0x18
+ */
+template DLListEntry<AudioStreamTrack::StreamTrack::QUEUED_STREAM>*
+nlDLRingGetStart(DLListEntry<AudioStreamTrack::StreamTrack::QUEUED_STREAM>*);

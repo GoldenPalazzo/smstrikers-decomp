@@ -577,3 +577,14 @@ void BaseGameSceneManager::PushLoadingScene(bool clearStack)
 void IntroMovieScene::PlayScreenBackSFX()
 {
 }
+
+/**
+ * Stub only for field order; unreferenced so the linker drops it.
+ * Forces emission of specific constants/operations so the compiler
+ * lays out the related fields to match the original binary.
+ */
+void BaseGameSceneManager_stub()
+{
+    void (SlideMenuList::* volatile forceSetSlide)() = &SlideMenuList::SetSlide;
+    (void)forceSetSlide;
+}

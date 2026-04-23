@@ -55,37 +55,30 @@ void MakePerpendicularPlane(const nlVector3& v3Position, const nlVector3& v3Norm
 
 /**
  * Offset/Address/Size: 0x1204 | 0x80006CB0 | size: 0x150
- * TODO: 97.3% match - x-component prologue register allocation still differs
- * (target f3/f7/f6 vs current f6/f3/f2 around 0x44-0x74), which cascades into
- * f9/f7 assignment differences in the post-nlRecipSqrt cone-side checks.
+ * TODO: 98.15% match - inner block normY=f7 (target f9) and zeroVal=f5 (target f7)
+ * register allocation shift cascading into dot product computations.
  */
 bool IsPointInCone(const nlVector3& v3Point, const nlVector3& v3Pivot, const nlVector3& v3Plane1, const nlVector3& v3Plane2)
 {
-    f32 dy = v3Plane1.f.y;
-    f32 dyLA = dy - v3Pivot.f.y;
-    dy -= v3Point.f.y;
-    f32 dyP = dy;
-    f32 x = v3Plane1.f.x;
-    f32 dxLA = x - v3Pivot.f.x;
-    f32 dxP = x - v3Point.f.x;
-
-    f32 distSqA = dxLA * dxLA + dyLA * dyLA;
-    f32 distSqP = dxP * dxP + dyP * dyP;
+    f32 distSqA = const_cast<nlVector3&>(v3Plane1).CalculateDistanceSquared2D(v3Pivot);
+    f32 distSqP = const_cast<nlVector3&>(v3Plane1).CalculateDistanceSquared2D(v3Point);
+    f32 pointY = v3Point.f.y;
+    f32 pivotY = v3Pivot.f.y;
 
     if (distSqP < distSqA)
     {
-        f32 dirX = v3Pivot.f.x - v3Point.f.x;
-        f32 zeroVal = 0.0f;
-        f32 dirY = v3Pivot.f.y - v3Point.f.y;
-
-        f32 perpY = -dirY;
-        f32 lenSq = perpY * perpY + dirX * dirX;
-        f32 invLen = nlRecipSqrt(zeroVal + lenSq, true);
-
         f32 dotApexY;
         f32 normZ;
         f32 dotLeftY;
         f32 dotRightY;
+
+        f32 dirX = v3Pivot.f.x - v3Point.f.x;
+        f32 zeroVal = 0.0f;
+        f32 dirY = pivotY - pointY;
+
+        f32 perpY = -dirY;
+        f32 lenSq = perpY * perpY + dirX * dirX;
+        f32 invLen = nlRecipSqrt(zeroVal + lenSq, true);
 
         f32 normY = invLen * perpY;
         f32 normX = invLen * dirX;
@@ -126,17 +119,17 @@ bool IsPointInCone(const nlVector3& v3Point, const nlVector3& v3Pivot, const nlV
 
 /**
  * Offset/Address/Size: 0x110C | 0x80006BB8 | size: 0xF8
- * TODO: 96.2% match - r30/r31 register swap (current/diff allocation)
  */
 #undef abs
 extern "C" int abs(int n);
 
+static inline s16 AngleDiff(u16 a, u16 b) { return (s16)(a - b); }
+
 unsigned short SeekDirection(unsigned short aCurrent, unsigned short aDesired, float fSeekSpeed, float fFalloff, float fDeltaT)
 {
     u16 current = aCurrent;
-    u16 desired = aDesired;
-    s16 diff = (s16)(desired - current);
-    s16 delta;
+    s16 diff = AngleDiff(aDesired, current);
+    signed short nDeltaDisplacement;
 
     if (diff != 0)
     {
@@ -146,37 +139,30 @@ unsigned short SeekDirection(unsigned short aCurrent, unsigned short aDesired, f
 
         if (absDiff < fFalloff)
         {
-            f32 sqFalloff = fFalloff * fFalloff;
-            f32 t1 = sqFalloff / fSeekSpeed;
-            f32 t2 = t1 / absDiff;
-            f32 t3 = fDeltaT + t2;
-            f32 t4 = t1 / t3;
-            f32 result = absDiff - t4;
-            delta = (s16)(s32)result;
+            f32 fSeekCoefficient = fFalloff * fFalloff / fSeekSpeed;
+            nDeltaDisplacement = (s16)(s32)(absDiff - fSeekCoefficient / (fDeltaT + fSeekCoefficient / absDiff));
         }
         else
         {
-            f32 result = fDeltaT * fSeekSpeed;
-            delta = (s16)(s32)result;
+            nDeltaDisplacement = (s16)(s32)(fDeltaT * fSeekSpeed);
         }
 
-        int absDiffInt = abs(diff);
-        if (absDiffInt < (s16)delta)
+        if (abs(diff) < (s16)nDeltaDisplacement)
         {
-            return desired;
+            return aDesired;
         }
 
         if (diff > 0)
         {
-            return (u16)(current + (s16)delta);
+            return (u16)(current + (s16)nDeltaDisplacement);
         }
         else
         {
-            return (u16)(current - (s16)delta);
+            return (u16)(current - (s16)nDeltaDisplacement);
         }
     }
 
-    return desired;
+    return aDesired;
 }
 
 /**

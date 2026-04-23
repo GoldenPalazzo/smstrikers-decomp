@@ -4,31 +4,6 @@
 GLInventory glInventory;
 
 template <>
-nlAVLTree<unsigned long, nlChunk*, DefaultKeyCompare<unsigned long> >::~nlAVLTree()
-{
-}
-
-template <>
-nlAVLTree<unsigned long, GLMaterialList*, DefaultKeyCompare<unsigned long> >::~nlAVLTree()
-{
-}
-
-template <>
-nlAVLTree<unsigned long, GLVertexAnim*, DefaultKeyCompare<unsigned long> >::~nlAVLTree()
-{
-}
-
-template <>
-nlAVLTree<unsigned long, GLTextureAnim*, DefaultKeyCompare<unsigned long> >::~nlAVLTree()
-{
-}
-
-template <>
-nlAVLTree<unsigned long, GLShadowVolume*, DefaultKeyCompare<unsigned long> >::~nlAVLTree()
-{
-}
-
-template <>
 clearing_GLInventory<glModel>::~clearing_GLInventory()
 {
     m_pItems->Clear();

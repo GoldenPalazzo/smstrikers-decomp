@@ -6,14 +6,12 @@
 #include "NL/nlDLRing.h"
 
 /**
+ * Offset/Address/Size: 0x20 | 0x801B64A8 | size: 0x18
+ */
+
+/**
  * Offset/Address/Size: 0x38 | 0x801B64C0 | size: 0x18
  */
-template BoneMapList* nlRingGetStart<BoneMapList>(BoneMapList*);
-
-// /**
-//  * Offset/Address/Size: 0x20 | 0x801B64A8 | size: 0x18
-//  */
-// Implemented via template in NL/nlDLRing.h; instantiated when AttachSkinData calls nlRingGetStart<SkinPairList>.
 
 // /**
 //  * Offset/Address/Size: 0x0 | 0x801B6488 | size: 0x20
@@ -25,7 +23,7 @@ template BoneMapList* nlRingGetStart<BoneMapList>(BoneMapList*);
 /**
  * Offset/Address/Size: 0x310 | 0x801B6480 | size: 0x8
  */
-static AVLTreeEntry<unsigned long, unsigned long>* force_CastUp(
+static AVLTreeEntry<unsigned long, unsigned long>* force_inst(
     const AVLTreeBase<unsigned long, unsigned long, NewAdapter<AVLTreeEntry<unsigned long, unsigned long> >, DefaultKeyCompare<unsigned long> >* t,
     AVLTreeNode* n)
 {
@@ -86,4 +84,21 @@ void TempMatrixCopier::CopyMatrix(const unsigned long& boneId, unsigned long* ou
  */
 void ShaderSkinMesh::AttachSkinData(unsigned long, const nlMatrix4*)
 {
+}
+
+/**
+ * Stub only for field order; unreferenced so the linker drops it.
+ * Forces emission of specific constants/operations so the compiler lays out the related fields to match the original binary.
+ */
+/**
+ * Stub only for field order; unreferenced so the linker drops it.
+ * Forces emission of specific constants/operations so the compiler
+ * lays out the related fields to match the original binary.
+ */
+void gluSkinMesh_stub()
+{
+    BoneMapList* (*volatile forceBoneMapListStart)(BoneMapList*) = &nlRingGetStart<BoneMapList>;
+    SkinPairList* (*volatile forceSkinPairListStart)(SkinPairList*) = &nlRingGetStart<SkinPairList>;
+    (void)forceSkinPairListStart;
+    (void)forceBoneMapListStart;
 }

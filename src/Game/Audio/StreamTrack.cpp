@@ -311,12 +311,12 @@ void AudioStreamTrack::StreamTrack::Update(float)
     }
 }
 
-// /**
-//  * Offset/Address/Size: 0x14D4 | 0x8015622C | size: 0x428
-//  */
-// void AudioStreamTrack::StreamTrack::PlayStream(unsigned long, float, bool, unsigned long, unsigned long, const char*, Audio::MasterVolume::VOLUME_GROUP)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x14D4 | 0x8015622C | size: 0x428
+ */
+void AudioStreamTrack::StreamTrack::PlayStream(unsigned long, float, bool, unsigned long, unsigned long, const char*, Audio::MasterVolume::VOLUME_GROUP)
+{
+}
 
 inline GCAudioStreaming::AudioStream::AudioStream(GCAudioStreaming::AudioBufferMgr& mgr,
     unsigned long bufCount)

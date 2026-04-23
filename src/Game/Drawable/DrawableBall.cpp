@@ -10,9 +10,14 @@
 extern int g_nMotionBlurDivs;
 extern float g_fMotionBlurAlpha0;
 extern float g_fMotionBlurAlphaScale;
-extern float g_fBallBlur;
+
+static float g_fBallBlur;
+
 extern const unsigned long eOC_NO_LIGHT;
 extern unsigned char sbBallShadowDisabled__13DrawableModel;
+
+static glModel* BallLightingCB(glModel* pModel, eGLView& view, unsigned long& uLayer);
+static glModel* BallBlurCB(glModel* pModel, eGLView& view, unsigned long& uLayer);
 
 /**
  * Offset/Address/Size: 0x0 | 0x8011DD50 | size: 0x80
@@ -51,8 +56,8 @@ void DrawableBall::Blend(const float* alpha, const DrawableBall& a, const Drawab
 
 /**
  * Offset/Address/Size: 0x1C0 | 0x8011DF10 | size: 0x47C
- * TODO: 98.78% match - remaining diffs are integer register allocation (r18-r24 shift
- * for savedWorldMatrix and blurMatrix word copies, r18/r20 swap in post-loop section)
+ * TODO: 98.87% match - remaining diffs are integer register allocation (r18 vs r24
+ * shift for savedWorldMatrix and blurMatrix word copies in GetWorldMatrix copies)
  */
 void DrawableBall::Render() const
 {
@@ -61,6 +66,9 @@ void DrawableBall::Render() const
     DrawableObject* pDrawableBall;
     glModel* (*savedBlurCB)(glModel*, eGLView&, unsigned long&);
     u8 savedBallShadowDisabled;
+    unsigned long savedLightingFlags;
+    glModel* (*savedLightingCB)(glModel*, eGLView&, unsigned long&);
+    u8 savedBallShadowDisabled2;
 
     DrawableObject* drawable = g_pBall->m_pDrawableBall;
     if (mVisible)
@@ -132,13 +140,13 @@ void DrawableBall::Render() const
     pDrawableBall->m_CB = savedBlurCB;
     pDrawableBall->m_uObjectCreationFlags = savedBlurCreationFlags;
 
-    u8 savedBallShadowDisabled2 = sbBallShadowDisabled__13DrawableModel;
+    savedBallShadowDisabled2 = sbBallShadowDisabled__13DrawableModel;
     sbBallShadowDisabled__13DrawableModel = 1;
 
-    glModel* (*savedLightingCB)(glModel*, eGLView&, unsigned long&) = pDrawableBall->m_CB;
+    savedLightingCB = pDrawableBall->m_CB;
     pDrawableBall->m_CB = BallLightingCB;
 
-    unsigned long savedLightingFlags = pDrawableBall->m_uObjectCreationFlags;
+    savedLightingFlags = pDrawableBall->m_uObjectCreationFlags;
     pDrawableBall->m_uObjectCreationFlags &= ~0x80;
     pDrawableBall->Draw();
 
@@ -150,7 +158,7 @@ void DrawableBall::Render() const
 /**
  * Offset/Address/Size: 0x63C | 0x8011E38C | size: 0xB4
  */
-glModel* BallLightingCB(glModel* pModel, eGLView& view, unsigned long& uLayer)
+static glModel* BallLightingCB(glModel* pModel, eGLView& view, unsigned long& uLayer)
 {
     u32 tex;
     glModelPacket* pPacket;
@@ -234,32 +242,6 @@ DrawableCharacter* DrawableBall::IndexToPlayer(int index) const
 }
 
 /**
- * Offset/Address/Size: 0x0 | 0x8011E63C | size: 0x138
- */
-template <>
-void DrawableBall::Replay<LoadFrame>(LoadFrame& frame)
-{
-    Replayable<1, LoadFrame, FloatCompressor<-127, 127, 7> >(frame, FloatCompressor<-127, 127, 7>(mPosition.f.x));
-    Replayable<1, LoadFrame, FloatCompressor<-127, 127, 7> >(frame, FloatCompressor<-127, 127, 7>(mPosition.f.y));
-    Replayable<1, LoadFrame, FloatCompressor<-127, 127, 7> >(frame, FloatCompressor<-127, 127, 7>(mPosition.f.z));
-
-    Replayable<1, LoadFrame, FloatCompressor<-1, 1, 13> >(frame, FloatCompressor<-1, 1, 13>(mOrientation.f.x));
-    Replayable<1, LoadFrame, FloatCompressor<-1, 1, 13> >(frame, FloatCompressor<-1, 1, 13>(mOrientation.f.y));
-    Replayable<1, LoadFrame, FloatCompressor<-1, 1, 13> >(frame, FloatCompressor<-1, 1, 13>(mOrientation.f.z));
-    Replayable<1, LoadFrame, FloatCompressor<-1, 1, 13> >(frame, FloatCompressor<-1, 1, 13>(mOrientation.f.w));
-
-    Replayable<1, LoadFrame, FloatCompressor<-127, 127, 5> >(frame, FloatCompressor<-127, 127, 5>(mVelocity.f.x));
-    Replayable<1, LoadFrame, FloatCompressor<-127, 127, 5> >(frame, FloatCompressor<-127, 127, 5>(mVelocity.f.y));
-    Replayable<1, LoadFrame, FloatCompressor<-127, 127, 5> >(frame, FloatCompressor<-127, 127, 5>(mVelocity.f.z));
-
-    Replayable<1, LoadFrame, bool>(frame, mVisible);
-    Replayable<1, LoadFrame, char>(frame, (char&)mOwnerIndex);
-    Replayable<1, LoadFrame, char>(frame, (char&)mPrevOwnerIndex);
-    Replayable<1, LoadFrame, char>(frame, (char&)mPassTargetIndex);
-    Replayable<1, LoadFrame, char>(frame, (char&)mLastTouchIndex);
-}
-
-/**
  * Offset/Address/Size: 0x138 | 0x8011E774 | size: 0x138
  */
 template <>
@@ -283,6 +265,32 @@ void DrawableBall::Replay<SaveFrame>(SaveFrame& frame)
     Replayable<1, SaveFrame, char>(frame, (char&)mPrevOwnerIndex);
     Replayable<1, SaveFrame, char>(frame, (char&)mPassTargetIndex);
     Replayable<1, SaveFrame, char>(frame, (char&)mLastTouchIndex);
+}
+
+/**
+ * Offset/Address/Size: 0x0 | 0x8011E63C | size: 0x138
+ */
+template <>
+void DrawableBall::Replay<LoadFrame>(LoadFrame& frame)
+{
+    Replayable<1, LoadFrame, FloatCompressor<-127, 127, 7> >(frame, FloatCompressor<-127, 127, 7>(mPosition.f.x));
+    Replayable<1, LoadFrame, FloatCompressor<-127, 127, 7> >(frame, FloatCompressor<-127, 127, 7>(mPosition.f.y));
+    Replayable<1, LoadFrame, FloatCompressor<-127, 127, 7> >(frame, FloatCompressor<-127, 127, 7>(mPosition.f.z));
+
+    Replayable<1, LoadFrame, FloatCompressor<-1, 1, 13> >(frame, FloatCompressor<-1, 1, 13>(mOrientation.f.x));
+    Replayable<1, LoadFrame, FloatCompressor<-1, 1, 13> >(frame, FloatCompressor<-1, 1, 13>(mOrientation.f.y));
+    Replayable<1, LoadFrame, FloatCompressor<-1, 1, 13> >(frame, FloatCompressor<-1, 1, 13>(mOrientation.f.z));
+    Replayable<1, LoadFrame, FloatCompressor<-1, 1, 13> >(frame, FloatCompressor<-1, 1, 13>(mOrientation.f.w));
+
+    Replayable<1, LoadFrame, FloatCompressor<-127, 127, 5> >(frame, FloatCompressor<-127, 127, 5>(mVelocity.f.x));
+    Replayable<1, LoadFrame, FloatCompressor<-127, 127, 5> >(frame, FloatCompressor<-127, 127, 5>(mVelocity.f.y));
+    Replayable<1, LoadFrame, FloatCompressor<-127, 127, 5> >(frame, FloatCompressor<-127, 127, 5>(mVelocity.f.z));
+
+    Replayable<1, LoadFrame, bool>(frame, mVisible);
+    Replayable<1, LoadFrame, char>(frame, (char&)mOwnerIndex);
+    Replayable<1, LoadFrame, char>(frame, (char&)mPrevOwnerIndex);
+    Replayable<1, LoadFrame, char>(frame, (char&)mPassTargetIndex);
+    Replayable<1, LoadFrame, char>(frame, (char&)mLastTouchIndex);
 }
 
 /**

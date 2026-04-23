@@ -149,7 +149,8 @@ ShaderSkinMesh::~ShaderSkinMesh()
 
     if (boneMaps != nullptr)
     {
-        nlDeleteRing<BoneMapList>(&boneMaps);
+        void (*deleteFn)(BoneMapList**) = nlDeleteRing<BoneMapList>;
+        deleteFn(&boneMaps);
     }
 
     delete[] tempNormals;

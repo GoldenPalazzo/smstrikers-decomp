@@ -3,6 +3,7 @@
 #pragma pool_data off
 
 #include "Game/Ball.h"
+#include "Game/AI/FuzzyVariant.h"
 
 #include "NL/nlDebug.h"
 #include "NL/nlMath.h"
@@ -1778,6 +1779,21 @@ cBall::cBall()
 // void Variant::Reset()
 // {
 // }
+
+/**
+ * Stub only for field order; unreferenced so the linker drops it.
+ * Forces emission of specific constants/operations so the compiler
+ * lays out the related fields to match the original binary.
+ */
+#pragma dont_inline on
+void Ball_stub()
+{
+    Variant v;
+    v.Reset();
+    FuzzyVariant fv;
+    fv.Reset();
+}
+#pragma dont_inline reset
 
 // // /**
 // //  * Offset/Address/Size: 0x0 | 0x8000DE80 | size: 0x8

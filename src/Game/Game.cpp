@@ -115,6 +115,7 @@ typedef std::map<unsigned long, FuzzyVariant, std::less<unsigned long>, std::all
 typedef std::__tree<_PairT, _MapT::value_compare, std::allocator<_PairT> > _TreeT;
 typedef std::allocator<_TreeT::node> _NodeAllocT;
 typedef std::__red_black_tree<1>::anchor _AnchorT;
+typedef std::allocator<_PairT> _PairAllocT;
 
 #pragma dont_inline on
 namespace Metrowerks
@@ -126,6 +127,12 @@ _NodeAllocT& compressed_pair_imp<_NodeAllocT, _AnchorT, 1>::first()
 {
     return *this;
 }
+
+template <>
+_PairAllocT& compressed_pair_imp<_PairAllocT, unsigned long, 1>::first()
+{
+    return *this;
+}
 } // namespace details
 } // namespace Metrowerks
 #pragma dont_inline reset
@@ -134,6 +141,8 @@ static void _dummy_compressed_pair_first()
 {
     Metrowerks::details::compressed_pair_imp<_NodeAllocT, _AnchorT, 1> obj;
     obj.first();
+    Metrowerks::details::compressed_pair_imp<_PairAllocT, unsigned long, 1> obj2;
+    obj2.first();
 }
 
 // /**
