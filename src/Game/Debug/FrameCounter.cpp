@@ -414,7 +414,94 @@ void DrawBrow(const nlVector3& leftEyeCentre, const nlVector3& rightEyeCentre, f
 
 /**
  * Offset/Address/Size: 0x0 | 0x801FCB9C | size: 0x588
+ * TODO: 86.75% match - colour lerp scheduling: MWCC interleaves byte loads with float ops but our code batches them. Eye section has f4/f6 f5/f7 register swap.
  */
 void FrameCounter::DisplayFrameSmiler()
 {
+    extern float sfSmileyRadius;
+    extern float sfSmileRadius;
+    extern float sfEyeRadius;
+    extern float sfEyeSeparation;
+    extern float sfEyeHeight;
+    extern float sfHappiness;
+    extern int siHappinessLookback;
+    extern nlColour sMadColour;
+    extern nlColour sMediumColour;
+    extern nlColour sHappyColour;
+
+    float happiness = 0.0f;
+    unsigned int i;
+    for (i = 0; i < (unsigned int)siHappinessLookback; i++)
+    {
+        float frameTime = m_FrameHistory[(u32)(unk34 - (s32)i + 640) % 640];
+        float fps;
+        if (frameTime == 0.0f)
+        {
+            fps = 60.0f;
+        }
+        else
+        {
+            fps = 1000.0f / frameTime;
+        }
+        happiness += (fps - 30.0f) / 30.0f;
+    }
+    happiness /= (float)siHappinessLookback;
+    if (happiness > 1.0f)
+        happiness = 1.0f;
+    if (happiness < 0.0f)
+        happiness = 0.0f;
+
+    sfHappiness = happiness;
+
+    float circleRadius = sfSmileyRadius;
+    float smileRadius = sfSmileRadius * sfSmileyRadius;
+    float eyeRadius = sfEyeRadius * sfSmileyRadius;
+
+    nlVector3 circleCentre = { 0, 0, 0 };
+    circleCentre.f.x = 2.0f * sfSmileyRadius;
+    circleCentre.f.y = 480.0f - 3.0f * sfSmileyRadius;
+
+    nlColour black = { 0, 0, 0, 255 };
+
+    nlColour colour;
+    if (happiness < 0.5f)
+    {
+        float alpha = 2.0f * happiness;
+        colour.c[0] = (u8)((float)sMediumColour.c[0] * alpha + (float)sMadColour.c[0] * (1.0f - alpha));
+        colour.c[1] = (u8)((float)sMediumColour.c[1] * alpha + (float)sMadColour.c[1] * (1.0f - alpha));
+        colour.c[2] = (u8)((float)sMediumColour.c[2] * alpha + (float)sMadColour.c[2] * (1.0f - alpha));
+        colour.c[3] = (u8)((float)sMediumColour.c[3] * alpha + (float)sMadColour.c[3] * (1.0f - alpha));
+    }
+    else
+    {
+        float alpha = 2.0f * (happiness - 0.5f);
+        colour.c[0] = (u8)((float)sHappyColour.c[0] * alpha + (float)sMediumColour.c[0] * (1.0f - alpha));
+        colour.c[1] = (u8)((float)sHappyColour.c[1] * alpha + (float)sMediumColour.c[1] * (1.0f - alpha));
+        colour.c[2] = (u8)((float)sHappyColour.c[2] * alpha + (float)sMediumColour.c[2] * (1.0f - alpha));
+        colour.c[3] = (u8)((float)sHappyColour.c[3] * alpha + (float)sMediumColour.c[3] * (1.0f - alpha));
+    }
+
+    nlVector3 leftEyeCentre = { 0, 0, 0 };
+    nlVector3 rightEyeCentre = { 0, 0, 0 };
+
+    leftEyeCentre.f.x = -circleRadius * sfEyeSeparation;
+    leftEyeCentre.f.y = -circleRadius * sfEyeHeight;
+
+    rightEyeCentre.f.x = circleRadius * sfEyeSeparation;
+    rightEyeCentre.f.y = -circleRadius * sfEyeHeight;
+
+    leftEyeCentre.f.x += circleCentre.f.x;
+    leftEyeCentre.f.y += circleCentre.f.y;
+    leftEyeCentre.f.z += circleCentre.f.z;
+
+    rightEyeCentre.f.x += circleCentre.f.x;
+    rightEyeCentre.f.y += circleCentre.f.y;
+    rightEyeCentre.f.z += circleCentre.f.z;
+
+    DrawCircle(circleCentre, 3.0f + circleRadius, 1.2f, black);
+    DrawCircle(circleCentre, circleRadius, 1.2f, colour);
+    DrawCircle(leftEyeCentre, eyeRadius, 1.2f, black);
+    DrawCircle(rightEyeCentre, eyeRadius, 1.2f, black);
+    DrawSmile(circleCentre, smileRadius, 1.2f, black, 3.0f);
+    DrawBrow(leftEyeCentre, rightEyeCentre, 3.0f * eyeRadius, 2.0f * eyeRadius, 1.5f * eyeRadius);
 }

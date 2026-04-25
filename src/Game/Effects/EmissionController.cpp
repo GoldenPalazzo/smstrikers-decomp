@@ -293,8 +293,8 @@ bool EmissionController::IsLingering() const
 
 /**
  * Offset/Address/Size: 0x32C | 0x801F7C1C | size: 0x5EC
- * TODO: 96.17% match - register allocation diffs (r26/r30 numSys, r27/r29 numDel, r29/r26 pSpec,
- * r30/r27 pNext, r20/r24 pTerrain, f1/f2 float swap) from -inline deferred vs -inline auto.
+ * TODO: 96.97% match - register allocation diffs (r26/r30 numSys, r27/r29 numDel, r29/r26 pSpec,
+ * r30/r27 pNext, r20/r24 pTerrain, f1/f2 float swap).
  */
 bool EmissionController::Update(float dt)
 {
@@ -476,7 +476,7 @@ bool EmissionController::Update(float dt)
         pSys = pNext;
     }
 
-    int isFinished = (numSys == numDel);
+    u8 isFinished = (numSys == numDel);
 
     if (isFinished && mFinishedCallback.mTag != EMPTY)
     {

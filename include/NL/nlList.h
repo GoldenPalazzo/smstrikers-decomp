@@ -161,16 +161,6 @@ template <typename T>
 class nlList
 {
 public:
-    ~nlList()
-    {
-        T* node;
-        do
-        {
-            node = nlListRemoveStart<T>(&m_pStart, &m_pEnd);
-            ::operator delete(node);
-        } while (m_pStart != 0);
-    }
-
     T* m_pStart; // offset 0x0, size 0x4
     T* m_pEnd;   // offset 0x4, size 0x4
 }; // total size: 0x8

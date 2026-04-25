@@ -29,6 +29,18 @@ inline float nlLerp(float a, float b, float t)
     return a + t * (b - a);
 }
 
+cFollowCamera::cFollowCamera(FollowTarget followTarget)
+{
+    m_FollowTarget = followTarget;
+    m_bOOISet = false;
+    m_aFacingDirection = 0;
+    m_aPitch = 0x1000;
+    m_fOOIDistance = 5.0f;
+    m_bPitchLimits = true;
+    m_bControlsLocked = false;
+    m_matView.SetIdentity();
+}
+
 /**
  * Offset/Address/Size: 0x0 | 0x801A8F18 | size: 0x668
  * TODO: 94.32% match - GPR r28-r31 allocation mismatch (context-level, all diffs are register swaps)

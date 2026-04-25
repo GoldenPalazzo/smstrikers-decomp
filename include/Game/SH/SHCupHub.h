@@ -39,7 +39,7 @@ public:
     void CreateBowserLeague();
     void CreateKnockout();
     unsigned char UpdateLeague(float);
-    void UpdateKnockout8(float);
+    unsigned char UpdateKnockout8(float);
     s32 UpdateKnockout4(float);
     void UpdateKnockout2(float);
     void UpdateProgressIndicator();

@@ -352,7 +352,7 @@ void CreditScene::UpdateForCopyrightMessage(float dt)
 
 /**
  * Offset/Address/Size: 0x1BC | 0x8010F318 | size: 0x398
- * TODO: 97.4% match - r4/r6 register swap in string copy loops (both '+' and else branches)
+ * TODO: 97.87% match - register permutation differences in both string copy loops
  */
 void CreditScene::UpdateForCredits(float dt)
 {
@@ -373,20 +373,21 @@ void CreditScene::UpdateForCredits(float dt)
             {
                 if (pToken[0] == '+')
                 {
-                    const unsigned char* pLine = (const unsigned char*)"";
                     u32 count = 64;
-                    u32 ch = 0;
-                    while (count-- && (mStrings[i][ch] = pLine[ch]) != 0)
+                    const unsigned char* pSrc = (const unsigned char*)"";
+                    u32 k = 0;
+                    while (count-- && (mStrings[i][k] = *pSrc) != 0)
                     {
-                        ch++;
+                        ++pSrc;
+                        ++k;
                     }
                     mStrings[i][63] = 0;
                 }
                 else
                 {
                     const unsigned char* pSrc = (const unsigned char*)pToken;
-                    u32 count = 64;
                     u32 ch = 0;
+                    u32 count = 64;
                     while (count-- && (mStrings[i][ch] = pSrc[ch]) != 0)
                     {
                         ch++;
@@ -440,7 +441,7 @@ void CreditScene::UpdateForCredits(float dt)
     {
         bool shouldFade = false;
 
-        if (mAreCreditsOver)
+        if (!mAreCreditsOver)
         {
             f32 time = *(f32*)&mCreditParser.mFileSize;
             time += dt;
@@ -465,7 +466,7 @@ void CreditScene::UpdateForCredits(float dt)
             mTimeElapsed = 1;
 
             TLComponentInstance* pWhiteFade = GetWhiteFadeComponent();
-            pWhiteFade->SetActiveSlide("credits");
+            pWhiteFade->SetActiveSlide("FADEIN");
             pWhiteFade->Update(0.0f);
         }
     }

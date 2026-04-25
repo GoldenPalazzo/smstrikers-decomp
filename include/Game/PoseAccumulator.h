@@ -16,14 +16,12 @@ class cBuildNodeMatrixCallbackInfo
 public:
     cBuildNodeMatrixCallbackInfo()
     {
-        fn = nullptr;
-        a = 0;
-        b = 0;
+        funcCallback = NULL;
     }
 
-    /* 0x00 */ BuildNodeMatrixFn fn;
-    /* 0x04 */ unsigned int a;
-    /* 0x08 */ unsigned int b;
+    /* 0x00 */ BuildNodeMatrixFn funcCallback;
+    /* 0x04 */ unsigned int nParam1;
+    /* 0x08 */ unsigned int nParam2;
 }; // size: 0x0C
 
 struct RotAccum

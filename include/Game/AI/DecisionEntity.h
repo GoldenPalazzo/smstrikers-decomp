@@ -4,6 +4,7 @@
 #include "NL/nlList.h"
 #include "Game/AI/Fielder.h"
 #include "Game/AI/FuzzyVariant.h"
+#include "types.h"
 
 // Forward declarations
 class ScriptAction;
@@ -24,6 +25,7 @@ public:
     cDecisionEntity(eDecisionEntity type, unsigned long id, FuzzyVariant (*dtf)(cDecisionEntity*), FuzzyVariant (*af)(cDecisionEntity*));
     cDecisionEntity(const cDecisionEntity& other)
     {
+        FORCE_DONT_INLINE
         m_type = other.m_type;
         m_id = other.m_id;
         m_pDTF = other.m_pDTF;
@@ -33,6 +35,7 @@ public:
         m_lQueuedActions = other.m_lQueuedActions;
         m_iNumDTFCalls = other.m_iNumDTFCalls;
     }
+    // ~cDecisionEntity() { };
 
     float CallDTF(cFielder*);
     bool DoAbort(cFielder*);

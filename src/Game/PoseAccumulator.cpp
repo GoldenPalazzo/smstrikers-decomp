@@ -287,8 +287,8 @@ void cPoseAccumulator::BuildNodeMatrices(const nlMatrix4& world)
         if (nPushPop > 0)
             ParentStack[nStackIndex] = i;
         cBuildNodeMatrixCallbackInfo* pCallback = &m_cb.mData[i];
-        if (pCallback->fn)
-            pCallback->fn(pCallback->a, pCallback->b, this, i, nParentIndex);
+        if (pCallback->funcCallback)
+            pCallback->funcCallback(pCallback->nParam1, pCallback->nParam2, this, i, nParentIndex);
     }
     for (int i = 0; i < m_BaseSHierarchy->m_nodeCount; i++)
     {

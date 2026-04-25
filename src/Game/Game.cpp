@@ -54,62 +54,6 @@ void std::allocator<std::pair<const unsigned long, FuzzyVariant> >::destroy(std:
 // {
 // }
 
-/**
- * Offset/Address/Size: 0x0 | 0x800401BC | size: 0x4
- */
-namespace std
-{
-
-template <class Arg1, class Arg2, class Result>
-struct binary_function
-{
-};
-
-template <class T>
-struct less : public binary_function<T, T, bool>
-{
-};
-
-template <class Key, class Value, class Compare, class Allocator>
-class map
-{
-public:
-    class value_compare : public binary_function<Value, Value, bool>
-    {
-    protected:
-        Compare comp;
-    };
-};
-
-template <int N>
-class __red_black_tree
-{
-public:
-    struct anchor
-    {
-    };
-};
-
-template <class T, class Compare, class Allocator>
-class __tree
-{
-public:
-    struct node
-    {
-    };
-
-private:
-    Metrowerks::details::compressed_pair_imp<Allocator, unsigned long, 1> alloc_;
-    Metrowerks::details::compressed_pair_imp<std::allocator<node>, __red_black_tree<1>::anchor, 1> node_alloc_;
-
-public:
-    void alloc();
-    std::allocator<node>& node_alloc();
-    void clear();
-};
-
-} // namespace std
-
 typedef std::pair<const unsigned long, FuzzyVariant> _PairT;
 typedef std::map<unsigned long, FuzzyVariant, std::less<unsigned long>, std::allocator<_PairT> > _MapT;
 typedef std::__tree<_PairT, _MapT::value_compare, std::allocator<_PairT> > _TreeT;

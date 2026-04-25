@@ -211,6 +211,10 @@ int     wctob (wint_t); /* mm 980625 */
 #define iswxdigit(c)                                                                           \
     ((int)(((c < __WCMAP_SIZE) ? (__wctype_map[__wz_fill (c)] & __whex_digit) : 0)))
 /* end mm 980626 */
+#define towlower(c)                                                                            \
+    (((c) >= __WCMAP_SIZE) ? (c) : ((wint_t)__wlower_map[__wz_fill (c)]))
+#define towupper(c)                                                                            \
+    (((c) >= __WCMAP_SIZE) ? (c) : ((wint_t)__wupper_map[__wz_fill (c)]))
 
 #endif /* __cplusplus */                      /* mm 990401 */
 

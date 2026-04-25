@@ -20,10 +20,12 @@ public:
     void Replay(T&);
 
     RenderSnapshot()
+        : mValid(false)
+        , mBall(this)
+        , mpNetMeshPositiveX(NULL)
+        , mpNetMeshNegativeX(NULL)
+        , mFrameBlendPercent(0.0f)
     {
-        mpNetMeshPositiveX = nullptr;
-        mpNetMeshNegativeX = nullptr;
-        mFrameBlendPercent = 0.0f;
     }
 
     void Initialize();

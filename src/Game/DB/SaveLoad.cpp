@@ -83,12 +83,27 @@ static unsigned long gIconCRC;
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0x38E4 | 0x8018D240 | size: 0x94
-//  */
-// IconDataCache::~IconDataCache()
-// {
-// }
+/**
+ * Offset/Address/Size: 0x38E4 | 0x8018D240 | size: 0x94
+ */
+IconDataCache::~IconDataCache()
+{
+    if (mIconHdrBuffer)
+    {
+        delete[] mIconHdrBuffer;
+        mIconHdrBuffer = NULL;
+    }
+    if (mIconBuffer)
+    {
+        delete[] mIconBuffer;
+        mIconBuffer = NULL;
+    }
+    if (mBannerBuffer)
+    {
+        delete[] mBannerBuffer;
+        mBannerBuffer = NULL;
+    }
+}
 
 /**
  * Offset/Address/Size: 0x38DC | 0x8018D238 | size: 0x8

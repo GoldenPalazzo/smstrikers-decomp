@@ -114,6 +114,8 @@ public:
 
 struct IconDataCache
 {
+    ~IconDataCache();
+
     /* 0x00 */ MemCard::ICON_CONFIG mIconConfig;
     /* 0x10 */ MemCard::ICON_DATA_INFO mIconDataInfo;
     /* 0x40 */ void* mIconHdrBuffer;

@@ -58,6 +58,8 @@ public:
 
     inline glModel* GetModel() const { return m_pModel; }
 
+    static unsigned char sbBallShadowDisabled;
+
     /* 0x9C */ glModel* m_pModel;
     /* 0xA0 */ GLShadowVolume* m_pShadowVolume;
     /* 0xA4 */ bool m_bVertexAnimated;

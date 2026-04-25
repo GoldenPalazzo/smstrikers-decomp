@@ -5,52 +5,7 @@
 #include "Game/AI/Scripts/ScriptDefines.h"
 
 cFielder* g_pScriptCurrentFielder = NULL;
-cDecisionEntity g_pDecisionEntities[44] = {
-    cDecisionEntity(DECISION_ENTITY_STRATEGY, 0, NULL, NULL),
-    cDecisionEntity(DECISION_ENTITY_PLAY, 0, NULL, NULL),
-    cDecisionEntity(DECISION_ENTITY_PLAY, 1, NULL, NULL),
-    cDecisionEntity(DECISION_ENTITY_PLAY, 2, NULL, NULL),
-    cDecisionEntity(DECISION_ENTITY_PLAY, 3, NULL, NULL),
-    cDecisionEntity(DECISION_ENTITY_PLAY, 4, NULL, NULL),
-    cDecisionEntity(DECISION_ENTITY_PLAY, 5, NULL, NULL),
-    cDecisionEntity(DECISION_ENTITY_PLAY, 6, NULL, NULL),
-    cDecisionEntity(DECISION_ENTITY_PLAY, 7, NULL, NULL),
-    cDecisionEntity(DECISION_ENTITY_PLAY, 8, NULL, NULL),
-    cDecisionEntity(DECISION_ENTITY_PLAY, 9, NULL, NULL),
-    cDecisionEntity(DECISION_ENTITY_PLAY, 10, NULL, NULL),
-    cDecisionEntity(DECISION_ENTITY_PLAY, 11, NULL, NULL),
-    cDecisionEntity(DECISION_ENTITY_PLAY, 12, NULL, NULL),
-    cDecisionEntity(DECISION_ENTITY_PLAY, 13, NULL, NULL),
-    cDecisionEntity(DECISION_ENTITY_PLAY, 14, NULL, NULL),
-    cDecisionEntity(DECISION_ENTITY_PLAY, 15, NULL, NULL),
-    cDecisionEntity(DECISION_ENTITY_PLAY, 16, NULL, NULL),
-    cDecisionEntity(DECISION_ENTITY_PLAY, 17, NULL, NULL),
-    cDecisionEntity(DECISION_ENTITY_PLAY, 18, NULL, NULL),
-    cDecisionEntity(DECISION_ENTITY_PLAY, 19, NULL, NULL),
-    cDecisionEntity(DECISION_ENTITY_PLAY, 20, NULL, NULL),
-    cDecisionEntity(DECISION_ENTITY_PLAY, 21, NULL, NULL),
-    cDecisionEntity(DECISION_ENTITY_PLAY, 22, NULL, NULL),
-    cDecisionEntity(DECISION_ENTITY_PLAY, 23, NULL, NULL),
-    cDecisionEntity(DECISION_ENTITY_PLAY, 24, NULL, NULL),
-    cDecisionEntity(DECISION_ENTITY_PLAY, 25, NULL, NULL),
-    cDecisionEntity(DECISION_ENTITY_PLAY, 26, NULL, NULL),
-    cDecisionEntity(DECISION_ENTITY_PLAY, 27, NULL, NULL),
-    cDecisionEntity(DECISION_ENTITY_PLAY, 28, NULL, NULL),
-    cDecisionEntity(DECISION_ENTITY_PLAY, 29, NULL, NULL),
-    cDecisionEntity(DECISION_ENTITY_PLAY, 30, NULL, NULL),
-    cDecisionEntity(DECISION_ENTITY_PLAY, 31, NULL, NULL),
-    cDecisionEntity(DECISION_ENTITY_PLAY, 32, NULL, NULL),
-    cDecisionEntity(DECISION_ENTITY_PLAY, 33, NULL, NULL),
-    cDecisionEntity(DECISION_ENTITY_PLAY, 34, NULL, NULL),
-    cDecisionEntity(DECISION_ENTITY_PLAY, 35, NULL, NULL),
-    cDecisionEntity(DECISION_ENTITY_PLAY, 36, NULL, NULL),
-    cDecisionEntity(DECISION_ENTITY_PLAY, 37, NULL, NULL),
-    cDecisionEntity(DECISION_ENTITY_PLAY, 38, NULL, NULL),
-    cDecisionEntity(DECISION_ENTITY_PLAY, 39, NULL, NULL),
-    cDecisionEntity(DECISION_ENTITY_PLAY, 40, NULL, NULL),
-    cDecisionEntity(DECISION_ENTITY_PLAY, 41, NULL, NULL),
-    cDecisionEntity(DECISION_ENTITY_PLAY, 42, NULL, NULL)
-};
+extern cDecisionEntity g_pDecisionEntities[44]; // defined in Game/AI/Scripts/RootScript.cpp
 
 // /**
 //  * Offset/Address/Size: 0x10C | 0x800190BC | size: 0x28
@@ -118,6 +73,7 @@ cDecisionEntity* GetDecisionEntity(eDecisionEntity type, unsigned long id)
 cDecisionEntity::cDecisionEntity(eDecisionEntity type, unsigned long id, FuzzyVariant (*dtf)(cDecisionEntity*), FuzzyVariant (*af)(cDecisionEntity*))
     : m_LastSelectedAction(SAT_NONE, 0.0f)
 {
+    FORCE_DONT_INLINE;
     m_lQueuedActions.m_pEnd = NULL;
     m_lQueuedActions.m_pStart = NULL;
     m_type = type;

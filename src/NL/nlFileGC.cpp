@@ -39,6 +39,20 @@ static AsyncEntry* nlDLRingRemoveStartAsyncEntry(AsyncEntry** head)
     return entry;
 }
 
+namespace
+{
+struct AsyncToVirMemBufferLoad
+{
+    /* 0x00 */ int numChunksLeft;
+    /* 0x04 */ unsigned long param;
+    /* 0x08 */ void (*callback)(class nlFile*, void*, unsigned int, unsigned long);
+    /* 0x0C */ char* target;
+    /* 0x10 */ int size;
+
+    AsyncToVirMemBufferLoad();
+}; // total size: 0x14
+} // namespace
+
 static AsyncToVirMemBufferLoad asyncToVirMemBufferLoad[4];
 static u8 asyncToVirMemBuffer[0x4000];
 
@@ -1173,6 +1187,7 @@ void nlRegHandleDVDMessageCB(const Function<void(int)>& cb)
  */
 AsyncToVirMemBufferLoad::AsyncToVirMemBufferLoad()
 {
+    numChunksLeft = 0;
 }
 
 /**

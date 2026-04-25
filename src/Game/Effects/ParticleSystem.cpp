@@ -739,12 +739,59 @@ float ParticleSystem::GetRemainingTime() const
     return m_pTemplate->m_fFountainLife - m_fElapsedTime;
 }
 
+struct TextureFrame
+{
+    s16 su;
+    s16 suinc;
+    s16 sv;
+    s16 svinc;
+};
+
+static inline TextureFrame* BuildFrameLookup(int numFrames, float inc)
+{
+    TextureFrame* p = (TextureFrame*)nlMalloc(numFrames * sizeof(TextureFrame), 8, false);
+    float u = 0.0f;
+    float v = 0.0f;
+    TextureFrame* q = p;
+    int i = 0;
+    while (i < numFrames)
+    {
+        float fSU = 1024.0f * u;
+        float fSV = 1024.0f * v;
+        float fSUinc = 1024.0f * (u + inc);
+        float fSVinc = 1024.0f * (v + inc);
+        q->su = (s16)fSU;
+        q->sv = (s16)fSV;
+        q->suinc = (s16)fSUinc;
+        q->svinc = (s16)fSVinc;
+        u += inc;
+        if (u >= 0.999f)
+        {
+            u = 0.0f;
+            v += inc;
+        }
+        i++;
+        q++;
+    }
+    return p;
+}
+
 /**
  * Offset/Address/Size: 0x188 | 0x801F52E0 | size: 0x558
  */
 void BuildFrameTable()
 {
-    FORCE_DONT_INLINE;
+    textureFrames[0] = nlMalloc(sizeof(TextureFrame), 8, false);
+    ((TextureFrame*)textureFrames[0])->su = 0;
+    ((TextureFrame*)textureFrames[0])->sv = 0;
+    ((TextureFrame*)textureFrames[0])->suinc = 1024;
+    ((TextureFrame*)textureFrames[0])->svinc = 1024;
+
+    textureFrames[3] = BuildFrameLookup(4, 0.5f);
+    textureFrames[8] = BuildFrameLookup(9, 1.0f / 3.0f);
+    textureFrames[15] = BuildFrameLookup(16, 0.25f);
+    textureFrames[24] = BuildFrameLookup(25, 0.2f);
+    textureFrames[35] = BuildFrameLookup(36, 1.0f / 6.0f);
 }
 
 // /**

@@ -47,27 +47,31 @@ static const nlVector3 v3Zero = { 0.0f, 0.0f, 0.0f };
 /**
  * Offset/Address/Size: 0x64 | 0x8003BE64 | size: 0x1C
  */
-// FormationSet::FormationSet()
-// {
-//     m_ID = -1;
-//     m_NumFormationDefs = 0;
-//     FormationSpec* m_FormationDefArray = NULL;
-//     m_AutoDelete = false;
-// }
+FormationSet::FormationSet()
+{
+    m_ID = -1;
+    m_NumFormationDefs = 0;
+    m_FormationDefArray = NULL;
+    m_AutoDelete = false;
+}
 
-// /**
-//  * Offset/Address/Size: 0x50 | 0x8003BE50 | size: 0x14
-//  */
-// FormationPos::FormationPos()
-// {
-// }
+/**
+ * Offset/Address/Size: 0x50 | 0x8003BE50 | size: 0x14
+ */
+FormationPos::FormationPos()
+{
+    m_Location.f.x = 0.0f;
+    m_Location.f.y = 0.0f;
+    m_CaptainPreference = 0.0f;
+}
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x8003BE00 | size: 0x50
-//  */
-// FormationSpec::FormationSpec()
-// {
-// }
+/**
+ * Offset/Address/Size: 0x0 | 0x8003BE00 | size: 0x50
+ */
+FormationSpec::FormationSpec()
+{
+    m_ID = -1;
+}
 
 // /**
 //  * Offset/Address/Size: 0xA8 | 0x8003BD7C | size: 0x84

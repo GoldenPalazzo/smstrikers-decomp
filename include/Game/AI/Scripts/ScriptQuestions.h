@@ -10,15 +10,7 @@
 #include "NL/nlSingleton.h"
 #include "NL/nlAVLTreeSlotPool.h"
 #include "Game/AI/FuzzyVariant.h"
-
-// Stub for std::map<unsigned long, FuzzyVariant> - size 0x10
-#ifndef _STDMAPSTUB_DEFINED_
-#define _STDMAPSTUB_DEFINED_
-struct StdMapStub
-{
-    u8 _data[0x10];
-};
-#endif
+#include "PowerPC_EABI_Support/MSL_C++/MSL_Common/msl_tree.h"
 
 enum eScriptFielderDesire
 {
@@ -58,15 +50,13 @@ class ScriptQuestionCache : public nlSingleton<ScriptQuestionCache>
 public:
     ScriptQuestionCache()
         : mQuestionCacheMap(16, 16)
-        , mTotalLookups(0)
-        , mCacheHits(0)
     {
     }
     ~ScriptQuestionCache();
     void Clear();
 
     /* 0x00 */ nlAVLTreeSlotPool<unsigned long, FuzzyVariant, DefaultKeyCompare<unsigned long> > mQuestionCacheMap;
-    /* 0x28 */ StdMapStub mQuestionCacheMapSTD;
+    /* 0x28 */ std::map<unsigned long, FuzzyVariant, std::less<unsigned long>, std::allocator<std::pair<const unsigned long, FuzzyVariant> > > mQuestionCacheMapSTD;
     /* 0x38 */ int mTotalLookups;
     /* 0x3C */ int mCacheHits;
 }; // total size: 0x40

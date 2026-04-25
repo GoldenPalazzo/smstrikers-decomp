@@ -3,6 +3,7 @@
 #include "Game/AI/AiUtil.h"
 #include "Game/Ball.h"
 #include "Game/AI/Fielder.h"
+#include "Game/AI/Scripts/ScriptQuestions.h"
 #include "Game/CharacterAudio.h"
 #include "Game/SAnim.h"
 #include "Game/SAnim/pnSingleAxisBlender.h"
@@ -617,8 +618,184 @@ void Goalie::DoNavigation(float, float, Goalie::eNaviMode)
 /**
  * Offset/Address/Size: 0x82F0 | 0x8004ADEC | size: 0x588
  */
-void Goalie::FindDesiredGoaliePosition(nlVector3&, nlVector3&, nlVector3&, unsigned short&, const nlVector3*)
+void Goalie::FindDesiredGoaliePosition(nlVector3& pos, nlVector3& dir, nlVector3& focus, unsigned short& ang, const nlVector3* pThreatPos)
 {
+    cNet* pNet = m_pTeam->m_pNet;
+    nlVector3 targetPos;
+    float goalX;
+    nlVector3 desiredVec;
+
+    goalX = 0.5f * pNet->m_sideSign + pNet->GetGoalLineX();
+
+    if (pThreatPos == NULL)
+    {
+        cBall* pBall = g_pBall;
+        cPlayer* pOwner = pBall->m_pOwner;
+        if (pOwner != NULL)
+        {
+            targetPos.f.x = 0.18f * pOwner->m_v3Velocity.f.x + pBall->m_v3Position.f.x;
+            targetPos.f.y = 0.18f * pOwner->m_v3Velocity.f.y + pBall->m_v3Position.f.y;
+            targetPos.f.z = 0.18f * pOwner->m_v3Velocity.f.z + pBall->m_v3Position.f.z;
+        }
+        else
+        {
+            targetPos.f.x = 0.18f * pBall->m_v3Velocity.f.x + pBall->m_v3Position.f.x;
+            targetPos.f.y = 0.18f * pBall->m_v3Velocity.f.y + pBall->m_v3Position.f.y;
+            targetPos.f.z = 0.18f * pBall->m_v3Velocity.f.z + pBall->m_v3Position.f.z;
+        }
+        targetPos.f.z = 0.0f;
+    }
+    else
+    {
+        targetPos = *pThreatPos;
+    }
+
+    float goalLineX = cField::GetGoalLineX(1U);
+    float absTargetY = (float)fabs(targetPos.f.y);
+    float fNetY = cField::GetSidelineY(1U);
+    float limit = goalLineX - absTargetY * 3.0f / fNetY;
+
+    if (targetPos.f.x > limit)
+    {
+        targetPos.f.x = limit;
+    }
+    else if (targetPos.f.x < -limit)
+    {
+        targetPos.f.x = -limit;
+    }
+
+    desiredVec.f.x = targetPos.f.x - goalX;
+    desiredVec.f.y = targetPos.f.y - 0.0f;
+    desiredVec.f.z = targetPos.f.z - 0.0f;
+
+    float goalLine = cField::GetGoalLineX(1U) - 0.5f;
+    float goalieDist = nlSqrt(desiredVec.f.x * desiredVec.f.x + desiredVec.f.y * desiredVec.f.y + desiredVec.f.z * desiredVec.f.z, true);
+    float breakaway = 0.0f;
+    float targetDist = goalieDist - 0.5f;
+
+    cFielder* ownerFielder = g_pBall->GetOwnerFielder();
+    if (ownerFielder != NULL && !IsOnSameTeam(ownerFielder))
+    {
+        cFielder* ownerFielder2 = g_pBall->GetOwnerFielder();
+        bool isShooting = (ownerFielder2 != NULL && !IsOnSameTeam(ownerFielder2) && ownerFielder2->m_eActionState == ACTION_SHOOT_TO_SCORE);
+        if (isShooting)
+        {
+            breakaway = 0.0f;
+        }
+        else
+        {
+            breakaway = OnBreakaway(ownerFielder);
+            if (breakaway > 0.8f)
+            {
+                cTeam* opponentTeam = ownerFielder->m_pTeam;
+                for (int i = 0; i < 4; i++)
+                {
+                    cFielder* fielder = opponentTeam->GetFielder(i);
+                    if (fielder == ownerFielder)
+                        continue;
+                    cNet* myNet = m_pTeam->m_pNet;
+                    float absX = (float)fabs(fielder->m_v3Position.f.x);
+                    if (fielder->m_v3Position.f.x * myNet->m_baseLocation.f.x > 0.0 && absX > 2.0f)
+                    {
+                        float factor = 1.0f - 0.5f * (absX - 2.0f) / 10.0f;
+                        if (0.0f >= factor)
+                        {
+                        }
+                        else
+                        {
+                            breakaway *= factor;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (breakaway > 0.8f)
+    {
+        goalieDist = Interpolate(2.5f, 8.0f, 5.0000005f * (breakaway - 0.8f));
+        mUrgency = URGENCY_MED;
+    }
+    else if (targetDist > 23.0f)
+    {
+        goalieDist = 8.0f;
+    }
+    else if (targetDist > 19.0f)
+    {
+        goalieDist = 5.5f * (targetDist - 19.0f) * 0.25f + 2.5f;
+    }
+    else if (targetDist > 12.0f)
+    {
+        goalieDist = 2.5f;
+    }
+    else if (targetDist > 7.0f)
+    {
+        goalieDist = 4.0f + (-1.5f * (targetDist - 7.0f) / 5.0f);
+    }
+    else
+    {
+        goalieDist = targetDist - 3.0f;
+    }
+
+    if (goalieDist > targetDist - 3.0f)
+    {
+        goalieDist = targetDist - 3.0f;
+    }
+    if (goalieDist < 0.5f)
+    {
+        goalieDist = 0.5f;
+    }
+
+    float ratio = (goalieDist + 0.5f) / (targetDist + 0.5f);
+    float desiredX = ratio * desiredVec.f.x + goalX;
+    float desiredY = ratio * desiredVec.f.y + 0.0f;
+    float desiredZ = ratio * desiredVec.f.z + 0.0f;
+
+    if ((float)fabs(m_v3Position.f.x) > cField::GetGoalLineX(1U))
+    {
+        float halfNetMinusOne = 0.5f * cNet::m_fNetWidth - 1.0f;
+        if (desiredY >= -halfNetMinusOne)
+        {
+        }
+        else
+        {
+            desiredY = -halfNetMinusOne;
+        }
+        if (desiredY <= halfNetMinusOne)
+        {
+        }
+        else
+        {
+            desiredY = halfNetMinusOne;
+        }
+        desiredX = goalLine * pNet->m_sideSign;
+        desiredVec.f.y = desiredY - m_v3Position.f.y;
+        desiredVec.f.x = desiredX - m_v3Position.f.x;
+        desiredVec.f.z = desiredZ - m_v3Position.f.z;
+    }
+
+    ang = (unsigned short)(10430.378f * nlATan2f(desiredVec.f.y, desiredVec.f.x));
+
+    if (desiredX >= -goalLine)
+    {
+    }
+    else
+    {
+        desiredX = -goalLine;
+    }
+    if (desiredX <= goalLine)
+    {
+    }
+    else
+    {
+        desiredX = goalLine;
+    }
+
+    pos.f.x = 0.2f * m_v3Position.f.x + 0.8f * desiredX;
+    pos.f.y = 0.2f * m_v3Position.f.y + 0.8f * desiredY;
+    pos.f.z = 0.2f * m_v3Position.f.z + 0.8f * desiredZ;
+    dir = desiredVec;
+    focus = targetPos;
 }
 
 /**

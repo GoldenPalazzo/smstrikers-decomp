@@ -288,7 +288,7 @@ public:
     bool S2SShootWasPressed();
     void StartRunning();
     bool DoAILooseBallActionSelection();
-    void DoAIReceivePassActionSelection();
+    bool DoAIReceivePassActionSelection();
     bool DoAIWindupActionSelection();
     void DoSpeedBoost();
 

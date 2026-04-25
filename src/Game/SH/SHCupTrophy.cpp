@@ -364,12 +364,11 @@ void CupTrophyScene::Update(float fDeltaT)
     (*(AsyncImage**)&unk_gap[125])->Update(true);
 
     FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
+    char* pBase = (char*)nlSingleton<GameInfoManager>::s_pInstance;
     bool canAccept = true;
     int buttonState = mButtonState;
-
-    GameInfoManager* gameInfo = nlSingleton<GameInfoManager>::s_pInstance;
-    gameInfo = (GameInfoManager*)((char*)gameInfo + mTrophy * 0x218);
-    Spoil* spoil = (Spoil*)((char*)gameInfo + 0x2F24);
+    pBase += mTrophy * 0x218;
+    Spoil* pSpoil = (Spoil*)(pBase + 0x2F24);
 
     if (buttonState != ButtonComponent::BS_A_AND_B && buttonState != ButtonComponent::BS_A_ONLY)
     {
@@ -418,12 +417,12 @@ void CupTrophyScene::Update(float fDeltaT)
 
     if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xE, true, NULL))
     {
-        if (((CupTrophySpoilView*)spoil)->mNumRecords > 3)
+        if (((CupTrophySpoilView*)pSpoil)->mNumRecords > 3)
         {
-            gameInfo = nlSingleton<GameInfoManager>::s_pInstance;
-            gameInfo = (GameInfoManager*)((char*)gameInfo + mTrophy * 0x218);
-            Spoil* curSpoil = (Spoil*)((char*)gameInfo + 0x2F24);
-            unsigned char numRecords = ((CupTrophySpoilView*)curSpoil)->mNumRecords;
+            char* pBase2 = (char*)nlSingleton<GameInfoManager>::s_pInstance;
+            pBase2 += mTrophy * 0x218;
+            Spoil* pSpoil = (Spoil*)(pBase2 + 0x2F24);
+            unsigned char numRecords = ((CupTrophySpoilView*)pSpoil)->mNumRecords;
 
             if (numRecords > 1)
             {
@@ -442,7 +441,7 @@ void CupTrophyScene::Update(float fDeltaT)
                     FEAudio::PlayAnimAudioEvent("sfx_deny", false);
                 }
 
-                SetHistory(*curSpoil);
+                SetHistory(*pSpoil);
                 return;
             }
         }
@@ -450,7 +449,7 @@ void CupTrophyScene::Update(float fDeltaT)
 
     if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xD, true, NULL))
     {
-        unsigned char numRecords = ((CupTrophySpoilView*)spoil)->mNumRecords;
+        unsigned char numRecords = ((CupTrophySpoilView*)pSpoil)->mNumRecords;
         if (numRecords > 3)
         {
             if (numRecords > 1)
@@ -470,7 +469,7 @@ void CupTrophyScene::Update(float fDeltaT)
                     FEAudio::PlayAnimAudioEvent("sfx_deny", false);
                 }
 
-                SetHistory(*spoil);
+                SetHistory(*pSpoil);
                 return;
             }
         }

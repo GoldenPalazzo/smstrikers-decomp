@@ -15,6 +15,35 @@ void PriorityStream::Reset()
     PLAY_RECORD::s_SuddenDeathNext = true;
 }
 
+inline unsigned long PriorityStream::GetNextStreamId(unsigned long SimpleStreamId)
+{
+    char StreamName[64];
+    char* Format;
+    unsigned char* pCounter;
+
+    switch (SimpleStreamId)
+    {
+    case 0x436E3953:
+        pCounter = &PLAY_RECORD::s_BowserAttackNext;
+        Format = "STAD_Bowser_Attack_%02d";
+        break;
+    case 0x57CB5A12:
+        pCounter = &PLAY_RECORD::s_SuddenDeathNext;
+        Format = "STAD_Sudden_Death_%02d";
+        break;
+    default:
+        return SimpleStreamId;
+    }
+
+    nlSNPrintf(StreamName, 64, Format, *pCounter);
+    *pCounter = *pCounter + 1;
+    if (*pCounter == 4)
+    {
+        *pCounter = 1;
+    }
+    return nlStringLowerHash(StreamName);
+}
+
 /**
  * Offset/Address/Size: 0xA34 | 0x801584E8 | size: 0x474
  * TODO: 97.96% match - register allocation drift: pSlot r5->r9, volGroup r6->r7,
@@ -264,15 +293,10 @@ end_playstream:
 
 /**
  * Offset/Address/Size: 0x79C | 0x80158250 | size: 0x298
- * TODO: 97.29% match - switch/default block still differs in register allocation
- *   (r3/r4 swaps, literal load mr), with follow-on branch target offsets.
+ * TODO: 99.52% match - r3/r4 register swap in dead CapChant QueueStream path
  */
 void PriorityStream::Stop(unsigned long StreamId, unsigned long Fadeout)
 {
-    char StreamName[64];
-    unsigned char* pCounter;
-    const char* Format;
-
     if ((StreamId == 0xE38B5407) && m_PStream.m_OrigStreamId)
     {
         m_Track.Stop(Fadeout);
@@ -310,30 +334,8 @@ void PriorityStream::Stop(unsigned long StreamId, unsigned long Fadeout)
         {
             if (m_PStream.m_Active)
             {
-                switch (m_PStream.m_StreamId)
-                {
-                case 0x436E3953:
-                    pCounter = &PLAY_RECORD::s_BowserAttackNext;
-                    Format = "bowser_attack_%d";
-                    break;
-                case 0x57CB5A12:
-                    pCounter = &PLAY_RECORD::s_SuddenDeathNext;
-                    Format = "sudden_death_%d";
-                    break;
-                default:
-                    m_HasCrowdStream = m_PStream.m_StreamId;
-                    goto after_switch;
-                }
+                m_HasCrowdStream = GetNextStreamId(m_PStream.m_StreamId);
 
-                nlSNPrintf(StreamName, 64, Format, *pCounter);
-                *pCounter = *pCounter + 1;
-                if (*pCounter == 4)
-                {
-                    *pCounter = 1;
-                }
-                m_HasCrowdStream = nlStringLowerHash(StreamName);
-
-            after_switch:
                 if (m_PStream.m_Queue)
                 {
                     m_PStream.m_Queue = 0;

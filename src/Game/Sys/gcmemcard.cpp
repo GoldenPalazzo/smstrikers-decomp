@@ -1063,6 +1063,7 @@ long MemCard::InternalReadFile(MC_FILE* pFile, void* Buffer, unsigned long Lengt
 
 /**
  * Offset/Address/Size: 0x740 | 0x801C9EB0 | size: 0x120
+ * TODO: 99.17% match - stw r5/li r0 scheduling swap at 0x8c in MemCardFunctor copy block
  */
 long MemCard::InternalWriteFile(MC_FILE* pFile, void* Buffer, unsigned long Length, unsigned long StartAt, const MemCardFunctor& Callback, bool ResetTransfer)
 {
@@ -1079,11 +1080,39 @@ long MemCard::InternalWriteFile(MC_FILE* pFile, void* Buffer, unsigned long Leng
         Length += m_CardInfo.SectorSize - LengthMisalign;
     }
 
-    struct CopyData
+    struct FunctorWords
     {
-        unsigned long a, b, c, d, e, f;
+        unsigned long w0;
+        unsigned long w1;
+        unsigned long w2;
+        unsigned long w3;
+        unsigned long w4;
+        unsigned long w5;
     };
-    *(CopyData*)&m_CB[8] = *(const CopyData*)&Callback;
+
+    volatile FunctorWords* dst = (volatile FunctorWords*)&m_CB[8];
+    const volatile FunctorWords* src = (const volatile FunctorWords*)&Callback;
+    unsigned long b;
+    unsigned long a;
+    unsigned long e;
+    unsigned long d;
+    unsigned long c;
+
+    a = src->w0;
+    b = src->w1;
+    dst->w0 = a;
+    dst->w1 = b;
+
+    d = src->w2;
+    e = src->w3;
+    dst->w2 = d;
+    dst->w3 = e;
+
+    b = src->w4;
+    a = src->w5;
+    dst->w4 = b;
+    dst->w5 = a;
+
     m_State = IS_WRITING;
     m_CardState = CS_WRITING;
 

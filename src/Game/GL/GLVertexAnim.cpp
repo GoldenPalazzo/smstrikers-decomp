@@ -20,7 +20,7 @@ GLVertexAnim::GLVertexAnim()
 /**
  * Offset/Address/Size: 0xBC | 0x801E7D54 | size: 0xDC
  */
-void GLVertexAnim::GetModel(int frame)
+glModel* GLVertexAnim::GetModel(int frame)
 {
     int actualFrame = (frame < 0) ? (int)m_fFrame : frame;
 
@@ -41,6 +41,8 @@ void GLVertexAnim::GetModel(int frame)
             streams++;
         }
     }
+
+    return model;
 }
 
 /**

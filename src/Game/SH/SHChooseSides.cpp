@@ -3,14 +3,21 @@
 #include "Game/FE/feFinder.h"
 #include "Game/FE/feHelpFuncs.h"
 #include "Game/FE/feManager.h"
+#include "Game/FE/fePopupMenu.h"
 #include "Game/Game.h"
 #include "Game/GameInfo.h"
 #include "Game/GameRenderTask.h"
 #include "Game/GameSceneManager.h"
+#include "Game/OverlayManager.h"
+#include "Game/SH/SHPause.h"
 #include "Game/Team.h"
 #include "NL/nlColour.h"
+#include "NL/nlConfig.h"
 #include "NL/nlPrint.h"
 #include "NL/nlString.h"
+
+static inline void GetAllSides();
+static inline void SetAllSides(IChooseSide& cs);
 
 // /**
 //  * Offset/Address/Size: 0x0 | 0x800C7D40 | size: 0xEC
@@ -199,9 +206,145 @@ void SHChooseSides2::SceneCreated()
 
 /**
  * Offset/Address/Size: 0x7BC | 0x800C537C | size: 0x540
+ * TODO: 98.66% match - extra mr instruction in prologue (lwz r4/mr r29,r4/mr r3,r4
+ * instead of lwz r29/mr r3,r29), rlwinm mask (24,31) vs srwi (5,31)
  */
-void SHChooseSides2::UpdateChooseSideComponent(float)
+void SHChooseSides2::UpdateChooseSideComponent(float fDeltaT)
 {
+    eFEINPUT_PAD pad = FE_ALL_PADS;
+    GameInfoManager* gim = nlSingleton<GameInfoManager>::Instance();
+
+    UpdateResult result;
+    if (gim->IsInCupMode())
+    {
+        eTeamID cupTeam = gim->GetUserSelectedCupTeam();
+        result = mChooseSide.Update(fDeltaT, &pad, (!(cupTeam - gim->GetTeam(0))) ? 1 : 0);
+    }
+    else
+    {
+        result = mChooseSide.Update(fDeltaT, &pad, -1);
+    }
+
+    switch (result)
+    {
+    case UPDATE_GO_FORWARD:
+    {
+        if (mContext == PAUSE)
+        {
+            if (mChooseSide.AllPlayersReady() || mChooseSide.AllPluggedInAreReady() || GetConfigBool(Config::Global(), "no_humans", false))
+            {
+                FEAudio::PlayAnimAudioEvent("sfx_back", false);
+
+                if (mContext == PAUSE)
+                {
+                    GetAllSides();
+                }
+                SetAllSides(mChooseSide);
+                if (mContext == PAUSE)
+                {
+                    g_pTeams[0]->UpdateControllers();
+                    g_pTeams[1]->UpdateControllers();
+                    nlSingleton<GameInfoManager>::s_pInstance->ApplyDifficultySettings();
+                    g_pGame->SetDifficulty(
+                        nlSingleton<GameInfoManager>::s_pInstance->mCurrentDifficulty[0],
+                        nlSingleton<GameInfoManager>::s_pInstance->mCurrentDifficulty[1],
+                        (eDifficultyID)3);
+                }
+
+                nlSingleton<OverlayManager>::s_pInstance->Push(IGSCENE_PAUSE, SCREEN_BACK, true);
+                break;
+            }
+        }
+
+        if (mChooseSide.mPlayerReady[pad])
+        {
+            if (mChooseSide.AllPlayersReady())
+            {
+                mProceedDelay = 2;
+                TLInstance* continueInst = mChooseSide.mInstanceTable[16];
+                if (continueInst != NULL)
+                {
+                    continueInst->m_bVisible = false;
+                }
+            }
+        }
+        else
+        {
+            FEAudio::PlayAnimAudioEvent("sfx_accept", false);
+
+            if (mChooseSide.AllPluggedInAreReady())
+            {
+                mProceedDelay = 2;
+                TLInstance* continueInst = mChooseSide.mInstanceTable[16];
+                if (continueInst != NULL)
+                {
+                    continueInst->m_bVisible = false;
+                }
+            }
+            else
+            {
+                if (mContext != PAUSE)
+                {
+                    if (!mChooseSide.AtLeastOnePlayerReady())
+                    {
+                        FEPopupMenu* popup = (FEPopupMenu*)nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
+                        popup->Create(POPUP_NO_SIDES_CHOSEN);
+                    }
+                }
+            }
+        }
+        break;
+    }
+
+    case UPDATE_GO_BACK:
+    {
+        FEAudio::PlayAnimAudioEvent("sfx_back", false);
+
+        if (mContext == PAUSE)
+        {
+            if (mChooseSide.AllControllersAreCentred())
+            {
+                if (!GetConfigBool(Config::Global(), "no_humans", false))
+                {
+                    FEPopupMenu* popup = (FEPopupMenu*)nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
+                    popup->Create(POPUP_NO_SIDES_CHOSEN);
+                    break;
+                }
+            }
+
+            if (mContext == PAUSE)
+            {
+                GetAllSides();
+            }
+            SetAllSides(mChooseSide);
+            if (mContext == PAUSE)
+            {
+                g_pTeams[0]->UpdateControllers();
+                g_pTeams[1]->UpdateControllers();
+                nlSingleton<GameInfoManager>::s_pInstance->ApplyDifficultySettings();
+                g_pGame->SetDifficulty(
+                    nlSingleton<GameInfoManager>::s_pInstance->mCurrentDifficulty[0],
+                    nlSingleton<GameInfoManager>::s_pInstance->mCurrentDifficulty[1],
+                    (eDifficultyID)3);
+            }
+
+            if (nlSingleton<GameInfoManager>::s_pInstance->mIsInStrikers101Mode)
+            {
+                nlSingleton<OverlayManager>::s_pInstance->Push(IGSCENE_STRIKERS_101_PAUSE, SCREEN_BACK, true);
+            }
+            else
+            {
+                PauseMenuScene* scene = (PauseMenuScene*)nlSingleton<OverlayManager>::s_pInstance->Push(IGSCENE_PAUSE, SCREEN_BACK, true);
+                scene->mStartAnimAtEnd = true;
+            }
+        }
+        else
+        {
+            nlSingleton<GameSceneManager>::s_pInstance->Push(mBackScene, SCREEN_BACK, true);
+        }
+        break;
+    }
+    }
 }
 
 /**

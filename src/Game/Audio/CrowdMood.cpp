@@ -45,6 +45,28 @@ static CROWD_SETTINGS g_Settings;
 CROWD_AUDIO_INIT g_CrowdAudio;
 CROWD_STATE g_CrowdState;
 
+struct RANDOM_STREAMS
+{
+    unsigned long Count;
+    char Files[32][256];
+};
+
+static RANDOM_STREAMS g_RandomChants;
+static RANDOM_STREAMS g_RandomHeckles;
+
+template <int N>
+float NDimDistance(float* A, float* B)
+{
+    FORCE_DONT_INLINE;
+    return 0.0f;
+}
+
+template <typename T>
+static void WarmRandomStream(const RANDOM_STREAMS& RandomStreams, T* pStream)
+{
+    FORCE_DONT_INLINE;
+}
+
 /**
  * Offset/Address/Size: 0x134 | 0x801514D0 | size: 0x2C
  */
@@ -63,12 +85,13 @@ void GCAudioStreaming::StereoAudioStream::Purge()
     nlClose(m_pFile);
 }
 
-// /**
-//  * Offset/Address/Size: 0x98 | 0x80151434 | size: 0x70
-//  */
-// void GCAudioStreaming::MonoAudioStream::~MonoAudioStream()
-// {
-// }
+/**
+ * Offset/Address/Size: 0x98 | 0x80151434 | size: 0x70
+ */
+GCAudioStreaming::MonoAudioStream::~MonoAudioStream()
+{
+    Destructor();
+}
 
 /**
  * Offset/Address/Size: 0x4C | 0x801513E8 | size: 0x4C
@@ -881,9 +904,204 @@ void CrowdMood::Purge(bool bJustStopSFX)
 
 /**
  * Offset/Address/Size: 0x9F8 | 0x8014E10C | size: 0x554
+ * TODO: 98.58% match - 2 missing instructions: li r0,-1; and r0,r3,r0 in DestMoodLevel clamp
  */
-void CrowdMood::Update(float)
+void CrowdMood::Update(float dt)
 {
+    if (!g_Initd)
+        return;
+
+    unsigned char noCrowd = GetConfigBool(Config::Global(), "no_crowd", false);
+    if (noCrowd == 1)
+        return;
+
+    if (g_CrowdSFXStopped)
+        return;
+
+    if (!g_Settings.NoStreaming)
+    {
+        if (!g_CrowdState.StreamLocked)
+        {
+            GCAudioStreaming::StereoAudioStream* pChant = g_CrowdAudio.pChantStream;
+            if (pChant->m_State <= GCAudioStreaming::SS_Initd && !g_CrowdState.ChantState.Ready)
+            {
+                if (pChant->SafeToPurge())
+                {
+                    g_CrowdState.ChantState.Ready = true;
+                    g_CrowdState.ChantState.SinceLast = 0.0f;
+                    WarmRandomStream<GCAudioStreaming::StereoAudioStream>(g_RandomChants, g_CrowdAudio.pChantStream);
+                }
+            }
+
+            GCAudioStreaming::MonoAudioStream* pHeckle = g_CrowdAudio.pHeckleStream;
+            if (pHeckle->m_State <= GCAudioStreaming::SS_Initd && !g_CrowdState.HeckleState.Ready)
+            {
+                if (pHeckle->SafeToPurge())
+                {
+                    g_CrowdState.HeckleState.Ready = true;
+                    g_CrowdState.HeckleState.SinceLast = 0.0f;
+                    WarmRandomStream<GCAudioStreaming::MonoAudioStream>(g_RandomHeckles, g_CrowdAudio.pHeckleStream);
+                }
+            }
+        }
+    }
+
+    UpdateTiming(dt);
+
+    if (g_CrowdState.HasChanged)
+    {
+        u8 level = g_CrowdState.DestMoodLevel;
+        u8 clampedLevel = CM_END;
+        if (((u32)level & (u32)-1) <= (u32)CM_END)
+            clampedLevel = level;
+        g_CrowdState.DestMoodLevel = clampedLevel;
+
+        f32 halfFactor = 0.5f;
+        CROWD_MOOD mood = CM_Positive;
+        f32 zero = 0.0f;
+        while (mood < (CROWD_MOOD)4)
+        {
+            g_CrowdState.StartingMood[mood] = g_CrowdState.CurrentMoodBlend[mood];
+
+            f32 dest;
+            if ((s8)g_CrowdState.DestMood == mood)
+            {
+                dest = (f32)g_CrowdState.DestMoodLevel / 5.0f;
+            }
+            else
+            {
+                dest = 0.0f;
+            }
+
+            g_CrowdState.DestinationMood[mood] = dest;
+
+            bool bothNonZero = false;
+            f32 midpoint = (g_CrowdState.DestinationMood[mood] + g_CrowdState.StartingMood[mood]) * halfFactor;
+            g_CrowdState.MidpointMood[mood] = midpoint;
+
+            if (g_CrowdState.CurrentMoodBlend[mood] != zero)
+            {
+                if (g_CrowdState.DestinationMood[mood] != zero)
+                {
+                    bothNonZero = true;
+                }
+            }
+
+            f32 factor;
+            if (bothNonZero)
+            {
+                factor = 1.0f;
+            }
+            else
+            {
+                factor = g_Settings.BlendStrictness;
+            }
+
+            g_CrowdState.MidpointMood[mood] *= factor;
+
+            Increment<CROWD_MOOD>(mood);
+        }
+
+        f32 distToMid = NDimDistance<4>(g_CrowdState.StartingMood, g_CrowdState.MidpointMood);
+        f32 distToDest = NDimDistance<4>(g_CrowdState.MidpointMood, g_CrowdState.DestinationMood);
+
+        f32 totalDist = distToMid + distToDest;
+        f32 zeroF = 0.0f;
+        f32 epsilon = 0.0001f;
+        if (fabsf(totalDist - zeroF) <= epsilon)
+        {
+            g_CrowdState.AtDestination = false;
+        }
+        else
+        {
+            f32 interpMid = distToMid / totalDist;
+            g_CrowdState.Interpolant = zeroF;
+            g_CrowdState.AtDestination = false;
+            g_CrowdState.InterpolantMidpoint = interpMid;
+        }
+        g_CrowdState.HasChanged = false;
+    }
+
+    if (!g_CrowdState.SkipBlend && !g_CrowdState.AtDestination)
+    {
+        f32 oneConst = 1.0f;
+        f32 eps = 0.0001f;
+        f32 interp = g_CrowdState.Interpolant;
+        if (interp - oneConst > eps)
+        {
+            g_CrowdState.AtDestination = true;
+            g_CrowdState.BlendFast = false;
+            g_CrowdState.Interpolant = oneConst;
+            g_CrowdState._unk78 = 0.0f;
+        }
+
+        f32 interpVal = g_CrowdState.Interpolant;
+        f32 interpMidVal = g_CrowdState.InterpolantMidpoint;
+
+        float* baseArray;
+        if (interpVal < interpMidVal)
+        {
+            baseArray = g_CrowdState.StartingMood;
+        }
+        else
+        {
+            baseArray = g_CrowdState.MidpointMood;
+        }
+
+        float* targetArray;
+        if (interpVal < interpMidVal)
+        {
+            targetArray = g_CrowdState.MidpointMood;
+        }
+        else
+        {
+            targetArray = g_CrowdState.DestinationMood;
+        }
+
+        f32 one = 1.0f;
+        f32 epsilon2 = 0.0001f;
+        f32 normalizedInterp;
+        if (fabsf(interpVal - one) <= epsilon2)
+        {
+            normalizedInterp = one;
+        }
+        else
+        {
+            interpVal = g_CrowdState.Interpolant;
+            interpMidVal = g_CrowdState.InterpolantMidpoint;
+
+            if (interpVal >= interpMidVal)
+            {
+                normalizedInterp = (interpVal - interpMidVal) / (one - interpMidVal);
+            }
+            else
+            {
+                normalizedInterp = interpVal / interpMidVal;
+            }
+        }
+
+        f32 complement = 1.0f - normalizedInterp;
+        g_CrowdState.SinceMoodDest = 0.0f;
+        CROWD_MOOD mood2 = CM_Positive;
+        while (mood2 < (CROWD_MOOD)4)
+        {
+            g_CrowdState.CurrentMoodBlend[mood2] = normalizedInterp * targetArray[mood2] + complement * baseArray[mood2];
+            if (g_CrowdState.CurrentMoodBlend[mood2] > g_CrowdState.SinceMoodDest)
+            {
+                g_CrowdState.SinceMoodDest = g_CrowdState.CurrentMoodBlend[mood2];
+                g_CrowdState.CurrentMood = (u8)mood2;
+            }
+            Increment<CROWD_MOOD>(mood2);
+        }
+    }
+    else
+    {
+        g_CrowdState.SkipBlend = false;
+    }
+
+    MOOD_DEFINITION moodDef;
+    MoodDefFromBlend(g_CrowdState.CurrentMoodBlend, moodDef);
+    PlayMoodDef(moodDef);
 }
 
 /**

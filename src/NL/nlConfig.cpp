@@ -705,9 +705,10 @@ void SetTagValuePair::TagValuePair(const BasicString<char, Detail::TempStringAll
 /**
  * Offset/Address/Size: 0x10 | 0x801D5824 | size: 0xC
  */
-// void Config::TagValuePair::TagValuePair()
-// {
-// }
+Config::TagValuePair::TagValuePair()
+{
+    tag = NULL;
+}
 
 /**
  * Offset/Address/Size: 0x0 | 0x801D5850 | size: 0xBC

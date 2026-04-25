@@ -7,6 +7,11 @@
 #include "NL/gl/glAppAttach.h"
 #include "NL/gl/glUserData.h"
 #include "NL/nlString.h"
+#include "Game/GameObjectLighting.h"
+#include "Game/GL/GLInventory.h"
+#include "Game/GL/GLVertexAnim.h"
+#include "Game/Render/Jumbotron.h"
+#include "Game/Render/CrowdManager.h"
 
 bool g_bShadowVolumes = true;
 bool g_bEnableDrawableSkinModel = true;
@@ -25,6 +30,28 @@ static unsigned long BallModelID;
 static float sfCoPlanarZ = 0.1f;
 static float sfCoPlanar0Z = 0.041666668f;
 static float sfPlanarShadowOpacity = 0.3f;
+
+bool g_bEnableDrawableModel = true;
+bool g_bLightDynamicObjects = true;
+bool g_bDrawLitObjects = true;
+bool g_bDrawSpecularObjects = true;
+bool g_bCalculateFresnel = true;
+bool g_bDrawObjectsWithPlanarShadows = true;
+bool g_bBallGlow = true;
+float g_fBallGlowH = 1.0f;
+float g_fBallGlowR0 = 2.0f;
+int g_nBallGlowA0 = 100;
+int g_nBallGlowA1 = 20;
+int g_nBallGlowRed = 255;
+int g_nBallGlowGreen = 255;
+int g_nBallGlowBlue = 255;
+float g_fBallShadowH = 3.0f;
+float g_fBallShadowR0 = 0.275f;
+float g_fBallShadowR1 = 0.625f;
+int g_nBallShadowA0 = 128;
+int g_nBallShadowA1 = 72;
+float g_fBallGlowR1;
+unsigned char DrawableModel::sbBallShadowDisabled;
 static nlAVLTreeSlotPool<unsigned long, AABBDimensions, DefaultKeyCompare<unsigned long> > boundingBoxCache;
 
 extern "C"
@@ -532,19 +559,425 @@ void DrawBallShadow(const nlVector3& vPosition, const BallShadowParams& p, bool 
     glViewAttachModel(GLV_Unshadowed, pModel);
 }
 
+static inline void* FindStream(glModelPacket* pPacket, int streamID)
+{
+    for (int i = 0; i < pPacket->numStreams; i++)
+    {
+        if (pPacket->streams[i].id == streamID)
+        {
+            return (void*)pPacket->streams[i].address;
+        }
+    }
+    return NULL;
+}
+
 /**
  * Offset/Address/Size: 0x183C | 0x80121648 | size: 0x598
+ * TODO: 99.75% match - 9 commutative operand swaps on mullw/add in display list vertex indexing
  */
-void Fresnelify(glModelPacket*, eGLView)
+void Fresnelify(glModelPacket* pPacket, eGLView view)
 {
+    extern void* dlGetStruct(unsigned long);
+
+    nlMatrix4 viewMat;
+    nlMatrix4 objectMat;
+    nlMatrix4 modelview;
+
+    u32 glossInt = (u8)glGetTextureState(pPacket->state.texturestate, GLTS_GlossLevel);
+    f32 glossLevel = (f32)glossInt * (1.0f / 63.0f);
+    if (glossLevel > 0.85f)
+    {
+        return;
+    }
+
+    s8* pNormals = (s8*)FindStream(pPacket, 1);
+    nlColour* pColours = (nlColour*)FindStream(pPacket, 2);
+
+    glViewGetViewMatrix(view, viewMat);
+    glGetMatrix(pPacket->state.matrix, objectMat);
+    nlMultMatrices(modelview, objectMat, viewMat);
+    nlInvertMatrix(modelview, modelview);
+    nlTransposeMatrix(modelview, modelview);
+
+    void* pList = dlGetStruct(pPacket->indexBuffer);
+    s32 index = 0;
+    s32 numVerts = pPacket->numVertices;
+
+    if (glossLevel > 0.5f)
+    {
+        while (index < numVerts)
+        {
+            u16* pVert;
+            if (*(u16*)((u8*)pList + 0x0E) != 0)
+            {
+                u16 ns = *(u16*)((u8*)pList + 0x0C);
+                int offset = index * ((ns - 1) * 2 + 1) + 4;
+                pVert = (u16*)((u8*)*(u32*)((u8*)pList + 0x04) + offset);
+            }
+            else
+            {
+                u16 ns = *(u16*)((u8*)pList + 0x0C);
+                int offset = index * (ns * 2) + 3;
+                pVert = (u16*)((u8*)*(u32*)((u8*)pList + 0x04) + offset);
+            }
+            int vertIndex = *pVert;
+            s8* pNormal = pNormals + vertIndex * 3;
+            nlColour* pColour = pColours + vertIndex;
+            nlVector3 normal = { 0 };
+            normal.f.x = (f32)pNormal[0] * (1.0f / 64.0f);
+            normal.f.y = (f32)pNormal[1] * (1.0f / 64.0f);
+            normal.f.z = (f32)pNormal[2] * (1.0f / 64.0f);
+            f32 dot = normal.f.x * modelview.m[0][2] + normal.f.y * modelview.m[1][2] + normal.f.z * modelview.m[2][2];
+            if (dot < 0.0f)
+            {
+                dot = 0.0f;
+            }
+            f32 fresnel = 1.0f - dot;
+            fresnel = fresnel * fresnel * 255.5f;
+            pColour->c[3] = (u8)(s32)fresnel;
+            index++;
+        }
+    }
+    else if (glossLevel > 0.25f)
+    {
+        while (index < numVerts)
+        {
+            u16* pVert;
+            if (*(u16*)((u8*)pList + 0x0E) != 0)
+            {
+                u16 ns = *(u16*)((u8*)pList + 0x0C);
+                int offset = index * ((ns - 1) * 2 + 1) + 4;
+                pVert = (u16*)((u8*)*(u32*)((u8*)pList + 0x04) + offset);
+            }
+            else
+            {
+                u16 ns = *(u16*)((u8*)pList + 0x0C);
+                int offset = index * (ns * 2) + 3;
+                pVert = (u16*)((u8*)*(u32*)((u8*)pList + 0x04) + offset);
+            }
+            int vertIndex = *pVert;
+            s8* pNormal = pNormals + vertIndex * 3;
+            nlColour* pColour = pColours + vertIndex;
+            nlVector3 normal = { 0 };
+            normal.f.x = (f32)pNormal[0] * (1.0f / 64.0f);
+            normal.f.y = (f32)pNormal[1] * (1.0f / 64.0f);
+            normal.f.z = (f32)pNormal[2] * (1.0f / 64.0f);
+            f32 dot = normal.f.x * modelview.m[0][2] + normal.f.y * modelview.m[1][2] + normal.f.z * modelview.m[2][2];
+            if (dot < 0.0f)
+            {
+                dot = 0.0f;
+            }
+            f32 fresnel = 1.0f - dot;
+            fresnel *= fresnel * fresnel;
+            pColour->c[3] = (u8)(s32)(255.5f * fresnel);
+            index++;
+        }
+    }
+    else
+    {
+        while (index < numVerts)
+        {
+            u16* pVert;
+            if (*(u16*)((u8*)pList + 0x0E) != 0)
+            {
+                u16 ns = *(u16*)((u8*)pList + 0x0C);
+                int offset = index * ((ns - 1) * 2 + 1) + 4;
+                pVert = (u16*)((u8*)*(u32*)((u8*)pList + 0x04) + offset);
+            }
+            else
+            {
+                u16 ns = *(u16*)((u8*)pList + 0x0C);
+                int offset = index * (ns * 2) + 3;
+                pVert = (u16*)((u8*)*(u32*)((u8*)pList + 0x04) + offset);
+            }
+            int vertIndex = *pVert;
+            s8* pNormal = pNormals + vertIndex * 3;
+            nlColour* pColour = pColours + vertIndex;
+            nlVector3 normal = { 0 };
+            normal.f.x = (f32)pNormal[0] * (1.0f / 64.0f);
+            normal.f.y = (f32)pNormal[1] * (1.0f / 64.0f);
+            normal.f.z = (f32)pNormal[2] * (1.0f / 64.0f);
+            f32 dot = normal.f.x * modelview.m[0][2] + normal.f.y * modelview.m[1][2] + normal.f.z * modelview.m[2][2];
+            if (dot < 0.0f)
+            {
+                dot = 0.0f;
+            }
+            f32 fresnel = 1.0f - dot;
+            fresnel *= fresnel * fresnel * fresnel;
+            pColour->c[3] = (u8)(s32)(255.5f * fresnel);
+            index++;
+        }
+    }
 }
 
 /**
  * Offset/Address/Size: 0x12A4 | 0x801210B0 | size: 0x598
+ * TODO: 97.61% match - r30/r31 register swap for this/worldMatrix (scratch context),
+ *       World offset diffs from missing m_pPlayerNISLightData in World.h,
+ *       linker address mode diffs for glInventory/CrowdManager
  */
-void DrawableModel::DrawModel(const nlMatrix4&)
+void DrawableModel::DrawModel(const nlMatrix4& worldMatrix)
 {
-    FORCE_DONT_INLINE;
+    void* pLightData = NULL;
+    void* pSpecularData = NULL;
+    void* pEnvData = NULL;
+    void* pTransData = NULL;
+    void* pNoFogData = NULL;
+    unsigned long LightTexture;
+    unsigned char bJumbotron;
+    unsigned char bCrowd;
+    unsigned long litProgram;
+    unsigned long unlitProgram;
+    unsigned char bLight;
+    unsigned char bSpec;
+    glModel* newModel;
+
+    if (!g_bEnableDrawableModel)
+        return;
+
+    if (!g_bDrawObjectsWithPlanarShadows && m_bRenderPlanarShadow)
+        return;
+
+    if (m_uObjectCreationFlags & 0x00100000)
+    {
+        pNoFogData = glAppGetNoFogUserData();
+    }
+
+    unsigned char bTransparent = (m_uObjectCreationFlags & 0x0000F000) != 0;
+    if (bTransparent)
+    {
+        float f31 = m_translucency;
+        if (f31 == 0.0f)
+            return;
+        if (f31 == 1.0f)
+            bTransparent = 0;
+        if (bTransparent)
+        {
+            pTransData = glUserAlloc(GLUD_Translucent, 4, false);
+            float* pFloat = (float*)glUserGetData(pTransData);
+            *pFloat = f31;
+        }
+    }
+
+    eGLView view;
+    if (m_uObjectFlags & 0x00000008)
+    {
+        view = (eGLView)0x16;
+    }
+    else
+    {
+        eGLView v = (eGLView)3;
+        if (m_uObjectCreationFlags & 0x00000004)
+            v = (eGLView)7;
+        view = v;
+        if (m_uObjectCreationFlags & 0x00000100)
+            v = (eGLView)2;
+        view = v;
+        if (m_uObjectFlags & 0x00000040)
+            v = (eGLView)0x13;
+        view = v;
+    }
+
+    bCrowd = (m_uObjectCreationFlags >> 17) & 1;
+    bJumbotron = (m_uObjectCreationFlags >> 16) & 1;
+
+    if (bCrowd)
+    {
+        litProgram = LitCrowdProgram;
+        unlitProgram = UnlitCrowdProgram;
+    }
+    else
+    {
+        litProgram = LitProgram;
+        unlitProgram = UnlitProgram;
+    }
+
+    if (m_uObjectFlags & 0x00000100)
+    {
+        LightTexture = GetGameObjectLightRamp();
+    }
+    else
+    {
+        LightTexture = m_pWorldContext->m_LightRampTexA;
+    }
+
+    bLight = ((m_uObjectCreationFlags >> 7) & 1) ^ 1;
+    if (bLight)
+    {
+        unsigned char temp = 1;
+        if (m_uObjectFlags & 0x00000004)
+            temp = g_bLightDynamicObjects;
+        bLight = temp;
+    }
+    if (bLight)
+    {
+        if (!g_bDrawLitObjects)
+            return;
+    }
+
+    bSpec = (m_uObjectCreationFlags >> 3) & 1;
+    if (bSpec)
+    {
+        if (!g_bDrawSpecularObjects)
+            return;
+    }
+
+    if (m_bVertexAnimated)
+    {
+        GLVertexAnim* pAnim = glInventory.GetVertexAnim(m_pModel->id);
+        newModel = pAnim->GetModel(-1);
+    }
+    else
+    {
+        newModel = glModelDupNoStreams(m_pModel, true, false);
+    }
+
+    if (m_pModel->id == BallModelID && !sbBallShadowDisabled && worldMatrix.m[3][2] >= 0.0f)
+    {
+        BallShadowParams p;
+        p.fReferenceHeight = g_fBallShadowH;
+        p.fRadius0 = g_fBallShadowR0;
+        p.fRadius1 = g_fBallShadowR1;
+        p.nAlpha0 = g_nBallShadowA0;
+        p.nAlpha1 = g_nBallShadowA1;
+        p.colour.c[0] = 0xFF;
+        p.colour.c[1] = 0xFF;
+        p.colour.c[2] = 0xFF;
+        p.colour.c[3] = 0xFF;
+        DrawBallShadow(*(const nlVector3*)&worldMatrix.m[3][0], p, false);
+
+        if (g_bBallGlow)
+        {
+            p.fReferenceHeight = g_fBallGlowH;
+            p.fRadius0 = g_fBallGlowR0;
+            p.fRadius1 = g_fBallGlowR1;
+            p.nAlpha0 = g_nBallGlowA0;
+            p.nAlpha1 = g_nBallGlowA1;
+            p.colour.c[0] = g_nBallGlowRed;
+            p.colour.c[1] = g_nBallGlowGreen;
+            p.colour.c[2] = g_nBallGlowBlue;
+            p.colour.c[3] = 0xFF;
+            DrawBallShadow(*(const nlVector3*)&worldMatrix.m[3][0], p, true);
+        }
+    }
+
+    if ((m_uObjectCreationFlags & 0x00000010) && g_bCalculateFresnel)
+    {
+        pEnvData = glUserAlloc(GLUD_EnvDiffuse, 0, false);
+    }
+
+    if (bLight)
+    {
+        if (m_uObjectFlags & 0x00000100)
+        {
+            pLightData = GetInGameLightData();
+        }
+        else
+        {
+            pLightData = m_pWorldContext->m_pIntensityPerm;
+        }
+
+        if (m_uObjectCreationFlags & 0x00000008)
+        {
+            pSpecularData = m_pWorldContext->m_pSTSIntensity;
+        }
+    }
+    else
+    {
+        if (bSpec)
+        {
+            pSpecularData = m_pWorldContext->m_pSTSIntensity;
+        }
+    }
+
+    unsigned long matHandle = glAllocMatrix();
+    if (matHandle + 0x10000 != 0xFFFF)
+    {
+        glSetMatrix(matHandle, worldMatrix);
+    }
+
+    if (m_uObjectCreationFlags & 0x00200000)
+    {
+        for (glModelPacket* pPacket = newModel->packets; pPacket < newModel->packets + newModel->numPackets; pPacket++)
+        {
+            void* fresnelData = glAppGetOnePassFresnelUserData();
+            glUserAttach(fresnelData, pPacket, false);
+        }
+    }
+
+    for (glModelPacket* pPacket = newModel->packets; pPacket < newModel->packets + newModel->numPackets; pPacket++)
+    {
+        pPacket->state.matrix = matHandle;
+
+        if (bJumbotron)
+        {
+            u32 tex = Jumbotron::instance.m_CurrentTexture;
+            if (tex + 0x10000 != 0xFFFF)
+            {
+                pPacket->state.texture[0] = tex;
+            }
+        }
+
+        if (bCrowd)
+        {
+            u32 tex = CrowdManager::instance.GetTextureHandle(newModel->id);
+            if (tex + 0x10000 != 0xFFFF)
+            {
+                pPacket->state.texture[0] = tex;
+            }
+        }
+
+        if (pNoFogData)
+            glUserAttach(pNoFogData, pPacket, false);
+        if (pTransData)
+            glUserAttach(pTransData, pPacket, false);
+        if (pEnvData)
+        {
+            glUserAttach(pEnvData, pPacket, false);
+            Fresnelify(pPacket, view);
+        }
+
+        pPacket->state.program = unlitProgram;
+        if (pLightData)
+        {
+            pPacket->state.program = litProgram;
+            glUserAttach(pLightData, pPacket, false);
+
+            if (!(pPacket->state.texconfig & 0x20))
+            {
+                pPacket->state.texture[5] = LightTexture;
+                pPacket->state.texconfig |= GLTT_BumpLocal_bit;
+            }
+
+            if (pSpecularData && (pPacket->state.texconfig & 0x10))
+            {
+                void* specData = m_pWorldContext->GetCustomSpecularData(pPacket, false);
+                glUserAttach(specData, pPacket, false);
+            }
+        }
+        else
+        {
+            if (pSpecularData && (pPacket->state.texconfig & 0x10))
+            {
+                void* specData = m_pWorldContext->GetCustomSpecularData(pPacket, false);
+                glUserAttach(specData, pPacket, false);
+            }
+        }
+    }
+
+    if (m_CB)
+    {
+        newModel = m_CB(newModel, view, m_uRenderLayer);
+        if (!newModel)
+            return;
+    }
+
+    glViewAttachModel(view, m_uRenderLayer, newModel);
+
+    if (m_bRenderPlanarShadow)
+    {
+        DrawPlanarShadow();
+    }
 }
 
 /**

@@ -25,6 +25,13 @@ public:
     template <typename T>
     void Replay(T&);
 
+    DrawableBall() { }
+    DrawableBall(RenderSnapshot* rs)
+        : mRenderSnapshot(rs)
+        , mVisible(true)
+    {
+    }
+
     void EvaluateFrom(DrawableCharacter&);
     void Blend(const float*, const DrawableBall&, const DrawableBall&);
     void Render() const;

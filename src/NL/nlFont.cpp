@@ -109,6 +109,7 @@ nlFont::~nlFont()
  */
 nlFont::nlFont()
 {
+    memset(m_GlyphLookup, 0xFF, sizeof(m_GlyphLookup));
 }
 
 /**

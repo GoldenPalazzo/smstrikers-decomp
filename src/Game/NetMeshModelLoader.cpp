@@ -140,12 +140,18 @@ static int s_initialVertexCount = 1;
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0x1400 | 0x80131558 | size: 0x54
-//  */
-// NetMeshModelLoader::NetMeshModelLoader(NetMesh&, unsigned long)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x1400 | 0x80131558 | size: 0x54
+ */
+NetMeshModelLoader::NetMeshModelLoader(NetMesh& netMesh, unsigned long netMeshDrawableObjectID)
+    : m_NetMesh(netMesh)
+    , m_NetMeshDrawableObjectID(netMeshDrawableObjectID)
+    , m_NumParticles(0)
+    , m_TriStripIndices(NULL)
+    , m_CurrentTriStripIndex(0)
+{
+    LoadGeometryFromModel();
+}
 
 // /**
 //  * Offset/Address/Size: 0x13A0 | 0x801314F8 | size: 0x60

@@ -199,14 +199,16 @@ void _AudioEventRaiser::RaiseEvent(AUDIO_EVENT_RECORD* pEvent)
 
 /**
  * Offset/Address/Size: 0x1904 | 0x8014AA58 | size: 0xB4
- * TODO: 99.8% match - stack offset for temp copy at r1+0xC instead of r1+0x10
  */
 void AudioScriptEventMgr::FireEvent(AudioScriptEventMgr::AUDIO_EVENT Event, AudioScriptEventMgr::AUDIO_EVENT_TEAM Team)
 {
-    AUDIO_EVENT_RECORD temp;
-    u32 _pad;
     AUDIO_EVENT_RECORD aer = { Event, Team };
-    temp = aer;
+    union
+    {
+        AUDIO_EVENT_RECORD val;
+        u64 _align;
+    } temp;
+    temp.val = aer;
 
     ListEntry<AUDIO_EVENT_RECORD>* entry = NULL;
     g_PendingEvents.m_Allocator.Allocate(entry);
@@ -214,7 +216,7 @@ void AudioScriptEventMgr::FireEvent(AudioScriptEventMgr::AUDIO_EVENT Event, Audi
     if (entry != NULL)
     {
         entry->next = NULL;
-        entry->data = temp;
+        entry->data = temp.val;
     }
 
     nlListAddEnd(&g_PendingEvents.m_Head, &g_PendingEvents.m_Tail, entry);
@@ -229,7 +231,6 @@ void AudioScriptEventMgr::FireEvent(AudioScriptEventMgr::AUDIO_EVENT Event, Audi
 
 /**
  * Offset/Address/Size: 0xFF8 | 0x8014A14C | size: 0x100
- * TODO: 99.77% match - _pad optimized away shifting temp stack offset
  */
 void RecordExcitingEvent()
 {

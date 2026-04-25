@@ -42,12 +42,14 @@ static bool g_StreamingInitd;
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x801C7748 | size: 0x14
-//  */
-// void GCAudioStreaming::AudioStreamBuffer::AudioStreamBuffer()
-// {
-// }
+/**
+ * Offset/Address/Size: 0x0 | 0x801C7748 | size: 0x14
+ */
+GCAudioStreaming::AudioStreamBuffer::AudioStreamBuffer()
+{
+    m_Volume = 0x7F;
+    m_Pan = 0x40;
+}
 
 // /**
 //  * Offset/Address/Size: 0x5B8 | 0x801C767C | size: 0xCC

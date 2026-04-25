@@ -75,17 +75,6 @@ void nlRegCheckForResetFromFSCB(const Function<FnVoidVoid>&);
 // void nlDLRingAddStart<AsyncEntry>(AsyncEntry**, AsyncEntry*);
 // void nlRingIsEnd<AsyncEntry>(AsyncEntry*, AsyncEntry*);
 
-struct AsyncToVirMemBufferLoad
-{
-    /* 0x00 */ int numChunksLeft;
-    /* 0x04 */ unsigned long param;
-    /* 0x08 */ void (*callback)(class nlFile*, void*, unsigned int, unsigned long);
-    /* 0x0C */ char* target;
-    /* 0x10 */ int size;
-
-    AsyncToVirMemBufferLoad();
-}; // total size: 0x14
-
 class GCFile : public nlFile
 {
 public:

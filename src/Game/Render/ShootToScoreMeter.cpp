@@ -3,6 +3,7 @@
 #include "NL/nlString.h"
 #include "NL/gl/glDraw3.h"
 #include "NL/gl/glState.h"
+#include "NL/platvmath.h"
 
 u32 UnlitProgram = glGetProgram("3d unlit");
 u32 LitProgram = glGetProgram("3d pointlit");
@@ -22,6 +23,17 @@ u32 NumberTextures[4] = {
 
 ShootToScoreMeter ShootToScoreMeter::instance;
 // static u32 WHITE_COLOR = 0xFFFFFFFF;
+
+extern u8 sbMakeSTSMeterOrthographic;
+
+static inline void InterpolateColours(const nlColour& colour0, const nlColour& colour1, float alpha, nlColour& result)
+{
+    float oneMinusAlpha = 1.0f - alpha;
+    result.c[0] = (u8)(s32)(oneMinusAlpha * (float)colour0.c[0] + alpha * (float)colour1.c[0]);
+    result.c[1] = (u8)(s32)(oneMinusAlpha * (float)colour0.c[1] + alpha * (float)colour1.c[1]);
+    result.c[2] = (u8)(s32)(oneMinusAlpha * (float)colour0.c[2] + alpha * (float)colour1.c[2]);
+    result.c[3] = (u8)(s32)(oneMinusAlpha * (float)colour0.c[3] + alpha * (float)colour1.c[3]);
+}
 
 float ShootToScoreMeter::MeterWidth = 0.4f;
 
@@ -71,9 +83,88 @@ void ShootToScoreMeter::DrawMeter()
 
 /**
  * Offset/Address/Size: 0x3DC | 0x8016063C | size: 0x5A8
+ * TODO: 97.9% match - f15/f16 register swap for magic double and 0.125f constants
  */
-void ShootToScoreMeter::DrawColouredRegion(float, float, const nlColour&, const nlColour&, nlMatrix4, float)
+void ShootToScoreMeter::DrawColouredRegion(float startAngle, float endAngle, const nlColour& startColour, const nlColour& endColour, nlMatrix4 meterMatrix, float scale)
 {
+    glSetCurrentTexture(WhiteTexture, GLTT_Diffuse);
+    glSetTextureState(GLTS_DiffuseWrap, 0);
+    glSetCurrentTextureState(glHandleizeTextureState());
+
+    float scaledWhiteBarWidth = 0.039f * scale;
+    float radius = 0.198f * (MeterWidth * scale);
+    nlVector3 v;
+    float widthAngle = endAngle - startAngle;
+    int i;
+    glQuad3 barQuad;
+    float frac0;
+    float frac1;
+    float radius0 = radius - scaledWhiteBarWidth * 0.5f;
+    float radius1 = radius + scaledWhiteBarWidth * 0.5f;
+
+    for (i = 0; i < 8; i++)
+    {
+        frac0 = (float)i * 0.125f;
+        frac1 = (float)(i + 1) * 0.125f;
+
+        float angle0 = frac0 * widthAngle + startAngle;
+        u16 angle0_u16 = (u16)(s32)(10430.378f * (3.1415927f * angle0 / 180.0f));
+        float cos0 = nlSin((u16)(angle0_u16 + 0x4000));
+        float sin0 = nlSin(angle0_u16);
+
+        float angle1 = frac1 * widthAngle + startAngle;
+        u16 angle1_u16 = (u16)(s32)(10430.378f * (3.1415927f * angle1 / 180.0f));
+        float cos1 = nlSin((u16)(angle1_u16 + 0x4000));
+        float sin1 = nlSin(angle1_u16);
+
+        float zDepth;
+        if (sbMakeSTSMeterOrthographic)
+        {
+            zDepth = -100.0f;
+        }
+        else
+        {
+            zDepth = 0.0f;
+        }
+
+        v.f.x = radius0 * cos0;
+        v.f.y = radius0 * sin0;
+        v.f.z = zDepth;
+        nlMultPosVectorMatrix(v, v, meterMatrix);
+        barQuad.m_pos[0] = v;
+
+        v.f.x = radius1 * cos0;
+        v.f.y = radius1 * sin0;
+        v.f.z = zDepth;
+        nlMultPosVectorMatrix(v, v, meterMatrix);
+        barQuad.m_pos[1] = v;
+
+        v.f.x = radius1 * cos1;
+        v.f.y = radius1 * sin1;
+        v.f.z = zDepth;
+        nlMultPosVectorMatrix(v, v, meterMatrix);
+        barQuad.m_pos[2] = v;
+
+        v.f.x = radius0 * cos1;
+        v.f.y = radius0 * sin1;
+        v.f.z = zDepth;
+        nlMultPosVectorMatrix(v, v, meterMatrix);
+        barQuad.m_pos[3] = v;
+
+        InterpolateColours(startColour, endColour, frac0, barQuad.m_colour[0]);
+        barQuad.m_colour[1] = barQuad.m_colour[0];
+
+        InterpolateColours(startColour, endColour, frac1, barQuad.m_colour[2]);
+        barQuad.m_colour[3] = barQuad.m_colour[2];
+
+        eGLView view = GLV_UnsortedPerspective;
+        if (sbMakeSTSMeterOrthographic)
+        {
+            view = GLV_UnsortedOrtho;
+        }
+
+        glAttachQuad3(view, 1, &barQuad, true);
+    }
 }
 
 /**

@@ -287,32 +287,37 @@ void ScrollingTickerScene::SceneCreated()
     m_rightBallOpenPos = m_rightBall->GetPosition();
     m_grayOpenScale = m_backRectangle->GetScale();
 
-    float zero = 0.0f;
-    float closedY = m_leftBallClosedPos.f.y;
-    float open = m_leftBallOpenPos.f.x;
-    float x = zero * (open - m_leftBallClosedPos.f.x) + m_leftBallClosedPos.f.x;
-    m_leftBall->SetAssetPosition(x, closedY, zero);
+    f32 closedY = m_leftBallClosedPos.f.y;
+    f32 open = m_leftBallOpenPos.f.x;
+    f32 x;
+    f32 val = 0.0f;
+
+    x = val * (open - m_leftBallClosedPos.f.x) + m_leftBallClosedPos.f.x;
+    m_leftBall->SetAssetPosition(x, closedY, val);
 
     open = m_rightBallOpenPos.f.x;
     x = open - m_rightBallClosedPos.f.x;
-    x = zero * x + m_rightBallClosedPos.f.x;
-    m_rightBall->SetAssetPosition(x, closedY, zero);
+    x = val * x + m_rightBallClosedPos.f.x;
+    m_rightBall->SetAssetPosition(x, closedY, val);
 
     open = m_grayOpenScale.f.x;
     x = open - m_grayClosedScale.f.x;
-    x = zero * x + m_grayClosedScale.f.x;
+    x = val * x + m_grayClosedScale.f.x;
     m_backRectangle->SetAssetScale(x, m_grayOpenScale.f.y, 1.0f);
 
-    float sx = m_ballClosedScale.f.x * zero;
-    float sy = m_ballClosedScale.f.y * zero;
-    float sz = m_ballClosedScale.f.z * zero;
+    f32 sz;
+    f32 sy;
+    f32 sx;
+    sx = m_ballClosedScale.f.x * val;
+    sy = m_ballClosedScale.f.y * val;
+    sz = m_ballClosedScale.f.z * val;
     m_leftBall->SetAssetScale(sx, sy, sz);
     m_rightBall->SetAssetScale(sx, sy, sz);
 
     m_backRectangle->SetAssetScale(
-        m_grayClosedScale.f.x * zero,
-        m_grayClosedScale.f.y * zero,
-        m_grayClosedScale.f.z * zero);
+        m_grayClosedScale.f.x * val,
+        m_grayClosedScale.f.y * val,
+        m_grayClosedScale.f.z * val);
 
     m_textBox->m_bVisible = false;
 
@@ -337,14 +342,11 @@ ScrollingTickerScene::~ScrollingTickerScene()
 
 /**
  * Offset/Address/Size: 0xE00 | 0x800A0A58 | size: 0x88
- * TODO: 97% match - missing stw r5,0x88(r31) for m_cbFunc.mTag zeroing.
- *       Adding mTag=EMPTY to Function<FnVoidVoid> ctor fixes this to 100%
- *       but regresses 5 -inline deferred functions from 100% (dead store not eliminated).
  */
 ScrollingTickerScene::ScrollingTickerScene()
     : BaseSceneHandler()
     , m_active(false)
-    , m_cbFunc()
+    , m_cbFunc(EMPTY)
     , m_textScroller(NULL)
     , m_pFETweenManager()
 {

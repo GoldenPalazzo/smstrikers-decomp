@@ -183,6 +183,56 @@ void Fuzzy::UsePowerupOffensive(float, cDecisionEntity*)
 /**
  * Offset/Address/Size: 0x0 | 0x8008CA8C | size: 0x560
  */
-void Fuzzy::GetPowerupTargetOffensive(cTeam*)
+FuzzyVariant Fuzzy::GetPowerupTargetOffensive(cTeam* TheTeam)
 {
+    extern cTeam* g_pScriptOtherTeam;
+    extern cFielder* g_pScriptCurrentFielder;
+
+    FuzzyVariant bestValue;
+    float fConfidence = 1.0f;
+    float fBestConfidence = 0.0f;
+    FuzzyVariant fvTeam(TheTeam);
+    ((Variant*)&fvTeam)->GetHash();
+    FuzzyVariant fvTeam2(TheTeam);
+    for (int i = 0; i < 4; i++)
+    {
+        cFielder* theOpponent = g_pScriptOtherTeam->GetFielder(i);
+        float fNotInvincible = 1.0f - Invincible(theOpponent);
+        float fTrueConfidence = 1.0f - Incapacitated((cPlayer*)theOpponent);
+        fTrueConfidence = (fTrueConfidence <= fNotInvincible) ? fTrueConfidence : fNotInvincible;
+        float fFalseConfidence = 1.0f - fTrueConfidence;
+        float fMin = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+        float fMax = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+        float fBranchRatio = fMin / fMax;
+        if (fTrueConfidence > 0.0f)
+        {
+            SaveConfidence PushDOM(&fConfidence);
+            fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
+            if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
+                fConfidence = fConfidence * fBranchRatio;
+            float fMarking = Marking(theOpponent, (cPlayer*)g_pScriptCurrentFielder);
+            float fDownfield = DownfieldFrom((cPlayer*)g_pScriptCurrentFielder, (cPlayer*)theOpponent);
+            float fClosing = ClosingTo((cPlayer*)g_pScriptCurrentFielder, (cPlayer*)theOpponent);
+            float fFar = FarTo((cPlayer*)g_pScriptCurrentFielder, (cPlayer*)theOpponent);
+            float fTrueConfidence2 = fClosing * 0.2f + (1.0f - fFar) * 0.2f + fDownfield * 0.3f + fMarking * 0.3f;
+            float fFalseConfidence2 = 1.0f - fTrueConfidence2;
+            float fMin2 = (fTrueConfidence2 <= fFalseConfidence2) ? fTrueConfidence2 : fFalseConfidence2;
+            float fMax2 = (fTrueConfidence2 >= fFalseConfidence2) ? fTrueConfidence2 : fFalseConfidence2;
+            float fBranchRatio2 = fMin2 / fMax2;
+            if (fTrueConfidence2 > 0.0f)
+            {
+                SaveConfidence PushDOM2(&fConfidence);
+                fConfidence = (fConfidence <= fTrueConfidence2) ? fConfidence : fTrueConfidence2;
+                if (fConfidence < fTrueConfidence2 && fTrueConfidence2 < 0.5f)
+                    fConfidence = fConfidence * fBranchRatio2;
+                if (fConfidence > fBestConfidence)
+                {
+                    fBestConfidence = fConfidence;
+                    bestValue = FuzzyVariant((cPlayer*)theOpponent);
+                }
+            }
+        }
+    }
+    bestValue.Confidence = fBestConfidence;
+    return bestValue;
 }

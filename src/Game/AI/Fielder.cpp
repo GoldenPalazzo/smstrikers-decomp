@@ -66,6 +66,8 @@ public:
     static FuzzyVariant ShouldIStrafeBall(cFielder*);
     static FuzzyVariant ShouldIStrafeMark(cFielder*);
     static FuzzyVariant GetBestHitTarget(cFielder*);
+    static FuzzyVariant GetBestLooseBallAction(cFielder*);
+    static FuzzyVariant GetBestPassReceiveAction(cFielder*);
     static FuzzyVariant GetBestWindupShotAction(cFielder*);
 };
 
@@ -1673,7 +1675,7 @@ void cFielder::CalcShootToScoreShot(nlVector3& v3BallVelocity, nlVector3& v3Ball
         if (fDist2Goalie > 7.0f && 100.0f * randgenSwat.genrand() < 66.0f * fSTSValue)
         {
             int nSide = -1;
-            if (fabs(ballPos->f.x) > 4.0f)
+            if ((f32)fabs(ballPos->f.x) > 4.0f)
             {
                 if (ballPos->f.y * ballPos->f.x < 0.0f)
                 {
@@ -1709,16 +1711,16 @@ void cFielder::CalcShootToScoreShot(nlVector3& v3BallVelocity, nlVector3& v3Ball
             {
                 uSaveType = 0xFFFC;
             }
-            fTime2Goalie += 0.1f;
+            fTime2Goalie = 0.1f + fTime2Goalie;
             unsigned short aSaveAngle = pGoalie->CalcBestSave(fTime2Goalie, *ballPos, v3IntceptPos, uSaveType, true);
             if (pGoalie->mpSaveData != NULL)
             {
                 nlVector3 v3WorldSavePos;
                 GetWorldPoint(v3WorldSavePos, pGoalie->mBlendInfo.mv3BlendedSavePos, *goaliePos, aSaveAngle);
-                float sdy = v3WorldSavePos.f.y - v3IntceptPos.f.y;
                 float sdx = v3WorldSavePos.f.x - v3IntceptPos.f.x;
+                float sdy = v3WorldSavePos.f.y - v3IntceptPos.f.y;
                 float sdz = v3WorldSavePos.f.z - v3IntceptPos.f.z;
-                if (sdy * sdy + sdx * sdx + sdz * sdz > 1.0f)
+                if (sdx * sdx + sdy * sdy + sdz * sdz > 1.0f)
                 {
                     pGoalie->mpSaveData = NULL;
                 }
@@ -1740,14 +1742,13 @@ void cFielder::CalcShootToScoreShot(nlVector3& v3BallVelocity, nlVector3& v3Ball
                 {
                     v3BallTarget.f.y = -fNetY;
                 }
-                float dy = ballPos->f.y - v3BallTarget.f.y;
                 float dx = ballPos->f.x - v3BallTarget.f.x;
-                float dist = nlSqrt(dy * dy + dx * dx, true);
+                float dy = ballPos->f.y - v3BallTarget.f.y;
+                float dist = nlSqrt(dx * dx + dy * dy, true);
                 float fPercent = fDist2Goalie / dist;
-                float fOneMinusPercent = 1.0f - fPercent;
-                v3IntceptPos.f.x = fPercent * v3BallTarget.f.x + fOneMinusPercent * ballPos->f.x;
-                v3IntceptPos.f.y = fPercent * v3BallTarget.f.y + fOneMinusPercent * ballPos->f.y;
-                v3IntceptPos.f.z = fPercent * v3BallTarget.f.z + fOneMinusPercent * ballPos->f.z;
+                v3IntceptPos.f.x = (1.0f - fPercent) * ballPos->f.x + fPercent * v3BallTarget.f.x;
+                v3IntceptPos.f.y = (1.0f - fPercent) * ballPos->f.y + fPercent * v3BallTarget.f.y;
+                v3IntceptPos.f.z = (1.0f - fPercent) * ballPos->f.z + fPercent * v3BallTarget.f.z;
                 pGoalie->CalcBestSave(0.6f, *ballPos, v3IntceptPos, 0xFFFC, true);
             }
             else
@@ -1762,12 +1763,12 @@ void cFielder::CalcShootToScoreShot(nlVector3& v3BallVelocity, nlVector3& v3Ball
     {
         pGoalie->FindSTSStunData();
         GetWorldPoint(v3BallTarget, pGoalie->mpSaveData->mv3SavePos, *goaliePos, pGoalie->m_aActualFacingDirection);
-        if (fTime2Goalie >= 0.03f)
+        if (!(fTime2Goalie < 0.03f))
         {
-            float sdy = v3IntceptPos.f.y - v3BallTarget.f.y;
             float sdx = v3IntceptPos.f.x - v3BallTarget.f.x;
+            float sdy = v3IntceptPos.f.y - v3BallTarget.f.y;
             float sdz = v3IntceptPos.f.z - v3BallTarget.f.z;
-            if (sdy * sdy + sdx * sdx + sdz * sdz <= 4.0f)
+            if (sdx * sdx + sdy * sdy + sdz * sdz <= 4.0f)
             {
                 fDesiredTime = fTime2Goalie;
                 goto yellow_final;
@@ -1785,14 +1786,13 @@ void cFielder::CalcShootToScoreShot(nlVector3& v3BallVelocity, nlVector3& v3Ball
             {
                 v3BallTarget.f.y = -fNetY;
             }
-            float dy = ballPos->f.y - v3BallTarget.f.y;
             float dx = ballPos->f.x - v3BallTarget.f.x;
-            float dist = nlSqrt(dy * dy + dx * dx, true);
+            float dy = ballPos->f.y - v3BallTarget.f.y;
+            float dist = nlSqrt(dx * dx + dy * dy, true);
             float fPercent = fDist2Goalie / dist;
-            float fOneMinusPercent = 1.0f - fPercent;
-            v3IntceptPos.f.x = fPercent * v3BallTarget.f.x + fOneMinusPercent * ballPos->f.x;
-            v3IntceptPos.f.y = fPercent * v3BallTarget.f.y + fOneMinusPercent * ballPos->f.y;
-            v3IntceptPos.f.z = fPercent * v3BallTarget.f.z + fOneMinusPercent * ballPos->f.z;
+            v3IntceptPos.f.x = (1.0f - fPercent) * ballPos->f.x + fPercent * v3BallTarget.f.x;
+            v3IntceptPos.f.y = (1.0f - fPercent) * ballPos->f.y + fPercent * v3BallTarget.f.y;
+            v3IntceptPos.f.z = (1.0f - fPercent) * ballPos->f.z + fPercent * v3BallTarget.f.z;
             pGoalie->CalcBestSave(0.5f, *ballPos, v3IntceptPos, 0xFFFC, true);
         }
     yellow_final:
@@ -1819,7 +1819,7 @@ void cFielder::CalcShootToScoreShot(nlVector3& v3BallVelocity, nlVector3& v3Ball
     {
         nlVector3 v3MagicPos = m_v3Position;
         float fNetWidthThresh = 0.5f * cNet::m_fNetWidth - 0.5f;
-        if (fabs(pGoalie->m_v3Position.f.y) > fNetWidthThresh)
+        if ((f32)fabs(pGoalie->m_v3Position.f.y) > fNetWidthThresh)
         {
             cNet* pNet = pGoalie->m_pTeam->m_pNet;
             v3MagicPos.f.x = pNet->m_baseLocation.f.x;
@@ -1857,10 +1857,10 @@ void cFielder::CalcShootToScoreShot(nlVector3& v3BallVelocity, nlVector3& v3Ball
             {
                 goto spin_data;
             }
-            float sdy = v3IntceptPos.f.y - v3BlastPos.f.y;
             float sdx = v3IntceptPos.f.x - v3BlastPos.f.x;
+            float sdy = v3IntceptPos.f.y - v3BlastPos.f.y;
             float sdz = v3IntceptPos.f.z - v3BlastPos.f.z;
-            if (sdy * sdy + sdx * sdx + sdz * sdz > 9.0f)
+            if (sdx * sdx + sdy * sdy + sdz * sdz > 9.0f)
             {
             spin_data:
                 if (pGoalie->mv3LocalContactPosition.f.y > 0.0f)
@@ -3175,9 +3175,9 @@ void cFielder::DoRegularShooting()
         {
             g_pBall->m_uGoalType = 0;
 
-            if (m_eActionState == ACTION_LOOSE_BALL_SHOT)
+            if (m_eActionState != ACTION_LOOSE_BALL_SHOT)
             {
-                f32 fAmount = g_pGame->m_pGameTweaks->fPowerupPowerShotMinAmount;
+                f32 fAmount = m_pShotMeter->m_fSpeedValue;
 
                 Event* pEvent = g_pEventManager->CreateValidEvent(0x3E, 0x20);
                 PowerupData* pPowerupData = (PowerupData*)&pEvent->m_data;
@@ -3196,7 +3196,7 @@ void cFielder::DoRegularShooting()
             }
             else
             {
-                f32 fAmount = m_pShotMeter->m_fSpeedValue;
+                f32 fAmount = g_pGame->m_pGameTweaks->fPowerupPowerShotMinAmount;
 
                 Event* pEvent = g_pEventManager->CreateValidEvent(0x3E, 0x20);
                 PowerupData* pPowerupData = (PowerupData*)&pEvent->m_data;
@@ -3221,10 +3221,11 @@ void cFielder::DoRegularShooting()
 
     g_pBall->m_v3ShotTarget = v3Target;
 
+    bool bIsChipShot = mActionShotVars.bIsChipShot || mActionLooseBallShotVars.bIsChipShot;
     eSpinType spinType;
     nlVector3 v3AngVel;
 
-    if (mActionShotVars.bIsChipShot || mActionLooseBallShotVars.bIsChipShot)
+    if (bIsChipShot)
     {
         spinType = SPINTYPE_BACK;
         v3AngVel = v3Zero;
@@ -3234,7 +3235,7 @@ void cFielder::DoRegularShooting()
         spinType = SPINTYPE_PARAMETER;
 
         v3AngVel.f.x = 7.5f - nlRandomf(15.0f, &nlDefaultSeed);
-        v3AngVel.f.y = 30.0f - nlRandomf(15.0f, &nlDefaultSeed);
+        v3AngVel.f.y = 15.0f - nlRandomf(30.0f, &nlDefaultSeed);
         v3AngVel.f.z = 10.0f + nlRandomf(15.0f, &nlDefaultSeed);
 
         bool bNegZSpin = false;
@@ -3259,9 +3260,9 @@ void cFielder::DoRegularShooting()
 
         if (m_eActionState == ACTION_ONETIMER)
         {
-            v3AngVel.f.z *= 0.4f;
-            v3AngVel.f.x *= 0.4f;
-            v3AngVel.f.y *= 0.4f;
+            v3AngVel.f.z = 0.4f * v3AngVel.f.z;
+            v3AngVel.f.y = 0.4f * v3AngVel.f.y;
+            v3AngVel.f.x = 0.4f * v3AngVel.f.x;
         }
     }
 
@@ -3271,13 +3272,16 @@ void cFielder::DoRegularShooting()
         g_pBall->m_unk_0xA6 = true;
     }
 
-    bool bHighSpeed = (m_pShotMeter->m_fSpeedValue >= 0.99f);
-    g_pBall->Shoot(v3BallVelocity, v3AngVel, spinType, bHighSpeed, bIsSTS, mActionShotVars.bIsChipShot || mActionLooseBallShotVars.bIsChipShot);
+    g_pBall->Shoot(v3BallVelocity, v3AngVel, spinType, bIsSTS, m_pShotMeter->m_fSpeedValue >= 0.99f, mActionShotVars.bIsChipShot || mActionLooseBallShotVars.bIsChipShot);
 
     g_pBall->m_pShooter = this;
     SetNoPickUpTime(0.2f);
 
+    bool bCreateEvent = false;
     if (g_pGame->m_eGameState == GS_GAMEPLAY || g_pGame->m_eGameState == GS_OVERTIME)
+        bCreateEvent = true;
+
+    if (bCreateEvent)
     {
         Event* pEvent = g_pEventManager->CreateValidEvent(0x14, 0x1C);
         ShotAtGoalData* pShotData = (ShotAtGoalData*)&pEvent->m_data;
@@ -4679,9 +4683,180 @@ void cFielder::SetPosition(const nlVector3& v3Position)
 
 /**
  * Offset/Address/Size: 0x3F70 | 0x8001D2AC | size: 0x5A8
+ * TODO: 90.23% match - f3/f4 register swap in delta computation (5 instruction diffs)
  */
-void cFielder::SetDesiredSpeedAndDirectionToPosition(float, const nlVector3&, eTurboRequest, float, float)
+void cFielder::SetDesiredSpeedAndDirectionToPosition(float fDeltaT, const nlVector3& v3Pos, eTurboRequest turboRequest, float fInRadiusMult, float fOutRadiusMult)
 {
+    nlVector3 v3FixedPos = v3Pos;
+    cField::FixOutOfBoundsPosition(v3FixedPos, 0.2f);
+
+    float fDeltaY = v3FixedPos.f.y - m_v3Position.f.y;
+    float fDeltaYFromDesired = v3FixedPos.f.y - m_v3DesiredPosition.f.y;
+    float fDeltaX = v3FixedPos.f.x - m_v3Position.f.x;
+    float fDeltaXFromDesired = v3FixedPos.f.x - m_v3DesiredPosition.f.x;
+    float fDistSq = fDeltaX * fDeltaX + fDeltaY * fDeltaY;
+    float fDeltaZFromDesired = v3FixedPos.f.z - m_v3DesiredPosition.f.z;
+
+    float fDesiredPositionRateOfChange = 0.0f;
+    float bAtTarget = (float)(fabsf(fDistSq - fDesiredPositionRateOfChange) <= 0.0001f);
+    if (bAtTarget != fDesiredPositionRateOfChange)
+    {
+    }
+    else
+    {
+        fDesiredPositionRateOfChange = nlSqrt(fDeltaXFromDesired * fDeltaXFromDesired + fDeltaYFromDesired * fDeltaYFromDesired + fDeltaZFromDesired * fDeltaZFromDesired, true) / fDeltaT;
+        float fAngle = nlATan2f(v3FixedPos.f.y - m_v3Position.f.y, v3FixedPos.f.x - m_v3Position.f.x);
+        m_aDesiredFacingDirection = (u16)(fAngle * 10430.378f);
+        m_aDesiredMovementDirection = m_aDesiredFacingDirection;
+    }
+
+    float fSpeedPercent = 0.0f;
+    switch (m_ePositionSeekState)
+    {
+    case PSS_ARRIVED:
+    {
+        float fOutRad = fOutRadiusMult * g_pGame->m_pGameTweaks->fArrivalOutRadius;
+        fSpeedPercent = NormalizeVal(fDistSq, 0.0f, fOutRad * fOutRad);
+        float fNearSeekOut = fOutRadiusMult * g_pGame->m_pGameTweaks->fNearSeekOutRadius;
+        if (fDistSq >= fNearSeekOut * fNearSeekOut)
+            m_ePositionSeekState = PSS_FAR_SEEKING;
+        else
+        {
+            float fArrivalOut = fOutRadiusMult * g_pGame->m_pGameTweaks->fArrivalOutRadius;
+            if (fDistSq >= fArrivalOut * fArrivalOut)
+                m_ePositionSeekState = PSS_NEAR_SEEKING;
+        }
+        break;
+    }
+    case PSS_NEAR_SEEKING:
+    {
+        float fInRad = fInRadiusMult * g_pGame->m_pGameTweaks->fArrivalInRadius;
+        float fOutRad = fOutRadiusMult * g_pGame->m_pGameTweaks->fNearSeekOutRadius;
+        fSpeedPercent = NormalizeVal(fDistSq, fInRad * fInRad, fOutRad * fOutRad);
+        float fNearSeekOut = fOutRadiusMult * g_pGame->m_pGameTweaks->fNearSeekOutRadius;
+        if (fDistSq >= fNearSeekOut * fNearSeekOut)
+            m_ePositionSeekState = PSS_FAR_SEEKING;
+        else
+        {
+            float fArrivalIn = fInRadiusMult * g_pGame->m_pGameTweaks->fArrivalInRadius;
+            if (fDistSq <= fArrivalIn * fArrivalIn)
+                m_ePositionSeekState = PSS_ARRIVED;
+        }
+        break;
+    }
+    case PSS_FAR_SEEKING:
+    {
+        float fInRad = fInRadiusMult * g_pGame->m_pGameTweaks->fNearSeekInRadius;
+        float fOutRad = fOutRadiusMult * g_pGame->m_pGameTweaks->fNearSeekOutRadius;
+        fSpeedPercent = NormalizeVal(fDistSq, fInRad * fInRad, fOutRad * fOutRad);
+        float fNearSeekIn = fInRadiusMult * g_pGame->m_pGameTweaks->fNearSeekInRadius;
+        if (fDistSq < fNearSeekIn * fNearSeekIn)
+            m_ePositionSeekState = PSS_NEAR_SEEKING;
+        else
+        {
+            float fArrivalIn = fInRadiusMult * g_pGame->m_pGameTweaks->fArrivalInRadius;
+            if (fDistSq < fArrivalIn * fArrivalIn)
+                m_ePositionSeekState = PSS_ARRIVED;
+        }
+        break;
+    }
+    }
+
+    float fMaxSpeed = 0.0f;
+    float fMinSpeed = fMaxSpeed;
+    if (m_pBall == NULL)
+    {
+        switch (m_ePositionSeekState)
+        {
+        case PSS_NEAR_SEEKING:
+            fMinSpeed = m_pTweaks->fJoggingSpeed;
+            fMaxSpeed = m_pTweaks->fRunningSpeed;
+            break;
+        case PSS_FAR_SEEKING:
+            fMinSpeed = m_pTweaks->fRunningSpeed;
+            fMaxSpeed = ((FielderTweaks*)m_pTweaks)->fRunningTurboSpeed;
+            break;
+        }
+        if (turboRequest == TR_FORCED_OFF)
+        {
+            if (fMaxSpeed <= m_pTweaks->fRunningSpeed)
+            {
+            }
+            else
+            {
+                fMaxSpeed = m_pTweaks->fRunningSpeed;
+            }
+        }
+        else if (turboRequest == TR_FORCED_ON)
+        {
+            fMinSpeed = ((FielderTweaks*)m_pTweaks)->fRunningTurboSpeed;
+        }
+        else if (turboRequest == TR_MOVING_TARGET)
+        {
+            float bRateZero = (float)(fabsf(fDesiredPositionRateOfChange - 0.0f) <= 0.0001f);
+            if (bRateZero != 0.0f)
+            {
+            }
+            else
+                fMinSpeed = ((FielderTweaks*)m_pTweaks)->fRunningTurboSpeed;
+        }
+    }
+    else
+    {
+        switch (m_ePositionSeekState)
+        {
+        case PSS_NEAR_SEEKING:
+            fMinSpeed = m_pTweaks->fJoggingSpeed;
+            fMaxSpeed = ((FielderTweaks*)m_pTweaks)->fRunningWBSpeed;
+            break;
+        case PSS_FAR_SEEKING:
+            fMinSpeed = ((FielderTweaks*)m_pTweaks)->fRunningWBSpeed;
+            fMaxSpeed = ((FielderTweaks*)m_pTweaks)->fRunningWBTurboSpeedLevel1;
+            break;
+        }
+        if (turboRequest == TR_FORCED_OFF)
+        {
+            if (fMaxSpeed <= ((FielderTweaks*)m_pTweaks)->fRunningWBSpeed)
+            {
+            }
+            else
+            {
+                fMaxSpeed = ((FielderTweaks*)m_pTweaks)->fRunningWBSpeed;
+            }
+        }
+        else if (turboRequest == TR_FORCED_ON)
+        {
+            fMinSpeed = ((FielderTweaks*)m_pTweaks)->fRunningWBTurboSpeedLevel1;
+        }
+        else if (turboRequest == TR_MOVING_TARGET)
+        {
+            float bRateZero = (float)(fabsf(fDesiredPositionRateOfChange - 0.0f) <= 0.0001f);
+            if (bRateZero != 0.0f)
+            {
+            }
+            else
+                fMinSpeed = ((FielderTweaks*)m_pTweaks)->fRunningWBTurboSpeedLevel1;
+        }
+    }
+
+    float bDistZero = (float)(fabsf(fDistSq - 0.0f) <= 0.0001f);
+    if (bDistZero != 0.0f)
+    {
+        fMinSpeed = 0.0f;
+        fMaxSpeed = 0.0f;
+    }
+
+    if (!IsRunningState())
+    {
+        if (m_pBall != NULL)
+            InitActionRunningWB(false);
+        else
+            InitActionRunning();
+    }
+
+    m_fDesiredSpeed = Interpolate(fMinSpeed, fMaxSpeed, fSpeedPercent);
+    m_v3DesiredPosition = v3FixedPos;
+    m_fDistanceToDesiredPosition = -9999.9f;
 }
 
 /**
@@ -6296,13 +6471,263 @@ void cFielder::StartRunning()
  */
 bool cFielder::DoAILooseBallActionSelection()
 {
+    extern cFielder* g_pScriptCurrentFielder;
+    extern cTeam* g_pCurrentlyUpdatingTeam;
+    extern cBall* g_pBall;
+
+    eFielderDesireState action;
+    bool bDidSomething = false;
+
+    FuzzyVariant looseBallAction = Fuzzy::GetBestLooseBallAction(this);
+
+    action = (eFielderDesireState)looseBallAction.mData.i;
+
+    static FilteredRandomChance randchancegen;
+
+    bool bSelectChance = randchancegen.genrand(looseBallAction.SelectionChance);
+    float fActionScore = looseBallAction.Confidence;
+    SkillTweaks* pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide);
+    float fPerturbPercent = 0.5f * (1.0f - pSkillTweaks->Off_Reaction);
+
+    if (looseBallAction.Confidence > 0.0f && bSelectChance)
+    {
+        switch (action)
+        {
+        case 0:
+        case 1:
+        case 2:
+        case 3:
+        case 4:
+        case 6:
+        case 7:
+        case 8:
+        case 9:
+        case 10:
+        case 11:
+        case 12:
+        case 16:
+        case 17:
+            break;
+        case FIELDERDESIRE_SLIDE_ATTACK:
+        {
+            float fReactionRandom = 0.5f * fPerturbPercent;
+            float fReactionOffset = nlRandomf(fReactionRandom, &nlDefaultSeed) - 0.5f * fReactionRandom;
+            if (!(fActionScore >= 0.5f + fReactionOffset))
+                break;
+            float fTime;
+            if (!CanISlideAttack(g_pBall->m_v3Position, g_pBall->m_v3Velocity, &fTime))
+                break;
+            InitActionSlideAttack(NULL, fTime);
+            m_eDesireSubState = 1;
+            bDidSomething = true;
+            break;
+        }
+        case FIELDERDESIRE_SHOOT:
+        {
+            float fReactionRandom = 0.5f * fPerturbPercent;
+            float fReactionOffset = nlRandomf(fReactionRandom, &nlDefaultSeed) - 0.5f * fReactionRandom;
+            if (!(fActionScore >= 0.5f + fReactionOffset))
+                break;
+            InitActionLooseBallShot(looseBallAction.ExtraData.mData.b);
+            bDidSomething = true;
+            break;
+        }
+        case FIELDERDESIRE_PASS:
+        {
+            float fReactionRandom = 0.5f * fPerturbPercent;
+            float fReactionOffset = nlRandomf(fReactionRandom, &nlDefaultSeed) - 0.5f * fReactionRandom;
+            if (!(fActionScore >= 0.5f + fReactionOffset))
+                break;
+            cFielder* pTarget = (cFielder*)looseBallAction.ExtraData.mData.pPlayer;
+            InitActionLooseBallPass(pTarget, OpenTo(g_pScriptCurrentFielder, pTarget) < 0.5f);
+            bDidSomething = true;
+            break;
+        }
+        case FIELDERDESIRE_HIT:
+        {
+            float fReactionRandom = 0.59f * fPerturbPercent;
+            float fReactionOffset = nlRandomf(fReactionRandom, &nlDefaultSeed) - 0.5f * fReactionRandom;
+            if (!(fActionScore > 0.59f + fReactionOffset))
+                break;
+            cPlayer* pTarget = looseBallAction.ExtraData.mData.pPlayer;
+            InitDesire(FIELDERDESIRE_HIT, looseBallAction.Confidence, -1.0f, FuzzyVariant(pTarget), fvNotSet);
+            bDidSomething = true;
+            break;
+        }
+        case FIELDERDESIRE_USE_POWERUP:
+        {
+            ePowerUpType powerupType = (ePowerUpType)looseBallAction.ExtraData.mData.i;
+            float fReactionRandom = 0.6f * fPerturbPercent;
+            float fReactionOffset = nlRandomf(fReactionRandom, &nlDefaultSeed) - 0.5f * fReactionRandom;
+            if (!(fActionScore >= 0.6f + fReactionOffset))
+                break;
+            if (powerupType != m_pTeam->GetCurrentPowerUp().eType)
+                break;
+            if (m_nPowerupAnimID >= 0)
+                break;
+            if (m_ePowerup == POWER_UP_STAR)
+                break;
+            if (m_tFrozenTimer.m_uPackedTime != 0)
+                break;
+            if (IsFallenDown(0.0f) && (m_pTeam->IsCurrentStar() || m_pTeam->IsCurrentMushroom()))
+                break;
+            if (!m_pTeam->IsCurrentNoPowerup())
+            {
+                cTeam* pTeam = m_pTeam;
+                SetPowerup(pTeam->GetCurrentPowerUp().eType,
+                    pTeam->GetCurrentPowerUp().nnumOfPowerups,
+                    NULL);
+                m_pTeam->ClearCurrentPowerUp();
+            }
+            else
+            {
+                if (m_pTeam->GetPowerUpByIndex(1).eType == POWER_UP_NONE)
+                    break;
+                m_pTeam->TogglePowerup(true);
+                cTeam* pTeam = m_pTeam;
+                SetPowerup(pTeam->GetCurrentPowerUp().eType,
+                    pTeam->GetCurrentPowerUp().nnumOfPowerups,
+                    NULL);
+                m_pTeam->ClearCurrentPowerUp();
+            }
+            break;
+        }
+        default:
+            break;
+        }
+    }
+
+    return bDidSomething;
 }
 
 /**
  * Offset/Address/Size: 0x6BC | 0x800199F8 | size: 0x558
+ * TODO: 99.9% match - ONETIMER fnmsubs f2/f0 register swap for 0.5f constant,
+ * USE_POWERUP GetCurrentPowerUp stack offsets swapped between if/else branches
  */
-void cFielder::DoAIReceivePassActionSelection()
+bool cFielder::DoAIReceivePassActionSelection()
 {
+    extern cFielder* g_pScriptCurrentFielder;
+    extern cTeam* g_pCurrentlyUpdatingTeam;
+
+    eFielderDesireState action;
+    bool bDidSomething = false;
+
+    FuzzyVariant looseBallAction = Fuzzy::GetBestPassReceiveAction(this);
+
+    action = (eFielderDesireState)looseBallAction.mData.i;
+
+    static FilteredRandomChance randchancegen;
+
+    bool bSelectChance = randchancegen.genrand(looseBallAction.SelectionChance);
+    float fActionScore = looseBallAction.Confidence;
+    SkillTweaks* pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide);
+    float fPerturbPercent = 0.5f * (1.0f - pSkillTweaks->Off_Reaction);
+
+    if (looseBallAction.Confidence > 0.0f && bSelectChance)
+    {
+        switch (action)
+        {
+        case 0:
+        case 1:
+        case 2:
+        case 3:
+        case 4:
+        case 6:
+        case 7:
+        case 8:
+        case 9:
+        case 10:
+        case 11:
+        case 12:
+        case 14:
+        case 15:
+        case 16:
+        case 17:
+        case 19:
+        case 20:
+        case 21:
+        case 22:
+        case 23:
+            break;
+        case FIELDERDESIRE_ONETIMER:
+        {
+            float fReactionRandom = 0.5f * fPerturbPercent;
+            float fReactionOffset = nlRandomf(fReactionRandom, &nlDefaultSeed) - 0.5f * fReactionRandom;
+            if (!(fActionScore >= 0.5f + fReactionOffset))
+                break;
+            m_DesireReceivePassSharedVars.iAttemptOneTouchShot = looseBallAction.ExtraData.mData.b ? 2 : 1;
+            bDidSomething = true;
+            break;
+        }
+        case FIELDERDESIRE_PASS:
+        {
+            cPlayer* pTarget = looseBallAction.ExtraData.mData.pPlayer;
+            float fReactionRandom = 0.6f * fPerturbPercent;
+            float fReactionOffset = nlRandomf(fReactionRandom, &nlDefaultSeed) - 0.5f * fReactionRandom;
+            if (!(fActionScore >= 0.6f + fReactionOffset))
+                break;
+            m_DesireReceivePassSharedVars.iAttemptOneTouchPass = (OpenTo(g_pScriptCurrentFielder, pTarget) < 0.5f) ? 2 : 1;
+            bDidSomething = true;
+            m_DesireReceivePassSharedVars.pOneTouchPassTarget = pTarget;
+            break;
+        }
+        case FIELDERDESIRE_USE_POWERUP:
+        {
+            ePowerUpType powerupType = (ePowerUpType)looseBallAction.ExtraData.mData.i;
+            float fReactionRandom = 0.45f * fPerturbPercent;
+            float fReactionOffset = nlRandomf(fReactionRandom, &nlDefaultSeed) - 0.5f * fReactionRandom;
+            if (!(fActionScore >= 0.45f + fReactionOffset))
+                break;
+            if (powerupType != m_pTeam->GetCurrentPowerUp().eType)
+                break;
+            if (m_nPowerupAnimID >= 0)
+                break;
+            if (m_ePowerup == POWER_UP_STAR)
+                break;
+            if (m_tFrozenTimer.m_uPackedTime != 0)
+                break;
+            if (IsFallenDown(0.0f) && (m_pTeam->IsCurrentStar() || m_pTeam->IsCurrentMushroom()))
+                break;
+            if (!m_pTeam->IsCurrentNoPowerup())
+            {
+                cTeam* pTeam = m_pTeam;
+                SetPowerup(pTeam->GetCurrentPowerUp().eType,
+                    pTeam->GetCurrentPowerUp().nnumOfPowerups,
+                    NULL);
+                m_pTeam->ClearCurrentPowerUp();
+            }
+            else
+            {
+                if (m_pTeam->GetPowerUpByIndex(1).eType == POWER_UP_NONE)
+                    break;
+                m_pTeam->TogglePowerup(true);
+                cTeam* pTeam = m_pTeam;
+                SetPowerup(pTeam->GetCurrentPowerUp().eType,
+                    pTeam->GetCurrentPowerUp().nnumOfPowerups,
+                    NULL);
+                m_pTeam->ClearCurrentPowerUp();
+            }
+            break;
+        }
+        case FIELDERDESIRE_HIT:
+        {
+            cPlayer* pTarget = looseBallAction.ExtraData.mData.pPlayer;
+            float fReactionRandom = 0.59f * fPerturbPercent;
+            float fReactionOffset = nlRandomf(fReactionRandom, &nlDefaultSeed) - 0.5f * fReactionRandom;
+            if (!(fActionScore >= 0.59f + fReactionOffset))
+                break;
+            EndDesire(false);
+            InitDesire(FIELDERDESIRE_HIT, 0.5f, -1.0f, FuzzyVariant(pTarget), fvNotSet);
+            bDidSomething = true;
+            break;
+        }
+        default:
+            break;
+        }
+    }
+
+    return bDidSomething;
 }
 
 /**
@@ -6437,4 +6862,3 @@ void cFielder::DoSpeedBoost()
 
     m_fActualSpeed = 0.0f;
 }
-

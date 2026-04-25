@@ -33,6 +33,7 @@
 #include "NL/nlBasicString.h"
 #include "NL/nlConfig.h"
 #include "NL/nlFunction.h"
+#include "NL/nlMath.h"
 #include "NL/plat/plataudio.h"
 #include "types.h"
 
@@ -115,13 +116,6 @@ int SlideAttackReactAnims[4] = {
     0x68,
     0x67,
 };
-
-// const int cFielder::SlideAttackReactAnims[4] = {
-//     0x66,
-//     0x69,
-//     0x68,
-//     0x67,
-// };
 
 const static int ShellAttackReactAnims[4] = {
     0x66,
@@ -3158,13 +3152,14 @@ void cFielder::ActionShootToScore(float)
 
     unsigned int nTotalFrames = m_pCurrentAnimController->m_pSAnim->m_nNumKeys;
     FielderTweaks* pTweaks = (FielderTweaks*)m_pTweaks;
+    bool isCaptainSts = mActionShootToScoreVars.isCaptainSts;
     float fTotalTime = (float)nTotalFrames;
 
     float fHalfAnimationTime;
     float fGreenRegionMaxWidth;
     float fShootToScore1stJumpTime = pTweaks->fS2S1stJumpFrame / fTotalTime;
 
-    if (mActionShootToScoreVars.isCaptainSts)
+    if (isCaptainSts)
     {
         fHalfAnimationTime = (1.0f + pTweaks->fCaptainS2SNisBeginFrame) / fTotalTime;
     }
@@ -3175,7 +3170,7 @@ void cFielder::ActionShootToScore(float)
 
     float fCaptainPercentage = pTweaks->fCaptainS2SNisBeginFrame / fTotalTime;
 
-    if (mActionShootToScoreVars.isCaptainSts)
+    if (isCaptainSts)
     {
         fGreenRegionMaxWidth = pTweaks->fCaptainS2SNisEndFrame / fTotalTime;
     }
@@ -3466,9 +3461,10 @@ void cFielder::ActionShootToScore(float)
 
                     for (int t = 0; t < 2; t++)
                     {
+                        cTeam* pTeam = g_pTeams[t];
                         for (int f = 0; f < 4; f++)
                         {
-                            cFielder* pFielder = g_pTeams[t]->GetFielder(f);
+                            cFielder* pFielder = pTeam->GetFielder(f);
                             if (pFielder != this)
                             {
                                 if (pFielder->IsFrozen())
@@ -3501,7 +3497,22 @@ void cFielder::ActionShootToScore(float)
                     Audio::FadeFilterFromCurrentToZero();
                 }
 
-                if (meS2SResult == S2S_SUPER_SHOT && sbDoShatteredGlassTransition)
+                if (meS2SResult != S2S_SUPER_SHOT || sbDoShatteredGlassTransition)
+                {
+                    Audio::FadeFilterFromCurrentToZero();
+                    FixedUpdateTask::mTimeScale = 1.0f;
+                    ParticleUpdateTask::SetTimeScale(1.0f);
+
+                    if (meS2SResult == S2S_SUPER_SHOT && sbDoShatteredGlassTransition)
+                    {
+                        Wiper::Instance().DoWipe("break_glass");
+                        m_pCurrentAnimController->m_fPrevTime = m_pCurrentAnimController->m_fTime;
+                        m_pCurrentAnimController->m_fTime = hyperStrikeAnimCamBeginTime;
+                    }
+
+                    SetupCaptainSTSAnimCam(false);
+                }
+                else
                 {
                     MatrixEffectCam* pMatrixCam = new (nlMalloc(0x140, 8, false)) MatrixEffectCam();
                     pMatrixCam->mbUseGameplayTransparencyFlags = true;
@@ -3525,27 +3536,11 @@ void cFielder::ActionShootToScore(float)
                     pMatrixCam->Reset(cameraPos, *pBallPos, *pBallPos);
                     pMatrixCam->mbFollowBall = true;
                     pMatrixCam->mfDesiredDistanceFromTarget = sfOtherMatrixCamFinalDistanceFromTarget;
-                    pMatrixCam->mfDesiredDistanceFromTarget = sfOtherMatrixCamFinalDistanceFromTarget;
                     pMatrixCam->mfDesiredHeightAboveTarget = 0.0f;
 
                     cCameraManager::PushCameraWithTransition(pMatrixCam, sfOtherMatrixCamTransitionTime, (eCameraTransition)1, NULL);
                     pMatrixCam->mFinishedCallback = (void (*)(MatrixEffectCam*))OtherMatrixCamFinishedCallback;
                     sfTimeSinceLastRumbleFilter = 2.0f * sfTimeBetweenApplyingRumbleFilters;
-                }
-                else
-                {
-                    Audio::FadeFilterFromCurrentToZero();
-                    FixedUpdateTask::mTimeScale = 1.0f;
-                    ParticleUpdateTask::SetTimeScale(1.0f);
-
-                    if (meS2SResult == S2S_SUPER_SHOT && sbDoShatteredGlassTransition)
-                    {
-                        Wiper::Instance().DoWipe("break_glass");
-                        m_pCurrentAnimController->m_fPrevTime = m_pCurrentAnimController->m_fTime;
-                        m_pCurrentAnimController->m_fTime = hyperStrikeAnimCamBeginTime;
-                    }
-
-                    SetupCaptainSTSAnimCam(false);
                 }
 
                 DrawableCharacter::RenderOnlyOneCharacter(*this, false);
@@ -3597,7 +3592,7 @@ void cFielder::ActionShootToScore(float)
 
         if (mActionShootToScoreVars.captainStsCamera != NULL || meS2SResult == S2S_SUPER_SHOT)
         {
-            if (m_pCurrentAnimController->TestTrigger(firstKickTime))
+            if (m_pCurrentAnimController->TestTrigger(shaolinTime))
             {
                 const char* teamName = GetTeamName(nlSingleton<GameInfoManager>::s_pInstance->GetTeam((s16)m_pTeam->m_nSide));
                 BasicString<char, Detail::TempStringAllocator> effectName(teamName);
@@ -3766,9 +3761,10 @@ void cFielder::ActionShootToScore(float)
 
             for (int t = 0; t < 2; t++)
             {
+                cTeam* pTeam = g_pTeams[t];
                 for (int f = 0; f < 4; f++)
                 {
-                    cFielder* pFielder = g_pTeams[t]->GetFielder(f);
+                    cFielder* pFielder = pTeam->GetFielder(f);
                     if (pFielder != this)
                     {
                         pFielder->SetFrozen(0.0f);
@@ -3808,8 +3804,6 @@ void cFielder::ActionShootToScore(float)
 
 /**
  * Offset/Address/Size: 0x13C8 | 0x80027F00 | size: 0x408
- * TODO: 96.00% match - remaining instruction mismatches in time-window branch shape and
- * float register allocation around distance/normalization math.
  */
 void cFielder::InitActionSlideAttack(cFielder* pTarget, float fTime)
 {
@@ -3822,9 +3816,7 @@ void cFielder::InitActionSlideAttack(cFielder* pTarget, float fTime)
     float fTargetY;
     float fMaxTime;
     float fInterceptTime;
-    float fDeltaX;
-    float fDeltaY;
-    float fDeltaZ;
+    nlVector3 v3Delta;
 
     if (IsFrozen())
     {
@@ -3885,11 +3877,8 @@ void cFielder::InitActionSlideAttack(cFielder* pTarget, float fTime)
         fTargetY = v3TargetPosition.f.y + v3TargetVelocity.f.y * fMaxTime;
     }
 
-    fDeltaY = m_v3Position.f.y - g_pBall->m_v3Position.f.y;
-    fDeltaX = m_v3Position.f.x - g_pBall->m_v3Position.f.x;
-    fDeltaZ = m_v3Position.f.z - g_pBall->m_v3Position.f.z;
-
-    if (nlSqrt(fDeltaX * fDeltaX + fDeltaY * fDeltaY + fDeltaZ * fDeltaZ, true) < (0.1f + m_pTweaks->fPhysCapsuleRadius))
+    nlVec3Sub(v3Delta, m_v3Position, g_pBall->m_v3Position);
+    if (nlSqrt(v3Delta.GetLengthSq3D(), true) < (0.1f + m_pTweaks->fPhysCapsuleRadius))
     {
         float fLenSq = v3SlideAttackVelocity.f.x * v3SlideAttackVelocity.f.x
                      + v3SlideAttackVelocity.f.y * v3SlideAttackVelocity.f.y
@@ -3951,8 +3940,6 @@ void cFielder::InitActionSlideAttack(cFielder* pTarget, float fTime)
 
 /**
  * Offset/Address/Size: 0xE2C | 0x80027964 | size: 0x59C
- * TODO: 97.40% match - 20 register-level diffs in star powerup velocity correction section:
- *   distSq f30 vs f26, vel.y/invDist f2/f3 swap, slideVel dy/dx processing order
  */
 void cFielder::ActionSlideAttack(float fDeltaTime)
 {
@@ -4238,8 +4225,6 @@ void cFielder::InitActionSlideAttackReact(cPlayer* pAttacker, bool bSkipEvent)
         InitDesire(FIELDERDESIRE_FINISH_ACTION, 0.5f, -1.0f, fvNotSet, fvNotSet);
         SetAction(ACTION_SLIDE_ATTACK_REACT);
 
-        // u16 facingDelta = (u16)(GetFacingDeltaToPosition(pAttacker->m_v3Position) + 0x2000);
-        // SetFacingAnim(this, facingDelta, SlideAttackReactAnims);
         u16 facingDelta = (u16)(GetFacingDeltaToPosition(pAttacker->m_v3Position) + 0x2000);
         SetAnimState(SlideAttackReactAnims[facingDelta >> 14], true, 0.2f, false, false);
 

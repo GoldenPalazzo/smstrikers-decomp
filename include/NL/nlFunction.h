@@ -241,6 +241,11 @@ public:
     {
     }
 
+    Function(Tag t)
+    {
+        mTag = t;
+    }
+
     template <typename T>
     Function(T bind)
         : Function0<void>(bind)

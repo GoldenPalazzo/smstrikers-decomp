@@ -1127,12 +1127,12 @@ void OptionsSubMenu::Update(float)
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0x1C8 | 0x800BB4E0 | size: 0x48
-//  */
-// SlideMenuItem::~SlideMenuItem()
-// {
-// }
+/**
+ * Offset/Address/Size: 0x1C8 | 0x800BB4E0 | size: 0x48
+ */
+SlideMenuItem::~SlideMenuItem()
+{
+}
 
 // /**
 //  * Offset/Address/Size: 0x210 | 0x800BB528 | size: 0x5C

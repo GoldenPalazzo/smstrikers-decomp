@@ -93,12 +93,20 @@ typedef Function0<void>::FunctorImpl<BindExp1_vfmfcp> FunctorImpl_vfmfcp;
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800F1EB4 | size: 0x64
-//  */
-// TeamStats::TeamStats()
-// {
-// }
+/**
+ * Offset/Address/Size: 0x0 | 0x800F1EB4 | size: 0x64
+ */
+TeamStats::TeamStats()
+{
+    memset(&mPlayerTotalStats, 0, sizeof(mPlayerTotalStats));
+    mPlayerTotalStats.mRecordType.mTeamID = TEAM_MARIO;
+    mPlayerTotalStats.mType = TYPE_TEAM;
+    mTeamIndex = TEAM_MARIO;
+    mNumWins = 0;
+    mNumLosses = 0;
+    mNumOTLosses = 0;
+    mNumPoints = 0;
+}
 
 /**
  * Offset/Address/Size: 0x78 | 0x800F1E84 | size: 0x30
@@ -471,8 +479,207 @@ unsigned char CupHubScene::UpdateLeague(float fDeltaT)
 /**
  * Offset/Address/Size: 0x2A64 | 0x800EC7C0 | size: 0x590
  */
-void CupHubScene::UpdateKnockout8(float)
+unsigned char CupHubScene::UpdateKnockout8(float fDeltaT)
 {
+    typedef TLComponentInstance* (*FindCompByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
+    typedef TLComponentInstance* (*FindCompByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
+    typedef TLTextInstance* (*FindTextByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
+    typedef TLTextInstance* (*FindTextByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
+
+    TLSlide* pSlide1 = mAnimComponents[mAnimatingKnockoutTeams[0]]->GetActiveSlide();
+    TLSlide* pSlide2 = mAnimComponents[mAnimatingKnockoutTeams[1]]->GetActiveSlide();
+    TLSlide* pSlide3 = mAnimComponents[mAnimatingKnockoutTeams[2]]->GetActiveSlide();
+    TLSlide* pSlide4 = mAnimComponents[mAnimatingKnockoutTeams[3]]->GetActiveSlide();
+    GameInfoManager* gameInfo = nlSingleton<GameInfoManager>::s_pInstance;
+
+    volatile InlineHasher h7, h5, h3, h1;
+
+    if (mKnockoutLoserAnimations && mSlideSwitchDelay > 0.0f)
+    {
+        mSlideSwitchDelay -= fDeltaT;
+        mAnimComponents[mAnimatingKnockoutTeams[0]]->SetActiveSlide("Eliminated");
+        mAnimComponents[mAnimatingKnockoutTeams[1]]->SetActiveSlide("Eliminated");
+        mAnimComponents[mAnimatingKnockoutTeams[2]]->SetActiveSlide("Eliminated");
+        mAnimComponents[mAnimatingKnockoutTeams[3]]->SetActiveSlide("Eliminated");
+
+        if (mSlideSwitchDelay <= 0.0f)
+            FEAudio::PlayAnimAudioEvent("sfx_hub_knockout_elimination", false);
+
+        return 0;
+    }
+
+    mSlideSwitchDelay = 0.0f;
+
+    if ((pSlide1->m_time < (pSlide1->m_start + pSlide1->m_duration)) || (pSlide2->m_time < (pSlide2->m_start + pSlide2->m_duration)) || (pSlide3->m_time < (pSlide3->m_start + pSlide3->m_duration)) || (pSlide4->m_time < (pSlide4->m_start + pSlide4->m_duration)))
+        return 0;
+
+    if (mKnockoutLoserAnimations)
+    {
+        BasicGameInfo* pGame = GetMatchupInfo__15GameInfoManagerCFsUs(gameInfo, -4, 0);
+        mAnimatingKnockoutTeams[0] = (pGame->mFinalScore[0] > pGame->mFinalScore[1]) ? 0 : 1;
+        mAnimComponents[mAnimatingKnockoutTeams[0]]->SetActiveSlide("Move");
+        mAnimComponents[mAnimatingKnockoutTeams[0]]->GetActiveSlide()->Update(0.0f);
+
+        pGame = GetMatchupInfo__15GameInfoManagerCFsUs(gameInfo, -4, 1);
+        mAnimatingKnockoutTeams[1] = (pGame->mFinalScore[0] > pGame->mFinalScore[1]) ? 2 : 3;
+        mAnimComponents[mAnimatingKnockoutTeams[1]]->SetActiveSlide("Move");
+        mAnimComponents[mAnimatingKnockoutTeams[1]]->GetActiveSlide()->Update(0.0f);
+
+        pGame = GetMatchupInfo__15GameInfoManagerCFsUs(gameInfo, -4, 2);
+        mAnimatingKnockoutTeams[2] = (pGame->mFinalScore[0] > pGame->mFinalScore[1]) ? 4 : 5;
+        mAnimComponents[mAnimatingKnockoutTeams[2]]->SetActiveSlide("Move");
+        mAnimComponents[mAnimatingKnockoutTeams[2]]->GetActiveSlide()->Update(0.0f);
+
+        pGame = GetMatchupInfo__15GameInfoManagerCFsUs(gameInfo, -4, 3);
+        mAnimatingKnockoutTeams[3] = (pGame->mFinalScore[0] > pGame->mFinalScore[1]) ? 6 : 7;
+        mAnimComponents[mAnimatingKnockoutTeams[3]]->SetActiveSlide("Move");
+        mAnimComponents[mAnimatingKnockoutTeams[3]]->GetActiveSlide()->Update(0.0f);
+
+        FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
+
+        volatile InlineHasher hB, hA, h9, h8, h6, h4, h2, h0;
+
+        h0.m_Hash = 0;
+        h1.m_Hash = 0;
+        h2.m_Hash = 0;
+        h3.m_Hash = 0;
+        h4.m_Hash = 0;
+        h5.m_Hash = 0;
+        h6.m_Hash = 0;
+        h7.m_Hash = 0;
+
+        unsigned long hash = nlStringLowerHash("vs");
+        h8.m_Hash = hash;
+        h9.m_Hash = hash;
+
+        hash = nlStringLowerHash(CUP_HUB_LAYER_NAME);
+        hB.m_Hash = hash;
+        hA.m_Hash = hash;
+
+        union
+        {
+            FindCompByValue byValue;
+            FindCompByRef byRef;
+        } findComp;
+        findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
+
+        TLComponentInstance* vsComp = findComp.byRef(
+            presentation->m_currentSlide,
+            (InlineHasher&)hB,
+            (InlineHasher&)h9,
+            (InlineHasher&)h7,
+            (InlineHasher&)h5,
+            (InlineHasher&)h3,
+            (InlineHasher&)h1);
+
+        vsComp->SetActiveSlide("Slide2");
+
+        mKnockoutLoserAnimations = false;
+
+        if (!gHubKnockoutMovementSoundIsPlaying)
+        {
+            FEAudio::PlayAnimAudioEvent("sfx_hub_knockout_movment", true);
+        }
+
+        gHubKnockoutMovementSoundIsPlaying = true;
+        return 0;
+    }
+
+    mDoAnimations = false;
+    UpdateProgressIndicator();
+
+    FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
+
+    volatile InlineHasher hB, hA, h9, h8, h6, h4, h2, h0;
+
+    h0.m_Hash = 0;
+    h1.m_Hash = 0;
+    h2.m_Hash = 0;
+    h3.m_Hash = 0;
+    h4.m_Hash = 0;
+    h5.m_Hash = 0;
+    h6.m_Hash = 0;
+    h7.m_Hash = 0;
+
+    unsigned long hash = nlStringLowerHash("message");
+    h8.m_Hash = hash;
+    h9.m_Hash = hash;
+
+    hash = nlStringLowerHash(CUP_HUB_LAYER_NAME);
+    hB.m_Hash = hash;
+    hA.m_Hash = hash;
+
+    union
+    {
+        FindCompByValue byValue;
+        FindCompByRef byRef;
+    } findComp;
+    findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
+
+    TLComponentInstance* pComp = findComp.byRef(
+        presentation->m_currentSlide,
+        (InlineHasher&)hB,
+        (InlineHasher&)h9,
+        (InlineHasher&)h7,
+        (InlineHasher&)h5,
+        (InlineHasher&)h3,
+        (InlineHasher&)h1);
+
+    pComp->SetActiveSlide("Slide1");
+    pComp->Update(0.0f);
+    pComp->m_bVisible = true;
+
+    volatile InlineHasher g7, g6, g5, g4, g3, g2, g1, g0;
+
+    g0.m_Hash = 0;
+    h1.m_Hash = 0;
+    g1.m_Hash = 0;
+    h3.m_Hash = 0;
+    g2.m_Hash = 0;
+    h5.m_Hash = 0;
+    g3.m_Hash = 0;
+    h7.m_Hash = 0;
+    g4.m_Hash = 0;
+    g5.m_Hash = 0;
+
+    hash = nlStringLowerHash("Text");
+    g6.m_Hash = hash;
+    g7.m_Hash = hash;
+
+    union
+    {
+        FindTextByValue byValue;
+        FindTextByRef byRef;
+    } findText;
+    findText.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
+
+    TLTextInstance* pText = findText.byRef(
+        pComp->GetActiveSlide(),
+        (InlineHasher&)g7,
+        (InlineHasher&)g5,
+        (InlineHasher&)h7,
+        (InlineHasher&)h5,
+        (InlineHasher&)h3,
+        (InlineHasher&)h1);
+
+    pText->SetStringId("STANDINGS_SEMI");
+
+    mHubState = HUB_KNOCKOUT4;
+    CreateKnockout();
+
+    if (gHubKnockoutMovementSoundIsPlaying)
+    {
+        Audio::gWorldSFX.Stop((Audio::eWorldSFX)0x11, cGameSFX::SFX_STOP_FIRST);
+    }
+
+    gHubKnockoutMovementSoundIsPlaying = false;
+
+    if (!mAllKnockoutAnimations && mPlayPopSound)
+    {
+        FEAudio::PlayAnimAudioEvent("sfx_standings_round_pop", false);
+        mPlayPopSound = false;
+    }
+    return 1;
 }
 
 /**

@@ -8,6 +8,7 @@ template <class T>
 class allocator
 {
 public:
+    allocator() { }
     void destroy(T*);
     void deallocate(T*, unsigned long);
 };

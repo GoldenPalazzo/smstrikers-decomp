@@ -19,7 +19,7 @@ class GLVertexAnim
 public:
     GLVertexAnim();
 
-    void GetModel(int);
+    glModel* GetModel(int);
     void Update(float);
     void Reset();
 

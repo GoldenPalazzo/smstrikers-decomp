@@ -498,10 +498,8 @@ UpdateResult IChooseSide::UpdateForPause(float, eFEINPUT_PAD* pad)
 
 /**
  * Offset/Address/Size: 0x820 | 0x800C3C64 | size: 0x4BC
- * TODO: 97.66% match - register allocation rotation (r30/r31 for this/disabledSide, r28/r29
- * for i/copy) caused by -inline deferred vs decomp.me compiler difference. Also extra li r4,0
- * at k=0 in allReady loop (compiler doesn't optimize away redundant store) and missing dead
- * branch in right-press switch case tree.
+ * TODO: 97.99% match - register allocation rotation (r30/r31 for this/disabledSide, r28/r29
+ * for i/copy) caused by -inline deferred vs decomp.me compiler difference.
  */
 void IChooseSide::CheckControllers(int disabledSide)
 {
@@ -609,6 +607,8 @@ void IChooseSide::CheckControllers(int disabledSide)
             {
             case 0:
                 mPlayingSides[i] = -1;
+                break;
+            case 1:
                 break;
             case -1:
                 mPlayingSides[i] = 1;

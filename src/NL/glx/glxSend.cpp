@@ -1,6 +1,5 @@
 #include "NL/glx/glxSend.h"
 
-#include "NL/glx/glxSend.h"
 #include "dolphin/gx/GXGeometry.h"
 #include "dolphin/gx/GXLighting.h"
 #include "dolphin/gx/GXEnum.h"
@@ -10,8 +9,10 @@
 #include "NL/gl/glConstant.h"
 #include "NL/gl/glLightUserData.h"
 #include "NL/gl/glMatrix.h"
+#include "NL/gl/gl.h"
 #include "NL/gl/glState.h"
 #include "NL/gl/glUserData.h"
+#include "NL/gl/glView.h"
 #include "NL/glx/glxGX.h"
 #include "NL/glx/glxMatrix.h"
 #include "NL/glx/glxTexture.h"
@@ -76,11 +77,202 @@ static s32 glx_GlossMapStage;
 static s32 glx_GlossMapCoord;
 static bool glx_NoFog;
 // static unsigned long glx_NumIndices;
+static eGLView prev_view;
+static u8 glx_InvXpose;
+static bool glx_IsCoPlanarView;
+static Mtx gx_mview;
+static nlMatrix4 mview;
+static u32 prog_3d_pointlit;
+static u32 prog_3d_pointlit_dirt;
+static u32 prog_3d_crowd_lit;
+static u8 glx_normals;
+static nlMatrix4 mproj;
+static Mtx44 gx_proj;
+static Mtx gx_modelview;
+static nlMatrix4 modelview;
+
 /**
  * Offset/Address/Size: 0x0 | 0x801B9B00 | size: 0x538
+ * TODO: 95.66% match - r-diffs in isCoPlanar block (branchless vs branched, r5 vs r3 scheduling) and texture loop register allocation (r24-r29 shifted)
  */
-void glx_SendFrame_cb(eGLView, unsigned long, const glModelPacket*)
+void glx_SendFrame_cb(eGLView view, unsigned long flags, const glModelPacket* p)
 {
+    static bool bEnabled;
+    static signed char init;
+
+    if (p != NULL)
+    {
+        if (glx_DirtyFlags != 0)
+        {
+            if (!init)
+            {
+                bEnabled = false;
+                init = 1;
+            }
+            if (bEnabled)
+            {
+                GXSetTevSwapMode((GXTevStageID)0, (GXTevSwapSel)0, (GXTevSwapSel)0);
+                gxSetTevAlphaOp(0, (_GXTevOp)0, (_GXTevBias)0, (_GXTevScale)0, true, (_GXTevRegID)0);
+                gxSetTevAlphaOp(1, (_GXTevOp)0, (_GXTevBias)0, (_GXTevScale)0, true, (_GXTevRegID)0);
+                bEnabled = false;
+            }
+            flags |= glx_DirtyFlags;
+            glx_DirtyFlags = 0;
+        }
+    }
+
+    if (flags & 0x7FF)
+    {
+        if (flags & 0x83)
+        {
+            if (flags & 1)
+            {
+                if (view != prev_view)
+                {
+                    prev_view = view;
+                    u8 isCoPlanar;
+                    if ((unsigned int)(view - GLV_CoPlanar0) <= 1)
+                        isCoPlanar = 1;
+                    else
+                        isCoPlanar = 0;
+                    glx_IsCoPlanarView = isCoPlanar;
+                    glViewGetProjectionMatrix(view, mproj);
+                    glViewGetViewMatrix(view, mview);
+                    glxCopyMatrix(gx_mview, mview);
+                    glxCopyMatrix(gx_proj, mproj);
+                    GXProjectionType projType;
+                    if (mproj.m[3][2] == -1.0f)
+                        projType = GX_PERSPECTIVE;
+                    else
+                        projType = GX_ORTHOGRAPHIC;
+                    GXSetProjection(gx_proj, projType);
+                    glx_SwitchUserData(NULL);
+
+                    nlColour amb;
+                    nlColour temp = { };
+                    glx_ReloadPointLights = 1;
+                    glx_ReloadSpecLights = 1;
+                    nlColourSet(temp, world_ambient.c[0], world_ambient.c[1], world_ambient.c[2], world_ambient.c[3]);
+                    amb = temp;
+                    gxSetChanAmbColour(0, amb);
+                    gxSetChanMatColour(0, nlWhite);
+                    gxSetChanAmbColour(1, nlBlack);
+                    gxSetChanMatColour(1, nlWhite);
+                }
+            }
+
+            if (flags & 2)
+            {
+                u32 newProg = p->state.program;
+                if (glx_program == prog_2d_movie && newProg != prog_2d_movie)
+                {
+                    GXSetTevKAlphaSel((GXTevStageID)1, (GXTevKAlphaSel)0);
+                }
+                u8 normals = 0;
+                if (newProg == prog_3d_pointlit || newProg == prog_3d_pointlit_dirt || newProg == prog_3d_crowd_lit)
+                {
+                    normals = 1;
+                }
+                glx_normals = normals;
+                glx_program = newProg;
+            }
+
+            if (flags & 0x80)
+            {
+                flags |= glx_SwitchTexConfig(p);
+            }
+        }
+
+        if (flags & 0x100)
+        {
+            glx_SwitchUserData(p);
+        }
+
+        if (flags & 0x14)
+        {
+            static u32 errorTextures[2];
+            static signed char errorTextures_init;
+            if (!errorTextures_init)
+            {
+                errorTextures[0] = glGetTexture("global/white");
+                errorTextures[1] = glGetTexture("global/magenta");
+                errorTextures_init = 1;
+            }
+
+            int texnum = 0;
+            int i;
+            for (i = 0; i < 6; i++)
+            {
+                if (!(glx_texconfig & (1 << i)))
+                    continue;
+
+                bool notDebug = (prev_view != GLV_Debug);
+                PlatTexture* tex = glx_GetTex(p->state.texture[i], false, notDebug);
+
+                if (tex == NULL || tex->m_bMissingTexture)
+                {
+                    s32 frame = glGetCurrentFrame();
+                    u32 errHandle = errorTextures[(frame & 4) >> 2];
+                    tex = glx_GetTex(errHandle, true, false);
+                }
+
+                memcpy(&glx_texobj[texnum], &tex->m_TexObj, sizeof(_GXTexObj));
+                if (tex->m_nPaletteEntries != 0)
+                {
+                    memcpy(&glx_tlutobj[texnum], &tex->m_TlutObj, sizeof(_GXTlutObj));
+                }
+
+                glx_texture[texnum] = (u32)tex;
+                glx_texdirty |= (1 << texnum);
+                texnum++;
+            }
+            glx_SwitchTextureState(p);
+        }
+
+        if (flags & 0x08)
+        {
+            glx_SwitchRaster(p);
+        }
+
+        if (flags & 0x20)
+        {
+            unsigned long mtx = p->state.matrix;
+            if (mtx == glGetIdentityMatrix())
+            {
+                modelview = mview;
+            }
+            else
+            {
+                nlMultMatrices(modelview, *(const nlMatrix4*)mtx, mview);
+            }
+            glxCopyMatrix(gx_modelview, modelview);
+            GXLoadPosMtxImm(gx_modelview, 0);
+            if (glx_normals)
+            {
+                if (glx_InvXpose)
+                {
+                    Mtx nrmMtx;
+                    PSMTXInvXpose(gx_modelview, nrmMtx);
+                    GXLoadNrmMtxImm(nrmMtx, 0);
+                }
+                else
+                {
+                    GXLoadNrmMtxImm(gx_modelview, 0);
+                }
+            }
+            GXSetCurrentMtx(0);
+        }
+
+        if (flags & 0x40)
+        {
+            glx_SwitchStreams(p);
+        }
+    }
+
+    if (flags & 0x800)
+    {
+        glx_DrawPacket(p);
+    }
 }
 
 /**
@@ -88,6 +280,7 @@ void glx_SendFrame_cb(eGLView, unsigned long, const glModelPacket*)
  */
 void glx_DrawPacket(const glModelPacket*)
 {
+    FORCE_DONT_INLINE;
 }
 
 /**
@@ -98,14 +291,9 @@ void glx_SwitchUserData(const glModelPacket*)
     FORCE_DONT_INLINE;
 }
 
-static eGLView prev_view;
-static u8 glx_InvXpose;
 static u8 glx_InvXposeChar;
 static bool g_bFastSkinPath;
 static bool g_bMtxSkinMath;
-static bool glx_IsCoPlanarView;
-static Mtx gx_mview;
-static nlMatrix4 mview;
 
 struct GLSkinUserData
 {
@@ -913,8 +1101,10 @@ void glx_SwitchTextureState(const glModelPacket* p)
 /**
  * Offset/Address/Size: 0x2B1C | 0x801BC61C | size: 0x2154
  */
-void glx_SwitchTexConfig(const glModelPacket*)
+unsigned long glx_SwitchTexConfig(const glModelPacket*)
 {
+    FORCE_DONT_INLINE;
+    return 0;
 }
 
 /**

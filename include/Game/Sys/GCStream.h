@@ -38,6 +38,7 @@ namespace GCAudioStreaming
 class AudioStreamBuffer
 {
 public:
+    AudioStreamBuffer();
     static unsigned long _UpdateHandler(void*, unsigned long, void*, unsigned long, unsigned long);
 
     /* 0x00 */ unsigned char* m_MRAMBuffer;   // offset 0x0, size 0x4
@@ -135,6 +136,7 @@ class MonoAudioStream : public AudioStream
 {
 public:
     MonoAudioStream(AudioBufferMgr& mgr);
+    virtual ~MonoAudioStream();
     static void _AsyncCancelCB(nlFile*, void*, unsigned int, unsigned long, void (*)(nlFile*, void*, unsigned int, unsigned long));
     virtual void CancelPendingReads();
     virtual unsigned long GetUpdateReadLength();

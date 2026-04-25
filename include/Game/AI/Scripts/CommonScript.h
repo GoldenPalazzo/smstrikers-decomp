@@ -4,6 +4,7 @@
 #include "NL/nlSingleton.h"
 #include "NL/nlAVLTreeSlotPool.h"
 #include "Game/AI/FuzzyVariant.h"
+#include "PowerPC_EABI_Support/MSL_C++/MSL_Common/msl_tree.h"
 
 class cTeam;
 class cPlayer;
@@ -11,15 +12,6 @@ class cFielder;
 
 extern unsigned char g_bScriptQuestionCachingOn;
 extern unsigned char g_bScriptQuestionCachingUseSTD;
-
-// Stub for std::map<unsigned long, FuzzyVariant> - size 0x10
-#ifndef _STDMAPSTUB_DEFINED_
-#define _STDMAPSTUB_DEFINED_
-struct StdMapStub
-{
-    u8 _data[0x10];
-};
-#endif
 
 class Fuzzy
 {
@@ -78,8 +70,6 @@ class ScriptQuestionCache : public nlSingleton<ScriptQuestionCache>
 public:
     ScriptQuestionCache()
         : mQuestionCacheMap(16, 16)
-        , mTotalLookups(0)
-        , mCacheHits(0)
     {
     }
     ~ScriptQuestionCache();
@@ -88,7 +78,7 @@ public:
     void Clear();
 
     /* 0x00 */ nlAVLTreeSlotPool<unsigned long, FuzzyVariant, DefaultKeyCompare<unsigned long> > mQuestionCacheMap;
-    /* 0x28 */ StdMapStub mQuestionCacheMapSTD;
+    /* 0x28 */ std::map<unsigned long, FuzzyVariant, std::less<unsigned long>, std::allocator<std::pair<const unsigned long, FuzzyVariant> > > mQuestionCacheMapSTD;
     /* 0x38 */ int mTotalLookups;
     /* 0x3C */ int mCacheHits;
 };

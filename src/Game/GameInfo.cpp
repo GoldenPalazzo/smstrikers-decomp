@@ -2161,12 +2161,82 @@ void GameInfoManager::TimeStampCupEnd()
     }
 }
 
+inline TeamStats::TeamStats()
+{
+    memset(&mPlayerTotalStats, 0, sizeof(mPlayerTotalStats));
+    mPlayerTotalStats.mRecordType.mTeamID = TEAM_MARIO;
+    mPlayerTotalStats.mType = TYPE_TEAM;
+    mTeamIndex = TEAM_MARIO;
+    mNumWins = 0;
+    mNumLosses = 0;
+    mNumOTLosses = 0;
+    mNumPoints = 0;
+}
+
 /**
  * Offset/Address/Size: 0x13E4 | 0x80176A88 | size: 0x588
  */
 eTeamID GameInfoManager::FindWinningTeam()
 {
-    FORCE_DONT_INLINE;
+    if (mDoingKnockout)
+    {
+        BaseCup* pCup = mCurrentCup;
+        short lastRound;
+        if (mCurrentMode == GM_BOWSER_CUP || mCurrentMode == GM_SUPER_BOWSER_CUP)
+        {
+            lastRound = 1;
+        }
+        else
+        {
+            lastRound = (short)(pCup->GetNumRounds() - 1);
+        }
+        BasicGameInfo* pGameInfo = pCup->GetGameInfo((int)lastRound, 0);
+        if (pGameInfo->mFinalScore[0] > pGameInfo->mFinalScore[1])
+        {
+            return pGameInfo->mTeamIndex[0];
+        }
+        else
+        {
+            return pGameInfo->mTeamIndex[1];
+        }
+    }
+
+    TeamStats allStats[8];
+    int rankIndices[8];
+    int tempBuf[16];
+    int numTeams;
+    int i;
+
+    if (mCurrentMode == GM_BOWSER_CUP || mCurrentMode == GM_SUPER_BOWSER_CUP)
+    {
+        numTeams = 8;
+    }
+    else
+    {
+        numTeams = mCurrentCup->GetNumTeams();
+    }
+
+    TeamStats* pTemp = (TeamStats*)tempBuf;
+    for (i = 0; i < numTeams; i++)
+    {
+        if (mCurrentMode == GM_BOWSER_CUP)
+        {
+            *pTemp = *mBowserCupSeries.GetTeamStats((u16)i);
+        }
+        else if (mCurrentMode == GM_SUPER_BOWSER_CUP)
+        {
+            *pTemp = *mSuperBowserCupSeries.GetTeamStats((u16)i);
+        }
+        else
+        {
+            *pTemp = *mCurrentCup->GetTeamStats((u16)i);
+        }
+        allStats[i] = *pTemp;
+    }
+
+    nlSingleton<StatsTracker>::s_pInstance->GetSortedTeamStats(allStats, numTeams, rankIndices, numTeams);
+
+    return allStats[rankIndices[0]].mTeamIndex;
 }
 
 /**

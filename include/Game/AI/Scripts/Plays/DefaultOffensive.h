@@ -20,7 +20,7 @@ public:
     void DoShooting(float, cDecisionEntity*);
     static FuzzyVariant FurthestBackOnMyTeam(cFielder*);
     void UsePowerupOffensive(float, cDecisionEntity*);
-    void GetPowerupTargetOffensive(cTeam*);
+    static FuzzyVariant GetPowerupTargetOffensive(cTeam*);
 };
 
 #endif // _DEFAULTOFFENSIVE_H_

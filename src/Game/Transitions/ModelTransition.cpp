@@ -29,6 +29,54 @@ struct TransitionModelStore
 
 static nlAVLTree<unsigned long, TransitionModelStore, DefaultKeyCompare<unsigned long> > g_ModelInventory;
 
+struct ModelInventoryFindHelper
+{
+    AVLTreeEntry<unsigned long, TransitionModelStore>* m_Root;
+
+    inline bool FindGet(unsigned long key, TransitionModelStore** foundValue) const
+    {
+        AVLTreeEntry<unsigned long, TransitionModelStore>* node = m_Root;
+        while (node != NULL)
+        {
+            int cmpResult;
+            if (key == node->key)
+                cmpResult = 0;
+            else if (key < node->key)
+                cmpResult = -1;
+            else
+                cmpResult = 1;
+            if (cmpResult == 0)
+            {
+                if (foundValue != NULL)
+                    *foundValue = &node->value;
+                return true;
+            }
+            else
+            {
+                if (cmpResult < 0)
+                    node = (AVLTreeEntry<unsigned long, TransitionModelStore>*)node->node.left;
+                else
+                    node = (AVLTreeEntry<unsigned long, TransitionModelStore>*)node->node.right;
+            }
+        }
+        return false;
+    }
+};
+
+static inline void CreateInstance(ModeledScreenTransition* self, TransitionModelStore& modelInfo)
+{
+    self->m_nModels = modelInfo.nModels;
+    self->m_pModels = (glModel*)glModelDupArrayNoStreams(modelInfo.pModels, modelInfo.nModels, false, true);
+
+    for (unsigned long j = 0; j < self->m_nModels; j++)
+    {
+        for (unsigned long i = 0; i < self->m_pModels[i].numPackets; i++)
+        {
+            self->m_pModels[j].packets[i].userData = 0;
+        }
+    }
+}
+
 eGLView ModeledScreenTransition::s_3DView = GLV_Transitions;
 
 // /**
@@ -494,8 +542,7 @@ void ModeledScreenTransition::Cancel()
 
 /**
  * Offset/Address/Size: 0x44 | 0x80202108 | size: 0x6C8
- * TODO: 85.87% match - FindGet boolean vs pointer test pattern differs,
- * inner loop lwzx optimization not matched, r24/r27 register allocation for pToken/name
+ * TODO: 92.66% match - branch offset diffs remain (consistent 8-byte shift in compiled output)
  */
 ModeledScreenTransition* ModeledScreenTransition::LoadFromParser(SimpleParser* parser)
 {
@@ -510,23 +557,15 @@ ModeledScreenTransition* ModeledScreenTransition::LoadFromParser(SimpleParser* p
         else if (nlStrCmp(pToken, "name") == 0)
         {
             pToken = parser->NextTokenOnLine(true);
+            u32 hash;
+            TransitionModelStore* pModelStore;
             u32 fileSize = 0;
             char buf[128];
-            u32 hash = glHash(pToken);
+            hash = glHash(pToken);
 
-            TransitionModelStore* store = g_ModelInventory.FindGet(hash);
-            if (store != NULL)
+            if (((ModelInventoryFindHelper*)&g_ModelInventory.m_Root)->FindGet(hash, &pModelStore))
             {
-                m_nModels = store->nModels;
-                m_pModels = (glModel*)glModelDupArrayNoStreams(store->pModels, store->nModels, false, true);
-
-                for (u32 i = 0; i < m_nModels; i++)
-                {
-                    for (u32 j = 0; j < m_pModels[i].numPackets; j++)
-                    {
-                        m_pModels[i].packets[j].userData = 0;
-                    }
-                }
+                CreateInstance(this, *pModelStore);
             }
             else
             {
