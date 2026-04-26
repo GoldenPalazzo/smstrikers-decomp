@@ -193,15 +193,6 @@ OptionsScene::~OptionsScene()
     }
 }
 
-namespace Detail
-{
-template <typename R, typename F>
-struct MemFunImpl
-{
-    F mMemFun;
-};
-} // namespace Detail
-
 template <typename T, typename R, typename P>
 Detail::MemFunImpl<R, void (T::*)(P)> MemFun(void (T::*)(P));
 

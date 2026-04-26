@@ -98,12 +98,22 @@ static const char* s_TeamNames[] = {
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x8014BFE8 | size: 0x274
-//  */
-// void PriorityStream::PriorityStream(AudioStreamTrack::StreamTrack&)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x0 | 0x8014BFE8 | size: 0x274
+ * TODO: 98.62% match - m_Track load scheduling, m_OrigStreamId/m_CapChant store order, stack temporary allocation order
+ */
+PriorityStream::PriorityStream(AudioStreamTrack::StreamTrack& track)
+    : m_InPause(false)
+    , m_Track(track)
+    , m_HasCrowdStream(0)
+    , m_PStream(m_Track)
+    , m_CapChant(m_Track)
+{
+    m_PStream.m_OrigStreamId = 0;
+    Function0<void> f0(Bind<void>(MemFun<PriorityStream, void>(&PriorityStream::TrackIdleCB), this));
+    AudioStreamTrack::StreamTrack& trackRef = m_Track;
+    trackRef.m_IdleCallback = Function<FnVoidVoid>(f0);
+}
 
 // /**
 //  * Offset/Address/Size: 0xE4 | 0x8014BFB8 | size: 0x30

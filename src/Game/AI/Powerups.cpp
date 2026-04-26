@@ -70,6 +70,13 @@ unsigned long uGREEN_SHELL_MASTER_OBJECT;
 unsigned long uSPINY_SHELL_MASTER_OBJECT;
 unsigned long uFREEZE_SHELL_MASTER_OBJECT;
 
+const char* uGREEN_SHELL_STREAK_TEXTURE;
+const char* uRED_SHELL_STREAK_TEXTURE;
+const char* uSPINY_SHELL_STREAK_TEXTURE;
+const char* uFREEZE_SHELL_STREAK_TEXTURE;
+const char* uBANANA_STREAK_TEXTURE;
+const char* uBOBOMB_STREAK_TEXTURE;
+
 } // namespace
 
 static const nlVector3 v3Zero = { 0.0f, 0.0f, 0.0f };
@@ -440,8 +447,137 @@ void CompactPowerups()
 /**
  * Offset/Address/Size: 0x465C | 0x8005EF48 | size: 0x490
  */
-PowerupBase::PowerupBase(cFielder*, ePowerUpType, float, ePowerupSize, bool, int)
+PowerupBase::PowerupBase(cFielder* pTarget, ePowerUpType eType, float fRadius, ePowerupSize eSize, bool bExplode, int nIndex)
+    : m_bShouldDestroy(false)
+    , m_pDrawableObj(NULL)
+    , m_pTarget(pTarget)
+    , m_eType(eType)
 {
+    m_aOrientation = 0;
+    m_scale = 1.0f;
+    m_szStreakTexture = NULL;
+    m_fBlurWidth = 0.0f;
+    m_fBlurLength = 0.0f;
+    m_uVoiceID = 0;
+    m_pBlurHandler = NULL;
+    m_nIndex = nIndex;
+    meSize = eSize;
+    mbExploder = bExplode;
+
+    switch (eType)
+    {
+    case POWER_UP_GREEN_SHELL:
+    {
+        PhysicsShell* pShell = (PhysicsShell*)nlMalloc(sizeof(PhysicsShell), 8, false);
+        pShell = new (pShell) PhysicsShell(fRadius);
+        m_pPhysicsObject = pShell;
+        PhysicsShell* pObj = (PhysicsShell*)m_pPhysicsObject;
+        pObj->m_pPowerupObject = this;
+        pObj->m_pTriggerCallbackFunc = (void (*)(PhysicsObject*, PhysicsObject*, nlVector3&, void*))CollisionCallback;
+        pObj->m_pCallbackParam = this;
+        m_szStreakTexture = uGREEN_SHELL_STREAK_TEXTURE;
+        mtActiveTimer.SetSeconds(g_pGame->m_pGameTweaks->fGreenShellActiveTime);
+        m_fBlurWidth = 2.0f * (fRadius / 3.0f);
+        m_fBlurLength = (f32)(2.0 * fRadius);
+        break;
+    }
+    case POWER_UP_RED_SHELL:
+    {
+        PhysicsShell* pShell = (PhysicsShell*)nlMalloc(sizeof(PhysicsShell), 8, false);
+        pShell = new (pShell) PhysicsShell(fRadius);
+        m_pPhysicsObject = pShell;
+        PhysicsShell* pObj = (PhysicsShell*)m_pPhysicsObject;
+        pObj->m_pPowerupObject = this;
+        pObj->m_pTriggerCallbackFunc = (void (*)(PhysicsObject*, PhysicsObject*, nlVector3&, void*))CollisionCallback;
+        pObj->m_pCallbackParam = this;
+        m_szStreakTexture = uRED_SHELL_STREAK_TEXTURE;
+        mtActiveTimer.SetSeconds(g_pGame->m_pGameTweaks->fRedShellActiveTime);
+        m_fBlurWidth = 2.0f * (fRadius / 3.0f);
+        m_fBlurLength = (f32)(2.0 * fRadius);
+        break;
+    }
+    case POWER_UP_SPINY_SHELL:
+    {
+        PhysicsShell* pShell = (PhysicsShell*)nlMalloc(sizeof(PhysicsShell), 8, false);
+        pShell = new (pShell) PhysicsShell(fRadius);
+        m_pPhysicsObject = pShell;
+        PhysicsShell* pObj = (PhysicsShell*)m_pPhysicsObject;
+        pObj->m_pPowerupObject = this;
+        pObj->m_pTriggerCallbackFunc = (void (*)(PhysicsObject*, PhysicsObject*, nlVector3&, void*))CollisionCallback;
+        pObj->m_pCallbackParam = this;
+        m_szStreakTexture = uSPINY_SHELL_STREAK_TEXTURE;
+        mtActiveTimer.SetSeconds(g_pGame->m_pGameTweaks->fSpinyShellActiveTime);
+        m_fBlurWidth = 2.0f * (fRadius / 3.0f);
+        m_fBlurLength = (f32)(2.0 * fRadius);
+        break;
+    }
+    case POWER_UP_FREEZE_SHELL:
+    {
+        PhysicsShell* pShell = (PhysicsShell*)nlMalloc(sizeof(PhysicsShell), 8, false);
+        pShell = new (pShell) PhysicsShell(fRadius);
+        m_pPhysicsObject = pShell;
+        PhysicsShell* pObj = (PhysicsShell*)m_pPhysicsObject;
+        pObj->m_pPowerupObject = this;
+        pObj->m_pTriggerCallbackFunc = (void (*)(PhysicsObject*, PhysicsObject*, nlVector3&, void*))CollisionCallback;
+        pObj->m_pCallbackParam = this;
+        m_szStreakTexture = uFREEZE_SHELL_STREAK_TEXTURE;
+        mtActiveTimer.SetSeconds(g_pGame->m_pGameTweaks->fFreezeShellActiveTime);
+        m_fBlurWidth = 2.0f * (fRadius / 3.0f);
+        m_fBlurLength = (f32)(2.0 * fRadius);
+        break;
+    }
+    case POWER_UP_BANANA:
+    {
+        PhysicsBanana* pBanana = (PhysicsBanana*)nlMalloc(sizeof(PhysicsBanana), 8, false);
+        pBanana = new (pBanana) PhysicsBanana(fRadius);
+        m_pPhysicsObject = pBanana;
+        PhysicsBanana* pObj = (PhysicsBanana*)m_pPhysicsObject;
+        pObj->m_pPowerupObject = this;
+        pObj->m_pTriggerCallbackFunc = (void (*)(PhysicsObject*, PhysicsObject*, nlVector3&, void*))CollisionCallback;
+        pObj->m_pCallbackParam = this;
+        m_szStreakTexture = uBANANA_STREAK_TEXTURE;
+        mtActiveTimer.SetSeconds(g_pGame->m_pGameTweaks->fBananaActiveTime);
+        m_fBlurWidth = 0.0f;
+        m_fBlurLength = 0.0f;
+        break;
+    }
+    case POWER_UP_BOBOMB:
+    {
+        PhysicsBanana* pBobomb = (PhysicsBanana*)nlMalloc(sizeof(PhysicsBanana), 8, false);
+        pBobomb = new (pBobomb) PhysicsBanana(fRadius);
+        m_pPhysicsObject = pBobomb;
+        PhysicsBanana* pObj = (PhysicsBanana*)m_pPhysicsObject;
+        pObj->m_pPowerupObject = this;
+        pObj->m_pTriggerCallbackFunc = (void (*)(PhysicsObject*, PhysicsObject*, nlVector3&, void*))CollisionCallback;
+        pObj->m_pCallbackParam = this;
+        m_szStreakTexture = uBOBOMB_STREAK_TEXTURE;
+        mtActiveTimer.SetSeconds(g_pGame->m_pGameTweaks->fBobombActiveTime);
+        m_fBlurWidth = 0.5f * fRadius;
+        m_fBlurLength = (f32)(2.0 * fRadius);
+        break;
+    }
+    }
+
+    m_aOrientation = nlRandom(65000, &nlDefaultSeed);
+
+    if (eType == POWER_UP_BANANA || eType == POWER_UP_RED_SHELL)
+    {
+        mtNoHitTimer.SetSeconds(1.0f);
+    }
+    else
+    {
+        mtNoHitTimer.SetSeconds(0.4f);
+    }
+
+    m_v3Position.f.x = 0.0f;
+    m_v3Position.f.y = 0.0f;
+    m_v3Position.f.z = fRadius;
+    m_v3PrevPosition = m_v3Position;
+    m_v3Velocity = v3Zero;
+
+    m_pPhysicsObject->SetPosition(m_v3Position, PhysicsObject::WORLD_COORDINATES);
+    m_pPhysicsObject->SetLinearVelocity(m_v3Velocity);
+    m_pPhysicsObject->EnableCollisions();
 }
 
 /**

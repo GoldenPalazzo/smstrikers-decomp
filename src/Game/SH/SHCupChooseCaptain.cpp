@@ -1,5 +1,6 @@
 #include "Game/SH/SHCupChooseCaptain.h"
 #include "Game/GameInfo.h"
+#include "Game/GameSceneManager.h"
 #include "Game/FE/feHelpFuncs.h"
 
 static unsigned long CAPTAIN_DESCRIPTIONS[] = {

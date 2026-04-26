@@ -247,7 +247,8 @@ ISidekickGridComponent::~ISidekickGridComponent()
 /**
  * Offset/Address/Size: 0x648 | 0x800C2E58 | size: 0x48
  */
-ISidekickGridComponent::ISidekickGridComponent(TLComponentInstance*, bool)
+ISidekickGridComponent::ISidekickGridComponent(TLComponentInstance* parentcomponent, bool ismirrored)
+    : IGridComponent<eSidekickID>(parentcomponent, "highlight", ismirrored)
 {
 }
 

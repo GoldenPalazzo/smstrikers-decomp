@@ -7,6 +7,10 @@
 class PhysicsGoalie : public PhysicsCharacter
 {
 public:
+    PhysicsGoalie(float f1, float f2)
+        : PhysicsCharacter(f1, f2)
+    {
+    }
     virtual ~PhysicsGoalie() { };
     virtual void PostUpdate();
 

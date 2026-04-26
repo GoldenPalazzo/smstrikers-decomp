@@ -1,5 +1,6 @@
 #include "Game/Render/StaticModelExplodable.h"
 #include "Game/Drawable/DrawableObj.h"
+#include "NL/nlBasicString.h"
 
 u8 StaticModelExplodable::bIsModelLoaded[2];
 nlList<SidelineExplodableNode> StaticModelExplodable::sStaticModelExplodableList;
@@ -185,9 +186,38 @@ void StaticModelExplodable::CleanUp()
 
 /**
  * Offset/Address/Size: 0xC4 | 0x80165588 | size: 0x43C
+ * TODO: 95.9% match - r30/r31 register swap for worldMatrix and bIsModelLoaded
  */
-StaticModelExplodable::StaticModelExplodable(StaticModelExplodableCategory, const nlMatrix4&)
+StaticModelExplodable::StaticModelExplodable(StaticModelExplodableCategory category, const nlMatrix4& worldMatrix)
 {
+    mCategory = category;
+    mWorldMatrix = worldMatrix;
+
+    if (!bIsModelLoaded[category])
+    {
+        sCategoryData[category].LoadGeometry();
+        bIsModelLoaded[category] = 1;
+    }
+
+    Initialize(GetCategoryData().mNumFragmentModels);
+
+    DrawableObject* drawable = s_World__12WorldManager->FindDrawableObject(GetCategoryData().mUnexplodedModel);
+    drawable->m_uObjectFlags &= ~1u;
+    m_pUnexplodedModel = drawable->Clone();
+
+    static int cloneCount = 0;
+
+    BasicString<char, Detail::TempStringAllocator> name = Format(BasicString<char, Detail::TempStringAllocator>("UndestroyedModelClone_{0}"), cloneCount);
+
+    unsigned long hash = nlStringHash(name.c_str());
+    s_World__12WorldManager->AddDrawableObject(hash, m_pUnexplodedModel);
+
+    const nlMatrix4& wm = GetWorldMatrix();
+    m_pUnexplodedModel->m_worldMatrix = wm;
+
+    m_pUnexplodedModel->m_uObjectFlags |= 1;
+
+    cloneCount++;
 }
 
 /**

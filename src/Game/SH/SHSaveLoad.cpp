@@ -371,8 +371,90 @@ bool PushNoCardMessage()
 /**
  * Offset/Address/Size: 0x11C8 | 0x800B1750 | size: 0x240
  */
-SaveLoadScene::SaveLoadScene(SaveLoadScene::eSaveLoadMode)
+SaveLoadScene::SaveLoadScene(SaveLoadScene::eSaveLoadMode saveLoadMode)
 {
+    m_displayText = NULL;
+    mNextScene = SCENE_INVALID;
+    mIsAutoSaving = false;
+    mIsFirstTimeCreateFile = true;
+    mButtonComponent = NULL;
+    mSaveLoadMode = saveLoadMode;
+
+    gSceneTypeStackDepth = 0;
+
+    int savingorloading = SCENE_SAVE;
+
+    switch (mSaveLoadMode)
+    {
+    case SLM_SAVING:
+        gSaveLoadStarted = false;
+        gSaveLoadFinished = false;
+        gSceneTypeStack[gSceneTypeStackDepth++] = ST_SAVE;
+        gCallbackMade = false;
+        gSceneTime = 0.0f;
+        ResetTask::s_resetPaused = true;
+
+        gSceneTypeStack[gSceneTypeStackDepth++] = ST_GAMESAVEIDTEST;
+        gSaveLoadStarted = false;
+        gSaveLoadFinished = false;
+        gCallbackMade = false;
+        gSceneTime = 0.0f;
+        ResetTask::s_resetPaused = false;
+        break;
+
+    case SLM_LOADING:
+        savingorloading = SCENE_LOAD;
+        gSceneTypeStack[gSceneTypeStackDepth++] = ST_LOAD;
+        gSaveLoadStarted = false;
+        gSaveLoadFinished = false;
+        gCallbackMade = false;
+        gSceneTime = 0.0f;
+        ResetTask::s_resetPaused = false;
+        break;
+
+    case SLM_ASK_BEFORE_SAVING:
+        gSceneTypeStack[gSceneTypeStackDepth++] = ST_ASK_SAVE;
+        gSaveLoadStarted = false;
+        gSaveLoadFinished = false;
+        gCallbackMade = false;
+        gSceneTime = 0.0f;
+        ResetTask::s_resetPaused = false;
+        break;
+
+    case SLM_ASK_BEFORE_LOADING:
+        savingorloading = SCENE_LOAD;
+        gSceneTypeStack[gSceneTypeStackDepth++] = ST_ASK_LOAD;
+        gSaveLoadStarted = false;
+        gSaveLoadFinished = false;
+        gCallbackMade = false;
+        gSceneTime = 0.0f;
+        ResetTask::s_resetPaused = false;
+        break;
+
+    case SLM_AT_BOOT:
+        savingorloading = SCENE_LOAD;
+        gSceneTypeStack[gSceneTypeStackDepth++] = ST_SHOULD_LOAD_OR_SAVE;
+        gSaveLoadStarted = false;
+        gSaveLoadFinished = false;
+        gCallbackMade = false;
+        gSceneTime = 0.0f;
+        ResetTask::s_resetPaused = false;
+        break;
+    }
+
+    gSceneTypeStack[gSceneTypeStackDepth++] = ST_CHECKING;
+    gCallbackMade = false;
+    ResetTask::s_resetPaused = false;
+    gSaveLoadStarted = true;
+    gSaveLoadFinished = true;
+    gIgnoreMinWait = false;
+    gSceneTime = 0.0f;
+    gRetryTimerDelay = 1.0f;
+    gContinueWithoutOperation = false;
+
+    g_pFEInput->PushExclusiveInputLock(this, savingorloading);
+
+    mInstance = this;
 }
 
 /**

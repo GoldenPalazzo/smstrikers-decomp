@@ -27,6 +27,9 @@ extern void nlReadAsync(nlFile*, void*, unsigned int, void (*)(nlFile*, void*, u
 extern void nlAsyncLoadFileToVirtualMemory(nlFile*, int, void*, void (*)(nlFile*, void*, unsigned int, unsigned long), unsigned long);
 extern void* nlLoadEntireFileToVirtualMemory(const char*, int*, unsigned int, void*, eAllocType);
 extern void nlBreak();
+extern "C" int sscanf(const char*, const char*, ...);
+
+static void* byteCode;
 
 namespace Detail
 {
@@ -391,13 +394,115 @@ NisPlayer* NisPlayer::Instance()
     return &instance;
 }
 
+static void SkipLine(const char*& data)
+{
+    while (*data != '\n')
+        data++;
+    while (*data == '\n')
+        data++;
+}
+
 /**
  * Offset/Address/Size: 0x3408 | 0x801180E4 | size: 0x588
+ * TODO: 63.62% match - stmw r16 vs r15: data spilled to stack, compiler version difference
  */
 NisPlayer::NisPlayer()
-    : InterpreterCore(0x1000)
+    : InterpreterCore(10)
+    , mActive(false)
+    , mDictSize(0)
+    , mMaxNumBallsVisible(1)
+    , mLoadingFromBack(false)
+    , mUsedFromFront(0)
+    , mUsedFromBack(0x70800)
+    , mGoalScorerCharIndex(-1)
 {
-    FORCE_DONT_INLINE;
+    if (useAsyncLoading && !(OSGetConsoleType() & 0x20000000))
+        mMemory = (char*)nlVirtualAlloc(0x70800, false);
+    else
+        mMemory = (char*)nlMalloc(0x70800);
+
+    for (int i = 0; i < 4; i++)
+    {
+        mLoadQueue[i] = NULL;
+        mPlaying[i] = NULL;
+        mLoaded[i] = NULL;
+        mAsyncStarted[i] = false;
+    }
+
+    unsigned long size = 0;
+    char* data = (char*)nlLoadEntireFile("art/nis/nis_dict.txt", &size, 0x20, AllocateStart);
+    if (data != NULL)
+    {
+        mDictSize = 0;
+        const char* d = data;
+        while (mDictSize < 256)
+        {
+            NisHeader& header = mDict[mDictSize];
+            if (sscanf(d, "name %s", header.name) != 1)
+                break;
+            SkipLine(d);
+            if (sscanf(d, "\tsize %d", &header.size) != 1)
+                break;
+            SkipLine(d);
+            if (sscanf(d, "\thas_ball %d", &header.numBalls) != 1)
+                break;
+            SkipLine(d);
+            if (sscanf(d, "\tnum_animations %d", &header.numAnimations) != 1)
+                break;
+            SkipLine(d);
+            if (sscanf(d, "\tnum_cameras %d", &header.numCameras) != 1)
+                break;
+            SkipLine(d);
+            if (sscanf(d, "\tcenter %f, %f, %f", &header.center.f.x, &header.center.f.y, &header.center.f.z) != 3)
+                break;
+            SkipLine(d);
+            if (sscanf(d, "\tmin_bounds %f, %f, %f", &header.minBounds.f.x, &header.minBounds.f.y, &header.minBounds.f.z) != 3)
+                break;
+            SkipLine(d);
+            if (sscanf(d, "\tmax_bounds %f, %f, %f", &header.maxBounds.f.x, &header.maxBounds.f.y, &header.maxBounds.f.z) != 3)
+                break;
+            SkipLine(d);
+
+            nlToLower(header.name);
+
+            nlVector3 beginPos = { { 0, 0, 0 } };
+            for (int i = 0; i < header.numAnimations; i++)
+            {
+                int num = sscanf(d, "\tbegin_position %f, %f, %f", &beginPos.f.x, &beginPos.f.y, &beginPos.f.z);
+                if (num != 3)
+                    break;
+                SkipLine(d);
+                header.beginPositions[i] = beginPos;
+            }
+            mDictSize++;
+        }
+        nlFree(data);
+    }
+
+    if (mActive)
+    {
+        for (int i = 0; i < 4; i++)
+        {
+            delete mPlaying[i];
+            delete mLoaded[i];
+            mPlaying[i] = NULL;
+            mLoaded[i] = NULL;
+            mLoadQueue[i] = NULL;
+            mAsyncStarted[i] = false;
+        }
+        mActive = false;
+        mLoadingFromBack = false;
+        mUsedFromFront = 0;
+        mUsedFromBack = 0x70800;
+        mCamera.UnselectCameraAnimation();
+        cCameraManager::Remove(mCamera);
+    }
+
+    unsigned long fileSize = 0;
+    byteCode = nlLoadEntireFile("art/nis/nis_bytecodes.bin", &fileSize, 0x20, AllocateStart);
+    LoadByteCode(byteCode);
+    mCamera.m_bCyclic = false;
+    mCamera.m_LetManagerDoUpdate = false;
 }
 
 /**

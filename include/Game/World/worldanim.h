@@ -10,11 +10,11 @@
 class AnimationSet
 {
 public:
-    /* 0x0 */ cInventory<cSHierarchy> m_animInventory;
+    /* 0x0 */ cInventory<cSAnim> m_animInventory;
 
     inline cSAnim* FindAnimationByHash(u32 hash) const
     {
-        ListEntry<cSAnim*>* entry = (ListEntry<cSAnim*>*)m_animInventory.m_lItemList.m_Head;
+        ListEntry<cSAnim*>* entry = m_animInventory.m_lItemList.m_Head;
         while (entry != NULL)
         {
             cSAnim* candidate = entry->data;

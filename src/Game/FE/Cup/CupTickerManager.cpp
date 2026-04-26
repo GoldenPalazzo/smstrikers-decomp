@@ -1,15 +1,6 @@
 #include "Game/FE/Cup/CupTickerManager.h"
 #include "Game/FE/feScrollText.h"
 
-namespace Detail
-{
-template <typename R, typename F>
-struct MemFunImpl
-{
-    F mFuncPtr;
-};
-} // namespace Detail
-
 template <typename T, typename R>
 Detail::MemFunImpl<R, void (T::*)()> MemFun(void (T::*)());
 
@@ -89,7 +80,7 @@ extern gl_ScreenInfo* glGetScreenInfo();
 template <>
 void Function0<void>::FunctorImpl<BindExp1_vfmfcp>::operator()()
 {
-    (mBind.mArg->*(mBind.mFuncPtr.mFuncPtr))();
+    (mBind.mArg->*(mBind.mFuncPtr.mMemFun))();
 }
 
 // /**

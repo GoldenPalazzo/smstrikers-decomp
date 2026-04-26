@@ -244,15 +244,6 @@ enum ePopupMenu
     NUM_POPUP_MENUS = 47,
 };
 
-namespace Detail
-{
-template <typename R, typename F>
-struct MemFunImpl
-{
-    F mFuncPtr;
-};
-} // namespace Detail
-
 template <typename T, typename R>
 Detail::MemFunImpl<R, void (T::*)()> MemFun(void (T::*)());
 
@@ -272,7 +263,7 @@ typedef Function0<void>::FunctorImpl<BindExp1_vfmfcp> FunctorImpl_vfmfcp;
 template <>
 void Function0<void>::FunctorImpl<BindExp1_vfmfcp>::operator()()
 {
-    (mBind.mArg->*(mBind.mFuncPtr.mFuncPtr))();
+    (mBind.mArg->*(mBind.mFuncPtr.mMemFun))();
 }
 
 /**

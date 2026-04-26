@@ -1,5 +1,6 @@
 #include "Game/FE/feScrollText.h"
 #include "Game/FE/feFontResource.h"
+#include "NL/gl/glStruct.h"
 #include "NL/nlTextEscape.h"
 
 struct LOCHeader
@@ -262,11 +263,50 @@ void FEScrollText::SetDisplayMessage(const BasicString<unsigned short, Detail::T
     FORCE_DONT_INLINE;
 }
 
+static const unsigned short sEmptyString[] = { 0 };
+
+inline void FEScrollText::SetMetrics(int pos, int width)
+{
+    const gl_ScreenInfo* screenInfo = glGetScreenInfo();
+    int boxWidth = width;
+    int boxX = pos + screenInfo->ScreenWidth / 2 - width / 2;
+    if (boxX < 0)
+        boxX = 0;
+    if (width + boxX >= screenInfo->ScreenWidth)
+        boxWidth = screenInfo->ScreenWidth - pos - 1;
+    m_controlText->SetScissorBox((u16)boxX, 0, (u16)boxWidth, (u16)screenInfo->ScreenHeight);
+}
+
 /**
  * Offset/Address/Size: 0xA68 | 0x800C943C | size: 0x1E8
  */
-FEScrollText::FEScrollText(TLTextInstance*, int, int)
+FEScrollText::FEScrollText(TLTextInstance* controlText, int pos, int width)
+    : m_controlText(controlText)
+    , m_message(sEmptyString)
 {
+    m_messageWidth = 0;
+
+    nlVector2 boxSize;
+    boxSize.f.x = 8000.0f;
+
+    m_msgTime = 0.0f;
+    m_messageFinishedCB.mTag = EMPTY;
+    m_textFont = NULL;
+
+    boxSize.f.y = 100.0f;
+
+    TLTextInstance* text = m_controlText;
+    text->m_OverloadedAttributes.BoxSize = boxSize;
+    text->m_OverloadFlags |= 0x4;
+
+    m_controlText->m_bVisible = false;
+
+    m_pos = pos;
+    m_width = width;
+
+    SetMetrics(pos, width);
+
+    m_leftEdge = (float)(m_pos - m_width / 2);
 }
 
 /**

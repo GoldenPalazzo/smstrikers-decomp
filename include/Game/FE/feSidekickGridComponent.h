@@ -29,6 +29,8 @@ public:
     virtual void vfunc_14() { }
     virtual void MoveHighlightToTarget(T target) { }
 
+    IGridComponent(TLComponentInstance* parentcomponent, const char* highlitename, bool ismirrored);
+
     /* 0x00 */ // vtable
     /* 0x04 */ TLInstance** mInstanceTable;
     /* 0x08 */ FEMapMenu* mMapMenu;

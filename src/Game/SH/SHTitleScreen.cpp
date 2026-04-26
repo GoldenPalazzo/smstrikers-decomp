@@ -107,9 +107,24 @@ void DoNothingCallback()
 
 /**
  * Offset/Address/Size: 0x7F0 | 0x800ACDAC | size: 0x204
+ * TODO: 99.18% match - sp+0x08/0x10 stack offset swap for Function0<void>
+ * copy and Function<FnVoidVoid> temporaries
  */
 TitleScene::TitleScene()
 {
+    m_fTimeElapsed = 0.0f;
+    mStartedDemo = false;
+    mStartedMovie = false;
+
+    AudioStreamTrack::TrackManagerBase* trackMgr = g_pTrackManager;
+    AudioStreamTrack::StreamTrack* track = trackMgr->GetTrack(nlStringLowerHash("FE"));
+    if (track != NULL)
+    {
+        Function0<void> f0;
+        f0.mTag = FREE_FUNCTION;
+        f0.mFreeFunction = DoNothingCallback;
+        track->m_IdleCallback = Function<FnVoidVoid>(f0);
+    }
 }
 
 /**

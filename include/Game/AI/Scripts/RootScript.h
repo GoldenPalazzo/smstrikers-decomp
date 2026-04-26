@@ -2,8 +2,9 @@
 #define _ROOTSCRIPT_H_
 
 #include "Game/AI/DecisionEntity.h"
+#include "Game/AI/FuzzyVariant.h"
 
-void StrategyChoosePlay(cDecisionEntity* pDecision);
+FuzzyVariant StrategyChoosePlay(cDecisionEntity* pDecision);
 int GetNumDecisionEntities();
 
 #endif // _ROOTSCRIPT_H_

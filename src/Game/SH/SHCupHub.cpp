@@ -40,15 +40,6 @@ public:
     void CreateTrophyScene(eTrophyType, ButtonComponent::ButtonState, bool);
 };
 
-namespace Detail
-{
-template <typename R, typename F>
-struct MemFunImpl
-{
-    F mFuncPtr;
-};
-} // namespace Detail
-
 template <typename T, typename R>
 Detail::MemFunImpl<R, void (T::*)()> MemFun(void (T::*)());
 
@@ -114,7 +105,7 @@ TeamStats::TeamStats()
 template <>
 void Function0<void>::FunctorImpl<BindExp1<void, Detail::MemFunImpl<void, void (CupHubScene::*)()>, CupHubScene*> >::operator()()
 {
-    (mBind.mArg->*mBind.mFuncPtr.mFuncPtr)();
+    (mBind.mArg->*mBind.mFuncPtr.mMemFun)();
 }
 
 /**

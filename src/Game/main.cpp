@@ -89,15 +89,6 @@ extern TestTask testTask;
 extern GLInventory glInventory;
 extern ShapeRender g_ShapeRenderer;
 
-namespace Detail
-{
-template <typename R, typename F>
-struct MemFunImpl
-{
-    F mFuncPtr;
-};
-} // namespace Detail
-
 static bool g_bProfiling = false;
 static bool g_bTweaking = false;
 bool g_e3_Build = false;
@@ -132,7 +123,7 @@ ResetTask resetTask;
 template <>
 void Function0<void>::FunctorImpl<BindExp1<void, Detail::MemFunImpl<void, void (ResetTask::*)()>, ResetTask*> >::operator()()
 {
-    (mBind.mArg->*mBind.mFuncPtr.mFuncPtr)();
+    (mBind.mArg->*mBind.mFuncPtr.mMemFun)();
 }
 
 static void Initialize();

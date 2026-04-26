@@ -34,6 +34,7 @@ public:
     /* 0x1C */ float m_fTimeElapsed;
     /* 0x20 */ TLTextInstance* mTextPressStart;
     /* 0x24 */ bool mStartedDemo;
+    /* 0x25 */ bool mStartedMovie;
 }; // total size: 0x28
 
 // class FEFinder<TLTextInstance, 3>

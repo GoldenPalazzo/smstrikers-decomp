@@ -2,9 +2,12 @@
 #include "Game/CharacterTemplate.h"
 #include "Game/Effects/EmissionManager.h"
 #include "Game/Physics/PhysicsBanana.h"
+#include "Game/Physics/PhysicsGoalie.h"
 #include "Game/Physics/PhysicsNet.h"
+#include "Game/Physics/CollisionSpace.h"
 
 #include "NL/nlString.h"
+#include "NL/nlPrint.h"
 
 #include "NL/gl/glState.h"
 #include "NL/gl/glTexture.h"
@@ -18,6 +21,8 @@
 
 #include "Game/Ball.h"
 #include "Game/Sys/audio.h"
+#include "Game/Sys/debug.h"
+#include "Game/GL/GLInventory.h"
 #include "types.h"
 
 static f32 CANT_COLLIDE = *(f32*)__float_max;
@@ -27,6 +32,7 @@ static const char szMushroomBlurTextureBase[23] = "global/mushroomstreak_";
 static const char szMushroomBlurTexture[22] = "global/mushroomstreak";
 
 extern unsigned int nlDefaultSeed;
+extern PhysicsWorld* g_PhysicsWorld;
 static bool sbElectricFenceDebug = false;
 
 eCharacterModelType cCharacter::m_ModelType = CharModel_Rigid;
@@ -1040,10 +1046,129 @@ cCharacter::~cCharacter()
 
 /**
  * Offset/Address/Size: 0x2238 | 0x80010184 | size: 0x468
+ * TODO: 94.11% match - r28/r29 register swap for pPhysicsData and pHierarchy
  */
-cCharacter::cCharacter(eCharacterClass, const int*, cSHierarchy*, cAnimInventory*, const CharacterPhysicsData*, float, float,
-    AnimRetargetList*, eClassTypes)
+static Blinker* MakeBlinker(eCharacterClass cc, unsigned long modelID)
 {
+    char matsName[64];
+    char eyesName[80];
+    const char* szBaseName = GetCharacterName(cc);
+
+    nlSNPrintf(matsName, 64, "%s/%s", szBaseName, szBaseName);
+    GLMaterialList* mats0 = glInventory.GetMaterialList(nlStringHash(matsName));
+
+    if (mats0 == NULL)
+    {
+        tDebugPrintManager::Print(DC_RENDER, "Error: %s cannot even begin to blink\n", szBaseName);
+        return NULL;
+    }
+
+    nlSNPrintf(eyesName, 80, "%s/%s/eyes", szBaseName, szBaseName);
+    unsigned long eyesHash = nlStringHash(eyesName);
+
+    if (mats0->FindMaterial(eyesHash) == NULL)
+    {
+        tDebugPrintManager::Print(DC_RENDER, "Error: %s cannot even begin to blink (no 'eyes')\n", szBaseName);
+        return NULL;
+    }
+
+    nlSNPrintf(matsName, 64, "%s/%s_blend", szBaseName, szBaseName);
+    GLMaterialList* mats1 = glInventory.GetMaterialList(nlStringHash(matsName));
+
+    Blinker* blinker = new (nlMalloc(sizeof(Blinker), 8, false)) Blinker(szBaseName, modelID, mats0, mats1, eyesHash);
+    return blinker;
+}
+
+cCharacter::cCharacter(eCharacterClass cc, const int* nModelID, cSHierarchy* pHierarchy, cAnimInventory* pAnimInventory,
+    const CharacterPhysicsData* pPhysicsData, float fPhysicsCapsuleHeight, float fPhysicsCapsuleWidth,
+    AnimRetargetList* pAnimRetargetList, eClassTypes eNewClassType)
+{
+    m_eCharacterClass = cc;
+    m_pPhysicsData = pPhysicsData;
+    m_pPhysicsCharacter = NULL;
+    m_aDesiredFacingDirection = 0;
+    m_aActualFacingDirection = 0;
+    m_aPrevFacingDirection = 0;
+    m_aDesiredMovementDirection = 0;
+    m_aActualMovementDirection = 0;
+    m_fDesiredSpeed = 0.0f;
+    m_fActualSpeed = 0.0f;
+    m_fLeanAmount = 0.0f;
+    m_pAnimInventory = pAnimInventory;
+    m_pPoseAccumulator = NULL;
+    m_pPoseTree = NULL;
+    m_pCurrentAnimController = NULL;
+    m_eAnimID = 0;
+    m_pAnimRetargetList = pAnimRetargetList;
+    m_eClassType = eNewClassType;
+    m_pCharacterSFX = NULL;
+    m_pPropModel = NULL;
+    m_uNormalTextureID = 0;
+    m_uSwapTextureID = 0;
+    m_Dirt = 0.0f;
+    m_MinDirt = 0.0f;
+    m_pBlurHandler = NULL;
+    m_pBlinker = NULL;
+
+    if (pPhysicsData != NULL)
+    {
+        if (eNewClassType == GOALIE)
+        {
+            PhysicsGoalie* goalie = new (nlMalloc(sizeof(PhysicsGoalie), 8, false)) PhysicsGoalie(fPhysicsCapsuleWidth, fPhysicsCapsuleHeight);
+            m_pPhysicsCharacter = goalie;
+        }
+        else
+        {
+            m_pPhysicsCharacter = new (nlMalloc(sizeof(PhysicsCharacter), 8, false)) PhysicsCharacter(fPhysicsCapsuleWidth, fPhysicsCapsuleHeight);
+        }
+        m_pPhysicsCharacter->m_pAICharacter = this;
+    }
+
+    m_m4WorldMatrix.SetIdentity();
+    SetPosition(v3Zero);
+
+    m_v3Velocity = v3Zero;
+    m_pPhysicsCharacter->SetCharacterVelocityXY(m_v3Velocity);
+
+    m_pSkinMesh[0] = glInventory.MakeSkinMesh(nModelID[0]);
+    if (nModelID[1] == 0)
+    {
+        m_pSkinMesh[1] = NULL;
+    }
+    else
+    {
+        m_pSkinMesh[1] = glInventory.MakeSkinMesh(nModelID[1]);
+    }
+
+    m_pPoseAccumulator = new (nlMalloc(sizeof(cPoseAccumulator), 8, false)) cPoseAccumulator(pHierarchy, true);
+
+    if (pPhysicsData != NULL)
+    {
+        m_pPhysicsCharacter->AddBoneVolumes(g_PhysicsWorld, g_CollisionSpace, m_pPoseAccumulator, m_pPhysicsData, 0x80, 0x20);
+        m_szEffectsName = NULL;
+    }
+
+    m_pHeadTrack = new (nlMalloc(sizeof(cHeadTrack), 8, false)) cHeadTrack();
+
+    m_nHeadJointIndex = m_pPoseAccumulator->m_BaseSHierarchy->GetNodeIndexByID(nlStringLowerHash("bip01 head"));
+    m_nBip01JointIndex_0xA4 = m_pPoseAccumulator->m_BaseSHierarchy->GetNodeIndexByID(nlStringLowerHash("bip01"));
+    m_nSpine1JointIndex = m_pPoseAccumulator->m_BaseSHierarchy->GetNodeIndexByID(nlStringLowerHash("bip01 spine1"));
+
+    m_pCharacterSFX = new (nlMalloc(sizeof(Audio::cCharacterSFX), 8, false)) Audio::cCharacterSFX();
+
+    m_pEffectsTexturing = NULL;
+
+    m_pBlinker = MakeBlinker(m_eCharacterClass, nModelID[0]);
+
+    if (m_pBlinker != NULL && !m_pBlinker->m_bValid)
+    {
+        delete m_pBlinker;
+        m_pBlinker = NULL;
+    }
+
+    m_v3ScreenPosition.f.x = 0.0f;
+    m_v3ScreenPosition.f.y = 0.0f;
+    m_v3ScreenPosition.f.z = 0.0f;
 }
 
 /**

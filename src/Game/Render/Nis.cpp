@@ -7,6 +7,12 @@
 
 #include "types.h"
 
+class nlTaskManager
+{
+public:
+    static void SetTimeDilation(float);
+};
+
 class EmissionController;
 
 typedef void (*NisEmissionFn)(EmissionController&, int);
@@ -90,46 +96,6 @@ Nis::Nis(NisHeader&, char*, int)
 char* Nis::Name() const
 {
     return mHeader->name;
-}
-
-/**
- * Offset/Address/Size: 0x13C0 | 0x8012C7D0 | size: 0x290
- */
-Nis::~Nis()
-{
-}
-
-/**
- * Offset/Address/Size: 0x1350 | 0x8012C760 | size: 0x70
- */
-void Nis::Update(float dt)
-{
-    for (int i = 0; i < 10; ++i)
-    {
-        cPN_SAnimController* pController = mCharacterControllers[i];
-        if (pController != nullptr)
-        {
-            pController->Update(dt);
-        }
-    }
-}
-
-/**
- * Offset/Address/Size: 0x1270 | 0x8012C680 | size: 0xE0
- */
-void Nis::UpdateTriggers(float oldTime, float newTime, float duration)
-{
-    if (duration != 0.0f)
-    {
-        for (int i = 0; i < mNumTriggers; ++i)
-        {
-            float triggerFrame = (mTriggers[i].frameNumber / 30.0f) / duration;
-            if ((oldTime <= triggerFrame) && (newTime > triggerFrame))
-            {
-                mTriggers[i].Fire(*this);
-            }
-        }
-    }
 }
 
 struct BasicStringInternal
@@ -243,6 +209,62 @@ public:
 
 template <typename StringType, typename Arg0, typename Arg1>
 StringType Format(const StringType&, const Arg0&, const Arg1&);
+
+/**
+ * Offset/Address/Size: 0x13C0 | 0x8012C7D0 | size: 0x290
+ * TODO: 95.62% match - r28/r29/r30 register assignment swap (this/dealloc/data)
+ * and compiler hoists format string load outside loop body
+ */
+Nis::~Nis()
+{
+    for (int i = 0; i < mNumCameras; i++)
+    {
+        BasicString<char, Detail::TempStringAllocator> cameraName = Format(BasicString<char, Detail::TempStringAllocator>("{0}_{1}"), mHeader->name, i);
+        cAnimCamera::FreeCameraAnimation(cameraName.c_str());
+    }
+
+    if (mCamera)
+    {
+        mCamera->UnselectCameraAnimation();
+    }
+
+    StopAllOutstandingNisAudio();
+    NisPlayer::Instance()->ResetEffects();
+    nlTaskManager::SetTimeDilation(1.0f);
+}
+
+/**
+ * Offset/Address/Size: 0x1350 | 0x8012C760 | size: 0x70
+ */
+void Nis::Update(float dt)
+{
+    for (int i = 0; i < 10; ++i)
+    {
+        cPN_SAnimController* pController = mCharacterControllers[i];
+        if (pController != nullptr)
+        {
+            pController->Update(dt);
+        }
+    }
+}
+
+/**
+ * Offset/Address/Size: 0x1270 | 0x8012C680 | size: 0xE0
+ */
+void Nis::UpdateTriggers(float oldTime, float newTime, float duration)
+{
+    if (duration != 0.0f)
+    {
+        for (int i = 0; i < mNumTriggers; ++i)
+        {
+            float triggerFrame = (mTriggers[i].frameNumber / 30.0f) / duration;
+            if ((oldTime <= triggerFrame) && (newTime > triggerFrame))
+            {
+                mTriggers[i].Fire(*this);
+            }
+        }
+    }
+}
 
 /**
  * Offset/Address/Size: 0xF80 | 0x8012C390 | size: 0x2F0

@@ -21,6 +21,16 @@ struct UserEffectSpecClone : public UserEffectSpec
     virtual UserEffectSpec* Clone() = 0;
 };
 
+struct EmptyCallback
+{
+    enum Tag mTag;
+    union
+    {
+        void (*mFreeFunction)(EmissionController&);
+        Function1<void, EmissionController&>::FunctorBase* mFunctor;
+    };
+};
+
 /**
  * Offset/Address/Size: 0xF2C | 0x801F881C | size: 0x104
  */
@@ -160,6 +170,67 @@ void EmissionController::InitializeSystemsFromGroup()
  */
 EmissionController::~EmissionController()
 {
+    if (mFinishedCallback.mTag != EMPTY)
+    {
+        if (mFinishedCallback.mTag == FREE_FUNCTION)
+        {
+            mFinishedCallback.mFreeFunction(*this);
+        }
+        else
+        {
+            ((EmissionFunctor*)mFinishedCallback.mFunctor)->Invoke(*this);
+        }
+
+        EmptyCallback empty;
+        empty.mTag = EMPTY;
+
+        if (mFinishedCallback.mTag == FUNCTOR)
+        {
+            delete mFinishedCallback.mFunctor;
+        }
+
+        mFinishedCallback.mTag = EMPTY;
+        mFinishedCallback.mTag = empty.mTag;
+
+        if (mFinishedCallback.mTag == FREE_FUNCTION)
+        {
+            mFinishedCallback.mFreeFunction = empty.mFreeFunction;
+        }
+        else if (mFinishedCallback.mTag == FUNCTOR)
+        {
+            mFinishedCallback.mFunctor = empty.mFunctor->Clone();
+        }
+
+        if (empty.mTag == FUNCTOR)
+        {
+            delete empty.mFunctor;
+        }
+        *(volatile int*)&empty.mTag = EMPTY;
+    }
+
+    while (m_Systems.m_headNode != NULL)
+    {
+        ParticleSystem* pSys = (ParticleSystem*)m_Systems.Remove();
+        delete pSys;
+    }
+
+    if (m_pUserEffects != NULL)
+    {
+        int i = 0;
+        int ofs = 0;
+        while (i < m_nUserEffects)
+        {
+            delete m_pUserEffects[ofs];
+            ofs++;
+            i++;
+        }
+        delete[] m_pUserEffects;
+    }
+
+    if (m_pGroup->m_isLingering != 0)
+    {
+        numLingeringSystems--;
+    }
 }
 
 /**
@@ -233,7 +304,7 @@ void EmissionController::Die()
             ((EmissionFunctor*)mFinishedCallback.mFunctor)->Invoke(*this);
         }
 
-        Function1<void, EmissionController&> empty;
+        EmptyCallback empty;
         empty.mTag = EMPTY;
 
         if (mFinishedCallback.mTag == FUNCTOR)
@@ -489,7 +560,7 @@ bool EmissionController::Update(float dt)
             ((EmissionFunctor*)mFinishedCallback.mFunctor)->Invoke(*this);
         }
 
-        Function1<void, EmissionController&> empty;
+        EmptyCallback empty;
         empty.mTag = EMPTY;
 
         if (mFinishedCallback.mTag == FUNCTOR)

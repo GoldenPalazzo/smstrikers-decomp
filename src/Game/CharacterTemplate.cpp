@@ -932,7 +932,7 @@ SebringAnimTagScriptInterpreter::~SebringAnimTagScriptInterpreter()
 /**
  * Offset/Address/Size: 0x0 | 0x800146F8 | size: 0xD0
  */
-// AnimTagScriptInterpreter::~AnimTagScriptInterpreter() — defined inline in AnimTagScript.h
+// AnimTagScriptInterpreter::~AnimTagScriptInterpreter() -- defined inline in AnimTagScript.h
 
 /**
  * Offset/Address/Size: 0xD0 | 0x800147C8 | size: 0x4

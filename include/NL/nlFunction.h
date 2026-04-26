@@ -276,7 +276,15 @@ public:
 namespace Detail
 {
 template <typename R, typename MemPtr>
-struct MemFunImpl;
+struct MemFunImpl
+{
+    MemPtr mMemFun;
+    MemFunImpl() { }
+    MemFunImpl(MemPtr fn)
+        : mMemFun(fn)
+    {
+    }
+};
 } // namespace Detail
 
 template <typename T, typename R>

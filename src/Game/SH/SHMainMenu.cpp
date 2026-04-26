@@ -12,15 +12,6 @@
 #include "NL/gl/glStruct.h"
 #include "NL/nlPrint.h"
 
-namespace Detail
-{
-template <typename R, typename MemFunType>
-struct MemFunImpl
-{
-    MemFunType mMemFun;
-};
-} // namespace Detail
-
 template <typename Class, typename R, typename P>
 Detail::MemFunImpl<R, void (Class::*)(P)> MemFun(void (Class::*fn)(P))
 {

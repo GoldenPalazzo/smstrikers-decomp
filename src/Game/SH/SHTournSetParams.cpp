@@ -1,14 +1,5 @@
 #include "Game/SH/SHTournSetParams.h"
 
-namespace Detail
-{
-template <typename R, typename F>
-struct MemFunImpl
-{
-    F mFuncPtr;
-};
-} // namespace Detail
-
 template <typename T, typename R>
 Detail::MemFunImpl<R, void (T::*)()> MemFun(void (T::*fn)());
 

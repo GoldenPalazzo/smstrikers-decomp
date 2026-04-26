@@ -3,8 +3,16 @@
 #include "Game/FE/tlComponentInstance.h"
 #include "Game/GameInfo.h"
 
-extern unsigned long CaptainCellItems[];
-extern unsigned long NUM_CAPTAIN_CELL_ITEMS;
+struct CellItem
+{
+    int mIconType;
+    const char* mIconName;
+};
+
+extern CellItem CaptainCellItems[];
+extern int NUM_CAPTAIN_CELL_ITEMS;
+extern CellItem LeipzigCaptainCellItems[];
+extern CellItem NormalCaptainCellItems[];
 
 /**
  * Offset/Address/Size: 0x0 | 0x800C16F4 | size: 0x24
@@ -69,11 +77,11 @@ eTeamID ICaptainGridComponent::GetSelectedItem() const
 
     for (i = 0; i < (long)NUM_CAPTAIN_CELL_ITEMS; i++)
     {
-        if (selectedItem != (int)CaptainCellItems[i * 2])
+        if (selectedItem != CaptainCellItems[i].mIconType)
         {
             continue;
         }
-        switch (CaptainCellItems[i * 2])
+        switch (CaptainCellItems[i].mIconType)
         {
         case 0:
             result = TEAM_DAISY;
@@ -324,14 +332,14 @@ void ICaptainGridComponent::RebuildInstanceTable()
     for (i = 0; i < (int)NUM_CAPTAIN_CELL_ITEMS; i++)
     {
         TLInstance* inst = FEFinder<TLInstance, 2>::Find(slide,
-            InlineHasher(nlStringLowerHash((const char*)CaptainCellItems[i * 2 + 1])),
+            InlineHasher(nlStringLowerHash(CaptainCellItems[i].mIconName)),
             InlineHasher(0),
             InlineHasher(0),
             InlineHasher(0),
             InlineHasher(0),
             InlineHasher(0));
-        mInstanceTable[CaptainCellItems[i * 2]] = inst;
-        mMapMenu->ChangeItem((int)CaptainCellItems[i * 2], mInstanceTable[CaptainCellItems[i * 2]]);
+        mInstanceTable[CaptainCellItems[i].mIconType] = inst;
+        mMapMenu->ChangeItem(CaptainCellItems[i].mIconType, mInstanceTable[CaptainCellItems[i].mIconType]);
     }
 
     if (!g_e3_Build)
@@ -357,7 +365,7 @@ void ICaptainGridComponent::RebuildInstanceTable()
 #pragma opt_strength_reduction off
 void ICaptainGridComponent::BuildMapMenu()
 {
-    unsigned long* pCell;
+    CellItem* pCell;
     TLSlide* activeslide;
     int i;
 
@@ -367,14 +375,14 @@ void ICaptainGridComponent::BuildMapMenu()
 
     for (i = 0; i < (int)NUM_CAPTAIN_CELL_ITEMS; i++)
     {
-        mInstanceTable[pCell[0]] = FEFinder<TLInstance, 2>::Find(activeslide,
-            InlineHasher(nlStringLowerHash((const char*)pCell[1])),
+        mInstanceTable[pCell->mIconType] = FEFinder<TLInstance, 2>::Find(activeslide,
+            InlineHasher(nlStringLowerHash(pCell->mIconName)),
             InlineHasher(0),
             InlineHasher(0),
             InlineHasher(0),
             InlineHasher(0),
             InlineHasher(0));
-        pCell += 2;
+        pCell++;
     }
 
     int numRows = g_e3_Build ? 2 : 3;
@@ -402,21 +410,21 @@ void ICaptainGridComponent::BuildMapMenu()
             int up = (i - numCols + NUM_ELEMENTS) % NUM_ELEMENTS;
             int down = (i + numCols) % NUM_ELEMENTS;
 
-            int itemID = (int)CaptainCellItems[i * 2];
+            int itemID = CaptainCellItems[i].mIconType;
             mMapMenu->AddItem(
                 itemID,
                 mInstanceTable[itemID],
-                (int)CaptainCellItems[left * 2],
-                (int)CaptainCellItems[right * 2],
-                (int)CaptainCellItems[up * 2],
-                (int)CaptainCellItems[down * 2],
+                CaptainCellItems[left].mIconType,
+                CaptainCellItems[right].mIconType,
+                CaptainCellItems[up].mIconType,
+                CaptainCellItems[down].mIconType,
                 true);
             i++;
         }
         base += numCols;
     }
 
-    mMapMenu->SetSelectedItem((int)CaptainCellItems[0]);
+    mMapMenu->SetSelectedItem(CaptainCellItems[0].mIconType);
 }
 #pragma opt_strength_reduction on
 
@@ -429,9 +437,39 @@ ICaptainGridComponent::~ICaptainGridComponent()
 
 /**
  * Offset/Address/Size: 0x950 | 0x800C2044 | size: 0x228
+ * TODO: 58.48% match - auto-unroll setup uses different formula (cmpwi/addi/srwi vs srwi./andi.),
+ * register allocation shifted (numItems r4 vs r6, g_e3_Build r3 vs r7),
+ * pipelined load-store in unrolled body instead of sequential single-register pattern
  */
-ICaptainGridComponent::ICaptainGridComponent(TLComponentInstance*, bool)
+ICaptainGridComponent::ICaptainGridComponent(TLComponentInstance* parentcomponent, bool ismirrored)
+    : IGridComponent<eTeamID>(parentcomponent, "highlight", ismirrored)
 {
+    int numItems = 9;
+    if (g_e3_Build)
+        numItems = 4;
+    NUM_CAPTAIN_CELL_ITEMS = g_e3_Build ? 4 : 9;
+
+    CellItem* leipzigSrc = LeipzigCaptainCellItems;
+    CellItem* dst = CaptainCellItems;
+    CellItem* normalSrc = NormalCaptainCellItems;
+
+    int i;
+    if (g_e3_Build)
+    {
+        for (i = 0; i < numItems; i++)
+        {
+            dst[i].mIconName = leipzigSrc[i].mIconName;
+            dst[i].mIconType = leipzigSrc[i].mIconType;
+        }
+    }
+    else
+    {
+        for (i = 0; i < numItems; i++)
+        {
+            dst[i].mIconName = normalSrc[i].mIconName;
+            dst[i].mIconType = normalSrc[i].mIconType;
+        }
+    }
 }
 
 // /**

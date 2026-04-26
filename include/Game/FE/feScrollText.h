@@ -19,6 +19,7 @@ public:
     void SetDisplayMessage(const char*);
     void SetDisplayMessage(unsigned long);
     void SetDisplayMessage(const BasicString<unsigned short, Detail::TempStringAllocator>&);
+    void SetMetrics(int, int);
 
     /* 0x0,  */ TLTextInstance* m_controlText;
     /* 0x4,  */ BasicString<unsigned short, Detail::TempStringAllocator> m_message;

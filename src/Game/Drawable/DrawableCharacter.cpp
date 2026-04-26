@@ -118,6 +118,76 @@ void ReplayablePolymorphic<1, LoadFrame, cPoseNode>(LoadFrame& frame, cPoseNode*
 }
 
 /**
+ * Offset/Address/Size: 0x438 | 0x8011C764 | size: 0x45C
+ * TODO: 96.2% match - r7/r8 register swap for loop counter and byte offset in first two nlMatrix4 copy loops
+ */
+cPoseAccumulator::cPoseAccumulator(const cPoseAccumulator& other)
+{
+    m_BaseSHierarchy = other.m_BaseSHierarchy;
+
+    int i;
+
+    m_NodeMatrices.mData = (nlMatrix4*)nlMalloc(other.m_NodeMatrices.mSize * sizeof(nlMatrix4), 8, 0);
+    m_NodeMatrices.mSize = other.m_NodeMatrices.mSize;
+    m_NodeMatrices.mCapacity = other.m_NodeMatrices.mSize;
+    for (i = 0; i < m_NodeMatrices.mSize; i++)
+    {
+        m_NodeMatrices.mData[i] = other.m_NodeMatrices.mData[i];
+    }
+
+    m_PrevNodeMatrices.mData = (nlMatrix4*)nlMalloc(other.m_PrevNodeMatrices.mSize * sizeof(nlMatrix4), 8, 0);
+    m_PrevNodeMatrices.mSize = other.m_PrevNodeMatrices.mSize;
+    m_PrevNodeMatrices.mCapacity = other.m_PrevNodeMatrices.mSize;
+    for (i = 0; i < m_PrevNodeMatrices.mSize; i++)
+    {
+        m_PrevNodeMatrices.mData[i] = other.m_PrevNodeMatrices.mData[i];
+    }
+
+    m_rot.mData = (RotAccum*)nlMalloc(other.m_rot.mSize * sizeof(RotAccum), 8, 0);
+    m_rot.mSize = other.m_rot.mSize;
+    m_rot.mCapacity = other.m_rot.mSize;
+    for (i = 0; i < m_rot.mSize; i++)
+    {
+        m_rot.mData[i] = other.m_rot.mData[i];
+    }
+
+    m_scale.mData = (ScaleAccum*)nlMalloc(other.m_scale.mSize * sizeof(ScaleAccum), 8, 0);
+    m_scale.mSize = other.m_scale.mSize;
+    m_scale.mCapacity = other.m_scale.mSize;
+    for (i = 0; i < m_scale.mSize; i++)
+    {
+        m_scale.mData[i] = other.m_scale.mData[i];
+    }
+
+    m_trans.mData = (TransAccum*)nlMalloc(other.m_trans.mSize * sizeof(TransAccum), 8, 0);
+    m_trans.mSize = other.m_trans.mSize;
+    m_trans.mCapacity = other.m_trans.mSize;
+    for (i = 0; i < m_trans.mSize; i++)
+    {
+        m_trans.mData[i] = other.m_trans.mData[i];
+    }
+
+    {
+        int n = other.m_cb.mSize;
+        m_cb.mData = new (nlMalloc(n * sizeof(cBuildNodeMatrixCallbackInfo) + 0x10, 8, 0)) cBuildNodeMatrixCallbackInfo[n];
+        m_cb.mSize = n;
+        m_cb.mCapacity = n;
+        for (i = 0; i < m_cb.mSize; i++)
+        {
+            m_cb.mData[i] = other.m_cb.mData[i];
+        }
+    }
+
+    m_MorphWeights.mData = (float*)nlMalloc(other.m_MorphWeights.mSize * sizeof(float), 8, 0);
+    m_MorphWeights.mSize = other.m_MorphWeights.mSize;
+    m_MorphWeights.mCapacity = other.m_MorphWeights.mSize;
+    for (i = 0; i < m_MorphWeights.mSize; i++)
+    {
+        m_MorphWeights.mData[i] = other.m_MorphWeights.mData[i];
+    }
+}
+
+/**
  * Offset/Address/Size: 0x2D50 | 0x8011BC00 | size: 0x4C
  */
 DrawableCharacter::DrawableCharacter()

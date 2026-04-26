@@ -19,19 +19,6 @@ namespace DoubleHighlite
 void OpenItem(TLComponentInstance*);
 }
 
-namespace Detail
-{
-template <typename R, typename F>
-struct MemFunImpl
-{
-    F mFuncPtr;
-    MemFunImpl(F fn)
-        : mFuncPtr(fn)
-    {
-    }
-};
-} // namespace Detail
-
 template <typename T, typename R>
 Detail::MemFunImpl<R, void (T::*)()> MemFun(void (T::*fn)())
 {

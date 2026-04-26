@@ -42,9 +42,87 @@ ExplosionFragment::ExplosionFragment()
 
 /**
  * Offset/Address/Size: 0x2188 | 0x801694E8 | size: 0x200
+ * TODO: 98.98% match - r5/r0 register swap for m_uObjectFlags clear +
+ * mpPhysicsObject NULL store (extra li r0,0 vs reusing r27)
  */
 ExplosionFragment::~ExplosionFragment()
 {
+    if (mbIsActive)
+    {
+        if (mpPhysicsObject != NULL)
+        {
+            delete mpPhysicsObject;
+        }
+
+        DrawableObject* drawable = WorldManager::s_World->FindDrawableObject(mFragmentModelHash);
+        drawable->m_uObjectFlags &= ~1;
+        mpPhysicsObject = NULL;
+        u16 handle = mDrawableFragmentID;
+        DrawableFragmentHandleNode* node = NULL;
+
+        if (DrawableFragmentHandleNode::sDrawableFragmentHandleNodePool.m_FreeList == NULL)
+        {
+            SlotPoolBase::BaseAddNewBlock(&DrawableFragmentHandleNode::sDrawableFragmentHandleNodePool, 8);
+        }
+
+        SlotPoolEntry* entry = DrawableFragmentHandleNode::sDrawableFragmentHandleNodePool.m_FreeList;
+        if (entry != NULL)
+        {
+            node = (DrawableFragmentHandleNode*)entry;
+            DrawableFragmentHandleNode::sDrawableFragmentHandleNodePool.m_FreeList = (SlotPoolEntry*)entry->m_next;
+        }
+
+        if (node != NULL)
+        {
+            node->mID = 0;
+            node->next = NULL;
+        }
+
+        node->mID = handle;
+        nlListAddEnd<DrawableFragmentHandleNode>(&SidelineExplodableManager::sUnusedDrawableFragments.m_pStart, &SidelineExplodableManager::sUnusedDrawableFragments.m_pEnd, node);
+        SidelineExplodableManager::sFragmentLookupTable[handle] = NULL;
+        mDrawableFragmentID = 0xFFFF;
+        mbIsActive = false;
+    }
+
+    mFragmentModelHash = 0;
+
+    EmissionController* pSmokeControl = mpSmokeEmissionController;
+    if (pSmokeControl != NULL)
+    {
+        Function1<void, EmissionController&> empty;
+        empty.mTag = EMPTY;
+
+        if (pSmokeControl->mUpdateCallback.mTag == FUNCTOR)
+        {
+            delete pSmokeControl->mUpdateCallback.mFunctor;
+        }
+
+        pSmokeControl->mUpdateCallback.mTag = EMPTY;
+        pSmokeControl->mUpdateCallback.mTag = empty.mTag;
+
+        if (pSmokeControl->mUpdateCallback.mTag == FREE_FUNCTION)
+        {
+            pSmokeControl->mUpdateCallback.mFreeFunction = empty.mFreeFunction;
+        }
+        else if (pSmokeControl->mUpdateCallback.mTag == FUNCTOR)
+        {
+            pSmokeControl->mUpdateCallback.mFunctor = empty.mFunctor->Clone();
+        }
+
+        if (empty.mTag == FUNCTOR)
+        {
+            delete empty.mFunctor;
+        }
+
+        *(volatile int*)&empty.mTag = EMPTY;
+    }
+
+    if (mStationaryTransform != NULL)
+    {
+        operator delete(mStationaryTransform);
+        mStationaryTransform = NULL;
+    }
 }
 
 /**

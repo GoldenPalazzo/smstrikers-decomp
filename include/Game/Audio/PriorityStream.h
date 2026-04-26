@@ -22,6 +22,11 @@ public:
     class PLAY_RECORD
     {
     public:
+        PLAY_RECORD(AudioStreamTrack::StreamTrack& t)
+            : m_Track(t)
+        {
+        }
+
         /* 0x00 */ unsigned long m_StreamId;
         /* 0x04 */ float m_Volume;
         /* 0x08 */ unsigned long m_FadeIn : 15;

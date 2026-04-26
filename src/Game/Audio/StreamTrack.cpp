@@ -23,15 +23,6 @@ TrackManagerBase::StreamFileLookup::StreamFileLookup(
 }
 } // namespace AudioStreamTrack
 
-namespace Detail
-{
-template <typename R, typename F>
-struct MemFunImpl
-{
-    F mFuncPtr;
-};
-} // namespace Detail
-
 typedef AudioStreamTrack::StreamTrack::QUEUED_STREAM QS_T;
 typedef Detail::MemFunImpl<void, void (AudioStreamTrack::StreamTrack::*)(QS_T*)> MemFunImpl_T;
 typedef BindExp2<void, MemFunImpl_T, AudioStreamTrack::StreamTrack*, QS_T*> BindExp2_T;
