@@ -11,6 +11,7 @@ public:
     {
         m_FireTriggers = true;
     }
+    ~SebringAnimTagScriptInterpreter();
 
     void DoFunctionCall(unsigned int);
     void TriggerFired(unsigned long);

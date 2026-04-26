@@ -922,24 +922,17 @@ CharacterPhysicsData::~CharacterPhysicsData()
     delete[] pPhysicsElements;
 }
 
-// /**
-//  * Offset/Address/Size: 0x60 | 0x80014618 | size: 0xE0
-//  */
-// SebringAnimTagScriptInterpreter::~SebringAnimTagScriptInterpreter()
-// {
-// }
+/**
+ * Offset/Address/Size: 0x60 | 0x80014618 | size: 0xE0
+ */
+SebringAnimTagScriptInterpreter::~SebringAnimTagScriptInterpreter()
+{
+}
 
 /**
  * Offset/Address/Size: 0x0 | 0x800146F8 | size: 0xD0
  */
-AnimTagScriptInterpreter::~AnimTagScriptInterpreter()
-{
-    SlotPoolBase::BaseFreeBlocks(&m_AnimTagSlotPool, sizeof(AnimTagCBInfo));
-    for (int i = 0; i < m_BytecodeCount; i++)
-    {
-        nlFree(m_ppBytecode[i]);
-    }
-}
+// AnimTagScriptInterpreter::~AnimTagScriptInterpreter() — defined inline in AnimTagScript.h
 
 /**
  * Offset/Address/Size: 0xD0 | 0x800147C8 | size: 0x4

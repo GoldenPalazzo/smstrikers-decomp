@@ -117,6 +117,17 @@ CommonDesireData& GetCommonDesireData(eFielderDesireState desireType)
 }
 
 /**
+ * Offset/Address/Size: 0xA84 | 0x80037F0C | size: 0xCC
+ */
+CommonDesireData::CommonDesireData(const CommonDesireData& other)
+    : m_DesireType(other.m_DesireType)
+    , m_ConfidenceExtrema(other.m_ConfidenceExtrema)
+    , m_RandomGenerator(other.m_RandomGenerator)
+    , m_RandomChanceGen(other.m_RandomChanceGen)
+{
+}
+
+/**
  * Offset/Address/Size: 0x6484 | 0x80037208 | size: 0x174
  * TODO: 81.83% match - remaining diffs are register allocation around preloaded opt1/opt2 locals.
  */

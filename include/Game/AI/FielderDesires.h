@@ -12,13 +12,7 @@ public:
     /**
      * Offset/Address/Size: 0xA84 | 0x80037F0C | size: 0xCC
      */
-    CommonDesireData(const CommonDesireData& other)
-    {
-        m_DesireType = other.m_DesireType;
-        m_ConfidenceExtrema = other.m_ConfidenceExtrema;
-        m_RandomGenerator = other.m_RandomGenerator;
-        m_RandomChanceGen = other.m_RandomChanceGen;
-    }
+    CommonDesireData(const CommonDesireData& other);
 
     /**
      * Offset/Address/Size: 0x0 | 0x80037FD8 | size: 0x3C

@@ -64,6 +64,13 @@ struct sPlayParams
 {
     /* 0x0 */ int ePlayType;
     /* 0x4 */ float fDuration;
+
+    sPlayParams() { }
+    sPlayParams(const sPlayParams& other)
+        : ePlayType(other.ePlayType)
+        , fDuration(other.fDuration)
+    {
+    }
 }; // total size: 0x8
 
 struct sDesireParams
@@ -79,7 +86,7 @@ class ScriptAction
 public:
     static SlotPool<ScriptAction> m_ScriptActionSlotPool;
 
-    ScriptAction();
+    ScriptAction() { }
     ScriptAction(eScriptActionType, float);
     float CalcSelectionChance();
     bool RollChanceDice();

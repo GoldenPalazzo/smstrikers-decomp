@@ -24,16 +24,15 @@ public:
     cDecisionEntity() { };
     cDecisionEntity(eDecisionEntity type, unsigned long id, FuzzyVariant (*dtf)(cDecisionEntity*), FuzzyVariant (*af)(cDecisionEntity*));
     cDecisionEntity(const cDecisionEntity& other)
+        : m_type(other.m_type)
+        , m_id(other.m_id)
+        , m_pDTF(other.m_pDTF)
+        , m_pAF(other.m_pAF)
+        , m_pLastQueuedAction(other.m_pLastQueuedAction)
+        , m_LastSelectedAction(other.m_LastSelectedAction)
+        , m_lQueuedActions(other.m_lQueuedActions)
+        , m_iNumDTFCalls(other.m_iNumDTFCalls)
     {
-        FORCE_DONT_INLINE
-        m_type = other.m_type;
-        m_id = other.m_id;
-        m_pDTF = other.m_pDTF;
-        m_pAF = other.m_pAF;
-        m_pLastQueuedAction = other.m_pLastQueuedAction;
-        m_LastSelectedAction = other.m_LastSelectedAction;
-        m_lQueuedActions = other.m_lQueuedActions;
-        m_iNumDTFCalls = other.m_iNumDTFCalls;
     }
     // ~cDecisionEntity() { };
 

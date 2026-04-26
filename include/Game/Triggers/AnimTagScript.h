@@ -29,7 +29,14 @@ public:
     {
         m_BytecodeCount = 0;
     }
-    ~AnimTagScriptInterpreter();
+    ~AnimTagScriptInterpreter()
+    {
+        SlotPoolBase::BaseFreeBlocks(&m_AnimTagSlotPool, sizeof(AnimTagCBInfo));
+        for (int i = 0; i < m_BytecodeCount; i++)
+        {
+            nlFree(m_ppBytecode[i]);
+        }
+    }
 
     void TriggerFired(unsigned long);
     void AnimControllerCB(unsigned int);

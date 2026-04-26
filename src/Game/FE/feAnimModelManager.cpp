@@ -1,5 +1,6 @@
 #include "Game/FE/feAnimModelManager.h"
 #include "Game/FE/feBasic3dModel.h"
+#include "Game/SAnim.h"
 #include "NL/globalpad.h"
 #include "NL/nlColour.h"
 #include "NL/nlPrint.h"
@@ -87,5 +88,13 @@ FEAnimModelManager::~FEAnimModelManager()
  * Offset/Address/Size: 0x3E8 | 0x80094B94 | size: 0xB0
  */
 FEAnimModelManager::FEAnimModelManager()
+    : mLightData(NULL)
+    , mFEAnimModelTweakList(NULL)
+    , mCurrentTweakModel(NULL)
+    , mTweak3dModels(false)
 {
+    for (int i = 0; i < 22; i++)
+    {
+        mLoadedModels[i] = NULL;
+    }
 }

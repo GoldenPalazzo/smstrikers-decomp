@@ -3,9 +3,11 @@
 
 #include "types.h"
 #include "NL/nlSingleton.h"
+#include "Game/Inventory.h"
 
 class FEAnimModel;
 class FEBasic3dModel;
+class cSAnim;
 
 class FEAnimModelManager : public nlSingleton<FEAnimModelManager>
 {
@@ -21,8 +23,7 @@ public:
     /* 0x60 */ void* mSpecularData;
     /* 0x64 */ FEBasic3dModel* mFEAnimModelTweakList;
     /* 0x68 */ FEBasic3dModel* mCurrentTweakModel;
-    /* 0x6C */ void* mAnimInventory;
-    /* 0x70 */ u8 pad70[0x18];
+    /* 0x6C */ cInventory<cSAnim> mAnimInventory;
     /* 0x88 */ u8 mTweak3dModels;
 };
 
