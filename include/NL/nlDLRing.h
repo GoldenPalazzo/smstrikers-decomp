@@ -70,6 +70,26 @@ void nlDLRingAddEnd(T** head, T* newNode)
 }
 
 template <typename T>
+void nlDLRingRemove(T** head, T* current)
+{
+    T* tmp_node = current->m_next;
+
+    if (tmp_node == current)
+    {
+        *head = NULL;
+        return;
+    }
+
+    current->m_prev->m_next = tmp_node;
+    current->m_next->m_prev = current->m_prev;
+
+    if (*head == current)
+    {
+        *head = current->m_prev;
+    }
+}
+
+template <typename T>
 T* nlDLRingGetStart(T* current)
 {
     if (current == NULL)
@@ -146,26 +166,6 @@ bool nlDLRingIsStart(T* head, T* current)
         return false;
     }
     return head->m_next == current;
-}
-
-template <typename T>
-void nlDLRingRemove(T** head, T* current)
-{
-    T* tmp_node = current->m_next;
-
-    if (tmp_node == current)
-    {
-        *head = NULL;
-        return;
-    }
-
-    current->m_prev->m_next = tmp_node;
-    current->m_next->m_prev = current->m_prev;
-
-    if (*head == current)
-    {
-        *head = current->m_prev;
-    }
 }
 
 template <typename T>
