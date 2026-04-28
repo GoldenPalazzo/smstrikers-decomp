@@ -7,8 +7,7 @@
 class AISandbox : public nlSingleton<AISandbox>
 {
 public:
-    AISandbox() {}
-    // total size: 0x1
-};
+    AISandbox() { }
+}; // total size: 0x1
 
 #endif // _AISANDBOX_H_
