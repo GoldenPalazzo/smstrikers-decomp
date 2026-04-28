@@ -38,12 +38,15 @@ class TempStringAllocator;
 
 static unsigned char useAsyncLoading;
 
-// /**
-//  * Offset/Address/Size: 0x74 | 0x80118E84 | size: 0x2C
-//  */
-// void nlStrLen<char>(const char*)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x74 | 0x80118E84 | size: 0x2C
+ * TODO: 98.18% match - r3/r4 register swap for str++/n++ increment order in loop body
+ */
+// REMOVE once real callers exist.
+void NisPlayer_stub()
+{
+    nlStrLen<char>((const char*)0);
+}
 
 /**
  * Offset/Address/Size: 0x54 | 0x80118E64 | size: 0x20

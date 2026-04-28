@@ -31,6 +31,7 @@
 #include "Game/Effects/EffectsGroup.h"
 #include "Game/World.h"
 #include "NL/nlBasicString.h"
+#include "NL/nlFormat.h"
 #include "NL/nlConfig.h"
 #include "NL/nlFunction.h"
 #include "NL/nlMath.h"
@@ -4405,4 +4406,11 @@ void cFielder::InitActionWait()
 void cFielder::ActionWait(float)
 {
     // EMPTY
+}
+
+// At the bottom of FielderActions.cpp — REMOVE once real callers exist.
+void FielderActions_stub()
+{
+    FormatImpl<BasicString<char, Detail::TempStringAllocator> > impl;
+    BasicString<char, Detail::TempStringAllocator> result = (BasicString<char, Detail::TempStringAllocator>)impl;
 }

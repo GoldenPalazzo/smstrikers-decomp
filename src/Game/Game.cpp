@@ -27,6 +27,8 @@
 #include "Game/Audio/AudioLoader.h"
 #include "PowerPC_EABI_Support/MSL_C++/MSL_Common/utility.h"
 #include "PowerPC_EABI_Support/MSL_C++/MSL_Common/msl_memory.h"
+#include "PowerPC_EABI_Support/MSL_C++/MSL_Common/msl_tree.h"
+#include "Game/AI/FuzzyVariant.h"
 
 extern cTeam* g_pTeams[];
 extern PowerupBase* g_pPowerups[];
@@ -1632,4 +1634,11 @@ void cGame::SetDifficulty(eDifficultyID diff0, eDifficultyID diff1, eDifficultyI
             pSkillTweaks->fGoalieCanInterceptPass = skillTweaks.fGoalieCanInterceptPass;
         }
     }
+}
+
+void Game_stub()
+{
+    std::map<unsigned long, FuzzyVariant> m;
+    _NodeAllocT na;
+    na.deallocate((_TreeT::node*)0, 0);
 }

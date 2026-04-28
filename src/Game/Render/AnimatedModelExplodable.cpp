@@ -34,10 +34,8 @@ extern "C" void __sinit_AnimatedModelExplodable_cpp(void)
 
 /**
  * Offset/Address/Size: 0x44 | 0x80158C20 | size: 0x2C
+ * nlListAddEnd<SidelineExplodableNode> — defined in NL/nlList.h; instantiated by AnimatedModelExplodable_stub below.
  */
-// void nlListAddEnd<SidelineExplodableNode>(SidelineExplodableNode**, SidelineExplodableNode**, SidelineExplodableNode*)
-// {
-// }
 
 // /**
 //  * Offset/Address/Size: 0x0 | 0x80158BDC | size: 0x44
@@ -116,4 +114,10 @@ bool AnimatedModelExplodable::LoadGeometry()
     bIsModelLoaded[0] = 0;
     bIsModelLoaded[1] = 0;
     return true;
+}
+
+// Force template instantiation — REMOVE once real callers exist.
+void AnimatedModelExplodable_stub()
+{
+    nlListAddEnd<SidelineExplodableNode>((SidelineExplodableNode**)0, (SidelineExplodableNode**)0, (SidelineExplodableNode*)0);
 }

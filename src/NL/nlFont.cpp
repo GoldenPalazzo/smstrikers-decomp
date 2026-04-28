@@ -1,6 +1,7 @@
 #include "NL/nlFont.h"
 #include "NL/nlBSearch.h"
 #include "NL/nlList.h"
+#include "NL/nlQSort.h"
 #include "NL/nlSlotPoolHigh.h"
 #include "NL/nlString.h"
 
@@ -140,31 +141,26 @@ int nlFont::KernPair::SortProc(const nlFont::KernPair* pa, const nlFont::KernPai
 
 /**
  * Offset/Address/Size: 0x0 | 0x80211C14 | size: 0x20
- */
-// BasicSlotPoolHigh<ListEntry<nlFont::GlyphInfo>>::freeFN(void*)
-// {
-// }
-
-/**
+ * BasicSlotPoolHigh<ListEntry<nlFont::GlyphInfo>>::freeFN(void*)
+ *
  * Offset/Address/Size: 0x20 | 0x80211C34 | size: 0x28
- */
-// BasicSlotPoolHigh<ListEntry<nlFont::GlyphInfo>>::allocFN(unsigned long)
-// {
-// }
-
-/**
+ * BasicSlotPoolHigh<ListEntry<nlFont::GlyphInfo>>::allocFN(unsigned long)
+ *
  * Offset/Address/Size: 0x48 | 0x80211C5C | size: 0x20
- */
-// BasicSlotPoolHigh<ListEntry<nlFont::KernPair>>::freeFN(void*)
-// {
-// }
-
-/**
+ * BasicSlotPoolHigh<ListEntry<nlFont::KernPair>>::freeFN(void*)
+ *
  * Offset/Address/Size: 0x68 | 0x80211C7C | size: 0x28
+ * BasicSlotPoolHigh<ListEntry<nlFont::KernPair>>::allocFN(unsigned long)
  */
-// BasicSlotPoolHigh<ListEntry<nlFont::KernPair>>::allocFN(unsigned long)
-// {
-// }
+void nlFont_stub()
+{
+    BasicSlotPoolHigh<ListEntry<nlFont::GlyphInfo> > pool1;
+    BasicSlotPoolHigh<ListEntry<nlFont::KernPair> > pool2;
+    nlQSort<nlFont::GlyphInfo>((nlFont::GlyphInfo*)0, 0, (int (*)(const nlFont::GlyphInfo*, const nlFont::GlyphInfo*))0);
+    nlQSort<nlFont::KernPair>((nlFont::KernPair*)0, 0, (int (*)(const nlFont::KernPair*, const nlFont::KernPair*))0);
+    nlListAddStart<ListEntry<nlFont::KernPair> >((ListEntry<nlFont::KernPair>**)0, (ListEntry<nlFont::KernPair>*)0, (ListEntry<nlFont::KernPair>**)0);
+    nlListAddStart<ListEntry<nlFont::GlyphInfo> >((ListEntry<nlFont::GlyphInfo>**)0, (ListEntry<nlFont::GlyphInfo>*)0, (ListEntry<nlFont::GlyphInfo>**)0);
+}
 
 /**
  * Offset/Address/Size: 0x0 | 0x80211CA4 | size: 0x28

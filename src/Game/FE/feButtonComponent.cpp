@@ -1,4 +1,5 @@
 #include "Game/FE/feButtonComponent.h"
+#include "NL/nlString.h"
 
 #include "Game/FE/feAsyncImage.h"
 #include "Game/FE/feFontResource.h"
@@ -193,9 +194,11 @@ ButtonComponent::ButtonComponent()
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x8010EF38 | size: 0x2C
-//  */
-// void nlStrLen<unsigned short>(const unsigned short*)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x0 | 0x8010EF38 | size: 0x2C
+ */
+// REMOVE stub once real callers exist
+void feButtonComponent_stub()
+{
+    nlStrLen<unsigned short>((const unsigned short*)0);
+}

@@ -24,6 +24,10 @@ public:
     struct anchor
     {
         void* left_;
+        anchor()
+            : left_(0)
+        {
+        }
     };
 };
 
@@ -42,8 +46,16 @@ public:
 private:
     Metrowerks::details::compressed_pair_imp<Allocator, unsigned long, 1> alloc_;
     Metrowerks::details::compressed_pair_imp<std::allocator<node>, __red_black_tree<1>::anchor, 1> node_alloc_;
-    Metrowerks::details::compressed_pair_imp<Compare, node*, 1> comp_;
+    Metrowerks::details::compressed_pair_imp<Compare, node*, 0> comp_;
 };
+
+template <class T, class Compare, class Allocator>
+__tree<T, Compare, Allocator>::__tree(const Compare& comp, const Allocator& alloc)
+    : alloc_()
+    , node_alloc_()
+    , comp_(comp, (node*)&node_alloc_.second())
+{
+}
 
 template <class Key, class Value, class Compare = less<Key>, class Allocator = allocator<pair<const Key, Value> > >
 class map
@@ -55,7 +67,10 @@ public:
         Compare comp;
     };
 
-    map() : tree_(value_compare(), Allocator()) {}
+    map()
+        : tree_(value_compare(), Allocator())
+    {
+    }
 
 private:
     __tree<pair<const Key, Value>, value_compare, Allocator> tree_;

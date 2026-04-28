@@ -1,6 +1,7 @@
 #include "Game/Audio/StreamTrack.h"
 #include "Game/Sys/GCStream.h"
 #include "NL/nlBSearch.h"
+#include "NL/nlQSort.h"
 #include "NL/nlConfig.h"
 #include "NL/nlFileGC.h"
 #include "NL/nlList.h"
@@ -927,4 +928,14 @@ void AudioStreamTrack::StreamTrack::AttachStream(
     entry->m_data.TrackOwnsStream = TrackOwnsStream;
 
     m_State = TS_Playing;
+}
+
+// At the bottom of StreamTrack.cpp — REMOVE once real callers exist.
+void StreamTrack_stub()
+{
+    using namespace AudioStreamTrack;
+    typedef ListEntry<TrackManagerBase::StreamFileLookup::STREAM_FILE_LIST_LOOKUP> ListLookupT;
+    nlListAddEnd<ListLookupT>((ListLookupT**)0, (ListLookupT**)0, (ListLookupT*)0);
+    nlQSort<TrackManagerBase::StreamFileLookup::STREAM_FILE_LOOKUP>(
+        (TrackManagerBase::StreamFileLookup::STREAM_FILE_LOOKUP*)0, 0, nlDefaultQSortComparer<TrackManagerBase::StreamFileLookup::STREAM_FILE_LOOKUP>);
 }

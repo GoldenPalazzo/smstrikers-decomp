@@ -443,3 +443,10 @@ void ScreenTransitionManager::AddTransitions(char* loadedData, unsigned long fil
         pToken = parser.NextToken(true);
     }
 }
+
+// At the bottom of ScreenTransitionManager.cpp — REMOVE once real callers exist.
+void ScreenTransitionManager_stub()
+{
+    NewAdapter<AVLTreeEntry<unsigned long, ScreenTransition*> > adapter;
+    adapter.Delete(0);
+}

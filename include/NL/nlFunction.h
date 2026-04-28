@@ -146,7 +146,10 @@ template <typename T>
 class Function : public Function1<void, T>
 {
 public:
-    Function() { }
+    Function()
+        : Function1<void, T>()
+    {
+    }
 
     template <typename BindType>
     Function(const BindType& bind)
@@ -190,7 +193,11 @@ template <typename R, typename P>
 class Function<R(P)> : public Function1<R, P>
 {
 public:
-    Function() { }
+    Function()
+        : Function1<R, P>()
+    {
+        mTag = EMPTY;
+    }
 
     template <typename BindType>
     Function(const BindType& bind)

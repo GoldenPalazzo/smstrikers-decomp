@@ -12,7 +12,11 @@ void nlQSort(T* array, int size, int (*compare)(const T*, const T*))
 template <typename T>
 int nlDefaultQSortComparer(const T* a, const T* b)
 {
-    return 0;
+    if (a->hash > b->hash)
+        return 1;
+    if (a->hash == b->hash)
+        return 0;
+    return -1;
 }
 
 #endif // _NLQSORT_H_

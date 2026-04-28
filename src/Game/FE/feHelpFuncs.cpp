@@ -13,6 +13,7 @@
 #include "NL/nlMath.h"
 #include "NL/nlPrint.h"
 #include "NL/nlString.h"
+#include "NL/nlBasicString.h"
 
 extern nlColour MenuHighliteColour;
 
@@ -971,7 +972,31 @@ namespace TakeGameMemSnapshot
 {
 unsigned char gTakenSnapshot;
 float gTimeElapsed;
+
+template <typename StringType>
+class FormatImpl
+{
+public:
+    StringType mString;
+    int mCurrentPos;
+
+    operator StringType() const
+    {
+        return mString;
+    }
+
+    template <typename T>
+    FormatImpl& operator%(const T& t);
+};
+
 } // namespace TakeGameMemSnapshot
+
+// Force instantiation of TakeGameMemSnapshot::FormatImpl — REMOVE once real callers exist.
+void feHelpFuncs_stub()
+{
+    TakeGameMemSnapshot::FormatImpl<BasicString<char, Detail::TempStringAllocator> > impl;
+    BasicString<char, Detail::TempStringAllocator> result = (BasicString<char, Detail::TempStringAllocator>)impl;
+}
 
 /**
  * Offset/Address/Size: 0x634 | 0x800A36F0 | size: 0x14

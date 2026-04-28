@@ -13,12 +13,9 @@
  * Offset/Address/Size: 0x38 | 0x801B64C0 | size: 0x18
  */
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x801B6488 | size: 0x20
-//  */
-// void nlRingIsEnd<SkinPairList>(SkinPairList*, SkinPairList*)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x0 | 0x801B6488 | size: 0x20
+ */
 
 /**
  * Offset/Address/Size: 0x310 | 0x801B6480 | size: 0x8
@@ -97,8 +94,10 @@ void ShaderSkinMesh::AttachSkinData(unsigned long, const nlMatrix4*)
  */
 void gluSkinMesh_stub()
 {
+    bool (*volatile forceNlRingIsEnd)(SkinPairList*, SkinPairList*) = &nlRingIsEnd<SkinPairList>;
     BoneMapList* (*volatile forceBoneMapListStart)(BoneMapList*) = &nlRingGetStart<BoneMapList>;
     SkinPairList* (*volatile forceSkinPairListStart)(SkinPairList*) = &nlRingGetStart<SkinPairList>;
+    (void)forceNlRingIsEnd;
     (void)forceSkinPairListStart;
     (void)forceBoneMapListStart;
 }

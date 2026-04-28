@@ -1527,12 +1527,10 @@ AVLTreeBase<unsigned long, HelperObject*, NewAdapter<AVLTreeEntry<unsigned long,
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x8019A8E4 | size: 0x24
-//  */
-// void ListContainerBase<LightObject*, NewAdapter<ListEntry<LightObject*>>>::DeleteEntry(ListEntry<LightObject*>*)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x0 | 0x8019A8E4 | size: 0x24
+ * ListContainerBase<LightObject*, NewAdapter<ListEntry<LightObject*>>>::DeleteEntry(ListEntry<LightObject*>*)
+ */
 
 // /**
 //  * Offset/Address/Size: 0x0 | 0x8019A908 | size: 0x24
@@ -1606,3 +1604,11 @@ template void nlWalkDLRing<DLListEntry<WorldAnimController*>, DLListContainerBas
 // void 0x8028D34C..0x8028D350 | size: 0x4
 // {
 // }
+
+// REMOVE once real callers exist.
+void World_stub()
+{
+    nlListContainer<LightObject*> list;
+}
+
+template void nlListAddStart<ListEntry<LightObject*> >(ListEntry<LightObject*>**, ListEntry<LightObject*>*, ListEntry<LightObject*>**);

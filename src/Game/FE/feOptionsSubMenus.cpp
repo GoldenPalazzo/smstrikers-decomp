@@ -13,6 +13,9 @@
 #include "Game/FE/feFinder.h"
 #include "types.h"
 
+typedef void FnTLComponentInstanceCb(TLComponentInstance*);
+typedef void FnSlideMenuItemCb(SlideMenuItem*);
+
 extern nlColour MenuHighliteColour;
 
 static const char* MAIN_MENU_SLIDE = "Slide1";
@@ -152,14 +155,14 @@ OptionsSaveLoad::OptionsSaveLoad(FEPresentation* presentation, ButtonComponent::
         mMenuItems.mNumItemsAdded++;
 
         {
-            Function<TLComponentInstance*> openFunc;
+            Function<FnTLComponentInstanceCb> openFunc;
             openFunc.mTag = FREE_FUNCTION;
             openFunc.mFreeFunction = openItem;
             menuItem->mCallbacks[1] = openFunc;
         }
 
         {
-            Function<TLComponentInstance*> closeFunc;
+            Function<FnTLComponentInstanceCb> closeFunc;
             closeFunc.mTag = FREE_FUNCTION;
             closeFunc.mFreeFunction = closeItem;
             menuItem->mCallbacks[2] = closeFunc;
@@ -452,7 +455,7 @@ void OptionsGameplayMenuV2::BuildSkillLevelMenu(TLComponentInstance* compinstanc
         {
             BindExp1_SML bind = Bind<void, MemFunImpl_SML, SlideMenuList*>(
                 MemFun<SlideMenuList, void>(&SlideMenuList::SetSlide), sml);
-            Function<SlideMenuItem*> callback(bind);
+            Function<FnSlideMenuItemCb> callback(bind);
             menuItem->mCallbacks[1] = callback;
         }
 
@@ -995,7 +998,7 @@ void OptionsSubMenu::BuildSubMenuList(int listIndex, TLComponentInstance* compIn
         {
             BindExp1_SML bind = Bind<void, MemFunImpl_SML, SlideMenuList*>(
                 MemFun<SlideMenuList, void>(&SlideMenuList::SetSlide), sml);
-            Function<SlideMenuItem*> callback(bind);
+            Function<FnSlideMenuItemCb> callback(bind);
             menuItem->mCallbacks[1] = callback;
         }
 

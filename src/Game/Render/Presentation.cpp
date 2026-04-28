@@ -6,6 +6,7 @@
 #include "Game/Audio/StreamTrack.h"
 #include "NL/gl/gl.h"
 #include "NL/nlFile.h"
+#include "NL/nlDebug.h"
 #include "NL/nlString.h"
 
 extern AudioStreamTrack::TrackManagerBase* g_pTrackManager;
@@ -125,6 +126,26 @@ template <>
 const char* LexicalCast<const char*, const char*>(const char* const& from)
 {
     return from;
+}
+
+/**
+ * Offset/Address/Size: 0x2C | 0x801272CC | size: 0x24
+ */
+template <>
+const char* LexicalCast<const char*, int>(const int& from)
+{
+    nlBreak();
+    return 0;
+}
+
+/**
+ * Offset/Address/Size: 0x8 | 0x801272A8 | size: 0x24
+ */
+template <>
+const char* LexicalCast<const char*, float>(const float& from)
+{
+    nlBreak();
+    return 0;
 }
 
 /**

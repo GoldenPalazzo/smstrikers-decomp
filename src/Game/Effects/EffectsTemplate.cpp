@@ -411,3 +411,10 @@ EffectsTemplate* fxGetTemplate(unsigned long key)
 
     return *resultPtr;
 }
+
+// At the bottom of EffectsTemplate.cpp — REMOVE once real callers exist.
+void EffectsTemplate_stub()
+{
+    NewAdapter<AVLTreeEntry<unsigned long, EffectsTemplate*> > adapter;
+    adapter.Delete(0);
+}

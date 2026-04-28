@@ -26,7 +26,8 @@ enum MenuResult
 template <typename T>
 struct MenuItem
 {
-    /*  0x00 */ Function<T*> mCallbacks[3];
+    typedef void FnCallback(T*);
+    /*  0x00 */ Function<FnCallback> mCallbacks[3];
     /*  0x18 */ T* mType;
     /*  0x1C */ bool mDisabled;
     /*  0x1D */ bool mLocked;

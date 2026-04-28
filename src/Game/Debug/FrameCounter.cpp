@@ -15,26 +15,7 @@ extern const u32 UnlitProgram;
 
 int FrameCounter::NUM_FRAMES_TO_AVERAGE_OVER = 0x1E;
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x801FE0D4 | size: 0x68
-//  */
-// void nlWalkList<ListEntry<TimeRegion*>, ListContainerBase<TimeRegion*, NewAdapter<ListEntry<TimeRegion*> > > >(ListEntry<TimeRegion*>*, ListContainerBase<TimeRegion*, NewAdapter<ListEntry<TimeRegion*> > >*, void (ListContainerBase<TimeRegion*, NewAdapter<ListEntry<TimeRegion*> > >::*)(ListEntry<TimeRegion*>*))
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0xBC | 0x801FE048 | size: 0x8C
-//  */
-// void nlListContainer<TimeRegion*>::~nlListContainer()
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x801FDF8C | size: 0x24
-//  */
-// void ListContainerBase<TimeRegion*, NewAdapter<ListEntry<TimeRegion*> > >::DeleteEntry(ListEntry<TimeRegion*>*)
-// {
-// }
+nlListContainer<TimeRegion*> TimeRegion::sTimeRegionList;
 
 /**
  * Offset/Address/Size: 0x1374 | 0x801FDF10 | size: 0x7C

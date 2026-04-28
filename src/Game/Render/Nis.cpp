@@ -41,12 +41,23 @@ NisBindPtr gNisBindPtr = &Bind<void, NisEmissionFn, Placeholder<0>, int>;
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0xF0 | 0x8012D194 | size: 0x28
-//  */
-// void nlListAddStart<Nis::NisAudioData>(Nis::NisAudioData**, Nis::NisAudioData*, Nis::NisAudioData**)
-// {
-// }
+/**
+ * Offset/Address/Size: 0xF0 | 0x8012D194 | size: 0x28
+ */
+template <>
+void nlListAddStart<Nis::NisAudioData>(Nis::NisAudioData** head, Nis::NisAudioData* entry, Nis::NisAudioData** tail)
+{
+    if (tail != 0)
+    {
+        if (*head == 0)
+        {
+            *tail = entry;
+        }
+    }
+
+    entry->next = *head;
+    *head = entry;
+}
 
 // /**
 //  * Offset/Address/Size: 0x54 | 0x8012D0F8 | size: 0x9C

@@ -126,3 +126,13 @@ nlEscapeSequence::nlEscapeSequence(const unsigned short* str)
 // int nlDefaultQSortComparer(const T* a, const T* b)
 // {
 // }
+
+/**
+ * nlBSearch<nlEscapeSequence::ESCAPE_LOOKUP, unsigned long>(const unsigned long&, nlEscapeSequence::ESCAPE_LOOKUP*, int)
+ * nlQSort<nlEscapeSequence::ESCAPE_LOOKUP>(nlEscapeSequence::ESCAPE_LOOKUP*, int, int (*)(const nlEscapeSequence::ESCAPE_LOOKUP*, const nlEscapeSequence::ESCAPE_LOOKUP*))
+ * nlDefaultQSortComparer<nlEscapeSequence::ESCAPE_LOOKUP>(const nlEscapeSequence::ESCAPE_LOOKUP*, const nlEscapeSequence::ESCAPE_LOOKUP*)
+ */
+void nlTextEscape_stub()
+{
+    nlQSort<nlEscapeSequence::ESCAPE_LOOKUP>((nlEscapeSequence::ESCAPE_LOOKUP*)0, 0, &nlDefaultQSortComparer<nlEscapeSequence::ESCAPE_LOOKUP>);
+}

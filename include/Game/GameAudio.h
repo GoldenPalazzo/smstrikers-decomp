@@ -44,7 +44,7 @@ struct SFXPlaySet
     /* 0x20 */ unsigned short filterFreq;
     /* 0x22 */ unsigned short pitch;
 
-    static SlotPoolBase m_TrackedSFXSlotPool;
+    static SlotPool<SFXPlaySet> m_TrackedSFXSlotPool;
 }; // total size: 0x24
 
 class SoundPropAccessor

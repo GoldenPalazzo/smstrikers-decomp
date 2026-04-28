@@ -13,7 +13,10 @@ template <>
 void Replayable<0, LoadFrame, unsigned long>(LoadFrame& frame, unsigned long& value);
 
 template <>
-void Replayable<0, LoadFrame, EmissionController>(LoadFrame& frame, EmissionController& controller);
+void Replayable<0, LoadFrame, EmissionController>(LoadFrame& frame, EmissionController& controller)
+{
+    frame.Replayable<0>(controller);
+}
 
 template <>
 nlAVLTree<unsigned long, LingerMessage*, DefaultKeyCompare<unsigned long> >::~nlAVLTree();
@@ -704,6 +707,13 @@ void EmissionManager::KillOldest(int num, bool lingeringOnly)
     }
 }
 
+// REMOVE once real callers exist.
+void EmissionManager_stub()
+{
+    NewAdapter<AVLTreeEntry<unsigned long, LingerMessage*> > adapter;
+    adapter.Delete((AVLTreeEntry<unsigned long, LingerMessage*>*)0);
+}
+
 // /**
 //  * Offset/Address/Size: 0x2C | 0x801FA600 | size: 0x254
 //  */
@@ -711,12 +721,11 @@ void EmissionManager::KillOldest(int num, bool lingeringOnly)
 //  {
 //  }
 
-//  /**
-//   * Offset/Address/Size: 0x0 | 0x801FA5D4 | size: 0x2C
-//   */
-//  void LoadFrame::Replayable<0, EmissionController>(EmissionController&)
-//  {
-//  }
+/**
+ * Offset/Address/Size: 0x0 | 0x801FA5D4 | size: 0x2C
+ * TODO: 99.73% match - stack offset swap (0x8/0xc) for NotReplayablePod local vs argument copy
+ * Implemented in include/Game/Replay.h as LoadFrame::Replayable<N, T> template body.
+ */
 
 //  /**
 //   * Offset/Address/Size: 0x3C4 | 0x801FA558 | size: 0x7C
@@ -764,13 +773,6 @@ void EmissionManager::KillOldest(int num, bool lingeringOnly)
 //   * Offset/Address/Size: 0xA8 | 0x801FA23C | size: 0x40
 //   */
 //  void Replayable<0, SaveFrame, unsigned short>(SaveFrame&, unsigned short&)
-//  {
-//  }
-
-//  /**
-//   * Offset/Address/Size: 0x88 | 0x801FA21C | size: 0x20
-//   */
-//  void Replayable<0, LoadFrame, EmissionController>(LoadFrame&, EmissionController&)
 //  {
 //  }
 

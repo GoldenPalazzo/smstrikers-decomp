@@ -43,9 +43,23 @@ enum ReplayNonBlendables
     DO_NOT_REPLAY_NON_BLENDABLES = 1,
 };
 
+struct ReplayablePod
+{
+}; // total size: 0x1
+
+struct NotReplayablePod
+{
+}; // total size: 0x1
+
 class LoadFrame
 {
 public:
+    template <int N, typename T>
+    void Replayable(T& current);
+
+    template <int N, typename T>
+    void Replayable(T& current, NotReplayablePod);
+
     template <int N, typename T>
     void ReplayablePolymorphicPtr(T*& ptr);
 
@@ -55,17 +69,27 @@ public:
     /* 0x10 */ float mNonBlendableAheadOfFrame;
 }; // total size: 0x14
 
+template <int N, typename T>
+void LoadFrame::Replayable(T& current)
+{
+    NotReplayablePod pod;
+    Replayable<N>(current, pod);
+}
+
 template <int MIN, int MAX, int BITS>
 class FloatCompressor
 {
 public:
-    FloatCompressor(float& f)
-        : mF(f)
-    {
-    }
+    FloatCompressor(float& f);
 
     /* 0x0 */ float& mF;
 }; // total size: 0x4
+
+template <int MIN, int MAX, int BITS>
+inline FloatCompressor<MIN, MAX, BITS>::FloatCompressor(float& f)
+    : mF(f)
+{
+}
 
 // Forward declaration of generic template (needed before specializations)
 template <int N, typename FrameType, typename T>
@@ -124,6 +148,8 @@ template <>
 void Replayable<0, SaveFrame, unsigned long>(SaveFrame& frame, unsigned long& value);
 template <>
 void Replayable<0, SaveFrame, EmissionController>(SaveFrame& frame, EmissionController& controller);
+template <>
+void Replayable<0, LoadFrame, EmissionController>(LoadFrame& frame, EmissionController& controller);
 
 template <>
 void Replayable<3, LoadFrame, bool>(LoadFrame& frame, bool& value);

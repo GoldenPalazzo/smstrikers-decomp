@@ -21,7 +21,7 @@ void WriteFrameRateStatsToFile();
 class TimeRegion
 {
 public:
-    static ListContainerBase<TimeRegion*, NewAdapter<TimeRegion*> > sTimeRegionList;
+    static nlListContainer<TimeRegion*> sTimeRegionList;
 
     TimeRegion(const char* pName, bool (*pConditionFunc)())
         : m_pName(pName)

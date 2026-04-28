@@ -22,20 +22,20 @@ u32 nlStringLowerHash(const char*);
 u32 nlStringHash(const char*);
 
 template <typename CharT>
-s32 nlStrLen(const CharT* str)
+unsigned long nlStrLen(const CharT* str)
 {
-    s32 len = 0;
-    while (str[len] != 0)
+    unsigned long n = 0;
+    if (str)
     {
-        len++;
+        for (; *str; n++, str++)
+            ;
     }
-    return len;
+    return n;
 }
 
 template <typename CharT>
 CharT* nlStrChr(const CharT* str, CharT ch)
 {
-    // if (!str) return nullptr;
     while (*str != static_cast<CharT>(0))
     {
         if (*str == ch)

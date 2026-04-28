@@ -10,7 +10,7 @@ class allocator
 public:
     allocator() { }
     void destroy(T*);
-    void deallocate(T*, unsigned long);
+    void deallocate(T* p, unsigned long) { ::operator delete(p); }
 };
 
 template <class ForwardIt, class Size, class T>
@@ -72,19 +72,46 @@ namespace details
 {
 
 template <class First, class Second, int tag>
-class compressed_pair_imp : private First
+class compressed_pair_imp
+{
+    First first_;
+    Second second_;
+
+public:
+    compressed_pair_imp() { }
+    compressed_pair_imp(const First& f)
+        : first_(f)
+        , second_()
+    {
+    }
+    compressed_pair_imp(const First& f, const Second& s)
+        : first_(f)
+        , second_(s)
+    {
+    }
+    First& first() { return first_; }
+    Second& second() { return second_; }
+};
+
+template <class First, class Second>
+class compressed_pair_imp<First, Second, 1> : private First
 {
     Second second_;
 
 public:
-    First& first();
+    compressed_pair_imp()
+        : First()
+        , second_()
+    {
+    }
+    compressed_pair_imp(const Second& s)
+        : First()
+        , second_(s)
+    {
+    }
+    First& first() { return *this; }
+    Second& second() { return second_; }
 };
-
-template <class First, class Second, int tag>
-First& compressed_pair_imp<First, Second, tag>::first()
-{
-    return *this;
-}
 
 } // namespace details
 } // namespace Metrowerks

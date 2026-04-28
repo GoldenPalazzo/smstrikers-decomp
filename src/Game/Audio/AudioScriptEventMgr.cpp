@@ -4,6 +4,7 @@
 #include "Game/Sys/eventman.h"
 
 #include "NL/nlList.h"
+#include "NL/nlQSort.h"
 #include "NL/nlSlotPool.h"
 #include "NL/nlString.h"
 
@@ -27,6 +28,15 @@ struct AUDIO_EVENT_RECORD
     /* 0x0 */ AudioScriptEventMgr::AUDIO_EVENT Event : 16;
     /* 0x2 */ AudioScriptEventMgr::AUDIO_EVENT_TEAM Team : 16;
 };
+
+struct NIS_EVENT_LOOKUP
+{
+    /* 0x0 */ unsigned long hash;
+    /* 0x4 */ const char* Name;
+    /* 0x8 */ AUDIO_EVENT_RECORD Event;
+};
+
+extern NIS_EVENT_LOOKUP g_NisEventLookup[4];
 
 extern char* AUDIO_EVENT_FUNC_NAMES[];
 
@@ -93,12 +103,11 @@ typedef WalkHelper<AUDIO_EVENT_RECORD, ListEntry<AUDIO_EVENT_RECORD>, _AudioEven
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0x8C | 0x8014B53C | size: 0x28
-//  */
+/**
+ * Offset/Address/Size: 0x8C | 0x8014B53C | size: 0x28
+ */
 // void nlQSort<NIS_EVENT_LOOKUP>(NIS_EVENT_LOOKUP*, int, int (*)(const NIS_EVENT_LOOKUP*, const NIS_EVENT_LOOKUP*))
-// {
-// }
+// instantiated via AudioScriptEventMgr_stub below
 
 // /**
 //  * Offset/Address/Size: 0x0 | 0x8014B4B0 | size: 0x8C
@@ -250,3 +259,9 @@ void RecordExcitingEvent()
 // void AudioScriptEventHandler(Event*, void*)
 // {
 // }
+
+// REMOVE once real callers exist.
+void AudioScriptEventMgr_stub()
+{
+    nlQSort<NIS_EVENT_LOOKUP>(g_NisEventLookup, 4, &nlDefaultQSortComparer<NIS_EVENT_LOOKUP>);
+}

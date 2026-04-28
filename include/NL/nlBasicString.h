@@ -87,7 +87,7 @@ public:
     BasicStringData<CharT>* m_data; // offset 0x0
 
     BasicString()
-        : m_data(nullptr)
+        : m_data(0)
     {
     }
 

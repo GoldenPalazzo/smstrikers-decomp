@@ -37,19 +37,23 @@ static DestructorChain sDestructorChain;
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0x388 | 0x80112C98 | size: 0x2C
-//  */
-// void Replayable<0, LoadFrame, RenderSnapshot>(LoadFrame&, RenderSnapshot&)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x388 | 0x80112C98 | size: 0x2C
+ */
+template <>
+void Replayable<0, LoadFrame, RenderSnapshot>(LoadFrame& frame, RenderSnapshot& current)
+{
+    current.Replay<LoadFrame>(frame);
+}
 
-// /**
-//  * Offset/Address/Size: 0x35C | 0x80112C6C | size: 0x2C
-//  */
-// void Replayable<0, SaveFrame, RenderSnapshot>(SaveFrame&, RenderSnapshot&)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x35C | 0x80112C6C | size: 0x2C
+ */
+template <>
+void Replayable<0, SaveFrame, RenderSnapshot>(SaveFrame& frame, RenderSnapshot& current)
+{
+    current.Replay<SaveFrame>(frame);
+}
 
 // /**
 //  * Offset/Address/Size: 0x1A4 | 0x80112AB4 | size: 0x1B8

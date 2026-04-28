@@ -366,7 +366,7 @@ void PhysicsCharacterBase::AddBoneVolumes(PhysicsWorld* physicsWorld, CollisionS
             listNode->data = boneVolume;
         }
 
-        nlListAddStart(pHead, listNode, pTail);
+        nlListAddStart<ListEntry<PhysicsBoneVolume*> >(pHead, listNode, pTail);
 
         switch (element->uPrimitiveType)
         {

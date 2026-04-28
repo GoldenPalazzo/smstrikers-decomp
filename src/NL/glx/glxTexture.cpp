@@ -716,7 +716,7 @@ PlatTexture* glx_GetGridTexture(int width, int height)
     PlatTexture* newTexture = glx_MakeGridTexture(width, height);
     ListEntry<PlatTexture*>* listEntry = new (nlMalloc(8, 8, false)) ListEntry<PlatTexture*>(newTexture);
 
-    nlListAddStart(&gridTextures.m_Head, listEntry, &gridTextures.m_Tail);
+    nlListAddStart<PlatTexture*>(&gridTextures.m_Head, listEntry, &gridTextures.m_Tail);
     return gridTextures.m_Head->data;
 }
 
@@ -962,12 +962,10 @@ glxTextureLoadCallback_t glx_SetLoadCallback(glxTextureLoadCallback_t callback)
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x801B98DC | size: 0x28
-//  */
-// void nlListAddStart<ListEntry<PlatTexture*>>(ListEntry<PlatTexture*>**, ListEntry<PlatTexture*>*, ListEntry<PlatTexture*>**)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x0 | 0x801B98DC | size: 0x28
+ */
+template void nlListAddStart<ListEntry<PlatTexture*> >(ListEntry<PlatTexture*>**, ListEntry<PlatTexture*>*, ListEntry<PlatTexture*>**);
 
 // /**
 //  * Offset/Address/Size: 0x28 | 0x801B9904 | size: 0x68

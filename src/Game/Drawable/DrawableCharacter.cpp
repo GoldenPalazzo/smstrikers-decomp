@@ -656,3 +656,12 @@ cCharacter* DrawableCharacter::OnlyRenderingOneCharacter()
 {
     return spRenderOnlyThisCharacter;
 }
+
+#pragma force_active on
+void DrawableCharacter_stub()
+{
+    float x;
+    FloatCompressor<0, 1, 7> fc7(x);
+    FloatCompressor<0, 1, 15> fc15(x);
+}
+#pragma force_active reset

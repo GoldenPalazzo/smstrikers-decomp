@@ -6,6 +6,8 @@
 #include "Game/FE/feFinder.h"
 #include "Game/FE/tlTextInstance.h"
 #include "Game/FE/feTemplates.h"
+#include "NL/nlLexicalCast.h"
+#include "NL/nlFormat.h"
 #include "NL/gl/gl.h"
 
 extern char* optionNames[4];
@@ -605,3 +607,14 @@ BasicString<unsigned short, Detail::TempStringAllocator>::operator=(BasicString<
 // void FormatImpl<BasicString<unsigned short, Detail::TempStringAllocator>>::operator%<const unsigned short*>(const unsigned short* const&)
 // {
 // }
+
+// Stub to force template instantiations — REMOVE once real callers exist.
+void fePopupMenu_stub()
+{
+    WideBasicString s;
+    LexicalCast<WideBasicString, WideBasicString>(s);
+    const unsigned short* p = 0;
+    LexicalCast<WideBasicString, const unsigned short*>(p);
+    FormatImpl<WideBasicString> fi;
+    WideBasicString s2 = (WideBasicString)fi;
+}

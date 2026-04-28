@@ -5,9 +5,30 @@
 #include "strtold.h"
 #include "NL/nlBasicString.h"
 
-// Primary template declaration (not defined/omited yet)
+namespace Detail
+{
 template <typename To, typename From>
-To LexicalCast(const From&);
+struct LexicalCastImpl
+{
+    static To Do(const From& f);
+};
+} // namespace Detail
+
+typedef BasicString<unsigned short, Detail::TempStringAllocator> WideBasicString;
+
+// Identity cast: WideBasicString -> WideBasicString (copy)
+template <>
+inline WideBasicString Detail::LexicalCastImpl<WideBasicString, WideBasicString>::Do(
+    const WideBasicString& f)
+{
+    return f;
+}
+
+template <typename To, typename From>
+To LexicalCast(const From& f)
+{
+    return Detail::LexicalCastImpl<To, From>::Do(f);
+}
 
 template <>
 int LexicalCast<int, float>(const float& value);
@@ -38,6 +59,12 @@ bool LexicalCast<bool, const char*>(const char* const& value);
 
 template <>
 const char* LexicalCast<const char*, const char*>(const char* const& value);
+template <>
+const char* LexicalCast<const char*, int>(const int& value);
+template <>
+const char* LexicalCast<const char*, float>(const float& value);
+template <>
+const char* LexicalCast<const char*, bool>(const bool& value);
 
 template <>
 BasicString<char, Detail::TempStringAllocator> LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(const int& value);

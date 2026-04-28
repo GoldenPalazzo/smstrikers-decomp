@@ -97,25 +97,26 @@ enum NisAudioType
     NIS_AUDIO_TYPE_SFX = 2,
 };
 
-struct NisAudioData
-{
-
-    /* 0x00 */ NisAudioType audioType;
-    union
-    {
-        SFXEmitter* pEmitter;
-        unsigned long index;
-    }
-    /* 0x04 */ identifier;
-    /* 0x08 */ char str[128];
-    /* 0x88 */ bool isEmitter;
-    /* 0x89 */ bool stopAtNisEnd;
-    /* 0x8C */ NisAudioData* next;
-}; // total size: 0x90
-
 class Nis
 {
 public:
+    struct NisAudioData
+    {
+        /* 0x00 */ NisAudioType audioType;
+        union
+        {
+            SFXEmitter* pEmitter;
+            unsigned long index;
+        }
+        /* 0x04 */ identifier;
+        /* 0x08 */ unsigned long soundType;
+        /* 0x0C */ char str[128];
+        /* 0x8C */ unsigned char isEmitter;
+        /* 0x8D */ unsigned char stopAtNisEnd;
+        /* 0x8E */ unsigned char pad[2];
+        /* 0x90 */ NisAudioData* next;
+    }; // total size: 0x94
+
     struct TriggerParams
     {
         /* 0x00 */ float float1;
