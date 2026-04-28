@@ -5,6 +5,15 @@
 extern cFielder* g_pScriptCurrentFielder;
 extern cTeam* g_pScriptCurrentTeam;
 
+template <>
+FuzzyVariant::FuzzyVariant(const float& var)
+    : Variant(VariantTypeOf(var), var)
+{
+    ExtraData.Reset();
+    Confidence = 0.0f;
+    SelectionChance = 1.0f;
+}
+
 class SaveConfidence
 {
 public:
@@ -96,7 +105,6 @@ FuzzyVariant StrategyChoosePlay(cDecisionEntity* pDecision)
 {
     float fConfidence = 1.0f;
     float fBestConfidence = 0.0f;
-    float* const pBest = &fBestConfidence;
 
     if (Striker(g_pScriptCurrentFielder))
     {
@@ -116,7 +124,7 @@ FuzzyVariant StrategyChoosePlay(cDecisionEntity* pDecision)
                         fConfidence = fConfidence * fBranchRatio;
                     {
                         const float fLocalConf = fConfidence;
-                        *pBest = (*pBest >= fLocalConf) ? *pBest : fLocalConf;
+                        fBestConfidence = (fBestConfidence >= fLocalConf) ? fBestConfidence : fLocalConf;
                         pDecision->QueueActionSetPlay(AIPLAY_OFFENSE_STRIKER_AGGRESSIVE, fLocalConf, -1.0f);
                     }
                 }
@@ -135,7 +143,7 @@ FuzzyVariant StrategyChoosePlay(cDecisionEntity* pDecision)
                         fConfidence = fConfidence * fBranchRatio;
                     {
                         const float fLocalConf = fConfidence;
-                        *pBest = (*pBest >= fLocalConf) ? *pBest : fLocalConf;
+                        fBestConfidence = (fBestConfidence >= fLocalConf) ? fBestConfidence : fLocalConf;
                         pDecision->QueueActionSetPlay(AIPLAY_DEFENSE_STRIKER_AGGRESSIVE, fLocalConf, -1.0f);
                     }
                 }
@@ -154,7 +162,7 @@ FuzzyVariant StrategyChoosePlay(cDecisionEntity* pDecision)
                         fConfidence = fConfidence * fBranchRatio;
                     {
                         const float fLocalConf = fConfidence;
-                        *pBest = (*pBest >= fLocalConf) ? *pBest : fLocalConf;
+                        fBestConfidence = (fBestConfidence >= fLocalConf) ? fBestConfidence : fLocalConf;
                         pDecision->QueueActionSetPlay(AIPLAY_LOOSE_STRIKER_AGGRESSIVE, fLocalConf, -1.0f);
                     }
                 }
@@ -176,7 +184,7 @@ FuzzyVariant StrategyChoosePlay(cDecisionEntity* pDecision)
                         fConfidence = fConfidence * fBranchRatio;
                     {
                         const float fLocalConf = fConfidence;
-                        *pBest = (*pBest >= fLocalConf) ? *pBest : fLocalConf;
+                        fBestConfidence = (fBestConfidence >= fLocalConf) ? fBestConfidence : fLocalConf;
                         pDecision->QueueActionSetPlay(AIPLAY_OFFENSE_STRIKER_MODERATE, fLocalConf, -1.0f);
                     }
                 }
@@ -195,7 +203,7 @@ FuzzyVariant StrategyChoosePlay(cDecisionEntity* pDecision)
                         fConfidence = fConfidence * fBranchRatio;
                     {
                         const float fLocalConf = fConfidence;
-                        *pBest = (*pBest >= fLocalConf) ? *pBest : fLocalConf;
+                        fBestConfidence = (fBestConfidence >= fLocalConf) ? fBestConfidence : fLocalConf;
                         pDecision->QueueActionSetPlay(AIPLAY_DEFENSE_STRIKER_MODERATE, fLocalConf, -1.0f);
                     }
                 }
@@ -214,7 +222,7 @@ FuzzyVariant StrategyChoosePlay(cDecisionEntity* pDecision)
                         fConfidence = fConfidence * fBranchRatio;
                     {
                         const float fLocalConf = fConfidence;
-                        *pBest = (*pBest >= fLocalConf) ? *pBest : fLocalConf;
+                        fBestConfidence = (fBestConfidence >= fLocalConf) ? fBestConfidence : fLocalConf;
                         pDecision->QueueActionSetPlay(AIPLAY_LOOSE_STRIKER_MODERATE, fLocalConf, -1.0f);
                     }
                 }
@@ -236,7 +244,7 @@ FuzzyVariant StrategyChoosePlay(cDecisionEntity* pDecision)
                         fConfidence = fConfidence * fBranchRatio;
                     {
                         const float fLocalConf = fConfidence;
-                        *pBest = (*pBest >= fLocalConf) ? *pBest : fLocalConf;
+                        fBestConfidence = (fBestConfidence >= fLocalConf) ? fBestConfidence : fLocalConf;
                         pDecision->QueueActionSetPlay(AIPLAY_OFFENSE_STRIKER_PASSIVE, fLocalConf, -1.0f);
                     }
                 }
@@ -255,7 +263,7 @@ FuzzyVariant StrategyChoosePlay(cDecisionEntity* pDecision)
                         fConfidence = fConfidence * fBranchRatio;
                     {
                         const float fLocalConf = fConfidence;
-                        *pBest = (*pBest >= fLocalConf) ? *pBest : fLocalConf;
+                        fBestConfidence = (fBestConfidence >= fLocalConf) ? fBestConfidence : fLocalConf;
                         pDecision->QueueActionSetPlay(AIPLAY_DEFENSE_STRIKER_PASSIVE, fLocalConf, -1.0f);
                     }
                 }
@@ -274,7 +282,7 @@ FuzzyVariant StrategyChoosePlay(cDecisionEntity* pDecision)
                         fConfidence = fConfidence * fBranchRatio;
                     {
                         const float fLocalConf = fConfidence;
-                        *pBest = (*pBest >= fLocalConf) ? *pBest : fLocalConf;
+                        fBestConfidence = (fBestConfidence >= fLocalConf) ? fBestConfidence : fLocalConf;
                         pDecision->QueueActionSetPlay(AIPLAY_LOOSE_STRIKER_PASSIVE, fLocalConf, -1.0f);
                     }
                 }
@@ -300,7 +308,7 @@ FuzzyVariant StrategyChoosePlay(cDecisionEntity* pDecision)
                         fConfidence = fConfidence * fBranchRatio;
                     {
                         const float fLocalConf = fConfidence;
-                        *pBest = (*pBest >= fLocalConf) ? *pBest : fLocalConf;
+                        fBestConfidence = (fBestConfidence >= fLocalConf) ? fBestConfidence : fLocalConf;
                         pDecision->QueueActionSetPlay(AIPLAY_OFFENSE_WINGER_AGGRESSIVE, fLocalConf, -1.0f);
                     }
                 }
@@ -319,7 +327,7 @@ FuzzyVariant StrategyChoosePlay(cDecisionEntity* pDecision)
                         fConfidence = fConfidence * fBranchRatio;
                     {
                         const float fLocalConf = fConfidence;
-                        *pBest = (*pBest >= fLocalConf) ? *pBest : fLocalConf;
+                        fBestConfidence = (fBestConfidence >= fLocalConf) ? fBestConfidence : fLocalConf;
                         pDecision->QueueActionSetPlay(AIPLAY_DEFENSE_WINGER_AGGRESSIVE, fLocalConf, -1.0f);
                     }
                 }
@@ -338,7 +346,7 @@ FuzzyVariant StrategyChoosePlay(cDecisionEntity* pDecision)
                         fConfidence = fConfidence * fBranchRatio;
                     {
                         const float fLocalConf = fConfidence;
-                        *pBest = (*pBest >= fLocalConf) ? *pBest : fLocalConf;
+                        fBestConfidence = (fBestConfidence >= fLocalConf) ? fBestConfidence : fLocalConf;
                         pDecision->QueueActionSetPlay(AIPLAY_LOOSE_WINGER_AGGRESSIVE, fLocalConf, -1.0f);
                     }
                 }
@@ -360,7 +368,7 @@ FuzzyVariant StrategyChoosePlay(cDecisionEntity* pDecision)
                         fConfidence = fConfidence * fBranchRatio;
                     {
                         const float fLocalConf = fConfidence;
-                        *pBest = (*pBest >= fLocalConf) ? *pBest : fLocalConf;
+                        fBestConfidence = (fBestConfidence >= fLocalConf) ? fBestConfidence : fLocalConf;
                         pDecision->QueueActionSetPlay(AIPLAY_OFFENSE_WINGER_MODERATE, fLocalConf, -1.0f);
                     }
                 }
@@ -379,7 +387,7 @@ FuzzyVariant StrategyChoosePlay(cDecisionEntity* pDecision)
                         fConfidence = fConfidence * fBranchRatio;
                     {
                         const float fLocalConf = fConfidence;
-                        *pBest = (*pBest >= fLocalConf) ? *pBest : fLocalConf;
+                        fBestConfidence = (fBestConfidence >= fLocalConf) ? fBestConfidence : fLocalConf;
                         pDecision->QueueActionSetPlay(AIPLAY_DEFENSE_WINGER_MODERATE, fLocalConf, -1.0f);
                     }
                 }
@@ -398,7 +406,7 @@ FuzzyVariant StrategyChoosePlay(cDecisionEntity* pDecision)
                         fConfidence = fConfidence * fBranchRatio;
                     {
                         const float fLocalConf = fConfidence;
-                        *pBest = (*pBest >= fLocalConf) ? *pBest : fLocalConf;
+                        fBestConfidence = (fBestConfidence >= fLocalConf) ? fBestConfidence : fLocalConf;
                         pDecision->QueueActionSetPlay(AIPLAY_LOOSE_WINGER_MODERATE, fLocalConf, -1.0f);
                     }
                 }
@@ -420,7 +428,7 @@ FuzzyVariant StrategyChoosePlay(cDecisionEntity* pDecision)
                         fConfidence = fConfidence * fBranchRatio;
                     {
                         const float fLocalConf = fConfidence;
-                        *pBest = (*pBest >= fLocalConf) ? *pBest : fLocalConf;
+                        fBestConfidence = (fBestConfidence >= fLocalConf) ? fBestConfidence : fLocalConf;
                         pDecision->QueueActionSetPlay(AIPLAY_OFFENSE_WINGER_PASSIVE, fLocalConf, -1.0f);
                     }
                 }
@@ -439,7 +447,7 @@ FuzzyVariant StrategyChoosePlay(cDecisionEntity* pDecision)
                         fConfidence = fConfidence * fBranchRatio;
                     {
                         const float fLocalConf = fConfidence;
-                        *pBest = (*pBest >= fLocalConf) ? *pBest : fLocalConf;
+                        fBestConfidence = (fBestConfidence >= fLocalConf) ? fBestConfidence : fLocalConf;
                         pDecision->QueueActionSetPlay(AIPLAY_DEFENSE_WINGER_PASSIVE, fLocalConf, -1.0f);
                     }
                 }
@@ -458,7 +466,7 @@ FuzzyVariant StrategyChoosePlay(cDecisionEntity* pDecision)
                         fConfidence = fConfidence * fBranchRatio;
                     {
                         const float fLocalConf = fConfidence;
-                        *pBest = (*pBest >= fLocalConf) ? *pBest : fLocalConf;
+                        fBestConfidence = (fBestConfidence >= fLocalConf) ? fBestConfidence : fLocalConf;
                         pDecision->QueueActionSetPlay(AIPLAY_LOOSE_WINGER_PASSIVE, fLocalConf, -1.0f);
                     }
                 }
@@ -484,7 +492,7 @@ FuzzyVariant StrategyChoosePlay(cDecisionEntity* pDecision)
                         fConfidence = fConfidence * fBranchRatio;
                     {
                         const float fLocalConf = fConfidence;
-                        *pBest = (*pBest >= fLocalConf) ? *pBest : fLocalConf;
+                        fBestConfidence = (fBestConfidence >= fLocalConf) ? fBestConfidence : fLocalConf;
                         pDecision->QueueActionSetPlay(AIPLAY_OFFENSE_MIDFIELD_AGGRESSIVE, fLocalConf, -1.0f);
                     }
                 }
@@ -503,7 +511,7 @@ FuzzyVariant StrategyChoosePlay(cDecisionEntity* pDecision)
                         fConfidence = fConfidence * fBranchRatio;
                     {
                         const float fLocalConf = fConfidence;
-                        *pBest = (*pBest >= fLocalConf) ? *pBest : fLocalConf;
+                        fBestConfidence = (fBestConfidence >= fLocalConf) ? fBestConfidence : fLocalConf;
                         pDecision->QueueActionSetPlay(AIPLAY_DEFENSE_MIDFIELD_AGGRESSIVE, fLocalConf, -1.0f);
                     }
                 }
@@ -522,7 +530,7 @@ FuzzyVariant StrategyChoosePlay(cDecisionEntity* pDecision)
                         fConfidence = fConfidence * fBranchRatio;
                     {
                         const float fLocalConf = fConfidence;
-                        *pBest = (*pBest >= fLocalConf) ? *pBest : fLocalConf;
+                        fBestConfidence = (fBestConfidence >= fLocalConf) ? fBestConfidence : fLocalConf;
                         pDecision->QueueActionSetPlay(AIPLAY_LOOSE_MIDFIELD_AGGRESSIVE, fLocalConf, -1.0f);
                     }
                 }
@@ -544,7 +552,7 @@ FuzzyVariant StrategyChoosePlay(cDecisionEntity* pDecision)
                         fConfidence = fConfidence * fBranchRatio;
                     {
                         const float fLocalConf = fConfidence;
-                        *pBest = (*pBest >= fLocalConf) ? *pBest : fLocalConf;
+                        fBestConfidence = (fBestConfidence >= fLocalConf) ? fBestConfidence : fLocalConf;
                         pDecision->QueueActionSetPlay(AIPLAY_OFFENSE_MIDFIELD_MODERATE, fLocalConf, -1.0f);
                     }
                 }
@@ -563,7 +571,7 @@ FuzzyVariant StrategyChoosePlay(cDecisionEntity* pDecision)
                         fConfidence = fConfidence * fBranchRatio;
                     {
                         const float fLocalConf = fConfidence;
-                        *pBest = (*pBest >= fLocalConf) ? *pBest : fLocalConf;
+                        fBestConfidence = (fBestConfidence >= fLocalConf) ? fBestConfidence : fLocalConf;
                         pDecision->QueueActionSetPlay(AIPLAY_DEFENSE_MIDFIELD_MODERATE, fLocalConf, -1.0f);
                     }
                 }
@@ -582,7 +590,7 @@ FuzzyVariant StrategyChoosePlay(cDecisionEntity* pDecision)
                         fConfidence = fConfidence * fBranchRatio;
                     {
                         const float fLocalConf = fConfidence;
-                        *pBest = (*pBest >= fLocalConf) ? *pBest : fLocalConf;
+                        fBestConfidence = (fBestConfidence >= fLocalConf) ? fBestConfidence : fLocalConf;
                         pDecision->QueueActionSetPlay(AIPLAY_LOOSE_MIDFIELD_MODERATE, fLocalConf, -1.0f);
                     }
                 }
@@ -604,7 +612,7 @@ FuzzyVariant StrategyChoosePlay(cDecisionEntity* pDecision)
                         fConfidence = fConfidence * fBranchRatio;
                     {
                         const float fLocalConf = fConfidence;
-                        *pBest = (*pBest >= fLocalConf) ? *pBest : fLocalConf;
+                        fBestConfidence = (fBestConfidence >= fLocalConf) ? fBestConfidence : fLocalConf;
                         pDecision->QueueActionSetPlay(AIPLAY_OFFENSE_MIDFIELD_PASSIVE, fLocalConf, -1.0f);
                     }
                 }
@@ -623,7 +631,7 @@ FuzzyVariant StrategyChoosePlay(cDecisionEntity* pDecision)
                         fConfidence = fConfidence * fBranchRatio;
                     {
                         const float fLocalConf = fConfidence;
-                        *pBest = (*pBest >= fLocalConf) ? *pBest : fLocalConf;
+                        fBestConfidence = (fBestConfidence >= fLocalConf) ? fBestConfidence : fLocalConf;
                         pDecision->QueueActionSetPlay(AIPLAY_DEFENSE_MIDFIELD_PASSIVE, fLocalConf, -1.0f);
                     }
                 }
@@ -642,7 +650,7 @@ FuzzyVariant StrategyChoosePlay(cDecisionEntity* pDecision)
                         fConfidence = fConfidence * fBranchRatio;
                     {
                         const float fLocalConf = fConfidence;
-                        *pBest = (*pBest >= fLocalConf) ? *pBest : fLocalConf;
+                        fBestConfidence = (fBestConfidence >= fLocalConf) ? fBestConfidence : fLocalConf;
                         pDecision->QueueActionSetPlay(AIPLAY_LOOSE_MIDFIELD_PASSIVE, fLocalConf, -1.0f);
                     }
                 }
@@ -668,7 +676,7 @@ FuzzyVariant StrategyChoosePlay(cDecisionEntity* pDecision)
                         fConfidence = fConfidence * fBranchRatio;
                     {
                         const float fLocalConf = fConfidence;
-                        *pBest = (*pBest >= fLocalConf) ? *pBest : fLocalConf;
+                        fBestConfidence = (fBestConfidence >= fLocalConf) ? fBestConfidence : fLocalConf;
                         pDecision->QueueActionSetPlay(AIPLAY_OFFENSE_DEFENDER_AGGRESSIVE, fLocalConf, -1.0f);
                     }
                 }
@@ -687,7 +695,7 @@ FuzzyVariant StrategyChoosePlay(cDecisionEntity* pDecision)
                         fConfidence = fConfidence * fBranchRatio;
                     {
                         const float fLocalConf = fConfidence;
-                        *pBest = (*pBest >= fLocalConf) ? *pBest : fLocalConf;
+                        fBestConfidence = (fBestConfidence >= fLocalConf) ? fBestConfidence : fLocalConf;
                         pDecision->QueueActionSetPlay(AIPLAY_DEFENSE_DEFENDER_AGGRESSIVE, fLocalConf, -1.0f);
                     }
                 }
@@ -706,7 +714,7 @@ FuzzyVariant StrategyChoosePlay(cDecisionEntity* pDecision)
                         fConfidence = fConfidence * fBranchRatio;
                     {
                         const float fLocalConf = fConfidence;
-                        *pBest = (*pBest >= fLocalConf) ? *pBest : fLocalConf;
+                        fBestConfidence = (fBestConfidence >= fLocalConf) ? fBestConfidence : fLocalConf;
                         pDecision->QueueActionSetPlay(AIPLAY_LOOSE_DEFENDER_AGGRESSIVE, fLocalConf, -1.0f);
                     }
                 }
@@ -728,7 +736,7 @@ FuzzyVariant StrategyChoosePlay(cDecisionEntity* pDecision)
                         fConfidence = fConfidence * fBranchRatio;
                     {
                         const float fLocalConf = fConfidence;
-                        *pBest = (*pBest >= fLocalConf) ? *pBest : fLocalConf;
+                        fBestConfidence = (fBestConfidence >= fLocalConf) ? fBestConfidence : fLocalConf;
                         pDecision->QueueActionSetPlay(AIPLAY_OFFENSE_DEFENDER_MODERATE, fLocalConf, -1.0f);
                     }
                 }
@@ -747,7 +755,7 @@ FuzzyVariant StrategyChoosePlay(cDecisionEntity* pDecision)
                         fConfidence = fConfidence * fBranchRatio;
                     {
                         const float fLocalConf = fConfidence;
-                        *pBest = (*pBest >= fLocalConf) ? *pBest : fLocalConf;
+                        fBestConfidence = (fBestConfidence >= fLocalConf) ? fBestConfidence : fLocalConf;
                         pDecision->QueueActionSetPlay(AIPLAY_DEFENSE_DEFENDER_MODERATE, fLocalConf, -1.0f);
                     }
                 }
@@ -766,7 +774,7 @@ FuzzyVariant StrategyChoosePlay(cDecisionEntity* pDecision)
                         fConfidence = fConfidence * fBranchRatio;
                     {
                         const float fLocalConf = fConfidence;
-                        *pBest = (*pBest >= fLocalConf) ? *pBest : fLocalConf;
+                        fBestConfidence = (fBestConfidence >= fLocalConf) ? fBestConfidence : fLocalConf;
                         pDecision->QueueActionSetPlay(AIPLAY_LOOSE_DEFENDER_MODERATE, fLocalConf, -1.0f);
                     }
                 }
@@ -788,7 +796,7 @@ FuzzyVariant StrategyChoosePlay(cDecisionEntity* pDecision)
                         fConfidence = fConfidence * fBranchRatio;
                     {
                         const float fLocalConf = fConfidence;
-                        *pBest = (*pBest >= fLocalConf) ? *pBest : fLocalConf;
+                        fBestConfidence = (fBestConfidence >= fLocalConf) ? fBestConfidence : fLocalConf;
                         pDecision->QueueActionSetPlay(AIPLAY_OFFENSE_DEFENDER_PASSIVE, fLocalConf, -1.0f);
                     }
                 }
@@ -807,7 +815,7 @@ FuzzyVariant StrategyChoosePlay(cDecisionEntity* pDecision)
                         fConfidence = fConfidence * fBranchRatio;
                     {
                         const float fLocalConf = fConfidence;
-                        *pBest = (*pBest >= fLocalConf) ? *pBest : fLocalConf;
+                        fBestConfidence = (fBestConfidence >= fLocalConf) ? fBestConfidence : fLocalConf;
                         pDecision->QueueActionSetPlay(AIPLAY_DEFENSE_DEFENDER_PASSIVE, fLocalConf, -1.0f);
                     }
                 }
@@ -826,7 +834,7 @@ FuzzyVariant StrategyChoosePlay(cDecisionEntity* pDecision)
                         fConfidence = fConfidence * fBranchRatio;
                     {
                         const float fLocalConf = fConfidence;
-                        *pBest = (*pBest >= fLocalConf) ? *pBest : fLocalConf;
+                        fBestConfidence = (fBestConfidence >= fLocalConf) ? fBestConfidence : fLocalConf;
                         pDecision->QueueActionSetPlay(AIPLAY_LOOSE_DEFENDER_PASSIVE, fLocalConf, -1.0f);
                     }
                 }
@@ -834,5 +842,5 @@ FuzzyVariant StrategyChoosePlay(cDecisionEntity* pDecision)
         }
     }
 
-    return FuzzyVariant(*pBest);
+    return FuzzyVariant(fBestConfidence);
 }
