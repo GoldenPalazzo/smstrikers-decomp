@@ -3,6 +3,7 @@
 #include "Game/Game.h"
 #include "Game/Sys/eventman.h"
 
+#include "NL/nlBSearch.h"
 #include "NL/nlList.h"
 #include "NL/nlQSort.h"
 #include "NL/nlSlotPool.h"
@@ -109,12 +110,10 @@ typedef WalkHelper<AUDIO_EVENT_RECORD, ListEntry<AUDIO_EVENT_RECORD>, _AudioEven
 // void nlQSort<NIS_EVENT_LOOKUP>(NIS_EVENT_LOOKUP*, int, int (*)(const NIS_EVENT_LOOKUP*, const NIS_EVENT_LOOKUP*))
 // instantiated via AudioScriptEventMgr_stub below
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x8014B4B0 | size: 0x8C
-//  */
-// void nlBSearch<NIS_EVENT_LOOKUP, unsigned long>(const unsigned long&, NIS_EVENT_LOOKUP*, int)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x0 | 0x8014B4B0 | size: 0x8C
+ */
+// nlBSearch<NIS_EVENT_LOOKUP, unsigned long> instantiated via AudioScriptEventMgr_stub below
 
 // /**
 //  * Offset/Address/Size: 0x0 | 0x8014B4A0 | size: 0x10
@@ -123,12 +122,13 @@ typedef WalkHelper<AUDIO_EVENT_RECORD, ListEntry<AUDIO_EVENT_RECORD>, _AudioEven
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x8014B46C | size: 0x34
-//  */
-// void WalkHelper<AUDIO_EVENT_RECORD, ListEntry<AUDIO_EVENT_RECORD>, _AudioEventRaiser>::Callback(ListEntry<AUDIO_EVENT_RECORD>*)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x0 | 0x8014B46C | size: 0x34
+ */
+void WalkHelper<AUDIO_EVENT_RECORD, ListEntry<AUDIO_EVENT_RECORD>, _AudioEventRaiser>::Callback(ListEntry<AUDIO_EVENT_RECORD>* listEntry)
+{
+    (m_CBClass->*m_CB)(&listEntry->data);
+}
 
 // /**
 //  * Offset/Address/Size: 0x2248 | 0x8014B39C | size: 0xD0
@@ -263,5 +263,7 @@ void RecordExcitingEvent()
 // REMOVE once real callers exist.
 void AudioScriptEventMgr_stub()
 {
+    unsigned long k = 0;
+    nlBSearch<NIS_EVENT_LOOKUP, unsigned long>(k, g_NisEventLookup, 4);
     nlQSort<NIS_EVENT_LOOKUP>(g_NisEventLookup, 4, &nlDefaultQSortComparer<NIS_EVENT_LOOKUP>);
 }

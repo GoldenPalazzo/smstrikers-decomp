@@ -3,6 +3,7 @@
 #include "Game/Player.h"
 #include "Game/AI/Fielder.h"
 #include "Game/CharacterTweaks.h"
+#include "Game/FE/feHelpFuncs.h"
 #include "Game/Goalie.h"
 #include "Game/Audio/AudioLoader.h"
 #include "Game/AnimInventory.h"
@@ -14,6 +15,7 @@
 #include "NL/nlString.h"
 #include "NL/nlMemory.h"
 #include "NL/gl/gl.h"
+#include "NL/gl/glRenderList.h"
 #include "NL/gl/glTexture.h"
 #include "NL/glx/glxTexture.h"
 
@@ -133,9 +135,6 @@ void DestroyCharacters()
  * r23<>r21 for teami, r27<>r30 for captain values). Inner loop compare loads sidekick/captain into
  * r5/r6 (reused as args) vs target r3/r0 (reloads into r5/r6), causing 2 instruction size difference.
  */
-extern eCharacterClass ConvertToCharacterClass(eTeamID);
-extern eCharacterClass ConvertToCharacterClass(eSidekickID);
-
 static eCharacterClass GetGoalieFromCaptain(eCharacterClass captain)
 {
     switch (captain)
@@ -878,12 +877,22 @@ typedef DLListContainerBase<AudioStreamTrack::StreamTrack::QUEUED_STREAM, nlStat
  * Forces emission of specific constants/operations so the compiler
  * lays out the related fields to match the original binary.
  */
+typedef WalkHelper<
+    AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL,
+    DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>,
+    AudioStreamTrack::TrackManagerBase::FadeManager>
+    _FadeWalkHelper;
+
 void CharacterTemplate_stub()
 {
     void (_StereoStreamDLList::* volatile forceStereoDelete)(DLListEntry<GCAudioStreaming::StereoAudioStream*>*) = &_StereoStreamDLList::DeleteEntry;
     void (_QueuedStreamDLList::* volatile forceQueuedDelete)(DLListEntry<AudioStreamTrack::StreamTrack::QUEUED_STREAM>*) = &_QueuedStreamDLList::DeleteEntry;
     (void)forceStereoDelete;
     (void)forceQueuedDelete;
+
+    _FadeWalkHelper fadeHelper;
+    DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>* fadeEntry = 0;
+    fadeHelper.Callback(fadeEntry);
 }
 
 // /**

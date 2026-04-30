@@ -40,6 +40,9 @@ public:
     /* 0x20 */ virtual void BlendRootTrans(nlVector3*, float, float*);
     /* 0x24 */ virtual void BlendRootRot(unsigned short*, float, float*);
 
+    template <typename T>
+    void Replay(T& frame);
+
     void UpdateSynchronized(float);
     void SetTime(float time)
     {

@@ -22,4 +22,10 @@ public:
     /* 0x8 */ int mCapacity;
 }; // total size: 0xC
 
+template <typename T, typename Allocator>
+void Vector<T, Allocator>::push_back(const T& value)
+{
+    insert(mData + mSize, &value, &value + 1);
+}
+
 #endif // _NLVECTOR_H_

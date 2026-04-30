@@ -83,47 +83,12 @@ static const nlVector3 v3Zero = { 0.0f, 0.0f, 0.0f };
 
 // extern Audio::cWorldSFX gPowerupSFX;
 
-// /**
-//  * Offset/Address/Size: 0x190 | 0x80061D50 | size: 0x64
-//  */
-// void SlotPool<FreezeShell>::~SlotPool()
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x12C | 0x80061CEC | size: 0x64
-//  */
-// void SlotPool<GreenShell>::~SlotPool()
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0xC8 | 0x80061C88 | size: 0x64
-//  */
-// void SlotPool<SpinyShell>::~SlotPool()
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x64 | 0x80061C24 | size: 0x64
-//  */
-// void SlotPool<RedShell>::~SlotPool()
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x80061BC0 | size: 0x64
-//  */
-// void SlotPool<Banana>::~SlotPool()
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x374 | 0x80061B5C | size: 0x64
-//  */
-// void SlotPool<Bobomb>::~SlotPool()
-// {
-// }
+SlotPool<FreezeShell> FreezeShell::m_FreezeShellSlotPool;
+SlotPool<GreenShell> GreenShell::m_GreenShellSlotPool;
+SlotPool<SpinyShell> SpinyShell::m_SpinyShellSlotPool;
+SlotPool<RedShell> RedShell::m_RedShellSlotPool;
+SlotPool<Banana> Banana::m_BananaSlotPool;
+SlotPool<Bobomb> Bobomb::m_BobombSlotPool;
 
 // /**
 //  * Offset/Address/Size: 0x114 | 0x80060A74 | size: 0xD74

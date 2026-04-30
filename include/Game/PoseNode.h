@@ -3,6 +3,12 @@
 
 #include "NL/nlMath.h"
 
+template <int N, typename FrameType, typename T>
+void Replayable(FrameType& frame, T& drawable);
+
+template <int N, typename FrameType, typename T>
+void ReplayablePolymorphic(FrameType& frame, T*& ptr);
+
 class cPoseAccumulator;
 
 class cPoseNode
@@ -35,8 +41,21 @@ public:
     cPoseNode* GetChild(int) const;
     cPoseNode* GetChild(int);
 
+    template <typename T>
+    void Replay(T& frame);
+
     /* 0x4 */ cPoseNode* m_children[3];
     /* 0x10 */ int m_numChildren;
 }; // total size: 0x14
+
+template <typename T>
+inline void cPoseNode::Replay(T& frame)
+{
+    Replayable<0>(frame, m_numChildren);
+    for (int i = 0; i < m_numChildren; i++)
+    {
+        ReplayablePolymorphic<0>(frame, m_children[i]);
+    }
+}
 
 #endif // _POSENODE_H_

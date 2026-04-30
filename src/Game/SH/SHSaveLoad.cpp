@@ -7,6 +7,8 @@
 #include "Game/GameSceneManager.h"
 #include "Game/DB/SaveLoad.h"
 #include "Game/FE/feFinder.h"
+#include "Game/FE/feTemplates.h"
+#include "Game/FE/tlSlide.h"
 #include "Game/FE/feInput.h"
 #include "Game/FE/fePopupMenu.h"
 #include "Game/FE/feSceneManager.h"
@@ -50,6 +52,44 @@ extern float gRetryTimerDelay;
 // extern declared in gcmemcard.h as: extern MemCard* g_MemCards[2];
 extern u8 WasCardRemoved;
 extern u8 PreviousNoCardInSlotState;
+
+#pragma dont_inline on
+
+/**
+ * Offset/Address/Size: 0x2B34 | 0x800B30BC | size: 0x84
+ */
+template <>
+template <>
+TLSlide* FEFinder<TLSlide, 0>::_Find<FEPresentation>(
+    FEPresentation* pTopLevel, const unsigned long Level1, const unsigned long Level2,
+    const unsigned long Level3, const unsigned long Level4, const unsigned long Level5, const unsigned long Level6)
+{
+    void* pChild = FindItemByHashID<TLSlide>(pTopLevel->m_slides, Level1);
+    if (pChild == 0)
+        return 0;
+    if (Level2 == 0)
+        return (TLSlide*)pChild;
+    return _Find<TLSlide>(CastToSomeType<TLSlide>(pTopLevel->m_slides, pChild), Level2, Level3, Level4, Level5, Level6, 0);
+}
+
+/**
+ * Offset/Address/Size: 0x2BB8 | 0x800B3140 | size: 0x84
+ */
+template <>
+template <>
+TLSlide* FEFinder<TLSlide, 0>::_Find<TLSlide>(
+    TLSlide* pTopLevel, const unsigned long Level1, const unsigned long Level2,
+    const unsigned long Level3, const unsigned long Level4, const unsigned long Level5, const unsigned long Level6)
+{
+    void* pChild = FindItemByHashID<TLInstance>(pTopLevel->m_instances, Level1);
+    if (pChild == 0)
+        return 0;
+    if (Level2 == 0)
+        return (TLSlide*)pChild;
+    return _Find<TLInstance>(CastToSomeType<TLInstance>(pTopLevel->m_instances, pChild), Level2, Level3, Level4, Level5, Level6, 0);
+}
+
+#pragma dont_inline reset
 
 /**
  * Offset/Address/Size: 0x28D0 | 0x800B2E58 | size: 0x14

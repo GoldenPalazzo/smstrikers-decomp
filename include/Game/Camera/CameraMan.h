@@ -74,4 +74,22 @@ public:
     static int m_UpVectorStackSize;
 };
 
+template <typename T>
+T* cCameraManager::GetCamera(eCameraType type)
+{
+    cBaseCamera* cam = m_cameraStack;
+    if (cam != NULL)
+    {
+        do
+        {
+            if (cam->GetType() == type)
+            {
+                return (T*)cam;
+            }
+            cam = cam->m_next;
+        } while (cam != m_cameraStack);
+    }
+    return NULL;
+}
+
 #endif // _CAMERAMAN_H_

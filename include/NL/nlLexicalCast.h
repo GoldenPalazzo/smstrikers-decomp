@@ -5,12 +5,62 @@
 #include "strtold.h"
 #include "NL/nlBasicString.h"
 
+// Expands to a forward-declaration of the by-value LexicalCast primary
+// templates inside the enclosing namespace. Used by translation units
+// (e.g. TakeGameMemSnapshot) that ship their own parallel copy of the
+// template machinery with `static To Do(From)` (by-value) instead of
+// the by-const-ref signature used at global scope below.
+#define NL_DECLARE_LOCAL_LEXICAL_CAST_BY_VALUE() \
+    namespace Detail                             \
+    {                                            \
+    template <typename To, typename From>        \
+    struct LexicalCastImpl                       \
+    {                                            \
+        static To Do(From);                      \
+    };                                           \
+    }                                            \
+    template <typename To, typename From>        \
+    To LexicalCast(const From& value)
+
 namespace Detail
 {
 template <typename To, typename From>
 struct LexicalCastImpl
 {
     static To Do(const From& f);
+};
+} // namespace Detail
+
+namespace Detail
+{
+template <typename To>
+struct LexicalCastImpl<To, const char*>
+{
+    static To Do(const char* s);
+};
+
+template <typename To>
+struct LexicalCastImpl<To, int>
+{
+    static To Do(int t);
+};
+
+template <typename To>
+struct LexicalCastImpl<To, unsigned long>
+{
+    static To Do(unsigned long t);
+};
+
+template <typename To>
+struct LexicalCastImpl<To, char>
+{
+    static To Do(char t);
+};
+
+template <typename To>
+struct LexicalCastImpl<To, bool>
+{
+    static To Do(bool t);
 };
 } // namespace Detail
 
@@ -65,9 +115,6 @@ template <>
 const char* LexicalCast<const char*, float>(const float& value);
 template <>
 const char* LexicalCast<const char*, bool>(const bool& value);
-
-template <>
-BasicString<char, Detail::TempStringAllocator> LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(const int& value);
 
 #ifdef NL_LEXICALCAST_DEFINE
 

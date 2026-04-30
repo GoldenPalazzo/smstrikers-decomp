@@ -153,44 +153,13 @@ NetMeshModelLoader::NetMeshModelLoader(NetMesh& netMesh, unsigned long netMeshDr
     LoadGeometryFromModel();
 }
 
-// /**
-//  * Offset/Address/Size: 0x13A0 | 0x801314F8 | size: 0x60
-//  */
-// void nlAVLTreeSlotPool<NetMeshModelLoader::NetMeshEdge, int, DefaultKeyCompare<NetMeshModelLoader::NetMeshEdge>>::~nlAVLTreeSlotPool()
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x1340 | 0x80131498 | size: 0x60
-//  */
-// void nlAVLTreeSlotPool<NetMeshModelLoader::NetMeshVertex, int, DefaultKeyCompare<NetMeshModelLoader::NetMeshVertex>>::~nlAVLTreeSlotPool()
-// {
-// }
-
 /**
  * Offset/Address/Size: 0x12C8 | 0x80131420 | size: 0x78
- * TODO: 99.00% match - two remaining call-target diffs on slot-pool deleting destructors.
  */
 NetMeshModelLoader::~NetMeshModelLoader()
 {
-    struct NetMeshEdge
-    {
-        ~NetMeshEdge()
-        {
-            FORCE_DONT_INLINE;
-        }
-    };
-
-    struct NetMeshVertex
-    {
-        ~NetMeshVertex()
-        {
-            FORCE_DONT_INLINE;
-        }
-    };
-
-    delete (NetMeshEdge*)m_EdgeList;
-    delete (NetMeshVertex*)m_VertexList;
+    delete m_EdgeList;
+    delete m_VertexList;
     delete m_TriStripIndices;
 }
 

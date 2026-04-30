@@ -22,7 +22,7 @@ extern AnimAudioEventLookup* gp_AnimAudioEventTable;
 extern unsigned long gNumAnimAudioEvents;
 
 template <typename T, typename U>
-T* nlBSearch(const U& key, T* table, int count);
+T* nlBSearch(const U& key, T* pBase, int count);
 
 template <typename T>
 int nlStrCmp(const T* a, const T* b);

@@ -169,9 +169,34 @@ static const char* CHARACTER_ACCEPT_SOUNDS[] = {
 // /**
 //  * Offset/Address/Size: 0x130 | 0x800A6640 | size: 0x30
 //  */
-// void TakeGameMemSnapshot::LexicalCast<BasicString<char, Detail::TempStringAllocator>, unsigned int>(const unsigned int&)
-// {
-// }
+namespace TakeGameMemSnapshot
+{
+namespace Detail
+{
+template <typename To, typename From>
+struct LexicalCastImpl
+{
+    static To Do(From);
+};
+} // namespace Detail
+
+template <typename To, typename From>
+To LexicalCast(const From& value);
+
+template <>
+BasicString<char, ::Detail::TempStringAllocator>
+LexicalCast<BasicString<char, ::Detail::TempStringAllocator>, unsigned int>(const unsigned int& value)
+{
+    return Detail::LexicalCastImpl<BasicString<char, ::Detail::TempStringAllocator>, unsigned int>::Do(value);
+}
+
+template <>
+BasicString<char, ::Detail::TempStringAllocator>
+LexicalCast<BasicString<char, ::Detail::TempStringAllocator>, unsigned long>(const unsigned long& value)
+{
+    return Detail::LexicalCastImpl<BasicString<char, ::Detail::TempStringAllocator>, unsigned long>::Do(value);
+}
+} // namespace TakeGameMemSnapshot
 
 // /**
 //  * Offset/Address/Size: 0x30 | 0x800A6540 | size: 0x100
@@ -410,37 +435,37 @@ unsigned long GetLOCDifficultyName(GameplaySettings::eSkillLevel difficulty)
 /**
  * Offset/Address/Size: 0x1098 | 0x800A4154 | size: 0x4C
  */
-NisCharacterClass ConvertToCharacterClass(eTeamID teamID)
+eCharacterClass ConvertToCharacterClass(eTeamID teamID)
 {
     for (int i = 0; i < 9; i++)
     {
         if (teamID == TeamID2CharacterClassTable[i][0])
         {
-            return (NisCharacterClass)TeamID2CharacterClassTable[i][1];
+            return (eCharacterClass)TeamID2CharacterClassTable[i][1];
         }
     }
-    return NIS_CHAR_CLASS_INVALID;
+    return CHARACTER_CLASS_INVALID;
 }
 
 /**
  * Offset/Address/Size: 0x1034 | 0x800A40F0 | size: 0x64
  */
-NisCharacterClass ConvertToCharacterClass(eSidekickID sidekickID)
+eCharacterClass ConvertToCharacterClass(eSidekickID sidekickID)
 {
     switch (sidekickID)
     {
     case SK_BIRDO:
-        return NIS_CHAR_CLASS_BIRDO;
+        return BIRDO;
     case SK_HAMMERBROS:
-        return NIS_CHAR_CLASS_HAMMERBROS;
+        return HAMMERBROS;
     case SK_KOOPA:
-        return NIS_CHAR_CLASS_KOOPA;
+        return KOOPA;
     case SK_TOAD:
-        return NIS_CHAR_CLASS_TOAD;
+        return TOAD;
     case SK_MYSTERY:
-        return NIS_CHAR_CLASS_MYSTERY;
+        return MYSTERY;
     default:
-        return NIS_CHAR_CLASS_INVALID;
+        return CHARACTER_CLASS_INVALID;
     }
 }
 
@@ -512,7 +537,7 @@ TLInstance* FindComponent(TLSlide* slide, const char* name)
     unsigned long hash = nlStringLowerHash(name);
     while (inst)
     {
-        if (hash == inst->m_hashID)
+        if (hash == inst->m_hash)
         {
             break;
         }
@@ -555,7 +580,7 @@ void DoubleHighlite::OpenItem(TLComponentInstance* component)
     unsigned long hash = nlStringLowerHash("highlite");
     while (highlite)
     {
-        if (hash == highlite->m_hashID)
+        if (hash == highlite->m_hash)
         {
             break;
         }
@@ -991,7 +1016,7 @@ public:
 
 } // namespace TakeGameMemSnapshot
 
-// Force instantiation of TakeGameMemSnapshot::FormatImpl — REMOVE once real callers exist.
+// Force instantiation of TakeGameMemSnapshot::FormatImpl -- REMOVE once real callers exist.
 void feHelpFuncs_stub()
 {
     TakeGameMemSnapshot::FormatImpl<BasicString<char, Detail::TempStringAllocator> > impl;

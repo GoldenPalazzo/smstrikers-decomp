@@ -6,7 +6,9 @@
 #include "Game/FE/feFinder.h"
 #include "Game/FE/tlTextInstance.h"
 #include "Game/FE/feTemplates.h"
+#include "NL/nlBSearch.h"
 #include "NL/nlLexicalCast.h"
+#include "NL/nlLocalization.h"
 #include "NL/nlFormat.h"
 #include "NL/gl/gl.h"
 
@@ -466,19 +468,15 @@ template TLInstance* CastToSomeType<TLInstance>(TLInstance*, void*);
  */
 template TLSlide* CastToSomeType<TLSlide>(TLSlide*, void*);
 
-// /**
-//  * Offset/Address/Size: 0x798 | 0x8009C374 | size: 0x44
-//  */
-// void FindItemByHashID<TLInstance>(TLInstance*, unsigned long)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x798 | 0x8009C374 | size: 0x44
+ */
+template TLInstance* FindItemByHashID<TLInstance>(TLInstance*, unsigned long);
 
-// /**
-//  * Offset/Address/Size: 0x7DC | 0x8009C3B8 | size: 0x44
-//  */
-// void FindItemByHashID<TLSlide>(TLSlide*, unsigned long)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x7DC | 0x8009C3B8 | size: 0x44
+ */
+template TLSlide* FindItemByHashID<TLSlide>(TLSlide*, unsigned long);
 
 /**
  * Offset/Address/Size: 0x0 | 0x8009C3FC | size: 0x14
@@ -608,7 +606,7 @@ BasicString<unsigned short, Detail::TempStringAllocator>::operator=(BasicString<
 // {
 // }
 
-// Stub to force template instantiations — REMOVE once real callers exist.
+// Stub to force template instantiations -- REMOVE once real callers exist.
 void fePopupMenu_stub()
 {
     WideBasicString s;
@@ -617,4 +615,7 @@ void fePopupMenu_stub()
     LexicalCast<WideBasicString, const unsigned short*>(p);
     FormatImpl<WideBasicString> fi;
     WideBasicString s2 = (WideBasicString)fi;
+
+    unsigned long key = 0;
+    nlBSearch<nlLocalization::StringLookup, unsigned long>(key, (nlLocalization::StringLookup*)0, 0);
 }

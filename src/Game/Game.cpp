@@ -113,13 +113,6 @@ static void _dummy_compressed_pair_first()
 // }
 
 // /**
-//  * Offset/Address/Size: 0x0 | 0x8004006C | size: 0x78
-//  */
-// void cCameraManager::GetCamera<GameplayCamera>(eCameraType)
-// {
-// }
-
-// /**
 //  * Offset/Address/Size: 0x0 | 0x80040064 | size: 0x8
 //  */
 // void GoalScoredData::GetID()
@@ -133,12 +126,20 @@ static void _dummy_compressed_pair_first()
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0x3D4 | 0x8003FFF8 | size: 0x4C
-//  */
-// void std::__tree<std::pair<const unsigned long, FuzzyVariant>, std::map<unsigned long, FuzzyVariant, std::less<unsigned long>, std::allocator<std::pair<const unsigned long, FuzzyVariant> > >::value_compare, std::allocator<std::pair<const unsigned long, FuzzyVariant> > >::clear()
-// {
-// }
+/**
+ * Offset/Address/Size: 0x3D4 | 0x8003FFF8 | size: 0x4C
+ */
+void _TreeT::clear()
+{
+    node* n = (node*)node_alloc_.second().left_;
+    if (n)
+    {
+        destroy(n);
+        alloc_.second() = 0;
+        node_alloc_.second().left_ = 0;
+        comp_.second() = (node*)&node_alloc_.second();
+    }
+}
 
 /**
  * Offset/Address/Size: 0x3D0 | 0x8003FFF4 | size: 0x4

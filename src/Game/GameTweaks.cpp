@@ -811,3 +811,10 @@ void SkillTweaks::HookupTweakeables(int)
 {
     // EMPTY
 }
+
+void GameTweaks_stub()
+{
+    SkillTweak* head;
+    SkillTweak* tail;
+    nlListRemoveStart<SkillTweak>(&head, &tail);
+}

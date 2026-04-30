@@ -712,6 +712,11 @@ void EmissionManager_stub()
 {
     NewAdapter<AVLTreeEntry<unsigned long, LingerMessage*> > adapter;
     adapter.Delete((AVLTreeEntry<unsigned long, LingerMessage*>*)0);
+
+    float f = 0.0f;
+    FloatCompressor<-255, 255, 6> fc(f);
+    Replayable<0>(*(SaveFrame*)0, (const FloatCompressor<-255, 255, 6>&)fc);
+    Replayable<0>(*(LoadFrame*)0, (const FloatCompressor<-255, 255, 6>&)fc);
 }
 
 // /**
@@ -741,19 +746,29 @@ void EmissionManager_stub()
 //  {
 //  }
 
-//  /**
-//   * Offset/Address/Size: 0x324 | 0x801FA4B8 | size: 0x40
-//   */
-//  void Replayable<0, SaveFrame, char>(SaveFrame&, char&)
-//  {
-//  }
+/**
+ * Offset/Address/Size: 0x324 | 0x801FA4B8 | size: 0x40
+ */
+#pragma dont_inline on
+template <>
+void Replayable<0, SaveFrame, char>(SaveFrame& frame, char& value)
+{
+    memcpy(frame.mStream.mStorage, &value, sizeof(char));
+    frame.mStream.mStorage += sizeof(char);
+}
+#pragma dont_inline reset
 
-//  /**
-//   * Offset/Address/Size: 0x2E0 | 0x801FA474 | size: 0x44
-//   */
-//  void Replayable<0, LoadFrame, char>(LoadFrame&, char&)
-//  {
-//  }
+/**
+ * Offset/Address/Size: 0x2E0 | 0x801FA474 | size: 0x44
+ */
+#pragma dont_inline on
+template <>
+void Replayable<0, LoadFrame, char>(LoadFrame& frame, char& value)
+{
+    memcpy(&value, frame.mStream.mStorage, sizeof(char));
+    frame.mStream.mStorage += sizeof(char);
+}
+#pragma dont_inline reset
 
 //  /**
 //   * Offset/Address/Size: 0x128 | 0x801FA2BC | size: 0x1B8
@@ -762,33 +777,53 @@ void EmissionManager_stub()
 //  {
 //  }
 
-//  /**
-//   * Offset/Address/Size: 0xE8 | 0x801FA27C | size: 0x40
-//   */
-//  void Replayable<0, SaveFrame, unsigned long>(SaveFrame&, unsigned long&)
-//  {
-//  }
+/**
+ * Offset/Address/Size: 0xE8 | 0x801FA27C | size: 0x40
+ */
+#pragma dont_inline on
+template <>
+void Replayable<0, SaveFrame, unsigned long>(SaveFrame& frame, unsigned long& value)
+{
+    memcpy(frame.mStream.mStorage, &value, sizeof(unsigned long));
+    frame.mStream.mStorage += sizeof(unsigned long);
+}
+#pragma dont_inline reset
 
-//  /**
-//   * Offset/Address/Size: 0xA8 | 0x801FA23C | size: 0x40
-//   */
-//  void Replayable<0, SaveFrame, unsigned short>(SaveFrame&, unsigned short&)
-//  {
-//  }
+/**
+ * Offset/Address/Size: 0xA8 | 0x801FA23C | size: 0x40
+ */
+#pragma dont_inline on
+template <>
+void Replayable<0, SaveFrame, unsigned short>(SaveFrame& frame, unsigned short& value)
+{
+    memcpy(frame.mStream.mStorage, &value, sizeof(unsigned short));
+    frame.mStream.mStorage += sizeof(unsigned short);
+}
+#pragma dont_inline reset
 
-//  /**
-//   * Offset/Address/Size: 0x44 | 0x801FA1D8 | size: 0x44
-//   */
-//  void Replayable<0, LoadFrame, unsigned long>(LoadFrame&, unsigned long&)
-//  {
-//  }
+/**
+ * Offset/Address/Size: 0x44 | 0x801FA1D8 | size: 0x44
+ */
+#pragma dont_inline on
+template <>
+void Replayable<0, LoadFrame, unsigned long>(LoadFrame& frame, unsigned long& value)
+{
+    memcpy(&value, frame.mStream.mStorage, sizeof(unsigned long));
+    frame.mStream.mStorage += sizeof(unsigned long);
+}
+#pragma dont_inline reset
 
-//  /**
-//   * Offset/Address/Size: 0x0 | 0x801FA194 | size: 0x44
-//   */
-//  void Replayable<0, LoadFrame, unsigned short>(LoadFrame&, unsigned short&)
-//  {
-//  }
+/**
+ * Offset/Address/Size: 0x0 | 0x801FA194 | size: 0x44
+ */
+#pragma dont_inline on
+template <>
+void Replayable<0, LoadFrame, unsigned short>(LoadFrame& frame, unsigned short& value)
+{
+    memcpy(&value, frame.mStream.mStorage, sizeof(unsigned short));
+    frame.mStream.mStorage += sizeof(unsigned short);
+}
+#pragma dont_inline reset
 
 //  /**
 //   * Offset/Address/Size: 0x0 | 0x801FA170 | size: 0x24

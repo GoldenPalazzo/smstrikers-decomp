@@ -161,8 +161,8 @@ void PlatAudio::ShutdownStreaming()
     while (streamIndex < g_Streams.m_EntryCount)
     {
         AudioStream** pStream;
-        EntryLookup<AudioStream*>* pEntryLookup;
-        EntryLookup<AudioStream*>* removedLookup;
+        nlSortedSlot<GCAudioStreaming::AudioStream*, 7>::EntryLookup<GCAudioStreaming::AudioStream*>* pEntryLookup;
+        nlSortedSlot<GCAudioStreaming::AudioStream*, 7>::EntryLookup<GCAudioStreaming::AudioStream*>* removedLookup;
         unsigned long index;
         unsigned long count;
 
@@ -192,21 +192,21 @@ void PlatAudio::ShutdownStreaming()
                 index++;
             }
 
-            ((nlSortedSlot<AudioStream*>*)&g_Streams)->FreeEntry(pStream);
+            ((nlSortedSlot<AudioStream*, 7>*)&g_Streams)->FreeEntry(pStream);
 
             index = (unsigned long)(removedLookup - g_Streams.m_pEntryLookup);
             count = g_Streams.m_EntryCount;
             while (index != count)
             {
                 unsigned long next = index + 1;
-                EntryLookup<AudioStream*>* base = g_Streams.m_pEntryLookup;
-                EntryLookup<AudioStream*>* src = &base[next];
-                EntryLookup<AudioStream*>* dst = &base[index];
-                unsigned long id = src->Id;
+                nlSortedSlot<GCAudioStreaming::AudioStream*, 7>::EntryLookup<GCAudioStreaming::AudioStream*>* base = g_Streams.m_pEntryLookup;
+                nlSortedSlot<GCAudioStreaming::AudioStream*, 7>::EntryLookup<GCAudioStreaming::AudioStream*>* src = &base[next];
+                nlSortedSlot<GCAudioStreaming::AudioStream*, 7>::EntryLookup<GCAudioStreaming::AudioStream*>* dst = &base[index];
+                unsigned long id = src->hash;
                 AudioStream** entry = src->pEntry;
 
                 dst->pEntry = entry;
-                dst->Id = id;
+                dst->hash = id;
                 index = next;
             }
             g_Streams.m_EntryCount--;
@@ -220,12 +220,12 @@ void PlatAudio::ShutdownStreaming()
     lookupOffset = 0;
     while (streamIndex < g_Streams.m_EntryCount)
     {
-        ((nlSortedSlot<AudioStream*>*)&g_Streams)->FreeEntry(g_Streams.m_pEntryLookup[lookupOffset >> 3].pEntry);
+        ((nlSortedSlot<AudioStream*, 7>*)&g_Streams)->FreeEntry(g_Streams.m_pEntryLookup[lookupOffset >> 3].pEntry);
         lookupOffset += 8;
         streamIndex++;
     }
 
-    ((nlSortedSlot<AudioStream*>*)&g_Streams)->FreeLookup();
+    ((nlSortedSlot<AudioStream*, 7>*)&g_Streams)->FreeLookup();
     g_Streams.m_EntryCount = 0;
 
     nlFree(g_BufferMgr.m_MRAMBuffer);

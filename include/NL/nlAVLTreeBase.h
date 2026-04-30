@@ -66,6 +66,7 @@ public:
     void DeleteEntry(AVLTreeEntry<KeyType, ValueType>* entry);
     void Clear();
     void DestroyTree(void (AVLTreeBase::*deleteFunc)(AVLTreeEntry<KeyType, ValueType>*));
+    void DeleteValue(AVLTreeEntry<KeyType, ValueType>* entry);
     void DeleteValues();
 
     void PostorderTraversal(AVLTreeEntry<KeyType, ValueType>* curr, void (AVLTreeBase::*cb)(AVLTreeEntry<KeyType, ValueType>*));
@@ -189,6 +190,13 @@ void AVLTreeBase<KeyType, ValueType, AllocatorType, CompareType>::DeleteEntry(AV
     m_Allocator.Free(entry);
 }
 
+template <typename KeyType, typename ValueType, typename AllocatorType, typename CompareType>
+void AVLTreeBase<KeyType, ValueType, AllocatorType, CompareType>::DeleteValue(AVLTreeEntry<KeyType, ValueType>* entry)
+{
+    delete entry->value;
+    m_Allocator.Delete(entry);
+}
+
 #ifndef NL_AVLTREEBASE_DECLARE_ONLY
 template <typename KeyType, typename ValueType, typename AllocatorType, typename CompareType>
 AVLTreeBase<KeyType, ValueType, AllocatorType, CompareType>::~AVLTreeBase()
@@ -292,6 +300,13 @@ void AVLTreeBase<KeyType, ValueType, AllocatorType, CompareType>::InorderWalk(AV
         (cbClass->*cb)(curr->key, &curr->value);
         curr = CastUp(curr->node.right);
     }
+}
+
+template <typename KeyType, typename ValueType, typename AllocatorType, typename CompareType>
+void AVLTreeBase<KeyType, ValueType, AllocatorType, CompareType>::DeleteValues()
+{
+    DestroyTree(&AVLTreeBase::DeleteValue);
+    m_NumElements = 0;
 }
 
 template <typename KeyType, typename ValueType, typename AllocatorType, typename CompareType>

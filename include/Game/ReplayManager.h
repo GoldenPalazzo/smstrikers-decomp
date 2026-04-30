@@ -9,7 +9,10 @@
 #include "Game/Replay.h"
 
 template <typename T>
-void Blend(const float* blendFactors, const T& lhs, const T& rhs, T& result);
+void Blend(const float* blendFactors, const T& lhs, const T& rhs, T& result)
+{
+    result.Blend(blendFactors, lhs, rhs);
+}
 
 // void Replayable<0, SaveFrame, RenderSnapshot>(SaveFrame&, RenderSnapshot&);
 // void Replayable<0, LoadFrame, RenderSnapshot>(LoadFrame&, RenderSnapshot&);

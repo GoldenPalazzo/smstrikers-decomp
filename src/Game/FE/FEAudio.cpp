@@ -587,14 +587,27 @@ AnimAudioEventLookup* nlBSearch(const unsigned long& key, AnimAudioEventLookup* 
 
 /**
  * Offset/Address/Size: 0x0 | 0x8009FB74 | size: 0x84
- * TODO: 87.7% match - MWCC emits extsb r3,r0 before each bl nlToUpper<c>__Fc
+ * TODO: 85.9% match - MWCC emits extsb r3,r0 before each bl nlToUpper<c>__Fc
  * (sign-extending char arg), but target loads directly into r3 with lbz.
- * Also minor scheduling diff with -O4,p (lbz for 2nd str moved before mr r31).
+ * Also scheduling diff (lbz for 2nd str moved before mr r31).
  * Compiler char sign-extension ABI quirk - not fixable with code changes.
  */
-// TEMP removed in scratch-root for decomp iteration
+#pragma dont_inline on
 template <>
-int nlStrICmp(const char* a, const char* b);
+int nlStrICmp(const char* a, const char* b)
+{
+    char c1;
+    char c2;
+
+    do
+    {
+        c1 = nlToUpper<char>(*a++);
+        c2 = nlToUpper<char>(*b++);
+    } while (c1 != 0 && c2 != 0 && c1 == c2);
+
+    return c1 - c2;
+}
+#pragma dont_inline reset
 
 // /**
 //  * Offset/Address/Size: 0x84 | 0x8009FBF8 | size: 0x40

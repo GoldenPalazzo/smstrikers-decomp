@@ -5,6 +5,7 @@
 #include "NL/nlDLListContainer.h"
 #include "NL/nlDLListSlotPool.h"
 #include "NL/nlSlotPool.h"
+#include "NL/nlSortedSlot.h"
 
 namespace GCAudioStreaming
 {
@@ -159,6 +160,19 @@ public:
     /* 0x68 */ Audio::MasterVolume::VOLUME_GROUP m_VolumeGroup;
     /* 0x6C */ Function<FnVoidVoid> m_IdleCallback;
 }; // total size: 0x74
+
+template <int N>
+class TrackManager : public TrackManagerBase, public nlStaticSortedSlot<StreamTrack, N>
+{
+public:
+    virtual ~TrackManager();
+    virtual void Update(float);
+    virtual StreamTrack& CreateTrack(const char*, Audio::MasterVolume::VOLUME_GROUP);
+    virtual void DestroyAllTracks();
+    virtual StreamTrack* GetTrack(unsigned long Name);
+    virtual void StopAllTracks(unsigned long);
+    virtual void OnMasterVolumeChange(Audio::MasterVolume::VOLUME_GROUP);
+};
 
 } // namespace AudioStreamTrack
 

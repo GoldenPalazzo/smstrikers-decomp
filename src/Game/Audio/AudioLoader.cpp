@@ -77,12 +77,9 @@ public:
 
 class GameSceneManager;
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x801490F4 | size: 0x60
-//  */
-//  void nlAVLTreeSlotPool<int, SoundStrToIDNode*, DefaultKeyCompare<int>>::~nlAVLTreeSlotPool()
-//  {
-//  }
+nlAVLTreeSlotPool<int, SoundStrToIDNode*, DefaultKeyCompare<int> > AudioLoader::gMusyXSoundDefineMap;
+nlAVLTreeSlotPool<int, SoundStrToIDNode*, DefaultKeyCompare<int> > AudioLoader::gCharSoundDefineMap;
+nlAVLTreeSlotPool<int, SoundStrToIDNode*, DefaultKeyCompare<int> > AudioLoader::gWorldSoundDefineMap;
 
 //  /**
 //   * Offset/Address/Size: 0x38 | 0x801490B0 | size: 0x44

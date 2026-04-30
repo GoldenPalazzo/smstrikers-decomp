@@ -53,12 +53,10 @@ void NisPlayer_stub()
  */
 template char nlToLower<char>(char c);
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x80118E10 | size: 0x54
-//  */
-// void nlToLower<char>(char*)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x0 | 0x80118E10 | size: 0x54
+ */
+template char* nlToLower<char>(char* str);
 
 /**
  * Offset/Address/Size: 0x0 | 0x801186C4 | size: 0x74C

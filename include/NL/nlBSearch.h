@@ -6,7 +6,7 @@
  */
 
 template <typename T, typename Key>
-T* nlBSearch(const Key& key, T* base, int count)
+T* nlBSearch(const Key& key, T* pBase, int count)
 {
     const unsigned long* keyPtr = (const unsigned long*)&key;
     unsigned long keyVal = (unsigned long)key;
@@ -17,7 +17,7 @@ T* nlBSearch(const Key& key, T* base, int count)
     {
         int mid = (high + low) / 2;
 
-        if (base[mid].hash > keyVal)
+        if (pBase[mid].hash > keyVal)
         {
             high = mid;
         }
@@ -27,10 +27,10 @@ T* nlBSearch(const Key& key, T* base, int count)
         }
     }
 
-    unsigned long highHash = base[high].hash;
+    unsigned long highHash = pBase[high].hash;
     if (highHash == *keyPtr)
     {
-        return &base[high];
+        return &pBase[high];
     }
 
     if (low == -1)
@@ -38,10 +38,10 @@ T* nlBSearch(const Key& key, T* base, int count)
         return nullptr;
     }
 
-    unsigned long lowHash = base[low].hash;
+    unsigned long lowHash = pBase[low].hash;
     if (lowHash == *keyPtr)
     {
-        return &base[low];
+        return &pBase[low];
     }
 
     return nullptr;

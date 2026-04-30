@@ -3,17 +3,17 @@
 
 #include "NL/nlArrayAllocator.h"
 
-template <typename T>
-struct EntryLookup
-{
-    /* 0x0 */ unsigned long Id;
-    /* 0x4 */ T* pEntry;
-}; // total size: 0x8
-
-template <typename T>
+template <typename T, int N = 0>
 class nlSortedSlot
 {
 public:
+    template <typename U>
+    struct EntryLookup
+    {
+        /* 0x0 */ unsigned long hash;
+        /* 0x4 */ U* pEntry;
+    }; // total size: 0x8
+
     virtual T* GetNewEntry() = 0;
     virtual void FreeEntry(T*) = 0;
     virtual void ExpandLookup() = 0;
@@ -25,7 +25,7 @@ public:
 }; // total size: 0x10
 
 template <typename T, int N>
-class nlStaticSortedSlot : public nlSortedSlot<T>
+class nlStaticSortedSlot : public nlSortedSlot<T, N>
 {
 public:
     virtual T* GetNewEntry();
@@ -34,7 +34,7 @@ public:
     virtual void FreeLookup();
 
     /* 0x10 */ unsigned char m_EntryData[sizeof(T) * N];
-    /* 0x2C */ EntryLookup<T> m_LookupData[N];
+    /* 0x2C */ typename nlSortedSlot<T, N>::template EntryLookup<T> m_LookupData[N];
     /* 0x64 */ nlArrayAllocator<T> m_ArrayAllocator;
 }; // total size: depends on T, N
 

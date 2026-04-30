@@ -3,6 +3,7 @@
 #include "Game/BaseGameSceneManager.h"
 #include "Game/FE/feManager.h"
 #include "Game/FE/fePopupMenu.h"
+#include "Game/FE/feTemplates.h"
 #include "Game/GameSceneManager.h"
 #include "NL/nlConfig.h"
 
@@ -40,25 +41,34 @@ void IChooseCaptain::SetPhaseReady(int homeaway)
 // }
 
 // /**
+//  * Offset/Address/Size: 0x7DC | 0x800D8124 | size: 0x38
+//  * Implicitly instantiated from feFinder.h template
+//  */
+
+/**
+ * Offset/Address/Size: 0x814 | 0x800D815C | size: 0x84
+ */
+#pragma dont_inline on
+template <>
+template <>
+TLInstance* FEFinder<TLInstance, 5>::_Find<TLSlide>(
+    TLSlide* pTopLevel, const unsigned long Level1, const unsigned long Level2,
+    const unsigned long Level3, const unsigned long Level4, const unsigned long Level5, const unsigned long Level6)
+{
+    void* pChild = FindItemByHashID<TLInstance>(pTopLevel->m_instances, Level1);
+    if (pChild == 0)
+        return 0;
+    if (Level2 == 0)
+        return (TLInstance*)pChild;
+    return _Find<TLInstance>(CastToSomeType<TLInstance>(pTopLevel->m_instances, pChild), Level2, Level3, Level4, Level5, Level6, 0);
+}
+#pragma dont_inline off
+
+// /**
 //  * Offset/Address/Size: 0x898 | 0x800D81E0 | size: 0x15C
 //  */
 // void FEFinder<TLInstance, 5>::_Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long,
 // unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x814 | 0x800D815C | size: 0x84
-//  */
-// void FEFinder<TLInstance, 5>::_Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long,
-// unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x7DC | 0x800D8124 | size: 0x38
-//  */
-// void FEFinder<TLInstance, 5>::Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher)
 // {
 // }
 
@@ -110,20 +120,34 @@ void IChooseCaptain::SetPhaseReady(int homeaway)
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0x250 | 0x800D7B98 | size: 0x84
-//  */
-// void FEFinder<TLInstance, 2>::_Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long,
-// unsigned long)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x218 | 0x800D7B60 | size: 0x38
+ */
+template <>
+template <>
+TLInstance* FEFinder<TLInstance, 2>::Find<TLSlide>(
+    TLSlide* pTopLevel, InlineHasher h1, InlineHasher h2, InlineHasher h3,
+    InlineHasher h4, InlineHasher h5, InlineHasher h6)
+{
+    return _Find(pTopLevel, h1.m_Hash, h2.m_Hash, h3.m_Hash, h4.m_Hash, h5.m_Hash, h6.m_Hash);
+}
 
-// /**
-//  * Offset/Address/Size: 0x218 | 0x800D7B60 | size: 0x38
-//  */
-// void FEFinder<TLInstance, 2>::Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x250 | 0x800D7B98 | size: 0x84
+ */
+template <>
+template <>
+TLInstance* FEFinder<TLInstance, 2>::_Find<TLSlide>(
+    TLSlide* pTopLevel, const unsigned long Level1, const unsigned long Level2,
+    const unsigned long Level3, const unsigned long Level4, const unsigned long Level5, const unsigned long Level6)
+{
+    void* pChild = FindItemByHashID<TLInstance>(pTopLevel->m_instances, Level1);
+    if (pChild == 0)
+        return 0;
+    if (Level2 == 0)
+        return (TLInstance*)pChild;
+    return _Find<TLInstance>(CastToSomeType<TLInstance>(pTopLevel->m_instances, pChild), Level2, Level3, Level4, Level5, Level6, 0);
+}
 
 // /**
 //  * Offset/Address/Size: 0xBC | 0x800D7A04 | size: 0x15C

@@ -3,6 +3,7 @@
 
 #include "Game/BaseSceneHandler.h"
 #include "Game/FE/feAsyncImage.h"
+#include "Game/FE/feFinder.h"
 #include "Game/FE/tlComponentInstance.h"
 
 class ProgressiveScanScene : public BaseSceneHandler

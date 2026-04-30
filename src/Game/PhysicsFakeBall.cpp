@@ -7,6 +7,8 @@
 #include "NL/nlDLRing.h"
 #include "NL/nlDLListSlotPool.h"
 
+SlotPool<BallCacheInfo> BallCacheInfo::mBallCacheInfoSlotPool;
+
 class SimpleCollisionSpace : public CollisionSpace
 {
 public:

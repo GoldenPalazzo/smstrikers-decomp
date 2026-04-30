@@ -262,27 +262,29 @@ void Format(StringType& result, const StringType& format, const float& value1, c
     FORCE_DONT_INLINE;
 }
 
-// Forward declaration for the operator== function
 template <typename CharT, typename Allocator>
-bool operator==(const BasicString<CharT, Allocator>& lhs, const char* rhs);
-
-#ifdef NL_BASICSTRING_DEFINE
-// Specialization for char with TempStringAllocator
-template <>
-bool operator== <char, Detail::TempStringAllocator>(const BasicString<char, Detail::TempStringAllocator>& lhs, const char* rhs)
+bool operator==(const BasicString<CharT, Allocator>& lhs, const char* rhs)
 {
-    if (!rhs)
+    unsigned int c;
+    BasicStringData<CharT>* data = lhs.m_data;
+    int i = 0;
+
+    while (i < (data != 0 ? data->mSize - 1 : 0))
     {
-        return lhs.m_data == nullptr || lhs.m_data->mSize == 0;
+        c = (u8)*rhs;
+        if ((CharT)c == 0)
+        {
+            return false;
+        }
+        if ((CharT)c != (CharT)data->mData[i])
+        {
+            return false;
+        }
+        rhs++;
+        i++;
     }
 
-    if (!lhs.m_data || !lhs.m_data->mData)
-    {
-        return *rhs == '\0';
-    }
-
-    return strcmp(lhs.m_data->mData, rhs) == 0;
+    return *rhs == '\0';
 }
-#endif
 
 #endif

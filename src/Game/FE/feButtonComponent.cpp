@@ -201,4 +201,5 @@ ButtonComponent::ButtonComponent()
 void feButtonComponent_stub()
 {
     nlStrLen<unsigned short>((const unsigned short*)0);
+    FEFinder<TLTextInstance, 3>::Find<TLSlide>((TLSlide*)0, InlineHasher(0), InlineHasher(0), InlineHasher(0), InlineHasher(0), InlineHasher(0), InlineHasher(0));
 }

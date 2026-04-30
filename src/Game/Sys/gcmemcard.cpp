@@ -42,7 +42,7 @@ extern "C" void* memset(void*, int, unsigned long);
 // /**
 //  * Offset/Address/Size: 0x0 | 0x801CB450 | size: 0x8C
 //  */
-// void nlBSearch<nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>, unsigned long>(const unsigned long&, nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>*, int)
+// void nlBSearch<nlSortedSlot<MemCard::MC_FILE, 16>::nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>, unsigned long>(const unsigned long&, nlSortedSlot<MemCard::MC_FILE, 16>::nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>*, int)
 // {
 // }
 
@@ -147,7 +147,7 @@ void MemCard::MountDoneCB(long channel, long result)
     }
 }
 
-static inline EntryLookup<MemCard::MC_FILE>* FindCreateFileLookup(MemCard* self, MemCard::MC_FILE* pFile)
+static inline nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>* FindCreateFileLookup(MemCard* self, MemCard::MC_FILE* pFile)
 {
     for (long i = 0; (unsigned long)i < self->m_OpenFiles.m_EntryCount; i++)
     {
@@ -159,7 +159,7 @@ static inline EntryLookup<MemCard::MC_FILE>* FindCreateFileLookup(MemCard* self,
     return NULL;
 }
 
-static inline void ShiftCreateFileLookup(MemCard* self, EntryLookup<MemCard::MC_FILE>* pFoundEntry)
+static inline void ShiftCreateFileLookup(MemCard* self, nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>* pFoundEntry)
 {
     unsigned long total = self->m_OpenFiles.m_EntryCount;
     long idx = (pFoundEntry - self->m_OpenFiles.m_pEntryLookup);
@@ -167,13 +167,13 @@ static inline void ShiftCreateFileLookup(MemCard* self, EntryLookup<MemCard::MC_
     while ((unsigned long)idx != total)
     {
         long next = idx + 1;
-        EntryLookup<MemCard::MC_FILE>* src = &self->m_OpenFiles.m_pEntryLookup[next];
-        EntryLookup<MemCard::MC_FILE>* dst = &self->m_OpenFiles.m_pEntryLookup[idx];
+        nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>* src = &self->m_OpenFiles.m_pEntryLookup[next];
+        nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>* dst = &self->m_OpenFiles.m_pEntryLookup[idx];
         idx = next;
-        unsigned long id = src->Id;
+        unsigned long id = src->hash;
         MemCard::MC_FILE* entry = src->pEntry;
         dst->pEntry = entry;
-        dst->Id = id;
+        dst->hash = id;
     }
 
     self->m_OpenFiles.m_EntryCount = self->m_OpenFiles.m_EntryCount - 1;
@@ -194,7 +194,7 @@ void MemCard::CreateFileDoneCB(long channel, long result)
         MC_FILE* pFile = card->m_pFileCB;
         if (pFile != NULL)
         {
-            EntryLookup<MC_FILE>* pFoundEntry = FindCreateFileLookup(card, pFile);
+            nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>* pFoundEntry = FindCreateFileLookup(card, pFile);
             card->m_OpenFiles.FreeEntry(pFile);
             ShiftCreateFileLookup(card, pFoundEntry);
         }
@@ -538,7 +538,7 @@ s32 MemCard::BeginCardAccess(const MemCardFunctor& Callback)
  */
 long MemCard::CreateFile(const char* FileName, unsigned long FileSize, MemCard::ICON_CONFIG* pIconConfig, MemCard::MC_FILE*& pFile, const MemCardFunctor& Callback)
 {
-    EntryLookup<MC_FILE>* nlBSearch(const unsigned long&, EntryLookup<MC_FILE>*, int);
+    nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>* nlBSearch(const unsigned long&, nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>*, int);
 
     if (m_State != IS_MOUNTED)
     {
@@ -614,7 +614,7 @@ long MemCard::CreateFile(const char* FileName, unsigned long FileSize, MemCard::
     while ((high - low) > 1)
     {
         middle = (high + low) >> 1;
-        if (m_OpenFiles.m_pEntryLookup[middle].Id > hash)
+        if (m_OpenFiles.m_pEntryLookup[middle].hash > hash)
         {
             high = middle;
         }
@@ -628,17 +628,17 @@ long MemCard::CreateFile(const char* FileName, unsigned long FileSize, MemCard::
     while (count != (unsigned long)high)
     {
         unsigned long prev = count - 1;
-        EntryLookup<MC_FILE>* lookup = m_OpenFiles.m_pEntryLookup;
-        EntryLookup<MC_FILE>* src2 = &lookup[prev];
-        EntryLookup<MC_FILE>* dst2 = &lookup[count];
+        nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>* lookup = m_OpenFiles.m_pEntryLookup;
+        nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>* src2 = &lookup[prev];
+        nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>* dst2 = &lookup[count];
         count = prev;
-        unsigned long id = src2->Id;
+        unsigned long id = src2->hash;
         MC_FILE* entry = src2->pEntry;
         dst2->pEntry = entry;
-        dst2->Id = id;
+        dst2->hash = id;
     }
 
-    m_OpenFiles.m_pEntryLookup[high].Id = hash;
+    m_OpenFiles.m_pEntryLookup[high].hash = hash;
     m_OpenFiles.m_pEntryLookup[high].pEntry = pNewFile;
     m_OpenFiles.m_EntryCount = m_OpenFiles.m_EntryCount + 1;
 
@@ -677,7 +677,7 @@ long MemCard::CreateFile(const char* FileName, unsigned long FileSize, MemCard::
     if (result != 0)
     {
         unsigned long searchKey = hash;
-        EntryLookup<MC_FILE>* pFound;
+        nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>* pFound;
 
         if (m_OpenFiles.m_EntryCount != 0)
         {
@@ -698,14 +698,14 @@ long MemCard::CreateFile(const char* FileName, unsigned long FileSize, MemCard::
             while ((unsigned long)idx != total)
             {
                 long next = idx + 1;
-                EntryLookup<MC_FILE>* lookup = m_OpenFiles.m_pEntryLookup;
-                EntryLookup<MC_FILE>* srcE = &lookup[next];
-                EntryLookup<MC_FILE>* dstE = &lookup[idx];
+                nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>* lookup = m_OpenFiles.m_pEntryLookup;
+                nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>* srcE = &lookup[next];
+                nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>* dstE = &lookup[idx];
                 idx = next;
-                unsigned long id = srcE->Id;
+                unsigned long id = srcE->hash;
                 MC_FILE* entry = srcE->pEntry;
                 dstE->pEntry = entry;
-                dstE->Id = id;
+                dstE->hash = id;
             }
 
             m_OpenFiles.m_EntryCount = m_OpenFiles.m_EntryCount - 1;
@@ -728,7 +728,7 @@ extern "C" void* memset(void*, int, unsigned long);
 
 long MemCard::OpenFile(const char* FileName, MemCard::MC_FILE*& pFile, unsigned long* pFileLength)
 {
-    EntryLookup<MC_FILE>* nlBSearch(const unsigned long&, EntryLookup<MC_FILE>*, int);
+    nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>* nlBSearch(const unsigned long&, nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>*, int);
 
     long result;
 
@@ -754,7 +754,7 @@ long MemCard::OpenFile(const char* FileName, MemCard::MC_FILE*& pFile, unsigned 
     while ((high - low) > 1)
     {
         middle = (high + low) >> 1;
-        if (m_OpenFiles.m_pEntryLookup[middle].Id > hash)
+        if (m_OpenFiles.m_pEntryLookup[middle].hash > hash)
         {
             high = middle;
         }
@@ -768,17 +768,17 @@ long MemCard::OpenFile(const char* FileName, MemCard::MC_FILE*& pFile, unsigned 
     while (count != (unsigned long)high)
     {
         unsigned long prev = count - 1;
-        EntryLookup<MC_FILE>* lookup = m_OpenFiles.m_pEntryLookup;
-        EntryLookup<MC_FILE>* src = &lookup[prev];
-        EntryLookup<MC_FILE>* dst = &lookup[count];
+        nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>* lookup = m_OpenFiles.m_pEntryLookup;
+        nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>* src = &lookup[prev];
+        nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>* dst = &lookup[count];
         count = prev;
-        unsigned long id = src->Id;
+        unsigned long id = src->hash;
         MC_FILE* entry = src->pEntry;
         dst->pEntry = entry;
-        dst->Id = id;
+        dst->hash = id;
     }
 
-    m_OpenFiles.m_pEntryLookup[high].Id = hash;
+    m_OpenFiles.m_pEntryLookup[high].hash = hash;
     m_OpenFiles.m_pEntryLookup[high].pEntry = pNewFile;
     m_OpenFiles.m_EntryCount = m_OpenFiles.m_EntryCount + 1;
 
@@ -790,7 +790,7 @@ long MemCard::OpenFile(const char* FileName, MemCard::MC_FILE*& pFile, unsigned 
     if (result != 0)
     {
         unsigned long searchKey = hash;
-        EntryLookup<MC_FILE>* pFound;
+        nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>* pFound;
 
         if (m_OpenFiles.m_EntryCount != 0)
         {
@@ -811,14 +811,14 @@ long MemCard::OpenFile(const char* FileName, MemCard::MC_FILE*& pFile, unsigned 
             while ((unsigned long)idx != total)
             {
                 long next = idx + 1;
-                EntryLookup<MC_FILE>* lookup = m_OpenFiles.m_pEntryLookup;
-                EntryLookup<MC_FILE>* src = &lookup[next];
-                EntryLookup<MC_FILE>* dst = &lookup[idx];
+                nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>* lookup = m_OpenFiles.m_pEntryLookup;
+                nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>* src = &lookup[next];
+                nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>* dst = &lookup[idx];
                 idx = next;
-                unsigned long id = src->Id;
+                unsigned long id = src->hash;
                 MC_FILE* entry = src->pEntry;
                 dst->pEntry = entry;
-                dst->Id = id;
+                dst->hash = id;
             }
 
             m_OpenFiles.m_EntryCount = m_OpenFiles.m_EntryCount - 1;
@@ -924,7 +924,7 @@ s32 MemCard::FormatCard(const MemCardFunctor& Callback)
  * diffs, nlBSearch call uses EntryLookup mangling variant, and shift loop keeps a
  * 4-instruction register permutation in entry copy.
  */
-static inline EntryLookup<MemCard::MC_FILE>* FindOpenLookup(MemCard* self, MemCard::MC_FILE* file)
+static inline nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>* FindOpenLookup(MemCard* self, MemCard::MC_FILE* file)
 {
     long i = 0;
     long byteOff = i;
@@ -940,7 +940,7 @@ static inline EntryLookup<MemCard::MC_FILE>* FindOpenLookup(MemCard* self, MemCa
     return NULL;
 }
 
-static inline void ShiftOpenLookup(MemCard* self, EntryLookup<MemCard::MC_FILE>* foundEntry)
+static inline void ShiftOpenLookup(MemCard* self, nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>* foundEntry)
 {
     s32 next;
     unsigned long total = self->m_OpenFiles.m_EntryCount;
@@ -949,13 +949,13 @@ static inline void ShiftOpenLookup(MemCard* self, EntryLookup<MemCard::MC_FILE>*
     while ((unsigned long)idx != total)
     {
         next = idx + 1;
-        EntryLookup<MemCard::MC_FILE>* src = &self->m_OpenFiles.m_pEntryLookup[next];
-        EntryLookup<MemCard::MC_FILE>* dst = &self->m_OpenFiles.m_pEntryLookup[idx];
+        nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>* src = &self->m_OpenFiles.m_pEntryLookup[next];
+        nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>* dst = &self->m_OpenFiles.m_pEntryLookup[idx];
         idx = next;
-        unsigned long id = src->Id;
+        unsigned long id = src->hash;
         MemCard::MC_FILE* entry = src->pEntry;
         dst->pEntry = entry;
-        dst->Id = id;
+        dst->hash = id;
     }
 
     self->m_OpenFiles.m_EntryCount = self->m_OpenFiles.m_EntryCount - 1;
@@ -968,8 +968,8 @@ static inline void ShiftOpenLookup(MemCard* self, EntryLookup<MemCard::MC_FILE>*
  */
 long MemCard::DeleteFile(const char* FileName, const MemCardFunctor& Callback)
 {
-    EntryLookup<MC_FILE>* nlBSearch(const unsigned long&, EntryLookup<MC_FILE>*, int);
-    EntryLookup<MC_FILE>* foundEntry;
+    nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>* nlBSearch(const unsigned long&, nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>*, int);
+    nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>* foundEntry;
 
     if (m_State != IS_MOUNTED)
     {
@@ -980,7 +980,7 @@ long MemCard::DeleteFile(const char* FileName, const MemCardFunctor& Callback)
 
     unsigned long hash = nlStringHash(FileName);
 
-    EntryLookup<MC_FILE>* result;
+    nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>* result;
     if (m_OpenFiles.m_EntryCount != 0)
     {
         result = nlBSearch(hash, m_OpenFiles.m_pEntryLookup, m_OpenFiles.m_EntryCount);
@@ -1137,7 +1137,7 @@ long MemCard::InternalWriteFile(MC_FILE* pFile, void* Buffer, unsigned long Leng
  * TODO: 99.1% match - first loop keeps i/byteOff in r4/r3 instead of target r3/r4;
  * copy loop keeps slwi/add/lwz+stw on r0 where target keeps those on r3/r5.
  */
-static inline EntryLookup<MemCard::MC_FILE>* FindOpenFileLookup(nlStaticSortedSlot<MemCard::MC_FILE, 16>& openFiles, MemCard::MC_FILE* pFile)
+static inline nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>* FindOpenFileLookup(nlStaticSortedSlot<MemCard::MC_FILE, 16>& openFiles, MemCard::MC_FILE* pFile)
 {
     for (long i = 0, byteOff = i; (unsigned long)i < openFiles.m_EntryCount; i++, byteOff += 8)
     {
@@ -1150,7 +1150,7 @@ static inline EntryLookup<MemCard::MC_FILE>* FindOpenFileLookup(nlStaticSortedSl
     return NULL;
 }
 
-static inline void ShiftCloseFileEntries(nlStaticSortedSlot<MemCard::MC_FILE, 16>& openFiles, EntryLookup<MemCard::MC_FILE>* pLookup)
+static inline void ShiftCloseFileEntries(nlStaticSortedSlot<MemCard::MC_FILE, 16>& openFiles, nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>* pLookup)
 {
     s32 next;
     unsigned long total = openFiles.m_EntryCount;
@@ -1159,13 +1159,13 @@ static inline void ShiftCloseFileEntries(nlStaticSortedSlot<MemCard::MC_FILE, 16
     while ((unsigned long)idx != total)
     {
         next = idx + 1;
-        EntryLookup<MemCard::MC_FILE>* dst = &openFiles.m_pEntryLookup[idx];
-        EntryLookup<MemCard::MC_FILE>* src = &openFiles.m_pEntryLookup[next];
+        nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>* dst = &openFiles.m_pEntryLookup[idx];
+        nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>* src = &openFiles.m_pEntryLookup[next];
         idx = next;
-        unsigned long id = src->Id;
+        unsigned long id = src->hash;
         MemCard::MC_FILE* entry = src->pEntry;
         dst->pEntry = entry;
-        dst->Id = id;
+        dst->hash = id;
     }
 
     openFiles.m_EntryCount = openFiles.m_EntryCount - 1;
@@ -1177,7 +1177,7 @@ s32 MemCard::CloseFile(MC_FILE* pFile)
     s32 result = CARDClose(&pFile->FileInfo);
     if (result == 0 && pFile != NULL)
     {
-        EntryLookup<MC_FILE>* pLookup = FindOpenFileLookup(m_OpenFiles, pFile);
+        nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>* pLookup = FindOpenFileLookup(m_OpenFiles, pFile);
         m_OpenFiles.FreeEntry(pFile);
         ShiftCloseFileEntries(m_OpenFiles, pLookup);
     }

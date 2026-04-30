@@ -1056,7 +1056,7 @@ void OptionsSubMenu::GoBack()
                         }
                         else if (inst->m_type == (eTimeLineAssetType)2)
                         {
-                            hash = inst->m_hashID;
+                            hash = inst->m_hash;
                             if (hash != nlStringLowerHash("white_box"))
                             {
                                 inst->SetAssetColour(SubMenuUnhighliteColour);

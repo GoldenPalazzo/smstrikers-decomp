@@ -21,6 +21,9 @@ public:
     /* 0x20 */ virtual void BlendRootTrans(nlVector3*, float, float*);
     /* 0x24 */ virtual void BlendRootRot(unsigned short*, float, float*);
 
+    template <typename T>
+    void Replay(T&);
+
     inline void operator delete(void* ptr);
 
     /* 0x14 */ float m_fBlendTime;

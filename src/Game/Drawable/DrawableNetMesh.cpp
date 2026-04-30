@@ -532,13 +532,23 @@ void DrawableNetMesh::Replay(SaveFrame& frame)
 /**
  * Offset/Address/Size: 0x0 | 0x80114BCC | size: 0x44
  */
-// void Replayable<0, LoadFrame, float>(LoadFrame&, float&)
-// {
-// }
+#pragma dont_inline on
+template <>
+void Replayable<0, LoadFrame, float>(LoadFrame& frame, float& value)
+{
+    memcpy(&value, frame.mStream.mStorage, sizeof(float));
+    frame.mStream.mStorage += sizeof(float);
+}
+#pragma dont_inline reset
 
 /**
  * Offset/Address/Size: 0x44 | 0x80114C10 | size: 0x40
  */
-// void Replayable<0, SaveFrame, float>(SaveFrame&, float&)
-// {
-// }
+#pragma dont_inline on
+template <>
+void Replayable<0, SaveFrame, float>(SaveFrame& frame, float& value)
+{
+    memcpy(frame.mStream.mStorage, &value, sizeof(float));
+    frame.mStream.mStorage += sizeof(float);
+}
+#pragma dont_inline reset

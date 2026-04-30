@@ -55,12 +55,18 @@ void Tokenizer<BasicString<char, Detail::TempStringAllocator> >::iterator::FindN
     FORCE_DONT_INLINE;
 }
 
-// /**
-//  * Offset/Address/Size: 0x44 | 0x801914DC | size: 0x44
-//  */
-// void Tokenizer<BasicString<char, Detail::TempStringAllocator> >::iterator::iterator(const Tokenizer<BasicString<char, Detail::TempStringAllocator> >&, const char*)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x44 | 0x801914DC | size: 0x44
+ */
+Tokenizer<BasicString<char, Detail::TempStringAllocator> >::iterator::iterator(
+    const Tokenizer<BasicString<char, Detail::TempStringAllocator> >& tokenizer,
+    const char* endPtr)
+    : m_field0((u32)&tokenizer)
+    , m_field1((u32)endPtr)
+    , m_field2(0)
+{
+    FindNextToken();
+}
 
 /**
  * Offset/Address/Size: 0xC18 | 0x80191494 | size: 0x4

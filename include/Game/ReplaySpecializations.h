@@ -37,6 +37,69 @@ void Replayable(SaveFrame& frame, bool& value)
 }
 
 template <>
+void Replayable<0, SaveFrame, bool>(SaveFrame& frame, bool& value)
+{
+    bool temp = value ? true : false;
+    memcpy(frame.mStream.mStorage, &temp, sizeof(bool));
+    frame.mStream.mStorage += sizeof(bool);
+}
+
+template <>
+void Replayable<1, SaveFrame, bool>(SaveFrame& frame, bool& value)
+{
+    if (frame.mInterval == 1)
+    {
+        char temp = value ? 1 : 0;
+        memcpy(frame.mStream.mStorage, &temp, 1);
+        frame.mStream.mStorage += 1;
+    }
+}
+
+template <>
+void Replayable<3, SaveFrame, bool>(SaveFrame& frame, bool& value)
+{
+    if (frame.mInterval == 3)
+    {
+        bool temp = value ? true : false;
+        memcpy(frame.mStream.mStorage, &temp, sizeof(bool));
+        frame.mStream.mStorage += sizeof(bool);
+    }
+}
+
+template <>
+void Replayable<0, LoadFrame, bool>(LoadFrame& frame, bool& value)
+{
+    char temp = 0;
+    memcpy(&temp, frame.mStream.mStorage, 1);
+    frame.mStream.mStorage += 1;
+    value = (temp != 0);
+}
+
+template <>
+void Replayable<1, LoadFrame, bool>(LoadFrame& frame, bool& value)
+{
+    if (frame.mInterval == 1)
+    {
+        char temp = 0;
+        memcpy(&temp, frame.mStream.mStorage, 1);
+        frame.mStream.mStorage += 1;
+        value = (temp != 0);
+    }
+}
+
+template <>
+void Replayable<3, LoadFrame, bool>(LoadFrame& frame, bool& value)
+{
+    if (frame.mInterval == 3)
+    {
+        char temp = 0;
+        memcpy(&temp, frame.mStream.mStorage, 1);
+        frame.mStream.mStorage += 1;
+        value = (temp != 0);
+    }
+}
+
+template <>
 void Replayable<1, SaveFrame, int>(SaveFrame& frame, int& value)
 {
     FORCE_DONT_INLINE;
@@ -83,6 +146,47 @@ void Replayable(SaveFrame& frame, nlVector3& value)
     {
         memcpy(frame.mStream.mStorage, &value, sizeof(nlVector3));
         frame.mStream.mStorage += sizeof(nlVector3);
+    }
+}
+
+template <>
+void Replayable<1, SaveFrame, nlVector3>(SaveFrame& frame, nlVector3& value)
+{
+    FORCE_DONT_INLINE;
+    if (frame.mInterval == 1)
+    {
+        if (frame.mInterval == 1)
+        {
+            memcpy(frame.mStream.mStorage, &value, sizeof(nlVector3));
+            frame.mStream.mStorage += sizeof(nlVector3);
+        }
+    }
+}
+
+template <>
+void Replayable<1, LoadFrame, nlVector3>(LoadFrame& frame, nlVector3& value)
+{
+    if (frame.mInterval == 1)
+    {
+        if (frame.mInterval == 1)
+        {
+            memcpy(&value, frame.mStream.mStorage, sizeof(nlVector3));
+            frame.mStream.mStorage += sizeof(nlVector3);
+        }
+    }
+}
+
+template <>
+void Replayable<3, SaveFrame, nlVector3>(SaveFrame& frame, nlVector3& value)
+{
+    FORCE_DONT_INLINE;
+    if (frame.mInterval == 3)
+    {
+        if (frame.mInterval == 3)
+        {
+            memcpy(frame.mStream.mStorage, &value, sizeof(nlVector3));
+            frame.mStream.mStorage += sizeof(nlVector3);
+        }
     }
 }
 
@@ -172,6 +276,154 @@ void Replayable<1, SaveFrame, DrawableNetMesh>(SaveFrame& frame, DrawableNetMesh
         if (frame.mInterval == 1)
         {
             manager.Replay(frame);
+        }
+    }
+}
+
+template <>
+void Replayable<3, SaveFrame, char>(SaveFrame& frame, char& value)
+{
+    FORCE_DONT_INLINE;
+    if (frame.mInterval == 3)
+    {
+        if (frame.mInterval == 3)
+        {
+            memcpy(frame.mStream.mStorage, &value, sizeof(char));
+            frame.mStream.mStorage += sizeof(char);
+        }
+    }
+}
+
+template <>
+void Replayable<3, LoadFrame, char>(LoadFrame& frame, char& value)
+{
+    if (frame.mInterval == 3)
+    {
+        if (frame.mInterval == 3)
+        {
+            memcpy(&value, frame.mStream.mStorage, sizeof(char));
+            frame.mStream.mStorage += sizeof(char);
+        }
+    }
+}
+
+template <>
+void Replayable<3, SaveFrame, unsigned short>(SaveFrame& frame, unsigned short& value)
+{
+    FORCE_DONT_INLINE;
+    if (frame.mInterval == 3)
+    {
+        if (frame.mInterval == 3)
+        {
+            memcpy(frame.mStream.mStorage, &value, sizeof(unsigned short));
+            frame.mStream.mStorage += sizeof(unsigned short);
+        }
+    }
+}
+
+template <>
+void Replayable<3, LoadFrame, unsigned short>(LoadFrame& frame, unsigned short& value)
+{
+    if (frame.mInterval == 3)
+    {
+        if (frame.mInterval == 3)
+        {
+            memcpy(&value, frame.mStream.mStorage, sizeof(unsigned short));
+            frame.mStream.mStorage += sizeof(unsigned short);
+        }
+    }
+}
+
+template <>
+void Replayable<3, SaveFrame, float>(SaveFrame& frame, float& value)
+{
+    FORCE_DONT_INLINE;
+    if (frame.mInterval == 3)
+    {
+        if (frame.mInterval == 3)
+        {
+            memcpy(frame.mStream.mStorage, &value, sizeof(float));
+            frame.mStream.mStorage += sizeof(float);
+        }
+    }
+}
+
+template <>
+void Replayable<3, LoadFrame, float>(LoadFrame& frame, float& value)
+{
+    if (frame.mInterval == 3)
+    {
+        if (frame.mInterval == 3)
+        {
+            memcpy(&value, frame.mStream.mStorage, sizeof(float));
+            frame.mStream.mStorage += sizeof(float);
+        }
+    }
+}
+
+template <>
+void Replayable<3, SaveFrame, unsigned long>(SaveFrame& frame, unsigned long& value)
+{
+    FORCE_DONT_INLINE;
+    if (frame.mInterval == 3)
+    {
+        if (frame.mInterval == 3)
+        {
+            memcpy(frame.mStream.mStorage, &value, sizeof(unsigned long));
+            frame.mStream.mStorage += sizeof(unsigned long);
+        }
+    }
+}
+
+template <>
+void Replayable<3, LoadFrame, unsigned long>(LoadFrame& frame, unsigned long& value)
+{
+    if (frame.mInterval == 3)
+    {
+        if (frame.mInterval == 3)
+        {
+            memcpy(&value, frame.mStream.mStorage, sizeof(unsigned long));
+            frame.mStream.mStorage += sizeof(unsigned long);
+        }
+    }
+}
+
+template <>
+void Replayable<3, SaveFrame, nlQuaternion>(SaveFrame& frame, nlQuaternion& value)
+{
+    FORCE_DONT_INLINE;
+    if (frame.mInterval == 3)
+    {
+        if (frame.mInterval == 3)
+        {
+            memcpy(frame.mStream.mStorage, &value, sizeof(nlQuaternion));
+            frame.mStream.mStorage += sizeof(nlQuaternion);
+        }
+    }
+}
+
+template <>
+void Replayable<3, LoadFrame, nlQuaternion>(LoadFrame& frame, nlQuaternion& value)
+{
+    if (frame.mInterval == 3)
+    {
+        if (frame.mInterval == 3)
+        {
+            memcpy(&value, frame.mStream.mStorage, sizeof(nlQuaternion));
+            frame.mStream.mStorage += sizeof(nlQuaternion);
+        }
+    }
+}
+
+template <>
+void Replayable<1, LoadFrame, unsigned long>(LoadFrame& frame, unsigned long& value)
+{
+    if (frame.mInterval == 1)
+    {
+        if (frame.mInterval == 1)
+        {
+            memcpy(&value, frame.mStream.mStorage, sizeof(unsigned long));
+            frame.mStream.mStorage += sizeof(unsigned long);
         }
     }
 }

@@ -53,7 +53,7 @@ public:
     /* 0x10 */ f32 m_fStartTime;
     /* 0x14 */ f32 m_fDuration;
     /* 0x18 */ char m_szName[32];
-    /* 0x38 */ unsigned long m_hashID;
+    /* 0x38 */ unsigned long m_hash;
     /* 0x3C */ FELibObjectAttributes m_overloadedAttributes;
     /* 0x74 */ unsigned long m_overloadFlags;
     /* 0x78 */ eTimeLineAssetType m_type;

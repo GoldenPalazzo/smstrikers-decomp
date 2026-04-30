@@ -83,7 +83,7 @@ loop_start:
                     if (name[0] == 's' && name[1] == 'f' && name[2] == 'x')
                     {
                         instance->m_bVisible = false;
-                        FEAudio::PlayAnimAudioEvent(instance->m_hashID, false);
+                        FEAudio::PlayAnimAudioEvent(instance->m_hash, false);
                     }
                 }
             }

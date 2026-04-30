@@ -4408,9 +4408,12 @@ void cFielder::ActionWait(float)
     // EMPTY
 }
 
-// At the bottom of FielderActions.cpp — REMOVE once real callers exist.
+// At the bottom of FielderActions.cpp -- REMOVE once real callers exist.
 void FielderActions_stub()
 {
     FormatImpl<BasicString<char, Detail::TempStringAllocator> > impl;
     BasicString<char, Detail::TempStringAllocator> result = (BasicString<char, Detail::TempStringAllocator>)impl;
+
+    const char* s = "";
+    LexicalCast<BasicString<char, Detail::TempStringAllocator>, const char*>(s);
 }

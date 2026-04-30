@@ -2,6 +2,7 @@
 #include "types.h"
 #include "Game/FE/feFinder.h"
 #include "Game/FE/feHelpFuncs.h"
+#include "Game/FE/feTemplates.h"
 #include "Game/GameSceneManager.h"
 #include "Game/SH/SHCupHub.h"
 
@@ -59,13 +60,22 @@ static unsigned long TOURN_CAPTAIN_DESCRIPTIONS[] = {
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0x680 | 0x800E7404 | size: 0x84
-//  */
-// void FEFinder<TLInstance, 4>::_Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long,
-// unsigned long)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x680 | 0x800E7404 | size: 0x84
+ */
+template <>
+template <>
+TLInstance* FEFinder<TLInstance, 4>::_Find<TLSlide>(
+    TLSlide* pTopLevel, const unsigned long Level1, const unsigned long Level2,
+    const unsigned long Level3, const unsigned long Level4, const unsigned long Level5, const unsigned long Level6)
+{
+    void* pChild = FindItemByHashID<TLInstance>(pTopLevel->m_instances, Level1);
+    if (pChild == 0)
+        return 0;
+    if (Level2 == 0)
+        return (TLInstance*)pChild;
+    return _Find<TLInstance>(CastToSomeType<TLInstance>(pTopLevel->m_instances, pChild), Level2, Level3, Level4, Level5, Level6, 0);
+}
 
 // /**
 //  * Offset/Address/Size: 0x648 | 0x800E73CC | size: 0x38
@@ -1262,4 +1272,10 @@ check_update:
     }
 
     FEAudio::EnableSounds(true);
+}
+
+void SHTournTeamSetup_stub()
+{
+    TLInstance* (*volatile forceFind)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher) = &FEFinder<TLInstance, 4>::Find<TLSlide>;
+    (void)forceFind;
 }

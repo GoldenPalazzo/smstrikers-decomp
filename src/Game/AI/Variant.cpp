@@ -1,4 +1,5 @@
 #include "Game/AI/Variant.h"
+#include "NL/nlLexicalCast.h"
 #include "PowerPC_EABI_Support/Runtime/runtime.h"
 
 static Variant gvNotSet;
@@ -17,12 +18,9 @@ static Variant gvNotSet;
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0x138 | 0x8006A064 | size: 0x30
-//  */
-// void LexicalCast<BasicString<char, Detail::TempStringAllocator>, unsigned long>(const unsigned long&)
-// {
-// }
+typedef BasicString<char, Detail::TempStringAllocator> NLString;
+
+template NLString LexicalCast<NLString, unsigned long>(const unsigned long&);
 
 // /**
 //  * Offset/Address/Size: 0x34 | 0x80069F60 | size: 0x104
@@ -31,12 +29,7 @@ static Variant gvNotSet;
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x80069F2C | size: 0x34
-//  */
-// void LexicalCast<BasicString<char, Detail::TempStringAllocator>, char>(const char&)
-// {
-// }
+template NLString LexicalCast<NLString, char>(const char&);
 
 // /**
 //  * Offset/Address/Size: 0x2BC0 | 0x80069E18 | size: 0x114

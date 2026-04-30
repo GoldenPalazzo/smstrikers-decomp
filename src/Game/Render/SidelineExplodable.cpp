@@ -11,6 +11,8 @@
 float ExplosionFragment::sfFadeOutTime = 1.0f;
 
 ExplosionFragment** SidelineExplodableManager::sFragmentLookupTable = NULL;
+SlotPool<SidelineExplodableNode> SidelineExplodableNode::sSidelineExplodableNodeSlotPool;
+SlotPool<DrawableFragmentHandleNode> DrawableFragmentHandleNode::sDrawableFragmentHandleNodePool;
 
 /**
  * Offset/Address/Size: 0x8 | 0x8016974C | size: 0x38

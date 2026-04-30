@@ -100,6 +100,11 @@ public:
     {
         Free(entry);
     }
+
+    void Delete(T* entry)
+    {
+        Free(entry);
+    }
 }; // total size: 0x18
 
 template <typename T>

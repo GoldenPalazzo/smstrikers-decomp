@@ -1,5 +1,6 @@
 #include "Game/FE/feScrollingTicker.h"
 #include "Game/FE/feFinder.h"
+#include "Game/FE/feTemplates.h"
 
 /**
  * Offset/Address/Size: 0x0 | 0x8009FC58 | size: 0x8
@@ -452,21 +453,32 @@ void ScrollingTickerScene::setSizeTweenCallback(void* scene, const float* value)
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0x29C | 0x800A1068 | size: 0x38
-//  */
-// void FEFinder<TLInstance, 2>::Find<FEPresentation>(FEPresentation*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher,
-// InlineHasher)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x29C | 0x800A1068 | size: 0x38
+ */
+template <>
+template <>
+TLInstance* FEFinder<TLInstance, 2>::Find<FEPresentation>(FEPresentation* pTopLevel, InlineHasher h1, InlineHasher h2, InlineHasher h3, InlineHasher h4, InlineHasher h5, InlineHasher h6)
+{
+    return _Find(pTopLevel, h1.m_Hash, h2.m_Hash, h3.m_Hash, h4.m_Hash, h5.m_Hash, h6.m_Hash);
+}
 
-// /**
-//  * Offset/Address/Size: 0x2D4 | 0x800A10A0 | size: 0x84
-//  */
-// void FEFinder<TLInstance, 2>::_Find<FEPresentation>(FEPresentation*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned
-// long, unsigned long)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x2D4 | 0x800A10A0 | size: 0x84
+ */
+template <>
+template <>
+TLInstance* FEFinder<TLInstance, 2>::_Find<FEPresentation>(
+    FEPresentation* pTopLevel, const unsigned long Level1, const unsigned long Level2,
+    const unsigned long Level3, const unsigned long Level4, const unsigned long Level5, const unsigned long Level6)
+{
+    void* pChild = FindItemByHashID<TLSlide>(pTopLevel->m_slides, Level1);
+    if (pChild == 0)
+        return 0;
+    if (Level2 == 0)
+        return (TLInstance*)pChild;
+    return _Find<TLSlide>(CastToSomeType<TLSlide>(pTopLevel->m_slides, pChild), Level2, Level3, Level4, Level5, Level6, 0);
+}
 
 // /**
 //  * Offset/Address/Size: 0x358 | 0x800A1124 | size: 0x84

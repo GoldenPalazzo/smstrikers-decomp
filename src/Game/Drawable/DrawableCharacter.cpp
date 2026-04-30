@@ -4,6 +4,11 @@
 #include "Game/Team.h"
 #include "Game/AI/HeadTrack.h"
 #include "Game/PoseAccumulator.h"
+#include "Game/SAnim/pnSAnimController.h"
+#include "Game/SAnim/pnFeather.h"
+#include "Game/SAnim/pnBlender.h"
+#include "Game/SAnim/pnSingleAxisBlender.h"
+#include "NL/nlDebug.h"
 
 cCharacter* DrawableCharacter::spRenderOnlyThisCharacter = nullptr;
 bool DrawableCharacter::sbRenderOpposingGoalieToo = false;
@@ -371,11 +376,12 @@ void DrawableCharacter::Render(cCharacter& character) const
     SendToGl(character);
 }
 
+static const float kBigFloat = 1e38f;
+
 /**
  * Offset/Address/Size: 0x22EC | 0x8011B19C | size: 0x3D8
- * TODO: 98.29% match - register allocation diff in center computation (span2.x reload)
  */
-void FindBoundingSphereAccurate(nlVector3* pOutSphere, float* pOutRadius, int numVertices, const nlVector3* pVertices)
+static void FindBoundingSphereAccurate(nlVector3* pOutSphere, float* pOutRadius, int numVertices, const nlVector3* pVertices)
 {
     nlVector3 minXPt, maxXPt, minYPt, maxYPt, minZPt, maxZPt;
     nlVector3 span1, span2;
@@ -383,12 +389,12 @@ void FindBoundingSphereAccurate(nlVector3* pOutSphere, float* pOutRadius, int nu
     int i;
     float radiusSq;
 
-    minZPt.f.z = 1e38f;
-    minYPt.f.y = 1e38f;
-    minXPt.f.x = 1e38f;
-    maxZPt.f.z = -1e38f;
-    maxYPt.f.y = -1e38f;
-    maxXPt.f.x = -1e38f;
+    minZPt.f.z = kBigFloat;
+    minYPt.f.y = kBigFloat;
+    minXPt.f.x = kBigFloat;
+    maxZPt.f.z = -kBigFloat;
+    maxYPt.f.y = -kBigFloat;
+    maxXPt.f.x = -kBigFloat;
 
     p = pVertices;
     for (i = 0; i < numVertices; i++, p++)
@@ -437,10 +443,12 @@ void FindBoundingSphereAccurate(nlVector3* pOutSphere, float* pOutRadius, int nu
         span2 = maxZPt;
     }
 
-    pOutSphere->f.x = 0.5f * (span1.f.x + span2.f.x);
-    pOutSphere->f.y = 0.5f * (span1.f.y + span2.f.y);
-    pOutSphere->f.z = 0.5f * (span1.f.z + span2.f.z);
-    radiusSq = nlGetLengthSquared3D(span2.f.x - pOutSphere->f.x, span2.f.y - pOutSphere->f.y, span2.f.z - pOutSphere->f.z);
+    nlVec3Set(*pOutSphere, 0.5f * (span1.f.x + span2.f.x), 0.5f * (span1.f.y + span2.f.y), 0.5f * (span1.f.z + span2.f.z));
+
+    nlVector3 result;
+    nlVec3Sub(result, span2, *pOutSphere);
+    radiusSq = nlGetLengthSquared3D(result.f.x, result.f.y, result.f.z);
+
     *pOutRadius = nlSqrt(radiusSq, false);
 
     for (i = 0; i < numVertices; pVertices++, i++)
@@ -542,8 +550,80 @@ void DrawableCharacter::Render(SkinAnimatedMovableNPC& character) const
 /**
  * Offset/Address/Size: 0x2B8 | 0x80119168 | size: 0x5C4
  */
-void DrawableCharacter::Blend(const float*, const DrawableCharacter&, const DrawableCharacter&)
+void DrawableCharacter::Blend(const float* blendFactors, const DrawableCharacter& lhs, const DrawableCharacter& rhs)
 {
+    mVisible = lhs.mVisible && rhs.mVisible;
+    mCharacter = lhs.mCharacter;
+    mBowser = lhs.mBowser;
+    mDirt = lhs.mDirt;
+    float t = *blendFactors;
+    mPosition.f.x = (1.0f - t) * lhs.mPosition.f.x + t * rhs.mPosition.f.x;
+    mPosition.f.y = (1.0f - t) * lhs.mPosition.f.y + t * rhs.mPosition.f.y;
+    mPosition.f.z = (1.0f - t) * lhs.mPosition.f.z + t * rhs.mPosition.f.z;
+    mBip01Position.f.x = (1.0f - t) * lhs.mBip01Position.f.x + t * rhs.mBip01Position.f.x;
+    mBip01Position.f.y = (1.0f - t) * lhs.mBip01Position.f.y + t * rhs.mBip01Position.f.y;
+    mBip01Position.f.z = (1.0f - t) * lhs.mBip01Position.f.z + t * rhs.mBip01Position.f.z;
+    mHeadPosition.f.x = (1.0f - t) * lhs.mHeadPosition.f.x + t * rhs.mHeadPosition.f.x;
+    mHeadPosition.f.y = (1.0f - t) * lhs.mHeadPosition.f.y + t * rhs.mHeadPosition.f.y;
+    mHeadPosition.f.z = (1.0f - t) * lhs.mHeadPosition.f.z + t * rhs.mHeadPosition.f.z;
+    mFacingDirection = lhs.mFacingDirection + (short)(t * (float)(short)(rhs.mFacingDirection - lhs.mFacingDirection));
+    mHeadSpin = lhs.mHeadSpin + (short)(t * (float)(short)(rhs.mHeadSpin - lhs.mHeadSpin));
+    mHeadTilt = lhs.mHeadTilt + (short)(t * (float)(short)(rhs.mHeadTilt - lhs.mHeadTilt));
+    mPoseTree = nullptr;
+    if (mPoseAccumulator == nullptr)
+    {
+        mPoseAccumulator = new (nlMalloc(sizeof(cPoseAccumulator), 8, false)) cPoseAccumulator(lhs.mPoseAccumulator->m_BaseSHierarchy, false);
+    }
+    mPoseAccumulator->InitAccumulators();
+    t = *blendFactors;
+    float oneMinusT = 1.0f - t;
+    cPoseAccumulator* lhsPoseAccum = lhs.mPoseAccumulator;
+    cPoseAccumulator* rhsPoseAccum = rhs.mPoseAccumulator;
+    for (int i = 0; i < mPoseAccumulator->GetNumNodes(); i++)
+    {
+        RotAccum* lhsRot = &lhsPoseAccum->m_rot.mData[i];
+        RotAccum* rhsRot = &rhsPoseAccum->m_rot.mData[i];
+        float rhsRotAroundZWeight = rhsRot->rotAroundZAccumulatedWeight * t;
+        mPoseAccumulator->BlendRotAroundZ(i, lhsRot->rotAroundZ, lhsRot->rotAroundZAccumulatedWeight * oneMinusT);
+        mPoseAccumulator->BlendRotAroundZ(i, rhsRot->rotAroundZ, rhsRotAroundZWeight);
+        float rhsQuatWeight = rhsRot->quatAccumulatedWeight * t;
+        mPoseAccumulator->BlendRot(i, &lhsRot->q, lhsRot->quatAccumulatedWeight * oneMinusT, false);
+        mPoseAccumulator->BlendRot(i, &rhsRot->q, rhsQuatWeight, false);
+        mPoseAccumulator->BlendTrans(i, &lhsPoseAccum->m_trans.mData[i].t, 1.0f - *blendFactors, false);
+        mPoseAccumulator->BlendTrans(i, &rhsPoseAccum->m_trans.mData[i].t, *blendFactors, false);
+        mPoseAccumulator->BlendScale(i, &lhsPoseAccum->m_scale.mData[i].s, 1.0f - *blendFactors, false);
+        mPoseAccumulator->BlendScale(i, &rhsPoseAccum->m_scale.mData[i].s, *blendFactors, false);
+    }
+    oneMinusT = 1.0f - *blendFactors;
+    t = *blendFactors;
+    lhsPoseAccum = lhs.mPoseAccumulator;
+    rhsPoseAccum = rhs.mPoseAccumulator;
+    for (int i = 0; i < mPoseAccumulator->m_MorphWeights.mSize; i++)
+    {
+        mPoseAccumulator->m_MorphWeights.mData[i] += lhsPoseAccum->m_MorphWeights.mData[i] * oneMinusT;
+        mPoseAccumulator->m_MorphWeights.mData[i] += rhsPoseAccum->m_MorphWeights.mData[i] * t;
+    }
+    nlMatrix4 rotMatrix;
+    nlMakeRotationMatrixZ(rotMatrix, 0.0000958738f * (float)mFacingDirection);
+    rotMatrix.SetRow_(3, mPosition);
+    if (mCharacter != nullptr)
+    {
+        mPoseAccumulator->SetBuildNodeMatrixCallback(mCharacter->m_nHeadJointIndex, DrawableCharacterHeadTrackCallback, (unsigned int)this, 0);
+    }
+    else if (mBowser != nullptr)
+    {
+        mPoseAccumulator->SetBuildNodeMatrixCallback(mBowser->mnHeadJointIndex, DrawableBowserHeadTrackCallback, (unsigned int)this, 0);
+    }
+    mPoseAccumulator->BuildNodeMatrices(rotMatrix);
+    if (mCharacter != nullptr)
+    {
+        mPoseAccumulator->SetBuildNodeMatrixCallback(mCharacter->m_nHeadJointIndex, nullptr, 0, 0);
+    }
+    else if (mBowser != nullptr)
+    {
+        mPoseAccumulator->SetBuildNodeMatrixCallback(mBowser->mnHeadJointIndex, nullptr, 0, 0);
+    }
+    mEffectsTexturing = lhs.mEffectsTexturing;
 }
 
 /**
@@ -657,11 +737,180 @@ cCharacter* DrawableCharacter::OnlyRenderingOneCharacter()
     return spRenderOnlyThisCharacter;
 }
 
+/**
+ * Offset/Address/Size: 0x44CC | 0x8011D17C | size: 0x44
+ */
+#pragma dont_inline on
+template <>
+void Replayable<0, LoadFrame, unsigned int>(LoadFrame& frame, unsigned int& value)
+{
+    memcpy(&value, frame.mStream.mStorage, sizeof(unsigned int));
+    frame.mStream.mStorage += sizeof(unsigned int);
+}
+#pragma dont_inline reset
+
+/**
+ * Offset/Address/Size: 0x4564 | 0x8011D414 | size: 0x44
+ */
+#pragma dont_inline on
+template <>
+void Replayable<0, LoadFrame, int>(LoadFrame& frame, int& value)
+{
+    memcpy(&value, frame.mStream.mStorage, sizeof(int));
+    frame.mStream.mStorage += sizeof(int);
+}
+#pragma dont_inline reset
+
+/**
+ * Offset/Address/Size: 0x48A0 | 0x8011D760 | size: 0x80
+ */
+template <>
+void cPN_SingleAxisBlender::Replay<SaveFrame>(SaveFrame& frame)
+{
+    Replayable<0>(frame, (cPoseNode&)*this);
+    FloatCompressor<0, 1, 7> proxy(m_fSmoothedWeight);
+    proxy.Replay(frame);
+}
+
+/**
+ * Offset/Address/Size: 0x4920 | 0x8011D7E0 | size: 0xD8
+ */
+template <>
+void cPN_SAnimController::Replay<LoadFrame>(LoadFrame& frame)
+{
+    Replayable<0>(frame, (cPoseNode&)*this);
+
+    const char* cursor = frame.mStream.mStorage;
+    unsigned short value = (unsigned short)(((unsigned char)cursor[1] << 8) | (unsigned char)cursor[0]);
+    frame.mStream.mStorage = cursor + 2;
+    m_fTime = (float)value / 32768.0f;
+
+    unsigned int animPtr = 0;
+    memcpy(&animPtr, frame.mStream.mStorage, sizeof(unsigned int));
+    frame.mStream.mStorage += sizeof(unsigned int);
+    m_bMirror = animPtr & 1;
+    m_pSAnim = (cSAnim*)(animPtr & ~1);
+    memcpy(&m_pAnimRetarget, frame.mStream.mStorage, sizeof(unsigned int));
+    frame.mStream.mStorage += sizeof(unsigned int);
+}
+
+/**
+ * Offset/Address/Size: 0x49F8 | 0x8011D8B8 | size: 0xE4
+ */
+template <>
+void cPN_SAnimController::Replay<SaveFrame>(SaveFrame& frame)
+{
+    Replayable<0>(frame, (cPoseNode&)*this);
+
+    FloatCompressor<0, 1, 15> proxy(m_fTime);
+    proxy.Replay(frame);
+
+    unsigned int animPtr = 0;
+    animPtr = (unsigned int)m_pSAnim;
+    if (m_bMirror)
+        animPtr |= 1;
+    memcpy(frame.mStream.mStorage, &animPtr, sizeof(unsigned int));
+    frame.mStream.mStorage += sizeof(unsigned int);
+    memcpy(frame.mStream.mStorage, &m_pAnimRetarget, sizeof(unsigned int));
+    frame.mStream.mStorage += sizeof(unsigned int);
+}
+
+/**
+ * Offset/Address/Size: 0x4AEC | 0x8011D99C | size: 0x44
+ */
+template <>
+void cPN_Feather::Replay<LoadFrame>(LoadFrame& frame)
+{
+    Replayable<0>(frame, (cPoseNode&)*this);
+    m_fBlendTime = 0.0f;
+    m_pFeatherWeights = NULL;
+}
+
+/**
+ * Offset/Address/Size: 0x4B30 | 0x8011D9E0 | size: 0x2C
+ */
+template <>
+void cPN_Feather::Replay<SaveFrame>(SaveFrame& frame)
+{
+    Replayable<0>(frame, (cPoseNode&)*this);
+}
+
+/**
+ * Offset/Address/Size: 0x4CC0 | 0x8011DA80 | size: 0x234
+ * TODO: 86.4% match - FloatCompressor constructor inlined instead of called,
+ * r26/r29/r31 register allocation mismatch
+ */
+template <>
+void cPN_Blender::Replay<SaveFrame>(SaveFrame& frame)
+{
+    cPoseNode* child;
+    int i;
+    char type;
+
+    memcpy(frame.mStream.mStorage, &m_numChildren, sizeof(int));
+    frame.mStream.mStorage += sizeof(int);
+
+    for (i = 0; i < m_numChildren; i++)
+    {
+        child = m_children[i];
+        bool hasChild = (child != 0);
+        memcpy(frame.mStream.mStorage, &hasChild, 1);
+        frame.mStream.mStorage += 1;
+        if (hasChild)
+        {
+            type = (char)child->GetType();
+            if (type < 0 || type > 4)
+                nlBreak();
+            memcpy(frame.mStream.mStorage, &type, 1);
+            frame.mStream.mStorage += 1;
+            if (type < 0 || type > 3)
+                nlBreak();
+            if (type == 0)
+            {
+                Replayable<0>(frame, (cPoseNode&)*child);
+                const FloatCompressor<0, 1, 7> proxy0(((cPN_Blender*)child)->m_fBlendTime);
+                Replayable<0>(frame, proxy0);
+            }
+            else if (type == 1)
+            {
+                Replayable<0>(frame, (cPoseNode&)*child);
+            }
+            else if (type == 2)
+            {
+                Replayable<0>(frame, (cPoseNode&)*child);
+                const FloatCompressor<0, 1, 15> proxy2(((cPN_SAnimController*)child)->m_fTime);
+                Replayable<0>(frame, proxy2);
+                unsigned int animPtr = 0;
+                animPtr = (unsigned int)((cPN_SAnimController*)child)->m_pSAnim;
+                if (((cPN_SAnimController*)child)->m_bMirror)
+                    animPtr |= 1;
+                Replayable<0>(frame, animPtr);
+                Replayable<0>(frame, (unsigned int&)((cPN_SAnimController*)child)->m_pAnimRetarget);
+            }
+            else if (type == 3)
+            {
+                Replayable<0>(frame, (cPoseNode&)*child);
+                const FloatCompressor<0, 1, 7> proxy3(((cPN_SingleAxisBlender*)child)->m_fSmoothedWeight);
+                Replayable<0>(frame, proxy3);
+            }
+        }
+    }
+
+    FloatCompressor<0, 1, 7> blendProxy(m_fBlendTime);
+    blendProxy.Replay(frame);
+}
+
 #pragma force_active on
 void DrawableCharacter_stub()
 {
     float x;
-    FloatCompressor<0, 1, 7> fc7(x);
-    FloatCompressor<0, 1, 15> fc15(x);
+    SaveFrame sf;
+    LoadFrame lf;
+    cPoseNode* pn = NULL;
+    Replayable<0>(sf, FloatCompressor<0, 1, 7>(x));
+    Replayable<0>(sf, FloatCompressor<0, 1, 15>(x));
+    Replayable<0>(lf, FloatCompressor<0, 1, 7>(x));
+    Replayable<0>(lf, FloatCompressor<0, 1, 15>(x));
+    ReplayablePolymorphic<1, SaveFrame, cPoseNode>(sf, pn);
 }
 #pragma force_active reset

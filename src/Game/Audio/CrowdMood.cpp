@@ -57,8 +57,13 @@ static RANDOM_STREAMS g_RandomHeckles;
 template <int N>
 float NDimDistance(float* A, float* B)
 {
-    FORCE_DONT_INLINE;
-    return 0.0f;
+    float sum = 0.0f;
+    for (int i = 0; i < N; i++)
+    {
+        float diff = B[i] - A[i];
+        sum += diff * diff;
+    }
+    return nlSqrt(sum, false);
 }
 
 template <typename T>

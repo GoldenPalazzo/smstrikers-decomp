@@ -930,7 +930,7 @@ void AudioStreamTrack::StreamTrack::AttachStream(
     m_State = TS_Playing;
 }
 
-// At the bottom of StreamTrack.cpp — REMOVE once real callers exist.
+// At the bottom of StreamTrack.cpp -- REMOVE once real callers exist.
 void StreamTrack_stub()
 {
     using namespace AudioStreamTrack;

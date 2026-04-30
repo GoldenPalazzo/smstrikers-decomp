@@ -802,7 +802,7 @@ EffectsGroup* fxGetGroup(const char* name)
     return nullptr;
 }
 
-// At the bottom of EffectsGroup.cpp — REMOVE once real callers exist.
+// At the bottom of EffectsGroup.cpp -- REMOVE once real callers exist.
 void EffectsGroup_stub()
 {
     NewAdapter<AVLTreeEntry<unsigned long, EffectsGroup*> > adapter;

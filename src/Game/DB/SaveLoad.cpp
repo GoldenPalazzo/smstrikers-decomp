@@ -41,12 +41,13 @@ static unsigned long gIconCRC;
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0x104 | 0x8018D3D8 | size: 0x34
-//  */
-// void MemCardFunctor::MCMemberFunctor<LoadCallbacks>::Call(unsigned long, long)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x104 | 0x8018D3D8 | size: 0x34
+ */
+void MemCardFunctor::MCMemberFunctor<LoadCallbacks>::Call(unsigned long Slot, long Result)
+{
+    (m_pObject->*(*(MemberCB*)&m_pFunc))(Slot, Result, m_pData);
+}
 
 // /**
 //  * Offset/Address/Size: 0xD0 | 0x8018D3A4 | size: 0x34
@@ -55,33 +56,37 @@ static unsigned long gIconCRC;
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0x9C | 0x8018D370 | size: 0x34
-//  */
-// void MemCardFunctor::MCMemberFunctor<DeleteCallbacks>::Call(unsigned long, long)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x9C | 0x8018D370 | size: 0x34
+ */
+void MemCardFunctor::MCMemberFunctor<DeleteCallbacks>::Call(unsigned long Slot, long Result)
+{
+    (m_pObject->*(*(MemberCB*)&m_pFunc))(Slot, Result, m_pData);
+}
 
-// /**
-//  * Offset/Address/Size: 0x68 | 0x8018D33C | size: 0x34
-//  */
-// void MemCardFunctor::MCMemberFunctor<FormatCallbacks>::Call(unsigned long, long)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x68 | 0x8018D33C | size: 0x34
+ */
+void MemCardFunctor::MCMemberFunctor<FormatCallbacks>::Call(unsigned long Slot, long Result)
+{
+    (m_pObject->*(*(MemberCB*)&m_pFunc))(Slot, Result, m_pData);
+}
 
-// /**
-//  * Offset/Address/Size: 0x34 | 0x8018D308 | size: 0x34
-//  */
-// void MemCardFunctor::MCMemberFunctor<FileExistsCallbacks>::Call(unsigned long, long)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x34 | 0x8018D308 | size: 0x34
+ */
+void MemCardFunctor::MCMemberFunctor<FileExistsCallbacks>::Call(unsigned long Slot, long Result)
+{
+    (m_pObject->*(*(MemberCB*)&m_pFunc))(Slot, Result, m_pData);
+}
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x8018D2D4 | size: 0x34
-//  */
-// void MemCardFunctor::MCMemberFunctor<MemoryCardIDCallbacks>::Call(unsigned long, long)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x0 | 0x8018D2D4 | size: 0x34
+ */
+void MemCardFunctor::MCMemberFunctor<MemoryCardIDCallbacks>::Call(unsigned long Slot, long Result)
+{
+    (m_pObject->*(*(MemberCB*)&m_pFunc))(Slot, Result, m_pData);
+}
 
 /**
  * Offset/Address/Size: 0x38E4 | 0x8018D240 | size: 0x94

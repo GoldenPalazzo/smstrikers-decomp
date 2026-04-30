@@ -1,6 +1,7 @@
 #include "Game/Drawable/DrawableExplosionFragment.h"
 
 #include "Game/Game.h"
+#include "Game/ReplaySpecializations.h"
 #include "Game/Render/SidelineExplodable.h"
 #include "Game/World.h"
 #include "Game/WorldManager.h"
@@ -139,9 +140,7 @@ void DrawableExplosionFragment::Replay<SaveFrame>(SaveFrame& frame)
 /**
  * Offset/Address/Size: 0x50 | 0x8011FB78 | size: 0x50
  */
-// void Replayable<3, SaveFrame, nlQuaternion>(SaveFrame&, nlQuaternion&)
-// {
-// }
+// Replayable<3, SaveFrame, nlQuaternion> defined in ReplaySpecializations.h
 
 /**
  * Offset/Address/Size: 0xA0 | 0x8011FBC8 | size: 0x54

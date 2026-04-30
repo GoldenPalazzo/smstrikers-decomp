@@ -1,5 +1,6 @@
 #include "Game/Drawable/DrawablePowerup.h"
 #include "Game/Drawable/DrawableModel.h"
+#include "Game/ReplaySpecializations.h"
 #include "Game/WorldManager.h"
 #include "Game/AI/Powerups.h"
 #include "NL/gl/glDraw3.h"
@@ -225,6 +226,7 @@ void DrawShadow(float radius, float x, float y, float z)
 /**
  * Offset/Address/Size: 0x0 | 0x8011F318 | size: 0x88
  */
+#pragma inline_depth(0)
 template <>
 void DrawablePowerup::Replay<LoadFrame>(LoadFrame& frame)
 {
@@ -238,6 +240,7 @@ void DrawablePowerup::Replay<LoadFrame>(LoadFrame& frame)
         Replayable<3, LoadFrame, float>(frame, mRadius);
     }
 }
+#pragma inline_depth
 
 /**
  * Offset/Address/Size: 0x88 | 0x8011F3A0 | size: 0x88
@@ -267,9 +270,7 @@ void DrawablePowerup::Replay<SaveFrame>(SaveFrame& frame)
 /**
  * Offset/Address/Size: 0x0 | 0x8011F430 | size: 0x64
  */
-// void Replayable<3, SaveFrame, bool>(SaveFrame&, bool&)
-// {
-// }
+// Replayable<3, SaveFrame, bool> defined in ReplaySpecializations.h
 
 /**
  * Offset/Address/Size: 0x64 | 0x8011F494 | size: 0x50
@@ -295,9 +296,7 @@ void DrawablePowerup::Replay<SaveFrame>(SaveFrame& frame)
 /**
  * Offset/Address/Size: 0x154 | 0x8011F584 | size: 0x50
  */
-// void Replayable<3, SaveFrame, float>(SaveFrame&, float&)
-// {
-// }
+// Replayable<3, SaveFrame, float> defined in ReplaySpecializations.h
 
 /**
  * Offset/Address/Size: 0x1A4 | 0x8011F5D4 | size: 0x7C
@@ -323,13 +322,21 @@ void DrawablePowerup::Replay<SaveFrame>(SaveFrame& frame)
 /**
  * Offset/Address/Size: 0x2C8 | 0x8011F6F8 | size: 0x54
  */
-// void Replayable<3, LoadFrame, nlVector3>(LoadFrame&, nlVector3&)
-// {
-// }
+template <>
+void Replayable<3, LoadFrame, nlVector3>(LoadFrame& frame, nlVector3& value)
+{
+    FORCE_DONT_INLINE;
+    if (frame.mInterval == 3)
+    {
+        if (frame.mInterval == 3)
+        {
+            memcpy(&value, frame.mStream.mStorage, sizeof(nlVector3));
+            frame.mStream.mStorage += sizeof(nlVector3);
+        }
+    }
+}
 
 /**
  * Offset/Address/Size: 0x31C | 0x8011F74C | size: 0x54
  */
-// void Replayable<3, LoadFrame, float>(LoadFrame&, float&)
-// {
-// }
+// Replayable<3, LoadFrame, float> defined in ReplaySpecializations.h

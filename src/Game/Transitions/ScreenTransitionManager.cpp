@@ -444,7 +444,7 @@ void ScreenTransitionManager::AddTransitions(char* loadedData, unsigned long fil
     }
 }
 
-// At the bottom of ScreenTransitionManager.cpp — REMOVE once real callers exist.
+// At the bottom of ScreenTransitionManager.cpp -- REMOVE once real callers exist.
 void ScreenTransitionManager_stub()
 {
     NewAdapter<AVLTreeEntry<unsigned long, ScreenTransition*> > adapter;

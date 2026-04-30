@@ -33,19 +33,7 @@ extern cBall* g_pScriptBall;
 extern cTeam* g_pScriptCurrentTeam;
 extern cTeam* g_pScriptOtherTeam;
 
-// /**
-//  * Offset/Address/Size: 0x654 | 0x8007A56C | size: 0x80
-//  */
-// void std::__red_black_tree<1>::rotate_left(std::__red_black_tree<1>::node_base*, std::__red_black_tree<1>::node_base*&)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x5D4 | 0x8007A4EC | size: 0x80
-//  */
-// void std::__red_black_tree<1>::rotate_right(std::__red_black_tree<1>::node_base*, std::__red_black_tree<1>::node_base*&)
-// {
-// }
+// rotate_left, rotate_right defined in msl_tree.h, instantiated via CommonScript_stub()
 
 // /**
 //  * Offset/Address/Size: 0x3E4 | 0x8007A2FC | size: 0x1F0
@@ -907,4 +895,14 @@ FuzzyVariant Fuzzy::GoalieAndGonnaPickupBall(cPlayer* ThePlayer)
     bestValue = fvResult;
 
     return bestValue;
+}
+
+void CommonScript_stub()
+{
+    std::map<unsigned long, FuzzyVariant> m;
+    unsigned long k = 0;
+    m.find(k);
+    std::__red_black_tree<1>::node_base* n = 0;
+    std::__red_black_tree<1>::rotate_left(n, n);
+    std::__red_black_tree<1>::rotate_right(n, n);
 }

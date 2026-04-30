@@ -125,6 +125,12 @@ public:
     void Callback(EntryType*);
 };
 
+template <typename KeyType, typename EntryType, typename CallbackType>
+void WalkHelper<KeyType, EntryType, CallbackType>::Callback(EntryType* listEntry)
+{
+    (m_CBClass->*m_CB)(&listEntry->m_data);
+}
+
 // class AVLTreeBase<const glModelPacket*, unsigned int, BasicSlotPool<AVLTreeEntry<const glModelPacket*, unsigned int>>, TextureTreeCompare>
 // {
 // public:

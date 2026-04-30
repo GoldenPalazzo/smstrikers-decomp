@@ -46,34 +46,45 @@ CharT* nlStrChr(const CharT* str, CharT ch)
 }
 
 template <typename CharT>
-int nlStrCmp(const CharT* str1, const CharT* str2)
+int nlStrCmp(const CharT* a, const CharT* b)
 {
-    return nlStrNCmp(str1, str2, nlStrLen(str1));
+    CharT c1;
+    CharT c2;
+
+    do
+    {
+        c1 = *a++;
+        c2 = *b++;
+    } while (c1 != 0 && c2 != 0 && c1 == c2);
+
+    return c1 - c2;
 }
 
 /**
  * Offset/Address/Size: 0x0 | 0x801514FC | size: 0x48
- * CrowdMood: void nlStrNCmp<char>(const char*, const char*, unsigned long)
+ * TODO: 87.78% match - two lbz instructions in swapped order (c2/b loaded before c1/a), beq branch prediction bit
  */
 template <typename CharT>
-int nlStrNCmp(const CharT* str1, const CharT* str2, unsigned long len)
+int nlStrNCmp(const CharT* a, const CharT* b, unsigned long maxsize)
 {
-    CharT cVar1;
-    CharT cVar2;
+    int c1;
+    int c2;
 
-    while (true)
+    do
     {
-        len -= 1;
-        cVar1 = *str1;
-        cVar2 = *str2;
-        str1++;
-        str2++;
-        if (len == 0)
+        --maxsize;
+        c2 = (unsigned char)*b;
+        c1 = (unsigned char)*a;
+        a++;
+        b++;
+        if (maxsize == 0)
             break;
-        if (((cVar1 == '\0') || (cVar2 == '\0')) || (cVar1 != cVar2))
+        if ((CharT)c1 == 0)
             break;
-    }
-    return (int)cVar1 - (int)cVar2;
+        if ((CharT)c2 == 0)
+            break;
+    } while ((CharT)c1 == (CharT)c2);
+    return (CharT)c1 - (CharT)c2;
 }
 
 template <typename CharT>
@@ -117,15 +128,16 @@ CharT nlToLower(CharT c)
     return c;
 }
 
-// String version (new addition)
 template <typename CharT>
-void nlToLower(CharT* str)
+CharT* nlToLower(CharT* str)
 {
-    while (*str)
+    CharT* cp = str;
+    while (*cp)
     {
-        *str = nlToLower<CharT>(*str);
-        str++;
+        *cp = nlToLower<CharT>(*cp);
+        cp++;
     }
+    return str;
 }
 
 /**

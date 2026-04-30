@@ -419,6 +419,9 @@ void PausePostGameScene::OnSelectChangeTeams()
 /**
  * Offset/Address/Size: 0x0 | 0x80107104 | size: 0x88
  */
-// void PausePostGameScene::SetText(TLTextInstance&, const BasicString<unsigned short, Detail::TempStringAllocator>&)
-// {
-// }
+void PausePostGameScene::SetText(TLTextInstance& textinstance, const BasicString<unsigned short, Detail::TempStringAllocator>& string)
+{
+    nlStrNCpy(mRematchTextBuffer, string.c_str(), 128);
+    mRematchTextBuffer[127] = 0;
+    textinstance.SetString(mRematchTextBuffer);
+}

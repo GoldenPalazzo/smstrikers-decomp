@@ -34,7 +34,7 @@ public:
     /* 0x40 */ nlVector2 m_v2Min;
     /* 0x48 */ nlVector2 m_v2Max;
     /* 0x50 */ nlVector2 m_v2Center;
-    /* 0x58 */ s8 m_Name[32];
+    /* 0x58 */ char m_Name[32];
 }; // total size: 0x78
 
 class FormationSet

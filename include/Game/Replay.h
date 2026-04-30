@@ -81,6 +81,8 @@ class FloatCompressor
 {
 public:
     FloatCompressor(float& f);
+    inline void Replay(LoadFrame& frame) const;
+    inline void Replay(SaveFrame& frame) const;
 
     /* 0x0 */ float& mF;
 }; // total size: 0x4
@@ -91,12 +93,64 @@ inline FloatCompressor<MIN, MAX, BITS>::FloatCompressor(float& f)
 {
 }
 
+template <int MIN, int MAX, int BITS>
+inline void FloatCompressor<MIN, MAX, BITS>::Replay(LoadFrame& frame) const
+{
+    if ((MAX - MIN) * (1 << BITS) <= 255)
+    {
+        const char* cursor = frame.mStream.mStorage;
+        unsigned char value = (unsigned char)*cursor++;
+        frame.mStream.mStorage = cursor;
+        mF = (float)value * (1.0f / (float)(1 << BITS)) + (float)MIN;
+    }
+    else
+    {
+        const char* cursor = frame.mStream.mStorage;
+        unsigned char lo = (unsigned char)cursor[0];
+        unsigned char hi = (unsigned char)cursor[1];
+        frame.mStream.mStorage = cursor + 2;
+        unsigned short value = (unsigned short)((hi << 8) | lo);
+        mF = (float)value * (1.0f / (float)(1 << BITS)) + (float)MIN;
+    }
+}
+
+template <int MIN, int MAX, int BITS>
+inline void FloatCompressor<MIN, MAX, BITS>::Replay(SaveFrame& frame) const
+{
+    float f = mF;
+    if (f > (float)MAX)
+        f = (float)MAX;
+    if (f < (float)MIN)
+        f = (float)MIN;
+    f -= (float)MIN;
+    f *= (float)(1 << BITS);
+    if ((MAX - MIN) * (1 << BITS) <= 255)
+    {
+        char* p = frame.mStream.mStorage;
+        unsigned int value = (unsigned int)f;
+        *p++ = (char)value;
+        frame.mStream.mStorage = p;
+    }
+    else
+    {
+        unsigned int value = (unsigned int)f;
+        char* p = frame.mStream.mStorage;
+        *p++ = (char)(value & 0xFF);
+        *p++ = (char)((value >> 8) & 0xFF);
+        frame.mStream.mStorage = p;
+    }
+}
+
 // Forward declaration of generic template (needed before specializations)
 template <int N, typename FrameType, typename T>
 void Replayable(FrameType& frame, T& manager);
 
 template <int N, typename FrameType, typename T>
-void Replayable(FrameType& frame, const T& manager);
+void Replayable(FrameType& frame, const T& proxy)
+{
+    FORCE_DONT_INLINE;
+    proxy.Replay(frame);
+}
 
 template <>
 void Replayable<1, LoadFrame, CrowdManager>(LoadFrame& frame, CrowdManager& manager);
@@ -138,14 +192,24 @@ template <>
 void Replayable<0, LoadFrame, float>(LoadFrame& frame, float& value);
 
 template <>
+void Replayable<0, LoadFrame, char>(LoadFrame& frame, char& value);
+template <>
+void Replayable<0, SaveFrame, char>(SaveFrame& frame, char& value);
+template <>
 void Replayable<0, SaveFrame, int>(SaveFrame& frame, int& value);
 template <>
 void Replayable<0, LoadFrame, int>(LoadFrame& frame, int& value);
 
 template <>
+void Replayable<0, SaveFrame, unsigned int>(SaveFrame& frame, unsigned int& value);
+template <>
+void Replayable<0, LoadFrame, unsigned int>(LoadFrame& frame, unsigned int& value);
+template <>
 void Replayable<0, SaveFrame, unsigned short>(SaveFrame& frame, unsigned short& value);
 template <>
 void Replayable<0, SaveFrame, unsigned long>(SaveFrame& frame, unsigned long& value);
+template <>
+void Replayable<0, LoadFrame, unsigned long>(LoadFrame& frame, unsigned long& value);
 template <>
 void Replayable<0, SaveFrame, EmissionController>(SaveFrame& frame, EmissionController& controller);
 template <>

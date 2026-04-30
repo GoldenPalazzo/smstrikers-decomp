@@ -8,6 +8,8 @@
 #include "Game/FE/feInput.h"
 
 #include "Game/FE/Overlay/OverlayHandlerSummary.h"
+#include "Game/FE/feFinder.h"
+#include "Game/FE/feTemplates.h"
 
 #include "types.h"
 
@@ -90,16 +92,36 @@ void BasicString<unsigned short, Detail::TempStringAllocator>::AppendInPlace<Det
 /**
  * Offset/Address/Size: 0x358 | 0x800FC460 | size: 0x84
  */
-// void FEFinder<TLInstance, 3>::_Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long)
-//{
-// }
+template <>
+template <>
+TLInstance* FEFinder<TLInstance, 3>::_Find<TLSlide>(
+    TLSlide* pTopLevel, const unsigned long Level1, const unsigned long Level2,
+    const unsigned long Level3, const unsigned long Level4, const unsigned long Level5, const unsigned long Level6)
+{
+    void* pChild = FindItemByHashID<TLInstance>(pTopLevel->m_instances, Level1);
+    if (pChild == 0)
+        return 0;
+    if (Level2 == 0)
+        return (TLInstance*)pChild;
+    return _Find<TLInstance>(CastToSomeType<TLInstance>(pTopLevel->m_instances, pChild), Level2, Level3, Level4, Level5, Level6, 0);
+}
 
 /**
  * Offset/Address/Size: 0x2D4 | 0x800FC3DC | size: 0x84
  */
-// void FEFinder<TLInstance, 3>::_Find<FEPresentation>(FEPresentation*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long)
-//{
-// }
+template <>
+template <>
+TLInstance* FEFinder<TLInstance, 3>::_Find<FEPresentation>(
+    FEPresentation* pTopLevel, const unsigned long Level1, const unsigned long Level2,
+    const unsigned long Level3, const unsigned long Level4, const unsigned long Level5, const unsigned long Level6)
+{
+    void* pChild = FindItemByHashID<TLSlide>(pTopLevel->m_slides, Level1);
+    if (pChild == 0)
+        return 0;
+    if (Level2 == 0)
+        return (TLInstance*)pChild;
+    return _Find<TLSlide>(CastToSomeType<TLSlide>(pTopLevel->m_slides, pChild), Level2, Level3, Level4, Level5, Level6, 0);
+}
 
 /**
  * Offset/Address/Size: 0x29C | 0x800FC3A4 | size: 0x38
@@ -148,6 +170,8 @@ void OverlayHandlerInGameText_stub()
 {
     void (*volatile forceTrack)(ePlayerStats, int, int, int, int, int, int) = &StatsTracker::Track;
     (void)forceTrack;
+    TLInstance* (*volatile forceFind)(FEPresentation*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher) = &FEFinder<TLInstance, 3>::Find<FEPresentation>;
+    (void)forceFind;
 }
 
 /**

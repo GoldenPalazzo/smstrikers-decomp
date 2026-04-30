@@ -296,16 +296,36 @@ void DrawableBall::Replay<LoadFrame>(LoadFrame& frame)
 /**
  * Offset/Address/Size: 0x0 | 0x8011E8AC | size: 0x50
  */
-// void Replayable<1, SaveFrame, char>(SaveFrame&, char&)
-// {
-// }
+template <>
+void Replayable<1, SaveFrame, char>(SaveFrame& frame, char& value)
+{
+    FORCE_DONT_INLINE;
+    if (frame.mInterval == 1)
+    {
+        if (frame.mInterval == 1)
+        {
+            memcpy(frame.mStream.mStorage, &value, 1);
+            frame.mStream.mStorage += 1;
+        }
+    }
+}
 
 /**
  * Offset/Address/Size: 0x50 | 0x8011E8FC | size: 0x54
  */
-// void Replayable<1, LoadFrame, char>(LoadFrame&, char&)
-// {
-// }
+template <>
+void Replayable<1, LoadFrame, char>(LoadFrame& frame, char& value)
+{
+    FORCE_DONT_INLINE;
+    if (frame.mInterval == 1)
+    {
+        if (frame.mInterval == 1)
+        {
+            memcpy(&value, frame.mStream.mStorage, 1);
+            frame.mStream.mStorage += 1;
+        }
+    }
+}
 
 /**
  * Offset/Address/Size: 0xA4 | 0x8011E950 | size: 0x98

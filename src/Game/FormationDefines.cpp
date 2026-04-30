@@ -1,48 +1,10 @@
 #include "Game/FormationDefines.h"
+#include "NL/nlConfig.h"
+#include "NL/nlLexicalCast.h"
+#include "NL/nlPrint.h"
+#include "NL/nlString.h"
 
 static const nlVector3 v3Zero = { 0.0f, 0.0f, 0.0f };
-
-// /**
-//  * Offset/Address/Size: 0x334 | 0x8003C1B4 | size: 0xFC
-//  */
-// void Detail::LexicalCastImpl<BasicString<char, Detail::TempStringAllocator>, float>::Do(float)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x304 | 0x8003C184 | size: 0x30
-//  */
-// void LexicalCast<BasicString<char, Detail::TempStringAllocator>, float>(const float&)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x204 | 0x8003C084 | size: 0x100
-//  */
-// void Detail::LexicalCastImpl<BasicString<char, Detail::TempStringAllocator>, int>::Do(int)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x1D4 | 0x8003C054 | size: 0x30
-//  */
-// void LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(const int&)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x30 | 0x8003BEB0 | size: 0x1A4
-//  */
-// void Detail::LexicalCastImpl<BasicString<char, Detail::TempStringAllocator>, bool>::Do(bool)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x8003BE80 | size: 0x30
-//  */
-// void LexicalCast<BasicString<char, Detail::TempStringAllocator>, bool>(const bool&)
-// {
-// }
 
 /**
  * Offset/Address/Size: 0x64 | 0x8003BE64 | size: 0x1C
@@ -72,20 +34,6 @@ FormationSpec::FormationSpec()
 {
     m_ID = -1;
 }
-
-// /**
-//  * Offset/Address/Size: 0xA8 | 0x8003BD7C | size: 0x84
-//  */
-// void Config::TagValuePair::Get<BasicString<char, Detail::TempStringAllocator> >() const
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x8003BCD4 | size: 0xA8
-//  */
-// void Config::Get<BasicString<char, Detail::TempStringAllocator> >(const char*, BasicString<char, Detail::TempStringAllocator>)
-// {
-// }
 
 static inline float Remap(float value, float fromMin, float fromMax, float toMin, float toMax)
 {
@@ -157,6 +105,25 @@ void AILocToFieldLoc(nlVector3& result, const nlVector3& input, eTeamSide side)
         normZ = 0.0f;
     result.f.y = normZ * yScale + (-4.0f);
     result.f.z = 0.0f;
+}
+
+static inline void AILocToFieldLoc(nlVector2& dest, const nlVector2& ai_location, eTeamSide nTeamSide)
+{
+    float fMinFromX = -20.60211f;
+    float fMaxFromX = 20.60211f;
+    float fMinFromY = -12.0825f;
+    float fMaxFromY = 12.0825f;
+
+    if (nTeamSide == AWAY)
+    {
+        fMinFromX = -fMinFromX;
+        fMaxFromX = -fMaxFromX;
+        fMinFromY = -fMinFromY;
+        fMaxFromY = -fMaxFromY;
+    }
+
+    dest.f.x = Remap(ai_location.f.x, 0.0f, 4.0f, fMinFromX, fMaxFromX);
+    dest.f.y = Remap(ai_location.f.y, -1.0f, 1.0f, fMinFromY, fMaxFromY);
 }
 
 /**
@@ -245,8 +212,129 @@ FormationSpec* FormationSet::GetFormationSpecFromID(int formationID) const
 
 /**
  * Offset/Address/Size: 0x0 | 0x8003AE10 | size: 0xC08
+ * TODO: 96.83% match - register r21/r22/r16 swap and m_Name[31]=0 scheduling
  */
-FormationSet* FormationSet::LoadFormationSets(const char*, int&)
+FormationSet* FormationSet::LoadFormationSets(const char* filename, int& out_numsets)
 {
-    return nullptr;
+    Config config(Config::ALLOCATE_HIGH);
+    config.LoadFromFile(filename);
+
+    out_numsets = GetConfigInt(config, "Number Of Formation Sets", 0);
+    if (out_numsets == 0)
+    {
+        return NULL;
+    }
+
+    FormationSet* setList = new FormationSet[out_numsets];
+    FormationSpec formationList[42];
+
+    char section_name[128];
+    char var_name[128];
+    int formation_id = 0;
+
+    for (int i_set = 0; i_set < out_numsets; i_set++)
+    {
+        nlSNPrintf(section_name, 127, "FORMATION_SET%d", i_set);
+
+        int i_formation;
+        for (i_formation = 0;; i_formation++)
+        {
+            nlSNPrintf(var_name, 127, "%s/F%d_NAME", section_name, i_formation);
+            if (!config.Exists(var_name))
+            {
+                break;
+            }
+
+            nlStrNCpy(formationList[i_formation].m_Name,
+                config.Get<BasicString<char, Detail::TempStringAllocator> >(var_name,
+                          BasicString<char, Detail::TempStringAllocator>("Unnamed"))
+                    .c_str(),
+                32);
+            formationList[i_formation].m_Name[31] = 0;
+
+            nlSNPrintf(var_name, 127, "%s/F%d_KEY_POS", section_name, i_formation);
+            int keyIndex = GetConfigInt(config, var_name, -1);
+
+            nlSNPrintf(var_name, 127, "%s/F%d_INRADIUS", section_name, i_formation);
+            float inRadius = GetConfigFloat(config, var_name, 7.0f);
+
+            nlSNPrintf(var_name, 127, "%s/F%d_OUTRADIUS", section_name, i_formation);
+            float outRadius = GetConfigFloat(config, var_name, 11.0f);
+
+            formationList[i_formation].m_InRadius = inRadius;
+            formationList[i_formation].m_OutRadius = outRadius;
+
+            for (int i_pos = 0; i_pos < 4; i_pos++)
+            {
+                nlSNPrintf(var_name, 127, "%s/F%d_P%d_X", section_name, i_formation, i_pos);
+                float xVal = GetConfigFloat(config, var_name, -9999.9f);
+
+                nlSNPrintf(var_name, 127, "%s/F%d_P%d_Y", section_name, i_formation, i_pos);
+                float yVal = GetConfigFloat(config, var_name, -9999.9f);
+
+                nlSNPrintf(var_name, 127, "%s/F%d_P%d_CAPTAINPREF", section_name, i_formation, i_pos);
+                float captainPref = GetConfigFloat(config, var_name, 0.0f);
+
+                nlVector2 ailocation = { 0.0f, 0.0f };
+                nlVector2 fieldLocation;
+                ailocation.f.x = xVal;
+                ailocation.f.y = yVal;
+                AILocToFieldLoc(fieldLocation, ailocation, HOME);
+
+                formationList[i_formation].m_Positions[i_pos].m_Location = fieldLocation;
+                formationList[i_formation].m_Positions[i_pos].m_CaptainPreference = captainPref;
+            }
+
+            formationList[i_formation].m_ID = formation_id;
+            formationList[i_formation].m_iKeyIndex = keyIndex;
+            formationList[i_formation].m_v2Min.f.x = 999999.9f;
+            formationList[i_formation].m_v2Min.f.y = 999999.9f;
+            formationList[i_formation].m_v2Max.f.x = -999999.9f;
+            formationList[i_formation].m_v2Max.f.y = -999999.9f;
+            formationList[i_formation].m_v2Center.f.x = 0.0f;
+            formationList[i_formation].m_v2Center.f.y = 0.0f;
+
+            FormationPos* pp = &formationList[i_formation].m_Positions[0];
+            for (int n = 4; n != 0; n--)
+            {
+                formationList[i_formation].m_v2Min.f.x = (formationList[i_formation].m_v2Min.f.x <= pp->m_Location.f.x) ? formationList[i_formation].m_v2Min.f.x : pp->m_Location.f.x;
+                formationList[i_formation].m_v2Min.f.y = (formationList[i_formation].m_v2Min.f.y <= pp->m_Location.f.y) ? formationList[i_formation].m_v2Min.f.y : pp->m_Location.f.y;
+                formationList[i_formation].m_v2Max.f.x = (formationList[i_formation].m_v2Max.f.x >= pp->m_Location.f.x) ? formationList[i_formation].m_v2Max.f.x : pp->m_Location.f.x;
+                formationList[i_formation].m_v2Max.f.y = (formationList[i_formation].m_v2Max.f.y >= pp->m_Location.f.y) ? formationList[i_formation].m_v2Max.f.y : pp->m_Location.f.y;
+                {
+                    float cx = formationList[i_formation].m_v2Center.f.x + pp->m_Location.f.x;
+                    float cy = formationList[i_formation].m_v2Center.f.y + pp->m_Location.f.y;
+                    formationList[i_formation].m_v2Center.f.x = cx;
+                    formationList[i_formation].m_v2Center.f.y = cy;
+                }
+                pp++;
+            }
+            {
+                float cx = formationList[i_formation].m_v2Center.f.x * 0.25f;
+                float cy = formationList[i_formation].m_v2Center.f.y * 0.25f;
+                formationList[i_formation].m_v2Center.f.x = cx;
+                formationList[i_formation].m_v2Center.f.y = cy;
+            }
+
+            formation_id++;
+        }
+
+        setList[i_set].m_AutoDelete = true;
+        setList[i_set].m_ID = i_set;
+        setList[i_set].m_NumFormationDefs = i_formation;
+        setList[i_set].m_FormationDefArray = new FormationSpec[i_formation];
+
+        for (int j = 0; j < i_formation; j++)
+        {
+            setList[i_set].m_FormationDefArray[j] = formationList[j];
+        }
+    }
+
+    return setList;
+}
+
+void FormationDefines_stub()
+{
+    int i = 0;
+    LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(i);
 }

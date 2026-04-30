@@ -1,6 +1,7 @@
 #include "Game/SH/SHProgressiveScan.h"
 
 #include "Game/FE/feInput.h"
+#include "Game/FE/feTemplates.h"
 #include "Game/GameSceneManager.h"
 #include "NL/gl/glPlat.h"
 #include "dolphin/os/OSRtc.h"
@@ -13,22 +14,39 @@
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0x358 | 0x80111AB8 | size: 0x84
-//  */
-// void FEFinder<TLComponentInstance, 4>::_Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned
-// long,
-//                                                       unsigned long)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x358 | 0x80111AB8 | size: 0x84
+ */
+template <>
+template <>
+TLComponentInstance* FEFinder<TLComponentInstance, 4>::_Find<TLSlide>(
+    TLSlide* pTopLevel, const unsigned long Level1, const unsigned long Level2,
+    const unsigned long Level3, const unsigned long Level4, const unsigned long Level5, const unsigned long Level6)
+{
+    void* pChild = FindItemByHashID<TLInstance>(pTopLevel->m_instances, Level1);
+    if (pChild == 0)
+        return 0;
+    if (Level2 == 0)
+        return (TLComponentInstance*)pChild;
+    return _Find<TLInstance>(CastToSomeType<TLInstance>(pTopLevel->m_instances, pChild), Level2, Level3, Level4, Level5, Level6, 0);
+}
 
-// /**
-//  * Offset/Address/Size: 0x2D4 | 0x80111A34 | size: 0x84
-//  */
-// void FEFinder<TLComponentInstance, 4>::_Find<FEPresentation>(FEPresentation*, unsigned long, unsigned long, unsigned long, unsigned long,
-//                                                              unsigned long, unsigned long)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x2D4 | 0x80111A34 | size: 0x84
+ */
+template <>
+template <>
+TLComponentInstance* FEFinder<TLComponentInstance, 4>::_Find<FEPresentation>(
+    FEPresentation* pTopLevel, const unsigned long Level1, const unsigned long Level2,
+    const unsigned long Level3, const unsigned long Level4, const unsigned long Level5, const unsigned long Level6)
+{
+    void* pChild = FindItemByHashID<TLSlide>(pTopLevel->m_slides, Level1);
+    if (pChild == 0)
+        return 0;
+    if (Level2 == 0)
+        return (TLComponentInstance*)pChild;
+    return _Find<TLSlide>(CastToSomeType<TLSlide>(pTopLevel->m_slides, pChild), Level2, Level3, Level4, Level5, Level6, 0);
+}
 
 // /**
 //  * Offset/Address/Size: 0x29C | 0x801119FC | size: 0x38
@@ -47,29 +65,41 @@
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0xBC | 0x8011181C | size: 0x84
-//  */
-// void FEFinder<TLImageInstance, 2>::_Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long,
-//                                                   unsigned long)
-// {
-// }
+/**
+ * Offset/Address/Size: 0xBC | 0x8011181C | size: 0x84
+ */
+template <>
+template <>
+TLImageInstance* FEFinder<TLImageInstance, 2>::_Find<TLSlide>(
+    TLSlide* pTopLevel, const unsigned long Level1, const unsigned long Level2,
+    const unsigned long Level3, const unsigned long Level4, const unsigned long Level5, const unsigned long Level6)
+{
+    void* pChild = FindItemByHashID<TLInstance>(pTopLevel->m_instances, Level1);
+    if (pChild == 0)
+        return 0;
+    if (Level2 == 0)
+        return (TLImageInstance*)pChild;
+    return _Find<TLInstance>(CastToSomeType<TLInstance>(pTopLevel->m_instances, pChild), Level2, Level3, Level4, Level5, Level6, 0);
+}
 
-// /**
-//  * Offset/Address/Size: 0x38 | 0x80111798 | size: 0x84
-//  */
-// void FEFinder<TLImageInstance, 2>::_Find<FEPresentation>(FEPresentation*, unsigned long, unsigned long, unsigned long, unsigned long,
-//                                                          unsigned long, unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x80111760 | size: 0x38
-//  */
-// void FEFinder<TLImageInstance, 2>::Find<FEPresentation>(FEPresentation*, InlineHasher, InlineHasher, InlineHasher, InlineHasher,
-//                                                         InlineHasher, InlineHasher)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x38 | 0x80111798 | size: 0x84
+ */
+#pragma inline_depth(0)
+template <>
+template <>
+TLImageInstance* FEFinder<TLImageInstance, 2>::_Find<FEPresentation>(
+    FEPresentation* pTopLevel, const unsigned long Level1, const unsigned long Level2,
+    const unsigned long Level3, const unsigned long Level4, const unsigned long Level5, const unsigned long Level6)
+{
+    void* pChild = FindItemByHashID<TLSlide>(pTopLevel->m_slides, Level1);
+    if (pChild == 0)
+        return 0;
+    if (Level2 == 0)
+        return (TLImageInstance*)pChild;
+    return _Find<TLSlide>(CastToSomeType<TLSlide>(pTopLevel->m_slides, pChild), Level2, Level3, Level4, Level5, Level6, 0);
+}
+#pragma inline_depth()
 
 /**
  * Offset/Address/Size: 0x1148 | 0x80111618 | size: 0x148
@@ -88,31 +118,31 @@ ProgressiveScanScene::~ProgressiveScanScene()
     delete mConfirmationImage;
 }
 
-struct InlineHasher
-{
-    unsigned long m_Hash;
-
-    InlineHasher()
-    {
-    }
-
-    InlineHasher(unsigned long h)
-        : m_Hash(h)
-    {
-    }
-};
-
-template <typename T, int N>
-class FEFinder
-{
-public:
-    template <typename U>
-    static T* Find(U* slide, InlineHasher h1, InlineHasher h2, InlineHasher h3, InlineHasher h4, InlineHasher h5, InlineHasher h6);
-};
-
 extern unsigned long nlStringLowerHash(const char*);
 extern int nlSNPrintf(char*, unsigned long, const char*, ...);
 extern int g_Language;
+
+/**
+ * Offset/Address/Size: 0x29C | 0x801119FC | size: 0x38
+ */
+template <>
+template <>
+TLComponentInstance* FEFinder<TLComponentInstance, 4>::Find<FEPresentation>(
+    FEPresentation* slide, InlineHasher h1, InlineHasher h2, InlineHasher h3, InlineHasher h4, InlineHasher h5, InlineHasher h6)
+{
+    return _Find<FEPresentation>(slide, h1.m_Hash, h2.m_Hash, h3.m_Hash, h4.m_Hash, h5.m_Hash, h6.m_Hash);
+}
+
+/**
+ * Offset/Address/Size: 0x0 | 0x80111760 | size: 0x38
+ */
+template <>
+template <>
+TLImageInstance* FEFinder<TLImageInstance, 2>::Find<FEPresentation>(
+    FEPresentation* pTopLevel, InlineHasher h1, InlineHasher h2, InlineHasher h3, InlineHasher h4, InlineHasher h5, InlineHasher h6)
+{
+    return _Find(pTopLevel, h1.m_Hash, h2.m_Hash, h3.m_Hash, h4.m_Hash, h5.m_Hash, h6.m_Hash);
+}
 
 /**
  * Offset/Address/Size: 0xD08 | 0x801111D8 | size: 0x374
