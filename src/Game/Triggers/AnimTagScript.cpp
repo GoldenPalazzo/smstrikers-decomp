@@ -1,13 +1,6 @@
 #include "Game/Triggers/AnimTagScript.h"
 #include "NL/nlMemory.h"
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x80214594 | size: 0x8C
-//  */
-// void nlBSearch<BinaryTriggerFile::ANIM_RECORD, unsigned long>(const unsigned long&, BinaryTriggerFile::ANIM_RECORD*, int)
-// {
-// }
-
 struct FILE_HEADER
 {
     s8 Thumbprint[4];
@@ -22,9 +15,11 @@ class BinaryTriggerFile
 public:
     struct ANIM_RECORD
     {
-        u32 AnimNameHash;
+        u32 hash;
         u16 TriggerCount;
         u16 TriggerOffset;
+
+        operator unsigned long() const { return hash; }
     };
 
     struct TRIGGER_RECORD
@@ -42,9 +37,6 @@ public:
     ANIM_RECORD* m_pCurrentAnim;
     u32 m_CurrentTrigger;
 };
-
-template <>
-BinaryTriggerFile::ANIM_RECORD* nlBSearch<BinaryTriggerFile::ANIM_RECORD, unsigned long>(const unsigned long& key, BinaryTriggerFile::ANIM_RECORD* base, int count);
 
 extern "C" void AnimControllerCB__24AnimTagScriptInterpreterFUi(unsigned int);
 

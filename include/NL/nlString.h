@@ -48,16 +48,20 @@ CharT* nlStrChr(const CharT* str, CharT ch)
 template <typename CharT>
 int nlStrCmp(const CharT* a, const CharT* b)
 {
-    CharT c1;
-    CharT c2;
+    int c1;
+    int c2;
 
     do
     {
-        c1 = *a++;
-        c2 = *b++;
-    } while (c1 != 0 && c2 != 0 && c1 == c2);
+        c2 = (unsigned char)*b++;
+        c1 = (unsigned char)*a++;
+        if ((CharT)c1 == 0)
+            break;
+        if ((CharT)c2 == 0)
+            break;
+    } while ((CharT)c1 == (CharT)c2);
 
-    return c1 - c2;
+    return (CharT)c1 - (CharT)c2;
 }
 
 /**
@@ -108,6 +112,25 @@ int nlStrICmp(const CharT* str1, const CharT* str2)
         c1 = nlToUpper<CharT>(*str1++);
         c2 = nlToUpper<CharT>(*str2++);
     } while (c1 != 0 && c2 != 0 && c1 == c2);
+
+    return c1 - c2;
+}
+
+/**
+ * Offset/Address/Size: 0x0 | 0x8014C2B8 | size: 0x98
+ * TODO: 87.76% match - extra extsb sign-extension before nlToUpper calls (compiler char signedness behavior)
+ */
+template <typename CharT>
+int nlStrNICmp(const CharT* a, const CharT* b, unsigned long maxsize)
+{
+    CharT c1;
+    CharT c2;
+
+    do
+    {
+        c1 = nlToUpper<CharT>(*a++);
+        c2 = nlToUpper<CharT>(*b++);
+    } while (--maxsize != 0 && c1 != 0 && c2 != 0 && c1 == c2);
 
     return c1 - c2;
 }

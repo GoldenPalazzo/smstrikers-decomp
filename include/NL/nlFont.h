@@ -61,8 +61,13 @@ public:
         /* 0xA */ signed char Offset;
         /* 0xB */ unsigned char Page : 4;
         /* 0xB */ unsigned char HasKernPairs : 1;
-        /* 0xC */ unsigned short UnicodeChar;
+        union
+        {
+            /* 0xC */ unsigned short UnicodeChar;
+            /* 0xC */ unsigned short hash;
+        };
 
+        operator unsigned long() const { return UnicodeChar; }
         static int SortProc(const GlyphInfo* pa, const GlyphInfo* pb);
     }; // total size: 0x10
 

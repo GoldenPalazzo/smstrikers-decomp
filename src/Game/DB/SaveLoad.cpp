@@ -49,12 +49,13 @@ void MemCardFunctor::MCMemberFunctor<LoadCallbacks>::Call(unsigned long Slot, lo
     (m_pObject->*(*(MemberCB*)&m_pFunc))(Slot, Result, m_pData);
 }
 
-// /**
-//  * Offset/Address/Size: 0xD0 | 0x8018D3A4 | size: 0x34
-//  */
-// void MemCardFunctor::MCMemberFunctor<SaveCallbacks>::Call(unsigned long, long)
-// {
-// }
+/**
+ * Offset/Address/Size: 0xD0 | 0x8018D3A4 | size: 0x34
+ */
+void MemCardFunctor::MCMemberFunctor<SaveCallbacks>::Call(unsigned long Slot, long Result)
+{
+    (m_pObject->*(*(MemberCB*)&m_pFunc))(Slot, Result, m_pData);
+}
 
 /**
  * Offset/Address/Size: 0x9C | 0x8018D370 | size: 0x34

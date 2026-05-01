@@ -20,6 +20,7 @@
 #include "Game/Sys/audio.h"
 #include "Game/Audio/WorldAudio.h"
 #include "NL/nlMath.h"
+#include "NL/nlFormat.h"
 #include "NL/nlSlotPool.h"
 #include "NL/nlDebug.h"
 

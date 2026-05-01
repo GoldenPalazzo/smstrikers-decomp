@@ -3,6 +3,7 @@
 #include "Game/Game.h"
 #include "Game/Goalie.h"
 #include "NL/nlBundleFile.h"
+#include "NL/nlFormat.h"
 
 struct InlineHasher
 {
@@ -64,6 +65,15 @@ extern const unsigned short MissingLocString[];
 
 void MakeTextBoxReallyWide(TLTextInstance&);
 extern "C" void SetWinnerTitle__11GoalOverlayFv(GoalOverlay*);
+
+void OverlayHandlerGoal_stub()
+{
+    typedef BasicString<unsigned short, Detail::TempStringAllocator> WideBasicString;
+    typedef WideBasicString (*FmtFn)(const WideBasicString&, const unsigned short (&)[32], const WideBasicString&);
+
+    volatile FmtFn fn = &Format<WideBasicString, unsigned short[32], WideBasicString>;
+    (void)fn;
+}
 
 /**
  * Offset/Address/Size: 0x106C | 0x80104868 | size: 0xCF0

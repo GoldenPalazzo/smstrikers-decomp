@@ -738,6 +738,107 @@ cCharacter* DrawableCharacter::OnlyRenderingOneCharacter()
 }
 
 /**
+ * Address/Size: 0x8011CC04 | size: 0x50
+ */
+template <>
+void Replayable<1, SaveFrame, unsigned char>(SaveFrame& frame, unsigned char& value)
+{
+    FORCE_DONT_INLINE;
+    if (frame.mInterval == 1)
+    {
+        if (frame.mInterval == 1)
+        {
+            memcpy(frame.mStream.mStorage, &value, 1);
+            frame.mStream.mStorage += 1;
+        }
+    }
+}
+
+/**
+ * Address/Size: 0x8011CC54 | size: 0x50
+ */
+template <>
+void Replayable<1, SaveFrame, unsigned short>(SaveFrame& frame, unsigned short& value)
+{
+    FORCE_DONT_INLINE;
+    if (frame.mInterval == 1)
+    {
+        if (frame.mInterval == 1)
+        {
+            memcpy(frame.mStream.mStorage, &value, sizeof(unsigned short));
+            frame.mStream.mStorage += sizeof(unsigned short);
+        }
+    }
+}
+
+/**
+ * Address/Size: 0x8011CCA4 | size: 0x50
+ */
+template <>
+void Replayable<1, SaveFrame, unsigned long>(SaveFrame& frame, unsigned long& value)
+{
+    FORCE_DONT_INLINE;
+    if (frame.mInterval == 1)
+    {
+        if (frame.mInterval == 1)
+        {
+            memcpy(frame.mStream.mStorage, &value, sizeof(unsigned long));
+            frame.mStream.mStorage += sizeof(unsigned long);
+        }
+    }
+}
+
+/**
+ * Address/Size: 0x8011CCF4 | size: 0x54
+ */
+template <>
+void Replayable<1, LoadFrame, unsigned char>(LoadFrame& frame, unsigned char& value)
+{
+    FORCE_DONT_INLINE;
+    if (frame.mInterval == 1)
+    {
+        if (frame.mInterval == 1)
+        {
+            memcpy(&value, frame.mStream.mStorage, sizeof(unsigned char));
+            frame.mStream.mStorage += sizeof(unsigned char);
+        }
+    }
+}
+
+/**
+ * Address/Size: 0x8011CD48 | size: 0x54
+ */
+template <>
+void Replayable<1, LoadFrame, unsigned short>(LoadFrame& frame, unsigned short& value)
+{
+    FORCE_DONT_INLINE;
+    if (frame.mInterval == 1)
+    {
+        if (frame.mInterval == 1)
+        {
+            memcpy(&value, frame.mStream.mStorage, sizeof(unsigned short));
+            frame.mStream.mStorage += sizeof(unsigned short);
+        }
+    }
+}
+
+/**
+ * Address/Size: 0x8011CD9C | size: 0x54
+ */
+template <>
+void Replayable<1, LoadFrame, unsigned long>(LoadFrame& frame, unsigned long& value)
+{
+    if (frame.mInterval == 1)
+    {
+        if (frame.mInterval == 1)
+        {
+            memcpy(&value, frame.mStream.mStorage, sizeof(unsigned long));
+            frame.mStream.mStorage += sizeof(unsigned long);
+        }
+    }
+}
+
+/**
  * Offset/Address/Size: 0x44CC | 0x8011D17C | size: 0x44
  */
 #pragma dont_inline on
@@ -750,6 +851,16 @@ void Replayable<0, LoadFrame, unsigned int>(LoadFrame& frame, unsigned int& valu
 #pragma dont_inline reset
 
 /**
+ * Offset/Address/Size: 0x4538 | 0x8011D238 | size: 0x40
+ */
+template <>
+void Replayable<0, SaveFrame, unsigned int>(SaveFrame& frame, unsigned int& value)
+{
+    memcpy(frame.mStream.mStorage, &value, sizeof(unsigned int));
+    frame.mStream.mStorage += sizeof(unsigned int);
+}
+
+/**
  * Offset/Address/Size: 0x4564 | 0x8011D414 | size: 0x44
  */
 #pragma dont_inline on
@@ -760,6 +871,32 @@ void Replayable<0, LoadFrame, int>(LoadFrame& frame, int& value)
     frame.mStream.mStorage += sizeof(int);
 }
 #pragma dont_inline reset
+
+/**
+ * Offset/Address/Size: 0x45A8 | 0x8011D458 | size: 0x40
+ */
+#pragma dont_inline on
+template <>
+void Replayable<0, SaveFrame, int>(SaveFrame& frame, int& value)
+{
+    memcpy(frame.mStream.mStorage, &value, sizeof(int));
+    frame.mStream.mStorage += sizeof(int);
+}
+#pragma dont_inline reset
+
+/**
+ * Offset/Address/Size: 0x482C | 0x8011D6EC | size: 0x74
+ */
+template <>
+void cPN_SingleAxisBlender::Replay<LoadFrame>(LoadFrame& frame)
+{
+    Replayable<0>(frame, (cPoseNode&)*this);
+    const char* cursor = frame.mStream.mStorage;
+    float scale = 1.0f / 128.0f;
+    unsigned char value = *cursor++;
+    frame.mStream.mStorage = cursor;
+    m_fSmoothedWeight = (float)value * scale;
+}
 
 /**
  * Offset/Address/Size: 0x48A0 | 0x8011D760 | size: 0x80
@@ -833,6 +970,20 @@ template <>
 void cPN_Feather::Replay<SaveFrame>(SaveFrame& frame)
 {
     Replayable<0>(frame, (cPoseNode&)*this);
+}
+
+/**
+ * Offset/Address/Size: 0x4B5C | 0x8011DA0C | size: 0x74
+ */
+template <>
+void cPN_Blender::Replay<LoadFrame>(LoadFrame& frame)
+{
+    Replayable<0>(frame, (cPoseNode&)*this);
+    const char* cursor = frame.mStream.mStorage;
+    float scale = 1.0f / 128.0f;
+    unsigned char value = *cursor++;
+    frame.mStream.mStorage = cursor;
+    m_fBlendTime = (float)value * scale;
 }
 
 /**

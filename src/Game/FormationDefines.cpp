@@ -212,7 +212,7 @@ FormationSpec* FormationSet::GetFormationSpecFromID(int formationID) const
 
 /**
  * Offset/Address/Size: 0x0 | 0x8003AE10 | size: 0xC08
- * TODO: 96.83% match - register r21/r22/r16 swap and m_Name[31]=0 scheduling
+ * TODO: 97.8% match - r21/r22 register swap for formationList base and r4/r5 in copy loop
  */
 FormationSet* FormationSet::LoadFormationSets(const char* filename, int& out_numsets)
 {
@@ -225,11 +225,10 @@ FormationSet* FormationSet::LoadFormationSets(const char* filename, int& out_num
         return NULL;
     }
 
-    FormationSet* setList = new FormationSet[out_numsets];
-    FormationSpec formationList[42];
-
+    FormationSet* setList = new (8, false) FormationSet[out_numsets];
     char section_name[128];
     char var_name[128];
+    FormationSpec formationList[42];
     int formation_id = 0;
 
     for (int i_set = 0; i_set < out_numsets; i_set++)
@@ -266,6 +265,8 @@ FormationSet* FormationSet::LoadFormationSets(const char* filename, int& out_num
 
             for (int i_pos = 0; i_pos < 4; i_pos++)
             {
+                FormationPos& position = formationList[i_formation].m_Positions[i_pos];
+
                 nlSNPrintf(var_name, 127, "%s/F%d_P%d_X", section_name, i_formation, i_pos);
                 float xVal = GetConfigFloat(config, var_name, -9999.9f);
 
@@ -281,8 +282,8 @@ FormationSet* FormationSet::LoadFormationSets(const char* filename, int& out_num
                 ailocation.f.y = yVal;
                 AILocToFieldLoc(fieldLocation, ailocation, HOME);
 
-                formationList[i_formation].m_Positions[i_pos].m_Location = fieldLocation;
-                formationList[i_formation].m_Positions[i_pos].m_CaptainPreference = captainPref;
+                position.m_Location = fieldLocation;
+                position.m_CaptainPreference = captainPref;
             }
 
             formationList[i_formation].m_ID = formation_id;
@@ -319,10 +320,10 @@ FormationSet* FormationSet::LoadFormationSets(const char* filename, int& out_num
             formation_id++;
         }
 
-        setList[i_set].m_AutoDelete = true;
         setList[i_set].m_ID = i_set;
         setList[i_set].m_NumFormationDefs = i_formation;
-        setList[i_set].m_FormationDefArray = new FormationSpec[i_formation];
+        setList[i_set].m_AutoDelete = true;
+        setList[i_set].m_FormationDefArray = new (8, false) FormationSpec[i_formation];
 
         for (int j = 0; j < i_formation; j++)
         {
@@ -337,4 +338,6 @@ void FormationDefines_stub()
 {
     int i = 0;
     LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(i);
+    float f = 0.0f;
+    LexicalCast<BasicString<char, Detail::TempStringAllocator>, float>(f);
 }

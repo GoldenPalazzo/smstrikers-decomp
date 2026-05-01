@@ -15,6 +15,9 @@ class EmissionManager;
 class DrawableNetMesh;
 class EmissionController;
 class RenderSnapshot;
+class cPoseNode;
+
+void nlBreak();
 
 class WriteByteStream
 {
@@ -76,11 +79,44 @@ void LoadFrame::Replayable(T& current)
     Replayable<N>(current, pod);
 }
 
+template <int N>
+void Replayable(LoadFrame& frame, char typeId, cPoseNode*& poseNode);
+
+template <int N, typename T>
+void LoadFrame::ReplayablePolymorphicPtr(T*& current)
+{
+    unsigned char notNull = 1;
+    memcpy(&notNull, mStream.mStorage, 1);
+    mStream.mStorage++;
+
+    if (notNull)
+    {
+        char typeId = 0;
+        memcpy(&typeId, mStream.mStorage, 1);
+        mStream.mStorage++;
+
+        if (typeId < 0 || typeId > 4)
+            nlBreak();
+
+        ::Replayable<N>(*this, typeId, current);
+    }
+    else
+    {
+        current = 0;
+    }
+}
+
 template <int MIN, int MAX, int BITS>
 class FloatCompressor
 {
 public:
     FloatCompressor(float& f);
+    inline unsigned int Read(LoadFrame& frame) const;
+    inline unsigned int Read(SaveFrame& frame) const;
+    inline void Transfer(LoadFrame& frame, unsigned int& value) const;
+    inline void Transfer(SaveFrame& frame, unsigned int& value) const;
+    inline void Apply(LoadFrame& frame, unsigned int value) const;
+    inline void Apply(SaveFrame& frame, unsigned int value) const;
     inline void Replay(LoadFrame& frame) const;
     inline void Replay(SaveFrame& frame) const;
 
@@ -94,28 +130,13 @@ inline FloatCompressor<MIN, MAX, BITS>::FloatCompressor(float& f)
 }
 
 template <int MIN, int MAX, int BITS>
-inline void FloatCompressor<MIN, MAX, BITS>::Replay(LoadFrame& frame) const
+inline unsigned int FloatCompressor<MIN, MAX, BITS>::Read(LoadFrame& frame) const
 {
-    if ((MAX - MIN) * (1 << BITS) <= 255)
-    {
-        const char* cursor = frame.mStream.mStorage;
-        unsigned char value = (unsigned char)*cursor++;
-        frame.mStream.mStorage = cursor;
-        mF = (float)value * (1.0f / (float)(1 << BITS)) + (float)MIN;
-    }
-    else
-    {
-        const char* cursor = frame.mStream.mStorage;
-        unsigned char lo = (unsigned char)cursor[0];
-        unsigned char hi = (unsigned char)cursor[1];
-        frame.mStream.mStorage = cursor + 2;
-        unsigned short value = (unsigned short)((hi << 8) | lo);
-        mF = (float)value * (1.0f / (float)(1 << BITS)) + (float)MIN;
-    }
+    return 0;
 }
 
 template <int MIN, int MAX, int BITS>
-inline void FloatCompressor<MIN, MAX, BITS>::Replay(SaveFrame& frame) const
+inline unsigned int FloatCompressor<MIN, MAX, BITS>::Read(SaveFrame& frame) const
 {
     float f = mF;
     if (f > (float)MAX)
@@ -124,21 +145,84 @@ inline void FloatCompressor<MIN, MAX, BITS>::Replay(SaveFrame& frame) const
         f = (float)MIN;
     f -= (float)MIN;
     f *= (float)(1 << BITS);
+    return (unsigned int)f;
+}
+
+template <int MIN, int MAX, int BITS>
+inline void FloatCompressor<MIN, MAX, BITS>::Transfer(LoadFrame& frame, unsigned int& value) const
+{
+    if ((MAX - MIN) * (1 << BITS) <= 255)
+    {
+        const char* cursor = frame.mStream.mStorage;
+        value = (unsigned int)(unsigned char)*cursor++;
+        frame.mStream.mStorage = cursor;
+    }
+    else if ((MAX - MIN) * (1 << BITS) <= 65535)
+    {
+        const char* cursor = frame.mStream.mStorage;
+        unsigned char hi = (unsigned char)cursor[1];
+        unsigned char lo = (unsigned char)cursor[0];
+        cursor += 2;
+        value = (unsigned int)hi << 8;
+        frame.mStream.mStorage = cursor;
+        value |= (unsigned int)lo;
+    }
+    else
+    {
+        const char* cursor = frame.mStream.mStorage;
+        unsigned char mid = (unsigned char)cursor[1];
+        unsigned char hi = (unsigned char)cursor[2];
+        unsigned char lo = (unsigned char)cursor[0];
+        cursor += 3;
+        frame.mStream.mStorage = cursor;
+        value = ((unsigned int)hi << 16) | ((unsigned int)mid << 8) | (unsigned int)lo;
+    }
+}
+
+template <int MIN, int MAX, int BITS>
+inline void FloatCompressor<MIN, MAX, BITS>::Transfer(SaveFrame& frame, unsigned int& value) const
+{
     if ((MAX - MIN) * (1 << BITS) <= 255)
     {
         char* p = frame.mStream.mStorage;
-        unsigned int value = (unsigned int)f;
         *p++ = (char)value;
         frame.mStream.mStorage = p;
     }
     else
     {
-        unsigned int value = (unsigned int)f;
         char* p = frame.mStream.mStorage;
         *p++ = (char)(value & 0xFF);
         *p++ = (char)((value >> 8) & 0xFF);
         frame.mStream.mStorage = p;
     }
+}
+
+template <int MIN, int MAX, int BITS>
+inline void FloatCompressor<MIN, MAX, BITS>::Apply(LoadFrame& frame, unsigned int value) const
+{
+    mF = (float)value / (float)(1 << BITS);
+    mF += (float)MIN;
+}
+
+template <int MIN, int MAX, int BITS>
+inline void FloatCompressor<MIN, MAX, BITS>::Apply(SaveFrame& frame, unsigned int value) const
+{
+}
+
+template <int MIN, int MAX, int BITS>
+inline void FloatCompressor<MIN, MAX, BITS>::Replay(LoadFrame& frame) const
+{
+    unsigned int value = Read(frame);
+    Transfer(frame, value);
+    Apply(frame, value);
+}
+
+template <int MIN, int MAX, int BITS>
+inline void FloatCompressor<MIN, MAX, BITS>::Replay(SaveFrame& frame) const
+{
+    unsigned int value = Read(frame);
+    Transfer(frame, value);
+    Apply(frame, value);
 }
 
 // Forward declaration of generic template (needed before specializations)
@@ -149,7 +233,61 @@ template <int N, typename FrameType, typename T>
 void Replayable(FrameType& frame, const T& proxy)
 {
     FORCE_DONT_INLINE;
-    proxy.Replay(frame);
+    if (N == 0 || frame.mInterval == N)
+    {
+        unsigned int value = proxy.Read(frame);
+        if (N == 0 || frame.mInterval == N)
+        {
+            proxy.Transfer(frame, value);
+        }
+        proxy.Apply(frame, value);
+    }
+}
+
+template <>
+inline void Replayable<1, LoadFrame, FloatCompressor<-512, 512, 8> >(LoadFrame& frame, const FloatCompressor<-512, 512, 8>& proxy)
+{
+    if (frame.mInterval == 1)
+    {
+        unsigned int value = 0;
+        if (frame.mInterval == 1)
+        {
+            const char* cursor = frame.mStream.mStorage;
+            unsigned char mid = (unsigned char)cursor[1];
+            unsigned char hi = (unsigned char)cursor[2];
+            unsigned char lo = (unsigned char)cursor[0];
+            unsigned int hiShift = (unsigned int)hi << 16;
+            value = (unsigned int)mid << 8;
+            value |= (unsigned int)lo;
+            frame.mStream.mStorage = cursor + 3;
+            value |= hiShift;
+        }
+        proxy.mF = (float)value / (float)(1 << 8);
+        proxy.mF += (float)-512;
+    }
+}
+
+template <>
+inline void Replayable<1, LoadFrame, FloatCompressor<-128, 128, 8> >(LoadFrame& frame, const FloatCompressor<-128, 128, 8>& proxy)
+{
+    if (frame.mInterval == 1)
+    {
+        unsigned int value = 0;
+        if (frame.mInterval == 1)
+        {
+            const char* cursor = frame.mStream.mStorage;
+            unsigned char mid = (unsigned char)cursor[1];
+            unsigned char hi = (unsigned char)cursor[2];
+            unsigned char lo = (unsigned char)cursor[0];
+            unsigned int hiShift = (unsigned int)hi << 16;
+            value = (unsigned int)mid << 8;
+            value |= (unsigned int)lo;
+            frame.mStream.mStorage = cursor + 3;
+            value |= hiShift;
+        }
+        proxy.mF = (float)value / (float)(1 << 8);
+        proxy.mF += (float)-128;
+    }
 }
 
 template <>

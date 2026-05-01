@@ -117,12 +117,16 @@ extern "C" void __sinit_feResourceManager_cpp()
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x8020D4A0 | size: 0xA8
-//  */
-// void nlDLListSlotPool<FEResourceHandle*>::~nlDLListSlotPool()
-// {
-// }
+/**
+ * Offset/Address/Size: 0x0 | 0x8020D4A0 | size: 0xA8
+ */
+#pragma dont_inline on
+void __force_dt()
+{
+    nlDLListSlotPool<FEResourceHandle*> x;
+    x.~nlDLListSlotPool();
+}
+#pragma dont_inline off
 
 // /**
 //  * Offset/Address/Size: 0xFC | 0x8020D490 | size: 0x10

@@ -4,6 +4,7 @@
 #include "types.h"
 #include "strtold.h"
 #include "NL/nlBasicString.h"
+#include "NL/nlPrint.h"
 
 // Expands to a forward-declaration of the by-value LexicalCast primary
 // templates inside the enclosing namespace. Used by translation units
@@ -58,6 +59,12 @@ struct LexicalCastImpl<To, char>
 };
 
 template <typename To>
+struct LexicalCastImpl<To, float>
+{
+    static To Do(float t);
+};
+
+template <typename To>
 struct LexicalCastImpl<To, bool>
 {
     static To Do(bool t);
@@ -65,6 +72,7 @@ struct LexicalCastImpl<To, bool>
 } // namespace Detail
 
 typedef BasicString<unsigned short, Detail::TempStringAllocator> WideBasicString;
+typedef BasicString<char, Detail::TempStringAllocator> NLString;
 
 // Identity cast: WideBasicString -> WideBasicString (copy)
 template <>
@@ -72,6 +80,132 @@ inline WideBasicString Detail::LexicalCastImpl<WideBasicString, WideBasicString>
     const WideBasicString& f)
 {
     return f;
+}
+
+/**
+ * Offset/Address/Size: 0x80 | 0x8009CF48 | size: 0xF4
+ * TODO: 87.21% match - return-buffer/source-pointer and copy-loop index/offset
+ * register assignments differ from target.
+ */
+template <>
+inline WideBasicString Detail::LexicalCastImpl<WideBasicString, const unsigned short*>::Do(
+    const unsigned short* const& f)
+{
+    BasicStringData<unsigned short>* data = (BasicStringData<unsigned short>*)nlMalloc(0x10, 8, true);
+    if (data != 0)
+    {
+        data->mData = 0;
+        data->mSize = 0;
+        data->mCapacity = 0;
+
+        const unsigned short* s = f;
+        while (*s++ != 0)
+        {
+            data->mSize++;
+        }
+
+        data->mSize++;
+        data->mData = (unsigned short*)nlMalloc((data->mSize + 1) * 2, 8, true);
+        data->mCapacity = data->mSize;
+
+        s = f;
+        for (int i = 0; i < data->mSize; i++)
+        {
+            data->mData[i] = *s++;
+        }
+
+        data->mRefCount = 1;
+    }
+    return WideBasicString(data);
+}
+
+/**
+ * Offset/Address/Size: 0x0 | 0x800BDB88 | size: 0xE8
+ * TODO: 97.16% match - r29/r30 register swap for s and data pointers
+ */
+template <>
+inline NLString Detail::LexicalCastImpl<NLString, const char*>::Do(const char* s)
+{
+    return NLString(s);
+}
+
+/**
+ * Offset/Address/Size: 0x39064 | 0x8003C084 | size: 0x100
+ * TODO: 93.45% match - return-buffer/data-pointer register roles are swapped
+ * (r30/r31), with matching logic/instruction order otherwise.
+ */
+template <>
+inline NLString Detail::LexicalCastImpl<NLString, int>::Do(int t)
+{
+    char string[0x40];
+    nlSNPrintf(string, 0x40, "%i", t);
+    return NLString(string);
+}
+
+/**
+ * Offset/Address/Size: 0x168 | 0x8006A094 | size: 0x100
+ * TODO: 93.45% match - return-buffer/data-pointer register roles remain swapped (r30/r31).
+ */
+template <>
+inline NLString Detail::LexicalCastImpl<NLString, unsigned long>::Do(unsigned long t)
+{
+    char string[0x40];
+    nlSNPrintf(string, 0x40, "%u", t);
+    return NLString(string);
+}
+
+/**
+ * Offset/Address/Size: 0x34 | 0x80069F60 | size: 0x104
+ * TODO: 94.69% match - return-slot/data pointer register roles are swapped
+ * (r30/r31), and prologue setup order differs before the snprintf call.
+ */
+template <>
+inline NLString Detail::LexicalCastImpl<NLString, char>::Do(char t)
+{
+    char string[0x40];
+    nlSNPrintf(string, 0x40, "%c", t);
+
+    BasicStringData<char>* data = (BasicStringData<char>*)nlMalloc(0x10, 8, true);
+    if (data != 0)
+    {
+        char* start = string;
+        char* p = start;
+
+        data->mData = 0;
+        data->mSize = 0;
+        data->mCapacity = 0;
+
+        while (*p++ != 0)
+        {
+            data->mSize++;
+        }
+
+        data->mSize++;
+        data->mData = (char*)nlMalloc(data->mSize + 1, 8, true);
+        data->mCapacity = data->mSize;
+
+        for (int i = 0; i < data->mSize; i++)
+        {
+            data->mData[i] = *start;
+            start++;
+        }
+
+        data->mRefCount = 1;
+    }
+
+    return (NLString)data;
+}
+
+/**
+ * Offset/Address/Size: 0x390F4 | 0x8003C1B4 | size: 0xFC
+ * TODO: 93.35% match - r30/r31 role swap for return-buffer vs allocated data pointer in inlined string construction path.
+ */
+template <>
+inline NLString Detail::LexicalCastImpl<NLString, float>::Do(float f)
+{
+    char string[0x40];
+    nlSNPrintf(string, 0x40, "%f", f);
+    return NLString(string);
 }
 
 template <typename To, typename From>

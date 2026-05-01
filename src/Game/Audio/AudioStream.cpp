@@ -45,9 +45,6 @@ struct LastScorerInfo
 
 extern LastScorerInfo* g_pLastScorer__5Audio;
 
-template <typename CharT>
-int nlStrNICmp(const CharT*, const CharT*, unsigned long);
-
 // Team name strings
 static const char* s_TeamNames[] = {
     "Daisy",      // TEAM_DAISY = 0
@@ -81,13 +78,6 @@ static const char* s_TeamNames[] = {
 //  * Offset/Address/Size: 0x0 | 0x8014C350 | size: 0x38
 //  */
 // void Bind<void, Detail::MemFunImpl<void, void (PriorityStream::*)()>, PriorityStream*>(Detail::MemFunImpl<void, void (PriorityStream::*)()>, PriorityStream* const&)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x8014C2B8 | size: 0x98
-//  */
-// void nlStrNICmp<char>(const char*, const char*, unsigned long)
 // {
 // }
 

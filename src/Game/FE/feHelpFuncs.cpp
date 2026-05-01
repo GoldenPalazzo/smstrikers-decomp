@@ -160,13 +160,6 @@ static const char* CHARACTER_ACCEPT_SOUNDS[] = {
 };
 
 // /**
-//  * Offset/Address/Size: 0x160 | 0x800A6670 | size: 0x100
-//  */
-// void TakeGameMemSnapshot::Detail::LexicalCastImpl<BasicString<char, Detail::TempStringAllocator>, unsigned int>::Do(unsigned int)
-// {
-// }
-
-// /**
 //  * Offset/Address/Size: 0x130 | 0x800A6640 | size: 0x30
 //  */
 namespace TakeGameMemSnapshot
@@ -198,12 +191,90 @@ LexicalCast<BasicString<char, ::Detail::TempStringAllocator>, unsigned long>(con
 }
 } // namespace TakeGameMemSnapshot
 
-// /**
-//  * Offset/Address/Size: 0x30 | 0x800A6540 | size: 0x100
-//  */
-// void TakeGameMemSnapshot::Detail::LexicalCastImpl<BasicString<char, Detail::TempStringAllocator>, unsigned long>::Do(unsigned long)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x160 | 0x800A6670 | size: 0x100
+ * TODO: 97.66% match - r30/r31 register roles are swapped between the return
+ * object slot and the allocated BasicStringData pointer.
+ */
+template <>
+BasicString<char, ::Detail::TempStringAllocator>
+TakeGameMemSnapshot::Detail::LexicalCastImpl<BasicString<char, ::Detail::TempStringAllocator>, unsigned int>::Do(unsigned int t)
+{
+    char string[0x40];
+    nlSNPrintf(string, 0x40, "%u", t);
+
+    BasicStringData<char>* data = (BasicStringData<char>*)nlMalloc(0x10, 8, true);
+    if (data != 0)
+    {
+        char* start = string;
+        char* p = start;
+
+        data->mData = 0;
+        data->mSize = 0;
+        data->mCapacity = 0;
+
+        while (*p++ != 0)
+        {
+            data->mSize++;
+        }
+
+        data->mSize++;
+        data->mData = (char*)nlMalloc(data->mSize + 1, 8, true);
+        data->mCapacity = data->mSize;
+
+        for (int i = 0; i < data->mSize; i++)
+        {
+            data->mData[i] = *start;
+            start++;
+        }
+
+        data->mRefCount = 1;
+    }
+
+    return (BasicString<char, ::Detail::TempStringAllocator>)data;
+}
+
+/**
+ * Offset/Address/Size: 0x30 | 0x800A6540 | size: 0x100
+ * TODO: 97.66% match - r30/r31 register roles are swapped between the return
+ * object slot and the allocated BasicStringData pointer.
+ */
+template <>
+BasicString<char, ::Detail::TempStringAllocator>
+TakeGameMemSnapshot::Detail::LexicalCastImpl<BasicString<char, ::Detail::TempStringAllocator>, unsigned long>::Do(unsigned long t)
+{
+    char s[0x40];
+    nlSNPrintf(s, 0x40, "%u", t);
+
+    BasicStringData<char>* data = (BasicStringData<char>*)nlMalloc(0x10, 8, true);
+    if (data != 0)
+    {
+        const char* str = s;
+        const char* p = str;
+
+        data->mData = 0;
+        data->mSize = 0;
+        data->mCapacity = 0;
+
+        while (*p++ != 0)
+        {
+            data->mSize++;
+        }
+
+        data->mSize++;
+        data->mData = (char*)nlMalloc(data->mSize + 1, 8, true);
+        data->mCapacity = data->mSize;
+
+        for (int i = 0; i < data->mSize; i++)
+        {
+            data->mData[i] = *str++;
+        }
+
+        data->mRefCount = 1;
+    }
+
+    return (BasicString<char, ::Detail::TempStringAllocator>)data;
+}
 
 // /**
 //  * Offset/Address/Size: 0x0 | 0x800A6510 | size: 0x30

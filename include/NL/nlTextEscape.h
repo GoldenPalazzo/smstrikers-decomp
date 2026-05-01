@@ -20,6 +20,8 @@ public:
     {
         /* 0x0 */ unsigned long hash;
         /* 0x4 */ ESCAPE_TYPE type;
+
+        operator unsigned long() const { return hash; }
     };
 
     nlColour GetExtendedColour();

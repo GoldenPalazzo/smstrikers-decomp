@@ -6,6 +6,7 @@
 #include "NL/nlDLListSlotPool.h"
 #include "NL/nlSlotPool.h"
 #include "NL/nlSortedSlot.h"
+#include "NL/nlWalkHelper.h"
 
 namespace GCAudioStreaming
 {
@@ -86,6 +87,8 @@ public:
         {
             /* 0x00 */ unsigned long hash;
             /* 0x04 */ char* value;
+
+            operator unsigned long() const { return hash; }
         }; // total size: 0x8
 
         typedef bool (*ParamCallbackFn)(const char*, char*, unsigned long);
@@ -173,6 +176,37 @@ public:
     virtual void StopAllTracks(unsigned long);
     virtual void OnMasterVolumeChange(Audio::MasterVolume::VOLUME_GROUP);
 };
+
+/**
+ * Offset/Address/Size: 0x3E4 | 0x800C6728 | size: 0xF0
+ * TODO: 99.85% match - helper/cb stack layout order swapped (i/s offset diffs)
+ */
+template <int N>
+void TrackManager<N>::Update(float dT)
+{
+    typedef WalkHelper<TrackManagerBase::FadeManager::STREAM_FADE_CTRL, DLListEntry<TrackManagerBase::FadeManager::STREAM_FADE_CTRL>, TrackManagerBase::FadeManager> FadeWalkHelper;
+    typedef void (FadeWalkHelper::*WalkCBType)(DLListEntry<TrackManagerBase::FadeManager::STREAM_FADE_CTRL>*);
+
+    int trackOffset;
+    unsigned long track;
+    FadeWalkHelper helper;
+    WalkCBType cb;
+
+    m_FadeMgr.m_dT = dT * 1000.0f;
+
+    helper.m_CBClass = &m_FadeMgr;
+    helper.m_CB = &TrackManagerBase::FadeManager::UpdateFade;
+    cb = &FadeWalkHelper::Callback;
+
+    nlWalkDLRing(m_FadeMgr.m_Fades.m_Head, &helper, cb);
+
+    for (track = 0, trackOffset = 0; track < nlStaticSortedSlot<StreamTrack, N>::m_EntryCount; track++, trackOffset += 8)
+    {
+        ((typename nlSortedSlot<StreamTrack, N>::template EntryLookup<StreamTrack>*)((char*)nlStaticSortedSlot<StreamTrack, N>::m_pEntryLookup + trackOffset))->pEntry->Update(dT);
+    }
+
+    TrackManagerBase::Update(dT);
+}
 
 } // namespace AudioStreamTrack
 

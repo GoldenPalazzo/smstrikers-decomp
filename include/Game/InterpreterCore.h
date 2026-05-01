@@ -8,6 +8,8 @@ struct FunctionEntryPoint
 {
     /* 0x0 */ u32 hash;
     /* 0x4 */ u32 offset;
+
+    operator unsigned long() const { return hash; }
 }; // total size: 0x8
 
 struct ByteCodeHeader

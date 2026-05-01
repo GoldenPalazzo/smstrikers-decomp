@@ -690,9 +690,6 @@ public:
     char _pad[0x70];
 };
 
-template <typename CharT>
-int nlStrNICmp(const CharT* str1, const CharT* str2, unsigned long len);
-
 void World::CreateHelperObjFromChunk(nlChunk* chunk)
 {
     static int flareLen;

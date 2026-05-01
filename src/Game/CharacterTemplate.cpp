@@ -872,6 +872,9 @@ typedef DLListContainerBase<GCAudioStreaming::StereoAudioStream*, BasicSlotPool<
 // Force weak symbol emission for DLListContainerBase::DeleteEntry<QUEUED_STREAM>
 typedef DLListContainerBase<AudioStreamTrack::StreamTrack::QUEUED_STREAM, nlStaticArrayAllocator<DLListEntry<AudioStreamTrack::StreamTrack::QUEUED_STREAM>, 4> > _QueuedStreamDLList;
 
+// Force weak symbol emission for DLListContainerBase::DeleteEntry<STREAM_FADE_CTRL>
+typedef DLListContainerBase<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL, BasicSlotPool<DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL> > > _FadeDLList;
+
 /**
  * Stub only for field order; unreferenced so the linker drops it.
  * Forces emission of specific constants/operations so the compiler
@@ -887,8 +890,10 @@ void CharacterTemplate_stub()
 {
     void (_StereoStreamDLList::* volatile forceStereoDelete)(DLListEntry<GCAudioStreaming::StereoAudioStream*>*) = &_StereoStreamDLList::DeleteEntry;
     void (_QueuedStreamDLList::* volatile forceQueuedDelete)(DLListEntry<AudioStreamTrack::StreamTrack::QUEUED_STREAM>*) = &_QueuedStreamDLList::DeleteEntry;
+    void (_FadeDLList::* volatile forceFadeDelete)(DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>*) = &_FadeDLList::DeleteEntry;
     (void)forceStereoDelete;
     (void)forceQueuedDelete;
+    (void)forceFadeDelete;
 
     _FadeWalkHelper fadeHelper;
     DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>* fadeEntry = 0;

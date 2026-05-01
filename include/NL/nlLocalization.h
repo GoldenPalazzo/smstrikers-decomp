@@ -17,6 +17,8 @@ public:
     {
         unsigned long hash;
         unsigned long StringOffset;
+
+        operator unsigned long() const { return hash; }
     };
 
     enum nlLanguage

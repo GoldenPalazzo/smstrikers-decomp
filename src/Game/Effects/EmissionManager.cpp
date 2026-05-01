@@ -902,12 +902,14 @@ void Replayable<0, LoadFrame, unsigned short>(LoadFrame& frame, unsigned short& 
 //  {
 //  }
 
-//  /**
-//   * Offset/Address/Size: 0x0 | 0x801F9778 | size: 0x48
-//   */
-//  void AVLTreeBase<unsigned long, LingerMessage*, NewAdapter<AVLTreeEntry<unsigned long, LingerMessage*>>, DefaultKeyCompare<unsigned long>>::DeleteValue(AVLTreeEntry<unsigned long, LingerMessage*>*)
-//  {
-//  }
+/**
+ * Offset/Address/Size: 0x0 | 0x801F9778 | size: 0x48
+ */
+void AVLTreeBase<unsigned long, LingerMessage*, NewAdapter<AVLTreeEntry<unsigned long, LingerMessage*> >, DefaultKeyCompare<unsigned long> >::DeleteValue(AVLTreeEntry<unsigned long, LingerMessage*>* entry)
+{
+    delete entry->value;
+    m_Allocator.Delete(entry);
+}
 
 //  /**
 //   * Offset/Address/Size: 0xD0C | 0x801F962C | size: 0x60

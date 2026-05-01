@@ -26,6 +26,12 @@ class AnimRetarget;
 class cPN_SAnimController : public cPoseNode
 {
 public:
+    cPN_SAnimController()
+        : cPoseNode(0)
+        , m_pSAnim(NULL)
+        , m_fTime(0.0f)
+    {
+    }
     cPN_SAnimController(cSAnim*, const AnimRetarget*, ePlayMode, void (*)(unsigned int, cPN_SAnimController*), unsigned int, bool);
     /* 0x08 */ virtual ~cPN_SAnimController() { };
     static void operator delete(void* ptr)

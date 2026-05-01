@@ -1,7 +1,6 @@
 #include "Game/Drawable/DrawableExplosionFragment.h"
 
 #include "Game/Game.h"
-#include "Game/ReplaySpecializations.h"
 #include "Game/Render/SidelineExplodable.h"
 #include "Game/World.h"
 #include "Game/WorldManager.h"
@@ -104,13 +103,13 @@ void DrawableExplosionFragment::Grab()
 template <>
 void DrawableExplosionFragment::Replay<LoadFrame>(LoadFrame& frame)
 {
-    Replayable<3>(frame, mVisible);
+    Replayable<3, LoadFrame, bool>(frame, mVisible);
     if (mVisible)
     {
-        Replayable<3>(frame, mFragmentModelHash);
-        Replayable<3>(frame, mPosition);
-        Replayable<3>(frame, mOrientation);
-        Replayable<3>(frame, mOpacity);
+        Replayable<3, LoadFrame, unsigned long>(frame, mFragmentModelHash);
+        Replayable<3, LoadFrame, nlVector3>(frame, mPosition);
+        Replayable<3, LoadFrame, nlQuaternion>(frame, mOrientation);
+        Replayable<3, LoadFrame, float>(frame, mOpacity);
     }
 }
 
@@ -120,15 +119,17 @@ void DrawableExplosionFragment::Replay<LoadFrame>(LoadFrame& frame)
 template <>
 void DrawableExplosionFragment::Replay<SaveFrame>(SaveFrame& frame)
 {
-    Replayable<3>(frame, mVisible);
+    Replayable<3, SaveFrame, bool>(frame, mVisible);
     if (mVisible)
     {
-        Replayable<3>(frame, mFragmentModelHash);
-        Replayable<3>(frame, mPosition);
-        Replayable<3>(frame, mOrientation);
-        Replayable<3>(frame, mOpacity);
+        Replayable<3, SaveFrame, unsigned long>(frame, mFragmentModelHash);
+        Replayable<3, SaveFrame, nlVector3>(frame, mPosition);
+        Replayable<3, SaveFrame, nlQuaternion>(frame, mOrientation);
+        Replayable<3, SaveFrame, float>(frame, mOpacity);
     }
 }
+
+#include "Game/ReplaySpecializations.h"
 
 /**
  * Offset/Address/Size: 0x0 | 0x8011FB28 | size: 0x50

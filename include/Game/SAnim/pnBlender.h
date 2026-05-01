@@ -12,6 +12,7 @@
 class cPN_Blender : public cPoseNode
 {
 public:
+    cPN_Blender() { }
     cPN_Blender(cPoseNode*, cPoseNode*, float);
     /* 0x08 */ virtual ~cPN_Blender() { };
     /* 0x10 */ virtual void Evaluate(float, cPoseAccumulator*) const;

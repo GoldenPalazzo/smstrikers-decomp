@@ -63,32 +63,14 @@ typedef std::allocator<_TreeT::node> _NodeAllocT;
 typedef std::__red_black_tree<1>::anchor _AnchorT;
 typedef std::allocator<_PairT> _PairAllocT;
 
-#pragma dont_inline on
-namespace Metrowerks
-{
-namespace details
-{
-template <>
-_NodeAllocT& compressed_pair_imp<_NodeAllocT, _AnchorT, 1>::first()
+_NodeAllocT& Metrowerks::details::compressed_pair_imp<_NodeAllocT, _AnchorT, 1>::first()
 {
     return *this;
 }
 
-template <>
-_PairAllocT& compressed_pair_imp<_PairAllocT, unsigned long, 1>::first()
+_PairAllocT& Metrowerks::details::compressed_pair_imp<_PairAllocT, unsigned long, 1>::first()
 {
     return *this;
-}
-} // namespace details
-} // namespace Metrowerks
-#pragma dont_inline reset
-
-static void _dummy_compressed_pair_first()
-{
-    Metrowerks::details::compressed_pair_imp<_NodeAllocT, _AnchorT, 1> obj;
-    obj.first();
-    Metrowerks::details::compressed_pair_imp<_PairAllocT, unsigned long, 1> obj2;
-    obj2.first();
 }
 
 // /**

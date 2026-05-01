@@ -72,12 +72,12 @@ static inline void CopyWideString(BasicStringData<unsigned short>* data, const u
     data->mRefCount = 1;
 }
 
-// /**
-//  * Offset/Address/Size: 0x2C4 | 0x800DCE10 | size: 0xBC
-//  */
-// void BasicString<unsigned short, Detail::TempStringAllocator>::Append(const unsigned short*) const
-// {
-// }
+// At the bottom of SHChooseCup.cpp -- REMOVE once real callers exist.
+static void SHChooseCup_stub()
+{
+    BasicString<unsigned short, Detail::TempStringAllocator> s;
+    s.Append((const unsigned short*)0);
+}
 
 // /**
 //  * Offset/Address/Size: 0xBC | 0x800DCC08 | size: 0x208

@@ -116,20 +116,7 @@ public:
     void DoCallback(const glModelPacket*, unsigned int);
 };
 
-template <typename KeyType, typename EntryType, typename CallbackType>
-class WalkHelper
-{
-public:
-    CallbackType* m_CBClass;
-    void (CallbackType::*m_CB)(KeyType*);
-    void Callback(EntryType*);
-};
-
-template <typename KeyType, typename EntryType, typename CallbackType>
-void WalkHelper<KeyType, EntryType, CallbackType>::Callback(EntryType* listEntry)
-{
-    (m_CBClass->*m_CB)(&listEntry->m_data);
-}
+#include "NL/nlWalkHelper.h"
 
 // class AVLTreeBase<const glModelPacket*, unsigned int, BasicSlotPool<AVLTreeEntry<const glModelPacket*, unsigned int>>, TextureTreeCompare>
 // {

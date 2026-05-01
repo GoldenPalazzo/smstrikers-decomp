@@ -2236,9 +2236,6 @@ template void nlWalkRing<DLListEntry<AudioStreamTrack::TrackManagerBase::FadeMan
         BasicSlotPool<DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL> > >::*)(
         DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>*));
 
-template <typename KeyType, typename EntryType, typename CallbackType>
-class WalkHelper;
-
 /**
  * Offset/Address/Size: 0xC0 | 0x801422F4 | size: 0x60
  */

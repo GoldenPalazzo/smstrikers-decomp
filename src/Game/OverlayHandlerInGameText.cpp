@@ -50,9 +50,16 @@ void BasicString<unsigned short, Detail::TempStringAllocator>::AppendInPlace<Det
 /**
  * Offset/Address/Size: 0x0 | 0x800FC8DC | size: 0xBC
  */
-// void BasicString<unsigned short, Detail::TempStringAllocator>::Append<Detail::TempStringAllocator>(const BasicString<unsigned short, Detail::TempStringAllocator>&) const
-//{
-// }
+template <>
+template <>
+BasicString<unsigned short, Detail::TempStringAllocator>
+BasicString<unsigned short, Detail::TempStringAllocator>::Append<Detail::TempStringAllocator>(
+    const BasicString<unsigned short, Detail::TempStringAllocator>& rhs) const
+{
+    BasicString r(*this);
+    r.AppendInPlace(rhs);
+    return r;
+}
 
 /**
  * Offset/Address/Size: 0x678 | 0x800FC780 | size: 0x15C
@@ -90,23 +97,6 @@ void BasicString<unsigned short, Detail::TempStringAllocator>::AppendInPlace<Det
 // }
 
 /**
- * Offset/Address/Size: 0x358 | 0x800FC460 | size: 0x84
- */
-template <>
-template <>
-TLInstance* FEFinder<TLInstance, 3>::_Find<TLSlide>(
-    TLSlide* pTopLevel, const unsigned long Level1, const unsigned long Level2,
-    const unsigned long Level3, const unsigned long Level4, const unsigned long Level5, const unsigned long Level6)
-{
-    void* pChild = FindItemByHashID<TLInstance>(pTopLevel->m_instances, Level1);
-    if (pChild == 0)
-        return 0;
-    if (Level2 == 0)
-        return (TLInstance*)pChild;
-    return _Find<TLInstance>(CastToSomeType<TLInstance>(pTopLevel->m_instances, pChild), Level2, Level3, Level4, Level5, Level6, 0);
-}
-
-/**
  * Offset/Address/Size: 0x2D4 | 0x800FC3DC | size: 0x84
  */
 template <>
@@ -122,6 +112,25 @@ TLInstance* FEFinder<TLInstance, 3>::_Find<FEPresentation>(
         return (TLInstance*)pChild;
     return _Find<TLSlide>(CastToSomeType<TLSlide>(pTopLevel->m_slides, pChild), Level2, Level3, Level4, Level5, Level6, 0);
 }
+
+/**
+ * Offset/Address/Size: 0x358 | 0x800FC460 | size: 0x84
+ */
+#pragma dont_inline on
+template <>
+template <>
+TLInstance* FEFinder<TLInstance, 3>::_Find<TLSlide>(
+    TLSlide* pTopLevel, const unsigned long Level1, const unsigned long Level2,
+    const unsigned long Level3, const unsigned long Level4, const unsigned long Level5, const unsigned long Level6)
+{
+    void* pChild = FindItemByHashID<TLInstance>(pTopLevel->m_instances, Level1);
+    if (pChild == 0)
+        return 0;
+    if (Level2 == 0)
+        return (TLInstance*)pChild;
+    return _Find<TLInstance>(CastToSomeType<TLInstance>(pTopLevel->m_instances, pChild), Level2, Level3, Level4, Level5, Level6, 0);
+}
+#pragma dont_inline reset
 
 /**
  * Offset/Address/Size: 0x29C | 0x800FC3A4 | size: 0x38

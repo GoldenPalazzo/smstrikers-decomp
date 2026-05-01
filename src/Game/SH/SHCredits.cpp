@@ -33,23 +33,6 @@ public:
 // }
 
 /**
- * Offset/Address/Size: 0x4EC | 0x801102F0 | size: 0x84
- */
-template <>
-template <>
-TLTextInstance* FEFinder<TLTextInstance, 3>::_Find<TLSlide>(
-    TLSlide* pTopLevel, const unsigned long Level1, const unsigned long Level2,
-    const unsigned long Level3, const unsigned long Level4, const unsigned long Level5, const unsigned long Level6)
-{
-    void* pChild = FindItemByHashID<TLInstance>(pTopLevel->m_instances, Level1);
-    if (pChild == 0)
-        return 0;
-    if (Level2 == 0)
-        return (TLTextInstance*)pChild;
-    return _Find<TLInstance>(CastToSomeType<TLInstance>(pTopLevel->m_instances, pChild), Level2, Level3, Level4, Level5, Level6, 0);
-}
-
-/**
  * Offset/Address/Size: 0x468 | 0x8011026C | size: 0x84
  */
 template <>
@@ -64,6 +47,23 @@ TLTextInstance* FEFinder<TLTextInstance, 3>::_Find<FEPresentation>(
     if (Level2 == 0)
         return (TLTextInstance*)pChild;
     return _Find<TLSlide>(CastToSomeType<TLSlide>(pTopLevel->m_slides, pChild), Level2, Level3, Level4, Level5, Level6, 0);
+}
+
+/**
+ * Offset/Address/Size: 0x4EC | 0x801102F0 | size: 0x84
+ */
+template <>
+template <>
+TLTextInstance* FEFinder<TLTextInstance, 3>::_Find<TLSlide>(
+    TLSlide* pTopLevel, const unsigned long Level1, const unsigned long Level2,
+    const unsigned long Level3, const unsigned long Level4, const unsigned long Level5, const unsigned long Level6)
+{
+    void* pChild = FindItemByHashID<TLInstance>(pTopLevel->m_instances, Level1);
+    if (pChild == 0)
+        return 0;
+    if (Level2 == 0)
+        return (TLTextInstance*)pChild;
+    return _Find<TLInstance>(CastToSomeType<TLInstance>(pTopLevel->m_instances, pChild), Level2, Level3, Level4, Level5, Level6, 0);
 }
 
 /**

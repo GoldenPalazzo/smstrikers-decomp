@@ -915,3 +915,12 @@ void IChooseCaptain::SetupNameComponentToCurrentCaptain(int slot)
         mNameComponents[slot].SetCaptainLogo(GetTeamName((eTeamID)mHomeAwayTeam[slot]));
     }
 }
+
+// REMOVE stub once real callers exist
+void feCaptainComponent_stub()
+{
+    IGridComponent<eSidekickID>* p1 = 0;
+    p1->RebindHighliteComponent(0);
+    IGridComponent<eTeamID>* p2 = 0;
+    p2->RebindHighliteComponent(0);
+}

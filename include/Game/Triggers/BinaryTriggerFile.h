@@ -14,7 +14,7 @@ struct FILE_HEADER
 
 struct ANIM_RECORD
 {
-    /* 0x0 */ u32 AnimNameHash;
+    /* 0x0 */ u32 hash;
     /* 0x4 */ u16 TriggerCount;
     /* 0x6 */ u16 TriggerOffset;
 }; // total size: 0x8

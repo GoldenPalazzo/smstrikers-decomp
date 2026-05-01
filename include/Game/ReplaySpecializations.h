@@ -39,6 +39,7 @@ void Replayable(SaveFrame& frame, bool& value)
 template <>
 void Replayable<0, SaveFrame, bool>(SaveFrame& frame, bool& value)
 {
+    FORCE_DONT_INLINE;
     bool temp = value ? true : false;
     memcpy(frame.mStream.mStorage, &temp, sizeof(bool));
     frame.mStream.mStorage += sizeof(bool);
@@ -47,6 +48,7 @@ void Replayable<0, SaveFrame, bool>(SaveFrame& frame, bool& value)
 template <>
 void Replayable<1, SaveFrame, bool>(SaveFrame& frame, bool& value)
 {
+    FORCE_DONT_INLINE;
     if (frame.mInterval == 1)
     {
         char temp = value ? 1 : 0;
@@ -69,6 +71,7 @@ void Replayable<3, SaveFrame, bool>(SaveFrame& frame, bool& value)
 template <>
 void Replayable<0, LoadFrame, bool>(LoadFrame& frame, bool& value)
 {
+    FORCE_DONT_INLINE;
     char temp = 0;
     memcpy(&temp, frame.mStream.mStorage, 1);
     frame.mStream.mStorage += 1;
@@ -78,6 +81,7 @@ void Replayable<0, LoadFrame, bool>(LoadFrame& frame, bool& value)
 template <>
 void Replayable<1, LoadFrame, bool>(LoadFrame& frame, bool& value)
 {
+    FORCE_DONT_INLINE;
     if (frame.mInterval == 1)
     {
         char temp = 0;
@@ -166,6 +170,7 @@ void Replayable<1, SaveFrame, nlVector3>(SaveFrame& frame, nlVector3& value)
 template <>
 void Replayable<1, LoadFrame, nlVector3>(LoadFrame& frame, nlVector3& value)
 {
+    FORCE_DONT_INLINE;
     if (frame.mInterval == 1)
     {
         if (frame.mInterval == 1)

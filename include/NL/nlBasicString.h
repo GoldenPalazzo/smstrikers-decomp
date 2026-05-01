@@ -127,7 +127,6 @@ public:
         if (data != 0)
         {
             data->mRefCount++;
-            data = other.m_data;
         }
         else
         {
@@ -231,10 +230,24 @@ public:
         return m_data->mData[index];
     }
 
-    BasicString Append(const char* rhs) const;
+    void TrimInPlace(const CharT* chars);
+
+    BasicString Trim(const CharT* chars) const;
+
+    BasicString Append(const CharT* rhs) const
+    {
+        BasicString r(*this);
+        r.AppendInPlace(rhs);
+        return r;
+    }
 
     template <typename OtherAllocator>
-    BasicString Append(const BasicString<CharT, OtherAllocator>& rhs) const;
+    BasicString Append(const BasicString<CharT, OtherAllocator>& rhs) const
+    {
+        BasicString r(*this);
+        r.AppendInPlace(rhs);
+        return r;
+    }
 };
 
 #ifndef NO_BASICSTRING_IMPL
@@ -247,6 +260,14 @@ BasicString<CharT, Allocator>& BasicString<CharT, Allocator>::operator=(BasicStr
     return *this;
 }
 #endif
+
+template <typename CharT, typename Allocator>
+BasicString<CharT, Allocator> BasicString<CharT, Allocator>::Trim(const CharT* chars) const
+{
+    BasicString r(*this);
+    r.TrimInPlace(chars);
+    return r;
+}
 
 // Format template function for single float argument
 template <typename StringType>

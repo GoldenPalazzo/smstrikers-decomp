@@ -610,9 +610,13 @@ BasicString<unsigned short, Detail::TempStringAllocator>::operator=(BasicString<
 void fePopupMenu_stub()
 {
     WideBasicString s;
+    unsigned short value[4] = { 0, 0, 0, 0 };
+    typedef WideBasicString (*FmtFn)(const WideBasicString&, const unsigned short (&)[4]);
+    volatile FmtFn fn = &Format<WideBasicString, unsigned short[4]>;
     LexicalCast<WideBasicString, WideBasicString>(s);
     const unsigned short* p = 0;
     LexicalCast<WideBasicString, const unsigned short*>(p);
+    WideBasicString s3 = fn(s, value);
     FormatImpl<WideBasicString> fi;
     WideBasicString s2 = (WideBasicString)fi;
 

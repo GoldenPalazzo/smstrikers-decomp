@@ -3,8 +3,6 @@
 
 #include "Game/Audio/PriorityStream.h"
 
-// void nlStrNICmp<char>(const char*, const char*, unsigned long);
-
 namespace Audio
 {
 

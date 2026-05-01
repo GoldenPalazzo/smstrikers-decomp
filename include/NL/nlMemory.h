@@ -36,6 +36,10 @@ inline void* operator new(unsigned long size, unsigned int alignment, bool atEnd
 {
     return nlMalloc(size, alignment, atEnd);
 }
+inline void* operator new[](unsigned long size, unsigned int alignment, bool atEnd)
+{
+    return nlMalloc(size, alignment, atEnd);
+}
 void operator delete[](void* ptr);
 void operator delete(void* ptr);
 unsigned int nlVirtualTotalFree();

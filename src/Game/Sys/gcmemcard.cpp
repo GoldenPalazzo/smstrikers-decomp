@@ -538,8 +538,6 @@ s32 MemCard::BeginCardAccess(const MemCardFunctor& Callback)
  */
 long MemCard::CreateFile(const char* FileName, unsigned long FileSize, MemCard::ICON_CONFIG* pIconConfig, MemCard::MC_FILE*& pFile, const MemCardFunctor& Callback)
 {
-    nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>* nlBSearch(const unsigned long&, nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>*, int);
-
     if (m_State != IS_MOUNTED)
     {
         return -100;
@@ -728,8 +726,6 @@ extern "C" void* memset(void*, int, unsigned long);
 
 long MemCard::OpenFile(const char* FileName, MemCard::MC_FILE*& pFile, unsigned long* pFileLength)
 {
-    nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>* nlBSearch(const unsigned long&, nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>*, int);
-
     long result;
 
     if (m_State != IS_MOUNTED)
@@ -968,7 +964,6 @@ static inline void ShiftOpenLookup(MemCard* self, nlSortedSlot<MemCard::MC_FILE,
  */
 long MemCard::DeleteFile(const char* FileName, const MemCardFunctor& Callback)
 {
-    nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>* nlBSearch(const unsigned long&, nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>*, int);
     nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>* foundEntry;
 
     if (m_State != IS_MOUNTED)

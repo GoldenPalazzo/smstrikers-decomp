@@ -260,4 +260,19 @@ struct Knockout : public BaseCup
     signed char mRoundResults[3];
 }; // total size: 0x184
 
+template <u16 Teams>
+BasicGameInfo* Knockout<Teams>::GetGameInfo(int i, int j)
+{
+    int offset = 0;
+    int k;
+
+    for (k = 1; k <= i; k++)
+    {
+        offset += 4 / (k * 2);
+    }
+
+    offset = j + offset;
+    return &mGameInfo[offset];
+}
+
 #endif // _CUP_H_

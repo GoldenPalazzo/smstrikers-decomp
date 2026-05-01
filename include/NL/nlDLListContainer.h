@@ -27,10 +27,8 @@ public:
 
     ~DLListContainerBase()
     {
-        typedef void (*WalkFn)(DLListEntry<T>*, DLListContainerBase*, void (DLListContainerBase::*)(DLListEntry<T>*));
         void (DLListContainerBase::*func)(DLListEntry<T>*) = &DLListContainerBase::DeleteEntry;
-        WalkFn walk = &nlWalkDLRing<DLListEntry<T>, DLListContainerBase>;
-        walk(m_Head, this, func);
+        nlWalkDLRing(m_Head, this, func);
         m_Head = NULL;
     }
 
@@ -70,6 +68,10 @@ public:
 template <typename T, typename Adapter>
 void DLListContainerBase<T, Adapter>::DeleteEntry(DLListEntry<T>* entry)
 {
+    if (entry)
+    {
+        entry->m_data.~T();
+    }
     m_Allocator.DeleteEntry(entry);
 }
 

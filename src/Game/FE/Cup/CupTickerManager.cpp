@@ -1,5 +1,6 @@
 #include "Game/FE/Cup/CupTickerManager.h"
 #include "Game/FE/feScrollText.h"
+#include "NL/nlFormat.h"
 
 template <typename T, typename R>
 Detail::MemFunImpl<R, void (T::*)()> MemFun(void (T::*)());
@@ -222,6 +223,19 @@ void CupTickerManager::Update(float dt)
     {
         mTicker->Update(dt);
     }
+}
+
+// Stub to force template instantiations -- REMOVE once real callers exist.
+void CupTickerManager_stub()
+{
+    typedef BasicString<unsigned short, Detail::TempStringAllocator> WideBasicString;
+    typedef WideBasicString (*FmtFn)(const WideBasicString&, const WideBasicString&, const WideBasicString&);
+    typedef WideBasicString (*FmtFnPCUs)(const WideBasicString&, const unsigned short* const&, const unsigned short* const&);
+
+    WideBasicString s;
+    volatile FmtFn fn = &Format<WideBasicString, WideBasicString, WideBasicString>;
+    volatile FmtFnPCUs fn2 = &Format<WideBasicString, const unsigned short*, const unsigned short*>;
+    WideBasicString s2 = fn(s, s, s);
 }
 
 // /**

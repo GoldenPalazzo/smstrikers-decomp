@@ -15,6 +15,7 @@
 #include "NL/nlBundleFile.h"
 #include "NL/nlTask.h"
 #include "NL/nlLocalization.h"
+#include "NL/nlFormat.h"
 #include "NL/nlPrint.h"
 #include "NL/nlString.h"
 #include "NL/gl/glState.h"

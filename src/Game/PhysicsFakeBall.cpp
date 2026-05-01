@@ -8,6 +8,7 @@
 #include "NL/nlDLListSlotPool.h"
 
 SlotPool<BallCacheInfo> BallCacheInfo::mBallCacheInfoSlotPool;
+nlDLListSlotPool<BallCacheInfo*> FakeBallWorld::mBallCacheList;
 
 class SimpleCollisionSpace : public CollisionSpace
 {

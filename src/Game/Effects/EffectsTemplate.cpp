@@ -150,12 +150,14 @@ struct ColourKeyListShim
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x801F1EC0 | size: 0x48
-//  */
-// void AVLTreeBase<unsigned long, EffectsTemplate*, NewAdapter<AVLTreeEntry<unsigned long, EffectsTemplate*> >, DefaultKeyCompare<unsigned long> >::DeleteValue(AVLTreeEntry<unsigned long, EffectsTemplate*>*)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x0 | 0x801F1EC0 | size: 0x48
+ */
+void AVLTreeBase<unsigned long, EffectsTemplate*, NewAdapter<AVLTreeEntry<unsigned long, EffectsTemplate*> >, DefaultKeyCompare<unsigned long> >::DeleteValue(AVLTreeEntry<unsigned long, EffectsTemplate*>* entry)
+{
+    delete entry->value;
+    m_Allocator.Delete(entry);
+}
 
 /**
  * Offset/Address/Size: 0x12D8 | 0x801F1E9C | size: 0x24

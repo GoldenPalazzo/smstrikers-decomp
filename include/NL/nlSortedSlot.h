@@ -12,6 +12,8 @@ public:
     {
         /* 0x0 */ unsigned long hash;
         /* 0x4 */ U* pEntry;
+
+        operator unsigned long() const { return hash; }
     }; // total size: 0x8
 
     virtual T* GetNewEntry() = 0;

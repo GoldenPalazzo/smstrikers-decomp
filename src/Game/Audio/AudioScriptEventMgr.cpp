@@ -1,10 +1,13 @@
 #include "Game/Audio/AudioScriptEventMgr.h"
 #include "Game/Audio/SoundEventScript.h"
 #include "Game/Game.h"
+#include "Game/Goalie.h"
+#include "Game/Physics/PhysicsNet.h"
 #include "Game/Sys/eventman.h"
 
 #include "NL/nlBSearch.h"
 #include "NL/nlList.h"
+#include "NL/nlListSlotPool.h"
 #include "NL/nlQSort.h"
 #include "NL/nlSlotPool.h"
 #include "NL/nlString.h"
@@ -35,6 +38,8 @@ struct NIS_EVENT_LOOKUP
     /* 0x0 */ unsigned long hash;
     /* 0x4 */ const char* Name;
     /* 0x8 */ AUDIO_EVENT_RECORD Event;
+
+    operator unsigned long() const { return hash; }
 };
 
 extern NIS_EVENT_LOOKUP g_NisEventLookup[4];
@@ -50,15 +55,6 @@ extern EventHandler* g_pAudioEventHandler;
 extern _AudioEventRaiser g_AudioEventRaiser;
 
 void Poll();
-
-template <typename KeyType, typename EntryType, typename CallbackType>
-class WalkHelper
-{
-public:
-    CallbackType* m_CBClass;
-    void (CallbackType::*m_CB)(KeyType*);
-    void Callback(EntryType*);
-};
 
 typedef WalkHelper<AUDIO_EVENT_RECORD, ListEntry<AUDIO_EVENT_RECORD>, _AudioEventRaiser> AudioEventWalkHelper;
 
@@ -87,13 +83,6 @@ typedef WalkHelper<AUDIO_EVENT_RECORD, ListEntry<AUDIO_EVENT_RECORD>, _AudioEven
 //  * Offset/Address/Size: 0x0 | 0x8014B65C | size: 0xC0
 //  */
 // void 0x8014B71C..0x8014B818 | size : 0xFC
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0xE0 | 0x8014B590 | size: 0xCC
-//  */
-// void nlListSlotPool<AUDIO_EVENT_RECORD>::~nlListSlotPool()
 // {
 // }
 
@@ -130,19 +119,47 @@ void WalkHelper<AUDIO_EVENT_RECORD, ListEntry<AUDIO_EVENT_RECORD>, _AudioEventRa
     (m_CBClass->*m_CB)(&listEntry->data);
 }
 
-// /**
-//  * Offset/Address/Size: 0x2248 | 0x8014B39C | size: 0xD0
-//  */
-// void GetEventTeam<GoalScoredData>(Event*, bool)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x2248 | 0x8014B39C | size: 0xD0
+ */
+template <typename T>
+static AudioScriptEventMgr::AUDIO_EVENT_TEAM GetEventTeam(Event* pEvent, bool Invert)
+{
+    T* pEventData;
+    if ((s32)pEvent->m_data.GetID() == -1)
+    {
+        nlPrintf("Error: Trying to get event data on event with none!\n");
+        pEventData = NULL;
+    }
+    else
+    {
+        if ((s32)pEvent->m_data.GetID() != (s32)T::ID)
+        {
+            nlPrintf("Error: GetData() failed! Data types do not match!\n");
+            pEventData = NULL;
+        }
+        else
+        {
+            pEventData = (T*)&pEvent->m_data;
+        }
+    }
 
-// /**
-//  * Offset/Address/Size: 0x2178 | 0x8014B2CC | size: 0xD0
-//  */
-// void GetEventTeam<CollisionBallGoalpostData>(Event*, bool)
-// {
-// }
+    AudioScriptEventMgr::AUDIO_EVENT_TEAM team = AudioScriptEventMgr::AET_Home;
+    if (pEventData->uTeamIndex != 0)
+    {
+        team = AudioScriptEventMgr::AET_Away;
+    }
+
+    s32 invertMask = Invert ? (s32)AudioScriptEventMgr::AET_Special : 0;
+    return (AudioScriptEventMgr::AUDIO_EVENT_TEAM)((s32)team ^ invertMask);
+}
+
+template AudioScriptEventMgr::AUDIO_EVENT_TEAM GetEventTeam<GoalScoredData>(Event*, bool);
+
+/**
+ * Offset/Address/Size: 0x2178 | 0x8014B2CC | size: 0xD0
+ */
+template AudioScriptEventMgr::AUDIO_EVENT_TEAM GetEventTeam<CollisionBallGoalpostData>(Event*, bool);
 
 // /**
 //  * Offset/Address/Size: 0x1BAC | 0x8014AD00 | size: 0x5CC
@@ -266,4 +283,6 @@ void AudioScriptEventMgr_stub()
     unsigned long k = 0;
     nlBSearch<NIS_EVENT_LOOKUP, unsigned long>(k, g_NisEventLookup, 4);
     nlQSort<NIS_EVENT_LOOKUP>(g_NisEventLookup, 4, &nlDefaultQSortComparer<NIS_EVENT_LOOKUP>);
+
+    static nlListSlotPool<AUDIO_EVENT_RECORD> s_inst;
 }

@@ -16,6 +16,8 @@ struct AnimAudioEventLookup
 {
     /* 0x00 */ unsigned long hash; // eventNameHash
     /* 0x04 */ char szSFXType[50];
+
+    operator unsigned long() const { return hash; }
 }; // total size: 0x38
 
 extern AnimAudioEventLookup* gp_AnimAudioEventTable;

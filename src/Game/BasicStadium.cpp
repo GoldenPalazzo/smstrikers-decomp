@@ -24,9 +24,6 @@
 #include "Game/Physics/PhysicsNet.h"
 #include "Game/Effects/EmissionManager.h"
 
-template <typename CharT>
-int nlStrNICmp(const CharT* str1, const CharT* str2, unsigned long len);
-
 extern u32 eOC_OPTIMIZE_OUT_FROM_GAMEPLAY;
 extern bool g_GoalLightEnabled;
 float g_fSkyboxRotationTime = 1420.0f;

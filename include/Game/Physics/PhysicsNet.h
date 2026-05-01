@@ -12,6 +12,8 @@
 
 struct CollisionBallGoalpostData : public EventData
 {
+    static const u32 ID = 0x10e;
+
     virtual u32 GetID();
 
     /* 0x4, */ nlVector3 v3CollisionVelocity;

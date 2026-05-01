@@ -14,6 +14,7 @@ enum eFeatherBlendMode
 class cPN_Feather : public cPoseNode
 {
 public:
+    cPN_Feather() { }
     cPN_Feather(cSHierarchy*, void (*)(unsigned int, cPN_Feather*), unsigned int);
     /* 0x08 */ virtual ~cPN_Feather();
     /* 0x14 */ virtual void Evaluate(int, float, cPoseAccumulator*) const;
@@ -51,5 +52,23 @@ public:
 // public:
 //     void ~SlotPool();
 // };
+
+inline cPN_Feather* AllocateFeather()
+{
+    cPN_Feather* feather = nullptr;
+
+    if (cPN_Feather::m_FeatherSlotPool.m_FreeList == nullptr)
+    {
+        SlotPoolBase::BaseAddNewBlock(&cPN_Feather::m_FeatherSlotPool, sizeof(cPN_Feather));
+    }
+
+    if (cPN_Feather::m_FeatherSlotPool.m_FreeList != nullptr)
+    {
+        feather = (cPN_Feather*)cPN_Feather::m_FeatherSlotPool.m_FreeList;
+        cPN_Feather::m_FeatherSlotPool.m_FreeList = cPN_Feather::m_FeatherSlotPool.m_FreeList->m_next;
+    }
+
+    return feather;
+}
 
 #endif // _PNFEATHER_H_

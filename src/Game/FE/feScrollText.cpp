@@ -2,6 +2,7 @@
 #include "Game/FE/feFontResource.h"
 #include "NL/gl/glStruct.h"
 #include "NL/nlTextEscape.h"
+#include "NL/nlBSearch.h"
 
 struct LOCHeader
 {
@@ -19,6 +20,8 @@ public:
     {
         unsigned long hash;
         unsigned long StringOffset;
+
+        operator unsigned long() const { return hash; }
     };
 
     LOCHeader* m_pFile;
@@ -29,9 +32,6 @@ public:
 extern void* g_pLocalization;
 extern const unsigned short LocalizationTableNotFound[];
 extern const unsigned short MissingLocString[];
-
-template <typename T, typename U>
-T* nlBSearch(const U&, T*, int);
 
 /**
  * Offset/Address/Size: 0x0 | 0x800C89D4 | size: 0x38
@@ -312,6 +312,8 @@ FEScrollText::FEScrollText(TLTextInstance* controlText, int pos, int width)
 /**
  * Offset/Address/Size: 0x0 | 0x800C9624 | size: 0x90
  */
-// void nlBSearch<nlFont::GlyphInfo, nlFont::GlyphInfo>(const nlFont::GlyphInfo&, nlFont::GlyphInfo*, int)
-// {
-// }
+void feScrollText_stub()
+{
+    nlFont::GlyphInfo key;
+    nlBSearch<nlFont::GlyphInfo, nlFont::GlyphInfo>(key, (nlFont::GlyphInfo*)0, 0);
+}

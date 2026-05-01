@@ -713,9 +713,8 @@ Config::TagValuePair::TagValuePair()
 /**
  * Offset/Address/Size: 0x0 | 0x801D5850 | size: 0xBC
  */
-// BasicString<char, Detail::TempStringAllocator>::Trim(const char*) const
-// {
-// }
+// Trim is defined in nlBasicString.h (weak/template out-of-line body).
+// Force instantiation via nlConfig_stub below.
 
 /**
  * Offset/Address/Size: 0xBC | 0x801D590C | size: 0xBC4
@@ -723,6 +722,13 @@ Config::TagValuePair::TagValuePair()
 // BasicString<char, Detail::TempStringAllocator>::TrimInPlace(const char*)
 // {
 // }
+
+// Force template instantiation - REMOVE once real callers exist
+void nlConfig_stub()
+{
+    BasicString<char, Detail::TempStringAllocator> s;
+    s.Trim("");
+}
 
 /**
  * Offset/Address/Size: 0xC80 | 0x801D64D0 | size: 0xBC

@@ -109,7 +109,7 @@ public:
         , second_(s)
     {
     }
-    First& first() { return *this; }
+    First& first();
     Second& second() { return second_; }
 };
 

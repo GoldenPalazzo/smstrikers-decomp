@@ -109,6 +109,8 @@ struct GoalieSaveData : public EventData
 
 struct GoalScoredData : public EventData
 {
+    static const u32 ID = 0x18A;
+
     /* 0x04 */ unsigned int uTeamIndex : 8;
     /* 0x04 */ unsigned int uNumGoalsScored : 8;
     /* 0x04 */ unsigned int uGoalType : 15;
@@ -118,7 +120,7 @@ struct GoalScoredData : public EventData
     /* 0x18 */ cPlayer* pAssister;
     /* 0x1C */ cPlayer* pLastTouch[2];
 
-    virtual u32 GetID() { return 0x18A; }
+    virtual u32 GetID() { return ID; }
 }; // total size: 0x24
 
 class Goalie : public cPlayer

@@ -12,10 +12,12 @@ extern bool g_e3_Build;
 /**
  * Offset/Address/Size: 0x0 | 0x800D8554 | size: 0x2C
  */
+#pragma dont_inline on
 void IChooseCaptain::SetPhaseReady(int homeaway)
 {
     mComponentState[homeaway].SetCurrentPhase(PHASE_READY);
 }
+#pragma dont_inline off
 
 // /**
 //  * Offset/Address/Size: 0xAB0 | 0x800D83F8 | size: 0x15C
@@ -135,6 +137,7 @@ TLInstance* FEFinder<TLInstance, 2>::Find<TLSlide>(
 /**
  * Offset/Address/Size: 0x250 | 0x800D7B98 | size: 0x84
  */
+#pragma dont_inline on
 template <>
 template <>
 TLInstance* FEFinder<TLInstance, 2>::_Find<TLSlide>(
@@ -148,6 +151,7 @@ TLInstance* FEFinder<TLInstance, 2>::_Find<TLSlide>(
         return (TLInstance*)pChild;
     return _Find<TLInstance>(CastToSomeType<TLInstance>(pTopLevel->m_instances, pChild), Level2, Level3, Level4, Level5, Level6, 0);
 }
+#pragma dont_inline off
 
 // /**
 //  * Offset/Address/Size: 0xBC | 0x800D7A04 | size: 0x15C
@@ -932,6 +936,7 @@ extern "C" FEScrollText* __ct__12FEScrollTextFP14TLTextInstanceii(FEScrollText*,
 /**
  * Offset/Address/Size: 0x0 | 0x800D6A48 | size: 0xE4
  */
+#pragma dont_inline on
 void ChooseCaptainsSceneV2::CreateTicker()
 {
     typedef TLTextInstance* (*FindTextByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
@@ -978,5 +983,6 @@ void ChooseCaptainsSceneV2::CreateTicker()
 
     mTicker = ticker;
 }
+#pragma dont_inline off
 
 #pragma inline_depth(8)
