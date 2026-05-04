@@ -297,13 +297,6 @@ void GoalieSave::InitData(Goalie*)
 {
 }
 
-// /**
-//  * Offset/Address/Size: 0x227C | 0x8005569C | size: 0x178
-//  */
-// void InsertSorted(nlDLListContainer<MyMiniData*>&, MyMiniData*)
-// {
-// }
-
 template <typename T>
 class nlSingleton
 {
@@ -329,7 +322,71 @@ struct MyMiniListShim
     DLListEntry<MyMiniData*>* m_Head;
 };
 
-static void InsertSorted(nlDLListContainer<MyMiniData*>&, MyMiniData*);
+/**
+ * Offset/Address/Size: 0x227C | 0x8005569C | size: 0x178
+ */
+static void InsertSorted(nlDLListContainer<MyMiniData*>& list, MyMiniData* data)
+{
+    DLListEntry<MyMiniData*>* head;
+    DLListEntry<MyMiniData*>* current = nlDLRingGetStart(list.m_Head);
+    head = list.m_Head;
+
+    while (current != NULL)
+    {
+        if (current->m_data->dist > data->dist)
+        {
+            if (nlDLRingIsStart(head, current))
+            {
+                DLListEntry<MyMiniData*>* entry = (DLListEntry<MyMiniData*>*)nlMalloc(0xC, 8, 0);
+                if (entry != NULL)
+                {
+                    entry->m_next = NULL;
+                    entry->m_prev = NULL;
+                    entry->m_data = data;
+                }
+                nlDLRingAddStart(&list.m_Head, entry);
+                return;
+            }
+
+            if (nlDLRingIsStart(head, current))
+            {
+                head = NULL;
+            }
+            else
+            {
+                head = current->m_prev;
+            }
+
+            DLListEntry<MyMiniData*>* entry = (DLListEntry<MyMiniData*>*)nlMalloc(0xC, 8, 0);
+            if (entry != NULL)
+            {
+                entry->m_next = NULL;
+                entry->m_prev = NULL;
+                entry->m_data = data;
+            }
+            nlDLRingInsert(&list.m_Head, head, entry);
+            return;
+        }
+
+        if (nlDLRingIsEnd(head, current) || current == NULL)
+        {
+            current = NULL;
+        }
+        else
+        {
+            current = current->m_next;
+        }
+    }
+
+    DLListEntry<MyMiniData*>* entry = (DLListEntry<MyMiniData*>*)nlMalloc(0xC, 8, 0);
+    if (entry != NULL)
+    {
+        entry->m_next = NULL;
+        entry->m_prev = NULL;
+        entry->m_data = data;
+    }
+    nlDLRingAddEnd(&list.m_Head, entry);
+}
 
 /**
  * Offset/Address/Size: 0x1FC0 | 0x800553E0 | size: 0x2BC

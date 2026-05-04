@@ -3,6 +3,8 @@
 #include "Game/AI/Fuzzy.h"
 #include "Game/AI/Scripts/ScriptQuestions.h"
 #include "Game/AI/AiUtil.h"
+#include "Game/Debug/ShapeRender.h"
+#include "Game/Field.h"
 
 static nlVector2 g_vRunToNetDistanceConfidence = { 50.0f, 1.5f };      /* const */
 static nlVector2 g_vRunToNetFormationDistConfidence = { 10.0f, 1.5f }; /* const */
@@ -30,9 +32,168 @@ SpaceSearch::~SpaceSearch()
 
 /**
  * Offset/Address/Size: 0x1284 | 0x80063BD4 | size: 0x5F0
+ * TODO: 89.08% match - MWCC register allocation (r25 vs r27 for aDirection, f24 vs f23 for fMaxRadius)
  */
-void SpaceSearch::FindBestPosition(nlVector3&, const nlVector3&, eFieldDirection, const nlVector3*, float, unsigned short)
+float SpaceSearch::FindBestPosition(nlVector3& v3Dest, const nlVector3& v3CenterPos, eFieldDirection eSearchDir, const nlVector3* pv3TargetOrDirection, float fMaxRadius, unsigned short aSearchCone)
 {
+    unsigned short aDirection;
+    nlVector3 v3BestOpenPosition;
+    float fOriginalPositionScore;
+    float fBestPositionScore;
+    nlPolar pLocation;
+    unsigned short aFromAngle;
+    unsigned short aToAngle;
+    long aDelta;
+    float fRadiusDelta;
+    nlVector3 v3LastPos;
+    int numIterations;
+    int i_radius;
+    unsigned short aAngleDelta;
+    int i_angle;
+    nlVector3 v3TestPosition;
+    float fScore;
+    nlColour colour;
+    int numRadiusSteps;
+    int numAngleSteps;
+
+    aDirection = 0;
+
+    switch (eSearchDir)
+    {
+    case DIR_NONE:
+        aSearchCone = 0xFFFF;
+        break;
+    case DIR_UPFIELD:
+        if (m_fNetDirection > 0.0f)
+            aDirection = 0x8000;
+        else
+            aDirection = 0;
+        break;
+    case DIR_DOWNFIELD:
+        if (m_fNetDirection > 0.0f)
+            aDirection = 0;
+        else
+            aDirection = 0x8000;
+        break;
+    case DIR_TOWARD_TARGET:
+        aDirection = (unsigned short)(s32)(10430.378f * nlATan2f(pv3TargetOrDirection->f.y - v3CenterPos.f.y, pv3TargetOrDirection->f.x - v3CenterPos.f.x));
+        break;
+    case DIR_AWAYFROM_TARGET:
+        aDirection = (unsigned short)(s32)(10430.378f * nlATan2f(v3CenterPos.f.y - pv3TargetOrDirection->f.y, v3CenterPos.f.x - pv3TargetOrDirection->f.x));
+        break;
+    case DIR_CUSTOM:
+        aDirection = (unsigned short)(s32)(10430.378f * nlATan2f(pv3TargetOrDirection->f.y, pv3TargetOrDirection->f.x));
+        break;
+    }
+
+    v3BestOpenPosition = v3CenterPos;
+    fOriginalPositionScore = EvaluatePosition(v3BestOpenPosition, v3CenterPos, eSearchDir, aDirection);
+    fBestPositionScore = fOriginalPositionScore;
+
+    pLocation.a = 0;
+    pLocation.r = 0.0f;
+
+    if (fMaxRadius <= 0.0f)
+    {
+        fMaxRadius = 4.0f;
+    }
+
+    m_unk_0x0C = fMaxRadius;
+
+    aFromAngle = (unsigned short)(int)((float)aDirection - 0.5f * (float)aSearchCone);
+    aToAngle = (unsigned short)(int)((float)aDirection + 0.5f * (float)aSearchCone);
+    aDelta = (short)(aToAngle - aFromAngle);
+
+    numRadiusSteps = 5;
+    if ((int)(0.5f + fMaxRadius / 1.5f) < 5)
+    {
+        numRadiusSteps = (int)(0.5f + fMaxRadius / 1.5f);
+    }
+
+    fRadiusDelta = fMaxRadius / (float)numRadiusSteps;
+
+    v3LastPos = v3CenterPos;
+    numIterations = 0;
+
+    static int maxIterations;
+    static signed char init;
+    if (!init)
+    {
+        maxIterations = 0;
+        init = 1;
+    }
+
+    for (i_radius = 0; i_radius < numRadiusSteps; i_radius++)
+    {
+        pLocation.a = aFromAngle;
+        pLocation.r += fRadiusDelta;
+        if (i_radius == numRadiusSteps - 1)
+        {
+            pLocation.r = fMaxRadius;
+        }
+
+        numAngleSteps = 10;
+        aAngleDelta = (unsigned short)(int)(65536.0f * (1.5f / (6.2831855f * pLocation.r)));
+        if ((int)(0.5f + (float)(unsigned short)aDelta / (float)aAngleDelta) < 10)
+        {
+            numAngleSteps = (int)(0.5f + (float)(unsigned short)aDelta / (float)aAngleDelta);
+        }
+
+        aAngleDelta = (unsigned short)((unsigned short)aDelta / numAngleSteps);
+
+        for (i_angle = 0; i_angle < numAngleSteps; i_angle++)
+        {
+            numIterations++;
+            pLocation.a += aAngleDelta;
+            if (i_angle == numAngleSteps - 1)
+            {
+                pLocation.a = aToAngle;
+            }
+
+            nlPolarToCartesian(v3TestPosition, pLocation);
+            v3TestPosition.f.x += v3CenterPos.f.x;
+            v3TestPosition.f.y += v3CenterPos.f.y;
+            v3TestPosition.f.z += v3CenterPos.f.z;
+            v3TestPosition.f.z = 0.0f;
+
+            cField::FixOutOfBoundsPosition(v3TestPosition, 0.2f);
+
+            fScore = EvaluatePosition(v3TestPosition, v3CenterPos, eSearchDir, aDirection);
+
+            if (m_bDrawSearchSpace)
+            {
+                colour.c[0] = 0x99;
+                colour.c[1] = 0;
+                colour.c[2] = 0x99;
+                colour.c[3] = 0xFF;
+                g_ShapeRenderer.DrawLine3D(v3LastPos, v3TestPosition, colour, false);
+                v3LastPos = v3TestPosition;
+            }
+
+            if (fScore > fBestPositionScore)
+            {
+                fBestPositionScore = fScore;
+                v3BestOpenPosition = v3TestPosition;
+                if (fScore > 1.0f && !m_bDrawSearchSpace)
+                {
+                    break;
+                }
+            }
+        }
+
+        if (fBestPositionScore > 1.0f && !m_bDebugOn)
+        {
+            break;
+        }
+    }
+
+    if (numIterations > maxIterations)
+    {
+        maxIterations = numIterations;
+    }
+
+    v3Dest = v3BestOpenPosition;
+    return fBestPositionScore;
 }
 
 /**

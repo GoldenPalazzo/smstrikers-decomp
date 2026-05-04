@@ -6,6 +6,7 @@
 #include "Game/Sys/eventman.h"
 
 #include "NL/nlBSearch.h"
+#include "NL/nlConfig.h"
 #include "NL/nlList.h"
 #include "NL/nlListSlotPool.h"
 #include "NL/nlQSort.h"
@@ -26,6 +27,21 @@ struct AUDIO_SCRIPT_POLL_STATE
 };
 
 extern AUDIO_SCRIPT_POLL_STATE g_ScriptPollState;
+
+struct AUDIO_SCRIPT_SETTINGS
+{
+    /* 0x00 */ unsigned long HalfTime;
+    /* 0x04 */ unsigned long LastPeriod;
+    /* 0x08 */ unsigned long FinalSeconds;
+    /* 0x0C */ float GoodToShootThreshold;
+    /* 0x10 */ float OnBreakawayThreshold;
+    /* 0x14 */ unsigned long MinGoodPositionPeriod;
+    /* 0x18 */ float TimeToBored;
+    /* 0x1C */ float BoredPeriod;
+    /* 0x20 */ unsigned long MaxFreeBallTime;
+};
+
+static AUDIO_SCRIPT_SETTINGS g_ScriptSettings;
 
 struct AUDIO_EVENT_RECORD
 {
@@ -54,6 +70,7 @@ extern AudioEventList g_PendingEvents;
 extern EventHandler* g_pAudioEventHandler;
 extern _AudioEventRaiser g_AudioEventRaiser;
 
+void AudioScriptEventHandler(Event*, void*);
 void Poll();
 
 typedef WalkHelper<AUDIO_EVENT_RECORD, ListEntry<AUDIO_EVENT_RECORD>, _AudioEventRaiser> AudioEventWalkHelper;
@@ -161,12 +178,27 @@ template AudioScriptEventMgr::AUDIO_EVENT_TEAM GetEventTeam<GoalScoredData>(Even
  */
 template AudioScriptEventMgr::AUDIO_EVENT_TEAM GetEventTeam<CollisionBallGoalpostData>(Event*, bool);
 
-// /**
-//  * Offset/Address/Size: 0x1BAC | 0x8014AD00 | size: 0x5CC
-//  */
-// void AudioScriptEventMgr::Init()
-// {
-// }
+/**
+ * Offset/Address/Size: 0x1BAC | 0x8014AD00 | size: 0x5CC
+ */
+void AudioScriptEventMgr::Init()
+{
+    g_pAudioEventHandler = g_pEventManager->AddEventHandler(AudioScriptEventHandler, NULL, (unsigned long)-1);
+
+    AUDIO_SCRIPT_SETTINGS& settings = g_ScriptSettings;
+
+    settings.HalfTime = GetConfigInt(Config::Global(), "HalfTime", 50);
+    settings.LastPeriod = GetConfigInt(Config::Global(), "LastPeriod", 75);
+    settings.FinalSeconds = GetConfigInt(Config::Global(), "FinalSeconds", 93);
+    settings.GoodToShootThreshold = GetConfigFloat(Config::Global(), "GoodToShoot", 0.5f);
+    settings.OnBreakawayThreshold = GetConfigFloat(Config::Global(), "OnBreakaway", 0.5f);
+    settings.MinGoodPositionPeriod = (unsigned long)GetConfigFloat(Config::Global(), "MinGoodPositionPeriod", 5.0f);
+    settings.TimeToBored = GetConfigFloat(Config::Global(), "TimeToBored", 12.0f);
+    settings.BoredPeriod = GetConfigFloat(Config::Global(), "BoredPeriod", 12.0f);
+    settings.MaxFreeBallTime = (unsigned long)(GetConfigFloat(Config::Global(), "MaxFreeBallTime", 1000.0f) / 1000.0f);
+
+    memset(&g_ScriptPollState, 0, sizeof(AUDIO_SCRIPT_POLL_STATE));
+}
 
 /**
  * Offset/Address/Size: 0x1B18 | 0x8014AC6C | size: 0x94

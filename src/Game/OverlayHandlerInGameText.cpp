@@ -92,9 +92,19 @@ BasicString<unsigned short, Detail::TempStringAllocator>::Append<Detail::TempStr
 /**
  * Offset/Address/Size: 0x3DC | 0x800FC4E4 | size: 0x15C
  */
-// void FEFinder<TLInstance, 3>::_Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long)
-//{
-// }
+template <>
+template <>
+TLInstance* FEFinder<TLInstance, 3>::_Find<TLInstance>(
+    TLInstance* pTopLevel, const unsigned long Level1, const unsigned long Level2,
+    const unsigned long Level3, const unsigned long Level4, const unsigned long Level5, const unsigned long Level6)
+{
+    void* pChild = FindItemByHashID<TLInstance>(pTopLevel->pChildren, Level1);
+    if (pChild == 0)
+        return 0;
+    if (Level2 == 0)
+        return (TLInstance*)pChild;
+    return _Find<TLInstance>(CastToSomeType<TLInstance>(pTopLevel->pChildren, pChild), Level2, Level3, Level4, Level5, Level6, 0);
+}
 
 /**
  * Offset/Address/Size: 0x2D4 | 0x800FC3DC | size: 0x84
@@ -135,9 +145,16 @@ TLInstance* FEFinder<TLInstance, 3>::_Find<TLSlide>(
 /**
  * Offset/Address/Size: 0x29C | 0x800FC3A4 | size: 0x38
  */
-// void FEFinder<TLInstance, 3>::Find<FEPresentation>(FEPresentation*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher)
-//{
-// }
+#pragma inline_depth(0)
+template <>
+template <>
+TLInstance* FEFinder<TLInstance, 3>::Find<FEPresentation>(
+    FEPresentation* pTopLevel, InlineHasher h1, InlineHasher h2, InlineHasher h3,
+    InlineHasher h4, InlineHasher h5, InlineHasher h6)
+{
+    return _Find(pTopLevel, h1.m_Hash, h2.m_Hash, h3.m_Hash, h4.m_Hash, h5.m_Hash, h6.m_Hash);
+}
+#pragma inline_depth()
 
 /**
  * Offset/Address/Size: 0x140 | 0x800FC248 | size: 0x15C
@@ -197,6 +214,7 @@ InGameTextOverlay::InGameTextOverlay()
 /**
  * Offset/Address/Size: 0xED8 | 0x800FBF84 | size: 0x6C
  */
+#pragma inline_depth(16)
 InGameTextOverlay::~InGameTextOverlay()
 {
 }

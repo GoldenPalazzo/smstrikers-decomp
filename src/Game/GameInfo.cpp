@@ -1033,10 +1033,262 @@ void GameInfoManager::SetupTournamentKnockout(eTeamID* pTeamIDs, eSidekickID* pS
 
 /**
  * Offset/Address/Size: 0x78D8 | 0x8017CF7C | size: 0x618
+ * TODO: 90.67% match - register allocation diffs only: cup r25 vs r22,
+ * gamesPerRound r27 vs r21, sidekicks ptr r21 vs r25, loop i r22 vs r26
  */
-unsigned char GameInfoManager::SetupKnockoutRound(short)
+unsigned char GameInfoManager::SetupKnockoutRound(short round)
 {
-    FORCE_DONT_INLINE;
+    eSidekickID sidekicks[9];
+    BaseCup* cup = mCurrentCup;
+    int gamesPerRound;
+    signed short previousRound;
+    signed short currentRound;
+    eTeamID home;
+    eTeamID away;
+    unsigned char returnValue = 0;
+    eStadiumID currentStadium;
+    int i;
+    BasicGameInfo* g;
+    eTeamID index;
+    BasicGameInfo* g2;
+    eTeamID losingTeam;
+    int i2;
+    int i3;
+    BasicGameInfo* g3;
+
+    if (round == -4)
+    {
+        gamesPerRound = 4;
+    }
+    else if (round == -3)
+    {
+        gamesPerRound = 2;
+    }
+    else if (round == -2 || round == -1)
+    {
+        gamesPerRound = 1;
+    }
+    else if (round == -5 && mDoingKnockout)
+    {
+        gamesPerRound = 1;
+    }
+    else
+    {
+        if (mDoingKnockout)
+        {
+            gamesPerRound = mPreviousCup->GetNumTeams() >> 1;
+        }
+        else
+        {
+            unsigned short temp;
+            if (mCurrentMode == GM_BOWSER_CUP || mCurrentMode == GM_SUPER_BOWSER_CUP)
+            {
+                temp = 8;
+            }
+            else
+            {
+                temp = mCurrentCup->GetNumTeams();
+            }
+            gamesPerRound = temp >> 1;
+        }
+    }
+
+    gamesPerRound = (u16)gamesPerRound;
+    returnValue = 0;
+
+    if (mCurrentMode == GM_BOWSER_CUP || mCurrentMode == GM_SUPER_BOWSER_CUP)
+    {
+        cup = mPreviousCup;
+    }
+
+    for (i = 0; i < (u16)cup->GetNumTeams() / 2; i++)
+    {
+        g = cup->GetGameInfo(0, i);
+        index = g->mTeamIndex[0];
+        sidekicks[index] = g->mSidekickIndex[0];
+        index = g->mTeamIndex[1];
+        sidekicks[index] = g->mSidekickIndex[1];
+    }
+
+    if (round == -3)
+    {
+        previousRound = (s16)(mCurrentCup->GetNumRounds() - 3);
+        currentRound = (s16)(mCurrentCup->GetNumRounds() - 2);
+    }
+    else if (round == -2)
+    {
+        previousRound = (s16)(mCurrentCup->GetNumRounds() - 2);
+        currentRound = (s16)(mCurrentCup->GetNumRounds() - 1);
+    }
+    else if (round == -1)
+    {
+        currentRound = (s16)(mCurrentCup->GetNumRounds() - 1);
+        previousRound = currentRound;
+    }
+
+    if (round == -1)
+    {
+        g = mCurrentCup->GetGameInfo((s16)currentRound, 0);
+
+        mUserInfo.mBowserCupFinalRound.mTeamIndex[0] = g->mTeamIndex[0];
+        mUserInfo.mBowserCupFinalRound.mTeamIndex[1] = g->mTeamIndex[1];
+        mUserInfo.mBowserCupFinalRound.mSidekickIndex[0] = g->mSidekickIndex[0];
+        mUserInfo.mBowserCupFinalRound.mSidekickIndex[1] = g->mSidekickIndex[1];
+        mUserInfo.mBowserCupFinalRound.mStadiumIndex = g->mStadiumIndex;
+        mUserInfo.mBowserCupFinalRound.mPadSides[0] = g->mPadSides[0];
+        mUserInfo.mBowserCupFinalRound.mPadSides[1] = g->mPadSides[1];
+        mUserInfo.mBowserCupFinalRound.mFinalScore[0] = g->mFinalScore[0];
+
+        g = mCurrentCup->GetGameInfo((s16)currentRound, 0);
+        if (g->mFinalScore[0] < g->mFinalScore[1])
+        {
+            losingTeam = g->mTeamIndex[0];
+        }
+        else
+        {
+            losingTeam = g->mTeamIndex[1];
+        }
+
+        eTeamID winner;
+        if (g->mFinalScore[0] > g->mFinalScore[1])
+        {
+            winner = g->mTeamIndex[0];
+        }
+        else
+        {
+            winner = g->mTeamIndex[1];
+        }
+
+        if (winner != mCurrentCup->mUserSelectedTeam)
+        {
+            goto end;
+        }
+
+        g->mTeamIndex[0] = (eTeamID)3;
+        g->mTeamIndex[1] = (eTeamID)2;
+        g->mSidekickIndex[0] = (eSidekickID)0;
+        g->mSidekickIndex[1] = (eSidekickID)1;
+        g->mFinalScore[1] = 0;
+        g->mFinalScore[0] = 0;
+        g->mPadSides[0] = -1;
+        g->mPadSides[1] = -1;
+        g->mPadSides[2] = -1;
+        g->mPadSides[3] = -1;
+        g->mStadiumIndex = (eStadiumID)0;
+
+        g->mTeamIndex[0] = (eTeamID)8;
+        g->mSidekickIndex[1] = (eSidekickID)0;
+        g->mTeamIndex[1] = winner;
+        g->mSidekickIndex[1] = sidekicks[winner];
+        g->mStadiumIndex = PickStadium(true, STAD_INVALID);
+        returnValue = 1;
+        gamesPerRound = 0;
+
+        for (i2 = 0; (u16)i2 < (u16)gamesPerRound; i2++)
+        {
+            TeamStats* ts;
+            if (mCurrentMode == GM_BOWSER_CUP)
+            {
+                ts = mBowserCupSeries.GetTeamStats((u16)i2);
+            }
+            else if (mCurrentMode == GM_SUPER_BOWSER_CUP)
+            {
+                ts = mSuperBowserCupSeries.GetTeamStats((u16)i2);
+            }
+            else
+            {
+                ts = mCurrentCup->GetTeamStats((u16)i2);
+            }
+
+            if (ts->mTeamIndex == losingTeam)
+            {
+                memset(&ts->mPlayerTotalStats, 0, sizeof(PlayerStats));
+                ts->mPlayerTotalStats.mRecordType.mTeamID = (eTeamID)8;
+                ts->mPlayerTotalStats.mType = TYPE_TEAM;
+                ts->mTeamIndex = (eTeamID)8;
+                ts->mNumWins = 0;
+                ts->mNumLosses = 0;
+                ts->mNumOTLosses = 0;
+                ts->mNumPoints = 0;
+                goto end;
+            }
+        }
+    }
+    else
+    {
+        previousRound = (s16)previousRound;
+        currentRound = (s16)currentRound;
+        i3 = 0;
+        int gameIdx0 = 0;
+        int gameIdx1 = 1;
+
+        for (; i3 < gamesPerRound; i3++)
+        {
+            g = mCurrentCup->GetGameInfo(previousRound, gameIdx0);
+            if (g->mFinalScore[0] > g->mFinalScore[1])
+            {
+                home = g->mTeamIndex[0];
+            }
+            else
+            {
+                home = g->mTeamIndex[1];
+            }
+
+            g = mCurrentCup->GetGameInfo(previousRound, gameIdx1);
+            if (g->mFinalScore[0] > g->mFinalScore[1])
+            {
+                away = g->mTeamIndex[0];
+            }
+            else
+            {
+                away = g->mTeamIndex[1];
+            }
+
+            g = mCurrentCup->GetGameInfo(currentRound, i3);
+            g->mTeamIndex[0] = (eTeamID)3;
+            g->mTeamIndex[1] = (eTeamID)2;
+            g->mSidekickIndex[0] = (eSidekickID)0;
+            g->mSidekickIndex[1] = (eSidekickID)1;
+            g->mFinalScore[1] = 0;
+            g->mFinalScore[0] = 0;
+            g->mPadSides[0] = -1;
+            g->mPadSides[1] = -1;
+            g->mPadSides[2] = -1;
+            g->mPadSides[3] = -1;
+            g->mStadiumIndex = (eStadiumID)0;
+
+            g->mTeamIndex[0] = home;
+            g->mTeamIndex[1] = away;
+            g->mSidekickIndex[0] = sidekicks[home];
+            g->mSidekickIndex[1] = sidekicks[away];
+            g->mStadiumIndex = PickStadium(true, mLastHumanStadium);
+
+            u16 humanTeams = mCurrentCup->mHumanTeams;
+            if ((humanTeams & (1 << g->mTeamIndex[0])) || (humanTeams & (1 << g->mTeamIndex[1])))
+            {
+                mLastHumanStadium = g->mStadiumIndex;
+            }
+
+            if (home == mCurrentCup->mUserSelectedTeam || away == mCurrentCup->mUserSelectedTeam)
+            {
+                returnValue = 1;
+            }
+            else
+            {
+                u16 humanTeams2 = mCurrentCup->mHumanTeams;
+                if ((humanTeams2 & (1 << home)) || (humanTeams2 & (1 << away)))
+                {
+                    returnValue = 1;
+                }
+            }
+
+            gameIdx0 += 2;
+            gameIdx1 += 2;
+        }
+    }
+
+end:
+    return returnValue;
 }
 
 /**

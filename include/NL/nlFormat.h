@@ -50,6 +50,9 @@ struct FormatImplLayoutWideTemp
 template <typename StringType, typename T1, typename T2>
 inline StringType Format(const StringType& format, const T1& value1, const T2& value2);
 
+template <typename StringType, typename T1, typename T2, typename T3>
+inline StringType Format(const StringType& format, const T1& value1, const T2& value2, const T3& value3);
+
 /**
  * Offset/Address/Size: 0xFB4 | 0x800CD994 | size: 0x118
  * TODO: 98.43% match - return copy path still stores null/data via r4 instead of stack reload into r0.
@@ -464,6 +467,33 @@ inline BasicString<char, Detail::TempStringAllocator> Format<BasicString<char, D
     FormatImpl<BasicString<char, Detail::TempStringAllocator> > impl(data);
 
     return BasicString<char, Detail::TempStringAllocator>((BasicString<char, Detail::TempStringAllocator>)(impl % value));
+}
+
+/**
+ * Offset/Address/Size: 0x0 | 0x80067258 | size: 0x13C
+ */
+template <>
+inline BasicString<char, Detail::TempStringAllocator>
+Format<BasicString<char, Detail::TempStringAllocator>, float, float, float>(
+    const BasicString<char, Detail::TempStringAllocator>& format,
+    const float& value1,
+    const float& value2,
+    const float& value3)
+{
+    BasicStringData<char>* data = format.m_data;
+    if (data != 0)
+    {
+        data->mRefCount++;
+    }
+    else
+    {
+        data = 0;
+    }
+
+    FormatImpl<BasicString<char, Detail::TempStringAllocator> > impl(data);
+
+    return BasicString<char, Detail::TempStringAllocator>(
+        (BasicString<char, Detail::TempStringAllocator>)(((impl % value1) % value2) % value3));
 }
 
 /**

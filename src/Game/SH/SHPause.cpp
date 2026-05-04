@@ -1,13 +1,16 @@
 #include "Game/SH/SHPause.h"
 #include "Game/OverlayManager.h"
 
-#include "Game/FE/Overlay/OverlayHandlerSummary.h"
 #include "Game/FE/FEAudio.h"
+#include "Game/FE/Overlay/OverlayHandlerSummary.h"
 #include "Game/FE/feHelpFuncs.h"
 #include "Game/FE/feFinder.h"
+#include "Game/FE/feManager.h"
+#include "Game/FE/feSceneManager.h"
 #include "Game/FE/tlTextInstance.h"
 #include "Game/GameInfo.h"
 #include "Game/Game.h"
+#include "NL/glx/glxSwap.h"
 #include "NL/nlPrint.h"
 
 extern FEInput* g_pFEInput;
@@ -361,9 +364,246 @@ void PauseMenuScene::SceneCreated()
 
 /**
  * Offset/Address/Size: 0x268 | 0x800AD760 | size: 0x5E4
+ * TODO: 83.81% match - r27/r28/r29 register allocation swap for i/goToChooseSides/connState, overlay pop loop structure, ExitMenuState branch pattern
  */
-void PauseMenuScene::Update(float)
+void PauseMenuScene::Update(float fDeltaT)
 {
+    if (mQuitDelay > 0.0f)
+    {
+        mQuitDelay = mQuitDelay - fDeltaT;
+        if (!nlSingleton<OverlayManager>::s_pInstance->IsOnStack(OVERLAY_POPUP))
+        {
+            glxSwapSetBlack(true);
+        }
+        if (mQuitDelay <= 0.0f)
+        {
+            mQuitDelay = 0.0f;
+            FrontEnd::ReturnToFE();
+        }
+        return;
+    }
+
+    if (mStartAnimAtEnd)
+    {
+        if (m_pFEPresentation->m_currentSlide != NULL)
+        {
+            m_pFEPresentation->m_fadeDuration = 999.9f;
+            mStartAnimAtEnd = false;
+        }
+    }
+
+    BaseSceneHandler::Update(fDeltaT);
+    mButtons.CentreButtons();
+    mButtons2.CentreButtons();
+
+    if (mIsInTransition)
+    {
+        TLSlide* slide = m_pFEPresentation->m_currentSlide;
+        f32 currentTime = slide->m_time;
+        f32 endTime = slide->m_start + slide->m_duration;
+        if (!(currentTime >= endTime))
+            return;
+
+        if (mTransitionTo == TT_OUT)
+        {
+            FrontEnd::ExitMenuState();
+        }
+        mIsInTransition = false;
+        mTransitionTo = (TransitionType)0;
+        return;
+    }
+
+    u8 goToChooseSides = 0;
+    int i = 0;
+    u8* connState = &FrontEnd::m_ctrlConnectedState[0];
+
+    for (; i < 4; i++)
+    {
+        bool isConn = g_pFEInput->IsConnected((eFEINPUT_PAD)i);
+
+        if (!g_pFEInput->IsConnected((eFEINPUT_PAD)i))
+        {
+            if (nlSingleton<GameInfoManager>::s_pInstance->GetPlayingSide((unsigned short)i) != -1)
+            {
+                if (!goToChooseSides)
+                {
+                    OverlayManager* om = nlSingleton<OverlayManager>::s_pInstance;
+                    BaseSceneHandler* top;
+                    if (om->mCurrentStackDepth != 0)
+                    {
+                        top = om->mBaseSceneHandlerStack[om->mCurrentStackDepth - 1];
+                    }
+                    else
+                    {
+                        top = NULL;
+                    }
+                    while (top != (BaseSceneHandler*)this)
+                    {
+                        om->Pop();
+                        nlSingleton<FESceneManager>::s_pInstance->ForceImmediateStackProcessing();
+                        om = nlSingleton<OverlayManager>::s_pInstance;
+                        if (om->mCurrentStackDepth != 0)
+                        {
+                            top = om->mBaseSceneHandlerStack[om->mCurrentStackDepth - 1];
+                        }
+                        else
+                        {
+                            top = NULL;
+                        }
+                    }
+                    om->Push(IGSCENE_CHOOSE_SIDES, SCREEN_FORWARD, true);
+                }
+                goToChooseSides = 1;
+            }
+        }
+
+        *connState = isConn;
+        connState++;
+    }
+
+    if (goToChooseSides)
+        return;
+
+    mDelayBeforeUnpause__14PauseMenuScene = mDelayBeforeUnpause__14PauseMenuScene - fDeltaT;
+    if (mDelayBeforeUnpause__14PauseMenuScene > 0.0f)
+        return;
+
+    mDelayBeforeUnpause__14PauseMenuScene = 0.0f;
+
+    if (m_pFEPresentation->m_currentSlide == NULL)
+        return;
+
+    if (g_pFEInput->IsAutoPressed(mControllingInput, 0xd, true, NULL))
+    {
+        int flags = mMenuItems.mFlags;
+        int currentIndex = mMenuItems.mCurrentIndex;
+        u8 wrapBit = flags & 1;
+        int skipDisabled = flags & 2;
+        int newIndex = currentIndex - 1;
+
+        while (true)
+        {
+            if (wrapBit)
+            {
+                if (newIndex < 0)
+                    newIndex = mMenuItems.mNumItemsAdded - 1;
+            }
+            else
+            {
+                if (newIndex < 0)
+                    return;
+            }
+
+            if (!skipDisabled)
+                break;
+
+            if (!mMenuItems.mMenuItems[newIndex].mLocked)
+                break;
+
+            newIndex = newIndex - 1;
+        }
+
+        mMenuItems.mMenuItems[currentIndex].ApplyAction(ON_UNHIGHLIGHT);
+
+        mMenuItems.mCurrentIndex = newIndex;
+        int idx = mMenuItems.mCurrentIndex;
+        mMenuItems.mMenuItems[idx].ApplyAction(ON_HIGHLIGHT);
+        return;
+    }
+
+    if (g_pFEInput->IsAutoPressed(mControllingInput, 0xe, true, NULL))
+    {
+        int flags = mMenuItems.mFlags;
+        int currentIndex = mMenuItems.mCurrentIndex;
+        u8 wrapBit = flags & 1;
+        int skipDisabled = flags & 2;
+        int newIndex = currentIndex + 1;
+
+        while (true)
+        {
+            if (wrapBit)
+            {
+                int numItems = mMenuItems.mNumItemsAdded;
+                newIndex = newIndex % numItems;
+            }
+            else
+            {
+                if (newIndex >= mMenuItems.mNumItemsAdded)
+                    return;
+            }
+
+            if (!skipDisabled)
+                break;
+
+            if (!mMenuItems.mMenuItems[newIndex].mLocked)
+                break;
+
+            newIndex = newIndex + 1;
+        }
+
+        mMenuItems.mMenuItems[currentIndex].ApplyAction(ON_UNHIGHLIGHT);
+
+        mMenuItems.mCurrentIndex = newIndex;
+        int idx = mMenuItems.mCurrentIndex;
+        mMenuItems.mMenuItems[idx].ApplyAction(ON_HIGHLIGHT);
+        return;
+    }
+
+    if (g_pFEInput->JustPressed(mControllingInput, 0x100, false, &mQuittingController))
+    {
+        int selectedIndex = mMenuItems.mCurrentIndex;
+        MenuItem<TLComponentInstance>* item = &mMenuItems.mMenuItems[selectedIndex];
+        MenuResult result;
+
+        if (item->mCallbacks[ON_APPLY].mTag != EMPTY)
+        {
+            if (item->mDisabled)
+            {
+                result = RES_ITEM_DISABLED;
+            }
+            else
+            {
+                item->mCallbacks[ON_APPLY](item->mType);
+                result = RES_OK;
+            }
+        }
+        else
+        {
+            result = RES_NO_CALLBACK_FUNC;
+        }
+
+        switch (result)
+        {
+        case RES_OK:
+            mLastSelectedIndex = mMenuItems.mCurrentIndex;
+            FEAudio::PlayAnimAudioEvent("sfx_accept", false);
+            break;
+        case RES_ITEM_DISABLED:
+            FEAudio::PlayAnimAudioEvent("sfx_deny", false);
+            break;
+        default:
+            break;
+        }
+        return;
+    }
+
+    if (!g_pFEInput->JustPressed(mControllingInput, 0x200, false, NULL))
+    {
+        if (!g_pFEInput->JustPressed(mControllingInput, 0x1000, false, NULL))
+            return;
+        if (FrontEnd::m_bGameOver)
+            return;
+    }
+
+    if (!FrontEnd::m_bGameOver)
+    {
+        OnSelectRESUME(NULL);
+    }
+    else
+    {
+        FrontEnd::ExitMenuState();
+        FEAudio::PlayAnimAudioEvent("sfx_back", false);
+    }
 }
 
 /**

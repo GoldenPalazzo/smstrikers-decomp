@@ -28,7 +28,28 @@ public:
         mInputLocked = 0;
         mComponentInstance = comp;
     }
-    virtual ~SlideMenuList();
+    virtual ~SlideMenuList()
+    {
+        int numItems = mNumItemsAdded;
+        if (numItems > 0)
+        {
+            char (*walker)[0x20] = (char (*)[0x20])this;
+            for (int i = 0; i < numItems; i++)
+            {
+                MenuItem<SlideMenuItem>* item;
+                if (i == -1)
+                {
+                    item = &mMenuItems[mCurrentIndex];
+                }
+                else
+                {
+                    item = &((SlideMenuList*)walker)->mMenuItems[0];
+                }
+                delete item->mType;
+                walker++;
+            }
+        }
+    }
     virtual void Update(float dt);
 
     void SetSlide()

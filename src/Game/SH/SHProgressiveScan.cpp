@@ -111,12 +111,14 @@ ProgressiveScanScene::ProgressiveScanScene(bool)
 /**
  * Offset/Address/Size: 0x107C | 0x8011154C | size: 0xCC
  */
+#pragma inline_depth(8)
 ProgressiveScanScene::~ProgressiveScanScene()
 {
     delete mUseProgressiveImage[0];
     delete mUseProgressiveImage[1];
     delete mConfirmationImage;
 }
+#pragma inline_depth()
 
 extern unsigned long nlStringLowerHash(const char*);
 extern int nlSNPrintf(char*, unsigned long, const char*, ...);

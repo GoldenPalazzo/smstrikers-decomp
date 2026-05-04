@@ -1,6 +1,8 @@
 #include "Game/AI/Scripts/Plays/DefaultOffensive.h"
 
+#include "Game/AI/Fuzzy.h"
 #include "Game/AI/Scripts/ScriptQuestions.h"
+#include "Game/AI/SpaceSearch.h"
 
 class cTeam;
 
@@ -20,6 +22,7 @@ public:
 };
 
 static bool sFalse = false;
+static float sZeroCutAndBreak = 0.0f;
 static bool sTrue = true;
 
 /**
@@ -107,23 +110,145 @@ void Fuzzy::DoPassing(float, cDecisionEntity*)
 
 /**
  * Offset/Address/Size: 0x4490 | 0x80090F1C | size: 0x604
+ * TODO: 98.96% match - f30/f31 register swap for fBestConfidence/fWindupScore
  */
-void Fuzzy::GoodBallCarrier(cFielder*)
+void Fuzzy::GoodBallCarrier(cFielder* TheFielder)
 {
+    extern cFielder* g_pScriptCurrentFielder;
+
+    FuzzyVariant bestValue;
+    float fConfidence = 1.0f;
+    float fBestConfidence = 0.0f;
+
+    FuzzyVariant fvFielder((cPlayer*)TheFielder);
+    ((Variant*)&fvFielder)->GetHash();
+    FuzzyVariant fvFielder2((cPlayer*)TheFielder);
+
+    float fWindupScore = InGoodWindupPosition(g_pScriptCurrentFielder).mData.f;
+
+    float fOnMushrooms = OnMushrooms(g_pScriptCurrentFielder);
+    float fInvincible = Invincible(g_pScriptCurrentFielder);
+
+    float fTrueConfidence = (fInvincible >= fOnMushrooms) ? fInvincible : fOnMushrooms;
+    float fFalseConfidence = 1.0f - fTrueConfidence;
+
+    float fMin = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+    float fMax = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+    float fBranchRatio = fMin / fMax;
+
+    if (fTrueConfidence > 0.0f)
+    {
+        SaveConfidence PushDOM(&fConfidence);
+        fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
+
+        if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
+            fConfidence = fConfidence * fBranchRatio;
+
+        if (fConfidence > 0.0f)
+        {
+            fBestConfidence = fConfidence;
+            float fLessWindup = FLESS(fWindupScore, 0.8f);
+            bestValue = FuzzyVariant(fLessWindup);
+        }
+    }
+
+    if (fFalseConfidence > 0.0f)
+    {
+        SaveConfidence PushDOM(&fConfidence);
+        fConfidence = (fConfidence <= fFalseConfidence) ? fConfidence : fFalseConfidence;
+
+        if (fConfidence < fFalseConfidence && fFalseConfidence < 0.5f)
+            fConfidence = fConfidence * fBranchRatio;
+
+        if (fConfidence > fBestConfidence)
+        {
+            fBestConfidence = fConfidence;
+            float fLessWindup = FLESS(fWindupScore, 0.8f);
+            float fNotCloseToNet = 1.0f - CloseToMyNet(g_pScriptCurrentFielder);
+            float fNotInDanger = 1.0f - InDangerDelayed(g_pScriptCurrentFielder).mData.f;
+            fNotCloseToNet = (fNotCloseToNet <= fLessWindup) ? fNotCloseToNet : fLessWindup;
+            fNotInDanger = (fNotInDanger <= fNotCloseToNet) ? fNotInDanger : fNotCloseToNet;
+            bestValue = FuzzyVariant(fNotInDanger);
+        }
+    }
+
+    bestValue.Confidence = fBestConfidence;
+
+    FuzzyVariant* pOut = (FuzzyVariant*)this;
+    new (pOut) FuzzyVariant;
+    *pOut = bestValue;
 }
 
 /**
  * Offset/Address/Size: 0x3128 | 0x8008FBB4 | size: 0x1368
  */
-void Fuzzy::InGoodWindupPosition(cFielder*)
+FuzzyVariant Fuzzy::InGoodWindupPosition(cFielder* TheFielder)
 {
+    FORCE_DONT_INLINE;
+    FuzzyVariant bestValue;
+    return bestValue;
 }
 
 /**
  * Offset/Address/Size: 0x2B2C | 0x8008F5B8 | size: 0x5FC
+ * TODO: 95.38% match - 4 @sda21 constant pool label diffs for 1.0f/0.0f loads
  */
-void Fuzzy::CutAndBreak(cFielder*)
+void Fuzzy::CutAndBreak(cFielder* TheFielder)
 {
+    FuzzyVariant bestValue;
+    float fConfidence = 1.0f;
+    float fBestConfidence = 0.0f;
+
+    FuzzyVariant fvFielder((cPlayer*)TheFielder);
+    ((Variant*)&fvFielder)->GetHash();
+    FuzzyVariant fvFielder2((cPlayer*)TheFielder);
+
+    float fTrueConfidence = InOffensiveZone(TheFielder);
+    float fFalseConfidence = 1.0f - fTrueConfidence;
+
+    float fMin = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+    float fMax = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+    float fBranchRatio = fMin / fMax;
+
+    if (fTrueConfidence > 0.0f)
+    {
+        SaveConfidence PushDOM(&fConfidence);
+        fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
+
+        if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
+            fConfidence = fConfidence * fBranchRatio;
+
+        SSearchCutAndBreak ssearch = SSearchCutAndBreak(TheFielder);
+        nlVector3 v3Position;
+        float fCutAndBreakScore = ssearch.FindBestPosition(v3Position, PositionOf(TheFielder), DIR_NONE, NULL, 8.0f, 0x8000);
+
+        if (fConfidence > 0.0f)
+        {
+            fBestConfidence = fConfidence;
+            bestValue = FuzzyVariant(fCutAndBreakScore);
+        }
+    }
+
+    if (fFalseConfidence > 0.0f)
+    {
+        SaveConfidence PushDOM(&fConfidence);
+        fConfidence = (fConfidence <= fFalseConfidence) ? fConfidence : fFalseConfidence;
+
+        if (fConfidence < fFalseConfidence && fFalseConfidence < 0.5f)
+            fConfidence = fConfidence * fBranchRatio;
+
+        if (fConfidence > fBestConfidence)
+        {
+            fBestConfidence = fConfidence;
+            bestValue = FuzzyVariant(sZeroCutAndBreak);
+        }
+    }
+
+    bestValue.Confidence = fBestConfidence;
+
+    FuzzyVariant* pOut = (FuzzyVariant*)this;
+    new (pOut) FuzzyVariant;
+    *pOut = bestValue;
 }
 
 /**

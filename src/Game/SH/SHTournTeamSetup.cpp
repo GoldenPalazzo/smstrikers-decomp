@@ -52,13 +52,22 @@ static unsigned long TOURN_CAPTAIN_DESCRIPTIONS[] = {
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0x704 | 0x800E7488 | size: 0x15C
-//  */
-// void FEFinder<TLInstance, 4>::_Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long,
-// unsigned long)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x704 | 0x800E7488 | size: 0x15C
+ */
+template <>
+template <>
+TLInstance* FEFinder<TLInstance, 4>::_Find<TLInstance>(
+    TLInstance* pTopLevel, const unsigned long Level1, const unsigned long Level2,
+    const unsigned long Level3, const unsigned long Level4, const unsigned long Level5, const unsigned long Level6)
+{
+    void* pChild = FindItemByHashID<TLInstance>(pTopLevel->pChildren, Level1);
+    if (pChild == 0)
+        return 0;
+    if (Level2 == 0)
+        return (TLInstance*)pChild;
+    return _Find<TLInstance>(CastToSomeType<TLInstance>(pTopLevel->pChildren, pChild), Level2, Level3, Level4, Level5, Level6, 0);
+}
 
 /**
  * Offset/Address/Size: 0x680 | 0x800E7404 | size: 0x84

@@ -70,37 +70,26 @@ inline float min_float(float a, float b)
 
 /**
  * Offset/Address/Size: 0x68 | 0x800575B8 | size: 0xAC
- * TODO: 96.9% match - remaining MWCC register/operand ordering in clamp sequence:
- * fcmpo cr0,f0,f3 + fmr/stfs via f0 instead of target fcmpo cr0,f3,f0 + fmr/stfs via f3.
  */
 nlVector3 cPlayer::GetAIDefNetLocation(const nlVector3* v3ReferencePos)
 {
-    nlVector3 result = m_pTeam->m_pNet->m_baseLocation;
+    nlVector3 v3NetLocation = m_pTeam->m_pNet->m_baseLocation;
+    float yCoord = (v3ReferencePos != NULL) ? v3ReferencePos->f.y : m_v3Position.f.y;
 
-    float yCoord;
-    if (v3ReferencePos != NULL)
-    {
-        yCoord = v3ReferencePos->f.y;
-    }
-    else
-    {
-        yCoord = m_v3Position.f.y;
-    }
-
-    float halfNetWidth = 0.5f * cNet::m_fNetWidth;
+    float fNetWidth = 0.5f * cNet::m_fNetWidth;
 
     if (yCoord < 0.0f)
     {
-        yCoord = max_float(-1.0f * halfNetWidth, yCoord);
-        result.f.y = yCoord;
+        yCoord = max_float(yCoord, -1.0f * fNetWidth);
+        v3NetLocation.f.y = yCoord;
     }
     else
     {
-        yCoord = min_float(yCoord, halfNetWidth);
-        result.f.y = yCoord;
+        yCoord = min_float(yCoord, fNetWidth);
+        v3NetLocation.f.y = yCoord;
     }
 
-    return result;
+    return v3NetLocation;
 }
 
 /**

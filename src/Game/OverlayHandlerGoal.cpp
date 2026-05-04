@@ -65,6 +65,10 @@ extern const unsigned short MissingLocString[];
 
 void MakeTextBoxReallyWide(TLTextInstance&);
 extern "C" void SetWinnerTitle__11GoalOverlayFv(GoalOverlay*);
+class GameInfoManager;
+extern "C" bool IsInFriendlyMode__15GameInfoManagerCFv(void*);
+extern "C" bool IsInTournamentMode__15GameInfoManagerCFv(void*);
+extern "C" bool HasTrophy__15GameInfoManagerCF11eTrophyType(void*, int);
 
 void OverlayHandlerGoal_stub()
 {
@@ -156,8 +160,27 @@ void OverlayHandlerGoal_stub()
  * Offset/Address/Size: 0x3150 | 0x801031C0 | size: 0x100
  */
 GoalOverlay::GoalOverlay()
-    : BaseOverlayHandler(2)
+    : BaseOverlayHandler(0x110, POSITION_BOTTOM)
 {
+    mEventHandler = NULL;
+    mIsCreated = false;
+    mIsInOvertime = false;
+
+    mEventHandler = g_pEventManager->AddEventHandler(eventHandler, this, 1);
+
+    if (IsInFriendlyMode__15GameInfoManagerCFv(nlSingleton<GameInfoManager>::s_pInstance) || IsInTournamentMode__15GameInfoManagerCFv(nlSingleton<GameInfoManager>::s_pInstance))
+    {
+        mHasSniperCup = true;
+    }
+    else
+    {
+        mHasSniperCup = HasTrophy__15GameInfoManagerCF11eTrophyType(nlSingleton<GameInfoManager>::s_pInstance, 9);
+    }
+
+    mCaptainGoals[0] = 0;
+    mCaptainGoals[1] = 0;
+    mSidekickGoals[0] = 0;
+    mSidekickGoals[1] = 0;
 }
 
 /**

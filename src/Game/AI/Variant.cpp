@@ -1,4 +1,5 @@
 #include "Game/AI/Variant.h"
+#include "NL/nlFormat.h"
 #include "NL/nlLexicalCast.h"
 #include "PowerPC_EABI_Support/Runtime/runtime.h"
 
@@ -31,12 +32,20 @@ template NLString LexicalCast<NLString, unsigned long>(const unsigned long&);
 
 template NLString LexicalCast<NLString, char>(const char&);
 
-// /**
-//  * Offset/Address/Size: 0x2BC0 | 0x80069E18 | size: 0x114
-//  */
-// void Format<BasicString<char, Detail::TempStringAllocator>, float>(const BasicString<char, Detail::TempStringAllocator>&, const float&)
-// {
-// }
+typedef NLString (*Format1FFn)(const NLString&, const float&);
+typedef NLString (*Format3FFn)(const NLString&, const float&, const float&, const float&);
+
+void Variant_stub()
+{
+    NLString format;
+    float value1 = 0.0f;
+    float value2 = 0.0f;
+    float value3 = 0.0f;
+    volatile Format1FFn fn1 = Format<NLString, float>;
+    fn1(format, value1);
+    volatile Format3FFn fn3 = Format<NLString, float, float, float>;
+    fn3(format, value1, value2, value3);
+}
 
 // /**
 //  * Offset/Address/Size: 0x1E4C | 0x800690A4 | size: 0xD74

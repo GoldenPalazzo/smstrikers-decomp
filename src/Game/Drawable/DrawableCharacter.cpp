@@ -14,6 +14,12 @@ cCharacter* DrawableCharacter::spRenderOnlyThisCharacter = nullptr;
 bool DrawableCharacter::sbRenderOpposingGoalieToo = false;
 
 template <>
+FloatCompressor<0, 1, 15>::FloatCompressor(float& f)
+    : mF(f)
+{
+}
+
+template <>
 void ReplayablePolymorphic<1, LoadFrame, cPoseNode>(LoadFrame& frame, cPoseNode*& ptr);
 
 /**
@@ -221,6 +227,7 @@ DrawableCharacter::DrawableCharacter()
  */
 DrawableCharacter::~DrawableCharacter()
 {
+    delete mPoseAccumulator;
 }
 
 /**

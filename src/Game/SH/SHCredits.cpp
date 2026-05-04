@@ -24,13 +24,25 @@ public:
     static void StartFEStream(const char*, bool, const char*);
 };
 
-// /**
-//  * Offset/Address/Size: 0x570 | 0x80110374 | size: 0x15C
-//  */
-// void FEFinder<TLTextInstance, 3>::_Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned
-// long, unsigned long)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x570 | 0x80110374 | size: 0x15C
+ */
+template <>
+template <>
+TLTextInstance* FEFinder<TLTextInstance, 3>::_Find<TLInstance>(
+    TLInstance* pTopLevel, const unsigned long Level1, const unsigned long Level2,
+    const unsigned long Level3, const unsigned long Level4, const unsigned long Level5, const unsigned long Level6)
+{
+    void* pChild = FindItemByHashID<TLInstance>(pTopLevel->pChildren, Level1);
+
+    if (pChild == 0)
+        return 0;
+
+    if (Level2 == 0)
+        return (TLTextInstance*)pChild;
+
+    return _Find<TLInstance>(CastToSomeType<TLInstance>(pTopLevel->pChildren, pChild), Level2, Level3, Level4, Level5, Level6, 0);
+}
 
 /**
  * Offset/Address/Size: 0x468 | 0x8011026C | size: 0x84

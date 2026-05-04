@@ -110,6 +110,8 @@ void Function0<void>::FunctorImpl<BindExp1_vfmfcp>::operator()()
  */
 CupTickerManager::CupTickerManager()
 {
+    mTicker = 0;
+    mState = CUP_TICKER_STATE_0;
 }
 
 /**
@@ -117,6 +119,10 @@ CupTickerManager::CupTickerManager()
  */
 CupTickerManager::~CupTickerManager()
 {
+    if (mTicker != 0)
+    {
+        delete mTicker;
+    }
 }
 
 /**

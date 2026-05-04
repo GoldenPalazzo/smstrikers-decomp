@@ -1107,31 +1107,6 @@ void OptionsSubMenu::Update(float)
 // {
 // }
 
-/**
- * Offset/Address/Size: 0x0 | 0x800BB318 | size: 0xE4
- * TODO: 99.39% match - r30/r31 register swap for numItems and pointer walker
- */
-SlideMenuList::~SlideMenuList()
-{
-    int numItems = mNumItemsAdded;
-    if (numItems > 0)
-    {
-        for (int i = 0; i < numItems; i++)
-        {
-            MenuItem<SlideMenuItem>* item;
-            if (i == -1)
-            {
-                item = &mMenuItems[mCurrentIndex];
-            }
-            else
-            {
-                item = &mMenuItems[i];
-            }
-            delete item->mType;
-        }
-    }
-}
-
 // /**
 //  * Offset/Address/Size: 0xE4 | 0x800BB3FC | size: 0x60
 //  */

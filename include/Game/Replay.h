@@ -123,6 +123,9 @@ public:
     /* 0x0 */ float& mF;
 }; // total size: 0x4
 
+template <>
+FloatCompressor<0, 1, 15>::FloatCompressor(float& f);
+
 template <int MIN, int MAX, int BITS>
 inline FloatCompressor<MIN, MAX, BITS>::FloatCompressor(float& f)
     : mF(f)

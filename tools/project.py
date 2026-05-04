@@ -1411,9 +1411,13 @@ def generate_objdiff_config(
     # Load existing objdiff.json
     existing_units = {}
     if Path("objdiff.json").is_file():
-        with open("objdiff.json", "r", encoding="utf-8") as r:
-            existing_config = json.load(r)
-            existing_units = {unit["name"]: unit for unit in existing_config["units"]}
+        try:
+            with open("objdiff.json", "r", encoding="utf-8") as r:
+                existing_config = json.load(r)
+                existing_units = {unit["name"]: unit for unit in existing_config["units"]}
+        except (OSError, json.JSONDecodeError, KeyError, TypeError):
+            # Regenerate from scratch when the existing file is malformed or incomplete.
+            existing_units = {}
 
     objdiff_config: Dict[str, Any] = {
         "min_version": "2.0.0-beta.5",

@@ -28,4 +28,26 @@ void Vector<T, Allocator>::push_back(const T& value)
     insert(mData + mSize, &value, &value + 1);
 }
 
+template <typename T, typename Allocator>
+void Vector<T, Allocator>::insert(T* at, const T* begin, const T* end)
+{
+    int size = end - begin;
+    int offset = at - mData;
+    reserve(mSize + size);
+    at = mData + offset;
+    T* t = mData + mSize - 1;
+    while (t >= at)
+    {
+        *(t + size) = *t;
+        t--;
+    }
+    while (begin != end)
+    {
+        *at = *begin;
+        begin++;
+        at++;
+    }
+    mSize += size;
+}
+
 #endif // _NLVECTOR_H_

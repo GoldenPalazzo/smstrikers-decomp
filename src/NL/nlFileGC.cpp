@@ -1109,10 +1109,9 @@ nlFile* nlOpen(const char* fileName)
 
 /**
  * Offset/Address/Size: 0x1B78 | 0x801D08CC | size: 0xB0
- * TODO: 93.8% match - register allocation still differs in fread setup
- *   (amountRead/length/remainingBytes in r3/r6 vs target r7/r3/r6), plus
- *   post-fread compare/flag path keeps currentAmount/isComplete in r0/r4
- *   instead of target r4/r0; final shift emits rlwinm instead of srwi.
+ * TODO: 97.6% match - pre-fread register allocation still differs
+ *   (amountRead/length/remainingBytes stay in r3/r6 vs target r7/r3/r6),
+ *   and epilogue scheduling keeps `lwz r31` after `cntlzw/srwi`.
  */
 s32 TDEVChunkFile::GetReadStatus()
 {
@@ -1127,15 +1126,11 @@ s32 TDEVChunkFile::GetReadStatus()
     u32 bytesRead = fread(dest, 1, (remainingBytes <= 0x3000U) ? remainingBytes : 0x3000U, m_pFile);
     u32 nextAmount = m_CurrentRead.AmountRead + bytesRead;
     m_CurrentRead.AmountRead = nextAmount;
-    bool isComplete = false;
-    u32 currentAmount = m_CurrentRead.AmountRead;
     u32 currentLength = m_CurrentRead.Length;
+    u32 currentAmount = m_CurrentRead.AmountRead;
+    bool isComplete = (currentAmount == currentLength) || ((currentLength == 0x20U) && (currentAmount != 0U));
 
-    if ((currentAmount == currentLength) || ((currentLength == 0x20U) && (currentAmount != 0U)))
-    {
-        isComplete = true;
-    }
-    return !isComplete;
+    return isComplete ? 0 : 1;
 }
 
 /**

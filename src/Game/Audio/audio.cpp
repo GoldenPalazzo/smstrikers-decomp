@@ -2095,12 +2095,104 @@ eClassType cGameSFX::GetClassType() const
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0x3F8 | 0x80141ABC | size: 0x1EC
-//  */
-// void AudioStreamTrack::TrackManager<3>::OnMasterVolumeChange(MasterVolume::VOLUME_GROUP)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x3F8 | 0x80141ABC | size: 0x1EC
+ * TODO: 83.27% match - register allocation and stack-slot ordering differ across queue/fade iteration and volume conversion paths.
+ */
+template <>
+void AudioStreamTrack::TrackManager<3>::OnMasterVolumeChange(Audio::MasterVolume::VOLUME_GROUP VolumeGroup)
+{
+    unsigned long track;
+    float vol = gfVolumeGroups[VolumeGroup];
+
+    for (track = 0; track < this->m_EntryCount; track++)
+    {
+        AudioStreamTrack::StreamTrack* pTrack = this->m_pEntryLookup[track].pEntry;
+        DLListEntry<AudioStreamTrack::StreamTrack::QUEUED_STREAM>* qentry;
+        AudioStreamTrack::StreamTrack::QUEUED_STREAM* qs;
+
+        if (pTrack->m_QueuedStreams.m_Head != NULL)
+        {
+            qentry = nlDLRingGetStart(pTrack->m_QueuedStreams.m_Head);
+            qs = &qentry->m_data;
+        }
+        else
+        {
+            qs = NULL;
+        }
+
+        if (qs != NULL)
+        {
+            GCAudioStreaming::StereoAudioStream* pStream = qs->pStream;
+            DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>* fadeHead = m_FadeMgr.m_Fades.m_Head;
+            DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>* fadeIter = nlDLRingGetStart(m_FadeMgr.m_Fades.m_Head);
+            AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL* fadeCtrl = NULL;
+
+            while (fadeIter != NULL)
+            {
+                if (fadeIter->m_data.pStream == pStream)
+                {
+                    fadeCtrl = &fadeIter->m_data;
+                    break;
+                }
+
+                if (nlDLRingIsEnd(fadeHead, fadeIter) || fadeIter == NULL)
+                {
+                    fadeIter = NULL;
+                }
+                else
+                {
+                    fadeIter = fadeIter->m_next;
+                }
+            }
+
+            if (fadeCtrl == NULL)
+            {
+                if ((Audio::MasterVolume::VOLUME_GROUP)qs->VolGroup == VolumeGroup)
+                {
+                    unsigned long volume = 0x7F;
+                    s32 streamVol = (s32)(vol * (float)qs->StartVolume);
+                    if ((unsigned long)(streamVol & 0xff) <= 0x7F)
+                    {
+                        volume = streamVol;
+                    }
+
+                    if (pStream->m_State >= GCAudioStreaming::SS_Warming)
+                    {
+                        GCAudioStreaming::AudioStreamBuffer* buf;
+                        volatile unsigned long bufCounter = 0;
+                        if (pStream->m_BufferCount > 0)
+                        {
+                            buf = pStream->m_Buffers[0];
+                        }
+                        else
+                        {
+                            buf = NULL;
+                        }
+
+                        while (buf != NULL)
+                        {
+                            buf->m_Volume = (unsigned char)volume;
+                            sndStreamMixParameterEx(buf->m_StreamId, buf->m_Volume, buf->m_Pan, buf->m_SurroundPan, 0, 0);
+                            unsigned long ci = bufCounter + 1;
+                            bufCounter = ci;
+                            if (ci < pStream->m_BufferCount)
+                            {
+                                buf = pStream->m_Buffers[ci];
+                            }
+                            else
+                            {
+                                buf = NULL;
+                            }
+                        }
+                    }
+
+                    pStream->m_Volume = (unsigned char)volume;
+                }
+            }
+        }
+    }
+}
 
 /**
  * Offset/Address/Size: 0x5E4 | 0x80141CA8 | size: 0x54

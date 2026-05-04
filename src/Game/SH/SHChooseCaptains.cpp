@@ -66,13 +66,22 @@ TLInstance* FEFinder<TLInstance, 5>::_Find<TLSlide>(
 }
 #pragma dont_inline off
 
-// /**
-//  * Offset/Address/Size: 0x898 | 0x800D81E0 | size: 0x15C
-//  */
-// void FEFinder<TLInstance, 5>::_Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long,
-// unsigned long)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x898 | 0x800D81E0 | size: 0x15C
+ */
+template <>
+template <>
+TLInstance* FEFinder<TLInstance, 5>::_Find<TLInstance>(
+    TLInstance* pTopLevel, const unsigned long Level1, const unsigned long Level2,
+    const unsigned long Level3, const unsigned long Level4, const unsigned long Level5, const unsigned long Level6)
+{
+    void* pChild = FindItemByHashID<TLInstance>(pTopLevel->pChildren, Level1);
+    if (pChild == 0)
+        return 0;
+    if (Level2 == 0)
+        return (TLInstance*)pChild;
+    return _Find<TLInstance>(CastToSomeType<TLInstance>(pTopLevel->pChildren, pChild), Level2, Level3, Level4, Level5, Level6, 0);
+}
 
 // /**
 //  * Offset/Address/Size: 0x680 | 0x800D7FC8 | size: 0x15C
@@ -114,13 +123,22 @@ TLInstance* FEFinder<TLInstance, 5>::_Find<TLSlide>(
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0x2D4 | 0x800D7C1C | size: 0x15C
-//  */
-// void FEFinder<TLInstance, 2>::_Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long,
-// unsigned long)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x2D4 | 0x800D7C1C | size: 0x15C
+ */
+template <>
+template <>
+TLInstance* FEFinder<TLInstance, 2>::_Find<TLInstance>(
+    TLInstance* pTopLevel, const unsigned long Level1, const unsigned long Level2,
+    const unsigned long Level3, const unsigned long Level4, const unsigned long Level5, const unsigned long Level6)
+{
+    void* pChild = FindItemByHashID<TLInstance>(pTopLevel->pChildren, Level1);
+    if (pChild == 0)
+        return 0;
+    if (Level2 == 0)
+        return (TLInstance*)pChild;
+    return _Find<TLInstance>(CastToSomeType<TLInstance>(pTopLevel->pChildren, pChild), Level2, Level3, Level4, Level5, Level6, 0);
+}
 
 /**
  * Offset/Address/Size: 0x218 | 0x800D7B60 | size: 0x38

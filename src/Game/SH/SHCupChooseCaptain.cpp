@@ -141,8 +141,180 @@ void CupChooseCaptainSceneV2::SceneCreated()
 /**
  * Offset/Address/Size: 0x109C | 0x800DDF68 | size: 0x5B8
  */
-void CupChooseCaptainSceneV2::Update(float)
+void CupChooseCaptainSceneV2::Update(float fDeltaT)
 {
+    BaseSceneHandler::Update(fDeltaT);
+    mButtons.CentreButtons();
+
+    if (mCaptainImageMain->Update(true))
+    {
+        mNumImagesLoaded++;
+    }
+    if (mCaptainImageBG->Update(true))
+    {
+        mNumImagesLoaded++;
+    }
+    if (mCaptainImageFlash->Update(true))
+    {
+        mNumImagesLoaded++;
+    }
+
+    static const char* lastCaptainSelectSoundStrPlayed = 0;
+
+    FEPresentation* pres = m_pFEScene->m_pFEPackage->GetPresentation();
+    TLSlide* currentSlide = pres->m_currentSlide;
+
+    if (mRemainingSoundDelay > 0.0f)
+    {
+        mRemainingSoundDelay -= fDeltaT;
+        if (mRemainingSoundDelay <= 0.0f)
+        {
+            mRemainingSoundDelay = 0.0f;
+            FECharacterSound::PlayCaptainSlideIn(mCurrentCaptain);
+        }
+    }
+
+    if (currentSlide->m_time >= 1.0)
+    {
+        mTicker->Update(fDeltaT);
+    }
+    mCaptainGrid->UpdateSuperTeamIconState();
+
+    if (mAnimationDelay > 0.0f)
+    {
+        mAnimationDelay -= fDeltaT;
+        return;
+    }
+
+    switch (mState)
+    {
+    case CUP_STATE_CAPTAIN:
+    {
+        if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x100, false, NULL))
+        {
+            if (mCurrentCaptain != TEAM_MYSTERY)
+            {
+                ChangeState(mState, CUP_STATE_SK);
+                FEAudio::PlayAnimAudioEvent("sfx_accept_no_screen_change", false);
+                lastCaptainSelectSoundStrPlayed = FECharacterSound::PlayCaptainName(mCurrentCaptain);
+            }
+            else if (mCurrentCaptain == TEAM_MYSTERY && nlSingleton<GameInfoManager>::s_pInstance->IsSuperTeamUnlocked())
+            {
+                ChangeState(mState, CUP_STATE_READY);
+                FEAudio::PlayAnimAudioEvent("sfx_accept_no_screen_change", false);
+                lastCaptainSelectSoundStrPlayed = FECharacterSound::PlayCaptainName(mCurrentCaptain);
+            }
+            else
+            {
+                FEAudio::PlayAnimAudioEvent("sfx_deny", false);
+            }
+        }
+        else if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x200, false, NULL))
+        {
+            if (mIsSuperCup)
+            {
+                nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_CUP_OPTIONS_INITIAL_SUPER, SCREEN_BACK, true);
+            }
+            else
+            {
+                nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_CUP_OPTIONS_INITIAL_CUP, SCREEN_BACK, true);
+            }
+            FEAudio::PlayAnimAudioEvent("sfx_back", false);
+        }
+        else
+        {
+            mCaptainGrid->Update(FE_ALL_PADS);
+            if (mCaptainGrid->mHasChangedSinceLastUpdate)
+            {
+                mCurrentCaptain = mCaptainGrid->GetSelectedItem();
+                mComponents[0]->SetActiveSlide("Slide1");
+                UpdateCaptainName();
+                mComponents[0]->Update(0.0f);
+            }
+        }
+        break;
+    }
+    case CUP_STATE_SK:
+    {
+        if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x100, false, NULL))
+        {
+            ChangeState(mState, CUP_STATE_READY);
+            FEAudio::PlayAnimAudioEvent("sfx_accept_no_screen_change", false);
+            if (lastCaptainSelectSoundStrPlayed)
+            {
+                FEAudio::StopAnimAudioEvent(lastCaptainSelectSoundStrPlayed);
+                lastCaptainSelectSoundStrPlayed = NULL;
+            }
+            FECharacterSound::PlaySidekickName(mCurrentSK);
+        }
+        else if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x200, false, NULL))
+        {
+            ChangeState(mState, CUP_STATE_CAPTAIN);
+            FEAudio::PlayAnimAudioEvent("sfx_back_no_screen_change", false);
+        }
+        else
+        {
+            mSKGrid->Update(FE_ALL_PADS);
+            if (mSKGrid->mHasChangedSinceLastUpdate)
+            {
+                mCurrentSK = mSKGrid->GetSelectedItem();
+                mComponents[0]->SetActiveSlide("Slide2");
+                UpdateSKName();
+                mComponents[0]->Update(0.0f);
+            }
+        }
+        break;
+    }
+    case CUP_STATE_READY:
+    {
+        if (mNumImagesLoaded != 3)
+        {
+            mComponents[2]->SetActiveSlide(mComponents[2]->GetActiveSlide());
+            mComponents[2]->Update(0.0f);
+            mComponents[4]->SetActiveSlide(mComponents[4]->GetActiveSlide());
+            mComponents[4]->Update(0.0f);
+            if (mCurrentCaptain != TEAM_MYSTERY)
+            {
+                StartSidekickMiniHead(mCurrentSK);
+                mSidekickMiniHead->m_bVisible = true;
+            }
+            else
+            {
+                mSidekickMiniHead->m_bVisible = false;
+            }
+        }
+        else
+        {
+            if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x100, false, NULL))
+            {
+                GameInfoManager* const pGameInfo = nlSingleton<GameInfoManager>::s_pInstance;
+                pGameInfo->SetUserSelectedCupTeam(mCurrentCaptain);
+                pGameInfo->SetUserSelectedCupSidekick(mCurrentSK);
+                CreateLineup();
+                pGameInfo->IncreaseRoundNumber();
+                pGameInfo->SetResultsOfLastUserGame(RESULT_CUP_START);
+                nlSingleton<GameSceneManager>::s_pInstance->Pop();
+                SceneList nextScene = mIsSuperCup ? SCENE_SUPER_CUP_STANDINGS : SCENE_CUP_STANDINGS;
+                BaseSceneHandler* hubScene = nlSingleton<GameSceneManager>::s_pInstance->Push(nextScene, SCREEN_FORWARD, false);
+                *(u8*)((u8*)hubScene + 0x226) = 1;
+                FEAudio::PlayAnimAudioEvent("sfx_accept", false);
+            }
+            else if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x200, false, NULL))
+            {
+                if (mCurrentCaptain != TEAM_MYSTERY)
+                {
+                    ChangeState(mState, CUP_STATE_SK);
+                }
+                else
+                {
+                    ChangeState(mState, CUP_STATE_CAPTAIN);
+                }
+                FEAudio::PlayAnimAudioEvent("sfx_back_no_screen_change", false);
+            }
+        }
+        break;
+    }
+    }
 }
 
 /**
@@ -432,6 +604,7 @@ void CupChooseCaptainSceneV2::UpdateSKName()
  */
 void CupChooseCaptainSceneV2::ChangeState(CupChooseCaptainSceneV2::eCupCaptainState, CupChooseCaptainSceneV2::eCupCaptainState)
 {
+    FORCE_DONT_INLINE;
 }
 
 /**

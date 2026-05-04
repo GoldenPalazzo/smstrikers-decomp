@@ -487,16 +487,14 @@ stream_compare_done:
 
 /**
  * Offset/Address/Size: 0x9E0 | 0x801D9CA0 | size: 0x108
- * TODO: 93.5% match - MWCC emits addi r3,r3,8 + lwz 8(r3) for the second
- * texture check instead of addi r3,r3,4 + lwz 0xC(r3), shifting later offsets
  */
 bool GLRenderList::IsEmpty() const
 {
     if (m_unk_0x04 == GLVSort_Texture)
     {
-        for (int layer = 1; layer <= 7; layer++)
+        for (int layer = 0; layer < 7; layer++)
         {
-            if (texPacketTree[layer - 1]->m_Root != NULL)
+            if (texPacketTree[layer]->m_Root != NULL)
             {
                 return false;
             }

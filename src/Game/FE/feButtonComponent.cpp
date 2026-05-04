@@ -137,6 +137,9 @@ ButtonComponent::~ButtonComponent()
  */
 ButtonComponent::ButtonComponent()
 {
+    mButtonInstance = 0;
+    mNumButtons = 0;
+    mAlreadyCentred = false;
 }
 
 // /**

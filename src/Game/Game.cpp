@@ -223,12 +223,33 @@ _NodeAllocT& _TreeT::node_alloc()
 // }
 
 /**
+ * Offset/Address/Size: 0x0 | 0x8003EF84 | size: 0x80
+ */
+ScriptQuestionCache::~ScriptQuestionCache()
+{
+    Clear();
+    if ((_TreeT*)&mQuestionCacheMapSTD)
+    {
+        if ((_TreeT*)&mQuestionCacheMapSTD)
+        {
+            _TreeT::node* n = *(_TreeT::node**)&((_TreeT&)mQuestionCacheMapSTD).node_alloc();
+            if (n)
+            {
+                ((_TreeT&)mQuestionCacheMapSTD).destroy(n);
+            }
+        }
+    }
+}
+
+/**
  * Offset/Address/Size: 0xE0 | 0x8003F064 | size: 0x40
+ * TODO: 78.4% match - emits __ptmf_scall thunk instead of direct __tree::clear call
  */
 void ScriptQuestionCache::Clear()
 {
+    FORCE_DONT_INLINE;
     mQuestionCacheMap.Clear();
-    ((_TreeT&)mQuestionCacheMapSTD).clear();
+    (((_TreeT&)mQuestionCacheMapSTD).*(&_TreeT::clear))();
     mCacheHits = 0;
     mTotalLookups = 0;
 }
@@ -239,13 +260,6 @@ void ScriptQuestionCache::Clear()
 // void nlAVLTreeSlotPool<unsigned long, FuzzyVariant, DefaultKeyCompare<unsigned long> >::~nlAVLTreeSlotPool()
 // {
 // }
-
-/**
- * Offset/Address/Size: 0x0 | 0x8003EF84 | size: 0x80
- */
-ScriptQuestionCache::~ScriptQuestionCache()
-{
-}
 
 // /**
 //  * Offset/Address/Size: 0x0 | 0x8003EF4C | size: 0x38
@@ -995,16 +1009,13 @@ void cGame::CheckForGoal()
 
 /**
  * Offset/Address/Size: 0xDF0 | 0x8003D364 | size: 0x6C
- * TODO: 98.33% match - posX stays in f2 (target uses f1), cascading to
- * y/z temp register allocation (f1/f2 swap in distance math chain).
  */
 void cGame::BlowUpPowerups(const nlVector3& v3ExplosionPosition, float fExplosionRadius)
 {
-    float posX, posY, posZ;
+    float posY, posZ;
     fExplosionRadius *= fExplosionRadius;
     posZ = v3ExplosionPosition.f.z;
     posY = v3ExplosionPosition.f.y;
-    posX = v3ExplosionPosition.f.x;
 
     for (int i = 0; i < 25; i++)
     {
@@ -1014,7 +1025,7 @@ void cGame::BlowUpPowerups(const nlVector3& v3ExplosionPosition, float fExplosio
             float dx, dy, dz;
             dy = posY - pPowerup->m_v3Position.f.y;
             dz = posZ - pPowerup->m_v3Position.f.z;
-            dx = posX - pPowerup->m_v3Position.f.x;
+            dx = v3ExplosionPosition.f.x - pPowerup->m_v3Position.f.x;
 
             if (dx * dx + dy * dy + dz * dz < fExplosionRadius)
             {

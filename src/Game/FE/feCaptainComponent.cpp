@@ -235,6 +235,8 @@ void IChooseCaptain::NameComponent::SetCaptainLogo(const char* name)
  */
 IChooseCaptain::IChooseCaptain()
 {
+    mIsSinglePlayerInput = true;
+    mNumTotalPushedPlayers = 0;
 }
 
 /**

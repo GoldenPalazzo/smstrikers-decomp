@@ -449,4 +449,7 @@ void ScreenTransitionManager_stub()
 {
     NewAdapter<AVLTreeEntry<unsigned long, ScreenTransition*> > adapter;
     adapter.Delete(0);
+
+    BasicString<char, Detail::TempStringAllocator>* strings = new BasicString<char, Detail::TempStringAllocator>[1];
+    delete[] strings;
 }

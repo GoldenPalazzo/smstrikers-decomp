@@ -3,6 +3,9 @@
 
 GLInventory glInventory;
 
+void GLInventoryModelsDtor(clearing_GLInventory<glModel>*, int);
+#pragma alias GLInventoryModelsDtor "__dt__30clearing_GLInventory<7glModel>Fv"
+
 template <>
 clearing_GLInventory<glModel>::~clearing_GLInventory()
 {
@@ -97,22 +100,21 @@ void GLInventory::Delete()
 
     nlListContainer<void*>* fileData = NULL;
     nlListContainer<void*>** current = m_pFileData;
-    int level = 0;
+    int i = 0;
 
-    for (; level < 16; level++, current++)
+    for (; i < 16; i++, current++)
     {
-        ReleaseLevel(level);
+        ReleaseLevel(i);
 
         fileData = *current;
-
         if (fileData == NULL)
         {
-            goto after_file_data;
+            goto done_file_data;
         }
 
         if (fileData == NULL)
         {
-            goto delete_file_data;
+            goto free_file_data;
         }
 
         nlWalkList<ListEntry<void*>, ListContainerBase<void*, NewAdapter<ListEntry<void*> > > >(
@@ -123,12 +125,12 @@ void GLInventory::Delete()
         fileData->m_Head = NULL;
         fileData->m_Tail = NULL;
 
-    delete_file_data:
-        delete fileData;
+    free_file_data:
+        operator delete(fileData);
 
-    after_file_data:
+    done_file_data:
         delete ((freeing_GLInventory<nlChunk>**)current)[16];
-        delete ((clearing_GLInventory<glModel>**)current)[32];
+        GLInventoryModelsDtor(((clearing_GLInventory<glModel>**)current)[32], 1);
         delete ((deleting_GLInventory<GLShadowVolume>**)current)[48];
         delete ((deleting_GLInventory<GLTextureAnim>**)current)[64];
         delete ((deleting_GLInventory<GLVertexAnim>**)current)[80];

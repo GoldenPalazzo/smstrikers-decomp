@@ -52,20 +52,14 @@ static inline bool glConstantFindInTree(nlAVLTree<unsigned long, nlVector4, Defa
     return false;
 }
 
-/**
- * Offset/Address/Size: 0x0 | 0x801DF220 | size: 0x10C
- * TODO: 98.0% match - MWCC regalloc quirk: addi r0 + mr r4 instead of direct addi r4
- * for result = &vZero, and epilogue lwz r0/r31 restore order swapped (compiler variant)
- */
-nlVector4 glConstantGet(const char* constantName)
+static nlVector4 glConstantGet(unsigned long constantHash)
 {
-    unsigned long hash = nlStringHash(constantName);
     nlVector4* foundValue;
     nlVector4* result;
 
     for (int i = level; i >= 0; i--)
     {
-        if (glConstantFindInTree(constants[i], hash, foundValue))
+        if (glConstantFindInTree(constants[i], constantHash, foundValue))
         {
             result = foundValue;
             goto found;
@@ -81,6 +75,14 @@ found:
     }
 
     return *result;
+}
+
+/**
+ * Offset/Address/Size: 0x0 | 0x801DF220 | size: 0x10C
+ */
+nlVector4 glConstantGet(const char* constantName)
+{
+    return glConstantGet(nlStringHash(constantName));
 }
 
 /**

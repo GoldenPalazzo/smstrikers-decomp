@@ -2,20 +2,19 @@
 
 /**
  * Offset/Address/Size: 0x0 | 0x801EFF90 | size: 0x48
- * TODO: 88.9% match - prolog instruction scheduling: target has mr r7,r5 / lwz r4,0x44(r4)
- *   but compiler emits lwz r4,0x44(r4) / li r7,0. Likely -inline deferred context difference.
+ * TODO: 96.4% match - register allocation differs in setup and loop body
+ * (r4/r5/r6/r7 rotation) versus target.
  */
-AnimRetarget* AnimRetargetList::GetAnimRetargetWithSignature(const cSAnim* anim)
+static inline AnimRetarget* GetAnimRetargetWithSignature_ARL(AnimRetargetList* list, unsigned long target_hierarchy_signature)
 {
     AnimRetarget* result = NULL;
-    const unsigned long signature = anim->m_nHierarchySignature;
     AnimRetarget* p;
     long offset = 0;
 
-    for (long i = m_NumAnimRetargets; i > 0; i--)
+    for (long i = list->m_NumAnimRetargets; i > 0; i--)
     {
-        p = (AnimRetarget*)((char*)m_pAnimRetarget + offset);
-        if (signature == p->m_TargetHierarchySignature)
+        p = (AnimRetarget*)((char*)list->m_pAnimRetarget + offset);
+        if (target_hierarchy_signature == p->m_TargetHierarchySignature)
         {
             result = p;
             break;
@@ -24,6 +23,12 @@ AnimRetarget* AnimRetargetList::GetAnimRetargetWithSignature(const cSAnim* anim)
     }
 
     return result;
+}
+
+AnimRetarget* AnimRetargetList::GetAnimRetargetWithSignature(const cSAnim* anim)
+{
+    unsigned long target_hierarchy_signature = anim->m_nHierarchySignature;
+    return GetAnimRetargetWithSignature_ARL(this, target_hierarchy_signature);
 }
 
 static inline void* GetChunkData_ARL(nlChunk* chunk)
@@ -82,4 +87,5 @@ void AnimRetargetList::Initialize(nlChunk*)
         off += 0xC;
         i++;
     }
+
 }

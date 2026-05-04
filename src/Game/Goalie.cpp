@@ -3017,8 +3017,6 @@ void Goalie::InitActionSTSAttack()
 
 /**
  * Offset/Address/Size: 0x214C | 0x80044C48 | size: 0x100
- * TODO: 97.66% match - ownerX is kept in f3 through the fabs/threshold block,
- * so MWCC skips the ownerX reload from memory at 0x5C and shifts branch targets by 0x4.
  */
 bool Goalie::IsTeammateHoardingBall()
 {
@@ -3027,12 +3025,13 @@ bool Goalie::IsTeammateHoardingBall()
     {
         f32 myX = m_v3Position.f.x;
         f32 ownerX = pOwner->m_v3Position.f.x;
+        volatile cFielder* pOwnerVolatile = pOwner;
         cBall* pBall = g_pBall;
         if (myX * ownerX > 0.0f)
         {
             f32 threshold = (f32)fabs(myX) - 2.7f;
 
-            if ((f32)fabs(ownerX) > threshold || (f32)fabs(pBall->m_v3Position.f.x) > threshold)
+            if ((f32)fabs(pOwnerVolatile->m_v3Position.f.x) > threshold || (f32)fabs(pBall->m_v3Position.f.x) > threshold)
             {
                 f32 distThresh = 100.0f;
 

@@ -1023,9 +1023,6 @@ long MemCard::DeleteFile(const char* FileName, const MemCardFunctor& Callback)
 
 /**
  * Offset/Address/Size: 0x860 | 0x801C9FD0 | size: 0xD0
- * TODO: 91.7% match - MWCC struct copy scheduling: compiler pipelines loads
- * early in 24-byte MemCardFunctor copy (lwz before preceding stw), producing
- * 8 instruction scheduling diffs. Same issue affects InternalWriteFile.
  */
 long MemCard::InternalReadFile(MC_FILE* pFile, void* Buffer, unsigned long Length, unsigned long StartAt, const MemCardFunctor& Callback)
 {
@@ -1034,12 +1031,39 @@ long MemCard::InternalReadFile(MC_FILE* pFile, void* Buffer, unsigned long Lengt
         return -100;
     }
 
-    unsigned long* dst = (unsigned long*)&m_CB[7];
-    const unsigned long* src = (const unsigned long*)&Callback;
-    for (int i = 0; i < 6; i++)
+    struct FunctorWords
     {
-        dst[i] = src[i];
-    }
+        unsigned long w0;
+        unsigned long w1;
+        unsigned long w2;
+        unsigned long w3;
+        unsigned long w4;
+        unsigned long w5;
+    };
+
+    volatile FunctorWords* dst = (volatile FunctorWords*)&m_CB[7];
+    const volatile FunctorWords* src = (const volatile FunctorWords*)&Callback;
+    unsigned long b;
+    unsigned long a;
+    unsigned long e;
+    unsigned long d;
+    unsigned long c;
+
+    a = src->w0;
+    b = src->w1;
+    dst->w0 = a;
+    dst->w1 = b;
+
+    d = src->w2;
+    e = src->w3;
+    dst->w2 = d;
+    dst->w3 = e;
+
+    b = src->w4;
+    a = src->w5;
+    dst->w4 = b;
+    dst->w5 = a;
+
     m_State = IS_READING;
     m_CardState = CS_READING;
 

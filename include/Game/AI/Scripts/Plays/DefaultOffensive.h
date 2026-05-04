@@ -15,12 +15,13 @@ public:
     void DefaultOffensivePlay(cDecisionEntity*);
     void DoPassing(float, cDecisionEntity*);
     void GoodBallCarrier(cFielder*);
-    void InGoodWindupPosition(cFielder*);
+    static FuzzyVariant InGoodWindupPosition(cFielder*);
     void CutAndBreak(cFielder*);
     void DoShooting(float, cDecisionEntity*);
     static FuzzyVariant FurthestBackOnMyTeam(cFielder*);
     void UsePowerupOffensive(float, cDecisionEntity*);
     static FuzzyVariant GetPowerupTargetOffensive(cTeam*);
+    static FuzzyVariant InDangerDelayed(cFielder*);
 };
 
 #endif // _DEFAULTOFFENSIVE_H_

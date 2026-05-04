@@ -228,7 +228,6 @@ void ___blank(const char*, ...)
 
 /**
  * Offset/Address/Size: 0x187C | 0x801C902C | size: 0x108
- * TODO: 99.39% match - r3/r4 register swap in max(m_StreamLength, m_StreamPos) comparison section
  */
 void GCAudioStreaming::AudioStream::_HdrReadCB(nlFile* pFile, void* pData, unsigned int Length, unsigned long User)
 {
@@ -264,16 +263,19 @@ void GCAudioStreaming::AudioStream::_HdrReadCB(nlFile* pFile, void* pData, unsig
     else
     {
         AudioStreamBuffer* pBuffer;
+        unsigned long streamLength;
+        AudioStream* pStream;
         sDSPADPCM* pHdr = (sDSPADPCM*)((unsigned long)pData - Length);
 
         ((AudioStream*)pCBInfo->m_next)->m_StreamLength = (pHdr->num_samples / 14) * 8;
 
-        unsigned long streamLength = ((AudioStream*)pCBInfo->m_next)->m_StreamLength;
-        if (((AudioStream*)pCBInfo->m_next)->m_StreamPos >= streamLength)
+        pStream = (AudioStream*)pCBInfo->m_next;
+        streamLength = pStream->m_StreamLength;
+        if (pStream->m_StreamPos >= streamLength)
         {
-            streamLength = ((AudioStream*)pCBInfo->m_next)->m_StreamPos;
+            streamLength = pStream->m_StreamPos;
         }
-        ((AudioStream*)pCBInfo->m_next)->m_StreamLength = streamLength;
+        pStream->m_StreamLength = streamLength;
 
         ((AudioStream*)pCBInfo->m_next)->m_OldLength = ((AudioStream*)pCBInfo->m_next)->m_StreamLength;
 
@@ -291,25 +293,44 @@ void GCAudioStreaming::AudioStream::_HdrReadCB(nlFile* pFile, void* pData, unsig
  */
 void GCAudioStreaming::AudioStream::_WarmReadCB(nlFile*, void*, unsigned int Length, unsigned long User)
 {
-    if (((AudioStream*)((READ_CB_INFO*)User)->m_next)->m_Flags & (1 << SF_SeriousStop))
+    READ_CB_INFO* pCBInfo = (READ_CB_INFO*)User;
+    AudioStream* pStream = (AudioStream*)pCBInfo->m_next;
+
+    bool serious;
+    if (pStream->m_Flags & (1 << SF_SeriousStop))
     {
-        AudioStream* pStream = (AudioStream*)((READ_CB_INFO*)User)->m_next;
         switch (pStream->m_State)
         {
+        case SS_New:
+        case SS_Initd:
+            break;
         case SS_Warming:
             pStream->m_State = SS_Warm;
             break;
+        case SS_Warm:
+        case SS_Playing:
+            break;
         }
-        ((READ_CB_INFO*)User)->m_next = READ_CB_INFO::s_AllocPool.m_pFree;
-        READ_CB_INFO::s_AllocPool.m_pFree = (READ_CB_INFO*)User;
-        return;
+        serious = true;
     }
-    unsigned long samples = (Length >> 3);
-    samples *= 0xE;
-    sndStreamARAMUpdate(((READ_CB_INFO*)User)->pBuffer->m_StreamId, 0, samples, 0, 0);
-    ((AudioStream*)((READ_CB_INFO*)User)->m_next)->WarmReadDone(((READ_CB_INFO*)User)->pBuffer);
-    ((READ_CB_INFO*)User)->m_next = READ_CB_INFO::s_AllocPool.m_pFree;
-    READ_CB_INFO::s_AllocPool.m_pFree = (READ_CB_INFO*)User;
+    else
+    {
+        serious = false;
+    }
+
+    if (serious)
+    {
+        pCBInfo->m_next = READ_CB_INFO::s_AllocPool.m_pFree;
+        READ_CB_INFO::s_AllocPool.m_pFree = pCBInfo;
+    }
+    else
+    {
+        unsigned long samples = (Length >> 3) * 0xE;
+        sndStreamARAMUpdate(pCBInfo->pBuffer->m_StreamId, 0, samples, 0, 0);
+        ((AudioStream*)pCBInfo->m_next)->WarmReadDone(pCBInfo->pBuffer);
+        pCBInfo->m_next = READ_CB_INFO::s_AllocPool.m_pFree;
+        READ_CB_INFO::s_AllocPool.m_pFree = pCBInfo;
+    }
 }
 
 /**

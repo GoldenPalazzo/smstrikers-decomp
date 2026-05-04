@@ -9,10 +9,6 @@
 /* 80366410-803664CC 360D50 00BC+00 0/0 1/1 0/0 .text            __copy_longs_aligned */
 void __copy_longs_aligned(void* dst, const void* src, size_t n)
 {
-    unsigned long* dstp;
-    unsigned long* srcp;
-    unsigned long a;
-    unsigned long b;
     unsigned long i;
 
     i = (-(unsigned long)dst) & 3;
@@ -25,52 +21,53 @@ void __copy_longs_aligned(void* dst, const void* src, size_t n)
         n -= i;
 
         do
+        {
             deref_auto_inc(cpd) = deref_auto_inc(cps);
-        while (--i);
+        } while (--i);
     }
 
-    dstp = ((unsigned long*)(cpd + 1)) - 1;
-    srcp = ((unsigned long*)(cps + 1)) - 1;
+    src = ((unsigned long*)(cps + 1)) - 1;
+    dst = ((unsigned long*)(cpd + 1)) - 1;
 
     i = n >> 5;
 
     if (i)
+    {
         do
         {
-            a = *++srcp;
-            b = *++srcp;
-            *++dstp = a;
-            a = *++srcp;
-            *++dstp = b;
-            b = *++srcp;
-            *++dstp = a;
-            a = *++srcp;
-            *++dstp = b;
-            b = *++srcp;
-            *++dstp = a;
-            a = *++srcp;
-            *++dstp = b;
-            b = *++srcp;
-            *++dstp = a;
-            *++dstp = b;
+            deref_auto_inc(lpd) = deref_auto_inc(lps);
+            deref_auto_inc(lpd) = deref_auto_inc(lps);
+            deref_auto_inc(lpd) = deref_auto_inc(lps);
+            deref_auto_inc(lpd) = deref_auto_inc(lps);
+            deref_auto_inc(lpd) = deref_auto_inc(lps);
+            deref_auto_inc(lpd) = deref_auto_inc(lps);
+            deref_auto_inc(lpd) = deref_auto_inc(lps);
+            deref_auto_inc(lpd) = deref_auto_inc(lps);
         } while (--i);
+    }
 
     i = (n & 31) >> 2;
 
     if (i)
+    {
         do
-            *++dstp = *++srcp;
-        while (--i);
+        {
+            deref_auto_inc(lpd) = deref_auto_inc(lps);
+        } while (--i);
+    }
 
-    cps = ((unsigned char*)(srcp + 1)) - 1;
-    cpd = ((unsigned char*)(dstp + 1)) - 1;
+    cps = ((unsigned char*)(lps + 1)) - 1;
+    cpd = ((unsigned char*)(lpd + 1)) - 1;
 
     n &= 3;
 
     if (n)
+    {
         do
+        {
             deref_auto_inc(cpd) = deref_auto_inc(cps);
-        while (--n);
+        } while (--n);
+    }
 
     return;
 }

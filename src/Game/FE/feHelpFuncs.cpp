@@ -14,6 +14,8 @@
 #include "NL/nlPrint.h"
 #include "NL/nlString.h"
 #include "NL/nlBasicString.h"
+#include "NL/MemAlloc.h"
+#include "PowerPC_EABI_Support/MSL_C/MSL_Common/direct_io.h"
 
 extern nlColour MenuHighliteColour;
 
@@ -1103,12 +1105,72 @@ void TakeGameMemSnapshot::ResetTimers()
     gTimeElapsed = 0.0f;
 }
 
-// /**
-//  * Offset/Address/Size: 0x130 | 0x800A31EC | size: 0x504
-//  */
-// void TakeGameMemSnapshot::WriteToDisk()
-// {
-// }
+/**
+ * Offset/Address/Size: 0x130 | 0x800A31EC | size: 0x504
+ * TODO: 89.66% match - r29/r30 register swap for pFile after third fopen
+ */
+static const char* StadiumNames[7] = {
+    "luigi",
+    "dk",
+    "daisy",
+    "waluigi",
+    "mario",
+    "peach",
+    "bowser",
+};
+
+namespace TakeGameMemSnapshot
+{
+template <typename StringType, typename T1, typename T2, typename T3>
+StringType Format(const StringType& fmt, const T1& a, const T2& b, const T3& c);
+}
+
+void TakeGameMemSnapshot::WriteToDisk()
+{
+    const char* filename = "gamesnapshot.txt";
+    FILE* pFile = fopen(filename, "r");
+
+    if (!pFile)
+    {
+        pFile = fopen(filename, "wt");
+        BasicString<char, ::Detail::TempStringAllocator> header;
+        header.AppendInPlace("hcaptain,hsidekick,acaptain,asidekick,stadium,largestfree,freevm,largestfreevm\n");
+        fwrite(header.c_str(), 1, header.m_data ? header.m_data->mSize - 1 : 0, pFile);
+    }
+    fclose(pFile);
+
+    pFile = fopen(filename, "at");
+
+    BasicString<char, ::Detail::TempStringAllocator> data;
+    data.AppendInPlace(NameTeamTable[GameInfoManager::GetInstance()->GetTeam(0)].name);
+    data.AppendInPlace(",");
+
+    eSidekickID sk0 = GameInfoManager::GetInstance()->GetSidekick(0);
+    data.AppendInPlace((sk0 == (eSidekickID)-2) ? "myst_sidekick" : NameSidekickTable[sk0].name);
+    data.AppendInPlace(",");
+
+    data.AppendInPlace(NameTeamTable[GameInfoManager::GetInstance()->GetTeam(1)].name);
+    data.AppendInPlace(",");
+
+    eSidekickID sk1 = GameInfoManager::GetInstance()->GetSidekick(1);
+    data.AppendInPlace((sk1 == (eSidekickID)-2) ? "myst_sidekick" : NameSidekickTable[sk1].name);
+    data.AppendInPlace(",");
+
+    data.AppendInPlace(StadiumNames[GameInfoManager::GetInstance()->GetStadium()]);
+    data.AppendInPlace(",");
+
+    fwrite(data.c_str(), 1, data.m_data ? data.m_data->mSize - 1 : 0, pFile);
+
+    BasicString<char, ::Detail::TempStringAllocator> stats;
+    BasicString<char, ::Detail::TempStringAllocator> fmt("{0},{1},{2}\n");
+    unsigned long largestBlock = nlVirtualLargestBlock();
+    unsigned int totalFree = nlVirtualTotalFree();
+    unsigned int stdLargest = StandardAllocator.LargestFreeBlock();
+    stats = Format<BasicString<char, ::Detail::TempStringAllocator>, unsigned long, unsigned int, unsigned int>(fmt, largestBlock, totalFree, stdLargest);
+
+    fwrite(stats.c_str(), 1, stats.m_data ? stats.m_data->mSize - 1 : 0, pFile);
+    fclose(pFile);
+}
 
 /**
  * Offset/Address/Size: 0xF0 | 0x800A31AC | size: 0x40

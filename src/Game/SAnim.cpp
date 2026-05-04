@@ -394,9 +394,8 @@ void cSAnim::Destroy()
 
 /**
  * Offset/Address/Size: 0x2EC | 0x801E9500 | size: 0xE0
- * TODO: 94.0% match - register allocation diffs (r5/r6 for base ptr, f1/f3 for fRealIndex,
- * lhz vs lhzx access pattern). Pointer approach gives best match but differs from target's
- * indexed addressing. -inline deferred scheduling artifact.
+ * TODO: 98.61% match - remaining diffs are float conversion stack slot ordering
+ * and f0/f1 register assignment in the interpolation tail.
  */
 void cSAnim::GetRootRot(float fTime, unsigned short* pRootRot) const
 {
@@ -413,11 +412,10 @@ void cSAnim::GetRootRot(float fTime, unsigned short* pRootRot) const
 
         fRealIndex = fTime * (m_nNumRootKeys - 1);
         nIndex = (int)fRealIndex;
-        unsigned short val0 = m_pRootRot[nIndex];
-        unsigned short* p = m_pRootRot + nIndex;
-        float fraction = fRealIndex - nIndex;
-        s16 diff = (s16)(p[1] - val0);
-        *pRootRot = val0 + (int)(fraction * diff);
+        unsigned short* pRoots = m_pRootRot;
+        unsigned short val0 = pRoots[nIndex];
+        s16 diff = (s16)(pRoots[nIndex + 1] - val0);
+        *pRootRot = val0 + (int)((fRealIndex - (float)nIndex) * diff);
         return;
     }
     *pRootRot = 0;
