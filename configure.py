@@ -1515,7 +1515,7 @@ config.libs = [
             # Dolphin/MTX
             Object(Matching, "Dolphin/mtx/mtx.c", extra_cflags=["-inline auto", "-char signed"]),
             Object(NonMatching, "Dolphin/mtx/mtx44.c", extra_cflags=["-inline auto", "-char signed"]),
-            Object(NonMatching, "Dolphin/mtx/quat.c", extra_cflags=["-inline auto", "-char signed", "-fp_contract off"]),
+            Object(Matching, "Dolphin/mtx/quat.c", extra_cflags=["-inline deferred", "-char signed", "-fp_contract off"]),
 
             # Dolphin/PAD
             Object(Matching, "Dolphin/pad/Padclamp.c", extra_cflags=["-inline auto"]),
