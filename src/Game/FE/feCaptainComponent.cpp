@@ -244,6 +244,23 @@ IChooseCaptain::IChooseCaptain()
  */
 IChooseCaptain::~IChooseCaptain()
 {
+    int j;
+    int i;
+    IChooseCaptain* col;
+    IChooseCaptain* row;
+
+    for (i = 0, row = this; i < 2; i++, row = (IChooseCaptain*)((u8*)row + 0xC))
+    {
+        for (j = 0, col = row; j < 3; j++, col = (IChooseCaptain*)((u8*)col + 4))
+        {
+            delete col->mAsyncImage[0][0];
+        }
+    }
+
+    delete mCaptainGridComponents[0];
+    delete mCaptainGridComponents[1];
+    delete mSidekickGridComponents[0];
+    delete mSidekickGridComponents[1];
 }
 
 /**

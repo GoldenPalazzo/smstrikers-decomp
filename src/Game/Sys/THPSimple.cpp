@@ -274,13 +274,16 @@ void __THPAsyncCancelCB(nlFile*, void*, unsigned int, unsigned long, void (*)(nl
 static inline void update_read_idx()
 {
     register s32 readIdx = SimpleControl.readIdx;
-    readIdx = (readIdx + 1 >= NumReadBuffers) ? 0 : readIdx + 1;
+    if (readIdx + 1 >= NumReadBuffers)
+        readIdx = 0;
+    else
+        readIdx = readIdx + 1;
     SimpleControl.readIdx = readIdx;
 }
 
 /**
  * Offset/Address/Size: 0xD0C | 0x801CCC70 | size: 0x160
- * TODO: 99.49% match - remaining register swap in readIdx/nextSize update (lwzx/andc temp assignment)
+ * TODO: 99.89% match - callback pointer immediate uses symbol @ha/@l instead of section .text@ha/@l
  */
 void __THPSimpleDVDCallback(nlFile* file, void* buffer, unsigned int bytesRead, unsigned long offset)
 {

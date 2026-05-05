@@ -423,9 +423,21 @@ float UserControlled(cFielder* pFielder)
 
 /**
  * Offset/Address/Size: 0x5838 | 0x800842C0 | size: 0x168
- * TODO: 98.04% match - remaining diffs are GetClosestPoint temporary stack slot
- * ordering (0x10/0x1C) and float register allocation around second distance calc.
+ * TODO: 99.89% match - remaining diff is fmuls operand order on fScaledDistance.
  */
+static float InPassingLane(cFielder* pFielder, cPlayer* pPassTarget, float fPotentialBallSpeed)
+{
+    nlVector3 v3BetweenIntercept = GetClosestPointOnLineABFromPointC(g_pScriptBall->m_v3Position, pPassTarget->m_v3Position, pFielder->m_v3Position);
+
+    float dy1 = g_pScriptBall->m_v3Position.f.y - v3BetweenIntercept.f.y;
+    float dx1 = g_pScriptBall->m_v3Position.f.x - v3BetweenIntercept.f.x;
+    float fPossibleFielderDistance = (nlSqrt(dx1 * dx1 + dy1 * dy1, true) / fPotentialBallSpeed) * pFielder->m_pTweaks->fRunningSpeed;
+
+    float dx2 = pFielder->m_v3Position.f.x - v3BetweenIntercept.f.x;
+    float dy2 = pFielder->m_v3Position.f.y - v3BetweenIntercept.f.y;
+    return NormalizeVal(nlSqrt(dx2 * dx2 + dy2 * dy2, true), fPossibleFielderDistance + ((GameTweaks*)g_pGame->m_pFuzzyTweaks)->fShellExplodeChance, fPossibleFielderDistance);
+}
+
 float InPassingLane(cFielder* pFielder)
 {
     if (pFielder == NULL)
@@ -450,21 +462,9 @@ float InPassingLane(cFielder* pFielder)
         return 0.0f;
     }
 
-    nlPolar polar;
-    nlCartesianToPolar(polar, g_pScriptBall->m_v3Velocity.f.x, g_pScriptBall->m_v3Velocity.f.y);
-    float fVelocityMagnitude = polar.r;
-
-    nlVector3 closestPoint = GetClosestPointOnLineABFromPointC(g_pScriptBall->m_v3Position, pPassingTarget->m_v3Position, pFielder->m_v3Position);
-
-    float fScaledDistance;
-    float fClosestY = closestPoint.f.y;
-    float dy1 = g_pScriptBall->m_v3Position.f.y - fClosestY;
-    float dx1 = g_pScriptBall->m_v3Position.f.x - closestPoint.f.x;
-    fScaledDistance = (nlSqrt(dx1 * dx1 + dy1 * dy1, true) / fVelocityMagnitude) * pFielder->m_pTweaks->fRunningSpeed;
-
-    float dy2 = pFielder->m_v3Position.f.y - fClosestY;
-    float dx2 = pFielder->m_v3Position.f.x - closestPoint.f.x;
-    return NormalizeVal(nlSqrt(dx2 * dx2 + dy2 * dy2, true), fScaledDistance + ((GameTweaks*)g_pGame->m_pFuzzyTweaks)->fShellExplodeChance, fScaledDistance);
+    nlPolar pBallSpeedPolar;
+    nlCartesianToPolar(pBallSpeedPolar, g_pScriptBall->m_v3Velocity.f.x, g_pScriptBall->m_v3Velocity.f.y);
+    return InPassingLane(pFielder, pPassingTarget, pBallSpeedPolar.r);
 }
 
 /**

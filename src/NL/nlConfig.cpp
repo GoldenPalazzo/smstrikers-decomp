@@ -433,8 +433,8 @@ void Config::Set(const char* tag, bool value)
 
 /**
  * Offset/Address/Size: 0x1E14 | 0x801D4A78 | size: 0x120
- * TODO: 92.5% match - r28/r29 register swap in probe/copy path (idx/offset/tvp and strStart/tvp->tag),
- * hash loop emits pre-call extsb/add scheduling differences, copy loop branch shape (bge vs blt+b),
+ * TODO: 95.35% match - r28/r29 register swap in probe/copy path (idx/offset/tvp and dest/tvp->tag),
+ * hash loop emits pre-call extsb/add scheduling differences
  */
 void Config::Set(const char* tag, int value)
 {
@@ -467,24 +467,22 @@ void Config::Set(const char* tag, int value)
 
     if (tvp->tag == NULL)
     {
-        char* strStart = mStringEnd;
-        char ch;
+        char* dest = mStringEnd;
+        s32 ch;
         while ((ch = *tag) != 0)
         {
-            if (mStringEnd - mStringMemory < 0x27FF)
+            if (mStringEnd - mStringMemory >= 0x27FF)
             {
-                *mStringEnd = nlToUpper(ch);
-                tag++;
-                mStringEnd++;
+                goto done;
             }
-            else
-            {
-                break;
-            }
+            *mStringEnd = nlToUpper((char)ch);
+            tag++;
+            mStringEnd++;
         }
-        *mStringEnd = '\0';
+        *mStringEnd = 0;
         mStringEnd++;
-        tvp->tag = strStart;
+    done:
+        tvp->tag = dest;
     }
 }
 

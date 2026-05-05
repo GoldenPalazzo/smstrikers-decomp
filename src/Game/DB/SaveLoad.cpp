@@ -2220,8 +2220,8 @@ long SaveLoad::StartMemoryCardIDCheck(int slot, void (*callback)(long))
 
 /**
  * Offset/Address/Size: 0x264 | 0x80189BC0 | size: 0x12C
- * TODO: 77.9% match - extra cmpwi/ble loop-guard checks remain in both block
- * counting loops, and register allocation still differs in the icon header size
+ * TODO: 79.87% match - extra cmpwi/ble loop-guard checks remain in both block
+ * counting loops, and register allocation still differs in the icon header-size
  * arithmetic chain.
  */
 #pragma push
@@ -2235,11 +2235,8 @@ int SaveLoad::GetSaveBlockSize(int)
     dataSize = (u32)(dataSize + 0x1FFF) >> 13;
     if (origSize > 0)
     {
-        while (dataSize > 0)
-        {
+        for (; dataSize > 0; dataSize--)
             numBlocks++;
-            dataSize--;
-        }
     }
 
     MemCard::ICON_CONFIG IconCfg;
@@ -2249,23 +2246,31 @@ int SaveLoad::GetSaveBlockSize(int)
     IconCfg.IconAnimType = 0;
     memset(IconCfg.IconSpeeds, 0, 8);
     memset(&IconCfg, 0, sizeof(MemCard::ICON_CONFIG));
+
     int negOne = -1;
-    int iconFormat = 2;
     int iconCount = 1;
+    int iconFormat = 2;
     int speed = 3;
-    int iconPixelSize = iconFormat << 10;
+
     IconCfg.IconCount = iconCount;
     negOne = ~(iconCount | negOne);
+
     int clutSize = 0x200;
-    int iconDataSize = iconCount * iconPixelSize;
+    int iconDataSize = iconCount * (iconFormat << 10);
+
     IconCfg.IconFormat = iconFormat;
+
     int iconClutMask = negOne >> 31;
     int bannerClutMask = negOne >> 31;
+
     IconCfg.IconSpeeds[0] = speed;
+
     int iconClutResult = clutSize & iconClutMask;
     int bannerDataSize = iconFormat * 0xC00;
     int bannerClutResult = clutSize & bannerClutMask;
+
     IconCfg.BannerFormat = iconFormat;
+
     int total = iconClutResult + bannerDataSize;
     total += iconDataSize;
     total += bannerClutResult;
@@ -2274,11 +2279,8 @@ int SaveLoad::GetSaveBlockSize(int)
     dataSize = (u32)(origSize + 0x1FFF) >> 13;
     if (origSize > 0)
     {
-        while (dataSize > 0)
-        {
+        for (; dataSize > 0; dataSize--)
             numBlocks++;
-            dataSize--;
-        }
     }
 
     return numBlocks;

@@ -49,6 +49,9 @@ Bowser::Bowser(cSHierarchy& pHierarchy, int nModelID, PhysicsNPC& mpPhysObj, cIn
  */
 Bowser::~Bowser()
 {
+    SetTiltParameters(0.0f);
+    delete mpHeadTrack;
+    delete m_pCharacterSFX;
 }
 
 extern "C" cPN_Blender* __ct__11cPN_BlenderFP9cPoseNodeP9cPoseNodef(cPN_Blender*, cPoseNode*, cPoseNode*, float);

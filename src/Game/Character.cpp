@@ -942,37 +942,38 @@ s16 cCharacter::GetFacingDeltaToPosition(const nlVector3& position)
 /**
  * Offset/Address/Size: 0x1E5C | 0x8000FDA8 | size: 0x148
  */
-s16 cCharacter::CalcAnimTurnAdjust(unsigned short param1, unsigned short param2, int animID)
+s16 cCharacter::CalcAnimTurnAdjust(unsigned short aFacingDirection, unsigned short aDesiredFacingDirection, int nAnimID)
 {
-    cSAnim* anim = m_pAnimInventory->GetAnim(animID);
-    cPN_SAnimController* controller = AllocateSAnimController();
-    if (controller != nullptr)
+    unsigned short aAnimRot;
+    unsigned short aFinalFacingDirection;
+    cSAnim* pAnim = m_pAnimInventory->GetAnim(nAnimID);
+    cPN_SAnimController* pAnimController = AllocateSAnimController();
+
+    if (pAnimController != NULL)
     {
-        const AnimRetarget* retarget = nullptr;
-        if (m_pAnimRetargetList != nullptr)
+        const AnimRetarget* pAnimRetarget = NULL;
+        if (m_pAnimRetargetList != NULL)
         {
-            retarget = m_pAnimRetargetList->GetAnimRetargetWithSignature(anim);
+            pAnimRetarget = m_pAnimRetargetList->GetAnimRetargetWithSignature(pAnim);
         }
 
-        bool mirrored = m_pAnimInventory->GetMirrored(animID);
-        ePlayMode playMode = m_pAnimInventory->GetPlayMode(animID);
+        bool bMirror = m_pAnimInventory->GetMirrored(nAnimID);
+        ePlayMode playMode = m_pAnimInventory->GetPlayMode(nAnimID);
 
-        controller = new (controller) cPN_SAnimController(anim, retarget, playMode, nullptr, 0, mirrored);
+        pAnimController = new (pAnimController) cPN_SAnimController(pAnim, pAnimRetarget, playMode, NULL, 0, bMirror);
     }
 
-    controller->m_fPrevTime = controller->m_fTime; // 0.0f
-    controller->m_fTime = 0.0f;
-    controller->m_fPrevTime = controller->m_fTime; // 0.0f
-    controller->m_fTime = 1.0f;
+    pAnimController->m_fPrevTime = pAnimController->m_fTime;
+    pAnimController->m_fTime = 0.0f;
+    pAnimController->m_fPrevTime = pAnimController->m_fTime;
+    pAnimController->m_fTime = 1.0f;
 
-    unsigned short rootRot;
-    controller->GetRootRot(&rootRot);
+    pAnimController->GetRootRot(&aAnimRot);
+    aFinalFacingDirection = aFacingDirection + aAnimRot;
 
-    unsigned short combined = param1 + rootRot;
+    delete pAnimController;
 
-    delete controller;
-
-    return (s16)(param2 - combined);
+    return (signed short)(aDesiredFacingDirection - aFinalFacingDirection);
 }
 
 /**

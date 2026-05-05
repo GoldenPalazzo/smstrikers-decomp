@@ -57,13 +57,6 @@ Everybody can and is warmly welcome to contribute to this project! Whether you'r
 **Partial matches welcome:**
 Don’t worry if your function or class translation isn’t a perfect match yet — partial matches are still valuable. They can help others understand the general structure of the codebase, and getting all the details 100% correct becomes easier with more routine and context.
 
-**File coordination:**
-To prevent double work, we use a [Trello board](https://trello.com/b/dGvF3W3v/super-mario-striker) to track which files are currently in progress.
-The setup is minimal:
-
-* Move a file to **"In Progress"** when you start working on it.
-* Request access to the board, and you’ll be added as a member.
-
 **Code style:**
 Please run [`clang-format`](https://clang.llvm.org/docs/ClangFormat.html) to ensure minimal, consistent formatting before committing.
 
@@ -79,6 +72,15 @@ This will create a C++ source and header file. After generation:
 * Clean up and fix `#include` statements.
 * Remove function definitions from the generated templates.
 * Move the files to the proper location in the `src` and `include` hierarchy.
+
+**Dumping DWARF info:**
+If you have legally acquired the game yourself and placed the original debug ELF at `orig/G4QE01/MarioSoccerR.elf`, you can dump its DWARF debug info into a human-readable `dwarf.txt` (used by some helper scripts, e.g. `auto_class_gen.py`):
+
+```bash
+./tools/scripts/dump_dwarf.sh
+```
+
+The script writes `dwarf.txt` to the project root. Run `python configure.py && ninja` at least once beforehand so that `build/tools/dtk` is available.
 
 **Learning together:**
 I'm learning myself throughout this process, so I'm very open to adapting and improving things for this project. Don't hesitate to suggest better approaches or point out areas that could be enhanced.

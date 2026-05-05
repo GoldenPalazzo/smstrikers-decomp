@@ -10,6 +10,17 @@
 #include "Game/OverlayHandlerInGameText.h"
 #include "Game/FE/feNSNMessenger.h"
 #include "Game/OverlayHandlerGoal.h"
+#include "Game/Audio/AudioLoader.h"
+#include "Game/Render/Presentation.h"
+#include "Game/ResetTask.h"
+#include "Game/FE/Overlay/OverlayHandlerSummary.h"
+#include "Game/Goalie.h"
+#include "NL/nlConfig.h"
+
+extern bool g_e3_Build;
+
+static bool isGoalScored;
+static bool isSlowMotionOn;
 
 // nlSingleton<OverlayManager> OverlayManager::s_pInstance;
 //
@@ -109,8 +120,149 @@ void OverlayManager::Update(float fDeltaT)
 /**
  * Offset/Address/Size: 0x330 | 0x800C815C | size: 0x638
  */
-void OverlayManager::FEEventHandler(Event*, void*)
+void OverlayManager::FEEventHandler(Event* pEvent, void*)
 {
+    if (nlTaskManager::m_pInstance->m_CurrState == 4)
+        return;
+
+    switch (pEvent->m_uEventID)
+    {
+    case 3:
+    {
+        if (g_e3_Build && nlSingleton<GameInfoManager>::s_pInstance->IsInDemoMode())
+        {
+            bool notimeout = GetConfigBool(Config::Global(), "notimeout", false);
+            if (!notimeout)
+            {
+                RESET_STATE state = ResetTask::s_ResetState;
+                if (state == RS_RUNNING)
+                    state = RS_STARTRESET;
+                ResetTask::s_ResetState = state;
+                return;
+            }
+        }
+        AudioLoader::StartFEStream("FE_Game_Over", true, "Music");
+        SummaryOverlay* summaryOverlay = (SummaryOverlay*)nlSingleton<OverlayManager>::s_pInstance->Push(OVERLAY_SUMMARY, SCREEN_NOTHING, false);
+        summaryOverlay->mButtonState = ButtonComponent::BS_A_ONLY;
+        OverlayManager* inst = nlSingleton<OverlayManager>::s_pInstance;
+        inst->mHUDDelay = 0.0f;
+        if (inst->mIsHUDSlideIn == 1)
+        {
+            HUDOverlay* HUD = (HUDOverlay*)inst->GetScene(OVERLAY_HUD);
+            HUD->SetSlideOut();
+            inst->mIsHUDSlideIn = false;
+        }
+        Presentation::Instance().StopOverlay();
+        HUDOverlay* HUD = (HUDOverlay*)nlSingleton<OverlayManager>::s_pInstance->GetScene(OVERLAY_HUD);
+        HUD->ResetScores();
+        break;
+    }
+    case 5:
+    {
+        isGoalScored = true;
+        GoalScoredData* pGoalData;
+        if ((s32)pEvent->m_data.GetID() == -1)
+        {
+            nlPrintf("Error: Trying to get event data on event with none!\n");
+            pGoalData = NULL;
+        }
+        else if ((s32)pEvent->m_data.GetID() != (s32)GoalScoredData::ID)
+        {
+            nlPrintf("Error: GetData() failed! Data types do not match!\n");
+            pGoalData = NULL;
+        }
+        else
+        {
+            pGoalData = (GoalScoredData*)&pEvent->m_data;
+        }
+        u32 goalType = pGoalData->uGoalType;
+        if (goalType != 2 && goalType != 6)
+        {
+            OverlayManager* inst = nlSingleton<OverlayManager>::s_pInstance;
+            inst->mHUDDelay = 0.0f;
+            if (inst->mIsHUDSlideIn == 1)
+            {
+                HUDOverlay* HUD = (HUDOverlay*)inst->GetScene(OVERLAY_HUD);
+                HUD->SetSlideOut();
+                inst->mIsHUDSlideIn = false;
+            }
+        }
+        HUDOverlay* HUD = (HUDOverlay*)nlSingleton<OverlayManager>::s_pInstance->GetScene(OVERLAY_HUD);
+        HUD->UpdateScore();
+        break;
+    }
+    case 9:
+    {
+        nlSingleton<OverlayManager>::s_pInstance->SetVisible(OVERLAY_HUD, true, true);
+        OverlayManager* inst = nlSingleton<OverlayManager>::s_pInstance;
+        inst->mHUDDelay = 0.25f;
+        inst->mDoHUDSlideIn = true;
+        isGoalScored = false;
+        HUDOverlay* HUD = (HUDOverlay*)nlSingleton<OverlayManager>::s_pInstance->GetScene(OVERLAY_HUD);
+        HUD->DisplayNewScore();
+        if (nlSingleton<GameInfoManager>::s_pInstance->mIsInStrikers101Mode)
+        {
+            NSNMessengerScene* messenger = (NSNMessengerScene*)nlSingleton<OverlayManager>::s_pInstance->GetScene(OVERLAY_LESSON_TICKER);
+            messenger->ForceMessengerVisibleNow();
+        }
+        break;
+    }
+    case 10:
+    {
+        nlSingleton<OverlayManager>::s_pInstance->SetVisible(OVERLAY_TEXT, false, false);
+        break;
+    }
+    case 0x46:
+    {
+        isSlowMotionOn = true;
+        OverlayManager* inst = nlSingleton<OverlayManager>::s_pInstance;
+        inst->mHUDDelay = 0.0f;
+        if (inst->mIsHUDSlideIn == 1)
+        {
+            HUDOverlay* HUD = (HUDOverlay*)inst->GetScene(OVERLAY_HUD);
+            HUD->SetSlideOut();
+            inst->mIsHUDSlideIn = false;
+        }
+        break;
+    }
+    case 0x3f:
+    {
+        OverlayManager* inst = nlSingleton<OverlayManager>::s_pInstance;
+        inst->mHUDDelay = 0.0f;
+        if (inst->mIsHUDSlideIn == 1)
+        {
+            HUDOverlay* HUD = (HUDOverlay*)inst->GetScene(OVERLAY_HUD);
+            HUD->SetSlideOut();
+            inst->mIsHUDSlideIn = false;
+        }
+        break;
+    }
+    case 0x47:
+    {
+        if (isSlowMotionOn)
+        {
+            OverlayManager* inst = nlSingleton<OverlayManager>::s_pInstance;
+            inst->mHUDDelay = 1.0f;
+            inst->mDoHUDSlideIn = true;
+        }
+        isSlowMotionOn = false;
+        break;
+    }
+    case 0x41:
+    {
+        if (isGoalScored)
+            break;
+        OverlayManager* inst = nlSingleton<OverlayManager>::s_pInstance;
+        inst->mHUDDelay = 0.0f;
+        if (!inst->mIsHUDSlideIn)
+        {
+            HUDOverlay* HUD = (HUDOverlay*)inst->GetScene(OVERLAY_HUD);
+            HUD->SetSlideIn();
+            inst->mIsHUDSlideIn = true;
+        }
+        break;
+    }
+    }
 }
 
 /**

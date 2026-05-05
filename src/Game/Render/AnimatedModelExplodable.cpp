@@ -70,9 +70,43 @@ void AnimatedModelExplodable::CleanUp()
 
 /**
  * Offset/Address/Size: 0xA8 | 0x80158A14 | size: 0x11C
+ * TODO: 98.80% match - r29/r30 register swap for pAnimatedNPC and bIsModelLoaded accesses
  */
-AnimatedModelExplodable::AnimatedModelExplodable(AnimatedModelExplodableCategory, SkinAnimatedNPC*)
+AnimatedModelExplodable::AnimatedModelExplodable(AnimatedModelExplodableCategory category, SkinAnimatedNPC* pAnimatedNPC)
 {
+    mpAnimatedNPC = pAnimatedNPC;
+    mCategory = category;
+
+    if (!bIsModelLoaded[category])
+    {
+        sCategoryData[category].LoadGeometry();
+        bIsModelLoaded[category] = 1;
+    }
+
+    Initialize(GetCategoryData().mNumFragmentModels);
+
+    SidelineExplodableNode* node = NULL;
+
+    if (SidelineExplodableNode::sSidelineExplodableNodeSlotPool.m_FreeList == NULL)
+    {
+        SlotPoolBase::BaseAddNewBlock(&SidelineExplodableNode::sSidelineExplodableNodeSlotPool, 8);
+    }
+
+    SlotPoolEntry* entry = SidelineExplodableNode::sSidelineExplodableNodeSlotPool.m_FreeList;
+    if (entry != NULL)
+    {
+        node = (SidelineExplodableNode*)entry;
+        SidelineExplodableNode::sSidelineExplodableNodeSlotPool.m_FreeList = entry->m_next;
+    }
+
+    if (node != NULL)
+    {
+        node->mpExplodable = NULL;
+        node->next = NULL;
+    }
+
+    node->mpExplodable = this;
+    nlListAddEnd<SidelineExplodableNode>(&sAnimatedModelExplodableList.m_pStart, &sAnimatedModelExplodableList.m_pEnd, node);
 }
 
 /**

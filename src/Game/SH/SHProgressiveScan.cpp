@@ -104,8 +104,36 @@ TLImageInstance* FEFinder<TLImageInstance, 2>::_Find<FEPresentation>(
 /**
  * Offset/Address/Size: 0x1148 | 0x80111618 | size: 0x148
  */
-ProgressiveScanScene::ProgressiveScanScene(bool)
+ProgressiveScanScene::ProgressiveScanScene(bool doRGB60Instead)
 {
+    const char* MESSAGES_FILE_NAME = "art/fe/HealthSafetyUI.res";
+
+    mConfirmationImage = NULL;
+    mHasChoiceBeenMade = false;
+    mUseProgressiveMode = true;
+    mCanProceed = false;
+    mFadingOut = false;
+    mDoRGB60Instead = doRGB60Instead;
+    mSelectorComponent = NULL;
+    mElapsedTime = 0.0f;
+
+    AsyncImage* useProgressiveImage0 = new (nlMalloc(0x1C, 0x20, 1)) AsyncImage(MESSAGES_FILE_NAME, NULL);
+    mUseProgressiveImage[0] = useProgressiveImage0;
+
+    AsyncImage* useProgressiveImage1 = new (nlMalloc(0x1C, 0x20, 1)) AsyncImage(MESSAGES_FILE_NAME, NULL);
+    mUseProgressiveImage[1] = useProgressiveImage1;
+
+    AsyncImage* confirmationImage = new (nlMalloc(0x1C, 0x20, 1)) AsyncImage(MESSAGES_FILE_NAME, NULL);
+    mConfirmationImage = confirmationImage;
+
+    if (mDoRGB60Instead)
+    {
+        mUseProgressiveMode = OSGetEuRgb60Mode() != 0;
+    }
+    else
+    {
+        mUseProgressiveMode = true;
+    }
 }
 
 /**

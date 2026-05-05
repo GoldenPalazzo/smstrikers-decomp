@@ -1153,14 +1153,14 @@ long MemCard::InternalWriteFile(MC_FILE* pFile, void* Buffer, unsigned long Leng
 
 /**
  * Offset/Address/Size: 0x620 | 0x801C9D90 | size: 0x120
- * TODO: 99.1% match - first loop keeps i/byteOff in r4/r3 instead of target r3/r4;
- * copy loop keeps slwi/add/lwz+stw on r0 where target keeps those on r3/r5.
+ * TODO: 99.58% match - copy loop keeps slwi/add/lwz+stw on r0 where target keeps
+ * those on r3/r5.
  */
 static inline nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>* FindOpenFileLookup(nlStaticSortedSlot<MemCard::MC_FILE, 16>& openFiles, MemCard::MC_FILE* pFile)
 {
-    for (long i = 0, byteOff = i; (unsigned long)i < openFiles.m_EntryCount; i++, byteOff += 8)
+    for (long i = 0; (unsigned long)i < openFiles.m_EntryCount; i++)
     {
-        if (openFiles.m_pEntryLookup[byteOff >> 3].pEntry == pFile)
+        if (openFiles.m_pEntryLookup[i].pEntry == pFile)
         {
             return &openFiles.m_pEntryLookup[i];
         }

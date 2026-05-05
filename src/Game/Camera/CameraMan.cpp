@@ -778,21 +778,23 @@ void cCameraManager::SetWorldUpVectorTilt(float fXAxisTilt, float fYAxisTilt)
     float fCos; // r1+0x8
 
     nlSinCos(&fSin, &fCos, ((s32)(65536.0f * fXAxisTilt)) / 360);
-    nlVec3Set(cCameraManager::m_UpVectorStack[0], 0.0f, fSin, fCos);
+
+    nlVector3* const pUp = &m_UpVectorStack[0];
+
+    pUp->f.x = 0.0f;
+    pUp->f.y = fSin;
+    pUp->f.z = fCos;
+
     nlSinCos(&fSin, &fCos, ((s32)(65536.0f * fYAxisTilt)) / 360);
 
-    cCameraManager::m_UpVectorStack[0].f.x = fSin;
-    cCameraManager::m_UpVectorStack[0].f.z = cCameraManager::m_UpVectorStack[0].f.z * fCos;
+    pUp->f.x = fSin;
+    pUp->f.z = pUp->f.z * fCos;
 
-    float xx = cCameraManager::m_UpVectorStack[0].f.x * cCameraManager::m_UpVectorStack[0].f.x;
-    float yy = cCameraManager::m_UpVectorStack[0].f.y * cCameraManager::m_UpVectorStack[0].f.y;
-    float zz = cCameraManager::m_UpVectorStack[0].f.z * cCameraManager::m_UpVectorStack[0].f.z;
+    float xx = pUp->f.x * pUp->f.x;
+    float yy = pUp->f.y * pUp->f.y;
+    float zz = pUp->f.z * pUp->f.z;
     float temp_f1 = nlRecipSqrt(xx + yy + zz, true);
-
-    nlVec3Set(cCameraManager::m_UpVectorStack[0],
-        temp_f1 * cCameraManager::m_UpVectorStack[0].f.x,
-        temp_f1 * cCameraManager::m_UpVectorStack[0].f.y,
-        temp_f1 * cCameraManager::m_UpVectorStack[0].f.z);
+    _nlVec3Scale(*pUp, temp_f1);
 }
 
 /**

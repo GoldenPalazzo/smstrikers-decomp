@@ -439,10 +439,9 @@ extern void AddTriangleFromGeometry__18NetMeshModelLoaderFRC13glModelPacketPUs(
 
 /**
  * Offset/Address/Size: 0xA80 | 0x80130BD8 | size: 0x110
- * TODO: 90.44% match - callee-saved register shift remains (this/packet/numVerts
- * in r26/r27/r28 vs target r27/r28/r26), plus inner-loop register allocation
- * differences around index math/base pointer temps (r3/r5/r6/r7 assignment).
- * Externalized AddTriangle call still required to avoid inlining.
+ * TODO: 96.18% match - callee-saved register mapping is still shifted for
+ * this/packet/numVerts, and the inner loop keeps j/base/index temporaries in
+ * r4/r5/r6/r3 instead of r7/r3/r6/r4.
  */
 void NetMeshModelLoader::ReadEdgesFromGeometryPacket(const glModelPacket& packet)
 {
@@ -471,8 +470,12 @@ void NetMeshModelLoader::ReadEdgesFromGeometryPacket(const glModelPacket& packet
                 vertOff -= 2;
                 s32 stride = (ns - 1) * 2 + 1;
                 s32 offset = stride * vertOff;
-                u8* base = (u8*)pList->list + offset;
-                ptr = (u16*)(base + 4);
+                u8* ptr8 = (u8*)pList->list;
+                ptr8 += offset;
+                ptr = (u16*)ptr8;
+                ptr8 = (u8*)ptr;
+                ptr8 += 4;
+                ptr = (u16*)ptr8;
             }
             else
             {
@@ -482,8 +485,12 @@ void NetMeshModelLoader::ReadEdgesFromGeometryPacket(const glModelPacket& packet
                 vertOff -= 2;
                 s32 stride = ns * 2;
                 s32 offset = stride * vertOff;
-                u8* base = (u8*)pList->list + offset;
-                ptr = (u16*)(base + 3);
+                u8* ptr8 = (u8*)pList->list;
+                ptr8 += offset;
+                ptr = (u16*)ptr8;
+                ptr8 = (u8*)ptr;
+                ptr8 += 3;
+                ptr = (u16*)ptr8;
             }
 
             vertexIndices[j] = *ptr;

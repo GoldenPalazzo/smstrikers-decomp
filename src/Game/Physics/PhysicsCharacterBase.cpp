@@ -159,9 +159,25 @@ void PhysicsCharacterBase::SetCharacterPosition(const nlVector3& pos)
     SetPosition(newPos, WORLD_COORDINATES);
 }
 
+static inline PhysicsCharacterBase* IsRootParentCharacter(PhysicsObject* obj)
+{
+    PhysicsObject* temp = obj;
+    int id = temp->GetObjectType();
+
+    if (id == 0xE || id == 0xD)
+    {
+        PhysicsObject* parent;
+        while ((parent = temp->m_parentObject) != NULL)
+        {
+            temp = parent;
+        }
+    }
+
+    return temp->GetObjectType() == 0x8 ? (PhysicsCharacterBase*)temp : NULL;
+}
+
 /**
  * Offset/Address/Size: 0x524 | 0x801FF020 | size: 0x130
- * TODO: 98.55% match - ternary generates extra 'mr r0,r30' due to compiler codegen pattern
  */
 bool PhysicsCharacterBase::BaseSetContactInfo(dContact* contact, PhysicsObject* other, bool first)
 {
@@ -171,19 +187,8 @@ bool PhysicsCharacterBase::BaseSetContactInfo(dContact* contact, PhysicsObject* 
     {
         SetDefaultContactInfo(contact);
 
-        PhysicsObject* owner = other;
-        int otherType = other->GetObjectType();
-        if (otherType == 0xE || otherType == 0xD)
-        {
-            PhysicsObject* parent;
-            while ((parent = owner->m_parentObject) != NULL)
-            {
-                owner = parent;
-            }
-        }
-
-        owner = owner->GetObjectType() == 0x8 ? owner : nullptr;
-        if (owner)
+        PhysicsCharacterBase* owner = IsRootParentCharacter(other);
+        if (owner != NULL)
         {
             contact->surface.mode &= ~(dContactBounce);
             contact->surface.bounce = 0.0f;

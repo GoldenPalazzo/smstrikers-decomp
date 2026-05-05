@@ -994,8 +994,6 @@ bool SidelineExplosionPhysicsObject::SetContactInfo(dContact* contact, PhysicsOb
 
 /**
  * Offset/Address/Size: 0x1D4 | 0x80167534 | size: 0x164
- * TODO: 99.66% match - floating-point register allocation mismatch (f4/f5 swap)
- * in angular velocity normalization/scaling around nlVec3Scale.
  */
 void SidelineExplosionPhysicsObject::PostUpdate()
 {
@@ -1008,8 +1006,10 @@ void SidelineExplosionPhysicsObject::PostUpdate()
         float recip = nlRecipSqrt(lenSq, true);
 
         float xNorm = recip * angularVelocity.f.x;
-        float zNorm = recip * angularVelocity.f.z;
-        float yNorm = recip * angularVelocity.f.y;
+        float yNorm;
+        float zNorm;
+        zNorm = recip * angularVelocity.f.z;
+        yNorm = recip * angularVelocity.f.y;
         angularVelocity.f.x = xNorm;
         angularVelocity.f.y = yNorm;
         angularVelocity.f.z = zNorm;

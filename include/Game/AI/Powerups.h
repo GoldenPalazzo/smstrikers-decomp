@@ -134,6 +134,7 @@ class Bobomb : public PowerupBase
 {
 public:
     virtual ~Bobomb();
+    static void operator delete(void* ptr);
     virtual void Update(float);
     virtual void ThrowAt(cFielder*, Bowser*);
     void Destroy(bool);
@@ -148,6 +149,7 @@ class FreezeShell : public PowerupBase
 {
 public:
     virtual ~FreezeShell();
+    static void operator delete(void* ptr);
     virtual void Update(float);
     void Destroy(bool);
 
@@ -158,6 +160,7 @@ class SpinyShell : public PowerupBase
 {
 public:
     virtual ~SpinyShell();
+    static void operator delete(void* ptr);
     virtual void Update(float);
     void Destroy(bool);
 
@@ -168,6 +171,7 @@ class Banana : public PowerupBase
 {
 public:
     virtual ~Banana();
+    static void operator delete(void* ptr);
     virtual void Update(float);
     void Destroy(bool);
 
@@ -178,6 +182,7 @@ class RedShell : public PowerupBase
 {
 public:
     virtual ~RedShell();
+    static void operator delete(void* ptr);
     virtual void Update(float);
     void Destroy(bool);
     void SeekTarget();
@@ -189,6 +194,7 @@ class GreenShell : public PowerupBase
 {
 public:
     virtual ~GreenShell();
+    static void operator delete(void* ptr);
     virtual void Update(float);
     void Destroy(bool);
 

@@ -123,7 +123,10 @@ bool IsPointInCone(const nlVector3& v3Point, const nlVector3& v3Pivot, const nlV
 #undef abs
 extern "C" int abs(int n);
 
-static inline s16 AngleDiff(u16 a, u16 b) { return (s16)(a - b); }
+static inline s16 AngleDiff(u16 a, u16 b)
+{
+    return (s16)(a - b);
+}
 
 unsigned short SeekDirection(unsigned short aCurrent, unsigned short aDesired, float fSeekSpeed, float fFalloff, float fDeltaT)
 {
@@ -193,7 +196,7 @@ float SeekSpeed(float fCurrent, float fDesired, float fSeekAccel, float fSeekDec
 
 /**
  * Offset/Address/Size: 0xFA4 | 0x80006A50 | size: 0x11C
- * TODO: 96.5% match - float register allocation (f4/f5/f6/f7/f9/f10 vs expected),
+ * TODO: 98.3% match - float register allocation differs in pre-quadratic math block.
  */
 void CalcInterceptXY(const nlVector3& pos1, f32 speed1, f32 speed2, const nlVector3& pos2, const nlVector3& vel, int& count, f32* times)
 {
@@ -226,9 +229,9 @@ void CalcInterceptXY(const nlVector3& pos1, f32 speed1, f32 speed2, const nlVect
     f32 b = 2.0f * (dotVelDelta - speed2 * speed1);
     f32 c = distSq - speed2Sq;
 
-    f32 t2, t1;
     int numRoots;
-    SolveQuadratic(a, b, c, numRoots, t1, t2);
+    f32 t[2];
+    SolveQuadratic(a, b, c, numRoots, t[0], t[1]);
 
     count = 0;
     if (numRoots == 0)
@@ -236,16 +239,14 @@ void CalcInterceptXY(const nlVector3& pos1, f32 speed1, f32 speed2, const nlVect
         return;
     }
 
-    if (t1 > 0.0f)
+    for (int i = 0; i < 2; i++)
     {
-        times[count] = t1;
-        count++;
-    }
-
-    if (t2 > 0.0f)
-    {
-        times[count] = t2;
-        count++;
+        f32 root = t[i];
+        if (root > 0.0f)
+        {
+            times[count] = root;
+            count++;
+        }
     }
 }
 

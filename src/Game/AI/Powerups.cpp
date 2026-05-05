@@ -91,6 +91,42 @@ SlotPool<RedShell> RedShell::m_RedShellSlotPool;
 SlotPool<Banana> Banana::m_BananaSlotPool;
 SlotPool<Bobomb> Bobomb::m_BobombSlotPool;
 
+void FreezeShell::operator delete(void* ptr)
+{
+    ((SlotPoolEntry*)ptr)->m_next = m_FreezeShellSlotPool.m_FreeList;
+    m_FreezeShellSlotPool.m_FreeList = (SlotPoolEntry*)ptr;
+}
+
+void GreenShell::operator delete(void* ptr)
+{
+    ((SlotPoolEntry*)ptr)->m_next = m_GreenShellSlotPool.m_FreeList;
+    m_GreenShellSlotPool.m_FreeList = (SlotPoolEntry*)ptr;
+}
+
+void Bobomb::operator delete(void* ptr)
+{
+    ((SlotPoolEntry*)ptr)->m_next = m_BobombSlotPool.m_FreeList;
+    m_BobombSlotPool.m_FreeList = (SlotPoolEntry*)ptr;
+}
+
+void SpinyShell::operator delete(void* ptr)
+{
+    ((SlotPoolEntry*)ptr)->m_next = m_SpinyShellSlotPool.m_FreeList;
+    m_SpinyShellSlotPool.m_FreeList = (SlotPoolEntry*)ptr;
+}
+
+void Banana::operator delete(void* ptr)
+{
+    ((SlotPoolEntry*)ptr)->m_next = m_BananaSlotPool.m_FreeList;
+    m_BananaSlotPool.m_FreeList = (SlotPoolEntry*)ptr;
+}
+
+void RedShell::operator delete(void* ptr)
+{
+    ((SlotPoolEntry*)ptr)->m_next = m_RedShellSlotPool.m_FreeList;
+    m_RedShellSlotPool.m_FreeList = (SlotPoolEntry*)ptr;
+}
+
 // /**
 //  * Offset/Address/Size: 0x114 | 0x80060A74 | size: 0xD74
 //  */
@@ -551,6 +587,31 @@ PowerupBase::PowerupBase(cFielder* pTarget, ePowerUpType eType, float fRadius, e
  */
 PowerupBase::~PowerupBase()
 {
+    u32 voiceID = m_uVoiceID;
+
+    if (voiceID != 0)
+    {
+        if (voiceID != (u32)Audio::GetSndIDError())
+        {
+            Audio::gPowerupSFX.StopEmitter((SFXEmitter*)m_uVoiceID, 0);
+            m_uVoiceID = 0;
+        }
+    }
+
+    DrawableObject* pDrawable = m_pDrawableObj;
+    int type = m_eType;
+
+    for (int i = 0; i < 25; i++)
+    {
+        if (pDrawable == powerupModelPool.mObjs[type][i])
+        {
+            pDrawable->m_uObjectFlags &= ~1;
+            powerupModelPool.mFree[type][i] = true;
+            break;
+        }
+    }
+
+    delete m_pPhysicsObject;
 }
 
 /**
@@ -1780,6 +1841,7 @@ void GreenShell::Destroy(bool bSilent)
 
 /**
  * Offset/Address/Size: 0x1874 | 0x8005C160 | size: 0x138
+ * TODO: 99.74% match - remaining instruction-only diffs are powerupModelPool unnamed-namespace symbol aliases
  */
 RedShell::~RedShell()
 {
