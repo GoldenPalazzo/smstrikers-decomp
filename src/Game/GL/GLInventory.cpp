@@ -601,7 +601,6 @@ void GLInventory::AddSkinData(unsigned long key, nlChunk* skinData)
 
 /**
  * Offset/Address/Size: 0x334 | 0x801E25CC | size: 0x1A0
- * TODO: 99.38% match - remaining diff is an r6/r7/r8 allocation swap in the inlined AVL search loops.
  */
 GLSkinMesh* GLInventory::MakeSkinMesh(unsigned long hashID)
 {
@@ -653,16 +652,7 @@ GLSkinMesh* GLInventory::MakeSkinMesh(unsigned long hashID)
 
                 found = false;
             check_found:
-                nlChunk* result;
-
-                if (found)
-                {
-                    result = *pResult;
-                }
-                else
-                {
-                    result = nullptr;
-                }
+                nlChunk* result = found ? *pResult : nullptr;
 
                 if (result != nullptr)
                 {
@@ -722,16 +712,7 @@ GLSkinMesh* GLInventory::MakeSkinMesh(unsigned long hashID)
 
                 found = false;
             check_found:
-                glModel* result;
-
-                if (found)
-                {
-                    result = *pResult;
-                }
-                else
-                {
-                    result = nullptr;
-                }
+                glModel* result = found ? *pResult : nullptr;
 
                 if (result != nullptr)
                 {

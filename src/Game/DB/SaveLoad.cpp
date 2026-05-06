@@ -121,9 +121,9 @@ bool SaveLoad::CardBusy()
 
 /**
  * Offset/Address/Size: 0x3720 | 0x8018D07C | size: 0x1BC
- * TODO: 99.3% match - header-size regalloc still differs (iconFmt/iconCount/bannerFmt map to r0/r11/r10 instead of
- * r4/r0/r11, and accumulation keeps r6 live instead of target r0/r3 add sequence). Literal symbol IDs for "@2009"
- * and "@2010" also remain different in scratch context.
+ * TODO: 99.46% match - header-size regalloc still differs (iconFmt and iconCount swap source registers and the
+ * accumulation still keeps r6 live at the final add chain). Literal symbol IDs for "@2009" and "@2010" also remain
+ * different in scratch context.
  */
 void LoadMemoryCardIconData()
 {
@@ -140,8 +140,8 @@ void LoadMemoryCardIconData()
 
     gIconDataCache.mIconConfig.GetValidDataInfo(gIconDataCache.mIconDataInfo);
 
-    u8 bannerFmt = gIconDataCache.mIconConfig.BannerFormat;
     u8 iconCount = gIconDataCache.mIconConfig.IconCount;
+    int bannerFmt = gIconDataCache.mIconConfig.BannerFormat;
     s8 iconFmt = gIconDataCache.mIconConfig.IconFormat;
 
     u32 headerSize = 0;
@@ -175,22 +175,22 @@ void LoadMemoryCardIconData()
 
 /**
  * Offset/Address/Size: 0x355C | 0x8018CEB8 | size: 0x1C4
- * TODO: 97.83% match - li r6,0x200 scheduling and header-size calc
- * register allocation differ under -inline deferred context
+ * TODO: 98.32% match - Slot/Result move order, early li r6, and
+ * header-term register flow still differ; file CRC compare uses r4.
  */
 unsigned long LoadCallbacks::LoadIconDataDoneCB(unsigned long Slot, long Result, void* pUserData)
 {
     void* pReadBuf = m_pReadBuffer;
     MemCard::MC_FILE* pFile = (MemCard::MC_FILE*)pUserData;
-    int iconFmt = pFile->IconCfg.IconFormat;
     int iconCount = pFile->IconCfg.IconCount;
+    s8 iconFmt = pFile->IconCfg.IconFormat;
     int bannerFmt = pFile->IconCfg.BannerFormat;
 
     u32 headerSize = 0;
-    headerSize += ((bannerFmt == 1) ? 0x200 : 0);
-    headerSize += bannerFmt * 0xC00;
-    headerSize += ((iconFmt == 1) ? 0x200 : 0);
-    headerSize += iconCount * (iconFmt << 10);
+    int bannerTerm = ((bannerFmt == 1) ? 0x200 : 0) + bannerFmt * 0xC00;
+    int iconTerm = ((iconFmt == 1) ? 0x200 : 0) + iconCount * (iconFmt << 10);
+    headerSize += bannerTerm;
+    headerSize += iconTerm;
     headerSize += 0x40;
     pFile->IconCfg.HeaderSize = headerSize;
 
@@ -2294,18 +2294,16 @@ static inline MemCard* GetCardBySlot(int slot)
 
 /**
  * Offset/Address/Size: 0xD8 | 0x80189A34 | size: 0x18C
- * TODO: 77.9% match - register allocation r29/r30 swapped (slot*4 in r30 vs target r29,
- * numBlocks in r29 vs target r30); compiler constant-folds ~(iconCount|-1) eliminating
- * the nor+srawi+and chain; pre-computed block count adds extra cmpwi/ble in both loops;
- * u8 return adds clrlwi masking. File uses -inline deferred which differs from scratch compiler.
+ * TODO: 82.19% match - slot/card register allocation still differs in prologue/epilogue;
+ * both block-count loops still emit extra cmpwi/ble guard pairs; tail still emits
+ * adde to temp + clrlwi before return.
  */
 u8 SaveLoad::HasEnoughFreeSpace(int Slot)
 {
     int slot = Slot;
     MemCard* card = GetCardBySlot(slot);
     int dataSize = nlSingleton<GameInfoManager>::s_pInstance->GetMemoryCardDataSize();
-    int numBlocks;
-    numBlocks = 0;
+    int numBlocks = 0;
 
     int origSize = (dataSize += 12);
     dataSize = (u32)(dataSize + 0x1FFF) >> 13;
@@ -2321,29 +2319,33 @@ u8 SaveLoad::HasEnoughFreeSpace(int Slot)
     IconCfg.IconFormat = 0;
     IconCfg.IconAnimType = 0;
     memset(IconCfg.IconSpeeds, 0, 8);
-
     memset(&IconCfg, 0, sizeof(MemCard::ICON_CONFIG));
-    IconCfg.IconCount = 1;
-    IconCfg.IconFormat = 2;
-    IconCfg.IconSpeeds[0] = 3;
-    IconCfg.BannerFormat = 2;
 
-    int iconFormat = IconCfg.IconFormat;
-    int iconCount = IconCfg.IconCount;
+    int iconFormat = 2;
+    int iconCount = 1;
+    int negOne = -1;
+    int speed = 3;
 
-    int iconSize = (iconFormat << 10) * iconCount;
-    int temp = ~(iconCount | -1);
-    int bannerClut = (temp >> 31) & 0x200;
+    int iconSize = iconCount * (iconFormat << 10);
+    IconCfg.IconCount = iconCount;
+    negOne = ~(iconCount | negOne);
+    int clutSize = 0x200;
+    IconCfg.IconFormat = iconFormat;
+    IconCfg.IconSpeeds[0] = speed;
+    int bannerClut = (negOne >> 31) & clutSize;
     int bannerSize = iconFormat * 0xC00;
-    int iconClut = (temp >> 31) & 0x200;
+    int iconClut = (negOne >> 31) & clutSize;
+    IconCfg.BannerFormat = iconFormat;
 
-    int total = bannerClut + bannerSize + iconSize + iconClut;
+    int total = bannerClut + bannerSize;
+    total += iconSize;
+    total += iconClut;
 
     origSize = (int)(IconCfg.HeaderSize = total + 0x40);
     dataSize = (u32)(origSize + 0x1FFF) >> 13;
     if (origSize > 0)
     {
-        while (dataSize-- > 0)
+        for (; dataSize > 0; dataSize--)
             numBlocks++;
     }
 
@@ -2351,13 +2353,13 @@ u8 SaveLoad::HasEnoughFreeSpace(int Slot)
     unsigned long bytestosave = numBlocks * sectorSize;
     unsigned long alignedSize = GetCardBySlot(slot)->AlignBytesToSectorSize(bytestosave);
     MemCard* mc = GetCardBySlot(slot);
-    if (alignedSize > mc->m_CardInfo.FreeBytes)
+    if (alignedSize > (unsigned long)mc->m_CardInfo.FreeBytes)
         return 0;
 
-    if (mc->m_CardInfo.FreeFiles >= 1)
-        return 1;
+    if (mc->m_CardInfo.FreeFiles < 1)
+        return 0;
 
-    return 0;
+    return 1;
 }
 
 /**

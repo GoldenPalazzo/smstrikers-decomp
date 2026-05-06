@@ -37,14 +37,17 @@ int World::CompareNameToGenericName(const char* str1, const char* str2)
 
 /**
  * Offset/Address/Size: 0x5C | 0x80194D20 | size: 0x44
- * TODO: 96.5% match - MWCC -O4,p scheduler moves lwz r5,0x120(r3) before prologue stw/stw/mr; all compiler variants (mwcc_247_92/92p1/105/107/108) produce same scheduling
+ * TODO: 99.7% match - r3 vs r31 base register on lwz r5,0x120; peephole off prevents scheduling hoist but forces r31 usage
  */
+#pragma push
+#pragma peephole off
 unsigned long World::GetHashIdForGenericName(const char* name) const
 {
     int len = m_WorldNameLength;
     nlStrNCpy<char>((char*)this + len + 0xe0, name, (unsigned long)(0x40 - len));
     return nlStringLowerHash((const char*)this + 0xe0);
 }
+#pragma pop
 
 /**
  * Offset/Address/Size: 0xA0 | 0x80194D64 | size: 0x1F0
@@ -1232,7 +1235,6 @@ nlAVLTree<unsigned long, LightObject*, DefaultKeyCompare<unsigned long> >::~nlAV
 
 /**
  * Offset/Address/Size: 0x3DB4 | 0x80198A78 | size: 0x19C
- * TODO: 99.66% match - r5/r7 vs r6/r0 register allocation for len/slash around nlMalloc arg interleaving
  */
 World::World(const char* szWorldName)
     : m_pWorldAnimManager(NULL)
@@ -1243,10 +1245,7 @@ World::World(const char* szWorldName)
     m_WorldNameLength = nlStrLen<char>(szWorldName);
     nlStrNCpy<char>(m_WorldNamePrefix, szWorldName, 0x40);
 
-    int len = m_WorldNameLength;
-    char slash = '/';
-    m_WorldNameLength = len + 1;
-    m_WorldNamePrefix[len] = slash;
+    m_WorldNamePrefix[m_WorldNameLength++] = '/';
 
     m_pWorldAnimManager = new (nlMalloc(sizeof(WorldAnimManager), 8, false)) WorldAnimManager();
 

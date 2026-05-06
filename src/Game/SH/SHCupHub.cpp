@@ -906,7 +906,7 @@ static unsigned char IsUserRow(eTeamID teamInRow)
 
 /**
  * Offset/Address/Size: 0x1698 | 0x800EB3F4 | size: 0x1C8
- * TODO: 99.1% match - extra mr r30,r0 for HUBstandingsRowNames address load (compiler scheduling artifact)
+ * TODO: 99.65% match - r30/r31 register allocation swap between presentation pointer and row-name base
  */
 void CupHubScene::ColourUserRow()
 {
@@ -983,7 +983,7 @@ void CupHubScene::ColourUserRow()
         g4.m_Hash = 0;
         g5.m_Hash = 0;
 
-        hash = nlStringLowerHash(*pRowName);
+        hash = nlStringLowerHash(HUBstandingsRowNames[row]);
         g6.m_Hash = hash;
         g7.m_Hash = hash;
 
@@ -1015,7 +1015,6 @@ void CupHubScene::ColourUserRow()
             }
         }
 
-        pRowName++;
         pStandingsIndices++;
     }
 }

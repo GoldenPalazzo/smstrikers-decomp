@@ -98,8 +98,8 @@ cAnimInventory::~cAnimInventory()
 
 /**
  * Offset/Address/Size: 0x88 | 0x80007004 | size: 0x214
- * TODO: 91.2% match - callee-saved register allocation differs (params r28/r27
- * vs target r31/r30), search loop pFound placement, pMem increment codegen
+ * TODO: 92.8% match - callee-saved register allocation differs (params r28/r27
+ * vs target r31/r30), search loop pFound placement
  */
 void cAnimInventory::AddAnimBundle(const char* szFilename)
 {
@@ -136,8 +136,7 @@ void cAnimInventory::AddAnimBundle(const char* szFilename)
             nlPrintf("Warning: inventory encountered an unknown chunk type\n");
         }
 
-        int chunkSize = ((nlChunk*)pMem)->m_Size;
-        pMem += chunkSize + 8;
+        pMem = (char*)(((nlChunk*)pMem)->m_Size + pMem + 8);
     }
 
     int propOffset = 0;

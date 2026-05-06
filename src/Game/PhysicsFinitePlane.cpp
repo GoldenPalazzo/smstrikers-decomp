@@ -38,12 +38,12 @@ PhysicsFinitePlane::PhysicsFinitePlane(CollisionSpace* collision_space, nlVector
 
     nlMatrix3 mat;
 
-    float temp_f7 = v1.f.x;
     float temp_f5 = v1.f.y;
     float temp_f1_3 = v2.f.x;
     float temp_f3_2 = v1.f.z;
     float temp_f6 = v2.f.y;
     float temp_f4_2 = v2.f.z;
+    float temp_f7 = v1.f.x;
 
     volatile nlVector3& vv1 = (volatile nlVector3&)v1;
     volatile nlVector3& vv2 = (volatile nlVector3&)v2;

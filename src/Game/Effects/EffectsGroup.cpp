@@ -51,12 +51,9 @@ struct EffectsSpecRaw
  */
 bool EffectsTerrainSpec::HasTerrain(unsigned long terrainID) const
 {
-    u32 count = m_uNumTerrains;
-    u32* pTerrainIDs = m_pTerrainIDs;
-
-    for (u32 i = 0; i < count; i++)
+    for (u32 i = 0; i < m_uNumTerrains; i++)
     {
-        if (pTerrainIDs[i] == terrainID)
+        if (m_pTerrainIDs[i] == terrainID)
         {
             return true;
         }

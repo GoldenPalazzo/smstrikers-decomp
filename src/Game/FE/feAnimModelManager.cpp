@@ -82,6 +82,14 @@ void FEAnimModelManager::Initialize()
  */
 FEAnimModelManager::~FEAnimModelManager()
 {
+    for (int i = 0; i < 22; i++)
+    {
+        if (mLoadedModels[i] != NULL)
+        {
+            delete (FEBasic3dModel*)mLoadedModels[i];
+            mLoadedModels[i] = NULL;
+        }
+    }
 }
 
 /**

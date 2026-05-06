@@ -111,6 +111,7 @@ _PairAllocT& Metrowerks::details::compressed_pair_imp<_PairAllocT, unsigned long
 /**
  * Offset/Address/Size: 0x3D4 | 0x8003FFF8 | size: 0x4C
  */
+#pragma dont_inline on
 void _TreeT::clear()
 {
     node* n = (node*)node_alloc_.second().left_;
@@ -122,6 +123,7 @@ void _TreeT::clear()
         comp_.second() = (node*)&node_alloc_.second();
     }
 }
+#pragma dont_inline reset
 
 /**
  * Offset/Address/Size: 0x3D0 | 0x8003FFF4 | size: 0x4
@@ -243,13 +245,12 @@ ScriptQuestionCache::~ScriptQuestionCache()
 
 /**
  * Offset/Address/Size: 0xE0 | 0x8003F064 | size: 0x40
- * TODO: 78.4% match - emits __ptmf_scall thunk instead of direct __tree::clear call
  */
 void ScriptQuestionCache::Clear()
 {
     FORCE_DONT_INLINE;
     mQuestionCacheMap.Clear();
-    (((_TreeT&)mQuestionCacheMapSTD).*(&_TreeT::clear))();
+    mQuestionCacheMapSTD.tree_.clear();
     mCacheHits = 0;
     mTotalLookups = 0;
 }

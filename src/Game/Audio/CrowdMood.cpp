@@ -1210,9 +1210,8 @@ void CrowdMood::SetCrowdVolume(unsigned long Volume, unsigned long FadeTime)
 
 /**
  * Offset/Address/Size: 0x490 | 0x8014DBA4 | size: 0x1CC
- * TODO: 94.48% match (decomp.me) / 97.43% match (build) - register allocation
- *       differs for LPF flag/state/audio stream pointers (decomp.me compiler
- *       version issue), and both buffer-count checks emit `beq` (target `ble`).
+ * TODO: 97.96% match (decomp.me) - register allocation differs for LPF
+ *       flag/state/audio stream pointers (decomp.me compiler version issue).
  */
 void CrowdMood::ActivateLPF(bool Activate)
 {
@@ -1235,8 +1234,12 @@ void CrowdMood::ActivateLPF(bool Activate)
         {
             GCAudioStreaming::AudioStreamBuffer* buf;
             volatile unsigned long i = (unsigned long)(buf = NULL);
+            unsigned long zero = 0;
 
-            if (pChant->m_BufferCount > 0)
+            if (pChant->m_BufferCount <= zero)
+            {
+            }
+            else
             {
                 buf = pChant->m_Buffers[0];
             }
@@ -1270,8 +1273,12 @@ void CrowdMood::ActivateLPF(bool Activate)
         {
             GCAudioStreaming::AudioStreamBuffer* buf;
             volatile unsigned long i = (unsigned long)(buf = NULL);
+            unsigned long zero = 0;
 
-            if (pHeckle->m_BufferCount > 0)
+            if (pHeckle->m_BufferCount <= zero)
+            {
+            }
+            else
             {
                 buf = pHeckle->m_Buffers[0];
             }
@@ -1328,7 +1335,11 @@ void CrowdMood::SetLPF(unsigned short Frequency)
         if (pChant->m_State >= GCAudioStreaming::SS_Warming)
         {
             volatile unsigned long i = (unsigned long)(buf = NULL);
-            if (pChant->m_BufferCount > 0)
+            unsigned long zero = 0;
+            if (pChant->m_BufferCount <= zero)
+            {
+            }
+            else
             {
                 buf = pChant->m_Buffers[0];
             }
@@ -1358,7 +1369,11 @@ void CrowdMood::SetLPF(unsigned short Frequency)
         if (pHeckle->m_State >= GCAudioStreaming::SS_Warming)
         {
             volatile unsigned long i = (unsigned long)(buf = NULL);
-            if (pHeckle->m_BufferCount > 0)
+            unsigned long zero = 0;
+            if (pHeckle->m_BufferCount <= zero)
+            {
+            }
+            else
             {
                 buf = pHeckle->m_Buffers[0];
             }
@@ -1399,8 +1414,6 @@ GCAudioStreaming::StereoAudioStream* CrowdMood::LockStream()
 
 /**
  * Offset/Address/Size: 0x104 | 0x8014D818 | size: 0x1B0
- * TODO: 95.88% match - `cmplwi m_BufferCount, 0` still emits `beq` (target `ble`)
- *       in both buffer-start checks; second free-buffer loop still has r3/r4 swap.
  */
 void CrowdMood::UnlockStream()
 {
@@ -1414,8 +1427,9 @@ void CrowdMood::UnlockStream()
         {
             GCAudioStreaming::AudioStreamBuffer* buf;
             volatile unsigned long i = (unsigned long)(buf = NULL);
+            unsigned long zero = 0;
 
-            if (pChant->m_BufferCount <= 0)
+            if (pChant->m_BufferCount <= zero)
             {
             }
             else
@@ -1456,10 +1470,10 @@ void CrowdMood::UnlockStream()
             {
                 GCAudioStreaming::AudioStreamBuffer* buf;
                 volatile unsigned long i = (unsigned long)(buf = NULL);
-
                 pChant->m_Flags = (pChant->m_Flags & ~(1 << GCAudioStreaming::SF_SeriousStop)) | (1 << GCAudioStreaming::SF_SeriousStop);
+                unsigned long zero = 0;
 
-                if (pChant->m_BufferCount <= 0)
+                if (pChant->m_BufferCount <= zero)
                 {
                 }
                 else
@@ -1470,15 +1484,14 @@ void CrowdMood::UnlockStream()
                 while (buf != NULL)
                 {
                     pChant->m_BuffMgr.FreeBuffer(buf);
+                    unsigned long idx = i;
+                    pChant->m_Buffers[idx] = NULL;
+                    idx = idx + 1;
+                    i = idx;
 
-                    unsigned long bi = i;
-                    unsigned long ci = bi + 1;
-                    i = ci;
-                    pChant->m_Buffers[bi] = NULL;
-
-                    if (ci < pChant->m_BufferCount)
+                    if (idx < pChant->m_BufferCount)
                     {
-                        buf = pChant->m_Buffers[ci];
+                        buf = pChant->m_Buffers[idx];
                     }
                     else
                     {

@@ -23,38 +23,17 @@ public:
 
         typedef ListContainerBase<T*, NewAdapter<ListEntry<T*> > > ItemListBase;
         void (ItemListBase::*cb)(ListEntry<T*>*) = &ItemListBase::DeleteEntry;
-        meshEntry = m_lItemList.m_Head;
-        while (meshEntry != NULL)
-        {
-            ListEntry<T*>* next = meshEntry->next;
-            (((ItemListBase*)this)->*cb)(meshEntry);
-            meshEntry = next;
-        }
+        nlWalkList(m_lItemList.m_Head, (ItemListBase*)this, cb);
 
         m_lItemList.m_Head = NULL;
         m_lItemList.m_Tail = NULL;
 
-        ListEntry<char*>** pTail = &m_lMemList.m_Tail;
-        while (m_lMemList.m_Head != NULL)
+        nlListContainer<char*>* memList = &m_lMemList;
+        ListEntry<char*>** pTail = &memList->m_Tail;
+        ListEntry<char*>** pHead = &memList->m_Head;
+        while (memList->m_Head != NULL)
         {
-            ListEntry<char*>* first = m_lMemList.m_Head;
-            if (first == NULL)
-            {
-                first = NULL;
-            }
-            else
-            {
-                if (pTail != NULL)
-                {
-                    if (m_lMemList.m_Tail == first)
-                    {
-                        m_lMemList.m_Tail = NULL;
-                    }
-                }
-                ListEntry<char*>* tmp = m_lMemList.m_Head;
-                m_lMemList.m_Head = tmp->next;
-                first = tmp;
-            }
+            ListEntry<char*>* first = nlListRemoveStart<ListEntry<char*> >(pHead, pTail);
             void* mesh;
             if (&mesh != NULL)
             {

@@ -16,6 +16,8 @@
 #include "NL/nlPrint.h"
 #include "NL/nlString.h"
 
+extern bool g_e3_Build;
+
 static inline void GetAllSides();
 static inline void SetAllSides(IChooseSide& cs);
 
@@ -186,8 +188,69 @@ static inline void SetAllSides(IChooseSide& cs);
 /**
  * Offset/Address/Size: 0x21C8 | 0x800C6D88 | size: 0x194
  */
-SHChooseSides2::SHChooseSides2(SHChooseSides2::eCSContext)
+SHChooseSides2::SHChooseSides2(SHChooseSides2::eCSContext context)
+    : BaseSceneHandler()
+    , mContext(context)
+    , m_pTicker(NULL)
+    , mSoundDelay(0.0f)
+    , mNextScene(SCENE_INVALID)
+    , mBackScene(SCENE_INVALID)
+    , mChooseSide()
+    , mProceedDelay(-1)
+    , mButtons()
 {
+    switch (mContext)
+    {
+    case FRIENDLY:
+        if (g_e3_Build)
+        {
+            mNextScene = SCENE_SUPER_LOADING;
+            mBackScene = SCENE_MAIN_MENU;
+        }
+        else
+        {
+            mNextScene = SCENE_STADIUM_SELECT;
+            mBackScene = SCENE_CHOOSE_CAPTAINS;
+        }
+        break;
+    case CUP:
+        mNextScene = SCENE_SUPER_LOADING;
+        mBackScene = SCENE_CUP_STANDINGS;
+        break;
+    case SUPERCUP:
+        mNextScene = SCENE_SUPER_LOADING;
+        mBackScene = SCENE_SUPER_CUP_STANDINGS;
+        break;
+    case TOURNAMENT:
+        mNextScene = SCENE_SUPER_LOADING;
+        mBackScene = SCENE_TOURNAMENT_STANDINGS;
+        break;
+    case PAUSE:
+        mNextScene = SCENE_INVALID;
+        mBackScene = IGSCENE_PAUSE;
+        break;
+    }
+
+    mChooseSide.mPlayingSides[0] = -1;
+    mChooseSide.mPlayingSides[1] = -1;
+    mChooseSide.mPlayingSides[2] = -1;
+    mChooseSide.mPlayingSides[3] = -1;
+
+    if (mContext == PAUSE)
+    {
+        mChooseSide.mContext = CONTEXT_PAUSE;
+    }
+    else
+    {
+        mChooseSide.mContext = CONTEXT_FE;
+    }
+
+    mAsyncImage[0][0] = NULL;
+    mAsyncImage[1][0] = NULL;
+    mAsyncImage[0][1] = NULL;
+    mAsyncImage[1][1] = NULL;
+    mAsyncImage[0][2] = NULL;
+    mAsyncImage[1][2] = NULL;
 }
 
 /**
@@ -195,6 +258,68 @@ SHChooseSides2::SHChooseSides2(SHChooseSides2::eCSContext)
  */
 SHChooseSides2::~SHChooseSides2()
 {
+    FEScrollText* ticker = m_pTicker;
+
+    if (ticker != NULL)
+    {
+        if (ticker != NULL)
+        {
+            if ((char*)ticker + 0x21C)
+            {
+                volatile FEScrollText* vticker = ticker;
+                if ((char*)vticker + 0x21C)
+                {
+                    if (ticker->m_messageFinishedCB.mTag == FUNCTOR)
+                    {
+                        delete ticker->m_messageFinishedCB.mFunctor;
+                    }
+                    ticker->m_messageFinishedCB.mTag = EMPTY;
+                }
+            }
+
+            if ((char*)ticker + 4)
+            {
+                BasicStringData<unsigned short>* data = ticker->m_message.m_data;
+                if (data != NULL)
+                {
+                    if (--data->mRefCount == 0)
+                    {
+                        if (data != NULL)
+                        {
+                            if (data != NULL)
+                            {
+                                delete[] data->mData;
+                            }
+                            if (data != NULL)
+                            {
+                                nlFree(data);
+                            }
+                        }
+                    }
+                }
+            }
+
+            ::operator delete(ticker);
+        }
+    }
+
+    for (int i = 0; i < 3; i++)
+    {
+        if (mAsyncImage[0][i] != NULL)
+        {
+            delete mAsyncImage[0][i];
+        }
+
+        if (mAsyncImage[1][i] != NULL)
+        {
+            delete mAsyncImage[1][i];
+        }
+    }
+
+    if (mContext == PAUSE)
+    {
+        g_bRenderWorld = true;
+    }
 }
 
 /**

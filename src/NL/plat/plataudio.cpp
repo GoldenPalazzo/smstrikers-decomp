@@ -102,10 +102,10 @@ bool IsSFXPlaying(unsigned long id)
  */
 void PlatAudio::InitEmitter(unsigned long idx)
 {
+    gEmitters[idx].bKeepTrack = true;
     SFXEmitter* emitter = &gEmitters[idx];
     SND_PARAMETER_INFO** ppInfo = &emitter->pMIDIControllerInfo;
 
-    gEmitters[idx].bKeepTrack = true;
     emitter->Init();
 
     emitter->pos.vPos.f.x = 0.0f;

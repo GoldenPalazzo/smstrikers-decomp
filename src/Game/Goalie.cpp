@@ -3794,9 +3794,9 @@ void Goalie::SetDesiredSaveFacing(const nlVector3& v3BallPosition)
 
 /**
  * Offset/Address/Size: 0x3C4 | 0x80042EC0 | size: 0x1F4
- * TODO: 96.26% match - volatile FP register allocation differs: 10430.378f->f0 instead of f3,
- * cascading through angle section (r4/r5 swap) and velocity clamp section (fVelX/fVelY in
- * f0/f1 instead of f4/f5, missing 2 branch instructions in ternary codegen).
+ * TODO: 97.28% match - remaining register assignment mismatch in angle-difference integer math,
+ * and velocity clamp temporaries still mapped to different FP registers with two branch shape
+ * differences.
  */
 void Goalie::TrackTarget(const nlVector3& v3Target, float fRatio)
 {
@@ -3811,12 +3811,11 @@ void Goalie::TrackTarget(const nlVector3& v3Target, float fRatio)
 
     float fAngleToTarget = nlATan2f(v3Target.f.y - m_v3Position.f.y, v3Target.f.x - m_v3Position.f.x);
 
-    u16 aFutureAngle = (u16)(s32)(10430.378f * nlATan2f(v3FutureBallPos.f.y - m_v3Position.f.y, v3FutureBallPos.f.x - m_v3Position.f.x));
-    u16 aTargetAngle = (u16)(s32)(10430.378f * fAngleToTarget);
+    s16 aDiff = (s16)((u16)(s32)(10430.378f * fAngleToTarget)
+                      - (u16)(s32)(10430.378f * nlATan2f(v3FutureBallPos.f.y - m_v3Position.f.y, v3FutureBallPos.f.x - m_v3Position.f.x)));
     s32 iRatio = (s32)(1024.0f * fRatio);
-    s16 aDiff = (s16)(aTargetAngle - aFutureAngle);
-    iRatio = (iRatio * aDiff) / 1024;
-    SetFacingDirection((u16)(m_aActualFacingDirection + iRatio));
+    iRatio = (aDiff * iRatio) / 1024;
+    SetFacingDirection((u16)(iRatio + m_aActualFacingDirection));
 
     float fVelX = fRatio * fDeltaX;
     float fVelY = fRatio * fDeltaY;

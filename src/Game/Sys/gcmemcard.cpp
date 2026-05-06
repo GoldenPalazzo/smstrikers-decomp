@@ -959,8 +959,8 @@ static inline void ShiftOpenLookup(MemCard* self, nlSortedSlot<MemCard::MC_FILE,
 
 /**
  * Offset/Address/Size: 0x3060 | 0x801CA0A0 | size: 0x1F8
- * TODO: 96.15% match - struct copy scheduling (m_CB[6]=Callback) differs,
- *   ShiftOpenLookup r3/r4 register allocation swap, nlBSearch symbol name mismatch
+ * TODO: 99.72% match - ShiftOpenLookup entry copy loop still emits a register
+ * permutation in the two load/store pairs.
  */
 long MemCard::DeleteFile(const char* FileName, const MemCardFunctor& Callback)
 {
@@ -971,7 +971,38 @@ long MemCard::DeleteFile(const char* FileName, const MemCardFunctor& Callback)
         return -100;
     }
 
-    m_CB[6] = Callback;
+    struct FunctorWords
+    {
+        unsigned long w0;
+        unsigned long w1;
+        unsigned long w2;
+        unsigned long w3;
+        unsigned long w4;
+        unsigned long w5;
+    };
+
+    volatile FunctorWords* dst = (volatile FunctorWords*)&m_CB[6];
+    const volatile FunctorWords* src = (const volatile FunctorWords*)&Callback;
+    unsigned long b;
+    unsigned long a;
+    unsigned long e;
+    unsigned long d;
+    unsigned long c;
+
+    a = src->w0;
+    b = src->w1;
+    dst->w0 = a;
+    dst->w1 = b;
+
+    d = src->w2;
+    e = src->w3;
+    dst->w2 = d;
+    dst->w3 = e;
+
+    c = src->w4;
+    b = src->w5;
+    dst->w4 = c;
+    dst->w5 = b;
 
     unsigned long hash = nlStringHash(FileName);
 

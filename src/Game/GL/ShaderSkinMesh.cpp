@@ -363,22 +363,38 @@ void ShaderSkinMesh::SetPoseMatrices(int num, GLSkinMeshMatrix* pMatrices)
     }
 }
 
+static inline void ClearUserData(ShaderSkinMesh* mesh)
+{
+    if (mesh->pModel != NULL)
+    {
+        glModelPacket* pPacket = mesh->pModel->packets;
+        glModelPacket* pEndPacket = pPacket + mesh->pModel->numPackets;
+        while (pPacket < pEndPacket)
+        {
+            pPacket->userData = 0;
+            pPacket++;
+        }
+    }
+}
+
+static inline void CopySoftwareVerts(ShaderSkinMesh* mesh)
+{
+    for (int i = 0; i < mesh->numSoftwareVerts; i++)
+    {
+        mesh->morphBuffer[i].f.x = mesh->softwareVertices[i].position.f.x;
+        mesh->morphBuffer[i].f.y = mesh->softwareVertices[i].position.f.y;
+        mesh->morphBuffer[i].f.z = mesh->softwareVertices[i].position.f.z;
+    }
+}
+
 /**
  * Offset/Address/Size: 0x58C | 0x801E0BD0 | size: 0x1E0
- * TODO: 91.0% match - remaining differences are register/counter assignment
- *       in the packet clear loop and morph outer-loop induction variables.
+ * TODO: 97.3% match - remaining differences are in morph loop register
+ *       assignment for morph weight and delta-offset cursors.
  */
 void ShaderSkinMesh::PrepareToRender(unsigned long flags, const nlMatrix4* pMatrix)
 {
-    if (pModel != NULL)
-    {
-        glModelPacket* p = pModel->packets;
-        glModelPacket* pEnd = p + pModel->numPackets;
-        for (; p < pEnd; p++)
-        {
-            p->userData = 0;
-        }
-    }
+    ClearUserData(this);
 
     if (numMorphs == 0)
     {
@@ -387,27 +403,23 @@ void ShaderSkinMesh::PrepareToRender(unsigned long flags, const nlMatrix4* pMatr
     else
     {
         morphBuffer = sharedMorphBuffer;
+        CopySoftwareVerts(this);
 
-        for (int i = 0; i < numSoftwareVerts; i++)
-        {
-            morphBuffer[i].f.x = softwareVertices[i].position.f.x;
-            morphBuffer[i].f.y = softwareVertices[i].position.f.y;
-            morphBuffer[i].f.z = softwareVertices[i].position.f.z;
-        }
-
-        MorphDelta* pDelta = morphData;
         int m = 0;
-        u32 n = (u32)m;
+        MorphDelta* pDelta = morphData;
+        u32 deltaOffset = (u32)m;
+        ShaderSkinMesh* weightCursor = this;
+
         while (m < numMorphs)
         {
-            u32 nDeltas = morphNumDeltas[n];
+            u32 nDeltas = morphNumDeltas[deltaOffset >> 2];
             MorphDelta* end = pDelta + nDeltas;
 
-            if (morphWeights[n] > 0.0f)
+            if (weightCursor->morphWeights[0] > 0.0f)
             {
                 while (pDelta != end)
                 {
-                    float w = morphWeights[n];
+                    float w = weightCursor->morphWeights[0];
                     nlVector3* dst = &morphBuffer[pDelta->index];
                     float rx = dst->f.x + w * pDelta->delta.f.x;
                     float rz = dst->f.z + w * pDelta->delta.f.z;
@@ -423,8 +435,9 @@ void ShaderSkinMesh::PrepareToRender(unsigned long flags, const nlMatrix4* pMatr
                 pDelta = end;
             }
 
+            deltaOffset += 4;
+            weightCursor = (ShaderSkinMesh*)((char*)weightCursor + 4);
             m++;
-            n++;
         }
     }
 

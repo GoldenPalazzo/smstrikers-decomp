@@ -412,19 +412,14 @@ inline float nlVec3Length(const nlVector3& a)
 }
 
 /**
- * Offset/Address/Size: 0x984 | 0x80163158 | size: 0x1C4
- * TODO: 98.0% match - remaining volatile FP register allocation diffs:
- * viewVector x/y load order (f4/f6 swap), cascading to perp f5/f6/f4
- * vs target f6/f7/f8 in both branches.
- */
-/**
  * Offset/Address/Size: 0x3DC | 0x80163158 | size: 0x1C4
- * TODO: 98.63% match - volatile FPR allocation offset for perp values (f5,f6,f4 vs f6,f7,f8)
  */
 bool BlurHandler::ConstructViewOrientedPoints(nlVector3& topPoint, nlVector3& bottomPoint, nlVector3 position, const nlVector3& forwardVector)
 {
     nlVector3 viewVector;
-    nlVector3 perp;
+    float perpX;
+    float perpY;
+    float perpZ;
 
     float sLen1 = nlVec3LengthSquared(forwardVector);
     if (sLen1 < 0.01f)
@@ -449,28 +444,28 @@ bool BlurHandler::ConstructViewOrientedPoints(nlVector3& topPoint, nlVector3& bo
 
         float invLen2 = nlRecipSqrt((crossZ * crossZ) + ((crossX * crossX) + (crossY * crossY)), 1);
 
-        nlVec3Set(perp, m_fLineWidth * (invLen2 * crossX), m_fLineWidth * (invLen2 * crossY), m_fLineWidth * (invLen2 * crossZ));
+        float width = m_fLineWidth;
+        perpX = width * (invLen2 * crossX);
+        perpY = width * (invLen2 * crossY);
+        perpZ = width * (invLen2 * crossZ);
     }
     else
     {
         if (m_pLastPoint != NULL)
         {
-            nlVec3Set(perp, 0.5f * (m_pLastPoint->v3Top.f.x - m_pLastPoint->v3Bottom.f.x), 0.5f * (m_pLastPoint->v3Top.f.y - m_pLastPoint->v3Bottom.f.y), 0.5f * (m_pLastPoint->v3Top.f.z - m_pLastPoint->v3Bottom.f.z));
+            perpX = 0.5f * (m_pLastPoint->v3Top.f.x - m_pLastPoint->v3Bottom.f.x);
+            perpY = 0.5f * (m_pLastPoint->v3Top.f.y - m_pLastPoint->v3Bottom.f.y);
+            perpZ = 0.5f * (m_pLastPoint->v3Top.f.z - m_pLastPoint->v3Bottom.f.z);
         }
         else
         {
             return false;
         }
     }
-    float pY_5 = position.f.x;
-    float pX_2 = position.f.y;
-    float pZ_2 = position.f.z;
-    topPoint.f.x = pY_5 + perp.f.x;
-    topPoint.f.y = pX_2 + perp.f.y;
-    topPoint.f.z = pZ_2 + perp.f.z;
-    bottomPoint.f.x = pY_5 - perp.f.x;
-    bottomPoint.f.y = pX_2 - perp.f.y;
-    bottomPoint.f.z = pZ_2 - perp.f.z;
+
+    nlVec3Set(topPoint, position.f.x + perpX, position.f.y + perpY, position.f.z + perpZ);
+    nlVec3Set(bottomPoint, position.f.x - perpX, position.f.y - perpY, position.f.z - perpZ);
+
     return true;
 }
 

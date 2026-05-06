@@ -220,13 +220,13 @@ static inline void CalcShotAim(cFielder* pFielder, ShotMeter* pMeter)
         if (pPad->GetMovementStickMagnitude() > 0.1f)
         {
             s16 dir = pPad->GetMovementStickDirection();
-            if ((s16)(dir + 0x8000) < 0)
+            if ((s16)(dir + 0x8000) >= 0)
             {
-                fAimValue = 1.0f;
+                fAimValue = -1.0f;
             }
             else
             {
-                fAimValue = -1.0f;
+                fAimValue = 1.0f;
             }
         }
     }
@@ -249,9 +249,9 @@ static inline void CalcScoreValue(cFielder* pFielder, ShotMeter* pMeter)
         float fDistWeight = pGameTweaks->unk2E0;
         fShooting *= fRatingsWeight;
         float fOpenWeight = pGameTweaks->unk2DC;
+        float fOpenVal = fLikelyToScore * fOpenWeight;
         float fDistVal = fDistance * fDistWeight;
         float fSumD = fDistWeight + fOpenWeight;
-        float fOpenVal = fLikelyToScore * fOpenWeight;
         float fSumWeights = fRatingsWeight + fSumD;
         float fResult = fOpenVal + fDistVal;
         float fRemainder = 1.0f - fSumWeights;
@@ -264,11 +264,12 @@ static inline void CalcScoreValue(cFielder* pFielder, ShotMeter* pMeter)
         float fChipWeight = pGameTweaks->unk2E4;
         float fGoalieOut = GoalieOutOfPosition(pFielder);
         pGameTweaks = g_pGame->m_pGameTweaks;
-        float fGoalieVal = fGoalieOut * fChipWeight;
+        float fGoalieVal = fGoalieOut;
+        fGoalieVal *= fChipWeight;
         fShooting *= fRatingsWeight;
         float fChipOpenWeight = pGameTweaks->unk2E8;
-        float fSum = fChipWeight + fChipOpenWeight;
         float fOpenVal = fLikelyToScore * fChipOpenWeight;
+        float fSum = fChipWeight + fChipOpenWeight;
         float fSumWeights = fRatingsWeight + fSum;
         float fResult = fGoalieVal + fOpenVal;
         float fRemainder = 1.0f - fSumWeights;
@@ -280,10 +281,8 @@ static inline void CalcScoreValue(cFielder* pFielder, ShotMeter* pMeter)
 
 /**
  * Offset/Address/Size: 0x0 | 0x80062120 | size: 0x1FC
- * TODO: 97.52% match - 22 volatile float temp register allocation diffs in
- * CalcScoreValue arithmetic (f4/f5 vs f1/f3 in non-chip, f2/f1 swap in chip).
- * Inherent to MWCC register allocator with -inline deferred; CalcScoreValue
- * and CalcShotAim were originally erased static member functions that got inlined.
+ * TODO: 99.29% match - remaining register allocation diffs in CalcScoreValue
+ * weighted arithmetic (non-chip f4/f5 vs f1/f3; chip f5/f1 swap chain).
  */
 void ShotMeter::ShotReleased(cFielder* pFielder)
 {

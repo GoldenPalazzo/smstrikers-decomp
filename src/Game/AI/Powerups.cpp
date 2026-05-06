@@ -1992,12 +1992,10 @@ void RedShell::SeekTarget()
     dx = invDist * dx;
     dy = invDist * dy;
 
-    fCurrSpeed = nlGetLength2D(m_v3Velocity.f.x, m_v3Velocity.f.y);
+    float velX = m_v3Velocity.f.x;
+    float velY = m_v3Velocity.f.y;
+    fCurrSpeed = nlGetLength2D(velY, velX);
 
-    // TODO: 99.3% match - MWCC compiler scheduling difference: decomp.me loads x-component
-    // (lower struct offset) before y-component, but target binary loads y first. This causes
-    // cascading register swaps (f2/f3, f29/f30) throughout the function. All remaining diffs
-    // are offset/register swaps from this root cause.
     float turnRate = 5.0f;
     float steerY = turnRate * dy;
     float steerX = turnRate * dx;
@@ -2016,7 +2014,7 @@ void RedShell::SeekTarget()
     }
     else
     {
-        nlVec3Set(v3NewVelocity, fCurrSpeed * normNewVelX, fCurrSpeed * normNewVelY, 0.0f);
+        nlVec3Set(v3NewVelocity, fCurrSpeed * normNewVelY, fCurrSpeed * normNewVelX, 0.0f);
         m_v3Velocity = v3NewVelocity;
         m_pPhysicsObject->SetLinearVelocity(v3NewVelocity);
         m_pPhysicsObject->SetLinearVelocity(m_v3Velocity);
@@ -2171,10 +2169,8 @@ void SpinyShell::Update(float dt)
             f32 sqX = velX * velX;
             f32 sqY = velY * velY;
             f32 recipLen = nlRecipSqrt(sqX + sqY, true);
-            vel.f.x = recipLen * velX;
-            vel.f.y = recipLen * velY;
-            vel.f.x = 5.0f * vel.f.x;
-            vel.f.y = 5.0f * vel.f.y;
+            nlVec2Set(vel, recipLen * velX, recipLen * velY);
+            nlVec2Set(vel, 5.0f * vel.f.x, 5.0f * vel.f.y);
             nlVector3 cappedVel;
             cappedVel.f.y = vel.f.y;
             cappedVel.f.x = vel.f.x;

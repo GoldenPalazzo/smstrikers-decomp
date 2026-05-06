@@ -603,16 +603,16 @@ void AudioStreamTrack::StreamTrack::ProcessNewHeadStream()
 
 /**
  * Offset/Address/Size: 0xC90 | 0x801559E8 | size: 0x190
- * TODO: 97.0% match - lwz r0,8(r1) scheduled before bne in target but after in current
  */
 void AudioStreamTrack::StreamTrack::StopHead(unsigned long Fadeout)
 {
     FORCE_DONT_INLINE;
     DLListEntry<QUEUED_STREAM>* entry = nlDLRingGetStart(m_QueuedStreams.m_Head);
+    StreamTrack* pTrack = this;
 
     if (Fadeout == 0)
     {
-        StopQStream(&entry->m_data);
+        pTrack->StopQStream(&entry->m_data);
     }
     else
     {
@@ -620,13 +620,24 @@ void AudioStreamTrack::StreamTrack::StopHead(unsigned long Fadeout)
         BindExp2_T bind = Bind<void>(
             MemFun<StreamTrack, void, QUEUED_STREAM*>(&StreamTrack::FadeOutDoneStartNext), this, qs);
 
-        Function<FnVoidVoid> callback;
+        struct CallbackRaw
+        {
+            Tag mTag;
+            Function0<void>::FunctorBase* mFunctor;
+        } callback;
+
         callback.mTag = FUNCTOR;
         FunctorImpl_T* functor = new ((FunctorImpl_T*)nlMalloc(sizeof(FunctorImpl_T), 8, false))
             FunctorImpl_T(bind);
         callback.mFunctor = functor;
 
-        StartQStreamFadeout(&entry->m_data, Fadeout, callback);
+        StartQStreamFadeout(&entry->m_data, Fadeout, *(Function<FnVoidVoid>*)&callback);
+
+        if (callback.mTag == FUNCTOR)
+        {
+            delete callback.mFunctor;
+        }
+        callback.mTag = EMPTY;
     }
 }
 

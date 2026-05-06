@@ -4,8 +4,6 @@
 #include "Game/Replay.h"
 #include "Game/Drawable/DrawableObj.h"
 
-void DrawShadow(float, float, float, float);
-
 class DrawablePowerup
 {
 public:

@@ -186,7 +186,6 @@ public:
         return tree_.find(x);
     }
 
-private:
     __tree<pair<const Key, Value>, value_compare, Allocator> tree_;
 };
 

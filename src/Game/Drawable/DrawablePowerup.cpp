@@ -7,6 +7,8 @@
 #include "NL/gl/glState.h"
 #include "NL/nlString.h"
 
+static void DrawShadow(float radius, float x, float y, float z);
+
 static char* PowerupLookupString(int idx)
 {
     static char powerupLookup[] = "powerup_generated_xxx";
@@ -137,31 +139,30 @@ void DrawablePowerup::Grab(int idx)
 
 /**
  * Offset/Address/Size: 0x504 | 0x8011F178 | size: 0x1A0
- * TODO: 99.47% match - MWCC keeps the clamped height ratio/interpolation pair
- * in f7/f8 swapped versus target in the pre-vertex math block.
  */
-void DrawShadow(float radius, float x, float y, float z)
+static void DrawShadow(float radius, float x, float y, float z)
 {
     float one = 1.0f;
     float zero = 0.0f;
-    float t = z / 10.0f;
+    float half_dim;
+    float frac = z / 10.0f;
 
-    if (t < zero)
+    if (frac < zero)
     {
-        t = zero;
+        frac = zero;
     }
 
-    if (t > one)
+    if (frac > one)
     {
-        t = one;
+        frac = one;
     }
 
-    float invT = one - t;
-    float alphaT = 48.0f * t;
+    half_dim = one - frac;
+    float alphaT = 48.0f * frac;
     float scale = 4.0f * radius;
-    float alphaF = 150.0f * invT + alphaT;
-    float shadowT = t * scale;
-    float shadowRadius = (float)(invT * (1.75 * radius) + shadowT);
+    float alphaF = 150.0f * half_dim + alphaT;
+    float shadowT = frac * scale;
+    float shadowRadius = (float)(half_dim * (1.75 * radius) + shadowT);
     int alpha = (int)alphaF;
 
     if (alpha < 0)

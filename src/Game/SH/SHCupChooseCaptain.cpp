@@ -609,18 +609,23 @@ void CupChooseCaptainSceneV2::ChangeState(CupChooseCaptainSceneV2::eCupCaptainSt
 
 /**
  * Offset/Address/Size: 0x15C | 0x800DD028 | size: 0x1D4
- * TODO: 98.3% match - register allocation mismatch persists for early long-lived
- * locals (target r30/r28/r27/r26/r31 vs current r31/r30/r29/r28/r27 for
- * pGameInfo/chosenCaptain/chosenSidekick/numPlayingTeams/slot).
+ * TODO: 98.8% match - remaining register allocation mismatch is in
+ * numPlayingTeams/slot and lineup/sklineup traversal registers
+ * (target r26/r31 + r29/r25/r27 vs current r31/r27 + r25/r26/r29).
  */
 void CupChooseCaptainSceneV2::CreateLineup()
 {
+    int numPlayingTeams;
+    u32 slot;
     GameInfoManager* const pGameInfo = nlSingleton<GameInfoManager>::s_pInstance;
-    eTeamID chosenCaptain = mCurrentCaptain;
-    eSidekickID chosenSidekick = mCurrentSK;
+    eSidekickID chosenSidekick;
+    eTeamID chosenCaptain;
 
-    int numPlayingTeams = pGameInfo->GetNumPlayingTeams();
-    u32 slot = nlRandom((u32)numPlayingTeams, &nlDefaultSeed);
+    chosenCaptain = mCurrentCaptain;
+    chosenSidekick = mCurrentSK;
+
+    numPlayingTeams = pGameInfo->GetNumPlayingTeams();
+    slot = nlRandom((u32)numPlayingTeams, &nlDefaultSeed);
 
     eTeamID lineup[8];
     eSidekickID sklineup[8];
