@@ -4,79 +4,6 @@
 static f32 CANT_COLLIDE = *(f32*)__float_max;
 
 /**
- * Offset/Address/Size: 0x0 | 0x801F08C4 | size: 0x1A8
- */
-void SolveQuadratic(float a, float b, float c, int& numRoots, float& x1, float& x2)
-{
-    float absA = (float)fabs(a);
-    float absB = (float)fabs(b);
-    float absC = (float)fabs(c);
-    float q;
-    float p;
-    float r;
-
-    if (absA < 0.00001f && absB < 0.00001f)
-    {
-        numRoots = 0;
-        return;
-    }
-
-    if (absA > absB && absA > absC)
-    {
-        q = b / a;
-        p = 1.0f;
-        r = c / a;
-    }
-    else if (absB > absA && absB > absC)
-    {
-        p = a / b;
-        q = 1.0f;
-        r = c / b;
-    }
-    else
-    {
-        p = a / c;
-        r = 1.0f;
-        q = b / c;
-    }
-
-    if (absA < 0.00001f)
-    {
-        numRoots = 1;
-        x1 = -r / q;
-        return;
-    }
-
-    float d = q * q - (4.0f * p * r);
-    if (d < 0.0f)
-    {
-        numRoots = 0;
-        return;
-    }
-
-    float sqrtd = nlSqrt(d, true);
-    float z;
-    if (q > 0.0f)
-    {
-        z = -0.5f * (q + sqrtd);
-    }
-    else
-    {
-        z = -0.5f * (q - sqrtd);
-    }
-
-    x1 = z / p;
-    if ((float)fabs(z) < 0.00001f)
-    {
-        numRoots = 1;
-        return;
-    }
-
-    x2 = r / z;
-    numRoots = 2;
-}
-
-/**
  * Offset/Address/Size: 0x1A8 | 0x801F0A6C | size: 0x148
  */
 float SweepSpheres(float rp, const nlVector3& p1, const nlVector3& p2, float rq,
@@ -122,6 +49,79 @@ float SweepSpheres(float rp, const nlVector3& p1, const nlVector3& p2, float rq,
 
     float t = (-dot - nlSqrt(disc, true)) / a;
     return t;
+}
+
+/**
+ * Offset/Address/Size: 0x0 | 0x801F08C4 | size: 0x1A8
+ */
+void SolveQuadratic(float a, float b, float c, int& numRoots, float& x1, float& x2)
+{
+    float absA = (float)fabs(a);
+    float absB = (float)fabs(b);
+    float absC = (float)fabs(c);
+    float q;
+    float p;
+    float r;
+
+    if (absA < 1e-10f && absB < 1e-10f)
+    {
+        numRoots = 0;
+        return;
+    }
+
+    if (absA > absB && absA > absC)
+    {
+        q = b / a;
+        p = 1.0f;
+        r = c / a;
+    }
+    else if (absB > absA && absB > absC)
+    {
+        p = a / b;
+        q = 1.0f;
+        r = c / b;
+    }
+    else
+    {
+        p = a / c;
+        r = 1.0f;
+        q = b / c;
+    }
+
+    if (absA < 1e-10f)
+    {
+        numRoots = 1;
+        x1 = -r / q;
+        return;
+    }
+
+    float d = q * q - (4.0f * p * r);
+    if (d < 0.0f)
+    {
+        numRoots = 0;
+        return;
+    }
+
+    float sqrtd = nlSqrt(d, true);
+    float z;
+    if (q > 0.0f)
+    {
+        z = -0.5f * (q + sqrtd);
+    }
+    else
+    {
+        z = -0.5f * (q - sqrtd);
+    }
+
+    x1 = z / p;
+    if ((float)fabs(z) < 0.00001f)
+    {
+        numRoots = 1;
+        return;
+    }
+
+    x2 = r / z;
+    numRoots = 2;
 }
 
 // /**
