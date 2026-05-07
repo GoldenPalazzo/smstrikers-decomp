@@ -232,7 +232,7 @@ void nlSinCos(float* presult_sin, float* presult_cos, unsigned short angle)
     float s1 = 1.0f / 120.0f;
     float s2 = -1.0f / 6.0f;
     float c0 = -1.0f / 720.0f;
-    float c1 = 1.0f / 24.0f;
+    float c1 = 0.0416363291f;
     float s3 = 1.0f;
     float c2 = -0.5f;
     float c3 = 0.99999998f;
