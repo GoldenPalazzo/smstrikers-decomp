@@ -518,6 +518,64 @@ void AudioLoader::SetupWorldSoundTypesAVLTree()
 }
 
 /**
+ * Offset/Address/Size: 0x39F4 | 0x801477C0 | size: 0x104
+ * TODO: 96.23% match - r29/r30/r31 callee-saved rotation: map in r31 instead of r30
+ */
+void AudioLoader::SetupSoundGroups()
+{
+    const char* szGroup = sebringAudioGroups[0].szGroupName;
+    int i = 0;
+
+    while ((u32)nlStrLen(szGroup) != 0)
+    {
+        SoundStrToIDNode** foundValue = NULL;
+        int hash = (int)nlStringLowerHash(sebringAudioGroups[i].szGroupName);
+
+        bool found = ((SoundDefineMapType*)&AudioLoader::gMusyXSoundDefineMap)->FindGet(hash, &foundValue);
+
+        s32 musyxID;
+        if (found)
+            musyxID = (*foundValue)->musyxID;
+        else
+            musyxID = -1;
+
+        if ((u32)(musyxID + 0x10000) == 0xFFFF)
+            break;
+
+        sebringAudioGroups[i].groupID = (u16)musyxID;
+        i++;
+    }
+}
+
+/**
+ * Offset/Address/Size: 0x3AF8 | 0x801478C4 | size: 0xB4
+ */
+unsigned long AudioLoader::GetWorldSFXTypeFromStr(const char* str)
+{
+    SoundStrToIDNode** ppNode = NULL;
+    unsigned long key = nlStringLowerHash(str);
+    bool found = ((SoundDefineMapType*)&AudioLoader::gWorldSoundDefineMap)->FindGet(key, &ppNode);
+    if (found)
+        return (*ppNode)->typeID;
+    else
+        return -1;
+}
+
+/**
+ * Offset/Address/Size: 0x3BAC | 0x80147978 | size: 0xB4
+ */
+unsigned long AudioLoader::GetCharSFXTypeFromStr(const char* str)
+{
+    SoundStrToIDNode** ppNode = NULL;
+    unsigned long key = nlStringLowerHash(str);
+    bool found = ((SoundDefineMapType*)&AudioLoader::gCharSoundDefineMap)->FindGet(key, &ppNode);
+    if (found)
+        return (*ppNode)->typeID;
+    else
+        return -1;
+}
+
+/**
  * Offset/Address/Size: 0x3C60 | 0x80147A2C | size: 0xE0
  */
 unsigned long AudioLoader::GetSFXIDFromStr(const char* str, SoundStrToIDNode** ppNode)
@@ -540,69 +598,6 @@ unsigned long AudioLoader::GetSFXIDFromStr(const char* str, SoundStrToIDNode** p
         return (*foundValue)->musyxID;
     }
     return -1;
-}
-
-/**
- * Offset/Address/Size: 0x3BAC | 0x80147978 | size: 0xB4
- */
-unsigned long AudioLoader::GetCharSFXTypeFromStr(const char* str)
-{
-    SoundStrToIDNode** ppNode = NULL;
-    unsigned long key = nlStringLowerHash(str);
-    bool found = ((SoundDefineMapType*)&AudioLoader::gCharSoundDefineMap)->FindGet(key, &ppNode);
-    if (found)
-        return (*ppNode)->typeID;
-    else
-        return -1;
-}
-
-/**
- * Offset/Address/Size: 0x3AF8 | 0x801478C4 | size: 0xB4
- */
-unsigned long AudioLoader::GetWorldSFXTypeFromStr(const char* str)
-{
-    SoundStrToIDNode** ppNode = NULL;
-    unsigned long key = nlStringLowerHash(str);
-    bool found = ((SoundDefineMapType*)&AudioLoader::gWorldSoundDefineMap)->FindGet(key, &ppNode);
-    if (found)
-        return (*ppNode)->typeID;
-    else
-        return -1;
-}
-
-/**
- * Offset/Address/Size: 0x39F4 | 0x801477C0 | size: 0x104
- * TODO: 96.15% match - callee-saved register shift (r29/r30/r31 rotated by 1)
- * is an unavoidable MWCC graph-coloring allocator decision
- */
-void AudioLoader::SetupSoundGroups()
-{
-    SndGroupData* group;
-    const char* firstName;
-
-    group = sebringAudioGroups;
-    firstName = sebringAudioGroups[0].szGroupName;
-    int i = 0;
-
-    while ((u32)nlStrLen(firstName) != 0)
-    {
-        SoundStrToIDNode** foundValue = NULL;
-        int hash = (int)nlStringLowerHash(sebringAudioGroups[i].szGroupName);
-
-        bool found = ((SoundDefineMapType*)&AudioLoader::gMusyXSoundDefineMap)->FindGet(hash, &foundValue);
-
-        s32 musyxID;
-        if (found)
-            musyxID = (*foundValue)->musyxID;
-        else
-            musyxID = -1;
-
-        if ((u32)(musyxID + 0x10000) == 0xFFFF)
-            break;
-
-        sebringAudioGroups[i].groupID = (u16)musyxID;
-        i++;
-    }
 }
 
 /**

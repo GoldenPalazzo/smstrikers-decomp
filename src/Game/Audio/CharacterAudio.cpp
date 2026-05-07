@@ -854,8 +854,6 @@ unsigned long cCharacterSFX::PlayNISRandomCharDialogue(CharDialogueType dialogue
 
 /**
  * Offset/Address/Size: 0x1E4 | 0x8014C588 | size: 0x10C
- * TODO: 68.7% match in decomp.me - jump table not generated (env limitation)
- *       and g_pTeams uses SDA instead of absolute addressing
  */
 cCharacter* cCharacterSFX::GetCharacterFromNisCharClass(NisCharacterClass charIdentifier)
 {
@@ -863,18 +861,15 @@ cCharacter* cCharacterSFX::GetCharacterFromNisCharClass(NisCharacterClass charId
 
     switch (charIdentifier)
     {
-    case NIS_CHAR_CLASS_BIRDO:
     case NIS_CHAR_CLASS_DAISY:
     case NIS_CHAR_CLASS_DONKEYKONG:
-    case NIS_CHAR_CLASS_HAMMERBROS:
-    case NIS_CHAR_CLASS_KOOPA:
     case NIS_CHAR_CLASS_LUIGI:
     case NIS_CHAR_CLASS_MARIO:
     case NIS_CHAR_CLASS_PEACH:
-    case NIS_CHAR_CLASS_TOAD:
     case NIS_CHAR_CLASS_WALUIGI:
     case NIS_CHAR_CLASS_WARIO:
     case NIS_CHAR_CLASS_YOSHI:
+    case NIS_CHAR_CLASS_MYSTERY:
         for (int team = 0; team < 2; team++)
         {
             cTeam* pTeam = g_pTeams[team];
@@ -885,7 +880,10 @@ cCharacter* cCharacterSFX::GetCharacterFromNisCharClass(NisCharacterClass charId
             }
         }
         break;
-    case NIS_CHAR_CLASS_MYSTERY:
+    case NIS_CHAR_CLASS_BIRDO:
+    case NIS_CHAR_CLASS_HAMMERBROS:
+    case NIS_CHAR_CLASS_KOOPA:
+    case NIS_CHAR_CLASS_TOAD:
         for (int team = 0; team < 2; team++)
         {
             if ((u32)ConvertToCharacterClass(GameInfoManager::Instance()->GetSidekick((short)team)) == (u32)charIdentifier)

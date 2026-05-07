@@ -2295,9 +2295,86 @@ void GameInfoManager::DetermineNextCupScreen()
 /**
  * Offset/Address/Size: 0x1DA8 | 0x8017744C | size: 0x654
  */
-signed char GameInfoManager::DetermineUserPlacement(Spoil*)
+signed char GameInfoManager::DetermineUserPlacement(Spoil* pSpoil)
 {
-    FORCE_DONT_INLINE;
+    signed char userplace = 0;
+    eGameModes mode = mCurrentMode;
+    TeamStats allStats[8];
+    int rankIndices[8];
+    int userIndex = -1;
+    int numTeams;
+    int i;
+    int j;
+
+    numTeams = GetNumPlayingTeams();
+
+    for (i = 0; i < (u16)numTeams; i++)
+    {
+        allStats[i] = GetTeamStatsByIndex(i);
+
+        if (allStats[i].mTeamIndex == mCurrentCup->mUserSelectedTeam)
+        {
+            userIndex = i;
+        }
+    }
+
+    if ((mode == GM_BOWSER_CUP || mode == GM_SUPER_BOWSER_CUP) && mUserLastResults[mCurrentMode] != RESULT_USER_DOES_NOT_PLAYOFF_QUALIFY)
+    {
+        if (mUserLastResults[mCurrentMode] == RESULT_CUP_WIN)
+        {
+            userplace = 0;
+        }
+        else
+        {
+            userplace = -2;
+        }
+    }
+    else if (mode == GM_TOURNAMENT && mCustomTournamentInfo.m_tournMode == TM_KNOCKOUT)
+    {
+        if (mUserLastResults[mCurrentMode] == RESULT_CUP_WIN)
+        {
+            userplace = 0;
+        }
+        else
+        {
+            userplace = -2;
+        }
+    }
+    else
+    {
+        StatsTracker::s_pInstance->GetSortedTeamStats(allStats, numTeams, rankIndices, numTeams);
+
+        for (j = 0; j < numTeams; j++)
+        {
+            if (userIndex == rankIndices[j])
+            {
+                userplace = (signed char)j;
+                break;
+            }
+        }
+    }
+
+    if (pSpoil != NULL)
+    {
+        pSpoil->mNumWins += allStats[userIndex].mNumWins;
+        pSpoil->mNumLosses += allStats[userIndex].mNumLosses;
+        pSpoil->mNumLosses += allStats[userIndex].mNumOTLosses;
+
+        if (pSpoil->mNumWins > 999)
+        {
+            pSpoil->mNumWins = 999;
+        }
+        if (pSpoil->mNumLosses > 999)
+        {
+            pSpoil->mNumLosses = 999;
+        }
+        if (pSpoil->mNumCupWins > 999)
+        {
+            pSpoil->mNumCupWins = 999;
+        }
+    }
+
+    return userplace;
 }
 
 /**

@@ -14,6 +14,8 @@
 
 #include "Game/Team.h"
 #include "Game/AI/Fielder.h"
+#include "Game/AI/ShotMeter.h"
+#include "Game/AI/AiUtil.h"
 #include "Game/AnimInventory.h"
 #include "Game/SAnim/pnBlender.h"
 #include "Game/SAnim/AnimRetargeter.h"
@@ -187,10 +189,248 @@ void cCharacter::SetSFX(SoundPropAccessor* pSoundPropAccessor)
 
 /**
  * Offset/Address/Size: 0x40C | 0x8000E358 | size: 0x650
+ * TODO: 96.35% match - r-diffs in preamble (lfs f1/fmr f29 scheduling), DECELERATE (f3/f4 swap),
+ * FROM_ANIM smoothstep (f5/f6 vs f7/f8, cror vs ble pattern x2), AnimMoveAdjust/RootTrans register cascade,
+ * RUNNING abs() r0/r3
  */
-void cCharacter::UpdateMovementState(float)
+void cCharacter::UpdateMovementState(float fDeltaT)
 {
-    FORCE_DONT_INLINE;
+    float fDesiredSpeed = m_fDesiredSpeed;
+
+    if (m_eClassType == FIELDER)
+    {
+        cFielder* pFielder = (cFielder*)this;
+        bool isCharging = false;
+        int shotState = *(int*)pFielder->m_pShotMeter;
+        if (shotState == 1 || shotState == 3 || shotState == 4)
+        {
+            isCharging = true;
+        }
+        if (!isCharging)
+        {
+            fDesiredSpeed = pFielder->GetSpeedPowerupAdjusted(fDesiredSpeed);
+        }
+    }
+
+    switch (m_eMovementState)
+    {
+    case MOVEMENT_COAST:
+    {
+        float mag = nlSqrt(m_v3Velocity.f.x * m_v3Velocity.f.x + m_v3Velocity.f.y * m_v3Velocity.f.y + m_v3Velocity.f.z * m_v3Velocity.f.z, true);
+        if (mag > 15.0f)
+        {
+            nlPolar polar;
+            nlCartesianToPolar(polar, m_v3Velocity.f.x, m_v3Velocity.f.y);
+            nlPolarToCartesian(m_v3Velocity.f.x, m_v3Velocity.f.y, polar.a, 15.0f);
+        }
+        break;
+    }
+
+    case MOVEMENT_DECELERATE_EXPONENTIAL:
+    {
+        float difference = fDesiredSpeed - m_fActualSpeed;
+        float fDecel = m_fDecel;
+        float distance = fabs(difference);
+        float newSpeed;
+        if (distance > 0.1f)
+        {
+            float adjustment = distance - (1.0f / (fDecel * fDeltaT + 1.0f / distance));
+            if (difference > 0.0f)
+            {
+                newSpeed = m_fActualSpeed + adjustment;
+            }
+            else
+            {
+                newSpeed = m_fActualSpeed - adjustment;
+            }
+        }
+        else
+        {
+            newSpeed = fDesiredSpeed;
+        }
+        m_fActualSpeed = newSpeed;
+        nlPolarToCartesian(m_v3Velocity.f.x, m_v3Velocity.f.y, m_aActualMovementDirection, m_fActualSpeed);
+        break;
+    }
+
+    case MOVEMENT_FROM_ANIM:
+    {
+        cPoseNode* pSourceNode;
+        if (m_bFromAnimBlended)
+        {
+            pSourceNode = *m_pAILayer;
+        }
+        else
+        {
+            pSourceNode = m_pCurrentAnimController;
+        }
+
+        s16 nAdjust = 0;
+        float adjustTime = m_fAnimAdjustEndTime - m_fAnimAdjustBeginTime;
+        float consumedMoveX = 0.0f;
+        float consumedMoveY = 0.0f;
+        float consumedMoveZ = 0.0f;
+
+        if (adjustTime > 0.0f)
+        {
+            float t = (m_pCurrentAnimController->m_fTime - m_fAnimAdjustBeginTime) / adjustTime;
+            float smoothStep1 = (t * (t * t)) * (t * (6.0f * t + (-15.0f)) + 10.0f);
+            if (smoothStep1 > 1.0f)
+            {
+                smoothStep1 = 1.0f;
+            }
+
+            float t2 = (m_pCurrentAnimController->m_fPrevTime - m_fAnimAdjustBeginTime) / adjustTime;
+            float smoothStep2 = (t2 * (t2 * t2)) * (t2 * (6.0f * t2 + (-15.0f)) + 10.0f);
+            if (smoothStep2 > 1.0f)
+            {
+                smoothStep2 = 1.0f;
+            }
+
+            if (smoothStep2 < 1.0f)
+            {
+                float fAdjustPercent = (smoothStep1 - smoothStep2) / (1.0f - smoothStep2);
+                nAdjust = (s16)((float)m_nAnimTurnAdjust * fAdjustPercent);
+                m_nAnimTurnAdjust -= nAdjust;
+
+                float adjX = m_v3AnimMoveAdjust.f.x;
+                float adjY = m_v3AnimMoveAdjust.f.y;
+                float adjZ = m_v3AnimMoveAdjust.f.z;
+                consumedMoveX = fAdjustPercent * adjX;
+                consumedMoveY = fAdjustPercent * adjY;
+                consumedMoveZ = fAdjustPercent * adjZ;
+                adjX -= consumedMoveX;
+                adjY -= consumedMoveY;
+                adjZ -= consumedMoveZ;
+                m_v3AnimMoveAdjust.f.x = adjX;
+                m_v3AnimMoveAdjust.f.y = adjY;
+                m_v3AnimMoveAdjust.f.z = adjZ;
+            }
+        }
+
+        u16 aRootRotation;
+        pSourceNode->GetRootRot(&aRootRotation);
+        u16 prevFacing = m_aActualFacingDirection;
+        u16 newFacing = prevFacing + aRootRotation + (u16)nAdjust;
+        m_aPrevFacingDirection = prevFacing;
+        m_aActualFacingDirection = newFacing;
+        m_pPhysicsCharacter->SetFacingDirection(newFacing);
+
+        nlVector3 v3RootTrans;
+        pSourceNode->GetRootTrans(&v3RootTrans, m_aPrevFacingDirection);
+        v3RootTrans.f.x += consumedMoveX;
+        v3RootTrans.f.z += consumedMoveZ;
+        v3RootTrans.f.y += consumedMoveY;
+        m_v3Velocity.f.x = v3RootTrans.f.x / fDeltaT;
+        m_v3Velocity.f.y = v3RootTrans.f.y / fDeltaT;
+
+        nlPolar aSpeed;
+        nlCartesianToPolar(aSpeed, m_v3Velocity.f.x, m_v3Velocity.f.y);
+        m_fActualSpeed = aSpeed.r;
+        break;
+    }
+
+    case MOVEMENT_FROM_ANIM_SEEK:
+    {
+        u16 aNewFacingDirection = SeekDirection(m_aActualFacingDirection, m_aDesiredFacingDirection, m_fDirectionSeekSpeed, m_fDirectionSeekFalloff, fDeltaT);
+        m_aPrevFacingDirection = m_aActualFacingDirection;
+        m_aActualFacingDirection = aNewFacingDirection;
+        m_pPhysicsCharacter->SetFacingDirection(aNewFacingDirection);
+
+        nlVector3 v3RootTrans;
+        m_pCurrentAnimController->GetRootTrans(&v3RootTrans, m_aPrevFacingDirection);
+        m_v3Velocity.f.x = v3RootTrans.f.x / fDeltaT;
+        m_v3Velocity.f.y = v3RootTrans.f.y / fDeltaT;
+        break;
+    }
+
+    case MOVEMENT_NONE:
+    {
+        u16 aNewFacingDirection = SeekDirection(m_aActualFacingDirection, m_aDesiredFacingDirection, m_fDirectionSeekSpeed, m_fDirectionSeekFalloff, fDeltaT);
+        m_aPrevFacingDirection = m_aActualFacingDirection;
+        m_aActualFacingDirection = aNewFacingDirection;
+        m_pPhysicsCharacter->SetFacingDirection(aNewFacingDirection);
+
+        m_fActualSpeed = 0.0f;
+        nlPolarToCartesian(m_v3Velocity.f.x, m_v3Velocity.f.y, m_aActualMovementDirection, m_fActualSpeed);
+        break;
+    }
+
+    case MOVEMENT_RUNNING:
+    {
+        u16 aNewFacingDirection = SeekDirection(m_aActualFacingDirection, m_aDesiredFacingDirection, m_fDirectionSeekSpeed, m_fDirectionSeekFalloff, fDeltaT);
+
+        int delta = (s16)(aNewFacingDirection - m_aActualFacingDirection);
+        int absDelta = abs(delta);
+        int maxDelta = (int)(fDeltaT * m_fDirectionSeekSpeed);
+
+        if (absDelta <= 182)
+        {
+            m_fLeanAmount = 0.0f;
+        }
+        else
+        {
+            m_fLeanAmount = NormalizeVal((float)absDelta, 182.0f, (float)maxDelta);
+            if (delta < 0)
+            {
+                m_fLeanAmount = -m_fLeanAmount;
+            }
+        }
+
+        m_aPrevFacingDirection = m_aActualFacingDirection;
+        m_aActualFacingDirection = aNewFacingDirection;
+        m_pPhysicsCharacter->SetFacingDirection(aNewFacingDirection);
+
+        m_fActualSpeed = SeekSpeed(m_fActualSpeed, fDesiredSpeed, m_fAccel, m_fDecel, fDeltaT);
+        if (m_fActualSpeed > 15.0f)
+        {
+            m_fActualSpeed = 15.0f;
+        }
+
+        nlPolarToCartesian(m_v3Velocity.f.x, m_v3Velocity.f.y, m_aActualFacingDirection, m_fActualSpeed);
+        break;
+    }
+
+    case MOVEMENT_RUNNING_NO_TURN:
+    {
+        m_fActualSpeed = SeekSpeed(m_fActualSpeed, fDesiredSpeed, m_fAccel, m_fDecel, fDeltaT);
+        if (m_fActualSpeed > 15.0f)
+        {
+            m_fActualSpeed = 15.0f;
+        }
+
+        nlPolarToCartesian(m_v3Velocity.f.x, m_v3Velocity.f.y, m_aActualMovementDirection, m_fActualSpeed);
+        break;
+    }
+
+    case MOVEMENT_STRAFING:
+    {
+        u16 aNewFacingDirection = SeekDirection(m_aActualFacingDirection, m_aDesiredFacingDirection, m_fDirectionSeekSpeed, m_fDirectionSeekFalloff, fDeltaT);
+        m_aPrevFacingDirection = m_aActualFacingDirection;
+        m_aActualFacingDirection = aNewFacingDirection;
+        m_pPhysicsCharacter->SetFacingDirection(aNewFacingDirection);
+
+        m_aActualMovementDirection = SeekDirection(m_aActualMovementDirection, m_aDesiredMovementDirection, m_fDirectionSeekSpeed, m_fDirectionSeekFalloff, fDeltaT);
+
+        m_fActualSpeed = SeekSpeed(m_fActualSpeed, fDesiredSpeed, m_fAccel, m_fDecel, fDeltaT);
+        if (m_fActualSpeed > 15.0f)
+        {
+            m_fActualSpeed = 15.0f;
+        }
+
+        nlPolarToCartesian(m_v3Velocity.f.x, m_v3Velocity.f.y, m_aActualMovementDirection, m_fActualSpeed);
+        break;
+    }
+
+    case MOVEMENT_UNUSED:
+    default:
+        break;
+    }
+
+    nlPolar pMovement;
+    nlCartesianToPolar(pMovement, m_v3Velocity.f.x, m_v3Velocity.f.y);
+    m_aActualMovementDirection = pMovement.a;
+    m_pPhysicsCharacter->SetCharacterVelocityXY(m_v3Velocity);
 }
 
 /**

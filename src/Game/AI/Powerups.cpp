@@ -369,19 +369,18 @@ void PowerupCreateAndThrow(cFielder*, ePowerUpType, int, Bowser*)
 
 /**
  * Offset/Address/Size: 0x4EB4 | 0x8005F7A0 | size: 0x4C
- * TODO: 97.9% match - r4/r5 register swap (strength reduction assigns loop pointer to r4 instead of r5). Persists regardless of code structure changes.
+ * TODO: 98.8% match - r4/r5 register swap on strength-reduced loop pointer and index.
  * File uses -inline deferred.
  */
 PowerupBase* FindPowerUp(unsigned long hashOfDrawable)
 {
-    int i = 0;
-    while (i < 25)
+    const Pair* entry = powerupRegistry.registry;
+    for (int i = 0; i < 25; ++i, ++entry)
     {
-        if (powerupRegistry.registry[i].hashId == hashOfDrawable)
+        if (hashOfDrawable == entry->hashId)
         {
             return const_cast<PowerupBase*>(powerupRegistry.registry[i].powerup);
         }
-        i++;
     }
     return nullptr;
 }

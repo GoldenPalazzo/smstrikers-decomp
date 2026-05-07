@@ -909,9 +909,121 @@ bool Goalie::ShouldReposition()
 
 /**
  * Offset/Address/Size: 0x7A48 | 0x8004A544 | size: 0x5DC
+ * TODO: 98.60% match - r30/r31 register swap in BasicString constructor inlining, branch pattern bne vs beq+b
  */
-void Goalie::HandleSTSContact(cBall*)
+extern eTeamID GetTeam__15GameInfoManagerCFs(GameInfoManager*, short);
+extern char* GetTeamName__F7eTeamID(eTeamID);
+extern void FireCameraRumbleFilter__Fff(float, float);
+extern void SetTimeScale__18ParticleUpdateTaskFf(float);
+extern void EmitGoalieCatch(cPlayer*, const char*, bool);
+extern void EmitDaze(cPlayer*);
+extern cBaseCamera* m_cameraStack__14cCameraManager;
+
+void Goalie::HandleSTSContact(cBall* pBall)
 {
+    if (pBall->m_tShotTimer.m_uPackedTime == 0)
+    {
+        return;
+    }
+    if (pBall->m_pOwner != NULL)
+    {
+        return;
+    }
+    if (m_eAnimID == 0x6D)
+    {
+        return;
+    }
+
+    if (mpSaveData != NULL)
+    {
+        u32 saveType = mpSaveData->muSaveType;
+        if (saveType == 0x40000)
+        {
+            return;
+        }
+        if (mbShouldMiss)
+        {
+            if ((saveType & 0xFFFC) != 0)
+            {
+                return;
+            }
+        }
+    }
+
+    Audio::SoundAttributes sndAtr;
+    sndAtr.Init();
+    sndAtr.SetSoundType(0xB7, true);
+    sndAtr.UseStationaryPosVector(m_v3Position);
+    Audio::gStadGenSFX.Play(sndAtr);
+
+    if (mpSaveData != NULL)
+    {
+        cPlayer* pPrevOwner = g_pBall->m_pPrevOwner;
+        if (pPrevOwner != NULL)
+        {
+            if (pPrevOwner->m_eClassType == 2)
+            {
+                cTeam* pTeam = pPrevOwner->m_pTeam;
+                eTeamID teamID = GetTeam__15GameInfoManagerCFs(nlSingleton<GameInfoManager>::s_pInstance, (s16)pTeam->m_nSide);
+                char* teamName = GetTeamName__F7eTeamID(teamID);
+
+                BasicString<char, Detail::TempStringAllocator> effectName(teamName);
+                effectName.AppendInPlace("_shoot_to_score_catch");
+                EmitGoalieCatch(this, effectName.c_str(), true);
+            }
+        }
+
+        u32 shotFlags = mpSaveData->muSaveType;
+        if ((shotFlags & 0x20003) != 0)
+        {
+            if ((shotFlags & 3) != 0)
+            {
+                MakeSaveEvent(true);
+            }
+
+            PickupBall(pBall);
+
+            cBaseCamera* pCamera = nlDLRingGetStart<cBaseCamera>(m_cameraStack__14cCameraManager);
+            if (pCamera->GetType() == eCameraType_MatrixEffect)
+            {
+                FireCameraRumbleFilter__Fff(0.0f, 0.2f);
+            }
+
+            if (m_eAnimID == 0x6C)
+            {
+                cNet* pNet = m_pTeam->m_pNet;
+                if (pNet->m_baseLocation.f.x > 0.0f)
+                {
+                    Goalie::mbPosGoalieNetCheck = true;
+                }
+                else
+                {
+                    Goalie::mbNegGoalieNetCheck = true;
+                }
+            }
+        }
+        else if (mpSaveData->muSaveType == 0x10000)
+        {
+            MakeSaveEvent(true);
+
+            EmitDaze(this);
+            mbStunEffectActive = true;
+        }
+    }
+    else
+    {
+        if (mpShooter != NULL)
+        {
+            MakeSaveEvent(true);
+
+            PickupBall(pBall);
+
+            FixedUpdateTask::mTimeScale = 0.75f;
+            SetTimeScale__18ParticleUpdateTaskFf(0.75f);
+        }
+    }
+
+    pBall->ClearShotInProgress();
 }
 
 /**

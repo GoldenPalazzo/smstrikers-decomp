@@ -173,34 +173,39 @@ void TLTextInstance::Render(eGLView view, const nlColour& colour) const
 
 /**
  * Offset/Address/Size: 0x288 | 0x80210460 | size: 0x94
- * TODO: 95.3% match - prologue stw r31 scheduling diff and add r0 vs r3 register destination diff
+ * TODO: prologue stw r31 scheduling diff (2 swapped instructions)
  */
 const unsigned short* TLTextInstance::GetString() const
 {
+    const unsigned short* pWideTextString;
     if (m_OverloadFlags & 0x8)
     {
         unsigned long key = m_LocStrId;
         nlLocalization* loc = g_pLocalization;
-        const unsigned short* pWideTextString;
+        const unsigned short* locString;
 
         if (loc->m_LookupTable == NULL)
         {
-            pWideTextString = LocalizationTableNotFound;
+            locString = LocalizationTableNotFound;
         }
         else
         {
             nlLocalization::StringLookup* result = nlBSearch<nlLocalization::StringLookup, unsigned long>(key, loc->m_LookupTable, loc->m_pFile->StringCount);
             if (result != NULL)
             {
-                pWideTextString = loc->m_FirstString + result->StringOffset;
+                locString = loc->m_FirstString + result->StringOffset;
             }
             else
             {
-                pWideTextString = MissingLocString;
+                locString = MissingLocString;
             }
         }
-        return pWideTextString;
+        pWideTextString = locString;
+    }
+    else
+    {
+        pWideTextString = m_wcUserString;
     }
 
-    return m_wcUserString;
+    return pWideTextString;
 }

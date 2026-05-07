@@ -1,9 +1,23 @@
 #include "Game/SH/SHTournSetParams.h"
 
+#include "Game/FE/feFinder.h"
+#include "NL/nlPrint.h"
+
 template <typename T, typename R>
 Detail::MemFunImpl<R, void (T::*)()> MemFun(void (T::*fn)());
 
 extern char __vt__13SlideMenuItem[];
+
+typedef void FnTLComponentInstanceCb(TLComponentInstance*);
+
+namespace SingleHighlite
+{
+void OpenItem(TLComponentInstance*);
+void CloseItem(TLComponentInstance*);
+void TempDisableSound();
+} // namespace SingleHighlite
+
+extern nlColour SubMenuHighliteColour;
 
 // /**
 //  * Offset/Address/Size: 0xBC | 0x800E1D48 | size: 0x15C
@@ -128,9 +142,145 @@ void TournSetParamsScene::BuildSubMenuList(int menuitem, TLComponentInstance* co
 
 /**
  * Offset/Address/Size: 0x168C | 0x800E1060 | size: 0x644
+ * TODO: 94.42% match - r30/r31 register swap for this/presentation,
+ * stack frame 0x100 vs 0x140, Function<R(P)> constructor dead store,
+ * ApplyAction inline re-evaluates ternary action index.
  */
 void TournSetParamsScene::SceneCreated()
 {
+    FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
+
+    char menuname[16] = { 0 };
+
+    for (int i = 0; i < 3; i++)
+    {
+        nlSNPrintf(menuname, 16, "MENU ITEM%d", i + 1);
+
+        TLComponentInstance* instance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
+            presentation->m_currentSlide,
+            InlineHasher(nlStringLowerHash("Layer")),
+            InlineHasher(nlStringLowerHash(menuname)),
+            InlineHasher(0),
+            InlineHasher(0),
+            InlineHasher(0),
+            InlineHasher(0));
+
+        MenuItem<TLComponentInstance>* menuItem = &mMenuItems.mMenuItems[mMenuItems.mNumItemsAdded];
+        menuItem->mType = instance;
+        mMenuItems.mNumItemsAdded++;
+
+        {
+            Function<FnTLComponentInstanceCb> openFunc;
+            openFunc.mTag = FREE_FUNCTION;
+            openFunc.mFreeFunction = SingleHighlite::OpenItem;
+            menuItem->mCallbacks[ON_HIGHLIGHT] = openFunc;
+        }
+
+        {
+            Function<FnTLComponentInstanceCb> closeFunc;
+            closeFunc.mTag = FREE_FUNCTION;
+            closeFunc.mFreeFunction = SingleHighlite::CloseItem;
+            menuItem->mCallbacks[ON_UNHIGHLIGHT] = closeFunc;
+        }
+
+        if (i == 0)
+        {
+            SingleHighlite::TempDisableSound();
+        }
+
+        menuItem->ApplyAction((i == 0) ? ON_HIGHLIGHT : ON_UNHIGHLIGHT);
+    }
+
+    mMenuItems.mFlags = 3;
+
+    TLSlide* currentSlide = presentation->m_currentSlide;
+
+    TLComponentInstance* instance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
+        currentSlide,
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("CHOICES")),
+        InlineHasher(0),
+        InlineHasher(0),
+        InlineHasher(0),
+        InlineHasher(0));
+    BuildSubMenuList(0, instance, true, 0);
+
+    instance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
+        currentSlide,
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("numbers")),
+        InlineHasher(0),
+        InlineHasher(0),
+        InlineHasher(0),
+        InlineHasher(0));
+    BuildSubMenuList(1, instance, true, 0);
+
+    mSlideMenuLists[1]->mFlags = 3;
+
+    instance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
+        currentSlide,
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("numbers2")),
+        InlineHasher(0),
+        InlineHasher(0),
+        InlineHasher(0),
+        InlineHasher(0));
+    BuildSubMenuList(2, instance, true, 0);
+
+    SlideMenuList* slideMenuList = mSlideMenuLists[mMenuItems.mCurrentIndex];
+    if (slideMenuList != NULL)
+    {
+        TLComponentInstance* comp = slideMenuList->mComponentInstance;
+        if (comp != NULL)
+        {
+            if (comp->GetActiveSlide() != NULL)
+            {
+                TLSlide* firstSlide = comp->GetActiveSlide();
+                TLSlide* slide = firstSlide;
+                do
+                {
+                    comp->SetActiveSlide(slide);
+                    TLInstance* head = comp->GetActiveSlide()->m_instances;
+                    TLInstance* inst = head;
+                    if (inst != NULL)
+                    {
+                        do
+                        {
+                            if (inst->m_type == TLAT_TEXT)
+                            {
+                                inst->SetAssetColour(SubMenuHighliteColour);
+                            }
+                            else if (inst->m_type == TLAT_IMAGE)
+                            {
+                                unsigned long hash = inst->m_hash;
+                                if (hash != nlStringLowerHash("white_box"))
+                                {
+                                    inst->SetAssetColour(SubMenuHighliteColour);
+                                }
+                            }
+                            inst = inst->m_next;
+                        } while (inst != head);
+                    }
+                    slide = slide->m_next;
+                } while (slide != firstSlide);
+
+                comp->SetActiveSlide(firstSlide);
+            }
+        }
+    }
+
+    InitializeMenu();
+
+    TLComponentInstance* buttonComponent = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
+        presentation->m_currentSlide,
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("buttons")),
+        InlineHasher(0),
+        InlineHasher(0),
+        InlineHasher(0),
+        InlineHasher(0));
+    mButtons.mButtonInstance = buttonComponent;
+    mButtons.SetState(ButtonComponent::BS_A_AND_B);
 }
 
 /**
@@ -247,4 +397,5 @@ void TournSetParamsScene::ApplyMenuDefaults()
  */
 void TournSetParamsScene::InitializeMenu()
 {
+    FORCE_DONT_INLINE;
 }
