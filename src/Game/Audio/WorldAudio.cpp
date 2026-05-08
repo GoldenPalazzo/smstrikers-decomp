@@ -232,53 +232,6 @@ const char* gWorldSoundTable[212] = {
     "STADSFX_STRIKE_CAPT_SFX",
     "NUM_WORLDSFX"
 };
-// bool g_bWorldSFXInitialized = false;
-// bool g_bAudioInitialized = false;
-
-/**
- * Offset/Address/Size: 0x0 | 0x80154C5C | size: 0xFC
- * TODO: 99.37% match - remaining immediate relocation label diffs for generated
- * destructor-chain symbols (@704-@707).
- */
-extern "C" void __sinit_WorldAudio_cpp()
-{
-    struct WorldAudioDestructorChain
-    {
-        WorldAudioDestructorChain* next;
-        void* destructor;
-        void* object;
-    };
-
-    extern void __ct__8cGameSFXFv(cGameSFX*);
-    extern void __dt__Q25Audio9cWorldSFXFv(void*, int);
-    extern void* __register_global_object(void*, void*, void*);
-    extern void* __vt__Q25Audio9cWorldSFX[];
-
-    static WorldAudioDestructorChain chain1;
-    static WorldAudioDestructorChain chain2;
-    static WorldAudioDestructorChain chain3;
-    static WorldAudioDestructorChain chain4;
-
-    __ct__8cGameSFXFv(&Audio::gWorldSFX);
-    *(void**)&Audio::gWorldSFX = __vt__Q25Audio9cWorldSFX;
-    Audio::gWorldSFX.meClassType = WORLD;
-    __register_global_object(&Audio::gWorldSFX, (void*)__dt__Q25Audio9cWorldSFXFv, &chain1);
-
-    __ct__8cGameSFXFv(&Audio::gPowerupSFX);
-    *(void**)&Audio::gPowerupSFX = __vt__Q25Audio9cWorldSFX;
-    Audio::gPowerupSFX.meClassType = WORLD;
-    __register_global_object(&Audio::gPowerupSFX, (void*)__dt__Q25Audio9cWorldSFXFv, &chain2);
-
-    __ct__8cGameSFXFv(&Audio::gStadGenSFX);
-    *(void**)&Audio::gStadGenSFX = __vt__Q25Audio9cWorldSFX;
-    Audio::gStadGenSFX.meClassType = WORLD;
-    __register_global_object(&Audio::gStadGenSFX, (void*)__dt__Q25Audio9cWorldSFXFv, &chain3);
-
-    __ct__8cGameSFXFv(&Audio::gCrowdSFX);
-    *(void**)&Audio::gCrowdSFX = __vt__Q25Audio9cWorldSFX;
-    Audio::gCrowdSFX.meClassType = WORLD;
-    __register_global_object(&Audio::gCrowdSFX, (void*)__dt__Q25Audio9cWorldSFXFv, &chain4);
-}
 
 /**
  * Offset/Address/Size: 0x2B8 | 0x80154BFC | size: 0x60

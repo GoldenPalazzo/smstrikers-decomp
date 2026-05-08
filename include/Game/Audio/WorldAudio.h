@@ -232,7 +232,8 @@ public:
     cWorldSFX()
         : cGameSFX()
     {
-        cGameSFX::Init();
+        // cGameSFX::Init();
+        meClassType = WORLD;
     };
     virtual ~cWorldSFX();
     virtual void Init();

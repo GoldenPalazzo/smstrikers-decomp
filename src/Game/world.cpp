@@ -26,6 +26,11 @@ float g_fTransAdjustNotOccluded = 0.125f;
 static float g_fTransMinimum = 0.0f;
 static unsigned char sbAllObjectsCanBeTransparent = 0;
 
+static unsigned long WhiteTexture = glGetTexture("global/white50percent");
+static unsigned long BallModelID = nlStringHash("gameplay/ball");
+static unsigned long HammerModelID = nlStringHash("gameplay/hammer");
+static unsigned long SpecificModelID = nlStringLowerHash("The_Palace/Pod_Metal_42");
+
 /**
  * Offset/Address/Size: 0x0 | 0x80194CC4 | size: 0x5C
  */

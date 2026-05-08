@@ -26,16 +26,8 @@ f32 mfGoalieRunDist;
 f32 mfGoalieUrgentDist;
 f32 gfRepositionThreshold;
 
+static int gOffplayDejected[5] = { 0x90, 0x91, 0x92, 0x93, 0x94 };
 static const nlVector3 v3Zero = { 0.0f, 0.0f, 0.0f };
-
-extern int gOffplayDejected[5];
-
-// inline float CalculateDistanceSquared(const nlVector3& pos1, const nlVector3& pos2)
-// {
-//     nlVector3 delta;
-//     nlVec3Sub(delta, pos1, pos2);
-//     return nlGetLengthSquared3D(delta.f.x, delta.f.y, delta.f.z);
-// }
 
 inline float CalculateDistanceSquared2D(const nlVector3& pos1, const nlVector3& pos2)
 {
@@ -43,13 +35,6 @@ inline float CalculateDistanceSquared2D(const nlVector3& pos1, const nlVector3& 
     nlVec3Sub(delta, pos1, pos2);
     return delta.GetLengthSq2D();
 }
-
-// /**
-//  * Offset/Address/Size: 0x4700 | 0x80052C3C | size: 0x10
-//  */
-// void 0x8028D294..0x8028D298 | size: 0x4
-// {
-// }
 
 /**
  * Offset/Address/Size: 0x4518 | 0x80052A54 | size: 0x1E8
@@ -901,10 +886,39 @@ void Goalie::RunWeightCB(unsigned int nParam, cPN_SingleAxisBlender* blender)
     blender->m_fDesiredWeight = (float)(clampedDiff + 0x31C4) / 25480.0f;
 }
 
+inline void Goalie::StartRunBlend()
+{
+    int runAnims[] = { 0x21, 0x1F, 0x20 };
+
+    cPN_SingleAxisBlender* pRunSAB = CreateSingleAxisBlender(runAnims, 3, 1, RunWeightCB, 0.15f, NULL);
+
+    cPN_SAnimController* pPrevCtrlr = NULL;
+    for (int i = 0; i < 3; i++)
+    {
+        cPN_SAnimController* pCtrlr = (cPN_SAnimController*)pRunSAB->GetChild(i);
+        if (pPrevCtrlr == NULL)
+        {
+            pCtrlr->m_fSynchronizedWeight = 0.0f;
+        }
+        else
+        {
+            pCtrlr->m_bIsSynchronized = true;
+            pPrevCtrlr->m_pSynchronizedController = pCtrlr;
+        }
+        pPrevCtrlr = pCtrlr;
+    }
+
+    cPN_Blender* pNewBlender = AllocateBlender();
+    if (pNewBlender != NULL)
+    {
+        pNewBlender = new ((u8*)pNewBlender) cPN_Blender(*m_pAILayer, pRunSAB, 0.1f);
+    }
+    *m_pAILayer = pNewBlender;
+    InitMovementFromAnimSeek(60000.0f, 4000.0f);
+}
+
 /**
  * Offset/Address/Size: 0x27FC | 0x80050D38 | size: 0x874
- * TODO: 90.55% match - stack frame 0x80 vs 0x90 (MWCC shares const int arrays
- * across mutually exclusive branches instead of allocating separate stack slots)
  */
 void Goalie::ActionMoveWB(float fDeltaT)
 {
@@ -995,7 +1009,7 @@ void Goalie::ActionMoveWB(float fDeltaT)
 
                 if (posX > 0.0f)
                 {
-                    dir = (u16)(dir + 0x8000);
+                    dir += 0x8000;
                 }
             }
 
@@ -1022,7 +1036,7 @@ void Goalie::ActionMoveWB(float fDeltaT)
 
                 if (posY < 0.0f)
                 {
-                    dir = (u16)(dir + 0x8000);
+                    dir += 0x8000;
                 }
             }
 
@@ -1044,12 +1058,10 @@ void Goalie::ActionMoveWB(float fDeltaT)
 
         {
             bool bClamped = false;
-            float posX = m_v3Position.f.x;
 
-            float absX = (float)fabs(posX);
-            if (absX < cField::GetPenaltyBoxX(1U))
+            if ((float)fabs(m_v3Position.f.x) < cField::GetPenaltyBoxX(1U))
             {
-                if (posX > 0.0f)
+                if (m_v3Position.f.x > 0.0f)
                 {
                     m_aDesiredFacingDirection = 0;
                 }
@@ -1060,12 +1072,10 @@ void Goalie::ActionMoveWB(float fDeltaT)
                 bClamped = true;
             }
 
-            float posY = m_v3Position.f.y;
-            float absY = (float)fabs(posY);
-            if (absY > cField::GetPenaltyBoxY())
+            if ((float)fabs(m_v3Position.f.y) > cField::GetPenaltyBoxY())
             {
                 u16 yDir;
-                if (posY > 0.0f)
+                if (m_v3Position.f.y > 0.0f)
                 {
                     yDir = 0xC000;
                 }
@@ -1116,18 +1126,14 @@ void Goalie::ActionMoveWB(float fDeltaT)
 
         if (mfTargetTime > 1.0f)
         {
-            nlVector3 pos = m_v3Position;
+            nlVector3 v3Center = m_v3Position;
             float dist = nlGetLength3D(m_v3Position.f.x, m_v3Position.f.y, m_v3Position.f.z);
             float invDist = -1.0f / dist;
-            float dirX = invDist * m_v3Position.f.x;
-            float dirY = invDist * m_v3Position.f.y;
-            float dirZ = invDist * m_v3Position.f.z;
+            v3Center.f.x = invDist * m_v3Position.f.x;
+            v3Center.f.y = invDist * m_v3Position.f.y;
+            v3Center.f.z = invDist * m_v3Position.f.z;
 
-            pos.f.x = dirX;
-            pos.f.y = dirY;
-            pos.f.z = dirZ;
-
-            float dot = m_m4WorldMatrix.m[0][1] * dirY + m_m4WorldMatrix.m[0][0] * dirX + m_m4WorldMatrix.m[0][2] * dirZ;
+            float dot = m_m4WorldMatrix.m[0][1] * v3Center.f.y + m_m4WorldMatrix.m[0][0] * v3Center.f.x + m_m4WorldMatrix.m[0][2] * v3Center.f.z;
 
             if (dot > 0.5)
             {
@@ -1144,33 +1150,7 @@ void Goalie::ActionMoveWB(float fDeltaT)
                 return;
             }
 
-            const int anims[] = { 0x21, 0x1F, 0x20 };
-
-            cPN_SingleAxisBlender* pBlender = CreateSingleAxisBlender(anims, 3, 1, RunWeightCB, 0.15f, NULL);
-
-            cPN_SAnimController* pPrev = NULL;
-            for (int i = 0; i < 3; i++)
-            {
-                cPN_SAnimController* pChild = (cPN_SAnimController*)pBlender->GetChild(i);
-                if (pPrev == NULL)
-                {
-                    pChild->m_fSynchronizedWeight = 0.0f;
-                }
-                else
-                {
-                    pChild->m_bIsSynchronized = true;
-                    pPrev->m_pSynchronizedController = pChild;
-                }
-                pPrev = pChild;
-            }
-
-            cPN_Blender* pNewBlender = AllocateBlender();
-            if (pNewBlender != NULL)
-            {
-                pNewBlender = new ((u8*)pNewBlender) cPN_Blender(*m_pAILayer, pBlender, 0.1f);
-            }
-            *m_pAILayer = pNewBlender;
-            InitMovementFromAnimSeek(60000.0f, 4000.0f);
+            StartRunBlend();
         }
         else
         {
@@ -1221,7 +1201,7 @@ no_pad:
 
         float absX = (float)fabs(m_v3Position.f.x);
         float goalLineX = cField::GetGoalLineX(1U);
-        if (absX <= goalLineX - 3.0f)
+        if (goalLineX - 3.0f >= absX)
         {
             s16 diff = (s16)(m_aDesiredFacingDirection - m_aActualFacingDirection);
             if (diff < 0)
@@ -1242,35 +1222,7 @@ no_pad:
             return;
         }
 
-        {
-            const int anims[] = { 0x21, 0x1F, 0x20 };
-
-            cPN_SingleAxisBlender* pBlender = CreateSingleAxisBlender(anims, 3, 1, RunWeightCB, 0.15f, NULL);
-
-            cPN_SAnimController* pPrev = NULL;
-            for (int i = 0; i < 3; i++)
-            {
-                cPN_SAnimController* pChild = (cPN_SAnimController*)pBlender->GetChild(i);
-                if (pPrev == NULL)
-                {
-                    pChild->m_fSynchronizedWeight = 0.0f;
-                }
-                else
-                {
-                    pChild->m_bIsSynchronized = true;
-                    pPrev->m_pSynchronizedController = pChild;
-                }
-                pPrev = pChild;
-            }
-
-            cPN_Blender* pNewBlender = AllocateBlender();
-            if (pNewBlender != NULL)
-            {
-                pNewBlender = new ((u8*)pNewBlender) cPN_Blender(*m_pAILayer, pBlender, 0.1f);
-            }
-            *m_pAILayer = pNewBlender;
-            InitMovementFromAnimSeek(60000.0f, 4000.0f);
-        }
+        StartRunBlend();
         return;
     }
 
@@ -1366,7 +1318,7 @@ void Goalie::ActionSaveReposition(float deltaTime)
 
 /**
  * Offset/Address/Size: 0x20BC | 0x800505F8 | size: 0x51C
- * TODO: 92.94% match - fAnimTime in f29 instead of target f31, cascading volatile reg diffs
+ * TODO: 97.32% match - fAnimTime in f29 instead of target f31, cascading register diffs in smoothstep/ball-catch sections
  */
 void Goalie::ActionSave(float)
 {
@@ -1477,20 +1429,13 @@ void Goalie::ActionSave(float)
     {
         float dZ = g_pBall->m_v3Position.f.y - m_v3Position.f.y;
         float dX = g_pBall->m_v3Position.f.x - m_v3Position.f.x;
-        float distSq = dZ * dZ;
-        distSq = dX * dX + distSq;
-        distSq = 0.0f + distSq;
-        if (distSq < 9.0f)
+        float distSq = dX * dX + dZ * dZ;
+        float m00 = m_m4WorldMatrix.m[0][0];
+        float m01 = m_m4WorldMatrix.m[0][1];
+        float m02 = m_m4WorldMatrix.m[0][2];
+        if (distSq < 9.0f || dX * m00 + dZ * m01 + 0.0f * m02 < 0.0f)
         {
             mbDoHeadTrack = false;
-        }
-        else
-        {
-            float dot = dX * m_m4WorldMatrix.m[0][0] + dZ * m_m4WorldMatrix.m[0][1] + 0.0f * m_m4WorldMatrix.m[0][2];
-            if (dot < 0.0f)
-            {
-                mbDoHeadTrack = false;
-            }
         }
     }
 
@@ -1518,11 +1463,11 @@ void Goalie::ActionSave(float)
                 const nlVector3& v3LHand = GetJointPosition(m_nLeftHandJointIndex);
                 const nlVector3& v3RHand = GetJointPosition(m_nRightHandJointIndex);
 
-                float dY = g_pBall->m_v3Position.f.y - v3LHand.f.y;
                 float dX = g_pBall->m_v3Position.f.x - v3LHand.f.x;
+                float dY = g_pBall->m_v3Position.f.y - v3LHand.f.y;
                 float dZ = g_pBall->m_v3Position.f.z - v3LHand.f.z;
-                float distSqL = dY * dY;
-                distSqL = dX * dX + distSqL;
+                float distSqL = dX * dX;
+                distSqL = dY * dY + distSqL;
                 distSqL = dZ * dZ + distSqL;
 
                 if (distSqL < fReachSq)
@@ -1581,11 +1526,174 @@ void Goalie::ActionSave(float)
     }
 }
 
+template <typename T>
+class nlSingleton
+{
+public:
+    static T* s_pInstance;
+};
+
+class GameInfoManager : public nlSingleton<GameInfoManager>
+{
+public:
+    int GetStadium() const;
+};
+
 /**
  * Offset/Address/Size: 0x1C30 | 0x8005016C | size: 0x48C
+ * TODO: 98.0% match — register allocation in the SetPosition projection block
+ *       (mv3NavTarget delta + smoothstep) loads m_v3Position members in a
+ *       different order than target; one branch destination is 4 bytes off.
  */
-void Goalie::ActionSTS(float)
+void Goalie::ActionSTS(float fDeltaT)
 {
+    nlVector3 v3BallDir;
+    nlVector4 plane;
+    nlVector4 plane2;
+    nlVector3 v3Root;
+    nlVector3 v3Projected;
+    unsigned short aRoot;
+    nlVector3 v3GoaliePos;
+
+    f32 fAnimTime = m_pCurrentAnimController->m_fTime;
+
+    if (m_pBall == NULL)
+    {
+        cBall* pBall = g_pBall;
+        float fSavePercent;
+
+        if (mpShooter != NULL)
+        {
+            nlVector3* pGoaliePos = &m_v3Position;
+            fSavePercent = mpLooseBallInfo->mfPickupTime;
+            nlVec3Sub(v3BallDir, *pGoaliePos, mpShooter->m_v3Position);
+            f32 fDot = v3BallDir.f.x * pBall->m_v3Velocity.f.x
+                     + v3BallDir.f.y * pBall->m_v3Velocity.f.y
+                     + v3BallDir.f.z * pBall->m_v3Velocity.f.z;
+            if (fDot > 0.0f)
+            {
+                MakePerpendicularPlane(*pGoaliePos, v3BallDir, plane, 0.7f);
+                f32 fDist = pBall->m_v3Position.f.x * plane.f.x
+                          + pBall->m_v3Position.f.y * plane.f.y
+                          + pBall->m_v3Position.f.z * plane.f.z
+                          - plane.f.w;
+                if (fDist > 0.0f)
+                {
+                    fSavePercent = m_pCurrentAnimController->m_fTime - 0.001f;
+                }
+            }
+        }
+        else
+        {
+            f32 fMilestone = mpSaveData->mfMilestonePercent[2];
+            fSavePercent = fMilestone;
+            if (fAnimTime < fMilestone)
+            {
+                unsigned int uSaveType = mpSaveData->muSaveType;
+                if ((uSaveType & 3) != 0 || (uSaveType == 0x20000 && m_eAnimID != 0x6d))
+                {
+                    f32 fBallFutureX;
+                    f32 fBallFutureY;
+                    f32 fBallFutureZ;
+                    fBallFutureZ = fDeltaT * pBall->m_v3Velocity.f.z + pBall->m_v3Position.f.z;
+                    fBallFutureY = fDeltaT * pBall->m_v3Velocity.f.y + pBall->m_v3Position.f.y;
+                    fBallFutureX = fDeltaT * pBall->m_v3Velocity.f.x + pBall->m_v3Position.f.x;
+                    MakePerpendicularPlane(m_v3Position, m_aActualFacingDirection, plane2, 0.5f);
+                    f32 fPlaneDist = fBallFutureX * plane2.f.x
+                                   + fBallFutureY * plane2.f.y
+                                   + fBallFutureZ * plane2.f.z
+                                   - plane2.f.w;
+                    if (fPlaneDist < 0.0f)
+                    {
+                        fSavePercent = m_pCurrentAnimController->m_fTime - 0.001f;
+                    }
+                }
+            }
+        }
+        if (m_pCurrentAnimController->TestTrigger(fSavePercent))
+        {
+            HandleSTSContact(g_pBall);
+        }
+    }
+    else
+    {
+        if (mpSaveData != NULL && mpSaveData->muSaveType == 0x20000 && m_eAnimID != 0x6d)
+        {
+            if (mfTargetTime < fAnimTime && fAnimTime < 1.0f)
+            {
+                GetCurrentAnimFuture(-1, 1.0f, v3Root, v3Projected, aRoot);
+                f32 dz = mv3NavTarget.f.z - v3Projected.f.z;
+                f32 dy = mv3NavTarget.f.y - v3Projected.f.y;
+                f32 dx = mv3NavTarget.f.x - v3Projected.f.x;
+                v3Root.f.z = dz;
+                v3Root.f.y = dy;
+                v3Root.f.x = dx;
+                f32 posZ = m_v3Position.f.z;
+                f32 posY = m_v3Position.f.y;
+                f32 posX = m_v3Position.f.x;
+                f32 fT = (fAnimTime - mfTargetTime) / (1.0f - mfTargetTime);
+                f32 fSmoothT = fT * fT * (-2.0f * fT + 3.0f);
+                v3Root.f.z = posZ + fSmoothT * dz;
+                v3Root.f.y = posY + fSmoothT * dy;
+                v3Root.f.x = posX + fSmoothT * dx;
+                SetPosition(v3Root);
+            }
+            f32 fGoalieNetYLimit = 0.5f * cNet::m_fNetWidth - 0.7f;
+            f32 fStadiumVal = 1.0f;
+            switch (nlSingleton<GameInfoManager>::s_pInstance->GetStadium())
+            {
+            case 1:
+                fStadiumVal = 1.6f;
+                break;
+            case 3:
+                fStadiumVal = 1.8f;
+                break;
+            case 4:
+                fStadiumVal = 2.0f;
+                break;
+            }
+            f32 fGoalLineLimit = cField::GetGoalLineX(1U);
+            fGoalLineLimit += fStadiumVal;
+            if (fAnimTime > 0.12f
+                && (float)fabs(m_v3Position.f.y) > fGoalieNetYLimit
+                && (float)fabs(m_v3Position.f.x) < fGoalLineLimit)
+            {
+                v3GoaliePos = m_v3Position;
+                if (m_v3Position.f.y > 0.0f)
+                    v3GoaliePos.f.y = fGoalieNetYLimit;
+                else
+                    v3GoaliePos.f.y = -fGoalieNetYLimit;
+                SetPosition(v3GoaliePos);
+            }
+        }
+    }
+    if (fAnimTime > 0.95f)
+    {
+        SaveData* pSaveData = mpSaveData;
+        if (pSaveData == NULL || pSaveData->muSaveType != 0x20000)
+        {
+            if (mnOffplayPending == GOALIE_OFFPLAY_NONE)
+            {
+                InitActionSTSRecover();
+            }
+            else if (pSaveData != NULL)
+            {
+                unsigned int uSaveType = pSaveData->muSaveType;
+                if (uSaveType == 8)
+                {
+                    InitActionDiveRecover();
+                }
+                else if (uSaveType == 0x40000 || pSaveData->mnAnimID == 0x6d)
+                {
+                    InitActionSTSRecover();
+                }
+                else
+                {
+                    InitActionMove(true);
+                }
+            }
+        }
+    }
 }
 
 /**
@@ -2120,7 +2228,7 @@ void Goalie::ActionPursueBallPounce(float)
                 {
                     float speed = InterpolateRangeClamped(
                         pTweaks->fGetupSpeedLow,
-                        0.0f,
+                        1.0f,
                         pTweaks->fGetupEnergyLow,
                         pTweaks->fGetupEnergyHigh,
                         mFatigue.mfEnergyLevel);
@@ -2354,9 +2462,8 @@ void Goalie::ActionSTSAttackSetup(float deltaTime)
 
 /**
  * Offset/Address/Size: 0x2B8 | 0x8004E7F4 | size: 0x414
- * TODO: 99.59% match - remaining diffs: 0.306f compare/subtract f0/f2 swap,
- *   GetJointPosition copy/load x/y order in both foot-distance checks,
- *   fabs register choice (f29 vs f30) before goal-line push test
+ * TODO: 99.80% match - remaining diff: 0.306f compare/subtract f0/f2 register swap
+ *   at offset 0x10c (context-dependent MWCC register allocation quirk, not fixable at source level)
  */
 void Goalie::ActionSTSAttack(float deltaTime)
 {
@@ -2400,10 +2507,10 @@ void Goalie::ActionSTSAttack(float deltaTime)
         if (animTime > 0.306f)
         {
             nlVector3 rightFootPos = GetJointPosition(m_nRightFootJointIndex);
-            float dy = rightFootPos.f.y - mpShooter->m_v3Position.f.y;
             float dx = rightFootPos.f.x - mpShooter->m_v3Position.f.x;
+            float dy = rightFootPos.f.y - mpShooter->m_v3Position.f.y;
 
-            if (((dy * dy) + (dx * dx)) < 1.0f)
+            if (((dx * dx) + (dy * dy)) < 1.0f)
             {
                 WhackSTSPlayer(mpShooter);
             }
@@ -2428,9 +2535,9 @@ void Goalie::ActionSTSAttack(float deltaTime)
     {
         cFielder* pShooter = mpShooter;
         nlVector3 rightFootPos = GetJointPosition(m_nRightFootJointIndex);
-        float dy = rightFootPos.f.y - pShooter->m_v3Position.f.y;
         float dx = rightFootPos.f.x - pShooter->m_v3Position.f.x;
-        float pushDist = 1.0f - nlSqrt((dy * dy) + (dx * dx), true);
+        float dy = rightFootPos.f.y - pShooter->m_v3Position.f.y;
+        float pushDist = 1.0f - nlSqrt((dx * dx) + (dy * dy), true);
 
         if (pushDist > 0.0f)
         {
@@ -2574,4 +2681,12 @@ void Goalie::ActionGrabBall(float)
             }
         }
     }
+}
+
+void GoalieActions_stub(float& a, float& b, float& c, float& d)
+{
+    a = 1.0f;  // @1577
+    b = 0.1f;  // @1578
+    c = 0.25f; // @1579
+    d = 0.0f;  // @1616
 }

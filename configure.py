@@ -887,7 +887,7 @@ config.libs = [
             Object(NonMatching, "Game/Audio/audio.cpp", extra_cflags=["-inline auto"]),   
             Object(Matching, "Game/Audio/SebringSoundDefines.cpp" , extra_cflags=["-inline auto", "-inline deferred"]),   
             Object(NonMatching, "Game/Audio/SoundEventScript.cpp" , extra_cflags=["-inline auto", "-inline deferred"]),   
-            Object(NonMatching, "Game/Audio/WorldAudio.cpp", extra_cflags=["-inline auto", "-inline deferred"]),   
+            Object(Matching, "Game/Audio/WorldAudio.cpp", extra_cflags=["-inline auto", "-inline deferred"]),   
             Object(NonMatching, "Game/Audio/AudioEventHandler.cpp", extra_cflags=["-inline auto", "-inline deferred"]),   
             Object(NonMatching, "Game/Audio/AudioLoader.cpp", extra_cflags=["-inline auto", "-inline deferred"]),   
             Object(NonMatching, "Game/Audio/AudioScriptEventMgr.cpp", extra_cflags=["-inline auto", "-inline deferred"]),  
@@ -927,7 +927,7 @@ config.libs = [
             Object(NonMatching, "Game/Physics/PhysicsGoalie.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
 
             # World
-            Object(NonMatching, "Game/World.cpp", extra_cflags=["-inline auto"]),
+            Object(NonMatching, "Game/world.cpp", extra_cflags=["-inline auto"]),
             Object(Matching, "Game/WorldManager.cpp", extra_cflags=["-inline auto"]),
             Object(NonMatching, "Game/BasicStadium.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/World/WorldLoader.cpp", extra_cflags=["-inline auto", "-inline deferred"]),

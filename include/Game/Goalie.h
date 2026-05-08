@@ -215,6 +215,9 @@ public:
     static void StrafeSynchronizedSpeedCallback(unsigned int, cPN_SAnimController*);
     void ActionMove(float);
     static void RunWeightCB(unsigned int, cPN_SingleAxisBlender*);
+
+    void StartRunBlend();
+
     void ActionMoveWB(float);
     void ActionSaveSetup(float);
     void ActionSaveReposition(float);

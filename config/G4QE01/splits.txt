@@ -2599,7 +2599,7 @@ Game/PadMonkey.cpp:
 	.data       start:0x802C2A38 end:0x802C2A80
 	.sdata2     start:0x80376A90 end:0x80376AA8
 
-Game/World.cpp:
+Game/world.cpp:
 	.text       start:0x80194CC4 end:0x80198C14
 	.text       start:0x80198C14 end:0x80198C1C
 	.text       start:0x80198C1C end:0x8019A8E4
