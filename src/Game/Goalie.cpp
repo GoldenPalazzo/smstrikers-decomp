@@ -17,6 +17,9 @@
 #include "Game/Team.h"
 #include "Game/AI/FilteredRandom.h"
 #include "Game/FixedUpdateTask.h"
+#include "Game/FE/feHelpFuncs.h"
+#include "Game/Camera/CameraMan.h"
+#include "Game/ParticleUpdateTask.h"
 #include "NL/plat/plataudio.h"
 #include "types.h"
 
@@ -122,8 +125,295 @@ void Goalie::CollideWithBallCallback(cBall*)
 /**
  * Offset/Address/Size: 0xA178 | 0x8004CC74 | size: 0x6F4
  */
-void Goalie::CollideWithCharacterCallback(CollisionPlayerPlayerData*)
+void Goalie::CollideWithCharacterCallback(CollisionPlayerPlayerData* pData)
 {
+    cPlayer* pPlayer = pData->player2;
+    cPlayer::CollideWithCharacterCallback(pData);
+
+    int bHitReactResult;
+    nlVector3 v3LocalPos;
+    s32 anim;
+
+    switch (mGoalieActionState)
+    {
+    case GOALIEACTION_MOVE_WB:
+    {
+        if (IsOnSameTeam(pPlayer))
+        {
+            return;
+        }
+
+        if (pPlayer->m_eClassType != FIELDER)
+        {
+            return;
+        }
+
+        cFielder* pFldr = (cFielder*)pPlayer;
+        if (pFldr->IsFallenDown(0.0f))
+        {
+            return;
+        }
+
+        if (m_eAnimID == 0x0B || m_eAnimID == 0x0D || m_eAnimID == 0x0C)
+        {
+            return;
+        }
+
+        f32 y = pPlayer->m_v3Position.f.y - m_v3Position.f.y;
+        f32 x = pPlayer->m_v3Position.f.x - m_v3Position.f.x;
+        u16 aHit = (u16)(s32)(10430.378f * nlATan2f(y, x));
+
+        bHitReactResult = pFldr->InitActionHitReact(this, aHit, false);
+        mnSubstate = 6;
+
+        GetLocalPoint(v3LocalPos, pPlayer->m_v3Position, m_v3Position, m_aActualFacingDirection);
+
+        if (fabsf(v3LocalPos.f.x / v3LocalPos.f.y) > 1.0f)
+        {
+            anim = 0x0B;
+        }
+        else if (v3LocalPos.f.y > 0.0f)
+        {
+            anim = 0x0D;
+        }
+        else
+        {
+            anim = 0x0C;
+        }
+
+        if (anim != m_eAnimID || (m_pCurrentAnimController->m_ePlayMode == PM_HOLD && m_pCurrentAnimController->m_fTime == 1.0f))
+        {
+            SetAnimState(anim, true, 0.2f, false, false);
+        }
+
+        InitMovementFromAnim(0, v3Zero, 1.0f, false);
+
+        if (bHitReactResult)
+        {
+            PlayRandomCharDialogue(CHAR_DIALOGUE_HIT, VECTORS, 100.0f, -1.0f);
+            pPlayer->PlayAttackReactionSounds(100.0f);
+        }
+        return;
+    }
+
+    case GOALIEACTION_STS_ATTACK:
+    {
+        cFielder* pFldr = g_pBall->GetOwnerFielder();
+        int bDoHit;
+
+        if (pFldr != NULL && !IsOnSameTeam(pFldr) && pFldr->m_eActionState == ACTION_SHOOT_TO_SCORE)
+        {
+            bDoHit = 1;
+        }
+        else
+        {
+            bDoHit = 0;
+        }
+
+        if (!bDoHit)
+        {
+            return;
+        }
+
+        if (pPlayer != g_pBall->m_pOwner)
+        {
+            return;
+        }
+
+        if (m_pCurrentAnimController->m_fTime <= 0.3f)
+        {
+            return;
+        }
+
+        pFldr = g_pBall->GetOwnerFielder();
+        if (pFldr == NULL)
+        {
+            return;
+        }
+
+        if (pFldr->m_pBall != NULL)
+        {
+            pFldr->ReleaseBall();
+        }
+
+        pFldr->SetFacingDirection(m_aActualFacingDirection + 0x8000);
+        pFldr->InitActionSTSHitReact(this);
+
+        PlayRandomCharDialogue(CHAR_DIALOGUE_HIT, VECTORS, 100.0f, -1.0f);
+        pFldr->PlayAttackReactionSounds(g_pGame->m_pGameTweaks->unk264);
+
+        nlVector3 v3NewVel;
+        f32 velScale = -((GoalieTweaks*)m_pTweaks)->fSTSAttackBallVelMult;
+        v3NewVel.f.x = velScale * m_v3Position.f.x;
+        v3NewVel.f.y = velScale * m_v3Position.f.y;
+        v3NewVel.f.z = velScale * m_v3Position.f.z;
+
+        f32 yRand = nlRandomf(5.0f, &nlDefaultSeed);
+        if ((u32)nlRandom(100, &nlDefaultSeed) > 50)
+        {
+            yRand *= -1.0f;
+        }
+        v3NewVel.f.y += yRand;
+        v3NewVel.f.z = 4.0f + nlRandomf(2.0f, &nlDefaultSeed);
+
+        g_pBall->SetVelocity(v3NewVel, SPINTYPE_FORWARD, NULL);
+        g_pBall->m_tNoPickupTimer.SetSeconds(0.12f);
+        return;
+    }
+
+    case GOALIEACTION_PURSUE_BALL_CARRIER:
+    case GOALIEACTION_PURSUE_BALL_POUNCE:
+        if (mbPlayMiss)
+        {
+            return;
+        }
+
+        if (!IsOnSameTeam(pPlayer))
+        {
+            ExecutePounce(pPlayer, false);
+        }
+        return;
+
+    case GOALIEACTION_MOVE:
+    {
+        s32 jointIndex = m_nRightFootJointIndex;
+        f32 zCheck = GetJointPosition(m_nHeadJointIndex).f.z + 0.4f;
+        if (pPlayer->GetJointPosition(jointIndex).f.z > zCheck)
+        {
+            return;
+        }
+    }
+
+    case GOALIEACTION_SAVE:
+    case GOALIEACTION_LOOSEBALL_SETUP:
+    case GOALIEACTION_LOOSEBALL_CATCH:
+    case GOALIEACTION_LOOSEBALL_PICKUP:
+    case GOALIEACTION_LOOSEBALL_PURSUE_BOUNCING:
+    case GOALIEACTION_LOOSEBALL_PURSUE_ROLLING:
+        if (IsOnSameTeam(pPlayer))
+        {
+            return;
+        }
+        if (pPlayer == NULL)
+        {
+            return;
+        }
+        if (pPlayer->m_eClassType != FIELDER)
+        {
+            return;
+        }
+        if (((cFielder*)pPlayer)->IsFallenDown(0.0f))
+        {
+            return;
+        }
+
+        pPlayer->PlayRandomCharDialogue(CHAR_DIALOGUE_HIT, VECTORS, 100.0f, -1.0f);
+
+        if (pPlayer->m_pBall != NULL)
+        {
+            pPlayer->ReleaseBall();
+        }
+
+        if (IsOnSameTeam(pPlayer))
+        {
+            ((cFielder*)pPlayer)->EndDesire(false);
+            ((cFielder*)pPlayer)->EndAction();
+        }
+        else
+        {
+            ((cFielder*)pPlayer)->InitActionSlideAttackReact(this, false);
+        }
+        return;
+
+    case GOALIEACTION_LOOSEBALL_DESPERATE:
+        if (g_pBall->m_pOwner == pPlayer)
+        {
+            if (pPlayer != NULL && !IsOnSameTeam(pPlayer) && !((cFielder*)pPlayer)->IsFallenDown(0.0f) && !((cFielder*)pPlayer)->IsInvincible())
+            {
+                if (pPlayer != NULL && pPlayer->m_eClassType == FIELDER && !((cFielder*)pPlayer)->IsFallenDown(0.0f))
+                {
+                    pPlayer->PlayRandomCharDialogue(CHAR_DIALOGUE_HIT, VECTORS, 100.0f, -1.0f);
+
+                    if (pPlayer->m_pBall != NULL)
+                    {
+                        pPlayer->ReleaseBall();
+                    }
+
+                    if (IsOnSameTeam(pPlayer))
+                    {
+                        ((cFielder*)pPlayer)->EndDesire(false);
+                        ((cFielder*)pPlayer)->EndAction();
+                    }
+                    else
+                    {
+                        ((cFielder*)pPlayer)->InitActionSlideAttackReact(this, false);
+                    }
+                }
+            }
+
+            if (mpLooseBallInfo->mnAnimID != m_eAnimID || (m_pCurrentAnimController->m_ePlayMode == PM_HOLD && m_pCurrentAnimController->m_fTime == 1.0f))
+            {
+                SetAnimState(mpLooseBallInfo->mnAnimID, true, 0.2f, false, false);
+            }
+
+            {
+                cPN_SAnimController* pAnim = m_pCurrentAnimController;
+                f32 targetTime = 0.5f * mpLooseBallInfo->mfPickupTime;
+                f32 curTime = pAnim->m_fTime;
+                pAnim->m_fPrevTime = curTime;
+                pAnim->m_fTime = targetTime;
+            }
+
+            InitMovementFromAnim(0, v3Zero, 1.0f, false);
+
+            if (m_pBall == NULL)
+            {
+                PickupBall(g_pBall);
+                mbPickedUp = true;
+                g_pBall->ClearShotInProgress();
+                EmitGoalieCatch(this, "goalie_catch", false);
+            }
+            return;
+        }
+
+        if (IsOnSameTeam(pPlayer))
+        {
+            return;
+        }
+        if (pPlayer == NULL)
+        {
+            return;
+        }
+        if (pPlayer->m_eClassType != FIELDER)
+        {
+            return;
+        }
+        if (((cFielder*)pPlayer)->IsFallenDown(0.0f))
+        {
+            return;
+        }
+
+        pPlayer->PlayRandomCharDialogue(CHAR_DIALOGUE_HIT, VECTORS, 100.0f, -1.0f);
+
+        if (pPlayer->m_pBall != NULL)
+        {
+            pPlayer->ReleaseBall();
+        }
+
+        if (IsOnSameTeam(pPlayer))
+        {
+            ((cFielder*)pPlayer)->EndDesire(false);
+            ((cFielder*)pPlayer)->EndAction();
+        }
+        else
+        {
+            ((cFielder*)pPlayer)->InitActionSlideAttackReact(this, false);
+        }
+        return;
+
+    default:
+        return;
+    }
 }
 
 /**
@@ -909,16 +1199,8 @@ bool Goalie::ShouldReposition()
 
 /**
  * Offset/Address/Size: 0x7A48 | 0x8004A544 | size: 0x5DC
- * TODO: 98.60% match - r30/r31 register swap in BasicString constructor inlining, branch pattern bne vs beq+b
+ * TODO: 99.72% match - r30/r31 register swap in BasicString constructor inlining
  */
-extern eTeamID GetTeam__15GameInfoManagerCFs(GameInfoManager*, short);
-extern char* GetTeamName__F7eTeamID(eTeamID);
-extern void FireCameraRumbleFilter__Fff(float, float);
-extern void SetTimeScale__18ParticleUpdateTaskFf(float);
-extern void EmitGoalieCatch(cPlayer*, const char*, bool);
-extern void EmitDaze(cPlayer*);
-extern cBaseCamera* m_cameraStack__14cCameraManager;
-
 void Goalie::HandleSTSContact(cBall* pBall)
 {
     if (pBall->m_tShotTimer.m_uPackedTime == 0)
@@ -937,16 +1219,9 @@ void Goalie::HandleSTSContact(cBall* pBall)
     if (mpSaveData != NULL)
     {
         u32 saveType = mpSaveData->muSaveType;
-        if (saveType == 0x40000)
+        if (saveType == 0x40000 || (mbShouldMiss && (saveType & 0xFFFC) != 0))
         {
             return;
-        }
-        if (mbShouldMiss)
-        {
-            if ((saveType & 0xFFFC) != 0)
-            {
-                return;
-            }
         }
     }
 
@@ -963,11 +1238,8 @@ void Goalie::HandleSTSContact(cBall* pBall)
         {
             if (pPrevOwner->m_eClassType == 2)
             {
-                cTeam* pTeam = pPrevOwner->m_pTeam;
-                eTeamID teamID = GetTeam__15GameInfoManagerCFs(nlSingleton<GameInfoManager>::s_pInstance, (s16)pTeam->m_nSide);
-                char* teamName = GetTeamName__F7eTeamID(teamID);
-
-                BasicString<char, Detail::TempStringAllocator> effectName(teamName);
+                BasicString<char, Detail::TempStringAllocator> effectName(
+                    GetTeamName(nlSingleton<GameInfoManager>::s_pInstance->GetTeam((s16)pPrevOwner->m_pTeam->m_nSide)));
                 effectName.AppendInPlace("_shoot_to_score_catch");
                 EmitGoalieCatch(this, effectName.c_str(), true);
             }
@@ -983,10 +1255,10 @@ void Goalie::HandleSTSContact(cBall* pBall)
 
             PickupBall(pBall);
 
-            cBaseCamera* pCamera = nlDLRingGetStart<cBaseCamera>(m_cameraStack__14cCameraManager);
+            cBaseCamera* pCamera = nlDLRingGetStart<cBaseCamera>(cCameraManager::m_cameraStack);
             if (pCamera->GetType() == eCameraType_MatrixEffect)
             {
-                FireCameraRumbleFilter__Fff(0.0f, 0.2f);
+                FireCameraRumbleFilter(0.0f, 0.2f);
             }
 
             if (m_eAnimID == 0x6C)
@@ -1019,7 +1291,7 @@ void Goalie::HandleSTSContact(cBall* pBall)
             PickupBall(pBall);
 
             FixedUpdateTask::mTimeScale = 0.75f;
-            SetTimeScale__18ParticleUpdateTaskFf(0.75f);
+            ParticleUpdateTask::SetTimeScale(0.75f);
         }
     }
 
@@ -1325,9 +1597,6 @@ bool Goalie::IsInsideGoalieBox(const nlVector3& rPos, float fXOffset, float fYOf
     return false;
 }
 
-/**
- * Offset/Address/Size: 0x6FE8 | 0x80049AE4 | size: 0x268
- */
 /**
  * Offset/Address/Size: 0x6FF0 | 0x80049AE4 | size: 0x268
  * TODO: 99.74% match - f30/f31 register swap between absX and saveIgnoreMargin
@@ -2553,8 +2822,289 @@ void Goalie::InitActionMoveWB()
 /**
  * Offset/Address/Size: 0x32E8 | 0x80045DE4 | size: 0x70C
  */
-void Goalie::InitActionSaveSetup(bool)
+void Goalie::InitActionSaveSetup(bool bCanReposition)
 {
+    if (mGoalieActionState == GOALIEACTION_STS || mGoalieActionState == GOALIEACTION_STS_RECOVER)
+    {
+        return;
+    }
+
+    if ((mGoalieActionState == GOALIEACTION_PURSUE_BALL_POUNCE || mGoalieActionState == GOALIEACTION_LOOSEBALL_PICKUP)
+        && m_pCurrentAnimController->m_fTime > (0.6f * mpLooseBallInfo->mfPickupTime))
+    {
+        return;
+    }
+
+    if (mGoalieActionState == GOALIEACTION_SAVE)
+    {
+        return;
+    }
+
+    muBallDeflectCount = g_pBall->m_bBallDeflectCount;
+    mbDoHeadTrack = true;
+    mbBallImpacted = false;
+    mnOffplayPending = GOALIE_OFFPLAY_NONE;
+
+    CleanGoalieAction();
+
+    mPrevGoalieActionState = mGoalieActionState;
+    mGoalieActionState = GOALIEACTION_SAVE_SETUP;
+    mnSubstate = 0;
+
+    m_pPhysicsCharacter->m_CanCollideWithBall = true;
+
+    SetDesiredSaveFacing(g_pBall->m_v3Position);
+
+    u16 desiredFacingDirection = m_aDesiredFacingDirection;
+    const nlVector3& pPosition = m_v3Position;
+
+    nlVector4 plane;
+    MakePerpendicularPlane(pPosition, desiredFacingDirection, plane, 0.2f);
+
+    nlVector3 localVelocity;
+    float fTimeToContact = FakeBallWorld::GetPredictedPlaneIntersectTime(plane, mv3TargetPosition, localVelocity);
+    double absX = __fabs(mv3TargetPosition.f.x);
+
+    if ((float)absX > cField::GetGoalLineX(1U))
+    {
+        fTimeToContact = -1.0f;
+    }
+    else if (fTimeToContact > 0.0f)
+    {
+        GetLocalPoint(mv3LocalContactPosition, mv3TargetPosition, pPosition, desiredFacingDirection);
+        GetLocalPoint(mv3LocalContactVelocity, localVelocity, v3Zero, desiredFacingDirection);
+    }
+
+    if (fTimeToContact > 0.0f)
+    {
+        bool bFromTakeoff = false;
+
+        if (mPrevGoalieActionState == GOALIEACTION_PRE_CROUCH || mPrevGoalieActionState == GOALIEACTION_PURSUE_BALL_CARRIER)
+        {
+            bFromTakeoff = true;
+        }
+
+        if (mbShouldMiss)
+        {
+            if (g_pBall->m_unk_0xA3)
+            {
+                float dY = m_v3Position.f.y - g_pBall->m_v3ShotTarget.f.y;
+                float dX = m_v3Position.f.x - g_pBall->m_v3ShotTarget.f.x;
+
+                if ((dX * dX + dY * dY) > 6.25f)
+                {
+                    static FilteredRandomChance randgenStumble;
+                    if (randgenStumble.genrand(((GoalieTweaks*)m_pTweaks)->fLobShotStumbleChance))
+                    {
+                        InitActionChipShotStumble();
+                        return;
+                    }
+                }
+            }
+        }
+        else if (mUrgency == URGENCY_HIGH)
+        {
+            bFromTakeoff = true;
+        }
+
+        float fTimeTilSave = fTimeToContact;
+        u32 saveType = muSaveType;
+
+        if (mbShouldMiss)
+        {
+            fTimeTilSave = fTimeToContact + ((GoalieTweaks*)m_pTweaks)->fSaveMissDelay;
+            mpSaveData = NULL;
+        }
+        else
+        {
+            mpSaveData = GoalieSave::FindBestSave(mBlendInfo, mv3LocalContactPosition, fTimeToContact, false, saveType, bFromTakeoff);
+        }
+
+        if (mpSaveData != NULL)
+        {
+            mbPlayMiss = false;
+            goto apply_blend_1;
+        }
+
+        if (!mbShouldMiss)
+        {
+            fTimeTilSave = -1.0f;
+            goto set_time_1;
+        }
+
+        mpSaveData = GoalieSave::FindBestSave(mBlendInfo, mv3LocalContactPosition, 5.0f, true, saveType & 0xFFFC, false);
+        mbPlayMiss = true;
+
+    apply_blend_1:
+    {
+        float fBlendFactor = (mpSaveData->mv3SavePos.f.x - mv3LocalContactPosition.f.x) / mv3LocalContactVelocity.f.x;
+        fTimeTilSave += fBlendFactor;
+
+        nlVec3Set(mv3LocalContactPosition,
+            fBlendFactor * mv3LocalContactVelocity.f.x + mv3LocalContactPosition.f.x,
+            fBlendFactor * mv3LocalContactVelocity.f.y + mv3LocalContactPosition.f.y,
+            fBlendFactor * mv3LocalContactVelocity.f.z + mv3LocalContactPosition.f.z);
+    }
+
+    set_time_1:
+        mfTimeTilSave = fTimeTilSave;
+
+        if (mfTimeTilSave < 0.0f)
+        {
+            saveType = muSaveType;
+
+            if (mbShouldMiss)
+            {
+                fTimeToContact += ((GoalieTweaks*)m_pTweaks)->fSaveMissDelay;
+                mpSaveData = NULL;
+            }
+            else
+            {
+                mpSaveData = GoalieSave::FindBestSave(mBlendInfo, mv3LocalContactPosition, fTimeToContact, false, saveType, true);
+            }
+
+            if (mpSaveData != NULL)
+            {
+                mbPlayMiss = false;
+            }
+            else
+            {
+                mpSaveData = GoalieSave::FindBestSave(mBlendInfo, mv3LocalContactPosition, 5.0f, true, saveType & 0xFFFC, false);
+                mbPlayMiss = true;
+            }
+
+            float fBlendFactor = (mpSaveData->mv3SavePos.f.x - mv3LocalContactPosition.f.x) / mv3LocalContactVelocity.f.x;
+
+            nlVec3Set(mv3LocalContactPosition,
+                fBlendFactor * mv3LocalContactVelocity.f.x + mv3LocalContactPosition.f.x,
+                fBlendFactor * mv3LocalContactVelocity.f.y + mv3LocalContactPosition.f.y,
+                fBlendFactor * mv3LocalContactVelocity.f.z + mv3LocalContactPosition.f.z);
+
+            mfTimeTilSave = fTimeToContact + fBlendFactor;
+        }
+
+        if (mbShouldMiss)
+        {
+            if (bFromTakeoff)
+            {
+                mBlendInfo.mfStartTime = mBlendInfo.mfMilestoneTime[0];
+            }
+            else
+            {
+                mBlendInfo.mfStartTime = 0.0f;
+            }
+        }
+        else if (bFromTakeoff)
+        {
+            float fMilestone2 = mBlendInfo.mfMilestoneTime[2];
+            if ((fMilestone2 - mBlendInfo.mfMilestoneTime[0]) <= mfTimeTilSave)
+            {
+                mBlendInfo.mfStartTime = mBlendInfo.mfMilestoneTime[0];
+            }
+            else
+            {
+                float diff = fMilestone2 - mfTimeTilSave;
+                if (diff <= mBlendInfo.mfMilestoneTime[1])
+                {
+                    mBlendInfo.mfStartTime = diff;
+                }
+                else
+                {
+                    mBlendInfo.mfStartTime = mBlendInfo.mfMilestoneTime[1];
+                }
+            }
+        }
+        else
+        {
+            if (mBlendInfo.mfMilestoneTime[2] <= mfTimeTilSave)
+            {
+                mBlendInfo.mfStartTime = 0.0f;
+            }
+            else
+            {
+                float diff = mBlendInfo.mfMilestoneTime[2] - mfTimeTilSave;
+                if (diff <= mBlendInfo.mfMilestoneTime[1])
+                {
+                    mBlendInfo.mfStartTime = diff;
+                }
+                else
+                {
+                    mBlendInfo.mfStartTime = mBlendInfo.mfMilestoneTime[1];
+                }
+            }
+        }
+
+        mfWaitTime = mBlendInfo.mfStartTime + (fTimeTilSave - mBlendInfo.mfMilestoneTime[2]);
+
+        if (mfWaitTime <= 0.01f)
+        {
+            InitActionSave();
+            return;
+        }
+
+        if (bCanReposition && ShouldReposition())
+        {
+            mMoveDirection = GOALIEDIR_IDLE;
+
+            CleanGoalieAction();
+
+            mPrevGoalieActionState = mGoalieActionState;
+            mGoalieActionState = GOALIEACTION_SAVE_REPOSITION;
+            mnSubstate = 0;
+
+            float dY = m_v3Position.f.y - mv3NavTarget.f.y;
+            float dX = m_v3Position.f.x - mv3NavTarget.f.x;
+            mfTargetDist = dX * dX + dY * dY;
+
+            mUrgency = URGENCY_HIGH;
+
+            cBall* pBall = g_pBall;
+            m_aDesiredFacingDirection = (u16)(s32)(10430.378f * nlATan2f(pBall->m_v3Position.f.y - m_v3Position.f.y, pBall->m_v3Position.f.x - m_v3Position.f.x));
+
+            DoNavigation(0.0f, gfRepositionThreshold, NAVI_FACE_DESIRED);
+            return;
+        }
+
+        SetAnimState(10, true, 0.2f, false, false);
+        GoalieTweaks* pGoalieTweaks = (GoalieTweaks*)m_pTweaks;
+        InitMovementFromAnimSeek(pGoalieTweaks->fSaveDirectionSeekSpeed, pGoalieTweaks->fSaveDirectionSeekFalloff);
+
+        return;
+    }
+
+    CleanGoalieAction();
+
+    mPrevGoalieActionState = mGoalieActionState;
+    mGoalieActionState = GOALIEACTION_MOVE;
+    mnSubstate = 0;
+
+    SetAnimState(8, true, 0.2f, false, false);
+    InitMovementFromAnim(0, v3Zero, 1.0f, false);
+
+    mnSubstate = 1;
+    mMoveDirection = GOALIEDIR_IDLE;
+
+    m_pPhysicsCharacter->m_CanCollideWithBall = true;
+    mbShouldMiss = false;
+    mbDoNavigate = false;
+    m_pPhysicsCharacter->m_CanCollidedWithGoalLine = true;
+    m_pPhysicsCharacter->m_CanCollideWithWall = true;
+
+    if (mbStunEffectActive)
+    {
+        KillDaze(this);
+        mbStunEffectActive = false;
+    }
+
+    mpShooter = NULL;
+    mUrgency = URGENCY_LOW;
+    mfSpeedScale = 1.0f;
+    mbPosGoalieNetCheck = false;
+    mbNegGoalieNetCheck = false;
+    mbDoHeadTrack = true;
+    mbBallImpacted = false;
+    mbNoUserControl = false;
+    mbPickedUp = false;
 }
 
 /**

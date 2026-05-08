@@ -1108,9 +1108,212 @@ float Pressured(cFielder* pFielder)
 /**
  * Offset/Address/Size: 0x4490 | 0x80082F18 | size: 0x4A4
  */
-float Attacked(cFielder*)
+float Attacked(cFielder* pFielder)
 {
-    return 0.0f;
+    if (!pFielder)
+    {
+        return 0.0f;
+    }
+
+    float fScore = 0.0f;
+    nlVector3* pFielderVel = &pFielder->m_v3Velocity;
+    nlVector3* pFielderPos = &pFielder->m_v3Position;
+
+    for (int i = 0; i < 5; i++)
+    {
+        cPlayer* pOpponent = pFielder->m_pTeam->GetOtherTeam()->GetPlayer(i);
+
+        unsigned char bAttackState = 0;
+        if (pOpponent->m_eClassType == GOALIE)
+        {
+            eGoalieActionState action = ((Goalie*)pOpponent)->mGoalieActionState;
+            bAttackState = 0;
+            if (action == GOALIEACTION_PURSUE_BALL_CARRIER || action == GOALIEACTION_PURSUE_BALL_POUNCE)
+            {
+                bAttackState = 1;
+            }
+        }
+        else if (pOpponent->m_eClassType == FIELDER)
+        {
+            eFielderActionState action = ((cFielder*)pOpponent)->m_eActionState;
+            bAttackState = 0;
+            if (action == ACTION_SLIDE_ATTACK || action == ACTION_HIT)
+            {
+                bAttackState = 1;
+            }
+        }
+
+        if (!bAttackState)
+        {
+            continue;
+        }
+
+        float fClosingSpeed;
+        if (!pFielder)
+        {
+            fClosingSpeed = 0.0f;
+        }
+        else if (!pOpponent)
+        {
+            fClosingSpeed = 0.0f;
+        }
+        else
+        {
+            fClosingSpeed = GetClosingSpeed2D(*pFielderPos, *pFielderVel, pOpponent->m_v3Position, pOpponent->m_v3Velocity);
+            fClosingSpeed = NormalizeVal(fClosingSpeed, 0.0f, g_pGame->m_pFuzzyTweaks->fClosingSpeedMax);
+        }
+
+        float fNearDist;
+        if (!pFielder)
+        {
+            fNearDist = 0.0f;
+        }
+        else if (!pOpponent)
+        {
+            fNearDist = 0.0f;
+        }
+        else if (pFielder->m_eClassType == GOALIE)
+        {
+            float dy = pOpponent->m_v3Position.f.y - pFielderPos->f.y;
+            float dx = pOpponent->m_v3Position.f.x - pFielderPos->f.x;
+            FuzzyTweaks* pFuzzyTweaks = g_pGame->m_pFuzzyTweaks;
+            fNearDist = nlSqrt(dx * dx + dy * dy, true);
+            fNearDist = NormalizeVal(fNearDist, pFuzzyTweaks->vNearGoalieConfidenceDistance);
+        }
+        else if (pOpponent->m_eClassType == GOALIE)
+        {
+            float dy = pFielderPos->f.y - pOpponent->m_v3Position.f.y;
+            float dx = pFielderPos->f.x - pOpponent->m_v3Position.f.x;
+            FuzzyTweaks* pFuzzyTweaks = g_pGame->m_pFuzzyTweaks;
+            fNearDist = nlSqrt(dx * dx + dy * dy, true);
+            fNearDist = NormalizeVal(fNearDist, pFuzzyTweaks->vNearGoalieConfidenceDistance);
+        }
+        else
+        {
+            nlVector2* pTweaks;
+            if (pFielder->IsOnSameTeam(pOpponent))
+            {
+                pTweaks = &g_pGame->m_pFuzzyTweaks->vNearTeammateConfidenceDistance;
+            }
+            else
+            {
+                pTweaks = &g_pGame->m_pFuzzyTweaks->vNearOpponentConfidenceDistance;
+            }
+            float dy = pFielderPos->f.y - pOpponent->m_v3Position.f.y;
+            float dx = pFielderPos->f.x - pOpponent->m_v3Position.f.x;
+            fNearDist = nlSqrt(dx * dx + dy * dy, true);
+            fNearDist = NormalizeVal(fNearDist, *pTweaks);
+        }
+
+        if (fNearDist <= fClosingSpeed)
+        {
+            fClosingSpeed = fNearDist;
+        }
+
+        float fCloseDist;
+        if (!pFielder)
+        {
+            fCloseDist = 0.0f;
+        }
+        else if (!pOpponent)
+        {
+            fCloseDist = 0.0f;
+        }
+        else if (pFielder->m_eClassType == GOALIE)
+        {
+            float dy = pOpponent->m_v3Position.f.y - pFielderPos->f.y;
+            float dx = pOpponent->m_v3Position.f.x - pFielderPos->f.x;
+            FuzzyTweaks* pFuzzyTweaks = g_pGame->m_pFuzzyTweaks;
+            fCloseDist = nlSqrt(dx * dx + dy * dy, true);
+            fCloseDist = NormalizeVal(fCloseDist, pFuzzyTweaks->vCloseGoalieConfidenceDistance);
+        }
+        else if (pOpponent->m_eClassType == GOALIE)
+        {
+            float dy = pFielderPos->f.y - pOpponent->m_v3Position.f.y;
+            float dx = pFielderPos->f.x - pOpponent->m_v3Position.f.x;
+            FuzzyTweaks* pFuzzyTweaks = g_pGame->m_pFuzzyTweaks;
+            fCloseDist = nlSqrt(dx * dx + dy * dy, true);
+            fCloseDist = NormalizeVal(fCloseDist, pFuzzyTweaks->vCloseGoalieConfidenceDistance);
+        }
+        else
+        {
+            nlVector2* pTweaks;
+            if (pFielder->IsOnSameTeam(pOpponent))
+            {
+                pTweaks = &g_pGame->m_pFuzzyTweaks->vCloseTeammateConfidenceDistance;
+            }
+            else
+            {
+                pTweaks = &g_pGame->m_pFuzzyTweaks->vCloseOpponentConfidenceDistance;
+            }
+            float dy = pFielderPos->f.y - pOpponent->m_v3Position.f.y;
+            float dx = pFielderPos->f.x - pOpponent->m_v3Position.f.x;
+            fCloseDist = nlSqrt(dx * dx + dy * dy, true);
+            fCloseDist = NormalizeVal(fCloseDist, *pTweaks);
+        }
+
+        if (fCloseDist >= fClosingSpeed)
+        {
+            fClosingSpeed = fCloseDist;
+        }
+
+        float fAngleScore;
+        if (!pOpponent)
+        {
+            fAngleScore = 0.0f;
+        }
+        else if (!pFielder)
+        {
+            fAngleScore = 0.0f;
+        }
+        else
+        {
+            nlVector3 vDiff;
+            vDiff.f.x = pFielderPos->f.x - pOpponent->m_v3Position.f.x;
+            vDiff.f.y = pFielderPos->f.y - pOpponent->m_v3Position.f.y;
+            vDiff.f.z = pFielderPos->f.z - pOpponent->m_v3Position.f.z;
+
+            u16 nOpponentFacing = pOpponent->m_aActualFacingDirection;
+
+            nlPolar polar;
+            nlCartesianToPolar(polar, vDiff);
+
+            s16 nAngleDiff = (s16)(nOpponentFacing - polar.a);
+            if (nAngleDiff < 0)
+            {
+                nAngleDiff = -nAngleDiff;
+            }
+
+            FuzzyTweaks* pFuzzyTweaks = g_pGame->m_pFuzzyTweaks;
+            s16 nFacingFull = pFuzzyTweaks->nFacingFullConfidenceAngle;
+            if (nAngleDiff < nFacingFull)
+            {
+                fAngleScore = 1.0f;
+            }
+            else
+            {
+                s16 nFacingNo = pFuzzyTweaks->nFacingNoConfidenceAngle;
+                if (nAngleDiff > nFacingNo)
+                {
+                    fAngleScore = 0.0f;
+                }
+                else
+                {
+                    fAngleScore = 1.0f - (float)(nAngleDiff - nFacingFull) / (float)(nFacingNo - nFacingFull);
+                }
+            }
+        }
+
+        fScore += fClosingSpeed * 0.8f + fAngleScore * 0.2f;
+    }
+
+    float fResult = clampGe0(fScore);
+    if (fResult <= 1.0f)
+    {
+        return fResult;
+    }
+
+    return 1.0f;
 }
 
 /**

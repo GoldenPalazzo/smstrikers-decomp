@@ -1,8 +1,11 @@
 #include "Game/Render/Indicators.h"
 #include "types.h"
 
-static float s_fPulseRate;
-static unsigned char s_bPulseGlowTexture;
+static float s_fOverheadSize = 35.0f;
+static float s_fAdditiveBlendingIntensity = 0.55f;
+static float s_fAdditiveTextureScale = 1.25f;
+static float s_fPulseRate = 2.0f;
+static unsigned char s_bPulseGlowTexture = 1;
 static float s_fGlowIntensityScale;
 static unsigned char s_bGlowIsRising;
 
@@ -76,12 +79,46 @@ typedef struct
     int m_eGameState;
 } cGame;
 
+typedef struct
+{
+    char pad0[0x19C];
+    float mSwitchScale;
+    char pad1[0x28];
+    void* mPossessionObject;
+} cPlayerIndicatorState;
+
+typedef struct
+{
+    void* vtbl;
+    void* mGameTweaks;
+} cGameOverlay;
+
+typedef struct
+{
+    char pad0[0x2B4];
+    float mVerticalOffset;
+    float mProjectionYOffset;
+} GameTweaksOverlay;
+
+typedef struct
+{
+    nlVector3 mPosition;
+    char pad0[0x4C];
+} ReplayIndicatorCharacter;
+
+typedef struct
+{
+    char pad0[0x68];
+    ReplayIndicatorCharacter mCharacters[10];
+} ReplayIndicatorSnapshot;
+
 extern void* g_pCharacters[10];
 extern cGame* g_pGame;
 
 extern ReplayManager* Instance__13ReplayManagerFv(void);
 extern cGlobalPad* GetGlobalPad__7cPlayerFv(cPlayer*);
 extern void glViewProjectPoint__F7eGLViewRC9nlVector3R9nlVector3(int, const nlVector3*, nlVector3*);
+extern float Interpolate(float, float, float);
 extern float InterpolateRangeClamped__Ffffff(float, float, float, float, float);
 extern int glTextureLoad__FUl(unsigned long);
 extern void glSetDefaultState__Fb(int);
@@ -96,6 +133,7 @@ extern void SetColour__7glPoly2FRC8nlColour(glPoly2*, const nlColour*);
 extern int Attach__7glPoly2F7eGLViewiPUlUl(glPoly2*, int, int, unsigned long*, unsigned long);
 
 unsigned long uIndicatorTexID[4];
+unsigned long uGlowTexID[4];
 float indicatorInfo[10];
 float fMaxAlpha = 0.9f;
 float fOpacityFadePerSecond = 1.2f;
@@ -267,12 +305,144 @@ void UpdateAndRenderOffScreenIndicators(float dt)
     }
 }
 
+static void DrawIndicator(int xCentre, int yCentre, float fPixelWidth, float fPixelHeight, float fOpacity, unsigned long uTexID,
+    float rotationAngle, unsigned char additiveBlending)
+{
+    if ((u8)glTextureLoad__FUl(uTexID))
+    {
+        static nlColour cInit;
+        glPoly2 poly;
+        nlColour c;
+
+        glSetDefaultState__Fb(0);
+        glSetRasterState__F8eGLStateUl(5, additiveBlending);
+        glSetRasterState__F8eGLStateUl(3, 1);
+        glSetRasterState__F8eGLStateUl(4, 0);
+        glSetCurrentRasterState__FUl(glHandleizeRasterState__Fv());
+        glSetCurrentTexture__FUl14eGLTextureType(uTexID, 0);
+        glTextureGetWidth__Fv();
+        glTextureGetHeight__Fv();
+
+        SetupRotatedRectangle__7glPoly2Fffffff(&poly, (float)xCentre, (float)yCentre, fPixelWidth, fPixelHeight, rotationAngle, 10000000000.0f);
+
+        c = cInit;
+        c.c[0] = 0xFF;
+        c.c[1] = 0xFF;
+        c.c[2] = 0xFF;
+        c.c[3] = (unsigned char)(255.0f * fOpacity);
+        SetColour__7glPoly2FRC8nlColour(&poly, &c);
+
+        poly.depth = -0.5f;
+        Attach__7glPoly2F7eGLViewiPUlUl(&poly, 27, 0, 0, (unsigned long)-1);
+    }
+}
+
 /**
  * Offset/Address/Size: 0xA8 | 0x8015F30C | size: 0x7C0
+ * TODO: 93.64% match - remaining diffs are register allocation and stack-slot
+ * placement differences around inlined DrawIndicator paths.
  */
 void UpdateAndRenderPlayerIndicators(float)
 {
-    FORCE_DONT_INLINE;
+    static int whoHadBall;
+    static signed char init;
+    cGlobalPad* pController;
+    nlVector3 v3Position;
+    nlVector3 v3ScreenPosition;
+    float fX;
+    float fY;
+    float fOpacity;
+    int whoHasBall;
+    int i;
+    float fDistInPixels;
+    float switchScale;
+    float sizeScale;
+
+    whoHasBall = -1;
+    if (!init)
+    {
+        whoHadBall = -1;
+        init = 1;
+    }
+
+    for (i = 0; i < 10; i++)
+    {
+        cPlayer* pCharacter = (cPlayer*)g_pCharacters[i];
+        cPlayerIndicatorState* pState;
+        ReplayManager* pReplay;
+        ReplayIndicatorSnapshot* pSnapshot;
+        GameTweaksOverlay* pTweaks;
+        unsigned long indicatorTexID;
+        unsigned long glowTexID;
+
+        if (GetGlobalPad__7cPlayerFv(pCharacter) == 0)
+        {
+            continue;
+        }
+
+        fOpacity = 1.0f - indicatorInfo[i];
+        if (fOpacity <= 0.011764706f)
+        {
+            continue;
+        }
+
+        pController = GetGlobalPad__7cPlayerFv(pCharacter);
+        indicatorTexID = uIndicatorTexID[pController->m_padIndex];
+        pController = GetGlobalPad__7cPlayerFv(pCharacter);
+        glowTexID = uGlowTexID[pController->m_padIndex];
+
+        pReplay = Instance__13ReplayManagerFv();
+        pSnapshot = (ReplayIndicatorSnapshot*)pReplay->mRender;
+        v3Position = pSnapshot->mCharacters[i].mPosition;
+
+        pTweaks = (GameTweaksOverlay*)((cGameOverlay*)g_pGame)->mGameTweaks;
+        v3Position.u.f.z += pTweaks->mVerticalOffset;
+        switchScale = pTweaks->mProjectionYOffset;
+
+        glViewProjectPoint__F7eGLViewRC9nlVector3R9nlVector3(7, &v3Position, &v3ScreenPosition);
+
+        fY = 240.0f * v3ScreenPosition.u.f.y + 240.0f;
+        fX = 320.0f * v3ScreenPosition.u.f.x + 320.0f;
+        fY -= switchScale;
+
+        pState = (cPlayerIndicatorState*)pCharacter;
+
+        if (pState->mSwitchScale < 0.5f)
+        {
+            switchScale = (0.5f - pState->mSwitchScale) / 0.5f;
+            sizeScale = Interpolate(1.0f, 2.0f, switchScale);
+
+            fDistInPixels = s_fOverheadSize * sizeScale;
+            DrawIndicator((int)fX, (int)fY, s_fAdditiveTextureScale * fDistInPixels, s_fAdditiveTextureScale * fDistInPixels, s_fAdditiveBlendingIntensity * switchScale, glowTexID, 0.0f, 2);
+            DrawIndicator((int)fX, (int)fY, fDistInPixels, fDistInPixels, fOpacity, indicatorTexID, 0.0f, 1);
+        }
+        else if (pState->mPossessionObject)
+        {
+            whoHasBall = i;
+
+            if (whoHadBall == -1)
+            {
+                s_fGlowIntensityScale = 0.0f;
+            }
+
+            switchScale = 1.0f;
+            if (s_bPulseGlowTexture)
+            {
+                switchScale = s_fGlowIntensityScale;
+            }
+
+            fDistInPixels = s_fOverheadSize;
+            DrawIndicator((int)fX, (int)fY, s_fAdditiveTextureScale * fDistInPixels, s_fAdditiveTextureScale * fDistInPixels, s_fAdditiveBlendingIntensity * switchScale, glowTexID, 0.0f, 2);
+            DrawIndicator((int)fX, (int)fY, fDistInPixels, fDistInPixels, fOpacity, indicatorTexID, 0.0f, 1);
+        }
+        else
+        {
+            fDistInPixels = s_fOverheadSize;
+            DrawIndicator((int)fX, (int)fY, fDistInPixels, fDistInPixels, fOpacity, indicatorTexID, 0.0f, 1);
+        }
+    }
+
+    whoHadBall = whoHasBall;
 }
 
 /**

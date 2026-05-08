@@ -479,4 +479,364 @@ void ShapeRender::DrawRectangle2D(float x, float y, float w, float h, float z, c
  */
 void ShapeRender::Initialize()
 {
+    static int ind_vert[24] = {
+        0,
+        2,
+        3,
+        1,
+        4,
+        5,
+        7,
+        6,
+        0,
+        1,
+        5,
+        4,
+        1,
+        3,
+        7,
+        5,
+        3,
+        2,
+        6,
+        7,
+        2,
+        0,
+        4,
+        6,
+    };
+    static int ind_uv[24] = {
+        1,
+        3,
+        2,
+        0,
+        0,
+        1,
+        3,
+        2,
+        0,
+        1,
+        3,
+        2,
+        0,
+        1,
+        3,
+        2,
+        0,
+        1,
+        3,
+        2,
+        0,
+        1,
+        3,
+        2,
+    };
+    static nlVector3 data_vert[8] = {
+        { -0.5f, -0.5f, -0.5f },
+        { 0.5f, -0.5f, -0.5f },
+        { -0.5f, 0.5f, -0.5f },
+        { 0.5f, 0.5f, -0.5f },
+        { -0.5f, -0.5f, 0.5f },
+        { 0.5f, -0.5f, 0.5f },
+        { -0.5f, 0.5f, 0.5f },
+        { 0.5f, 0.5f, 0.5f },
+    };
+    static nlVector2 data_uv[4] = {
+        { 0.0f, 0.0f },
+        { 1.0f, 0.0f },
+        { 0.0f, 1.0f },
+        { 1.0f, 1.0f },
+    };
+    static nlVector3 data_norm[24] = {
+        { 0.0f, 0.0f, -1.0f },
+        { 0.0f, 0.0f, -1.0f },
+        { 0.0f, 0.0f, -1.0f },
+        { 0.0f, 0.0f, -1.0f },
+
+        { 0.0f, 0.0f, 1.0f },
+        { 0.0f, 0.0f, 1.0f },
+        { 0.0f, 0.0f, 1.0f },
+        { 0.0f, 0.0f, 1.0f },
+
+        { 0.0f, -1.0f, 0.0f },
+        { 0.0f, -1.0f, 0.0f },
+        { 0.0f, -1.0f, 0.0f },
+        { 0.0f, -1.0f, 0.0f },
+
+        { 0.0f, 1.0f, 0.0f },
+        { 0.0f, 1.0f, 0.0f },
+        { 0.0f, 1.0f, 0.0f },
+        { 0.0f, 1.0f, 0.0f },
+
+        { 1.0f, 0.0f, 0.0f },
+        { 1.0f, 0.0f, 0.0f },
+        { 1.0f, 0.0f, 0.0f },
+        { 1.0f, 0.0f, 0.0f },
+
+        { -1.0f, 0.0f, 0.0f },
+        { -1.0f, 0.0f, 0.0f },
+        { -1.0f, 0.0f, 0.0f },
+        { -1.0f, 0.0f, 0.0f },
+    };
+    static int tri_map[6] = { 0, 1, 2, 3, 0, 2 };
+
+    if (!m_Initialized)
+    {
+        m_Initialized = true;
+
+        m_Box.position = (nlVector3*)glResourceAlloc(0x1B0, GLM_VertexData);
+        m_Box.normal = (nlVector3*)glResourceAlloc(0x1B0, GLM_VertexData);
+        m_Box.texcoord = (nlVector2*)glResourceAlloc(0x120, GLM_VertexData);
+        m_Box.vertCount = 0x24;
+
+        nlVector3* pos = m_Box.position;
+        nlVector3* norm = m_Box.normal;
+        nlVector2* uv = m_Box.texcoord;
+
+        for (int i = 0; i < 6; i++)
+        {
+            int base = i * 4;
+            nlVector3* faceVerts[4];
+            nlVector3* faceNorms[4];
+            nlVector2* faceUVs[4];
+
+            faceVerts[0] = &data_vert[ind_vert[base + 0]];
+            faceNorms[0] = &data_norm[base + 0];
+            faceUVs[0] = &data_uv[ind_uv[base + 0]];
+
+            faceVerts[1] = &data_vert[ind_vert[base + 1]];
+            faceNorms[1] = &data_norm[base + 1];
+            faceUVs[1] = &data_uv[ind_uv[base + 1]];
+
+            faceVerts[2] = &data_vert[ind_vert[base + 2]];
+            faceNorms[2] = &data_norm[base + 2];
+            faceUVs[2] = &data_uv[ind_uv[base + 2]];
+
+            faceVerts[3] = &data_vert[ind_vert[base + 3]];
+            faceNorms[3] = &data_norm[base + 3];
+            faceUVs[3] = &data_uv[ind_uv[base + 3]];
+
+            for (int j = 0; j < 3; j++)
+            {
+                int index0 = tri_map[j * 2 + 0];
+                int index1 = tri_map[j * 2 + 1];
+
+                *pos = *faceVerts[index0];
+                *norm = *faceNorms[index0];
+                *uv = *faceUVs[index0];
+
+                pos[1] = *faceVerts[index1];
+                norm[1] = *faceNorms[index1];
+                uv[1] = *faceUVs[index1];
+
+                pos += 2;
+                norm += 2;
+                uv += 2;
+            }
+        }
+
+        CreateCylinderGeometry(m_Cylinder);
+        CreateHemisphereGeometry(m_Hemisphere);
+        CreateFlatCylinderEndGeometry(m_FlatCylinderEnd);
+
+        {
+            extern unsigned long UnlitProgram;
+            GLMeshWriter mesh;
+            eGLStream stream_decl[4] = { GLStream_Position, GLStream_Colour, GLStream_Normal, GLStream_Diffuse };
+            nlColour colour;
+            colour.c[0] = 0xFF;
+            colour.c[1] = 0xFF;
+            colour.c[2] = 0xFF;
+            colour.c[3] = 0xFF;
+            m_Box.model = NULL;
+
+            nlVector3* pPosition = m_Box.position;
+            nlVector3* pNormal = m_Box.normal;
+            nlVector2* pTexcoord = m_Box.texcoord;
+
+            glSetDefaultState(true);
+            glSetCurrentMatrix(glGetIdentityMatrix());
+            glSetCurrentTexture(WhiteTexture, GLTT_Diffuse);
+            glSetCurrentProgram(UnlitProgram);
+
+            if (mesh.Begin(m_Box.vertCount, GLP_TriStrip, 4, stream_decl, true))
+            {
+                int index = 0;
+                while (index < m_Box.vertCount)
+                {
+                    mesh.Colour(colour);
+                    mesh.Normal(*pNormal);
+                    mesh.Texcoord(*pTexcoord);
+                    mesh.Vertex(*pPosition);
+
+                    pNormal++;
+                    pTexcoord++;
+                    pPosition++;
+                    index++;
+                }
+
+                if (mesh.End())
+                {
+                    m_Box.model = mesh.GetModel();
+                }
+            }
+        }
+
+        {
+            extern unsigned long UnlitProgram;
+            GLMeshWriter mesh;
+            eGLStream stream_decl[4] = { GLStream_Position, GLStream_Colour, GLStream_Normal, GLStream_Diffuse };
+            nlColour colour;
+            colour.c[0] = 0xFF;
+            colour.c[1] = 0xFF;
+            colour.c[2] = 0xFF;
+            colour.c[3] = 0xFF;
+            m_Cylinder.model = NULL;
+
+            nlVector3* pPosition = m_Cylinder.position;
+            nlVector3* pNormal = m_Cylinder.normal;
+            nlVector2* pTexcoord = m_Cylinder.texcoord;
+
+            glSetDefaultState(true);
+            glSetCurrentMatrix(glGetIdentityMatrix());
+            glSetCurrentTexture(WhiteTexture, GLTT_Diffuse);
+            glSetCurrentProgram(UnlitProgram);
+
+            if (mesh.Begin(m_Cylinder.vertCount, GLP_TriStrip, 4, stream_decl, true))
+            {
+                int index = 0;
+                while (index < m_Cylinder.vertCount)
+                {
+                    mesh.Colour(colour);
+                    mesh.Normal(*pNormal);
+                    mesh.Texcoord(*pTexcoord);
+                    mesh.Vertex(*pPosition);
+
+                    pNormal++;
+                    pTexcoord++;
+                    pPosition++;
+                    index++;
+                }
+
+                if (mesh.End())
+                {
+                    m_Cylinder.model = mesh.GetModel();
+                }
+            }
+        }
+
+        {
+            extern unsigned long UnlitProgram;
+            GLMeshWriter mesh;
+            eGLStream stream_decl[4] = { GLStream_Position, GLStream_Colour, GLStream_Normal, GLStream_Diffuse };
+            nlColour colour;
+            colour.c[0] = 0xFF;
+            colour.c[1] = 0xFF;
+            colour.c[2] = 0xFF;
+            colour.c[3] = 0xFF;
+            m_Hemisphere.model = NULL;
+
+            nlVector3* pPosition = m_Hemisphere.position;
+            nlVector3* pNormal = m_Hemisphere.normal;
+            nlVector2* pTexcoord = m_Hemisphere.texcoord;
+
+            glSetDefaultState(true);
+            glSetCurrentMatrix(glGetIdentityMatrix());
+            glSetCurrentTexture(WhiteTexture, GLTT_Diffuse);
+            glSetCurrentProgram(UnlitProgram);
+
+            if (mesh.Begin(m_Hemisphere.vertCount, GLP_TriStrip, 4, stream_decl, true))
+            {
+                int index = 0;
+                while (index < m_Hemisphere.vertCount)
+                {
+                    mesh.Colour(colour);
+                    mesh.Normal(*pNormal);
+                    mesh.Texcoord(*pTexcoord);
+                    mesh.Vertex(*pPosition);
+
+                    pNormal++;
+                    pTexcoord++;
+                    pPosition++;
+                    index++;
+                }
+
+                if (mesh.End())
+                {
+                    m_Hemisphere.model = mesh.GetModel();
+                }
+            }
+        }
+
+        {
+            extern unsigned long UnlitProgram;
+            GLMeshWriter mesh;
+            eGLStream stream_decl[4] = { GLStream_Position, GLStream_Colour, GLStream_Normal, GLStream_Diffuse };
+            nlColour colour;
+            colour.c[0] = 0xFF;
+            colour.c[1] = 0xFF;
+            colour.c[2] = 0xFF;
+            colour.c[3] = 0xFF;
+            m_FlatCylinderEnd.model = NULL;
+
+            nlVector3* pPosition = m_FlatCylinderEnd.position;
+            nlVector3* pNormal = m_FlatCylinderEnd.normal;
+            nlVector2* pTexcoord = m_FlatCylinderEnd.texcoord;
+
+            glSetDefaultState(true);
+            glSetCurrentMatrix(glGetIdentityMatrix());
+            glSetCurrentTexture(WhiteTexture, GLTT_Diffuse);
+            glSetCurrentProgram(UnlitProgram);
+
+            if (mesh.Begin(m_FlatCylinderEnd.vertCount, GLP_TriStrip, 4, stream_decl, true))
+            {
+                int index = 0;
+                while (index < m_FlatCylinderEnd.vertCount)
+                {
+                    mesh.Colour(colour);
+                    mesh.Normal(*pNormal);
+                    mesh.Texcoord(*pTexcoord);
+                    mesh.Vertex(*pPosition);
+
+                    pNormal++;
+                    pTexcoord++;
+                    pPosition++;
+                    index++;
+                }
+
+                if (mesh.End())
+                {
+                    m_FlatCylinderEnd.model = mesh.GetModel();
+                }
+            }
+        }
+
+        struct ShapeRenderLightUserData
+        {
+            u32 type;
+            nlVector3 worldPosition;
+            nlFloatColour colour;
+            float intensity;
+            float innerRadius;
+            float outerRadius;
+        };
+
+        void* pUser = glUserAlloc(GLUD_Light, sizeof(ShapeRenderLightUserData), true);
+        ShapeRenderLightUserData* pLight = (ShapeRenderLightUserData*)glUserGetData(pUser);
+
+        pLight->type = 1;
+        pLight->worldPosition.f.x = 0.5f;
+        pLight->worldPosition.f.y = 0.5f;
+        pLight->worldPosition.f.z = 10.0f;
+        pLight->colour.c[0] = 0.5f;
+        pLight->colour.c[1] = 0.5f;
+        pLight->colour.c[2] = 1.0f;
+        pLight->colour.c[3] = 0.0f;
+        pLight->intensity = 1.0f;
+        pLight->innerRadius = 0.0f;
+        pLight->outerRadius = 30.0f;
+
+        m_pLightUserData = pUser;
+        m_eView = (eGLView)7;
+    }
 }

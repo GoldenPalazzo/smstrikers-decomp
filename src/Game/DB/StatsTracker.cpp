@@ -1,5 +1,7 @@
 #include "Game/DB/StatsTracker.h"
+#include "Game/AI/FielderActions.h"
 #include "Game/FE/feHelpFuncs.h"
+#include "Game/Game.h"
 #include "Game/GameInfo.h"
 
 // /**
@@ -253,8 +255,362 @@ void StatsTracker::DestroyEventHandler()
 /**
  * Offset/Address/Size: 0x4730 | 0x80185C90 | size: 0x818
  */
-void StatsTracker::eventHandler(Event*, void*)
+void StatsTracker::eventHandler(Event* event, void*)
 {
+    struct GoalScoredDataExt
+    {
+        GoalScoredData data;
+        int sideOfInterest;
+    };
+
+    switch (event->m_uEventID)
+    {
+    case 5:
+    {
+        GoalScoredData* data;
+        cPlayer* assistplayer;
+        s32 id = event->m_data.GetID();
+
+        if (id == -1)
+        {
+            nlPrintf("Error: Trying to get event data on event with none!\n");
+            data = 0;
+        }
+        else
+        {
+            id = event->m_data.GetID();
+            if (id != 0x18A)
+            {
+                nlPrintf("Error: GetData() failed! Data types do not match!\n");
+                data = 0;
+            }
+            else
+            {
+                data = (GoalScoredData*)&event->m_data;
+            }
+        }
+
+        assistplayer = data->pAssister;
+
+        s_pInstance->TrackStat(
+            STATS_GOALS_FOR,
+            data->uTeamIndex,
+            data->pScorer->m_ID,
+            (assistplayer != 0) ? assistplayer->m_ID : -1,
+            data->uGoalType,
+            data->uNumGoalsScored,
+            ((GoalScoredDataExt*)data)->sideOfInterest);
+
+        if (g_pGame != 0)
+        {
+            float gameDuration = g_pGame->m_fGameDuration;
+            if (g_pGame->GetGameTime() >= gameDuration)
+            {
+                TeamStats awayStats = s_pInstance->mCurrentTeamStats[0];
+                TeamStats homeStats = s_pInstance->mCurrentTeamStats[1];
+                if ((int)awayStats.mPlayerTotalStats.mNumGoalsFor != (int)homeStats.mPlayerTotalStats.mNumGoalsFor)
+                {
+                    s_pInstance->TrackWinner(-1);
+                }
+            }
+        }
+        break;
+    }
+
+    case 0x3D:
+    {
+        PenaltyData* data;
+        cPlayer* fouler;
+        s32 id = event->m_data.GetID();
+
+        if (id == -1)
+        {
+            nlPrintf("Error: Trying to get event data on event with none!\n");
+            data = 0;
+        }
+        else
+        {
+            id = event->m_data.GetID();
+            if (id != 0x152)
+            {
+                nlPrintf("Error: GetData() failed! Data types do not match!\n");
+                data = 0;
+            }
+            else
+            {
+                data = (PenaltyData*)&event->m_data;
+            }
+        }
+
+        fouler = (cPlayer*)data->pFouler;
+        s_pInstance->TrackStat(STATS_FOULS,
+            fouler->m_pTeam->m_nSide,
+            fouler->m_ID,
+            0,
+            0,
+            0,
+            0);
+        break;
+    }
+
+    case 0x14:
+    {
+        ShotAtGoalData* data;
+        s32 id = event->m_data.GetID();
+
+        if (id == -1)
+        {
+            nlPrintf("Error: Trying to get event data on event with none!\n");
+            data = 0;
+        }
+        else
+        {
+            id = event->m_data.GetID();
+            if (id != 0x14A)
+            {
+                nlPrintf("Error: GetData() failed! Data types do not match!\n");
+                data = 0;
+            }
+            else
+            {
+                data = (ShotAtGoalData*)&event->m_data;
+            }
+        }
+
+        s_pInstance->TrackStat(STATS_SHOTS_ON_GOAL,
+            data->pShooter->m_pTeam->m_nSide,
+            data->pShooter->m_ID,
+            0,
+            0,
+            0,
+            0);
+        break;
+    }
+
+    case 0xE:
+    {
+        PassBallData* data;
+        s32 id = event->m_data.GetID();
+
+        if (id == -1)
+        {
+            nlPrintf("Error: Trying to get event data on event with none!\n");
+            data = 0;
+        }
+        else
+        {
+            id = event->m_data.GetID();
+            if (id != 0x131)
+            {
+                nlPrintf("Error: GetData() failed! Data types do not match!\n");
+                data = 0;
+            }
+            else
+            {
+                data = (PassBallData*)&event->m_data;
+            }
+        }
+
+        s_pInstance->TrackStat(STATS_PASSES_MADE,
+            data->pPasser->m_pTeam->m_nSide,
+            data->pPasser->m_ID,
+            data->mPasserControllerID,
+            0,
+            0,
+            0);
+        break;
+    }
+
+    case 0xD:
+    {
+        ReceiveBallData* data;
+        s32 id = event->m_data.GetID();
+
+        if (id == -1)
+        {
+            nlPrintf("Error: Trying to get event data on event with none!\n");
+            data = 0;
+        }
+        else
+        {
+            id = event->m_data.GetID();
+            if (id != 0x121)
+            {
+                nlPrintf("Error: GetData() failed! Data types do not match!\n");
+                data = 0;
+            }
+            else
+            {
+                data = (ReceiveBallData*)&event->m_data;
+            }
+        }
+
+        if (data->eResult == RECEIVEBALL_PASS_COMPLETE)
+        {
+            s_pInstance->TrackStat(STATS_PASSES_RECEIVED,
+                data->pReceiver->m_pTeam->m_nSide,
+                data->pReceiver->m_ID,
+                0,
+                0,
+                0,
+                0);
+        }
+        else if (data->eResult == RECEIVEBALL_PASS_INTERCEPT)
+        {
+            s_pInstance->TrackStat(STATS_PASSES_INTERCEPTED,
+                data->pReceiver->m_pTeam->m_nSide,
+                data->pReceiver->m_ID,
+                0,
+                0,
+                0,
+                0);
+        }
+        break;
+    }
+
+    case 0x55:
+    {
+        CollisionPowerupStatsData* data;
+        cPlayer* thrower;
+        s32 id = event->m_data.GetID();
+
+        if (id == -1)
+        {
+            nlPrintf("Error: Trying to get event data on event with none!\n");
+            data = 0;
+        }
+        else
+        {
+            id = event->m_data.GetID();
+            if (id != 0x104)
+            {
+                nlPrintf("Error: GetData() failed! Data types do not match!\n");
+                data = 0;
+            }
+            else
+            {
+                data = (CollisionPowerupStatsData*)&event->m_data;
+            }
+        }
+
+        thrower = (cPlayer*)data->pThrower;
+        s_pInstance->TrackStat(STATS_POWERUPS_HIT,
+            thrower->m_pTeam->m_nSide,
+            thrower->m_ID,
+            data->nThrowerPadID,
+            0,
+            0,
+            0);
+        break;
+    }
+
+    case 0x19:
+    {
+        PlayerAttackData* data;
+        cPlayer* attacker;
+        s32 id = event->m_data.GetID();
+
+        if (id == -1)
+        {
+            nlPrintf("Error: Trying to get event data on event with none!\n");
+            data = 0;
+        }
+        else
+        {
+            id = event->m_data.GetID();
+            if (id != 0x19A)
+            {
+                nlPrintf("Error: GetData() failed! Data types do not match!\n");
+                data = 0;
+            }
+            else
+            {
+                data = (PlayerAttackData*)&event->m_data;
+            }
+        }
+
+        attacker = (cPlayer*)data->pAttacker;
+        s_pInstance->TrackStat(STATS_STEALS,
+            attacker->m_pTeam->m_nSide,
+            attacker->m_ID,
+            data->nAttackerPadID,
+            0,
+            0,
+            0);
+        break;
+    }
+
+    case 0x45:
+    {
+        PassBallData* data;
+        s32 id = event->m_data.GetID();
+
+        if (id == -1)
+        {
+            nlPrintf("Error: Trying to get event data on event with none!\n");
+            data = 0;
+        }
+        else
+        {
+            id = event->m_data.GetID();
+            if (id != 0x131)
+            {
+                nlPrintf("Error: GetData() failed! Data types do not match!\n");
+                data = 0;
+            }
+            else
+            {
+                data = (PassBallData*)&event->m_data;
+            }
+        }
+
+        s_pInstance->TrackStat(STATS_PERFECT_PASSES,
+            data->pPasser->m_pTeam->m_nSide,
+            data->pPasser->m_ID,
+            data->mPasserControllerID,
+            0,
+            0,
+            0);
+        break;
+    }
+
+    case 0x40:
+    {
+        ShotAtGoalData* data;
+        s32 id = event->m_data.GetID();
+
+        if (id == -1)
+        {
+            nlPrintf("Error: Trying to get event data on event with none!\n");
+            data = 0;
+        }
+        else
+        {
+            id = event->m_data.GetID();
+            if (id != 0x14A)
+            {
+                nlPrintf("Error: GetData() failed! Data types do not match!\n");
+                data = 0;
+            }
+            else
+            {
+                data = (ShotAtGoalData*)&event->m_data;
+            }
+        }
+
+        s_pInstance->TrackStat(STATS_STS_ATTEMPTS,
+            data->pShooter->m_pTeam->m_nSide,
+            data->pShooter->m_ID,
+            0,
+            0,
+            0,
+            0);
+        break;
+    }
+
+    default:
+        break;
+    }
 }
 
 /**

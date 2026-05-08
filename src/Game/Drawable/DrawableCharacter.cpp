@@ -8,10 +8,81 @@
 #include "Game/SAnim/pnFeather.h"
 #include "Game/SAnim/pnBlender.h"
 #include "Game/SAnim/pnSingleAxisBlender.h"
+#include "Game/Render/RenderShadow.h"
+#include "Game/GameObjectLighting.h"
+#include "Game/WorldManager.h"
+#include "Game/GL/GLInventory.h"
+#include "NL/gl/glView.h"
+#include "NL/gl/glModel.h"
+#include "NL/gl/glUserData.h"
+#include "NL/gl/glMatrix.h"
+#include "NL/gl/glModify.h"
+#include "NL/nlTask.h"
+#include "NL/nlTicker.h"
+#include "NL/nlString.h"
 #include "NL/nlDebug.h"
+#include <dolphin/os.h>
 
 cCharacter* DrawableCharacter::spRenderOnlyThisCharacter = nullptr;
 bool DrawableCharacter::sbRenderOpposingGoalieToo = false;
+bool DrawableCharacter::sCameraRelativeLighting = false;
+
+unsigned char sShadowRenderingDisabled__17DrawableCharacter;
+unsigned char sSTSLighting__17DrawableCharacter;
+
+const u32 GLTT_BumpLocal_bit = 1 << (int)GLTT_BumpLocal;
+static unsigned long GLTT_Detail_bit = 1UL << (int)GLTT_Detail;
+
+static unsigned long CharacterDirtProgram = glGetProgram("3d pointlit dirt");
+static unsigned long CharacterProgram = glGetProgram("3d pointlit");
+
+static int g_nShowBones;
+static const int g_nOnscreenUpdate[3] = { 4, 3, 2 };
+static const int g_nOffscreenUpdate[3] = { 8, 8, 6 };
+
+struct ShadowScale
+{
+    float fRadius;
+    float fHeight;
+    float fScalar;
+};
+
+ShadowScale shadowScale[] = {
+    { 1.5f, 1.0f, 1.0f },
+    { 1.75f, 1.25f, 1.25f },
+    { 2.8f, 1.25f, 2.0f },
+    { 1.5f, 1.0f, 1.0f },
+    { 1.5f, 1.0f, 1.0f },
+    { 1.5f, 1.0f, 1.0f },
+    { 1.5f, 1.0f, 1.0f },
+    { 1.75f, 1.25f, 1.25f },
+    { 1.5f, 1.0f, 1.0f },
+    { 2.0f, 1.25f, 1.5f },
+    { 1.5f, 1.0f, 1.0f },
+    { 1.5f, 1.0f, 1.0f },
+    { 1.75f, 1.25f, 1.25f },
+    { 1.75f, 1.25f, 1.25f },
+};
+
+int charSizes[] = {
+    0,
+    1,
+    2,
+    0,
+    0,
+    0,
+    0,
+    1,
+    0,
+    1,
+    0,
+    0,
+    1,
+    0,
+};
+
+static float g_fRadiusScale = 1.175f;
+static unsigned char g_bSloppyBounds = 1;
 
 template <>
 FloatCompressor<0, 1, 15>::FloatCompressor(float& f)
@@ -477,9 +548,353 @@ static void FindBoundingSphereAccurate(nlVector3* pOutSphere, float* pOutRadius,
 /**
  * Offset/Address/Size: 0x1AE4 | 0x8011A994 | size: 0x808
  */
-void DrawableCharacter::SendToGl(const cCharacter&) const
+void DrawableCharacter::SendToGl(const cCharacter& character) const
 {
-    FORCE_DONT_INLINE;
+    extern GLInventory glInventory;
+    extern unsigned long ResolvedWhiteTexture;
+
+    struct WorldShadowData
+    {
+        unsigned char padding[0x138];
+        nlVector4* pLight;
+    };
+
+    EffectsTexturing* fxtex = mEffectsTexturing;
+    eCharacterClass ec = character.m_eCharacterClass;
+
+    if (fxtex != nullptr && fxtex->m_uTexture == 0xFFFFFFFF)
+    {
+        fxtex = nullptr;
+    }
+
+    unsigned long program = CharacterDirtProgram;
+    if (fxtex != nullptr && fxtex->m_bDetail)
+    {
+        program = CharacterProgram;
+    }
+
+    GLSkinMesh* skinMesh = character.GetSkinMesh();
+    skinMesh->PrepareToRender(program, nullptr);
+
+    if (ec == DONKEYKONG || ec == MYSTERY)
+    {
+        for (glModelPacket* pPacket = skinMesh->pModel->packets; pPacket < skinMesh->pModel->packets + skinMesh->pModel->numPackets; pPacket++)
+        {
+            glSetRasterState(pPacket->state.raster, GLS_Culling, 0);
+        }
+    }
+
+    u32 lightTexture;
+    World* world = WorldManager::s_World;
+    if (sSTSLighting__17DrawableCharacter != 0)
+    {
+        lightTexture = world->m_GlobalLightRampSTSTex;
+    }
+    else
+    {
+        lightTexture = GetGameObjectLightRamp();
+    }
+
+    void* pLightData;
+    if (sSTSLighting__17DrawableCharacter != 0)
+    {
+        pLightData = world->m_pIntensityData;
+    }
+    else if (DrawableCharacter::sCameraRelativeLighting || AlwaysUseCameraRelativeCharacterLighting())
+    {
+        pLightData = GetCameraRelativeLightData();
+    }
+    else
+    {
+        pLightData = GetInGameLightData();
+    }
+
+    void* pEnviroData = nullptr;
+    if (fxtex != nullptr && fxtex->m_bEnviro)
+    {
+        pEnviroData = glUserAlloc(GLUD_EnvDiffuse, 0, false);
+    }
+
+    void* pSpecularData = WorldManager::s_World->m_pSTSIntensity;
+    glModel* pModel = glModelDup(skinMesh->pModel, true);
+
+    u8 isVisible;
+    if (nlTaskManager::m_pInstance->m_CurrState == 0x100)
+    {
+        isVisible = 1;
+    }
+    else if (WorldManager::s_World != nullptr)
+    {
+        float fRadius;
+        if (ec == DONKEYKONG)
+        {
+            fRadius = 3.5f;
+        }
+        else
+        {
+            fRadius = 2.5f;
+        }
+
+        nlMatrix4 mWorld;
+        mWorld.SetIdentity();
+        mWorld.f.m41 = mBip01Position.f.x;
+        mWorld.f.m42 = mBip01Position.f.y;
+        mWorld.f.m43 = mBip01Position.f.z;
+        mWorld.f.m44 = 1.0f;
+
+        isVisible = WorldManager::s_World->IsSphereInFrustum(mWorld, fRadius);
+    }
+    else
+    {
+        isVisible = 1;
+    }
+
+    if (isVisible)
+    {
+        u8 dirtIndicator = (u8)(int)(63.0f * (1.0f - ((float)mDirt / 255.0f)));
+
+        for (glModelPacket* pPacket = pModel->packets; pPacket < pModel->packets + pModel->numPackets; pPacket++)
+        {
+            if (pLightData != nullptr)
+            {
+                glUserAttach(pLightData, pPacket, false);
+            }
+
+            if (pPacket->state.texconfig & 0x10)
+            {
+                nlBreak();
+                glUserAttach(pSpecularData, pPacket, false);
+            }
+
+            pPacket->state.texture[GLTT_BumpLocal] = lightTexture;
+            pPacket->state.texconfig |= GLTT_BumpLocal_bit;
+
+            if (fxtex != nullptr)
+            {
+                if (fxtex->m_eBlendMode != GLB_None)
+                {
+                    glSetRasterState(pPacket->state.raster, GLS_AlphaBlend, fxtex->m_eBlendMode);
+                }
+
+                if (fxtex->m_bDetail)
+                {
+                    if (ec == MYSTERY)
+                    {
+                        pPacket->state.texture[GLTT_Gloss] = fxtex->m_uTexture;
+                    }
+                    else
+                    {
+                        pPacket->state.texture[GLTT_BumpLocal] = fxtex->m_uTexture;
+                        pPacket->state.texconfig |= GLTT_Detail_bit;
+                        glSetTextureState(pPacket->state.texturestate, (eGLTextureState)0xC, 0xF);
+                    }
+                }
+                else
+                {
+                    pPacket->state.texture[GLTT_Gloss] = fxtex->m_uTexture;
+                }
+
+                if (pEnviroData != nullptr)
+                {
+                    glUserAttach(pEnviroData, pPacket, false);
+                }
+            }
+
+            if ((pPacket->state.texconfig & 0x2) && (fxtex == nullptr || !fxtex->m_bDetail))
+            {
+                glSetTextureState(pPacket->state.texturestate, (eGLTextureState)0xC, dirtIndicator);
+            }
+        }
+
+        u8 isMapped = 0;
+        if (character.m_uNormalTextureID != character.m_uSwapTextureID)
+        {
+            gl_ModifyAddMapping(eGLModifier_1, character.m_uNormalTextureID, character.m_uSwapTextureID);
+            isMapped = 1;
+        }
+
+        if (fxtex == nullptr)
+        {
+            character.PerformBlinking(skinMesh, pModel);
+        }
+
+        glViewAttachModel(GLV_Characters, pModel);
+
+        if (isMapped != 0)
+        {
+            gl_ModifyClearLastMapping();
+        }
+    }
+
+    if (g_nShowBones > 0)
+    {
+        static u32 tDiff;
+        static u8 initTdiff;
+        static u32 counter;
+        static u8 initCounter;
+
+        if (!initTdiff)
+        {
+            tDiff = 0;
+            initTdiff = 1;
+        }
+        if (!initCounter)
+        {
+            counter = 0;
+            initCounter = 1;
+        }
+
+        const bool endpointBounds = (g_nShowBones == 1);
+        PhysicsCharacterBase* pPhysicsCharacter = character.m_pPhysicsCharacter;
+        int numBoneVolumePoints = pPhysicsCharacter->GetNumBoneVolumePoints(endpointBounds);
+
+        if (numBoneVolumePoints <= 0xC0)
+        {
+            u32 startTick = nlGetTicker();
+
+            nlVector3 points[0xC0];
+            pPhysicsCharacter->GetBoneVolumePoints(points, endpointBounds);
+
+            nlVector3 vCenter;
+            float fRadius;
+            if (g_bSloppyBounds != 0)
+            {
+                vCenter = mBip01Position;
+                float maxDistSq = 0.0f;
+
+                for (int i = 0; i < numBoneVolumePoints; i++)
+                {
+                    float dx = points[i].f.x - vCenter.f.x;
+                    float dy = points[i].f.y - vCenter.f.y;
+                    float dz = points[i].f.z - vCenter.f.z;
+                    float distSq = dx * dx + dy * dy + dz * dz;
+                    if (distSq > maxDistSq)
+                    {
+                        maxDistSq = distSq;
+                    }
+                }
+
+                fRadius = nlSqrt(maxDistSq, false);
+            }
+            else
+            {
+                FindBoundingSphereAccurate(&vCenter, &fRadius, numBoneVolumePoints, points);
+            }
+
+            u32 endTick = nlGetTicker();
+            u32 tickDiff = nlSubtractTicks(startTick, endTick);
+
+            counter++;
+            tDiff += tickDiff;
+            if (counter >= 0x1E0)
+            {
+                float ms = nlGetTickerDifference(0, tDiff);
+                u32 avgTicks = tDiff / counter;
+                tDiff = avgTicks;
+                ms = 8.0f * (ms / (float)counter);
+                OSReport("%u avg ticks (%0.3fms for 8 chars) to find bounding sphere\n", avgTicks, ms);
+                tDiff = 0;
+                counter = 0;
+            }
+
+            static const u32 debugColour = 0xFFFF4050;
+            glModel* pSphereModel = glModelDup(glInventory.GetModel(nlStringHash("debug/sphere")), true);
+
+            nlMatrix4 sphereWorldMatrix;
+            sphereWorldMatrix.SetIdentity();
+            sphereWorldMatrix.f.m41 = vCenter.f.x;
+            sphereWorldMatrix.f.m42 = vCenter.f.y;
+            sphereWorldMatrix.f.m43 = vCenter.f.z;
+            sphereWorldMatrix.f.m44 = 1.0f;
+            sphereWorldMatrix.f.m11 = fRadius;
+            sphereWorldMatrix.f.m22 = fRadius;
+            sphereWorldMatrix.f.m33 = fRadius;
+
+            unsigned long matrix = glAllocMatrix();
+            if (matrix != 0xFFFFFFFF)
+            {
+                glSetMatrix(matrix, sphereWorldMatrix);
+            }
+
+            void* pConstantColour = glUserAlloc(GLUD_ConstantColour, 4, false);
+            *(u32*)glUserGetData(pConstantColour) = debugColour;
+
+            u8 alpha = ((const u8*)&debugColour)[3];
+            for (glModelPacket* pPacket = pSphereModel->packets; pPacket < pSphereModel->packets + pSphereModel->numPackets; pPacket++)
+            {
+                pPacket->state.matrix = matrix;
+                pPacket->state.texture[GLTT_Gloss] = ResolvedWhiteTexture;
+                if (alpha != 0xFF)
+                {
+                    glSetRasterState(pPacket->state.raster, GLS_AlphaBlend, GLB_Standard);
+                }
+                glUserAttach(pConstantColour, pPacket, false);
+            }
+
+            glViewAttachModel(GLV_Characters, 6, pSphereModel);
+        }
+    }
+
+    if (sShadowRenderingDisabled__17DrawableCharacter == 0)
+    {
+        nlVector4* pLight = ((WorldShadowData*)WorldManager::s_World)->pLight;
+        if (pLight != nullptr)
+        {
+            static float s_fHeightFudge;
+            static u8 initHeightFudge;
+
+            if (!initHeightFudge)
+            {
+                s_fHeightFudge = 1.125f;
+                initHeightFudge = 1;
+            }
+
+            float fRadius = 0.0f;
+            float fHeight = 0.0f;
+            int characterSizeIndex;
+            float fScalar = 0.0f;
+
+            if (ec < NUM_FIELDER_CLASSES)
+            {
+                const ShadowScale& ss = shadowScale[ec];
+                fRadius = ss.fRadius;
+                fHeight = ss.fHeight;
+                fScalar = ss.fScalar;
+                characterSizeIndex = charSizes[ec];
+            }
+            else
+            {
+                const ShadowScale& ss = shadowScale[NUM_FIELDER_CLASSES];
+                fRadius = ss.fRadius;
+                fHeight = ss.fHeight;
+                fScalar = ss.fScalar;
+                characterSizeIndex = charSizes[NUM_FIELDER_CLASSES];
+            }
+
+            fRadius *= g_fRadiusScale;
+            fHeight *= s_fHeightFudge;
+
+            ProjectedShadowParams params;
+            params.vLight = *pLight;
+            params.vPosition = mBip01Position;
+            params.fRadius = fRadius;
+            params.pModel = pModel;
+            params.fWidth = fHeight;
+            params.fHeight = fHeight;
+            params.fScalar = fScalar;
+            params.nPartitionIndex = ((int (*)())GetShadowPartitionIndex)();
+            params.nVisibleInterval = g_nOnscreenUpdate[characterSizeIndex];
+            params.nInvisibleInterval = g_nOffscreenUpdate[characterSizeIndex];
+
+            if (ShouldShadowBeUpdated(params))
+            {
+                params.pModel = glModelDupNoStreams(pModel, true, false);
+                RenderCharacterIntoTexture(params);
+            }
+
+            RenderProjectedShadow(params);
+        }
+    }
 }
 
 // /**

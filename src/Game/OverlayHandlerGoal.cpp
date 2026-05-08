@@ -2,6 +2,7 @@
 #include "Game/FE/feNSNMessenger.h"
 #include "Game/Game.h"
 #include "Game/Goalie.h"
+#include "Game/Team.h"
 #include "NL/nlBundleFile.h"
 #include "NL/nlFormat.h"
 
@@ -62,13 +63,37 @@ nlLocalization::StringLookup* nlBSearch<nlLocalization::StringLookup, unsigned l
 extern nlLocalization* g_pLocalization;
 extern const unsigned short LocalizationTableNotFound[];
 extern const unsigned short MissingLocString[];
+extern cTeam* g_pTeams[];
 
 void MakeTextBoxReallyWide(TLTextInstance&);
 extern "C" void SetWinnerTitle__11GoalOverlayFv(GoalOverlay*);
 class GameInfoManager;
+extern "C" int GetTeam__15GameInfoManagerCFs(void*, short);
 extern "C" bool IsInFriendlyMode__15GameInfoManagerCFv(void*);
 extern "C" bool IsInTournamentMode__15GameInfoManagerCFv(void*);
 extern "C" bool HasTrophy__15GameInfoManagerCF11eTrophyType(void*, int);
+extern "C" int GetUserSelectedCupTeam__15GameInfoManagerCFv(void*);
+extern "C" int GetTrophyTypeByCurrentMode__15GameInfoManagerCFv(void*);
+extern "C" bool IsInCupMode__15GameInfoManagerCFv(void*);
+extern "C" short GetCurrentRoundNumber__15GameInfoManagerCFv(void*);
+extern "C" bool IsSuperTeamUnlocked__15GameInfoManagerCFv(void*);
+extern "C" int FindWinningTeam__15GameInfoManagerFv(void*);
+extern "C" unsigned short GetNumRounds__15GameInfoManagerCFv(void*);
+extern "C" unsigned long GetLOCCharacterName__F7eTeamIDbb(int, bool, bool);
+extern "C" unsigned long GetLOCTrophyName__F11eTrophyType(int);
+extern "C" unsigned long GetLOCTeamName__F7eTeamID(int);
+
+enum eGameModes_DoMatchEndOverlay
+{
+    GM_BOWSER_CUP_DoMatchEndOverlay = 4,
+    GM_SUPER_BOWSER_CUP_DoMatchEndOverlay = 8,
+};
+
+struct GameInfoModeAccessor_DoMatchEndOverlay
+{
+    char _padding[0x4954];
+    int mCurrentMode;
+};
 
 void OverlayHandlerGoal_stub()
 {
@@ -411,9 +436,339 @@ void GoalOverlay::SetHighlightNumber(int highlightNumber)
 
 /**
  * Offset/Address/Size: 0xDA4 | 0x80100E14 | size: 0x7EC
+ * TODO: 88.52% match - control-flow ordering in cup-final checks and BasicString temporary lifetime blocks still produce register/branch diffs.
  */
 void GoalOverlay::DoMatchEndOverlay()
 {
+    typedef TLTextInstance* (*FindCompByValue)(FEPresentation*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
+    typedef TLTextInstance* (*FindCompByRef)(FEPresentation*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
+
+    union
+    {
+        FindCompByValue byValue;
+        FindCompByRef byRef;
+    } findComp;
+
+    volatile InlineHasher hSlideB, hSlideA;
+    volatile InlineHasher hLayerB, hLayerA;
+    volatile InlineHasher hDescB, hDescA;
+    volatile InlineHasher h5, h4, h3, h2, h1, h0;
+
+    unsigned long hash;
+
+    SetWinnerTitle__11GoalOverlayFv(this);
+
+    GameInfoManager* gameInfo = nlSingleton<GameInfoManager>::s_pInstance;
+    BasicString<unsigned short, Detail::TempStringAllocator> formatted;
+    int winner = -1;
+    bool isFinalGame = false;
+
+    if (IsInCupMode__15GameInfoManagerCFv(gameInfo))
+    {
+        int round = (short)GetCurrentRoundNumber__15GameInfoManagerCFv(gameInfo);
+        int mode = ((GameInfoModeAccessor_DoMatchEndOverlay*)gameInfo)->mCurrentMode;
+
+        if (mode == GM_BOWSER_CUP_DoMatchEndOverlay)
+        {
+            if ((round == -2 && IsSuperTeamUnlocked__15GameInfoManagerCFv(gameInfo)) || round == -1)
+            {
+                isFinalGame = true;
+                winner = FindWinningTeam__15GameInfoManagerFv(gameInfo);
+            }
+            else if (round == -2)
+            {
+                winner = FindWinningTeam__15GameInfoManagerFv(gameInfo);
+                if (winner != GetUserSelectedCupTeam__15GameInfoManagerCFv(gameInfo))
+                {
+                    isFinalGame = true;
+                }
+            }
+        }
+        else if (mode == GM_SUPER_BOWSER_CUP_DoMatchEndOverlay)
+        {
+            if (round == -2)
+            {
+                isFinalGame = true;
+                winner = FindWinningTeam__15GameInfoManagerFv(gameInfo);
+            }
+        }
+        else
+        {
+            if (round == (u16)(GetNumRounds__15GameInfoManagerCFv(gameInfo) - 1))
+            {
+                isFinalGame = true;
+                winner = FindWinningTeam__15GameInfoManagerFv(gameInfo);
+            }
+        }
+    }
+
+    if (isFinalGame)
+    {
+        if (winner == GetTeam__15GameInfoManagerCFs(gameInfo, 0) || winner == GetTeam__15GameInfoManagerCFs(gameInfo, 1))
+        {
+            const unsigned short* formatLocString;
+            unsigned long key = 0x736E7F17;
+            nlLocalization* loc = g_pLocalization;
+
+            if (loc->m_LookupTable == 0)
+            {
+                formatLocString = LocalizationTableNotFound;
+            }
+            else
+            {
+                nlLocalization::StringLookup* entry = nlBSearch<nlLocalization::StringLookup, unsigned long>(key, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
+                if (entry)
+                {
+                    formatLocString = loc->m_FirstString + entry->StringOffset;
+                }
+                else
+                {
+                    formatLocString = MissingLocString;
+                }
+            }
+
+            BasicStringData<unsigned short>* data = (BasicStringData<unsigned short>*)nlMalloc(0x10, 8, true);
+            if (data)
+            {
+                data->mData = 0;
+                data->mSize = 0;
+                data->mCapacity = 0;
+
+                const unsigned short* ptr = formatLocString;
+                while (*ptr++)
+                {
+                    data->mSize++;
+                }
+
+                data->mSize++;
+                data->mData = (unsigned short*)nlMalloc((data->mSize + 1) * 2, 8, true);
+                data->mCapacity = data->mSize;
+
+                int i = 0;
+                int j = 0;
+                while (i < data->mSize)
+                {
+                    *(unsigned short*)((char*)data->mData + j) = *formatLocString;
+                    i++;
+                    formatLocString++;
+                    j += 2;
+                }
+
+                data->mRefCount = 1;
+            }
+
+            BasicString<unsigned short, Detail::TempStringAllocator> unformatted(data);
+            int cup = GetTrophyTypeByCurrentMode__15GameInfoManagerCFv(gameInfo);
+
+            unsigned long winnerLocID = GetLOCTeamName__F7eTeamID(winner);
+            const unsigned short* winnerLocString;
+
+            loc = g_pLocalization;
+
+            if (loc->m_LookupTable == 0)
+            {
+                winnerLocString = LocalizationTableNotFound;
+            }
+            else
+            {
+                nlLocalization::StringLookup* entry = nlBSearch<nlLocalization::StringLookup, unsigned long>(winnerLocID, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
+                if (entry)
+                {
+                    winnerLocString = loc->m_FirstString + entry->StringOffset;
+                }
+                else
+                {
+                    winnerLocString = MissingLocString;
+                }
+            }
+
+            unsigned long trophyLocID = GetLOCTrophyName__F11eTrophyType(cup);
+            const unsigned short* trophyLocString;
+
+            loc = g_pLocalization;
+
+            if (loc->m_LookupTable == 0)
+            {
+                trophyLocString = LocalizationTableNotFound;
+            }
+            else
+            {
+                nlLocalization::StringLookup* entry = nlBSearch<nlLocalization::StringLookup, unsigned long>(trophyLocID, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
+                if (entry)
+                {
+                    trophyLocString = loc->m_FirstString + entry->StringOffset;
+                }
+                else
+                {
+                    trophyLocString = MissingLocString;
+                }
+            }
+
+            formatted = Format(unformatted, winnerLocString, trophyLocString);
+        }
+    }
+
+    if (!isFinalGame)
+    {
+        int scoreLeft = g_pTeams[0]->m_nScore;
+        int scoreRight = g_pTeams[1]->m_nScore;
+
+        int winnerID;
+        int loserID;
+
+        if (scoreLeft > scoreRight)
+        {
+            winnerID = GetTeam__15GameInfoManagerCFs(nlSingleton<GameInfoManager>::s_pInstance, 0);
+        }
+        else
+        {
+            winnerID = GetTeam__15GameInfoManagerCFs(nlSingleton<GameInfoManager>::s_pInstance, 1);
+        }
+
+        if (scoreLeft < scoreRight)
+        {
+            loserID = GetTeam__15GameInfoManagerCFs(nlSingleton<GameInfoManager>::s_pInstance, 0);
+        }
+        else
+        {
+            loserID = GetTeam__15GameInfoManagerCFs(nlSingleton<GameInfoManager>::s_pInstance, 1);
+        }
+
+        const unsigned short* formatLocString;
+        unsigned long key = 0x09B5BC7C;
+        nlLocalization* loc = g_pLocalization;
+
+        if (loc->m_LookupTable == 0)
+        {
+            formatLocString = LocalizationTableNotFound;
+        }
+        else
+        {
+            nlLocalization::StringLookup* entry = nlBSearch<nlLocalization::StringLookup, unsigned long>(key, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
+            if (entry)
+            {
+                formatLocString = loc->m_FirstString + entry->StringOffset;
+            }
+            else
+            {
+                formatLocString = MissingLocString;
+            }
+        }
+
+        BasicStringData<unsigned short>* data = (BasicStringData<unsigned short>*)nlMalloc(0x10, 8, true);
+        if (data)
+        {
+            data->mData = 0;
+            data->mSize = 0;
+            data->mCapacity = 0;
+
+            const unsigned short* ptr = formatLocString;
+            while (*ptr++)
+            {
+                data->mSize++;
+            }
+
+            data->mSize++;
+            data->mData = (unsigned short*)nlMalloc((data->mSize + 1) * 2, 8, true);
+            data->mCapacity = data->mSize;
+
+            int i = 0;
+            int j = 0;
+            while (i < data->mSize)
+            {
+                *(unsigned short*)((char*)data->mData + j) = *formatLocString;
+                i++;
+                formatLocString++;
+                j += 2;
+            }
+
+            data->mRefCount = 1;
+        }
+
+        BasicString<unsigned short, Detail::TempStringAllocator> unformatted(data);
+
+        unsigned long winnerLocID = GetLOCCharacterName__F7eTeamIDbb(winnerID, true, false);
+        const unsigned short* winnerLocString;
+
+        loc = g_pLocalization;
+
+        if (loc->m_LookupTable == 0)
+        {
+            winnerLocString = LocalizationTableNotFound;
+        }
+        else
+        {
+            nlLocalization::StringLookup* entry = nlBSearch<nlLocalization::StringLookup, unsigned long>(winnerLocID, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
+            if (entry)
+            {
+                winnerLocString = loc->m_FirstString + entry->StringOffset;
+            }
+            else
+            {
+                winnerLocString = MissingLocString;
+            }
+        }
+
+        unsigned long loserLocID = GetLOCCharacterName__F7eTeamIDbb(loserID, true, false);
+        const unsigned short* loserLocString;
+
+        loc = g_pLocalization;
+
+        if (loc->m_LookupTable == 0)
+        {
+            loserLocString = LocalizationTableNotFound;
+        }
+        else
+        {
+            nlLocalization::StringLookup* entry = nlBSearch<nlLocalization::StringLookup, unsigned long>(loserLocID, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
+            if (entry)
+            {
+                loserLocString = loc->m_FirstString + entry->StringOffset;
+            }
+            else
+            {
+                loserLocString = MissingLocString;
+            }
+        }
+
+        formatted = Format(unformatted, winnerLocString, loserLocString);
+    }
+
+    findComp.byValue = FEFinder<TLTextInstance, 3>::Find<FEPresentation>;
+
+    h0.m_Hash = 0;
+    h1.m_Hash = 0;
+    h2.m_Hash = 0;
+    h3.m_Hash = 0;
+    h4.m_Hash = 0;
+    h5.m_Hash = 0;
+
+    hash = nlStringLowerHash("Description");
+    hDescA.m_Hash = hash;
+    hDescB.m_Hash = hash;
+
+    hash = nlStringLowerHash("Layer");
+    hLayerA.m_Hash = hash;
+    hLayerB.m_Hash = hash;
+
+    hash = nlStringLowerHash("Slide1");
+    hSlideA.m_Hash = hash;
+    hSlideB.m_Hash = hash;
+
+    TLTextInstance* pText = findComp.byRef(
+        m_pFEPresentation,
+        (InlineHasher&)hSlideB,
+        (InlineHasher&)hLayerB,
+        (InlineHasher&)hDescB,
+        (InlineHasher&)h5,
+        (InlineHasher&)h3,
+        (InlineHasher&)h1);
+
+    MakeTextBoxReallyWide(*pText);
+
+    memcpy(mDescriptionBuffer, formatted.c_str(), 0x100);
+    mDescriptionBuffer[127] = 0;
+    pText->SetString(mDescriptionBuffer);
 }
 
 /**
@@ -421,6 +776,205 @@ void GoalOverlay::DoMatchEndOverlay()
  */
 void GoalOverlay::SetWinnerTitle()
 {
+    int scoreLeft = g_pTeams[0]->m_nScore;
+    int scoreRight = g_pTeams[1]->m_nScore;
+
+    BasicString<char, Detail::TempStringAllocator> scoreLeftString(
+        LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(scoreLeft));
+    BasicString<char, Detail::TempStringAllocator> scoreRightString(
+        LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(scoreRight));
+
+    unsigned short scoreLeftWideString[32];
+    unsigned short scoreRightWideString[32];
+
+    nlStrToWcs(scoreLeftString.c_str(), scoreLeftWideString, 32);
+    nlStrToWcs(scoreRightString.c_str(), scoreRightWideString, 32);
+
+    const unsigned short* formatLocString;
+    unsigned long key = 0x4543196B;
+    nlLocalization* loc = g_pLocalization;
+
+    if (loc->m_LookupTable == 0)
+    {
+        formatLocString = LocalizationTableNotFound;
+    }
+    else
+    {
+        nlLocalization::StringLookup* entry = nlBSearch<nlLocalization::StringLookup, unsigned long>(key, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
+        if (entry)
+        {
+            formatLocString = loc->m_FirstString + entry->StringOffset;
+        }
+        else
+        {
+            formatLocString = MissingLocString;
+        }
+    }
+
+    BasicStringData<unsigned short>* data = (BasicStringData<unsigned short>*)nlMalloc(0x10, 8, true);
+    if (data)
+    {
+        data->mData = 0;
+        data->mSize = 0;
+        data->mCapacity = 0;
+
+        const unsigned short* ptr = formatLocString;
+        while (*ptr++)
+        {
+            data->mSize++;
+        }
+
+        data->mSize++;
+        data->mData = (unsigned short*)nlMalloc((data->mSize + 1) * 2, 8, true);
+        data->mCapacity = data->mSize;
+
+        int i = 0;
+        int j = 0;
+        while (i < data->mSize)
+        {
+            *(unsigned short*)((char*)data->mData + j) = *formatLocString;
+            i++;
+            formatLocString++;
+            j += 2;
+        }
+
+        data->mRefCount = 1;
+    }
+
+    BasicString<unsigned short, Detail::TempStringAllocator> unformatted(data);
+    BasicString<unsigned short, Detail::TempStringAllocator> formatted;
+
+    int winningTeam = GetTeam__15GameInfoManagerCFs(
+        nlSingleton<GameInfoManager>::s_pInstance,
+        (short)((scoreRight >> 31) + ((unsigned int)scoreLeft >> 31) + ((unsigned int)scoreRight >= (unsigned int)scoreLeft)));
+
+    if (scoreLeft > scoreRight)
+    {
+        unsigned long teamNameStringID = GetLOCTeamName__F7eTeamID(winningTeam);
+        const unsigned short* winnerLocString;
+
+        if (loc->m_LookupTable == 0)
+        {
+            winnerLocString = LocalizationTableNotFound;
+        }
+        else
+        {
+            nlLocalization::StringLookup* entry = nlBSearch<nlLocalization::StringLookup, unsigned long>(teamNameStringID, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
+            if (entry)
+            {
+                winnerLocString = loc->m_FirstString + entry->StringOffset;
+            }
+            else
+            {
+                winnerLocString = MissingLocString;
+            }
+        }
+
+        formatted = Format(unformatted, winnerLocString, scoreLeftWideString, scoreRightWideString);
+    }
+    else
+    {
+        unsigned long teamNameStringID = GetLOCTeamName__F7eTeamID(winningTeam);
+        const unsigned short* winnerLocString;
+
+        if (loc->m_LookupTable == 0)
+        {
+            winnerLocString = LocalizationTableNotFound;
+        }
+        else
+        {
+            nlLocalization::StringLookup* entry = nlBSearch<nlLocalization::StringLookup, unsigned long>(teamNameStringID, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
+            if (entry)
+            {
+                winnerLocString = loc->m_FirstString + entry->StringOffset;
+            }
+            else
+            {
+                winnerLocString = MissingLocString;
+            }
+        }
+
+        formatted = Format(unformatted, winnerLocString, scoreRightWideString, scoreLeftWideString);
+    }
+
+    memcpy(mScoresBuffer, formatted.c_str(), 0x100);
+
+    typedef TLTextInstance* (*FindCompByValue)(FEPresentation*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
+    typedef TLTextInstance* (*FindCompByRef)(FEPresentation*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
+
+    union
+    {
+        FindCompByValue byValue;
+        FindCompByRef byRef;
+    } findComp;
+
+    volatile InlineHasher hSlideB, hSlideA;
+    volatile InlineHasher hLayerB, hLayerA;
+    volatile InlineHasher hNameB, hNameA;
+    volatile InlineHasher hTimeB, hTimeA;
+    volatile InlineHasher h5, h4, h3, h2, h1, h0;
+
+    unsigned long hash;
+    TLTextInstance* pText;
+
+    findComp.byValue = FEFinder<TLTextInstance, 3>::Find<FEPresentation>;
+
+    h0.m_Hash = 0;
+    h1.m_Hash = 0;
+    h2.m_Hash = 0;
+    h3.m_Hash = 0;
+    h4.m_Hash = 0;
+    h5.m_Hash = 0;
+
+    hash = nlStringLowerHash("Name");
+    hNameA.m_Hash = hash;
+    hNameB.m_Hash = hash;
+
+    hash = nlStringLowerHash("Layer");
+    hLayerA.m_Hash = hash;
+    hLayerB.m_Hash = hash;
+
+    hash = nlStringLowerHash("Slide1");
+    hSlideA.m_Hash = hash;
+    hSlideB.m_Hash = hash;
+
+    pText = findComp.byRef(
+        m_pFEPresentation,
+        (InlineHasher&)hSlideB,
+        (InlineHasher&)hLayerB,
+        (InlineHasher&)hNameB,
+        (InlineHasher&)h5,
+        (InlineHasher&)h3,
+        (InlineHasher&)h1);
+
+    pText->SetString(mScoresBuffer);
+
+    h1.m_Hash = 0;
+    h3.m_Hash = 0;
+    h5.m_Hash = 0;
+
+    hash = nlStringLowerHash("Time");
+    hTimeA.m_Hash = hash;
+    hTimeB.m_Hash = hash;
+
+    hash = nlStringLowerHash("Layer");
+    hLayerA.m_Hash = hash;
+    hLayerB.m_Hash = hash;
+
+    hash = nlStringLowerHash("Slide1");
+    hSlideA.m_Hash = hash;
+    hSlideB.m_Hash = hash;
+
+    pText = findComp.byRef(
+        m_pFEPresentation,
+        (InlineHasher&)hSlideB,
+        (InlineHasher&)hLayerB,
+        (InlineHasher&)hTimeB,
+        (InlineHasher&)h5,
+        (InlineHasher&)h3,
+        (InlineHasher&)h1);
+
+    pText->m_bVisible = false;
 }
 
 /**
@@ -428,6 +982,275 @@ void GoalOverlay::SetWinnerTitle()
  */
 void GoalOverlay::DoCupWinOverlay()
 {
+    typedef TLTextInstance* (*FindCompByValue)(FEPresentation*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
+    typedef TLTextInstance* (*FindCompByRef)(FEPresentation*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
+
+    union
+    {
+        FindCompByValue byValue;
+        FindCompByRef byRef;
+    } findComp;
+
+    volatile InlineHasher hSlideB, hSlideA;
+    volatile InlineHasher hLayerB, hLayerA;
+    volatile InlineHasher hNameB, hNameA;
+    volatile InlineHasher hDescB, hDescA;
+    volatile InlineHasher hTimeB, hTimeA;
+    volatile InlineHasher h5, h4, h3, h2, h1, h0;
+
+    unsigned long hash;
+    TLTextInstance* pText;
+
+    int winners = GetUserSelectedCupTeam__15GameInfoManagerCFv(nlSingleton<GameInfoManager>::s_pInstance);
+
+    const unsigned short* formatLocString;
+    unsigned long key = 0xB49CF8B5;
+    nlLocalization* loc = g_pLocalization;
+
+    if (loc->m_LookupTable == 0)
+    {
+        formatLocString = LocalizationTableNotFound;
+    }
+    else
+    {
+        nlLocalization::StringLookup* entry = nlBSearch<nlLocalization::StringLookup, unsigned long>(key, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
+        if (entry)
+        {
+            formatLocString = loc->m_FirstString + entry->StringOffset;
+        }
+        else
+        {
+            formatLocString = MissingLocString;
+        }
+    }
+
+    BasicStringData<unsigned short>* data = (BasicStringData<unsigned short>*)nlMalloc(0x10, 8, true);
+    if (data)
+    {
+        data->mData = 0;
+        data->mSize = 0;
+        data->mCapacity = 0;
+
+        const unsigned short* ptr = formatLocString;
+        while (*ptr++)
+        {
+            data->mSize++;
+        }
+
+        data->mSize++;
+        data->mData = (unsigned short*)nlMalloc((data->mSize + 1) * 2, 8, true);
+        data->mCapacity = data->mSize;
+
+        int i = 0;
+        int j = 0;
+        while (i < data->mSize)
+        {
+            *(unsigned short*)((char*)data->mData + j) = *formatLocString;
+            i++;
+            formatLocString++;
+            j += 2;
+        }
+
+        data->mRefCount = 1;
+    }
+
+    BasicString<unsigned short, Detail::TempStringAllocator> unformatted(data);
+
+    unsigned long winnerLocID = GetLOCCharacterName__F7eTeamIDbb(winners, true, false);
+    const unsigned short* winnerLocString;
+
+    loc = g_pLocalization;
+
+    if (loc->m_LookupTable == 0)
+    {
+        winnerLocString = LocalizationTableNotFound;
+    }
+    else
+    {
+        nlLocalization::StringLookup* entry = nlBSearch<nlLocalization::StringLookup, unsigned long>(winnerLocID, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
+        if (entry)
+        {
+            winnerLocString = loc->m_FirstString + entry->StringOffset;
+        }
+        else
+        {
+            winnerLocString = MissingLocString;
+        }
+    }
+
+    BasicString<unsigned short, Detail::TempStringAllocator> formatted(Format(unformatted, winnerLocString));
+
+    memcpy(mScoresBuffer, formatted.c_str(), 0x100);
+
+    findComp.byValue = FEFinder<TLTextInstance, 3>::Find<FEPresentation>;
+
+    h0.m_Hash = 0;
+    h1.m_Hash = 0;
+    h2.m_Hash = 0;
+    h3.m_Hash = 0;
+    h4.m_Hash = 0;
+    h5.m_Hash = 0;
+
+    hash = nlStringLowerHash("Name");
+    hNameA.m_Hash = hash;
+    hNameB.m_Hash = hash;
+
+    hash = nlStringLowerHash("Layer");
+    hLayerA.m_Hash = hash;
+    hLayerB.m_Hash = hash;
+
+    hash = nlStringLowerHash("Slide1");
+    hSlideA.m_Hash = hash;
+    hSlideB.m_Hash = hash;
+
+    pText = findComp.byRef(
+        m_pFEPresentation,
+        (InlineHasher&)hSlideB,
+        (InlineHasher&)hLayerB,
+        (InlineHasher&)hNameB,
+        (InlineHasher&)h5,
+        (InlineHasher&)h3,
+        (InlineHasher&)h1);
+
+    pText->SetString(mScoresBuffer);
+
+    int cup = GetTrophyTypeByCurrentMode__15GameInfoManagerCFv(nlSingleton<GameInfoManager>::s_pInstance);
+
+    key = 0x4E704897;
+    loc = g_pLocalization;
+
+    if (loc->m_LookupTable == 0)
+    {
+        formatLocString = LocalizationTableNotFound;
+    }
+    else
+    {
+        nlLocalization::StringLookup* entry = nlBSearch<nlLocalization::StringLookup, unsigned long>(key, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
+        if (entry)
+        {
+            formatLocString = loc->m_FirstString + entry->StringOffset;
+        }
+        else
+        {
+            formatLocString = MissingLocString;
+        }
+    }
+
+    data = (BasicStringData<unsigned short>*)nlMalloc(0x10, 8, true);
+    if (data)
+    {
+        data->mData = 0;
+        data->mSize = 0;
+        data->mCapacity = 0;
+
+        const unsigned short* ptr = formatLocString;
+        while (*ptr++)
+        {
+            data->mSize++;
+        }
+
+        data->mSize++;
+        data->mData = (unsigned short*)nlMalloc((data->mSize + 1) * 2, 8, true);
+        data->mCapacity = data->mSize;
+
+        int i = 0;
+        int j = 0;
+        while (i < data->mSize)
+        {
+            *(unsigned short*)((char*)data->mData + j) = *formatLocString;
+            i++;
+            formatLocString++;
+            j += 2;
+        }
+
+        data->mRefCount = 1;
+    }
+
+    BasicString<unsigned short, Detail::TempStringAllocator> trophyUnformatted(data);
+
+    unsigned long trophyLocID = GetLOCTrophyName__F11eTrophyType(cup);
+    const unsigned short* trophyLocString;
+
+    loc = g_pLocalization;
+
+    if (loc->m_LookupTable == 0)
+    {
+        trophyLocString = LocalizationTableNotFound;
+    }
+    else
+    {
+        nlLocalization::StringLookup* entry = nlBSearch<nlLocalization::StringLookup, unsigned long>(trophyLocID, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
+        if (entry)
+        {
+            trophyLocString = loc->m_FirstString + entry->StringOffset;
+        }
+        else
+        {
+            trophyLocString = MissingLocString;
+        }
+    }
+
+    formatted = Format(trophyUnformatted, trophyLocString);
+
+    memcpy(mDescriptionBuffer, formatted.c_str(), 0x100);
+
+    h0.m_Hash = 0;
+    h1.m_Hash = 0;
+    h2.m_Hash = 0;
+    h3.m_Hash = 0;
+    h4.m_Hash = 0;
+    h5.m_Hash = 0;
+
+    hash = nlStringLowerHash("Description");
+    hDescA.m_Hash = hash;
+    hDescB.m_Hash = hash;
+
+    hash = nlStringLowerHash("Layer");
+    hLayerA.m_Hash = hash;
+    hLayerB.m_Hash = hash;
+
+    hash = nlStringLowerHash("Slide1");
+    hSlideA.m_Hash = hash;
+    hSlideB.m_Hash = hash;
+
+    pText = findComp.byRef(
+        m_pFEPresentation,
+        (InlineHasher&)hSlideB,
+        (InlineHasher&)hLayerB,
+        (InlineHasher&)hDescB,
+        (InlineHasher&)h5,
+        (InlineHasher&)h3,
+        (InlineHasher&)h1);
+
+    MakeTextBoxReallyWide(*pText);
+    pText->SetString(mDescriptionBuffer);
+
+    h1.m_Hash = 0;
+    h3.m_Hash = 0;
+    h5.m_Hash = 0;
+
+    hash = nlStringLowerHash("Time");
+    hTimeA.m_Hash = hash;
+    hTimeB.m_Hash = hash;
+
+    hash = nlStringLowerHash("Layer");
+    hLayerA.m_Hash = hash;
+    hLayerB.m_Hash = hash;
+
+    hash = nlStringLowerHash("Slide1");
+    hSlideA.m_Hash = hash;
+    hSlideB.m_Hash = hash;
+
+    pText = findComp.byRef(
+        m_pFEPresentation,
+        (InlineHasher&)hSlideB,
+        (InlineHasher&)hLayerB,
+        (InlineHasher&)hTimeB,
+        (InlineHasher&)h5,
+        (InlineHasher&)h3,
+        (InlineHasher&)h1);
+
+    pText->m_bVisible = false;
 }
 
 /**

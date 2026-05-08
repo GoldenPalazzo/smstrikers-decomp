@@ -1,6 +1,11 @@
 #include "Game/SH/SHCupCheater.h"
 #include "Game/FE/FEAudio.h"
+#include "Game/FE/feFinder.h"
 #include "Game/FE/feInput.h"
+#include "Game/FE/tlSlide.h"
+#include "Game/FE/tlTextInstance.h"
+#include "NL/nlBasicString.h"
+#include "NL/nlLexicalCast.h"
 
 // /**
 //  * Offset/Address/Size: 0x0 | 0x800E9970 | size: 0x38
@@ -124,6 +129,90 @@ CupCheaterScene::~CupCheaterScene()
  */
 void CupCheaterScene::SceneCreated()
 {
+    typedef Detail::MemFunImpl<void, void (CupCheaterScene::*)()> MemFunImpl_CupCheaterScene_v;
+    typedef BindExp1<void, MemFunImpl_CupCheaterScene_v, CupCheaterScene*> BindExp1_vfmfcp;
+    typedef Function0<void>::FunctorImpl<BindExp1_vfmfcp> FunctorImpl_vfmfcp;
+
+    void* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
+
+    TLComponentInstance* comp = FEFinder<TLComponentInstance, 4>::Find(
+        (FEPresentation*)presentation,
+        InlineHasher(nlStringLowerHash("Slide1")),
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("Menu")),
+        InlineHasher(0),
+        InlineHasher(0),
+        InlineHasher(0));
+
+    m_SlideMenu = new ((FESlideMenu*)nlMalloc(sizeof(FESlideMenu), 8, false)) FESlideMenu(comp);
+
+    {
+        BindExp1_vfmfcp bind = Bind<void, MemFunImpl_CupCheaterScene_v, CupCheaterScene*>(
+            MemFun<CupCheaterScene, void>(&CupCheaterScene::OnSelectGameplay), this);
+
+        Function<FnVoidVoid> callback;
+        callback.mTag = FUNCTOR;
+        FunctorImpl_vfmfcp* functor = new ((FunctorImpl_vfmfcp*)nlMalloc(sizeof(FunctorImpl_vfmfcp), 8, false)) FunctorImpl_vfmfcp(bind);
+        callback.mFunctor = functor;
+
+        m_SlideMenu->AddMenuItem("Slide1", callback);
+    }
+
+    {
+        BindExp1_vfmfcp bind = Bind<void, MemFunImpl_CupCheaterScene_v, CupCheaterScene*>(
+            MemFun<CupCheaterScene, void>(&CupCheaterScene::OnSelectHomeWin), this);
+
+        Function<FnVoidVoid> callback;
+        callback.mTag = FUNCTOR;
+        FunctorImpl_vfmfcp* functor = new ((FunctorImpl_vfmfcp*)nlMalloc(sizeof(FunctorImpl_vfmfcp), 8, false)) FunctorImpl_vfmfcp(bind);
+        callback.mFunctor = functor;
+
+        m_SlideMenu->AddMenuItem("Slide2", callback);
+    }
+
+    {
+        BindExp1_vfmfcp bind = Bind<void, MemFunImpl_CupCheaterScene_v, CupCheaterScene*>(
+            MemFun<CupCheaterScene, void>(&CupCheaterScene::OnSelectAwayWin), this);
+
+        Function<FnVoidVoid> callback;
+        callback.mTag = FUNCTOR;
+        FunctorImpl_vfmfcp* functor = new ((FunctorImpl_vfmfcp*)nlMalloc(sizeof(FunctorImpl_vfmfcp), 8, false)) FunctorImpl_vfmfcp(bind);
+        callback.mFunctor = functor;
+
+        m_SlideMenu->AddMenuItem("Slide3", callback);
+    }
+
+    {
+        BindExp1_vfmfcp bind = Bind<void, MemFunImpl_CupCheaterScene_v, CupCheaterScene*>(
+            MemFun<CupCheaterScene, void>(&CupCheaterScene::OnSelectHomeOTWin), this);
+
+        Function<FnVoidVoid> callback;
+        callback.mTag = FUNCTOR;
+        FunctorImpl_vfmfcp* functor = new ((FunctorImpl_vfmfcp*)nlMalloc(sizeof(FunctorImpl_vfmfcp), 8, false)) FunctorImpl_vfmfcp(bind);
+        callback.mFunctor = functor;
+
+        m_SlideMenu->AddMenuItem("Slide4", callback);
+    }
+
+    {
+        BindExp1_vfmfcp bind = Bind<void, MemFunImpl_CupCheaterScene_v, CupCheaterScene*>(
+            MemFun<CupCheaterScene, void>(&CupCheaterScene::OnSelectAwayOTWin), this);
+
+        Function<FnVoidVoid> callback;
+        callback.mTag = FUNCTOR;
+        FunctorImpl_vfmfcp* functor = new ((FunctorImpl_vfmfcp*)nlMalloc(sizeof(FunctorImpl_vfmfcp), 8, false)) FunctorImpl_vfmfcp(bind);
+        callback.mFunctor = functor;
+
+        m_SlideMenu->AddMenuItem("Slide5", callback);
+    }
+
+    m_SlideMenu->AddMenuItem("Slide6");
+    m_SlideMenu->AddMenuItem("Slide7");
+    m_SlideMenu->AddMenuItem("Slide8");
+    m_SlideMenu->AddMenuItem("Slide9");
+
+    m_SlideMenu->m_doWrapAround = true;
+    m_SlideMenu->UpdatePresentation();
 }
 
 /**
@@ -677,5 +766,87 @@ void CupCheaterScene::OnSelectAwayOTWin()
  */
 void CupCheaterScene::UpdateSlides()
 {
-    FORCE_DONT_INLINE;
+    CupCheaterScene* const self = this;
+    int currentSlide = self->m_SlideMenu->m_currentSlide;
+    TLComponentInstance* pComp = self->m_SlideMenu->m_pMenuComp;
+    TLTextInstance* pText;
+    TLSlide* pSlide;
+
+    for (int i = 0; i < 9; i++)
+    {
+        self->m_SlideMenu->SetSlideByIndex((unsigned char)i);
+        pSlide = pComp->GetActiveSlide();
+
+        pText = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
+            pSlide,
+            InlineHasher(nlStringLowerHash("number1")),
+            InlineHasher(0),
+            InlineHasher(0),
+            InlineHasher(0),
+            InlineHasher(0),
+            InlineHasher(0));
+
+        BasicString<char, Detail::TempStringAllocator> Sniper(
+            LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(self->mSniper));
+        nlStrToWcs(Sniper.c_str(), self->mSniperBuffer, 10);
+        pText->SetString(self->mSniperBuffer);
+
+        pText = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
+            pSlide,
+            InlineHasher(nlStringLowerHash("number2")),
+            InlineHasher(0),
+            InlineHasher(0),
+            InlineHasher(0),
+            InlineHasher(0),
+            InlineHasher(0));
+
+        BasicString<char, Detail::TempStringAllocator> Striker(
+            LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(self->mStriker));
+        nlStrToWcs(Striker.c_str(), self->mStrikerBuffer, 10);
+        pText->SetString(self->mStrikerBuffer);
+
+        pText = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
+            pSlide,
+            InlineHasher(nlStringLowerHash("number3")),
+            InlineHasher(0),
+            InlineHasher(0),
+            InlineHasher(0),
+            InlineHasher(0),
+            InlineHasher(0));
+
+        BasicString<char, Detail::TempStringAllocator> Tactician(
+            LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(self->mTactician));
+        nlStrToWcs(Tactician.c_str(), self->mTacticianBuffer, 10);
+        pText->SetString(self->mTacticianBuffer);
+
+        pText = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
+            pSlide,
+            InlineHasher(nlStringLowerHash("number4")),
+            InlineHasher(0),
+            InlineHasher(0),
+            InlineHasher(0),
+            InlineHasher(0),
+            InlineHasher(0));
+
+        BasicString<char, Detail::TempStringAllocator> Paramedic(
+            LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(self->mParamedic));
+        nlStrToWcs(Paramedic.c_str(), self->mParamedicBuffer, 10);
+        pText->SetString(self->mParamedicBuffer);
+
+        pText = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
+            pSlide,
+            InlineHasher(nlStringLowerHash("number5")),
+            InlineHasher(0),
+            InlineHasher(0),
+            InlineHasher(0),
+            InlineHasher(0),
+            InlineHasher(0));
+
+        BasicString<char, Detail::TempStringAllocator> Veteran(
+            LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(self->mVeteran));
+        nlStrToWcs(Veteran.c_str(), self->mVeteranBuffer, 10);
+        pText->SetString(self->mVeteranBuffer);
+    }
+
+    self->m_SlideMenu->SetSlideByIndex((unsigned char)currentSlide);
 }

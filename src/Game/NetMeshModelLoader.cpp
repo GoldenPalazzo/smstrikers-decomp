@@ -642,8 +642,302 @@ void NetMeshModelLoader::ProcessEdges(const glModelPacket& packet, int maxVertex
 
 /**
  * Offset/Address/Size: 0x0 | 0x80130158 | size: 0x780
+ * TODO: 97.91% match - register allocation still differs in iterator/counter
+ * locals across the AVL traversals and vertex writeback block.
  */
 void NetMeshModelLoader::CreateNetMeshFromVertexList()
 {
-    FORCE_DONT_INLINE;
+    extern void* nlMalloc(unsigned long, unsigned int, bool);
+    extern unsigned char sbPullGoalsOut;
+
+    struct VertexIter
+    {
+        VertexEntry** m_Stack;
+        unsigned int m_NumStackEntries;
+    };
+
+    struct EdgeIter
+    {
+        EdgeEntry** m_Stack;
+        unsigned int m_NumStackEntries;
+    };
+
+    int numEdges = 0;
+    int numVertices = 0;
+    int numConstrainedVertices = 0;
+
+    VertexTree* vertexTree = m_VertexList;
+    VertexIter* vertexIter = (VertexIter*)nlMalloc(sizeof(VertexIter), 8, false);
+    if (vertexIter != NULL)
+    {
+        unsigned int numEntries = vertexTree->m_NumElements;
+        VertexEntry* node = vertexTree->m_Root;
+
+        vertexIter->m_Stack = (VertexEntry**)nlMalloc((numEntries + 1) * 4, 8, false);
+        vertexIter->m_NumStackEntries = 0;
+
+        if (node != NULL)
+        {
+            while (node->node.left != NULL)
+            {
+                vertexIter->m_Stack[vertexIter->m_NumStackEntries] = node;
+                vertexIter->m_NumStackEntries++;
+                node = (VertexEntry*)node->node.left;
+            }
+
+            vertexIter->m_Stack[vertexIter->m_NumStackEntries] = node;
+            vertexIter->m_NumStackEntries++;
+        }
+    }
+
+    while (vertexIter->m_NumStackEntries != 0)
+    {
+        VertexEntry* vertexEntry = vertexIter->m_Stack[vertexIter->m_NumStackEntries - 1];
+        numVertices++;
+
+        if (vertexEntry->key.mbIsConstrained != 0)
+        {
+            numConstrainedVertices++;
+        }
+
+        vertexIter->m_NumStackEntries--;
+        vertexEntry = vertexIter->m_Stack[vertexIter->m_NumStackEntries];
+
+        VertexEntry* right = (VertexEntry*)vertexEntry->node.right;
+        if (right != NULL)
+        {
+            while (right->node.left != NULL)
+            {
+                vertexIter->m_Stack[vertexIter->m_NumStackEntries] = right;
+                vertexIter->m_NumStackEntries++;
+                right = (VertexEntry*)right->node.left;
+            }
+
+            vertexIter->m_Stack[vertexIter->m_NumStackEntries] = right;
+            vertexIter->m_NumStackEntries++;
+        }
+    }
+
+    if (vertexIter != NULL)
+    {
+        delete[] vertexIter->m_Stack;
+        delete vertexIter;
+    }
+
+    EdgeTree* edgeTree = m_EdgeList;
+    EdgeIter* edgeIter = (EdgeIter*)nlMalloc(sizeof(EdgeIter), 8, false);
+    if (edgeIter != NULL)
+    {
+        unsigned int numEntries = edgeTree->m_NumElements;
+        EdgeEntry* node = edgeTree->m_Root;
+
+        edgeIter->m_Stack = (EdgeEntry**)nlMalloc((numEntries + 1) * 4, 8, false);
+        edgeIter->m_NumStackEntries = 0;
+
+        if (node != NULL)
+        {
+            while (node->node.left != NULL)
+            {
+                edgeIter->m_Stack[edgeIter->m_NumStackEntries] = node;
+                edgeIter->m_NumStackEntries++;
+                node = (EdgeEntry*)node->node.left;
+            }
+
+            edgeIter->m_Stack[edgeIter->m_NumStackEntries] = node;
+            edgeIter->m_NumStackEntries++;
+        }
+    }
+
+    while (edgeIter->m_NumStackEntries != 0)
+    {
+        edgeIter->m_NumStackEntries--;
+        numEdges++;
+
+        EdgeEntry* edgeEntry = edgeIter->m_Stack[edgeIter->m_NumStackEntries];
+        EdgeEntry* right = (EdgeEntry*)edgeEntry->node.right;
+        if (right != NULL)
+        {
+            while (right->node.left != NULL)
+            {
+                edgeIter->m_Stack[edgeIter->m_NumStackEntries] = right;
+                edgeIter->m_NumStackEntries++;
+                right = (EdgeEntry*)right->node.left;
+            }
+
+            edgeIter->m_Stack[edgeIter->m_NumStackEntries] = right;
+            edgeIter->m_NumStackEntries++;
+        }
+    }
+
+    if (edgeIter != NULL)
+    {
+        delete[] edgeIter->m_Stack;
+        delete edgeIter;
+    }
+
+    m_NumParticles = numVertices;
+    m_NetMesh.Allocate(m_NumParticles, numEdges, numConstrainedVertices);
+
+    DrawableModel* pObject = (DrawableModel*)WorldManager::s_World->FindDrawableObject(m_NetMeshDrawableObjectID);
+
+    vertexTree = m_VertexList;
+    vertexIter = (VertexIter*)nlMalloc(sizeof(VertexIter), 8, false);
+    if (vertexIter != NULL)
+    {
+        unsigned int numEntries = vertexTree->m_NumElements;
+        VertexEntry* node = vertexTree->m_Root;
+
+        vertexIter->m_Stack = (VertexEntry**)nlMalloc((numEntries + 1) * 4, 8, false);
+        vertexIter->m_NumStackEntries = 0;
+
+        if (node != NULL)
+        {
+            while (node->node.left != NULL)
+            {
+                vertexIter->m_Stack[vertexIter->m_NumStackEntries] = node;
+                vertexIter->m_NumStackEntries++;
+                node = (VertexEntry*)node->node.left;
+            }
+
+            vertexIter->m_Stack[vertexIter->m_NumStackEntries] = node;
+            vertexIter->m_NumStackEntries++;
+        }
+    }
+
+    float scale = 1024.0f;
+    int index = 0;
+
+    while (vertexIter->m_NumStackEntries != 0)
+    {
+        VertexEntry* vertexEntry = vertexIter->m_Stack[vertexIter->m_NumStackEntries - 1];
+        NetMeshVertex* vertex = &vertexEntry->key;
+
+        nlVector3 position = *vertex->GetPosition();
+        nlVector3 normal;
+        nlVector2 texCoord;
+        shortVector2 shortCoord;
+
+        vertex->GetNormal(normal);
+        vertex->GetTextureCoord(texCoord);
+
+        shortCoord.e[0] = (s16)(scale * texCoord.f.x);
+        shortCoord.e[1] = (s16)(scale * texCoord.f.y);
+
+        if (sbPullGoalsOut != 0)
+        {
+            position.f.x = position.f.x - 5.0f;
+        }
+
+        nlMultPosVectorMatrix(position, position, pObject->GetWorldMatrix());
+        nlMultDirVectorMatrix(normal, normal, pObject->GetWorldMatrix());
+
+        NetMesh* pNetMesh = &m_NetMesh;
+        int particle = pNetMesh->m_NumParticles;
+        pNetMesh->m_v3Position[particle] = position;
+        pNetMesh->m_v3Normal[particle] = normal;
+        pNetMesh->m_v2TextureCoords[particle] = shortCoord;
+        pNetMesh->m_NumParticles = particle + 1;
+
+        if (vertex->mbIsConstrained != 0)
+        {
+            m_NetMesh.SetPositionConstraint(index, position);
+        }
+
+        vertex->mParticleIndex = index;
+
+        vertexIter->m_NumStackEntries--;
+        vertexEntry = vertexIter->m_Stack[vertexIter->m_NumStackEntries];
+
+        VertexEntry* right = (VertexEntry*)vertexEntry->node.right;
+        if (right != NULL)
+        {
+            while (right->node.left != NULL)
+            {
+                vertexIter->m_Stack[vertexIter->m_NumStackEntries] = right;
+                vertexIter->m_NumStackEntries++;
+                right = (VertexEntry*)right->node.left;
+            }
+
+            vertexIter->m_Stack[vertexIter->m_NumStackEntries] = right;
+            vertexIter->m_NumStackEntries++;
+        }
+
+        index++;
+    }
+
+    if (vertexIter != NULL)
+    {
+        delete[] vertexIter->m_Stack;
+        delete vertexIter;
+    }
+
+    edgeTree = m_EdgeList;
+    edgeIter = (EdgeIter*)nlMalloc(sizeof(EdgeIter), 8, false);
+    if (edgeIter != NULL)
+    {
+        unsigned int numEntries = edgeTree->m_NumElements;
+        EdgeEntry* node = edgeTree->m_Root;
+
+        edgeIter->m_Stack = (EdgeEntry**)nlMalloc((numEntries + 1) * 4, 8, false);
+        edgeIter->m_NumStackEntries = 0;
+
+        if (node != NULL)
+        {
+            while (node->node.left != NULL)
+            {
+                edgeIter->m_Stack[edgeIter->m_NumStackEntries] = node;
+                edgeIter->m_NumStackEntries++;
+                node = (EdgeEntry*)node->node.left;
+            }
+
+            edgeIter->m_Stack[edgeIter->m_NumStackEntries] = node;
+            edgeIter->m_NumStackEntries++;
+        }
+    }
+
+    while (edgeIter->m_NumStackEntries != 0)
+    {
+        EdgeEntry* edgeEntry = edgeIter->m_Stack[edgeIter->m_NumStackEntries - 1];
+
+        if (edgeEntry->value > 1)
+        {
+            int index1 = edgeEntry->key.mpVertex1->mParticleIndex;
+            int index2 = edgeEntry->key.mpVertex2->mParticleIndex;
+
+            nlVector3 position1 = *edgeEntry->key.mpVertex1->GetPosition();
+            nlVector3 position2 = *edgeEntry->key.mpVertex2->GetPosition();
+
+            float dx = position1.f.x - position2.f.x;
+            float dy = position1.f.y - position2.f.y;
+            float dz = position1.f.z - position2.f.z;
+            float distance = nlSqrt(dx * dx + dy * dy + dz * dz, true);
+
+            m_NetMesh.SetDistanceConstraint(index1, index2, distance);
+        }
+
+        edgeIter->m_NumStackEntries--;
+        edgeEntry = edgeIter->m_Stack[edgeIter->m_NumStackEntries];
+
+        EdgeEntry* right = (EdgeEntry*)edgeEntry->node.right;
+        if (right != NULL)
+        {
+            while (right->node.left != NULL)
+            {
+                edgeIter->m_Stack[edgeIter->m_NumStackEntries] = right;
+                edgeIter->m_NumStackEntries++;
+                right = (EdgeEntry*)right->node.left;
+            }
+
+            edgeIter->m_Stack[edgeIter->m_NumStackEntries] = right;
+            edgeIter->m_NumStackEntries++;
+        }
+    }
+
+    if (edgeIter != NULL)
+    {
+        delete[] edgeIter->m_Stack;
+        delete edgeIter;
+    }
+
+    m_NetMesh.SetTriStripIndices(m_NumTriStripIndices, m_TriStripIndices);
 }

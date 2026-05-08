@@ -6,6 +6,7 @@
 
 #include "Game/AI/AvoidController.h"
 #include "Game/AI/Fielder.h"
+#include "Game/AI/Scripts/CommonScript.h"
 #include "Game/AI/Scripts/ScriptQuestions.h"
 #include "Game/AI/SpaceSearch.h"
 #include "Game/AnimInventory.h"
@@ -67,6 +68,36 @@ static const SupportBallAILocation g_vSupportBallOffensiveAILocations[6] = {
     { 4.0f, -1.0f, 3.4f, -0.45f },
     { 2.0f, 1.0f, 2.6f, 0.4f },
     { 2.0f, -1.0f, 2.6f, -0.4f },
+};
+
+static const nlVector2 g_vMarkingNetPassBalance = {
+    0.0f,
+    0.25f,
+};
+
+static const nlVector2 g_vMarkDistance = {
+    7.0f,
+    4.0f,
+};
+
+static const nlVector2 g_vMarkFormationBalance = {
+    0.8f,
+    1.0f,
+};
+
+static const nlVector2 g_vMarkBallOwner = {
+    0.0f,
+    0.5f,
+};
+
+static const nlVector2 g_vMarkImmediateThreatCoeff = {
+    1.0f,
+    0.5f,
+};
+
+static const nlVector2 g_vMarkFollowTimeDelay = {
+    0.4f,
+    0.1f,
 };
 
 static inline void CalcDeltaToTarget(nlVector3& outDelta, const nlVector3& target, const nlVector3& origin)
@@ -400,8 +431,160 @@ void cFielder::DesireInterceptBall(float fDeltaT)
 /**
  * Offset/Address/Size: 0x39EC | 0x80034770 | size: 0x818
  */
-void cFielder::DesireMark(float)
+void cFielder::DesireMark(float fDeltaT)
 {
+    bool bBestBallInterceptor = (m_pTeam->m_pBallInterceptOrderedFielders[0] == this);
+
+    if (m_pMark == NULL || this == g_pBall->m_pOwner || (bBestBallInterceptor && m_pTeam->mpCurrentSituation == SITUATION_LOOSE))
+    {
+        SetDesireDuration(0.0f, true);
+        return;
+    }
+
+    if ((IsOnSameTeam(m_pMark) || bBestBallInterceptor) && m_DesireCommonVars.tAge.GetSeconds() > 0.5f)
+    {
+        SetDesireDuration(0.0f, true);
+    }
+
+    if (m_pMark->m_pBall != NULL)
+    {
+        SkillTweaks* pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide);
+
+        if (pSkillTweaks->Def_SlideAttackChance > 0.0f && m_pMark->m_tBallPossessionTimer.GetSeconds() > 5.0f)
+        {
+            InitDesire(FIELDERDESIRE_SLIDE_ATTACK, 0.5f, -1.0f, FuzzyVariant((cPlayer*)m_pMark), fvNotSet);
+            return;
+        }
+    }
+
+    if (m_DesireCommonVars.tMiscTimer.m_uPackedTime == 0)
+    {
+        SkillTweaks* pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide);
+        float fTimeDelay = Interpolate(g_vMarkFollowTimeDelay.f.x, g_vMarkFollowTimeDelay.f.y, pSkillTweaks->Def_Marking);
+        float fTimeDelayRange = fTimeDelay * 0.8f;
+        float fRandomTime = nlRandomf(fTimeDelayRange, &nlDefaultSeed) - (0.5f * fTimeDelayRange);
+        m_DesireCommonVars.tMiscTimer.SetSeconds(fTimeDelay + fRandomTime);
+
+        cPlayer* pMark = m_pMark;
+        cNet* pNet = m_pTeam->m_pNet;
+
+        float fMarkY = pMark->m_v3Position.f.y + (0.1f * pMark->m_v3Velocity.f.y);
+        float fMarkX = pMark->m_v3Position.f.x + (0.1f * pMark->m_v3Velocity.f.x);
+
+        float dirY = pNet->m_baseLocation.f.y - fMarkY;
+        float dirX = pNet->m_baseLocation.f.x - fMarkX;
+        float dirZ = pNet->m_baseLocation.f.z - 0.0f;
+
+        float fInvLength = nlRecipSqrt((dirY * dirY) + (dirX * dirX) + (dirZ * dirZ), true);
+        dirY = fInvLength * dirY;
+        dirX = fInvLength * dirX;
+        dirZ = fInvLength * dirZ;
+
+        nlVector3 vAccumulated_v3 = v3Zero;
+        float fTotalWeight_v3 = 0.0f;
+
+        float fMarkingNetPassBalance = Interpolate(g_vMarkingNetPassBalance.f.x, g_vMarkingNetPassBalance.f.y, pSkillTweaks->Def_Marking);
+        float fMarkingDistance = Interpolate(g_vMarkDistance.f.x, g_vMarkDistance.f.y, pSkillTweaks->Def_Marking);
+        float fMarkFormationBalance = Interpolate(g_vMarkFormationBalance.f.x, g_vMarkFormationBalance.f.y, pSkillTweaks->Def_Marking);
+        float fMarkBallOwnerBalance = Interpolate(g_vMarkBallOwner.f.x, g_vMarkBallOwner.f.y, pSkillTweaks->Def_Marking);
+        float fMarkThreatCoeff = Interpolate(g_vMarkImmediateThreatCoeff.f.x, g_vMarkImmediateThreatCoeff.f.y, pSkillTweaks->Def_Marking);
+
+        float fDistanceMultiplier = Interpolate(0.5f, 1.0f, FarToTheirNet(m_pMark));
+        fMarkingDistance = fMarkingDistance * fDistanceMultiplier;
+
+        if (UserControlledT(m_pTeam) != 0.0f && (ReceivingPass(m_pMark) != 0.0f || WindingUpForShot(m_pMark) != 0.0f))
+        {
+            fMarkingDistance = fMarkingDistance * fMarkThreatCoeff;
+        }
+
+        if (m_pMark->m_pBall == NULL)
+        {
+            cPlayer* pSBC = Fuzzy::GetStrategicBallCarrier(m_pTeam->GetOtherTeam()).mData.pPlayer;
+
+            if (pSBC != NULL && pSBC != m_pMark)
+            {
+                float fSBCY = pSBC->m_v3Position.f.y + (0.1f * pSBC->m_v3Velocity.f.y);
+                float fSBCX = pSBC->m_v3Position.f.x + (0.1f * pSBC->m_v3Velocity.f.x);
+                float fSBCZ = pSBC->m_v3Position.f.z + (0.1f * pSBC->m_v3Velocity.f.z);
+
+                float sbcDirY = fSBCY - fMarkY;
+                float sbcDirX = fSBCX - fMarkX;
+                float sbcDirZ = fSBCZ - 0.0f;
+
+                float fSBCInvLength = nlRecipSqrt((sbcDirY * sbcDirY) + (sbcDirX * sbcDirX) + (sbcDirZ * sbcDirZ), true);
+
+                sbcDirY = fSBCInvLength * sbcDirY;
+                sbcDirX = fSBCInvLength * sbcDirX;
+                sbcDirZ = fSBCInvLength * sbcDirZ;
+
+                float fDotToNet = (sbcDirY * dirY) + (sbcDirX * dirX) + (sbcDirZ * dirZ);
+                if (fDotToNet >= 0.0f)
+                {
+                    float fToMarkNetPassBalance = 1.0f - fMarkingNetPassBalance;
+                    dirY = (fToMarkNetPassBalance * dirY) + (fMarkingNetPassBalance * sbcDirY);
+                    dirX = (fToMarkNetPassBalance * dirX) + (fMarkingNetPassBalance * sbcDirX);
+                    dirZ = (fToMarkNetPassBalance * dirZ) + (fMarkingNetPassBalance * sbcDirZ);
+                }
+
+                float fToNetY = pNet->m_baseLocation.f.y - fSBCY;
+                float fToNetX = pNet->m_baseLocation.f.x - fSBCX;
+                float fToNetZ = pNet->m_baseLocation.f.z - fSBCZ;
+
+                float fToNetInvLength = nlRecipSqrt((fToNetY * fToNetY) + (fToNetX * fToNetX) + (fToNetZ * fToNetZ), true);
+
+                float fThreatTargetZ = (fMarkingDistance * (fToNetInvLength * fToNetZ)) + fSBCZ;
+                float fThreatTargetY = (fMarkingDistance * (fToNetInvLength * fToNetY)) + fSBCY;
+                float fThreatTargetX = (fMarkingDistance * (fToNetInvLength * fToNetX)) + fSBCX;
+
+                FuzzyVariant markBallOwner = Fuzzy::ShouldIMarkBallOwner(this);
+                if (markBallOwner.mData.f > 0.0f)
+                {
+                    float fWeight = markBallOwner.mData.f * fMarkBallOwnerBalance;
+
+                    vAccumulated_v3.f.z = (fWeight * fThreatTargetZ) + vAccumulated_v3.f.z;
+                    vAccumulated_v3.f.y = (fWeight * fThreatTargetY) + vAccumulated_v3.f.y;
+                    vAccumulated_v3.f.x = (fWeight * fThreatTargetX) + vAccumulated_v3.f.x;
+                    fTotalWeight_v3 = fTotalWeight_v3 + fWeight;
+                }
+            }
+        }
+
+        float fMarkTargetY = (fMarkingDistance * dirY) + fMarkY;
+        float fMarkTargetX = (fMarkingDistance * dirX) + fMarkX;
+        float fMarkTargetZ = (fMarkingDistance * dirZ) + 0.0f;
+
+        vAccumulated_v3.f.y = (fMarkFormationBalance * fMarkTargetY) + vAccumulated_v3.f.y;
+        vAccumulated_v3.f.z = (fMarkFormationBalance * fMarkTargetZ) + vAccumulated_v3.f.z;
+        vAccumulated_v3.f.x = (fMarkFormationBalance * fMarkTargetX) + vAccumulated_v3.f.x;
+        fTotalWeight_v3 = fTotalWeight_v3 + fMarkFormationBalance;
+
+        nlVector3 v3FormationPosition;
+        m_DesireCommonVars.bInPosition = GetFormationPosition(v3FormationPosition, 0.0f);
+        if (m_DesireCommonVars.bInPosition)
+        {
+            v3FormationPosition = m_v3Position;
+        }
+
+        float fFormationWeight = 1.0f - fMarkFormationBalance;
+        fTotalWeight_v3 = fTotalWeight_v3 + fFormationWeight;
+        vAccumulated_v3.f.z = (fFormationWeight * v3FormationPosition.f.z) + vAccumulated_v3.f.z;
+        vAccumulated_v3.f.y = (fFormationWeight * v3FormationPosition.f.y) + vAccumulated_v3.f.y;
+        vAccumulated_v3.f.x = (fFormationWeight * v3FormationPosition.f.x) + vAccumulated_v3.f.x;
+
+        if (fTotalWeight_v3 > 0.0f)
+        {
+            m_DesireCommonVars.v3DesiredPosition.f.x = (1.0f / fTotalWeight_v3) * vAccumulated_v3.f.x;
+            m_DesireCommonVars.v3DesiredPosition.f.y = (1.0f / fTotalWeight_v3) * vAccumulated_v3.f.y;
+            m_DesireCommonVars.v3DesiredPosition.f.z = (1.0f / fTotalWeight_v3) * vAccumulated_v3.f.z;
+        }
+        else
+        {
+            m_DesireCommonVars.v3DesiredPosition = v3Zero;
+        }
+    }
+
+    SetDesiredSpeedAndDirectionToPosition(fDeltaT, m_DesireCommonVars.v3DesiredPosition, TR_FAR_DISTANCE, 0.75f, 0.75f);
+    ShouldIStrafe();
 }
 
 /**

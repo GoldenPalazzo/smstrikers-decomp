@@ -204,11 +204,506 @@ CupTrophyScene::~CupTrophyScene()
     delete *(AsyncImage**)&unk_gap[125];
 }
 
+static const char* CUP_TROPHY_TEXT_NAME = "CUP TITLE";
+static const char* CUP_TROPHY_IMAGE_NAME = "Trophy";
+static const char* CUP_TROPHY_TOTAL_NAME = "TOTAL CUPS";
+
+static const char* TROPHY_TEXTURE_FILENAMES[13] = {
+    "fe/trophies/cups_mushroom",
+    "fe/trophies/cups_flower",
+    "fe/trophies/cups_star",
+    "fe/trophies/cups_bowser",
+    "fe/trophies/cups_super_mushroom",
+    "fe/trophies/cups_super_flower",
+    "fe/trophies/cups_super_star",
+    "fe/trophies/cups_super_bowser",
+    "fe/trophies/cups_veteran",
+    "fe/trophies/cups_sniper",
+    "fe/trophies/cups_striker",
+    "fe/trophies/cups_super_team",
+    "fe/trophies/cups_lakitu",
+};
+
+static const nlColour TROPHY_BLACK_CUP = { 0x00, 0x00, 0x00, 0xFF };
+
+struct SpoilNumCupWinsView
+{
+    unsigned char mPad[0x20E];
+    unsigned short mNumCupWins;
+};
+
+extern unsigned long GetLOCTrophyName(eTrophyType);
+extern "C" bool HasTrophy__15GameInfoManagerCF11eTrophyType(const void*, eTrophyType);
+
+struct TLTextLocView
+{
+    unsigned char mPad0[0x80];
+    unsigned long mLocStrId;
+    unsigned char mPad1[0x0C];
+    unsigned long mOverloadFlags;
+};
+
+class GameInfoManager;
+
+struct CupTrophySpoilView
+{
+    unsigned char mPad[0x208];
+    unsigned char mNumRecords;
+    unsigned char mTailPad[0x0F];
+};
+
+template <typename To, typename From>
+To LexicalCast(const From&);
+
+template <typename StringType, typename ValueType>
+StringType Format(const StringType& format, const ValueType& value);
+
+template <typename T, typename Key>
+T* nlBSearch(const Key& key, T* base, int count);
+
+struct LOCHeader
+{
+    char Thumbprint[4];
+    unsigned long Version;
+    unsigned long Language;
+    unsigned long StringCount;
+    unsigned long Flags;
+};
+
+class nlLocalization
+{
+public:
+    struct StringLookup
+    {
+        unsigned long hash;
+        unsigned long StringOffset;
+    };
+
+    LOCHeader* m_pFile;
+    StringLookup* m_LookupTable;
+    unsigned short* m_FirstString;
+    int m_CurrentLanguage;
+};
+
+class TLTextInstance
+{
+public:
+    void SetString(const unsigned short* utf16);
+};
+
+extern nlLocalization* g_pLocalization;
+extern const unsigned short LocalizationTableNotFound[];
+extern const unsigned short MissingLocString[];
+
 /**
  * Offset/Address/Size: 0x1F54 | 0x800CB608 | size: 0x7B8
+ * TODO: 75.83% match - stack/register allocation drift in finder/localization setup and text string materialization.
  */
 void CupTrophyScene::SceneCreated()
 {
+    typedef TLTextInstance* (*FindTextByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
+    typedef TLTextInstance* (*FindTextByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
+    typedef TLImageInstance* (*FindImageByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
+    typedef TLImageInstance* (*FindImageByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
+    typedef TLComponentInstance* (*FindCompSlideByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
+    typedef TLComponentInstance* (*FindCompSlideByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
+    typedef TLComponentInstance* (*FindCompPresByValue)(FEPresentation*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
+    typedef TLComponentInstance* (*FindCompPresByRef)(FEPresentation*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
+
+    *(int*)&unk_gap[121] = 0;
+    *(int*)&unk_gap[123] = 0;
+
+    FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
+    char* gameInfoBase = (char*)nlSingleton<GameInfoManager>::s_pInstance;
+    gameInfoBase += mTrophy * 0x218;
+    Spoil* pSpoil = (Spoil*)(gameInfoBase + 0x2F24);
+
+    TLTextInstance* pText;
+    {
+        union
+        {
+            FindTextByValue byValue;
+            FindTextByRef byRef;
+        } findText;
+
+        volatile InlineHasher hLayerA, hLayerB;
+        volatile InlineHasher hNameB, hNameA;
+        volatile InlineHasher h7, h6;
+        volatile InlineHasher h5, h4, h3, h2, h1, h0;
+
+        findText.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
+
+        h0.m_Hash = 0;
+        h1.m_Hash = 0;
+        h2.m_Hash = 0;
+        h3.m_Hash = 0;
+        h4.m_Hash = 0;
+        h5.m_Hash = 0;
+        h6.m_Hash = 0;
+        h7.m_Hash = 0;
+
+        unsigned long hash = nlStringLowerHash(CUP_TROPHY_TEXT_NAME);
+        hNameA.m_Hash = hash;
+        hNameB.m_Hash = hash;
+
+        hash = nlStringLowerHash("Layer");
+        hLayerA.m_Hash = hash;
+        hLayerB.m_Hash = hash;
+
+        pText = findText.byRef(
+            presentation->m_currentSlide,
+            (InlineHasher&)hLayerA,
+            (InlineHasher&)hNameA,
+            (InlineHasher&)h7,
+            (InlineHasher&)h5,
+            (InlineHasher&)h3,
+            (InlineHasher&)h1);
+    }
+
+    ((TLTextLocView*)pText)->mLocStrId = GetLOCTrophyName(mTrophy);
+    ((TLTextLocView*)pText)->mOverloadFlags |= 0x8;
+
+    TLImageInstance* pTrophyImage;
+    {
+        union
+        {
+            FindImageByValue byValue;
+            FindImageByRef byRef;
+        } findImage;
+
+        volatile InlineHasher hLayerA, hLayerB;
+        volatile InlineHasher hNameB, hNameA;
+        volatile InlineHasher h7, h6;
+        volatile InlineHasher h5, h4, h3, h2, h1, h0;
+
+        findImage.byValue = FEFinder<TLImageInstance, 2>::Find<TLSlide>;
+
+        h0.m_Hash = 0;
+        h1.m_Hash = 0;
+        h2.m_Hash = 0;
+        h3.m_Hash = 0;
+        h4.m_Hash = 0;
+        h5.m_Hash = 0;
+        h6.m_Hash = 0;
+        h7.m_Hash = 0;
+
+        unsigned long hash = nlStringLowerHash(CUP_TROPHY_IMAGE_NAME);
+        hNameA.m_Hash = hash;
+        hNameB.m_Hash = hash;
+
+        hash = nlStringLowerHash("Layer");
+        hLayerA.m_Hash = hash;
+        hLayerB.m_Hash = hash;
+
+        pTrophyImage = findImage.byRef(
+            presentation->m_currentSlide,
+            (InlineHasher&)hLayerA,
+            (InlineHasher&)hNameA,
+            (InlineHasher&)h7,
+            (InlineHasher&)h5,
+            (InlineHasher&)h3,
+            (InlineHasher&)h1);
+    }
+
+    (*(AsyncImage**)&unk_gap[125])->mImageInstance = pTrophyImage;
+    (*(AsyncImage**)&unk_gap[125])->QueueLoad(TROPHY_TEXTURE_FILENAMES[(int)mTrophy], *(bool*)&unk_gap[127]);
+    *(bool*)&unk_gap[127] = false;
+
+    {
+        union
+        {
+            FindCompSlideByValue byValue;
+            FindCompSlideByRef byRef;
+        } findComp;
+
+        volatile InlineHasher hLayerA, hLayerB;
+        volatile InlineHasher hNameB, hNameA;
+        volatile InlineHasher h7, h6;
+        volatile InlineHasher h5, h4, h3, h2, h1, h0;
+
+        findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
+
+        h0.m_Hash = 0;
+        h1.m_Hash = 0;
+        h2.m_Hash = 0;
+        h3.m_Hash = 0;
+        h4.m_Hash = 0;
+        h5.m_Hash = 0;
+        h6.m_Hash = 0;
+        h7.m_Hash = 0;
+
+        unsigned long hash = nlStringLowerHash("ARROWS2");
+        hNameA.m_Hash = hash;
+        hNameB.m_Hash = hash;
+
+        hash = nlStringLowerHash("Layer");
+        hLayerA.m_Hash = hash;
+        hLayerB.m_Hash = hash;
+
+        TLComponentInstance* arrowComp = findComp.byRef(
+            presentation->m_currentSlide,
+            (InlineHasher&)hLayerA,
+            (InlineHasher&)hNameA,
+            (InlineHasher&)h7,
+            (InlineHasher&)h5,
+            (InlineHasher&)h3,
+            (InlineHasher&)h1);
+        arrowComp->m_bVisible = ((CupTrophySpoilView*)pSpoil)->mNumRecords > 3;
+    }
+
+    if (mIsNew)
+    {
+        union
+        {
+            FindCompSlideByValue byValue;
+            FindCompSlideByRef byRef;
+        } findComp;
+
+        volatile InlineHasher hLayerA, hLayerB;
+        volatile InlineHasher hNameB, hNameA;
+        volatile InlineHasher h7, h6;
+        volatile InlineHasher h5, h4, h3, h2, h1, h0;
+
+        findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
+
+        h0.m_Hash = 0;
+        h1.m_Hash = 0;
+        h2.m_Hash = 0;
+        h3.m_Hash = 0;
+        h4.m_Hash = 0;
+        h5.m_Hash = 0;
+        h6.m_Hash = 0;
+        h7.m_Hash = 0;
+
+        unsigned long hash = nlStringLowerHash("ARROWS");
+        hNameA.m_Hash = hash;
+        hNameB.m_Hash = hash;
+
+        hash = nlStringLowerHash("Layer");
+        hLayerA.m_Hash = hash;
+        hLayerB.m_Hash = hash;
+
+        TLComponentInstance* pComp = findComp.byRef(
+            presentation->m_currentSlide,
+            (InlineHasher&)hLayerA,
+            (InlineHasher&)hNameA,
+            (InlineHasher&)h7,
+            (InlineHasher&)h5,
+            (InlineHasher&)h3,
+            (InlineHasher&)h1);
+
+        pComp->m_bVisible = false;
+        ((unsigned char*)nlSingleton<GameInfoManager>::s_pInstance)[0x4C39] = 0;
+    }
+
+    if (HasTrophy__15GameInfoManagerCF11eTrophyType(nlSingleton<GameInfoManager>::s_pInstance, mTrophy))
+    {
+        nlColour trophyColour = ((FELibObject*)pTrophyImage->m_component)->GetColour();
+        pTrophyImage->SetAssetColour(trophyColour);
+    }
+    else
+    {
+        pTrophyImage->SetAssetColour(TROPHY_BLACK_CUP);
+    }
+
+    SetWinRecord(*pSpoil);
+    SetLossRecord(*pSpoil);
+    SetHistory(*pSpoil);
+
+    if (!mButtons.mAlreadyCentred)
+    {
+        union
+        {
+            FindCompPresByValue byValue;
+            FindCompPresByRef byRef;
+        } findComp;
+
+        volatile InlineHasher hInB, hInA;
+        volatile InlineHasher hLayerB, hLayerA;
+        volatile InlineHasher hButtonsB, hButtonsA;
+        volatile InlineHasher h5, h4, h3, h2, h1, h0;
+
+        findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<FEPresentation>;
+
+        h0.m_Hash = 0;
+        h1.m_Hash = 0;
+        h2.m_Hash = 0;
+        h3.m_Hash = 0;
+        h4.m_Hash = 0;
+        h5.m_Hash = 0;
+
+        unsigned long hash = nlStringLowerHash("buttons");
+        hButtonsA.m_Hash = hash;
+        hButtonsB.m_Hash = hash;
+
+        hash = nlStringLowerHash("Layer");
+        hLayerA.m_Hash = hash;
+        hLayerB.m_Hash = hash;
+
+        hash = nlStringLowerHash("IN");
+        hInA.m_Hash = hash;
+        hInB.m_Hash = hash;
+
+        mButtons.mButtonInstance = findComp.byRef(
+            presentation,
+            (InlineHasher&)hInA,
+            (InlineHasher&)hLayerA,
+            (InlineHasher&)hButtonsA,
+            (InlineHasher&)h5,
+            (InlineHasher&)h3,
+            (InlineHasher&)h1);
+
+        mButtons.SetState(mButtonState);
+    }
+
+    if (!mButtons2.mAlreadyCentred)
+    {
+        union
+        {
+            FindCompPresByValue byValue;
+            FindCompPresByRef byRef;
+        } findComp;
+
+        volatile InlineHasher hInB, hInA;
+        volatile InlineHasher hLayerB, hLayerA;
+        volatile InlineHasher hButtonsB, hButtonsA;
+        volatile InlineHasher h5, h4, h3, h2, h1, h0;
+
+        findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<FEPresentation>;
+
+        h0.m_Hash = 0;
+        h1.m_Hash = 0;
+        h2.m_Hash = 0;
+        h3.m_Hash = 0;
+        h4.m_Hash = 0;
+        h5.m_Hash = 0;
+
+        unsigned long hash = nlStringLowerHash("buttons");
+        hButtonsA.m_Hash = hash;
+        hButtonsB.m_Hash = hash;
+
+        hash = nlStringLowerHash("Layer");
+        hLayerA.m_Hash = hash;
+        hLayerB.m_Hash = hash;
+
+        hash = nlStringLowerHash("IN2");
+        hInA.m_Hash = hash;
+        hInB.m_Hash = hash;
+
+        mButtons2.mButtonInstance = findComp.byRef(
+            presentation,
+            (InlineHasher&)hInA,
+            (InlineHasher&)hLayerA,
+            (InlineHasher&)hButtonsA,
+            (InlineHasher&)h5,
+            (InlineHasher&)h3,
+            (InlineHasher&)h1);
+
+        mButtons2.SetState(mButtonState);
+    }
+
+    BasicString<char, Detail::TempStringAllocator> timesWon = LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>((int)((SpoilNumCupWinsView&)(*pSpoil)).mNumCupWins);
+
+    unsigned short timesWonWide[32];
+    nlStrToWcs(timesWon.c_str(), timesWonWide, 32);
+
+    unsigned long locHash = 0x103642ED;
+    nlLocalization* loc = g_pLocalization;
+    const unsigned short* locString;
+
+    if (loc->m_LookupTable == 0)
+    {
+        locString = LocalizationTableNotFound;
+    }
+    else
+    {
+        nlLocalization::StringLookup* entry = nlBSearch(locHash, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
+        if (entry != 0)
+        {
+            locString = loc->m_FirstString + entry->StringOffset;
+        }
+        else
+        {
+            locString = MissingLocString;
+        }
+    }
+
+    BasicStringData<unsigned short>* data = (BasicStringData<unsigned short>*)nlMalloc(0x10, 8, true);
+    if (data != 0)
+    {
+        data->mData = 0;
+        data->mSize = 0;
+        data->mCapacity = 0;
+
+        const unsigned short* ptr = locString;
+        while (*ptr++ != 0)
+        {
+            data->mSize++;
+        }
+
+        data->mSize++;
+        data->mData = (unsigned short*)nlMalloc((data->mSize + 1) * 2, 8, true);
+        data->mCapacity = data->mSize;
+
+        int i = 0;
+        int j = i;
+        while (i < data->mSize)
+        {
+            *(unsigned short*)((char*)data->mData + j) = *locString;
+            i++;
+            locString++;
+            j += 2;
+        }
+
+        data->mRefCount = 1;
+    }
+
+    BasicString<unsigned short, Detail::TempStringAllocator> unformatted(data);
+    BasicString<unsigned short, Detail::TempStringAllocator> formatted = Format(unformatted, timesWonWide);
+
+    memcpy((void*)((char*)this + 0x62C), formatted.c_str(), 0x100);
+
+    {
+        union
+        {
+            FindTextByValue byValue;
+            FindTextByRef byRef;
+        } findText;
+
+        volatile InlineHasher hLayerA, hLayerB;
+        volatile InlineHasher hNameB, hNameA;
+        volatile InlineHasher h7, h6;
+        volatile InlineHasher h5, h4, h3, h2, h1, h0;
+
+        findText.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
+
+        h0.m_Hash = 0;
+        h1.m_Hash = 0;
+        h2.m_Hash = 0;
+        h3.m_Hash = 0;
+        h4.m_Hash = 0;
+        h5.m_Hash = 0;
+        h6.m_Hash = 0;
+        h7.m_Hash = 0;
+
+        unsigned long hash = nlStringLowerHash(CUP_TROPHY_TOTAL_NAME);
+        hNameA.m_Hash = hash;
+        hNameB.m_Hash = hash;
+
+        hash = nlStringLowerHash("Layer");
+        hLayerA.m_Hash = hash;
+        hLayerB.m_Hash = hash;
+
+        TLTextInstance* pTotal = findText.byRef(
+            presentation->m_currentSlide,
+            (InlineHasher&)hLayerA,
+            (InlineHasher&)hNameA,
+            (InlineHasher&)h7,
+            (InlineHasher&)h5,
+            (InlineHasher&)h3,
+            (InlineHasher&)h1);
+        pTotal->SetString((unsigned short*)((char*)this + 0x62C));
+    }
 }
 
 class GameInfoManager
@@ -339,13 +834,6 @@ struct FEInput
 
 extern FEInput* g_pFEInput;
 extern "C" void HandleUnlockedTriggers__14CupTrophySceneFv(CupTrophyScene*);
-
-struct CupTrophySpoilView
-{
-    unsigned char mPad[0x208];
-    unsigned char mNumRecords;
-    unsigned char mTailPad[0x0F];
-};
 
 void CupTrophyScene::Update(float fDeltaT)
 {
@@ -530,45 +1018,6 @@ void CupTrophyScene::CreateTrophyScene(eTrophyType trophy, ButtonComponent::Butt
     mButtonState = buttonState;
 }
 
-template <typename To, typename From>
-To LexicalCast(const From&);
-
-template <typename StringType, typename ValueType>
-StringType Format(const StringType& format, const ValueType& value);
-
-template <typename T, typename Key>
-T* nlBSearch(const Key& key, T* base, int count);
-
-struct LOCHeader
-{
-    char Thumbprint[4];
-    unsigned long Version;
-    unsigned long Language;
-    unsigned long StringCount;
-    unsigned long Flags;
-};
-
-class nlLocalization
-{
-public:
-    struct StringLookup
-    {
-        unsigned long hash;
-        unsigned long StringOffset;
-    };
-
-    LOCHeader* m_pFile;
-    StringLookup* m_LookupTable;
-    unsigned short* m_FirstString;
-    int m_CurrentLanguage;
-};
-
-class TLTextInstance
-{
-public:
-    void SetString(const unsigned short* utf16);
-};
-
 struct SpoilNumWinsView
 {
     unsigned char mPad[0x20A];
@@ -580,10 +1029,6 @@ struct SpoilNumLossesView
     unsigned char mPad[0x20C];
     unsigned short mNumLosses;
 };
-
-extern nlLocalization* g_pLocalization;
-extern const unsigned short LocalizationTableNotFound[];
-extern const unsigned short MissingLocString[];
 
 static const char* CUP_FIRST_TEXT_NAME_LEFT = "FIRST WON TIME";
 

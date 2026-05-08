@@ -293,8 +293,296 @@ void GoalieSave::ClearData()
 /**
  * Offset/Address/Size: 0x23F4 | 0x80055814 | size: 0x750
  */
-void GoalieSave::InitData(Goalie*)
+void GoalieSave::InitData(Goalie* pGoalie)
 {
+    struct SaveInfo
+    {
+        int mnAnimID;
+        int mnFailAnimID;
+        int mnRecoverAnimID;
+        unsigned int muSaveType;
+        int mConnectedSaveID[4];
+        char mszName[16];
+    };
+
+    struct GoalieTweaksLite
+    {
+        unsigned char mPad[0xB8];
+        float fShotFatigueDefault;
+        float fShotFatigueStandCatch;
+        float fShotFatigueDiveCatch;
+        float fShotFatigueStandDeflect;
+        float fShotFatigueDiveDeflect;
+        float fShotFatigueStandPunch;
+        float fShotFatigueLegSave;
+        float fShotFatigueSTSSave;
+        float fShotFatigueSTSStun;
+    };
+
+    struct SAnimLite
+    {
+        unsigned char mPad[0x8];
+        unsigned int m_nNumKeys;
+    };
+
+    struct SaveMapFindHelper
+    {
+        unsigned char m_Pad[0x8];
+        AVLTreeEntry<int, SaveData*>* m_Root;
+
+        inline bool FindGet(int key, SaveData*** foundValue) const
+        {
+            AVLTreeEntry<int, SaveData*>* node = m_Root;
+            while (node != NULL)
+            {
+                int cmpResult;
+                if (key == node->key)
+                {
+                    cmpResult = 0;
+                }
+                else if (key < node->key)
+                {
+                    cmpResult = -1;
+                }
+                else
+                {
+                    cmpResult = 1;
+                }
+
+                if (cmpResult == 0)
+                {
+                    if (foundValue != NULL)
+                    {
+                        *foundValue = &node->value;
+                    }
+                    return true;
+                }
+
+                if (cmpResult < 0)
+                {
+                    node = (AVLTreeEntry<int, SaveData*>*)node->node.left;
+                }
+                else
+                {
+                    node = (AVLTreeEntry<int, SaveData*>*)node->node.right;
+                }
+            }
+            return false;
+        }
+    };
+
+    extern unsigned int muNumSaveEntries__10GoalieSave;
+    extern unsigned int muSTSMissCount__10GoalieSave;
+    extern unsigned int muMissChipCount__10GoalieSave;
+    extern unsigned int muNumPositionEntries__10GoalieSave;
+    extern int gPositionAnimID[6];
+    extern SaveInfo gSaveInfo[70];
+    extern SAnimLite* GetAnim__14cAnimInventoryFi(void*, int);
+
+    if (mbInitialized)
+    {
+        return;
+    }
+
+    muNumSaveEntries__10GoalieSave = 0x45;
+    mpSaveTable = new SaveData[muNumSaveEntries__10GoalieSave];
+
+    muSTSGoalIndexStart = 0;
+    muSTSGoalCount = 0;
+    muSTSMissIndexStart = 0;
+    muSTSMissCount__10GoalieSave = 0;
+    muSTSSaveIndexStart = 0;
+    muSTSSaveCount = 0;
+    muMissChipIndexStart = 0;
+    muMissChipCount__10GoalieSave = 0;
+
+    void* pAnimInventory = *(void**)((unsigned char*)pGoalie + 0x80);
+    SAnimLite* pAnim = GetAnim__14cAnimInventoryFi(pAnimInventory, 0x2E);
+    mfCrouchDuration = (float)pAnim->m_nNumKeys / 30.0f;
+
+    GoalieTweaksLite* pTweaks = *(GoalieTweaksLite**)((unsigned char*)pGoalie + 0x1C4);
+
+    for (unsigned int i = 0; i < muNumSaveEntries__10GoalieSave; i++)
+    {
+        SaveData* pSaveData = &mpSaveTable[i];
+        const SaveInfo* pInfo = &gSaveInfo[i];
+
+        pSaveData->mnAnimID = pInfo->mnAnimID;
+        pSaveData->mnRecoverAnimID = pInfo->mnRecoverAnimID;
+        pSaveData->muSaveType = pInfo->muSaveType;
+
+        unsigned int uSaveType = pSaveData->muSaveType;
+        if (uSaveType & 0x1)
+        {
+            pSaveData->mfFatigueValue = pTweaks->fShotFatigueStandCatch;
+        }
+        else if (uSaveType & 0x2)
+        {
+            pSaveData->mfFatigueValue = pTweaks->fShotFatigueDiveCatch;
+        }
+        else if (uSaveType & 0x4)
+        {
+            pSaveData->mfFatigueValue = pTweaks->fShotFatigueStandDeflect;
+        }
+        else if (uSaveType & 0x8)
+        {
+            pSaveData->mfFatigueValue = pTweaks->fShotFatigueDiveDeflect;
+        }
+        else if (uSaveType & 0x10)
+        {
+            pSaveData->mfFatigueValue = pTweaks->fShotFatigueStandPunch;
+        }
+        else if (uSaveType & 0x20)
+        {
+            pSaveData->mfFatigueValue = pTweaks->fShotFatigueLegSave;
+        }
+        else if (uSaveType & 0x00010000)
+        {
+            pSaveData->mfFatigueValue = pTweaks->fShotFatigueSTSStun;
+        }
+        else if (uSaveType & 0x00060000)
+        {
+            pSaveData->mfFatigueValue = pTweaks->fShotFatigueSTSStun;
+        }
+        else
+        {
+            pSaveData->mfFatigueValue = pTweaks->fShotFatigueDefault;
+        }
+
+        pSaveData->mv3SavePos.f.x = 0.0f;
+        pSaveData->mv3SavePos.f.y = 0.0f;
+        pSaveData->mv3SavePos.f.z = 0.0f;
+
+        pSaveData->mfMilestonePercent[0] = 0.0f;
+        pSaveData->mfMilestonePercent[1] = 0.0f;
+        pSaveData->mfMilestonePercent[2] = 0.0f;
+        pSaveData->mfMilestonePercent[3] = 0.0f;
+        pSaveData->mfMilestonePercent[4] = 0.0f;
+
+        pSaveData->mv3TakeoffPos.f.x = 0.0f;
+        pSaveData->mv3TakeoffPos.f.y = 0.0f;
+        pSaveData->mv3TakeoffPos.f.z = 0.0f;
+
+        pSaveData->mv3GroupMinCoords.f.x = 0.0f;
+        pSaveData->mv3GroupMinCoords.f.y = 0.0f;
+        pSaveData->mv3GroupMinCoords.f.z = 0.0f;
+
+        pSaveData->mv3GroupMaxCoords.f.x = 0.0f;
+        pSaveData->mv3GroupMaxCoords.f.y = 0.0f;
+        pSaveData->mv3GroupMaxCoords.f.z = 0.0f;
+
+        nlStrNCpy<char>(pSaveData->mszName, pInfo->mszName, 16);
+        pSaveData->muIndex = i;
+
+        if (uSaveType & 0x00020000)
+        {
+            muSTSGoalCount++;
+            if (muSTSGoalCount == 1)
+            {
+                muSTSGoalIndexStart = i;
+            }
+        }
+        else if (uSaveType & 0x00040000)
+        {
+            muSTSMissCount__10GoalieSave++;
+            if (muSTSMissCount__10GoalieSave == 1)
+            {
+                muSTSMissIndexStart = i;
+            }
+        }
+        else if (uSaveType & 0x00010000)
+        {
+            muSTSSaveCount++;
+            if (muSTSSaveCount == 1)
+            {
+                muSTSSaveIndexStart = i;
+            }
+        }
+        else if (uSaveType & 0x00100000)
+        {
+            muMissChipCount__10GoalieSave++;
+            if (muMissChipCount__10GoalieSave == 1)
+            {
+                muMissChipIndexStart = i;
+            }
+        }
+
+        AVLTreeNode* pExistingNode;
+        gSaveMap.AddAVLNode((AVLTreeNode**)&gSaveMap.m_Root, &pSaveData->mnAnimID, &pSaveData, &pExistingNode, gSaveMap.m_NumElements);
+        if (pExistingNode == NULL)
+        {
+            gSaveMap.m_NumElements++;
+        }
+    }
+
+    SaveMapFindHelper* pMap = (SaveMapFindHelper*)&gSaveMap;
+
+    for (unsigned int i = 0; i < muNumSaveEntries__10GoalieSave; i++)
+    {
+        SaveData* pSaveData = &mpSaveTable[i];
+        const SaveInfo* pInfo = &gSaveInfo[i];
+
+        pSaveData->mpFailAnimData = NULL;
+        if (pInfo->mnFailAnimID >= 0)
+        {
+            SaveData** ppFail = NULL;
+            if (pMap->FindGet(pInfo->mnFailAnimID, &ppFail))
+            {
+                pSaveData->mpFailAnimData = *ppFail;
+            }
+        }
+
+        for (int j = 0; j < 4; j++)
+        {
+            int connectedID = pInfo->mConnectedSaveID[j];
+            pSaveData->mpConnectedSaveData[j] = NULL;
+            if (connectedID >= 0)
+            {
+                SaveData** ppConnected = NULL;
+                if (pMap->FindGet(connectedID, &ppConnected))
+                {
+                    pSaveData->mpConnectedSaveData[j] = *ppConnected;
+                }
+            }
+        }
+    }
+
+    muNumPositionEntries__10GoalieSave = 6;
+    mpPositionTable = new SavePositionData[muNumPositionEntries__10GoalieSave];
+    for (unsigned int i = 0; i < muNumPositionEntries__10GoalieSave; i++)
+    {
+        SavePositionData* pPos = &mpPositionTable[i];
+        pPos->mnAnimID = gPositionAnimID[i];
+        pPos->mfAnimDistance = 0.0f;
+        pPos->mfAnimTime = 0.0f;
+        pPos->mfAnimVelocity = 0.0f;
+    }
+
+    typedef ListContainerBase<SaveData*, NewAdapter<ListEntry<SaveData*> > > SaveListBase;
+
+    for (int i = 0; i < 7; i++)
+    {
+        for (int j = 0; j < 5; j++)
+        {
+            nlListContainer<SaveData*>* pEntry = &gSaveGrid[i][j];
+            nlWalkList(pEntry->m_Head, (SaveListBase*)pEntry, &SaveListBase::DeleteEntry);
+            pEntry->m_Head = NULL;
+            pEntry->m_Tail = NULL;
+        }
+    }
+
+    int nCount = (int)muNumSaveEntries__10GoalieSave - 1;
+    while (nCount >= 0)
+    {
+        SaveData* pSaveData = &mpSaveTable[nCount];
+        if ((pSaveData->muSaveType & 0xFFFF) != 0)
+        {
+            AddToGrid(pSaveData);
+        }
+        nCount--;
+    }
+
+    mbInitialized = 1;
 }
 
 template <typename T>

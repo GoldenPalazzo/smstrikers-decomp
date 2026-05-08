@@ -3,6 +3,8 @@
 #include "Game/FE/feFinder.h"
 #include "Game/FE/tlSlide.h"
 
+extern bool g_e3_Build;
+
 // /**
 //  * Offset/Address/Size: 0x9C | 0x800C1658 | size: 0x9C
 //  */
@@ -85,7 +87,179 @@
  */
 void IChooseCaptain::ComponentState::GotoNextPhase()
 {
-    FORCE_DONT_INLINE;
+    ICaptainGridComponent* captaingrid;
+    ISidekickGridComponent* sidekickgrid;
+    ISidekickGridComponent* sidekickgrid2;
+    eTeamID chosenteam;
+    char filenameC2[0x80];
+    char filenameC1[0x80];
+    char filenameC0[0x80];
+    char filenameS2[0x80];
+    char filenameS1[0x80];
+    char filenameS0[0x80];
+
+    switch (mCurrentPhase)
+    {
+    case PHASE_CHOOSING_CAPTAIN:
+        captaingrid = mParent->mCaptainGridComponents[mHomeAway];
+
+        if (!captaingrid->mMapMenu->IsSelectedItemActive())
+        {
+            FEAudio::PlayAnimAudioEvent("sfx_deny", false);
+            break;
+        }
+
+        captaingrid->mParentComponent->SetActiveSlide("OUT");
+        captaingrid->mParentComponent->Update(0.0f);
+        captaingrid->RebuildInstanceTable();
+        captaingrid->mMapMenu->UpdateAllItems();
+        captaingrid->RebindHighliteComponent("HIGHLIGHT");
+        captaingrid->mHighliteComponent->m_bVisible = false;
+
+        {
+            const char* eventName = "sfx_character_group_right_exit";
+            if (mHomeAway == 0)
+            {
+                eventName = "sfx_character_group_left_exit";
+            }
+            FEAudio::PlayAnimAudioEvent(eventName, false);
+        }
+
+        mParent->mHomeAwayTeam[mHomeAway] = captaingrid->GetSelectedItem();
+
+        {
+            FEMapMenu* mapmenu = mParent->mCaptainGridComponents[mHomeAway ^ 1]->mMapMenu;
+            mapmenu->SetItemActive(captaingrid->mMapMenu->GetSelectedItem(), false);
+        }
+
+        chosenteam = captaingrid->GetSelectedItem();
+        if (chosenteam != TEAM_MYSTERY)
+        {
+            sidekickgrid = mParent->mSidekickGridComponents[mHomeAway];
+            sidekickgrid->mParentComponent->SetActiveSlide("IN");
+            sidekickgrid->mParentComponent->Update(0.0f);
+            sidekickgrid->RebuildInstanceTable();
+            sidekickgrid->mMapMenu->UpdateAllItems();
+            sidekickgrid->RebindHighliteComponent("HIGHLIGHT");
+            sidekickgrid->mHighliteComponent->m_bVisible = false;
+            sidekickgrid->mHighliteVisibilityAtAnimEnd = true;
+            sidekickgrid->SetVisibleInstanceTable(true);
+            sidekickgrid->mParentComponent->m_bVisible = true;
+            mCurrentPhase = PHASE_CHOOSING_SIDEKICK;
+
+            {
+                const char* eventName = "sfx_character_group_right_enter";
+                if (mHomeAway == 0)
+                {
+                    eventName = "sfx_character_group_left_enter";
+                }
+                FEAudio::PlayAnimAudioEvent(eventName, false);
+            }
+
+            mParent->mNameComponents[mHomeAway].mComponent->SetActiveSlide("Slide2");
+            mParent->mNameComponents[mHomeAway].mComponent->Update(0.0f);
+            mParent->mNameComponents[mHomeAway].SetCaptainName(GetLOCCharacterName((eTeamID)mParent->mHomeAwayTeam[mHomeAway], false, false));
+            mParent->mNameComponents[mHomeAway].SetCaptainLogo(GetTeamName((eTeamID)mParent->mHomeAwayTeam[mHomeAway]));
+            mParent->mNameComponents[mHomeAway].SetSidekickName(GetLOCSidekickName(sidekickgrid->GetSelectedItem()));
+
+            if (g_e3_Build)
+            {
+                mParent->mSidekickGridComponents[mHomeAway]->MoveHighlightToTarget((eSidekickID)(mHomeAway != 0));
+                mParent->mNameComponents[mHomeAway].SetSidekickName(GetLOCSidekickName(sidekickgrid->GetSelectedItem()));
+                GotoNextPhase();
+            }
+        }
+        else
+        {
+            int homeaway = mHomeAway;
+            IChooseCaptain* parent = mParent;
+            int teamID = parent->mHomeAwayTeam[homeaway];
+
+            CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_0, filenameC0, 0x80, teamID, homeaway);
+            CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_1, filenameC1, 0x80, teamID, homeaway);
+            CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_2, filenameC2, 0x80, teamID, homeaway);
+
+            parent->mAsyncImage[homeaway][0]->QueueLoad(filenameC0, false);
+            parent->mAsyncImage[homeaway][1]->QueueLoad(filenameC1, false);
+            parent->mAsyncImage[homeaway][2]->QueueLoad(filenameC2, false);
+
+            parent->mDidSwapCaptains[homeaway] = false;
+            mCurrentPhase = PHASE_READY;
+        }
+
+        FEAudio::PlayAnimAudioEvent("sfx_accept_no_screen_change", false);
+        mParent->mLastCaptainSelectSoundStrPlayed[mHomeAway] = (char*)FECharacterSound::PlayCaptainName((eTeamID)mParent->mHomeAwayTeam[mHomeAway]);
+        break;
+
+    case PHASE_CHOOSING_SIDEKICK:
+        sidekickgrid2 = mParent->mSidekickGridComponents[mHomeAway];
+
+        sidekickgrid2->mParentComponent->SetActiveSlide("OUT");
+        sidekickgrid2->mParentComponent->Update(0.0f);
+        sidekickgrid2->RebuildInstanceTable();
+        sidekickgrid2->mMapMenu->UpdateAllItems();
+        sidekickgrid2->RebindHighliteComponent("HIGHLIGHT");
+        sidekickgrid2->mHighliteComponent->m_bVisible = false;
+
+        {
+            const char* eventName = "sfx_character_group_right_exit";
+            if (mHomeAway == 0)
+            {
+                eventName = "sfx_character_group_left_exit";
+            }
+            FEAudio::PlayAnimAudioEvent(eventName, false);
+        }
+
+        if (g_e3_Build)
+        {
+            sidekickgrid2->SetVisibleInstanceTable(false);
+        }
+
+        mParent->mHomeAwaySidekicks[mHomeAway] = sidekickgrid2->GetSelectedItem();
+        {
+            int homeaway = mHomeAway;
+            IChooseCaptain* parent = mParent;
+            int teamID = parent->mHomeAwayTeam[homeaway];
+
+            CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_0, filenameS0, 0x80, teamID, homeaway);
+            CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_1, filenameS1, 0x80, teamID, homeaway);
+            CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_2, filenameS2, 0x80, teamID, homeaway);
+
+            parent->mAsyncImage[homeaway][0]->QueueLoad(filenameS0, false);
+            parent->mAsyncImage[homeaway][1]->QueueLoad(filenameS1, false);
+            parent->mAsyncImage[homeaway][2]->QueueLoad(filenameS2, false);
+
+            parent->mDidSwapCaptains[homeaway] = false;
+            parent->StartSidekickMiniHead(homeaway, (eSidekickID)parent->mHomeAwaySidekicks[homeaway]);
+        }
+        mCurrentPhase = PHASE_READY;
+
+        FEAudio::PlayAnimAudioEvent("sfx_accept_no_screen_change", false);
+
+        if (!g_e3_Build)
+        {
+            if (mParent->mLastCaptainSelectSoundStrPlayed[mHomeAway] != NULL)
+            {
+                FEAudio::StopAnimAudioEvent(mParent->mLastCaptainSelectSoundStrPlayed[mHomeAway]);
+                mParent->mLastCaptainSelectSoundStrPlayed[mHomeAway] = NULL;
+            }
+
+            FECharacterSound::PlaySidekickName((eSidekickID)mParent->mHomeAwaySidekicks[mHomeAway]);
+        }
+        break;
+
+    case PHASE_READY:
+        if (mParent->mCaptainGridComponents[mHomeAway]->GetSelectedItem() != TEAM_MYSTERY)
+        {
+            mParent->mSidekickComponents[mHomeAway]->m_bVisible = false;
+        }
+
+        FEAudio::PlayAnimAudioEvent("sfx_accept_no_screen_change", false);
+        break;
+
+    default:
+        break;
+    }
 }
 
 /**
@@ -93,7 +267,133 @@ void IChooseCaptain::ComponentState::GotoNextPhase()
  */
 void IChooseCaptain::ComponentState::GotoPreviousPhase()
 {
-    FORCE_DONT_INLINE;
+    ICaptainGridComponent* gridcomponent;
+    ICaptainGridComponent* captaingrid;
+    ICaptainGridComponent* othercaptaingrid;
+    ICaptainGridComponent* captaingrid2;
+    ICaptainGridComponent* othercaptaingrid2;
+
+    switch (mCurrentPhase)
+    {
+    case PHASE_CHOOSING_CAPTAIN:
+        mCurrentPhase = PHASE_IDLE;
+
+        gridcomponent = mParent->mCaptainGridComponents[mHomeAway];
+        gridcomponent->mParentComponent->SetActiveSlide("OUT");
+        gridcomponent->mParentComponent->Update(0.0f);
+        gridcomponent->RebuildInstanceTable();
+        gridcomponent->mMapMenu->UpdateAllItems();
+        gridcomponent->RebindHighliteComponent("HIGHLIGHT");
+        gridcomponent->mHighliteComponent->m_bVisible = false;
+
+        mParent->mNameComponents[mHomeAway].SetCaptainName(0);
+        mParent->mNameComponents[mHomeAway].SetCaptainLogo(NULL);
+        mParent->mSidekickMiniHeadComponents[mHomeAway]->m_bVisible = false;
+
+        FEAudio::PlayAnimAudioEvent("sfx_back_no_screen_change", true);
+        break;
+
+    case PHASE_CHOOSING_SIDEKICK:
+        mCurrentPhase = PHASE_CHOOSING_CAPTAIN;
+
+        mParent->mSidekickGridComponents[mHomeAway]->mParentComponent->m_bVisible = false;
+
+        captaingrid = mParent->mCaptainGridComponents[mHomeAway];
+        captaingrid->mParentComponent->SetActiveSlide("SELECT");
+        captaingrid->mParentComponent->Update(0.0f);
+        captaingrid->RebuildInstanceTable();
+        captaingrid->mMapMenu->UpdateAllItems();
+        captaingrid->RebindHighliteComponent("HIGHLIGHT");
+        captaingrid->mHighliteComponent->m_bVisible = true;
+        captaingrid->mParentComponent->m_bVisible = true;
+        captaingrid->MoveHighlightToTarget((eTeamID)mParent->mHomeAwayTeam[mHomeAway]);
+
+        othercaptaingrid = mParent->mCaptainGridComponents[mHomeAway ^ 1];
+        othercaptaingrid->RebuildInstanceTable();
+        othercaptaingrid->SetAllItemsActive();
+        captaingrid->RebuildInstanceTable();
+        captaingrid->SetAllItemsActive();
+
+        mParent->mNameComponents[mHomeAway].mComponent->SetActiveSlide("Slide1");
+        mParent->mNameComponents[mHomeAway].mComponent->Update(0.0f);
+        mParent->mNameComponents[mHomeAway].SetCaptainName(GetLOCCharacterName(captaingrid->GetSelectedItem(), false, false));
+        mParent->mNameComponents[mHomeAway].SetCaptainLogo(GetTeamName(captaingrid->GetSelectedItem()));
+
+        if (mParent->mComponentState[mHomeAway ^ 1].mCurrentPhase > PHASE_CHOOSING_CAPTAIN)
+        {
+            FEMapMenu* menu = captaingrid->mMapMenu;
+            menu->SetItemActive(othercaptaingrid->mMapMenu->GetSelectedItem(), false);
+        }
+
+        FEAudio::PlayAnimAudioEvent("sfx_back_no_screen_change", false);
+        break;
+
+    case PHASE_READY:
+        if (mParent->mCaptainGridComponents[mHomeAway]->GetSelectedItem() != (eTeamID)8 && mParent->mHomeAwayTeam[mHomeAway] != 8)
+        {
+            mCurrentPhase = PHASE_CHOOSING_SIDEKICK;
+
+            gridcomponent = (ICaptainGridComponent*)mParent->mSidekickGridComponents[mHomeAway];
+            gridcomponent->mParentComponent->SetActiveSlide("SELECT");
+            gridcomponent->mParentComponent->Update(0.0f);
+            gridcomponent->RebuildInstanceTable();
+            gridcomponent->mMapMenu->UpdateAllItems();
+
+            mParent->mSidekickGridComponents[mHomeAway]->RebindHighliteComponent("HIGHLIGHT");
+            mParent->mSidekickGridComponents[mHomeAway]->mHighliteComponent->m_bVisible = true;
+            mParent->mSidekickGridComponents[mHomeAway]->SetVisibleInstanceTable(true);
+            mParent->mSidekickGridComponents[mHomeAway]->MoveHighlightToTarget((eSidekickID)mParent->mHomeAwaySidekicks[mHomeAway]);
+            mParent->mSidekickGridComponents[mHomeAway]->mParentComponent->m_bVisible = true;
+
+            mParent->mSidekickComponents[mHomeAway]->m_bVisible = false;
+            mParent->mCaptainComponents[mHomeAway]->m_bVisible = false;
+            mParent->mSidekickMiniHeadComponents[mHomeAway]->m_bVisible = false;
+
+            if (g_e3_Build)
+            {
+                GotoPreviousPhase();
+            }
+        }
+        else
+        {
+            mCurrentPhase = PHASE_CHOOSING_CAPTAIN;
+
+            captaingrid2 = mParent->mCaptainGridComponents[mHomeAway];
+            captaingrid2->mParentComponent->SetActiveSlide("SELECT");
+            captaingrid2->mParentComponent->Update(0.0f);
+            captaingrid2->RebuildInstanceTable();
+            captaingrid2->mMapMenu->UpdateAllItems();
+            captaingrid2->RebindHighliteComponent("HIGHLIGHT");
+            captaingrid2->mHighliteComponent->m_bVisible = true;
+            captaingrid2->mParentComponent->m_bVisible = true;
+            captaingrid2->MoveHighlightToTarget((eTeamID)mParent->mHomeAwayTeam[mHomeAway]);
+            mParent->mCaptainComponents[mHomeAway]->m_bVisible = false;
+
+            othercaptaingrid2 = mParent->mCaptainGridComponents[mHomeAway ^ 1];
+            othercaptaingrid2->RebuildInstanceTable();
+            othercaptaingrid2->SetAllItemsActive();
+            captaingrid2->RebuildInstanceTable();
+            captaingrid2->SetAllItemsActive();
+
+            mParent->mNameComponents[mHomeAway].mComponent->SetActiveSlide("Slide1");
+            mParent->mNameComponents[mHomeAway].mComponent->Update(0.0f);
+            mParent->mNameComponents[mHomeAway].SetCaptainName(GetLOCCharacterName(captaingrid2->GetSelectedItem(), false, false));
+            mParent->mNameComponents[mHomeAway].SetCaptainLogo(GetTeamName(captaingrid2->GetSelectedItem()));
+
+            if (mParent->mComponentState[mHomeAway ^ 1].mCurrentPhase > PHASE_CHOOSING_CAPTAIN)
+            {
+                FEMapMenu* menu = captaingrid2->mMapMenu;
+                menu->SetItemActive(othercaptaingrid2->mMapMenu->GetSelectedItem(), false);
+            }
+        }
+
+        FEAudio::PlayAnimAudioEvent("sfx_back_no_screen_change", false);
+        break;
+
+    case PHASE_IDLE:
+    default:
+        break;
+    }
 }
 
 /**
@@ -335,7 +635,293 @@ void IChooseCaptain::UpdateSound(float dt)
  */
 UpdateResult IChooseCaptain::Update(float)
 {
-    FORCE_DONT_INLINE;
+    CheckForDisconnectedHumanPlayers();
+    FindAliveHumanPlayers();
+
+    int numSide1;
+    mIsSinglePlayerInput = numSide1 = 0;
+
+    if (mNumTotalPushedPlayers == 1)
+    {
+        mIsSinglePlayerInput = true;
+    }
+    else
+    {
+        int numSide0 = numSide1;
+        IChooseCaptain* p = this;
+
+        for (int i = 0; i < mNumTotalPushedPlayers; i++)
+        {
+            if (p->mAllPushedPlayerSides[0] == 0)
+            {
+                numSide0++;
+            }
+            else if (p->mAllPushedPlayerSides[0] == 1)
+            {
+                numSide1++;
+            }
+
+            p = (IChooseCaptain*)((u8*)p + 4);
+        }
+
+        if (numSide0 == 0 || numSide1 == 0)
+        {
+            mIsSinglePlayerInput = true;
+        }
+    }
+
+    for (int i = 0; i < 4; i++)
+    {
+        eFEINPUT_PAD inputpad = (eFEINPUT_PAD)i;
+        int side;
+
+        if (mIsSinglePlayerInput)
+        {
+            if (mComponentState[0].mCurrentPhase < PHASE_READY)
+            {
+                side = 0;
+            }
+            else
+            {
+                side = 1;
+            }
+        }
+        else
+        {
+            int j = 0;
+            IChooseCaptain* p = this;
+
+            for (; j < mNumTotalPushedPlayers; j++)
+            {
+                if (p->mAllPushedPlayers[0] == i)
+                {
+                    side = mAllPushedPlayerSides[j];
+                    goto found_side;
+                }
+
+                p = (IChooseCaptain*)((u8*)p + 4);
+            }
+
+            side = -1;
+        }
+
+    found_side:
+        if (side == -1)
+        {
+            continue;
+        }
+
+        if (g_pFEInput->JustPressed(inputpad, 0x200, false, NULL))
+        {
+            unsigned char goback = 0;
+
+            switch (mComponentState[side].mCurrentPhase)
+            {
+            case PHASE_CHOOSING_CAPTAIN:
+                if (mIsSinglePlayerInput)
+                {
+                    if (side == 1)
+                    {
+                        mComponentState[1].GotoPreviousPhase();
+                        mComponentState[0].GotoPreviousPhase();
+                    }
+                    else
+                    {
+                        goback = true;
+                    }
+                }
+                else
+                {
+                    goback = true;
+                }
+                break;
+
+            case PHASE_CHOOSING_SIDEKICK:
+            case PHASE_READY:
+                mComponentState[side].GotoPreviousPhase();
+                break;
+            }
+
+            if (goback)
+            {
+                FEAudio::PlayAnimAudioEvent("sfx_back_no_screen_change", false);
+                return UPDATE_GO_BACK;
+            }
+        }
+        else if (g_pFEInput->JustPressed(inputpad, 0x100, false, &inputpad))
+        {
+            unsigned char isdoneanimating = 1;
+
+            switch (mComponentState[side].mCurrentPhase)
+            {
+            case PHASE_CHOOSING_CAPTAIN:
+            {
+                TLSlide* slide = mCaptainGridComponents[side]->mParentComponent->GetActiveSlide();
+
+                if (slide == NULL)
+                {
+                    isdoneanimating = 1;
+                }
+                else if (slide->m_time >= slide->m_start + slide->m_duration)
+                {
+                    isdoneanimating = 1;
+                }
+                else
+                {
+                    isdoneanimating = 0;
+                }
+                break;
+            }
+
+            case PHASE_CHOOSING_SIDEKICK:
+            {
+                TLSlide* slide = mSidekickGridComponents[side]->mParentComponent->GetActiveSlide();
+
+                if (slide == NULL)
+                {
+                    isdoneanimating = 1;
+                }
+                else if (slide->m_time >= slide->m_start + slide->m_duration)
+                {
+                    isdoneanimating = 1;
+                }
+                else
+                {
+                    isdoneanimating = 0;
+                }
+                break;
+            }
+            }
+
+            if (isdoneanimating)
+            {
+                int side2;
+
+                if (mIsSinglePlayerInput)
+                {
+                    if (mComponentState[0].mCurrentPhase < PHASE_READY)
+                    {
+                        side2 = 0;
+                    }
+                    else
+                    {
+                        side2 = 1;
+                    }
+                }
+                else
+                {
+                    int j = 0;
+                    IChooseCaptain* p = this;
+
+                    for (; j < mNumTotalPushedPlayers; j++)
+                    {
+                        if (p->mAllPushedPlayers[0] == inputpad)
+                        {
+                            side2 = mAllPushedPlayerSides[j];
+                            goto found_side2;
+                        }
+
+                        p = (IChooseCaptain*)((u8*)p + 4);
+                    }
+
+                    side2 = -1;
+                }
+
+            found_side2:
+                mComponentState[side2].GotoNextPhase();
+
+                if (mIsSinglePlayerInput && mComponentState[0].mCurrentPhase == PHASE_READY && mComponentState[1].mCurrentPhase == PHASE_IDLE)
+                {
+                    mComponentState[1].SetCurrentPhase(PHASE_CHOOSING_CAPTAIN);
+                }
+            }
+        }
+        else
+        {
+            switch (mComponentState[side].mCurrentPhase)
+            {
+            case PHASE_CHOOSING_CAPTAIN:
+                mCaptainGridComponents[side]->Update(inputpad);
+                if (mCaptainGridComponents[side]->mHasChangedSinceLastUpdate)
+                {
+                    mNameComponents[side].mComponent->SetActiveSlide("Slide1");
+                    mNameComponents[side].mComponent->Update(0.0f);
+                    mNameComponents[side].SetCaptainName(GetLOCCharacterName(mCaptainGridComponents[side]->GetSelectedItem(), false, true));
+                    mNameComponents[side].SetCaptainLogo(GetTeamName(mCaptainGridComponents[side]->GetSelectedItem()));
+                }
+                break;
+
+            case PHASE_CHOOSING_SIDEKICK:
+                mSidekickGridComponents[side]->Update(inputpad);
+                if (mSidekickGridComponents[side]->mHasChangedSinceLastUpdate)
+                {
+                    mNameComponents[side].mComponent->SetActiveSlide("Slide2");
+                    mNameComponents[side].mComponent->Update(0.0f);
+                    mNameComponents[side].SetCaptainName(GetLOCCharacterName((eTeamID)mHomeAwayTeam[side], false, false));
+                    mNameComponents[side].SetSidekickName(GetLOCSidekickName(mSidekickGridComponents[side]->GetSelectedItem()));
+                    mNameComponents[side].SetCaptainLogo(GetTeamName((eTeamID)mHomeAwayTeam[side]));
+                }
+                break;
+            }
+        }
+    }
+
+    if (mComponentState[0].mCurrentPhase == PHASE_READY && mComponentState[1].mCurrentPhase == PHASE_READY)
+    {
+        GameInfoManager* gim = nlSingleton<GameInfoManager>::s_pInstance;
+
+        gim->SetTeam(0, (eTeamID)mHomeAwayTeam[0]);
+        gim->SetTeam(1, (eTeamID)mHomeAwayTeam[1]);
+        gim->SetSidekick(0, (eSidekickID)mHomeAwaySidekicks[0]);
+        gim->SetSidekick(1, (eSidekickID)mHomeAwaySidekicks[1]);
+
+        IChooseCaptain* p = this;
+        for (int i = 0; i < mNumTotalPushedPlayers; i++)
+        {
+            gim->SetPlayingSide((unsigned short)p->mAllPushedPlayers[0], (short)p->mAllPushedPlayerSides[0]);
+            p = (IChooseCaptain*)((u8*)p + 4);
+        }
+
+        return UPDATE_GO_FORWARD;
+    }
+
+    for (int j = 0; j < 3; j++)
+    {
+        mAsyncImage[0][j]->Update(false);
+        mAsyncImage[1][j]->Update(false);
+    }
+
+    for (int i = 0; i < 2; i++)
+    {
+        if (mComponentState[i].mCurrentPhase != PHASE_READY)
+        {
+            mCaptainSoundDelay[i] = 0.0f;
+        }
+        else
+        {
+            bool canswapcaptains = false;
+            if (!mDidSwapCaptains[i])
+            {
+                if (mAsyncImage[i][0]->CanSwapTextures() && mAsyncImage[i][1]->CanSwapTextures() && mAsyncImage[i][2]->CanSwapTextures())
+                {
+                    canswapcaptains = true;
+                }
+            }
+
+            if (canswapcaptains)
+            {
+                mCaptainComponents[i]->SetActiveSlide("Slide1");
+                mCaptainComponents[i]->m_bVisible = true;
+                mAsyncImage[i][0]->Update(true);
+                mAsyncImage[i][1]->Update(true);
+                mAsyncImage[i][2]->Update(true);
+                mDidSwapCaptains[i] = true;
+                mCaptainSoundDelay[i] = mCaptainSlideDurations[0];
+            }
+        }
+    }
+
+    return UPDATE_OK;
 }
 
 /**

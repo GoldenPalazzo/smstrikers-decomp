@@ -654,9 +654,241 @@ void SaveLoadScene::SceneCreated()
 
 /**
  * Offset/Address/Size: 0x8C8 | 0x800B0E50 | size: 0x644
+ * TODO: 80.93% match - InlineHasher stack slot assignments differ (array at sp+0x54 vs
+ * target interleaved at sp+0x24), srwi vs rlwinm encoding for PreviousNoCardInSlotState
  */
-void SaveLoadScene::Update(float)
+void SaveLoadScene::Update(float fDeltaT)
 {
+    MemCard* pMemCard = g_MemCards[0];
+    s32 probeResult = CARDProbeEx(pMemCard->m_Slot, &pMemCard->m_CardInfo.CardSize, &pMemCard->m_CardInfo.SectorSize);
+
+    if (probeResult != CARD_RESULT_READY)
+    {
+        pMemCard->m_State = IS_IDLE;
+        pMemCard->m_CardState = CS_IDLE;
+    }
+
+    PreviousNoCardInSlotState = (probeResult == CARD_RESULT_NOCARD);
+
+    if (!g_pFEInput->HasInputLock(this))
+    {
+        BaseSceneHandler* handler;
+        if (nlSingleton<GameSceneManager>::s_pInstance->mCurrentStackDepth != 0)
+        {
+            handler = nlSingleton<GameSceneManager>::s_pInstance->mBaseSceneHandlerStack[nlSingleton<GameSceneManager>::s_pInstance->mCurrentStackDepth - 1];
+        }
+        else
+        {
+            handler = NULL;
+        }
+        if (nlSingleton<GameSceneManager>::s_pInstance->GetSceneType(handler) == SCENE_POPUP_MENU)
+        {
+            PushNoCardMessage();
+        }
+        return;
+    }
+
+    BaseSceneHandler::Update(fDeltaT);
+    gSceneTime += fDeltaT;
+
+    if (mIsAutoSaving)
+    {
+        eSaveLoad sceneType = gSceneTypeStack[gSceneTypeStackDepth - 1];
+        InlineHasher zeroHashers[5];
+        if (sceneType == (eSaveLoad)11)
+        {
+            zeroHashers[0].m_Hash = 0;
+            zeroHashers[1].m_Hash = 0;
+            zeroHashers[2].m_Hash = 0;
+            zeroHashers[3].m_Hash = 0;
+            zeroHashers[4].m_Hash = 0;
+            TLSlide* slide = FEFinder<TLSlide, 0>::Find<FEPresentation>(
+                m_pFEPresentation, InlineHasher(nlStringLowerHash("Slide1")), zeroHashers[0], zeroHashers[1], zeroHashers[2], zeroHashers[3], zeroHashers[4]);
+            if (m_pFEPresentation->m_currentSlide != slide)
+            {
+                m_pFEPresentation->SetActiveSlide(slide);
+            }
+        }
+        else
+        {
+            zeroHashers[0].m_Hash = 0;
+            zeroHashers[1].m_Hash = 0;
+            zeroHashers[2].m_Hash = 0;
+            zeroHashers[3].m_Hash = 0;
+            zeroHashers[4].m_Hash = 0;
+            TLSlide* slide = FEFinder<TLSlide, 0>::Find<FEPresentation>(
+                m_pFEPresentation, InlineHasher(nlStringLowerHash("Slide2")), zeroHashers[0], zeroHashers[1], zeroHashers[2], zeroHashers[3], zeroHashers[4]);
+            if (m_pFEPresentation->m_currentSlide != slide)
+            {
+                m_pFEPresentation->SetActiveSlide(slide);
+            }
+        }
+    }
+
+    if (m_displayText)
+    {
+        switch ((unsigned)gSceneTypeStack[gSceneTypeStackDepth - 1])
+        {
+        case ST_SAVE:
+        case ST_GAMESAVEIDTEST:
+            m_displayText->m_LocStrId = 0xCF941DC9;
+            m_displayText->m_OverloadFlags |= 0x8;
+            break;
+        case ST_LOAD:
+            m_displayText->m_LocStrId = 0xFAA420FA;
+            m_displayText->m_OverloadFlags |= 0x8;
+            break;
+        case ST_DELETE:
+            m_displayText->m_LocStrId = 0x1A7FDB2D;
+            m_displayText->m_OverloadFlags |= 0x8;
+            break;
+        case ST_FORMAT:
+        case ST_CONFIRM_FORMAT:
+            m_displayText->m_LocStrId = 0x81D26163;
+            m_displayText->m_OverloadFlags |= 0x8;
+            break;
+        case ST_ASK_SAVE:
+        case ST_ASK_LOAD:
+        case ST_CHECKING:
+        case ST_SHOULD_LOAD_OR_SAVE:
+            m_displayText->m_LocStrId = 0xE8E70E54;
+            m_displayText->m_OverloadFlags |= 0x8;
+            break;
+        case ST_ABOUT_AUTOSAVE:
+            break;
+        case 11:
+            m_displayText->m_LocStrId = 0xF501447B;
+            m_displayText->m_OverloadFlags |= 0x8;
+            break;
+        }
+    }
+
+    if (ResetTask::s_ResetState == 1)
+    {
+        if (gSceneTypeStack[gSceneTypeStackDepth - 1] == ST_SAVE)
+        {
+            gIgnoreMinWait = true;
+        }
+    }
+
+    if (!gIgnoreMinWait)
+    {
+        float minTime;
+        if (gSceneTypeStack[gSceneTypeStackDepth - 1] == (eSaveLoad)11)
+        {
+            minTime = 3.5f;
+        }
+        else
+        {
+            minTime = 1.75f;
+        }
+        if (gSceneTime <= minTime)
+        {
+            gRetryTimerDelay -= fDeltaT;
+            if (gRetryTimerDelay <= 0.0f)
+            {
+                PushNoCardMessage();
+            }
+            return;
+        }
+    }
+
+    eSaveLoad sceneType = gSceneTypeStack[gSceneTypeStackDepth - 1];
+    if (sceneType == ST_CHECKING || sceneType == (eSaveLoad)11)
+    {
+        gSaveLoadStarted = true;
+        gCallbackMade = false;
+        gSaveLoadFinished = true;
+    }
+
+    if (m_pFEPresentation->m_currentSlide == mAboutAutoSaveSlide)
+    {
+        UpdateForAboutToSaveSlide();
+        return;
+    }
+
+    if (!gSaveLoadStarted)
+    {
+        gSaveLoadStarted = true;
+        gSaveLoadFinished = false;
+        gCallbackMade = false;
+        switch (sceneType)
+        {
+        case ST_SAVE:
+            gResult = SaveLoad::StartSave(0, SaveLoadCallback);
+            break;
+        case ST_LOAD:
+            gResult = SaveLoad::StartLoad(0, SaveLoadCallback, true, false);
+            break;
+        case ST_GAMESAVEIDTEST:
+            gResult = SaveLoad::StartMemoryCardIDCheck(0, SaveLoadCallback);
+            break;
+        case ST_DELETE:
+            gResult = SaveLoad::StartDelete(0, SaveLoadCallback);
+            break;
+        case ST_FORMAT:
+            gResult = SaveLoad::StartFormat(0, SaveLoadCallback);
+            break;
+        case ST_ASK_SAVE:
+            gResult = SaveLoad::StartFileExistsCheck(0, SaveLoadCallback);
+            break;
+        case ST_ASK_LOAD:
+            gResult = SaveLoad::StartLoad(0, SaveLoadCallback, false, false);
+            break;
+        case ST_CHECKING:
+        case ST_ABOUT_AUTOSAVE:
+            break;
+        case ST_CONFIRM_FORMAT:
+            gSaveLoadFinished = true;
+            gCallbackMade = false;
+            break;
+        case ST_SHOULD_LOAD_OR_SAVE:
+            gResult = SaveLoad::StartFileExistsCheck(0, SaveLoadCallback);
+            break;
+        }
+    }
+
+    if (gResult == -1)
+    {
+        gSaveLoadStarted = false;
+        return;
+    }
+
+    if (gResult != 0)
+    {
+        CheckResults();
+    }
+
+    if (gCallbackMade)
+    {
+        gCallbackMade = false;
+        CheckResults();
+        if (gResult == 0)
+        {
+            if (gSceneTypeStack[gSceneTypeStackDepth - 1] == ST_GAMESAVEIDTEST)
+            {
+                if (SaveLoad().DidGameIDChange())
+                {
+                    FEPopupMenu* pPopup = (FEPopupMenu*)nlSingleton<GameSceneManager>::s_pInstance
+                                              ->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
+                    Function<FnVoidVoid> retryCB;
+                    retryCB.mTag = FREE_FUNCTION;
+                    retryCB.mFreeFunction = RetryCB;
+                    Function<FnVoidVoid> continueCB;
+                    continueCB.mTag = FREE_FUNCTION;
+                    continueCB.mFreeFunction = ContinueWithoutSavingCB;
+                    pPopup->Create(POPUP_NOTSAMECARD, retryCB, continueCB);
+                    gSaveLoadFinished = false;
+                }
+            }
+        }
+    }
+
+    if (gSaveLoadFinished)
+    {
+        mLastSaveLoadSuccess = false;
+        HandleSaveLoadFinishedResult();
+    }
 }
 
 /**

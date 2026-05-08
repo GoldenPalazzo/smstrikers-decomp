@@ -42,6 +42,13 @@ bool g_bAudioInitialized = false;
 bool g_bAudioInGameLoaded = false;
 bool g_bWorldSFXInitialized = false;
 
+extern const char* AUDIO_DEFAULT_CONFIG_FILE;
+
+static SND_AUX_REVERBSTD gReverbStdSettings;
+static SND_AUX_REVERBHI gReverbHiSettings;
+static SND_AUX_REVERBSTD gDPL2ReverbStdSettings;
+static SND_AUX_REVERBHI gDPL2ReverbHiSettings;
+
 static f32 gfVolumeGroups[0x18];
 
 extern Audio::SoundAttributes gDelayedSFX[15];
@@ -1789,9 +1796,343 @@ bool ShutdownReverb()
 /**
  * Offset/Address/Size: 0x337C | 0x8013F890 | size: 0x734
  */
-// void InitializeReverb(eStadiumID, unsigned char)
-// {
-// }
+bool InitializeReverb(eStadiumID stadiumID, unsigned char studio)
+{
+    MusyXEffectType type;
+    void* pAuxEffectSettings;
+    bool bResult;
+    char reverbStr[80];
+    char headerStr[80];
+    SND_AUX_REVERBHI* pReverbHiSettings;
+    SND_AUX_REVERBSTD* pReverbStdSettings;
+    float coloration;
+    float mix;
+    float time;
+    float damping;
+    float preDelay;
+    float crosstalk;
+
+    if (AudioLoader::gbDisableReverb)
+    {
+        return true;
+    }
+
+    Config config(Config::ALLOCATE_HIGH);
+    config.LoadFromFile(AUDIO_DEFAULT_CONFIG_FILE);
+
+    memset(reverbStr, 0, 0x50);
+    memset(headerStr, 0, 0x50);
+
+    if (stadiumID == STAD_INVALID)
+    {
+        nlStrNCpy(headerStr, "DEFAULT", 0x50);
+    }
+    else
+    {
+        const char* stadiumStr;
+
+        switch (stadiumID)
+        {
+        case STAD_MARIO_STADIUM:
+            stadiumStr = "STAD_MARIO";
+            break;
+        case STAD_PEACH_TOAD_STADIUM:
+            stadiumStr = "STAD_PEACH";
+            break;
+        case STAD_DK_DAISY:
+            stadiumStr = "STAD_DK";
+            break;
+        case STAD_WARIO_STADIUM:
+            stadiumStr = "STAD_WARIO";
+            break;
+        case STAD_YOSHI_STADIUM:
+            stadiumStr = "STAD_YOSHI";
+            break;
+        case STAD_SUPER_STADIUM:
+            stadiumStr = "STAD_SUPER";
+            break;
+        case STAD_FORBIDDEN_DOME:
+            stadiumStr = "STAD_DOME";
+            break;
+        default:
+            stadiumStr = "NOT_YET_DEFINED";
+            break;
+        }
+
+        nlStrNCpy(headerStr, stadiumStr, 0x50);
+    }
+
+    nlStrLen(headerStr);
+
+    nlStrNCat(reverbStr, headerStr, " Use High Quality Reverb", 0x50);
+    {
+        TagValuePair& tvp = config.FindTvp(reverbStr);
+
+        if (tvp.tag == NULL)
+        {
+            config.Set(reverbStr, true);
+            bResult = true;
+        }
+        else if (tvp.type == _BOOL)
+        {
+            bResult = LexicalCast<bool, bool>(tvp.value.b);
+        }
+        else if (tvp.type == _INT)
+        {
+            bResult = LexicalCast<bool, int>(tvp.value.i);
+        }
+        else if (tvp.type == _FLOAT)
+        {
+            bResult = LexicalCast<bool, float>(tvp.value.f);
+        }
+        else if (tvp.type == _STRING)
+        {
+            bResult = LexicalCast<bool, const char*>(tvp.value.s);
+        }
+        else
+        {
+            bResult = false;
+        }
+    }
+    gbUseHiQualityReverb = bResult;
+
+    nlStrNCat(reverbStr, headerStr, " Reverb Coloration", 0x50);
+    {
+        TagValuePair& tvp = config.FindTvp(reverbStr);
+        if (tvp.tag == NULL)
+        {
+            config.Set(reverbStr, 0.9f);
+            coloration = 0.9f;
+        }
+        else if (tvp.type == _BOOL)
+        {
+            coloration = LexicalCast<float, bool>(tvp.value.b);
+        }
+        else if (tvp.type == _INT)
+        {
+            coloration = LexicalCast<float, int>(tvp.value.i);
+        }
+        else if (tvp.type == _FLOAT)
+        {
+            coloration = LexicalCast<float, float>(tvp.value.f);
+        }
+        else if (tvp.type == _STRING)
+        {
+            coloration = LexicalCast<float, const char*>(tvp.value.s);
+        }
+        else
+        {
+            coloration = 0.0f;
+        }
+    }
+
+    nlStrNCat(reverbStr, headerStr, " Reverb Mix", 0x50);
+    {
+        TagValuePair& tvp = config.FindTvp(reverbStr);
+        if (tvp.tag == NULL)
+        {
+            config.Set(reverbStr, 0.3f);
+            mix = 0.3f;
+        }
+        else if (tvp.type == _BOOL)
+        {
+            mix = LexicalCast<float, bool>(tvp.value.b);
+        }
+        else if (tvp.type == _INT)
+        {
+            mix = LexicalCast<float, int>(tvp.value.i);
+        }
+        else if (tvp.type == _FLOAT)
+        {
+            mix = LexicalCast<float, float>(tvp.value.f);
+        }
+        else if (tvp.type == _STRING)
+        {
+            mix = LexicalCast<float, const char*>(tvp.value.s);
+        }
+        else
+        {
+            mix = 0.0f;
+        }
+    }
+
+    nlStrNCat(reverbStr, headerStr, " Reverb Time", 0x50);
+    {
+        TagValuePair& tvp = config.FindTvp(reverbStr);
+        if (tvp.tag == NULL)
+        {
+            config.Set(reverbStr, 3.5f);
+            time = 3.5f;
+        }
+        else if (tvp.type == _BOOL)
+        {
+            time = LexicalCast<float, bool>(tvp.value.b);
+        }
+        else if (tvp.type == _INT)
+        {
+            time = LexicalCast<float, int>(tvp.value.i);
+        }
+        else if (tvp.type == _FLOAT)
+        {
+            time = LexicalCast<float, float>(tvp.value.f);
+        }
+        else if (tvp.type == _STRING)
+        {
+            time = LexicalCast<float, const char*>(tvp.value.s);
+        }
+        else
+        {
+            time = 0.0f;
+        }
+    }
+
+    nlStrNCat(reverbStr, headerStr, " Reverb Damping", 0x50);
+    {
+        TagValuePair& tvp = config.FindTvp(reverbStr);
+        if (tvp.tag == NULL)
+        {
+            config.Set(reverbStr, 0.5f);
+            damping = 0.5f;
+        }
+        else if (tvp.type == _BOOL)
+        {
+            damping = LexicalCast<float, bool>(tvp.value.b);
+        }
+        else if (tvp.type == _INT)
+        {
+            damping = LexicalCast<float, int>(tvp.value.i);
+        }
+        else if (tvp.type == _FLOAT)
+        {
+            damping = LexicalCast<float, float>(tvp.value.f);
+        }
+        else if (tvp.type == _STRING)
+        {
+            damping = LexicalCast<float, const char*>(tvp.value.s);
+        }
+        else
+        {
+            damping = 0.0f;
+        }
+    }
+
+    nlStrNCat(reverbStr, headerStr, " Reverb Pre Delay", 0x50);
+    {
+        TagValuePair& tvp = config.FindTvp(reverbStr);
+        if (tvp.tag == NULL)
+        {
+            config.Set(reverbStr, 0.1f);
+            preDelay = 0.1f;
+        }
+        else if (tvp.type == _BOOL)
+        {
+            preDelay = LexicalCast<float, bool>(tvp.value.b);
+        }
+        else if (tvp.type == _INT)
+        {
+            preDelay = LexicalCast<float, int>(tvp.value.i);
+        }
+        else if (tvp.type == _FLOAT)
+        {
+            preDelay = LexicalCast<float, float>(tvp.value.f);
+        }
+        else if (tvp.type == _STRING)
+        {
+            preDelay = LexicalCast<float, const char*>(tvp.value.s);
+        }
+        else
+        {
+            preDelay = 0.0f;
+        }
+    }
+
+    nlStrNCat(reverbStr, headerStr, " Reverb Crosstalk", 0x50);
+    {
+        TagValuePair& tvp = config.FindTvp(reverbStr);
+        if (tvp.tag == NULL)
+        {
+            config.Set(reverbStr, 0.0f);
+            crosstalk = 0.0f;
+        }
+        else if (tvp.type == _BOOL)
+        {
+            crosstalk = LexicalCast<float, bool>(tvp.value.b);
+        }
+        else if (tvp.type == _INT)
+        {
+            crosstalk = LexicalCast<float, int>(tvp.value.i);
+        }
+        else if (tvp.type == _FLOAT)
+        {
+            crosstalk = LexicalCast<float, float>(tvp.value.f);
+        }
+        else if (tvp.type == _STRING)
+        {
+            crosstalk = LexicalCast<float, const char*>(tvp.value.s);
+        }
+        else
+        {
+            crosstalk = 0.0f;
+        }
+    }
+
+    if (gbUseHiQualityReverb)
+    {
+        pReverbHiSettings = &gReverbHiSettings;
+        if (PlatAudio::gUsingDolbyProLogic2)
+        {
+            pReverbHiSettings = &gDPL2ReverbHiSettings;
+        }
+
+        pAuxEffectSettings = pReverbHiSettings;
+        pReverbHiSettings->tempDisableFX = false;
+        type = MUSYX_EFFECT_REVERB_HI;
+        pReverbHiSettings->time = time;
+        pReverbHiSettings->preDelay = preDelay;
+        pReverbHiSettings->damping = damping;
+        pReverbHiSettings->coloration = coloration;
+        pReverbHiSettings->crosstalk = crosstalk;
+        pReverbHiSettings->mix = mix;
+    }
+    else
+    {
+        pReverbStdSettings = &gReverbStdSettings;
+        if (PlatAudio::gUsingDolbyProLogic2)
+        {
+            pReverbStdSettings = &gDPL2ReverbStdSettings;
+        }
+
+        pAuxEffectSettings = pReverbStdSettings;
+        pReverbStdSettings->tempDisableFX = false;
+        type = MUSYX_EFFECT_REVERB;
+        pReverbStdSettings->time = time;
+        pReverbStdSettings->preDelay = preDelay;
+        pReverbStdSettings->damping = damping;
+        pReverbStdSettings->coloration = coloration;
+        pReverbStdSettings->mix = mix;
+    }
+
+    if (AudioLoader::gReverbOn)
+    {
+        nlPrintf("Reverb already on, calling UpdateAuxEffectA().\n");
+        bResult = PlatAudio::UpdateAuxEffectA(type, pAuxEffectSettings);
+    }
+    else
+    {
+        nlPrintf("Reverb hasn't been turned on yet, this must be the very 1st time from Audio::Initialize().\n");
+        nlPrintf("Calling AddAuxEffectA().\n");
+        bResult = PlatAudio::AddAuxEffectA(type, pAuxEffectSettings, studio);
+    }
+
+    if (bResult)
+    {
+        nlPrintf("Audio::InitializeReverb() successful...\n");
+        return true;
+    }
+
+    nlPrintf("Audio::InitializeReverb() unsuccessful.\n");
+    return false;
+}
 
 /**
  * Offset/Address/Size: 0x3AB0 | 0x8013FFC4 | size: 0xF60

@@ -6,6 +6,7 @@
 #include "Game/Ball.h"
 #include "Game/GameTweaks.h"
 #include "Game/SAnim/pnSingleAxisBlender.h"
+#include "Game/SAnim/pnBlender.h"
 #include "Game/Audio/WorldAudio.h"
 #include "Game/CharacterTriggers.h"
 #include "Game/AI/FilteredRandom.h"
@@ -13,6 +14,8 @@
 #include "Game/Physics/PhysicsFakeBall.h"
 #include "NL/nlMath.h"
 #include "Game/MathHelpers.h"
+
+static f32 CANT_COLLIDE = *(f32*)__float_max;
 
 cTeam* g_pCurrentlyUpdatingTeam;
 extern cBall* g_pBall;
@@ -112,16 +115,501 @@ void Goalie::ActionLooseBallCatch(float deltaTime)
 
 /**
  * Offset/Address/Size: 0x3E6C | 0x800523A8 | size: 0x6AC
+ * TODO: 91.1% match - f0/f1 register swap at c8-cc for pickupTime/animTime
+ *       load order causes cascading diffs in time computation and clamping
  */
-void Goalie::ActionLooseBallDesperate(float)
+void Goalie::ActionLooseBallDesperate(float fDeltaT)
 {
+    cBall* pBall = g_pBall;
+    int animID = m_eAnimID;
+    const LooseBallInfo* pInfo = mpLooseBallInfo;
+    if (pInfo->mnAnimID == animID)
+    {
+        cPN_SAnimController* pAnim = m_pCurrentAnimController;
+        bool bAnimDone = false;
+        if (pAnim->m_ePlayMode == PM_HOLD && pAnim->m_fTime == 1.0f)
+            bAnimDone = true;
+        if (bAnimDone)
+        {
+            if (animID == 0x7C)
+            {
+                InitActionPursueRecover();
+                return;
+            }
+            if (m_pBall == NULL)
+            {
+                InitActionMove(false);
+                return;
+            }
+            InitActionMoveWB();
+            return;
+        }
+        if (pBall->m_pOwner != NULL)
+            goto handleOwner;
+        if (pAnim->m_fTime < pInfo->mfPickupTime)
+        {
+            float fRatio = pAnim->m_fTime / pInfo->mfPickupTime;
+            float fTimeRemaining = pInfo->mfPickupTime * pInfo->mfAnimDuration - pInfo->mfAnimDuration * pAnim->m_fTime;
+            float fGoalLineX = cField::GetGoalLineX(1U);
+            float fTimeScale = 0.25f * fTimeRemaining;
+            float fLimit = fGoalLineX - 0.2f;
+            nlVector3 v3GuessBallPos;
+            v3GuessBallPos.f.x = fTimeScale * g_pBall->m_v3Velocity.f.x + pBall->m_v3Position.f.x;
+            v3GuessBallPos.f.z = fTimeScale * g_pBall->m_v3Velocity.f.z + pBall->m_v3Position.f.z;
+            v3GuessBallPos.f.y = fTimeScale * g_pBall->m_v3Velocity.f.y + pBall->m_v3Position.f.y;
+            if ((float)fabs(v3GuessBallPos.f.x) > fLimit)
+            {
+                float fClampedX;
+                if (v3GuessBallPos.f.x > 0.0f)
+                    fClampedX = fLimit;
+                else
+                    fClampedX = -fLimit;
+                if ((float)fabs(pBall->m_v3Position.f.x) < fLimit)
+                {
+                    float fDX = pBall->m_v3Position.f.x - fClampedX;
+                    float fDY = pBall->m_v3Position.f.y - v3GuessBallPos.f.y;
+                    float fDXOrig = pBall->m_v3Position.f.x - v3GuessBallPos.f.x;
+                    float fNewY = fDX * fDY;
+                    fNewY = fNewY / fDXOrig;
+                    fNewY = pBall->m_v3Position.f.y - fNewY;
+                    v3GuessBallPos.f.y = fNewY;
+                }
+                v3GuessBallPos.f.x = fClampedX;
+            }
+            TrackTarget(v3GuessBallPos, fRatio);
+            const nlVector3& v3Head = GetJointPosition(m_nHeadJointIndex);
+            nlVector3 v3HeadCopy;
+            v3HeadCopy = v3Head;
+            float fAbsX = (float)fabs(v3HeadCopy.f.x);
+            float fDX2 = 0.0f;
+            float fLimitH = cField::GetGoalLineX(1U) - 0.5f;
+            float fNetY = 0.5f * cNet::m_fNetWidth;
+            if (fAbsX > fLimitH)
+            {
+                if ((float)fabs(v3HeadCopy.f.y) > fNetY)
+                    fDX2 = fAbsX - fLimitH;
+            }
+            const nlVector3& v3RHand = GetJointPosition(m_nRightHandJointIndex);
+            nlVector3 v3RHandCopy;
+            v3RHandCopy = v3RHand;
+            fAbsX = (float)fabs(v3RHandCopy.f.x);
+            float fLimitR = cField::GetGoalLineX(1U) - 0.4f;
+            if (fAbsX > fLimitR)
+            {
+                if ((float)fabs(v3RHandCopy.f.y) > fNetY)
+                {
+                    float fDiff = fAbsX - fLimitR;
+                    if (fDiff > fDX2)
+                        fDX2 = fDiff;
+                }
+            }
+            const nlVector3& v3LHand = GetJointPosition(m_nLeftHandJointIndex);
+            nlVector3 v3LHandCopy;
+            v3LHandCopy = v3LHand;
+            float fAbsX3 = (float)fabs(v3LHandCopy.f.x);
+            if (fAbsX3 > fLimitR)
+            {
+                if ((float)fabs(v3LHandCopy.f.y) > fNetY)
+                {
+                    float fDiff = fAbsX3 - fLimitR;
+                    if (fDiff > fDX2)
+                        fDX2 = fDiff;
+                }
+            }
+            if (fDX2 > 0.0f)
+            {
+                nlVector3 v3AdjPos;
+                v3AdjPos = m_v3Position;
+                if (v3AdjPos.f.x > 0.0f)
+                    fDX2 *= -1.0f;
+                v3AdjPos.f.x = v3AdjPos.f.x + fDX2;
+                SetPosition(v3AdjPos);
+            }
+            return;
+        }
+        else
+        {
+            const nlVector3& v3BallJoint = GetJointPosition(m_nBallJointIndex);
+            float dY = pBall->m_v3Position.f.y - v3BallJoint.f.y;
+            float dX = pBall->m_v3Position.f.x - v3BallJoint.f.x;
+            float dZ = pBall->m_v3Position.f.z - v3BallJoint.f.z;
+            float distSq = dY * dY;
+            distSq = dX * dX + distSq;
+            distSq = dZ * dZ + distSq;
+            if (distSq < 0.36f)
+            {
+                InitiatePanicGrab(NULL);
+            }
+            return;
+        }
+    handleOwner:
+        if (m_pBall != NULL)
+            return;
+        SetGoalieAction(GOALIEACTION_PURSUE_BALL_POUNCE, 0);
+    }
+    else
+    {
+        if (muBallChangeCount != pBall->m_bBallPathChangeCount || mnOffplayPending != 0 || pBall->m_pOwner != NULL)
+        {
+            InitActionMove(false);
+            return;
+        }
+        mfTargetTime = mfTargetTime - fDeltaT;
+        DoNavigation(fDeltaT, 0.0f, NAVI_FOLLOW_TARGET);
+        const nlVector3& v3Head = GetJointPosition(m_nHeadJointIndex);
+        nlVector3 v3HeadCopy;
+        v3HeadCopy = v3Head;
+        float fAbsX = (float)fabs(v3HeadCopy.f.x);
+        float fDX = 0.0f;
+        float fLimitH = cField::GetGoalLineX(1U) - 0.5f;
+        float fNetY = 0.5f * cNet::m_fNetWidth;
+        if (fAbsX > fLimitH)
+        {
+            if ((float)fabs(v3HeadCopy.f.y) > fNetY)
+                fDX = fAbsX - fLimitH;
+        }
+        const nlVector3& v3RHand = GetJointPosition(m_nRightHandJointIndex);
+        nlVector3 v3RHandCopy;
+        v3RHandCopy = v3RHand;
+        fAbsX = (float)fabs(v3RHandCopy.f.x);
+        float fLimitR = cField::GetGoalLineX(1U) - 0.4f;
+        if (fAbsX > fLimitR)
+        {
+            if ((float)fabs(v3RHandCopy.f.y) > fNetY)
+            {
+                float fDiff = fAbsX - fLimitR;
+                if (fDiff > fDX)
+                    fDX = fDiff;
+            }
+        }
+        const nlVector3& v3LHand = GetJointPosition(m_nLeftHandJointIndex);
+        nlVector3 v3LHandCopy;
+        v3LHandCopy = v3LHand;
+        float fAbsX3 = (float)fabs(v3LHandCopy.f.x);
+        if (fAbsX3 > fLimitR)
+        {
+            if ((float)fabs(v3LHandCopy.f.y) > fNetY)
+            {
+                float fDiff = fAbsX3 - fLimitR;
+                if (fDiff > fDX)
+                    fDX = fDiff;
+            }
+        }
+        if (fDX > 0.0f)
+        {
+            nlVector3 v3AdjPos;
+            v3AdjPos = m_v3Position;
+            if (v3AdjPos.f.x > 0.0f)
+                fDX *= -1.0f;
+            v3AdjPos.f.x = v3AdjPos.f.x + fDX;
+            SetPosition(v3AdjPos);
+        }
+        const LooseBallInfo* pInfoE = mpLooseBallInfo;
+        cBall* pBallE = g_pBall;
+        float fCatchRadius = 0.6f + pInfoE->mfPickupDistance;
+        float fPickupTimeE = pInfoE->mfPickupTime;
+        float fAnimDurE = pInfoE->mfAnimDuration;
+        float fCatchRadSq = fCatchRadius * fCatchRadius;
+        float fTimeProduct = fPickupTimeE * fAnimDurE;
+        float fGuessY = fTimeProduct * pBallE->m_v3Velocity.f.y + pBall->m_v3Position.f.y;
+        float fGuessX = fTimeProduct * pBallE->m_v3Velocity.f.x + pBall->m_v3Position.f.x;
+        if (mfTargetTime < 0.02f)
+            goto doPlayNewAnim;
+        {
+            float fAbsBallX = (float)fabs(pBall->m_v3Position.f.x);
+            float fGoalLine2 = cField::GetGoalLineX(1U) - 1.0f;
+            if (fAbsBallX > fGoalLine2)
+                goto doPlayNewAnim;
+        }
+        {
+            float dYc = m_v3Position.f.y - pBall->m_v3Position.f.y;
+            float dXc = m_v3Position.f.x - pBall->m_v3Position.f.x;
+            float distSqC = dYc * dYc;
+            distSqC = dXc * dXc + distSqC;
+            if (distSqC < fCatchRadSq)
+                goto doPlayNewAnim;
+        }
+        {
+            float dYg = m_v3Position.f.y - fGuessY;
+            float dXg = m_v3Position.f.x - fGuessX;
+            float distSqG = dYg * dYg;
+            distSqG = dXg * dXg + distSqG;
+            if (distSqG < fCatchRadSq)
+                goto doPlayNewAnim;
+        }
+        return;
+    doPlayNewAnim:
+        PlayNewAnim(mpLooseBallInfo->mnAnimID);
+        InitMovementFromAnim(0, v3Zero, 1.0f, false);
+    }
 }
 
 /**
  * Offset/Address/Size: 0x36CC | 0x80051C08 | size: 0x7A0
+ * TODO: 99.90% match - 9 register diffs: f0/f2 swap at mfWaitTime check, f30/f28 for fSmooth, f29/f28 for fAbsX
  */
-void Goalie::ActionLooseBallPickup(float)
+void Goalie::ActionLooseBallPickup(float fDeltaT)
 {
+    float fTimeLeft = m_pCurrentAnimController->m_fTime;
+
+    if (fTimeLeft > 0.97f)
+    {
+        if (g_pBall->m_pOwner != this && mfWaitTime > 0.0f && mpLooseBallInfo->mAnimType != LOOSEBALL_ANIM_KICK)
+        {
+            m_tNoPickupTimer.SetSeconds(fDeltaT);
+        }
+        else
+        {
+            if (m_eAnimID == 0x7C)
+            {
+                InitActionPursueRecover();
+                return;
+            }
+
+            if (m_pBall == NULL)
+            {
+                InitActionMove(false);
+                return;
+            }
+
+            InitActionMoveWB();
+            return;
+        }
+    }
+
+    if (mpLooseBallInfo->mAnimType == LOOSEBALL_ANIM_KICK)
+    {
+        if ((m_eAnimID == 5 || m_eAnimID == 4)
+            && fTimeLeft > (0.1f + mpLooseBallInfo->mfPickupTime)
+            && m_pBall == NULL)
+        {
+            InitActionMove(false);
+            return;
+        }
+
+        if (mpPassTarget != NULL)
+        {
+            float fAngle = nlATan2f(
+                mpPassTarget->m_v3Position.f.y - m_v3Position.f.y,
+                mpPassTarget->m_v3Position.f.x - m_v3Position.f.x);
+            m_aDesiredFacingDirection = (u16)(s32)(10430.378f * fAngle);
+        }
+        else
+        {
+            unsigned short dir;
+            if (m_v3Position.f.x > 0.0f)
+            {
+                dir = 0x8000;
+            }
+            else
+            {
+                dir = 0;
+            }
+            m_aDesiredFacingDirection = dir;
+        }
+
+        float fSeekSpeed;
+        float fSeekFalloff;
+        if (mpLooseBallInfo->mnAnimID == 3)
+        {
+            fSeekSpeed = 150000.0f;
+            fSeekFalloff = 2000.0f;
+        }
+        else
+        {
+            fSeekSpeed = 30000.0f;
+            fSeekFalloff = 3000.0f;
+        }
+
+        unsigned short aNewFacingDirection = SeekDirection(
+            m_aActualFacingDirection,
+            m_aDesiredFacingDirection,
+            fSeekSpeed,
+            fSeekFalloff,
+            fDeltaT);
+        SetFacingDirection(aNewFacingDirection);
+    }
+
+    if (g_pBall->m_pOwner != this && mfWaitTime > 0.0f)
+    {
+        TacklePlayer(g_pBall->m_pOwner);
+
+        float fNoPickupTime = m_tNoPickupTimer.GetSeconds();
+        if (fNoPickupTime > 0.0f)
+        {
+            const nlVector3& pickupPos = GetJointPosition(m_nBallJointIndex);
+            nlVector3 v3TargetPos = pickupPos;
+
+            float fGoallineX = cField::GetGoalLineX(1U);
+            float fDeltaPos = 0.0f;
+            if (v3TargetPos.f.x > fGoallineX)
+            {
+                fDeltaPos = fGoallineX - v3TargetPos.f.x;
+            }
+            else if (v3TargetPos.f.x < -fGoallineX)
+            {
+                fDeltaPos = -fGoallineX - v3TargetPos.f.x;
+            }
+
+            if (fDeltaPos != 0.0f)
+            {
+                v3TargetPos.f.x += fDeltaPos;
+
+                nlVector3 v3MyPos = m_v3Position;
+                v3MyPos.f.x += fDeltaPos;
+                SetPosition(v3MyPos);
+            }
+
+            float fBlend;
+            float fPercent = fNoPickupTime / mfWaitTime;
+            fBlend = 1.0f - fPercent;
+            v3TargetPos.f.x = fBlend * v3TargetPos.f.x + fPercent * g_pBall->m_v3Position.f.x;
+            v3TargetPos.f.y = fBlend * v3TargetPos.f.y + fPercent * g_pBall->m_v3Position.f.y;
+            v3TargetPos.f.z = fBlend * v3TargetPos.f.z + fPercent * g_pBall->m_v3Position.f.z;
+            g_pBall->SetPosition(v3TargetPos);
+
+            nlVector3 v3BallVel = g_pBall->m_v3Velocity;
+            float fSpeedSq = v3BallVel.f.x * v3BallVel.f.x + v3BallVel.f.y * v3BallVel.f.y + v3BallVel.f.z * v3BallVel.f.z;
+            if (fSpeedSq > 64.0f)
+            {
+                v3BallVel.f.x = 0.3f * v3BallVel.f.x;
+                v3BallVel.f.y = 0.3f * v3BallVel.f.y;
+                v3BallVel.f.z = 0.3f * v3BallVel.f.z;
+                g_pBall->SetVelocity(v3BallVel, SPINTYPE_NONE, NULL);
+            }
+        }
+        else
+        {
+            Audio::SoundAttributes sndAtr;
+            sndAtr.Init();
+            sndAtr.SetSoundType(0xB7, true);
+            sndAtr.UseStationaryPosVector(m_v3Position);
+            sndAtr.mf_Volume = 0.4f;
+            Audio::gStadGenSFX.Play(sndAtr);
+
+            PickupBall(g_pBall);
+            mbPickedUp = true;
+            g_pBall->ClearShotInProgress();
+        }
+    }
+
+    if (g_pBall->m_pOwner != NULL && g_pBall->m_pOwner != this)
+    {
+        if (IsOnSameTeam(g_pBall->m_pOwner))
+        {
+            InitActionMove(false);
+            return;
+        }
+
+        SetGoalieAction(GOALIEACTION_PURSUE_BALL_POUNCE, 0);
+        return;
+    }
+
+    if (IsPassThreat())
+    {
+        InitActionMove(true);
+        return;
+    }
+
+    if (m_pBall == NULL && mfWaitTime <= 0.0f)
+    {
+        if (fTimeLeft >= mpLooseBallInfo->mfPickupTime)
+        {
+            if (mpLooseBallInfo->mAnimType == LOOSEBALL_ANIM_KICK)
+            {
+                if (!m_pCurrentAnimController->TestTrigger(mpLooseBallInfo->mfPickupTime))
+                {
+                    return;
+                }
+
+                const nlVector3& pickupPos = GetJointPosition(m_nBallJointIndex);
+                if (CalculateDistanceSquared(g_pBall->m_v3Position, pickupPos) < 1.0f
+                    || CalculateDistanceSquared(g_pBall->m_v3Position, m_v3Position) < 2.25f)
+                {
+                    InitiatePickup();
+                    return;
+                }
+
+                InitActionMove(true);
+                return;
+            }
+
+            const nlVector3& pickupPos = GetJointPosition(m_nBallJointIndex);
+            if (CalculateDistanceSquared(g_pBall->m_v3Position, pickupPos) < 1.0f)
+            {
+                InitiatePickup();
+            }
+            return;
+        }
+
+        float fPercent = (fTimeLeft - mfTargetTime) / (mpLooseBallInfo->mfPickupTime - mfTargetTime);
+        float fSmooth = fPercent * (fPercent * ((-2.0f * fPercent) + 3.0f));
+
+        if (!(fSmooth < 0.99f))
+        {
+            return;
+        }
+
+        nlVector3 v3BallVel;
+        FakeBallWorld::GetPredictedBallPosition(mpLooseBallInfo->mfAnimDuration * (mpLooseBallInfo->mfPickupTime - fTimeLeft), mv3TargetPosition, v3BallVel);
+
+        TrackTarget(mv3TargetPosition, fSmooth);
+
+        nlVector3 v3MyPos;
+        nlVector3 animPos = GetJointPosition(m_nHeadJointIndex);
+        float fDX = 0.0f;
+        float fAbsX = (float)fabs(animPos.f.x);
+        float fLimit = cField::GetGoalLineX(1U) - 0.5f;
+        float fNetY = 0.5f * cNet::m_fNetWidth;
+        if (fAbsX > fLimit)
+        {
+            if ((float)fabs(animPos.f.y) > fNetY)
+            {
+                fDX = fAbsX - fLimit;
+            }
+        }
+
+        nlVector3 leftHandPos;
+        nlVector3 rightHandPos = GetJointPosition(m_nRightHandJointIndex);
+        fAbsX = (float)fabs(rightHandPos.f.x);
+        fLimit = cField::GetGoalLineX(1U) - 0.4f;
+        if (fAbsX > fLimit)
+        {
+            if ((float)fabs(rightHandPos.f.y) > fNetY)
+            {
+                float fDiff = fAbsX - fLimit;
+                if (fDiff > fDX)
+                {
+                    fDX = fDiff;
+                }
+            }
+        }
+
+        leftHandPos = GetJointPosition(m_nLeftHandJointIndex);
+        fAbsX = (float)fabs(leftHandPos.f.x);
+        if (fAbsX > fLimit)
+        {
+            if ((float)fabs(leftHandPos.f.y) > fNetY)
+            {
+                float fDiff = fAbsX - fLimit;
+                if (fDiff > fDX)
+                {
+                    fDX = fDiff;
+                }
+            }
+        }
+
+        if (fDX > 0.0f)
+        {
+            v3MyPos = m_v3Position;
+            if (v3MyPos.f.x > 0.0f)
+            {
+                fDX *= -1.0f;
+            }
+            v3MyPos.f.x += fDX;
+            SetPosition(v3MyPos);
+        }
+    }
 }
 
 /**
@@ -415,9 +903,384 @@ void Goalie::RunWeightCB(unsigned int nParam, cPN_SingleAxisBlender* blender)
 
 /**
  * Offset/Address/Size: 0x27FC | 0x80050D38 | size: 0x874
+ * TODO: 90.55% match - stack frame 0x80 vs 0x90 (MWCC shares const int arrays
+ * across mutually exclusive branches instead of allocating separate stack slots)
  */
-void Goalie::ActionMoveWB(float)
+void Goalie::ActionMoveWB(float fDeltaT)
 {
+    if (mnSubstate == 6)
+    {
+        bool isAnimDone = false;
+        cPN_SAnimController* pCtrl = m_pCurrentAnimController;
+        if (pCtrl->m_ePlayMode == PM_HOLD)
+        {
+            if (1.0f == pCtrl->m_fTime)
+            {
+                isAnimDone = true;
+            }
+        }
+        if (isAnimDone)
+        {
+            mnSubstate = 0;
+        }
+        else
+        {
+            return;
+        }
+    }
+
+    if (m_pController == NULL)
+    {
+        goto no_pad;
+    }
+
+    if (mfWaitTime > 0.0f)
+    {
+    }
+    else
+    {
+        goto no_pad;
+    }
+
+    if (m_pBall == NULL)
+    {
+        InitActionMove(false);
+        return;
+    }
+
+    {
+        mfWaitTime -= fDeltaT;
+
+        float stickMag = m_pController->GetMovementStickMagnitude();
+
+        if (stickMag > 0.0f)
+        {
+            mfTargetTime = 0.0f;
+
+            f32 penaltyBoxX, penaltyBoxY;
+            penaltyBoxY = cField::GetPenaltyBoxY() - 0.5f;
+            penaltyBoxX = 0.5f + cField::GetPenaltyBoxX(1U);
+
+            u16 direction = m_pController->GetMovementStickDirection();
+            m_aDesiredFacingDirection = direction;
+
+            float jogging = m_pTweaks->fJoggingSpeed;
+            float running = m_pTweaks->fRunningSpeed;
+            m_fDesiredSpeed = jogging + stickMag * (running - jogging);
+
+            float posX = m_v3Position.f.x;
+            float posY = m_v3Position.f.y;
+            u16 dir = m_aDesiredFacingDirection;
+
+            if ((float)fabs(posX) < penaltyBoxX)
+            {
+                if (posX > 0.0f)
+                {
+                    dir = (u16)(dir + 0x8000);
+                }
+
+                u16 d = dir;
+                if (d < 0x1C18 || d > 0xE3E7)
+                {
+                    m_fDesiredSpeed = 0.0f;
+                }
+                else if (d < 0x43E8)
+                {
+                    dir = 0x43E8;
+                }
+                else if (d > 0xBC17)
+                {
+                    dir = 0xBC17;
+                }
+
+                if (posX > 0.0f)
+                {
+                    dir = (u16)(dir + 0x8000);
+                }
+            }
+
+            if ((float)fabs(posY) > penaltyBoxY)
+            {
+                if (posY < 0.0f)
+                {
+                    dir = (u16)(dir + 0x8000);
+                }
+
+                u16 d = dir;
+                if (d < 0x23E8 || d > 0xFC17)
+                {
+                    dir = 0xFC17;
+                }
+                else if (d < 0x5C18)
+                {
+                    m_fDesiredSpeed = 0.0f;
+                }
+                else if (d < 0x83E8)
+                {
+                    dir = 0x83E8;
+                }
+
+                if (posY < 0.0f)
+                {
+                    dir = (u16)(dir + 0x8000);
+                }
+            }
+
+            if (m_fDesiredSpeed > 0.0f)
+            {
+                m_aDesiredFacingDirection = dir;
+            }
+            else
+            {
+                m_aDesiredFacingDirection = m_aActualFacingDirection;
+            }
+        }
+        else
+        {
+            mfTargetTime += fDeltaT;
+            m_fDesiredSpeed = 0.0f;
+            m_aDesiredFacingDirection = m_aActualFacingDirection;
+        }
+
+        {
+            bool bClamped = false;
+            float posX = m_v3Position.f.x;
+
+            float absX = (float)fabs(posX);
+            if (absX < cField::GetPenaltyBoxX(1U))
+            {
+                if (posX > 0.0f)
+                {
+                    m_aDesiredFacingDirection = 0;
+                }
+                else
+                {
+                    m_aDesiredFacingDirection = 0x8000;
+                }
+                bClamped = true;
+            }
+
+            float posY = m_v3Position.f.y;
+            float absY = (float)fabs(posY);
+            if (absY > cField::GetPenaltyBoxY())
+            {
+                u16 yDir;
+                if (posY > 0.0f)
+                {
+                    yDir = 0xC000;
+                }
+                else
+                {
+                    yDir = 0x4000;
+                }
+
+                if (bClamped)
+                {
+                    s16 diff = (s16)(yDir - m_aDesiredFacingDirection);
+                    m_aDesiredFacingDirection = (u16)(m_aDesiredFacingDirection + (s16)(diff * 0.5f));
+                }
+                else
+                {
+                    m_aDesiredFacingDirection = yDir;
+                }
+                bClamped = true;
+            }
+
+            if (bClamped)
+            {
+                if (m_fDesiredSpeed < 0.001f)
+                {
+                    m_fDesiredSpeed = m_pTweaks->fJoggingSpeed;
+                }
+            }
+        }
+
+        if (GetGlobalPad()->JustPressed(0x17, true))
+        {
+            m_pTeam->TogglePowerup(false);
+        }
+
+        if (GetGlobalPad()->JustPressed(0x1c, true))
+        {
+            m_eLastPadAction = (ePadActions)0x25;
+            InitActionPass(false);
+            return;
+        }
+
+        if (GetGlobalPad()->JustPressed(0x1b, true))
+        {
+            m_eLastPadAction = (ePadActions)0x25;
+            InitActionPass(true);
+            return;
+        }
+
+        if (mfTargetTime > 1.0f)
+        {
+            nlVector3 pos = m_v3Position;
+            float dist = nlGetLength3D(m_v3Position.f.x, m_v3Position.f.y, m_v3Position.f.z);
+            float invDist = -1.0f / dist;
+            float dirX = invDist * m_v3Position.f.x;
+            float dirY = invDist * m_v3Position.f.y;
+            float dirZ = invDist * m_v3Position.f.z;
+
+            pos.f.x = dirX;
+            pos.f.y = dirY;
+            pos.f.z = dirZ;
+
+            float dot = m_m4WorldMatrix.m[0][1] * dirY + m_m4WorldMatrix.m[0][0] * dirX + m_m4WorldMatrix.m[0][2] * dirZ;
+
+            if (dot > 0.5)
+            {
+                mfTargetTime = 0.0f;
+                PlayNewAnim(14);
+                InitMovementFromAnim(0, v3Zero, 1.0f, false);
+            }
+        }
+
+        if (m_fDesiredSpeed > 0.01f)
+        {
+            if (m_eAnimID == 0x1F)
+            {
+                return;
+            }
+
+            const int anims[] = { 0x21, 0x1F, 0x20 };
+
+            cPN_SingleAxisBlender* pBlender = CreateSingleAxisBlender(anims, 3, 1, RunWeightCB, 0.15f, NULL);
+
+            cPN_SAnimController* pPrev = NULL;
+            for (int i = 0; i < 3; i++)
+            {
+                cPN_SAnimController* pChild = (cPN_SAnimController*)pBlender->GetChild(i);
+                if (pPrev == NULL)
+                {
+                    pChild->m_fSynchronizedWeight = 0.0f;
+                }
+                else
+                {
+                    pChild->m_bIsSynchronized = true;
+                    pPrev->m_pSynchronizedController = pChild;
+                }
+                pPrev = pChild;
+            }
+
+            cPN_Blender* pNewBlender = AllocateBlender();
+            if (pNewBlender != NULL)
+            {
+                pNewBlender = new ((u8*)pNewBlender) cPN_Blender(*m_pAILayer, pBlender, 0.1f);
+            }
+            *m_pAILayer = pNewBlender;
+            InitMovementFromAnimSeek(60000.0f, 4000.0f);
+        }
+        else
+        {
+            if (m_eAnimID == 0x0E)
+            {
+                return;
+            }
+            PlayNewAnim(9);
+            InitMovementFromAnim(0, v3Zero, 1.0f, false);
+        }
+        return;
+    }
+
+no_pad:
+    mfWaitTime = 0.0f;
+
+    switch (mnSubstate)
+    {
+    case 0:
+        mnSubstate = 4;
+        return;
+
+    case 5:
+    {
+        bool isAnimDone = false;
+        cPN_SAnimController* pCtrl = m_pCurrentAnimController;
+        if (pCtrl->m_ePlayMode == PM_HOLD)
+        {
+            if (1.0f == pCtrl->m_fTime)
+            {
+                isAnimDone = true;
+            }
+        }
+        if (!isAnimDone)
+        {
+            return;
+        }
+        mnSubstate = 4;
+        return;
+    }
+
+    case 4:
+    {
+        float posY = m_v3Position.f.y;
+        float posX = m_v3Position.f.x;
+        float angle = nlATan2f(-posY, -posX);
+        m_aDesiredFacingDirection = (u16)(s32)(10430.378f * angle);
+
+        float absX = (float)fabs(m_v3Position.f.x);
+        float goalLineX = cField::GetGoalLineX(1U);
+        if (absX <= goalLineX - 3.0f)
+        {
+            s16 diff = (s16)(m_aDesiredFacingDirection - m_aActualFacingDirection);
+            if (diff < 0)
+            {
+                diff = -diff;
+            }
+            if ((u16)diff <= 0xDAC)
+            {
+                mnSubstate = 7;
+                return;
+            }
+        }
+
+        m_fDesiredSpeed = m_pTweaks->fRunningSpeed;
+
+        if (m_eAnimID == 0x1F)
+        {
+            return;
+        }
+
+        {
+            const int anims[] = { 0x21, 0x1F, 0x20 };
+
+            cPN_SingleAxisBlender* pBlender = CreateSingleAxisBlender(anims, 3, 1, RunWeightCB, 0.15f, NULL);
+
+            cPN_SAnimController* pPrev = NULL;
+            for (int i = 0; i < 3; i++)
+            {
+                cPN_SAnimController* pChild = (cPN_SAnimController*)pBlender->GetChild(i);
+                if (pPrev == NULL)
+                {
+                    pChild->m_fSynchronizedWeight = 0.0f;
+                }
+                else
+                {
+                    pChild->m_bIsSynchronized = true;
+                    pPrev->m_pSynchronizedController = pChild;
+                }
+                pPrev = pChild;
+            }
+
+            cPN_Blender* pNewBlender = AllocateBlender();
+            if (pNewBlender != NULL)
+            {
+                pNewBlender = new ((u8*)pNewBlender) cPN_Blender(*m_pAILayer, pBlender, 0.1f);
+            }
+            *m_pAILayer = pNewBlender;
+            InitMovementFromAnimSeek(60000.0f, 4000.0f);
+        }
+        return;
+    }
+
+    case 7:
+        InitActionPass(true);
+        return;
+
+    default:
+        return;
+    }
 }
 
 /**
@@ -1080,7 +1943,7 @@ void Goalie::ActionPreCrouch(float deltaTime)
 
 /**
  * Offset/Address/Size: 0xF9C | 0x8004F4D8 | size: 0x3C0
- * TODO: 98.81% match - f4/f6, f5/f7 register swap in distance section (CalculateDistanceSquared2D interleaving)
+ * TODO: 99.85% match - f10/f2 register swap for dx4 subtraction in dist4Sq CalculateDistanceSquared2D
  */
 void Goalie::ActionPursueBallCarrier(float)
 {
@@ -1154,9 +2017,11 @@ void Goalie::ActionPursueBallCarrier(float)
         nlVector3 opponentLocalPos;
         GetLocalPoint(opponentLocalPos, pOwnerFielder->m_v3Position, m_v3Position, m_aActualFacingDirection);
 
-        float dist3Sq = mv3LocalContactPosition.GetLengthSq2D();
+        float dist3x = mv3LocalContactPosition.f.x * mv3LocalContactPosition.f.x;
         float dist1Sq = CalculateDistanceSquared2D(mv3LocalContactPosition, mpLooseBallInfo->mv3PickupPos);
+        float dist3y = mv3LocalContactPosition.f.y * mv3LocalContactPosition.f.y;
         float dist2Sq = CalculateDistanceSquared2D(opponentLocalPos, mpLooseBallInfo->mv3PickupPos);
+        float dist3Sq = dist3x + dist3y;
         float dist4Sq = CalculateDistanceSquared2D(pOwnerFielder->m_v3Position, m_v3Position);
 
         if ((mv3LocalContactPosition.f.x < -0.35f) || (dist1Sq > 0.36f && dist2Sq > 0.36f && dist3Sq > pickupDistanceSq && dist4Sq > pickupDistanceSq))

@@ -390,17 +390,6 @@ void SetupRenderInfo()
 /**
  * Offset/Address/Size: 0x950 | 0x8016F030 | size: 0x718
  */
-void DrawSafeFrame()
-{
-    FORCE_DONT_INLINE;
-}
-
-/**
- * Offset/Address/Size: 0x410 | 0x8016EAF0 | size: 0x540
- * TODO: 98.62% match - stack offset diffs (0x18) on nlVector3 vars; MWCC not
- * generating ~GLMeshWriterCore() destructor cleanup, causing stack slot reuse
- * where target has 3 separate mesh/streams allocations
- */
 static inline void meshTexcoord(GLMeshWriterCore& w, const nlVector2& tc)
 {
     w.Texcoord(tc);
@@ -411,6 +400,182 @@ static inline void meshVertex(GLMeshWriterCore& w, const nlVector3& v)
     w.Vertex(v);
 }
 
+void DrawSafeFrame()
+{
+    extern u32 glx_GetScaledXFBWidth();
+
+    nlColour safeFrameColour = { 0x40, 0xFF, 0x40, 0xFF };
+    int offset = (glx_GetScaledXFBWidth() - 640) / 2;
+    int leftEdge = offset + 16;
+    int rightEdge = 624 - offset;
+
+    {
+        GLMeshWriter mesh;
+        eGLStream streams[] = { GLStream_Position, GLStream_Colour, GLStream_Diffuse };
+        glSetDefaultState(false);
+        glSetCurrentTexture(glGetTexture("global/white"), GLTT_Diffuse);
+        glSetCurrentProgram(glGetProgram("2d unlit"));
+
+        if (mesh.Begin(2, GLP_LineList, 3, streams, false))
+        {
+            nlVector2 tc;
+            tc.f.x = 0.0f;
+            tc.f.y = 0.0f;
+            meshTexcoord(mesh, tc);
+            mesh.Colour(safeFrameColour);
+
+            nlVector3 v;
+            v.f.x = (float)leftEdge;
+            v.f.y = 30.0f;
+            v.f.z = 0.0f;
+            meshVertex(mesh, v);
+
+            nlVector2 tc2;
+            tc2.f.x = 0.0f;
+            tc2.f.y = 0.0f;
+            meshTexcoord(mesh, tc2);
+            mesh.Colour(safeFrameColour);
+
+            nlVector3 v2;
+            v2.f.x = (float)rightEdge;
+            v2.f.y = 30.0f;
+            v2.f.z = 0.0f;
+            meshVertex(mesh, v2);
+
+            if (mesh.End())
+            {
+                glViewAttachModel(GLV_Debug, 6, mesh.GetModel());
+            }
+        }
+    }
+
+    {
+        GLMeshWriter mesh;
+        eGLStream streams[] = { GLStream_Position, GLStream_Colour, GLStream_Diffuse };
+        glSetDefaultState(false);
+        glSetCurrentTexture(glGetTexture("global/white"), GLTT_Diffuse);
+        glSetCurrentProgram(glGetProgram("2d unlit"));
+
+        if (mesh.Begin(2, GLP_LineList, 3, streams, false))
+        {
+            nlVector2 tc;
+            tc.f.x = 0.0f;
+            tc.f.y = 0.0f;
+            meshTexcoord(mesh, tc);
+            mesh.Colour(safeFrameColour);
+
+            nlVector3 v;
+            v.f.x = (float)leftEdge;
+            v.f.y = 450.0f;
+            v.f.z = 0.0f;
+            meshVertex(mesh, v);
+
+            nlVector2 tc2;
+            tc2.f.x = 0.0f;
+            tc2.f.y = 0.0f;
+            meshTexcoord(mesh, tc2);
+            mesh.Colour(safeFrameColour);
+
+            nlVector3 v2;
+            v2.f.x = (float)rightEdge;
+            v2.f.y = 450.0f;
+            v2.f.z = 0.0f;
+            meshVertex(mesh, v2);
+
+            if (mesh.End())
+            {
+                glViewAttachModel(GLV_Debug, 6, mesh.GetModel());
+            }
+        }
+    }
+
+    {
+        GLMeshWriter mesh;
+        eGLStream streams[] = { GLStream_Position, GLStream_Colour, GLStream_Diffuse };
+        glSetDefaultState(false);
+        glSetCurrentTexture(glGetTexture("global/white"), GLTT_Diffuse);
+        glSetCurrentProgram(glGetProgram("2d unlit"));
+
+        if (mesh.Begin(2, GLP_LineList, 3, streams, false))
+        {
+            nlVector2 tc;
+            tc.f.x = 0.0f;
+            tc.f.y = 0.0f;
+            meshTexcoord(mesh, tc);
+            mesh.Colour(safeFrameColour);
+
+            nlVector3 v;
+            v.f.x = (float)leftEdge;
+            v.f.y = 30.0f;
+            v.f.z = 0.0f;
+            meshVertex(mesh, v);
+
+            nlVector2 tc2;
+            tc2.f.x = 0.0f;
+            tc2.f.y = 0.0f;
+            meshTexcoord(mesh, tc2);
+            mesh.Colour(safeFrameColour);
+
+            nlVector3 v2;
+            v2.f.x = (float)leftEdge;
+            v2.f.y = 450.0f;
+            v2.f.z = 0.0f;
+            meshVertex(mesh, v2);
+
+            if (mesh.End())
+            {
+                glViewAttachModel(GLV_Debug, 6, mesh.GetModel());
+            }
+        }
+    }
+
+    {
+        GLMeshWriter mesh;
+        eGLStream streams[] = { GLStream_Position, GLStream_Colour, GLStream_Diffuse };
+        glSetDefaultState(false);
+        glSetCurrentTexture(glGetTexture("global/white"), GLTT_Diffuse);
+        glSetCurrentProgram(glGetProgram("2d unlit"));
+
+        if (mesh.Begin(2, GLP_LineList, 3, streams, false))
+        {
+            nlVector2 tc;
+            tc.f.x = 0.0f;
+            tc.f.y = 0.0f;
+            meshTexcoord(mesh, tc);
+            mesh.Colour(safeFrameColour);
+
+            nlVector3 v;
+            v.f.x = (float)rightEdge;
+            v.f.y = 30.0f;
+            v.f.z = 0.0f;
+            meshVertex(mesh, v);
+
+            nlVector2 tc2;
+            tc2.f.x = 0.0f;
+            tc2.f.y = 0.0f;
+            meshTexcoord(mesh, tc2);
+            mesh.Colour(safeFrameColour);
+
+            nlVector3 v2;
+            v2.f.x = (float)rightEdge;
+            v2.f.y = 450.0f;
+            v2.f.z = 0.0f;
+            meshVertex(mesh, v2);
+
+            if (mesh.End())
+            {
+                glViewAttachModel(GLV_Debug, 6, mesh.GetModel());
+            }
+        }
+    }
+}
+
+/**
+ * Offset/Address/Size: 0x410 | 0x8016EAF0 | size: 0x540
+ * TODO: 98.62% match - stack offset diffs (0x18) on nlVector3 vars; MWCC not
+ * generating ~GLMeshWriterCore() destructor cleanup, causing stack slot reuse
+ * where target has 3 separate mesh/streams allocations
+ */
 void DrawGrid(int spacing)
 {
     nlColour gridColour = { 0x40, 0x40, 0xFF, 0xFF };

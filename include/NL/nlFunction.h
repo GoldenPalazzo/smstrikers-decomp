@@ -155,9 +155,8 @@ public:
     Function(const BindType& bind)
     {
         typedef typename Function1<void, T>::template FunctorImpl<BindType> ImplType;
-        ImplType* impl = new (nlMalloc(sizeof(ImplType), 8, false)) ImplType(bind);
         mTag = FUNCTOR;
-        mFunctor = impl;
+        mFunctor = new (nlMalloc(sizeof(ImplType), 8, false)) ImplType(bind);
     }
 
     ~Function()
@@ -203,9 +202,8 @@ public:
     Function(const BindType& bind)
     {
         typedef typename Function1<R, P>::template FunctorImpl<BindType> ImplType;
-        ImplType* impl = new (nlMalloc(sizeof(ImplType), 8, false)) ImplType(bind);
         mTag = FUNCTOR;
-        mFunctor = impl;
+        mFunctor = new (nlMalloc(sizeof(ImplType), 8, false)) ImplType(bind);
     }
 
     ~Function()

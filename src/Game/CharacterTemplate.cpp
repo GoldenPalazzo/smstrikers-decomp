@@ -35,6 +35,9 @@ extern SoundPropAccessor* gpSUPERSoundPropAccessor;
 extern SoundPropAccessor* gpCRITTERSoundPropAccessor;
 
 extern SebringAnimTagScriptInterpreter* g_pAnimScriptInterp;
+extern "C" cAnimInventory* __dt__14cAnimInventoryFv(cAnimInventory*, int);
+extern "C" SlotPoolBase m_AnimTriggerCallbackInfoSlotPool__23AnimTriggerCallbackInfo;
+extern "C" SlotPoolBase m_ScriptActionSlotPool__12ScriptAction;
 
 cCharacter* g_pCharacters[10];
 static tCharacterTemplateInfo g_aCharacterTemplateInfo[13];
@@ -124,9 +127,221 @@ s32 GetCharacterIndex(const cCharacter* character)
 
 /**
  * Offset/Address/Size: 0x294 | 0x8001257C | size: 0x6C0
+ * TODO: 96.47% match - register allocation differences and callback literal-pool/address diffs
+ * across inventory cleanup paths.
  */
 void DestroyCharacters()
 {
+    typedef ListContainerBase<cSHierarchy*, NewAdapter<ListEntry<cSHierarchy*> > > HierListBase;
+    typedef ListContainerBase<char*, NewAdapter<ListEntry<char*> > > FileListBase;
+    typedef ListContainerBase<AnimRetargetList*, NewAdapter<ListEntry<AnimRetargetList*> > > RetargetListBase;
+
+    int i;
+
+    if (g_pAnimScriptInterp != NULL)
+    {
+        delete g_pAnimScriptInterp;
+    }
+    g_pAnimScriptInterp = NULL;
+
+    cCharacter** pCharacter = g_pCharacters;
+    for (i = 0; i < 10; i++, pCharacter++)
+    {
+        if (*pCharacter != NULL)
+        {
+            delete *pCharacter;
+        }
+        *pCharacter = NULL;
+    }
+
+    tCharacterTemplate** ppCharacterTemplate = g_aCharacterTemplates;
+    for (i = 0; i < 13; i++, ppCharacterTemplate++)
+    {
+        if (*ppCharacterTemplate != NULL)
+        {
+            cInventory<cSHierarchy>* pHierInv = (*ppCharacterTemplate)->pHierarchyInventory;
+            if (pHierInv != NULL)
+            {
+                ListEntry<cSHierarchy*>* hierEntry = pHierInv->m_lItemList.m_Head;
+                while (hierEntry != NULL)
+                {
+                    hierEntry = hierEntry->next;
+                }
+
+                void (HierListBase::*cbHier)(ListEntry<cSHierarchy*>*) = &HierListBase::DeleteEntry;
+                nlWalkList(pHierInv->m_lItemList.m_Head, (HierListBase*)pHierInv, cbHier);
+
+                ListEntry<char*>** pTail = &pHierInv->m_lMemList.m_Tail;
+                pHierInv->m_lItemList.m_Head = NULL;
+                ListEntry<char*>** pHead = &pHierInv->m_lMemList.m_Head;
+                pHierInv->m_lItemList.m_Tail = NULL;
+
+                while (pHierInv->m_lMemList.m_Head != NULL)
+                {
+                    ListEntry<char*>* first = nlListRemoveStart<ListEntry<char*> >(pHead, pTail);
+                    void* mesh;
+                    if (&mesh != NULL)
+                    {
+                        mesh = first->data;
+                    }
+                    ::operator delete(first);
+                    ::operator delete(mesh);
+                }
+
+                pHierInv->m_nItemCount = 0;
+                pHierInv->m_lMemList.~nlListContainer();
+                pHierInv->m_lItemList.~nlListContainer();
+                ::operator delete(pHierInv);
+            }
+
+            if (!(*ppCharacterTemplate)->bAnimInventoryCopy)
+            {
+                __dt__14cAnimInventoryFv((*ppCharacterTemplate)->pAnimInventory, 1);
+            }
+
+            if ((*ppCharacterTemplate)->pPhysicsData != NULL)
+            {
+                delete (*ppCharacterTemplate)->pPhysicsData;
+            }
+
+            cInventory<AnimRetargetList>* pRetInv = (*ppCharacterTemplate)->pAnimRetargetListInventory;
+            if (pRetInv != NULL)
+            {
+                ListEntry<AnimRetargetList*>* retEntry = pRetInv->m_lItemList.m_Head;
+                while (retEntry != NULL)
+                {
+                    retEntry = retEntry->next;
+                }
+
+                void (RetargetListBase::*cbRet)(ListEntry<AnimRetargetList*>*) = &RetargetListBase::DeleteEntry;
+                nlWalkList(pRetInv->m_lItemList.m_Head, (RetargetListBase*)pRetInv, cbRet);
+
+                ListEntry<char*>** pTail2 = &pRetInv->m_lMemList.m_Tail;
+                pRetInv->m_lItemList.m_Head = NULL;
+                ListEntry<char*>** pHead2 = &pRetInv->m_lMemList.m_Head;
+                pRetInv->m_lItemList.m_Tail = NULL;
+
+                while (pRetInv->m_lMemList.m_Head != NULL)
+                {
+                    ListEntry<char*>* first = nlListRemoveStart<ListEntry<char*> >(pHead2, pTail2);
+                    void* mesh;
+                    if (&mesh != NULL)
+                    {
+                        mesh = first->data;
+                    }
+                    ::operator delete(first);
+                    ::operator delete(mesh);
+                }
+
+                pRetInv->m_nItemCount = 0;
+                pRetInv->m_lMemList.~nlListContainer();
+                pRetInv->m_lItemList.~nlListContainer();
+                ::operator delete(pRetInv);
+            }
+
+            ::operator delete(*ppCharacterTemplate);
+            *ppCharacterTemplate = NULL;
+        }
+    }
+
+    if (g_GoalieTemplate != NULL)
+    {
+        cInventory<cSHierarchy>* pHierInv = g_GoalieTemplate->pHierarchyInventory;
+        if (pHierInv != NULL)
+        {
+            ListEntry<cSHierarchy*>* hierEntry = pHierInv->m_lItemList.m_Head;
+            while (hierEntry != NULL)
+            {
+                hierEntry = hierEntry->next;
+            }
+
+            void (HierListBase::*cbHier)(ListEntry<cSHierarchy*>*) = &HierListBase::DeleteEntry;
+            nlWalkList(pHierInv->m_lItemList.m_Head, (HierListBase*)pHierInv, cbHier);
+
+            ListEntry<char*>** pTail = &pHierInv->m_lMemList.m_Tail;
+            pHierInv->m_lItemList.m_Head = NULL;
+            ListEntry<char*>** pHead = &pHierInv->m_lMemList.m_Head;
+            pHierInv->m_lItemList.m_Tail = NULL;
+
+            while (pHierInv->m_lMemList.m_Head != NULL)
+            {
+                ListEntry<char*>* first = nlListRemoveStart<ListEntry<char*> >(pHead, pTail);
+                void* mesh;
+                if (&mesh != NULL)
+                {
+                    mesh = first->data;
+                }
+                ::operator delete(first);
+                ::operator delete(mesh);
+            }
+
+            pHierInv->m_nItemCount = 0;
+            pHierInv->m_lMemList.~nlListContainer();
+            pHierInv->m_lItemList.~nlListContainer();
+            ::operator delete(pHierInv);
+        }
+
+        if (!g_GoalieTemplate->bAnimInventoryCopy)
+        {
+            __dt__14cAnimInventoryFv(g_GoalieTemplate->pAnimInventory, 1);
+        }
+
+        if (g_GoalieTemplate->pPhysicsData != NULL)
+        {
+            delete g_GoalieTemplate->pPhysicsData;
+        }
+
+        cInventory<AnimRetargetList>* pRetInv = g_GoalieTemplate->pAnimRetargetListInventory;
+        if (pRetInv != NULL)
+        {
+            ListEntry<AnimRetargetList*>* retEntry = pRetInv->m_lItemList.m_Head;
+            while (retEntry != NULL)
+            {
+                retEntry = retEntry->next;
+            }
+
+            void (RetargetListBase::*cbRet)(ListEntry<AnimRetargetList*>*) = &RetargetListBase::DeleteEntry;
+            nlWalkList(pRetInv->m_lItemList.m_Head, (RetargetListBase*)pRetInv, cbRet);
+
+            ListEntry<char*>** pTail2 = &pRetInv->m_lMemList.m_Tail;
+            pRetInv->m_lItemList.m_Head = NULL;
+            ListEntry<char*>** pHead2 = &pRetInv->m_lMemList.m_Head;
+            pRetInv->m_lItemList.m_Tail = NULL;
+
+            while (pRetInv->m_lMemList.m_Head != NULL)
+            {
+                ListEntry<char*>* first = nlListRemoveStart<ListEntry<char*> >(pHead2, pTail2);
+                void* mesh;
+                if (&mesh != NULL)
+                {
+                    mesh = first->data;
+                }
+                ::operator delete(first);
+                ::operator delete(mesh);
+            }
+
+            pRetInv->m_nItemCount = 0;
+            pRetInv->m_lMemList.~nlListContainer();
+            pRetInv->m_lItemList.~nlListContainer();
+            ::operator delete(pRetInv);
+        }
+
+        ::operator delete(g_GoalieTemplate);
+        g_GoalieTemplate = NULL;
+    }
+
+    g_GoalieTextureInfo[0].bLoaded = 0;
+    g_GoalieTextureInfo[1].bLoaded = 0;
+    g_GoalieTextureInfo[2].bLoaded = 0;
+    g_GoalieTextureInfo[3].bLoaded = 0;
+    g_GoalieTextureInfo[4].bLoaded = 0;
+    g_GoalieTextureInfo[5].bLoaded = 0;
+    g_GoalieTextureInfo[6].bLoaded = 0;
+    g_GoalieTextureInfo[7].bLoaded = 0;
+    g_GoalieTextureInfo[8].bLoaded = 0;
+
+    SlotPoolBase::BaseFreeBlocks(&m_AnimTriggerCallbackInfoSlotPool__23AnimTriggerCallbackInfo, 8);
+    SlotPoolBase::BaseFreeBlocks(&m_ScriptActionSlotPool__12ScriptAction, 0x80);
 }
 
 /**

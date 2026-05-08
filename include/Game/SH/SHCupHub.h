@@ -41,7 +41,7 @@ public:
     unsigned char UpdateLeague(float);
     unsigned char UpdateKnockout8(float);
     s32 UpdateKnockout4(float);
-    void UpdateKnockout2(float);
+    void UpdateKnockout2(float fDeltaT);
     void UpdateProgressIndicator();
     void ColourUserRow();
     void HandleButtonComponent();

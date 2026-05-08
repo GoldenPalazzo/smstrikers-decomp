@@ -394,8 +394,161 @@ void TournSetParamsScene::ApplyMenuDefaults()
 
 /**
  * Offset/Address/Size: 0x0 | 0x800DF9D4 | size: 0x6B0
+ * TODO: 87.87% match - remaining diffs are r29/r30 register allocation swaps
+ * in menu pointer/index handling and non-league preselection branch flow
+ * offsets.
  */
 void TournSetParamsScene::InitializeMenu()
 {
-    FORCE_DONT_INLINE;
+#define CALL_MENU_CB(cur, action)                              \
+    do                                                         \
+    {                                                          \
+        int tag = (cur)->mCallbacks[action].mTag;              \
+        if (((u32)((-tag) | tag) >> 31) > 0)                   \
+        {                                                      \
+            SlideMenuItem* type = (cur)->mType;                \
+            if (tag == FREE_FUNCTION)                          \
+            {                                                  \
+                (cur)->mCallbacks[action].mFreeFunction(type); \
+            }                                                  \
+            else                                               \
+            {                                                  \
+                (*(cur)->mCallbacks[action].mFunctor)(type);   \
+            }                                                  \
+        }                                                      \
+    } while (0)
+
+    if (!m_isLeagueMode)
+    {
+        SlideMenuList* menu = mSlideMenuLists[0];
+        int flags = menu->mFlags;
+        int wrapFlag = flags & 1;
+        int skipDisabled = flags & 2;
+        int currentIndex = menu->mCurrentIndex;
+        int newIndex = currentIndex - 1;
+
+        while (true)
+        {
+            if (wrapFlag)
+            {
+                if (newIndex < 0)
+                {
+                    newIndex = menu->mNumItemsAdded - 1;
+                }
+            }
+            else
+            {
+                if (newIndex < 0)
+                {
+                    break;
+                }
+            }
+
+            if (skipDisabled)
+            {
+                if (menu->mMenuItems[newIndex].mDisabled)
+                {
+                    newIndex--;
+                    continue;
+                }
+            }
+
+            MenuItem<SlideMenuItem>* cur = &menu->mMenuItems[currentIndex];
+            CALL_MENU_CB(cur, 2);
+            menu->mCurrentIndex = newIndex;
+            cur = &menu->mMenuItems[menu->mCurrentIndex];
+            CALL_MENU_CB(cur, 1);
+            break;
+        }
+
+        mMenuItems.mMenuItems[2].mDisabled = true;
+        mMenuItems.mMenuItems[2].mType->m_bVisible = false;
+
+        if (m_numTeams == 4)
+        {
+            menu = mSlideMenuLists[1];
+            MenuItem<SlideMenuItem>* cur = &menu->mMenuItems[menu->mCurrentIndex];
+            CALL_MENU_CB(cur, 2);
+            menu->mCurrentIndex = 1;
+            cur = &menu->mMenuItems[menu->mCurrentIndex];
+            CALL_MENU_CB(cur, 1);
+        }
+        else if (m_numTeams == 8)
+        {
+            menu = mSlideMenuLists[1];
+            MenuItem<SlideMenuItem>* cur = &menu->mMenuItems[menu->mCurrentIndex];
+            CALL_MENU_CB(cur, 2);
+            menu->mCurrentIndex = 5;
+            cur = &menu->mMenuItems[menu->mCurrentIndex];
+            CALL_MENU_CB(cur, 1);
+        }
+
+        menu = mSlideMenuLists[2];
+        MenuItem<SlideMenuItem>* cur = &menu->mMenuItems[menu->mCurrentIndex];
+        CALL_MENU_CB(cur, 2);
+        menu->mCurrentIndex = 0;
+        cur = &menu->mMenuItems[menu->mCurrentIndex];
+        CALL_MENU_CB(cur, 1);
+
+        mSlideMenuLists[2]->mMenuItems[mSlideMenuLists[2]->mCurrentIndex].mDisabled = true;
+        mSlideMenuLists[2]->mComponentInstance->m_bVisible = false;
+
+        unsigned char activestatetable[6] = { 1, 0, 1, 1, 1, 0 };
+        int i = 0;
+        for (int row = 0; row < 2; row++)
+        {
+            for (int col = 0; col < 3; col++)
+            {
+                MenuItem<SlideMenuItem>* item;
+                if (i == ON_INVALID)
+                {
+                    item = &mSlideMenuLists[1]->mMenuItems[mSlideMenuLists[1]->mCurrentIndex];
+                }
+                else
+                {
+                    item = &mSlideMenuLists[1]->mMenuItems[i];
+                }
+                item->mDisabled = activestatetable[row * 3 + col];
+                i++;
+            }
+        }
+    }
+    else
+    {
+        mMenuItems.mMenuItems[2].mDisabled = false;
+        mMenuItems.mMenuItems[2].mType->m_bVisible = true;
+
+        SlideMenuList* menu = mSlideMenuLists[1];
+        MenuItem<SlideMenuItem>* cur = &menu->mMenuItems[menu->mCurrentIndex];
+        CALL_MENU_CB(cur, 2);
+        menu->mCurrentIndex = m_numTeams - 3;
+        cur = &menu->mMenuItems[menu->mCurrentIndex];
+        CALL_MENU_CB(cur, 1);
+
+        menu = mSlideMenuLists[2];
+        cur = &menu->mMenuItems[menu->mCurrentIndex];
+        CALL_MENU_CB(cur, 2);
+        menu->mCurrentIndex = m_numGames - 1;
+        cur = &menu->mMenuItems[menu->mCurrentIndex];
+        CALL_MENU_CB(cur, 1);
+
+        mSlideMenuLists[2]->mMenuItems[mSlideMenuLists[2]->mCurrentIndex].mDisabled = false;
+        mSlideMenuLists[2]->mComponentInstance->m_bVisible = true;
+
+        for (int i = 0; i < mSlideMenuLists[1]->mNumItemsAdded; i++)
+        {
+            MenuItem<SlideMenuItem>* item;
+            if (i == ON_INVALID)
+            {
+                item = &mSlideMenuLists[1]->mMenuItems[mSlideMenuLists[1]->mCurrentIndex];
+            }
+            else
+            {
+                item = &mSlideMenuLists[1]->mMenuItems[i];
+            }
+            item->mDisabled = false;
+        }
+    }
+
+#undef CALL_MENU_CB
 }

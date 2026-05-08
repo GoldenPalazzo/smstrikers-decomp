@@ -7,6 +7,9 @@
 #include "types.h"
 #include <string.h>
 
+int nlSNPrintf(char*, unsigned long, const char*, ...);
+void nlBreak();
+
 static AsyncManager* s_pAsyncManager;
 static GCFileSystem fileSystem;
 
@@ -16,6 +19,7 @@ static Function<void(int)> g_HandleDVDRetryCB;
 static Function<FnVoidVoid> g_CheckForResetCB;
 
 static void AsyncToVirMemBufferCallback(nlFile*, void*, unsigned int, unsigned long);
+static unsigned char UpdateReadState(AsyncEntry*);
 
 static AsyncEntry* nlDLRingRemoveStartAsyncEntry(AsyncEntry** head)
 {
@@ -54,6 +58,7 @@ struct AsyncToVirMemBufferLoad
 } // namespace
 
 static AsyncToVirMemBufferLoad asyncToVirMemBufferLoad[4];
+static char readBuffer32ByteLength[32];
 static u8 asyncToVirMemBuffer[0x4000];
 
 /**
@@ -418,7 +423,7 @@ void nlServiceFileSystem()
             OSYieldThread();
         }
 
-        if (((bool (*)(AsyncEntry*))UpdateReadState)(entry))
+        if (UpdateReadState(entry))
         {
             nlDLRingRemove<AsyncEntry>(&manager->m_activeEntryList, entry);
             entry->m_pFile->PendingAsync.m_Count--;
@@ -694,7 +699,7 @@ loop_check:
             OSYieldThread();
         }
 
-        if (((bool (*)(AsyncEntry*))UpdateReadState)(entry))
+        if (UpdateReadState(entry))
         {
             nlDLRingRemove<AsyncEntry>(&manager->m_activeEntryList, entry);
             entry->m_pFile->PendingAsync.m_Count--;
@@ -875,7 +880,7 @@ static unsigned char GameCubeReadAsync(GCFile* pFile, ReadAsyncCallback callback
                     OSYieldThread();
                 }
 
-                if (((bool (*)(AsyncEntry*))UpdateReadState)(entry))
+                if (UpdateReadState(entry))
                 {
                     nlDLRingRemove<AsyncEntry>(&manager->m_activeEntryList, entry);
                     entry->m_pFile->PendingAsync.m_Count--;
@@ -1003,8 +1008,378 @@ static unsigned char GameCubeReadAsync(GCFile* pFile, ReadAsyncCallback callback
 /**
  * Offset/Address/Size: 0x1308 | 0x801D005C | size: 0x6E0
  */
-void UpdateReadState(AsyncEntry*)
+static unsigned char UpdateReadState(AsyncEntry* pEntry)
 {
+    extern void glxLoadSaveState(void);
+    extern void glxLoadRestoreState(void);
+    extern int nlSNPrintf(char*, unsigned long, const char*, ...);
+    extern void nlBreak(void);
+
+    long nStatus;
+    unsigned long uNumRead;
+    GCFile* pFile;
+    unsigned long readSize;
+
+    pFile = pEntry->m_pFile;
+
+    while (true)
+    {
+        switch (pEntry->Phase)
+        {
+        case eRS_ISSUE_HEAD_READ:
+            uNumRead = pEntry->ReadNumBytes & ~31;
+            if (uNumRead >= 0x20)
+            {
+                pFile->ReadAsync(pEntry->m_pBuffer, uNumRead, pEntry->m_uPosition);
+                pEntry->Phase = eRS_WAIT_HEAD_READ;
+            }
+            else
+            {
+                pEntry->Phase = eRS_ISSUE_TAIL_READ;
+            }
+            break;
+
+        case eRS_WAIT_HEAD_READ:
+            nStatus = pFile->GetReadStatus();
+            if (nStatus == DVD_STATE_BUSY)
+            {
+                return 0;
+            }
+
+            if (nStatus == DVD_STATE_END)
+            {
+                readSize = pEntry->ReadNumBytes & ~31;
+                pEntry->m_uPosition += readSize;
+                pEntry->m_pBuffer = (char*)pEntry->m_pBuffer + readSize;
+                pEntry->Phase = eRS_ISSUE_TAIL_READ;
+                break;
+            }
+
+            {
+                u8 loadedSaveState = 0;
+
+                while (true)
+                {
+                    s32 driveStatus = DVDGetDriveStatus();
+                    u32 statusPlusOne = (u32)(driveStatus + 1);
+
+                    if (statusPlusOne <= 12)
+                    {
+                        switch (statusPlusOne)
+                        {
+                        case DVD_STATE_FATAL_ERROR + 1:
+                        case DVD_STATE_NO_DISK + 1:
+                        case DVD_STATE_COVER_OPEN + 1:
+                        case DVD_STATE_WRONG_DISK + 1:
+                        case DVD_STATE_RETRY + 1:
+                            if (!loadedSaveState)
+                            {
+                                glxLoadSaveState();
+                            }
+
+                            if (g_HandleDVDMessageCallback.mTag == 1)
+                            {
+                                g_HandleDVDMessageCallback.mFreeFunction(driveStatus);
+                            }
+                            else
+                            {
+                                (*g_HandleDVDMessageCallback.mFunctor)(driveStatus);
+                            }
+
+                            loadedSaveState = 1;
+
+                            while (driveStatus == DVDGetDriveStatus())
+                            {
+                                OSYieldThread();
+
+                                if (g_CheckForResetCB.mTag != 0)
+                                {
+                                    if (g_CheckForResetCB.mTag == 1)
+                                    {
+                                        g_CheckForResetCB.mFreeFunction();
+                                    }
+                                    else
+                                    {
+                                        g_CheckForResetCB.mFunctor->operator()();
+                                    }
+                                }
+                            }
+                            break;
+
+                        case DVD_STATE_BUSY + 1:
+                            if (loadedSaveState)
+                            {
+                                if (g_HandleDVDRetryCB.mTag != 0)
+                                {
+                                    if (g_HandleDVDRetryCB.mTag == 1)
+                                    {
+                                        g_HandleDVDRetryCB.mFreeFunction(1);
+                                    }
+                                    else
+                                    {
+                                        (*g_HandleDVDRetryCB.mFunctor)(1);
+                                    }
+                                }
+
+                                while (DVDGetDriveStatus() == DVD_STATE_BUSY)
+                                {
+                                    OSYieldThread();
+
+                                    if (g_CheckForResetCB.mTag != 0)
+                                    {
+                                        if (g_CheckForResetCB.mTag == 1)
+                                        {
+                                            g_CheckForResetCB.mFreeFunction();
+                                        }
+                                        else
+                                        {
+                                            g_CheckForResetCB.mFunctor->operator()();
+                                        }
+                                    }
+                                }
+                            }
+                            break;
+
+                        default:
+                            break;
+                        }
+                    }
+
+                    if ((driveStatus == DVD_STATE_END) || (driveStatus == DVD_STATE_FATAL_ERROR))
+                    {
+                        break;
+                    }
+                }
+
+                if (loadedSaveState)
+                {
+                    glxLoadRestoreState();
+                }
+
+                while (true)
+                {
+                    char message[0x100];
+
+                    nStatus = pFile->GetReadStatus();
+                    if ((nStatus >= 0) && (nStatus < 3))
+                    {
+                        break;
+                    }
+
+                    nlSNPrintf(message, 0x100, "Read error %d. File start addr %d\n", nStatus, pFile->GetDiscPosition());
+                    OSReport(message);
+                    nlBreak();
+
+                    if (g_CheckForResetCB.mTag != 0)
+                    {
+                        if (g_CheckForResetCB.mTag == 1)
+                        {
+                            g_CheckForResetCB.mFreeFunction();
+                        }
+                        else
+                        {
+                            g_CheckForResetCB.mFunctor->operator()();
+                        }
+                    }
+
+                    OSYieldThread();
+                }
+
+                if (loadedSaveState && (g_HandleDVDAllClearCallback.mTag != 0))
+                {
+                    if (g_HandleDVDAllClearCallback.mTag == 1)
+                    {
+                        g_HandleDVDAllClearCallback.mFreeFunction(0);
+                    }
+                    else
+                    {
+                        (*g_HandleDVDAllClearCallback.mFunctor)(0);
+                    }
+                }
+            }
+            return 0;
+
+        case eRS_ISSUE_TAIL_READ:
+            uNumRead = pEntry->ReadNumBytes & ~31;
+            if ((pEntry->ReadNumBytes - uNumRead) != 0)
+            {
+                pFile->ReadAsync(readBuffer32ByteLength, 0x20, pEntry->m_uPosition);
+                pEntry->Phase = eRS_WAIT_TAIL_READ;
+            }
+            else
+            {
+                pEntry->Phase = eRS_READ_COMPLETE;
+            }
+            break;
+
+        case eRS_WAIT_TAIL_READ:
+            nStatus = pFile->GetReadStatus();
+            if (nStatus == DVD_STATE_BUSY)
+            {
+                return 0;
+            }
+
+            if (nStatus == DVD_STATE_END)
+            {
+                uNumRead = pEntry->ReadNumBytes - (pEntry->ReadNumBytes & ~31);
+                memcpy(pEntry->m_pBuffer, readBuffer32ByteLength, uNumRead);
+                pEntry->m_pBuffer = (char*)pEntry->m_pBuffer + uNumRead;
+                pEntry->m_uPosition += uNumRead;
+                pEntry->Phase = eRS_READ_COMPLETE;
+                break;
+            }
+
+            {
+                u8 loadedSaveState = 0;
+
+                while (true)
+                {
+                    s32 driveStatus = DVDGetDriveStatus();
+                    u32 statusPlusOne = (u32)(driveStatus + 1);
+
+                    if (statusPlusOne <= 12)
+                    {
+                        switch (statusPlusOne)
+                        {
+                        case DVD_STATE_FATAL_ERROR + 1:
+                        case DVD_STATE_NO_DISK + 1:
+                        case DVD_STATE_COVER_OPEN + 1:
+                        case DVD_STATE_WRONG_DISK + 1:
+                        case DVD_STATE_RETRY + 1:
+                            if (!loadedSaveState)
+                            {
+                                glxLoadSaveState();
+                            }
+
+                            if (g_HandleDVDMessageCallback.mTag == 1)
+                            {
+                                g_HandleDVDMessageCallback.mFreeFunction(driveStatus);
+                            }
+                            else
+                            {
+                                (*g_HandleDVDMessageCallback.mFunctor)(driveStatus);
+                            }
+
+                            loadedSaveState = 1;
+
+                            while (driveStatus == DVDGetDriveStatus())
+                            {
+                                OSYieldThread();
+
+                                if (g_CheckForResetCB.mTag != 0)
+                                {
+                                    if (g_CheckForResetCB.mTag == 1)
+                                    {
+                                        g_CheckForResetCB.mFreeFunction();
+                                    }
+                                    else
+                                    {
+                                        g_CheckForResetCB.mFunctor->operator()();
+                                    }
+                                }
+                            }
+                            break;
+
+                        case DVD_STATE_BUSY + 1:
+                            if (loadedSaveState)
+                            {
+                                if (g_HandleDVDRetryCB.mTag != 0)
+                                {
+                                    if (g_HandleDVDRetryCB.mTag == 1)
+                                    {
+                                        g_HandleDVDRetryCB.mFreeFunction(1);
+                                    }
+                                    else
+                                    {
+                                        (*g_HandleDVDRetryCB.mFunctor)(1);
+                                    }
+                                }
+
+                                while (DVDGetDriveStatus() == DVD_STATE_BUSY)
+                                {
+                                    OSYieldThread();
+
+                                    if (g_CheckForResetCB.mTag != 0)
+                                    {
+                                        if (g_CheckForResetCB.mTag == 1)
+                                        {
+                                            g_CheckForResetCB.mFreeFunction();
+                                        }
+                                        else
+                                        {
+                                            g_CheckForResetCB.mFunctor->operator()();
+                                        }
+                                    }
+                                }
+                            }
+                            break;
+
+                        default:
+                            break;
+                        }
+                    }
+
+                    if ((driveStatus == DVD_STATE_END) || (driveStatus == DVD_STATE_FATAL_ERROR))
+                    {
+                        break;
+                    }
+                }
+
+                if (loadedSaveState)
+                {
+                    glxLoadRestoreState();
+                }
+
+                while (true)
+                {
+                    char message[0x100];
+
+                    nStatus = pFile->GetReadStatus();
+                    if ((nStatus >= 0) && (nStatus < 3))
+                    {
+                        break;
+                    }
+
+                    nlSNPrintf(message, 0x100, "Read error %d. File start addr %d\n", nStatus, pFile->GetDiscPosition());
+                    OSReport(message);
+                    nlBreak();
+
+                    if (g_CheckForResetCB.mTag != 0)
+                    {
+                        if (g_CheckForResetCB.mTag == 1)
+                        {
+                            g_CheckForResetCB.mFreeFunction();
+                        }
+                        else
+                        {
+                            g_CheckForResetCB.mFunctor->operator()();
+                        }
+                    }
+
+                    OSYieldThread();
+                }
+
+                if (loadedSaveState && (g_HandleDVDAllClearCallback.mTag != 0))
+                {
+                    if (g_HandleDVDAllClearCallback.mTag == 1)
+                    {
+                        g_HandleDVDAllClearCallback.mFreeFunction(0);
+                    }
+                    else
+                    {
+                        (*g_HandleDVDAllClearCallback.mFunctor)(0);
+                    }
+                }
+            }
+            return 0;
+
+        case eRS_READ_COMPLETE:
+            return 1;
+
+        default:
+            return 0;
+        }
+    }
 }
 
 /**

@@ -15,6 +15,27 @@
 #include "NL/gl/glState.h"
 #include "NL/glx/glxTexture.h"
 
+namespace Audio
+{
+enum eWorldSFX
+{
+    WORLDSFX_DUMMY = 0,
+};
+
+class cWorldSFX : public cGameSFX
+{
+public:
+    void Stop(eWorldSFX, cGameSFX::StopFlag);
+    unsigned long Play(Audio::SoundAttributes&);
+    unsigned long Play(Audio::eWorldSFX, float, float, bool, float);
+};
+
+extern cWorldSFX gPowerupSFX;
+extern cWorldSFX gStadGenSFX;
+} // namespace Audio
+
+void FireCameraRumbleFilter(float, float);
+
 static unsigned char gbChainChompProjectedShadow;
 
 const nlVector3 v3Zero = { 0.0f, 0.0f, 0.0f };
@@ -38,8 +59,254 @@ ChainChomp::~ChainChomp()
 /**
  * Offset/Address/Size: 0xAA8 | 0x8015E7AC | size: 0x7B4
  */
-void ChainChomp::Update(float)
+void ChainChomp::Update(float fDeltaT)
 {
+    switch (meChainChompState)
+    {
+    case CHAIN_STATE_FALL:
+        if (mtStateTimer.m_uPackedTime == 0)
+        {
+            break;
+        }
+
+        if (mpTarget != NULL)
+        {
+            maDesiredFacingDirection = (u16)(s32)(10430.378f * nlATan2f(mpTarget->m_v3Position.f.y - mv3Position.f.y, mpTarget->m_v3Position.f.x - mv3Position.f.x));
+        }
+
+        Move(fDeltaT);
+
+        if (mtStateTimer.Countdown(fDeltaT, 0.0f))
+        {
+            meChainChompState = CHAIN_STATE_RECOVER;
+            SetAnimState(*mpRecoverAnim, 0.0f, PM_HOLD);
+
+            nlVector3 v3NewPosition = mv3Position;
+            v3NewPosition.f.z = 0.0f;
+            SetPosition(v3NewPosition);
+            mv3Velocity = v3Zero;
+
+            Event* pEvent = g_pEventManager->CreateValidEvent(0x33, 0x1C);
+            ShotAtGoalData* pData = new ((u8*)pEvent + 0x10) ShotAtGoalData();
+            pData->pShooter = mpThrower;
+        }
+        break;
+
+    case CHAIN_STATE_RECOVER:
+        if (mpAnimController->m_fTime < 0.625)
+        {
+            nlVector3 v3NewPosition = mpTarget->m_v3Position;
+            v3NewPosition.f.z = 0.0f;
+            SetPosition(v3NewPosition);
+        }
+
+        if (mpAnimController->TestTrigger(0.75f))
+        {
+            Audio::gPowerupSFX.Stop((Audio::eWorldSFX)0x8D, cGameSFX::SFX_STOP_FIRST);
+            mpPhysObj->EnableCollisions();
+
+            EmissionController* pControl = EmissionManager::Create(fxGetGroup("chainchomp_land"), 0);
+            pControl->SetPosition(mv3Position);
+
+            PowerupBase::PlayPowerupSound(POWER_UP_CHAIN_CHOMP, PowerupBase::PWRUP_SOUND_BOUNCE_GROUND, mpPhysObj, 100.0f);
+            Audio::gStadGenSFX.Play((Audio::eWorldSFX)0xCE, 100.0f, -1.0f, true, 100.0f);
+
+            EffectsGroup* pGroup = fxGetGroup("chainchomp_trail");
+            if (pGroup->m_specs != NULL && pGroup->m_numSpecs > 0)
+            {
+                EffectsSpec* pSpec = pGroup->m_specs;
+                int i;
+                for (i = pGroup->m_numSpecs; i > 0; i--)
+                {
+                    if (pSpec->m_pTemplate != NULL)
+                    {
+                        pSpec->m_pTemplate->m_fFountainLife = 12.0f;
+                    }
+                    pSpec++;
+                }
+            }
+
+            pControl = EmissionManager::Create(pGroup, 0);
+            pControl->m_uUserData = (u32)this;
+
+            {
+                Function<EmissionController&> update;
+                update.mTag = FREE_FUNCTION;
+                update.mFreeFunction = UpdateChainEmitter;
+                pControl->SetUpdateCallback(update);
+            }
+
+            FireCameraRumbleFilter(0.0f, 0.2f);
+        }
+        else
+        {
+            bool bRecoverDone = false;
+            if (mpAnimController->m_ePlayMode == PM_HOLD && mpAnimController->m_fTime == 1.0f)
+            {
+                bRecoverDone = true;
+            }
+
+            if (bRecoverDone)
+            {
+                PowerupBase::PlayPowerupSound(POWER_UP_CHAIN_CHOMP, PowerupBase::PWRUP_SOUND_END, mpPhysObj, 100.0f);
+                meChainChompState = CHAIN_STATE_CHASE;
+                SetAnimState(*mpIdleAnim, 0.0f, PM_CYCLIC);
+                mtStateTimer.SetSeconds(g_pGame->m_pGameTweaks->fChainChompActiveTime);
+            }
+        }
+        break;
+
+    case CHAIN_STATE_CHASE:
+        if (mtStateTimer.m_uPackedTime == 0)
+        {
+            break;
+        }
+
+        if (mpTarget != NULL)
+        {
+            maDesiredFacingDirection = (u16)(s32)(10430.378f * nlATan2f(mpTarget->m_v3Position.f.y - mv3Position.f.y, mpTarget->m_v3Position.f.x - mv3Position.f.x));
+        }
+
+        Move(fDeltaT);
+
+        if (mpInEffectSFX == NULL && !g_pGame->mbCaptainShotToScoreOn)
+        {
+            Audio::SoundAttributes sndAtr;
+            sndAtr.Init();
+            sndAtr.SetSoundType(0x8E, true);
+            sndAtr.UseVectors(mv3Position, mv3Velocity);
+            sndAtr.mf_ReturnEmitterOnPlay = true;
+            mpInEffectSFX = (SFXEmitter*)Audio::gPowerupSFX.Play(sndAtr);
+        }
+
+        {
+            static float fBarkT;
+            static signed char init;
+            if (!init)
+            {
+                init = 1;
+                fBarkT = 0.0f;
+            }
+
+            fBarkT += fDeltaT;
+            if (fBarkT > 0.7f)
+            {
+                Audio::SoundAttributes sndAtr;
+                sndAtr.Init();
+                sndAtr.SetSoundType(0x91, true);
+                sndAtr.UseStationaryPosVector(mv3Position);
+                Audio::gPowerupSFX.Play(sndAtr);
+                fBarkT = 0.0f;
+            }
+        }
+
+        if (mtStateTimer.Countdown(fDeltaT, 0.0f))
+        {
+            float fTargetX;
+            float fTargetY;
+
+            meChainChompState = CHAIN_STATE_LEAVE;
+
+            if ((0.5f * g_pBall->m_v3Velocity.f.x + g_pBall->m_v3Position.f.x) < 0.0f)
+            {
+                fTargetX = 40.0f;
+            }
+            else
+            {
+                fTargetX = -40.0f;
+            }
+
+            if (mv3Position.f.y < 0.0f)
+            {
+                fTargetY = -8.0f;
+            }
+            else
+            {
+                fTargetY = 8.0f;
+            }
+
+            maDesiredFacingDirection = (u16)(s32)(10430.378f * nlATan2f(fTargetY - mv3Position.f.y, fTargetX - mv3Position.f.x));
+            mfDesiredSpeed = g_pGame->m_pGameTweaks->fChainChompSpeed;
+        }
+        break;
+
+    case CHAIN_STATE_LEAVE:
+        Move(fDeltaT);
+
+        {
+            static float fBarkT;
+            static signed char init;
+            if (!init)
+            {
+                init = 1;
+                fBarkT = 0.0f;
+            }
+
+            fBarkT += fDeltaT;
+            if (fBarkT > 0.7f)
+            {
+                Audio::SoundAttributes sndAtr;
+                sndAtr.Init();
+                sndAtr.SetSoundType(0x91, true);
+                sndAtr.UseStationaryPosVector(mv3Position);
+                Audio::gPowerupSFX.Play(sndAtr);
+                fBarkT = 0.0f;
+            }
+        }
+
+        if (fabsf(mv3Position.f.x) > 22.5f)
+        {
+            Event* pEvent = g_pEventManager->CreateValidEvent(0x34, 0x1C);
+            ShotAtGoalData* pData = new ((u8*)pEvent + 0x10) ShotAtGoalData();
+            pData->pShooter = mpThrower;
+
+            if (mpInEffectSFX != NULL)
+            {
+                PowerupBase::StopPowerupInEffectSound(mpInEffectSFX);
+                mpInEffectSFX = NULL;
+            }
+
+            EmissionManager::Kill((unsigned long)this, fxGetGroup("chainchomp_trail"));
+
+            meChainChompState = CHAIN_STATE_HIDDEN;
+            mfDesiredSpeed = 0.0f;
+            SetAnimState(*mpIdleAnim, 0.0f, PM_CYCLIC);
+            SetPosition(gv3HomePosition);
+            mv3Velocity = v3Zero;
+            maFacingDirection = 0;
+            mpPhysObj->DisableCollisions();
+            mpThrower = NULL;
+            mnThrowerPadID = -1;
+            mbIsVisible = false;
+        }
+        break;
+
+    case CHAIN_STATE_HIDDEN:
+    default:
+        break;
+    }
+
+    {
+        nlVector3 v3NewPosition;
+        v3NewPosition.f.x = mv3Position.f.x + fDeltaT * mv3Velocity.f.x;
+        v3NewPosition.f.y = mv3Position.f.y + fDeltaT * mv3Velocity.f.y;
+        v3NewPosition.f.z = mv3Position.f.z + fDeltaT * mv3Velocity.f.z;
+        SetPosition(v3NewPosition);
+    }
+
+    if (mpInEffectSFX != NULL)
+    {
+        static nlVector3 vPos;
+        static nlVector3 vDir;
+
+        vPos = mv3Position;
+        vDir = mv3Velocity;
+
+        mpInEffectSFX->pos.vPos = vPos;
+        mpInEffectSFX->dir.vDir = vDir;
+    }
+
+    SkinAnimatedNPC::Update(fDeltaT);
 }
 
 /**

@@ -61,7 +61,6 @@ void nlServiceFileSystem();
 void nlInitFileSystem();
 unsigned char GameCubeReadBlocking(GCFile*, void*, unsigned long);
 static unsigned char GameCubeReadAsync(GCFile*, ReadAsyncCallback, void*, unsigned long, unsigned long);
-void UpdateReadState(AsyncEntry*);
 void nlFlushFileCash();
 nlFile* nlOpen(const char*);
 void nlRegHandleDVDMessageCB(const Function<void(int)>&);

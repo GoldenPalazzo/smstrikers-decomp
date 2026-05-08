@@ -322,9 +322,131 @@ void FEPopupMenu::Update(float fDeltaT)
 
 /**
  * Offset/Address/Size: 0x2F24 | 0x8009B1D0 | size: 0x6B8
+ * TODO: 17.23% match - option-label string copy/update loop and popup-open event
+ * selection path are still incomplete.
  */
 void FEPopupMenu::SceneCreated()
 {
+    struct PopupStringData
+    {
+        unsigned short* mData;
+        int mSize;
+        int mCapacity;
+        int mRefCount;
+    };
+
+    FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
+
+    TLTextInstance* pText = FEFinder<TLTextInstance, 3>::Find<FEPresentation>(
+        presentation,
+        InlineHasher(nlStringLowerHash("Slide1")),
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("Message")),
+        InlineHasher(0),
+        InlineHasher(0),
+        InlineHasher(0));
+
+    PopupStringData*& textData = reinterpret_cast<PopupStringData*&>(mPopup.pMessage);
+    PopupStringData* oldData = textData;
+
+    if (oldData == NULL)
+    {
+        PopupStringData* data = (PopupStringData*)nlMalloc(0x10, 8, true);
+        if (data != NULL)
+        {
+            data->mData = (unsigned short*)nlMalloc(2, 8, true);
+            data->mSize = 1;
+            data->mCapacity = 1;
+            data->mRefCount = 1;
+            data->mData[0] = 0;
+        }
+        textData = data;
+    }
+    else if (oldData->mRefCount != 1)
+    {
+        PopupStringData* data = (PopupStringData*)nlMalloc(0x10, 8, true);
+        if (data != NULL)
+        {
+            data->mData = (unsigned short*)nlMalloc(oldData->mSize * 2, 8, true);
+            data->mSize = oldData->mSize;
+            data->mCapacity = oldData->mSize;
+
+            for (int i = 0; i < data->mSize; i++)
+            {
+                data->mData[i] = oldData->mData[i];
+            }
+
+            data->mRefCount = 1;
+        }
+
+        if (--oldData->mRefCount == 0)
+        {
+            if (oldData != NULL)
+            {
+                delete[] oldData->mData;
+            }
+            if (oldData != NULL)
+            {
+                nlFree(oldData);
+            }
+        }
+
+        oldData = data;
+        textData = oldData;
+    }
+
+    pText->SetString((textData != NULL) ? textData->mData : NULL);
+
+    if (mUnknownAA5)
+    {
+        pText->m_OverloadedAttributes.BoxSize.e[0] = 650.0f;
+        pText->m_OverloadFlags |= 4;
+    }
+
+    for (int i = mPopup.numOptions; i < 4; i++)
+    {
+        pText = FEFinder<TLTextInstance, 3>::Find<FEPresentation>(
+            presentation,
+            InlineHasher(nlStringLowerHash("Slide1")),
+            InlineHasher(nlStringLowerHash("Layer")),
+            InlineHasher(nlStringLowerHash(optionNames[i])),
+            InlineHasher(0),
+            InlineHasher(0),
+            InlineHasher(0));
+
+        if (pText != NULL)
+        {
+            pText->m_bVisible = false;
+        }
+    }
+
+    FEAudio::EnableSounds(true);
+    FEAudio::EnableSounds(false);
+
+    TLComponentInstance* pHighlight = FEFinder<TLComponentInstance, 4>::Find<FEPresentation>(
+        presentation,
+        InlineHasher(nlStringLowerHash("Slide1")),
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("highlite")),
+        InlineHasher(0),
+        InlineHasher(0),
+        InlineHasher(0));
+
+    pHighlight->SetActiveSlide("idle");
+
+    mButtons.mButtonInstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
+        pHighlight->GetActiveSlide(),
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("buttons")),
+        InlineHasher(0),
+        InlineHasher(0),
+        InlineHasher(0),
+        InlineHasher(0));
+
+    if (mButtons.mButtonInstance != NULL)
+    {
+        mButtons.mButtonInstance->m_bVisible = false;
+    }
 }
 
 /**

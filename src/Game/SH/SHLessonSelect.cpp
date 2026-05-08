@@ -164,11 +164,331 @@ void LessonSelectScene::SceneCreated()
 {
 }
 
+extern int sRowOffset;
+extern int sCurrentRow;
+
 /**
  * Offset/Address/Size: 0x7E0 | 0x8010B630 | size: 0x6B8
+ * TODO: 90.70% match - callback tag checks and up/down navigation branch layout
+ * differ; back action scene-start-animation byte store is still missing.
  */
-void LessonSelectScene::Update(float)
+void LessonSelectScene::Update(float fDeltaT)
 {
+    if (mStartAnimAtEnd)
+    {
+        m_pFEPresentation->m_fadeDuration = 999.9f;
+        mStartAnimAtEnd = false;
+    }
+
+    BaseSceneHandler::Update(fDeltaT);
+    mButtons.CentreButtons();
+
+    if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x100, false, NULL))
+    {
+        int tag = mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[ON_APPLY].mTag;
+        if (tag)
+        {
+            if (!mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mDisabled)
+            {
+                TLComponentInstance* type = mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mType;
+                if (tag == FREE_FUNCTION)
+                {
+                    mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[ON_APPLY].mFreeFunction(type);
+                }
+                else
+                {
+                    (*mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[ON_APPLY].mFunctor)(type);
+                }
+            }
+        }
+
+        FEAudio::PlayAnimAudioEvent("sfx_accept", false);
+    }
+    else if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x200, false, NULL))
+    {
+        nlSingleton<OverlayManager>::s_pInstance->Push(IGSCENE_STRIKERS_101_PAUSE, SCREEN_BACK, true);
+        FEAudio::PlayAnimAudioEvent("sfx_back", false);
+        sRowOffset = 0;
+        sCurrentRow = 0;
+    }
+    else if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xD, true, NULL))
+    {
+        FEAudio::EnableSounds(false);
+
+        int flags = mMenuItems.mFlags;
+        int currentIndex = mMenuItems.mCurrentIndex;
+        int wrapBit = flags & 1;
+        int skipDisabled = flags & 2;
+        int result = currentIndex - 1;
+
+        while (true)
+        {
+            if (wrapBit)
+            {
+                if (result < 0)
+                {
+                    result = mMenuItems.mNumItemsAdded - 1;
+                }
+            }
+            else
+            {
+                if (result < 0)
+                {
+                    result = RES_NOT_CHANGED;
+                    break;
+                }
+            }
+
+            if (skipDisabled)
+            {
+                if (mMenuItems.mMenuItems[result].mDisabled)
+                {
+                    result = result - 1;
+                    continue;
+                }
+            }
+
+            {
+                int tag = mMenuItems.mMenuItems[currentIndex].mCallbacks[ON_UNHIGHLIGHT].mTag;
+                if (tag)
+                {
+                    TLComponentInstance* type = mMenuItems.mMenuItems[currentIndex].mType;
+                    if (tag == FREE_FUNCTION)
+                    {
+                        mMenuItems.mMenuItems[currentIndex].mCallbacks[ON_UNHIGHLIGHT].mFreeFunction(type);
+                    }
+                    else
+                    {
+                        (*mMenuItems.mMenuItems[currentIndex].mCallbacks[ON_UNHIGHLIGHT].mFunctor)(type);
+                    }
+                }
+            }
+
+            mMenuItems.mCurrentIndex = result;
+
+            {
+                int tag = mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[ON_HIGHLIGHT].mTag;
+                if (tag)
+                {
+                    TLComponentInstance* type = mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mType;
+                    if (tag == FREE_FUNCTION)
+                    {
+                        mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[ON_HIGHLIGHT].mFreeFunction(type);
+                    }
+                    else
+                    {
+                        (*mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[ON_HIGHLIGHT].mFunctor)(type);
+                    }
+                }
+            }
+
+            result = RES_OK;
+            break;
+        }
+
+        FEAudio::EnableSounds(true);
+
+        sCurrentRow = sRowOffset + mMenuItems.mCurrentIndex;
+        bool updatearrows = true;
+
+        if (result == RES_NOT_CHANGED && sRowOffset > 0)
+        {
+            sRowOffset = sRowOffset - 1;
+            sCurrentRow = sRowOffset + mMenuItems.mCurrentIndex;
+
+            int tag = mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[ON_HIGHLIGHT].mTag;
+            if (tag)
+            {
+                TLComponentInstance* type = mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mType;
+                if (tag == FREE_FUNCTION)
+                {
+                    mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[ON_HIGHLIGHT].mFreeFunction(type);
+                }
+                else
+                {
+                    (*mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[ON_HIGHLIGHT].mFunctor)(type);
+                }
+            }
+        }
+        else
+        {
+            if (result == RES_NOT_CHANGED)
+            {
+                updatearrows = false;
+                FEAudio::PlayAnimAudioEvent("sfx_deny", false);
+            }
+            else if (result == RES_OK)
+            {
+                int tag = mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[ON_HIGHLIGHT].mTag;
+                if (tag)
+                {
+                    TLComponentInstance* type = mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mType;
+                    if (tag == FREE_FUNCTION)
+                    {
+                        mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[ON_HIGHLIGHT].mFreeFunction(type);
+                    }
+                    else
+                    {
+                        (*mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[ON_HIGHLIGHT].mFunctor)(type);
+                    }
+                }
+            }
+        }
+
+        if (updatearrows)
+        {
+            for (int i = 0; i < 4; i++)
+            {
+                UpdateRow(i, false);
+            }
+        }
+    }
+    else if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xE, true, NULL))
+    {
+        FEAudio::EnableSounds(false);
+
+        int flags = mMenuItems.mFlags;
+        int currentIndex = mMenuItems.mCurrentIndex;
+        int wrapBit = flags & 1;
+        int skipDisabled = flags & 2;
+        int result = currentIndex + 1;
+
+        while (true)
+        {
+            if (wrapBit)
+            {
+                int numItems = mMenuItems.mNumItemsAdded;
+                result = result % numItems;
+            }
+            else
+            {
+                if (result >= mMenuItems.mNumItemsAdded)
+                {
+                    result = RES_NOT_CHANGED;
+                    break;
+                }
+            }
+
+            if (skipDisabled)
+            {
+                if (mMenuItems.mMenuItems[result].mDisabled)
+                {
+                    result = result + 1;
+                    continue;
+                }
+            }
+
+            {
+                int tag = mMenuItems.mMenuItems[currentIndex].mCallbacks[ON_UNHIGHLIGHT].mTag;
+                if (tag)
+                {
+                    TLComponentInstance* type = mMenuItems.mMenuItems[currentIndex].mType;
+                    if (tag == FREE_FUNCTION)
+                    {
+                        mMenuItems.mMenuItems[currentIndex].mCallbacks[ON_UNHIGHLIGHT].mFreeFunction(type);
+                    }
+                    else
+                    {
+                        (*mMenuItems.mMenuItems[currentIndex].mCallbacks[ON_UNHIGHLIGHT].mFunctor)(type);
+                    }
+                }
+            }
+
+            mMenuItems.mCurrentIndex = result;
+
+            {
+                int tag = mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[ON_HIGHLIGHT].mTag;
+                if (tag)
+                {
+                    TLComponentInstance* type = mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mType;
+                    if (tag == FREE_FUNCTION)
+                    {
+                        mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[ON_HIGHLIGHT].mFreeFunction(type);
+                    }
+                    else
+                    {
+                        (*mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[ON_HIGHLIGHT].mFunctor)(type);
+                    }
+                }
+            }
+
+            result = RES_OK;
+            break;
+        }
+
+        FEAudio::EnableSounds(true);
+
+        sCurrentRow = sRowOffset + mMenuItems.mCurrentIndex;
+        bool updatearrows = true;
+
+        if (result == RES_NOT_CHANGED && (sRowOffset + 3) < 11)
+        {
+            sRowOffset = sRowOffset + 1;
+            sCurrentRow = sRowOffset + mMenuItems.mCurrentIndex;
+
+            int tag = mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[ON_HIGHLIGHT].mTag;
+            if (tag)
+            {
+                TLComponentInstance* type = mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mType;
+                if (tag == FREE_FUNCTION)
+                {
+                    mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[ON_HIGHLIGHT].mFreeFunction(type);
+                }
+                else
+                {
+                    (*mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[ON_HIGHLIGHT].mFunctor)(type);
+                }
+            }
+        }
+        else
+        {
+            if (result == RES_NOT_CHANGED)
+            {
+                updatearrows = false;
+                FEAudio::PlayAnimAudioEvent("sfx_deny", false);
+            }
+            else if (result == RES_OK)
+            {
+                int tag = mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[ON_HIGHLIGHT].mTag;
+                if (tag)
+                {
+                    TLComponentInstance* type = mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mType;
+                    if (tag == FREE_FUNCTION)
+                    {
+                        mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[ON_HIGHLIGHT].mFreeFunction(type);
+                    }
+                    else
+                    {
+                        (*mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[ON_HIGHLIGHT].mFunctor)(type);
+                    }
+                }
+            }
+        }
+
+        if (updatearrows)
+        {
+            for (int i = 0; i < 4; i++)
+            {
+                UpdateRow(i, false);
+            }
+        }
+    }
+
+    if (sCurrentRow == 0)
+    {
+        mUpArrow->m_bVisible = false;
+        mDownArrow->m_bVisible = true;
+    }
+    else if (sCurrentRow == 11)
+    {
+        mUpArrow->m_bVisible = true;
+        mDownArrow->m_bVisible = false;
+    }
+    else
+    {
+        mUpArrow->m_bVisible = true;
+        mDownArrow->m_bVisible = true;
+    }
 }
 
 extern int sRowOffset;

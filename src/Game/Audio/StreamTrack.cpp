@@ -305,9 +305,80 @@ void AudioStreamTrack::StreamTrack::Update(float)
 
 /**
  * Offset/Address/Size: 0x14D4 | 0x8015622C | size: 0x428
+ * TODO: 87.4% match - +0x10 QS variable stack offset shift from Allocate inline localData placement, loop addi r3,r6,0x58 scheduling diff, Allocate branch pattern diff
  */
-void AudioStreamTrack::StreamTrack::PlayStream(unsigned long, float, bool, unsigned long, unsigned long, const char*, Audio::MasterVolume::VOLUME_GROUP)
+void AudioStreamTrack::StreamTrack::PlayStream(
+    unsigned long StreamId, float Volume, bool Looping,
+    unsigned long FadeIn, unsigned long ExistingFadeOut,
+    const char* StreamParam, Audio::MasterVolume::VOLUME_GROUP OverrideVolGroup)
 {
+    if (GetConfigBool(Config::Global(), "no_stream", false) == true)
+    {
+        return;
+    }
+
+    TRACK_STATE savedState = m_State;
+    QueueStream(StreamId, Volume, Looping, FadeIn, StreamParam, OverrideVolGroup);
+
+    if (savedState != TS_Playing)
+    {
+        return;
+    }
+
+    QUEUED_STREAM allocHead;
+    QUEUED_STREAM* const pAllocHead = &allocHead;
+    QUEUED_STREAM allocTail;
+    QUEUED_STREAM* const pAllocTail = &allocTail;
+
+    DLListEntry<QUEUED_STREAM>* headEntry = nlDLRingRemoveStart(&m_QueuedStreams.m_Head);
+    QUEUED_STREAM headQS;
+    m_QueuedStreams.Deallocate(headEntry, (QUEUED_STREAM*)(void*)&headQS);
+
+    DLListEntry<QUEUED_STREAM>* tailEntry = nlDLRingRemoveEnd(&m_QueuedStreams.m_Head);
+    QUEUED_STREAM tailQS;
+    m_QueuedStreams.Deallocate(tailEntry, (QUEUED_STREAM*)(void*)&tailQS);
+
+    while (m_QueuedStreams.m_Head != NULL)
+    {
+        DLListEntry<QUEUED_STREAM>* entry = nlDLRingRemoveStart(&m_QueuedStreams.m_Head);
+        QUEUED_STREAM tempQS;
+        m_QueuedStreams.Deallocate(entry, (QUEUED_STREAM*)(void*)&tempQS);
+        unsigned char flags = *((unsigned char*)&tempQS + 0xB);
+        StopStream(tempQS.pStream, (flags >> 1) & 1);
+    }
+
+    *pAllocHead = headQS;
+    DLListEntry<QUEUED_STREAM>* newHead = m_QueuedStreams.Allocate(*pAllocHead);
+    nlDLRingAddStart(&m_QueuedStreams.m_Head, newHead);
+
+    *pAllocTail = tailQS;
+    DLListEntry<QUEUED_STREAM>* newTail = m_QueuedStreams.Allocate(*pAllocTail);
+    nlDLRingAddEnd(&m_QueuedStreams.m_Head, newTail);
+
+    DLListEntry<QUEUED_STREAM>* startEntry = nlDLRingGetStart(m_QueuedStreams.m_Head);
+    QUEUED_STREAM* qs = &startEntry->m_data;
+
+    BindExp2_T bind = Bind<void>(
+        MemFun<StreamTrack, void, QUEUED_STREAM*>(&StreamTrack::FadeOutDoneStartNext), this, qs);
+
+    struct CallbackRaw
+    {
+        Tag mTag;
+        Function0<void>::FunctorBase* mFunctor;
+    } callback;
+
+    callback.mTag = FUNCTOR;
+    FunctorImpl_T* functor = new ((FunctorImpl_T*)nlMalloc(sizeof(FunctorImpl_T), 8, false))
+        FunctorImpl_T(bind);
+    callback.mFunctor = functor;
+
+    StartQStreamFadeout(qs, ExistingFadeOut, *(Function<FnVoidVoid>*)&callback);
+
+    if (callback.mTag == FUNCTOR)
+    {
+        delete callback.mFunctor;
+    }
+    callback.mTag = EMPTY;
 }
 
 inline GCAudioStreaming::AudioStream::AudioStream(GCAudioStreaming::AudioBufferMgr& mgr,
