@@ -4,7 +4,7 @@
 
 void* memcpy(void* dest, const void* src, size_t num);
 
-static float fUnk_504 = 0.0000000004656613f;
+static float fUnk_504 = 0.00000000000000000000000000056904566f;
 
 struct coeffs
 {
@@ -18,8 +18,8 @@ struct coeffs
     s32 coeffs7;
 };
 
-const struct coeffs coeffs1 = { 0, 7, 26, 98, 223, 400, 649, 1024 };
-const struct coeffs coeffs2 = { 65408, 63104, 59680, 55008, 49536, 43680, 38016, 34112 };
+const struct coeffs coeffs1 = { 0, 0x3b85739f, 0x3c92a2f4, 0x3d3741dd, 0x3dad0097, 0x3e09f123, 0x3e44b6ba, 0x3e81b9e9 };
+const struct coeffs coeffs2 = {0x3f7f567a, 0x3f77098b, 0x3f690bc9, 0x3f56c9b8, 0x3f42760a, 0x3f2de0fe, 0x3f1a4609, 0x3f0854e4};
 
 extern void seedMT(u32 p);
 
@@ -89,8 +89,8 @@ float nlBezier(float* controlPoints, int degree, float t)
  */
 float nlATan2f(float arg0, float arg1)
 {
-    f32 temp_f4;
-    f32 temp_f5;
+    register f32 temp_f5;
+    register f32 temp_f4;
     f32 var_f3;
     s32 temp_r25;
     s32 temp_r25_2;
@@ -98,22 +98,25 @@ float nlATan2f(float arg0, float arg1)
     s32 var_r0_2;
 
     // Static arrays for polynomial coefficients
-    if (fabs(arg1) > 0.00001f)
+    if ((float)fabs(arg1) > 0.00001f)
     {
         temp_f4 = fabs(arg0 / arg1);
         if (temp_f4 > 1.0f)
         {
-            temp_f5 = 1.0f / temp_f4;
-            var_r0 = 7;
+            
+            coeffs sp48 = coeffs2;
+            coeffs sp68 = coeffs1;
+
+            register f32 tmp = 1.0f/ temp_f4;
+            temp_f5 = tmp;
             temp_r25 = 8.0f * temp_f5;
 
-            coeffs sp48 = coeffs1;
-            coeffs sp68 = coeffs2;
-            if (temp_r25 <= 7)
-            {
-                var_r0 = temp_r25;
-            }
-            var_f3 = 1.5707964f - ((temp_f5 * ((float*)&sp68)[var_r0]) + ((float*)&sp48)[var_r0]);
+            var_r0 = temp_r25 <= 7 ? temp_r25 : 7;
+
+            f32 c2 = ((float*)&sp68)[var_r0];
+            f32 c1 = ((float*)&sp48)[var_r0];
+            c1 = temp_f5 * c2 + c1;
+            var_f3 = 1.5707964f - c1;  
         }
         else
         {
@@ -122,10 +125,9 @@ float nlATan2f(float arg0, float arg1)
 
             coeffs sp8 = coeffs1;
             coeffs sp28 = coeffs2;
-            if (temp_r25_2 <= 7)
-            {
-                var_r0_2 = temp_r25_2;
-            }
+
+            var_r0_2 = temp_r25_2 <= 7 ? temp_r25_2 : var_r0_2;
+            
             var_f3 = (temp_f4 * ((float*)&sp28)[var_r0_2]) + ((float*)&sp8)[var_r0_2];
         }
         if (arg0 >= 0.0f)
@@ -230,10 +232,10 @@ void nlSinCos(float* presult_sin, float* presult_cos, unsigned short angle)
     float s1 = 1.0f / 120.0f;
     float s2 = -1.0f / 6.0f;
     float c0 = -1.0f / 720.0f;
-    float c1 = 1.0f / 24.0f;
+    float c1 = 0.0416363291f;
     float s3 = 1.0f;
     float c2 = -0.5f;
-    float c3 = 0.99999994f;
+    float c3 = 0.99999998f;
 
     float sin_poly = s0 * y_squared + s1;
     float cos_poly = c0 * y_squared + c1;
@@ -326,7 +328,7 @@ float nlSin(unsigned short angle)
 
     // Taylor series
     float a_squared = working_a * working_a;
-    float result = working_a * (1.0f + a_squared * (-0.16666667f + a_squared * (0.00833333f + a_squared * (-0.00019841f + a_squared * 0.0000027557f))));
+    float result = working_a * (1.0f + a_squared * (-0.16666667f + a_squared * (0.008332208f + a_squared * (-0.00019841f + a_squared * 0.0000027557319f))));
 
     return flip_sign * result;
 }
