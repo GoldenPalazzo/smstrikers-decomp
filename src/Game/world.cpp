@@ -16,6 +16,10 @@
 #include "NL/glx/glxTexture.h"
 #include "Game/Sys/debug.h"
 #include "Game/Drawable/DrawableObj.h"
+#include "Game/Drawable/DrawableModel.h"
+#include "Game/Drawable/DrawableSkinModel.h"
+#include "Game/Drawable/DrawableTmModel.h"
+#include "Game/GL/GLInventory.h"
 
 #include "NL/gl/glLightUserData.h"
 
@@ -856,23 +860,8 @@ void World::AddToHyperSTSDrawables(unsigned long key, DrawableModel* pDrawableMo
     }
 }
 
-class GLInventory
-{
-public:
-    glModel* GetModel(unsigned long);
-    void* GetShadowVolume(unsigned long);
-    void* GetVertexAnim(unsigned long);
-
-    char _pad[0x1C8];
-};
-
-extern GLInventory glInventory;
-
 /**
  * Offset/Address/Size: 0x3084 | 0x80197D48 | size: 0x39C
- * TODO: 96.00% match - remaining diffs are from ABI/signature context:
- *       function is currently declared `void` in headers while target returns `bool`,
- *       plus ctor-call symbol shape for `DrawableObject`.
  */
 u8 World::HandleObjectCreation(WorldObjectData* pObjectData)
 {
@@ -888,44 +877,7 @@ u8 World::HandleObjectCreation(WorldObjectData* pObjectData)
         nlVector3 m_v3Offset;
     };
 
-    struct DrawableSkinModelLocal
-    {
-        char _pad0[0x9C];
-        glModel* m_pModel;
-        void* m_pShadowVolume;
-        void* m_pAnimController;
-    };
-
-    struct DrawableModelLocal
-    {
-        char _pad0[0x9C];
-        glModel* m_pModel;
-        void* m_pShadowVolume;
-        unsigned char m_bVertexAnimated;
-        unsigned char m_bUnknownA5;
-        unsigned short _padA6;
-        void* pAABBDimensions;
-    };
-
-    struct DrawableTmModelLocal
-    {
-        DrawableModelLocal m_model;
-        void* m_pAnimController;
-        unsigned long m_uAnimBoneIndex;
-    };
-
-    struct DrawableShadowLocal
-    {
-        char _pad0[0x9C];
-        glModel* m_pModel;
-    };
-
     extern unsigned long eOC_SHINY;
-    extern void __ct__14DrawableObjectFv(void*);
-    extern void* __vt__17DrawableSkinModel[];
-    extern void* __vt__15DrawableTmModel[];
-    extern void* __vt__13DrawableModel[];
-    extern void* __vt__14DrawableShadow[];
 
     WorldObjectDataLocal* pData = (WorldObjectDataLocal*)pObjectData;
     DrawableObject* pDrawable = NULL;
@@ -955,70 +907,35 @@ u8 World::HandleObjectCreation(WorldObjectData* pObjectData)
 
     if (pData->m_uObjectCreationFlags & 0x2)
     {
-        DrawableSkinModelLocal* pSkin = (DrawableSkinModelLocal*)nlMalloc(0xA8, 8, false);
-        if (pSkin)
-        {
-            __ct__14DrawableObjectFv(pSkin);
-            *(void**)pSkin = __vt__17DrawableSkinModel;
-            pSkin->m_pAnimController = NULL;
-        }
-
+        DrawableSkinModel* pSkin = new (nlMalloc(sizeof(DrawableSkinModel), 8, false)) DrawableSkinModel();
         pSkin->m_pModel = pModel;
         pSkin->m_pShadowVolume = glInventory.GetShadowVolume(pData->m_uShadowHashID);
-        ((DrawableObject*)pSkin)->m_uObjectFlags |= 0x4;
-        pDrawable = (DrawableObject*)pSkin;
+        pSkin->m_uObjectFlags |= 0x4;
+        pDrawable = pSkin;
     }
     else if (pData->m_uObjectCreationFlags & 0x20)
     {
-        DrawableTmModelLocal* pTm = (DrawableTmModelLocal*)nlMalloc(0xB4, 8, false);
-        if (pTm)
-        {
-            __ct__14DrawableObjectFv(pTm);
-            *(void**)pTm = __vt__13DrawableModel;
-            pTm->m_model.m_pModel = NULL;
-            pTm->m_model.m_pShadowVolume = NULL;
-            pTm->m_model.m_bVertexAnimated = 0;
-            pTm->m_model.m_bUnknownA5 = 0;
-            *(void**)pTm = __vt__15DrawableTmModel;
-            pTm->m_pAnimController = NULL;
-        }
-
-        pTm->m_model.m_pModel = pModel;
-        pTm->m_model.m_pShadowVolume = glInventory.GetShadowVolume(pData->m_uShadowHashID);
-        ((DrawableObject*)pTm)->m_uObjectFlags |= 0x4;
-        pDrawable = (DrawableObject*)pTm;
+        DrawableTmModel* pTm = new (nlMalloc(sizeof(DrawableTmModel), 8, false)) DrawableTmModel();
+        pTm->m_pModel = pModel;
+        pTm->m_pShadowVolume = glInventory.GetShadowVolume(pData->m_uShadowHashID);
+        pTm->m_uObjectFlags |= 0x4;
+        pDrawable = pTm;
     }
     else if (pData->m_uObjectCreationFlags & 0x1)
     {
-        DrawableShadowLocal* pShadow = (DrawableShadowLocal*)nlMalloc(0xA0, 8, false);
-        if (pShadow)
-        {
-            __ct__14DrawableObjectFv(pShadow);
-            *(void**)pShadow = __vt__14DrawableShadow;
-        }
-
+        DrawableShadow* pShadow = new (nlMalloc(sizeof(DrawableShadow), 8, false)) DrawableShadow();
         pShadow->m_pModel = pModel;
-        ((DrawableObject*)pShadow)->m_uObjectFlags &= ~0x4;
-        pDrawable = (DrawableObject*)pShadow;
+        pShadow->m_uObjectFlags &= ~0x4;
+        pDrawable = pShadow;
     }
     else
     {
-        DrawableModelLocal* pModelDrawable = (DrawableModelLocal*)nlMalloc(0xAC, 8, false);
-        if (pModelDrawable)
-        {
-            __ct__14DrawableObjectFv(pModelDrawable);
-            *(void**)pModelDrawable = __vt__13DrawableModel;
-            pModelDrawable->m_pModel = NULL;
-            pModelDrawable->m_pShadowVolume = NULL;
-            pModelDrawable->m_bVertexAnimated = 0;
-            pModelDrawable->m_bUnknownA5 = 0;
-        }
-
+        DrawableModel* pModelDrawable = new (nlMalloc(sizeof(DrawableModel), 8, false)) DrawableModel();
         pModelDrawable->m_pModel = pModel;
         pModelDrawable->m_pShadowVolume = glInventory.GetShadowVolume(pData->m_uShadowHashID);
-        pModelDrawable->m_bVertexAnimated = glInventory.GetVertexAnim(pModel->id) ? 1 : 0;
-        ((DrawableObject*)pModelDrawable)->m_uObjectFlags &= ~0x4;
-        pDrawable = (DrawableObject*)pModelDrawable;
+        pModelDrawable->m_bVertexAnimated = glInventory.GetVertexAnim(pModel->id) ? true : false;
+        pModelDrawable->m_uObjectFlags &= ~0x4;
+        pDrawable = pModelDrawable;
     }
 
     if (pDrawable == NULL)

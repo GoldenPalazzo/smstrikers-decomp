@@ -4,10 +4,16 @@
 #include "Game/Drawable/DrawableObj.h"
 
 class WorldAnimController;
+class GLShadowVolume;
 
 class DrawableSkinModel : public DrawableObject
 {
 public:
+    DrawableSkinModel()
+        : m_pAnimController(NULL)
+    {
+    }
+
     /* 0x08 */ virtual ~DrawableSkinModel();
     /* 0x10 */ virtual void Draw();
     /* 0x14 */ virtual void SetAnimation(const char*, unsigned long);
@@ -16,8 +22,8 @@ public:
     /* 0x20 */ virtual void SetAnimationTime(float);
     /* 0x24 */ virtual float GetAnimationDuration();
 
-    /* 0x9C */ void* m_pField9C;
-    /* 0xA0 */ void* m_pFieldA0;
+    /* 0x9C */ glModel* m_pModel;
+    /* 0xA0 */ GLShadowVolume* m_pShadowVolume;
     /* 0xA4 */ WorldAnimController* m_pAnimController;
 };
 

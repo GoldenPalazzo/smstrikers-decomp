@@ -9,6 +9,11 @@ class WorldAnimController;
 class DrawableTmModel : public DrawableModel
 {
 public:
+    DrawableTmModel()
+        : m_pAnimController(NULL)
+    {
+    }
+
     DrawableTmModel(const DrawableTmModel& other)
         : DrawableModel(other)
         , m_pAnimController(other.m_pAnimController)

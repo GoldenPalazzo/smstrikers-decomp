@@ -38,6 +38,14 @@ void DrawBallShadow(const nlVector3&, const BallShadowParams&, bool);
 class DrawableModel : public DrawableObject
 {
 public:
+    DrawableModel()
+        : m_pModel(NULL)
+        , m_pShadowVolume(NULL)
+        , m_bVertexAnimated(false)
+        , m_bUnknownA5(false)
+    {
+    }
+
     DrawableModel(const DrawableModel& other)
         : DrawableObject(other)
         , m_pModel(other.m_pModel)
@@ -70,6 +78,8 @@ public:
 class DrawableShadow : public DrawableObject
 {
 public:
+    DrawableShadow() { }
+
     /* 0x04 */ virtual ~DrawableShadow() { };
     /* 0x0C */ virtual void Draw();
 
