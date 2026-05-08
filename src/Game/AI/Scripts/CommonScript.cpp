@@ -1,4 +1,5 @@
 #include "Game/AI/Scripts/CommonScript.h"
+#include "Game/AI/Scripts/ScriptQuestions.h"
 
 #include "Game/Team.h"
 #include "Game/Player.h"
@@ -29,9 +30,12 @@ float ReceivingPass(cFielder*);
 float ReceivingVolleyPass(cPlayer*);
 float NormalizeVal(float fromVal, float fromMin, float fromMax);
 
-extern cBall* g_pScriptBall;
+extern cFielder* g_pScriptCurrentFielder; // size: 0x4, address: 0x803977E0
+extern cFielder* g_pScriptCurrentMark; // size: 0x4, address: 0x803977E4
+extern cFielder* g_pScriptBallOwner;
 extern cTeam* g_pScriptCurrentTeam;
 extern cTeam* g_pScriptOtherTeam;
+extern cBall* g_pScriptBall;
 
 // rotate_left, rotate_right defined in msl_tree.h, instantiated via CommonScript_stub()
 
@@ -597,10 +601,86 @@ FuzzyVariant Fuzzy::ShouldIStrafeMark(cFielder* TheFielder)
 /**
  * Offset/Address/Size: 0xD188 | 0x80077358 | size: 0x7A4
  */
-FuzzyVariant Fuzzy::ShouldIMarkBallOwner(cFielder*)
+FuzzyVariant Fuzzy::ShouldIMarkBallOwner(cFielder* TheFielder)
 {
-    FORCE_DONT_INLINE;
-    return FuzzyVariant();
+    float fConfidence, fBestConfidence, fMarkedConf, fFalseConfidence,
+          fMaxConf, fMinConf, fBranchRatio, fUpfield, fIncapacitated,
+          fCondition, fNotCondition, fSubMax, fSubMin, fSubRatio;
+    cPlayer *pBallOwner, *pTarget;
+    FuzzyVariant bestValue(6);
+    fConfidence = 1.0f;
+    fBestConfidence = 0.0f;
+
+    fMarkedConf = Marking(g_pScriptCurrentFielder, g_pScriptBallOwner);
+    fFalseConfidence = 1.0f - fMarkedConf;
+
+    fMaxConf = (fFalseConfidence <= fMarkedConf) ? fMarkedConf : fFalseConfidence;
+    fMinConf = (fFalseConfidence >= fMarkedConf) ? fMarkedConf : fFalseConfidence;
+    fBranchRatio = (fMaxConf != 0.0f) ? (fMinConf / fMaxConf) : 0.0f;
+
+    if (fFalseConfidence > 0.0f) {
+        SaveConfidence PushDOM(&fConfidence);
+        
+        if (fFalseConfidence < fConfidence) fConfidence = fFalseConfidence;
+        
+        if (fConfidence < fFalseConfidence && fFalseConfidence < 0.5f) {
+            fConfidence *= fBranchRatio;
+        }
+
+        pBallOwner = (cPlayer*)g_pScriptBallOwner;
+        pTarget = (pBallOwner) ? g_pScriptBallOwner->m_pMarker : nullptr;
+
+        fUpfield = UpfieldFrom(pTarget, pBallOwner);
+        fIncapacitated = Incapacitated(pTarget);
+
+        fCondition = (fIncapacitated > fUpfield) ? fIncapacitated : fUpfield;
+        fNotCondition = 1.0f - fCondition;
+        
+        fSubMax = (fCondition <= fNotCondition) ? fNotCondition : fCondition;
+        fSubMin = (fCondition >= fNotCondition) ? fNotCondition : fCondition;
+        fSubRatio = (fSubMax != 0.0f) ? (fSubMin / fSubMax) : 0.0f;
+
+        if (fCondition > 0.0f) {
+            SaveConfidence PushDOMInner(&fConfidence);
+            if (fCondition < fConfidence) fConfidence = fCondition;
+            if (fConfidence < fCondition && fCondition < 0.5f) fConfidence *= fSubRatio;
+
+            if (fConfidence > 0.0f) {
+                fBestConfidence = fConfidence;
+                bestValue = FuzzyVariant(5);
+                bestValue.Confidence = fConfidence;
+            }
+        }
+
+        if (fNotCondition > 0.0f) {
+            SaveConfidence PushDOMInner(&fConfidence);
+            if (fNotCondition < fConfidence) fConfidence = fNotCondition;
+            if (fConfidence < fNotCondition && fNotCondition < 0.5f) fConfidence *= fSubRatio;
+
+            if (fConfidence > fBestConfidence) {
+                fBestConfidence = fConfidence;
+                bestValue = FuzzyVariant(5);
+                bestValue.mData.f = 0.0f;
+                bestValue.Confidence = fConfidence;
+            }
+        }
+    }
+
+    if (fMarkedConf > 0.0f) {
+        SaveConfidence PushDOM(&fConfidence);
+        if (fMarkedConf < fConfidence) fConfidence = fMarkedConf;
+        if (fConfidence < fMarkedConf && fMarkedConf < 0.5f) fConfidence *= fBranchRatio;
+
+        if (fConfidence > fBestConfidence) {
+            fBestConfidence = fConfidence;
+            bestValue = FuzzyVariant(5);
+            bestValue.mData.f = 0.0f;
+            bestValue.Confidence = fConfidence;
+        }
+    }
+
+    bestValue.Confidence = fBestConfidence;
+    return bestValue;
 }
 
 /**
