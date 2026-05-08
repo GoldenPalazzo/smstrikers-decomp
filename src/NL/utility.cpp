@@ -114,7 +114,7 @@ void SolveQuadratic(float a, float b, float c, int& numRoots, float& x1, float& 
     }
 
     x1 = z / p;
-    if ((float)fabs(z) < 0.00001f)
+    if ((float)fabs(z) < 1e-10f)
     {
         numRoots = 1;
         return;
@@ -123,10 +123,3 @@ void SolveQuadratic(float a, float b, float c, int& numRoots, float& x1, float& 
     x2 = r / z;
     numRoots = 2;
 }
-
-// /**
-//  * Offset/Address/Size: 0x2F0 | 0x801F0BB4 | size: 0x10
-//  */
-// void 0x8028D55C..0x8028D560 | size : 0x4
-// {
-// }

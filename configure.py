@@ -1325,7 +1325,7 @@ config.libs = [
             # Ext/Game-Specific?
             Object(Matching, "NL/StatsGatherer.cpp", extra_cflags=["-inline auto", "-inline deferred"]),     
             Object(Matching, "NL/math.cpp", extra_cflags=["-inline auto", "-inline deferred"]),     
-            Object(NonMatching, "NL/utility.cpp", extra_cflags=["-inline auto", "-inline deferred"]),     
+            Object(Matching, "NL/utility.cpp", extra_cflags=["-inline auto", "-inline deferred"]),     
 
             # Ext/GL
             Object(NonMatching, "NL/glx/glxSwap.cpp", extra_cflags=["-inline auto", "-inline off"]),
