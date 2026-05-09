@@ -17,6 +17,15 @@ typedef void FnTLComponentInstanceCb(TLComponentInstance*);
 typedef void FnSlideMenuItemCb(SlideMenuItem*);
 
 extern nlColour MenuHighliteColour;
+extern nlColour SubMenuHighliteColour;
+extern nlColour SubMenuUnhighliteColour;
+
+namespace SingleHighlite
+{
+void OpenItem(TLComponentInstance*);
+void CloseItem(TLComponentInstance*);
+void TempDisableSound();
+} // namespace SingleHighlite
 
 static const char* MAIN_MENU_SLIDE = "Slide1";
 static const char* VISUAL_MENU_SLIDE = "Slide6";
@@ -478,10 +487,222 @@ void OptionsGameplayMenuV2::BuildSkillLevelMenu(TLComponentInstance* compinstanc
 
 /**
  * Offset/Address/Size: 0xEE0 | 0x800B5F24 | size: 0x850
+ * TODO: 74.19% match - constructor prologue register/stack layout differs and
+ * hash temporary setup around FEFinder calls still mismatches.
  */
-OptionsGameplayMenuV2::OptionsGameplayMenuV2(FEPresentation*, ButtonComponent::ButtonState, GameplaySettings& settings, int)
+OptionsGameplayMenuV2::OptionsGameplayMenuV2(FEPresentation* presentation, ButtonComponent::ButtonState buttonstate, GameplaySettings& settings, int skilltoskip)
     : mSettings(settings)
 {
+    extern int nlSNPrintf(char*, unsigned long, const char*, ...);
+
+    char menuname[64];
+    int i;
+    TLInstance* instance;
+    TLComponentInstance* compinstance;
+    int gtindex;
+
+    m_pres = presentation;
+    m_buttons = NULL;
+    m_currentButtonState = buttonstate;
+    mSettingsCRC = 0;
+    mSlideMenuLists[0] = NULL;
+    mSlideMenuLists[1] = NULL;
+    mSlideMenuLists[2] = NULL;
+    mSlideMenuLists[3] = NULL;
+    mSlideMenuLists[4] = NULL;
+    mSlideMenuLists[5] = NULL;
+    mSlideMenuLists[6] = NULL;
+    mSlideMenuLists[7] = NULL;
+
+    presentation->SetActiveSlide("Slide3");
+    presentation->Update(0.0f);
+
+    SetButtonState(buttonstate);
+    if (buttonstate == ButtonComponent::BS_A_AND_B)
+    {
+        SetAButtonLOC(0x9C81A82F);
+    }
+
+    TLSlide* currentSlide = presentation->m_currentSlide;
+    void (*openItem)(TLComponentInstance*) = SingleHighlite::OpenItem;
+    void (*closeItem)(TLComponentInstance*) = SingleHighlite::CloseItem;
+
+    for (i = 0; i < 6; i++)
+    {
+        nlSNPrintf(menuname, 64, "MENU ITEM%d", i + 1);
+
+        instance = FEFinder<TLInstance, 4>::Find<TLSlide>(
+            currentSlide,
+            InlineHasher(nlStringLowerHash("Layer")),
+            InlineHasher(nlStringLowerHash(menuname)),
+            InlineHasher(0),
+            InlineHasher(0),
+            InlineHasher(0),
+            InlineHasher(0));
+
+        MenuItem<TLComponentInstance>* menuItem = &mMenuItems.mMenuItems[mMenuItems.mNumItemsAdded];
+        menuItem->mType = (TLComponentInstance*)instance;
+        mMenuItems.mNumItemsAdded++;
+
+        {
+            Function<FnTLComponentInstanceCb> openFunc;
+            openFunc.mTag = FREE_FUNCTION;
+            openFunc.mFreeFunction = openItem;
+            menuItem->mCallbacks[1] = openFunc;
+        }
+
+        {
+            Function<FnTLComponentInstanceCb> closeFunc;
+            closeFunc.mTag = FREE_FUNCTION;
+            closeFunc.mFreeFunction = closeItem;
+            menuItem->mCallbacks[2] = closeFunc;
+        }
+
+        if (i == 0)
+        {
+            SingleHighlite::TempDisableSound();
+            menuItem->mCallbacks[1](menuItem->mType);
+            menuItem->mDisabled = false;
+        }
+        else
+        {
+            CloseItem(menuItem->mType);
+        }
+
+        mSlideMenuLists[i] = NULL;
+    }
+
+    mMenuItems.mFlags = 1;
+
+    compinstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
+        currentSlide,
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("SKILLLEVEL")),
+        InlineHasher(0),
+        InlineHasher(0),
+        InlineHasher(0),
+        InlineHasher(0));
+    BuildSkillLevelMenu(compinstance, mSettings.SkillLevel, skilltoskip);
+
+    compinstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
+        currentSlide,
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("GAME TIME")),
+        InlineHasher(0),
+        InlineHasher(0),
+        InlineHasher(0),
+        InlineHasher(0));
+
+    gtindex = 0;
+    switch (mSettings.GameTime)
+    {
+    case 120:
+        gtindex = 0;
+        break;
+    case 180:
+        gtindex = 1;
+        break;
+    case 240:
+        gtindex = 2;
+        break;
+    case 300:
+        gtindex = 3;
+        break;
+    case 600:
+        gtindex = 4;
+        break;
+    case 900:
+        gtindex = 5;
+        break;
+    }
+    BuildSubMenuList(1, compinstance, true, gtindex);
+
+    compinstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
+        currentSlide,
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("PUPS")),
+        InlineHasher(0),
+        InlineHasher(0),
+        InlineHasher(0),
+        InlineHasher(0));
+    BuildSubMenuList(2, compinstance, true, mSettings.PowerUps ? 0 : 1);
+
+    compinstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
+        currentSlide,
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("S2S")),
+        InlineHasher(0),
+        InlineHasher(0),
+        InlineHasher(0),
+        InlineHasher(0));
+    BuildSubMenuList(3, compinstance, true, mSettings.Shoot2Score ? 0 : 1);
+
+    compinstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
+        currentSlide,
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("RUMBLE")),
+        InlineHasher(0),
+        InlineHasher(0),
+        InlineHasher(0),
+        InlineHasher(0));
+    BuildSubMenuList(4, compinstance, true, mSettings.RumbleEnabled ? 0 : 1);
+
+    compinstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
+        currentSlide,
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("BOWSER")),
+        InlineHasher(0),
+        InlineHasher(0),
+        InlineHasher(0),
+        InlineHasher(0));
+    BuildSubMenuList(5, compinstance, true, mSettings.BowserAttackEnabled ? 0 : 1);
+
+    SlideMenuList* slideMenuList = (SlideMenuList*)mSlideMenuLists[mMenuItems.mCurrentIndex];
+    if (slideMenuList != NULL)
+    {
+        compinstance = slideMenuList->mComponentInstance;
+        if (compinstance != NULL)
+        {
+            if (compinstance->GetActiveSlide() != NULL)
+            {
+                TLSlide* startSlide = compinstance->GetActiveSlide();
+                TLSlide* currentMenuSlide = startSlide;
+
+                do
+                {
+                    compinstance->SetActiveSlide(currentMenuSlide);
+                    TLInstance* firstChild = compinstance->GetActiveSlide()->m_instances;
+                    TLInstance* inst = firstChild;
+                    if (firstChild != NULL)
+                    {
+                        do
+                        {
+                            if (inst->m_type == TLAT_TEXT)
+                            {
+                                inst->SetAssetColour(SubMenuHighliteColour);
+                            }
+                            else if (inst->m_type == TLAT_IMAGE)
+                            {
+                                if (inst->m_hash != nlStringLowerHash("white_box"))
+                                {
+                                    inst->SetAssetColour(SubMenuHighliteColour);
+                                }
+                            }
+
+                            inst = inst->m_next;
+                        } while (inst != firstChild);
+                    }
+
+                    currentMenuSlide = currentMenuSlide->m_next;
+                } while (currentMenuSlide != startSlide);
+
+                compinstance->SetActiveSlide(startSlide);
+            }
+        }
+    }
+
+    memcpy(&mBackupSettings, &mSettings, sizeof(GameplaySettings));
+    mSettingsCRC = nlChecksum32(&mBackupSettings, sizeof(GameplaySettings));
 }
 
 /**
@@ -599,17 +820,6 @@ void OptionsVisualMenuV2::Update(float dt)
 OptionsVisualMenuV2::~OptionsVisualMenuV2()
 {
 }
-
-// Forward declarations for SingleHighlite
-namespace SingleHighlite
-{
-void OpenItem(TLComponentInstance*);
-void CloseItem(TLComponentInstance*);
-void TempDisableSound();
-} // namespace SingleHighlite
-
-extern nlColour SubMenuHighliteColour;
-extern nlColour SubMenuUnhighliteColour;
 
 static char* MENU_ITEMS_VISUAL[] = {
     "MENU ITEM3",
@@ -783,11 +993,453 @@ OptionsVisualMenuV2::OptionsVisualMenuV2(FEPresentation* pres, ButtonComponent::
 
 /**
  * Offset/Address/Size: 0x20C8 | 0x800B710C | size: 0xA3C
+ * TODO: 87.69% match - register usage differs in slide traversal/callback paths
+ * and left/right submenu callback field access still emits different offsets.
  */
 void OptionsAudioMenuV2::Update(float)
 {
-}
+    int ischaractervol = (mMenuItems.mCurrentIndex == 2);
+    mButtons.CentreButtons();
 
+    if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xD, true, NULL))
+    {
+        SlideMenuList* slideMenuList = (SlideMenuList*)mSlideMenuLists[mMenuItems.mCurrentIndex];
+        if (slideMenuList != NULL)
+        {
+            TLComponentInstance* comp = slideMenuList->mComponentInstance;
+            if (comp != NULL && comp->GetActiveSlide() != NULL)
+            {
+                TLSlide* startSlide = comp->GetActiveSlide();
+                TLSlide* currentSlide = startSlide;
+
+                do
+                {
+                    comp->SetActiveSlide(currentSlide);
+                    TLInstance* firstChild = comp->GetActiveSlide()->m_instances;
+                    TLInstance* inst = firstChild;
+
+                    if (firstChild != NULL)
+                    {
+                        do
+                        {
+                            if (inst->m_type == TLAT_TEXT)
+                            {
+                                inst->SetAssetColour(SubMenuUnhighliteColour);
+                            }
+                            else if (inst->m_type == TLAT_IMAGE)
+                            {
+                                unsigned long hash = inst->m_hash;
+                                if (hash != nlStringLowerHash("white_box"))
+                                {
+                                    inst->SetAssetColour(SubMenuUnhighliteColour);
+                                }
+                            }
+
+                            inst = inst->m_next;
+                        } while (inst != firstChild);
+                    }
+
+                    currentSlide = currentSlide->m_next;
+                } while (currentSlide != startSlide);
+
+                comp->SetActiveSlide(startSlide);
+            }
+        }
+
+        int oldIndex = mMenuItems.mCurrentIndex;
+        int flags = mMenuItems.mFlags;
+        int wrapList = flags & 1;
+        int skipDisabled = flags & 2;
+        int newIndex = oldIndex - 1;
+
+        while (true)
+        {
+            if (wrapList)
+            {
+                if (newIndex < 0)
+                {
+                    newIndex = mMenuItems.mNumItemsAdded - 1;
+                }
+            }
+            else if (newIndex < 0)
+            {
+                break;
+            }
+
+            if (skipDisabled)
+            {
+                if (mMenuItems.mMenuItems[newIndex].mDisabled)
+                {
+                    newIndex--;
+                    continue;
+                }
+            }
+
+            mMenuItems.mMenuItems[oldIndex].mCallbacks[2](mMenuItems.mMenuItems[oldIndex].mType);
+
+            mMenuItems.mCurrentIndex = newIndex;
+
+            mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[1](mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mType);
+            break;
+        }
+
+        slideMenuList = (SlideMenuList*)mSlideMenuLists[mMenuItems.mCurrentIndex];
+        if (slideMenuList != NULL)
+        {
+            TLComponentInstance* comp = slideMenuList->mComponentInstance;
+            if (comp != NULL && comp->GetActiveSlide() != NULL)
+            {
+                TLSlide* startSlide = comp->GetActiveSlide();
+                TLSlide* currentSlide = startSlide;
+
+                do
+                {
+                    comp->SetActiveSlide(currentSlide);
+                    TLInstance* firstChild = comp->GetActiveSlide()->m_instances;
+                    TLInstance* inst = firstChild;
+
+                    if (firstChild != NULL)
+                    {
+                        do
+                        {
+                            if (inst->m_type == TLAT_TEXT)
+                            {
+                                inst->SetAssetColour(SubMenuHighliteColour);
+                            }
+                            else if (inst->m_type == TLAT_IMAGE)
+                            {
+                                unsigned long hash = inst->m_hash;
+                                if (hash != nlStringLowerHash("white_box"))
+                                {
+                                    inst->SetAssetColour(SubMenuHighliteColour);
+                                }
+                            }
+
+                            inst = inst->m_next;
+                        } while (inst != firstChild);
+                    }
+
+                    currentSlide = currentSlide->m_next;
+                } while (currentSlide != startSlide);
+
+                comp->SetActiveSlide(startSlide);
+            }
+        }
+    }
+    else if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xE, true, NULL))
+    {
+        SlideMenuList* slideMenuList = (SlideMenuList*)mSlideMenuLists[mMenuItems.mCurrentIndex];
+        if (slideMenuList != NULL)
+        {
+            TLComponentInstance* comp = slideMenuList->mComponentInstance;
+            if (comp != NULL && comp->GetActiveSlide() != NULL)
+            {
+                TLSlide* startSlide = comp->GetActiveSlide();
+                TLSlide* currentSlide = startSlide;
+
+                do
+                {
+                    comp->SetActiveSlide(currentSlide);
+                    TLInstance* firstChild = comp->GetActiveSlide()->m_instances;
+                    TLInstance* inst = firstChild;
+
+                    if (firstChild != NULL)
+                    {
+                        do
+                        {
+                            if (inst->m_type == TLAT_TEXT)
+                            {
+                                inst->SetAssetColour(SubMenuUnhighliteColour);
+                            }
+                            else if (inst->m_type == TLAT_IMAGE)
+                            {
+                                unsigned long hash = inst->m_hash;
+                                if (hash != nlStringLowerHash("white_box"))
+                                {
+                                    inst->SetAssetColour(SubMenuUnhighliteColour);
+                                }
+                            }
+
+                            inst = inst->m_next;
+                        } while (inst != firstChild);
+                    }
+
+                    currentSlide = currentSlide->m_next;
+                } while (currentSlide != startSlide);
+
+                comp->SetActiveSlide(startSlide);
+            }
+        }
+
+        int oldIndex = mMenuItems.mCurrentIndex;
+        int flags = mMenuItems.mFlags;
+        int wrapList = flags & 1;
+        int skipDisabled = flags & 2;
+        int newIndex = oldIndex + 1;
+
+        while (true)
+        {
+            if (wrapList)
+            {
+                newIndex = newIndex % mMenuItems.mNumItemsAdded;
+            }
+            else if (newIndex >= mMenuItems.mNumItemsAdded)
+            {
+                break;
+            }
+
+            if (skipDisabled)
+            {
+                if (mMenuItems.mMenuItems[newIndex].mDisabled)
+                {
+                    newIndex++;
+                    continue;
+                }
+            }
+
+            mMenuItems.mMenuItems[oldIndex].mCallbacks[2](mMenuItems.mMenuItems[oldIndex].mType);
+
+            mMenuItems.mCurrentIndex = newIndex;
+
+            mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[1](mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mType);
+            break;
+        }
+
+        slideMenuList = (SlideMenuList*)mSlideMenuLists[mMenuItems.mCurrentIndex];
+        if (slideMenuList != NULL)
+        {
+            TLComponentInstance* comp = slideMenuList->mComponentInstance;
+            if (comp != NULL && comp->GetActiveSlide() != NULL)
+            {
+                TLSlide* startSlide = comp->GetActiveSlide();
+                TLSlide* currentSlide = startSlide;
+
+                do
+                {
+                    comp->SetActiveSlide(currentSlide);
+                    TLInstance* firstChild = comp->GetActiveSlide()->m_instances;
+                    TLInstance* inst = firstChild;
+
+                    if (firstChild != NULL)
+                    {
+                        do
+                        {
+                            if (inst->m_type == TLAT_TEXT)
+                            {
+                                inst->SetAssetColour(SubMenuHighliteColour);
+                            }
+                            else if (inst->m_type == TLAT_IMAGE)
+                            {
+                                unsigned long hash = inst->m_hash;
+                                if (hash != nlStringLowerHash("white_box"))
+                                {
+                                    inst->SetAssetColour(SubMenuHighliteColour);
+                                }
+                            }
+
+                            inst = inst->m_next;
+                        } while (inst != firstChild);
+                    }
+
+                    currentSlide = currentSlide->m_next;
+                } while (currentSlide != startSlide);
+
+                comp->SetActiveSlide(startSlide);
+            }
+        }
+    }
+    else if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xB, true, NULL))
+    {
+        SlideMenuList* slideMenuList = (SlideMenuList*)mSlideMenuLists[mMenuItems.mCurrentIndex];
+        if (slideMenuList != NULL)
+        {
+            MenuResult res = RES_ERROR;
+
+            int oldIndex = slideMenuList->mCurrentIndex;
+            int flags = slideMenuList->mFlags;
+            int wrapList = flags & 1;
+            int skipDisabled = flags & 2;
+            int newIndex = oldIndex - 1;
+
+            while (true)
+            {
+                if (wrapList)
+                {
+                    if (newIndex < 0)
+                    {
+                        newIndex = slideMenuList->mNumItemsAdded - 1;
+                    }
+                }
+                else if (newIndex < 0)
+                {
+                    res = RES_NOT_CHANGED;
+                    break;
+                }
+
+                if (skipDisabled)
+                {
+                    if (slideMenuList->mMenuItems[newIndex].mDisabled)
+                    {
+                        newIndex--;
+                        continue;
+                    }
+                }
+
+                slideMenuList->mMenuItems[oldIndex].mCallbacks[2](slideMenuList->mMenuItems[oldIndex].mType);
+
+                slideMenuList->mCurrentIndex = newIndex;
+
+                slideMenuList->mMenuItems[slideMenuList->mCurrentIndex].mCallbacks[1](
+                    slideMenuList->mMenuItems[slideMenuList->mCurrentIndex].mType);
+
+                res = RES_OK;
+                break;
+            }
+
+            if (res == RES_OK)
+            {
+                if (ischaractervol)
+                {
+                    ((FEAudio*)this)->PlayRandomVoiceToggleSFX();
+                }
+                else
+                {
+                    FEAudio::PlayAnimAudioEvent("sfx_option_scroll_left", false);
+                }
+
+                if (mMenuItems.mCurrentIndex != 3)
+                {
+                    unsigned char bModeChanged = mbUpdateMode;
+                    mbUpdateMode = false;
+                    Save();
+                    mbUpdateMode = bModeChanged;
+                }
+                else
+                {
+                    int mode;
+                    SlideMenuList* list = (SlideMenuList*)mSlideMenuLists[3];
+                    if (list != NULL)
+                    {
+                        SlideMenuItem** pType = &list->mMenuItems[list->mCurrentIndex].mType;
+                        mode = (*pType)->mUserEnumType;
+                    }
+                    else
+                    {
+                        mode = -1;
+                    }
+
+                    mSettings.Mode = (eAudioMode)mode;
+                    if (mSettings.Mode != mSettings.DefaultMode)
+                    {
+                        mbUpdateMode = true;
+                    }
+                    else
+                    {
+                        mbUpdateMode = false;
+                    }
+                }
+            }
+            else if (res == RES_NOT_CHANGED)
+            {
+                FEAudio::PlayAnimAudioEvent("sfx_deny", false);
+            }
+        }
+    }
+    else if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xC, true, NULL))
+    {
+        SlideMenuList* slideMenuList = (SlideMenuList*)mSlideMenuLists[mMenuItems.mCurrentIndex];
+        if (slideMenuList != NULL)
+        {
+            MenuResult res = RES_ERROR;
+
+            int oldIndex = slideMenuList->mCurrentIndex;
+            int flags = slideMenuList->mFlags;
+            int wrapList = flags & 1;
+            int skipDisabled = flags & 2;
+            int newIndex = oldIndex + 1;
+
+            while (true)
+            {
+                if (wrapList)
+                {
+                    newIndex = newIndex % slideMenuList->mNumItemsAdded;
+                }
+                else if (newIndex >= slideMenuList->mNumItemsAdded)
+                {
+                    res = RES_NOT_CHANGED;
+                    break;
+                }
+
+                if (skipDisabled)
+                {
+                    if (slideMenuList->mMenuItems[newIndex].mDisabled)
+                    {
+                        newIndex++;
+                        continue;
+                    }
+                }
+
+                slideMenuList->mMenuItems[oldIndex].mCallbacks[2](slideMenuList->mMenuItems[oldIndex].mType);
+
+                slideMenuList->mCurrentIndex = newIndex;
+
+                slideMenuList->mMenuItems[slideMenuList->mCurrentIndex].mCallbacks[1](
+                    slideMenuList->mMenuItems[slideMenuList->mCurrentIndex].mType);
+
+                res = RES_OK;
+                break;
+            }
+
+            if (res == RES_OK)
+            {
+                if (ischaractervol)
+                {
+                    ((FEAudio*)this)->PlayRandomVoiceToggleSFX();
+                }
+                else
+                {
+                    FEAudio::PlayAnimAudioEvent("sfx_option_scroll_left", false);
+                }
+
+                if (mMenuItems.mCurrentIndex != 3)
+                {
+                    unsigned char bModeChanged = mbUpdateMode;
+                    mbUpdateMode = false;
+                    Save();
+                    mbUpdateMode = bModeChanged;
+                }
+                else
+                {
+                    int mode;
+                    SlideMenuList* list = (SlideMenuList*)mSlideMenuLists[3];
+                    if (list != NULL)
+                    {
+                        SlideMenuItem** pType = &list->mMenuItems[list->mCurrentIndex].mType;
+                        mode = (*pType)->mUserEnumType;
+                    }
+                    else
+                    {
+                        mode = -1;
+                    }
+
+                    mSettings.Mode = (eAudioMode)mode;
+                    if (mSettings.Mode != mSettings.DefaultMode)
+                    {
+                        mbUpdateMode = true;
+                    }
+                    else
+                    {
+                        mbUpdateMode = false;
+                    }
+                }
+            }
+            else if (res == RES_NOT_CHANGED)
+            {
+                FEAudio::PlayAnimAudioEvent("sfx_deny", false);
+            }
+        }
+    }
+}
 /**
  * Offset/Address/Size: 0x2B04 | 0x800B7B48 | size: 0x44
  */
@@ -1070,8 +1722,208 @@ OptionsAudioMenuV2::OptionsAudioMenuV2(FEPresentation* presentation, ButtonCompo
 /**
  * Offset/Address/Size: 0x34B0 | 0x800B84F4 | size: 0x88C
  */
-void OptionsCheatsMenu::BuildCustomPowerupsList(TLComponentInstance*, CustomPowerups, FEPresentation*)
+void OptionsCheatsMenu::BuildCustomPowerupsList(TLComponentInstance* compinstance, CustomPowerups startOption, FEPresentation* presentation)
 {
+    extern int nlSNPrintf(char*, unsigned long, const char*, ...);
+    typedef Detail::MemFunImpl<void, void (SlideMenuList::*)()> MemFunImpl_SML;
+    typedef BindExp1<void, MemFunImpl_SML, SlideMenuList*> BindExp1_SML;
+
+    int slidesAdded = 1;
+    int startindex = 0;
+    char slidename[64];
+    int i;
+    unsigned char unlocked;
+    TLTextInstance* pText;
+    nlColour lockColour;
+    TLComponentInstance* pMenuComp;
+    TLComponentInstance* pArrowComp;
+    GameInfoManager* gm = nlSingleton<GameInfoManager>::s_pInstance;
+
+    SlideMenuList* list = (SlideMenuList*)nlMalloc(sizeof(SlideMenuList), 8, false);
+    if (list != NULL)
+    {
+        new (list) SlideMenuList();
+        list->mComponentInstance = compinstance;
+    }
+    mSlideMenuLists[0] = (MenuList<SlideMenuList>*)list;
+
+    compinstance->SetActiveSlide("Slide1");
+    {
+        unsigned long slideHash = compinstance->GetActiveSlide()->m_hash;
+        SlideMenuList* sml = (SlideMenuList*)mSlideMenuLists[0];
+        SlideMenuItem* item = (SlideMenuItem*)nlMalloc(sizeof(SlideMenuItem), 8, true);
+        if (item != NULL)
+        {
+            TLComponentInstance* comp = sml->mComponentInstance;
+            *(char**)item = __vt__13SlideMenuItem;
+            item->mSlideMenuHash = (unsigned long)-1;
+            item->mComponentInstance = comp;
+            item->mUserEnumType = 0;
+        }
+        item->mSlideMenuHash = slideHash;
+
+        MenuItem<SlideMenuItem>* menuItem = &sml->mMenuItems[sml->mNumItemsAdded];
+        menuItem->mType = item;
+        sml->mNumItemsAdded++;
+
+        BindExp1_SML bind = Bind<void, MemFunImpl_SML, SlideMenuList*>(
+            MemFun<SlideMenuList, void>(&SlideMenuList::SetSlide), sml);
+        Function<FnSlideMenuItemCb> callback(bind);
+        menuItem->mCallbacks[1] = callback;
+    }
+
+    for (i = 1; i < 6; i++)
+    {
+        switch (i)
+        {
+        case 1:
+            unlocked = gm->IsCustomExplosiveUnlocked();
+            break;
+        case 2:
+            unlocked = gm->IsCustomFreezingUnlocked();
+            break;
+        case 3:
+            unlocked = gm->IsCustomShellsUnlocked();
+            break;
+        case 4:
+            unlocked = gm->IsCustomGiantUnlocked();
+            break;
+        case 5:
+            unlocked = gm->IsCustomEnhanceUnlocked();
+            break;
+        }
+
+        if (unlocked)
+        {
+            nlSNPrintf(slidename, 64, "Slide%d", i + 1);
+            compinstance->SetActiveSlide(slidename);
+
+            unsigned long slideHash = compinstance->GetActiveSlide()->m_hash;
+            SlideMenuList* sml = (SlideMenuList*)mSlideMenuLists[0];
+            SlideMenuItem* item = (SlideMenuItem*)nlMalloc(sizeof(SlideMenuItem), 8, true);
+            if (item != NULL)
+            {
+                TLComponentInstance* comp = sml->mComponentInstance;
+                *(char**)item = __vt__13SlideMenuItem;
+                item->mSlideMenuHash = (unsigned long)-1;
+                item->mComponentInstance = comp;
+                item->mUserEnumType = i;
+            }
+            item->mSlideMenuHash = slideHash;
+
+            MenuItem<SlideMenuItem>* menuItem = &sml->mMenuItems[sml->mNumItemsAdded];
+            menuItem->mType = item;
+            sml->mNumItemsAdded++;
+
+            BindExp1_SML bind = Bind<void, MemFunImpl_SML, SlideMenuList*>(
+                MemFun<SlideMenuList, void>(&SlideMenuList::SetSlide), sml);
+            Function<FnSlideMenuItemCb> callback(bind);
+            menuItem->mCallbacks[1] = callback;
+
+            if (startOption == i)
+            {
+                startindex = slidesAdded;
+            }
+
+            slidesAdded++;
+        }
+    }
+
+    {
+        SlideMenuList* sml = (SlideMenuList*)mSlideMenuLists[0];
+        MenuItem<SlideMenuItem>* menuItem = &sml->mMenuItems[sml->mCurrentIndex];
+        menuItem->mCallbacks[2](menuItem->mType);
+
+        sml->mCurrentIndex = startindex;
+
+        menuItem = &sml->mMenuItems[sml->mCurrentIndex];
+        menuItem->mCallbacks[1](menuItem->mType);
+
+        if (slidesAdded > 1)
+        {
+            sml->mFlags = 1;
+
+            if (sml != NULL)
+            {
+                TLComponentInstance* comp = sml->mComponentInstance;
+                if (comp != NULL && comp->GetActiveSlide() != NULL)
+                {
+                    TLSlide* startSlide = comp->GetActiveSlide();
+                    TLSlide* currentMenuSlide = startSlide;
+
+                    do
+                    {
+                        comp->SetActiveSlide(currentMenuSlide);
+                        TLInstance* firstChild = comp->GetActiveSlide()->m_instances;
+                        TLInstance* inst = firstChild;
+                        if (firstChild != NULL)
+                        {
+                            do
+                            {
+                                if (inst->m_type == TLAT_TEXT)
+                                {
+                                    inst->SetAssetColour(SubMenuHighliteColour);
+                                }
+                                else if (inst->m_type == TLAT_IMAGE)
+                                {
+                                    if (inst->m_hash != nlStringLowerHash("white_box"))
+                                    {
+                                        inst->SetAssetColour(SubMenuHighliteColour);
+                                    }
+                                }
+                                inst = inst->m_next;
+                            } while (inst != firstChild);
+                        }
+
+                        currentMenuSlide = currentMenuSlide->m_next;
+                    } while (currentMenuSlide != startSlide);
+
+                    comp->SetActiveSlide(startSlide);
+                }
+            }
+        }
+        else
+        {
+            pText = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
+                compinstance->GetActiveSlide(),
+                InlineHasher(nlStringLowerHash("EXPLOSIVE")),
+                InlineHasher(0),
+                InlineHasher(0),
+                InlineHasher(0),
+                InlineHasher(0),
+                InlineHasher(0));
+
+            pText->SetStringId("CHEAT_LOCKED");
+
+            lockColour.c[0] = 0xFE;
+            lockColour.c[1] = 0xEE;
+            lockColour.c[2] = 0x00;
+            lockColour.c[3] = 0xFF;
+            pText->SetAssetColour(lockColour);
+
+            pMenuComp = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
+                presentation->m_currentSlide,
+                InlineHasher(nlStringLowerHash("Layer")),
+                InlineHasher(nlStringLowerHash("MENU ITEM1")),
+                InlineHasher(0),
+                InlineHasher(0),
+                InlineHasher(0),
+                InlineHasher(0));
+
+            pArrowComp = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
+                pMenuComp->GetActiveSlide(),
+                InlineHasher(nlStringLowerHash("ARROWS")),
+                InlineHasher(0),
+                InlineHasher(0),
+                InlineHasher(0),
+                InlineHasher(0),
+                InlineHasher(0));
+
+            pArrowComp->m_bVisible = false;
+
+            ((SlideMenuList*)mSlideMenuLists[0])->mMenuItems[((SlideMenuList*)mSlideMenuLists[0])->mCurrentIndex].mLocked = true;
+        }
+    }
 }
 
 /**
@@ -1687,6 +2539,421 @@ void OptionsSubMenu::GoBack()
  */
 void OptionsSubMenu::Update(float)
 {
+    mButtons.CentreButtons();
+
+    if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xD, true, NULL))
+    {
+        SlideMenuList* activeList = (SlideMenuList*)mSlideMenuLists[mMenuItems.mCurrentIndex];
+        int locked;
+        if (activeList != NULL)
+        {
+            locked = activeList->mMenuItems[activeList->mCurrentIndex].mLocked;
+        }
+        else
+        {
+            locked = 0;
+        }
+
+        if (!locked)
+        {
+            SlideMenuList* slideMenuList = (SlideMenuList*)mSlideMenuLists[mMenuItems.mCurrentIndex];
+            if (slideMenuList != NULL)
+            {
+                TLComponentInstance* comp = slideMenuList->mComponentInstance;
+                if (comp != NULL && comp->GetActiveSlide() != NULL)
+                {
+                    TLSlide* startSlide = comp->GetActiveSlide();
+                    TLSlide* currentSlide = startSlide;
+
+                    do
+                    {
+                        comp->SetActiveSlide(currentSlide);
+                        TLInstance* firstChild = comp->GetActiveSlide()->m_instances;
+                        TLInstance* inst = firstChild;
+
+                        if (firstChild != NULL)
+                        {
+                            do
+                            {
+                                if (inst->m_type == TLAT_TEXT)
+                                {
+                                    inst->SetAssetColour(SubMenuUnhighliteColour);
+                                }
+                                else if (inst->m_type == TLAT_IMAGE)
+                                {
+                                    if (inst->m_hash != nlStringLowerHash("white_box"))
+                                    {
+                                        inst->SetAssetColour(SubMenuUnhighliteColour);
+                                    }
+                                }
+
+                                inst = inst->m_next;
+                            } while (inst != firstChild);
+                        }
+
+                        currentSlide = currentSlide->m_next;
+                    } while (currentSlide != startSlide);
+
+                    comp->SetActiveSlide(startSlide);
+                }
+            }
+        }
+
+        int oldIndex = mMenuItems.mCurrentIndex;
+        int flags = mMenuItems.mFlags;
+        int wrapList = flags & 1;
+        int skipDisabled = flags & 2;
+        int newIndex = oldIndex - 1;
+
+        while (true)
+        {
+            if (wrapList)
+            {
+                if (newIndex < 0)
+                {
+                    newIndex = mMenuItems.mNumItemsAdded - 1;
+                }
+            }
+            else if (newIndex < 0)
+            {
+                break;
+            }
+
+            if (skipDisabled)
+            {
+                if (mMenuItems.mMenuItems[newIndex].mDisabled)
+                {
+                    newIndex--;
+                    continue;
+                }
+            }
+
+            mMenuItems.mMenuItems[oldIndex].mCallbacks[2](mMenuItems.mMenuItems[oldIndex].mType);
+
+            mMenuItems.mCurrentIndex = newIndex;
+
+            mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[1](mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mType);
+            break;
+        }
+
+        activeList = (SlideMenuList*)mSlideMenuLists[mMenuItems.mCurrentIndex];
+        if (activeList != NULL)
+        {
+            locked = activeList->mMenuItems[activeList->mCurrentIndex].mLocked;
+        }
+        else
+        {
+            locked = 0;
+        }
+
+        if (!locked)
+        {
+            SlideMenuList* slideMenuList = (SlideMenuList*)mSlideMenuLists[mMenuItems.mCurrentIndex];
+            if (slideMenuList != NULL)
+            {
+                TLComponentInstance* comp = slideMenuList->mComponentInstance;
+                if (comp != NULL && comp->GetActiveSlide() != NULL)
+                {
+                    TLSlide* startSlide = comp->GetActiveSlide();
+                    TLSlide* currentSlide = startSlide;
+
+                    do
+                    {
+                        comp->SetActiveSlide(currentSlide);
+                        TLInstance* firstChild = comp->GetActiveSlide()->m_instances;
+                        TLInstance* inst = firstChild;
+
+                        if (firstChild != NULL)
+                        {
+                            do
+                            {
+                                if (inst->m_type == TLAT_TEXT)
+                                {
+                                    inst->SetAssetColour(SubMenuHighliteColour);
+                                }
+                                else if (inst->m_type == TLAT_IMAGE)
+                                {
+                                    if (inst->m_hash != nlStringLowerHash("white_box"))
+                                    {
+                                        inst->SetAssetColour(SubMenuHighliteColour);
+                                    }
+                                }
+
+                                inst = inst->m_next;
+                            } while (inst != firstChild);
+                        }
+
+                        currentSlide = currentSlide->m_next;
+                    } while (currentSlide != startSlide);
+
+                    comp->SetActiveSlide(startSlide);
+                }
+            }
+        }
+    }
+    else if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xE, true, NULL))
+    {
+        SlideMenuList* activeList = (SlideMenuList*)mSlideMenuLists[mMenuItems.mCurrentIndex];
+        int locked;
+        if (activeList != NULL)
+        {
+            locked = activeList->mMenuItems[activeList->mCurrentIndex].mLocked;
+        }
+        else
+        {
+            locked = 0;
+        }
+
+        if (!locked)
+        {
+            SlideMenuList* slideMenuList = (SlideMenuList*)mSlideMenuLists[mMenuItems.mCurrentIndex];
+            if (slideMenuList != NULL)
+            {
+                TLComponentInstance* comp = slideMenuList->mComponentInstance;
+                if (comp != NULL && comp->GetActiveSlide() != NULL)
+                {
+                    TLSlide* startSlide = comp->GetActiveSlide();
+                    TLSlide* currentSlide = startSlide;
+
+                    do
+                    {
+                        comp->SetActiveSlide(currentSlide);
+                        TLInstance* firstChild = comp->GetActiveSlide()->m_instances;
+                        TLInstance* inst = firstChild;
+
+                        if (firstChild != NULL)
+                        {
+                            do
+                            {
+                                if (inst->m_type == TLAT_TEXT)
+                                {
+                                    inst->SetAssetColour(SubMenuUnhighliteColour);
+                                }
+                                else if (inst->m_type == TLAT_IMAGE)
+                                {
+                                    if (inst->m_hash != nlStringLowerHash("white_box"))
+                                    {
+                                        inst->SetAssetColour(SubMenuUnhighliteColour);
+                                    }
+                                }
+
+                                inst = inst->m_next;
+                            } while (inst != firstChild);
+                        }
+
+                        currentSlide = currentSlide->m_next;
+                    } while (currentSlide != startSlide);
+
+                    comp->SetActiveSlide(startSlide);
+                }
+            }
+        }
+
+        int oldIndex = mMenuItems.mCurrentIndex;
+        int flags = mMenuItems.mFlags;
+        int wrapList = flags & 1;
+        int skipDisabled = flags & 2;
+        int newIndex = oldIndex + 1;
+
+        while (true)
+        {
+            if (wrapList)
+            {
+                newIndex = newIndex % mMenuItems.mNumItemsAdded;
+            }
+            else if (newIndex >= mMenuItems.mNumItemsAdded)
+            {
+                break;
+            }
+
+            if (skipDisabled)
+            {
+                if (mMenuItems.mMenuItems[newIndex].mDisabled)
+                {
+                    newIndex++;
+                    continue;
+                }
+            }
+
+            mMenuItems.mMenuItems[oldIndex].mCallbacks[2](mMenuItems.mMenuItems[oldIndex].mType);
+
+            mMenuItems.mCurrentIndex = newIndex;
+
+            mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[1](mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mType);
+            break;
+        }
+
+        activeList = (SlideMenuList*)mSlideMenuLists[mMenuItems.mCurrentIndex];
+        if (activeList != NULL)
+        {
+            locked = activeList->mMenuItems[activeList->mCurrentIndex].mLocked;
+        }
+        else
+        {
+            locked = 0;
+        }
+
+        if (!locked)
+        {
+            SlideMenuList* slideMenuList = (SlideMenuList*)mSlideMenuLists[mMenuItems.mCurrentIndex];
+            if (slideMenuList != NULL)
+            {
+                TLComponentInstance* comp = slideMenuList->mComponentInstance;
+                if (comp != NULL && comp->GetActiveSlide() != NULL)
+                {
+                    TLSlide* startSlide = comp->GetActiveSlide();
+                    TLSlide* currentSlide = startSlide;
+
+                    do
+                    {
+                        comp->SetActiveSlide(currentSlide);
+                        TLInstance* firstChild = comp->GetActiveSlide()->m_instances;
+                        TLInstance* inst = firstChild;
+
+                        if (firstChild != NULL)
+                        {
+                            do
+                            {
+                                if (inst->m_type == TLAT_TEXT)
+                                {
+                                    inst->SetAssetColour(SubMenuHighliteColour);
+                                }
+                                else if (inst->m_type == TLAT_IMAGE)
+                                {
+                                    if (inst->m_hash != nlStringLowerHash("white_box"))
+                                    {
+                                        inst->SetAssetColour(SubMenuHighliteColour);
+                                    }
+                                }
+
+                                inst = inst->m_next;
+                            } while (inst != firstChild);
+                        }
+
+                        currentSlide = currentSlide->m_next;
+                    } while (currentSlide != startSlide);
+
+                    comp->SetActiveSlide(startSlide);
+                }
+            }
+        }
+    }
+    else if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xB, true, NULL))
+    {
+        SlideMenuList* slideMenuList = (SlideMenuList*)mSlideMenuLists[mMenuItems.mCurrentIndex];
+        if (slideMenuList != NULL)
+        {
+            MenuResult res = RES_ERROR;
+
+            int oldIndex = slideMenuList->mCurrentIndex;
+            int flags = slideMenuList->mFlags;
+            int wrapList = flags & 1;
+            int skipDisabled = flags & 2;
+            int newIndex = oldIndex - 1;
+
+            while (true)
+            {
+                if (wrapList)
+                {
+                    if (newIndex < 0)
+                    {
+                        newIndex = slideMenuList->mNumItemsAdded - 1;
+                    }
+                }
+                else if (newIndex < 0)
+                {
+                    res = RES_NOT_CHANGED;
+                    break;
+                }
+
+                if (skipDisabled)
+                {
+                    if (slideMenuList->mMenuItems[newIndex].mDisabled)
+                    {
+                        newIndex--;
+                        continue;
+                    }
+                }
+
+                slideMenuList->mMenuItems[oldIndex].mCallbacks[2](slideMenuList->mMenuItems[oldIndex].mType);
+
+                slideMenuList->mCurrentIndex = newIndex;
+
+                slideMenuList->mMenuItems[slideMenuList->mCurrentIndex].mCallbacks[1](
+                    slideMenuList->mMenuItems[slideMenuList->mCurrentIndex].mType);
+
+                res = RES_OK;
+                break;
+            }
+
+            if (res == RES_OK)
+            {
+                FEAudio::PlayAnimAudioEvent("sfx_option_scroll_left", false);
+                Save();
+            }
+            else if (res == RES_NOT_CHANGED)
+            {
+                FEAudio::PlayAnimAudioEvent("sfx_deny", false);
+            }
+        }
+    }
+    else if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xC, true, NULL))
+    {
+        SlideMenuList* slideMenuList = (SlideMenuList*)mSlideMenuLists[mMenuItems.mCurrentIndex];
+        if (slideMenuList != NULL)
+        {
+            MenuResult res = RES_ERROR;
+
+            int oldIndex = slideMenuList->mCurrentIndex;
+            int flags = slideMenuList->mFlags;
+            int wrapList = flags & 1;
+            int skipDisabled = flags & 2;
+            int newIndex = oldIndex + 1;
+
+            while (true)
+            {
+                if (wrapList)
+                {
+                    newIndex = newIndex % slideMenuList->mNumItemsAdded;
+                }
+                else if (newIndex >= slideMenuList->mNumItemsAdded)
+                {
+                    res = RES_NOT_CHANGED;
+                    break;
+                }
+
+                if (skipDisabled)
+                {
+                    if (slideMenuList->mMenuItems[newIndex].mDisabled)
+                    {
+                        newIndex++;
+                        continue;
+                    }
+                }
+
+                slideMenuList->mMenuItems[oldIndex].mCallbacks[2](slideMenuList->mMenuItems[oldIndex].mType);
+
+                slideMenuList->mCurrentIndex = newIndex;
+
+                slideMenuList->mMenuItems[slideMenuList->mCurrentIndex].mCallbacks[1](
+                    slideMenuList->mMenuItems[slideMenuList->mCurrentIndex].mType);
+
+                res = RES_OK;
+                break;
+            }
+
+            if (res == RES_OK)
+            {
+                FEAudio::PlayAnimAudioEvent("sfx_option_scroll_right", false);
+                Save();
+            }
+            else if (res == RES_NOT_CHANGED)
+            {
+                FEAudio::PlayAnimAudioEvent("sfx_deny", false);
+                Save();
+            }
+        }
+    }
 }
 
 // /**

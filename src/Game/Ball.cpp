@@ -1567,9 +1567,187 @@ void cBall::CollideWithGroundCallback()
 
 /**
  * Offset/Address/Size: 0x2BD4 | 0x8000C5A8 | size: 0xA18
+ * TODO: 49.40% match - missing cFielder-specific collision handling branch and
+ *       stack/register allocation differences in duplicated shot/pass cleanup blocks.
  */
-void cBall::CollideWithCharacterCallback(cPlayer*, const nlVector3&)
+void cBall::CollideWithCharacterCallback(cPlayer* pCharacter, const nlVector3& v3PreBallVelocity)
 {
+    if (m_pOwner == NULL)
+    {
+        float currentVel = nlSqrt(m_v3Velocity.f.x * m_v3Velocity.f.x + m_v3Velocity.f.y * m_v3Velocity.f.y, true);
+        if (currentVel > 0.1f)
+        {
+            float previousVel = nlSqrt(v3PreBallVelocity.f.x * v3PreBallVelocity.f.x + v3PreBallVelocity.f.y * v3PreBallVelocity.f.y, true);
+            float speedDifference = (previousVel - currentVel) / currentVel;
+            speedDifference = fabsf(speedDifference);
+
+            if (speedDifference < 0.2f)
+            {
+                float dot = m_v3Velocity.f.x * v3PreBallVelocity.f.x + m_v3Velocity.f.y * v3PreBallVelocity.f.y;
+                if (dot > previousVel * (0.99f * currentVel))
+                {
+                    return;
+                }
+            }
+        }
+    }
+
+    if (m_tShotTimer.m_uPackedTime != 0)
+    {
+        float fGameDuration = g_pGame->m_fGameDuration;
+        if (g_pGame->GetGameTime() >= fGameDuration && g_pGame->m_eGameState == GS_GAMEPLAY && m_tBuzzerBeaterTimer.m_uPackedTime == 0)
+        {
+            m_tBuzzerBeaterTimer.SetSeconds(0.5f);
+        }
+
+        m_tShotTimer.m_uPackedTime = 0;
+        mbCanDamage = false;
+        m_unk_0xA4 = false;
+
+        if (mbHyperSTS)
+        {
+            Audio::gWorldSFX.Stop(Audio::eWorldSFX(0x57), cGameSFX::SFX_STOP_FIRST);
+        }
+        Audio::FadeFilterFromCurrentToZero();
+
+        FixedUpdateTask::mTimeScale = 1.0f;
+        ParticleUpdateTask::SetTimeScale(1.0f);
+
+        if (m_pBlurHandler != 0)
+        {
+            m_pBlurHandler->Die(0.5f);
+            m_pBlurHandler = 0;
+        }
+
+        KillBallShot("ball_shot_perfect_glow", true);
+        KillBallShot("ball_pass_perfect_glow", true);
+        KillBallShot("shoot_to_score_shot", false);
+        KillBallShot("ball_shot_onetimer", false);
+
+        Audio::gStadGenSFX.Stop(Audio::eWorldSFX(0xB9), cGameSFX::SFX_STOP_FIRST);
+        Audio::gStadGenSFX.Stop(Audio::eWorldSFX(0xBA), cGameSFX::SFX_STOP_FIRST);
+        Audio::gStadGenSFX.Stop(Audio::eWorldSFX(0xBD), cGameSFX::SFX_STOP_FIRST);
+
+        if (mbHyperSTS)
+        {
+            void* data = (u8*)g_pEventManager->CreateValidEvent(0x47, 0x24) + 0x10;
+            PassBallData* eventdata = new (data) PassBallData();
+            eventdata->pPasser = m_pPrevOwner;
+            eventdata->pTarget = NULL;
+
+            bool pad = eventdata->pPasser->GetGlobalPad() != NULL;
+            eventdata->mPasserControllerID = pad ? eventdata->pPasser->GetGlobalPad()->m_padIndex : -1;
+        }
+
+        mbHyperSTS = false;
+        mbIsPerfectShot = false;
+
+        gbCanFadeOutPerfectPassSFX = true;
+
+        if (AudioLoader::IsInited())
+        {
+            gfPerfectPassSFXVol = Audio::gStadGenSFX.GetSFXVol(0xBA);
+        }
+
+        if (pCharacter->m_eClassType != GOALIE)
+        {
+            Audio::SoundAttributes sndAtr;
+            sndAtr.Init();
+            sndAtr.SetSoundType(0xB7, true);
+            sndAtr.UseStationaryPosVector(pCharacter->m_v3Position);
+            Audio::gStadGenSFX.Play(sndAtr);
+        }
+    }
+
+    if (m_pPassTarget != NULL)
+    {
+        if (m_pPassTarget->m_pTeam != pCharacter->m_pTeam)
+        {
+            Audio::SoundAttributes sndAtr;
+            sndAtr.Init();
+            sndAtr.SetSoundType(0xB7, true);
+            sndAtr.UseStationaryPosVector(pCharacter->m_v3Position);
+            Audio::gStadGenSFX.Play(sndAtr);
+        }
+
+        if (mbHyperSTS)
+        {
+            Audio::gWorldSFX.Stop(Audio::eWorldSFX(0x57), cGameSFX::SFX_STOP_FIRST);
+        }
+        Audio::FadeFilterFromCurrentToZero();
+
+        FixedUpdateTask::mTimeScale = 1.0f;
+        ParticleUpdateTask::SetTimeScale(1.0f);
+
+        if (m_pBlurHandler != 0)
+        {
+            m_pBlurHandler->Die(0.5f);
+            m_pBlurHandler = 0;
+        }
+
+        KillBallShot("ball_shot_perfect_glow", true);
+        KillBallShot("ball_pass_perfect_glow", true);
+        KillBallShot("shoot_to_score_shot", false);
+        KillBallShot("ball_shot_onetimer", false);
+
+        Audio::gStadGenSFX.Stop(Audio::eWorldSFX(0xB9), cGameSFX::SFX_STOP_FIRST);
+        Audio::gStadGenSFX.Stop(Audio::eWorldSFX(0xBA), cGameSFX::SFX_STOP_FIRST);
+        Audio::gStadGenSFX.Stop(Audio::eWorldSFX(0xBD), cGameSFX::SFX_STOP_FIRST);
+
+        if (mbHyperSTS)
+        {
+            void* data = (u8*)g_pEventManager->CreateValidEvent(0x47, 0x24) + 0x10;
+            PassBallData* eventdata = new (data) PassBallData();
+            eventdata->pPasser = m_pPrevOwner;
+            eventdata->pTarget = NULL;
+
+            bool pad = eventdata->pPasser->GetGlobalPad() != NULL;
+            eventdata->mPasserControllerID = pad ? eventdata->pPasser->GetGlobalPad()->m_padIndex : -1;
+        }
+
+        mbHyperSTS = false;
+        mbIsPerfectShot = false;
+
+        gbCanFadeOutPerfectPassSFX = true;
+
+        if (AudioLoader::IsInited())
+        {
+            gfPerfectPassSFXVol = Audio::gStadGenSFX.GetSFXVol(0xBA);
+        }
+
+        if (m_pPassTarget)
+        {
+            m_pPassTarget = NULL;
+        }
+
+        m_v3PassIntercept.f.x = 0.f;
+        m_v3PassIntercept.f.y = 0.f;
+        m_v3PassIntercept.f.z = 0.f;
+
+        m_tPassTargetTimer.m_uPackedTime = 0;
+
+        if (m_uVoiceID)
+        {
+            Audio::StopSFX(m_uVoiceID);
+            m_uVoiceID = 0;
+        }
+
+        m_uGoalType = 4;
+    }
+
+    if (m_pOwner == NULL)
+    {
+        m_pLastTouch = pCharacter;
+        FakeBallWorld::InvalidateBallCache();
+        m_bBallDeflectCount++;
+    }
+
+    m_bBallPathChangeCount++;
+
+    if (pCharacter->m_eClassType == FIELDER)
+    {
+        m_v3ShotOrigin = m_v3Position;
+    }
 }
 
 /**

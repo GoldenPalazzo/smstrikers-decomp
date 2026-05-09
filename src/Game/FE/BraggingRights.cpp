@@ -29,6 +29,56 @@ void OpenItem(TLComponentInstance*);
 void CloseItem(TLComponentInstance*);
 } // namespace SingleHighlite
 
+struct LOCHeader
+{
+    char Thumbprint[4];
+    unsigned long Version;
+    unsigned long Language;
+    unsigned long StringCount;
+    unsigned long Flags;
+};
+
+class nlLocalization
+{
+public:
+    struct StringLookup
+    {
+        unsigned long hash;
+        unsigned long StringOffset;
+        operator unsigned long() const { return hash; }
+    };
+
+    LOCHeader* m_pFile;
+    StringLookup* m_LookupTable;
+    unsigned short* m_FirstString;
+    int m_CurrentLanguage;
+};
+
+extern nlLocalization* g_pLocalization;
+extern const unsigned short LocalizationTableNotFound[];
+extern const unsigned short MissingLocString[];
+extern nlLocalization::StringLookup* nlBSearch(const unsigned long&, nlLocalization::StringLookup*, int);
+
+template <typename StringType, typename T1, typename T2>
+StringType Format(const StringType& format, const T1& value1, const T2& value2);
+
+static const unsigned short* LookupLocHash(unsigned long hash)
+{
+    nlLocalization* loc = g_pLocalization;
+    if (loc->m_LookupTable == 0)
+    {
+        return LocalizationTableNotFound;
+    }
+
+    nlLocalization::StringLookup* entry = nlBSearch(hash, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
+    if (entry)
+    {
+        return loc->m_FirstString + entry->StringOffset;
+    }
+
+    return MissingLocString;
+}
+
 // /**
 //  * Offset/Address/Size: 0xE10 | 0x800D6924 | size: 0x124
 //  */
@@ -362,8 +412,60 @@ void BraggingRightsOverlay::Update(float)
 /**
  * Offset/Address/Size: 0x15A4 | 0x800D35A0 | size: 0x8FC
  */
-void BraggingRightsOverlay::ChangeTicker(int)
+void BraggingRightsOverlay::ChangeTicker(int tickerRow)
 {
+    static unsigned long DETAIL_NAMES[6][2] = {
+        { 0x1583A4AF, 0x779A26F3 },
+        { 0x14C01771, 0x1EF8D3F5 },
+        { 0x361BDF85, 0x88E8F289 },
+        { 0x311076D6, 0x994F54FA },
+        { 0xB3863DA8, 0x2C4EE80C },
+        { 0x724E4E75, 0xF19F2F79 },
+    };
+
+    BasicString<char, Detail::TempStringAllocator> statString
+        = LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(mHighestStats[tickerRow]);
+    unsigned short statWideString[16];
+    BasicString<unsigned short, Detail::TempStringAllocator> formatted;
+
+    nlStrToWcs(statString.c_str(), statWideString, 16);
+
+    if (mHighestStats[tickerRow] != 0)
+    {
+        if (mIsTournamentScene)
+        {
+            eTeamID winningTeam = nlSingleton<GameInfoManager>::s_pInstance->GetTeamStatsByIndex((unsigned short)mAwardWinners[tickerRow]).mTeamIndex;
+
+            if (tickerRow == 4)
+            {
+                tickerRow++;
+            }
+
+            const unsigned short* detailFormat = LookupLocHash(DETAIL_NAMES[tickerRow][0]);
+            const unsigned short* winnerName = LookupLocHash(GetLOCCharacterName(winningTeam, false, false));
+
+            formatted = Format<BasicString<unsigned short, Detail::TempStringAllocator>, const unsigned short*, unsigned short[16]>(
+                BasicString<unsigned short, Detail::TempStringAllocator>(detailFormat), winnerName, statWideString);
+        }
+        else
+        {
+            const unsigned short* detailFormat = LookupLocHash(DETAIL_NAMES[tickerRow][0]);
+            const unsigned short* winnerName = LookupLocHash(CONTROLLER_TEXT[mAwardWinners[tickerRow]]);
+
+            formatted = Format<BasicString<unsigned short, Detail::TempStringAllocator>, const unsigned short*, unsigned short[16]>(
+                BasicString<unsigned short, Detail::TempStringAllocator>(detailFormat), winnerName, statWideString);
+        }
+    }
+    else
+    {
+        const unsigned short* locString = LookupLocHash(0xBA05BFBD);
+        formatted = BasicString<unsigned short, Detail::TempStringAllocator>(locString);
+    }
+
+    memcpy(mBuffer, formatted.c_str(), sizeof(mBuffer));
+
+    BasicString<unsigned short, Detail::TempStringAllocator> message(mBuffer);
+    mTicker->SetDisplayMessage(message);
 }
 
 /**

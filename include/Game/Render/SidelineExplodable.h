@@ -104,6 +104,11 @@ void UpdateEmissionControllerPosition(EmissionController&, ExplosionFragment*);
 class SidelineExplosionPhysicsObject : public PhysicsBox
 {
 public:
+    SidelineExplosionPhysicsObject(CollisionSpace* space, PhysicsWorld* world, float side1, float side2, float side3, ExplosionFragment* pExplosionFragment)
+        : PhysicsBox(space, world, side1, side2, side3)
+        , mpExplosionFragment(pExplosionFragment)
+    {
+    }
     virtual ~SidelineExplosionPhysicsObject();
     virtual int GetObjectType() const { return 0x1C; };
     virtual bool SetContactInfo(dContact* contact, PhysicsObject* other, bool first);

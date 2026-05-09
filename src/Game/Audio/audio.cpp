@@ -1010,10 +1010,424 @@ void Update3DSFXEmitters()
 
 /**
  * Offset/Address/Size: 0x159C | 0x8013DAB0 | size: 0xA34
+ * TODO: 91.91% match - fade-type dispatch control flow and several register allocations differ.
  */
-// void UpdateFades(float)
-// {
-// }
+void UpdateFades(float fDeltaT)
+{
+    FadeAudioData* pFadeData;
+    float newVol;
+
+    pFadeData = g_pFadeList;
+    while (pFadeData != NULL)
+    {
+        float totalEstimatedTime = *(float*)((char*)pFadeData + 0x24);
+        if (-1.0f == totalEstimatedTime)
+        {
+            *(float*)((char*)pFadeData + 0x24) = *(float*)((char*)pFadeData + 0x0C) + *(float*)((char*)pFadeData + 0x10);
+        }
+        else
+        {
+            if (totalEstimatedTime < -10.0f)
+            {
+                nlListRemoveElement<FadeAudioData>(&g_pFadeList, pFadeData, NULL);
+                FadeAudioData* next = pFadeData->next;
+                delete pFadeData;
+                pFadeData = next;
+                continue;
+            }
+            *(float*)((char*)pFadeData + 0x24) = totalEstimatedTime - fDeltaT;
+        }
+
+        switch (*(s32*)pFadeData)
+        {
+        case 1:
+        {
+            if (*(u8*)((char*)pFadeData + 0x1D) != 0)
+            {
+                if (!PlatAudio::IsEmitterActive((SFXEmitter*)*(u32*)((char*)pFadeData + 0x4)))
+                {
+                    break;
+                }
+            }
+
+            bool isPlaying;
+            if (g_bAudioInitialized)
+            {
+                isPlaying = PlatAudio::IsSFXPlaying(*(u32*)((char*)pFadeData + 0x4));
+            }
+            else
+            {
+                isPlaying = false;
+            }
+            if (!isPlaying)
+            {
+                break;
+            }
+
+            if (*(float*)((char*)pFadeData + 0x0C) > 0.0f)
+            {
+                *(float*)((char*)pFadeData + 0x0C) -= fDeltaT;
+            }
+
+            if (*(float*)((char*)pFadeData + 0x0C) <= 0.0f && *(float*)((char*)pFadeData + 0x10) > 0.0f)
+            {
+                *(float*)((char*)pFadeData + 0x10) -= fDeltaT;
+                if (*(float*)((char*)pFadeData + 0x10) < 0.01f)
+                {
+                    *(float*)((char*)pFadeData + 0x10) = 0.0f;
+                }
+
+                float deltaVol = fDeltaT * *(float*)((char*)pFadeData + 0x8);
+                newVol = *(float*)*(u32*)((char*)pFadeData + 0x18);
+                newVol = newVol + deltaVol;
+
+                if (*(u8*)((char*)pFadeData + 0x1D) != 0)
+                {
+                    SFXEmitter* pEmitter = (SFXEmitter*)*(u32*)((char*)pFadeData + 0x4);
+                    if (pEmitter->posUpdateMethod == PHYSOBJ)
+                    {
+                        nlVector3 vel = { 0.0f, 0.0f, 0.0f };
+                        if (pEmitter->pPhysObj->m_bodyID)
+                        {
+                            nlVector3& linVel = pEmitter->pPhysObj->GetLinearVelocity();
+                            vel.as_u32[0] = linVel.as_u32[0];
+                            vel.as_u32[1] = linVel.as_u32[1];
+                            vel.as_u32[2] = linVel.as_u32[2];
+                        }
+                        PlatAudio::Update3DSFXEmitter(pEmitter, pEmitter->pPhysObj->GetPosition(), vel, newVol);
+                    }
+                    else if (pEmitter->posUpdateMethod == PTRS_TO_VECTORS)
+                    {
+                        PlatAudio::Update3DSFXEmitter(pEmitter, *pEmitter->pos.pvPos, *pEmitter->dir.pvDir, newVol);
+                    }
+                    else if (pEmitter->posUpdateMethod == VECTORS)
+                    {
+                        PlatAudio::Update3DSFXEmitter(pEmitter, pEmitter->pos.vPos, pEmitter->dir.vDir, newVol);
+                    }
+                }
+                else
+                {
+                    PlatAudio::SetSFXVolume(*(u32*)((char*)pFadeData + 0x4), newVol);
+                }
+
+                *(float*)*(u32*)((char*)pFadeData + 0x18) = newVol;
+            }
+
+            if (*(float*)((char*)pFadeData + 0x10) <= 0.0f)
+            {
+                if (*(u8*)((char*)pFadeData + 0x1D) != 0)
+                {
+                    SFXEmitter* pEmitter = (SFXEmitter*)*(u32*)((char*)pFadeData + 0x4);
+                    if (pEmitter->posUpdateMethod == PHYSOBJ)
+                    {
+                        nlVector3 vel = { 0.0f, 0.0f, 0.0f };
+                        if (pEmitter->pPhysObj->m_bodyID)
+                        {
+                            nlVector3& linVel = pEmitter->pPhysObj->GetLinearVelocity();
+                            vel.as_u32[0] = linVel.as_u32[0];
+                            vel.as_u32[1] = linVel.as_u32[1];
+                            vel.as_u32[2] = linVel.as_u32[2];
+                        }
+                        PlatAudio::Update3DSFXEmitter(pEmitter, pEmitter->pPhysObj->GetPosition(), vel, *(float*)((char*)pFadeData + 0x14));
+                    }
+                    else if (pEmitter->posUpdateMethod == PTRS_TO_VECTORS)
+                    {
+                        PlatAudio::Update3DSFXEmitter(
+                            pEmitter, *pEmitter->pos.pvPos, *pEmitter->dir.pvDir, *(float*)((char*)pFadeData + 0x14));
+                    }
+                    else if (pEmitter->posUpdateMethod == VECTORS)
+                    {
+                        PlatAudio::Update3DSFXEmitter(
+                            pEmitter, pEmitter->pos.vPos, pEmitter->dir.vDir, *(float*)((char*)pFadeData + 0x14));
+                    }
+                }
+                else
+                {
+                    PlatAudio::SetSFXVolume(*(u32*)((char*)pFadeData + 0x4), *(float*)((char*)pFadeData + 0x14));
+                }
+
+                if (*(u8*)((char*)pFadeData + 0x1C) != 0)
+                {
+                    if (*(u8*)((char*)pFadeData + 0x1D) != 0)
+                    {
+                        PlatAudio::RemoveEmitter((SFXEmitter*)*(u32*)((char*)pFadeData + 0x4));
+                    }
+                    else if (g_bAudioInitialized)
+                    {
+                        PlatAudio::StopSFX(*(u32*)((char*)pFadeData + 0x4));
+                    }
+                }
+
+                nlListRemoveElement<FadeAudioData>(&g_pFadeList, pFadeData, NULL);
+                FadeAudioData* next = pFadeData->next;
+                delete pFadeData;
+                pFadeData = next;
+                continue;
+            }
+            break;
+        }
+
+        case 2:
+        {
+            if (*(float*)((char*)pFadeData + 0x0C) > 0.0f)
+            {
+                *(float*)((char*)pFadeData + 0x0C) -= fDeltaT;
+            }
+
+            if (*(float*)((char*)pFadeData + 0x0C) <= 0.0f && *(float*)((char*)pFadeData + 0x10) > 0.0f)
+            {
+                if (*(u8*)((char*)pFadeData + 0x1E) != 0 && *(u8*)((char*)pFadeData + 0x1F) == 0)
+                {
+                    gWorldSFX.ActivateFilterOnAllTrackedSFX(true);
+                    gPowerupSFX.ActivateFilterOnAllTrackedSFX(true);
+                    gStadGenSFX.ActivateFilterOnAllTrackedSFX(true);
+                    gCrowdSFX.ActivateFilterOnAllTrackedSFX(true);
+
+                    if (g_pGame != NULL)
+                    {
+                        for (int t = 0; t < 2; t++)
+                        {
+                            cTeam* team = g_pTeams[t];
+                            for (int p = 0; p < 5; p++)
+                            {
+                                team->GetPlayer(p)->m_pCharacterSFX->ActivateFilterOnAllTrackedSFX(true);
+                            }
+                        }
+                        BasicStadium::GetCurrentStadium()->mpNPCManager->mpBowser->m_pCharacterSFX->ActivateFilterOnAllTrackedSFX(
+                            true);
+                    }
+
+                    CrowdMood::ActivateLPF(true);
+                    gbFilterOn = true;
+                    *(u8*)((char*)pFadeData + 0x1F) = 1;
+                }
+
+                *(float*)((char*)pFadeData + 0x10) -= fDeltaT;
+                if (*(float*)((char*)pFadeData + 0x10) < 0.01f)
+                {
+                    *(float*)((char*)pFadeData + 0x10) = 0.0f;
+                }
+
+                float deltaVal = fDeltaT * *(float*)((char*)pFadeData + 0x8);
+                float newVal = *(float*)((char*)pFadeData + 0x18) + deltaVal;
+                if (newVal < 0.0f)
+                {
+                    newVal = 0.0f;
+                }
+                if (newVal > 1.0f)
+                {
+                    newVal = 1.0f;
+                }
+
+                float newFreq = 16383.0f * newVal;
+                if (newFreq < 0.0f)
+                {
+                    newFreq += -0.5f;
+                }
+                else
+                {
+                    newFreq += 0.5f;
+                }
+
+                unsigned short targetFreq = (unsigned short)(s32)newFreq;
+                if (targetFreq > 0x3FFF)
+                {
+                    targetFreq = 0x3FFF;
+                }
+
+                gWorldSFX.SetFilterFreqOnAllTrackedSFX(targetFreq);
+                gPowerupSFX.SetFilterFreqOnAllTrackedSFX(targetFreq);
+                gStadGenSFX.SetFilterFreqOnAllTrackedSFX(targetFreq);
+                gCrowdSFX.SetFilterFreqOnAllTrackedSFX(targetFreq);
+
+                if (g_pGame != NULL)
+                {
+                    for (int t = 0; t < 2; t++)
+                    {
+                        cTeam* team = g_pTeams[t];
+                        for (int p = 0; p < 5; p++)
+                        {
+                            team->GetPlayer(p)->m_pCharacterSFX->SetFilterFreqOnAllTrackedSFX(targetFreq);
+                        }
+                    }
+                    BasicStadium::GetCurrentStadium()->mpNPCManager->mpBowser->m_pCharacterSFX->SetFilterFreqOnAllTrackedSFX(
+                        targetFreq);
+                }
+
+                CrowdMood::SetLPF(targetFreq);
+                *(float*)((char*)pFadeData + 0x18) = newVal;
+            }
+
+            if (*(float*)((char*)pFadeData + 0x10) <= 0.0f)
+            {
+                float targetFreqFloat = 16383.0f * *(float*)((char*)pFadeData + 0x14);
+                if (targetFreqFloat < 0.0f)
+                {
+                    targetFreqFloat += -0.5f;
+                }
+                else
+                {
+                    targetFreqFloat += 0.5f;
+                }
+
+                unsigned short targetFreq = (unsigned short)(s32)targetFreqFloat;
+                if (targetFreq > 0x3FFF)
+                {
+                    targetFreq = 0x3FFF;
+                }
+
+                gWorldSFX.SetFilterFreqOnAllTrackedSFX(targetFreq);
+                gPowerupSFX.SetFilterFreqOnAllTrackedSFX(targetFreq);
+                gStadGenSFX.SetFilterFreqOnAllTrackedSFX(targetFreq);
+                gCrowdSFX.SetFilterFreqOnAllTrackedSFX(targetFreq);
+
+                if (g_pGame != NULL)
+                {
+                    for (int t = 0; t < 2; t++)
+                    {
+                        cTeam* team = g_pTeams[t];
+                        for (int p = 0; p < 5; p++)
+                        {
+                            team->GetPlayer(p)->m_pCharacterSFX->SetFilterFreqOnAllTrackedSFX(targetFreq);
+                        }
+                    }
+                    BasicStadium::GetCurrentStadium()->mpNPCManager->mpBowser->m_pCharacterSFX->SetFilterFreqOnAllTrackedSFX(
+                        targetFreq);
+                }
+
+                CrowdMood::SetLPF(targetFreq);
+
+                if (*(u8*)((char*)pFadeData + 0x1C) != 0)
+                {
+                    gWorldSFX.ActivateFilterOnAllTrackedSFX(false);
+                    gPowerupSFX.ActivateFilterOnAllTrackedSFX(false);
+                    gStadGenSFX.ActivateFilterOnAllTrackedSFX(false);
+                    gCrowdSFX.ActivateFilterOnAllTrackedSFX(false);
+
+                    if (g_pGame != NULL)
+                    {
+                        for (int t = 0; t < 2; t++)
+                        {
+                            cTeam* team = g_pTeams[t];
+                            for (int p = 0; p < 5; p++)
+                            {
+                                team->GetPlayer(p)->m_pCharacterSFX->ActivateFilterOnAllTrackedSFX(false);
+                            }
+                        }
+                        BasicStadium::GetCurrentStadium()->mpNPCManager->mpBowser->m_pCharacterSFX->ActivateFilterOnAllTrackedSFX(
+                            false);
+                    }
+
+                    CrowdMood::ActivateLPF(false);
+                    gbFilterOn = false;
+                    *(u8*)((char*)pFadeData + 0x1F) = 0;
+                }
+
+                nlListRemoveElement<FadeAudioData>(&g_pFadeList, pFadeData, NULL);
+                FadeAudioData* next = pFadeData->next;
+                delete pFadeData;
+                pFadeData = next;
+                continue;
+            }
+            break;
+        }
+
+        case 3:
+        {
+            if (*(float*)((char*)pFadeData + 0x0C) > 0.0f)
+            {
+                *(float*)((char*)pFadeData + 0x0C) -= fDeltaT;
+            }
+
+            if (*(float*)((char*)pFadeData + 0x0C) <= 0.0f && *(float*)((char*)pFadeData + 0x10) > 0.0f)
+            {
+                *(float*)((char*)pFadeData + 0x10) -= fDeltaT;
+                if (*(float*)((char*)pFadeData + 0x10) < 0.01f)
+                {
+                    *(float*)((char*)pFadeData + 0x10) = 0.0f;
+                }
+
+                float deltaVal = fDeltaT * *(float*)((char*)pFadeData + 0x8);
+                float newVal = *(float*)((char*)pFadeData + 0x18) + deltaVal;
+                if (newVal < 0.0f)
+                {
+                    newVal = 0.0f;
+                }
+                if (newVal > 1.0f)
+                {
+                    newVal = 1.0f;
+                }
+
+                float newPitch = 8192.0f * newVal;
+                if (newPitch < 0.0f)
+                {
+                    newPitch += -0.5f;
+                }
+                else
+                {
+                    newPitch += 0.5f;
+                }
+
+                unsigned short targetFreq = (unsigned short)(s32)newPitch;
+                if (targetFreq > 0x3FFF)
+                {
+                    targetFreq = 0x3FFF;
+                }
+
+                if (g_pGame != NULL)
+                {
+                    for (int t = 0; t < 2; t++)
+                    {
+                        cTeam* team = g_pTeams[t];
+                        for (int p = 0; p < 5; p++)
+                        {
+                            team->GetPlayer(p)->m_pCharacterSFX->SetPitchBendOnAllDialogueSFX(targetFreq);
+                        }
+                    }
+                    BasicStadium::GetCurrentStadium()->mpNPCManager->mpBowser->m_pCharacterSFX->SetPitchBendOnAllDialogueSFX(
+                        targetFreq);
+                }
+
+                gbPitchBent = targetFreq != 0x2000;
+                *(u8*)((char*)pFadeData + 0x21) = 1;
+                *(float*)((char*)pFadeData + 0x18) = newVal;
+            }
+
+            if (*(float*)((char*)pFadeData + 0x10) <= 0.0f)
+            {
+                if (*(u8*)((char*)pFadeData + 0x1C) != 0)
+                {
+                    if (g_pGame != NULL)
+                    {
+                        for (int t = 0; t < 2; t++)
+                        {
+                            cTeam* team = g_pTeams[t];
+                            for (int p = 0; p < 5; p++)
+                            {
+                                team->GetPlayer(p)->m_pCharacterSFX->SetPitchBendOnAllDialogueSFX(0x2000);
+                            }
+                        }
+                        BasicStadium::GetCurrentStadium()->mpNPCManager->mpBowser->m_pCharacterSFX->SetPitchBendOnAllDialogueSFX(
+                            0x2000);
+                    }
+                    gbPitchBent = false;
+                    *(u8*)((char*)pFadeData + 0x21) = 0;
+                    gbPitchBent = false;
+                }
+
+                nlListRemoveElement<FadeAudioData>(&g_pFadeList, pFadeData, NULL);
+                FadeAudioData* next = pFadeData->next;
+                delete pFadeData;
+                pFadeData = next;
+                continue;
+            }
+            break;
+        }
+        }
+
+        pFadeData = pFadeData->next;
+    }
+}
 
 /**
  * Offset/Address/Size: 0x1FD0 | 0x8013E4E4 | size: 0x354

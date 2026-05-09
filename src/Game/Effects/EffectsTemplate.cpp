@@ -1,12 +1,15 @@
 #include "Game/Effects/EffectsTemplate.h"
 #include "Game/Effects/EmissionController.h"
 #include "Game/Effects/EmissionManager.h"
+#include "Game/GL/GLInventory.h"
 #include "stdlib.h"
 #include "NL/nlAVLTree.h"
 #include "NL/nlDLListContainer.h"
 #include "NL/nlDLRing.h"
 #include "NL/nlMath.h"
 #include "NL/nlString.h"
+#include "NL/gl/glState.h"
+#include "NL/glx/glxTexture.h"
 #include "Game/Sys/simpleparser.h"
 
 static nlAVLTree<unsigned long, EffectsTemplate*, DefaultKeyCompare<unsigned long> >* pTemplateMap = nullptr;
@@ -280,10 +283,372 @@ void GetColourComponent(SimpleParser* parser, nlColour* pColour, int cindex)
 /**
  * Offset/Address/Size: 0x2A8 | 0x801F0E6C | size: 0xD2C
  */
-EffectsTemplate* parse_template(SimpleParser*, bool)
+EffectsTemplate* parse_template(SimpleParser* parser, bool bQuick)
 {
-    FORCE_DONT_INLINE;
-    return nullptr;
+    char name[128];
+    EffectsTemplate t;
+    char* token;
+    nlColour colours[50];
+    bool bFountain;
+    bool bFountainForever;
+    char texname[264];
+    char modelname[264];
+    int i;
+
+    nlZeroMemory(&t, sizeof(EffectsTemplate));
+    t.m_hTexture = (u32)-1;
+    t.m_uModelID = (u32)-1;
+
+    if (bQuick)
+    {
+        t.m_uHashID = nlStringHash("quickeffect");
+        nlStrNCpy<char>(name, "quickeffect", 0x80);
+    }
+    else
+    {
+        token = parser->NextToken(true);
+        if (token == NULL)
+        {
+            return NULL;
+        }
+
+        t.m_uHashID = nlStringHash(token);
+        nlStrNCpy<char>(name, token, 0x80);
+    }
+
+    bFountain = true;
+    bFountainForever = false;
+
+    while (true)
+    {
+        token = parser->NextToken(true);
+        if (token == NULL)
+        {
+            if (!bQuick)
+            {
+                return NULL;
+            }
+            break;
+        }
+
+        if (nlStrCmp<char>(token, "end") == 0)
+        {
+            break;
+        }
+
+        if (nlStrCmp<char>(token, "fountainlife") == 0)
+        {
+            t.m_fFountainLife = atof(parser->NextToken(true));
+            continue;
+        }
+
+        if (nlStrCmp<char>(token, "fountainmode") == 0)
+        {
+            bFountain = (nlStrCmp<char>(parser->NextToken(true), "true") == 0);
+            continue;
+        }
+
+        if (nlStrCmp<char>(token, "fountainforever") == 0)
+        {
+            bFountainForever = (nlStrCmp<char>(parser->NextToken(true), "true") == 0);
+            continue;
+        }
+
+        if (nlStrCmp<char>(token, "number") == 0)
+        {
+            t.m_rNumber.base = atof(parser->NextTokenOnLine(true));
+            t.m_rNumber.range = atof(parser->NextTokenOnLine(true));
+            continue;
+        }
+
+        if (nlStrCmp<char>(token, "bounce") == 0)
+        {
+            t.m_bBounce = (nlStrCmp<char>(parser->NextToken(true), "true") == 0);
+            continue;
+        }
+
+        if (nlStrCmp<char>(token, "meshlighting") == 0)
+        {
+            t.m_bLit = (nlStrCmp<char>(parser->NextToken(true), "true") == 0);
+            continue;
+        }
+
+        if (nlStrCmp<char>(token, "infront") == 0)
+        {
+            t.m_bInFront = (nlStrCmp<char>(parser->NextToken(true), "true") == 0);
+            continue;
+        }
+
+        if (nlStrCmp<char>(token, "sizebegin") == 0)
+        {
+            t.m_rSizeBegin.base = atof(parser->NextTokenOnLine(true));
+            t.m_rSizeBegin.range = atof(parser->NextTokenOnLine(true));
+            continue;
+        }
+
+        if (nlStrCmp<char>(token, "sizeend") == 0)
+        {
+            t.m_rSizeEnd.base = atof(parser->NextTokenOnLine(true));
+            t.m_rSizeEnd.range = atof(parser->NextTokenOnLine(true));
+            continue;
+        }
+
+        if (nlStrCmp<char>(token, "mass") == 0)
+        {
+            t.m_rMass.base = atof(parser->NextTokenOnLine(true));
+            t.m_rMass.range = atof(parser->NextTokenOnLine(true));
+            continue;
+        }
+
+        if (nlStrCmp<char>(token, "particlelife") == 0)
+        {
+            t.m_rParticleLife.base = atof(parser->NextTokenOnLine(true));
+            t.m_rParticleLife.range = atof(parser->NextTokenOnLine(true));
+            continue;
+        }
+
+        if (nlStrCmp<char>(token, "rotation") == 0)
+        {
+            t.m_rRotation.base = atof(parser->NextTokenOnLine(true));
+            t.m_rRotation.range = atof(parser->NextTokenOnLine(true));
+            continue;
+        }
+
+        if (nlStrCmp<char>(token, "radius") == 0)
+        {
+            t.m_rRadius.base = atof(parser->NextTokenOnLine(true));
+            t.m_rRadius.range = atof(parser->NextTokenOnLine(true));
+            continue;
+        }
+
+        if (nlStrCmp<char>(token, "inheritvelocity") == 0)
+        {
+            t.m_rInheritVelocity.base = atof(parser->NextTokenOnLine(true));
+            t.m_rInheritVelocity.range = atof(parser->NextTokenOnLine(true));
+            continue;
+        }
+
+        if (nlStrCmp<char>(token, "velocity") == 0)
+        {
+            t.m_rVelocity.base = atof(parser->NextTokenOnLine(true));
+            t.m_rVelocity.range = atof(parser->NextTokenOnLine(true));
+            continue;
+        }
+
+        if (nlStrCmp<char>(token, "acceleration") == 0)
+        {
+            t.m_rAcceleration.base = atof(parser->NextTokenOnLine(true));
+            t.m_rAcceleration.range = atof(parser->NextTokenOnLine(true));
+            continue;
+        }
+
+        if (nlStrCmp<char>(token, "particlefps") == 0)
+        {
+            t.m_rFPS.base = atof(parser->NextTokenOnLine(true));
+            t.m_rFPS.range = atof(parser->NextTokenOnLine(true));
+            continue;
+        }
+
+        if (nlStrCmp<char>(token, "angle") == 0)
+        {
+            t.m_rAngle.base = atof(parser->NextTokenOnLine(true));
+            t.m_rAngle.range = atof(parser->NextTokenOnLine(true));
+            continue;
+        }
+
+        if (nlStrCmp<char>(token, "tilt") == 0)
+        {
+            t.m_rTilt.base = atof(parser->NextTokenOnLine(true));
+            t.m_rTilt.range = atof(parser->NextTokenOnLine(true));
+            continue;
+        }
+
+        if (nlStrCmp<char>(token, "texturenumframes") == 0)
+        {
+            t.m_nFrames = (s32)atof(parser->NextToken(true));
+            continue;
+        }
+
+        if (nlStrCmp<char>(token, "emitter") == 0)
+        {
+            token = parser->NextToken(true);
+            if (nlStrCmp<char>(token, "circle") == 0)
+            {
+                t.m_eEmitter = Emitter_Circle;
+                continue;
+            }
+
+            if (nlStrCmp<char>(token, "sphere") == 0)
+            {
+                t.m_eEmitter = Emitter_Sphere;
+                continue;
+            }
+
+            if (nlStrCmp<char>(token, "spindle") == 0)
+            {
+                t.m_eEmitter = Emitter_Spindle;
+                continue;
+            }
+
+            if (nlStrCmp<char>(token, "hemisphere") == 0)
+            {
+                t.m_eEmitter = Emitter_Hemisphere;
+                continue;
+            }
+
+            EmissionManager::AddError("%s : unknown emitter type '%s'\n", name, token);
+            continue;
+        }
+
+        if (nlStrCmp<char>(token, "blendmode") == 0)
+        {
+            token = parser->NextToken(true);
+            if (nlStrCmp<char>(token, "normal") == 0)
+            {
+                t.m_eBlend = EfBlend_Normal;
+                continue;
+            }
+
+            if (nlStrCmp<char>(token, "additive") == 0)
+            {
+                t.m_eBlend = EfBlend_Additive;
+                continue;
+            }
+
+            EmissionManager::AddError("%s : unknown blend type '%s'\n", name, token);
+            continue;
+        }
+
+        if (nlStrCmp<char>(token, "billboardmode") == 0)
+        {
+            token = parser->NextToken(true);
+            if (nlStrCmp<char>(token, "billboard") == 0)
+            {
+                t.m_eBillboard = EfBill_Billboard;
+                continue;
+            }
+
+            if (nlStrCmp<char>(token, "groundboard") == 0)
+            {
+                t.m_eBillboard = EfBill_Groundboard;
+                continue;
+            }
+
+            if (nlStrCmp<char>(token, "softwarecontrolled") == 0)
+            {
+                t.m_eBillboard = EfBill_SoftwareControlled;
+                continue;
+            }
+
+            EmissionManager::AddError("%s : unknown billboard type '%s'\n", name, token);
+            continue;
+        }
+
+        if (nlStrCmp<char>(token, "texture") == 0)
+        {
+            token = parser->NextToken(true);
+            nlStrNCat<char>(texname, "effects/", token, 0x100);
+            t.m_hTexture = glGetTexture(texname);
+            t.m_hTexture = (u32)glx_GetTex(t.m_hTexture, true, true);
+            continue;
+        }
+
+        if (nlStrCmp<char>(token, "model") == 0)
+        {
+            token = parser->NextTokenOnLine(true);
+            if (token == NULL)
+            {
+                t.m_uModelID = (u32)-1;
+                continue;
+            }
+
+            nlStrNCat<char>(modelname, "effects/", token, 0x100);
+            t.m_uModelID = nlStringHash(modelname);
+            continue;
+        }
+
+        if (nlStrCmp<char>(token, "matchmodelfpstoparticlelife") == 0)
+        {
+            t.m_bMatchLifespan = (nlStrCmp<char>(parser->NextToken(true), "true") == 0);
+            continue;
+        }
+
+        if (nlStrCmp<char>(token, "follow") == 0)
+        {
+            t.m_bLocalSpace = (nlStrCmp<char>(parser->NextToken(true), "true") == 0);
+            continue;
+        }
+
+        if (nlStrCmp<char>(token, "red") == 0)
+        {
+            GetColourComponent(parser, colours, 0);
+            continue;
+        }
+
+        if (nlStrCmp<char>(token, "green") == 0)
+        {
+            GetColourComponent(parser, colours, 1);
+            continue;
+        }
+
+        if (nlStrCmp<char>(token, "blue") == 0)
+        {
+            GetColourComponent(parser, colours, 2);
+            continue;
+        }
+
+        if (nlStrCmp<char>(token, "alpha") == 0)
+        {
+            GetColourComponent(parser, colours, 3);
+            continue;
+        }
+
+        if (nlStrCmp<char>(token, "link") == 0)
+        {
+            do
+            {
+                token = parser->NextTokenOnLine(true);
+            } while (token != NULL);
+            continue;
+        }
+
+        EmissionManager::AddError("%s : unknown token in a template '%s'\n", name, token);
+    }
+
+    if (!bFountain)
+    {
+        t.m_fFountainLife = 0.0f;
+    }
+
+    if (bFountain && bFountainForever)
+    {
+        t.m_fFountainLife = 10000000000.0f;
+    }
+
+    t.m_rInheritVelocity.base /= 100.0f;
+    t.m_rInheritVelocity.range /= 100.0f;
+
+    if (t.m_nFrames == 0)
+    {
+        t.m_nFrames = 1;
+    }
+
+    if (glInventory.GetModel(t.m_uModelID) == NULL)
+    {
+        t.m_uModelID = (u32)-1;
+    }
+
+    for (i = 0; i < 25; i++)
+    {
+        t.m_cColour[i].c[0] = ((u32)colours[i * 2].c[0] + (u32)colours[(i * 2) + 1].c[0]) / 2;
+        t.m_cColour[i].c[1] = ((u32)colours[i * 2].c[1] + (u32)colours[(i * 2) + 1].c[1]) / 2;
+        t.m_cColour[i].c[2] = ((u32)colours[i * 2].c[2] + (u32)colours[(i * 2) + 1].c[2]) / 2;
+        t.m_cColour[i].c[3] = ((u32)colours[i * 2].c[3] + (u32)colours[(i * 2) + 1].c[3]) / 2;
+    }
+
+    EffectsTemplate* out = (EffectsTemplate*)nlMalloc(sizeof(EffectsTemplate), 8, false);
+    memcpy(out, &t, sizeof(EffectsTemplate));
+    return out;
 }
 
 /**

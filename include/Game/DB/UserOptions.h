@@ -3,18 +3,6 @@
 
 #include "NL/nlConfig.h"
 
-enum CustomPowerups
-{
-    CP_INVALID = -1,
-    CP_OFF = 0,
-    CP_EXPLOSIVE = 1,
-    CP_FREEZING = 2,
-    CP_SHELLS = 3,
-    CP_GIANT = 4,
-    CP_ENCHANCEMENT = 5,
-    CP_LAST = 6,
-};
-
 enum eAudioMode
 {
     INVALID = -1,
@@ -37,6 +25,18 @@ public:
 class CheatSettings
 {
 public:
+    enum CustomPowerups
+    {
+        CP_INVALID = -1,
+        CP_OFF = 0,
+        CP_EXPLOSIVE = 1,
+        CP_FREEZING = 2,
+        CP_SHELLS = 3,
+        CP_GIANT = 4,
+        CP_ENCHANCEMENT = 5,
+        CP_LAST = 6,
+    };
+
     CheatSettings();
     void InitializeDefaults();
     void OnSettingsUpdated() const;
@@ -47,6 +47,20 @@ public:
     /* 0x6 */ bool mCheatTBD1Enabled;
     /* 0x7 */ bool mCheatTBD2Enabled;
 }; // total size: 0x8
+
+typedef CheatSettings::CustomPowerups CustomPowerups;
+
+enum
+{
+    CP_INVALID = CheatSettings::CP_INVALID,
+    CP_OFF = CheatSettings::CP_OFF,
+    CP_EXPLOSIVE = CheatSettings::CP_EXPLOSIVE,
+    CP_FREEZING = CheatSettings::CP_FREEZING,
+    CP_SHELLS = CheatSettings::CP_SHELLS,
+    CP_GIANT = CheatSettings::CP_GIANT,
+    CP_ENCHANCEMENT = CheatSettings::CP_ENCHANCEMENT,
+    CP_LAST = CheatSettings::CP_LAST,
+};
 
 class PowerupSettings
 {

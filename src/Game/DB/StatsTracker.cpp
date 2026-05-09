@@ -616,9 +616,342 @@ void StatsTracker::eventHandler(Event* event, void*)
 /**
  * Offset/Address/Size: 0x3EF0 | 0x80185450 | size: 0x840
  */
-void StatsTracker::TrackStat(ePlayerStats, int, int, int, int, int, int)
+void StatsTracker::TrackStat(ePlayerStats stat, int homeaway, int playerindex, int param0, int param1, int param2, int param3)
 {
-    FORCE_DONT_INLINE;
+    cTeam* team;
+    cGlobalPad* pad;
+    GameInfoManager* gameInfoManager;
+    eTeamID teamID;
+    int padIndex;
+    u8 hasPad;
+    int i;
+
+    switch (stat)
+    {
+    case STATS_SHOTS_ON_GOAL:
+        AddStat(STATS_SHOTS_ON_GOAL, homeaway, playerindex, 1);
+        team = g_pTeams[homeaway];
+        if (team != NULL)
+        {
+            pad = team->GetPlayer(playerindex)->GetGlobalPad();
+            if (pad != NULL)
+            {
+                padIndex = pad->m_padIndex;
+                hasPad = 1;
+                goto HavePad_SHOTS_ON_GOAL;
+            }
+        }
+        padIndex = -1;
+        hasPad = 0;
+
+    HavePad_SHOTS_ON_GOAL:
+        if (hasPad)
+        {
+            AddUserStatByPad(STATS_SHOTS_ON_GOAL, padIndex, 1);
+        }
+        break;
+    case STATS_GOALS_FOR:
+        AddStat(STATS_GOALS_FOR, homeaway, playerindex, param2);
+        AddUserStatByPad(STATS_GOALS_FOR, param3, param2);
+        if (param1 == 6 || param1 == 2)
+        {
+            nlSingleton<StatsTracker>::s_pInstance->TrackStat(STATS_GOALS_FOR_STS, homeaway, playerindex, param2, param3, 0, 0);
+        }
+        else if (param1 == 1)
+        {
+            nlSingleton<StatsTracker>::s_pInstance->TrackStat(STATS_GOALS_FOR_ONE_TIMERS, homeaway, playerindex, param2, param3, 0, 0);
+        }
+        if (param0 >= 0)
+        {
+            nlSingleton<StatsTracker>::s_pInstance->TrackStat(STATS_ASSISTS, homeaway, param0, 0, 0, 0, 0);
+        }
+        nlSingleton<StatsTracker>::s_pInstance->TrackStat(STATS_GOALS_AGAINST, homeaway == 0, playerindex, param2, 0, 0, 0);
+        break;
+    case STATS_GOALS_AGAINST:
+        AddStat(STATS_GOALS_AGAINST, homeaway, -1, param0);
+        for (i = 0; i < 5; i++)
+        {
+            team = g_pTeams[homeaway];
+            if (team != NULL)
+            {
+                pad = team->GetPlayer(i)->GetGlobalPad();
+                if (pad != NULL)
+                {
+                    padIndex = pad->m_padIndex;
+                    hasPad = 1;
+                    goto HavePad_GOALS_AGAINST;
+                }
+            }
+            padIndex = -1;
+            hasPad = 0;
+
+        HavePad_GOALS_AGAINST:
+            if (hasPad)
+            {
+                AddUserStatByPad(STATS_GOALS_AGAINST, padIndex, param0);
+            }
+        }
+        break;
+    case STATS_GOALS_FOR_STS:
+        AddStat(STATS_GOALS_FOR_STS, homeaway, playerindex, param0);
+        AddUserStatByPad(STATS_GOALS_FOR_STS, param1, param0);
+        break;
+    case STATS_GOALS_FOR_ONE_TIMERS:
+        AddStat(STATS_GOALS_FOR_ONE_TIMERS, homeaway, playerindex, param0);
+        AddUserStatByPad(STATS_GOALS_FOR_ONE_TIMERS, param1, param0);
+        break;
+    case STATS_ASSISTS:
+        AddStat(STATS_ASSISTS, homeaway, playerindex, 1);
+        team = g_pTeams[homeaway];
+        if (team != NULL)
+        {
+            pad = team->GetPlayer(playerindex)->GetGlobalPad();
+            if (pad != NULL)
+            {
+                padIndex = pad->m_padIndex;
+                hasPad = 1;
+                goto HavePad_ASSISTS;
+            }
+        }
+        padIndex = -1;
+        hasPad = 0;
+
+    HavePad_ASSISTS:
+        if (hasPad)
+        {
+            AddUserStatByPad(STATS_ASSISTS, padIndex, 1);
+        }
+        break;
+    case STATS_FOULS:
+        AddStat(STATS_FOULS, homeaway, playerindex, 1);
+        team = g_pTeams[homeaway];
+        if (team != NULL)
+        {
+            pad = team->GetPlayer(playerindex)->GetGlobalPad();
+            if (pad != NULL)
+            {
+                padIndex = pad->m_padIndex;
+                hasPad = 1;
+                goto HavePad_FOULS;
+            }
+        }
+        padIndex = -1;
+        hasPad = 0;
+
+    HavePad_FOULS:
+        if (hasPad)
+        {
+            AddUserStatByPad(STATS_FOULS, padIndex, 1);
+        }
+        break;
+    case STATS_WIN:
+        mIsUserCupWinner = false;
+        AddStat(STATS_WIN, homeaway, -1, 1);
+        mBasicGameInfo->mFinalScore[0] = param0;
+        mBasicGameInfo->mFinalScore[1] = param1;
+        nlSingleton<StatsTracker>::s_pInstance->TrackStat(STATS_LOSS, homeaway == 0, 0, 0, 0, 0, 0);
+
+        gameInfoManager = nlSingleton<GameInfoManager>::s_pInstance;
+        if (gameInfoManager->IsInCupMode())
+        {
+            if (gameInfoManager->mCupMatchRequirement != RESULT_INVALID)
+            {
+                teamID = mBasicGameInfo->mTeamIndex[homeaway];
+                if (teamID == gameInfoManager->GetUserSelectedCupTeam())
+                {
+                    AwardCup(RESULT_USER_WINS);
+                }
+                else
+                {
+                    AwardCup(RESULT_USER_LOSES);
+                }
+            }
+        }
+        else if (gameInfoManager->IsInTournamentMode() && gameInfoManager->GetNumHumanTeams() == 1)
+        {
+            teamID = mBasicGameInfo->mTeamIndex[homeaway];
+            if (teamID == gameInfoManager->GetUserSelectedCupTeam() && gameInfoManager->mCustomTournamentInfo.m_tournMode == TM_KNOCKOUT)
+            {
+                gameInfoManager->SetResultsOfLastUserGame(RESULT_CUP_WIN);
+            }
+        }
+        break;
+    case STATS_OT_WIN:
+        mIsUserCupWinner = false;
+        AddStat(STATS_OT_WIN, homeaway, -1, 1);
+        mBasicGameInfo->mFinalScore[0] = param0;
+        mBasicGameInfo->mFinalScore[1] = param1;
+        nlSingleton<StatsTracker>::s_pInstance->TrackStat(STATS_OT_LOSS, homeaway == 0, 0, 0, 0, 0, 0);
+
+        gameInfoManager = nlSingleton<GameInfoManager>::s_pInstance;
+        if (gameInfoManager->IsInCupMode())
+        {
+            if (gameInfoManager->mCupMatchRequirement != RESULT_INVALID)
+            {
+                teamID = mBasicGameInfo->mTeamIndex[homeaway];
+                if (teamID == gameInfoManager->GetUserSelectedCupTeam())
+                {
+                    AwardCup(RESULT_USER_OT_WINS);
+                }
+                else
+                {
+                    AwardCup(RESULT_USER_OT_LOSES);
+                }
+            }
+        }
+        else if (gameInfoManager->IsInTournamentMode() && gameInfoManager->GetNumHumanTeams() == 1)
+        {
+            teamID = mBasicGameInfo->mTeamIndex[homeaway];
+            if (teamID == gameInfoManager->GetUserSelectedCupTeam() && gameInfoManager->mCustomTournamentInfo.m_tournMode == TM_KNOCKOUT)
+            {
+                gameInfoManager->SetResultsOfLastUserGame(RESULT_CUP_WIN);
+            }
+        }
+        break;
+    case STATS_LOSS:
+        AddStat(STATS_LOSS, homeaway, -1, 1);
+        break;
+    case STATS_OT_LOSS:
+        AddStat(STATS_OT_LOSS, homeaway, -1, 1);
+        break;
+    case STATS_POWERUPS_USED:
+        AddStat(STATS_POWERUPS_USED, homeaway, playerindex, 1);
+        team = g_pTeams[homeaway];
+        if (team != NULL)
+        {
+            pad = team->GetPlayer(playerindex)->GetGlobalPad();
+            if (pad != NULL)
+            {
+                padIndex = pad->m_padIndex;
+                hasPad = 1;
+                goto HavePad_POWERUPS_USED;
+            }
+        }
+        padIndex = -1;
+        hasPad = 0;
+
+    HavePad_POWERUPS_USED:
+        if (hasPad)
+        {
+            AddUserStatByPad(STATS_POWERUPS_USED, padIndex, 1);
+        }
+        break;
+    case STATS_POWERUPS_HIT:
+        AddStat(STATS_POWERUPS_HIT, homeaway, playerindex, 1);
+        AddUserStatByPad(STATS_POWERUPS_HIT, param0, 1);
+        break;
+    case STATS_PASSES_MADE:
+        AddStat(STATS_PASSES_MADE, homeaway, playerindex, 1);
+        AddUserStatByPad(STATS_PASSES_MADE, param0, 1);
+        break;
+    case STATS_PASSES_RECEIVED:
+        AddStat(STATS_PASSES_RECEIVED, homeaway, playerindex, 1);
+        team = g_pTeams[homeaway];
+        if (team != NULL)
+        {
+            pad = team->GetPlayer(playerindex)->GetGlobalPad();
+            if (pad != NULL)
+            {
+                padIndex = pad->m_padIndex;
+                hasPad = 1;
+                goto HavePad_PASSES_RECEIVED;
+            }
+        }
+        padIndex = -1;
+        hasPad = 0;
+
+    HavePad_PASSES_RECEIVED:
+        if (hasPad)
+        {
+            AddUserStatByPad(STATS_PASSES_RECEIVED, padIndex, 1);
+        }
+        break;
+    case STATS_PASSES_INTERCEPTED:
+        AddStat(STATS_PASSES_INTERCEPTED, homeaway, playerindex, 1);
+        break;
+    case STATS_POSSESION_TIME:
+        AddStat(STATS_POSSESION_TIME, homeaway, playerindex, param0);
+        team = g_pTeams[homeaway];
+        if (team != NULL)
+        {
+            pad = team->GetPlayer(playerindex)->GetGlobalPad();
+            if (pad != NULL)
+            {
+                padIndex = pad->m_padIndex;
+                hasPad = 1;
+                goto HavePad_POSSESION_TIME;
+            }
+        }
+        padIndex = -1;
+        hasPad = 0;
+
+    HavePad_POSSESION_TIME:
+        if (hasPad)
+        {
+            AddUserStatByPad(STATS_POSSESION_TIME, padIndex, param0);
+        }
+        break;
+    case STATS_GAMES_PLAYED:
+        break;
+    case STATS_STEALS:
+        AddStat(STATS_STEALS, homeaway, playerindex, 1);
+        AddUserStatByPad(STATS_STEALS, param0, 1);
+        break;
+    case STATS_BUTTON_PRESSES:
+        AddStat(STATS_BUTTON_PRESSES, homeaway, playerindex, param1);
+        AddUserStatByPad(STATS_BUTTON_PRESSES, param0, param1);
+        break;
+    case STATS_HITS_MADE:
+        AddStat(STATS_HITS_MADE, homeaway, playerindex, 1);
+        team = g_pTeams[homeaway];
+        if (team != NULL)
+        {
+            pad = team->GetPlayer(playerindex)->GetGlobalPad();
+            if (pad != NULL)
+            {
+                padIndex = pad->m_padIndex;
+                hasPad = 1;
+                goto HavePad_HITS_MADE;
+            }
+        }
+        padIndex = -1;
+        hasPad = 0;
+
+    HavePad_HITS_MADE:
+        if (hasPad)
+        {
+            AddUserStatByPad(STATS_HITS_MADE, padIndex, 1);
+        }
+        break;
+    case STATS_STS_ATTEMPTS:
+        AddStat(STATS_STS_ATTEMPTS, homeaway, playerindex, 1);
+        team = g_pTeams[homeaway];
+        if (team != NULL)
+        {
+            pad = team->GetPlayer(playerindex)->GetGlobalPad();
+            if (pad != NULL)
+            {
+                padIndex = pad->m_padIndex;
+                hasPad = 1;
+                goto HavePad_STS_ATTEMPTS;
+            }
+        }
+        padIndex = -1;
+        hasPad = 0;
+
+    HavePad_STS_ATTEMPTS:
+        if (hasPad)
+        {
+            AddUserStatByPad(STATS_STS_ATTEMPTS, padIndex, 1);
+        }
+        break;
+    case STATS_PERFECT_PASSES:
+        AddStat(STATS_PERFECT_PASSES, homeaway, playerindex, 1);
+        AddUserStatByPad(STATS_PERFECT_PASSES, param0, 1);
+        break;
+    default:
+        break;
+    }
 }
 
 /**

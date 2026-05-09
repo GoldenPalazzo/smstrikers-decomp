@@ -25,7 +25,7 @@ public:
 };
 
 template <typename To, typename From>
-To LexicalCast(const From&);
+To LexicalCast(const From& f);
 
 template <typename StringType, typename ValueType>
 StringType Format(const StringType&, const ValueType&);

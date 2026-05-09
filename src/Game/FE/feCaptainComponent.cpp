@@ -1,6 +1,7 @@
 #include "Game/FE/feCaptainComponent.h"
 #include "Game/FE/feAsyncImage.h"
 #include "Game/FE/feFinder.h"
+#include "Game/FE/fePresentation.h"
 #include "Game/FE/tlSlide.h"
 
 extern bool g_e3_Build;
@@ -406,10 +407,173 @@ void IChooseCaptain::NameComponent::SetSidekickName(unsigned long id)
 
 /**
  * Offset/Address/Size: 0x1AC | 0x800BF950 | size: 0x874
+ * TODO: 75.86% match - stack/register layout still differs across phase branches,
+ * and a few calls inline differently (notably `SetSidekickName`).
  */
 void IChooseCaptain::ComponentState::SetCurrentPhase(Phase phase)
 {
-    FORCE_DONT_INLINE;
+    ICaptainGridComponent* captaingrid;
+    int firstcaptain;
+    int rowfirstcaptain;
+    ISidekickGridComponent* gridcomponent;
+    char filename0[0x80];
+    char filename1[0x80];
+    char filename2[0x80];
+
+    switch (phase)
+    {
+    case PHASE_IDLE:
+        mParent->mCaptainGridComponents[mHomeAway]->mParentComponent->m_bVisible = false;
+        mParent->mSidekickGridComponents[mHomeAway]->mParentComponent->m_bVisible = false;
+        mParent->mCaptainComponents[mHomeAway]->m_bVisible = false;
+        mParent->mSidekickComponents[mHomeAway]->m_bVisible = false;
+        mParent->mSidekickMiniHeadComponents[mHomeAway]->m_bVisible = false;
+        mParent->mNameComponents[mHomeAway].SetCaptainName(0);
+        mParent->mNameComponents[mHomeAway].SetCaptainLogo(NULL);
+        break;
+
+    case PHASE_CHOOSING_CAPTAIN:
+        captaingrid = mParent->mCaptainGridComponents[mHomeAway];
+        captaingrid->mParentComponent->SetActiveSlide("IN");
+        captaingrid->mParentComponent->Update(0.0f);
+        captaingrid->RebuildInstanceTable();
+        captaingrid->mMapMenu->UpdateAllItems();
+        captaingrid->mParentComponent->m_bVisible = true;
+        captaingrid->RebindHighliteComponent("HIGHLIGHT");
+        captaingrid->mHighliteComponent->m_bVisible = false;
+        captaingrid->mHighliteVisibilityAtAnimEnd = true;
+        captaingrid->RebuildInstanceTable();
+        captaingrid->SetAllItemsActive();
+
+        {
+            const char* eventName = "sfx_character_group_right_enter";
+            if (mHomeAway == 0)
+            {
+                eventName = "sfx_character_group_left_enter";
+            }
+            FEAudio::PlayAnimAudioEvent(eventName, false);
+        }
+
+        if (mParent->mComponentState[mHomeAway ^ 1].mCurrentPhase > PHASE_CHOOSING_CAPTAIN)
+        {
+            FEMapMenu* menu = captaingrid->mMapMenu;
+            menu->SetItemActive(mParent->mCaptainGridComponents[mHomeAway ^ 1]->mMapMenu->GetSelectedItem(), false);
+        }
+
+        firstcaptain = captaingrid->mMapMenu->GetSelectedItem();
+        rowfirstcaptain = firstcaptain;
+
+        while (!captaingrid->mMapMenu->IsSelectedItemActive())
+        {
+            captaingrid->mMapMenu->MoveDown(true);
+            if (rowfirstcaptain == captaingrid->mMapMenu->GetSelectedItem())
+            {
+                captaingrid->mMapMenu->MoveRight(true);
+                rowfirstcaptain = captaingrid->mMapMenu->GetSelectedItem();
+                if (rowfirstcaptain == firstcaptain)
+                {
+                    break;
+                }
+            }
+        }
+
+        mParent->mSidekickGridComponents[mHomeAway]->mParentComponent->m_bVisible = false;
+        mParent->mCaptainComponents[mHomeAway]->m_bVisible = false;
+        mParent->mSidekickComponents[mHomeAway]->m_bVisible = false;
+
+        mParent->mNameComponents[mHomeAway].mComponent->SetActiveSlide("Slide1");
+        mParent->mNameComponents[mHomeAway].mComponent->Update(0.0f);
+        mParent->mNameComponents[mHomeAway].SetCaptainName(GetLOCCharacterName(captaingrid->GetSelectedItem(), false, true));
+        mParent->mNameComponents[mHomeAway].SetCaptainLogo(GetTeamName(captaingrid->GetSelectedItem()));
+
+        mParent->mSidekickMiniHeadComponents[mHomeAway]->m_bVisible = false;
+        break;
+
+    case PHASE_CHOOSING_SIDEKICK:
+        mParent->mCaptainGridComponents[mHomeAway]->mParentComponent->m_bVisible = false;
+
+        gridcomponent = mParent->mSidekickGridComponents[mHomeAway];
+        gridcomponent->mParentComponent->SetActiveSlide("IN");
+        gridcomponent->mParentComponent->Update(0.0f);
+        gridcomponent->RebuildInstanceTable();
+        gridcomponent->mMapMenu->UpdateAllItems();
+        gridcomponent->RebindHighliteComponent("HIGHLIGHT");
+        gridcomponent->mHighliteComponent->m_bVisible = false;
+        gridcomponent->SetVisibleInstanceTable(true);
+        gridcomponent->mParentComponent->m_bVisible = true;
+
+        {
+            const char* eventName = "sfx_character_group_right_enter";
+            if (mHomeAway == 0)
+            {
+                eventName = "sfx_character_group_left_enter";
+            }
+            FEAudio::PlayAnimAudioEvent(eventName, false);
+        }
+
+        mParent->mNameComponents[mHomeAway].mComponent->SetActiveSlide("Slide2");
+        mParent->mNameComponents[mHomeAway].mComponent->Update(0.0f);
+        mParent->mNameComponents[mHomeAway].SetCaptainName(GetLOCCharacterName((eTeamID)mParent->mHomeAwayTeam[mHomeAway], false, false));
+        mParent->mNameComponents[mHomeAway].SetSidekickName(GetLOCSidekickName(gridcomponent->GetSelectedItem()));
+        mParent->mNameComponents[mHomeAway].SetCaptainLogo(GetTeamName((eTeamID)mParent->mHomeAwayTeam[mHomeAway]));
+
+        mParent->mCaptainComponents[mHomeAway]->m_bVisible = false;
+        mParent->mSidekickComponents[mHomeAway]->m_bVisible = false;
+        mParent->mSidekickMiniHeadComponents[mHomeAway]->m_bVisible = false;
+        break;
+
+    case PHASE_READY:
+    {
+        int homeaway = mHomeAway;
+        IChooseCaptain* parent = mParent;
+        int teamID;
+        FEMapMenu* menu;
+
+        parent->mCaptainGridComponents[homeaway]->mParentComponent->m_bVisible = false;
+        parent->mSidekickGridComponents[homeaway]->mParentComponent->m_bVisible = true;
+        parent->mSidekickGridComponents[homeaway]->mParentComponent->SetActiveSlide("in");
+        parent->mSidekickGridComponents[homeaway]->SetVisibleInstanceTable(false);
+        parent->mSidekickGridComponents[homeaway]->mHighliteComponent->m_bVisible = false;
+
+        teamID = parent->mHomeAwayTeam[homeaway];
+        CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_0, filename0, 0x80, teamID, homeaway);
+        CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_1, filename1, 0x80, teamID, homeaway);
+        CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_2, filename2, 0x80, teamID, homeaway);
+        parent->mAsyncImage[homeaway][0]->QueueLoad(filename0, true);
+        parent->mAsyncImage[homeaway][1]->QueueLoad(filename1, true);
+        parent->mAsyncImage[homeaway][2]->QueueLoad(filename2, true);
+        parent->mDidSwapCaptains[homeaway] = false;
+
+        parent->mCaptainComponents[homeaway]->m_bVisible = true;
+        if (parent->mHomeAwayTeam[homeaway] != TEAM_MYSTERY)
+        {
+            parent->mSidekickComponents[homeaway]->m_bVisible = false;
+            parent->mNameComponents[homeaway].mComponent->SetActiveSlide("Slide2");
+            parent->mNameComponents[homeaway].mComponent->Update(0.0f);
+            parent->mNameComponents[homeaway].SetSidekickName(GetLOCSidekickName((eSidekickID)parent->mHomeAwaySidekicks[homeaway]));
+        }
+
+        parent->mNameComponents[homeaway].SetCaptainName(GetLOCCharacterName((eTeamID)parent->mHomeAwayTeam[homeaway], false, false));
+        parent->mNameComponents[homeaway].SetCaptainLogo(GetTeamName((eTeamID)parent->mHomeAwayTeam[homeaway]));
+
+        parent->mCaptainGridComponents[homeaway]->mMapMenu->SetSelectedItem(parent->mHomeAwayTeam[homeaway]);
+        parent->mCaptainGridComponents[homeaway ^ 1]->mMapMenu->SetSelectedItem(parent->mHomeAwayTeam[homeaway ^ 1]);
+
+        menu = parent->mCaptainGridComponents[homeaway]->mMapMenu;
+        menu->SetItemActive(menu->GetSelectedItem(), false);
+
+        menu = parent->mCaptainGridComponents[homeaway ^ 1]->mMapMenu;
+        menu->SetItemActive(menu->GetSelectedItem(), false);
+
+        parent->StartSidekickMiniHead(homeaway, (eSidekickID)parent->mHomeAwaySidekicks[homeaway]);
+        break;
+    }
+
+    default:
+        break;
+    }
+
+    mCurrentPhase = phase;
 }
 
 /**
@@ -973,8 +1137,477 @@ void IChooseCaptain::UpdateAsyncImages()
 /**
  * Offset/Address/Size: 0xAB0 | 0x800BE44C | size: 0x840
  */
-void IChooseCaptain::SceneCreated(FEPresentation*)
+void IChooseCaptain::SceneCreated(FEPresentation* presentation)
 {
+    typedef TLComponentInstance* (*FindCompByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
+    typedef TLComponentInstance* (*FindCompByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
+
+    union
+    {
+        FindCompByValue byValue;
+        FindCompByRef byRef;
+    } findComp;
+
+    TLComponentInstance* compinstance;
+    char filenameC2[0x80];
+    char filenameC1[0x80];
+    char filenameC0[0x80];
+    char filenameS2[0x80];
+    char filenameS1[0x80];
+    char filenameS0[0x80];
+
+    findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
+
+    {
+        volatile InlineHasher hB, hA;
+        volatile InlineHasher h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
+
+        h0.m_Hash = 0;
+        h1.m_Hash = 0;
+        h2.m_Hash = 0;
+        h3.m_Hash = 0;
+        h4.m_Hash = 0;
+        h5.m_Hash = 0;
+        h6.m_Hash = 0;
+        h7.m_Hash = 0;
+        h8.m_Hash = 0;
+        h9.m_Hash = 0;
+
+        unsigned long hash = nlStringLowerHash("LEFT_CAPT");
+        hA.m_Hash = hash;
+        hB.m_Hash = hash;
+
+        hash = nlStringLowerHash("Layer");
+        h9.m_Hash = hash;
+        h8.m_Hash = hash;
+
+        compinstance = findComp.byRef(
+            presentation->m_currentSlide,
+            (InlineHasher&)h9,
+            (InlineHasher&)hB,
+            (InlineHasher&)h8,
+            (InlineHasher&)h7,
+            (InlineHasher&)h6,
+            (InlineHasher&)h5);
+    }
+    SetupCaptainComponent(compinstance, 0);
+    compinstance->m_bVisible = false;
+
+    {
+        volatile InlineHasher hB, hA;
+        volatile InlineHasher h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
+
+        h0.m_Hash = 0;
+        h1.m_Hash = 0;
+        h2.m_Hash = 0;
+        h3.m_Hash = 0;
+        h4.m_Hash = 0;
+        h5.m_Hash = 0;
+        h6.m_Hash = 0;
+        h7.m_Hash = 0;
+        h8.m_Hash = 0;
+        h9.m_Hash = 0;
+
+        unsigned long hash = nlStringLowerHash("RIGHT_CAPT");
+        hA.m_Hash = hash;
+        hB.m_Hash = hash;
+
+        hash = nlStringLowerHash("Layer");
+        h9.m_Hash = hash;
+        h8.m_Hash = hash;
+
+        compinstance = findComp.byRef(
+            presentation->m_currentSlide,
+            (InlineHasher&)h9,
+            (InlineHasher&)hB,
+            (InlineHasher&)h8,
+            (InlineHasher&)h7,
+            (InlineHasher&)h6,
+            (InlineHasher&)h5);
+    }
+    SetupCaptainComponent(compinstance, 1);
+    compinstance->m_bVisible = false;
+
+    CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_0, filenameC0, 0x80, mHomeAwayTeam[0], 0);
+    CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_1, filenameC1, 0x80, mHomeAwayTeam[0], 0);
+    CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_2, filenameC2, 0x80, mHomeAwayTeam[0], 0);
+    mAsyncImage[0][0]->QueueLoad(filenameC0, true);
+    mAsyncImage[0][1]->QueueLoad(filenameC1, true);
+    mAsyncImage[0][2]->QueueLoad(filenameC2, true);
+    mDidSwapCaptains[0] = false;
+
+    CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_0, filenameS0, 0x80, mHomeAwayTeam[1], 1);
+    CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_1, filenameS1, 0x80, mHomeAwayTeam[1], 1);
+    CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_2, filenameS2, 0x80, mHomeAwayTeam[1], 1);
+    mAsyncImage[1][0]->QueueLoad(filenameS0, true);
+    mAsyncImage[1][1]->QueueLoad(filenameS1, true);
+    mAsyncImage[1][2]->QueueLoad(filenameS2, true);
+    mDidSwapCaptains[1] = false;
+
+    {
+        volatile InlineHasher hB, hA;
+        volatile InlineHasher h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
+
+        h0.m_Hash = 0;
+        h1.m_Hash = 0;
+        h2.m_Hash = 0;
+        h3.m_Hash = 0;
+        h4.m_Hash = 0;
+        h5.m_Hash = 0;
+        h6.m_Hash = 0;
+        h7.m_Hash = 0;
+        h8.m_Hash = 0;
+        h9.m_Hash = 0;
+
+        unsigned long hash = nlStringLowerHash("LEFT_SK");
+        hA.m_Hash = hash;
+        hB.m_Hash = hash;
+
+        hash = nlStringLowerHash("Layer");
+        h9.m_Hash = hash;
+        h8.m_Hash = hash;
+
+        compinstance = findComp.byRef(
+            presentation->m_currentSlide,
+            (InlineHasher&)h9,
+            (InlineHasher&)hB,
+            (InlineHasher&)h8,
+            (InlineHasher&)h7,
+            (InlineHasher&)h6,
+            (InlineHasher&)h5);
+    }
+    mSidekickComponents[0] = compinstance;
+    {
+        TLSlide* slide = compinstance->GetActiveSlide();
+        mSidekickSlideDurations[0] = (slide->m_start + slide->m_duration) * 0.5f;
+    }
+    compinstance->m_bVisible = false;
+    mSidekickComponents[0]->m_bVisible = false;
+
+    {
+        volatile InlineHasher hB, hA;
+        volatile InlineHasher h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
+
+        h0.m_Hash = 0;
+        h1.m_Hash = 0;
+        h2.m_Hash = 0;
+        h3.m_Hash = 0;
+        h4.m_Hash = 0;
+        h5.m_Hash = 0;
+        h6.m_Hash = 0;
+        h7.m_Hash = 0;
+        h8.m_Hash = 0;
+        h9.m_Hash = 0;
+
+        unsigned long hash = nlStringLowerHash("RIGHT_SK");
+        hA.m_Hash = hash;
+        hB.m_Hash = hash;
+
+        hash = nlStringLowerHash("Layer");
+        h9.m_Hash = hash;
+        h8.m_Hash = hash;
+
+        compinstance = findComp.byRef(
+            presentation->m_currentSlide,
+            (InlineHasher&)h9,
+            (InlineHasher&)hB,
+            (InlineHasher&)h8,
+            (InlineHasher&)h7,
+            (InlineHasher&)h6,
+            (InlineHasher&)h5);
+    }
+    mSidekickComponents[1] = compinstance;
+    {
+        TLSlide* slide = compinstance->GetActiveSlide();
+        mSidekickSlideDurations[1] = (slide->m_start + slide->m_duration) * 0.5f;
+    }
+    compinstance->m_bVisible = false;
+    mSidekickComponents[1]->m_bVisible = false;
+
+    {
+        volatile InlineHasher hB, hA;
+        volatile InlineHasher h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
+
+        h0.m_Hash = 0;
+        h1.m_Hash = 0;
+        h2.m_Hash = 0;
+        h3.m_Hash = 0;
+        h4.m_Hash = 0;
+        h5.m_Hash = 0;
+        h6.m_Hash = 0;
+        h7.m_Hash = 0;
+        h8.m_Hash = 0;
+        h9.m_Hash = 0;
+
+        unsigned long hash = nlStringLowerHash("CAPTAIN_CHOOSER_LEFT");
+        hA.m_Hash = hash;
+        hB.m_Hash = hash;
+
+        hash = nlStringLowerHash("Layer");
+        h9.m_Hash = hash;
+        h8.m_Hash = hash;
+
+        compinstance = findComp.byRef(
+            presentation->m_currentSlide,
+            (InlineHasher&)h9,
+            (InlineHasher&)hB,
+            (InlineHasher&)h8,
+            (InlineHasher&)h7,
+            (InlineHasher&)h6,
+            (InlineHasher&)h5);
+    }
+    mCaptainGridComponents[0] = new (8, false) ICaptainGridComponent(compinstance, false);
+
+    {
+        volatile InlineHasher hB, hA;
+        volatile InlineHasher h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
+
+        h0.m_Hash = 0;
+        h1.m_Hash = 0;
+        h2.m_Hash = 0;
+        h3.m_Hash = 0;
+        h4.m_Hash = 0;
+        h5.m_Hash = 0;
+        h6.m_Hash = 0;
+        h7.m_Hash = 0;
+        h8.m_Hash = 0;
+        h9.m_Hash = 0;
+
+        unsigned long hash = nlStringLowerHash("CAPTAIN_CHOOSER_RIGHT");
+        hA.m_Hash = hash;
+        hB.m_Hash = hash;
+
+        hash = nlStringLowerHash("Layer");
+        h9.m_Hash = hash;
+        h8.m_Hash = hash;
+
+        compinstance = findComp.byRef(
+            presentation->m_currentSlide,
+            (InlineHasher&)h9,
+            (InlineHasher&)hB,
+            (InlineHasher&)h8,
+            (InlineHasher&)h7,
+            (InlineHasher&)h6,
+            (InlineHasher&)h5);
+    }
+    mCaptainGridComponents[1] = new (8, false) ICaptainGridComponent(compinstance, true);
+
+    mCaptainGridComponents[0]->BuildMapMenu();
+    mCaptainGridComponents[1]->BuildMapMenu();
+
+    {
+        volatile InlineHasher hB, hA;
+        volatile InlineHasher h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
+
+        h0.m_Hash = 0;
+        h1.m_Hash = 0;
+        h2.m_Hash = 0;
+        h3.m_Hash = 0;
+        h4.m_Hash = 0;
+        h5.m_Hash = 0;
+        h6.m_Hash = 0;
+        h7.m_Hash = 0;
+        h8.m_Hash = 0;
+        h9.m_Hash = 0;
+
+        unsigned long hash = nlStringLowerHash("CHOOSE_SIDEKICKS_LEFT");
+        hA.m_Hash = hash;
+        hB.m_Hash = hash;
+
+        hash = nlStringLowerHash("Layer");
+        h9.m_Hash = hash;
+        h8.m_Hash = hash;
+
+        compinstance = findComp.byRef(
+            presentation->m_currentSlide,
+            (InlineHasher&)h9,
+            (InlineHasher&)hB,
+            (InlineHasher&)h8,
+            (InlineHasher&)h7,
+            (InlineHasher&)h6,
+            (InlineHasher&)h5);
+    }
+    mSidekickGridComponents[0] = new (8, false) ISidekickGridComponent(compinstance, false);
+
+    {
+        volatile InlineHasher hB, hA;
+        volatile InlineHasher h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
+
+        h0.m_Hash = 0;
+        h1.m_Hash = 0;
+        h2.m_Hash = 0;
+        h3.m_Hash = 0;
+        h4.m_Hash = 0;
+        h5.m_Hash = 0;
+        h6.m_Hash = 0;
+        h7.m_Hash = 0;
+        h8.m_Hash = 0;
+        h9.m_Hash = 0;
+
+        unsigned long hash = nlStringLowerHash("CHOOSE_SIDEKICKS_RIGHT");
+        hA.m_Hash = hash;
+        hB.m_Hash = hash;
+
+        hash = nlStringLowerHash("Layer");
+        h9.m_Hash = hash;
+        h8.m_Hash = hash;
+
+        compinstance = findComp.byRef(
+            presentation->m_currentSlide,
+            (InlineHasher&)h9,
+            (InlineHasher&)hB,
+            (InlineHasher&)h8,
+            (InlineHasher&)h7,
+            (InlineHasher&)h6,
+            (InlineHasher&)h5);
+    }
+    mSidekickGridComponents[1] = new (8, false) ISidekickGridComponent(compinstance, true);
+
+    mSidekickGridComponents[0]->mParentComponent->m_bVisible = false;
+    mSidekickGridComponents[1]->mParentComponent->m_bVisible = false;
+    mSidekickGridComponents[0]->BuildMapMenu();
+    mSidekickGridComponents[1]->BuildMapMenu();
+
+    {
+        volatile InlineHasher hB, hA;
+        volatile InlineHasher h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
+
+        h0.m_Hash = 0;
+        h1.m_Hash = 0;
+        h2.m_Hash = 0;
+        h3.m_Hash = 0;
+        h4.m_Hash = 0;
+        h5.m_Hash = 0;
+        h6.m_Hash = 0;
+        h7.m_Hash = 0;
+        h8.m_Hash = 0;
+        h9.m_Hash = 0;
+
+        unsigned long hash = nlStringLowerHash("sidekick icon left");
+        hA.m_Hash = hash;
+        hB.m_Hash = hash;
+
+        hash = nlStringLowerHash("Layer");
+        h9.m_Hash = hash;
+        h8.m_Hash = hash;
+
+        mSidekickMiniHeadComponents[0] = findComp.byRef(
+            presentation->m_currentSlide,
+            (InlineHasher&)h9,
+            (InlineHasher&)hB,
+            (InlineHasher&)h8,
+            (InlineHasher&)h7,
+            (InlineHasher&)h6,
+            (InlineHasher&)h5);
+    }
+
+    {
+        volatile InlineHasher hB, hA;
+        volatile InlineHasher h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
+
+        h0.m_Hash = 0;
+        h1.m_Hash = 0;
+        h2.m_Hash = 0;
+        h3.m_Hash = 0;
+        h4.m_Hash = 0;
+        h5.m_Hash = 0;
+        h6.m_Hash = 0;
+        h7.m_Hash = 0;
+        h8.m_Hash = 0;
+        h9.m_Hash = 0;
+
+        unsigned long hash = nlStringLowerHash("sidekick icon right");
+        hA.m_Hash = hash;
+        hB.m_Hash = hash;
+
+        hash = nlStringLowerHash("Layer");
+        h9.m_Hash = hash;
+        h8.m_Hash = hash;
+
+        mSidekickMiniHeadComponents[1] = findComp.byRef(
+            presentation->m_currentSlide,
+            (InlineHasher&)h9,
+            (InlineHasher&)hB,
+            (InlineHasher&)h8,
+            (InlineHasher&)h7,
+            (InlineHasher&)h6,
+            (InlineHasher&)h5);
+    }
+
+    {
+        volatile InlineHasher hB, hA;
+        volatile InlineHasher h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
+
+        h0.m_Hash = 0;
+        h1.m_Hash = 0;
+        h2.m_Hash = 0;
+        h3.m_Hash = 0;
+        h4.m_Hash = 0;
+        h5.m_Hash = 0;
+        h6.m_Hash = 0;
+        h7.m_Hash = 0;
+        h8.m_Hash = 0;
+        h9.m_Hash = 0;
+
+        unsigned long hash = nlStringLowerHash("CAPTAIN_NAME_LEFT");
+        hA.m_Hash = hash;
+        hB.m_Hash = hash;
+
+        hash = nlStringLowerHash("Layer");
+        h9.m_Hash = hash;
+        h8.m_Hash = hash;
+
+        mNameComponents[0].mComponent = findComp.byRef(
+            presentation->m_currentSlide,
+            (InlineHasher&)h9,
+            (InlineHasher&)hB,
+            (InlineHasher&)h8,
+            (InlineHasher&)h7,
+            (InlineHasher&)h6,
+            (InlineHasher&)h5);
+    }
+
+    mNameComponents[0].mCaptainObjName = "CAPTAIN_NAME";
+    mNameComponents[0].mSidekickObjName = "SIDEKICK_NAME";
+
+    {
+        volatile InlineHasher hB, hA;
+        volatile InlineHasher h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
+
+        h0.m_Hash = 0;
+        h1.m_Hash = 0;
+        h2.m_Hash = 0;
+        h3.m_Hash = 0;
+        h4.m_Hash = 0;
+        h5.m_Hash = 0;
+        h6.m_Hash = 0;
+        h7.m_Hash = 0;
+        h8.m_Hash = 0;
+        h9.m_Hash = 0;
+
+        unsigned long hash = nlStringLowerHash("CAPTAIN_NAME_RIGHT");
+        hA.m_Hash = hash;
+        hB.m_Hash = hash;
+
+        hash = nlStringLowerHash("Layer");
+        h9.m_Hash = hash;
+        h8.m_Hash = hash;
+
+        mNameComponents[1].mComponent = findComp.byRef(
+            presentation->m_currentSlide,
+            (InlineHasher&)h9,
+            (InlineHasher&)hB,
+            (InlineHasher&)h8,
+            (InlineHasher&)h7,
+            (InlineHasher&)h6,
+            (InlineHasher&)h5);
+    }
+
+    mNameComponents[1].mCaptainObjName = "CAPTAIN_NAME";
+    mNameComponents[1].mSidekickObjName = "SIDEKICK_NAME";
+
+    mComponentState[0].SetCurrentPhase(PHASE_CHOOSING_CAPTAIN);
+    mComponentState[1].SetCurrentPhase(PHASE_IDLE);
 }
 
 /**

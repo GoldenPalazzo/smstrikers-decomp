@@ -7,6 +7,7 @@
 #include "Game/FE/tlTextInstance.h"
 #include "Game/FE/feTemplates.h"
 #include "NL/nlBSearch.h"
+#include "NL/nlConfig.h"
 #include "NL/nlLexicalCast.h"
 #include "NL/nlLocalization.h"
 #include "NL/nlFormat.h"
@@ -151,7 +152,230 @@ void FEPopupMenu::CentrePopup(float totalHeight, float topOfMessageBox)
  */
 void FEPopupMenu::SetPositions()
 {
-    FORCE_DONT_INLINE;
+    feVector3 optionPosition;
+    float optionHeight;
+    float prevOptionHeight;
+    float totalHeight;
+    float topOfMessage;
+    FEPresentation* presentation;
+    TLTextInstance* pText;
+    TLComponentInstance* pHighlight;
+    feVector3 messagePosition;
+    nlTextBox::StringDrawInfo drawInfo;
+    float messageHeight;
+    float highlightScale;
+    nlColour colour;
+    int i;
+    nlColour colour2;
+    int i2;
+    float optionY;
+    nlColour optionColour;
+    feVector3 highlightPosition;
+    TLInstance* pImage;
+
+    presentation = m_pFEScene->m_pFEPackage->GetPresentation();
+
+    pHighlight = FEFinder<TLComponentInstance, 4>::Find<FEPresentation>(
+        presentation,
+        InlineHasher(nlStringLowerHash("Slide1")),
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("highlite")),
+        InlineHasher(0),
+        InlineHasher(0),
+        InlineHasher(0));
+
+    pText = FEFinder<TLTextInstance, 3>::Find<FEPresentation>(
+        presentation,
+        InlineHasher(nlStringLowerHash("Slide1")),
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("Message")),
+        InlineHasher(0),
+        InlineHasher(0),
+        InlineHasher(0));
+
+    messagePosition = pText->GetAssetPosition();
+    drawInfo = pText->m_DrawInfo;
+    messageHeight = (float)(drawInfo.RowCount * drawInfo.pFont->m_Metrics.RenderHeight);
+    prevOptionHeight = messageHeight * 0.5f;
+    totalHeight = messageHeight;
+    topOfMessage = messagePosition.e[1] + prevOptionHeight;
+
+    if (messageHeight == 0.0f)
+    {
+        pHighlight->m_bVisible = false;
+
+        colour = pText->GetAssetColour();
+        colour.c[3] = 0;
+        pText->SetAssetColour(colour);
+
+        for (i = 0; i < mPopup.numOptions; i++)
+        {
+            pText = FEFinder<TLTextInstance, 3>::Find<FEPresentation>(
+                presentation,
+                InlineHasher(nlStringLowerHash("Slide1")),
+                InlineHasher(nlStringLowerHash("Layer")),
+                InlineHasher(nlStringLowerHash(optionNames[i])),
+                InlineHasher(0),
+                InlineHasher(0),
+                InlineHasher(0));
+
+            colour = pText->GetAssetColour();
+            colour.c[3] = 0;
+            pText->SetAssetColour(colour);
+        }
+
+        glDiscardFrame(1);
+        return;
+    }
+
+    colour2 = pText->GetAssetColour();
+    colour2.c[3] = 0xFF;
+    pText->SetAssetColour(colour2);
+
+    Config& cfg = Config::Global();
+    TagValuePair& firstOptionSpacingTvp = cfg.FindTvp("popup_first_option_spacing");
+    float firstOptionSpacing;
+
+    if (firstOptionSpacingTvp.tag == NULL)
+    {
+        cfg.Set("popup_first_option_spacing", 75.0f);
+        firstOptionSpacing = 75.0f;
+    }
+    else if (firstOptionSpacingTvp.type == _BOOL)
+    {
+        firstOptionSpacing = LexicalCast<float, bool>(firstOptionSpacingTvp.value.b);
+    }
+    else if (firstOptionSpacingTvp.type == _INT)
+    {
+        firstOptionSpacing = LexicalCast<float, int>(firstOptionSpacingTvp.value.i);
+    }
+    else if (firstOptionSpacingTvp.type == _FLOAT)
+    {
+        firstOptionSpacing = LexicalCast<float, float>(firstOptionSpacingTvp.value.f);
+    }
+    else if (firstOptionSpacingTvp.type == _STRING)
+    {
+        firstOptionSpacing = LexicalCast<float, const char*>(firstOptionSpacingTvp.value.s);
+    }
+    else
+    {
+        firstOptionSpacing = 0.0f;
+    }
+
+    Config& cfg2 = Config::Global();
+    TagValuePair& otherOptionSpacingTvp = cfg2.FindTvp("popup_other_option_spacing");
+    float otherOptionSpacing;
+
+    if (otherOptionSpacingTvp.tag == NULL)
+    {
+        cfg2.Set("popup_other_option_spacing", 12.5f);
+        otherOptionSpacing = 12.5f;
+    }
+    else if (otherOptionSpacingTvp.type == _BOOL)
+    {
+        otherOptionSpacing = LexicalCast<float, bool>(otherOptionSpacingTvp.value.b);
+    }
+    else if (otherOptionSpacingTvp.type == _INT)
+    {
+        otherOptionSpacing = LexicalCast<float, int>(otherOptionSpacingTvp.value.i);
+    }
+    else if (otherOptionSpacingTvp.type == _FLOAT)
+    {
+        otherOptionSpacing = LexicalCast<float, float>(otherOptionSpacingTvp.value.f);
+    }
+    else if (otherOptionSpacingTvp.type == _STRING)
+    {
+        otherOptionSpacing = LexicalCast<float, const char*>(otherOptionSpacingTvp.value.s);
+    }
+    else
+    {
+        otherOptionSpacing = 0.0f;
+    }
+
+    highlightScale = 0.0f;
+
+    for (i2 = 0; i2 < mPopup.numOptions; i2++)
+    {
+        pText = FEFinder<TLTextInstance, 3>::Find<FEPresentation>(
+            presentation,
+            InlineHasher(nlStringLowerHash("Slide1")),
+            InlineHasher(nlStringLowerHash("Layer")),
+            InlineHasher(nlStringLowerHash(optionNames[i2])),
+            InlineHasher(0),
+            InlineHasher(0),
+            InlineHasher(0));
+
+        optionColour = pText->GetAssetColour();
+        optionColour.c[3] = 0xFF;
+        pText->SetAssetColour(optionColour);
+
+        drawInfo = pText->m_DrawInfo;
+        optionHeight = (float)(drawInfo.RowCount * drawInfo.pFont->m_Metrics.RenderHeight);
+
+        totalHeight += optionHeight;
+
+        if (i2 == 0)
+        {
+            totalHeight += firstOptionSpacing;
+            optionY = (messagePosition.e[1] - prevOptionHeight) - (optionHeight * 0.5f) - firstOptionSpacing;
+        }
+        else
+        {
+            totalHeight += otherOptionSpacing;
+            optionY = optionPosition.e[1] - (prevOptionHeight * 0.5f) - (optionHeight * 0.5f) - otherOptionSpacing;
+        }
+
+        prevOptionHeight = optionHeight;
+
+        optionPosition = pText->GetAssetPosition();
+        pText->SetAssetPosition(optionPosition.e[0], optionY, optionPosition.e[2]);
+
+        if (i2 == mHighlightedOption)
+        {
+            highlightScale = (float)drawInfo.RowCount;
+        }
+    }
+
+    pText = FEFinder<TLTextInstance, 3>::Find<FEPresentation>(
+        presentation,
+        InlineHasher(nlStringLowerHash("Slide1")),
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash(optionNames[mHighlightedOption])),
+        InlineHasher(0),
+        InlineHasher(0),
+        InlineHasher(0));
+
+    pHighlight = FEFinder<TLComponentInstance, 4>::Find<FEPresentation>(
+        presentation,
+        InlineHasher(nlStringLowerHash("Slide1")),
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("highlite")),
+        InlineHasher(0),
+        InlineHasher(0),
+        InlineHasher(0));
+
+    highlightPosition = pHighlight->GetAssetPosition();
+
+    pImage = (TLInstance*)FEFinder<TLImageInstance, 2>::Find<TLSlide>(
+        pHighlight->GetActiveSlide(),
+        InlineHasher(nlStringLowerHash("Highlight")),
+        InlineHasher(0),
+        InlineHasher(0),
+        InlineHasher(0),
+        InlineHasher(0),
+        InlineHasher(0));
+
+    mHighlightSize = pImage->GetAssetScale();
+
+    CentrePopup(totalHeight, topOfMessage);
+
+    optionPosition = pText->GetAssetPosition();
+    pHighlight->SetAssetPosition(highlightPosition.e[0], optionPosition.e[1], highlightPosition.e[2]);
+
+    pImage->SetAssetScale(mHighlightSize.e[0], mHighlightSize.e[1] * highlightScale, mHighlightSize.e[2]);
+
+    pHighlight->m_bVisible = true;
+    mMenuDisplayed = true;
 }
 
 /**

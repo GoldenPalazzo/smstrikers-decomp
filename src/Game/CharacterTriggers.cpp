@@ -527,8 +527,220 @@ void EmitBallPass(cPlayer* pPlayer)
 /**
  * Offset/Address/Size: 0x1B10 | 0x801A08C0 | size: 0xB48
  */
-void EmitBallShot(cPlayer*, eBallShotEffectType, cPlayer*, bool)
+void EmitBallShot(cPlayer* pCharacter, eBallShotEffectType eNewBallEffect, cPlayer*, bool bSilent)
 {
+    // TODO: 71.87% match - captain-team shot effect string path and stack/register
+    // layout around the switch still differ from target.
+    EmissionController* pControl = NULL;
+    EmissionController* pGlowControl = NULL;
+    unsigned long kickSound = (unsigned long)-1;
+
+    switch (eNewBallEffect)
+    {
+    case BALL_EFFECT_S2S_SUPER_SHOT:
+    {
+        EmissionController* pController = EmissionManager::Create(fxGetGroup("shoot_to_score_shot"), 0);
+        const nlVector3 vel = { 0.0f, 0.0f, 1.0f };
+        pController->SetVelocity(vel);
+        pController->m_fGround = 0.0f;
+        {
+            Function<EmissionController&> update;
+            update.mTag = FREE_FUNCTION;
+            update.mFreeFunction = UpdateEmitterPoseFromCharacter;
+            pController->SetUpdateCallback(update);
+        }
+        pCharacter->AttachEffect(pController);
+        pGlowControl = pController;
+        BeginRumbleAction((eRumbleActionPreset)5, pCharacter->GetGlobalPad());
+        break;
+    }
+    case BALL_EFFECT_S2S_SHOT:
+    {
+        EmissionController* pController = EmissionManager::Create(fxGetGroup("shoot_to_score_shot"), 0);
+        const nlVector3 vel = { 0.0f, 0.0f, 1.0f };
+        pController->SetVelocity(vel);
+        pController->m_fGround = 0.0f;
+        {
+            Function<EmissionController&> update;
+            update.mTag = FREE_FUNCTION;
+            update.mFreeFunction = UpdateEmitterPoseFromCharacter;
+            pController->SetUpdateCallback(update);
+        }
+        pCharacter->AttachEffect(pController);
+        pGlowControl = pController;
+        BeginRumbleAction((eRumbleActionPreset)5, pCharacter->GetGlobalPad());
+        break;
+    }
+    case BALL_EFFECT_PERFECT_SHOT:
+    {
+        EmissionController* pController = EmissionManager::Create(fxGetGroup("ball_shot_perfect"), 0);
+        const nlVector3 vel = { 0.0f, 0.0f, 1.0f };
+        pController->SetVelocity(vel);
+        pController->m_fGround = 0.0f;
+        {
+            Function<EmissionController&> update;
+            update.mTag = FREE_FUNCTION;
+            update.mFreeFunction = UpdateEmitterPoseFromCharacter;
+            pController->SetUpdateCallback(update);
+        }
+        pCharacter->AttachEffect(pController);
+        pControl = pController;
+
+        pController = EmissionManager::Create(fxGetGroup("ball_shot_perfect_glow"), 0);
+        pController->SetVelocity(vel);
+        pController->m_fGround = 0.0f;
+        {
+            Function<EmissionController&> update;
+            update.mTag = FREE_FUNCTION;
+            update.mFreeFunction = UpdateEmitterPoseFromCharacter;
+            pController->SetUpdateCallback(update);
+        }
+        pCharacter->AttachEffect(pController);
+        pGlowControl = pController;
+
+        BeginRumbleAction((eRumbleActionPreset)3, pCharacter->GetGlobalPad());
+        g_pBall->InitiateBallBlur(eNewBallEffect, NULL);
+        kickSound = 0xBB;
+        break;
+    }
+    case BALL_EFFECT_PERFECT_PASS:
+    {
+        EmissionController* pController = EmissionManager::Create(fxGetGroup("ball_pass_perfect"), 0);
+        const nlVector3 vel = { 0.0f, 0.0f, 1.0f };
+        pController->SetVelocity(vel);
+        pController->m_fGround = 0.0f;
+        {
+            Function<EmissionController&> update;
+            update.mTag = FREE_FUNCTION;
+            update.mFreeFunction = UpdateEmitterPoseFromCharacter;
+            pController->SetUpdateCallback(update);
+        }
+        pCharacter->AttachEffect(pController);
+        pControl = pController;
+
+        pController = EmissionManager::Create(fxGetGroup("ball_pass_perfect_glow"), 0);
+        pController->SetVelocity(vel);
+        pController->m_fGround = 0.0f;
+        {
+            Function<EmissionController&> update;
+            update.mTag = FREE_FUNCTION;
+            update.mFreeFunction = UpdateEmitterPoseFromCharacter;
+            pController->SetUpdateCallback(update);
+        }
+        pCharacter->AttachEffect(pController);
+        pGlowControl = pController;
+
+        BeginRumbleAction((eRumbleActionPreset)1, pCharacter->GetGlobalPad());
+        g_pBall->InitiateBallBlur(eNewBallEffect, NULL);
+        pCharacter->Play3DSFX((Audio::eCharSFX)0x3D, (PosUpdateMethod)2, 1.0f);
+
+        const float dx = g_pBall->m_v3Position.f.x - g_pBall->m_pPassTarget->m_v3Position.f.x;
+        const float dy = g_pBall->m_v3Position.f.y - g_pBall->m_pPassTarget->m_v3Position.f.y;
+        const float dz = g_pBall->m_v3Position.f.z - g_pBall->m_pPassTarget->m_v3Position.f.z;
+        const float distSq = dx * dx + dy * dy + dz * dz;
+        if (distSq > 0.0f)
+        {
+            Audio::SoundAttributes attrs;
+            attrs.Init();
+            attrs.SetSoundType(0xBA, true);
+            attrs.UsePhysObj(g_pBall->m_pPhysicsBall);
+            Audio::gStadGenSFX.Play(attrs);
+        }
+        break;
+    }
+    case BALL_EFFECT_ONETIMER_SHOT:
+    {
+        EmissionController* pController = EmissionManager::Create(fxGetGroup("ball_shot_onetimer"), 0);
+        const nlVector3 vel = { 0.0f, 0.0f, 1.0f };
+        pController->SetVelocity(vel);
+        pController->m_fGround = 0.0f;
+        {
+            Function<EmissionController&> update;
+            update.mTag = FREE_FUNCTION;
+            update.mFreeFunction = UpdateEmitterPoseFromCharacter;
+            pController->SetUpdateCallback(update);
+        }
+        pCharacter->AttachEffect(pController);
+        pControl = pController;
+        BeginRumbleAction((eRumbleActionPreset)3, pCharacter->GetGlobalPad());
+        g_pBall->InitiateBallBlur(eNewBallEffect, NULL);
+        kickSound = 0xB4;
+        break;
+    }
+    case BALL_EFFECT_CHIP_SHOT:
+    {
+        EmissionController* pController = EmissionManager::Create(fxGetGroup("divot"), 0);
+        const nlVector3 vel = { 0.0f, 0.0f, 1.0f };
+        pController->SetVelocity(vel);
+        pController->m_fGround = 0.0f;
+        {
+            Function<EmissionController&> update;
+            update.mTag = FREE_FUNCTION;
+            update.mFreeFunction = UpdateEmitterPoseFromCharacter;
+            pController->SetUpdateCallback(update);
+        }
+        pCharacter->AttachEffect(pController);
+        pController->SetPosition(g_pBall->m_v3Position);
+        pController->SetVelocity(pCharacter->m_v3Velocity);
+        pControl = pController;
+        g_pBall->InitiateBallBlur(eNewBallEffect, NULL);
+        break;
+    }
+    case BALL_EFFECT_REGULAR_SHOT:
+        g_pBall->InitiateBallBlur(eNewBallEffect, NULL);
+        // fall through
+    default:
+    {
+        EmissionController* pController = EmissionManager::Create(fxGetGroup("ball_shot"), 0);
+        const nlVector3 vel = { 0.0f, 0.0f, 1.0f };
+        pController->SetVelocity(vel);
+        pController->m_fGround = 0.0f;
+        {
+            Function<EmissionController&> update;
+            update.mTag = FREE_FUNCTION;
+            update.mFreeFunction = UpdateEmitterPoseFromCharacter;
+            pController->SetUpdateCallback(update);
+        }
+        pCharacter->AttachEffect(pController);
+        pControl = pController;
+        BeginRumbleAction((eRumbleActionPreset)1, pCharacter->GetGlobalPad());
+        kickSound = 0xB3;
+        break;
+    }
+    }
+
+    if (pCharacter->m_eAnimID == 0x4C)
+    {
+        kickSound = 0xB1;
+    }
+
+    if (!bSilent && kickSound != (unsigned long)-1)
+    {
+        Audio::SoundAttributes attrs;
+        attrs.Init();
+        attrs.SetSoundType(kickSound, true);
+        attrs.UseStationaryPosVector(g_pBall->m_v3Position);
+        Audio::gStadGenSFX.Play(attrs);
+    }
+
+    pCharacter->m_pTeam->GetOtherNet();
+
+    if (pControl != NULL)
+    {
+        pControl->SetPosition(g_pBall->m_v3Position);
+        pControl->SetVelocity(pCharacter->m_v3Velocity);
+    }
+
+    if (pGlowControl != NULL)
+    {
+        pGlowControl->SetPosition(g_pBall->m_v3Position);
+        pGlowControl->SetVelocity(pCharacter->m_v3Velocity);
+
+        Function<EmissionController&> update;
+        update.mTag = FREE_FUNCTION;
+        update.mFreeFunction = UpdateEmitterFromBall;
+        pGlowControl->SetUpdateCallback(update);
+    }
 }
 
 /**

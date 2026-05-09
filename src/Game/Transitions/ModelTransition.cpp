@@ -18,6 +18,8 @@
 #include "NL/gl/glState.h"
 #include "NL/gl/glView.h"
 #include "NL/glx/glxLoadModel.h"
+#include "NL/glx/glxDisplayList.h"
+#include "Game/GL/gluMeshWriter.h"
 
 extern "C" cSHierarchy* Initialize__11cSHierarchyFP7nlChunk(nlChunk*);
 
@@ -460,7 +462,136 @@ void ModeledScreenTransition::Render(eGLView)
  */
 void ModeledScreenTransition::RenderOutline() const
 {
-    FORCE_DONT_INLINE;
+    static nlVector3 sZeroInit;
+    static nlVector3 sZeroClear;
+
+    Vector<nlVector3, DefaultAllocator> outline;
+    outline.mData = NULL;
+    outline.mSize = 0;
+    outline.mCapacity = 0;
+
+    if (outline.mCapacity < 8)
+    {
+        nlVector3* newData = (nlVector3*)nlMalloc(8 * sizeof(nlVector3), 8, false);
+        newData[0] = sZeroInit;
+        newData[1] = sZeroInit;
+        newData[2] = sZeroInit;
+        newData[3] = sZeroInit;
+        newData[4] = sZeroInit;
+        newData[5] = sZeroInit;
+        newData[6] = sZeroInit;
+        newData[7] = sZeroInit;
+
+        for (int i = 0; i < outline.mSize; i++)
+        {
+            newData[i] = outline.mData[i];
+        }
+
+        delete[] outline.mData;
+        outline.mData = newData;
+        outline.mCapacity = 8;
+    }
+
+    glModel* pModel = m_pModels;
+    int* pModelMap = m_pModelMap;
+
+    for (int i = 0; i < (int)m_nModels; i++)
+    {
+        int packetOffset = 0;
+        for (int iPacket = 0; iPacket < (int)pModel->numPackets; iPacket++)
+        {
+            const glModelPacket& packet = *(const glModelPacket*)((u8*)pModel->packets + packetOffset);
+            DisplayList* pList = dlGetStruct(packet.indexBuffer);
+
+            for (int iVertex = 0; iVertex < (int)packet.numVertices; iVertex++)
+            {
+                const u16* p;
+                if (((u16*)&pList->indices)[1] != 0)
+                {
+                    u16 ns = ((u16*)&pList->indices)[0];
+                    p = (u16*)((u8*)pList->list + (((ns - 1) * 2 + 1) * iVertex) + 4);
+                }
+                else
+                {
+                    u16 ns = ((u16*)&pList->indices)[0];
+                    p = (u16*)((u8*)pList->list + ((ns * 2) * iVertex) + 3);
+                }
+
+                int index = *p;
+                const glModelStream& stream = packet.streams[0];
+
+                nlVector3 current;
+                if (stream.stride == 12)
+                {
+                    memcpy(&current, (const void*)((u8*)stream.address + index * stream.stride), 12);
+                }
+                else
+                {
+                    const s16* s = (const s16*)((u8*)stream.address + index * stream.stride);
+                    current.f.x = s[0] * 0.0078125f;
+                    current.f.y = s[1] * 0.0078125f;
+                    current.f.z = s[2] * 0.0078125f;
+                }
+
+                nlMultPosVectorMatrix(current, current, m_pPoseAccumulator->GetNodeMatrix(pModelMap[0]));
+
+                outline.insert(outline.mData + outline.mSize, &current, &current + 1);
+            }
+
+            ShuffleIntoOutline(outline);
+
+            GLMeshWriter mesh;
+            glSetDefaultState(true);
+            glSetCurrentMatrix(glGetIdentityMatrix());
+            glSetCurrentTexture(glGetTexture("global/white"), GLTT_Diffuse);
+            glSetCurrentProgram(glGetProgram("3d unlit"));
+            glSetRasterState((eGLState)5, 1);
+            glSetCurrentRasterState(glHandleizeRasterState());
+
+            eGLStream streamDecl[3] = {
+                GLStream_Position,
+                GLStream_Colour,
+                GLStream_Diffuse,
+            };
+
+            mesh.Begin(outline.mSize + 1, GLP_LineStrip, 3, streamDecl, false);
+
+            for (int k = 0; k < outline.mSize; k++)
+            {
+                mesh.Colour(m_OutlineColour);
+                nlVector2 uv;
+                uv.f.x = 0.0f;
+                uv.f.y = 0.0f;
+                ((GLMeshWriterCore*)&mesh)->Texcoord(uv);
+                mesh.Vertex(outline.mData[k]);
+            }
+
+            mesh.Colour(m_OutlineColour);
+            nlVector2 uv;
+            uv.f.x = 0.0f;
+            uv.f.y = 0.0f;
+            ((GLMeshWriterCore*)&mesh)->Texcoord(uv);
+            mesh.Vertex(outline.mData[0]);
+
+            if (mesh.End())
+            {
+                glViewAttachModel(GLV_Transitions3D, 2, mesh.GetModel());
+            }
+
+            for (int k = 0; k < outline.mSize; k++)
+            {
+                outline.mData[k] = sZeroClear;
+            }
+            outline.mSize = 0;
+
+            packetOffset += sizeof(glModelPacket);
+        }
+
+        pModelMap++;
+        pModel = (glModel*)((u8*)pModel + sizeof(glModel));
+    }
+
+    delete[] outline.mData;
 }
 
 /**

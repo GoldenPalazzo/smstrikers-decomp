@@ -392,5 +392,49 @@ void ProgressiveScanScene::Update(float fDeltaT)
  */
 void ProgressiveScanScene::SwitchMessageImage()
 {
-    FORCE_DONT_INLINE;
+    const char* confirmationText = "No";
+    if (mUseProgressiveMode)
+    {
+        confirmationText = "Yes";
+    }
+
+    BasicString<char, Detail::TempStringAllocator> languageString;
+    FEPresentation* presentation = m_pFEPresentation;
+
+    presentation->SetActiveSlide("Slide1");
+    presentation->Update(0.0f);
+
+    switch (g_Language)
+    {
+    case 0:
+        languageString = "eng";
+        break;
+    case 1:
+        languageString = "fre";
+        break;
+    case 2:
+        languageString = "deu";
+        break;
+    case 3:
+        languageString = "spa";
+        break;
+    case 4:
+        languageString = "ita";
+        break;
+    case 5:
+        languageString = "jpn";
+        break;
+    case 6:
+        languageString = "uke";
+        break;
+    default:
+        languageString = "eng";
+        break;
+    }
+
+    char textureName[64];
+    nlSNPrintf(textureName, sizeof(textureName), "fe/health_and_safety/Progressive%s_%s", confirmationText, languageString.c_str());
+    textureName[sizeof(textureName) - 1] = '\0';
+
+    mConfirmationImage->QueueLoad(textureName, true);
 }

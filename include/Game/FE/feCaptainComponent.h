@@ -21,14 +21,6 @@ enum UpdateResult
     UPDATE_GO_FORWARD = 2,
 };
 
-enum Phase
-{
-    PHASE_IDLE = 0,
-    PHASE_CHOOSING_CAPTAIN = 1,
-    PHASE_CHOOSING_SIDEKICK = 2,
-    PHASE_READY = 3,
-};
-
 class IChooseCaptain
 {
 public:
@@ -48,6 +40,14 @@ public:
     class ComponentState
     {
     public:
+        enum Phase
+        {
+            PHASE_IDLE = 0,
+            PHASE_CHOOSING_CAPTAIN = 1,
+            PHASE_CHOOSING_SIDEKICK = 2,
+            PHASE_READY = 3,
+        };
+
         void GotoNextPhase();
         void GotoPreviousPhase();
         void SetCurrentPhase(Phase);
@@ -110,6 +110,11 @@ public:
     /* 0xAC */ char* mLastCaptainSelectSoundStrPlayed[2];           // size 0x8
     /* 0xB4 */ NameComponent mNameComponents[2];                    // size 0x18
 }; // total size: 0xCC
+
+#define PHASE_IDLE              IChooseCaptain::ComponentState::PHASE_IDLE
+#define PHASE_CHOOSING_CAPTAIN  IChooseCaptain::ComponentState::PHASE_CHOOSING_CAPTAIN
+#define PHASE_CHOOSING_SIDEKICK IChooseCaptain::ComponentState::PHASE_CHOOSING_SIDEKICK
+#define PHASE_READY             IChooseCaptain::ComponentState::PHASE_READY
 
 // class FEFinder<TLComponentInstance, 4>
 // {

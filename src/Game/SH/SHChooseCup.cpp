@@ -902,6 +902,245 @@ void ChooseCupSceneV2::Update(float fDeltaT)
  */
 void ChooseCupSceneV2::DisplayCup()
 {
+    unsigned long GetLOCTrophyName(eTrophyType);
+
+    static const char* TROPHY_TEXTURE_FILENAMES[13] = {
+        "fe/trophies/cups_mushroom",
+        "fe/trophies/cups_flower",
+        "fe/trophies/cups_star",
+        "fe/trophies/cups_bowser",
+        "fe/trophies/cups_super_mushroom",
+        "fe/trophies/cups_super_flower",
+        "fe/trophies/cups_super_star",
+        "fe/trophies/cups_super_bowser",
+        "fe/trophies/cups_veteran",
+        "fe/trophies/cups_sniper",
+        "fe/trophies/cups_super_striker",
+        "fe/trophies/cups_super_team",
+        "fe/trophies/cups_lakitu",
+    };
+
+    static const unsigned long CUP_EXPLANATIONS[8] = {
+        0x92E00D2D,
+        0x4442C1E2,
+        0x88ABDECD,
+        0x3B28BAE5,
+        0x13E667DB,
+        0xC8F69910,
+        0x3684127B,
+        0xBFDC9213,
+    };
+
+    static const unsigned short CUP_SEPARATOR[] = { ' ', 0 };
+    static const nlColour CHOOSE_CUP_BLACK = { 0x00, 0x00, 0x00, 0xFF };
+
+    FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
+    TLSlide* slide = presentation->m_currentSlide;
+
+    presentation->m_fadeDuration = slide->m_start;
+    slide->m_time = slide->m_start;
+
+    TLTextInstance* pText = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
+        slide,
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("TITLE")),
+        InlineHasher(0),
+        InlineHasher(0),
+        InlineHasher(0),
+        InlineHasher(0));
+
+    pText->m_LocStrId = GetLOCTrophyName(mCupToDisplay);
+    pText->m_OverloadFlags |= 0x8;
+
+    mCupImage->QueueLoad(TROPHY_TEXTURE_FILENAMES[(int)mCupToDisplay], false);
+
+    TLImageInstance* pTrophyImage = FEFinder<TLImageInstance, 2>::Find<TLSlide>(
+        m_pFEPresentation->m_currentSlide,
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("TROPHY")),
+        InlineHasher(0),
+        InlineHasher(0),
+        InlineHasher(0),
+        InlineHasher(0));
+
+    bool canProceed = false;
+    if (mIsSuperCup)
+    {
+        canProceed = true;
+    }
+    else
+    {
+        switch (mCupToDisplay)
+        {
+        case TROPHY_MUSHROOM_CUP:
+            canProceed = true;
+            break;
+        case TROPHY_FLOWER_CUP:
+            canProceed = nlSingleton<GameInfoManager>::s_pInstance->IsUserQualified(GameInfoManager::GM_FLOWER_CUP);
+            break;
+        case TROPHY_STAR_CUP:
+            canProceed = nlSingleton<GameInfoManager>::s_pInstance->IsUserQualified(GameInfoManager::GM_STAR_CUP);
+            break;
+        case TROPHY_BOWSER_CUP:
+            canProceed = nlSingleton<GameInfoManager>::s_pInstance->IsUserQualified(GameInfoManager::GM_BOWSER_CUP);
+            break;
+        default:
+            break;
+        }
+    }
+
+    if (canProceed)
+    {
+        const unsigned short* firstHalfLoc = LookupLocHash(CUP_EXPLANATIONS[(int)mCupToDisplay]);
+
+        BasicStringData<unsigned short>* firstHalfData = (BasicStringData<unsigned short>*)nlMalloc(0x10, 8, true);
+        if (firstHalfData != 0)
+        {
+            CopyWideString(firstHalfData, firstHalfLoc);
+        }
+
+        BasicString<unsigned short, Detail::TempStringAllocator> firstHalf(firstHalfData);
+
+        if (((nlLocalization*)g_pLocalization)->m_CurrentLanguage != nlLocalization::LangJapanese)
+        {
+            firstHalf = firstHalf.Append(CUP_SEPARATOR);
+        }
+
+        const unsigned short* secondHalfLoc;
+        if (mCupToDisplay == TROPHY_BOWSER_CUP || mCupToDisplay == TROPHY_SUPER_BOWSER_CUP)
+        {
+            secondHalfLoc = LookupLocString("CUPEXP_KNOCKOUT");
+        }
+        else
+        {
+            secondHalfLoc = LookupLocString("CUPEXP_LEAGUE");
+        }
+
+        BasicStringData<unsigned short>* secondHalfData = (BasicStringData<unsigned short>*)nlMalloc(0x10, 8, true);
+        if (secondHalfData != 0)
+        {
+            CopyWideString(secondHalfData, secondHalfLoc);
+        }
+
+        BasicString<unsigned short, Detail::TempStringAllocator> secondHalf(secondHalfData);
+        BasicString<unsigned short, Detail::TempStringAllocator> descriptor = firstHalf.Append(secondHalf);
+
+        memcpy(mDescriptorBuffer, descriptor.c_str(), 0x200);
+        mDescriptorBuffer[0xFF] = 0;
+
+        pText = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
+            slide,
+            InlineHasher(nlStringLowerHash("Layer")),
+            InlineHasher(nlStringLowerHash("DESCRIPTOR")),
+            InlineHasher(0),
+            InlineHasher(0),
+            InlineHasher(0),
+            InlineHasher(0));
+
+        pText->SetString(mDescriptorBuffer);
+
+        nlColour trophyColour = ((FELibObject*)pTrophyImage->m_component)->GetColour();
+        pTrophyImage->SetAssetColour(trophyColour);
+    }
+    else
+    {
+        pText = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
+            slide,
+            InlineHasher(nlStringLowerHash("Layer")),
+            InlineHasher(nlStringLowerHash("DESCRIPTOR")),
+            InlineHasher(0),
+            InlineHasher(0),
+            InlineHasher(0),
+            InlineHasher(0));
+
+        pTrophyImage->SetAssetColour(CHOOSE_CUP_BLACK);
+
+        switch (mCupToDisplay)
+        {
+        case TROPHY_FLOWER_CUP:
+            pText->SetStringId("FLOWER_LOCKED");
+            break;
+        case TROPHY_STAR_CUP:
+            pText->SetStringId("STAR_LOCKED");
+            break;
+        case TROPHY_BOWSER_CUP:
+            pText->SetStringId("BOWSER_LOCKED");
+            break;
+        default:
+            break;
+        }
+    }
+
+    TLComponentInstance* progressComp = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
+        slide,
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("cup in progress")),
+        InlineHasher(0),
+        InlineHasher(0),
+        InlineHasher(0),
+        InlineHasher(0));
+
+    GameInfoManager::eGameModes cupMode = GameInfoManager::GM_MUSHROOM_CUP;
+    switch (mCupToDisplay)
+    {
+    case TROPHY_MUSHROOM_CUP:
+        cupMode = GameInfoManager::GM_MUSHROOM_CUP;
+        break;
+    case TROPHY_FLOWER_CUP:
+        cupMode = GameInfoManager::GM_FLOWER_CUP;
+        break;
+    case TROPHY_STAR_CUP:
+        cupMode = GameInfoManager::GM_STAR_CUP;
+        break;
+    case TROPHY_BOWSER_CUP:
+        cupMode = GameInfoManager::GM_BOWSER_CUP;
+        break;
+    case TROPHY_SUPER_MUSHROOM_CUP:
+        cupMode = GameInfoManager::GM_SUPER_MUSHROOM_CUP;
+        break;
+    case TROPHY_SUPER_FLOWER_CUP:
+        cupMode = GameInfoManager::GM_SUPER_FLOWER_CUP;
+        break;
+    case TROPHY_SUPER_STAR_CUP:
+        cupMode = GameInfoManager::GM_SUPER_STAR_CUP;
+        break;
+    case TROPHY_SUPER_BOWSER_CUP:
+        cupMode = GameInfoManager::GM_SUPER_BOWSER_CUP;
+        break;
+    default:
+        break;
+    }
+
+    BaseCup* cup = nlSingleton<GameInfoManager>::s_pInstance->GetCup(cupMode);
+    if (cup->mCupStarted)
+    {
+        progressComp->m_bVisible = true;
+
+        pText = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
+            progressComp->GetActiveSlide(),
+            InlineHasher(nlStringLowerHash("Text")),
+            InlineHasher(0),
+            InlineHasher(0),
+            InlineHasher(0),
+            InlineHasher(0),
+            InlineHasher(0));
+
+        pText->SetStringId("INPROGRESS");
+    }
+    else
+    {
+        Spoil cupSpoil = nlSingleton<GameInfoManager>::s_pInstance->mUserInfo.mSpoils[(int)mCupToDisplay];
+
+        if (cupSpoil.mCurrentChamp == TEAM_INVALID)
+        {
+            progressComp->m_bVisible = false;
+        }
+        else
+        {
+            SetCurrentChamp(cupSpoil.mCurrentChamp, cupSpoil.mIsCPUChamp, progressComp);
+            progressComp->m_bVisible = true;
+        }
+    }
 }
 
 /**

@@ -20,7 +20,7 @@ public:
     // void @class$264CustomTournament_cpp::@class$264CustomTournament_cpp();
     CustomTournament();
     ~CustomTournament();
-    void ConstructCup();
+    BaseCup* ConstructCup();
     int GetSaveDataSize() const;
     void SerializeData(void*) const;
     void DeserializeData(void*);

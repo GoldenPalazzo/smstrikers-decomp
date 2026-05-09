@@ -7,6 +7,7 @@
 #include "Game/FE/feFinder.h"
 #include "Game/FE/feManager.h"
 #include "Game/FE/feSceneManager.h"
+#include "Game/FE/fePopupMenu.h"
 #include "Game/FE/tlTextInstance.h"
 #include "Game/GameInfo.h"
 #include "Game/Game.h"
@@ -245,6 +246,60 @@ void PauseMenuScene::OnSelectRESUME(TLComponentInstance*)
  */
 void PauseMenuScene::OnSelectQUIT(TLComponentInstance*)
 {
+    FEPopupMenu* popup;
+
+    if (FrontEnd::m_bGameOver)
+    {
+        OverlayManager::s_pInstance->Pop();
+        OverlayManager::s_pInstance->Pop();
+        OverlayManager::s_pInstance->Push(OVERLAY_BRAG, SCREEN_FORWARD, false);
+    }
+    else
+    {
+        popup = (FEPopupMenu*)OverlayManager::s_pInstance->Push(OVERLAY_POPUP, SCREEN_NOTHING, false);
+        popup->mControlInput = mQuittingController;
+
+        if (nlSingleton<GameInfoManager>::s_pInstance->mIsInStrikers101Mode)
+        {
+            {
+                Function<FnVoidVoid> yes(Bind<void, Detail::MemFunImpl<void, void (PauseMenuScene::*)()>, PauseMenuScene*>(
+                    MemFun<PauseMenuScene, void>(&PauseMenuScene::OnSelectPopupYESFORFEIT), this));
+                Function<FnVoidVoid> no(Bind<void, Detail::MemFunImpl<void, void (PauseMenuScene::*)()>, PauseMenuScene*>(
+                    MemFun<PauseMenuScene, void>(&PauseMenuScene::OnSelectPopupNOFORFEIT), this));
+                popup->Create(POPUP_INGAME_QUIT_STRIKERS_101, yes, no);
+            }
+        }
+        else if (nlSingleton<GameInfoManager>::s_pInstance->mCurrentMode == GameInfoManager::GM_FRIENDLY || g_pGame->m_eGameState == GS_END_GAME)
+        {
+            {
+                Function<FnVoidVoid> yes(Bind<void, Detail::MemFunImpl<void, void (PauseMenuScene::*)()>, PauseMenuScene*>(
+                    MemFun<PauseMenuScene, void>(&PauseMenuScene::OnSelectPopupYESFORFEIT), this));
+                Function<FnVoidVoid> no(Bind<void, Detail::MemFunImpl<void, void (PauseMenuScene::*)()>, PauseMenuScene*>(
+                    MemFun<PauseMenuScene, void>(&PauseMenuScene::OnSelectPopupNOFORFEIT), this));
+                popup->Create(POPUP_INGAME_QUIT_MATCH, yes, no);
+            }
+        }
+        else if (nlSingleton<GameInfoManager>::s_pInstance->IsInCupMode()
+                 || (nlSingleton<GameInfoManager>::s_pInstance->IsInTournamentMode()
+                     && nlSingleton<GameInfoManager>::s_pInstance->GetPlayingSide((unsigned short)mQuittingController) != -1))
+        {
+            {
+                Function<FnVoidVoid> yes(Bind<void, Detail::MemFunImpl<void, void (PauseMenuScene::*)()>, PauseMenuScene*>(
+                    MemFun<PauseMenuScene, void>(&PauseMenuScene::OnSelectPopupYESFORFEIT), this));
+                Function<FnVoidVoid> no(Bind<void, Detail::MemFunImpl<void, void (PauseMenuScene::*)()>, PauseMenuScene*>(
+                    MemFun<PauseMenuScene, void>(&PauseMenuScene::OnSelectPopupNOFORFEIT), this));
+                popup->Create(POPUP_INGAME_FORFEIT_MATCH, yes, no);
+            }
+        }
+        else
+        {
+            {
+                Function<FnVoidVoid> no(Bind<void, Detail::MemFunImpl<void, void (PauseMenuScene::*)()>, PauseMenuScene*>(
+                    MemFun<PauseMenuScene, void>(&PauseMenuScene::OnSelectPopupNOFORFEIT), this));
+                popup->Create(POPUP_NO_FORFEIT, no);
+            }
+        }
+    }
 }
 
 /**

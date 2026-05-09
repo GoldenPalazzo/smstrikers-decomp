@@ -1,4 +1,5 @@
 #include "Game/DB/CustomTournament.h"
+#include "Game/Sys/debug.h"
 
 // /**
 //  * Offset/Address/Size: 0x1010 | 0x8018F618 | size: 0xF4
@@ -430,9 +431,82 @@ CustomTournament::~CustomTournament()
 /**
  * Offset/Address/Size: 0x15C | 0x8018D60C | size: 0x88C
  */
-void CustomTournament::ConstructCup()
+BaseCup* CustomTournament::ConstructCup()
 {
-    FORCE_DONT_INLINE;
+    if (m_cup != NULL)
+    {
+        m_cup = NULL;
+    }
+
+    switch (m_tournMode)
+    {
+    case TM_LEAGUE:
+        switch (m_numGamesPerTeam)
+        {
+        case 1:
+            switch (m_numTeams)
+            {
+            case 3:
+                m_cup = new (&m_dataSpace.cup31) Cup<3, 3>;
+                break;
+            case 4:
+                m_cup = new (&m_dataSpace.cup41) Cup<4, 3>;
+                break;
+            case 5:
+                m_cup = new (&m_dataSpace.cup51) Cup<5, 5>;
+                break;
+            case 6:
+                m_cup = new (&m_dataSpace.cup61) Cup<6, 5>;
+                break;
+            case 7:
+                m_cup = new (&m_dataSpace.cup71) Cup<7, 7>;
+                break;
+            case 8:
+                m_cup = new (&m_dataSpace.cup81) Cup<8, 7>;
+                break;
+            }
+            break;
+        case 2:
+            switch (m_numTeams)
+            {
+            case 3:
+                m_cup = new (&m_dataSpace.cup32) Cup<3, 6>;
+                break;
+            case 4:
+                m_cup = new (&m_dataSpace.cup42) Cup<4, 6>;
+                break;
+            case 5:
+                m_cup = new (&m_dataSpace.cup52) Cup<5, 10>;
+                break;
+            case 6:
+                m_cup = new (&m_dataSpace.cup62) Cup<6, 10>;
+                break;
+            case 7:
+                m_cup = new (&m_dataSpace.cup72) Cup<7, 14>;
+                break;
+            case 8:
+                m_cup = new (&m_dataSpace.cup82) Cup<8, 14>;
+                break;
+            }
+            break;
+        }
+        break;
+    case TM_KNOCKOUT:
+        switch (m_numTeams)
+        {
+        case 4:
+            m_cup = new (&m_dataSpace.knockout4) Knockout<4>;
+            break;
+        case 8:
+            m_cup = new (&m_dataSpace.knockout8) Knockout<8>;
+            break;
+        }
+        break;
+    }
+
+    tDebugPrintManager::Print(DC_FE, "Tournament Cup Constructed\n");
+    m_cupConstructed = true;
+    return m_cup;
 }
 
 /**

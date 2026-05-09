@@ -76,6 +76,7 @@ static s32 glx_RasterizedAlphaArg;
 static s32 glx_GlossMapStage;
 static s32 glx_GlossMapCoord;
 static bool glx_NoFog;
+static u32 ColourTargetTexture;
 // static unsigned long glx_NumIndices;
 static eGLView prev_view;
 static u8 glx_InvXpose;
@@ -277,18 +278,153 @@ void glx_SendFrame_cb(eGLView view, unsigned long flags, const glModelPacket* p)
 
 /**
  * Offset/Address/Size: 0x538 | 0x801BA038 | size: 0xB20
+ * TODO: 8.23% match - function currently aliases into a shared block starting at +0x310;
+ * remaining draw path, viewport restore, and alpha-state blocks still missing.
  */
-void glx_DrawPacket(const glModelPacket*)
+void glx_DrawPacket(const glModelPacket* p)
 {
-    FORCE_DONT_INLINE;
+    extern bool glx_GetFog();
+    extern void glx_Fog(bool);
+    void GXSetNumIndStages(unsigned char);
+    void GXSetIndTexOrder(GXIndTexStageID, GXTexCoordID, GXTexMapID);
+    void GXSetIndTexCoordScale(GXIndTexStageID, GXIndTexScale, GXIndTexScale);
+    void GXSetTevIndWarp(GXTevStageID, GXIndTexStageID, bool, bool, GXIndTexMtxID);
+    void GXSetIndTexMtx(GXIndTexMtxID, const float (*)[3], signed char);
+    void GXSetTevDirect(GXTevStageID);
+
+    static float indMtx[2][3] = {
+        { 1.0f, 0.0f, 0.0f },
+        { 0.0f, 1.0f, 0.0f },
+    };
+
+    bool bIndirect = false;
+
+    if (p == (const glModelPacket*)-1)
+    {
+        GXSetCurrentMtx(0);
+    }
+
+    if ((prev_view == GLV_WarbleBlend) && (p->state.texture[4] == ColourTargetTexture))
+    {
+        PlatTexture* tex = glx_GetTex(glGetTexture("target/offset"), true, true);
+
+        glx_texture[1] = (u32)tex;
+        memcpy(&glx_texobj[1], &tex->m_TexObj, sizeof(GXTexObj));
+        GXInitTexObjWrapMode(&glx_texobj[1], (GXTexWrapMode)0, (GXTexWrapMode)0);
+        GXInitTexObjFilter(&glx_texobj[1], (GXTexFilter)1, (GXTexFilter)1);
+        glx_texdirty |= 2;
+
+        GXSetNumIndStages(1);
+        GXSetIndTexOrder((GXIndTexStageID)0, (GXTexCoordID)0, (GXTexMapID)1);
+        GXSetIndTexCoordScale((GXIndTexStageID)0, (GXIndTexScale)1, (GXIndTexScale)1);
+        GXSetTevIndWarp((GXTevStageID)0, (GXIndTexStageID)0, true, false, (GXIndTexMtxID)1);
+
+        {
+            float scale = 1.0f / glx_IndDivisor;
+            indMtx[0][0] = scale;
+            indMtx[1][1] = scale;
+        }
+
+        GXSetIndTexMtx((GXIndTexMtxID)1, indMtx, 1);
+        bIndirect = true;
+    }
+
+    bool bFogWasDisabled = false;
+    if (glx_NoFog && glx_GetFog())
+    {
+        bFogWasDisabled = true;
+        glx_Fog(false);
+    }
+
+    if (p != NULL)
+    {
+        glx_SwitchTextureState(p);
+    }
+
+    if (bIndirect)
+    {
+        GXSetNumIndStages(0);
+        GXSetTevDirect((GXTevStageID)0);
+    }
+
+    if (bFogWasDisabled)
+    {
+        glx_Fog(true);
+    }
+
+    GXSetCurrentMtx(0);
 }
 
 /**
  * Offset/Address/Size: 0x1058 | 0x801BAB58 | size: 0x964
  */
-void glx_SwitchUserData(const glModelPacket*)
+void glx_SwitchUserData(const glModelPacket* p)
 {
-    FORCE_DONT_INLINE;
+    void GXSetScissor(u32, u32, u32, u32);
+
+    static bool bDeferredEnvDiffuse;
+    static signed char init;
+    static bool glx_AlwaysReloadLights = true;
+
+    if (!init)
+    {
+        bDeferredEnvDiffuse = true;
+        init = 1;
+    }
+
+    if (glx_AlwaysReloadLights)
+    {
+        glx_ReloadPointLights = true;
+        glx_ReloadSpecLights = true;
+    }
+
+    {
+        nlColour amb;
+        nlColourSet(amb, world_ambient.c[0], world_ambient.c[1], world_ambient.c[2], world_ambient.c[3]);
+        gxSetChanAmbColour(0, amb);
+    }
+
+    if (glx_prevLightMask)
+    {
+        GXSetChanCtrl(GX_COLOR0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, (GXLightID)glx_prevLightMask, GX_DF_NONE, GX_AF_SPEC);
+        glx_prevLightMask = 0;
+    }
+
+    if (glx_prevSpecMask)
+    {
+        gxSetNumChans(1);
+        GXSetChanCtrl(GX_COLOR1, GX_FALSE, GX_SRC_REG, GX_SRC_REG, (GXLightID)glx_prevSpecMask, GX_DF_NONE, GX_AF_SPEC);
+        glx_prevSpecMask = 0;
+    }
+
+    if (bDeferredEnvDiffuse)
+    {
+        glx_envdiffuse = false;
+    }
+    else if (glx_GlossMapStage >= 0)
+    {
+        gxSetTexCoordGen(glx_GlossMapStage, GX_TG_MTX3x4, (_GXTexGenSrc)(glx_GlossMapStage + 4), GX_IDENTITY);
+        glx_DirtyFlags |= 0x80;
+    }
+
+    glx_mobilediffuse = false;
+    glx_constantcolour = false;
+    glx_viewport = false;
+    glx_translucent = false;
+    glx_norasterizedalpha = false;
+    glx_NoFog = false;
+    GXSetScissor(0, 0, 640, 448);
+    glx_CoPlanar = false;
+
+    if (p == NULL)
+    {
+        return;
+    }
+
+    if (p->userData == 0)
+    {
+        return;
+    }
 }
 
 static u8 glx_InvXposeChar;

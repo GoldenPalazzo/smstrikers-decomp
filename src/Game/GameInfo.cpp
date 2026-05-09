@@ -6,8 +6,11 @@
 #include "Game/SH/SHMilestoneTrophy.h"
 #include "Game/SH/SHCupHub.h"
 #include "Game/Audio/WorldAudio.h"
+#include "Game/FE/feHelpFuncs.h"
+#include "Game/World/WorldLoader.h"
 
 extern bool g_e3_Build;
+extern void OnPreCupGameState__15GameInfoManagerFv(GameInfoManager*);
 
 bool isFreezingUnlocked = false;
 bool isShellsUnlocked = false;
@@ -2104,6 +2107,189 @@ const PowerupSettings& GameInfoManager::GetPowerupOptions() const
  */
 void GameInfoManager::OnPreGameState()
 {
+    GameplaySettings* settings;
+    if (mUseCurGameSettings)
+    {
+        settings = &mCurGameGameplayOptions;
+    }
+    else if (mCurrentMode == GM_FRIENDLY || mCurrentMode == GM_DEMO)
+    {
+        settings = &mUserInfo.mGameplayOptions;
+    }
+    else
+    {
+        settings = &mCurrentCup->mCupSettings;
+    }
+
+    mCurGameGameplayOptions.SkillLevel = settings->SkillLevel;
+    mCurGameGameplayOptions.GameTime = settings->GameTime;
+    mCurGameGameplayOptions.PowerUps = settings->PowerUps;
+    mCurGameGameplayOptions.Shoot2Score = settings->Shoot2Score;
+    mCurGameGameplayOptions.BowserAttackEnabled = settings->BowserAttackEnabled;
+    mCurGameGameplayOptions.RumbleEnabled = settings->RumbleEnabled;
+
+    mUseCurGameSettings = true;
+
+    if (Config::Global().Exists("team1"))
+    {
+        BasicString<char, Detail::TempStringAllocator> teamString = Config::Global().Get<BasicString<char, Detail::TempStringAllocator> >(
+            "team1", BasicString<char, Detail::TempStringAllocator>("mario"));
+
+        mGameInfo[mCurrentMode]->mTeamIndex[0] = ConvertToTeamID(teamString.c_str());
+    }
+
+    if (Config::Global().Exists("team2"))
+    {
+        BasicString<char, Detail::TempStringAllocator> teamString = Config::Global().Get<BasicString<char, Detail::TempStringAllocator> >(
+            "team2", BasicString<char, Detail::TempStringAllocator>("luigi"));
+
+        mGameInfo[mCurrentMode]->mTeamIndex[1] = ConvertToTeamID(teamString.c_str());
+    }
+
+    if (Config::Global().Exists("soak_diff"))
+    {
+        mCurGameGameplayOptions.SkillLevel = (GameplaySettings::eSkillLevel)GetConfigInt(Config::Global(), "soak_diff", 2);
+    }
+
+    if (Config::Global().Exists("sidekick1"))
+    {
+        BasicString<char, Detail::TempStringAllocator> sidekickString
+            = Config::Global().Get<BasicString<char, Detail::TempStringAllocator> >(
+                "sidekick1", BasicString<char, Detail::TempStringAllocator>("toad"));
+
+        mGameInfo[mCurrentMode]->mSidekickIndex[0] = ConvertToSidekickID(sidekickString.c_str());
+    }
+
+    if (Config::Global().Exists("sidekick2"))
+    {
+        BasicString<char, Detail::TempStringAllocator> sidekickString
+            = Config::Global().Get<BasicString<char, Detail::TempStringAllocator> >(
+                "sidekick2", BasicString<char, Detail::TempStringAllocator>("koopa"));
+
+        mGameInfo[mCurrentMode]->mSidekickIndex[1] = ConvertToSidekickID(sidekickString.c_str());
+    }
+
+    bool inCupMode;
+    if (mCurrentMode < GM_SUPER_MUSHROOM_CUP)
+    {
+        inCupMode = false;
+        if (mCurrentMode >= GM_MUSHROOM_CUP)
+        {
+            inCupMode = true;
+        }
+    }
+    else
+    {
+        inCupMode = false;
+    }
+
+    if (!inCupMode)
+    {
+        if (mCurrentMode < GM_TOURNAMENT)
+        {
+            inCupMode = false;
+            if (mCurrentMode >= GM_SUPER_MUSHROOM_CUP)
+            {
+                inCupMode = true;
+            }
+        }
+        else
+        {
+            inCupMode = false;
+        }
+    }
+
+    if (inCupMode)
+    {
+        OnPreCupGameState__15GameInfoManagerFv(this);
+    }
+
+    if (mCurrentMode == GM_DEMO)
+    {
+        mCurGameGameplayOptions.GameTime = 120;
+        mCurGameGameplayOptions.SkillLevel = GameplaySettings::PROFESSIONAL;
+        mCurGameGameplayOptions.PowerUps = true;
+        mCurGameGameplayOptions.Shoot2Score = true;
+        mCurGameGameplayOptions.BowserAttackEnabled = true;
+    }
+    else if (mIsInStrikers101Mode)
+    {
+        mCurGameGameplayOptions.GameTime = 59940;
+        mCurGameGameplayOptions.PowerUps = true;
+        mCurGameGameplayOptions.Shoot2Score = true;
+        mCurGameGameplayOptions.BowserAttackEnabled = false;
+    }
+    else if (g_e3_Build)
+    {
+        mCurGameGameplayOptions.GameTime = 240;
+        mCurGameGameplayOptions.SkillLevel = GameplaySettings::ROOKIE;
+    }
+
+    static eDifficultyID DifficultyMap[5][2] = {
+        { DIFF_HUMAN, DIFF_BRAINDEAD },
+        { DIFF_HUMAN, DIFF_EASY },
+        { DIFF_HUMAN, DIFF_MEDIUM },
+        { DIFF_HUMAN, DIFF_HARD },
+        { DIFF_HUMAN, DIFF_VERYHARD },
+    };
+
+    unsigned char humansOnSide[2] = { 0, 0 };
+
+    for (int i = 0; i < 4; i++)
+    {
+        s16 padSide = mGameInfo[mCurrentMode]->mPadSides[i];
+        if (padSide == 0)
+        {
+            humansOnSide[0] = 1;
+        }
+        else if (padSide == 1)
+        {
+            humansOnSide[1] = 1;
+        }
+    }
+
+    GameplaySettings::eSkillLevel skillLevel;
+    if (mIsInStrikers101Mode)
+    {
+        skillLevel = GameplaySettings::TRAINING;
+    }
+    else
+    {
+        GameplaySettings* pSettings;
+        if (mUseCurGameSettings)
+        {
+            pSettings = &mCurGameGameplayOptions;
+        }
+        else if (mCurrentMode == GM_FRIENDLY || mCurrentMode == GM_DEMO)
+        {
+            pSettings = &mUserInfo.mGameplayOptions;
+        }
+        else
+        {
+            pSettings = &mCurrentCup->mCupSettings;
+        }
+        skillLevel = pSettings->SkillLevel;
+    }
+
+    mCurrentDifficulty[0] = DifficultyMap[skillLevel][humansOnSide[0] ? 0 : 1];
+    mCurrentDifficulty[1] = DifficultyMap[skillLevel][humansOnSide[1] ? 0 : 1];
+
+    if (Config::Global().Exists("stadium"))
+    {
+        BasicString<char, Detail::TempStringAllocator> stadium;
+        stadium = Config::Global().Get<BasicString<char, Detail::TempStringAllocator> >(
+            "stadium", BasicString<char, Detail::TempStringAllocator>());
+
+        mGameInfo[mCurrentMode]->mStadiumIndex = (eStadiumID)-1;
+        for (eStadiumID i = STAD_MARIO_STADIUM; i < MAX_STADIUMS; i = (eStadiumID)(i + 1))
+        {
+            if (nlStrICmp(TheWorldLoader.GetStadiumFilename(i), stadium.c_str()) == 0)
+            {
+                mGameInfo[mCurrentMode]->mStadiumIndex = i;
+                break;
+            }
+        }
+    }
 }
 
 /**
@@ -3045,7 +3231,7 @@ CustomPowerups GameInfoManager::GetCustomPowerups() const
 {
     if (mIsInStrikers101Mode)
     {
-        return CP_OFF;
+        return CheatSettings::CP_OFF;
     }
 
     bool useCheatSettings;
@@ -3061,7 +3247,7 @@ CustomPowerups GameInfoManager::GetCustomPowerups() const
         {
             return mUserInfo.mCheatOptions.mCustomPowerups;
         }
-        return CP_OFF;
+        return CheatSettings::CP_OFF;
     }
-    return CP_OFF;
+    return CheatSettings::CP_OFF;
 }

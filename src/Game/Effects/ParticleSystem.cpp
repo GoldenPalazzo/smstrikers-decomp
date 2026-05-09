@@ -1,5 +1,12 @@
 #include "Game/Effects/ParticleSystem.h"
+#include "Game/Effects/EmissionManager.h"
+#include "Game/GL/GLInventory.h"
+#include "Game/GL/gluMeshWriter.h"
 #include "Game/Sys/debug.h"
+#include "NL/gl/glDraw3.h"
+#include "NL/gl/glMatrix.h"
+#include "NL/gl/glState.h"
+#include "NL/gl/glUserData.h"
 #include "NL/nlMemory.h"
 #include "PowerPC_EABI_Support/Runtime/MWCPlusLib.h"
 #include "types.h"
@@ -13,6 +20,11 @@ efList freeParticles;
 void* textureFrames[36] = { nullptr };
 Particle* particleMemory;
 int MaxNumParticles;
+
+extern float m_fAspect__14ParticleSystem;
+extern volatile u8 m_AllowInFront__14ParticleSystem;
+extern glModel* (*m_LightingCallback__14ParticleSystem)(glModel*);
+extern u8 (*m_Callback__14ParticleSystem)(eGLView, unsigned long, efList&, EffectsTemplate*, nlVector3&, nlVector3&, nlMatrix4*);
 
 /**
  * Offset/Address/Size: 0x26F0 | 0x801F7848 | size: 0x90
@@ -632,8 +644,345 @@ void ParticleSystem::UpdateParticle(ParticleReturn* pReturn, Particle* pPart, Ef
 /**
  * Offset/Address/Size: 0x970 | 0x801F5AC8 | size: 0xC3C
  */
-void ParticleSystem::RenderAllParticles(eGLView)
+void ParticleSystem::RenderAllParticles(eGLView view)
 {
+    static int _tris[6] = { 0, 1, 2, 0, 2, 3 };
+    static u32 WhiteTexture;
+    static s8 init;
+
+    ParticleReturn ret;
+    GLMeshWriter mesh;
+    eGLStream stream_decl[3] = { GLStream_Position, GLStream_Colour, GLStream_Diffuse };
+    nlVector3 viewRight;
+    nlVector3 viewUp;
+    nlMatrix4 viewMatrix;
+    nlMatrix4 mCoordSys;
+    bool cullBackFaces;
+
+    UpdateCoordSys(mCoordSys);
+    if (m_Particles.m_numNodes == 0)
+    {
+        return;
+    }
+    cullBackFaces = true;
+
+    if (m_pTemplate->m_eBillboard == EfBill_Billboard)
+    {
+        float x;
+        float y;
+        float z;
+        glViewGetViewMatrix(view, viewMatrix);
+        x = viewMatrix.e[0];
+        y = viewMatrix.e[4];
+        z = viewMatrix.e[8];
+        viewRight.f.x = x;
+        viewRight.f.y = y;
+        viewRight.f.z = z;
+        viewUp.f.x = viewMatrix.e[1];
+        viewUp.f.y = viewMatrix.e[5];
+        viewUp.f.z = viewMatrix.e[9];
+        viewRight.f.x = m_fAspect__14ParticleSystem * x;
+        viewRight.f.y = m_fAspect__14ParticleSystem * y;
+        viewRight.f.z = m_fAspect__14ParticleSystem * z;
+    }
+    else if (m_pTemplate->m_eBillboard == EfBill_Groundboard)
+    {
+        viewRight.f.x = 1.0f;
+        viewRight.f.y = 0.0f;
+        viewRight.f.z = 0.0f;
+        viewUp.f.x = 0.0f;
+        viewUp.f.y = 1.0f;
+        viewUp.f.z = 0.0f;
+    }
+    else if (m_pTemplate->m_eBillboard == EfBill_SoftwareControlled)
+    {
+        nlMatrix4 rot;
+        viewUp.f.x = 0.0f;
+        viewUp.f.y = 0.0f;
+        viewUp.f.z = 1.0f;
+        viewRight.f.x = 1.0f;
+        viewRight.f.y = 0.0f;
+        viewRight.f.z = 0.0f;
+        cullBackFaces = false;
+        nlMakeRotationMatrixZ(rot, 0.0000958738f * (float)(unsigned short)(m_aFacing + 0x4000));
+        nlMultDirVectorMatrix(viewRight, viewRight, rot);
+    }
+
+    glSetDefaultState(true);
+    glSetRasterState(GLS_DepthWrite, 0);
+    glSetRasterState(GLS_Culling, cullBackFaces ? 1 : 0);
+
+    if (m_AllowInFront__14ParticleSystem != 0)
+    {
+        if (m_pTemplate->m_bInFront || ((m_pSpec != nullptr) && m_pSpec->m_bInFront))
+        {
+            glSetRasterState(GLS_DepthTest, 0);
+        }
+    }
+
+    if (m_pTemplate->m_eBlend == EfBlend_Additive)
+    {
+        glSetRasterState(GLS_AlphaBlend, 3);
+    }
+    else if (m_pTemplate->m_eBlend == EfBlend_Normal)
+    {
+        glSetRasterState(GLS_AlphaBlend, 1);
+    }
+
+    glSetRasterState(GLS_AlphaTest, 1);
+    glSetCurrentRasterState(glHandleizeRasterState());
+
+    if (!init)
+    {
+        WhiteTexture = glGetTexture("global/white");
+        init = 1;
+    }
+
+    glSetCurrentTexture(m_pTemplate->m_hTexture, GLTT_Diffuse);
+    glSetCurrentProgram(glGetProgram("3d unlit"));
+
+    if ((m_pSpec != nullptr) && m_pSpec->m_bLight)
+    {
+        Particle* pPart = (Particle*)m_Particles.m_headNode;
+        const nlMatrix4* pCoord = m_pTemplate->m_bLocalSpace ? &mCoordSys : nullptr;
+        while (pPart != nullptr)
+        {
+            int colourIndex = (int)(24.5f * (pPart->timeElapsed / pPart->lifeSpan));
+            EffectsLight light;
+            light.m_Colour = m_pTemplate->m_cColour[colourIndex];
+            light.m_fRadius = 0.5f * ((pPart->dSize * pPart->timeElapsed) + pPart->size);
+
+            float d = pPart->timeElapsed * (((0.5f * pPart->acceleration) * pPart->timeElapsed) + pPart->velocity);
+            nlVector3 position;
+            nlVec3Set(position,
+                (d * pPart->velDir.f.x) + pPart->position.f.x,
+                (d * pPart->velDir.f.y) + pPart->position.f.y,
+                (d * pPart->velDir.f.z) + pPart->position.f.z);
+            if (pCoord != nullptr)
+            {
+                nlMultPosVectorMatrix(position, position, *pCoord);
+            }
+            position.f.z += pPart->mass * ((-9.81f * pPart->timeElapsed) * pPart->timeElapsed);
+
+            light.m_v3Position = position;
+            EmissionManager::AddEffectsLight(light);
+
+            float alphaScale = 1.0f - (light.m_v3Position.f.z / light.m_fRadius);
+            if (alphaScale > 0.0f)
+            {
+                if (alphaScale > 1.0f)
+                {
+                    alphaScale = 1.0f;
+                }
+
+                glSetDefaultState(true);
+                glSetCurrentTexture(glGetTexture("global/light_blob"), GLTT_Diffuse);
+                glSetRasterState(GLS_AlphaBlend, 3);
+                glSetRasterState(GLS_DepthWrite, 0);
+                glSetCurrentRasterState(glHandleizeRasterState());
+
+                float size = 1.4f * ((2.0f * light.m_fRadius) * (alphaScale * alphaScale));
+                nlMatrix4 rot;
+                rot.SetIdentity();
+                glQuad3 q;
+                q.SetupRotatedRectangle(size, size, rot, false, false);
+                q.SetColour(light.m_Colour);
+                for (int i = 0; i < 4; i++)
+                {
+                    q.m_pos[i].f.x += light.m_v3Position.f.x;
+                    q.m_pos[i].f.y += light.m_v3Position.f.y;
+                    q.m_pos[i].f.z += light.m_v3Position.f.z;
+                    q.m_pos[i].f.z = 0.03125f;
+                    q.m_colour[i].c[3] = (unsigned char)((int)q.m_colour[i].c[3] / 3);
+                }
+
+                glModel* pModel = (glModel*)q.GetModel(true);
+                void* pUserData = glUserAlloc(GLUD_NoFog, 0, false);
+                glUserAttach(pUserData, pModel->packets, false);
+                glViewAttachModel((eGLView)7, 2, pModel);
+            }
+            pPart = (Particle*)pPart->m_nextNode;
+        }
+    }
+    else if (m_pTemplate->m_uModelID != 0xFFFFFFFF)
+    {
+        GLVertexAnim* pAnim = glInventory.GetVertexAnim(m_pTemplate->m_uModelID);
+        eEffectsBlend blendType = EfBlend_Num;
+        Particle* pPart = (Particle*)m_Particles.m_headNode;
+        const nlMatrix4* pCoord = m_pTemplate->m_bLocalSpace ? &mCoordSys : nullptr;
+
+        nlMatrix4 m;
+        m = mCoordSys;
+        m.e[2] = -m.e[2];
+        m.e[6] = -m.e[6];
+        m.e[10] = -m.e[10];
+
+        if (m_pTemplate->m_eBlend == EfBlend_Normal)
+        {
+            blendType = EfBlend_Additive;
+        }
+        else if (m_pTemplate->m_eBlend == EfBlend_Additive)
+        {
+            blendType = EfBlend_Subtractive;
+        }
+
+        while (pPart != nullptr)
+        {
+            glModel* pModel;
+            if (pAnim == nullptr)
+            {
+                pModel = glModelDupNoStreams(glInventory.GetModel(m_pTemplate->m_uModelID), true, false);
+            }
+
+            UpdateParticle(&ret, pPart, m_pTemplate, viewRight, viewUp, pCoord);
+
+            float rotRad = 3.1415927f * ret.position[1].f.y / 180.0f;
+            float size = ret.position[1].f.x;
+            if (m_pTemplate->m_eBillboard == EfBill_Billboard)
+            {
+                rotRad += 0.0000958738f * (float)(short)m_aFacing;
+            }
+
+            nlMatrix4 mRot;
+            nlMakeRotationMatrixZ(mRot, rotRad);
+            nlMatrix4 mScale;
+            nlMakeScaleMatrix(mScale, size, size, size);
+            nlMultMatrices(mScale, mScale, mRot);
+
+            nlMatrix4 m2;
+            nlMultMatrices(m2, m, mScale);
+            m2.e[12] = ret.position[0].f.x;
+            m2.e[13] = ret.position[0].f.y;
+            m2.e[14] = ret.position[0].f.z;
+
+            void* pUserData = glUserAlloc(GLUD_ConstantColour, 4, false);
+            if (pUserData != nullptr)
+            {
+                *(u32*)glUserGetData(pUserData) = *(u32*)&ret.c;
+            }
+
+            u32 hMatrix = glAllocMatrix();
+            if (hMatrix != 0xFFFFFFFF)
+            {
+                glSetMatrix(hMatrix, m2);
+            }
+
+            float meshRateScale = 1.0f;
+            if (pAnim != nullptr)
+            {
+                if (m_pTemplate->m_bMatchLifespan)
+                {
+                    meshRateScale = (((float)pAnim->m_nNumFrames) / pAnim->m_fFrameRate) / pPart->lifeSpan;
+                    float frame = (pPart->timeElapsed / pPart->lifeSpan) * (float)(pAnim->m_nNumFrames - 1);
+                    pModel = pAnim->GetModel((int)frame);
+                }
+                else
+                {
+                    meshRateScale = pPart->FPS / pAnim->m_fFrameRate;
+                    float frame = pPart->FPS * pPart->timeElapsed;
+                    float bound = (float)pAnim->m_nNumFrames;
+                    while (frame >= bound)
+                    {
+                        frame -= bound;
+                    }
+                    pModel = pAnim->GetModel((int)frame);
+                }
+            }
+
+            glModelPacket* pPacket = pModel->packets;
+            while (pPacket < &pModel->packets[pModel->numPackets])
+            {
+                glSetRasterState(pPacket->state.raster, GLS_Culling, 0);
+                glSetRasterState(pPacket->state.raster, GLS_AlphaBlend, blendType);
+                glSetRasterState(pPacket->state.raster, GLS_AlphaTest, 1);
+                glSetRasterState(pPacket->state.raster, GLS_AlphaTestRef, 3);
+                pPacket->state.matrix = hMatrix;
+                if (pUserData != nullptr)
+                {
+                    glUserAttach(pUserData, pPacket, false);
+                }
+
+                GLTextureAnim* pTex = glInventory.GetTextureAnim(pPacket->state.texture[2]);
+                if (pTex != nullptr)
+                {
+                    pPacket->state.texture[2] = pTex->GetTextureHandle(meshRateScale * pPart->timeElapsed);
+                }
+                pPacket = (glModelPacket*)((u8*)pPacket + sizeof(glModelPacket));
+            }
+
+            if (m_pTemplate->m_bLit)
+            {
+                pModel = m_LightingCallback__14ParticleSystem(pModel);
+            }
+
+            glViewAttachModel(view, m_uLayer + 1, pModel);
+            pPart = (Particle*)pPart->m_nextNode;
+        }
+    }
+    else if (m_Callback__14ParticleSystem == nullptr)
+    {
+        bool bQuads = glHasQuads();
+        bool began;
+        if (bQuads)
+        {
+            began = mesh.Begin(m_Particles.m_numNodes, GLP_QuadList, 3, stream_decl, false);
+        }
+        else
+        {
+            began = mesh.Begin(m_Particles.m_numNodes * 6, GLP_TriList, 3, stream_decl, false);
+        }
+
+        if (began)
+        {
+            Particle* pPart = (Particle*)m_Particles.m_headNode;
+            const nlMatrix4* pCoord = m_pTemplate->m_bLocalSpace ? &mCoordSys : nullptr;
+            while (pPart != nullptr)
+            {
+                UpdateParticle(&ret, pPart, m_pTemplate, viewRight, viewUp, pCoord);
+                if (bQuads)
+                {
+                    for (int i = 0; i < 4; i++)
+                    {
+                        mesh.Texcoord(ret.texcoord[i][0], ret.texcoord[i][1]);
+                        mesh.Colour(ret.c);
+                        mesh.Vertex(ret.position[i]);
+                    }
+                }
+                else
+                {
+                    for (int i = 0; i < 6; i++)
+                    {
+                        int idx = _tris[i];
+                        mesh.Texcoord(ret.texcoord[idx][0], ret.texcoord[idx][1]);
+                        mesh.Colour(ret.c);
+                        mesh.Vertex(ret.position[idx]);
+                    }
+                }
+                pPart = (Particle*)pPart->m_nextNode;
+            }
+
+            if (mesh.End())
+            {
+                glViewAttachModel(view, m_uLayer, mesh.GetModel());
+            }
+            else
+            {
+                tDebugPrintManager::Print(DC_RENDER, "couldn't end mesh built by sprites\n");
+            }
+        }
+        else
+        {
+            tDebugPrintManager::Print(DC_RENDER, "could not begin a mesh for sprites\n");
+        }
+    }
+    else
+    {
+        nlMatrix4* pCoord = m_pTemplate->m_bLocalSpace ? &mCoordSys : nullptr;
+        if (!m_Callback__14ParticleSystem(view, m_uLayer, m_Particles, m_pTemplate, viewRight, viewUp, pCoord))
+        {
+            tDebugPrintManager::Print(DC_RENDER, "too many particles for the fast-path\n");
+        }
+    }
 }
 
 /**

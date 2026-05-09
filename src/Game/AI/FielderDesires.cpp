@@ -192,10 +192,68 @@ bool cFielder::InitDesire(const sDesireParams* pParams, float fConfidence)
 
 /**
  * Offset/Address/Size: 0x54DC | 0x80036260 | size: 0xD30
+ * TODO: 9.07% match - missing ShotReleased call, full init switch behavior, and thought-cap requeue path.
  */
-bool cFielder::InitDesire(eFielderDesireState, float, float, FuzzyVariant, FuzzyVariant)
+bool cFielder::InitDesire(eFielderDesireState eDesireType, float fConfidence, float fDuration, FuzzyVariant opt1, FuzzyVariant opt2)
 {
     FORCE_DONT_INLINE;
+
+    if (GetGlobalPad() == nullptr && m_pMark != nullptr && m_eFielderDesireState == FIELDERDESIRE_WINDUP_SHOT
+        && (u32)(eDesireType - FIELDERDESIRE_PASS) > 1 && eDesireType != FIELDERDESIRE_DEKE)
+    {
+        m_eFielderDesireState = FIELDERDESIRE_FINISH_ACTION;
+        InitActionShot(false);
+        return true;
+    }
+
+    m_DesireCommonVars.tAge.m_uPackedTime = 0;
+    m_DesireCommonVars.tMiscTimer.m_uPackedTime = 0;
+    m_DesireCommonVars.fMisc = 0.0f;
+    m_DesireCommonVars.v3DesiredPosition = m_v3Position;
+    m_DesireCommonVars.pBallOwner = g_pBall->m_pOwner;
+    m_DesireCommonVars.pSBC = Fuzzy::GetStrategicBallCarrier(m_pTeam).mData.pPlayer;
+    m_DesireCommonVars.turboRequest = TR_FAR_DISTANCE;
+
+    if (fDuration > 0.0f)
+    {
+        SetDesireDuration(fDuration, true);
+    }
+    else
+    {
+        switch (eDesireType)
+        {
+        case FIELDERDESIRE_CUT_AND_BREAK:
+            SetDesireDuration(3.0f, true);
+            break;
+
+        case FIELDERDESIRE_USE_POWERUP:
+        case FIELDERDESIRE_USER_CONTROLLED:
+            SetDesireDuration(99999.0f, true);
+            break;
+
+        case FIELDERDESIRE_WAIT:
+            SetDesireDuration(0.0f, true);
+            break;
+
+        case FIELDERDESIRE_SHOOT:
+        case FIELDERDESIRE_RUN_TO_NET:
+        case FIELDERDESIRE_SLIDE_ATTACK:
+        case FIELDERDESIRE_POST_WHISTLE:
+            SetDesireDuration(1.0f, true);
+            break;
+
+        case FIELDERDESIRE_WINDUP_SHOT:
+            SetDesireDuration(0.5f, true);
+            break;
+
+        default:
+            break;
+        }
+    }
+
+    (void)fConfidence;
+    (void)opt1;
+    (void)opt2;
     return false;
 }
 
@@ -1029,9 +1087,332 @@ void cFielder::InitDesireReceivePassFromIdle(const LooseBallContactAnimInfo* pAn
 
 /**
  * Offset/Address/Size: 0x2080 | 0x80032E04 | size: 0xC88
+ * TODO: 91.52% match - state-machine branch ordering and register allocation still differ in one-touch shot/pass handling paths.
  */
-void cFielder::DesireReceivePassFromIdle(float)
+void cFielder::DesireReceivePassFromIdle(float fDeltaT)
 {
+    float yDiff = m_DesireReceivePassSharedVars.v3BallPosition.f.y - g_pBall->m_v3Position.f.y;
+    float xDiff = m_DesireReceivePassSharedVars.v3BallPosition.f.x - g_pBall->m_v3Position.f.x;
+
+    float invDist = nlRecipSqrt((yDiff * yDiff) + (xDiff * xDiff), true);
+    float normY = invDist * yDiff;
+    float normX = invDist * xDiff;
+
+    float invBallVel = nlRecipSqrt(
+        (g_pBall->m_v3Velocity.f.x * g_pBall->m_v3Velocity.f.x) + (g_pBall->m_v3Velocity.f.y * g_pBall->m_v3Velocity.f.y),
+        true);
+    float ballVelNormY = invBallVel * g_pBall->m_v3Velocity.f.y;
+    float ballVelNormX = invBallVel * g_pBall->m_v3Velocity.f.x;
+
+    if (m_pBall == NULL && m_eDesireSubState != 2)
+    {
+        float fDot = (normY * ballVelNormY) + (normX * ballVelNormX);
+        if (fDot < 0.98f || g_pBall->m_pOwner != NULL)
+        {
+            ClearPassTargetIfAmThePassTarget();
+            SetDesireDuration(0.0f, true);
+            return;
+        }
+    }
+
+    if (GetGlobalPad() != NULL)
+    {
+        if (GetGlobalPad()->JustPressed(PAD_USE, true))
+        {
+            if (!IsPlayingPowerupAnim())
+            {
+                UseTeamPowerup(NULL);
+            }
+        }
+        else if (GetGlobalPad()->JustPressed(PAD_TOGGLE_POWERUP, true))
+        {
+            m_pTeam->TogglePowerup(false);
+        }
+
+        if (m_pBall != NULL)
+        {
+            if (m_pController != NULL && m_pController->IsTurboPressed())
+            {
+                SetDesiredSpeed(m_pTweaks->fRunningSpeed, ((FielderTweaks*)m_pTweaks)->fRunningTurboSpeed);
+            }
+            else
+            {
+                SetDesiredSpeed(m_pTweaks->fJoggingSpeed, m_pTweaks->fRunningSpeed);
+            }
+
+            if (GetGlobalPad()->JustPressed(PAD_SHOOT, true))
+            {
+                SetAttemptOneTouchShot();
+                m_DesireReceivePassSharedVars.bFailedToInitOneTouchShot = true;
+            }
+            else if (GetGlobalPad()->JustPressed(PAD_PASS, true))
+            {
+                SetAttemptOneTouchPass();
+            }
+        }
+        else
+        {
+            if (GetGlobalPad()->JustPressed(PAD_SHOOT, true))
+            {
+                SetAttemptOneTouchShot();
+            }
+            else if (GetGlobalPad()->JustPressed(PAD_DEKE, true))
+            {
+                if (m_eDesireSubState != 1)
+                {
+                    InitActionHit(DoFindBestHitTarget());
+                    return;
+                }
+            }
+            else if (GetGlobalPad()->JustPressed(PAD_PASS, true))
+            {
+                SetAttemptOneTouchPass();
+            }
+        }
+    }
+
+    m_DesireReceivePassSharedVars.fDesiredTime -= fDeltaT;
+
+    if (m_eDesireSubState == 0 || m_eDesireSubState == 1)
+    {
+        if (GetGlobalPad() == NULL && m_DesireCommonVars.tMiscTimer.m_uPackedTime == 0)
+        {
+            if (DoAIReceivePassActionSelection())
+            {
+                m_DesireCommonVars.tMiscTimer.SetSeconds(99999.9f);
+            }
+            else
+            {
+                float actionRethinkTime = (m_DesireCommonVars.fMisc / 3.0f) - 0.1f;
+                m_DesireCommonVars.tMiscTimer.SetSeconds((actionRethinkTime <= 0.1f) ? 0.1f : actionRethinkTime);
+            }
+        }
+
+        if (m_DesireReceivePassSharedVars.iAttemptOneTouchShot != 0
+            && !m_DesireReceivePassSharedVars.bFailedToInitOneTouchShot)
+        {
+            bool bIsChipShot = m_DesireReceivePassSharedVars.iAttemptOneTouchShot == 2;
+            bool bVolleyPass = m_DesireReceivePassSharedVars.bVolleyPassReceive;
+
+            float fBallContactTime;
+            const LooseBallContactAnimInfo* pBestBallContactAnimInfo = GetOneTimerBallContactAnimInfo(
+                m_aActualFacingDirection,
+                m_v3Position,
+                m_pTeam->GetOtherNet()->m_baseLocation,
+                false,
+                bVolleyPass);
+
+            m_DesireOneTimerVars.nOneTimerAnim = pBestBallContactAnimInfo->nAnimID;
+            const cSAnim* contactAnim = m_pAnimInventory->GetAnim(pBestBallContactAnimInfo->nAnimID);
+            m_DesireOneTimerVars.fOneTimerAnimTime = pBestBallContactAnimInfo->fAnimContactFrame / (float)contactAnim->m_nNumKeys;
+
+            bool bFoundContact = DoLooseBallContactFromIdle(
+                m_DesireOneTimerVars.v3DesiredPosition,
+                m_DesireOneTimerVars.fDesiredTime,
+                m_DesireOneTimerVars.v3BallPosition,
+                fBallContactTime,
+                m_aActualFacingDirection,
+                pBestBallContactAnimInfo);
+
+            bool bSuccess = false;
+            if (bFoundContact)
+            {
+                m_DesireOneTimerVars.aDesiredFacingDirection = m_aActualFacingDirection;
+                m_DesireOneTimerVars.bIsChipShot = bIsChipShot;
+                m_DesireOneTimerVars.bVolleyPassReceive = bVolleyPass;
+
+                if (m_DesireOneTimerVars.fDesiredTime >= 0.0f)
+                {
+                    const cSAnim* pOneTimerAnim = m_pAnimInventory->GetAnim(m_DesireOneTimerVars.nOneTimerAnim);
+                    float fAnimTimeInSecs = m_DesireOneTimerVars.fOneTimerAnimTime * ((float)pOneTimerAnim->m_nNumKeys / 30.0f);
+                    float fPlaybackScale = fAnimTimeInSecs / (fAnimTimeInSecs + m_DesireOneTimerVars.fDesiredTime);
+
+                    if (fPlaybackScale > 1.5f)
+                    {
+                        bFoundContact = false;
+                    }
+                }
+
+                if (bFoundContact)
+                {
+                    SetDesire(FIELDERDESIRE_ONETIMER, 0.5f);
+                    SetDesireDuration(3.0f, false);
+                    InitActionWait();
+                    m_eDesireSubState = 0;
+                    SetNoPickUpTime(3.0f);
+                    g_pBall->SetPassTargetTimer(fBallContactTime);
+                    m_pAvoidance->SetThingsToAvoid(0);
+                    bSuccess = true;
+                }
+            }
+
+            if (bSuccess)
+            {
+                return;
+            }
+
+            if (bVolleyPass)
+            {
+                g_pGame->DoPerfectPassSlowDown();
+            }
+
+            m_DesireReceivePassSharedVars.bFailedToInitOneTouchShot = true;
+        }
+    }
+
+    switch (m_eDesireSubState)
+    {
+    case 0:
+    {
+        if (IsActionDone() || m_DesireReceivePassSharedVars.fDesiredTime <= 0.0f)
+        {
+            m_eDesireSubState = 1;
+            InitActionWait();
+        }
+        break;
+    }
+
+    case 1:
+    {
+        if (m_DesireReceivePassSharedVars.fDesiredTime <= 0.0f)
+        {
+            SetFacingDirection(m_DesireReceivePassSharedVars.aDesiredFacingDirection);
+            InitActionReceivePass(
+                m_DesireReceivePassSharedVars.nReceivePassAnim,
+                m_DesireReceivePassSharedVars.v3DesiredPosition,
+                m_DesireReceivePassSharedVars.fReceivePassAnimTime);
+            m_eDesireSubState = 2;
+
+            if (m_DesireReceivePassSharedVars.bVolleyPassReceive)
+            {
+                m_DesireReceivePassSharedVars.bFailedToInitOneTouchShot = false;
+            }
+
+            cSAnim* pAnim = m_pAnimInventory->GetAnim(m_DesireReceivePassSharedVars.nReceivePassAnim);
+            float fAnimTimeInSecs = m_DesireReceivePassSharedVars.fReceivePassAnimTime * ((float)pAnim->m_nNumKeys / 30.0f);
+            float fTimeToIntercept = fAnimTimeInSecs + m_DesireReceivePassSharedVars.fDesiredTime;
+
+            if (fAnimTimeInSecs > 0.0f && fTimeToIntercept > 0.0f)
+            {
+                m_pCurrentAnimController->m_fPlaybackSpeedScale = fAnimTimeInSecs / fTimeToIntercept;
+            }
+        }
+        break;
+    }
+
+    case 2:
+    {
+        if (m_pBall != NULL)
+        {
+            if (m_DesireReceivePassSharedVars.iAttemptOneTouchShot != 0)
+            {
+                if (m_DesireReceivePassSharedVars.bVolleyPassReceive && m_DesireReceivePassSharedVars.bFailedToInitOneTouchShot)
+                {
+                    if ((float)fabs(m_DesireReceivePassSharedVars.fReceivePassAnimTime - m_pCurrentAnimController->m_fTime) <= 0.1f)
+                    {
+                        InitActionLateOneTimerFromVolley();
+                        return;
+                    }
+                }
+
+                if (!m_DesireReceivePassSharedVars.bVolleyPassReceive)
+                {
+                    if (m_DesireReceivePassSharedVars.bFailedToInitOneTouchShot)
+                    {
+                        if (GetGlobalPad() != NULL && GetGlobalPad()->JustPressed(PAD_SHOOT, true))
+                        {
+                            if (!ShouldStartCrossBlend(0x1A))
+                            {
+                                return;
+                            }
+
+                            DoResetShotMeter(0.0f);
+                            SetDesireDuration(0.0f, true);
+                            return;
+                        }
+
+                        DoResetShotMeter(0.0f);
+                        m_pShotMeter->CalcOneTimerValue(this, UsePerfectPass());
+                        InitDesire(FIELDERDESIRE_FINISH_ACTION, 0.5f, -1.0f, fvNotSet, fvNotSet);
+                        InitActionShot(m_DesireReceivePassSharedVars.iAttemptOneTouchShot == 2);
+                        return;
+                    }
+
+                    if (GetGlobalPad() != NULL && GetGlobalPad()->JustPressed(PAD_SHOOT, true))
+                    {
+                        if (!ShouldStartCrossBlend(0x1A))
+                        {
+                            return;
+                        }
+
+                        DoResetShotMeter(0.0f);
+                        SetDesireDuration(0.0f, true);
+                        return;
+                    }
+                }
+                else if (ShouldStartCrossBlend(0x1A))
+                {
+                    if (GetGlobalPad() != NULL && GetGlobalPad()->JustPressed(PAD_SHOOT, true))
+                    {
+                        DoResetShotMeter(0.0f);
+                        SetDesireDuration(0.0f, true);
+                    }
+                    else
+                    {
+                        DoResetShotMeter(0.0f);
+                        m_pShotMeter->CalcOneTimerValue(this, UsePerfectPass());
+                        InitDesire(FIELDERDESIRE_FINISH_ACTION, 0.5f, -1.0f, fvNotSet, fvNotSet);
+                        InitActionShot(m_DesireReceivePassSharedVars.iAttemptOneTouchShot == 2);
+                    }
+                    return;
+                }
+            }
+            else if (m_DesireReceivePassSharedVars.iAttemptOneTouchPass != 0)
+            {
+                bool bStrongOneTouchPass = m_DesireReceivePassSharedVars.iAttemptOneTouchPass == 2;
+
+                if (m_DesireReceivePassSharedVars.bVolleyPassReceive)
+                {
+                    if ((float)fabs(m_DesireReceivePassSharedVars.fReceivePassAnimTime - m_pCurrentAnimController->m_fTime) <= 0.1f)
+                    {
+                        InitActionOneTouchPassFromVolley(m_DesireReceivePassSharedVars.pOneTouchPassTarget);
+                        return;
+                    }
+                }
+
+                if (!m_DesireReceivePassSharedVars.bVolleyPassReceive || ShouldStartCrossBlend(0x1A))
+                {
+                    InitActionPass(m_DesireReceivePassSharedVars.pOneTouchPassTarget, bStrongOneTouchPass, false);
+                    return;
+                }
+            }
+            else
+            {
+                if (!m_DesireReceivePassSharedVars.bVolleyPassReceive || ShouldStartCrossBlend(0x1A))
+                {
+                    SetDesireDuration(0.0f, true);
+                    InitActionRunningWB(true);
+                }
+            }
+        }
+        else
+        {
+            if (m_DesireReceivePassSharedVars.iAttemptOneTouchShot != 0)
+            {
+                m_DesireReceivePassSharedVars.bFailedToInitOneTouchShot = true;
+            }
+        }
+        break;
+    }
+
+    default:
+        break;
+    }
+
+    if (ShouldStartCrossBlend(0x1A))
+    {
+        SetDesireDuration(0.0f, true);
+    }
 }
 
 /**
@@ -1128,8 +1509,278 @@ void cFielder::InitDesireReceivePassFromRun(const LooseBallContactAnimInfo* pAni
 /**
  * Offset/Address/Size: 0x130C | 0x80032090 | size: 0xADC
  */
-void cFielder::DesireReceivePassFromRun(float)
+void cFielder::DesireReceivePassFromRun(float fDeltaT)
 {
+    float yDiff = m_DesireReceivePassSharedVars.v3BallPosition.f.y - g_pBall->m_v3Position.f.y;
+    float xDiff = m_DesireReceivePassSharedVars.v3BallPosition.f.x - g_pBall->m_v3Position.f.x;
+
+    float invDist = nlRecipSqrt((yDiff * yDiff) + (xDiff * xDiff), true);
+    float normY = invDist * yDiff;
+    float normX = invDist * xDiff;
+
+    float invBallVel = nlRecipSqrt(
+        (g_pBall->m_v3Velocity.f.x * g_pBall->m_v3Velocity.f.x) + (g_pBall->m_v3Velocity.f.y * g_pBall->m_v3Velocity.f.y),
+        true);
+
+    float ballVelNormY = invBallVel * g_pBall->m_v3Velocity.f.y;
+    float ballVelNormX = invBallVel * g_pBall->m_v3Velocity.f.x;
+
+    if (GetGlobalPad() == NULL && m_eDesireSubState != 1)
+    {
+        float fDot = (normY * ballVelNormY) + (normX * ballVelNormX);
+        if (fDot < 0.98f || g_pBall->m_pOwner != NULL)
+        {
+            ClearPassTargetIfAmThePassTarget();
+            SetDesireDuration(0.0f, true);
+            return;
+        }
+    }
+
+    if (GetGlobalPad() != NULL)
+    {
+        if (GetGlobalPad()->JustPressed(PAD_USE, true))
+        {
+            if (!IsPlayingPowerupAnim())
+            {
+                UseTeamPowerup(NULL);
+            }
+        }
+        else if (GetGlobalPad()->JustPressed(PAD_TOGGLE_POWERUP, true))
+        {
+            m_pTeam->TogglePowerup(false);
+        }
+
+        if (m_pBall != NULL)
+        {
+            if (m_pController != NULL && m_pController->IsTurboPressed())
+            {
+                SetDesiredSpeed(m_pTweaks->fRunningSpeed, ((FielderTweaks*)m_pTweaks)->fRunningTurboSpeed);
+            }
+            else
+            {
+                SetDesiredSpeed(m_pTweaks->fJoggingSpeed, m_pTweaks->fRunningSpeed);
+            }
+
+            if (GetGlobalPad()->JustPressed(PAD_SHOOT, true))
+            {
+                SetAttemptOneTouchShot();
+                m_DesireReceivePassSharedVars.bFailedToInitOneTouchShot = true;
+            }
+            else if (GetGlobalPad()->JustPressed(PAD_PASS, true))
+            {
+                SetAttemptOneTouchPass();
+            }
+        }
+        else
+        {
+            if (GetGlobalPad()->JustPressed(PAD_SHOOT, true))
+            {
+                SetAttemptOneTouchShot();
+            }
+            else if (GetGlobalPad()->JustPressed(PAD_DEKE, true))
+            {
+                if (m_eDesireSubState != 1)
+                {
+                    InitActionHit(DoFindBestHitTarget());
+                    return;
+                }
+            }
+            else if (GetGlobalPad()->JustPressed(PAD_PASS, true))
+            {
+                SetAttemptOneTouchPass();
+            }
+        }
+    }
+
+    m_DesireReceivePassSharedVars.fDesiredTime -= fDeltaT;
+
+    switch (m_eDesireSubState)
+    {
+    case 0:
+    {
+        if (GetGlobalPad() == NULL && m_DesireCommonVars.tMiscTimer.m_uPackedTime == 0)
+        {
+            if (DoAIReceivePassActionSelection())
+            {
+                m_DesireCommonVars.tMiscTimer.SetSeconds(99999.9f);
+            }
+            else
+            {
+                float actionRethinkTime = (m_DesireCommonVars.fMisc / 3.0f) - 0.1f;
+                m_DesireCommonVars.tMiscTimer.SetSeconds((actionRethinkTime <= 0.1f) ? 0.1f : actionRethinkTime);
+            }
+        }
+
+        if (m_DesireReceivePassSharedVars.iAttemptOneTouchShot != 0
+            && !m_DesireReceivePassSharedVars.bFailedToInitOneTouchShot)
+        {
+            bool bStrongOneTouch = m_DesireReceivePassSharedVars.iAttemptOneTouchShot == 2;
+            bool bVolleyPass = m_DesireReceivePassSharedVars.bVolleyPassReceive;
+
+            bool bSuccess = InitDesireOneTimerFromRun(
+                m_aActualFacingDirection,
+                m_DesireReceivePassSharedVars.v3DesiredPosition,
+                m_DesireReceivePassSharedVars.v3BallPosition,
+                bVolleyPass,
+                bStrongOneTouch);
+
+            if (bSuccess)
+            {
+                return;
+            }
+
+            if (bVolleyPass)
+            {
+                g_pGame->DoPerfectPassSlowDown();
+            }
+
+            m_DesireReceivePassSharedVars.bFailedToInitOneTouchShot = true;
+        }
+
+        if (m_DesireReceivePassSharedVars.fDesiredTime <= 0.0f)
+        {
+            float yToTarget = m_v3Position.f.y - m_DesireReceivePassSharedVars.v3DesiredPosition.f.y;
+            float xToTarget = m_v3Position.f.x - m_DesireReceivePassSharedVars.v3DesiredPosition.f.x;
+
+            if ((xToTarget * xToTarget) + (yToTarget * yToTarget) > 4.0f)
+            {
+                ClearPassTargetIfAmThePassTarget();
+                SetDesireDuration(0.0f, true);
+                return;
+            }
+
+            SetFacingDirection(m_DesireReceivePassSharedVars.aDesiredFacingDirection);
+            InitActionReceivePass(
+                m_DesireReceivePassSharedVars.nReceivePassAnim,
+                m_DesireReceivePassSharedVars.v3DesiredPosition,
+                m_DesireReceivePassSharedVars.fReceivePassAnimTime);
+            m_eDesireSubState = 1;
+
+            if (m_DesireReceivePassSharedVars.bVolleyPassReceive)
+            {
+                m_DesireReceivePassSharedVars.bFailedToInitOneTouchShot = false;
+            }
+
+            cSAnim* pAnim = m_pAnimInventory->GetAnim(m_DesireReceivePassSharedVars.nReceivePassAnim);
+            float fAnimTimeInSecs = m_DesireReceivePassSharedVars.fReceivePassAnimTime * ((float)pAnim->m_nNumKeys / 30.0f);
+            float fTimeToIntercept = fAnimTimeInSecs + m_DesireReceivePassSharedVars.fDesiredTime;
+
+            if (fAnimTimeInSecs > 0.0f && fTimeToIntercept > 0.0f)
+            {
+                m_pCurrentAnimController->m_fPlaybackSpeedScale = fAnimTimeInSecs / fTimeToIntercept;
+            }
+        }
+        break;
+    }
+
+    case 1:
+    {
+        if (m_pBall != NULL)
+        {
+            if (m_DesireReceivePassSharedVars.iAttemptOneTouchShot != 0)
+            {
+                if (m_DesireReceivePassSharedVars.bVolleyPassReceive && m_DesireReceivePassSharedVars.bFailedToInitOneTouchShot)
+                {
+                    if ((float)fabs(m_DesireReceivePassSharedVars.fReceivePassAnimTime - m_pCurrentAnimController->m_fTime) <= 0.1f)
+                    {
+                        InitActionLateOneTimerFromVolley();
+                        return;
+                    }
+                }
+
+                if (!m_DesireReceivePassSharedVars.bVolleyPassReceive)
+                {
+                    if (m_DesireReceivePassSharedVars.bFailedToInitOneTouchShot)
+                    {
+                        if (GetGlobalPad() != NULL && GetGlobalPad()->JustPressed(PAD_SHOOT, true))
+                        {
+                            if (!ShouldStartCrossBlend(0x1A))
+                            {
+                                return;
+                            }
+
+                            DoResetShotMeter(0.0f);
+                            SetDesireDuration(0.0f, true);
+                            return;
+                        }
+
+                        DoResetShotMeter(0.0f);
+                        m_pShotMeter->CalcOneTimerValue(this, UsePerfectPass());
+                        InitDesire(FIELDERDESIRE_FINISH_ACTION, 0.5f, -1.0f, fvNotSet, fvNotSet);
+                        InitActionShot(m_DesireReceivePassSharedVars.iAttemptOneTouchShot == 2);
+                        return;
+                    }
+
+                    if (GetGlobalPad() != NULL && GetGlobalPad()->JustPressed(PAD_SHOOT, true))
+                    {
+                        if (!ShouldStartCrossBlend(0x1A))
+                        {
+                            return;
+                        }
+
+                        DoResetShotMeter(0.0f);
+                        SetDesireDuration(0.0f, true);
+                        return;
+                    }
+                }
+                else if (ShouldStartCrossBlend(0x1A))
+                {
+                    if (GetGlobalPad() != NULL && GetGlobalPad()->JustPressed(PAD_SHOOT, true))
+                    {
+                        DoResetShotMeter(0.0f);
+                        SetDesireDuration(0.0f, true);
+                    }
+                    else
+                    {
+                        DoResetShotMeter(0.0f);
+                        m_pShotMeter->CalcOneTimerValue(this, UsePerfectPass());
+                        InitDesire(FIELDERDESIRE_FINISH_ACTION, 0.5f, -1.0f, fvNotSet, fvNotSet);
+                        InitActionShot(m_DesireReceivePassSharedVars.iAttemptOneTouchShot == 2);
+                    }
+                    return;
+                }
+            }
+            else
+            {
+                if (m_DesireReceivePassSharedVars.iAttemptOneTouchPass != 0)
+                {
+                    bool bStrongOneTouchPass = m_DesireReceivePassSharedVars.iAttemptOneTouchPass == 2;
+
+                    if (m_DesireReceivePassSharedVars.bVolleyPassReceive)
+                    {
+                        if ((float)fabs(m_DesireReceivePassSharedVars.fReceivePassAnimTime - m_pCurrentAnimController->m_fTime) <= 0.1f)
+                        {
+                            InitActionOneTouchPassFromVolley(m_DesireReceivePassSharedVars.pOneTouchPassTarget);
+                            return;
+                        }
+                    }
+
+                    if (!m_DesireReceivePassSharedVars.bVolleyPassReceive || ShouldStartCrossBlend(0x1A))
+                    {
+                        InitActionPass(m_DesireReceivePassSharedVars.pOneTouchPassTarget, bStrongOneTouchPass, false);
+                        return;
+                    }
+                }
+            }
+        }
+        else
+        {
+            if (m_DesireReceivePassSharedVars.iAttemptOneTouchShot != 0)
+            {
+                m_DesireReceivePassSharedVars.bFailedToInitOneTouchShot = true;
+            }
+        }
+        break;
+    }
+
+    default:
+        break;
+    }
+
+    if (ShouldStartCrossBlend(0x1A))
+    {
+        SetDesireDuration(0.0f, true);
+    }
 }
 
 /**

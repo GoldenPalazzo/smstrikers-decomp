@@ -3,9 +3,12 @@
 #include "Game/Character.h"
 #include "Game/CharacterTemplate.h"
 #include "Game/Effects/EmissionManager.h"
+#include "Game/FE/feHelpFuncs.h"
 #include "Game/Game.h"
+#include "Game/GameInfo.h"
 #include "Game/Goalie.h"
 #include "Game/ReplayManager.h"
+#include "NL/nlConfig.h"
 #include "NL/nlFileGC.h"
 #include "NL/nlTask.h"
 #include "NL/nlString.h"
@@ -27,6 +30,7 @@ extern void nlReadAsync(nlFile*, void*, unsigned int, void (*)(nlFile*, void*, u
 extern void nlAsyncLoadFileToVirtualMemory(nlFile*, int, void*, void (*)(nlFile*, void*, unsigned int, unsigned long), unsigned long);
 extern void* nlLoadEntireFileToVirtualMemory(const char*, int*, unsigned int, void*, eAllocType);
 extern void nlBreak();
+extern unsigned long cupTrophyHash;
 extern "C" int sscanf(const char*, const char*, ...);
 
 static void* byteCode;
@@ -839,9 +843,84 @@ void NisPlayer::Load(char* buffer, unsigned int size, NisHeader& nisHeader)
 /**
  * Offset/Address/Size: 0x1AE0 | 0x801167BC | size: 0xD08
  */
-void NisPlayer::LoadTriggers(Nis&)
+void NisPlayer::LoadTriggers(Nis& nis)
 {
     FORCE_DONT_INLINE;
+    BasicString<char, Detail::TempStringAllocator> name(nis.Name());
+    int i;
+
+    if (name.m_data != NULL)
+    {
+        i = name.m_data->mSize - 1;
+    }
+    else
+    {
+        i = 0;
+    }
+    i = i - 1;
+
+    while (i >= 0)
+    {
+        if (name[i] == '.')
+        {
+            name[i] = '\0';
+            break;
+        }
+        i = i - 1;
+    }
+
+    unsigned long nisHash = nlStringHash(name.c_str());
+    if (!FunctionExists(nisHash))
+    {
+        i = 0;
+        while (true)
+        {
+            BasicStringData<char>* data = name.m_data;
+            int len;
+            if (data != NULL)
+            {
+                len = data->mSize - 1;
+            }
+            else
+            {
+                len = 0;
+            }
+
+            if (i >= len)
+            {
+                break;
+            }
+
+            if (name[i] == '_')
+            {
+                char* at = (char*)name.c_str() + i;
+                BasicString<char, Detail::TempStringAllocator> all("all");
+                const char* begin = all.c_str();
+                const char* end;
+                if (all.m_data != NULL)
+                {
+                    end = all.m_data->mData + (all.m_data->mSize - 1);
+                }
+                else
+                {
+                    end = NULL;
+                }
+
+                name.insert(at, begin, end);
+            }
+
+            i = i + 1;
+        }
+
+        nisHash = nlStringHash(name.c_str());
+    }
+
+    if (FunctionExists(nisHash))
+    {
+        mNisForTriggerLoading = &nis;
+        CallFunction(nisHash);
+        mNisForTriggerLoading = NULL;
+    }
 }
 
 #pragma dont_inline on
@@ -864,15 +943,298 @@ void NisPlayer::AsyncLoad(nlFile* file, void* buffer, unsigned int size, unsigne
 /**
  * Offset/Address/Size: 0xFAC | 0x80115C88 | size: 0xA9C
  */
-void NisPlayer::GetTargetFilter(NisTarget, NisWinnerType) const
+BasicString<char, Detail::TempStringAllocator> NisPlayer::GetTargetFilter(NisTarget target, NisWinnerType wt) const
 {
+    if (target == NIS_TARGET_STADIUM)
+    {
+        const char* stadiumName;
+        eStadiumID stadium = nlSingleton<GameInfoManager>::s_pInstance->GetStadium();
+        if (stadium == STAD_PEACH_TOAD_STADIUM)
+        {
+            stadiumName = "the_palace";
+        }
+        else if (stadium == STAD_MARIO_STADIUM)
+        {
+            stadiumName = "pipeline_central";
+        }
+        else if (stadium == STAD_WARIO_STADIUM)
+        {
+            stadiumName = "wario_stadium";
+        }
+        else if (stadium == STAD_DK_DAISY)
+        {
+            stadiumName = "dk_daisy";
+        }
+        else if (stadium == STAD_YOSHI_STADIUM)
+        {
+            stadiumName = "yoshi_stadium";
+        }
+        else if (stadium == STAD_SUPER_STADIUM)
+        {
+            stadiumName = "super_stadium";
+        }
+        else if (stadium == STAD_FORBIDDEN_DOME)
+        {
+            stadiumName = "forbidden_dome";
+        }
+        else
+        {
+            stadiumName = "";
+        }
+
+        return BasicString<char, Detail::TempStringAllocator>(stadiumName);
+    }
+
+    if (target == NIS_TARGET_HOME_CAPTAIN)
+    {
+        return BasicString<char, Detail::TempStringAllocator>(GetTeamName(nlSingleton<GameInfoManager>::s_pInstance->GetTeam(0)));
+    }
+
+    if (target == NIS_TARGET_AWAY_CAPTAIN)
+    {
+        return BasicString<char, Detail::TempStringAllocator>(GetTeamName(nlSingleton<GameInfoManager>::s_pInstance->GetTeam(1)));
+    }
+
+    if (target == NIS_TARGET_HOME_SIDEKICK)
+    {
+        return BasicString<char, Detail::TempStringAllocator>(GetSidekickName(nlSingleton<GameInfoManager>::s_pInstance->GetSidekick(0)));
+    }
+
+    if (target == NIS_TARGET_AWAY_SIDEKICK)
+    {
+        return BasicString<char, Detail::TempStringAllocator>(GetSidekickName(nlSingleton<GameInfoManager>::s_pInstance->GetSidekick(1)));
+    }
+
+    if (target == NIS_TARGET_WINNER_SIDEKICK)
+    {
+        return BasicString<char, Detail::TempStringAllocator>(GetSidekickName(nlSingleton<GameInfoManager>::s_pInstance->GetSidekick((short)mWinnerSide[wt])));
+    }
+
+    if (target == NIS_TARGET_LOSER_SIDEKICK)
+    {
+        int side = mWinnerSide[wt] + 1;
+        if (side < 0)
+        {
+            side = -side;
+        }
+
+        return BasicString<char, Detail::TempStringAllocator>(GetSidekickName(nlSingleton<GameInfoManager>::s_pInstance->GetSidekick((short)side)));
+    }
+
+    if (target == NIS_TARGET_WINNER_CAPTAIN)
+    {
+        return BasicString<char, Detail::TempStringAllocator>(GetTeamName(nlSingleton<GameInfoManager>::s_pInstance->GetTeam((short)mWinnerSide[wt])));
+    }
+
+    if (target == NIS_TARGET_LOSER_CAPTAIN)
+    {
+        int side = mWinnerSide[wt] + 1;
+        if (side < 0)
+        {
+            side = -side;
+        }
+
+        return BasicString<char, Detail::TempStringAllocator>(GetTeamName(nlSingleton<GameInfoManager>::s_pInstance->GetTeam((short)side)));
+    }
+
+    if (target == NIS_TARGET_HOME_GOALIE || target == NIS_TARGET_AWAY_GOALIE || target == NIS_TARGET_WINNER_GOALIE || target == NIS_TARGET_LOSER_GOALIE)
+    {
+        return BasicString<char, Detail::TempStringAllocator>("goalie");
+    }
+
+    if (target == NIS_TARGET_AWAY_SIDEKICK)
+    {
+        return BasicString<char, Detail::TempStringAllocator>(GetSidekickName(nlSingleton<GameInfoManager>::s_pInstance->GetSidekick(1)));
+    }
+
+    return BasicString<char, Detail::TempStringAllocator>("");
 }
 
 /**
  * Offset/Address/Size: 0x610 | 0x801152EC | size: 0x99C
  */
-void NisPlayer::Load(const char*, NisTarget, NisUseStadiumOffset, NisUseFilter, NisWinnerType)
+void NisPlayer::Load(const char* nisType, NisTarget target, NisUseStadiumOffset useStadiumOffset, NisUseFilter useFilter, NisWinnerType winnerType)
 {
+    mActive = true;
+
+    BasicString<char, Detail::TempStringAllocator> filter = GetTargetFilter(target, winnerType);
+
+    if (filter == "myst_sidekick" && strstr(nisType, "goal_winner") != NULL)
+    {
+        BasicString<char, Detail::TempStringAllocator> s("mystery");
+        filter = s;
+    }
+
+    if (nlStrCmp(nisType, "trophy") == 0 && cupTrophyHash == 0)
+    {
+        return;
+    }
+
+    int numAvailableNis = 0;
+    NisHeader* availableNis[10] = { 0 };
+
+    NisHeader* nisHeader = mDict;
+    for (int e = 0; e < mDictSize && numAvailableNis < 10; e++)
+    {
+        if (strstr(nisHeader->name, nisType) != NULL)
+        {
+            int filterLengthMinusNull = (filter.m_data != NULL) ? (filter.m_data->mSize - 1) : 0;
+            if (filterLengthMinusNull == 0 || strstr(nisHeader->name, filter.c_str()) == nisHeader->name)
+            {
+                if (useFilter == NIS_NO_FILTER || nlStrLen(mExtraNameFilter) == 0 || strstr(nisHeader->name, mExtraNameFilter) != NULL)
+                {
+                    availableNis[numAvailableNis] = nisHeader;
+                    numAvailableNis++;
+                }
+            }
+        }
+
+        nisHeader++;
+    }
+
+    if (numAvailableNis == 0)
+    {
+        return;
+    }
+
+    nisHeader = availableNis[nlRandom(numAvailableNis, &nlDefaultSeed)];
+
+    for (int i = 0; i < 4; i++)
+    {
+        if (mLoadQueue[i] != NULL)
+        {
+            continue;
+        }
+
+        nisHeader->target = target;
+        nisHeader->winnerType = winnerType;
+        nisHeader->mTime = 0.0f;
+        mLoadQueue[i] = nisHeader;
+
+        if (useStadiumOffset == NIS_NO_STADIUM_OFFSET)
+        {
+            nisHeader->stadiumOffset.f.x = 0.0f;
+            nisHeader->stadiumOffset.f.y = 0.0f;
+            nisHeader->stadiumOffset.f.z = 0.0f;
+        }
+        else
+        {
+            float scale = (useStadiumOffset == NIS_AWAY_STADIUM_OFFSET) ? -1.0f : 1.0f;
+
+            const char* stadiumName;
+            eStadiumID stadium = GameInfoManager::s_pInstance->GetStadium();
+            if (stadium == STAD_PEACH_TOAD_STADIUM)
+            {
+                stadiumName = "the_palace";
+            }
+            else if (stadium == STAD_MARIO_STADIUM)
+            {
+                stadiumName = "pipeline_central";
+            }
+            else if (stadium == STAD_WARIO_STADIUM)
+            {
+                stadiumName = "wario_stadium";
+            }
+            else if (stadium == STAD_DK_DAISY)
+            {
+                stadiumName = "dk_daisy";
+            }
+            else if (stadium == STAD_YOSHI_STADIUM)
+            {
+                stadiumName = "yoshi_stadium";
+            }
+            else if (stadium == STAD_SUPER_STADIUM)
+            {
+                stadiumName = "super_stadium";
+            }
+            else if (stadium == STAD_FORBIDDEN_DOME)
+            {
+                stadiumName = "forbidden_dome";
+            }
+            else
+            {
+                stadiumName = "";
+            }
+
+            BasicString<char, Detail::TempStringAllocator> key = Format(BasicString<char, Detail::TempStringAllocator>("nisHeader/{0}_offset"), stadiumName);
+
+            Config& cfg = Config::Global();
+            Config::TagValuePair& tvp = cfg.FindTvp(key.c_str());
+            float offset;
+            if (tvp.tag == NULL)
+            {
+                cfg.Set(key.c_str(), 0.0f);
+                offset = 0.0f;
+            }
+            else if (tvp.type == _BOOL)
+            {
+                offset = LexicalCast<float, bool>(tvp.value.b);
+            }
+            else if (tvp.type == _INT)
+            {
+                offset = LexicalCast<float, int>(tvp.value.i);
+            }
+            else if (tvp.type == _FLOAT)
+            {
+                offset = LexicalCast<float, float>(tvp.value.f);
+            }
+            else if (tvp.type == _STRING)
+            {
+                offset = LexicalCast<float, const char*>(tvp.value.s);
+            }
+            else
+            {
+                offset = 0.0f;
+            }
+
+            nisHeader->stadiumOffset.f.x = 0.0f;
+            nisHeader->stadiumOffset.f.y = scale * offset;
+            nisHeader->stadiumOffset.f.z = 0.0f;
+        }
+
+        bool mirrored = false;
+        if (target == NIS_TARGET_LOSER_CAPTAIN || target == NIS_TARGET_WINNER_CAPTAIN || target == NIS_TARGET_WINNER_SIDEKICK || target == NIS_TARGET_LOSER_GOALIE || target == NIS_TARGET_WINNER_GOALIE || target == NIS_TARGET_LOSER_SIDEKICK)
+        {
+            mirrored = true;
+            if (strstr(nisHeader->name, "_goal_") == NULL && strstr(nisHeader->name, "goalie_loser") == NULL)
+            {
+                mirrored = false;
+            }
+
+            if (mWinnerSide[winnerType] != 0)
+            {
+                mirrored = !mirrored;
+            }
+        }
+        else
+        {
+            if (strstr(nisHeader->name, "home") != NULL || strstr(nisHeader->name, "run_to_center") != NULL)
+            {
+                if (target == NIS_TARGET_AWAY_CAPTAIN || target == NIS_TARGET_AWAY_SIDEKICK || target == NIS_TARGET_NONE)
+                {
+                    mirrored = true;
+                }
+            }
+        }
+
+        if (mirrored)
+        {
+            for (int j = 0; j < nisHeader->numAnimations; j++)
+            {
+                mBeginPositions[j] = nisHeader->beginPositions[j];
+                mBeginPositions[j].f.x *= -1.0f;
+            }
+        }
+        else
+        {
+            for (int j = 0; j < nisHeader->numAnimations; j++)
+            {
+                mBeginPositions[j] = nisHeader->beginPositions[j];
+            }
+        }
+
+        return;
+    }
 }
 
 /**

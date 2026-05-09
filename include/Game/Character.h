@@ -329,11 +329,17 @@ public:
     /* 0x08 */ eReceiveBallResult eResult;
 }; // total size: 0xC
 
-class CollisionBobombData
+class CollisionBobombData : public EventData
 {
 public:
     virtual u32 GetID();
-};
+
+    /* 0x04 */ nlVector3 v3ExplosionLocation;
+    /* 0x10 */ float fExplosionRadius;
+    /* 0x14 */ cFielder* pThrower;
+    /* 0x18 */ int nThrowerPadID;
+    /* 0x1C */ bool bIsFreezeBomb;
+}; // total size: 0x20
 
 class CollisionPlayerBananaData : public EventData
 {

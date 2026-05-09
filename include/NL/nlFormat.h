@@ -2,6 +2,7 @@
 #define _NLFORMAT_H_
 
 #include "NL/nlBasicString.h"
+#include "NL/nlLexicalCast.h"
 
 template <typename StringType>
 class FormatImpl
@@ -28,6 +29,49 @@ public:
     template <typename T>
     FormatImpl& operator%(const T& t);
 };
+
+template <typename StringType>
+template <typename T>
+FormatImpl<StringType>& FormatImpl<StringType>::operator%(const T& t)
+{
+    StringType insert = LexicalCast<StringType, T>(t);
+
+    for (int i = 0; i < (int)mString.size() - 1; i++)
+    {
+        if (mString[i] != '{')
+            continue;
+
+        if (i + 1 >= (int)mString.size() - 1)
+            continue;
+
+        if (mString[i + 1] - '0' != mCurrentPos)
+            continue;
+
+        if (i + 2 >= (int)mString.size() - 1)
+            continue;
+
+        if (mString[i + 2] != '}')
+            continue;
+
+        // erase {N} (3 chars)
+        typename StringType::value_type* eraseEnd = &mString[i + 3];
+        typename StringType::value_type* eraseStart = &mString[i];
+        BasicStringData<typename StringType::value_type>* data = mString.m_data;
+        int eraseLen = eraseEnd - eraseStart;
+        typename StringType::value_type* dst = &data->mData[eraseStart - data->mData];
+        while (eraseEnd != data->mData + data->mSize)
+        {
+            *dst++ = *eraseEnd++;
+        }
+        data->mSize -= eraseLen;
+
+        // insert replacement text
+        mString.insert(&mString[i], &insert[0], &insert[(int)insert.size() - 1]);
+    }
+
+    mCurrentPos++;
+    return *this;
+}
 
 struct FormatImplLayoutCharTemp
 {

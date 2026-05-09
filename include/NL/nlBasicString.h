@@ -84,6 +84,7 @@ template <typename CharT, typename Allocator>
 class BasicString
 {
 public:
+    typedef CharT value_type;
     BasicStringData<CharT>* m_data; // offset 0x0
 
     BasicString()
@@ -127,6 +128,7 @@ public:
         if (data != 0)
         {
             data->mRefCount++;
+            data = other.m_data;
         }
         else
         {
@@ -177,7 +179,8 @@ public:
 
     CharT& operator[](int index)
     {
-        if (m_data == 0)
+        BasicStringData<CharT>* oldData = m_data;
+        if (oldData == 0)
         {
             BasicStringData<CharT>* data = (BasicStringData<CharT>*)Allocator::allocate(sizeof(BasicStringData<CharT>));
             if (data != 0)
@@ -188,47 +191,51 @@ public:
                 data->mCapacity = sz;
                 data->mData[0] = 0;
                 data->mRefCount = 1;
+                for (int j = 0; j < data->mSize - 1; j++)
+                {
+                    data->mData[j] = m_data->mData[j];
+                }
             }
             m_data = data;
         }
         else
         {
-            if (m_data->mRefCount == 1)
-            {
-            }
-            else
+            if (oldData->mRefCount != 1)
             {
                 BasicStringData<CharT>* newData = (BasicStringData<CharT>*)Allocator::allocate(sizeof(BasicStringData<CharT>));
                 if (newData != 0)
                 {
-                    newData->mData = (CharT*)Allocator::allocate(m_data->mSize);
-                    newData->mSize = m_data->mSize;
-                    newData->mCapacity = m_data->mSize;
+                    newData->mData = (CharT*)Allocator::allocate(oldData->mSize);
+                    newData->mSize = oldData->mSize;
+                    newData->mCapacity = oldData->mSize;
                     for (int j = 0; j < newData->mSize; j++)
                     {
-                        newData->mData[j] = m_data->mData[j];
+                        newData->mData[j] = oldData->mData[j];
                     }
                     newData->mRefCount = 1;
                 }
-                if (--m_data->mRefCount == 0)
+                if (--oldData->mRefCount == 0)
                 {
-                    if (m_data)
+                    if (oldData)
                     {
-                        if (m_data)
+                        if (oldData)
                         {
-                            delete[] m_data->mData;
+                            delete[] oldData->mData;
                         }
-                        if (m_data)
+                        if (oldData)
                         {
-                            nlFree(m_data);
+                            nlFree(oldData);
                         }
                     }
                 }
-                m_data = newData;
+                oldData = newData;
             }
+            m_data = oldData;
         }
         return m_data->mData[index];
     }
+
+    void insert(CharT* at, const CharT* begin, const CharT* end);
 
     void TrimInPlace(const CharT* chars);
 

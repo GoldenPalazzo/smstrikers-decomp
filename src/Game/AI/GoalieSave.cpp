@@ -1,4 +1,5 @@
 #include "Game/AI/GoalieSave.h"
+#include "Game/AI/AiUtil.h"
 #include "Game/AI/FilteredRandom.h"
 #include "Game/Field.h"
 
@@ -805,9 +806,461 @@ void GoalieSave::FindBestInList(SaveBlendInfo&, nlListContainer<SaveData*>&, con
 
 /**
  * Offset/Address/Size: 0xF90 | 0x800543B0 | size: 0xA8C
+ * TODO: 81.83% match - branch structure and register usage still diverge in
+ * vertical row traversal and edge-selection blending paths.
  */
-void GoalieSave::GetClosestBlendedPos(SaveBlendInfo&, const nlVector3&, SaveData*)
+void GoalieSave::GetClosestBlendedPos(SaveBlendInfo& blendInfo, const nlVector3& v3TargetPos, SaveData* pSaveData)
 {
+    extern float Interpolate(float, float, float);
+
+    SaveData* pClosest = pSaveData;
+    SaveData* pEdge = NULL;
+
+    SaveData* pLeft = NULL;
+    SaveData* pRight = NULL;
+    SaveData* pLeftUp = NULL;
+    SaveData* pRightUp = NULL;
+
+    float fScaleLeft;
+    float fScaleRight;
+    float fLeftY;
+    float fRightY;
+    float fTimeLeft[5];
+    float fLeftZ;
+    float fTimeRight[5];
+    float fRightZ;
+
+    blendInfo.mfSaveBlendPrimary = 0.0f;
+    blendInfo.mfSaveBlendSecondary = 0.0f;
+    blendInfo.mfSaveBlendComposite = 0.0f;
+
+    if (pSaveData->mv3GroupMaxCoords.f.y <= v3TargetPos.f.y)
+    {
+        SaveData* pLast = pSaveData;
+        while (pSaveData != NULL)
+        {
+            pLast = pSaveData;
+            pSaveData = pSaveData->mpConnectedSaveData[2];
+        }
+        pEdge = pLast;
+    }
+    else if (pSaveData->mv3GroupMinCoords.f.y >= v3TargetPos.f.y)
+    {
+        SaveData* pLast = pSaveData;
+        while (pSaveData != NULL)
+        {
+            pLast = pSaveData;
+            pSaveData = pSaveData->mpConnectedSaveData[3];
+        }
+        pEdge = pLast;
+    }
+    else
+    {
+        SaveData* pPrev = pSaveData;
+        SaveData* pCur = pSaveData;
+
+        while (pCur != NULL && v3TargetPos.f.z > pCur->mv3SavePos.f.z)
+        {
+            pPrev = pCur;
+            pCur = pCur->mpConnectedSaveData[0];
+        }
+
+        while (pPrev != NULL && v3TargetPos.f.z < pPrev->mv3SavePos.f.z)
+        {
+            pCur = pPrev;
+            pPrev = pPrev->mpConnectedSaveData[1];
+        }
+
+        if (pPrev == NULL)
+        {
+            pLeft = pCur;
+            pRight = pCur;
+        }
+        else if (pCur == NULL)
+        {
+            pLeft = pPrev;
+            pRight = pPrev;
+        }
+        else
+        {
+            pLeft = pPrev;
+            pRight = pCur;
+        }
+
+        pLeftUp = pLeft;
+        pRightUp = pRight;
+
+        bool done = false;
+        while (!done)
+        {
+            if (v3TargetPos.f.y <= pLeft->mv3SavePos.f.y || v3TargetPos.f.y <= pRight->mv3SavePos.f.y)
+            {
+                if (v3TargetPos.f.y < pLeft->mv3SavePos.f.y && v3TargetPos.f.y < pRight->mv3SavePos.f.y && pLeft->mpConnectedSaveData[3] != NULL)
+                {
+                    SaveData* pNextRow = pLeft->mpConnectedSaveData[3];
+                    SaveData* pNextPrev = pNextRow;
+                    SaveData* pNextCur = pNextRow;
+
+                    pLeftUp = pLeft;
+                    pRightUp = pRight;
+
+                    while (pNextCur != NULL && v3TargetPos.f.z > pNextCur->mv3SavePos.f.z)
+                    {
+                        pNextPrev = pNextCur;
+                        pNextCur = pNextCur->mpConnectedSaveData[0];
+                    }
+
+                    while (pNextPrev != NULL && v3TargetPos.f.z < pNextPrev->mv3SavePos.f.z)
+                    {
+                        pNextCur = pNextPrev;
+                        pNextPrev = pNextPrev->mpConnectedSaveData[1];
+                    }
+
+                    if (pNextPrev == NULL)
+                    {
+                        pLeft = pNextCur;
+                        pRight = pNextCur;
+                    }
+                    else if (pNextCur == NULL)
+                    {
+                        pLeft = pNextPrev;
+                        pRight = pNextPrev;
+                    }
+                    else
+                    {
+                        pLeft = pNextPrev;
+                        pRight = pNextCur;
+                    }
+                }
+                else
+                {
+                    pEdge = pLeft;
+                    break;
+                }
+            }
+            else if (v3TargetPos.f.y >= pLeftUp->mv3SavePos.f.y || v3TargetPos.f.y >= pRightUp->mv3SavePos.f.y)
+            {
+                if (v3TargetPos.f.y > pLeftUp->mv3SavePos.f.y && v3TargetPos.f.y > pRightUp->mv3SavePos.f.y && pLeftUp->mpConnectedSaveData[2] != NULL)
+                {
+                    SaveData* pNextRow = pLeftUp->mpConnectedSaveData[2];
+                    SaveData* pNextPrev = pNextRow;
+                    SaveData* pNextCur = pNextRow;
+
+                    pLeft = pLeftUp;
+                    pRight = pRightUp;
+
+                    while (pNextCur != NULL && v3TargetPos.f.z > pNextCur->mv3SavePos.f.z)
+                    {
+                        pNextPrev = pNextCur;
+                        pNextCur = pNextCur->mpConnectedSaveData[0];
+                    }
+
+                    while (pNextPrev != NULL && v3TargetPos.f.z < pNextPrev->mv3SavePos.f.z)
+                    {
+                        pNextCur = pNextPrev;
+                        pNextPrev = pNextPrev->mpConnectedSaveData[1];
+                    }
+
+                    if (pNextPrev == NULL)
+                    {
+                        pLeftUp = pNextCur;
+                        pRightUp = pNextCur;
+                    }
+                    else if (pNextCur == NULL)
+                    {
+                        pLeftUp = pNextPrev;
+                        pRightUp = pNextPrev;
+                    }
+                    else
+                    {
+                        pLeftUp = pNextPrev;
+                        pRightUp = pNextCur;
+                    }
+                }
+                else
+                {
+                    pEdge = pLeftUp;
+                    break;
+                }
+            }
+            else
+            {
+                int milestone;
+
+                fScaleLeft = 0.0f;
+                fScaleRight = 0.0f;
+
+                if (pLeft != pRight)
+                {
+                    fScaleLeft = (v3TargetPos.f.z - pLeft->mv3SavePos.f.z) / (pRight->mv3SavePos.f.z - pLeft->mv3SavePos.f.z);
+                }
+
+                if (pLeftUp != pRightUp)
+                {
+                    fScaleRight = (v3TargetPos.f.z - pLeftUp->mv3SavePos.f.z) / (pRightUp->mv3SavePos.f.z - pLeftUp->mv3SavePos.f.z);
+                }
+
+                fLeftY = Interpolate(pLeft->mv3SavePos.f.y, pRight->mv3SavePos.f.y, fScaleLeft);
+                fRightY = Interpolate(pLeftUp->mv3SavePos.f.y, pRightUp->mv3SavePos.f.y, fScaleRight);
+                blendInfo.mfSaveBlendComposite = (v3TargetPos.f.y - fLeftY) / (fRightY - fLeftY);
+
+                if (blendInfo.mfSaveBlendComposite <= 0.001f)
+                {
+                    pEdge = pLeft;
+                    break;
+                }
+
+                if (blendInfo.mfSaveBlendComposite >= 0.999f)
+                {
+                    pEdge = pLeftUp;
+                    break;
+                }
+
+                done = true;
+
+                blendInfo.mpSaveData[1] = NULL;
+                if (fScaleLeft <= 0.999f)
+                {
+                    blendInfo.mpSaveData[0] = pLeft;
+                    if (fScaleLeft >= 0.001f)
+                    {
+                        blendInfo.mpSaveData[1] = pRight;
+                        pClosest = pLeft;
+                        fLeftZ = v3TargetPos.f.z;
+                        blendInfo.mfSaveBlendPrimary = fScaleLeft;
+
+                        for (milestone = 0; milestone < 5; milestone++)
+                        {
+                            float fTime0 = pLeft->mfMilestonePercent[milestone] * pLeft->mfDuration;
+                            float fTime1 = pRight->mfMilestonePercent[milestone] * pRight->mfDuration;
+
+                            if (fTime0 <= 0.001f)
+                                fTimeLeft[milestone] = 0.0f;
+                            else
+                                fTimeLeft[milestone] = Interpolate(fTime0, fTime1, fScaleLeft);
+                        }
+                    }
+                    else
+                    {
+                        fLeftZ = pLeft->mv3SavePos.f.z;
+                        for (milestone = 0; milestone < 5; milestone++)
+                        {
+                            fTimeLeft[milestone] = pLeft->mfMilestonePercent[milestone] * pLeft->mfDuration;
+                        }
+                    }
+                }
+                else
+                {
+                    blendInfo.mpSaveData[0] = pRight;
+                    fLeftZ = pRight->mv3SavePos.f.z;
+                    for (milestone = 0; milestone < 5; milestone++)
+                    {
+                        fTimeLeft[milestone] = pRight->mfMilestonePercent[milestone] * pRight->mfDuration;
+                    }
+                }
+
+                blendInfo.mpSaveData[3] = NULL;
+                if (fScaleRight <= 0.999f)
+                {
+                    blendInfo.mpSaveData[2] = pLeftUp;
+                    if (fScaleRight >= 0.001f)
+                    {
+                        blendInfo.mpSaveData[3] = pRightUp;
+                        fRightZ = v3TargetPos.f.z;
+                        blendInfo.mfSaveBlendSecondary = fScaleRight;
+
+                        for (milestone = 0; milestone < 5; milestone++)
+                        {
+                            float fTime0 = pLeftUp->mfMilestonePercent[milestone] * pLeftUp->mfDuration;
+                            float fTime1 = pRightUp->mfMilestonePercent[milestone] * pRightUp->mfDuration;
+
+                            if (fTime0 <= 0.001f)
+                                fTimeRight[milestone] = 0.0f;
+                            else
+                                fTimeRight[milestone] = Interpolate(fTime0, fTime1, fScaleRight);
+                        }
+                    }
+                    else
+                    {
+                        fRightZ = pLeftUp->mv3SavePos.f.z;
+                        for (milestone = 0; milestone < 5; milestone++)
+                        {
+                            fTimeRight[milestone] = pLeftUp->mfMilestonePercent[milestone] * pLeftUp->mfDuration;
+                        }
+                    }
+                }
+                else
+                {
+                    blendInfo.mpSaveData[2] = pRightUp;
+                    fRightZ = pRightUp->mv3SavePos.f.z;
+                    for (milestone = 0; milestone < 5; milestone++)
+                    {
+                        fTimeRight[milestone] = pRightUp->mfMilestonePercent[milestone] * pRightUp->mfDuration;
+                    }
+                }
+
+                blendInfo.mv3BlendedSavePos.f.y = v3TargetPos.f.y;
+                blendInfo.mv3BlendedSavePos.f.z = Interpolate(fLeftZ, fRightZ, blendInfo.mfSaveBlendComposite);
+
+                for (milestone = 0; milestone < 5; milestone++)
+                {
+                    if (fTimeLeft[milestone] <= 0.001f)
+                        blendInfo.mfMilestoneTime[milestone] = 0.0f;
+                    else
+                        blendInfo.mfMilestoneTime[milestone] = Interpolate(fTimeLeft[milestone], fTimeRight[milestone], blendInfo.mfSaveBlendComposite);
+                }
+
+                if (blendInfo.mfSaveBlendComposite <= 0.5f)
+                {
+                    if (fScaleLeft <= 0.5f)
+                        pClosest = pLeft;
+                    else
+                        pClosest = pRight;
+                }
+                else
+                {
+                    if (fScaleRight <= 0.5f)
+                        pClosest = pLeftUp;
+                    else
+                        pClosest = pRightUp;
+                }
+            }
+        }
+    }
+
+    if (pEdge != NULL)
+    {
+        SaveData* pPrev = pEdge;
+        SaveData* pCur = pEdge;
+        SaveData* pDown;
+        SaveData* pUp;
+        int milestone;
+
+        while (pCur != NULL && v3TargetPos.f.z > pCur->mv3SavePos.f.z)
+        {
+            pPrev = pCur;
+            pCur = pCur->mpConnectedSaveData[0];
+        }
+
+        while (pPrev != NULL && v3TargetPos.f.z < pPrev->mv3SavePos.f.z)
+        {
+            pCur = pPrev;
+            pPrev = pPrev->mpConnectedSaveData[1];
+        }
+
+        if (pPrev == NULL)
+        {
+            pDown = pCur;
+            pUp = pCur;
+        }
+        else if (pCur == NULL)
+        {
+            pDown = pPrev;
+            pUp = pPrev;
+        }
+        else
+        {
+            pDown = pPrev;
+            pUp = pCur;
+        }
+
+        blendInfo.mpSaveData[0] = pDown;
+        blendInfo.mpSaveData[1] = NULL;
+        blendInfo.mpSaveData[3] = NULL;
+        blendInfo.mpSaveData[2] = NULL;
+
+        if (pDown != pUp)
+        {
+            float fPrimary = (v3TargetPos.f.z - pDown->mv3SavePos.f.z) / (pUp->mv3SavePos.f.z - pDown->mv3SavePos.f.z);
+            if (fPrimary >= 0.999f)
+            {
+                blendInfo.mv3BlendedSavePos = pUp->mv3SavePos;
+                blendInfo.mpSaveData[0] = pUp;
+                for (milestone = 0; milestone < 5; milestone++)
+                {
+                    blendInfo.mfMilestoneTime[milestone] = pUp->mfMilestonePercent[milestone] * pUp->mfDuration;
+                }
+            }
+            else if (fPrimary <= 0.001f)
+            {
+                blendInfo.mv3BlendedSavePos = pDown->mv3SavePos;
+                for (milestone = 0; milestone < 5; milestone++)
+                {
+                    blendInfo.mfMilestoneTime[milestone] = pDown->mfMilestonePercent[milestone] * pDown->mfDuration;
+                }
+            }
+            else
+            {
+                blendInfo.mfSaveBlendPrimary = fPrimary;
+                blendInfo.mv3BlendedSavePos.f.x = pDown->mv3SavePos.f.x;
+                blendInfo.mv3BlendedSavePos.f.y = Interpolate(pDown->mv3SavePos.f.y, pUp->mv3SavePos.f.y, fPrimary);
+                blendInfo.mv3BlendedSavePos.f.z = v3TargetPos.f.z;
+                blendInfo.mpSaveData[1] = pUp;
+
+                for (milestone = 0; milestone < 5; milestone++)
+                {
+                    float fTime0 = pDown->mfMilestonePercent[milestone] * pDown->mfDuration;
+                    float fTime1 = pUp->mfMilestonePercent[milestone] * pUp->mfDuration;
+
+                    if (fTime0 <= 0.001f)
+                        blendInfo.mfMilestoneTime[milestone] = 0.0f;
+                    else
+                        blendInfo.mfMilestoneTime[milestone] = Interpolate(fTime0, fTime1, fPrimary);
+                }
+            }
+        }
+        else
+        {
+            blendInfo.mv3BlendedSavePos = pDown->mv3SavePos;
+            for (milestone = 0; milestone < 5; milestone++)
+            {
+                blendInfo.mfMilestoneTime[milestone] = pDown->mfMilestonePercent[milestone] * pDown->mfDuration;
+            }
+
+            if (pDown->mpConnectedSaveData[1] == NULL && pDown->mpConnectedSaveData[0] == NULL)
+            {
+                float fTargetY = v3TargetPos.f.y;
+                float fCurrentY = pDown->mv3SavePos.f.y;
+                const float fNudge = 0.1f;
+
+                if (fabs(fCurrentY - fTargetY) < fNudge)
+                {
+                    blendInfo.mv3BlendedSavePos.f.y = fTargetY;
+                }
+                else if (fCurrentY > fTargetY)
+                {
+                    blendInfo.mv3BlendedSavePos.f.y -= fNudge;
+                }
+                else
+                {
+                    blendInfo.mv3BlendedSavePos.f.y += fNudge;
+                }
+
+                float fTargetZ = v3TargetPos.f.z;
+                float fCurrentZ = pDown->mv3SavePos.f.z;
+
+                if (fabs(fCurrentZ - fTargetZ) < fNudge)
+                {
+                    blendInfo.mv3BlendedSavePos.f.z = fTargetZ;
+                }
+                else if (fCurrentZ > fTargetZ)
+                {
+                    blendInfo.mv3BlendedSavePos.f.z -= fNudge;
+                }
+                else
+                {
+                    blendInfo.mv3BlendedSavePos.f.z += fNudge;
+                }
+            }
+        }
+
+        if (blendInfo.mfSaveBlendPrimary < 0.5f)
+            pClosest = blendInfo.mpSaveData[0];
+        else
+            pClosest = blendInfo.mpSaveData[1];
+    }
+
+    blendInfo.mv3BlendedSavePos.f.x = pClosest->mv3SavePos.f.x;
 }
 
 /**

@@ -9,6 +9,14 @@
 #include "NL/nlFile.h"
 #include "NL/nlMath.h"
 
+namespace Detail
+{
+class TempStringAllocator;
+}
+
+template <typename CharT, typename Allocator>
+class BasicString;
+
 enum NisUseStadiumOffset
 {
     NIS_NO_STADIUM_OFFSET = 0,
@@ -37,7 +45,7 @@ public:
     static void EventHandler(Event* event, void* userData) { ((NisPlayer*)userData)->EventHandler(event); }
     void PlayCharacterDirection();
     void Load(const char*, NisTarget, NisUseStadiumOffset, NisUseFilter, NisWinnerType);
-    void GetTargetFilter(NisTarget, NisWinnerType) const;
+    BasicString<char, Detail::TempStringAllocator> GetTargetFilter(NisTarget, NisWinnerType) const;
     static void AsyncLoad(nlFile*, void*, unsigned int, unsigned long);
     void LoadTriggers(Nis&);
     void Load(char*, unsigned int, NisHeader&);

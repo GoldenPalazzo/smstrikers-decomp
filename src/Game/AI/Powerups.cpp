@@ -81,6 +81,16 @@ const char* uBOBOMB_STREAK_TEXTURE;
 } // namespace
 
 static const nlVector3 v3Zero = { 0.0f, 0.0f, 0.0f };
+static u8 gbAlwaysSurround;
+
+extern void* __vt__6Banana[];
+extern void* __vt__6Bobomb[];
+extern void* __vt__10GreenShell[];
+extern void* __vt__11FreezeShell[];
+extern void* __vt__8RedShell[];
+extern void* __vt__10SpinyShell[];
+extern void* __vt__9EventData[];
+extern void* __vt__20PowerupUsedEventData[];
 
 // extern Audio::cWorldSFX gPowerupSFX;
 
@@ -363,8 +373,502 @@ void PowerupThrowPosition(int nThrowOrder, eThrowStyle eStyle, PowerupBase* pNew
 /**
  * Offset/Address/Size: 0x4F00 | 0x8005F7EC | size: 0xA98
  */
-void PowerupCreateAndThrow(cFielder*, ePowerUpType, int, Bowser*)
+void PowerupCreateAndThrow(cFielder* pThrower, ePowerUpType eType, int nnumOfPowerups, Bowser* pBowser)
 {
+    eThrowStyle eStyle = THROW_ARROW;
+    ePowerupSize eSize = POWERUPSIZE_SMALL;
+    float fMediumChance = 0.0f;
+    float fBigChance = 0.0f;
+    float fExplodeChance = 0.0f;
+    bool bExplode = false;
+
+    switch (eType)
+    {
+    case POWER_UP_BANANA:
+        fMediumChance = g_pGame->m_pGameTweaks->fBananaMediumChance;
+        fBigChance = fMediumChance + g_pGame->m_pGameTweaks->fBananaBigChance;
+        fExplodeChance = g_pGame->m_pGameTweaks->fBananaExplodeChance;
+        break;
+    case POWER_UP_GREEN_SHELL:
+    case POWER_UP_RED_SHELL:
+    case POWER_UP_SPINY_SHELL:
+    case POWER_UP_FREEZE_SHELL:
+        fMediumChance = g_pGame->m_pGameTweaks->fShellMediumChance;
+        fBigChance = fMediumChance + g_pGame->m_pGameTweaks->fShellBigChance;
+        fExplodeChance = g_pGame->m_pGameTweaks->fShellExplodeChance;
+        break;
+    case POWER_UP_BOBOMB:
+        fMediumChance = g_pGame->m_pGameTweaks->fBobombMediumChance;
+        fBigChance = fMediumChance + g_pGame->m_pGameTweaks->fBobombBigChance;
+        fExplodeChance = g_pGame->m_pGameTweaks->fBobombMineChance;
+        break;
+    default:
+        break;
+    }
+
+    if (pThrower != NULL)
+    {
+        fBigChance += ((FielderTweaks*)pThrower->m_pTweaks)->fChanceForBig;
+    }
+    else if (pBowser != NULL)
+    {
+        fBigChance += nlRandomf(g_pGame->m_pGameTweaks->unk33C, &nlDefaultSeed);
+    }
+
+    if (pBowser == NULL)
+    {
+        if ((nlSingleton<GameInfoManager>::s_pInstance->GetCustomPowerups() == CP_GIANT) && (nnumOfPowerups == 1))
+        {
+            fMediumChance = 0.0f;
+            fBigChance = 1.0f;
+        }
+        else if (nlSingleton<GameInfoManager>::s_pInstance->GetCustomPowerups() == CP_EXPLOSIVE)
+        {
+            fExplodeChance = 1.0f;
+        }
+    }
+
+    if (nnumOfPowerups > 1)
+    {
+        if (eType == POWER_UP_RED_SHELL)
+        {
+            eStyle = THROW_SURROUND;
+        }
+        else
+        {
+            float fRandom = nlRandomf(1.0f, &nlDefaultSeed);
+            float fArrowChance = g_pGame->m_pGameTweaks->fPowerupArrowThrowChance;
+            float fSpreadChance = fArrowChance + g_pGame->m_pGameTweaks->fPowerupSpreadThrowChance;
+            float fSurroundChance = fSpreadChance + g_pGame->m_pGameTweaks->fPowerupSurroundThrowChance;
+            float fHorizChance = fSurroundChance + g_pGame->m_pGameTweaks->fPowerupHorizontalLineThrowChance;
+
+            if (fRandom < fArrowChance)
+            {
+                eStyle = THROW_ARROW;
+            }
+            else if (fRandom < fSpreadChance)
+            {
+                if ((eType != POWER_UP_BANANA) && (eType != POWER_UP_SPINY_SHELL))
+                {
+                    eStyle = THROW_SPREAD;
+                }
+            }
+            else if (fRandom < fSurroundChance)
+            {
+                if ((eType != POWER_UP_BANANA) && (eType != POWER_UP_SPINY_SHELL))
+                {
+                    eStyle = THROW_SURROUND;
+                }
+            }
+            else if (fRandom < fHorizChance)
+            {
+                eStyle = THROW_HORIZONTAL_LINE;
+            }
+        }
+
+        if (gbAlwaysSurround)
+        {
+            eStyle = THROW_SURROUND;
+        }
+    }
+    else
+    {
+        float fRandom = nlRandomf(1.0f, &nlDefaultSeed);
+        if (fRandom < fExplodeChance)
+        {
+            bExplode = true;
+        }
+        else if (pThrower == NULL)
+        {
+            bExplode = true;
+        }
+
+        fRandom = nlRandomf(1.0f, &nlDefaultSeed);
+        if (fRandom < fMediumChance)
+        {
+            eSize = POWERUPSIZE_MEDIUM;
+        }
+        else if (fRandom < fBigChance)
+        {
+            eSize = POWERUPSIZE_LARGE;
+        }
+
+        if (pThrower != NULL)
+        {
+            cFielder* pFielder = pThrower;
+            if (pThrower->IsCaptain())
+            {
+                pFielder = pThrower->m_pTeam->GetFielder(1);
+            }
+
+            switch (pFielder->m_eCharacterClass)
+            {
+            case BIRDO:
+                if (eType == POWER_UP_FREEZE_SHELL)
+                {
+                    bExplode = true;
+                }
+                break;
+            case TOAD:
+                if (eType == POWER_UP_RED_SHELL)
+                {
+                    bExplode = true;
+                }
+                break;
+            case KOOPA:
+                if (eType == POWER_UP_GREEN_SHELL)
+                {
+                    bExplode = true;
+                }
+                break;
+            case HAMMERBROS:
+                if (eType == POWER_UP_SPINY_SHELL)
+                {
+                    bExplode = true;
+                }
+                break;
+            default:
+                break;
+            }
+        }
+    }
+
+    PowerupBase* pFirstPowerup = NULL;
+    cFielder* pTarget;
+    cTeam* pTargetTeam;
+    cFielder* pTargetFielders[4];
+    int a;
+    int j;
+
+    if (pThrower != NULL)
+    {
+        pTarget = pThrower->m_pPowerupTarget;
+        pTargetTeam = pThrower->m_pTeam->GetOtherTeam();
+    }
+    else
+    {
+        pTarget = pBowser->mpTarget;
+        pTargetTeam = pTarget->m_pTeam;
+
+        if ((eSize == POWERUPSIZE_SMALL) && (nnumOfPowerups == 1))
+        {
+            eSize = POWERUPSIZE_MEDIUM;
+        }
+    }
+
+    for (a = 0; a < 4; a++)
+    {
+        pTargetFielders[a] = pTargetTeam->GetFielder(a);
+    }
+
+    for (a = 0; a < nnumOfPowerups; a++)
+    {
+        PowerupBase** pRegistry = g_pPowerups;
+        bool bFoundLocation = false;
+
+        for (j = 0; j < 25; j++, pRegistry++)
+        {
+            if (bFoundLocation)
+            {
+                continue;
+            }
+
+            if (*pRegistry != NULL)
+            {
+                continue;
+            }
+
+            PowerupBase* pPowerup = NULL;
+
+            switch (eType)
+            {
+            case POWER_UP_BANANA:
+            {
+                float fBananaRadius;
+                switch (eSize)
+                {
+                case POWERUPSIZE_MEDIUM:
+                    fBananaRadius = g_pGame->m_pGameTweaks->fBananaMediumRadius;
+                    break;
+                case POWERUPSIZE_LARGE:
+                    fBananaRadius = g_pGame->m_pGameTweaks->fBananaBigRadius;
+                    break;
+                default:
+                    fBananaRadius = g_pGame->m_pGameTweaks->fBananaSmallRadius;
+                    break;
+                }
+
+                Banana* pBanana = NULL;
+                if (Banana::m_BananaSlotPool.m_FreeList == NULL)
+                {
+                    SlotPoolBase::BaseAddNewBlock(&Banana::m_BananaSlotPool, sizeof(Banana));
+                }
+
+                if (Banana::m_BananaSlotPool.m_FreeList != NULL)
+                {
+                    pBanana = (Banana*)Banana::m_BananaSlotPool.m_FreeList;
+                    Banana::m_BananaSlotPool.m_FreeList = Banana::m_BananaSlotPool.m_FreeList->m_next;
+                }
+
+                if (pBanana != NULL)
+                {
+                    new (pBanana) PowerupBase(pTarget, POWER_UP_BANANA, fBananaRadius, eSize, bExplode, j);
+                    *(void**)pBanana = __vt__6Banana;
+                }
+
+                pPowerup = pBanana;
+                break;
+            }
+            case POWER_UP_BOBOMB:
+            {
+                float fBobombRadius;
+                switch (eSize)
+                {
+                case POWERUPSIZE_MEDIUM:
+                    fBobombRadius = g_pGame->m_pGameTweaks->fBobombMediumRadius;
+                    break;
+                case POWERUPSIZE_LARGE:
+                    fBobombRadius = g_pGame->m_pGameTweaks->fBobombBigRadius;
+                    break;
+                default:
+                    fBobombRadius = g_pGame->m_pGameTweaks->fBobombSmallRadius;
+                    break;
+                }
+
+                Bobomb* pBobomb = NULL;
+                if (Bobomb::m_BobombSlotPool.m_FreeList == NULL)
+                {
+                    SlotPoolBase::BaseAddNewBlock(&Bobomb::m_BobombSlotPool, sizeof(Bobomb));
+                }
+
+                if (Bobomb::m_BobombSlotPool.m_FreeList != NULL)
+                {
+                    pBobomb = (Bobomb*)Bobomb::m_BobombSlotPool.m_FreeList;
+                    Bobomb::m_BobombSlotPool.m_FreeList = Bobomb::m_BobombSlotPool.m_FreeList->m_next;
+                }
+
+                if (pBobomb != NULL)
+                {
+                    new (pBobomb) PowerupBase(pTarget, POWER_UP_BOBOMB, fBobombRadius, eSize, true, j);
+                    *(void**)pBobomb = __vt__6Bobomb;
+                    pBobomb->pMovementEmitter = NULL;
+
+                    if (nlRandomf(1.0f, &nlDefaultSeed) < g_pGame->m_pGameTweaks->fBobombMineChance)
+                    {
+                        pBobomb->mbIsMine = true;
+                    }
+                    else
+                    {
+                        pBobomb->mbIsMine = false;
+                    }
+                }
+
+                pPowerup = pBobomb;
+                break;
+            }
+            case POWER_UP_GREEN_SHELL:
+            {
+                float fGreenShellRadius;
+                switch (eSize)
+                {
+                case POWERUPSIZE_MEDIUM:
+                    fGreenShellRadius = g_pGame->m_pGameTweaks->fShellMediumRadius;
+                    break;
+                case POWERUPSIZE_LARGE:
+                    fGreenShellRadius = g_pGame->m_pGameTweaks->fShellBigRadius;
+                    break;
+                default:
+                    fGreenShellRadius = g_pGame->m_pGameTweaks->fShellSmallRadius;
+                    break;
+                }
+
+                GreenShell* pGreenShell = NULL;
+                if (GreenShell::m_GreenShellSlotPool.m_FreeList == NULL)
+                {
+                    SlotPoolBase::BaseAddNewBlock(&GreenShell::m_GreenShellSlotPool, sizeof(GreenShell));
+                }
+
+                if (GreenShell::m_GreenShellSlotPool.m_FreeList != NULL)
+                {
+                    pGreenShell = (GreenShell*)GreenShell::m_GreenShellSlotPool.m_FreeList;
+                    GreenShell::m_GreenShellSlotPool.m_FreeList = GreenShell::m_GreenShellSlotPool.m_FreeList->m_next;
+                }
+
+                if (pGreenShell != NULL)
+                {
+                    new (pGreenShell) PowerupBase(pTarget, POWER_UP_GREEN_SHELL, fGreenShellRadius, eSize, bExplode, j);
+                    *(void**)pGreenShell = __vt__10GreenShell;
+                }
+
+                pPowerup = pGreenShell;
+                break;
+            }
+            case POWER_UP_FREEZE_SHELL:
+            {
+                float fFreezeShellRadius;
+                switch (eSize)
+                {
+                case POWERUPSIZE_MEDIUM:
+                    fFreezeShellRadius = g_pGame->m_pGameTweaks->fShellMediumRadius;
+                    break;
+                case POWERUPSIZE_LARGE:
+                    fFreezeShellRadius = g_pGame->m_pGameTweaks->fShellBigRadius;
+                    break;
+                default:
+                    fFreezeShellRadius = g_pGame->m_pGameTweaks->fShellSmallRadius;
+                    break;
+                }
+
+                FreezeShell* pFreezeShell = NULL;
+                if (FreezeShell::m_FreezeShellSlotPool.m_FreeList == NULL)
+                {
+                    SlotPoolBase::BaseAddNewBlock(&FreezeShell::m_FreezeShellSlotPool, sizeof(FreezeShell));
+                }
+
+                if (FreezeShell::m_FreezeShellSlotPool.m_FreeList != NULL)
+                {
+                    pFreezeShell = (FreezeShell*)FreezeShell::m_FreezeShellSlotPool.m_FreeList;
+                    FreezeShell::m_FreezeShellSlotPool.m_FreeList = FreezeShell::m_FreezeShellSlotPool.m_FreeList->m_next;
+                }
+
+                if (pFreezeShell != NULL)
+                {
+                    new (pFreezeShell) PowerupBase(pTarget, POWER_UP_FREEZE_SHELL, fFreezeShellRadius, eSize, bExplode, j);
+                    *(void**)pFreezeShell = __vt__11FreezeShell;
+                }
+
+                pPowerup = pFreezeShell;
+                break;
+            }
+            case POWER_UP_RED_SHELL:
+            {
+                float fRedShellRadius;
+                switch (eSize)
+                {
+                case POWERUPSIZE_MEDIUM:
+                    fRedShellRadius = g_pGame->m_pGameTweaks->fShellMediumRadius;
+                    break;
+                case POWERUPSIZE_LARGE:
+                    fRedShellRadius = g_pGame->m_pGameTweaks->fShellBigRadius;
+                    break;
+                default:
+                    fRedShellRadius = g_pGame->m_pGameTweaks->fShellSmallRadius;
+                    break;
+                }
+
+                RedShell* pRedShell = NULL;
+                if (RedShell::m_RedShellSlotPool.m_FreeList == NULL)
+                {
+                    SlotPoolBase::BaseAddNewBlock(&RedShell::m_RedShellSlotPool, sizeof(RedShell));
+                }
+
+                if (RedShell::m_RedShellSlotPool.m_FreeList != NULL)
+                {
+                    pRedShell = (RedShell*)RedShell::m_RedShellSlotPool.m_FreeList;
+                    RedShell::m_RedShellSlotPool.m_FreeList = RedShell::m_RedShellSlotPool.m_FreeList->m_next;
+                }
+
+                if (pRedShell != NULL)
+                {
+                    new (pRedShell) PowerupBase(pTarget, POWER_UP_RED_SHELL, fRedShellRadius, eSize, bExplode, j);
+                    *(void**)pRedShell = __vt__8RedShell;
+                }
+
+                pPowerup = pRedShell;
+                break;
+            }
+            case POWER_UP_SPINY_SHELL:
+            {
+                float fSpinyShellRadius;
+                switch (eSize)
+                {
+                case POWERUPSIZE_MEDIUM:
+                    fSpinyShellRadius = g_pGame->m_pGameTweaks->fShellMediumRadius;
+                    break;
+                case POWERUPSIZE_LARGE:
+                    fSpinyShellRadius = g_pGame->m_pGameTweaks->fShellBigRadius;
+                    break;
+                default:
+                    fSpinyShellRadius = g_pGame->m_pGameTweaks->fShellSmallRadius;
+                    break;
+                }
+
+                SpinyShell* pSpinyShell = NULL;
+                if (SpinyShell::m_SpinyShellSlotPool.m_FreeList == NULL)
+                {
+                    SlotPoolBase::BaseAddNewBlock(&SpinyShell::m_SpinyShellSlotPool, sizeof(SpinyShell));
+                }
+
+                if (SpinyShell::m_SpinyShellSlotPool.m_FreeList != NULL)
+                {
+                    pSpinyShell = (SpinyShell*)SpinyShell::m_SpinyShellSlotPool.m_FreeList;
+                    SpinyShell::m_SpinyShellSlotPool.m_FreeList = SpinyShell::m_SpinyShellSlotPool.m_FreeList->m_next;
+                }
+
+                if (pSpinyShell != NULL)
+                {
+                    new (pSpinyShell) PowerupBase(pTarget, POWER_UP_SPINY_SHELL, fSpinyShellRadius, eSize, bExplode, j);
+                    *(void**)pSpinyShell = __vt__10SpinyShell;
+                }
+
+                pPowerup = pSpinyShell;
+                break;
+            }
+            default:
+                break;
+            }
+
+            pPowerup->ThrowAt(pThrower, pBowser);
+
+            if (pFirstPowerup == NULL)
+            {
+                pPowerup->Init(pThrower, pBowser);
+                pFirstPowerup = pPowerup;
+            }
+            else
+            {
+                PowerupThrowPosition(a, eStyle, pPowerup, pFirstPowerup);
+
+                if (pPowerup->m_eType == POWER_UP_RED_SHELL)
+                {
+                    int i;
+                    for (i = 0; i < 4; i++)
+                    {
+                        if (pFirstPowerup->m_pTarget == pTargetFielders[i])
+                        {
+                            pTargetFielders[i] = NULL;
+                        }
+
+                        if (pTargetFielders[i] != NULL)
+                        {
+                            pPowerup->m_pTarget = pTargetFielders[i];
+                            pTargetFielders[i] = NULL;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            *pRegistry = pPowerup;
+            bFoundLocation = true;
+        }
+    }
+
+    if (pThrower != NULL)
+    {
+        Event* pEvent = g_pEventManager->CreateValidEvent(0x1D, 0x24);
+        PowerupUsedEventData* pData = (PowerupUsedEventData*)((u8*)pEvent + 0x10);
+
+        if (pData != NULL)
+        {
+            *(void**)pData = __vt__9EventData;
+            *(void**)pData = __vt__20PowerupUsedEventData;
+        }
+
+        pData->Type = eType;
+        pData->Thrower = pThrower;
+        pData->Target = pTarget;
+    }
 }
 
 /**
@@ -1313,9 +1817,380 @@ void PowerupBase::ThrowAt(cFielder* pThrower, Bowser*)
 /**
  * Offset/Address/Size: 0x28DC | 0x8005D1C8 | size: 0xA98
  */
-void PowerupBase::Destroy(bool)
+void PowerupBase::Destroy(bool bSilent)
 {
-    FORCE_DONT_INLINE;
+    void FireCameraRumbleFilter(float, float);
+    struct CollisionBobombDataLayout
+    {
+        void* vtable;
+        nlVector3 v3ExplosionLocation;
+        float fExplosionRadius;
+        cFielder* pThrower;
+        int nThrowerPadID;
+        bool bIsFreezeBomb;
+    };
+
+    EffectsGroup* pExplosionGroup;
+    EffectsGroup* pGroundGroup;
+    PowerupSound bobombExplosions[2] = { PWRUP_SOUND_HIT, PWRUP_SOUND_EXPLODE };
+
+    if (!bSilent)
+    {
+        if (m_eType == POWER_UP_BOBOMB || mbExploder)
+        {
+            if (!g_pGame->mbCaptainShotToScoreOn)
+            {
+                switch (meSize)
+                {
+                case POWERUPSIZE_LARGE:
+                {
+                    pExplosionGroup = fxGetGroup("bobomb_explode_big");
+                    pGroundGroup = fxGetGroup("bobomb_explode_ground_big");
+
+                    PhysicsObject* pPhysObj = m_pPhysicsObject;
+                    float fVol = g_pGame->m_pGameTweaks->unk238;
+                    PowerupSound pwrSnd = bobombExplosions[nlRandom(2, &nlDefaultSeed)];
+
+                    if (!Audio::IsInited())
+                    {
+                        Audio::GetSndIDError();
+                    }
+                    else
+                    {
+                        Audio::SoundAttributes attrs;
+                        attrs.Init();
+
+                        unsigned long sndType = 0xFFFFFFFF;
+                        switch (pwrSnd)
+                        {
+                        case PWRUP_SOUND_ACQUIRE:
+                            sndType = powerupSounds[m_eType].sndAcquire;
+                            break;
+                        case PWRUP_SOUND_ACTIVATE:
+                            sndType = powerupSounds[m_eType].sndActivate;
+                            break;
+                        case PWRUP_SOUND_IN_EFFECT:
+                            sndType = powerupSounds[m_eType].sndInEffect;
+                            break;
+                        case PWRUP_SOUND_HIT:
+                            sndType = powerupSounds[m_eType].sndHit;
+                            break;
+                        case PWRUP_SOUND_BOUNCE_WALL:
+                            sndType = powerupSounds[m_eType].sndBounceWall;
+                            break;
+                        case PWRUP_SOUND_BOUNCE_GROUND:
+                            sndType = powerupSounds[m_eType].sndBounceGround;
+                            break;
+                        case PWRUP_SOUND_EXPLODE:
+                            sndType = powerupSounds[m_eType].sndExplode;
+                            break;
+                        case PWRUP_SOUND_END:
+                            sndType = powerupSounds[m_eType].sndEnd;
+                            break;
+                        }
+
+                        if (sndType != 0xFFFFFFFF)
+                        {
+                            if (pwrSnd == PWRUP_SOUND_ACQUIRE)
+                            {
+                                attrs.SetSoundType(sndType, false);
+                            }
+                            else
+                            {
+                                attrs.SetSoundType(sndType, true);
+                                if ((pwrSnd == PWRUP_SOUND_IN_EFFECT) || (pwrSnd == PWRUP_SOUND_ACTIVATE))
+                                {
+                                    attrs.UsePhysObj(pPhysObj);
+                                    attrs.mf_ReturnEmitterOnPlay = true;
+                                }
+                                else
+                                {
+                                    attrs.UseStationaryPosVector(pPhysObj->GetPosition());
+                                }
+                            }
+
+                            float fDefaultVol = Audio::gPowerupSFX.GetSFXVol(sndType);
+                            if (fVol != 100.0f)
+                            {
+                                attrs.mf_Volume = fVol * fDefaultVol;
+                            }
+                            Audio::gPowerupSFX.Play(attrs);
+                        }
+                    }
+                    break;
+                }
+                case POWERUPSIZE_MEDIUM:
+                {
+                    pExplosionGroup = fxGetGroup("bobomb_explode_med");
+                    pGroundGroup = fxGetGroup("bobomb_explode_ground_med");
+
+                    PhysicsObject* pPhysObj = m_pPhysicsObject;
+                    float fVol = g_pGame->m_pGameTweaks->unk234;
+                    PowerupSound pwrSnd = bobombExplosions[nlRandom(2, &nlDefaultSeed)];
+
+                    if (!Audio::IsInited())
+                    {
+                        Audio::GetSndIDError();
+                    }
+                    else
+                    {
+                        Audio::SoundAttributes attrs;
+                        attrs.Init();
+
+                        unsigned long sndType = 0xFFFFFFFF;
+                        switch (pwrSnd)
+                        {
+                        case PWRUP_SOUND_ACQUIRE:
+                            sndType = powerupSounds[m_eType].sndAcquire;
+                            break;
+                        case PWRUP_SOUND_ACTIVATE:
+                            sndType = powerupSounds[m_eType].sndActivate;
+                            break;
+                        case PWRUP_SOUND_IN_EFFECT:
+                            sndType = powerupSounds[m_eType].sndInEffect;
+                            break;
+                        case PWRUP_SOUND_HIT:
+                            sndType = powerupSounds[m_eType].sndHit;
+                            break;
+                        case PWRUP_SOUND_BOUNCE_WALL:
+                            sndType = powerupSounds[m_eType].sndBounceWall;
+                            break;
+                        case PWRUP_SOUND_BOUNCE_GROUND:
+                            sndType = powerupSounds[m_eType].sndBounceGround;
+                            break;
+                        case PWRUP_SOUND_EXPLODE:
+                            sndType = powerupSounds[m_eType].sndExplode;
+                            break;
+                        case PWRUP_SOUND_END:
+                            sndType = powerupSounds[m_eType].sndEnd;
+                            break;
+                        }
+
+                        if (sndType != 0xFFFFFFFF)
+                        {
+                            if (pwrSnd == PWRUP_SOUND_ACQUIRE)
+                            {
+                                attrs.SetSoundType(sndType, false);
+                            }
+                            else
+                            {
+                                attrs.SetSoundType(sndType, true);
+                                if ((pwrSnd == PWRUP_SOUND_IN_EFFECT) || (pwrSnd == PWRUP_SOUND_ACTIVATE))
+                                {
+                                    attrs.UsePhysObj(pPhysObj);
+                                    attrs.mf_ReturnEmitterOnPlay = true;
+                                }
+                                else
+                                {
+                                    attrs.UseStationaryPosVector(pPhysObj->GetPosition());
+                                }
+                            }
+
+                            float fDefaultVol = Audio::gPowerupSFX.GetSFXVol(sndType);
+                            if (fVol != 100.0f)
+                            {
+                                attrs.mf_Volume = fVol * fDefaultVol;
+                            }
+                            Audio::gPowerupSFX.Play(attrs);
+                        }
+                    }
+                    break;
+                }
+                case POWERUPSIZE_SMALL:
+                {
+                    pExplosionGroup = fxGetGroup("bobomb_explode_small");
+                    pGroundGroup = fxGetGroup("bobomb_explode_ground_small");
+
+                    PhysicsObject* pPhysObj = m_pPhysicsObject;
+                    float fVol = g_pGame->m_pGameTweaks->unk230;
+                    PowerupSound pwrSnd = bobombExplosions[nlRandom(2, &nlDefaultSeed)];
+
+                    if (!Audio::IsInited())
+                    {
+                        Audio::GetSndIDError();
+                    }
+                    else
+                    {
+                        Audio::SoundAttributes attrs;
+                        attrs.Init();
+
+                        unsigned long sndType = 0xFFFFFFFF;
+                        switch (pwrSnd)
+                        {
+                        case PWRUP_SOUND_ACQUIRE:
+                            sndType = powerupSounds[m_eType].sndAcquire;
+                            break;
+                        case PWRUP_SOUND_ACTIVATE:
+                            sndType = powerupSounds[m_eType].sndActivate;
+                            break;
+                        case PWRUP_SOUND_IN_EFFECT:
+                            sndType = powerupSounds[m_eType].sndInEffect;
+                            break;
+                        case PWRUP_SOUND_HIT:
+                            sndType = powerupSounds[m_eType].sndHit;
+                            break;
+                        case PWRUP_SOUND_BOUNCE_WALL:
+                            sndType = powerupSounds[m_eType].sndBounceWall;
+                            break;
+                        case PWRUP_SOUND_BOUNCE_GROUND:
+                            sndType = powerupSounds[m_eType].sndBounceGround;
+                            break;
+                        case PWRUP_SOUND_EXPLODE:
+                            sndType = powerupSounds[m_eType].sndExplode;
+                            break;
+                        case PWRUP_SOUND_END:
+                            sndType = powerupSounds[m_eType].sndEnd;
+                            break;
+                        }
+
+                        if (sndType != 0xFFFFFFFF)
+                        {
+                            if (pwrSnd == PWRUP_SOUND_ACQUIRE)
+                            {
+                                attrs.SetSoundType(sndType, false);
+                            }
+                            else
+                            {
+                                attrs.SetSoundType(sndType, true);
+                                if ((pwrSnd == PWRUP_SOUND_IN_EFFECT) || (pwrSnd == PWRUP_SOUND_ACTIVATE))
+                                {
+                                    attrs.UsePhysObj(pPhysObj);
+                                    attrs.mf_ReturnEmitterOnPlay = true;
+                                }
+                                else
+                                {
+                                    attrs.UseStationaryPosVector(pPhysObj->GetPosition());
+                                }
+                            }
+
+                            float fDefaultVol = Audio::gPowerupSFX.GetSFXVol(sndType);
+                            if (fVol != 100.0f)
+                            {
+                                attrs.mf_Volume = fVol * fDefaultVol;
+                            }
+                            Audio::gPowerupSFX.Play(attrs);
+                        }
+                    }
+                    break;
+                }
+                }
+            }
+
+            Audio::gStadGenSFX.Play((Audio::eWorldSFX)0xCE, 100.0f, -1.0f, true, 100.0f);
+            EmissionController* pControl = EmissionManager::Create(pExplosionGroup, 0);
+            pControl->SetPosition(m_pPhysicsObject->GetPosition());
+            if ((m_v3Position.f.z - ((PhysicsSphere*)m_pPhysicsObject)->GetRadius()) < 1.0f)
+            {
+                pControl = EmissionManager::Create(pGroundGroup, 0);
+                pControl->SetPosition(m_pPhysicsObject->GetPosition());
+            }
+            FireCameraRumbleFilter(0.0f, 0.2f);
+
+            Event* pEvent = g_pEventManager->CreateValidEvent(0x2C, 0x34);
+            CollisionBobombDataLayout* pEventData = NULL;
+            if (pEvent != NULL)
+            {
+                CollisionBobombData* pData = new ((u8*)pEvent + 0x10) CollisionBobombData();
+                pEventData = (CollisionBobombDataLayout*)pData;
+            }
+
+            if (pEventData != NULL)
+            {
+                pEventData->v3ExplosionLocation = m_v3Position;
+                pEventData->fExplosionRadius = ((float)meSize * g_pGame->m_pGameTweaks->fPowerupExplosionRadius)
+                                             + g_pGame->m_pGameTweaks->fPowerupExplosionRadius;
+                pEventData->pThrower = m_pThrower;
+                pEventData->nThrowerPadID = m_nThrowerPadID;
+                pEventData->bIsFreezeBomb = (m_eType == POWER_UP_FREEZE_SHELL);
+            }
+        }
+    }
+
+    if (!bSilent)
+    {
+        float fVol;
+        switch (meSize)
+        {
+        case POWERUPSIZE_LARGE:
+            fVol = g_pGame->m_pGameTweaks->unk238;
+            break;
+        case POWERUPSIZE_MEDIUM:
+            fVol = g_pGame->m_pGameTweaks->unk234;
+            break;
+        case POWERUPSIZE_SMALL:
+            fVol = g_pGame->m_pGameTweaks->unk230;
+            break;
+        default:
+            goto cleanup;
+        }
+
+        ePowerUpType type = m_eType;
+        PhysicsObject* pPhysObj = m_pPhysicsObject;
+
+        if (type >= NUM_POWER_UPS)
+        {
+            Audio::GetSndIDError();
+        }
+        else if (!Audio::IsInited())
+        {
+            Audio::GetSndIDError();
+        }
+        else
+        {
+            Audio::SoundAttributes attrs;
+            attrs.Init();
+
+            unsigned long sndType = powerupSounds[type].sndEnd;
+            if (sndType != 0xFFFFFFFF)
+            {
+                attrs.SetSoundType(sndType, true);
+                attrs.UseStationaryPosVector(pPhysObj->GetPosition());
+
+                float fDefaultVol = Audio::gPowerupSFX.GetSFXVol(sndType);
+                if (fVol != 100.0f)
+                {
+                    attrs.mf_Volume = fVol * fDefaultVol;
+                }
+
+                Audio::gPowerupSFX.Play(attrs);
+            }
+        }
+    }
+
+cleanup:
+    if (m_uVoiceID != 0)
+    {
+        if (m_uVoiceID != (u32)Audio::GetSndIDError())
+        {
+            Audio::gPowerupSFX.StopEmitter((SFXEmitter*)m_uVoiceID, 0);
+            m_uVoiceID = 0;
+        }
+    }
+
+    g_pPowerups[m_nIndex] = NULL;
+    m_pTarget = NULL;
+
+    if (m_pBlurHandler != NULL)
+    {
+        m_pBlurHandler->Die(0.5f);
+        m_pBlurHandler = NULL;
+    }
+
+    unsigned long hashID = m_pDrawableObj->m_uHashID;
+    int i;
+    for (i = 0; i < 25; i++)
+    {
+        if (powerupRegistry.registry[i].hashId == hashID)
+        {
+            powerupRegistry.registry[i].hashId = 0;
+            goto found;
+        }
+    }
+
+    nlBreak();
+
+found:
+    delete this;
 }
 
 /**
