@@ -13,6 +13,7 @@
 #include "Game/CharacterTemplate.h"
 #include "Game/SAnim/pnFeather.h"
 #include "Game/SAnim/pnSingleAxisBlender.h"
+#include "NL/nlMath.h"
 #include "NL/nlString.h"
 
 #include "Game/DB/StatsTracker.h"
@@ -416,8 +417,54 @@ void cPlayer::ClearPowerupAnimState(bool bIsEndGame)
 /**
  * Offset/Address/Size: 0xA10 | 0x80057F60 | size: 0xBCC
  */
-void cPlayer::DoRegularPassing(cPlayer*, bool, bool, bool, bool)
+void cPlayer::DoRegularPassing(cPlayer* pTeammate, bool bVolleyPass, bool bAllowLeadPass, bool unk1, bool unk2)
 {
+    class cFielder * pPassTarget; // r30
+    unsigned char bLeadPass; // r29
+    class nlVector3 teammateLeadPassVelocity; // r1+0x50
+    class nlVector3 v3PassIntercept; // r1+0x44
+    float fPassGroundSpeed; // f30
+    class nlVector3 suggestedPassDirection; // r1+0x38
+    class nlVector3 suggestedPassTarget; // r1+0x2C
+    float fLeadPassSpeed; // f28
+    unsigned char calcPassIntercept; // r28
+    float speedToSuggestedPassTarget; // f28
+    float fNewPassGroundSpeed; // f1
+    int nNumSolutions; // r1+0x8
+    float pSolutions[2]; // r1+0xC
+    float t; // f3
+    class nlVector3 v3PassVelocity; // r1+0x20
+    float fPassTime; // f30
+    unsigned short aContactFacingDirection; // r28
+    const struct LooseBallContactAnimInfo * pBestContactAnimInfo; // r27
+    class nlVector3 v3ContactOffset; // r1+0x14
+    enum eSpinType Spin; // r25
+    unsigned char bBadVolleyPass; // r24
+    struct PassBallData * pEventData; // r0
+    class cFielder * pPasser; // r0
+
+    g_pBall->m_tNoPickupTimer.SetSeconds(0.1f); // g_pBall + 0x0c
+                                                //
+    if (bAllowLeadPass && ((cFielder*)pTeammate)->ShouldILeadPass()) {
+        Fuzzy::GetPassDirection(this, pTeammate);
+        // r3 = 0x78
+        // r4 = 0x08
+        // r5 = 0x00
+
+        SSearchBestPass* bestPass = (SSearchBestPass*) nlMalloc(0x78, 0x8, 0);
+        // r24 = r3 = return di nlMalloc
+        // r4 = r30 = this
+        // r5 = r29 = pTeammate
+        // r6 = 
+        if (bestPass != nullptr) {
+            bestPass = new (bestPass) SSearchBestPass(this, pTeammate, bVolleyPass, unk1);
+        }
+
+        eFieldDirection temp_r25;
+        float temp_r8 = 6.0f;
+        unsigned short temp_r9 = 0xAAAA;
+        auto ciao = pTeammate->m_pSpaceSearch->FindBestPosition(suggestedPassTarget, pTeammate->m_v3Position, temp_r25, &(this->m_v3Position), temp_r8, temp_r9);
+    }
 }
 
 /**
@@ -1227,8 +1274,100 @@ cPlayer::~cPlayer()
 
 /**
  * Offset/Address/Size: 0x2FAC | 0x8005A4FC | size: 0x380
+ * Logic is mostly matching, I'm unsure about the first SetNodeWeight call.
+ * Overall, only a cleanup should be necessary.
  */
-cPlayer::cPlayer(int arg0, eCharacterClass characterClass, const int* arg2, cSHierarchy* hierarchy, cAnimInventory* animInventory, const CharacterPhysicsData* physData, PlayerTweaks* playerTweaks, AnimRetargetList* animRetargetList, eClassTypes classType)
-    : cCharacter(characterClass, arg2, hierarchy, animInventory, physData, playerTweaks->fPhysCapsuleHeight, playerTweaks->fPhysCapsuleRadius, animRetargetList, classType)
+cPlayer::cPlayer(int nPlayerID, eCharacterClass characterClass, const int* nModelID, cSHierarchy* pHierarchy, cAnimInventory* pAnimInventory, const CharacterPhysicsData* pPhysicsData, PlayerTweaks* pPlayerTweaks, AnimRetargetList* pAnimRetargetList, eClassTypes eNewClassType)
+    : cCharacter(characterClass, nModelID, pHierarchy, pAnimInventory, pPhysicsData, pPlayerTweaks->fPhysCapsuleHeight, pPlayerTweaks->fPhysCapsuleRadius, pAnimRetargetList, eNewClassType)
 {
+    u32 uVar2;
+    s32 uVar3;
+    s32 uVar4;
+    float fVar1 = 0.0f;
+    cSHierarchy *pcVar6;
+    this->m_ID = nPlayerID;
+    this->m_bIsContactingWall = false;
+    this->m_ePositionSeekState = (ePositionSeekState)0;
+    this->m_eBallRotationMode = (eBallRotationMode)1;
+    this->m_tBallPossessionTimer.SetSeconds(fVar1);
+    this->m_tBallUnPossessionTimer.SetSeconds(0.0);
+    this->m_tNoPickupTimer.SetSeconds(0.0);
+    this->m_tNoPickupPassInterceptTimer.SetSeconds(0.0);
+    fVar1 = 0.0f;
+    this->m_fShotStrengthTime = 0.0f;
+    this->m_tSlideAttackTimer.SetSeconds(fVar1);
+    this->m_tLooseBallPassTimer.SetSeconds(0.0f);
+    this->m_tInactivityTimer.SetSeconds(0.0f);
+    // there should be an initialization of 
+    // Timer m_tSwapControllerTimer[4]; // offset 0x17C, size 0x10
+    this->m_bCanTestController = true;
+    fVar1 = 0.0f;
+    this->m_eLastPadAction = (ePadActions)0x25;
+    this->m_aSwapFacingDirection = 0;
+    this->m_tSwapFacingTimer.SetSeconds(fVar1);
+    this->m_UserControlledTime = 0.0f;
+    this->m_pController = nullptr;
+    this->m_pTweaks = pPlayerTweaks;
+    this->m_pBall = nullptr;
+    this->m_pTeam = nullptr;
+
+    pcVar6 = this->m_pPoseAccumulator->m_BaseSHierarchy;
+    uVar2 = nlStringLowerHash("ball");
+    uVar3 = pcVar6->GetNodeIndexByID(uVar2);
+    this->m_nBallJointIndex = uVar3;
+
+    pcVar6 = this->m_pPoseAccumulator->m_BaseSHierarchy;
+    uVar2 = nlStringLowerHash("bip01 r foot");
+    uVar3 = pcVar6->GetNodeIndexByID(uVar2);
+    this->m_nRightFootJointIndex = uVar3;
+
+    pcVar6 = this->m_pPoseAccumulator->m_BaseSHierarchy;
+    uVar2 = nlStringLowerHash("bip01 l foot");
+    uVar3 = pcVar6->GetNodeIndexByID(uVar2);
+    this->m_nLeftFootJointIndex = uVar3;
+
+    pcVar6 = this->m_pPoseAccumulator->m_BaseSHierarchy;
+    uVar2 = nlStringLowerHash("bip01 l hand");
+    uVar3 = pcVar6->GetNodeIndexByID(uVar2);
+    this->m_nLeftHandJointIndex = uVar3;
+
+    pcVar6 = this->m_pPoseAccumulator->m_BaseSHierarchy;
+    uVar2 = nlStringLowerHash("bip01 r hand");
+    uVar3 = pcVar6->GetNodeIndexByID(uVar2);
+    this->m_nRightHandJointIndex = uVar3;
+
+    cPN_Feather* pcVar7 = AllocateFeather();
+
+    cPN_Feather* temp_uVar3 = nullptr;
+    if (pcVar7 != nullptr) {
+        temp_uVar3 = new (pcVar7) cPN_Feather((cSHierarchy *)this->m_pPoseAccumulator->m_BaseSHierarchy, nullptr, 0);
+    }
+    this->m_pReceivePassLayer = temp_uVar3;
+
+    pcVar6 = this->m_pPoseAccumulator->m_BaseSHierarchy;
+    uVar2 = nlStringLowerHash("bip01 spine1");
+    uVar4 = pcVar6->GetNodeIndexByID(uVar2);
+    this->m_pReceivePassLayer->SetNodeWeight((int)this->m_pPoseAccumulator->m_BaseSHierarchy, 1.0f, 0.2f); // pretty unsecure about the first parameter
+    this->m_pReceivePassLayer->SetNodeWeight(this->m_nBallJointIndex, 1.0f);
+    cPoseNode **temp_uVar3_2 = this->m_pReceivePassLayer->GetChildPtr(0);
+    this->m_pAILayer = temp_uVar3_2;
+
+    pcVar7 = AllocateFeather();
+    temp_uVar3 = nullptr;
+    if (pcVar7 != nullptr) {
+        temp_uVar3 = new (pcVar7) cPN_Feather((cSHierarchy *)this->m_pPoseAccumulator->m_BaseSHierarchy, nullptr, 0);
+    }
+    this->m_pPowerupLayer = temp_uVar3;
+    this->m_pPowerupLayer->SetChild(0, this->m_pReceivePassLayer);
+    fVar1 = 0.2;
+    this->m_pPoseTree = this->m_pPowerupLayer;
+    this->m_pSpaceSearch = nullptr;
+    this->SetAnimState(0, true, fVar1, false, false);
+    this->PoseLocalSpace();
+    this->AdjustPoseMatrices();
+    this->m_tSwapFacingTimer.SetSeconds(0.0f);
+    fVar1 = 0.0f;
+    this->m_v3AIPosition.f.x = 0.0f;
+    this->m_v3AIPosition.f.y = fVar1;
+    this->m_v3AIPosition.f.z = fVar1;
 }
