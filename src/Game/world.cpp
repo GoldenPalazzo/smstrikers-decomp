@@ -1,3 +1,6 @@
+#include "Game/Drawable/DrawableCharacter.h"
+#include "Game/Game.h"
+#include "NL/nlMemory.h"
 #define NL_AVLTREE_DECLARE_ONLY
 #define NL_AVLTREEBASE_DECLARE_ONLY
 #include "Game/World.h"
@@ -273,11 +276,44 @@ DrawableObject* World::FindDrawableObject(unsigned long uHashID)
     return nullptr;
 }
 
+static bool g_bFreezeSideCam;
+static bool g_bFreezeEndCam;
+static bool g_bDebugEqualsSide;
+static bool g_bDebugEqualsEnd;
+static bool g_bFreezeFrustum;
 /**
  * Offset/Address/Size: 0x434 | 0x801950F8 | size: 0xB20
+ * 4.56%: without proper offsets in the class, I can't understand which
+ * members are being referenced.
+ * For example: this + 0x54, this + 0x4c
  */
 void World::Render()
 {
+    bool cVar7;
+
+
+    if (g_bFreezeSideCam && g_bFreezeEndCam) {
+        g_bFreezeSideCam = false;
+    }
+    g_bDebugEqualsSide= g_bFreezeSideCam;
+    g_bDebugEqualsEnd = g_bFreezeEndCam;
+    if (!g_bFreezeFrustum && !g_bFreezeSideCam)
+        this->ExtractFrustumPlanes();
+    if (g_pGame == nullptr)
+        cVar7 = false;
+    else
+        cVar7 = g_pGame->mbCaptainShotToScoreOn;
+    if (!cVar7)
+        ;
+        // TODO: should be DrawableCharacter::sSTSLightning = 0;
+    this->CreateLightUserData();
+    if (!sbIsHyperShootToScoreRenderingEnabled) {
+        void *piVar2 = nlMalloc(8, 8, 0);
+        if (piVar2 != nullptr) {
+            // nlAVLTree<unsigned long, DrawableObject *, DefaultKeyCompare<unsigned long> > piVar14 = this->m_drawableMap;
+        }
+    }
+
 }
 
 /**
@@ -362,23 +398,23 @@ void World::HandleCameraSwitch()
  */
 class cRumbleFilter;
 
-class cBaseCamera
-{
-public:
-    virtual ~cBaseCamera() { }
-    virtual int GetType() = 0;
-    virtual void Update(float) = 0;
-    virtual const nlMatrix4& GetViewMatrix() const = 0;
-    virtual float GetFOV() const;
-    virtual void Reactivate() { }
-    virtual const nlVector3& GetTargetPosition() const = 0;
-    virtual const nlVector3& GetCameraPosition() const = 0;
-
-    cBaseCamera* m_next;
-    cBaseCamera* m_prev;
-    cRumbleFilter* m_pFilter;
-    nlVector3 mUpVector;
-};
+// class cBaseCamera
+// {
+// public:
+//     virtual ~cBaseCamera() { }
+//     virtual int GetType() = 0;
+//     virtual void Update(float) = 0;
+//     virtual const nlMatrix4& GetViewMatrix() const = 0;
+//     virtual float GetFOV() const;
+//     virtual void Reactivate() { }
+//     virtual const nlVector3& GetTargetPosition() const = 0;
+//     virtual const nlVector3& GetCameraPosition() const = 0;
+//
+//     cBaseCamera* m_next;
+//     cBaseCamera* m_prev;
+//     cRumbleFilter* m_pFilter;
+//     nlVector3 mUpVector;
+// };
 
 class cCameraManager
 {
@@ -1163,7 +1199,9 @@ World::World(const char* szWorldName)
     , m_Locked(false)
     , m_pModels(NULL)
     , m_uNumModels(0)
+    // , m_pPlayerNISLightData(NULL)
 {
+    // typedef char DLListSize_check[sizeof(DLListContainerBase<WorldAnimController*, NewAdapter<DLListEntry<WorldAnimController*> > >) == 4 ? 1 : -1];
     m_WorldNameLength = nlStrLen<char>(szWorldName);
     nlStrNCpy<char>(m_WorldNamePrefix, szWorldName, 0x40);
 
