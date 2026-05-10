@@ -2,6 +2,7 @@
 #include "Game/Character.h"
 #include "Game/Ball.h"
 #include "Game/AnimInventory.h"
+#include "Game/CharacterAudio.h"
 #include "Game/Net.h"
 
 #include "Game/AI/Fielder.h"
@@ -13,6 +14,7 @@
 #include "Game/CharacterTemplate.h"
 #include "Game/SAnim/pnFeather.h"
 #include "Game/SAnim/pnSingleAxisBlender.h"
+#include "NL/nlMath.h"
 #include "NL/nlString.h"
 
 #include "Game/DB/StatsTracker.h"
@@ -416,8 +418,54 @@ void cPlayer::ClearPowerupAnimState(bool bIsEndGame)
 /**
  * Offset/Address/Size: 0xA10 | 0x80057F60 | size: 0xBCC
  */
-void cPlayer::DoRegularPassing(cPlayer*, bool, bool, bool, bool)
+void cPlayer::DoRegularPassing(cPlayer* pTeammate, bool bVolleyPass, bool bAllowLeadPass, bool unk1, bool unk2)
 {
+    class cFielder * pPassTarget; // r30
+    unsigned char bLeadPass; // r29
+    class nlVector3 teammateLeadPassVelocity; // r1+0x50
+    class nlVector3 v3PassIntercept; // r1+0x44
+    float fPassGroundSpeed; // f30
+    class nlVector3 suggestedPassDirection; // r1+0x38
+    class nlVector3 suggestedPassTarget; // r1+0x2C
+    float fLeadPassSpeed; // f28
+    unsigned char calcPassIntercept; // r28
+    float speedToSuggestedPassTarget; // f28
+    float fNewPassGroundSpeed; // f1
+    int nNumSolutions; // r1+0x8
+    float pSolutions[2]; // r1+0xC
+    float t; // f3
+    class nlVector3 v3PassVelocity; // r1+0x20
+    float fPassTime; // f30
+    unsigned short aContactFacingDirection; // r28
+    const struct LooseBallContactAnimInfo * pBestContactAnimInfo; // r27
+    class nlVector3 v3ContactOffset; // r1+0x14
+    enum eSpinType Spin; // r25
+    unsigned char bBadVolleyPass; // r24
+    struct PassBallData * pEventData; // r0
+    class cFielder * pPasser; // r0
+
+    g_pBall->m_tNoPickupTimer.SetSeconds(0.1f); // g_pBall + 0x0c
+                                                //
+    if (bAllowLeadPass && ((cFielder*)pTeammate)->ShouldILeadPass()) {
+        Fuzzy::GetPassDirection(this, pTeammate);
+        // r3 = 0x78
+        // r4 = 0x08
+        // r5 = 0x00
+
+        SSearchBestPass* bestPass = (SSearchBestPass*) nlMalloc(0x78, 0x8, 0);
+        // r24 = r3 = return di nlMalloc
+        // r4 = r30 = this
+        // r5 = r29 = pTeammate
+        // r6 = 
+        if (bestPass != nullptr) {
+            bestPass = new (bestPass) SSearchBestPass(this, pTeammate, bVolleyPass, unk1);
+        }
+
+        eFieldDirection temp_r25;
+        float temp_r8 = 6.0f;
+        unsigned short temp_r9 = 0xAAAA;
+        auto ciao = pTeammate->m_pSpaceSearch->FindBestPosition(suggestedPassTarget, pTeammate->m_v3Position, temp_r25, &(this->m_v3Position), temp_r8, temp_r9);
+    }
 }
 
 /**
@@ -1220,9 +1268,39 @@ void cPlayer::SetSpaceSearch(SpaceSearch* pSpaceSearch)
 
 /**
  * Offset/Address/Size: 0x2E4C | 0x8005A39C | size: 0x160
+ * Almost identical match, emits redundant beq and a single mr
  */
 cPlayer::~cPlayer()
 {
+    PlayerTweaks *piVar1;
+    EffectsGroup *pEVar2;
+    char cVar3;
+    double dVar4;
+
+    this->EndBlur();
+    piVar1 = this->m_pTweaks;
+    if (piVar1 != nullptr) {
+        delete piVar1;
+    }
+    if (this->m_pBall != nullptr) {
+        this->m_pPhysicsCharacter->ReleaseObject();
+        this->m_pBall->ClearOwner();
+        this->m_pBall = nullptr;
+        dVar4 = this->m_tBallPossessionTimer.GetSeconds();
+        StatsTracker::s_pInstance->TrackStat((ePlayerStats)0xf, m_pTeam->m_nSide,this->m_ID , 100.f*dVar4, 0, 0, 0);
+        pEVar2 = fxGetGroup("ball_sts_windup");
+        cVar3 = this->IsPlayingEffect(pEVar2);
+        if (cVar3 != 0) {
+            this->StopSFX((Audio::eCharSFX)0x14);
+            this->StopSFX((Audio::eCharSFX)0x39);
+        }
+        KillWindups(this);
+        this->StopSFX((Audio::eCharSFX)0x12);
+        this->m_pCharacterSFX->StopMovementLoop();
+    }
+    SpaceSearch *temp_piVar1 = this->m_pSpaceSearch;
+    if (temp_piVar1 != nullptr)
+        delete temp_piVar1;
 }
 
 /**

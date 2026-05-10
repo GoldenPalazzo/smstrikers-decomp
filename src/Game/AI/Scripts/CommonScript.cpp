@@ -1,4 +1,5 @@
 #include "Game/AI/Scripts/CommonScript.h"
+#include "Game/AI/Scripts/ScriptQuestions.h"
 
 #include "Game/Team.h"
 #include "Game/Player.h"
@@ -29,9 +30,12 @@ float ReceivingPass(cFielder*);
 float ReceivingVolleyPass(cPlayer*);
 float NormalizeVal(float fromVal, float fromMin, float fromMax);
 
-extern cBall* g_pScriptBall;
+extern cFielder* g_pScriptCurrentFielder; // size: 0x4, address: 0x803977E0
+extern cFielder* g_pScriptCurrentMark; // size: 0x4, address: 0x803977E4
+extern cFielder* g_pScriptBallOwner;
 extern cTeam* g_pScriptCurrentTeam;
 extern cTeam* g_pScriptOtherTeam;
+extern cBall* g_pScriptBall;
 
 // rotate_left, rotate_right defined in msl_tree.h, instantiated via CommonScript_stub()
 
