@@ -1227,8 +1227,81 @@ cPlayer::~cPlayer()
 
 /**
  * Offset/Address/Size: 0x2FAC | 0x8005A4FC | size: 0x380
+ * TODO: 97.23% match - remaining mismatch in cPN_Feather allocation control flow
+ * for receive-pass and powerup layer construction.
  */
 cPlayer::cPlayer(int arg0, eCharacterClass characterClass, const int* arg2, cSHierarchy* hierarchy, cAnimInventory* animInventory, const CharacterPhysicsData* physData, PlayerTweaks* playerTweaks, AnimRetargetList* animRetargetList, eClassTypes classType)
     : cCharacter(characterClass, arg2, hierarchy, animInventory, physData, playerTweaks->fPhysCapsuleHeight, playerTweaks->fPhysCapsuleRadius, animRetargetList, classType)
+    , m_ID(arg0)
+    , m_bIsContactingWall(false)
+    , m_ePositionSeekState(PSS_ARRIVED)
+    , m_eBallRotationMode(BRM_MATCH_VELOCITY)
+    , m_ResetBaseBallOrientation(false)
+    , m_tBallPossessionTimer(0.0f)
+    , m_tBallUnPossessionTimer(0.0f)
+    , m_tNoPickupTimer(0.0f)
+    , m_tNoPickupPassInterceptTimer(0.0f)
+    , m_fShotStrengthTime(0.0f)
+    , m_tSlideAttackTimer(0.0f)
+    , m_tLooseBallPassTimer(0.0f)
+    , m_tInactivityTimer(0.0f)
+    , m_bCanTestController(true)
+    , m_eLastPadAction(PAD_NONE)
+    , m_aSwapFacingDirection(0)
+    , m_tSwapFacingTimer(0.0f)
+    , m_UserControlledTime(0.0f)
+    , m_pController(NULL)
+    , m_pTweaks(playerTweaks)
+    , m_pBall(NULL)
+    , m_pTeam(NULL)
 {
+    cSHierarchy* baseHierarchy;
+
+    baseHierarchy = m_pPoseAccumulator->m_BaseSHierarchy;
+    m_nBallJointIndex = baseHierarchy->GetNodeIndexByID(nlStringLowerHash("ball"));
+
+    baseHierarchy = m_pPoseAccumulator->m_BaseSHierarchy;
+    m_nRightFootJointIndex = baseHierarchy->GetNodeIndexByID(nlStringLowerHash("bip01 r foot"));
+
+    baseHierarchy = m_pPoseAccumulator->m_BaseSHierarchy;
+    m_nLeftFootJointIndex = baseHierarchy->GetNodeIndexByID(nlStringLowerHash("bip01 l foot"));
+
+    baseHierarchy = m_pPoseAccumulator->m_BaseSHierarchy;
+    m_nLeftHandJointIndex = baseHierarchy->GetNodeIndexByID(nlStringLowerHash("bip01 l hand"));
+
+    baseHierarchy = m_pPoseAccumulator->m_BaseSHierarchy;
+    m_nRightHandJointIndex = baseHierarchy->GetNodeIndexByID(nlStringLowerHash("bip01 r hand"));
+
+    cPN_Feather* receivePassLayer = AllocateFeather();
+    if (receivePassLayer != NULL)
+    {
+        receivePassLayer = new (receivePassLayer) cPN_Feather(m_pPoseAccumulator->m_BaseSHierarchy, NULL, 0);
+    }
+    m_pReceivePassLayer = receivePassLayer;
+
+    baseHierarchy = m_pPoseAccumulator->m_BaseSHierarchy;
+    int nodeIndex = baseHierarchy->GetNodeIndexByID(nlStringLowerHash("bip01 spine1"));
+    m_pReceivePassLayer->SetNodeWeight(nodeIndex, 1.0f, 0.2f);
+    m_pReceivePassLayer->SetNodeWeight(m_nBallJointIndex, 1.0f);
+    m_pAILayer = m_pReceivePassLayer->GetChildPtr(0);
+
+    cPN_Feather* powerupLayer = AllocateFeather();
+    if (powerupLayer != NULL)
+    {
+        powerupLayer = new (powerupLayer) cPN_Feather(m_pPoseAccumulator->m_BaseSHierarchy, NULL, 0);
+    }
+    m_pPowerupLayer = powerupLayer;
+    m_pPowerupLayer->SetChild(0, m_pReceivePassLayer);
+    m_pPoseTree = m_pPowerupLayer;
+    m_pSpaceSearch = NULL;
+
+    SetAnimState(0, true, 0.2f, false, false);
+    PoseLocalSpace();
+    AdjustPoseMatrices();
+
+    m_tSwapFacingTimer.SetSeconds(0.0f);
+
+    m_v3AIPosition.f.x = 0.0f;
+    m_v3AIPosition.f.y = 0.0f;
+    m_v3AIPosition.f.z = 0.0f;
 }

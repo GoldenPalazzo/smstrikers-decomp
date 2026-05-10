@@ -91,6 +91,12 @@ FloatCompressor<0, 1, 15>::FloatCompressor(float& f)
 }
 
 template <>
+FloatCompressor<0, 1, 7>::FloatCompressor(float& f)
+    : mF(f)
+{
+}
+
+template <>
 void ReplayablePolymorphic<1, LoadFrame, cPoseNode>(LoadFrame& frame, cPoseNode*& ptr);
 
 /**
@@ -345,7 +351,8 @@ void DrawableCharacter::Grab(cCharacter& character)
     }
     else
     {
-        *mPoseAccumulator = *character.m_pPoseAccumulator;
+        mPoseAccumulator->~cPoseAccumulator();
+        new (mPoseAccumulator) cPoseAccumulator(*character.m_pPoseAccumulator);
     }
 
     EffectsTexturing* tex = character.m_pEffectsTexturing;

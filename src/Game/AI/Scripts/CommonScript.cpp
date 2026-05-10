@@ -597,19 +597,438 @@ FuzzyVariant Fuzzy::ShouldIStrafeMark(cFielder* TheFielder)
 /**
  * Offset/Address/Size: 0xD188 | 0x80077358 | size: 0x7A4
  */
-FuzzyVariant Fuzzy::ShouldIMarkBallOwner(cFielder*)
+extern cFielder* g_pScriptCurrentFielder;
+extern cFielder* g_pScriptBallOwner;
+
+float Marking(cFielder*, cPlayer*);
+float UpfieldFrom(cPlayer*, cPlayer*);
+float Incapacitated(cPlayer*);
+
+FuzzyVariant Fuzzy::ShouldIMarkBallOwner(cFielder* pFielder)
 {
-    FORCE_DONT_INLINE;
-    return FuzzyVariant();
+    FuzzyVariant bestValue;
+    float confidence = 1.0f;
+    float bestConfidence = 0.0f;
+
+    FuzzyVariant fvFielder((cPlayer*)pFielder);
+    unsigned long hash = (unsigned long)ShouldIMarkBallOwner + ((Variant*)&fvFielder)->GetHash();
+    FuzzyVariant fvFielder2((cPlayer*)pFielder);
+
+    if (ScriptQuestionCache::Instance()->Lookup(hash, bestValue, "ShouldIMarkBallOwner"))
+    {
+        ScriptQuestionCache::Instance()->AddToCache(hash, bestValue, "ShouldIMarkBallOwner");
+        return bestValue;
+    }
+
+    float score = 1.0f - Marking(g_pScriptCurrentFielder, g_pScriptBallOwner);
+    float complement = 1.0f - score;
+    float minVal = (score <= complement) ? score : complement;
+    float maxVal = (score >= complement) ? score : complement;
+    float ratio = minVal / maxVal;
+
+    if (score > 0.0f)
+    {
+        SaveConfidence sc1(&confidence);
+
+        confidence = (confidence <= score) ? confidence : score;
+        if (confidence < score && score < 0.5f)
+        {
+            confidence = (float)confidence * ratio;
+        }
+
+        cFielder* marker = g_pScriptBallOwner != NULL ? g_pScriptBallOwner->m_pMarker : NULL;
+        float upfield = UpfieldFrom((cPlayer*)marker, (cPlayer*)g_pScriptBallOwner);
+
+        marker = g_pScriptBallOwner != NULL ? g_pScriptBallOwner->m_pMarker : NULL;
+        float incap = Incapacitated((cPlayer*)marker);
+
+        float combined = (incap >= upfield) ? incap : upfield;
+        float notCombined = 1.0f - combined;
+
+        float minVal2 = (combined <= notCombined) ? combined : notCombined;
+        float maxVal2 = (combined >= notCombined) ? combined : notCombined;
+        float ratio2 = minVal2 / maxVal2;
+
+        if (combined > 0.0f)
+        {
+            SaveConfidence sc2(&confidence);
+
+            confidence = (confidence <= combined) ? confidence : combined;
+            if (confidence < combined && combined < 0.5f)
+            {
+                confidence = (float)confidence * ratio2;
+            }
+
+            if (confidence > 0.0f)
+            {
+                bestConfidence = confidence;
+                FuzzyVariant returnValue(confidence);
+                bestValue = returnValue;
+            }
+        }
+
+        if (notCombined > 0.0f)
+        {
+            SaveConfidence sc3(&confidence);
+
+            confidence = (confidence <= notCombined) ? confidence : notCombined;
+            if (confidence < notCombined && notCombined < 0.5f)
+            {
+                confidence = (float)confidence * ratio2;
+            }
+
+            if (confidence > bestConfidence)
+            {
+                bestConfidence = confidence;
+                FuzzyVariant returnValue(0.0f);
+                bestValue = returnValue;
+            }
+        }
+    }
+
+    if (complement > 0.0f)
+    {
+        SaveConfidence sc4(&confidence);
+
+        confidence = (confidence <= complement) ? confidence : complement;
+        if (confidence < complement && complement < 0.5f)
+        {
+            confidence = (float)confidence * ratio;
+        }
+
+        if (confidence > bestConfidence)
+        {
+            bestConfidence = confidence;
+            FuzzyVariant returnValue(0.0f);
+            bestValue = returnValue;
+        }
+    }
+
+    bestValue.Confidence = bestConfidence;
+    ScriptQuestionCache::Instance()->AddToCache(hash, bestValue, "ShouldIMarkBallOwner");
+    return bestValue;
 }
 
 /**
  * Offset/Address/Size: 0xC144 | 0x80076314 | size: 0x1044
  */
-FuzzyVariant Fuzzy::ShouldIAttemptOneTimer(cFielder*)
+FuzzyVariant Fuzzy::ShouldIAttemptOneTimer(cFielder* TheFielder)
 {
-    FORCE_DONT_INLINE;
-    return FuzzyVariant();
+    extern cTeam* g_pCurrentlyUpdatingTeam;
+    extern float InFrontOfTheirNet(cFielder*);
+    extern float IsPerfectPassInPlay();
+    extern float ReceivingVolleyPass(cPlayer*);
+    extern float CloseToTheirGoalie(cPlayer*);
+    extern float NearToTheirNet(cPlayer*);
+    extern float Stunned(Goalie*);
+    extern float Shooter(cFielder*);
+    extern float CalcSelectChance(float, float);
+
+    FuzzyVariant bestValue;
+    float fConfidence = 1.0f;
+    float fBestConfidence = 0.0f;
+
+    FuzzyVariant fvFielder((cPlayer*)TheFielder);
+    unsigned long hash = (unsigned long)ShouldIAttemptOneTimer + ((Variant*)&fvFielder)->GetHash();
+    FuzzyVariant fvFielder2((cPlayer*)TheFielder);
+
+    ScriptQuestionCache* cache = ScriptQuestionCache::Instance();
+    cache->mTotalLookups++;
+
+    unsigned char lookupFound = 0;
+    FuzzyVariant* pValue;
+
+    if (g_bScriptQuestionCachingUseSTD)
+    {
+        StdMapNode* stdNode;
+        __find(&stdNode, &cache->mQuestionCacheMapSTD, &hash);
+        StdMapNode* stdFound = stdNode;
+        if ((StdMapNodeBase*)stdFound != &((StdMapTree*)&cache->mQuestionCacheMapSTD)->x4)
+        {
+            cache->mCacheHits++;
+            bestValue = stdFound->value;
+            lookupFound = 1;
+        }
+    }
+    else
+    {
+        AVLTreeEntry<unsigned long, FuzzyVariant>* node = cache->mQuestionCacheMap.m_Root;
+        unsigned long key = hash;
+
+        while (node != NULL)
+        {
+            int cmpResult;
+            if (key == node->key)
+            {
+                cmpResult = 0;
+            }
+            else if (key < node->key)
+            {
+                cmpResult = -1;
+            }
+            else
+            {
+                cmpResult = 1;
+            }
+
+            if (cmpResult == 0)
+            {
+                if (&pValue != NULL)
+                {
+                    pValue = &node->value;
+                }
+                lookupFound = 1;
+                goto found_done;
+            }
+
+            if (cmpResult < 0)
+            {
+                node = (AVLTreeEntry<unsigned long, FuzzyVariant>*)node->node.left;
+            }
+            else
+            {
+                node = (AVLTreeEntry<unsigned long, FuzzyVariant>*)node->node.right;
+            }
+        }
+
+        lookupFound = 0;
+
+    found_done:
+
+        if (lookupFound)
+        {
+            cache->mCacheHits++;
+            bestValue = *pValue;
+        }
+    }
+
+    if (lookupFound)
+    {
+        unsigned long hashCopy1 = hash;
+        if (g_bScriptQuestionCachingOn)
+        {
+            if (g_bScriptQuestionCachingUseSTD)
+            {
+                FuzzyMapPair* pair = __find_or_insert(&cache->mQuestionCacheMapSTD, &hashCopy1);
+                pair->value = bestValue;
+            }
+            else
+            {
+                AVLTreeNode* existingNode1;
+                cache->mQuestionCacheMap.AddAVLNode((AVLTreeNode**)&cache->mQuestionCacheMap.m_Root, (void*)&hashCopy1, (void*)&bestValue, &existingNode1, cache->mQuestionCacheMap.m_NumElements);
+                if (existingNode1 == NULL)
+                    cache->mQuestionCacheMap.m_NumElements++;
+            }
+        }
+        return bestValue;
+    }
+
+    float fTrueConfidence = FarToTheirNet((cPlayer*)TheFielder);
+    float fInFrontOfNet = 1.0f - InFrontOfTheirNet(TheFielder);
+    if (fTrueConfidence < fInFrontOfNet)
+    {
+        fTrueConfidence = fInFrontOfNet;
+    }
+
+    float fFalseConfidence = 1.0f - fTrueConfidence;
+    float fMinVal = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+    float fMaxVal = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+    float fBranchRatio = fMinVal / fMaxVal;
+
+    if (fTrueConfidence > 0.0f)
+    {
+        SaveConfidence PushDOM(&fConfidence);
+
+        fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
+        if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
+        {
+            fConfidence = (float)fConfidence * fBranchRatio;
+        }
+
+        if (fConfidence > 0.0f)
+        {
+            fBestConfidence = fConfidence;
+            FuzzyVariant returnValue(0.0f);
+            bestValue = returnValue;
+        }
+    }
+
+    if (fFalseConfidence > 0.0f)
+    {
+        SaveConfidence PushDOM(&fConfidence);
+
+        fConfidence = (fConfidence <= fFalseConfidence) ? fConfidence : fFalseConfidence;
+        if (fConfidence < fFalseConfidence && fFalseConfidence < 0.5f)
+        {
+            fConfidence = (float)fConfidence * fBranchRatio;
+        }
+
+        fTrueConfidence = IsPerfectPassInPlay();
+        fFalseConfidence = 1.0f - fTrueConfidence;
+        fMinVal = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+        fMaxVal = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+        fBranchRatio = fMinVal / fMaxVal;
+
+        if (fTrueConfidence > 0.0f)
+        {
+            SaveConfidence PushDOM2(&fConfidence);
+
+            fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
+            if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
+            {
+                fConfidence = (float)fConfidence * fBranchRatio;
+            }
+
+            if (fConfidence > fBestConfidence)
+            {
+                fBestConfidence = fConfidence;
+                FuzzyVariant returnValue(1.0f);
+                SkillTweaks* pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide);
+                returnValue.SelectionChance = CalcSelectChance(pSkillTweaks->Off_VolleyOneTimerChance, Shooter(TheFielder));
+                bestValue = returnValue;
+            }
+        }
+
+        fTrueConfidence = 1.0f - FarToTheirNet((cPlayer*)TheFielder);
+        fFalseConfidence = 1.0f - fTrueConfidence;
+        fMinVal = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+        fMaxVal = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+        fBranchRatio = fMinVal / fMaxVal;
+
+        if (fTrueConfidence > 0.0f)
+        {
+            SaveConfidence PushDOM2(&fConfidence);
+
+            fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
+            if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
+            {
+                fConfidence = (float)fConfidence * fBranchRatio;
+            }
+
+            fTrueConfidence = ReceivingVolleyPass((cPlayer*)TheFielder);
+            fFalseConfidence = 1.0f - fTrueConfidence;
+            fMinVal = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+            fMaxVal = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+            fBranchRatio = fMinVal / fMaxVal;
+
+            if (fTrueConfidence > 0.0f)
+            {
+                SaveConfidence PushDOM3(&fConfidence);
+
+                fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
+                if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
+                {
+                    fConfidence = (float)fConfidence * fBranchRatio;
+                }
+
+                Goalie* pGoalie = NULL;
+                if (TheFielder != NULL)
+                {
+                    pGoalie = TheFielder->m_pTeam->GetOtherTeam()->GetGoalie();
+                }
+
+                float fGoalieStunned = Stunned(pGoalie);
+                float fDanger = InDanger(TheFielder).Confidence;
+                if (fDanger < fGoalieStunned)
+                {
+                    fDanger = fGoalieStunned;
+                }
+
+                float fNearToNet = NearToTheirNet((cPlayer*)TheFielder);
+                fDanger = GoodToShoot(TheFielder).Confidence;
+                if (fDanger < fNearToNet)
+                {
+                    fDanger = fNearToNet;
+                }
+                if (fGoalieStunned < fDanger)
+                {
+                    fDanger = fGoalieStunned;
+                }
+
+                if (fConfidence > fBestConfidence)
+                {
+                    fBestConfidence = fConfidence;
+                    FuzzyVariant returnValue(fDanger);
+                    SkillTweaks* pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide);
+                    returnValue.SelectionChance = CalcSelectChance(pSkillTweaks->Off_VolleyOneTimerChance, Shooter(TheFielder));
+                    bestValue = returnValue;
+                }
+            }
+
+            if (fFalseConfidence > 0.0f)
+            {
+                SaveConfidence PushDOM3(&fConfidence);
+
+                fConfidence = (fConfidence <= fFalseConfidence) ? fConfidence : fFalseConfidence;
+                if (fConfidence < fFalseConfidence && fFalseConfidence < 0.5f)
+                {
+                    fConfidence = (float)fConfidence * fBranchRatio;
+                }
+
+                Goalie* pGoalie = NULL;
+                if (TheFielder != NULL)
+                {
+                    pGoalie = TheFielder->m_pTeam->GetOtherTeam()->GetGoalie();
+                }
+
+                float fGoalieStunned = Stunned(pGoalie);
+                float fDanger = InDanger(TheFielder).Confidence;
+                if (fDanger < fGoalieStunned)
+                {
+                    fDanger = fGoalieStunned;
+                }
+                fDanger = GoodToShoot(TheFielder).Confidence * 0.5f + fDanger * 0.5f;
+
+                if (fConfidence > fBestConfidence)
+                {
+                    fBestConfidence = fConfidence;
+                    FuzzyVariant returnValue(fDanger);
+                    SkillTweaks* pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide);
+                    returnValue.SelectionChance = CalcSelectChance(pSkillTweaks->Off_GroundOneTimerChance, Shooter(TheFielder));
+                    bestValue = returnValue;
+                }
+            }
+        }
+    }
+
+    if (fFalseConfidence > 0.0f)
+    {
+        SaveConfidence PushDOM(&fConfidence);
+
+        fConfidence = (fConfidence <= fFalseConfidence) ? fConfidence : fFalseConfidence;
+        if (fConfidence < fFalseConfidence && fFalseConfidence < 0.5f)
+        {
+            fConfidence = (float)fConfidence * fBranchRatio;
+        }
+
+        if (fConfidence > fBestConfidence)
+        {
+            fBestConfidence = fConfidence;
+            FuzzyVariant returnValue(0.0f);
+            bestValue = returnValue;
+        }
+    }
+
+    bestValue.Confidence = fBestConfidence;
+
+    unsigned long hashCopy2 = hash;
+    if (g_bScriptQuestionCachingOn)
+    {
+        if (g_bScriptQuestionCachingUseSTD)
+        {
+            FuzzyMapPair* pair = __find_or_insert(&cache->mQuestionCacheMapSTD, &hashCopy2);
+            pair->value = bestValue;
+        }
+        else
+        {
+            AVLTreeNode* existingNode2;
+            cache->mQuestionCacheMap.AddAVLNode((AVLTreeNode**)&cache->mQuestionCacheMap.m_Root, (void*)&hashCopy2, (void*)&bestValue, &existingNode2, cache->mQuestionCacheMap.m_NumElements);
+            if (existingNode2 == NULL)
+                cache->mQuestionCacheMap.m_NumElements++;
+        }
+    }
+
+    return bestValue;
 }
 
 /**
@@ -1831,10 +2250,311 @@ FuzzyVariant Fuzzy::GoodToShoot(cFielder* TheFielder)
 /**
  * Offset/Address/Size: 0x71F4 | 0x800713C4 | size: 0xE28
  */
-FuzzyVariant Fuzzy::GoodToChipShot(cFielder*)
+FuzzyVariant Fuzzy::GoodToChipShot(cFielder* TheFielder)
 {
-    FORCE_DONT_INLINE;
-    return FuzzyVariant();
+    extern float ReceivingVolleyPass(cPlayer*);
+    extern float InFrontOfTheirNet(cFielder*);
+    extern float OnScreen(cPlayer*);
+    extern float GoalieOutOfPosition(cFielder*);
+    extern float LikelyToScore(cFielder*);
+    extern float OutOfNet(Goalie*);
+    extern float Stunned(Goalie*);
+    extern float OpenToTheirNet(cFielder*);
+    extern float CloseToTheirGoalie(cPlayer*);
+    extern float NearToTheirNet(cPlayer*);
+
+    FuzzyVariant bestValue;
+    float fConfidence = 1.0f;
+    float fBestConfidence = 0.0f;
+
+    FuzzyVariant fvFielder(TheFielder);
+    unsigned long funcAddr = (unsigned long)GoodToChipShot;
+    unsigned long hash = ((Variant*)&fvFielder)->GetHash() + funcAddr;
+    FuzzyVariant fvFielder2(TheFielder);
+
+    ScriptQuestionCache* cache = ScriptQuestionCache::Instance();
+    cache->mTotalLookups++;
+
+    unsigned char lookupFound = 0;
+    FuzzyVariant* pValue;
+
+    if (g_bScriptQuestionCachingUseSTD)
+    {
+        StdMapNode* stdNode;
+        __find(&stdNode, &cache->mQuestionCacheMapSTD, &hash);
+        StdMapNode* stdFound = stdNode;
+        if ((StdMapNodeBase*)stdFound != &((StdMapTree*)&cache->mQuestionCacheMapSTD)->x4)
+        {
+            cache->mCacheHits++;
+            bestValue = stdFound->value;
+            lookupFound = 1;
+        }
+    }
+    else
+    {
+        AVLTreeEntry<unsigned long, FuzzyVariant>* node = cache->mQuestionCacheMap.m_Root;
+        unsigned long key = hash;
+
+        while (node != NULL)
+        {
+            int cmpResult;
+            if (key == node->key)
+            {
+                cmpResult = 0;
+            }
+            else if (key < node->key)
+            {
+                cmpResult = -1;
+            }
+            else
+            {
+                cmpResult = 1;
+            }
+
+            if (cmpResult == 0)
+            {
+                if (&pValue != NULL)
+                {
+                    pValue = &node->value;
+                }
+                lookupFound = 1;
+                goto found_done;
+            }
+
+            if (cmpResult < 0)
+            {
+                node = (AVLTreeEntry<unsigned long, FuzzyVariant>*)node->node.left;
+            }
+            else
+            {
+                node = (AVLTreeEntry<unsigned long, FuzzyVariant>*)node->node.right;
+            }
+        }
+
+        lookupFound = 0;
+
+    found_done:
+
+        if (lookupFound)
+        {
+            cache->mCacheHits++;
+            bestValue = *pValue;
+        }
+    }
+
+    if (lookupFound)
+    {
+        unsigned long hashCopy1 = hash;
+        if (g_bScriptQuestionCachingOn)
+        {
+            if (g_bScriptQuestionCachingUseSTD)
+            {
+                FuzzyMapPair* pair = __find_or_insert(&cache->mQuestionCacheMapSTD, &hashCopy1);
+                pair->value = bestValue;
+            }
+            else
+            {
+                AVLTreeNode* existingNode1;
+                cache->mQuestionCacheMap.AddAVLNode((AVLTreeNode**)&cache->mQuestionCacheMap.m_Root, (void*)&hashCopy1, (void*)&bestValue, &existingNode1, cache->mQuestionCacheMap.m_NumElements);
+                if (existingNode1 == NULL)
+                    cache->mQuestionCacheMap.m_NumElements++;
+            }
+        }
+        return bestValue;
+    }
+
+    float fTrueConfidence = ReceivingVolleyPass((cPlayer*)TheFielder);
+    float fInFrontOfNet = 1.0f - InFrontOfTheirNet(TheFielder);
+    if (fTrueConfidence > fInFrontOfNet)
+    {
+        fTrueConfidence = fInFrontOfNet;
+    }
+
+    Goalie* pGoalieOnScreen = NULL;
+    if (TheFielder != NULL)
+    {
+        pGoalieOnScreen = TheFielder->m_pTeam->GetOtherTeam()->GetGoalie();
+    }
+
+    float fGoalieOffScreen = 1.0f - OnScreen((cPlayer*)pGoalieOnScreen);
+    if (fTrueConfidence > fGoalieOffScreen)
+    {
+        fTrueConfidence = fGoalieOffScreen;
+    }
+
+    float fFarToNet = FarToTheirNet((cPlayer*)TheFielder);
+    if (fFarToNet > fTrueConfidence)
+    {
+        fFarToNet = fTrueConfidence;
+    }
+    fTrueConfidence = fFarToNet;
+
+    float fFalseConfidence = 1.0f - fTrueConfidence;
+    float fBranchRatio = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+    fBranchRatio = fBranchRatio / ((fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence);
+
+    if (fTrueConfidence > 0.0f)
+    {
+        SaveConfidence PushDOM(&fConfidence);
+
+        fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
+        if ((fConfidence < fTrueConfidence) && (fTrueConfidence < 0.5f))
+        {
+            fConfidence = (float)fConfidence * fBranchRatio;
+        }
+
+        if (fConfidence > 0.0f)
+        {
+            fBestConfidence = fConfidence;
+            FuzzyVariant fvResult(0.0f);
+            bestValue = fvResult;
+        }
+    }
+
+    if (fFalseConfidence > 0.0f)
+    {
+        SaveConfidence PushDOM(&fConfidence);
+
+        fConfidence = (fConfidence <= fFalseConfidence) ? fConfidence : fFalseConfidence;
+        if ((fConfidence < fFalseConfidence) && (fFalseConfidence < 0.5f))
+        {
+            fConfidence = (float)fConfidence * fBranchRatio;
+        }
+
+        float fPositionScore = GoalieOutOfPosition(TheFielder);
+        float fNetOpeness = LikelyToScore(TheFielder);
+        float fPositionWeighting = 0.5f;
+        float fNetWeighting = 0.5f;
+        float fTotalSum = fPositionScore * fPositionWeighting + fNetOpeness * fNetWeighting;
+        float fTotalWeight = fPositionWeighting + fNetWeighting;
+        float fScore = 0.0f;
+
+        if (fTotalWeight > 0.0f)
+        {
+            fScore = fTotalSum / fTotalWeight;
+        }
+
+        if (fScore < 0.0f)
+        {
+            fScore = 0.0f;
+        }
+        if (fScore > 1.0f)
+        {
+            fScore = 1.0f;
+        }
+
+        Goalie* pGoalieOutOfNet = NULL;
+        if (TheFielder != NULL)
+        {
+            pGoalieOutOfNet = TheFielder->m_pTeam->GetOtherTeam()->GetGoalie();
+        }
+
+        float fOutOfNetScore = OutOfNet(pGoalieOutOfNet);
+
+        Goalie* pGoalieStunned = NULL;
+        if (TheFielder != NULL)
+        {
+            pGoalieStunned = TheFielder->m_pTeam->GetOtherTeam()->GetGoalie();
+        }
+
+        float fTrueConfidence2 = Stunned(pGoalieStunned);
+        float fFalseConfidence2 = 1.0f - fTrueConfidence2;
+        float fBranchRatio2 = (fTrueConfidence2 <= fFalseConfidence2) ? fTrueConfidence2 : fFalseConfidence2;
+        fBranchRatio2 = fBranchRatio2 / ((fTrueConfidence2 >= fFalseConfidence2) ? fTrueConfidence2 : fFalseConfidence2);
+
+        if (fTrueConfidence2 > 0.0f)
+        {
+            SaveConfidence PushDOM(&fConfidence);
+
+            fConfidence = (fConfidence <= fTrueConfidence2) ? fConfidence : fTrueConfidence2;
+            if ((fConfidence < fTrueConfidence2) && (fTrueConfidence2 < 0.5f))
+            {
+                fConfidence = (float)fConfidence * fBranchRatio2;
+            }
+
+            if (fConfidence > fBestConfidence)
+            {
+                fBestConfidence = fConfidence;
+                FuzzyVariant fvResult(OpenToTheirNet(TheFielder) * 0.4f + fOutOfNetScore * 0.6f);
+                bestValue = fvResult;
+            }
+        }
+
+        if (fFalseConfidence2 > 0.0f)
+        {
+            SaveConfidence PushDOM(&fConfidence);
+
+            fConfidence = (fConfidence <= fFalseConfidence2) ? fConfidence : fFalseConfidence2;
+            if ((fConfidence < fFalseConfidence2) && (fFalseConfidence2 < 0.5f))
+            {
+                fConfidence = (float)fConfidence * fBranchRatio2;
+            }
+
+            float fTrueConfidence3 = CloseToTheirGoalie((cPlayer*)TheFielder);
+            float fFalseConfidence3 = 1.0f - fTrueConfidence3;
+            float fBranchRatio3 = (fTrueConfidence3 <= fFalseConfidence3) ? fTrueConfidence3 : fFalseConfidence3;
+            fBranchRatio3 = fBranchRatio3 / ((fTrueConfidence3 >= fFalseConfidence3) ? fTrueConfidence3 : fFalseConfidence3);
+
+            if (fTrueConfidence3 > 0.0f)
+            {
+                SaveConfidence PushDOM(&fConfidence);
+
+                fConfidence = (fConfidence <= fTrueConfidence3) ? fConfidence : fTrueConfidence3;
+                if ((fConfidence < fTrueConfidence3) && (fTrueConfidence3 < 0.5f))
+                {
+                    fConfidence = (float)fConfidence * fBranchRatio3;
+                }
+
+                if (fConfidence > fBestConfidence)
+                {
+                    fBestConfidence = fConfidence;
+                    float fNearToNet = NearToTheirNet((cPlayer*)TheFielder);
+                    FuzzyVariant fvResult(fOutOfNetScore * 0.4f + fScore * 0.5f + fNearToNet * 0.2f);
+                    bestValue = fvResult;
+                }
+            }
+
+            if (fFalseConfidence3 > 0.0f)
+            {
+                SaveConfidence PushDOM(&fConfidence);
+
+                fConfidence = (fConfidence <= fFalseConfidence3) ? fConfidence : fFalseConfidence3;
+                if ((fConfidence < fFalseConfidence3) && (fFalseConfidence3 < 0.5f))
+                {
+                    fConfidence = (float)fConfidence * fBranchRatio3;
+                }
+
+                if (fConfidence > fBestConfidence)
+                {
+                    fBestConfidence = fConfidence;
+                    float fNearToNet = NearToTheirNet((cPlayer*)TheFielder);
+                    FuzzyVariant fvResult(fOutOfNetScore * 0.4f + fScore * 0.5f + fNearToNet * 0.2f);
+                    bestValue = fvResult;
+                }
+            }
+        }
+    }
+
+    bestValue.Confidence = fBestConfidence;
+
+    unsigned long hashCopy2 = hash;
+    if (g_bScriptQuestionCachingOn)
+    {
+        if (g_bScriptQuestionCachingUseSTD)
+        {
+            FuzzyMapPair* pair = __find_or_insert(&cache->mQuestionCacheMapSTD, &hashCopy2);
+            pair->value = bestValue;
+        }
+        else
+        {
+            AVLTreeNode* existingNode2;
+            cache->mQuestionCacheMap.AddAVLNode((AVLTreeNode**)&cache->mQuestionCacheMap.m_Root, (void*)&hashCopy2, (void*)&bestValue, &existingNode2, cache->mQuestionCacheMap.m_NumElements);
+            if (existingNode2 == NULL)
+                cache->mQuestionCacheMap.m_NumElements++;
+        }
+    }
+
+    return bestValue;
 }
 
 /**
@@ -1857,20 +2577,715 @@ FuzzyVariant Fuzzy::GetBestLooseBallAction(cFielder*)
 
 /**
  * Offset/Address/Size: 0x2CB4 | 0x8006CE84 | size: 0x131C
+ * TODO: 41.34% match - windup decision tree still diverges in action branches and stack layout
  */
-FuzzyVariant Fuzzy::GetBestWindupShotAction(cFielder*)
+FuzzyVariant Fuzzy::GetBestWindupShotAction(cFielder* TheFielder)
 {
-    FORCE_DONT_INLINE;
-    return FuzzyVariant();
+    extern cTeam* g_pCurrentlyUpdatingTeam;
+    extern float InFrontOfTheirNet(cFielder*);
+    extern float IsPerfectPassInPlay();
+    extern float ReceivingVolleyPass(cPlayer*);
+    extern float CloseToTheirGoalie(cPlayer*);
+    extern float NearToTheirNet(cPlayer*);
+    extern float Stunned(Goalie*);
+    extern float Shooter(cFielder*);
+    extern float CalcSelectChance(float, float);
+
+    FuzzyVariant bestValue;
+    float fConfidence = 1.0f;
+    float fBestConfidence = 0.0f;
+
+    FuzzyVariant fvFielder((cPlayer*)TheFielder);
+    unsigned long hash = (unsigned long)GetBestWindupShotAction + ((Variant*)&fvFielder)->GetHash();
+    FuzzyVariant fvFielder2((cPlayer*)TheFielder);
+
+    ScriptQuestionCache* cache = ScriptQuestionCache::Instance();
+    cache->mTotalLookups++;
+
+    unsigned char lookupFound = 0;
+    FuzzyVariant* pValue;
+
+    if (g_bScriptQuestionCachingUseSTD)
+    {
+        StdMapNode* stdNode;
+        __find(&stdNode, &cache->mQuestionCacheMapSTD, &hash);
+        StdMapNode* stdFound = stdNode;
+        if ((StdMapNodeBase*)stdFound != &((StdMapTree*)&cache->mQuestionCacheMapSTD)->x4)
+        {
+            cache->mCacheHits++;
+            bestValue = stdFound->value;
+            lookupFound = 1;
+        }
+    }
+    else
+    {
+        AVLTreeEntry<unsigned long, FuzzyVariant>* node = cache->mQuestionCacheMap.m_Root;
+        unsigned long key = hash;
+
+        while (node != NULL)
+        {
+            int cmpResult;
+            if (key == node->key)
+            {
+                cmpResult = 0;
+            }
+            else if (key < node->key)
+            {
+                cmpResult = -1;
+            }
+            else
+            {
+                cmpResult = 1;
+            }
+
+            if (cmpResult == 0)
+            {
+                if (&pValue != NULL)
+                {
+                    pValue = &node->value;
+                }
+                lookupFound = 1;
+                goto found_done;
+            }
+
+            if (cmpResult < 0)
+            {
+                node = (AVLTreeEntry<unsigned long, FuzzyVariant>*)node->node.left;
+            }
+            else
+            {
+                node = (AVLTreeEntry<unsigned long, FuzzyVariant>*)node->node.right;
+            }
+        }
+
+        lookupFound = 0;
+
+    found_done:
+
+        if (lookupFound)
+        {
+            cache->mCacheHits++;
+            bestValue = *pValue;
+        }
+    }
+
+    if (lookupFound)
+    {
+        unsigned long hashCopy1 = hash;
+        if (g_bScriptQuestionCachingOn)
+        {
+            if (g_bScriptQuestionCachingUseSTD)
+            {
+                FuzzyMapPair* pair = __find_or_insert(&cache->mQuestionCacheMapSTD, &hashCopy1);
+                pair->value = bestValue;
+            }
+            else
+            {
+                AVLTreeNode* existingNode1;
+                cache->mQuestionCacheMap.AddAVLNode((AVLTreeNode**)&cache->mQuestionCacheMap.m_Root, (void*)&hashCopy1, (void*)&bestValue, &existingNode1, cache->mQuestionCacheMap.m_NumElements);
+                if (existingNode1 == NULL)
+                    cache->mQuestionCacheMap.m_NumElements++;
+            }
+        }
+        return bestValue;
+    }
+
+    float fTrueConfidence = FarToTheirNet((cPlayer*)TheFielder);
+    float fInFrontOfNet = 1.0f - InFrontOfTheirNet(TheFielder);
+    if (fTrueConfidence < fInFrontOfNet)
+    {
+        fTrueConfidence = fInFrontOfNet;
+    }
+
+    float fFalseConfidence = 1.0f - fTrueConfidence;
+    float fMinVal = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+    float fMaxVal = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+    float fBranchRatio = fMinVal / fMaxVal;
+
+    if (fTrueConfidence > 0.0f)
+    {
+        SaveConfidence PushDOM(&fConfidence);
+
+        fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
+        if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
+        {
+            fConfidence = (float)fConfidence * fBranchRatio;
+        }
+
+        if (fConfidence > 0.0f)
+        {
+            fBestConfidence = fConfidence;
+            FuzzyVariant returnValue(0.0f);
+            bestValue = returnValue;
+        }
+    }
+
+    if (fFalseConfidence > 0.0f)
+    {
+        SaveConfidence PushDOM(&fConfidence);
+
+        fConfidence = (fConfidence <= fFalseConfidence) ? fConfidence : fFalseConfidence;
+        if (fConfidence < fFalseConfidence && fFalseConfidence < 0.5f)
+        {
+            fConfidence = (float)fConfidence * fBranchRatio;
+        }
+
+        fTrueConfidence = IsPerfectPassInPlay();
+        fFalseConfidence = 1.0f - fTrueConfidence;
+        fMinVal = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+        fMaxVal = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+        fBranchRatio = fMinVal / fMaxVal;
+
+        if (fTrueConfidence > 0.0f)
+        {
+            SaveConfidence PushDOM2(&fConfidence);
+
+            fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
+            if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
+            {
+                fConfidence = (float)fConfidence * fBranchRatio;
+            }
+
+            if (fConfidence > fBestConfidence)
+            {
+                fBestConfidence = fConfidence;
+                FuzzyVariant returnValue(1.0f);
+                SkillTweaks* pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide);
+                returnValue.SelectionChance = CalcSelectChance(pSkillTweaks->Off_VolleyOneTimerChance, Shooter(TheFielder));
+                bestValue = returnValue;
+            }
+        }
+
+        fTrueConfidence = 1.0f - FarToTheirNet((cPlayer*)TheFielder);
+        fFalseConfidence = 1.0f - fTrueConfidence;
+        fMinVal = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+        fMaxVal = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+        fBranchRatio = fMinVal / fMaxVal;
+
+        if (fTrueConfidence > 0.0f)
+        {
+            SaveConfidence PushDOM2(&fConfidence);
+
+            fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
+            if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
+            {
+                fConfidence = (float)fConfidence * fBranchRatio;
+            }
+
+            fTrueConfidence = ReceivingVolleyPass((cPlayer*)TheFielder);
+            fFalseConfidence = 1.0f - fTrueConfidence;
+            fMinVal = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+            fMaxVal = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+            fBranchRatio = fMinVal / fMaxVal;
+
+            if (fTrueConfidence > 0.0f)
+            {
+                SaveConfidence PushDOM3(&fConfidence);
+
+                fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
+                if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
+                {
+                    fConfidence = (float)fConfidence * fBranchRatio;
+                }
+
+                Goalie* pGoalie = NULL;
+                if (TheFielder != NULL)
+                {
+                    pGoalie = TheFielder->m_pTeam->GetOtherTeam()->GetGoalie();
+                }
+
+                float fGoalieStunned = Stunned(pGoalie);
+                float fDanger = InDanger(TheFielder).Confidence;
+                if (fDanger < fGoalieStunned)
+                {
+                    fDanger = fGoalieStunned;
+                }
+
+                float fNearToNet = NearToTheirNet((cPlayer*)TheFielder);
+                fDanger = GoodToShoot(TheFielder).Confidence;
+                if (fDanger < fNearToNet)
+                {
+                    fDanger = fNearToNet;
+                }
+                if (fGoalieStunned < fDanger)
+                {
+                    fDanger = fGoalieStunned;
+                }
+
+                if (fConfidence > fBestConfidence)
+                {
+                    fBestConfidence = fConfidence;
+                    FuzzyVariant returnValue(fDanger);
+                    SkillTweaks* pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide);
+                    returnValue.SelectionChance = CalcSelectChance(pSkillTweaks->Off_VolleyOneTimerChance, Shooter(TheFielder));
+                    bestValue = returnValue;
+                }
+            }
+
+            if (fFalseConfidence > 0.0f)
+            {
+                SaveConfidence PushDOM3(&fConfidence);
+
+                fConfidence = (fConfidence <= fFalseConfidence) ? fConfidence : fFalseConfidence;
+                if (fConfidence < fFalseConfidence && fFalseConfidence < 0.5f)
+                {
+                    fConfidence = (float)fConfidence * fBranchRatio;
+                }
+
+                Goalie* pGoalie = NULL;
+                if (TheFielder != NULL)
+                {
+                    pGoalie = TheFielder->m_pTeam->GetOtherTeam()->GetGoalie();
+                }
+
+                float fGoalieStunned = Stunned(pGoalie);
+                float fDanger = InDanger(TheFielder).Confidence;
+                if (fDanger < fGoalieStunned)
+                {
+                    fDanger = fGoalieStunned;
+                }
+                fDanger = GoodToShoot(TheFielder).Confidence * 0.5f + fDanger * 0.5f;
+
+                if (fConfidence > fBestConfidence)
+                {
+                    fBestConfidence = fConfidence;
+                    FuzzyVariant returnValue(fDanger);
+                    SkillTweaks* pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide);
+                    returnValue.SelectionChance = CalcSelectChance(pSkillTweaks->Off_GroundOneTimerChance, Shooter(TheFielder));
+                    bestValue = returnValue;
+                }
+            }
+        }
+    }
+
+    if (fFalseConfidence > 0.0f)
+    {
+        SaveConfidence PushDOM(&fConfidence);
+
+        fConfidence = (fConfidence <= fFalseConfidence) ? fConfidence : fFalseConfidence;
+        if (fConfidence < fFalseConfidence && fFalseConfidence < 0.5f)
+        {
+            fConfidence = (float)fConfidence * fBranchRatio;
+        }
+
+        if (fConfidence > fBestConfidence)
+        {
+            fBestConfidence = fConfidence;
+            FuzzyVariant returnValue(0.0f);
+            bestValue = returnValue;
+        }
+    }
+
+    bestValue.Confidence = fBestConfidence;
+
+    unsigned long hashCopy2 = hash;
+    if (g_bScriptQuestionCachingOn)
+    {
+        if (g_bScriptQuestionCachingUseSTD)
+        {
+            FuzzyMapPair* pair = __find_or_insert(&cache->mQuestionCacheMapSTD, &hashCopy2);
+            pair->value = bestValue;
+        }
+        else
+        {
+            AVLTreeNode* existingNode2;
+            cache->mQuestionCacheMap.AddAVLNode((AVLTreeNode**)&cache->mQuestionCacheMap.m_Root, (void*)&hashCopy2, (void*)&bestValue, &existingNode2, cache->mQuestionCacheMap.m_NumElements);
+            if (existingNode2 == NULL)
+                cache->mQuestionCacheMap.m_NumElements++;
+        }
+    }
+
+    return bestValue;
 }
 
 /**
  * Offset/Address/Size: 0x1A48 | 0x8006BC18 | size: 0x126C
  */
-FuzzyVariant Fuzzy::GetPowerupToUseForPassReceiveDefence(cFielder*)
+FuzzyVariant Fuzzy::GetPowerupToUseForPassReceiveDefence(cFielder* TheFielder)
 {
-    FORCE_DONT_INLINE;
-    return FuzzyVariant();
+    extern cBall* g_pBall;
+    extern cFielder* g_pScriptCurrentFielder;
+    extern float OnScreen(cPlayer*);
+    extern float UserControlledT(cTeam*);
+    extern float LikelyToUsePowerup(cFielder*, int);
+    extern float High(cBall*);
+    extern float NearToBall(cPlayer*);
+    extern float ChasingBall(cPlayer*);
+    extern float OnMushrooms(cFielder*);
+    extern float InDefensiveZone(cPlayer*);
+    extern float Captain(cFielder*);
+    extern float ReceivingPass(cFielder*);
+    extern float BallOwner(cPlayer*);
+
+    FuzzyVariant bestValue;
+    float fConfidence = 1.0f;
+    float fBestConfidence = 0.0f;
+
+    FuzzyVariant fvFielder((cPlayer*)TheFielder);
+    ((Variant*)&fvFielder)->GetHash();
+
+    FuzzyVariant fvFielder2((cPlayer*)TheFielder);
+
+    float fTrueConfidence = OnScreen((cPlayer*)TheFielder);
+
+    cTeam* pTeam = (TheFielder != NULL) ? TheFielder->m_pTeam : NULL;
+    float fNotUserControlled = 1.0f - UserControlledT(pTeam);
+
+    cPlayer* pOtherGoalie;
+    if (TheFielder != NULL)
+    {
+        if (TheFielder != NULL)
+        {
+            pOtherGoalie = TheFielder->m_pTeam->GetOtherTeam()->GetGoalie();
+        }
+    }
+    else
+    {
+        pOtherGoalie = NULL;
+    }
+
+    float fNotOtherGoaliePickup = 1.0f - Fuzzy::GoalieAndGonnaPickupBall(pOtherGoalie).Confidence;
+
+    cPlayer* pGoalie;
+    if (TheFielder != NULL)
+    {
+        if (TheFielder != NULL)
+        {
+            pGoalie = TheFielder->m_pTeam->GetGoalie();
+        }
+    }
+    else
+    {
+        pGoalie = NULL;
+    }
+
+    float fNotGoaliePickup = 1.0f - Fuzzy::GoalieAndGonnaPickupBall(pGoalie).Confidence;
+
+    if (fNotUserControlled > fTrueConfidence)
+    {
+        fNotUserControlled = fTrueConfidence;
+    }
+
+    if (fNotOtherGoaliePickup > fNotUserControlled)
+    {
+        fNotOtherGoaliePickup = fNotUserControlled;
+    }
+
+    if (fNotGoaliePickup > fNotOtherGoaliePickup)
+    {
+        fNotGoaliePickup = fNotOtherGoaliePickup;
+    }
+
+    fTrueConfidence = fNotGoaliePickup;
+
+    float fFalseConfidence = 1.0f - fTrueConfidence;
+    float fMinConfidence = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+    float fMaxConfidence = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+    float fBranchRatio = fMinConfidence / fMaxConfidence;
+
+    if (fTrueConfidence > 0.0f)
+    {
+        SaveConfidence PushDOM(&fConfidence);
+
+        fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
+
+        if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
+        {
+            fConfidence = (float)fConfidence * fBranchRatio;
+        }
+
+        float fLikelyConfidence = LikelyToUsePowerup(TheFielder, 0);
+        float fLikelyFalseConfidence = 1.0f - fLikelyConfidence;
+        float fLikelyMin = (fLikelyConfidence <= fLikelyFalseConfidence) ? fLikelyConfidence : fLikelyFalseConfidence;
+        float fLikelyMax = (fLikelyConfidence >= fLikelyFalseConfidence) ? fLikelyConfidence : fLikelyFalseConfidence;
+        float fLikelyBranchRatio = fLikelyMin / fLikelyMax;
+
+        if (fLikelyConfidence > 0.0f)
+        {
+            SaveConfidence PushDOM(&fConfidence);
+
+            fConfidence = (fConfidence <= fLikelyConfidence) ? fConfidence : fLikelyConfidence;
+
+            if (fConfidence < fLikelyConfidence && fLikelyConfidence < 0.5f)
+            {
+                fConfidence = (float)fConfidence * fLikelyBranchRatio;
+            }
+
+            if (fConfidence > fBestConfidence)
+            {
+                fBestConfidence = fConfidence;
+                FuzzyVariant fvResult(0);
+                bestValue = fvResult;
+            }
+        }
+
+        fLikelyConfidence = LikelyToUsePowerup(TheFielder, 1);
+        fLikelyFalseConfidence = 1.0f - fLikelyConfidence;
+        fLikelyMin = (fLikelyConfidence <= fLikelyFalseConfidence) ? fLikelyConfidence : fLikelyFalseConfidence;
+        fLikelyMax = (fLikelyConfidence >= fLikelyFalseConfidence) ? fLikelyConfidence : fLikelyFalseConfidence;
+        fLikelyBranchRatio = fLikelyMin / fLikelyMax;
+
+        if (fLikelyConfidence > 0.0f)
+        {
+            SaveConfidence PushDOM(&fConfidence);
+
+            fConfidence = (fConfidence <= fLikelyConfidence) ? fConfidence : fLikelyConfidence;
+
+            if (fConfidence < fLikelyConfidence && fLikelyConfidence < 0.5f)
+            {
+                fConfidence = (float)fConfidence * fLikelyBranchRatio;
+            }
+
+            if (fConfidence > fBestConfidence)
+            {
+                fBestConfidence = fConfidence;
+                FuzzyVariant fvResult(1);
+                bestValue = fvResult;
+            }
+        }
+
+        fLikelyConfidence = LikelyToUsePowerup(TheFielder, 2);
+        fLikelyFalseConfidence = 1.0f - fLikelyConfidence;
+        fLikelyMin = (fLikelyConfidence <= fLikelyFalseConfidence) ? fLikelyConfidence : fLikelyFalseConfidence;
+        fLikelyMax = (fLikelyConfidence >= fLikelyFalseConfidence) ? fLikelyConfidence : fLikelyFalseConfidence;
+        fLikelyBranchRatio = fLikelyMin / fLikelyMax;
+
+        if (fLikelyConfidence > 0.0f)
+        {
+            SaveConfidence PushDOM(&fConfidence);
+
+            fConfidence = (fConfidence <= fLikelyConfidence) ? fConfidence : fLikelyConfidence;
+
+            if (fConfidence < fLikelyConfidence && fLikelyConfidence < 0.5f)
+            {
+                fConfidence = (float)fConfidence * fLikelyBranchRatio;
+            }
+
+            if (fConfidence > fBestConfidence)
+            {
+                fBestConfidence = fConfidence;
+                FuzzyVariant fvResult(2);
+                bestValue = fvResult;
+            }
+        }
+
+        fLikelyConfidence = LikelyToUsePowerup(TheFielder, 3);
+        fLikelyFalseConfidence = 1.0f - fLikelyConfidence;
+        fLikelyMin = (fLikelyConfidence <= fLikelyFalseConfidence) ? fLikelyConfidence : fLikelyFalseConfidence;
+        fLikelyMax = (fLikelyConfidence >= fLikelyFalseConfidence) ? fLikelyConfidence : fLikelyFalseConfidence;
+        fLikelyBranchRatio = fLikelyMin / fLikelyMax;
+
+        if (fLikelyConfidence > 0.0f)
+        {
+            SaveConfidence PushDOM(&fConfidence);
+
+            fConfidence = (fConfidence <= fLikelyConfidence) ? fConfidence : fLikelyConfidence;
+
+            if (fConfidence < fLikelyConfidence && fLikelyConfidence < 0.5f)
+            {
+                fConfidence = (float)fConfidence * fLikelyBranchRatio;
+            }
+
+            if (fConfidence > fBestConfidence)
+            {
+                fBestConfidence = fConfidence;
+                FuzzyVariant fvResult(3);
+                bestValue = fvResult;
+            }
+        }
+
+        fLikelyConfidence = LikelyToUsePowerup(TheFielder, 4);
+        fLikelyFalseConfidence = 1.0f - fLikelyConfidence;
+        fLikelyMin = (fLikelyConfidence <= fLikelyFalseConfidence) ? fLikelyConfidence : fLikelyFalseConfidence;
+        fLikelyMax = (fLikelyConfidence >= fLikelyFalseConfidence) ? fLikelyConfidence : fLikelyFalseConfidence;
+        fLikelyBranchRatio = fLikelyMin / fLikelyMax;
+
+        if (fLikelyConfidence > 0.0f)
+        {
+            SaveConfidence PushDOM(&fConfidence);
+
+            fConfidence = (fConfidence <= fLikelyConfidence) ? fConfidence : fLikelyConfidence;
+
+            if (fConfidence < fLikelyConfidence && fLikelyConfidence < 0.5f)
+            {
+                fConfidence = (float)fConfidence * fLikelyBranchRatio;
+            }
+
+            if (fConfidence > fBestConfidence)
+            {
+                fBestConfidence = fConfidence;
+                FuzzyVariant fvResult(4);
+                bestValue = fvResult;
+            }
+        }
+
+        fLikelyConfidence = LikelyToUsePowerup(TheFielder, 5);
+        fLikelyFalseConfidence = 1.0f - fLikelyConfidence;
+        fLikelyMin = (fLikelyConfidence <= fLikelyFalseConfidence) ? fLikelyConfidence : fLikelyFalseConfidence;
+        fLikelyMax = (fLikelyConfidence >= fLikelyFalseConfidence) ? fLikelyConfidence : fLikelyFalseConfidence;
+        fLikelyBranchRatio = fLikelyMin / fLikelyMax;
+
+        if (fLikelyConfidence > 0.0f)
+        {
+            SaveConfidence PushDOM(&fConfidence);
+
+            fConfidence = (fConfidence <= fLikelyConfidence) ? fConfidence : fLikelyConfidence;
+
+            if (fConfidence < fLikelyConfidence && fLikelyConfidence < 0.5f)
+            {
+                fConfidence = (float)fConfidence * fLikelyBranchRatio;
+            }
+
+            if (fConfidence > fBestConfidence)
+            {
+                fBestConfidence = fConfidence;
+                FuzzyVariant fvResult(5);
+                bestValue = fvResult;
+            }
+        }
+
+        fTrueConfidence = 1.0f - High(g_pBall);
+        float fNotNearBall = 1.0f - NearToBall((cPlayer*)TheFielder);
+        float fChasingBall = ChasingBall((cPlayer*)TheFielder);
+
+        if (fNotNearBall > fTrueConfidence)
+        {
+            fNotNearBall = fTrueConfidence;
+        }
+        if (fChasingBall > fNotNearBall)
+        {
+            fChasingBall = fNotNearBall;
+        }
+
+        fTrueConfidence = fChasingBall;
+
+        fFalseConfidence = 1.0f - fTrueConfidence;
+        fMinConfidence = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+        fMaxConfidence = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+        fBranchRatio = fMinConfidence / fMaxConfidence;
+
+        if (fTrueConfidence > 0.0f)
+        {
+            SaveConfidence PushDOM(&fConfidence);
+
+            fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
+
+            if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
+            {
+                fConfidence = (float)fConfidence * fBranchRatio;
+            }
+
+            fTrueConfidence = 1.0f - OnMushrooms(g_pScriptCurrentFielder);
+            fFalseConfidence = 1.0f - fTrueConfidence;
+            fMinConfidence = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+            fMaxConfidence = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+            fBranchRatio = fMinConfidence / fMaxConfidence;
+
+            if (fTrueConfidence > 0.0f)
+            {
+                SaveConfidence PushDOM(&fConfidence);
+
+                fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
+
+                if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
+                {
+                    fConfidence = (float)fConfidence * fBranchRatio;
+                }
+
+                fLikelyConfidence = LikelyToUsePowerup(TheFielder, 7);
+                fLikelyFalseConfidence = 1.0f - fLikelyConfidence;
+                fLikelyMin = (fLikelyConfidence <= fLikelyFalseConfidence) ? fLikelyConfidence : fLikelyFalseConfidence;
+                fLikelyMax = (fLikelyConfidence >= fLikelyFalseConfidence) ? fLikelyConfidence : fLikelyFalseConfidence;
+                fLikelyBranchRatio = fLikelyMin / fLikelyMax;
+
+                if (fLikelyConfidence > 0.0f)
+                {
+                    SaveConfidence PushDOM(&fConfidence);
+
+                    fConfidence = (fConfidence <= fLikelyConfidence) ? fConfidence : fLikelyConfidence;
+
+                    if (fConfidence < fLikelyConfidence && fLikelyConfidence < 0.5f)
+                    {
+                        fConfidence = (float)fConfidence * fLikelyBranchRatio;
+                    }
+
+                    if (fConfidence > fBestConfidence)
+                    {
+                        fBestConfidence = fConfidence;
+                        FuzzyVariant fvResult(7);
+                        bestValue = fvResult;
+                    }
+                }
+            }
+        }
+
+        float fNotInDefensiveZone = 1.0f - InDefensiveZone((cPlayer*)TheFielder);
+        float fCaptain = Captain(TheFielder);
+        float fReceivingPass = ReceivingPass(TheFielder);
+        float fBallOwner = BallOwner((cPlayer*)TheFielder);
+
+        if (fBallOwner < fReceivingPass)
+        {
+            fBallOwner = fReceivingPass;
+        }
+
+        if (fCaptain > fNotInDefensiveZone)
+        {
+            fCaptain = fNotInDefensiveZone;
+        }
+
+        if (fBallOwner > fCaptain)
+        {
+            fBallOwner = fCaptain;
+        }
+
+        fTrueConfidence = fBallOwner;
+
+        fFalseConfidence = 1.0f - fTrueConfidence;
+        fMinConfidence = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+        fMaxConfidence = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+        fBranchRatio = fMinConfidence / fMaxConfidence;
+
+        if (fTrueConfidence > 0.0f)
+        {
+            SaveConfidence PushDOM(&fConfidence);
+
+            fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
+
+            if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
+            {
+                fConfidence = (float)fConfidence * fBranchRatio;
+            }
+
+            fLikelyConfidence = LikelyToUsePowerup(TheFielder, 8);
+            fLikelyFalseConfidence = 1.0f - fLikelyConfidence;
+            fLikelyMin = (fLikelyConfidence <= fLikelyFalseConfidence) ? fLikelyConfidence : fLikelyFalseConfidence;
+            fLikelyMax = (fLikelyConfidence >= fLikelyFalseConfidence) ? fLikelyConfidence : fLikelyFalseConfidence;
+            fLikelyBranchRatio = fLikelyMin / fLikelyMax;
+
+            if (fLikelyConfidence > 0.0f)
+            {
+                SaveConfidence PushDOM(&fConfidence);
+
+                fConfidence = (fConfidence <= fLikelyConfidence) ? fConfidence : fLikelyConfidence;
+
+                if (fConfidence < fLikelyConfidence && fLikelyConfidence < 0.5f)
+                {
+                    fConfidence = (float)fConfidence * fLikelyBranchRatio;
+                }
+
+                if (fConfidence > fBestConfidence)
+                {
+                    fBestConfidence = fConfidence;
+                    FuzzyVariant fvResult(8);
+                    bestValue = fvResult;
+                }
+            }
+        }
+    }
+
+    bestValue.Confidence = fBestConfidence;
+    return bestValue;
 }
 
 /**

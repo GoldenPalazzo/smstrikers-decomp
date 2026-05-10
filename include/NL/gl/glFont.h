@@ -4,9 +4,9 @@
 #include "NL/nlColour.h"
 #include "NL/gl/glView.h"
 
-bool glFontPrintf(eGLView, int, int, const nlColour&, const char*, ...);
-bool glFontPrintf(eGLView, int, int, const char*, ...);
-bool glFontPrint(eGLView, int, int, const nlColour&, const char*);
+int glFontPrintf(eGLView, int, int, const nlColour&, const char*, ...);
+int glFontPrintf(eGLView, int, int, const char*, ...);
+int glFontPrint(eGLView, int, int, const nlColour&, const char*);
 void glFontEnd();
 void glFontBegin(bool);
 void glFontVirtualPosToScreenCoordPos(float, float, float&, float&);

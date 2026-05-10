@@ -1994,8 +1994,70 @@ void StatsTracker::TrackWinner(int forfeitSide)
 /**
  * Offset/Address/Size: 0x540 | 0x80181AA0 | size: 0x15A0
  */
-void StatsTracker::WriteStats(float, float, const char*)
+void StatsTracker::WriteStats(float gameTime, float gameDuration, const char* filename)
 {
+    unsigned char firstTime = 1;
+    FILE* pFile;
+
+    extern const char* STATS_FILE;
+    extern unsigned long fwrite(const void*, unsigned long, unsigned long, void*);
+
+    if (gameDuration <= 0.0f)
+    {
+        gameDuration = (float)nlSingleton<GameInfoManager>::s_pInstance->GetGameplayOptions().GameTime;
+    }
+
+    if (filename == 0)
+    {
+        filename = STATS_FILE;
+    }
+
+    pFile = fopen(filename, "r");
+    if (pFile != 0)
+    {
+        firstTime = 0;
+        fclose(pFile);
+    }
+
+    pFile = fopen(filename, firstTime ? "wt" : "at");
+    if (pFile == 0)
+    {
+        return;
+    }
+
+    if (firstTime)
+    {
+        BasicString<char, Detail::TempStringAllocator> header;
+        header.AppendInPlace("H Captain, ");
+        header.AppendInPlace("H Sidekick, ");
+        header.AppendInPlace("A Captain, ");
+        header.AppendInPlace("A Sidekick, ");
+        header.AppendInPlace("Stadium, ");
+        header.AppendInPlace("Game Time, ");
+        header.AppendInPlace("Actual Time, ");
+        header.AppendInPlace("Num Players, ");
+        header.AppendInPlace("Difficulty, ");
+        header.AppendInPlace("Shots On Goal, ");
+        header.AppendInPlace("Goals For, ");
+        header.AppendInPlace("ShootToScoreGoals, ");
+        header.AppendInPlace("Assists, ");
+        header.AppendInPlace("Fouls, ");
+        header.AppendInPlace("Powerups Used, ");
+        header.AppendInPlace("Powerups Hit, ");
+        header.AppendInPlace("Passes Made, ");
+        header.AppendInPlace("Passes Received, ");
+        header.AppendInPlace("Passes Intercepted, ");
+        header.AppendInPlace("Possession Time, ");
+        header.AppendInPlace("Steals, ");
+        header.AppendInPlace("Hits Made, ");
+        header.AppendInPlace("Goals One Timers, ");
+        header.AppendInPlace("\n");
+
+        unsigned long len = header.size() > 0 ? (unsigned long)(header.size() - 1) : 0UL;
+        fwrite(header.c_str(), 1, len, pFile);
+    }
+
+    fclose(pFile);
 }
 
 /**

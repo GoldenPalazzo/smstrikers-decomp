@@ -50,6 +50,7 @@ static SND_AUX_REVERBSTD gDPL2ReverbStdSettings;
 static SND_AUX_REVERBHI gDPL2ReverbHiSettings;
 
 static f32 gfVolumeGroups[0x18];
+static void ReadVolGroupSettings();
 
 extern Audio::SoundAttributes gDelayedSFX[15];
 
@@ -95,6 +96,703 @@ void nlListAddStart<FadeAudioData>(FadeAudioData** head, FadeAudioData* entry, F
 
     entry->next = *head;
     *head = entry;
+}
+
+/**
+ * Offset/Address/Size: 0x3AB0 | 0x8013FFC4 | size: 0xF60
+ * TODO: 89.74% match - register allocation and branch layout differ in volume-group initialization and typed config-cast blocks.
+ */
+static void ReadVolGroupSettings()
+{
+    extern const char* AUDIO_DEFAULT_VOLUMEGROUPS_CONFIG_FILE;
+
+    int i;
+    for (i = 0; i < 24; i++)
+    {
+        gfVolumeGroups[i] = 1.0f;
+    }
+
+    gfVolumeGroups[2] = 0.9f;
+
+    Config& globalConfig = Config::Global();
+    TagValuePair& crowdOnlyTvp = globalConfig.FindTvp("crowd_only");
+    bool crowdOnly;
+    if (crowdOnlyTvp.tag == NULL)
+    {
+        globalConfig.Set("crowd_only", false);
+        crowdOnly = false;
+    }
+    else if (crowdOnlyTvp.type == _BOOL)
+    {
+        crowdOnly = LexicalCast<bool, bool>(crowdOnlyTvp.value.b);
+    }
+    else if (crowdOnlyTvp.type == _INT)
+    {
+        crowdOnly = LexicalCast<bool, int>(crowdOnlyTvp.value.i);
+    }
+    else if (crowdOnlyTvp.type == _FLOAT)
+    {
+        crowdOnly = LexicalCast<bool, float>(crowdOnlyTvp.value.f);
+    }
+    else if (crowdOnlyTvp.type == _STRING)
+    {
+        crowdOnly = LexicalCast<bool, const char*>(crowdOnlyTvp.value.s);
+    }
+    else
+    {
+        crowdOnly = false;
+    }
+
+    Config config(Config::ALLOCATE_HIGH);
+    config.LoadFromFile(AUDIO_DEFAULT_VOLUMEGROUPS_CONFIG_FILE);
+
+    float crowd;
+    {
+        TagValuePair& tvp = config.FindTvp("Crowd");
+        if (tvp.tag == NULL)
+        {
+            config.Set("Crowd", 0.8f);
+            crowd = 0.8f;
+        }
+        else if (tvp.type == _BOOL)
+        {
+            crowd = LexicalCast<float, bool>(tvp.value.b);
+        }
+        else if (tvp.type == _INT)
+        {
+            crowd = LexicalCast<float, int>(tvp.value.i);
+        }
+        else if (tvp.type == _FLOAT)
+        {
+            crowd = LexicalCast<float, float>(tvp.value.f);
+        }
+        else if (tvp.type == _STRING)
+        {
+            crowd = LexicalCast<float, const char*>(tvp.value.s);
+        }
+        else
+        {
+            crowd = 0.0f;
+        }
+    }
+
+    Audio::SetVolGroupVolume(2, crowd, 500);
+    gfVolumeGroups[5] = crowd;
+
+    if (!crowdOnly)
+    {
+        float fe;
+        {
+            TagValuePair& tvp = config.FindTvp("FE");
+            if (tvp.tag == NULL)
+            {
+                config.Set("FE", 0.8f);
+                fe = 0.8f;
+            }
+            else if (tvp.type == _BOOL)
+            {
+                fe = LexicalCast<float, bool>(tvp.value.b);
+            }
+            else if (tvp.type == _INT)
+            {
+                fe = LexicalCast<float, int>(tvp.value.i);
+            }
+            else if (tvp.type == _FLOAT)
+            {
+                fe = LexicalCast<float, float>(tvp.value.f);
+            }
+            else if (tvp.type == _STRING)
+            {
+                fe = LexicalCast<float, const char*>(tvp.value.s);
+            }
+            else
+            {
+                fe = 0.0f;
+            }
+        }
+
+        float birdo;
+        {
+            TagValuePair& tvp = config.FindTvp("Birdo");
+            if (tvp.tag == NULL)
+            {
+                config.Set("Birdo", 1.0f);
+                birdo = 1.0f;
+            }
+            else if (tvp.type == _BOOL)
+            {
+                birdo = LexicalCast<float, bool>(tvp.value.b);
+            }
+            else if (tvp.type == _INT)
+            {
+                birdo = LexicalCast<float, int>(tvp.value.i);
+            }
+            else if (tvp.type == _FLOAT)
+            {
+                birdo = LexicalCast<float, float>(tvp.value.f);
+            }
+            else if (tvp.type == _STRING)
+            {
+                birdo = LexicalCast<float, const char*>(tvp.value.s);
+            }
+            else
+            {
+                birdo = 0.0f;
+            }
+        }
+
+        float bowser;
+        {
+            TagValuePair& tvp = config.FindTvp("Bowser");
+            if (tvp.tag == NULL)
+            {
+                config.Set("Bowser", 1.0f);
+                bowser = 1.0f;
+            }
+            else if (tvp.type == _BOOL)
+            {
+                bowser = LexicalCast<float, bool>(tvp.value.b);
+            }
+            else if (tvp.type == _INT)
+            {
+                bowser = LexicalCast<float, int>(tvp.value.i);
+            }
+            else if (tvp.type == _FLOAT)
+            {
+                bowser = LexicalCast<float, float>(tvp.value.f);
+            }
+            else if (tvp.type == _STRING)
+            {
+                bowser = LexicalCast<float, const char*>(tvp.value.s);
+            }
+            else
+            {
+                bowser = 0.0f;
+            }
+        }
+
+        float critter;
+        {
+            TagValuePair& tvp = config.FindTvp("Critter");
+            if (tvp.tag == NULL)
+            {
+                config.Set("Critter", 1.0f);
+                critter = 1.0f;
+            }
+            else if (tvp.type == _BOOL)
+            {
+                critter = LexicalCast<float, bool>(tvp.value.b);
+            }
+            else if (tvp.type == _INT)
+            {
+                critter = LexicalCast<float, int>(tvp.value.i);
+            }
+            else if (tvp.type == _FLOAT)
+            {
+                critter = LexicalCast<float, float>(tvp.value.f);
+            }
+            else if (tvp.type == _STRING)
+            {
+                critter = LexicalCast<float, const char*>(tvp.value.s);
+            }
+            else
+            {
+                critter = 0.0f;
+            }
+        }
+
+        float daisy;
+        {
+            TagValuePair& tvp = config.FindTvp("Daisy");
+            if (tvp.tag == NULL)
+            {
+                config.Set("Daisy", 1.0f);
+                daisy = 1.0f;
+            }
+            else if (tvp.type == _BOOL)
+            {
+                daisy = LexicalCast<float, bool>(tvp.value.b);
+            }
+            else if (tvp.type == _INT)
+            {
+                daisy = LexicalCast<float, int>(tvp.value.i);
+            }
+            else if (tvp.type == _FLOAT)
+            {
+                daisy = LexicalCast<float, float>(tvp.value.f);
+            }
+            else if (tvp.type == _STRING)
+            {
+                daisy = LexicalCast<float, const char*>(tvp.value.s);
+            }
+            else
+            {
+                daisy = 0.0f;
+            }
+        }
+
+        float dk;
+        {
+            TagValuePair& tvp = config.FindTvp("DK");
+            if (tvp.tag == NULL)
+            {
+                config.Set("DK", 1.0f);
+                dk = 1.0f;
+            }
+            else if (tvp.type == _BOOL)
+            {
+                dk = LexicalCast<float, bool>(tvp.value.b);
+            }
+            else if (tvp.type == _INT)
+            {
+                dk = LexicalCast<float, int>(tvp.value.i);
+            }
+            else if (tvp.type == _FLOAT)
+            {
+                dk = LexicalCast<float, float>(tvp.value.f);
+            }
+            else if (tvp.type == _STRING)
+            {
+                dk = LexicalCast<float, const char*>(tvp.value.s);
+            }
+            else
+            {
+                dk = 0.0f;
+            }
+        }
+
+        float hammerBrothers;
+        {
+            TagValuePair& tvp = config.FindTvp("Hammer Brothers");
+            if (tvp.tag == NULL)
+            {
+                config.Set("Hammer Brothers", 1.0f);
+                hammerBrothers = 1.0f;
+            }
+            else if (tvp.type == _BOOL)
+            {
+                hammerBrothers = LexicalCast<float, bool>(tvp.value.b);
+            }
+            else if (tvp.type == _INT)
+            {
+                hammerBrothers = LexicalCast<float, int>(tvp.value.i);
+            }
+            else if (tvp.type == _FLOAT)
+            {
+                hammerBrothers = LexicalCast<float, float>(tvp.value.f);
+            }
+            else if (tvp.type == _STRING)
+            {
+                hammerBrothers = LexicalCast<float, const char*>(tvp.value.s);
+            }
+            else
+            {
+                hammerBrothers = 0.0f;
+            }
+        }
+
+        float koopa;
+        {
+            TagValuePair& tvp = config.FindTvp("Koopa");
+            if (tvp.tag == NULL)
+            {
+                config.Set("Koopa", 1.0f);
+                koopa = 1.0f;
+            }
+            else if (tvp.type == _BOOL)
+            {
+                koopa = LexicalCast<float, bool>(tvp.value.b);
+            }
+            else if (tvp.type == _INT)
+            {
+                koopa = LexicalCast<float, int>(tvp.value.i);
+            }
+            else if (tvp.type == _FLOAT)
+            {
+                koopa = LexicalCast<float, float>(tvp.value.f);
+            }
+            else if (tvp.type == _STRING)
+            {
+                koopa = LexicalCast<float, const char*>(tvp.value.s);
+            }
+            else
+            {
+                koopa = 0.0f;
+            }
+        }
+
+        float luigi;
+        {
+            TagValuePair& tvp = config.FindTvp("Luigi");
+            if (tvp.tag == NULL)
+            {
+                config.Set("Luigi", 1.0f);
+                luigi = 1.0f;
+            }
+            else if (tvp.type == _BOOL)
+            {
+                luigi = LexicalCast<float, bool>(tvp.value.b);
+            }
+            else if (tvp.type == _INT)
+            {
+                luigi = LexicalCast<float, int>(tvp.value.i);
+            }
+            else if (tvp.type == _FLOAT)
+            {
+                luigi = LexicalCast<float, float>(tvp.value.f);
+            }
+            else if (tvp.type == _STRING)
+            {
+                luigi = LexicalCast<float, const char*>(tvp.value.s);
+            }
+            else
+            {
+                luigi = 0.0f;
+            }
+        }
+
+        float mario;
+        {
+            TagValuePair& tvp = config.FindTvp("Mario");
+            if (tvp.tag == NULL)
+            {
+                config.Set("Mario", 1.0f);
+                mario = 1.0f;
+            }
+            else if (tvp.type == _BOOL)
+            {
+                mario = LexicalCast<float, bool>(tvp.value.b);
+            }
+            else if (tvp.type == _INT)
+            {
+                mario = LexicalCast<float, int>(tvp.value.i);
+            }
+            else if (tvp.type == _FLOAT)
+            {
+                mario = LexicalCast<float, float>(tvp.value.f);
+            }
+            else if (tvp.type == _STRING)
+            {
+                mario = LexicalCast<float, const char*>(tvp.value.s);
+            }
+            else
+            {
+                mario = 0.0f;
+            }
+        }
+
+        float peach;
+        {
+            TagValuePair& tvp = config.FindTvp("Peach");
+            if (tvp.tag == NULL)
+            {
+                config.Set("Peach", 1.0f);
+                peach = 1.0f;
+            }
+            else if (tvp.type == _BOOL)
+            {
+                peach = LexicalCast<float, bool>(tvp.value.b);
+            }
+            else if (tvp.type == _INT)
+            {
+                peach = LexicalCast<float, int>(tvp.value.i);
+            }
+            else if (tvp.type == _FLOAT)
+            {
+                peach = LexicalCast<float, float>(tvp.value.f);
+            }
+            else if (tvp.type == _STRING)
+            {
+                peach = LexicalCast<float, const char*>(tvp.value.s);
+            }
+            else
+            {
+                peach = 0.0f;
+            }
+        }
+
+        float super;
+        {
+            TagValuePair& tvp = config.FindTvp("Super");
+            if (tvp.tag == NULL)
+            {
+                config.Set("Super", 1.0f);
+                super = 1.0f;
+            }
+            else if (tvp.type == _BOOL)
+            {
+                super = LexicalCast<float, bool>(tvp.value.b);
+            }
+            else if (tvp.type == _INT)
+            {
+                super = LexicalCast<float, int>(tvp.value.i);
+            }
+            else if (tvp.type == _FLOAT)
+            {
+                super = LexicalCast<float, float>(tvp.value.f);
+            }
+            else if (tvp.type == _STRING)
+            {
+                super = LexicalCast<float, const char*>(tvp.value.s);
+            }
+            else
+            {
+                super = 0.0f;
+            }
+        }
+
+        float toad;
+        {
+            TagValuePair& tvp = config.FindTvp("Toad");
+            if (tvp.tag == NULL)
+            {
+                config.Set("Toad", 1.0f);
+                toad = 1.0f;
+            }
+            else if (tvp.type == _BOOL)
+            {
+                toad = LexicalCast<float, bool>(tvp.value.b);
+            }
+            else if (tvp.type == _INT)
+            {
+                toad = LexicalCast<float, int>(tvp.value.i);
+            }
+            else if (tvp.type == _FLOAT)
+            {
+                toad = LexicalCast<float, float>(tvp.value.f);
+            }
+            else if (tvp.type == _STRING)
+            {
+                toad = LexicalCast<float, const char*>(tvp.value.s);
+            }
+            else
+            {
+                toad = 0.0f;
+            }
+        }
+
+        float waluigi;
+        {
+            TagValuePair& tvp = config.FindTvp("Waluigi");
+            if (tvp.tag == NULL)
+            {
+                config.Set("Waluigi", 1.0f);
+                waluigi = 1.0f;
+            }
+            else if (tvp.type == _BOOL)
+            {
+                waluigi = LexicalCast<float, bool>(tvp.value.b);
+            }
+            else if (tvp.type == _INT)
+            {
+                waluigi = LexicalCast<float, int>(tvp.value.i);
+            }
+            else if (tvp.type == _FLOAT)
+            {
+                waluigi = LexicalCast<float, float>(tvp.value.f);
+            }
+            else if (tvp.type == _STRING)
+            {
+                waluigi = LexicalCast<float, const char*>(tvp.value.s);
+            }
+            else
+            {
+                waluigi = 0.0f;
+            }
+        }
+
+        float wario;
+        {
+            TagValuePair& tvp = config.FindTvp("Wario");
+            if (tvp.tag == NULL)
+            {
+                config.Set("Wario", 1.0f);
+                wario = 1.0f;
+            }
+            else if (tvp.type == _BOOL)
+            {
+                wario = LexicalCast<float, bool>(tvp.value.b);
+            }
+            else if (tvp.type == _INT)
+            {
+                wario = LexicalCast<float, int>(tvp.value.i);
+            }
+            else if (tvp.type == _FLOAT)
+            {
+                wario = LexicalCast<float, float>(tvp.value.f);
+            }
+            else if (tvp.type == _STRING)
+            {
+                wario = LexicalCast<float, const char*>(tvp.value.s);
+            }
+            else
+            {
+                wario = 0.0f;
+            }
+        }
+
+        float yoshi;
+        {
+            TagValuePair& tvp = config.FindTvp("Yoshi");
+            if (tvp.tag == NULL)
+            {
+                config.Set("Yoshi", 1.0f);
+                yoshi = 1.0f;
+            }
+            else if (tvp.type == _BOOL)
+            {
+                yoshi = LexicalCast<float, bool>(tvp.value.b);
+            }
+            else if (tvp.type == _INT)
+            {
+                yoshi = LexicalCast<float, int>(tvp.value.i);
+            }
+            else if (tvp.type == _FLOAT)
+            {
+                yoshi = LexicalCast<float, float>(tvp.value.f);
+            }
+            else if (tvp.type == _STRING)
+            {
+                yoshi = LexicalCast<float, const char*>(tvp.value.s);
+            }
+            else
+            {
+                yoshi = 0.0f;
+            }
+        }
+
+        float allIngameDialogue;
+        {
+            TagValuePair& tvp = config.FindTvp("All Ingame Dialogue");
+            if (tvp.tag == NULL)
+            {
+                config.Set("All Ingame Dialogue", 1.0f);
+                allIngameDialogue = 1.0f;
+            }
+            else if (tvp.type == _BOOL)
+            {
+                allIngameDialogue = LexicalCast<float, bool>(tvp.value.b);
+            }
+            else if (tvp.type == _INT)
+            {
+                allIngameDialogue = LexicalCast<float, int>(tvp.value.i);
+            }
+            else if (tvp.type == _FLOAT)
+            {
+                allIngameDialogue = LexicalCast<float, float>(tvp.value.f);
+            }
+            else if (tvp.type == _STRING)
+            {
+                allIngameDialogue = LexicalCast<float, const char*>(tvp.value.s);
+            }
+            else
+            {
+                allIngameDialogue = 0.0f;
+            }
+        }
+
+        float allFEDialogue;
+        {
+            TagValuePair& tvp = config.FindTvp("All FE Dialogue");
+            if (tvp.tag == NULL)
+            {
+                config.Set("All FE Dialogue", 1.0f);
+                allFEDialogue = 1.0f;
+            }
+            else if (tvp.type == _BOOL)
+            {
+                allFEDialogue = LexicalCast<float, bool>(tvp.value.b);
+            }
+            else if (tvp.type == _INT)
+            {
+                allFEDialogue = LexicalCast<float, int>(tvp.value.i);
+            }
+            else if (tvp.type == _FLOAT)
+            {
+                allFEDialogue = LexicalCast<float, float>(tvp.value.f);
+            }
+            else if (tvp.type == _STRING)
+            {
+                allFEDialogue = LexicalCast<float, const char*>(tvp.value.s);
+            }
+            else
+            {
+                allFEDialogue = 0.0f;
+            }
+        }
+
+        float everythingElse;
+        {
+            TagValuePair& tvp = config.FindTvp("Everything Else");
+            if (tvp.tag == NULL)
+            {
+                config.Set("Everything Else", 0.8f);
+                everythingElse = 0.8f;
+            }
+            else if (tvp.type == _BOOL)
+            {
+                everythingElse = LexicalCast<float, bool>(tvp.value.b);
+            }
+            else if (tvp.type == _INT)
+            {
+                everythingElse = LexicalCast<float, int>(tvp.value.i);
+            }
+            else if (tvp.type == _FLOAT)
+            {
+                everythingElse = LexicalCast<float, float>(tvp.value.f);
+            }
+            else if (tvp.type == _STRING)
+            {
+                everythingElse = LexicalCast<float, const char*>(tvp.value.s);
+            }
+            else
+            {
+                everythingElse = 0.0f;
+            }
+        }
+
+        Audio::SetVolGroupVolume(3, fe, 500);
+        gfVolumeGroups[6] = fe;
+
+        Audio::SetVolGroupVolume(4, allFEDialogue, 500);
+        gfVolumeGroups[7] = allFEDialogue;
+
+        Audio::SetVolGroupVolume(1, everythingElse, 500);
+
+        gfVolumeGroups[2] = fe;
+        gfVolumeGroups[3] = allIngameDialogue;
+        gfVolumeGroups[8] = birdo;
+        gfVolumeGroups[9] = bowser;
+        gfVolumeGroups[10] = critter;
+        gfVolumeGroups[11] = daisy;
+        gfVolumeGroups[12] = dk;
+        gfVolumeGroups[13] = hammerBrothers;
+        gfVolumeGroups[14] = koopa;
+        gfVolumeGroups[15] = luigi;
+        gfVolumeGroups[16] = mario;
+        gfVolumeGroups[17] = peach;
+        gfVolumeGroups[18] = super;
+        gfVolumeGroups[19] = toad;
+        gfVolumeGroups[20] = waluigi;
+        gfVolumeGroups[21] = wario;
+        gfVolumeGroups[22] = yoshi;
+
+        Audio::SetVolGroupVolume(5, allIngameDialogue * birdo, 500);
+        Audio::SetVolGroupVolume(6, allIngameDialogue * bowser, 500);
+        Audio::SetVolGroupVolume(7, allIngameDialogue * critter, 500);
+        Audio::SetVolGroupVolume(8, allIngameDialogue * daisy, 500);
+        Audio::SetVolGroupVolume(9, allIngameDialogue * dk, 500);
+        Audio::SetVolGroupVolume(10, allIngameDialogue * hammerBrothers, 500);
+        Audio::SetVolGroupVolume(11, allIngameDialogue * koopa, 500);
+        Audio::SetVolGroupVolume(12, allIngameDialogue * luigi, 500);
+        Audio::SetVolGroupVolume(13, allIngameDialogue * mario, 500);
+        Audio::SetVolGroupVolume(14, allIngameDialogue * peach, 500);
+        Audio::SetVolGroupVolume(15, allIngameDialogue * super, 500);
+        Audio::SetVolGroupVolume(16, allIngameDialogue * toad, 500);
+        Audio::SetVolGroupVolume(17, allIngameDialogue * waluigi, 500);
+        Audio::SetVolGroupVolume(18, allIngameDialogue * wario, 500);
+        Audio::SetVolGroupVolume(19, allIngameDialogue * yoshi, 500);
+    }
 }
 
 namespace Audio
@@ -2547,13 +3245,6 @@ bool InitializeReverb(eStadiumID stadiumID, unsigned char studio)
     nlPrintf("Audio::InitializeReverb() unsuccessful.\n");
     return false;
 }
-
-/**
- * Offset/Address/Size: 0x3AB0 | 0x8013FFC4 | size: 0xF60
- */
-// void ReadVolGroupSettings()
-// {
-// }
 
 /**
  * Offset/Address/Size: 0x4A10 | 0x80140F24 | size: 0x15C

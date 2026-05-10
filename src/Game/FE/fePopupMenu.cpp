@@ -394,7 +394,7 @@ void FEPopupMenu::Update(float fDeltaT)
     {
         SetPositions();
 
-        if (mUnknownA64 == 0)
+        if (mUnknownA64.mTag == 0)
         {
             if (mButtons.mButtonInstance != NULL)
             {
@@ -482,7 +482,7 @@ void FEPopupMenu::Update(float fDeltaT)
 
     if (g_pFEInput->JustPressed(mControlInput, 0x200, false, NULL))
     {
-        if (mUnknownA64 == 0)
+        if (mUnknownA64.mTag == 0)
         {
             return;
         }
@@ -678,6 +678,46 @@ void FEPopupMenu::SceneCreated()
  */
 FEPopupMenu::~FEPopupMenu()
 {
+    for (int i = 0; i < mPopup.numOptions; i++)
+    {
+        delete mPopup.pOptionLabels[i];
+    }
+
+    if (mPopup.pMessage != NULL)
+    {
+        delete mPopup.pMessage;
+    }
+
+    g_pFEInput->PopExclusiveInputLock(this);
+    FEAudio::EnableSounds(true);
+    FEAudio::PlayAnimAudioEvent("sfx_back", false);
+    FEAudio::EnableSounds(false);
+
+    if (mRunCallBack == true)
+    {
+        Function<FnVoidVoid>& callback = callBacks[mHighlightedOption];
+        if (callback.mTag == FREE_FUNCTION)
+        {
+            callback.mFreeFunction();
+        }
+        else
+        {
+            callback.mFunctor->operator()();
+        }
+    }
+    else if (mUnknownA1F != false)
+    {
+        if (mUnknownA64.mTag == FREE_FUNCTION)
+        {
+            mUnknownA64.mFreeFunction();
+        }
+        else
+        {
+            mUnknownA64.mFunctor->operator()();
+        }
+    }
+
+    FEAudio::EnableSounds(true);
 }
 
 /**

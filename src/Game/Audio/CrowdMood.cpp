@@ -45,6 +45,16 @@ static CROWD_SETTINGS g_Settings;
 CROWD_AUDIO_INIT g_CrowdAudio;
 CROWD_STATE g_CrowdState;
 
+char* MoodNames[5] = {
+    "Positive",
+    "Negative",
+    "Bored",
+    "Frustrated",
+    "Neutral",
+};
+
+static MOOD_DEFINITION g_MoodDefs[5];
+
 struct RANDOM_STREAMS
 {
     unsigned long Count;
@@ -608,6 +618,304 @@ void UpdateTiming(float dtArg)
  */
 void CrowdMood::ReadConfig()
 {
+    Config config(Config::ALLOCATE_HIGH);
+    config.LoadFromFile("audio/CrowdMood.ini");
+
+    CROWD_SETTINGS& settings = g_Settings;
+    char IniTag[256];
+    char* TagEnd;
+    unsigned long MaxTagLen;
+    const char* HeckleDelayTag = "HeckleDelay";
+    const char* HeckleDelayRangeTag = "HeckleDelayRange";
+    CROWD_MOOD mood = CM_Positive;
+
+    for (; mood < CM_END; Increment(mood))
+    {
+        MOOD_DEFINITION& MoodDef = g_MoodDefs[mood];
+        nlStrNCpy(IniTag, MoodNames[mood], 0x100);
+
+        TagEnd = IniTag + nlStrLen(IniTag);
+        *TagEnd = '_';
+        TagEnd = TagEnd + 1;
+        MaxTagLen = 0x100 - (TagEnd - IniTag);
+
+        nlStrNCpy(TagEnd, "NeutralVol", MaxTagLen);
+        MoodDef.NeutralVol = GetConfigFloat(config, IniTag, 0.0f) / 100.0f;
+
+        nlStrNCpy(TagEnd, "NegativeVol", MaxTagLen);
+        MoodDef.NegativeVol = GetConfigFloat(config, IniTag, 0.0f) / 100.0f;
+
+        nlStrNCpy(TagEnd, "PositiveVol", MaxTagLen);
+        MoodDef.PositiveVol = GetConfigFloat(config, IniTag, 0.0f) / 100.0f;
+
+        nlStrNCpy(TagEnd, "SaturationStart", MaxTagLen);
+        MoodDef.SaturationStart = GetConfigFloat(config, IniTag, 0.0f) / 100.0f;
+
+        nlStrNCpy(TagEnd, "SaturationVolume", MaxTagLen);
+        MoodDef.SaturationVolume = GetConfigFloat(config, IniTag, 0.0f) / 100.0f;
+
+        nlStrNCpy(TagEnd, "SaturationSample", MaxTagLen);
+        {
+            const char* sampleName;
+            TagValuePair& tvp = config.FindTvp(IniTag);
+            if (tvp.tag == NULL)
+            {
+                config.Set(IniTag, "none");
+                sampleName = "none";
+            }
+            else if (tvp.type == _BOOL)
+            {
+                sampleName = LexicalCast<const char*, bool>(tvp.value.b);
+            }
+            else if (tvp.type == _INT)
+            {
+                sampleName = LexicalCast<const char*, int>(tvp.value.i);
+            }
+            else if (tvp.type == _FLOAT)
+            {
+                sampleName = LexicalCast<const char*, float>(tvp.value.f);
+            }
+            else if (tvp.type == _STRING)
+            {
+                sampleName = LexicalCast<const char*, const char*>(tvp.value.s);
+            }
+            else
+            {
+                sampleName = NULL;
+            }
+            nlStrNCpy(settings.SaturationSampleNames[mood], sampleName, 0x100);
+        }
+
+        nlStrNCpy(TagEnd, "ChantVolume", MaxTagLen);
+        MoodDef.Chant.Volume = GetConfigFloat(config, IniTag, 0.0f) / 100.0f;
+
+        nlStrNCpy(TagEnd, "ChantVolumeRange", MaxTagLen);
+        MoodDef.Chant.VolumeRange = GetConfigFloat(config, IniTag, 0.0f) / 100.0f;
+
+        nlStrNCpy(TagEnd, "ChantDelay", MaxTagLen);
+        MoodDef.Chant.Delay = GetConfigFloat(config, IniTag, 0.0f) / 100.0f;
+
+        nlStrNCpy(TagEnd, "ChantDelayRange", MaxTagLen);
+        MoodDef.Chant.DelayRange = GetConfigFloat(config, IniTag, 0.0f) / 100.0f;
+
+        nlStrNCpy(TagEnd, "HeckleVolume", MaxTagLen);
+        MoodDef.Heckle.Volume = GetConfigFloat(config, IniTag, 0.0f) / 100.0f;
+
+        nlStrNCpy(TagEnd, "HeckleVolumeRange", MaxTagLen);
+        MoodDef.Heckle.VolumeRange = GetConfigFloat(config, IniTag, 0.0f) / 100.0f;
+
+        nlStrNCpy(TagEnd, HeckleDelayTag, MaxTagLen);
+        MoodDef.Heckle.Delay = GetConfigFloat(config, IniTag, 0.0f) / 100.0f;
+
+        nlStrNCpy(TagEnd, HeckleDelayRangeTag, MaxTagLen);
+        MoodDef.Heckle.DelayRange = GetConfigFloat(config, IniTag, 0.0f) / 100.0f;
+
+        MoodDef.Chant.Delay /= 10.0;
+        MoodDef.Chant.DelayRange /= 10.0;
+        MoodDef.Heckle.Delay /= 10.0;
+        MoodDef.Heckle.DelayRange /= 10.0;
+    }
+
+    settings.MoodDecayDelay = GetConfigFloat(config, "MoodDecayDelay", 0.0f) / 100.0f;
+    settings.MoodDecayRate = GetConfigFloat(config, "MoodDecayRate", 0.0f) / 100.0f;
+    settings.BlendSpeedNormal = GetConfigFloat(config, "BlendSpeedNormal", 0.0f) / 100.0f;
+    settings.BlendSpeedFast = GetConfigFloat(config, "BlendSpeedFast", 0.0f) / 100.0f;
+    settings.BlendStrictness = GetConfigFloat(config, "BlendStrictness", 0.0f) / 100.0f;
+    settings.CrowdMasterVolume = GetConfigFloat(config, "CrowdMasterVolume", 0.0f) / 100.0f;
+
+    settings.BlendSpeedNormal /= 10.0f;
+    settings.BlendSpeedFast /= 10.0f;
+    settings.MoodDecayDelay /= 10.0f;
+    settings.MoodDecayRate /= 100.0f;
+
+    {
+        const char* sampleName;
+        TagValuePair& tvp = config.FindTvp("NeutralSample");
+        if (tvp.tag == NULL)
+        {
+            config.Set("NeutralSample", "none");
+            sampleName = "none";
+        }
+        else if (tvp.type == _BOOL)
+        {
+            sampleName = LexicalCast<const char*, bool>(tvp.value.b);
+        }
+        else if (tvp.type == _INT)
+        {
+            sampleName = LexicalCast<const char*, int>(tvp.value.i);
+        }
+        else if (tvp.type == _FLOAT)
+        {
+            sampleName = LexicalCast<const char*, float>(tvp.value.f);
+        }
+        else if (tvp.type == _STRING)
+        {
+            sampleName = LexicalCast<const char*, const char*>(tvp.value.s);
+        }
+        else
+        {
+            sampleName = NULL;
+        }
+        nlStrNCpy(settings.NeutralSampleName, sampleName, 0x100);
+    }
+
+    {
+        const char* sampleName;
+        TagValuePair& tvp = config.FindTvp("PositiveSample");
+        if (tvp.tag == NULL)
+        {
+            config.Set("PositiveSample", "none");
+            sampleName = "none";
+        }
+        else if (tvp.type == _BOOL)
+        {
+            sampleName = LexicalCast<const char*, bool>(tvp.value.b);
+        }
+        else if (tvp.type == _INT)
+        {
+            sampleName = LexicalCast<const char*, int>(tvp.value.i);
+        }
+        else if (tvp.type == _FLOAT)
+        {
+            sampleName = LexicalCast<const char*, float>(tvp.value.f);
+        }
+        else if (tvp.type == _STRING)
+        {
+            sampleName = LexicalCast<const char*, const char*>(tvp.value.s);
+        }
+        else
+        {
+            sampleName = NULL;
+        }
+        nlStrNCpy(settings.PositiveSampleName, sampleName, 0x100);
+    }
+
+    {
+        const char* sampleName;
+        TagValuePair& tvp = config.FindTvp("NegativeSample");
+        if (tvp.tag == NULL)
+        {
+            config.Set("NegativeSample", "none");
+            sampleName = "none";
+        }
+        else if (tvp.type == _BOOL)
+        {
+            sampleName = LexicalCast<const char*, bool>(tvp.value.b);
+        }
+        else if (tvp.type == _INT)
+        {
+            sampleName = LexicalCast<const char*, int>(tvp.value.i);
+        }
+        else if (tvp.type == _FLOAT)
+        {
+            sampleName = LexicalCast<const char*, float>(tvp.value.f);
+        }
+        else if (tvp.type == _STRING)
+        {
+            sampleName = LexicalCast<const char*, const char*>(tvp.value.s);
+        }
+        else
+        {
+            sampleName = NULL;
+        }
+        nlStrNCpy(settings.NegativeSampleName, sampleName, 0x100);
+    }
+
+    nlStrNCpy(IniTag, "RandomChant", 0x100);
+    TagEnd = IniTag + nlStrLen(IniTag);
+
+    RANDOM_STREAMS* pStreams = &g_RandomChants;
+    pStreams->Count = 0;
+
+    while (pStreams->Count <= 0x20)
+    {
+        nlSNPrintf(TagEnd, 4, "%d", pStreams->Count + 1);
+
+        const char* sampleName;
+        TagValuePair& tvp = config.FindTvp(IniTag);
+        if (tvp.tag == NULL)
+        {
+            config.Set(IniTag, "none");
+            sampleName = "none";
+        }
+        else if (tvp.type == _BOOL)
+        {
+            sampleName = LexicalCast<const char*, bool>(tvp.value.b);
+        }
+        else if (tvp.type == _INT)
+        {
+            sampleName = LexicalCast<const char*, int>(tvp.value.i);
+        }
+        else if (tvp.type == _FLOAT)
+        {
+            sampleName = LexicalCast<const char*, float>(tvp.value.f);
+        }
+        else if (tvp.type == _STRING)
+        {
+            sampleName = LexicalCast<const char*, const char*>(tvp.value.s);
+        }
+        else
+        {
+            sampleName = NULL;
+        }
+
+        if (nlStrNCmp<char>(sampleName, "none", 4) == 0)
+        {
+            break;
+        }
+
+        nlStrNCpy(pStreams->Files[pStreams->Count], sampleName, 0x100);
+        pStreams->Count++;
+    }
+
+    nlStrNCpy(IniTag, "RandomHeckle", 0x100);
+    TagEnd = IniTag + nlStrLen(IniTag);
+
+    pStreams = &g_RandomHeckles;
+    pStreams->Count = 0;
+
+    while (pStreams->Count <= 0x20)
+    {
+        nlSNPrintf(TagEnd, 4, "%d", pStreams->Count + 1);
+
+        const char* sampleName;
+        TagValuePair& tvp = config.FindTvp(IniTag);
+        if (tvp.tag == NULL)
+        {
+            config.Set(IniTag, "none");
+            sampleName = "none";
+        }
+        else if (tvp.type == _BOOL)
+        {
+            sampleName = LexicalCast<const char*, bool>(tvp.value.b);
+        }
+        else if (tvp.type == _INT)
+        {
+            sampleName = LexicalCast<const char*, int>(tvp.value.i);
+        }
+        else if (tvp.type == _FLOAT)
+        {
+            sampleName = LexicalCast<const char*, float>(tvp.value.f);
+        }
+        else if (tvp.type == _STRING)
+        {
+            sampleName = LexicalCast<const char*, const char*>(tvp.value.s);
+        }
+        else
+        {
+            sampleName = NULL;
+        }
+
+        if (nlStrNCmp<char>(sampleName, "none", 4) == 0)
+        {
+            break;
+        }
+
+        nlStrNCpy(pStreams->Files[pStreams->Count], sampleName, 0x100);
+        pStreams->Count++;
+    }
+
+    settings.NoStreaming = GetConfigBool(Config::Global(), "no_stream", false);
 }
 
 inline GCAudioStreaming::AudioStream::AudioStream(GCAudioStreaming::AudioBufferMgr& mgr, unsigned long bufCount)

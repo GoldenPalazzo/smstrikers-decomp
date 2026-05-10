@@ -19,6 +19,44 @@ struct gl_ScreenInfo
 
 extern gl_ScreenInfo* glGetScreenInfo();
 
+class GameInfoManager;
+
+template <typename T>
+class nlSingleton
+{
+public:
+    static T* s_pInstance;
+};
+
+extern "C" bool IsInTournamentMode__15GameInfoManagerCFv(void*);
+extern "C" short GetCurrentRoundNumber__15GameInfoManagerCFv(void*);
+extern "C" short GetFirstRoundNumber__15GameInfoManagerCFv(void*);
+extern "C" short GetPreviousRoundNumber__15GameInfoManagerCFs(void*, short);
+extern "C" unsigned short GetNumGamesPerRound__15GameInfoManagerCFi(void*, int);
+extern "C" void* GetMatchupInfo__15GameInfoManagerCFsUs(void*, short, unsigned short);
+extern "C" int GetTeam__15GameInfoManagerCFs(void*, short);
+extern "C" bool IsUserQualified__15GameInfoManagerCFQ215GameInfoManager10eGameModes(void*, int);
+extern "C" bool IsInCupMode__15GameInfoManagerCFv(void*);
+extern "C" unsigned long GetLOCTeamName__F7eTeamID(int);
+
+struct GameInfoAccessor_CupTicker
+{
+    char _pad6C[0x6C];
+    unsigned char mDoingKnockout;
+    char _pad4948[0x48DB];
+    int mTournamentMode;
+    int _padCurrentMode0;
+    int mCurrentMode;
+    char _pad4960[8];
+    void* mCurrentCup;
+};
+
+struct BaseCupAccessor_CupTicker
+{
+    char _padA[0xA];
+    short mGameNumber;
+};
+
 // /**
 //  * Offset/Address/Size: 0x0 | 0x800F5EBC | size: 0x38
 //  */
@@ -215,9 +253,139 @@ void CupTickerManager::SetTickerTextInstance(TLTextInstance* tickerText)
 
 /**
  * Offset/Address/Size: 0x680 | 0x800F2648 | size: 0x12E8
+ * TODO: 15.49% match - large localization/formatting branches for each ticker state
+ * are still placeholder control flow and do not construct the final message text yet.
  */
 void CupTickerManager::CreateNewMessage()
 {
+    GameInfoManager* gameInfo = nlSingleton<GameInfoManager>::s_pInstance;
+    GameInfoAccessor_CupTicker* gameInfoMem = (GameInfoAccessor_CupTicker*)gameInfo;
+    BasicString<unsigned short, Detail::TempStringAllocator> tickerMessage;
+    bool messageDisplayed = false;
+    bool tournamentLeague = false;
+
+    if (IsInTournamentMode__15GameInfoManagerCFv(gameInfo)
+        && gameInfoMem->mTournamentMode == 0)
+    {
+        tournamentLeague = true;
+    }
+
+    if (mTicker == 0)
+    {
+        return;
+    }
+
+    do
+    {
+        switch ((int)mState)
+        {
+        case 0:
+            messageDisplayed = true;
+            break;
+        case 1:
+            if (!tournamentLeague)
+            {
+                mState = (eCupTickerState)3;
+            }
+            else
+            {
+                messageDisplayed = true;
+            }
+            break;
+        case 2:
+        {
+            BaseCupAccessor_CupTicker* cup = (BaseCupAccessor_CupTicker*)gameInfoMem->mCurrentCup;
+            if (tournamentLeague
+                && GetCurrentRoundNumber__15GameInfoManagerCFv(gameInfo) == 0
+                && cup->mGameNumber == 0)
+            {
+                mState = (eCupTickerState)3;
+            }
+            else
+            {
+                messageDisplayed = true;
+            }
+            break;
+        }
+        case 3:
+            if (GetCurrentRoundNumber__15GameInfoManagerCFv(gameInfo) == -5)
+            {
+                mState = (eCupTickerState)4;
+            }
+            else
+            {
+                (void)GetLOCTeamName__F7eTeamID(GetTeam__15GameInfoManagerCFs(gameInfo, 0));
+                (void)GetLOCTeamName__F7eTeamID(GetTeam__15GameInfoManagerCFs(gameInfo, 1));
+                messageDisplayed = true;
+            }
+            break;
+        case 4:
+        {
+            int mode = gameInfoMem->mCurrentMode;
+            if ((mode == 1 && !IsUserQualified__15GameInfoManagerCFQ215GameInfoManager10eGameModes(gameInfo, 2))
+                || (mode == 2 && !IsUserQualified__15GameInfoManagerCFQ215GameInfoManager10eGameModes(gameInfo, 3))
+                || (IsUserQualified__15GameInfoManagerCFQ215GameInfoManager10eGameModes(gameInfo, 2)
+                    && IsUserQualified__15GameInfoManagerCFQ215GameInfoManager10eGameModes(gameInfo, 3)
+                    && !IsUserQualified__15GameInfoManagerCFQ215GameInfoManager10eGameModes(gameInfo, 4)
+                    && IsInCupMode__15GameInfoManagerCFv(gameInfo))
+                || ((mode == 4 || mode == 8) && !gameInfoMem->mDoingKnockout))
+            {
+                messageDisplayed = true;
+            }
+            else
+            {
+                mState = (eCupTickerState)5;
+            }
+            break;
+        }
+        case 5:
+        {
+            short firstRound = GetFirstRoundNumber__15GameInfoManagerCFv(gameInfo);
+            short currentRound = GetCurrentRoundNumber__15GameInfoManagerCFv(gameInfo);
+            if (currentRound == firstRound)
+            {
+                mState = CUP_TICKER_STATE_0;
+            }
+            else
+            {
+                short round = GetPreviousRoundNumber__15GameInfoManagerCFs(gameInfo, -7);
+                unsigned short numGames = GetNumGamesPerRound__15GameInfoManagerCFi(gameInfo, round);
+                int i = 0;
+                while (i < (int)numGames)
+                {
+                    int* game = 0;
+                    if (currentRound == -1)
+                    {
+                        game = (int*)((char*)gameInfo + 0x3FF0);
+                    }
+                    else
+                    {
+                        game = (int*)GetMatchupInfo__15GameInfoManagerCFsUs(gameInfo, round, (unsigned short)i);
+                    }
+
+                    (void)GetLOCTeamName__F7eTeamID(game[0]);
+                    (void)GetLOCTeamName__F7eTeamID(game[1]);
+                    i++;
+                }
+                messageDisplayed = true;
+            }
+            break;
+        }
+        default:
+            messageDisplayed = true;
+            break;
+        }
+
+        if (!messageDisplayed)
+        {
+            int nextState = (int)mState + 1;
+            mState = (eCupTickerState)(nextState % 6);
+        }
+    } while (!messageDisplayed);
+
+    memcpy(mMessageBuffer, tickerMessage.c_str(), 0x400);
+    BasicString<unsigned short, Detail::TempStringAllocator> displayMessage(mMessageBuffer);
+    mTicker->SetDisplayMessage(displayMessage);
 }
 
 /**

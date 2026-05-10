@@ -1267,8 +1267,321 @@ void CupTrophyScene::SetLossRecord(Spoil& spoil)
 /**
  * Offset/Address/Size: 0x170 | 0x800C9824 | size: 0xFBC
  */
-void CupTrophyScene::SetHistory(Spoil&)
+void CupTrophyScene::SetHistory(Spoil& spoil)
 {
+    typedef TLComponentInstance* (*FindCompByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
+    typedef TLComponentInstance* (*FindCompByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
+    typedef TLTextInstance* (*FindTextByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
+    typedef TLTextInstance* (*FindTextByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
+    typedef TLImageInstance* (*FindImageByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
+    typedef TLImageInstance* (*FindImageByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
+
+    struct CupRecordView
+    {
+        OSCalendarTime mDate;
+        signed char mPlace;
+        unsigned char mPad0[3];
+        int mTeam;
+        int mDifficulty;
+    };
+
+    struct SpoilHistoryView
+    {
+        CupRecordView mCupHistory[10];
+        unsigned char mNumRecords;
+    };
+
+    struct TLTextPosView
+    {
+        unsigned char mPad0[0x88];
+        float mX;
+        float mY;
+        unsigned long mFlags;
+    };
+
+    static const char* TROPHY_RECORD_ROW_NAMES_LOCAL[3] = {
+        "THE HISTORY",
+        "THE HISTORY2",
+        "THE HISTORY3",
+    };
+
+    static const nlColour SPOILS_COLOUR_HIGHLIGHT_LOCAL = { 0xFE, 0xEE, 0x00, 0xFF };
+    static const nlColour SPOILS_COLOUR_NORMAL_LOCAL = { 0xFF, 0xFF, 0xFF, 0xFF };
+
+    FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
+    SpoilHistoryView& spoilView = (SpoilHistoryView&)spoil;
+
+    for (int i = 0; i < 3; i++)
+    {
+        int recordIndex = i + mScrollOffset;
+
+        TLComponentInstance* pComp;
+        {
+            union
+            {
+                FindCompByValue byValue;
+                FindCompByRef byRef;
+            } findComp;
+
+            volatile InlineHasher hLayerB, hLayerA;
+            volatile InlineHasher hHistoryB, hHistoryA;
+            volatile InlineHasher h5, h4, h3, h2, h1, h0;
+
+            findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
+
+            h0.m_Hash = 0;
+            h1.m_Hash = 0;
+            h2.m_Hash = 0;
+            h3.m_Hash = 0;
+            h4.m_Hash = 0;
+            h5.m_Hash = 0;
+
+            unsigned long hash = nlStringLowerHash("HISTORY");
+            hHistoryA.m_Hash = hash;
+            hHistoryB.m_Hash = hash;
+
+            hash = nlStringLowerHash("Layer");
+            hLayerA.m_Hash = hash;
+            hLayerB.m_Hash = hash;
+
+            pComp = findComp.byRef(
+                m_pFEScene->m_pFEPackage->GetPresentation()->m_currentSlide,
+                (InlineHasher&)hLayerB,
+                (InlineHasher&)hHistoryB,
+                (InlineHasher&)h5,
+                (InlineHasher&)h3,
+                (InlineHasher&)h1,
+                (InlineHasher&)h0);
+        }
+
+        TLTextInstance* pText;
+        {
+            union
+            {
+                FindTextByValue byValue;
+                FindTextByRef byRef;
+            } findText;
+
+            volatile InlineHasher hNameB, hNameA;
+            volatile InlineHasher hLayerB, hLayerA;
+            volatile InlineHasher h5, h4, h3, h2, h1, h0;
+
+            findText.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
+
+            h0.m_Hash = 0;
+            h1.m_Hash = 0;
+            h2.m_Hash = 0;
+            h3.m_Hash = 0;
+            h4.m_Hash = 0;
+            h5.m_Hash = 0;
+
+            unsigned long hash = nlStringLowerHash(TROPHY_RECORD_ROW_NAMES_LOCAL[i]);
+            hNameA.m_Hash = hash;
+            hNameB.m_Hash = hash;
+
+            hash = nlStringLowerHash("Layer");
+            hLayerA.m_Hash = hash;
+            hLayerB.m_Hash = hash;
+
+            pText = findText.byRef(
+                pComp->GetActiveSlide(),
+                (InlineHasher&)hNameB,
+                (InlineHasher&)hLayerB,
+                (InlineHasher&)h5,
+                (InlineHasher&)h3,
+                (InlineHasher&)h1,
+                (InlineHasher&)h0);
+        }
+
+        {
+            TLTextPosView* pos = (TLTextPosView*)pText;
+            float oldY = pos->mY;
+            pos->mX = 999.9f;
+            pos->mY = oldY;
+            pos->mFlags |= 4;
+        }
+
+        if (i == mRow && (spoilView.mNumRecords == 0 || spoilView.mNumRecords > 3))
+        {
+            ((TLInstance*)pText)->SetAssetColour(SPOILS_COLOUR_HIGHLIGHT_LOCAL);
+        }
+        else
+        {
+            ((TLInstance*)pText)->SetAssetColour(SPOILS_COLOUR_NORMAL_LOCAL);
+        }
+
+        if (recordIndex == 0 && spoilView.mNumRecords == 0)
+        {
+            ((TLTextLocView*)pText)->mLocStrId = 0x745863BC;
+            ((TLTextLocView*)pText)->mOverloadFlags |= 0x8;
+            ((TLInstance*)pText)->m_bVisible = true;
+            continue;
+        }
+
+        if (i >= (int)spoilView.mNumRecords)
+        {
+            ((TLInstance*)pText)->m_bVisible = false;
+            continue;
+        }
+
+        ((TLInstance*)pText)->m_bVisible = true;
+
+        unsigned long locHash;
+        if (spoilView.mCupHistory[recordIndex].mPlace != -2)
+        {
+            locHash = 0x4EEF03CB;
+        }
+        else
+        {
+            locHash = 0xB4B37E9E;
+        }
+
+        nlLocalization* loc = g_pLocalization;
+        const unsigned short* locString;
+
+        if (loc->m_LookupTable == 0)
+        {
+            locString = LocalizationTableNotFound;
+        }
+        else
+        {
+            nlLocalization::StringLookup* entry = nlBSearch(locHash, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
+            if (entry != 0)
+            {
+                locString = loc->m_FirstString + entry->StringOffset;
+            }
+            else
+            {
+                locString = MissingLocString;
+            }
+        }
+
+        memcpy(mRecordBuffer[i], locString, 0x100);
+        pText->SetString(mRecordBuffer[i]);
+    }
+
+    TLComponentInstance* arrowsComp;
+    {
+        union
+        {
+            FindCompByValue byValue;
+            FindCompByRef byRef;
+        } findComp;
+
+        volatile InlineHasher hLayerB, hLayerA;
+        volatile InlineHasher hNameB, hNameA;
+        volatile InlineHasher h5, h4, h3, h2, h1, h0;
+
+        findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
+
+        h0.m_Hash = 0;
+        h1.m_Hash = 0;
+        h2.m_Hash = 0;
+        h3.m_Hash = 0;
+        h4.m_Hash = 0;
+        h5.m_Hash = 0;
+
+        unsigned long hash = nlStringLowerHash("ARROWS2");
+        hNameA.m_Hash = hash;
+        hNameB.m_Hash = hash;
+
+        hash = nlStringLowerHash("Layer");
+        hLayerA.m_Hash = hash;
+        hLayerB.m_Hash = hash;
+
+        arrowsComp = findComp.byRef(
+            presentation->m_currentSlide,
+            (InlineHasher&)hNameA,
+            (InlineHasher&)hLayerA,
+            (InlineHasher&)h5,
+            (InlineHasher&)h3,
+            (InlineHasher&)h1,
+            (InlineHasher&)h0);
+    }
+
+    int currentRecord = mRow + mScrollOffset;
+
+    TLImageInstance* pArrowDown;
+    {
+        union
+        {
+            FindImageByValue byValue;
+            FindImageByRef byRef;
+        } findImage;
+
+        volatile InlineHasher hNameB, hNameA;
+        volatile InlineHasher hLayerB, hLayerA;
+        volatile InlineHasher h5, h4, h3, h2, h1, h0;
+
+        findImage.byValue = FEFinder<TLImageInstance, 2>::Find<TLSlide>;
+
+        h0.m_Hash = 0;
+        h1.m_Hash = 0;
+        h2.m_Hash = 0;
+        h3.m_Hash = 0;
+        h4.m_Hash = 0;
+        h5.m_Hash = 0;
+
+        unsigned long hash = nlStringLowerHash("arrow");
+        hNameA.m_Hash = hash;
+        hNameB.m_Hash = hash;
+
+        hash = nlStringLowerHash("Layer");
+        hLayerA.m_Hash = hash;
+        hLayerB.m_Hash = hash;
+
+        pArrowDown = findImage.byRef(
+            arrowsComp->GetActiveSlide(),
+            (InlineHasher&)hNameB,
+            (InlineHasher&)hLayerB,
+            (InlineHasher&)h5,
+            (InlineHasher&)h3,
+            (InlineHasher&)h1,
+            (InlineHasher&)h0);
+    }
+
+    pArrowDown->m_bVisible = currentRecord < (int)spoilView.mNumRecords - 1;
+
+    TLImageInstance* pArrowUp;
+    {
+        union
+        {
+            FindImageByValue byValue;
+            FindImageByRef byRef;
+        } findImage;
+
+        volatile InlineHasher hNameB, hNameA;
+        volatile InlineHasher hLayerB, hLayerA;
+        volatile InlineHasher h5, h4, h3, h2, h1, h0;
+
+        findImage.byValue = FEFinder<TLImageInstance, 2>::Find<TLSlide>;
+
+        h0.m_Hash = 0;
+        h1.m_Hash = 0;
+        h2.m_Hash = 0;
+        h3.m_Hash = 0;
+        h4.m_Hash = 0;
+        h5.m_Hash = 0;
+
+        unsigned long hash = nlStringLowerHash("arrow2");
+        hNameA.m_Hash = hash;
+        hNameB.m_Hash = hash;
+
+        hash = nlStringLowerHash("Layer");
+        hLayerA.m_Hash = hash;
+        hLayerB.m_Hash = hash;
+
+        pArrowUp = findImage.byRef(
+            arrowsComp->GetActiveSlide(),
+            (InlineHasher&)hNameB,
+            (InlineHasher&)hLayerB,
+            (InlineHasher&)h5,
+            (InlineHasher&)h3,
+            (InlineHasher&)h1,
+            (InlineHasher&)h0);
+    }
+
+    pArrowUp->m_bVisible = currentRecord > 0;
 }
 
 /**

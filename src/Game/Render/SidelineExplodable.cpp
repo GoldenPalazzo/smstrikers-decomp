@@ -1,12 +1,20 @@
 #include "Game/Render/SidelineExplodable.h"
 #include "Game/Render/AnimatedModelExplodable.h"
 #include "Game/Render/StaticModelExplodable.h"
+#include "Game/Character.h"
+#include "Game/Effects/EffectsGroup.h"
+#include "Game/Effects/EmissionManager.h"
 #include "Game/Field.h"
+#include "Game/Game.h"
+#include "Game/Physics/CollisionSpace.h"
 #include "Game/WorldManager.h"
 #include "NL/glx/glxTexture.h"
+#include "NL/nlFunction.h"
 #include "NL/nlMath.h"
 #include "NL/nlString.h"
 #include "types.h"
+
+extern PhysicsWorld* g_PhysicsWorld;
 
 float ExplosionFragment::sfFadeOutTime = 1.0f;
 
@@ -534,10 +542,156 @@ void SidelineExplodable::DestroyAllActiveFragments(bool renewExplodables)
 
 /**
  * Offset/Address/Size: 0xE84 | 0x801681E4 | size: 0x88C
+ * TODO: 77.35% match - applied from scratch tP3Yc.
  */
 void SidelineExplodable::Explode()
 {
-    FORCE_DONT_INLINE;
+    if (mNumActiveFragments != 0)
+        return;
+    if (mbIsMainModelVisible == false)
+        return;
+
+    nlMatrix4 frustumMatrix;
+    frustumMatrix.SetIdentity();
+    const nlMatrix4& worldMatrix = GetWorldMatrix();
+    frustumMatrix.f.m41 = worldMatrix.f.m41;
+    frustumMatrix.f.m42 = worldMatrix.f.m42;
+    frustumMatrix.f.m43 = worldMatrix.f.m43;
+    frustumMatrix.f.m44 = 1.0f;
+    if (!WorldManager::s_World->IsSphereInFrustum(frustumMatrix, 1.0f))
+        return;
+
+    mbIsMainModelVisible = false;
+    if (!g_pGame->mbCaptainShotToScoreOn)
+    {
+        EmissionController* pSmokeControl = EmissionManager::Create(fxGetGroup("explosion_smoke"), 0);
+        pSmokeControl->SetPosition(*(nlVector3*)&GetWorldMatrix().f.m41);
+    }
+
+    Event* pEvent = g_pEventManager->CreateValidEvent(0x66, 0x34);
+    CollisionBobombData* pEventData = new ((CollisionBobombData*)((u8*)pEvent + 0x10)) CollisionBobombData();
+    pEventData->v3ExplosionLocation = *(nlVector3*)&GetWorldMatrix().f.m41;
+
+    int fragmentOffset = 0;
+    int modelListOffset = 0;
+    int transformOffset = 0;
+    int iFragment = 0;
+    DrawableFragmentHandleNode** pUnusedTail = &SidelineExplodableManager::sUnusedDrawableFragments.m_pEnd;
+
+    for (; iFragment < mNumFragmentModels; fragmentOffset += 0x20, modelListOffset += 4, transformOffset += 0x40, iFragment++)
+    {
+        DrawableFragmentHandleNode* pNode = SidelineExplodableManager::sUnusedDrawableFragments.m_pStart;
+        unsigned short handle;
+        if (pNode == NULL)
+        {
+            handle = 0xFFFF;
+        }
+        else
+        {
+            nlListRemoveStart(&SidelineExplodableManager::sUnusedDrawableFragments.m_pStart, pUnusedTail);
+            handle = pNode->mID;
+            *(u32*)pNode = *(u32*)&DrawableFragmentHandleNode::sDrawableFragmentHandleNodePool.m_FreeList;
+            DrawableFragmentHandleNode::sDrawableFragmentHandleNodePool.m_FreeList = (SlotPoolEntry*)pNode;
+        }
+        if ((u16)handle == 0xFFFF)
+            continue;
+
+        ExplosionFragment* pFragment = (ExplosionFragment*)((u8*)mExplosionFragments.mData + fragmentOffset);
+        pFragment->mDrawableFragmentID = handle;
+        SidelineExplodableManager::sFragmentLookupTable[(u16)handle] = pFragment;
+
+        unsigned long hash = *(unsigned long*)((u8*)&GetCategoryData().mFragmentModelList[0] + modelListOffset);
+        DrawableObject* pDrawable = WorldManager::s_World->FindDrawableObject(hash);
+        pFragment->mFragmentModelHash = pDrawable->m_uHashID;
+
+        if (iFragment < GetCategoryData().mNumStationaryFragments)
+            pFragment->mbIsStationary = true;
+
+        AABBDimensions aabb;
+        pDrawable->GetAABBDimensions(aabb, false);
+        pDrawable->m_bRenderPlanarShadow = true;
+
+        pFragment->mfRemainingLifespan = nlRandomf(-0.0f, 0.0f, &nlDefaultSeed) + 2.0f;
+
+        if (!pFragment->mbIsStationary)
+        {
+            SidelineExplosionPhysicsObject* pPhysicsObject = (SidelineExplosionPhysicsObject*)nlMalloc(0x30, 8, false);
+            if (pPhysicsObject != NULL)
+            {
+                new (pPhysicsObject) SidelineExplosionPhysicsObject(g_CollisionSpace, g_PhysicsWorld, aabb.mDim.f.x, aabb.mDim.f.y, aabb.mDim.f.z, pFragment);
+                pPhysicsObject->SetCategory(0x400);
+                pPhysicsObject->SetCollide(0xFF);
+            }
+            pPhysicsObject->SetDensity(5.0f);
+
+            nlMatrix4 initialTransform;
+            initialTransform = *(nlMatrix4*)((u8*)GetCategoryData().mInitialTransforms + transformOffset);
+            nlMultMatrices(initialTransform, initialTransform, GetWorldMatrix());
+
+            bool isStationary = pFragment->mbIsStationary;
+            unsigned short minLocal, maxLocal;
+            FindExplosionAngleRange(minLocal, maxLocal);
+            pPhysicsObject->SetWorldMatrix(initialTransform);
+
+            if (!isStationary)
+            {
+                unsigned short maxAngle = mMaxExplosionAngle;
+                unsigned short minAngle = mMinExplosionAngle;
+                float randomAngle = nlRandomf(0.0f, 1.0f, &nlDefaultSeed);
+                short angleDelta = maxAngle - minAngle;
+
+                nlPolar velPolar;
+                velPolar.a = minAngle + (short)(randomAngle * (float)angleDelta);
+
+                float fragmentSpeed = nlRandomf(-0.0f, 0.0f, &nlDefaultSeed) + 40.0f;
+                float fragmentHeight = nlRandomf(-0.0f, 0.0f, &nlDefaultSeed) + 13.0f;
+                float speedAngle = (3.1415927f * fragmentSpeed) / 180.0f;
+                unsigned short speedAngleU16 = (unsigned short)(int)(10430.378f * speedAngle);
+
+                nlVector3 vel;
+                velPolar.r = fragmentHeight * nlSin((u16)(speedAngleU16 + 0x4000));
+                nlPolarToCartesian(vel, velPolar);
+                vel.f.y = fragmentHeight * nlSin(speedAngleU16);
+
+                nlVector3 angVel;
+                angVel.f.x = nlRandomf(-6.0f, 6.0f, &nlDefaultSeed);
+                float angVelY = nlRandomf(-6.0f, 6.0f, &nlDefaultSeed);
+                float angVelZ = nlRandomf(-6.0f, 6.0f, &nlDefaultSeed);
+                angVel.f.y = angVelZ;
+                angVel.f.z = angVelY;
+                pPhysicsObject->SetLinearVelocity(vel);
+                pPhysicsObject->SetAngularVelocity(angVel);
+            }
+            pFragment->mpPhysicsObject = pPhysicsObject;
+        }
+        else
+        {
+            nlMatrix4 stationaryTransform;
+            stationaryTransform = *(nlMatrix4*)((u8*)GetCategoryData().mInitialTransforms + transformOffset);
+            nlMultMatrices(stationaryTransform, stationaryTransform, GetWorldMatrix());
+
+            if (pFragment->mStationaryTransform == NULL)
+                pFragment->mStationaryTransform = (nlMatrix4*)nlMalloc(0x40, 8, false);
+            *pFragment->mStationaryTransform = stationaryTransform;
+            pFragment->mbInfiniteLifespan = true;
+        }
+
+        pFragment->mbIsActive = true;
+        mNumActiveFragments++;
+
+        EmissionController* pSmokeController = EmissionManager::Create(fxGetGroup("explosion_fragment_smoke"), 0);
+        {
+            Function<EmissionController&> updateFunc(Bind<void>(UpdateEmissionControllerPosition, placeholder0, pFragment));
+            pSmokeController->SetUpdateCallback(updateFunc);
+        }
+        {
+            Function<EmissionController&> finishedFunc(Bind<void>(EmissionControllerFinished, placeholder0, pFragment));
+            pSmokeController->SetFinishedCallback(finishedFunc);
+        }
+
+        pSmokeController->SetPosition(*(nlVector3*)&GetWorldMatrix().f.m41);
+        pFragment->mpSmokeEmissionController = pSmokeController;
+    }
 }
 
 /**

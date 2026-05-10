@@ -8,7 +8,6 @@
 #include "Game/Render/Nis.h"
 #include "Game/Audio/StreamTrack.h"
 
-void ReadVolGroupSettings();
 // void nlDeleteList<FadeAudioData>(FadeAudioData**);
 // void nlListRemoveElement<FadeAudioData>(FadeAudioData**, FadeAudioData*, FadeAudioData**);
 // void nlListAddStart<FadeAudioData>(FadeAudioData**, FadeAudioData*, FadeAudioData**);

@@ -60,8 +60,115 @@ extern "C" cPN_SAnimController* __ct__19cPN_SAnimControllerFP6cSAnimPC12AnimReta
 /**
  * Offset/Address/Size: 0x325C | 0x8015BFD0 | size: 0x1294
  */
-void Bowser::Update(float)
+void Bowser::Update(float fDeltaT)
 {
+    Bowser* pObj = this;
+    bool bIsSTS = false;
+    cFielder* ownerFielder = g_pBall->GetOwnerFielder();
+    if (ownerFielder != NULL)
+    {
+        if (g_pBall->GetOwnerFielder()->m_eActionState == ACTION_SHOOT_TO_SCORE)
+        {
+            bIsSTS = true;
+            if (pObj->mbIsVisible)
+            {
+                float animTime = pObj->mpAnimController->m_fTime;
+                if (pObj->meBowserState == BOWSER_STATE_JUMP)
+                {
+                }
+                else if (pObj->meBowserState < BOWSER_STATE_JUMP)
+                {
+                    if (pObj->meBowserState == BOWSER_STATE_FALL)
+                    {
+                        if (animTime > 0.34920636f)
+                        {
+                            pObj->ActionLeave();
+                        }
+                    }
+                }
+                else if (pObj->meBowserState < BOWSER_STATE_ROLL)
+                {
+                    pObj->ActionLeave();
+                }
+                else if (pObj->meBowserState == BOWSER_STATE_ROLL)
+                {
+                    if (animTime > 0.58536583f)
+                    {
+                        pObj->ActionLeave();
+                    }
+                }
+            }
+            else
+            {
+                if (pObj->meBowserState != BOWSER_STATE_HIDDEN)
+                {
+                    pObj->ActionHide();
+                }
+            }
+        }
+    }
+
+    if (pObj->mbResetPending)
+    {
+        pObj->mbResetPending = false;
+        if (pObj->mbAlive)
+        {
+            pObj->ActionReset();
+            return;
+        }
+    }
+
+    if (!GameInfoManager::s_pInstance->IsBowserAttackEnabled())
+    {
+        if (pObj->mbIsVisible)
+        {
+            pObj->ActionHide();
+        }
+        return;
+    }
+
+    if (g_pGame->mIsPure)
+    {
+        return;
+    }
+
+    if (pObj->mtActiveTimer.m_uPackedTime != 0)
+    {
+        pObj->mtActiveTimer.Countdown(fDeltaT, 0.0f);
+    }
+
+    switch (pObj->meBowserState)
+    {
+    case BOWSER_STATE_HIDDEN:
+        pObj->mbIsVisible = false;
+        break;
+    case BOWSER_STATE_FALL:
+        pObj->ActionFall();
+        break;
+    case BOWSER_STATE_JUMP:
+        pObj->ActionJump();
+        break;
+    case BOWSER_STATE_IDLE:
+        pObj->ActionIdle();
+        break;
+    case BOWSER_STATE_THROW:
+        pObj->ActionThrow();
+        break;
+    case BOWSER_STATE_ROAR:
+        pObj->ActionStomp();
+        break;
+    case BOWSER_STATE_ROLL:
+        pObj->ActionRoll();
+        break;
+    case BOWSER_STATE_LEAVE:
+        pObj->ActionLeave();
+        break;
+    }
+
+    if (bIsSTS)
+    {
+        return;
+    }
 }
 
 /**

@@ -58,8 +58,88 @@ static const nlVector3 v3Zero = { 0.0f, 0.0f, 0.0f };
  * Offset/Address/Size: 0xB780 | 0x8004E27C | size: 0x2B8
  */
 Goalie::Goalie(eCharacterClass charClass, const int* nModelID, cSHierarchy* pHierarchy, cAnimInventory* pAnimInventory, const CharacterPhysicsData* pPhysicsData, GoalieTweaks* pCharTweaks, AnimRetargetList* pAnimRetargetList)
-    : cPlayer(0, charClass, nModelID, pHierarchy, pAnimInventory, pPhysicsData, pCharTweaks, pAnimRetargetList, GOALIE)
+    : cPlayer(4, charClass, nModelID, pHierarchy, pAnimInventory, pPhysicsData, pCharTweaks, pAnimRetargetList, GOALIE)
+    , mGoalieActionState(GOALIEACTION_MOVE)
+    , mPrevGoalieActionState(GOALIEACTION_MOVE)
+    , mpPassTarget(NULL)
+    , mpShooter(NULL)
+    , mnSubstate(0)
+    , mMoveDirection(GOALIEDIR_IDLE)
+    , mfSwitchTime(1.0f)
+    , mpSaveData(NULL)
+    , muSaveType(0xFFFF)
+    , mbShouldMiss(false)
+    , mbStunEffectActive(false)
+    , mbDoIntercept(false)
+    , mbDoNavigate(false)
+    , mbDoHeadTrack(true)
+    , mbBallImpacted(false)
+    , mbNoUserControl(false)
+    , mbIsPosed(false)
+    , mbPickedUp(false)
+    , mfSpeedScale(1.0f)
+    , mpLooseBallInfo(NULL)
+    , muBallChangeCount(0)
+    , muBallDeflectCount(0)
+    , mnOffplayPending(GOALIE_OFFPLAY_NONE)
 {
+    extern u8 mbActionDataSetup;
+    extern f32 mfGoalieStrafeDist;
+    extern f32 mfGoalieRunDist;
+
+    CleanGoalieAction();
+    mPrevGoalieActionState = mGoalieActionState;
+    mGoalieActionState = GOALIEACTION_MOVE;
+    mnSubstate = 0;
+
+    SetAnimState(0x08, true, 0.2f, false, false);
+    InitMovementFromAnim(0, v3Zero, 1.0f, false);
+
+    mnSubstate = 1;
+    mMoveDirection = GOALIEDIR_IDLE;
+    m_pPhysicsCharacter->m_CanCollideWithBall = true;
+    mbShouldMiss = false;
+    mbDoNavigate = false;
+    m_pPhysicsCharacter->m_CanCollidedWithGoalLine = true;
+    m_pPhysicsCharacter->m_CanCollideWithWall = true;
+
+    if (mbStunEffectActive)
+    {
+        KillDaze(this);
+        mbStunEffectActive = false;
+    }
+
+    mpShooter = NULL;
+    mUrgency = URGENCY_LOW;
+    mfSpeedScale = 1.0f;
+    mbPosGoalieNetCheck = false;
+    mbNegGoalieNetCheck = false;
+    mbDoHeadTrack = true;
+    mbBallImpacted = false;
+    mbNoUserControl = false;
+    mbPickedUp = false;
+
+    GoalieSave::InitData(this);
+    LooseBallAnims::Init(this);
+
+    if (!mbActionDataSetup)
+    {
+        nlVector3 v3JointPos;
+
+        GetJointPositionFuture(&v3JointPos, 0x19, -1, 1.0f, true, true, false);
+        mfGoalieStepDist = fabsf(0.6f * v3JointPos.f.y);
+
+        GetJointPositionFuture(&v3JointPos, 0x14, -1, 1.0f, true, true, false);
+
+        mbActionDataSetup = true;
+        mfGoalieStrafeDist = fabsf(0.6f * v3JointPos.f.y);
+        mfGoalieRunDist = fabsf(1.8f * v3JointPos.f.y);
+    }
+
+    mFatigue.Reset();
+    mFatigue.mfRecoverRate = pCharTweaks->fFatigueRecoverRate;
+
+    m_pHeadTrack->m_bTrackOOI = true;
 }
 
 /**
@@ -3107,9 +3187,57 @@ void Goalie::InitActionLooseBallCatch()
 
 /**
  * Offset/Address/Size: 0x3BD0 | 0x800466CC | size: 0x1B04
+ * TODO: 3.89% match - unresolved loose-ball intercept/desperation setup path and
+ * large prologue/register-allocation diffs beyond the early move fallback block.
  */
 void Goalie::InitActionLooseBallSetup()
 {
+    if (CheckForLooseBallShotInProgress())
+    {
+        return;
+    }
+
+    SkillTweaks* pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide);
+    if (!IsLooseBallClose(pSkillTweaks->fLooseBallChaseDistance))
+    {
+        CleanGoalieAction();
+
+        mPrevGoalieActionState = mGoalieActionState;
+        mGoalieActionState = GOALIEACTION_MOVE;
+        mnSubstate = 0;
+
+        SetAnimState(8, true, 0.2f, false, false);
+        InitMovementFromAnim(0, v3Zero, 1.0f, false);
+
+        mnSubstate = 1;
+        mMoveDirection = GOALIEDIR_IDLE;
+
+        m_pPhysicsCharacter->m_CanCollideWithBall = true;
+        mbShouldMiss = false;
+        mbDoNavigate = false;
+        m_pPhysicsCharacter->m_CanCollidedWithGoalLine = true;
+        m_pPhysicsCharacter->m_CanCollideWithWall = true;
+
+        if (mbStunEffectActive)
+        {
+            KillDaze(this);
+            mbStunEffectActive = false;
+        }
+
+        mpShooter = NULL;
+        mUrgency = URGENCY_LOW;
+        mfSpeedScale = 1.0f;
+        mbPosGoalieNetCheck = false;
+        mbNegGoalieNetCheck = false;
+        mbDoHeadTrack = true;
+        mbBallImpacted = false;
+        mbNoUserControl = false;
+        mbPickedUp = false;
+
+        ActionMove(0.0f);
+        return;
+    }
+
     FORCE_DONT_INLINE;
 }
 

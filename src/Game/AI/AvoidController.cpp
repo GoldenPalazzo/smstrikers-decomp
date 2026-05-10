@@ -1,4 +1,5 @@
 #include "Game/AI/AvoidController.h"
+#include "Game/BasicStadium.h"
 
 static const nlVector3 v3Zero = { 0.0f, 0.0f, 0.0f };
 static const nlVector2 v2Zero = { 0.0f, 0.0f };
@@ -92,6 +93,326 @@ nlVector3& AvoidController::GetLastRepulsionVector(eAvoidableThings things)
  */
 void AvoidController::Update(float)
 {
+    extern cTeam* g_pTeams[];
+    extern cTeam* g_pCurrentlyUpdatingTeam;
+    extern float GetClosingSpeed2D(const nlVector3&, const nlVector3&, const nlVector3&, const nlVector3&);
+    extern float NormalizeVal(float, float, float);
+    extern float Incapacitated(cPlayer*);
+    extern float Invincible(cFielder*);
+
+    nlVector3 vAccumulated_v3 = v3Zero;
+    float fTotalWeight_v3 = 0.0f;
+
+    m_SidelineUnavoidable = false;
+    m_VeryCloseToSideline = false;
+
+    if ((m_ThingsToAvoid & AVOID_SIDELINES) && (Incapacitated(m_pFielder) == 0.0f))
+    {
+        AvoidSidelines();
+    }
+
+    bool bAverageWithLastRepulsion = true;
+    bool bAvoidingOn = false;
+    if ((m_CurrentlyAvoiding & AVOID_FIELDERS) || (m_CurrentlyAvoiding & AVOID_GOALIES))
+    {
+        bAvoidingOn = true;
+    }
+    if (!bAvoidingOn && !(m_CurrentlyAvoiding & AVOID_BOWSER))
+    {
+        bAverageWithLastRepulsion = false;
+    }
+
+    if ((m_ThingsToAvoid & AVOID_FIELDERS) && (Invincible(m_pFielder) == 0.0f) && (Incapacitated(m_pFielder) == 0.0f))
+    {
+        nlVector3 v3Repulsion = v3Zero;
+        bool bAvoidedSomething = CalcFielderRepulsionVector(v3Repulsion);
+
+        if (bAvoidedSomething)
+        {
+            float fWeight = 1.0f;
+            vAccumulated_v3.f.x = fWeight * v3Repulsion.f.x + vAccumulated_v3.f.x;
+            vAccumulated_v3.f.y = fWeight * v3Repulsion.f.y + vAccumulated_v3.f.y;
+            vAccumulated_v3.f.z = fWeight * v3Repulsion.f.z + vAccumulated_v3.f.z;
+            fTotalWeight_v3 += fWeight;
+
+            m_CurrentlyAvoiding |= AVOID_FIELDERS;
+            m_LastRepulsionVector[AvoidableEnumToIndex(AVOID_FIELDERS)] = v3Repulsion;
+        }
+        else
+        {
+            m_CurrentlyAvoiding &= ~AVOID_FIELDERS;
+            m_LastRepulsionVector[AvoidableEnumToIndex(AVOID_FIELDERS)] = v3Zero;
+        }
+    }
+
+    if ((m_ThingsToAvoid & AVOID_POWERUPS) && (Incapacitated(m_pFielder) == 0.0f))
+    {
+        nlVector3 v3Repulsion = v3Zero;
+        bool bAvoidedSomething = CalcPowerupRepulsionVector(v3Repulsion);
+
+        if (bAvoidedSomething)
+        {
+            float fWeight = 1.0f;
+            vAccumulated_v3.f.x = fWeight * v3Repulsion.f.x + vAccumulated_v3.f.x;
+            vAccumulated_v3.f.y = fWeight * v3Repulsion.f.y + vAccumulated_v3.f.y;
+            vAccumulated_v3.f.z = fWeight * v3Repulsion.f.z + vAccumulated_v3.f.z;
+            fTotalWeight_v3 += fWeight;
+
+            m_CurrentlyAvoiding |= AVOID_POWERUPS;
+            m_LastRepulsionVector[AvoidableEnumToIndex(AVOID_POWERUPS)] = v3Repulsion;
+        }
+        else
+        {
+            m_CurrentlyAvoiding &= ~AVOID_POWERUPS;
+            m_LastRepulsionVector[AvoidableEnumToIndex(AVOID_POWERUPS)] = v3Zero;
+        }
+    }
+
+    if ((m_ThingsToAvoid & AVOID_GOALIES) && (Incapacitated(m_pFielder) == 0.0f))
+    {
+        nlVector3 v3Repulsion = v3Zero;
+        bool bAvoidedSomething = false;
+
+        for (int i_team = 0; i_team < 2; i_team++)
+        {
+            Goalie* pGoalie = g_pTeams[i_team]->GetGoalie();
+
+            float fDeltaY = m_pFielder->m_v3Position.f.y - pGoalie->m_v3Position.f.y;
+            float fDeltaX = m_pFielder->m_v3Position.f.x - pGoalie->m_v3Position.f.x;
+            float fDeltaZ = m_pFielder->m_v3Position.f.z - pGoalie->m_v3Position.f.z;
+
+            float fDistanceSq = fDeltaY * fDeltaY;
+            fDistanceSq += fDeltaX * fDeltaX;
+            fDistanceSq += fDeltaZ * fDeltaZ;
+            if (fDistanceSq > 16.0f)
+            {
+                continue;
+            }
+
+            float fDistance = nlSqrt(fDistanceSq, true);
+
+            float fInvDistance = 1.0f / fDistance;
+            fDeltaX = fInvDistance * fDeltaX;
+            fDeltaY = fInvDistance * fDeltaY;
+            fDeltaZ = fInvDistance * fDeltaZ;
+
+            fDistance -= pGoalie->m_pTweaks->fPhysCapsuleRadius + m_pFTweaks->fPhysCapsuleRadius;
+
+            float fClosingSpeed = GetClosingSpeed2D(
+                m_pFielder->m_v3Position,
+                m_pFielder->m_v3Velocity,
+                pGoalie->m_v3Position,
+                pGoalie->m_v3Velocity);
+
+            float fMagnitude = 10.0f * NormalizeVal(fDistance, 4.0f, 0.5f);
+            fMagnitude += 3.0f * NormalizeVal(fClosingSpeed, 0.0f, 3.0f);
+
+            if (!m_pFielder->IsOnSameTeam(pGoalie))
+            {
+                fMagnitude *= 1.5f;
+            }
+
+            if (m_pFielder->m_pBall != NULL)
+            {
+                SkillTweaks* pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide);
+                fMagnitude *= 1.5f * pSkillTweaks->Off_Avoidance;
+            }
+
+            if (m_UseMinimumAvoidance)
+            {
+                fMagnitude *= 0.3f;
+            }
+
+            if (fMagnitude <= 0.0f)
+            {
+                continue;
+            }
+
+            float fContribution = 10.0f;
+            if (fMagnitude <= fContribution)
+            {
+                fContribution = fMagnitude;
+            }
+
+            float fOutY = v3Repulsion.f.y;
+            float fOutX = v3Repulsion.f.x;
+            fOutY = fContribution * fDeltaY + fOutY;
+            float fOutZ = v3Repulsion.f.z;
+            fOutX = fContribution * fDeltaX + fOutX;
+            fOutZ = fContribution * fDeltaZ + fOutZ;
+            v3Repulsion.f.x = fOutX;
+            v3Repulsion.f.y = fOutY;
+            v3Repulsion.f.z = fOutZ;
+            bAvoidedSomething = true;
+        }
+
+        if (bAvoidedSomething)
+        {
+            float fWeight = 1.0f;
+            vAccumulated_v3.f.x = fWeight * v3Repulsion.f.x + vAccumulated_v3.f.x;
+            vAccumulated_v3.f.y = fWeight * v3Repulsion.f.y + vAccumulated_v3.f.y;
+            vAccumulated_v3.f.z = fWeight * v3Repulsion.f.z + vAccumulated_v3.f.z;
+            fTotalWeight_v3 += fWeight;
+
+            m_CurrentlyAvoiding |= AVOID_GOALIES;
+            m_LastRepulsionVector[AvoidableEnumToIndex(AVOID_GOALIES)] = v3Repulsion;
+        }
+        else
+        {
+            m_CurrentlyAvoiding &= ~AVOID_GOALIES;
+            m_LastRepulsionVector[AvoidableEnumToIndex(AVOID_GOALIES)] = v3Zero;
+        }
+    }
+
+    if ((m_ThingsToAvoid & AVOID_BOWSER) && (Incapacitated(m_pFielder) == 0.0f))
+    {
+        nlVector3 v3Repulsion = v3Zero;
+        bool bAvoidedSomething = false;
+
+        Bowser* pBowser = BasicStadium::GetCurrentStadium()->mpNPCManager->mpBowser;
+        if ((pBowser != NULL) && (pBowser->meBowserState != BOWSER_STATE_HIDDEN))
+        {
+            float fDeltaY = m_pFielder->m_v3Position.f.y - pBowser->mv3Position.f.y;
+            float fDeltaX = m_pFielder->m_v3Position.f.x - pBowser->mv3Position.f.x;
+            float fDeltaZ = m_pFielder->m_v3Position.f.z - pBowser->mv3Position.f.z;
+
+            float fDistanceSq = fDeltaY * fDeltaY;
+            fDistanceSq += fDeltaX * fDeltaX;
+            fDistanceSq += fDeltaZ * fDeltaZ;
+
+            if (fDistanceSq <= 49.0f)
+            {
+                float fDistance = nlSqrt(fDistanceSq, true);
+                float fInvDistance = 1.0f / fDistance;
+                fDeltaX = fInvDistance * fDeltaX;
+                fDeltaY = fInvDistance * fDeltaY;
+                fDeltaZ = fInvDistance * fDeltaZ;
+
+                fDistance -= m_pFTweaks->fPhysCapsuleRadius + pBowser->mpPhysObj->GetRadius();
+
+                float fClosingSpeed = GetClosingSpeed2D(
+                    m_pFielder->m_v3Position,
+                    m_pFielder->m_v3Velocity,
+                    pBowser->mv3Position,
+                    pBowser->mv3Velocity);
+
+                float fMagnitude = 10.0f * NormalizeVal(fDistance, 7.0f, 2.0f);
+                fMagnitude += 3.0f * NormalizeVal(fClosingSpeed, 0.0f, 3.0f);
+
+                if (m_pFielder->m_pBall != NULL)
+                {
+                    SkillTweaks* pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide);
+                    fMagnitude *= 3.0f * pSkillTweaks->Off_Avoidance;
+                }
+
+                if (fMagnitude > 0.0f)
+                {
+                    float fContribution = 10.0f;
+                    if (fMagnitude <= fContribution)
+                    {
+                        fContribution = fMagnitude;
+                    }
+
+                    float fOutY = v3Repulsion.f.y;
+                    float fOutX = v3Repulsion.f.x;
+                    fOutY = fContribution * fDeltaY + fOutY;
+                    float fOutZ = v3Repulsion.f.z;
+                    fOutX = fContribution * fDeltaX + fOutX;
+                    fOutZ = fContribution * fDeltaZ + fOutZ;
+                    v3Repulsion.f.x = fOutX;
+                    v3Repulsion.f.y = fOutY;
+                    v3Repulsion.f.z = fOutZ;
+
+                    bAvoidedSomething = true;
+                }
+            }
+        }
+
+        if (bAvoidedSomething)
+        {
+            float fWeight = 1.0f;
+            vAccumulated_v3.f.x = fWeight * v3Repulsion.f.x + vAccumulated_v3.f.x;
+            vAccumulated_v3.f.y = fWeight * v3Repulsion.f.y + vAccumulated_v3.f.y;
+            vAccumulated_v3.f.z = fWeight * v3Repulsion.f.z + vAccumulated_v3.f.z;
+            fTotalWeight_v3 += fWeight;
+
+            m_CurrentlyAvoiding |= AVOID_BOWSER;
+            m_LastRepulsionVector[AvoidableEnumToIndex(AVOID_BOWSER)] = v3Repulsion;
+        }
+        else
+        {
+            m_CurrentlyAvoiding &= ~AVOID_BOWSER;
+            m_LastRepulsionVector[AvoidableEnumToIndex(AVOID_BOWSER)] = v3Zero;
+        }
+    }
+
+    nlVector3 v3FinalRepulsion = v3Zero;
+    nlVector3 v3SmoothedRepulsion = v3Zero;
+
+    if (m_CurrentlyAvoiding != 0)
+    {
+        if (fTotalWeight_v3 > 0.0f)
+        {
+            float fInvTotalWeight = 1.0f / fTotalWeight_v3;
+            v3FinalRepulsion.f.x = fInvTotalWeight * vAccumulated_v3.f.x;
+            v3FinalRepulsion.f.y = fInvTotalWeight * vAccumulated_v3.f.y;
+            v3FinalRepulsion.f.z = fInvTotalWeight * vAccumulated_v3.f.z;
+        }
+        else
+        {
+            v3FinalRepulsion = v3Zero;
+        }
+
+        if (bAverageWithLastRepulsion)
+        {
+            float fLastRepulsionWeight = 0.5f;
+
+            v3SmoothedRepulsion.f.x = fLastRepulsionWeight * v3FinalRepulsion.f.x;
+            v3SmoothedRepulsion.f.y = fLastRepulsionWeight * v3FinalRepulsion.f.y;
+            v3SmoothedRepulsion.f.z = fLastRepulsionWeight * v3FinalRepulsion.f.z;
+
+            v3SmoothedRepulsion.f.x = fLastRepulsionWeight * m_LastRepulsionVector[5].f.x + v3SmoothedRepulsion.f.x;
+            v3SmoothedRepulsion.f.y = fLastRepulsionWeight * m_LastRepulsionVector[5].f.y + v3SmoothedRepulsion.f.y;
+            v3SmoothedRepulsion.f.z = fLastRepulsionWeight * m_LastRepulsionVector[5].f.z + v3SmoothedRepulsion.f.z;
+        }
+        else
+        {
+            v3SmoothedRepulsion = v3FinalRepulsion;
+        }
+
+        ApplyRepulsionVector(v3SmoothedRepulsion);
+    }
+    else
+    {
+        float fLastRepulsionWeight = 0.95f;
+        v3SmoothedRepulsion.f.x = fLastRepulsionWeight * m_LastRepulsionVector[5].f.x;
+        v3SmoothedRepulsion.f.y = fLastRepulsionWeight * m_LastRepulsionVector[5].f.y;
+        v3SmoothedRepulsion.f.z = fLastRepulsionWeight * m_LastRepulsionVector[5].f.z;
+
+        if (m_ThingsToAvoid != 0)
+        {
+            float fRepulsionSq = v3SmoothedRepulsion.f.x * v3SmoothedRepulsion.f.x;
+            fRepulsionSq += v3SmoothedRepulsion.f.y * v3SmoothedRepulsion.f.y;
+            fRepulsionSq += v3SmoothedRepulsion.f.z * v3SmoothedRepulsion.f.z;
+
+            if (fRepulsionSq > 0.1f)
+            {
+                ApplyRepulsionVector(v3SmoothedRepulsion);
+            }
+            else
+            {
+                v3SmoothedRepulsion = v3Zero;
+            }
+        }
+        else
+        {
+            v3SmoothedRepulsion = v3Zero;
+        }
+    }
+
+    m_UseMinimumAvoidance = false;
+    m_pIgnoreThisPlayer = 0;
+    m_LastRepulsionVector[5] = v3SmoothedRepulsion;
 }
 
 /**

@@ -85,12 +85,16 @@ static Mtx gx_mview;
 static nlMatrix4 mview;
 static u32 prog_3d_pointlit;
 static u32 prog_3d_pointlit_dirt;
+static u32 prog_3d_crowd;
 static u32 prog_3d_crowd_lit;
+static u32 glv_MatrixChanged;
 static u8 glx_normals;
 static nlMatrix4 mproj;
 static Mtx44 gx_proj;
 static Mtx gx_modelview;
 static nlMatrix4 modelview;
+
+static unsigned long glx_SwitchTexConfig(const glModelPacket*);
 
 /**
  * Offset/Address/Size: 0x0 | 0x801B9B00 | size: 0x538
@@ -1236,11 +1240,118 @@ void glx_SwitchTextureState(const glModelPacket* p)
 
 /**
  * Offset/Address/Size: 0x2B1C | 0x801BC61C | size: 0x2154
+ * TODO: 4.30% match - only early setup and crowd/crowd_lit texconfig paths are
+ * implemented; the large texconfig jump-table and non-crowd program paths are
+ * still stubbed by early return.
  */
-unsigned long glx_SwitchTexConfig(const glModelPacket*)
+static unsigned long glx_SwitchTexConfig(const glModelPacket* p)
 {
-    FORCE_DONT_INLINE;
-    return 0;
+    int i;
+    int bit;
+    int texnum;
+    unsigned long extra;
+    GXAttr attr;
+
+    glx_texconfig = p->state.texconfig;
+    extra = 0x40;
+
+    if (glx_texconfig & 0x10)
+    {
+        if (glx_normals == 0)
+        {
+            extra = glv_MatrixChanged | 0x40;
+            glx_normals = 1;
+        }
+        glx_allowSpecular = 1;
+    }
+    else
+    {
+        glx_allowSpecular = 0;
+    }
+
+    gx_texattr[0] = GX_VA_NULL;
+    gx_texattr[1] = GX_VA_NULL;
+    gx_texattr[2] = GX_VA_NULL;
+    gx_texattr[3] = GX_VA_NULL;
+    gx_texattr[4] = GX_VA_NULL;
+    gx_texattr[5] = GX_VA_NULL;
+
+    gx_vtxfmt++;
+    if ((int)gx_vtxfmt >= 1)
+    {
+        gx_vtxfmt = 0;
+    }
+
+    glx_NumIndices = 0;
+
+    texnum = 0;
+    for (bit = 0; bit < 6; bit++)
+    {
+        if (glx_texconfig & (1 << bit))
+        {
+            attr = (GXAttr)(texnum + 13);
+            texnum++;
+            gx_texattr[bit] = attr;
+        }
+    }
+
+    gxSetTevColourOp(0, (_GXTevOp)0, (_GXTevBias)0, (_GXTevScale)0, true, (_GXTevRegID)0);
+    gxSetTevColourOp(1, (_GXTevOp)0, (_GXTevBias)0, (_GXTevScale)0, true, (_GXTevRegID)0);
+    gxSetTevColourOp(2, (_GXTevOp)0, (_GXTevBias)0, (_GXTevScale)0, true, (_GXTevRegID)0);
+    gxSetTevColourOp(3, (_GXTevOp)0, (_GXTevBias)0, (_GXTevScale)0, true, (_GXTevRegID)0);
+
+    gxSetTevAlphaOp(0, (_GXTevOp)0, (_GXTevBias)0, (_GXTevScale)0, true, (_GXTevRegID)0);
+    gxSetTevAlphaOp(1, (_GXTevOp)0, (_GXTevBias)0, (_GXTevScale)0, true, (_GXTevRegID)0);
+    gxSetTevAlphaOp(2, (_GXTevOp)0, (_GXTevBias)0, (_GXTevScale)0, true, (_GXTevRegID)0);
+    gxSetTevAlphaOp(3, (_GXTevOp)0, (_GXTevBias)0, (_GXTevScale)0, true, (_GXTevRegID)0);
+
+    gxSetTexCoordGen(0, (_GXTexGenType)1, (_GXTexGenSrc)4, 0x3C);
+    gxSetTexCoordGen(1, (_GXTexGenType)1, (_GXTexGenSrc)5, 0x3C);
+    gxSetTexCoordGen(2, (_GXTexGenType)1, (_GXTexGenSrc)6, 0x3C);
+    gxSetTexCoordGen(3, (_GXTexGenType)1, (_GXTexGenSrc)7, 0x3C);
+
+    glx_RasterizedAlphaStage = -1;
+    glx_RasterizedAlphaArg = -1;
+    glx_GlossMapStage = -1;
+    glx_GlossMapCoord = -1;
+
+    if (glx_program == prog_3d_crowd || glx_program == prog_3d_crowd_lit)
+    {
+        if (glx_texconfig == 1)
+        {
+            gxSetNumTexGens(1);
+            gxSetNumTevStages(1);
+            GXSetTevOrder((GXTevStageID)0, (GXTexCoordID)0, (GXTexMapID)0, (GXChannelID)4);
+            gxSetTexCoordGen(0, (_GXTexGenType)1, (_GXTexGenSrc)4, 0x36);
+            GXSetTevColorIn((GXTevStageID)0, (GXTevColorArg)15, (GXTevColorArg)10, (GXTevColorArg)8, (GXTevColorArg)15);
+            gxSetTevAlphaIn(0, (_GXTevAlphaArg)7, (_GXTevAlphaArg)5, (_GXTevAlphaArg)4, (_GXTevAlphaArg)7);
+            glx_RasterizedAlphaStage = 0;
+            glx_RasterizedAlphaArg = 1;
+            return extra;
+        }
+
+        if (glx_texconfig == 0x21)
+        {
+            gxSetNumTexGens(2);
+            gxSetNumTevStages(2);
+            GXSetTevOrder((GXTevStageID)0, (GXTexCoordID)1, (GXTexMapID)1, (GXChannelID)4);
+            GXSetTevOrder((GXTevStageID)1, (GXTexCoordID)0, (GXTexMapID)0, (GXChannelID)0xFF);
+            gxSetTexCoordGen(0, (_GXTexGenType)1, (_GXTexGenSrc)4, 0x36);
+            gxSetTexCoordGen(1, (_GXTexGenType)10, (_GXTexGenSrc)19, 0x3C);
+            gxSetTevColourOp(1, (_GXTevOp)0, (_GXTevBias)0, glx_tevscale, true, (_GXTevRegID)0);
+            GXSetTevColorIn((GXTevStageID)0, (GXTevColorArg)15, (GXTevColorArg)12, (GXTevColorArg)8, (GXTevColorArg)15);
+            GXSetTevColorIn((GXTevStageID)1, (GXTevColorArg)15, (GXTevColorArg)0, (GXTevColorArg)8, (GXTevColorArg)15);
+            gxSetTevAlphaIn(0, (_GXTevAlphaArg)7, (_GXTevAlphaArg)6, (_GXTevAlphaArg)6, (_GXTevAlphaArg)7);
+            gxSetTevAlphaIn(1, (_GXTevAlphaArg)7, (_GXTevAlphaArg)6, (_GXTevAlphaArg)4, (_GXTevAlphaArg)7);
+            glx_RasterizedAlphaStage = 1;
+            glx_RasterizedAlphaArg = 1;
+            return extra;
+        }
+
+        return extra;
+    }
+
+    return extra;
 }
 
 /**

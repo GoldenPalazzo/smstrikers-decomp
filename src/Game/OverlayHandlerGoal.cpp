@@ -301,9 +301,147 @@ void GoalOverlay::eventHandler(Event* event, void* param)
 /**
  * Offset/Address/Size: 0x19A8 | 0x80101A18 | size: 0x159C
  */
-void GoalOverlay::UpdateGoalInfo(int, int, bool, int)
+void GoalOverlay::UpdateGoalInfo(int homeAway, int playerIndex, bool isCaptainS2S, int numGoals)
 {
-    FORCE_DONT_INLINE;
+    typedef TLTextInstance* (*FindCompByValue)(FEPresentation*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
+    typedef TLTextInstance* (*FindCompByRef)(FEPresentation*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
+
+    union
+    {
+        FindCompByValue byValue;
+        FindCompByRef byRef;
+    } findComp;
+
+    volatile InlineHasher hSlideB, hSlideA;
+    volatile InlineHasher hLayerB, hLayerA;
+    volatile InlineHasher hNameB, hNameA;
+    volatile InlineHasher h5, h4, h3, h2, h1, h0;
+
+    unsigned long hash;
+
+    findComp.byValue = FEFinder<TLTextInstance, 3>::Find<FEPresentation>;
+
+    h0.m_Hash = 0;
+    h1.m_Hash = 0;
+    h2.m_Hash = 0;
+    h3.m_Hash = 0;
+    h4.m_Hash = 0;
+    h5.m_Hash = 0;
+
+    hash = nlStringLowerHash("Name");
+    hNameA.m_Hash = hash;
+    hNameB.m_Hash = hash;
+
+    hash = nlStringLowerHash("Layer");
+    hLayerA.m_Hash = hash;
+    hLayerB.m_Hash = hash;
+
+    hash = nlStringLowerHash("Slide1");
+    hSlideA.m_Hash = hash;
+    hSlideB.m_Hash = hash;
+
+    TLTextInstance* pText = findComp.byRef(
+        m_pFEPresentation,
+        (InlineHasher&)hSlideB,
+        (InlineHasher&)hLayerB,
+        (InlineHasher&)hNameB,
+        (InlineHasher&)h5,
+        (InlineHasher&)h3,
+        (InlineHasher&)h1);
+
+    (void)pText;
+    (void)isCaptainS2S;
+
+    if (playerIndex > 0)
+    {
+        mSidekickGoals[homeAway] += numGoals;
+    }
+    else
+    {
+        mCaptainGoals[homeAway] += numGoals;
+    }
+
+    int scoreLeft = mCaptainGoals[0] + mSidekickGoals[0];
+    int scoreRight = mCaptainGoals[1] + mSidekickGoals[1];
+
+    BasicString<char, Detail::TempStringAllocator> scoreLeftString(
+        LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(scoreLeft));
+    BasicString<char, Detail::TempStringAllocator> scoreRightString(
+        LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(scoreRight));
+
+    unsigned short scoreLeftWideString[32];
+    unsigned short scoreRightWideString[32];
+    nlStrToWcs(scoreLeftString.c_str(), scoreLeftWideString, 32);
+    nlStrToWcs(scoreRightString.c_str(), scoreRightWideString, 32);
+
+    const unsigned short* formatLocString;
+    unsigned long key = 0x4E76F8B;
+    nlLocalization* loc = g_pLocalization;
+
+    if (loc->m_LookupTable == 0)
+    {
+        formatLocString = LocalizationTableNotFound;
+    }
+    else
+    {
+        nlLocalization::StringLookup* entry = nlBSearch<nlLocalization::StringLookup, unsigned long>(key, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
+        if (entry)
+        {
+            formatLocString = loc->m_FirstString + entry->StringOffset;
+        }
+        else
+        {
+            formatLocString = MissingLocString;
+        }
+    }
+
+    BasicStringData<unsigned short>* data = (BasicStringData<unsigned short>*)nlMalloc(0x10, 8, true);
+    if (data)
+    {
+        data->mData = 0;
+        data->mSize = 0;
+        data->mCapacity = 0;
+
+        const unsigned short* ptr = formatLocString;
+        while (*ptr++)
+        {
+            data->mSize++;
+        }
+
+        data->mSize++;
+        data->mData = (unsigned short*)nlMalloc((data->mSize + 1) * 2, 8, true);
+        data->mCapacity = data->mSize;
+
+        int i = 0;
+        int j = 0;
+        while (i < data->mSize)
+        {
+            *(unsigned short*)((char*)data->mData + j) = *formatLocString;
+            i++;
+            formatLocString++;
+            j += 2;
+        }
+
+        data->mRefCount = 1;
+    }
+
+    BasicString<unsigned short, Detail::TempStringAllocator> clockFormat(data);
+    BasicString<unsigned short, Detail::TempStringAllocator> clockFormatted(Format(clockFormat, scoreLeftWideString, scoreRightWideString));
+    memcpy(mClockBuffer, clockFormatted.c_str(), 0x40);
+
+    hash = nlStringLowerHash("Time");
+    hNameA.m_Hash = hash;
+    hNameB.m_Hash = hash;
+    pText = findComp.byRef(
+        m_pFEPresentation,
+        (InlineHasher&)hSlideB,
+        (InlineHasher&)hLayerB,
+        (InlineHasher&)hNameB,
+        (InlineHasher&)h5,
+        (InlineHasher&)h3,
+        (InlineHasher&)h1);
+
+    pText->SetString(mClockBuffer);
 }
 
 /**

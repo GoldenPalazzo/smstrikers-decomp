@@ -2398,20 +2398,6 @@ bool GameInfoManager::IsPossibleCupMatch() const
     return mCupMatchRequirement != RESULT_INVALID;
 }
 
-/**
- * Offset/Address/Size: 0x38E8 | 0x80178F8C | size: 0x1514
- */
-void GameInfoManager::OnPreCupGameState()
-{
-}
-
-/**
- * Offset/Address/Size: 0x256C | 0x80177C10 | size: 0x137C
- */
-void GameInfoManager::OnPostCupGameState()
-{
-}
-
 static eTrophyType MILESTONES[5] = {
     TROPHY_VETERAN_CUP,
     TROPHY_SNIPER_CUP,
@@ -2419,6 +2405,489 @@ static eTrophyType MILESTONES[5] = {
     TROPHY_TACTICIAN_CUP,
     TROPHY_PARAMEDIC_CUP,
 };
+
+/**
+ * Offset/Address/Size: 0x38E8 | 0x80178F8C | size: 0x1514
+ */
+void GameInfoManager::OnPreCupGameState()
+{
+    eTrophyType tourneyCup = INVALID_TROPHY;
+    int i;
+    TeamStats userTeam;
+    TeamStats opponentTeam;
+    TeamStats highestTeam;
+    int highPoints;
+    TeamStats team;
+
+    switch (mCurrentMode)
+    {
+    case GM_MUSHROOM_CUP:
+        tourneyCup = TROPHY_MUSHROOM_CUP;
+        break;
+    case GM_FLOWER_CUP:
+        tourneyCup = TROPHY_FLOWER_CUP;
+        break;
+    case GM_STAR_CUP:
+        tourneyCup = TROPHY_STAR_CUP;
+        break;
+    case GM_BOWSER_CUP:
+        tourneyCup = TROPHY_BOWSER_CUP;
+        break;
+    case GM_SUPER_MUSHROOM_CUP:
+        tourneyCup = TROPHY_SUPER_MUSHROOM_CUP;
+        break;
+    case GM_SUPER_FLOWER_CUP:
+        tourneyCup = TROPHY_SUPER_FLOWER_CUP;
+        break;
+    case GM_SUPER_STAR_CUP:
+        tourneyCup = TROPHY_SUPER_STAR_CUP;
+        break;
+    case GM_SUPER_BOWSER_CUP:
+        tourneyCup = TROPHY_SUPER_BOWSER_CUP;
+        break;
+    }
+
+    mPreGameUnlockedState = 0;
+
+    if (CheckUnlockStatus(isKongaUnlocked, mUserInfo.mTrophies[0], 0))
+    {
+        mPreGameUnlockedState |= 0x1;
+    }
+    if (CheckUnlockStatus(isYoshiUnlocked, mUserInfo.mTrophies[0], 1))
+    {
+        mPreGameUnlockedState |= 0x2;
+    }
+    if (CheckUnlockStatus(isForbiddenUnlocked, mUserInfo.mTrophies[0], 2))
+    {
+        mPreGameUnlockedState |= 0x4;
+    }
+    if (IsSuperCupModeUnlocked())
+    {
+        mPreGameUnlockedState |= 0x8;
+    }
+    if (CheckUnlockStatus(isSuperTeamUnlocked, mUserInfo.mTrophies[0], 3))
+    {
+        mPreGameUnlockedState |= 0x10;
+    }
+
+    mPreGameUnlockedState |= 0x20;
+
+    if (CheckUnlockStatus(isSuperStadUnlocked, mUserInfo.mTrophies[0], 3))
+    {
+        mPreGameUnlockedState |= 0x40;
+    }
+    if (CheckUnlockStatus(isAllSTSUnlocked, mUserInfo.mTrophies[0], 4))
+    {
+        mPreGameUnlockedState |= 0x80;
+    }
+    if (CheckUnlockStatus(isTiltUnlocked, mUserInfo.mTrophies[0], 5))
+    {
+        mPreGameUnlockedState |= 0x100;
+    }
+    if (CheckUnlockStatus(isGoalieUnlocked, mUserInfo.mTrophies[0], 6))
+    {
+        mPreGameUnlockedState |= 0x2000;
+    }
+    if (CheckUnlockStatus(isUnlimitedUnlocked, mUserInfo.mTrophies[0], 7))
+    {
+        mPreGameUnlockedState |= 0x200;
+    }
+
+    if (mUserInfo.mIsFlowerCupUnlocked)
+    {
+        mPreGameUnlockedState |= 0x400;
+    }
+    if (mUserInfo.mIsStarCupUnlocked)
+    {
+        mPreGameUnlockedState |= 0x800;
+    }
+
+    if (CheckUnlockStatus(isKongaUnlocked, mUserInfo.mTrophies[0], 0)
+        && CheckUnlockStatus(isYoshiUnlocked, mUserInfo.mTrophies[0], 1))
+    {
+        mPreGameUnlockedState |= 0x1000;
+    }
+
+    if (CheckUnlockStatus(false, mUserInfo.mTrophies[0], 3))
+    {
+        mPreGameUnlockedState |= 0x4000;
+    }
+
+    if (CheckUnlockStatus(false, mUserInfo.mTrophies[tourneyCup / 8], (unsigned int)tourneyCup % 8))
+    {
+        mDisplayTrophy[0] = false;
+    }
+    else
+    {
+        mDisplayTrophy[0] = true;
+    }
+
+    for (i = 0; i < 5; i++)
+    {
+        mTrophyColourState[i] = GetMilestoneLevel(MILESTONES[i]);
+    }
+
+    if (mCurrentMode == GM_BOWSER_CUP
+        && !CheckUnlockStatus(isSuperTeamUnlocked, mUserInfo.mTrophies[0], 3)
+        && mCurrentCup->mRoundNumber == -1)
+    {
+        mCupMatchRequirement = RESULT_USER_OT_WINS;
+        return;
+    }
+
+    if (CheckUnlockStatus(isSuperTeamUnlocked, mUserInfo.mTrophies[0], 3)
+        && mCurrentCup->mRoundNumber == -2)
+    {
+        mCupMatchRequirement = RESULT_USER_OT_WINS;
+        return;
+    }
+
+    if (mCurrentMode == GM_SUPER_BOWSER_CUP && mCurrentCup->mRoundNumber == -2)
+    {
+        mCupMatchRequirement = RESULT_USER_OT_WINS;
+        return;
+    }
+
+    if (mCurrentMode == GM_BOWSER_CUP || mCurrentMode == GM_SUPER_BOWSER_CUP)
+    {
+        mCupMatchRequirement = RESULT_INVALID;
+        return;
+    }
+
+    if (mCurrentCup->mRoundNumber != (short)(mCurrentCup->GetNumRounds() - 1))
+    {
+        mCupMatchRequirement = RESULT_INVALID;
+        return;
+    }
+
+    highPoints = 0;
+
+    for (i = 0; i < mCurrentCup->GetNumTeams(); i++)
+    {
+        team = *mCurrentCup->GetTeamStats((unsigned short)i);
+
+        if (team.mNumPoints > highPoints)
+        {
+            highestTeam = team;
+            highPoints = team.mNumPoints;
+        }
+
+        if (team.mTeamIndex == mCurrentCup->mUserSelectedTeam)
+        {
+            userTeam = team;
+        }
+        else
+        {
+            BasicGameInfo* gameInfo = mGameInfo[mCurrentMode];
+            eTeamID team0 = TEAM_INVALID;
+            eTeamID team1 = TEAM_INVALID;
+
+            if (gameInfo != nullptr)
+            {
+                team0 = gameInfo->mTeamIndex[0];
+                team1 = gameInfo->mTeamIndex[1];
+            }
+
+            if (team.mTeamIndex == team0 || team.mTeamIndex == team1)
+            {
+                opponentTeam = team;
+            }
+        }
+    }
+
+    if (userTeam.mNumPoints >= opponentTeam.mNumPoints && userTeam.mNumPoints >= highestTeam.mNumPoints + 3)
+    {
+        mCupMatchRequirement = RESULT_CUP_WIN;
+    }
+    else if (userTeam.mNumPoints + 1 >= opponentTeam.mNumPoints && userTeam.mNumPoints + 1 >= highestTeam.mNumPoints + 3)
+    {
+        mCupMatchRequirement = RESULT_USER_OT_LOSES;
+    }
+    else if (userTeam.mNumPoints + 3 >= opponentTeam.mNumPoints && userTeam.mNumPoints + 3 >= highestTeam.mNumPoints + 1)
+    {
+        mCupMatchRequirement = RESULT_USER_OT_WINS;
+    }
+    else if (userTeam.mNumPoints + 3 >= opponentTeam.mNumPoints && userTeam.mNumPoints + 3 >= highestTeam.mNumPoints)
+    {
+        mCupMatchRequirement = RESULT_USER_WINS;
+    }
+    else
+    {
+        mCupMatchRequirement = RESULT_USER_LOSES;
+    }
+}
+
+/**
+ * Offset/Address/Size: 0x256C | 0x80177C10 | size: 0x137C
+ */
+void GameInfoManager::OnPostCupGameState()
+{
+    eTrophyType tourneyCup = INVALID_TROPHY;
+    int i;
+
+    switch (mCurrentMode)
+    {
+    case GM_MUSHROOM_CUP:
+        tourneyCup = TROPHY_MUSHROOM_CUP;
+        break;
+    case GM_FLOWER_CUP:
+        tourneyCup = TROPHY_FLOWER_CUP;
+        break;
+    case GM_STAR_CUP:
+        tourneyCup = TROPHY_STAR_CUP;
+        break;
+    case GM_BOWSER_CUP:
+        tourneyCup = TROPHY_BOWSER_CUP;
+        break;
+    case GM_SUPER_MUSHROOM_CUP:
+        tourneyCup = TROPHY_SUPER_MUSHROOM_CUP;
+        break;
+    case GM_SUPER_FLOWER_CUP:
+        tourneyCup = TROPHY_SUPER_FLOWER_CUP;
+        break;
+    case GM_SUPER_STAR_CUP:
+        tourneyCup = TROPHY_SUPER_STAR_CUP;
+        break;
+    case GM_SUPER_BOWSER_CUP:
+        tourneyCup = TROPHY_SUPER_BOWSER_CUP;
+        break;
+    }
+
+    if (mDisplayTrophy[0])
+    {
+        bool hasTrophy;
+
+        if (GetConfigBool(Config::Global(), "givealltrophies", false))
+        {
+            hasTrophy = true;
+        }
+        else
+        {
+            int trophy = (int)tourneyCup;
+            hasTrophy = (mUserInfo.mTrophies[trophy / 8] & (1 << (trophy % 8))) != 0;
+        }
+
+        mDisplayTrophy[0] = hasTrophy;
+    }
+
+    for (i = 0; i < 5; i++)
+    {
+        eMilestoneColour level = GetMilestoneLevel(MILESTONES[i]);
+        mDisplayTrophy[i + 1] = (mTrophyColourState[i] != level);
+        mTrophyColourState[i] = level;
+    }
+
+    mCupMatchRequirement = RESULT_INVALID;
+
+    if ((mCurrentMode == GM_MUSHROOM_CUP || mCurrentMode == GM_FLOWER_CUP)
+        && !(mCurrentMode == GM_MUSHROOM_CUP && mUserInfo.mIsFlowerCupUnlocked)
+        && !(mCurrentMode == GM_FLOWER_CUP && mUserInfo.mIsStarCupUnlocked))
+    {
+        if (mCurrentCup->mRoundNumber == (short)(mCurrentCup->GetNumRounds() - 1))
+        {
+            TeamStats allStats[8];
+            int userIndex = -1;
+            int rankIndices[8];
+            int userRank;
+            int numTeams;
+            int i;
+            int j;
+            int tempBuf[16];
+            TeamStats* pTemp = (TeamStats*)tempBuf;
+
+            if (mCurrentMode == GM_BOWSER_CUP || mCurrentMode == GM_SUPER_BOWSER_CUP)
+            {
+                numTeams = 8;
+            }
+            else
+            {
+                numTeams = mCurrentCup->GetNumTeams();
+            }
+
+            for (i = 0; i < numTeams; i++)
+            {
+                if (mCurrentMode == GM_BOWSER_CUP)
+                {
+                    *pTemp = *mBowserCupSeries.GetTeamStats((unsigned short)i);
+                }
+                else if (mCurrentMode == GM_SUPER_BOWSER_CUP)
+                {
+                    *pTemp = *mSuperBowserCupSeries.GetTeamStats((unsigned short)i);
+                }
+                else
+                {
+                    *pTemp = *mCurrentCup->GetTeamStats((unsigned short)i);
+                }
+
+                allStats[i] = *pTemp;
+
+                if (allStats[i].mTeamIndex == mCurrentCup->mUserSelectedTeam)
+                {
+                    userIndex = i;
+                }
+            }
+
+            nlSingleton<StatsTracker>::s_pInstance->GetSortedTeamStats(allStats, numTeams, rankIndices, numTeams);
+
+            for (j = 0; j < numTeams; j++)
+            {
+                if (userIndex == rankIndices[j])
+                {
+                    userRank = j;
+                }
+            }
+
+            if (mCurrentMode == GM_MUSHROOM_CUP)
+            {
+                if ((unsigned int)userRank < 3)
+                {
+                    mUserInfo.mIsFlowerCupUnlocked = true;
+                }
+            }
+            else if (mCurrentMode == GM_FLOWER_CUP)
+            {
+                if ((unsigned int)userRank < 3)
+                {
+                    mUserInfo.mIsStarCupUnlocked = true;
+                }
+            }
+        }
+    }
+
+    IncreaseRoundNumber();
+
+    extern void DetermineNextCupScreen__15GameInfoManagerFv(GameInfoManager*);
+    DetermineNextCupScreen__15GameInfoManagerFv(this);
+
+    mUnlockedTriggers = 0;
+
+    u32 unlockedState = 0;
+
+    if (CheckUnlockStatus(isKongaUnlocked, mUserInfo.mTrophies[0], 0))
+    {
+        unlockedState |= 0x1;
+    }
+    if (CheckUnlockStatus(isYoshiUnlocked, mUserInfo.mTrophies[0], 1))
+    {
+        unlockedState |= 0x2;
+    }
+    if (CheckUnlockStatus(isForbiddenUnlocked, mUserInfo.mTrophies[0], 2))
+    {
+        unlockedState |= 0x4;
+    }
+    if (IsSuperCupModeUnlocked())
+    {
+        unlockedState |= 0x8;
+    }
+    if (CheckUnlockStatus(isSuperTeamUnlocked, mUserInfo.mTrophies[0], 3))
+    {
+        unlockedState |= 0x10;
+    }
+
+    unlockedState |= 0x20;
+
+    if (CheckUnlockStatus(isSuperStadUnlocked, mUserInfo.mTrophies[0], 3))
+    {
+        unlockedState |= 0x40;
+    }
+    if (CheckUnlockStatus(isAllSTSUnlocked, mUserInfo.mTrophies[0], 4))
+    {
+        unlockedState |= 0x80;
+    }
+    if (CheckUnlockStatus(isGoalieUnlocked, mUserInfo.mTrophies[0], 6))
+    {
+        unlockedState |= 0x2000;
+    }
+    if (CheckUnlockStatus(isTiltUnlocked, mUserInfo.mTrophies[0], 5))
+    {
+        unlockedState |= 0x100;
+    }
+    if (CheckUnlockStatus(isUnlimitedUnlocked, mUserInfo.mTrophies[0], 7))
+    {
+        unlockedState |= 0x200;
+    }
+
+    if (mUserInfo.mIsFlowerCupUnlocked)
+    {
+        unlockedState |= 0x400;
+    }
+    if (mUserInfo.mIsStarCupUnlocked)
+    {
+        unlockedState |= 0x800;
+    }
+
+    if (CheckUnlockStatus(isKongaUnlocked, mUserInfo.mTrophies[0], 0)
+        && CheckUnlockStatus(isYoshiUnlocked, mUserInfo.mTrophies[0], 1))
+    {
+        unlockedState |= 0x1000;
+    }
+
+    if (CheckUnlockStatus(false, mUserInfo.mTrophies[0], 3))
+    {
+        unlockedState |= 0x4000;
+    }
+
+    if ((mPreGameUnlockedState & 0x1) != (unlockedState & 0x1))
+    {
+        mUnlockedTriggers |= 0x1;
+    }
+    if ((mPreGameUnlockedState & 0x2) != (unlockedState & 0x2))
+    {
+        mUnlockedTriggers |= 0x2;
+    }
+    if ((mPreGameUnlockedState & 0x4) != (unlockedState & 0x4))
+    {
+        mUnlockedTriggers |= 0x4;
+    }
+    if ((mPreGameUnlockedState & 0x8) != (unlockedState & 0x8))
+    {
+        mUnlockedTriggers |= 0x8;
+    }
+    if ((mPreGameUnlockedState & 0x10) != (unlockedState & 0x10))
+    {
+        mUnlockedTriggers |= 0x10;
+    }
+    if ((mPreGameUnlockedState & 0x20) != (unlockedState & 0x20))
+    {
+        mUnlockedTriggers |= 0x20;
+    }
+    if ((mPreGameUnlockedState & 0x40) != (unlockedState & 0x40))
+    {
+        mUnlockedTriggers |= 0x40;
+    }
+    if ((mPreGameUnlockedState & 0x80) != (unlockedState & 0x80))
+    {
+        mUnlockedTriggers |= 0x80;
+    }
+    if ((mPreGameUnlockedState & 0x2000) != (unlockedState & 0x2000))
+    {
+        mUnlockedTriggers |= 0x2000;
+    }
+    if ((mPreGameUnlockedState & 0x100) != (unlockedState & 0x100))
+    {
+        mUnlockedTriggers |= 0x100;
+    }
+    if ((mPreGameUnlockedState & 0x200) != (unlockedState & 0x200))
+    {
+        mUnlockedTriggers |= 0x200;
+    }
+    if ((mPreGameUnlockedState & 0x400) != (unlockedState & 0x400))
+    {
+        mUnlockedTriggers |= 0x400;
+    }
+    if ((mPreGameUnlockedState & 0x800) != (unlockedState & 0x800))
+    {
+        mUnlockedTriggers |= 0x800;
+    }
+    if ((mPreGameUnlockedState & 0x1000) != (unlockedState & 0x1000))
+    {
+        mUnlockedTriggers |= 0x1000;
+    }
+    if ((mPreGameUnlockedState & 0x4000) != (unlockedState & 0x4000))
+    {
+        mUnlockedTriggers |= 0x4000;
+    }
+}
 
 /**
  * Offset/Address/Size: 0x23FC | 0x80177AA0 | size: 0x170

@@ -220,6 +220,53 @@ static void SHMilestoneTrophy_Append_stub()
 // {
 // }
 
+struct TLTextInstance;
+struct TLImageInstance;
+
+struct TLTextLocView
+{
+    unsigned char mPad0[0x80];
+    unsigned long mLocStrId;
+    unsigned char mPad1[0x0C];
+    unsigned long mOverloadFlags;
+};
+
+struct TLInstanceView
+{
+    unsigned char mPad0[0x0C];
+    void* m_component;
+    unsigned char mPad1[0x6E];
+    bool m_bVisible;
+};
+
+extern unsigned long GetLOCTrophyName(eTrophyType);
+extern "C" void SetString__14TLTextInstanceFPCUs(TLTextInstance*, const unsigned short*);
+extern "C" const nlColour& GetColour__11FELibObjectCFv(void*);
+extern "C" void SetAssetColour__10TLInstanceFRC8nlColour(void*, const nlColour&);
+
+static const char* MILESTONE_TROPHY_TEXT_NAME = "CUP TITLE";
+static const char* MILESTONE_TROPHY_IMAGE_NAME = "TROPHY";
+static const char* MILESTONE_TOTAL_TEXT_NAME = "TOTALS";
+static const char* MILESTONE_DESCRIPTION_TEXT_NAME = "THE TOTAL2";
+
+static const char* TROPHY_TEXTURE_FILENAMES[13] = {
+    "fe/trophies/cups_mushroom",
+    "fe/trophies/cups_flower",
+    "fe/trophies/cups_star",
+    "fe/trophies/cups_bowser",
+    "fe/trophies/cups_super_mushroom",
+    "fe/trophies/cups_super_flower",
+    "fe/trophies/cups_super_star",
+    "fe/trophies/cups_super_bowser",
+    "fe/trophies/cups_veteran",
+    "fe/trophies/cups_sniper",
+    "fe/trophies/cups_super_striker",
+    "fe/trophies/cups_super_team",
+    "fe/trophies/cups_lakitu",
+};
+
+static const nlColour TROPHY_BLACK_MILESTONE = { 0x00, 0x00, 0x00, 0xFF };
+
 /**
  * Offset/Address/Size: 0x19F4 | 0x800CF4F4 | size: 0xCC
  */
@@ -251,6 +298,339 @@ MilestoneTrophyScene::~MilestoneTrophyScene()
  */
 void MilestoneTrophyScene::SceneCreated()
 {
+    typedef TLTextInstance* (*FindTextByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
+    typedef TLTextInstance* (*FindTextByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
+    typedef TLImageInstance* (*FindImageByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
+    typedef TLImageInstance* (*FindImageByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
+    typedef TLComponentInstance* (*FindCompSlideByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
+    typedef TLComponentInstance* (*FindCompSlideByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
+    typedef TLComponentInstance* (*FindCompPresByValue)(FEPresentation*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
+    typedef TLComponentInstance* (*FindCompPresByRef)(FEPresentation*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
+
+    FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
+
+    TLTextInstance* pText;
+    {
+        union
+        {
+            FindTextByValue byValue;
+            FindTextByRef byRef;
+        } findText;
+
+        volatile InlineHasher hLayerA, hLayerB;
+        volatile InlineHasher hNameB, hNameA;
+        volatile InlineHasher h7, h6;
+        volatile InlineHasher h5, h4, h3, h2, h1, h0;
+
+        h0.m_Hash = 0;
+        h1.m_Hash = 0;
+        h2.m_Hash = 0;
+        h3.m_Hash = 0;
+        h4.m_Hash = 0;
+        h5.m_Hash = 0;
+        h6.m_Hash = 0;
+        h7.m_Hash = 0;
+
+        unsigned long hash = nlStringLowerHash(MILESTONE_TROPHY_TEXT_NAME);
+        hNameA.m_Hash = hash;
+        hNameB.m_Hash = hash;
+
+        hash = nlStringLowerHash("Layer");
+        hLayerA.m_Hash = hash;
+        hLayerB.m_Hash = hash;
+
+        findText.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
+        pText = findText.byRef(
+            presentation->m_currentSlide,
+            (InlineHasher&)hLayerA,
+            (InlineHasher&)hNameA,
+            (InlineHasher&)h7,
+            (InlineHasher&)h5,
+            (InlineHasher&)h3,
+            (InlineHasher&)h1);
+    }
+
+    ((TLTextLocView*)pText)->mLocStrId = GetLOCTrophyName(mTrophy);
+    ((TLTextLocView*)pText)->mOverloadFlags |= 0x8;
+
+    TLImageInstance* pTrophyImage;
+    {
+        union
+        {
+            FindImageByValue byValue;
+            FindImageByRef byRef;
+        } findImage;
+
+        volatile InlineHasher hLayerA, hLayerB;
+        volatile InlineHasher hNameB, hNameA;
+        volatile InlineHasher h7, h6;
+        volatile InlineHasher h5, h4, h3, h2, h1, h0;
+
+        h0.m_Hash = 0;
+        h1.m_Hash = 0;
+        h2.m_Hash = 0;
+        h3.m_Hash = 0;
+        h4.m_Hash = 0;
+        h5.m_Hash = 0;
+        h6.m_Hash = 0;
+        h7.m_Hash = 0;
+
+        unsigned long hash = nlStringLowerHash(MILESTONE_TROPHY_IMAGE_NAME);
+        hNameA.m_Hash = hash;
+        hNameB.m_Hash = hash;
+
+        hash = nlStringLowerHash("Layer");
+        hLayerA.m_Hash = hash;
+        hLayerB.m_Hash = hash;
+
+        findImage.byValue = FEFinder<TLImageInstance, 2>::Find<TLSlide>;
+        pTrophyImage = findImage.byRef(
+            presentation->m_currentSlide,
+            (InlineHasher&)hLayerA,
+            (InlineHasher&)hNameA,
+            (InlineHasher&)h7,
+            (InlineHasher&)h5,
+            (InlineHasher&)h3,
+            (InlineHasher&)h1);
+    }
+
+    mAsyncTrophy->mImageInstance = pTrophyImage;
+    ((TLInstanceView*)pTrophyImage)->m_bVisible = true;
+
+    unsigned short tempTotal[128];
+    tempTotal[0] = 0;
+    memcpy(mTotalBuffer, tempTotal, 0x100);
+
+    {
+        union
+        {
+            FindTextByValue byValue;
+            FindTextByRef byRef;
+        } findText;
+
+        volatile InlineHasher hLayerA, hLayerB;
+        volatile InlineHasher hNameB, hNameA;
+        volatile InlineHasher h7, h6;
+        volatile InlineHasher h5, h4, h3, h2, h1, h0;
+
+        h0.m_Hash = 0;
+        h1.m_Hash = 0;
+        h2.m_Hash = 0;
+        h3.m_Hash = 0;
+        h4.m_Hash = 0;
+        h5.m_Hash = 0;
+        h6.m_Hash = 0;
+        h7.m_Hash = 0;
+
+        unsigned long hash = nlStringLowerHash(MILESTONE_TOTAL_TEXT_NAME);
+        hNameA.m_Hash = hash;
+        hNameB.m_Hash = hash;
+
+        hash = nlStringLowerHash("Layer");
+        hLayerA.m_Hash = hash;
+        hLayerB.m_Hash = hash;
+
+        findText.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
+        TLTextInstance* pTotal = findText.byRef(
+            presentation->m_currentSlide,
+            (InlineHasher&)hLayerA,
+            (InlineHasher&)hNameA,
+            (InlineHasher&)h7,
+            (InlineHasher&)h5,
+            (InlineHasher&)h3,
+            (InlineHasher&)h1);
+        SetString__14TLTextInstanceFPCUs(pTotal, mTotalBuffer);
+    }
+
+    if (mIsNew)
+    {
+        union
+        {
+            FindCompSlideByValue byValue;
+            FindCompSlideByRef byRef;
+        } findComp;
+
+        volatile InlineHasher hLayerA, hLayerB;
+        volatile InlineHasher hNameB, hNameA;
+        volatile InlineHasher h7, h6;
+        volatile InlineHasher h5, h4, h3, h2, h1, h0;
+
+        h0.m_Hash = 0;
+        h1.m_Hash = 0;
+        h2.m_Hash = 0;
+        h3.m_Hash = 0;
+        h4.m_Hash = 0;
+        h5.m_Hash = 0;
+        h6.m_Hash = 0;
+        h7.m_Hash = 0;
+
+        unsigned long hash = nlStringLowerHash("ARROWS");
+        hNameA.m_Hash = hash;
+        hNameB.m_Hash = hash;
+
+        hash = nlStringLowerHash("Layer");
+        hLayerA.m_Hash = hash;
+        hLayerB.m_Hash = hash;
+
+        findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
+        TLComponentInstance* arrows = findComp.byRef(
+            presentation->m_currentSlide,
+            (InlineHasher&)hLayerA,
+            (InlineHasher&)hNameA,
+            (InlineHasher&)h7,
+            (InlineHasher&)h5,
+            (InlineHasher&)h3,
+            (InlineHasher&)h1);
+        arrows->m_bVisible = false;
+    }
+
+    eMilestoneColour levelReached = nlSingleton<GameInfoManager>::s_pInstance->GetMilestoneLevel(mTrophy);
+    const char* texture = TROPHY_TEXTURE_FILENAMES[(int)mTrophy];
+    mAsyncTrophy->QueueLoad(texture, mDoBlockLoad);
+    if (levelReached == MILESTONE_BLACK)
+    {
+        SetAssetColour__10TLInstanceFRC8nlColour((void*)pTrophyImage, TROPHY_BLACK_MILESTONE);
+    }
+    else
+    {
+        SetAssetColour__10TLInstanceFRC8nlColour((void*)pTrophyImage, GetColour__11FELibObjectCFv(((TLInstanceView*)pTrophyImage)->m_component));
+    }
+    mDoBlockLoad = false;
+
+    unsigned short tempDesc[128];
+    tempDesc[0] = 0;
+    memcpy(mDescriptionBuffer, tempDesc, 0x100);
+
+    {
+        union
+        {
+            FindTextByValue byValue;
+            FindTextByRef byRef;
+        } findText;
+
+        volatile InlineHasher hLayerA, hLayerB;
+        volatile InlineHasher hNameB, hNameA;
+        volatile InlineHasher h7, h6;
+        volatile InlineHasher h5, h4, h3, h2, h1, h0;
+
+        h0.m_Hash = 0;
+        h1.m_Hash = 0;
+        h2.m_Hash = 0;
+        h3.m_Hash = 0;
+        h4.m_Hash = 0;
+        h5.m_Hash = 0;
+        h6.m_Hash = 0;
+        h7.m_Hash = 0;
+
+        unsigned long hash = nlStringLowerHash(MILESTONE_DESCRIPTION_TEXT_NAME);
+        hNameA.m_Hash = hash;
+        hNameB.m_Hash = hash;
+
+        hash = nlStringLowerHash("Layer");
+        hLayerA.m_Hash = hash;
+        hLayerB.m_Hash = hash;
+
+        findText.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
+        TLTextInstance* pDescription = findText.byRef(
+            presentation->m_currentSlide,
+            (InlineHasher&)hLayerA,
+            (InlineHasher&)hNameA,
+            (InlineHasher&)h7,
+            (InlineHasher&)h5,
+            (InlineHasher&)h3,
+            (InlineHasher&)h1);
+        SetString__14TLTextInstanceFPCUs(pDescription, mDescriptionBuffer);
+    }
+
+    if (!mButtons.mAlreadyCentred)
+    {
+        union
+        {
+            FindCompPresByValue byValue;
+            FindCompPresByRef byRef;
+        } findComp;
+
+        volatile InlineHasher hInB, hInA;
+        volatile InlineHasher hLayerB, hLayerA;
+        volatile InlineHasher hButtonsB, hButtonsA;
+        volatile InlineHasher h5, h4, h3, h2, h1, h0;
+
+        h0.m_Hash = 0;
+        h1.m_Hash = 0;
+        h2.m_Hash = 0;
+        h3.m_Hash = 0;
+        h4.m_Hash = 0;
+        h5.m_Hash = 0;
+
+        unsigned long hash = nlStringLowerHash("buttons");
+        hButtonsA.m_Hash = hash;
+        hButtonsB.m_Hash = hash;
+
+        hash = nlStringLowerHash("Layer");
+        hLayerA.m_Hash = hash;
+        hLayerB.m_Hash = hash;
+
+        hash = nlStringLowerHash("IN");
+        hInA.m_Hash = hash;
+        hInB.m_Hash = hash;
+
+        findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<FEPresentation>;
+        mButtons.mButtonInstance = findComp.byRef(
+            presentation,
+            (InlineHasher&)hInA,
+            (InlineHasher&)hLayerA,
+            (InlineHasher&)hButtonsA,
+            (InlineHasher&)h5,
+            (InlineHasher&)h3,
+            (InlineHasher&)h1);
+
+        mButtons.SetState(mButtonState);
+    }
+
+    if (!mButtons2.mAlreadyCentred)
+    {
+        union
+        {
+            FindCompPresByValue byValue;
+            FindCompPresByRef byRef;
+        } findComp;
+
+        volatile InlineHasher hInB, hInA;
+        volatile InlineHasher hLayerB, hLayerA;
+        volatile InlineHasher hButtonsB, hButtonsA;
+        volatile InlineHasher h5, h4, h3, h2, h1, h0;
+
+        h0.m_Hash = 0;
+        h1.m_Hash = 0;
+        h2.m_Hash = 0;
+        h3.m_Hash = 0;
+        h4.m_Hash = 0;
+        h5.m_Hash = 0;
+
+        unsigned long hash = nlStringLowerHash("buttons");
+        hButtonsA.m_Hash = hash;
+        hButtonsB.m_Hash = hash;
+
+        hash = nlStringLowerHash("Layer");
+        hLayerA.m_Hash = hash;
+        hLayerB.m_Hash = hash;
+
+        hash = nlStringLowerHash("change");
+        hInA.m_Hash = hash;
+        hInB.m_Hash = hash;
+
+        findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<FEPresentation>;
+        mButtons2.mButtonInstance = findComp.byRef(
+            presentation,
+            (InlineHasher&)hInA,
+            (InlineHasher&)hLayerA,
+            (InlineHasher&)hButtonsA,
+            (InlineHasher&)h5,
+            (InlineHasher&)h3,
+            (InlineHasher&)h1);
+
+        mButtons2.SetState(mButtonState);
+    }
 }
 
 /**

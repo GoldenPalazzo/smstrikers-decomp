@@ -620,9 +620,61 @@ void FERender::RenderSlide(const TLSlide* slide)
 
 /**
  * Offset/Address/Size: 0xD90 | 0x8020B018 | size: 0x7A8
+ * TODO: 1.30% match - currently only covers transform and colour setup for the
+ * root asset. Type dispatch, component slide traversal, and recursive child
+ * rendering paths are still missing.
  */
-void FERender::RenderTimeLineAsset(TLInstance*, float)
+void FERender::RenderTimeLineAsset(TLInstance* instance, float time)
 {
+    if (!instance->IsValidAtTime(time))
+    {
+        return;
+    }
+
+    if (!instance->m_bVisible)
+    {
+        return;
+    }
+
+    nlMatrix4 rotationMatrix;
+    nlMatrix4 scaleMatrix;
+    nlMatrix4 combinedMatrix;
+
+    const feVector3& rotZ = instance->GetRotation();
+    const feVector3& rotY = instance->GetRotation();
+    nlMakeRotationMatrixEulerAngles(
+        rotationMatrix,
+        instance->GetRotation().f.x,
+        rotY.f.y,
+        rotZ.f.z);
+
+    const feVector3& scaleZ = instance->GetScale();
+    const feVector3& scaleY = instance->GetScale();
+    nlMakeScaleMatrix(
+        scaleMatrix,
+        instance->GetScale().f.x,
+        scaleY.f.y,
+        scaleZ.f.z);
+
+    nlMultMatrices(combinedMatrix, scaleMatrix, rotationMatrix);
+
+    const feVector3& pos = instance->GetPosition();
+    float z = pos.f.z;
+    combinedMatrix.f.m41 = pos.f.x;
+    combinedMatrix.f.m42 = pos.f.y;
+    combinedMatrix.f.m44 = 1.0f;
+    combinedMatrix.f.m43 = z * -1.0f;
+
+    m_pMatrixStack->PushMatrix();
+    m_pMatrixStack->MultMatrix(combinedMatrix);
+
+    nlFloatColour* curAssetColour = &s_currentAssetColour;
+    for (u32 i = 0; i < 4; i++)
+    {
+        curAssetColour->c[i] = (instance->GetColour().c[i] * curAssetColour->c[i]) / 255.0f;
+    }
+
+    m_pMatrixStack->PopMatrix();
 }
 
 /**

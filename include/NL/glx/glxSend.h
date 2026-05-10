@@ -16,7 +16,6 @@ void glx_LoadLight(GLLightUserData*, _GXLightID);
 void glx_SwitchStreams(const glModelPacket*);
 void glx_SwitchRaster(const glModelPacket*);
 void glx_SwitchTextureState(const glModelPacket*);
-unsigned long glx_SwitchTexConfig(const glModelPacket*);
 void glx_SendEnd();
 void glx_SendReset();
 void GetConstants();

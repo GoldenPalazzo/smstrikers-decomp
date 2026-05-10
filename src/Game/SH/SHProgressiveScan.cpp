@@ -185,7 +185,10 @@ void ProgressiveScanScene::SceneCreated()
 
     presentation = m_pFEPresentation;
 
-    mSelectorComponent = FEFinder<TLComponentInstance, 4>::Find<FEPresentation>(
+    TLComponentInstance* (*findComponent)(
+        FEPresentation*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher) = FEFinder<TLComponentInstance, 4>::Find<FEPresentation>;
+
+    mSelectorComponent = findComponent(
         presentation,
         InlineHasher(nlStringLowerHash("Slide1")),
         InlineHasher(nlStringLowerHash("Layer")),
@@ -207,7 +210,10 @@ void ProgressiveScanScene::SceneCreated()
 
     mSelectorComponent->Update(0.0f);
 
-    TLImageInstance* img = FEFinder<TLImageInstance, 2>::Find<FEPresentation>(
+    TLImageInstance* (*findImage)(
+        FEPresentation*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher) = FEFinder<TLImageInstance, 2>::Find<FEPresentation>;
+
+    TLImageInstance* img = findImage(
         presentation,
         InlineHasher(nlStringLowerHash("Slide1")),
         InlineHasher(nlStringLowerHash("Layer")),
@@ -218,7 +224,7 @@ void ProgressiveScanScene::SceneCreated()
     mUseProgressiveImage[0]->mImageInstance = img;
     img->m_bVisible = false;
 
-    mUseProgressiveImage[1]->mImageInstance = FEFinder<TLImageInstance, 2>::Find<FEPresentation>(
+    mUseProgressiveImage[1]->mImageInstance = findImage(
         presentation,
         InlineHasher(nlStringLowerHash("Slide3")),
         InlineHasher(nlStringLowerHash("Layer")),
@@ -227,7 +233,7 @@ void ProgressiveScanScene::SceneCreated()
         InlineHasher(0),
         InlineHasher(0));
 
-    mConfirmationImage->mImageInstance = FEFinder<TLImageInstance, 2>::Find<FEPresentation>(
+    mConfirmationImage->mImageInstance = findImage(
         presentation,
         InlineHasher(nlStringLowerHash("Slide2")),
         InlineHasher(nlStringLowerHash("Layer")),

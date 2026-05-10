@@ -148,7 +148,16 @@ extern AudioEventList g_PendingEvents;
 extern EventHandler* g_pAudioEventHandler;
 extern _AudioEventRaiser g_AudioEventRaiser;
 
-void AudioScriptEventHandler(Event*, void*);
+class AudioLoader
+{
+public:
+    static bool IsInited();
+};
+
+static unsigned char g_InBowserAttack;
+static unsigned char g_InGoal;
+
+static void AudioScriptEventHandler(Event*, void*);
 static void Poll();
 
 typedef WalkHelper<AUDIO_EVENT_RECORD, ListEntry<AUDIO_EVENT_RECORD>, _AudioEventRaiser> AudioEventWalkHelper;
@@ -528,12 +537,71 @@ void RecordExcitingEvent()
     }
 }
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x80149154 | size: 0xFF8
-//  */
-// void AudioScriptEventHandler(Event*, void*)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x0 | 0x80149154 | size: 0xFF8
+ * TODO: 11.35% match - major event switch cases are still missing.
+ */
+static void AudioScriptEventHandler(Event* pEvent, void*)
+{
+    if (g_pBall == NULL)
+    {
+        return;
+    }
+
+    if (!AudioLoader::IsInited())
+    {
+        return;
+    }
+
+    switch (pEvent->m_uEventID)
+    {
+    case 4:
+    {
+        cTeam* pHome = g_pTeams[0];
+        cTeam* pAway = g_pTeams[1];
+        AudioScriptEventMgr::AUDIO_EVENT_TEAM team = AudioScriptEventMgr::AET_Away;
+        if (pHome->m_nScore > pAway->m_nScore)
+        {
+            team = AudioScriptEventMgr::AET_Home;
+        }
+
+        AudioScriptEventMgr::AUDIO_EVENT event = AudioScriptEventMgr::AE_WinGame;
+        if (g_pGame->mInSuddenDeath)
+        {
+            event = AudioScriptEventMgr::AE_SDWin;
+        }
+
+        AudioScriptEventMgr::FireEvent(event, team);
+        return;
+    }
+    case 5:
+    {
+        g_InBowserAttack = 0;
+        g_InGoal = 1;
+
+        AudioScriptEventMgr::AUDIO_EVENT_TEAM team = GetEventTeam<GoalScoredData>(pEvent, false);
+        if (g_pGame->mInSuddenDeath)
+        {
+            AudioScriptEventMgr::FireEvent(AudioScriptEventMgr::AE_SDWin, team);
+        }
+        else
+        {
+            AudioScriptEventMgr::FireEvent(AudioScriptEventMgr::AE_Goal, team);
+        }
+        return;
+    }
+    case 11:
+        g_InBowserAttack = 0;
+        g_InGoal = 0;
+        AudioScriptEventMgr::FireEvent(AudioScriptEventMgr::AE_KickOff, AudioScriptEventMgr::AET_Neutral);
+        return;
+    case 12:
+        AudioScriptEventMgr::FireEvent(AudioScriptEventMgr::AE_SuddenDeath, AudioScriptEventMgr::AET_Neutral);
+        return;
+    default:
+        return;
+    }
+}
 
 // REMOVE once real callers exist.
 void AudioScriptEventMgr_stub()

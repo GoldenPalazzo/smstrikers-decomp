@@ -14,6 +14,75 @@
 
 extern FEInput* g_pFEInput;
 
+struct LOCHeader
+{
+    char Thumbprint[4];
+    unsigned long Version;
+    unsigned long Language;
+    unsigned long StringCount;
+    unsigned long Flags;
+};
+
+class nlLocalization
+{
+public:
+    struct StringLookup
+    {
+        unsigned long hash;
+        unsigned long StringOffset;
+
+        operator unsigned long() const { return hash; }
+    };
+
+    LOCHeader* m_pFile;
+    StringLookup* m_LookupTable;
+    unsigned short* m_FirstString;
+    int m_CurrentLanguage;
+};
+
+extern nlLocalization* g_pLocalization;
+extern const unsigned short LocalizationTableNotFound[];
+extern const unsigned short MissingLocString[];
+
+template <typename T, typename Key>
+T* nlBSearch(const Key& key, T* pBase, int count);
+
+struct InlineHasher
+{
+    unsigned long m_Hash;
+    InlineHasher() { }
+    InlineHasher(unsigned long h)
+        : m_Hash(h)
+    {
+    }
+};
+
+template <typename T, int N>
+class FEFinder
+{
+public:
+    template <typename U>
+    static T* Find(U* slide, InlineHasher h1, InlineHasher h2, InlineHasher h3, InlineHasher h4, InlineHasher h5, InlineHasher h6);
+};
+
+static inline const unsigned short* LookupLocString(const char* stringId)
+{
+    nlLocalization* loc = g_pLocalization;
+    unsigned long key = nlStringLowerHash(stringId);
+
+    if (loc->m_LookupTable == 0)
+    {
+        return LocalizationTableNotFound;
+    }
+
+    if (nlLocalization::StringLookup* entry = nlBSearch<nlLocalization::StringLookup, unsigned long>(key, loc->m_LookupTable, (int)loc->m_pFile->StringCount))
+    {
+        return loc->m_FirstString + entry->StringOffset;
+    }
+
+    return MissingLocString;
+}
+
 int LessonScene::mLessonIndex = -1;
 // /**
 //  * Offset/Address/Size: 0x2D4 | 0x8010ACF4 | size: 0x15C
@@ -92,8 +161,50 @@ void LessonScene::SceneCreated()
     TLTextInstance* titletextinstance;
     TLTextInstance* bodytextinstance;
     TLComponentInstance* buttonComponent;
-    nlSNPrintf("LOC_TUTORIAL_INSTRUCTION_TITLE_%d", mLessonIndex, title, 0x40);
-    nlSNPrintf("LOC_TUTORIAL_INSTRUCTION_BODY_%d", mLessonIndex, body, 0x40);
+
+    nlSNPrintf(title, 0x40, "LOC_TUTORIAL_INSTRUCTION_TITLE_%d", mLessonIndex);
+    nlSNPrintf(body, 0x40, "LOC_TUTORIAL_INSTRUCTION_BODY_%d", mLessonIndex);
+
+    titletextinstance = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
+        m_pFEPresentation->m_currentSlide,
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("title")),
+        InlineHasher(0),
+        InlineHasher(0),
+        InlineHasher(0),
+        InlineHasher(0));
+
+    bodytextinstance = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
+        m_pFEPresentation->m_currentSlide,
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("body")),
+        InlineHasher(0),
+        InlineHasher(0),
+        InlineHasher(0),
+        InlineHasher(0));
+
+    if (LookupLocString(title) != 0)
+    {
+        titletextinstance->SetStringId(title);
+    }
+
+    if (LookupLocString(body) != 0)
+    {
+        bodytextinstance->SetStringId(body);
+    }
+
+    buttonComponent = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
+        m_pFEPresentation->m_currentSlide,
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("buttons")),
+        InlineHasher(0),
+        InlineHasher(0),
+        InlineHasher(0),
+        InlineHasher(0));
+
+    mButtons.mButtonInstance = buttonComponent;
+    mButtons.SetState(ButtonComponent::BS_A_AND_B_AND_Y);
+    buttonComponent->m_bVisible = false;
 }
 
 /**

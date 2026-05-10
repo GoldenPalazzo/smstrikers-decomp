@@ -47,10 +47,10 @@ public:
 
     struct Parser
     {
-        virtual void TagValuePair(const BasicString<char, Detail::TempStringAllocator>&, const BasicString<char, Detail::TempStringAllocator>&) { FORCE_DONT_INLINE; }
-        virtual void Section(const BasicString<char, Detail::TempStringAllocator>&) { FORCE_DONT_INLINE; }
-        virtual void Comment(const BasicString<char, Detail::TempStringAllocator>&) { FORCE_DONT_INLINE; }
         virtual void EmptyLine() { FORCE_DONT_INLINE; }
+        virtual void Comment(const BasicString<char, Detail::TempStringAllocator>&) { FORCE_DONT_INLINE; }
+        virtual void Section(const BasicString<char, Detail::TempStringAllocator>&) { FORCE_DONT_INLINE; }
+        virtual void TagValuePair(const BasicString<char, Detail::TempStringAllocator>&, const BasicString<char, Detail::TempStringAllocator>&) { FORCE_DONT_INLINE; }
     }; // total size: 0x4
 
     void Parse(const char*, Parser&);

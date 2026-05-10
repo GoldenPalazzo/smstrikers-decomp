@@ -2,6 +2,7 @@
 #define _VARIANT_H_
 
 // void 0x8028D2AC..0x8028D2B0 | size : 0x4;
+#include "NL/nlBasicString.h"
 #include "NL/nlMath.h"
 #include "Game/Player.h"
 #include "Game/Team.h"
@@ -76,7 +77,7 @@ public:
     };
 
     virtual unsigned long GetHash() const;
-    virtual void ToString() const;
+    virtual BasicString<char, Detail::TempStringAllocator> ToString() const;
 
     inline bool operator==(const Variant& other) const
     {

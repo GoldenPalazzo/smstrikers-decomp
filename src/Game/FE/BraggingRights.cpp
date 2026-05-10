@@ -487,6 +487,227 @@ BraggingRightsScene::~BraggingRightsScene()
  */
 void BraggingRightsScene::SceneCreated()
 {
+    static char* CUP_BRAG_TEXT[5][4] = {
+        { "Goals", "CUP_MILESTONEUPDATE_VETERAN", "Goals_Detail", "Goals_Detail2" },
+        { "Hits", "CUP_MILESTONEUPDATE_SNIPER", "Hits_Detail", "Hits_Detail2" },
+        { "Steals", "CUP_MILESTONEUPDATE_SUPERSTRIKER", "Steals_Detail", "Steals_Detail2" },
+        { "Weapons", "CUP_MILESTONEUPDATE_TACTICIAN", "Weapons_Detail", "Weapons_Detail2" },
+        { "Buttons2", "CUP_MILESTONEUPDATE_PARAMEDIC", "Buttons_Detail", "Buttons_Detail2" },
+    };
+
+    static int MILESTONE_GOALS[5] = { 100, 300, 100, 300, 1000 };
+    static unsigned short ratioFormat[] = { '{', '0', '}', '/', '{', '1', '}', 0 };
+
+    FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
+    GameInfoManager* info = nlSingleton<GameInfoManager>::s_pInstance;
+
+    int wins;
+    int losses;
+    TLTextInstance* pText;
+    int totalStats[5];
+    int currentStats[5];
+    TeamStats userStats;
+    unsigned char complete[5] = { 0, 0, 0, 0, 0 };
+    int i;
+
+    for (i = 0; i < info->GetNumPlayingTeams(); i++)
+    {
+        TeamStats tempStats = info->GetTeamStatsByIndex((unsigned short)i);
+        if (tempStats.mTeamIndex == info->GetUserSelectedCupTeam())
+        {
+            userStats = tempStats;
+        }
+    }
+
+    totalStats[0] = info->mUserInfo.mNumGamesPlayed;
+    currentStats[0] = userStats.mPlayerTotalStats.mNumGamesPlayed;
+    if (totalStats[0] >= 100)
+    {
+        complete[0] = 1;
+    }
+
+    totalStats[1] = info->mUserInfo.mNumGoalsScored;
+    currentStats[1] = userStats.mPlayerTotalStats.mNumGoalsFor;
+    if (totalStats[1] >= 300)
+    {
+        complete[1] = 1;
+    }
+
+    totalStats[2] = info->mUserInfo.mNumSTSAttempts;
+    currentStats[2] = userStats.mPlayerTotalStats.mNumSTSAttempts;
+    if (totalStats[2] >= 100)
+    {
+        complete[2] = 1;
+    }
+
+    totalStats[3] = info->mUserInfo.mNumPerfectPasses;
+    currentStats[3] = userStats.mPlayerTotalStats.mNumPerfectPasses;
+    if (totalStats[3] >= 300)
+    {
+        complete[3] = 1;
+    }
+
+    totalStats[4] = info->mUserInfo.mNumHits;
+    currentStats[4] = userStats.mPlayerTotalStats.mNumHitsMade;
+    if (totalStats[4] >= 1000)
+    {
+        complete[4] = 1;
+    }
+
+    TLTextInstance* pTitleText = FEFinder<TLTextInstance, 3>::Find(
+        presentation->m_currentSlide,
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("Title")),
+        InlineHasher(0),
+        InlineHasher(0),
+        InlineHasher(0),
+        InlineHasher(0));
+    pTitleText->m_LocStrId = 0xB1839C7A;
+    pTitleText->m_OverloadFlags |= 0x8;
+
+    TLComponentInstance* buttonComponent = FEFinder<TLComponentInstance, 4>::Find(
+        presentation->m_currentSlide,
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("buttons")),
+        InlineHasher(0),
+        InlineHasher(0),
+        InlineHasher(0),
+        InlineHasher(0));
+    mButtons.mButtonInstance = buttonComponent;
+    mButtons.SetState(ButtonComponent::BS_A_AND_B);
+
+    for (i = 0; i < 5; i++)
+    {
+        TLTextInstance* pLabelText = FEFinder<TLTextInstance, 3>::Find(
+            presentation->m_currentSlide,
+            InlineHasher(nlStringLowerHash("Layer")),
+            InlineHasher(nlStringLowerHash(CUP_BRAG_TEXT[i][0])),
+            InlineHasher(0),
+            InlineHasher(0),
+            InlineHasher(0),
+            InlineHasher(0));
+        pLabelText->SetStringId(CUP_BRAG_TEXT[i][1]);
+
+        TLTextInstance* pStatText = FEFinder<TLTextInstance, 3>::Find(
+            presentation->m_currentSlide,
+            InlineHasher(nlStringLowerHash("Layer")),
+            InlineHasher(nlStringLowerHash(CUP_BRAG_TEXT[i][3])),
+            InlineHasher(0),
+            InlineHasher(0),
+            InlineHasher(0),
+            InlineHasher(0));
+
+        if (!complete[i])
+        {
+            BasicString<unsigned short, Detail::TempStringAllocator> unformatted(ratioFormat);
+            BasicString<char, Detail::TempStringAllocator> statString
+                = LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(totalStats[i]);
+            BasicString<char, Detail::TempStringAllocator> currentStatString
+                = LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(MILESTONE_GOALS[i]);
+            unsigned short statWideString[32];
+            unsigned short currentStatWideString[32];
+            BasicString<unsigned short, Detail::TempStringAllocator> formatted;
+
+            nlStrToWcs(statString.c_str(), statWideString, 32);
+            nlStrToWcs(currentStatString.c_str(), currentStatWideString, 32);
+
+            formatted = Format<BasicString<unsigned short, Detail::TempStringAllocator>, unsigned short[32], unsigned short[32]>(
+                unformatted, statWideString, currentStatWideString);
+
+            memcpy(mBuffer[i], formatted.c_str(), sizeof(mBuffer[i]));
+            pStatText->SetString(mBuffer[i]);
+        }
+        else
+        {
+            BasicString<char, Detail::TempStringAllocator> statString
+                = LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(totalStats[i]);
+            nlStrToWcs(statString.c_str(), mBuffer[i], 256);
+            pStatText->SetString(mBuffer[i]);
+        }
+
+        pText = FEFinder<TLTextInstance, 3>::Find(
+            presentation->m_currentSlide,
+            InlineHasher(nlStringLowerHash("Layer")),
+            InlineHasher(nlStringLowerHash(CUP_BRAG_TEXT[i][2])),
+            InlineHasher(0),
+            InlineHasher(0),
+            InlineHasher(0),
+            InlineHasher(0));
+
+        BasicString<char, Detail::TempStringAllocator> currentStatString
+            = LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(currentStats[i]);
+        nlStrToWcs(currentStatString.c_str(), mThisCupBuffer[i], 256);
+        pText->SetString(mThisCupBuffer[i]);
+    }
+
+    for (i = 0; i < info->GetNumPlayingTeams(); i++)
+    {
+        TeamStats userTeam = info->GetTeamStatsByIndex((unsigned short)i);
+        if (userTeam.mTeamIndex == info->GetUserSelectedCupTeam())
+        {
+            wins = userTeam.mNumWins;
+            losses = userTeam.mNumLosses + userTeam.mNumOTLosses;
+            break;
+        }
+    }
+
+    mUserPlace = info->DetermineUserPlacement(NULL);
+
+    BasicString<char, Detail::TempStringAllocator> winString
+        = LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(wins);
+    BasicString<char, Detail::TempStringAllocator> lossString
+        = LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(losses);
+    unsigned short winWideString[32];
+    unsigned short lossWideString[32];
+    BasicString<unsigned short, Detail::TempStringAllocator> unformatted(
+        LookupLocHash(nlStringLowerHash("BRAG_RATIO")));
+    BasicString<unsigned short, Detail::TempStringAllocator> formatted;
+
+    nlStrToWcs(winString.c_str(), winWideString, 32);
+    nlStrToWcs(lossString.c_str(), lossWideString, 32);
+
+    formatted = Format<BasicString<unsigned short, Detail::TempStringAllocator>, unsigned short[32], unsigned short[32]>(
+        unformatted, winWideString, lossWideString);
+    memcpy(mRatioBuffer, formatted.c_str(), sizeof(mRatioBuffer));
+
+    pText = FEFinder<TLTextInstance, 3>::Find(
+        presentation,
+        InlineHasher(nlStringLowerHash("Slide1")),
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("Win_Loss_Record")),
+        InlineHasher(0),
+        InlineHasher(0),
+        InlineHasher(0));
+    pText->SetString(mRatioBuffer);
+
+    TLComponentInstance* pTemp = FEFinder<TLComponentInstance, 4>::Find(
+        presentation,
+        InlineHasher(nlStringLowerHash("Slide1")),
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("Placement")),
+        InlineHasher(0),
+        InlineHasher(0),
+        InlineHasher(0));
+
+    pText = FEFinder<TLTextInstance, 3>::Find(
+        pTemp->GetActiveSlide(),
+        InlineHasher(nlStringLowerHash("Placement")),
+        InlineHasher(0),
+        InlineHasher(0),
+        InlineHasher(0),
+        InlineHasher(0),
+        InlineHasher(0));
+
+    if (mUserPlace == -2)
+    {
+        pText->m_LocStrId = 0x813370B6;
+        pText->m_OverloadFlags |= 0x8;
+    }
+    else
+    {
+        pText->m_LocStrId = GetLOCRank(mUserPlace);
+        pText->m_OverloadFlags |= 0x8;
+    }
 }
 
 /**

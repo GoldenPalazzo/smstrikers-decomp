@@ -8,17 +8,18 @@
 
 #include "font_data.h"
 
-glPoly2* g_poly = NULL;
-void* handle = NULL;
-bool bInsideBegin = false;
-bool bEnabled = false;
-bool bDrop = false;
-bool bVirtualCoords = false;
+static glPoly2 g_poly[128];
+static float font_z;
+static void* handle;
+static bool bInsideBegin;
+static bool bDrop;
+static bool bEnabled;
+static bool bVirtualCoords;
 
 /**
  * Offset/Address/Size: 0x0 | 0x801D8398 | size: 0xE8
  */
-bool glFontPrintf(eGLView view, int x, int y, const nlColour& col, const char* format, ...)
+int glFontPrintf(eGLView view, int x, int y, const nlColour& col, const char* format, ...)
 {
     char string[0x80];
     va_list args;
@@ -38,7 +39,7 @@ bool glFontPrintf(eGLView view, int x, int y, const nlColour& col, const char* f
 /**
  * Offset/Address/Size: 0xE8 | 0x801D8480 | size: 0xF4
  */
-bool glFontPrintf(eGLView view, int x, int y, const char* format, ...)
+int glFontPrintf(eGLView view, int x, int y, const char* format, ...)
 {
     char string[0x80];
     va_list args;
@@ -63,33 +64,136 @@ bool glFontPrintf(eGLView view, int x, int y, const char* format, ...)
 
 /**
  * Offset/Address/Size: 0x1DC | 0x801D8574 | size: 0x3EC
+ * TODO: 55.52% match - glyph-loop register allocation and stack layout still diverge, especially in UV conversion and shadow restore iteration.
  */
-bool glFontPrint(eGLView view, int x, int y, const nlColour& col, const char* text)
+int glFontPrint(eGLView view, int virtual_x, int virtual_y, const nlColour& colour, const char* str)
 {
-    if (nlStrLen(text) == 0)
+    if (nlStrLen(str) == 0)
     {
-        return false;
+        return 0;
     }
 
     if (bEnabled == false)
     {
-        return false;
+        return 0;
     }
 
-    int pos_x = x;
-    int pos_y = y;
+    int screen_x = virtual_x;
+    int screen_y = virtual_y;
     if ((u8)bVirtualCoords != 0)
     {
-        pos_x = (pos_x * 0xA) + 0x28;
-        pos_y = (pos_y * 0xB) + 0x20;
+        screen_x = (screen_x * 10) + 40;
+        screen_y = (screen_y * 11) + 32;
     }
 
-    int str_len = nlStrLen(text);
+    nlStrLen(str);
 
-    // todo
+    int numChars = 0;
+    glPoly2* pPoly = g_poly;
+    const char* cp = str;
+    while (*cp != '\0')
+    {
+        if (((s8)*cp >= 0x20) && ((s8)*cp <= 0x7E))
+        {
+            int i = (s8)*cp - 0x20;
+            int j = (i % 8) * 8;
+            i = (i / 8) * 8;
 
-    glAttachPoly2(view, str_len, g_poly, 0, 0);
-    return false;
+            pPoly->m_uv[0].f.x = (float)j * 0.015625f;
+            pPoly->m_uv[0].f.y = (float)i * 0.0078125f;
+            pPoly->m_uv[1].f.x = (float)j * 0.015625f;
+            pPoly->m_uv[1].f.y = ((float)i + 8.0f) * 0.0078125f;
+            pPoly->m_uv[2].f.x = ((float)j + 8.0f) * 0.015625f;
+            pPoly->m_uv[2].f.y = ((float)i + 8.0f) * 0.0078125f;
+            pPoly->m_uv[3].f.x = ((float)j + 8.0f) * 0.015625f;
+            pPoly->m_uv[3].f.y = (float)i * 0.0078125f;
+
+            pPoly->m_pos[0].f.x = screen_x;
+            pPoly->m_pos[0].f.y = screen_y;
+            pPoly->m_pos[1].f.x = screen_x;
+            pPoly->m_pos[1].f.y = 10.0f + screen_y;
+            pPoly->m_pos[2].f.x = 10.0f + screen_x;
+            pPoly->m_pos[2].f.y = 10.0f + screen_y;
+            pPoly->m_pos[3].f.x = 10.0f + screen_x;
+            pPoly->m_pos[3].f.y = screen_y;
+
+            *(u32*)&pPoly->m_colour[0].c[0] = *(u32*)&colour.c[0];
+            *(u32*)&pPoly->m_colour[1].c[0] = *(u32*)&colour.c[0];
+            *(u32*)&pPoly->m_colour[2].c[0] = *(u32*)&colour.c[0];
+            *(u32*)&pPoly->m_colour[3].c[0] = *(u32*)&colour.c[0];
+            pPoly->depth = font_z;
+
+            pPoly++;
+            numChars++;
+        }
+        else if ((s8)*cp == '\n')
+        {
+            screen_x = 30;
+            screen_y += 11;
+        }
+
+        screen_x += 10;
+        cp++;
+    }
+
+    if (bDrop != false)
+    {
+        pPoly = g_poly;
+        for (int i = 0; i < numChars; i++)
+        {
+            pPoly->m_colour[0].c[0] = 0;
+            pPoly->m_colour[0].c[1] = 0;
+            pPoly->m_colour[0].c[2] = 0;
+            pPoly->m_colour[0].c[3] = 0xFF;
+            pPoly->m_pos[0].f.x += 3.0f;
+            pPoly->m_pos[0].f.y += 3.0f;
+            pPoly->m_colour[1].c[0] = 0;
+            pPoly->m_colour[1].c[1] = 0;
+            pPoly->m_colour[1].c[2] = 0;
+            pPoly->m_colour[1].c[3] = 0xFF;
+            pPoly->m_pos[1].f.x += 3.0f;
+            pPoly->m_pos[1].f.y += 3.0f;
+            pPoly->m_colour[2].c[0] = 0;
+            pPoly->m_colour[2].c[1] = 0;
+            pPoly->m_colour[2].c[2] = 0;
+            pPoly->m_colour[2].c[3] = 0xFF;
+            pPoly->m_pos[2].f.x += 3.0f;
+            pPoly->m_pos[2].f.y += 3.0f;
+            pPoly->m_colour[3].c[0] = 0;
+            pPoly->m_colour[3].c[1] = 0;
+            pPoly->m_colour[3].c[2] = 0;
+            pPoly->m_colour[3].c[3] = 0xFF;
+            pPoly->m_pos[3].f.x += 3.0f;
+            pPoly->m_pos[3].f.y += 3.0f;
+            pPoly->depth += -0.001f;
+            pPoly++;
+        }
+
+        glAttachPoly2(view, numChars, g_poly, 0, 0);
+
+        const u32 packedColour = *(u32*)&colour.c[0];
+        pPoly = g_poly;
+        for (int i = 0; i < numChars; i++)
+        {
+            *(u32*)&pPoly->m_colour[0].c[0] = packedColour;
+            pPoly->m_pos[0].f.x -= 3.0f;
+            pPoly->m_pos[0].f.y -= 3.0f;
+            *(u32*)&pPoly->m_colour[1].c[0] = packedColour;
+            pPoly->m_pos[1].f.x -= 3.0f;
+            pPoly->m_pos[1].f.y -= 3.0f;
+            *(u32*)&pPoly->m_colour[2].c[0] = packedColour;
+            pPoly->m_pos[2].f.x -= 3.0f;
+            pPoly->m_pos[2].f.y -= 3.0f;
+            *(u32*)&pPoly->m_colour[3].c[0] = packedColour;
+            pPoly->m_pos[3].f.x -= 3.0f;
+            pPoly->m_pos[3].f.y -= 3.0f;
+            pPoly->depth = font_z;
+            pPoly++;
+        }
+    }
+
+    glAttachPoly2(view, numChars, g_poly, 0, 0);
+    return numChars;
 }
 
 /**

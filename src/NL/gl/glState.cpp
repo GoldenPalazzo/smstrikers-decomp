@@ -16,6 +16,16 @@ static glTextureState _textureState;
 
 static gl_StateBitfield packed_raster[GLS_Num];
 
+enum eGLMaterialState
+{
+    GLMS_Glossiness = 0,
+    GLMS_Num = 1
+};
+
+static gl_StateBitfield packed_materials[GLMS_Num + 1];
+static glMaterialState _materialState;
+static unsigned long defaultMaterialState = 0;
+
 /**
  * Offset/Address/Size: 0x0 | 0x801DBC44 | size: 0x184
  * TODO: 99.43% match - remaining register allocation differences in the final
@@ -538,9 +548,117 @@ glStateBundle* gl_GetCurrentStateBundle()
     return &_bundle;
 }
 
+static inline unsigned long setRasterLocal(eGLState rasterstate, unsigned long value)
+{
+    gl_StateBitfield* p = &packed_raster[rasterstate];
+    s32 numBits = p->numBits;
+    unsigned long out = extractStateBits(getRasterState(), p, numBits);
+    unsigned long state = _state.m_State;
+    for (s32 i = 0; i < numBits; i++)
+    {
+        if (value & (1u << i))
+            state = state | (1u << (i + p->startBit));
+        else
+            state = state & ~(1u << (i + p->startBit));
+    }
+    _state.m_State = state;
+    return out;
+}
+
+static inline unsigned long setMaterialLocal(eGLMaterialState materialstate, unsigned long value)
+{
+    gl_StateBitfield* p = &packed_materials[materialstate];
+    s32 numBits = p->numBits;
+    unsigned long out = extractStateBits(_materialState.m_State, p, numBits);
+    unsigned long state = _materialState.m_State;
+    for (s32 i = 0; i < numBits; i++)
+    {
+        if (value & (1u << i))
+            state = state | (1u << (i + p->startBit));
+        else
+            state = state & ~(1u << (i + p->startBit));
+    }
+    _materialState.m_State = state;
+    return out;
+}
+
 /**
  * Offset/Address/Size: 0x910 | 0x801DC554 | size: 0x1E78
+ * TODO: 32.22% match - value=0 raster calls use local inline (setRasterLocal)
+ * but decomp.me compiler doesn't promote _state.m_State stores out of loops
+ * for constant propagation, causing register allocation differences vs target
+ * (r0 vs r6 accumulator, stmw r27 vs stw x4 prologue, 29 vs 28 unrolled body
+ * instructions, missing store/reload between unrolled and tail sections)
  */
 void gl_StateStartup()
 {
+    s32 start;
+    gl_StateBitfield* p;
+
+    _bundle.texconfig = 0;
+
+    start = 0;
+    p = &packed_raster[GLS_DepthTest];
+    while (p->numBits != 0)
+    {
+        p->startBit = start;
+        start += p->numBits;
+        p++;
+    }
+
+    start = 0;
+    p = &packed_texture[GLTS_DiffuseWrap];
+    while (p->numBits != 0)
+    {
+        p->startBit = start;
+        start += p->numBits;
+        p++;
+    }
+
+    start = 0;
+    p = &packed_materials[GLMS_Glossiness];
+    while (p->numBits != 0)
+    {
+        p->startBit = start;
+        start += p->numBits;
+        p++;
+    }
+
+    setRasterLocal(GLS_DepthTest, 0);
+    setRasterLocal(GLS_DepthWrite, 0);
+    glSetRasterState(GLS_DepthFunc, 1);
+    setRasterLocal(GLS_AlphaTest, 0);
+    setRasterLocal(GLS_AlphaTestRef, 0);
+    setRasterLocal(GLS_AlphaBlend, 0);
+    glSetRasterState(GLS_Culling, 1);
+    glSetRasterState(GLS_ColourWrite, 3);
+    setRasterLocal(GLS_SolidOffset, 0);
+    setRasterLocal(GLS_FillMode, 0);
+
+    defaultRasterState = _state.m_State;
+
+    glSetTextureState(GLTS_DiffuseWrap, 0);
+    glSetTextureState(GLTS_DetailWrap, 0);
+    glSetTextureState(GLTS_ShadowWrap, 0);
+    glSetTextureState(GLTS_SelfIllumWrap, 0);
+    glSetTextureState(GLTS_GlossWrap, 0);
+    glSetTextureState(GLTS_BumpLocalWrap, 0);
+    glSetTextureState(GLTS_DiffuseFilter, 0);
+    glSetTextureState(GLTS_DetailFilter, 0);
+    glSetTextureState(GLTS_ShadowFilter, 0);
+    glSetTextureState(GLTS_SelfIllumFilter, 0);
+    glSetTextureState(GLTS_GlossFilter, 0);
+    glSetTextureState(GLTS_BumpLocalFilter, 0);
+    glSetTextureState(GLTS_DiffuseLevel, 63);
+    glSetTextureState(GLTS_DetailLevel, 0);
+    glSetTextureState(GLTS_ShadowLevel, 63);
+    glSetTextureState(GLTS_SelfIllumLevel, 63);
+    glSetTextureState(GLTS_GlossLevel, 63);
+    glSetTextureState(GLTS_BumpLocalLevel, 63);
+
+    defaultTextureState = _textureState.m_State;
+
+    setMaterialLocal(GLMS_Glossiness, 1);
+
+    defaultMaterialState = _materialState.m_State;
 }

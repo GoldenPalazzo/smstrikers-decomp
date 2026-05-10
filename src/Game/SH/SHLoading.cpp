@@ -310,9 +310,216 @@ void SuperLoadingScene::Update(float fDeltaT)
 
 /**
  * Offset/Address/Size: 0x3C4 | 0x800A6B34 | size: 0xF60
+ * TODO: 64.10% match - stack/local layout and FEFinder hasher temporary
+ * ordering differ from target, and early slide/presentation access path is
+ * still different.
  */
 void SuperLoadingScene::DisplayCupInfo()
 {
+    TLSlide* slide = m_pFEScene->m_pFEPackage->GetPresentation()->m_currentSlide;
+    InlineHasher h1;
+    InlineHasher h2;
+    InlineHasher h3(0);
+    InlineHasher h4(0);
+    InlineHasher h5(0);
+    InlineHasher h6(0);
+
+    TLTextInstance* statsText[4];
+
+    h2.m_Hash = nlStringLowerHash("stats_left1");
+    h1.m_Hash = nlStringLowerHash("Layer");
+    statsText[0] = FEFinder<TLTextInstance, 3>::Find<TLSlide>(slide, h1, h2, h3, h4, h5, h6);
+
+    h2.m_Hash = nlStringLowerHash("stats_left2");
+    h1.m_Hash = nlStringLowerHash("Layer");
+    statsText[1] = FEFinder<TLTextInstance, 3>::Find<TLSlide>(slide, h1, h2, h3, h4, h5, h6);
+
+    h2.m_Hash = nlStringLowerHash("stats_right1");
+    h1.m_Hash = nlStringLowerHash("Layer");
+    statsText[2] = FEFinder<TLTextInstance, 3>::Find<TLSlide>(slide, h1, h2, h3, h4, h5, h6);
+
+    h2.m_Hash = nlStringLowerHash("stats_right2");
+    h1.m_Hash = nlStringLowerHash("Layer");
+    statsText[3] = FEFinder<TLTextInstance, 3>::Find<TLSlide>(slide, h1, h2, h3, h4, h5, h6);
+
+    GameInfoManager* gameInfo = nlSingleton<GameInfoManager>::s_pInstance;
+
+    if (!gameInfo->IsInCupOrTournamentMode() || (gameInfo->IsInCupMode() && gameInfo->mDoingKnockout)
+        || (gameInfo->IsInTournamentMode() && gameInfo->mCustomTournamentInfo.m_tournMode == TM_KNOCKOUT))
+    {
+        statsText[0]->m_bVisible = false;
+        statsText[1]->m_bVisible = false;
+        statsText[2]->m_bVisible = false;
+        statsText[3]->m_bVisible = false;
+        return;
+    }
+
+    TeamStats allTeamStats[8];
+    int numTeams = gameInfo->GetNumPlayingTeams();
+    int standingsIndices[8];
+    int homeAwayIndex[2] = { -1, -1 };
+    int ranks[2] = { -1, -1 };
+    int stats[4] = { 0, 0, 0, 0 };
+
+    typedef BasicString<unsigned short, Detail::TempStringAllocator> WideString;
+    typedef BasicString<char, Detail::TempStringAllocator> NarrowString;
+
+    WideString unformatted[4];
+
+    {
+        unsigned long key = 0xF0BEFFA7;
+        nlLocalization* loc = g_pLocalization;
+        const unsigned short* locString;
+
+        if (loc->m_LookupTable == NULL)
+        {
+            locString = LocalizationTableNotFound;
+        }
+        else
+        {
+            nlLocalization::StringLookup* entry = nlBSearch(key, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
+            if (entry != NULL)
+            {
+                locString = loc->m_FirstString + entry->StringOffset;
+            }
+            else
+            {
+                locString = MissingLocString;
+            }
+        }
+
+        unformatted[0] = WideString(locString);
+    }
+
+    {
+        unsigned long key = 0x18CDD978;
+        nlLocalization* loc = g_pLocalization;
+        const unsigned short* locString;
+
+        if (loc->m_LookupTable == NULL)
+        {
+            locString = LocalizationTableNotFound;
+        }
+        else
+        {
+            nlLocalization::StringLookup* entry = nlBSearch(key, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
+            if (entry != NULL)
+            {
+                locString = loc->m_FirstString + entry->StringOffset;
+            }
+            else
+            {
+                locString = MissingLocString;
+            }
+        }
+
+        unformatted[1] = WideString(locString);
+    }
+
+    {
+        unsigned long key = 0xF0BEFFA7;
+        nlLocalization* loc = g_pLocalization;
+        const unsigned short* locString;
+
+        if (loc->m_LookupTable == NULL)
+        {
+            locString = LocalizationTableNotFound;
+        }
+        else
+        {
+            nlLocalization::StringLookup* entry = nlBSearch(key, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
+            if (entry != NULL)
+            {
+                locString = loc->m_FirstString + entry->StringOffset;
+            }
+            else
+            {
+                locString = MissingLocString;
+            }
+        }
+
+        unformatted[2] = WideString(locString);
+    }
+
+    {
+        unsigned long key = 0x18CDD978;
+        nlLocalization* loc = g_pLocalization;
+        const unsigned short* locString;
+
+        if (loc->m_LookupTable == NULL)
+        {
+            locString = LocalizationTableNotFound;
+        }
+        else
+        {
+            nlLocalization::StringLookup* entry = nlBSearch(key, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
+            if (entry != NULL)
+            {
+                locString = loc->m_FirstString + entry->StringOffset;
+            }
+            else
+            {
+                locString = MissingLocString;
+            }
+        }
+
+        unformatted[3] = WideString(locString);
+    }
+
+    for (int i = 0; i < numTeams; i++)
+    {
+        allTeamStats[i] = gameInfo->mPreviousTeamStats[i];
+
+        if (allTeamStats[i].mTeamIndex == gameInfo->GetTeam(0))
+        {
+            homeAwayIndex[0] = i;
+        }
+        else if (allTeamStats[i].mTeamIndex == gameInfo->GetTeam(1))
+        {
+            homeAwayIndex[1] = i;
+        }
+    }
+
+    nlSingleton<StatsTracker>::s_pInstance->GetSortedTeamStats(allTeamStats, numTeams, standingsIndices, numTeams);
+
+    for (int i = 0; i < numTeams; i++)
+    {
+        if (homeAwayIndex[0] == standingsIndices[i])
+        {
+            ranks[0] = i + 1;
+        }
+        else if (homeAwayIndex[1] == standingsIndices[i])
+        {
+            ranks[1] = i + 1;
+        }
+    }
+
+    stats[0] = ranks[0];
+    stats[1] = allTeamStats[homeAwayIndex[0]].mNumPoints;
+    stats[2] = ranks[1];
+    stats[3] = allTeamStats[homeAwayIndex[1]].mNumPoints;
+
+    for (int i = 0; i < 4; i++)
+    {
+        NarrowString statString = LexicalCast<NarrowString, int>(stats[i]);
+        unsigned short statWideString[16];
+        WideString formatted;
+
+        nlStrToWcs(statString.c_str(), statWideString, 16);
+
+        if (gameInfo->GetCurrentRoundNumber() == 0 && (i == 0 || i == 2))
+        {
+            static const unsigned short sDash[] = { '-', 0 };
+            formatted = Format(unformatted[i], sDash);
+        }
+        else
+        {
+            formatted = Format(unformatted[i], statWideString);
+        }
+
+        memcpy(mStatsBuffers[i], formatted.c_str(), 0x80);
+        statsText[i]->SetString(mStatsBuffers[i]);
+    }
 }
 
 /**

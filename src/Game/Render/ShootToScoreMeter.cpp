@@ -25,6 +25,15 @@ ShootToScoreMeter ShootToScoreMeter::instance;
 // static u32 WHITE_COLOR = 0xFFFFFFFF;
 
 extern u8 sbMakeSTSMeterOrthographic;
+extern float GetDistanceFromCameraToObject__14cCameraManagerFRC9nlVector3(const nlVector3& objectPosition);
+
+static nlColour sWhiteBarColour = { 255, 255, 255, 255 };
+static nlColour sHyperColour = { 181, 240, 255, 255 };
+static nlColour sGreenRegionColour = { 5, 150, 5, 255 };
+static nlColour sYellowRegionColour = { 200, 200, 10, 255 };
+static s32 sfNumBarsInTrail = 20;
+static float sfTrailIntensity = 0.6f;
+static float sfTrailLengthScale = 0.25f;
 
 static inline void InterpolateColours(const nlColour& colour0, const nlColour& colour1, float alpha, nlColour& result)
 {
@@ -33,6 +42,51 @@ static inline void InterpolateColours(const nlColour& colour0, const nlColour& c
     result.c[1] = (u8)(s32)(oneMinusAlpha * (float)colour0.c[1] + alpha * (float)colour1.c[1]);
     result.c[2] = (u8)(s32)(oneMinusAlpha * (float)colour0.c[2] + alpha * (float)colour1.c[2]);
     result.c[3] = (u8)(s32)(oneMinusAlpha * (float)colour0.c[3] + alpha * (float)colour1.c[3]);
+}
+
+static inline void DrawIndicatorBar(ShootToScoreMeter* pMeter, float angle, const nlColour& colour, const nlMatrix4& meterMatrix, float scale)
+{
+    glSetCurrentTexture(WhiteTexture, GLTT_Diffuse);
+    glSetTextureState(GLTS_DiffuseWrap, 0);
+    glSetCurrentTextureState(glHandleizeTextureState());
+    GetDistanceFromCameraToObject__14cCameraManagerFRC9nlVector3(pMeter->m_v3MeterPosition);
+
+    glQuad3 barQuad;
+    float scaledMeterWidth = ShootToScoreMeter::MeterWidth * scale;
+    float scaledWhiteBarWidth = 0.039f * scale;
+    float scaledWhiteBarHeight = 0.0035f * scale;
+    nlMatrix4 barMatrix;
+    float radius = 0.198f * scaledMeterWidth;
+
+    float angleRadians = (3.1415927f * angle) / 180.0f;
+    nlMakeRotationMatrixZ(barMatrix, angleRadians);
+
+    float zDepth = 0.0f;
+    if (sbMakeSTSMeterOrthographic)
+    {
+        zDepth = -100.0f;
+    }
+
+    u16 angle_u16 = (u16)(s32)(10430.378f * angleRadians);
+    float sinVal = nlSin(angle_u16);
+    float cosVal = nlSin((u16)(angle_u16 + 0x4000));
+
+    barMatrix.m[3][0] = radius * cosVal;
+    barMatrix.m[3][1] = radius * sinVal;
+    barMatrix.m[3][2] = zDepth;
+    barMatrix.m[3][3] = 1.0f;
+    nlMultMatrices(barMatrix, barMatrix, meterMatrix);
+
+    barQuad.SetupRotatedRectangle(scaledWhiteBarWidth, scaledWhiteBarHeight, barMatrix, false, false);
+    barQuad.SetColour(colour);
+
+    eGLView view = GLV_UnsortedPerspective;
+    if (sbMakeSTSMeterOrthographic)
+    {
+        view = GLV_UnsortedOrtho;
+    }
+
+    glAttachQuad3(view, 1, &barQuad, true);
 }
 
 float ShootToScoreMeter::MeterWidth = 0.4f;
@@ -78,7 +132,203 @@ void ShootToScoreMeter::RumbleMeter(float rumbleIntensity, float xOffset, float 
  */
 void ShootToScoreMeter::DrawMeter()
 {
-    FORCE_DONT_INLINE;
+    glSetRasterState((eGLState)6, 0);
+    glSetDefaultState(true);
+    glSetRasterState((eGLState)1, 0);
+    glSetRasterState((eGLState)0, 0);
+    glSetRasterState((eGLState)5, 1);
+    glSetRasterState((eGLState)6, 0);
+    glSetCurrentRasterState(glHandleizeRasterState());
+
+    if (m_MeterType == REGULAR_SHOOT_TO_SCORE_PHASE1)
+    {
+        glSetCurrentTexture(MeterTexture, GLTT_Diffuse);
+    }
+    else
+    {
+        glSetCurrentTexture(CaptainMeterTexture, GLTT_Diffuse);
+    }
+
+    glSetTextureState(GLTS_DiffuseWrap, 0);
+    glSetCurrentTextureState(glHandleizeTextureState());
+
+    nlMatrix4 matrix;
+    float scale;
+    float scaledMeterWidth;
+    glQuad3 quad;
+    nlColour green;
+    nlColour yellow;
+    nlColour black = { 0, 0, 0, 255 };
+    nlColour hyper;
+    float diffCurrentPrev;
+    int i;
+    float angle;
+    nlColour fadedColour;
+
+    matrix.SetIdentity();
+    nlMakeRotationMatrixZ(matrix, 1.5707964f);
+
+    if (sbMakeSTSMeterOrthographic)
+    {
+        static nlVector3 screenPosition;
+        float projectedY;
+        float projectedX;
+
+        matrix.SetIdentity();
+        glViewProjectPoint(GLV_Unshadowed, m_v3MeterPosition, screenPosition);
+
+        projectedY = 240.0f * screenPosition.f.y;
+        projectedX = 320.0f * screenPosition.f.x;
+        screenPosition.f.y = projectedY;
+        screenPosition.f.x = projectedX;
+        screenPosition.f.y = projectedY + 240.0f;
+        screenPosition.f.x = projectedX + 320.0f;
+        screenPosition.f.z = -0.1f;
+        screenPosition.f.y = screenPosition.f.y - 20.0f;
+
+        if (screenPosition.f.x < 92.0f)
+        {
+            screenPosition.f.x = 92.0f;
+        }
+        else if (screenPosition.f.x > 548.0f)
+        {
+            screenPosition.f.x = 548.0f;
+        }
+
+        if (screenPosition.f.y < 84.0f)
+        {
+            screenPosition.f.y = 84.0f;
+        }
+        else if (screenPosition.f.y > 396.0f)
+        {
+            screenPosition.f.y = 396.0f;
+        }
+
+        scale = 640.0f;
+        scaledMeterWidth = MeterWidth * scale;
+
+        matrix.m[3][0] = screenPosition.f.x;
+        matrix.m[3][1] = screenPosition.f.y;
+        matrix.m[3][2] = screenPosition.f.z;
+        matrix.m[3][3] = 1.0f;
+    }
+    else
+    {
+        scale = GetDistanceFromCameraToObject__14cCameraManagerFRC9nlVector3(m_v3MeterPosition);
+        scaledMeterWidth = MeterWidth * scale;
+
+        matrix.m[3][0] = m_v3MeterPosition.f.x;
+        matrix.m[3][1] = m_v3MeterPosition.f.y;
+        matrix.m[3][2] = m_v3MeterPosition.f.z;
+        matrix.m[3][3] = 1.0f;
+    }
+
+    quad.SetupRotatedRectangle(
+        scaledMeterWidth,
+        scaledMeterWidth,
+        matrix,
+        m_MeterType == REGULAR_SHOOT_TO_SCORE_PHASE1,
+        false);
+
+    eGLView view = GLV_UnsortedPerspective;
+    if (sbMakeSTSMeterOrthographic)
+    {
+        view = GLV_UnsortedOrtho;
+    }
+    glAttachQuad3(view, 1, &quad, true);
+
+    green = sGreenRegionColour;
+    yellow = sYellowRegionColour;
+    hyper = sHyperColour;
+
+    green.c[3] = (u8)(s32)(255.0f * m_fGreenAndYellonRegionIntensity);
+    yellow.c[3] = (u8)(s32)(255.0f * m_fGreenAndYellonRegionIntensity);
+
+    if (meHyper == STS_GOT_HYPER)
+    {
+        DrawIndicatorBar(this, m_fWhiteBarAngle, black, matrix, scale);
+        DrawIndicatorBar(this, m_fSavedWhiteBarAngle, black, matrix, scale);
+    }
+    else
+    {
+        DrawColouredRegion(
+            m_fGreenBarAngle - (0.5f * m_fYellowRegionWidth),
+            m_fGreenBarAngle - (0.5f * m_fGreenRegionWidth),
+            yellow,
+            yellow,
+            matrix,
+            scale);
+        DrawColouredRegion(
+            m_fGreenBarAngle + (0.5f * m_fYellowRegionWidth),
+            m_fGreenBarAngle + (0.5f * m_fGreenRegionWidth),
+            yellow,
+            yellow,
+            matrix,
+            scale);
+        DrawColouredRegion(
+            m_fGreenBarAngle - (0.5f * m_fGreenRegionWidth),
+            m_fGreenBarAngle + (0.5f * m_fGreenRegionWidth),
+            green,
+            green,
+            matrix,
+            scale);
+
+        DrawIndicatorBar(this, m_fWhiteBarAngle, sWhiteBarColour, matrix, scale);
+
+        if (mbShowSavedWhiteBar)
+        {
+            DrawColouredRegion(
+                m_fSavedGreenBarAngle - (0.5f * m_fSavedYellowRegionWidth),
+                m_fSavedGreenBarAngle - (0.5f * m_fSavedGreenRegionWidth),
+                yellow,
+                yellow,
+                matrix,
+                scale);
+            DrawColouredRegion(
+                m_fSavedGreenBarAngle + (0.5f * m_fSavedYellowRegionWidth),
+                m_fSavedGreenBarAngle + (0.5f * m_fSavedGreenRegionWidth),
+                yellow,
+                yellow,
+                matrix,
+                scale);
+
+            if (meHyper == STS_POSSIBLE_HYPER)
+            {
+                DrawColouredRegion(
+                    m_fSavedGreenBarAngle - (0.5f * m_fSavedGreenRegionWidth),
+                    m_fSavedGreenBarAngle + (0.5f * m_fSavedGreenRegionWidth),
+                    hyper,
+                    hyper,
+                    matrix,
+                    scale);
+                DrawIndicatorBar(this, m_fSavedWhiteBarAngle, black, matrix, scale);
+            }
+            else
+            {
+                DrawColouredRegion(
+                    m_fSavedGreenBarAngle - (0.5f * m_fSavedGreenRegionWidth),
+                    m_fSavedGreenBarAngle + (0.5f * m_fSavedGreenRegionWidth),
+                    green,
+                    green,
+                    matrix,
+                    scale);
+                DrawIndicatorBar(this, m_fSavedWhiteBarAngle, sWhiteBarColour, matrix, scale);
+            }
+        }
+
+        diffCurrentPrev = m_fWhiteBarPreviousAngle - m_fWhiteBarAngle;
+
+        for (i = 0; i < sfNumBarsInTrail; i++)
+        {
+            fadedColour = sWhiteBarColour;
+            fadedColour.c[3] = (u8)(s32)(255.0f * (sfTrailIntensity * (1.0f - ((float)i / (float)sfNumBarsInTrail))));
+
+            angle = sfTrailLengthScale * ((float)i * diffCurrentPrev) + m_fWhiteBarAngle;
+            DrawIndicatorBar(this, angle, fadedColour, matrix, scale);
+        }
+    }
+
+    glSetDefaultState(false);
 }
 
 /**

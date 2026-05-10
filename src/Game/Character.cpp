@@ -1415,8 +1415,336 @@ cCharacter::cCharacter(eCharacterClass cc, const int* nModelID, cSHierarchy* pHi
 /**
  * Offset/Address/Size: 0x26A0 | 0x800105EC | size: 0x1A58
  */
-void AIEventHandler(Event*, void*)
+void AIEventHandler(Event* pEvent, void*)
 {
+    struct CollisionBallGroundDataFields
+    {
+        void* vtbl;
+        cBall* pBall;
+        unsigned char bIsShot;
+        unsigned char pad[3];
+        nlVector3 position;
+        nlVector3 normal;
+        float fVecZComponent;
+    };
+
+    struct CollisionBallWallDataFields
+    {
+        void* vtbl;
+        cBall* pBall;
+        unsigned char bIsPerfect;
+        unsigned char bIsShot;
+        unsigned char pad[2];
+        nlVector3 position;
+        nlVector3 normal;
+        float fCollisionVecLen;
+    };
+
+    struct PhysicsBallFlagsView
+    {
+        unsigned char pad[0x3B];
+        unsigned char unk3B;
+    };
+
+    extern void EmitBallWallHit(const char*);
+    extern void EmitElectricFenceBallEffect(const nlVector3&, const nlVector3&, unsigned long, bool);
+    extern void CharacterElectrocutionEffect(cCharacter * pCharacter, const nlVector3& v3Position, const nlVector3& v3Normal);
+
+    switch (pEvent->m_uEventID)
+    {
+    case 0x1F:
+    {
+        CollisionPlayerWallData* pEventData;
+
+        s32 id = pEvent->m_data.GetID();
+        if (id == -1)
+        {
+            nlPrintf("Error: Trying to get event data on event with none!\n");
+            pEventData = 0;
+        }
+        else
+        {
+            id = pEvent->m_data.GetID();
+            if (id != 0x6E)
+            {
+                nlPrintf("Error: GetData() failed! Data types do not match!\n");
+                pEventData = 0;
+            }
+            else
+            {
+                pEventData = (CollisionPlayerWallData*)&pEvent->m_data;
+            }
+        }
+
+        cPlayer* p = pEventData->pPlayer;
+        if (p == 0)
+        {
+            break;
+        }
+
+        p->CollideWithWallCallback(pEventData);
+
+        if (sbElectricFenceDebug)
+        {
+            if (p->m_eClassType != GOALIE)
+            {
+                nlVector3 p2 = pEventData->contactPoint;
+                p2.f.z += 0.6f;
+                CharacterElectrocutionEffect(p, p2, pEventData->wallNormal);
+            }
+        }
+
+        if (p->m_eClassType == FIELDER)
+        {
+            ((cFielder*)p)->CanBreakOutOfSlideTackle();
+        }
+
+        break;
+    }
+
+    case 0x20:
+    {
+        CollisionBallWallDataFields* pEventData;
+
+        s32 id = pEvent->m_data.GetID();
+        if (id == -1)
+        {
+            nlPrintf("Error: Trying to get event data on event with none!\n");
+            pEventData = 0;
+        }
+        else
+        {
+            id = pEvent->m_data.GetID();
+            if (id != 0x78)
+            {
+                nlPrintf("Error: GetData() failed! Data types do not match!\n");
+                pEventData = 0;
+            }
+            else
+            {
+                pEventData = (CollisionBallWallDataFields*)&pEvent->m_data;
+            }
+        }
+
+        if (pEventData->pBall == 0)
+        {
+            break;
+        }
+
+        if (pEventData->bIsShot)
+        {
+            if (pEventData->bIsPerfect)
+            {
+                EmitBallWallHit("perfect_shot_catch");
+            }
+            else
+            {
+                EmitBallWallHit("goalie_catch");
+            }
+        }
+
+        pEventData->pBall->CollideWithWallCallback();
+        EmitElectricFenceBallEffect(pEventData->position, pEventData->normal, 0, false);
+        break;
+    }
+
+    case 0x24:
+    {
+        CollisionBallGroundDataFields* pEventData;
+
+        s32 id = pEvent->m_data.GetID();
+        if (id == -1)
+        {
+            nlPrintf("Error: Trying to get event data on event with none!\n");
+            pEventData = 0;
+        }
+        else
+        {
+            id = pEvent->m_data.GetID();
+            if (id != 0x8F)
+            {
+                nlPrintf("Error: GetData() failed! Data types do not match!\n");
+                pEventData = 0;
+            }
+            else
+            {
+                pEventData = (CollisionBallGroundDataFields*)&pEvent->m_data;
+            }
+        }
+
+        if (pEventData->pBall == 0)
+        {
+            break;
+        }
+
+        if (!pEventData->pBall->mbIsPerfectShot)
+        {
+            if (!pEventData->bIsShot)
+            {
+                break;
+            }
+        }
+
+        pEventData->pBall->CollideWithGroundCallback();
+
+        if (pEventData->bIsShot)
+        {
+            EmitBallWallHit("perfect_shot_catch");
+        }
+        else
+        {
+            EmitBallWallHit("goalie_catch");
+        }
+
+        break;
+    }
+
+    case 0x25:
+    {
+        CollisionPlayerPlayerData* pEventData;
+
+        s32 id = pEvent->m_data.GetID();
+        if (id == -1)
+        {
+            nlPrintf("Error: Trying to get event data on event with none!\n");
+            pEventData = 0;
+        }
+        else
+        {
+            id = pEvent->m_data.GetID();
+            if (id != 0x51)
+            {
+                nlPrintf("Error: GetData() failed! Data types do not match!\n");
+                pEventData = 0;
+            }
+            else
+            {
+                pEventData = (CollisionPlayerPlayerData*)&pEvent->m_data;
+            }
+        }
+
+        pEventData->player1->CollideWithCharacterCallback(pEventData);
+        break;
+    }
+
+    case 0x27:
+    {
+        CollisionPlayerBallData* pEventData;
+
+        s32 id = pEvent->m_data.GetID();
+        if (id == -1)
+        {
+            nlPrintf("Error: Trying to get event data on event with none!\n");
+            pEventData = 0;
+        }
+        else
+        {
+            id = pEvent->m_data.GetID();
+            if (id != 0xA7)
+            {
+                nlPrintf("Error: GetData() failed! Data types do not match!\n");
+                pEventData = 0;
+            }
+            else
+            {
+                pEventData = (CollisionPlayerBallData*)&pEvent->m_data;
+            }
+        }
+
+        if (pEventData->pPlayer == 0)
+        {
+            break;
+        }
+
+        if (pEventData->pBall == 0)
+        {
+            break;
+        }
+
+        pEventData->pPlayer->CollideWithBallCallback(pEventData->pBall);
+        pEventData->pBall->CollideWithCharacterCallback(pEventData->pPlayer, pEventData->velocity);
+
+        PhysicsAIBall* pPhysicsBall = pEventData->pBall->m_pPhysicsBall;
+        if (((PhysicsBallFlagsView*)pPhysicsBall)->unk3B)
+        {
+            nlVector3 v3AngVel;
+            pPhysicsBall->GetAngularVelocity(&v3AngVel);
+            v3AngVel.f.x = 0.6f * v3AngVel.f.x;
+            v3AngVel.f.y = 0.6f * v3AngVel.f.y;
+            v3AngVel.f.z = 0.6f * v3AngVel.f.z;
+            pPhysicsBall->SetAngularVelocity(v3AngVel);
+        }
+
+        break;
+    }
+
+    case 0x3:
+    case 0x4:
+    case 0x5:
+    case 0x6:
+    case 0x7:
+    case 0x8:
+    case 0x9:
+    case 0xA:
+    case 0xB:
+    case 0xC:
+    case 0xD:
+    case 0xE:
+    case 0xF:
+    case 0x10:
+    case 0x11:
+    case 0x12:
+    case 0x13:
+    case 0x14:
+    case 0x15:
+    case 0x16:
+    case 0x17:
+    case 0x18:
+    case 0x19:
+    case 0x1A:
+    case 0x1B:
+    case 0x1C:
+    case 0x1D:
+    case 0x1E:
+    case 0x21:
+    case 0x22:
+    case 0x23:
+    case 0x26:
+    case 0x28:
+    case 0x29:
+    case 0x2A:
+    case 0x2B:
+    case 0x2C:
+    case 0x2D:
+    case 0x2E:
+    case 0x2F:
+    case 0x30:
+    case 0x31:
+    case 0x32:
+    case 0x33:
+    case 0x34:
+    case 0x35:
+    case 0x36:
+    case 0x37:
+    case 0x38:
+    case 0x39:
+    case 0x3A:
+    case 0x3B:
+    case 0x3C:
+    case 0x3D:
+    case 0x3E:
+    case 0x3F:
+    case 0x40:
+    case 0x41:
+    case 0x42:
+    case 0x43:
+    case 0x44:
+    case 0x45:
+    case 0x46:
+    case 0x47:
+    default:
+        break;
+    }
 }
 
 // /**

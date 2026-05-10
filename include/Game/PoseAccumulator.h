@@ -93,4 +93,13 @@ public:
     /* 0x4C */ Vector<float, DefaultAllocator> m_MorphWeights;
 }; // total size: 0x58
 
+inline void cPoseAccumulator::operator=(const cPoseAccumulator& other)
+{
+    if (this != &other)
+    {
+        this->~cPoseAccumulator();
+        new (this) cPoseAccumulator(other);
+    }
+}
+
 #endif // _POSEACCUMULATOR_H_
