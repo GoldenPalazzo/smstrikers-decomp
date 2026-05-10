@@ -5,6 +5,8 @@
 #include "Game/FE/feInput.h"
 #include "Game/GameInfo.h"
 #include "Game/GameSceneManager.h"
+#include "NL/nlBSearch.h"
+#include "NL/nlLocalization.h"
 
 template <typename StringType>
 class FormatImpl
@@ -25,8 +27,14 @@ public:
     FormatImpl& operator%(const T& t);
 };
 
+template <typename StringType, typename T1>
+StringType Format(const StringType& format, const T1& value1);
+
 template <typename StringType, typename T1, typename T2>
 StringType Format(const StringType& format, const T1& value1, const T2& value2);
+
+template <typename StringType, typename T1, typename T2, typename T3>
+StringType Format(const StringType& format, const T1& value1, const T2& value2, const T3& value3);
 
 /**
  * Offset/Address/Size: 0x1058 | 0x800D0DD8 | size: 0x118
@@ -243,10 +251,14 @@ extern unsigned long GetLOCTrophyName(eTrophyType);
 extern "C" void SetString__14TLTextInstanceFPCUs(TLTextInstance*, const unsigned short*);
 extern "C" const nlColour& GetColour__11FELibObjectCFv(void*);
 extern "C" void SetAssetColour__10TLInstanceFRC8nlColour(void*, const nlColour&);
+extern nlLocalization* g_pLocalization;
+extern const unsigned short LocalizationTableNotFound[];
+extern const unsigned short MissingLocString[];
 
 static const char* MILESTONE_TROPHY_TEXT_NAME = "CUP TITLE";
 static const char* MILESTONE_TROPHY_IMAGE_NAME = "TROPHY";
 static const char* MILESTONE_TOTAL_TEXT_NAME = "TOTALS";
+static const char* MILESTONE_STAT_TEXT_NAME = "THE TOTAL";
 static const char* MILESTONE_DESCRIPTION_TEXT_NAME = "THE TOTAL2";
 
 static const char* TROPHY_TEXTURE_FILENAMES[13] = {
@@ -266,6 +278,28 @@ static const char* TROPHY_TEXTURE_FILENAMES[13] = {
 };
 
 static const nlColour TROPHY_BLACK_MILESTONE = { 0x00, 0x00, 0x00, 0xFF };
+
+#define LOOKUP_LOC(_hash, _out)                                                                                                             \
+    do                                                                                                                                      \
+    {                                                                                                                                       \
+        nlLocalization* _loc = g_pLocalization;                                                                                             \
+        if (_loc->m_LookupTable == 0)                                                                                                       \
+        {                                                                                                                                   \
+            (_out) = LocalizationTableNotFound;                                                                                             \
+        }                                                                                                                                   \
+        else                                                                                                                                \
+        {                                                                                                                                   \
+            nlLocalization::StringLookup* _entry = nlBSearch((unsigned long)(_hash), _loc->m_LookupTable, (int)_loc->m_pFile->StringCount); \
+            if (_entry != 0)                                                                                                                \
+            {                                                                                                                               \
+                (_out) = _loc->m_FirstString + _entry->StringOffset;                                                                        \
+            }                                                                                                                               \
+            else                                                                                                                            \
+            {                                                                                                                               \
+                (_out) = MissingLocString;                                                                                                  \
+            }                                                                                                                               \
+        }                                                                                                                                   \
+    } while (0)
 
 /**
  * Offset/Address/Size: 0x19F4 | 0x800CF4F4 | size: 0xCC
@@ -308,6 +342,12 @@ void MilestoneTrophyScene::SceneCreated()
     typedef TLComponentInstance* (*FindCompPresByRef)(FEPresentation*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
 
     FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
+
+    int statAccumulated = 0;
+    int statNeeded = 0;
+    int bronzeStat = 0;
+    int silverStat = 0;
+    int goldStat = 0;
 
     TLTextInstance* pText;
     {
@@ -397,9 +437,116 @@ void MilestoneTrophyScene::SceneCreated()
     mAsyncTrophy->mImageInstance = pTrophyImage;
     ((TLInstanceView*)pTrophyImage)->m_bVisible = true;
 
-    unsigned short tempTotal[128];
-    tempTotal[0] = 0;
-    memcpy(mTotalBuffer, tempTotal, 0x100);
+    const unsigned short* locString;
+    LOOKUP_LOC(0x3C479468, locString);
+
+    BasicString<unsigned short, Detail::TempStringAllocator> unformatted(locString);
+    BasicString<unsigned short, Detail::TempStringAllocator> stat;
+    BasicString<unsigned short, Detail::TempStringAllocator> unlockable;
+    BasicString<unsigned short, Detail::TempStringAllocator> description;
+    BasicString<unsigned short, Detail::TempStringAllocator> formatted;
+
+    switch (mTrophy)
+    {
+    case TROPHY_VETERAN_CUP:
+        statAccumulated = nlSingleton<GameInfoManager>::s_pInstance->mUserInfo.mNumGamesPlayed;
+        bronzeStat = 25;
+        silverStat = 50;
+        goldStat = 100;
+
+        LOOKUP_LOC(0x8A5D9314, locString);
+        {
+            BasicString<unsigned short, Detail::TempStringAllocator> tmp(locString);
+            stat = tmp;
+        }
+
+        LOOKUP_LOC(0x759DD858, locString);
+        {
+            BasicString<unsigned short, Detail::TempStringAllocator> tmp(locString);
+            unlockable = tmp;
+        }
+        break;
+
+    case TROPHY_SNIPER_CUP:
+        statAccumulated = nlSingleton<GameInfoManager>::s_pInstance->mUserInfo.mNumGoalsScored;
+        bronzeStat = 75;
+        silverStat = 150;
+        goldStat = 300;
+
+        LOOKUP_LOC(0x49772A70, locString);
+        {
+            BasicString<unsigned short, Detail::TempStringAllocator> tmp(locString);
+            stat = tmp;
+        }
+
+        LOOKUP_LOC(0xE3FB84B4, locString);
+        {
+            BasicString<unsigned short, Detail::TempStringAllocator> tmp(locString);
+            unlockable = tmp;
+        }
+        break;
+
+    case TROPHY_STRIKER_CUP:
+        statAccumulated = nlSingleton<GameInfoManager>::s_pInstance->mUserInfo.mNumSTSAttempts;
+        bronzeStat = 25;
+        silverStat = 50;
+        goldStat = 100;
+
+        LOOKUP_LOC(0x593E7EE3, locString);
+        {
+            BasicString<unsigned short, Detail::TempStringAllocator> tmp(locString);
+            stat = tmp;
+        }
+
+        LOOKUP_LOC(0x1D5A2367, locString);
+        {
+            BasicString<unsigned short, Detail::TempStringAllocator> tmp(locString);
+            unlockable = tmp;
+        }
+        break;
+
+    case TROPHY_TACTICIAN_CUP:
+        statAccumulated = nlSingleton<GameInfoManager>::s_pInstance->mUserInfo.mNumPerfectPasses;
+        bronzeStat = 75;
+        silverStat = 150;
+        goldStat = 300;
+
+        LOOKUP_LOC(0x243FB12F, locString);
+        {
+            BasicString<unsigned short, Detail::TempStringAllocator> tmp(locString);
+            stat = tmp;
+        }
+
+        LOOKUP_LOC(0x1F42DEB3, locString);
+        {
+            BasicString<unsigned short, Detail::TempStringAllocator> tmp(locString);
+            unlockable = tmp;
+        }
+        break;
+
+    case TROPHY_PARAMEDIC_CUP:
+        statAccumulated = nlSingleton<GameInfoManager>::s_pInstance->mUserInfo.mNumHits;
+        bronzeStat = 250;
+        silverStat = 500;
+        goldStat = 1000;
+
+        LOOKUP_LOC(0xD9A2F4C5, locString);
+        {
+            BasicString<unsigned short, Detail::TempStringAllocator> tmp(locString);
+            stat = tmp;
+        }
+
+        LOOKUP_LOC(0xAB6BFAC9, locString);
+        {
+            BasicString<unsigned short, Detail::TempStringAllocator> tmp(locString);
+            unlockable = tmp;
+        }
+        break;
+    }
+
+    formatted = Format(unformatted, stat.c_str());
+
+    memcpy(mTotalBuffer, formatted.c_str(), 0x100);
 
     {
         union
@@ -485,21 +632,194 @@ void MilestoneTrophyScene::SceneCreated()
     }
 
     eMilestoneColour levelReached = nlSingleton<GameInfoManager>::s_pInstance->GetMilestoneLevel(mTrophy);
-    const char* texture = TROPHY_TEXTURE_FILENAMES[(int)mTrophy];
-    mAsyncTrophy->QueueLoad(texture, mDoBlockLoad);
+    BasicString<char, Detail::TempStringAllocator> fileName(TROPHY_TEXTURE_FILENAMES[(int)mTrophy]);
     if (levelReached == MILESTONE_BLACK)
     {
+        mAsyncTrophy->QueueLoad(fileName.c_str(), mDoBlockLoad);
         SetAssetColour__10TLInstanceFRC8nlColour((void*)pTrophyImage, TROPHY_BLACK_MILESTONE);
+
+        statNeeded = bronzeStat;
+        LOOKUP_LOC(0x138E19E5, locString);
+        {
+            BasicString<unsigned short, Detail::TempStringAllocator> tmp(locString);
+            unformatted = tmp;
+        }
+    }
+    else if (levelReached == MILESTONE_BRONZE)
+    {
+        fileName = fileName.Append("_bronze");
+        mAsyncTrophy->QueueLoad(fileName.c_str(), mDoBlockLoad);
+        SetAssetColour__10TLInstanceFRC8nlColour((void*)pTrophyImage, GetColour__11FELibObjectCFv(((TLInstanceView*)pTrophyImage)->m_component));
+
+        statNeeded = silverStat;
+        LOOKUP_LOC(0x3A916A4A, locString);
+        {
+            BasicString<unsigned short, Detail::TempStringAllocator> tmp(locString);
+            unformatted = tmp;
+        }
+    }
+    else if (levelReached == MILESTONE_SILVER)
+    {
+        fileName = fileName.Append("_silver");
+        mAsyncTrophy->QueueLoad(fileName.c_str(), mDoBlockLoad);
+        SetAssetColour__10TLInstanceFRC8nlColour((void*)pTrophyImage, GetColour__11FELibObjectCFv(((TLInstanceView*)pTrophyImage)->m_component));
+
+        statNeeded = goldStat;
+        LOOKUP_LOC(0x0AD790FB, locString);
+        {
+            BasicString<unsigned short, Detail::TempStringAllocator> tmp(locString);
+            unformatted = tmp;
+        }
     }
     else
     {
+        mAsyncTrophy->QueueLoad(fileName.c_str(), mDoBlockLoad);
         SetAssetColour__10TLInstanceFRC8nlColour((void*)pTrophyImage, GetColour__11FELibObjectCFv(((TLInstanceView*)pTrophyImage)->m_component));
     }
     mDoBlockLoad = false;
 
-    unsigned short tempDesc[128];
-    tempDesc[0] = 0;
-    memcpy(mDescriptionBuffer, tempDesc, 0x100);
+    if (nlSingleton<GameInfoManager>::s_pInstance->HasTrophy(mTrophy))
+    {
+        BasicString<char, Detail::TempStringAllocator> accumulatedString = LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(statAccumulated);
+
+        unsigned short accumulatedWideString[128];
+        nlStrToWcs(accumulatedString.c_str(), accumulatedWideString, 128);
+
+        LOOKUP_LOC(0x59B161FF, locString);
+        {
+            BasicString<unsigned short, Detail::TempStringAllocator> tmp(locString);
+            unformatted = tmp;
+        }
+
+        formatted = Format(unformatted, accumulatedWideString);
+
+        memcpy(mStatBuffer, formatted.c_str(), 0x100);
+
+        {
+            union
+            {
+                FindTextByValue byValue;
+                FindTextByRef byRef;
+            } findText;
+
+            volatile InlineHasher hLayerA, hLayerB;
+            volatile InlineHasher hNameB, hNameA;
+            volatile InlineHasher h7, h6;
+            volatile InlineHasher h5, h4, h3, h2, h1, h0;
+
+            h0.m_Hash = 0;
+            h1.m_Hash = 0;
+            h2.m_Hash = 0;
+            h3.m_Hash = 0;
+            h4.m_Hash = 0;
+            h5.m_Hash = 0;
+            h6.m_Hash = 0;
+            h7.m_Hash = 0;
+
+            unsigned long hash = nlStringLowerHash(MILESTONE_STAT_TEXT_NAME);
+            hNameA.m_Hash = hash;
+            hNameB.m_Hash = hash;
+
+            hash = nlStringLowerHash("Layer");
+            hLayerA.m_Hash = hash;
+            hLayerB.m_Hash = hash;
+
+            findText.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
+            TLTextInstance* pStat = findText.byRef(
+                presentation->m_currentSlide,
+                (InlineHasher&)hLayerA,
+                (InlineHasher&)hNameA,
+                (InlineHasher&)h7,
+                (InlineHasher&)h5,
+                (InlineHasher&)h3,
+                (InlineHasher&)h1);
+            SetString__14TLTextInstanceFPCUs(pStat, mStatBuffer);
+        }
+
+        LOOKUP_LOC(0xF8710578, locString);
+        {
+            BasicString<unsigned short, Detail::TempStringAllocator> tmp(locString);
+            description = tmp;
+        }
+
+        formatted = Format(description, unlockable);
+    }
+    else
+    {
+        BasicString<char, Detail::TempStringAllocator> accumulatedString = LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(statAccumulated);
+        BasicString<char, Detail::TempStringAllocator> neededString = LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(statNeeded);
+
+        unsigned short accumulatedWideString[128];
+        unsigned short neededWideString[128];
+        nlStrToWcs(accumulatedString.c_str(), accumulatedWideString, 128);
+        nlStrToWcs(neededString.c_str(), neededWideString, 128);
+
+        formatted = Format(unformatted, accumulatedWideString, neededWideString);
+
+        memcpy(mStatBuffer, formatted.c_str(), 0x100);
+
+        {
+            union
+            {
+                FindTextByValue byValue;
+                FindTextByRef byRef;
+            } findText;
+
+            volatile InlineHasher hLayerA, hLayerB;
+            volatile InlineHasher hNameB, hNameA;
+            volatile InlineHasher h7, h6;
+            volatile InlineHasher h5, h4, h3, h2, h1, h0;
+
+            h0.m_Hash = 0;
+            h1.m_Hash = 0;
+            h2.m_Hash = 0;
+            h3.m_Hash = 0;
+            h4.m_Hash = 0;
+            h5.m_Hash = 0;
+            h6.m_Hash = 0;
+            h7.m_Hash = 0;
+
+            unsigned long hash = nlStringLowerHash(MILESTONE_STAT_TEXT_NAME);
+            hNameA.m_Hash = hash;
+            hNameB.m_Hash = hash;
+
+            hash = nlStringLowerHash("Layer");
+            hLayerA.m_Hash = hash;
+            hLayerB.m_Hash = hash;
+
+            findText.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
+            TLTextInstance* pStat = findText.byRef(
+                presentation->m_currentSlide,
+                (InlineHasher&)hLayerA,
+                (InlineHasher&)hNameA,
+                (InlineHasher&)h7,
+                (InlineHasher&)h5,
+                (InlineHasher&)h3,
+                (InlineHasher&)h1);
+            SetString__14TLTextInstanceFPCUs(pStat, mStatBuffer);
+        }
+
+        BasicString<char, Detail::TempStringAllocator> bronzeString = LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(bronzeStat);
+        BasicString<char, Detail::TempStringAllocator> silverString = LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(silverStat);
+        BasicString<char, Detail::TempStringAllocator> goldString = LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(goldStat);
+
+        unsigned short bronzeWideString[16];
+        unsigned short silverWideString[16];
+        unsigned short goldWideString[16];
+        nlStrToWcs(bronzeString.c_str(), bronzeWideString, 16);
+        nlStrToWcs(silverString.c_str(), silverWideString, 16);
+        nlStrToWcs(goldString.c_str(), goldWideString, 16);
+
+        LOOKUP_LOC(0x42FDAE95, locString);
+        {
+            BasicString<unsigned short, Detail::TempStringAllocator> tmp(locString);
+            description = tmp;
+        }
+
+        formatted = Format(description, bronzeWideString, silverWideString, goldWideString);
+    }
+
+    memcpy(mDescriptionBuffer, formatted.c_str(), 0x100);
 
     {
         union

@@ -1679,8 +1679,50 @@ void AIEventHandler(Event* pEvent, void*)
     }
 
     case 0x3:
-    case 0x4:
+    {
+        for (s32 i = 0; i < 2; i++)
+        {
+            cTeam* pTeam = g_pTeams[i];
+            if (pTeam != NULL)
+            {
+                for (s32 j = 0; j < 4; j++)
+                {
+                    pTeam->GetFielder(j)->m_pCharacterSFX->StopMovementLoop();
+                }
+            }
+        }
+        break;
+    }
+
     case 0x5:
+    {
+        if (g_pTeams[0] == NULL || g_pTeams[1] == NULL)
+        {
+            break;
+        }
+
+        for (s32 i = 0; i < 2; i++)
+        {
+            cTeam* pTeam = g_pTeams[i];
+            for (s32 j = 0; j < 5; j++)
+            {
+                cPlayer* pPlayer = pTeam->GetPlayer(j);
+                if (pPlayer->GetGlobalPad() != NULL)
+                {
+                    pPlayer->SetAIPad(NULL);
+                }
+            }
+        }
+        break;
+    }
+
+    case 0x32:
+    {
+        g_pBall->CollideWithWallCallback();
+        break;
+    }
+
+    case 0x4:
     case 0x6:
     case 0x7:
     case 0x8:
@@ -1720,7 +1762,6 @@ void AIEventHandler(Event* pEvent, void*)
     case 0x2F:
     case 0x30:
     case 0x31:
-    case 0x32:
     case 0x33:
     case 0x34:
     case 0x35:

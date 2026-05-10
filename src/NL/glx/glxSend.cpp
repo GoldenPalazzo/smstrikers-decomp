@@ -66,6 +66,7 @@ static bool glx_viewport;
 static bool glx_CoPlanar;
 static u32 glx_program;
 static u32 prog_2d_movie;
+static u32 prog_3d_unlit_2x;
 static f32 glx_konstlevel[4];
 static int glx_aniso;
 static u32 glx_texconfig;
@@ -1240,9 +1241,9 @@ void glx_SwitchTextureState(const glModelPacket* p)
 
 /**
  * Offset/Address/Size: 0x2B1C | 0x801BC61C | size: 0x2154
- * TODO: 4.30% match - only early setup and crowd/crowd_lit texconfig paths are
- * implemented; the large texconfig jump-table and non-crowd program paths are
- * still stubbed by early return.
+ * TODO: 23.37% match - large switch coverage added; remaining mismatches are
+ * concentrated in texconfig 0x07 and 0x23 program-split paths and several
+ * high-value gloss/raster stage sequences.
  */
 static unsigned long glx_SwitchTexConfig(const glModelPacket* p)
 {
@@ -1251,6 +1252,20 @@ static unsigned long glx_SwitchTexConfig(const glModelPacket* p)
     int texnum;
     unsigned long extra;
     GXAttr attr;
+    GXColorS10 movieColour;
+
+#define SET_TEV_ORDER(stage, coord, map, chan) \
+    GXSetTevOrder((GXTevStageID)(stage), (GXTexCoordID)(coord), (GXTexMapID)(map), (GXChannelID)(chan))
+#define SET_TEV_COLOR_IN(stage, a, b, c, d) \
+    GXSetTevColorIn((GXTevStageID)(stage), (GXTevColorArg)(a), (GXTevColorArg)(b), (GXTevColorArg)(c), (GXTevColorArg)(d))
+#define SET_TEV_ALPHA_IN(stage, a, b, c, d) \
+    gxSetTevAlphaIn((int)(stage), (_GXTevAlphaArg)(a), (_GXTevAlphaArg)(b), (_GXTevAlphaArg)(c), (_GXTevAlphaArg)(d))
+#define SET_TEV_KCOLOR_SEL(stage, sel) \
+    GXSetTevKColorSel((GXTevStageID)(stage), (GXTevKColorSel)(sel))
+#define SET_TEV_KALPHA_SEL(stage, sel) \
+    GXSetTevKAlphaSel((GXTevStageID)(stage), (GXTevKAlphaSel)(sel))
+#define SET_TEX_GEN(stage, type, src, mtx) \
+    gxSetTexCoordGen((int)(stage), (_GXTexGenType)(type), (_GXTexGenSrc)(src), (u32)(mtx))
 
     glx_texconfig = p->state.texconfig;
     extra = 0x40;
@@ -1305,10 +1320,10 @@ static unsigned long glx_SwitchTexConfig(const glModelPacket* p)
     gxSetTevAlphaOp(2, (_GXTevOp)0, (_GXTevBias)0, (_GXTevScale)0, true, (_GXTevRegID)0);
     gxSetTevAlphaOp(3, (_GXTevOp)0, (_GXTevBias)0, (_GXTevScale)0, true, (_GXTevRegID)0);
 
-    gxSetTexCoordGen(0, (_GXTexGenType)1, (_GXTexGenSrc)4, 0x3C);
-    gxSetTexCoordGen(1, (_GXTexGenType)1, (_GXTexGenSrc)5, 0x3C);
-    gxSetTexCoordGen(2, (_GXTexGenType)1, (_GXTexGenSrc)6, 0x3C);
-    gxSetTexCoordGen(3, (_GXTexGenType)1, (_GXTexGenSrc)7, 0x3C);
+    SET_TEX_GEN(0, 1, 4, 0x3C);
+    SET_TEX_GEN(1, 1, 5, 0x3C);
+    SET_TEX_GEN(2, 1, 6, 0x3C);
+    SET_TEX_GEN(3, 1, 7, 0x3C);
 
     glx_RasterizedAlphaStage = -1;
     glx_RasterizedAlphaArg = -1;
@@ -1321,10 +1336,10 @@ static unsigned long glx_SwitchTexConfig(const glModelPacket* p)
         {
             gxSetNumTexGens(1);
             gxSetNumTevStages(1);
-            GXSetTevOrder((GXTevStageID)0, (GXTexCoordID)0, (GXTexMapID)0, (GXChannelID)4);
-            gxSetTexCoordGen(0, (_GXTexGenType)1, (_GXTexGenSrc)4, 0x36);
-            GXSetTevColorIn((GXTevStageID)0, (GXTevColorArg)15, (GXTevColorArg)10, (GXTevColorArg)8, (GXTevColorArg)15);
-            gxSetTevAlphaIn(0, (_GXTevAlphaArg)7, (_GXTevAlphaArg)5, (_GXTevAlphaArg)4, (_GXTevAlphaArg)7);
+            SET_TEV_ORDER(0, 0, 0, 4);
+            SET_TEX_GEN(0, 1, 4, 0x36);
+            SET_TEV_COLOR_IN(0, 15, 10, 8, 15);
+            SET_TEV_ALPHA_IN(0, 7, 5, 4, 7);
             glx_RasterizedAlphaStage = 0;
             glx_RasterizedAlphaArg = 1;
             return extra;
@@ -1334,15 +1349,15 @@ static unsigned long glx_SwitchTexConfig(const glModelPacket* p)
         {
             gxSetNumTexGens(2);
             gxSetNumTevStages(2);
-            GXSetTevOrder((GXTevStageID)0, (GXTexCoordID)1, (GXTexMapID)1, (GXChannelID)4);
-            GXSetTevOrder((GXTevStageID)1, (GXTexCoordID)0, (GXTexMapID)0, (GXChannelID)0xFF);
-            gxSetTexCoordGen(0, (_GXTexGenType)1, (_GXTexGenSrc)4, 0x36);
-            gxSetTexCoordGen(1, (_GXTexGenType)10, (_GXTexGenSrc)19, 0x3C);
+            SET_TEV_ORDER(0, 1, 1, 4);
+            SET_TEV_ORDER(1, 0, 0, 0xFF);
+            SET_TEX_GEN(0, 1, 4, 0x36);
+            SET_TEX_GEN(1, 10, 19, 0x3C);
             gxSetTevColourOp(1, (_GXTevOp)0, (_GXTevBias)0, glx_tevscale, true, (_GXTevRegID)0);
-            GXSetTevColorIn((GXTevStageID)0, (GXTevColorArg)15, (GXTevColorArg)12, (GXTevColorArg)8, (GXTevColorArg)15);
-            GXSetTevColorIn((GXTevStageID)1, (GXTevColorArg)15, (GXTevColorArg)0, (GXTevColorArg)8, (GXTevColorArg)15);
-            gxSetTevAlphaIn(0, (_GXTevAlphaArg)7, (_GXTevAlphaArg)6, (_GXTevAlphaArg)6, (_GXTevAlphaArg)7);
-            gxSetTevAlphaIn(1, (_GXTevAlphaArg)7, (_GXTevAlphaArg)6, (_GXTevAlphaArg)4, (_GXTevAlphaArg)7);
+            SET_TEV_COLOR_IN(0, 15, 12, 8, 15);
+            SET_TEV_COLOR_IN(1, 15, 0, 8, 15);
+            SET_TEV_ALPHA_IN(0, 7, 6, 6, 7);
+            SET_TEV_ALPHA_IN(1, 7, 6, 4, 7);
             glx_RasterizedAlphaStage = 1;
             glx_RasterizedAlphaArg = 1;
             return extra;
@@ -1350,6 +1365,407 @@ static unsigned long glx_SwitchTexConfig(const glModelPacket* p)
 
         return extra;
     }
+
+    switch (glx_texconfig)
+    {
+    case 0x00:
+        gxSetNumTexGens(0);
+        gxSetNumTevStages(1);
+        SET_TEV_ORDER(0, 0xFF, 0xFF, 4);
+        SET_TEV_COLOR_IN(0, 15, 10, 12, 15);
+        SET_TEV_ALPHA_IN(0, 7, 5, 6, 7);
+        glx_RasterizedAlphaStage = 0;
+        glx_RasterizedAlphaArg = 1;
+        break;
+    case 0x01:
+        gxSetNumTexGens(1);
+        gxSetNumTevStages(1);
+        SET_TEV_ORDER(0, 0, 0, 4);
+        if (glx_program == prog_3d_unlit_2x)
+        {
+            gxSetTevColourOp(0, (_GXTevOp)0, (_GXTevBias)0, (_GXTevScale)1, true, (_GXTevRegID)1);
+        }
+        SET_TEV_COLOR_IN(0, 15, 10, 8, 15);
+        SET_TEV_ALPHA_IN(0, 7, 5, 4, 7);
+        glx_RasterizedAlphaStage = 0;
+        glx_RasterizedAlphaArg = 1;
+        break;
+    case 0x03:
+        gxSetNumTexGens(2);
+        gxSetNumTevStages(3);
+        SET_TEV_ORDER(0, 0, 0, 4);
+        SET_TEV_ORDER(1, 1, 1, 0xFF);
+        SET_TEV_ORDER(2, 0xFF, 0xFF, 4);
+        SET_TEV_KCOLOR_SEL(0, 0x0C);
+        SET_TEV_KCOLOR_SEL(1, 0x0C);
+        SET_TEV_KALPHA_SEL(0, 0x1C);
+        SET_TEV_KALPHA_SEL(1, 0x1C);
+        SET_TEV_COLOR_IN(0, 15, 8, 14, 15);
+        SET_TEV_COLOR_IN(1, 8, 15, 14, 0);
+        SET_TEV_COLOR_IN(2, 15, 0, 10, 15);
+        SET_TEV_ALPHA_IN(0, 7, 4, 6, 7);
+        SET_TEV_ALPHA_IN(1, 4, 7, 6, 0);
+        SET_TEV_ALPHA_IN(2, 7, 0, 5, 7);
+        glx_RasterizedAlphaStage = 2;
+        glx_RasterizedAlphaArg = 2;
+        SET_TEV_KCOLOR_SEL(3, 0x0E);
+        movieColour.r = (s16)0xFFA6;
+        movieColour.g = 0;
+        movieColour.b = (s16)0xFF8E;
+        movieColour.a = 0x87;
+        GXSetTevColorS10((GXTevRegID)1, movieColour);
+        break;
+    case 0x05:
+        gxSetNumTexGens(2);
+        gxSetNumTevStages(2);
+        SET_TEV_ORDER(0, 0, 0, 4);
+        SET_TEV_ORDER(1, 1, 1, 0xFF);
+        SET_TEV_COLOR_IN(0, 15, 10, 8, 15);
+        SET_TEV_COLOR_IN(1, 15, 0, 8, 15);
+        SET_TEV_ALPHA_IN(0, 7, 5, 4, 7);
+        SET_TEV_ALPHA_IN(1, 7, 7, 7, 0);
+        glx_RasterizedAlphaStage = 0;
+        glx_RasterizedAlphaArg = 1;
+        break;
+    case 0x09:
+        gxSetNumTexGens(2);
+        gxSetNumTevStages(2);
+        SET_TEV_ORDER(0, 0, 0, 4);
+        SET_TEV_ORDER(1, 1, 1, 0xFF);
+        SET_TEV_COLOR_IN(0, 15, 10, 8, 15);
+        SET_TEV_COLOR_IN(1, 15, 0, 12, 8);
+        SET_TEV_ALPHA_IN(0, 7, 5, 4, 7);
+        SET_TEV_ALPHA_IN(1, 7, 7, 7, 0);
+        glx_RasterizedAlphaStage = 0;
+        glx_RasterizedAlphaArg = 1;
+        break;
+    case 0x0D:
+        gxSetNumTexGens(3);
+        gxSetNumTevStages(3);
+        SET_TEV_ORDER(0, 0, 0, 4);
+        SET_TEV_ORDER(1, 1, 1, 0xFF);
+        SET_TEV_ORDER(2, 2, 2, 0xFF);
+        SET_TEV_COLOR_IN(0, 15, 10, 8, 15);
+        SET_TEV_COLOR_IN(1, 15, 0, 8, 15);
+        SET_TEV_COLOR_IN(2, 15, 0, 12, 8);
+        SET_TEV_ALPHA_IN(0, 7, 5, 4, 7);
+        SET_TEV_ALPHA_IN(1, 7, 7, 7, 0);
+        SET_TEV_ALPHA_IN(2, 7, 7, 7, 0);
+        glx_RasterizedAlphaStage = 0;
+        glx_RasterizedAlphaArg = 1;
+        break;
+    case 0x11:
+        gxSetNumTexGens(2);
+        gxSetNumTevStages(2);
+        SET_TEV_ORDER(0, 0, 0, 4);
+        SET_TEV_ORDER(1, 1, 1, 5);
+        SET_TEV_COLOR_IN(0, 15, 10, 8, 15);
+        SET_TEV_COLOR_IN(1, 15, 10, 8, 0);
+        SET_TEV_ALPHA_IN(0, 7, 5, 4, 7);
+        SET_TEV_ALPHA_IN(1, 7, 7, 7, 0);
+        glx_RasterizedAlphaStage = 0;
+        glx_RasterizedAlphaArg = 1;
+        glx_GlossMapStage = 1;
+        glx_GlossMapCoord = 1;
+        break;
+    case 0x13:
+        gxSetNumTexGens(3);
+        gxSetNumTevStages(4);
+        SET_TEV_ORDER(0, 0, 0, 4);
+        SET_TEV_ORDER(1, 1, 1, 0xFF);
+        SET_TEV_ORDER(2, 0xFF, 0xFF, 4);
+        SET_TEV_ORDER(3, 2, 2, 5);
+        SET_TEV_KCOLOR_SEL(0, 0x0C);
+        SET_TEV_KCOLOR_SEL(1, 0x0C);
+        SET_TEV_KALPHA_SEL(0, 0x1C);
+        SET_TEV_KALPHA_SEL(1, 0x1C);
+        SET_TEV_COLOR_IN(0, 15, 8, 14, 15);
+        SET_TEV_COLOR_IN(1, 8, 15, 14, 0);
+        SET_TEV_COLOR_IN(2, 15, 0, 10, 15);
+        SET_TEV_COLOR_IN(3, 15, 10, 8, 0);
+        SET_TEV_ALPHA_IN(0, 7, 5, 4, 7);
+        SET_TEV_ALPHA_IN(1, 7, 7, 7, 0);
+        SET_TEV_ALPHA_IN(2, 7, 7, 7, 0);
+        SET_TEV_ALPHA_IN(3, 7, 7, 7, 0);
+        glx_RasterizedAlphaStage = 0;
+        glx_RasterizedAlphaArg = 1;
+        glx_GlossMapStage = 3;
+        glx_GlossMapCoord = 2;
+        break;
+    case 0x15:
+        gxSetNumTexGens(3);
+        gxSetNumTevStages(3);
+        SET_TEV_ORDER(0, 0, 0, 4);
+        SET_TEV_ORDER(1, 1, 1, 0xFF);
+        SET_TEV_ORDER(2, 2, 2, 5);
+        SET_TEV_COLOR_IN(0, 15, 10, 8, 15);
+        SET_TEV_COLOR_IN(1, 15, 0, 8, 15);
+        SET_TEV_COLOR_IN(2, 15, 10, 8, 0);
+        SET_TEV_ALPHA_IN(0, 7, 5, 4, 7);
+        SET_TEV_ALPHA_IN(1, 7, 7, 7, 0);
+        SET_TEV_ALPHA_IN(1, 7, 7, 7, 0);
+        glx_RasterizedAlphaStage = 0;
+        glx_RasterizedAlphaArg = 1;
+        glx_GlossMapStage = 2;
+        glx_GlossMapCoord = 2;
+        break;
+    case 0x19:
+        gxSetNumTexGens(3);
+        gxSetNumTevStages(3);
+        SET_TEV_ORDER(0, 0, 0, 4);
+        SET_TEV_ORDER(1, 1, 1, 0xFF);
+        SET_TEV_ORDER(2, 2, 2, 5);
+        SET_TEV_COLOR_IN(0, 15, 10, 8, 15);
+        SET_TEV_COLOR_IN(1, 15, 0, 12, 8);
+        SET_TEV_COLOR_IN(2, 15, 10, 8, 0);
+        SET_TEV_ALPHA_IN(0, 7, 5, 4, 7);
+        SET_TEV_ALPHA_IN(1, 7, 7, 7, 0);
+        SET_TEV_ALPHA_IN(2, 7, 7, 7, 0);
+        glx_RasterizedAlphaStage = 0;
+        glx_RasterizedAlphaArg = 1;
+        glx_GlossMapStage = 2;
+        glx_GlossMapCoord = 2;
+        break;
+    case 0x21:
+        gxSetNumTexGens(2);
+        gxSetNumTevStages(2);
+        SET_TEV_ORDER(0, 1, 1, 4);
+        SET_TEV_ORDER(1, 0, 0, 0xFF);
+        SET_TEX_GEN(1, 10, 19, 0x3C);
+        gxSetTevColourOp(1, (_GXTevOp)0, (_GXTevBias)0, glx_tevscale, true, (_GXTevRegID)0);
+        SET_TEV_COLOR_IN(0, 15, 12, 8, 15);
+        SET_TEV_COLOR_IN(1, 15, 0, 8, 15);
+        SET_TEV_ALPHA_IN(0, 7, 6, 6, 7);
+        SET_TEV_ALPHA_IN(1, 7, 6, 4, 7);
+        glx_RasterizedAlphaStage = 1;
+        glx_RasterizedAlphaArg = 1;
+        break;
+    case 0x25:
+        gxSetNumTexGens(3);
+        gxSetNumTevStages(3);
+        SET_TEV_ORDER(0, 2, 2, 4);
+        SET_TEV_ORDER(1, 0, 0, 0xFF);
+        SET_TEV_ORDER(2, 1, 1, 0xFF);
+        SET_TEX_GEN(2, 10, 19, 0x3C);
+        gxSetTevColourOp(2, (_GXTevOp)0, (_GXTevBias)0, glx_tevscale, true, (_GXTevRegID)0);
+        SET_TEV_COLOR_IN(0, 15, 12, 8, 15);
+        SET_TEV_COLOR_IN(1, 15, 0, 8, 15);
+        SET_TEV_COLOR_IN(2, 15, 0, 8, 15);
+        SET_TEV_ALPHA_IN(0, 7, 6, 6, 7);
+        SET_TEV_ALPHA_IN(1, 7, 6, 4, 7);
+        SET_TEV_ALPHA_IN(1, 7, 7, 7, 0);
+        glx_RasterizedAlphaStage = 1;
+        glx_RasterizedAlphaArg = 1;
+        break;
+    case 0x29:
+        gxSetNumTexGens(3);
+        gxSetNumTevStages(3);
+        SET_TEV_ORDER(0, 2, 2, 4);
+        SET_TEV_ORDER(1, 0, 0, 0xFF);
+        SET_TEV_ORDER(2, 1, 1, 0xFF);
+        SET_TEX_GEN(2, 10, 19, 0x3C);
+        gxSetTevColourOp(1, (_GXTevOp)0, (_GXTevBias)0, glx_tevscale, true, (_GXTevRegID)0);
+        SET_TEV_COLOR_IN(0, 15, 12, 8, 15);
+        SET_TEV_COLOR_IN(1, 15, 0, 8, 15);
+        SET_TEV_COLOR_IN(2, 15, 12, 8, 0);
+        SET_TEV_ALPHA_IN(0, 7, 6, 6, 7);
+        SET_TEV_ALPHA_IN(1, 7, 6, 4, 7);
+        SET_TEV_ALPHA_IN(2, 7, 6, 6, 0);
+        glx_RasterizedAlphaStage = 1;
+        glx_RasterizedAlphaArg = 1;
+        break;
+    case 0x27:
+        gxSetNumTexGens(4);
+        gxSetNumTevStages(7);
+        SET_TEV_ORDER(0, 3, 3, 4);
+        SET_TEV_ORDER(1, 0, 0, 0xFF);
+        SET_TEV_ORDER(2, 1, 1, 0xFF);
+        SET_TEV_ORDER(3, 0xFF, 0xFF, 0xFF);
+        SET_TEV_ORDER(4, 2, 2, 0xFF);
+        SET_TEV_ORDER(5, 0xFF, 0xFF, 0xFF);
+        SET_TEX_GEN(3, 10, 19, 0x3C);
+        gxSetTevColourOp(0, (_GXTevOp)0, (_GXTevBias)0, glx_tevscale, true, (_GXTevRegID)1);
+        SET_TEV_KCOLOR_SEL(1, 0x0C);
+        SET_TEV_KCOLOR_SEL(2, 0x0C);
+        SET_TEV_KCOLOR_SEL(4, 0x0D);
+        SET_TEV_KCOLOR_SEL(5, 0x0E);
+        SET_TEV_KALPHA_SEL(1, 0x1C);
+        SET_TEV_KALPHA_SEL(2, 0x1C);
+        SET_TEV_KALPHA_SEL(4, 0x1D);
+        SET_TEV_KALPHA_SEL(5, 0x1E);
+        gxSetTevColourOp(3, (_GXTevOp)0, (_GXTevBias)0, (_GXTevScale)0, true, (_GXTevRegID)1);
+        SET_TEV_COLOR_IN(0, 15, 12, 8, 15);
+        SET_TEV_COLOR_IN(1, 15, 8, 14, 15);
+        SET_TEV_COLOR_IN(2, 8, 15, 14, 0);
+        SET_TEV_COLOR_IN(3, 15, 0, 2, 15);
+        SET_TEV_COLOR_IN(4, 15, 14, 8, 15);
+        SET_TEV_COLOR_IN(5, 15, 12, 0, 14);
+        SET_TEV_COLOR_IN(6, 15, 2, 0, 15);
+        SET_TEV_ALPHA_IN(0, 7, 7, 7, 7);
+        SET_TEV_ALPHA_IN(1, 7, 4, 6, 7);
+        SET_TEV_ALPHA_IN(2, 4, 7, 6, 0);
+        SET_TEV_ALPHA_IN(3, 7, 0, 5, 7);
+        SET_TEV_ALPHA_IN(4, 7, 7, 7, 0);
+        SET_TEV_ALPHA_IN(5, 7, 7, 7, 0);
+        SET_TEV_ALPHA_IN(6, 7, 7, 7, 0);
+        glx_RasterizedAlphaStage = 3;
+        glx_RasterizedAlphaArg = 2;
+        break;
+    case 0x2B:
+        gxSetNumTexGens(4);
+        gxSetNumTevStages(5);
+        SET_TEV_ORDER(0, 3, 3, 4);
+        SET_TEV_ORDER(1, 0, 0, 0xFF);
+        SET_TEV_ORDER(2, 1, 1, 0xFF);
+        SET_TEV_ORDER(3, 0xFF, 0xFF, 0xFF);
+        SET_TEV_ORDER(4, 2, 2, 0xFF);
+        SET_TEX_GEN(3, 10, 19, 0x3C);
+        gxSetTevColourOp(0, (_GXTevOp)0, (_GXTevBias)0, glx_tevscale, true, (_GXTevRegID)1);
+        SET_TEV_KCOLOR_SEL(1, 0x0C);
+        SET_TEV_KCOLOR_SEL(2, 0x0C);
+        SET_TEV_KALPHA_SEL(1, 0x1C);
+        SET_TEV_KALPHA_SEL(2, 0x1C);
+        SET_TEV_COLOR_IN(0, 15, 12, 8, 15);
+        SET_TEV_COLOR_IN(1, 15, 8, 14, 15);
+        SET_TEV_COLOR_IN(2, 8, 15, 14, 0);
+        SET_TEV_COLOR_IN(3, 15, 0, 2, 15);
+        SET_TEV_COLOR_IN(4, 15, 0, 12, 8);
+        SET_TEV_ALPHA_IN(0, 7, 7, 7, 7);
+        SET_TEV_ALPHA_IN(1, 7, 4, 6, 7);
+        SET_TEV_ALPHA_IN(2, 4, 7, 6, 0);
+        SET_TEV_ALPHA_IN(3, 7, 7, 7, 0);
+        SET_TEV_ALPHA_IN(4, 7, 7, 7, 0);
+        break;
+    case 0x31:
+        gxSetNumTexGens(3);
+        gxSetNumTevStages(4);
+        SET_TEV_ORDER(0, 2, 2, 4);
+        SET_TEV_ORDER(1, 0, 0, 0xFF);
+        SET_TEV_ORDER(2, 1, 1, 5);
+        SET_TEV_ORDER(3, 0xFF, 0xFF, 0xFF);
+        SET_TEV_KCOLOR_SEL(3, 0x0F);
+        SET_TEV_KALPHA_SEL(3, 0x1F);
+        gxSetTevColourOp(1, (_GXTevOp)0, (_GXTevBias)0, (_GXTevScale)0, true, (_GXTevRegID)1);
+        gxSetTevAlphaOp(1, (_GXTevOp)0, (_GXTevBias)0, (_GXTevScale)0, true, (_GXTevRegID)1);
+        SET_TEX_GEN(2, 10, 19, 0x3C);
+        gxSetTevColourOp(0, (_GXTevOp)0, (_GXTevBias)0, glx_tevscale, true, (_GXTevRegID)0);
+        SET_TEV_COLOR_IN(0, 15, 12, 8, 15);
+        SET_TEV_COLOR_IN(1, 15, 0, 8, 15);
+        SET_TEV_COLOR_IN(2, 15, 10, 8, 15);
+        SET_TEV_COLOR_IN(3, 15, 14, 0, 2);
+        SET_TEV_ALPHA_IN(0, 7, 6, 6, 7);
+        SET_TEV_ALPHA_IN(1, 7, 6, 4, 7);
+        SET_TEV_ALPHA_IN(2, 7, 7, 7, 7);
+        SET_TEV_ALPHA_IN(3, 7, 6, 0, 1);
+        glx_RasterizedAlphaStage = 1;
+        glx_RasterizedAlphaArg = 1;
+        glx_GlossMapStage = 2;
+        glx_GlossMapCoord = 1;
+        break;
+    case 0x35:
+        gxSetNumTexGens(4);
+        gxSetNumTevStages(5);
+        SET_TEV_ORDER(0, 3, 3, 4);
+        SET_TEV_ORDER(1, 0, 0, 0xFF);
+        SET_TEV_ORDER(2, 1, 1, 0xFF);
+        SET_TEV_ORDER(3, 2, 2, 5);
+        SET_TEV_ORDER(4, 0xFF, 0xFF, 0xFF);
+        SET_TEV_KCOLOR_SEL(4, 0x0F);
+        SET_TEV_KALPHA_SEL(4, 0x1F);
+        gxSetTevColourOp(1, (_GXTevOp)0, (_GXTevBias)0, (_GXTevScale)0, true, (_GXTevRegID)1);
+        gxSetTevAlphaOp(1, (_GXTevOp)0, (_GXTevBias)0, (_GXTevScale)0, true, (_GXTevRegID)1);
+        gxSetTevColourOp(2, (_GXTevOp)0, (_GXTevBias)0, (_GXTevScale)0, true, (_GXTevRegID)1);
+        SET_TEX_GEN(3, 10, 19, 0x3C);
+        gxSetTevColourOp(0, (_GXTevOp)0, (_GXTevBias)0, glx_tevscale, true, (_GXTevRegID)0);
+        SET_TEV_COLOR_IN(0, 15, 12, 8, 15);
+        SET_TEV_COLOR_IN(1, 15, 0, 8, 15);
+        SET_TEV_COLOR_IN(2, 15, 2, 8, 15);
+        SET_TEV_COLOR_IN(3, 15, 10, 8, 15);
+        SET_TEV_COLOR_IN(4, 15, 14, 0, 2);
+        SET_TEV_ALPHA_IN(0, 7, 6, 6, 7);
+        SET_TEV_ALPHA_IN(1, 7, 6, 4, 7);
+        SET_TEV_ALPHA_IN(2, 7, 6, 6, 7);
+        SET_TEV_ALPHA_IN(3, 7, 7, 7, 7);
+        SET_TEV_ALPHA_IN(4, 7, 6, 0, 1);
+        glx_GlossMapStage = 3;
+        glx_GlossMapCoord = 2;
+        break;
+    case 0x39:
+        gxSetNumTexGens(4);
+        gxSetNumTevStages(5);
+        SET_TEV_ORDER(0, 3, 3, 4);
+        SET_TEV_ORDER(1, 0, 0, 0xFF);
+        SET_TEV_ORDER(2, 2, 2, 5);
+        SET_TEV_ORDER(3, 1, 1, 0xFF);
+        SET_TEV_ORDER(4, 0xFF, 0xFF, 0xFF);
+        SET_TEV_KCOLOR_SEL(4, 0x0F);
+        SET_TEV_KALPHA_SEL(4, 0x1F);
+        gxSetTevColourOp(1, (_GXTevOp)0, (_GXTevBias)0, (_GXTevScale)0, true, (_GXTevRegID)1);
+        gxSetTevAlphaOp(1, (_GXTevOp)0, (_GXTevBias)0, (_GXTevScale)0, true, (_GXTevRegID)1);
+        SET_TEX_GEN(3, 10, 19, 0x3C);
+        gxSetTevColourOp(0, (_GXTevOp)0, (_GXTevBias)0, glx_tevscale, true, (_GXTevRegID)0);
+        SET_TEV_COLOR_IN(0, 15, 12, 8, 15);
+        SET_TEV_COLOR_IN(1, 15, 0, 8, 15);
+        SET_TEV_COLOR_IN(2, 15, 10, 8, 15);
+        SET_TEV_COLOR_IN(3, 15, 0, 8, 15);
+        SET_TEV_COLOR_IN(4, 15, 14, 0, 2);
+        SET_TEV_ALPHA_IN(0, 7, 6, 6, 7);
+        SET_TEV_ALPHA_IN(1, 7, 6, 4, 7);
+        SET_TEV_ALPHA_IN(2, 7, 7, 7, 7);
+        SET_TEV_ALPHA_IN(3, 7, 7, 7, 7);
+        SET_TEV_ALPHA_IN(4, 7, 6, 0, 1);
+        glx_GlossMapStage = 2;
+        glx_GlossMapCoord = 2;
+        break;
+    case 0x02:
+    case 0x04:
+    case 0x06:
+    case 0x08:
+    case 0x0A:
+    case 0x0B:
+    case 0x0C:
+    case 0x0E:
+    case 0x0F:
+    case 0x10:
+    case 0x12:
+    case 0x14:
+    case 0x16:
+    case 0x17:
+    case 0x18:
+    case 0x1A:
+    case 0x1B:
+    case 0x1C:
+    case 0x1D:
+    case 0x1E:
+    case 0x1F:
+    case 0x20:
+    case 0x22:
+    case 0x24:
+    case 0x26:
+    case 0x28:
+    case 0x2A:
+    case 0x2C:
+    case 0x2D:
+    case 0x2E:
+    case 0x2F:
+    case 0x30:
+    case 0x32:
+    case 0x33:
+    case 0x34:
+    case 0x36:
+    case 0x37:
+    case 0x38:
+        break;
+    default:
+        break;
+    }
+
+#undef SET_TEV_ORDER
+#undef SET_TEV_COLOR_IN
+#undef SET_TEV_ALPHA_IN
+#undef SET_TEV_KCOLOR_SEL
+#undef SET_TEV_KALPHA_SEL
+#undef SET_TEX_GEN
 
     return extra;
 }

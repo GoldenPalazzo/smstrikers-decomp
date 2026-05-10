@@ -32,6 +32,7 @@ class ShotMeter
 {
 public:
     eShotMeterState m_eShotMeterState;
+    void ShotReleased(cFielder* pFielder);
     float GetTotalDuration() const;
     void CalcOneTimerValue(cFielder* pFielder, bool bWasPerfectPass);
 };
@@ -192,19 +193,26 @@ bool cFielder::InitDesire(const sDesireParams* pParams, float fConfidence)
 
 /**
  * Offset/Address/Size: 0x54DC | 0x80036260 | size: 0xD30
- * TODO: 9.07% match - missing ShotReleased call, full init switch behavior, and thought-cap requeue path.
+ * TODO: 45.35% match - stack frame/register allocation and shared switch-table control flow still diverge from target asm.
  */
 bool cFielder::InitDesire(eFielderDesireState eDesireType, float fConfidence, float fDuration, FuzzyVariant opt1, FuzzyVariant opt2)
 {
+    unsigned long uQueuedThoughtHash;
+    bool bDesireInitSuccess;
+
     FORCE_DONT_INLINE;
 
-    if (GetGlobalPad() == nullptr && m_pMark != nullptr && m_eFielderDesireState == FIELDERDESIRE_WINDUP_SHOT
+    if (GetGlobalPad() == NULL && m_pBall != NULL && m_eFielderDesireState == FIELDERDESIRE_WINDUP_SHOT
         && (u32)(eDesireType - FIELDERDESIRE_PASS) > 1 && eDesireType != FIELDERDESIRE_DEKE)
     {
+        m_pShotMeter->ShotReleased(this);
         m_eFielderDesireState = FIELDERDESIRE_FINISH_ACTION;
         InitActionShot(false);
         return true;
     }
+
+    uQueuedThoughtHash = 0;
+    bDesireInitSuccess = true;
 
     m_DesireCommonVars.tAge.m_uPackedTime = 0;
     m_DesireCommonVars.tMiscTimer.m_uPackedTime = 0;
@@ -226,24 +234,43 @@ bool cFielder::InitDesire(eFielderDesireState eDesireType, float fConfidence, fl
             SetDesireDuration(3.0f, true);
             break;
 
-        case FIELDERDESIRE_USE_POWERUP:
         case FIELDERDESIRE_USER_CONTROLLED:
             SetDesireDuration(99999.0f, true);
             break;
 
-        case FIELDERDESIRE_WAIT:
+        case FIELDERDESIRE_FINISH_ACTION:
+            SetDesireDuration(99999.0f, true);
+            break;
+
+        case FIELDERDESIRE_WAIT_FOR_THOUGHT_CAP:
             SetDesireDuration(0.0f, true);
             break;
 
-        case FIELDERDESIRE_SHOOT:
-        case FIELDERDESIRE_RUN_TO_NET:
-        case FIELDERDESIRE_SLIDE_ATTACK:
-        case FIELDERDESIRE_POST_WHISTLE:
-            SetDesireDuration(1.0f, true);
+        case FIELDERDESIRE_WAIT:
+            SetDesireDuration(0.5f, true);
             break;
 
+        case FIELDERDESIRE_DEKE:
+        case FIELDERDESIRE_GET_IN_POSITION:
+        case FIELDERDESIRE_GET_OPEN:
+        case FIELDERDESIRE_HIT:
+        case FIELDERDESIRE_INTERCEPT_BALL:
+        case FIELDERDESIRE_MARK:
+        case FIELDERDESIRE_PROTECT_BALL:
+        case FIELDERDESIRE_RUN_TO_NET:
+        case FIELDERDESIRE_RUN_UPFIELD:
+        case FIELDERDESIRE_RUN_DOWNFIELD:
+        case FIELDERDESIRE_RUN_TO_LOCATION:
+        case FIELDERDESIRE_PASS:
+        case FIELDERDESIRE_SHOOT:
+        case FIELDERDESIRE_SLIDE_ATTACK:
+        case FIELDERDESIRE_SUPPORT_BALL_DEFENSIVE:
+        case FIELDERDESIRE_SUPPORT_BALL_OFFENSIVE:
+        case FIELDERDESIRE_USE_POWERUP:
+        case FIELDERDESIRE_WINDUP_PASS:
         case FIELDERDESIRE_WINDUP_SHOT:
-            SetDesireDuration(0.5f, true);
+        case FIELDERDESIRE_POST_WHISTLE:
+            SetDesireDuration(1.0f, true);
             break;
 
         default:
@@ -251,10 +278,367 @@ bool cFielder::InitDesire(eFielderDesireState eDesireType, float fConfidence, fl
         }
     }
 
-    (void)fConfidence;
-    (void)opt1;
-    (void)opt2;
-    return false;
+    switch (eDesireType)
+    {
+    case FIELDERDESIRE_CUT_AND_BREAK:
+    {
+        if (g_pGame->IsThoughtAllowed(mThoughtHashInitCutAndBreak))
+        {
+            if (m_pBall != NULL)
+            {
+                if (m_sQueuedDesireParams.eDesireType == FIELDERDESIRE_CUT_AND_BREAK)
+                {
+                    m_sQueuedDesireParams.fDuration = 0.0f;
+                    m_sQueuedDesireParams.eDesireType = FIELDERDESIRE_NEED_DESIRE;
+                    m_sQueuedDesireParams.opt1 = fvNotSet;
+                    m_sQueuedDesireParams.opt2 = fvNotSet;
+                }
+                bDesireInitSuccess = false;
+            }
+            else
+            {
+                SetSpaceSearch(new (nlMalloc(0x14, 8, false)) SSearchCutAndBreak(this));
+                m_pSpaceSearch->m_bDebugOn = false;
+                m_pSpaceSearch->FindBestPosition(m_DesireCommonVars.v3DesiredPosition, m_v3Position, DIR_NONE, NULL, 4.0f, 0x8000);
+                m_pAvoidance->SetThingsToAvoid(0x1F);
+                bDesireInitSuccess = true;
+            }
+        }
+        else
+        {
+            uQueuedThoughtHash = mThoughtHashInitCutAndBreak;
+        }
+        break;
+    }
+
+    case FIELDERDESIRE_DEKE:
+        m_pAvoidance->SetThingsToAvoid(0);
+        break;
+
+    case FIELDERDESIRE_GET_IN_POSITION:
+        m_pAvoidance->SetThingsToAvoid(0x1F);
+        break;
+
+    case FIELDERDESIRE_GET_OPEN:
+        if (g_pGame->IsThoughtAllowed(mThoughtHashInitGetOpen))
+        {
+            bDesireInitSuccess = InitDesireGetOpen();
+        }
+        else
+        {
+            uQueuedThoughtHash = mThoughtHashInitGetOpen;
+        }
+        break;
+
+    case FIELDERDESIRE_HIT:
+    {
+        cFielder* pTarget = (cFielder*)opt1.mData.pPlayer;
+
+        if (pTarget != NULL && pTarget->m_eClassType == FIELDER)
+        {
+            if (pTarget == NULL)
+            {
+                pTarget = DoFindBestHitTarget();
+            }
+            InitActionHit(pTarget);
+            m_pAvoidance->SetThingsToAvoid(0);
+        }
+        else
+        {
+            bDesireInitSuccess = false;
+            AbortPendingThoughts();
+        }
+        break;
+    }
+
+    case FIELDERDESIRE_INTERCEPT_BALL:
+    {
+        m_eDesireSubState = 0;
+        m_DesireCommonVars.tMiscTimer.m_uPackedTime = 0;
+
+        if (g_pBall->m_pPassTarget != NULL)
+        {
+            float fRandomTime = nlRandomf(0.15f, &nlDefaultSeed) - 0.075f;
+            m_DesireCommonVars.tMiscTimer.SetSeconds(g_pBall->m_tPassTargetTimer.GetSeconds() * (0.5f + fRandomTime));
+        }
+
+        m_pAvoidance->SetThingsToAvoid(0x1F);
+        break;
+    }
+
+    case FIELDERDESIRE_MARK:
+        m_pAvoidance->SetThingsToAvoid(0x1F);
+        m_DesireCommonVars.tMiscTimer.m_uPackedTime = 0;
+        break;
+
+    case FIELDERDESIRE_PROTECT_BALL:
+        m_pAvoidance->SetThingsToAvoid(0x1F);
+        break;
+
+    case FIELDERDESIRE_RUN_TO_NET:
+        bDesireInitSuccess = InitDesireRunToNet();
+        break;
+
+    case FIELDERDESIRE_RUN_UPFIELD:
+    case FIELDERDESIRE_RUN_DOWNFIELD:
+        m_pAvoidance->SetThingsToAvoid(0x1F);
+        break;
+
+    case FIELDERDESIRE_RUN_TO_LOCATION:
+    {
+        bool bTurbo = opt2.mData.b;
+
+        if (m_pBall != NULL)
+        {
+            ReleaseBall();
+        }
+
+        m_DesireCommonVars.v3DesiredPosition = opt1.mData.vector;
+        m_DesireCommonVars.turboRequest = bTurbo ? TR_FORCED_OFF : TR_FAR_DISTANCE;
+
+        m_pAvoidance->SetThingsToAvoid(0x1F);
+        break;
+    }
+
+    case FIELDERDESIRE_PASS:
+    {
+        cPlayer* pTarget = (cPlayer*)opt1.mData.pPlayer;
+
+        if (pTarget != NULL)
+        {
+            mActionPassingVars.pPassTarget = pTarget;
+            mActionPassingVars.bVolleyPass = opt2.mData.b;
+
+            if (m_fActualSpeed > m_pTweaks->fRunningSpeed)
+            {
+                m_fDesiredSpeed = m_pTweaks->fRunningSpeed;
+            }
+            else
+            {
+                m_fDesiredSpeed = m_fActualSpeed;
+            }
+
+            m_pAvoidance->SetThingsToAvoid(0);
+        }
+        else
+        {
+            bDesireInitSuccess = false;
+            AbortPendingThoughts();
+        }
+        break;
+    }
+
+    case FIELDERDESIRE_SHOOT:
+    {
+        bool bShootToScore = opt1.mData.b;
+        bool bChipShot = opt2.mData.b;
+
+        if (m_pBall != NULL)
+        {
+            if (bShootToScore)
+            {
+                SkillTweaks* pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide);
+
+                if (GenerateFilteredRandom() <= pSkillTweaks->Off_CaptainS2SChance)
+                {
+                    m_DesireCommonVars.fMisc = g_pGame->m_pGameTweaks->unk294;
+                }
+                else
+                {
+                    m_DesireCommonVars.fMisc = g_pGame->m_pGameTweaks->unk294 + (float)(0.6f * GenerateFilteredRandom() - 0.30000001192092896);
+                }
+
+                SetDesireDuration(100000000.0f, true);
+                mActionShotVars.bIsShootToScore = true;
+            }
+            else
+            {
+                mActionShotVars.bIsChipShot = bChipShot;
+                mActionShotVars.bIsShootToScore = false;
+            }
+
+            m_pAvoidance->SetThingsToAvoid(0);
+        }
+        break;
+    }
+
+    case FIELDERDESIRE_SLIDE_ATTACK:
+    {
+        cFielder* pTarget = (cFielder*)opt1.mData.pPlayer;
+
+        if (pTarget != NULL && pTarget->m_eClassType == FIELDER)
+        {
+            m_DesireSlideAttackVars.m_pSlideAttackTarget = pTarget;
+            m_eDesireSubState = 0;
+            m_pAvoidance->SetThingsToAvoid(0x1F);
+        }
+        else
+        {
+            bDesireInitSuccess = false;
+            AbortPendingThoughts();
+        }
+        break;
+    }
+
+    case FIELDERDESIRE_SUPPORT_BALL_DEFENSIVE:
+    case FIELDERDESIRE_SUPPORT_BALL_OFFENSIVE:
+        m_pAvoidance->SetThingsToAvoid(0x1F);
+        break;
+
+    case FIELDERDESIRE_USE_POWERUP:
+    {
+        cFielder* pTarget = (cFielder*)opt2.mData.pPlayer;
+
+        if (pTarget == NULL || pTarget->m_eClassType == FIELDER)
+        {
+            ePowerUpType ePowerup = (ePowerUpType)opt1.mData.i;
+            PowerUpTeamType powerUp = m_pTeam->GetCurrentPowerUp();
+
+            if (ePowerup == powerUp.eType)
+            {
+                if (!IsPlayingPowerupAnim())
+                {
+                    UseTeamPowerup(pTarget);
+                }
+            }
+        }
+        else
+        {
+            bDesireInitSuccess = false;
+            AbortPendingThoughts();
+        }
+        break;
+    }
+
+    case FIELDERDESIRE_WINDUP_PASS:
+    {
+        if (g_pGame->IsThoughtAllowed(mThoughtHashInitWindupPass))
+        {
+            cPlayer* pTarget = (cPlayer*)opt1.mData.pPlayer;
+
+            if (pTarget != NULL)
+            {
+                bool bHighPass = opt2.mData.b;
+
+                if (m_pBall != NULL)
+                {
+                    mActionPassingVars.pPassTarget = pTarget;
+                    SetDesireDuration(3.2f, true);
+                    mActionPassingVars.bVolleyPass = bHighPass;
+
+                    if (bHighPass)
+                    {
+                        m_DesireCommonVars.tMiscTimer.m_uPackedTime = 0;
+                    }
+                    else
+                    {
+                        m_DesireCommonVars.tMiscTimer.SetSeconds(3.0f);
+                    }
+
+                    SkillTweaks* pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide);
+                    float fReactionTimeRange = 0.85f * (0.3f * (1.0f - pSkillTweaks->Off_Reaction));
+
+                    m_DesireCommonVars.fMisc = 0.85f + (nlRandomf(fReactionTimeRange, &nlDefaultSeed) - (0.5f * fReactionTimeRange));
+
+                    SetSpaceSearch(new (nlMalloc(0x28, 8, false)) SSearchOpenLane(this, pTarget));
+                    m_pSpaceSearch->m_bDebugOn = false;
+                    m_pSpaceSearch->FindBestPosition(m_DesireCommonVars.v3DesiredPosition, m_v3Position, DIR_TOWARD_TARGET, &pTarget->m_v3Position, 4.5f, 0x8000);
+                    m_pAvoidance->SetThingsToAvoid(0x1F);
+
+                    bDesireInitSuccess = true;
+                }
+                else
+                {
+                    if (m_sQueuedDesireParams.eDesireType == FIELDERDESIRE_WINDUP_PASS)
+                    {
+                        m_sQueuedDesireParams.fDuration = 0.0f;
+                        m_sQueuedDesireParams.eDesireType = FIELDERDESIRE_NEED_DESIRE;
+                        m_sQueuedDesireParams.opt1 = fvNotSet;
+                        m_sQueuedDesireParams.opt2 = fvNotSet;
+                    }
+
+                    bDesireInitSuccess = false;
+                }
+            }
+            else
+            {
+                bDesireInitSuccess = false;
+                AbortPendingThoughts();
+            }
+        }
+        else
+        {
+            uQueuedThoughtHash = mThoughtHashInitWindupPass;
+        }
+        break;
+    }
+
+    case FIELDERDESIRE_WINDUP_SHOT:
+    {
+        if (m_pBall != NULL)
+        {
+            if (!IsBallAwayFromCarrier())
+            {
+                DoResetShotMeter(0.0f);
+                m_DesireWindupForShotVars.bIsBallAwayFromCarrier = false;
+                SetDesireDuration(m_pShotMeter->GetTotalDuration(), false);
+            }
+            else
+            {
+                SetDesireDuration(999999.9f, true);
+                m_DesireWindupForShotVars.bIsBallAwayFromCarrier = true;
+            }
+
+            m_pAvoidance->SetThingsToAvoid(0);
+        }
+        break;
+    }
+
+    case FIELDERDESIRE_USER_CONTROLLED:
+        StartRunning();
+        m_pAvoidance->SetThingsToAvoid(8);
+        break;
+
+    case FIELDERDESIRE_FINISH_ACTION:
+        m_pAvoidance->SetThingsToAvoid(0);
+        break;
+
+    case FIELDERDESIRE_POST_WHISTLE:
+        if (m_pBall != NULL)
+        {
+            ReleaseBall();
+            g_pBall->ShootRelease(m_v3Velocity, SPINTYPE_NONE);
+        }
+
+        m_DesireCommonVars.tMiscTimer.SetSeconds(2.0f);
+        m_pAvoidance->SetThingsToAvoid(0x1F);
+        break;
+
+    case FIELDERDESIRE_WAIT:
+        m_fDesiredSpeed = 0.0f;
+        break;
+
+    case FIELDERDESIRE_NEED_DESIRE:
+    case FIELDERDESIRE_ONETIMER:
+    case FIELDERDESIRE_RECEIVE_PASS_FROM_IDLE:
+    case FIELDERDESIRE_RECEIVE_PASS_FROM_RUN:
+    case FIELDERDESIRE_WAIT_FOR_THOUGHT_CAP:
+    default:
+        break;
+    }
+
+    if (uQueuedThoughtHash != 0)
+    {
+        QueueDesire(eDesireType, fDuration, opt1, opt2);
+        InitDesire(FIELDERDESIRE_WAIT_FOR_THOUGHT_CAP, 0.5f, -1.0f, fvNotSet, fvNotSet);
+        bDesireInitSuccess = false;
+    }
+    else if (bDesireInitSuccess)
+    {
+        bDesireInitSuccess = SetDesire(eDesireType, fConfidence);
+    }
+
+    return bDesireInitSuccess;
 }
 
 /**

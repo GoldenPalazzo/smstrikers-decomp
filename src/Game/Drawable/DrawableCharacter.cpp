@@ -1492,5 +1492,7 @@ void DrawableCharacter_stub()
     Replayable<0>(lf, FloatCompressor<0, 1, 7>(x));
     Replayable<0>(lf, FloatCompressor<0, 1, 15>(x));
     ReplayablePolymorphic<1, SaveFrame, cPoseNode>(sf, pn);
+    cPoseAccumulator& (cPoseAccumulator::*fn)(const cPoseAccumulator&) = &cPoseAccumulator::operator=;
+    (void)fn;
 }
 #pragma force_active reset

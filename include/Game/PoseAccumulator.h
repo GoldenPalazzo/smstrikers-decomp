@@ -81,7 +81,7 @@ public:
     void MultNodeMatrices(const nlMatrix4*);
     void SetBuildNodeMatrixCallback(int, BuildNodeMatrixFn, unsigned int, unsigned int);
 
-    void operator=(const cPoseAccumulator&);
+    cPoseAccumulator& operator=(const cPoseAccumulator&);
 
     /* 0x00 */ cSHierarchy* m_BaseSHierarchy;
     /* 0x04 */ Vector<nlMatrix4, DefaultAllocator> m_NodeMatrices;
@@ -93,13 +93,243 @@ public:
     /* 0x4C */ Vector<float, DefaultAllocator> m_MorphWeights;
 }; // total size: 0x58
 
-inline void cPoseAccumulator::operator=(const cPoseAccumulator& other)
+inline cPoseAccumulator& cPoseAccumulator::operator=(const cPoseAccumulator& other)
 {
-    if (this != &other)
+    m_BaseSHierarchy = other.m_BaseSHierarchy;
+
+    if (m_NodeMatrices.mSize >= other.m_NodeMatrices.mSize)
     {
-        this->~cPoseAccumulator();
-        new (this) cPoseAccumulator(other);
+        for (int i = 0; i < other.m_NodeMatrices.mSize; i++)
+        {
+            m_NodeMatrices.mData[i] = other.m_NodeMatrices.mData[i];
+        }
+        m_NodeMatrices.mSize = other.m_NodeMatrices.mSize;
     }
+    else
+    {
+        Vector<nlMatrix4, DefaultAllocator> tmp;
+        tmp.mData = (nlMatrix4*)nlMalloc(other.m_NodeMatrices.mSize * sizeof(nlMatrix4), 8, false);
+        tmp.mSize = other.m_NodeMatrices.mSize;
+        tmp.mCapacity = other.m_NodeMatrices.mSize;
+
+        for (int i = 0; i < other.m_NodeMatrices.mSize; i++)
+        {
+            tmp.mData[i] = other.m_NodeMatrices.mData[i];
+        }
+
+        int oldSize = m_NodeMatrices.mSize;
+        int oldCapacity = m_NodeMatrices.mCapacity;
+        nlMatrix4* oldData = m_NodeMatrices.mData;
+
+        m_NodeMatrices.mData = tmp.mData;
+        m_NodeMatrices.mSize = tmp.mSize;
+        m_NodeMatrices.mCapacity = tmp.mCapacity;
+
+        tmp.mData = oldData;
+        tmp.mSize = oldSize;
+        tmp.mCapacity = oldCapacity;
+    }
+
+    if (m_PrevNodeMatrices.mSize >= other.m_PrevNodeMatrices.mSize)
+    {
+        for (int i = 0; i < other.m_PrevNodeMatrices.mSize; i++)
+        {
+            m_PrevNodeMatrices.mData[i] = other.m_PrevNodeMatrices.mData[i];
+        }
+        m_PrevNodeMatrices.mSize = other.m_PrevNodeMatrices.mSize;
+    }
+    else
+    {
+        Vector<nlMatrix4, DefaultAllocator> tmp;
+        tmp.mData = (nlMatrix4*)nlMalloc(other.m_PrevNodeMatrices.mSize * sizeof(nlMatrix4), 8, false);
+        tmp.mSize = other.m_PrevNodeMatrices.mSize;
+        tmp.mCapacity = other.m_PrevNodeMatrices.mSize;
+
+        for (int i = 0; i < other.m_PrevNodeMatrices.mSize; i++)
+        {
+            tmp.mData[i] = other.m_PrevNodeMatrices.mData[i];
+        }
+
+        int oldSize = m_PrevNodeMatrices.mSize;
+        int oldCapacity = m_PrevNodeMatrices.mCapacity;
+        nlMatrix4* oldData = m_PrevNodeMatrices.mData;
+
+        m_PrevNodeMatrices.mData = tmp.mData;
+        m_PrevNodeMatrices.mSize = tmp.mSize;
+        m_PrevNodeMatrices.mCapacity = tmp.mCapacity;
+
+        tmp.mData = oldData;
+        tmp.mSize = oldSize;
+        tmp.mCapacity = oldCapacity;
+    }
+
+    if (m_rot.mSize >= other.m_rot.mSize)
+    {
+        for (int i = 0; i < other.m_rot.mSize; i++)
+        {
+            m_rot.mData[i] = other.m_rot.mData[i];
+        }
+        m_rot.mSize = other.m_rot.mSize;
+    }
+    else
+    {
+        Vector<RotAccum, DefaultAllocator> tmp;
+        tmp.mData = (RotAccum*)nlMalloc(other.m_rot.mSize * sizeof(RotAccum), 8, false);
+        tmp.mSize = other.m_rot.mSize;
+        tmp.mCapacity = other.m_rot.mSize;
+
+        for (int i = 0; i < other.m_rot.mSize; i++)
+        {
+            tmp.mData[i] = other.m_rot.mData[i];
+        }
+
+        int oldSize = m_rot.mSize;
+        int oldCapacity = m_rot.mCapacity;
+        RotAccum* oldData = m_rot.mData;
+
+        m_rot.mData = tmp.mData;
+        m_rot.mSize = tmp.mSize;
+        m_rot.mCapacity = tmp.mCapacity;
+
+        tmp.mData = oldData;
+        tmp.mSize = oldSize;
+        tmp.mCapacity = oldCapacity;
+    }
+
+    if (m_scale.mSize >= other.m_scale.mSize)
+    {
+        for (int i = 0; i < other.m_scale.mSize; i++)
+        {
+            m_scale.mData[i] = other.m_scale.mData[i];
+        }
+        m_scale.mSize = other.m_scale.mSize;
+    }
+    else
+    {
+        Vector<ScaleAccum, DefaultAllocator> tmp;
+        tmp.mData = (ScaleAccum*)nlMalloc(other.m_scale.mSize * sizeof(ScaleAccum), 8, false);
+        tmp.mSize = other.m_scale.mSize;
+        tmp.mCapacity = other.m_scale.mSize;
+
+        for (int i = 0; i < other.m_scale.mSize; i++)
+        {
+            tmp.mData[i] = other.m_scale.mData[i];
+        }
+
+        int oldSize = m_scale.mSize;
+        int oldCapacity = m_scale.mCapacity;
+        ScaleAccum* oldData = m_scale.mData;
+
+        m_scale.mData = tmp.mData;
+        m_scale.mSize = tmp.mSize;
+        m_scale.mCapacity = tmp.mCapacity;
+
+        tmp.mData = oldData;
+        tmp.mSize = oldSize;
+        tmp.mCapacity = oldCapacity;
+    }
+
+    if (m_trans.mSize >= other.m_trans.mSize)
+    {
+        for (int i = 0; i < other.m_trans.mSize; i++)
+        {
+            m_trans.mData[i] = other.m_trans.mData[i];
+        }
+        m_trans.mSize = other.m_trans.mSize;
+    }
+    else
+    {
+        Vector<TransAccum, DefaultAllocator> tmp;
+        tmp.mData = (TransAccum*)nlMalloc(other.m_trans.mSize * sizeof(TransAccum), 8, false);
+        tmp.mSize = other.m_trans.mSize;
+        tmp.mCapacity = other.m_trans.mSize;
+
+        for (int i = 0; i < other.m_trans.mSize; i++)
+        {
+            tmp.mData[i] = other.m_trans.mData[i];
+        }
+
+        int oldSize = m_trans.mSize;
+        int oldCapacity = m_trans.mCapacity;
+        TransAccum* oldData = m_trans.mData;
+
+        m_trans.mData = tmp.mData;
+        m_trans.mSize = tmp.mSize;
+        m_trans.mCapacity = tmp.mCapacity;
+
+        tmp.mData = oldData;
+        tmp.mSize = oldSize;
+        tmp.mCapacity = oldCapacity;
+    }
+
+    if (m_cb.mSize >= other.m_cb.mSize)
+    {
+        for (int i = 0; i < other.m_cb.mSize; i++)
+        {
+            m_cb.mData[i] = other.m_cb.mData[i];
+        }
+        m_cb.mSize = other.m_cb.mSize;
+    }
+    else
+    {
+        int n = other.m_cb.mSize;
+        Vector<cBuildNodeMatrixCallbackInfo, DefaultAllocator> tmp;
+        tmp.mData = new (nlMalloc(n * sizeof(cBuildNodeMatrixCallbackInfo) + 0x10, 8, false)) cBuildNodeMatrixCallbackInfo[n];
+        tmp.mSize = n;
+        tmp.mCapacity = n;
+
+        for (int i = 0; i < other.m_cb.mSize; i++)
+        {
+            tmp.mData[i] = other.m_cb.mData[i];
+        }
+
+        int oldSize = m_cb.mSize;
+        int oldCapacity = m_cb.mCapacity;
+        cBuildNodeMatrixCallbackInfo* oldData = m_cb.mData;
+
+        m_cb.mData = tmp.mData;
+        m_cb.mSize = tmp.mSize;
+        m_cb.mCapacity = tmp.mCapacity;
+
+        tmp.mData = oldData;
+        tmp.mSize = oldSize;
+        tmp.mCapacity = oldCapacity;
+    }
+
+    if (m_MorphWeights.mSize >= other.m_MorphWeights.mSize)
+    {
+        for (int i = 0; i < other.m_MorphWeights.mSize; i++)
+        {
+            m_MorphWeights.mData[i] = other.m_MorphWeights.mData[i];
+        }
+        m_MorphWeights.mSize = other.m_MorphWeights.mSize;
+    }
+    else
+    {
+        Vector<float, DefaultAllocator> tmp;
+        tmp.mData = (float*)nlMalloc(other.m_MorphWeights.mSize * sizeof(float), 8, false);
+        tmp.mSize = other.m_MorphWeights.mSize;
+        tmp.mCapacity = other.m_MorphWeights.mSize;
+
+        for (int i = 0; i < other.m_MorphWeights.mSize; i++)
+        {
+            tmp.mData[i] = other.m_MorphWeights.mData[i];
+        }
+
+        int oldSize = m_MorphWeights.mSize;
+        int oldCapacity = m_MorphWeights.mCapacity;
+        float* oldData = m_MorphWeights.mData;
+
+        m_MorphWeights.mData = tmp.mData;
+        m_MorphWeights.mSize = tmp.mSize;
+        m_MorphWeights.mCapacity = tmp.mCapacity;
+
+        tmp.mData = oldData;
+        tmp.mSize = oldSize;
+        tmp.mCapacity = oldCapacity;
+    }
+
+    return *this;
 }
 
 #endif // _POSEACCUMULATOR_H_

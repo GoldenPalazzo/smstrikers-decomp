@@ -3,6 +3,7 @@
 #include "Game/FE/feHelpFuncs.h"
 #include "Game/Game.h"
 #include "Game/GameInfo.h"
+#include "Game/World/WorldLoader.h"
 
 // /**
 //  * Offset/Address/Size: 0x2C7C | 0x80189818 | size: 0x144
@@ -2001,6 +2002,34 @@ void StatsTracker::WriteStats(float gameTime, float gameDuration, const char* fi
 
     extern const char* STATS_FILE;
     extern unsigned long fwrite(const void*, unsigned long, unsigned long, void*);
+    extern BasicString<char, Detail::TempStringAllocator> Format(
+        const BasicString<char, Detail::TempStringAllocator>&,
+        const char* const&,
+        const char* const&,
+        const char* const&,
+        const char* const&,
+        const char* const&,
+        const float&,
+        const float&);
+    extern BasicString<char, Detail::TempStringAllocator> Format(
+        const BasicString<char, Detail::TempStringAllocator>&,
+        const int&,
+        const int&,
+        const int&,
+        const int&,
+        const int&,
+        const int&,
+        const int&);
+    extern BasicString<char, Detail::TempStringAllocator> Format(
+        const BasicString<char, Detail::TempStringAllocator>&,
+        const int&,
+        const int&,
+        const int&,
+        const int&,
+        const int&,
+        const int&,
+        const int&,
+        const int&);
 
     if (gameDuration <= 0.0f)
     {
@@ -2028,6 +2057,9 @@ void StatsTracker::WriteStats(float gameTime, float gameDuration, const char* fi
     if (firstTime)
     {
         BasicString<char, Detail::TempStringAllocator> header;
+        BasicString<char, Detail::TempStringAllocator> homeAway("H ");
+        int i;
+
         header.AppendInPlace("H Captain, ");
         header.AppendInPlace("H Sidekick, ");
         header.AppendInPlace("A Captain, ");
@@ -2035,26 +2067,128 @@ void StatsTracker::WriteStats(float gameTime, float gameDuration, const char* fi
         header.AppendInPlace("Stadium, ");
         header.AppendInPlace("Game Time, ");
         header.AppendInPlace("Actual Time, ");
-        header.AppendInPlace("Num Players, ");
-        header.AppendInPlace("Difficulty, ");
-        header.AppendInPlace("Shots On Goal, ");
-        header.AppendInPlace("Goals For, ");
-        header.AppendInPlace("ShootToScoreGoals, ");
-        header.AppendInPlace("Assists, ");
-        header.AppendInPlace("Fouls, ");
-        header.AppendInPlace("Powerups Used, ");
-        header.AppendInPlace("Powerups Hit, ");
-        header.AppendInPlace("Passes Made, ");
-        header.AppendInPlace("Passes Received, ");
-        header.AppendInPlace("Passes Intercepted, ");
-        header.AppendInPlace("Possession Time, ");
-        header.AppendInPlace("Steals, ");
-        header.AppendInPlace("Hits Made, ");
-        header.AppendInPlace("Goals One Timers, ");
+
+        for (i = 0; i < 2; i++)
+        {
+            header.AppendInPlace(homeAway.Append("Num Players, "));
+            header.AppendInPlace(homeAway.Append("Difficulty, "));
+            header.AppendInPlace(homeAway.Append("Shots On Goal, "));
+            header.AppendInPlace(homeAway.Append("Goals For, "));
+            header.AppendInPlace(homeAway.Append("ShootToScoreGoals, "));
+            header.AppendInPlace(homeAway.Append("Assists, "));
+            header.AppendInPlace(homeAway.Append("Fouls, "));
+            header.AppendInPlace(homeAway.Append("Powerups Used, "));
+            header.AppendInPlace(homeAway.Append("Powerups Hit, "));
+            header.AppendInPlace(homeAway.Append("Passes Made, "));
+            header.AppendInPlace(homeAway.Append("Passes Received, "));
+            header.AppendInPlace(homeAway.Append("Passes Intercepted, "));
+            header.AppendInPlace(homeAway.Append("Possession Time, "));
+            header.AppendInPlace(homeAway.Append("Steals, "));
+            header.AppendInPlace(homeAway.Append("Hits Made, "));
+            header.AppendInPlace(homeAway.Append("Goals One Timers, "));
+            homeAway = "A ";
+        }
+
         header.AppendInPlace("\n");
 
         unsigned long len = header.size() > 0 ? (unsigned long)(header.size() - 1) : 0UL;
         fwrite(header.c_str(), 1, len, pFile);
+    }
+
+    int numHumans[2] = { 0, 0 };
+    int i;
+    for (i = 0; i < 4; i++)
+    {
+        short side = nlSingleton<GameInfoManager>::s_pInstance->GetPlayingSide((unsigned short)i);
+        if (side == 0)
+        {
+            numHumans[0]++;
+        }
+        else if (side == 1)
+        {
+            numHumans[1]++;
+        }
+    }
+
+    BasicString<char, Detail::TempStringAllocator> stats;
+    bool allCaptains = Config::Global().Get("allcaptains", false);
+
+    if (allCaptains)
+    {
+        BasicString<char, Detail::TempStringAllocator> formatTemplate("{0},{1},{2},{3},{4},{5},{6},");
+        const char* stadiumName = TheWorldLoader.GetStadiumFilename(nlSingleton<GameInfoManager>::s_pInstance->GetStadium());
+        const char* awayTeamName = GetTeamName(nlSingleton<GameInfoManager>::s_pInstance->GetTeam(1));
+        const char* homeTeamName = GetTeamName(nlSingleton<GameInfoManager>::s_pInstance->GetTeam(0));
+
+        stats = Format(formatTemplate,
+            homeTeamName,
+            homeTeamName,
+            awayTeamName,
+            awayTeamName,
+            stadiumName,
+            gameTime,
+            gameDuration);
+    }
+    else
+    {
+        BasicString<char, Detail::TempStringAllocator> formatTemplate("{0},{1},{2},{3},{4},{5},{6},");
+        const char* stadiumName = TheWorldLoader.GetStadiumFilename(nlSingleton<GameInfoManager>::s_pInstance->GetStadium());
+        const char* awaySidekickName = GetSidekickName(nlSingleton<GameInfoManager>::s_pInstance->GetSidekick(1));
+        const char* awayTeamName = GetTeamName(nlSingleton<GameInfoManager>::s_pInstance->GetTeam(1));
+        const char* homeSidekickName = GetSidekickName(nlSingleton<GameInfoManager>::s_pInstance->GetSidekick(0));
+        const char* homeTeamName = GetTeamName(nlSingleton<GameInfoManager>::s_pInstance->GetTeam(0));
+
+        stats = Format(formatTemplate,
+            homeTeamName,
+            homeSidekickName,
+            awayTeamName,
+            awaySidekickName,
+            stadiumName,
+            gameTime,
+            gameDuration);
+    }
+
+    for (int team = 0; team < 2; team++)
+    {
+        int possession = (int)(mCurrentTeamStats[team].mPlayerTotalStats.mBallPossessionTime / 100);
+        int difficulty = (int)nlSingleton<GameInfoManager>::s_pInstance->mCurrentDifficulty[team];
+
+        BasicString<char, Detail::TempStringAllocator> numPlayersTemplate("{0},");
+        BasicString<char, Detail::TempStringAllocator> statsAfterPlayers = stats.Append(Format(numPlayersTemplate, numHumans[team]));
+
+        BasicString<char, Detail::TempStringAllocator> firstStatsTemplate("{0},{1},{2},{3},{4},{5},{6},");
+        BasicString<char, Detail::TempStringAllocator> statsAfterFirst = statsAfterPlayers.Append(Format(firstStatsTemplate,
+            difficulty,
+            (int)mCurrentTeamStats[team].mPlayerTotalStats.mNumShotsOnGoal,
+            (int)mCurrentTeamStats[team].mPlayerTotalStats.mNumGoalsFor,
+            (int)mCurrentTeamStats[team].mPlayerTotalStats.mNumShootToScoreGoals,
+            (int)mCurrentTeamStats[team].mPlayerTotalStats.mNumAssists,
+            (int)mCurrentTeamStats[team].mPlayerTotalStats.mNumFouls,
+            (int)mCurrentTeamStats[team].mPlayerTotalStats.mNumPowerupsUsed));
+
+        BasicString<char, Detail::TempStringAllocator> secondStatsTemplate("{0},{1},{2},{3},{4},{5},{6},{7}");
+        BasicString<char, Detail::TempStringAllocator> fullStats = statsAfterFirst.Append(Format(secondStatsTemplate,
+            (int)mCurrentTeamStats[team].mPlayerTotalStats.mNumPowerupsHit,
+            (int)mCurrentTeamStats[team].mPlayerTotalStats.mNumPassesMade,
+            (int)mCurrentTeamStats[team].mPlayerTotalStats.mNumPassesReceived,
+            (int)mCurrentTeamStats[team].mPlayerTotalStats.mNumPassesIntercepted,
+            possession,
+            (int)mCurrentTeamStats[team].mPlayerTotalStats.mNumSteals,
+            (int)mCurrentTeamStats[team].mPlayerTotalStats.mNumHitsMade,
+            (int)mCurrentTeamStats[team].mPlayerTotalStats.mNumGoalsOneTimers));
+
+        stats = fullStats;
+
+        if (team == 0)
+        {
+            stats = stats.Append(",");
+        }
+    }
+
+    stats.AppendInPlace("\n");
+    {
+        unsigned long len = stats.size() > 0 ? (unsigned long)(stats.size() - 1) : 0UL;
+        fwrite(stats.c_str(), 1, len, pFile);
     }
 
     fclose(pFile);
@@ -2130,8 +2264,6 @@ void Format(StringType& result,
     const Arg3& arg3,
     const Arg4& arg4);
 
-extern "C" char* GetStadiumFilename__11WorldLoaderCF10eStadiumID(void*, eStadiumID);
-extern "C" char TheWorldLoader;
 extern "C" unsigned long fwrite(const void*, unsigned long, unsigned long, void*);
 
 /**
@@ -2184,8 +2316,7 @@ void StatsTracker::WriteCurrentlyPlaying() const
     const char* stadiumName;
     BasicStringInternal* outputData;
 
-    stadiumName = GetStadiumFilename__11WorldLoaderCF10eStadiumID(
-        &TheWorldLoader,
+    stadiumName = TheWorldLoader.GetStadiumFilename(
         nlSingleton<GameInfoManager>::s_pInstance->GetStadium());
     awaySidekickName = GetSidekickName(nlSingleton<GameInfoManager>::s_pInstance->GetSidekick(1));
     awayTeamName = GetTeamName(nlSingleton<GameInfoManager>::s_pInstance->GetTeam(1));

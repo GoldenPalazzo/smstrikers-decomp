@@ -62,7 +62,6 @@ extern "C" cPN_SAnimController* __ct__19cPN_SAnimControllerFP6cSAnimPC12AnimReta
  */
 void Bowser::Update(float fDeltaT)
 {
-    Bowser* pObj = this;
     bool bIsSTS = false;
     cFielder* ownerFielder = g_pBall->GetOwnerFielder();
     if (ownerFielder != NULL)
@@ -70,59 +69,54 @@ void Bowser::Update(float fDeltaT)
         if (g_pBall->GetOwnerFielder()->m_eActionState == ACTION_SHOOT_TO_SCORE)
         {
             bIsSTS = true;
-            if (pObj->mbIsVisible)
+            if (mbIsVisible)
             {
-                float animTime = pObj->mpAnimController->m_fTime;
-                if (pObj->meBowserState == BOWSER_STATE_JUMP)
+                float animTime = mpAnimController->m_fTime;
+                switch (meBowserState)
                 {
-                }
-                else if (pObj->meBowserState < BOWSER_STATE_JUMP)
-                {
-                    if (pObj->meBowserState == BOWSER_STATE_FALL)
+                case BOWSER_STATE_FALL:
+                    if (animTime > 0.34920636f)
                     {
-                        if (animTime > 0.34920636f)
-                        {
-                            pObj->ActionLeave();
-                        }
+                        ActionLeave();
                     }
-                }
-                else if (pObj->meBowserState < BOWSER_STATE_ROLL)
-                {
-                    pObj->ActionLeave();
-                }
-                else if (pObj->meBowserState == BOWSER_STATE_ROLL)
-                {
+                    break;
+                case BOWSER_STATE_IDLE:
+                case BOWSER_STATE_THROW:
+                case BOWSER_STATE_ROAR:
+                    ActionLeave();
+                    break;
+                case BOWSER_STATE_ROLL:
                     if (animTime > 0.58536583f)
                     {
-                        pObj->ActionLeave();
+                        ActionLeave();
                     }
+                    break;
+                default:
+                    break;
                 }
             }
-            else
+            else if (meBowserState != BOWSER_STATE_HIDDEN)
             {
-                if (pObj->meBowserState != BOWSER_STATE_HIDDEN)
-                {
-                    pObj->ActionHide();
-                }
+                ActionHide();
             }
         }
     }
 
-    if (pObj->mbResetPending)
+    if (mbResetPending)
     {
-        pObj->mbResetPending = false;
-        if (pObj->mbAlive)
+        mbResetPending = false;
+        if (mbAlive)
         {
-            pObj->ActionReset();
+            ActionReset();
             return;
         }
     }
 
     if (!GameInfoManager::s_pInstance->IsBowserAttackEnabled())
     {
-        if (pObj->mbIsVisible)
+        if (mbIsVisible)
         {
-            pObj->ActionHide();
+            ActionHide();
         }
         return;
     }
@@ -132,42 +126,64 @@ void Bowser::Update(float fDeltaT)
         return;
     }
 
-    if (pObj->mtActiveTimer.m_uPackedTime != 0)
+    if (mtActiveTimer.m_uPackedTime != 0)
     {
-        pObj->mtActiveTimer.Countdown(fDeltaT, 0.0f);
+        mtActiveTimer.Countdown(fDeltaT, 0.0f);
     }
 
-    switch (pObj->meBowserState)
+    switch (meBowserState)
     {
     case BOWSER_STATE_HIDDEN:
-        pObj->mbIsVisible = false;
+        mbIsVisible = false;
         break;
     case BOWSER_STATE_FALL:
-        pObj->ActionFall();
+        ActionFall();
         break;
     case BOWSER_STATE_JUMP:
-        pObj->ActionJump();
+        ActionJump();
         break;
     case BOWSER_STATE_IDLE:
-        pObj->ActionIdle();
+        ActionIdle();
         break;
     case BOWSER_STATE_THROW:
-        pObj->ActionThrow();
+        ActionThrow();
         break;
     case BOWSER_STATE_ROAR:
-        pObj->ActionStomp();
+        ActionStomp();
         break;
     case BOWSER_STATE_ROLL:
-        pObj->ActionRoll();
+        ActionRoll();
         break;
     case BOWSER_STATE_LEAVE:
-        pObj->ActionLeave();
+        ActionLeave();
         break;
     }
 
-    if (bIsSTS)
+    if (bIsSTS && meBowserState == BOWSER_STATE_FALL)
     {
-        return;
+        if (mpAnimController->TestTrigger(0.14f) || mpAnimController->TestTrigger(0.3f))
+        {
+            FireCameraRumbleFilter(0.0f, 0.5f);
+            NetMesh::spPositiveXNetMesh->JoltNet(0.04f);
+            NetMesh::spNegativeXNetMesh->JoltNet(0.04f);
+        }
+    }
+
+    SkinAnimatedNPC::Update(fDeltaT);
+
+    if (meBowserState == BOWSER_STATE_IDLE || meBowserState == BOWSER_STATE_THROW)
+    {
+        mpHeadTrack->m_bTrackOOI = true;
+    }
+    else
+    {
+        mpHeadTrack->m_bTrackOOI = false;
+    }
+
+    if (ReplayManager::Instance()->mRender != NULL)
+    {
+        mpHeadTrack->m_v3OOI = ReplayManager::Instance()->mRender->mBall.mPosition;
+        mpHeadTrack->Update(mLastHeadMatrix, mLastHeadMatrix, fDeltaT, 0x8000, 0x3555, 0x0AAA, 0.4f);
     }
 }
 
