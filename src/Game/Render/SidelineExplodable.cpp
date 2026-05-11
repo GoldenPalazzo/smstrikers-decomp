@@ -223,11 +223,124 @@ SidelineExplodable::SidelineExplodable()
     mpAssociatedEffect = NULL;
 }
 
+static inline void ExplosionFragment_Deactivate(ExplosionFragment* frag, SlotPool<DrawableFragmentHandleNode>* pPool, DrawableFragmentHandleNode** pTail)
+{
+    if (frag->mpPhysicsObject != NULL)
+    {
+        delete frag->mpPhysicsObject;
+    }
+
+    DrawableObject* drawable = WorldManager::s_World->FindDrawableObject(frag->mFragmentModelHash);
+    DrawableFragmentHandleNode* node = NULL;
+    drawable->m_uObjectFlags &= ~1;
+    frag->mpPhysicsObject = NULL;
+    u16 handle = frag->mDrawableFragmentID;
+
+    if (pPool->m_FreeList == NULL)
+    {
+        SlotPoolBase::BaseAddNewBlock(&DrawableFragmentHandleNode::sDrawableFragmentHandleNodePool, 8);
+    }
+
+    SlotPoolEntry* entry = pPool->m_FreeList;
+    if (entry != NULL)
+    {
+        node = (DrawableFragmentHandleNode*)entry;
+        pPool->m_FreeList = (SlotPoolEntry*)entry->m_next;
+    }
+
+    if (node != NULL)
+    {
+        node->mID = 0;
+        node->next = NULL;
+    }
+
+    node->mID = handle;
+    nlListAddEnd<DrawableFragmentHandleNode>(&SidelineExplodableManager::sUnusedDrawableFragments.m_pStart, pTail, node);
+    SidelineExplodableManager::sFragmentLookupTable[handle] = NULL;
+    frag->mDrawableFragmentID = 0xFFFF;
+    frag->mbIsActive = false;
+}
+
 /**
  * Offset/Address/Size: 0x1D74 | 0x801690D4 | size: 0x298
  */
 SidelineExplodable::~SidelineExplodable()
 {
+    SlotPool<DrawableFragmentHandleNode>* pPool = &DrawableFragmentHandleNode::sDrawableFragmentHandleNodePool;
+    ExplosionFragment* fragment;
+    int fragmentOffset;
+    DrawableFragmentHandleNode** pTail = &SidelineExplodableManager::sUnusedDrawableFragments.m_pEnd;
+    int i;
+
+    i = 0;
+    fragmentOffset = 0;
+
+    while (i < mExplosionFragments.mSize)
+    {
+        fragment = (ExplosionFragment*)((u8*)mExplosionFragments.mData + fragmentOffset);
+        if (fragment->mbIsActive)
+        {
+            ExplosionFragment_Deactivate(fragment, pPool, pTail);
+        }
+
+        fragment->mFragmentModelHash = 0;
+
+        EmissionController* pSmokeControl = fragment->mpSmokeEmissionController;
+        if (pSmokeControl != NULL)
+        {
+            Function1<void, EmissionController&> empty;
+            empty.mTag = EMPTY;
+
+            if (pSmokeControl->mUpdateCallback.mTag == FUNCTOR)
+            {
+                delete pSmokeControl->mUpdateCallback.mFunctor;
+            }
+
+            pSmokeControl->mUpdateCallback.mTag = EMPTY;
+            pSmokeControl->mUpdateCallback.mTag = empty.mTag;
+
+            if (pSmokeControl->mUpdateCallback.mTag == FREE_FUNCTION)
+            {
+                pSmokeControl->mUpdateCallback.mFreeFunction = empty.mFreeFunction;
+            }
+            else if (pSmokeControl->mUpdateCallback.mTag == FUNCTOR)
+            {
+                pSmokeControl->mUpdateCallback.mFunctor = empty.mFunctor->Clone();
+            }
+
+            if (empty.mTag == FUNCTOR)
+            {
+                delete empty.mFunctor;
+            }
+
+            *(volatile int*)&empty.mTag = EMPTY;
+        }
+
+        if (fragment->mStationaryTransform != NULL)
+        {
+            operator delete(fragment->mStationaryTransform);
+            fragment->mStationaryTransform = NULL;
+        }
+
+        fragmentOffset += 0x20;
+        i++;
+    }
+
+    SidelineExplodableNode* current = SidelineExplodableManager::sSidelineExplodableList.m_pStart;
+    SidelineExplodableNode** pListTail = &SidelineExplodableManager::sSidelineExplodableList.m_pEnd;
+    SlotPool<SidelineExplodableNode>* pNodePool = &SidelineExplodableNode::sSidelineExplodableNodeSlotPool;
+
+    while (current != NULL)
+    {
+        SidelineExplodableNode* next = current->next;
+        if (current->mpExplodable == this)
+        {
+            nlListRemoveElement<SidelineExplodableNode>(&SidelineExplodableManager::sSidelineExplodableList.m_pStart, current, pListTail);
+            current->mpExplodable = (SidelineExplodable*)pNodePool->m_FreeList;
+            pNodePool->m_FreeList = (SlotPoolEntry*)current;
+        }
+        current = next;
+    }
 }
 
 /**

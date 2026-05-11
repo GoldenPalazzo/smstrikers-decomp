@@ -1,8 +1,36 @@
 #include "Game/SH/SHSpoils.h"
 #include "Game/GameSceneManager.h"
+#include "Game/FE/feFinder.h"
+#include "Game/FE/feHelpFuncs.h"
 #include "Game/FE/feInput.h"
 #include "Game/SH/SHCupTrophy.h"
 #include "Game/SH/SHMilestoneTrophy.h"
+#include "NL/nlPrint.h"
+#include "NL/nlString.h"
+
+extern s32 mLastSelectedIndex__11SpoilsScene;
+
+namespace DoubleHighlite
+{
+extern const char* SLIDE_IN;
+extern const char* SLIDE_OUT;
+} // namespace DoubleHighlite
+
+typedef Detail::MemFunImpl<void, void (SpoilsScene::*)(SpoilsScene::eSpoils)> MemFunImpl_Spoils_t;
+typedef BindExp2<void, MemFunImpl_Spoils_t, SpoilsScene*, SpoilsScene::eSpoils> BindExp2_Spoils_t;
+typedef Function1<void, TLComponentInstance*>::FunctorImpl<BindExp2_Spoils_t> FunctorImpl_Spoils_t;
+
+template <>
+void Function1<void, TLComponentInstance*>::FunctorImpl<BindExp2_Spoils_t>::operator()(TLComponentInstance*)
+{
+    (mBind.mT0->*mBind.mFunction.mMemFun)(mBind.mT1);
+}
+
+typedef TLInstance* (*FindInstByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
+typedef TLInstance* (*FindInstByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
+
+typedef TLComponentInstance* (*FindCompByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
+typedef TLComponentInstance* (*FindCompByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
 
 // /**
 //  * Offset/Address/Size: 0x0 | 0x800D1FBC | size: 0x40
@@ -291,9 +319,192 @@ void SpoilsScene::Update(float dt)
 
 /**
  * Offset/Address/Size: 0xC4 | 0x800D0FB4 | size: 0x5F0
+ * TODO: 93.4% match - stack frame 0x140 vs 0x130 (+0x10 from no inter-loop hasher slot reuse),
+ *       register shift by 1, item base offset bias (r23+0x20 vs r27)
  */
 void SpoilsScene::SceneCreated()
 {
+    FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
+
+    for (int i = 0; i < SPOILS_NUM_CHOICES; i++)
+    {
+        char menuname[64];
+        nlSNPrintf(menuname, 64, "MENU ITEM%d", i + 2);
+
+        union
+        {
+            FindInstByValue byValue;
+            FindInstByRef byRef;
+        } findInst;
+        findInst.byValue = FEFinder<TLInstance, 4>::Find<TLSlide>;
+
+        volatile InlineHasher h1, h3, h5, h7;
+        volatile InlineHasher hB, hA, h9, h8, h6, h4, h2, h0;
+
+        h0.m_Hash = 0;
+        h1.m_Hash = 0;
+        h2.m_Hash = 0;
+        h3.m_Hash = 0;
+        h4.m_Hash = 0;
+        h5.m_Hash = 0;
+        h6.m_Hash = 0;
+        h7.m_Hash = 0;
+
+        unsigned long nameHash = nlStringLowerHash(menuname);
+        h8.m_Hash = nameHash;
+        h9.m_Hash = nameHash;
+
+        unsigned long layerHash = nlStringLowerHash("Layer");
+        hB.m_Hash = layerHash;
+        hA.m_Hash = layerHash;
+
+        TLInstance* found = findInst.byRef(
+            presentation->m_currentSlide,
+            (InlineHasher&)hB,
+            (InlineHasher&)h9,
+            (InlineHasher&)h7,
+            (InlineHasher&)h5,
+            (InlineHasher&)h3,
+            (InlineHasher&)h1);
+        TLComponentInstance* instance = (TLComponentInstance*)found;
+
+        instance->SetActiveSlide(i == mLastSelectedIndex__11SpoilsScene ? DoubleHighlite::SLIDE_IN : DoubleHighlite::SLIDE_OUT);
+
+        MenuItem<TLComponentInstance>* item = &mMenuItems.mMenuItems[mMenuItems.mNumItemsAdded];
+        item->mType = instance;
+        mMenuItems.mNumItemsAdded++;
+
+        {
+            Function<TLComponentInstance*> callback1;
+            callback1.mTag = FREE_FUNCTION;
+            callback1.mFreeFunction = DoubleHighlite::OpenItem;
+            *(Function<TLComponentInstance*>*)&item->mCallbacks[1] = callback1;
+        }
+
+        {
+            Function<TLComponentInstance*> callback2;
+            callback2.mTag = FREE_FUNCTION;
+            callback2.mFreeFunction = DoubleHighlite::CloseItem;
+            *(Function<TLComponentInstance*>*)&item->mCallbacks[2] = callback2;
+        }
+
+        {
+            BindExp2_Spoils_t bind = Bind<void, MemFunImpl_Spoils_t, SpoilsScene*, SpoilsScene::eSpoils>(
+                MemFun<SpoilsScene, void, SpoilsScene::eSpoils>(&SpoilsScene::ShowSpoils),
+                this,
+                (SpoilsScene::eSpoils)i);
+
+            FunctorImpl_Spoils_t* impl = new ((FunctorImpl_Spoils_t*)nlMalloc(sizeof(FunctorImpl_Spoils_t), 8, false))
+                FunctorImpl_Spoils_t(bind);
+
+            Function<TLComponentInstance*> callback0;
+            callback0.mTag = FUNCTOR;
+            callback0.mFunctor = impl;
+            *(Function<TLComponentInstance*>*)&item->mCallbacks[0] = callback0;
+        }
+
+        FindComponent(instance->GetActiveSlide(), "highlite");
+
+        if (i == mLastSelectedIndex__11SpoilsScene)
+        {
+            DoubleHighlite::TempDisableSound();
+            {
+                int tag = item->mCallbacks[1].mTag;
+                if (((u32)((-tag) | tag) >> 31) > 0)
+                {
+                    TLComponentInstance* type = item->mType;
+                    if (tag == FREE_FUNCTION)
+                    {
+                        item->mCallbacks[1].mFreeFunction(type);
+                    }
+                    else
+                    {
+                        (*item->mCallbacks[1].mFunctor)(type);
+                    }
+                }
+            }
+        }
+        else
+        {
+            {
+                int tag = item->mCallbacks[2].mTag;
+                if (((u32)((-tag) | tag) >> 31) > 0)
+                {
+                    TLComponentInstance* type = item->mType;
+                    if (tag == FREE_FUNCTION)
+                    {
+                        item->mCallbacks[2].mFreeFunction(type);
+                    }
+                    else
+                    {
+                        (*item->mCallbacks[2].mFunctor)(type);
+                    }
+                }
+            }
+            TLSlide* slide = instance->GetActiveSlide();
+            instance->Update(1.0f + (slide->m_start + slide->m_duration));
+        }
+    }
+
+    mMenuItems.mFlags = 1;
+    mMenuItems.mCurrentIndex = mLastSelectedIndex__11SpoilsScene;
+
+    {
+        int selIdx = mMenuItems.mCurrentIndex;
+        int tag = mMenuItems.mMenuItems[selIdx].mCallbacks[1].mTag;
+        if (((u32)((-tag) | tag) >> 31) > 0)
+        {
+            TLComponentInstance* type = mMenuItems.mMenuItems[selIdx].mType;
+            if (tag == FREE_FUNCTION)
+            {
+                mMenuItems.mMenuItems[selIdx].mCallbacks[1].mFreeFunction(type);
+            }
+            else
+            {
+                (*mMenuItems.mMenuItems[selIdx].mCallbacks[1].mFunctor)(type);
+            }
+        }
+    }
+
+    {
+        union
+        {
+            FindCompByValue byValue;
+            FindCompByRef byRef;
+        } findComp;
+        findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
+
+        volatile InlineHasher h1, h3, h5, h7;
+        volatile InlineHasher hB, hA, h9, h8, h6, h4, h2, h0;
+
+        h0.m_Hash = 0;
+        h1.m_Hash = 0;
+        h2.m_Hash = 0;
+        h3.m_Hash = 0;
+        h4.m_Hash = 0;
+        h5.m_Hash = 0;
+        h6.m_Hash = 0;
+        h7.m_Hash = 0;
+
+        unsigned long hash1 = nlStringLowerHash("buttons");
+        h8.m_Hash = hash1;
+        h9.m_Hash = hash1;
+
+        unsigned long hash2 = nlStringLowerHash("Layer");
+        hB.m_Hash = hash2;
+        hA.m_Hash = hash2;
+
+        mButtons.mButtonInstance = findComp.byRef(
+            presentation->m_currentSlide,
+            (InlineHasher&)hB,
+            (InlineHasher&)h9,
+            (InlineHasher&)h7,
+            (InlineHasher&)h5,
+            (InlineHasher&)h3,
+            (InlineHasher&)h1);
+    }
+
+    mButtons.SetState(ButtonComponent::BS_A_AND_B);
 }
 
 /**

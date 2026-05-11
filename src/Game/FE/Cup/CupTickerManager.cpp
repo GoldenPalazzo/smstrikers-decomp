@@ -45,7 +45,7 @@ struct GameInfoAccessor_CupTicker
     unsigned char mDoingKnockout;
     char _pad4948[0x48DB];
     int mTournamentMode;
-    int _padCurrentMode0;
+    char _pad4954[8];
     int mCurrentMode;
     char _pad4960[8];
     void* mCurrentCup;

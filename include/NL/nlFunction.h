@@ -259,6 +259,9 @@ public:
 
     Function& operator=(const Function& other)
     {
+#ifdef FEPOPUPMENU_INTERNAL_BYVAL
+        FORCE_DONT_INLINE;
+#endif
         if (mTag == FUNCTOR)
         {
             delete mFunctor;

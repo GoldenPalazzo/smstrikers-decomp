@@ -1,3 +1,4 @@
+#define FEPOPUPMENU_INTERNAL_BYVAL
 #include "Game/FE/fePopupMenu.h"
 
 #include "Game/BaseGameSceneManager.h"
@@ -12,8 +13,77 @@
 #include "NL/nlLocalization.h"
 #include "NL/nlFormat.h"
 #include "NL/gl/gl.h"
+#include "Game/GameInfo.h"
+#include "Game/FE/feHelpFuncs.h"
+#include "Game/DB/SaveLoad.h"
+#include "NL/nlString.h"
 
 extern char* optionNames[4];
+
+extern void* g_pLocalization;
+extern const unsigned short LocalizationTableNotFound[];
+extern const unsigned short MissingLocString[];
+
+// Format with one substitution arg, used by the special-case popup arms.
+template <typename StringType, typename T1>
+StringType Format(const StringType& format, const T1& value1);
+
+struct PopupEntry
+{
+    int mMessageType;
+    unsigned long mMessage;
+    unsigned long mOptions[4];
+    int mInitialHighlight;
+};
+
+static const PopupEntry PopupEntries[31] = {
+    { 0, 0x53FF99B4, { 0x29793383, 0x56970FAF, 0, 0 }, 1 }, //  0 POPUP_END_CUP
+    { 2, 0xC5DF4FD6, { 0x56970FCC, 0, 0, 0 }, 0 },          //  1 POPUP_FLOWER_CUP_LOCKED
+    { 2, 0x9FEC7DA1, { 0x56970FCC, 0, 0, 0 }, 0 },          //  2 POPUP_STAR_CUP_LOCKED
+    { 2, 0xB49B9A79, { 0x56970FCC, 0, 0, 0 }, 0 },          //  3 POPUP_BOWSER_CUP_LOCKED
+    { 2, 0xAF3B0976, { 0x56970FCC, 0, 0, 0 }, 0 },          //  4 POPUP_SUPER_CUPS_LOCKED
+    { 0, 0x8C8DB4C5, { 0x29793383, 0x56970FAF, 0, 0 }, 1 }, //  5 POPUP_INGAME_FORFEIT_MATCH
+    { 1, 0xE3096A19, { 0x29793383, 0x56970FAF, 0, 0 }, 1 }, //  6 POPUP_INGAME_QUIT_MATCH
+    { 1, 0xCF0DA0B0, { 0x29793383, 0x56970FAF, 0, 0 }, 1 }, //  7 POPUP_INGAME_QUIT_STRIKERS_101
+    { 0, 0xF5BCD42D, { 0x56970FCC, 0, 0, 0 }, 0 },          //  8 POPUP_NO_SIDES_CHOSEN
+    { 0, 0x59C0BC5B, { 0x56970FCC, 0, 0, 0 }, 0 },          //  9 POPUP_NO_HUMAN_TOURNAMENT
+    { 0, 0xFB7A0CFB, { 0x29793383, 0x56970FAF, 0, 0 }, 1 }, // 10 POPUP_START_NEW_CUP
+    { 0, 0xFB7A0CFB, { 0x29793383, 0x56970FAF, 0, 0 }, 1 }, // 11 POPUP_START_NEW_TOURNAMENT
+    { 0, 0x36BB72B1, { 0x29793383, 0x56970FAF, 0, 0 }, 1 }, // 12 POPUP_FILLALLSLOTS
+    { 0, 0x892C84F9, { 0x29793383, 0x56970FAF, 0, 0 }, 1 }, // 13 POPUP_REVERT_OPTION_CHANGES
+    { 0, 0x892C84F9, { 0x56970FCC, 0, 0, 0 }, 0 },          // 14 POPUP_TOURNEY_OVER
+    { 0, 0x892C84F9, { 0x56970FCC, 0, 0, 0 }, 0 },          // 15 POPUP_NO_FORFEIT
+    { 0, 0x892C84F9, { 0x29793383, 0x56970FAF, 0, 0 }, 1 }, // 16 POPUP_REALLY_OVERWRITE
+    { 0, 0x892C84F9, { 0x56970FCC, 0, 0, 0 }, 0 },          // 17 POPUP_APPLYING_AUDIO
+    { 0, 0x892C84F9, { 0x56970FCC, 0, 0, 0 }, 0 },          // 18 POPUP_NO_MEMCARD
+    { 0, 0x892C84F9, { 0x56970FCC, 0, 0, 0 }, 0 },          // 19 POPUP_MEMCARD_CORRUPTED
+    { 0, 0x892C84F9, { 0x56970FCC, 0, 0, 0 }, 0 },          // 20 POPUP_MEMCARD_WRONGFORMAT
+    { 0, 0x892C84F9, { 0x56970FCC, 0, 0, 0 }, 0 },          // 21 POPUP_FILE_CORRUPTED
+    { 0, 0x892C84F9, { 0x56970FCC, 0, 0, 0 }, 0 },          // 22 POPUP_MEMCARD_DAMAGED
+    { 0, 0x892C84F9, { 0x56970FCC, 0, 0, 0 }, 0 },          // 23 POPUP_WRONG_DEVICE
+    { 0, 0x892C84F9, { 0x56970FCC, 0, 0, 0 }, 0 },          // 24 POPUP_NOT_ENOUGH_SPACE
+    { 0, 0x892C84F9, { 0x56970FCC, 0, 0, 0 }, 0 },          // 25 POPUP_NOT_ENOUGH_SPACE_CANMANAGE
+    { 0, 0x892C84F9, { 0x29793383, 0x56970FAF, 0, 0 }, 1 }, // 26 POPUP_ABOUTTOSAVE
+    { 0, 0x892C84F9, { 0x29793383, 0x56970FAF, 0, 0 }, 1 }, // 27 POPUP_NOTSAMECARD
+    { 0, 0x892C84F9, { 0x29793383, 0x56970FAF, 0, 0 }, 1 }, // 28 POPUP_MEMCARD_ASK_SAVE_OVERWRITE
+    { 0, 0, { 0, 0, 0, 0 }, 0 },
+    { 0, 0, { 0, 0, 0, 0 }, 0 },
+};
+
+static inline const unsigned short* LookupLoc(unsigned long key)
+{
+    nlLocalization* loc = (nlLocalization*)g_pLocalization;
+    if (loc->m_LookupTable == 0)
+    {
+        return LocalizationTableNotFound;
+    }
+    nlLocalization::StringLookup* entry = nlBSearch<nlLocalization::StringLookup, unsigned long>(key, loc->m_LookupTable, loc->m_pFile->StringCount);
+    if (entry != 0)
+    {
+        return loc->m_FirstString + entry->StringOffset;
+    }
+    return MissingLocString;
+}
 
 /**
  * Offset/Address/Size: 0xA8 | 0x80098354 | size: 0xBC
@@ -746,6 +816,205 @@ FEPopupMenu::FEPopupMenu()
 
     g_pFEInput->PushExclusiveInputLock(this, 0x1B);
     FEAudio::EnableSounds(false);
+}
+
+/**
+ * Offset/Address/Size: 0x3000 | 0x8009916C | size: 0x1BB8
+ *
+ * Current repo match: ~34.5%. Implemented so far:
+ *   - prolog + mMenuCreated early-out
+ *   - bounds check (type > 30 -> default) + PopupEntries[type] lookup
+ *   - jump-table dispatch with 5 distinct arms emitted
+ *   - case 0  (POPUP_END_CUP): LookupLoc + Format with current mode name
+ *   - case 10 (POPUP_START_NEW_CUP): same Format-with-mode pattern
+ *   - case 11 (POPUP_START_NEW_TOURNAMENT): Format with GM_TOURNAMENT mode name
+ *                  - top half only; cup-state-conditional option strings TODO
+ *   - case 16 (POPUP_REALLY_OVERWRITE): same Format-with-mode pattern
+ *   - default arm (covers 22 of 31 enum values): plain LookupLoc + options
+ *   - tail: callBacks[0..3] = optionN; mMenuCreated/mType/mHighlightedOption
+ *
+ * Special arms still TODO:
+ *   case 13 -> .L_8009A6DC (REVERT_OPTION_CHANGES) - scene-state-dependent
+ *               text via GameSceneManager::GetScene(0x26/0x3b/0x3c) + 5-way
+ *               localized template dispatch on r30 = 0..5
+ *   case 18/24/25/26/30 -> .L_8009A498 (memcard family) - needs
+ *               SaveLoad::GetSaveBlockSize + LexicalCast<BString<char>,int>
+ *               + nlStrToWcs + Format<WStr, unsigned short[4]>. Attempted
+ *               implementation regressed function match (instruction
+ *               alignment quirk) - needs more careful matching pass.
+ *   case 11 deep tail: cup-type dispatch on `mCustomTournamentInfo.m_cup`
+ *               field (-4/-3/-2/-1/normal) + GetLOCRank-based option
+ *               formatting. ~1500 bytes of additional codegen.
+ *
+ * Mangling note: by-value parameter mangling is locked in via the
+ * FEPOPUPMENU_INTERNAL_BYVAL header hack at the top of this TU. Other TUs
+ * see Function<FnVoidVoid>& and emit R-prefixed unresolved bl references,
+ * which objdiff treats as equivalent - so the 100% matches in
+ * confirmNewTourn/UpdateForSubOptionMenus/Create(ePopupMenu) are preserved.
+ */
+void FEPopupMenu::Create(
+    ePopupMenu type,
+    Function<FnVoidVoid> option1,
+    Function<FnVoidVoid> option2,
+    Function<FnVoidVoid> option3,
+    Function<FnVoidVoid> option4)
+{
+    if (mMenuCreated)
+    {
+        return;
+    }
+
+    const PopupEntry* popupentry = &PopupEntries[type];
+
+    switch (type)
+    {
+    case POPUP_END_CUP: // 0 - .L_8009A230
+    {
+        typedef BasicString<unsigned short, Detail::TempStringAllocator> WStr;
+        WStr modeStr(LookupLoc(GetLOCModeName(GameInfoManager::s_pInstance->mCurrentMode)));
+        WStr msgStr(LookupLoc(popupentry->mMessage));
+        mPopup.pMessage = new WStr(Format<WStr, WStr>(msgStr, modeStr));
+        mPopup.numOptions = 0;
+        for (int i = 0; i < 4; i++)
+        {
+            if (popupentry->mOptions[i] != 0)
+            {
+                mPopup.pOptionLabels[i] = new WStr(LookupLoc(popupentry->mOptions[i]));
+                mPopup.numOptions++;
+            }
+            else
+            {
+                mPopup.pOptionLabels[i] = NULL;
+            }
+        }
+        break;
+    }
+    case POPUP_FLOWER_CUP_LOCKED:        // 1
+    case POPUP_STAR_CUP_LOCKED:          // 2
+    case POPUP_BOWSER_CUP_LOCKED:        // 3
+    case POPUP_SUPER_CUPS_LOCKED:        // 4
+    case POPUP_INGAME_FORFEIT_MATCH:     // 5
+    case POPUP_INGAME_QUIT_MATCH:        // 6
+    case POPUP_INGAME_QUIT_STRIKERS_101: // 7
+    case POPUP_NO_SIDES_CHOSEN:          // 8
+    case POPUP_NO_HUMAN_TOURNAMENT:      // 9
+    case POPUP_START_NEW_CUP:            // 10 - .L_8009994C
+    {
+        typedef BasicString<unsigned short, Detail::TempStringAllocator> WStr;
+        WStr modeStr(LookupLoc(GetLOCModeName(GameInfoManager::s_pInstance->mCurrentMode)));
+        WStr msgStr(LookupLoc(popupentry->mMessage));
+        mPopup.pMessage = new WStr(Format<WStr, WStr>(msgStr, modeStr));
+        mPopup.numOptions = 0;
+        for (int i = 0; i < 4; i++)
+        {
+            if (popupentry->mOptions[i] != 0)
+            {
+                mPopup.pOptionLabels[i] = new WStr(LookupLoc(popupentry->mOptions[i]));
+                mPopup.numOptions++;
+            }
+            else
+            {
+                mPopup.pOptionLabels[i] = NULL;
+            }
+        }
+        break;
+    }
+    case POPUP_START_NEW_TOURNAMENT: // 11 - .L_800991D0
+    {
+        typedef BasicString<unsigned short, Detail::TempStringAllocator> WStr;
+        WStr teamStr(LookupLoc(GetLOCModeName(GameInfoManager::GM_TOURNAMENT)));
+        WStr msgStr(LookupLoc(popupentry->mMessage));
+        mPopup.pMessage = new WStr(Format<WStr, WStr>(msgStr, teamStr));
+        mPopup.numOptions = 0;
+        for (int i = 0; i < 4; i++)
+        {
+            if (popupentry->mOptions[i] != 0)
+            {
+                mPopup.pOptionLabels[i] = new WStr(LookupLoc(popupentry->mOptions[i]));
+                mPopup.numOptions++;
+            }
+            else
+            {
+                mPopup.pOptionLabels[i] = NULL;
+            }
+        }
+        break;
+    }
+    case POPUP_FILLALLSLOTS:          // 12
+    case POPUP_REVERT_OPTION_CHANGES: // 13 - .L_8009A6DC  TODO
+    case POPUP_TOURNEY_OVER:          // 14
+    case POPUP_NO_FORFEIT:            // 15
+    case POPUP_REALLY_OVERWRITE:      // 16 - .L_80099FC8
+    {
+        typedef BasicString<unsigned short, Detail::TempStringAllocator> WStr;
+        WStr modeStr(LookupLoc(GetLOCModeName(GameInfoManager::s_pInstance->mCurrentMode)));
+        WStr msgStr(LookupLoc(popupentry->mMessage));
+        mPopup.pMessage = new WStr(Format<WStr, WStr>(msgStr, modeStr));
+        mPopup.numOptions = 0;
+        for (int i = 0; i < 4; i++)
+        {
+            if (popupentry->mOptions[i] != 0)
+            {
+                mPopup.pOptionLabels[i] = new WStr(LookupLoc(popupentry->mOptions[i]));
+                mPopup.numOptions++;
+            }
+            else
+            {
+                mPopup.pOptionLabels[i] = NULL;
+            }
+        }
+        break;
+    }
+    case POPUP_APPLYING_AUDIO:             // 17
+    case POPUP_NO_MEMCARD:                 // 18 - .L_8009A498  TODO
+    case POPUP_MEMCARD_CORRUPTED:          // 19
+    case POPUP_MEMCARD_WRONGFORMAT:        // 20
+    case POPUP_FILE_CORRUPTED:             // 21
+    case POPUP_MEMCARD_DAMAGED:            // 22
+    case POPUP_WRONG_DEVICE:               // 23
+    case POPUP_NOT_ENOUGH_SPACE:           // 24 - .L_8009A498  TODO
+    case POPUP_NOT_ENOUGH_SPACE_CANMANAGE: // 25 - .L_8009A498  TODO
+    case POPUP_ABOUTTOSAVE:                // 26 - .L_8009A498  TODO
+    case POPUP_NOTSAMECARD:                // 27
+    case POPUP_MEMCARD_ASK_SAVE_OVERWRITE: // 28
+    case 29:
+    case 30: // - .L_8009A498  TODO
+    default:
+    {
+        if (popupentry->mMessage != 0)
+        {
+            mPopup.pMessage = new BasicString<unsigned short, Detail::TempStringAllocator>(LookupLoc(popupentry->mMessage));
+        }
+        else
+        {
+            mPopup.pMessage = NULL;
+        }
+
+        mPopup.numOptions = 0;
+        for (int i = 0; i < 4; i++)
+        {
+            if (popupentry->mOptions[i] != 0)
+            {
+                mPopup.pOptionLabels[i] = new BasicString<unsigned short, Detail::TempStringAllocator>(LookupLoc(popupentry->mOptions[i]));
+                mPopup.numOptions++;
+            }
+            else
+            {
+                mPopup.pOptionLabels[i] = NULL;
+            }
+        }
+        break;
+    }
+    }
+
+    callBacks[0] = option1;
+    callBacks[1] = option2;
+    callBacks[2] = option3;
+    callBacks[3] = option4;
+
+    mMenuCreated = true;
+    mType = type;
+    mHighlightedOption = popupentry->mInitialHighlight;
 }
 
 // /**

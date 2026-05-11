@@ -9,6 +9,19 @@
 #include "NL/nlColour.h"
 #include "NL/nlFunction.h"
 
+// HACK: fePopupMenu.cpp defines FEPOPUPMENU_INTERNAL_BYVAL before including
+// this header so its Create overload definitions get the by-value MWCC
+// mangling (no R prefix) required to match the target binary. All other TUs
+// see the &-reference declarations, preserving their existing call-site
+// codegen and 100% matches. The two views never link directly: most TUs are
+// matched per-function (unlinked), and objdiff treats both sides' bl-to-
+// unresolved as equivalent.
+#ifdef FEPOPUPMENU_INTERNAL_BYVAL
+typedef Function<FnVoidVoid> _FEPopupMenuCB;
+#else
+typedef Function<FnVoidVoid>& _FEPopupMenuCB;
+#endif
+
 // void CastToSomeType<TLInstance>(TLInstance*, void*);
 // void CastToSomeType<TLSlide>(TLSlide*, void*);
 // void FindItemByHashID<TLInstance>(TLInstance*, unsigned long);
@@ -69,11 +82,11 @@ public:
     void SetPositions();
 
     void Create(ePopupMenu);
-    void Create(ePopupMenu, Function<FnVoidVoid>&);
-    void Create(ePopupMenu, Function<FnVoidVoid>&, Function<FnVoidVoid>&);
-    void Create(ePopupMenu, Function<FnVoidVoid>&, Function<FnVoidVoid>&, Function<FnVoidVoid>&);
-    void Create(ePopupMenu, Function<FnVoidVoid>&, Function<FnVoidVoid>&, Function<FnVoidVoid>&, Function<FnVoidVoid>&);
-    void SetBackButtonCallback(Function<FnVoidVoid>&);
+    void Create(ePopupMenu, _FEPopupMenuCB);
+    void Create(ePopupMenu, _FEPopupMenuCB, _FEPopupMenuCB);
+    void Create(ePopupMenu, _FEPopupMenuCB, _FEPopupMenuCB, _FEPopupMenuCB);
+    void Create(ePopupMenu, _FEPopupMenuCB, _FEPopupMenuCB, _FEPopupMenuCB, _FEPopupMenuCB);
+    void SetBackButtonCallback(_FEPopupMenuCB);
     static void Nothing() { }
 
     // /* 0x0 */ TLSlide* m_slides;

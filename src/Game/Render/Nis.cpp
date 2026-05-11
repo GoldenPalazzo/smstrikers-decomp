@@ -22,9 +22,10 @@
 // by the already-matched ~Nis() / SelectCamera / Render in this TU.
 struct NISData : public EventData
 {
+    virtual u32 GetID();
+
     /* 0x04 */ const char* Type;
     /* 0x08 */ const char* Param;
-    virtual u32 GetID();
 }; // total size: 0xC
 
 class nlTaskManager
@@ -255,45 +256,57 @@ Nis::Nis(NisHeader& header, char* data, int size)
     mMainCharacterIndex = -1;
     mUnk_0x738 = -1;
     mNisAudioDataList = NULL;
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < 10; i++)
+    {
         mCharacterControllers[i] = NULL;
         mBallId[i] = -1;
     }
     nlChunk* chunk = (nlChunk*)data;
     nlChunk* end = (nlChunk*)(data + size);
     int numAnimations = 0;
-    while (chunk != end) {
-        if ((chunk->m_ID & 0x80FFFFFF) == 0x80017000) {
+    while (chunk != end)
+    {
+        if ((chunk->m_ID & 0x80FFFFFF) == 0x80017000)
+        {
             cSAnim* anim = cSAnim::Initialize(chunk);
             int i = NisPlayer::Instance()->TargetToIndex(mTarget, numAnimations, mWinnerType);
-            if (NisPlayer::Instance()->mGoalScorerCharIndex >= 0 && mTarget == NIS_TARGET_WINNER_SIDEKICK) {
+            if (NisPlayer::Instance()->mGoalScorerCharIndex >= 0 && mTarget == NIS_TARGET_WINNER_SIDEKICK)
+            {
                 int goalScorer = NisPlayer::Instance()->mGoalScorerCharIndex;
                 mMainCharacterIndex = goalScorer;
                 i = goalScorer;
             }
             NisPlayer::Instance()->mGoalScorerCharIndex = -1;
-            if (mCharacterControllers[i] != NULL) {
+            if (mCharacterControllers[i] != NULL)
+            {
                 i = NisPlayer::Instance()->TargetToIndex(NIS_TARGET_HOME_CAPTAIN, numAnimations, mWinnerType);
             }
-            if (mCharacterControllers[i] != NULL) {
+            if (mCharacterControllers[i] != NULL)
+            {
                 i = NisPlayer::Instance()->TargetToIndex(NIS_TARGET_AWAY_CAPTAIN, numAnimations, mWinnerType);
             }
-            if (mCharacterControllers[i] != NULL) {
-                for (i = 0; i < 10; i++) {
-                    if (mCharacterControllers[i] == NULL) break;
+            if (mCharacterControllers[i] != NULL)
+            {
+                for (i = 0; i < 10; i++)
+                {
+                    if (mCharacterControllers[i] == NULL)
+                        break;
                 }
             }
-            if (i < 10) {
+            if (i < 10)
+            {
                 mBallId[i] = numAnimations;
                 cPN_SAnimController* controller = new (AllocateSAnimController()) cPN_SAnimController(anim, NULL, PM_HOLD, NULL, 0, false);
                 mCharacterControllers[i] = controller;
-                if (mUnk_0x738 < 0) {
+                if (mUnk_0x738 < 0)
+                {
                     mUnk_0x738 = i;
                 }
             }
             numAnimations++;
         }
-        if ((chunk->m_ID & 0x80FFFFFF) == 0x80015501) {
+        if ((chunk->m_ID & 0x80FFFFFF) == 0x80015501)
+        {
             BasicString<char, Detail::TempStringAllocator> name = Format(BasicString<char, Detail::TempStringAllocator>("{0}_{1}"), mHeader->name, mNumCameras);
             cAnimCamera* cam = (cAnimCamera*)((char*)chunk + 8);
             cam->LoadCameraAnimation((nlChunk*)((char*)chunk + chunk->m_Size + 8), (nlChunk*)name.c_str(), (const char*)0, false);
