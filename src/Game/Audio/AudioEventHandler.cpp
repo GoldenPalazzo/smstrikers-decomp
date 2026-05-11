@@ -446,19 +446,7 @@ void Audio::AudioEventHandler(Event* pEvent, void*)
         if (!Audio::IsWorldSFXLoaded())
             break;
 
-        struct CollisionBallWallDataFields
-        {
-            void* vtbl;
-            cBall* pBall;
-            unsigned char bIsShot;
-            unsigned char bWasShotting;
-            unsigned char pad[2];
-            nlVector3 position;
-            nlVector3 normal;
-            float speedBeforeCollision;
-        };
-
-        CollisionBallWallDataFields* pData;
+        CollisionBallWallData* pData;
         if ((int)pEvent->m_data.GetID() == -1)
         {
             nlPrintf("Error: Trying to get event data on event with none!\n");
@@ -471,10 +459,10 @@ void Audio::AudioEventHandler(Event* pEvent, void*)
         }
         else
         {
-            pData = (CollisionBallWallDataFields*)&pEvent->m_data;
+            pData = (CollisionBallWallData*)&pEvent->m_data;
         }
 
-        float speed = pData->speedBeforeCollision;
+        float speed = pData->fCollisionVecLen;
         GameTweaks* tweaks = g_pGame->m_pGameTweaks;
         float maxSpeed = tweaks->unk268;
         float minSpeed = tweaks->unk26C;
@@ -519,18 +507,7 @@ void Audio::AudioEventHandler(Event* pEvent, void*)
         if (nlTaskManager::m_pInstance->m_CurrState & 0x20110)
             break;
 
-        struct CollisionBallGroundDataFields
-        {
-            void* vtbl;
-            cBall* pBall;
-            unsigned char bIsShot;
-            unsigned char pad[3];
-            nlVector3 position;
-            nlVector3 normal;
-            float fVecZComponent;
-        };
-
-        CollisionBallGroundDataFields* pData;
+        CollisionBallGroundData* pData;
         if ((int)pEvent->m_data.GetID() == -1)
         {
             nlPrintf("Error: Trying to get event data on event with none!\n");
@@ -543,7 +520,7 @@ void Audio::AudioEventHandler(Event* pEvent, void*)
         }
         else
         {
-            pData = (CollisionBallGroundDataFields*)&pEvent->m_data;
+            pData = (CollisionBallGroundData*)&pEvent->m_data;
         }
 
         if (pData->fVecZComponent >= -2.0f)

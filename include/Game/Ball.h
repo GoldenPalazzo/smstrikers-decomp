@@ -10,7 +10,7 @@
 #include "Game/Physics/RayCollider.h"
 #include "Game/Drawable/DrawableObj.h"
 #include "Game/ObjectBlur.h"
-#include "Game/Sys/eventman.h"
+#include "Game/EventDataTypes.h"
 
 #include "Game/CharacterAudio.h"
 #include "Game/CharacterTriggers.h"
@@ -35,15 +35,6 @@ enum eSpinType
 //     BALL_EFFECT_CHIP_SHOT = 6,
 //     NUM_BALL_EFFECTS = 7,
 // };
-
-struct PassBallData : public EventData
-{
-    /* 0x00 */ cPlayer* pPasser;
-    /* 0x04 */ cPlayer* pTarget;
-    /* 0x08 */ s32 mPasserControllerID;
-
-    virtual u32 GetID();
-};
 
 class cBall
 {

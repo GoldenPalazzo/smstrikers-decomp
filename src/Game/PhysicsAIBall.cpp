@@ -218,15 +218,6 @@ void PhysicsAIBall::CheckIfBallWentThroughGoalie()
         u8 unk_0x5A;
     };
 
-    struct CollisionPlayerBallDataFields
-    {
-        void* vtbl;
-        cPlayer* pPlayer;
-        cBall* pBall;
-        nlVector3 collisionVelocity;
-        u32 saveType;
-    };
-
     if (((PhysicsAIBallOffsetView*)this)->unk_0x5A != 0)
     {
         return;
@@ -301,11 +292,11 @@ void PhysicsAIBall::CheckIfBallWentThroughGoalie()
 
             m_pAIBall->ClearBallBlur();
 
-            CollisionPlayerBallDataFields* pCollisionData = (CollisionPlayerBallDataFields*)pEventData;
+            CollisionPlayerBallData* pCollisionData = (CollisionPlayerBallData*)pEventData;
             pCollisionData->pPlayer = pGoalie;
             pCollisionData->pBall = m_pAIBall;
-            pCollisionData->collisionVelocity = v3Vel;
-            pCollisionData->saveType = 0;
+            pCollisionData->velocity = v3Vel;
+            pCollisionData->boneID = 0;
             m_unk_0x50 = 0;
 
             float normalY = contactNormal.f.y;
@@ -404,17 +395,6 @@ void PhysicsAIBall::PostUpdate()
         cPlayer* xA8;
     };
 
-    struct CollisionBallGroundDataFields
-    {
-        void* vtbl;
-        cBall* pBall;
-        u8 bIsShot;
-        u8 pad[3];
-        nlVector3 position;
-        nlVector3 normal;
-        float fVecZComponent;
-    };
-
     nlVector3 v3IncidentVel;
     CollisionBallGroundData* pEventData;
     nlVector3 ballPosition;
@@ -441,7 +421,7 @@ void PhysicsAIBall::PostUpdate()
                     *(void**)pEventData = __vt__23CollisionBallGroundData;
                 }
 
-                CollisionBallGroundDataFields* pGroundData = (CollisionBallGroundDataFields*)pEventData;
+                CollisionBallGroundData* pGroundData = (CollisionBallGroundData*)pEventData;
                 s32 bIsShot = 0;
 
                 pGroundData->pBall = m_pAIBall;

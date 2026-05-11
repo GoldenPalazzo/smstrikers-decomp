@@ -1417,29 +1417,6 @@ cCharacter::cCharacter(eCharacterClass cc, const int* nModelID, cSHierarchy* pHi
  */
 void AIEventHandler(Event* pEvent, void*)
 {
-    struct CollisionBallGroundDataFields
-    {
-        void* vtbl;
-        cBall* pBall;
-        unsigned char bIsShot;
-        unsigned char pad[3];
-        nlVector3 position;
-        nlVector3 normal;
-        float fVecZComponent;
-    };
-
-    struct CollisionBallWallDataFields
-    {
-        void* vtbl;
-        cBall* pBall;
-        unsigned char bIsPerfect;
-        unsigned char bIsShot;
-        unsigned char pad[2];
-        nlVector3 position;
-        nlVector3 normal;
-        float fCollisionVecLen;
-    };
-
     struct PhysicsBallFlagsView
     {
         unsigned char pad[0x3B];
@@ -1504,7 +1481,7 @@ void AIEventHandler(Event* pEvent, void*)
 
     case 0x20:
     {
-        CollisionBallWallDataFields* pEventData;
+        CollisionBallWallData* pEventData;
 
         s32 id = pEvent->m_data.GetID();
         if (id == -1)
@@ -1522,7 +1499,7 @@ void AIEventHandler(Event* pEvent, void*)
             }
             else
             {
-                pEventData = (CollisionBallWallDataFields*)&pEvent->m_data;
+                pEventData = (CollisionBallWallData*)&pEvent->m_data;
             }
         }
 
@@ -1550,7 +1527,7 @@ void AIEventHandler(Event* pEvent, void*)
 
     case 0x24:
     {
-        CollisionBallGroundDataFields* pEventData;
+        CollisionBallGroundData* pEventData;
 
         s32 id = pEvent->m_data.GetID();
         if (id == -1)
@@ -1568,7 +1545,7 @@ void AIEventHandler(Event* pEvent, void*)
             }
             else
             {
-                pEventData = (CollisionBallGroundDataFields*)&pEvent->m_data;
+                pEventData = (CollisionBallGroundData*)&pEvent->m_data;
             }
         }
 
