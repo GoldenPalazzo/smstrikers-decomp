@@ -351,8 +351,7 @@ void DrawableCharacter::Grab(cCharacter& character)
     }
     else
     {
-        mPoseAccumulator->~cPoseAccumulator();
-        new (mPoseAccumulator) cPoseAccumulator(*character.m_pPoseAccumulator);
+        *mPoseAccumulator = *character.m_pPoseAccumulator;
     }
 
     EffectsTexturing* tex = character.m_pEffectsTexturing;
