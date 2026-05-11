@@ -61,6 +61,7 @@ void PhysicsShell::PostUpdate()
 
 /**
  * Offset/Address/Size: 0x10C | 0x8013BA74 | size: 0x898
+ * TODO: 99.47% match - fabs f2 vs f1 register in z/height comparisons, fmsubs operand order in width*0.5f, eventData r29 vs r25, meSize comparison load order
  */
 ContactType PhysicsShell::Contact(PhysicsObject* obj, dContact* info, int numContacts)
 {
@@ -117,9 +118,9 @@ ContactType PhysicsShell::Contact(PhysicsObject* obj, dContact* info, int numCon
         }
         else
         {
+            bWasRicochet = true;
             Event* event = g_pEventManager->CreateValidEvent(0x23, 0x2C);
             CollisionPowerupGroundData* eventData = new (&event->m_data) CollisionPowerupGroundData();
-            bWasRicochet = true;
             GetPosition(&eventData->position);
             eventData->eType = m_pPowerupObject->m_eType;
         }
@@ -128,7 +129,7 @@ ContactType PhysicsShell::Contact(PhysicsObject* obj, dContact* info, int numCon
 
     case 0x0F:
     {
-        ContactType type = TWO_WAY_CONTACT;
+        numContacts = eType;
         cPlayer* owner = ((PhysicsAIBall*)obj)->m_pAIBall->m_pOwner;
         if (owner != NULL)
         {
@@ -157,7 +158,7 @@ ContactType PhysicsShell::Contact(PhysicsObject* obj, dContact* info, int numCon
 
             if (m_pPowerupObject->m_eType == POWER_UP_SPINY_SHELL)
             {
-                type = ONE_WAY_CONTACT_OTHER;
+                numContacts = ONE_WAY_CONTACT_OTHER;
             }
         }
         else
@@ -176,7 +177,7 @@ ContactType PhysicsShell::Contact(PhysicsObject* obj, dContact* info, int numCon
 
             if (m_pPowerupObject->meSize != POWERUPSIZE_SMALL)
             {
-                type = ONE_WAY_CONTACT_OTHER;
+                numContacts = ONE_WAY_CONTACT_OTHER;
             }
         }
 
@@ -187,7 +188,7 @@ ContactType PhysicsShell::Contact(PhysicsObject* obj, dContact* info, int numCon
             m_pTriggerCallbackFunc(this, obj, v3Pos, m_pCallbackParam);
         }
 
-        if (type == ONE_WAY_CONTACT_OTHER)
+        if (numContacts == ONE_WAY_CONTACT_OTHER)
         {
             return ONE_WAY_CONTACT_OTHER;
         }
@@ -297,7 +298,7 @@ ContactType PhysicsShell::Contact(PhysicsObject* obj, dContact* info, int numCon
 
     if (mbIsInNet)
     {
-        if ((float)fabs(v3PowerupPosition.f.y) > 0.5f * cNet::m_fNetWidth - fPowerupRadius)
+        if ((float)fabs(v3PowerupPosition.f.y) > cNet::m_fNetWidth / 2.0f - fPowerupRadius)
         {
             m_pPowerupObject->m_bShouldDestroy = true;
             return NO_CONTACT;
@@ -306,24 +307,26 @@ ContactType PhysicsShell::Contact(PhysicsObject* obj, dContact* info, int numCon
         float fMaxX;
         if (v3PowerupPosition.f.x > 0.0f)
         {
+            NetMesh* pMesh = NetMesh::spPositiveXNetMesh;
             if (v3PowerupPosition.f.x > 0.0f)
             {
-                fMaxX = NetMesh::spPositiveXNetMesh->mfMaxX;
+                fMaxX = pMesh->mfMaxX;
             }
             else
             {
-                fMaxX = NetMesh::spPositiveXNetMesh->mfMinX;
+                fMaxX = pMesh->mfMinX;
             }
         }
         else
         {
+            NetMesh* pMesh = NetMesh::spNegativeXNetMesh;
             if (v3PowerupPosition.f.x > 0.0f)
             {
-                fMaxX = NetMesh::spNegativeXNetMesh->mfMaxX;
+                fMaxX = pMesh->mfMaxX;
             }
             else
             {
-                fMaxX = NetMesh::spNegativeXNetMesh->mfMinX;
+                fMaxX = pMesh->mfMinX;
             }
         }
 
@@ -340,7 +343,7 @@ ContactType PhysicsShell::Contact(PhysicsObject* obj, dContact* info, int numCon
         }
     }
 
-    if ((float)fabs(v3PowerupPosition.f.y) < 0.5f * cNet::m_fNetWidth - fPowerupRadius)
+    if ((float)fabs(v3PowerupPosition.f.y) < cNet::m_fNetWidth / 2.0f - fPowerupRadius)
     {
         if ((float)fabs(v3PowerupPosition.f.x) > cField::GetGoalLineX(1u) - fPowerupRadius)
         {
@@ -384,13 +387,10 @@ ContactType PhysicsShell::Contact(PhysicsObject* obj, dContact* info, int numCon
             EffectsGroup* pGroup = fxGetGroup("shell_ricochet");
             EmissionController* pControl = EmissionManager::Create(pGroup, 0);
 
-            nlVector3 v3Direction;
-            nlVec3Set(v3Direction, 0.0f, 0.0f, 1.0f);
-
             nlVector3 v3Position;
-            GetPosition(&v3Position);
-
             nlVector3 v3Velocity;
+            nlVector3 v3Direction = { 0.0f, 0.0f, 1.0f };
+            GetPosition(&v3Position);
             GetLinearVelocity(&v3Velocity);
 
             pControl->SetPosition(v3Position);

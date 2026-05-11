@@ -2013,8 +2013,9 @@ void TournTeamSetupSceneV2::Proceed()
 
 /**
  * Offset/Address/Size: 0xC34 | 0x800E2AD8 | size: 0x9C0
- * TODO: 92.68% match - r29/r30 register role swap and per-case literal pointer setup differ in switch body
+ * TODO: 96.09% match - string literal hoisted before nlMalloc in inlined BasicString constructor
  */
+#pragma optimization_level 2
 BasicString<char, Detail::TempStringAllocator> TournTeamSetupSceneV2::FindCaptainSlideName(eTeamID captain)
 {
     BasicString<char, Detail::TempStringAllocator> returnValue;
@@ -2052,6 +2053,7 @@ BasicString<char, Detail::TempStringAllocator> TournTeamSetupSceneV2::FindCaptai
 
     return returnValue;
 }
+#pragma optimization_level 4
 
 /**
  * Offset/Address/Size: 0x76C | 0x800E2610 | size: 0x4C8

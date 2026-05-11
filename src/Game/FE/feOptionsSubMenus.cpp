@@ -1935,17 +1935,12 @@ void OptionsCheatsMenu::BuildLockableSubMenuList(int menuitem, TLComponentInstan
     typedef Detail::MemFunImpl<void, void (SlideMenuList::*)()> MemFunImpl_SML;
     typedef BindExp1<void, MemFunImpl_SML, SlideMenuList*> BindExp1_SML;
 
-    bool wraps = true;
-    SlideMenuList* list = (SlideMenuList*)nlMalloc(sizeof(SlideMenuList), 8, false);
-    if (list != NULL)
-    {
-        new (list) SlideMenuList();
-        list->mComponentInstance = compinstance;
-    }
+    SlideMenuList* list = new (nlMalloc(sizeof(SlideMenuList), 8, false)) SlideMenuList(compinstance);
     mSlideMenuLists[menuitem] = (MenuList<SlideMenuList>*)list;
 
     compinstance->SetActiveSlide("Slide2");
 
+    unsigned long hash = compinstance->GetActiveSlide()->m_hash;
     SlideMenuList* sml = (SlideMenuList*)mSlideMenuLists[menuitem];
     SlideMenuItem* item = (SlideMenuItem*)nlMalloc(sizeof(SlideMenuItem), 8, true);
     if (item != NULL)
@@ -1956,7 +1951,7 @@ void OptionsCheatsMenu::BuildLockableSubMenuList(int menuitem, TLComponentInstan
         item->mComponentInstance = comp;
         item->mUserEnumType = 0;
     }
-    item->mSlideMenuHash = compinstance->GetActiveSlide()->m_hash;
+    item->mSlideMenuHash = hash;
 
     MenuItem<SlideMenuItem>* menuItem = &sml->mMenuItems[sml->mNumItemsAdded];
     menuItem->mType = item;
@@ -1969,10 +1964,11 @@ void OptionsCheatsMenu::BuildLockableSubMenuList(int menuitem, TLComponentInstan
         menuItem->mCallbacks[1] = callback;
     }
 
+    bool wraps = true;
     if (!unlocked)
     {
-        wraps = false;
         startindex = 0;
+        wraps = false;
 
         TLTextInstance* pText = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
             compinstance->GetActiveSlide(),
@@ -2024,6 +2020,8 @@ void OptionsCheatsMenu::BuildLockableSubMenuList(int menuitem, TLComponentInstan
     {
         compinstance->SetActiveSlide("Slide1");
 
+        hash = compinstance->GetActiveSlide()->m_hash;
+        sml = (SlideMenuList*)mSlideMenuLists[menuitem];
         item = (SlideMenuItem*)nlMalloc(sizeof(SlideMenuItem), 8, true);
         if (item != NULL)
         {
@@ -2033,7 +2031,7 @@ void OptionsCheatsMenu::BuildLockableSubMenuList(int menuitem, TLComponentInstan
             item->mComponentInstance = comp;
             item->mUserEnumType = 1;
         }
-        item->mSlideMenuHash = compinstance->GetActiveSlide()->m_hash;
+        item->mSlideMenuHash = hash;
 
         menuItem = &sml->mMenuItems[sml->mNumItemsAdded];
         menuItem->mType = item;

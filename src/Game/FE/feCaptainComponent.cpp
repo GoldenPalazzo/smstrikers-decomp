@@ -1155,12 +1155,11 @@ void IChooseCaptain::SceneCreated(FEPresentation* presentation)
     char filenameS2[0x80];
     char filenameS1[0x80];
     char filenameS0[0x80];
-
-    findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
+    volatile InlineHasher h1, h3, h5, h7;
 
     {
         volatile InlineHasher hB, hA;
-        volatile InlineHasher h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
+        volatile InlineHasher h9, h8, h6, h4, h2, h0;
 
         h0.m_Hash = 0;
         h1.m_Hash = 0;
@@ -1170,32 +1169,32 @@ void IChooseCaptain::SceneCreated(FEPresentation* presentation)
         h5.m_Hash = 0;
         h6.m_Hash = 0;
         h7.m_Hash = 0;
-        h8.m_Hash = 0;
-        h9.m_Hash = 0;
 
         unsigned long hash = nlStringLowerHash("LEFT_CAPT");
-        hA.m_Hash = hash;
-        hB.m_Hash = hash;
+        h8.m_Hash = hash;
+        h9.m_Hash = hash;
 
         hash = nlStringLowerHash("Layer");
-        h9.m_Hash = hash;
-        h8.m_Hash = hash;
+        hB.m_Hash = hash;
+        hA.m_Hash = hash;
 
+        findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
         compinstance = findComp.byRef(
             presentation->m_currentSlide,
-            (InlineHasher&)h9,
             (InlineHasher&)hB,
-            (InlineHasher&)h8,
+            (InlineHasher&)h9,
             (InlineHasher&)h7,
-            (InlineHasher&)h6,
-            (InlineHasher&)h5);
+            (InlineHasher&)h5,
+            (InlineHasher&)h3,
+            (InlineHasher&)h1);
+        ;
     }
     SetupCaptainComponent(compinstance, 0);
     compinstance->m_bVisible = false;
 
     {
         volatile InlineHasher hB, hA;
-        volatile InlineHasher h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
+        volatile InlineHasher h9, h8, h6, h4, h2, h0;
 
         h0.m_Hash = 0;
         h1.m_Hash = 0;
@@ -1205,32 +1204,35 @@ void IChooseCaptain::SceneCreated(FEPresentation* presentation)
         h5.m_Hash = 0;
         h6.m_Hash = 0;
         h7.m_Hash = 0;
-        h8.m_Hash = 0;
-        h9.m_Hash = 0;
 
         unsigned long hash = nlStringLowerHash("RIGHT_CAPT");
-        hA.m_Hash = hash;
-        hB.m_Hash = hash;
+        h8.m_Hash = hash;
+        h9.m_Hash = hash;
 
         hash = nlStringLowerHash("Layer");
-        h9.m_Hash = hash;
-        h8.m_Hash = hash;
+        hB.m_Hash = hash;
+        hA.m_Hash = hash;
 
+        findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
         compinstance = findComp.byRef(
             presentation->m_currentSlide,
-            (InlineHasher&)h9,
             (InlineHasher&)hB,
-            (InlineHasher&)h8,
+            (InlineHasher&)h9,
             (InlineHasher&)h7,
-            (InlineHasher&)h6,
-            (InlineHasher&)h5);
+            (InlineHasher&)h5,
+            (InlineHasher&)h3,
+            (InlineHasher&)h1);
+        ;
     }
     SetupCaptainComponent(compinstance, 1);
     compinstance->m_bVisible = false;
 
-    CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_0, filenameC0, 0x80, mHomeAwayTeam[0], 0);
-    CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_1, filenameC1, 0x80, mHomeAwayTeam[0], 0);
-    CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_2, filenameC2, 0x80, mHomeAwayTeam[0], 0);
+    {
+        int team0 = mHomeAwayTeam[0];
+        CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_0, filenameC0, 0x80, team0, 0);
+        CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_1, filenameC1, 0x80, team0, 0);
+        CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_2, filenameC2, 0x80, team0, 0);
+    }
     mAsyncImage[0][0]->QueueLoad(filenameC0, true);
     mAsyncImage[0][1]->QueueLoad(filenameC1, true);
     mAsyncImage[0][2]->QueueLoad(filenameC2, true);
@@ -1246,7 +1248,7 @@ void IChooseCaptain::SceneCreated(FEPresentation* presentation)
 
     {
         volatile InlineHasher hB, hA;
-        volatile InlineHasher h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
+        volatile InlineHasher h9, h8, h6, h4, h2, h0;
 
         h0.m_Hash = 0;
         h1.m_Hash = 0;
@@ -1256,25 +1258,25 @@ void IChooseCaptain::SceneCreated(FEPresentation* presentation)
         h5.m_Hash = 0;
         h6.m_Hash = 0;
         h7.m_Hash = 0;
-        h8.m_Hash = 0;
-        h9.m_Hash = 0;
 
         unsigned long hash = nlStringLowerHash("LEFT_SK");
-        hA.m_Hash = hash;
-        hB.m_Hash = hash;
+        h8.m_Hash = hash;
+        h9.m_Hash = hash;
 
         hash = nlStringLowerHash("Layer");
-        h9.m_Hash = hash;
-        h8.m_Hash = hash;
+        hB.m_Hash = hash;
+        hA.m_Hash = hash;
 
+        findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
         compinstance = findComp.byRef(
             presentation->m_currentSlide,
-            (InlineHasher&)h9,
             (InlineHasher&)hB,
-            (InlineHasher&)h8,
+            (InlineHasher&)h9,
             (InlineHasher&)h7,
-            (InlineHasher&)h6,
-            (InlineHasher&)h5);
+            (InlineHasher&)h5,
+            (InlineHasher&)h3,
+            (InlineHasher&)h1);
+        ;
     }
     mSidekickComponents[0] = compinstance;
     {
@@ -1286,7 +1288,7 @@ void IChooseCaptain::SceneCreated(FEPresentation* presentation)
 
     {
         volatile InlineHasher hB, hA;
-        volatile InlineHasher h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
+        volatile InlineHasher h9, h8, h6, h4, h2, h0;
 
         h0.m_Hash = 0;
         h1.m_Hash = 0;
@@ -1296,25 +1298,25 @@ void IChooseCaptain::SceneCreated(FEPresentation* presentation)
         h5.m_Hash = 0;
         h6.m_Hash = 0;
         h7.m_Hash = 0;
-        h8.m_Hash = 0;
-        h9.m_Hash = 0;
 
         unsigned long hash = nlStringLowerHash("RIGHT_SK");
-        hA.m_Hash = hash;
-        hB.m_Hash = hash;
+        h8.m_Hash = hash;
+        h9.m_Hash = hash;
 
         hash = nlStringLowerHash("Layer");
-        h9.m_Hash = hash;
-        h8.m_Hash = hash;
+        hB.m_Hash = hash;
+        hA.m_Hash = hash;
 
+        findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
         compinstance = findComp.byRef(
             presentation->m_currentSlide,
-            (InlineHasher&)h9,
             (InlineHasher&)hB,
-            (InlineHasher&)h8,
+            (InlineHasher&)h9,
             (InlineHasher&)h7,
-            (InlineHasher&)h6,
-            (InlineHasher&)h5);
+            (InlineHasher&)h5,
+            (InlineHasher&)h3,
+            (InlineHasher&)h1);
+        ;
     }
     mSidekickComponents[1] = compinstance;
     {
@@ -1326,7 +1328,7 @@ void IChooseCaptain::SceneCreated(FEPresentation* presentation)
 
     {
         volatile InlineHasher hB, hA;
-        volatile InlineHasher h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
+        volatile InlineHasher h9, h8, h6, h4, h2, h0;
 
         h0.m_Hash = 0;
         h1.m_Hash = 0;
@@ -1336,31 +1338,31 @@ void IChooseCaptain::SceneCreated(FEPresentation* presentation)
         h5.m_Hash = 0;
         h6.m_Hash = 0;
         h7.m_Hash = 0;
-        h8.m_Hash = 0;
-        h9.m_Hash = 0;
 
         unsigned long hash = nlStringLowerHash("CAPTAIN_CHOOSER_LEFT");
-        hA.m_Hash = hash;
-        hB.m_Hash = hash;
+        h8.m_Hash = hash;
+        h9.m_Hash = hash;
 
         hash = nlStringLowerHash("Layer");
-        h9.m_Hash = hash;
-        h8.m_Hash = hash;
+        hB.m_Hash = hash;
+        hA.m_Hash = hash;
 
+        findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
         compinstance = findComp.byRef(
             presentation->m_currentSlide,
-            (InlineHasher&)h9,
             (InlineHasher&)hB,
-            (InlineHasher&)h8,
+            (InlineHasher&)h9,
             (InlineHasher&)h7,
-            (InlineHasher&)h6,
-            (InlineHasher&)h5);
+            (InlineHasher&)h5,
+            (InlineHasher&)h3,
+            (InlineHasher&)h1);
+        ;
+        mCaptainGridComponents[0] = new (8, false) ICaptainGridComponent(compinstance, false);
     }
-    mCaptainGridComponents[0] = new (8, false) ICaptainGridComponent(compinstance, false);
 
     {
         volatile InlineHasher hB, hA;
-        volatile InlineHasher h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
+        volatile InlineHasher h9, h8, h6, h4, h2, h0;
 
         h0.m_Hash = 0;
         h1.m_Hash = 0;
@@ -1370,34 +1372,34 @@ void IChooseCaptain::SceneCreated(FEPresentation* presentation)
         h5.m_Hash = 0;
         h6.m_Hash = 0;
         h7.m_Hash = 0;
-        h8.m_Hash = 0;
-        h9.m_Hash = 0;
 
         unsigned long hash = nlStringLowerHash("CAPTAIN_CHOOSER_RIGHT");
-        hA.m_Hash = hash;
-        hB.m_Hash = hash;
+        h8.m_Hash = hash;
+        h9.m_Hash = hash;
 
         hash = nlStringLowerHash("Layer");
-        h9.m_Hash = hash;
-        h8.m_Hash = hash;
+        hB.m_Hash = hash;
+        hA.m_Hash = hash;
 
+        findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
         compinstance = findComp.byRef(
             presentation->m_currentSlide,
-            (InlineHasher&)h9,
             (InlineHasher&)hB,
-            (InlineHasher&)h8,
+            (InlineHasher&)h9,
             (InlineHasher&)h7,
-            (InlineHasher&)h6,
-            (InlineHasher&)h5);
+            (InlineHasher&)h5,
+            (InlineHasher&)h3,
+            (InlineHasher&)h1);
+        ;
+        mCaptainGridComponents[1] = new (8, false) ICaptainGridComponent(compinstance, true);
     }
-    mCaptainGridComponents[1] = new (8, false) ICaptainGridComponent(compinstance, true);
 
     mCaptainGridComponents[0]->BuildMapMenu();
     mCaptainGridComponents[1]->BuildMapMenu();
 
     {
         volatile InlineHasher hB, hA;
-        volatile InlineHasher h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
+        volatile InlineHasher h9, h8, h6, h4, h2, h0;
 
         h0.m_Hash = 0;
         h1.m_Hash = 0;
@@ -1407,31 +1409,31 @@ void IChooseCaptain::SceneCreated(FEPresentation* presentation)
         h5.m_Hash = 0;
         h6.m_Hash = 0;
         h7.m_Hash = 0;
-        h8.m_Hash = 0;
-        h9.m_Hash = 0;
 
         unsigned long hash = nlStringLowerHash("CHOOSE_SIDEKICKS_LEFT");
-        hA.m_Hash = hash;
-        hB.m_Hash = hash;
+        h8.m_Hash = hash;
+        h9.m_Hash = hash;
 
         hash = nlStringLowerHash("Layer");
-        h9.m_Hash = hash;
-        h8.m_Hash = hash;
+        hB.m_Hash = hash;
+        hA.m_Hash = hash;
 
+        findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
         compinstance = findComp.byRef(
             presentation->m_currentSlide,
-            (InlineHasher&)h9,
             (InlineHasher&)hB,
-            (InlineHasher&)h8,
+            (InlineHasher&)h9,
             (InlineHasher&)h7,
-            (InlineHasher&)h6,
-            (InlineHasher&)h5);
+            (InlineHasher&)h5,
+            (InlineHasher&)h3,
+            (InlineHasher&)h1);
+        ;
+        mSidekickGridComponents[0] = new (8, false) ISidekickGridComponent(compinstance, false);
     }
-    mSidekickGridComponents[0] = new (8, false) ISidekickGridComponent(compinstance, false);
 
     {
         volatile InlineHasher hB, hA;
-        volatile InlineHasher h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
+        volatile InlineHasher h9, h8, h6, h4, h2, h0;
 
         h0.m_Hash = 0;
         h1.m_Hash = 0;
@@ -1441,27 +1443,27 @@ void IChooseCaptain::SceneCreated(FEPresentation* presentation)
         h5.m_Hash = 0;
         h6.m_Hash = 0;
         h7.m_Hash = 0;
-        h8.m_Hash = 0;
-        h9.m_Hash = 0;
 
         unsigned long hash = nlStringLowerHash("CHOOSE_SIDEKICKS_RIGHT");
-        hA.m_Hash = hash;
-        hB.m_Hash = hash;
+        h8.m_Hash = hash;
+        h9.m_Hash = hash;
 
         hash = nlStringLowerHash("Layer");
-        h9.m_Hash = hash;
-        h8.m_Hash = hash;
+        hB.m_Hash = hash;
+        hA.m_Hash = hash;
 
+        findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
         compinstance = findComp.byRef(
             presentation->m_currentSlide,
-            (InlineHasher&)h9,
             (InlineHasher&)hB,
-            (InlineHasher&)h8,
+            (InlineHasher&)h9,
             (InlineHasher&)h7,
-            (InlineHasher&)h6,
-            (InlineHasher&)h5);
+            (InlineHasher&)h5,
+            (InlineHasher&)h3,
+            (InlineHasher&)h1);
+        ;
+        mSidekickGridComponents[1] = new (8, false) ISidekickGridComponent(compinstance, true);
     }
-    mSidekickGridComponents[1] = new (8, false) ISidekickGridComponent(compinstance, true);
 
     mSidekickGridComponents[0]->mParentComponent->m_bVisible = false;
     mSidekickGridComponents[1]->mParentComponent->m_bVisible = false;
@@ -1470,7 +1472,7 @@ void IChooseCaptain::SceneCreated(FEPresentation* presentation)
 
     {
         volatile InlineHasher hB, hA;
-        volatile InlineHasher h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
+        volatile InlineHasher h9, h8, h6, h4, h2, h0;
 
         h0.m_Hash = 0;
         h1.m_Hash = 0;
@@ -1480,30 +1482,30 @@ void IChooseCaptain::SceneCreated(FEPresentation* presentation)
         h5.m_Hash = 0;
         h6.m_Hash = 0;
         h7.m_Hash = 0;
-        h8.m_Hash = 0;
-        h9.m_Hash = 0;
 
         unsigned long hash = nlStringLowerHash("sidekick icon left");
-        hA.m_Hash = hash;
-        hB.m_Hash = hash;
+        h8.m_Hash = hash;
+        h9.m_Hash = hash;
 
         hash = nlStringLowerHash("Layer");
-        h9.m_Hash = hash;
-        h8.m_Hash = hash;
+        hB.m_Hash = hash;
+        hA.m_Hash = hash;
 
+        findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
         mSidekickMiniHeadComponents[0] = findComp.byRef(
             presentation->m_currentSlide,
-            (InlineHasher&)h9,
             (InlineHasher&)hB,
-            (InlineHasher&)h8,
+            (InlineHasher&)h9,
             (InlineHasher&)h7,
-            (InlineHasher&)h6,
-            (InlineHasher&)h5);
+            (InlineHasher&)h5,
+            (InlineHasher&)h3,
+            (InlineHasher&)h1);
+        ;
     }
 
     {
         volatile InlineHasher hB, hA;
-        volatile InlineHasher h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
+        volatile InlineHasher h9, h8, h6, h4, h2, h0;
 
         h0.m_Hash = 0;
         h1.m_Hash = 0;
@@ -1513,30 +1515,30 @@ void IChooseCaptain::SceneCreated(FEPresentation* presentation)
         h5.m_Hash = 0;
         h6.m_Hash = 0;
         h7.m_Hash = 0;
-        h8.m_Hash = 0;
-        h9.m_Hash = 0;
 
         unsigned long hash = nlStringLowerHash("sidekick icon right");
-        hA.m_Hash = hash;
-        hB.m_Hash = hash;
+        h8.m_Hash = hash;
+        h9.m_Hash = hash;
 
         hash = nlStringLowerHash("Layer");
-        h9.m_Hash = hash;
-        h8.m_Hash = hash;
+        hB.m_Hash = hash;
+        hA.m_Hash = hash;
 
+        findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
         mSidekickMiniHeadComponents[1] = findComp.byRef(
             presentation->m_currentSlide,
-            (InlineHasher&)h9,
             (InlineHasher&)hB,
-            (InlineHasher&)h8,
+            (InlineHasher&)h9,
             (InlineHasher&)h7,
-            (InlineHasher&)h6,
-            (InlineHasher&)h5);
+            (InlineHasher&)h5,
+            (InlineHasher&)h3,
+            (InlineHasher&)h1);
+        ;
     }
 
     {
         volatile InlineHasher hB, hA;
-        volatile InlineHasher h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
+        volatile InlineHasher h9, h8, h6, h4, h2, h0;
 
         h0.m_Hash = 0;
         h1.m_Hash = 0;
@@ -1546,25 +1548,25 @@ void IChooseCaptain::SceneCreated(FEPresentation* presentation)
         h5.m_Hash = 0;
         h6.m_Hash = 0;
         h7.m_Hash = 0;
-        h8.m_Hash = 0;
-        h9.m_Hash = 0;
 
         unsigned long hash = nlStringLowerHash("CAPTAIN_NAME_LEFT");
-        hA.m_Hash = hash;
-        hB.m_Hash = hash;
+        h8.m_Hash = hash;
+        h9.m_Hash = hash;
 
         hash = nlStringLowerHash("Layer");
-        h9.m_Hash = hash;
-        h8.m_Hash = hash;
+        hB.m_Hash = hash;
+        hA.m_Hash = hash;
 
+        findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
         mNameComponents[0].mComponent = findComp.byRef(
             presentation->m_currentSlide,
-            (InlineHasher&)h9,
             (InlineHasher&)hB,
-            (InlineHasher&)h8,
+            (InlineHasher&)h9,
             (InlineHasher&)h7,
-            (InlineHasher&)h6,
-            (InlineHasher&)h5);
+            (InlineHasher&)h5,
+            (InlineHasher&)h3,
+            (InlineHasher&)h1);
+        ;
     }
 
     mNameComponents[0].mCaptainObjName = "CAPTAIN_NAME";
@@ -1572,7 +1574,7 @@ void IChooseCaptain::SceneCreated(FEPresentation* presentation)
 
     {
         volatile InlineHasher hB, hA;
-        volatile InlineHasher h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
+        volatile InlineHasher h9, h8, h6, h4, h2, h0;
 
         h0.m_Hash = 0;
         h1.m_Hash = 0;
@@ -1582,25 +1584,25 @@ void IChooseCaptain::SceneCreated(FEPresentation* presentation)
         h5.m_Hash = 0;
         h6.m_Hash = 0;
         h7.m_Hash = 0;
-        h8.m_Hash = 0;
-        h9.m_Hash = 0;
 
         unsigned long hash = nlStringLowerHash("CAPTAIN_NAME_RIGHT");
-        hA.m_Hash = hash;
-        hB.m_Hash = hash;
+        h8.m_Hash = hash;
+        h9.m_Hash = hash;
 
         hash = nlStringLowerHash("Layer");
-        h9.m_Hash = hash;
-        h8.m_Hash = hash;
+        hB.m_Hash = hash;
+        hA.m_Hash = hash;
 
+        findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
         mNameComponents[1].mComponent = findComp.byRef(
             presentation->m_currentSlide,
-            (InlineHasher&)h9,
             (InlineHasher&)hB,
-            (InlineHasher&)h8,
+            (InlineHasher&)h9,
             (InlineHasher&)h7,
-            (InlineHasher&)h6,
-            (InlineHasher&)h5);
+            (InlineHasher&)h5,
+            (InlineHasher&)h3,
+            (InlineHasher&)h1);
+        ;
     }
 
     mNameComponents[1].mCaptainObjName = "CAPTAIN_NAME";

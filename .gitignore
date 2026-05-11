@@ -43,3 +43,7 @@ compile_commands.json
 src/SDK/__TRK_MINNOW_DOLPHIN/
 extern/musyx
 /extern
+
+# sms-agent runner state
+.sms-agent-runner.lock
+*.lock
