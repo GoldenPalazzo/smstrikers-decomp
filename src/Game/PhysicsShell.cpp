@@ -1,5 +1,10 @@
 #include "Game/Physics/PhysicsShell.h"
+#include "Game/AI/Powerups.h"
 #include "Game/Game.h"
+#include "Game/AI/Fielder.h"
+#include "Game/Physics/PhysicsBanana.h"
+#include "Game/Physics/PhysicsObject.h"
+#include "Game/Sys/eventman.h"
 
 extern CollisionSpace* g_CollisionSpace;
 extern PhysicsWorld* g_PhysicsWorld;
@@ -50,9 +55,122 @@ void PhysicsShell::PostUpdate()
 /**
  * Offset/Address/Size: 0x10C | 0x8013BA74 | size: 0x898
  */
-ContactType PhysicsShell::Contact(PhysicsObject*, dContact*, int)
+ContactType PhysicsShell::Contact(PhysicsObject* obj, dContact* info, int numContacts)
 {
-    return NO_CONTACT;
+    ContactType returnValue = TWO_WAY_CONTACT;
+    nlVector3 curPosition;
+    int objType;
+
+    bool bVar5, bVar6;
+    int iVar8;
+
+    this->GetPosition(&curPosition);
+
+    switch (objType) {
+        case 0xd: // 
+        case 0xe:
+            cFielder *pcVar7 = static_cast<cFielder*>(static_cast<PhysicsCharacter*>(obj->m_parentObject)->m_pAICharacter);
+            if (pcVar7->m_eClassType == FIELDER) {
+                if (this->m_pPowerupObject->mtNoHitTimer.m_uPackedTime != 0
+                        && this->m_pPowerupObject->m_pThrower == pcVar7) {
+                    return NO_CONTACT;
+                }
+                bool isFrozen = pcVar7->IsFrozen();
+                if (isFrozen)
+                    returnValue = ONE_WAY_CONTACT_THIS;
+                else if (this->m_pTriggerCallbackFunc != nullptr) {
+                    nlVector3 local = {};
+                    this->m_pTriggerCallbackFunc(this, obj, local, this->m_pCallbackParam);
+                }
+                if (this->m_pPowerupObject->meSize == POWERUPSIZE_LARGE)
+                    return NO_CONTACT;
+                if (this->m_pPowerupObject->m_eType == POWER_UP_SPINY_SHELL) {
+                    if (!isFrozen && pcVar7->IsInvincible())
+                        return NO_CONTACT;
+                    returnValue = ONE_WAY_CONTACT_THIS;
+                }
+            }
+            else {
+                Event *pEVar9 = g_pEventManager->CreateValidEvent(0x23, 0x2c);
+                CollisionPowerupGroundData *pEVar13 = static_cast<CollisionPowerupGroundData *>(&pEVar9->m_data);
+                this->GetPosition(&pEVar13->position);
+                pEVar13->eType = this->m_pPowerupObject->m_eType;
+            }
+            break;
+        case 0xf:
+            cBall *fVar8 = static_cast<PhysicsAIBall *>(obj)->m_pAIBall;
+            pcVar7 = static_cast<cFielder *>(fVar8->m_pOwner);
+            if (pcVar7 == nullptr) {
+                bVar5 = false;
+                if (fVar8->m_tShotTimer.m_uPackedTime != 0 /*&& fVar8->field_0xa2*/)
+                    bVar5 = true;
+                if (bVar5) {
+                    this->m_pPowerupObject->m_bShouldDestroy = true;
+                    return NO_CONTACT;
+                }
+                if (this->m_pPowerupObject->meSize != POWERUPSIZE_SMALL)
+                    iVar8 = 2;
+            }
+            else {
+                if (pcVar7->m_eClassType == FIELDER) {
+                    if (this->m_pPowerupObject->mtNoHitTimer.m_uPackedTime != 0
+                            && this->m_pPowerupObject->m_pThrower == pcVar7) {
+                        return NO_CONTACT;
+                    }
+                    bool isBallAway = pcVar7->IsBallAwayFromCarrier();
+                    if (isBallAway) {
+                        if (this->m_pTriggerCallbackFunc != nullptr) {
+                            nlVector3 local = {};
+                            this->m_pTriggerCallbackFunc(this, obj, local, this->m_pCallbackParam);
+                        }
+                        return NO_CONTACT;
+                    }
+                }
+                else {
+                    bVar6 = true;
+                }
+                if (this->m_pPowerupObject->m_eType == POWER_UP_SPINY_SHELL)
+                    iVar8 = 2;
+            }
+            if (!bVar6 && this->m_pTriggerCallbackFunc != nullptr) {
+                nlVector3 local;
+                this->m_pTriggerCallbackFunc(this, obj, local, this->m_pCallbackParam);
+            }
+            if (iVar8 == 2)
+                return ONE_WAY_CONTACT_OTHER;
+            break;
+        default:
+            int temp_iVar8;
+            if (objType == 0x11 && numContacts > 0) {
+                do {
+
+                } while (iVar8 != 0);
+            }
+            break;
+        case 0x13: // PhysicsShell
+            PhysicsShell *pShell = static_cast<PhysicsShell *>(obj);
+            if (this->m_pPowerupObject->mtNoHitTimer.m_uPackedTime != 0
+                    && pShell->m_pPowerupObject->m_pThrower == this->m_pPowerupObject->m_pThrower)
+                return NO_CONTACT;
+            if (this->m_pTriggerCallbackFunc != nullptr) {
+                nlVector3 local = {};
+                this->m_pTriggerCallbackFunc(this, obj, local, this->m_pCallbackParam);
+            }
+            if (pShell->m_pPowerupObject->meSize < this->m_pPowerupObject->meSize)
+                return NO_CONTACT;
+            break;
+        case 0x14:
+            break;
+        case 0x1a:
+            break;
+    }
+    if (bVar6) {
+        if (objType == 0x19) {
+
+        }
+    }
+
+    return returnValue;
 }
 
 /**
