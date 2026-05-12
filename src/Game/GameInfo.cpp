@@ -798,9 +798,211 @@ void GameInfoManager::ResetPlayingSides()
 
 /**
  * Offset/Address/Size: 0x8638 | 0x8017DCDC | size: 0x4D8
+ * TODO: 80.85% match
  */
-void GameInfoManager::SetupRoundRobinSchedule(eTeamID*, eSidekickID*)
+static unsigned long THREE_TEAM_MATCHUPS[3][2] = { 0 };  // size: 0x18, address: 0x802B2878
+static unsigned long FOUR_TEAM_MATCHUPS[6][2] = { 0 };   // size: 0x30, address: 0x802B2890
+static unsigned long FIVE_TEAM_MATCHUPS[10][2] = { 0 };  // size: 0x50, address: 0x802B28C0
+static unsigned long SIX_TEAM_MATCHUPS[15][2] = { 0 };   // size: 0x78, address: 0x802B2910
+static unsigned long SEVEN_TEAM_MATCHUPS[21][2] = { 0 }; // size: 0xA8, address: 0x802B2988
+static unsigned long EIGHT_TEAM_MATCHUPS[28][2] = { 0 }; // size: 0xE0, address: 0x802B2A30
+void GameInfoManager::SetupRoundRobinSchedule(eTeamID* lineup, eSidekickID* sklineup)
 {
+    enum eGameModes gamemode; // r25
+    enum eGameModes gamemode_copy;
+    u16 numplayingteams;              // r1+0xC
+    int numRounds;                    // r1+0x8
+    int numGamesPerRound;             // r24
+    int home;                         // r23
+    int away;                         // r22
+    unsigned char superRounds;        // r14
+    int superOffset;                  // r21
+    enum eStadiumID lastHumanStadium; // r20
+    struct BasicGameInfo* g;          // r0
+    struct TeamStats* teamstats;      // r0
+
+    int numOpponentTeams;
+
+    gamemode = this->mCurrentMode;
+    if ((this->mCurrentMode == GM_BOWSER_CUP) || (this->mCurrentMode == GM_SUPER_BOWSER_CUP))
+    {
+        numplayingteams = 8;
+    }
+    else
+    {
+        numplayingteams = this->mCurrentCup->GetNumTeams();
+    }
+    // numTeams_copy = (u16)numTeams;
+    numRounds = this->mCurrentCup->GetNumRounds();
+
+    if (this->mDoingKnockout != false)
+    {
+        numGamesPerRound = this->mPreviousCup->GetNumTeams();
+    }
+    else if ((this->mCurrentMode == GM_BOWSER_CUP) || (this->mCurrentMode == GM_SUPER_BOWSER_CUP))
+    {
+        numGamesPerRound = 8;
+    }
+    else
+    {
+        numGamesPerRound = this->mCurrentCup->GetNumTeams();
+    }
+
+    numGamesPerRound >>= 1;
+    this->mLastHumanStadium = STAD_INVALID;
+    superRounds = 0;
+    superOffset = 0;
+    lastHumanStadium = STAD_INVALID;
+
+    gamemode_copy = this->mCurrentMode;
+    bool inMushroomRange = (gamemode_copy >= GM_MUSHROOM_CUP && gamemode_copy < GM_BOWSER_CUP);
+    bool inBowserRange = (gamemode_copy >= GM_BOWSER_CUP && gamemode_copy < GM_TOURNAMENT);
+    if (!inMushroomRange && !inBowserRange && gamemode_copy != GM_TOURNAMENT)
+        return;
+
+    if (gamemode == GM_BOWSER_CUP)
+    {
+        this->mCurrentCup = (BaseCup*)&this->mBowserCupSeries;
+    }
+    else if (gamemode == GM_SUPER_BOWSER_CUP)
+    {
+        this->mCurrentCup = (BaseCup*)&this->mSuperBowserCupSeries;
+    }
+
+    this->mCurrentCup->mRoundNumber = -6;
+    this->mDoingKnockout = false;
+
+    numOpponentTeams = numplayingteams - 1;
+    if (numOpponentTeams % 2 != 0)
+    {
+        numOpponentTeams = numplayingteams;
+    }
+    for (int i = 0; i < numRounds; i++)
+    {
+        if (i == numOpponentTeams)
+        {
+            superRounds = 1;
+            superOffset = numOpponentTeams;
+        }
+        int matchupOffset = numGamesPerRound * (i - superOffset);
+        int byteOffset;
+        for (int j = 0; j < numGamesPerRound; j++)
+        {
+            byteOffset = matchupOffset * 8;
+            int numTeams_again;
+            if ((this->mCurrentMode == GM_BOWSER_CUP) || (this->mCurrentMode == GM_SUPER_BOWSER_CUP))
+            {
+                numTeams_again = 8;
+            }
+            else
+            {
+                numTeams_again = this->mCurrentCup->GetNumTeams();
+            }
+
+            unsigned long* row;
+            if (numTeams_again == 6)
+            {
+                row = (unsigned long*)((char*)SIX_TEAM_MATCHUPS + byteOffset);
+                home = row[0];
+                away = row[1];
+            }
+            else if (numTeams_again > 6)
+            {
+                if (numTeams_again == 8)
+                {
+                    row = (unsigned long*)((char*)EIGHT_TEAM_MATCHUPS + byteOffset);
+                    home = row[0];
+                    away = row[1];
+                }
+                else
+                {
+                    row = (unsigned long*)((char*)SEVEN_TEAM_MATCHUPS + byteOffset);
+                    home = row[0];
+                    away = row[1];
+                }
+            }
+            else
+            {
+                if (numTeams_again == 4)
+                {
+                    row = (unsigned long*)((char*)FOUR_TEAM_MATCHUPS + byteOffset);
+                    home = row[0];
+                    away = row[1];
+                }
+                else if (numTeams_again < 4)
+                {
+                    row = (unsigned long*)((char*)THREE_TEAM_MATCHUPS + byteOffset);
+                    home = row[0];
+                    away = row[1];
+                }
+                else
+                {
+                    row = (unsigned long*)((char*)FIVE_TEAM_MATCHUPS + byteOffset);
+                    home = row[0];
+                    away = row[1];
+                }
+            }
+            g = (BasicGameInfo*)this->mCurrentCup->GetGameInfo(i, j);
+            g->mTeamIndex[0] = TEAM_MARIO;
+            g->mTeamIndex[1] = TEAM_LUIGI;
+            g->mSidekickIndex[0] = SK_TOAD;
+            g->mSidekickIndex[1] = SK_KOOPA;
+            g->mFinalScore[1] = 0;
+            g->mFinalScore[0] = 0;
+            g->mPadSides[0] = -1;
+            g->mPadSides[1] = -1;
+            g->mPadSides[2] = -1;
+            g->mPadSides[3] = -1;
+            g->mStadiumIndex = STAD_MARIO_STADIUM;
+            if (superRounds != 0)
+            {
+                g->mTeamIndex[0] = lineup[away];
+                g->mTeamIndex[1] = lineup[home];
+                g->mSidekickIndex[0] = sklineup[away];
+                g->mSidekickIndex[1] = sklineup[home];
+            }
+            else
+            {
+                g->mTeamIndex[0] = lineup[home];
+                g->mTeamIndex[1] = lineup[away];
+                g->mSidekickIndex[0] = sklineup[home];
+                g->mSidekickIndex[1] = sklineup[away];
+            }
+            if (i == (numRounds - 1) && gamemode != GM_BOWSER_CUP && gamemode != GM_SUPER_BOWSER_CUP)
+            {
+                g->mStadiumIndex = PickStadium(true, lastHumanStadium);
+            }
+            else
+            {
+                g->mStadiumIndex = PickStadium(false, lastHumanStadium);
+            }
+
+            unsigned short humanTeams = this->mCurrentCup->mHumanTeams;
+            if (((humanTeams & (1 << g->mTeamIndex[0])) != 0) || ((humanTeams & (1 << g->mTeamIndex[1])) != 0))
+            {
+                lastHumanStadium = g->mStadiumIndex;
+            }
+            matchupOffset++;
+        }
+        signed char* roundRes = this->mCurrentCup->GetRoundResults(i);
+        *roundRes = 1;
+    }
+    teamstats = this->mCurrentCup->GetTeamStats(0);
+    for (int i = 0; i < numplayingteams; i++)
+    {
+        eTeamID teamID = *lineup;
+        memset(&teamstats->mPlayerTotalStats, 0, 0x34);
+        (teamstats->mPlayerTotalStats).mRecordType.mTeamID = teamID;
+        lineup++;
+        teamstats->mPlayerTotalStats.mType = TYPE_TEAM;
+        teamstats->mTeamIndex = teamID;
+        teamstats->mNumWins = 0;
+        teamstats->mNumLosses = 0;
+        teamstats->mNumOTLosses = 0;
+        teamstats->mNumPoints = 0;
+        teamstats++;
+    }
+    this->mCurrentCup->mCupStarted = true;
 }
 
 /**
