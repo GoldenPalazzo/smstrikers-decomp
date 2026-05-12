@@ -31,7 +31,7 @@
 #include "Game/Physics/CharacterPhysicsElement.h"
 #include "ctype_api.h"
 
-// .sdata (initialized) — order matches target world.s
+// .sdata (initialized) -- order matches target world.s
 static unsigned char g_bClipToFrustum = 1;
 u32 World::m_uCurrentFrameCount = 0xFFFFFFFF;
 float g_fTransAdjustOccluded = 1.0f;
@@ -39,7 +39,7 @@ float g_fTransAdjustNotOccluded = 0.125f;
 float g_fExponentScale = 128.0f;
 float g_fExponentBase = 8.0f;
 
-// .sbss (uninitialized) — order matches target world.s
+// .sbss (uninitialized) -- order matches target world.s
 static unsigned char g_bDrawBoundingSphere;
 static unsigned char g_bFreezeFrustum;
 static unsigned char g_bDrawCullingInfo;

@@ -54,6 +54,7 @@ public:
 
     void SetSlide()
     {
+        FORCE_DONT_INLINE;
         MenuItem<SlideMenuItem>& mi = mMenuItems[mCurrentIndex];
         mi.mType->mComponentInstance->SetActiveSlide(mi.mType->mSlideMenuHash);
     }

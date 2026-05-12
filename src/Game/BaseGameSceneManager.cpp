@@ -49,6 +49,7 @@
 #include "Game/BaseSceneHandler.h"
 
 #include "NL/nlConfig.h"
+#include "types.h"
 
 // Define the scene entry struct
 struct SceneEntry
@@ -572,19 +573,14 @@ void BaseGameSceneManager::PushLoadingScene(bool clearStack)
 }
 
 /**
- * Offset/Address/Size: 0x64 | 0x80096B94 | size: 0x4
- */
-void IntroMovieScene::PlayScreenBackSFX()
-{
-}
-
-/**
  * Stub only for field order; unreferenced so the linker drops it.
  * Forces emission of specific constants/operations so the compiler
  * lays out the related fields to match the original binary.
  */
 void BaseGameSceneManager_stub()
 {
-    void (SlideMenuList::* volatile forceSetSlide)() = &SlideMenuList::SetSlide;
-    (void)forceSetSlide;
+    SlideMenuList* volatile p = NULL;
+    p->SetSlide();
+    BaseSceneHandler* volatile h = NULL;
+    h->SetVisible(true);
 }

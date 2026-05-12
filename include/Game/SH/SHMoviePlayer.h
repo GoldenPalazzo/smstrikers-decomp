@@ -40,9 +40,8 @@ public:
         mNextScene = SCENE_TITLE;
     }
     virtual ~IntroMovieScene() { };
-    virtual void PlayScreenBackSFX();
     virtual void PlayScreenForwardSFX() { };
-    virtual void OverrideMovieDimensions();
+    virtual void PlayScreenBackSFX() { };
 };
 
 class NLGLogoMovieScene : public MoviePlayerScene

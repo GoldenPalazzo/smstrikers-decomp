@@ -1010,7 +1010,7 @@ config.libs = [
             # Frontend / Scenes
             Object(Matching, "Game/GameSceneManager.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/BaseSceneHandler.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(NonMatching, "Game/BaseGameSceneManager.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(Matching, "Game/BaseGameSceneManager.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
 
             Object(NonMatching, "Game/OverlayManager.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/OverlayHandlerHUD.cpp", extra_cflags=["-inline auto", "-inline deferred"]),

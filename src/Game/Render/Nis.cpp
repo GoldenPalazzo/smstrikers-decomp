@@ -16,7 +16,7 @@
 
 #include "types.h"
 
-// Local mirror of NISData from Game/Render/Presentation.h — including that
+// Local mirror of NISData from Game/Render/Presentation.h -- including that
 // header drags in nlBasicString.h / nlTask.h, which clash with the in-file
 // nlTaskManager / BasicString / TempStringAllocator declarations relied on
 // by the already-matched ~Nis() / SelectCamera / Render in this TU.

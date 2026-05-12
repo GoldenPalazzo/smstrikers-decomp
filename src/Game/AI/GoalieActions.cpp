@@ -1541,7 +1541,7 @@ public:
 
 /**
  * Offset/Address/Size: 0x1C30 | 0x8005016C | size: 0x48C
- * TODO: 98.0% match — register allocation in the SetPosition projection block
+ * TODO: 98.0% match -- register allocation in the SetPosition projection block
  *       (mv3NavTarget delta + smoothstep) loads m_v3Position members in a
  *       different order than target; one branch destination is 4 bytes off.
  */
