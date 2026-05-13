@@ -629,8 +629,11 @@ void Nis::Trigger::FireEffect(const Nis& nis) const
 
 /**
  * Offset/Address/Size: 0x2D0 | 0x8012B6E0 | size: 0x564
- * TODO: ~90% scratch match (xqwZV). Transferred from decomp.me scratch on
+ * TODO: 98.77% match
  * 2026-05-11 to preserve progress baseline for collaborator.
+ * 2026-05-13 only problems are a regswap and the calls to nlListAddStart:
+ *            they should be with Nis::NisAudioData**, but with
+ *            Nis::AudioDataExt** they don't... idk why
  */
 void Nis::Trigger::Fire(Nis& nis) const
 {
@@ -650,6 +653,7 @@ void Nis::Trigger::Fire(Nis& nis) const
         NisAudioDataExt* next;
     };
 
+    World* pWorld;
     bool bIsEmitter;
     bool bStopAtNisEnd;
     unsigned long sfxHandle;
@@ -662,15 +666,14 @@ void Nis::Trigger::Fire(Nis& nis) const
         bIsEmitter = false;
         bStopAtNisEnd = true;
 
-        float volume = params.float1 != -1.0f ? 100.f : params.float1;
+        float volume = params.float1 != -1.0f ? params.float1 : 100.f;
 
         if (params.param1 == (unsigned long)-1)
         {
             if (strlen(target) > 0)
             {
-                // World* pWorld = WorldManager::s_World;
-                unsigned long hashId = WorldManager::s_World->GetHashIdForGenericName(target);
-                HelperObject* helper = WorldManager::s_World->FindHelperObject(hashId);
+                pWorld = WorldManager::s_World;
+                HelperObject* helper = pWorld->FindHelperObject(pWorld->GetHashIdForGenericName(target));
                 if (helper == NULL)
                     return;
                 static nlVector3 zeroDirection = { 0.0f, 0.0f, 0.0f };
@@ -697,8 +700,8 @@ void Nis::Trigger::Fire(Nis& nis) const
         if (sfxHandle == (unsigned long)-1)
             break;
 
-        const char* sfxName = name;
         unsigned long trackingVal = trackingId;
+        const char* sfxName = name;
         NisAudioDataExt* pAudioData = (NisAudioDataExt*)nlMalloc(sizeof(NisAudioDataExt), 8, false);
         pAudioData->audioType = NIS_AUDIO_TYPE_NONE;
         pAudioData->identifier.index = (unsigned long)-1;
@@ -716,7 +719,8 @@ void Nis::Trigger::Fire(Nis& nis) const
         pAudioData->isEmitter = bIsEmitter;
         pAudioData->stopAtNisEnd = bStopAtNisEnd;
         pAudioData->next = NULL;
-        nlListAddStart((NisAudioData**)&nis.mNisAudioDataList, (NisAudioData*)pAudioData, (NisAudioData**)NULL);
+        // NisAudioData gets inlined, while NisAudioDataExt doesn't
+        nlListAddStart((NisAudioDataExt**)&nis.mNisAudioDataList, pAudioData, (NisAudioDataExt**)NULL);
         break;
     }
 
@@ -734,8 +738,8 @@ void Nis::Trigger::Fire(Nis& nis) const
         if (sfxHandle == (unsigned long)-1)
             break;
 
-        unsigned long trackingVal = trackingId;
         const char* sfxName = name;
+        unsigned long trackingVal = trackingId;
         NisAudioDataExt* pAudioData = (NisAudioDataExt*)nlMalloc(sizeof(NisAudioDataExt), 8, false);
         pAudioData->audioType = NIS_AUDIO_TYPE_NONE;
         pAudioData->identifier.index = (unsigned long)-1;
@@ -750,7 +754,7 @@ void Nis::Trigger::Fire(Nis& nis) const
         pAudioData->isEmitter = true;
         pAudioData->stopAtNisEnd = bStopAtNisEnd;
         pAudioData->next = NULL;
-        nlListAddStart((NisAudioData**)&nis.mNisAudioDataList, (NisAudioData*)pAudioData, (NisAudioData**)NULL);
+        nlListAddStart((NisAudioDataExt**)&nis.mNisAudioDataList, pAudioData, (NisAudioDataExt**)NULL);
         break;
     }
 
@@ -760,68 +764,71 @@ void Nis::Trigger::Fire(Nis& nis) const
         NisAudioDataExt* pNode = (NisAudioDataExt*)nis.mNisAudioDataList;
         while (pNode != NULL)
         {
-            if (nlStrICmp(pNode->str, targetName) != 0)
+            if (nlStrICmp(pNode->str, targetName) == 0)
             {
-                pNode = pNode->next;
-                continue;
-            }
-            if (pNode->isEmitter)
-            {
-                SFXEmitter* pEmitter = pNode->identifier.pEmitter;
-                if (pNode->soundType == pEmitter->soundType)
+                if (pNode->isEmitter)
                 {
-                    if (Audio::Remove3DSFXEmitter(pEmitter))
+                    SFXEmitter* pEmitter = pNode->identifier.pEmitter;
+                    if (pNode->soundType == pEmitter->soundType)
                     {
-                        if (!Audio::IsEmitterActive(pEmitter))
+                        if (Audio::Remove3DSFXEmitter(pEmitter))
                         {
-                            pEmitter->bKeepTrack = true;
-                            pEmitter->soundType = (unsigned long)-1;
-                            pEmitter->fTimeStamp = -1.0f;
-                            pEmitter->bIsStopping = false;
-                            pEmitter->bInUse = false;
-                            pEmitter->bIsFilterOn = false;
-                            pEmitter->m_unk_0x5F = false;
-                            pEmitter->pPhysObj = NULL;
-                            pEmitter->pOwner = NULL;
-                            pEmitter->pos.pvPos = NULL;
-                            pEmitter->dir.pvDir = NULL;
-                            pEmitter->pos.vPos.f.x = 0.0f;
-                            pEmitter->pos.vPos.f.y = 0.0f;
-                            pEmitter->pos.vPos.f.z = 0.0f;
-                            pEmitter->dir.vDir.f.x = 0.0f;
-                            pEmitter->dir.vDir.f.y = 0.0f;
-                            pEmitter->dir.vDir.f.z = 0.0f;
-                            pEmitter->posUpdateMethod = NONE;
-                            if (pEmitter->pMIDIControllerInfo != NULL)
+                            if (!Audio::IsEmitterActive(pEmitter))
                             {
-                                if (pEmitter->pMIDIControllerInfo->paraArray != NULL)
-                                    delete[] pEmitter->pMIDIControllerInfo->paraArray;
-                                delete pEmitter->pMIDIControllerInfo;
+                                pEmitter->bKeepTrack = true;
+                                pEmitter->soundType = (unsigned long)-1;
+                                pEmitter->fTimeStamp = -1.0f;
+                                pEmitter->bIsStopping = false;
+                                pEmitter->bInUse = false;
+                                pEmitter->bIsFilterOn = false;
+                                pEmitter->m_unk_0x5F = false;
+                                pEmitter->pPhysObj = NULL;
+                                pEmitter->pOwner = NULL;
+                                pEmitter->pos.pvPos = NULL;
+                                pEmitter->dir.pvDir = NULL;
+                                pEmitter->pos.vPos.f.x = 0.0f;
+                                pEmitter->pos.vPos.f.y = 0.0f;
+                                pEmitter->pos.vPos.f.z = 0.0f;
+                                pEmitter->dir.vDir.f.x = 0.0f;
+                                pEmitter->dir.vDir.f.y = 0.0f;
+                                pEmitter->dir.vDir.f.z = 0.0f;
+                                pEmitter->posUpdateMethod = NONE;
+                                if (pEmitter->pMIDIControllerInfo != NULL)
+                                {
+                                    if (pEmitter->pMIDIControllerInfo->paraArray != NULL)
+                                        delete[] pEmitter->pMIDIControllerInfo->paraArray;
+                                    delete pEmitter->pMIDIControllerInfo;
+                                }
+                                pEmitter->pMIDIControllerInfo = NULL;
+                                pNode->identifier.pEmitter = NULL;
                             }
-                            pEmitter->pMIDIControllerInfo = NULL;
-                            pNode->identifier.pEmitter = NULL;
                         }
                     }
                 }
-            }
-            else
-            {
-                if (Audio::IsSFXPlaying(pNode->identifier.index))
+                else
                 {
-                    Audio::StopSFX(pNode->identifier.index);
-                    pNode->identifier.index = (unsigned long)-1;
+                    if (Audio::IsSFXPlaying(pNode->identifier.index))
+                    {
+                        Audio::StopSFX(pNode->identifier.index);
+                        pNode->identifier.index = (unsigned long)-1;
+                    }
                 }
+                nlListRemoveElement((NisAudioData**)&nis.mNisAudioDataList, (NisAudioData*)pNode, (NisAudioData**)NULL);
+                NisAudioDataExt* pNext = pNode->next;
+                pNode->audioType = NIS_AUDIO_TYPE_NONE;
+                pNode->identifier.index = (unsigned long)-1;
+                memset(pNode->str, 0, 0x80);
+                pNode->soundType = (unsigned long)-1;
+                pNode->stopAtNisEnd = 1;
+                pNode->isEmitter = 0;
+                delete pNode;
+                pNode = pNext;
             }
-            nlListRemoveElement((NisAudioData**)&nis.mNisAudioDataList, (NisAudioData*)pNode, (NisAudioData**)NULL);
-            NisAudioDataExt* pNext = pNode->next;
-            pNode->audioType = NIS_AUDIO_TYPE_NONE;
-            pNode->identifier.index = (unsigned long)-1;
-            memset(pNode->str, 0, 0x80);
-            pNode->soundType = (unsigned long)-1;
-            pNode->stopAtNisEnd = 1;
-            pNode->isEmitter = 0;
-            delete pNode;
-            pNode = pNext;
+            else {
+                pNode = pNode->next;
+                continue;
+            }
+            
         }
         break;
     }
