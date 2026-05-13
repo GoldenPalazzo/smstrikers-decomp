@@ -658,21 +658,19 @@ void Nis::Trigger::Fire(Nis& nis) const
     {
     case NIS_TRIGGER_TYPE_PLAY_SOUND:
     {
-        float volume = params.float1;
         unsigned long trackingId = (unsigned long)-1;
         bIsEmitter = false;
         bStopAtNisEnd = true;
 
-        if (volume != -1.0f)
-            volume = 100.0f;
+        float volume = params.float1 != -1.0f ? 100.f : params.float1;
 
         if (params.param1 == (unsigned long)-1)
         {
             if (strlen(target) > 0)
             {
-                World* pWorld = WorldManager::s_World;
-                unsigned long hashId = pWorld->GetHashIdForGenericName(target);
-                HelperObject* helper = pWorld->FindHelperObject(hashId);
+                // World* pWorld = WorldManager::s_World;
+                unsigned long hashId = WorldManager::s_World->GetHashIdForGenericName(target);
+                HelperObject* helper = WorldManager::s_World->FindHelperObject(hashId);
                 if (helper == NULL)
                     return;
                 static nlVector3 zeroDirection = { 0.0f, 0.0f, 0.0f };
