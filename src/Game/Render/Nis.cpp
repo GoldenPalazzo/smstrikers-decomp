@@ -264,6 +264,7 @@ Nis::Nis(NisHeader& header, char* data, int size)
     nlChunk* chunk = (nlChunk*)data;
     nlChunk* end = (nlChunk*)(data + size);
     int numAnimations = 0;
+    NisPlayer* tmpPlayer;
     while (chunk != end)
     {
         if ((chunk->m_ID & 0x80FFFFFF) == 0x80017000)
@@ -276,7 +277,8 @@ Nis::Nis(NisHeader& header, char* data, int size)
                 mMainCharacterIndex = goalScorer;
                 i = goalScorer;
             }
-            NisPlayer::Instance()->mGoalScorerCharIndex = -1;
+            tmpPlayer = NisPlayer::Instance();
+            tmpPlayer->mGoalScorerCharIndex = -1;
             if (mCharacterControllers[i] != NULL)
             {
                 i = NisPlayer::Instance()->TargetToIndex(NIS_TARGET_HOME_CAPTAIN, numAnimations, mWinnerType);
@@ -309,7 +311,10 @@ Nis::Nis(NisHeader& header, char* data, int size)
         {
             BasicString<char, Detail::TempStringAllocator> name = Format(BasicString<char, Detail::TempStringAllocator>("{0}_{1}"), mHeader->name, mNumCameras);
             cAnimCamera* cam = (cAnimCamera*)((char*)chunk + 8);
-            cam->LoadCameraAnimation((nlChunk*)((char*)chunk + chunk->m_Size + 8), (nlChunk*)name.c_str(), (const char*)0, false);
+            nlChunk* nextChunk = (nlChunk*)((char*)chunk + chunk->m_Size + 8);
+            const char* nameStr = name.c_str();
+            cam->LoadCameraAnimation(nextChunk, (nlChunk*)nameStr, (const char*)0, false);
+            // cam->LoadCameraAnimation((nlChunk*)((char*)chunk + chunk->m_Size + 8), (nlChunk*)name.c_str(), (const char*)0, false);
             mNumCameras++;
         }
         chunk = (nlChunk*)((char*)chunk + chunk->m_Size + 8);
