@@ -241,6 +241,10 @@ StringType Format(const StringType&, const Arg0&, const Arg1&);
  * permutation (target uses r25/r28/r30/r31 for header/this/end/chunk where
  * MWCC here picks r26/r25/r27/r28) plus an extra `li r7,0` at the
  * LoadCameraAnimation call site (target omits r7 even though signature is 4-arg).
+ *
+ * 2026-05-14: 97.07% match, r7 gets set two times to 0 and the inline of
+ * BasicString<char, Detail::TempStringAllocator> Format() loads the string
+ * "{0}_{1}" before the nlMalloc
  */
 Nis::Nis(NisHeader& header, char* data, int size)
 {
@@ -314,7 +318,6 @@ Nis::Nis(NisHeader& header, char* data, int size)
             nlChunk* nextChunk = (nlChunk*)((char*)chunk + chunk->m_Size + 8);
             const char* nameStr = name.c_str();
             cam->LoadCameraAnimation(nextChunk, (nlChunk*)nameStr, (const char*)0, false);
-            // cam->LoadCameraAnimation((nlChunk*)((char*)chunk + chunk->m_Size + 8), (nlChunk*)name.c_str(), (const char*)0, false);
             mNumCameras++;
         }
         chunk = (nlChunk*)((char*)chunk + chunk->m_Size + 8);
