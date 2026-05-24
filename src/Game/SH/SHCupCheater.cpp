@@ -7,6 +7,8 @@
 #include "NL/nlBasicString.h"
 #include "NL/nlLexicalCast.h"
 
+#include "NL/nlMemFunBody.h"
+
 // /**
 //  * Offset/Address/Size: 0x0 | 0x800E9970 | size: 0x38
 //  */

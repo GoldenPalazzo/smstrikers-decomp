@@ -5,79 +5,13 @@
 #include "NL/gl/glTexture.h"
 #include "NL/nlBundleFile.h"
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x80209CC8 | size: 0x60
-//  */
-// void nlWalkRing<DLListEntry<nlFont*>, DLListContainerBase<nlFont*, BasicSlotPool<DLListEntry<nlFont*>>>>(DLListEntry<nlFont*>*, DLListContainerBase<nlFont*, BasicSlotPool<DLListEntry<nlFont*>>>*, void (DLListContainerBase<nlFont*, BasicSlotPool<DLListEntry<nlFont*>>>::*)(DLListEntry<nlFont*>*))
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0xB0 | 0x80209C90 | size: 0x38
-//  */
-// void nlDLRingAddStart<DLListEntry<nlFont*>>(DLListEntry<nlFont*>**, DLListEntry<nlFont*>*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x74 | 0x80209C54 | size: 0x3C
-//  */
-// void nlDLRingAddEnd<DLListEntry<nlFont*>>(DLListEntry<nlFont*>**, DLListEntry<nlFont*>*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x5C | 0x80209C3C | size: 0x18
-//  */
-// void nlDLRingGetStart<DLListEntry<nlFont*>>(DLListEntry<nlFont*>*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x3C | 0x80209C1C | size: 0x20
-//  */
-// void nlDLRingIsEnd<DLListEntry<nlFont*>>(DLListEntry<nlFont*>*, DLListEntry<nlFont*>*)
-// {
-// }
-
-/**
- * Offset/Address/Size: 0x0 | 0x80209BE0 | size: 0x3C
- */
-template void nlWalkDLRing<DLListEntry<nlFont*>, DLListContainerBase<nlFont*, BasicSlotPool<DLListEntry<nlFont*> > > >(
-    DLListEntry<nlFont*>* head,
-    DLListContainerBase<nlFont*, BasicSlotPool<DLListEntry<nlFont*> > >* callback,
-    void (DLListContainerBase<nlFont*, BasicSlotPool<DLListEntry<nlFont*> > >::*callbackFunc)(DLListEntry<nlFont*>*));
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x80209BD0 | size: 0x10
-//  */
-// void DLListContainerBase<nlFont*, BasicSlotPool<DLListEntry<nlFont*>>>::DeleteEntry(DLListEntry<nlFont*>*)
-// {
-// }
-
-template <>
-nlDLListSlotPool<nlFont*>::nlDLListSlotPool()
-{
-    this->m_Head = NULL;
-    this->m_Allocator.m_Initial = 8;
-    SlotPoolBase::BaseAddNewBlock((SlotPoolBase*)&this->m_Allocator, sizeof(DLListEntry<nlFont*>));
-    this->m_Allocator.m_Delta = 0;
-}
-
-/**
- * Offset/Address/Size: 0x4CC | 0x80209B60 | size: 0x70
- * TODO: 96.25% match - remaining mismatch is r30/r31 nonvolatile register
- * allocation in the inlined m_fonts slot-pool constructor path.
- */
 FontManager::FontManager()
+    : m_fonts(8, 0)
 {
 }
 
 /**
  * Offset/Address/Size: 0x374 | 0x80209A08 | size: 0x158
- * TODO: 97.97% match - auto-generated m_fonts destructor path still lowers to
- * nlWalkRing with @106/@165 callback constants instead of target nlWalkDLRing
- * calls that reuse @198.
  */
 FontManager::~FontManager()
 {
@@ -100,12 +34,7 @@ FontManager::~FontManager()
     }
 
     typedef DLListContainerBase<nlFont*, BasicSlotPool<DLListEntry<nlFont*> > > FontListBase;
-    typedef void (*WalkFn)(DLListEntry<nlFont*>*, FontListBase*, void (FontListBase::*)(DLListEntry<nlFont*>*));
-
-    void (FontListBase::*func)(DLListEntry<nlFont*>*) = &FontListBase::DeleteEntry;
-    WalkFn walk = &nlWalkDLRing<DLListEntry<nlFont*>, FontListBase>;
-    walk(m_fonts.m_Head, &m_fonts, func);
-    m_fonts.m_Head = NULL;
+    FontListBase::DestroyAllEntries(&m_fonts);
 }
 
 /**

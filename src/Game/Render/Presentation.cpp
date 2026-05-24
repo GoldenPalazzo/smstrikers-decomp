@@ -133,6 +133,7 @@ To LexicalCast(const From&);
 template <>
 const char* LexicalCast<const char*, const char*>(const char* const& from)
 {
+    FORCE_DONT_INLINE;
     return from;
 }
 
@@ -142,6 +143,7 @@ const char* LexicalCast<const char*, const char*>(const char* const& from)
 template <>
 const char* LexicalCast<const char*, int>(const int& from)
 {
+    FORCE_DONT_INLINE;
     nlBreak();
     return 0;
 }
@@ -152,6 +154,7 @@ const char* LexicalCast<const char*, int>(const int& from)
 template <>
 const char* LexicalCast<const char*, float>(const float& from)
 {
+    FORCE_DONT_INLINE;
     nlBreak();
     return 0;
 }
@@ -162,6 +165,7 @@ const char* LexicalCast<const char*, float>(const float& from)
 template <>
 const char* LexicalCast<const char*, bool>(const bool& from)
 {
+    FORCE_DONT_INLINE;
     return from ? "true" : "false";
 }
 
@@ -275,15 +279,13 @@ void Presentation::LoadTrophyModel()
     }
 
     cupTrophyHash = 1;
-
     BasicString<char, Detail::TempStringAllocator> trophyName;
     if (hasCupOverride)
     {
-        const char* cupName = NULL;
+        const char* cupName;
         BasicString<char, Detail::TempStringAllocator> prefix("Gameplay/");
         Config& cfg = Config::Global();
         TagValuePair& tvp = cfg.FindTvp("gimme_cup_trophy");
-
         if (tvp.tag == NULL)
         {
             cfg.Set("gimme_cup_trophy", "FlowerCup");

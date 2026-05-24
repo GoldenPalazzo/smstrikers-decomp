@@ -1283,16 +1283,18 @@ cCharacter::~cCharacter()
 
 /**
  * Offset/Address/Size: 0x2238 | 0x80010184 | size: 0x468
- * TODO: 94.11% match - r28/r29 register swap for pPhysicsData and pHierarchy
+ * TODO: 99.73% match - r29/r30/r28 register allocation mismatch in inlined blinker setup
  */
 static Blinker* MakeBlinker(eCharacterClass cc, unsigned long modelID)
 {
     char matsName[64];
     char eyesName[80];
+    unsigned long eyesHash;
     const char* szBaseName = GetCharacterName(cc);
+    GLMaterialList* mats0;
 
     nlSNPrintf(matsName, 64, "%s/%s", szBaseName, szBaseName);
-    GLMaterialList* mats0 = glInventory.GetMaterialList(nlStringHash(matsName));
+    mats0 = glInventory.GetMaterialList(nlStringHash(matsName));
 
     if (mats0 == NULL)
     {
@@ -1301,7 +1303,7 @@ static Blinker* MakeBlinker(eCharacterClass cc, unsigned long modelID)
     }
 
     nlSNPrintf(eyesName, 80, "%s/%s/eyes", szBaseName, szBaseName);
-    unsigned long eyesHash = nlStringHash(eyesName);
+    eyesHash = nlStringHash(eyesName);
 
     if (mats0->FindMaterial(eyesHash) == NULL)
     {
@@ -1320,6 +1322,7 @@ cCharacter::cCharacter(eCharacterClass cc, const int* nModelID, cSHierarchy* pHi
     const CharacterPhysicsData* pPhysicsData, float fPhysicsCapsuleHeight, float fPhysicsCapsuleWidth,
     AnimRetargetList* pAnimRetargetList, eClassTypes eNewClassType)
 {
+    volatile cSHierarchy* pHierarchyVol = pHierarchy;
     m_eCharacterClass = cc;
     m_pPhysicsData = pPhysicsData;
     m_pPhysicsCharacter = NULL;
@@ -1377,7 +1380,7 @@ cCharacter::cCharacter(eCharacterClass cc, const int* nModelID, cSHierarchy* pHi
         m_pSkinMesh[1] = glInventory.MakeSkinMesh(nModelID[1]);
     }
 
-    m_pPoseAccumulator = new (nlMalloc(sizeof(cPoseAccumulator), 8, false)) cPoseAccumulator(pHierarchy, true);
+    m_pPoseAccumulator = new (nlMalloc(sizeof(cPoseAccumulator), 8, false)) cPoseAccumulator((cSHierarchy*)pHierarchyVol, true);
 
     if (pPhysicsData != NULL)
     {

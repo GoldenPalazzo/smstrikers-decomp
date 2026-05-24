@@ -132,7 +132,9 @@ public:
         if (data != 0)
         {
             data->mRefCount++;
+#ifndef BASICSTRING_NO_COPY_REREAD
             data = other.m_data;
+#endif
         }
         else
         {
@@ -241,25 +243,16 @@ public:
 
     void insert(CharT* at, const CharT* begin, const CharT* end);
 
-    void erase(const CharT* begin, const CharT* end)
-    {
-        (*this)[0];
-        BasicStringData<CharT>* data = m_data;
-        int size = end - begin;
-        CharT* dst = data->mData + (begin - data->mData);
-        const CharT* src = end;
-        while (src != data->mData + data->mSize)
-        {
-            *dst++ = *src++;
-        }
-        data->mSize -= size;
-    }
+    void erase(const CharT* begin, const CharT* end);
 
     void TrimInPlace(const CharT* chars);
 
     BasicString Trim(const CharT* chars) const;
 
     BasicString Append(const CharT* rhs) const
+#ifdef BASICSTRING_NO_INLINE_APPEND
+        ;
+#else
     {
         BasicString r(*this);
         r.AppendInPlace(rhs);
@@ -274,6 +267,7 @@ public:
         }
         return BasicString(data);
     }
+#endif
 
     template <typename OtherAllocator>
     BasicString Append(const BasicString<CharT, OtherAllocator>& rhs) const
@@ -322,6 +316,7 @@ BasicString<CharT, Allocator>::BasicString(const CharT* str)
 #endif
 
 #ifndef NO_BASICSTRING_IMPL
+#pragma always_inline on
 template <typename CharT, typename Allocator>
 BasicString<CharT, Allocator>& BasicString<CharT, Allocator>::operator=(BasicString other)
 {
@@ -329,6 +324,26 @@ BasicString<CharT, Allocator>& BasicString<CharT, Allocator>::operator=(BasicStr
     m_data = other.m_data;
     other.m_data = tmp;
     return *this;
+}
+#pragma always_inline reset
+#endif
+
+#ifdef BASICSTRING_NO_INLINE_APPEND
+template <typename CharT, typename Allocator>
+BasicString<CharT, Allocator> BasicString<CharT, Allocator>::Append(const CharT* rhs) const
+{
+    BasicString r(*this);
+    r.AppendInPlace(rhs);
+    BasicStringData<CharT>* data = r.m_data;
+    if (data != 0)
+    {
+        data->mRefCount++;
+    }
+    else
+    {
+        data = 0;
+    }
+    return BasicString(data);
 }
 #endif
 

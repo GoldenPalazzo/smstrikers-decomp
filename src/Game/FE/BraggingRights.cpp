@@ -21,6 +21,8 @@
 static char* TEXT_NAMES[] = { "PLAYER", "PLAYER2", "PLAYER3", "PLAYER4", "PLAYER5" };
 extern u32 CONTROLLER_TEXT[4];
 extern u8 PAD_COLOURS[4][3];
+extern void TournamentSceneCreated__21BraggingRightsOverlayFv(BraggingRightsOverlay*);
+extern void ChangeTicker__21BraggingRightsOverlayFi(BraggingRightsOverlay*, int);
 
 namespace SingleHighlite
 {
@@ -193,7 +195,7 @@ BraggingRightsOverlay::~BraggingRightsOverlay()
 
 /**
  * Offset/Address/Size: 0x2E3C | 0x800D4E38 | size: 0x52C
- * TODO: 85.15% scratch match (87.61% full build). Added MenuItem::ApplyAction
+ * TODO: 86.90% scratch match (87.61% full build). Added MenuItem::ApplyAction
  *       for correct callback dispatch pattern. Remaining diff: stmw r25 vs r26
  *       register shift from -inline deferred vs -inline auto context difference.
  */
@@ -275,7 +277,7 @@ void BraggingRightsOverlay::SceneCreated()
     if (nlSingleton<GameInfoManager>::s_pInstance->IsInTournamentMode())
     {
         mIsTournamentScene = 1;
-        TournamentSceneCreated();
+        TournamentSceneCreated__21BraggingRightsOverlayFv(this);
         mButtons.SetState(ButtonComponent::BS_A_AND_B);
     }
     else
@@ -284,7 +286,7 @@ void BraggingRightsOverlay::SceneCreated()
         mButtons.SetState(ButtonComponent::BS_A_ONLY);
     }
 
-    ChangeTicker(0);
+    ChangeTicker__21BraggingRightsOverlayFi(this, 0);
 }
 
 /**

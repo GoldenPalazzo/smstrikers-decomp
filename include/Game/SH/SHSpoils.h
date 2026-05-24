@@ -26,6 +26,8 @@ public:
 
     /* 0x01C */ MenuList<TLComponentInstance> mMenuItems; // size 0x214
     /* 0x230 */ ButtonComponent mButtons;                 // size 0x24
+
+    static s32 mLastSelectedIndex;
 }; // total size: 0x254
 
 // class FEFinder<TLComponentInstance, 4>

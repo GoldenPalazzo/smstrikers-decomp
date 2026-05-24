@@ -505,31 +505,47 @@ void World::Render()
                         goto culledClip;
                     if (!(objectFlags & 0x10))
                     {
+                        f32 fBoundingRadius = pObject->m_fBoundingRadius;
                         volatile u32 tz;
                         volatile u32 ty;
                         volatile u32 tx;
                         const nlMatrix4& mat = pObject->GetWorldMatrix();
                         tx = *(u32*)&mat.m[3][0];
-                        f32 posX = *(f32*)&tx;
-                        s32 numSets = 2;
+                        f32 negRadius = -fBoundingRadius;
                         ty = *(u32*)&mat.m[3][1];
-                        f32* plane = (f32*)((u8*)this + 0x80);
+                        s32 numSets = 2;
                         tz = *(u32*)&mat.m[3][2];
+                        u8* pThisOff = (u8*)this;
+                        f32 posX = *(f32*)&tx;
+                        f32* plane = (f32*)((u8*)this + 0x80);
                         s32 count = 0;
                         f32 posY = *(f32*)&ty;
                         f32 posZ = *(f32*)&tz;
-                        f32 negRadius = -pObject->m_fBoundingRadius;
+                        u8 visible = 0;
                         do
                         {
-                            if ((posZ * plane[2] + (posX * plane[0] + posY * plane[1]) + *(f32*)((u8*)this + 0x8C + count * 0x18)) < negRadius)
-                                goto culledClip;
-                            if ((posZ * plane[6] + (posX * plane[4] + posY * plane[5]) + *(f32*)((u8*)this + 0x9C + count * 0x18)) < negRadius)
-                                goto culledClip;
-                            if ((posZ * plane[10] + (posX * plane[8] + posY * plane[9]) + *(f32*)((u8*)this + 0xAC + count * 0x18)) < negRadius)
-                                goto culledClip;
+                            if ((posZ * plane[2] + (posX * plane[0] + posY * plane[1]) + *(f32*)(pThisOff + 0x8C)) < negRadius)
+                            {
+                                visible = 0;
+                                break;
+                            }
+                            if ((posZ * plane[6] + (posX * plane[4] + posY * plane[5]) + *(f32*)(pThisOff + 0x9C)) < negRadius)
+                            {
+                                visible = 0;
+                                break;
+                            }
+                            if ((posZ * plane[10] + (posX * plane[8] + posY * plane[9]) + *(f32*)(pThisOff + 0xAC)) < negRadius)
+                            {
+                                visible = 0;
+                                break;
+                            }
                             plane += 12;
+                            pThisOff += 0x30;
                             count += 2;
                         } while (--numSets != 0);
+                        visible = 1;
+                        if (!visible)
+                            goto culledClip;
                     }
                     if (pObject->m_uObjectCreationFlags & 0xF0000)
                         DoTranslucency(pObject);
@@ -594,15 +610,7 @@ void World::Render()
         while (iter->count > 0)
         {
             DrawableObject* pObject = iter->data[iter->count - 1]->value;
-            if (!(pObject->m_uObjectFlags & 0x1))
-            {
-                pObject->m_translucency = 1.0f;
-                if (pObject->m_translucency < 0.0f)
-                    pObject->m_translucency = 0.0f;
-                if (pObject->m_translucency > 1.0f)
-                    pObject->m_translucency = 1.0f;
-            }
-            else
+            if (pObject->m_uObjectFlags & 0x1)
             {
                 if (pObject->m_uObjectCreationFlags & 0xF0000)
                     DoTranslucency(pObject);
@@ -636,6 +644,14 @@ void World::Render()
                     glViewAttachModel((eGLView)7, pSphere);
                 }
                 nDrawn++;
+            }
+            else
+            {
+                pObject->m_translucency = 1.0f;
+                if (pObject->m_translucency < 0.0f)
+                    pObject->m_translucency = 0.0f;
+                if (pObject->m_translucency > 1.0f)
+                    pObject->m_translucency = 1.0f;
             }
             nSubmitted++;
             iter->count--;

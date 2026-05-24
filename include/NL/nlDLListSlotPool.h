@@ -16,9 +16,17 @@ public:
         this->m_Allocator.m_Delta = 16;
     }
 
-    nlDLListSlotPool(const int initial, const int delta)
+    nlDLListSlotPool(const int initial)
+        : DLListContainerBase<T, BasicSlotPool<DLListEntry<T> > >(0)
     {
-        this->m_Head = NULL;
+        this->m_Allocator.m_Initial = initial;
+        SlotPoolBase::BaseAddNewBlock((SlotPoolBase*)&this->m_Allocator, sizeof(DLListEntry<T>));
+        this->m_Allocator.m_Delta = 0;
+    }
+
+    nlDLListSlotPool(const int initial, const int delta)
+        : DLListContainerBase<T, BasicSlotPool<DLListEntry<T> > >(0)
+    {
         this->m_Allocator.m_Initial = initial;
         SlotPoolBase::BaseAddNewBlock((SlotPoolBase*)&this->m_Allocator, sizeof(DLListEntry<T>));
         this->m_Allocator.m_Delta = delta;

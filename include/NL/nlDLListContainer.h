@@ -23,11 +23,18 @@ public:
     {
     }
 
+    static void DestroyAllEntries(DLListContainerBase* container)
+    {
+        typedef void (*WalkFn)(DLListEntry<T>*, DLListContainerBase*, void (DLListContainerBase::*)(DLListEntry<T>*));
+        void (DLListContainerBase::*func)(DLListEntry<T>*) = &DLListContainerBase::DeleteEntry;
+        WalkFn walk = &nlWalkDLRing<DLListEntry<T>, DLListContainerBase>;
+        walk(container->m_Head, container, func);
+        container->m_Head = NULL;
+    }
+
     ~DLListContainerBase()
     {
-        void (DLListContainerBase::*func)(DLListEntry<T>*) = &DLListContainerBase::DeleteEntry;
-        nlWalkDLRing(m_Head, this, func);
-        m_Head = NULL;
+        DestroyAllEntries(this);
     }
 
     DLListEntry<T>* Allocate(const T& data)

@@ -253,8 +253,9 @@ void Goalie::CollideWithBallCallback(cBall* pBall)
             {
                 float fAdjustedTime = (mpLooseBallInfo->mfPickupDistance - 0.3f) * mpLooseBallInfo->mfPickupTime / mpLooseBallInfo->mfPickupDistance;
                 mfTargetTime = fAdjustedTime;
-                m_pCurrentAnimController->m_fPrevTime = m_pCurrentAnimController->m_fTime;
-                m_pCurrentAnimController->m_fTime = mfTargetTime;
+                cPN_SAnimController* pAnim = m_pCurrentAnimController;
+                pAnim->m_fPrevTime = pAnim->m_fTime;
+                pAnim->m_fTime = mfTargetTime;
             }
 
             InitiatePickup();
@@ -291,19 +292,22 @@ void Goalie::CollideWithBallCallback(cBall* pBall)
 
                 if (!pFldr->IsFallenDown(0.0f) && !pFldr->IsInvincible() && pFldr != NULL && pFldr->m_eClassType == FIELDER)
                 {
-                    pFldr->PlayRandomCharDialogue(CHAR_DIALOGUE_HIT, VECTORS, 100.0f, -1.0f);
-                    if (pFldr->m_pBall != NULL)
+                    if (!pFldr->IsFallenDown(0.0f))
                     {
-                        pFldr->ReleaseBall();
-                    }
-                    if (IsOnSameTeam(pFldr))
-                    {
-                        pFldr->EndDesire(false);
-                        pFldr->EndAction();
-                    }
-                    else
-                    {
-                        pFldr->InitActionSlideAttackReact(this, false);
+                        pFldr->PlayRandomCharDialogue(CHAR_DIALOGUE_HIT, VECTORS, 100.0f, -1.0f);
+                        if (pFldr->m_pBall != NULL)
+                        {
+                            pFldr->ReleaseBall();
+                        }
+                        if (IsOnSameTeam(pFldr))
+                        {
+                            pFldr->EndDesire(false);
+                            pFldr->EndAction();
+                        }
+                        else
+                        {
+                            pFldr->InitActionSlideAttackReact(this, false);
+                        }
                     }
                 }
             }
@@ -330,7 +334,6 @@ void Goalie::CollideWithBallCallback(cBall* pBall)
                 g_pBall->ClearShotInProgress();
                 EmitGoalieCatch(this, "goalie_catch", false);
             }
-            InitiatePickup();
             break;
         }
 
@@ -494,11 +497,8 @@ void Goalie::CollideWithBallCallback(cBall* pBall)
                     fThreshold = 0.7f * mpSaveData->mfMilestonePercent[2];
                 }
 
-                if (mpSaveData->muSaveType != 4)
-                {
-                    if (m_pCurrentAnimController->m_fTime >= fThreshold)
-                        break;
-                }
+                if (mpSaveData->muSaveType != 4 && !(m_pCurrentAnimController->m_fTime < fThreshold))
+                    break;
 
                 if (g_pBall->m_uGoalType != 0 && g_pBall->m_uGoalType != 1)
                     break;
@@ -524,7 +524,7 @@ void Goalie::CollideWithBallCallback(cBall* pBall)
                         break;
                     if (pScorer != g_pBall->m_pShooter)
                         break;
-                    if (*(float*)((u8*)((cFielder*)pScorer)->m_pShotMeter + 0x0C) <= 0.8f)
+                    if (!(*(float*)((u8*)((cFielder*)pScorer)->m_pShotMeter + 0x0C) > 0.8f))
                         break;
                 }
 

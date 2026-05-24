@@ -4,16 +4,17 @@
 extern int nlPrintf(const char*, ...);
 
 #include "NL/nlFileGC.h"
+#include "NL/nlString.h"
 
 typedef void (*FileReadAsyncCallback)(void*, unsigned long, unsigned long);
 
 typedef struct
 {
-    /* 0x00 */ u32 m_blockSize;
-    /* 0x04 */ u32 m_entryCount;
-    /* 0x08 */ u32 m_unk_0x08;
-    /* 0x0C */ u32 m_unk_0x0C;
-} BundleFileDirectoryHeader;
+    /* 0x00 */ u32 nSectorSize;
+    /* 0x04 */ u32 nNumFiles;
+    /* 0x08 */ u32 nDirectoryOffsetInSectors;
+    /* 0x0C */ u32 nDataOffsetInSectors;
+} BundleFileHeader;
 
 typedef struct
 {
@@ -42,34 +43,102 @@ public:
     ~BundleFile();
     BundleFile();
 
-public:
-    /* 0x00 */ nlFile* m_file;
-    /* 0x04 */ u32 m_unk_0x04;
-    /* 0x08 */ u32 m_unk_0x08;
-    /* 0x0C */ FileReadAsyncCallback m_readAsyncCallback;
-    /* 0x10 */ u32 m_unk_0x10;
-    /* 0x14 */ BundleFileDirectoryHeader* m_bundleHeader;
-    /* 0x18 */ BundleFileDirectoryEntry* m_bundleEntries; // most probably another struct
+    static inline u32 HashFilename(const char* filename)
+    {
+        char fixedName[256];
+        char* src = (char*)filename;
+        unsigned long index = 0;
+        char* dst = fixedName;
+        for (; index < nlStrLen<char>(filename); dst++, index++, src++)
+        {
+            *dst = nlToLower<char>(*src);
+            if (*src == 0x5C)
+            {
+                *dst = 0x2f;
+            }
+        }
+        fixedName[index] = 0;
+        return nlStringHash(fixedName);
+    }
 
-    // Inline method to find hash index
+    inline void LoadFileByIndex(unsigned long nFileIndex, void* pBuffer)
+    {
+        BundleFileDirectoryEntry* pEntry = &m_pDirectory[nFileIndex];
+        nlSeek(m_pFile, pEntry->m_blockNumber * m_pHeader->nSectorSize, 0);
+        nlRead(m_pFile, pBuffer, pEntry->m_length);
+    }
+
+    inline void LoadFile(unsigned long nHashID, void* pBuffer)
+    {
+        u32 index = FindHashIndex(nHashID);
+        LoadFileByIndex(index, pBuffer);
+    }
+
+    inline void ReadFileAsyncByIndex(unsigned long nFileIndex, void* pBuffer, unsigned long bytesToRead, FileReadAsyncCallback pCallback, unsigned long userParam)
+    {
+        m_pReadCallback = pCallback;
+        m_readUserParam = userParam;
+        BundleFileDirectoryEntry* pEntry = &m_pDirectory[nFileIndex];
+        nlSeek(m_pFile, pEntry->m_blockNumber * m_pHeader->nSectorSize, 0);
+        nlReadAsync(m_pFile, pBuffer, bytesToRead, &cbFileReadAsyncCallback, (unsigned long)this);
+    }
+
+    inline void LoadFileAsyncByIndex(unsigned long nFileIndex, void* pBuffer, FileReadAsyncCallback pCallback, unsigned long userParam)
+    {
+        BundleFileDirectoryEntry* pEntry = &m_pDirectory[nFileIndex];
+        ReadFileAsyncByIndex(nFileIndex, pBuffer, pEntry->m_length, pCallback, userParam);
+    }
+
+    inline void LoadFileAsync(unsigned long nHashID, void* pBuffer, FileReadAsyncCallback pCallback, unsigned long userParam)
+    {
+        u32 index = FindHashIndex(nHashID);
+        LoadFileAsyncByIndex(index, pBuffer, pCallback, userParam);
+    }
+
+    inline void LoadFileAsync(const char* filename, void* pBuffer, FileReadAsyncCallback pCallback, unsigned long userParam)
+    {
+        u32 hash = HashFilename(filename);
+        LoadFileAsync(hash, pBuffer, pCallback, userParam);
+    }
+
+    inline u32 GetFileIndex(unsigned long nHashID, bool bMissingFileFatal)
+    {
+        return FindHashIndex(nHashID, bMissingFileFatal);
+    }
+
+    inline u32 GetFileIndex(const char* filename, bool bMissingFileFatal)
+    {
+        u32 hash = HashFilename(filename);
+        return FindHashIndex(hash, bMissingFileFatal);
+    }
+
+public:
+    /* 0x00 */ nlFile* m_pFile;
+    /* 0x04 */ void (*m_pOpenCallback)(void*, unsigned long, unsigned long);
+    /* 0x08 */ unsigned long m_openUserParam;
+    /* 0x0C */ FileReadAsyncCallback m_pReadCallback;
+    /* 0x10 */ unsigned long m_readUserParam;
+    /* 0x14 */ BundleFileHeader* m_pHeader;
+    /* 0x18 */ BundleFileDirectoryEntry* m_pDirectory;
+
     inline u32 FindHashIndex(u32 hash) const
     {
-        for (u32 i = 0; i < m_bundleHeader->m_entryCount; i++)
+        for (u32 i = 0; i < m_pHeader->nNumFiles; i++)
         {
-            if (hash == m_bundleEntries[i].m_hash)
+            if (hash == m_pDirectory[i].m_hash)
             {
                 return i;
             }
         }
         nlPrintf("ERROR: Failed to find file with hash ID: %d\n", hash);
-        return -1U; // Not found
+        return -1U;
     }
 
     inline u32 FindHashIndex(u32 hash, bool printError) const
     {
-        for (u32 i = 0; i < m_bundleHeader->m_entryCount; i++)
+        for (u32 i = 0; i < m_pHeader->nNumFiles; i++)
         {
-            if (hash == m_bundleEntries[i].m_hash)
+            if (hash == m_pDirectory[i].m_hash)
             {
                 return i;
             }
@@ -78,7 +147,7 @@ public:
         {
             nlPrintf("ERROR: Failed to find file with hash ID: %d\n", hash);
         }
-        return -1U; // Not found
+        return -1U;
     }
 };
 

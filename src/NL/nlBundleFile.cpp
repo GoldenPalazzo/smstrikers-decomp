@@ -3,86 +3,40 @@
 #include "NL/nlString.h"
 #include <string.h>
 
-inline u32 GetNormalizedFilenameHash(const char* filename)
-{
-    char tmp[252];
-    char* puVar8 = tmp;
-    u32 i = 0;
-    char* pcVar10 = (char*)filename;
-    for (; i < nlStrLen<char>(filename); puVar8++, i++, pcVar10++)
-    {
-        *puVar8 = nlToLower<char>(*pcVar10);
-        if (*pcVar10 == '\\')
-        {
-            *puVar8 = 0x2f;
-        }
-    }
-    tmp[i] = 0;
-    return nlStringHash((char*)&tmp[0]);
-}
-
 /**
  * Offset/Address/Size: 0x0 | 0x801E85CC | size: 0xD4
  */
-void BundleFile::ReadFileAsync(unsigned long hash, void* buffer, unsigned long size, FileReadAsyncCallback callback, unsigned long arg5)
+void BundleFile::ReadFileAsync(unsigned long hash, void* buffer, unsigned long size, FileReadAsyncCallback callback, unsigned long userParam)
 {
     u32 index = FindHashIndex(hash);
-    m_readAsyncCallback = callback;
-    m_unk_0x10 = arg5;
-    BundleFileDirectoryEntry* entry = &m_bundleEntries[index];
-    nlSeek(m_file, entry->m_blockNumber * m_bundleHeader->m_blockSize, 0);
-    nlReadAsync(m_file, buffer, size, &cbFileReadAsyncCallback, (unsigned long)this);
+    m_pReadCallback = callback;
+    m_readUserParam = userParam;
+    BundleFileDirectoryEntry* entry = &m_pDirectory[index];
+    nlSeek(m_pFile, entry->m_blockNumber * m_pHeader->nSectorSize, 0);
+    nlReadAsync(m_pFile, buffer, size, &cbFileReadAsyncCallback, (unsigned long)this);
 }
 
 /**
  * Offset/Address/Size: 0xD4 | 0x801E86A0 | size: 0x138
- * TODO: r25/r26 swap in filename normalization loop; FindHashIndex error literal pool label mismatch (@181 vs @313).
  */
-void BundleFile::ReadFileAsync(const char* filename, void* buffer, unsigned long size, FileReadAsyncCallback callback, unsigned long arg5)
+void BundleFile::ReadFileAsync(const char* filename, void* buffer, unsigned long size, FileReadAsyncCallback callback, unsigned long userParam)
 {
-    char tmp[252];
-    char* pcVar10 = (char*)filename;
-    u32 i = 0;
-    char* puVar8 = tmp;
-    for (; i < nlStrLen<char>(filename); puVar8++, i++, pcVar10++)
-    {
-        *puVar8 = nlToLower<char>(*pcVar10);
-        if (*pcVar10 == '\\')
-        {
-            *puVar8 = 0x2f;
-        }
-    }
-    tmp[i] = 0;
-    u32 index = FindHashIndex(nlStringHash((char*)&tmp[0]));
-    m_readAsyncCallback = callback;
-    m_unk_0x10 = arg5;
-    BundleFileDirectoryEntry* entry = &m_bundleEntries[index];
-    nlSeek(m_file, entry->m_blockNumber * m_bundleHeader->m_blockSize, 0);
-    nlReadAsync(m_file, buffer, size, &cbFileReadAsyncCallback, (unsigned long)this);
+    const u32 index = FindHashIndex(HashFilename(filename));
+    m_pReadCallback = callback;
+    m_readUserParam = userParam;
+    BundleFileDirectoryEntry* entry = &m_pDirectory[index];
+    nlSeek(m_pFile, entry->m_blockNumber * m_pHeader->nSectorSize, 0);
+    nlReadAsync(m_pFile, buffer, size, &cbFileReadAsyncCallback, (unsigned long)this);
 }
 
 /**
  * Offset/Address/Size: 0x20C | 0x801E87D8 | size: 0x118
  */
-void BundleFile::LoadFile(const char* filename, void* buffer)
+void BundleFile::LoadFile(const char* filename, void* pBuffer)
 {
-    char tmp[252];
-    char* pcVar10 = (char*)filename;
-    u32 i = 0;
-    char* puVar8 = tmp;
-    for (; i < nlStrLen<char>(filename); puVar8++, i++, pcVar10++)
-    {
-        *puVar8 = nlToLower<char>(*pcVar10);
-        if (*pcVar10 == 0x5C)
-        {
-            *puVar8 = 0x2f;
-        }
-    }
-    tmp[i] = 0;
-    u32 index = FindHashIndex(nlStringHash((char*)&tmp[0]));
-    BundleFileDirectoryEntry* entry = &m_bundleEntries[index];
-    nlSeek(m_file, entry->m_blockNumber * m_bundleHeader->m_blockSize, 0);
-    nlRead(m_file, buffer, entry->m_length);
+    BundleFileDirectoryEntry* pEntry = &m_pDirectory[FindHashIndex(HashFilename(filename))];
+    nlSeek(m_pFile, pEntry->m_blockNumber * m_pHeader->nSectorSize, 0);
+    nlRead(m_pFile, pBuffer, pEntry->m_length);
 }
 
 /**
@@ -90,9 +44,9 @@ void BundleFile::LoadFile(const char* filename, void* buffer)
  */
 void BundleFile::ReadFileByIndex(unsigned long index, void* buffer, unsigned long size)
 {
-    BundleFileDirectoryEntry* entry = &m_bundleEntries[index];
-    nlSeek(m_file, entry->m_blockNumber * m_bundleHeader->m_blockSize, 0);
-    nlRead(m_file, buffer, entry->m_length);
+    BundleFileDirectoryEntry* entry = &m_pDirectory[index];
+    nlSeek(m_pFile, entry->m_blockNumber * m_pHeader->nSectorSize, 0);
+    nlRead(m_pFile, buffer, entry->m_length);
 }
 
 /**
@@ -101,33 +55,21 @@ void BundleFile::ReadFileByIndex(unsigned long index, void* buffer, unsigned lon
 void BundleFile::ReadFile(unsigned long hash, void* buffer, unsigned long arg3)
 {
     u32 index = FindHashIndex(hash);
-    BundleFileDirectoryEntry* entry = &m_bundleEntries[index];
-    nlSeek(m_file, entry->m_blockNumber * m_bundleHeader->m_blockSize, 0);
-    nlRead(m_file, buffer, entry->m_length);
+    BundleFileDirectoryEntry* entry = &m_pDirectory[index];
+    nlSeek(m_pFile, entry->m_blockNumber * m_pHeader->nSectorSize, 0);
+    nlRead(m_pFile, buffer, entry->m_length);
 }
 
 /**
  * Offset/Address/Size: 0x45C | 0x801E8A28 | size: 0x118
  */
-void BundleFile::ReadFile(const char* filename, void* buffer, unsigned long)
+void BundleFile::ReadFile(const char* filename, void* pBuffer, unsigned long)
 {
-    char tmp[252];
-    char* pcVar10 = (char*)filename;
-    u32 i = 0;
-    char* puVar8 = tmp;
-    for (; i < nlStrLen<char>(filename); puVar8++, i++, pcVar10++)
-    {
-        *puVar8 = nlToLower<char>(*pcVar10);
-        if (*pcVar10 == 0x5C)
-        {
-            *puVar8 = 0x2f;
-        }
-    }
-    tmp[i] = 0;
-    u32 index = FindHashIndex(nlStringHash((char*)&tmp[0]));
-    BundleFileDirectoryEntry* entry = &m_bundleEntries[index];
-    nlSeek(m_file, entry->m_blockNumber * m_bundleHeader->m_blockSize, 0);
-    nlRead(m_file, buffer, entry->m_length);
+    u32 hash = HashFilename(filename);
+    u32 index = FindHashIndex(hash);
+    BundleFileDirectoryEntry* pEntry = &m_pDirectory[index];
+    nlSeek(m_pFile, pEntry->m_blockNumber * m_pHeader->nSectorSize, 0);
+    nlRead(m_pFile, pBuffer, pEntry->m_length);
 }
 
 /**
@@ -135,9 +77,9 @@ void BundleFile::ReadFile(const char* filename, void* buffer, unsigned long)
  */
 bool BundleFile::GetFileInfoByIndex(unsigned long index, BundleFileDirectoryEntry* entry)
 {
-    if (index < (u32)m_bundleHeader->m_entryCount)
+    if (index < (u32)m_pHeader->nNumFiles)
     {
-        memcpy((void*)entry, (void*)&m_bundleEntries[index], 0xC);
+        memcpy((void*)entry, (void*)&m_pDirectory[index], 0xC);
         return 1;
     }
     return 0;
@@ -155,9 +97,9 @@ bool BundleFile::GetFileInfo(unsigned long hash, BundleFileDirectoryEntry* entry
         return 0;
     }
 
-    if (index < (u32)m_bundleHeader->m_entryCount)
+    if (index < (u32)m_pHeader->nNumFiles)
     {
-        memcpy((void*)entry, &m_bundleEntries[index], 0xC);
+        memcpy((void*)entry, &m_pDirectory[index], 0xC);
         return 1;
     }
 
@@ -169,16 +111,16 @@ bool BundleFile::GetFileInfo(unsigned long hash, BundleFileDirectoryEntry* entry
  */
 bool BundleFile::GetFileInfo(const char* filename, BundleFileDirectoryEntry* entry, bool printError)
 {
-    u32 index = FindHashIndex(GetNormalizedFilenameHash(filename), printError);
+    u32 index = GetFileIndex(filename, printError);
 
     if ((index == -1U) && (printError == 0))
     {
         return 0;
     }
 
-    if (index < (u32)m_bundleHeader->m_entryCount)
+    if (index < (u32)m_pHeader->nNumFiles)
     {
-        memcpy((void*)entry, &m_bundleEntries[index], 0xC);
+        memcpy((void*)entry, &m_pDirectory[index], 0xC);
         return 1;
     }
 
@@ -190,16 +132,16 @@ bool BundleFile::GetFileInfo(const char* filename, BundleFileDirectoryEntry* ent
  */
 void BundleFile::Close()
 {
-    if ((u32)m_file != NULL)
+    if ((u32)m_pFile != NULL)
     {
-        nlClose(m_file);
-        m_file = NULL;
+        nlClose(m_pFile);
+        m_pFile = NULL;
     }
 
-    if ((u32)m_bundleEntries != NULL)
+    if ((u32)m_pDirectory != NULL)
     {
-        delete[] m_bundleEntries;
-        m_bundleEntries = NULL;
+        delete[] m_pDirectory;
+        m_pDirectory = NULL;
     }
 }
 
@@ -208,15 +150,15 @@ void BundleFile::Close()
  */
 bool BundleFile::Open(const char* filename)
 {
-    m_file = nlOpen(filename);
-    if ((void*)m_file == NULL)
+    m_pFile = nlOpen(filename);
+    if ((void*)m_pFile == NULL)
     {
         return 0;
     }
-    nlRead(m_file, m_bundleHeader, 0x10);
-    nlSeek(m_file, m_bundleHeader->m_unk_0x08 * m_bundleHeader->m_blockSize, 0);
-    m_bundleEntries = (BundleFileDirectoryEntry*)nlMalloc(m_bundleHeader->m_entryCount * 0xC, 0x20, 0);
-    nlRead(m_file, m_bundleEntries, m_bundleHeader->m_entryCount * 0xC);
+    nlRead(m_pFile, m_pHeader, 0x10);
+    nlSeek(m_pFile, m_pHeader->nDirectoryOffsetInSectors * m_pHeader->nSectorSize, 0);
+    m_pDirectory = (BundleFileDirectoryEntry*)nlMalloc(m_pHeader->nNumFiles * 0xC, 0x20, 0);
+    nlRead(m_pFile, m_pDirectory, m_pHeader->nNumFiles * 0xC);
     return 1;
 }
 
@@ -225,20 +167,20 @@ bool BundleFile::Open(const char* filename)
  */
 BundleFile::~BundleFile()
 {
-    if (m_file != NULL)
+    if (m_pFile != NULL)
     {
-        nlClose(m_file);
-        m_file = NULL;
+        nlClose(m_pFile);
+        m_pFile = NULL;
     }
 
-    if (m_bundleEntries != 0U)
+    if (m_pDirectory != 0U)
     {
-        delete[] m_bundleEntries;
-        m_bundleEntries = NULL;
+        delete[] m_pDirectory;
+        m_pDirectory = NULL;
     }
 
-    delete m_bundleHeader;
-    m_bundleHeader = NULL;
+    delete m_pHeader;
+    m_pHeader = NULL;
 }
 
 /**
@@ -246,15 +188,15 @@ BundleFile::~BundleFile()
  */
 BundleFile::BundleFile()
 {
-    m_file = 0;
-    m_unk_0x04 = 0;
-    m_unk_0x08 = 0;
-    m_readAsyncCallback = NULL;
-    m_unk_0x10 = 0;
-    m_bundleHeader = 0;
-    m_bundleEntries = 0;
-    m_bundleHeader = (BundleFileDirectoryHeader*)nlMalloc(0x10, 0x20, 0);
-    memset(m_bundleHeader, 0, 0x10);
+    m_pFile = 0;
+    m_pOpenCallback = 0;
+    m_openUserParam = 0;
+    m_pReadCallback = NULL;
+    m_readUserParam = 0;
+    m_pHeader = 0;
+    m_pDirectory = 0;
+    m_pHeader = (BundleFileHeader*)nlMalloc(0x10, 0x20, 0);
+    memset(m_pHeader, 0, 0x10);
 }
 
 /**
@@ -263,7 +205,7 @@ BundleFile::BundleFile()
 static void cbFileReadAsyncCallback(nlFile*, void* buffer, unsigned int arg, unsigned long bundlePtr)
 {
     BundleFile* bundleFile = (BundleFile*)bundlePtr;
-    bundleFile->m_readAsyncCallback(buffer, arg, bundleFile->m_unk_0x10);
-    bundleFile->m_readAsyncCallback = NULL;
-    bundleFile->m_unk_0x10 = 0;
+    bundleFile->m_pReadCallback(buffer, arg, bundleFile->m_readUserParam);
+    bundleFile->m_pReadCallback = NULL;
+    bundleFile->m_readUserParam = 0;
 }

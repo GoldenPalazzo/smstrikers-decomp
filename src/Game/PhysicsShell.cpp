@@ -61,7 +61,7 @@ void PhysicsShell::PostUpdate()
 
 /**
  * Offset/Address/Size: 0x10C | 0x8013BA74 | size: 0x898
- * TODO: 99.47% match - fabs f2 vs f1 register in z/height comparisons, fmsubs operand order in width*0.5f, eventData r29 vs r25, meSize comparison load order
+ * TODO: 99.73% match - eventData temp register in non-fielder branch uses r25 instead of r29, net width half-scale fmsubs operand order, fabs register destination in net-height comparisons
  */
 ContactType PhysicsShell::Contact(PhysicsObject* obj, dContact* info, int numContacts)
 {
@@ -212,7 +212,9 @@ ContactType PhysicsShell::Contact(PhysicsObject* obj, dContact* info, int numCon
             m_pTriggerCallbackFunc(this, obj, v3Pos, m_pCallbackParam);
         }
 
-        if (m_pPowerupObject->meSize > ((PhysicsShell*)obj)->m_pPowerupObject->meSize)
+        ePowerupSize otherShellSize = ((PhysicsShell*)obj)->m_pPowerupObject->meSize;
+        ePowerupSize myShellSize = m_pPowerupObject->meSize;
+        if (myShellSize > otherShellSize)
         {
             return NO_CONTACT;
         }

@@ -1478,6 +1478,7 @@ bool UpdateAuxEffectA(MusyXEffectType type, void* auxEffectSettings)
  */
 bool AddAuxEffect(MusyXEffectType type, void* data, bool arg2, unsigned char arg3)
 {
+    FORCE_DONT_INLINE;
     if ((arg2 == 0) && (PlatAudio::gUsingDolbyProLogic2) && (type != 0))
     {
         return false;

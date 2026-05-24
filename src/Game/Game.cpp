@@ -745,8 +745,8 @@ void cGame::PostResetCallback(unsigned long, unsigned long)
 
 /**
  * Offset/Address/Size: 0x113C | 0x8003D6B0 | size: 0x5A0
- * TODO: 96.40% match - register allocation uses one fewer non-volatile register
- * (stmw r25 vs r24), causing cascading r-diffs and extra g_pTeams reload at end.
+ * TODO: 97.43% match - register allocation still starts at r25 instead of r24,
+ * with remaining cascading r-diffs in early loops and vector stack-slot ordering.
  */
 void cGame::BeginGame(bool bRematch, bool bStraightToKickoff)
 {
@@ -759,6 +759,7 @@ void cGame::BeginGame(bool bRematch, bool bStraightToKickoff)
 
     m_bBallInNet = false;
     mInSuddenDeath = false;
+    cTeam** pTeams = g_pTeams;
 
     for (i = 0; i < 5; i++)
     {
@@ -892,8 +893,8 @@ void cGame::BeginGame(bool bRematch, bool bStraightToKickoff)
     m_pPostGameDoneClock->Stop();
 
     mfCheatTilt = 0.0f;
-    g_pTeams[0]->m_nScore = 0;
-    g_pTeams[1]->m_nScore = 0;
+    pTeams[0]->m_nScore = 0;
+    pTeams[1]->m_nScore = 0;
 
     for (i = 0; i < 10; i++)
     {

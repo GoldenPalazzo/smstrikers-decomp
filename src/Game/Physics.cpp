@@ -289,16 +289,18 @@ void PhysicsLoader::ConstructStaticPhysicsPrimitives(CharacterPhysicsData* pPhys
             nlVec3Set(v1, physElement->matLocalToParent.f.m11, physElement->matLocalToParent.f.m12, physElement->matLocalToParent.f.m13);
             nlVec3Set(v2, physElement->matLocalToParent.f.m21, physElement->matLocalToParent.f.m22, physElement->matLocalToParent.f.m23);
 
+            float m31 = physElement->matLocalToParent.f.m31;
+
             if (centre.f.x > 0.0f)
             {
-                if (physElement->matLocalToParent.f.m31 > 0.0f)
+                if (m31 > 0.01f)
                 {
                     normalPointsAwayFromField = true;
                 }
             }
             else if (centre.f.x < 0.0f)
             {
-                if (physElement->matLocalToParent.f.m31 < 0.0f)
+                if (m31 < -0.01f)
                 {
                     normalPointsAwayFromField = true;
                 }

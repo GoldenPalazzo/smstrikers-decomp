@@ -386,7 +386,7 @@ void IChooseCaptain::NameComponent::SetSidekickName(unsigned long id)
 
 /**
  * Offset/Address/Size: 0x1AC | 0x800BF950 | size: 0x874
- * TODO: 80.74% match - register allocation still differs in multiple branches.
+ * TODO: 88.46% match - register allocation and call inlining still differ in phase transitions.
  */
 void IChooseCaptain::ComponentState::SetCurrentPhase(Phase phase)
 {
@@ -394,6 +394,7 @@ void IChooseCaptain::ComponentState::SetCurrentPhase(Phase phase)
     int firstcaptain;
     int rowfirstcaptain;
     ISidekickGridComponent* gridcomponent;
+    FEMapMenu* captaingridmenu;
     char filename2[0x80];
     char filename1[0x80];
     char filename0[0x80];
@@ -427,19 +428,21 @@ void IChooseCaptain::ComponentState::SetCurrentPhase(Phase phase)
 
         if (mParent->mComponentState[mHomeAway ^ 1].mCurrentPhase > PHASE_CHOOSING_CAPTAIN)
         {
-            captaingrid->mMapMenu->SetItemActive(mParent->mCaptainGridComponents[mHomeAway ^ 1]->mMapMenu->GetSelectedItem(), false);
+            captaingridmenu = captaingrid->mMapMenu;
+            captaingridmenu->SetItemActive(mParent->mCaptainGridComponents[mHomeAway ^ 1]->mMapMenu->GetSelectedItem(), false);
         }
 
-        firstcaptain = captaingrid->mMapMenu->GetSelectedItem();
+        captaingridmenu = captaingrid->mMapMenu;
+        firstcaptain = captaingridmenu->GetSelectedItem();
         rowfirstcaptain = firstcaptain;
 
-        while (!captaingrid->mMapMenu->IsSelectedItemActive())
+        while (!captaingridmenu->IsSelectedItemActive())
         {
-            captaingrid->mMapMenu->MoveDown(true);
-            if (rowfirstcaptain == captaingrid->mMapMenu->GetSelectedItem())
+            captaingridmenu->MoveDown(true);
+            if (rowfirstcaptain == captaingridmenu->GetSelectedItem())
             {
-                captaingrid->mMapMenu->MoveRight(true);
-                rowfirstcaptain = captaingrid->mMapMenu->GetSelectedItem();
+                captaingridmenu->MoveRight(true);
+                rowfirstcaptain = captaingridmenu->GetSelectedItem();
                 if (rowfirstcaptain == firstcaptain)
                 {
                     break;
@@ -469,6 +472,7 @@ void IChooseCaptain::ComponentState::SetCurrentPhase(Phase phase)
         gridcomponent->mMapMenu->UpdateAllItems();
         gridcomponent->RebindHighliteComponent("HIGHLIGHT");
         gridcomponent->mHighliteComponent->m_bVisible = false;
+        gridcomponent->mHighliteVisibilityAtAnimEnd = true;
         gridcomponent->SetVisibleInstanceTable(true);
         gridcomponent->mParentComponent->m_bVisible = true;
 
@@ -486,19 +490,22 @@ void IChooseCaptain::ComponentState::SetCurrentPhase(Phase phase)
         break;
 
     case PHASE_READY:
+    {
+        int homeaway = mHomeAway;
+        int teamID = mParent->mHomeAwayTeam[homeaway];
         mParent->mCaptainGridComponents[mHomeAway]->mParentComponent->m_bVisible = false;
         mParent->mSidekickGridComponents[mHomeAway]->mParentComponent->m_bVisible = true;
         mParent->mSidekickGridComponents[mHomeAway]->mParentComponent->SetActiveSlide("in");
         mParent->mSidekickGridComponents[mHomeAway]->SetVisibleInstanceTable(false);
         mParent->mSidekickGridComponents[mHomeAway]->mHighliteComponent->m_bVisible = false;
 
-        CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_0, filename0, 0x80, mParent->mHomeAwayTeam[mHomeAway], mHomeAway);
-        CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_1, filename1, 0x80, mParent->mHomeAwayTeam[mHomeAway], mHomeAway);
-        CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_2, filename2, 0x80, mParent->mHomeAwayTeam[mHomeAway], mHomeAway);
-        mParent->mAsyncImage[mHomeAway][0]->QueueLoad(filename0, true);
-        mParent->mAsyncImage[mHomeAway][1]->QueueLoad(filename1, true);
-        mParent->mAsyncImage[mHomeAway][2]->QueueLoad(filename2, true);
-        mParent->mDidSwapCaptains[mHomeAway] = false;
+        CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_0, filename0, 0x80, teamID, homeaway);
+        CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_1, filename1, 0x80, teamID, homeaway);
+        CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_2, filename2, 0x80, teamID, homeaway);
+        mParent->mAsyncImage[homeaway][0]->QueueLoad(filename0, true);
+        mParent->mAsyncImage[homeaway][1]->QueueLoad(filename1, true);
+        mParent->mAsyncImage[homeaway][2]->QueueLoad(filename2, true);
+        mParent->mDidSwapCaptains[homeaway] = false;
 
         mParent->mCaptainComponents[mHomeAway]->m_bVisible = true;
         if (mParent->mHomeAwayTeam[mHomeAway] != TEAM_MYSTERY)
@@ -515,15 +522,15 @@ void IChooseCaptain::ComponentState::SetCurrentPhase(Phase phase)
         mParent->mCaptainGridComponents[mHomeAway]->mMapMenu->SetSelectedItem(mParent->mHomeAwayTeam[mHomeAway]);
         mParent->mCaptainGridComponents[mHomeAway ^ 1]->mMapMenu->SetSelectedItem(mParent->mHomeAwayTeam[mHomeAway ^ 1]);
 
-        mParent->mCaptainGridComponents[mHomeAway]->mMapMenu->SetItemActive(
-            mParent->mCaptainGridComponents[mHomeAway]->mMapMenu->GetSelectedItem(),
-            false);
-        mParent->mCaptainGridComponents[mHomeAway ^ 1]->mMapMenu->SetItemActive(
-            mParent->mCaptainGridComponents[mHomeAway ^ 1]->mMapMenu->GetSelectedItem(),
-            false);
+        FEMapMenu* menu = mParent->mCaptainGridComponents[mHomeAway]->mMapMenu;
+        menu->SetItemActive(menu->GetSelectedItem(), false);
+
+        menu = mParent->mCaptainGridComponents[mHomeAway ^ 1]->mMapMenu;
+        menu->SetItemActive(menu->GetSelectedItem(), false);
 
         mParent->StartSidekickMiniHead(mHomeAway, (eSidekickID)mParent->mHomeAwaySidekicks[mHomeAway]);
         break;
+    }
 
     default:
         break;

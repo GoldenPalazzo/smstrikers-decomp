@@ -347,7 +347,7 @@ void nlFont::DrawString(eGLView View, const FontCharString& Text, const nlVector
     }
 }
 
-static const nlFont::GlyphInfo sZeroGlyphInfo = { };
+static nlFont::GlyphInfo sZeroGlyphInfo;
 
 /**
  * Offset/Address/Size: 0x830 | 0x8021116C | size: 0x9C0
@@ -365,7 +365,6 @@ unsigned char nlFont::Load(const char* szFontName, char* pFontDescData, unsigned
     unsigned short Base;
     nlFont::KernPair kp;
     nlFont::KernPair* pKP;
-    char sHashFontName[265];
     unsigned long page;
 
     nlStrNCpy(m_FontName, szFontName, 0x20);
@@ -409,11 +408,13 @@ unsigned char nlFont::Load(const char* szFontName, char* pFontDescData, unsigned
             m_PageSize = atoi(pToken);
             m_InvTexSize = 1.0f / (float)m_PageSize;
 
-            pCurrentLine = nlStrChr(pToken, ' ') + 1;
+            pCurrentLine = nlStrChr(pToken, ' ');
+            pCurrentLine++;
             pCurrentLine = nlStrChr(pCurrentLine, ' ') + 1;
             m_PageCount = atoi(pCurrentLine);
 
-            pCurrentLine = nlStrChr(pCurrentLine, ' ') + 1;
+            pCurrentLine = nlStrChr(pCurrentLine, ' ');
+            pCurrentLine++;
             pCurrentLine = nlStrChr(pCurrentLine, ' ') + 1;
             switch (nlToLower(*pCurrentLine))
             {
@@ -430,7 +431,8 @@ unsigned char nlFont::Load(const char* szFontName, char* pFontDescData, unsigned
                 break;
             }
 
-            pCurrentLine = nlStrChr(pCurrentLine, ' ') + 1;
+            pCurrentLine = nlStrChr(pCurrentLine, ' ');
+            pCurrentLine++;
             pCurrentLine = nlStrChr(pCurrentLine, ' ');
             switch (nlToLower(pCurrentLine[1]))
             {
@@ -450,19 +452,23 @@ unsigned char nlFont::Load(const char* szFontName, char* pFontDescData, unsigned
         {
             m_Metrics.Height = (unsigned short)atoi(pToken);
 
-            pCurrentLine = nlStrChr(pToken, ' ') + 1;
+            pCurrentLine = nlStrChr(pToken, ' ');
+            pCurrentLine++;
             pCurrentLine = nlStrChr(pCurrentLine, ' ') + 1;
             m_Metrics.RenderHeight = (unsigned short)atoi(pCurrentLine);
 
-            pCurrentLine = nlStrChr(pCurrentLine, ' ') + 1;
+            pCurrentLine = nlStrChr(pCurrentLine, ' ');
+            pCurrentLine++;
             pCurrentLine = nlStrChr(pCurrentLine, ' ') + 1;
             m_Metrics.Ascent = (unsigned short)atoi(pCurrentLine);
 
-            pCurrentLine = nlStrChr(pCurrentLine, ' ') + 1;
+            pCurrentLine = nlStrChr(pCurrentLine, ' ');
+            pCurrentLine++;
             pCurrentLine = nlStrChr(pCurrentLine, ' ') + 1;
             m_Metrics.RenderAscent = (unsigned short)atoi(pCurrentLine);
 
-            pCurrentLine = nlStrChr(pCurrentLine, ' ') + 1;
+            pCurrentLine = nlStrChr(pCurrentLine, ' ');
+            pCurrentLine++;
             pCurrentLine = nlStrChr(pCurrentLine, ' ') + 1;
             m_Metrics.InternalLeading = (unsigned short)atoi(pCurrentLine);
             break;
@@ -472,7 +478,8 @@ unsigned char nlFont::Load(const char* szFontName, char* pFontDescData, unsigned
         {
             m_Metrics.Spacing = (float)atoi(pToken) / 100.0f;
 
-            pCurrentLine = nlStrChr(pToken, ' ') + 1;
+            pCurrentLine = nlStrChr(pToken, ' ');
+            pCurrentLine++;
             pCurrentLine = nlStrChr(pCurrentLine, ' ') + 1;
             m_Metrics.LineHeight = (float)atoi(pCurrentLine) / 100.0f;
             break;
@@ -523,7 +530,8 @@ unsigned char nlFont::Load(const char* szFontName, char* pFontDescData, unsigned
             pInfo->UnicodeChar = Character;
             pInfo->HasKernPairs = 0;
 
-            pCurrentLine = nlStrChr(pToken, ' ') + 1;
+            pCurrentLine = nlStrChr(pToken, ' ');
+            pCurrentLine++;
             pCurrentLine = nlStrChr(pCurrentLine, ' ') + 1;
             pInfo->Advance = (unsigned char)atoi(pCurrentLine);
 
@@ -664,13 +672,7 @@ unsigned char nlFont::Load(const char* szFontName, char* pFontDescData, unsigned
             ListEntry<nlFont::GlyphInfo>* pEntry = nlListRemoveStart(&ExtendedGlyphList.m_Head, &ExtendedGlyphList.m_Tail);
             if (pInfo != NULL)
             {
-                pInfo->uv = pEntry->data.uv;
-                pInfo->Advance = pEntry->data.Advance;
-                pInfo->RenderWidth = pEntry->data.RenderWidth;
-                pInfo->Offset = pEntry->data.Offset;
-                pInfo->Page = pEntry->data.Page;
-                pInfo->HasKernPairs = pEntry->data.HasKernPairs;
-                pInfo->UnicodeChar = pEntry->data.UnicodeChar;
+                *pInfo = pEntry->data;
             }
 
             pEntry->next = (ListEntry<nlFont::GlyphInfo>*)ExtendedGlyphList.m_Allocator.m_FreeList;
@@ -685,6 +687,7 @@ unsigned char nlFont::Load(const char* szFontName, char* pFontDescData, unsigned
         m_pExtendedGlyphs = NULL;
     }
 
+    char sHashFontName[265] = { 0 };
     for (page = 0; page < m_PageCount; page++)
     {
         nlStrNCpy(sHashFontName, szFontName, 0x109);

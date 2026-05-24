@@ -13,6 +13,8 @@
 
 #include "Game/FE/feHelpFuncs.h"
 
+#include "NL/nlMemFunBody.h"
+
 extern cTeam* g_pTeams[2];
 extern unsigned int nlDefaultSeed;
 

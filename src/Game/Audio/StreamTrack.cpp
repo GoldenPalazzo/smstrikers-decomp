@@ -570,7 +570,7 @@ inline GCAudioStreaming::AudioStream::AudioStream(GCAudioStreaming::AudioBufferM
     m_OldLength = 0;
     m_Flags = 0;
     m_BufferCount = bufCount;
-    memset(m_Buffers, 0, sizeof(m_Buffers));
+    memset(m_Buffers, sizeof(m_Buffers), 0);
 }
 
 inline GCAudioStreaming::StereoAudioStream::StereoAudioStream(

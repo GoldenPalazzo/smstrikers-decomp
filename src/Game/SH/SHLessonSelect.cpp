@@ -14,6 +14,8 @@
 #include "NL/nlLexicalCast.h"
 #include "NL/nlBasicString.h"
 
+#include "NL/nlMemFunBody.h"
+
 extern int sRowOffset;
 extern int sCurrentRow;
 

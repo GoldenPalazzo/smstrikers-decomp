@@ -79,15 +79,19 @@ SummaryOverlay::SummaryOverlay(SummaryOverlay::eSummaryContext context)
     , mCurrentSummaryIndex(0)
     , mButtonState(ButtonComponent::BS_INVALID)
 {
+    StatsTracker* tracker = StatsTracker::GetInstance();
+
     mShowUserStats = false;
     mShowCumulativeStats = false;
 
-    StatsTracker* tracker = nlSingleton<StatsTracker>::s_pInstance;
-
-    PlayerStats currentStatsA = tracker->mCurrentTeamStats[0].mPlayerTotalStats;
-    PlayerStats currentStatsB = tracker->mCurrentTeamStats[1].mPlayerTotalStats;
-    mCurrentPlayerStats[0] = currentStatsA;
-    mCurrentPlayerStats[1] = currentStatsB;
+    {
+        TeamStats currentTeam = tracker->mCurrentTeamStats[0];
+        mCurrentPlayerStats[0] = currentTeam.mPlayerTotalStats;
+    }
+    {
+        TeamStats currentTeam = tracker->mCurrentTeamStats[1];
+        mCurrentPlayerStats[1] = currentTeam.mPlayerTotalStats;
+    }
 
     if (mShowUserStats)
     {
@@ -106,19 +110,23 @@ SummaryOverlay::SummaryOverlay(SummaryOverlay::eSummaryContext context)
 
     if (mShowCumulativeStats)
     {
-        PlayerStats cumulativeA = tracker->mCumulativeTeamStats[0].mPlayerTotalStats;
-        PlayerStats cumulativeB = tracker->mCumulativeTeamStats[1].mPlayerTotalStats;
-
-        mCumulativePlayerStats[0] = cumulativeA;
-        mCumulativePlayerStats[1] = cumulativeB;
+        {
+            TeamStats cumulativeTeamA = tracker->mCumulativeTeamStats[0];
+            mCumulativePlayerStats[0] = cumulativeTeamA.mPlayerTotalStats;
+        }
+        {
+            TeamStats cumulativeTeamB = tracker->mCumulativeTeamStats[1];
+            mCumulativePlayerStats[1] = cumulativeTeamB.mPlayerTotalStats;
+        }
     }
 
     {
-        PlayerStats cumulativeA = tracker->mCumulativeTeamStats[0].mPlayerTotalStats;
-        PlayerStats cumulativeB = tracker->mCumulativeTeamStats[1].mPlayerTotalStats;
-
-        mCumulativePlayerStats[0] = cumulativeA;
-        mCumulativePlayerStats[1] = cumulativeB;
+        TeamStats cumulativeTeamA = tracker->mCumulativeTeamStats[0];
+        mCumulativePlayerStats[0] = cumulativeTeamA.mPlayerTotalStats;
+    }
+    {
+        TeamStats cumulativeTeamB = tracker->mCumulativeTeamStats[1];
+        mCumulativePlayerStats[1] = cumulativeTeamB.mPlayerTotalStats;
     }
 
     summaryOrder[0] = SUMMARY_MATCH;
@@ -412,10 +420,8 @@ void SummaryOverlay::DisplayMatchSummary(eSummaryType matchSummaryType)
         WideBasicString unformatted(locString);
         NLString numGamesString(LexicalCast<NLString, int>((int)nlSingleton<StatsTracker>::s_pInstance->mNumConsecutiveGamesPlayed));
         unsigned short tempBuffer[32];
-        WideBasicString formatted;
-
         nlStrToWcs(numGamesString.c_str(), tempBuffer, 0x40);
-        formatted = Format(unformatted, tempBuffer);
+        WideBasicString formatted(Format(unformatted, tempBuffer));
         memcpy(mTitleBuffer, formatted.c_str(), 0x80);
 
         pTitleText = FEFinder<TLTextInstance, 3>::Find<TLSlide>(

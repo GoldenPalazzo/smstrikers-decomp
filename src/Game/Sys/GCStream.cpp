@@ -402,7 +402,7 @@ void GCAudioStreaming::AudioStream::_UpdateReadCB(nlFile*, void* pData, unsigned
 
 /**
  * Offset/Address/Size: 0x1364 | 0x801C8B14 | size: 0x3A0
- * TODO: 88.49% match - r31/r29 register swap for mgr/this and missing li r28,0 fallback at buffer loop exit
+ * TODO: 88.69% match - register allocation differences remain in callback pool paths
  */
 void GCAudioStreaming::MonoAudioStream::Warm(bool CoolOnStop)
 {
@@ -425,8 +425,8 @@ void GCAudioStreaming::MonoAudioStream::Warm(bool CoolOnStop)
         test = (-(long)test | test) >> 31;
         if ((int)test == 1)
         {
-            mgr.m_BuffersFree = free & ~mask;
             pBuf = &mgr.m_Buffers[i];
+            mgr.m_BuffersFree = free & ~mask;
             pBuf->m_pStream = this;
             pBuf->m_UpdateOffset = 0;
             pBuf->m_Volume = 0x7F;
@@ -440,10 +440,14 @@ void GCAudioStreaming::MonoAudioStream::Warm(bool CoolOnStop)
                 count++;
             }
             ___blank("After buffer alloc there are %d availible\n", count);
-            break;
+            goto done_alloc;
         }
         i++;
     }
+
+    pBuf = 0;
+
+done_alloc:
     m_Buffers[0] = pBuf;
 
     m_UpdateLen = m_Buffers[0]->m_BufferSize >> 1;
@@ -461,7 +465,7 @@ void GCAudioStreaming::MonoAudioStream::Warm(bool CoolOnStop)
 
     nlSeek(m_pFile, 0, 0);
 
-    unsigned long alignedHdr = ((unsigned long)mgr.m_ADPCMHdrMem + 0x1F) & ~0x1F;
+    unsigned long alignedHdr = ((unsigned long)m_BuffMgr.m_ADPCMHdrMem + 0x1F) & ~0x1F;
 
     bool enabled = OSDisableInterrupts();
     READ_CB_INFO* pCBInfo = READ_CB_INFO::s_AllocPool.m_pFree;
@@ -537,11 +541,13 @@ void GCAudioStreaming::MonoAudioStream::Warm(bool CoolOnStop)
 
                 unsigned long MRAMOffsetB;
 
-                if (pBuffer->m_UpdateOffset >= pBuffer->m_BufferSize)
+                unsigned long updateOffset = pBuffer->m_UpdateOffset;
+                if (updateOffset >= pBuffer->m_BufferSize)
                 {
-                    pBuffer->m_UpdateOffset -= pBuffer->m_BufferSize;
-                    ReadLen = availLen - pBuffer->m_UpdateOffset;
-                    MRAMOffsetB = pBuffer->m_UpdateOffset & ~0x1F;
+                    updateOffset -= pBuffer->m_BufferSize;
+                    pBuffer->m_UpdateOffset = updateOffset;
+                    ReadLen = availLen - updateOffset;
+                    MRAMOffsetB = updateOffset & ~0x1F;
                 }
                 else
                 {
@@ -562,7 +568,7 @@ void GCAudioStreaming::MonoAudioStream::Warm(bool CoolOnStop)
     }
     else
     {
-        m_Flags |= (1 << SF_EndAtUpdate);
+        m_Flags = (m_Flags & ~(1 << SF_EndAtUpdate)) | (1 << SF_EndAtUpdate);
         m_LastPlayable = m_StreamPos;
     }
 }

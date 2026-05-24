@@ -182,6 +182,9 @@ void FEPopupMenu::CentrePopup(float totalHeight, float topOfMessageBox)
     float offset;
     FEPresentation* presentation;
     TLTextInstance* pText;
+    InlineHasher h4;
+    InlineHasher h5;
+    InlineHasher h6;
     feVector3 position;
     int i;
 
@@ -190,28 +193,34 @@ void FEPopupMenu::CentrePopup(float totalHeight, float topOfMessageBox)
     offset = half - topOfMessageBox;
     presentation = m_pFEScene->m_pFEPackage->GetPresentation();
 
+    h6 = InlineHasher(0);
+    h5 = InlineHasher(0);
+    h4 = InlineHasher(0);
     pText = FEFinder<TLTextInstance, 3>::Find<FEPresentation>(
         presentation,
         InlineHasher(nlStringLowerHash("Slide1")),
         InlineHasher(nlStringLowerHash("Layer")),
         InlineHasher(nlStringLowerHash("Message")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        h4,
+        h5,
+        h6);
 
     position = pText->GetAssetPosition();
     pText->SetAssetPosition(position.e[0], position.e[1] + offset, position.e[2]);
 
     for (i = 0; i < mPopup.numOptions; i++)
     {
+        h6 = InlineHasher(0);
+        h5 = InlineHasher(0);
+        h4 = InlineHasher(0);
         pText = FEFinder<TLTextInstance, 3>::Find<FEPresentation>(
             presentation,
             InlineHasher(nlStringLowerHash("Slide1")),
             InlineHasher(nlStringLowerHash("Layer")),
             InlineHasher(nlStringLowerHash(optionNames[i])),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0));
+            h4,
+            h5,
+            h6);
 
         position = pText->GetAssetPosition();
         pText->SetAssetPosition(position.e[0], position.e[1] + offset, position.e[2]);

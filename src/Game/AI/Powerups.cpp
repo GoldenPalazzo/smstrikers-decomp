@@ -1193,8 +1193,9 @@ PowerupBase::~PowerupBase()
 
     DrawableObject* pDrawable = m_pDrawableObj;
     int type = m_eType;
+    int i;
 
-    for (int i = 0; i < 25; i++)
+    for (i = 0; i < 25; i++)
     {
         if (pDrawable == powerupModelPool.mObjs[type][i])
         {
@@ -1255,10 +1256,33 @@ void PowerupBase::Update(float dt)
 
 /**
  * Offset/Address/Size: 0x3DFC | 0x8005E6E8 | size: 0x608
- * TODO: 97.5% match - remaining register allocation and arithmetic operand-order diffs
+ * TODO: 97.63% match - remaining register allocation and integer chance accumulator ordering diffs
  */
 int PowerupBase::AwardPowerup(cTeam* pTeam)
 {
+    unsigned char bEmptySpot;
+    int i;
+    int nDifference;
+    int nChanceForChainChomp;
+    cTeam* pOtherTeam;
+    cFielder* pCaptain;
+    cFielder* pSideKick;
+    int nChanceForStar;
+    ePowerUpType powerUpType;
+    int nChanceForSpinyShell;
+    int nChanceForRedShell;
+    int nChanceForBanana;
+    int nChanceForBoBomb;
+    int nChanceForMushroom;
+    int nChanceForGreenShell;
+    int nChanceForFreezeShell;
+    int nChance;
+    float fMultiplesBonus;
+    int nNumOfPowerups;
+    float fRandom;
+    float fFiveChance;
+    float fThreeChance;
+
     if (g_pGame->mIsPure)
     {
         return -1;
@@ -1269,8 +1293,8 @@ int PowerupBase::AwardPowerup(cTeam* pTeam)
         return -1;
     }
 
-    unsigned char bEmptySpot = false;
-    for (int i = 0; i < 2; i++)
+    bEmptySpot = false;
+    for (i = 0; i < 2; i++)
     {
         if (pTeam->GetPowerUpByIndex(i).eType == POWER_UP_NONE)
         {
@@ -1283,23 +1307,21 @@ int PowerupBase::AwardPowerup(cTeam* pTeam)
         return -1;
     }
 
-    int nDifference = pTeam->m_nScore - pTeam->GetOtherTeam()->m_nScore;
+    nDifference = pTeam->m_nScore - pTeam->GetOtherTeam()->m_nScore;
 
-    int absDiff = nDifference < 0 ? -nDifference : nDifference;
-    if ((u32)absDiff <= (u32)g_pGame->m_pGameTweaks->nScoreDifferenceMinimum)
+    if ((u32)(nDifference < 0 ? -nDifference : nDifference) <= (u32)g_pGame->m_pGameTweaks->nScoreDifferenceMinimum)
     {
         nDifference = 0;
     }
     else
     {
-        int nMax = g_pGame->m_pGameTweaks->nScoreDifferenceMaximum;
-        if (nDifference < -nMax)
+        if (nDifference < -g_pGame->m_pGameTweaks->nScoreDifferenceMaximum)
         {
-            nDifference = -nMax;
+            nDifference = -g_pGame->m_pGameTweaks->nScoreDifferenceMaximum;
         }
-        else if (nDifference > nMax)
+        else if (nDifference > g_pGame->m_pGameTweaks->nScoreDifferenceMaximum)
         {
-            nDifference = nMax;
+            nDifference = g_pGame->m_pGameTweaks->nScoreDifferenceMaximum;
         }
     }
 
@@ -1313,10 +1335,10 @@ int PowerupBase::AwardPowerup(cTeam* pTeam)
         nDifference *= nDifference;
     }
 
-    int nChanceForChainChomp = g_pGame->m_pGameTweaks->nChanceForChainChomp - nDifference;
+    nChanceForChainChomp = g_pGame->m_pGameTweaks->nChanceForChainChomp - nDifference;
 
-    cTeam* pOtherTeam = pTeam->GetOtherTeam();
-    for (int i = 0; i < 2; i++)
+    pOtherTeam = pTeam->GetOtherTeam();
+    for (i = 0; i < 2; i++)
     {
         if (pOtherTeam->GetPowerUpByIndex(i).eType == POWER_UP_CHAIN_CHOMP)
         {
@@ -1333,11 +1355,10 @@ int PowerupBase::AwardPowerup(cTeam* pTeam)
         nChanceForChainChomp = 0;
     }
 
-    cFielder* pCaptain = pTeam->GetCaptain();
-    cFielder* pSideKick = pTeam->GetFielder(1);
+    pCaptain = pTeam->GetCaptain();
+    pSideKick = pTeam->GetFielder(1);
 
-    int nChanceForStar = nChanceForChainChomp > 0 ? nChanceForChainChomp : 0;
-    nChanceForStar += g_pGame->m_pGameTweaks->nChanceForStar;
+    nChanceForStar = (nChanceForChainChomp > 0 ? nChanceForChainChomp : 0) + g_pGame->m_pGameTweaks->nChanceForStar;
     nChanceForStar -= nDifference;
 
     if (nDifference >= -1)
@@ -1346,46 +1367,42 @@ int PowerupBase::AwardPowerup(cTeam* pTeam)
         nChanceForStar = 0;
     }
 
-    FielderTweaks* pCapTweaks = (FielderTweaks*)pCaptain->m_pTweaks;
-    FielderTweaks* pSkTweaks = (FielderTweaks*)pSideKick->m_pTweaks;
-
-    int nChanceForSpinyShell = pCapTweaks->nChanceForSpinyShell + pSkTweaks->nChanceForSpinyShell;
+    nChanceForSpinyShell = ((FielderTweaks*)pCaptain->m_pTweaks)->nChanceForSpinyShell + ((FielderTweaks*)pSideKick->m_pTweaks)->nChanceForSpinyShell;
     nChanceForSpinyShell += nChanceForStar > 0 ? nChanceForStar : 0;
     nChanceForSpinyShell += g_pGame->m_pGameTweaks->nChanceForSpinyShell;
     nChanceForSpinyShell -= nDifference;
 
-    int nChanceForRedShell = pCapTweaks->nChanceForRedShell + pSkTweaks->nChanceForRedShell;
+    nChanceForRedShell = ((FielderTweaks*)pCaptain->m_pTweaks)->nChanceForRedShell + ((FielderTweaks*)pSideKick->m_pTweaks)->nChanceForRedShell;
     nChanceForRedShell += nChanceForSpinyShell > 0 ? nChanceForSpinyShell : 0;
     nChanceForRedShell += g_pGame->m_pGameTweaks->nChanceForRedShell;
     nChanceForRedShell -= nDifference;
 
-    int nChanceForBanana = pCapTweaks->nChanceForBanana + pSkTweaks->nChanceForBanana;
+    nChanceForBanana = ((FielderTweaks*)pCaptain->m_pTweaks)->nChanceForBanana + ((FielderTweaks*)pSideKick->m_pTweaks)->nChanceForBanana;
     nChanceForBanana += nChanceForRedShell > 0 ? nChanceForRedShell : 0;
     nChanceForBanana += g_pGame->m_pGameTweaks->nChanceForBanana;
     nChanceForBanana += nDifference;
 
-    int nChanceForBoBomb = pCapTweaks->nChanceForBoBomb + pSkTweaks->nChanceForBoBomb;
+    nChanceForBoBomb = ((FielderTweaks*)pCaptain->m_pTweaks)->nChanceForBoBomb + ((FielderTweaks*)pSideKick->m_pTweaks)->nChanceForBoBomb;
     nChanceForBoBomb += nChanceForBanana > 0 ? nChanceForBanana : 0;
     nChanceForBoBomb += g_pGame->m_pGameTweaks->nChanceForBoBomb;
 
-    int nChanceForMushroom = pCapTweaks->nChanceForMushroom + pSkTweaks->nChanceForMushroom;
+    nChanceForMushroom = ((FielderTweaks*)pCaptain->m_pTweaks)->nChanceForMushroom + ((FielderTweaks*)pSideKick->m_pTweaks)->nChanceForMushroom;
     nChanceForMushroom += nChanceForBoBomb > 0 ? nChanceForBoBomb : 0;
     nChanceForMushroom += g_pGame->m_pGameTweaks->nChanceForMushroom;
     nChanceForMushroom += nDifference;
 
-    int nChanceForGreenShell = pCapTweaks->nChanceForGreenShell + pSkTweaks->nChanceForGreenShell;
+    nChanceForGreenShell = ((FielderTweaks*)pCaptain->m_pTweaks)->nChanceForGreenShell + ((FielderTweaks*)pSideKick->m_pTweaks)->nChanceForGreenShell;
     nChanceForGreenShell += nChanceForMushroom > 0 ? nChanceForMushroom : 0;
     nChanceForGreenShell += g_pGame->m_pGameTweaks->nChanceForGreenShell;
     nChanceForGreenShell += nDifference;
 
-    int nChanceForFreezeShell = pCapTweaks->nChanceForFreezeShell + pSkTweaks->nChanceForFreezeShell;
+    nChanceForFreezeShell = ((FielderTweaks*)pCaptain->m_pTweaks)->nChanceForFreezeShell + ((FielderTweaks*)pSideKick->m_pTweaks)->nChanceForFreezeShell;
     nChanceForFreezeShell += nChanceForGreenShell > 0 ? nChanceForGreenShell : 0;
     nChanceForFreezeShell += g_pGame->m_pGameTweaks->nChanceForFreezeShell;
     nChanceForFreezeShell += nDifference;
 
-    int nChance = nlRandom(nChanceForFreezeShell, &nlDefaultSeed);
+    nChance = nlRandom(nChanceForFreezeShell, &nlDefaultSeed);
 
-    ePowerUpType powerUpType;
     switch (nlSingleton<GameInfoManager>::s_pInstance->GetCustomPowerups())
     {
     case CP_FREEZING:
@@ -1476,11 +1493,9 @@ int PowerupBase::AwardPowerup(cTeam* pTeam)
         powerUpType = POWER_UP_FREEZE_SHELL;
     }
 
-    int nNumOfPowerups = 1;
-    float fMultiplesBonus = 0.5f * ((FielderTweaks*)pCaptain->m_pTweaks)->fChanceForMultiples;
-    float fRandom = nlRandomf(1.0f, &nlDefaultSeed);
-    float fFiveChance;
-    float fThreeChance;
+    nNumOfPowerups = 1;
+    fMultiplesBonus = ((FielderTweaks*)pCaptain->m_pTweaks)->fChanceForMultiples * 0.5f;
+    fRandom = nlRandomf(1.0f, &nlDefaultSeed);
 
     switch (powerUpType)
     {
@@ -1488,7 +1503,7 @@ int PowerupBase::AwardPowerup(cTeam* pTeam)
     case POWER_UP_FREEZE_SHELL:
         fFiveChance = fMultiplesBonus + g_pGame->m_pGameTweaks->fShellFiveChance;
         fThreeChance = fFiveChance + g_pGame->m_pGameTweaks->fShellThreeChance;
-        fThreeChance += fMultiplesBonus;
+        fThreeChance = fMultiplesBonus + fThreeChance;
         if (fThreeChance > fRandom)
         {
             nNumOfPowerups = 3;
@@ -1500,8 +1515,8 @@ int PowerupBase::AwardPowerup(cTeam* pTeam)
         break;
     case POWER_UP_RED_SHELL:
     case POWER_UP_SPINY_SHELL:
-        fThreeChance = ((FielderTweaks*)pCaptain->m_pTweaks)->fChanceForMultiples + g_pGame->m_pGameTweaks->fShellFiveChance;
-        fThreeChance += g_pGame->m_pGameTweaks->fShellThreeChance;
+        fThreeChance = g_pGame->m_pGameTweaks->fShellFiveChance + g_pGame->m_pGameTweaks->fShellThreeChance;
+        fThreeChance += ((FielderTweaks*)pCaptain->m_pTweaks)->fChanceForMultiples;
         if (fThreeChance > fRandom)
         {
             nNumOfPowerups = 3;
@@ -1510,7 +1525,7 @@ int PowerupBase::AwardPowerup(cTeam* pTeam)
     case POWER_UP_BOBOMB:
         fFiveChance = fMultiplesBonus + g_pGame->m_pGameTweaks->fBobombFiveChance;
         fThreeChance = fFiveChance + g_pGame->m_pGameTweaks->fBobombThreeChance;
-        fThreeChance += fMultiplesBonus;
+        fThreeChance = fMultiplesBonus + fThreeChance;
         if (fThreeChance > fRandom)
         {
             nNumOfPowerups = 3;
@@ -1523,7 +1538,7 @@ int PowerupBase::AwardPowerup(cTeam* pTeam)
     case POWER_UP_BANANA:
         fFiveChance = fMultiplesBonus + g_pGame->m_pGameTweaks->fBananaFiveChance;
         fThreeChance = fFiveChance + g_pGame->m_pGameTweaks->fBananaThreeChance;
-        fThreeChance += fMultiplesBonus;
+        fThreeChance = fMultiplesBonus + fThreeChance;
         if (fThreeChance > fRandom)
         {
             nNumOfPowerups = 3;
@@ -1545,7 +1560,6 @@ int PowerupBase::AwardPowerup(cTeam* pTeam)
     pTeam->SetCurrentPowerUp(powerUpType, nNumOfPowerups);
     return (int)powerUpType;
 }
-
 /**
  * Offset/Address/Size: 0x38B4 | 0x8005E1A0 | size: 0x548
  */

@@ -612,7 +612,6 @@ void HUDOverlay::SceneCreated()
 {
     FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
     TLComponentInstance* pScoreComp;
-    TLSlide* pScoreSlide;
     eTeamID team;
     TLTextInstance* pTeamName;
 
@@ -644,10 +643,12 @@ void HUDOverlay::SceneCreated()
         InlineHasher(0),
         InlineHasher(0),
         InlineHasher(0));
-    pScoreSlide = pScoreComp->GetActiveSlide();
-    pScoreComp->Update(pScoreSlide->m_start + pScoreSlide->m_duration);
+    {
+        TLSlide* pSlide = pScoreComp->GetActiveSlide();
+        pScoreComp->Update(pSlide->m_start + pSlide->m_duration);
+    }
     m_pTextInstanceScore[0][0] = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
-        pScoreSlide,
+        pScoreComp->GetActiveSlide(),
         InlineHasher(nlStringLowerHash("left_score")),
         InlineHasher(0),
         InlineHasher(0),
@@ -663,10 +664,12 @@ void HUDOverlay::SceneCreated()
         InlineHasher(0),
         InlineHasher(0),
         InlineHasher(0));
-    pScoreSlide = pScoreComp->GetActiveSlide();
-    pScoreComp->Update(pScoreSlide->m_start + pScoreSlide->m_duration);
+    {
+        TLSlide* pSlide = pScoreComp->GetActiveSlide();
+        pScoreComp->Update(pSlide->m_start + pSlide->m_duration);
+    }
     m_pTextInstanceScore[0][1] = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
-        pScoreSlide,
+        pScoreComp->GetActiveSlide(),
         InlineHasher(nlStringLowerHash("right_score")),
         InlineHasher(0),
         InlineHasher(0),
@@ -674,40 +677,20 @@ void HUDOverlay::SceneCreated()
         InlineHasher(0),
         InlineHasher(0));
 
-    pScoreComp = FEFinder<TLComponentInstance, 4>::Find<FEPresentation>(
+    m_pTextInstanceScore[1][0] = FEFinder<TLTextInstance, 3>::Find<FEPresentation>(
         presentation,
         InlineHasher(nlStringLowerHash(HUD_SLIDE_OUT_NAME)),
         InlineHasher(nlStringLowerHash(LAYER_NAME)),
         InlineHasher(nlStringLowerHash("left_score")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
-    pScoreSlide = pScoreComp->GetActiveSlide();
-    pScoreComp->Update(pScoreSlide->m_start + pScoreSlide->m_duration);
-    m_pTextInstanceScore[1][0] = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
-        pScoreSlide,
-        InlineHasher(nlStringLowerHash("left_score")),
-        InlineHasher(0),
-        InlineHasher(0),
         InlineHasher(0),
         InlineHasher(0),
         InlineHasher(0));
 
-    pScoreComp = FEFinder<TLComponentInstance, 4>::Find<FEPresentation>(
+    m_pTextInstanceScore[1][1] = FEFinder<TLTextInstance, 3>::Find<FEPresentation>(
         presentation,
         InlineHasher(nlStringLowerHash(HUD_SLIDE_OUT_NAME)),
         InlineHasher(nlStringLowerHash(LAYER_NAME)),
         InlineHasher(nlStringLowerHash("right_score")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
-    pScoreSlide = pScoreComp->GetActiveSlide();
-    pScoreComp->Update(pScoreSlide->m_start + pScoreSlide->m_duration);
-    m_pTextInstanceScore[1][1] = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
-        pScoreSlide,
-        InlineHasher(nlStringLowerHash("right_score")),
-        InlineHasher(0),
-        InlineHasher(0),
         InlineHasher(0),
         InlineHasher(0),
         InlineHasher(0));
@@ -790,7 +773,7 @@ void HUDOverlay::SceneCreated()
         m_pTextInstanceClock[1]->m_bVisible = false;
     }
 
-    presentation->SetActiveSlide("OUT");
+    m_pFEScene->m_pFEPackage->GetPresentation()->SetActiveSlide("OUT");
     mIsHUDSlideIn = false;
 
     for (int i = 0; i < 2; i++)

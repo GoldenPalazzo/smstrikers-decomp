@@ -1424,17 +1424,16 @@ void StatsTracker::GetSortedTeamStats(TeamStats* source, int numsource, int* des
  * Offset/Address/Size: 0x2E00 | 0x80184360 | size: 0x540
  */
 /**
- * TODO: 94.1% match - mFinalScore[homeaway] still compiles to a persistent
- * index accumulator instead of per-iteration index calculation, which shifts
- * register allocation in the main team loop.
+ * TODO: 99.08% match - final user-stats accumulation loop still assigns source
+ * and destination pointers to different registers than target.
  */
 void StatsTracker::CompileEndOfGameStats()
 {
     int homeAwayIndex[2] = { 0, 0 };
     eTeamID homeid = mBasicGameInfo->mTeamIndex[0];
     eTeamID awayid = mBasicGameInfo->mTeamIndex[1];
-    GameInfoManager* gameInfoMgr = nlSingleton<GameInfoManager>::s_pInstance;
-    u16 numTeams = gameInfoMgr->GetNumPlayingTeams();
+    GameInfoManager* gameInfoMgr = nlSingleton<GameInfoManager>::Instance();
+    int numTeams = gameInfoMgr->GetNumPlayingTeams();
 
     for (int i = 0; i < numTeams; i++)
     {
@@ -1453,7 +1452,7 @@ void StatsTracker::CompileEndOfGameStats()
     {
         int team = homeAwayIndex[homeaway];
 
-        if (mBasicGameInfo->mFinalScore[homeaway] != -5)
+        if (mBasicGameInfo->mFinalScore[(short)homeaway] != -5)
         {
             tempStat = mCurrentTeamStats[homeaway].mPlayerTotalStats.mNumShotsOnGoal;
             gameInfoMgr->pGetTeamStatsByIndex(team)->mPlayerTotalStats.mNumShotsOnGoal += tempStat;
@@ -1506,7 +1505,8 @@ void StatsTracker::CompileEndOfGameStats()
             tempStat = mCurrentTeamStats[homeaway].mPlayerTotalStats.mNumSTSAttempts;
             gameInfoMgr->pGetTeamStatsByIndex(team)->mPlayerTotalStats.mNumSTSAttempts += tempStat;
 
-            gameInfoMgr->pGetTeamStatsByIndex(team)->mPlayerTotalStats.mNumPerfectPasses += mCurrentTeamStats[homeaway].mPlayerTotalStats.mNumPerfectPasses;
+            tempStat = mCurrentTeamStats[homeaway].mPlayerTotalStats.mNumPerfectPasses;
+            gameInfoMgr->pGetTeamStatsByIndex(team)->mPlayerTotalStats.mNumPerfectPasses += tempStat;
 
             gameInfoMgr->pGetTeamStatsByIndex(team)->mPlayerTotalStats.mNumGamesPlayed++;
 
@@ -1524,7 +1524,7 @@ void StatsTracker::CompileEndOfGameStats()
         }
         else
         {
-            mBasicGameInfo->mFinalScore[homeaway] = 0;
+            mBasicGameInfo->mFinalScore[(short)homeaway] = 0;
         }
 
         tempStat = mCurrentTeamStats[homeaway].mNumWins;
@@ -1533,31 +1533,33 @@ void StatsTracker::CompileEndOfGameStats()
         gameInfoMgr->pGetTeamStatsByIndex(team)->mNumLosses += tempStat;
         tempStat = mCurrentTeamStats[homeaway].mNumOTLosses;
         gameInfoMgr->pGetTeamStatsByIndex(team)->mNumOTLosses += tempStat;
-        gameInfoMgr->pGetTeamStatsByIndex(team)->mNumPoints += mCurrentTeamStats[homeaway].mNumPoints;
+        tempStat = mCurrentTeamStats[homeaway].mNumPoints;
+        gameInfoMgr->pGetTeamStatsByIndex(team)->mNumPoints += tempStat;
     }
 
     for (int i = 0; i < 4; i++)
     {
+        const PlayerStats& current = mCurrentUserStats[i];
         PlayerStats* us = &nlSingleton<GameInfoManager>::s_pInstance->mUserStats[i];
-        us->mNumShotsOnGoal += mCurrentUserStats[i].mNumShotsOnGoal;
-        us->mNumGoalsFor += mCurrentUserStats[i].mNumGoalsFor;
-        us->mNumGoalsAgainst = mCurrentUserStats[i].mNumGoalsAgainst;
-        us->mNumAssists += mCurrentUserStats[i].mNumAssists;
-        us->mNumFouls += mCurrentUserStats[i].mNumFouls;
-        us->mNumPowerupsUsed += mCurrentUserStats[i].mNumPowerupsUsed;
-        us->mNumPowerupsHit += mCurrentUserStats[i].mNumPowerupsHit;
-        us->mNumShootToScoreGoals += mCurrentUserStats[i].mNumShootToScoreGoals;
-        us->mNumPassesMade += mCurrentUserStats[i].mNumPassesMade;
-        us->mNumPassesReceived += mCurrentUserStats[i].mNumPassesReceived;
-        us->mNumPassesIntercepted += mCurrentUserStats[i].mNumPassesIntercepted;
-        us->mNumHitsMade += mCurrentUserStats[i].mNumHitsMade;
-        us->mNumSteals += mCurrentUserStats[i].mNumSteals;
-        us->mBallPossessionTime += mCurrentUserStats[i].mBallPossessionTime;
-        us->mNumButtonPresses += mCurrentUserStats[i].mNumButtonPresses;
-        us->mNumGoalsOneTimers += mCurrentUserStats[i].mNumGoalsOneTimers;
-        us->mNumSTSAttempts += mCurrentUserStats[i].mNumSTSAttempts;
-        us->mNumPerfectPasses += mCurrentUserStats[i].mNumPerfectPasses;
-        us->mNumGamesPlayed = mCurrentUserStats[i].mNumGamesPlayed;
+        us->mNumShotsOnGoal += current.mNumShotsOnGoal;
+        us->mNumGoalsFor += current.mNumGoalsFor;
+        us->mNumGoalsAgainst = current.mNumGoalsAgainst;
+        us->mNumAssists += current.mNumAssists;
+        us->mNumFouls += current.mNumFouls;
+        us->mNumPowerupsUsed += current.mNumPowerupsUsed;
+        us->mNumPowerupsHit += current.mNumPowerupsHit;
+        us->mNumShootToScoreGoals += current.mNumShootToScoreGoals;
+        us->mNumPassesMade += current.mNumPassesMade;
+        us->mNumPassesReceived += current.mNumPassesReceived;
+        us->mNumPassesIntercepted += current.mNumPassesIntercepted;
+        us->mNumHitsMade += current.mNumHitsMade;
+        us->mNumSteals += current.mNumSteals;
+        us->mBallPossessionTime += current.mBallPossessionTime;
+        us->mNumButtonPresses += current.mNumButtonPresses;
+        us->mNumGoalsOneTimers += current.mNumGoalsOneTimers;
+        us->mNumSTSAttempts += current.mNumSTSAttempts;
+        us->mNumPerfectPasses += current.mNumPerfectPasses;
+        us->mNumGamesPlayed = current.mNumGamesPlayed;
     }
 }
 

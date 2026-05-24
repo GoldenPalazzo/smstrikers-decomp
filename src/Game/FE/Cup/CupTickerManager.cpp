@@ -13,6 +13,8 @@
 #include "NL/nlSingleton.h"
 #include "NL/nlString.h"
 
+#include "NL/nlMemFunBody.h"
+
 typedef Detail::MemFunImpl<void, void (CupTickerManager::*)()> MemFunImpl_CupTickerManager_v;
 typedef BindExp1<void, MemFunImpl_CupTickerManager_v, CupTickerManager*> BindExp1_vfmfcp;
 typedef Function0<void>::FunctorImpl<BindExp1_vfmfcp> FunctorImpl_vfmfcp;
@@ -270,7 +272,7 @@ void CupTickerManager::CreateNewMessage()
     GameInfoAccessor_CupTicker* gameInfoMem = (GameInfoAccessor_CupTicker*)gameInfo;
     WideBasicString tickerMessage;
     bool messageDisplayed = false;
-    unsigned short* locString = 0;
+    unsigned short* locString;
 
     if (gameInfo->IsInTournamentMode() && gameInfoMem->mTournamentMode == 0)
     {
@@ -354,7 +356,7 @@ void CupTickerManager::CreateNewMessage()
         {
             if (tournamentLeague
                 && (gameInfo->GetCurrentRoundNumber() != 0
-                    || (((BaseCupAccessor_CupTicker*)gameInfoMem->mCurrentCup)->mGameNumber != 0)))
+                    || (gameInfo->mCurrentCup->mGameNumber != 0)))
             {
                 BuildGoalTotalTickerMessage(tickerMessage, false);
                 messageDisplayed = true;
@@ -442,18 +444,18 @@ void CupTickerManager::CreateNewMessage()
                 int i = 0;
                 while (i < (int)numGames)
                 {
-                    int* game;
+                    BasicGameInfo* game;
                     if (gameInfo->GetCurrentRoundNumber() == -1)
                     {
-                        game = (int*)((char*)gameInfo + 0x3FF0);
+                        game = &gameInfo->mUserInfo.mBowserCupFinalRound;
                     }
                     else
                     {
-                        game = (int*)gameInfo->GetMatchupInfo(round, (unsigned short)i);
+                        game = gameInfo->GetMatchupInfo(round, (unsigned short)i);
                     }
 
-                    unsigned long team0Name = GetLOCTeamName((eTeamID)game[0]);
-                    unsigned long team1Name = GetLOCTeamName((eTeamID)game[1]);
+                    unsigned long team0Name = GetLOCTeamName(game->mTeamIndex[0]);
+                    unsigned long team1Name = GetLOCTeamName(game->mTeamIndex[1]);
 
                     unsigned long formatHash;
                     if (i == 0)
@@ -465,8 +467,8 @@ void CupTickerManager::CreateNewMessage()
                         formatHash = 0x3E3B44CAUL;
                     }
 
-                    NLString score0Str = LexicalCast<NLString, int>((int)*(short*)((char*)game + 0x1C));
-                    NLString score1Str = LexicalCast<NLString, int>((int)*(short*)((char*)game + 0x1E));
+                    NLString score0Str = LexicalCast<NLString, int>((int)game->mFinalScore[0]);
+                    NLString score1Str = LexicalCast<NLString, int>((int)game->mFinalScore[1]);
 
                     unsigned short wideScore0[16];
                     nlStrToWcs(score0Str.c_str(), wideScore0, 16);
@@ -474,7 +476,7 @@ void CupTickerManager::CreateNewMessage()
                     unsigned short wideScore1[16];
                     nlStrToWcs(score1Str.c_str(), wideScore1, 16);
 
-                    if (*(short*)((char*)game + 0x1C) > *(short*)((char*)game + 0x1E))
+                    if (game->mFinalScore[0] > game->mFinalScore[1])
                     {
                         unsigned short* fmtLocString;
                         unsigned short* t0Str;

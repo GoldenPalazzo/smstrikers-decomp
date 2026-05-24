@@ -202,6 +202,7 @@ static inline void DrawPrimitive(const ElectricFenceGeometry& prim, const nlMatr
 
     const eGLStream stream_decl[3] = { GLStream_Position, GLStream_Colour, GLStream_Diffuse };
     GLMeshWriter mesh;
+    nlVector3* pPosition;
     nlVector2* pTexcoord = (nlVector2*)prim.texcoord;
 
     glSetDefaultState(true);
@@ -230,7 +231,7 @@ static inline void DrawPrimitive(const ElectricFenceGeometry& prim, const nlMatr
 
     if (mesh.Begin(prim.vertCount, (eGLPrimitive)nPrimType, 3, stream_decl, false))
     {
-        nlVector3* pPosition = (nlVector3*)prim.position;
+        pPosition = (nlVector3*)prim.position;
         int index = 0;
         while (index < prim.vertCount)
         {
@@ -711,40 +712,41 @@ void UpdateElectricFence(float fDeltaT)
         if (pos.f.x == 0.0f)
         {
             scale = sideLineY;
-            sideLineY = 1.0f;
-            randomAngleOffset = 0.0f;
+            sideLineY = 0.0f;
+            randomAngleOffset = 1.0f;
         }
         else if ((float)pos.f.y == 0.0f)
         {
             scale = goalLineX;
-            randomAngleOffset = 1.0f;
-            sideLineY = 0.0f;
+            randomAngleOffset = 0.0f;
+            sideLineY = 1.0f;
         }
         else
         {
-            sideLineY = sideLineY / pos.f.y;
-            scale = goalLineX / pos.f.x;
-            if (scale < 0.0f)
-                scale = -scale;
-            if (sideLineY < 0.0f)
-                sideLineY = -sideLineY;
-            if (scale < sideLineY)
+            float goalLineScale = goalLineX / pos.f.x;
+            float sideLineScale = sideLineY / pos.f.y;
+            if (goalLineScale < 0.0f)
+                goalLineScale = -goalLineScale;
+            if (sideLineScale < 0.0f)
+                sideLineScale = -sideLineScale;
+            if (goalLineScale < sideLineScale)
             {
-                randomAngleOffset = 1.0f;
-                sideLineY = 0.0f;
-            }
-            else
-            {
-                scale = sideLineY;
+                scale = goalLineScale;
                 randomAngleOffset = 0.0f;
                 sideLineY = 1.0f;
             }
+            else
+            {
+                scale = sideLineScale;
+                randomAngleOffset = 1.0f;
+                sideLineY = 0.0f;
+            }
         }
         float zComp = pos.f.z;
-        pos.f.x = scale * pos.f.x;
         float yComp = pos.f.y;
-        pos.f.z = scale * zComp;
+        pos.f.x = scale * pos.f.x;
         pos.f.y = scale * yComp;
+        pos.f.z = scale * zComp;
         pos.f.z = nlRandomf(0.0f, 5.0f, &nlDefaultSeed);
         if ((counter & 1) == 0)
         {
@@ -759,8 +761,8 @@ void UpdateElectricFence(float fDeltaT)
                 pos.f.z = nlRandomf(netHeight, 5.0f, &nlDefaultSeed);
             }
         }
-        unsigned long counterVal = counter;
         u8 useNoSpark = !sbUseSparksDuringElectricFenceFlyBy;
+        unsigned long counterVal = counter;
         counter = counterVal + 1;
         if (g_pGame->mbCaptainShotToScoreOn)
             goto next;
@@ -781,21 +783,13 @@ void UpdateElectricFence(float fDeltaT)
                     clampedPos.f.x = -goalLineX2;
                 }
             }
-            const char* groupName;
-            if (useNoSpark == 0)
-            {
-                groupName = "electric_fence";
-            }
-            else
-            {
-                groupName = "electric_fence_nospark";
-            }
+            const char* groupName = useNoSpark != 0 ? "electric_fence_nospark" : "electric_fence";
             if (!EmissionManager::IsPlaying(counterVal, fxGetGroup(groupName)))
             {
                 EmissionController* controller = EmissionManager::Create(fxGetGroup(groupName), 0);
                 controller->m_uUserData = counterVal;
                 controller->SetPosition(clampedPos);
-                float atan = nlATan2f(sideLineY, randomAngleOffset);
+                float atan = nlATan2f(randomAngleOffset, sideLineY);
                 ElectricFenceData* data = NULL;
                 controller->m_aFacing = (u16)(s32)(10430.378f * atan);
                 if (ElectricFenceData::sElectricFenceDataPool.m_FreeList == NULL)

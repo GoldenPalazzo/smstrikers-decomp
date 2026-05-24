@@ -642,8 +642,8 @@ void NetMeshModelLoader::ProcessEdges(const glModelPacket& packet, int maxVertex
 
 /**
  * Offset/Address/Size: 0x0 | 0x80130158 | size: 0x780
- * TODO: 98.83% match - register allocation still differs in iterator/counter
- * locals across the AVL traversals and vertex writeback block.
+ * TODO: 99.16% match - register allocation still differs for iterator/tree
+ * pointers and constrained-counter locals across AVL traversals/writeback.
  */
 void NetMeshModelLoader::CreateNetMeshFromVertexList()
 {
@@ -662,12 +662,14 @@ void NetMeshModelLoader::CreateNetMeshFromVertexList()
         unsigned int m_NumStackEntries;
     };
 
+    VertexIter* vertexIter;
+    VertexTree* vertexTree;
     int numEdges = 0;
-    int numVertices = 0;
     int numConstrainedVertices = 0;
+    int numVertices = 0;
 
-    VertexTree* vertexTree = m_VertexList;
-    VertexIter* vertexIter = (VertexIter*)nlMalloc(sizeof(VertexIter), 8, false);
+    vertexTree = m_VertexList;
+    vertexIter = (VertexIter*)nlMalloc(sizeof(VertexIter), 8, false);
     if (vertexIter != NULL)
     {
         unsigned int numEntries = vertexTree->m_NumElements;

@@ -66,6 +66,8 @@
 #include "dolphin/si.h"
 #include "dolphin/card.h"
 
+#include "NL/nlMemFunBody.h"
+
 extern u8 g_DoStackWatermarkTests;
 extern u8 g_StackWatermarkFiller;
 extern u8 g_bFrameSmiler;

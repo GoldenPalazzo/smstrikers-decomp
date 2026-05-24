@@ -1045,14 +1045,19 @@ float Pressured(cFielder* pFielder)
             fNearScore = NormalizeVal(nlSqrt(dx * dx + dy * dy, true), *pNearConfidence);
         }
 
-        float fOpponentScore = 0.0f;
-        if (pOpponent != NULL)
+        float fOpponentScore;
+        if (pOpponent == NULL)
         {
+            fOpponentScore = 0.0f;
+        }
+        else
+        {
+            fOpponentScore = 0.0f;
             if (pOpponent->m_eClassType == GOALIE)
             {
                 Goalie* pGoalie = (Goalie*)pOpponent;
-                eGoalieActionState actionState = pGoalie->mGoalieActionState;
                 bool result = true;
+                eGoalieActionState actionState = pGoalie->mGoalieActionState;
                 int isRecover = (((int)GOALIEACTION_STS_RECOVER - (int)actionState) == 0);
 
                 if ((isRecover & 0xFF) == 0)

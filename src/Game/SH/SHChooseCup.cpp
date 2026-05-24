@@ -957,7 +957,7 @@ void ChooseCupSceneV2::DisplayCup()
         InlineHasher(0),
         InlineHasher(0));
 
-    bool canProceed = false;
+    bool canProceed;
     if (mIsSuperCup)
     {
         canProceed = true;
@@ -977,8 +977,6 @@ void ChooseCupSceneV2::DisplayCup()
             break;
         case TROPHY_BOWSER_CUP:
             canProceed = nlSingleton<GameInfoManager>::s_pInstance->IsUserQualified(GameInfoManager::GM_BOWSER_CUP);
-            break;
-        default:
             break;
         }
     }

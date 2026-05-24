@@ -437,7 +437,7 @@ ICaptainGridComponent::~ICaptainGridComponent()
 
 /**
  * Offset/Address/Size: 0x950 | 0x800C2044 | size: 0x228
- * TODO: 88.91% match - constructor setup still uses different register allocation for
+ * TODO: 90.68% match - constructor setup still uses different register allocation for
  * g_e3_Build/numItems and the first copy branch still emits mismatched load/store pairing
  */
 ICaptainGridComponent::ICaptainGridComponent(TLComponentInstance* parentcomponent, bool ismirrored)
@@ -445,8 +445,16 @@ ICaptainGridComponent::ICaptainGridComponent(TLComponentInstance* parentcomponen
 {
     int numItems = 9;
     if (g_e3_Build)
+    {
         numItems = 4;
-    NUM_CAPTAIN_CELL_ITEMS = g_e3_Build ? 4 : 9;
+    }
+
+    int totalItems = 9;
+    if (g_e3_Build)
+    {
+        totalItems = 4;
+    }
+    NUM_CAPTAIN_CELL_ITEMS = totalItems;
 
     CellItem* leipzigSrc = LeipzigCaptainCellItems;
     CellItem* dst = CaptainCellItems;
