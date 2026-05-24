@@ -617,10 +617,10 @@ EffectsTemplate* parse_template(SimpleParser* parser, bool bQuick)
 
         if (nlStrCmp<char>(token, "link") == 0)
         {
-            do
+            while (token != NULL)
             {
                 token = parser->NextTokenOnLine(true);
-            } while (token != NULL);
+            }
             continue;
         }
 
@@ -652,9 +652,9 @@ EffectsTemplate* parse_template(SimpleParser* parser, bool bQuick)
 
     for (i = 0; i < 25; i++)
     {
-        nlColour a = colours[i * 2];
-        nlColour b = colours[(i * 2) + 1];
         nlColour c;
+        nlColour b = colours[(i * 2) + 1];
+        nlColour a = colours[i * 2];
 
         c.c[0] = (a.c[0] + b.c[0]) / 2;
         c.c[1] = (a.c[1] + b.c[1]) / 2;

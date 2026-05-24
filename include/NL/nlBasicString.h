@@ -322,6 +322,7 @@ BasicString<CharT, Allocator>::BasicString(const CharT* str)
 #endif
 
 #ifndef NO_BASICSTRING_IMPL
+#pragma always_inline on
 template <typename CharT, typename Allocator>
 BasicString<CharT, Allocator>& BasicString<CharT, Allocator>::operator=(BasicString other)
 {
@@ -330,6 +331,7 @@ BasicString<CharT, Allocator>& BasicString<CharT, Allocator>::operator=(BasicStr
     other.m_data = tmp;
     return *this;
 }
+#pragma always_inline reset
 #endif
 
 template <typename CharT, typename Allocator>

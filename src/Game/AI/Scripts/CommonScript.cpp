@@ -2093,23 +2093,22 @@ FuzzyVariant Fuzzy::GoodToShoot(cFielder* TheFielder)
     float fBestConfidence = 0.0f;
 
     FuzzyVariant fvFielder(TheFielder);
-    unsigned long funcAddr = (unsigned long)GoodToShoot;
-    unsigned long hash = ((Variant*)&fvFielder)->GetHash() + funcAddr;
+    unsigned long hash = (unsigned long)GoodToShoot;
+    hash += ((Variant*)&fvFielder)->GetHash();
     FuzzyVariant fvFielder2(TheFielder);
 
     ScriptQuestionCache* cache = ScriptQuestionCache::Instance();
     cache->mTotalLookups++;
 
-    unsigned char lookupFound = 0;
+    unsigned char lookupFound;
     FuzzyVariant* pValue;
 
     if (g_bScriptQuestionCachingUseSTD)
     {
-        StdMapNode* stdNode;
-        __find(&stdNode, &cache->mQuestionCacheMapSTD, &hash);
-        StdMapNode* stdFound = stdNode;
-        if ((StdMapNodeBase*)stdFound != &((StdMapTree*)&cache->mQuestionCacheMapSTD)->x4)
+        std::map<unsigned long, FuzzyVariant>::iterator stdIt = cache->mQuestionCacheMapSTD.find(hash);
+        if (*(StdMapNodeBase**)&stdIt != &((StdMapTree*)&cache->mQuestionCacheMapSTD)->x4)
         {
+            StdMapNode* stdFound = *(StdMapNode**)&stdIt;
             cache->mCacheHits++;
             bestValue = stdFound->value;
             lookupFound = 1;
@@ -2174,8 +2173,8 @@ FuzzyVariant Fuzzy::GoodToShoot(cFielder* TheFielder)
         {
             if (g_bScriptQuestionCachingUseSTD)
             {
-                FuzzyMapPair* pair = __find_or_insert(&cache->mQuestionCacheMapSTD, &hashCopy1);
-                pair->value = bestValue;
+                std::pair<const unsigned long, FuzzyVariant>& pair = cache->mQuestionCacheMapSTD.tree_.find_or_insert<unsigned long, FuzzyVariant>(hashCopy1);
+                pair.second = bestValue;
             }
             else
             {
@@ -2278,17 +2277,6 @@ FuzzyVariant Fuzzy::GoodToShoot(cFielder* TheFielder)
             }
         }
 
-        if (fFalseConfidence2 > 0.0f)
-        {
-            SaveConfidence PushDOM(&fConfidence);
-
-            fConfidence = (fConfidence <= fFalseConfidence2) ? fConfidence : fFalseConfidence2;
-            if ((fConfidence < fFalseConfidence2) && (fFalseConfidence2 < 0.5f))
-            {
-                fConfidence = (float)fConfidence * fBranchRatio2;
-            }
-        }
-
         float fTrueConfidence3 = CloseToTheirGoalie((cPlayer*)TheFielder);
         float fFalseConfidence3 = 1.0f - fTrueConfidence3;
         float fBranchRatio3 = (fTrueConfidence3 <= fFalseConfidence3) ? fTrueConfidence3 : fFalseConfidence3;
@@ -2307,8 +2295,7 @@ FuzzyVariant Fuzzy::GoodToShoot(cFielder* TheFielder)
             if (fConfidence > fBestConfidence)
             {
                 fBestConfidence = fConfidence;
-                float fNearToNet = NearToTheirNet((cPlayer*)TheFielder);
-                FuzzyVariant fvResult(fNearToNet * 0.3f + fNetOpeness * 0.7f);
+                FuzzyVariant fvResult(fNetOpeness);
                 bestValue = fvResult;
             }
         }
@@ -2340,8 +2327,8 @@ FuzzyVariant Fuzzy::GoodToShoot(cFielder* TheFielder)
     {
         if (g_bScriptQuestionCachingUseSTD)
         {
-            FuzzyMapPair* pair = __find_or_insert(&cache->mQuestionCacheMapSTD, &hashCopy2);
-            pair->value = bestValue;
+            std::pair<const unsigned long, FuzzyVariant>& pair = cache->mQuestionCacheMapSTD.tree_.find_or_insert<unsigned long, FuzzyVariant>(hashCopy2);
+            pair.second = bestValue;
         }
         else
         {

@@ -759,6 +759,7 @@ void Function0<void>::FunctorImpl<BindExp1_vfmfcp>::operator()()
  * Offset/Address/Size: 0x1D70 | 0x800CB424 | size: 0x1E4
  * TODO: 99.88% match - only minor instruction/label diffs remain around PopupMap/Create relocation.
  */
+#pragma dont_inline on
 void CupTrophyScene::HandleUnlockedTriggers()
 {
     static const ePopupMenu PopupMap[] = {
@@ -811,10 +812,11 @@ void CupTrophyScene::HandleUnlockedTriggers()
 
     nlSingleton<GameSceneManager>::s_pInstance->Push(0x2E, 0, true);
 }
+#pragma dont_inline reset
 
 /**
  * Offset/Address/Size: 0x1970 | 0x800CB024 | size: 0x400
- * TODO: 98.76% match - HandleUnlockedTriggers path still differs by an indirect __ptmf_scall call sequence.
+ * TODO: 99.96% match - minor branch-target/literal label diffs remain.
  */
 extern FEInput* g_pFEInput;
 
@@ -855,7 +857,7 @@ void CupTrophyScene::Update(float fDeltaT)
         {
             if (nlSingleton<GameInfoManager>::s_pInstance->mUnlockedTriggers != 0)
             {
-                (this->*&CupTrophyScene::HandleUnlockedTriggers)();
+                HandleUnlockedTriggers();
             }
             else
             {
@@ -888,14 +890,14 @@ void CupTrophyScene::Update(float fDeltaT)
 
             if (numRecords > 1)
             {
-                if (mRow < 2 && mRow < (int)(numRecords - 1))
+                if (*(int*)&unk_gap[123] < 2 && *(int*)&unk_gap[123] < (int)(numRecords - 1))
                 {
-                    mRow += 1;
+                    *(int*)&unk_gap[123] += 1;
                     FEAudio::PlayAnimAudioEvent("sfx_option_scroll_down", false);
                 }
-                else if (numRecords > 3 && mScrollOffset < (int)(numRecords - 3))
+                else if (numRecords > 3 && *(int*)&unk_gap[121] < (int)(numRecords - 3))
                 {
-                    mScrollOffset += 1;
+                    *(int*)&unk_gap[121] += 1;
                     FEAudio::PlayAnimAudioEvent("sfx_option_scroll_down", false);
                 }
                 else
@@ -916,14 +918,14 @@ void CupTrophyScene::Update(float fDeltaT)
         {
             if (numRecords > 1)
             {
-                if (mRow > 0)
+                if (*(int*)&unk_gap[123] > 0)
                 {
-                    mRow -= 1;
+                    *(int*)&unk_gap[123] -= 1;
                     FEAudio::PlayAnimAudioEvent("sfx_option_scroll_up", false);
                 }
-                else if (mScrollOffset > 0)
+                else if (*(int*)&unk_gap[121] > 0)
                 {
-                    mScrollOffset -= 1;
+                    *(int*)&unk_gap[121] -= 1;
                     FEAudio::PlayAnimAudioEvent("sfx_option_scroll_up", false);
                 }
                 else

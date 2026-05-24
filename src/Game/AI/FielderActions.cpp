@@ -3991,12 +3991,12 @@ void cFielder::ActionSlideAttack(float fDeltaTime)
         float normSlideY = invSlideMag * slideVelY;
         float normSlideX = invSlideMag * slideVelX;
 
-        float dot = normSlideY * dy + normSlideX * dx;
+        float dot = normSlideY * dx + normSlideX * dy;
 
         if (dot >= 0.0f)
         {
-            float vx = speed * normSlideX;
-            float vy = speed * normSlideY;
+            float vx = speed * normSlideY;
+            float vy = speed * normSlideX;
             nlVector3 vel;
             vel.f.z = 0.0f;
             vel.f.x = vx;

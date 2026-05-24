@@ -161,7 +161,7 @@ u32 PlayerAttackData::GetID()
 
 /**
  * Offset/Address/Size: 0xD2E8 | 0x80026624 | size: 0x474
- * TODO: 94.04% match - extra Timer auto-construction SetSeconds calls and duplicate null-check branches in placement-new paths
+ * TODO: 94.74% match - extra Timer SetSeconds calls for 0x2D0/0x2D4/0x368/0x36C/0x380 before queued desire initialization
  */
 cFielder::cFielder(int nPlayerID, int nTeamID, eCharacterClass cc, const int* nModelID,
     cSHierarchy* pHierarchy, cAnimInventory* pAnimInventory,
@@ -204,8 +204,7 @@ cFielder::cFielder(int nPlayerID, int nTeamID, eCharacterClass cc, const int* nM
     m_v3DesiredPosition.f.z = 0.0f;
 
     AIPlay* pAIPlayMem = (AIPlay*)nlMalloc(0x10, 8, false);
-    if (pAIPlayMem != NULL)
-        pAIPlayMem = new (pAIPlayMem) AIPlay(this, AIPLAY_NULL, -1.0f);
+    pAIPlayMem = new (pAIPlayMem) AIPlay(this, AIPLAY_NULL, -1.0f);
     m_pCurrentPlay = pAIPlayMem;
 
     ShotMeter* pShotMeter = (ShotMeter*)nlMalloc(sizeof(ShotMeter), 8, false);
@@ -221,8 +220,7 @@ cFielder::cFielder(int nPlayerID, int nTeamID, eCharacterClass cc, const int* nM
     m_pShotMeter = pShotMeter;
 
     AvoidController* pAvoidMem = (AvoidController*)nlMalloc(sizeof(AvoidController), 8, false);
-    if (pAvoidMem != NULL)
-        pAvoidMem = new (pAvoidMem) AvoidController(this);
+    pAvoidMem = new (pAvoidMem) AvoidController(this);
     m_pAvoidance = pAvoidMem;
 
     m_DesireCommonVars.tAge.m_uPackedTime = 0;
@@ -3267,8 +3265,8 @@ void cFielder::DoRegularShooting()
         v3AngVel.f.z = 10.0f + nlRandomf(15.0f, &nlDefaultSeed);
 
         bool bNegZSpin = false;
-        f32 fDeltaY = v3Target.f.y;
         f32 fDeltaX = v3Target.f.x;
+        f32 fDeltaY = v3Target.f.y;
         fDeltaY -= g_pBall->m_v3Position.f.y;
         fDeltaX -= g_pBall->m_v3Position.f.x;
 

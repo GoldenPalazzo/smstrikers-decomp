@@ -335,6 +335,7 @@ void TournSetParamsScene::Update(float fDeltaT)
     if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x100, false, NULL))
     {
         SlideMenuList* list = mSlideMenuLists[0];
+        CustomTournament* customTourn = &nlSingleton<GameInfoManager>::s_pInstance->mCustomTournamentInfo;
         SlideMenuItem* item = list->mMenuItems[list->mCurrentIndex].mType;
         m_isLeagueMode = !item->mUserEnumType;
 
@@ -346,7 +347,6 @@ void TournSetParamsScene::Update(float fDeltaT)
         item = list->mMenuItems[list->mCurrentIndex].mType;
         m_numGames = (item->mUserEnumType == 0) ? 1 : 2;
 
-        CustomTournament* customTourn = &nlSingleton<GameInfoManager>::s_pInstance->mCustomTournamentInfo;
         customTourn->m_tournMode = (eTournamentMode)!m_isLeagueMode;
         customTourn->m_numTeams = m_numTeams;
         if (m_isLeagueMode)
@@ -355,9 +355,8 @@ void TournSetParamsScene::Update(float fDeltaT)
         }
 
         customTourn->ConstructCup();
-        GameInfoManager* gameInfo = nlSingleton<GameInfoManager>::s_pInstance;
-        gameInfo->SetMode(GameInfoManager::GM_TOURNAMENT);
-        gameInfo->mCurrentCup->mCupSettings = gameInfo->mUserInfo.mGameplayOptions;
+        nlSingleton<GameInfoManager>::s_pInstance->SetMode(GameInfoManager::GM_TOURNAMENT);
+        nlSingleton<GameInfoManager>::s_pInstance->mCurrentCup->mCupSettings = nlSingleton<GameInfoManager>::s_pInstance->mUserInfo.mGameplayOptions;
 
         GameSceneManager::Instance()->Push(SCENE_CUP_OPTIONS_INITIAL_TOURN, SCREEN_FORWARD, true);
 

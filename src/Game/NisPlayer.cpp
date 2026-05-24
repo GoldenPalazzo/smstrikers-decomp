@@ -48,6 +48,7 @@ static unsigned char useAsyncLoading;
 template <>
 unsigned long nlStrLen<char>(const char* str)
 {
+    FORCE_DONT_INLINE;
     unsigned long n = 0;
     if (str)
     {
@@ -1101,23 +1102,20 @@ void NisPlayer::Load(const char* nisType, NisTarget target, NisUseStadiumOffset 
     int numAvailableNis = 0;
     NisHeader* availableNis[10] = { 0 };
 
-    NisHeader* nisHeader = mDict;
     for (int e = 0; e < mDictSize && numAvailableNis < 10; e++)
     {
-        if (strstr(nisHeader->name, nisType) != NULL)
+        if (strstr(mDict[e].name, nisType) != NULL)
         {
             int filterLengthMinusNull = (filter.m_data != NULL) ? (filter.m_data->mSize - 1) : 0;
-            if (filterLengthMinusNull == 0 || strstr(nisHeader->name, filter.c_str()) == nisHeader->name)
+            if (filterLengthMinusNull == 0 || mDict[e].name == strstr(mDict[e].name, filter.c_str()))
             {
-                if (useFilter == NIS_NO_FILTER || nlStrLen(mExtraNameFilter) == 0 || strstr(nisHeader->name, mExtraNameFilter) != NULL)
+                if (useFilter == NIS_NO_FILTER || nlStrLen(mExtraNameFilter) == 0 || strstr(mDict[e].name, mExtraNameFilter) != NULL)
                 {
-                    availableNis[numAvailableNis] = nisHeader;
+                    availableNis[numAvailableNis] = &mDict[e];
                     numAvailableNis++;
                 }
             }
         }
-
-        nisHeader++;
     }
 
     if (numAvailableNis == 0)
@@ -1125,7 +1123,7 @@ void NisPlayer::Load(const char* nisType, NisTarget target, NisUseStadiumOffset 
         return;
     }
 
-    nisHeader = availableNis[nlRandom(numAvailableNis, &nlDefaultSeed)];
+    NisHeader& nisHeader = *availableNis[nlRandom(numAvailableNis, &nlDefaultSeed)];
 
     for (int i = 0; i < 4; i++)
     {
@@ -1134,16 +1132,16 @@ void NisPlayer::Load(const char* nisType, NisTarget target, NisUseStadiumOffset 
             continue;
         }
 
-        nisHeader->target = target;
-        nisHeader->winnerType = winnerType;
-        nisHeader->mTime = 0.0f;
-        mLoadQueue[i] = nisHeader;
+        nisHeader.target = target;
+        nisHeader.winnerType = winnerType;
+        nisHeader.mTime = 0.0f;
+        mLoadQueue[i] = &nisHeader;
 
         if (useStadiumOffset == NIS_NO_STADIUM_OFFSET)
         {
-            nisHeader->stadiumOffset.f.x = 0.0f;
-            nisHeader->stadiumOffset.f.y = 0.0f;
-            nisHeader->stadiumOffset.f.z = 0.0f;
+            nisHeader.stadiumOffset.f.x = 0.0f;
+            nisHeader.stadiumOffset.f.y = 0.0f;
+            nisHeader.stadiumOffset.f.z = 0.0f;
         }
         else
         {
@@ -1187,12 +1185,13 @@ void NisPlayer::Load(const char* nisType, NisTarget target, NisUseStadiumOffset 
 
             BasicString<char, Detail::TempStringAllocator> key = Format(formatString, stadiumName);
 
+            const char* keyStr = key.c_str();
             Config& cfg = Config::Global();
-            Config::TagValuePair& tvp = cfg.FindTvp(key.c_str());
+            Config::TagValuePair& tvp = cfg.FindTvp(keyStr);
             float offset;
             if (tvp.tag == NULL)
             {
-                cfg.Set(key.c_str(), 0.0f);
+                cfg.Set(keyStr, 0.0f);
                 offset = 0.0f;
             }
             else if (tvp.type == _BOOL)
@@ -1216,16 +1215,16 @@ void NisPlayer::Load(const char* nisType, NisTarget target, NisUseStadiumOffset 
                 offset = 0.0f;
             }
 
-            nisHeader->stadiumOffset.f.x = 0.0f;
-            nisHeader->stadiumOffset.f.y = scale * offset;
-            nisHeader->stadiumOffset.f.z = 0.0f;
+            nisHeader.stadiumOffset.f.x = 0.0f;
+            nisHeader.stadiumOffset.f.y = scale * offset;
+            nisHeader.stadiumOffset.f.z = 0.0f;
         }
 
         bool mirrored = false;
         if (target == NIS_TARGET_LOSER_CAPTAIN || target == NIS_TARGET_WINNER_CAPTAIN || target == NIS_TARGET_WINNER_SIDEKICK || target == NIS_TARGET_LOSER_GOALIE || target == NIS_TARGET_WINNER_GOALIE || target == NIS_TARGET_LOSER_SIDEKICK)
         {
             mirrored = true;
-            if (strstr(nisHeader->name, "_goal_") == NULL && strstr(nisHeader->name, "goalie_loser") == NULL)
+            if (strstr(nisHeader.name, "_goal_") == NULL && strstr(nisHeader.name, "goalie_loser") == NULL)
             {
                 mirrored = false;
             }
@@ -1237,9 +1236,17 @@ void NisPlayer::Load(const char* nisType, NisTarget target, NisUseStadiumOffset 
         }
         else
         {
-            if (strstr(nisHeader->name, "home") != NULL || strstr(nisHeader->name, "run_to_center") != NULL)
+            if (strstr(nisHeader.name, "home") != NULL || strstr(nisHeader.name, "run_to_center") != NULL)
             {
-                if (target == NIS_TARGET_AWAY_CAPTAIN || target == NIS_TARGET_AWAY_SIDEKICK || target == NIS_TARGET_NONE)
+                if (target == NIS_TARGET_AWAY_CAPTAIN)
+                {
+                    mirrored = true;
+                }
+                else if (target == NIS_TARGET_AWAY_SIDEKICK)
+                {
+                    mirrored = true;
+                }
+                else if (target == NIS_TARGET_NONE)
                 {
                     mirrored = true;
                 }
@@ -1248,17 +1255,17 @@ void NisPlayer::Load(const char* nisType, NisTarget target, NisUseStadiumOffset 
 
         if (mirrored)
         {
-            for (int j = 0; j < nisHeader->numAnimations; j++)
+            for (int j = 0; j < nisHeader.numAnimations; j++)
             {
-                mBeginPositions[j] = nisHeader->beginPositions[j];
+                mBeginPositions[j] = nisHeader.beginPositions[j];
                 mBeginPositions[j].f.x *= -1.0f;
             }
         }
         else
         {
-            for (int j = 0; j < nisHeader->numAnimations; j++)
+            for (int j = 0; j < nisHeader.numAnimations; j++)
             {
-                mBeginPositions[j] = nisHeader->beginPositions[j];
+                mBeginPositions[j] = nisHeader.beginPositions[j];
             }
         }
 

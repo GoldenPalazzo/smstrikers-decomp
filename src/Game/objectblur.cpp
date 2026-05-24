@@ -19,6 +19,7 @@ SlotPool<BlurHandler> BlurManager::m_BlurHandlerSlotPool(0x10, 0x10);
 f32 fFlimmerOffset = 0.01f;
 
 const eGLStream stream_decl_[3] = { GLStream_Position, GLStream_Colour, GLStream_Diffuse };
+static u32 sWhiteColour = 0xFFFFFFFF;
 
 /**
  * Offset/Address/Size: 0x0 | 0x801627D4 | size: 0x3C
@@ -144,8 +145,8 @@ BlurHandler* BlurManager::GetNewHandler(const char* szTextureName, float fLineWi
 
 /**
  * Offset/Address/Size: 0x2AC | 0x80162A80 | size: 0x514
- * TODO: 97.03% match - remaining diffs are in blended-endpoint address arithmetic and
- * loading the initial white colour value from constant storage.
+ * TODO: 98.18% match - remaining diffs are in blended-endpoint address arithmetic for
+ * interpolated top/bottom sampling.
  */
 void BlurHandler::RenderMesh(unsigned long uTexID)
 {
@@ -212,7 +213,7 @@ void BlurHandler::RenderMesh(unsigned long uTexID)
     glSetCurrentProgram(glGetProgram("3d unlit"));
 
     nonAdditiveAlpha = 0.0f;
-    *(u32*)&colour.c[0] = 0xFFFFFFFF;
+    *(u32*)&colour.c[0] = sWhiteColour;
 
     if (m_bAdditive)
     {

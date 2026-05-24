@@ -1191,10 +1191,9 @@ unsigned long FormatCallbacks::FormatDoneCB(unsigned long channel, long result, 
 
 /**
  * Offset/Address/Size: 0x11DC | 0x8018AB38 | size: 0xC7C
- * TODO: 70.01% match - register allocation (r27 vs r29 for Slot) and constant folding
- *   in first error path's HasEnoughFreeSpace inline due to -inline deferred vs -inline auto.
- *   Success path (icon copy, functor construction, inner error paths) matches perfectly.
  */
+#pragma push
+#pragma opt_propagation off
 unsigned long SaveCallbacks::CardMountCB(unsigned long Slot, long Result, void* pUserData)
 {
     m_Slot = Slot;
@@ -1704,6 +1703,7 @@ unsigned long SaveCallbacks::CardMountCB(unsigned long Slot, long Result, void* 
         return -1;
     }
 }
+#pragma pop
 
 /**
  * Offset/Address/Size: 0x10D4 | 0x8018AA30 | size: 0x108

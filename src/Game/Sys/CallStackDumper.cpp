@@ -44,16 +44,22 @@ static inline void ProcessBackground()
             r = (color >> 16) & 0xFF;
             g = (color >> 8) & 0xFF;
             b = color & 0xFF;
-            color = (color & 0xFF000000) | ((r / 3) << 16) | ((g / 3) << 8) | (b / 3);
+            color >>= 24;
+            color <<= 8;
+            color |= r / 3;
+            color <<= 8;
+            color |= g / 3;
+            color <<= 8;
+            color |= b / 3;
             GXPokeARGB((unsigned short)j, (unsigned short)i, color);
         }
     }
 }
 
-static inline void PutChar(int x, int y, char c, unsigned long color)
+static inline void PutChar(int x, int y, int scale, char c, unsigned long color)
 {
     char* charBitMap = (char*)CallstackDumpFont + ((((signed char)c) - 0x20) * 0x24);
-    int endx = x + 0x0B;
+    int endx = x + scale;
     int endy = y + 0x12;
     int i;
 
@@ -84,14 +90,14 @@ static inline void PutChar(int x, int y, char c, unsigned long color)
     }
 }
 
-static inline int PutString(int x, int y, const char* str, unsigned long color)
+static inline int PutString(int x, int y, int scale, const char* str, unsigned long color)
 {
     int i = 0;
 
     while (str[i] != '\0')
     {
-        PutChar(x, y, str[i], color);
-        x += 0x0B;
+        PutChar(x, y, scale, str[i], color);
+        x += scale;
         i++;
     }
 
@@ -112,30 +118,30 @@ void ErrorHandler(unsigned short err, OSContext* ctx, unsigned long dsisr, unsig
     int x;
     int callStackY;
 
+    ProcessBackground();
+
+    frameBuffer = (unsigned short*)glxGetDisplayedBuffer();
+    GXPokeColorUpdate(1);
+    GXPokeBlendMode((GXBlendMode)0, (GXBlendFactor)1, (GXBlendFactor)0, (GXLogicOp)0xF);
+
     bufferLoop = 0;
     while (bufferLoop < 2)
     {
-        ProcessBackground();
-
-        frameBuffer = (unsigned short*)glxGetDisplayedBuffer();
-        GXPokeColorUpdate(1);
-        GXPokeBlendMode((GXBlendMode)0, (GXBlendFactor)1, (GXBlendFactor)0, (GXLogicOp)0xF);
-
         y = 0x0F;
-        if ((unsigned short)err == 2)
+        if ((unsigned long)err == 2)
         {
             nlSNPrintf(buf, 0x3C, "Instruction at 0x%x (read from SRR0) attempted to", ctx->srr0);
-            PutString(0x0F, 0x0F, buf, (unsigned long)-1);
+            PutString(0x0F, 0x0F, 0x0B, buf, (unsigned long)-1);
 
             nlSNPrintf(buf, 0x3C, "access invalid address 0x%x (read from DAR)", dar);
-            PutString(0x0F, 0x22, buf, (unsigned long)-1);
+            PutString(0x0F, 0x22, 0x0B, buf, (unsigned long)-1);
             y = 0x35;
         }
 
-        PutString(0x0F, y, "", (unsigned long)-1);
+        PutString(0x0F, y, 0x0B, "", (unsigned long)-1);
 
         callStackY = y + 0x13;
-        PutString(0x0F, callStackY, "Call Stack", (unsigned long)0xFFFF8888);
+        PutString(0x0F, callStackY, 0x0B, "Call Stack", (unsigned long)0xFFFF8888);
 
         p = (unsigned long*)ctx->gpr[1];
         y = callStackY + 0x13;
@@ -143,14 +149,14 @@ void ErrorHandler(unsigned short err, OSContext* ctx, unsigned long dsisr, unsig
         while ((p != 0) && (p != (unsigned long*)0xFFFFFFFF) && (i < 0x10))
         {
             nlSNPrintf(buf, 0x3C, "%08x", p[1]);
-            PutString(0x0F, y, buf, (unsigned long)0xFFFF8888);
+            PutString(0x0F, y, 0x0B, buf, (unsigned long)0xFFFF8888);
             p = (unsigned long*)p[0];
             y += 0x13;
             i++;
         }
 
         x = (((int)nlStrLen(buf) + 4) * 0x0B) + 0x0F;
-        PutString(x, callStackY, "General Purpose Registers", 0xFF8888FF);
+        PutString(x, callStackY, 0x0B, "General Purpose Registers", 0xFF8888FF);
 
         p = &ctx->gpr[0];
         y = callStackY + 0x13;
@@ -158,7 +164,7 @@ void ErrorHandler(unsigned short err, OSContext* ctx, unsigned long dsisr, unsig
         while (i < 0x10)
         {
             nlSNPrintf(buf, 0x3C, "r%-2d=%08x r%-2d=%08x", i, p[0], i + 0x10, p[0x10]);
-            PutString(x, y, buf, 0xFF8888FF);
+            PutString(x, y, 0x0B, buf, 0xFF8888FF);
             i++;
             p++;
             y += 0x13;
@@ -167,19 +173,19 @@ void ErrorHandler(unsigned short err, OSContext* ctx, unsigned long dsisr, unsig
         x += ((int)nlStrLen(buf) + 2) * 0x0B;
 
         nlSNPrintf(buf, 0x3C, "LR=%08x", ctx->lr);
-        PutString(x, callStackY, buf, 0xFFFFFF88);
+        PutString(x, callStackY, 0x0B, buf, 0xFFFFFF88);
 
         callStackY += 0x13;
         nlSNPrintf(buf, 0x3C, "CR=%08x", ctx->cr);
-        PutString(x, callStackY, buf, 0xFFFFFF88);
+        PutString(x, callStackY, 0x0B, buf, 0xFFFFFF88);
 
         callStackY += 0x13;
         nlSNPrintf(buf, 0x3C, "SRR1=%08x", ctx->srr1);
-        PutString(x, callStackY, buf, 0xFFFFFF88);
+        PutString(x, callStackY, 0x0B, buf, 0xFFFFFF88);
 
         callStackY += 0x13;
         nlSNPrintf(buf, 0x3C, "DSISR=%08x", dsisr);
-        PutString(x, callStackY, buf, 0xFFFFFF88);
+        PutString(x, callStackY, 0x0B, buf, 0xFFFFFF88);
 
         GXCopyDisp(frameBuffer, 0);
         GXDrawDone();

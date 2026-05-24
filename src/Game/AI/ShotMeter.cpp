@@ -166,9 +166,7 @@ void ShotMeter::CalcOneTimerValue(cFielder* pFielder, bool bWasPerfectPass)
         float fDistY = g_pBall->m_v3Position.f.y - v3OffNetLocation2.f.y;
         float fDistX = g_pBall->m_v3Position.f.x - v3OffNetLocation2.f.x;
         float fDistZ = g_pBall->m_v3Position.f.z - v3OffNetLocation2.f.z;
-        float fDistance = nlSqrt((fDistX * fDistX) + (fDistY * fDistY) + (fDistZ * fDistZ), true);
-
-        float fDistanceValue = InterpolateRangeClamped(0.0f, 1.0f, 20.0f, 7.5f, fDistance);
+        float fDistanceValue = InterpolateRangeClamped(0.0f, 1.0f, 20.0f, 7.5f, nlSqrt((fDistX * fDistX) + (fDistY * fDistY) + (fDistZ * fDistZ), true));
         float fDot = (v3FielderToNet.f.x * v3BallDirection.f.x) + (v3FielderToNet.f.y * v3BallDirection.f.y) + (v3FielderToNet.f.z * v3BallDirection.f.z);
         float fDirectionValue = InterpolateRangeClamped(0.0f, 1.0f, 1.0f, 0.0f, fDot);
 

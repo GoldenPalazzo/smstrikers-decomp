@@ -1377,9 +1377,8 @@ void EmitBallShot(cPlayer* pCharacter, eBallShotEffectType eNewBallEffect, cPlay
         pCharacter->AttachEffect(pController);
         pController->SetPosition(g_pBall->m_v3Position);
         pController->SetVelocity(pCharacter->m_v3Velocity);
-        pControl = pController;
         g_pBall->InitiateBallBlur(eNewBallEffect, NULL);
-        break;
+        // fall through
     }
     case BALL_EFFECT_REGULAR_SHOT:
         g_pBall->InitiateBallBlur(eNewBallEffect, NULL);

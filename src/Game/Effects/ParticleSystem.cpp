@@ -554,9 +554,6 @@ void ParticleSystem::CreateNewParticles(int numParticles)
 
 /**
  * Offset/Address/Size: 0x15AC | 0x801F6704 | size: 0x354
- * TODO: 98.59% match - register name diffs only: f4/f5 swap for posZ/posY at b4/b8/cc/d4,
- * r9/r6 swap in modulo at 19c/1a0, snS2 in f3 vs f5 cascading through billboard section.
- * All instructions and offsets correct, same code size.
  */
 void ParticleSystem::UpdateParticle(ParticleReturn* pReturn, Particle* pPart, EffectsTemplate* pTemplate, const nlVector3& viewRight, const nlVector3& viewUp, const nlMatrix4* pCoordSys)
 {
@@ -594,7 +591,7 @@ void ParticleSystem::UpdateParticle(ParticleReturn* pReturn, Particle* pPart, Ef
     }
 
     int animFrame = (int)(pPart->FPS * pPart->timeElapsed + pPart->frame);
-    animFrame = animFrame % pTemplate->m_nFrames;
+    animFrame %= pTemplate->m_nFrames;
 
     s16* pFrame = (s16*)((u8*)textureFrames[pTemplate->m_nFrames - 1] + (animFrame << 3));
 
@@ -613,14 +610,12 @@ void ParticleSystem::UpdateParticle(ParticleReturn* pReturn, Particle* pPart, Ef
 
     sn = sn * s2;
     cs = cs * s2;
-    float nsn = -sn;
-
     float x0 = (cs * viewRight.f.x) + (sn * viewUp.f.x);
     float y0 = (cs * viewRight.f.y) + (sn * viewUp.f.y);
     float z0 = (cs * viewRight.f.z) + (sn * viewUp.f.z);
-    float x1 = (nsn * viewRight.f.x) + (cs * viewUp.f.x);
-    float y1 = (nsn * viewRight.f.y) + (cs * viewUp.f.y);
-    float z1 = (nsn * viewRight.f.z) + (cs * viewUp.f.z);
+    float x1 = ((-sn) * viewRight.f.x) + (cs * viewUp.f.x);
+    float y1 = ((-sn) * viewRight.f.y) + (cs * viewUp.f.y);
+    float z1 = ((-sn) * viewRight.f.z) + (cs * viewUp.f.z);
 
     pReturn->position[0].f.x = (position.f.x + x0) + x1;
     pReturn->position[0].f.y = (position.f.y + y0) + y1;

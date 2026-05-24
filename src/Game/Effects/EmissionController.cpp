@@ -394,6 +394,7 @@ bool EmissionController::Update(float dt)
 
     int numSys = 0;
     int numDel = 0;
+    UserEffectInfo info;
 
     if (m_Replaying)
     {
@@ -610,7 +611,6 @@ bool EmissionController::Update(float dt)
 
     if (m_nUserEffects > 0)
     {
-        UserEffectInfo info;
         info.pv3Position = &m_vPosition;
         info.pv3Direction = &m_vDirection;
 

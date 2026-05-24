@@ -192,8 +192,9 @@ void cBall::WarpTo(const nlVector3& toPos)
 
 /**
  * Offset/Address/Size: 0x42C | 0x80009E00 | size: 0x30C
- * TODO: 99.03% match - FPR register allocation
- *       (f8/f5/f7/f6 vs f5/f6/f8/f7) in both velocity cross-product blocks.
+ * TODO: 99.23% match - FPR register allocation
+ *       (f8/f5/f6 vs f5/f6/f8 for normalized direction + zero constant)
+ *       in both velocity cross-product blocks.
  */
 void cBall::UpdateOrientation(float fDeltaT)
 {
@@ -244,9 +245,13 @@ void cBall::UpdateOrientation(float fDeltaT)
                 float fZero = 0.0f;
                 float fOne = 1.0f;
 
-                v3Direction.f.x = v3Direction.f.x / fVel;
-                v3Direction.f.y = v3Direction.f.y / fVel;
-                v3Direction.f.z = v3Direction.f.z / fVel;
+                float fDirX = v3Direction.f.x / fVel;
+                float fDirY = v3Direction.f.y / fVel;
+                float fDirZ = v3Direction.f.z / fVel;
+
+                v3Direction.f.x = fDirX;
+                v3Direction.f.y = fDirY;
+                v3Direction.f.z = fDirZ;
 
                 v3Axis.f.x = fZero * v3Direction.f.z - fOne * v3Direction.f.y;
                 v3Axis.f.y = -fZero * v3Direction.f.z + fOne * v3Direction.f.x;
@@ -280,9 +285,13 @@ void cBall::UpdateOrientation(float fDeltaT)
                 float fZero = 0.0f;
                 float fOne = 1.0f;
 
-                v3Direction.f.x = v3Direction.f.x / fVel;
-                v3Direction.f.y = v3Direction.f.y / fVel;
-                v3Direction.f.z = v3Direction.f.z / fVel;
+                float fDirX = v3Direction.f.x / fVel;
+                float fDirY = v3Direction.f.y / fVel;
+                float fDirZ = v3Direction.f.z / fVel;
+
+                v3Direction.f.x = fDirX;
+                v3Direction.f.y = fDirY;
+                v3Direction.f.z = fDirZ;
 
                 v3Axis.f.x = fZero * v3Direction.f.z - fOne * v3Direction.f.y;
                 v3Axis.f.y = -fZero * v3Direction.f.z + fOne * v3Direction.f.x;
@@ -1570,8 +1579,8 @@ void cBall::CollideWithGroundCallback()
 
 /**
  * Offset/Address/Size: 0x2BD4 | 0x8000C5A8 | size: 0xA18
- * TODO: 95.85% match - remaining mismatch is register allocation (r29/r30 swap)
- *       in the cFielder collision branch.
+ * TODO: 98.34% match - remaining mismatch is pCharacter/pOwner register
+ *       allocation in the cFielder collision branch.
  */
 void cBall::CollideWithCharacterCallback(cPlayer* pCharacter, const nlVector3& v3PreBallVelocity)
 {
@@ -1662,8 +1671,12 @@ void cBall::CollideWithCharacterCallback(cPlayer* pCharacter, const nlVector3& v
         }
     }
 
-    cFielder* pOwnerFielder = (cFielder*)m_pOwner;
-    if (m_pOwner == NULL || m_pOwner->m_eClassType != FIELDER)
+    cFielder* pOwnerFielder;
+    if (m_pOwner != NULL && m_pOwner->m_eClassType == FIELDER)
+    {
+        pOwnerFielder = (cFielder*)m_pOwner;
+    }
+    else
     {
         pOwnerFielder = NULL;
     }
@@ -1757,24 +1770,23 @@ void cBall::CollideWithCharacterCallback(cPlayer* pCharacter, const nlVector3& v
 
         if (pCharacterFielder->IsSlideTackling())
         {
-            float x;
-            float y;
-            nlVector3 v3TestPosition = pCharacter->m_v3Position;
-            nlPolarToCartesian(x, y, pCharacter->m_aActualFacingDirection, pCharacter->m_pTweaks->fPhysCapsuleRadius);
+            nlVector3 v3ContactLocation = pCharacter->m_v3Position;
+            nlVector3 v3PhysicsRadialSpot;
+            nlPolarToCartesian(v3PhysicsRadialSpot.f.x, v3PhysicsRadialSpot.f.y, pCharacter->m_aActualFacingDirection, pCharacter->m_pTweaks->fPhysCapsuleRadius);
 
-            v3TestPosition.f.x += x;
-            v3TestPosition.f.y += y;
-            v3TestPosition.f.z += 0.0f;
+            v3ContactLocation.f.x += v3PhysicsRadialSpot.f.x;
+            v3ContactLocation.f.y += v3PhysicsRadialSpot.f.y;
+            v3ContactLocation.f.z += v3PhysicsRadialSpot.f.z;
 
-            s16 facingDelta = pCharacter->GetFacingDeltaToPosition(v3TestPosition);
-            u16 absFacingDelta = facingDelta < 0 ? -facingDelta : facingDelta;
+            s16 nHitterContactLocationFacingDelta = pCharacter->GetFacingDeltaToPosition(v3ContactLocation);
+            u16 absFacingDelta = nHitterContactLocationFacingDelta < 0 ? -nHitterContactLocationFacingDelta : nHitterContactLocationFacingDelta;
 
             if (absFacingDelta < 0x2000)
             {
                 if (pOwnerFielder->IsSlideTackling())
                 {
-                    s16 ownerFacingDelta = pOwnerFielder->GetFacingDeltaToPosition(v3TestPosition);
-                    u16 absOwnerFacingDelta = ownerFacingDelta < 0 ? -ownerFacingDelta : ownerFacingDelta;
+                    s16 nHitteeContactLocationFacingDelta = pOwnerFielder->GetFacingDeltaToPosition(v3ContactLocation);
+                    u16 absOwnerFacingDelta = nHitteeContactLocationFacingDelta < 0 ? -nHitteeContactLocationFacingDelta : nHitteeContactLocationFacingDelta;
 
                     if (absOwnerFacingDelta < 0x2000)
                     {
@@ -1826,29 +1838,25 @@ void cBall::CollideWithCharacterCallback(cPlayer* pCharacter, const nlVector3& v
         {
             pOwnerFielder->ReleaseBall();
 
-            if (!pCharacterFielder->IsFrozen() && (pCharacterFielder->IsRunning() || pCharacterFielder->IsSlideTackling()))
+            do
             {
-                s16 delta = pCharacter->GetFacingDeltaToPosition(g_pBall->m_v3Position);
-                u16 absDelta = delta < 0 ? -delta : delta;
+                if (!pCharacterFielder->IsFrozen() && (pCharacterFielder->IsRunning() || pCharacterFielder->IsSlideTackling()))
+                {
+                    s16 delta = pCharacter->GetFacingDeltaToPosition(g_pBall->m_v3Position);
+                    u16 absDelta = delta < 0 ? -delta : delta;
 
-                if (absDelta < 0x4000)
-                {
-                    pCharacter->PickupBall(g_pBall);
-                    pCharacterFielder->InitActionRunningWB(false);
+                    if (absDelta < 0x4000)
+                    {
+                        pCharacter->PickupBall(g_pBall);
+                        pCharacterFielder->InitActionRunningWB(false);
+                        break;
+                    }
                 }
-                else
-                {
-                    pOwnerFielder->ShootBallDueToContact(pCharacter->m_v3Velocity);
-                    pOwnerFielder->SetNoPickUpTime(0.08f);
-                    pCharacter->SetNoPickUpTime(0.08f);
-                }
-            }
-            else
-            {
+
                 pOwnerFielder->ShootBallDueToContact(pCharacter->m_v3Velocity);
                 pOwnerFielder->SetNoPickUpTime(0.08f);
                 pCharacter->SetNoPickUpTime(0.08f);
-            }
+            } while (0);
 
             pOwnerFielder->InitDesire(FIELDERDESIRE_FINISH_ACTION, 0.5f, -1.0f, fvNotSet, fvNotSet);
         }

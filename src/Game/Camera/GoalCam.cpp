@@ -40,7 +40,7 @@ GoalCamera::~GoalCamera()
 
 /**
  * Offset/Address/Size: 0x0 | 0x801AA59C | size: 0x670
- * TODO: 77.34% match - f30/f31 register swap for ballpos.f.y/f.z callee-saved allocation
+ * TODO: 80.46% match - f30/f31 register swap for ballpos.f.y/f.z callee-saved allocation
  */
 void GoalCamera::Update(float /*dt*/)
 {
@@ -129,7 +129,7 @@ void GoalCamera::Update(float /*dt*/)
         m_vecCamera.f.x = m_vecTarget.f.x + gfDistance * dirvec.f.x;
         m_vecCamera.f.y = m_vecTarget.f.y + gfDistance * dirvec.f.y;
         m_vecCamera.f.z = m_vecTarget.f.z + gfDistance * dirvec.f.z;
-        m_vecCamera.f.z += gfHeight;
+        m_vecCamera.f.z = m_vecTarget.f.z + gfHeight;
 
         m_vecCamera.f.x = 0.2f * m_vecCamera.f.x + 0.8f * lastpos.f.x;
         m_vecCamera.f.y = 0.2f * m_vecCamera.f.y + 0.8f * lastpos.f.y;
@@ -194,8 +194,6 @@ void GoalCamera::Update(float /*dt*/)
             dirvec.f.x = gfSideMult * dirvec.f.x + mx;
             dirvec.f.y = gfSideMult * dirvec.f.y + my;
             dirvec.f.z = gfHeight;
-
-            glMatrixLookAt(m_matView, dirvec, midvec, vecUp);
         }
         else if (gnCamType == 1)
         {
@@ -208,14 +206,13 @@ void GoalCamera::Update(float /*dt*/)
             dirvec.f.y = x;
 
             dirvec.f.z = m_vecTarget.f.z + gfDistance * dirvec.f.z;
-            dirvec.f.x = m_vecTarget.f.x + gfDistance * dirvec.f.x;
             dirvec.f.y = m_vecTarget.f.y + gfDistance * dirvec.f.y;
-            dirvec.f.z += gfHeight;
+            dirvec.f.x = m_vecTarget.f.x + gfDistance * dirvec.f.x;
+            dirvec.f.z = m_vecTarget.f.z + gfHeight;
 
             midvec = m_vecTarget;
-
-            glMatrixLookAt(m_matView, dirvec, midvec, vecUp);
         }
+        glMatrixLookAt(m_matView, dirvec, midvec, vecUp);
     }
     else
     {

@@ -275,7 +275,6 @@ void Presentation::LoadTrophyModel()
     }
 
     cupTrophyHash = 1;
-
     BasicString<char, Detail::TempStringAllocator> trophyName;
     if (hasCupOverride)
     {
@@ -283,7 +282,6 @@ void Presentation::LoadTrophyModel()
         BasicString<char, Detail::TempStringAllocator> prefix("Gameplay/");
         Config& cfg = Config::Global();
         TagValuePair& tvp = cfg.FindTvp("gimme_cup_trophy");
-
         if (tvp.tag == NULL)
         {
             cfg.Set("gimme_cup_trophy", "FlowerCup");

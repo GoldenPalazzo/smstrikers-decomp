@@ -403,13 +403,12 @@ void AudioScriptEventMgr::FireEvent(AudioScriptEventMgr::AUDIO_EVENT Event, Audi
 
 /**
  * Offset/Address/Size: 0x10F8 | 0x8014A24C | size: 0x80C
- * TODO: 95.18% match - two literal symbol references differ (@2283 and @1485)
+ * TODO: 98.72% match - FuzzyVariant stack slot and inlined FireEvent stack/register layout still differ.
  */
 static void Poll()
 {
     GameTweaks* pGameTweaks = g_pGame->m_pGameTweaks;
-    float gameTime = g_pGame->GetGameTime();
-    unsigned long gameTimePercentage = (unsigned long)((100.0f * gameTime) / pGameTweaks->fGameDuration);
+    unsigned long gameTimePercentage = (unsigned long)((100.0f * g_pGame->GetGameTime()) / pGameTweaks->fGameDuration);
     AudioScriptEventMgr::AUDIO_EVENT event = (AudioScriptEventMgr::AUDIO_EVENT)-1;
     AudioScriptEventMgr::AUDIO_EVENT_TEAM team = AudioScriptEventMgr::AET_Neutral;
 
@@ -472,7 +471,7 @@ static void Poll()
         if (pOwnerTeam != g_ScriptPollState.pLastBallOwnerTeam)
         {
             g_ScriptPollState.pLastBallOwnerTeam = pOwnerTeam;
-            g_ScriptPollState.NextPossibleGoodPositionTime = g_pGame->GetGameTime() - 0.0001f;
+            g_ScriptPollState.NextPossibleGoodPositionTime = g_pGame->GetGameTime() - 0.0001;
         }
 
         if (Fuzzy::GoodToShoot(pBallOwner).mData.f >= g_ScriptSettings.GoodToShootThreshold || OnBreakaway(pBallOwner) >= g_ScriptSettings.OnBreakawayThreshold)
@@ -482,7 +481,7 @@ static void Poll()
                 g_ScriptPollState.NextPossibleGoodPositionTime = g_pGame->GetGameTime() + (float)g_ScriptSettings.MinGoodPositionPeriod;
                 AudioScriptEventMgr::AUDIO_EVENT_TEAM eventTeam = AudioScriptEventMgr::AET_Home;
 
-                if (pOwnerTeam->m_nSide != 0)
+                if (((cPlayer*)pBallOwner)->m_pTeam->m_nSide != 0)
                 {
                     eventTeam = AudioScriptEventMgr::AET_Away;
                 }
@@ -502,8 +501,7 @@ static void Poll()
 
     if (g_pBall->m_pOwner != NULL)
     {
-        cTeam* pBallTeam = g_pBall->m_pOwner->m_pTeam;
-        if (pBallTeam != g_ScriptPollState.LastOwningTeam)
+        if (g_pBall->m_pOwner->m_pTeam != g_ScriptPollState.LastOwningTeam)
         {
             g_ScriptPollState.LastExcitementTime = g_pGame->GetGameTime();
 
@@ -514,12 +512,12 @@ static void Poll()
                 AudioScriptEventMgr::FireEvent(AudioScriptEventMgr::AE_BoredEnd, AudioScriptEventMgr::AET_Neutral);
             }
 
-            g_ScriptPollState.LastOwningTeam = pBallTeam;
+            g_ScriptPollState.LastOwningTeam = g_pBall->m_pOwner->m_pTeam;
 
             if (g_pGame->m_eGameState > GS_END_GAME)
             {
                 AudioScriptEventMgr::AUDIO_EVENT_TEAM eventTeam = AudioScriptEventMgr::AET_Home;
-                if (pBallTeam->m_nSide != 0)
+                if (g_pBall->m_pOwner->m_pTeam->m_nSide != 0)
                 {
                     eventTeam = AudioScriptEventMgr::AET_Away;
                 }
