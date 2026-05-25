@@ -616,9 +616,27 @@ static inline unsigned long setTextureLocal(eGLTextureState texturestate, unsign
 
 /**
  * Offset/Address/Size: 0x910 | 0x801DC554 | size: 0x1E78
- * TODO: 60.5% match - raster section lwzu pattern mismatch (stmw r27 vs r26,
- * missing store/reload between unrolled and tail sections in first setRasterLocal)
+ * TODO: 69.2% match - lwzu scheduling, stmw vs individual stw, register
+ * allocation differences across all inlined state-setter sections.
  */
+#define SET_RASTER_LOCAL(idx, val)                                 \
+    do                                                             \
+    {                                                              \
+        s32 _sr_startBit = packed_raster[idx].startBit;            \
+        s32 _sr_numBits = packed_raster[idx].numBits;              \
+        s32 _sr_i;                                                 \
+        for (_sr_i = _sr_numBits; _sr_i > 0; _sr_i--)              \
+        {                                                          \
+        }                                                          \
+        for (_sr_i = 0; _sr_i < _sr_numBits; _sr_i++)              \
+        {                                                          \
+            if ((val) & (1u << _sr_i))                             \
+                _state.m_State |= (1u << (_sr_i + _sr_startBit));  \
+            else                                                   \
+                _state.m_State &= ~(1u << (_sr_i + _sr_startBit)); \
+        }                                                          \
+    } while (0)
+
 void gl_StateStartup()
 {
     s32 start;
@@ -653,16 +671,16 @@ void gl_StateStartup()
         p++;
     }
 
-    setRasterLocal(GLS_DepthTest, 0);
-    setRasterLocal(GLS_DepthWrite, 0);
-    setRasterLocal(GLS_DepthFunc, 1);
-    setRasterLocal(GLS_AlphaTest, 0);
-    setRasterLocal(GLS_AlphaTestRef, 0);
-    setRasterLocal(GLS_AlphaBlend, 0);
-    setRasterLocal(GLS_Culling, 1);
-    setRasterLocal(GLS_ColourWrite, 3);
-    setRasterLocal(GLS_SolidOffset, 0);
-    setRasterLocal(GLS_FillMode, 0);
+    SET_RASTER_LOCAL(GLS_DepthTest, 0);
+    SET_RASTER_LOCAL(GLS_DepthWrite, 0);
+    SET_RASTER_LOCAL(GLS_DepthFunc, 1);
+    SET_RASTER_LOCAL(GLS_AlphaTest, 0);
+    SET_RASTER_LOCAL(GLS_AlphaTestRef, 0);
+    SET_RASTER_LOCAL(GLS_AlphaBlend, 0);
+    SET_RASTER_LOCAL(GLS_Culling, 1);
+    SET_RASTER_LOCAL(GLS_ColourWrite, 3);
+    SET_RASTER_LOCAL(GLS_SolidOffset, 0);
+    SET_RASTER_LOCAL(GLS_FillMode, 0);
 
     defaultRasterState = _state.m_State;
 
@@ -691,3 +709,5 @@ void gl_StateStartup()
 
     defaultMaterialState = _materialState.m_State;
 }
+
+#undef SET_RASTER_LOCAL
