@@ -449,6 +449,8 @@ static inline float DoCalculatePassSpeed(const nlVector3& teammatePosition, cons
 void cPlayer::DoRegularPassing(cPlayer* pTeammate, bool bVolleyPass, bool bAllowLeadPass, bool bParam3, bool bParam4)
 {
     g_pBall->m_tNoPickupTimer.SetSeconds(0.1f);
+    cFielder* pPasser = (cFielder*)this;
+    cFielder* pPassTarget = (cFielder*)pTeammate;
     float fPassGroundSpeed = 0.0f;
     g_pBall->mbIsPerfectShot = bVolleyPass;
     nlVector3 v3PassIntercept = { 0.0f, 0.0f, 0.0f };
@@ -457,7 +459,7 @@ void cPlayer::DoRegularPassing(cPlayer* pTeammate, bool bVolleyPass, bool bAllow
     bool bLeadPass = false;
     if (bAllowLeadPass)
     {
-        if (((cFielder*)pTeammate)->ShouldILeadPass())
+        if (pPassTarget->ShouldILeadPass())
         {
             int direction = Fuzzy::GetPassDirection(this, pTeammate).mData.i;
             SSearchBestPass* pNewSearch = new (nlMalloc(sizeof(SSearchBestPass), 8, false)) SSearchBestPass(this, pTeammate, bVolleyPass, bParam3);
@@ -693,9 +695,9 @@ void cPlayer::DoRegularPassing(cPlayer* pTeammate, bool bVolleyPass, bool bAllow
     {
         facingDirection = (unsigned short)(nlATan2f(g_pBall->m_v3Position.f.y - pTeammate->m_v3Position.f.y, g_pBall->m_v3Position.f.x - pTeammate->m_v3Position.f.x) * 10430.378f);
     }
-    const LooseBallContactAnimInfo* pAnimInfo = ((cFielder*)pTeammate)->GetReceivePassBallContactAnimInfo(g_pBall, v3PassIntercept, facingDirection, calcPassIntercept, bVolleyPass);
+    const LooseBallContactAnimInfo* pAnimInfo = pPassTarget->GetReceivePassBallContactAnimInfo(g_pBall, v3PassIntercept, facingDirection, calcPassIntercept, bVolleyPass);
     nlVector3 ballContactOffset;
-    ((cFielder*)pTeammate)->GetReceivePassBallContactOffset(ballContactOffset, facingDirection, pAnimInfo);
+    pPassTarget->GetReceivePassBallContactOffset(ballContactOffset, facingDirection, pAnimInfo);
     eSpinType spinType = SPINTYPE_ROLLING;
     bool bHighArc = false;
     v3PassIntercept.f.z += ballContactOffset.f.z;
@@ -736,7 +738,7 @@ void cPlayer::DoRegularPassing(cPlayer* pTeammate, bool bVolleyPass, bool bAllow
     g_pBall->ShootRelease(velocity, spinType);
     m_pPhysicsCharacter->m_CanCollideWithBall = 0;
     m_tNoPickupTimer.SetSeconds(0.5f);
-    if (((cFielder*)pTeammate)->CanReceivePass())
+    if (pPassTarget->CanReceivePass())
     {
         if (!bHighArc)
         {
@@ -744,10 +746,22 @@ void cPlayer::DoRegularPassing(cPlayer* pTeammate, bool bVolleyPass, bool bAllow
             PassBallData* pData = new (&pEvent->m_data) PassBallData();
             pData->pPasser = this;
             pData->pTarget = pTeammate;
-            cGlobalPad* pPad = GetGlobalPad();
+            cGlobalPad* pPad = NULL;
+            if (m_pController != NULL)
+            {
+                pPad = m_pController->m_pPad;
+            }
             if (pPad != NULL)
             {
-                pData->mPasserControllerID = GetGlobalPad()->m_padIndex;
+                if (m_pController != NULL)
+                {
+                    pPad = m_pController->m_pPad;
+                }
+                else
+                {
+                    pPad = NULL;
+                }
+                pData->mPasserControllerID = pPad->m_padIndex;
             }
             else
             {
@@ -755,15 +769,15 @@ void cPlayer::DoRegularPassing(cPlayer* pTeammate, bool bVolleyPass, bool bAllow
             }
             if (calcPassIntercept)
             {
-                ((cFielder*)pTeammate)->InitDesireReceivePassFromRun(pAnimInfo, teammateLeadPassVelocity, bVolleyPass, v3PassIntercept);
+                pPassTarget->InitDesireReceivePassFromRun(pAnimInfo, teammateLeadPassVelocity, bVolleyPass, v3PassIntercept);
             }
             else
             {
-                ((cFielder*)pTeammate)->InitDesireReceivePassFromIdle(pAnimInfo, facingDirection, bVolleyPass);
+                pPassTarget->InitDesireReceivePassFromIdle(pAnimInfo, facingDirection, bVolleyPass);
             }
             if (m_eClassType == FIELDER)
             {
-                if (((cFielder*)this)->m_eActionState != ACTION_ONETOUCH_PASS_FROM_VOLLEY && ((cFielder*)this)->DoCalcCanDoPerfectPass((cFielder*)pTeammate, v3PassIntercept))
+                if (pPasser->m_eActionState != ACTION_ONETOUCH_PASS_FROM_VOLLEY && pPasser->DoCalcCanDoPerfectPass(pPassTarget, v3PassIntercept))
                 {
                     g_pBall->SetPerfectPass(true, false);
                     EmitBallShot(this, BALL_EFFECT_PERFECT_PASS, pTeammate, false);
