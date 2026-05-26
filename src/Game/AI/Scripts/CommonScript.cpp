@@ -4727,7 +4727,7 @@ FuzzyVariant Fuzzy::InDanger(cFielder* TheFielder)
         fFourth = fThird;
     }
 
-    if (fFourth < fFifth)
+    if (fFifth > fFourth)
     {
         fFourth = fFifth;
     }

@@ -13,6 +13,8 @@
 #include "NL/nlSingleton.h"
 #include "NL/nlString.h"
 
+#include "NL/nlMemFunBody.h"
+
 typedef Detail::MemFunImpl<void, void (CupTickerManager::*)()> MemFunImpl_CupTickerManager_v;
 typedef BindExp1<void, MemFunImpl_CupTickerManager_v, CupTickerManager*> BindExp1_vfmfcp;
 typedef Function0<void>::FunctorImpl<BindExp1_vfmfcp> FunctorImpl_vfmfcp;
@@ -260,8 +262,6 @@ void CupTickerManager::SetTickerTextInstance(TLTextInstance* tickerText)
 
 /**
  * Offset/Address/Size: 0x680 | 0x800F2648 | size: 0x12E8
- * TODO: 78.75% match - register allocation (r25/r28 vs r30/r31 for this/gameInfo),
- * extra mr r4,r0 in LOC_LOOKUP fallback paths, stack frame size 0x150 vs 0x140.
  */
 void CupTickerManager::CreateNewMessage()
 {
@@ -282,7 +282,7 @@ void CupTickerManager::CreateNewMessage()
         return;
     }
 
-    do
+    while (!messageDisplayed)
     {
         if (gameInfo->GetCurrentRoundNumber() == -5)
         {
@@ -306,7 +306,7 @@ void CupTickerManager::CreateNewMessage()
                     fmtWBS, modeWBS, charWBS);
                 break;
             }
-            else
+            if (mState != 2)
             {
                 mState = (eCupTickerState)2;
                 if (gameInfoMem->mTournamentMode != 0)
@@ -377,7 +377,6 @@ void CupTickerManager::CreateNewMessage()
                 unsigned long team1LOC = GetLOCTeamName(gameInfo->GetTeam(1));
 
                 unsigned long fmtHash = nlStringLowerHash("CUPHUB_TICKER_NEXT_MATCH");
-                unsigned short* locString;
                 LOC_LOOKUP(fmtHash, locString);
                 WideBasicString fmtWBS(locString);
                 unsigned short* team0LocString;
@@ -393,20 +392,20 @@ void CupTickerManager::CreateNewMessage()
 
         if (mState == 4)
         {
-            int mode = gameInfoMem->mCurrentMode;
-            if ((mode == 1
-                    && !gameInfo->IsUserQualified((GameInfoManager::eGameModes)2))
-                || (mode == 2
-                    && !gameInfo->IsUserQualified((GameInfoManager::eGameModes)3)))
+            GameInfoManager::eGameModes mode = gameInfo->mCurrentMode;
+            if ((mode == GameInfoManager::GM_MUSHROOM_CUP
+                    && !gameInfo->IsUserQualified(GameInfoManager::GM_FLOWER_CUP))
+                || (mode == GameInfoManager::GM_FLOWER_CUP
+                    && !gameInfo->IsUserQualified(GameInfoManager::GM_STAR_CUP)))
             {
                 LOC_LOOKUP(0x751FA62FUL, locString);
                 WideBasicString msg(locString);
                 tickerMessage = msg;
                 messageDisplayed = true;
             }
-            else if (gameInfo->IsUserQualified((GameInfoManager::eGameModes)2)
-                     && gameInfo->IsUserQualified((GameInfoManager::eGameModes)3)
-                     && !gameInfo->IsUserQualified((GameInfoManager::eGameModes)4)
+            else if (gameInfo->IsUserQualified(GameInfoManager::GM_FLOWER_CUP)
+                     && gameInfo->IsUserQualified(GameInfoManager::GM_STAR_CUP)
+                     && !gameInfo->IsUserQualified(GameInfoManager::GM_BOWSER_CUP)
                      && gameInfo->IsInCupMode())
             {
                 LOC_LOOKUP(0xEEC22902UL, locString);
@@ -414,7 +413,8 @@ void CupTickerManager::CreateNewMessage()
                 tickerMessage = msg;
                 messageDisplayed = true;
             }
-            else if ((mode == 4 || mode == 8) && !gameInfoMem->mDoingKnockout)
+            else if ((mode == GameInfoManager::GM_BOWSER_CUP || mode == GameInfoManager::GM_SUPER_BOWSER_CUP)
+                     && !gameInfoMem->mDoingKnockout)
             {
                 LOC_LOOKUP(0x4B50DF6AUL, locString);
                 WideBasicString msg(locString);
@@ -437,10 +437,10 @@ void CupTickerManager::CreateNewMessage()
             }
             else
             {
-                short round = gameInfo->GetPreviousRoundNumber(-7);
-                unsigned short numGames = gameInfo->GetNumGamesPerRound(round);
-                int i = 0;
-                while (i < (int)numGames)
+                int roundNumber = gameInfo->GetPreviousRoundNumber(-7);
+                int numGames = (int)gameInfo->GetNumGamesPerRound(roundNumber);
+                int gameNumber = 0;
+                while (gameNumber < numGames)
                 {
                     BasicGameInfo* game;
                     if (gameInfo->GetCurrentRoundNumber() == -1)
@@ -449,20 +449,16 @@ void CupTickerManager::CreateNewMessage()
                     }
                     else
                     {
-                        game = gameInfo->GetMatchupInfo(round, (unsigned short)i);
+                        game = gameInfo->GetMatchupInfo(roundNumber, (unsigned short)gameNumber);
                     }
 
                     unsigned long team0Name = GetLOCTeamName(game->mTeamIndex[0]);
                     unsigned long team1Name = GetLOCTeamName(game->mTeamIndex[1]);
 
-                    unsigned long formatHash;
-                    if (i == 0)
+                    unsigned long formatHash = 0x3E3B44CAUL;
+                    if (gameNumber == 0)
                     {
                         formatHash = 0x97372F0FUL;
-                    }
-                    else
-                    {
-                        formatHash = 0x3E3B44CAUL;
                     }
 
                     NLString score0Str = LexicalCast<NLString, int>((int)game->mFinalScore[0]);
@@ -501,14 +497,14 @@ void CupTickerManager::CreateNewMessage()
                                 fmtWBS, t1Str, t0Str, wideScore1, wideScore0));
                     }
 
-                    i++;
+                    gameNumber++;
                 }
                 messageDisplayed = true;
             }
         }
 
         mState = (eCupTickerState)(((int)mState + 1) % 6);
-    } while (!messageDisplayed);
+    }
 
     memcpy(mMessageBuffer, tickerMessage.c_str(), 0x400);
     WideBasicString displayMessage(mMessageBuffer);

@@ -8,12 +8,12 @@
 #include "NL/nlPrint.h"
 #include "NL/nlString.h"
 
-extern s32 mLastSelectedIndex__11SpoilsScene;
+s32 SpoilsScene::mLastSelectedIndex = 0;
 
 namespace DoubleHighlite
 {
-extern const char* SLIDE_IN;
-extern const char* SLIDE_OUT;
+static const char* SLIDE_IN = "in";
+static const char* SLIDE_OUT = "out";
 } // namespace DoubleHighlite
 
 typedef Detail::MemFunImpl<void, void (SpoilsScene::*)(SpoilsScene::eSpoils)> MemFunImpl_Spoils_t;
@@ -368,7 +368,7 @@ void SpoilsScene::SceneCreated()
             (InlineHasher&)h1);
         TLComponentInstance* instance = (TLComponentInstance*)found;
 
-        instance->SetActiveSlide(i == mLastSelectedIndex__11SpoilsScene ? DoubleHighlite::SLIDE_IN : DoubleHighlite::SLIDE_OUT);
+        instance->SetActiveSlide(i == SpoilsScene::mLastSelectedIndex ? DoubleHighlite::SLIDE_IN : DoubleHighlite::SLIDE_OUT);
 
         MenuItem<TLComponentInstance>* item = &mMenuItems.mMenuItems[mMenuItems.mNumItemsAdded];
         item->mType = instance;
@@ -405,7 +405,7 @@ void SpoilsScene::SceneCreated()
 
         FindComponent(instance->GetActiveSlide(), "highlite");
 
-        if (i == mLastSelectedIndex__11SpoilsScene)
+        if (i == SpoilsScene::mLastSelectedIndex)
         {
             DoubleHighlite::TempDisableSound();
             {
@@ -447,7 +447,7 @@ void SpoilsScene::SceneCreated()
     }
 
     mMenuItems.mFlags = 1;
-    mMenuItems.mCurrentIndex = mLastSelectedIndex__11SpoilsScene;
+    mMenuItems.mCurrentIndex = SpoilsScene::mLastSelectedIndex;
 
     {
         int selIdx = mMenuItems.mCurrentIndex;

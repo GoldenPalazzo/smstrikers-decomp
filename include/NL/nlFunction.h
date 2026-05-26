@@ -60,16 +60,13 @@ public:
 
     inline void operator()(ParamType arg)
     {
-        if ((bool)mTag)
+        if (mTag == FREE_FUNCTION)
         {
-            if (mTag == FREE_FUNCTION)
-            {
-                mFreeFunction(arg);
-            }
-            else
-            {
-                (*mFunctor)(arg);
-            }
+            mFreeFunction(arg);
+        }
+        else
+        {
+            (*mFunctor)(arg);
         }
     }
 }; // total size: 0x8
@@ -295,11 +292,13 @@ struct MemFunImpl
 };
 } // namespace Detail
 
+#ifndef MEMFUN_NO_DECL
 template <typename T, typename R>
 Detail::MemFunImpl<R, void (T::*)()> MemFun(void (T::*fn)());
 
 template <typename T, typename R, typename P>
 Detail::MemFunImpl<R, void (T::*)(P)> MemFun(void (T::*fn)(P));
+#endif
 
 // Bind template
 template <typename R, typename F, typename A>

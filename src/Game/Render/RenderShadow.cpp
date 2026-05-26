@@ -585,10 +585,67 @@ void RenderBlobShadow(const nlVector3& vPosition, const nlVector3* pPoints, int 
     }
 }
 
+static void CastDirectional(nlVector3& p, const nlVector3& lightPos)
+{
+    float lz = -lightPos.f.z;
+    float ly = -lightPos.f.y;
+    float lx = -lightPos.f.x;
+    float pz = p.f.z;
+    float py = p.f.y;
+    float px = p.f.x;
+    float invLen = nlRecipSqrt(ly * ly + lx * lx + lz * lz, false);
+    nlVector3 vDir;
+    vDir.f.x = lx;
+    vDir.f.y = ly;
+    vDir.f.z = lz;
+    _nlVec3Scale(vDir, invLen);
+    float dirX = vDir.f.x;
+    float dirY = vDir.f.y;
+    float dirZ = vDir.f.z;
+
+    float Vx = 0.0f;
+    float Vy = 0.0f;
+    float Vz = 1.0f;
+    float num = Vx * px + Vy * py + Vz * pz;
+    float den = Vx * dirX + Vy * dirY + Vz * dirZ;
+    float t = -(num / den);
+
+    p.f.x = px + t * dirX;
+    p.f.y = py + t * dirY;
+    p.f.z = pz + t * dirZ;
+}
+
+static void CastPoint(nlVector3& p, const nlVector3& vLight)
+{
+    nlVector4 V = { 0.0f, 0.0f, 1.0f, 0.0f };
+    nlVector4 Q = { 0.0f, 0.0f, 0.0f, 1.0f };
+    nlVector4 L = { 0.0f, 0.0f, 0.0f, 0.0f };
+
+    Q.f.x = p.f.x;
+    Q.f.y = p.f.y;
+    Q.f.z = p.f.z;
+
+    L.f.x = vLight.f.x;
+    L.f.y = vLight.f.y;
+    L.f.z = vLight.f.z;
+
+    float qx = Q.f.x - L.f.x;
+    float qy = Q.f.y - L.f.y;
+    float qz = Q.f.z - L.f.z;
+
+    float qDot = V.f.x * Q.f.x + V.f.y * Q.f.y + V.f.z * Q.f.z + V.f.w * Q.f.w;
+    float lDot = V.f.x * qx + V.f.y * qy + V.f.z * qz + V.f.w * L.f.w;
+    float t = -(qDot / lDot);
+
+    p.f.x = Q.f.x + t * qx;
+    p.f.y = Q.f.y + t * qy;
+    p.f.z = Q.f.z + t * qz;
+}
+
 /**
  * Offset/Address/Size: 0x0 | 0x80123034 | size: 0x750
- * TODO: 80.78% match - register allocation shift in vTemp copy section (height f29 vs f27,
- *       width f27 vs f24) cascades through quad corner computation scheduling
+ * TODO: 84.62% match - register allocation and scheduling still differ in corner setup
+ *       and directional/point cast paths.
  */
 void RenderProjectedShadow(const ProjectedShadowParams& params)
 {
@@ -627,17 +684,23 @@ void RenderProjectedShadow(const ProjectedShadowParams& params)
     vTemp = params.vPosition;
 
     {
-        float dy = vTemp.f.y - vLight.f.y;
         float dx = vTemp.f.x - vLight.f.x;
+        float dy = vTemp.f.y - vLight.f.y;
         float dz = 0.0f;
         float halfH = 0.5f * height;
         vTemp.f.z += halfH;
 
         float invLen = nlRecipSqrt(dx * dx + dy * dy + dz * dz, false);
 
-        float vx = invLen * dx;
-        float vy = invLen * dy;
-        float vz = invLen * dz;
+        nlVector3 vDir;
+        vDir.f.x = dx;
+        vDir.f.y = dy;
+        vDir.f.z = dz;
+        _nlVec3Scale(vDir, invLen);
+
+        float vx = vDir.f.x;
+        float vy = vDir.f.y;
+        float vz = vDir.f.z;
 
         float crossX = vy * vUp.f.z - vz * vUp.f.y;
         float crossY = vz * vUp.f.x - vx * vUp.f.z;
@@ -688,56 +751,13 @@ void RenderProjectedShadow(const ProjectedShadowParams& params)
         nlVector3* pPoint = p;
         for (i = 0; i < 4; i++, pPoint++)
         {
-            float lx = -vLight.f.x;
-            float ly = -vLight.f.y;
-            float lz = -vLight.f.z;
-
             if (g_bShadowDirectional)
             {
-                float pz = pPoint->f.z;
-                float py = pPoint->f.y;
-                float px = pPoint->f.x;
-                float invLen = nlRecipSqrt(ly * ly + lx * lx + lz * lz, false);
-                float dirX = invLen * lx;
-                float dirY = invLen * ly;
-                float dirZ = invLen * lz;
-
-                float Vx = 0.0f;
-                float Vy = 0.0f;
-                float Vz = 1.0f;
-                float num = Vx * px + Vy * py + Vz * pz;
-                float den = Vx * dirX + Vy * dirY + Vz * dirZ;
-                float t = -(num / den);
-
-                pPoint->f.x = px + t * dirX;
-                pPoint->f.y = py + t * dirY;
-                pPoint->f.z = pz + t * dirZ;
+                CastDirectional(*pPoint, vLight);
             }
             else
             {
-                nlVector4 V = { 0.0f, 0.0f, 1.0f, 0.0f };
-                nlVector4 Q = { 0.0f, 0.0f, 0.0f, 1.0f };
-                nlVector4 L = { 0.0f, 0.0f, 0.0f, 0.0f };
-
-                Q.f.x = pPoint->f.x;
-                Q.f.y = pPoint->f.y;
-                Q.f.z = pPoint->f.z;
-
-                L.f.x = vLight.f.x;
-                L.f.y = vLight.f.y;
-                L.f.z = vLight.f.z;
-
-                float qx = Q.f.x - L.f.x;
-                float qy = Q.f.y - L.f.y;
-                float qz = Q.f.z - L.f.z;
-
-                float qDot = V.f.x * Q.f.x + V.f.y * Q.f.y + V.f.z * Q.f.z + V.f.w * Q.f.w;
-                float lDot = V.f.x * qx + V.f.y * qy + V.f.z * qz + V.f.w * L.f.w;
-                float t = -(qDot / lDot);
-
-                pPoint->f.x = Q.f.x + t * qx;
-                pPoint->f.y = Q.f.y + t * qy;
-                pPoint->f.z = Q.f.z + t * qz;
+                CastPoint(*pPoint, vLight);
             }
 
             pPoint->f.z = g_AntiFlimmer;
@@ -749,9 +769,7 @@ void RenderProjectedShadow(const ProjectedShadowParams& params)
 
     {
         float invLen = nlRecipSqrt(dir.f.y * dir.f.y + dir.f.x * dir.f.x + dir.f.z * dir.f.z, false);
-        dir.f.x = dir.f.x * invLen;
-        dir.f.y = dir.f.y * invLen;
-        dir.f.z = dir.f.z * invLen;
+        _nlVec3Scale(dir, invLen);
     }
 
     {

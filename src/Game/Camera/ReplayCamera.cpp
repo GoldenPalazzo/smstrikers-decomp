@@ -291,8 +291,8 @@ nlVector3 ReplayCamera::GetPosition(ReplayCameraPosition position, float directi
         float normDx, normDy, normDz;
         {
             float invLen = nlRecipSqrt(dx * dx + dy * dy + dz * dz, false);
-            normDz = invLen * dz;
             normDy = invLen * dy;
+            normDz = invLen * dz;
             normDx = invLen * dx;
         }
 
@@ -344,8 +344,7 @@ nlVector3 ReplayCamera::GetPosition(ReplayCameraPosition position, float directi
                 prefix.AppendInPlace(Format(formatStr, idx));
             }
 
-            float side = (mSideOfInterest == 0) ? -1.0f : 1.0f;
-            float xVal = GetConfigFloat(Config::Global(), prefix.Append("x").c_str(), 0.0f) * side;
+            float xVal = GetConfigFloat(Config::Global(), prefix.Append("x").c_str(), 0.0f) * ((mSideOfInterest == 0) ? -1.0f : 1.0f);
             float yVal = GetConfigFloat(Config::Global(), prefix.Append("y").c_str(), 0.0f);
             float zVal = GetConfigFloat(Config::Global(), prefix.Append("z").c_str(), 0.0f);
             result.f.x = xVal;

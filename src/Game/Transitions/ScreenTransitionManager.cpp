@@ -1,3 +1,4 @@
+#define BASICSTRING_NO_COPY_REREAD
 #include "Game/Transitions/ScreenTransitionManager.h"
 
 #include "Game/Transitions/TransitionSequence.h"

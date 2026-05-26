@@ -1,3 +1,4 @@
+#define BASICSTRING_NO_INLINE_APPEND
 #include "Game/SH/SHMilestoneTrophy.h"
 
 #include "Game/FE/FEAudio.h"
@@ -28,7 +29,7 @@ typedef BasicString<unsigned short, Detail::TempStringAllocator> WideBasicString
  * TODO: 98.36% match - return copy null/data path still stores through r4 instead of reloading through r0.
  */
 template <>
-BasicString<unsigned short, Detail::TempStringAllocator>
+inline BasicString<unsigned short, Detail::TempStringAllocator>
 Format<BasicString<unsigned short, Detail::TempStringAllocator>, unsigned short[128]>(
     const BasicString<unsigned short, Detail::TempStringAllocator>& format,
     const unsigned short (&value)[128])
@@ -53,7 +54,7 @@ Format<BasicString<unsigned short, Detail::TempStringAllocator>, unsigned short[
  * Offset/Address/Size: 0xF44 | 0x800D0CC4 | size: 0x114
  */
 template <>
-BasicString<unsigned short, Detail::TempStringAllocator>
+inline BasicString<unsigned short, Detail::TempStringAllocator>
 Format<BasicString<unsigned short, Detail::TempStringAllocator>, const unsigned short*>(
     const BasicString<unsigned short, Detail::TempStringAllocator>& format,
     const unsigned short* const& value)
@@ -78,7 +79,7 @@ Format<BasicString<unsigned short, Detail::TempStringAllocator>, const unsigned 
  * Offset/Address/Size: 0xE20 | 0x800D0BA0 | size: 0x124
  */
 template <>
-BasicString<unsigned short, Detail::TempStringAllocator>
+inline BasicString<unsigned short, Detail::TempStringAllocator>
 Format<BasicString<unsigned short, Detail::TempStringAllocator>, unsigned short[128], unsigned short[128]>(
     const BasicString<unsigned short, Detail::TempStringAllocator>& format,
     const unsigned short (&value)[128],
@@ -100,27 +101,36 @@ Format<BasicString<unsigned short, Detail::TempStringAllocator>, unsigned short[
         (BasicString<unsigned short, Detail::TempStringAllocator>)((((FormatImpl<BasicString<unsigned short, Detail::TempStringAllocator> >&)impl) % (const unsigned short*)value) % (const unsigned short*)value2));
 }
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800CFD80 | size: 0x130
-//  */
-// void Format<BasicString<unsigned short, Detail::TempStringAllocator>, unsigned short[16], unsigned short[16], unsigned short[16]>(const
-// BasicString<unsigned short, Detail::TempStringAllocator>&, const unsigned short(&)[16], const unsigned short(&)[16], const unsigned
-// short(&)[16])
-// {
-// }
-
 /**
- * Offset/Address/Size: 0x0 | 0x800CFCC4 | size: 0xBC
+ * Offset/Address/Size: 0x0 | 0x800CFD80 | size: 0x130
  */
-static void SHMilestoneTrophy_Append_stub()
+template <>
+inline BasicString<unsigned short, Detail::TempStringAllocator>
+Format<BasicString<unsigned short, Detail::TempStringAllocator>, unsigned short[16], unsigned short[16], unsigned short[16]>(
+    const BasicString<unsigned short, Detail::TempStringAllocator>& format,
+    const unsigned short (&value1)[16],
+    const unsigned short (&value2)[16],
+    const unsigned short (&value3)[16])
 {
-    BasicString<char, Detail::TempStringAllocator> s;
-    s.Append("");
+    BasicStringData<unsigned short>* data = format.m_data;
+    if (data != 0)
+    {
+        data->mRefCount++;
+    }
+    else
+    {
+        data = 0;
+    }
+
+    FormatImplLayoutWideTemp impl(data);
+
+    return BasicString<unsigned short, Detail::TempStringAllocator>(
+        (BasicString<unsigned short, Detail::TempStringAllocator>)(((((FormatImpl<BasicString<unsigned short, Detail::TempStringAllocator> >&)impl) % (const unsigned short*)value1) % (const unsigned short*)value2) % (const unsigned short*)value3));
 }
 
 // /**
 //  * Offset/Address/Size: 0x5A8 | 0x800CFB68 | size: 0x15C
-//  */
+// */
 // void FEFinder<TLTextInstance, 3>::_Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned
 // long, unsigned long)
 // {
@@ -230,12 +240,6 @@ extern nlLocalization* g_pLocalization;
 extern const unsigned short LocalizationTableNotFound[];
 extern const unsigned short MissingLocString[];
 
-static const char* MILESTONE_TROPHY_TEXT_NAME = "CUP TITLE";
-static const char* MILESTONE_TROPHY_IMAGE_NAME = "TROPHY";
-static const char* MILESTONE_TOTAL_TEXT_NAME = "TOTALS";
-static const char* MILESTONE_STAT_TEXT_NAME = "THE TOTAL";
-static const char* MILESTONE_DESCRIPTION_TEXT_NAME = "THE TOTAL2";
-
 static const char* TROPHY_TEXTURE_FILENAMES[13] = {
     "fe/trophies/cups_mushroom",
     "fe/trophies/cups_flower",
@@ -252,28 +256,35 @@ static const char* TROPHY_TEXTURE_FILENAMES[13] = {
     "fe/trophies/cups_lakitu",
 };
 
+static const char* MILESTONE_TROPHY_TEXT_NAME = "CUP TITLE";
+static const char* MILESTONE_TROPHY_IMAGE_NAME = "TROPHY";
+static const char* MILESTONE_STAT_TEXT_NAME = "THE TOTAL";
+static const char* MILESTONE_TOTAL_TEXT_NAME = "TOTALS";
+static const char* MILESTONE_DESCRIPTION_TEXT_NAME = "THE TOTAL2";
+
 static const nlColour TROPHY_BLACK_MILESTONE = { 0x00, 0x00, 0x00, 0xFF };
 
-#define LOOKUP_LOC(_hash, _out)                                                                                                             \
-    do                                                                                                                                      \
-    {                                                                                                                                       \
-        nlLocalization* _loc = g_pLocalization;                                                                                             \
-        if (_loc->m_LookupTable == 0)                                                                                                       \
-        {                                                                                                                                   \
-            (_out) = LocalizationTableNotFound;                                                                                             \
-        }                                                                                                                                   \
-        else                                                                                                                                \
-        {                                                                                                                                   \
-            nlLocalization::StringLookup* _entry = nlBSearch((unsigned long)(_hash), _loc->m_LookupTable, (int)_loc->m_pFile->StringCount); \
-            if (_entry != 0)                                                                                                                \
-            {                                                                                                                               \
-                (_out) = _loc->m_FirstString + _entry->StringOffset;                                                                        \
-            }                                                                                                                               \
-            else                                                                                                                            \
-            {                                                                                                                               \
-                (_out) = MissingLocString;                                                                                                  \
-            }                                                                                                                               \
-        }                                                                                                                                   \
+#define LOOKUP_LOC(_hash, _out)                                                                                             \
+    do                                                                                                                      \
+    {                                                                                                                       \
+        locKey = (_hash);                                                                                                   \
+        nlLocalization* _loc = g_pLocalization;                                                                             \
+        if (_loc->m_LookupTable == 0)                                                                                       \
+        {                                                                                                                   \
+            (_out) = LocalizationTableNotFound;                                                                             \
+        }                                                                                                                   \
+        else                                                                                                                \
+        {                                                                                                                   \
+            nlLocalization::StringLookup* _entry = nlBSearch(locKey, _loc->m_LookupTable, (int)_loc->m_pFile->StringCount); \
+            if (_entry != 0)                                                                                                \
+            {                                                                                                               \
+                (_out) = _loc->m_FirstString + _entry->StringOffset;                                                        \
+            }                                                                                                               \
+            else                                                                                                            \
+            {                                                                                                               \
+                (_out) = MissingLocString;                                                                                  \
+            }                                                                                                               \
+        }                                                                                                                   \
     } while (0)
 
 /**
@@ -324,6 +335,7 @@ void MilestoneTrophyScene::SceneCreated()
     int bronzeStat = 0;
     int silverStat = 0;
     int goldStat = 0;
+    unsigned long locKey;
 
     TLTextInstance* pText;
     {
@@ -419,7 +431,6 @@ void MilestoneTrophyScene::SceneCreated()
     BasicString<unsigned short, Detail::TempStringAllocator> unformatted(locString);
     BasicString<unsigned short, Detail::TempStringAllocator> stat;
     BasicString<unsigned short, Detail::TempStringAllocator> unlockable;
-    BasicString<unsigned short, Detail::TempStringAllocator> description;
     BasicString<unsigned short, Detail::TempStringAllocator> formatted;
 
     switch (mTrophy)
@@ -431,16 +442,10 @@ void MilestoneTrophyScene::SceneCreated()
         goldStat = 100;
 
         LOOKUP_LOC(0x8A5D9314, locString);
-        {
-            BasicString<unsigned short, Detail::TempStringAllocator> tmp(locString);
-            stat = tmp;
-        }
+        stat = BasicString<unsigned short, Detail::TempStringAllocator>(locString);
 
         LOOKUP_LOC(0x759DD858, locString);
-        {
-            BasicString<unsigned short, Detail::TempStringAllocator> tmp(locString);
-            unlockable = tmp;
-        }
+        unlockable = BasicString<unsigned short, Detail::TempStringAllocator>(locString);
         break;
 
     case TROPHY_SNIPER_CUP:
@@ -450,16 +455,10 @@ void MilestoneTrophyScene::SceneCreated()
         goldStat = 300;
 
         LOOKUP_LOC(0x49772A70, locString);
-        {
-            BasicString<unsigned short, Detail::TempStringAllocator> tmp(locString);
-            stat = tmp;
-        }
+        stat = BasicString<unsigned short, Detail::TempStringAllocator>(locString);
 
         LOOKUP_LOC(0xE3FB84B4, locString);
-        {
-            BasicString<unsigned short, Detail::TempStringAllocator> tmp(locString);
-            unlockable = tmp;
-        }
+        unlockable = BasicString<unsigned short, Detail::TempStringAllocator>(locString);
         break;
 
     case TROPHY_STRIKER_CUP:
@@ -469,16 +468,10 @@ void MilestoneTrophyScene::SceneCreated()
         goldStat = 100;
 
         LOOKUP_LOC(0x593E7EE3, locString);
-        {
-            BasicString<unsigned short, Detail::TempStringAllocator> tmp(locString);
-            stat = tmp;
-        }
+        stat = BasicString<unsigned short, Detail::TempStringAllocator>(locString);
 
         LOOKUP_LOC(0x1D5A2367, locString);
-        {
-            BasicString<unsigned short, Detail::TempStringAllocator> tmp(locString);
-            unlockable = tmp;
-        }
+        unlockable = BasicString<unsigned short, Detail::TempStringAllocator>(locString);
         break;
 
     case TROPHY_TACTICIAN_CUP:
@@ -488,16 +481,10 @@ void MilestoneTrophyScene::SceneCreated()
         goldStat = 300;
 
         LOOKUP_LOC(0x243FB12F, locString);
-        {
-            BasicString<unsigned short, Detail::TempStringAllocator> tmp(locString);
-            stat = tmp;
-        }
+        stat = BasicString<unsigned short, Detail::TempStringAllocator>(locString);
 
         LOOKUP_LOC(0x1F42DEB3, locString);
-        {
-            BasicString<unsigned short, Detail::TempStringAllocator> tmp(locString);
-            unlockable = tmp;
-        }
+        unlockable = BasicString<unsigned short, Detail::TempStringAllocator>(locString);
         break;
 
     case TROPHY_PARAMEDIC_CUP:
@@ -507,16 +494,10 @@ void MilestoneTrophyScene::SceneCreated()
         goldStat = 1000;
 
         LOOKUP_LOC(0xD9A2F4C5, locString);
-        {
-            BasicString<unsigned short, Detail::TempStringAllocator> tmp(locString);
-            stat = tmp;
-        }
+        stat = BasicString<unsigned short, Detail::TempStringAllocator>(locString);
 
         LOOKUP_LOC(0xAB6BFAC9, locString);
-        {
-            BasicString<unsigned short, Detail::TempStringAllocator> tmp(locString);
-            unlockable = tmp;
-        }
+        unlockable = BasicString<unsigned short, Detail::TempStringAllocator>(locString);
         break;
     }
 
@@ -565,7 +546,7 @@ void MilestoneTrophyScene::SceneCreated()
         pTotal->SetString(mTotalBuffer);
     }
 
-    if (mIsNew)
+    if (mIsNew == true)
     {
         union
         {
@@ -616,45 +597,41 @@ void MilestoneTrophyScene::SceneCreated()
 
         statNeeded = bronzeStat;
         LOOKUP_LOC(0x138E19E5, locString);
-        {
-            BasicString<unsigned short, Detail::TempStringAllocator> tmp(locString);
-            unformatted = tmp;
-        }
+        unformatted = BasicString<unsigned short, Detail::TempStringAllocator>(locString);
     }
     else if (levelReached == MILESTONE_BRONZE)
     {
         fileName = fileName.Append("_bronze");
         mAsyncTrophy->QueueLoad(fileName.c_str(), mDoBlockLoad);
-        pTrophyImage->SetAssetColour(((FELibObject*)((TLInstanceView*)pTrophyImage)->m_component)->GetColour());
+        nlColour colour = ((FELibObject*)((TLInstanceView*)pTrophyImage)->m_component)->GetColour();
+        pTrophyImage->SetAssetColour(colour);
 
         statNeeded = silverStat;
         LOOKUP_LOC(0x3A916A4A, locString);
-        {
-            BasicString<unsigned short, Detail::TempStringAllocator> tmp(locString);
-            unformatted = tmp;
-        }
+        unformatted = BasicString<unsigned short, Detail::TempStringAllocator>(locString);
     }
     else if (levelReached == MILESTONE_SILVER)
     {
         fileName = fileName.Append("_silver");
         mAsyncTrophy->QueueLoad(fileName.c_str(), mDoBlockLoad);
-        pTrophyImage->SetAssetColour(((FELibObject*)((TLInstanceView*)pTrophyImage)->m_component)->GetColour());
+        nlColour colour = ((FELibObject*)((TLInstanceView*)pTrophyImage)->m_component)->GetColour();
+        pTrophyImage->SetAssetColour(colour);
 
         statNeeded = goldStat;
         LOOKUP_LOC(0x0AD790FB, locString);
-        {
-            BasicString<unsigned short, Detail::TempStringAllocator> tmp(locString);
-            unformatted = tmp;
-        }
+        unformatted = BasicString<unsigned short, Detail::TempStringAllocator>(locString);
     }
     else
     {
         mAsyncTrophy->QueueLoad(fileName.c_str(), mDoBlockLoad);
-        pTrophyImage->SetAssetColour(((FELibObject*)((TLInstanceView*)pTrophyImage)->m_component)->GetColour());
+        nlColour colour = ((FELibObject*)((TLInstanceView*)pTrophyImage)->m_component)->GetColour();
+        pTrophyImage->SetAssetColour(colour);
     }
     mDoBlockLoad = false;
 
-    if (gameInfo->HasTrophy(mTrophy))
+    BasicString<unsigned short, Detail::TempStringAllocator> description;
+
+    if (nlSingleton<GameInfoManager>::s_pInstance->HasTrophy(mTrophy))
     {
         BasicString<char, Detail::TempStringAllocator> accumulatedString = LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(statAccumulated);
 
@@ -662,10 +639,7 @@ void MilestoneTrophyScene::SceneCreated()
         nlStrToWcs(accumulatedString.c_str(), accumulatedWideString, 128);
 
         LOOKUP_LOC(0x59B161FF, locString);
-        {
-            BasicString<unsigned short, Detail::TempStringAllocator> tmp(locString);
-            unformatted = tmp;
-        }
+        unformatted = BasicString<unsigned short, Detail::TempStringAllocator>(locString);
 
         formatted = Format(unformatted, accumulatedWideString);
 
@@ -713,10 +687,7 @@ void MilestoneTrophyScene::SceneCreated()
         }
 
         LOOKUP_LOC(0xF8710578, locString);
-        {
-            BasicString<unsigned short, Detail::TempStringAllocator> tmp(locString);
-            description = tmp;
-        }
+        description = BasicString<unsigned short, Detail::TempStringAllocator>(locString);
 
         formatted = Format(description, unlockable);
     }
@@ -787,10 +758,7 @@ void MilestoneTrophyScene::SceneCreated()
         nlStrToWcs(goldString.c_str(), goldWideString, 16);
 
         LOOKUP_LOC(0x42FDAE95, locString);
-        {
-            BasicString<unsigned short, Detail::TempStringAllocator> tmp(locString);
-            description = tmp;
-        }
+        description = BasicString<unsigned short, Detail::TempStringAllocator>(locString);
 
         formatted = Format(description, bronzeWideString, silverWideString, goldWideString);
     }

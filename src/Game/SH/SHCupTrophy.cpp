@@ -662,7 +662,7 @@ void CupTrophyScene::SceneCreated()
     BasicString<unsigned short, Detail::TempStringAllocator> unformatted(data);
     BasicString<unsigned short, Detail::TempStringAllocator> formatted = Format(unformatted, timesWonWide);
 
-    memcpy((void*)((char*)this + 0x62C), formatted.c_str(), 0x100);
+    memcpy(&mScrollOffset, formatted.c_str(), 0x100);
 
     {
         union
@@ -687,7 +687,7 @@ void CupTrophyScene::SceneCreated()
         h6.m_Hash = 0;
         h7.m_Hash = 0;
 
-        unsigned long hash = nlStringLowerHash(CUP_TROPHY_TOTAL_NAME);
+        unsigned long hash = nlStringLowerHash("TOTAL CUPS");
         hNameA.m_Hash = hash;
         hNameB.m_Hash = hash;
 
@@ -703,7 +703,7 @@ void CupTrophyScene::SceneCreated()
             (InlineHasher&)h5,
             (InlineHasher&)h3,
             (InlineHasher&)h1);
-        pTotal->SetString((unsigned short*)((char*)this + 0x62C));
+        pTotal->SetString((unsigned short*)&mScrollOffset);
     }
 }
 

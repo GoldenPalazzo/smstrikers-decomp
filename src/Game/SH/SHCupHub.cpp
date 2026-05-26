@@ -268,16 +268,9 @@ CupHubScene::CupHubScene(bool doAnimations, bool playAllKnockoutAnimations)
     i = 0;
     while (i < gameInfo->GetNumPlayingTeams())
     {
-        if (mDoAnimations)
+        if (mDoAnimations && (gameInfo->GetCurrentRoundNumber() != 0 || (gameInfo->GetCurrentRoundNumber() == 0 && gameInfo->mCurrentCup->mGameNumber != 0)))
         {
-            if (gameInfo->GetCurrentRoundNumber() != 0 || (gameInfo->GetCurrentRoundNumber() == 0 && gameInfo->mCurrentCup->mGameNumber != 0))
-            {
-                mAllTeamStats[i] = gameInfo->mPreviousTeamStats[i];
-            }
-            else
-            {
-                mAllTeamStats[i] = gameInfo->GetTeamStatsByIndex(i);
-            }
+            mAllTeamStats[i] = gameInfo->mPreviousTeamStats[i];
         }
         else
         {

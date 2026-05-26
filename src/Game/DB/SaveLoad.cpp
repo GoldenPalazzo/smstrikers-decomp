@@ -580,11 +580,10 @@ unsigned long SaveCallbacks::FileWriteCB(unsigned long Slot, long Result, void* 
  * TODO: 71.37% match - stack/regalloc differences and ICON_CONFIG constant
  * folding remain in the duplicated -4 free-space remap paths.
  *
- * TODO: 82.15% match - remaining diffs from -inline deferred vs -inline auto:
- * 1. ICON_CONFIG constant folding: compiler folds ~(iconCount|-1)=0, eliminating nor/srawi/and 0x200 (10+ insns)
- * 2. Extra cmpwi+ble loop guards from (u32) cast creating temp register, breaking addic. CR chain
- * 3. CSE of Slot*4 into callee-saved r30 vs target computing fresh per-block
- * All inherent -inline deferred optimization differences, unfixable with -inline auto.
+ * TODO: 83.71% match - remaining diffs:
+ * 1. Icon calc ~(iconCount|-1) nor/srawi/and 0x200 block not folded (target folds to 0)
+ * 2. CSE of Slot*4 into r27 vs target r30 (register allocation cascade)
+ * 3. gIconDataCache load ordering and register assignment differs from target
  */
 long SaveCallbacks::DoSave(unsigned long Slot)
 {
@@ -626,15 +625,12 @@ long SaveCallbacks::DoSave(unsigned long Slot)
             MemCard* card2 = g_MemCards[Slot];
             long dataSize = nlSingleton<GameInfoManager>::s_pInstance->GetMemoryCardDataSize();
             int numBlocks = 0;
-            int origSize = (dataSize += 12);
-            dataSize = (u32)(dataSize + 0x1FFF) >> 13;
-            if (origSize > 0)
+            int origSize;
+            dataSize = (u32)(dataSize + 0x200B) >> 13;
+            while (dataSize > 0)
             {
-                while (dataSize > 0)
-                {
-                    numBlocks++;
-                    dataSize--;
-                }
+                numBlocks++;
+                dataSize--;
             }
             MemCard::ICON_CONFIG IconCfg;
             IconCfg.BannerFormat = 0;
@@ -657,13 +653,10 @@ long SaveCallbacks::DoSave(unsigned long Slot)
             int total = bannerClut + bannerSize + iconSize + iconClut;
             origSize = (int)(IconCfg.HeaderSize = total + 0x40);
             dataSize = (u32)(origSize + 0x1FFF) >> 13;
-            if (origSize > 0)
+            while (dataSize > 0)
             {
-                while (dataSize > 0)
-                {
-                    numBlocks++;
-                    dataSize--;
-                }
+                numBlocks++;
+                dataSize--;
             }
             unsigned long sectorSize = card2->m_CardInfo.SectorSize;
             unsigned long bytestosave = numBlocks * sectorSize;
@@ -672,10 +665,10 @@ long SaveCallbacks::DoSave(unsigned long Slot)
             u8 hasSpace;
             if (alignedSize > mc->m_CardInfo.FreeBytes)
                 hasSpace = 0;
-            else if (mc->m_CardInfo.FreeFiles >= 1)
-                hasSpace = 1;
-            else
+            else if (mc->m_CardInfo.FreeFiles < 1)
                 hasSpace = 0;
+            else
+                hasSpace = 1;
             if (hasSpace == 0)
                 errorCode = -9;
         }
@@ -689,9 +682,8 @@ long SaveCallbacks::DoSave(unsigned long Slot)
     {
         MemCard::ICON_DATA_INFO localDataInfo1;
         m_pSaveFile->IconCfg.GetValidDataInfo(localDataInfo1);
-        IconDataCache* cache = &gIconDataCache;
-        void* pHdrBuf = cache->mIconHdrBuffer;
-        void* bannerBuf = cache->mBannerBuffer;
+        void* pHdrBuf = gIconDataCache.mIconHdrBuffer;
+        void* bannerBuf = gIconDataCache.mBannerBuffer;
         u32 bannerOfs = localDataInfo1.BannerOffset;
         void* destBanner = (u8*)pHdrBuf + bannerOfs;
         u8 bannerFmt = m_pSaveFile->IconCfg.BannerFormat;
@@ -708,10 +700,9 @@ long SaveCallbacks::DoSave(unsigned long Slot)
         memcpy(destBanner, srcBanner, bannerCopySize);
         MemCard::ICON_DATA_INFO localDataInfo2;
         m_pSaveFile->IconCfg.GetValidDataInfo(localDataInfo2);
-        void* pHdrBuf2 = cache->mIconHdrBuffer;
-        void* iconBuf = cache->mIconBuffer;
+        void* iconBuf = gIconDataCache.mIconBuffer;
         u32 iconOfs = localDataInfo2.IconOffset[0];
-        void* destIcon = (u8*)pHdrBuf2 + iconOfs;
+        void* destIcon = (u8*)gIconDataCache.mIconHdrBuffer + iconOfs;
         s8 iconFmtS = m_pSaveFile->IconCfg.IconFormat;
         u32 itableOfs = *(u32*)((u8*)iconBuf + 8);
         u32 ientryVal = *(u32*)((u8*)iconBuf + itableOfs);
@@ -719,10 +710,9 @@ long SaveCallbacks::DoSave(unsigned long Slot)
         void* srcIcon = (u8*)iconBuf + idataOfs;
         u32 iconCopySize = iconFmtS << 10;
         memcpy(destIcon, srcIcon, iconCopySize);
-        MemCard::MC_FILE* pFile = m_pSaveFile;
-        u8 bannerFmt2 = pFile->IconCfg.BannerFormat;
-        s8 iconFmt2 = pFile->IconCfg.IconFormat;
-        u8 iconCount2 = pFile->IconCfg.IconCount;
+        u8 bannerFmt2 = m_pSaveFile->IconCfg.BannerFormat;
+        s8 iconFmt2 = m_pSaveFile->IconCfg.IconFormat;
+        u8 iconCount2 = m_pSaveFile->IconCfg.IconCount;
         int bf1 = bannerFmt2 - 1;
         int bf2 = 1 - bannerFmt2;
         int banClutMask = ~(bf1 | bf2);
@@ -735,8 +725,8 @@ long SaveCallbacks::DoSave(unsigned long Slot)
         u32 icnPixels = iconCount2 * (iconFmt2 << 10);
         int headerTotal = banClutH + banDatH + icnPixels + icnClutH;
         u32 headerSize = headerTotal + 0x40;
-        pFile->IconCfg.HeaderSize = headerSize;
-        u32 crc = nlChecksum32(pHdrBuf2, headerSize);
+        m_pSaveFile->IconCfg.HeaderSize = headerSize;
+        u32 crc = nlChecksum32(gIconDataCache.mIconHdrBuffer, headerSize);
         m_IconCRC = crc;
         gIconCRC = m_IconCRC;
     }
@@ -758,7 +748,7 @@ long SaveCallbacks::DoSave(unsigned long Slot)
     header[1] = nlChecksum32((void*)((u8*)m_pSaveGameBuffer + 12), nlSingleton<GameInfoManager>::s_pInstance->GetMemoryCardDataSize());
     header[2] = gIconCRC;
     cb = &SaveCallbacks::FileWriteCB;
-    new (functor.m_FunctorMem) MemCardFunctor::MCMemberFunctor<SaveCallbacks>(this, cb, m_pSaveGameBuffer);
+    new (functor.m_FunctorMem) MemCardFunctor::MCMemberFunctor<SaveCallbacks>(this, cb, header);
     long result = g_MemCards[Slot]->InternalWriteFile(m_pSaveFile, m_pSaveGameBuffer, dataSize, m_pSaveFile->TotalHeaderSize, functor, true);
     if (result != 0)
     {
@@ -778,15 +768,12 @@ long SaveCallbacks::DoSave(unsigned long Slot)
             MemCard* card2 = g_MemCards[Slot];
             long ds2 = nlSingleton<GameInfoManager>::s_pInstance->GetMemoryCardDataSize();
             int numBlocks2 = 0;
-            int origSize2 = (ds2 += 12);
-            ds2 = (u32)(ds2 + 0x1FFF) >> 13;
-            if (origSize2 > 0)
+            int origSize2;
+            ds2 = (u32)(ds2 + 0x200B) >> 13;
+            while (ds2 > 0)
             {
-                while (ds2 > 0)
-                {
-                    numBlocks2++;
-                    ds2--;
-                }
+                numBlocks2++;
+                ds2--;
             }
             MemCard::ICON_CONFIG IconCfg2;
             IconCfg2.BannerFormat = 0;
@@ -809,13 +796,10 @@ long SaveCallbacks::DoSave(unsigned long Slot)
             int total2 = bannerClut2 + bannerSize2 + iconSize2 + iconClut2;
             origSize2 = (int)(IconCfg2.HeaderSize = total2 + 0x40);
             ds2 = (u32)(origSize2 + 0x1FFF) >> 13;
-            if (origSize2 > 0)
+            while (ds2 > 0)
             {
-                while (ds2 > 0)
-                {
-                    numBlocks2++;
-                    ds2--;
-                }
+                numBlocks2++;
+                ds2--;
             }
             unsigned long sectorSize2 = card2->m_CardInfo.SectorSize;
             unsigned long bytestosave2 = numBlocks2 * sectorSize2;
@@ -2345,10 +2329,10 @@ u8 SaveLoad::HasEnoughFreeSpace(int Slot)
     int iconFormat = 2;
     int speed = 3;
 
-    int iconSize = iconCount * (iconFormat << 10);
     IconCfg.IconCount = iconCount;
     negOne = ~(iconCount | negOne);
     int clutSize = 0x200;
+    int iconSize = iconCount * (iconFormat << 10);
     IconCfg.IconFormat = iconFormat;
     IconCfg.IconSpeeds[0] = speed;
     int bannerClut = (negOne >> 31) & clutSize;
@@ -2356,9 +2340,7 @@ u8 SaveLoad::HasEnoughFreeSpace(int Slot)
     int iconClut = (negOne >> 31) & clutSize;
     IconCfg.BannerFormat = iconFormat;
 
-    int total = bannerClut + bannerSize;
-    total += iconSize;
-    total += iconClut;
+    int total = bannerClut + bannerSize + iconSize + iconClut;
 
     origSize = (int)(IconCfg.HeaderSize = total + 0x40);
     dataSize = (u32)(origSize + 0x1FFF) >> 13;

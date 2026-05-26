@@ -14,6 +14,8 @@
 #include "NL/nlLexicalCast.h"
 #include "NL/nlBasicString.h"
 
+#include "NL/nlMemFunBody.h"
+
 extern int sRowOffset;
 extern int sCurrentRow;
 
@@ -173,19 +175,20 @@ LessonSelectScene::~LessonSelectScene()
  */
 void LessonSelectScene::SceneCreated()
 {
-    TLComponentInstance* compinstance;
+    MenuItem<TLComponentInstance>* menuItem;
     FEPresentation* presentation = m_pFEPresentation;
     FEAudio::EnableSounds(false);
 
     typedef Detail::MemFunImpl<void, void (LessonSelectScene::*)()> MemFunImpl_LessonSelect_t;
     typedef BindExp1<void, MemFunImpl_LessonSelect_t, LessonSelectScene*> BindExp1_LessonSelect_t;
+    typedef Function<TLComponentInstance*> MenuCallback;
 
     for (int i = 0; i < 4; i++)
     {
         char menuname[64];
         nlSNPrintf(menuname, 64, "MENU ITEM%d", i + 1);
 
-        compinstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
+        TLComponentInstance* compinstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
             presentation->m_currentSlide,
             InlineHasher(nlStringLowerHash("Layer")),
             InlineHasher(nlStringLowerHash(menuname)),
@@ -198,29 +201,29 @@ void LessonSelectScene::SceneCreated()
 
         if (mDoSlideIn)
         {
-            MenuItem<TLComponentInstance>* menuItem = &mMenuItems.mMenuItems[mMenuItems.mNumItemsAdded];
+            menuItem = &mMenuItems.mMenuItems[mMenuItems.mNumItemsAdded];
             menuItem->mType = compinstance;
             mMenuItems.mNumItemsAdded++;
 
             {
-                Function<FnTLComponentInstanceCb> openFunc;
+                MenuCallback openFunc;
                 openFunc.mTag = FREE_FUNCTION;
                 openFunc.mFreeFunction = DoubleHighlite::OpenItem;
-                menuItem->mCallbacks[ON_HIGHLIGHT] = openFunc;
+                *(MenuCallback*)&menuItem->mCallbacks[ON_HIGHLIGHT] = openFunc;
             }
 
             {
-                Function<FnTLComponentInstanceCb> closeFunc;
+                MenuCallback closeFunc;
                 closeFunc.mTag = FREE_FUNCTION;
                 closeFunc.mFreeFunction = DoubleHighlite::CloseItem;
-                menuItem->mCallbacks[ON_UNHIGHLIGHT] = closeFunc;
+                *(MenuCallback*)&menuItem->mCallbacks[ON_UNHIGHLIGHT] = closeFunc;
             }
 
             {
                 BindExp1_LessonSelect_t bind = Bind<void, MemFunImpl_LessonSelect_t, LessonSelectScene*>(
                     MemFun<LessonSelectScene, void>(&LessonSelectScene::StartLesson), this);
-                Function<FnTLComponentInstanceCb> applyFunc(bind);
-                menuItem->mCallbacks[ON_APPLY] = applyFunc;
+                MenuCallback applyFunc(bind);
+                *(MenuCallback*)&menuItem->mCallbacks[ON_APPLY] = applyFunc;
             }
 
             if (i == 0)
@@ -229,6 +232,9 @@ void LessonSelectScene::SceneCreated()
             }
 
             menuItem->ApplyAction((i == 0) ? ON_HIGHLIGHT : ON_UNHIGHLIGHT);
+
+            TLSlide* slide = compinstance->GetActiveSlide();
+            compinstance->Update(slide->m_start + slide->m_duration);
         }
 
         if (i == sCurrentRow)
@@ -240,16 +246,45 @@ void LessonSelectScene::SceneCreated()
         {
             DoubleHighlite::CloseItem(compinstance);
         }
-
-        TLSlide* slide = compinstance->GetActiveSlide();
-        compinstance->Update(slide->m_start + slide->m_duration);
     }
 
     DoubleHighlite::TempDisableSound();
 
-    mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].ApplyAction(ON_UNHIGHLIGHT);
-    mMenuItems.mCurrentIndex = sCurrentRow - sRowOffset;
-    mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].ApplyAction(ON_HIGHLIGHT);
+    int newIndex = sCurrentRow - sRowOffset;
+
+    {
+        int tag = mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[ON_UNHIGHLIGHT].mTag;
+        if (((unsigned int)((-tag) | tag)) >> 31)
+        {
+            TLComponentInstance* type = mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mType;
+            if (tag == FREE_FUNCTION)
+            {
+                mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[ON_UNHIGHLIGHT].mFreeFunction(type);
+            }
+            else
+            {
+                (*mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[ON_UNHIGHLIGHT].mFunctor)(type);
+            }
+        }
+    }
+
+    mMenuItems.mCurrentIndex = newIndex;
+
+    {
+        int tag = mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[ON_HIGHLIGHT].mTag;
+        if (((unsigned int)((-tag) | tag)) >> 31)
+        {
+            TLComponentInstance* type = mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mType;
+            if (tag == FREE_FUNCTION)
+            {
+                mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[ON_HIGHLIGHT].mFreeFunction(type);
+            }
+            else
+            {
+                (*mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[ON_HIGHLIGHT].mFunctor)(type);
+            }
+        }
+    }
 
     for (int i = 0; i < 4; i++)
     {

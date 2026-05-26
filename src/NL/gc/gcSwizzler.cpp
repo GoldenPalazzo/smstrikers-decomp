@@ -43,11 +43,11 @@ u32 GCTextureSize(eGXTextureFormat fmt, int w, int h, int levels, unsigned long 
 
 /**
  * Offset/Address/Size: 0x0 | 0x801C21C4 | size: 0x4A4
- * TODO: 73.85% match - register allocation chain after w*4/w computation:
- *   target puts w*4 in r0 (scratch) and w in r7 (reused fmt slot), but
- *   compiler swaps these (w*4 -> r7, w -> r5). All 73 remaining diffs are
- *   register-only and cascade from this single swap, including stmw r22
- *   vs r23 (one extra callee-saved).
+ * TODO: 78.62% match - 152-byte size gap (source=1036, target=1188).
+ *   w*2 branch, swap16 loop, and w branch differ at opcode level
+ *   (133 op-diffs w*2, 59 op-diffs w branch). w*4 branch has correct
+ *   instructions but register swaps persist. Likely MWCC version
+ *   difference in instruction selection and loop codegen.
  */
 void GCSwizzle(void* dst_, const void* src_, unsigned short w, unsigned short h, eGXTextureFormat fmt, bool swap16)
 {
@@ -174,15 +174,16 @@ void GCSwizzle(void* dst_, const void* src_, unsigned short w, unsigned short h,
             if (count > 0)
             {
                 unsigned short* p = (unsigned short*)dst_;
-                while (count > 0)
+                int i = 0;
+                while (i < count)
                 {
-                    unsigned short in_val = *p;
-                    unsigned short out_val;
-                    ((unsigned char*)&out_val)[0] = ((unsigned char*)&in_val)[1];
-                    ((unsigned char*)&out_val)[1] = ((unsigned char*)&in_val)[0];
-                    *p = out_val;
-                    p++;
-                    count--;
+                    unsigned short val = p[i];
+                    unsigned char* b = (unsigned char*)&val;
+                    unsigned char t = b[0];
+                    b[0] = b[1];
+                    b[1] = t;
+                    p[i] = val;
+                    i++;
                 }
             }
         }

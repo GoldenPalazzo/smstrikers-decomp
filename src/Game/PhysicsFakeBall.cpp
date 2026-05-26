@@ -30,10 +30,76 @@ ContactType FakePhysicsBall::Contact(PhysicsObject* object, dContact* contact, i
     return PhysicsBall::Contact(object, contact, arg);
 }
 
+static inline void GetNextBallPosVelInline(nlVector3& v3BallPos, nlVector3& v3BallVel)
+{
+    nlDLListIterator<DLListEntry<BallCacheInfo*> >* cacheIter = FakeBallWorld::mpCacheIterator;
+
+    if (cacheIter->m_current != NULL)
+    {
+        BallCacheInfo* info = cacheIter->m_current->m_data;
+        v3BallPos = info->mv3Position;
+        v3BallVel = info->mv3LinearVelocity;
+
+        if (nlDLRingIsEnd(cacheIter->m_head, cacheIter->m_current) || cacheIter->m_current == NULL)
+        {
+            cacheIter->m_current = NULL;
+        }
+        else
+        {
+            cacheIter->m_current = cacheIter->m_current->m_next;
+        }
+        return;
+    }
+
+    float tick = FixedUpdateTask::GetPhysicsUpdateTick();
+    PhysicsUpdate(FakeBallWorld::mpPredictWorld->mpPhysicsWorld, tick);
+    FakeBallWorld::mfLastCacheTime += tick;
+
+    BallCacheInfo* newInfo = NULL;
+    PhysicsObject* physObj = FakeBallWorld::mpPredictWorld->mpPhysicsBall;
+
+    if (BallCacheInfo::mBallCacheInfoSlotPool.m_FreeList == NULL)
+    {
+        SlotPoolBase::BaseAddNewBlock((SlotPoolBase*)&BallCacheInfo::mBallCacheInfoSlotPool, sizeof(BallCacheInfo));
+    }
+    if (BallCacheInfo::mBallCacheInfoSlotPool.m_FreeList != NULL)
+    {
+        newInfo = (BallCacheInfo*)BallCacheInfo::mBallCacheInfoSlotPool.m_FreeList;
+        BallCacheInfo::mBallCacheInfoSlotPool.m_FreeList = BallCacheInfo::mBallCacheInfoSlotPool.m_FreeList->m_next;
+    }
+
+    newInfo->mfTime = FakeBallWorld::mfLastCacheTime;
+    newInfo->mv3Position = physObj->GetPosition();
+    newInfo->mv3LinearVelocity = physObj->GetLinearVelocity();
+
+    DLListEntry<BallCacheInfo*>* newEntry = NULL;
+    if (FakeBallWorld::mBallCacheList.m_Allocator.m_FreeList == NULL)
+    {
+        SlotPoolBase::BaseAddNewBlock((SlotPoolBase*)&FakeBallWorld::mBallCacheList.m_Allocator, sizeof(DLListEntry<BallCacheInfo*>));
+    }
+    if (FakeBallWorld::mBallCacheList.m_Allocator.m_FreeList != NULL)
+    {
+        newEntry = (DLListEntry<BallCacheInfo*>*)FakeBallWorld::mBallCacheList.m_Allocator.m_FreeList;
+        FakeBallWorld::mBallCacheList.m_Allocator.m_FreeList = FakeBallWorld::mBallCacheList.m_Allocator.m_FreeList->m_next;
+    }
+
+    if (newEntry != NULL)
+    {
+        newEntry->m_next = NULL;
+        newEntry->m_prev = NULL;
+        newEntry->m_data = newInfo;
+    }
+
+    nlDLRingAddEnd(&FakeBallWorld::mBallCacheList.m_Head, newEntry);
+
+    v3BallPos = newInfo->mv3Position;
+    v3BallVel = newInfo->mv3LinearVelocity;
+}
+
 /**
  * Offset/Address/Size: 0x98 | 0x80137484 | size: 0x3EC
- * TODO: 99.06% match - remaining diffs are callee-saved register assignment
- *       in the pre-loop iterator setup and v3PlayerPos carry register.
+ * TODO: 99.48% match - remaining diffs are static-local label numbering
+ *       (iter/init symbols) and float literal label selection.
  */
 bool FakeBallWorld::FindBallIntercept(const nlVector3& v3PlayerPos, float fPlayerReach, float fPlayerSpeed, nlVector3& v3InterceptPos, nlVector3& v3InterceptVel, float& fInterceptTime, float& fClosestDist, float fMaxTime)
 {
@@ -82,68 +148,7 @@ bool FakeBallWorld::FindBallIntercept(const nlVector3& v3PlayerPos, float fPlaye
 
     while (!bDone)
     {
-        nlDLListIterator<DLListEntry<BallCacheInfo*> >* cacheIter = mpCacheIterator;
-
-        if (cacheIter->m_current != NULL)
-        {
-            BallCacheInfo* info = cacheIter->m_current->m_data;
-            v3NewBallPos = info->mv3Position;
-            v3NewBallVel = info->mv3LinearVelocity;
-
-            if (nlDLRingIsEnd(cacheIter->m_head, cacheIter->m_current) || cacheIter->m_current == NULL)
-            {
-                cacheIter->m_current = NULL;
-            }
-            else
-            {
-                cacheIter->m_current = cacheIter->m_current->m_next;
-            }
-        }
-        else
-        {
-            float tick = FixedUpdateTask::GetPhysicsUpdateTick();
-            PhysicsUpdate(mpPredictWorld->mpPhysicsWorld, tick);
-            mfLastCacheTime += tick;
-            BallCacheInfo* newInfo = NULL;
-            PhysicsObject* physObj = mpPredictWorld->mpPhysicsBall;
-
-            if (BallCacheInfo::mBallCacheInfoSlotPool.m_FreeList == NULL)
-            {
-                SlotPoolBase::BaseAddNewBlock((SlotPoolBase*)&BallCacheInfo::mBallCacheInfoSlotPool, sizeof(BallCacheInfo));
-            }
-            if (BallCacheInfo::mBallCacheInfoSlotPool.m_FreeList != NULL)
-            {
-                newInfo = (BallCacheInfo*)BallCacheInfo::mBallCacheInfoSlotPool.m_FreeList;
-                BallCacheInfo::mBallCacheInfoSlotPool.m_FreeList = BallCacheInfo::mBallCacheInfoSlotPool.m_FreeList->m_next;
-            }
-
-            newInfo->mfTime = mfLastCacheTime;
-            newInfo->mv3Position = physObj->GetPosition();
-            newInfo->mv3LinearVelocity = physObj->GetLinearVelocity();
-
-            DLListEntry<BallCacheInfo*>* newEntry = NULL;
-            if (mBallCacheList.m_Allocator.m_FreeList == NULL)
-            {
-                SlotPoolBase::BaseAddNewBlock((SlotPoolBase*)&mBallCacheList.m_Allocator, sizeof(DLListEntry<BallCacheInfo*>));
-            }
-            if (mBallCacheList.m_Allocator.m_FreeList != NULL)
-            {
-                newEntry = (DLListEntry<BallCacheInfo*>*)mBallCacheList.m_Allocator.m_FreeList;
-                mBallCacheList.m_Allocator.m_FreeList = mBallCacheList.m_Allocator.m_FreeList->m_next;
-            }
-
-            if (newEntry != NULL)
-            {
-                newEntry->m_next = NULL;
-                newEntry->m_prev = NULL;
-                newEntry->m_data = newInfo;
-            }
-
-            nlDLRingAddEnd(&mBallCacheList.m_Head, newEntry);
-
-            v3NewBallPos = newInfo->mv3Position;
-            v3NewBallVel = newInfo->mv3LinearVelocity;
-        }
+        GetNextBallPosVelInline(v3NewBallPos, v3NewBallVel);
 
         fPlayerDistanceFromStartingPoint += fPlayerDistPerTick;
 

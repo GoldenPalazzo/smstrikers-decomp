@@ -318,7 +318,7 @@ void FEResourceManager::LoadPermanentResourceBundle(const char* szBundleFileName
     s_pPermanentBundle = new (nlMalloc(sizeof(BundleFile), 8, false)) BundleFile();
     s_pPermanentBundle->Open(m_szPermanentBundleFileName);
 
-    u32 fileCount = s_pPermanentBundle->m_bundleHeader->m_entryCount;
+    u32 fileCount = s_pPermanentBundle->m_pHeader->nNumFiles;
     u32 fileIndex;
     AVLTreeNode** pRoot = (AVLTreeNode**)&s_loadedResourceList.m_Root;
     FETextureResource* pTextureResource;
@@ -523,7 +523,7 @@ void FEResourceManager::UnloadPermanentResourceBundle()
     s_pPermanentBundle->Open(m_szPermanentBundleFileName);
 
     FESceneResource* pPermanentSceneResource = s_pPermanentBundleSceneResource;
-    u32 fileCount = s_pPermanentBundle->m_bundleHeader->m_entryCount;
+    u32 fileCount = s_pPermanentBundle->m_pHeader->nNumFiles;
 
     switch (pPermanentSceneResource->m_type)
     {
