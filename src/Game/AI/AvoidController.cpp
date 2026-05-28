@@ -103,13 +103,13 @@ void AvoidController::Update(float)
     nlVector3 vAccumulated_v3 = v3Zero;
     float fTotalWeight_v3 = 0.0f;
 
+    bool bCanAvoid = false;
     m_SidelineUnavoidable = false;
     m_VeryCloseToSideline = false;
 
-    bool bCanAvoid = false;
     if (m_ThingsToAvoid & AVOID_SIDELINES)
     {
-        if (Incapacitated(m_pFielder) == 0.0f)
+        if (!Incapacitated(m_pFielder))
         {
             bCanAvoid = true;
         }
@@ -133,9 +133,9 @@ void AvoidController::Update(float)
     bCanAvoid = false;
     if (m_ThingsToAvoid & AVOID_FIELDERS)
     {
-        if (Invincible(m_pFielder) == 0.0f)
+        if (!Invincible(m_pFielder))
         {
-            if (Incapacitated(m_pFielder) == 0.0f)
+            if (!Incapacitated(m_pFielder))
             {
                 bCanAvoid = true;
             }
@@ -167,7 +167,7 @@ void AvoidController::Update(float)
     bCanAvoid = false;
     if (m_ThingsToAvoid & AVOID_POWERUPS)
     {
-        if (Incapacitated(m_pFielder) == 0.0f)
+        if (!Incapacitated(m_pFielder))
         {
             bCanAvoid = true;
         }
@@ -198,7 +198,7 @@ void AvoidController::Update(float)
     bCanAvoid = false;
     if (m_ThingsToAvoid & AVOID_GOALIES)
     {
-        if (Incapacitated(m_pFielder) == 0.0f)
+        if (!Incapacitated(m_pFielder))
         {
             bCanAvoid = true;
         }
@@ -302,7 +302,7 @@ void AvoidController::Update(float)
     bCanAvoid = false;
     if (m_ThingsToAvoid & AVOID_BOWSER)
     {
-        if (Incapacitated(m_pFielder) == 0.0f)
+        if (!Incapacitated(m_pFielder))
         {
             bCanAvoid = true;
         }
@@ -389,7 +389,7 @@ void AvoidController::Update(float)
     }
 
     nlVector3 v3FinalRepulsion = v3Zero;
-    nlVector3 v3SmoothedRepulsion = v3Zero;
+    nlVector3 v3SmoothedRepulsion;
 
     if (m_CurrentlyAvoiding != 0)
     {

@@ -439,6 +439,8 @@ void PowerupThrowPosition(int nThrowOrder, eThrowStyle eStyle, PowerupBase* pNew
 
 /**
  * Offset/Address/Size: 0x4F00 | 0x8005F7EC | size: 0xA98
+ * TODO: 95.0% match - GPR register allocation diffs (r15-r17 vs r29-r31 for params)
+ * due to target compiler performing LICM on slot pool addresses into r26-r31
  */
 u8 PowerupCreateAndThrow(cFielder* pThrower, ePowerUpType eType, int nnumOfPowerups, Bowser* pBowser)
 {
@@ -447,19 +449,19 @@ u8 PowerupCreateAndThrow(cFielder* pThrower, ePowerUpType eType, int nnumOfPower
     float fMediumChance;
     float fBigChance;
     float fExplodeChance;
-    bool bExplode;
     float fRandom;
     float fArrowChance;
     float fSpreadChance;
     float fSurroundChance;
     float fHorizChance;
     PowerupBase* pFirstPowerup;
+    bool bExplode;
     cFielder* pTarget;
     cTeam* pTargetTeam;
     cFielder* pTargetFielders[4];
     int a;
     int j;
-    bool bFoundLocation;
+    u8 bFoundLocation;
     int i;
     PowerupBase* pPowerup;
     float fBananaRadius;
@@ -474,7 +476,6 @@ u8 PowerupCreateAndThrow(cFielder* pThrower, ePowerUpType eType, int nnumOfPower
     fMediumChance = 0.0f;
     fBigChance = 0.0f;
     fExplodeChance = 0.0f;
-    bExplode = false;
 
     switch (eType)
     {
@@ -521,6 +522,8 @@ u8 PowerupCreateAndThrow(cFielder* pThrower, ePowerUpType eType, int nnumOfPower
             fExplodeChance = 1.0f;
         }
     }
+
+    bExplode = false;
 
     if (nnumOfPowerups > 1)
     {
@@ -688,7 +691,7 @@ u8 PowerupCreateAndThrow(cFielder* pThrower, ePowerUpType eType, int nnumOfPower
                 case POWERUPSIZE_SMALL:
                     fBananaRadius = g_pGame->m_pGameTweaks->fBananaSmallRadius;
                     break;
-                default:
+                case POWERUPSIZE_LARGE:
                     fBananaRadius = g_pGame->m_pGameTweaks->fBananaBigRadius;
                     break;
                 }
@@ -724,7 +727,7 @@ u8 PowerupCreateAndThrow(cFielder* pThrower, ePowerUpType eType, int nnumOfPower
                 case POWERUPSIZE_SMALL:
                     fBobombRadius = g_pGame->m_pGameTweaks->fBobombSmallRadius;
                     break;
-                default:
+                case POWERUPSIZE_LARGE:
                     fBobombRadius = g_pGame->m_pGameTweaks->fBobombBigRadius;
                     break;
                 }
@@ -770,7 +773,7 @@ u8 PowerupCreateAndThrow(cFielder* pThrower, ePowerUpType eType, int nnumOfPower
                 case POWERUPSIZE_SMALL:
                     fGreenShellRadius = g_pGame->m_pGameTweaks->fShellSmallRadius;
                     break;
-                default:
+                case POWERUPSIZE_LARGE:
                     fGreenShellRadius = g_pGame->m_pGameTweaks->fShellBigRadius;
                     break;
                 }
@@ -806,7 +809,7 @@ u8 PowerupCreateAndThrow(cFielder* pThrower, ePowerUpType eType, int nnumOfPower
                 case POWERUPSIZE_SMALL:
                     fFreezeShellRadius = g_pGame->m_pGameTweaks->fShellSmallRadius;
                     break;
-                default:
+                case POWERUPSIZE_LARGE:
                     fFreezeShellRadius = g_pGame->m_pGameTweaks->fShellBigRadius;
                     break;
                 }
@@ -842,7 +845,7 @@ u8 PowerupCreateAndThrow(cFielder* pThrower, ePowerUpType eType, int nnumOfPower
                 case POWERUPSIZE_SMALL:
                     fRedShellRadius = g_pGame->m_pGameTweaks->fShellSmallRadius;
                     break;
-                default:
+                case POWERUPSIZE_LARGE:
                     fRedShellRadius = g_pGame->m_pGameTweaks->fShellBigRadius;
                     break;
                 }
@@ -878,7 +881,7 @@ u8 PowerupCreateAndThrow(cFielder* pThrower, ePowerUpType eType, int nnumOfPower
                 case POWERUPSIZE_SMALL:
                     fSpinyShellRadius = g_pGame->m_pGameTweaks->fShellSmallRadius;
                     break;
-                default:
+                case POWERUPSIZE_LARGE:
                     fSpinyShellRadius = g_pGame->m_pGameTweaks->fShellBigRadius;
                     break;
                 }

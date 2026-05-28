@@ -2630,7 +2630,7 @@ bool cFielder::InitDesireRunToNet()
     float fInvDistance = nlRecipSqrt(
         (v3DesiredVelDirection.f.x * v3DesiredVelDirection.f.x) + (v3DesiredVelDirection.f.y * v3DesiredVelDirection.f.y) + (v3DesiredVelDirection.f.z * v3DesiredVelDirection.f.z), true);
 
-    _nlVec3Scale(v3DesiredVelDirection, fInvDistance);
+    nlVec3Scale(v3DesiredVelDirection, fInvDistance);
 
     float fInvVelocity = nlRecipSqrt(
         (m_v3Velocity.f.x * m_v3Velocity.f.x) + (m_v3Velocity.f.y * m_v3Velocity.f.y) + (m_v3Velocity.f.z * m_v3Velocity.f.z), true);

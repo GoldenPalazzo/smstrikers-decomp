@@ -150,7 +150,7 @@ void ReplayCamera::ManualUpdate(float deltaT)
         if (numFocusPoints != 0)
         {
             float invCount = 1.0f / (float)numFocusPoints;
-            _nlVec3Scale(lookAt, invCount);
+            nlVec3Scale(lookAt, invCount);
         }
 
         nlVector3 position = GetPosition(mCamPos, mSideOfInterest == 0 ? -1.0f : 1.0f);

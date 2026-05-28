@@ -6,6 +6,7 @@
 #include "Game/Sys/eventman.h"
 #include "NL/nlList.h"
 #include "NL/nlQSort.h"
+#include "NL/nlSlotPoolHigh.h"
 #include "NL/nlString.h"
 
 static bool mIsEnabled = true;
@@ -18,14 +19,6 @@ struct FrontEndAnimAudioData : EventData
 
 extern "C" void qsort(void*, unsigned long, unsigned long, int (*)(const void*, const void*));
 
-template <typename T>
-class BasicSlotPoolHigh : public SlotPoolBase
-{
-public:
-    static void* allocFN(unsigned long size) { return nlMalloc(size, 8, true); }
-    static void freeFN(void* ptr) { nlFree(ptr); }
-};
-
 template <>
 class ListContainerBase<AnimAudioEventLookup, BasicSlotPoolHigh<ListEntry<AnimAudioEventLookup> > >
     : public BasicSlotPoolHigh<ListEntry<AnimAudioEventLookup> >
@@ -35,11 +28,9 @@ public:
     ListEntry<AnimAudioEventLookup>* m_Tail;
 
     ListContainerBase()
+        : m_Head(NULL)
+        , m_Tail(NULL)
     {
-        m_AllocFn = BasicSlotPoolHigh<ListEntry<AnimAudioEventLookup> >::allocFN;
-        m_FreeFn = BasicSlotPoolHigh<ListEntry<AnimAudioEventLookup> >::freeFN;
-        m_Head = NULL;
-        m_Tail = NULL;
         m_Initial = 0x10;
         SlotPoolBase::BaseAddNewBlock(this, sizeof(ListEntry<AnimAudioEventLookup>));
         m_Delta = 0x10;
@@ -414,6 +405,7 @@ void FEAudio::BuildAnimAudioEventLookup()
 
     static AnimAudioEventLookup blankEntry;
     FELookupPool LookupList;
+    u32 _pad;
 
     AnimAudioEventLookup entry;
     AnimAudioEventLookup temp;

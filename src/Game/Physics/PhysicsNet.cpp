@@ -431,7 +431,7 @@ bool PhysicsNet::SweepTestForBallContact(const nlVector3& startPos, const nlVect
         height = ballRadius + netPostRadius;
 
         // nlVec3Set(contactNormal, normalLength * contactNormal.f.x, normalLength * contactNormal.f.y, normalLength * contactNormal.f.z);
-        _nlVec3Scale(contactNormal, normalLength);
+        nlVec3Scale(contactNormal, normalLength);
 
         const float tx = contactPos.f.x - goalPost0Location.f.x;
         const float ty = contactPos.f.y - goalPost0Location.f.y;

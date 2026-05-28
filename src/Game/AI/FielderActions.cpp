@@ -3907,7 +3907,7 @@ void cFielder::InitActionSlideAttack(cFielder* pTarget, float fTime)
         if (fLenSq > 0.0001f)
         {
             float fInvLen = nlRecipSqrt(fLenSq, true);
-            _nlVec3Scale(v3SlideAttackVelocity, fInvLen);
+            nlVec3Scale(v3SlideAttackVelocity, fInvLen);
         }
 
         v3SlideAttackVelocity.f.x *= GetSlideAttackSpeed();
@@ -3928,7 +3928,7 @@ void cFielder::InitActionSlideAttack(cFielder* pTarget, float fTime)
             if (fLenSq > 0.0001f)
             {
                 float fInvLen = nlRecipSqrt(fLenSq, true);
-                _nlVec3Scale(v3SlideAttackVelocity, fInvLen);
+                nlVec3Scale(v3SlideAttackVelocity, fInvLen);
             }
         }
 

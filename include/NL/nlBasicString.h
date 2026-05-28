@@ -316,16 +316,15 @@ BasicString<CharT, Allocator>::BasicString(const CharT* str)
 #endif
 
 #ifndef NO_BASICSTRING_IMPL
-#pragma always_inline on
 template <typename CharT, typename Allocator>
 BasicString<CharT, Allocator>& BasicString<CharT, Allocator>::operator=(BasicString other)
 {
+    FORCE_DONT_INLINE;
     BasicStringData<CharT>* tmp = m_data;
     m_data = other.m_data;
     other.m_data = tmp;
     return *this;
 }
-#pragma always_inline reset
 #endif
 
 #ifdef BASICSTRING_NO_INLINE_APPEND
@@ -443,27 +442,27 @@ BasicString<CharT, Allocator>& BasicString<CharT, Allocator>::AppendInPlace(cons
 template <typename CharT, typename Allocator>
 BasicString<CharT, Allocator>& BasicString<CharT, Allocator>::AppendInPlace(const CharT* str)
 {
-    BasicStringData<CharT>* oldData = m_data;
     const CharT* rhsEnd = str;
     while (*rhsEnd != 0)
     {
         rhsEnd++;
     }
+    BasicStringData<CharT>* data;
+    BasicStringData<CharT>* oldData = m_data;
 
     if (oldData == 0)
     {
-        BasicStringData<CharT>* data = (BasicStringData<CharT>*)Allocator::allocate(sizeof(BasicStringData<CharT>));
+        data = (BasicStringData<CharT>*)Allocator::allocate(sizeof(BasicStringData<CharT>));
         if (data != 0)
         {
             data->mData = (CharT*)Allocator::allocate(sizeof(CharT));
-            int sz = 1;
-            data->mSize = sz;
-            data->mCapacity = sz;
+            data->mSize = 1;
+            data->mCapacity = 1;
             data->mData[0] = 0;
             data->mRefCount = 1;
             for (int j = 0; j < data->mSize - 1; j++)
             {
-                data->mData[j] = m_data->mData[j];
+                data->mData[j] = ((CharT*)0)[j];
             }
         }
         m_data = data;
@@ -472,17 +471,17 @@ BasicString<CharT, Allocator>& BasicString<CharT, Allocator>::AppendInPlace(cons
     {
         if (oldData->mRefCount != 1)
         {
-            BasicStringData<CharT>* newData = (BasicStringData<CharT>*)Allocator::allocate(sizeof(BasicStringData<CharT>));
-            if (newData != 0)
+            data = (BasicStringData<CharT>*)Allocator::allocate(sizeof(BasicStringData<CharT>));
+            if (data != 0)
             {
-                newData->mData = (CharT*)Allocator::allocate(oldData->mSize * sizeof(CharT));
-                newData->mSize = oldData->mSize;
-                newData->mCapacity = oldData->mSize;
-                for (int j = 0; j < newData->mSize; j++)
+                data->mData = (CharT*)Allocator::allocate(oldData->mSize * sizeof(CharT));
+                data->mSize = oldData->mSize;
+                data->mCapacity = oldData->mSize;
+                for (int j = 0; j < data->mSize; j++)
                 {
-                    newData->mData[j] = oldData->mData[j];
+                    data->mData[j] = oldData->mData[j];
                 }
-                newData->mRefCount = 1;
+                data->mRefCount = 1;
             }
             if (--oldData->mRefCount == 0)
             {
@@ -498,7 +497,7 @@ BasicString<CharT, Allocator>& BasicString<CharT, Allocator>::AppendInPlace(cons
                     }
                 }
             }
-            oldData = newData;
+            oldData = data;
         }
         m_data = oldData;
     }
@@ -550,24 +549,20 @@ void BasicString<CharT, Allocator>::insert(CharT* at, const CharT* begin, const 
 
     if (data->mCapacity < newSize)
     {
-        Vector<CharT, Allocator> tmp;
-        tmp.mData = (CharT*)Allocator::allocate(newSize * sizeof(CharT));
-        tmp.mSize = newSize;
-        tmp.mCapacity = newSize;
-        for (int i = 0; i < tmp.mSize; i++)
+        CharT* buf = (CharT*)Allocator::allocate(newSize * sizeof(CharT));
+        for (int i = 0; i < newSize; i++)
         {
-            tmp.mData[i] = 0;
+            buf[i] = 0;
         }
-        CharT* dst = tmp.mData;
+        CharT* dst = buf;
         for (int i = 0; i < data->mSize; i++)
         {
             *dst++ = data->mData[i];
         }
-        data->mSize = data->mSize;
-        data->mCapacity = newSize;
         CharT* oldBuf = data->mData;
-        data->mData = tmp.mData;
-        tmp.mData = oldBuf;
+        data->mData = buf;
+        data->mCapacity = newSize;
+        delete[] oldBuf;
     }
 
     at = data->mData + insertPos;
@@ -606,10 +601,23 @@ void BasicString<CharT, Allocator>::TrimInPlace(const CharT* chars)
     }
 
     (*this)[0];
-    CharT* trimEnd = (m_data ? m_data->mData : (CharT*)0) + i;
+    const CharT* eraseEnd = (m_data ? m_data->mData : (CharT*)0) + i;
     (*this)[0];
-    CharT* trimBegin = m_data ? m_data->mData : (CharT*)0;
-    erase(trimBegin, trimEnd);
+    const CharT* eraseBegin = m_data ? m_data->mData : (CharT*)0;
+
+    {
+        (*this)[0];
+        BasicStringData<CharT>* data = m_data;
+        int size = eraseEnd - eraseBegin;
+        CharT* at = data->mData + (eraseBegin - data->mData);
+        while (eraseEnd != data->mData + data->mSize)
+        {
+            *at = *eraseEnd;
+            eraseEnd++;
+            at++;
+        }
+        data->mSize -= size;
+    }
 
     int last = (int)(m_data ? m_data->mSize - 1 : 0) - 1;
     while (last >= 0)
@@ -627,14 +635,27 @@ void BasicString<CharT, Allocator>::TrimInPlace(const CharT* chars)
     }
 
     (*this)[0];
-    CharT* trailEnd;
+    const CharT* trailEnd;
     if (m_data)
         trailEnd = m_data->mData + m_data->mSize - 1;
     else
         trailEnd = (CharT*)0;
     (*this)[0];
-    CharT* trailBegin = (m_data ? m_data->mData : (CharT*)0) + (last + 1);
-    erase(trailBegin, trailEnd);
+    const CharT* trailBegin = (m_data ? m_data->mData : (CharT*)0) + (last + 1);
+
+    {
+        (*this)[0];
+        BasicStringData<CharT>* data = m_data;
+        int size = trailEnd - trailBegin;
+        CharT* at = data->mData + (trailBegin - data->mData);
+        while (trailEnd != data->mData + data->mSize)
+        {
+            *at = *trailEnd;
+            trailEnd++;
+            at++;
+        }
+        data->mSize -= size;
+    }
 }
 
 // Format template function for single float argument

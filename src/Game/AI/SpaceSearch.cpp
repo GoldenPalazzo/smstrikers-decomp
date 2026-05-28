@@ -472,7 +472,7 @@ float SSearchBestPass::EvaluatePosition(const nlVector3& position, const nlVecto
             float fInvPassTargetVelocity = nlRecipSqrt(fPassTargetVelocitySq, true);
 
             float fDy = position.f.y - v3OtherPosition.f.y;
-            _nlVec3Scale(v3PassTargetVelocity, fInvPassTargetVelocity);
+            nlVec3Scale(v3PassTargetVelocity, fInvPassTargetVelocity);
 
             float fDx = position.f.x - v3OtherPosition.f.x;
             float fDz = position.f.z - v3OtherPosition.f.z;

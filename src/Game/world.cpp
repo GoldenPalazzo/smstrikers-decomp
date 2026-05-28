@@ -320,8 +320,8 @@ void World::Render()
         u32 count;
     };
 
-    int nSubmitted = 0;
     int nDrawn = 0;
+    int nSubmitted = 0;
     u8 bFreezeSide = g_bFreezeSideCam;
     if (bFreezeSide && g_bFreezeEndCam)
         g_bFreezeEndCam = 0;
@@ -336,13 +336,12 @@ void World::Render()
     CreateLightUserData();
 
     NodeStack* iter;
-    Entry* node;
     if (!sbIsHyperShootToScoreRenderingEnabled)
     {
         iter = (NodeStack*)nlMalloc(sizeof(NodeStack), 8, false);
         if (iter != NULL)
         {
-            node = m_drawableMap.m_Root;
+            Entry* node = m_drawableMap.m_Root;
             iter->data = (Entry**)nlMalloc((m_drawableMap.m_NumElements + 1) * sizeof(Entry*), 8, false);
             iter->count = 0;
             if (node != NULL)
@@ -363,7 +362,7 @@ void World::Render()
         iter = (NodeStack*)nlMalloc(sizeof(NodeStack), 8, false);
         if (iter != NULL)
         {
-            node = m_hyperSTSDrawableMap.m_Root;
+            Entry* node = m_hyperSTSDrawableMap.m_Root;
             iter->data = (Entry**)nlMalloc((m_hyperSTSDrawableMap.m_NumElements + 1) * sizeof(Entry*), 8, false);
             iter->count = 0;
             if (node != NULL)
@@ -501,90 +500,101 @@ void World::Render()
                         }
                         continue;
                     }
-                    if (!(objectFlags & 0x1))
-                        goto culledClip;
-                    if (!(objectFlags & 0x10))
+                    if (objectFlags & 0x1)
                     {
-                        f32 fBoundingRadius = pObject->m_fBoundingRadius;
-                        volatile u32 tz;
-                        volatile u32 ty;
-                        volatile u32 tx;
-                        const nlMatrix4& mat = pObject->GetWorldMatrix();
-                        tx = *(u32*)&mat.m[3][0];
-                        f32 negRadius = -fBoundingRadius;
-                        ty = *(u32*)&mat.m[3][1];
-                        s32 numSets = 2;
-                        tz = *(u32*)&mat.m[3][2];
-                        u8* pThisOff = (u8*)this;
-                        f32 posX = *(f32*)&tx;
-                        f32* plane = (f32*)((u8*)this + 0x80);
-                        s32 count = 0;
-                        f32 posY = *(f32*)&ty;
-                        f32 posZ = *(f32*)&tz;
-                        u8 visible = 0;
-                        do
+                        u8 visible = 1;
+                        if (!(objectFlags & 0x10))
                         {
-                            if ((posZ * plane[2] + (posX * plane[0] + posY * plane[1]) + *(f32*)(pThisOff + 0x8C)) < negRadius)
+                            f32 fBoundingRadius = pObject->m_fBoundingRadius;
+                            volatile u32 tz;
+                            volatile u32 ty;
+                            volatile u32 tx;
+                            const nlMatrix4& mat = pObject->GetWorldMatrix();
+                            tx = *(u32*)&mat.m[3][0];
+                            f32 negRadius = -fBoundingRadius;
+                            ty = *(u32*)&mat.m[3][1];
+                            s32 numSets = 2;
+                            tz = *(u32*)&mat.m[3][2];
+                            u8* pThisOff = (u8*)this;
+                            f32 posX = *(f32*)&tx;
+                            f32* plane = (f32*)(pThisOff + 0x80);
+                            s32 count = 0;
+                            f32 posY = *(f32*)&ty;
+                            f32 posZ = *(f32*)&tz;
+                            do
                             {
-                                visible = 0;
-                                break;
-                            }
-                            if ((posZ * plane[6] + (posX * plane[4] + posY * plane[5]) + *(f32*)(pThisOff + 0x9C)) < negRadius)
-                            {
-                                visible = 0;
-                                break;
-                            }
-                            if ((posZ * plane[10] + (posX * plane[8] + posY * plane[9]) + *(f32*)(pThisOff + 0xAC)) < negRadius)
-                            {
-                                visible = 0;
-                                break;
-                            }
-                            plane += 12;
-                            pThisOff += 0x30;
-                            count += 2;
-                        } while (--numSets != 0);
-                        visible = 1;
-                        if (!visible)
-                            goto culledClip;
-                    }
-                    if (pObject->m_uObjectCreationFlags & 0xF0000)
-                        DoTranslucency(pObject);
-                    pObject->Draw();
-                    if (g_bDrawBoundingSphere)
-                    {
-                        f32 fRad = pObject->m_fBoundingRadius;
-                        const nlMatrix4& wmDraw = pObject->GetWorldMatrix();
-                        glModel* pSphere = glModelDup(glInventory.GetModel(nlStringHash("debug/sphere")), true);
-                        nlMatrix4 mtx;
-                        mtx.SetIdentity();
-                        mtx.m[3][0] = wmDraw.m[3][0];
-                        mtx.m[3][1] = wmDraw.m[3][1];
-                        mtx.m[3][2] = wmDraw.m[3][2];
-                        mtx.m[3][3] = 1.0f;
-                        mtx.m[0][0] = fRad;
-                        mtx.m[1][1] = fRad;
-                        mtx.m[2][2] = fRad;
-                        u32 whiteTex = WhiteTexture;
-                        glModelPacket* pPkt = pSphere->packets;
-                        while (pPkt < (glModelPacket*)((u8*)pSphere->packets + pSphere->numPackets * 0x4A))
-                        {
-                            glSetRasterState(pPkt->state.raster, (eGLState)5, 1);
-                            u32 matID = glAllocMatrix();
-                            if ((matID + 0x10000) != 0xFFFF)
-                                glSetMatrix(matID, mtx);
-                            pPkt->state.matrix = matID;
-                            pPkt->state.texture[0] = whiteTex;
-                            pPkt = (glModelPacket*)((u8*)pPkt + 0x4A);
+                                if ((posZ * plane[2] + (posX * plane[0] + posY * plane[1]) + *(f32*)(pThisOff + 0x8C)) < negRadius)
+                                {
+                                    visible = 0;
+                                    break;
+                                }
+                                if ((posZ * plane[6] + (posX * plane[4] + posY * plane[5]) + *(f32*)(pThisOff + 0x9C)) < negRadius)
+                                {
+                                    visible = 0;
+                                    break;
+                                }
+                                if ((posZ * plane[10] + (posX * plane[8] + posY * plane[9]) + *(f32*)(pThisOff + 0xAC)) < negRadius)
+                                {
+                                    visible = 0;
+                                    break;
+                                }
+                                plane += 12;
+                                pThisOff += 0x30;
+                                count += 2;
+                            } while (--numSets != 0);
                         }
-                        glViewAttachModel((eGLView)7, pSphere);
+                        if (visible)
+                        {
+                            if (pObject->m_uObjectCreationFlags & 0xF0000)
+                                DoTranslucency(pObject);
+                            pObject->Draw();
+                            if (g_bDrawBoundingSphere)
+                            {
+                                f32 fRad = pObject->m_fBoundingRadius;
+                                const nlMatrix4& wmDraw = pObject->GetWorldMatrix();
+                                glModel* pSphere = glModelDup(glInventory.GetModel(nlStringHash("debug/sphere")), true);
+                                nlMatrix4 mtx;
+                                mtx.SetIdentity();
+                                mtx.m[3][0] = wmDraw.m[3][0];
+                                mtx.m[3][1] = wmDraw.m[3][1];
+                                mtx.m[3][2] = wmDraw.m[3][2];
+                                mtx.m[3][3] = 1.0f;
+                                mtx.m[0][0] = fRad;
+                                mtx.m[1][1] = fRad;
+                                mtx.m[2][2] = fRad;
+                                u32 whiteTex = WhiteTexture;
+                                glModelPacket* pPkt = pSphere->packets;
+                                while (pPkt < (glModelPacket*)((u8*)pSphere->packets + pSphere->numPackets * 0x4A))
+                                {
+                                    glSetRasterState(pPkt->state.raster, (eGLState)5, 1);
+                                    u32 matID = glAllocMatrix();
+                                    if ((matID + 0x10000) != 0xFFFF)
+                                        glSetMatrix(matID, mtx);
+                                    pPkt->state.matrix = matID;
+                                    pPkt->state.texture[0] = whiteTex;
+                                    pPkt = (glModelPacket*)((u8*)pPkt + 0x4A);
+                                }
+                                glViewAttachModel((eGLView)7, pSphere);
+                            }
+                            nDrawn++;
+                        }
+                        else
+                        {
+                            pObject->m_translucency = 1.0f;
+                            if (pObject->m_translucency < 0.0f)
+                                pObject->m_translucency = 0.0f;
+                            if (pObject->m_translucency > 1.0f)
+                                pObject->m_translucency = 1.0f;
+                        }
                     }
-                    nDrawn++;
-                culledClip:
-                    pObject->m_translucency = 1.0f;
-                    if (pObject->m_translucency < 0.0f)
-                        pObject->m_translucency = 0.0f;
-                    if (pObject->m_translucency > 1.0f)
+                    else
+                    {
                         pObject->m_translucency = 1.0f;
+                        if (pObject->m_translucency < 0.0f)
+                            pObject->m_translucency = 0.0f;
+                        if (pObject->m_translucency > 1.0f)
+                            pObject->m_translucency = 1.0f;
+                    }
                 }
             }
             nSubmitted++;
@@ -694,7 +704,6 @@ void World::Render()
         glStateRestore(state);
     }
 }
-
 /**
  * Offset/Address/Size: 0xF54 | 0x80195C18 | size: 0x1A0
  */

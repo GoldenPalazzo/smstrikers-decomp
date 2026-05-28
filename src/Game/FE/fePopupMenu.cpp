@@ -633,14 +633,6 @@ void FEPopupMenu::SceneCreated()
 {
     typedef BasicString<unsigned short, Detail::TempStringAllocator> WStr;
 
-    struct PopupStringData
-    {
-        unsigned short* mData;
-        int mSize;
-        int mCapacity;
-        int mRefCount;
-    };
-
     FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
 
     TLTextInstance* pText = FEFinder<TLTextInstance, 3>::Find<FEPresentation>(
@@ -652,65 +644,17 @@ void FEPopupMenu::SceneCreated()
         InlineHasher(0),
         InlineHasher(0));
 
-    PopupStringData*& textData = reinterpret_cast<PopupStringData*&>(mPopup.pMessage->m_data);
-    PopupStringData* oldData = textData;
-
-    if (oldData == NULL)
-    {
-        PopupStringData* data = (PopupStringData*)nlMalloc(0x10, 8, true);
-        if (data != NULL)
-        {
-            data->mData = (unsigned short*)nlMalloc(2, 8, true);
-            data->mSize = 1;
-            data->mCapacity = 1;
-            data->mRefCount = 1;
-            data->mData[0] = 0;
-        }
-        textData = data;
-    }
-    else if (oldData->mRefCount != 1)
-    {
-        PopupStringData* data = (PopupStringData*)nlMalloc(0x10, 8, true);
-        if (data != NULL)
-        {
-            data->mData = (unsigned short*)nlMalloc(oldData->mSize * 2, 8, true);
-            data->mSize = oldData->mSize;
-            data->mCapacity = oldData->mSize;
-
-            for (int i = 0; i < data->mSize; i++)
-            {
-                data->mData[i] = oldData->mData[i];
-            }
-
-            data->mRefCount = 1;
-        }
-
-        if (--oldData->mRefCount == 0)
-        {
-            if (oldData != NULL)
-            {
-                delete[] oldData->mData;
-            }
-            if (oldData != NULL)
-            {
-                nlFree(oldData);
-            }
-        }
-
-        oldData = data;
-        textData = oldData;
-    }
-
-    pText->SetString((textData != NULL) ? textData->mData : NULL);
+    (*mPopup.pMessage)[0];
+    pText->SetString(mPopup.pMessage->m_data ? mPopup.pMessage->m_data->mData : NULL);
 
     if (mUnknownAA5)
     {
-        pText->m_OverloadedAttributes.BoxSize.e[0] = 650.0f;
+        nlVector2 boxSize = pText->m_OverloadedAttributes.BoxSize;
+        boxSize.e[0] = 650.0f;
+        pText->m_OverloadedAttributes.BoxSize = boxSize;
         pText->m_OverloadFlags |= 4;
     }
 
-    WStr** optionLabel = mPopup.pOptionLabels;
-    char** optionName = optionNames;
     int i;
 
     for (i = 0; i < mPopup.numOptions; i++)
@@ -719,69 +663,18 @@ void FEPopupMenu::SceneCreated()
             presentation,
             InlineHasher(nlStringLowerHash("Slide1")),
             InlineHasher(nlStringLowerHash("Layer")),
-            InlineHasher(nlStringLowerHash(*optionName)),
+            InlineHasher(nlStringLowerHash(optionNames[i])),
             InlineHasher(0),
             InlineHasher(0),
             InlineHasher(0));
 
-        PopupStringData*& optionData = reinterpret_cast<PopupStringData*&>((*optionLabel)->m_data);
-        PopupStringData* oldOptionData = optionData;
-
-        if (oldOptionData == NULL)
-        {
-            PopupStringData* data = (PopupStringData*)nlMalloc(0x10, 8, true);
-            if (data != NULL)
-            {
-                data->mData = (unsigned short*)nlMalloc(2, 8, true);
-                data->mSize = 1;
-                data->mCapacity = 1;
-                data->mRefCount = 1;
-                data->mData[0] = 0;
-            }
-            optionData = data;
-        }
-        else if (oldOptionData->mRefCount != 1)
-        {
-            PopupStringData* data = (PopupStringData*)nlMalloc(0x10, 8, true);
-            if (data != NULL)
-            {
-                data->mData = (unsigned short*)nlMalloc(oldOptionData->mSize * 2, 8, true);
-                data->mSize = oldOptionData->mSize;
-                data->mCapacity = oldOptionData->mSize;
-
-                for (int j = 0; j < data->mSize; j++)
-                {
-                    data->mData[j] = oldOptionData->mData[j];
-                }
-
-                data->mRefCount = 1;
-            }
-
-            if (--oldOptionData->mRefCount == 0)
-            {
-                if (oldOptionData != NULL)
-                {
-                    delete[] oldOptionData->mData;
-                }
-                if (oldOptionData != NULL)
-                {
-                    nlFree(oldOptionData);
-                }
-            }
-
-            oldOptionData = data;
-            optionData = oldOptionData;
-        }
-
-        pText->SetString((optionData != NULL) ? optionData->mData : NULL);
+        (*mPopup.pOptionLabels[i])[0];
+        pText->SetString(mPopup.pOptionLabels[i]->m_data ? mPopup.pOptionLabels[i]->m_data->mData : NULL);
 
         if (i == 0)
         {
             mHighlightedOptionColour = pText->GetAssetColour();
         }
-
-        optionLabel++;
-        optionName++;
     }
 
     for (int k = mPopup.numOptions; k < 4; k++)
@@ -835,7 +728,7 @@ void FEPopupMenu::SceneCreated()
     pHighlight->SetActiveSlide("idle");
 
     mButtons.mButtonInstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
-        pHighlight->GetActiveSlide(),
+        presentation->m_currentSlide,
         InlineHasher(nlStringLowerHash("Layer")),
         InlineHasher(nlStringLowerHash("buttons")),
         InlineHasher(0),

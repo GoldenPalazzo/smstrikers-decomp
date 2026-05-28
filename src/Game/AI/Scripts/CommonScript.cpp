@@ -927,9 +927,9 @@ FuzzyVariant Fuzzy::ShouldIAttemptOneTimer(cFielder* TheFielder)
         return bestValue;
     }
 
-    float fTrueConfidence = FarToTheirNet((cPlayer*)TheFielder);
     float fInFrontOfNet = 1.0f - InFrontOfTheirNet(TheFielder);
-    if (fTrueConfidence < fInFrontOfNet)
+    float fTrueConfidence = FarToTheirNet((cPlayer*)TheFielder);
+    if (fInFrontOfNet >= fTrueConfidence)
     {
         fTrueConfidence = fInFrontOfNet;
     }
@@ -983,13 +983,15 @@ FuzzyVariant Fuzzy::ShouldIAttemptOneTimer(cFielder* TheFielder)
                 fConfidence = (float)fConfidence * fBranchRatio;
             }
 
-            if (fConfidence > fBestConfidence)
             {
-                fBestConfidence = fConfidence;
                 FuzzyVariant returnValue(1.0f);
                 SkillTweaks* pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide);
                 returnValue.SelectionChance = CalcSelectChance(pSkillTweaks->Off_VolleyOneTimerChance, Shooter(TheFielder));
-                bestValue = returnValue;
+                if (fConfidence > fBestConfidence)
+                {
+                    fBestConfidence = fConfidence;
+                    bestValue = returnValue;
+                }
             }
         }
 
@@ -1025,37 +1027,43 @@ FuzzyVariant Fuzzy::ShouldIAttemptOneTimer(cFielder* TheFielder)
                     fConfidence = (float)fConfidence * fBranchRatio;
                 }
 
+                float fCloseToGoalie = CloseToTheirGoalie((cPlayer*)TheFielder);
+                float fDanger = InDanger(TheFielder).Confidence;
+                if (fDanger < fCloseToGoalie)
+                {
+                    fDanger = fCloseToGoalie;
+                }
+
+                float fNearToNet = NearToTheirNet((cPlayer*)TheFielder);
+                fDanger = fNearToNet * 0.5f + fDanger * 0.5f;
+
+                float fGoodToShoot = GoodToShoot(TheFielder).Confidence;
+
                 Goalie* pGoalie = NULL;
                 if (TheFielder != NULL)
                 {
                     pGoalie = TheFielder->m_pTeam->GetOtherTeam()->GetGoalie();
                 }
-
                 float fGoalieStunned = Stunned(pGoalie);
-                float fDanger = InDanger(TheFielder).Confidence;
-                if (fDanger < fGoalieStunned)
+
+                if (fDanger >= fGoodToShoot)
                 {
-                    fDanger = fGoalieStunned;
+                    fGoodToShoot = fDanger;
+                }
+                if (fGoalieStunned >= fGoodToShoot)
+                {
+                    fGoodToShoot = fGoalieStunned;
                 }
 
-                float fNearToNet = NearToTheirNet((cPlayer*)TheFielder);
-                fDanger = GoodToShoot(TheFielder).Confidence;
-                if (fDanger < fNearToNet)
                 {
-                    fDanger = fNearToNet;
-                }
-                if (fGoalieStunned < fDanger)
-                {
-                    fDanger = fGoalieStunned;
-                }
-
-                if (fConfidence > fBestConfidence)
-                {
-                    fBestConfidence = fConfidence;
-                    FuzzyVariant returnValue(fDanger);
+                    FuzzyVariant returnValue(fGoodToShoot);
                     SkillTweaks* pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide);
                     returnValue.SelectionChance = CalcSelectChance(pSkillTweaks->Off_VolleyOneTimerChance, Shooter(TheFielder));
-                    bestValue = returnValue;
+                    if (fConfidence > fBestConfidence)
+                    {
+                        fBestConfidence = fConfidence;
+                        bestValue = returnValue;
+                    }
                 }
             }
 
@@ -1077,19 +1085,23 @@ FuzzyVariant Fuzzy::ShouldIAttemptOneTimer(cFielder* TheFielder)
 
                 float fGoalieStunned = Stunned(pGoalie);
                 float fDanger = InDanger(TheFielder).Confidence;
-                if (fDanger < fGoalieStunned)
+                if (fGoalieStunned >= fDanger)
                 {
                     fDanger = fGoalieStunned;
                 }
-                fDanger = GoodToShoot(TheFielder).Confidence * 0.5f + fDanger * 0.5f;
 
-                if (fConfidence > fBestConfidence)
+                float fGoodToShoot = GoodToShoot(TheFielder).Confidence;
+                fDanger = fGoodToShoot * 0.5f + fDanger * 0.5f;
+
                 {
-                    fBestConfidence = fConfidence;
                     FuzzyVariant returnValue(fDanger);
                     SkillTweaks* pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide);
                     returnValue.SelectionChance = CalcSelectChance(pSkillTweaks->Off_GroundOneTimerChance, Shooter(TheFielder));
-                    bestValue = returnValue;
+                    if (fConfidence > fBestConfidence)
+                    {
+                        fBestConfidence = fConfidence;
+                        bestValue = returnValue;
+                    }
                 }
             }
         }

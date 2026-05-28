@@ -1,19 +1,10 @@
 #include "Game/Physics/PhysicsFinitePlane.h"
 #include "ode/ext/dFinitePlane.h"
+#include "NL/nlMath.h"
 
 /**
  * Offset/Address/Size: 0x0 | 0x801FFAE4 | size: 0x218
  */
-//  void * PhysicsFinitePlane::PhysicsFinitePlane(class CollisionSpace * space /* r27 */, class nlVector3 & centre /* r28 */, class nlVector3 & v1 /* r29 */, class nlVector3 & v2 /* r30 */, unsigned char isOneSided /* r31 */, float errorCorrectionDepth /* f31 */) {
-
-inline void nlVec3Cross(nlVector3& result, const nlVector3& a, const nlVector3& b)
-{
-    nlVec3Set(result,
-        (a.f.y * b.f.z) - (a.f.z * b.f.y),
-        (a.f.z * b.f.x) - (a.f.x * b.f.z),
-        (a.f.x * b.f.y) - (a.f.y * b.f.x));
-}
-
 PhysicsFinitePlane::PhysicsFinitePlane(CollisionSpace* collision_space, nlVector3& centre, nlVector3& v1, nlVector3& v2, bool isOneSided, float errorCorrectionDepth)
     : PhysicsObject(NULL)
 {
@@ -36,27 +27,18 @@ PhysicsFinitePlane::PhysicsFinitePlane(CollisionSpace* collision_space, nlVector
     const float l2 = 1.f / yMax;
     nlVec3Set(v2, l2 * v2.f.x, l2 * v2.f.y, l2 * v2.f.z);
 
-    nlMatrix3 mat;
-
-    float temp_f5 = v1.f.y;
-    float temp_f1_3 = v2.f.x;
-    float temp_f3_2 = v1.f.z;
-    float temp_f6 = v2.f.y;
-    float temp_f4_2 = v2.f.z;
-    float temp_f7 = v1.f.x;
-
-    volatile nlVector3& vv1 = (volatile nlVector3&)v1;
-    volatile nlVector3& vv2 = (volatile nlVector3&)v2;
-
-    mat.m[0] = temp_f7;
-    mat.m[1] = vv1.f.y;
-    mat.m[2] = vv1.f.z;
-    mat.m[3] = vv2.f.x;
-    mat.m[4] = vv2.f.y;
-    mat.m[5] = vv2.f.z;
-    mat.m[6] = (temp_f5 * temp_f4_2) - (temp_f3_2 * temp_f6);
-    mat.m[7] = (-temp_f7 * temp_f4_2) + (temp_f3_2 * temp_f1_3);
-    mat.m[8] = (temp_f7 * temp_f6) - (temp_f5 * temp_f1_3);
+    nlMatrix3 R;
+    nlVector3 normal;
+    nlVec3Cross(normal, v1, v2);
+    R.m[0] = v1.f.x;
+    R.m[1] = v1.f.y;
+    R.m[2] = v1.f.z;
+    R.m[3] = v2.f.x;
+    R.m[4] = v2.f.y;
+    R.m[5] = v2.f.z;
+    R.m[6] = normal.f.x;
+    R.m[7] = normal.f.y;
+    R.m[8] = normal.f.z;
 
     dSpaceID space = NULL;
     if (collision_space != NULL)
@@ -66,7 +48,7 @@ PhysicsFinitePlane::PhysicsFinitePlane(CollisionSpace* collision_space, nlVector
 
     m_geomID = dCreateFinitePlane(space, xMin, xMax, yMin, yMax, isOneSided, errorCorrectionDepth);
     dGeomSetData(m_geomID, this);
-    SetRotation(mat);
+    SetRotation(R);
     SetPosition(centre, WORLD_COORDINATES);
     SetDefaultCollideBits();
 }

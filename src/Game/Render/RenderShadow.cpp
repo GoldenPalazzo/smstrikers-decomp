@@ -598,7 +598,7 @@ static void CastDirectional(nlVector3& p, const nlVector3& lightPos)
     vDir.f.x = lx;
     vDir.f.y = ly;
     vDir.f.z = lz;
-    _nlVec3Scale(vDir, invLen);
+    nlVec3Scale(vDir, invLen);
     float dirX = vDir.f.x;
     float dirY = vDir.f.y;
     float dirZ = vDir.f.z;
@@ -696,7 +696,7 @@ void RenderProjectedShadow(const ProjectedShadowParams& params)
         vDir.f.x = dx;
         vDir.f.y = dy;
         vDir.f.z = dz;
-        _nlVec3Scale(vDir, invLen);
+        nlVec3Scale(vDir, invLen);
 
         float vx = vDir.f.x;
         float vy = vDir.f.y;
@@ -769,7 +769,7 @@ void RenderProjectedShadow(const ProjectedShadowParams& params)
 
     {
         float invLen = nlRecipSqrt(dir.f.y * dir.f.y + dir.f.x * dir.f.x + dir.f.z * dir.f.z, false);
-        _nlVec3Scale(dir, invLen);
+        nlVec3Scale(dir, invLen);
     }
 
     {

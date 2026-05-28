@@ -325,18 +325,19 @@ void ChangeCrowdVolume(float NewVolume)
 
 /**
  * Offset/Address/Size: 0x31F8 | 0x8015090C | size: 0x588
- * TODO: 86.45% match - remaining diffs are pMaxBlend/index register flow and
- *       inlined ScaleAndAddVocalDef scheduling around chant/heckle updates.
+ * TODO: 87.95% match - r-register allocation cascade in loop body (mood r0 vs r6,
+ *       blendVal f4 vs f3) and Delay temp variable scheduling diffs.
  */
 static inline void ScaleAndAddVocalDef(CROWD_VOCAL_DEFINITION& Dest, const CROWD_VOCAL_DEFINITION& Src, float Scale)
 {
     float srcVol = Src.Volume;
+    float volRange = Src.VolumeRange;
     Dest.Volume += srcVol * Scale;
-    Dest.VolumeRange += Src.VolumeRange * Scale;
-    if (srcVol != 0.0f)
+    Dest.VolumeRange += volRange * Scale;
+    if (srcVol)
     {
         float invDelay;
-        if (Src.Delay != 0.0f)
+        if (Src.Delay)
         {
             invDelay = (1.0f / Src.Delay) * Scale;
         }
@@ -387,8 +388,8 @@ static void MoodDefFromBlend(float* MoodBlend, MOOD_DEFINITION& MoodDef)
         }
 
         AccountedFor += g_CrowdState.CurrentMoodBlend[mood];
-        MoodDef.NeutralVol += g_MoodDefs[mood].NeutralVol * blendVal;
         pMaxBlend = pNewMax;
+        MoodDef.NeutralVol += g_MoodDefs[mood].NeutralVol * blendVal;
 
         MoodDef.PositiveVol += g_MoodDefs[mood].PositiveVol * MoodBlend[mood];
         MoodDef.NegativeVol += g_MoodDefs[mood].NegativeVol * MoodBlend[mood];
@@ -410,14 +411,19 @@ static void MoodDefFromBlend(float* MoodBlend, MOOD_DEFINITION& MoodDef)
     ScaleAndAddVocalDef(MoodDef.Chant, SatMoodDef.Chant, remainWeight);
     ScaleAndAddVocalDef(MoodDef.Heckle, SatMoodDef.Heckle, remainWeight);
 
-    if (MoodDef.Chant.Delay != 0.0f)
+    float delay = MoodDef.Chant.Delay;
+    if (delay)
     {
-        MoodDef.Chant.Delay = 1.0f / MoodDef.Chant.Delay;
+        delay = 1.0f / delay;
     }
-    if (MoodDef.Heckle.Delay != 0.0f)
+    MoodDef.Chant.Delay = delay;
+
+    delay = MoodDef.Heckle.Delay;
+    if (delay)
     {
-        MoodDef.Heckle.Delay = 1.0f / MoodDef.Heckle.Delay;
+        delay = 1.0f / delay;
     }
+    MoodDef.Heckle.Delay = delay;
 
     if (*pMaxBlend < remainWeight)
     {

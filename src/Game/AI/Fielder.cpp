@@ -3288,7 +3288,7 @@ void cFielder::DoRegularShooting()
 
         if (m_eActionState == ACTION_ONETIMER)
         {
-            _nlVec3Scale(v3AngVel, 0.4f);
+            nlVec3Scale(v3AngVel, 0.4f);
         }
     }
 

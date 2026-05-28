@@ -225,12 +225,6 @@ bool BasicStadium::DoInitialize()
     pObject = FindDrawableObject(nlStringLowerHash("gameplay/star"));
     pObject->m_uObjectFlags &= 0xFFFFFFFE;
 
-    /**
-     * Offset/Address/Size: 0x3DC | 0x800C3820 | size: 0x2608
-     * TODO: 98.14% match - register allocation shift: pPacket=r30 (target r26),
-     * pGlModel=r27 (target r30), formatStr=r26 (target r27). 397 register diffs,
-     * 6 extra instructions from hash save pattern.
-     */
     glModel* pGlModel;
     int counter = 1;
     u8 keepLooking = 1;
@@ -798,8 +792,9 @@ bool BasicStadium::DoInitialize()
     HelperObject* pPenBoxHelper = FindHelperObject(uPenaltyHelperHashID);
     if (pPenBoxHelper != NULL)
     {
+        float fy = pPenBoxHelper->m_worldMatrix.f.m42;
         cField::mfPenaltyBoxX = pPenBoxHelper->m_worldMatrix.f.m41;
-        cField::mfPenaltyBoxY = pPenBoxHelper->m_worldMatrix.f.m42;
+        cField::mfPenaltyBoxY = fy;
     }
 
     // Camera flash - Pass 1: Count

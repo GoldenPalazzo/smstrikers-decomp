@@ -2236,22 +2236,8 @@ long SaveLoad::StartMemoryCardIDCheck(int slot, void (*callback)(long))
  * counting loops, and register allocation still differs in the icon header-size
  * arithmetic chain.
  */
-#pragma push
-#pragma opt_propagation off
-int SaveLoad::GetSaveBlockSize(int)
+static inline int BuildDefaultIconHeaderSize(MemCard::ICON_CONFIG& IconCfg)
 {
-    int dataSize = nlSingleton<GameInfoManager>::s_pInstance->GetMemoryCardDataSize();
-    int numBlocks = 0;
-
-    int origSize = (dataSize += 12);
-    dataSize = (u32)(dataSize + 0x1FFF) >> 13;
-    if (origSize > 0)
-    {
-        for (; dataSize > 0; dataSize--)
-            numBlocks++;
-    }
-
-    MemCard::ICON_CONFIG IconCfg;
     IconCfg.BannerFormat = 0;
     IconCfg.IconCount = 0;
     IconCfg.IconFormat = 0;
@@ -2276,7 +2262,26 @@ int SaveLoad::GetSaveBlockSize(int)
     IconCfg.BannerFormat = iconFormat;
     int total = bannerClut + bannerSize + iconDataSize + iconClut;
 
-    origSize = (int)(IconCfg.HeaderSize = total + 0x40);
+    return (int)(IconCfg.HeaderSize = total + 0x40);
+}
+
+#pragma push
+#pragma opt_propagation off
+int SaveLoad::GetSaveBlockSize(int)
+{
+    int dataSize = nlSingleton<GameInfoManager>::s_pInstance->GetMemoryCardDataSize();
+    int numBlocks = 0;
+
+    int origSize = (dataSize += 12);
+    dataSize = (u32)(dataSize + 0x1FFF) >> 13;
+    if (origSize > 0)
+    {
+        for (; dataSize > 0; dataSize--)
+            numBlocks++;
+    }
+
+    MemCard::ICON_CONFIG IconCfg;
+    origSize = BuildDefaultIconHeaderSize(IconCfg);
     dataSize = (u32)(origSize + 0x1FFF) >> 13;
     if (origSize > 0)
     {

@@ -53,7 +53,7 @@ void cHeadTrack::Update(const nlMatrix4& m4HeadMatrix, const nlMatrix4& m4Constr
             float y2 = v3OOIConstraintSpace.f.y * v3OOIConstraintSpace.f.y;
             float z2 = v3OOIConstraintSpace.f.z * v3OOIConstraintSpace.f.z;
             float invLen = nlRecipSqrt(x2 + y2 + z2, true);
-            _nlVec3Scale(v3OOIConstraintSpace, invLen);
+            nlVec3Scale(v3OOIConstraintSpace, invLen);
         }
 
         nHeadSpin = ((int)(10430.378f * nlATan2f(v3OOIConstraintSpace.f.z, v3OOIConstraintSpace.f.y)) << 16) >> 16;

@@ -1890,7 +1890,7 @@ void CupHubScene::CreateBowserLeague()
         pSlide = pComp->GetActiveSlide();
 
         {
-            volatile InlineHasher h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
+            volatile InlineHasher hB, hA, h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
 
             h0.m_Hash = 0;
             h1.m_Hash = 0;
@@ -1898,6 +1898,10 @@ void CupHubScene::CreateBowserLeague()
             h3.m_Hash = 0;
             h4.m_Hash = 0;
             h5.m_Hash = 0;
+            h8.m_Hash = 0;
+            h9.m_Hash = 0;
+            hA.m_Hash = 0;
+            hB.m_Hash = 0;
 
             unsigned long hash = nlStringLowerHash(HUBstandingsRowNames[row]);
             h6.m_Hash = hash;
@@ -1913,23 +1917,29 @@ void CupHubScene::CreateBowserLeague()
             pTextInstance = findText.byRef(
                 pSlide,
                 (InlineHasher&)h7,
+                (InlineHasher&)hB,
+                (InlineHasher&)h9,
                 (InlineHasher&)h5,
                 (InlineHasher&)h3,
-                (InlineHasher&)h1,
-                (InlineHasher&)h0,
-                (InlineHasher&)h0);
+                (InlineHasher&)h1);
         }
 
         eTeamID currentTeam = mAllTeamStats[standingsIndices[row]].mTeamIndex;
+        gameInfo = nlSingleton<GameInfoManager>::s_pInstance;
         eTeamID rowUserTeam = gameInfo->GetUserSelectedCupTeam();
-        bool useHighlightColour = false;
+        bool useHighlightColour;
 
-        if (gameInfo->mCurrentCup->mHumanTeams & (1 << currentTeam))
+        if (!(gameInfo->mCurrentCup->mHumanTeams & (1 << currentTeam)))
         {
-            if (gameInfo->GetNumHumanTeams() == 1 && currentTeam == rowUserTeam)
-            {
-                useHighlightColour = true;
-            }
+            useHighlightColour = false;
+        }
+        else if (gameInfo->GetNumHumanTeams() == 1 && currentTeam == rowUserTeam)
+        {
+            useHighlightColour = true;
+        }
+        else
+        {
+            useHighlightColour = false;
         }
 
         if (useHighlightColour)
@@ -1987,7 +1997,7 @@ void CupHubScene::CreateBowserLeague()
             pTextInstance->SetAssetColour(mTextColour);
         }
 
-        unsigned long locString = GetLOCTeamName(currentTeam);
+        unsigned long locString = GetLOCTeamName((eTeamID)mAllTeamStats[standingsIndices[row]].mTeamIndex);
         nlLocalization* loc = g_pLocalization;
         const unsigned short* teamNameLookup;
 
@@ -2021,8 +2031,6 @@ void CupHubScene::CreateBowserLeague()
             h3.m_Hash = 0;
             h4.m_Hash = 0;
             h5.m_Hash = 0;
-            h6.m_Hash = 0;
-            h7.m_Hash = 0;
 
             unsigned long hash = nlStringLowerHash(HUB_ROWS[row]);
             h8.m_Hash = hash;
@@ -2054,10 +2062,9 @@ void CupHubScene::CreateBowserLeague()
         }
 
         pSlide = pComp->GetActiveSlide();
-        mAnimComponents[row] = pComp;
 
         {
-            volatile InlineHasher h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
+            volatile InlineHasher hB, hA, h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
 
             h0.m_Hash = 0;
             h1.m_Hash = 0;
@@ -2065,6 +2072,10 @@ void CupHubScene::CreateBowserLeague()
             h3.m_Hash = 0;
             h4.m_Hash = 0;
             h5.m_Hash = 0;
+            h8.m_Hash = 0;
+            h9.m_Hash = 0;
+            hA.m_Hash = 0;
+            hB.m_Hash = 0;
 
             unsigned long hash = nlStringLowerHash("wins");
             h6.m_Hash = hash;
@@ -2080,11 +2091,11 @@ void CupHubScene::CreateBowserLeague()
             pTextInstance = findText.byRef(
                 pSlide,
                 (InlineHasher&)h7,
+                (InlineHasher&)hB,
+                (InlineHasher&)h9,
                 (InlineHasher&)h5,
                 (InlineHasher&)h3,
-                (InlineHasher&)h1,
-                (InlineHasher&)h0,
-                (InlineHasher&)h0);
+                (InlineHasher&)h1);
         }
 
         mOldStats[row][0] = mAllTeamStats[standingsIndices[row]].mNumWins;
@@ -2102,7 +2113,7 @@ void CupHubScene::CreateBowserLeague()
         }
 
         {
-            volatile InlineHasher h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
+            volatile InlineHasher hB, hA, h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
 
             h0.m_Hash = 0;
             h1.m_Hash = 0;
@@ -2110,6 +2121,10 @@ void CupHubScene::CreateBowserLeague()
             h3.m_Hash = 0;
             h4.m_Hash = 0;
             h5.m_Hash = 0;
+            h8.m_Hash = 0;
+            h9.m_Hash = 0;
+            hA.m_Hash = 0;
+            hB.m_Hash = 0;
 
             unsigned long hash = nlStringLowerHash("draws");
             h6.m_Hash = hash;
@@ -2125,11 +2140,11 @@ void CupHubScene::CreateBowserLeague()
             pTextInstance = findText.byRef(
                 pSlide,
                 (InlineHasher&)h7,
+                (InlineHasher&)hB,
+                (InlineHasher&)h9,
                 (InlineHasher&)h5,
                 (InlineHasher&)h3,
-                (InlineHasher&)h1,
-                (InlineHasher&)h0,
-                (InlineHasher&)h0);
+                (InlineHasher&)h1);
         }
 
         if (useHighlightColour)
@@ -2147,7 +2162,7 @@ void CupHubScene::CreateBowserLeague()
         pTextInstance->SetString(mColumnsByRowsBuffers[2][row]);
 
         {
-            volatile InlineHasher h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
+            volatile InlineHasher hB, hA, h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
 
             h0.m_Hash = 0;
             h1.m_Hash = 0;
@@ -2155,6 +2170,10 @@ void CupHubScene::CreateBowserLeague()
             h3.m_Hash = 0;
             h4.m_Hash = 0;
             h5.m_Hash = 0;
+            h8.m_Hash = 0;
+            h9.m_Hash = 0;
+            hA.m_Hash = 0;
+            hB.m_Hash = 0;
 
             unsigned long hash = nlStringLowerHash("losses");
             h6.m_Hash = hash;
@@ -2170,11 +2189,11 @@ void CupHubScene::CreateBowserLeague()
             pTextInstance = findText.byRef(
                 pSlide,
                 (InlineHasher&)h7,
+                (InlineHasher&)hB,
+                (InlineHasher&)h9,
                 (InlineHasher&)h5,
                 (InlineHasher&)h3,
-                (InlineHasher&)h1,
-                (InlineHasher&)h0,
-                (InlineHasher&)h0);
+                (InlineHasher&)h1);
         }
 
         if (useHighlightColour)
@@ -2192,7 +2211,7 @@ void CupHubScene::CreateBowserLeague()
         pTextInstance->SetString(mColumnsByRowsBuffers[3][row]);
 
         {
-            volatile InlineHasher h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
+            volatile InlineHasher hB, hA, h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
 
             h0.m_Hash = 0;
             h1.m_Hash = 0;
@@ -2200,6 +2219,10 @@ void CupHubScene::CreateBowserLeague()
             h3.m_Hash = 0;
             h4.m_Hash = 0;
             h5.m_Hash = 0;
+            h8.m_Hash = 0;
+            h9.m_Hash = 0;
+            hA.m_Hash = 0;
+            hB.m_Hash = 0;
 
             unsigned long hash = nlStringLowerHash("points");
             h6.m_Hash = hash;
@@ -2215,11 +2238,11 @@ void CupHubScene::CreateBowserLeague()
             pTextInstance = findText.byRef(
                 pSlide,
                 (InlineHasher&)h7,
+                (InlineHasher&)hB,
+                (InlineHasher&)h9,
                 (InlineHasher&)h5,
                 (InlineHasher&)h3,
-                (InlineHasher&)h1,
-                (InlineHasher&)h0,
-                (InlineHasher&)h0);
+                (InlineHasher&)h1);
         }
 
         if (useHighlightColour)
@@ -2324,6 +2347,8 @@ void CupHubScene::CreateBowserLeague()
         h3.m_Hash = 0;
         h4.m_Hash = 0;
         h5.m_Hash = 0;
+        h6.m_Hash = 0;
+        h7.m_Hash = 0;
 
         unsigned long hash = nlStringLowerHash("TickerText");
         h6.m_Hash = hash;

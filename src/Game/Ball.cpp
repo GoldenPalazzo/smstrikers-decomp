@@ -219,7 +219,7 @@ void cBall::UpdateOrientation(float fDeltaT)
             if (fAng > 0.01f)
             {
                 fInvAng = 1.0f / fAng;
-                _nlVec3Scale(v3AngVel, fInvAng);
+                nlVec3Scale(v3AngVel, fInvAng);
                 nlMakeQuat(qOrientationDelta, v3AngVel, fAng * fDeltaT);
             }
             else
@@ -1963,17 +1963,15 @@ static f32 CANT_COLLIDE = *(f32*)__float_max;
  * TODO: 96.22% match - todo: inline setter for quaternions seems to be missing
  */
 cBall::cBall()
+    : m_bBallPathChangeCount(0)
+    , m_bBallDeflectCount(0)
+    , m_tShotTimer(0.f)
+    , m_tNoPickupTimer(0.f)
+    , m_tPassTargetTimer(0.f)
+    , m_tBuzzerBeaterTimer(0.f)
 {
     u32 t0, t1, t2;
     nlVector3* pz;
-
-    m_bBallPathChangeCount = 0;
-    m_bBallDeflectCount = 0;
-
-    m_tShotTimer.SetSeconds(0.f);
-    m_tNoPickupTimer.SetSeconds(0.f);
-    m_tPassTargetTimer.SetSeconds(0.f);
-    m_tBuzzerBeaterTimer.SetSeconds(0.f);
 
     m_pBlurHandler = NULL;
     m_pOwner = NULL;
@@ -2013,11 +2011,6 @@ cBall::cBall()
     m_v3PassIntercept.f.z = 0.f;
 
     m_pPhysicsBall->SetPosition(m_v3Position, PhysicsObject::WORLD_COORDINATES);
-
-    // m_qOrientation.Identity();
-    // nlQuatIdentity(m_qOrientation);
-
-    // nlQuatSet2(m_qOrientation, 0.f, 0.f, 0.f, 1.f);
 
     pz = &v3Zero;
 

@@ -796,7 +796,7 @@ void cCameraManager::SetWorldUpVectorTilt(float fXAxisTilt, float fYAxisTilt)
     float yy = pUp->f.y * pUp->f.y;
     float zz = pUp->f.z * pUp->f.z;
     float temp_f1 = nlRecipSqrt(xx + yy + zz, true);
-    _nlVec3Scale(*pUp, temp_f1);
+    nlVec3Scale(*pUp, temp_f1);
 }
 
 /**

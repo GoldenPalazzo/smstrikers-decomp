@@ -8,6 +8,7 @@
 #include "NL/nlFile.h"
 #include "NL/nlDebug.h"
 #include "NL/nlString.h"
+#include "Game/TrophyInfo.h"
 
 extern AudioStreamTrack::TrackManagerBase* g_pTrackManager;
 
@@ -69,6 +70,10 @@ class GameInfoManager : public nlSingleton<GameInfoManager>
 public:
     u8 _pad[0x4959];
     bool mIsInStrikers101Mode;
+
+    eTrophyType GetTrophyTypeByCurrentMode() const;
+    bool IsPossibleCupMatch() const;
+    bool IsInDemoMode() const;
 };
 
 class GoalOverlay
@@ -259,20 +264,16 @@ void ReadTrophyModel(void* data, unsigned long size, void* userData)
 
 /**
  * Offset/Address/Size: 0x1848 | 0x8012602C | size: 0x460
- * TODO: 67.91% match - remaining diffs in temporary string lifetime/cleanup ordering
+ * TODO: 71.39% match - remaining diffs in hasCupOverride temporary lifetime and cupName register flow
  */
 void Presentation::LoadTrophyModel()
 {
-    extern bool IsPossibleCupMatch__15GameInfoManagerCFv(const GameInfoManager*);
-    extern int GetTrophyTypeByCurrentMode__15GameInfoManagerCFv(const GameInfoManager*);
-    extern const char* GetThrophyModelName__F11eTrophyType(int);
-
     cupTrophyHash = 0;
 
     bool hasCupOverride = Config::Global().Exists("gimme_cup_trophy");
     if (!hasCupOverride)
     {
-        if (!IsPossibleCupMatch__15GameInfoManagerCFv(nlSingleton<GameInfoManager>::s_pInstance))
+        if (!nlSingleton<GameInfoManager>::s_pInstance->IsPossibleCupMatch())
         {
             return;
         }
@@ -282,7 +283,7 @@ void Presentation::LoadTrophyModel()
     BasicString<char, Detail::TempStringAllocator> trophyName;
     if (hasCupOverride)
     {
-        const char* cupName;
+        const char* cupName = (const char*)0;
         BasicString<char, Detail::TempStringAllocator> prefix("Gameplay/");
         Config& cfg = Config::Global();
         TagValuePair& tvp = cfg.FindTvp("gimme_cup_trophy");
@@ -312,10 +313,10 @@ void Presentation::LoadTrophyModel()
     }
     else
     {
-        trophyName = BasicString<char, Detail::TempStringAllocator>(
-            GetThrophyModelName__F11eTrophyType(
-                GetTrophyTypeByCurrentMode__15GameInfoManagerCFv(
-                    nlSingleton<GameInfoManager>::s_pInstance)));
+        BasicString<char, Detail::TempStringAllocator> cupModel(
+            GetThrophyModelName(
+                nlSingleton<GameInfoManager>::s_pInstance->GetTrophyTypeByCurrentMode()));
+        trophyName = cupModel;
     }
 
     nlSNPrintf(trophyFileName, 0xFF, "%s.glg", trophyName.c_str());

@@ -407,7 +407,6 @@ bool FormationManager::CalculateFielderPosition(nlVector3& v3DestPosition, cFiel
  */
 FormationEval::FormationEval(FormationManager* pMgr, eFormationType type, const FormationSpec* spec)
 {
-    m_SortTimer.SetSeconds(0.0f);
     m_SortTimer.m_uPackedTime = 0;
     m_pFormationManager = pMgr;
     m_pKeyPlayer = NULL;
@@ -445,7 +444,6 @@ FormationBallPosition::FormationBallPosition(FormationManager* pMgr, eFormationT
 
 FormationEval* FormationEval::Create(FormationManager* pManager, eFormationType formType, eFormationSet formSetID, eFormation formID)
 {
-    int i;
     FormationEval* result = NULL;
     FormationSet* pFormationSet = NULL;
     const FormationSpec* pFormationSpec = NULL;
@@ -458,9 +456,11 @@ FormationEval* FormationEval::Create(FormationManager* pManager, eFormationType 
     if (formType != (eFormationType)-1)
     {
         const FormationSpec* spec = NULL;
+        int id = formID;
+        int i;
         for (i = 0; i < FormationManager::m_NumFormationSets; i++)
         {
-            spec = FormationManager::m_FormationSetArray[i].GetFormationSpecFromID(formID);
+            spec = FormationManager::m_FormationSetArray[i].GetFormationSpecFromID(id);
             if (spec != NULL)
             {
                 break;

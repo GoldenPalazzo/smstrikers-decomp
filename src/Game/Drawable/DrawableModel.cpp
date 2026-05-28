@@ -1442,9 +1442,8 @@ static inline void ComputeShadowMtx(nlMatrix4& dst, const nlMatrix4& src, u32 li
     float xRatioNeg = -lightX;
     float lightZ = *(float*)(lightPtr + 0xC);
     float yRatioNeg = -lightY;
-    float zero = 0.0f;
-    float one = 1.0f;
     float xOverZ = xRatioNeg / lightZ;
+    float yOverZ = yRatioNeg / lightZ;
     float m23 = src.f.m23;
     float m21 = src.f.m21;
     float m33 = src.f.m33;
@@ -1452,10 +1451,11 @@ static inline void ComputeShadowMtx(nlMatrix4& dst, const nlMatrix4& src, u32 li
     float m43 = src.f.m43;
     float m41 = src.f.m41;
     float m12 = src.f.m12;
-    float yOverZ = yRatioNeg / lightZ;
     float m22 = src.f.m22;
     float m32 = src.f.m32;
     float m42 = src.f.m42;
+    float zero = 0.0f;
+    float one = 1.0f;
 
     dst.f.m11 = xOverZ * m13 + m11;
     dst.f.m21 = xOverZ * m23 + m21;

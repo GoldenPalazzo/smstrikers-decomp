@@ -1554,8 +1554,9 @@ void GoalOverlay::DoCupWinOverlay()
 
     unsigned long hash;
     TLTextInstance* pText;
+    GoalOverlay* self = this;
 
-    int winners = nlSingleton<GameInfoManager>::s_pInstance->GetUserSelectedCupTeam();
+    eTeamID winners = (eTeamID)nlSingleton<GameInfoManager>::s_pInstance->GetUserSelectedCupTeam();
 
     const unsigned short* formatLocString;
     unsigned long key = 0xB49CF8B5;
@@ -1608,37 +1609,32 @@ void GoalOverlay::DoCupWinOverlay()
         data->mRefCount = 1;
     }
 
-    BasicString<unsigned short, Detail::TempStringAllocator> formatted((BasicStringData<unsigned short>*)0);
+    unsigned long winnerLocID = GetLOCCharacterName(winners, true, false);
+    const unsigned short* winnerLocString;
 
+    loc = g_pLocalization;
+
+    if (loc->m_LookupTable == 0)
     {
-        BasicString<unsigned short, Detail::TempStringAllocator> unformatted(data);
-
-        unsigned long winnerLocID = GetLOCCharacterName((eTeamID)winners, true, false);
-        const unsigned short* winnerLocString;
-
-        loc = g_pLocalization;
-
-        if (loc->m_LookupTable == 0)
+        winnerLocString = LocalizationTableNotFound;
+    }
+    else
+    {
+        nlLocalization::StringLookup* entry = nlBSearch<nlLocalization::StringLookup, unsigned long>(winnerLocID, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
+        if (entry)
         {
-            winnerLocString = LocalizationTableNotFound;
+            winnerLocString = loc->m_FirstString + entry->StringOffset;
         }
         else
         {
-            nlLocalization::StringLookup* entry = nlBSearch<nlLocalization::StringLookup, unsigned long>(winnerLocID, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
-            if (entry)
-            {
-                winnerLocString = loc->m_FirstString + entry->StringOffset;
-            }
-            else
-            {
-                winnerLocString = MissingLocString;
-            }
+            winnerLocString = MissingLocString;
         }
-
-        formatted = Format(unformatted, winnerLocString);
     }
 
-    memcpy(mScoresBuffer, formatted.c_str(), 0x100);
+    BasicString<unsigned short, Detail::TempStringAllocator> formatted(
+        Format(BasicString<unsigned short, Detail::TempStringAllocator>(data), winnerLocString));
+
+    memcpy(self->mScoresBuffer, formatted.c_str(), 0x100);
 
     findComp.byValue = FEFinder<TLTextInstance, 3>::Find<FEPresentation>;
 
@@ -1662,7 +1658,7 @@ void GoalOverlay::DoCupWinOverlay()
     hSlideB.m_Hash = hash;
 
     pText = findComp.byRef(
-        m_pFEPresentation,
+        self->m_pFEPresentation,
         (InlineHasher&)hSlideB,
         (InlineHasher&)hLayerB,
         (InlineHasher&)hNameB,
@@ -1670,9 +1666,9 @@ void GoalOverlay::DoCupWinOverlay()
         (InlineHasher&)h3,
         (InlineHasher&)h1);
 
-    pText->SetString(mScoresBuffer);
+    pText->SetString(self->mScoresBuffer);
 
-    int cup = nlSingleton<GameInfoManager>::s_pInstance->GetTrophyTypeByCurrentMode();
+    eTrophyType cup = (eTrophyType)nlSingleton<GameInfoManager>::s_pInstance->GetTrophyTypeByCurrentMode();
 
     key = 0x4E704897;
     loc = g_pLocalization;
@@ -1724,35 +1720,31 @@ void GoalOverlay::DoCupWinOverlay()
         data->mRefCount = 1;
     }
 
+    unsigned long trophyLocID = GetLOCTrophyName(cup);
+    const unsigned short* trophyLocString;
+
+    loc = g_pLocalization;
+
+    if (loc->m_LookupTable == 0)
     {
-        BasicString<unsigned short, Detail::TempStringAllocator> trophyUnformatted(data);
-
-        unsigned long trophyLocID = GetLOCTrophyName((eTrophyType)cup);
-        const unsigned short* trophyLocString;
-
-        loc = g_pLocalization;
-
-        if (loc->m_LookupTable == 0)
+        trophyLocString = LocalizationTableNotFound;
+    }
+    else
+    {
+        nlLocalization::StringLookup* entry = nlBSearch<nlLocalization::StringLookup, unsigned long>(trophyLocID, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
+        if (entry)
         {
-            trophyLocString = LocalizationTableNotFound;
+            trophyLocString = loc->m_FirstString + entry->StringOffset;
         }
         else
         {
-            nlLocalization::StringLookup* entry = nlBSearch<nlLocalization::StringLookup, unsigned long>(trophyLocID, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
-            if (entry)
-            {
-                trophyLocString = loc->m_FirstString + entry->StringOffset;
-            }
-            else
-            {
-                trophyLocString = MissingLocString;
-            }
+            trophyLocString = MissingLocString;
         }
-
-        formatted = Format(trophyUnformatted, trophyLocString);
     }
 
-    memcpy(mDescriptionBuffer, formatted.c_str(), 0x100);
+    formatted = Format(BasicString<unsigned short, Detail::TempStringAllocator>(data), trophyLocString);
+
+    memcpy(self->mDescriptionBuffer, formatted.c_str(), 0x100);
 
     h0.m_Hash = 0;
     h1.m_Hash = 0;
@@ -1773,8 +1765,10 @@ void GoalOverlay::DoCupWinOverlay()
     hSlideA.m_Hash = hash;
     hSlideB.m_Hash = hash;
 
+    findComp.byValue = FEFinder<TLTextInstance, 3>::Find<FEPresentation>;
+
     pText = findComp.byRef(
-        m_pFEPresentation,
+        self->m_pFEPresentation,
         (InlineHasher&)hSlideB,
         (InlineHasher&)hLayerB,
         (InlineHasher&)hDescB,
@@ -1783,10 +1777,13 @@ void GoalOverlay::DoCupWinOverlay()
         (InlineHasher&)h1);
 
     MakeTextBoxReallyWide(*pText);
-    pText->SetString(mDescriptionBuffer);
+    pText->SetString(self->mDescriptionBuffer);
 
+    h0.m_Hash = 0;
     h1.m_Hash = 0;
+    h2.m_Hash = 0;
     h3.m_Hash = 0;
+    h4.m_Hash = 0;
     h5.m_Hash = 0;
 
     hash = nlStringLowerHash("Time");
@@ -1801,8 +1798,10 @@ void GoalOverlay::DoCupWinOverlay()
     hSlideA.m_Hash = hash;
     hSlideB.m_Hash = hash;
 
+    findComp.byValue = FEFinder<TLTextInstance, 3>::Find<FEPresentation>;
+
     pText = findComp.byRef(
-        m_pFEPresentation,
+        self->m_pFEPresentation,
         (InlineHasher&)hSlideB,
         (InlineHasher&)hLayerB,
         (InlineHasher&)hTimeB,

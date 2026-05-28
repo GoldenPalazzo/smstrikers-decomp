@@ -568,17 +568,18 @@ static inline unsigned long setRasterLocal(eGLState rasterstate, unsigned long v
 static inline unsigned long setMaterialLocal(eGLMaterialState materialstate, unsigned long value)
 {
     gl_StateBitfield* p = &packed_materials[materialstate];
-    s32 numBits = p->numBits;
     s32 startBit = p->startBit;
+    s32 numBits = p->numBits;
     for (s32 i = numBits; i > 0; i--)
     {
     }
     for (s32 i = 0; i < numBits; i++)
     {
         if (value & (1u << i))
-            _materialState.m_State = _materialState.m_State | (1u << (i + startBit));
+            _materialState.m_State = _materialState.m_State | (1u << startBit);
         else
-            _materialState.m_State = _materialState.m_State & ~(1u << (i + startBit));
+            _materialState.m_State = _materialState.m_State & ~(1u << startBit);
+        startBit++;
     }
     return 0;
 }
@@ -616,7 +617,7 @@ static inline unsigned long setTextureLocal(eGLTextureState texturestate, unsign
 
 /**
  * Offset/Address/Size: 0x910 | 0x801DC554 | size: 0x1E78
- * TODO: 69.2% match - lwzu scheduling, stmw vs individual stw, register
+ * TODO: 69.9% match - lwzu scheduling, stmw vs individual stw, register
  * allocation differences across all inlined state-setter sections.
  */
 #define SET_RASTER_LOCAL(idx, val)                                 \
@@ -635,6 +636,25 @@ static inline unsigned long setTextureLocal(eGLTextureState texturestate, unsign
             else                                                   \
                 _state.m_State &= ~(1u << (_sr_i + _sr_startBit)); \
         }                                                          \
+    } while (0)
+
+#define SET_RASTER_VAL(idx, val)                                         \
+    do                                                                   \
+    {                                                                    \
+        s32 _sr_startBit = packed_raster[idx].startBit;                  \
+        s32 _sr_numBits = packed_raster[idx].numBits;                    \
+        s32 _sr_i;                                                       \
+        for (_sr_i = _sr_numBits; _sr_i > 0; _sr_i--)                    \
+        {                                                                \
+        }                                                                \
+        for (_sr_i = 0; _sr_i < _sr_numBits; _sr_i++)                    \
+        {                                                                \
+            if ((val) & (1u << _sr_i))                                   \
+                _state.m_State = _state.m_State | (1u << _sr_startBit);  \
+            else                                                         \
+                _state.m_State = _state.m_State & ~(1u << _sr_startBit); \
+            _sr_startBit++;                                              \
+        }                                                                \
     } while (0)
 
 void gl_StateStartup()
@@ -673,12 +693,12 @@ void gl_StateStartup()
 
     SET_RASTER_LOCAL(GLS_DepthTest, 0);
     SET_RASTER_LOCAL(GLS_DepthWrite, 0);
-    SET_RASTER_LOCAL(GLS_DepthFunc, 1);
+    SET_RASTER_VAL(GLS_DepthFunc, 1);
     SET_RASTER_LOCAL(GLS_AlphaTest, 0);
     SET_RASTER_LOCAL(GLS_AlphaTestRef, 0);
     SET_RASTER_LOCAL(GLS_AlphaBlend, 0);
-    SET_RASTER_LOCAL(GLS_Culling, 1);
-    SET_RASTER_LOCAL(GLS_ColourWrite, 3);
+    SET_RASTER_VAL(GLS_Culling, 1);
+    SET_RASTER_VAL(GLS_ColourWrite, 3);
     SET_RASTER_LOCAL(GLS_SolidOffset, 0);
     SET_RASTER_LOCAL(GLS_FillMode, 0);
 
@@ -711,3 +731,4 @@ void gl_StateStartup()
 }
 
 #undef SET_RASTER_LOCAL
+#undef SET_RASTER_VAL

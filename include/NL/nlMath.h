@@ -217,9 +217,34 @@ inline void nlVec3Scale(nlVector3& result, const nlVector3& v, const float scale
     nlVec3Set(result, scale * v.f.x, scale * v.f.y, scale * v.f.z);
 }
 
-inline void _nlVec3Scale(nlVector3& result, float scale)
+inline void nlVec3Scale(nlVector3& result, float scale)
 {
     nlVec3Set(result, scale * result.f.x, scale * result.f.y, scale * result.f.z);
+}
+
+inline void nlVec3Cross(nlVector3& result, const nlVector3& a, const nlVector3& b)
+{
+    nlVec3Set(result,
+        (a.f.y * b.f.z) - (a.f.z * b.f.y),
+        (-a.f.x * b.f.z) + (a.f.z * b.f.x),
+        (a.f.x * b.f.y) - (a.f.y * b.f.x));
+}
+
+// result = scale * dir + origin
+inline void nlVec3ScaleAdd(nlVector3& result, float scale, const nlVector3& dir, const nlVector3& origin)
+{
+    nlVec3Set(result,
+        scale * dir.f.x + origin.f.x,
+        scale * dir.f.y + origin.f.y,
+        scale * dir.f.z + origin.f.z);
+}
+
+// result = wa * a + wb * b (component-wise weighted sum / blend)
+inline void nlVec3WeightedSum(nlVector3& result, float wa, const nlVector3& a, float wb, const nlVector3& b)
+{
+    result.f.x = wa * a.f.x + wb * b.f.x;
+    result.f.y = wa * a.f.y + wb * b.f.y;
+    result.f.z = wa * a.f.z + wb * b.f.z;
 }
 
 class nlVector4

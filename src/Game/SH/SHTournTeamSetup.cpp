@@ -6,6 +6,8 @@
 #include "Game/FE/feTemplates.h"
 #include "Game/GameSceneManager.h"
 #include "Game/SH/SHCupHub.h"
+#include "NL/gl/glPlat.h"
+#include "NL/gl/glStruct.h"
 
 namespace DoubleHighlite
 {
@@ -348,7 +350,7 @@ void TournTeamSetupSceneV2::SceneCreated()
 
     if (mCurrentState == STATE_SCROLLING)
     {
-        mComponents[0] = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
+        TLComponentInstance* comp0 = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
             presentation->m_currentSlide,
             InlineHasher(nlStringLowerHash("Layer")),
             InlineHasher(nlStringLowerHash("CAPTAIN_NAME_RIGHT")),
@@ -356,9 +358,10 @@ void TournTeamSetupSceneV2::SceneCreated()
             InlineHasher(0),
             InlineHasher(0),
             InlineHasher(0));
-        mComponents[0]->m_bVisible = false;
+        comp0->m_bVisible = false;
+        mComponents[0] = comp0;
 
-        mComponents[1] = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
+        TLComponentInstance* comp1 = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
             presentation->m_currentSlide,
             InlineHasher(nlStringLowerHash("Layer")),
             InlineHasher(nlStringLowerHash("CAPTAIN_CHOOSER_LEFT")),
@@ -366,9 +369,10 @@ void TournTeamSetupSceneV2::SceneCreated()
             InlineHasher(0),
             InlineHasher(0),
             InlineHasher(0));
-        mComponents[1]->m_bVisible = false;
+        comp1->m_bVisible = false;
+        mComponents[1] = comp1;
 
-        mComponents[2] = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
+        TLComponentInstance* comp2 = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
             presentation->m_currentSlide,
             InlineHasher(nlStringLowerHash("Layer")),
             InlineHasher(nlStringLowerHash("CHOOSE_SIDEKICKS_LEFT")),
@@ -376,7 +380,8 @@ void TournTeamSetupSceneV2::SceneCreated()
             InlineHasher(0),
             InlineHasher(0),
             InlineHasher(0));
-        mComponents[2]->m_bVisible = false;
+        comp2->m_bVisible = false;
+        mComponents[2] = comp2;
 
         TLComponentInstance* chooserComp = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
             mComponents[1]->GetActiveSlide(),
@@ -424,9 +429,8 @@ void TournTeamSetupSceneV2::SceneCreated()
             InlineHasher(0),
             InlineHasher(0));
 
-        extern void* glGetScreenInfo();
-        int screenWidth = *(int*)glGetScreenInfo();
-        mTicker = new (nlMalloc(0x22C, 0x20, true)) FEScrollText(scrollText, 0, screenWidth + 0x32);
+        gl_ScreenInfo* screenInfo = glGetScreenInfo();
+        mTicker = new (nlMalloc(0x22C, 0x20, true)) FEScrollText(scrollText, 0, screenInfo->ScreenWidth + 0x32);
         mTicker->SetDisplayMessage("CHOOSE_CAPTAIN_CUSTOM_TOURNAMENT");
 
         mPressStartComponent = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(

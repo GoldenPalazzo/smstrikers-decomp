@@ -575,15 +575,6 @@ void DrawableCharacter::SendToGl(const cCharacter& character) const
         unsigned char padding[0x138];
         nlVector4* pLight;
     };
-    struct WorldLightingData
-    {
-        unsigned char pad0[0x3C];
-        void* pIntensityData;
-        void* pSTSIntensity;
-        unsigned char pad1[0xEC];
-        u32 globalLightRampSTSTex;
-    };
-
     EffectsTexturing* fxtex = mEffectsTexturing;
     eCharacterClass ec = character.m_eCharacterClass;
 
@@ -619,7 +610,7 @@ void DrawableCharacter::SendToGl(const cCharacter& character) const
     World* world = WorldManager::s_World;
     if (sSTSLighting__17DrawableCharacter != 0)
     {
-        lightTexture = ((WorldLightingData*)world)->globalLightRampSTSTex;
+        lightTexture = world->m_GlobalLightRampSTSTex;
     }
     else
     {
@@ -629,7 +620,7 @@ void DrawableCharacter::SendToGl(const cCharacter& character) const
     void* pLightData;
     if (sSTSLighting__17DrawableCharacter != 0)
     {
-        pLightData = ((WorldLightingData*)world)->pIntensityData;
+        pLightData = world->m_pIntensityData;
     }
     else if (DrawableCharacter::sCameraRelativeLighting || AlwaysUseCameraRelativeCharacterLighting())
     {
@@ -646,7 +637,7 @@ void DrawableCharacter::SendToGl(const cCharacter& character) const
         pEnviroData = glUserAlloc((eGLUserData)0xE, 0, false);
     }
 
-    void* pSpecularData = ((WorldLightingData*)WorldManager::s_World)->pSTSIntensity;
+    void* pSpecularData = WorldManager::s_World->m_pSTSIntensity;
     glModel* pModel = glModelDup(skinMesh->pModel, true);
 
     u8 isVisible;
@@ -682,10 +673,10 @@ void DrawableCharacter::SendToGl(const cCharacter& character) const
 
     if (isVisible)
     {
-        u8 dirtIndicator = (u8)(int)(63.0f * (1.0f - ((float)mDirt / 255.0f)));
-        u8 dirtValue = dirtIndicator;
+        u8 dirtValue = (u8)(int)(63.0f * (1.0f - ((float)mDirt / 255.0f)));
+        glModelPacket* pPacket = pModel->packets;
 
-        for (glModelPacket* pPacket = pModel->packets; pPacket < pModel->packets + pModel->numPackets; pPacket++)
+        for (; pPacket < pModel->packets + pModel->numPackets; pPacket++)
         {
             if (pLightData != nullptr)
             {
@@ -716,7 +707,7 @@ void DrawableCharacter::SendToGl(const cCharacter& character) const
                     }
                     else
                     {
-                        pPacket->state.texture[GLTT_BumpLocal] = fxtex->m_uTexture;
+                        pPacket->state.texture[GLTT_Detail] = fxtex->m_uTexture;
                         pPacket->state.texconfig |= GLTT_Detail_bit;
                         glSetTextureState(pPacket->state.texturestate, (eGLTextureState)0xC, 0xF);
                     }
@@ -761,22 +752,25 @@ void DrawableCharacter::SendToGl(const cCharacter& character) const
     if (g_nShowBones > 0)
     {
         static u32 tDiff;
-        static s8 initTdiff;
+        {
+            static s8 init;
+            if (!init)
+            {
+                tDiff = 0;
+                init = 1;
+            }
+        }
         static u32 counter;
-        static s8 initCounter;
-
-        if (!initTdiff)
         {
-            tDiff = 0;
-            initTdiff = 1;
-        }
-        if (!initCounter)
-        {
-            counter = 0;
-            initCounter = 1;
+            static s8 init;
+            if (!init)
+            {
+                counter = 0;
+                init = 1;
+            }
         }
 
-        int endpointBounds = (g_nShowBones == 1);
+        bool endpointBounds = (g_nShowBones == 1);
         PhysicsCharacterBase* pPhysicsCharacter = character.m_pPhysicsCharacter;
         int numBoneVolumePoints = pPhysicsCharacter->GetNumBoneVolumePoints(endpointBounds);
 
@@ -800,7 +794,10 @@ void DrawableCharacter::SendToGl(const cCharacter& character) const
                     float dy = points[i].f.y - vCenter.f.y;
                     float dz = points[i].f.z - vCenter.f.z;
                     float distSq = dx * dx + dy * dy + dz * dz;
-                    if (!(maxDistSq >= distSq))
+                    if (maxDistSq >= distSq)
+                    {
+                    }
+                    else
                     {
                         maxDistSq = distSq;
                     }
@@ -829,7 +826,7 @@ void DrawableCharacter::SendToGl(const cCharacter& character) const
                 counter = 0;
             }
 
-            static const u32 debugColour = 0xFFFF4050;
+            u32 debugColour = 0xFFFF4050;
             glModel* pSphereModel = glModelDup(glInventory.GetModel(nlStringHash("debug/sphere")), true);
 
             nlMatrix4 sphereWorldMatrix;
@@ -851,7 +848,7 @@ void DrawableCharacter::SendToGl(const cCharacter& character) const
             void* pConstantColour = glUserAlloc(GLUD_ConstantColour, 4, false);
             *(u32*)glUserGetData(pConstantColour) = debugColour;
 
-            u8 alpha = ((const u8*)&debugColour)[3];
+            u8 alpha = ((u8*)&debugColour)[3];
             for (glModelPacket* pPacket = pSphereModel->packets; pPacket < pSphereModel->packets + pSphereModel->numPackets; pPacket++)
             {
                 pPacket->state.matrix = matrix;
@@ -873,25 +870,27 @@ void DrawableCharacter::SendToGl(const cCharacter& character) const
         if (pLight != nullptr)
         {
             static float s_fHeightFudge;
-            static s8 initHeightFudge;
-
-            if (!initHeightFudge)
             {
-                s_fHeightFudge = 1.125f;
-                initHeightFudge = 1;
+                static s8 init;
+                if (!init)
+                {
+                    s_fHeightFudge = 1.125f;
+                    init = 1;
+                }
             }
 
-            float fRadius = 0.0f;
-            float fHeight = 0.0f;
+            ProjectedShadowParams params;
+            params.fScalar = 1.0f;
+            float fRadius;
+            float fHeight;
             int characterSizeIndex;
-            float fScalar = 0.0f;
 
             if (ec < NUM_FIELDER_CLASSES)
             {
                 const ShadowScale& ss = shadowScale[ec];
                 fRadius = ss.fRadius;
                 fHeight = ss.fHeight;
-                fScalar = ss.fScalar;
+                params.fScalar = ss.fScalar;
                 characterSizeIndex = charSizes[ec];
             }
             else
@@ -899,21 +898,22 @@ void DrawableCharacter::SendToGl(const cCharacter& character) const
                 const ShadowScale& ss = shadowScale[NUM_FIELDER_CLASSES];
                 fRadius = ss.fRadius;
                 fHeight = ss.fHeight;
-                fScalar = ss.fScalar;
+                params.fScalar = ss.fScalar;
                 characterSizeIndex = charSizes[NUM_FIELDER_CLASSES];
             }
 
             fRadius *= g_fRadiusScale;
             fHeight *= s_fHeightFudge;
 
-            ProjectedShadowParams params;
-            params.vLight = *pLight;
+            params.vLight.f.x = pLight->f.y;
+            params.vLight.f.y = pLight->f.z;
+            params.vLight.f.z = pLight->f.w;
+            params.vLight.f.w = 1.0f;
             params.vPosition = mBip01Position;
             params.fRadius = fRadius;
-            params.pModel = pModel;
-            params.fWidth = fHeight;
             params.fHeight = fHeight;
-            params.fScalar = fScalar;
+            params.fWidth = fHeight;
+            params.pModel = pModel;
             params.nPartitionIndex = ((int (*)())GetShadowPartitionIndex)();
             params.nVisibleInterval = g_nOnscreenUpdate[characterSizeIndex];
             params.nInvisibleInterval = g_nOffscreenUpdate[characterSizeIndex];

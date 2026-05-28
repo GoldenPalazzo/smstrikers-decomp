@@ -174,8 +174,7 @@ SFXEmitter* GetSFXEmitter(unsigned long id)
 
 /**
  * Offset/Address/Size: 0x15C | 0x801C4958 | size: 0x35C
- * TODO: 89.13% match - r31/r30/r29 callee-saved rotation (target: r31=i, r30=index, r29=emitter;
- * ours: r31=index, r30=emitter, r29=i). MWCC gives parameter priority for r31 over locals.
+ * TODO: 92.96% match - r4/r5 volatile register scheduling in both init blocks, r27/r29 callee-saved swap in second block
  */
 SFXEmitter* GetFreeEmitter(unsigned long& index)
 {
@@ -187,46 +186,43 @@ SFXEmitter* GetFreeEmitter(unsigned long& index)
         if (!sndCheckEmitter((SND_EMITTER*)&gEmitters[i]) && sndFXCheck(sndEmitterVoiceID((SND_EMITTER*)&gEmitters[i])) == -1
             && !gEmitters[i].bIsStopping && !gEmitters[i].bInUse)
         {
-            int emitterOffset = i * sizeof(SFXEmitter);
-            SFXEmitter* currEmitter = (SFXEmitter*)((u8*)gEmitters + emitterOffset);
-            sndRemoveEmitter((SND_EMITTER*)currEmitter);
-            currEmitter->bInUse = true;
+            sndRemoveEmitter((SND_EMITTER*)&gEmitters[i]);
+            gEmitters[i].bInUse = true;
             index = i;
-            currEmitter->bKeepTrack = true;
-            currEmitter->soundType = (unsigned long)-1;
-            currEmitter->fTimeStamp = -1.0f;
-            currEmitter->bIsStopping = false;
-            currEmitter->bInUse = false;
-            currEmitter->bIsFilterOn = false;
-            currEmitter->m_unk_0x5F = false;
-            currEmitter->pPhysObj = NULL;
-            currEmitter->pOwner = NULL;
-            currEmitter->pos.pvPos = NULL;
-            currEmitter->dir.pvDir = NULL;
-            currEmitter->pos.vPos.f.x = 0.0f;
-            currEmitter->pos.vPos.f.y = 0.0f;
-            currEmitter->pos.vPos.f.z = 0.0f;
-            currEmitter->dir.vDir.f.x = 0.0f;
-            currEmitter->dir.vDir.f.y = 0.0f;
-            currEmitter->dir.vDir.f.z = 0.0f;
-            currEmitter->posUpdateMethod = NONE;
-            SND_PARAMETER_INFO* pInfo = currEmitter->pMIDIControllerInfo;
-            if (pInfo != NULL)
+            gEmitters[i].bKeepTrack = true;
+            gEmitters[i].soundType = (unsigned long)-1;
+            gEmitters[i].fTimeStamp = -1.0f;
+            gEmitters[i].bIsStopping = false;
+            gEmitters[i].bInUse = false;
+            gEmitters[i].bIsFilterOn = false;
+            gEmitters[i].m_unk_0x5F = false;
+            gEmitters[i].pPhysObj = NULL;
+            gEmitters[i].pOwner = NULL;
+            gEmitters[i].pos.pvPos = NULL;
+            gEmitters[i].dir.pvDir = NULL;
+            gEmitters[i].pos.vPos.f.x = 0.0f;
+            gEmitters[i].pos.vPos.f.y = 0.0f;
+            gEmitters[i].pos.vPos.f.z = 0.0f;
+            gEmitters[i].dir.vDir.f.x = 0.0f;
+            gEmitters[i].dir.vDir.f.y = 0.0f;
+            gEmitters[i].dir.vDir.f.z = 0.0f;
+            gEmitters[i].posUpdateMethod = NONE;
+            if (gEmitters[i].pMIDIControllerInfo != NULL)
             {
-                if (pInfo->paraArray != NULL)
-                    delete[] (char*)pInfo->paraArray;
-                delete pInfo;
+                if (gEmitters[i].pMIDIControllerInfo->paraArray != NULL)
+                    delete[] (char*)gEmitters[i].pMIDIControllerInfo->paraArray;
+                delete gEmitters[i].pMIDIControllerInfo;
             }
-            currEmitter->pMIDIControllerInfo = NULL;
+            gEmitters[i].pMIDIControllerInfo = NULL;
             break;
         }
     }
 
     if (i == 64)
     {
+        int minIndex = 0;
         float* pFirstTimeStamp = &gEmitters[0].fTimeStamp;
         float min = *pFirstTimeStamp;
-        int minIndex = 0;
         for (i = 1; i < 64; i++)
         {
             if (gEmitters[i].fTimeStamp < min)
@@ -237,37 +233,35 @@ SFXEmitter* GetFreeEmitter(unsigned long& index)
         }
 
         int emitterOffset = minIndex * sizeof(SFXEmitter);
-        SFXEmitter* currEmitter = (SFXEmitter*)((u8*)gEmitters + emitterOffset);
-        sndRemoveEmitter((SND_EMITTER*)currEmitter);
-        currEmitter->bInUse = true;
+        sndRemoveEmitter((SND_EMITTER*)((u8*)gEmitters + emitterOffset));
+        gEmitters[minIndex].bInUse = true;
         index = minIndex;
-        currEmitter->bKeepTrack = true;
-        currEmitter->soundType = (unsigned long)-1;
-        pFirstTimeStamp[emitterOffset / sizeof(float)] = -1.0f;
-        currEmitter->bIsStopping = false;
-        currEmitter->bInUse = false;
-        currEmitter->bIsFilterOn = false;
-        currEmitter->m_unk_0x5F = false;
-        currEmitter->pPhysObj = NULL;
-        currEmitter->pOwner = NULL;
-        currEmitter->pos.pvPos = NULL;
-        currEmitter->dir.pvDir = NULL;
-        currEmitter->pos.vPos.f.x = 0.0f;
-        currEmitter->pos.vPos.f.y = 0.0f;
-        currEmitter->pos.vPos.f.z = 0.0f;
-        currEmitter->dir.vDir.f.x = 0.0f;
-        currEmitter->dir.vDir.f.y = 0.0f;
-        currEmitter->dir.vDir.f.z = 0.0f;
-        currEmitter->posUpdateMethod = NONE;
-        SND_PARAMETER_INFO* pInfo = currEmitter->pMIDIControllerInfo;
-        if (pInfo != NULL)
+        gEmitters[minIndex].bKeepTrack = true;
+        gEmitters[minIndex].soundType = (unsigned long)-1;
+        *(float*)((u8*)pFirstTimeStamp + emitterOffset) = -1.0f;
+        gEmitters[minIndex].bIsStopping = false;
+        gEmitters[minIndex].bInUse = false;
+        gEmitters[minIndex].bIsFilterOn = false;
+        gEmitters[minIndex].m_unk_0x5F = false;
+        gEmitters[minIndex].pPhysObj = NULL;
+        gEmitters[minIndex].pOwner = NULL;
+        gEmitters[minIndex].pos.pvPos = NULL;
+        gEmitters[minIndex].dir.pvDir = NULL;
+        gEmitters[minIndex].pos.vPos.f.x = 0.0f;
+        gEmitters[minIndex].pos.vPos.f.y = 0.0f;
+        gEmitters[minIndex].pos.vPos.f.z = 0.0f;
+        gEmitters[minIndex].dir.vDir.f.x = 0.0f;
+        gEmitters[minIndex].dir.vDir.f.y = 0.0f;
+        gEmitters[minIndex].dir.vDir.f.z = 0.0f;
+        gEmitters[minIndex].posUpdateMethod = NONE;
+        if (gEmitters[minIndex].pMIDIControllerInfo != NULL)
         {
-            if (pInfo->paraArray != NULL)
-                delete[] (char*)pInfo->paraArray;
-            delete pInfo;
+            if (gEmitters[minIndex].pMIDIControllerInfo->paraArray != NULL)
+                delete[] (char*)gEmitters[minIndex].pMIDIControllerInfo->paraArray;
+            delete gEmitters[minIndex].pMIDIControllerInfo;
         }
-        currEmitter->pMIDIControllerInfo = NULL;
-        tDebugPrintManager::Print(DC_SOUND, "GetFreeEmitter: No free SFX emitters available!\n");
+        gEmitters[minIndex].pMIDIControllerInfo = NULL;
+        tDebugPrintManager::Print(DC_SOUND, "Audio::GetFreeEmitter(): Ran out of free emitters, killing oldest one...\n");
     }
 
     return &gEmitters[index];

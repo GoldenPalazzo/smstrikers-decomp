@@ -15,20 +15,52 @@ struct PowerupAcquireEventData : public EventData
 
 struct InlineHasher
 {
-    InlineHasher() { }
+    unsigned long m_Hash;
     InlineHasher(unsigned long h)
         : m_Hash(h)
     {
     }
-    unsigned long m_Hash;
 };
+
+template <class T>
+T* FindItemByHashID(T* head, unsigned long hash);
+
+template <class T>
+T* CastToSomeType(T*, void* pValue);
+
+inline TLSlide* FEGetChildren(FEPresentation* p)
+{
+    return p->m_slides;
+}
+inline TLInstance* FEGetChildren(TLSlide* p)
+{
+    return p->m_instances;
+}
+inline TLInstance* FEGetChildren(TLInstance* p)
+{
+    return p->pChildren;
+}
 
 template <typename T, int N>
 class FEFinder
 {
 public:
     template <typename U>
-    static T* Find(U*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
+    static T* Find(U* pTopLevel, InlineHasher h1, InlineHasher h2, InlineHasher h3, InlineHasher h4, InlineHasher h5, InlineHasher h6)
+    {
+        return _Find(pTopLevel, h1.m_Hash, h2.m_Hash, h3.m_Hash, h4.m_Hash, h5.m_Hash, h6.m_Hash);
+    }
+    template <typename U>
+    static T* _Find(U* pTopLevel, const unsigned long Level1, const unsigned long Level2,
+        const unsigned long Level3, const unsigned long Level4, const unsigned long Level5, const unsigned long Level6)
+    {
+        void* pChild = FindItemByHashID(FEGetChildren(pTopLevel), Level1);
+        if (pChild == 0)
+            return 0;
+        if (Level2 == 0)
+            return (T*)pChild;
+        return _Find(CastToSomeType(FEGetChildren(pTopLevel), pChild), Level2, Level3, Level4, Level5, Level6, 0);
+    }
 };
 
 #ifndef NL_SINGLETON_H
@@ -167,103 +199,7 @@ static char* RIGHT_POWER_UP_TEXT_NAMES[2] = {
 //     return 0x1C3;
 // }
 
-/**
- * Offset/Address/Size: 0x7C0 | 0x800FA20C | size: 0x84
- */
-// void FEFinder<TLTextInstance, 3>::_Find<FEPresentation>(FEPresentation*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long)
-// {
-// }
-
-/**
- * Offset/Address/Size: 0x788 | 0x800FA1D4 | size: 0x38
- */
-// void FEFinder<TLTextInstance, 3>::Find<FEPresentation>(FEPresentation*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher)
-// {
-// }
-
-/**
- * Offset/Address/Size: 0x62C | 0x800FA078 | size: 0x15C
- */
-// void FEFinder<TLTextInstance, 3>::_Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long)
-// {
-// }
-
-/**
- * Offset/Address/Size: 0x5A8 | 0x800F9FF4 | size: 0x84
- */
-// void FEFinder<TLTextInstance, 3>::_Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long)
-// {
-// }
-
-/**
- * Offset/Address/Size: 0x570 | 0x800F9FBC | size: 0x38
- */
-// void FEFinder<TLTextInstance, 3>::Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher)
-// {
-// }
-
-/**
- * Offset/Address/Size: 0x4EC | 0x800F9F38 | size: 0x84
- */
-// void FEFinder<TLImageInstance, 2>::_Find<FEPresentation>(FEPresentation*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long)
-// {
-// }
-
-/**
- * Offset/Address/Size: 0x4B4 | 0x800F9F00 | size: 0x38
- */
-// void FEFinder<TLImageInstance, 2>::Find<FEPresentation>(FEPresentation*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher)
-// {
-// }
-
-/**
- * Offset/Address/Size: 0x358 | 0x800F9DA4 | size: 0x15C
- */
-// void FEFinder<TLComponentInstance, 4>::_Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long)
-// {
-// }
-
-/**
- * Offset/Address/Size: 0x2D4 | 0x800F9D20 | size: 0x84
- */
-// void FEFinder<TLComponentInstance, 4>::_Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long)
-// {
-// }
-
-/**
- * Offset/Address/Size: 0x250 | 0x800F9C9C | size: 0x84
- */
-// void FEFinder<TLComponentInstance, 4>::_Find<FEPresentation>(FEPresentation*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long)
-// {
-// }
-
-/**
- * Offset/Address/Size: 0x218 | 0x800F9C64 | size: 0x38
- */
-// void FEFinder<TLComponentInstance, 4>::Find<FEPresentation>(FEPresentation*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher)
-// {
-// }
-
-/**
- * Offset/Address/Size: 0xBC | 0x800F9B08 | size: 0x15C
- */
-// void FEFinder<TLImageInstance, 2>::_Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long)
-// {
-// }
-
-/**
- * Offset/Address/Size: 0x38 | 0x800F9A84 | size: 0x84
- */
-// void FEFinder<TLImageInstance, 2>::_Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long)
-// {
-// }
-
-/**
- * Offset/Address/Size: 0x0 | 0x800F9A4C | size: 0x38
- */
-// void FEFinder<TLImageInstance, 2>::Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher)
-// {
-// }
+// FEFinder template instantiations (Find/_Find) are generated from the class template body above
 
 /**
  * Offset/Address/Size: 0x36B8 | 0x800F9998 | size: 0xB4
@@ -340,12 +276,6 @@ void HUDOverlay::Update(float fDeltaT)
     extern const unsigned short MissingLocString[];
     nlLocalization::StringLookup* nlBSearch(const unsigned long&, nlLocalization::StringLookup*, int);
 
-    struct HUDPresentationTime
-    {
-        char _padding[0x18];
-        float mTime;
-    };
-
     extern unsigned char g_hudVisible;
 
     BaseSceneHandler::Update(fDeltaT);
@@ -356,8 +286,6 @@ void HUDOverlay::Update(float fDeltaT)
     {
         SetVisible(false);
     }
-
-    FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
 
     for (int i = 0; i < 2; ++i)
     {
@@ -371,7 +299,7 @@ void HUDOverlay::Update(float fDeltaT)
             continue;
         }
 
-        if (((HUDPresentationTime*)presentation)->mTime > 1.0f)
+        if (m_pFEPresentation->m_currentSlide->m_time < 1.0f)
         {
             continue;
         }
@@ -382,7 +310,7 @@ void HUDOverlay::Update(float fDeltaT)
             if (i == 0)
             {
                 pScoreComp = FEFinder<TLComponentInstance, 4>::Find<FEPresentation>(
-                    presentation,
+                    m_pFEPresentation,
                     InlineHasher(nlStringLowerHash("IN")),
                     InlineHasher(nlStringLowerHash(LAYER_NAME)),
                     InlineHasher(nlStringLowerHash("left_score")),
@@ -393,7 +321,7 @@ void HUDOverlay::Update(float fDeltaT)
             else
             {
                 pScoreComp = FEFinder<TLComponentInstance, 4>::Find<FEPresentation>(
-                    presentation,
+                    m_pFEPresentation,
                     InlineHasher(nlStringLowerHash("IN")),
                     InlineHasher(nlStringLowerHash(LAYER_NAME)),
                     InlineHasher(nlStringLowerHash("right_score")),
@@ -431,6 +359,7 @@ void HUDOverlay::Update(float fDeltaT)
                 m_pTextInstanceScore[1][i]->SetString(mScoreBuffer[i]);
             }
         }
+        break;
     }
 
     if (nlSingleton<GameInfoManager>::s_pInstance->mIsInStrikers101Mode)

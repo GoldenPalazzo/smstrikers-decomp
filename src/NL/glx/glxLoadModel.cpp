@@ -196,8 +196,7 @@ static glModel* glxLoadModelFromMemory(char* data, int size, unsigned long* pNum
                 u32 alignBits = rawId & 0x7F000000u;
                 int id = (int)(rawId & ~0x7F000000u);
                 u8* chunkData;
-                bool hasAlignment = (alignBits != 0);
-                if (hasAlignment)
+                if (((-alignBits | alignBits) >> 31) != 0)
                 {
                     u32 align = 1u << (alignBits >> 24);
                     chunkData = (u8*)(((u32)((u8*)chunk + align) + 7) & ~(align - 1));
@@ -244,7 +243,7 @@ static glModel* glxLoadModelFromMemory(char* data, int size, unsigned long* pNum
                 }
                 case BMD_CHUNK_PACKETS:
                 {
-                    numPacketEntries = (int)(chunkSize / 67);
+                    numPacketEntries = (int)Div67(chunkSize);
                     pPackets = (glModelPacket*)glResourceAlloc(chunkSize, GLM_Header);
                     memcpy(pPackets, chunkData, chunkSize);
                     break;
@@ -273,21 +272,18 @@ static glModel* glxLoadModelFromMemory(char* data, int size, unsigned long* pNum
                 case BMD_CHUNK_TEXTURE_ANIM:
                 {
                     u32 animId = *(u32*)chunkData;
-                    if (glInventory.GetTextureAnim(animId) != NULL)
-                    {
-                        tDebugPrintManager::Print(DC_LOADER, "skipping duplicate texanim 0x%08X\n", animId);
-                        break;
-                    }
+                    if (glInventory.GetTextureAnim(animId) == NULL)
                     {
                         u8* pTexData = chunkData + 12;
                         int numTextures = *(int*)(chunkData + 4);
+                        GLTextureAnim* pAnim;
                         u32 mode = *(u32*)(chunkData + 8);
                         f32 tempRate;
                         memcpy(&tempRate, pTexData, 4);
-                        GLTextureAnim* pAnim = (GLTextureAnim*)nlMalloc(0x20, 8, false);
                         pTexData += 4;
+                        pAnim = (GLTextureAnim*)nlMalloc(0x20, 8, false);
                         if (pAnim != NULL)
-                            pAnim = new (pAnim) GLTextureAnim();
+                            new (pAnim) GLTextureAnim();
                         pAnim->m_unk_0x00 = (s32)animId;
                         pAnim->SetNumTextures(numTextures);
                         pAnim->m_mode = mode;
@@ -305,6 +301,10 @@ static glModel* glxLoadModelFromMemory(char* data, int size, unsigned long* pNum
                         }
                         glInventory.AddTextureAnim(animId, pAnim);
                     }
+                    else
+                    {
+                        tDebugPrintManager::Print(DC_LOADER, "skipping duplicate texanim 0x%08X\n", animId);
+                    }
                     break;
                 }
                 case BMD_CHUNK_VERTEX_ANIM:
@@ -317,7 +317,7 @@ static glModel* glxLoadModelFromMemory(char* data, int size, unsigned long* pNum
                     int dataSize = numFrames * 12 * numVerts;
                     GLVertexAnim* pAnim = (GLVertexAnim*)nlMalloc(0x28, 8, false);
                     if (pAnim != NULL)
-                        pAnim = new (pAnim) GLVertexAnim();
+                        new (pAnim) GLVertexAnim();
                     pAnim->m_uHashID = modelId;
                     pAnim->m_nNumFrames = numFrames;
                     pAnim->m_nNumVertices = numVerts;
@@ -338,7 +338,7 @@ static glModel* glxLoadModelFromMemory(char* data, int size, unsigned long* pNum
                     int numMats = *(int*)(chunkData + 4);
                     GLMaterialList* pList = (GLMaterialList*)nlMalloc(0x0C, 8, false);
                     if (pList != NULL)
-                        pList = new (pList) GLMaterialList();
+                        new (pList) GLMaterialList();
                     pList->m_uHashID = listId;
                     pList->SetMaterials(numMats, (const GLMaterialEntry*)pMatData);
                     glInventory.AddMaterialList(listId, pList);

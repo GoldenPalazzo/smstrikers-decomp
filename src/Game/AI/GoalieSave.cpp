@@ -1117,11 +1117,7 @@ SaveData* GoalieSave::GetClosestBlendedPos(SaveBlendInfo& blendInfo, const nlVec
     blendInfo.mfSaveBlendSecondary = 0.0f;
     blendInfo.mfSaveBlendComposite = 0.0f;
 
-    if (pSaveData->mv3GroupMaxCoords.f.y <= v3TargetPos.f.y || pSaveData->mv3GroupMinCoords.f.y >= v3TargetPos.f.y)
-    {
-        pEdge = pSaveData;
-    }
-    else
+    if (pSaveData->mv3GroupMaxCoords.f.y > v3TargetPos.f.y && pSaveData->mv3GroupMinCoords.f.y < v3TargetPos.f.y)
     {
         SaveData* pPrev = pSaveData;
         SaveData* pCur = pSaveData;
@@ -1393,6 +1389,10 @@ SaveData* GoalieSave::GetClosestBlendedPos(SaveBlendInfo& blendInfo, const nlVec
                 }
             }
         }
+    }
+    else
+    {
+        pEdge = pSaveData;
     }
 
     if (pEdge == pSaveData)

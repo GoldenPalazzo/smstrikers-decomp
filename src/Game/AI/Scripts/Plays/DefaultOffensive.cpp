@@ -582,38 +582,30 @@ void Fuzzy::GoodBallCarrier(cFielder* TheFielder)
  * TODO: 77.62% match - stack slot offsets and hash/std::find setup ordering
  * still diverge in cache prologue.
  */
+struct StdMapNodeBase
+{
+    void* left;
+    void* right;
+    void* parent;
+};
+
+struct StdMapTree
+{
+    unsigned long x0;
+    StdMapNodeBase x4;
+};
+
+struct StdMapNode
+{
+    StdMapNodeBase base;
+    unsigned long key;
+    FuzzyVariant value;
+};
+
 FuzzyVariant Fuzzy::InGoodWindupPosition(cFielder* TheFielder)
 {
-    struct StdMapNodeBase
-    {
-        void* left;
-        void* right;
-        void* parent;
-    };
-
-    struct StdMapTree
-    {
-        unsigned long x0;
-        StdMapNodeBase x4;
-    };
-
-    struct StdMapNode
-    {
-        StdMapNodeBase base;
-        unsigned long key;
-        FuzzyVariant value;
-    };
-
-    struct FuzzyMapPair
-    {
-        unsigned long key;
-        FuzzyVariant value;
-    };
-
     extern unsigned char g_bScriptQuestionCachingUseSTD;
     extern unsigned char g_bScriptQuestionCachingOn;
-    extern void __find(StdMapNode * *outNode, void* tree, const unsigned long* key);
-    extern FuzzyMapPair* __find_or_insert(void* tree, const unsigned long* key);
 
     extern cFielder* g_pScriptCurrentFielder;
     extern cTeam* g_pScriptCurrentTeam;
@@ -637,20 +629,19 @@ FuzzyVariant Fuzzy::InGoodWindupPosition(cFielder* TheFielder)
     float fBestConfidence = 0.0f;
 
     FuzzyVariant fvFielder((cPlayer*)TheFielder);
-    unsigned long hash = (unsigned long)InGoodWindupPosition + ((Variant*)&fvFielder)->GetHash();
+    unsigned long hash = (unsigned long)InGoodWindupPosition;
+    hash += ((Variant*)&fvFielder)->GetHash();
     FuzzyVariant fvFielder2((cPlayer*)TheFielder);
 
-    ScriptQuestionCache* cache = ScriptQuestionCache::Instance();
+    ScriptQuestionCache* cache = nlSingleton<ScriptQuestionCache>::s_pInstance;
     cache->mTotalLookups++;
 
-    unsigned char lookupFound = 0;
     FuzzyVariant* pValue;
+    unsigned char lookupFound;
 
     if (g_bScriptQuestionCachingUseSTD)
     {
-        StdMapNode* stdNode;
-        __find(&stdNode, &cache->mQuestionCacheMapSTD, &hash);
-        StdMapNode* stdFound = stdNode;
+        StdMapNode* stdFound = (StdMapNode*)cache->mQuestionCacheMapSTD.tree_.find(hash).ptr_;
         if ((StdMapNodeBase*)stdFound != &((StdMapTree*)&cache->mQuestionCacheMapSTD)->x4)
         {
             cache->mCacheHits++;
@@ -717,8 +708,7 @@ FuzzyVariant Fuzzy::InGoodWindupPosition(cFielder* TheFielder)
         {
             if (g_bScriptQuestionCachingUseSTD)
             {
-                FuzzyMapPair* pair = __find_or_insert(&cache->mQuestionCacheMapSTD, &hashCopy1);
-                pair->value = bestValue;
+                cache->mQuestionCacheMapSTD.tree_.find_or_insert<unsigned long, FuzzyVariant>(hashCopy1).second = bestValue;
             }
             else
             {
@@ -750,7 +740,8 @@ FuzzyVariant Fuzzy::InGoodWindupPosition(cFielder* TheFielder)
         fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
         if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
         {
-            fConfidence = (float)fConfidence * fBranchRatio;
+            double d = fConfidence;
+            fConfidence = (float)d * fBranchRatio;
         }
 
         if (fConfidence > 0.0f)
@@ -768,7 +759,8 @@ FuzzyVariant Fuzzy::InGoodWindupPosition(cFielder* TheFielder)
         fConfidence = (fConfidence <= fFalseConfidence) ? fConfidence : fFalseConfidence;
         if (fConfidence < fFalseConfidence && fFalseConfidence < 0.5f)
         {
-            fConfidence = (float)fConfidence * fBranchRatio;
+            double d = fConfidence;
+            fConfidence = (float)d * fBranchRatio;
         }
 
         fTrueConfidence = 1.0f - Invincible(g_pScriptCurrentFielder);
@@ -784,7 +776,8 @@ FuzzyVariant Fuzzy::InGoodWindupPosition(cFielder* TheFielder)
             fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
             if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
             {
-                fConfidence = (float)fConfidence * fBranchRatio;
+                double d = fConfidence;
+                fConfidence = (float)d * fBranchRatio;
             }
 
             if (fConfidence > fBestConfidence)
@@ -802,7 +795,8 @@ FuzzyVariant Fuzzy::InGoodWindupPosition(cFielder* TheFielder)
             fConfidence = (fConfidence <= fFalseConfidence) ? fConfidence : fFalseConfidence;
             if (fConfidence < fFalseConfidence && fFalseConfidence < 0.5f)
             {
-                fConfidence = (float)fConfidence * fBranchRatio;
+                double d = fConfidence;
+                fConfidence = (float)d * fBranchRatio;
             }
 
             float fOpen = FGREATER(WideOpen(g_pScriptCurrentFielder), 0.4f);
@@ -818,7 +812,8 @@ FuzzyVariant Fuzzy::InGoodWindupPosition(cFielder* TheFielder)
                 fConfidence = (fConfidence <= fOpen) ? fConfidence : fOpen;
                 if (fConfidence < fOpen && fOpen < 0.5f)
                 {
-                    fConfidence = (float)fConfidence * fOpenBranchRatio;
+                    double d = fConfidence;
+                    fConfidence = (float)d * fOpenBranchRatio;
                 }
 
                 float fNotInDanger = 1.0f - InDanger__5FuzzyFP8cFielder(g_pScriptCurrentFielder).mData.f;
@@ -842,7 +837,8 @@ FuzzyVariant Fuzzy::InGoodWindupPosition(cFielder* TheFielder)
                     fConfidence = (fConfidence <= fInFront) ? fConfidence : fInFront;
                     if (fConfidence < fInFront && fInFront < 0.5f)
                     {
-                        fConfidence = (float)fConfidence * fInFrontBranchRatio;
+                        double d = fConfidence;
+                        fConfidence = (float)d * fInFrontBranchRatio;
                     }
 
                     float fLosingFalse = 1.0f - fLosing;
@@ -857,7 +853,8 @@ FuzzyVariant Fuzzy::InGoodWindupPosition(cFielder* TheFielder)
                         fConfidence = (fConfidence <= fLosing) ? fConfidence : fLosing;
                         if (fConfidence < fLosing && fLosing < 0.5f)
                         {
-                            fConfidence = (float)fConfidence * fLosingBranchRatio;
+                            double d = fConfidence;
+                            fConfidence = (float)d * fLosingBranchRatio;
                         }
 
                         if (fConfidence > fBestConfidence)
@@ -876,7 +873,8 @@ FuzzyVariant Fuzzy::InGoodWindupPosition(cFielder* TheFielder)
                         fConfidence = (fConfidence <= fLosingFalse) ? fConfidence : fLosingFalse;
                         if (fConfidence < fLosingFalse && fLosingFalse < 0.5f)
                         {
-                            fConfidence = (float)fConfidence * fLosingBranchRatio;
+                            double d = fConfidence;
+                            fConfidence = (float)d * fLosingBranchRatio;
                         }
 
                         if (fConfidence > fBestConfidence)
@@ -894,7 +892,8 @@ FuzzyVariant Fuzzy::InGoodWindupPosition(cFielder* TheFielder)
                     fConfidence = (fConfidence <= fNotInFront) ? fConfidence : fNotInFront;
                     if (fConfidence < fNotInFront && fNotInFront < 0.5f)
                     {
-                        fConfidence = (float)fConfidence * fInFrontBranchRatio;
+                        double d = fConfidence;
+                        fConfidence = (float)d * fInFrontBranchRatio;
                     }
 
                     fTrueConfidence = LikelyToScore(g_pScriptCurrentFielder);
@@ -910,7 +909,8 @@ FuzzyVariant Fuzzy::InGoodWindupPosition(cFielder* TheFielder)
                         fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
                         if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
                         {
-                            fConfidence = (float)fConfidence * fBranchRatio;
+                            double d = fConfidence;
+                            fConfidence = (float)d * fBranchRatio;
                         }
 
                         if (fConfidence > fBestConfidence)
@@ -934,7 +934,8 @@ FuzzyVariant Fuzzy::InGoodWindupPosition(cFielder* TheFielder)
                         fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
                         if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
                         {
-                            fConfidence = (float)fConfidence * fBranchRatio;
+                            double d = fConfidence;
+                            fConfidence = (float)d * fBranchRatio;
                         }
 
                         if (fConfidence > fBestConfidence)
@@ -955,7 +956,8 @@ FuzzyVariant Fuzzy::InGoodWindupPosition(cFielder* TheFielder)
                         fConfidence = (fConfidence <= fFalseConfidence) ? fConfidence : fFalseConfidence;
                         if (fConfidence < fFalseConfidence && fFalseConfidence < 0.5f)
                         {
-                            fConfidence = (float)fConfidence * fBranchRatio;
+                            double d = fConfidence;
+                            fConfidence = (float)d * fBranchRatio;
                         }
 
                         if (fConfidence > fBestConfidence)
@@ -980,8 +982,7 @@ FuzzyVariant Fuzzy::InGoodWindupPosition(cFielder* TheFielder)
     {
         if (g_bScriptQuestionCachingUseSTD)
         {
-            FuzzyMapPair* pair = __find_or_insert(&cache->mQuestionCacheMapSTD, &hashCopy2);
-            pair->value = bestValue;
+            cache->mQuestionCacheMapSTD.tree_.find_or_insert<unsigned long, FuzzyVariant>(hashCopy2).second = bestValue;
         }
         else
         {
@@ -994,6 +995,7 @@ FuzzyVariant Fuzzy::InGoodWindupPosition(cFielder* TheFielder)
 
     return bestValue;
 }
+
 /**
  * Offset/Address/Size: 0x2B2C | 0x8008F5B8 | size: 0x5FC
  * TODO: 97.32% match - SpaceSearch destructor call shape and final output

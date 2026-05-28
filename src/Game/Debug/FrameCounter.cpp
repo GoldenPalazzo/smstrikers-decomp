@@ -451,18 +451,26 @@ void FrameCounter::DisplayFrameSmiler()
     if (happiness < 0.5f)
     {
         float alpha = 2.0f * happiness;
-        colour.c[0] = (u8)((float)sMediumColour.c[0] * alpha + (float)sMadColour.c[0] * (1.0f - alpha));
-        colour.c[1] = (u8)((float)sMediumColour.c[1] * alpha + (float)sMadColour.c[1] * (1.0f - alpha));
-        colour.c[2] = (u8)((float)sMediumColour.c[2] * alpha + (float)sMadColour.c[2] * (1.0f - alpha));
-        colour.c[3] = (u8)((float)sMediumColour.c[3] * alpha + (float)sMadColour.c[3] * (1.0f - alpha));
+        int c0 = (int)((float)sMediumColour.c[0] * alpha + (float)sMadColour.c[0] * (1.0f - alpha));
+        int c1 = (int)((float)sMediumColour.c[1] * alpha + (float)sMadColour.c[1] * (1.0f - alpha));
+        int c2 = (int)((float)sMediumColour.c[2] * alpha + (float)sMadColour.c[2] * (1.0f - alpha));
+        int c3 = (int)((float)sMediumColour.c[3] * alpha + (float)sMadColour.c[3] * (1.0f - alpha));
+        colour.c[0] = (u8)c0;
+        colour.c[1] = (u8)c1;
+        colour.c[2] = (u8)c2;
+        colour.c[3] = (u8)c3;
     }
     else
     {
         float alpha = 2.0f * (happiness - 0.5f);
-        colour.c[0] = (u8)((float)sHappyColour.c[0] * alpha + (float)sMediumColour.c[0] * (1.0f - alpha));
-        colour.c[1] = (u8)((float)sHappyColour.c[1] * alpha + (float)sMediumColour.c[1] * (1.0f - alpha));
-        colour.c[2] = (u8)((float)sHappyColour.c[2] * alpha + (float)sMediumColour.c[2] * (1.0f - alpha));
-        colour.c[3] = (u8)((float)sHappyColour.c[3] * alpha + (float)sMediumColour.c[3] * (1.0f - alpha));
+        int c0 = (int)((float)sHappyColour.c[0] * alpha + (float)sMediumColour.c[0] * (1.0f - alpha));
+        int c1 = (int)((float)sHappyColour.c[1] * alpha + (float)sMediumColour.c[1] * (1.0f - alpha));
+        int c2 = (int)((float)sHappyColour.c[2] * alpha + (float)sMediumColour.c[2] * (1.0f - alpha));
+        int c3 = (int)((float)sHappyColour.c[3] * alpha + (float)sMediumColour.c[3] * (1.0f - alpha));
+        colour.c[0] = (u8)c0;
+        colour.c[1] = (u8)c1;
+        colour.c[2] = (u8)c2;
+        colour.c[3] = (u8)c3;
     }
 
     nlVector3 leftEyeCentre = { 0, 0, 0 };

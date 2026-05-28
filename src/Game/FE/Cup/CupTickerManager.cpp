@@ -1,3 +1,4 @@
+#define NO_BASICSTRING_IMPL
 #include "Game/FE/Cup/CupTickerManager.h"
 
 #include "Game/DB/StatsTracker.h"
@@ -306,7 +307,7 @@ void CupTickerManager::CreateNewMessage()
                     fmtWBS, modeWBS, charWBS);
                 break;
             }
-            if (mState != 2)
+            else if (mState != 2)
             {
                 mState = (eCupTickerState)2;
                 if (gameInfoMem->mTournamentMode != 0)
@@ -352,16 +353,16 @@ void CupTickerManager::CreateNewMessage()
 
         if (mState == 2)
         {
-            if (tournamentLeague
-                && (gameInfo->GetCurrentRoundNumber() != 0
-                    || (gameInfo->mCurrentCup->mGameNumber != 0)))
+            if (!tournamentLeague
+                || (gameInfo->GetCurrentRoundNumber() == 0
+                    && gameInfo->mCurrentCup->mGameNumber == 0))
             {
-                BuildGoalTotalTickerMessage(tickerMessage, false);
-                messageDisplayed = true;
+                mState = (eCupTickerState)3;
             }
             else
             {
-                mState = (eCupTickerState)3;
+                BuildGoalTotalTickerMessage(tickerMessage, false);
+                messageDisplayed = true;
             }
         }
 
@@ -429,8 +430,8 @@ void CupTickerManager::CreateNewMessage()
 
         if (mState == 5)
         {
-            short firstRound = gameInfo->GetFirstRoundNumber();
-            short currentRound = gameInfo->GetCurrentRoundNumber();
+            int firstRound = gameInfo->GetFirstRoundNumber();
+            int currentRound = gameInfo->GetCurrentRoundNumber();
             if (currentRound == firstRound)
             {
                 mState = CUP_TICKER_STATE_0;
@@ -455,10 +456,14 @@ void CupTickerManager::CreateNewMessage()
                     unsigned long team0Name = GetLOCTeamName(game->mTeamIndex[0]);
                     unsigned long team1Name = GetLOCTeamName(game->mTeamIndex[1]);
 
-                    unsigned long formatHash = 0x3E3B44CAUL;
+                    unsigned long formatHash;
                     if (gameNumber == 0)
                     {
                         formatHash = 0x97372F0FUL;
+                    }
+                    else
+                    {
+                        formatHash = 0x3E3B44CAUL;
                     }
 
                     NLString score0Str = LexicalCast<NLString, int>((int)game->mFinalScore[0]);
@@ -473,12 +478,12 @@ void CupTickerManager::CreateNewMessage()
                     if (game->mFinalScore[0] > game->mFinalScore[1])
                     {
                         unsigned short* fmtLocString;
+                        LOC_LOOKUP(formatHash, fmtLocString);
+                        WideBasicString fmtWBS(fmtLocString);
                         unsigned short* t0Str;
                         unsigned short* t1Str;
-                        LOC_LOOKUP(formatHash, fmtLocString);
                         LOC_LOOKUP(team0Name, t0Str);
                         LOC_LOOKUP(team1Name, t1Str);
-                        WideBasicString fmtWBS(fmtLocString);
                         tickerMessage = tickerMessage.Append(
                             Format<WideBasicString, unsigned short*, unsigned short*, unsigned short[16], unsigned short[16]>(
                                 fmtWBS, t0Str, t1Str, wideScore0, wideScore1));
@@ -486,17 +491,16 @@ void CupTickerManager::CreateNewMessage()
                     else
                     {
                         unsigned short* fmtLocString;
+                        LOC_LOOKUP(formatHash, fmtLocString);
+                        WideBasicString fmtWBS(fmtLocString);
                         unsigned short* t1Str;
                         unsigned short* t0Str;
-                        LOC_LOOKUP(formatHash, fmtLocString);
                         LOC_LOOKUP(team1Name, t1Str);
                         LOC_LOOKUP(team0Name, t0Str);
-                        WideBasicString fmtWBS(fmtLocString);
                         tickerMessage = tickerMessage.Append(
                             Format<WideBasicString, unsigned short*, unsigned short*, unsigned short[16], unsigned short[16]>(
                                 fmtWBS, t1Str, t0Str, wideScore1, wideScore0));
                     }
-
                     gameNumber++;
                 }
                 messageDisplayed = true;

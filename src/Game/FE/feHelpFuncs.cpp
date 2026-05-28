@@ -1166,9 +1166,9 @@ TakeGameMemSnapshot::Format<BasicString<char, ::Detail::TempStringAllocator>, un
     }
 
     FormatImplLayoutCharTempULUIUI impl(data);
-    BasicString<char, ::Detail::TempStringAllocator> value = (BasicString<char, ::Detail::TempStringAllocator>)((((TakeGameMemSnapshot::FormatImpl<BasicString<char, ::Detail::TempStringAllocator> >&)impl) % value1) % value2 % value3);
 
-    return (BasicString<char, ::Detail::TempStringAllocator>)value;
+    return BasicString<char, ::Detail::TempStringAllocator>(
+        (BasicString<char, ::Detail::TempStringAllocator>)((((TakeGameMemSnapshot::FormatImpl<BasicString<char, ::Detail::TempStringAllocator> >&)impl) % value1) % value2 % value3));
 }
 
 /**
