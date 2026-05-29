@@ -2805,7 +2805,7 @@ void AudioLoader::ResetForRematch()
 
 /**
  * Offset/Address/Size: 0x0 | 0x80143DCC | size: 0x68
- * TODO: 88.5% match - bne+b vs beq branch optimization difference
+ * TODO: 95.6% match - bne+b vs beq branch optimization difference
  */
 void AudioLoader::InitCrowdFromStateTransition()
 {

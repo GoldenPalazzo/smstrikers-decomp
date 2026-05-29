@@ -1960,7 +1960,6 @@ static f32 CANT_COLLIDE = *(f32*)__float_max;
 
 /**
  * Offset/Address/Size: 0x3908 | 0x8000D2DC | size: 0x260
- * TODO: 96.22% match - todo: inline setter for quaternions seems to be missing
  */
 cBall::cBall()
     : m_bBallPathChangeCount(0)

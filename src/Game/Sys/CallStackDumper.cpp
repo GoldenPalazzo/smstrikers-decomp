@@ -71,18 +71,18 @@ static inline void PutChar(int x, int y, int scale, char c, unsigned long color)
         for (j = x; j < endx; j++)
         {
             int column = (j - x);
-            int bit;
+            unsigned char bit;
 
             if (column < 8)
             {
-                bit = (((signed char)rowData[0]) << column) & 0x80;
+                bit = ((((signed char)rowData[0]) << column) >> 7) & 1;
             }
             else
             {
-                bit = (((signed char)rowData[1]) << (column - 8)) & 0x80;
+                bit = ((((signed char)rowData[1]) << (column - 8)) >> 7) & 1;
             }
 
-            if (bit != 0)
+            if (bit)
             {
                 GXPokeARGB((unsigned short)j, (unsigned short)i, color);
             }
@@ -107,7 +107,7 @@ static inline int PutString(int x, int y, int scale, const char* str, unsigned l
 /**
  * Offset/Address/Size: 0x2C | 0x801ACE90 | size: 0xB08
  */
-void ErrorHandler(unsigned short err, OSContext* ctx, unsigned long dsisr, unsigned long dar)
+static void ErrorHandler(unsigned short err, OSContext* ctx, unsigned long dsisr, unsigned long dar)
 {
     unsigned long i;
     unsigned long* p;

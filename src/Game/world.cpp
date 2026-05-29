@@ -948,8 +948,7 @@ void DoTranslucency(DrawableObject* pObject)
 
 /**
  * Offset/Address/Size: 0x1340 | 0x80196004 | size: 0xE8
- * TODO: 82.8% match - f2/f4 float register swap (posX) and addic./bne vs mtctr/bdnz
- * caused by -inline deferred in scratch context (target uses -inline auto)
+ * TODO: 88.7% match - f4/f2 posX register swap and subic./bne vs mtctr/bdnz
  */
 bool World::IsSphereInFrustum(const nlMatrix4& mat, float radius)
 {
@@ -1217,7 +1216,7 @@ static inline void* getUserData(void* p)
 
 /**
  * Offset/Address/Size: 0x1B7C | 0x80196840 | size: 0x12C
- * TODO: 98.67% match - remaining r29/r31 register swap; current World layout is missing m_pPlayerNISLightData so m_pSpecularData aliases target m_pSTSIntensity offset
+ * TODO: 98.67% match - remaining r29/r31 register swap
  */
 void* World::GetCustomSpecularData(glModelPacket* pPacket, bool bPerm)
 {
@@ -1225,7 +1224,7 @@ void* World::GetCustomSpecularData(glModelPacket* pPacket, bool bPerm)
     GLSpecularUserData* pEntries;
     int numLights;
     void* pSTSIntensity;
-    pSTSIntensity = m_pSpecularData;
+    pSTSIntensity = m_pSTSIntensity;
 
     u8 glossLevel = (u8)glGetTextureState(pPacket->state.texturestate, GLTS_GlossLevel);
 
@@ -1271,8 +1270,8 @@ void World::CreateLightUserData()
     WorldLightUserDataFields* fields = (WorldLightUserDataFields*)this;
     ListContainerBase<LightObject*, NewAdapter<ListEntry<LightObject*> > > lightList;
     ListContainerBase<LightObject*, NewAdapter<ListEntry<LightObject*> > > specList;
-    int numLights = 0;
     int numSpecLights = 0;
+    int numLights = 0;
     u32* pStack = (u32*)nlMalloc(8, 8, false);
 
     if (pStack != NULL)
@@ -1302,8 +1301,8 @@ void World::CreateLightUserData()
 
         if ((pLight->m_emitFlags & 0x4) == 0)
         {
-            ListEntry<LightObject*>* entry = (ListEntry<LightObject*>*)nlMalloc(8, 8, false);
             numLights++;
+            ListEntry<LightObject*>* entry = (ListEntry<LightObject*>*)nlMalloc(8, 8, false);
             if (entry != NULL)
             {
                 entry->next = NULL;
@@ -1314,8 +1313,8 @@ void World::CreateLightUserData()
 
         if ((pLight->m_emitFlags & 0x2) != 0)
         {
-            ListEntry<LightObject*>* entry = (ListEntry<LightObject*>*)nlMalloc(8, 8, false);
             numSpecLights++;
+            ListEntry<LightObject*>* entry = (ListEntry<LightObject*>*)nlMalloc(8, 8, false);
             if (entry != NULL)
             {
                 entry->next = NULL;
@@ -1351,13 +1350,13 @@ void World::CreateLightUserData()
     }
 
     int numExtra = 0;
-    LightObject* pFX = fxLightObjects;
     int i = 0;
-    while (i < EmissionManager::GetNumLights())
+    LightObject* pFXBase = fxLightObjects;
+    LightObject* pFX = pFXBase;
+    for (; i < EmissionManager::GetNumLights(); i++)
     {
         const EffectsLight* pLight = EmissionManager::GetLight(i);
         numExtra++;
-        i++;
 
         pFX->m_worldPosition = pLight->m_v3Position;
         pFX->m_fIntensity = (2.0f * (f32)pLight->m_Colour.c[3]) / 255.0f;
@@ -1406,22 +1405,16 @@ void World::CreateLightUserData()
             entry = entry->next;
             glLight++;
         }
-
-        if (numExtra > 0)
+        LightObject* pLight2 = pFXBase;
+        for (i = numExtra; i > 0; i--)
         {
-            LightObject* pLight = fxLightObjects;
-            i = numExtra;
-            while (i > 0)
-            {
-                glLight->colour = pLight->m_colour;
-                glLight->worldPosition = pLight->m_worldPosition;
-                glLight->intensity = pLight->m_fIntensity;
-                glLight->innerRadius = pLight->m_fFarAttenuationStart;
-                glLight->outerRadius = pLight->m_fFarAttenuationEnd;
-                pLight = (LightObject*)((u8*)pLight + 0x38);
-                glLight++;
-                i--;
-            }
+            glLight->colour = pLight2->m_colour;
+            glLight->worldPosition = pLight2->m_worldPosition;
+            glLight->intensity = pLight2->m_fIntensity;
+            glLight->innerRadius = pLight2->m_fFarAttenuationStart;
+            glLight->outerRadius = pLight2->m_fFarAttenuationEnd;
+            pLight2 = (LightObject*)((u8*)pLight2 + 0x38);
+            glLight++;
         }
 
         fields->m_pIntensityPerm = glUserAlloc(GLUD_Light, size, false);
@@ -1465,22 +1458,16 @@ void World::CreateLightUserData()
             entry = entry->next;
             glLight++;
         }
-
-        if (numExtra > 0)
+        LightObject* pLight = pFXBase;
+        for (i = numExtra; i > 0; i--)
         {
-            LightObject* pLight = fxLightObjects;
-            i = numExtra;
-            while (i > 0)
-            {
-                glLight->colour = pLight->m_colour;
-                glLight->worldPosition = pLight->m_worldPosition;
-                glLight->intensity = pLight->m_fIntensity;
-                glLight->innerRadius = pLight->m_fFarAttenuationStart;
-                glLight->outerRadius = pLight->m_fFarAttenuationEnd;
-                pLight = (LightObject*)((u8*)pLight + 0x38);
-                glLight++;
-                i--;
-            }
+            glLight->colour = pLight->m_colour;
+            glLight->worldPosition = pLight->m_worldPosition;
+            glLight->intensity = pLight->m_fIntensity;
+            glLight->innerRadius = pLight->m_fFarAttenuationStart;
+            glLight->outerRadius = pLight->m_fFarAttenuationEnd;
+            pLight = (LightObject*)((u8*)pLight + 0x38);
+            glLight++;
         }
 
         if (fields->m_pPlayerNISLightData == NULL)
@@ -1511,9 +1498,12 @@ void World::CreateLightUserData()
             pSpec->colour = pLight->m_colour;
             pSpec->exponent = 64.0f;
             pSpec->intensity = pLight->m_fIntensity;
-            pSpec->worldDirection.f.x = origin.f.x - pLight->m_worldPosition.f.x;
-            pSpec->worldDirection.f.y = origin.f.y - pLight->m_worldPosition.f.y;
-            pSpec->worldDirection.f.z = origin.f.z - pLight->m_worldPosition.f.z;
+            float x = origin.f.x - pLight->m_worldPosition.f.x;
+            float y = origin.f.y - pLight->m_worldPosition.f.y;
+            float z = origin.f.z - pLight->m_worldPosition.f.z;
+            pSpec->worldDirection.f.x = x;
+            pSpec->worldDirection.f.z = z;
+            pSpec->worldDirection.f.y = y;
             pSpec++;
             entry = entry->next;
         }
@@ -1545,8 +1535,8 @@ void World::CreateLightUserData()
 
 /**
  * Offset/Address/Size: 0x264C | 0x80197310 | size: 0x9D4
- * TODO: 74.59% match - reversed register allocation order (MWCC top-down vs bottom-up),
- *       phantom r21 callee-save, 6 missing switch tree guard instructions
+ * TODO: 93.58% match - remaining diffs are in switch-dispatch register/branch shape,
+ *       light/helper AddAVLNode temporary stack-slot placement, and inner physics copy loop setup.
  */
 extern u32 __vt__20CharacterPhysicsData[];
 static const int LF_NOLIGHT = 4;
@@ -1621,24 +1611,7 @@ bool World::LoadObjectData(const char* szWorldName)
             local.m_uObjectCreationFlags = *(u32*)(pData + 0x90);
             local.m_uHashID = *(u32*)(pData + 0x80);
 
-            u32* pSrcMatrix = (u32*)(pData + 0xA0);
-            u32* pDstMatrix = (u32*)&local.m_worldMatrix;
-            pDstMatrix[0] = pSrcMatrix[0];
-            pDstMatrix[1] = pSrcMatrix[1];
-            pDstMatrix[2] = pSrcMatrix[2];
-            pDstMatrix[3] = pSrcMatrix[3];
-            pDstMatrix[4] = pSrcMatrix[4];
-            pDstMatrix[5] = pSrcMatrix[5];
-            pDstMatrix[6] = pSrcMatrix[6];
-            pDstMatrix[7] = pSrcMatrix[7];
-            pDstMatrix[8] = pSrcMatrix[8];
-            pDstMatrix[9] = pSrcMatrix[9];
-            pDstMatrix[10] = pSrcMatrix[10];
-            pDstMatrix[11] = pSrcMatrix[11];
-            pDstMatrix[12] = pSrcMatrix[12];
-            pDstMatrix[13] = pSrcMatrix[13];
-            pDstMatrix[14] = pSrcMatrix[14];
-            pDstMatrix[15] = pSrcMatrix[15];
+            local.m_worldMatrix = *(nlMatrix4*)(pData + 0xA0);
 
             local.m_uShadowHashID = *(u32*)(pData + 0x8C);
             local.m_uRenderLayer = *(u32*)(pData + 0x94);
@@ -1656,9 +1629,12 @@ bool World::LoadObjectData(const char* szWorldName)
 
             pLight->m_uHashID = *(u32*)(pData + 0x40);
 
-            pLight->m_worldPosition.as_u32[0] = *(u32*)(pData + 0x90);
-            pLight->m_worldPosition.as_u32[1] = *(u32*)(pData + 0x94);
-            pLight->m_worldPosition.as_u32[2] = *(u32*)(pData + 0x98);
+            u32 worldPosX = *(u32*)(pData + 0x90);
+            u32 worldPosY = *(u32*)(pData + 0x94);
+            pLight->m_worldPosition.as_u32[0] = worldPosX;
+            pLight->m_worldPosition.as_u32[1] = worldPosY;
+            u32 worldPosZ = *(u32*)(pData + 0x98);
+            pLight->m_worldPosition.as_u32[2] = worldPosZ;
 
             pLight->m_fIntensity = *(float*)(pData + 0x44);
             pLight->m_fFarAttenuationStart = *(float*)(pData + 0x48);
@@ -1670,9 +1646,12 @@ bool World::LoadObjectData(const char* szWorldName)
                 pLight->m_emitFlags |= LF_NOLIGHT;
             }
 
-            pLight->m_colour.c[0] = *(float*)(pData + 0x50);
-            pLight->m_colour.c[1] = *(float*)(pData + 0x54);
-            pLight->m_colour.c[2] = *(float*)(pData + 0x58);
+            float colourZ = *(float*)(pData + 0x58);
+            float colourY = *(float*)(pData + 0x54);
+            float colourX = *(float*)(pData + 0x50);
+            pLight->m_colour.c[0] = colourX;
+            pLight->m_colour.c[1] = colourY;
+            pLight->m_colour.c[2] = colourZ;
             pLight->m_colour.c[3] = 0.0f;
             pLight->m_bit = 0;
 
@@ -1728,24 +1707,7 @@ bool World::LoadObjectData(const char* szWorldName)
 
                 pHelper->m_uHashID = *(u32*)(pData + 0x40);
 
-                u32* pSrcMatrix = (u32*)(pData + 0x60);
-                u32* pDstMatrix = (u32*)&pHelper->m_worldMatrix;
-                pDstMatrix[0] = pSrcMatrix[0];
-                pDstMatrix[1] = pSrcMatrix[1];
-                pDstMatrix[2] = pSrcMatrix[2];
-                pDstMatrix[3] = pSrcMatrix[3];
-                pDstMatrix[4] = pSrcMatrix[4];
-                pDstMatrix[5] = pSrcMatrix[5];
-                pDstMatrix[6] = pSrcMatrix[6];
-                pDstMatrix[7] = pSrcMatrix[7];
-                pDstMatrix[8] = pSrcMatrix[8];
-                pDstMatrix[9] = pSrcMatrix[9];
-                pDstMatrix[10] = pSrcMatrix[10];
-                pDstMatrix[11] = pSrcMatrix[11];
-                pDstMatrix[12] = pSrcMatrix[12];
-                pDstMatrix[13] = pSrcMatrix[13];
-                pDstMatrix[14] = pSrcMatrix[14];
-                pDstMatrix[15] = pSrcMatrix[15];
+                pHelper->m_worldMatrix = *(nlMatrix4*)(pData + 0x60);
 
                 nlStrNCpy<char>(pHelper->m_szName, (const char*)pData, 64);
 
@@ -1780,30 +1742,31 @@ bool World::LoadObjectData(const char* szWorldName)
                 {
                 case 0x1D001:
                 {
-                    CharacterPhysicsData* pPhysData = (CharacterPhysicsData*)nlMalloc(sizeof(CharacterPhysicsData), 8, false);
-                    if (pPhysData != NULL)
-                    {
-                        *(u32*)pPhysData = (u32)__vt__20CharacterPhysicsData;
-                    }
+                    void* pMem = nlMalloc(sizeof(CharacterPhysicsData), 8, false);
+                    CharacterPhysicsData* pPhysData = new (pMem) CharacterPhysicsData();
                     *(CharacterPhysicsData**)((u8*)this + 0x134) = pPhysData;
 
                     u8* pInnerData = (u8*)nlGetChunkData(pInnerChunk);
                     s32 count = *(s32*)pInnerData;
 
-                    pPhysData = *(CharacterPhysicsData**)((u8*)this + 0x134);
-                    pPhysData->physicsElementCount = count;
+                    (*(CharacterPhysicsData**)((u8*)this + 0x134))->physicsElementCount = count;
 
-                    pPhysData = *(CharacterPhysicsData**)((u8*)this + 0x134);
-                    pPhysData->pPhysicsElements = (CharacterPhysicsElement*)nlMalloc(pPhysData->physicsElementCount * sizeof(CharacterPhysicsElement), 8, false);
+                    s32 numElements = (*(CharacterPhysicsData**)((u8*)this + 0x134))->physicsElementCount;
+                    CharacterPhysicsElement* pElements = (CharacterPhysicsElement*)nlMalloc(numElements * sizeof(CharacterPhysicsElement), 8, false);
+                    (*(CharacterPhysicsData**)((u8*)this + 0x134))->pPhysicsElements = pElements;
                     break;
                 }
                 case 0x1D002:
                 {
                     u8* pInnerData = (u8*)nlGetChunkData(pInnerChunk);
-                    CharacterPhysicsData* pPhysData = *(CharacterPhysicsData**)((u8*)this + 0x134);
-                    for (s32 i = 0; (u32)i < (u32)pPhysData->physicsElementCount; i++)
+                    u32 i = 0;
+                    u32 offset = 0;
+                    while (i < *(u32*)((u8*)(*(CharacterPhysicsData**)((u8*)this + 0x134)) + 0x4))
                     {
-                        pPhysData->pPhysicsElements[i] = *(CharacterPhysicsElement*)pInnerData;
+                        CharacterPhysicsData* pPhysData = *(CharacterPhysicsData**)((u8*)this + 0x134);
+                        *(CharacterPhysicsElement*)((u8*)pPhysData->pPhysicsElements + offset) = *(CharacterPhysicsElement*)pInnerData;
+                        i++;
+                        offset += sizeof(CharacterPhysicsElement);
                         pInnerData += sizeof(CharacterPhysicsElement);
                     }
                     break;

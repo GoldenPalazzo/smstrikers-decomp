@@ -727,7 +727,6 @@ static FEResourceHandle* FindExistingResourceInResourceList_Inline(FEResourceHan
     FEResourceHandle** pPreExistingResourceHandle;
     unsigned long key = pFEResourceHandle->m_hashID;
     AVLTreeEntry<unsigned long, FEResourceHandle*>* node = s_loadedResourceList.m_Root;
-    unsigned char found = 0;
 
     while (node != NULL)
     {
@@ -753,8 +752,8 @@ static FEResourceHandle* FindExistingResourceInResourceList_Inline(FEResourceHan
             {
                 pPreExistingResourceHandle = &node->value;
             }
-            found = 1;
-            break;
+            key = 1;
+            goto check_found;
         }
 
         if (cmpResult < 0)
@@ -767,7 +766,9 @@ static FEResourceHandle* FindExistingResourceInResourceList_Inline(FEResourceHan
         }
     }
 
-    if (found)
+    key = 0;
+check_found:
+    if ((u8)key)
     {
         return *pPreExistingResourceHandle;
     }
@@ -827,11 +828,15 @@ static ResourceResult IssueFontLoadRequest_Inline(FEFontResource* pFeFontResourc
     return FERR_AlreadyLoaded;
 }
 
-static ResourceResult IssueResourceLoadRequest_Inline(FEResourceHandle* pFeResourceHandle)
+static ResourceResult IssueResourceLoadRequest_Inline(FEResourceHandle* pFeResourceHandle,
+    DLListEntry<FEResourceHandle*>* pQueueEntry,
+    DLListEntry<FEResourceHandle*>* pQueueHead)
 {
     ResourceResult resourceRequestResult = FERR_WaitingForResource;
-    DLListEntry<FEResourceHandle*>* volatile pQueueEntrySpill = NULL;
-    DLListEntry<FEResourceHandle*>* volatile pQueueHeadSpill = NULL;
+    DLListEntry<FEResourceHandle*>* volatile pQueueHeadSpill;
+    DLListEntry<FEResourceHandle*>* volatile pQueueEntrySpill;
+    pQueueEntrySpill = pQueueEntry;
+    pQueueHeadSpill = pQueueHead;
 
     switch (pFeResourceHandle->m_type)
     {
@@ -856,9 +861,8 @@ static ResourceResult IssueResourceLoadRequest_Inline(FEResourceHandle* pFeResou
 
 /**
  * Offset/Address/Size: 0x0 | 0x8020BB40 | size: 0x29C
- * TODO: 96.80% match - switch-entry spill slots still diverge from target
- * pointer stores, and texture-path compare/register choices are still
- * mismatched.
+ * TODO: 98.39% match - r0/r4 register swap for key variable in inlined AVL
+ * search cascades to 18 instruction diffs in the FERT_TEXTURE path
  */
 void FEResourceManager::Update(float)
 {
@@ -896,7 +900,7 @@ void FEResourceManager::Update(float)
         DLListEntry<FEResourceHandle*>* pQueueEntry = nlDLRingGetStart(pQueueHead);
         pFeResourceHandle = pQueueEntry->m_data;
         s_pCurrentResourceBeingLoaded = pFeResourceHandle;
-        result = IssueResourceLoadRequest_Inline(pFeResourceHandle);
+        result = IssueResourceLoadRequest_Inline(pFeResourceHandle, pQueueEntry, *pPendingHead);
         bQueueNextResource = (result == FERR_AlreadyLoaded);
     }
 }

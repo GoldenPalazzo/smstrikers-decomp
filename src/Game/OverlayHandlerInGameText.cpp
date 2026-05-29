@@ -415,7 +415,7 @@ void InGameTextOverlay::DisplayFinalScore()
     nlStrToWcs(scoreRightString.c_str(), scoreRightWideString, 32);
 
     const unsigned short* formatLocString;
-    unsigned long key = 0x8C4280A4;
+    unsigned long key = 0x8C4180A4;
     nlLocalization* loc = g_pLocalization;
 
     if (loc->m_LookupTable == 0)
@@ -470,7 +470,7 @@ void InGameTextOverlay::DisplayFinalScore()
 
     FEPresentation* presentation = this->m_pFEScene->m_pFEPackage->GetPresentation();
     TLTextInstance* pTextInstance;
-    const char* WINNER_SLIDE_NAME = IGTTable[this->mCurrentSlideName].mSlideName;
+    const char* WINNER_SLIDE_NAME = IGTTable[SLIDE_NAME_TEXT_WINNER].mSlideName;
 
     if (this->mCurrentSlideName == SLIDE_NAME_TEXT_WINNER)
     {
@@ -511,9 +511,7 @@ void InGameTextOverlay::DisplayFinalScore()
             (InlineHasher&)h3,
             (InlineHasher&)h1);
 
-        int winningSide = (scoreRight >> 31)
-                        + ((unsigned int)scoreLeft >> 31)
-                        + ((unsigned int)scoreRight >= (unsigned int)scoreLeft);
+        long winningSide = (scoreLeft > scoreRight) ? 0 : 1;
 
         int winningTeam = GetTeam__15GameInfoManagerCFs(
             nlSingleton<GameInfoManager>::s_pInstance,
@@ -577,8 +575,6 @@ void InGameTextOverlay::DisplayFinalScore()
         {
             static const unsigned short SPACE_WCS[2] = { 0x20, 0x0 };
 
-            const unsigned short* spaceLocString = SPACE_WCS;
-
             BasicStringData<unsigned short>* spaceData = (BasicStringData<unsigned short>*)nlMalloc(0x10, 8, true);
             if (spaceData)
             {
@@ -586,6 +582,7 @@ void InGameTextOverlay::DisplayFinalScore()
                 spaceData->mSize = 0;
                 spaceData->mCapacity = 0;
 
+                const unsigned short* spaceLocString = SPACE_WCS;
                 const unsigned short* ptr = spaceLocString;
                 while (*ptr++)
                 {
@@ -613,7 +610,8 @@ void InGameTextOverlay::DisplayFinalScore()
             winnerNameWideString = space.Append(winnerNameWideString);
         }
 
-        key = 0x8611A152;
+        key = 0x8610A152;
+        loc = g_pLocalization;
 
         if (loc->m_LookupTable == 0)
         {
@@ -668,11 +666,15 @@ void InGameTextOverlay::DisplayFinalScore()
         volatile InlineHasher hNameSlideB, hNameSlideA;
         volatile InlineHasher hNameLayerB, hNameLayerA;
         volatile InlineHasher hNameB, hNameA;
+        volatile InlineHasher n5, n3, n1;
 
         findInst.byValue = FEFinder<TLInstance, 3>::Find<FEPresentation>;
 
+        n1.m_Hash = 0;
         h1.m_Hash = 0;
+        n3.m_Hash = 0;
         h3.m_Hash = 0;
+        n5.m_Hash = 0;
         h5.m_Hash = 0;
 
         hash = nlStringLowerHash("name");
@@ -708,12 +710,16 @@ void InGameTextOverlay::DisplayFinalScore()
         volatile InlineHasher hFaceSlideB, hFaceSlideA;
         volatile InlineHasher hFaceLayerB, hFaceLayerA;
         volatile InlineHasher hFaceB, hFaceA;
+        volatile InlineHasher f5, f3, f1;
 
         findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<FEPresentation>;
 
-        h5.m_Hash = 0;
-        h3.m_Hash = 0;
+        f1.m_Hash = 0;
         h1.m_Hash = 0;
+        f3.m_Hash = 0;
+        h3.m_Hash = 0;
+        f5.m_Hash = 0;
+        h5.m_Hash = 0;
 
         hash = nlStringLowerHash("left_face");
         hFaceA.m_Hash = hash;
@@ -742,27 +748,35 @@ void InGameTextOverlay::DisplayFinalScore()
             nlSingleton<GameInfoManager>::s_pInstance,
             1);
 
-        h5.m_Hash = 0;
-        h3.m_Hash = 0;
+        volatile InlineHasher hRFaceSlideB, hRFaceSlideA;
+        volatile InlineHasher hRFaceLayerB, hRFaceLayerA;
+        volatile InlineHasher hRFaceB, hRFaceA;
+        volatile InlineHasher rf5, rf3, rf1;
+
+        rf1.m_Hash = 0;
         h1.m_Hash = 0;
+        rf3.m_Hash = 0;
+        h3.m_Hash = 0;
+        rf5.m_Hash = 0;
+        h5.m_Hash = 0;
 
         hash = nlStringLowerHash("right_face");
-        hFaceA.m_Hash = hash;
-        hFaceB.m_Hash = hash;
+        hRFaceA.m_Hash = hash;
+        hRFaceB.m_Hash = hash;
 
         hash = nlStringLowerHash(OVERLAY_HANDLER_LAYER_NAME);
-        hFaceLayerA.m_Hash = hash;
-        hFaceLayerB.m_Hash = hash;
+        hRFaceLayerA.m_Hash = hash;
+        hRFaceLayerB.m_Hash = hash;
 
         hash = nlStringLowerHash(WINNER_SLIDE_NAME);
-        hFaceSlideA.m_Hash = hash;
-        hFaceSlideB.m_Hash = hash;
+        hRFaceSlideA.m_Hash = hash;
+        hRFaceSlideB.m_Hash = hash;
 
         pComponentInstance = findComp.byRef(
             presentation,
-            (InlineHasher&)hFaceSlideB,
-            (InlineHasher&)hFaceLayerB,
-            (InlineHasher&)hFaceB,
+            (InlineHasher&)hRFaceSlideB,
+            (InlineHasher&)hRFaceLayerB,
+            (InlineHasher&)hRFaceB,
             (InlineHasher&)h5,
             (InlineHasher&)h3,
             (InlineHasher&)h1);

@@ -277,6 +277,9 @@ void TrackManager<N>::DestroyAllTracks()
     }
 }
 
+template <>
+void TrackManager<3>::DestroyAllTracks();
+
 } // namespace AudioStreamTrack
 
 // class Function0<void>

@@ -280,20 +280,15 @@ void OptionsScene::SceneCreated()
         mMenuItems.mNumItemsAdded++;
 
         {
-            Function<TLComponentInstance*> callback1;
-            callback1.mTag = FREE_FUNCTION;
-            callback1.mFreeFunction = DoubleHighlite::OpenItem;
-            item->mCallbacks[1] = callback1;
-        }
+            Function<TLComponentInstance*> callback;
+            callback.mTag = FREE_FUNCTION;
+            callback.mFreeFunction = DoubleHighlite::OpenItem;
+            item->mCallbacks[1] = callback;
 
-        {
-            Function<TLComponentInstance*> callback2;
-            callback2.mTag = FREE_FUNCTION;
-            callback2.mFreeFunction = DoubleHighlite::CloseItem;
-            item->mCallbacks[2] = callback2;
-        }
+            callback.mTag = FREE_FUNCTION;
+            callback.mFreeFunction = DoubleHighlite::CloseItem;
+            item->mCallbacks[2] = callback;
 
-        {
             BindExp2_Options_t bind = Bind<void, MemFunImpl_Options_t, OptionsScene*, eMenuState>(
                 MemFun<OptionsScene, void, eMenuState>(&OptionsScene::ChangeMenuState),
                 this,
@@ -302,25 +297,24 @@ void OptionsScene::SceneCreated()
             FunctorImpl_Options_t* impl = new ((FunctorImpl_Options_t*)nlMalloc(sizeof(FunctorImpl_Options_t), 8, false))
                 FunctorImpl_Options_t(bind);
 
-            Function<TLComponentInstance*> callback0;
-            callback0.mTag = FUNCTOR;
-            callback0.mFunctor = impl;
-            item->mCallbacks[0] = callback0;
+            callback.mTag = FUNCTOR;
+            callback.mFunctor = impl;
+            item->mCallbacks[0] = callback;
         }
 
         FindComponent(instance->GetActiveSlide(), "highlite");
 
         if (i == mLastSelectedIndex)
         {
-            item->mCallbacks[1](instance);
+            item->mCallbacks[1](item->mType);
         }
         else
         {
-            item->mCallbacks[2](instance);
-        }
+            item->mCallbacks[2](item->mType);
 
-        TLSlide* slide = instance->GetActiveSlide();
-        instance->Update(1.0f + slide->m_start + slide->m_duration);
+            TLSlide* slide = instance->GetActiveSlide();
+            instance->Update(1.0f + (slide->m_start + slide->m_duration));
+        }
     }
 
     mMenuItems.mFlags = 1;

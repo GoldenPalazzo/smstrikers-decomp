@@ -4,9 +4,8 @@
 #include "Game/BasicStadium.h"
 #include "Game/Game.h"
 #include "Game/Sys/eventman.h"
-#include "NL/nlList.h"
+#include "NL/nlListSlotPoolHigh.h"
 #include "NL/nlQSort.h"
-#include "NL/nlSlotPoolHigh.h"
 #include "NL/nlString.h"
 
 static bool mIsEnabled = true;
@@ -19,31 +18,8 @@ struct FrontEndAnimAudioData : EventData
 
 extern "C" void qsort(void*, unsigned long, unsigned long, int (*)(const void*, const void*));
 
-template <>
-class ListContainerBase<AnimAudioEventLookup, BasicSlotPoolHigh<ListEntry<AnimAudioEventLookup> > >
-    : public BasicSlotPoolHigh<ListEntry<AnimAudioEventLookup> >
-{
-public:
-    ListEntry<AnimAudioEventLookup>* m_Head;
-    ListEntry<AnimAudioEventLookup>* m_Tail;
-
-    ListContainerBase()
-        : m_Head(NULL)
-        , m_Tail(NULL)
-    {
-        m_Initial = 0x10;
-        SlotPoolBase::BaseAddNewBlock(this, sizeof(ListEntry<AnimAudioEventLookup>));
-        m_Delta = 0x10;
-    }
-
-    void DeleteEntry(ListEntry<AnimAudioEventLookup>* entry)
-    {
-        entry->next = (ListEntry<AnimAudioEventLookup>*)m_FreeList;
-        m_FreeList = (SlotPoolEntry*)entry;
-    }
-};
-
-typedef ListContainerBase<AnimAudioEventLookup, BasicSlotPoolHigh<ListEntry<AnimAudioEventLookup> > > FELookupPool;
+typedef nlListSlotPoolHigh<AnimAudioEventLookup> FELookupPool;
+typedef ListContainerBase<AnimAudioEventLookup, BasicSlotPoolHigh<ListEntry<AnimAudioEventLookup> > > FELookupBase;
 
 struct LookupBlock
 {
@@ -404,8 +380,7 @@ void FEAudio::BuildAnimAudioEventLookup()
     char* pFileData = (char*)nlLoadEntireFile("audio/FEAnimAudio.txt", &fileSize, 0x20, (eAllocType)1);
 
     static AnimAudioEventLookup blankEntry;
-    FELookupPool LookupList;
-    u32 _pad;
+    FELookupPool LookupList(0x10, 0x10);
 
     AnimAudioEventLookup entry;
     AnimAudioEventLookup temp;
@@ -429,14 +404,14 @@ void FEAudio::BuildAnimAudioEventLookup()
                 *(LookupBlock*)&entry = *(LookupBlock*)&blankEntry;
                 *(LookupBlock*)&temp = *(LookupBlock*)&entry;
 
-                if (LookupList.m_FreeList == NULL)
+                if (LookupList.m_Allocator.m_FreeList == NULL)
                 {
-                    SlotPoolBase::BaseAddNewBlock(&LookupList, sizeof(ListEntry<AnimAudioEventLookup>));
+                    SlotPoolBase::BaseAddNewBlock(&LookupList.m_Allocator, sizeof(ListEntry<AnimAudioEventLookup>));
                 }
-                if (LookupList.m_FreeList != NULL)
+                if (LookupList.m_Allocator.m_FreeList != NULL)
                 {
-                    pEntry = (ListEntry<AnimAudioEventLookup>*)LookupList.m_FreeList;
-                    LookupList.m_FreeList = LookupList.m_FreeList->m_next;
+                    pEntry = (ListEntry<AnimAudioEventLookup>*)LookupList.m_Allocator.m_FreeList;
+                    LookupList.m_Allocator.m_FreeList = LookupList.m_Allocator.m_FreeList->m_next;
                 }
 
                 if (pEntry != NULL)
@@ -470,15 +445,15 @@ void FEAudio::BuildAnimAudioEventLookup()
 
     nlFree(pFileData);
 
-    nlWalkList(LookupList.m_Head, (FELookupPool*)&LookupList, &FELookupPool::DeleteEntry);
+    nlWalkList(LookupList.m_Head, (FELookupBase*)&LookupList, &FELookupBase::DeleteEntry);
     LookupList.m_Head = NULL;
     LookupList.m_Tail = NULL;
-    SlotPoolBase::BaseFreeBlocks(&LookupList, sizeof(ListEntry<AnimAudioEventLookup>));
+    SlotPoolBase::BaseFreeBlocks(&LookupList.m_Allocator, sizeof(ListEntry<AnimAudioEventLookup>));
 
-    nlWalkList(LookupList.m_Head, (FELookupPool*)&LookupList, &FELookupPool::DeleteEntry);
+    nlWalkList(LookupList.m_Head, (FELookupBase*)&LookupList, &FELookupBase::DeleteEntry);
     LookupList.m_Head = NULL;
     LookupList.m_Tail = NULL;
-    SlotPoolBase::BaseFreeBlocks(&LookupList, sizeof(ListEntry<AnimAudioEventLookup>));
+    SlotPoolBase::BaseFreeBlocks(&LookupList.m_Allocator, sizeof(ListEntry<AnimAudioEventLookup>));
 }
 
 // /**

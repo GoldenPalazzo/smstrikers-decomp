@@ -239,7 +239,7 @@ void OverlayManager::FEEventHandler(Event* pEvent, void*)
     }
     case 0x47:
     {
-        if (isSlowMotionOn)
+        if (isSlowMotionOn == true)
         {
             OverlayManager* inst = nlSingleton<OverlayManager>::s_pInstance;
             inst->mHUDDelay = 1.0f;

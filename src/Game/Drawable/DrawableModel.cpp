@@ -716,7 +716,6 @@ void Fresnelify(glModelPacket* pPacket, eGLView view)
 /**
  * Offset/Address/Size: 0x12A4 | 0x801210B0 | size: 0x598
  * TODO: 97.61% match - r30/r31 register swap for this/worldMatrix (scratch context),
- *       World offset diffs from missing m_pPlayerNISLightData in World.h,
  *       linker address mode diffs for glInventory/CrowdManager
  */
 void DrawableModel::DrawModel(const nlMatrix4& worldMatrix)

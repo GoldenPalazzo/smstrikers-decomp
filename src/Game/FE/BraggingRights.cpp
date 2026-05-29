@@ -195,9 +195,7 @@ BraggingRightsOverlay::~BraggingRightsOverlay()
 
 /**
  * Offset/Address/Size: 0x2E3C | 0x800D4E38 | size: 0x52C
- * TODO: 86.90% scratch match (87.61% full build). Added MenuItem::ApplyAction
- *       for correct callback dispatch pattern. Remaining diff: stmw r25 vs r26
- *       register shift from -inline deferred vs -inline auto context difference.
+ * TODO: 96.45% match - all remaining diffs are linker relocations only
  */
 void BraggingRightsOverlay::SceneCreated()
 {
@@ -248,13 +246,13 @@ void BraggingRightsOverlay::SceneCreated()
         mMenuItems.mNumItemsAdded++;
 
         {
-            Function<TLComponentInstance*> openFunc;
+            Function<MenuItem<TLComponentInstance>::FnCallback> openFunc;
             openFunc.mTag = FREE_FUNCTION;
             openFunc.mFreeFunction = SingleHighlite::OpenItem;
             menuItem->mCallbacks[1] = openFunc;
         }
         {
-            Function<TLComponentInstance*> closeFunc;
+            Function<MenuItem<TLComponentInstance>::FnCallback> closeFunc;
             closeFunc.mTag = FREE_FUNCTION;
             closeFunc.mFreeFunction = SingleHighlite::CloseItem;
             menuItem->mCallbacks[2] = closeFunc;

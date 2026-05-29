@@ -44,6 +44,18 @@ bool inline CheckUnlockStatus(const bool& globalFlag, const unsigned char& troph
     return globalFlag;
 }
 
+static inline bool CheckUnlockStatusNoGlobal(const unsigned char& trophyValue, const unsigned int bit)
+{
+    if (GetConfigBool(Config::Global(), "givealltrophies", false))
+    {
+        return true;
+    }
+    else
+    {
+        return (trophyValue >> bit) & 0x01;
+    }
+}
+
 /**
  * Offset/Address/Size: 0x9E90 | 0x8017F534 | size: 0xB84
  */
@@ -2806,8 +2818,8 @@ void GameInfoManager::OnPreCupGameState()
         *(volatile u32*)&mPreGameUnlockedState = mPreGameUnlockedState;
     }
 
-    if (CheckUnlockStatus(isKongaUnlocked, mUserInfo.mTrophies[0], 0)
-        && CheckUnlockStatus(isYoshiUnlocked, mUserInfo.mTrophies[0], 1))
+    if (CheckUnlockStatusNoGlobal(mUserInfo.mTrophies[0], 0)
+        && CheckUnlockStatusNoGlobal(mUserInfo.mTrophies[0], 1))
     {
         mPreGameUnlockedState |= 0x1000;
     }
@@ -2816,7 +2828,7 @@ void GameInfoManager::OnPreCupGameState()
         *(volatile u32*)&mPreGameUnlockedState = mPreGameUnlockedState;
     }
 
-    if (CheckUnlockStatus(false, mUserInfo.mTrophies[0], 3))
+    if (CheckUnlockStatusNoGlobal(mUserInfo.mTrophies[0], 3))
     {
         mPreGameUnlockedState |= 0x4000;
     }
@@ -2825,7 +2837,7 @@ void GameInfoManager::OnPreCupGameState()
         *(volatile u32*)&mPreGameUnlockedState = mPreGameUnlockedState;
     }
 
-    if (CheckUnlockStatus(false, mUserInfo.mTrophies[tourneyCup / 8], (unsigned int)tourneyCup % 8))
+    if (CheckUnlockStatusNoGlobal(mUserInfo.mTrophies[tourneyCup / 8], tourneyCup % 8))
     {
         mDisplayTrophy[0] = false;
     }
@@ -2931,19 +2943,19 @@ void GameInfoManager::OnPreCupGameState()
         }
     }
 
-    if (userTeam.mNumPoints >= opponentTeam.mNumPoints && userTeam.mNumPoints >= highestTeam.mNumPoints + 3)
+    if (userTeam.mNumPoints >= highestTeam.mNumPoints && userTeam.mNumPoints >= opponentTeam.mNumPoints + 3)
     {
         mCupMatchRequirement = RESULT_CUP_WIN;
     }
-    else if (userTeam.mNumPoints + 1 >= opponentTeam.mNumPoints && userTeam.mNumPoints + 1 >= highestTeam.mNumPoints + 3)
+    else if (userTeam.mNumPoints + 1 >= highestTeam.mNumPoints && userTeam.mNumPoints + 1 >= opponentTeam.mNumPoints + 3)
     {
         mCupMatchRequirement = RESULT_USER_OT_LOSES;
     }
-    else if (userTeam.mNumPoints + 3 >= opponentTeam.mNumPoints && userTeam.mNumPoints + 3 >= highestTeam.mNumPoints + 1)
+    else if (userTeam.mNumPoints + 3 >= highestTeam.mNumPoints && userTeam.mNumPoints + 3 >= opponentTeam.mNumPoints + 1)
     {
         mCupMatchRequirement = RESULT_USER_OT_WINS;
     }
-    else if (userTeam.mNumPoints + 3 >= opponentTeam.mNumPoints && userTeam.mNumPoints + 3 >= highestTeam.mNumPoints)
+    else if (userTeam.mNumPoints + 3 >= highestTeam.mNumPoints && userTeam.mNumPoints + 3 >= opponentTeam.mNumPoints)
     {
         mCupMatchRequirement = RESULT_USER_WINS;
     }

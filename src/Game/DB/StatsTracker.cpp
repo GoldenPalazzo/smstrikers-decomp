@@ -422,37 +422,31 @@ void StatsTracker::SetBasicGameInfoPointer(BasicGameInfo* pGameInfo, bool initia
     } while (j < 4);
 }
 
+static inline void ResetTeamStats(TeamStats& cur, const TeamStats& cum)
+{
+    eTeamID teamIdx = cum.mTeamIndex;
+    memset(&cur.mPlayerTotalStats, 0, sizeof(PlayerStats));
+    cur.mPlayerTotalStats.mRecordType.mTeamID = teamIdx;
+    cur.mPlayerTotalStats.mType = TYPE_TEAM;
+    cur.mTeamIndex = teamIdx;
+    cur.mNumWins = 0;
+    cur.mNumLosses = 0;
+    cur.mNumOTLosses = 0;
+    cur.mNumPoints = 0;
+}
+
 /**
  * Offset/Address/Size: 0x4FD0 | 0x80186530 | size: 0xF8
- * TODO: 94.2% match - r29/r30 register swap for this pointer vs teamIdx (MWCC register allocation quirk)
  */
 void StatsTracker::ResetCurrentStats()
 {
-    eTeamID teamIdx;
     int i;
 
     mIsOvertime = false;
     mHasGameEnded = false;
 
-    teamIdx = mCumulativeTeamStats[0].mTeamIndex;
-    memset(&mCurrentTeamStats[0].mPlayerTotalStats, 0, sizeof(PlayerStats));
-    mCurrentTeamStats[0].mPlayerTotalStats.mRecordType.mTeamID = teamIdx;
-    mCurrentTeamStats[0].mPlayerTotalStats.mType = TYPE_TEAM;
-    mCurrentTeamStats[0].mTeamIndex = teamIdx;
-    mCurrentTeamStats[0].mNumWins = 0;
-    mCurrentTeamStats[0].mNumLosses = 0;
-    mCurrentTeamStats[0].mNumOTLosses = 0;
-    mCurrentTeamStats[0].mNumPoints = 0;
-
-    teamIdx = mCumulativeTeamStats[1].mTeamIndex;
-    memset(&mCurrentTeamStats[1].mPlayerTotalStats, 0, sizeof(PlayerStats));
-    mCurrentTeamStats[1].mPlayerTotalStats.mRecordType.mTeamID = teamIdx;
-    mCurrentTeamStats[1].mPlayerTotalStats.mType = TYPE_TEAM;
-    mCurrentTeamStats[1].mTeamIndex = teamIdx;
-    mCurrentTeamStats[1].mNumWins = 0;
-    mCurrentTeamStats[1].mNumLosses = 0;
-    mCurrentTeamStats[1].mNumOTLosses = 0;
-    mCurrentTeamStats[1].mNumPoints = 0;
+    ResetTeamStats(mCurrentTeamStats[0], mCumulativeTeamStats[0]);
+    ResetTeamStats(mCurrentTeamStats[1], mCumulativeTeamStats[1]);
 
     mNumConsecutiveGamesPlayed = mNumConsecutiveGamesPlayed + 1;
 
@@ -2201,34 +2195,6 @@ void StatsTracker::WriteStats(float gameTime, float gameDuration, const char* fi
 
     extern const char* STATS_FILE;
     extern unsigned long fwrite(const void*, unsigned long, unsigned long, void*);
-    extern BasicString<char, Detail::TempStringAllocator> Format(
-        const BasicString<char, Detail::TempStringAllocator>&,
-        const char* const&,
-        const char* const&,
-        const char* const&,
-        const char* const&,
-        const char* const&,
-        const float&,
-        const float&);
-    extern BasicString<char, Detail::TempStringAllocator> Format(
-        const BasicString<char, Detail::TempStringAllocator>&,
-        const int&,
-        const int&,
-        const int&,
-        const int&,
-        const int&,
-        const int&,
-        const int&);
-    extern BasicString<char, Detail::TempStringAllocator> Format(
-        const BasicString<char, Detail::TempStringAllocator>&,
-        const int&,
-        const int&,
-        const int&,
-        const int&,
-        const int&,
-        const int&,
-        const int&,
-        const int&);
 
     if (gameDuration <= 0.0f)
     {
@@ -2337,7 +2303,15 @@ void StatsTracker::WriteStats(float gameTime, float gameDuration, const char* fi
 
         header.AppendInPlace("\n");
 
-        unsigned long len = header.size() > 0 ? (unsigned long)(header.size() - 1) : 0UL;
+        unsigned long len;
+        if (header.m_data != 0)
+        {
+            len = (unsigned long)(header.m_data->mSize - 1);
+        }
+        else
+        {
+            len = 0UL;
+        }
         fwrite(header.c_str(), 1, len, pFile);
     }
 
@@ -2458,7 +2432,8 @@ void StatsTracker::WriteStats(float gameTime, float gameDuration, const char* fi
             gameDuration);
     }
 
-    for (int team = 0; team < 2; team++)
+    int team;
+    for (team = 0; team < 2; team++)
     {
         int possession = (int)(mCurrentTeamStats[team].mPlayerTotalStats.mBallPossessionTime / 100);
         int difficulty = (int)nlSingleton<GameInfoManager>::s_pInstance->mCurrentDifficulty[team];
@@ -2540,7 +2515,7 @@ void StatsTracker::WriteStats(float gameTime, float gameDuration, const char* fi
             ssData->mRefCount = 1;
         }
         BasicString<char, Detail::TempStringAllocator> secondStatsTemplate(ssData);
-        BasicString<char, Detail::TempStringAllocator> fullStats = statsAfterFirst.Append(Format(secondStatsTemplate,
+        stats = statsAfterFirst.Append(Format(secondStatsTemplate,
             (int)mCurrentTeamStats[team].mPlayerTotalStats.mNumPowerupsHit,
             (int)mCurrentTeamStats[team].mPlayerTotalStats.mNumPassesMade,
             (int)mCurrentTeamStats[team].mPlayerTotalStats.mNumPassesReceived,
@@ -2550,8 +2525,6 @@ void StatsTracker::WriteStats(float gameTime, float gameDuration, const char* fi
             (int)mCurrentTeamStats[team].mPlayerTotalStats.mNumHitsMade,
             (int)mCurrentTeamStats[team].mPlayerTotalStats.mNumGoalsOneTimers));
 
-        stats = fullStats;
-
         if (team == 0)
         {
             stats = stats.Append(",");
@@ -2560,7 +2533,15 @@ void StatsTracker::WriteStats(float gameTime, float gameDuration, const char* fi
 
     stats.AppendInPlace("\n");
     {
-        unsigned long len = stats.size() > 0 ? (unsigned long)(stats.size() - 1) : 0UL;
+        unsigned long len;
+        if (stats.m_data != 0)
+        {
+            len = (unsigned long)(stats.m_data->mSize - 1);
+        }
+        else
+        {
+            len = 0UL;
+        }
         fwrite(stats.c_str(), 1, len, pFile);
     }
 

@@ -1387,7 +1387,7 @@ config.libs = [
             Object(Matching, "ode/mass.cpp", extra_cflags=["-inline auto"]),
             Object(Matching, "ode/obstack.cpp", extra_cflags=["-inline auto"]),
             Object(NonMatching, "ode/quickstep.cpp", extra_cflags=["-inline auto"]),
-            Object(NonMatching, "ode/rotation.cpp", extra_cflags=["-inline auto", "-inline off"]),
+            Object(Matching, "ode/rotation.cpp", extra_cflags=["-inline auto", "-inline off"]),
             Object(Matching, "ode/util.cpp", extra_cflags=["-inline auto"]),
 
             Object(NonMatching, "ode/ext/dColumn.cpp", extra_cflags=["-inline auto", "-inline off"]),

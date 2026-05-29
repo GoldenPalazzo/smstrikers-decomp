@@ -473,8 +473,6 @@ void ReplayChoreo::Reset()
 /**
  * Offset/Address/Size: 0x698 | 0x80127D04 | size: 0x3E0
  * TODO: 95.2% match - register allocation: stmw r26 vs r27.
- * With -inline deferred, data/goalType share r30 and src/zoneInWidth share r31,
- * but decomp.me uses -inline auto which prevents this register reuse.
  */
 extern "C" void CalcAutoReplayScriptName__12ReplayChoreoCF10ReplayType(
     BasicString<char, Detail::TempStringAllocator>* __return, const ReplayChoreo* __this, ReplayType)
@@ -564,7 +562,7 @@ extern "C" void CalcAutoReplayScriptName__12ReplayChoreoCF10ReplayType(
         BasicStringDataHack* d2 = (BasicStringDataHack*)nlMalloc(0x10, 8, true);
         if (d2 != 0)
         {
-            const char* src2 = "default_replay";
+            const char* src2 = "MID_CENTER_OWN_GOAL_0";
             d2->mData = 0;
             const char* p2 = src2;
             d2->mSize = 0;
@@ -590,13 +588,25 @@ extern "C" void CalcAutoReplayScriptName__12ReplayChoreoCF10ReplayType(
         return;
     }
 
+    typedef BasicString<char, Detail::TempStringAllocator> ReplayNameString;
+    typedef ReplayNameString (*FormatReplayNameRetFn)(
+        const ReplayNameString&, const char* const&, const char* const&, const char* const&, const int&);
+    typedef void (*FormatReplayNameFn)(ReplayNameString*,
+        const ReplayNameString&,
+        const char* const&,
+        const char* const&,
+        const char* const&,
+        const int&);
+
     int pick = nlRandom(__this->mNumScripts[zoneDepth][zoneInWidth][goalType], &nlDefaultSeed);
     if (cameraPick > -1)
     {
         pick = cameraPick % __this->mNumScripts[zoneDepth][zoneInWidth][goalType];
     }
-    *__return = Format<BasicString<char, Detail::TempStringAllocator>, const char*, const char*, const char*, int>(
-        format, zoneDepthNames[zoneDepth], zoneInWidthNames[zoneInWidth], replayTypeNames[goalType], pick);
+
+    FormatReplayNameRetFn formatFnIn = Format<ReplayNameString, const char*, const char*, const char*, int>;
+    ((FormatReplayNameFn)formatFnIn)(
+        __return, format, zoneDepthNames[zoneDepth], zoneInWidthNames[zoneInWidth], replayTypeNames[goalType], pick);
 }
 
 /**

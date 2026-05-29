@@ -19,6 +19,7 @@ extern cTeam* g_pCurrentlyUpdatingTeam;
 static float g_fLooseBallActionRethinkTime;
 static float g_fPostWhistleDelayToFinishAction = 2.0f;
 extern cFielder* g_pScriptCurrentFielder;
+extern cCharacter* g_pCharacters[10];
 
 enum eShotMeterState
 {
@@ -136,6 +137,16 @@ static const nlVector2 g_vMarkImmediateThreatCoeff = {
 static const nlVector2 g_vMarkFollowTimeDelay = {
     0.4f,
     0.1f,
+};
+
+static const nlVector2 g_vUpFieldRange = {
+    0.0f,
+    4.0f,
+};
+
+static const nlVector2 g_vUpFieldMaxDistance = {
+    4.0f,
+    1.0f,
 };
 
 static inline void CalcDeltaToTarget(nlVector3& outDelta, const nlVector3& target, const nlVector3& origin)
@@ -759,7 +770,7 @@ void cFielder::UpdateDesireState(float fDeltaT)
         break;
 
     case FIELDERDESIRE_PROTECT_BALL:
-        if (g_pBall->m_pOwner != this && (m_DesireCommonVars.tAge.GetSeconds() > 0.5f) != false)
+        if (this != g_pBall->m_pOwner && (m_DesireCommonVars.tAge.GetSeconds() > 0.5f) != false)
         {
             SetDesireDuration(0.0f, true);
         }
@@ -786,9 +797,7 @@ void cFielder::UpdateDesireState(float fDeltaT)
         }
 
         nlVector3 v3DesiredPosition;
-        v3DesiredPosition.f.x = m_v3Position.f.x + (4.0f * m_DesireCommonVars.v3DesiredPosition.f.x);
-        v3DesiredPosition.f.y = m_v3Position.f.y + (4.0f * m_DesireCommonVars.v3DesiredPosition.f.y);
-        v3DesiredPosition.f.z = m_v3Position.f.z + (4.0f * m_DesireCommonVars.v3DesiredPosition.f.z);
+        nlVec3ScaleAdd(v3DesiredPosition, 4.0f, m_DesireCommonVars.v3DesiredPosition, m_v3Position);
 
         SetDesiredSpeedAndDirectionToPosition(fDeltaT, v3DesiredPosition, m_DesireCommonVars.turboRequest, 0.85f, 0.85f);
 
@@ -823,11 +832,11 @@ void cFielder::UpdateDesireState(float fDeltaT)
         }
         else
         {
-            float fFormationBlend = InterpolateRangeClamped(4.0f, 1.0f, 0.0f, 4.0f, m_v3AIPosition.f.x);
+            float fFormationBlend = InterpolateRangeClamped(g_vUpFieldMaxDistance.f.x, g_vUpFieldMaxDistance.f.y, g_vUpFieldRange.f.x, g_vUpFieldRange.f.y, m_v3AIPosition.f.x);
             float fSign = AIsgn(m_pTeam->GetOtherNet()->m_baseLocation.f.x);
             v3DesiredPosition.f.x = v3DesiredPosition.f.x + (fFormationBlend * fSign);
-            float dy = v3DesiredPosition.f.y - m_v3Position.f.y;
             float dx = v3DesiredPosition.f.x - m_v3Position.f.x;
+            float dy = v3DesiredPosition.f.y - m_v3Position.f.y;
             m_DesireCommonVars.bInPosition = ((dx * dx + dy * dy) <= 1.0f);
         }
         SetDesiredSpeedAndDirectionToPosition(fDeltaT, v3DesiredPosition, TR_FAR_DISTANCE, 0.8f, 0.8f);
@@ -855,15 +864,15 @@ void cFielder::UpdateDesireState(float fDeltaT)
         }
         else
         {
-            float fFormationBlend = InterpolateRangeClamped(1.0f, 4.0f, 0.0f, 4.0f, m_v3AIPosition.f.x);
+            float fFormationBlend = InterpolateRangeClamped(g_vUpFieldMaxDistance.f.y, g_vUpFieldMaxDistance.f.x, g_vUpFieldRange.f.x, g_vUpFieldRange.f.y, m_v3AIPosition.f.x);
             if (g_pBall->GetOwnerGoalie() != NULL)
             {
                 fFormationBlend = fFormationBlend * 2.0f;
             }
             float fSign = AIsgn(m_pTeam->m_pNet->m_baseLocation.f.x);
             v3DesiredPosition.f.x = v3DesiredPosition.f.x + (fFormationBlend * fSign);
-            float dy = v3DesiredPosition.f.y - m_v3Position.f.y;
             float dx = v3DesiredPosition.f.x - m_v3Position.f.x;
+            float dy = v3DesiredPosition.f.y - m_v3Position.f.y;
             m_DesireCommonVars.bInPosition = ((dx * dx + dy * dy) <= 1.5f);
         }
         SetDesiredSpeedAndDirectionToPosition(fDeltaT, v3DesiredPosition, TR_FAR_DISTANCE, 0.8f, 0.8f);
@@ -886,7 +895,7 @@ void cFielder::UpdateDesireState(float fDeltaT)
         if (GetDistanceToDesiredPos() < 1.0f)
         {
             SetDesireDuration(0.0f, true);
-            if (g_pGame->m_eGameState == GS_POST_GOAL || g_pGame->m_eGameState == GS_END_GAME)
+            if ((g_pGame->m_eGameState == GS_POST_GOAL || g_pGame->m_eGameState == GS_END_GAME) && this == g_pCharacters[0])
             {
                 g_pEventManager->CreateValidEvent(8, 20);
             }
@@ -951,6 +960,51 @@ void cFielder::UpdateDesireState(float fDeltaT)
         }
         break;
 
+    case FIELDERDESIRE_POST_WHISTLE:
+    {
+        bool bIsGameplay = false;
+        if (g_pGame->m_eGameState == GS_GAMEPLAY || g_pGame->m_eGameState == GS_OVERTIME)
+        {
+            bIsGameplay = true;
+        }
+        if (bIsGameplay)
+        {
+            SetDesireDuration(0.0f, true);
+            break;
+        }
+        if (m_DesireCommonVars.tMiscTimer.m_uPackedTime == 0 || m_eActionState == ACTION_NEED_ACTION)
+        {
+            InitActionPostWhistle();
+        }
+        SetDesiredSpeedAndDirectionToPosition(fDeltaT, m_v3Position, TR_FAR_DISTANCE, 1.0f, 1.0f);
+        ShouldIStrafe();
+        break;
+    }
+
+    case FIELDERDESIRE_RECEIVE_PASS_FROM_IDLE:
+        DesireReceivePassFromIdle(fDeltaT);
+        break;
+    case FIELDERDESIRE_RECEIVE_PASS_FROM_RUN:
+        DesireReceivePassFromRun(fDeltaT);
+        break;
+    case FIELDERDESIRE_SLIDE_ATTACK:
+        DesireSlideAttack(fDeltaT);
+        break;
+    case FIELDERDESIRE_SUPPORT_BALL_DEFENSIVE:
+        DesireSupportBall(fDeltaT, true);
+        break;
+    case FIELDERDESIRE_SUPPORT_BALL_OFFENSIVE:
+        DesireSupportBall(fDeltaT, false);
+        break;
+    case FIELDERDESIRE_USE_POWERUP:
+        DesireUsePowerup(fDeltaT);
+        break;
+    case FIELDERDESIRE_USER_CONTROLLED:
+        DesireUserControlled(fDeltaT);
+        break;
+    case FIELDERDESIRE_WAIT:
+        SetDesiredSpeedAndDirectionToPosition(fDeltaT, m_v3Position, TR_FAR_DISTANCE, 1.0f, 1.0f);
+        break;
     case FIELDERDESIRE_WINDUP_PASS:
     {
         if (m_pBall == NULL || Incapacitated(mActionPassingVars.pPassTarget) != 0.0f)
@@ -990,45 +1044,6 @@ void cFielder::UpdateDesireState(float fDeltaT)
         }
         break;
     }
-
-    case FIELDERDESIRE_POST_WHISTLE:
-        if (g_pGame->m_eGameState == GS_GAMEPLAY || g_pGame->m_eGameState == GS_OVERTIME)
-        {
-            SetDesireDuration(0.0f, true);
-            break;
-        }
-        if (m_DesireCommonVars.tMiscTimer.m_uPackedTime == 0 || m_eActionState == ACTION_NEED_ACTION)
-        {
-            InitActionPostWhistle();
-        }
-        SetDesiredSpeedAndDirectionToPosition(fDeltaT, m_v3Position, TR_FAR_DISTANCE, 1.0f, 1.0f);
-        ShouldIStrafe();
-        break;
-
-    case FIELDERDESIRE_RECEIVE_PASS_FROM_IDLE:
-        DesireReceivePassFromIdle(fDeltaT);
-        break;
-    case FIELDERDESIRE_RECEIVE_PASS_FROM_RUN:
-        DesireReceivePassFromRun(fDeltaT);
-        break;
-    case FIELDERDESIRE_SLIDE_ATTACK:
-        DesireSlideAttack(fDeltaT);
-        break;
-    case FIELDERDESIRE_SUPPORT_BALL_DEFENSIVE:
-        DesireSupportBall(fDeltaT, true);
-        break;
-    case FIELDERDESIRE_SUPPORT_BALL_OFFENSIVE:
-        DesireSupportBall(fDeltaT, false);
-        break;
-    case FIELDERDESIRE_USE_POWERUP:
-        DesireUsePowerup(fDeltaT);
-        break;
-    case FIELDERDESIRE_USER_CONTROLLED:
-        DesireUserControlled(fDeltaT);
-        break;
-    case FIELDERDESIRE_WAIT:
-        SetDesiredSpeedAndDirectionToPosition(fDeltaT, m_v3Position, TR_FAR_DISTANCE, 1.0f, 1.0f);
-        break;
     case FIELDERDESIRE_WINDUP_SHOT:
         DesireWindupShot(fDeltaT);
         break;
@@ -1292,9 +1307,13 @@ void cFielder::DesireMark(float fDeltaT)
         return;
     }
 
-    if ((IsOnSameTeam(m_pMark) || bBestBallInterceptor) && m_DesireCommonVars.tAge.GetSeconds() > 0.5f)
+    if (IsOnSameTeam(m_pMark) || bBestBallInterceptor)
     {
-        SetDesireDuration(0.0f, true);
+        bool bStale = m_DesireCommonVars.tAge.GetSeconds() > 0.5f;
+        if (bStale)
+        {
+            SetDesireDuration(0.0f, true);
+        }
     }
 
     if (m_pMark->m_pBall != NULL)

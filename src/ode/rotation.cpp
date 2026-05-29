@@ -232,11 +232,7 @@ void dRfromQ(dMatrix3 R, const dQuaternion q)
     _R(2, 2) = 1 - qq1 - qq2;
 }
 
-/**
- * Offset/Address/Size: 0x610 | 0x802236D0 | size: 0x224
- * TODO: 97.2% match - float register allocation still differs in all four
- * branches (mostly constant/load register choices around the 0.5f scale path).
- */
+// Offset/Address/Size: 0x610 | 0x802236D0 | size: 0x224
 void dQfromR(dQuaternion q, const dMatrix3 R)
 {
     dAASSERT(q && R);
@@ -245,29 +241,15 @@ void dQfromR(dQuaternion q, const dMatrix3 R)
 
     if (tr >= 0)
     {
-        dReal r;
-        dReal c, b, a, d, e, f;
-        dReal q0;
-
-        s = dSqrt(tr + 1);
-        r = s;
-        s = REAL(1.0) / s;
-        a = _R(2, 1);
-        b = _R(1, 2);
-        c = _R(0, 2);
-        d = _R(2, 0);
-        e = _R(1, 0);
-        q0 = REAL(0.5) * r;
-        f = _R(0, 1);
-        s = REAL(0.5) * s;
-        q[0] = q0;
-        q[1] = s * (a - b);
-        q[2] = s * (c - d);
-        q[3] = s * (e - f);
+        s = dSqrt(tr + REAL(1.0));
+        q[0] = REAL(0.5) * s;
+        s = REAL(0.5) * (REAL(1.0) / s);
+        q[1] = (_R(2, 1) - _R(1, 2)) * s;
+        q[2] = (_R(0, 2) - _R(2, 0)) * s;
+        q[3] = (_R(1, 0) - _R(0, 1)) * s;
     }
     else
     {
-        // find the largest diagonal element and jump to the appropriate case
         if (_R(1, 1) > _R(0, 0))
         {
             if (_R(2, 2) > _R(1, 1))
@@ -280,73 +262,34 @@ void dQfromR(dQuaternion q, const dMatrix3 R)
 
     case_0:
     {
-        dReal r;
-        dReal c, b, a, d, e, f;
-        dReal q1;
-
-        s = dSqrt((_R(0, 0) - (_R(1, 1) + _R(2, 2))) + 1);
-        r = s;
-        s = REAL(1.0) / s;
-        a = _R(0, 1);
-        b = _R(1, 0);
-        c = _R(2, 0);
-        d = _R(0, 2);
-        e = _R(2, 1);
-        q1 = REAL(0.5) * r;
-        f = _R(1, 2);
-        s = REAL(0.5) * s;
-        q[1] = q1;
-        q[2] = s * (a + b);
-        q[3] = s * (c + d);
-        q[0] = s * (e - f);
+        s = dSqrt((_R(0, 0) - (_R(1, 1) + _R(2, 2))) + REAL(1.0));
+        q[1] = REAL(0.5) * s;
+        s = REAL(0.5) * (REAL(1.0) / s);
+        q[2] = (_R(0, 1) + _R(1, 0)) * s;
+        q[3] = (_R(2, 0) + _R(0, 2)) * s;
+        q[0] = (_R(2, 1) - _R(1, 2)) * s;
         return;
     }
 
     case_1:
     {
-        dReal r;
-        dReal c, b, a, d, e, f;
-        dReal q2;
-
-        s = dSqrt((_R(1, 1) - (_R(2, 2) + _R(0, 0))) + 1);
-        r = s;
-        s = REAL(1.0) / s;
-        a = _R(1, 2);
-        b = _R(2, 1);
-        c = _R(0, 1);
-        d = _R(1, 0);
-        e = _R(0, 2);
-        q2 = REAL(0.5) * r;
-        f = _R(2, 0);
-        s = REAL(0.5) * s;
-        q[2] = q2;
-        q[3] = s * (a + b);
-        q[1] = s * (c + d);
-        q[0] = s * (e - f);
+        s = dSqrt((_R(1, 1) - (_R(2, 2) + _R(0, 0))) + REAL(1.0));
+        q[2] = REAL(0.5) * s;
+        s = REAL(0.5) * (REAL(1.0) / s);
+        q[3] = (_R(1, 2) + _R(2, 1)) * s;
+        q[1] = (_R(0, 1) + _R(1, 0)) * s;
+        q[0] = (_R(0, 2) - _R(2, 0)) * s;
         return;
     }
 
     case_2:
     {
-        dReal r;
-        dReal c, b, a, d, e, f;
-        dReal q3;
-
-        s = dSqrt((_R(2, 2) - (_R(0, 0) + _R(1, 1))) + 1);
-        r = s;
-        s = REAL(1.0) / s;
-        a = _R(2, 0);
-        b = _R(0, 2);
-        c = _R(1, 2);
-        d = _R(2, 1);
-        e = _R(1, 0);
-        q3 = REAL(0.5) * r;
-        f = _R(0, 1);
-        s = REAL(0.5) * s;
-        q[3] = q3;
-        q[1] = s * (a + b);
-        q[2] = s * (c + d);
-        q[0] = s * (e - f);
+        s = dSqrt((_R(2, 2) - (_R(0, 0) + _R(1, 1))) + REAL(1.0));
+        q[3] = REAL(0.5) * s;
+        s = REAL(0.5) * (REAL(1.0) / s);
+        q[1] = (_R(2, 0) + _R(0, 2)) * s;
+        q[2] = (_R(1, 2) + _R(2, 1)) * s;
+        q[0] = (_R(1, 0) - _R(0, 1)) * s;
         return;
     }
     }

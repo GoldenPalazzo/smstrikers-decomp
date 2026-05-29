@@ -78,12 +78,12 @@ public:
 
     static float mfCatchAllowDistSq;
     static SaveData* mpSaveTable;
-    static int muSTSMissIndexStart;
-    static int muSTSGoalIndexStart;
-    static int muSTSGoalCount;
-    static int muSTSSaveIndexStart;
-    static int muSTSSaveCount;
-    static int muMissChipIndexStart;
+    static unsigned int muSTSMissIndexStart;
+    static unsigned int muSTSGoalIndexStart;
+    static unsigned int muSTSGoalCount;
+    static unsigned int muSTSSaveIndexStart;
+    static unsigned int muSTSSaveCount;
+    static unsigned int muMissChipIndexStart;
     static float mfCrouchDuration;
     static SavePositionData* mpPositionTable;
     static unsigned char mbInitialized;

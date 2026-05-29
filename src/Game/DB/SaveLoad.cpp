@@ -381,11 +381,13 @@ unsigned long LoadCallbacks::ReadDoneCB(unsigned long Slot, long Result, void* p
 
 /**
  * Offset/Address/Size: 0x2DA8 | 0x8018C704 | size: 0x4AC
- * TODO: 86.19% match - remaining diffs from -inline deferred vs -inline auto:
- * r31 caching Slot*4, nor/srawi/and constant folding in icon config,
- * extra cmpwi+ble while loop guards, cascading register allocation.
+ * TODO: 87.38% match - opt_propagation off prevents icon config constant folding
+ * but causes: this->r31 (should be r27), extra cmpwi+ble while loop guards,
+ * srawi CSE (one srawi vs two in target), cascading register allocation diffs.
  */
-unsigned long SaveCallbacks::FileWriteCB(unsigned long Slot, long Result, void* pUserData)
+#pragma push
+#pragma opt_propagation off
+inline unsigned long SaveCallbacks::FileWriteCB(unsigned long Slot, long Result, void* pUserData)
 {
     if (Result != 0)
     {
@@ -423,9 +425,9 @@ unsigned long SaveCallbacks::FileWriteCB(unsigned long Slot, long Result, void* 
             IconCfg.IconAnimType = 0;
             memset(IconCfg.IconSpeeds, 0, 8);
             memset(&IconCfg, 0, sizeof(MemCard::ICON_CONFIG));
-            int negOne = -1;
             int iconFormat = 2;
             int iconCount = 1;
+            int negOne = -1;
             int speed = 3;
             int iconPixelSize = iconFormat << 10;
             IconCfg.IconCount = iconCount;
@@ -514,18 +516,26 @@ unsigned long SaveCallbacks::FileWriteCB(unsigned long Slot, long Result, void* 
                 IconCfg.IconAnimType = 0;
                 memset(IconCfg.IconSpeeds, 0, 8);
                 memset(&IconCfg, 0, sizeof(MemCard::ICON_CONFIG));
-                IconCfg.IconCount = 1;
-                IconCfg.IconFormat = 2;
-                IconCfg.IconSpeeds[0] = 3;
-                IconCfg.BannerFormat = 2;
-                int iconFormat = IconCfg.IconFormat;
-                int iconCount = IconCfg.IconCount;
-                int iconSize = (iconFormat << 10) * iconCount;
-                int temp = ~(iconCount | -1);
-                int bannerClut = (temp >> 31) & 0x200;
-                int bannerSize = iconFormat * 0xC00;
-                int iconClut = (temp >> 31) & 0x200;
-                int total = bannerClut + bannerSize + iconSize + iconClut;
+                int iconFormat = 2;
+                int iconCount = 1;
+                int negOne = -1;
+                int speed = 3;
+                int iconPixelSize = iconFormat << 10;
+                IconCfg.IconCount = iconCount;
+                negOne = ~(iconCount | negOne);
+                int clutSize = 0x200;
+                int iconDataSize = iconCount * iconPixelSize;
+                IconCfg.IconFormat = iconFormat;
+                int bannerClutMask = negOne >> 31;
+                int iconClutMask = negOne >> 31;
+                IconCfg.IconSpeeds[0] = speed;
+                int bannerClutResult = clutSize & bannerClutMask;
+                int bannerDataSize = iconFormat * 0xC00;
+                int iconClutResult = clutSize & iconClutMask;
+                IconCfg.BannerFormat = iconFormat;
+                int total = bannerClutResult + bannerDataSize;
+                total += iconDataSize;
+                total += iconClutResult;
                 origSize = (int)(IconCfg.HeaderSize = total + 0x40);
                 dataSize = (u32)(origSize + 0x1FFF) >> 13;
                 if (origSize > 0)
@@ -574,6 +584,7 @@ unsigned long SaveCallbacks::FileWriteCB(unsigned long Slot, long Result, void* 
     ResetTask::s_resetPaused = false;
     return 0;
 }
+#pragma pop
 
 /**
  * Offset/Address/Size: 0x2708 | 0x8018C064 | size: 0x6A0
@@ -883,7 +894,9 @@ unsigned long SaveCallbacks::FileWriteIconCB(unsigned long channel, long result,
             int bannerClut = (temp >> 31) & 0x200;
             int bannerSize = iconFormat * 0xC00;
             int iconClut = (temp >> 31) & 0x200;
-            int total = bannerClut + bannerSize + iconSize + iconClut;
+            int total = bannerClut + bannerSize;
+            total += iconSize;
+            total += iconClut;
             origSize = (int)(IconCfg.HeaderSize = total + 0x40);
             dataSize = (u32)(origSize + 0x1FFF) >> 13;
             if (origSize > 0)

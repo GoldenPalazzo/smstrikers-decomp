@@ -559,7 +559,8 @@ done:
  * @note Address: 0x8022B944
  * @note Size: 0xD8
  */
-void* soft_allocate_from_var_pools(Block** start_ptr, u32 size, u32* max_free_size)
+#pragma dont_inline on
+static void* soft_allocate_from_var_pools(Block** start_ptr, u32 size, u32* max_free_size)
 {
     Block* bp;
     SubBlock* sb;
@@ -607,6 +608,7 @@ void* soft_allocate_from_var_pools(Block** start_ptr, u32 size, u32* max_free_si
 found:
     return (char*)sb + 8;
 }
+#pragma dont_inline reset
 
 /**
  * @note Address: 0x800C2770
@@ -686,14 +688,13 @@ void* allocate_from_fixed_pools(__mem_pool_obj* pool_obj, u32 size)
         void* block;
         u32 max_free_size;
         u32 msize;
-        u32 fix_size;
-        u32 sub_size;
         u32 num_subblocks;
+        u32 sub_size;
         FixBlock* b;
-        FixBlock* head;
         FixBlock* tail;
-        FixSubBlock* p;
+        FixBlock* head;
         u32 k;
+        char* p;
 
         if (n > 0x100)
         {
@@ -737,32 +738,31 @@ void* allocate_from_fixed_pools(__mem_pool_obj* pool_obj, u32 size)
             fs->tail_ = (FixBlock*)block;
         }
 
-        fix_size = pool_sizes[i];
-        sub_size = fix_size + 4;
+        sub_size = pool_sizes[i] + 4;
         b = (FixBlock*)block;
         head = fs->head_;
         tail = fs->tail_;
         num_subblocks = (msize - 0x14) / sub_size;
-        p = (FixSubBlock*)((char*)b + 0x14);
+        p = (char*)b + 0x14;
 
         b->prev_ = tail;
         b->next_ = head;
         tail->next_ = b;
         head->prev_ = b;
-        b->client_size_ = fix_size;
+        b->client_size_ = pool_sizes[i];
 
         for (k = 0; k < num_subblocks - 1; ++k)
         {
-            FixSubBlock* np;
+            char* np;
 
-            p->block_ = b;
-            np = (FixSubBlock*)((char*)p + sub_size);
-            p->next_ = np;
+            np = p + sub_size;
+            ((FixSubBlock*)p)->block_ = b;
+            ((FixSubBlock*)p)->next_ = (FixSubBlock*)np;
             p = np;
         }
 
-        p->block_ = b;
-        p->next_ = NULL;
+        ((FixSubBlock*)p)->block_ = b;
+        ((FixSubBlock*)p)->next_ = NULL;
         b->start_ = (FixSubBlock*)((char*)block + 0x14);
         b->n_allocated_ = 0;
         fs->head_ = b;

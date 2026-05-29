@@ -1,3 +1,4 @@
+#define BASICSTRING_OUTLINE_CTOR
 #include "Game/SH/SHCupHub.h"
 
 #include "Game/GameSceneManager.h"
@@ -255,10 +256,7 @@ CupHubScene::CupHubScene(bool doAnimations, bool playAllKnockoutAnimations)
     int round;
 
     AsyncImage* captainImage = (AsyncImage*)nlMalloc(sizeof(AsyncImage), 0x20, true);
-    if (captainImage)
-    {
-        captainImage = new (captainImage) AsyncImage("art/fe/CupLoadingScreensUI.res", 0);
-    }
+    captainImage = new (captainImage) AsyncImage("art/fe/CupLoadingScreensUI.res", 0);
     mCaptainImage = captainImage;
 
     gameInfo = nlSingleton<GameInfoManager>::s_pInstance;
@@ -270,7 +268,8 @@ CupHubScene::CupHubScene(bool doAnimations, bool playAllKnockoutAnimations)
     {
         if (mDoAnimations && (gameInfo->GetCurrentRoundNumber() != 0 || (gameInfo->GetCurrentRoundNumber() == 0 && gameInfo->mCurrentCup->mGameNumber != 0)))
         {
-            mAllTeamStats[i] = gameInfo->mPreviousTeamStats[i];
+            TeamStats teamStats = gameInfo->mPreviousTeamStats[(u16)i];
+            mAllTeamStats[i] = teamStats;
         }
         else
         {
@@ -4702,6 +4701,7 @@ void CupHubScene::SetRoundColours(eHubColour* coloursArray, int sizeOfArray)
 /**
  * Offset/Address/Size: 0x1DC | 0x800E9F38 | size: 0x1110
  */
+#pragma dont_inline on
 void CupHubScene::UpdateRoundMessage(bool hideMessage)
 {
     typedef TLComponentInstance* (*FindCompByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
@@ -4739,7 +4739,7 @@ void CupHubScene::UpdateRoundMessage(bool hideMessage)
     }
 
     GameInfoManager* gameInfo = *(GameInfoManager* volatile*)&nlSingleton<GameInfoManager>::s_pInstance;
-    s16 roundNumber = gameInfo->GetCurrentRoundNumber();
+    int roundNumber = gameInfo->GetCurrentRoundNumber();
 
     TLSlide* pCurrentSlide = m_pFEScene->m_pFEPackage->GetPresentation()->m_currentSlide;
 
@@ -4936,6 +4936,7 @@ void CupHubScene::UpdateRoundMessage(bool hideMessage)
 
 #undef LOOKUP_LOC_STRING
 }
+#pragma dont_inline reset
 
 /**
  * Offset/Address/Size: 0x0 | 0x800E9D5C | size: 0x1DC

@@ -3885,18 +3885,80 @@ void AudioStreamTrack::TrackManager<3>::StopAllTracks(unsigned long FadeOut)
 // }
 
 // /**
-//  * Offset/Address/Size: 0x7A0 | 0x80141E64 | size: 0x1D0
-//  */
-// void AudioStreamTrack::TrackManager<3>::DestroyAllTracks()
-// {
-// }
-
-// /**
 //  * Offset/Address/Size: 0x970 | 0x80142034 | size: 0x1AC
 //  */
 // void AudioStreamTrack::TrackManager<3>::CreateTrack(const char*, MasterVolume::VOLUME_GROUP)
 // {
 // }
+
+template <>
+void AudioStreamTrack::TrackManager<3>::DestroyAllTracks()
+{
+    typedef nlSortedSlot<AudioStreamTrack::StreamTrack, 3>::EntryLookup<AudioStreamTrack::StreamTrack> EL;
+
+    unsigned long trackOffset;
+    unsigned long i;
+    EL* foundSlot;
+    AudioStreamTrack::StreamTrack* track;
+
+    StopAllTracks(0);
+
+    while (nlStaticSortedSlot<AudioStreamTrack::StreamTrack, 3>::m_EntryCount != 0)
+    {
+        track = ((EL*)((char*)nlStaticSortedSlot<AudioStreamTrack::StreamTrack, 3>::m_pEntryLookup))->pEntry;
+        if (track == NULL)
+        {
+            break;
+        }
+
+        track->m_InFakePause = 0;
+        track->Stop(0);
+
+        if (track->m_IdleCallback.mTag == FUNCTOR)
+        {
+            if (track->m_IdleCallback.mFunctor != NULL)
+            {
+                delete track->m_IdleCallback.mFunctor;
+            }
+        }
+        track->m_IdleCallback.mTag = EMPTY;
+
+        {
+            typedef DLListContainerBase<AudioStreamTrack::StreamTrack::QUEUED_STREAM, nlStaticArrayAllocator<DLListEntry<AudioStreamTrack::StreamTrack::QUEUED_STREAM>, 4> > QContainer;
+            void (QContainer::*func)(DLListEntry<AudioStreamTrack::StreamTrack::QUEUED_STREAM>*) = &QContainer::DeleteEntry;
+            nlWalkDLRing(track->m_QueuedStreams.m_Head, &track->m_QueuedStreams, func);
+            track->m_QueuedStreams.m_Head = NULL;
+        }
+
+        foundSlot = 0;
+        for (i = 0, trackOffset = 0; i < nlStaticSortedSlot<AudioStreamTrack::StreamTrack, 3>::m_EntryCount; i++, trackOffset += 8)
+        {
+            if (((EL*)((char*)nlStaticSortedSlot<AudioStreamTrack::StreamTrack, 3>::m_pEntryLookup + trackOffset))->pEntry == track)
+            {
+                foundSlot = (EL*)((char*)nlStaticSortedSlot<AudioStreamTrack::StreamTrack, 3>::m_pEntryLookup + i * 8);
+                break;
+            }
+        }
+
+        FreeEntry(track);
+
+        {
+            unsigned long entryCount = nlStaticSortedSlot<AudioStreamTrack::StreamTrack, 3>::m_EntryCount;
+            int idx = foundSlot - nlStaticSortedSlot<AudioStreamTrack::StreamTrack, 3>::m_pEntryLookup;
+            while ((unsigned long)idx != entryCount)
+            {
+                int next = idx + 1;
+                EL* src = (EL*)((char*)nlStaticSortedSlot<AudioStreamTrack::StreamTrack, 3>::m_pEntryLookup + next * 8);
+                EL* dst = (EL*)((char*)nlStaticSortedSlot<AudioStreamTrack::StreamTrack, 3>::m_pEntryLookup + idx * 8);
+                idx = next;
+                dst->pEntry = src->pEntry;
+                dst->hash = src->hash;
+            }
+        }
+
+        nlStaticSortedSlot<AudioStreamTrack::StreamTrack, 3>::m_EntryCount--;
+    }
+}
 
 template class nlStaticSortedSlot<AudioStreamTrack::StreamTrack, 3>;
 template class AudioStreamTrack::TrackManager<3>;

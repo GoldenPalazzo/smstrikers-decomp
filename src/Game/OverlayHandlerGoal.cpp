@@ -394,7 +394,7 @@ void GoalOverlay::UpdateGoalInfo(int homeAway, int playerIndex, bool isCaptainS2
     BasicString<unsigned short, Detail::TempStringAllocator> formatted;
     BasicString<unsigned short, Detail::TempStringAllocator> unformatted;
 
-    int oldScore[2];
+    int oldScore[2] = { 0, 0 };
     oldScore[0] = mCaptainGoals[0] + mSidekickGoals[0];
     oldScore[1] = mCaptainGoals[1] + mSidekickGoals[1];
 
@@ -414,7 +414,6 @@ void GoalOverlay::UpdateGoalInfo(int homeAway, int playerIndex, bool isCaptainS2
             BasicString<char, Detail::TempStringAllocator> zeroStr("0");
             secondsString = zeroStr;
         }
-
         BasicString<char, Detail::TempStringAllocator> secStr(
             LexicalCast<BasicString<char, Detail::TempStringAllocator>, unsigned long>(seconds));
         secondsString = secondsString.Append(secStr);
@@ -730,13 +729,7 @@ void GoalOverlay::UpdateGoalInfo(int homeAway, int playerIndex, bool isCaptainS2
             }
 
             BasicString<unsigned short, Detail::TempStringAllocator> teamNameStr(teamLocString);
-
-            BasicString<char, Detail::TempStringAllocator> numGoalsString(
-                LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(mCaptainGoals[homeAway]));
-            unsigned short goalsWideString[32];
-            nlStrToWcs(numGoalsString.c_str(), goalsWideString, 32);
-
-            formatted = Format(unformatted, goalsWideString, teamNameStr);
+            formatted = Format(unformatted, teamNameStr);
         }
         else if (playerIndex == 0)
         {

@@ -2138,8 +2138,8 @@ OptionsCheatsMenu::OptionsCheatsMenu(FEPresentation* pres, ButtonComponent::Butt
     }
 
     TLSlide* currentSlide = pres->m_currentSlide;
-    void (*openItem)(TLComponentInstance*) = SingleHighlite::OpenItem;
     void (*closeItem)(TLComponentInstance*) = SingleHighlite::CloseItem;
+    void (*openItem)(TLComponentInstance*) = SingleHighlite::OpenItem;
 
     for (i = 0; i < 5; i++)
     {

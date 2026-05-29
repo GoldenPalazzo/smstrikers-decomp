@@ -53,7 +53,17 @@ FormatImpl<StringType>& FormatImpl<StringType>::operator%(const T& t)
         if (mString[i + 2] != '}')
             continue;
 
-        mString.erase(&mString[i], &mString[i + 3]);
+        typename StringType::value_type* eraseEnd = &mString[i + 3];
+        typename StringType::value_type* eraseStart = &mString[i];
+        BasicStringData<typename StringType::value_type>* data = mString.m_data;
+        int eraseLen = eraseEnd - eraseStart;
+        typename StringType::value_type* dst = &data->mData[eraseStart - data->mData];
+        while (eraseEnd != data->mData + data->mSize)
+        {
+            *dst++ = *eraseEnd++;
+        }
+        data->mSize -= eraseLen;
+
         mString.insert(&mString[i], &insert[0], &insert[(int)insert.size() - 1]);
     }
 
@@ -464,6 +474,7 @@ inline BasicString<unsigned short, Detail::TempStringAllocator> Format<BasicStri
 }
 /**
  * Offset/Address/Size: 0x0 | 0x80060960 | size: 0x114
+ * TODO: 61.38% match - extra helper ctor/dtor wrapper calls and stack frame size mismatch remain.
  */
 template <>
 inline BasicString<char, Detail::TempStringAllocator> Format<BasicString<char, Detail::TempStringAllocator>, int>(
@@ -480,10 +491,14 @@ inline BasicString<char, Detail::TempStringAllocator> Format<BasicString<char, D
         data = 0;
     }
 
-    FormatImpl<BasicString<char, Detail::TempStringAllocator> > impl(data);
+    FormatImplLayoutCharTemp impl;
+    impl.mString.m_data = data;
+    impl.mCurrentPos = 0;
+
+    ((FormatImpl<BasicString<char, Detail::TempStringAllocator> >&)impl) % value;
 
     return BasicString<char, Detail::TempStringAllocator>(
-        (BasicString<char, Detail::TempStringAllocator>)(impl % value));
+        (BasicString<char, Detail::TempStringAllocator>)((FormatImpl<BasicString<char, Detail::TempStringAllocator> >&)impl));
 }
 
 /**

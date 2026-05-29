@@ -713,13 +713,14 @@ void ParticleSystem::RenderAllParticles(eGLView view)
         }
     }
 
-    if (m_pTemplate->m_eBlend == EfBlend_Additive)
+    switch (m_pTemplate->m_eBlend)
     {
-        glSetRasterState(GLS_AlphaBlend, 3);
-    }
-    else if (m_pTemplate->m_eBlend == EfBlend_Normal)
-    {
+    case EfBlend_Normal:
         glSetRasterState(GLS_AlphaBlend, 1);
+        break;
+    case EfBlend_Additive:
+        glSetRasterState(GLS_AlphaBlend, 3);
+        break;
     }
 
     glSetRasterState(GLS_AlphaTest, 1);
@@ -812,7 +813,6 @@ void ParticleSystem::RenderAllParticles(eGLView view)
     {
         GLVertexAnim* pAnim = glInventory.GetVertexAnim(m_pTemplate->m_uModelID);
         eEffectsBlend blendType;
-        Particle* pPart = (Particle*)m_Particles.m_headNode;
 
         nlMatrix4 m;
         nlMatrix4 mScale;
@@ -823,20 +823,22 @@ void ParticleSystem::RenderAllParticles(eGLView view)
         mCoord.e[6] = -mCoord.e[6];
         mCoord.e[10] = -mCoord.e[10];
 
-        const nlMatrix4* pCoord = m_pTemplate->m_bLocalSpace ? &mCoordSys : nullptr;
-
-        if (m_pTemplate->m_eBlend == EfBlend_Normal)
+        switch (m_pTemplate->m_eBlend)
         {
+        case EfBlend_Normal:
             blendType = EfBlend_Additive;
+            break;
+        case EfBlend_Additive:
+            blendType = (eEffectsBlend)3;
+            break;
         }
-        else if (m_pTemplate->m_eBlend == EfBlend_Additive)
-        {
-            blendType = EfBlend_Subtractive;
-        }
+
+        glModel* pModel;
+        Particle* pPart = (Particle*)m_Particles.m_headNode;
+        const nlMatrix4* pCoord = m_pTemplate->m_bLocalSpace ? &mCoordSys : nullptr;
 
         while (pPart != nullptr)
         {
-            glModel* pModel;
             if (pAnim == nullptr)
             {
                 pModel = glModelDupNoStreams(glInventory.GetModel(m_pTemplate->m_uModelID), true, false);
@@ -848,7 +850,8 @@ void ParticleSystem::RenderAllParticles(eGLView view)
             float size = ret.position[1].f.x;
             if (m_pTemplate->m_eBillboard == EfBill_Billboard)
             {
-                rotRad += 0.0000958738f * (float)(short)m_aFacing;
+                float facingRot = 0.0000958738f * (float)(short)m_aFacing;
+                rotRad += facingRot;
             }
 
             nlMakeRotationMatrixZ(mRot, rotRad);
@@ -863,7 +866,8 @@ void ParticleSystem::RenderAllParticles(eGLView view)
             void* pUserData = glUserAlloc(GLUD_ConstantColour, 4, false);
             if (pUserData != nullptr)
             {
-                *(u32*)glUserGetData(pUserData) = *(u32*)&ret.c;
+                u32* pDst = (u32*)glUserGetData(pUserData);
+                *pDst = *(u32*)&ret.c;
             }
 
             u32 hMatrix = glAllocMatrix();
@@ -930,7 +934,7 @@ void ParticleSystem::RenderAllParticles(eGLView view)
         bool began;
         if (bQuads)
         {
-            began = mesh.Begin(m_Particles.m_numNodes, GLP_QuadList, 3, stream_decl, false);
+            began = mesh.Begin(m_Particles.m_numNodes * 4, GLP_QuadList, 3, stream_decl, false);
         }
         else
         {
@@ -957,10 +961,9 @@ void ParticleSystem::RenderAllParticles(eGLView view)
                 {
                     for (int i = 0; i < 6; i++)
                     {
-                        int idx = _tris[i];
-                        mesh.Texcoord(ret.texcoord[idx][0], ret.texcoord[idx][1]);
+                        mesh.Texcoord(ret.texcoord[_tris[i]][0], ret.texcoord[_tris[i]][1]);
                         mesh.Colour(ret.c);
-                        mesh.Vertex(ret.position[idx]);
+                        mesh.Vertex(ret.position[_tris[i]]);
                     }
                 }
                 pPart = (Particle*)pPart->m_nextNode;

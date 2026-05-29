@@ -44,6 +44,22 @@ static inline void InterpolateColours(const nlColour& colour0, const nlColour& c
     result.c[3] = (u8)(s32)(oneMinusAlpha * (float)colour0.c[3] + alpha * (float)colour1.c[3]);
 }
 
+static inline float clamp_ge(float x, float limit)
+{
+    if (x >= limit)
+        return x;
+    else
+        return limit;
+}
+
+static inline float clamp_le(float x, float limit)
+{
+    if (x <= limit)
+        return x;
+    else
+        return limit;
+}
+
 static inline void DrawIndicatorBar(ShootToScoreMeter* pMeter, float angle, const nlColour& colour, const nlMatrix4& meterMatrix, float scale)
 {
     glSetCurrentTexture(WhiteTexture, GLTT_Diffuse);
@@ -52,24 +68,27 @@ static inline void DrawIndicatorBar(ShootToScoreMeter* pMeter, float angle, cons
     cCameraManager::GetDistanceFromCameraToObject(pMeter->m_v3MeterPosition);
 
     glQuad3 barQuad;
-    float scaledMeterWidth = ShootToScoreMeter::MeterWidth * scale;
-    float scaledWhiteBarWidth = 0.039f * scale;
-    float scaledWhiteBarHeight = 0.0035f * scale;
     nlMatrix4 barMatrix;
-    float radius = 0.198f * scaledMeterWidth;
-
+    float scaledWhiteBarWidth = 0.039f * scale;
+    float zDepth;
     float angleRadians = (3.1415927f * angle) / 180.0f;
+    float scaledWhiteBarHeight = 0.0035f * scale;
+    float scaledMeterWidth = ShootToScoreMeter::MeterWidth * scale;
     nlMakeRotationMatrixZ(barMatrix, angleRadians);
 
-    float zDepth = 0.0f;
+    float radius = 0.198f * scaledMeterWidth;
     if (sbMakeSTSMeterOrthographic)
     {
         zDepth = -100.0f;
     }
+    else
+    {
+        zDepth = 0.0f;
+    }
 
-    u16 angle_u16 = (u16)(s32)(10430.378f * angleRadians);
-    float sinVal = nlSin(angle_u16);
-    float cosVal = nlSin((u16)(angle_u16 + 0x4000));
+    s32 angle_s32 = (s32)(10430.378f * angleRadians);
+    float sinVal = nlSin((u16)angle_s32);
+    float cosVal = nlSin((u16)((u16)angle_s32 + 0x4000));
 
     barMatrix.m[3][0] = radius * cosVal;
     barMatrix.m[3][1] = radius * sinVal;
@@ -190,24 +209,12 @@ void ShootToScoreMeter::DrawMeter()
         scaledMeterWidth = MeterWidth * scale;
 
         projectedX = screenPosition.f.x;
-        if (!(projectedX >= 92.0f))
-        {
-            projectedX = 92.0f;
-        }
-        if (!(projectedX <= 548.0f))
-        {
-            projectedX = 548.0f;
-        }
+        projectedX = clamp_ge(projectedX, 92.0f);
+        projectedX = clamp_le(projectedX, 548.0f);
 
         projectedY = screenPosition.f.y;
-        if (!(projectedY >= 84.0f))
-        {
-            projectedY = 84.0f;
-        }
-        if (!(projectedY <= 396.0f))
-        {
-            projectedY = 396.0f;
-        }
+        projectedY = clamp_ge(projectedY, 84.0f);
+        projectedY = clamp_le(projectedY, 396.0f);
         screenPosition.f.x = projectedX;
         screenPosition.f.y = projectedY;
 
@@ -256,14 +263,14 @@ void ShootToScoreMeter::DrawMeter()
     else
     {
         DrawColouredRegion(
-            m_fGreenBarAngle - (0.5f * m_fYellowRegionWidth),
+            m_fGreenBarAngle - (0.5 * m_fYellowRegionWidth),
             m_fGreenBarAngle - (0.5f * m_fGreenRegionWidth),
             yellow,
             yellow,
             matrix,
             scale);
         DrawColouredRegion(
-            m_fGreenBarAngle + (0.5f * m_fYellowRegionWidth),
+            m_fGreenBarAngle + (0.5 * m_fYellowRegionWidth),
             m_fGreenBarAngle + (0.5f * m_fGreenRegionWidth),
             yellow,
             yellow,
@@ -282,14 +289,14 @@ void ShootToScoreMeter::DrawMeter()
         if (mbShowSavedWhiteBar)
         {
             DrawColouredRegion(
-                m_fSavedGreenBarAngle - (0.5f * m_fSavedYellowRegionWidth),
+                m_fSavedGreenBarAngle - (0.5 * m_fSavedYellowRegionWidth),
                 m_fSavedGreenBarAngle - (0.5f * m_fSavedGreenRegionWidth),
                 yellow,
                 yellow,
                 matrix,
                 scale);
             DrawColouredRegion(
-                m_fSavedGreenBarAngle + (0.5f * m_fSavedYellowRegionWidth),
+                m_fSavedGreenBarAngle + (0.5 * m_fSavedYellowRegionWidth),
                 m_fSavedGreenBarAngle + (0.5f * m_fSavedGreenRegionWidth),
                 yellow,
                 yellow,

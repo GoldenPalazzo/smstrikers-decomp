@@ -213,7 +213,7 @@ void ReplayCamera::CutTo(ReplayCameraPosition camPos)
 
 /**
  * Offset/Address/Size: 0x11AC | 0x801ABEB0 | size: 0x4BC
- * TODO: 89.65% match - r29/r31 register swap for position parameter and branch/layout differences in generic path
+ * TODO: 96.29% match - r29/r31 register swap for position parameter; string literal address loaded before nlMalloc instead of after
  */
 float ReplayCamera::GetFov(ReplayCameraPosition position) const
 {
@@ -236,7 +236,7 @@ float ReplayCamera::GetFov(ReplayCameraPosition position) const
             {
                 BasicString<char, Detail::TempStringAllocator> formatStr("generic_{0}_fov");
                 int idx = position - REPLAY_CAMERA_POSITION_GENERIC_0;
-                prefix = prefix.Append(Format(formatStr, idx));
+                prefix.AppendInPlace(Format(formatStr, idx));
             }
             float fov = GetConfigFloat(Config::Global(), prefix.c_str(), 50.0f);
             return fov;

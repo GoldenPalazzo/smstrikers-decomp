@@ -1426,7 +1426,8 @@ void CupTrophyScene::SetHistory(Spoil& spoil)
             zeroData->mData = 0;
             zeroData->mSize = 0;
             zeroData->mCapacity = 0;
-            const char* ptr = "0";
+            const char* str = "0";
+            const char* ptr = str;
             while ((signed char)*ptr++ != 0)
             {
                 zeroData->mSize++;
@@ -1435,7 +1436,7 @@ void CupTrophyScene::SetHistory(Spoil& spoil)
             zeroData->mData = (char*)nlMalloc(zeroData->mSize + 1, 8, true);
             zeroData->mCapacity = zeroData->mSize;
             int idx = 0;
-            const char* src = "0";
+            const char* src = str;
             while (idx < zeroData->mSize)
             {
                 zeroData->mData[idx] = *src;
@@ -1450,12 +1451,18 @@ void CupTrophyScene::SetHistory(Spoil& spoil)
 
         BasicString<char, Detail::TempStringAllocator> dayString = LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(pRecord->mDate.mday);
         if (pRecord->mDate.mday < 10)
-            dayString = zero.Append(dayString);
+        {
+            const BasicString<char, Detail::TempStringAllocator>& prefixed = zero.Append(dayString);
+            dayString = prefixed;
+        }
 
         int monthVal = pRecord->mDate.mon + 1;
         BasicString<char, Detail::TempStringAllocator> monthString = LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(monthVal);
         if (pRecord->mDate.mon + 1 < 10)
-            monthString = zero.Append(monthString);
+        {
+            const BasicString<char, Detail::TempStringAllocator>& prefixed = zero.Append(monthString);
+            monthString = prefixed;
+        }
 
         BasicString<char, Detail::TempStringAllocator> yearString = LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(pRecord->mDate.year);
 
@@ -1708,7 +1715,10 @@ void CupTrophyScene::SetHistory(Spoil& spoil)
             (InlineHasher&)h3,
             (InlineHasher&)h1);
     }
-    pArrowDown->m_bVisible = currentRecord < (int)spoilView.mNumRecords - 1;
+    if (currentRecord < (int)spoilView.mNumRecords - 1)
+        pArrowDown->m_bVisible = true;
+    else
+        pArrowDown->m_bVisible = false;
 
     TLImageInstance* pArrowUp;
     {
@@ -1741,7 +1751,10 @@ void CupTrophyScene::SetHistory(Spoil& spoil)
             (InlineHasher&)h3,
             (InlineHasher&)h1);
     }
-    pArrowUp->m_bVisible = currentRecord > 0;
+    if (currentRecord > 0)
+        pArrowUp->m_bVisible = true;
+    else
+        pArrowUp->m_bVisible = false;
 }
 
 /**

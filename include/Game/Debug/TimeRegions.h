@@ -3,7 +3,7 @@
 
 #include "NL/nlList.h"
 #include "NL/nlMemory.h"
-#include "Game/GameTweaks.h" // Add this for nlListAddEnd
+#include "Game/GameTweaks.h"
 
 void DestroyTimeRegions();
 void InitializeTimeRegions();
@@ -16,7 +16,6 @@ bool LeftSideOfField();
 bool CentreOfField();
 bool IsDuringGameplay();
 void WriteFrameRateStatsToFile();
-// void nlListAddEnd<ListEntry<TimeRegion*>>(ListEntry<TimeRegion*>**, ListEntry<TimeRegion*>**, ListEntry<TimeRegion*>*);
 
 class TimeRegion
 {
@@ -34,11 +33,15 @@ public:
         if (entry != nullptr)
         {
             entry->next = nullptr;
-            entry->data = this; // Store the old value
+            entry->data = this;
         }
         nlListAddEnd<ListEntry<TimeRegion*> >(&sTimeRegionList.m_Head, &sTimeRegionList.m_Tail, entry);
     }
 
+    /**
+     * Offset/Address/Size: 0x888 | 0x801626A8 | size: 0x100
+     * TODO: 96.25% match - r4/r5 register swap for currentEntry, hoisted newHead=NULL init
+     */
     virtual ~TimeRegion()
     {
         ListEntry<TimeRegion*>* currentEntry = TimeRegion::sTimeRegionList.m_Head;

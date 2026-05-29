@@ -2,6 +2,7 @@
 #include "NL/nlBSearch.h"
 #include "NL/nlColour.h"
 #include "NL/nlList.h"
+#include "NL/nlListSlotPoolHigh.h"
 #include "NL/nlQSort.h"
 #include "NL/nlSlotPoolHigh.h"
 #include "NL/nlString.h"
@@ -371,16 +372,10 @@ unsigned char nlFont::Load(const char* szFontName, char* pFontDescData, unsigned
 
     pCurrentLine = pFontDescData;
 
-    ListContainerBase<nlFont::KernPair, BasicSlotPoolHigh<ListEntry<nlFont::KernPair> > > KernList;
-    KernList.m_Allocator.m_Initial = 0x10;
-    SlotPoolBase::BaseAddNewBlock(&KernList.m_Allocator, sizeof(ListEntry<nlFont::KernPair>));
-    KernList.m_Allocator.m_Delta = 0x10;
+    nlListSlotPoolHigh<nlFont::KernPair> KernList(0x10, 0x10);
     m_KernTableSize = 0;
 
-    ListContainerBase<nlFont::GlyphInfo, BasicSlotPoolHigh<ListEntry<nlFont::GlyphInfo> > > ExtendedGlyphList;
-    ExtendedGlyphList.m_Allocator.m_Initial = 0x10;
-    SlotPoolBase::BaseAddNewBlock(&ExtendedGlyphList.m_Allocator, sizeof(ListEntry<nlFont::GlyphInfo>));
-    ExtendedGlyphList.m_Allocator.m_Delta = 0x10;
+    nlListSlotPoolHigh<nlFont::GlyphInfo> ExtendedGlyphList(0x10, 0x10);
     m_ExtendedGlyphCount = 0;
 
     CurrentPage = 0;
@@ -518,11 +513,10 @@ unsigned char nlFont::Load(const char* szFontName, char* pFontDescData, unsigned
 
                 if (pEntry != NULL)
                 {
-                    pEntry->next = NULL;
-                    pEntry->data = zeroedInfo;
+                    *pEntry = ListEntry<nlFont::GlyphInfo>(zeroedInfo);
                 }
 
-                nlListAddStart(&ExtendedGlyphList.m_Head, pEntry, &ExtendedGlyphList.m_Tail);
+                nlListAddStart<ListEntry<nlFont::GlyphInfo> >(&ExtendedGlyphList.m_Head, pEntry, &ExtendedGlyphList.m_Tail);
                 m_ExtendedGlyphCount++;
                 pInfo = &pEntry->data;
             }
@@ -585,7 +579,7 @@ unsigned char nlFont::Load(const char* szFontName, char* pFontDescData, unsigned
             pToken = nlStrChr(pToken, ' ') + 1;
             while ((unsigned long)pToken != 1)
             {
-                ListEntry<nlFont::KernPair>* pEntry;
+                ListEntry<nlFont::KernPair>* pEntry = NULL;
                 nlFont::KernPair entryData;
 
                 kp.s.A = Base;
@@ -609,15 +603,19 @@ unsigned char nlFont::Load(const char* szFontName, char* pFontDescData, unsigned
                     SlotPoolBase::BaseAddNewBlock(&KernList.m_Allocator, sizeof(ListEntry<nlFont::KernPair>));
                 }
 
-                pEntry = (ListEntry<nlFont::KernPair>*)KernList.m_Allocator.m_FreeList;
+                if (KernList.m_Allocator.m_FreeList != NULL)
+                {
+                    pEntry = (ListEntry<nlFont::KernPair>*)KernList.m_Allocator.m_FreeList;
+                    KernList.m_Allocator.m_FreeList = KernList.m_Allocator.m_FreeList->m_next;
+                }
+
                 if (pEntry != NULL)
                 {
-                    KernList.m_Allocator.m_FreeList = KernList.m_Allocator.m_FreeList->m_next;
                     pEntry->next = NULL;
                     pEntry->data = entryData;
                 }
 
-                nlListAddStart(&KernList.m_Head, pEntry, &KernList.m_Tail);
+                nlListAddStart<ListEntry<nlFont::KernPair> >(&KernList.m_Head, pEntry, &KernList.m_Tail);
                 m_KernTableSize++;
 
                 pToken = nlStrChr(pToken, ' ') + 1;
@@ -642,7 +640,7 @@ unsigned char nlFont::Load(const char* szFontName, char* pFontDescData, unsigned
 
         while (KernList.m_Head != NULL)
         {
-            ListEntry<nlFont::KernPair>* pEntry = nlListRemoveStart(&KernList.m_Head, &KernList.m_Tail);
+            ListEntry<nlFont::KernPair>* pEntry = nlListRemoveStart<ListEntry<nlFont::KernPair> >(&KernList.m_Head, &KernList.m_Tail);
             if (pKP != NULL)
             {
                 pKP->s.A = pEntry->data.s.A;
@@ -669,7 +667,7 @@ unsigned char nlFont::Load(const char* szFontName, char* pFontDescData, unsigned
 
         while (ExtendedGlyphList.m_Head != NULL)
         {
-            ListEntry<nlFont::GlyphInfo>* pEntry = nlListRemoveStart(&ExtendedGlyphList.m_Head, &ExtendedGlyphList.m_Tail);
+            ListEntry<nlFont::GlyphInfo>* pEntry = nlListRemoveStart<ListEntry<nlFont::GlyphInfo> >(&ExtendedGlyphList.m_Head, &ExtendedGlyphList.m_Tail);
             if (pInfo != NULL)
             {
                 *pInfo = pEntry->data;

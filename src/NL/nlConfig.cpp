@@ -389,9 +389,6 @@ void Config::Set(const char* tag, float value)
 
 /**
  * Offset/Address/Size: 0x1CF4 | 0x801D4958 | size: 0x120
- * TODO: 92.9% match - r28/r29 register swap throughout (idx/offset/tvp allocation),
- * hash loop *p++ lbz r0 + extra extsb r3,r0 (same as Exists), add operand order swap,
- * copy loop extsb. r3,r3 vs r0,r3, bge vs blt/b branch pattern
  */
 void Config::Set(const char* tag, bool value)
 {

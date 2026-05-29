@@ -861,48 +861,23 @@ void NisPlayer::LoadTriggers(Nis& nis)
     FORCE_DONT_INLINE;
     BasicString<char, Detail::TempStringAllocator> name(nis.Name());
     int i;
+    unsigned long nisHash;
 
-    if (name.m_data != NULL)
-    {
-        i = name.m_data->mSize - 1;
-    }
-    else
-    {
-        i = 0;
-    }
-    i = i - 1;
-
-    while (i >= 0)
+    for (i = ((name.m_data != NULL) ? (name.m_data->mSize - 1) : 0) - 1; i >= 0; i = i - 1)
     {
         if (name[i] == '.')
         {
             name[i] = '\0';
             break;
         }
-        i = i - 1;
     }
 
-    unsigned long nisHash = nlStringHash(name.c_str());
+    nisHash = nlStringHash(name.c_str());
     if (!FunctionExists(nisHash))
     {
-        int i = 0;
-        while (true)
+        int i;
+        for (i = 0; i < ((name.m_data != NULL) ? (name.m_data->mSize - 1) : 0); i = i + 1)
         {
-            int len;
-            if (name.m_data != NULL)
-            {
-                len = name.m_data->mSize - 1;
-            }
-            else
-            {
-                len = 0;
-            }
-
-            if (i >= len)
-            {
-                break;
-            }
-
             if (name[i] == '_')
             {
                 name[i];
@@ -947,8 +922,6 @@ void NisPlayer::LoadTriggers(Nis& nis)
                 name.insert(at, begin, end);
                 break;
             }
-
-            i = i + 1;
         }
 
         nisHash = nlStringHash(name.c_str());
