@@ -554,9 +554,9 @@ static void SOR_LCP(int m, int nb, dRealMutablePtr J, int* jb, dxBody* const* bo
 
 /**
  * Offset/Address/Size: 0x21E9B4 | 0x80221A74 | size: 0x134C
- * TODO: 95.3% match - register allocation (world in r16 vs stack, nj/nb/body
- * register shift r15/r18/r17 vs r18/r17/r16). Body tag loop and rest of
- * function match 100%.
+ * TODO: 99.5% match - register allocation drift in v/h+invM*fe accumulator
+ * (L713-721) and post-SOR velocity update (L764-770); a single scheduling
+ * insert of `addi r4,r4,0x4` in the inertia-tensor loop epilogue remains.
  */
 void dxQuickStepper(dxWorld* world, dxBody* const* body, int nb,
     dxJoint* const* _joint, int nj, dReal stepsize)
@@ -590,17 +590,20 @@ void dxQuickStepper(dxWorld* world, dxBody* const* body, int nb,
     for (i = 0; i < nb; i++)
     {
         dMatrix3 tmp;
+        dxBody* b = body[i];
         // compute inertia tensor in global frame
-        dMULTIPLY2_333(tmp, body[i]->mass.I, body[i]->R);
-        dMULTIPLY0_333(I + i * 12, body[i]->R, tmp);
+        dMULTIPLY2_333(tmp, b->mass.I, b->R);
+        dMULTIPLY0_333(I + i * 12, b->R, tmp);
         // compute inverse inertia tensor in global frame
-        dMULTIPLY2_333(tmp, body[i]->invI, body[i]->R);
-        dMULTIPLY0_333(invI + i * 12, body[i]->R, tmp);
+        dMULTIPLY2_333(tmp, b->invI, b->R);
+        dMULTIPLY0_333(invI + i * 12, b->R, tmp);
         // compute rotational force
-        dReal* avel = body[i]->avel;
-        dReal* tacc = body[i]->tacc;
+        dReal* avel = b->avel;
+        dReal* tacc = b->tacc;
         dMULTIPLY0_331(tmp, I + i * 12, avel);
-        dCROSS(tacc, -=, avel, tmp);
+        tacc[0] -= tmp[2] * avel[1] - tmp[1] * avel[2];
+        tacc[1] -= tmp[0] * avel[2] - tmp[2] * avel[0];
+        tacc[2] -= tmp[1] * avel[0] - tmp[0] * avel[1];
     }
 
     // gravity is applied externally before calling dxQuickStepper
@@ -714,10 +717,10 @@ void dxQuickStepper(dxWorld* world, dxBody* const* body, int nb,
             dxBody* b = body[i];
             dReal body_invMass = b->invMass;
             for (j = 0; j < 3; j++)
-                tmp1[i * 6 + j] = b->facc[j] * body_invMass + b->lvel[j] * stepsize1;
+                tmp1[i * 6 + j] = body_invMass * b->facc[j] + stepsize1 * b->lvel[j];
             dMULTIPLY0_331(tmp1 + i * 6 + 3, invI + i * 12, b->tacc);
             for (j = 0; j < 3; j++)
-                tmp1[i * 6 + 3 + j] += b->avel[j] * stepsize1;
+                tmp1[i * 6 + 3 + j] += stepsize1 * b->avel[j];
         }
 
         // put J*tmp1 into rhs
@@ -760,13 +763,16 @@ void dxQuickStepper(dxWorld* world, dxBody* const* body, int nb,
         // they should not be used again.
 
         // add stepsize * cforce to the body velocity
-        for (i = 0; i < nb; i++)
         {
-            dxBody* b = body[i];
-            for (j = 0; j < 3; j++)
-                b->lvel[j] += stepsize * cforce[i * 6 + j];
-            for (j = 0; j < 3; j++)
-                b->avel[j] += stepsize * cforce[i * 6 + 3 + j];
+            dxBody* const* body_ptr = body;
+            for (i = 0; i < nb; i++, body_ptr++)
+            {
+                dxBody* b = *body_ptr;
+                for (j = 0; j < 3; j++)
+                    b->lvel[j] += stepsize * cforce[i * 6 + j];
+                for (j = 0; j < 3; j++)
+                    b->avel[j] += stepsize * cforce[i * 6 + 3 + j];
+            }
         }
 
         // if joint feedback is requested, compute the constraint force.
@@ -822,9 +828,9 @@ void dxQuickStepper(dxWorld* world, dxBody* const* body, int nb,
         for (i = 0; i < nb; i++, body_ptr++, invI_ptr += 12)
         {
             dxBody* b = *body_ptr;
-            dReal body_invMass = b->invMass;
+            dReal step_invMass = stepsize * b->invMass;
             for (j = 0; j < 3; j++)
-                b->lvel[j] += stepsize * body_invMass * b->facc[j];
+                b->lvel[j] += step_invMass * b->facc[j];
             for (j = 0; j < 3; j++)
                 b->tacc[j] *= stepsize;
             dMULTIPLYADD0_331(b->avel, invI_ptr, b->tacc);
