@@ -359,13 +359,14 @@ BasicString<CharT, Allocator>& BasicString<CharT, Allocator>::AppendInPlace(cons
         {
             data->mData = (CharT*)Allocator::allocate(1);
             int sz = 1;
+            int j = 0;
             data->mSize = sz;
             data->mCapacity = sz;
             data->mData[0] = 0;
-            data->mRefCount = 1;
-            for (int j = 0; j < data->mSize - 1; j++)
+            data->mRefCount = sz;
+            for (; j < data->mSize - 1; j++)
             {
-                data->mData[j] = m_data->mData[j];
+                data->mData[j] = ((CharT*)0)[j];
             }
         }
         m_data = data;
@@ -406,9 +407,10 @@ BasicString<CharT, Allocator>& BasicString<CharT, Allocator>::AppendInPlace(cons
     }
 
     CharT* at;
-    if (m_data != 0)
+    BasicStringData<CharT>* currentData = m_data;
+    if (currentData != 0)
     {
-        at = m_data->mData + (m_data->mSize - 1);
+        at = currentData->mData + currentData->mSize - 1;
     }
     else
     {
@@ -416,9 +418,10 @@ BasicString<CharT, Allocator>& BasicString<CharT, Allocator>::AppendInPlace(cons
     }
 
     const CharT* begin;
-    if (rhs.m_data != 0)
+    BasicStringData<CharT>* rhsData = rhs.m_data;
+    if (rhsData != 0)
     {
-        begin = rhs.m_data->mData;
+        begin = rhsData->mData;
     }
     else
     {
@@ -426,9 +429,9 @@ BasicString<CharT, Allocator>& BasicString<CharT, Allocator>::AppendInPlace(cons
     }
 
     const CharT* end;
-    if (rhs.m_data != 0)
+    if (rhsData != 0)
     {
-        end = rhs.m_data->mData + (rhs.m_data->mSize - 1);
+        end = rhsData->mData + rhsData->mSize - 1;
     }
     else
     {
@@ -447,60 +450,8 @@ BasicString<CharT, Allocator>& BasicString<CharT, Allocator>::AppendInPlace(cons
     {
         rhsEnd++;
     }
-    BasicStringData<CharT>* data;
-    BasicStringData<CharT>* oldData = m_data;
 
-    if (oldData == 0)
-    {
-        data = (BasicStringData<CharT>*)Allocator::allocate(sizeof(BasicStringData<CharT>));
-        if (data != 0)
-        {
-            data->mData = (CharT*)Allocator::allocate(sizeof(CharT));
-            data->mSize = 1;
-            data->mCapacity = 1;
-            data->mData[0] = 0;
-            data->mRefCount = 1;
-            for (int j = 0; j < data->mSize - 1; j++)
-            {
-                data->mData[j] = ((CharT*)0)[j];
-            }
-        }
-        m_data = data;
-    }
-    else
-    {
-        if (oldData->mRefCount != 1)
-        {
-            data = (BasicStringData<CharT>*)Allocator::allocate(sizeof(BasicStringData<CharT>));
-            if (data != 0)
-            {
-                data->mData = (CharT*)Allocator::allocate(oldData->mSize * sizeof(CharT));
-                data->mSize = oldData->mSize;
-                data->mCapacity = oldData->mSize;
-                for (int j = 0; j < data->mSize; j++)
-                {
-                    data->mData[j] = oldData->mData[j];
-                }
-                data->mRefCount = 1;
-            }
-            if (--oldData->mRefCount == 0)
-            {
-                if (oldData)
-                {
-                    if (oldData)
-                    {
-                        delete[] oldData->mData;
-                    }
-                    if (oldData)
-                    {
-                        nlFree(oldData);
-                    }
-                }
-            }
-            oldData = data;
-        }
-        m_data = oldData;
-    }
+    (*this)[0];
 
     CharT* at;
     if (m_data != 0)
@@ -549,34 +500,37 @@ void BasicString<CharT, Allocator>::insert(CharT* at, const CharT* begin, const 
 
     if (data->mCapacity < newSize)
     {
-        CharT* buf = (CharT*)Allocator::allocate(newSize * sizeof(CharT));
+        Vector<CharT> newVec;
+        newVec.mData = (CharT*)Allocator::allocate(newSize * sizeof(CharT));
+        newVec.mSize = newSize;
+        newVec.mCapacity = newSize;
         for (int i = 0; i < newSize; i++)
         {
-            buf[i] = 0;
+            newVec.mData[i] = 0;
         }
-        CharT* dst = buf;
+        CharT* dst = newVec.mData;
         for (int i = 0; i < data->mSize; i++)
         {
             *dst++ = data->mData[i];
         }
         CharT* oldBuf = data->mData;
-        data->mData = buf;
-        data->mCapacity = newSize;
-        delete[] oldBuf;
+        data->mData = newVec.mData;
+        data->mCapacity = newVec.mCapacity;
+        newVec.mData = oldBuf;
     }
 
-    at = data->mData + insertPos;
+    CharT* pos = data->mData + insertPos;
     CharT* t = data->mData + data->mSize - 1;
-    while (t >= at)
+    while (t >= pos)
     {
         *(t + size) = *t;
         t--;
     }
     while (begin != end)
     {
-        *at = *begin;
+        *pos = *begin;
         begin++;
-        at++;
+        pos++;
     }
     data->mSize += size;
 }

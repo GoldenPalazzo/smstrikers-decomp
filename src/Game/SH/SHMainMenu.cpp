@@ -500,8 +500,9 @@ void SHMainMenu::SceneCreated()
         fi0.byValue = FEFinder<TLInstance, 4>::Find<TLSlide>;
         instance = fi0.byRef(presentation->m_currentSlide, (InlineHasher&)a7, (InlineHasher&)a5, (InlineHasher&)h7, (InlineHasher&)h5, (InlineHasher&)h3, (InlineHasher&)h1);
         compinstance = (TLComponentInstance*)instance;
-        MenuItem<TLComponentInstance>& item = mMenuItems.mMenuItems[mMenuItems.mNumItemsAdded];
-        item.mType = compinstance;
+        int numAdded = mMenuItems.mNumItemsAdded;
+        mMenuItems.mMenuItems[numAdded].mType = compinstance;
+        MenuItem<TLComponentInstance>& item = mMenuItems.mMenuItems[numAdded];
         mMenuItems.mNumItemsAdded++;
         {
             BindExp2<void, Detail::MemFunImpl<void, void (SHMainMenu::*)(TLComponentInstance*)>, SHMainMenu*, Placeholder<0> > bindOpen = Bind<void>(MemFun<SHMainMenu, void, TLComponentInstance*>(&SHMainMenu::OpenItem), this, placeholder0);

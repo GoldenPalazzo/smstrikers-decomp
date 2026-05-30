@@ -15,12 +15,45 @@ s32 g_pPadRemapArray[38] = {
     0x00000020, 0x00000040, 0x00000008, 0x00000004, 0x00000004, 0x00000040, 0x00000020, 0x00000100, 0x00000010, 0x00000100, 0x00000200, 0x00000001, 0x00000002, 0x00000008, 0x00000004, 0x00000100, 0x00000200, 0x00000400, 0x00000800, 0x00001000, 0x00000020, 0x00000040, 0x00000400, 0x00000010, 0x00000800, 0x00000200, 0x00000100, 0x00000100, 0x00000200, 0x00000800, 0x00000800, 0x00000800, 0x00000020, 0x00001000, 0x00000010, 0x00000010, 0x00001000, 0x00001000
 };
 
-// /**
-//  * Offset/Address/Size: 0x128 | 0x80193720 | size: 0xD74
-//  */
-// void FormatImpl<BasicString<char, Detail::TempStringAllocator>>::operator%<int>(const int&)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x128 | 0x80193720 | size: 0xD74
+ */
+template <>
+template <>
+FormatImpl<BasicString<char, Detail::TempStringAllocator> >&
+    FormatImpl<BasicString<char, Detail::TempStringAllocator> >::operator% <int>(const int& t)
+{
+    BasicString<char, Detail::TempStringAllocator> insert = LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(t);
+    for (int i = 0; i < (mString.m_data ? mString.m_data->mSize - 1 : 0); i++)
+    {
+        if (mString[i] != '{')
+            continue;
+        if (i + 1 >= (mString.m_data ? mString.m_data->mSize - 1 : 0))
+            continue;
+        if (mString[i + 1] - '0' != mCurrentPos)
+            continue;
+        if (i + 2 >= (mString.m_data ? mString.m_data->mSize - 1 : 0))
+            continue;
+        if (mString[i + 2] != '}')
+            continue;
+        mString[0];
+        BasicStringData<char>* data = mString.m_data;
+        char* eraseStart = &mString[i];
+        char* eraseEnd = &mString[i + 3];
+        int eraseLen = eraseEnd - eraseStart;
+        char* at = data->mData + (eraseStart - data->mData);
+        while (eraseEnd != data->mData + data->mSize)
+        {
+            *at = *eraseEnd;
+            eraseEnd++;
+            at++;
+        }
+        data->mSize -= eraseLen;
+        mString.insert(&mString[i], &insert[0], &insert[(int)insert.size()]);
+    }
+    mCurrentPos++;
+    return *this;
+}
 
 // /**
 //  * Offset/Address/Size: 0x0 | 0x801935F8 | size: 0x128

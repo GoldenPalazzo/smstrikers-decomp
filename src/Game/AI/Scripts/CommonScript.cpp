@@ -4196,10 +4196,8 @@ FuzzyVariant Fuzzy::GetPowerupToUseForPassReceiveDefence(cFielder* TheFielder)
     float fConfidence = 1.0f;
     float fBestConfidence = 0.0f;
 
-    FuzzyVariant fvFielder((cPlayer*)TheFielder);
-    ((Variant*)&fvFielder)->GetHash();
-
-    FuzzyVariant fvFielder2((cPlayer*)TheFielder);
+    ((Variant*)&FuzzyVariant((cPlayer*)TheFielder))->GetHash();
+    FuzzyVariant((cPlayer*)TheFielder);
 
     float fTrueConfidence = OnScreen((cPlayer*)TheFielder);
 
@@ -4292,8 +4290,7 @@ FuzzyVariant Fuzzy::GetPowerupToUseForPassReceiveDefence(cFielder* TheFielder)
             if (fConfidence > fBestConfidence)
             {
                 fBestConfidence = fConfidence;
-                FuzzyVariant fvResult(0);
-                bestValue = fvResult;
+                bestValue = FuzzyVariant(0);
             }
         }
 
@@ -4318,8 +4315,7 @@ FuzzyVariant Fuzzy::GetPowerupToUseForPassReceiveDefence(cFielder* TheFielder)
             if (fConfidence > fBestConfidence)
             {
                 fBestConfidence = fConfidence;
-                FuzzyVariant fvResult(1);
-                bestValue = fvResult;
+                bestValue = FuzzyVariant(1);
             }
         }
 
@@ -4344,8 +4340,7 @@ FuzzyVariant Fuzzy::GetPowerupToUseForPassReceiveDefence(cFielder* TheFielder)
             if (fConfidence > fBestConfidence)
             {
                 fBestConfidence = fConfidence;
-                FuzzyVariant fvResult(2);
-                bestValue = fvResult;
+                bestValue = FuzzyVariant(2);
             }
         }
 
@@ -4370,8 +4365,7 @@ FuzzyVariant Fuzzy::GetPowerupToUseForPassReceiveDefence(cFielder* TheFielder)
             if (fConfidence > fBestConfidence)
             {
                 fBestConfidence = fConfidence;
-                FuzzyVariant fvResult(3);
-                bestValue = fvResult;
+                bestValue = FuzzyVariant(3);
             }
         }
 
@@ -4396,8 +4390,7 @@ FuzzyVariant Fuzzy::GetPowerupToUseForPassReceiveDefence(cFielder* TheFielder)
             if (fConfidence > fBestConfidence)
             {
                 fBestConfidence = fConfidence;
-                FuzzyVariant fvResult(4);
-                bestValue = fvResult;
+                bestValue = FuzzyVariant(4);
             }
         }
 
@@ -4422,8 +4415,7 @@ FuzzyVariant Fuzzy::GetPowerupToUseForPassReceiveDefence(cFielder* TheFielder)
             if (fConfidence > fBestConfidence)
             {
                 fBestConfidence = fConfidence;
-                FuzzyVariant fvResult(5);
-                bestValue = fvResult;
+                bestValue = FuzzyVariant(5);
             }
         }
 
@@ -4492,8 +4484,7 @@ FuzzyVariant Fuzzy::GetPowerupToUseForPassReceiveDefence(cFielder* TheFielder)
                     if (fConfidence > fBestConfidence)
                     {
                         fBestConfidence = fConfidence;
-                        FuzzyVariant fvResult(7);
-                        bestValue = fvResult;
+                        bestValue = FuzzyVariant(7);
                     }
                 }
             }
@@ -4548,8 +4539,7 @@ FuzzyVariant Fuzzy::GetPowerupToUseForPassReceiveDefence(cFielder* TheFielder)
                 if (fConfidence > fBestConfidence)
                 {
                     fBestConfidence = fConfidence;
-                    FuzzyVariant fvResult(8);
-                    bestValue = fvResult;
+                    bestValue = FuzzyVariant(8);
                 }
             }
         }

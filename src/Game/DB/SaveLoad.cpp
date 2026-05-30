@@ -636,12 +636,15 @@ long SaveCallbacks::DoSave(unsigned long Slot)
             MemCard* card2 = g_MemCards[Slot];
             long dataSize = nlSingleton<GameInfoManager>::s_pInstance->GetMemoryCardDataSize();
             int numBlocks = 0;
-            int origSize;
-            dataSize = (u32)(dataSize + 0x200B) >> 13;
-            while (dataSize > 0)
+            dataSize += 12;
+            if (dataSize > 0)
             {
-                numBlocks++;
-                dataSize--;
+                dataSize = (unsigned long)(dataSize + 0x1FFF) >> 13;
+                while (dataSize > 0)
+                {
+                    numBlocks++;
+                    dataSize--;
+                }
             }
             MemCard::ICON_CONFIG IconCfg;
             IconCfg.BannerFormat = 0;
@@ -662,7 +665,7 @@ long SaveCallbacks::DoSave(unsigned long Slot)
             int bannerSize = iconFormat * 0xC00;
             int iconClut = (temp >> 31) & 0x200;
             int total = bannerClut + bannerSize + iconSize + iconClut;
-            origSize = (int)(IconCfg.HeaderSize = total + 0x40);
+            int origSize = (int)(IconCfg.HeaderSize = total + 0x40);
             dataSize = (u32)(origSize + 0x1FFF) >> 13;
             while (dataSize > 0)
             {
@@ -779,12 +782,15 @@ long SaveCallbacks::DoSave(unsigned long Slot)
             MemCard* card2 = g_MemCards[Slot];
             long ds2 = nlSingleton<GameInfoManager>::s_pInstance->GetMemoryCardDataSize();
             int numBlocks2 = 0;
-            int origSize2;
-            ds2 = (u32)(ds2 + 0x200B) >> 13;
-            while (ds2 > 0)
+            ds2 += 12;
+            if (ds2 > 0)
             {
-                numBlocks2++;
-                ds2--;
+                ds2 = (unsigned long)(ds2 + 0x1FFF) >> 13;
+                while (ds2 > 0)
+                {
+                    numBlocks2++;
+                    ds2--;
+                }
             }
             MemCard::ICON_CONFIG IconCfg2;
             IconCfg2.BannerFormat = 0;
@@ -805,7 +811,7 @@ long SaveCallbacks::DoSave(unsigned long Slot)
             int bannerSize2 = iconFormat2 * 0xC00;
             int iconClut2 = (temp2 >> 31) & 0x200;
             int total2 = bannerClut2 + bannerSize2 + iconSize2 + iconClut2;
-            origSize2 = (int)(IconCfg2.HeaderSize = total2 + 0x40);
+            int origSize2 = (int)(IconCfg2.HeaderSize = total2 + 0x40);
             ds2 = (u32)(origSize2 + 0x1FFF) >> 13;
             while (ds2 > 0)
             {

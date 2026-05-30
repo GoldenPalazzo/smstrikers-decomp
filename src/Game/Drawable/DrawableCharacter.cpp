@@ -1009,16 +1009,16 @@ void DrawableCharacter::Blend(const float* blendFactors, const DrawableCharacter
     mCharacter = lhs.mCharacter;
     mBowser = lhs.mBowser;
     mDirt = lhs.mDirt;
+    mPosition.f.x = (1.0f - *blendFactors) * lhs.mPosition.f.x + *blendFactors * rhs.mPosition.f.x;
+    mPosition.f.y = (1.0f - *blendFactors) * lhs.mPosition.f.y + *blendFactors * rhs.mPosition.f.y;
+    mPosition.f.z = (1.0f - *blendFactors) * lhs.mPosition.f.z + *blendFactors * rhs.mPosition.f.z;
+    mBip01Position.f.x = (1.0f - *blendFactors) * lhs.mBip01Position.f.x + *blendFactors * rhs.mBip01Position.f.x;
+    mBip01Position.f.y = (1.0f - *blendFactors) * lhs.mBip01Position.f.y + *blendFactors * rhs.mBip01Position.f.y;
+    mBip01Position.f.z = (1.0f - *blendFactors) * lhs.mBip01Position.f.z + *blendFactors * rhs.mBip01Position.f.z;
+    mHeadPosition.f.x = (1.0f - *blendFactors) * lhs.mHeadPosition.f.x + *blendFactors * rhs.mHeadPosition.f.x;
+    mHeadPosition.f.y = (1.0f - *blendFactors) * lhs.mHeadPosition.f.y + *blendFactors * rhs.mHeadPosition.f.y;
+    mHeadPosition.f.z = (1.0f - *blendFactors) * lhs.mHeadPosition.f.z + *blendFactors * rhs.mHeadPosition.f.z;
     float t = *blendFactors;
-    mPosition.f.x = (1.0f - t) * lhs.mPosition.f.x + t * rhs.mPosition.f.x;
-    mPosition.f.y = (1.0f - t) * lhs.mPosition.f.y + t * rhs.mPosition.f.y;
-    mPosition.f.z = (1.0f - t) * lhs.mPosition.f.z + t * rhs.mPosition.f.z;
-    mBip01Position.f.x = (1.0f - t) * lhs.mBip01Position.f.x + t * rhs.mBip01Position.f.x;
-    mBip01Position.f.y = (1.0f - t) * lhs.mBip01Position.f.y + t * rhs.mBip01Position.f.y;
-    mBip01Position.f.z = (1.0f - t) * lhs.mBip01Position.f.z + t * rhs.mBip01Position.f.z;
-    mHeadPosition.f.x = (1.0f - t) * lhs.mHeadPosition.f.x + t * rhs.mHeadPosition.f.x;
-    mHeadPosition.f.y = (1.0f - t) * lhs.mHeadPosition.f.y + t * rhs.mHeadPosition.f.y;
-    mHeadPosition.f.z = (1.0f - t) * lhs.mHeadPosition.f.z + t * rhs.mHeadPosition.f.z;
     mFacingDirection = lhs.mFacingDirection + (short)(t * (float)(short)(rhs.mFacingDirection - lhs.mFacingDirection));
     mHeadSpin = lhs.mHeadSpin + (short)(t * (float)(short)(rhs.mHeadSpin - lhs.mHeadSpin));
     mHeadTilt = lhs.mHeadTilt + (short)(t * (float)(short)(rhs.mHeadTilt - lhs.mHeadTilt));
@@ -1028,18 +1028,17 @@ void DrawableCharacter::Blend(const float* blendFactors, const DrawableCharacter
         mPoseAccumulator = new (nlMalloc(sizeof(cPoseAccumulator), 8, false)) cPoseAccumulator(lhs.mPoseAccumulator->m_BaseSHierarchy, false);
     }
     mPoseAccumulator->InitAccumulators();
-    t = *blendFactors;
-    float oneMinusT = 1.0f - t;
+    float oneMinusT = 1.0f - *blendFactors;
     cPoseAccumulator* lhsPoseAccum = lhs.mPoseAccumulator;
     cPoseAccumulator* rhsPoseAccum = rhs.mPoseAccumulator;
     for (int i = 0; i < mPoseAccumulator->GetNumNodes(); i++)
     {
         RotAccum* lhsRot = &lhsPoseAccum->m_rot.mData[i];
         RotAccum* rhsRot = &rhsPoseAccum->m_rot.mData[i];
-        float rhsRotAroundZWeight = rhsRot->rotAroundZAccumulatedWeight * t;
+        float rhsRotAroundZWeight = rhsRot->rotAroundZAccumulatedWeight * *blendFactors;
         mPoseAccumulator->BlendRotAroundZ(i, lhsRot->rotAroundZ, lhsRot->rotAroundZAccumulatedWeight * oneMinusT);
         mPoseAccumulator->BlendRotAroundZ(i, rhsRot->rotAroundZ, rhsRotAroundZWeight);
-        float rhsQuatWeight = rhsRot->quatAccumulatedWeight * t;
+        float rhsQuatWeight = rhsRot->quatAccumulatedWeight * *blendFactors;
         mPoseAccumulator->BlendRot(i, &lhsRot->q, lhsRot->quatAccumulatedWeight * oneMinusT, false);
         mPoseAccumulator->BlendRot(i, &rhsRot->q, rhsQuatWeight, false);
         mPoseAccumulator->BlendTrans(i, &lhsPoseAccum->m_trans.mData[i].t, 1.0f - *blendFactors, false);

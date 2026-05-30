@@ -158,8 +158,6 @@ Format<BasicString<unsigned short, Detail::TempStringAllocator>, unsigned short[
 
 /**
  * Offset/Address/Size: 0xF40 | 0x8010473C | size: 0x12C
- * TODO: 97.67% match - store scheduling (li r0,0 before/after stw r4) and
- * return copy register choice (r0 reload vs r4 reuse) still differ.
  */
 template <>
 inline BasicString<unsigned short, Detail::TempStringAllocator>
@@ -180,12 +178,10 @@ Format<BasicString<unsigned short, Detail::TempStringAllocator>,
         data = 0;
     }
 
-    BasicString<unsigned short, Detail::TempStringAllocator> implString(data);
-    ((FormatImpl<BasicString<unsigned short, Detail::TempStringAllocator> >&)implString)
-        .mCurrentPos = 0;
+    FormatImplLayoutWideTemp impl(data);
 
     return BasicString<unsigned short, Detail::TempStringAllocator>(
-        (BasicString<unsigned short, Detail::TempStringAllocator>)((((FormatImpl<BasicString<unsigned short, Detail::TempStringAllocator> >&)implString) % (const unsigned short*)value1) % value2));
+        (BasicString<unsigned short, Detail::TempStringAllocator>)((((FormatImpl<BasicString<unsigned short, Detail::TempStringAllocator> >&)impl) % (const unsigned short*)value1) % value2));
 }
 
 /**
@@ -474,7 +470,6 @@ inline BasicString<unsigned short, Detail::TempStringAllocator> Format<BasicStri
 }
 /**
  * Offset/Address/Size: 0x0 | 0x80060960 | size: 0x114
- * TODO: 61.38% match - extra helper ctor/dtor wrapper calls and stack frame size mismatch remain.
  */
 template <>
 inline BasicString<char, Detail::TempStringAllocator> Format<BasicString<char, Detail::TempStringAllocator>, int>(
@@ -491,14 +486,10 @@ inline BasicString<char, Detail::TempStringAllocator> Format<BasicString<char, D
         data = 0;
     }
 
-    FormatImplLayoutCharTemp impl;
-    impl.mString.m_data = data;
-    impl.mCurrentPos = 0;
-
-    ((FormatImpl<BasicString<char, Detail::TempStringAllocator> >&)impl) % value;
+    FormatImpl<BasicString<char, Detail::TempStringAllocator> > impl(data);
 
     return BasicString<char, Detail::TempStringAllocator>(
-        (BasicString<char, Detail::TempStringAllocator>)((FormatImpl<BasicString<char, Detail::TempStringAllocator> >&)impl));
+        (BasicString<char, Detail::TempStringAllocator>)(impl % value));
 }
 
 /**

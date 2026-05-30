@@ -144,14 +144,44 @@ inline NLString Detail::LexicalCastImpl<NLString, int>::Do(int t)
 
 /**
  * Offset/Address/Size: 0x168 | 0x8006A094 | size: 0x100
- * TODO: 93.45% match - return-buffer/data-pointer register roles remain swapped (r30/r31).
+ * TODO: 97.66% match - r30/r31 register roles are swapped between return
+ * slot and the allocated BasicStringData pointer.
  */
 template <>
 inline NLString Detail::LexicalCastImpl<NLString, unsigned long>::Do(unsigned long t)
 {
     char string[0x40];
     nlSNPrintf(string, 0x40, "%u", t);
-    return NLString(string);
+
+    BasicStringData<char>* data = (BasicStringData<char>*)nlMalloc(0x10, 8, true);
+    if (data != 0)
+    {
+        char* start = string;
+        char* p = start;
+
+        data->mData = 0;
+        data->mSize = 0;
+        data->mCapacity = 0;
+
+        while (*p++ != 0)
+        {
+            data->mSize++;
+        }
+
+        data->mSize++;
+        data->mData = (char*)nlMalloc(data->mSize + 1, 8, true);
+        data->mCapacity = data->mSize;
+
+        for (int i = 0; i < data->mSize; i++)
+        {
+            data->mData[i] = *start;
+            start++;
+        }
+
+        data->mRefCount = 1;
+    }
+
+    return NLString((BasicStringData<char>*)data);
 }
 
 /**

@@ -9,6 +9,7 @@
 #include "Game/SH/SHPause.h"
 #include "NL/nlBSearch.h"
 #include "NL/nlFormat.h"
+#include "NL/nlLocalization.h"
 
 extern bool g_e3_Build;
 
@@ -316,32 +317,7 @@ void SummaryOverlay::Update(float fDeltaT)
  */
 void SummaryOverlay::DisplayMatchSummary(eSummaryType matchSummaryType)
 {
-    struct LOCHeaderLocal
-    {
-        char Thumbprint[4];
-        unsigned long Version;
-        unsigned long Language;
-        unsigned long StringCount;
-        unsigned long Flags;
-    };
-
-    struct StringLookupLocal
-    {
-        unsigned long hash;
-        unsigned long StringOffset;
-
-        operator unsigned long() const { return hash; }
-    };
-
-    struct LocalizationLocal
-    {
-        LOCHeaderLocal* m_pFile;
-        StringLookupLocal* m_LookupTable;
-        unsigned short* m_FirstString;
-        int m_CurrentLanguage;
-    };
-
-    extern void* g_pLocalization;
+    extern nlLocalization* g_pLocalization;
     extern const unsigned short LocalizationTableNotFound[];
     extern const unsigned short MissingLocString[];
     extern unsigned long GetLOCCharacterName(eTeamID, bool, bool);
@@ -362,7 +338,7 @@ void SummaryOverlay::DisplayMatchSummary(eSummaryType matchSummaryType)
         "numeric_column_sm4",
     };
 
-    FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
+    m_pFEScene->m_pFEPackage->GetPresentation();
     TLComponentInstance* pComponentInstances[2] = { 0, 0 };
     TLSlide* pSlide = mSlideMenu->m_pMenuComp->GetActiveSlide();
     TLTextInstance* pTextInstanceRows[6];
@@ -388,36 +364,35 @@ void SummaryOverlay::DisplayMatchSummary(eSummaryType matchSummaryType)
     }
     else
     {
-        const unsigned short* locString;
         unsigned long key;
-        LocalizationLocal* loc;
-        StringLookupLocal* entry;
+        nlLocalization* loc;
+        nlLocalization::StringLookup* entry;
 
         displayedStats[0] = &mCumulativePlayerStats[0];
         displayedStats[1] = &mCumulativePlayerStats[1];
         numRows = 6;
 
-        loc = (LocalizationLocal*)g_pLocalization;
+        loc = g_pLocalization;
         key = nlStringLowerHash("TOTAL_MATCH_SUMMARY");
 
         if (loc->m_LookupTable == 0)
         {
-            locString = LocalizationTableNotFound;
+            loc = (nlLocalization*)LocalizationTableNotFound;
         }
         else
         {
-            entry = nlBSearch<StringLookupLocal, unsigned long>(key, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
+            entry = nlBSearch<nlLocalization::StringLookup, unsigned long>(key, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
             if (entry)
             {
-                locString = loc->m_FirstString + entry->StringOffset;
+                loc = (nlLocalization*)(loc->m_FirstString + entry->StringOffset);
             }
             else
             {
-                locString = MissingLocString;
+                loc = (nlLocalization*)MissingLocString;
             }
         }
 
-        WideBasicString unformatted(locString);
+        WideBasicString unformatted((const unsigned short*)loc);
         NLString numGamesString(LexicalCast<NLString, int>((int)nlSingleton<StatsTracker>::s_pInstance->mNumConsecutiveGamesPlayed));
         unsigned short tempBuffer[32];
         nlStrToWcs(numGamesString.c_str(), tempBuffer, 0x40);
@@ -478,8 +453,9 @@ void SummaryOverlay::DisplayMatchSummary(eSummaryType matchSummaryType)
             statsStrings[5] = LexicalCast<NLString, int>((int)displayedStats[team]->mNumSTSAttempts);
         }
 
+        pSlide = mSlideMenu->m_pMenuComp->GetActiveSlide();
         pComponentInstances[team] = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
-            mSlideMenu->m_pMenuComp->GetActiveSlide(),
+            pSlide,
             InlineHasher(nlStringLowerHash(SUMMARY_COL_NAMES[team])),
             InlineHasher(0),
             InlineHasher(0),
@@ -515,8 +491,6 @@ void SummaryOverlay::DisplayMatchSummary(eSummaryType matchSummaryType)
             pTextInstanceRows[k]->SetString(mBuffersColBySide[team][k]);
         }
     }
-
-    (void)presentation;
 }
 
 /**
@@ -549,7 +523,7 @@ void SummaryOverlay::DisplayUserSummary(eSummaryType matchSummaryType)
         int m_CurrentLanguage;
     };
 
-    extern void* g_pLocalization;
+    extern nlLocalization* g_pLocalization;
     extern const unsigned short LocalizationTableNotFound[];
     extern const unsigned short MissingLocString[];
 

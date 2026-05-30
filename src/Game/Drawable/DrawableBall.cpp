@@ -351,9 +351,25 @@ void Replayable<1, LoadFrame, char>(LoadFrame& frame, char& value)
 /**
  * Offset/Address/Size: 0x26C | 0x8011EB18 | size: 0x74
  */
-// void Replayable<1, LoadFrame, FloatCompressor<-127, 127, 7>>(LoadFrame&, const FloatCompressor<-127, 127, 7>&)
-// {
-// }
+template <>
+void Replayable<1, LoadFrame, FloatCompressor<-127, 127, 7> >(LoadFrame& frame,
+    const FloatCompressor<-127, 127, 7>& proxy)
+{
+    FORCE_DONT_INLINE;
+    if (frame.mInterval == 1)
+    {
+        unsigned int value = proxy.Read(frame);
+        if (frame.mInterval == 1)
+        {
+            const char* cursor = frame.mStream.mStorage;
+            unsigned int lo = (unsigned char)cursor[0];
+            unsigned int hi = (unsigned char)cursor[1];
+            frame.mStream.mStorage = cursor + 2;
+            value = lo | (hi << 8);
+        }
+        proxy.Apply(frame, value);
+    }
+}
 
 /**
  * Offset/Address/Size: 0x2E0 | 0x8011EB8C | size: 0x74
