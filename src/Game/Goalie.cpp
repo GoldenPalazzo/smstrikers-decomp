@@ -6631,15 +6631,12 @@ void Goalie::SetDesiredSaveFacing(const nlVector3& v3BallPosition)
     m_pTeam->m_pNet->GetPostLocation(v3LeftPost, 0, 0.5f);
     m_pTeam->m_pNet->GetPostLocation(v3RightPost, 1, 0.5f);
 
-    float fLeftY = v3LeftPost.f.y - m_v3Position.f.y;
-    float fRightY = v3RightPost.f.y - m_v3Position.f.y;
     float fLeftX = v3LeftPost.f.x - m_v3Position.f.x;
+    float fLeftY = v3LeftPost.f.y - m_v3Position.f.y;
     float fLeftZ = v3LeftPost.f.z - m_v3Position.f.z;
     float fRightX = v3RightPost.f.x - m_v3Position.f.x;
+    float fRightY = v3RightPost.f.y - m_v3Position.f.y;
     float fRightZ = v3RightPost.f.z - m_v3Position.f.z;
-
-    float fLeftDot = v3BallOffset.f.y * fLeftY + v3BallOffset.f.x * fLeftX + v3BallOffset.f.z * fLeftZ;
-    float fRightDot = v3BallOffset.f.y * fRightY + v3BallOffset.f.x * fRightX + v3BallOffset.f.z * fRightZ;
 
     v3LeftPost.f.x = fLeftX;
     v3LeftPost.f.y = fLeftY;
@@ -6647,6 +6644,9 @@ void Goalie::SetDesiredSaveFacing(const nlVector3& v3BallPosition)
     v3RightPost.f.x = fRightX;
     v3RightPost.f.y = fRightY;
     v3RightPost.f.z = fRightZ;
+
+    float fLeftDot = nlVec3DotProduct(v3BallOffset, v3LeftPost);
+    float fRightDot = nlVec3DotProduct(v3BallOffset, v3RightPost);
 
     if ((fLeftDot > -1.0f) || (fRightDot > -1.0f))
     {
@@ -6658,9 +6658,9 @@ void Goalie::SetDesiredSaveFacing(const nlVector3& v3BallPosition)
 
             if (((v3TargetFacing.f.y * fRightY) + (v3TargetFacing.f.x * fRightX) + (v3TargetFacing.f.z * fRightZ)) > -1.0f)
             {
-                v3TargetFacing.f.x *= 0.5f;
-                v3TargetFacing.f.y *= 0.5f;
-                v3TargetFacing.f.z *= 0.5f;
+                v3TargetFacing.f.x = 0.5f * v3TargetFacing.f.x;
+                v3TargetFacing.f.y = 0.5f * v3TargetFacing.f.y;
+                v3TargetFacing.f.z = 0.5f * v3TargetFacing.f.z;
             }
         }
         else
@@ -6671,9 +6671,9 @@ void Goalie::SetDesiredSaveFacing(const nlVector3& v3BallPosition)
 
             if (((v3TargetFacing.f.y * fLeftY) + (v3TargetFacing.f.x * fLeftX) + (v3TargetFacing.f.z * fLeftZ)) > -1.0f)
             {
-                v3TargetFacing.f.x *= 0.5f;
-                v3TargetFacing.f.y *= 0.5f;
-                v3TargetFacing.f.z *= 0.5f;
+                v3TargetFacing.f.x = 0.5f * v3TargetFacing.f.x;
+                v3TargetFacing.f.y = 0.5f * v3TargetFacing.f.y;
+                v3TargetFacing.f.z = 0.5f * v3TargetFacing.f.z;
             }
         }
     }
@@ -6682,7 +6682,7 @@ void Goalie::SetDesiredSaveFacing(const nlVector3& v3BallPosition)
         v3TargetFacing = v3BallOffset;
     }
 
-    float fBallOffMagSq = v3BallOffset.f.x * v3BallOffset.f.x + v3BallOffset.f.y * v3BallOffset.f.y + v3BallOffset.f.z * v3BallOffset.f.z;
+    float fBallOffMagSq = nlVec3DotProduct(v3BallOffset, v3BallOffset);
 
     if (fBallOffMagSq < 0.0001f)
     {

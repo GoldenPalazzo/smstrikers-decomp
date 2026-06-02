@@ -108,6 +108,8 @@ TLComponentInstance* FEFinder<TLComponentInstance, 4>::Find<FEPresentation>(
 /**
  * Offset/Address/Size: 0x140 | 0x801118A0 | size: 0x15C
  * TODO: 95.75% match - returns zero via r3 instead of preserving pChild in r4 on deep failure paths.
+ *       Recursive approach works at 100% in OverlayHandlerInGameText but MWCC limits recursive
+ *       inlining in this TU to 2 levels. Cause unknown.
  */
 template <>
 template <>

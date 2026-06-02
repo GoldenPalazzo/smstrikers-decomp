@@ -258,9 +258,153 @@ void FEScrollText::SetDisplayMessage(unsigned long hash)
 /**
  * Offset/Address/Size: 0x4F0 | 0x800C8EC4 | size: 0x578
  */
-void FEScrollText::SetDisplayMessage(const BasicString<unsigned short, Detail::TempStringAllocator>&)
+void FEScrollText::SetDisplayMessage(const BasicString<unsigned short, Detail::TempStringAllocator>& theMessage)
 {
-    FORCE_DONT_INLINE;
+    m_message = theMessage;
+    m_msgTime = 0.0f;
+
+    if (m_textFont == NULL)
+    {
+        m_textFont = ((FEFontResource*)m_controlText->m_component->pChildren)->m_font;
+    }
+
+    if (m_textFont == NULL)
+    {
+        return;
+    }
+
+    FontCharString fontcharstring;
+    fontcharstring.m_pString = m_textBuffer;
+    fontcharstring.m_InternalBuffer = 0;
+
+    const unsigned short* src = m_message.c_str();
+    nlFont* font = m_textFont;
+    unsigned short* dest = fontcharstring.m_pString;
+    unsigned short escBegin = nlEscapeSequence::ESCAPE_BEGIN;
+
+    while (*src != 0)
+    {
+        unsigned short ch = *src;
+        if (ch == escBegin)
+        {
+            nlEscapeSequence EscSeq(src);
+            int count = (int)((unsigned int)((int)EscSeq.m_pEnd + 1 - (int)src) >> 1);
+            if (src < EscSeq.m_pEnd)
+            {
+                for (int k = count; k > 0; k--)
+                    *dest++ = *src++;
+            }
+        }
+        else
+        {
+            if (ch > 0x7F)
+            {
+                nlFont::GlyphInfo key;
+                key.UnicodeChar = ch;
+                if (font->m_pExtendedGlyphs != NULL && font->m_ExtendedGlyphCount != 0)
+                {
+                    nlFont::GlyphInfo* result = nlBSearch<nlFont::GlyphInfo, nlFont::GlyphInfo>(key, font->m_pExtendedGlyphs, font->m_ExtendedGlyphCount);
+                    if (result != NULL)
+                        ch = (unsigned short)((result - font->m_pExtendedGlyphs) + 0x80);
+                    else
+                    {
+                        ch = 0x30;
+                        while (true)
+                        {
+                            nlFont::GlyphInfo* glyph;
+                            if ((unsigned short)ch > 0x7F)
+                                glyph = &font->m_pExtendedGlyphs[(unsigned short)ch - 0x80];
+                            else
+                                glyph = &font->m_GlyphLookup[(unsigned short)ch - 0x20];
+                            if (glyph->UnicodeChar != 0xFFFF)
+                                break;
+                            ch = (unsigned short)((unsigned short)ch + 1);
+                        }
+                    }
+                }
+            }
+            *dest++ = ch;
+            src++;
+        }
+    }
+
+    *dest = 0;
+    m_messageWidth = 0;
+
+    escBegin = nlEscapeSequence::ESCAPE_BEGIN;
+    int i = 0;
+    while (i < (int)m_message.size() - 1)
+    {
+        const unsigned short* str = m_message.c_str();
+        unsigned short* charPtr = (unsigned short*)(str) + i;
+        unsigned short origCh = *charPtr;
+
+        if (origCh == escBegin)
+        {
+            nlEscapeSequence esc2(charPtr);
+            int skipCount = ((int)esc2.m_pEnd - (int)charPtr) / 2;
+            i += skipCount - 1;
+        }
+        else
+        {
+            unsigned short mappedCh = fontcharstring.m_pString[i];
+            if (i != 0)
+            {
+                unsigned short prevChar = fontcharstring.m_pString[i - 1];
+                m_messageWidth += (int)m_textFont->GetCharWidth(mappedCh, prevChar);
+            }
+            else
+            {
+                m_messageWidth += (int)m_textFont->GetCharWidth(mappedCh, 0);
+            }
+        }
+        i++;
+    }
+
+    const unsigned short* finalStr = m_message.c_str();
+    memcpy(m_textBuffer, finalStr, 0x200);
+    m_controlText->SetString(m_textBuffer);
+
+    const feVector3& scale = m_controlText->GetScale();
+    m_messageWidth = (int)((float)m_messageWidth * scale.f.x);
+
+    if (m_textFont == NULL)
+    {
+        SetDisplayMessage(m_message);
+        if (m_textFont == NULL)
+        {
+            return;
+        }
+    }
+
+    m_controlText->m_bVisible = true;
+    m_msgTime += 0.0f;
+
+    float pixPerSec = (float)m_width / TEXT_TIME;
+    feVector3 pos = m_controlText->GetPosition();
+    int halfWidth = m_width / 2;
+    float x = (float)(m_pos + halfWidth);
+    x = x - m_msgTime * pixPerSec;
+    m_controlText->SetAssetPosition(x, pos.f.y, pos.f.z);
+
+    if (x + (float)m_messageWidth < m_leftEdge)
+    {
+        if (m_messageFinishedCB.mTag != EMPTY)
+        {
+            if (m_messageFinishedCB.mTag == FREE_FUNCTION)
+            {
+                ((void (*)())m_messageFinishedCB.mFreeFunction)();
+            }
+            else
+            {
+                (*((FunctorBase*)m_messageFinishedCB.mFunctor))();
+            }
+        }
+        else
+        {
+            m_msgTime = 0.0f;
+        }
+    }
 }
 
 static unsigned short sEmptyStringData[] = { 0 };

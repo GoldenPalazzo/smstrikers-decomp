@@ -103,6 +103,30 @@ FloatCompressor<0, 1, 7>::FloatCompressor(float& f)
 }
 
 template <>
+inline void Replayable<1, LoadFrame, FloatCompressor<-128, 128, 8> >(LoadFrame& frame, const FloatCompressor<-128, 128, 8>& proxy)
+{
+    FORCE_DONT_INLINE;
+    if (frame.mInterval == 1)
+    {
+        unsigned int value = 0;
+        if (frame.mInterval == 1)
+        {
+            const char* cursor = frame.mStream.mStorage;
+            unsigned char mid = (unsigned char)cursor[1];
+            unsigned char hi = (unsigned char)cursor[2];
+            unsigned char lo = (unsigned char)cursor[0];
+            cursor += 3;
+            value = (unsigned int)mid << 8;
+            value |= (unsigned int)hi << 16;
+            frame.mStream.mStorage = cursor;
+            value |= (unsigned int)lo;
+        }
+        proxy.mF = (float)value / (float)(1 << 8);
+        proxy.mF += (float)(-128);
+    }
+}
+
+template <>
 void ReplayablePolymorphic<1, LoadFrame, cPoseNode>(LoadFrame& frame, cPoseNode*& ptr);
 
 template <>
@@ -1427,6 +1451,7 @@ void cPN_SAnimController::Replay<SaveFrame>(SaveFrame& frame)
 template <>
 void cPN_Feather::Replay<LoadFrame>(LoadFrame& frame)
 {
+    FORCE_DONT_INLINE;
     Replayable<0>(frame, (cPoseNode&)*this);
     m_fBlendTime = 0.0f;
     m_pFeatherWeights = NULL;
@@ -1448,6 +1473,7 @@ void cPN_Feather::Replay<SaveFrame>(SaveFrame& frame)
 template <>
 void cPN_Blender::Replay<LoadFrame>(LoadFrame& frame)
 {
+    FORCE_DONT_INLINE;
     Replayable<0>(frame, (cPoseNode&)*this);
     const char* cursor = frame.mStream.mStorage;
     float scale = 1.0f / 128.0f;

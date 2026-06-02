@@ -501,9 +501,8 @@ void FreeElectricFence()
 
 /**
  * Offset/Address/Size: 0x5A0 | 0x8016B5D0 | size: 0x448
- * TODO: 93.7% match - register allocation + instruction scheduling diffs
- *   due to -inline deferred (target) vs -inline auto (decomp.me) flag difference.
- *   fabs temp register (f0 vs f24/f25), neg GPR (r27 vs r30), loop body scheduling.
+ * TODO: 95.3% match - neg GPR r27 vs r30, loop body GPR/FPR swap (r27/r29,
+ *   f24-f27 reversed) and instruction scheduling diffs in corner-case branch.
  */
 ElectricFenceData::ElectricFenceData(EmissionController* pEmissionController)
 {
@@ -524,10 +523,12 @@ ElectricFenceData::ElectricFenceData(EmissionController* pEmissionController)
     mPosition = pEmissionController->GetPosition();
 
     f64 absY = __fabs(mPosition.f.y);
-    f32 distanceFromSideline = (f32)__fabs((f32)absY - cField::GetSidelineY(1U));
+    f64 diffY = __fabs((f32)absY - cField::GetSidelineY(1U));
+    f32 distanceFromSideline = (f32)diffY;
 
     f64 absX = __fabs(mPosition.f.x);
-    f32 distanceFromGoal = (f32)__fabs((f32)absX - cField::GetGoalLineX(1U));
+    f64 diffX = __fabs((f32)absX - cField::GetGoalLineX(1U));
+    f32 distanceFromGoal = (f32)diffX;
 
     float cornerDiameter = 2.0f * cField::GetCornerRadius();
     if (distanceFromGoal > cornerDiameter || distanceFromSideline > cornerDiameter)

@@ -3,6 +3,7 @@
 #include "Game/Sys/eventman.h"
 #include "Game/FE/tlComponentInstance.h"
 #include "NL/nlLexicalCast.h"
+#include "NL/nlFormat.h"
 
 extern cTeam* g_pTeams[];
 
@@ -245,7 +246,6 @@ HUDOverlay::~HUDOverlay()
 void HUDOverlay::Update(float fDeltaT)
 {
     typedef BasicString<unsigned short, Detail::TempStringAllocator> WideString;
-    WideString Format(const WideString&, const unsigned short (&)[8], const unsigned short (&)[8]);
 
     struct LOCHeader
     {

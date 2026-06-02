@@ -124,6 +124,7 @@ struct GLScissorUserData
 
 static GLViewportUserData g_viewport;
 
+static void glx_SwitchTextureState(const glModelPacket*);
 static unsigned long glx_SwitchTexConfig(const glModelPacket*);
 static void glx_DrawPacket(const glModelPacket*);
 
@@ -1823,7 +1824,7 @@ void glx_SwitchRaster(const glModelPacket* p)
  * 2d_movie GXColors at lower offsets than konst GXColor work area, target has
  * them reversed). All instructions and registers correct.
  */
-void glx_SwitchTextureState(const glModelPacket* p)
+static void glx_SwitchTextureState(const glModelPacket* p)
 {
     int bit;
     int texnum;

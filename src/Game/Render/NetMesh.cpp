@@ -394,9 +394,7 @@ void NetMesh::SatisfyConstraints(const nlVector3& ballPosition, bool bExaggerate
                             }
 
                             float displacementMag = penetration * falloffFactor;
-                            particlePosition.f.x += displacementMag * particleNormal.f.x;
-                            particlePosition.f.y += displacementMag * particleNormal.f.y;
-                            particlePosition.f.z += displacementMag * particleNormal.f.z;
+                            nlVec3ScaleAdd(particlePosition, displacementMag, particleNormal, particlePosition);
                         }
                     }
                 }

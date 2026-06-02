@@ -396,31 +396,20 @@ void SuperLoadingScene::DisplayCupInfo()
     TLTextInstance* statsText[4];
 
     {
-        InlineHasher h2(nlStringLowerHash("stats_left1"));
-        InlineHasher h1(nlStringLowerHash("Layer"));
         statsText[0] = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
-            slide, h1, h2, InlineHasher(0), InlineHasher(0), InlineHasher(0), InlineHasher(0));
+            slide, InlineHasher(nlStringLowerHash("Layer")), InlineHasher(nlStringLowerHash("stats_left1")), InlineHasher(0), InlineHasher(0), InlineHasher(0), InlineHasher(0));
     }
-
     {
-        InlineHasher h2(nlStringLowerHash("stats_left2"));
-        InlineHasher h1(nlStringLowerHash("Layer"));
         statsText[1] = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
-            slide, h1, h2, InlineHasher(0), InlineHasher(0), InlineHasher(0), InlineHasher(0));
+            slide, InlineHasher(nlStringLowerHash("Layer")), InlineHasher(nlStringLowerHash("stats_left2")), InlineHasher(0), InlineHasher(0), InlineHasher(0), InlineHasher(0));
     }
-
     {
-        InlineHasher h2(nlStringLowerHash("stats_right1"));
-        InlineHasher h1(nlStringLowerHash("Layer"));
         statsText[2] = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
-            slide, h1, h2, InlineHasher(0), InlineHasher(0), InlineHasher(0), InlineHasher(0));
+            slide, InlineHasher(nlStringLowerHash("Layer")), InlineHasher(nlStringLowerHash("stats_right1")), InlineHasher(0), InlineHasher(0), InlineHasher(0), InlineHasher(0));
     }
-
     {
-        InlineHasher h2(nlStringLowerHash("stats_right2"));
-        InlineHasher h1(nlStringLowerHash("Layer"));
         statsText[3] = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
-            slide, h1, h2, InlineHasher(0), InlineHasher(0), InlineHasher(0), InlineHasher(0));
+            slide, InlineHasher(nlStringLowerHash("Layer")), InlineHasher(nlStringLowerHash("stats_right2")), InlineHasher(0), InlineHasher(0), InlineHasher(0), InlineHasher(0));
     }
 
     if (!gameInfo->IsInCupOrTournamentMode() || (gameInfo->IsInCupMode() && gameInfo->mDoingKnockout)
@@ -438,7 +427,7 @@ void SuperLoadingScene::DisplayCupInfo()
     int standingsIndices[8];
     int homeAwayIndex[2] = { -1, -1 };
     int ranks[2] = { -1, -1 };
-    int stats[4] = { 0, 0, 0, 0 };
+    int stats[4];
 
     typedef BasicString<unsigned short, Detail::TempStringAllocator> WideString;
     typedef BasicString<char, Detail::TempStringAllocator> NarrowString;
@@ -446,17 +435,18 @@ void SuperLoadingScene::DisplayCupInfo()
     WideString unformatted[4];
 
     {
-        unsigned long key = 0xF0BEFFA7;
         nlLocalization* loc = g_pLocalization;
         const unsigned short* locString;
+        nlLocalization::StringLookup* entry;
 
+        unsigned long key = 0xF0BEFFA7;
         if (loc->m_LookupTable == NULL)
         {
             locString = LocalizationTableNotFound;
         }
         else
         {
-            nlLocalization::StringLookup* entry = nlBSearch(key, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
+            entry = nlBSearch(key, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
             if (entry != NULL)
             {
                 locString = loc->m_FirstString + entry->StringOffset;
@@ -466,22 +456,17 @@ void SuperLoadingScene::DisplayCupInfo()
                 locString = MissingLocString;
             }
         }
-
         unformatted[0] = WideString(locString);
-    }
 
-    {
-        unsigned long key = 0x18CDE978;
-        nlLocalization* loc = g_pLocalization;
-        const unsigned short* locString;
-
+        key = 0x18CDE978;
+        loc = g_pLocalization;
         if (loc->m_LookupTable == NULL)
         {
             locString = LocalizationTableNotFound;
         }
         else
         {
-            nlLocalization::StringLookup* entry = nlBSearch(key, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
+            entry = nlBSearch(key, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
             if (entry != NULL)
             {
                 locString = loc->m_FirstString + entry->StringOffset;
@@ -491,22 +476,17 @@ void SuperLoadingScene::DisplayCupInfo()
                 locString = MissingLocString;
             }
         }
-
         unformatted[1] = WideString(locString);
-    }
 
-    {
-        unsigned long key = 0xF0BEFFA7;
-        nlLocalization* loc = g_pLocalization;
-        const unsigned short* locString;
-
+        key = 0xF0BEFFA7;
+        loc = g_pLocalization;
         if (loc->m_LookupTable == NULL)
         {
             locString = LocalizationTableNotFound;
         }
         else
         {
-            nlLocalization::StringLookup* entry = nlBSearch(key, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
+            entry = nlBSearch(key, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
             if (entry != NULL)
             {
                 locString = loc->m_FirstString + entry->StringOffset;
@@ -516,22 +496,17 @@ void SuperLoadingScene::DisplayCupInfo()
                 locString = MissingLocString;
             }
         }
-
         unformatted[2] = WideString(locString);
-    }
 
-    {
-        unsigned long key = 0x18CDE978;
-        nlLocalization* loc = g_pLocalization;
-        const unsigned short* locString;
-
+        key = 0x18CDE978;
+        loc = g_pLocalization;
         if (loc->m_LookupTable == NULL)
         {
             locString = LocalizationTableNotFound;
         }
         else
         {
-            nlLocalization::StringLookup* entry = nlBSearch(key, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
+            entry = nlBSearch(key, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
             if (entry != NULL)
             {
                 locString = loc->m_FirstString + entry->StringOffset;
@@ -541,7 +516,6 @@ void SuperLoadingScene::DisplayCupInfo()
                 locString = MissingLocString;
             }
         }
-
         unformatted[3] = WideString(locString);
     }
 
@@ -583,11 +557,12 @@ void SuperLoadingScene::DisplayCupInfo()
     {
         NarrowString statString = LexicalCast<NarrowString, int>(stats[i]);
         unsigned short statWideString[16];
-        WideString formatted;
 
         nlStrToWcs(statString.c_str(), statWideString, 16);
 
-        if (gameInfo->GetCurrentRoundNumber() == 0 && (i == 0 || i == 2))
+        WideString formatted;
+
+        if (nlSingleton<GameInfoManager>::s_pInstance->GetCurrentRoundNumber() == 0 && (i == 0 || i == 2))
         {
             static const unsigned short sDash[] = { '-', 0 };
             formatted = Format(unformatted[i], sDash);

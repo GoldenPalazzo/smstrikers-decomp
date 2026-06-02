@@ -720,7 +720,8 @@ unsigned long GCAudioStreaming::MonoAudioStream::DoUpdateRead(unsigned long MRAM
             m_StreamPos = m_StreamPos - m_StreamLength;
             ReadASize = ReadLen - m_StreamPos;
             unsigned long AlignOff = 32 - (ReadASize & 31);
-            AlignOff = (AlignOff == 32) ? 0 : AlignOff;
+            if (AlignOff == 32)
+                AlignOff = 0;
             ReadASize += AlignOff;
             ReadBSize = m_StreamPos - AlignOff;
             if (!(m_Flags & (1 << SF_Loop)))

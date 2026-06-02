@@ -1434,8 +1434,6 @@ void DrawCoPlanarReference(eGLView view, const glModel& model, const nlMatrix4& 
  */
 static inline void ComputeShadowMtx(nlMatrix4& dst, const nlMatrix4& src, u32 lightPtr)
 {
-    float m13 = src.f.m13;
-    float m11 = src.f.m11;
     float lightX = *(float*)(lightPtr + 4);
     float lightY = *(float*)(lightPtr + 8);
     float xRatioNeg = -lightX;
@@ -1443,6 +1441,8 @@ static inline void ComputeShadowMtx(nlMatrix4& dst, const nlMatrix4& src, u32 li
     float yRatioNeg = -lightY;
     float xOverZ = xRatioNeg / lightZ;
     float yOverZ = yRatioNeg / lightZ;
+    float m13 = src.f.m13;
+    float m11 = src.f.m11;
     float m23 = src.f.m23;
     float m21 = src.f.m21;
     float m33 = src.f.m33;

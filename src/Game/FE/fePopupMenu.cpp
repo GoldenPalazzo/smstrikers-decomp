@@ -1275,6 +1275,8 @@ void fePopupMenu_stub()
     WideBasicString s2 = (WideBasicString)fi;
     WideBasicString s4 = Format<WideBasicString, WideBasicString, WideBasicString, WideBasicString>(s, s, s, s);
 
+    s.erase((const unsigned short*)0, (const unsigned short*)0);
+
     unsigned long key = 0;
     nlBSearch<nlLocalization::StringLookup, unsigned long>(key, (nlLocalization::StringLookup*)0, 0);
 }

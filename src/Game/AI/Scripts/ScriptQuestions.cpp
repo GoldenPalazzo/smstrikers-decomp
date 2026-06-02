@@ -995,8 +995,8 @@ float Pressured(cFielder* pFielder)
         return fZero;
     }
 
-    float fScore = fZero;
     float fCheck = fZero;
+    float fScore = fZero;
     const nlVector3* pFielderPos = &pFielder->m_v3Position;
     const nlVector3* pFielderVel = &pFielder->m_v3Velocity;
     int i = 0;
@@ -1014,35 +1014,40 @@ float Pressured(cFielder* pFielder)
         {
             fNearScore = fCheck;
         }
-        else if (pFielder->m_eClassType == GOALIE)
-        {
-            FuzzyTweaks* pFuzzyTweaks = g_pGame->m_pFuzzyTweaks;
-            float dy = pOpponent->m_v3Position.f.y - pFielderPos->f.y;
-            float dx = pOpponent->m_v3Position.f.x - pFielderPos->f.x;
-            fNearScore = NormalizeVal(nlSqrt(dx * dx + dy * dy, true), pFuzzyTweaks->vNearGoalieConfidenceDistance);
-        }
-        else if (pOpponent->m_eClassType == GOALIE)
-        {
-            FuzzyTweaks* pFuzzyTweaks = g_pGame->m_pFuzzyTweaks;
-            float dy = pFielderPos->f.y - pOpponent->m_v3Position.f.y;
-            float dx = pFielderPos->f.x - pOpponent->m_v3Position.f.x;
-            fNearScore = NormalizeVal(nlSqrt(dx * dx + dy * dy, true), pFuzzyTweaks->vNearGoalieConfidenceDistance);
-        }
         else
         {
-            const nlVector2* pNearConfidence;
-            if (pFielder->IsOnSameTeam(pOpponent))
+            float dist;
+            if (pFielder->m_eClassType == GOALIE)
             {
-                pNearConfidence = &g_pGame->m_pFuzzyTweaks->vNearTeammateConfidenceDistance;
+                FuzzyTweaks* pFuzzyTweaks = g_pGame->m_pFuzzyTweaks;
+                float dy = pOpponent->m_v3Position.f.y - pFielderPos->f.y;
+                float dx = pOpponent->m_v3Position.f.x - pFielderPos->f.x;
+                dist = NormalizeVal(nlSqrt(dx * dx + dy * dy, true), pFuzzyTweaks->vNearGoalieConfidenceDistance);
+            }
+            else if (pOpponent->m_eClassType == GOALIE)
+            {
+                FuzzyTweaks* pFuzzyTweaks = g_pGame->m_pFuzzyTweaks;
+                float dy = pFielderPos->f.y - pOpponent->m_v3Position.f.y;
+                float dx = pFielderPos->f.x - pOpponent->m_v3Position.f.x;
+                dist = NormalizeVal(nlSqrt(dx * dx + dy * dy, true), pFuzzyTweaks->vNearGoalieConfidenceDistance);
             }
             else
             {
-                pNearConfidence = &g_pGame->m_pFuzzyTweaks->vNearOpponentConfidenceDistance;
-            }
+                const nlVector2* pNearConfidence;
+                if (pFielder->IsOnSameTeam(pOpponent))
+                {
+                    pNearConfidence = &g_pGame->m_pFuzzyTweaks->vNearTeammateConfidenceDistance;
+                }
+                else
+                {
+                    pNearConfidence = &g_pGame->m_pFuzzyTweaks->vNearOpponentConfidenceDistance;
+                }
 
-            float dx = pFielderPos->f.x - pOpponent->m_v3Position.f.x;
-            float dy = pFielderPos->f.y - pOpponent->m_v3Position.f.y;
-            fNearScore = NormalizeVal(nlSqrt(dx * dx + dy * dy, true), *pNearConfidence);
+                float dx = pFielderPos->f.x - pOpponent->m_v3Position.f.x;
+                float dy = pFielderPos->f.y - pOpponent->m_v3Position.f.y;
+                dist = NormalizeVal(nlSqrt(dx * dx + dy * dy, true), *pNearConfidence);
+            }
+            fNearScore = dist;
         }
 
         float fOpponentScore;

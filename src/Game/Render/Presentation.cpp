@@ -280,10 +280,10 @@ void Presentation::LoadTrophyModel()
     }
 
     cupTrophyHash = 1;
+    const char* cupName = (const char*)0;
     BasicString<char, Detail::TempStringAllocator> trophyName;
     if (hasCupOverride)
     {
-        const char* cupName = (const char*)0;
         BasicString<char, Detail::TempStringAllocator> prefix("Gameplay/");
         Config& cfg = Config::Global();
         TagValuePair& tvp = cfg.FindTvp("gimme_cup_trophy");

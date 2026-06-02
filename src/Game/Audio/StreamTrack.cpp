@@ -561,15 +561,15 @@ void AudioStreamTrack::StreamTrack::PlayStream(
 
 inline GCAudioStreaming::AudioStream::AudioStream(GCAudioStreaming::AudioBufferMgr& mgr,
     unsigned long bufCount)
-    : m_BuffMgr(mgr)
+    : m_FlagAtDelete(0)
+    , m_State(GCAudioStreaming::SS_New)
+    , m_StreamLength((unsigned long)-1)
+    , m_StreamPos(0)
+    , m_OldLength(0)
+    , m_BuffMgr(mgr)
+    , m_Flags(0)
+    , m_BufferCount(bufCount)
 {
-    m_FlagAtDelete = 0;
-    m_State = GCAudioStreaming::SS_New;
-    m_StreamLength = (unsigned long)-1;
-    m_StreamPos = 0;
-    m_OldLength = 0;
-    m_Flags = 0;
-    m_BufferCount = bufCount;
     memset(m_Buffers, sizeof(m_Buffers), 0);
 }
 
@@ -583,8 +583,8 @@ inline GCAudioStreaming::StereoAudioStream::StereoAudioStream(
 
 /**
  * Offset/Address/Size: 0x10BC | 0x80155E14 | size: 0x418
- * TODO: 86.8% match - double QUEUED_STREAM copy elided by MWCC, constructor register cascade,
- * placement new duplicate beq, memset arg swap
+ * TODO: 93.8% match - QUEUED_STREAM double copy elided by MWCC (Allocate localData optimization),
+ * register allocation cascade from missing copy (r23 not saved), ble vs beq on buffer count check
  */
 void AudioStreamTrack::StreamTrack::QueueStream(
     unsigned long StreamId, float Volume, bool Looping,
@@ -607,10 +607,7 @@ void AudioStreamTrack::StreamTrack::QueueStream(
     GCAudioStreaming::StereoAudioStream* pStream = NULL;
     TrackManagerBase& mgr = m_TrackMgr;
     mgr.m_StreamPool.Allocate(pStream);
-    if (pStream != NULL)
-    {
-        new (pStream) GCAudioStreaming::StereoAudioStream(g_BufferMgr);
-    }
+    new (pStream) GCAudioStreaming::StereoAudioStream(g_BufferMgr);
 
     entry->m_data.pStream = pStream;
     entry->m_data.FadeIn = FadeIn;
@@ -641,14 +638,14 @@ void AudioStreamTrack::StreamTrack::QueueStream(
         nlStrNCpy<char>(dest, lookup->value, prefixLen + 1);
         unsigned long remainLen = 0xed - prefixLen;
         dest += prefixLen;
-        Tag tag = mgr.m_FileLookup.m_ParamCBTag;
+        Tag tag = mgr.m_FileLookup.m_ParamCB.mTag;
         if (tag == FREE_FUNCTION)
         {
-            mgr.m_FileLookup.m_ParamCBFunc(StreamParam, dest, remainLen);
+            ((AudioStreamTrack::TrackManagerBase::StreamFileLookup::ParamCallbackFn)mgr.m_FileLookup.m_ParamCB.mFreeFunction)(StreamParam, dest, remainLen);
         }
         else
         {
-            (*mgr.m_FileLookup.m_ParamCBFunctor)(StreamParam, dest, remainLen);
+            (*(AudioStreamTrack::TrackManagerBase::StreamFileLookup::ParamFunctorBase*)mgr.m_FileLookup.m_ParamCB.mFunctor)(StreamParam, dest, remainLen);
         }
         unsigned long cbLen = nlStrLen(dest);
         nlStrNCpy<char>(dest + cbLen, percentPos + 3, remainLen - cbLen);

@@ -34,6 +34,40 @@ void Replayable(SaveFrame& frame, char typeId, cPoseNode*& poseNode)
     }
 }
 
+template <int N>
+void Replayable(LoadFrame& frame, char typeId, cPoseNode*& poseNode)
+{
+    FORCE_DONT_INLINE;
+    if (typeId == 0)
+    {
+        cPN_Blender* blender = AllocateBlender();
+        new ((u8*)blender) cPN_Blender();
+        blender->Replay(frame);
+        poseNode = blender;
+    }
+    else if (typeId == 1)
+    {
+        cPN_Feather* feather = AllocateFeather();
+        new ((u8*)feather) cPN_Feather();
+        feather->Replay(frame);
+        poseNode = feather;
+    }
+    else if (typeId == 2)
+    {
+        cPN_SAnimController* controller = AllocateSAnimController();
+        new ((u8*)controller) cPN_SAnimController();
+        controller->Replay(frame);
+        poseNode = controller;
+    }
+    else if (typeId == 3)
+    {
+        cPN_SingleAxisBlender* singleAxis = AllocateSingleAxisBlender();
+        new ((u8*)singleAxis) cPN_SingleAxisBlender();
+        singleAxis->Replay(frame);
+        poseNode = singleAxis;
+    }
+}
+
 template <>
 void Replayable<1>(SaveFrame& frame, char typeId, cPoseNode*& poseNode)
 {

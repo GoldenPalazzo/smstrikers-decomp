@@ -243,7 +243,24 @@ public:
 
     void insert(CharT* at, const CharT* begin, const CharT* end);
 
-    void erase(const CharT* begin, const CharT* end);
+    void erase(const CharT* begin, const CharT* end)
+#ifdef BASICSTRING_INLINE_ERASE
+    {
+        (*this)[0];
+        BasicStringData<CharT>* data = m_data;
+        int size = end - begin;
+        const CharT* eraseEnd = end;
+        CharT* at = data->mData + (begin - data->mData);
+        while (eraseEnd != data->mData + data->mSize)
+        {
+            *at = *eraseEnd;
+            eraseEnd++;
+            at++;
+        }
+        data->mSize -= size;
+    }
+#endif
+    ;
 
     void TrimInPlace(const CharT* chars);
 
@@ -487,14 +504,18 @@ BasicString<CharT, Allocator> BasicString<CharT, Allocator>::Trim(const CharT* c
 template <typename CharT, typename Allocator>
 void BasicString<CharT, Allocator>::insert(CharT* at, const CharT* begin, const CharT* end)
 {
+    BasicString<CharT, Allocator>* self = this;
+    const CharT* from = begin;
+    const CharT* to = end;
+
     (*this)[0];
-    int offset = at - (m_data ? m_data->mData : (CharT*)0);
+    int offset = at - (self->m_data ? self->m_data->mData : (CharT*)0);
     (*this)[0];
     (*this)[0];
 
-    BasicStringData<CharT>* data = m_data;
+    BasicStringData<CharT>* data = self->m_data;
     CharT* dataPtr = data ? data->mData : (CharT*)0;
-    int size = end - begin;
+    int size = to - from;
     int insertPos = (dataPtr + offset) - data->mData;
     int newSize = data->mSize + size;
 
@@ -526,14 +547,33 @@ void BasicString<CharT, Allocator>::insert(CharT* at, const CharT* begin, const 
         *(t + size) = *t;
         t--;
     }
-    while (begin != end)
+    while (from != to)
     {
-        *pos = *begin;
-        begin++;
+        *pos = *from;
+        from++;
         pos++;
     }
     data->mSize += size;
 }
+
+#ifndef BASICSTRING_INLINE_ERASE
+template <typename CharT, typename Allocator>
+void BasicString<CharT, Allocator>::erase(const CharT* begin, const CharT* end)
+{
+    (*this)[0];
+    BasicStringData<CharT>* data = m_data;
+    int size = end - begin;
+    const CharT* eraseEnd = end;
+    CharT* at = data->mData + (begin - data->mData);
+    while (eraseEnd != data->mData + data->mSize)
+    {
+        *at = *eraseEnd;
+        eraseEnd++;
+        at++;
+    }
+    data->mSize -= size;
+}
+#endif
 
 template <typename CharT, typename Allocator>
 void BasicString<CharT, Allocator>::TrimInPlace(const CharT* chars)

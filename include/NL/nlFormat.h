@@ -36,24 +36,26 @@ FormatImpl<StringType>& FormatImpl<StringType>::operator%(const T& t)
 {
     StringType insert = LexicalCast<StringType, T>(t);
 
-    for (int i = 0; i < (int)mString.size() - 1; i++)
+    for (int i = 0; i < (mString.m_data ? mString.m_data->mSize - 1 : 0); i++)
     {
         if (mString[i] != '{')
             continue;
 
-        if (i + 1 >= (int)mString.size() - 1)
+        if (i + 1 >= (mString.m_data ? mString.m_data->mSize - 1 : 0))
             continue;
 
         if (mString[i + 1] - '0' != mCurrentPos)
             continue;
 
-        if (i + 2 >= (int)mString.size() - 1)
+        if (i + 2 >= (mString.m_data ? mString.m_data->mSize - 1 : 0))
             continue;
 
         if (mString[i + 2] != '}')
             continue;
 
         typename StringType::value_type* eraseEnd = &mString[i + 3];
+        if (sizeof(typename StringType::value_type) == 1)
+            mString[0];
         typename StringType::value_type* eraseStart = &mString[i];
         BasicStringData<typename StringType::value_type>* data = mString.m_data;
         int eraseLen = eraseEnd - eraseStart;
@@ -64,7 +66,7 @@ FormatImpl<StringType>& FormatImpl<StringType>::operator%(const T& t)
         }
         data->mSize -= eraseLen;
 
-        mString.insert(&mString[i], &insert[0], &insert[(int)insert.size() - 1]);
+        mString.insert(&mString[i], &insert[0], &insert[(int)(insert.m_data ? insert.m_data->mSize - 1 : 0)]);
     }
 
     mCurrentPos++;
@@ -413,21 +415,15 @@ inline BasicString<unsigned short, Detail::TempStringAllocator> Format<BasicStri
 }
 
 /**
- * Offset/Address/Size: 0x0 | 0x800A898C | size: 0x118
- * TODO: 67.36% match - return/null path store order and temporary cleanup
- * sequencing still differ, with an extra trailing helper block emitted.
+ * Offset/Address/Size: 0x0 | 0x800FA298 | size: 0x124
  */
 template <>
-inline BasicString<unsigned short, Detail::TempStringAllocator> Format<BasicString<unsigned short, Detail::TempStringAllocator>, unsigned short[2]>(
+inline BasicString<unsigned short, Detail::TempStringAllocator>
+Format<BasicString<unsigned short, Detail::TempStringAllocator>, unsigned short[8], unsigned short[8]>(
     const BasicString<unsigned short, Detail::TempStringAllocator>& format,
-    const unsigned short (&value)[2])
+    const unsigned short (&value1)[8],
+    const unsigned short (&value2)[8])
 {
-    struct FormatImplLayoutWideTempU2
-    {
-        BasicStringData<unsigned short>* m_data;
-        int mCurrentPos;
-    };
-
     BasicStringData<unsigned short>* data = format.m_data;
     if (data != 0)
     {
@@ -438,9 +434,31 @@ inline BasicString<unsigned short, Detail::TempStringAllocator> Format<BasicStri
         data = 0;
     }
 
-    FormatImplLayoutWideTempU2 impl;
-    impl.m_data = data;
-    impl.mCurrentPos = 0;
+    FormatImplLayoutWideTemp impl(data);
+
+    return BasicString<unsigned short, Detail::TempStringAllocator>(
+        (BasicString<unsigned short, Detail::TempStringAllocator>)((((FormatImpl<BasicString<unsigned short, Detail::TempStringAllocator> >&)impl) % (const unsigned short*)value1) % (const unsigned short*)value2));
+}
+
+/**
+ * Offset/Address/Size: 0x0 | 0x800A898C | size: 0x118
+ */
+template <>
+inline BasicString<unsigned short, Detail::TempStringAllocator> Format<BasicString<unsigned short, Detail::TempStringAllocator>, unsigned short[2]>(
+    const BasicString<unsigned short, Detail::TempStringAllocator>& format,
+    const unsigned short (&value)[2])
+{
+    BasicStringData<unsigned short>* data = format.m_data;
+    if (data != 0)
+    {
+        data->mRefCount++;
+    }
+    else
+    {
+        data = 0;
+    }
+
+    FormatImplLayoutWideTemp impl(data);
 
     return BasicString<unsigned short, Detail::TempStringAllocator>(
         (BasicString<unsigned short, Detail::TempStringAllocator>)(((FormatImpl<BasicString<unsigned short, Detail::TempStringAllocator> >&)impl) % (const unsigned short*)value));

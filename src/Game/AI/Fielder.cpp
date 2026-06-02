@@ -2495,18 +2495,18 @@ bool cFielder::DoLooseBallContactFromRun(nlVector3& v3AnimStartPosition, float& 
 
 /**
  * Offset/Address/Size: 0x84AC | 0x800217E8 | size: 0x2FC
- * TODO: 91.40% match - register allocation and compare ordering still differ in Z crossing checks and final timing math.
+ * TODO: 97.07% match - scratch register allocation in sin/cos rotation block and Z crossing branch structure differ (cror+bne vs blt pattern)
  */
 bool cFielder::DoLooseBallContactFromRunVolley(nlVector3& v3AnimStartPosition, float& fAnimStartTime, nlVector3& v3BallContactPosition, float& fBallContactTime,
     const LooseBallContactAnimInfo* pBestBallContactAnimInfo, const nlVector3& v3PassIntercept)
 {
-    float bestTime;
     float fSimulatedTime;
-    float fPrevBallZ;
-    float fContactZ;
+    float bestTime;
     float fMaxSimulatedTime;
-    float prevDistZ;
+    float fContactZ;
     float currDistZ;
+    float prevDistZ;
+    float fPrevBallZ;
     const cSAnim* pGuessContactAnim;
     nlVector3 v3ContactOffsetLocal;
     nlVector3 v3ContactOffsetWorld;
@@ -2539,17 +2539,16 @@ bool cFielder::DoLooseBallContactFromRunVolley(nlVector3& v3AnimStartPosition, f
         FakeBallWorld::GetNextBallPosition(v3SimulatedBallPos);
         fSimulatedTime += FixedUpdateTask::GetPhysicsUpdateTick();
 
-        prevDistZ = (float)fabs(fPrevBallZ - fContactZ);
         currDistZ = (float)fabs(v3SimulatedBallPos.f.z - fContactZ);
+        prevDistZ = (float)fabs(fPrevBallZ - fContactZ);
 
         if (fSimulatedTime > FixedUpdateTask::GetPhysicsUpdateTick())
         {
-            bool bIsCrossingZ = ((v3SimulatedBallPos.f.z >= fContactZ) && (fPrevBallZ < fContactZ)) || ((v3SimulatedBallPos.f.z < fContactZ) && (fPrevBallZ >= fContactZ));
-            if (bIsCrossingZ || currDistZ <= prevDistZ)
+            if ((((v3SimulatedBallPos.f.z >= v3ContactOffsetWorld.f.z) && (fPrevBallZ < v3ContactOffsetWorld.f.z)) || ((v3SimulatedBallPos.f.z < v3ContactOffsetWorld.f.z) && (fPrevBallZ >= v3ContactOffsetWorld.f.z))) || (currDistZ >= prevDistZ))
             {
                 float deltaY = v3SimulatedBallPos.f.y - v3PassIntercept.f.y;
                 float deltaX = v3SimulatedBallPos.f.x - v3PassIntercept.f.x;
-                float distSq = deltaY * deltaY + deltaX * deltaX;
+                float distSq = deltaX * deltaX + deltaY * deltaY;
                 if (distSq < 1.0f)
                 {
                     bestTime = fSimulatedTime;

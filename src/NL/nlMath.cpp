@@ -84,70 +84,65 @@ float nlBezier(float* controlPoints, int degree, float t)
     return result;
 }
 
+static inline float nlATan(float x)
+{
+    register f32 temp_f4 = x;
+    register f32 temp_f5;
+    f32 var_f3;
+    s32 temp_r25;
+    s32 var_r0;
+
+    if (temp_f4 > 1.0f)
+    {
+        coeffs sp48 = { 0x3f7f567a, 0x3f77098b, 0x3f690bc9, 0x3f56c9b8, 0x3f42760a, 0x3f2de0fe, 0x3f1a4609, 0x3f0854e4 };
+        coeffs sp68 = { 0, 0x3b85739f, 0x3c92a2f4, 0x3d3741dd, 0x3dad0097, 0x3e09f123, 0x3e44b6ba, 0x3e81b9e9 };
+
+        register f32 tmp = 1.0f / temp_f4;
+        temp_f5 = tmp;
+        temp_r25 = 8.0f * temp_f5;
+        var_r0 = temp_r25 <= 7 ? temp_r25 : 7;
+
+        f32 c2 = ((float*)&sp68)[var_r0];
+        f32 c1 = ((float*)&sp48)[var_r0];
+        c1 = temp_f5 * c2 + c1;
+        var_f3 = 1.5707964f - c1;
+    }
+    else
+    {
+        s32 var_r0_2 = 7;
+        s32 temp_r25_2 = 8.0f * temp_f4;
+
+        coeffs sp8 = { 0, 0x3b85739f, 0x3c92a2f4, 0x3d3741dd, 0x3dad0097, 0x3e09f123, 0x3e44b6ba, 0x3e81b9e9 };
+        coeffs sp28 = { 0x3f7f567a, 0x3f77098b, 0x3f690bc9, 0x3f56c9b8, 0x3f42760a, 0x3f2de0fe, 0x3f1a4609, 0x3f0854e4 };
+
+        var_r0_2 = temp_r25_2 <= 7 ? temp_r25_2 : var_r0_2;
+        var_f3 = (temp_f4 * ((float*)&sp28)[var_r0_2]) + ((float*)&sp8)[var_r0_2];
+    }
+    return var_f3;
+}
+
 /**
  * Offset/Address/Size: 0x1D4 | 0x801D1648 | size: 0x244
  */
 float nlATan2f(float arg0, float arg1)
 {
-    register f32 temp_f5;
-    register f32 temp_f4;
     f32 var_f3;
-    s32 temp_r25;
-    s32 temp_r25_2;
-    s32 var_r0;
-    s32 var_r0_2;
 
-    // Static arrays for polynomial coefficients
     if ((float)fabs(arg1) > 0.00001f)
     {
-        temp_f4 = fabs(arg0 / arg1);
-        if (temp_f4 > 1.0f)
-        {
-
-            coeffs sp48 = { 0x3f7f567a, 0x3f77098b, 0x3f690bc9, 0x3f56c9b8, 0x3f42760a, 0x3f2de0fe, 0x3f1a4609, 0x3f0854e4 };
-            coeffs sp68 = { 0, 0x3b85739f, 0x3c92a2f4, 0x3d3741dd, 0x3dad0097, 0x3e09f123, 0x3e44b6ba, 0x3e81b9e9 };
-
-            register f32 tmp = 1.0f / temp_f4;
-            temp_f5 = tmp;
-            temp_r25 = 8.0f * temp_f5;
-
-            var_r0 = temp_r25 <= 7 ? temp_r25 : 7;
-
-            f32 c2 = ((float*)&sp68)[var_r0];
-            f32 c1 = ((float*)&sp48)[var_r0];
-            c1 = temp_f5 * c2 + c1;
-            var_f3 = 1.5707964f - c1;
-        }
-        else
-        {
-            var_r0_2 = 7;
-            temp_r25_2 = 8.0f * temp_f4;
-
-            coeffs sp8 = { 0, 0x3b85739f, 0x3c92a2f4, 0x3d3741dd, 0x3dad0097, 0x3e09f123, 0x3e44b6ba, 0x3e81b9e9 };
-            coeffs sp28 = { 0x3f7f567a, 0x3f77098b, 0x3f690bc9, 0x3f56c9b8, 0x3f42760a, 0x3f2de0fe, 0x3f1a4609, 0x3f0854e4 };
-
-            var_r0_2 = temp_r25_2 <= 7 ? temp_r25_2 : var_r0_2;
-
-            var_f3 = (temp_f4 * ((float*)&sp28)[var_r0_2]) + ((float*)&sp8)[var_r0_2];
-        }
+        var_f3 = nlATan((float)fabs(arg0 / arg1));
         if (arg0 >= 0.0f)
         {
             if (arg1 >= 0.0f)
-            {
                 return var_f3;
-            }
             return 3.1415927f - var_f3;
         }
         if (arg1 < 0.0f)
-        {
             return 3.1415927f + var_f3;
-        }
         return 6.2831855f - var_f3;
     }
     if (arg0 > 0.0f)
-    {
         return 1.5707964f;
-    }
     return 4.712389f;
 }
 

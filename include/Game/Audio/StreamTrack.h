@@ -103,12 +103,7 @@ public:
         StreamFileLookup(const char* name,
             const Function<bool(const char*, char*, unsigned long)>& fn);
 
-        /* 0x00 */ Tag m_ParamCBTag;
-        /* 0x04 */ union
-        {
-            ParamCallbackFn m_ParamCBFunc;
-            ParamFunctorBase* m_ParamCBFunctor;
-        };
+        /* 0x00 */ Function<FnVoidVoid> m_ParamCB;
         /* 0x08 */ STREAM_FILE_LOOKUP* m_pLookup;
         /* 0x0C */ unsigned long m_StreamCount;
         /* 0x10 */ char* m_pStrings;
@@ -121,7 +116,7 @@ public:
     /* 0x04 */ StreamFileLookup m_FileLookup;
     /* 0x18 */ FadeManager m_FadeMgr;
     /* 0x38 */ SlotPool<GCAudioStreaming::StereoAudioStream> m_StreamPool;
-    /* 0x50 */ StreamDeleteList m_StreamDeleteList;
+    /* 0x50 */ nlDLListSlotPool<GCAudioStreaming::StereoAudioStream*> m_StreamDeleteList;
 }; // total size: 0x6C
 
 class StreamTrack
@@ -165,7 +160,7 @@ public:
 }; // total size: 0x74
 
 template <int N>
-class TrackManager : public TrackManagerBase, public nlStaticSortedSlot<StreamTrack, N>
+class TrackManager : public TrackManagerBase
 {
 public:
     virtual ~TrackManager();
@@ -175,6 +170,8 @@ public:
     virtual StreamTrack* GetTrack(unsigned long Name);
     virtual void StopAllTracks(unsigned long);
     virtual void OnMasterVolumeChange(Audio::MasterVolume::VOLUME_GROUP);
+
+    /* 0x6C */ nlStaticSortedSlot<StreamTrack, N> m_Tracks;
 };
 
 /**
@@ -200,9 +197,9 @@ void TrackManager<N>::Update(float dT)
 
     nlWalkDLRing(m_FadeMgr.m_Fades.m_Head, &helper, cb);
 
-    for (track = 0, trackOffset = 0; track < nlStaticSortedSlot<StreamTrack, N>::m_EntryCount; track++, trackOffset += 8)
+    for (track = 0, trackOffset = 0; track < m_Tracks.m_EntryCount; track++, trackOffset += 8)
     {
-        ((typename nlSortedSlot<StreamTrack, N>::template EntryLookup<StreamTrack>*)((char*)nlStaticSortedSlot<StreamTrack, N>::m_pEntryLookup + trackOffset))->pEntry->Update(dT);
+        ((typename nlSortedSlot<StreamTrack, N>::template EntryLookup<StreamTrack>*)((char*)m_Tracks.m_pEntryLookup + trackOffset))->pEntry->Update(dT);
     }
 
     TrackManagerBase::Update(dT);
@@ -220,60 +217,69 @@ void TrackManager<N>::DestroyAllTracks()
 
     StopAllTracks(0);
 
-    while (nlStaticSortedSlot<StreamTrack, N>::m_EntryCount != 0)
+    while (m_Tracks.m_EntryCount != 0)
     {
-        track = ((EL*)((char*)nlStaticSortedSlot<StreamTrack, N>::m_pEntryLookup))->pEntry;
+        track = ((EL*)m_Tracks.m_pEntryLookup)->pEntry;
         if (track == NULL)
-        {
             break;
-        }
 
-        track->m_InFakePause = 0;
-        track->Stop(0);
-
-        if (track->m_IdleCallback.mTag == FUNCTOR)
+        if (track)
         {
-            if (track->m_IdleCallback.mFunctor != NULL)
+            track->m_InFakePause = 0;
+            track->Stop(0);
+
+            if (&track->m_IdleCallback)
             {
-                delete track->m_IdleCallback.mFunctor;
+                if (&track->m_IdleCallback)
+                {
+                    if (track->m_IdleCallback.mTag == FUNCTOR)
+                    {
+                        delete track->m_IdleCallback.mFunctor;
+                    }
+                    track->m_IdleCallback.mTag = EMPTY;
+                }
+            }
+
+            if (&track->m_QueuedStreams)
+            {
+                typedef DLListContainerBase<StreamTrack::QUEUED_STREAM, nlStaticArrayAllocator<DLListEntry<StreamTrack::QUEUED_STREAM>, 4> > QContainer;
+                void (QContainer::*func)(DLListEntry<StreamTrack::QUEUED_STREAM>*) = &QContainer::DeleteEntry;
+                nlWalkDLRing(track->m_QueuedStreams.m_Head, &track->m_QueuedStreams, func);
+                track->m_QueuedStreams.m_Head = NULL;
             }
         }
-        track->m_IdleCallback.mTag = EMPTY;
 
+        if (track == NULL)
+            break;
+
+        for (i = 0, trackOffset = 0; i < m_Tracks.m_EntryCount; trackOffset += 8, i++)
         {
-            typedef DLListContainerBase<StreamTrack::QUEUED_STREAM, nlStaticArrayAllocator<DLListEntry<StreamTrack::QUEUED_STREAM>, 4> > QContainer;
-            void (QContainer::*func)(DLListEntry<StreamTrack::QUEUED_STREAM>*) = &QContainer::DeleteEntry;
-            nlWalkDLRing(track->m_QueuedStreams.m_Head, &track->m_QueuedStreams, func);
-            track->m_QueuedStreams.m_Head = NULL;
+            if (((EL*)((char*)m_Tracks.m_pEntryLookup + trackOffset))->pEntry == track)
+            {
+                foundSlot = (EL*)((char*)m_Tracks.m_pEntryLookup + i * 8);
+                goto found_slot;
+            }
         }
-
         foundSlot = 0;
-        for (i = 0, trackOffset = 0; i < nlStaticSortedSlot<StreamTrack, N>::m_EntryCount; i++, trackOffset += 8)
-        {
-            if (((EL*)((char*)nlStaticSortedSlot<StreamTrack, N>::m_pEntryLookup + trackOffset))->pEntry == track)
-            {
-                foundSlot = (EL*)((char*)nlStaticSortedSlot<StreamTrack, N>::m_pEntryLookup + i * 8);
-                break;
-            }
-        }
+    found_slot:
 
-        FreeEntry(track);
+        m_Tracks.FreeEntry(track);
 
         {
-            unsigned long entryCount = nlStaticSortedSlot<StreamTrack, N>::m_EntryCount;
-            int idx = foundSlot - nlStaticSortedSlot<StreamTrack, N>::m_pEntryLookup;
+            unsigned long entryCount = m_Tracks.m_EntryCount;
+            int idx = foundSlot - m_Tracks.m_pEntryLookup;
             while ((unsigned long)idx != entryCount)
             {
                 int next = idx + 1;
-                EL* src = (EL*)((char*)nlStaticSortedSlot<StreamTrack, N>::m_pEntryLookup + next * 8);
-                EL* dst = (EL*)((char*)nlStaticSortedSlot<StreamTrack, N>::m_pEntryLookup + idx * 8);
+                EL* src = (EL*)((char*)m_Tracks.m_pEntryLookup + next * 8);
+                EL* dst = (EL*)((char*)m_Tracks.m_pEntryLookup + idx * 8);
                 idx = next;
                 dst->pEntry = src->pEntry;
                 dst->hash = src->hash;
             }
         }
 
-        nlStaticSortedSlot<StreamTrack, N>::m_EntryCount--;
+        m_Tracks.m_EntryCount--;
     }
 }
 

@@ -2251,9 +2251,8 @@ long SaveLoad::StartMemoryCardIDCheck(int slot, void (*callback)(long))
 
 /**
  * Offset/Address/Size: 0x264 | 0x80189BC0 | size: 0x12C
- * TODO: 83.31% match - extra cmpwi/ble loop-guard checks remain in both block
- * counting loops, and register allocation still differs in the icon header-size
- * arithmetic chain.
+ * TODO: 83.51% match - extra cmpwi/ble loop-guard checks in both block-counting
+ * loops; CSE merges two srawi into one; mullw scheduled eagerly in inline.
  */
 static inline int BuildDefaultIconHeaderSize(MemCard::ICON_CONFIG& IconCfg)
 {
@@ -2264,9 +2263,9 @@ static inline int BuildDefaultIconHeaderSize(MemCard::ICON_CONFIG& IconCfg)
     memset(IconCfg.IconSpeeds, 0, 8);
     memset(&IconCfg, 0, sizeof(MemCard::ICON_CONFIG));
 
-    int negOne = -1;
-    int iconCount = 1;
     int iconFormat = 2;
+    int iconCount = 1;
+    int negOne = -1;
     int speed = 3;
 
     IconCfg.IconCount = iconCount;

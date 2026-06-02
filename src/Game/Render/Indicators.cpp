@@ -78,15 +78,39 @@ struct IndicatorsInit
 IndicatorsInit s_indicatorsInit;
 } // namespace
 
-float indicatorInfo[10];
 float fMaxAlpha = 0.9f;
 float fOpacityFadePerSecond = 1.2f;
 
+class IndicatorInfo
+{
+public:
+    float m_fOpacity;
+
+    inline void IncrementOnscreenTimer(float fTimeDelta)
+    {
+        m_fOpacity -= fTimeDelta * fOpacityFadePerSecond;
+        if (m_fOpacity < 0.0f)
+        {
+            m_fOpacity = 0.0f;
+        }
+    }
+
+    inline void IncrementOffscreenTimer(float fTimeDelta)
+    {
+        m_fOpacity += fTimeDelta * fOpacityFadePerSecond;
+        if (m_fOpacity > fMaxAlpha)
+        {
+            m_fOpacity = fMaxAlpha;
+        }
+    }
+};
+
+IndicatorInfo indicatorInfo[10];
+
 /**
  * Offset/Address/Size: 0x868 | 0x8015FACC | size: 0x440
- * TODO: 91.55% match - remaining 15 diffs are -inline deferred artifacts:
- * f29/f30 swap (dt vs x register allocation), r3/r4 swap (g_pGame/drawIndicator),
- * mr vs li constant propagation, and branch offset consequence.
+ * TODO: 95.82% match - f29/f30 swap (dt vs x callee-saved register allocation),
+ * r3/r4 swap (g_pGame/drawIndicator), mr vs li constant propagation for insideXY
  */
 void UpdateAndRenderOffScreenIndicators(float dt)
 {
@@ -155,31 +179,25 @@ void UpdateAndRenderOffScreenIndicators(float dt)
             if (!drawIndicator)
             {
             do_fadeout:
-                indicatorInfo[i] -= dt * fOpacityFadePerSecond;
-                if (indicatorInfo[i] < 0.0f)
-                {
-                    indicatorInfo[i] = 0.0f;
-                }
+                indicatorInfo[i].IncrementOnscreenTimer(dt);
             }
             else
             {
                 float x;
                 float y;
+                cPlayer* pCharDraw;
                 float absX;
                 float absY;
                 float size;
                 unsigned long texID;
-                int xPixels;
                 int yPixels;
+                int xPixels;
 
-                indicatorInfo[i] += dt * fOpacityFadePerSecond;
-                if (indicatorInfo[i] > fMaxAlpha)
-                {
-                    indicatorInfo[i] = fMaxAlpha;
-                }
+                indicatorInfo[i].IncrementOffscreenTimer(dt);
 
                 x = 320.0f * projectedPos.f.x;
                 y = 240.0f * projectedPos.f.y;
+                pCharDraw = (cPlayer*)g_pCharacters[i];
 
                 if (x < -288.0f)
                 {
@@ -205,19 +223,19 @@ void UpdateAndRenderOffScreenIndicators(float dt)
                 x = x + 320.0f;
                 y = y + 240.0f;
 
-                if (!(absX >= absY))
+                if (absX < absY)
                 {
                     absX = absY;
                 }
 
                 size = InterpolateRangeClamped(1.0f, 0.5f, 0.0f, 2.0f, (float)__fabs(1.0f - absX));
-                texID = uIndicatorTexID[((cPlayer*)g_pCharacters[i])->GetGlobalPad()->m_padIndex];
+                texID = uIndicatorTexID[pCharDraw->GetGlobalPad()->m_padIndex];
                 yPixels = (int)y;
                 xPixels = (int)x;
 
                 size = 64.0f * size;
                 {
-                    float opacity = indicatorInfo[i];
+                    float opacity = indicatorInfo[i].m_fOpacity;
 
                     if ((u8)glTextureLoad(texID))
                     {
@@ -336,7 +354,7 @@ void UpdateAndRenderPlayerIndicators(float)
             continue;
         }
 
-        fOpacity = 1.0f - indicatorInfo[i];
+        fOpacity = 1.0f - indicatorInfo[i].m_fOpacity;
         if (fOpacity <= 0.011764706f)
         {
             continue;

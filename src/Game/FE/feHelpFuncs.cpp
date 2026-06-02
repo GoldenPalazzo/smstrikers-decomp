@@ -1,3 +1,4 @@
+#define BASICSTRING_INLINE_ERASE
 #include "Game/FE/feHelpFuncs.h"
 
 #include "Game/FE/FEAudio.h"
@@ -287,7 +288,7 @@ TakeGameMemSnapshot::Detail::LexicalCastImpl<BasicString<char, ::Detail::TempStr
 
 /**
  * Offset/Address/Size: 0xED8 | 0x800A579C | size: 0xD74
- * TODO: 88.84% match - register allocation off by 1 (stmw r25 vs r26), bne+b vs beq branch pattern in operator[] COW check
+ * TODO: 90.98% match - register allocation off by 1 (stmw r25 vs r26), bne+b vs beq branch pattern in operator[] COW check
  */
 
 // /**
