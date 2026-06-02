@@ -43,7 +43,7 @@ cFollowCamera::cFollowCamera(FollowTarget followTarget)
 
 /**
  * Offset/Address/Size: 0x0 | 0x801A8F18 | size: 0x668
- * TODO: 94.32% match - GPR r28-r31 allocation mismatch (context-level, all diffs are register swaps)
+ * TODO: 96.4% match - GPR r28-r31 allocation rotated (this=r29 should be r28, pad=r31 should be r29); dampening/vector math float scheduling differs
  */
 void cFollowCamera::Update(float dt)
 {
@@ -153,7 +153,7 @@ void cFollowCamera::Update(float dt)
     {
         if (m_aPitch > g_aFollowCamMaxPitch)
             m_aPitch = g_aFollowCamMaxPitch;
-        if (m_aPitch < g_aFollowCamMinPitch)
+        else if (m_aPitch < g_aFollowCamMinPitch)
             m_aPitch = g_aFollowCamMinPitch;
     }
 
@@ -182,7 +182,7 @@ void cFollowCamera::Update(float dt)
 
     nlVec3Set(m_v3CameraPosition, m_fOOIDistance, 0.0f, 0.0f);
 
-    nlMakeRotationMatrixY(m4Orient, -m_aPitch * 0.0000958738f);
+    nlMakeRotationMatrixY(m4Orient, (u16)(-m_aPitch) * 0.0000958738f);
     nlMultPosVectorMatrix(m_v3CameraPosition, m_v3CameraPosition, m4Orient);
 
     nlMakeRotationMatrixZ(m4Orient, m_aFacingDirection * 0.0000958738f);

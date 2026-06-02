@@ -399,17 +399,12 @@ void NSNMessengerScene::SceneCreated()
 
 /**
  * Offset/Address/Size: 0x940 | 0x800A1C5C | size: 0x180
- * TODO: 96.72% match - one addic./beq pair remains in FEScrollText delete path and
- *       one addic./beq pair remains before m_messageFinishedCB teardown.
  */
 NSNMessengerScene::~NSNMessengerScene()
 {
     if (m_scrollText != NULL)
     {
-        if (m_scrollText != NULL)
-        {
-            delete m_scrollText;
-        }
+        delete m_scrollText;
     }
 }
 

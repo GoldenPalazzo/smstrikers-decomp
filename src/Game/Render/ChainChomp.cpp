@@ -147,11 +147,12 @@ void ChainChomp::Update(float fDeltaT)
             Audio::gStadGenSFX.Play((Audio::eWorldSFX)0xCE, 100.0f, -1.0f, true, 100.0f);
 
             EffectsGroup* pGroup = fxGetGroup("chainchomp_trail");
-            if (pGroup->m_specs != NULL && pGroup->m_numSpecs > 0)
+            EffectsSpec* pSpec = pGroup->m_specs;
+            int numSpecs = pGroup->m_numSpecs;
+            if (pSpec != NULL && numSpecs > 0)
             {
-                EffectsSpec* pSpec = pGroup->m_specs;
                 int i;
-                for (i = pGroup->m_numSpecs; i > 0; i--)
+                for (i = numSpecs; i > 0; i--)
                 {
                     if (pSpec->m_pTemplate != NULL)
                     {
@@ -251,7 +252,8 @@ void ChainChomp::Update(float fDeltaT)
                 fTargetX = -40.0f;
             }
 
-            if (mv3Position.f.y < 0.0f)
+            float fPosY = mv3Position.f.y;
+            if (fPosY < 0.0f)
             {
                 fTargetY = -8.0f;
             }
@@ -260,7 +262,7 @@ void ChainChomp::Update(float fDeltaT)
                 fTargetY = 8.0f;
             }
 
-            maDesiredFacingDirection = (u16)(s32)(10430.378f * nlATan2f(fTargetY - mv3Position.f.y, fTargetX - mv3Position.f.x));
+            maDesiredFacingDirection = (u16)(s32)(10430.378f * nlATan2f(fTargetY - fPosY, fTargetX - mv3Position.f.x));
             mfDesiredSpeed = g_pGame->m_pGameTweaks->fChainChompSpeed;
         }
         break;

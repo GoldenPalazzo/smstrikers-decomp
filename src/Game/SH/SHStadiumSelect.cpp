@@ -491,8 +491,7 @@ void StadiumSelectSceneV2::SceneCreated()
 
 /**
  * Offset/Address/Size: 0x210 | 0x800D8790 | size: 0x5C4
- * TODO: 91.88% match - stack slot ordering: function-scope zeros allocated at top
- * where hash vars belong, block-scope vars at low instead of mixed layout.
+ * TODO: 97.97% match - r4/r0 register swap in WrapStadiumIndex result (subf dest)
  */
 void StadiumSelectSceneV2::Update(float dt)
 {
@@ -511,7 +510,7 @@ void StadiumSelectSceneV2::Update(float dt)
         bool rightPressed = g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xC, true, NULL);
         bool leftPressed = g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xB, true, NULL);
 
-        volatile InlineHasher hz1, hz3, hz5, hz7;
+        volatile InlineHasher hA_1, hB_1, h9_1, h8_1, hz7, h6_1, hz5, h4_1, hz3, h2_1, hz1, h0_1;
 
         if (!rightPressed && !leftPressed)
         {
@@ -540,28 +539,25 @@ void StadiumSelectSceneV2::Update(float dt)
                 CFindByRef byRef;
             } find;
             find.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
-            volatile InlineHasher hB, hA;
-            volatile InlineHasher h9, h8;
-            volatile InlineHasher h6, h4, h2, h0;
             unsigned long hash;
-            h0.m_Hash = 0;
+            h0_1.m_Hash = 0;
             hz1.m_Hash = 0;
-            h2.m_Hash = 0;
+            h2_1.m_Hash = 0;
             hz3.m_Hash = 0;
-            h4.m_Hash = 0;
+            h4_1.m_Hash = 0;
             hz5.m_Hash = 0;
-            h6.m_Hash = 0;
+            h6_1.m_Hash = 0;
             hz7.m_Hash = 0;
             hash = nlStringLowerHash("buttons");
-            h8.m_Hash = hash;
-            h9.m_Hash = hash;
+            h8_1.m_Hash = hash;
+            h9_1.m_Hash = hash;
             hash = nlStringLowerHash("Layer");
-            hA.m_Hash = hash;
-            hB.m_Hash = hash;
+            hA_1.m_Hash = hash;
+            hB_1.m_Hash = hash;
             TLComponentInstance* buttonsComp = find.byRef(
                 m_pFEPresentation->m_currentSlide,
-                (InlineHasher&)hB,
-                (InlineHasher&)h9,
+                (InlineHasher&)hA_1,
+                (InlineHasher&)h9_1,
                 (InlineHasher&)hz7,
                 (InlineHasher&)hz5,
                 (InlineHasher&)hz3,
@@ -608,9 +604,7 @@ void StadiumSelectSceneV2::Update(float dt)
                 TFindByRef byRef;
             } find;
             find.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
-            volatile InlineHasher hB, hA;
-            volatile InlineHasher h9, h8;
-            volatile InlineHasher h6, h4, h2, h0;
+            volatile InlineHasher hA, hB, h9, h8, h6, h4, h2, h0;
             unsigned long hash;
             h0.m_Hash = 0;
             hz1.m_Hash = 0;
@@ -628,7 +622,7 @@ void StadiumSelectSceneV2::Update(float dt)
             hB.m_Hash = hash;
             nameText = find.byRef(
                 m_pFEPresentation->m_currentSlide,
-                (InlineHasher&)hB,
+                (InlineHasher&)hA,
                 (InlineHasher&)h9,
                 (InlineHasher&)hz7,
                 (InlineHasher&)hz5,
@@ -675,9 +669,7 @@ void StadiumSelectSceneV2::Update(float dt)
                 TFindByRef byRef;
             } find;
             find.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
-            volatile InlineHasher hB, hA;
-            volatile InlineHasher h9, h8;
-            volatile InlineHasher h6, h4, h2, h0;
+            volatile InlineHasher hA, hB, h9, h8, h6, h4, h2, h0;
             unsigned long hash;
             h0.m_Hash = 0;
             hz1.m_Hash = 0;
@@ -695,7 +687,7 @@ void StadiumSelectSceneV2::Update(float dt)
             hB.m_Hash = hash;
             TLTextInstance* tickerText = find.byRef(
                 m_pFEPresentation->m_currentSlide,
-                (InlineHasher&)hB,
+                (InlineHasher&)hA,
                 (InlineHasher&)h9,
                 (InlineHasher&)hz7,
                 (InlineHasher&)hz5,

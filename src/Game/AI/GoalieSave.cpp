@@ -819,8 +819,8 @@ SaveData* GoalieSave::FindBestInList(SaveBlendInfo& blendInfo, nlListContainer<S
     static float fDefaultMilestoneValues[2] = { 0.4f, 0.7f };
 
     float fClosest = 10000.0f;
-    SaveData* pClosest = NULL;
     SaveBlendInfo tempBlendInfo;
+    ListEntry<SaveData*>* pEntry;
     nlVector3 v3AdjLocalPos;
     float fSaveTime;
     SaveData* pConnected;
@@ -830,8 +830,9 @@ SaveData* GoalieSave::FindBestInList(SaveBlendInfo& blendInfo, nlListContainer<S
     float fInvSegTime;
 
     int milestone = bFromTakeoff ? 1 : 0;
+    SaveData* pClosest = NULL;
 
-    ListEntry<SaveData*>* pEntry = SaveList.m_Head;
+    pEntry = SaveList.m_Head;
     while (pEntry != NULL)
     {
         SaveData* pCur = pEntry->data;
@@ -899,24 +900,14 @@ SaveData* GoalieSave::FindBestInList(SaveBlendInfo& blendInfo, nlListContainer<S
                     pClosest = pCur;
 
                     blendInfo.mfStartTime = tempBlendInfo.mfStartTime;
-                    blendInfo.mfMilestoneTime[0] = tempBlendInfo.mfMilestoneTime[0];
-                    blendInfo.mfMilestoneTime[1] = tempBlendInfo.mfMilestoneTime[1];
-                    blendInfo.mfMilestoneTime[2] = tempBlendInfo.mfMilestoneTime[2];
-                    blendInfo.mfMilestoneTime[3] = tempBlendInfo.mfMilestoneTime[3];
-                    blendInfo.mfMilestoneTime[4] = tempBlendInfo.mfMilestoneTime[4];
+                    __memcpy(blendInfo.mfMilestoneTime, tempBlendInfo.mfMilestoneTime, 20);
 
                     __memcpy(&blendInfo.mfMilestoneScale[0][0], &tempBlendInfo.mfMilestoneScale[0][0], 80);
 
                     blendInfo.mfSaveBlendPrimary = tempBlendInfo.mfSaveBlendPrimary;
                     blendInfo.mfSaveBlendSecondary = tempBlendInfo.mfSaveBlendSecondary;
                     blendInfo.mfSaveBlendComposite = tempBlendInfo.mfSaveBlendComposite;
-                    blendInfo.mpSaveData[0] = tempBlendInfo.mpSaveData[0];
-                    blendInfo.mpSaveData[1] = tempBlendInfo.mpSaveData[1];
-                    blendInfo.mpSaveData[2] = tempBlendInfo.mpSaveData[2];
-                    blendInfo.mpSaveData[3] = tempBlendInfo.mpSaveData[3];
-                    blendInfo.mv3BlendedSavePos.f.x = tempBlendInfo.mv3BlendedSavePos.f.x;
-                    blendInfo.mv3BlendedSavePos.f.y = tempBlendInfo.mv3BlendedSavePos.f.y;
-                    blendInfo.mv3BlendedSavePos.f.z = tempBlendInfo.mv3BlendedSavePos.f.z;
+                    __memcpy(&blendInfo.mpSaveData[0], &tempBlendInfo.mpSaveData[0], 28);
 
                     {
                         float fStartAdj = blendInfo.mfMilestoneTime[2] - fTime;
@@ -930,9 +921,7 @@ SaveData* GoalieSave::FindBestInList(SaveBlendInfo& blendInfo, nlListContainer<S
 
                     if (bFromTakeoff)
                     {
-                        blendInfo.mv3BlendedSavePos.f.x -= pCur->mv3TakeoffPos.f.x;
-                        blendInfo.mv3BlendedSavePos.f.y -= pCur->mv3TakeoffPos.f.y;
-                        blendInfo.mv3BlendedSavePos.f.z -= pCur->mv3TakeoffPos.f.z;
+                        nlVec3Sub(blendInfo.mv3BlendedSavePos, blendInfo.mv3BlendedSavePos, pCur->mv3TakeoffPos);
                     }
 
                     if (fDistSq < 0.0025f)
@@ -1109,12 +1098,6 @@ SaveData* GoalieSave::GetClosestBlendedPos(SaveBlendInfo& blendInfo, const nlVec
 
     float fScaleLeft;
     float fScaleRight;
-    float fLeftY;
-    float fRightY;
-    float fTimeLeft[5];
-    float fLeftZ;
-    float fTimeRight[5];
-    float fRightZ;
 
     blendInfo.mfSaveBlendPrimary = 0.0f;
     blendInfo.mfSaveBlendSecondary = 0.0f;
@@ -1156,7 +1139,7 @@ SaveData* GoalieSave::GetClosestBlendedPos(SaveBlendInfo& blendInfo, const nlVec
         pLeftUp = pLeft;
         pRightUp = pRight;
 
-        bool done = false;
+        unsigned char done = 0;
         while (!done)
         {
             if (v3TargetPos.f.y <= pLeft->mv3SavePos.f.y || v3TargetPos.f.y <= pRight->mv3SavePos.f.y)
@@ -1266,9 +1249,9 @@ SaveData* GoalieSave::GetClosestBlendedPos(SaveBlendInfo& blendInfo, const nlVec
                     fScaleRight = (v3TargetPos.f.z - pLeftUp->mv3SavePos.f.z) / (pRightUp->mv3SavePos.f.z - pLeftUp->mv3SavePos.f.z);
                 }
 
-                fLeftY = Interpolate(pLeft->mv3SavePos.f.y, pRight->mv3SavePos.f.y, fScaleLeft);
-                fRightY = Interpolate(pLeftUp->mv3SavePos.f.y, pRightUp->mv3SavePos.f.y, fScaleRight);
-                blendInfo.mfSaveBlendComposite = (v3TargetPos.f.y - fLeftY) / (fRightY - fLeftY);
+                float fLefty = Interpolate(pLeft->mv3SavePos.f.y, pRight->mv3SavePos.f.y, fScaleLeft);
+                float fRighty = Interpolate(pLeftUp->mv3SavePos.f.y, pRightUp->mv3SavePos.f.y, fScaleRight);
+                blendInfo.mfSaveBlendComposite = (v3TargetPos.f.y - fLefty) / (fRighty - fLefty);
 
                 if (blendInfo.mfSaveBlendComposite <= 0.001f)
                 {
@@ -1282,7 +1265,12 @@ SaveData* GoalieSave::GetClosestBlendedPos(SaveBlendInfo& blendInfo, const nlVec
                     break;
                 }
 
-                done = true;
+                done = 1;
+
+                float fTimeLeft[5];
+                float fLeftZ;
+                float fTimeRight[5];
+                float fRightZ;
 
                 blendInfo.mpSaveData[1] = NULL;
                 if (fScaleLeft <= 0.999f)
@@ -1395,27 +1383,23 @@ SaveData* GoalieSave::GetClosestBlendedPos(SaveBlendInfo& blendInfo, const nlVec
     }
     else
     {
-        pEdge = pSaveData;
-    }
+        SaveData* pNode = pClosest;
+        SaveData* pLast = pClosest;
 
-    if (pEdge == pSaveData)
-    {
-        SaveData* pLast = pSaveData;
-
-        if (pSaveData->mv3GroupMaxCoords.f.y <= v3TargetPos.f.y)
+        if (pClosest->mv3GroupMaxCoords.f.y <= v3TargetPos.f.y)
         {
-            while (pSaveData != NULL)
+            while (pNode != NULL)
             {
-                pLast = pSaveData;
-                pSaveData = pSaveData->mpConnectedSaveData[2];
+                pLast = pNode;
+                pNode = pNode->mpConnectedSaveData[2];
             }
         }
         else
         {
-            while (pSaveData != NULL)
+            while (pNode != NULL)
             {
-                pLast = pSaveData;
-                pSaveData = pSaveData->mpConnectedSaveData[3];
+                pLast = pNode;
+                pNode = pNode->mpConnectedSaveData[3];
             }
         }
 

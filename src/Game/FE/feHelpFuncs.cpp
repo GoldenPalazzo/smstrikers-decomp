@@ -288,7 +288,7 @@ TakeGameMemSnapshot::Detail::LexicalCastImpl<BasicString<char, ::Detail::TempStr
 
 /**
  * Offset/Address/Size: 0xED8 | 0x800A579C | size: 0xD74
- * TODO: 90.98% match - register allocation off by 1 (stmw r25 vs r26), bne+b vs beq branch pattern in operator[] COW check
+ * TODO: 91.71% match - register allocation off by 1 (stmw r25 vs r26), bne+b vs beq branch pattern in operator[] COW check
  */
 
 // /**
@@ -1095,25 +1095,25 @@ FormatImpl<StringType>& FormatImpl<StringType>::operator%(const T& t)
 {
     StringType insert = LexicalCast<StringType, T>(t);
 
-    for (int i = 0; i < (int)mString.size() - 1; i++)
+    for (int i = 0; i < (mString.m_data ? mString.m_data->mSize - 1 : 0); i++)
     {
         if (mString[i] != '{')
             continue;
 
-        if (i + 1 >= (int)mString.size() - 1)
+        if (i + 1 >= (mString.m_data ? mString.m_data->mSize - 1 : 0))
             continue;
 
         if (mString[i + 1] - '0' != mCurrentPos)
             continue;
 
-        if (i + 2 >= (int)mString.size() - 1)
+        if (i + 2 >= (mString.m_data ? mString.m_data->mSize - 1 : 0))
             continue;
 
         if (mString[i + 2] != '}')
             continue;
 
         mString.erase(&mString[i], &mString[i + 3]);
-        mString.insert(&mString[i], &insert[0], &insert[(int)insert.size() - 1]);
+        mString.insert(&mString[i], &insert[0], &insert[insert.size() - 1]);
     }
 
     mCurrentPos++;

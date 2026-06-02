@@ -325,27 +325,21 @@ void ChangeCrowdVolume(float NewVolume)
 
 /**
  * Offset/Address/Size: 0x31F8 | 0x8015090C | size: 0x588
- * TODO: 87.95% match - r-register allocation cascade in loop body (mood r0 vs r6,
- *       blendVal f4 vs f3) and Delay temp variable scheduling diffs.
  */
 static inline void ScaleAndAddVocalDef(CROWD_VOCAL_DEFINITION& Dest, const CROWD_VOCAL_DEFINITION& Src, float Scale)
 {
-    float srcVol = Src.Volume;
-    float volRange = Src.VolumeRange;
-    Dest.Volume += srcVol * Scale;
-    Dest.VolumeRange += volRange * Scale;
-    if (srcVol)
+    Dest.Volume += Src.Volume * Scale;
+    Dest.VolumeRange += Src.VolumeRange * Scale;
+    if (Src.Volume)
     {
-        float invDelay;
         if (Src.Delay)
         {
-            invDelay = (1.0f / Src.Delay) * Scale;
+            Dest.Delay += (1.0f / Src.Delay) * Scale;
         }
         else
         {
-            invDelay = 1000000.0f;
+            Dest.Delay += 1000000.0f;
         }
-        Dest.Delay += invDelay;
     }
     else
     {
@@ -399,7 +393,7 @@ static void MoodDefFromBlend(float* MoodBlend, MOOD_DEFINITION& MoodDef)
     }
 
     float remainWeight = 1.0f - AccountedFor;
-    if (remainWeight <= 0.0f)
+    if (remainWeight < 0.0f)
     {
         remainWeight = 0.0f;
     }
@@ -411,19 +405,15 @@ static void MoodDefFromBlend(float* MoodBlend, MOOD_DEFINITION& MoodDef)
     ScaleAndAddVocalDef(MoodDef.Chant, SatMoodDef.Chant, remainWeight);
     ScaleAndAddVocalDef(MoodDef.Heckle, SatMoodDef.Heckle, remainWeight);
 
-    float delay = MoodDef.Chant.Delay;
-    if (delay)
+    if (MoodDef.Chant.Delay)
     {
-        delay = 1.0f / delay;
+        MoodDef.Chant.Delay = 1.0f / MoodDef.Chant.Delay;
     }
-    MoodDef.Chant.Delay = delay;
 
-    delay = MoodDef.Heckle.Delay;
-    if (delay)
+    if (MoodDef.Heckle.Delay)
     {
-        delay = 1.0f / delay;
+        MoodDef.Heckle.Delay = 1.0f / MoodDef.Heckle.Delay;
     }
-    MoodDef.Heckle.Delay = delay;
 
     if (*pMaxBlend < remainWeight)
     {

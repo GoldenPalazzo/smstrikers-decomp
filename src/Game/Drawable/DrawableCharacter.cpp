@@ -1484,8 +1484,10 @@ void cPN_Blender::Replay<LoadFrame>(LoadFrame& frame)
 
 /**
  * Offset/Address/Size: 0x4CC0 | 0x8011DA80 | size: 0x234
- * TODO: 86.4% match - FloatCompressor constructor inlined instead of called,
- * r26/r29/r31 register allocation mismatch
+ * TODO: 87.8% match - MWCC inlines FloatCompressor<0,1,7> and <0,1,15>
+ * constructors despite explicit specialization declarations in Replay.h;
+ * target calls __ct__ externally. This cascades into r26 not allocated for
+ * type and r29/r31 swap.
  */
 template <>
 void cPN_Blender::Replay<SaveFrame>(SaveFrame& frame)

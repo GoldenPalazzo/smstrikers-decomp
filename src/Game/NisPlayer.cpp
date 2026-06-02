@@ -421,7 +421,7 @@ static void SkipLine(const char*& data)
 
 /**
  * Offset/Address/Size: 0x3408 | 0x801180E4 | size: 0x588
- * TODO: 95.90% match - cleanup-loop register assignment mismatch in the active reset block
+ * TODO: 99.69% match - r15/r16 register swap in active reset cleanup loop
  */
 NisPlayer::NisPlayer()
     : InterpreterCore(10)
@@ -483,10 +483,10 @@ NisPlayer::NisPlayer()
             char* (*toLower)(char*) = nlToLower<char>;
             toLower(header.name);
 
-            nlVector3 beginPos = { { 0, 0, 0 } };
             for (int i = 0; i < header.numAnimations; i++)
             {
-                int num = sscanf(d, "\tbegin_position %f, %f, %f", &beginPos.f.x, &beginPos.f.y, &beginPos.f.z);
+                nlVector3 beginPos = { { 0, 0, 0 } };
+                int num = sscanf(d, "\tbegin_pos %f, %f, %f", &beginPos.f.x, &beginPos.f.y, &beginPos.f.z);
                 if (num != 3)
                     break;
                 SkipLine(d);

@@ -506,7 +506,7 @@ def GameLib(lib_name: str, objects: Objects) -> Library:
             "-DMUSY_VERSION_MINOR=0",
             "-DMUSY_VERSION_PATCH=3",
             # '-pragma "supress_warnings on"',
-        ],            
+        ],
         category="game",
     )
 

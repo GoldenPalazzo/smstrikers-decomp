@@ -315,8 +315,8 @@ static void DrawIndicator(int xCentre, int yCentre, float fPixelWidth, float fPi
 
 /**
  * Offset/Address/Size: 0xA8 | 0x8015F30C | size: 0x7C0
- * TODO: 97.04% match - remaining diffs are register allocation differences in
- * loop-carried pointers and inlined DrawIndicator argument setup.
+ * TODO: 98.26% match - remaining diffs are callee-saved integer register
+ * allocation rotation (r25-r31 shifted by 2 positions).
  */
 void UpdateAndRenderPlayerIndicators(float)
 {
@@ -370,8 +370,8 @@ void UpdateAndRenderPlayerIndicators(float)
         v3Position = pSnapshot->mCharacters[i].mPosition;
 
         pTweaks = (GameTweaksOverlay*)((cGameOverlay*)g_pGame)->mGameTweaks;
-        v3Position.f.z += pTweaks->mVerticalOffset;
         switchScale = pTweaks->mProjectionYOffset;
+        v3Position.f.z += pTweaks->mVerticalOffset;
 
         glViewProjectPoint((eGLView)7, v3Position, v3ScreenPosition);
 
@@ -384,8 +384,9 @@ void UpdateAndRenderPlayerIndicators(float)
             switchScale = (0.5f - ((cPlayerIndicatorState*)g_pCharacters[i])->mSwitchScale) / 0.5f;
             sizeScale = Interpolate(1.0f, 2.0f, switchScale);
 
+            DrawIndicator((int)fX, (int)fY, s_fAdditiveTextureScale * (s_fOverheadSize * sizeScale), s_fAdditiveTextureScale * (s_fOverheadSize * sizeScale), s_fAdditiveBlendingIntensity * switchScale, glowTexID, 0.0f, 2);
+
             fDistInPixels = s_fOverheadSize * sizeScale;
-            DrawIndicator((int)fX, (int)fY, s_fAdditiveTextureScale * fDistInPixels, s_fAdditiveTextureScale * fDistInPixels, s_fAdditiveBlendingIntensity * switchScale, glowTexID, 0.0f, 2);
             DrawIndicator((int)fX, (int)fY, fDistInPixels, fDistInPixels, fOpacity, indicatorTexID, 0.0f, 1);
         }
         else if (((cPlayerIndicatorState*)g_pCharacters[i])->mPossessionObject)

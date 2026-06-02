@@ -176,9 +176,6 @@ void GameplayCamera::CalcDynamicZoom()
 
 /**
  * Offset/Address/Size: 0x8CC | 0x801A9F0C | size: 0x258
- * TODO: 98.57% match - float register allocation differs (omega=f6 vs target f8,
- * change=f8 vs target f6) due to MWCC graph coloring. All instructions correct.
- * File uses -inline deferred which may contribute to the register allocation difference.
  */
 void GameplayCamera::Update(float deltaTime)
 {
@@ -224,19 +221,21 @@ void GameplayCamera::Update(float deltaTime)
             smoothTime = 0.75f;
         }
 
+        float change;
+        float x;
         float omega = 2.0f / smoothTime;
-        float x = omega * deltaTime;
+        x = omega * deltaTime;
         float exp = 1.0f / ((x * (0.235f * x * x)) + ((0.48f * x * x) + (1.0f + x)));
-        float change = m_fZoom - clampedDesiredZoom;
+        change = m_fZoom - clampedDesiredZoom;
         float currentVelocity = m_fZoomSeekSpeed;
-        float temp = deltaTime * ((change * omega) + currentVelocity);
 
-        m_fZoomSeekSpeed = exp * (currentVelocity - (omega * temp));
-        m_fZoom = (exp * (change + temp)) + clampedDesiredZoom;
+        m_fZoomSeekSpeed = exp * (currentVelocity - (omega * (deltaTime * ((omega * change) + currentVelocity))));
+        m_fZoom = (exp * (change + (deltaTime * ((omega * change) + currentVelocity)))) + clampedDesiredZoom;
     }
 
+    float inverseZoom;
     float zoom = m_fZoom;
-    float inverseZoom = 1.0f - zoom;
+    inverseZoom = 1.0f - zoom;
 
     m_v3Target.f.x = (inverseZoom * m_nearZoom.m_v3Target.f.x) + (zoom * m_farZoom.m_v3Target.f.x);
     m_v3Target.f.y = (inverseZoom * m_nearZoom.m_v3Target.f.y) + (zoom * m_farZoom.m_v3Target.f.y);

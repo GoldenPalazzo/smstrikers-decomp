@@ -60,13 +60,17 @@ public:
 
     inline void operator()(ParamType arg)
     {
-        if (mTag == FREE_FUNCTION)
+        int tag = mTag;
+        if (((u32)((-tag) | tag) >> 31) > 0)
         {
-            mFreeFunction(arg);
-        }
-        else
-        {
-            (*mFunctor)(arg);
+            if (tag == FREE_FUNCTION)
+            {
+                mFreeFunction(arg);
+            }
+            else
+            {
+                (*mFunctor)(arg);
+            }
         }
     }
 }; // total size: 0x8

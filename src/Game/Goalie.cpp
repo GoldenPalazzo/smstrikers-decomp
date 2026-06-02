@@ -3786,34 +3786,31 @@ void Goalie::InitActionLooseBallSetup()
     mbPickedUp = false;
 
     nlVector3 v3BallPosition;
+    cNet* pNet;
     bool bInCone = false;
     const nlVector3* pBallVelocity = &g_pBall->m_v3Velocity;
 
     v3BallPosition = g_pBall->m_v3Position;
-    cNet* pNet = m_pTeam->m_pNet;
+    pNet = m_pTeam->m_pNet;
     muBallChangeCount = g_pBall->m_bBallPathChangeCount;
     muBallDeflectCount = g_pBall->m_bBallDeflectCount;
 
     if (g_pBall->m_pOwner == NULL)
     {
-        nlVector3 v3Velocity;
-        v3Velocity.f.x = g_pBall->m_v3Velocity.f.x;
-        v3Velocity.f.y = g_pBall->m_v3Velocity.f.y;
-        v3Velocity.f.z = g_pBall->m_v3Velocity.f.z;
+        nlVector3 v3Velocity = g_pBall->m_v3Velocity;
         f32 fVelMagSq = v3Velocity.f.x * v3Velocity.f.x + v3Velocity.f.y * v3Velocity.f.y + v3Velocity.f.z * v3Velocity.f.z;
         if (fVelMagSq >= 0.01f)
         {
             nlVector3 v3Post0;
             nlVector3 v3Post1;
-            pNet->GetPostLocation(v3Post0, 0, 0.0f);
-            pNet->GetPostLocation(v3Post1, 1, 0.0f);
+            m_pTeam->m_pNet->GetPostLocation(v3Post0, 0, 0.0f);
+            m_pTeam->m_pNet->GetPostLocation(v3Post1, 1, 0.0f);
 
-            nlVector3 v3GuessBallPos;
-            v3GuessBallPos.f.z = v3Velocity.f.z + g_pBall->m_v3Position.f.z;
-            v3GuessBallPos.f.y = v3Velocity.f.y + g_pBall->m_v3Position.f.y;
-            v3GuessBallPos.f.x = v3Velocity.f.x + g_pBall->m_v3Position.f.x;
+            v3Velocity.f.z += g_pBall->m_v3Position.f.z;
+            v3Velocity.f.y += g_pBall->m_v3Position.f.y;
+            v3Velocity.f.x += g_pBall->m_v3Position.f.x;
 
-            bInCone = IsPointInCone(v3GuessBallPos, g_pBall->m_v3Position, v3Post0, v3Post1);
+            bInCone = IsPointInCone(v3Velocity, g_pBall->m_v3Position, v3Post0, v3Post1);
         }
     }
 
@@ -3901,15 +3898,15 @@ void Goalie::InitActionLooseBallSetup()
                 {
                     f32 fSavePosX = mpSaveData->mv3SavePos.f.x;
                     f32 fLocalX = mv3LocalContactPosition.f.x;
-                    f32 fLocalVelZ = mv3LocalContactVelocity.f.z;
+                    f32 fLocalVelX = mv3LocalContactVelocity.f.x;
                     f32 fLocalY = mv3LocalContactPosition.f.y;
                     f32 fLocalVelY = mv3LocalContactVelocity.f.y;
-                    f32 fRatio = (fSavePosX - fLocalX) / fLocalVelZ;
-                    f32 fLocalVelX = mv3LocalContactVelocity.f.x;
-                    mv3LocalContactPosition.f.x = fRatio * fLocalVelZ + fLocalX;
+                    f32 fRatio = (fSavePosX - fLocalX) / fLocalVelX;
+                    f32 fLocalVelZ = mv3LocalContactVelocity.f.z;
+                    mv3LocalContactPosition.f.x = fRatio * fLocalVelX + fLocalX;
                     mv3LocalContactPosition.f.y = fRatio * fLocalVelY + fLocalY;
                     fTimeTilSave = fTimeTilSave + fRatio;
-                    mv3LocalContactPosition.f.z = fRatio * fLocalVelX + mv3LocalContactPosition.f.z;
+                    mv3LocalContactPosition.f.z = fRatio * fLocalVelZ + mv3LocalContactPosition.f.z;
                 }
 
                 mfTimeTilSave = fTimeTilSave;

@@ -133,37 +133,35 @@ int glFontPrint(eGLView view, int virtual_x, int virtual_y, const nlColour& colo
         pPoly = g_poly;
         glPoly2* p = pPoly;
         int n = numChars;
-        if (n > 0)
+        while (n > 0)
         {
-            do
-            {
-                p->m_colour[0].c[0] = 0;
-                p->m_colour[0].c[1] = 0;
-                p->m_colour[0].c[2] = 0;
-                p->m_colour[0].c[3] = 0xFF;
-                p->m_pos[0].f.x += 3.0f;
-                p->m_pos[0].f.y += 3.0f;
-                p->m_colour[1].c[0] = 0;
-                p->m_colour[1].c[1] = 0;
-                p->m_colour[1].c[2] = 0;
-                p->m_colour[1].c[3] = 0xFF;
-                p->m_pos[1].f.x += 3.0f;
-                p->m_pos[1].f.y += 3.0f;
-                p->m_colour[2].c[0] = 0;
-                p->m_colour[2].c[1] = 0;
-                p->m_colour[2].c[2] = 0;
-                p->m_colour[2].c[3] = 0xFF;
-                p->m_pos[2].f.x += 3.0f;
-                p->m_pos[2].f.y += 3.0f;
-                p->m_colour[3].c[0] = 0;
-                p->m_colour[3].c[1] = 0;
-                p->m_colour[3].c[2] = 0;
-                p->m_colour[3].c[3] = 0xFF;
-                p->m_pos[3].f.x += 3.0f;
-                p->m_pos[3].f.y += 3.0f;
-                p->depth += -0.001f;
-                p++;
-            } while (--n);
+            p->m_colour[0].c[0] = 0;
+            p->m_colour[0].c[1] = 0;
+            p->m_colour[0].c[2] = 0;
+            p->m_colour[0].c[3] = 0xFF;
+            p->m_pos[0].f.x += 3.0f;
+            p->m_pos[0].f.y += 3.0f;
+            p->m_colour[1].c[0] = 0;
+            p->m_colour[1].c[1] = 0;
+            p->m_colour[1].c[2] = 0;
+            p->m_colour[1].c[3] = 0xFF;
+            p->m_pos[1].f.x += 3.0f;
+            p->m_pos[1].f.y += 3.0f;
+            p->m_colour[2].c[0] = 0;
+            p->m_colour[2].c[1] = 0;
+            p->m_colour[2].c[2] = 0;
+            p->m_colour[2].c[3] = 0xFF;
+            p->m_pos[2].f.x += 3.0f;
+            p->m_pos[2].f.y += 3.0f;
+            p->m_colour[3].c[0] = 0;
+            p->m_colour[3].c[1] = 0;
+            p->m_colour[3].c[2] = 0;
+            p->m_colour[3].c[3] = 0xFF;
+            p->m_pos[3].f.x += 3.0f;
+            p->m_pos[3].f.y += 3.0f;
+            p->depth += -0.001f;
+            p++;
+            n--;
         }
         glAttachPoly2(view, numChars, g_poly, 0, 0);
         n = numChars;

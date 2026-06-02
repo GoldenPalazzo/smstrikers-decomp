@@ -77,7 +77,7 @@ public:
     // void @4@SceneCreated();
     // void @4@Update(float);
 
-    /* 0x02C */ Function<NSNMessengerScene> m_messageFinishedCB;
+    /* 0x02C */ Function<FnVoidVoid> m_messageFinishedCB;
     /* 0x034 */ eMessengerState m_curState;
     /* 0x038 */ float m_messageDisplayTime;
     /* 0x03C */ bool m_messageDisplaying;

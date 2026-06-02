@@ -291,7 +291,6 @@ extern const unsigned short MissingLocString[];
 
 /**
  * Offset/Address/Size: 0x1F54 | 0x800CB608 | size: 0x7B8
- * TODO: 75.83% match - stack/register allocation drift in finder/localization setup and text string materialization.
  */
 void CupTrophyScene::SceneCreated()
 {
@@ -312,6 +311,8 @@ void CupTrophyScene::SceneCreated()
     gameInfoBase += mTrophy * 0x218;
     Spoil* pSpoil = (Spoil*)(gameInfoBase + 0x2F24);
 
+    volatile InlineHasher h7, h6, h5, h4, h3, h2, h1, h0;
+
     TLTextInstance* pText;
     {
         union
@@ -322,8 +323,6 @@ void CupTrophyScene::SceneCreated()
 
         volatile InlineHasher hLayerA, hLayerB;
         volatile InlineHasher hNameB, hNameA;
-        volatile InlineHasher h7, h6;
-        volatile InlineHasher h5, h4, h3, h2, h1, h0;
 
         findText.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
 
@@ -367,8 +366,7 @@ void CupTrophyScene::SceneCreated()
 
         volatile InlineHasher hLayerA, hLayerB;
         volatile InlineHasher hNameB, hNameA;
-        volatile InlineHasher h7, h6;
-        volatile InlineHasher h5, h4, h3, h2, h1, h0;
+        volatile InlineHasher h6, h4, h2, h0;
 
         findImage.byValue = FEFinder<TLImageInstance, 2>::Find<TLSlide>;
 
@@ -412,8 +410,7 @@ void CupTrophyScene::SceneCreated()
 
         volatile InlineHasher hLayerA, hLayerB;
         volatile InlineHasher hNameB, hNameA;
-        volatile InlineHasher h7, h6;
-        volatile InlineHasher h5, h4, h3, h2, h1, h0;
+        volatile InlineHasher h6, h4, h2, h0;
 
         findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
 
@@ -462,8 +459,7 @@ void CupTrophyScene::SceneCreated()
 
         volatile InlineHasher hLayerA, hLayerB;
         volatile InlineHasher hNameB, hNameA;
-        volatile InlineHasher h7, h6;
-        volatile InlineHasher h5, h4, h3, h2, h1, h0;
+        volatile InlineHasher h6, h4, h2, h0;
 
         findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
 
@@ -522,7 +518,7 @@ void CupTrophyScene::SceneCreated()
         volatile InlineHasher hInB, hInA;
         volatile InlineHasher hLayerB, hLayerA;
         volatile InlineHasher hButtonsB, hButtonsA;
-        volatile InlineHasher h5, h4, h3, h2, h1, h0;
+        volatile InlineHasher h4, h2, h0;
 
         findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<FEPresentation>;
 
@@ -568,7 +564,7 @@ void CupTrophyScene::SceneCreated()
         volatile InlineHasher hInB, hInA;
         volatile InlineHasher hLayerB, hLayerA;
         volatile InlineHasher hButtonsB, hButtonsA;
-        volatile InlineHasher h5, h4, h3, h2, h1, h0;
+        volatile InlineHasher h4, h2, h0;
 
         findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<FEPresentation>;
 
@@ -673,8 +669,7 @@ void CupTrophyScene::SceneCreated()
 
         volatile InlineHasher hLayerA, hLayerB;
         volatile InlineHasher hNameB, hNameA;
-        volatile InlineHasher h7, h6;
-        volatile InlineHasher h5, h4, h3, h2, h1, h0;
+        volatile InlineHasher h6, h4, h2, h0;
 
         findText.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
 

@@ -238,6 +238,69 @@ inline NLString Detail::LexicalCastImpl<NLString, float>::Do(float f)
     return NLString(string);
 }
 
+template <>
+inline NLString Detail::LexicalCastImpl<NLString, bool>::Do(bool t)
+{
+    if (t)
+    {
+        BasicStringData<char>* data = (BasicStringData<char>*)nlMalloc(sizeof(BasicStringData<char>), 8, true);
+        if (data != 0)
+        {
+            const char* s = "true";
+            data->mData = 0;
+            data->mSize = 0;
+            data->mCapacity = 0;
+
+            const char* p = s;
+            while (*p++ != 0)
+            {
+                data->mSize++;
+            }
+
+            data->mSize++;
+            data->mData = (char*)nlMalloc(data->mSize + 1, 8, true);
+            data->mCapacity = data->mSize;
+
+            for (int i = 0; i < data->mSize; i++)
+            {
+                data->mData[i] = *s++;
+            }
+
+            data->mRefCount = 1;
+        }
+        return NLString((BasicStringData<char>*)data);
+    }
+    else
+    {
+        BasicStringData<char>* data = (BasicStringData<char>*)nlMalloc(sizeof(BasicStringData<char>), 8, true);
+        if (data != 0)
+        {
+            const char* s = "false";
+            data->mData = 0;
+            data->mSize = 0;
+            data->mCapacity = 0;
+
+            const char* p = s;
+            while (*p++ != 0)
+            {
+                data->mSize++;
+            }
+
+            data->mSize++;
+            data->mData = (char*)nlMalloc(data->mSize + 1, 8, true);
+            data->mCapacity = data->mSize;
+
+            for (int i = 0; i < data->mSize; i++)
+            {
+                data->mData[i] = *s++;
+            }
+
+            data->mRefCount = 1;
+        }
+        return NLString((BasicStringData<char>*)data);
+    }
+}
+
 template <typename To, typename From>
 To LexicalCast(const From& f)
 {

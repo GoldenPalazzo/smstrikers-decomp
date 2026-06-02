@@ -89,6 +89,10 @@ struct FormatImplLayoutWideTemp
         , mCurrentPos(0)
     {
     }
+
+    ~FormatImplLayoutWideTemp()
+    {
+    }
 };
 
 template <typename StringType, typename T1, typename T2>

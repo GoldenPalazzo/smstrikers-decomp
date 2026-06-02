@@ -342,4 +342,6 @@ void FormationDefines_stub()
     LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(i);
     float f = 0.0f;
     LexicalCast<BasicString<char, Detail::TempStringAllocator>, float>(f);
+    bool b = false;
+    LexicalCast<BasicString<char, Detail::TempStringAllocator>, bool>(b);
 }

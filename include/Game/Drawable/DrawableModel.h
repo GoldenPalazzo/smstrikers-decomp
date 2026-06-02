@@ -33,7 +33,6 @@ void DrawCoPlanarReference(eGLView, const glModel&, const nlMatrix4&, unsigned l
 void GetShadowBoundingSquare(const glModel*, const nlMatrix4&, float&, float&, float&, float&, unsigned long);
 void GetAABBDimensions(const glModel*, AABBDimensions&, unsigned long);
 void Fresnelify(glModelPacket*, eGLView);
-void DrawBallShadow(const nlVector3&, const BallShadowParams&, bool);
 
 class DrawableModel : public DrawableObject
 {

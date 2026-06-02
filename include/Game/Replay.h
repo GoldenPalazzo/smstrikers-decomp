@@ -118,7 +118,9 @@ public:
     inline unsigned int Read(LoadFrame& frame) const;
     inline unsigned int Read(SaveFrame& frame) const;
     inline void Transfer(LoadFrame& frame, unsigned int& value) const;
+    inline void TransferOR(LoadFrame& frame, unsigned int& value) const;
     inline void Transfer(SaveFrame& frame, unsigned int& value) const;
+    inline void TransferOR(SaveFrame& frame, unsigned int& value) const;
     inline void Apply(LoadFrame& frame, unsigned int value) const;
     inline void Apply(SaveFrame& frame, unsigned int value) const;
     inline void Replay(LoadFrame& frame) const;
@@ -190,7 +192,55 @@ inline void FloatCompressor<MIN, MAX, BITS>::Transfer(LoadFrame& frame, unsigned
 }
 
 template <int MIN, int MAX, int BITS>
+inline void FloatCompressor<MIN, MAX, BITS>::TransferOR(LoadFrame& frame, unsigned int& value) const
+{
+    if ((MAX - MIN) * (1 << BITS) <= 255)
+    {
+        const char* cursor = frame.mStream.mStorage;
+        value = (unsigned int)(unsigned char)*cursor++;
+        frame.mStream.mStorage = cursor;
+    }
+    else if ((MAX - MIN) * (1 << BITS) <= 65535)
+    {
+        const char* cursor = frame.mStream.mStorage;
+        unsigned char lo = (unsigned char)*cursor++;
+        unsigned char hi = (unsigned char)*cursor++;
+        frame.mStream.mStorage = cursor;
+        value |= (unsigned int)hi << 8;
+        value |= (unsigned int)lo;
+    }
+    else
+    {
+        const char* cursor = frame.mStream.mStorage;
+        unsigned char mid = (unsigned char)cursor[1];
+        unsigned char hi = (unsigned char)cursor[2];
+        unsigned char lo = (unsigned char)cursor[0];
+        cursor += 3;
+        frame.mStream.mStorage = cursor;
+        value = ((unsigned int)hi << 16) | ((unsigned int)mid << 8) | (unsigned int)lo;
+    }
+}
+
+template <int MIN, int MAX, int BITS>
 inline void FloatCompressor<MIN, MAX, BITS>::Transfer(SaveFrame& frame, unsigned int& value) const
+{
+    if ((MAX - MIN) * (1 << BITS) <= 255)
+    {
+        char* p = frame.mStream.mStorage;
+        *p++ = (char)value;
+        frame.mStream.mStorage = p;
+    }
+    else
+    {
+        char* p = frame.mStream.mStorage;
+        *p++ = (char)(value & 0xFF);
+        *p++ = (char)((value >> 8) & 0xFF);
+        frame.mStream.mStorage = p;
+    }
+}
+
+template <int MIN, int MAX, int BITS>
+inline void FloatCompressor<MIN, MAX, BITS>::TransferOR(SaveFrame& frame, unsigned int& value) const
 {
     if ((MAX - MIN) * (1 << BITS) <= 255)
     {
@@ -285,9 +335,13 @@ void Replayable(FrameType& frame, const T& proxy)
     if (N == 0 || frame.mInterval == N)
     {
         unsigned int value = proxy.Read(frame);
-        if (N == 0 || frame.mInterval == N)
+        if (N == 0)
         {
             proxy.Transfer(frame, value);
+        }
+        else if (frame.mInterval == N)
+        {
+            proxy.TransferOR(frame, value);
         }
         proxy.Apply(frame, value);
     }

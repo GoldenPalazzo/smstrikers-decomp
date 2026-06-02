@@ -888,7 +888,7 @@ void AudioStreamTrack::StreamTrack::StopHead(unsigned long Fadeout)
 
 /**
  * Offset/Address/Size: 0xA28 | 0x80155780 | size: 0x268
- * TODO: 90.8% match - r-diffs: qs in r8 vs r30, Fadeout in r30 vs r29; compiler uses 3 callee-saved registers instead of 4
+ * TODO: 94.1% match - r-diffs: qs in r8 vs r30, Fadeout in r30 vs r29; compiler uses 3 callee-saved registers instead of 4
  */
 void AudioStreamTrack::StreamTrack::Stop(unsigned long Fadeout)
 {

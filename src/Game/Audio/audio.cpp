@@ -3729,6 +3729,8 @@ eClassType cGameSFX::GetClassType() const
 
 AudioStreamTrack::TrackManagerBase::~TrackManagerBase()
 {
+    FadeManager::FadeList::DestroyAllEntries(&m_FadeMgr.m_Fades);
+    SlotPoolBase::BaseFreeBlocks(&m_FadeMgr.m_Fades.m_Allocator, sizeof(DLListEntry<FadeManager::STREAM_FADE_CTRL>));
     SlotPoolBase::BaseFreeBlocks(&m_StreamPool, sizeof(GCAudioStreaming::StereoAudioStream));
 }
 

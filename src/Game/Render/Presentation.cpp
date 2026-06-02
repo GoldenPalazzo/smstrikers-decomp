@@ -743,6 +743,10 @@ void Presentation::Call(const char* functionName, const char* nisFilter)
 }
 /**
  * Offset/Address/Size: 0x57C | 0x80124D60 | size: 0x774
+ * TODO: 93.7% match - r29/r27 register swap for persistentEffectsTag and cascading
+ * register rotation in goal section (gsd r26/r27, tiesTheGame r25/r28, takeTheLead
+ * r28/r26, inSuddenDeath r27/r25). AIPad loop uses different register set and missing
+ * lwzu optimization for second character access.
  */
 void Presentation::EventHandler(Event* event)
 {
@@ -874,10 +878,10 @@ void Presentation::EventHandler(Event* event)
         TreeStackLocal* stack = (TreeStackLocal*)nlMalloc(8, 8, false);
         if (stack != 0)
         {
+            TreeNodeLocal* node = world->helperRoot;
             stack->nodes = (TreeNodeLocal**)nlMalloc((world->helperCount + 1) * sizeof(TreeNodeLocal*), 8, false);
             stack->count = 0;
 
-            TreeNodeLocal* node = world->helperRoot;
             if (node != 0)
             {
                 while (node->left != 0)
@@ -890,59 +894,62 @@ void Presentation::EventHandler(Event* event)
                 stack->nodes[stack->count] = node;
                 stack->count++;
             }
+        }
 
-            static int len;
-            static signed char init;
-            const char* persistentEffectsTag = "fx_goal_";
+        static int len;
+        static signed char init;
+        const char* persistentEffectsTag = "fx_goal_";
 
-            while (stack->count != 0)
+        while (stack->count != 0)
+        {
+            u32 c = stack->count;
+            TreeNodeLocal* currentNode = stack->nodes[c - 1];
+            HelperObjectLocal* helper = currentNode->value;
+
+            if (!init)
             {
-                u32 c = stack->count;
-                TreeNodeLocal* currentNode = stack->nodes[c - 1];
-                HelperObjectLocal* helper = currentNode->value;
+                len = strlen(persistentEffectsTag);
+                init = 1;
+            }
 
-                if (!init)
+            char fxName[256];
+            char* fxStart = strstr(helper->name, persistentEffectsTag);
+            if (fxStart)
+            {
+                nlStrNCpy<char>(fxName, fxStart + len, 256);
+                char* underscore = strstr(fxName, "_");
+                if (underscore != 0)
                 {
-                    len = strlen(persistentEffectsTag);
-                    init = 1;
+                    *underscore = 0;
                 }
 
-                char fxName[256];
-                char* fxStart = strstr(helper->name, persistentEffectsTag);
-                if (fxStart)
+                void* fx = fxGetGroup__FPCc(fxName);
+                if (fx != 0)
                 {
-                    nlStrNCpy<char>(fxName, fxStart + len, 256);
-                    char* underscore = strstr(fxName, "_");
-                    if (underscore != 0)
-                    {
-                        *underscore = 0;
-                    }
-
-                    void* fx = fxGetGroup__FPCc(fxName);
-                    if (fx != 0)
-                    {
-                        void* ec = Create__15EmissionManagerFP12EffectsGroupUs(fx, 0);
-                        SetPosition__18EmissionControllerFRC9nlVector3(ec, helper->position);
-                        ((EmissionControllerUserLocal*)ec)->m_uUserData = 0xDEADBEEF;
-                    }
-                }
-
-                stack->count = c - 1;
-                TreeNodeLocal* right = stack->nodes[stack->count]->right;
-                if (right != 0)
-                {
-                    while (right->left != 0)
-                    {
-                        stack->nodes[stack->count] = right;
-                        stack->count++;
-                        right = right->left;
-                    }
-
-                    stack->nodes[stack->count] = right;
-                    stack->count++;
+                    void* ec = Create__15EmissionManagerFP12EffectsGroupUs(fx, 0);
+                    SetPosition__18EmissionControllerFRC9nlVector3(ec, helper->position);
+                    ((EmissionControllerUserLocal*)ec)->m_uUserData = 0xDEADBEEF;
                 }
             }
 
+            stack->count = c - 1;
+            TreeNodeLocal* right = stack->nodes[stack->count]->right;
+            if (right != 0)
+            {
+                while (right->left != 0)
+                {
+                    stack->nodes[stack->count] = right;
+                    stack->count++;
+                    right = right->left;
+                }
+
+                stack->nodes[stack->count] = right;
+                stack->count++;
+            }
+        }
+
+        if (stack != 0)
+        {
             __dla__FPv(stack->nodes);
             __dl__FPv(stack);
         }
