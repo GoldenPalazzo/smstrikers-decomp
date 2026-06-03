@@ -15,19 +15,13 @@ public:
 
     // For List interface
     typedef T EntryType;
-    static void DeleteEntry(T* entry);
+    static void DeleteEntry(T* entry) { delete entry; }
 };
 
 template <typename T>
 void NewAdapter<T>::Delete(T* ptr)
 {
     delete ptr;
-}
-
-template <typename T>
-void NewAdapter<T>::DeleteEntry(T* entry)
-{
-    delete entry;
 }
 
 #endif // NL_ADAPTER_H
