@@ -37,9 +37,6 @@ public:
 class EmissionController;
 
 typedef void (*NisEmissionFn)(EmissionController&, int);
-typedef BindExp2<void, NisEmissionFn, Placeholder<0>, int> (*NisBindPtr)(NisEmissionFn, const Placeholder<0>&, const int&);
-
-NisBindPtr gNisBindPtr = &Bind<void, NisEmissionFn, Placeholder<0>, int>;
 
 // /**
 //  * Offset/Address/Size: 0xEA0 | 0x8012E074 | size: 0xD74
@@ -566,7 +563,7 @@ void Nis::Trigger::FireEffect(const Nis& nis) const
             index = NisPlayer::Instance()->TargetToIndex(nis.mTarget, idx, nis.mWinnerType);
         }
 
-        s32 charIdx = index;
+        int charIdx = index;
         if (charIdx >= 10)
             return;
 
@@ -677,7 +674,7 @@ void Nis::Trigger::Fire(Nis& nis) const
                 HelperObject* helper = pWorld->FindHelperObject(hashId);
                 if (helper == NULL)
                     return;
-                static nlVector3 zeroDirection = { 0.0f, 0.0f, 0.0f };
+                static const nlVector3 zeroDirection = { 0.0f, 0.0f, 0.0f };
                 sfxHandle = Audio::PlayWorldSFXbyStr(name, volume, -1.0f, true, false, (const nlVector3*)&helper->m_worldMatrix.m[3][0], &zeroDirection, &trackingId);
                 bIsEmitter = true;
             }
@@ -900,7 +897,7 @@ void Nis::StopAllOutstandingNisAudio()
                 if (pController != NULL)
                 {
                     float remainingTime = 1.0f - pController->m_fTime;
-                    if (remainingTime < 0.1f)
+                    if (remainingTime < 0.025f)
                     {
                         bNisEndedNormally = 1;
                         break;

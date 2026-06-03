@@ -38,7 +38,7 @@
 #include "NL/plat/plataudio.h"
 #include "types.h"
 
-u16 g_IdleTurnCompletionDelta;
+static u16 g_IdleTurnCompletionDelta;
 
 namespace
 {
@@ -52,7 +52,7 @@ struct FielderActionsGlobalsInit
 FielderActionsGlobalsInit s_fielderActionsGlobalsInit;
 } // namespace
 
-f32 CANT_COLLIDE = *(f32*)__float_max;
+static f32 CANT_COLLIDE = *(f32*)__float_max;
 
 extern unsigned int nlDefaultSeed;
 extern FuzzyVariant fvNotSet;
@@ -3045,9 +3045,9 @@ void MatrixCamFinishedCallback(MatrixEffectCam*)
 
 /**
  * Offset/Address/Size: 0x2D08 | 0x80029840 | size: 0x450
- * TODO: 95.67% match - persistent r28/r29/r30 register-allocation drift around
- *       BasicString temporary setup.
+ * TODO: 96.38% match - r30/r31 register swap in BasicString temporary setup
  */
+#pragma opt_dead_assignments off
 void cFielder::SetupCaptainSTSAnimCam(bool arg1)
 {
     mActionShootToScoreVars.captainStsCamera = new ((cAnimCamera*)nlMalloc(sizeof(cAnimCamera), 8, false)) cAnimCamera();
@@ -3109,6 +3109,8 @@ void cFielder::SetupCaptainSTSAnimCam(bool arg1)
         cCameraManager::PushCamera(mActionShootToScoreVars.captainStsCamera);
     }
 }
+
+#pragma opt_dead_assignments reset
 
 /**
  * Offset/Address/Size: 0x2D04 | 0x8002983C | size: 0x4

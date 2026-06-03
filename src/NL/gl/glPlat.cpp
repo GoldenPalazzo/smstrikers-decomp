@@ -55,39 +55,39 @@ struct GXFrameBuffer
     void* unk4;
 };
 
-GXFrameBuffer glx_FrameBuffer;
+static GXFrameBuffer glx_FrameBuffer;
 
-bool glx_bFog = false;
-bool glx_bProgressiveMode = false;
-u32 glx_TargetFPS = 60;
-s32 glx_FBSize;
-GXPerf0 glx_perf0 = GX_PERF0_TRIANGLES;
-GXPerf1 glx_perf1 = GX_PERF1_VERTICES;
+static bool glx_bFog = false;
+static bool glx_bProgressiveMode = false;
+static u32 glx_TargetFPS = 60;
+static s32 glx_FBSize;
+static GXPerf0 glx_perf0 = GX_PERF0_TRIANGLES;
+static GXPerf1 glx_perf1 = GX_PERF1_VERTICES;
 bool glx_Virt = true;
 bool glx_Perf = true;
 bool glx_PerfSync = true;
-s32 glx_ViewFence = -1;
-u32 glx_NumVirtMisses = 0;
-u32 glx_VirtLatency = 0;
-f32 glx_CopyDispScaleFactor = 1.f;
-eVideoMode glx_VideoMode;
+static s32 glx_ViewFence = -1;
+static u32 glx_NumVirtMisses = 0;
+static u32 glx_VirtLatency = 0;
+static f32 glx_CopyDispScaleFactor = 1.f;
+static eVideoMode glx_VideoMode;
 
-void* glx_FIFOMem = nullptr;
-GXFifoObj* glx_FIFO = nullptr;
-u32 glx_FIFOSize = 393216;
+static void* glx_FIFOMem = nullptr;
+static GXFifoObj* glx_FIFO = nullptr;
+static u32 glx_FIFOSize = 393216;
 
-bool glx_bFogAdjust = true;
-u32 glx_FogType = 4;
-bool glx_bFogSky = true;
-f32 glx_FogStart = 5.f;
-f32 glx_FogEnd = 160.f;
-f32 glx_FogIntensity = 1.f;
-GXColor glx_FogColour = { 0xFF, 0xFF, 0xFF, 0xFF };
+static bool glx_bFogAdjust = true;
+static u32 glx_FogType = 4;
+static bool glx_bFogSky = true;
+static f32 glx_FogStart = 5.f;
+static f32 glx_FogEnd = 160.f;
+static f32 glx_FogIntensity = 1.f;
+static GXColor glx_FogColour = { 0xFF, 0xFF, 0xFF, 0xFF };
 
 static u32 fogtype[5] = { GX_FOG_PERSP_LIN, GX_FOG_PERSP_EXP, GX_FOG_PERSP_EXP2, GX_FOG_PERSP_REVEXP, GX_FOG_PERSP_REVEXP2 };
 
-s32 glx_VIWidth = 0x00000294;
-s32 prev_VIWidth = 0x00000294;
+static s32 glx_VIWidth = 0x00000294;
+static s32 prev_VIWidth = 0x00000294;
 
 static u32 total_val0 = 0;
 static u32 total_val1 = 0;

@@ -12,14 +12,14 @@ extern void nlFree(void*);
 
 IconDataCache gIconDataCache;
 
-bool InOperation = false;
+static bool InOperation = false;
 
 LoadCallbacks LoadSystem;
 SaveCallbacks SaveSystem;
 DeleteCallbacks DeleteSystem;
 FormatCallbacks FormatSystem;
 
-void (*g_Callback)(long);
+static void (*g_Callback)(long);
 FileExistsCallbacks FileExistsSystem;
 MemoryCardIDCallbacks MemoryCardIDSystem;
 MemCard** g_MemCards = MemCards;
@@ -28,7 +28,7 @@ struct MemCardIDInfo
     s64 serialID;
     // u32 cardID;
 };
-MemCardIDInfo mLastKnownMemCardID;
+static MemCardIDInfo mLastKnownMemCardID;
 static const char* MarioSoccerFileName;
 static s64 mRequiredMemoryCardID;
 static unsigned long gIconCRC;

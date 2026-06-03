@@ -7,10 +7,10 @@ struct CameraData
 {
     /* 0x00 */ int numKnotsX;
     /* 0x04 */ int numKnotsY;
-    /* 0x08 */ float* targetKnotsX[3];
-    /* 0x14 */ float* fieldKnotsX[3];
-    /* 0x20 */ float* targetKnotsY[3];
-    /* 0x2C */ float* fieldKnotsY[3];
+    /* 0x08 */ const float* targetKnotsX[3];
+    /* 0x14 */ const float* fieldKnotsX[3];
+    /* 0x20 */ const float* targetKnotsY[3];
+    /* 0x2C */ const float* fieldKnotsY[3];
     /* 0x38 */ float fov;
     /* 0x3C */ float distance;
     /* 0x40 */ float pitch;
@@ -36,7 +36,7 @@ public:
     void CalcDesiredTarget();
     void Update(float, bool);
 
-    /* 0x00 */ CameraData* m_CameraData;
+    /* 0x00 */ const CameraData* m_CameraData;
     /* 0x04 */ float m_fDesiredTargetX;
     /* 0x08 */ float m_fDesiredTargetY;
     /* 0x0C */ float m_fDampenedTargetX;

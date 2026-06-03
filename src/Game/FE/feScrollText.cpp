@@ -196,7 +196,7 @@ static inline const unsigned short* LookupLocText(unsigned long hash)
 
 /**
  * Offset/Address/Size: 0x360 | 0x800C8D34 | size: 0x190
- * TODO: 95.4% match - MWCC register allocation: this->r31/text->r29 instead of this->r29/text->r31, li r5,0 instead of mr r5,r4
+ * TODO: 96.8% match - MWCC register allocation: this->r31/text->r29 instead of this->r29/text->r31, li r5,0 instead of mr r5,r4
  */
 void FEScrollText::SetDisplayMessage(unsigned long hash)
 {

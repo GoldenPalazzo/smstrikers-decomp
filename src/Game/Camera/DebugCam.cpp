@@ -6,8 +6,8 @@
 #include "NL/globalpad.h"
 #include "NL/nlTask.h"
 
-float sfDebugCamFOV = 60.0f;
-float sfControlSpeedScale = 50.f;
+static float sfDebugCamFOV = 60.0f;
+static float sfControlSpeedScale = 50.f;
 
 /**
  * Offset/Address/Size: 0x5A4 | 0x801A8C60 | size: 0xB8

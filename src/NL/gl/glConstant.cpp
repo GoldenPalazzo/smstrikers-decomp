@@ -2,7 +2,7 @@
 #include "NL/nlAVLTree.h"
 #include "NL/nlString.h"
 
-int level = 0;
+static int level = 0;
 
 // AVLTreeBase<unsigned long, nlVector4, NewAdapter<AVLTreeEntry<unsigned long, nlVector4> >, DefaultKeyCompare<unsigned long> >* constants[16] = { NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL };
 // nlAVLTree<unsigned long, nlVector4, NewAdapter<AVLTreeEntry<unsigned long, nlVector4> >, DefaultKeyCompare<unsigned long> >* constants[16] = { NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL };

@@ -6,14 +6,14 @@
 #include "NL/gl/glState.h"
 #include "NL/platvmath.h"
 
-u32 UnlitProgram = glGetProgram("3d unlit");
-u32 LitProgram = glGetProgram("3d pointlit");
-u32 LightTexture = glGetTexture("global/lightramp");
-u32 BlackTexture = glGetTexture("global/black");
-u32 WhiteTexture = glGetTexture("global/white");
-u32 MeterTexture = glGetTexture("fe/shoot_to_score_track_black");
-u32 CaptainMeterTexture = glGetTexture("fe/capt_shoot_to_score_track");
-u32 CaptainMeterShadowTexture = glGetTexture("fe/capt_shoot_to_score_track_shadow");
+static u32 UnlitProgram = glGetProgram("3d unlit");
+static u32 LitProgram = glGetProgram("3d pointlit");
+static u32 LightTexture = glGetTexture("global/lightramp");
+static u32 BlackTexture = glGetTexture("global/black");
+static u32 WhiteTexture = glGetTexture("global/white");
+static u32 MeterTexture = glGetTexture("fe/shoot_to_score_track_black");
+static u32 CaptainMeterTexture = glGetTexture("fe/capt_shoot_to_score_track");
+static u32 CaptainMeterShadowTexture = glGetTexture("fe/capt_shoot_to_score_track_shadow");
 
 u32 NumberTextures[4] = {
     nlStringLowerHash("fe/controller_1_indicator"),

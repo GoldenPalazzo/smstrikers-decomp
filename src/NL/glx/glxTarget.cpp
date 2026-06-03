@@ -16,10 +16,10 @@
 
 static u32 GrabTextureName = glGetTexture("target/grab_texture");
 static u32 DOFTextureName = glGetTexture("target/dof");
-void* clearz_mem = 0;
-u32 glx_SharedMemory = 0;
-u32 glx_SharedSize = 0;
-bool glx_SharedLock = false;
+static void* clearz_mem = 0;
+static u32 glx_SharedMemory = 0;
+static u32 glx_SharedSize = 0;
+static bool glx_SharedLock = false;
 
 /**
  * Offset/Address/Size: 0x0 | 0x801C26DC | size: 0x104

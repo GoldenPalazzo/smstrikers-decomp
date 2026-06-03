@@ -2181,7 +2181,6 @@ void cFielder::DoHandleActiveShotMeter()
     case ACTION_SQUISH_REACT:
     case ACTION_SLIDE_FAIL_REACT:
         m_pShotMeter->Abort(this);
-        return;
     case ACTION_SHOOT_TO_SCORE:
         return;
     default:
@@ -2195,7 +2194,7 @@ void cFielder::DoHandleActiveShotMeter()
     }
 
     bool bReturn;
-    if (m_eActionState == ACTION_RUNNING_WB_TURBO && m_pCurrentAnimController->m_fTime > 0.2f && m_pCurrentAnimController->m_fTime < 1.0f)
+    if (m_eActionState == ACTION_RUNNING_WB_TURBO && m_pCurrentAnimController->m_fTime > 0.2f && m_pCurrentAnimController->m_fTime < 0.975f)
     {
         bReturn = true;
     }

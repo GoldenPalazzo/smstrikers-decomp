@@ -1148,8 +1148,8 @@ void TournTeamSetupSceneV2::UpdateRow(int onScreenRow)
     volatile InlineHasher h7, h6, h5, h4, h3, h2, h1, h0;
 
     volatile InlineHasher gB, gA;
-    volatile InlineHasher g4, g3, g2, g1, g0;
     volatile InlineHasher innerHash;
+    volatile InlineHasher g4, g3, g2, g1, g0;
 
     volatile InlineHasher fB, fA;
     volatile InlineHasher f4, f3, f2, f1, f0;
@@ -1535,7 +1535,7 @@ void TournTeamSetupSceneV2::UpdateRow(int onScreenRow)
     if (onScreenRow == (mCurrentRow - mRowOffset))
     {
         pComp->SetActiveSlide("IN");
-        mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].ApplyAction(ON_HIGHLIGHT);
+        mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[ON_HIGHLIGHT](mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mType);
         arrow1->m_bVisible = true;
         arrow2->m_bVisible = true;
     }

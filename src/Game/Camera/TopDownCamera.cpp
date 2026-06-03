@@ -5,9 +5,9 @@
 #include "Game/Ball.h"
 #include "Game/Field.h"
 
-float sfCameraHeight = 21.0f;
-float sfFov = 90.0f;
-bool sbFocusOnBall = false;
+static float sfCameraHeight = 21.0f;
+static float sfFov = 90.0f;
+static bool sbFocusOnBall = false;
 
 extern cBall* g_pBall;
 

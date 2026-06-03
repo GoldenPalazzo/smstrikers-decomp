@@ -1061,14 +1061,16 @@ void Goalie::ActionMoveWB(float fDeltaT)
 
             if ((float)fabs(m_v3Position.f.x) < cField::GetPenaltyBoxX(1U))
             {
+                u16 dirVal;
                 if (m_v3Position.f.x > 0.0f)
                 {
-                    m_aDesiredFacingDirection = 0;
+                    dirVal = 0;
                 }
                 else
                 {
-                    m_aDesiredFacingDirection = 0x8000;
+                    dirVal = 0x8000;
                 }
+                m_aDesiredFacingDirection = dirVal;
                 bClamped = true;
             }
 
@@ -1126,11 +1128,12 @@ void Goalie::ActionMoveWB(float fDeltaT)
 
         if (mfTargetTime > 1.0f)
         {
+            float x = m_v3Position.f.x;
             nlVector3 v3Center = m_v3Position;
             float m02 = m_m4WorldMatrix.m[0][2];
             float m01 = m_m4WorldMatrix.m[0][1];
             float m00 = m_m4WorldMatrix.m[0][0];
-            float dist = nlGetLength3D(m_v3Position.f.x, m_v3Position.f.y, m_v3Position.f.z);
+            float dist = nlGetLength3D(x, m_v3Position.f.y, m_v3Position.f.z);
             float invDist = -1.0f / dist;
             v3Center.f.x = invDist * m_v3Position.f.x;
             v3Center.f.y = invDist * m_v3Position.f.y;

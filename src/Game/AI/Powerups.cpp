@@ -26,7 +26,7 @@
 #include "NL/nlDebug.h"
 #include "math.h"
 
-int gBobombAnticipationVoiceID = -1;
+static int gBobombAnticipationVoiceID = -1;
 unsigned long uPowerupTexID[NUM_POWER_UPS] = { 0 };
 static f32 CANT_COLLIDE = *(f32*)__float_max;
 static PowerupSounds powerupSounds[9] = {

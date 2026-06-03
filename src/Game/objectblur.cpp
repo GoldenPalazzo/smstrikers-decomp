@@ -16,7 +16,7 @@ BlurHandler* BlurManager::m_activeBlurHandler = NULL;
 
 SlotPool<BlurHandler> BlurManager::m_BlurHandlerSlotPool(0x10, 0x10);
 
-f32 fFlimmerOffset = 0.01f;
+static f32 fFlimmerOffset = 0.01f;
 
 const eGLStream stream_decl_[3] = { GLStream_Position, GLStream_Colour, GLStream_Diffuse };
 static u32 sWhiteColour = 0xFFFFFFFF;

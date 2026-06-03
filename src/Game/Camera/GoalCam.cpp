@@ -12,13 +12,13 @@
 static bool gbCamFreeze;
 static s32 gnCamType;
 
-f32 gfDistance = 10.0f;
-f32 gfHeight = 3.0f;
-f32 gfSideMult = 2.0f;
-f32 gfSideBias = 0.4f;
-f32 gfCamDir = 3.1415927f;
-f32 gfCamTilt = 0.1f;
-f32 gfCamDist = 14.0f;
+static f32 gfDistance = 10.0f;
+static f32 gfHeight = 3.0f;
+static f32 gfSideMult = 2.0f;
+static f32 gfSideBias = 0.4f;
+static f32 gfCamDir = 3.1415927f;
+static f32 gfCamTilt = 0.1f;
+static f32 gfCamDist = 14.0f;
 
 /**
  * Offset/Address/Size: 0x6CC | 0x801AAC68 | size: 0x7C

@@ -10,7 +10,7 @@ struct Modifier
 };
 
 Modifier glModifier[6];
-u32 glNumModifiers = 0;
+static u32 glNumModifiers = 0;
 
 static u32 GLTT_Diffuse_bit = 0x00000001;
 static u32 GLTT_Gloss_bit = 0x00000010;

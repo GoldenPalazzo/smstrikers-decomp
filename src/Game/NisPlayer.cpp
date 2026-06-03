@@ -14,8 +14,6 @@
 #include "NL/nlString.h"
 #include "string.h"
 
-bool g_ForceDoubleBallTransition;
-
 struct TempStringData
 {
     char* data;
@@ -33,14 +31,15 @@ extern void nlBreak();
 extern unsigned long cupTrophyHash;
 extern "C" int sscanf(const char*, const char*, ...);
 
-static void* byteCode;
-
 namespace Detail
 {
 class TempStringAllocator;
 } // namespace Detail
 
-static unsigned char useAsyncLoading;
+namespace
+{
+static unsigned char useAsyncLoading = true;
+}
 
 /**
  * Offset/Address/Size: 0x74 | 0x80118E84 | size: 0x2C
@@ -411,7 +410,14 @@ NisPlayer* NisPlayer::Instance()
     return &instance;
 }
 
-static void SkipLine(const char*& data)
+namespace
+{
+static void* byteCode;
+}
+
+bool g_ForceDoubleBallTransition;
+
+static inline void SkipLine(const char*& data)
 {
     while (*data != '\n')
         data++;
@@ -517,7 +523,7 @@ NisPlayer::NisPlayer()
     }
 
     unsigned long fileSize = 0;
-    byteCode = nlLoadEntireFile("art/nis/nis_bytecodes.bin", &fileSize, 0x20, AllocateStart);
+    byteCode = nlLoadEntireFile("art/presentation/nis_triggers.byte_code", &fileSize, 0x20, AllocateStart);
     LoadByteCode(byteCode);
     mCamera.m_LetManagerDoUpdate = false;
     mCamera.m_bCyclic = false;
@@ -726,7 +732,7 @@ bool NisPlayer::Play()
     {
         if (mLoadQueue[i] != NULL)
         {
-            if (mLoadQueue[i]->mTime > 0.0f)
+            if (mLoadQueue[i]->mTime > 10.0f)
             {
                 mLoadQueue[i] = NULL;
             }
@@ -938,7 +944,6 @@ void NisPlayer::LoadTriggers(Nis& nis)
 #pragma dont_inline on
 /**
  * Offset/Address/Size: 0x1A48 | 0x80116724 | size: 0x98
- * TODO: 99.21% match - remaining `i` diffs are the local-static `instance` / `init$` relocation immediates.
  */
 void NisPlayer::AsyncLoad(nlFile* file, void* buffer, unsigned int size, unsigned long param)
 {
@@ -947,8 +952,7 @@ void NisPlayer::AsyncLoad(nlFile* file, void* buffer, unsigned int size, unsigne
         nlClose(file);
     }
 
-    static NisPlayer instance;
-    instance.Load((char*)buffer - size, size, *(NisHeader*)param);
+    Instance()->Load((char*)buffer - size, size, *(NisHeader*)param);
 }
 #pragma dont_inline reset
 
@@ -1282,12 +1286,12 @@ void NisPlayer::EventHandler(Event* event)
         GoalScoredData* gsd;
         if ((s32)event->m_data.GetID() == -1)
         {
-            nlPrintf("NisPlayer EventHandler invalid data\n");
+            nlPrintf("Error: Trying to get event data on event with none!\n");
             gsd = NULL;
         }
         else if ((s32)event->m_data.GetID() != 0x18A)
         {
-            nlPrintf("NisPlayer EventHandler unexpected data\n");
+            nlPrintf("Error: GetData() failed! Data types do not match!\n");
             gsd = NULL;
         }
         else
@@ -1314,12 +1318,12 @@ void NisPlayer::EventHandler(Event* event)
         GoalieSaveData* gsd;
         if ((s32)event->m_data.GetID() == -1)
         {
-            nlPrintf("NisPlayer EventHandler invalid data\n");
+            nlPrintf("Error: Trying to get event data on event with none!\n");
             gsd = NULL;
         }
         else if ((s32)event->m_data.GetID() != 0x13C)
         {
-            nlPrintf("NisPlayer EventHandler unexpected data\n");
+            nlPrintf("Error: GetData() failed! Data types do not match!\n");
             gsd = NULL;
         }
         else

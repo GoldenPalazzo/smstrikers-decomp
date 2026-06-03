@@ -13,11 +13,11 @@
 #include "Game/Camera/BaseCamera.h"
 
 static nlVector3 cameraPosition;
-f32 sfDuration = 3.0f;
-f32 sfSpinRate = 120.0f;
-f32 sfDesiredDistanceFromTarget = 10.0f;
-f32 sfDesiredHeightAboveTarget = 1.0f;
-f32 sfZoomTime = 2.0f;
+static f32 sfDuration = 3.0f;
+static f32 sfSpinRate = 120.0f;
+static f32 sfDesiredDistanceFromTarget = 10.0f;
+static f32 sfDesiredHeightAboveTarget = 1.0f;
+static f32 sfZoomTime = 2.0f;
 
 /**
  * Offset/Address/Size: 0x788 | 0x801A4B50 | size: 0x8C

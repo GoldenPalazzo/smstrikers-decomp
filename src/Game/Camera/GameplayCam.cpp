@@ -10,25 +10,25 @@
 #include "NL/gl/glMatrix.h"
 #include "math.h"
 
-f32 CANT_COLLIDE = *(f32*)__float_max;
+static f32 CANT_COLLIDE = *(f32*)__float_max;
 
-static float nearZoomPositiveTargetKnotsY[3] = { -5.2f, 0.0f, 4.0f };
-static float nearZoomPositiveFieldKnotsY[3] = { -5.6f, 0.0f, 11.65f };
-static float farZoomPositiveTargetKnotsY[3] = { -2.6f, -2.6f, 2.0f };
-static float farZoomPositiveFieldKnotsY[3] = { 0.0f, 0.0f, 11.65f };
+static const float nearZoomPositiveTargetKnotsY[3] = { -5.2f, 0.0f, 4.0f };
+static const float nearZoomPositiveFieldKnotsY[3] = { -5.6f, 0.0f, 11.65f };
+static const float farZoomPositiveTargetKnotsY[3] = { -2.6f, -2.6f, 2.0f };
+static const float farZoomPositiveFieldKnotsY[3] = { 0.0f, 0.0f, 11.65f };
 
-static float nearZoomPositiveTargetKnotsX[2] = { -16.8f, 16.8f };
-static float nearZoomPositiveFieldKnotsX[2] = { -17.0f, 14.5f };
-static float nearZoomNegativeFieldKnotsX[2] = { -14.5f, 17.0f };
-static float nearZoomNeutralFieldKnotsX[2] = { -15.75f, 15.75f };
-static float farZoomPositiveTargetKnotsX[2] = { -13.3f, 13.3f };
-static float farZoomPositiveFieldKnotsX[2] = { -13.0f, 8.0f };
-static float farZoomNegativeFieldKnotsX[2] = { -8.0f, 13.0f };
-static float farZoomNeutralFieldKnotsX[2] = { -10.5f, 10.5f };
-static float nearZoomWidePositiveTargetKnotsX[2] = { -15.5f, 15.5f };
-static float farZoomWidePositiveTargetKnotsX[2] = { -10.1f, 10.1f };
+static const float nearZoomPositiveTargetKnotsX[2] = { -16.8f, 16.8f };
+static const float nearZoomPositiveFieldKnotsX[2] = { -17.0f, 14.5f };
+static const float nearZoomNegativeFieldKnotsX[2] = { -14.5f, 17.0f };
+static const float nearZoomNeutralFieldKnotsX[2] = { -15.75f, 15.75f };
+static const float farZoomPositiveTargetKnotsX[2] = { -13.3f, 13.3f };
+static const float farZoomPositiveFieldKnotsX[2] = { -13.0f, 8.0f };
+static const float farZoomNegativeFieldKnotsX[2] = { -8.0f, 13.0f };
+static const float farZoomNeutralFieldKnotsX[2] = { -10.5f, 10.5f };
+static const float nearZoomWidePositiveTargetKnotsX[2] = { -15.5f, 15.5f };
+static const float farZoomWidePositiveTargetKnotsX[2] = { -10.1f, 10.1f };
 
-static CameraData gCameraData[4] = {
+static const CameraData gCameraData[4] = {
     {
         2,
         3,
@@ -131,7 +131,7 @@ void GameplayCamera::CalcDynamicZoom()
                 numFieldersInInnerZone++;
             }
 
-            if (screenPosition.f.x <= 1.0f && screenPosition.f.y <= 1.0f)
+            if (screenPosition.f.x <= 0.85f && screenPosition.f.y <= 0.85f)
             {
                 numFieldersInMidZone++;
             }

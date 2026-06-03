@@ -20,7 +20,7 @@
 
 extern float g_fSimulationTick;
 
-f32 CANT_COLLIDE = *(f32*)__float_max;
+static f32 CANT_COLLIDE = *(f32*)__float_max;
 
 nlMatrix4 cCameraManager::m_matView;
 nlVector3 cCameraManager::m_cameraPosition;

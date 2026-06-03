@@ -13,10 +13,10 @@
 
 #include "NL/nlString.h"
 
-u32 gl_clearColour = 0x00000040;
-s32 gl_frameCounter = 0;
-s32 gl_nDiscard = 0;
-s32 gl_state = 0;
+static u32 gl_clearColour = 0x00000040;
+static s32 gl_frameCounter = 0;
+static s32 gl_nDiscard = 0;
+static s32 gl_state = 0;
 
 /**
  * Offset/Address/Size: 0x0 | 0x801D733C | size: 0x20

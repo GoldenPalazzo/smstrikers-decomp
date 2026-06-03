@@ -5,7 +5,7 @@
 #include "NL/platvmath.h"
 #include <string.h>
 
-unsigned long gl_IdentityMatrix = 0xFFFFFFFF;
+static unsigned long gl_IdentityMatrix = 0xFFFFFFFF;
 
 /**
  * Offset/Address/Size: 0x0 | 0x801D8A74 | size: 0x20
@@ -61,7 +61,8 @@ void glGetMatrix(unsigned long arg0, nlMatrix4& matrix)
 u32 glAllocMatrix()
 {
     u32 var_r3 = glplatFrameAlloc(0x40, (eGLMemory)1);
-    if (var_r3 == 0U) {
+    if (var_r3 == 0U)
+    {
         var_r3 = -1U;
     }
     return var_r3;
@@ -70,7 +71,7 @@ u32 glAllocMatrix()
 /**
  * Offset/Address/Size: 0xF4 | 0x801D8B68 | size: 0x8
  */
- unsigned long glGetIdentityMatrix()
+unsigned long glGetIdentityMatrix()
 {
     return gl_IdentityMatrix; // probably a pointer to a matrix
 }
@@ -83,7 +84,7 @@ void gl_MatrixStartup()
     nlMatrix4 matrix;
     matrix.SetIdentity();
     gl_IdentityMatrix = (unsigned long)glplatResourceAlloc(0x40, (eGLMemory)1);
-    glplatSetMatrix(gl_IdentityMatrix, matrix);    
+    glplatSetMatrix(gl_IdentityMatrix, matrix);
 }
 
 /**

@@ -1,7 +1,7 @@
 #include "ode/ext/dColumn.h"
 #include "math.h"
 
-u8 lengthwiseAxis = 0x2;
+static u8 lengthwiseAxis = 0x2;
 s32 dColumnClassUser = -1;
 
 /**

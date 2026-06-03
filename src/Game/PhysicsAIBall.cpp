@@ -513,7 +513,6 @@ ContactType PhysicsAIBall::Contact(PhysicsObject* obj, dContact* info, int numCo
     extern float sfMaxBallBounceSpeed;
 
     int objID;
-    cFielder* pFielder;
     nlVector3 ballPosition;
     float radius;
     unsigned char hitWall;
@@ -523,6 +522,7 @@ ContactType PhysicsAIBall::Contact(PhysicsObject* obj, dContact* info, int numCo
     CollisionBallWallData* pEventData;
     float scale;
     nlVector3 vel;
+    cFielder* pFielder;
 
     objID = obj->GetObjectType();
 
@@ -541,8 +541,8 @@ ContactType PhysicsAIBall::Contact(PhysicsObject* obj, dContact* info, int numCo
             }
             else if (pFielder->m_eClassType == 2)
             {
-                cBall* pBall = m_pAIBall;
                 bool isShootToScore = false;
+                cBall* pBall = m_pAIBall;
                 if (pBall->m_tShotTimer.m_uPackedTime != 0)
                 {
                     if (pBall->mbCanDamage)
@@ -573,8 +573,8 @@ ContactType PhysicsAIBall::Contact(PhysicsObject* obj, dContact* info, int numCo
 
     if (objID == 0x1A)
     {
-        cBall* pBall = m_pAIBall;
         bool canDamage = false;
+        cBall* pBall = m_pAIBall;
         if (pBall->m_tShotTimer.m_uPackedTime != 0)
         {
             if (pBall->mbCanDamage)
@@ -666,8 +666,8 @@ ContactType PhysicsAIBall::Contact(PhysicsObject* obj, dContact* info, int numCo
 
                     *(cBall**)((u8*)pEventData + 0x4) = m_pAIBall;
 
-                    cBall* pBallShot = m_pAIBall;
                     bool bIsShot = false;
+                    cBall* pBallShot = m_pAIBall;
                     if (pBallShot->m_tShotTimer.m_uPackedTime != 0)
                     {
                         if (pBallShot->m_unk_0xA4)
@@ -683,15 +683,15 @@ ContactType PhysicsAIBall::Contact(PhysicsObject* obj, dContact* info, int numCo
                     u32 shotTimer = m_pAIBall->m_tShotTimer.m_uPackedTime;
                     *(u8*)((u8*)pEventData + 0x9) = (shotTimer != 0);
 
-                    float posZ = info->geom.pos[2];
                     float posY = info->geom.pos[1];
+                    float posZ = info->geom.pos[2];
                     float posX = info->geom.pos[0];
                     *(float*)((u8*)pEventData + 0x0C) = posX;
                     *(float*)((u8*)pEventData + 0x10) = posY;
                     *(float*)((u8*)pEventData + 0x14) = posZ;
 
-                    float normalZ = info->geom.normal[2];
                     float normalY = info->geom.normal[1];
+                    float normalZ = info->geom.normal[2];
                     float normalX = info->geom.normal[0];
                     *(float*)((u8*)pEventData + 0x18) = normalX;
                     *(float*)((u8*)pEventData + 0x1C) = normalY;

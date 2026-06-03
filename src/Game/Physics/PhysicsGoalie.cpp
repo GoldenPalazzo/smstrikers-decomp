@@ -7,9 +7,9 @@
 #include "NL/utility.h"
 #include "types.h"
 
-f32 CANT_COLLIDE = *(f32*)__float_max;
+static f32 CANT_COLLIDE = *(f32*)__float_max;
 
-float ballMaxMotionPerTick = PhysicsBall::GetBallMaxVelocity() * FixedUpdateTask::GetPhysicsUpdateTick();
+static float ballMaxMotionPerTick = PhysicsBall::GetBallMaxVelocity() * FixedUpdateTask::GetPhysicsUpdateTick();
 
 /**
  * Offset / Address / Size : 0x8F0 | 0x8013A370 | size : 0x34

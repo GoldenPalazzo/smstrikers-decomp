@@ -13,7 +13,7 @@
 
 extern cTeam* g_pTeams[2] __attribute__((section(".data"))) = { NULL, NULL };
 
-f32 CANT_COLLIDE = *(f32*)__float_max;
+static f32 CANT_COLLIDE = *(f32*)__float_max;
 
 PhysicsNet* PhysicsNet::spPhysNetNegativeX = nullptr;
 PhysicsNet* PhysicsNet::spPhysNetPositiveX = nullptr;

@@ -3,30 +3,30 @@
 
 GXTevAlphaArg gx_alphaArg[2][32];
 
-bool gx_dither;
-bool gx_colourupdate;
-bool gx_alphaupdate;
-bool gx_zcomploc;
-bool gx_ztest;
-bool save_ztest;
-GXCompare gx_zfunc;
-GXCompare save_zfunc;
-bool gx_zwrite;
-bool save_zwrite;
-s32 /*GXCompare*/ gx_alphafunc;
-u8 gx_alpharef;
-u8 /*GXBlendMode*/ gx_blend;
-u8 /*GXLogicOp*/ gx_blendSubtract;
-GXBlendFactor gx_srcfactor;
-GXBlendFactor gx_dstfactor;
-GXCullMode gx_cullmode;
-u32 gx_currentmtx;
-u32 gx_numChans;
-u32 gx_numTEV;
-u32 gx_numGens;
-nlColour gx_matColour[2];
-nlColour gx_ambColour[2];
-bool gx_coplanar = false;
+static bool gx_dither;
+static bool gx_colourupdate;
+static bool gx_alphaupdate;
+static bool gx_zcomploc;
+static bool gx_ztest;
+static bool save_ztest;
+static GXCompare gx_zfunc;
+static GXCompare save_zfunc;
+static bool gx_zwrite;
+static bool save_zwrite;
+static s32 /*GXCompare*/ gx_alphafunc;
+static u8 gx_alpharef;
+static u8 /*GXBlendMode*/ gx_blend;
+static u8 /*GXLogicOp*/ gx_blendSubtract;
+static GXBlendFactor gx_srcfactor;
+static GXBlendFactor gx_dstfactor;
+static GXCullMode gx_cullmode;
+static u32 gx_currentmtx;
+static u32 gx_numChans;
+static u32 gx_numTEV;
+static u32 gx_numGens;
+static nlColour gx_matColour[2];
+static nlColour gx_ambColour[2];
+static bool gx_coplanar = false;
 
 /**
  * Offset/Address/Size: 0x0 | 0x801C14E8 | size: 0x48

@@ -26,8 +26,8 @@
 
 extern u32 eOC_OPTIMIZE_OUT_FROM_GAMEPLAY;
 extern bool g_GoalLightEnabled;
-float g_fSkyboxRotationTime = 1420.0f;
-float g_fCloudRotationTime = 720.0f;
+static float g_fSkyboxRotationTime = 1420.0f;
+static float g_fCloudRotationTime = 720.0f;
 EventManager* g_pEventManager = nullptr;
 
 char szBasicStadiumName[0x40];
@@ -35,12 +35,12 @@ char szBasicStadiumName[0x40];
 const char szBallName[] = "gameplay/ball";
 const char szPowerupsName[] = "gameplay/powerups";
 
-u32 uSkyBoxHashID;
-u32 uCloudsHashID;
-u32 uNetHelperHashID;
-u32 uFieldHelperHashID;
-u32 uPenaltyHelperHashID;
-BasicStadium* pBasicStadiumInstance;
+static u32 uSkyBoxHashID;
+static u32 uCloudsHashID;
+static u32 uNetHelperHashID;
+static u32 uFieldHelperHashID;
+static u32 uPenaltyHelperHashID;
+static BasicStadium* pBasicStadiumInstance;
 
 static nlMatrix4 mSkyBoxTM;
 static nlMatrix4 mCloudTM;

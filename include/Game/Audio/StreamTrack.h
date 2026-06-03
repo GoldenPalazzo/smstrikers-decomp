@@ -273,9 +273,11 @@ void TrackManager<N>::DestroyAllTracks()
                 int next = idx + 1;
                 EL* src = (EL*)((char*)m_Tracks.m_pEntryLookup + next * 8);
                 EL* dst = (EL*)((char*)m_Tracks.m_pEntryLookup + idx * 8);
+                unsigned long hash = src->hash;
+                StreamTrack* pEntry = src->pEntry;
                 idx = next;
-                dst->pEntry = src->pEntry;
-                dst->hash = src->hash;
+                dst->pEntry = pEntry;
+                dst->hash = hash;
             }
         }
 

@@ -33,7 +33,7 @@ StadiumLightingParams gStadiumGameObjectLightingParams[7] = {
     { glGetTexture("ForbiddenDomePlayerLightRamp") }
 };
 
-void* g_pCameraRelativeLightData = NULL;
+static void* g_pCameraRelativeLightData = NULL;
 
 /**
  * Offset/Address/Size: 0xB0C | 0x8012B348 | size: 0x8

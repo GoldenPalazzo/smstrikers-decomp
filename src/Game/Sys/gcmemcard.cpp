@@ -18,7 +18,7 @@ MemCard::MemCard(unsigned long slot)
     memcpy(&m_CompanyId, ((char*)id) + 4, 2);
 }
 
-MemCard* MemCards[2] = { new MemCard(0), new MemCard(1) };
+static MemCard* MemCards[2] = { new MemCard(0), new MemCard(1) };
 
 // /**
 //  * Offset/Address/Size: 0x30 | 0x801CB798 | size: 0x24
@@ -642,13 +642,11 @@ long MemCard::CreateFile(const char* FileName, unsigned long FileSize, MemCard::
     {
         unsigned long prev = count - 1;
         nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>* lookup = m_OpenFiles.m_pEntryLookup;
-        nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>* src2 = &lookup[prev];
-        nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>* dst2 = &lookup[count];
+        unsigned long id = lookup[prev].hash;
+        MC_FILE* entry = lookup[prev].pEntry;
+        lookup[count].pEntry = entry;
+        lookup[count].hash = id;
         count = prev;
-        unsigned long id = src2->hash;
-        MC_FILE* entry = src2->pEntry;
-        dst2->pEntry = entry;
-        dst2->hash = id;
     }
 
     m_OpenFiles.m_pEntryLookup[high].hash = hash;
@@ -712,13 +710,11 @@ long MemCard::CreateFile(const char* FileName, unsigned long FileSize, MemCard::
             {
                 long next = idx + 1;
                 nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>* lookup = m_OpenFiles.m_pEntryLookup;
-                nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>* srcE = &lookup[next];
-                nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>* dstE = &lookup[idx];
+                unsigned long id = lookup[next].hash;
+                MC_FILE* entry = lookup[next].pEntry;
+                lookup[idx].pEntry = entry;
+                lookup[idx].hash = id;
                 idx = next;
-                unsigned long id = srcE->hash;
-                MC_FILE* entry = srcE->pEntry;
-                dstE->pEntry = entry;
-                dstE->hash = id;
             }
 
             m_OpenFiles.m_EntryCount = m_OpenFiles.m_EntryCount - 1;

@@ -26,21 +26,17 @@
 #include "Game/FixedUpdateTask.h"
 #include "Game/FormationDefines.h"
 
-float g_fPassInterceptNoPickupTimer = 5.0f;
-
 static u8 sbNoBallPickups;
 
 extern float g_fFixedUpdateTick;
 
-u16 g_aOOIConstraint;
-int g_nHeadTiltMax;
-int g_nHeadSpinMax;
-int g_nWaluigiHeadSpinMax;
-int g_nWarioHeadSpinMax;
-int g_nWarioHeadTiltMax;
+static u16 g_aOOIConstraint;
+static int g_nHeadTiltMax;
+static int g_nHeadSpinMax;
+static int g_nWaluigiHeadSpinMax;
+static int g_nWarioHeadSpinMax;
+static int g_nWarioHeadTiltMax;
 
-namespace
-{
 struct PlayerGlobalsInit
 {
     PlayerGlobalsInit()
@@ -54,7 +50,6 @@ struct PlayerGlobalsInit
     }
 };
 PlayerGlobalsInit s_playerGlobalsInit;
-} // namespace
 
 /**
  * Offset/Address/Size: 0x0 | 0x80057550 | size: 0x20
@@ -152,7 +147,7 @@ bool cPlayer::CanPickupBallFromPass(cBall* pBall)
 
 /**
  * Offset/Address/Size: 0x284 | 0x800577D4 | size: 0x1B0
- * TODO: 99.44% match - MWCC scheduling keeps one extra li r30,0 after
+ * TODO: 98.1% match - li r30,0 (bDoPickUp=false) at 0x174 after
  * extsh r0,r3 instead of at 0x158 before the TestCollision beq.
  */
 bool cPlayer::CanPickupBall(cBall* pBall)
@@ -176,7 +171,7 @@ bool cPlayer::CanPickupBall(cBall* pBall)
 
     if (pBall->m_pOwner == NULL && pBall->m_tNoPickupTimer.m_uPackedTime == 0)
     {
-        if (speedSq <= 900.0f || pBall->m_pPassTarget == self)
+        if (speedSq <= 100.0f || pBall->m_pPassTarget == self)
         {
             if (self->m_tNoPickupPassInterceptTimer.m_uPackedTime == 0
                 && self->m_tNoPickupTimer.m_uPackedTime == 0
@@ -810,7 +805,7 @@ void cPlayer::ResetUnPossessionTimer()
 {
     if (m_pBall == NULL)
     {
-        m_tBallUnPossessionTimer.SetSeconds(0.0f);
+        m_tBallUnPossessionTimer.SetSeconds(2.5f);
     }
 }
 
@@ -859,7 +854,7 @@ static inline cFielder* GetAIOrderedFielder(cTeam* pTeam, s32 i)
  */
 cPlayer* cPlayer::DoFindBestPassTarget(bool bAllowLeadPass, bool bIsPerfectPass)
 {
-    f32 fBestScore = 99999.0f;
+    f32 fBestScore = 9000.0f;
     cFielder* pTarget;
     cPlayer* pBestTarget = NULL;
 
@@ -874,7 +869,7 @@ cPlayer* cPlayer::DoFindBestPassTarget(bool bAllowLeadPass, bool bIsPerfectPass)
 
         if (m_pController != NULL)
         {
-            if (m_pController->GetMovementStickMagnitude() > 0.1f)
+            if (m_pController->GetMovementStickMagnitude() > 0.01f)
             {
                 aDirection = m_pController->GetMovementStickDirection();
             }
@@ -889,14 +884,14 @@ cPlayer* cPlayer::DoFindBestPassTarget(bool bAllowLeadPass, bool bIsPerfectPass)
 
         if (bAllowLeadPass || bIsPerfectPass)
         {
-            fMaxDistance = 100.0f;
+            fMaxDistance = 20.0f;
             fAngleWeighting = g_pGame->m_pGameTweaks->fVolleyPassAngleWeighting;
             fMinDistance = g_pGame->m_pGameTweaks->fVolleyPassMinDistance;
         }
         else
         {
             fMinDistance = 1.0f;
-            fMaxDistance = 50.0f;
+            fMaxDistance = 99999.0f;
             fAngleWeighting = g_pGame->m_pGameTweaks->fPassAngleWeighting;
         }
 
@@ -908,7 +903,7 @@ cPlayer* cPlayer::DoFindBestPassTarget(bool bAllowLeadPass, bool bIsPerfectPass)
 
         if (fSqrt < fMinDistance || fSqrt > fMaxDistance)
         {
-            fDistBetween = 0.0f;
+            fDistBetween = 9999.9f;
         }
 
         f32 fConverted = 10430.37835f * nlATan2f(dy, dx);
@@ -928,7 +923,7 @@ cPlayer* cPlayer::DoFindBestPassTarget(bool bAllowLeadPass, bool bIsPerfectPass)
 
         if (!pTarget->CanReceivePass())
         {
-            fScore += 500.0f;
+            fScore += 99999.9f;
         }
 
         if (fScore < fBestScore)
@@ -1269,6 +1264,8 @@ void cPlayer::CollideWithCharacterCallback(CollisionPlayerPlayerData*)
 /**
  * Offset/Address/Size: 0x23D4 | 0x80059924 | size: 0x64
  */
+__declspec(section ".sdata2") static float g_fPassInterceptNoPickupTimer = 0.5f;
+
 void cPlayer::CollideWithBallCallback(cBall* pBall)
 {
     if (pBall->m_pPassTarget != NULL)
@@ -1400,11 +1397,11 @@ static inline void UpdateTimers(cPlayer* self, float fDeltaT)
 {
     if (self->m_pBall != NULL)
     {
-        self->m_tBallPossessionTimer.Countup(fDeltaT, 100000.0f);
+        self->m_tBallPossessionTimer.Countup(fDeltaT, 10.0f);
     }
     else
     {
-        self->m_tBallUnPossessionTimer.Countup(fDeltaT, 100000.0f);
+        self->m_tBallUnPossessionTimer.Countup(fDeltaT, 10.0f);
     }
 
     self->m_tSlideAttackTimer.Countdown(fDeltaT, 0.0f);
@@ -1429,7 +1426,7 @@ static inline void UpdateTimers(cPlayer* self, float fDeltaT)
 
     if (self->m_fActualSpeed < 0.1f)
     {
-        self->m_tInactivityTimer.Countup(fDeltaT, 100000.0f);
+        self->m_tInactivityTimer.Countup(fDeltaT, 10.0f);
     }
     else
     {

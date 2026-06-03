@@ -5,8 +5,8 @@
 #include "NL/gl/gl.h"
 #include "NL/gl/glState.h"
 
-bool g_bEnableDrawableSkinModel = true;
-bool g_bSkinModelTextureLighting = true;
+static bool g_bEnableDrawableSkinModel = true;
+static bool g_bSkinModelTextureLighting = true;
 const u32 GLTT_BumpLocal_bit = 1 << (int)GLTT_BumpLocal;
 
 const unsigned long UnlitProgram = glGetProgram("3d unlit");

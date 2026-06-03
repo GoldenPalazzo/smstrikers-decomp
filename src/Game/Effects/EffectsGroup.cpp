@@ -21,8 +21,8 @@ extern "C"
 #pragma alias vtAVLTreeBaseTerrainSpec "__vt__116AVLTreeBase<Ul,P18EffectsTerrainSpec,52NewAdapter<38AVLTreeEntry<Ul,P18EffectsTerrainSpec>>,21DefaultKeyCompare<Ul>>"
 #pragma alias vtNlAVLTreeTerrainSpec "__vt__59nlAVLTree<Ul,P18EffectsTerrainSpec,21DefaultKeyCompare<Ul>>"
 
-nlAVLTree<unsigned long, EffectsGroup*, DefaultKeyCompare<unsigned long> >* pGroupMap = nullptr;
-nlAVLTree<unsigned long, EffectsTerrainSpec*, DefaultKeyCompare<unsigned long> >* pTerrainSpecMap = nullptr;
+static nlAVLTree<unsigned long, EffectsGroup*, DefaultKeyCompare<unsigned long> >* pGroupMap = nullptr;
+static nlAVLTree<unsigned long, EffectsTerrainSpec*, DefaultKeyCompare<unsigned long> >* pTerrainSpecMap = nullptr;
 extern "C" int atoi(const char*);
 static char last_spec_name[0x100];
 static s32 gnUserEffectTypes;

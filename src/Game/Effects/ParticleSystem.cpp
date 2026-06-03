@@ -28,8 +28,8 @@ struct FreeParticles : public efList
 FreeParticles freeParticles;
 
 void* textureFrames[36] = { nullptr };
-Particle* particleMemory;
-int MaxNumParticles;
+static Particle* particleMemory;
+static int MaxNumParticles;
 
 extern float m_fAspect__14ParticleSystem;
 extern volatile u8 m_AllowInFront__14ParticleSystem;
@@ -372,17 +372,14 @@ void EmitSpindularPosition(nlVector3& vPosition, nlVector3& vDirection, EffectsT
         nlSinCos(&sin, &cos, (unsigned short)(int)(10430.378f * tiltRotation));
 
         float dirX = localDir.f.x;
-        float dirZ = localDir.f.z;
         float posX = localPos.f.x;
-        float posY = localPos.f.y;
-        float posZ = localPos.f.z;
 
-        localDir.f.z = (-dirX * sin) + (dirZ * cos);
-        localDir.f.x = (dirX * cos) + (dirZ * sin);
+        localDir.f.x = (dirX * cos) + (localDir.f.z * sin);
+        localDir.f.z = (-dirX * sin) + (localDir.f.z * cos);
 
-        localPos.f.x = (posX * cos) + (posZ * sin);
-        localPos.f.y = posY;
-        localPos.f.z = (-posX * sin) + (posZ * cos);
+        localPos.f.x = (posX * cos) + (localPos.f.z * sin);
+        localPos.f.y = localPos.f.y;
+        localPos.f.z = (-posX * sin) + (localPos.f.z * cos);
     }
 
     if (pSpec != nullptr)

@@ -2685,16 +2685,18 @@ void StatsTracker::WriteCurrentlyPlaying() const
         awaySidekickName,
         stadiumName);
 
-    BasicStringInternal* toFree = outputData;
-    if (outputData != 0)
+    BasicStringInternal* data = outputData;
+    if (data != 0)
     {
-        outputData->mRefCount++;
-        retainedData = outputData;
+        data->mRefCount++;
+        data = outputData;
     }
     else
     {
-        retainedData = 0;
+        data = 0;
     }
+    BasicStringInternal* toFree = outputData;
+    retainedData = data;
 
     if (toFree != 0)
     {

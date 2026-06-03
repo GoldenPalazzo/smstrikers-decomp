@@ -595,10 +595,11 @@ ElectricFenceData::ElectricFenceData(EmissionController* pEmissionController)
         float increment = sfGridTextureSize / sfNumGridSquares;
         mPosition.f.z = increment * (float)floor(mPosition.f.z / increment);
 
+        ElectricFenceGeometry* geom = NULL;
+
         if (ElectricFenceGeometry::sElectricFenceGeometryPool.m_FreeList == NULL)
             SlotPoolBase::BaseAddNewBlock(&ElectricFenceGeometry::sElectricFenceGeometryPool, sizeof(ElectricFenceGeometry));
 
-        ElectricFenceGeometry* geom = NULL;
         SlotPoolEntry* freeSlot = ElectricFenceGeometry::sElectricFenceGeometryPool.m_FreeList;
         if (freeSlot != NULL)
         {

@@ -22,9 +22,9 @@ inline int GetCameraSpinMax()
     return 0x8000;
 }
 
-u16 g_aCameraOOIConstraint = GetCameraOOIConstraint();
-int g_nCameraSpinMax = (int)GetCameraOOIConstraint();
-int g_nCameraTiltMax = GetCameraTiltMax();
+static u16 g_aCameraOOIConstraint = GetCameraOOIConstraint();
+static int g_nCameraSpinMax = (int)GetCameraOOIConstraint();
+static int g_nCameraTiltMax = GetCameraTiltMax();
 
 static const float kUnitsToRad = 0.0000958738f;
 inline float AngUnitsToRad_fromFloat(float fUnits)

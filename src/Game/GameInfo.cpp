@@ -12,21 +12,21 @@
 extern bool g_e3_Build;
 extern void OnPreCupGameState__15GameInfoManagerFv(GameInfoManager*);
 
-bool isFreezingUnlocked = false;
-bool isShellsUnlocked = false;
-bool isSuperTeamUnlocked = false;
+static bool isFreezingUnlocked = false;
+static bool isShellsUnlocked = false;
+static bool isSuperTeamUnlocked = false;
 bool isLegendUnlocked = false;
-bool isEnhanceUnlocked = false;
-bool isGiantUnlocked = false;
-bool isExplosiveUnlocked = false;
-bool isUnlimitedUnlocked = false;
-bool isGoalieUnlocked = false;
-bool isTiltUnlocked = false;
-bool isAllSTSUnlocked = false;
-bool isKongaUnlocked = false;
-bool isYoshiUnlocked = false;
-bool isForbiddenUnlocked = false;
-bool isSuperStadUnlocked = false;
+static bool isEnhanceUnlocked = false;
+static bool isGiantUnlocked = false;
+static bool isExplosiveUnlocked = false;
+static bool isUnlimitedUnlocked = false;
+static bool isGoalieUnlocked = false;
+static bool isTiltUnlocked = false;
+static bool isAllSTSUnlocked = false;
+static bool isKongaUnlocked = false;
+static bool isYoshiUnlocked = false;
+static bool isForbiddenUnlocked = false;
+static bool isSuperStadUnlocked = false;
 
 bool inline CheckUnlockStatus(const bool& globalFlag, const unsigned char& trophyValue, const unsigned int bit)
 {

@@ -56,7 +56,7 @@ static struct _struct_stack_list_0x10 stack_list[2] = {
 
 namespace PlatAudio
 {
-extern u32 gPrimaryStackSize;
+static u32 gPrimaryStackSize;
 }
 
 namespace
@@ -96,7 +96,6 @@ static bool gAreSoundBuffersSetup;
 namespace PlatAudio
 {
 
-u32 gPrimaryStackSize;
 bool gUsingDolbyProLogic2 = false;
 
 /**

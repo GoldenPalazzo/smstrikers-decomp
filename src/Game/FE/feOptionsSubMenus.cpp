@@ -2002,18 +2002,20 @@ void OptionsCheatsMenu::BuildLockableSubMenuList(int menuitem, TLComponentInstan
         }
     }
 
-    sml = (SlideMenuList*)mSlideMenuLists[menuitem];
-    menuItem = &sml->mMenuItems[sml->mCurrentIndex];
-    menuItem->mCallbacks[2](menuItem->mType);
-
-    sml->mCurrentIndex = startindex;
-
-    menuItem = &sml->mMenuItems[sml->mCurrentIndex];
-    menuItem->mCallbacks[1](menuItem->mType);
-
-    if (wraps)
     {
-        sml->mFlags = 1;
+        SlideMenuList* s = (SlideMenuList*)mSlideMenuLists[menuitem];
+        MenuItem<SlideMenuItem>* mi = &s->mMenuItems[s->mCurrentIndex];
+        mi->mCallbacks[2](mi->mType);
+
+        s->mCurrentIndex = startindex;
+
+        mi = &s->mMenuItems[s->mCurrentIndex];
+        mi->mCallbacks[1](mi->mType);
+
+        if (wraps)
+        {
+            ((SlideMenuList*)mSlideMenuLists[menuitem])->mFlags = 1;
+        }
     }
 }
 

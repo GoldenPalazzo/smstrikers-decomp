@@ -8,7 +8,7 @@
 #include "NL/gl/glState.h"
 
 ShapeRender g_ShapeRenderer;
-unsigned long UnlitProgram = glGetProgram("3d unlit");
+static unsigned long UnlitProgram = glGetProgram("3d unlit");
 static unsigned long LitProgram = glGetProgram("3d pointlit");
 const u32 WhiteTexture = glGetTexture("global/white");
 

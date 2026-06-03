@@ -33,9 +33,9 @@ struct DelayTimer
 
 FadeAudioData* g_pFadeList;
 
-bool gbFilterOn = false;
-bool gbPitchBent = false;
-bool gbUseHiQualityReverb = false;
+static bool gbFilterOn = false;
+static bool gbPitchBent = false;
+static bool gbUseHiQualityReverb = false;
 bool gbListenerInit = false;
 
 bool g_bAudioInitialized = false;
@@ -3945,9 +3945,11 @@ void AudioStreamTrack::TrackManager<3>::DestroyAllTracks()
                 int next = idx + 1;
                 EL* src = (EL*)((char*)m_Tracks.m_pEntryLookup + next * 8);
                 EL* dst = (EL*)((char*)m_Tracks.m_pEntryLookup + idx * 8);
+                unsigned long hash = src->hash;
+                AudioStreamTrack::StreamTrack* pEntry = src->pEntry;
                 idx = next;
-                dst->pEntry = src->pEntry;
-                dst->hash = src->hash;
+                dst->pEntry = pEntry;
+                dst->hash = hash;
             }
         }
 

@@ -599,6 +599,9 @@ void DrawableCharacter::SendToGl(const cCharacter& character) const
         unsigned char padding[0x138];
         nlVector4* pLight;
     };
+    ProjectedShadowParams params;
+    nlMatrix4 mWorld;
+    nlMatrix4 sphereWorldMatrix;
     EffectsTexturing* fxtex = mEffectsTexturing;
     eCharacterClass ec = character.m_eCharacterClass;
 
@@ -681,7 +684,6 @@ void DrawableCharacter::SendToGl(const cCharacter& character) const
             fRadius = 2.5f;
         }
 
-        nlMatrix4 mWorld;
         mWorld.SetIdentity();
         mWorld.f.m41 = mBip01Position.f.x;
         mWorld.f.m42 = mBip01Position.f.y;
@@ -853,7 +855,6 @@ void DrawableCharacter::SendToGl(const cCharacter& character) const
             u32 debugColour = 0xFFFF4050;
             glModel* pSphereModel = glModelDup(glInventory.GetModel(nlStringHash("debug/sphere")), true);
 
-            nlMatrix4 sphereWorldMatrix;
             sphereWorldMatrix.SetIdentity();
             sphereWorldMatrix.f.m41 = vCenter.f.x;
             sphereWorldMatrix.f.m42 = vCenter.f.y;
@@ -903,7 +904,6 @@ void DrawableCharacter::SendToGl(const cCharacter& character) const
                 }
             }
 
-            ProjectedShadowParams params;
             params.fScalar = 1.0f;
             float fRadius;
             float fHeight;

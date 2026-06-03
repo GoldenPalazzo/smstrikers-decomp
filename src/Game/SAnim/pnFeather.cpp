@@ -4,7 +4,7 @@
 #include "NL/nlMemory.h"
 #include "NL/nlSlotPool.h"
 
-f32 CANT_COLLIDE = *(f32*)__float_max;
+static f32 CANT_COLLIDE = *(f32*)__float_max;
 
 SlotPool<cPN_Feather> cPN_Feather::m_FeatherSlotPool(0x10, 0x10);
 
