@@ -4,18 +4,8 @@
 #include "types.h"
 #include "NL/nlList.h"
 
+#include "Game/Inventory.h"
 #include "Game/SAnim.h"
-
-struct SAnimContainer
-{
-    /* 0x00 */ void* unused0;
-    /* 0x04 */ ListEntry<cSAnim*>* animHead;
-    /* 0x08 */ ListEntry<cSAnim*>* animTail;
-    /* 0x0C */ void* unused0C;
-    /* 0x10 */ ListEntry<char*>* fileHead;
-    /* 0x14 */ ListEntry<char*>* fileTail;
-    /* 0x18 */ int animCount;
-};
 
 struct AnimProperties
 {
@@ -48,7 +38,7 @@ public:
     u8 GetMatchCharacterSpeed(int i);
 
     /* 0x00 */ int m_count;
-    /* 0x04 */ SAnimContainer* m_cont;
+    /* 0x04 */ cInventory<cSAnim>* m_cont;
     /* 0x08 */ cSAnim** m_anims;
     /* 0x0C */ const AnimProperties* m_props;
 };

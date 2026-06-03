@@ -4,7 +4,24 @@
 #include "NL/nlMemory.h"
 #include "NL/nlFileGC.h"
 
-SAnimContainer* g_pDefaultSAnimInventory = nullptr;
+cInventory<cSAnim>* g_pDefaultSAnimInventory = nullptr;
+
+typedef ListContainerBase<cSAnim*, NewAdapter<ListEntry<cSAnim*> > > SAnimListBase;
+typedef ListContainerBase<char*, NewAdapter<ListEntry<char*> > > FileListBase;
+
+static void ClearAnimList(cInventory<cSAnim>* c)
+{
+    nlWalkList(c->m_lItemList.m_Head, (SAnimListBase*)c, &SAnimListBase::DeleteEntry);
+    c->m_lItemList.m_Head = 0;
+    c->m_lItemList.m_Tail = 0;
+}
+
+static void ClearFileList(cInventory<cSAnim>* c)
+{
+    nlWalkList(c->m_lMemList.m_Head, (FileListBase*)&c->m_lMemList, &FileListBase::DeleteEntry);
+    c->m_lMemList.m_Head = 0;
+    c->m_lMemList.m_Tail = 0;
+}
 
 /**
  * Offset/Address/Size: 0x438 | 0x800073B4 | size: 0xA0
@@ -16,14 +33,14 @@ cAnimInventory::cAnimInventory(const AnimProperties* props, int count)
     m_anims = 0;
     m_props = props;
 
-    SAnimContainer* cont = (SAnimContainer*)nlMalloc(0x1C, 8, 0);
+    cInventory<cSAnim>* cont = (cInventory<cSAnim>*)nlMalloc(0x1C, 8, 0);
     if (cont)
     {
-        cont->animHead = 0;
-        cont->animTail = 0;
-        cont->fileHead = 0;
-        cont->fileTail = 0;
-        cont->animCount = 0;
+        cont->m_lItemList.m_Head = 0;
+        cont->m_lItemList.m_Tail = 0;
+        cont->m_lMemList.m_Head = 0;
+        cont->m_lMemList.m_Tail = 0;
+        cont->m_nItemCount = 0;
     }
     m_cont = cont;
 
@@ -38,26 +55,21 @@ cAnimInventory::cAnimInventory(const AnimProperties* props, int count)
  */
 cAnimInventory::~cAnimInventory()
 {
-    typedef ListContainerBase<cSAnim*, NewAdapter<ListEntry<cSAnim*> > > SAnimListBase;
-    typedef ListContainerBase<char*, NewAdapter<ListEntry<char*> > > FileListBase;
-
-    SAnimContainer* c = m_cont;
+    cInventory<cSAnim>* c = m_cont;
     if (c != 0)
     {
-        ListEntry<cSAnim*>* anim = c->animHead;
+        ListEntry<cSAnim*>* anim = c->m_lItemList.m_Head;
         while (anim != 0)
         {
             anim->data->Destroy();
             anim = anim->next;
         }
 
-        nlWalkList(c->animHead, (SAnimListBase*)c, &SAnimListBase::DeleteEntry);
-        c->animHead = 0;
-        c->animTail = 0;
+        ClearAnimList(c);
 
-        ListEntry<char*>** tail = &c->fileTail;
-        ListEntry<char*>** head = &c->fileHead;
-        while (c->fileHead != 0)
+        ListEntry<char*>** tail = &c->m_lMemList.m_Tail;
+        ListEntry<char*>** head = &c->m_lMemList.m_Head;
+        while (c->m_lMemList.m_Head != 0)
         {
             ListEntry<char*>* entry = nlListRemoveStart<ListEntry<char*> >(head, tail);
             char* filename;
@@ -69,14 +81,12 @@ cAnimInventory::~cAnimInventory()
             delete filename;
         }
 
-        c->animCount = 0;
-        if (&c->unused0C != 0)
+        c->m_nItemCount = 0;
+        if (&c->m_lMemList != 0)
         {
-            if (&c->unused0C != 0)
+            if (&c->m_lMemList != 0)
             {
-                nlWalkList(c->fileHead, (FileListBase*)&c->unused0C, &FileListBase::DeleteEntry);
-                c->fileHead = 0;
-                c->fileTail = 0;
+                ClearFileList(c);
             }
         }
 
@@ -84,12 +94,10 @@ cAnimInventory::~cAnimInventory()
         {
             if (c != 0)
             {
-                nlWalkList(c->animHead, (SAnimListBase*)c, &SAnimListBase::DeleteEntry);
-                c->animHead = 0;
-                c->animTail = 0;
+                ClearAnimList(c);
             }
         }
-        delete c;
+        ::operator delete(c);
     }
 
     delete[] m_anims;
@@ -106,7 +114,7 @@ void cAnimInventory::AddAnimBundle(const char* szFilename)
     int len;
     char* pMem = (char*)nlLoadEntireFileToVirtualMemory(szFilename, &len, 0x10000, 0, AllocateStart);
     int bundleLen = len;
-    SAnimContainer* inv = m_cont;
+    cInventory<cSAnim>* inv = m_cont;
 
     ListEntry<char*>* pFileEntry = (ListEntry<char*>*)nlMalloc(8, 8, 0);
     if (pFileEntry != 0)
@@ -114,7 +122,7 @@ void cAnimInventory::AddAnimBundle(const char* szFilename)
         pFileEntry->next = 0;
         pFileEntry->data = pMem;
     }
-    nlListAddStart<ListEntry<char*> >(&inv->fileHead, pFileEntry, &inv->fileTail);
+    nlListAddStart<ListEntry<char*> >(&inv->m_lMemList.m_Head, pFileEntry, &inv->m_lMemList.m_Tail);
 
     char* end = pMem + bundleLen;
     while (pMem != end)
@@ -128,8 +136,8 @@ void cAnimInventory::AddAnimBundle(const char* szFilename)
                 pAnimEntry->next = 0;
                 pAnimEntry->data = pAnim;
             }
-            nlListAddStart<ListEntry<cSAnim*> >(&inv->animHead, pAnimEntry, &inv->animTail);
-            inv->animCount++;
+            nlListAddStart<ListEntry<cSAnim*> >(&inv->m_lItemList.m_Head, pAnimEntry, &inv->m_lItemList.m_Tail);
+            inv->m_nItemCount++;
         }
         else
         {
@@ -144,9 +152,9 @@ void cAnimInventory::AddAnimBundle(const char* szFilename)
     int animOffset = propOffset;
     while (i < m_count)
     {
-        SAnimContainer* pInv = m_cont;
+        cInventory<cSAnim>* pInv = m_cont;
         unsigned int hash = nlStringHash(*(const char**)((char*)m_props + propOffset + 4));
-        ListEntry<cSAnim*>* pList = pInv->animHead;
+        ListEntry<cSAnim*>* pList = pInv->m_lItemList.m_Head;
         cSAnim* pFound = 0;
 
         while (pList != 0)
@@ -166,9 +174,9 @@ void cAnimInventory::AddAnimBundle(const char* szFilename)
             nlPrintf("Warning! Could not find \"%s\" in bundle \"%s\"\n",
                 *(const char**)((char*)m_props + propOffset + 4),
                 szFilename);
-            SAnimContainer* pDefaultInv = g_pDefaultSAnimInventory;
+            cInventory<cSAnim>* pDefaultInv = g_pDefaultSAnimInventory;
             hash = nlStringHash(*(const char**)((char*)m_props + propOffset + 4));
-            pList = pDefaultInv->animHead;
+            pList = pDefaultInv->m_lItemList.m_Head;
             pFound = 0;
             while (pList != 0)
             {
