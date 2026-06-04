@@ -5,6 +5,7 @@
 #include "PowerPC_EABI_Support/MSL_C++/MSL_Common/msl_memory.h"
 #include "stdio.h"
 #include "stdlib.h"
+#include "types.h"
 
 namespace std
 {
@@ -36,6 +37,12 @@ public:
     {
         void* right_;
         void* parent_;
+
+        node_base* parent() const { return (node_base*)((unsigned long)parent_ & ~1); }
+        node_base* grandparent() const { return parent()->parent(); }
+        bool is_red() const { return ((unsigned long)parent_ & 1) == 1; }
+        void set_red() { parent_ = (void*)((unsigned long)parent_ | 1); }
+        void set_black() { parent_ = (void*)((unsigned long)parent_ & ~1); }
     };
 
     static void rotate_left(node_base* x, node_base*& root);
@@ -46,6 +53,7 @@ public:
 template <int N>
 void __red_black_tree<N>::rotate_left(node_base* x, node_base*& root)
 {
+    FORCE_DONT_INLINE;
     node_base* y = (node_base*)x->right_;
     if (root == x)
     {
@@ -74,6 +82,7 @@ void __red_black_tree<N>::rotate_left(node_base* x, node_base*& root)
 template <int N>
 void __red_black_tree<N>::rotate_right(node_base* x, node_base*& root)
 {
+    FORCE_DONT_INLINE;
     node_base* y = (node_base*)x->left_;
     if (root == x)
     {
@@ -99,67 +108,59 @@ void __red_black_tree<N>::rotate_right(node_base* x, node_base*& root)
     x->parent_ = (void*)((unsigned long)y | ((unsigned long)x->parent_ & 1));
 }
 
-// Color is stored in bit 0 of parent_ (1 = red, 0 = black); the pointer is the
-// remaining bits. These mirror the rotate_left/rotate_right encoding above.
-#define RB_PARENT(n)    ((node_base*)((unsigned long)(n)->parent_ & ~1))
-#define RB_IS_RED(n)    (((unsigned long)(n)->parent_ & 1) == 1)
-#define RB_SET_RED(n)   ((n)->parent_ = (void*)((unsigned long)(n)->parent_ | 1))
-#define RB_SET_BLACK(n) ((n)->parent_ = (void*)((unsigned long)(n)->parent_ & ~1))
-
 template <int N>
 void __red_black_tree<N>::balance_insert(node_base* x, node_base* root)
 {
-    RB_SET_RED(x);
-    while (x != root && RB_IS_RED(RB_PARENT(x)))
+    node_base* y;
+    x->set_red();
+    while (x != root && x->parent()->is_red())
     {
-        node_base* p = RB_PARENT(x);
-        node_base* g = RB_PARENT(p);
-        if (p == (node_base*)g->left_)
+        if (x->parent() == (node_base*)x->grandparent()->left_)
         {
-            node_base* y = (node_base*)g->right_;
-            if (y != 0 && RB_IS_RED(y))
+            y = (node_base*)x->grandparent()->right_;
+            if (y != 0 && y->is_red())
             {
-                RB_SET_BLACK(p);
-                RB_SET_BLACK(y);
-                RB_SET_RED(g);
-                x = g;
+                x->parent()->set_black();
+                y->set_black();
+                x = x->grandparent();
+                x->set_red();
             }
             else
             {
-                if (x == (node_base*)p->right_)
+                if (x == (node_base*)x->parent()->right_)
                 {
-                    x = p;
+                    x = x->parent();
                     rotate_left(x, root);
                 }
-                RB_SET_BLACK(RB_PARENT(x));
-                RB_SET_RED(RB_PARENT(RB_PARENT(x)));
-                rotate_right(RB_PARENT(RB_PARENT(x)), root);
+                x->parent()->set_black();
+                x->grandparent()->set_red();
+                rotate_right(x->grandparent(), root);
             }
         }
         else
         {
-            node_base* y = (node_base*)g->left_;
-            if (y != 0 && RB_IS_RED(y))
+            y = (node_base*)x->grandparent()->left_;
+            if (y != 0 && y->is_red())
             {
-                RB_SET_BLACK(p);
-                RB_SET_BLACK(y);
-                RB_SET_RED(g);
-                x = g;
+                x->parent()->set_black();
+                y->set_black();
+                x = x->grandparent();
+                x->set_red();
             }
             else
             {
-                if (x == (node_base*)p->left_)
+                if (x == (node_base*)x->parent()->left_)
                 {
-                    x = p;
+                    x = x->parent();
                     rotate_right(x, root);
                 }
-                RB_SET_BLACK(RB_PARENT(x));
-                RB_SET_RED(RB_PARENT(RB_PARENT(x)));
-                rotate_left(RB_PARENT(RB_PARENT(x)), root);
+                x->parent()->set_black();
+                x->grandparent()->set_red();
+                rotate_left(x->grandparent(), root);
             }
         }
     }
-    RB_SET_BLACK(root);
+    root->set_black();
 }
 
 template <class T, class Compare, class Allocator>
@@ -307,10 +308,6 @@ __tree<T, Compare, Allocator>::insert_node_at(node* p, bool leftchild, bool is_l
     return new_node;
 }
 
-#undef RB_PARENT
-#undef RB_IS_RED
-#undef RB_SET_RED
-#undef RB_SET_BLACK
 
 template <class Key, class Value, class Compare = less<Key>, class Allocator = allocator<pair<const Key, Value> > >
 class map

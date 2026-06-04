@@ -61,7 +61,7 @@ public:
     Variant() { Reset(); };
 
     template <typename T>
-    Variant(eVariantType type, const T& value)
+    Variant(eVariantType type, T value)
     {
         T val = value;
         Reset();

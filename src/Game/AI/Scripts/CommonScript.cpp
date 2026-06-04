@@ -721,7 +721,7 @@ FuzzyVariant Fuzzy::ShouldIStrafeBall(cFielder* TheFielder)
         if (BallOwner(g_pScriptCurrentTeam->GetGoalie()) != 0.0f || BallOwner(g_pScriptOtherTeam->GetGoalie()) != 0.0f)
         {
             confidence = 1.0f;
-            FuzzyVariant fvResult(confidence);
+            FuzzyVariant fvResult(1.0f);
             bestValue = fvResult;
         }
         else if (UserControlled(TheFielder) == 0.0f && TheFielder->m_fDesiredSpeed < 0.1f)
@@ -4955,7 +4955,4 @@ void CommonScript_stub()
     unsigned long k = 0;
     m.find(k);
     m.tree_.find_or_insert<unsigned long, FuzzyVariant>(k);
-    std::__red_black_tree<1>::node_base* n = 0;
-    std::__red_black_tree<1>::rotate_left(n, n);
-    std::__red_black_tree<1>::rotate_right(n, n);
 }
