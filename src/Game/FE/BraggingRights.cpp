@@ -809,8 +809,7 @@ void BraggingRightsOverlay::ChangeTicker(int tickerRow)
 
     if (mHighestStats[tickerRow] == 0)
     {
-        BasicString<unsigned short, Detail::TempStringAllocator> detail(LookupLocHash(0xBA05BFBD));
-        formatted = detail;
+        formatted = BasicString<unsigned short, Detail::TempStringAllocator>(LookupLocHash(0xBA05BFBD));
     }
     else
     {

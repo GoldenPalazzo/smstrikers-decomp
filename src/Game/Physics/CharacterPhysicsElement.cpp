@@ -5,15 +5,35 @@
 
 #include "Game/SAnim.h"
 
+static inline void* nlGetChunkData(nlChunk* chunk)
+{
+    u32 alignField = chunk->m_ID & 0x7F000000;
+    u32 isAligned = ((-alignField) | alignField) >> 31;
+    if (isAligned != 0)
+    {
+        u32 alignment = 1u << (alignField >> 24);
+        u32 ptr = (u32)chunk + alignment;
+        ptr += 7;
+        ptr &= ~(alignment - 1);
+        return (void*)ptr;
+    }
+    return (void*)((u8*)chunk + 8);
+}
+
+static inline nlChunk* nlGetNextChunk(nlChunk* chunk)
+{
+    return (nlChunk*)((u8*)chunk + chunk->m_Size + 8);
+}
+
 /**
  * Offset/Address/Size: 0x0 | 0x801FE13C | size: 0x2AC
- * TODO: 93.68% match - alignment address formation add folding (both cases)
- * and copy-loop r3/r4 register swap (-inline deferred scratch limitation).
+ * TODO: 96.84% match - nlGetChunkData return-via-r3 forces extra mr r5,r3
+ * in case 2, and copy-loop counter n stays in r4 instead of r3.
  */
 bool LoadCharacterPhysicsElements(const char* pFileData, CharacterPhysicsData* pPhysicsData)
 {
-    u8* var_r30;
-    u8* temp_r29;
+    nlChunk* var_r30;
+    nlChunk* temp_r29;
 
     u32 dataSize;
     u8* rawData = (u8*)nlLoadEntireFile(pFileData, &dataSize, 0x20, AllocateStart);
@@ -23,33 +43,19 @@ bool LoadCharacterPhysicsElements(const char* pFileData, CharacterPhysicsData* p
     }
 
     u32 temp_r4 = *((u32*)(rawData + 4));
-    var_r30 = rawData + 8;
-    temp_r29 = rawData + temp_r4 + 8;
+    var_r30 = (nlChunk*)(rawData + 8);
+    temp_r29 = (nlChunk*)(rawData + temp_r4 + 8);
 
     while (var_r30 < temp_r29)
     {
-        s32 temp_r5 = *(s32*)var_r30;
+        s32 temp_r5 = (s32)var_r30->m_ID;
         s32 temp_r4_2 = temp_r5 & 0x80FFFFFF;
 
         switch (temp_r4_2)
         {
         case 0x0001D001:
         {
-            s32 temp_r3 = temp_r5 & 0x7F000000;
-            u8* var_r3;
-            if ((((u32)(-temp_r3 | temp_r3)) >> 31) != 0)
-            {
-                s32 temp_r4_3 = 1 << ((u32)temp_r3 >> 24);
-                u8* ptr = var_r30 + temp_r4_3;
-                ptr += 7;
-                var_r3 = (u8*)((u32)ptr & ~(u32)(temp_r4_3 - 1));
-            }
-            else
-            {
-                var_r3 = var_r30 + 8;
-            }
-
-            pPhysicsData->physicsElementCount = *(u32*)var_r3;
+            pPhysicsData->physicsElementCount = *(u32*)nlGetChunkData(var_r30);
             pPhysicsData->pPhysicsElements = (CharacterPhysicsElement*)nlMalloc(pPhysicsData->physicsElementCount * sizeof(CharacterPhysicsElement), 8, false);
             break;
         }
@@ -57,19 +63,7 @@ bool LoadCharacterPhysicsElements(const char* pFileData, CharacterPhysicsData* p
         case 0x0001D002:
         {
             u32 n;
-            s32 temp_r3 = temp_r5 & 0x7F000000;
-            u8* var_r5;
-            if ((((u32)(-temp_r3 | temp_r3)) >> 31) != 0)
-            {
-                s32 temp_r4_3 = 1 << ((u32)temp_r3 >> 24);
-                u8* ptr = var_r30 + temp_r4_3;
-                ptr += 7;
-                var_r5 = (u8*)((u32)ptr & ~(u32)(temp_r4_3 - 1));
-            }
-            else
-            {
-                var_r5 = var_r30 + 8;
-            }
+            u8* var_r5 = (u8*)nlGetChunkData(var_r30);
 
             n = 0;
             unsigned long i = n;
@@ -84,8 +78,7 @@ bool LoadCharacterPhysicsElements(const char* pFileData, CharacterPhysicsData* p
         }
         }
 
-        u32 chunkSize = *(u32*)(var_r30 + 4);
-        var_r30 += chunkSize + 8;
+        var_r30 = nlGetNextChunk(var_r30);
     }
 
     delete rawData;

@@ -800,7 +800,7 @@ PlatTexture* glx_MakeGridTexture(int w, int h)
     }
 
     // Update grid memory counter - includes sizeof(PlatTexture)
-    nGridMemory += (w << 1) * h + 0x50;
+    nGridMemory += h * (w << 1) + 0x50;
     tDebugPrintManager::Print(DC_GL, "grid [%d %d] now using %uKB\n", w, h, nGridMemory / 1024);
 
     // Swizzle and prepare texture

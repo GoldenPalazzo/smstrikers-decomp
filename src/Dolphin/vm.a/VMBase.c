@@ -1,5 +1,3 @@
-#include <string.h>
-
 #include <dolphin/ar.h>
 #include <dolphin/types.h>
 #include <dolphin/os/OSCache.h>
@@ -9,16 +7,13 @@
 
 typedef void (*VMSwapPageInCallback)(u32 virtualAddr);
 
-static u32* g_vmBasePageTable;
-static u32* g_vmBaseVMReversePageTable;
-static u8* g_vmBaseLockedPageTable;
-static VMSwapPageInCallback cbVMSwapPageIn;
-static u32 g_baseInitialized;
-static u32 g_originalSR7;
 static u32 g_originalSDR1;
-
-static __OSExceptionHandler s_prevDSIHandler;
-static __OSExceptionHandler s_prevISIHandler;
+static u32 g_originalSR7;
+static u32 g_baseInitialized;
+static VMSwapPageInCallback cbVMSwapPageIn;
+static u8* g_vmBaseLockedPageTable;
+static u32* g_vmBaseVMReversePageTable;
+static u32* g_vmBasePageTable;
 
 void __VMBASESetupVMRegisters_SetSDR1(void);
 void __VMBASESetupVMRegisters_End(void);
@@ -49,9 +44,9 @@ void VMBASESetPageLocked(u32 mramPage, BOOL locked);
 void __VMBASEInvalidatePageTable(void);
 void __VMBASEInvalidateLockedPageTable(void);
 void __VMBASEInvalidateReversePageTable(void);
-void __VMBASEDSIServiceExceptionPrep(OSContext* context, u32 faultAddr);
+asm void __VMBASEDSIServiceExceptionPrep(register OSContext* context, register u32 faultAddr);
 void __VMBASEDSIServiceException(OSContext* context, u32 faultAddr);
-void __VMBASEISIServiceExceptionPrep(OSContext* context);
+asm void __VMBASEISIServiceExceptionPrep(register OSContext* context);
 void __VMBASEISIServiceException(OSContext* context);
 
 void VMBASEInit(VMSwapPageInCallback cb)
@@ -232,12 +227,6 @@ void __VMBASEInitLockedPageTable(void)
     __VMBASEInvalidateLockedPageTable();
 }
 
-/**
- * Offset/Address/Size: 0x3DC | 0x8025FF14 | size: 0x30
- * TODO: 64.7% match - body is correct but MWCC generates 0x08 stack frame instead of
- *       target's 0x10 frame, causing prologue/epilogue ordering differences.
- *       Same issue affects __VMBASEInitLockedPageTable and __VMBASEInitPageTable.
- */
 void __VMBASEInitReversePageTable(void)
 {
     void* lo = OSGetArenaLo();
@@ -264,10 +253,17 @@ void __VMBASEInvalidatePageTable(void)
     OSRestoreInterrupts(oldInterrupts);
 }
 
+#pragma scheduling off
 void __VMBASEInvalidateLockedPageTable(void)
 {
-    memset(g_vmBaseLockedPageTable, 0, 0x1000);
+    u32 offset;
+
+    for (offset = 0; offset < 0x1000; offset++)
+    {
+        g_vmBaseLockedPageTable[offset] = 0;
+    }
 }
+#pragma scheduling reset
 
 void __VMBASEInvalidateReversePageTable(void)
 {
@@ -378,8 +374,87 @@ __VMBASESetupVMRegisters_End:
 
 void __VMBASESetupExceptionHandlers(void)
 {
-    s_prevDSIHandler = __OSSetExceptionHandler(__OS_EXCEPTION_DSI, __VMBASEDSIExceptionHandler);
-    s_prevISIHandler = __OSSetExceptionHandler(__OS_EXCEPTION_ISI, __VMBASEISIExceptionHandler);
+    register void* icbiAddr;
+    register u32 icbiZero;
+    u32 origInstr;
+    u32 branchInstr;
+    volatile u32* patchAddr;
+
+    branchInstr = 0x48000000 | ((u32)__VMBASEDSIExceptionHandler - 0x80000300);
+    origInstr = *(volatile u32*)0x80000300;
+    *(volatile u32*)0x80000300 = branchInstr;
+    DCFlushRangeNoSync((void*)0x80000300, 4);
+    asm { sync }
+    icbiAddr = (void*)0x80000300;
+    icbiZero = 0;
+    asm {
+        isync
+        icbi icbiAddr, icbiZero
+    }
+
+    patchAddr = (volatile u32*)(u32)__VMBASEDSIExceptionHandler_SetOriginalInstruction;
+    *patchAddr = origInstr;
+    DCFlushRangeNoSync((void*)patchAddr, 4);
+    asm { sync }
+    icbiAddr = (void*)patchAddr;
+    icbiZero = 0;
+    asm {
+        isync
+        icbi icbiAddr, icbiZero
+    }
+
+    patchAddr = (volatile u32*)(u32)__VMBASEDSIExceptionHandler_SetBranchBack;
+    {
+        u32 fwdOffset = (u32)patchAddr - 0x80000304;
+        branchInstr = 0x48000000 | ((-fwdOffset) & 0x03FFFFFF);
+    }
+    *patchAddr = branchInstr;
+    DCFlushRangeNoSync((void*)patchAddr, 4);
+    asm { sync }
+    icbiAddr = (void*)patchAddr;
+    icbiZero = 0;
+    asm {
+        isync
+        icbi icbiAddr, icbiZero
+    }
+
+    branchInstr = 0x48000000 | ((u32)__VMBASEISIExceptionHandler - 0x80000400);
+    origInstr = *(volatile u32*)0x80000400;
+    *(volatile u32*)0x80000400 = branchInstr;
+    DCFlushRangeNoSync((void*)0x80000400, 4);
+    asm { sync }
+    icbiAddr = (void*)0x80000400;
+    icbiZero = 0;
+    asm {
+        isync
+        icbi icbiAddr, icbiZero
+    }
+
+    patchAddr = (volatile u32*)(u32)__VMBASEISIExceptionHandler_SetOriginalInstruction;
+    *patchAddr = origInstr;
+    DCFlushRangeNoSync((void*)patchAddr, 4);
+    asm { sync }
+    icbiAddr = (void*)patchAddr;
+    icbiZero = 0;
+    asm {
+        isync
+        icbi icbiAddr, icbiZero
+    }
+
+    patchAddr = (volatile u32*)(u32)__VMBASEISIExceptionHandler_SetBranchBack;
+    {
+        u32 fwdOffset = (u32)patchAddr - 0x80000404;
+        branchInstr = 0x48000000 | ((-fwdOffset) & 0x03FFFFFF);
+    }
+    *patchAddr = branchInstr;
+    DCFlushRangeNoSync((void*)patchAddr, 4);
+    asm { sync }
+    icbiAddr = (void*)patchAddr;
+    icbiZero = 0;
+    asm {
+        isync
+        icbi icbiAddr, icbiZero
+    }
 }
 #pragma dont_inline reset
 
@@ -483,10 +558,37 @@ entry __VMBASEDSIExceptionHandler_SetBranchBack
 }
 #pragma scheduling reset
 
-void __VMBASEDSIServiceExceptionPrep(OSContext* context, u32 faultAddr)
+#pragma scheduling off
+asm void __VMBASEDSIServiceExceptionPrep(register OSContext* context, register u32 faultAddr)
 {
-    __VMBASEDSIServiceException(context, faultAddr);
+    // clang-format off
+    nofralloc
+
+    stw     r0, OS_CONTEXT_R0(context)
+    stw     r1, OS_CONTEXT_R1(context)
+    stw     r2, OS_CONTEXT_R2(context)
+    stmw    r6, OS_CONTEXT_R6(context)
+
+    mfspr   r0, GQR1
+    stw     r0, OS_CONTEXT_GQR1(context)
+    mfspr   r0, GQR2
+    stw     r0, OS_CONTEXT_GQR2(context)
+    mfspr   r0, GQR3
+    stw     r0, OS_CONTEXT_GQR3(context)
+    mfspr   r0, GQR4
+    stw     r0, OS_CONTEXT_GQR4(context)
+    mfspr   r0, GQR5
+    stw     r0, OS_CONTEXT_GQR5(context)
+    mfspr   r0, GQR6
+    stw     r0, OS_CONTEXT_GQR6(context)
+    mfspr   r0, GQR7
+    stw     r0, OS_CONTEXT_GQR7(context)
+
+    mfdar   faultAddr
+    b       __VMBASEDSIServiceException
+    // clang-format on
 }
+#pragma scheduling reset
 
 void __VMBASEDSIServiceException(OSContext* context, u32 faultAddr)
 {
@@ -599,10 +701,36 @@ entry __VMBASEISIExceptionHandler_SetBranchBack
 }
 #pragma scheduling reset
 
-void __VMBASEISIServiceExceptionPrep(OSContext* context)
+#pragma scheduling off
+asm void __VMBASEISIServiceExceptionPrep(register OSContext* context)
 {
-    __VMBASEISIServiceException(context);
+    // clang-format off
+    nofralloc
+
+    stw     r0, OS_CONTEXT_R0(context)
+    stw     r1, OS_CONTEXT_R1(context)
+    stw     r2, OS_CONTEXT_R2(context)
+    stmw    r6, OS_CONTEXT_R6(context)
+
+    mfspr   r0, GQR1
+    stw     r0, OS_CONTEXT_GQR1(context)
+    mfspr   r0, GQR2
+    stw     r0, OS_CONTEXT_GQR2(context)
+    mfspr   r0, GQR3
+    stw     r0, OS_CONTEXT_GQR3(context)
+    mfspr   r0, GQR4
+    stw     r0, OS_CONTEXT_GQR4(context)
+    mfspr   r0, GQR5
+    stw     r0, OS_CONTEXT_GQR5(context)
+    mfspr   r0, GQR6
+    stw     r0, OS_CONTEXT_GQR6(context)
+    mfspr   r0, GQR7
+    stw     r0, OS_CONTEXT_GQR7(context)
+
+    b       __VMBASEISIServiceException
+    // clang-format on
 }
+#pragma scheduling reset
 
 void __VMBASEISIServiceException(OSContext* context)
 {

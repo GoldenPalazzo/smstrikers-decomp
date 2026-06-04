@@ -3,9 +3,8 @@
 #include "Game/AI/FilteredRandom.h"
 #include "Game/CharacterTriggers.h"
 #include "NL/nlMath.h"
-#include "PowerPC_EABI_Support/Runtime/global_destructor_chain.h"
 
-LooseBallInfo LooseBallAnims::mLooseBallKickInfo;
+LooseBallInfo LooseBallAnims::mLooseBallKickInfo[3];
 LooseBallInfo LooseBallAnims::mTrapBallInfo;
 LooseBallInfo LooseBallAnims::mAttackSTSInfo;
 LooseBallInfo LooseBallAnims::mSwatSTSInfo[2];
@@ -16,7 +15,7 @@ LooseBallInfo* LooseBallAnims::mpLooseBallInfo = NULL;
 unsigned int LooseBallAnims::muNumLooseBallAnims = 0;
 
 static LooseBallInfo gCatches[8];
-static int gLooseBallAnims[8] = {
+static const int gLooseBallAnims[8] = {
     0x00000033,
     0x00000076,
     0x0000007F,
@@ -26,8 +25,8 @@ static int gLooseBallAnims[8] = {
     0x00000078,
     0x0000007A
 };
-static int gLooseBallKickAnims[3] = { 0x3, 0x4, 0x5 };
-static int gSwatSTSAnim[2] = { 0x6, 0x7 };
+static const int gLooseBallKickAnims[3] = { 0x3, 0x4, 0x5 };
+static const int gSwatSTSAnim[2] = { 0x6, 0x7 };
 
 /**
  * Offset/Address/Size: 0x6FC | 0x80053404 | size: 0x1C
@@ -76,7 +75,7 @@ void LooseBallAnims::Init(cPlayer* pPlayer)
 
     for (i = 0; i < 3; i++)
     {
-        InitLooseBallAnim(pPlayer, &(&mLooseBallKickInfo)[i], gLooseBallKickAnims[i], LOOSEBALL_ANIM_KICK);
+        InitLooseBallAnim(pPlayer, &mLooseBallKickInfo[i], gLooseBallKickAnims[i], LOOSEBALL_ANIM_KICK);
     }
 
     InitLooseBallAnim(pPlayer, &mTrapBallInfo, 0x7C, LOOSEBALL_ANIM_TRAP);

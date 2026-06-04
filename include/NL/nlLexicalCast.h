@@ -129,6 +129,7 @@ inline NLString Detail::LexicalCastImpl<NLString, const char*>::Do(const char* s
     return NLString(s);
 }
 
+#ifndef NL_NO_LEXICALCAST_NLSTRING_INT
 /**
  * Offset/Address/Size: 0x39064 | 0x8003C084 | size: 0x100
  * TODO: 93.45% match - return-buffer/data-pointer register roles are swapped
@@ -141,6 +142,7 @@ inline NLString Detail::LexicalCastImpl<NLString, int>::Do(int t)
     nlSNPrintf(string, 0x40, "%i", t);
     return NLString(string);
 }
+#endif
 
 /**
  * Offset/Address/Size: 0x168 | 0x8006A094 | size: 0x100

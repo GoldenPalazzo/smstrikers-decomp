@@ -729,7 +729,7 @@ config.libs = [
             Object(Matching, "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/qsort.c", extra_cflags=["-inline auto"]),
             Object(NonMatching, "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/wctype.c", extra_cflags=["-inline auto"]),
 
-            Object(NonMatching, "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/wcstoul.c", extra_cflags=["-inline auto"]),
+            Object(Matching, "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/wcstoul.c", extra_cflags=["-inline auto"]),
             Object(NonMatching, "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/wscanf.c", extra_cflags=["-inline auto"]),
 
             Object(Matching, "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/e_acos.c", extra_cflags=["-inline auto", "-inline off"]),

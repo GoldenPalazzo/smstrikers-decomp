@@ -12,8 +12,8 @@ struct Modifier
 Modifier glModifier[6];
 static u32 glNumModifiers = 0;
 
-static u32 GLTT_Diffuse_bit = 0x00000001;
-static u32 GLTT_Gloss_bit = 0x00000010;
+__declspec(section ".sdata2") static u32 GLTT_Diffuse_bit = 0x00000001;
+__declspec(section ".sdata2") static u32 GLTT_Gloss_bit = 0x00000010;
 
 /**
  * Offset/Address/Size: 0x0 | 0x801D903C | size: 0x30
@@ -62,7 +62,8 @@ void gl_ModifyClearMappings()
 
 /**
  * Offset/Address/Size: 0x84 | 0x801D90C0 | size: 0x1F8
- * TODO: 99.29% match - SDA21 load scheduling: MWCC loads GLTT_*_bit@sda21 before struct field, target does reverse
+ * TODO: 96.9% match - MWCC hoists non-const SDA2 loads before struct-pointer loads (3 sites).
+ *       Target had const .sdata2 without folding; our MWCC version folds const, so __declspec forces section.
  */
 static inline glModelPacket* gl_ModifyClonePacket(const glModelPacket* pPacket)
 {

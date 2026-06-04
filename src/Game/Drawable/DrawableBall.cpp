@@ -8,9 +8,9 @@
 #include "NL/gl/glState.h"
 #include "NL/gl/glUserData.h"
 
-extern int g_nMotionBlurDivs;
-extern float g_fMotionBlurAlpha0;
-extern float g_fMotionBlurAlphaScale;
+static int g_nMotionBlurDivs = 5;
+static float g_fMotionBlurAlpha0 = 0.1f;
+static float g_fMotionBlurAlphaScale = 0.22f;
 
 static float g_fBallBlur;
 
@@ -347,29 +347,6 @@ void Replayable<1, LoadFrame, char>(LoadFrame& frame, char& value)
 // void Replayable<1, SaveFrame, FloatCompressor<-127, 127, 5>>(SaveFrame&, const FloatCompressor<-127, 127, 5>&)
 // {
 // }
-
-/**
- * Offset/Address/Size: 0x26C | 0x8011EB18 | size: 0x74
- */
-template <>
-void Replayable<1, LoadFrame, FloatCompressor<-127, 127, 7> >(LoadFrame& frame,
-    const FloatCompressor<-127, 127, 7>& proxy)
-{
-    FORCE_DONT_INLINE;
-    if (frame.mInterval == 1)
-    {
-        unsigned int value = proxy.Read(frame);
-        if (frame.mInterval == 1)
-        {
-            const char* cursor = frame.mStream.mStorage;
-            unsigned int lo = (unsigned char)cursor[0];
-            unsigned int hi = (unsigned char)cursor[1];
-            frame.mStream.mStorage = cursor + 2;
-            value = lo | (hi << 8);
-        }
-        proxy.Apply(frame, value);
-    }
-}
 
 /**
  * Offset/Address/Size: 0x2E0 | 0x8011EB8C | size: 0x74

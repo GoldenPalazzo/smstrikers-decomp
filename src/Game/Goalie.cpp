@@ -4411,15 +4411,15 @@ void Goalie::InitActionLooseBallSetup()
 
                 if (fAbsBallX > fMinKickLine && (u16)nAngDiff > 0x4E34)
                 {
-                    mpLooseBallInfo = &LooseBallAnims::mLooseBallKickInfo;
+                    mpLooseBallInfo = &LooseBallAnims::mLooseBallKickInfo[0];
                 }
                 else if (v3BallPosition.f.y * v3BallPosition.f.x > 0.0f)
                 {
-                    mpLooseBallInfo = &LooseBallAnims::mLooseBallKickInfo + 1;
+                    mpLooseBallInfo = &LooseBallAnims::mLooseBallKickInfo[1];
                 }
                 else
                 {
-                    mpLooseBallInfo = &LooseBallAnims::mLooseBallKickInfo + 2;
+                    mpLooseBallInfo = &LooseBallAnims::mLooseBallKickInfo[2];
                 }
             }
 

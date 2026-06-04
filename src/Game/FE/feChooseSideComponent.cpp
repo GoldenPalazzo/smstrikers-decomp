@@ -912,7 +912,7 @@ void IChooseSide::PositionController(int padindex, bool usetween, bool setvisibi
         FETweener* tweener = mTweenManager.createTween(
             localPos.e,
             &mControllerDestPos[destPosIndex],
-            0.2f,
+            0.075f,
             0.0f,
             1,
             TweenFunctions::linear,

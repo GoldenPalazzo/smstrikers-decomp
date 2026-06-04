@@ -1,3 +1,5 @@
+#define NL_SINGLETON_NO_DEFINE
+#define NL_NO_LEXICALCAST_NLSTRING_INT
 #include "Game/SH/SHCupCheater.h"
 #include "Game/FE/FEAudio.h"
 #include "Game/FE/feFinder.h"

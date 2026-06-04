@@ -2,68 +2,23 @@
 #include "Game/SH/SHLessonSelect.h"
 #include "Game/BaseGameSceneManager.h"
 #include "Game/FE/FEAudio.h"
+#include "Game/FE/feFinder.h"
 #include "Game/FE/feInput.h"
 #include "Game/FE/feManager.h"
 #include "Game/FE/tlComponentInstance.h"
 #include "Game/FE/tlTextInstance.h"
 #include "Game/OverlayManager.h"
 #include "Game/SH/SHMoviePlayer.h"
+#include "NL/nlLocalization.h"
+#include "NL/nlBSearch.h"
 #include "NL/nlPrint.h"
 #include "NL/nlSingleton.h"
 #include "types.h"
 
 extern FEInput* g_pFEInput;
-
-struct LOCHeader
-{
-    char Thumbprint[4];
-    unsigned long Version;
-    unsigned long Language;
-    unsigned long StringCount;
-    unsigned long Flags;
-};
-
-class nlLocalization
-{
-public:
-    struct StringLookup
-    {
-        unsigned long hash;
-        unsigned long StringOffset;
-
-        operator unsigned long() const { return hash; }
-    };
-
-    LOCHeader* m_pFile;
-    StringLookup* m_LookupTable;
-    unsigned short* m_FirstString;
-    int m_CurrentLanguage;
-};
-
 extern nlLocalization* g_pLocalization;
 extern const unsigned short LocalizationTableNotFound[];
 extern const unsigned short MissingLocString[];
-
-template <typename T, typename Key>
-T* nlBSearch(const Key& key, T* pBase, int count);
-
-struct InlineHasher
-{
-    unsigned long m_Hash;
-    InlineHasher() { }
-    InlineHasher(unsigned long h)
-        : m_Hash(h)
-    {
-    }
-};
-
-template <typename T, int N>
-class FEFinder
-{
-public:
-    template <typename U>
-    static T* Find(U* slide, InlineHasher h1, InlineHasher h2, InlineHasher h3, InlineHasher h4, InlineHasher h5, InlineHasher h6);
-};
 
 static inline const unsigned short* LookupLocString(const char* stringId)
 {
@@ -83,56 +38,69 @@ static inline const unsigned short* LookupLocString(const char* stringId)
     return MissingLocString;
 }
 
+template <class T>
+T* FindItemByHashID(T* head, unsigned long hash);
+
+template <class T>
+T* CastToSomeType(T*, void* pValue);
+
 int LessonScene::mLessonIndex = -1;
-// /**
-//  * Offset/Address/Size: 0x2D4 | 0x8010ACF4 | size: 0x15C
-//  */
-// void FEFinder<TLTextInstance, 3>::_Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned
-// long,
-//                                                     unsigned long)
-// {
-// }
 
-// /**
-//  * Offset/Address/Size: 0x250 | 0x8010AC70 | size: 0x84
-//  */
-// void FEFinder<TLTextInstance, 3>::_Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long,
-//                                                  unsigned long)
-// {
-// }
+template <>
+template <>
+TLTextInstance* FEFinder<TLTextInstance, 3>::_Find<TLInstance>(
+    TLInstance* pTopLevel, const unsigned long Level1, const unsigned long Level2,
+    const unsigned long Level3, const unsigned long Level4, const unsigned long Level5, const unsigned long Level6)
+{
+    void* pChild = FindItemByHashID<TLInstance>(pTopLevel->pChildren, Level1);
+    if (pChild == 0)
+        return 0;
+    if (Level2 == 0)
+        return (TLTextInstance*)pChild;
+    return _Find<TLInstance>(CastToSomeType<TLInstance>(pTopLevel->pChildren, pChild), Level2, Level3, Level4, Level5, Level6, 0);
+}
 
-// /**
-//  * Offset/Address/Size: 0x218 | 0x8010AC38 | size: 0x38
-//  */
-// void FEFinder<TLTextInstance, 3>::Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher,
-//                                                 InlineHasher)
-// {
-// }
+template <>
+template <>
+TLTextInstance* FEFinder<TLTextInstance, 3>::_Find<TLSlide>(
+    TLSlide* pTopLevel, const unsigned long Level1, const unsigned long Level2,
+    const unsigned long Level3, const unsigned long Level4, const unsigned long Level5, const unsigned long Level6)
+{
+    void* pChild = FindItemByHashID<TLInstance>(pTopLevel->m_instances, Level1);
+    if (pChild == 0)
+        return 0;
+    if (Level2 == 0)
+        return (TLTextInstance*)pChild;
+    return _Find<TLInstance>(CastToSomeType<TLInstance>(pTopLevel->m_instances, pChild), Level2, Level3, Level4, Level5, Level6, 0);
+}
 
-// /**
-//  * Offset/Address/Size: 0xBC | 0x8010AADC | size: 0x15C
-//  */
-// void FEFinder<TLComponentInstance, 4>::_Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long,
-//                                                          unsigned long, unsigned long)
-// {
-// }
+template <>
+template <>
+TLComponentInstance* FEFinder<TLComponentInstance, 4>::_Find<TLInstance>(
+    TLInstance* pTopLevel, const unsigned long Level1, const unsigned long Level2,
+    const unsigned long Level3, const unsigned long Level4, const unsigned long Level5, const unsigned long Level6)
+{
+    void* pChild = FindItemByHashID<TLInstance>(pTopLevel->pChildren, Level1);
+    if (pChild == 0)
+        return 0;
+    if (Level2 == 0)
+        return (TLComponentInstance*)pChild;
+    return _Find<TLInstance>(CastToSomeType<TLInstance>(pTopLevel->pChildren, pChild), Level2, Level3, Level4, Level5, Level6, 0);
+}
 
-// /**
-//  * Offset/Address/Size: 0x38 | 0x8010AA58 | size: 0x84
-//  */
-// void FEFinder<TLComponentInstance, 4>::_Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned
-// long,
-//                                                       unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x8010AA20 | size: 0x38
-//  */
-// void FEFinder<TLComponentInstance, 4>::Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher,
-//                                                      InlineHasher)
-// {
-// }
+template <>
+template <>
+TLComponentInstance* FEFinder<TLComponentInstance, 4>::_Find<TLSlide>(
+    TLSlide* pTopLevel, const unsigned long Level1, const unsigned long Level2,
+    const unsigned long Level3, const unsigned long Level4, const unsigned long Level5, const unsigned long Level6)
+{
+    void* pChild = FindItemByHashID<TLInstance>(pTopLevel->m_instances, Level1);
+    if (pChild == 0)
+        return 0;
+    if (Level2 == 0)
+        return (TLComponentInstance*)pChild;
+    return _Find<TLInstance>(CastToSomeType<TLInstance>(pTopLevel->m_instances, pChild), Level2, Level3, Level4, Level5, Level6, 0);
+}
 
 /**
  * Offset/Address/Size: 0x508 | 0x8010A9B4 | size: 0x6C

@@ -2479,9 +2479,9 @@ FuzzyVariant Fuzzy::GoodToChipShot(cFielder* TheFielder)
 
     float fGoalieOffScreen = 1.0f - OnScreen((cPlayer*)pGoalieOnScreen);
     float fFarToNet = FarToTheirNet((cPlayer*)TheFielder);
-    fTrueConfidence = (fInFrontOfNet <= fTrueConfidence) ? fInFrontOfNet : fTrueConfidence;
-    fTrueConfidence = (fGoalieOffScreen <= fTrueConfidence) ? fGoalieOffScreen : fTrueConfidence;
-    fTrueConfidence = (fFarToNet <= fTrueConfidence) ? fFarToNet : fTrueConfidence;
+    fTrueConfidence = (fInFrontOfNet >= fTrueConfidence) ? fInFrontOfNet : fTrueConfidence;
+    fTrueConfidence = (fGoalieOffScreen >= fTrueConfidence) ? fGoalieOffScreen : fTrueConfidence;
+    fTrueConfidence = (fFarToNet >= fTrueConfidence) ? fFarToNet : fTrueConfidence;
 
     float fFalseConfidence = 1.0f - fTrueConfidence;
     float fBranchRatio = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
@@ -2599,8 +2599,7 @@ FuzzyVariant Fuzzy::GoodToChipShot(cFielder* TheFielder)
             if (fConfidence > fBestConfidence)
             {
                 fBestConfidence = fConfidence;
-                float fNearToNet = NearToTheirNet((cPlayer*)TheFielder);
-                FuzzyVariant fvResult(fOutOfNetScore * 0.4f + fPositionScore * 0.5f + fNearToNet * 0.2f);
+                FuzzyVariant fvResult(fPositionScore * 0.4f + fOutOfNetScore * 0.6f);
                 bestValue = fvResult;
             }
         }
@@ -2619,7 +2618,7 @@ FuzzyVariant Fuzzy::GoodToChipShot(cFielder* TheFielder)
             {
                 fBestConfidence = fConfidence;
                 float fNearToNet = NearToTheirNet((cPlayer*)TheFielder);
-                FuzzyVariant fvResult(fOutOfNetScore * 0.4f + fPositionScore * 0.5f + fNearToNet * 0.2f);
+                FuzzyVariant fvResult(fOutOfNetScore * 0.3f + fPositionScore * 0.5f + fNearToNet * 0.2f);
                 bestValue = fvResult;
             }
         }

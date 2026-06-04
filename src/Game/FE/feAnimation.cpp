@@ -2,8 +2,6 @@
 #include "NL/nlMath.h"
 #include "NL/nlDLRing.h"
 
-nlVector3_ ZeroVector3 = { 0.0f, 0.0f, 0.0f };
-
 /**
  * Offset/Address/Size: 0x0 | 0x8020E580 | size: 0x19C
  */
@@ -16,7 +14,7 @@ void FEAnimation::Update(float arg0)
     u16 temp_r0;
     fAnimationKeyframe* temp_r9;
     nlVector4 spC;
-    static const nlVector4 sZero = { 0.0f, 0.0f, 0.0f, 0.0f };
+    const nlVector4 sZero = { 0.0f, 0.0f, 0.0f, 0.0f };
 
     temp_r0 = this->m_cast_type;
     switch (temp_r0)
@@ -96,9 +94,9 @@ void FEAnimation::AnimateTargetAtTimeWithVector3(float fCurrentTime)
     f32 var_f3;
     v3AnimationKeyframe* currentFrame;
     v3AnimationKeyframe* prevFrame;
-    static const nlVector4 sZeroX = { 0.0f, 0.0f, 0.0f, 0.0f };
-    static const nlVector4 sZeroY = { 0.0f, 0.0f, 0.0f, 0.0f };
-    static const nlVector4 sZeroZ = { 0.0f, 0.0f, 0.0f, 0.0f };
+    const nlVector4 sZeroX = { 0.0f, 0.0f, 0.0f, 0.0f };
+    const nlVector4 sZeroY = { 0.0f, 0.0f, 0.0f, 0.0f };
+    const nlVector4 sZeroZ = { 0.0f, 0.0f, 0.0f, 0.0f };
 
     currentFrame = nlDLRingGetStart<v3AnimationKeyframe>((v3AnimationKeyframe*)this->m_DLRingHead);
     temp_f0 = currentFrame->pKeyFrameDataX.m_fTime;

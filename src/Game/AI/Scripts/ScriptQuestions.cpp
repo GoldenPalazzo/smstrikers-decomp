@@ -1,3 +1,4 @@
+#define NL_SINGLETON_NO_DEFINE
 #include "Game/AI/Scripts/ScriptQuestions.h"
 #include "Game/FormationDefines.h"
 #include "Game/AI/AiUtil.h"
@@ -10,15 +11,15 @@
 #include "Game/Goalie.h"
 #include "Game/CharacterTweaks.h"
 #include "types.h"
-
 extern cTeam* g_pCurrentlyUpdatingTeam;
 extern cBall* g_pScriptBall;
 extern cBall* g_pBall;
 extern cFielder* g_pScriptCurrentFielder;
-extern nlVector2 g_vStallingConfidenceTime;
-extern nlVector2 g_vPassCloseToDoneConfidence;
 extern cTeam* g_pScriptOtherTeam;
-extern nlVector2 g_vOpenToAdjust;
+
+static const nlVector2 g_vOpenToAdjust = { 0.0f, 0.8f };
+static const nlVector2 g_vPassCloseToDoneConfidence = { 0.0f, 0.5f };
+static const nlVector2 g_vStallingConfidenceTime = { 1.0f, 8.0f };
 
 inline float max_float(float a, float b)
 {
@@ -1338,7 +1339,7 @@ float Attacked(cFielder* pFielder)
             }
         }
 
-        fScore += fClosingSpeed * 0.8f + fAngleScore * 0.2f;
+        fScore += fAngleScore * 0.2f + fClosingSpeed * 0.8f;
     }
 
     float fResult = clampGe0(fScore);
@@ -4331,7 +4332,7 @@ float InDefensiveZoneOfPlayer(cBall* pBall, cPlayer* pPlayer)
     nlVector3 aiLoc;
     if ((pBall == NULL) && (pPlayer != NULL))
     {
-        return 1.0f;
+        return 0.0f;
     }
 
     eTeamSide teamSide = (eTeamSide)(pPlayer->m_pTeam->m_nSide);
@@ -4349,7 +4350,7 @@ float InOffensiveZoneOfPlayer(cBall* pBall, cPlayer* pPlayer)
     nlVector3 aiLoc;
     if ((pBall == NULL) && (pPlayer != NULL))
     {
-        return 1.0f;
+        return 0.0f;
     }
 
     eTeamSide teamSide = (eTeamSide)(pPlayer->m_pTeam->m_nSide);

@@ -17,9 +17,6 @@ static void* glapp_OnePassFresnelUserData;
 
 const u32 MovieTexture_Y = glGetTexture("movie");
 
-PlatTexture* ResolvedBlackTexture __attribute__((section(".sdata"))) = (PlatTexture*)0xFFFFFFFF;
-PlatTexture* ResolvedWhiteTexture __attribute__((section(".sdata"))) = (PlatTexture*)0xFFFFFFFF;
-
 const u32 MovieTexture_U = glGetTexture("movie_u");
 const u32 MovieTexture_V = glGetTexture("movie_v");
 const u32 MovieProgram = glGetProgram("2d movie");
@@ -60,6 +57,9 @@ const char* view_names[0x22] = {
     "Anark3DFG",           // @410
     "Debug"                // @411
 };
+
+PlatTexture* ResolvedBlackTexture __attribute__((section(".sdata"))) = (PlatTexture*)0xFFFFFFFF;
+PlatTexture* ResolvedWhiteTexture __attribute__((section(".sdata"))) = (PlatTexture*)0xFFFFFFFF;
 
 /**
  * Offset/Address/Size: 0x0 | 0x80191948 | size: 0x41C
@@ -175,30 +175,30 @@ void glplatAttachPacket(eGLView view, unsigned long layer, const glModelPacket* 
         newLayer++;
     }
 
-    if ((s32)newView >= 8)
+    if ((s32)newView < 8)
     {
-        if ((s32)newView == 0xB)
+        if (((s32)newView == 3) || ((s32)newView >= 6))
         {
             if (glGetRasterState(pPacket->state.raster, (eGLState)5) != 0)
             {
-                newLayer++;
+                if (WorldDarkening::Instance().mActive)
+                {
+                    newView = (eGLView)7;
+                    newLayer++;
+                }
+                else
+                {
+                    newView = (eGLView)11;
+                    newLayer += 2;
+                }
             }
         }
     }
-    else if (((s32)newView == 3) || ((s32)newView >= 6))
+    else if ((s32)newView == 0xB)
     {
         if (glGetRasterState(pPacket->state.raster, (eGLState)5) != 0)
         {
-            if (WorldDarkening::Instance().mActive)
-            {
-                newView = (eGLView)7;
-                newLayer++;
-            }
-            else
-            {
-                newView = (eGLView)11;
-                newLayer += 2;
-            }
+            newLayer++;
         }
     }
 

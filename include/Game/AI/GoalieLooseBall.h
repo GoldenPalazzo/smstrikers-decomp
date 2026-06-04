@@ -39,7 +39,7 @@ public:
 
     static LooseBallInfo* mpLooseBallInfo;
     static unsigned int muNumLooseBallAnims;
-    static LooseBallInfo mLooseBallKickInfo;
+    static LooseBallInfo mLooseBallKickInfo[3];
     static LooseBallInfo mTrapBallInfo;
     static LooseBallInfo mAttackSTSInfo;
     static LooseBallInfo mDiveBallInfo;

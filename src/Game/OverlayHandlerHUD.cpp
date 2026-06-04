@@ -1,3 +1,5 @@
+#define NL_SINGLETON_NO_DEFINE
+#define NL_NO_LEXICALCAST_NLSTRING_INT
 #include "Game/OverlayHandlerHUD.h"
 #include "Game/Team.h"
 #include "Game/Sys/eventman.h"
@@ -64,15 +66,6 @@ public:
     }
 };
 
-#ifndef NL_SINGLETON_H
-template <class T>
-class nlSingleton
-{
-public:
-    static T* s_pInstance;
-};
-#endif
-
 class GameInfoManager
 {
 public:
@@ -130,10 +123,7 @@ extern cWorldSFX gWorldSFX;
 
 extern int nlSNPrintf(char*, unsigned long, const char*, ...);
 
-static const char* HUD_SLIDE_IN_NAME = "IN";
-static const char* HUD_SLIDE_OUT_NAME = "OUT";
-static const char* LAYER_NAME = "Layer";
-static const char CLOCK_NAME[] = "clock";
+static unsigned char g_hudVisible = 1;
 static char* LEFT_POWER_UP_IMAGE_NAMES[2] = {
     "left_powerup1",
     "left_powerup2",
@@ -158,6 +148,9 @@ static char* RIGHT_POWER_UP_TEXT_NAMES[2] = {
     "POWERUP NUMBER RIGHT 1",
     "POWERUP NUMBER RIGHT 2",
 };
+static const char* HUD_SLIDE_IN_NAME = "IN";
+static const char* HUD_SLIDE_OUT_NAME = "OUT";
+static const char* LAYER_NAME = "Layer";
 
 #define FIND_IMAGE_PRESENTATION(presentation, name, slideName) FEFinder<TLImageInstance, 2>::Find<FEPresentation>( \
     presentation,                                                                                                  \
@@ -275,8 +268,6 @@ void HUDOverlay::Update(float fDeltaT)
     extern const unsigned short LocalizationTableNotFound[];
     extern const unsigned short MissingLocString[];
     nlLocalization::StringLookup* nlBSearch(const unsigned long&, nlLocalization::StringLookup*, int);
-
-    extern unsigned char g_hudVisible;
 
     BaseSceneHandler::Update(fDeltaT);
     mAsyncImage[0]->Update(true);
@@ -548,7 +539,7 @@ void HUDOverlay::SceneCreated()
         presentation,
         InlineHasher(nlStringLowerHash(HUD_SLIDE_IN_NAME)),
         InlineHasher(nlStringLowerHash(LAYER_NAME)),
-        InlineHasher(nlStringLowerHash(CLOCK_NAME)),
+        InlineHasher(nlStringLowerHash("clock")),
         InlineHasher(0),
         InlineHasher(0),
         InlineHasher(0));
@@ -557,7 +548,7 @@ void HUDOverlay::SceneCreated()
         presentation,
         InlineHasher(nlStringLowerHash(HUD_SLIDE_OUT_NAME)),
         InlineHasher(nlStringLowerHash(LAYER_NAME)),
-        InlineHasher(nlStringLowerHash(CLOCK_NAME)),
+        InlineHasher(nlStringLowerHash("clock")),
         InlineHasher(0),
         InlineHasher(0),
         InlineHasher(0));
@@ -1097,7 +1088,7 @@ void HUDOverlay::DisplayNewScore()
     {
         if (mNewScore[team] != mScore[team])
         {
-            mScoreUpdateDelay[team] = 0.0f;
+            mScoreUpdateDelay[team] = 0.5f;
             mStartScoreAnimation = true;
         }
 

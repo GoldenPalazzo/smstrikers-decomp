@@ -1,3 +1,5 @@
+#define NL_SINGLETON_NO_DEFINE
+#define NL_NO_LEXICALCAST_NLSTRING_INT
 #include "Game/SH/SHLoading.h"
 #include "Game/Audio/AudioLoader.h"
 #include "Game/Audio/AudioStream.h"
@@ -564,8 +566,7 @@ void SuperLoadingScene::DisplayCupInfo()
 
         if (nlSingleton<GameInfoManager>::s_pInstance->GetCurrentRoundNumber() == 0 && (i == 0 || i == 2))
         {
-            static const unsigned short sDash[] = { '-', 0 };
-            formatted = Format(unformatted[i], sDash);
+            formatted = Format(unformatted[i], *(const unsigned short (*)[2])L"-");
         }
         else
         {
@@ -600,7 +601,7 @@ void SuperLoadingScene::BuildPlayerStrings(TLTextInstance* pTextInst, int side, 
         if (nlSingleton<GameInfoManager>::s_pInstance->GetPlayingSide((unsigned short)i) != side)
             continue;
 
-        nlSNPrintf(narrowBuf, 255, "{c:%02x%02x%02x}", PAD_COLOURS[i][0], PAD_COLOURS[i][1], PAD_COLOURS[i][2]);
+        nlSNPrintf(narrowBuf, 255, "{clr:%2x%2x%2x}", PAD_COLOURS[i][0], PAD_COLOURS[i][1], PAD_COLOURS[i][2]);
         nlStrToWcs(narrowBuf, wideBuf, 255);
         str = str.AppendInPlace(wideBuf);
 
@@ -620,9 +621,8 @@ void SuperLoadingScene::BuildPlayerStrings(TLTextInstance* pTextInst, int side, 
         }
 
         str = str.AppendInPlace(locText);
-
-        static const unsigned short sLineBreak[] = { (unsigned short)'\n', 0 };
-        str = str.AppendInPlace(sLineBreak);
+        static unsigned short sClrPop[] = { (unsigned short)'{', (unsigned short)'c', (unsigned short)'l', (unsigned short)'r', (unsigned short)':', (unsigned short)'p', (unsigned short)'o', (unsigned short)'p', (unsigned short)'}', (unsigned short)'\n', 0 };
+        str = str.AppendInPlace(sClrPop);
     }
 
     memcpy(side == 0 ? mPlayerStrings[0] : mPlayerStrings[1], str.c_str(), 255);

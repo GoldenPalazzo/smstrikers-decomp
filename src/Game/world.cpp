@@ -57,6 +57,7 @@ unsigned char sbSkyboxRenderingDisabled__5World;
 static unsigned char g_bFreezeSideCam;
 static unsigned char g_bFreezeEndCam;
 static unsigned char sbAllObjectsCanBeTransparent;
+static unsigned char sbPretendWereNotInGameplayCam;
 
 static LightObject fxLightObjects[4];
 static nlVector3 vLightDirection = { { 0.0f, 0.0f, -1.0f } };
@@ -91,7 +92,7 @@ LightObject* World::GetShadowLight(const nlVector3& vPosition, float)
 {
     u32* pStack;
     LightObject* pClosest = NULL;
-    float fDistance = 999999.0f;
+    float fDistance = 1e30f;
     AVLTreeEntry<unsigned long, LightObject*>* pNode;
     LightObject* pLight;
 
@@ -305,6 +306,8 @@ extern cGame* g_pGame;
 extern cBall* g_pBall;
 extern unsigned char sSTSLighting__17DrawableCharacter;
 void DoTranslucency(DrawableObject* pObject);
+
+static void World_DrawCullingInfo(int nDrawn, int nSubmitted);
 
 /**
  * Offset/Address/Size: 0x434 | 0x801950F8 | size: 0xB20
@@ -690,18 +693,7 @@ void World::Render()
 
     if (g_bDrawCullingInfo)
     {
-        char buf[256];
-        f32 drawnPct = 100.0f * ((f32)nDrawn / (f32)nSubmitted);
-        nlSNPrintf(buf, 255, "%d submitted, %d culled, %d ( %0.2f%% )drawn", nSubmitted, nSubmitted - nDrawn, nDrawn, drawnPct);
-        static int x = 10;
-        static int y = 0;
-        nlColour color = { 0xFF, 0xFF, 0xFF, 0xFF };
-        glStateBundle state;
-        glStateSave(state);
-        glFontBegin(false);
-        glFontPrint((eGLView)0x21, x, y, color, buf);
-        glFontEnd();
-        glStateRestore(state);
+        World_DrawCullingInfo(nDrawn, nSubmitted);
     }
 }
 /**
@@ -817,8 +809,6 @@ struct MatrixEffectCamStub
     char _pad[0x13C];
     unsigned char m_transitioningOut;
 };
-
-extern unsigned char sbPretendWereNotInGameplayCam;
 
 void DoTranslucency(DrawableObject* pObject)
 {
@@ -1846,6 +1836,21 @@ bool World::LoadObjectData(const char* szWorldName)
 
     return true;
 }
+static void World_DrawCullingInfo(int nDrawn, int nSubmitted)
+{
+    char buf[256];
+    f32 drawnPct = 100.0f * ((f32)nDrawn / (f32)nSubmitted);
+    nlSNPrintf(buf, 255, "%d submitted, %d culled, %d ( %0.2f%% )drawn", nSubmitted, nSubmitted - nDrawn, nDrawn, drawnPct);
+    static int x = 10;
+    static int y = 0;
+    nlColour color = { 0xFF, 0xFF, 0xFF, 0xFF };
+    glStateBundle state;
+    glStateSave(state);
+    glFontBegin(false);
+    glFontPrint((eGLView)0x21, x, y, color, buf);
+    glFontEnd();
+    glStateRestore(state);
+}
 
 /**
  * Offset/Address/Size: 0x3020 | 0x80197CE4 | size: 0x64
@@ -1863,6 +1868,8 @@ void World::AddToHyperSTSDrawables(unsigned long key, DrawableModel* pDrawableMo
     }
 }
 
+static const unsigned long eOC_SHINY = 0x00000008;
+
 /**
  * Offset/Address/Size: 0x3084 | 0x80197D48 | size: 0x39C
  */
@@ -1879,8 +1886,6 @@ u8 World::HandleObjectCreation(WorldObjectData* pObjectData)
         float m_fRadius;
         nlVector3 m_v3Offset;
     };
-
-    extern unsigned long eOC_SHINY;
 
     WorldObjectDataLocal* pData = (WorldObjectDataLocal*)pObjectData;
     DrawableObject* pDrawable = NULL;
@@ -1967,6 +1972,8 @@ u8 World::HandleObjectCreation(WorldObjectData* pObjectData)
     return 1;
 }
 
+static const unsigned long eOC_ENV_SHINY = 0x00000010;
+
 /**
  * Offset/Address/Size: 0x3420 | 0x801980E4 | size: 0x274
  * TODO: 97.48% match - remaining diffs are key/register ordering in the inlined DrawableMap FindGet path
@@ -1999,7 +2006,6 @@ bool World::LoadGeometry(glModel* gModel, unsigned long uNumModels, bool bMakeDr
     };
 
     extern void glGetMatrix(unsigned long, nlMatrix4&);
-    extern unsigned long eOC_ENV_SHINY;
 
     WorldObjectDataLocal data;
     AABBDimensions aabb;
@@ -2057,13 +2063,12 @@ bool World::LoadGeometry(glModel* gModel, unsigned long uNumModels, bool bMakeDr
                 DrawableModel* model = pObject->AsDrawableModel();
                 if (model != NULL)
                 {
-                    unsigned long envShiny = eOC_ENV_SHINY;
                     glModelPacket* pPacket = ((DrawableModelProxy*)model)->m_pModel->packets;
                     while (pPacket < ((DrawableModelProxy*)model)->m_pModel->packets + ((DrawableModelProxy*)model)->m_pModel->numPackets)
                     {
                         if (pPacket->state.texconfig & 0x10)
                         {
-                            pObject->m_uObjectCreationFlags |= envShiny;
+                            pObject->m_uObjectCreationFlags |= eOC_ENV_SHINY;
                         }
                         pPacket++;
                     }

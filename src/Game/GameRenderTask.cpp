@@ -1,3 +1,4 @@
+#define NL_SINGLETON_NO_DEFINE
 #include "Game/GameRenderTask.h"
 
 #include "types.h"
@@ -48,47 +49,18 @@ static u8 g_TexGloss = 1;
 static u8 g_bTexelDensity;
 static int g_LightMult = 2;
 static float g_WarbleDivisor = 32.0f;
-static nlVector4 world_ambient;
+bool g_bRenderWorld = true;
+static nlVector4 world_ambient = { 0.0f, 0.0f, 0.0f, 0.0f };
 static u8 g_bWarblePreview;
 static u8 g_bWarbleShow;
 static u8 g_bMemoryOnScreen;
 
-static unsigned long GLTT_Detail_bit = 1UL << 1;
-static unsigned long GLTT_Shadow_bit = 1UL << 2;
-static unsigned long GLTT_SelfIllum_bit = 1UL << 3;
-static unsigned long GLTT_Gloss_bit = 1UL << 4;
+static const unsigned long GLTT_Detail_bit = 1UL << 1;
+static const unsigned long GLTT_Shadow_bit = 1UL << 2;
+static const unsigned long GLTT_SelfIllum_bit = 1UL << 3;
+static const unsigned long GLTT_Gloss_bit = 1UL << 4;
 
-static void inline MemoryOnScreen(unsigned int cutoff)
-{
-    float x0;
-    float x1;
-    float y0;
-    float y1;
-
-    if (StandardAllocator.TotalFreeMemory() > cutoff)
-    {
-        return;
-    }
-
-    nlColour bg = { 0x3A, 0x6E, 0xA5, 0xFF };
-    nlColour fg = { 0xFF, 0xFF, 0xFF, 0xFF };
-
-    glFontVirtualPosToScreenCoordPos(0.0f, -2.0f, x0, y0);
-    glFontVirtualPosToScreenCoordPos(0.0f, -1.0f, x1, y1);
-
-    g_ShapeRenderer.DrawRectangle2D(0.0f, y0 - 4.0f, 640.0f, 8.0f + (y1 - y0), -0.5f, bg, GLV_FrontEnd);
-
-    glFontBegin(false);
-    u32 virtFree;
-    u32 stdFree;
-    virtFree = VirtualAllocator.LargestFreeBlock() >> 10;
-    stdFree = StandardAllocator.LargestFreeBlock() >> 10;
-    u32 totalFree = StandardAllocator.TotalFreeMemory() >> 10;
-    glFontPrintf((eGLView)0x21, 0, -2, fg, "%u free, %u block, %u virt (KB)", totalFree, stdFree, virtFree);
-    glFontEnd();
-}
-
-static void WarbleTest()
+static inline void WarbleTest()
 {
     glPoly2 p;
     if (!glTextureLoad(glGetTexture("target/warble")))
@@ -120,12 +92,34 @@ static void WarbleTest()
     p.Attach(GLV_WarbleBlend, 0, 0, (u32)-1);
 }
 
-/**
- * Offset/Address/Size: 0x0 | 0x80171594 | size: 0xC
- */
-const char* GameRenderTask::GetName()
+static void inline MemoryOnScreen(unsigned int cutoff)
 {
-    return "Game Render";
+    float x0;
+    float x1;
+    float y0;
+    float y1;
+
+    if (StandardAllocator.TotalFreeMemory() > cutoff)
+    {
+        return;
+    }
+
+    nlColour bg = { 0x3A, 0x6E, 0xA5, 0xFF };
+    nlColour fg = { 0xFF, 0xFF, 0xFF, 0xFF };
+
+    glFontVirtualPosToScreenCoordPos(0.0f, -2.0f, x0, y0);
+    glFontVirtualPosToScreenCoordPos(0.0f, -1.0f, x1, y1);
+
+    g_ShapeRenderer.DrawRectangle2D(0.0f, y0 - 4.0f, 640.0f, 8.0f + (y1 - y0), -0.5f, bg, GLV_FrontEnd);
+
+    glFontBegin(false);
+    u32 virtFree;
+    u32 stdFree;
+    virtFree = VirtualAllocator.LargestFreeBlock() >> 10;
+    stdFree = StandardAllocator.LargestFreeBlock() >> 10;
+    u32 totalFree = StandardAllocator.TotalFreeMemory() >> 10;
+    glFontPrintf((eGLView)0x21, 0, -2, fg, "%u free, %u block, %u virt (KB)", totalFree, stdFree, virtFree);
+    glFontEnd();
 }
 
 /**
@@ -236,7 +230,7 @@ void GameRenderTask::Run(float fDeltaT)
             h = (float)(s32)glTextureGetHeight();
             p.SetupRectangle(24.0f, 24.0f, w, h, 0.0f);
 
-            nlColour white = { 0xFF, 0xFF, 0xFF, 0xFF };
+            nlColour white = { 0, 0, 0, 0 };
             white.c[0] = 0xFF;
             white.c[1] = 0xFF;
             white.c[2] = 0xFF;

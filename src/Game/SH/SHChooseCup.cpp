@@ -233,19 +233,13 @@ typedef Function0<void>::FunctorImpl<BindExp1_vfb> FunctorImpl_vfb;
 
 /**
  * Offset/Address/Size: 0x1F64 | 0x800DC1E8 | size: 0x154
- * TODO: 93.80% match - Bind temp and no-callback stack slots remain swapped (0x0C/0x1C),
- * functor bind arg still lowers as word copy (lwz/stw) instead of byte copy (lbz/stb),
- * and FEPopupMenu::Create call site remains ref-vs-value ABI-mangled.
+ * TODO: FEPopupMenu::Create call site remains ref-vs-value ABI-mangled.
  */
 template <>
 struct BindExp1<void, void (*)(bool), bool>
 {
     void (*mFuncPtr)(bool);
-    union
-    {
-        bool mArg;
-        int mArgWord;
-    };
+    bool mArg;
 
     BindExp1() { }
     ~BindExp1() { }
