@@ -867,7 +867,7 @@ config.libs = [
             Object(NonMatching, "Game/SAnim/AnimRetargeter.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/SAnim/pnSAnimController.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/SAnim/pnBlender.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(NonMatching, "Game/SAnim/pnSingleAxisBlender.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(Matching, "Game/SAnim/pnSingleAxisBlender.cpp", extra_cflags=["-inline auto", "-inline deferred"], mw_version="GC/1.3.2"),
             Object(NonMatching, "Game/SAnim/pnFeather.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/AnimInventory.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Blinker.cpp", extra_cflags=["-inline auto"]),   

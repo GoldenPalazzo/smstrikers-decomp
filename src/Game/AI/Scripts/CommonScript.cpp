@@ -4684,6 +4684,12 @@ FuzzyVariant Fuzzy::InDanger(cFielder* TheFielder)
     return bestValue;
 }
 
+namespace Fuzzy
+{
+const nlVector2 g_vInDangerDelayedMin = { 0.8f, 0.2f };
+const nlVector2 g_vInDangerDelayedMax = { 1.0f, 1.0f };
+} // namespace Fuzzy
+
 /**
  * Offset/Address/Size: 0x3B4 | 0x8006A584 | size: 0xAB0
  */
@@ -4863,8 +4869,6 @@ FuzzyVariant Fuzzy::InDangerDelayed(cFielder* TheFielder)
                 double d = fConfidence;
                 fConfidence = (float)d * fBranchRatio;
             }
-            static nlVector2 g_vInDangerDelayedMin = { 0.8f, 0.2f };
-            static nlVector2 g_vInDangerDelayedMax = { 1.0f, 1.0f };
             SkillTweaks* pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide);
             float fMin = Interpolate(g_vInDangerDelayedMin.f.x, g_vInDangerDelayedMin.f.y, pSkillTweaks->Off_Reaction);
             pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide);
