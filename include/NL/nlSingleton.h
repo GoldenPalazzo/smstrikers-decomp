@@ -28,7 +28,9 @@ public:
     static T* s_pInstance;
 };
 
+#ifndef NL_SINGLETON_NO_DEFINE
 template <class T>
 T* nlSingleton<T>::s_pInstance = 0;
+#endif
 
 #endif // NL_SINGLETON_H

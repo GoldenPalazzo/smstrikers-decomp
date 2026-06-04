@@ -1,3 +1,4 @@
+#define NL_SINGLETON_NO_DEFINE
 #include "Game/Goalie.h"
 #include "Game/AI/GoalieLooseBall.h"
 #include "Game/AI/AiUtil.h"
@@ -42,7 +43,6 @@ extern cWorldSFX gStadGenSFX;
 } // namespace Audio
 
 extern cTeam* g_pCurrentlyUpdatingTeam;
-extern f32 gfRepositionThreshold;
 class cPN_Blender;
 extern "C" cPN_Blender* __ct__11cPN_BlenderFP9cPoseNodeP9cPoseNodef(cPN_Blender*, cPoseNode*, cPoseNode*, float);
 cPN_Blender* AllocateBlender();
@@ -56,6 +56,16 @@ public:
 float OpenTo(cPlayer*, cPlayer*);
 
 static const nlVector3 v3Zero = { 0.0f, 0.0f, 0.0f };
+
+bool Goalie::mbPosGoalieNetCheck;
+bool Goalie::mbNegGoalieNetCheck;
+u8 Goalie::mbActionDataSetup;
+f32 Goalie::mfGoalieStepDist = -1.0f;
+f32 Goalie::mfGoalieStrafeDist = -1.0f;
+f32 Goalie::mfGoalieRunDist = -1.0f;
+f32 Goalie::mfGoalieUrgentDist = 0.8f;
+f32 gfRepositionThreshold = 0.15f;
+bool gbEnableBallGoalieSweepTest = true;
 
 /**
  * Offset/Address/Size: 0xB780 | 0x8004E27C | size: 0x2B8
@@ -86,10 +96,6 @@ Goalie::Goalie(eCharacterClass charClass, const int* nModelID, cSHierarchy* pHie
     , muBallDeflectCount(0)
     , mnOffplayPending(GOALIE_OFFPLAY_NONE)
 {
-    extern u8 mbActionDataSetup;
-    extern f32 mfGoalieStrafeDist;
-    extern f32 mfGoalieRunDist;
-
     CleanGoalieAction();
     mPrevGoalieActionState = mGoalieActionState;
     mGoalieActionState = GOALIEACTION_MOVE;
@@ -1155,7 +1161,7 @@ void Goalie::InitActionPass(bool useTarget)
                     {
                         animID = 2;
                     }
-                    else if ((fDistanceSq > fOverhandThrowDistanceSq) || (fOpenTo < 0.65f))
+                    else if ((fDistanceSq > fOverhandThrowDistanceSq) || (fOpenTo < 0.85f))
                     {
                         animID = 0;
                     }
@@ -1168,7 +1174,7 @@ void Goalie::InitActionPass(bool useTarget)
                 {
                     animID = 2;
                 }
-                else if ((fDistanceSq > fOverhandThrowDistanceSq) || (fOpenTo < 0.65f))
+                else if ((fDistanceSq > fOverhandThrowDistanceSq) || (fOpenTo < 0.85f))
                 {
                     animID = 0;
                 }
@@ -1387,11 +1393,6 @@ void Goalie::InitActionPursueRecover()
  */
 void Goalie::DoNavigation(float fDeltaT, float fIdleDistance, Goalie::eNaviMode naviMode)
 {
-    extern f32 mfGoalieRunDist;
-    extern f32 mfGoalieUrgentDist;
-    extern f32 mfGoalieStrafeDist;
-    extern f32 mfGoalieStepDist;
-
     int nNewAnim;
 
     cPN_SAnimController* pAnimCtrl = m_pCurrentAnimController;
@@ -5451,7 +5452,7 @@ void Goalie::InitActionChipShotStumble()
 
     float dx = m_v3Position.f.x - g_pBall->m_v3Position.f.x;
     float dy = m_v3Position.f.y - g_pBall->m_v3Position.f.y;
-    bool bFar = (dx * dx + dy * dy) > 100.0f;
+    bool bFar = (dx * dx + dy * dy) > 42.25f;
     bool bContactLow;
     if (mv3LocalContactPosition.f.y > 0.0f)
         bContactLow = false;
@@ -5654,11 +5655,11 @@ bool Goalie::IsTeammateHoardingBall()
         cBall* pBall = g_pBall;
         if (myX * ownerX > 0.0f)
         {
-            f32 threshold = (f32)fabs(myX) - 2.7f;
+            f32 threshold = (f32)fabs(myX) - 0.5f;
 
             if ((f32)fabs(pOwnerVolatile->m_v3Position.f.x) > threshold || (f32)fabs(pBall->m_v3Position.f.x) > threshold)
             {
-                f32 distThresh = 100.0f;
+                f32 distThresh = 1.6899998f;
 
                 if (nlGetLengthSquared2D(m_v3Position.f.x - pOwner->m_v3Position.f.x, m_v3Position.f.y - pOwner->m_v3Position.f.y) < distThresh
                     || m_v3Position.CalculateDistanceSquared2D(pBall->m_v3Position) < distThresh)
@@ -6681,7 +6682,7 @@ void Goalie::SetDesiredSaveFacing(const nlVector3& v3BallPosition)
 
     float fBallOffMagSq = nlVec3DotProduct(v3BallOffset, v3BallOffset);
 
-    if (fBallOffMagSq < 0.0001f)
+    if (fBallOffMagSq < 1.44f)
     {
         float fSqX = v3TargetFacing.f.x * v3TargetFacing.f.x;
         float fTfY = v3TargetFacing.f.y;
@@ -6832,18 +6833,18 @@ void Goalie::WhackSTSPlayer(cFielder* pFielder)
     v3BallVel.f.z = vz;
     v3BallVel.f.y = vy;
 
-    float yRand = nlRandomf(1.0f, &nlDefaultSeed);
+    float yRand = nlRandomf(5.0f, &nlDefaultSeed);
     if ((u32)nlRandom(100, &nlDefaultSeed) > 50)
     {
         yRand *= -1.0f;
     }
     v3BallVel.f.y += yRand;
 
-    float zRand = nlRandomf(3.0f, &nlDefaultSeed);
-    v3BallVel.f.z = 2.0f + zRand;
+    float zRand = nlRandomf(2.0f, &nlDefaultSeed);
+    v3BallVel.f.z = 4.0f + zRand;
 
     g_pBall->SetVelocity(v3BallVel, SPINTYPE_FORWARD, NULL);
-    g_pBall->m_tNoPickupTimer.SetSeconds(0.5f);
+    g_pBall->m_tNoPickupTimer.SetSeconds(0.12f);
 }
 
 /**

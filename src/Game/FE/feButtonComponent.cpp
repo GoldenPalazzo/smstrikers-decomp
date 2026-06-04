@@ -9,7 +9,7 @@
 
 /**
  * Offset/Address/Size: 0x0 | 0x8010DC04 | size: 0x3F8
- * TODO: 90.96% match - stack frame +0x10 (0x240 vs 0x230), fmuls operand order, instruction scheduling around FCS ctor args
+ * TODO: 96.94% match - stack frame +0x10 due to InlineHasher temp slot reuse, fmuls operand swap at halfWidth and componentPosition
  */
 void ButtonComponent::CentreButtons()
 {
@@ -58,20 +58,17 @@ void ButtonComponent::CentreButtons()
         renderedLength = 0;
         pCurrentChar = 0;
         firstChar = true;
-        FontCharString fcs(buffer, pFont, (unsigned short*)0);
-        pLastChar = fcs.m_pString;
-
-        while (*pLastChar != 0)
         {
-            renderedLength += pFont->GetCharWidth(*pLastChar, firstChar ? 0 : *pCurrentChar);
-            pCurrentChar = pLastChar;
-            firstChar = false;
-            pLastChar++;
-        }
+            FontCharString fcs(buffer, pFont, (unsigned short*)0);
+            pLastChar = fcs.m_pString;
 
-        if (fcs.m_InternalBuffer)
-        {
-            delete[] fcs.m_pString;
+            while (*pLastChar != 0)
+            {
+                renderedLength += pFont->GetCharWidth(*pLastChar, firstChar ? 0 : *pCurrentChar);
+                pCurrentChar = pLastChar;
+                firstChar = false;
+                pLastChar++;
+            }
         }
 
         totalLength += (float)(int)(labelScale.f.x * (float)renderedLength);

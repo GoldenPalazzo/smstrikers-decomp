@@ -10,14 +10,14 @@ cInventory<cSAnim>* g_pDefaultSAnimInventory = nullptr;
 typedef ListContainerBase<cSAnim*, NewAdapter<ListEntry<cSAnim*> > > SAnimListBase;
 typedef ListContainerBase<char*, NewAdapter<ListEntry<char*> > > FileListBase;
 
-static void ClearAnimList(cInventory<cSAnim>* c)
+static inline void ClearAnimList(cInventory<cSAnim>* c)
 {
     nlWalkList(c->m_lItemList.m_Head, (SAnimListBase*)c, &SAnimListBase::DeleteEntry);
     c->m_lItemList.m_Head = 0;
     c->m_lItemList.m_Tail = 0;
 }
 
-static void ClearFileList(cInventory<cSAnim>* c)
+static inline void ClearFileList(cInventory<cSAnim>* c)
 {
     nlWalkList(c->m_lMemList.m_Head, (FileListBase*)&c->m_lMemList, &FileListBase::DeleteEntry);
     c->m_lMemList.m_Head = 0;

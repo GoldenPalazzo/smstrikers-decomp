@@ -340,10 +340,9 @@ static inline BallCacheInfo* AddCacheEntry(PhysicsBall* pPhysicsBall)
 
 /**
  * Offset/Address/Size: 0x7B0 | 0x80137B9C | size: 0x600
- * TODO: 92.86% match - remaining diffs are FPR/GPR allocation drift
- *       (fDistance lives in f27 vs target f26, pBall in r29 vs r27,
- *       cascading across both loops) and minor instruction scheduling
- *       on the v3Zero copy and pre-loop distance computation.
+ * TODO: 94.4% match - 214 register-only diffs from systematic GPR/FPR
+ *       allocation shift (v3Position r24 vs target r23, fDistance f27 vs
+ *       target f26, cascading across both loops).
  */
 float FakeBallWorld::GetPredictedPosAtDistance(float fDistance, nlVector3& v3Position, nlVector3& v3Velocity)
 {
@@ -377,8 +376,8 @@ float FakeBallWorld::GetPredictedPosAtDistance(float fDistance, nlVector3& v3Pos
     if (pHead != NULL)
     {
         DLListEntry<BallCacheInfo*>* pListEntry = nlDLRingGetStart(pHead);
-        BallCacheInfo* pNext = pListEntry->m_data;
         DLListEntry<BallCacheInfo*>* pHeadRef = *ppHead;
+        BallCacheInfo* pNext = pListEntry->m_data;
 
         float dx0 = pNext->mv3Position.f.x - pBall->m_v3Position.f.x;
         float dy0 = pNext->mv3Position.f.y - pBall->m_v3Position.f.y;
@@ -431,9 +430,7 @@ float FakeBallWorld::GetPredictedPosAtDistance(float fDistance, nlVector3& v3Pos
     DLListEntry<BallCacheInfo*>* pLastEntry = nlDLRingGetEnd(*ppHead);
     BallCacheInfo* pCurCache = pLastEntry->m_data;
 
-    SlotPool<BallCacheInfo>* pBCIPool = &BallCacheInfo::mBallCacheInfoSlotPool;
     float fMaxTime = 6.0f + fSimulationTime;
-    nlDLListSlotPool<BallCacheInfo*>* pCacheList = &mBallCacheList;
 
     float dx0 = pCurCache->mv3Position.f.x - pBall->m_v3Position.f.x;
     float dy0 = pCurCache->mv3Position.f.y - pBall->m_v3Position.f.y;

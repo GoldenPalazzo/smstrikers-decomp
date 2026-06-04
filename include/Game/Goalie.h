@@ -286,6 +286,10 @@ public:
     static f32 mfGoalieStepDist;
     static bool mbPosGoalieNetCheck;
     static bool mbNegGoalieNetCheck;
+    static u8 mbActionDataSetup;
+    static f32 mfGoalieStrafeDist;
+    static f32 mfGoalieRunDist;
+    static f32 mfGoalieUrgentDist;
 }; // total size: 0x310
 
 #endif // _GOALIE_H_

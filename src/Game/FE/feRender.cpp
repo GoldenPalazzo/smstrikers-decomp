@@ -637,6 +637,10 @@ void FERender::RenderSlide(const TLSlide* slide)
 
 /**
  * Offset/Address/Size: 0xD90 | 0x8020B018 | size: 0x7A8
+ * TODO: 98.82% match - 131 pure register-allocation diffs: pTLInstance r26 vs
+ * target r31, colour loop base r31 vs target r27, cascading through all
+ * nested loop variables. Stack offsets shifted accordingly. No opcode or
+ * control-flow diffs.
  */
 void FERender::RenderTimeLineAsset(TLInstance* pTLInstance, float fCurrentTime)
 {
@@ -688,11 +692,9 @@ void FERender::RenderTimeLineAsset(TLInstance* pTLInstance, float fCurrentTime)
     m_pMatrixStack->PushMatrix();
     m_pMatrixStack->MultMatrix(combinedMatrix);
 
-    nlFloatColour* pCurrentAssetColour = &s_currentAssetColour;
-    nlFloatColour* curAssetColour = pCurrentAssetColour;
     for (u32 i = 0; i < 4; i++)
     {
-        curAssetColour->c[i] = (pTLInstance->GetColour().c[i] * curAssetColour->c[i]) / 255.0f;
+        s_currentAssetColour.c[i] = (pTLInstance->GetColour().c[i] * s_currentAssetColour.c[i]) / 255.0f;
     }
 
     switch (pTLInstance->m_type)
@@ -785,10 +787,14 @@ void FERender::RenderTimeLineAsset(TLInstance* pTLInstance, float fCurrentTime)
                             PopTransformMatrix();
                         }
 
-                        *(u32*)&s_currentAssetColour.c[0] = *(u32*)&oldSlideColour.c[0];
-                        *(u32*)&s_currentAssetColour.c[1] = *(u32*)&oldSlideColour.c[1];
-                        *(u32*)&s_currentAssetColour.c[2] = *(u32*)&oldSlideColour.c[2];
-                        *(u32*)&s_currentAssetColour.c[3] = *(u32*)&oldSlideColour.c[3];
+                        {
+                            u32* slideDst = (u32*)&s_currentAssetColour;
+                            u32* slideSrc = (u32*)&oldSlideColour;
+                            slideDst[0] = slideSrc[0];
+                            slideDst[1] = slideSrc[1];
+                            slideDst[2] = slideSrc[2];
+                            slideDst[3] = slideSrc[3];
+                        }
 
                         if (curr == slide->m_instances)
                         {
@@ -847,10 +853,9 @@ void FERender::RenderTimeLineAsset(TLInstance* pTLInstance, float fCurrentTime)
                 m_pMatrixStack->PushMatrix();
                 m_pMatrixStack->MultMatrix(combMatrix);
 
-                nlFloatColour* colPtr = pCurrentAssetColour;
                 for (u32 j = 0; j < 4; j++)
                 {
-                    colPtr->c[j] = (curr->GetColour().c[j] * colPtr->c[j]) / 255.0f;
+                    s_currentAssetColour.c[j] = (curr->GetColour().c[j] * s_currentAssetColour.c[j]) / 255.0f;
                 }
 
                 switch (curr->m_type)
@@ -949,10 +954,14 @@ void FERender::RenderTimeLineAsset(TLInstance* pTLInstance, float fCurrentTime)
                             PopTransformMatrix();
                         }
 
-                        *(u32*)&s_currentAssetColour.c[0] = *(u32*)&oldGrandColour.c[0];
-                        *(u32*)&s_currentAssetColour.c[1] = *(u32*)&oldGrandColour.c[1];
-                        *(u32*)&s_currentAssetColour.c[2] = *(u32*)&oldGrandColour.c[2];
-                        *(u32*)&s_currentAssetColour.c[3] = *(u32*)&oldGrandColour.c[3];
+                        {
+                            u32* grandDst = (u32*)&s_currentAssetColour;
+                            u32* grandSrc = (u32*)&oldGrandColour;
+                            grandDst[0] = grandSrc[0];
+                            grandDst[1] = grandSrc[1];
+                            grandDst[2] = grandSrc[2];
+                            grandDst[3] = grandSrc[3];
+                        }
 
                         if (grandchild == curr->pChildren)
                         {
@@ -966,10 +975,14 @@ void FERender::RenderTimeLineAsset(TLInstance* pTLInstance, float fCurrentTime)
                 m_pMatrixStack->PopMatrix();
             }
 
-            *(u32*)&s_currentAssetColour.c[0] = *(u32*)&colour.c[0];
-            *(u32*)&s_currentAssetColour.c[1] = *(u32*)&colour.c[1];
-            *(u32*)&s_currentAssetColour.c[2] = *(u32*)&colour.c[2];
-            *(u32*)&s_currentAssetColour.c[3] = *(u32*)&colour.c[3];
+            {
+                u32* colDst = (u32*)&s_currentAssetColour;
+                u32* colSrc = (u32*)&colour;
+                colDst[0] = colSrc[0];
+                colDst[1] = colSrc[1];
+                colDst[2] = colSrc[2];
+                colDst[3] = colSrc[3];
+            }
 
             if (curr == pTLInstance->pChildren)
             {

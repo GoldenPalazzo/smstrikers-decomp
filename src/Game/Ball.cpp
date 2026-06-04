@@ -1,3 +1,4 @@
+#define NL_SINGLETON_NO_DEFINE
 #include "Game/WorldManager.h"
 #include "NL/platqmath.h"
 #pragma pool_data off
@@ -25,12 +26,12 @@
 #include "Game/Audio/WorldAudio.h"
 #include "Game/AI/AiUtil.h"
 #include "Game/FE/feHelpFuncs.h"
-
-extern float gfPerfectPassSFXVol;
-extern bool gbCanFadeOutPerfectPassSFX;
 extern float g_BallAirResistance;
 
+static f32 CANT_COLLIDE = *(f32*)__float_max;
 cBall* g_pBall = NULL;
+static float gfPerfectPassSFXVol;
+static bool gbCanFadeOutPerfectPassSFX = true;
 
 nlMatrix3 m3Ident = { 1.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 1.f };
 // nlMatrix4 m4Ident = { 1.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 0.f, 1.f };
@@ -421,7 +422,7 @@ void cBall::Update(float fDeltaT)
 void cBall::ShootAtFast(nlVector3& v3Vel, const nlVector3& v3Target, float fDesiredTime)
 {
     float k = g_BallAirResistance;
-    float g = 0.5f * m_pPhysicsBall->m_gravity;
+    float g = 1.025f * m_pPhysicsBall->m_gravity;
     float eToTheNegativeKT = Exp(-k * fDesiredTime);
     float kSquaredOverOneMinusEToTheNegativeKT = (k * k) / (1.0f - eToTheNegativeKT);
     float oneOverK = 1.0f / k;
@@ -559,7 +560,7 @@ void cBall::Shoot(const nlVector3& v3Dir, const nlVector3& v3Spin, eSpinType spi
     m_v3ShotOrigin = m_v3Position;
     m_tNoPickupTimer.SetSeconds(0.1f);
     m_tBuzzerBeaterTimer.SetSeconds(0.0f);
-    m_tShotTimer.SetSeconds(0.3f);
+    m_tShotTimer.SetSeconds(1.5f);
 
     m_unk_0xA3 = bParam6;
     mbCanDamage = bCanDamage;
@@ -1015,19 +1016,19 @@ void cBall::InitiateBallBlur(eBallShotEffectType effectType, cPlayer* pPlayer)
         break;
 
     case BALL_EFFECT_PERFECT_SHOT:
-        m_pBlurHandler = BlurManager::GetNewHandler("global/greenshotstreak", 0.35f, 0x1E, true);
+        m_pBlurHandler = BlurManager::GetNewHandler("global/greenshotstreak", 0.15f, 0x1E, true);
         break;
 
     case BALL_EFFECT_PERFECT_PASS:
-        m_pBlurHandler = BlurManager::GetNewHandler("global/perfectpassstreak", 0.35f, 0x1E, true);
+        m_pBlurHandler = BlurManager::GetNewHandler("global/perfectpassstreak", 0.15f, 0x1E, true);
         break;
 
     case BALL_EFFECT_CHIP_SHOT:
-        m_pBlurHandler = BlurManager::GetNewHandler("global/blueshotstreak", 0.35f, 0x1E, true);
+        m_pBlurHandler = BlurManager::GetNewHandler("global/blueshotstreak", 0.15f, 0x1E, true);
         break;
 
     default:
-        m_pBlurHandler = BlurManager::GetNewHandler("global/shotstreak", 0.35f, 0x1E, false);
+        m_pBlurHandler = BlurManager::GetNewHandler("global/shotstreak", 0.15f, 0x1E, false);
         break;
     }
 }
@@ -1854,8 +1855,8 @@ void cBall::CollideWithCharacterCallback(cPlayer* pCharacter, const nlVector3& v
                 }
 
                 pOwnerFielder->ShootBallDueToContact(pCharacter->m_v3Velocity);
-                pOwnerFielder->SetNoPickUpTime(0.08f);
-                pCharacter->SetNoPickUpTime(0.08f);
+                pOwnerFielder->SetNoPickUpTime(0.33f);
+                pCharacter->SetNoPickUpTime(0.33f);
             } while (0);
 
             pOwnerFielder->InitDesire(FIELDERDESIRE_FINISH_ACTION, 0.5f, -1.0f, fvNotSet, fvNotSet);
@@ -1956,7 +1957,6 @@ cBall::~cBall()
 
 static nlVector3 v3Zero = { 0.f, 0.f, 0.f };
 static nlQuaternion qIdentity = { 0.f, 0.f, 0.f, 1.f };
-static f32 CANT_COLLIDE = *(f32*)__float_max;
 
 /**
  * Offset/Address/Size: 0x3908 | 0x8000D2DC | size: 0x260

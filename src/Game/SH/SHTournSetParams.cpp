@@ -78,18 +78,21 @@ TournSetParamsScene::~TournSetParamsScene()
 
 /**
  * Offset/Address/Size: 0x1CD0 | 0x800E16A4 | size: 0x434
- * TODO: 91.22% match - remaining diffs are r27/r28/r29 register allocation swap
- * and stack/layout differences in callback setup.
+ * TODO: 97.74% match - r28/r29 register swap for this+offset vs
+ * memcpy-temp/menuItem, stack layout inversion for bind/callback
+ * intermediates, post-loop mType load scheduling (before vs after tag check).
  */
 void TournSetParamsScene::BuildSubMenuList(int menuitem, TLComponentInstance* compinstance, bool wraps, int startindex)
 {
     extern int nlSNPrintf(char*, unsigned long, const char*, ...);
     typedef Detail::MemFunImpl<void, void (SlideMenuList::*)()> MemFunImpl_SML;
     typedef BindExp1<void, MemFunImpl_SML, SlideMenuList*> BindExp1_SML;
+    typedef void FnSlideMenuItemCb(SlideMenuItem*);
 
     SlideMenuList* list = new (nlMalloc(sizeof(SlideMenuList), 8, false)) SlideMenuList(compinstance);
     mSlideMenuLists[menuitem] = list;
 
+    MenuItem<SlideMenuItem>* menuItem;
     char slidename[64] = { 0 };
 
     int slidenum = 0;
@@ -118,20 +121,20 @@ void TournSetParamsScene::BuildSubMenuList(int menuitem, TLComponentInstance* co
         }
         item->mSlideMenuHash = slideHash;
 
-        MenuItem<SlideMenuItem>* menuItem = ((MenuItem<SlideMenuItem>*)sml) + sml->mNumItemsAdded;
+        menuItem = ((MenuItem<SlideMenuItem>*)sml) + sml->mNumItemsAdded;
         menuItem->mType = item;
         sml->mNumItemsAdded++;
 
         {
             BindExp1_SML bind = Bind<void, MemFunImpl_SML, SlideMenuList*>(
                 MemFun<SlideMenuList, void>(&SlideMenuList::SetSlide), sml);
-            Function<SlideMenuItem*> callback(bind);
+            Function<FnSlideMenuItemCb> callback(bind);
             menuItem->mCallbacks[1] = callback;
         }
     } while (++slidenum);
 
     list = mSlideMenuLists[menuitem];
-    MenuItem<SlideMenuItem>* menuItem = &list->mMenuItems[list->mCurrentIndex];
+    menuItem = &list->mMenuItems[list->mCurrentIndex];
     menuItem->mCallbacks[2](menuItem->mType);
 
     list->mCurrentIndex = startindex;

@@ -347,8 +347,7 @@ FuzzyVariant Fuzzy::DefendPassInPlay(float fConfidence, cDecisionEntity* pEntity
                             pEntity->QueueActionSetDesire(5, fConfidence, 0.0f, FuzzyVariant(pTarget), fvNotSet);
 
                             SkillTweaks* pTweaks = SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide);
-                            float fAggressive = Aggressive(g_pScriptCurrentFielder);
-                            pEntity->m_pLastQueuedAction->m_fSelectionChance = CalcSelectChance(pTweaks->Def_VolleyPassDefendChance, fAggressive);
+                            pEntity->m_pLastQueuedAction->m_fSelectionChance = CalcSelectChance(pTweaks->Def_VolleyPassDefendChance, Aggressive(g_pScriptCurrentFielder));
                         }
                     }
 
@@ -379,8 +378,7 @@ FuzzyVariant Fuzzy::DefendPassInPlay(float fConfidence, cDecisionEntity* pEntity
                             pEntity->QueueActionSetDesire(5, fConfidence, 0.0f, FuzzyVariant(pTarget), fvNotSet);
 
                             SkillTweaks* pTweaks = SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide);
-                            float fAggressive = Aggressive(g_pScriptCurrentFielder);
-                            pEntity->m_pLastQueuedAction->m_fSelectionChance = CalcSelectChance(pTweaks->Def_HeavyAttackChance, fAggressive);
+                            pEntity->m_pLastQueuedAction->m_fSelectionChance = CalcSelectChance(pTweaks->Def_HeavyAttackChance, Aggressive(g_pScriptCurrentFielder));
                         }
                     }
                 }
@@ -412,8 +410,7 @@ FuzzyVariant Fuzzy::DefendPassInPlay(float fConfidence, cDecisionEntity* pEntity
                         pEntity->QueueActionSetDesire(6, fConfidence, 0.5f, fvNotSet, fvNotSet);
 
                         SkillTweaks* pTweaks = SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide);
-                        float fAggressive = Aggressive(g_pScriptCurrentFielder);
-                        pEntity->m_pLastQueuedAction->m_fSelectionChance = CalcSelectChance(pTweaks->Def_BlockPassChance, fAggressive);
+                        pEntity->m_pLastQueuedAction->m_fSelectionChance = CalcSelectChance(pTweaks->Def_BlockPassChance, Aggressive(g_pScriptCurrentFielder));
                     }
                 }
             }

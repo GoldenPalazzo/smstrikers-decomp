@@ -1,3 +1,4 @@
+#define NL_SINGLETON_NO_DEFINE
 #include "Game/Team.h"
 
 #include "Game/AI/Fielder.h"
@@ -21,7 +22,8 @@
 #include <stdlib.h>
 
 cTeam* g_pTeams[2] = { NULL, NULL };
-static nlVector2 g_vMarkDistanceConfidence;
+cTeam* g_pCurrentlyUpdatingTeam;
+static const nlVector2 g_vMarkDistanceConfidence = { 15.0f, 1.0f };
 static const unsigned short g_aNeutralPlayerFacingDirections[5] = {
     0,
     0,
@@ -425,55 +427,7 @@ void cTeam::PreUpdate(float dt)
     }
 }
 
-static inline void UpdateBallInterceptTime(cTeam* pTeam)
-{
-    for (int i = 0; i < 4; i++)
-    {
-        cFielder* pPlayer = pTeam->m_pPlayers[i];
-        float speed = pPlayer->m_fActualSpeed;
-        float runSpeed = pPlayer->m_pTweaks->fRunningSpeed;
-        speed = (speed >= runSpeed) ? speed : runSpeed;
-
-        nlVector3 v3LandingSpot;
-        float landingTime = g_pBall->PredictLandingSpotAndTime(v3LandingSpot);
-        float interceptTime;
-
-        if (landingTime > 0.0f)
-        {
-            float x = v3LandingSpot.f.x - pPlayer->m_v3Position.f.x;
-            float y = v3LandingSpot.f.y - pPlayer->m_v3Position.f.y;
-            interceptTime = nlSqrt((x * x) + (y * y), true) / speed;
-        }
-        else
-        {
-            cBall* pBall = g_pBall;
-            int nFoundSolutions = 0;
-            float fSolutions[2];
-
-            interceptTime = 99999.0f;
-            nlVector3* pBallPosition = &pBall->m_v3Position;
-            nlVector3* pAIVelocity = pBall->GetAIVelocity();
-            CalcInterceptXY(pPlayer->m_v3Position, speed, 0.0f, *pBallPosition, *pAIVelocity, nFoundSolutions, fSolutions);
-
-            if (nFoundSolutions != 0)
-            {
-                if (nFoundSolutions == 2)
-                {
-                    float solution1 = fSolutions[1];
-                    interceptTime = fSolutions[0];
-                    interceptTime = (interceptTime <= solution1) ? interceptTime : solution1;
-                }
-                else
-                {
-                    interceptTime = fSolutions[0];
-                }
-            }
-        }
-
-        pTeam->mfBallInterceptTimes[i] = interceptTime;
-    }
-}
-
+static void UpdateBallInterceptTime(cTeam* pTeam);
 /**
  * Offset/Address/Size: 0x132C | 0x800656D8 | size: 0x2CC
  * TODO: 98.94% match - remaining diffs are stalling-threshold 1.0f load reuse and
@@ -481,7 +435,6 @@ static inline void UpdateBallInterceptTime(cTeam* pTeam)
  */
 void cTeam::Update(float dt)
 {
-    extern cTeam* g_pCurrentlyUpdatingTeam;
 
     g_pCurrentlyUpdatingTeam = this;
 
@@ -490,7 +443,7 @@ void cTeam::Update(float dt)
         mfPowerupTimer -= dt;
         if (mfPowerupTimer < 0.0f)
         {
-            mfPowerupTimer = 1.0f;
+            mfPowerupTimer = 10.0f;
             if (nlSingleton<GameInfoManager>::s_pInstance->IsInfinitePowerupsOn())
             {
                 PowerupBase::AwardPowerup(this);
@@ -503,24 +456,21 @@ void cTeam::Update(float dt)
         mtBallInterceptTimer.Countdown(dt, 0.0f);
 
         float offensive = Offensive(this);
-        if (offensive && InOffensiveZone(g_pBall->m_v3Position, (eTeamSide)m_nSide) < 1.0f)
+        if (offensive && InOffensiveZone(g_pBall->m_v3Position, (eTeamSide)m_nSide) < 0.5f)
         {
             float stalling = Stalling(this);
             if (stalling < 1.0f)
             {
-                mtDefensiveZoneTimer.Countup(dt, 1.0f);
+                mtDefensiveZoneTimer.Countup(dt, 10.0f);
             }
         }
         else
         {
-            mtDefensiveZoneTimer.Countdown(0.5f * dt, 0.0f);
+            mtDefensiveZoneTimer.Countdown(2.0f * dt, 0.0f);
         }
     }
 
     UpdateBallInterceptTime(this);
-
-    qsort(m_pBallInterceptOrderedFielders, 4, 4, BestAbleToInterceptBall);
-    mtBallInterceptTimer.SetSeconds(0.0f);
 
     UpdateTeamAI(dt);
 
@@ -624,6 +574,7 @@ void cTeam::ResetCharacters()
     const unsigned short* pFacingDirectionTable;
     const FormationSpec* pFormation;
     unsigned char bFlipPositions;
+    int* pOrder;
     cFielder* pFielder;
 
     for (int i = 0; i < 5; i++)
@@ -633,15 +584,15 @@ void cTeam::ResetCharacters()
 
     UpdateControllers();
 
-    nAssignmentOrder[0] = 0;
+    nAssignmentOrder[0] = nAssignedControllers = 0;
     nAssignmentOrder[1] = 1;
     nAssignmentOrder[2] = 2;
     nAssignmentOrder[3] = 3;
     nAssignmentOrder[4] = 4;
 
-    nAssignedControllers = 0;
+    j = nAssignedControllers;
+    pOrder = nAssignmentOrder;
 
-    j = 0;
     while ((u16)j < 4)
     {
         int nSide = m_nSide;
@@ -654,12 +605,12 @@ void cTeam::ResetCharacters()
 
     if (nAssignedControllers > 0)
     {
-        if (m_pPlayers[nAssignmentOrder[0]]->m_pController == NULL)
+        if (m_pPlayers[pOrder[0]]->m_pController == NULL)
         {
             int swapIndex;
             for (swapIndex = 0; swapIndex <= 4; swapIndex++)
             {
-                if (m_pPlayers[nAssignmentOrder[swapIndex]]->m_pController != NULL)
+                if (m_pPlayers[pOrder[swapIndex]]->m_pController != NULL)
                 {
                     break;
                 }
@@ -686,10 +637,10 @@ void cTeam::ResetCharacters()
         bFlipPositions = 1;
     }
 
-    for (int i = 0; i < 5; i++)
+    for (int i = 0; i < 5; i++, pOrder++, pFacingDirectionTable++)
     {
-        pFielder = m_pPlayers[nAssignmentOrder[i]];
-        unsigned short aNewFacingDirection = pFacingDirectionTable[i];
+        pFielder = m_pPlayers[*pOrder];
+        unsigned short aNewFacingDirection = *pFacingDirectionTable;
         nlVector3 v3NewPosition;
 
         if (i < 4)
@@ -757,7 +708,7 @@ void cTeam::ResetCharacters()
         }
     }
 
-    (this->*&cTeam::StopGameplayEffectsAndSounds)();
+    StopGameplayEffectsAndSounds();
     mfPowerupTimer = 0.0f;
 }
 
@@ -766,6 +717,8 @@ void cTeam::ResetCharacters()
  */
 void cTeam::StopGameplayEffectsAndSounds()
 {
+    FORCE_DONT_INLINE;
+
     Audio::ActivateFilterOnAllCurrentSFX(false);
     Audio::SetPitchBendOnAllDialogueSFX(0x2000);
 
@@ -808,6 +761,57 @@ bool cTeam::CalculateFormationPosition(nlVector3& pos, cFielder* pFielder, bool 
     return m_pFormationManager->CalculateFielderPosition(pos, pFielder, bParam, fParam);
 }
 
+static void UpdateBallInterceptTime(cTeam* pTeam)
+{
+    for (int i = 0; i < 4; i++)
+    {
+        cFielder* pPlayer = pTeam->m_pPlayers[i];
+        float speed = pPlayer->m_fActualSpeed;
+        float runSpeed = pPlayer->m_pTweaks->fRunningSpeed;
+        speed = (speed >= runSpeed) ? speed : runSpeed;
+
+        nlVector3 v3LandingSpot;
+        float landingTime = g_pBall->PredictLandingSpotAndTime(v3LandingSpot);
+        float interceptTime;
+
+        if (landingTime > 0.0f)
+        {
+            float x = v3LandingSpot.f.x - pPlayer->m_v3Position.f.x;
+            float y = v3LandingSpot.f.y - pPlayer->m_v3Position.f.y;
+            interceptTime = nlSqrt((x * x) + (y * y), true) / speed;
+        }
+        else
+        {
+            cBall* pBall = g_pBall;
+            int nFoundSolutions = 0;
+            float fSolutions[2];
+
+            interceptTime = 100000000.0f;
+            nlVector3* pBallPosition = &pBall->m_v3Position;
+            nlVector3* pAIVelocity = pBall->GetAIVelocity();
+            CalcInterceptXY(pPlayer->m_v3Position, speed, 0.0f, *pBallPosition, *pAIVelocity, nFoundSolutions, fSolutions);
+
+            if (nFoundSolutions != 0)
+            {
+                if (nFoundSolutions == 2)
+                {
+                    float solution1 = fSolutions[1];
+                    interceptTime = fSolutions[0];
+                    interceptTime = (interceptTime <= solution1) ? interceptTime : solution1;
+                }
+                else
+                {
+                    interceptTime = fSolutions[0];
+                }
+            }
+        }
+
+        pTeam->mfBallInterceptTimes[i] = interceptTime;
+    }
+
+    qsort(pTeam->m_pBallInterceptOrderedFielders, 4, 4, BestAbleToInterceptBall);
+    pTeam->mtBallInterceptTimer.SetSeconds(1.0f / 30.0f);
+}
 /**
  * Offset/Address/Size: 0xA68 | 0x80064E14 | size: 0x68
  */
@@ -1090,7 +1094,7 @@ void cTeam::AssignMarks(bool bForceReMark)
                 bool bNeedsMark = true;
 
                 float fDefZone = InDefensiveZone(pOppFielder);
-                if (1.0f - fDefZone >= 0.75f)
+                if (1.0f - fDefZone >= 0.3f)
                 {
                     float fBreakaway = OnBreakaway(pOppFielder);
                     if (fBreakaway > 0.5f)
@@ -1146,7 +1150,7 @@ void cTeam::AssignMarks(bool bForceReMark)
 
                 if (bNeedsMark)
                 {
-                    fConfidence = fNormDist * 0.25f + fDownfieldMax * 0.75f;
+                    fConfidence = fNormDist * 0.7f + fDownfieldMax * 0.3f;
                 }
 
                 if (Incapacitated(pMyFielder))

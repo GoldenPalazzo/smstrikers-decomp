@@ -17,7 +17,7 @@
 
 static f32 CANT_COLLIDE = *(f32*)__float_max;
 
-cTeam* g_pCurrentlyUpdatingTeam;
+extern cTeam* g_pCurrentlyUpdatingTeam;
 extern cBall* g_pBall;
 extern FakeBallWorld* g_pFakeBallWorld;
 f32 Goalie::mfGoalieStepDist;
