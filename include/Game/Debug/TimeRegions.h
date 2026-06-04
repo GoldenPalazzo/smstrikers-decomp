@@ -7,14 +7,6 @@
 
 void DestroyTimeRegions();
 void InitializeTimeRegions();
-bool IsShotInProgress();
-bool IsBowserAround();
-bool IsDuringAutoreplay();
-bool IsDuringNIS();
-bool RightSideOfField();
-bool LeftSideOfField();
-bool CentreOfField();
-bool IsDuringGameplay();
 void WriteFrameRateStatsToFile();
 
 class TimeRegion

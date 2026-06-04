@@ -14,16 +14,15 @@ FuzzyVariant::FuzzyVariant(const float& var)
     SelectionChance = 1.0f;
 }
 
-class Fuzzy
+namespace Fuzzy
 {
-public:
-    static void DefaultOffensivePlay(cDecisionEntity*);
-    static void AbortOffensivePlay(cDecisionEntity*);
-    static void DefaultDefencePlay(cDecisionEntity*);
-    static void AbortDefencePlay(cDecisionEntity*);
-    static void DefaultLoosePlay(cDecisionEntity*);
-    static void AbortLoosePlay(cDecisionEntity*);
-};
+void DefaultOffensivePlay(cDecisionEntity*);
+void AbortOffensivePlay(cDecisionEntity*);
+void DefaultDefencePlay(cDecisionEntity*);
+void AbortDefencePlay(cDecisionEntity*);
+void DefaultLoosePlay(cDecisionEntity*);
+void AbortLoosePlay(cDecisionEntity*);
+} // namespace Fuzzy
 
 typedef FuzzyVariant (*DecisionFn)(cDecisionEntity*);
 

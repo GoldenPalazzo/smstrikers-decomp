@@ -47,11 +47,10 @@ class cPN_Blender;
 extern "C" cPN_Blender* __ct__11cPN_BlenderFP9cPoseNodeP9cPoseNodef(cPN_Blender*, cPoseNode*, cPoseNode*, float);
 cPN_Blender* AllocateBlender();
 
-class Fuzzy
+namespace Fuzzy
 {
-public:
-    static FuzzyVariant GetBestPassTarget(cPlayer*);
-};
+FuzzyVariant GetBestPassTarget(cPlayer*);
+}
 
 float OpenTo(cPlayer*, cPlayer*);
 

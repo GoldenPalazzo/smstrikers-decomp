@@ -8,19 +8,14 @@ class cTeam;
 
 #include "Game/AI/Scripts/SaveConfidence.h"
 
-static bool sFalse = false;
-static float sZeroCutAndBreak = 0.0f;
-static bool sTrue = true;
+// static bool sFalse = false;
+// static float sZeroCutAndBreak = 0.0f;
+// static bool sTrue = true;
 
-/**
- * Offset/Address/Size: 0x0 | 0x80093A64 | size: 0x8
- */
-template <typename T>
-nlVector3& PositionOf(T pObject)
-{
-    return pObject->m_v3Position;
-}
-template nlVector3& PositionOf<cFielder*>(cFielder*);
+extern cFielder* g_pScriptCurrentFielder;
+extern cTeam* g_pScriptCurrentTeam;
+extern cTeam* g_pCurrentlyUpdatingTeam;
+extern FuzzyVariant fvNotSet;
 
 /**
  * Offset/Address/Size: 0x6B9C | 0x80093628 | size: 0x43C
@@ -30,7 +25,6 @@ FuzzyVariant Fuzzy::AbortOffensivePlay(cDecisionEntity*)
     extern cTeam* g_pScriptCurrentTeam;
 
     FuzzyVariant bestValue;
-    bool bResult;
     float fConfidence = 1.0f;
     float fBestConfidence = 0.0f;
 
@@ -52,8 +46,7 @@ FuzzyVariant Fuzzy::AbortOffensivePlay(cDecisionEntity*)
         if (fConfidence > 0.0f)
         {
             fBestConfidence = fConfidence;
-            bResult = sFalse;
-            bestValue = FuzzyVariant(bResult);
+            bestValue = FuzzyVariant(false);
         }
     }
 
@@ -68,8 +61,7 @@ FuzzyVariant Fuzzy::AbortOffensivePlay(cDecisionEntity*)
         if (fConfidence > fBestConfidence)
         {
             fBestConfidence = fConfidence;
-            bResult = sTrue;
-            bestValue = FuzzyVariant(bResult);
+            bestValue = FuzzyVariant(true);
         }
     }
 
@@ -82,10 +74,6 @@ FuzzyVariant Fuzzy::AbortOffensivePlay(cDecisionEntity*)
  */
 void Fuzzy::DefaultOffensivePlay(cDecisionEntity* pDecision)
 {
-    extern cFielder* g_pScriptCurrentFielder;
-    extern cTeam* g_pScriptCurrentTeam;
-    extern cTeam* g_pCurrentlyUpdatingTeam;
-    extern FuzzyVariant fvNotSet;
     extern FuzzyVariant GetStrategicBallCarrier__5FuzzyFP5cTeam(cTeam*);
 
     struct FuzzyBuf
@@ -476,7 +464,7 @@ void Fuzzy::DoPassing(float fConfidence, cDecisionEntity* pDecision)
                     else
                         fBestConfidence = fConfidence;
 
-                    pDecision->QueueActionSetDesire(19, fConfidence, 0.0f, theBestPassTarget, FuzzyVariant(sFalse));
+                    pDecision->QueueActionSetDesire(19, fConfidence, 0.0f, theBestPassTarget, FuzzyVariant(false));
 
                     SkillTweaks* pTweaks = SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide);
                     pDecision->m_pLastQueuedAction->m_fSelectionChance = CalcSelectChance(pTweaks->Off_GroundPassChance, Passer(g_pScriptCurrentFielder));
@@ -493,7 +481,7 @@ void Fuzzy::DoPassing(float fConfidence, cDecisionEntity* pDecision)
                     if (fBestConfidence <= fConfidence)
                         fBestConfidence = fConfidence;
 
-                    pDecision->QueueActionSetDesire(19, fConfidence, 0.0f, theBestPassTarget, FuzzyVariant(sTrue));
+                    pDecision->QueueActionSetDesire(19, fConfidence, 0.0f, theBestPassTarget, FuzzyVariant(true));
 
                     SkillTweaks* pTweaks = SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide);
                     pDecision->m_pLastQueuedAction->m_fSelectionChance = CalcSelectChance(pTweaks->Off_VolleyPassChance, Passer(g_pScriptCurrentFielder));
@@ -1124,7 +1112,7 @@ void Fuzzy::DoShooting(float fConfidence, cDecisionEntity* pDecision)
         if (fBestConfidence <= fConfidence)
             fBestConfidence = fConfidence;
 
-        pDecision->QueueActionSetDesire(14, fConfidence, 0.0f, FuzzyVariant(sFalse), FuzzyVariant(sTrue));
+        pDecision->QueueActionSetDesire(14, fConfidence, 0.0f, FuzzyVariant(false), FuzzyVariant(true));
 
         SkillTweaks* pTweaks = SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide);
         pDecision->m_pLastQueuedAction->m_fSelectionChance = CalcSelectChance(pTweaks->Off_ChipShotChance, Shooter(g_pScriptCurrentFielder));

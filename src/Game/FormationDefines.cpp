@@ -2,38 +2,12 @@
 #include "NL/nlConfig.h"
 #include "NL/nlLexicalCast.h"
 #include "NL/nlPrint.h"
-#include "NL/nlString.h"
+
+template <>
+BasicString<char, Detail::TempStringAllocator>
+LexicalCast<BasicString<char, Detail::TempStringAllocator>, const char*>(const char* const& value);
 
 static const nlVector3 v3Zero = { 0.0f, 0.0f, 0.0f };
-
-/**
- * Offset/Address/Size: 0x64 | 0x8003BE64 | size: 0x1C
- */
-FormationSet::FormationSet()
-{
-    m_ID = -1;
-    m_NumFormationDefs = 0;
-    m_FormationDefArray = NULL;
-    m_AutoDelete = false;
-}
-
-/**
- * Offset/Address/Size: 0x50 | 0x8003BE50 | size: 0x14
- */
-FormationPos::FormationPos()
-{
-    m_Location.f.x = 0.0f;
-    m_Location.f.y = 0.0f;
-    m_CaptainPreference = 0.0f;
-}
-
-/**
- * Offset/Address/Size: 0x0 | 0x8003BE00 | size: 0x50
- */
-FormationSpec::FormationSpec()
-{
-    m_ID = -1;
-}
 
 static inline float Remap(float value, float fromMin, float fromMax, float toMin, float toMax)
 {
@@ -334,14 +308,4 @@ FormationSet* FormationSet::LoadFormationSets(const char* filename, int& out_num
     }
 
     return setList;
-}
-
-void FormationDefines_stub()
-{
-    int i = 0;
-    LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(i);
-    float f = 0.0f;
-    LexicalCast<BasicString<char, Detail::TempStringAllocator>, float>(f);
-    bool b = false;
-    LexicalCast<BasicString<char, Detail::TempStringAllocator>, bool>(b);
 }

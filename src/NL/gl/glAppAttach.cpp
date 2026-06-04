@@ -1,6 +1,15 @@
 #include "NL/gl/glAppAttach.h"
 
-#include "Game/Render/ShootToScoreArrow.h"
+class WorldDarkening
+{
+public:
+    static WorldDarkening& Instance();
+    /* 0x0 */ float mRate;
+    /* 0x4 */ float mPos;
+    /* 0x8 */ float mTo;
+    /* 0xC */ bool mActive;
+};
+
 #include "NL/gl/glMemory.h"
 #include "NL/gl/glState.h"
 
@@ -175,30 +184,30 @@ void glplatAttachPacket(eGLView view, unsigned long layer, const glModelPacket* 
         newLayer++;
     }
 
-    if ((s32)newView < 8)
+    if ((s32)newView >= 8)
     {
-        if (((s32)newView == 3) || ((s32)newView >= 6))
+        if ((s32)newView == 0xB)
         {
             if (glGetRasterState(pPacket->state.raster, (eGLState)5) != 0)
             {
-                if (WorldDarkening::Instance().mActive)
-                {
-                    newView = (eGLView)7;
-                    newLayer++;
-                }
-                else
-                {
-                    newView = (eGLView)11;
-                    newLayer += 2;
-                }
+                newLayer++;
             }
         }
     }
-    else if ((s32)newView == 0xB)
+    else if (((s32)newView == 3) || ((s32)newView >= 6))
     {
         if (glGetRasterState(pPacket->state.raster, (eGLState)5) != 0)
         {
-            newLayer++;
+            if (WorldDarkening::Instance().mActive)
+            {
+                newView = (eGLView)7;
+                newLayer++;
+            }
+            else
+            {
+                newView = (eGLView)11;
+                newLayer += 2;
+            }
         }
     }
 

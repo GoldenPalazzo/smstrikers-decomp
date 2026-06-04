@@ -60,16 +60,15 @@ public:
 };
 extern float g_fSimulationTick;
 
-class Fuzzy
+namespace Fuzzy
 {
-public:
-    static FuzzyVariant ShouldIStrafeBall(cFielder*);
-    static FuzzyVariant ShouldIStrafeMark(cFielder*);
-    static FuzzyVariant GetBestHitTarget(cFielder*);
-    static FuzzyVariant GetBestLooseBallAction(cFielder*);
-    static FuzzyVariant GetBestPassReceiveAction(cFielder*);
-    static FuzzyVariant GetBestWindupShotAction(cFielder*);
-};
+FuzzyVariant ShouldIStrafeBall(cFielder*);
+FuzzyVariant ShouldIStrafeMark(cFielder*);
+FuzzyVariant GetBestHitTarget(cFielder*);
+FuzzyVariant GetBestLooseBallAction(cFielder*);
+FuzzyVariant GetBestPassReceiveAction(cFielder*);
+FuzzyVariant GetBestWindupShotAction(cFielder*);
+} // namespace Fuzzy
 
 const nlVector3 v3Zero = { 0.0f, 0.0f, 0.0f };
 

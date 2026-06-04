@@ -8,6 +8,94 @@
 #include "Game/Ball.h"
 #include "Game/Field.h"
 
+// Global helper/script-question declarations hoisted from block scope so they
+// resolve to global symbols (Fuzzy is now a namespace, not a class).
+class cGame;
+class Goalie;
+extern cTeam* g_pCurrentlyUpdatingTeam;
+extern float InFrontOfTheirNet(cFielder*);
+extern float IsPerfectPassInPlay();
+extern float ReceivingVolleyPass(cPlayer*);
+extern float CloseToTheirGoalie(cPlayer*);
+extern float NearToTheirNet(cPlayer*);
+extern float Stunned(Goalie*);
+extern float Shooter(cFielder*);
+extern float CalcSelectChance(float, float);
+extern float Incapacitated(cPlayer*);
+extern float UpfieldFrom(cPlayer*, cPlayer*);
+extern float FarTo(cPlayer*, cPlayer*);
+extern float NearTo(cPlayer*, cPlayer*);
+extern float Open(cFielder*);
+extern float OpenTo(cPlayer*, cPlayer*);
+extern float FGREATER(float, float);
+extern float AbleToUsePowerup(cFielder*, int);
+extern float Captain(cFielder*);
+extern float PerfectPassCandidateFrom(cFielder*, cFielder*);
+extern float OnScreen(cPlayer*);
+extern float LastBallOwner(cPlayer*);
+extern float DownfieldFrom(cPlayer*, cPlayer*);
+extern float Invincible(cFielder*);
+extern float FallenDown(cFielder*);
+extern float ChasingBall(cPlayer*);
+extern float Facing(cPlayer*, cPlayer*);
+extern float CloseToTheirNet(cPlayer*);
+extern float InDefensiveZone(cPlayer*);
+extern float InOffensiveZone(cPlayer*);
+extern float LikelyToScore(cFielder*);
+extern float PlayerShotDistance(cFielder*);
+extern float OpenToTheirNet(cFielder*);
+extern float GoalieOutOfPosition(cFielder*);
+extern float OutOfNet(Goalie*);
+extern cTeam* g_pScriptCurrentTeam;
+extern float UserControlledT(cTeam*);
+extern float ReceivingPass(cFielder*);
+extern float WideOpen(cFielder*);
+extern float ReceivingVolleyPassDelayed(cPlayer*);
+extern float Aggressive(cFielder*);
+extern float NearToBall(cPlayer*);
+extern float ClosingTo(cPlayer*, cPlayer*);
+extern float AtIdealDistanceForTackling(cPlayer*, cPlayer*);
+extern float CloseTo(cPlayer*, cPlayer*);
+extern float BallOwner(cPlayer*);
+extern float OnTheGround(cPlayer*);
+extern float PassReceiveCloseToDone(cFielder*);
+extern float Passer(cFielder*);
+extern float FLESS(float, float);
+extern cPlayer* GetClosestOpponentFielder(cPlayer*, nlVector3*);
+extern cTeam* g_pScriptOtherTeam;
+extern cBall* g_pScriptBall;
+extern cGame* g_pGame;
+extern float RandomChance(float);
+extern float TimeNearlyOver(cGame*);
+extern float Stalling(cTeam*);
+extern float Losing(cTeam*);
+extern float Difficult(cTeam*);
+extern float NormalizeVal(float, float, float);
+extern float OnMushrooms(cFielder*);
+extern float Ownerless(cBall*);
+extern float Pressured(cFielder*);
+extern float FacingSideline(cFielder*);
+extern float SeparatingFrom(cPlayer*, cPlayer*);
+extern float FarToBall(cPlayer*);
+extern float WindingUpForShot(cFielder*);
+extern float ReceivingPassDelayed(cFielder*);
+extern float InDefensiveZoneOfPlayer(cBall*, cPlayer*);
+extern float AbleToInterceptBall(cPlayer*);
+extern float Marking(cFielder*, cPlayer*);
+extern float GonnaGetBall(cTeam*);
+extern float CloseToSideline(cFielder*);
+extern float RepeatingLastDesire(cFielder*, eScriptFielderDesire);
+extern float Attacked(cFielder*);
+extern float Deker(cFielder*);
+extern float NearToTheirGoalie(cPlayer*);
+extern cBall* g_pBall;
+extern cFielder* g_pScriptCurrentFielder;
+extern float LikelyToUsePowerup(cFielder*, int);
+extern float High(cBall*);
+extern float AvoidingPowerups(cFielder*);
+extern float StuckOnSidelines(cFielder*);
+extern float Interpolate(float, float, float);
+
 extern "C" double fabs(double);
 
 float InBetweenMyNetAnd(cFielder*, cFielder*);
@@ -817,15 +905,6 @@ FuzzyVariant Fuzzy::ShouldIMarkBallOwner(cFielder* pFielder)
  */
 FuzzyVariant Fuzzy::ShouldIAttemptOneTimer(cFielder* TheFielder)
 {
-    extern cTeam* g_pCurrentlyUpdatingTeam;
-    extern float InFrontOfTheirNet(cFielder*);
-    extern float IsPerfectPassInPlay();
-    extern float ReceivingVolleyPass(cPlayer*);
-    extern float CloseToTheirGoalie(cPlayer*);
-    extern float NearToTheirNet(cPlayer*);
-    extern float Stunned(Goalie*);
-    extern float Shooter(cFielder*);
-    extern float CalcSelectChance(float, float);
 
     FuzzyVariant bestValue;
     float fConfidence = 1.0f;
@@ -1312,12 +1391,6 @@ FuzzyVariant Fuzzy::GetBestLooseBallPassTarget(cFielder* TheFielder)
  */
 FuzzyVariant Fuzzy::GetBestPassTarget(cPlayer* ThePlayer)
 {
-    extern float Incapacitated(cPlayer*);
-    extern float UpfieldFrom(cPlayer*, cPlayer*);
-    extern float FarTo(cPlayer*, cPlayer*);
-    extern float NearTo(cPlayer*, cPlayer*);
-    extern float Open(cFielder*);
-    extern float OpenTo(cPlayer*, cPlayer*);
 
     FuzzyVariant bestValue;
     float fConfidence = 1.0f;
@@ -1584,16 +1657,6 @@ FuzzyVariant Fuzzy::GetBestPassTarget(cPlayer* ThePlayer)
  */
 FuzzyVariant Fuzzy::GoodPassTargetFrom(cFielder* TheTargetFielder, cFielder* TheBallOwner)
 {
-    extern float FGREATER(float, float);
-    extern float Incapacitated(cPlayer*);
-    extern float AbleToUsePowerup(cFielder*, int);
-    extern float Captain(cFielder*);
-    extern float PerfectPassCandidateFrom(cFielder*, cFielder*);
-    extern float OpenTo(cPlayer*, cPlayer*);
-    extern float OnScreen(cPlayer*);
-    extern float NearToTheirNet(cPlayer*);
-    extern float LastBallOwner(cPlayer*);
-    extern float DownfieldFrom(cPlayer*, cPlayer*);
 
     FuzzyVariant bestValue;
     float fConfidence = 1.0f;
@@ -1772,12 +1835,6 @@ FuzzyVariant Fuzzy::GoodPassTargetFrom(cFielder* TheTargetFielder, cFielder* The
  */
 FuzzyVariant Fuzzy::GetBestHitTarget(cFielder* TheFielder)
 {
-    extern float Invincible(cFielder*);
-    extern float FallenDown(cFielder*);
-    extern float ChasingBall(cPlayer*);
-    extern float FarTo(cPlayer*, cPlayer*);
-    extern float Facing(cPlayer*, cPlayer*);
-    extern float NearTo(cPlayer*, cPlayer*);
 
     FuzzyVariant bestValue;
     float fConfidence = 1.0f;
@@ -2001,11 +2058,6 @@ FuzzyVariant Fuzzy::GetBestHitTarget(cFielder* TheFielder)
  */
 FuzzyVariant Fuzzy::GetPassDirection(cPlayer* pFromPlayer, cPlayer* pTargetPlayer)
 {
-    extern float CloseToTheirNet(cPlayer*);
-    extern float InDefensiveZone(cPlayer*);
-    extern float InOffensiveZone(cPlayer*);
-    extern float FarTo(cPlayer*, cPlayer*);
-    extern float FGREATER(float, float);
 
     FuzzyVariant bestValue;
     float fConfidence = 1.0f;
@@ -2092,13 +2144,6 @@ FuzzyVariant Fuzzy::GetPassDirection(cPlayer* pFromPlayer, cPlayer* pTargetPlaye
  */
 FuzzyVariant Fuzzy::GoodToShoot(cFielder* TheFielder)
 {
-    extern float InFrontOfTheirNet(cFielder*);
-    extern float LikelyToScore(cFielder*);
-    extern float PlayerShotDistance(cFielder*);
-    extern float Stunned(Goalie*);
-    extern float OpenToTheirNet(cFielder*);
-    extern float CloseToTheirGoalie(cPlayer*);
-    extern float NearToTheirNet(cPlayer*);
 
     FuzzyVariant bestValue;
     float fConfidence = 1.0f;
@@ -2359,16 +2404,6 @@ FuzzyVariant Fuzzy::GoodToShoot(cFielder* TheFielder)
  */
 FuzzyVariant Fuzzy::GoodToChipShot(cFielder* TheFielder)
 {
-    extern float ReceivingVolleyPass(cPlayer*);
-    extern float InFrontOfTheirNet(cFielder*);
-    extern float OnScreen(cPlayer*);
-    extern float GoalieOutOfPosition(cFielder*);
-    extern float LikelyToScore(cFielder*);
-    extern float OutOfNet(Goalie*);
-    extern float Stunned(Goalie*);
-    extern float OpenToTheirNet(cFielder*);
-    extern float CloseToTheirGoalie(cPlayer*);
-    extern float NearToTheirNet(cPlayer*);
 
     FuzzyVariant bestValue;
     float fConfidence = 1.0f;
@@ -2651,39 +2686,6 @@ FuzzyVariant Fuzzy::GoodToChipShot(cFielder* TheFielder)
  */
 FuzzyVariant Fuzzy::GetBestPassReceiveAction(cFielder* TheFielder)
 {
-    extern cTeam* g_pCurrentlyUpdatingTeam;
-    extern cTeam* g_pScriptCurrentTeam;
-    extern float UserControlledT(cTeam*);
-    extern float ReceivingPass(cFielder*);
-    extern float Captain(cFielder*);
-    extern float InOffensiveZone(cPlayer*);
-    extern float WideOpen(cFielder*);
-    extern float ReceivingVolleyPassDelayed(cPlayer*);
-    extern FuzzyVariant GetPowerupToUseForPassReceiveDefence(cFielder*);
-    extern float Aggressive(cFielder*);
-    extern float CalcSelectChance(float, float);
-    extern float NearToBall(cPlayer*);
-    extern float ClosingTo(cPlayer*, cPlayer*);
-    extern float NearTo(cPlayer*, cPlayer*);
-    extern float OnScreen(cPlayer*);
-    extern float AtIdealDistanceForTackling(cPlayer*, cPlayer*);
-    extern float CloseTo(cPlayer*, cPlayer*);
-    extern float InDefensiveZone(cPlayer*);
-    extern float BallOwner(cPlayer*);
-    extern float OnTheGround(cPlayer*);
-    extern FuzzyVariant ShouldIAttemptOneTimer(cFielder*);
-    extern float PassReceiveCloseToDone(cFielder*);
-    extern float Shooter(cFielder*);
-    extern float Passer(cFielder*);
-    extern float ReceivingVolleyPass(cPlayer*);
-    extern float FarTo(cPlayer*, cPlayer*);
-    extern float FGREATER(float, float);
-    extern float FLESS(float, float);
-    extern FuzzyVariant InDanger(cFielder*);
-    extern FuzzyVariant GoodToChipShot(cFielder*);
-    extern FuzzyVariant GetBestPassTarget(cPlayer*);
-    extern FuzzyVariant InDangerDelayed(cFielder*);
-    extern cPlayer* GetClosestOpponentFielder(cPlayer*, nlVector3*);
 
     FuzzyVariant bestValue;
     float fConfidence = 1.0f;
@@ -3248,47 +3250,6 @@ FuzzyVariant Fuzzy::GetBestPassReceiveAction(cFielder* TheFielder)
 FuzzyVariant Fuzzy::GetBestLooseBallAction(cFielder* TheFielder)
 {
     FORCE_DONT_INLINE;
-    extern cTeam* g_pCurrentlyUpdatingTeam;
-    extern cTeam* g_pScriptCurrentTeam;
-    extern cTeam* g_pScriptOtherTeam;
-    extern cBall* g_pScriptBall;
-    extern cGame* g_pGame;
-    extern float FGREATER(float, float);
-    extern float RandomChance(float);
-    extern float TimeNearlyOver(cGame*);
-    extern float Stalling(cTeam*);
-    extern float Losing(cTeam*);
-    extern float Difficult(cTeam*);
-    extern float NormalizeVal(float, float, float);
-    extern float UserControlledT(cTeam*);
-    extern float OnMushrooms(cFielder*);
-    extern float Ownerless(cBall*);
-    extern float Open(cFielder*);
-    extern float Pressured(cFielder*);
-    extern float FacingSideline(cFielder*);
-    extern float Aggressive(cFielder*);
-    extern float CalcSelectChance(float, float);
-    extern float CloseTo(cPlayer*, cPlayer*);
-    extern float AtIdealDistanceForTackling(cPlayer*, cPlayer*);
-    extern float SeparatingFrom(cPlayer*, cPlayer*);
-    extern float OnScreen(cPlayer*);
-    extern float FarToBall(cPlayer*);
-    extern float BallOwner(cPlayer*);
-    extern float WindingUpForShot(cFielder*);
-    extern float ReceivingPassDelayed(cFielder*);
-    extern float ChasingBall(cPlayer*);
-    extern float InDefensiveZoneOfPlayer(cBall*, cPlayer*);
-    extern float NearToBall(cPlayer*);
-    extern float AbleToInterceptBall(cPlayer*);
-    extern float InDefensiveZone(cPlayer*);
-    extern float Marking(cFielder*, cPlayer*);
-    extern float GonnaGetBall(cTeam*);
-    extern float Captain(cFielder*);
-    extern float InOffensiveZone(cPlayer*);
-    extern float Shooter(cFielder*);
-    extern float Passer(cFielder*);
-    extern float ClosingTo(cPlayer*, cPlayer*);
-    extern float NearTo(cPlayer*, cPlayer*);
 
     FuzzyVariant bestValue;
     float fConfidence = 1.0f;
@@ -3787,24 +3748,6 @@ FuzzyVariant Fuzzy::GetBestLooseBallAction(cFielder* TheFielder)
  */
 FuzzyVariant Fuzzy::GetBestWindupShotAction(cFielder* TheFielder)
 {
-    extern cTeam* g_pCurrentlyUpdatingTeam;
-    extern float LikelyToScore(cFielder*);
-    extern float Stunned(Goalie*);
-    extern float Invincible(cFielder*);
-    extern float Captain(cFielder*);
-    extern float OpenToTheirNet(cFielder*);
-    extern float Open(cFielder*);
-    extern float CalcSelectChance(float, float);
-    extern float Aggressive(cFielder*);
-    extern float Passer(cFielder*);
-    extern float CloseToSideline(cFielder*);
-    extern float CloseToTheirGoalie(cPlayer*);
-    extern float RepeatingLastDesire(cFielder*, eScriptFielderDesire);
-    extern float FLESS(float, float);
-    extern float Attacked(cFielder*);
-    extern float Deker(cFielder*);
-    extern float NearToTheirGoalie(cPlayer*);
-    extern float FGREATER(float, float);
 
     FuzzyVariant bestValue;
     float fConfidence = 1.0f;
@@ -4177,19 +4120,6 @@ FuzzyVariant Fuzzy::GetBestWindupShotAction(cFielder* TheFielder)
  */
 FuzzyVariant Fuzzy::GetPowerupToUseForPassReceiveDefence(cFielder* TheFielder)
 {
-    extern cBall* g_pBall;
-    extern cFielder* g_pScriptCurrentFielder;
-    extern float OnScreen(cPlayer*);
-    extern float UserControlledT(cTeam*);
-    extern float LikelyToUsePowerup(cFielder*, int);
-    extern float High(cBall*);
-    extern float NearToBall(cPlayer*);
-    extern float ChasingBall(cPlayer*);
-    extern float OnMushrooms(cFielder*);
-    extern float InDefensiveZone(cPlayer*);
-    extern float Captain(cFielder*);
-    extern float ReceivingPass(cFielder*);
-    extern float BallOwner(cPlayer*);
 
     FuzzyVariant bestValue;
     float fConfidence = 1.0f;
@@ -4598,12 +4528,6 @@ FuzzyVariant Fuzzy::GetPowerupToUseForWindupDefence(cFielder* TheFielder)
  */
 FuzzyVariant Fuzzy::InDanger(cFielder* TheFielder)
 {
-    extern float FGREATER(float, float);
-    extern float AvoidingPowerups(cFielder*);
-    extern float StuckOnSidelines(cFielder*);
-    extern float Open(cFielder*);
-    extern float Pressured(cFielder*);
-    extern float Attacked(cFielder*);
 
     FuzzyVariant bestValue;
 
@@ -4765,15 +4689,6 @@ FuzzyVariant Fuzzy::InDanger(cFielder* TheFielder)
  */
 FuzzyVariant Fuzzy::InDangerDelayed(cFielder* TheFielder)
 {
-    extern float FGREATER(float, float);
-    extern float Interpolate(float, float, float);
-    extern cTeam* g_pCurrentlyUpdatingTeam;
-    extern float Difficult(cTeam*);
-    extern float AvoidingPowerups(cFielder*);
-    extern float StuckOnSidelines(cFielder*);
-    extern float Open(cFielder*);
-    extern float Pressured(cFielder*);
-    extern float Attacked(cFielder*);
 
     FuzzyVariant bestValue;
     float fConfidence = 1.0f;

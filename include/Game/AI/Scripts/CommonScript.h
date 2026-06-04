@@ -15,32 +15,31 @@ class cFielder;
 extern unsigned char g_bScriptQuestionCachingOn;
 extern unsigned char g_bScriptQuestionCachingUseSTD;
 
-class Fuzzy
+namespace Fuzzy
 {
-public:
-    static FuzzyVariant GetStrategicBallCarrier(cTeam*);
-    static FuzzyVariant GetBestBallInterceptor(cTeam*);
-    static FuzzyVariant GetSwapControllerScore(cPlayer*);
-    static FuzzyVariant ShouldIStrafeBall(cFielder*);
-    static FuzzyVariant ShouldIStrafeMark(cFielder*);
-    static FuzzyVariant ShouldIMarkBallOwner(cFielder*);
-    static FuzzyVariant ShouldIAttemptOneTimer(cFielder*);
-    static FuzzyVariant GetBestLooseBallPassTarget(cFielder*);
-    static FuzzyVariant GetBestPassTarget(cPlayer*);
-    static FuzzyVariant GoodPassTargetFrom(cFielder*, cFielder*);
-    static FuzzyVariant GetBestHitTarget(cFielder*);
-    static FuzzyVariant GetPassDirection(cPlayer*, cPlayer*);
-    static FuzzyVariant GoodToShoot(cFielder*);
-    static FuzzyVariant GoodToChipShot(cFielder*);
-    static FuzzyVariant GetBestPassReceiveAction(cFielder*);
-    static FuzzyVariant GetBestLooseBallAction(cFielder*);
-    static FuzzyVariant GetBestWindupShotAction(cFielder*);
-    static FuzzyVariant GetPowerupToUseForPassReceiveDefence(cFielder*);
-    static FuzzyVariant GetPowerupToUseForWindupDefence(cFielder*);
-    static FuzzyVariant InDanger(cFielder*);
-    static FuzzyVariant InDangerDelayed(cFielder*);
-    static FuzzyVariant GoalieAndGonnaPickupBall(cPlayer*);
-};
+FuzzyVariant GetStrategicBallCarrier(cTeam*);
+FuzzyVariant GetBestBallInterceptor(cTeam*);
+FuzzyVariant GetSwapControllerScore(cPlayer*);
+FuzzyVariant ShouldIStrafeBall(cFielder*);
+FuzzyVariant ShouldIStrafeMark(cFielder*);
+FuzzyVariant ShouldIMarkBallOwner(cFielder*);
+FuzzyVariant ShouldIAttemptOneTimer(cFielder*);
+FuzzyVariant GetBestLooseBallPassTarget(cFielder*);
+FuzzyVariant GetBestPassTarget(cPlayer*);
+FuzzyVariant GoodPassTargetFrom(cFielder*, cFielder*);
+FuzzyVariant GetBestHitTarget(cFielder*);
+FuzzyVariant GetPassDirection(cPlayer*, cPlayer*);
+FuzzyVariant GoodToShoot(cFielder*);
+FuzzyVariant GoodToChipShot(cFielder*);
+FuzzyVariant GetBestPassReceiveAction(cFielder*);
+FuzzyVariant GetBestLooseBallAction(cFielder*);
+FuzzyVariant GetBestWindupShotAction(cFielder*);
+FuzzyVariant GetPowerupToUseForPassReceiveDefence(cFielder*);
+FuzzyVariant GetPowerupToUseForWindupDefence(cFielder*);
+FuzzyVariant InDanger(cFielder*);
+FuzzyVariant InDangerDelayed(cFielder*);
+FuzzyVariant GoalieAndGonnaPickupBall(cPlayer*);
+} // namespace Fuzzy
 
 #ifndef _SCRIPTQUESTIONCACHE_DEFINED_
 #define _SCRIPTQUESTIONCACHE_DEFINED_

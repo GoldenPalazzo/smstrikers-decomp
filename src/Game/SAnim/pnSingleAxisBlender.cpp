@@ -4,19 +4,6 @@
 
 SlotPool<cPN_SingleAxisBlender> cPN_SingleAxisBlender::m_SingleAxisBlenderSlotPool(0x10, 0x10);
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x801EF4C0 | size: 0x6C
-//  */
-// cPN_SingleAxisBlender::~cPN_SingleAxisBlender()
-// {
-// }
-
-void cPN_SingleAxisBlender::operator delete(void* ptr)
-{
-    ((SlotPoolEntry*)ptr)->m_next = m_SingleAxisBlenderSlotPool.m_FreeList;
-    m_SingleAxisBlenderSlotPool.m_FreeList = (SlotPoolEntry*)ptr;
-}
-
 /**
  * Offset/Address/Size: 0x5DC | 0x801EF320 | size: 0xD4
  */

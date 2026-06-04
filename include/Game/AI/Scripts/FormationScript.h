@@ -4,14 +4,13 @@
 #include "Game/AI/FuzzyVariant.h"
 #include "Game/Team.h"
 
-class Fuzzy
+namespace Fuzzy
 {
-public:
-    static FuzzyVariant GetStrategicBallCarrier(cTeam*);
-    static FuzzyVariant GetBestBallInterceptor(cTeam*);
-    static FuzzyVariant GetBestDefensiveFormation(cTeam*);
-    static FuzzyVariant GetBestOffensiveFormation(cTeam*);
-    static FuzzyVariant GetBestBallFormationSet(cTeam*);
-};
+FuzzyVariant GetStrategicBallCarrier(cTeam*);
+FuzzyVariant GetBestBallInterceptor(cTeam*);
+FuzzyVariant GetBestDefensiveFormation(cTeam*);
+FuzzyVariant GetBestOffensiveFormation(cTeam*);
+FuzzyVariant GetBestBallFormationSet(cTeam*);
+} // namespace Fuzzy
 
 #endif // _FORMATIONSCRIPT_H_

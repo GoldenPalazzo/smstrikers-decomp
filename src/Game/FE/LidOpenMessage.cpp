@@ -28,9 +28,9 @@ static int lastImageWidth;
 static int lastImageHeight;
 static int lastImageSize;
 static const unsigned char* lastImageData;
-static u8 ResetWasPaused;
-static bool CanGetResetPauseState;
 static int OpenCloseRefCount;
+static u8 ResetWasPaused;
+static bool CanGetResetPauseState = true;
 
 extern "C"
 {
@@ -91,7 +91,7 @@ static inline void UncompressLidMessage(const unsigned char* compressed, int com
  * remain on r20/r10 instead of r26/r9, and xStart does not preserve through
  * mr r19,r5 before x-loop setup.
  */
-void DisplayMessage(int arg0, int arg1, const unsigned char* arg2, int arg3, unsigned long arg4, bool arg5)
+static void DisplayMessage(int arg0, int arg1, const unsigned char* arg2, int arg3, unsigned long arg4, bool arg5)
 {
     unsigned int centeredFlag;
     int pass;
@@ -288,7 +288,7 @@ void DisplayDVDMessageSebring(int arg)
             if (nlTaskManager::m_pInstance->m_CurrState == 1)
             {
                 trackMgr = g_pTrackManager;
-                AudioStreamTrack::StreamTrack* track = trackMgr->GetTrack(nlStringLowerHash("sebring_music"));
+                AudioStreamTrack::StreamTrack* track = trackMgr->GetTrack(nlStringLowerHash("Announcer"));
                 if (track != NULL)
                 {
                     track->Pause(0, false);
@@ -298,7 +298,7 @@ void DisplayDVDMessageSebring(int arg)
         else
         {
             trackMgr = g_pTrackManager;
-            AudioStreamTrack::StreamTrack* track = trackMgr->GetTrack(nlStringLowerHash("music"));
+            AudioStreamTrack::StreamTrack* track = trackMgr->GetTrack(nlStringLowerHash("FE"));
             if (track != NULL)
             {
                 track->Pause(0, false);
@@ -316,13 +316,13 @@ void DisplayDVDMessageSebring(int arg)
         trackMgr = g_pTrackManager;
         if (trackMgr != NULL)
         {
-            AudioStreamTrack::StreamTrack* track = trackMgr->GetTrack(nlStringLowerHash("music"));
+            AudioStreamTrack::StreamTrack* track = trackMgr->GetTrack(nlStringLowerHash("FE"));
             if (track != NULL)
             {
                 track->Pause(0, false);
             }
             trackMgr = g_pTrackManager;
-            track = trackMgr->GetTrack(nlStringLowerHash("crowd"));
+            track = trackMgr->GetTrack(nlStringLowerHash("FE2"));
             if (track != NULL)
             {
                 track->Pause(0, false);
@@ -386,7 +386,7 @@ void DVDAllClearSebring(int)
                 if (!IsMoviePlayingInStrikers101())
                 {
                     trackMgr = g_pTrackManager;
-                    AudioStreamTrack::StreamTrack* track = trackMgr->GetTrack(nlStringLowerHash("sebring_music"));
+                    AudioStreamTrack::StreamTrack* track = trackMgr->GetTrack(nlStringLowerHash("Announcer"));
                     if (track != NULL)
                     {
                         track->Resume();
@@ -397,13 +397,13 @@ void DVDAllClearSebring(int)
         else
         {
             trackMgr = g_pTrackManager;
-            AudioStreamTrack::StreamTrack* track = trackMgr->GetTrack(nlStringLowerHash("music"));
+            AudioStreamTrack::StreamTrack* track = trackMgr->GetTrack(nlStringLowerHash("FE"));
             if (track != NULL)
             {
                 track->Resume();
             }
             trackMgr = g_pTrackManager;
-            track = trackMgr->GetTrack(nlStringLowerHash("crowd"));
+            track = trackMgr->GetTrack(nlStringLowerHash("FE2"));
             if (track != NULL)
             {
                 track->Resume();
@@ -415,13 +415,13 @@ void DVDAllClearSebring(int)
         trackMgr = g_pTrackManager;
         if (trackMgr != NULL)
         {
-            AudioStreamTrack::StreamTrack* track = trackMgr->GetTrack(nlStringLowerHash("music"));
+            AudioStreamTrack::StreamTrack* track = trackMgr->GetTrack(nlStringLowerHash("FE"));
             if (track != NULL)
             {
                 track->Resume();
             }
             trackMgr = g_pTrackManager;
-            track = trackMgr->GetTrack(nlStringLowerHash("crowd"));
+            track = trackMgr->GetTrack(nlStringLowerHash("FE2"));
             if (track != NULL)
             {
                 track->Resume();

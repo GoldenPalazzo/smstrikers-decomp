@@ -1,3 +1,4 @@
+#define NL_SINGLETON_NO_DEFINE
 #include "Game/Sys/movie.h"
 #include "Game/Audio/AudioLoader.h"
 #include "Game/Audio/StreamTrack.h"
@@ -34,15 +35,16 @@ extern "C"
 }
 void nlServiceFileSystem(void);
 
-static bool g_bMovieMustStop;
-static bool start;
+static bool g_bActive;
 static unsigned char* buffer;
-static PlatTexture* pTex[4];
-static unsigned long long resourceMarker;
 static bool bMustFreeBuffer;
+static bool start;
+static bool g_bMovieMustStop;
+static unsigned long long resourceMarker;
 static void* g_GrabTextureData;
 static unsigned long g_GrabTextureSize;
 static unsigned long GrabTextureHandle = glGetTexture("target/grab_texture");
+static PlatTexture* pTex[4] = { 0 };
 static THPVideoInfo videoInfo;
 
 /**

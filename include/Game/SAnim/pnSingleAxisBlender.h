@@ -11,7 +11,11 @@ public:
     cPN_SingleAxisBlender() { }
     cPN_SingleAxisBlender(int, void (*)(unsigned int, cPN_SingleAxisBlender*), unsigned int, float);
     /* 0x08 */ virtual ~cPN_SingleAxisBlender() { };
-    static void operator delete(void* ptr);
+    static void operator delete(void* ptr)
+    {
+        ((SlotPoolEntry*)ptr)->m_next = m_SingleAxisBlenderSlotPool.m_FreeList;
+        m_SingleAxisBlenderSlotPool.m_FreeList = (SlotPoolEntry*)ptr;
+    }
     /* 0x14 */ virtual void Evaluate(int, float, cPoseAccumulator*) const;
     /* 0x10 */ virtual void Evaluate(float, cPoseAccumulator*) const;
     /* 0x18 */ virtual cPoseNode* Update(float);

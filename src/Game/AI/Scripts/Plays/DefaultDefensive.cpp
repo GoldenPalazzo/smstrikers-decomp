@@ -18,19 +18,14 @@ extern cFielder* g_pScriptCurrentMark;
 
 float Defensive(cTeam*);
 
-static bool sFalse = false;
-static bool sTrue = true;
-
 /**
  * Offset/Address/Size: 0x5590 | 0x8008AC48 | size: 0x43C
- * TODO: 99.7% match - r29/r30 register swap for bResult and ExtraData temp pointer
  */
 FuzzyVariant Fuzzy::AbortDefencePlay(cDecisionEntity*)
 {
     FuzzyVariant bestValue;
     float fConfidence = 1.0f;
     float fBestConfidence = 0.0f;
-    bool bResult;
 
     float fTrueConfidence = Defensive(g_pScriptCurrentTeam);
     float fFalseConfidence = 1.0f - fTrueConfidence;
@@ -48,8 +43,7 @@ FuzzyVariant Fuzzy::AbortDefencePlay(cDecisionEntity*)
         if (fConfidence > 0.0f)
         {
             fBestConfidence = fConfidence;
-            bResult = sFalse;
-            bestValue = FuzzyVariant(bResult);
+            bestValue = FuzzyVariant(false);
         }
     }
 
@@ -62,8 +56,7 @@ FuzzyVariant Fuzzy::AbortDefencePlay(cDecisionEntity*)
         if (fConfidence > fBestConfidence)
         {
             fBestConfidence = fConfidence;
-            bResult = sTrue;
-            bestValue = FuzzyVariant(bResult);
+            bestValue = FuzzyVariant(true);
         }
     }
 

@@ -65,10 +65,10 @@ void ScrollingTickerScene::CloseMessenger()
     f32 startScale = 0.0f;
 
     FETweener* scaleTween = m_pFETweenManager.createTween(
-        &endScale, &startScale, 0.3f, 0.1f, 1, TweenFunctions::easeinelastic, this, setScaleTweenCallback);
+        &endScale, &startScale, 0.4f, -0.3f, 1, TweenFunctions::easeinelastic, this, setScaleTweenCallback);
 
     FETweener* sizeTween = m_pFETweenManager.createTween(
-        &endScale, &startScale, 0.15f, 0.0f, 1, TweenFunctions::linear, this, setSizeTweenCallback);
+        &endScale, &startScale, 0.1f, 0.0f, 1, TweenFunctions::linear, this, setSizeTweenCallback);
 
     sizeTween->setNextTween(scaleTween);
     scaleTween->setDoneCallFunc(tickerClosed, this);

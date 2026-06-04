@@ -7,17 +7,16 @@
 
 class cFielder;
 
-class Fuzzy
+namespace Fuzzy
 {
-public:
-    static FuzzyVariant AbortDefencePlay(cDecisionEntity*);
-    static FuzzyVariant DefaultDefencePlay(cDecisionEntity*);
-    static FuzzyVariant DefendPassInPlay(float, cDecisionEntity*);
-    static FuzzyVariant TryAttacking(float, cDecisionEntity*);
-    static FuzzyVariant AttackBallOwner(float, cDecisionEntity*);
-    static FuzzyVariant UsePowerupDefensive(float, cDecisionEntity*);
-    static FuzzyVariant GetPowerupTargetDefensive(cTeam*);
-    static FuzzyVariant InGoodWindupPosition(cFielder*);
-};
+FuzzyVariant AbortDefencePlay(cDecisionEntity*);
+FuzzyVariant DefaultDefencePlay(cDecisionEntity*);
+FuzzyVariant DefendPassInPlay(float, cDecisionEntity*);
+FuzzyVariant TryAttacking(float, cDecisionEntity*);
+FuzzyVariant AttackBallOwner(float, cDecisionEntity*);
+FuzzyVariant UsePowerupDefensive(float, cDecisionEntity*);
+FuzzyVariant GetPowerupTargetDefensive(cTeam*);
+FuzzyVariant InGoodWindupPosition(cFielder*);
+} // namespace Fuzzy
 
 #endif // _DEFAULTDEFENSIVE_H_

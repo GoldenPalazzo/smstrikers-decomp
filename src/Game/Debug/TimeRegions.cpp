@@ -1,3 +1,5 @@
+#define NL_SINGLETON_NO_DEFINE
+
 #include "Game/Debug/TimeRegions.h"
 
 #include "Game/BasicStadium.h"
@@ -7,6 +9,9 @@
 
 #include "Game/Debug/FrameCounter.h"
 #include "NL/nlPrint.h"
+
+template <>
+cBaseCamera* nlDLRingGetStart<cBaseCamera>(cBaseCamera*);
 
 TimeRegion* pGamePlayTimeRegion;
 TimeRegion* pNISTimeRegion;
@@ -31,7 +36,7 @@ void WriteFrameRateStatsToFile()
 /**
  * Offset/Address/Size: 0x820 | 0x80162640 | size: 0x18
  */
-bool IsDuringGameplay()
+static bool IsDuringGameplay()
 {
     return (nlTaskManager::m_pInstance->m_CurrState == 0x2);
 }
@@ -39,7 +44,7 @@ bool IsDuringGameplay()
 /**
  * Offset/Address/Size: 0x7B8 | 0x801625D8 | size: 0x68
  */
-bool CentreOfField()
+static bool CentreOfField()
 {
     const nlVector3& targetPosition = (*nlDLRingGetStart<cBaseCamera>(cCameraManager::m_cameraStack)).GetTargetPosition();
     bool isCenter = false;
@@ -61,7 +66,7 @@ inline bool IsInCenterZone()
 /**
  * Offset/Address/Size: 0x6DC | 0x801624FC | size: 0xDC
  */
-bool LeftSideOfField()
+static bool LeftSideOfField()
 {
     const nlVector3& v = nlDLRingGetStart<cBaseCamera>(cCameraManager::m_cameraStack)->GetTargetPosition();
     unsigned long curState = nlTaskManager::m_pInstance->m_CurrState;
@@ -72,7 +77,7 @@ bool LeftSideOfField()
 /**
  * Offset/Address/Size: 0x600 | 0x80162420 | size: 0xDC
  */
-bool RightSideOfField()
+static bool RightSideOfField()
 {
     const nlVector3& v = nlDLRingGetStart<cBaseCamera>(cCameraManager::m_cameraStack)->GetTargetPosition();
     unsigned long curState = nlTaskManager::m_pInstance->m_CurrState;
@@ -83,7 +88,7 @@ bool RightSideOfField()
 /**
  * Offset/Address/Size: 0x5E8 | 0x80162408 | size: 0x18
  */
-bool IsDuringNIS()
+static bool IsDuringNIS()
 {
     return (nlTaskManager::m_pInstance->m_CurrState == 0x100);
 }
@@ -91,7 +96,7 @@ bool IsDuringNIS()
 /**
  * Offset/Address/Size: 0x5D0 | 0x801623F0 | size: 0x18
  */
-bool IsDuringAutoreplay()
+static bool IsDuringAutoreplay()
 {
     return (nlTaskManager::m_pInstance->m_CurrState == 0x10);
 }
@@ -99,7 +104,7 @@ bool IsDuringAutoreplay()
 /**
  * Offset/Address/Size: 0x598 | 0x801623B8 | size: 0x38
  */
-bool IsBowserAround()
+static bool IsBowserAround()
 {
     return (BasicStadium::GetCurrentStadium()->mpNPCManager->mpBowser->meBowserState != BOWSER_STATE_HIDDEN);
 }
@@ -107,7 +112,7 @@ bool IsBowserAround()
 /**
  * Offset/Address/Size: 0x580 | 0x801623A0 | size: 0x18
  */
-bool IsShotInProgress()
+static bool IsShotInProgress()
 {
     return (g_pBall->m_tShotTimer.m_uPackedTime != 0);
 }

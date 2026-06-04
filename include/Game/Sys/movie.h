@@ -4,8 +4,6 @@
 #include "NL/nlTask.h"
 #include "Game/GameInfo.h"
 
-extern bool g_bActive;
-
 bool IsMoviePlayingInStrikers101();
 bool MoviePlay();
 bool MovieStop();

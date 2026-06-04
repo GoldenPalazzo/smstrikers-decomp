@@ -4,11 +4,15 @@
 #include "Game/AI/DecisionEntity.h"
 #include "Game/AI/FuzzyVariant.h"
 
-class Fuzzy
+class cTeam;
+class cPlayer;
+
+namespace Fuzzy
 {
-public:
-    static FuzzyVariant AbortLoosePlay(cDecisionEntity*);
-    static FuzzyVariant DefaultLoosePlay(cDecisionEntity*);
-};
+FuzzyVariant AbortLoosePlay(cDecisionEntity*);
+FuzzyVariant DefaultLoosePlay(cDecisionEntity*);
+FuzzyVariant GetBestBallInterceptor(cTeam*);
+FuzzyVariant GoalieAndGonnaPickupBall(cPlayer*);
+} // namespace Fuzzy
 
 #endif // _DEFAULTLOOSE_H_

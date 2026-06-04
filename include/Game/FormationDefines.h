@@ -12,7 +12,12 @@ class FormationSpec;
 class FormationPos
 {
 public:
-    FormationPos();
+    FormationPos()
+    {
+        m_Location.f.x = 0.0f;
+        m_Location.f.y = 0.0f;
+        m_CaptainPreference = 0.0f;
+    }
     void GetLocationForTeam(nlVector2&, int) const;
 
     nlVector2 m_Location;      // offset 0x0, size 0x8
@@ -22,7 +27,10 @@ public:
 class FormationSpec
 {
 public:
-    FormationSpec();
+    FormationSpec()
+    {
+        m_ID = -1;
+    }
     nlVector2& GetKeyLocation() const;
     void CalculateExtents(nlVector2&, nlVector2&, const nlVector2&) const;
 
@@ -40,7 +48,13 @@ public:
 class FormationSet
 {
 public:
-    FormationSet();
+    FormationSet()
+    {
+        m_ID = -1;
+        m_NumFormationDefs = 0;
+        m_FormationDefArray = NULL;
+        m_AutoDelete = false;
+    }
 
     ~FormationSet()
     {
@@ -48,7 +62,7 @@ public:
         {
             delete[] m_FormationDefArray;
         }
-    };
+    }
 
     FormationSpec* GetFormationSpec(int) const;
     FormationSpec* GetFormationSpecFromID(int) const;

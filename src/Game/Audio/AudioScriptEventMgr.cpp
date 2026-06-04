@@ -84,11 +84,10 @@ public:
     /* 0x1C */ Variant ExtraData;
 };
 
-class Fuzzy
+namespace Fuzzy
 {
-public:
-    static FuzzyVariant GoodToShoot(cFielder*);
-};
+FuzzyVariant GoodToShoot(cFielder*);
+}
 
 extern cTeam* g_pTeams[];
 float OnBreakaway(cFielder*);

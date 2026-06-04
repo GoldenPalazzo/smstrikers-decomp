@@ -1,25 +1,26 @@
 #include "Game/AI/Scripts/Plays/DefaultLoose.h"
 #include "Game/AI/ScriptAction.h"
+#include "Game/AI/Scripts/ScriptQuestions.h"
 #include "Game/GameTweaks.h"
-
-class cTeam;
 
 #include "Game/AI/Scripts/SaveConfidence.h"
 
-static bool sFalse = false;
-static bool sTrue = true;
+extern cFielder* g_pScriptCurrentFielder;
+extern cFielder* g_pScriptCurrentMark;
+extern cTeam* g_pScriptCurrentTeam;
+extern cTeam* g_pScriptOtherTeam;
+extern cTeam* g_pCurrentlyUpdatingTeam;
+extern cBall* g_pScriptBall;
+extern FuzzyVariant fvNotSet;
+
+extern float Loose(cTeam*);
 
 /**
  * Offset/Address/Size: 0x15CC | 0x8008C650 | size: 0x43C
- * TODO: 99.70% match - r29/r30 swap in bool-to-FuzzyVariant branch temporaries.
  */
 FuzzyVariant Fuzzy::AbortLoosePlay(cDecisionEntity*)
 {
-    extern cTeam* g_pScriptCurrentTeam;
-    extern float Loose(cTeam*);
-
     FuzzyVariant bestValue;
-    bool bResult;
     float fConfidence = 1.0f;
     float fBestConfidence = 0.0f;
 
@@ -41,8 +42,7 @@ FuzzyVariant Fuzzy::AbortLoosePlay(cDecisionEntity*)
         if (fConfidence > 0.0f)
         {
             fBestConfidence = fConfidence;
-            bResult = sFalse;
-            bestValue = FuzzyVariant(bResult);
+            bestValue = FuzzyVariant(false);
         }
     }
 
@@ -57,8 +57,7 @@ FuzzyVariant Fuzzy::AbortLoosePlay(cDecisionEntity*)
         if (fConfidence > fBestConfidence)
         {
             fBestConfidence = fConfidence;
-            bResult = sTrue;
-            bestValue = FuzzyVariant(bResult);
+            bestValue = FuzzyVariant(true);
         }
     }
 
@@ -73,34 +72,6 @@ FuzzyVariant Fuzzy::AbortLoosePlay(cDecisionEntity*)
  */
 FuzzyVariant Fuzzy::DefaultLoosePlay(cDecisionEntity* pDecision)
 {
-    extern cFielder* g_pScriptCurrentFielder;
-    extern cFielder* g_pScriptCurrentMark;
-    extern cTeam* g_pScriptCurrentTeam;
-    extern cTeam* g_pScriptOtherTeam;
-    extern cTeam* g_pCurrentlyUpdatingTeam;
-    extern cBall* g_pScriptBall;
-    extern FuzzyVariant fvNotSet;
-
-    extern float ChasingBall(cPlayer*);
-    extern float GonnaGetBall(cTeam*);
-    extern float RepeatingLastDesire(cFielder*, int);
-    extern float AtIdealDistanceForTackling(cPlayer*, cPlayer*);
-    extern float Winger(cFielder*);
-    extern float InOffensiveZoneOfPlayer(cBall*, cPlayer*);
-    extern float InDefensiveZoneOfPlayer(cBall*, cPlayer*);
-    extern float InDefensiveZone(cPlayer*);
-    extern float InOffensiveZone(cPlayer*);
-    extern float Midfield(cFielder*);
-    extern float Defence(cFielder*);
-    extern float NearToMyNet(cPlayer*);
-    extern float NearToBall(cPlayer*);
-    extern float Stunned(Goalie*);
-    extern float Aggressive(cFielder*);
-    extern float CalcSelectChance(float, float);
-
-    extern FuzzyVariant GetBestBallInterceptor(cTeam*);
-    extern FuzzyVariant GoalieAndGonnaPickupBall(cPlayer*);
-
     float fConfidence = 1.0f;
     float fBestConfidence = 0.0f;
 
@@ -135,7 +106,7 @@ FuzzyVariant Fuzzy::DefaultLoosePlay(cDecisionEntity* pDecision)
             {
                 cFielder* theOpponent = g_pScriptOtherTeam->GetFielder(i);
 
-                float fNotRepeating = 1.0f - RepeatingLastDesire(g_pScriptCurrentFielder, 5);
+                float fNotRepeating = 1.0f - RepeatingLastDesire(g_pScriptCurrentFielder, edHeavyAttack);
                 float fChasing = ChasingBall((cPlayer*)theOpponent);
                 float fIdealTackle = AtIdealDistanceForTackling((cPlayer*)g_pScriptCurrentFielder, (cPlayer*)theOpponent);
                 float fNotChasing;
@@ -475,7 +446,7 @@ FuzzyVariant Fuzzy::DefaultLoosePlay(cDecisionEntity* pDecision)
         fConfidence = (fConfidence <= fNearBall) ? fConfidence : fNearBall;
         if (fConfidence < fNearBall && fNearBall < 0.5f)
             fConfidence = fConfidence * fBranchRatio10;
-        if (fBestConfidence < fConfidence)
+        if (fBestConfidence <= fConfidence)
             fBestConfidence = fConfidence;
         pDecision->QueueActionSetDesire(11, fConfidence, -1.0f, fvNotSet, fvNotSet);
     }
