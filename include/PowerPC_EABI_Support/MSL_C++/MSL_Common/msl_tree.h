@@ -45,8 +45,8 @@ public:
         void set_black() { parent_ = (void*)((unsigned long)parent_ & ~1); }
     };
 
-    static void rotate_left(node_base* x, node_base*& root);
     static void rotate_right(node_base* x, node_base*& root);
+    static void rotate_left(node_base* x, node_base*& root);
     static void balance_insert(node_base* x, node_base* root);
 };
 
@@ -188,11 +188,11 @@ public:
     void clear();
     void destroy(node* n);
 
-    template <class Key>
-    iterator find(const Key& x);
-
     template <class Key, class Value>
     T& find_or_insert(const Key& key);
+
+    template <class Key>
+    iterator find(const Key& x);
 
     node* insert_node_at(node* p, bool leftchild, bool is_leftmost, const T& x);
 

@@ -178,85 +178,6 @@ struct StdMapNode
 
 extern "C" void __find(StdMapNode** outNode, void* tree, const unsigned long* key);
 
-/**
- * Offset/Address/Size: 0xE4 | 0x80079D64 | size: 0x1B4
- * TODO: Remaining diff is std::tree find call symbol (__find wrapper vs templated std::__tree::find<Ul>)
- */
-unsigned char ScriptQuestionCache::Lookup(unsigned long hash, FuzzyVariant& returnVal, const char* name)
-{
-    FuzzyVariant* pValue;
-    StdMapNode* stdNode;
-
-    mTotalLookups++;
-
-    if (g_bScriptQuestionCachingUseSTD)
-    {
-        __find(&stdNode, &mQuestionCacheMapSTD, &hash);
-
-        StdMapNode* stdFound = stdNode;
-        if ((StdMapNodeBase*)stdFound != &((StdMapTree*)&mQuestionCacheMapSTD)->x4)
-        {
-            mCacheHits++;
-            returnVal = stdFound->value;
-            return 1;
-        }
-    }
-    else
-    {
-        AVLTreeEntry<unsigned long, FuzzyVariant>* node = mQuestionCacheMap.m_Root;
-        unsigned long key = hash;
-        unsigned char found;
-
-        while (node != NULL)
-        {
-            int cmpResult;
-            if (key == node->key)
-            {
-                cmpResult = 0;
-            }
-            else if (key < node->key)
-            {
-                cmpResult = -1;
-            }
-            else
-            {
-                cmpResult = 1;
-            }
-
-            if (cmpResult == 0)
-            {
-                if (&pValue != NULL)
-                {
-                    pValue = &node->value;
-                }
-                found = 1;
-                goto found_done;
-            }
-            if (cmpResult < 0)
-            {
-                node = (AVLTreeEntry<unsigned long, FuzzyVariant>*)node->node.left;
-            }
-            else
-            {
-                node = (AVLTreeEntry<unsigned long, FuzzyVariant>*)node->node.right;
-            }
-        }
-
-        found = 0;
-
-    found_done:
-
-        if (found)
-        {
-            mCacheHits++;
-            returnVal = *pValue;
-            return 1;
-        }
-    }
-
-    return 0;
-}
-
 // Stub for find_or_insert result (std::pair<const unsigned long, FuzzyVariant> in map)
 struct FuzzyMapPair
 {
@@ -266,42 +187,17 @@ struct FuzzyMapPair
 
 extern "C" FuzzyMapPair* __find_or_insert(void* tree, const unsigned long* key);
 
-/**
- * Offset/Address/Size: 0x0 | 0x80079C80 | size: 0xE4
- */
-#pragma dont_inline on
-const FuzzyVariant& ScriptQuestionCache::AddToCache(unsigned long key, const FuzzyVariant& variant, const char* name)
-{
-    if (g_bScriptQuestionCachingOn)
-    {
-        if (g_bScriptQuestionCachingUseSTD)
-        {
-            // TODO: Implement all this std stuff..
-            FuzzyMapPair* pair = __find_or_insert(&mQuestionCacheMapSTD, &key);
-            pair->value = variant;
-        }
-        else
-        {
-            AVLTreeNode* existingNode;
-            mQuestionCacheMap.AddAVLNode((AVLTreeNode**)&mQuestionCacheMap.m_Root, (void*)&key, (void*)&variant, &existingNode, mQuestionCacheMap.m_NumElements);
-            if (existingNode == NULL)
-            {
-                mQuestionCacheMap.m_NumElements++;
-            }
-        }
-    }
-    return variant;
-}
-#pragma dont_inline reset
+#include "Game/AI/Scripts/ScriptCaching.h"
 
 /**
  * Offset/Address/Size: 0x0 | 0x80079B54 | size: 0xE4
  */
-FuzzyVariant::FuzzyVariant(const FuzzyVariant& other)
+inline FuzzyVariant::FuzzyVariant(const FuzzyVariant& other)
 {
     Reset();
     *this = other;
 }
+
 
 /**
  * Offset/Address/Size: 0xF1B0 | 0x80079380 | size: 0x7D4
