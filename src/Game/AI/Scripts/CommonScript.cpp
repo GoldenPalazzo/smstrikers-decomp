@@ -1,4 +1,3 @@
-#define FUZZYVARIANT_COPY_CTOR_DECL_ONLY
 #include "Game/AI/Scripts/CommonScript.h"
 #include "Game/AI/Scripts/ScriptQuestions.h"
 
@@ -176,34 +175,12 @@ struct StdMapNode
     FuzzyVariant value;
 };
 
-extern "C" void __find(StdMapNode** outNode, void* tree, const unsigned long* key);
-
-// Stub for find_or_insert result (std::pair<const unsigned long, FuzzyVariant> in map)
-struct FuzzyMapPair
-{
-    unsigned long key;
-    FuzzyVariant value;
-};
-
-extern "C" FuzzyMapPair* __find_or_insert(void* tree, const unsigned long* key);
-
 #include "Game/AI/Scripts/ScriptCaching.h"
 
 /**
- * Offset/Address/Size: 0x0 | 0x80079B54 | size: 0xE4
- */
-inline FuzzyVariant::FuzzyVariant(const FuzzyVariant& other)
-{
-    Reset();
-    *this = other;
-}
-
-
-/**
  * Offset/Address/Size: 0xF1B0 | 0x80079380 | size: 0x7D4
- * TODO: 95.35% match - std::tree call symbol remains __find/__find_or_insert
- * versus find<Ul>/find_or_insert<Ul,12FuzzyVariant>, plus residual
- * stack/register drift around hash and cache temporaries
+ * TODO: 96.3% match - one add operand/register swap (r31,r0,r3 vs r29,r3,r0)
+ * plus literal-pool offset numbering drift in .sdata2
  */
 FuzzyVariant Fuzzy::GetStrategicBallCarrier(cTeam* TheTeam)
 {
@@ -227,9 +204,7 @@ FuzzyVariant Fuzzy::GetStrategicBallCarrier(cTeam* TheTeam)
 
     if (g_bScriptQuestionCachingUseSTD)
     {
-        StdMapNode* stdNode;
-        __find(&stdNode, &pCache->mQuestionCacheMapSTD, &hashKey);
-        StdMapNode* stdFound = stdNode;
+        StdMapNode* stdFound = (StdMapNode*)pCache->mQuestionCacheMapSTD.find(hashKey).ptr_;
         if ((StdMapNodeBase*)stdFound != &((StdMapTree*)&pCache->mQuestionCacheMapSTD)->x4)
         {
             pCache->mCacheHits++;
@@ -283,8 +258,8 @@ FuzzyVariant Fuzzy::GetStrategicBallCarrier(cTeam* TheTeam)
         {
             if (g_bScriptQuestionCachingUseSTD)
             {
-                FuzzyMapPair* pair = __find_or_insert(&pCache->mQuestionCacheMapSTD, &hashCopy1);
-                pair->value = bestValue;
+                std::pair<const unsigned long, FuzzyVariant>& pair = pCache->mQuestionCacheMapSTD.tree_.find_or_insert<unsigned long, FuzzyVariant>(hashCopy1);
+                pair.second = bestValue;
             }
             else
             {
@@ -328,8 +303,8 @@ FuzzyVariant Fuzzy::GetStrategicBallCarrier(cTeam* TheTeam)
     {
         if (g_bScriptQuestionCachingUseSTD)
         {
-            FuzzyMapPair* pair = __find_or_insert(&pCache->mQuestionCacheMapSTD, &hashCopy2);
-            pair->value = bestValue;
+            std::pair<const unsigned long, FuzzyVariant>& pair = pCache->mQuestionCacheMapSTD.tree_.find_or_insert<unsigned long, FuzzyVariant>(hashCopy2);
+            pair.second = bestValue;
         }
         else
         {
@@ -345,9 +320,8 @@ FuzzyVariant Fuzzy::GetStrategicBallCarrier(cTeam* TheTeam)
 
 /**
  * Offset/Address/Size: 0xE9DC | 0x80078BAC | size: 0x7D4
- * TODO: 95.47% match - std::tree call symbol remains __find/__find_or_insert
- * versus find<Ul>/find_or_insert<Ul,12FuzzyVariant>, plus residual stack/register
- * allocation drift around hash key and cache temporaries
+ * TODO: 96.7% match - residual register-allocation drift around hash key
+ * and cache temporaries, plus literal-pool offset numbering in .sdata2
  */
 FuzzyVariant Fuzzy::GetBestBallInterceptor(cTeam* TheTeam)
 {
@@ -371,9 +345,7 @@ FuzzyVariant Fuzzy::GetBestBallInterceptor(cTeam* TheTeam)
 
     if (g_bScriptQuestionCachingUseSTD)
     {
-        StdMapNode* stdNode;
-        __find(&stdNode, &pCache->mQuestionCacheMapSTD, &hashKey);
-        StdMapNode* stdFound = stdNode;
+        StdMapNode* stdFound = (StdMapNode*)pCache->mQuestionCacheMapSTD.find(hashKey).ptr_;
         if ((StdMapNodeBase*)stdFound != &((StdMapTree*)&pCache->mQuestionCacheMapSTD)->x4)
         {
             pCache->mCacheHits++;
@@ -423,8 +395,8 @@ FuzzyVariant Fuzzy::GetBestBallInterceptor(cTeam* TheTeam)
         {
             if (g_bScriptQuestionCachingUseSTD)
             {
-                FuzzyMapPair* pair = __find_or_insert(&pCache->mQuestionCacheMapSTD, &hashCopy1);
-                pair->value = bestValue;
+                std::pair<const unsigned long, FuzzyVariant>& pair = pCache->mQuestionCacheMapSTD.tree_.find_or_insert<unsigned long, FuzzyVariant>(hashCopy1);
+                pair.second = bestValue;
             }
             else
             {
@@ -469,8 +441,8 @@ FuzzyVariant Fuzzy::GetBestBallInterceptor(cTeam* TheTeam)
     {
         if (g_bScriptQuestionCachingUseSTD)
         {
-            FuzzyMapPair* pair = __find_or_insert(&pCache->mQuestionCacheMapSTD, &hashCopy2);
-            pair->value = bestValue;
+            std::pair<const unsigned long, FuzzyVariant>& pair = pCache->mQuestionCacheMapSTD.tree_.find_or_insert<unsigned long, FuzzyVariant>(hashCopy2);
+            pair.second = bestValue;
         }
         else
         {
@@ -888,8 +860,8 @@ FuzzyVariant Fuzzy::ShouldIAttemptOneTimer(cFielder* TheFielder)
         {
             if (g_bScriptQuestionCachingUseSTD)
             {
-                FuzzyMapPair* pair = __find_or_insert(&cache->mQuestionCacheMapSTD, &hashCopy1);
-                pair->value = bestValue;
+                std::pair<const unsigned long, FuzzyVariant>& pair = cache->mQuestionCacheMapSTD.tree_.find_or_insert<unsigned long, FuzzyVariant>(hashCopy1);
+                pair.second = bestValue;
             }
             else
             {
@@ -1107,8 +1079,8 @@ FuzzyVariant Fuzzy::ShouldIAttemptOneTimer(cFielder* TheFielder)
     {
         if (g_bScriptQuestionCachingUseSTD)
         {
-            FuzzyMapPair* pair = __find_or_insert(&cache->mQuestionCacheMapSTD, &hashCopy2);
-            pair->value = bestValue;
+            std::pair<const unsigned long, FuzzyVariant>& pair = cache->mQuestionCacheMapSTD.tree_.find_or_insert<unsigned long, FuzzyVariant>(hashCopy2);
+            pair.second = bestValue;
         }
         else
         {
@@ -1144,9 +1116,7 @@ FuzzyVariant Fuzzy::GetBestLooseBallPassTarget(cFielder* TheFielder)
 
     if (g_bScriptQuestionCachingUseSTD)
     {
-        StdMapNode* stdNode;
-        __find(&stdNode, &cache->mQuestionCacheMapSTD, &hash);
-        StdMapNode* stdFound = stdNode;
+        StdMapNode* stdFound = (StdMapNode*)cache->mQuestionCacheMapSTD.find(hash).ptr_;
         if ((StdMapNodeBase*)stdFound != &((StdMapTree*)&cache->mQuestionCacheMapSTD)->x4)
         {
             cache->mCacheHits++;
@@ -1213,8 +1183,8 @@ FuzzyVariant Fuzzy::GetBestLooseBallPassTarget(cFielder* TheFielder)
         {
             if (g_bScriptQuestionCachingUseSTD)
             {
-                FuzzyMapPair* pair = __find_or_insert(&cache->mQuestionCacheMapSTD, &hashCopy1);
-                pair->value = bestValue;
+                std::pair<const unsigned long, FuzzyVariant>& pair = cache->mQuestionCacheMapSTD.tree_.find_or_insert<unsigned long, FuzzyVariant>(hashCopy1);
+                pair.second = bestValue;
             }
             else
             {
@@ -1229,7 +1199,8 @@ FuzzyVariant Fuzzy::GetBestLooseBallPassTarget(cFielder* TheFielder)
 
     float fTrueConfidence = InDanger(TheFielder).Confidence;
     float fFalseConfidence = 1.0f - fTrueConfidence;
-    float fBranchRatio = ((fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence) / ((fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence);
+    float fBranchRatio = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+    fBranchRatio = fBranchRatio / ((fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence);
 
     if (fTrueConfidence > 0.0f)
     {
@@ -1242,7 +1213,8 @@ FuzzyVariant Fuzzy::GetBestLooseBallPassTarget(cFielder* TheFielder)
 
         fTrueConfidence = (theBestPassTarget.Confidence <= fConfidence) ? theBestPassTarget.Confidence : fConfidence;
         fFalseConfidence = 1.0f - fTrueConfidence;
-        fBranchRatio = ((fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence) / ((fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence);
+        fBranchRatio = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+        fBranchRatio = fBranchRatio / ((fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence);
 
         if (fTrueConfidence > 0.0f)
         {
@@ -1265,8 +1237,8 @@ FuzzyVariant Fuzzy::GetBestLooseBallPassTarget(cFielder* TheFielder)
     {
         if (g_bScriptQuestionCachingUseSTD)
         {
-            FuzzyMapPair* pair = __find_or_insert(&cache->mQuestionCacheMapSTD, &hashCopy2);
-            pair->value = bestValue;
+            std::pair<const unsigned long, FuzzyVariant>& pair = cache->mQuestionCacheMapSTD.tree_.find_or_insert<unsigned long, FuzzyVariant>(hashCopy2);
+            pair.second = bestValue;
         }
         else
         {
@@ -1817,8 +1789,8 @@ FuzzyVariant Fuzzy::GetBestHitTarget(cFielder* TheFielder)
         {
             if (g_bScriptQuestionCachingUseSTD)
             {
-                FuzzyMapPair* pair = __find_or_insert(&cache->mQuestionCacheMapSTD, &hashCopy1);
-                pair->value = bestValue;
+                std::pair<const unsigned long, FuzzyVariant>& pair = cache->mQuestionCacheMapSTD.tree_.find_or_insert<unsigned long, FuzzyVariant>(hashCopy1);
+                pair.second = bestValue;
             }
             else
             {
@@ -1929,8 +1901,8 @@ FuzzyVariant Fuzzy::GetBestHitTarget(cFielder* TheFielder)
     {
         if (g_bScriptQuestionCachingUseSTD)
         {
-            FuzzyMapPair* pair = __find_or_insert(&cache->mQuestionCacheMapSTD, &hashCopy2);
-            pair->value = bestValue;
+            std::pair<const unsigned long, FuzzyVariant>& pair = cache->mQuestionCacheMapSTD.tree_.find_or_insert<unsigned long, FuzzyVariant>(hashCopy2);
+            pair.second = bestValue;
         }
         else
         {
@@ -2601,9 +2573,7 @@ FuzzyVariant Fuzzy::GetBestPassReceiveAction(cFielder* TheFielder)
 
     if (g_bScriptQuestionCachingUseSTD)
     {
-        StdMapNode* stdNode;
-        __find(&stdNode, &cache->mQuestionCacheMapSTD, &hash);
-        StdMapNode* stdFound = stdNode;
+        StdMapNode* stdFound = (StdMapNode*)cache->mQuestionCacheMapSTD.find(hash).ptr_;
         if ((StdMapNodeBase*)stdFound != &((StdMapTree*)&cache->mQuestionCacheMapSTD)->x4)
         {
             cache->mCacheHits++;
@@ -2670,8 +2640,8 @@ FuzzyVariant Fuzzy::GetBestPassReceiveAction(cFielder* TheFielder)
         {
             if (g_bScriptQuestionCachingUseSTD)
             {
-                FuzzyMapPair* pair = __find_or_insert(&cache->mQuestionCacheMapSTD, &hashCopy1);
-                pair->value = bestValue;
+                std::pair<const unsigned long, FuzzyVariant>& pair = cache->mQuestionCacheMapSTD.tree_.find_or_insert<unsigned long, FuzzyVariant>(hashCopy1);
+                pair.second = bestValue;
             }
             else
             {
@@ -3124,8 +3094,8 @@ FuzzyVariant Fuzzy::GetBestPassReceiveAction(cFielder* TheFielder)
     {
         if (g_bScriptQuestionCachingUseSTD)
         {
-            FuzzyMapPair* pair = __find_or_insert(&cache->mQuestionCacheMapSTD, &hashCopy2);
-            pair->value = bestValue;
+            std::pair<const unsigned long, FuzzyVariant>& pair = cache->mQuestionCacheMapSTD.tree_.find_or_insert<unsigned long, FuzzyVariant>(hashCopy2);
+            pair.second = bestValue;
         }
         else
         {
@@ -4845,10 +4815,10 @@ FuzzyVariant Fuzzy::GoalieAndGonnaPickupBall(cPlayer* ThePlayer)
     return bestValue;
 }
 
-void CommonScript_stub()
-{
-    std::map<unsigned long, FuzzyVariant> m;
-    unsigned long k = 0;
-    m.find(k);
-    m.tree_.find_or_insert<unsigned long, FuzzyVariant>(k);
-}
+// void CommonScript_stub()
+// {
+//     std::map<unsigned long, FuzzyVariant> m;
+//     unsigned long k = 0;
+//     m.find(k);
+//     m.tree_.find_or_insert<unsigned long, FuzzyVariant>(k);
+// }

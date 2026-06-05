@@ -9,20 +9,16 @@
 
 /**
  * Offset/Address/Size: 0xE4 | 0x80079D64 | size: 0x1B4
- * TODO: Remaining diff is std::tree find call symbol (__find wrapper vs templated std::__tree::find<Ul>)
  */
 inline unsigned char ScriptQuestionCache::Lookup(unsigned long hash, FuzzyVariant& returnVal, const char* name)
 {
     FuzzyVariant* pValue;
-    StdMapNode* stdNode;
 
     mTotalLookups++;
 
     if (g_bScriptQuestionCachingUseSTD)
     {
-        __find(&stdNode, &mQuestionCacheMapSTD, &hash);
-
-        StdMapNode* stdFound = stdNode;
+        StdMapNode* stdFound = (StdMapNode*)mQuestionCacheMapSTD.find(hash).ptr_;
         if ((StdMapNodeBase*)stdFound != &((StdMapTree*)&mQuestionCacheMapSTD)->x4)
         {
             mCacheHits++;
@@ -96,9 +92,8 @@ inline const FuzzyVariant& ScriptQuestionCache::AddToCache(unsigned long key, co
     {
         if (g_bScriptQuestionCachingUseSTD)
         {
-            // TODO: Implement all this std stuff..
-            FuzzyMapPair* pair = __find_or_insert(&mQuestionCacheMapSTD, &key);
-            pair->value = variant;
+            std::pair<const unsigned long, FuzzyVariant>& pair = mQuestionCacheMapSTD.tree_.find_or_insert<unsigned long, FuzzyVariant>(key);
+            pair.second = variant;
         }
         else
         {

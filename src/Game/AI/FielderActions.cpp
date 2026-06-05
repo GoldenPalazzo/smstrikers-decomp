@@ -3292,7 +3292,7 @@ void cFielder::ActionShootToScore(float)
             {
                 float fShootToScoreSlowMoMax = g_pGame->m_pGameTweaks->unk1EC;
                 float fShootToScoreSlowMoMin = g_pGame->m_pGameTweaks->unk1E8;
-                nlVector3 v3OffNet = GetAIOffNetLocation(NULL);
+                const nlVector3& v3OffNet = GetAIOffNetLocation(NULL);
                 float dy = m_v3Position.f.y - v3OffNet.f.y;
                 float dx = m_v3Position.f.x - v3OffNet.f.x;
                 float dz = m_v3Position.f.z - v3OffNet.f.z;
@@ -3311,9 +3311,9 @@ void cFielder::ActionShootToScore(float)
     }
     else
     {
-        if (mActionShootToScoreVars.fShootToScoreActiveTime > 0.0f)
+        if (mActionShootToScoreVars.fFrameButtonDownTime2 > 0.0f)
         {
-            ShootToScoreMeter::instance.SetWhiteBarPosition(mActionShootToScoreVars.fShootToScoreActiveTime);
+            ShootToScoreMeter::instance.SetWhiteBarPosition(mActionShootToScoreVars.fFrameButtonDownTime2);
         }
         else
         {
@@ -3346,7 +3346,7 @@ void cFielder::ActionShootToScore(float)
                     BeginRumbleAction((eRumbleActionPreset)0, GetGlobalPad());
                 }
 
-                Play3DSFX(Audio::eCharSFX(0x15), PHYSOBJ, 100.0f);
+                Play3DSFX(Audio::eCharSFX(0x15), VECTORS, 100.0f);
             }
         }
         else if (mActionShootToScoreVars.fFrameButtonDownTime2 < 0.0f)
@@ -3370,7 +3370,7 @@ void cFielder::ActionShootToScore(float)
                             BeginRumbleAction((eRumbleActionPreset)5, GetGlobalPad());
                             ShootToScoreMeter::instance.meHyper = STS_GOT_HYPER;
                             ShootToScoreMeter::instance.m_MeterType = ShootToScoreMeter::REGULAR_SHOOT_TO_SCORE_PHASE2;
-                            Play3DSFX(Audio::eCharSFX(0x17), PHYSOBJ, 100.0f);
+                            Play3DSFX(Audio::eCharSFX(0x17), VECTORS, 100.0f);
                         }
                         else
                         {
@@ -3383,7 +3383,7 @@ void cFielder::ActionShootToScore(float)
                         BeginRumbleAction((eRumbleActionPreset)0, GetGlobalPad());
                     }
 
-                    Play3DSFX(Audio::eCharSFX(0x15), PHYSOBJ, 100.0f);
+                    Play3DSFX(Audio::eCharSFX(0x15), VECTORS, 100.0f);
                 }
             }
         }
@@ -3397,31 +3397,24 @@ void cFielder::ActionShootToScore(float)
         float fAbsSweetSpotPercent = (float)fSweetSpotPercent;
 
         float fMultiplier;
-        if (m_eCharacterClass > 12)
+        switch (m_eCharacterClass)
         {
+        case DONKEYKONG:
+        case WARIO:
+        case MYSTERY:
+            fMultiplier = 1.1f;
+            break;
+        case WALUIGI:
+        case YOSHI:
+            fMultiplier = 0.92f;
+            break;
+        case DAISY:
+        case PEACH:
+            fMultiplier = 0.84f;
+            break;
+        default:
             fMultiplier = 1.0f;
-        }
-        else
-        {
-            switch (m_eCharacterClass)
-            {
-            case DONKEYKONG:
-            case WARIO:
-            case MYSTERY:
-                fMultiplier = 1.1f;
-                break;
-            case WALUIGI:
-            case YOSHI:
-                fMultiplier = 0.92f;
-                break;
-            case DAISY:
-            case PEACH:
-                fMultiplier = 0.84f;
-                break;
-            default:
-                fMultiplier = 1.0f;
-                break;
-            }
+            break;
         }
 
         GameTweaks* pGameTweaks = g_pGame->m_pGameTweaks;
@@ -3435,7 +3428,7 @@ void cFielder::ActionShootToScore(float)
         {
             float fNewWidth = InterpolateRangeClamped(pGameTweaks->unk29C, fMultiplier, mActionShootToScoreVars.fCaptainYellowWidth, pGameTweaks->unk29C, fAbsSweetSpotPercent);
             float fMinOverMax = g_pGame->m_pGameTweaks->unk29C / g_pGame->m_pGameTweaks->unk2A0;
-            nlVector3 v3OffNet2 = GetAIOffNetLocation(NULL);
+            const nlVector3& v3OffNet2 = GetAIOffNetLocation(NULL);
             float dy2 = m_v3Position.f.y - v3OffNet2.f.y;
             float dx2 = m_v3Position.f.x - v3OffNet2.f.x;
             float dz2 = m_v3Position.f.z - v3OffNet2.f.z;

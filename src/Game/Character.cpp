@@ -35,6 +35,7 @@ static const char szMushroomBlurTexture[22] = "global/mushroomstreak";
 
 extern unsigned int nlDefaultSeed;
 extern PhysicsWorld* g_PhysicsWorld;
+static float sfElectrocutionHeightOffset = 0.6f;
 static bool sbElectricFenceDebug = false;
 
 eCharacterModelType cCharacter::m_ModelType = CharModel_Rigid;
@@ -1515,7 +1516,6 @@ void AIEventHandler(Event* pEvent, void*)
     };
 
     extern cGame* g_pGame;
-    extern float sfElectrocutionHeightOffset;
     extern const char* GetTeamName(eTeamID);
 
     extern void EmitBallWallHit(const char*);
