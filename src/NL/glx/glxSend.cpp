@@ -167,12 +167,9 @@ void glx_SendFrame_cb(eGLView view, unsigned long flags, const glModelPacket* p)
                 if (view != prev_view)
                 {
                     prev_view = view;
-                    u8 isCoPlanar;
-                    if ((unsigned int)(view - GLV_CoPlanar0) <= 1)
-                        isCoPlanar = 1;
-                    else
-                        isCoPlanar = 0;
-                    glx_IsCoPlanarView = isCoPlanar;
+                    glx_IsCoPlanarView = true;
+                    if ((unsigned int)(view - GLV_CoPlanar0) > 1)
+                        glx_IsCoPlanarView = false;
                     glViewGetProjectionMatrix(view, mproj);
                     glViewGetViewMatrix(view, mview);
                     glxCopyMatrix(gx_mview, mview);
@@ -227,6 +224,9 @@ void glx_SendFrame_cb(eGLView view, unsigned long flags, const glModelPacket* p)
 
         if (flags & 0x14)
         {
+            int texnum;
+            int i;
+
             static u32 errorTextures[2] = { 0, 0 };
             static signed char errorTextures_init;
             if (!errorTextures_init)
@@ -236,9 +236,7 @@ void glx_SendFrame_cb(eGLView view, unsigned long flags, const glModelPacket* p)
                 errorTextures_init = 1;
             }
 
-            int texnum = 0;
-            int i;
-            for (i = 0; i < 6; i++)
+            for (texnum = 0, i = 0; i < 6; i++)
             {
                 if (!(glx_texconfig & (1 << i)))
                     continue;

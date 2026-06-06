@@ -14,7 +14,7 @@
 
 BlurHandler* BlurManager::m_activeBlurHandler = NULL;
 
-SlotPool<BlurHandler> BlurManager::m_BlurHandlerSlotPool(0x10, 0x10);
+SlotPool<BlurHandler> BlurHandler::m_BlurHandlerSlotPool(0x10, 0x10);
 
 static f32 fFlimmerOffset = 0.01f;
 
@@ -28,7 +28,7 @@ void BlurManager::Shutdown()
 {
     nlDeleteDLRing<BlurHandler>(&m_activeBlurHandler);
     m_activeBlurHandler = NULL;
-    SlotPoolBase::BaseFreeBlocks(&m_BlurHandlerSlotPool, 0x4C);
+    SlotPoolBase::BaseFreeBlocks(&BlurHandler::m_BlurHandlerSlotPool, 0x4C);
 }
 
 /**
@@ -71,8 +71,8 @@ void BlurManager::Update(float deltaTime)
             if (current != NULL)
             {
                 delete[] current->m_pointRingBuffer;
-                current->m_next = (BlurHandler*)m_BlurHandlerSlotPool.m_FreeList;
-                m_BlurHandlerSlotPool.m_FreeList = (SlotPoolEntry*)current;
+                current->m_next = (BlurHandler*)BlurHandler::m_BlurHandlerSlotPool.m_FreeList;
+                BlurHandler::m_BlurHandlerSlotPool.m_FreeList = (SlotPoolEntry*)current;
             }
         }
         else
@@ -95,8 +95,8 @@ void BlurManager::DestroyHandler(BlurHandler* handler, float timeToDie)
         if (handler != NULL)
         {
             delete[] handler->m_pointRingBuffer;
-            handler->m_next = (BlurHandler*)m_BlurHandlerSlotPool.m_FreeList;
-            m_BlurHandlerSlotPool.m_FreeList = (SlotPoolEntry*)handler;
+            handler->m_next = (BlurHandler*)BlurHandler::m_BlurHandlerSlotPool.m_FreeList;
+            BlurHandler::m_BlurHandlerSlotPool.m_FreeList = (SlotPoolEntry*)handler;
         }
     }
     else
@@ -114,15 +114,15 @@ BlurHandler* BlurManager::GetNewHandler(const char* szTextureName, float fLineWi
 {
     BlurHandler* handler = nullptr;
 
-    if (m_BlurHandlerSlotPool.m_FreeList == nullptr)
+    if (BlurHandler::m_BlurHandlerSlotPool.m_FreeList == nullptr)
     {
-        SlotPoolBase::BaseAddNewBlock(&m_BlurHandlerSlotPool, 0x4C);
+        SlotPoolBase::BaseAddNewBlock(&BlurHandler::m_BlurHandlerSlotPool, 0x4C);
     }
 
-    if (m_BlurHandlerSlotPool.m_FreeList != nullptr)
+    if (BlurHandler::m_BlurHandlerSlotPool.m_FreeList != nullptr)
     {
-        handler = (BlurHandler*)m_BlurHandlerSlotPool.m_FreeList;
-        m_BlurHandlerSlotPool.m_FreeList = (SlotPoolEntry*)handler->m_next;
+        handler = (BlurHandler*)BlurHandler::m_BlurHandlerSlotPool.m_FreeList;
+        BlurHandler::m_BlurHandlerSlotPool.m_FreeList = (SlotPoolEntry*)handler->m_next;
     }
 
     if (handler != nullptr)
@@ -449,33 +449,39 @@ bool BlurHandler::ConstructViewOrientedPoints(nlVector3& topPoint, nlVector3& bo
 
 /**
  * Offset/Address/Size: 0xC58 | 0x8016342C | size: 0x94
+ *
+ * Replaced by the generic nlDeleteRing<T> template in nlDLRing.h. With
+ * BlurHandler's inline ~BlurHandler() (delete[] m_pointRingBuffer) and
+ * operator delete (slot-pool return), `delete current;` inside the generic
+ * template inlines to the same body. Kept commented for easy revert.
  */
-template <>
-void nlDeleteRing<BlurHandler>(BlurHandler** head)
-{
-    extern SlotPool<BlurHandler> m_BlurHandlerSlotPool__11BlurHandler;
-    BlurHandler* element;
-    BlurHandler* next;
-
-    BlurHandler* headPtr = *head;
-    if (headPtr != NULL)
-    {
-        element = headPtr->m_next;
-        for (;;)
-        {
-            next = element->m_next;
-            if (element != NULL)
-            {
-                delete[] element->m_pointRingBuffer;
-                element->m_next = (BlurHandler*)m_BlurHandlerSlotPool__11BlurHandler.m_FreeList;
-                m_BlurHandlerSlotPool__11BlurHandler.m_FreeList = (SlotPoolEntry*)element;
-            }
-            if (element == *head)
-            {
-                break;
-            }
-            element = next;
-        }
-        *head = NULL;
-    }
-}
+// template <>
+// void nlDeleteRing<BlurHandler>(BlurHandler** head)
+// {
+//     FORCE_DONT_INLINE;
+//     extern SlotPool<BlurHandler> m_BlurHandlerSlotPool__11BlurHandler;
+//     BlurHandler* element;
+//     BlurHandler* next;
+//
+//     BlurHandler* headPtr = *head;
+//     if (headPtr != NULL)
+//     {
+//         element = headPtr->m_next;
+//         for (;;)
+//         {
+//             next = element->m_next;
+//             if (element != NULL)
+//             {
+//                 delete[] element->m_pointRingBuffer;
+//                 element->m_next = (BlurHandler*)m_BlurHandlerSlotPool__11BlurHandler.m_FreeList;
+//                 m_BlurHandlerSlotPool__11BlurHandler.m_FreeList = (SlotPoolEntry*)element;
+//             }
+//             if (element == *head)
+//             {
+//                 break;
+//             }
+//             element = next;
+//         }
+//         *head = NULL;
+//     }
+// }

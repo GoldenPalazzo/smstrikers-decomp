@@ -133,17 +133,21 @@ static void BundleLoad_cb(void*, unsigned long, void*)
 {
     Jumbotron* j = &Jumbotron::instance;
 
-    j->m_nCurrentFrame = 0;               // stw r0, 0x18(r31)
-    j->m_nNumFrames = j->m_nMaxNumFrames; // lwz r0, 0x20 ; stw r0, 0x1C
+    j->m_nCurrentFrame = 0;
+    j->m_nNumFrames = j->m_nMaxNumFrames;
 
     nlStrNCpy<char>(j->m_szTexture, "kickoff/frame000", 0x80);
 
     j->m_CurrentTexture = -1;
 
     if (j->m_State == JState_PlayingButWaiting)
+    {
         j->m_State = JState_Playing;
+    }
     else
+    {
         j->m_State = JState_Ready;
+    }
 }
 
 /**
@@ -331,4 +335,14 @@ void Jumbotron::Update(float dt)
             m_CurrentTexture = glGetTexture(m_szTexture);
         }
     }
+}
+
+// Force .data string-literal order to match target. With -inline deferred, this
+// end-of-file stub emits first, so its references fix the @NNN allocation order:
+// "kickoff/frame%03d", "kickoff/frame000", "jumbotron/%s.glt".
+static void Jumbotron_stub()
+{
+    nlSNPrintf(NULL, 0, "kickoff/frame%03d");
+    nlStrNCpy<char>((char*)NULL, "kickoff/frame000", 0);
+    nlSNPrintf(NULL, 0, "jumbotron/%s.glt");
 }

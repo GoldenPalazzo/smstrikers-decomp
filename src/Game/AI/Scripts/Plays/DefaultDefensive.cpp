@@ -66,9 +66,9 @@ FuzzyVariant Fuzzy::AbortDefencePlay(cDecisionEntity*)
 
 /**
  * Offset/Address/Size: 0x48B4 | 0x80089F6C | size: 0xCDC
- * TODO: 97.96% match - remaining diffs are register allocation cascades
- * (f1/f2 swap in fTryConf/fallback sections, f29 vs f0 for TryResult,
- * 1-branch ternary optimization at max chain and position result).
+ * TODO: 99.04% match - remaining diffs are register allocation cascades
+ * (f29 vs f0 for DefendPassInPlay/TryAttacking return values,
+ * f30/f28 vs f0 in position cascade, cascading f1/f2 swaps).
  */
 FuzzyVariant Fuzzy::DefaultDefencePlay(cDecisionEntity* pDecision)
 {
@@ -105,7 +105,10 @@ FuzzyVariant Fuzzy::DefaultDefencePlay(cDecisionEntity* pDecision)
         fConfidence = (fConfidence <= fGoalieBallOwner) ? fConfidence : fGoalieBallOwner;
         if (fConfidence < fGoalieBallOwner && fGoalieBallOwner < 0.2f)
             fConfidence = fConfidence * fBranchRatio2;
-        fBestConfidence = (fBestConfidence <= fConfidence) ? fConfidence : fBestConfidence;
+        if (fBestConfidence >= fConfidence)
+            fBestConfidence = fBestConfidence;
+        else
+            fBestConfidence = fConfidence;
         pDecision->QueueActionSetDesire(11, fConfidence, 0.5f, fvNotSet, fvNotSet);
     }
 
@@ -182,7 +185,10 @@ FuzzyVariant Fuzzy::DefaultDefencePlay(cDecisionEntity* pDecision)
                     fConfidence = (fConfidence <= fNotMarkBO) ? fConfidence : fNotMarkBO;
                     if (fConfidence < fNotMarkBO && fNotMarkBO < 0.2f)
                         fConfidence = fConfidence * fBranchRatio5;
-                    fBestConfidence = (fBestConfidence <= fConfidence) ? fConfidence : fBestConfidence;
+                    if (fBestConfidence >= fConfidence)
+                        fBestConfidence = fBestConfidence;
+                    else
+                        fBestConfidence = fConfidence;
                     pDecision->QueueActionSetDesire(11, fConfidence, 0.5f, fvNotSet, fvNotSet);
                 }
             }
@@ -204,7 +210,10 @@ FuzzyVariant Fuzzy::DefaultDefencePlay(cDecisionEntity* pDecision)
         fConfidence = (fConfidence <= fFallback) ? fConfidence : fFallback;
         if (fConfidence < fFallback && fFallback < 0.2f)
             fConfidence = fConfidence * fBranchRatio6;
-        fBestConfidence = (fBestConfidence <= fConfidence) ? fConfidence : fBestConfidence;
+        if (fBestConfidence >= fConfidence)
+            fBestConfidence = fBestConfidence;
+        else
+            fBestConfidence = fConfidence;
         pDecision->QueueActionSetDesire(7, fConfidence, 0.5f, fvNotSet, fvNotSet);
     }
 

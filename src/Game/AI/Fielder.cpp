@@ -2498,20 +2498,20 @@ bool cFielder::DoLooseBallContactFromRun(nlVector3& v3AnimStartPosition, float& 
 bool cFielder::DoLooseBallContactFromRunVolley(nlVector3& v3AnimStartPosition, float& fAnimStartTime, nlVector3& v3BallContactPosition, float& fBallContactTime,
     const LooseBallContactAnimInfo* pBestBallContactAnimInfo, const nlVector3& v3PassIntercept)
 {
-    float fSimulatedTime;
-    float bestTime;
-    float fMaxSimulatedTime;
-    float fContactZ;
-    float currDistZ;
-    float prevDistZ;
-    float fPrevBallZ;
     const cSAnim* pGuessContactAnim;
     nlVector3 v3ContactOffsetLocal;
+    float fCos;
+    float fSin;
     nlVector3 v3ContactOffsetWorld;
     nlVector3 bestIntercept;
     nlVector3 v3SimulatedBallPos;
-    float fCos;
-    float fSin;
+    float fPrevBallZ;
+    float prevDistZ;
+    float currDistZ;
+    float fContactZ;
+    float fMaxSimulatedTime;
+    float bestTime;
+    float fSimulatedTime;
 
     pGuessContactAnim = m_pAnimInventory->GetAnim(pBestBallContactAnimInfo->nAnimID);
     GetJointPositionFuture(&v3ContactOffsetLocal, pBestBallContactAnimInfo->nAnimID, m_nBallJointIndex, pBestBallContactAnimInfo->fAnimContactFrame / (float)pGuessContactAnim->m_nNumKeys, true, true, false);

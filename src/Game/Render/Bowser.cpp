@@ -16,8 +16,9 @@
 #include "Game/Camera/CameraMan.h"
 #include "Game/Render/NetMesh.h"
 #include "Game/Game.h"
+#include "Game/World/worldanim.h"
 #include "Game/Audio/AudioLoader.h"
-// #include "Game/SoundProps/bowsergensoundproperties.h"
+
 #include "math.h"
 
 SoundPropAccessor* gpBOWSERSoundPropAccessor;
@@ -41,59 +42,91 @@ void AnimSoundCallback(unsigned int eventID)
  */
 Bowser::Bowser(cSHierarchy& rSHierarchy, int nTeam, PhysicsNPC& rPhysNPC, cInventory<cSAnim>* pInventorySAnim)
     : SkinAnimatedMovableNPC(rSHierarchy, nTeam, rPhysNPC)
+    , mpFeatherController(NULL)
+    , mpTarget(NULL)
+    , meBowserState((eBowserState)0)
 {
-    meBowserState = BOWSER_STATE_IDLE;
+    mAnimID = 0;
+    mbDoTilt = false;
     mAttackType = (eBowserAttackType)0;
+    mStompStage = 0;
+    mbFirstTime = false;
     mbAlive = false;
-    mAnimID = -1;
-    mfDesiredSpeed = 0.0f;
+    mbResetPending = false;
+    m_pCharacterSFX = NULL;
     mtStateTimer.SetSeconds(0.0f);
+    mtActiveTimer.SetSeconds(0.0f);
 
-    const char* animNames[7] = {
-        "bowser_idle",
-        "bowser_drop_and_land",
-        "bowser_exit",
-        "bowser_walk_fwd",
-        "bowser_throw",
-        "bowser_fire_up",
-        "bowser_roll"
-    };
+    mpAnim[0] = ((AnimationSet*)pInventorySAnim)->FindAnimationByHash(nlStringHash("bowser_idle"));
+    mpAnim[1] = ((AnimationSet*)pInventorySAnim)->FindAnimationByHash(nlStringHash("bowser_drop_and_land"));
+    mpAnim[2] = ((AnimationSet*)pInventorySAnim)->FindAnimationByHash(nlStringHash("bowser_exit"));
+    mpAnim[3] = ((AnimationSet*)pInventorySAnim)->FindAnimationByHash(nlStringHash("bowser_walk_fwd"));
+    mpAnim[4] = ((AnimationSet*)pInventorySAnim)->FindAnimationByHash(nlStringHash("bowser_throw"));
+    mpAnim[5] = ((AnimationSet*)pInventorySAnim)->FindAnimationByHash(nlStringHash("bowser_fire_up"));
+    mpAnim[6] = ((AnimationSet*)pInventorySAnim)->FindAnimationByHash(nlStringHash("bowser_roll"));
 
-    for (int i = 0; i < 7; i++)
-    {
-        u32 hash = nlStringHash(animNames[i]);
-        cSAnim* foundAnim = NULL;
-        ListEntry<cSAnim*>* animEntry = pInventorySAnim->m_lItemList.m_Head;
-        while (animEntry != NULL)
-        {
-            if (animEntry->data->m_uHashID == hash)
-            {
-                foundAnim = animEntry->data;
-                break;
-            }
-            animEntry = animEntry->next;
-        }
-        mpAnim[i] = foundAnim;
-    }
+    mpPhysObj->mpAINPC = this;
+    mpHeadTrack = new (nlMalloc(sizeof(cHeadTrack), 8, false)) cHeadTrack();
 
-    mpHeadTrack = new (nlMalloc(sizeof(cHeadTrack), 4, false)) cHeadTrack();
-    mpFeatherBlender = AllocateFeather();
+    cSHierarchy* pHierarchy = mpPoseAccumulator->m_BaseSHierarchy;
+    mnHeadJointIndex = pHierarchy->GetNodeIndexByID(nlStringLowerHash("bip01 head"));
+    mLastHeadMatrix.SetIdentity();
+
+    mpFeatherBlender = new (AllocateFeather()) cPN_Feather(mpPoseAccumulator->m_BaseSHierarchy, NULL, 0);
     if (mpPoseTree != NULL)
     {
         mpFeatherBlender->SetChild(0, mpPoseTree);
     }
     mpPoseTree = mpFeatherBlender;
-
-    delete mpFeatherBlender->GetChild(1);
-
     mbIsVisible = false;
     EmissionManager::Destroy((unsigned long)this, fxGetGroup("bowser_fire"));
     g_pEventManager->CreateValidEvent(0x65, 0x14);
+
+    eBowserAttackType savedAttackType;
+    bool savedVisible = mbIsVisible;
+    mbIsVisible = false;
+    meBowserState = (eBowserState)0;
+    mfDesiredSpeed = 0.0f;
+
+    if (mpFeatherBlender->GetChild(1) != NULL)
+    {
+        delete mpFeatherBlender->GetChild(1);
+        mpFeatherBlender->SetChild(1, NULL);
+    }
+
     mpFeatherController = NULL;
     SetPosition(gv3BowserHomePosition);
     mv3Velocity = v3Zero;
     maFacingDirection = 0;
     mpPhysObj->DisableCollisions();
+
+    if (mAttackType != BOWSER_ATTACK_STOMP || mStompStage == 2)
+    {
+        savedAttackType = mAttackType;
+        SetTiltParameters(0.0f);
+        mAttackType = (eBowserAttackType)0;
+
+        if (g_pGame->m_pGameTweaks->unk310 < 0.0f)
+        {
+            g_pGame->ResetBowser();
+        }
+
+        if (mbAlive)
+        {
+            mbAlive = false;
+            if (GameInfoManager::s_pInstance->IsBowserAttackEnabled() && savedAttackType != BOWSER_ATTACK_STOMP && savedVisible)
+            {
+                g_pEventManager->CreateValidEvent(0x37, 0x14);
+            }
+        }
+    }
+    else
+    {
+        g_pGame->ResetBowserTimer(g_pGame->m_pGameTweaks->unk31C);
+    }
+
+    m_pCharacterSFX = new (nlMalloc(sizeof(Audio::cCharacterSFX), 8, false)) Audio::cCharacterSFX();
+    SetupBaseSFX();
 }
 
 /**
@@ -1695,6 +1728,7 @@ void Bowser::FindTarget()
 /**
  * Offset/Address/Size: 0x334 | 0x801590A8 | size: 0x470
  */
+#pragma dont_inline on
 void Bowser::SetupBaseSFX()
 {
     if (!AudioLoader::IsInited())
@@ -1727,6 +1761,7 @@ void Bowser::SetupBaseSFX()
     mpAnim[4]->CreateCallback(20.0f / mpAnim[4]->m_nNumKeys, 0x63, AnimSoundCallback);
     mpAnim[4]->CreateCallback(39.0f / mpAnim[4]->m_nNumKeys, 0x5F, AnimSoundCallback);
 }
+#pragma dont_inline reset
 
 /**
  * Offset/Address/Size: 0x290 | 0x80159004 | size: 0xA4

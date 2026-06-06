@@ -341,7 +341,7 @@ void Goalie::ActionLooseBallPickup(float fDeltaT)
     {
         if (g_pBall->m_pOwner != this && mfWaitTime > 0.0f && mpLooseBallInfo->mAnimType != LOOSEBALL_ANIM_KICK)
         {
-            m_tNoPickupTimer.SetSeconds(fDeltaT);
+            m_tNoPickupTimer.SetSeconds(0.0f);
         }
         else
         {

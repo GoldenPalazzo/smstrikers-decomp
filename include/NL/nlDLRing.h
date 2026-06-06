@@ -263,6 +263,7 @@ void nlDLRingAppendRing(T** head, T* current)
 template <typename T>
 void nlDeleteRing(T** head)
 {
+    FORCE_DONT_INLINE;
     T* current;
     T* next;
 
@@ -290,6 +291,7 @@ void nlDeleteRing(T** head)
 template <typename T>
 void nlDeleteDLRing(T** head)
 {
+    FORCE_DONT_INLINE;
     nlDeleteRing<T>(head);
 }
 

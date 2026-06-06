@@ -5,14 +5,6 @@
 #include "NL/nlSlotPool.h"
 #include "NL/nlDLRing.h"
 
-// void nlDeleteDLRing<BlurHandler>(BlurHandler**);
-// void nlDLRingIsEnd<BlurHandler>(BlurHandler*, BlurHandler*);
-// void nlDLRingGetStart<BlurHandler>(BlurHandler*);
-// void nlDLRingRemove<BlurHandler>(BlurHandler**, BlurHandler*);
-// void nlDLRingAddEnd<BlurHandler>(BlurHandler**, BlurHandler*);
-// void nlDLRingAddStart<BlurHandler>(BlurHandler**, BlurHandler*);
-// void nlDeleteRing<BlurHandler>(BlurHandler**);
-
 struct BlurPointEntry
 {
     class nlVector3 v3Top;    // offset 0x0, size 0xC
@@ -22,10 +14,20 @@ struct BlurPointEntry
 class BlurHandler
 {
 public:
+    ~BlurHandler() { delete[] m_pointRingBuffer; }
+
+    void operator delete(void* p)
+    {
+        ((BlurHandler*)p)->m_next = (BlurHandler*)m_BlurHandlerSlotPool.m_FreeList;
+        m_BlurHandlerSlotPool.m_FreeList = (SlotPoolEntry*)p;
+    }
+
     void RenderMesh(unsigned long);
     void Die(float);
     void AddViewOrientedPoint(const nlVector3& position, const nlVector3& forwardVector);
     bool ConstructViewOrientedPoints(nlVector3& topPoint, nlVector3& bottomPoint, nlVector3 position, const nlVector3& forwardVector);
+
+    static SlotPool<BlurHandler> m_BlurHandlerSlotPool;
 
 public:
     /* 0x00 */ BlurHandler* m_next;
@@ -52,17 +54,7 @@ public:
     static void DestroyHandler(BlurHandler*, float);
     static BlurHandler* GetNewHandler(const char*, float, int, bool);
 
-    static SlotPool<BlurHandler> m_BlurHandlerSlotPool;
     static BlurHandler* m_activeBlurHandler;
 };
-
-template <>
-void nlDeleteRing<BlurHandler>(BlurHandler** head);
-
-// class SlotPool<BlurHandler>
-// {
-// public:
-//     void ~SlotPool();
-// };
 
 #endif // _OBJECTBLUR_H_

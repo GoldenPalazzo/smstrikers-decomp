@@ -127,6 +127,30 @@ inline void Replayable<1, LoadFrame, FloatCompressor<-128, 128, 8> >(LoadFrame& 
 }
 
 template <>
+inline void Replayable<1, LoadFrame, FloatCompressor<-512, 512, 8> >(LoadFrame& frame, const FloatCompressor<-512, 512, 8>& proxy)
+{
+    FORCE_DONT_INLINE;
+    if (frame.mInterval == 1)
+    {
+        unsigned int value = 0;
+        if (frame.mInterval == 1)
+        {
+            const char* cursor = frame.mStream.mStorage;
+            unsigned char mid = (unsigned char)cursor[1];
+            unsigned char hi = (unsigned char)cursor[2];
+            unsigned char lo = (unsigned char)cursor[0];
+            cursor += 3;
+            value = (unsigned int)mid << 8;
+            value |= (unsigned int)hi << 16;
+            frame.mStream.mStorage = cursor;
+            value |= (unsigned int)lo;
+        }
+        proxy.mF = (float)value / (float)(1 << 8);
+        proxy.mF += (float)(-512);
+    }
+}
+
+template <>
 void ReplayablePolymorphic<1, LoadFrame, cPoseNode>(LoadFrame& frame, cPoseNode*& ptr);
 
 template <>
