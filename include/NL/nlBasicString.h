@@ -375,12 +375,11 @@ BasicString<CharT, Allocator>& BasicString<CharT, Allocator>::AppendInPlace(cons
         if (data != 0)
         {
             data->mData = (CharT*)Allocator::allocate(1);
-            int sz = 1;
             int j = 0;
-            data->mSize = sz;
-            data->mCapacity = sz;
-            data->mData[0] = 0;
-            data->mRefCount = sz;
+            data->mSize = 1;
+            data->mCapacity = 1;
+            data->mData[0] = j;
+            data->mRefCount = 1;
             for (; j < data->mSize - 1; j++)
             {
                 data->mData[j] = ((CharT*)0)[j];
@@ -435,6 +434,7 @@ BasicString<CharT, Allocator>& BasicString<CharT, Allocator>::AppendInPlace(cons
     }
 
     const CharT* begin;
+    const CharT* end;
     BasicStringData<CharT>* rhsData = rhs.m_data;
     if (rhsData != 0)
     {
@@ -445,7 +445,6 @@ BasicString<CharT, Allocator>& BasicString<CharT, Allocator>::AppendInPlace(cons
         begin = 0;
     }
 
-    const CharT* end;
     if (rhsData != 0)
     {
         end = rhsData->mData + rhsData->mSize - 1;

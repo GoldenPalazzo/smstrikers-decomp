@@ -5780,20 +5780,18 @@ void cFielder::ThrowPowerup()
 
         switch (m_ePowerup)
         {
-        case POWER_UP_NONE:
-            return;
         case POWER_UP_STAR:
             m_tPowerupEffectTime.SetSeconds(g_pGame->m_pGameTweaks->fStarEffectTime);
             EmitStar(this);
             break;
         case POWER_UP_MUSHROOM:
         {
-            f32 time = g_pGame->m_pGameTweaks->fMushroomEffectTime;
+            f32 fMushroomTime = g_pGame->m_pGameTweaks->fMushroomEffectTime;
             if (m_eCharacterClass < PEACH && m_eCharacterClass >= LUIGI)
             {
-                time *= 0.5f;
+                fMushroomTime *= 1.33f;
             }
-            m_tPowerupEffectTime.SetSeconds(time);
+            m_tPowerupEffectTime.SetSeconds(fMushroomTime);
             EmitMushroom(this);
             InitBlur(0);
             break;
@@ -5810,7 +5808,7 @@ void cFielder::ThrowPowerup()
         case POWER_UP_CHAIN_CHOMP:
             BasicStadium::GetCurrentStadium()->mpNPCManager->mpChainChomp->Fall(this, pTarget);
             break;
-        default:
+        case POWER_UP_NONE:
             return;
         }
 

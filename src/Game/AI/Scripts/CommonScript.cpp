@@ -779,15 +779,13 @@ FuzzyVariant Fuzzy::ShouldIAttemptOneTimer(cFielder* TheFielder)
     float fBestConfidence = 0.0f;
 
     FuzzyVariant fvFielder((cPlayer*)TheFielder);
-    unsigned long functionAddress = (unsigned long)ShouldIAttemptOneTimer;
-    unsigned long hash = ((Variant*)&fvFielder)->GetHash();
-    hash += functionAddress;
+    unsigned long hash = (unsigned long)ShouldIAttemptOneTimer + ((Variant*)&fvFielder)->GetHash();
     FuzzyVariant fvFielder2((cPlayer*)TheFielder);
 
     ScriptQuestionCache* cache = ScriptQuestionCache::Instance();
     cache->mTotalLookups++;
 
-    unsigned char lookupFound = 0;
+    unsigned char lookupFound;
     FuzzyVariant* pValue;
 
     if (g_bScriptQuestionCachingUseSTD)
@@ -799,6 +797,10 @@ FuzzyVariant Fuzzy::ShouldIAttemptOneTimer(cFielder* TheFielder)
             cache->mCacheHits++;
             bestValue = stdFound->value;
             lookupFound = 1;
+        }
+        else
+        {
+            lookupFound = 0;
         }
     }
     else

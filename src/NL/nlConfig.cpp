@@ -8,11 +8,82 @@
 
 /**
  * Offset/Address/Size: 0x0 | 0x801D2C64 | size: 0x13EC
+ * TODO: 97.01% match - r21/r22 register swap for s parameter and BString data
+ * in BString constructor inlining (r24 vs r21), extra mr r23,r21 copy in target
  */
-void Config::Parse(const char*, Config::Parser&)
+typedef BasicString<char, Detail::TempStringAllocator> BString;
+typedef Tokenizer<BString> BTokenizer;
+#pragma opt_propagation off
+void Config::Parse(const char* s, Config::Parser& parser)
 {
-    FORCE_DONT_INLINE;
+    BTokenizer split(BString(s), BString("\n\r"));
+
+    for (BTokenizer::iterator iter = split.begin(); iter != split.end(); ++iter)
+    {
+        BString line = iter.mToken;
+        line.TrimInPlace(" \t\n");
+
+        int lineLen = line.m_data ? line.m_data->mSize - 1 : 0;
+        if (lineLen == 0)
+        {
+            parser.EmptyLine();
+            continue;
+        }
+
+        if (line[0] == '#')
+        {
+            parser.Comment(line);
+            continue;
+        }
+
+        if (line[0] == '[')
+        {
+            int lastIdx = (line.m_data ? line.m_data->mSize - 1 : 0) - 1;
+            if (line[lastIdx] == ']')
+            {
+                char sectionMarkers[3] = "[]";
+                line.TrimInPlace(sectionMarkers);
+                parser.Section(line);
+                continue;
+            }
+        }
+
+        BTokenizer tagValuePair(line, BString("="));
+        BString tag;
+        BString value;
+        int numTokens = 0;
+
+        for (BTokenizer::iterator jter = tagValuePair.begin(); jter != tagValuePair.end(); ++jter)
+        {
+            if (numTokens == 0)
+            {
+                tag = jter.mToken.Trim(" \t\"\r");
+            }
+            if (numTokens == 1)
+            {
+                value = jter.mToken.Trim(" \t\"\r");
+
+                for (int i = 0; i < (int)(value.m_data ? value.m_data->mSize - 1 : 0); i++)
+                {
+                    if (value[i] == '#')
+                    {
+                        value[i] = '\0';
+                        value = BString(value.c_str());
+                        value.TrimInPlace(" \t\"\r");
+                    }
+                }
+            }
+            numTokens++;
+        }
+
+        if (numTokens < 2)
+        {
+            continue;
+        }
+        parser.TagValuePair(tag, value);
+    }
 }
+#pragma opt_propagation reset
 
 /**
  * Offset/Address/Size: 0x13EC | 0x801D4050 | size: 0x21C

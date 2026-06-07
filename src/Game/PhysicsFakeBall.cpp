@@ -1043,7 +1043,6 @@ void FakeBallWorld::InvalidateBallCache()
 
 /**
  * Offset/Address/Size: 0x1F14 | 0x80139300 | size: 0x198
- * TODO: 99.66% match - world ptr in r30 vs r28 (MWCC register allocator quirk)
  */
 void FakeBallWorld::Destroy()
 {

@@ -7,7 +7,7 @@
 
 #include "NL/nlBSearch.h"
 #include "NL/nlFormat.h"
-#include "NL/nlFunktion.h"
+#include "NL/nlFunction.h"
 #include "NL/nlMemory.h"
 #include "NL/nlString.h"
 
@@ -784,7 +784,7 @@ void CupTrophyScene::HandleUnlockedTriggers()
         if ((gameInfo->mUnlockedTriggers & (1 << i)) != 0)
         {
             popup = (FEPopupMenu*)nlSingleton<GameSceneManager>::s_pInstance->Push(0x1B, 0, false);
-            BindExp1_vfmfcp bind = Bind<void, MemFunImpl_CupTrophyScene_v, CupTrophyScene*>(
+            BindExp1_vfmfcp bind = Bind<void>(
                 MemFun<CupTrophyScene, void>(&CupTrophyScene::HandleUnlockedTriggers), this);
 
             {

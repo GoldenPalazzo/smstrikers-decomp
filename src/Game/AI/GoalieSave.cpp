@@ -341,15 +341,16 @@ void GoalieSave::InitData(Goalie* pGoalie)
     SAnimLite* pAnim = GetAnim__14cAnimInventoryFi(pAnimInventory, 0x2E);
     u32 numKeys = pAnim->m_nNumKeys;
 
-    u32 v3ZeroX = v3Zero.as_u32[0];
-    u32 v3ZeroY = v3Zero.as_u32[1];
-    u32 v3ZeroZ = v3Zero.as_u32[2];
+    nlVector3* pv3Zero = &v3Zero;
+    u32 v3ZeroX = pv3Zero->as_u32[0];
 
     mfCrouchDuration = (float)numKeys / 30.0f;
 
     SaveInfo* pSaveInfoBase = gSaveInfo;
     SaveInfo* pSaveInfo = pSaveInfoBase;
     i = 0;
+    u32 v3ZeroY = pv3Zero->as_u32[1];
+    u32 v3ZeroZ = pv3Zero->as_u32[2];
 
     while (i < muNumSaveEntries__10GoalieSave)
     {
@@ -426,7 +427,8 @@ void GoalieSave::InitData(Goalie* pGoalie)
         nlStrNCpy__FPcPCcUl(pSD->mszName, pSaveInfo->mszName, 16);
         pSD->muIndex = i;
 
-        unsigned int st = pSD->muSaveType;
+        SaveData* pReload = &mpSaveTable[i];
+        unsigned int st = pReload->muSaveType;
         if (st & 0x00020000)
         {
             muSTSGoalCount++;
@@ -460,9 +462,10 @@ void GoalieSave::InitData(Goalie* pGoalie)
             }
         }
 
-        int animKey = pSD->mnAnimID;
+        int animKey = pReload->mnAnimID;
+        SaveData* pValue = pReload;
         AVLTreeNode* pExistingNode = NULL;
-        gSaveMap.AddAVLNode((AVLTreeNode**)&gSaveMap.m_Root, &animKey, pSD, &pExistingNode, gSaveMap.m_NumElements);
+        gSaveMap.AddAVLNode((AVLTreeNode**)&gSaveMap.m_Root, &animKey, &pValue, &pExistingNode, gSaveMap.m_NumElements);
         if (pExistingNode == NULL)
         {
             gSaveMap.m_NumElements++;

@@ -288,7 +288,7 @@ TakeGameMemSnapshot::Detail::LexicalCastImpl<BasicString<char, ::Detail::TempStr
 
 /**
  * Offset/Address/Size: 0xED8 | 0x800A579C | size: 0xD74
- * TODO: 91.71% match - register allocation off by 1 (stmw r25 vs r26), bne+b vs beq branch pattern in operator[] COW check
+ * TODO: 92.65% match - register allocation off by 1 (stmw r25 vs r26), bne+b vs beq branch pattern in operator[] COW check (9 sites)
  */
 
 // /**
@@ -1113,7 +1113,11 @@ FormatImpl<StringType>& FormatImpl<StringType>::operator%(const T& t)
             continue;
 
         mString.erase(&mString[i], &mString[i + 3]);
-        mString.insert(&mString[i], &insert[0], &insert[insert.size() - 1]);
+        char* insertAt = &mString[i];
+        char* insertBegin = &insert[0];
+        int insertEndIdx = insert.size() - 1;
+        char* insertEnd = &insert[insertEndIdx];
+        mString.insert(insertAt, insertBegin, insertEnd);
     }
 
     mCurrentPos++;

@@ -169,7 +169,7 @@ void CupTickerManager::SetTickerTextInstance(TLTextInstance* tickerText)
             FEScrollText(tickerText, 0, screenInfo->ScreenWidth + 0x32);
 
         {
-            BindExp1_vfmfcp bind = Bind<void, MemFunImpl_CupTickerManager_v, CupTickerManager*>(
+            BindExp1_vfmfcp bind = Bind<void>(
                 MemFun<CupTickerManager, void>(&CupTickerManager::CreateNewMessage), this);
 
             Function<FnVoidVoid> callback;

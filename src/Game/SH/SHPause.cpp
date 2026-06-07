@@ -46,7 +46,7 @@ Detail::MemFunImpl<R, void (T::*)(A)> MemFun(void (T::*fn)(A))
 // /**
 //  * Offset/Address/Size: 0x0 | 0x800B017C | size: 0x38
 //  */
-// void Bind<void, Detail::MemFunImpl<void, void (PauseMenuScene::*)()>, PauseMenuScene*>(Detail::MemFunImpl<void, void
+// void Bind<void>(Detail::MemFunImpl<void, void
 // (PauseMenuScene::*)()>,
 //                                                                                        PauseMenuScene* const&)
 // {
@@ -263,9 +263,9 @@ void PauseMenuScene::OnSelectQUIT(TLComponentInstance*)
         {
             {
                 Detail::MemFunImpl<void, void (PauseMenuScene::*)()> (*makeMemFun)(void (PauseMenuScene::*)()) = MemFun<PauseMenuScene, void>;
-                Function<FnVoidVoid> yes(Bind<void, Detail::MemFunImpl<void, void (PauseMenuScene::*)()>, PauseMenuScene*>(
+                Function<FnVoidVoid> yes(Bind<void>(
                     makeMemFun(&PauseMenuScene::OnSelectPopupYESFORFEIT), this));
-                Function<FnVoidVoid> no(Bind<void, Detail::MemFunImpl<void, void (PauseMenuScene::*)()>, PauseMenuScene*>(
+                Function<FnVoidVoid> no(Bind<void>(
                     makeMemFun(&PauseMenuScene::OnSelectPopupNOFORFEIT), this));
                 popup->Create(POPUP_INGAME_QUIT_STRIKERS_101, yes, no);
             }
@@ -274,9 +274,9 @@ void PauseMenuScene::OnSelectQUIT(TLComponentInstance*)
         {
             {
                 Detail::MemFunImpl<void, void (PauseMenuScene::*)()> (*makeMemFun)(void (PauseMenuScene::*)()) = MemFun<PauseMenuScene, void>;
-                Function<FnVoidVoid> yes(Bind<void, Detail::MemFunImpl<void, void (PauseMenuScene::*)()>, PauseMenuScene*>(
+                Function<FnVoidVoid> yes(Bind<void>(
                     makeMemFun(&PauseMenuScene::OnSelectPopupYESFORFEIT), this));
-                Function<FnVoidVoid> no(Bind<void, Detail::MemFunImpl<void, void (PauseMenuScene::*)()>, PauseMenuScene*>(
+                Function<FnVoidVoid> no(Bind<void>(
                     makeMemFun(&PauseMenuScene::OnSelectPopupNOFORFEIT), this));
                 popup->Create(POPUP_INGAME_QUIT_MATCH, yes, no);
             }
@@ -287,9 +287,9 @@ void PauseMenuScene::OnSelectQUIT(TLComponentInstance*)
         {
             {
                 Detail::MemFunImpl<void, void (PauseMenuScene::*)()> (*makeMemFun)(void (PauseMenuScene::*)()) = MemFun<PauseMenuScene, void>;
-                Function<FnVoidVoid> yes(Bind<void, Detail::MemFunImpl<void, void (PauseMenuScene::*)()>, PauseMenuScene*>(
+                Function<FnVoidVoid> yes(Bind<void>(
                     makeMemFun(&PauseMenuScene::OnSelectPopupYESFORFEIT), this));
-                Function<FnVoidVoid> no(Bind<void, Detail::MemFunImpl<void, void (PauseMenuScene::*)()>, PauseMenuScene*>(
+                Function<FnVoidVoid> no(Bind<void>(
                     makeMemFun(&PauseMenuScene::OnSelectPopupNOFORFEIT), this));
                 popup->Create(POPUP_INGAME_FORFEIT_MATCH, yes, no);
             }
@@ -298,7 +298,7 @@ void PauseMenuScene::OnSelectQUIT(TLComponentInstance*)
         {
             {
                 Detail::MemFunImpl<void, void (PauseMenuScene::*)()> (*makeMemFun)(void (PauseMenuScene::*)()) = MemFun<PauseMenuScene, void>;
-                Function<FnVoidVoid> no(Bind<void, Detail::MemFunImpl<void, void (PauseMenuScene::*)()>, PauseMenuScene*>(
+                Function<FnVoidVoid> no(Bind<void>(
                     makeMemFun(&PauseMenuScene::OnSelectPopupNOFORFEIT), this));
                 popup->Create(POPUP_NO_FORFEIT, no);
             }

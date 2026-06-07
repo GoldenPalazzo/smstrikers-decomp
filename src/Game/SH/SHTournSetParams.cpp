@@ -126,7 +126,7 @@ void TournSetParamsScene::BuildSubMenuList(int menuitem, TLComponentInstance* co
         sml->mNumItemsAdded++;
 
         {
-            BindExp1_SML bind = Bind<void, MemFunImpl_SML, SlideMenuList*>(
+            BindExp1_SML bind = Bind<void>(
                 MemFun<SlideMenuList, void>(&SlideMenuList::SetSlide), sml);
             Function<FnSlideMenuItemCb> callback(bind);
             menuItem->mCallbacks[1] = callback;

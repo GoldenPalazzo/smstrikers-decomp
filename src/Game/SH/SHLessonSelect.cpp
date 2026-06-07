@@ -220,7 +220,7 @@ void LessonSelectScene::SceneCreated()
             }
 
             {
-                BindExp1_LessonSelect_t bind = Bind<void, MemFunImpl_LessonSelect_t, LessonSelectScene*>(
+                BindExp1_LessonSelect_t bind = Bind<void>(
                     MemFun<LessonSelectScene, void>(&LessonSelectScene::StartLesson), this);
                 MenuCallback applyFunc(bind);
                 *(MenuCallback*)&menuItem->mCallbacks[ON_APPLY] = applyFunc;

@@ -1988,10 +1988,11 @@ void PowerupBase::Destroy(bool bSilent)
                     if (bSilent)
                         break;
 
-                    PhysicsObject* pPhysObj = m_pPhysicsObject;
+                    PowerupSound pwrSnd;
                     unsigned long sndType;
+                    PhysicsObject* pPhysObj = m_pPhysicsObject;
                     float fVol = g_pGame->m_pGameTweaks->unk238;
-                    PowerupSound pwrSnd = bobombExplosions[nlRandom(2, &nlDefaultSeed)];
+                    pwrSnd = bobombExplosions[nlRandom(2, &nlDefaultSeed)];
 
                     if (!Audio::IsInited())
                     {

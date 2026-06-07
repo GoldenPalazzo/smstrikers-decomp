@@ -401,8 +401,9 @@ CupHubScene::CupHubScene(bool doAnimations, bool playAllKnockoutAnimations)
         }
         else if (gameInfo->IsInTournamentMode() && gameInfo->mCustomTournamentInfo.m_tournMode == TM_KNOCKOUT)
         {
-            int knockoutRound = -4;
-            if (gameInfo->mCurrentCup->GetNumRounds() == 2)
+            u16 numRounds = gameInfo->mCurrentCup->GetNumRounds();
+            s32 knockoutRound = -4;
+            if (numRounds == 2)
             {
                 knockoutRound = -3;
             }
@@ -774,7 +775,7 @@ void CupHubScene::Update(float fDeltaT)
 
         pPopup = (FEPopupMenu*)nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
 
-        BindExp1_vfmfcp bind = Bind<void, MemFunImpl_CupHubScene_v, CupHubScene*>(
+        BindExp1_vfmfcp bind = Bind<void>(
             MemFun<CupHubScene, void>(&CupHubScene::ReturnToMainMenu), this);
 
         {
@@ -822,7 +823,7 @@ void CupHubScene::EndCup()
         {
             FEPopupMenu* popup = (FEPopupMenu*)nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
 
-            BindExp1_vfmfcp bind = Bind<void, MemFunImpl_CupHubScene_v, CupHubScene*>(
+            BindExp1_vfmfcp bind = Bind<void>(
                 MemFun<CupHubScene, void>(&CupHubScene::ReturnToMainMenu), self);
 
             {

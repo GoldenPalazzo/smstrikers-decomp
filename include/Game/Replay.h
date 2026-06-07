@@ -230,11 +230,19 @@ inline void FloatCompressor<MIN, MAX, BITS>::Transfer(SaveFrame& frame, unsigned
         *p++ = (char)value;
         frame.mStream.mStorage = p;
     }
+    else if ((MAX - MIN) * (1 << BITS) <= 65535)
+    {
+        char* p = frame.mStream.mStorage;
+        *p++ = (char)(value & 0xFF);
+        *p++ = (char)((value >> 8) & 0xFF);
+        frame.mStream.mStorage = p;
+    }
     else
     {
         char* p = frame.mStream.mStorage;
         *p++ = (char)(value & 0xFF);
         *p++ = (char)((value >> 8) & 0xFF);
+        *p++ = (char)((value >> 16) & 0xFF);
         frame.mStream.mStorage = p;
     }
 }
@@ -248,11 +256,19 @@ inline void FloatCompressor<MIN, MAX, BITS>::TransferOR(SaveFrame& frame, unsign
         *p++ = (char)value;
         frame.mStream.mStorage = p;
     }
+    else if ((MAX - MIN) * (1 << BITS) <= 65535)
+    {
+        char* p = frame.mStream.mStorage;
+        *p++ = (char)(value & 0xFF);
+        *p++ = (char)((value >> 8) & 0xFF);
+        frame.mStream.mStorage = p;
+    }
     else
     {
         char* p = frame.mStream.mStorage;
         *p++ = (char)(value & 0xFF);
         *p++ = (char)((value >> 8) & 0xFF);
+        *p++ = (char)((value >> 16) & 0xFF);
         frame.mStream.mStorage = p;
     }
 }

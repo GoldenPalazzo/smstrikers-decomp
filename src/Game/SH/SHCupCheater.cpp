@@ -151,7 +151,7 @@ void CupCheaterScene::SceneCreated()
     m_SlideMenu = new ((FESlideMenu*)nlMalloc(sizeof(FESlideMenu), 8, false)) FESlideMenu(comp);
 
     {
-        BindExp1_vfmfcp bind = Bind<void, MemFunImpl_CupCheaterScene_v, CupCheaterScene*>(
+        BindExp1_vfmfcp bind = Bind<void>(
             MemFun<CupCheaterScene, void>(&CupCheaterScene::OnSelectGameplay), this);
 
         Function<FnVoidVoid> callback;
@@ -163,7 +163,7 @@ void CupCheaterScene::SceneCreated()
     }
 
     {
-        BindExp1_vfmfcp bind = Bind<void, MemFunImpl_CupCheaterScene_v, CupCheaterScene*>(
+        BindExp1_vfmfcp bind = Bind<void>(
             MemFun<CupCheaterScene, void>(&CupCheaterScene::OnSelectHomeWin), this);
 
         Function<FnVoidVoid> callback;
@@ -175,7 +175,7 @@ void CupCheaterScene::SceneCreated()
     }
 
     {
-        BindExp1_vfmfcp bind = Bind<void, MemFunImpl_CupCheaterScene_v, CupCheaterScene*>(
+        BindExp1_vfmfcp bind = Bind<void>(
             MemFun<CupCheaterScene, void>(&CupCheaterScene::OnSelectAwayWin), this);
 
         Function<FnVoidVoid> callback;
@@ -187,7 +187,7 @@ void CupCheaterScene::SceneCreated()
     }
 
     {
-        BindExp1_vfmfcp bind = Bind<void, MemFunImpl_CupCheaterScene_v, CupCheaterScene*>(
+        BindExp1_vfmfcp bind = Bind<void>(
             MemFun<CupCheaterScene, void>(&CupCheaterScene::OnSelectHomeOTWin), this);
 
         Function<FnVoidVoid> callback;
@@ -199,7 +199,7 @@ void CupCheaterScene::SceneCreated()
     }
 
     {
-        BindExp1_vfmfcp bind = Bind<void, MemFunImpl_CupCheaterScene_v, CupCheaterScene*>(
+        BindExp1_vfmfcp bind = Bind<void>(
             MemFun<CupCheaterScene, void>(&CupCheaterScene::OnSelectAwayOTWin), this);
 
         Function<FnVoidVoid> callback;

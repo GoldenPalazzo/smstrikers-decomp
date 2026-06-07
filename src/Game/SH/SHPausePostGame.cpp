@@ -245,7 +245,7 @@ void PausePostGameScene::SceneCreated()
         }
 
         {
-            PauseBind bind = Bind<void, PauseMemFun, PausePostGameScene*>(
+            PauseBind bind = Bind<void>(
                 MemFun<PausePostGameScene, void>(FunctionTable[i]), this);
             PauseFunctorImpl* impl = new ((PauseFunctorImpl*)nlMalloc(sizeof(PauseFunctorImpl), 8, false)) PauseFunctorImpl(bind);
 

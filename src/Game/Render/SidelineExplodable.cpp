@@ -349,8 +349,8 @@ SidelineExplodable::~SidelineExplodable()
         i++;
     }
 
-    SidelineExplodableNode* current = SidelineExplodableManager::sSidelineExplodableList.m_pStart;
     SidelineExplodableNode** pListTail = &SidelineExplodableManager::sSidelineExplodableList.m_pEnd;
+    SidelineExplodableNode* current = SidelineExplodableManager::sSidelineExplodableList.m_pStart;
     SlotPool<SidelineExplodableNode>* pNodePool = &SidelineExplodableNode::sSidelineExplodableNodeSlotPool;
 
     while (current != NULL)

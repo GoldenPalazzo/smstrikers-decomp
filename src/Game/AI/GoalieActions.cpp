@@ -908,12 +908,7 @@ inline void Goalie::StartRunBlend()
         pPrevCtrlr = pCtrlr;
     }
 
-    cPN_Blender* pNewBlender = AllocateBlender();
-    if (pNewBlender != NULL)
-    {
-        pNewBlender = new ((u8*)pNewBlender) cPN_Blender(*m_pAILayer, pRunSAB, 0.1f);
-    }
-    *m_pAILayer = pNewBlender;
+    *m_pAILayer = new (AllocateBlender()) cPN_Blender(*m_pAILayer, pRunSAB, 0.1f);
     InitMovementFromAnimSeek(60000.0f, 4000.0f);
 }
 

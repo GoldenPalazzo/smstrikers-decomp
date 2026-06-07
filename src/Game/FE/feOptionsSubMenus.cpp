@@ -447,7 +447,7 @@ void OptionsGameplayMenuV2::BuildSkillLevelMenu(TLComponentInstance* compinstanc
         sml->mNumItemsAdded++;
 
         {
-            BindExp1_SML bind = Bind<void, MemFunImpl_SML, SlideMenuList*>(
+            BindExp1_SML bind = Bind<void>(
                 MemFun<SlideMenuList, void>(&SlideMenuList::SetSlide), sml);
             Function<FnSlideMenuItemCb> callback(bind);
             menuItem->mCallbacks[1] = callback;
@@ -1722,7 +1722,7 @@ void OptionsCheatsMenu::BuildCustomPowerupsList(TLComponentInstance* compinstanc
         menuItem->mType = item;
         sml->mNumItemsAdded++;
 
-        BindExp1_SML bind = Bind<void, MemFunImpl_SML, SlideMenuList*>(
+        BindExp1_SML bind = Bind<void>(
             MemFun<SlideMenuList, void>(&SlideMenuList::SetSlide), sml);
         Function<FnSlideMenuItemCb> callback(bind);
         menuItem->mCallbacks[1] = callback;
@@ -1771,7 +1771,7 @@ void OptionsCheatsMenu::BuildCustomPowerupsList(TLComponentInstance* compinstanc
             menuItem->mType = item;
             sml->mNumItemsAdded++;
 
-            BindExp1_SML bind = Bind<void, MemFunImpl_SML, SlideMenuList*>(
+            BindExp1_SML bind = Bind<void>(
                 MemFun<SlideMenuList, void>(&SlideMenuList::SetSlide), sml);
             Function<FnSlideMenuItemCb> callback(bind);
             menuItem->mCallbacks[1] = callback;
@@ -1915,7 +1915,7 @@ void OptionsCheatsMenu::BuildLockableSubMenuList(int menuitem, TLComponentInstan
     sml->mNumItemsAdded++;
 
     {
-        BindExp1_SML bind = Bind<void, MemFunImpl_SML, SlideMenuList*>(
+        BindExp1_SML bind = Bind<void>(
             MemFun<SlideMenuList, void>(&SlideMenuList::SetSlide), sml);
         Function<FnSlideMenuItemCb> callback(bind);
         menuItem->mCallbacks[1] = callback;
@@ -1995,7 +1995,7 @@ void OptionsCheatsMenu::BuildLockableSubMenuList(int menuitem, TLComponentInstan
         sml->mNumItemsAdded++;
 
         {
-            BindExp1_SML bind = Bind<void, MemFunImpl_SML, SlideMenuList*>(
+            BindExp1_SML bind = Bind<void>(
                 MemFun<SlideMenuList, void>(&SlideMenuList::SetSlide), sml);
             Function<FnSlideMenuItemCb> callback(bind);
             menuItem->mCallbacks[1] = callback;
@@ -2395,7 +2395,7 @@ void OptionsSubMenu::BuildSubMenuList(int listIndex, TLComponentInstance* compIn
         sml->mNumItemsAdded++;
 
         {
-            BindExp1_SML bind = Bind<void, MemFunImpl_SML, SlideMenuList*>(
+            BindExp1_SML bind = Bind<void>(
                 MemFun<SlideMenuList, void>(&SlideMenuList::SetSlide), sml);
             Function<FnSlideMenuItemCb> callback(bind);
             menuItem->mCallbacks[1] = callback;
