@@ -938,34 +938,28 @@ void DoTranslucency(DrawableObject* pObject)
 
 /**
  * Offset/Address/Size: 0x1340 | 0x80196004 | size: 0xE8
- * TODO: 88.7% match - f4/f2 posX register swap and subic./bne vs mtctr/bdnz
  */
 bool World::IsSphereInFrustum(const nlMatrix4& mat, float radius)
 {
-    volatile u32 tz;
-    volatile u32 ty;
-    volatile u32 tx;
-    tx = *(u32*)&mat.m[3][0];
-    f32 posX = *(f32*)&tx;
-    s32 numSets = 2;
-    ty = *(u32*)&mat.m[3][1];
-    f32* plane = (f32*)((u8*)this + 0x80);
-    tz = *(u32*)&mat.m[3][2];
-    s32 count = 0;
-    f32 posY = *(f32*)&ty;
-    f32 posZ = *(f32*)&tz;
+    nlVector3 v3Position;
+    v3Position.as_u32[0] = *(u32*)&mat.m[3][0];
+    v3Position.as_u32[1] = *(u32*)&mat.m[3][1];
+    v3Position.as_u32[2] = *(u32*)&mat.m[3][2];
+
+    f32 posX = v3Position.f.x;
+    f32 posY = v3Position.f.y;
+    f32 posZ = v3Position.f.z;
     f32 negRadius = -radius;
-    do
+
+    nlVector4* pPlanes = m_frustumPlane;
+    World* self = this;
+
+    for (int i = 0; i < 6; i++)
     {
-        if ((posZ * plane[2] + (posX * plane[0] + posY * plane[1]) + *(f32*)((u8*)this + 0x8C + count * 0x18)) < negRadius)
+        f32 dot = posX * pPlanes[i].f.x + posY * pPlanes[i].f.y + posZ * pPlanes[i].f.z + self->m_frustumPlane[i].f.w;
+        if (dot < negRadius)
             return false;
-        if ((posZ * plane[6] + (posX * plane[4] + posY * plane[5]) + *(f32*)((u8*)this + 0x9C + count * 0x18)) < negRadius)
-            return false;
-        if ((posZ * plane[10] + (posX * plane[8] + posY * plane[9]) + *(f32*)((u8*)this + 0xAC + count * 0x18)) < negRadius)
-            return false;
-        plane += 12;
-        count += 2;
-    } while (--numSets != 0);
+    }
     return true;
 }
 

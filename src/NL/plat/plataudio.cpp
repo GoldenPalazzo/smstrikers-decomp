@@ -865,7 +865,7 @@ bool UnloadAllSoundGroupsOnStack(AudioFileData& fileData, unsigned long stackEnu
 
     if (!(unsigned char)sndStackSetCurrent(stack_list[stackEnum].id))
     {
-        tDebugPrintManager::Print(DC_SOUND, "sndStackSetCurrent failed for stack %d\n", stack_list[stackEnum].id);
+        tDebugPrintManager::Print(DC_SOUND, "sndStackSetCurrent() failed on sound stack ID %d\n", stack_list[stackEnum].id);
         return 0;
     }
 
@@ -929,7 +929,7 @@ bool UnloadAllSoundGroups(AudioFileData& fileData)
         idPtr = &entry->id;
         if (!(unsigned char)sndStackSetCurrent(id))
         {
-            tDebugPrintManager::Print(DC_SOUND, "sndStackSetCurrent failed for stack %d\n", *idPtr);
+            tDebugPrintManager::Print(DC_SOUND, "sndStackSetCurrent() failed on sound stack ID %d\n", *idPtr);
             goto next;
         }
 
@@ -998,7 +998,7 @@ bool UnloadSoundGroup(AudioFileData& fileData, unsigned long groupEnum)
     {
         if (!(unsigned char)sndStackSetCurrent(stack_list[fileData.soundGroups[groupEnum].stackEnum].id))
         {
-            tDebugPrintManager::Print(DC_SOUND, "sndStackSetCurrent failed for stack %d\n", stack_list[fileData.soundGroups[groupEnum].stackEnum].id);
+            tDebugPrintManager::Print(DC_SOUND, "sndStackSetCurrent() failed on sound stack ID %d\n", stack_list[fileData.soundGroups[groupEnum].stackEnum].id);
             return false;
         }
 
@@ -1013,7 +1013,7 @@ bool UnloadSoundGroup(AudioFileData& fileData, unsigned long groupEnum)
         u32 uTickEnd = nlGetTicker();
         f32 fTime = nlGetTickerDifference(uTickStart, uTickEnd) / 1000.0f;
 
-        tDebugPrintManager::Print(DC_SOUND, "Unloaded %s from stack %d in %f seconds\n", fileData.soundGroups[groupEnum].szGroupName, stack_list[fileData.soundGroups[groupEnum].stackEnum].id, fTime);
+        tDebugPrintManager::Print(DC_SOUND, "Popping sound group %s from sound stack ID %d: %0.3f seconds\n", fileData.soundGroups[groupEnum].szGroupName, stack_list[fileData.soundGroups[groupEnum].stackEnum].id, fTime);
         PrintSoundStackInfo();
 
         SndGroupData* grp = &fileData.soundGroups[groupEnum];
@@ -1030,7 +1030,6 @@ bool UnloadSoundGroup(AudioFileData& fileData, unsigned long groupEnum)
 
 /**
  * Offset/Address/Size: 0x1350 | 0x801C5B4C | size: 0x328
- * 99.85% match - i diffs only (string pool index differences)
  */
 bool LoadSoundGroup(AudioFileData& fileData, unsigned long groupEnum, unsigned long stackEnum, bool bUseARAMStreamCallback)
 {
@@ -1040,7 +1039,7 @@ bool LoadSoundGroup(AudioFileData& fileData, unsigned long groupEnum, unsigned l
 
     if (!(unsigned char)sndStackSetCurrent(stack_list[stackEnum].id))
     {
-        tDebugPrintManager::Print(DC_SOUND, "sndStackSetCurrent failed for stack %d\n", stack_list[stackEnum].id);
+        tDebugPrintManager::Print(DC_SOUND, "sndStackSetCurrent() failed on sound stack ID %d\n", stack_list[stackEnum].id);
         return false;
     }
 
@@ -1069,7 +1068,7 @@ bool LoadSoundGroup(AudioFileData& fileData, unsigned long groupEnum, unsigned l
             nlClose(ARAMTransferHelper::m_pFile);
             ARAMTransferHelper::m_pFile = NULL;
 
-            tDebugPrintManager::Print(DC_SOUND, "sound group file size %d\n", pTransferHelperLoadFromDisc->m_uFileSize);
+            tDebugPrintManager::Print(DC_SOUND, "ARAMTransferHelper: Sample file size is %d\n", pTransferHelperLoadFromDisc->m_uFileSize);
 
             ARAMTransferHelper::m_pARAMHelper = pTransferHelperLoadFromDisc;
         }
@@ -1095,17 +1094,17 @@ bool LoadSoundGroup(AudioFileData& fileData, unsigned long groupEnum, unsigned l
 
     if (!(unsigned char)sndPushGroup(fileData.proj_buffer, groupID, 0, fileData.sdir_buffer, fileData.pool_buffer))
     {
-        tDebugPrintManager::Print(DC_SOUND, "sndPushGroup failed for group %d\n", groupID);
+        tDebugPrintManager::Print(DC_SOUND, "sndPushGroup() failed on sound group %d\n", groupID);
         return false;
     }
 
     fileData.soundGroups[groupEnum].stackEnum = stackEnum;
 
+    int loadType = 1;
     unsigned long uLoadOrder = stack_list[stackEnum].unkC;
     stack_list[stackEnum].unkC = uLoadOrder + 1;
     fileData.soundGroups[groupEnum].uLoadOrder = uLoadOrder;
 
-    int loadType = 1;
     if (pTransferHelperLoadFromDisc != NULL)
     {
         loadType = 2;
@@ -1163,7 +1162,7 @@ bool LoadSoundGroup(AudioFileData& fileData, unsigned long groupEnum, unsigned l
     {
         unsigned long uTickEnd = nlGetTicker();
         float fTime = nlGetTickerDifference(uTickStart, uTickEnd) / 1000.0f;
-        nlPrintf("Loaded %s from stack %d in %f seconds\n", fileData.soundGroups[groupEnum].szGroupName, stack_list[stackEnum].id, fTime);
+        nlPrintf("Pushed sound group %s onto sound stack ID %d: %0.3f seconds\n", fileData.soundGroups[groupEnum].szGroupName, stack_list[stackEnum].id, fTime);
     }
 
     PrintSoundStackInfo();

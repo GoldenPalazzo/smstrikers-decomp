@@ -1327,7 +1327,7 @@ void Goalie::ActionSaveReposition(float deltaTime)
 
 /**
  * Offset/Address/Size: 0x20BC | 0x800505F8 | size: 0x51C
- * TODO: 97.32% match - fAnimTime in f29 instead of target f31, cascading register diffs in smoothstep/ball-catch sections
+ * TODO: 98.48% match - fAnimTime in f28 instead of target f31, cascading register diffs in smoothstep/ball-catch sections
  */
 void Goalie::ActionSave(float)
 {
@@ -1339,8 +1339,8 @@ void Goalie::ActionSave(float)
 
     const nlVector3& v3LHandPos = GetJointPosition(m_nHeadJointIndex);
     v3HeadCopy = v3LHandPos;
-    float fAbsX = (float)fabs(v3HeadCopy.f.x);
     float fDX = 0.0f;
+    float fAbsX = (float)fabs(v3HeadCopy.f.x);
     float fLimit = cField::GetGoalLineX(1U) - 0.5f;
     float fNetY = 0.5f * cNet::m_fNetWidth;
 
@@ -1396,11 +1396,10 @@ void Goalie::ActionSave(float)
         SetPosition(v3AdjPos);
     }
 
-    float fCrouchTime;
     SaveData* pSaveData = mpSaveData;
     float fTakeoffTime = pSaveData->mfMilestonePercent[1];
     float fAnimTime = m_pCurrentAnimController->m_fTime;
-    fCrouchTime = pSaveData->mfMilestonePercent[0];
+    float fCrouchTime = pSaveData->mfMilestonePercent[0];
 
     if (fTakeoffTime <= 0.0f)
     {
@@ -1438,11 +1437,14 @@ void Goalie::ActionSave(float)
     {
         float dZ = g_pBall->m_v3Position.f.y - m_v3Position.f.y;
         float dX = g_pBall->m_v3Position.f.x - m_v3Position.f.x;
-        float distSq = dX * dX + dZ * dZ;
+        float dY = 0.0f;
+        float distSq = dZ * dZ;
+        distSq = dX * dX + distSq;
+        distSq = dY + distSq;
         float m00 = m_m4WorldMatrix.m[0][0];
         float m01 = m_m4WorldMatrix.m[0][1];
         float m02 = m_m4WorldMatrix.m[0][2];
-        if (distSq < 9.0f || dX * m00 + dZ * m01 + 0.0f * m02 < 0.0f)
+        if (distSq < 9.0f || dX * m00 + dZ * m01 + dY * m02 < 0.0f)
         {
             mbDoHeadTrack = false;
         }
@@ -1472,11 +1474,11 @@ void Goalie::ActionSave(float)
                 const nlVector3& v3LHand = GetJointPosition(m_nLeftHandJointIndex);
                 const nlVector3& v3RHand = GetJointPosition(m_nRightHandJointIndex);
 
-                float dX = g_pBall->m_v3Position.f.x - v3LHand.f.x;
                 float dY = g_pBall->m_v3Position.f.y - v3LHand.f.y;
+                float dX = g_pBall->m_v3Position.f.x - v3LHand.f.x;
                 float dZ = g_pBall->m_v3Position.f.z - v3LHand.f.z;
-                float distSqL = dX * dX;
-                distSqL = dY * dY + distSqL;
+                float distSqL = dY * dY;
+                distSqL = dX * dX + distSqL;
                 distSqL = dZ * dZ + distSqL;
 
                 if (distSqL < fReachSq)

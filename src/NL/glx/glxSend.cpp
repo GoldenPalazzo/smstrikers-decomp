@@ -130,7 +130,7 @@ static void glx_DrawPacket(const glModelPacket*);
 
 /**
  * Offset/Address/Size: 0x0 | 0x801B9B00 | size: 0x538
- * TODO: 95.66% match - r-diffs in isCoPlanar block (branchless vs branched, r5 vs r3 scheduling) and texture loop register allocation (r24-r29 shifted)
+ * TODO: 95.97% match - isCoPlanar: target uses subfic+orc branchless pattern, ours uses cmplwi branch; texture loop: register permutation (texnum/i at r25/r24 vs target r29/r28, sliding ptr/arrays shifted +2)
  */
 void glx_SendFrame_cb(eGLView view, unsigned long flags, const glModelPacket* p)
 {
@@ -224,7 +224,7 @@ void glx_SendFrame_cb(eGLView view, unsigned long flags, const glModelPacket* p)
 
         if (flags & 0x14)
         {
-            int texnum;
+            int texnum = 0;
             int i;
 
             static u32 errorTextures[2] = { 0, 0 };
@@ -236,7 +236,7 @@ void glx_SendFrame_cb(eGLView view, unsigned long flags, const glModelPacket* p)
                 errorTextures_init = 1;
             }
 
-            for (texnum = 0, i = 0; i < 6; i++)
+            for (i = 0; i < 6; i++)
             {
                 if (!(glx_texconfig & (1 << i)))
                     continue;

@@ -843,90 +843,97 @@ void GCAudioStreaming::StereoAudioStream::Warm(bool CoolOnStop)
 
     AudioStreamBuffer* pBuf;
     unsigned long i = 0;
-    unsigned long buffer;
     unsigned long freeBuffer;
     unsigned long mask;
     unsigned long test;
 
-    AudioBufferMgr& mgr = m_BuffMgr;
-
-    for (unsigned long j = 0; j < mgr.m_BufferCount; j++)
     {
-        freeBuffer = mgr.m_BuffersFree;
-        mask = 1 << i;
-        test = freeBuffer & mask;
-        test = (-(long)test | test) >> 31;
-        if ((int)test == 1)
+        AudioBufferMgr& mgr = m_BuffMgr;
+        for (unsigned long j = 0; j < mgr.m_BufferCount; j++)
         {
-            pBuf = &mgr.m_Buffers[i];
-            mgr.m_BuffersFree = freeBuffer & ~mask;
-            pBuf->m_pStream = this;
-            pBuf->m_UpdateOffset = 0;
-            pBuf->m_Volume = 0x7F;
-            pBuf->m_Pan = 0x40;
-
-            unsigned long remaining = mgr.m_BuffersFree;
-            int count = 0;
-            while (remaining)
+            freeBuffer = mgr.m_BuffersFree;
+            mask = 1 << i;
+            test = freeBuffer & mask;
+            test = (-(long)test | test) >> 31;
+            if ((int)test == 1)
             {
-                remaining &= (remaining - 1);
-                count++;
-            }
-            ___blank("After buffer alloc there are %d availible\n", count);
-            goto done_alloc_0;
-        }
-        i++;
-    }
+                pBuf = &mgr.m_Buffers[i];
+                mgr.m_BuffersFree = freeBuffer & ~mask;
+                pBuf->m_pStream = this;
+                pBuf->m_UpdateOffset = 0;
+                pBuf->m_Volume = 0x7F;
+                pBuf->m_Pan = 0x40;
 
-    pBuf = 0;
+                unsigned long remaining = mgr.m_BuffersFree;
+                int count = 0;
+                while (remaining)
+                {
+                    remaining &= (remaining - 1);
+                    count++;
+                }
+                ___blank("After buffer alloc there are %d availible\n", count);
+                goto done_alloc_0;
+            }
+            i++;
+        }
+        pBuf = 0;
+    }
 
 done_alloc_0:
     m_Buffers[0] = pBuf;
 
     i = 0;
-    for (unsigned long j = 0; j < mgr.m_BufferCount; j++)
     {
-        freeBuffer = mgr.m_BuffersFree;
-        mask = 1 << i;
-        test = freeBuffer & mask;
-        test = (-(long)test | test) >> 31;
-        if ((int)test == 1)
+        AudioBufferMgr& mgr = m_BuffMgr;
+        for (unsigned long j = 0; j < mgr.m_BufferCount; j++)
         {
-            pBuf = &mgr.m_Buffers[i];
-            mgr.m_BuffersFree = freeBuffer & ~mask;
-            pBuf->m_pStream = this;
-            pBuf->m_UpdateOffset = 0;
-            pBuf->m_Volume = 0x7F;
-            pBuf->m_Pan = 0x40;
-
-            unsigned long remaining = mgr.m_BuffersFree;
-            int count = 0;
-            while (remaining)
+            freeBuffer = mgr.m_BuffersFree;
+            mask = 1 << i;
+            test = freeBuffer & mask;
+            test = (-(long)test | test) >> 31;
+            if ((int)test == 1)
             {
-                remaining &= (remaining - 1);
-                count++;
-            }
-            ___blank("After buffer alloc there are %d availible\n", count);
-            goto done_alloc_1;
-        }
-        i++;
-    }
+                pBuf = &mgr.m_Buffers[i];
+                mgr.m_BuffersFree = freeBuffer & ~mask;
+                pBuf->m_pStream = this;
+                pBuf->m_UpdateOffset = 0;
+                pBuf->m_Volume = 0x7F;
+                pBuf->m_Pan = 0x40;
 
-    pBuf = 0;
+                unsigned long remaining = mgr.m_BuffersFree;
+                int count = 0;
+                while (remaining)
+                {
+                    remaining &= (remaining - 1);
+                    count++;
+                }
+                ___blank("After buffer alloc there are %d availible\n", count);
+                goto done_alloc_1;
+            }
+            i++;
+        }
+        pBuf = 0;
+    }
 
 done_alloc_1:
     m_Buffers[1] = pBuf;
 
-    m_Buffers[0]->m_Pan = 0;
-    sndStreamMixParameterEx(m_Buffers[0]->m_StreamId, m_Buffers[0]->m_Volume, m_Buffers[0]->m_Pan, m_Buffers[0]->m_SurroundPan, 0, 0);
+    {
+        AudioStreamBuffer* pBuf0 = m_Buffers[0];
+        pBuf0->m_Pan = 0;
+        sndStreamMixParameterEx(pBuf0->m_StreamId, pBuf0->m_Volume, pBuf0->m_Pan, pBuf0->m_SurroundPan, 0, 0);
+    }
+    {
+        AudioStreamBuffer* pBuf1 = m_Buffers[1];
+        pBuf1->m_Pan = 0x7F;
+        sndStreamMixParameterEx(pBuf1->m_StreamId, pBuf1->m_Volume, pBuf1->m_Pan, pBuf1->m_SurroundPan, 0, 0);
+    }
 
-    m_Buffers[1]->m_Pan = 0x7F;
-    sndStreamMixParameterEx(m_Buffers[1]->m_StreamId, m_Buffers[1]->m_Volume, m_Buffers[1]->m_Pan, m_Buffers[1]->m_SurroundPan, 0, 0);
-
-    AudioStreamBuffer* pBuffer = 0;
-    volatile unsigned long BufferIndex = (unsigned long)pBuffer;
+    AudioStreamBuffer* pTemp = 0;
+    volatile unsigned long BufferIndex = (unsigned long)pTemp;
     if (m_BufferCount > 0)
-        pBuffer = m_Buffers[0];
+        pTemp = m_Buffers[0];
+    AudioStreamBuffer* pBuffer = pTemp;
     while (pBuffer)
     {
         pBuffer->m_Volume = (unsigned char)m_Volume;
@@ -960,7 +967,7 @@ done_alloc_1:
     void* pInterlvHdr = nlMalloc(sizeof(INTERLEAVED_ADPCM_HEADER), 0x20, true);
     nlReadAsync(m_pFile, pInterlvHdr, sizeof(INTERLEAVED_ADPCM_HEADER), _InterleavedHdrReadCB, (unsigned long)this);
 
-    for (buffer = 0; buffer < 2; buffer++)
+    for (unsigned long buffer = 0; buffer < 2; buffer++)
     {
         void* pADPCMHdr = (void*)(((unsigned long)m_BuffMgr.m_ADPCMHdrMem + 0x1F) & ~0x1F);
 

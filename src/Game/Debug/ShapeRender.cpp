@@ -206,8 +206,8 @@ void ShapeRender::CreateFlatCylinderEndGeometry(PrimitiveShape& prim)
 
 /**
  * Offset/Address/Size: 0xE14 | 0x801FC0A4 | size: 0x3AC
- * TODO: 95.66% match - remaining gap is float register and constant-load allocation
- * in outer/inner loop setup.
+ * TODO: 96.28% match - remaining gap is FPR constant-register allocation (+2 shift)
+ * and GPR r24-r27 rotation in outer loop setup.
  */
 void ShapeRender::CreateCylinderGeometry(PrimitiveShape& prim)
 {
@@ -216,6 +216,8 @@ void ShapeRender::CreateCylinderGeometry(PrimitiveShape& prim)
     nlVector3* ndst;
     nlVector2* tdst;
     int nRing;
+    float z0Sq;
+    float z1Sq;
     float z0;
     float z1;
     int nSegment;
@@ -223,8 +225,6 @@ void ShapeRender::CreateCylinderGeometry(PrimitiveShape& prim)
     float y0;
     float x1;
     float y1;
-    float z0Sq;
-    float z1Sq;
     float x0Sq;
     float y0Sq;
     float x1Sq;

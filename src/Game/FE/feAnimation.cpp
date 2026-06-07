@@ -80,33 +80,23 @@ void FEAnimation::Update(float arg0)
 
 /**
  * Offset/Address/Size: 0x19C | 0x8020E71C | size: 0x298
- * TODO: 97.98% match - f29/f31 FPR register swap: compiler puts fCurrentTime in f31 (should be f29) and sentinel/X in f29 (should be f31)
  */
 void FEAnimation::AnimateTargetAtTimeWithVector3(float fCurrentTime)
 {
-    nlVector4 controlPointsX;
-    nlVector4 controlPointsY;
-    nlVector4 controlPointsZ;
-    f32 temp_f0;
-    f32 temp_f2;
-    f32 var_f30;
-    f32 var_f31;
-    f32 var_f3;
     v3AnimationKeyframe* currentFrame;
-    v3AnimationKeyframe* prevFrame;
-    const nlVector4 sZeroX = { 0.0f, 0.0f, 0.0f, 0.0f };
-    const nlVector4 sZeroY = { 0.0f, 0.0f, 0.0f, 0.0f };
-    const nlVector4 sZeroZ = { 0.0f, 0.0f, 0.0f, 0.0f };
+    f32 resultX, resultY, resultZ;
 
     currentFrame = nlDLRingGetStart<v3AnimationKeyframe>((v3AnimationKeyframe*)this->m_DLRingHead);
-    temp_f0 = currentFrame->pKeyFrameDataX.m_fTime;
-    if (fCurrentTime < temp_f0)
+
+    if (fCurrentTime < currentFrame->pKeyFrameDataX.m_fTime)
     {
-        fCurrentTime = temp_f0;
+        fCurrentTime = currentFrame->pKeyFrameDataX.m_fTime;
     }
 
-    var_f31 = -1.0f;
-    while (fCurrentTime > currentFrame->pKeyFrameDataX.m_fTime && (var_f31 != currentFrame->pKeyFrameDataX.m_fControl1 || var_f31 != currentFrame->pKeyFrameDataX.m_fControl2))
+    resultX = -1.0f;
+    while (fCurrentTime > currentFrame->pKeyFrameDataX.m_fTime
+           && (resultX != currentFrame->pKeyFrameDataX.m_fControl1
+               || resultX != currentFrame->pKeyFrameDataX.m_fControl2))
     {
         currentFrame = currentFrame->m_next;
         if (nlDLRingIsEnd<v3AnimationKeyframe>((v3AnimationKeyframe*)this->m_DLRingHead, currentFrame))
@@ -115,58 +105,59 @@ void FEAnimation::AnimateTargetAtTimeWithVector3(float fCurrentTime)
         }
     }
 
-    temp_f2 = currentFrame->pKeyFrameDataX.m_fTime;
-    if (fCurrentTime == temp_f2)
+    f32 currentTime = currentFrame->pKeyFrameDataX.m_fTime;
+
+    if (fCurrentTime == currentTime)
     {
-        var_f31 = currentFrame->pKeyFrameDataX.m_fPoint;
-        var_f30 = currentFrame->pKeyFrameDataY.m_fPoint;
-        var_f3 = currentFrame->pKeyFrameDataZ.m_fPoint;
+        resultX = currentFrame->pKeyFrameDataX.m_fPoint;
+        resultY = currentFrame->pKeyFrameDataY.m_fPoint;
+        resultZ = currentFrame->pKeyFrameDataZ.m_fPoint;
     }
-    else if (!(fCurrentTime > temp_f2) || (currentFrame->pKeyFrameDataX.m_fControl1 != -1.0f))
+    else if (!(fCurrentTime > currentTime) || currentFrame->pKeyFrameDataX.m_fControl1 != -1.0f)
     {
-        prevFrame = currentFrame->m_prev;
-        temp_f0 = prevFrame->pKeyFrameDataX.m_fTime;
+        v3AnimationKeyframe* prevFrame = currentFrame->m_prev;
+        f32 prevTime = prevFrame->pKeyFrameDataX.m_fTime;
 
-        controlPointsX = sZeroX;
-        controlPointsX.f.x = prevFrame->pKeyFrameDataX.m_fPoint;
-        controlPointsX.f.y = prevFrame->pKeyFrameDataX.m_fControl1;
-        controlPointsX.f.z = prevFrame->pKeyFrameDataX.m_fControl2;
-        controlPointsX.f.w = currentFrame->pKeyFrameDataX.m_fPoint;
+        float controlPointsX[4] = { 0 };
+        controlPointsX[0] = prevFrame->pKeyFrameDataX.m_fPoint;
+        controlPointsX[1] = prevFrame->pKeyFrameDataX.m_fControl1;
+        controlPointsX[2] = prevFrame->pKeyFrameDataX.m_fControl2;
+        controlPointsX[3] = currentFrame->pKeyFrameDataX.m_fPoint;
 
-        controlPointsY = sZeroY;
-        controlPointsY.f.x = prevFrame->pKeyFrameDataY.m_fPoint;
-        controlPointsY.f.y = prevFrame->pKeyFrameDataY.m_fControl1;
-        controlPointsY.f.z = prevFrame->pKeyFrameDataY.m_fControl2;
-        controlPointsY.f.w = currentFrame->pKeyFrameDataY.m_fPoint;
+        float controlPointsY[4] = { 0 };
+        controlPointsY[0] = prevFrame->pKeyFrameDataY.m_fPoint;
+        controlPointsY[1] = prevFrame->pKeyFrameDataY.m_fControl1;
+        controlPointsY[2] = prevFrame->pKeyFrameDataY.m_fControl2;
+        controlPointsY[3] = currentFrame->pKeyFrameDataY.m_fPoint;
 
-        controlPointsZ = sZeroZ;
-        controlPointsZ.f.x = prevFrame->pKeyFrameDataZ.m_fPoint;
-        controlPointsZ.f.y = prevFrame->pKeyFrameDataZ.m_fControl1;
-        controlPointsZ.f.z = prevFrame->pKeyFrameDataZ.m_fControl2;
-        controlPointsZ.f.w = currentFrame->pKeyFrameDataZ.m_fPoint;
+        float controlPointsZ[4] = { 0 };
+        controlPointsZ[0] = prevFrame->pKeyFrameDataZ.m_fPoint;
+        controlPointsZ[1] = prevFrame->pKeyFrameDataZ.m_fControl1;
+        controlPointsZ[2] = prevFrame->pKeyFrameDataZ.m_fControl2;
+        controlPointsZ[3] = currentFrame->pKeyFrameDataZ.m_fPoint;
 
-        fCurrentTime = (fCurrentTime - temp_f0) / (temp_f2 - temp_f0);
-        var_f31 = nlBezier(&controlPointsX.f.x, 3, fCurrentTime);
-        var_f30 = nlBezier(&controlPointsY.f.x, 3, fCurrentTime);
-        var_f3 = nlBezier(&controlPointsZ.f.x, 3, fCurrentTime);
+        f32 fMu = (fCurrentTime - prevTime) / (currentTime - prevTime);
+        resultX = nlBezier(controlPointsX, 3, fMu);
+        resultY = nlBezier(controlPointsY, 3, fMu);
+        resultZ = nlBezier(controlPointsZ, 3, fMu);
     }
     else
     {
-        var_f31 = currentFrame->pKeyFrameDataX.m_fPoint;
-        var_f30 = currentFrame->pKeyFrameDataY.m_fPoint;
-        var_f3 = currentFrame->pKeyFrameDataZ.m_fPoint;
+        resultX = currentFrame->pKeyFrameDataX.m_fPoint;
+        resultY = currentFrame->pKeyFrameDataY.m_fPoint;
+        resultZ = currentFrame->pKeyFrameDataZ.m_fPoint;
     }
 
-    switch (this->m_type)
+    switch (m_type)
     {
     case eAnimPosition:
-        m_pTLInstanceTarget->SetAssetPosition(var_f31, var_f30, var_f3);
+        m_pTLInstanceTarget->SetAssetPosition(resultX, resultY, resultZ);
         break;
     case eAnimRotation:
-        m_pTLInstanceTarget->SetAssetRotation(var_f31, var_f30, var_f3);
+        m_pTLInstanceTarget->SetAssetRotation(resultX, resultY, resultZ);
         break;
     case eAnimScale:
-        m_pTLInstanceTarget->SetAssetScale(var_f31, var_f30, var_f3);
+        m_pTLInstanceTarget->SetAssetScale(resultX, resultY, resultZ);
         break;
     }
 }

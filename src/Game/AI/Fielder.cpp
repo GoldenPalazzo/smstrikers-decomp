@@ -2500,37 +2500,37 @@ bool cFielder::DoLooseBallContactFromRunVolley(nlVector3& v3AnimStartPosition, f
 {
     const cSAnim* pGuessContactAnim;
     nlVector3 v3ContactOffsetLocal;
-    float fCos;
-    float fSin;
-    nlVector3 v3ContactOffsetWorld;
-    nlVector3 bestIntercept;
-    nlVector3 v3SimulatedBallPos;
-    float fPrevBallZ;
-    float prevDistZ;
-    float currDistZ;
-    float fContactZ;
-    float fMaxSimulatedTime;
-    float bestTime;
-    float fSimulatedTime;
 
     pGuessContactAnim = m_pAnimInventory->GetAnim(pBestBallContactAnimInfo->nAnimID);
     GetJointPositionFuture(&v3ContactOffsetLocal, pBestBallContactAnimInfo->nAnimID, m_nBallJointIndex, pBestBallContactAnimInfo->fAnimContactFrame / (float)pGuessContactAnim->m_nNumKeys, true, true, false);
 
+    float fCos;
+    float fSin;
     nlSinCos(&fSin, &fCos, m_aActualFacingDirection);
 
+    nlVector3 v3ContactOffsetWorld;
     nlVector3* pContactOffsetWorld = &v3ContactOffsetWorld;
     float ySin = v3ContactOffsetLocal.f.y * fSin;
     float xSin = v3ContactOffsetLocal.f.x * fSin;
-    pContactOffsetWorld->f.z = v3ContactOffsetLocal.f.z;
     pContactOffsetWorld->f.x = (v3ContactOffsetLocal.f.x * fCos) - ySin;
     pContactOffsetWorld->f.y = (v3ContactOffsetLocal.f.y * fCos) + xSin;
+    pContactOffsetWorld->f.z = v3ContactOffsetLocal.f.z;
+
+    float fContactZ;
+    float currDistZ;
+    float prevDistZ;
+    float fPrevBallZ;
+    float fMaxSimulatedTime;
+    nlVector3 bestIntercept;
+    nlVector3 v3SimulatedBallPos;
 
     FakeBallWorld::ResetBallIterator();
 
-    fSimulatedTime = 0.0f;
+    float fSimulatedTime = 0.0f;
     fContactZ = pContactOffsetWorld->f.z;
     fPrevBallZ = fSimulatedTime;
     fMaxSimulatedTime = 5.0f;
+    float bestTime;
 
     while (fSimulatedTime < fMaxSimulatedTime)
     {
@@ -2567,14 +2567,11 @@ bool cFielder::DoLooseBallContactFromRunVolley(nlVector3& v3AnimStartPosition, f
     u32 nNumKeys = pGuessContactAnim->m_nNumKeys;
     float fContactTimeNorm = pBestBallContactAnimInfo->fAnimContactFrame / (float)nNumKeys;
     float fAnimLength = (float)nNumKeys / 30.0f;
-    float fBestSpeedToAnimStartDelta = fContactTimeNorm * fAnimLength;
 
-    nlVec3Set(v3AnimStartPosition,
-        bestIntercept.f.x - pContactOffsetWorld->f.x,
-        bestIntercept.f.y - pContactOffsetWorld->f.y,
-        bestIntercept.f.z - pContactOffsetWorld->f.z);
+    nlVec3Sub(v3AnimStartPosition, bestIntercept, *pContactOffsetWorld);
     v3AnimStartPosition.f.z = 0.0f;
 
+    float fBestSpeedToAnimStartDelta = fContactTimeNorm * fAnimLength;
     fAnimStartTime = bestTime - fBestSpeedToAnimStartDelta;
 
     v3BallContactPosition = bestIntercept;

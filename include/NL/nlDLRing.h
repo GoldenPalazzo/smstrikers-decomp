@@ -4,6 +4,7 @@
 // Doubly Linked Ring
 
 #include "types.h"
+#include "NL/nlRing.h"
 
 template <typename T>
 class DLListEntry
@@ -257,34 +258,6 @@ void nlDLRingAppendRing(T** head, T* current)
         current->m_next = nextAfterHead;
         nextAfterHead->m_prev = current;
         *head = current;
-    }
-}
-
-template <typename T>
-void nlDeleteRing(T** head)
-{
-    FORCE_DONT_INLINE;
-    T* current;
-    T* next;
-
-    T* headPtr = *head;
-    if (headPtr != NULL)
-    {
-        current = headPtr->m_next;
-        for (;;)
-        {
-            next = current->m_next;
-            delete current;
-            if (current != *head)
-            {
-                current = next;
-            }
-            else
-            {
-                break;
-            }
-        }
-        *head = NULL;
     }
 }
 

@@ -2771,6 +2771,22 @@ bool Goalie::CheckForLooseBallShotInProgress()
     return false;
 }
 
+static inline float clamp_upper(float x, float hi)
+{
+    if (x <= hi)
+        return x;
+    else
+        return hi;
+}
+
+static inline float clamp_lower(float x, float lo)
+{
+    if (x >= lo)
+        return x;
+    else
+        return lo;
+}
+
 /**
  * Offset/Address/Size: 0x69D8 | 0x800494D4 | size: 0x3A8
  * TODO: 96.11% match - FPR allocation around ownerDistSq/net-zone math, fmadds
@@ -2846,13 +2862,7 @@ bool Goalie::CheckForSTSAttack()
                     clampedY = pOppFielder->m_v3Position.f.y;
                 }
 
-                if (clampedY <= halfWidth)
-                {
-                }
-                else
-                {
-                    clampedY = halfWidth;
-                }
+                clampedY = clamp_upper(clampedY, halfWidth);
 
                 v3GoalPos.f.y = clampedY;
 
@@ -2895,10 +2905,7 @@ bool Goalie::CheckForSTSAttack()
                 fTimeToImpact = fTimeToImpact - fPickupDuration2;
 
                 mfWaitTime = fTimeToImpact;
-                if (fTimeToImpact < 0.0f)
-                {
-                    fTimeToImpact = 0.0f;
-                }
+                fTimeToImpact = clamp_lower(fTimeToImpact, 0.25f);
 
                 mfTargetTime = fTimeToImpact;
                 mpLooseBallInfo = &LooseBallAnims::mAttackSTSInfo;

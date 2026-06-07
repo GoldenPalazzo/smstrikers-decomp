@@ -302,12 +302,13 @@ void PausePostGameScene::SceneCreated()
             InlineHasher(0),
             InlineHasher(0));
 
-        BasicString<char, Detail::TempStringAllocator> score = LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(
-            nlSingleton<StatsTracker>::s_pInstance->mNumGamesWon[i]);
+        int numWins = nlSingleton<StatsTracker>::s_pInstance->mNumGamesWon[i];
+        BasicString<char, Detail::TempStringAllocator> score = LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(numWins);
         unsigned short wscore[8];
         nlStrToWcs(score.c_str(), wscore, 8);
         memcpy(mScoreBuffer[i], wscore, sizeof(wscore));
-        mScoreBuffer[i][score.size() - 1] = 0;
+        int scoreLen = score.size();
+        mScoreBuffer[i][scoreLen - 1] = 0;
         text->SetString(mScoreBuffer[i]);
     }
 
@@ -325,24 +326,6 @@ void PausePostGameScene::SceneCreated()
         InlineHasher(0));
 
     BasicGameInfo* game = nlSingleton<GameInfoManager>::s_pInstance->mGameInfo[nlSingleton<GameInfoManager>::s_pInstance->mCurrentMode];
-
-    u8 hasAway = 0;
-    if (game->mPadSides[0] == 1)
-    {
-        hasAway = 1;
-    }
-    else if (game->mPadSides[1] == 1)
-    {
-        hasAway = 1;
-    }
-    else if (game->mPadSides[2] == 1)
-    {
-        hasAway = 1;
-    }
-    else if (game->mPadSides[3] == 1)
-    {
-        hasAway = 1;
-    }
 
     u8 hasHome = 0;
     if (game->mPadSides[0] == 0)
@@ -362,7 +345,25 @@ void PausePostGameScene::SceneCreated()
         hasHome = 1;
     }
 
-    if (hasAway && hasHome)
+    u8 hasAway = 0;
+    if (game->mPadSides[0] == 1)
+    {
+        hasAway = 1;
+    }
+    else if (game->mPadSides[1] == 1)
+    {
+        hasAway = 1;
+    }
+    else if (game->mPadSides[2] == 1)
+    {
+        hasAway = 1;
+    }
+    else if (game->mPadSides[3] == 1)
+    {
+        hasAway = 1;
+    }
+
+    if (hasHome && hasAway)
     {
         if (absdiff == 0)
         {
@@ -374,22 +375,18 @@ void PausePostGameScene::SceneCreated()
             unsigned short wscore[8];
             nlStrToWcs(score.c_str(), wscore, 8);
 
-            BasicString<unsigned short, Detail::TempStringAllocator> locFmt(formatLoc);
-            BasicString<unsigned short, Detail::TempStringAllocator> msg = Format(locFmt, wscore);
-            SetText(*message, msg);
+            BasicString<unsigned short, Detail::TempStringAllocator> formatted = Format(BasicString<unsigned short, Detail::TempStringAllocator>(formatLoc), wscore);
+            SetText(*message, formatted);
         }
         else if (absdiff <= 2)
         {
             const unsigned short* formatLoc;
             formatLoc = LookupLocHash(0x291A9065);
 
-            eTeamID winningteam = nlSingleton<GameInfoManager>::s_pInstance->GetTeam((short)((pointdiff < 0) ? 1 : 0));
-            BasicString<unsigned short, Detail::TempStringAllocator> locFmt(formatLoc);
-            const unsigned short* charLoc;
-            charLoc = LookupLocHash(GetLOCCharacterName(winningteam, true, false));
+            eTeamID winningteam = nlSingleton<GameInfoManager>::s_pInstance->GetTeam((short)(!(pointdiff > 0)));
 
-            BasicString<unsigned short, Detail::TempStringAllocator> msg = Format(locFmt, charLoc);
-            SetText(*message, msg);
+            BasicString<unsigned short, Detail::TempStringAllocator> formatted = Format(BasicString<unsigned short, Detail::TempStringAllocator>(formatLoc), LookupLocHash(GetLOCCharacterName(winningteam, true, false)));
+            SetText(*message, formatted);
         }
         else if (absdiff <= 6)
         {
@@ -397,12 +394,9 @@ void PausePostGameScene::SceneCreated()
             formatLoc = LookupLocHash(0x1214A3EB);
 
             eTeamID loosingteam = nlSingleton<GameInfoManager>::s_pInstance->GetTeam((short)((pointdiff > 0) ? 1 : 0));
-            BasicString<unsigned short, Detail::TempStringAllocator> locFmt(formatLoc);
-            const unsigned short* charLoc;
-            charLoc = LookupLocHash(GetLOCCharacterName(loosingteam, true, false));
 
-            BasicString<unsigned short, Detail::TempStringAllocator> msg = Format(locFmt, charLoc);
-            SetText(*message, msg);
+            BasicString<unsigned short, Detail::TempStringAllocator> formatted = Format(BasicString<unsigned short, Detail::TempStringAllocator>(formatLoc), LookupLocHash(GetLOCCharacterName(loosingteam, true, false)));
+            SetText(*message, formatted);
         }
         else
         {
@@ -410,12 +404,9 @@ void PausePostGameScene::SceneCreated()
             formatLoc = LookupLocHash(0xAACD893B);
 
             eTeamID loosingteam = nlSingleton<GameInfoManager>::s_pInstance->GetTeam((short)((pointdiff > 0) ? 1 : 0));
-            BasicString<unsigned short, Detail::TempStringAllocator> locFmt(formatLoc);
-            const unsigned short* charLoc;
-            charLoc = LookupLocHash(GetLOCCharacterName(loosingteam, true, false));
 
-            BasicString<unsigned short, Detail::TempStringAllocator> msg = Format(locFmt, charLoc);
-            SetText(*message, msg);
+            BasicString<unsigned short, Detail::TempStringAllocator> formatted = Format(BasicString<unsigned short, Detail::TempStringAllocator>(formatLoc), LookupLocHash(GetLOCCharacterName(loosingteam, true, false)));
+            SetText(*message, formatted);
         }
     }
     else
@@ -439,7 +430,7 @@ void PausePostGameScene::SceneCreated()
         }
         int humanside = (newHasHome == 0);
 
-        if (pointdiff == 0)
+        if (absdiff == 0)
         {
             const unsigned short* formatLoc;
             formatLoc = LookupLocHash(0xFF559E6A);
@@ -448,9 +439,8 @@ void PausePostGameScene::SceneCreated()
             unsigned short wscore[8];
             nlStrToWcs(score.c_str(), wscore, 8);
 
-            BasicString<unsigned short, Detail::TempStringAllocator> locFmt(formatLoc);
-            BasicString<unsigned short, Detail::TempStringAllocator> msg = Format(locFmt, wscore);
-            SetText(*message, msg);
+            BasicString<unsigned short, Detail::TempStringAllocator> formatted = Format(BasicString<unsigned short, Detail::TempStringAllocator>(formatLoc), wscore);
+            SetText(*message, formatted);
         }
         else if (((humanside == 0) && (pointdiff > 0)) || ((humanside == 1) && (pointdiff < 0)))
         {
@@ -464,25 +454,23 @@ void PausePostGameScene::SceneCreated()
                 const unsigned short* formatLoc;
                 formatLoc = LookupLocHash(0xDBBFA4DE);
 
-                eTeamID otherteam = nlSingleton<GameInfoManager>::s_pInstance->GetTeam((short)(humanside ? 0 : 1));
-                BasicString<unsigned short, Detail::TempStringAllocator> locFmt(formatLoc);
-                const unsigned short* charLoc;
-                charLoc = LookupLocHash(GetLOCCharacterName(otherteam, true, false));
+                eTeamID otherteam = nlSingleton<GameInfoManager>::s_pInstance->GetTeam((short)(!humanside));
 
-                BasicString<unsigned short, Detail::TempStringAllocator> msg = Format(locFmt, charLoc);
-                SetText(*message, msg);
+                BasicString<unsigned short, Detail::TempStringAllocator> formatted = Format(BasicString<unsigned short, Detail::TempStringAllocator>(formatLoc), LookupLocHash(GetLOCCharacterName(otherteam, true, false)));
+                SetText(*message, formatted);
             }
             else
             {
                 if (nlSingleton<GameInfoManager>::s_pInstance->GetSkillLevel() == GameplaySettings::LEGEND)
                 {
                     message->m_LocStrId = 0xA4CA441C;
+                    message->m_OverloadFlags |= 8;
                 }
                 else
                 {
                     message->m_LocStrId = 0x460AB22E;
+                    message->m_OverloadFlags |= 8;
                 }
-                message->m_OverloadFlags |= 8;
             }
         }
         else
@@ -490,16 +478,18 @@ void PausePostGameScene::SceneCreated()
             if (absdiff <= 2)
             {
                 message->m_LocStrId = 0x0B3C1BCB;
+                message->m_OverloadFlags |= 8;
             }
             else if (absdiff <= 6)
             {
                 message->m_LocStrId = 0x53AE5311;
+                message->m_OverloadFlags |= 8;
             }
             else
             {
                 message->m_LocStrId = 0x075B0A61;
+                message->m_OverloadFlags |= 8;
             }
-            message->m_OverloadFlags |= 8;
         }
     }
 }

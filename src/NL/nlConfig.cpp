@@ -69,25 +69,19 @@ void Config::Set(const char* key, const BasicString<char, Detail::TempStringAllo
 
 static bool IsIntValue(const char* str, int& out)
 {
-    bool ok = true;
     const char* s = str;
     while (*s != 0)
     {
         char c = *s;
         if (!isdigit(c) && c != '-')
         {
-            ok = false;
-            break;
+            return false;
         }
         s++;
     }
 
-    if (ok)
-    {
-        out = LexicalCast<int, const char*>(str);
-    }
-
-    return ok;
+    out = LexicalCast<int, const char*>(str);
+    return true;
 }
 
 static bool IsFloatValue(const char* str, float& out)
@@ -103,26 +97,17 @@ static bool IsFloatValue(const char* str, float& out)
         }
         else if (!isdigit(c) && c != '-')
         {
-            seenPeriod = false;
-            break;
+            return false;
         }
         s++;
     }
 
-    if (*s == 0)
-    {
-        out = LexicalCast<float, const char*>(str);
-    }
-
+    out = LexicalCast<float, const char*>(str);
     return seenPeriod;
 }
 
 /**
  * Offset/Address/Size: 0x165C | 0x801D42C0 | size: 0x56C
- * TODO: 87.5% match - r28/r30/r31/r28/r27/r29/r29/r31 register allocation swap,
- * nlToUpper<Uc> vs nlToUpper<c> template instantiation (u8 cast needed for byte load pattern),
- * __ctype_map not hoisted to prologue, IsInteger bne+beq vs bne+bne+b branch pattern,
- * copy loop bge vs blt/b branch pattern
  */
 void Config::Set(const char* tag, const char* value)
 {
@@ -297,16 +282,13 @@ void Config::Set(const char* tag, const char* value)
         char* valDest = mStringEnd;
         while (*value != 0)
         {
-            if (mStringEnd - mStringMemory < 0x27FF)
-            {
-                *mStringEnd = *value;
-                value++;
-                mStringEnd++;
-            }
-            else
+            if (mStringEnd - mStringMemory >= 0x27FF)
             {
                 break;
             }
+            *mStringEnd = *value;
+            value++;
+            mStringEnd++;
         }
         *mStringEnd = 0;
         mStringEnd++;

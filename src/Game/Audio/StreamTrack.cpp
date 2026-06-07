@@ -1137,7 +1137,7 @@ void AudioStreamTrack::StreamTrack::FadeOutDoneStartNext(AudioStreamTrack::Strea
 
 /**
  * Offset/Address/Size: 0x1E8 | 0x80154F40 | size: 0x374
- * TODO: 95.51% match - fade-list search register allocation drift and fade-entry teardown mismatch
+ * TODO: 97.73% match - r25/r27 register swap for fadeIter/fadeHead in both fade search loops
  */
 void AudioStreamTrack::StreamTrack::Pause(unsigned long Fadeout, bool bPause)
 {
@@ -1180,13 +1180,13 @@ void AudioStreamTrack::StreamTrack::Pause(unsigned long Fadeout, bool bPause)
     FadeEntry* fadeIter = nlDLRingGetStart(mgr.m_FadeMgr.m_Fades.m_Head);
     FadeEntry* fadeHead = mgr.m_FadeMgr.m_Fades.m_Head;
 
-    FadeCtrl* fadeCtrl = NULL;
+    FadeCtrl* fadeCtrl;
     while (fadeIter != NULL)
     {
         if (fadeIter->m_data.pStream == pStream)
         {
             fadeCtrl = &fadeIter->m_data;
-            break;
+            goto fade_found;
         }
         if (nlDLRingIsEnd(fadeHead, fadeIter) || fadeIter == NULL)
         {
@@ -1197,6 +1197,8 @@ void AudioStreamTrack::StreamTrack::Pause(unsigned long Fadeout, bool bPause)
             fadeIter = fadeIter->m_next;
         }
     }
+    fadeCtrl = NULL;
+fade_found:
     unsigned long endVol;
     bool hasEndVol;
     if (fadeCtrl != NULL)
@@ -1220,14 +1222,14 @@ void AudioStreamTrack::StreamTrack::Pause(unsigned long Fadeout, bool bPause)
 
     FadeEntry* fadeIter2 = nlDLRingGetStart(pMgr->m_FadeMgr.m_Fades.m_Head);
     FadeEntry* fadeHead2 = pMgr->m_FadeMgr.m_Fades.m_Head;
-    FadeCtrl* fadeCtrl2 = NULL;
+    FadeCtrl* fadeCtrl2;
 
     while (fadeIter2 != NULL)
     {
         if (fadeIter2->m_data.pStream == pStream)
         {
             fadeCtrl2 = &fadeIter2->m_data;
-            break;
+            goto fade2_found;
         }
         if (nlDLRingIsEnd(fadeHead2, fadeIter2) || fadeIter2 == NULL)
         {
@@ -1238,6 +1240,8 @@ void AudioStreamTrack::StreamTrack::Pause(unsigned long Fadeout, bool bPause)
             fadeIter2 = fadeIter2->m_next;
         }
     }
+    fadeCtrl2 = NULL;
+fade2_found:
 
     if (fadeCtrl2 != NULL)
     {

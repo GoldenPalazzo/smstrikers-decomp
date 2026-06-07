@@ -18,9 +18,6 @@ SlotPool<BlurHandler> BlurHandler::m_BlurHandlerSlotPool(0x10, 0x10);
 
 static f32 fFlimmerOffset = 0.01f;
 
-const eGLStream stream_decl_[3] = { GLStream_Position, GLStream_Colour, GLStream_Diffuse };
-static u32 sWhiteColour = 0xFFFFFFFF;
-
 /**
  * Offset/Address/Size: 0x0 | 0x801627D4 | size: 0x3C
  */
@@ -176,10 +173,7 @@ void BlurHandler::RenderMesh(unsigned long uTexID)
         return;
     }
 
-    eGLStream stream_decl[3];
-    stream_decl[0] = stream_decl_[0];
-    stream_decl[1] = stream_decl_[1];
-    stream_decl[2] = stream_decl_[2];
+    eGLStream stream_decl[3] = { GLStream_Position, GLStream_Colour, GLStream_Diffuse };
 
     GLMeshWriter mesh;
 
@@ -212,8 +206,8 @@ void BlurHandler::RenderMesh(unsigned long uTexID)
     glSetCurrentTexture(uTexID, GLTT_Diffuse);
     glSetCurrentProgram(glGetProgram("3d unlit"));
 
+    colour.SetWhite();
     nonAdditiveAlpha = 0.0f;
-    *(u32*)&colour.c[0] = sWhiteColour;
 
     if (m_bAdditive)
     {

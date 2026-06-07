@@ -1933,20 +1933,20 @@ void cFielder::DesireReceivePassFromIdle(float fDeltaT)
     float xDiff = m_DesireReceivePassSharedVars.v3BallPosition.f.y - g_pBall->m_v3Position.f.y;
 
     float invDist = nlRecipSqrt((yDiff * yDiff) + (xDiff * xDiff), true);
-    float normX = invDist * xDiff;
     float normY = invDist * yDiff;
+    yDiff = invDist * xDiff;
 
     cBall* pBall = g_pBall;
 
-    float invBallVel = nlRecipSqrt(
+    invDist = nlRecipSqrt(
         (pBall->m_v3Velocity.f.x * pBall->m_v3Velocity.f.x) + (pBall->m_v3Velocity.f.y * pBall->m_v3Velocity.f.y),
         true);
-    float ballVelNormY = invBallVel * pBall->m_v3Velocity.f.y;
-    float ballVelNormX = invBallVel * pBall->m_v3Velocity.f.x;
+    float ballVelNormY = invDist * pBall->m_v3Velocity.f.y;
+    float ballVelNormX = invDist * pBall->m_v3Velocity.f.x;
 
     if (m_pBall == NULL && m_eDesireSubState != 2)
     {
-        float fDot = (normY * ballVelNormY) + (normX * ballVelNormX);
+        float fDot = (normY * ballVelNormY) + (yDiff * ballVelNormX);
         if (fDot < 0.98f || g_pBall->m_pOwner != NULL)
         {
             ClearPassTargetIfAmThePassTarget();

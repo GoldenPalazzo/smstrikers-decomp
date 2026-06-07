@@ -4,6 +4,9 @@
 #include "Game/WorldManager.h"
 #include "Game/Drawable/DrawableObj.h"
 #include "Game/Audio/StreamTrack.h"
+#include "Game/Effects/EffectsGroup.h"
+#include "Game/Effects/EmissionManager.h"
+#include "Game/Effects/EmissionController.h"
 #include "NL/gl/gl.h"
 #include "NL/nlFile.h"
 #include "NL/nlDebug.h"
@@ -741,12 +744,134 @@ void Presentation::Call(const char* functionName, const char* nisFilter)
     NisPlayer::Instance()->SetExtraNameFilter(nisFilter);
     CallFunction(nlStringHash(functionName));
 }
+struct TreeNodeLocal;
+
+struct HelperObjectLocal
+{
+    u32 m_uHashID;
+    float _pad0[12];
+    nlVector3 position;
+    float _pad1;
+    char name[64];
+};
+
+struct TreeNodeLocal
+{
+    TreeNodeLocal* left;
+    TreeNodeLocal* right;
+    s8 heavy;
+    u8 _pad0[3];
+    u32 key;
+    HelperObjectLocal* value;
+};
+
+struct WorldLocal
+{
+    u8 _pad[0x74];
+    TreeNodeLocal* helperRoot;
+    u8 _pad2[0x4];
+    u32 helperCount;
+};
+
+struct TreeStackLocal
+{
+    TreeNodeLocal** nodes;
+    u32 count;
+};
+
+struct EmissionControllerUserLocal
+{
+    u8 _pad[0x78];
+    u32 m_uUserData;
+};
+
+static inline void TriggerParticleEffects()
+{
+    extern void __dla__FPv(void*);
+    extern void __dl__FPv(void*);
+
+    WorldLocal* world = (WorldLocal*)WorldManager::s_World;
+    TreeStackLocal* stack = (TreeStackLocal*)nlMalloc(8, 8, false);
+    if (stack != 0)
+    {
+        TreeNodeLocal* node = world->helperRoot;
+        stack->nodes = (TreeNodeLocal**)nlMalloc((world->helperCount + 1) * sizeof(TreeNodeLocal*), 8, false);
+        stack->count = 0;
+
+        if (node != 0)
+        {
+            while (node->left != 0)
+            {
+                stack->nodes[stack->count] = node;
+                stack->count++;
+                node = node->left;
+            }
+
+            stack->nodes[stack->count] = node;
+            stack->count++;
+        }
+    }
+
+    static int len;
+    static signed char init;
+    const char* persistentEffectsTag = "fx_goal_";
+
+    while (stack->count != 0)
+    {
+        TreeNodeLocal* currentNode = stack->nodes[stack->count - 1];
+        HelperObjectLocal* helper = currentNode->value;
+
+        if (!init)
+        {
+            len = strlen(persistentEffectsTag);
+            init = 1;
+        }
+
+        char fxName[256];
+        char* fxStart = strstr(helper->name, persistentEffectsTag);
+        if (fxStart)
+        {
+            nlStrNCpy<char>(fxName, fxStart + len, 256);
+            char* underscore = strstr(fxName, "_");
+            if (underscore != 0)
+            {
+                *underscore = 0;
+            }
+
+            EffectsGroup* fx = fxGetGroup(fxName);
+            if (fx != 0)
+            {
+                EmissionController* ec = EmissionManager::Create(fx, 0);
+                ec->SetPosition(helper->position);
+                ((EmissionControllerUserLocal*)ec)->m_uUserData = 0xDEADBEEF;
+            }
+        }
+
+        stack->count--;
+        TreeNodeLocal* right = stack->nodes[stack->count]->right;
+        if (right != 0)
+        {
+            while (right->left != 0)
+            {
+                stack->nodes[stack->count] = right;
+                stack->count++;
+                right = right->left;
+            }
+
+            stack->nodes[stack->count] = right;
+            stack->count++;
+        }
+    }
+
+    if (stack != 0)
+    {
+        __dla__FPv(stack->nodes);
+        __dl__FPv(stack);
+    }
+}
+
 /**
  * Offset/Address/Size: 0x57C | 0x80124D60 | size: 0x774
- * TODO: 93.7% match - r29/r27 register swap for persistentEffectsTag and cascading
- * register rotation in goal section (gsd r26/r27, tiesTheGame r25/r28, takeTheLead
- * r28/r26, inSuddenDeath r27/r25). AIPad loop uses different register set and missing
- * lwzu optimization for second character access.
  */
 void Presentation::EventHandler(Event* event)
 {
@@ -794,47 +919,6 @@ void Presentation::EventHandler(Event* event)
         PlayerLocal* pLastTouch[2];
     };
 
-    struct TreeNodeLocal;
-
-    struct HelperObjectLocal
-    {
-        u32 m_uHashID;
-        float _pad0[12];
-        nlVector3 position;
-        float _pad1;
-        char name[64];
-    };
-
-    struct TreeNodeLocal
-    {
-        TreeNodeLocal* left;
-        TreeNodeLocal* right;
-        s8 heavy;
-        u8 _pad0[3];
-        u32 key;
-        HelperObjectLocal* value;
-    };
-
-    struct WorldLocal
-    {
-        u8 _pad[0x74];
-        TreeNodeLocal* helperRoot;
-        u8 _pad2[0x4];
-        u32 helperCount;
-    };
-
-    struct TreeStackLocal
-    {
-        TreeNodeLocal** nodes;
-        u32 count;
-    };
-
-    struct EmissionControllerUserLocal
-    {
-        u8 _pad[0x78];
-        u32 m_uUserData;
-    };
-
     struct AIPadLocal
     {
         void* m_pPad;
@@ -852,15 +936,10 @@ void Presentation::EventHandler(Event* event)
     extern CharacterLocal* g_pCharacters[10];
     extern AIPadLocal mAIPads__12AIPadManager[4];
     extern unsigned int nlDefaultSeed;
-    extern void* fxGetGroup__FPCc(const char*);
-    extern void* Create__15EmissionManagerFP12EffectsGroupUs(void*, unsigned short);
-    extern void SetPosition__18EmissionControllerFRC9nlVector3(void*, const nlVector3&);
     extern TeamLocal* GetOtherTeam__5cTeamFv(TeamLocal*);
     extern bool IsCaptain__7cPlayerCFv(PlayerLocal*);
     extern float GetGameTime__5cGameFv(cGame*);
     extern void Set__6ConfigFPCcb(Config*, const char*, bool);
-    extern void __dla__FPv(void*);
-    extern void __dl__FPv(void*);
 
     if (g_pGame == 0)
     {
@@ -874,85 +953,7 @@ void Presentation::EventHandler(Event* event)
 
     if (event->m_uEventID == 5)
     {
-        WorldLocal* world = (WorldLocal*)WorldManager::s_World;
-        TreeStackLocal* stack = (TreeStackLocal*)nlMalloc(8, 8, false);
-        if (stack != 0)
-        {
-            TreeNodeLocal* node = world->helperRoot;
-            stack->nodes = (TreeNodeLocal**)nlMalloc((world->helperCount + 1) * sizeof(TreeNodeLocal*), 8, false);
-            stack->count = 0;
-
-            if (node != 0)
-            {
-                while (node->left != 0)
-                {
-                    stack->nodes[stack->count] = node;
-                    stack->count++;
-                    node = node->left;
-                }
-
-                stack->nodes[stack->count] = node;
-                stack->count++;
-            }
-        }
-
-        static int len;
-        static signed char init;
-        const char* persistentEffectsTag = "fx_goal_";
-
-        while (stack->count != 0)
-        {
-            u32 c = stack->count;
-            TreeNodeLocal* currentNode = stack->nodes[c - 1];
-            HelperObjectLocal* helper = currentNode->value;
-
-            if (!init)
-            {
-                len = strlen(persistentEffectsTag);
-                init = 1;
-            }
-
-            char fxName[256];
-            char* fxStart = strstr(helper->name, persistentEffectsTag);
-            if (fxStart)
-            {
-                nlStrNCpy<char>(fxName, fxStart + len, 256);
-                char* underscore = strstr(fxName, "_");
-                if (underscore != 0)
-                {
-                    *underscore = 0;
-                }
-
-                void* fx = fxGetGroup__FPCc(fxName);
-                if (fx != 0)
-                {
-                    void* ec = Create__15EmissionManagerFP12EffectsGroupUs(fx, 0);
-                    SetPosition__18EmissionControllerFRC9nlVector3(ec, helper->position);
-                    ((EmissionControllerUserLocal*)ec)->m_uUserData = 0xDEADBEEF;
-                }
-            }
-
-            stack->count = c - 1;
-            TreeNodeLocal* right = stack->nodes[stack->count]->right;
-            if (right != 0)
-            {
-                while (right->left != 0)
-                {
-                    stack->nodes[stack->count] = right;
-                    stack->count++;
-                    right = right->left;
-                }
-
-                stack->nodes[stack->count] = right;
-                stack->count++;
-            }
-        }
-
-        if (stack != 0)
-        {
-            __dla__FPv(stack->nodes);
-            __dl__FPv(stack);
-        }
+        TriggerParticleEffects();
 
         Config& cfg = Config::Global();
         TagValuePair& tvp = cfg.FindTvp("no_presentation");

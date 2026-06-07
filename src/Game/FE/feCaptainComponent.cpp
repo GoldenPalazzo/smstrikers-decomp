@@ -1122,21 +1122,19 @@ void IChooseCaptain::SceneCreated(FEPresentation* presentation)
     char filenameS2[0x80];
     char filenameS1[0x80];
     char filenameS0[0x80];
-    volatile InlineHasher h1, h3, h5, h7;
+    volatile InlineHasher hB, hA;
+    volatile InlineHasher h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
+
+    h0.m_Hash = 0;
+    h1.m_Hash = 0;
+    h2.m_Hash = 0;
+    h3.m_Hash = 0;
+    h4.m_Hash = 0;
+    h5.m_Hash = 0;
+    h6.m_Hash = 0;
+    h7.m_Hash = 0;
 
     {
-        volatile InlineHasher hB, hA;
-        volatile InlineHasher h9, h8, h6, h4, h2, h0;
-
-        h0.m_Hash = 0;
-        h1.m_Hash = 0;
-        h2.m_Hash = 0;
-        h3.m_Hash = 0;
-        h4.m_Hash = 0;
-        h5.m_Hash = 0;
-        h6.m_Hash = 0;
-        h7.m_Hash = 0;
-
         unsigned long hash = nlStringLowerHash("LEFT_CAPT");
         h8.m_Hash = hash;
         h9.m_Hash = hash;

@@ -16,8 +16,6 @@ void cPN_Feather::operator delete(void* ptr)
 
 /**
  * Offset/Address/Size: 0x890 | 0x801EFDC4 | size: 0xEC
- * TODO: 95.08% match - register roles for loop counter/byte offset are still
- * swapped in weight-clear loop setup.
  */
 cPN_Feather::cPN_Feather(cSHierarchy* hierarchy, void (*callback)(unsigned int, cPN_Feather*), unsigned int callbackParam)
     : cPoseNode(2)
@@ -31,10 +29,7 @@ cPN_Feather::cPN_Feather(cSHierarchy* hierarchy, void (*callback)(unsigned int, 
 
     m_pFeatherWeights = (float*)nlMalloc(hierarchy->m_nodeCount * sizeof(float), 8, 0);
 
-    for (int byteOffset = 0, i = 0; i < m_pBaseHierarchy->m_nodeCount; ++i, byteOffset += 4)
-    {
-        m_pFeatherWeights[byteOffset / 4] = 0.0f;
-    }
+    ClearNodeWeights();
 
     SetChild(0, nullptr);
     SetChild(1, nullptr);

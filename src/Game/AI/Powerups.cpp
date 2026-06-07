@@ -1985,8 +1985,11 @@ void PowerupBase::Destroy(bool bSilent)
                 {
                     pExplosionGroup = fxGetGroup("bobomb_explode_big");
                     pGroundGroup = fxGetGroup("bobomb_explode_ground_big");
+                    if (bSilent)
+                        break;
 
                     PhysicsObject* pPhysObj = m_pPhysicsObject;
+                    unsigned long sndType;
                     float fVol = g_pGame->m_pGameTweaks->unk238;
                     PowerupSound pwrSnd = bobombExplosions[nlRandom(2, &nlDefaultSeed)];
 
@@ -1999,7 +2002,6 @@ void PowerupBase::Destroy(bool bSilent)
                         Audio::SoundAttributes attrs;
                         attrs.Init();
 
-                        unsigned long sndType;
                         switch (pwrSnd)
                         {
                         case PWRUP_SOUND_ACQUIRE:
@@ -2062,8 +2064,11 @@ void PowerupBase::Destroy(bool bSilent)
                 {
                     pExplosionGroup = fxGetGroup("bobomb_explode_med");
                     pGroundGroup = fxGetGroup("bobomb_explode_ground_med");
+                    if (bSilent)
+                        break;
 
                     PhysicsObject* pPhysObj = m_pPhysicsObject;
+                    unsigned long sndType;
                     float fVol = g_pGame->m_pGameTweaks->unk234;
                     PowerupSound pwrSnd = bobombExplosions[nlRandom(2, &nlDefaultSeed)];
 
@@ -2076,7 +2081,6 @@ void PowerupBase::Destroy(bool bSilent)
                         Audio::SoundAttributes attrs;
                         attrs.Init();
 
-                        unsigned long sndType;
                         switch (pwrSnd)
                         {
                         case PWRUP_SOUND_ACQUIRE:
@@ -2139,8 +2143,11 @@ void PowerupBase::Destroy(bool bSilent)
                 {
                     pExplosionGroup = fxGetGroup("bobomb_explode_small");
                     pGroundGroup = fxGetGroup("bobomb_explode_ground_small");
+                    if (bSilent)
+                        break;
 
                     PhysicsObject* pPhysObj = m_pPhysicsObject;
+                    unsigned long sndType;
                     float fVol = g_pGame->m_pGameTweaks->unk230;
                     PowerupSound pwrSnd = bobombExplosions[nlRandom(2, &nlDefaultSeed)];
 
@@ -2153,7 +2160,6 @@ void PowerupBase::Destroy(bool bSilent)
                         Audio::SoundAttributes attrs;
                         attrs.Init();
 
-                        unsigned long sndType;
                         switch (pwrSnd)
                         {
                         case PWRUP_SOUND_ACQUIRE:
@@ -2226,22 +2232,14 @@ void PowerupBase::Destroy(bool bSilent)
             }
 
             Event* pEvent = g_pEventManager->CreateValidEvent(0x2C, 0x34);
-            CollisionBobombDataLayout* pEventData = NULL;
-            if (pEvent != NULL)
-            {
-                CollisionBobombData* pData = new ((u8*)pEvent + 0x10) CollisionBobombData();
-                pEventData = (CollisionBobombDataLayout*)pData;
-            }
-
-            if (pEventData != NULL)
-            {
-                pEventData->v3ExplosionLocation = m_v3Position;
-                pEventData->fExplosionRadius = ((float)meSize * g_pGame->m_pGameTweaks->fPowerupExplosionRadius)
-                                             + g_pGame->m_pGameTweaks->fPowerupExplosionRadius;
-                pEventData->pThrower = m_pThrower;
-                pEventData->nThrowerPadID = m_nThrowerPadID;
-                pEventData->bIsFreezeBomb = (m_eType == POWER_UP_FREEZE_SHELL);
-            }
+            CollisionBobombDataLayout* pEventData = (CollisionBobombDataLayout*)new ((u8*)pEvent + 0x10) CollisionBobombData();
+            pEventData->v3ExplosionLocation = m_v3Position;
+            pEventData->fExplosionRadius = ((float)meSize * g_pGame->m_pGameTweaks->fPowerupExplosionRadius)
+                                         + g_pGame->m_pGameTweaks->fPowerupExplosionRadius;
+            pEventData->pThrower = m_pThrower;
+            pEventData->nThrowerPadID = m_nThrowerPadID;
+            pEventData->bIsFreezeBomb = (m_eType == POWER_UP_FREEZE_SHELL);
+            goto cleanup;
         }
     }
 

@@ -759,9 +759,9 @@ void TournSetParamsScene::SetInitialParams(bool isLeagueMode, int numTeams, int 
 
 /**
  * Offset/Address/Size: 0x6B0 | 0x800E0084 | size: 0x4E0
- * TODO: 90.6% match on decomp.me - remaining diffs are compiler scheduling
- * (lwzx vs add+lwz, srwi vs rlwinm byte mask, callback/loop register
- * allocation swaps, and stbx vs stb addressing mode).
+ * TODO: 98.43% match - remaining diffs are srwi vs rlwinm byte mask,
+ * r5/r6/r7 register allocation swap in both loops, and stbx vs add+stb
+ * addressing mode for pre-loop disabled stores.
  */
 #define CALL_MENU_CB_APPLY(cur, action)                        \
     do                                                         \
@@ -810,24 +810,20 @@ void TournSetParamsScene::ApplyMenuDefaults()
         mSlideMenuLists[2]->mComponentInstance->m_bVisible = false;
 
         unsigned char activestatetable[6] = { 1, 0, 1, 1, 1, 0 };
-        int i = 0;
-        for (int row = 0; row < 2; row++)
+        for (int i = 0; i < 6; i++)
         {
-            for (int col = 0; col < 3; col++)
+            unsigned char active = activestatetable[i];
+            SlideMenuList* list = mSlideMenuLists[1];
+            MenuItem<SlideMenuItem>* item;
+            if (i == ON_INVALID)
             {
-                unsigned char active = activestatetable[row * 3 + col];
-                MenuItem<SlideMenuItem>* item;
-                if (i == ON_INVALID)
-                {
-                    item = &mSlideMenuLists[1]->mMenuItems[mSlideMenuLists[1]->mCurrentIndex];
-                }
-                else
-                {
-                    item = &mSlideMenuLists[1]->mMenuItems[i];
-                }
-                item->mDisabled = active;
-                i++;
+                item = &list->mMenuItems[list->mCurrentIndex];
             }
+            else
+            {
+                item = &list->mMenuItems[i];
+            }
+            ((unsigned char&)item->mDisabled) = active;
         }
     }
     else

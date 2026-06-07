@@ -1451,8 +1451,6 @@ float FallenDown(cFielder* pFielder)
 
 /**
  * Offset/Address/Size: 0x3FA0 | 0x80082A28 | size: 0x268
- * TODO: 96.31% match - remaining f0/f2 FP temp swap in the goalie-angle conversion block
- *   and goalie delta scheduling around the center-angle atan2 call
  */
 float LikelyToScoreFromPosition(const nlVector3& v3Position, const nlVector3& v3GoaliePosition, const cNet* pNet, bool)
 {
@@ -1488,7 +1486,7 @@ float LikelyToScoreFromPosition(const nlVector3& v3Position, const nlVector3& v3
 
     fGoalieDeltaX = v3GoaliePosition.f.x - v3Position.f.x;
     fGoalieDeltaX *= fSideSign;
-    fGoalieDeltaY = v3GoaliePosition.f.y - fPositionY;
+    fGoalieDeltaY = v3GoaliePosition.f.y - v3Position.f.y;
 
     float fGoalieCenterAngle = nlATan2f(fGoalieDeltaY, fGoalieDeltaX);
     float fGoalieHalfAngle = nlATan2f(0.5f, nlSqrt(fGoalieDeltaX * fGoalieDeltaX + fGoalieDeltaY * fGoalieDeltaY, true));

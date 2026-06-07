@@ -501,42 +501,16 @@ void cPlayer::DoRegularPassing(cPlayer* pTeammate, bool bVolleyPass, bool bAllow
                     float adjustedSpeed = DoCalculatePassSpeed(pTeammate->m_v3Position, teammateLeadPassVelocity, m_pTweaks->fPassVolleySpeedMin, m_pTweaks->fPassVolleySpeedMax, g_pGame->m_pGameTweaks->fPassSpeedMinDist, g_pGame->m_pGameTweaks->fPassSpeedMaxDist);
                     float fMinPassSpeed = m_pTweaks->fPassGroundSpeedMin;
                     float fMaxPassSpeed = m_pTweaks->fPassGroundSpeedMax;
-                    if (adjustedSpeed >= fMinPassSpeed)
-                    {
-                    }
-                    else
-                    {
-                        adjustedSpeed = fMinPassSpeed;
-                    }
-                    if (adjustedSpeed <= fMaxPassSpeed)
-                    {
-                        fPassGroundSpeed = adjustedSpeed;
-                    }
-                    else
-                    {
-                        fPassGroundSpeed = fMaxPassSpeed;
-                    }
+                    adjustedSpeed = (adjustedSpeed >= fMinPassSpeed) ? adjustedSpeed : fMinPassSpeed;
+                    fPassGroundSpeed = (adjustedSpeed <= fMaxPassSpeed) ? adjustedSpeed : fMaxPassSpeed;
                 }
                 else
                 {
                     float adjustedSpeed = DoCalculatePassSpeed(pTeammate->m_v3Position, teammateLeadPassVelocity, m_pTweaks->fPassGroundSpeedMin, m_pTweaks->fPassGroundSpeedMax, g_pGame->m_pGameTweaks->fPassSpeedMinDist, g_pGame->m_pGameTweaks->fPassSpeedMaxDist);
                     float fMinPassSpeed = m_pTweaks->fPassGroundSpeedMin;
                     float fMaxPassSpeed = m_pTweaks->fPassGroundSpeedMax;
-                    if (adjustedSpeed >= fMinPassSpeed)
-                    {
-                    }
-                    else
-                    {
-                        adjustedSpeed = fMinPassSpeed;
-                    }
-                    if (adjustedSpeed <= fMaxPassSpeed)
-                    {
-                        fPassGroundSpeed = adjustedSpeed;
-                    }
-                    else
-                    {
-                        fPassGroundSpeed = fMaxPassSpeed;
-                    }
+                    adjustedSpeed = (adjustedSpeed >= fMinPassSpeed) ? adjustedSpeed : fMinPassSpeed;
+                    fPassGroundSpeed = (adjustedSpeed <= fMaxPassSpeed) ? adjustedSpeed : fMaxPassSpeed;
                 }
                 if (!bLeadPass)
                 {
@@ -625,42 +599,16 @@ void cPlayer::DoRegularPassing(cPlayer* pTeammate, bool bVolleyPass, bool bAllow
             float adjustedSpeed = DoCalculatePassSpeed(pTeammate->m_v3Position, pTeammate->m_v3Velocity, m_pTweaks->fPassVolleySpeedMin, m_pTweaks->fPassVolleySpeedMax, g_pGame->m_pGameTweaks->fPassSpeedMinDist, g_pGame->m_pGameTweaks->fPassSpeedMaxDist);
             float fMinPassSpeed = m_pTweaks->fPassGroundSpeedMin;
             float fMaxPassSpeed = m_pTweaks->fPassGroundSpeedMax;
-            if (adjustedSpeed >= fMinPassSpeed)
-            {
-            }
-            else
-            {
-                adjustedSpeed = fMinPassSpeed;
-            }
-            if (adjustedSpeed <= fMaxPassSpeed)
-            {
-                fPassGroundSpeed = adjustedSpeed;
-            }
-            else
-            {
-                fPassGroundSpeed = fMaxPassSpeed;
-            }
+            adjustedSpeed = (adjustedSpeed >= fMinPassSpeed) ? adjustedSpeed : fMinPassSpeed;
+            fPassGroundSpeed = (adjustedSpeed <= fMaxPassSpeed) ? adjustedSpeed : fMaxPassSpeed;
         }
         else
         {
             float adjustedSpeed = DoCalculatePassSpeed(pTeammate->m_v3Position, pTeammate->m_v3Velocity, m_pTweaks->fPassGroundSpeedMin, m_pTweaks->fPassGroundSpeedMax, g_pGame->m_pGameTweaks->fPassSpeedMinDist, g_pGame->m_pGameTweaks->fPassSpeedMaxDist);
             float fMinPassSpeed = m_pTweaks->fPassGroundSpeedMin;
             float fMaxPassSpeed = m_pTweaks->fPassGroundSpeedMax;
-            if (adjustedSpeed >= fMinPassSpeed)
-            {
-            }
-            else
-            {
-                adjustedSpeed = fMinPassSpeed;
-            }
-            if (adjustedSpeed <= fMaxPassSpeed)
-            {
-                fPassGroundSpeed = adjustedSpeed;
-            }
-            else
-            {
-                fPassGroundSpeed = fMaxPassSpeed;
-            }
+            adjustedSpeed = (adjustedSpeed >= fMinPassSpeed) ? adjustedSpeed : fMinPassSpeed;
+            fPassGroundSpeed = (adjustedSpeed <= fMaxPassSpeed) ? adjustedSpeed : fMaxPassSpeed;
         }
     }
     if (m_pBall != NULL)

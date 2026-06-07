@@ -672,17 +672,27 @@ void cullPoints(int n, dReal p[], int m, int i0, int iret[])
 // collision functions. this function only fills in the position and depth
 // fields.
 
+#undef dDOT
+#undef dDOT14
+#undef dDOT41
+#undef dDOT44
+#define dDOT(a, b)   dDOTpq(a, b, 1, 1)
+#define dDOT14(a, b) dDOTpq(a, b, 1, 4)
+#define dDOT41(a, b) dDOTpq(a, b, 4, 1)
+#define dDOT44(a, b) dDOTpq(a, b, 4, 4)
+
 int dBoxBox(const dVector3 p1, const dMatrix3 R1,
     const dVector3 side1, const dVector3 p2,
     const dMatrix3 R2, const dVector3 side2,
     dVector3 normal, dReal* depth, int* return_code,
     int maxc, dContactGeom* contact, int skip)
 {
+    dReal s, s2, l;
     const dReal fudge_factor = REAL(1.05);
     dVector3 p, pp, normalC;
     const dReal* normalR = 0;
     dReal A[3], B[3], R11, R12, R13, R21, R22, R23, R31, R32, R33,
-        Q11, Q12, Q13, Q21, Q22, Q23, Q31, Q32, Q33, s, s2, l;
+        Q11, Q12, Q13, Q21, Q22, Q23, Q31, Q32, Q33;
     int i, j, invert_normal, code;
 
     // get vector from centers of box 1 to box 2, relative to box 1
@@ -1097,6 +1107,11 @@ int dBoxBox(const dVector3 p1, const dMatrix3 R1,
     *return_code = code;
     return cnum;
 }
+
+#undef dDOT
+#undef dDOT14
+#undef dDOT41
+#undef dDOT44
 
 //****************************************************************************
 // pairwise collision functions for standard geom types

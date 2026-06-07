@@ -499,11 +499,16 @@ UpdateResult IChooseSide::UpdateForPause(float, eFEINPUT_PAD* pad)
 
 /**
  * Offset/Address/Size: 0x820 | 0x800C3C64 | size: 0x4BC
- * TODO: 97.99% match - register allocation rotation (r30/r31 for this/disabledSide, r28/r29
- * for i/copy) caused by -inline deferred vs decomp.me compiler difference.
+ * TODO: 98.75% match - callee-saved register rotation (r29/r31 this, r28/r30 advPtr)
+ * across entire function; all 29 diffs are register-only.
  */
 void IChooseSide::CheckControllers(int disabledSide)
 {
+    int newSide;
+    int destIndex;
+    TLInstance* inst;
+    bool allReady;
+
     for (int i = 0; i < 4; i++)
     {
         if (mPlayerReady[i])
@@ -540,9 +545,7 @@ void IChooseSide::CheckControllers(int disabledSide)
                 FEAudio::PlayAnimAudioEvent("sfx_deny", false);
             }
 
-            int newSide = mPlayingSides[i];
-            TLInstance* inst;
-            int destIndex;
+            newSide = mPlayingSides[i];
             if (newSide == 0)
             {
                 destIndex = 0;
@@ -576,7 +579,7 @@ void IChooseSide::CheckControllers(int disabledSide)
             TLInstance* readyIndicator = mInstanceTable[16];
             if (readyIndicator != NULL)
             {
-                bool allReady = false;
+                allReady = false;
                 for (int k = 0; k < 4; k++)
                 {
                     if (mPlayerReady[k])
@@ -625,9 +628,7 @@ void IChooseSide::CheckControllers(int disabledSide)
                 FEAudio::PlayAnimAudioEvent("sfx_deny", false);
             }
 
-            int newSide = mPlayingSides[i];
-            TLInstance* inst;
-            int destIndex;
+            newSide = mPlayingSides[i];
             if (newSide == 0)
             {
                 destIndex = 0;
@@ -661,7 +662,7 @@ void IChooseSide::CheckControllers(int disabledSide)
             TLInstance* readyIndicator = mInstanceTable[16];
             if (readyIndicator != NULL)
             {
-                bool allReady = false;
+                allReady = false;
                 for (int k = 0; k < 4; k++)
                 {
                     if (mPlayerReady[k])
