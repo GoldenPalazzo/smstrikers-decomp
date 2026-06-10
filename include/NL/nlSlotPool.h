@@ -3,6 +3,7 @@
 
 #include "types.h"
 #include "NL/nlMemory.h"
+#include "NL/nlList.h"
 
 typedef void* (*SlotPoolAllocatorFunc)(unsigned long size);
 typedef void (*SlotPoolFreeFunc)(void* data);
@@ -10,17 +11,6 @@ typedef void (*SlotPoolFreeFunc)(void* data);
 // Forward declarations
 struct SlotPoolBlock;
 struct SlotPoolEntry;
-
-template <typename T>
-void nlListAddStart(T** head, T* newNode, T** prev)
-{
-    if ((prev != NULL) && ((T*)*head == NULL))
-    {
-        *prev = newNode;
-    }
-    *(T**)newNode = *head;
-    *head = newNode;
-}
 
 class SlotPoolBase
 {

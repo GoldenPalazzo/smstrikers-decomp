@@ -715,7 +715,7 @@ PlatTexture* glx_GetGridTexture(int width, int height)
     PlatTexture* newTexture = glx_MakeGridTexture(width, height);
     ListEntry<PlatTexture*>* listEntry = new (nlMalloc(8, 8, false)) ListEntry<PlatTexture*>(newTexture);
 
-    nlListAddStart<PlatTexture*>(&gridTextures.m_Head, listEntry, &gridTextures.m_Tail);
+    nlListAddStart<ListEntry<PlatTexture*> >(&gridTextures.m_Head, listEntry, &gridTextures.m_Tail);
     return gridTextures.m_Head->data;
 }
 

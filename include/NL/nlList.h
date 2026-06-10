@@ -98,19 +98,14 @@ ListEntry<T>* nlListRemoveStart(ListEntry<T>** head, ListEntry<T>** tail)
 }
 
 template <typename T>
-void nlListAddStart(ListEntry<T>** head, ListEntry<T>* entry, ListEntry<T>** tail)
+void nlListAddStart(T** head, T* newNode, T** prev)
 {
-    if (tail != 0)
+    if ((prev != NULL) && ((T*)*head == NULL))
     {
-        if (*head == 0)
-        {
-            *tail = entry;
-        }
+        *prev = newNode;
     }
-
-    // Insert at start
-    entry->next = *head;
-    *head = entry;
+    *(T**)newNode = *head;
+    *head = newNode;
 }
 
 template <typename T>

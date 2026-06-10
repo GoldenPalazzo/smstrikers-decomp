@@ -206,42 +206,4 @@ public:
     }
 };
 
-// void nlQSort<glTexBundleDict>(glTexBundleDict*, int, int (*)(const glTexBundleDict*, const glTexBundleDict*));
-// void nlListAddStart<PlatTexture*>(ListEntry<PlatTexture*>**, ListEntry<PlatTexture*>*, ListEntry<PlatTexture*>**);
-
-// class AVLTreeBase<unsigned long, PlatTexture*, NewAdapter<AVLTreeEntry<unsigned long, PlatTexture*>>, DefaultKeyCompare<unsigned long>>
-// {
-// public:
-//     void DeleteEntry(AVLTreeEntry<unsigned long, PlatTexture*>*);
-//     void Clear();
-//     void DestroyTree(void (AVLTreeBase<unsigned long, PlatTexture*, NewAdapter<AVLTreeEntry<unsigned long, PlatTexture*>>,
-//     DefaultKeyCompare<unsigned long>>::*)(AVLTreeEntry<unsigned long, PlatTexture*>*)); void PostorderTraversal(AVLTreeEntry<unsigned
-//     long, PlatTexture*>*, void (AVLTreeBase<unsigned long, PlatTexture*, NewAdapter<AVLTreeEntry<unsigned long, PlatTexture*>>,
-//     DefaultKeyCompare<unsigned long>>::*)(AVLTreeEntry<unsigned long, PlatTexture*>*)); void CastUp(AVLTreeNode*) const; void
-//     Walk<TexDestructor>(TexDestructor*, void (TexDestructor::*)(const unsigned long&, PlatTexture**)); void
-//     InorderWalk<TexDestructor>(AVLTreeEntry<unsigned long, PlatTexture*>*, TexDestructor*, void (TexDestructor::*)(const unsigned long&,
-//     PlatTexture**)); void CompareNodes(AVLTreeNode*, AVLTreeNode*); void CompareKey(void*, AVLTreeNode*); void AllocateEntry(void*,
-//     void*);
-// };
-
-// class nlWalkList<ListEntry<PlatTexture*>, ListContainerBase<PlatTexture*, NewAdapter<ListEntry<PlatTexture*>>>>(ListEntry<PlatTexture*>*,
-// ListContainerBase<PlatTexture*, NewAdapter<ListEntry<PlatTexture*>>>*, void (ListContainerBase<PlatTexture*,
-// NewAdapter<ListEntry<PlatTexture*>>>
-// {
-// public:
-//     void *)(ListEntry<PlatTexture*>*));
-// };
-
-// class ListContainerBase<PlatTexture*, NewAdapter<ListEntry<PlatTexture*>>>
-// {
-// public:
-//     void DeleteEntry(ListEntry<PlatTexture*>*);
-// };
-
-// class nlListContainer<PlatTexture*>
-// {
-// public:
-//     void ~nlListContainer();
-// };
-
 #endif // _GLXTEXTURE_H_

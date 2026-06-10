@@ -16,10 +16,6 @@
 
 #include "types.h"
 
-// Local mirror of NISData from Game/Render/Presentation.h -- including that
-// header drags in nlBasicString.h / nlTask.h, which clash with the in-file
-// nlTaskManager / BasicString / TempStringAllocator declarations relied on
-// by the already-matched ~Nis() / SelectCamera / Render in this TU.
 struct NISData : public EventData
 {
     virtual u32 GetID();
@@ -37,88 +33,6 @@ public:
 class EmissionController;
 
 typedef void (*NisEmissionFn)(EmissionController&, int);
-
-// /**
-//  * Offset/Address/Size: 0xEA0 | 0x8012E074 | size: 0xD74
-//  */
-// void FormatImpl<BasicString<char, Detail::TempStringAllocator>>::operator%<const char*>(const char* const&)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x12C | 0x8012D300 | size: 0xD74
-//  */
-// void FormatImpl<BasicString<char, Detail::TempStringAllocator>>::operator%<int>(const int&)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x8012D1D4 | size: 0x12C
-//  */
-// void Format<BasicString<char, Detail::TempStringAllocator>, char[64], int>(const BasicString<char, Detail::TempStringAllocator>&, const char(&)[64], const int&)
-// {
-// }
-
-/**
- * Offset/Address/Size: 0xF0 | 0x8012D194 | size: 0x28
- */
-template <>
-void nlListAddStart<Nis::NisAudioData>(Nis::NisAudioData** head, Nis::NisAudioData* entry, Nis::NisAudioData** tail)
-{
-    if (tail != 0)
-    {
-        if (*head == 0)
-        {
-            *tail = entry;
-        }
-    }
-
-    entry->next = *head;
-    *head = entry;
-}
-
-// /**
-//  * Offset/Address/Size: 0x54 | 0x8012D0F8 | size: 0x9C
-//  */
-// void nlListRemoveElement<Nis::NisAudioData>(Nis::NisAudioData**, Nis::NisAudioData*, Nis::NisAudioData**)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x8012D0A4 | size: 0x54
-//  */
-// void nlDeleteList<Nis::NisAudioData>(Nis::NisAudioData**)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x8012D048 | size: 0x5C
-//  */
-// void Function1<void, EmissionController&>::FunctorImpl<BindExp2<void, void (*)(EmissionController&, int), Placeholder<0>, int>>::~FunctorImpl()
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x70 | 0x8012D014 | size: 0x34
-//  */
-// void Function1<void, EmissionController&>::FunctorImpl<BindExp2<void, void (*)(EmissionController&, int), Placeholder<0>, int>>::operator()(EmissionController&)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x8012CFA4 | size: 0x70
-//  */
-// void Function1<void, EmissionController&>::FunctorImpl<BindExp2<void, void (*)(EmissionController&, int), Placeholder<0>, int>>::Clone() const
-// {
-// }
-
-/**
- * Offset/Address/Size: 0x1650 | 0x8012CA60 | size: 0x8
- */
-char* Nis::Name() const
-{
-    return mHeader->name;
-}
 
 struct BasicStringInternal
 {
@@ -311,6 +225,14 @@ Nis::Nis(NisHeader& header, char* data, int size)
         }
         chunk = (nlChunk*)((char*)chunk + chunk->m_Size + 8);
     }
+}
+
+/**
+ * Offset/Address/Size: 0x1650 | 0x8012CA60 | size: 0x8
+ */
+char* Nis::Name() const
+{
+    return mHeader->name;
 }
 
 /**
