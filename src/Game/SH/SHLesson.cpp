@@ -46,62 +46,6 @@ T* CastToSomeType(T*, void* pValue);
 
 int LessonScene::mLessonIndex = -1;
 
-template <>
-template <>
-TLTextInstance* FEFinder<TLTextInstance, 3>::_Find<TLInstance>(
-    TLInstance* pTopLevel, const unsigned long Level1, const unsigned long Level2,
-    const unsigned long Level3, const unsigned long Level4, const unsigned long Level5, const unsigned long Level6)
-{
-    void* pChild = FindItemByHashID<TLInstance>(pTopLevel->pChildren, Level1);
-    if (pChild == 0)
-        return 0;
-    if (Level2 == 0)
-        return (TLTextInstance*)pChild;
-    return _Find<TLInstance>(CastToSomeType<TLInstance>(pTopLevel->pChildren, pChild), Level2, Level3, Level4, Level5, Level6, 0);
-}
-
-template <>
-template <>
-TLTextInstance* FEFinder<TLTextInstance, 3>::_Find<TLSlide>(
-    TLSlide* pTopLevel, const unsigned long Level1, const unsigned long Level2,
-    const unsigned long Level3, const unsigned long Level4, const unsigned long Level5, const unsigned long Level6)
-{
-    void* pChild = FindItemByHashID<TLInstance>(pTopLevel->m_instances, Level1);
-    if (pChild == 0)
-        return 0;
-    if (Level2 == 0)
-        return (TLTextInstance*)pChild;
-    return _Find<TLInstance>(CastToSomeType<TLInstance>(pTopLevel->m_instances, pChild), Level2, Level3, Level4, Level5, Level6, 0);
-}
-
-template <>
-template <>
-TLComponentInstance* FEFinder<TLComponentInstance, 4>::_Find<TLInstance>(
-    TLInstance* pTopLevel, const unsigned long Level1, const unsigned long Level2,
-    const unsigned long Level3, const unsigned long Level4, const unsigned long Level5, const unsigned long Level6)
-{
-    void* pChild = FindItemByHashID<TLInstance>(pTopLevel->pChildren, Level1);
-    if (pChild == 0)
-        return 0;
-    if (Level2 == 0)
-        return (TLComponentInstance*)pChild;
-    return _Find<TLInstance>(CastToSomeType<TLInstance>(pTopLevel->pChildren, pChild), Level2, Level3, Level4, Level5, Level6, 0);
-}
-
-template <>
-template <>
-TLComponentInstance* FEFinder<TLComponentInstance, 4>::_Find<TLSlide>(
-    TLSlide* pTopLevel, const unsigned long Level1, const unsigned long Level2,
-    const unsigned long Level3, const unsigned long Level4, const unsigned long Level5, const unsigned long Level6)
-{
-    void* pChild = FindItemByHashID<TLInstance>(pTopLevel->m_instances, Level1);
-    if (pChild == 0)
-        return 0;
-    if (Level2 == 0)
-        return (TLComponentInstance*)pChild;
-    return _Find<TLInstance>(CastToSomeType<TLInstance>(pTopLevel->m_instances, pChild), Level2, Level3, Level4, Level5, Level6, 0);
-}
-
 /**
  * Offset/Address/Size: 0x508 | 0x8010A9B4 | size: 0x6C
  */
@@ -136,20 +80,12 @@ void LessonScene::SceneCreated()
     titletextinstance = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
         m_pFEPresentation->m_currentSlide,
         InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("title")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("title")));
 
     bodytextinstance = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
         m_pFEPresentation->m_currentSlide,
         InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("body")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("body")));
 
     if (LookupLocString(title) != 0)
     {
@@ -164,11 +100,7 @@ void LessonScene::SceneCreated()
     buttonComponent = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
         m_pFEPresentation->m_currentSlide,
         InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("buttons")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("buttons")));
 
     mButtons.mButtonInstance = buttonComponent;
     mButtons.SetState(ButtonComponent::BS_A_AND_B_AND_Y);
@@ -208,6 +140,7 @@ void LessonScene::Update(float fDeltaT)
             this->mButtons.mButtonInstance->m_bVisible = false;
         }
     }
+
     if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x100, false, nullptr))
     {
         MoviePlayerScene* movieScene = (MoviePlayerScene*)nlSingleton<OverlayManager>::s_pInstance->Push(IGSCENE_LESSON_MOVIE_PLAYER, SCREEN_FORWARD, false);
@@ -219,6 +152,7 @@ void LessonScene::Update(float fDeltaT)
         FEAudio::PlayAnimAudioEvent("sfx_accept", NULL);
         return;
     }
+
     if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x200, false, nullptr))
     {
         LessonSelectScene* lessonScene = (LessonSelectScene*)nlSingleton<OverlayManager>::s_pInstance->Push(IGSCENE_LESSON_SELECT, SCREEN_BACK, true);
@@ -226,6 +160,7 @@ void LessonScene::Update(float fDeltaT)
         FEAudio::PlayAnimAudioEvent("sfx_back", NULL);
         return;
     }
+
     if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x800, false, nullptr))
     {
         FrontEnd::ExitMenuState();

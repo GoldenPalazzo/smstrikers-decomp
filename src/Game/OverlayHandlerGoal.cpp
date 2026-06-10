@@ -1,4 +1,5 @@
 #include "Game/OverlayHandlerGoal.h"
+#include "Game/FE/feFinder.h"
 #include "Game/FE/feNSNMessenger.h"
 #include "Game/Game.h"
 #include "Game/GameInfo.h"
@@ -6,24 +7,6 @@
 #include "Game/Team.h"
 #include "NL/nlBundleFile.h"
 #include "NL/nlFormat.h"
-
-struct InlineHasher
-{
-    InlineHasher() { }
-    InlineHasher(unsigned long h)
-        : m_Hash(h)
-    {
-    }
-    unsigned long m_Hash;
-};
-
-template <typename T, int N>
-class FEFinder
-{
-public:
-    template <typename U>
-    static T* Find(U*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-};
 
 template <typename To, typename From>
 To LexicalCast(const From& f);
@@ -134,34 +117,6 @@ void OverlayHandlerGoal_stub()
  * Offset/Address/Size: 0x0 | 0x801037FC | size: 0x12C
  */
 // void Format<BasicString<unsigned short, Detail::TempStringAllocator>, const unsigned short*, unsigned short[32], unsigned short[32]>(const BasicString<unsigned short, Detail::TempStringAllocator>&, const unsigned short* const&, const unsigned short(&)[32], const unsigned short(&)[32])
-//{
-// }
-
-/**
- * Offset/Address/Size: 0x140 | 0x801036A0 | size: 0x15C
- */
-// void FEFinder<TLTextInstance, 3>::_Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long)
-//{
-// }
-
-/**
- * Offset/Address/Size: 0xBC | 0x8010361C | size: 0x84
- */
-// void FEFinder<TLTextInstance, 3>::_Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long)
-//{
-// }
-
-/**
- * Offset/Address/Size: 0x38 | 0x80103598 | size: 0x84
- */
-// void FEFinder<TLTextInstance, 3>::_Find<FEPresentation>(FEPresentation*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long)
-//{
-// }
-
-/**
- * Offset/Address/Size: 0x0 | 0x80103560 | size: 0x38
- */
-// void FEFinder<TLTextInstance, 3>::Find<FEPresentation>(FEPresentation*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher)
 //{
 // }
 

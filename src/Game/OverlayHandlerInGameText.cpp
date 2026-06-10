@@ -143,131 +143,17 @@ BasicString<unsigned short, Detail::TempStringAllocator>::Append<Detail::TempStr
 }
 
 /**
- * Offset/Address/Size: 0x678 | 0x800FC780 | size: 0x15C
- */
-// void FEFinder<TLTextInstance, 3>::_Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long)
-//{
-// }
-
-/**
- * Offset/Address/Size: 0x5F4 | 0x800FC6FC | size: 0x84
- */
-// void FEFinder<TLTextInstance, 3>::_Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long)
-//{
-// }
-
-/**
- * Offset/Address/Size: 0x570 | 0x800FC678 | size: 0x84
- */
-// void FEFinder<TLTextInstance, 3>::_Find<FEPresentation>(FEPresentation*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long)
-//{
-// }
-
-/**
- * Offset/Address/Size: 0x538 | 0x800FC640 | size: 0x38
- */
-// void FEFinder<TLTextInstance, 3>::Find<FEPresentation>(FEPresentation*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher)
-//{
-// }
-
-/**
- * Offset/Address/Size: 0x29C | 0x800FC3A4 | size: 0x38
- */
-template <>
-template <>
-TLInstance* FEFinder<TLInstance, 3>::Find<FEPresentation>(
-    FEPresentation* pTopLevel, InlineHasher h1, InlineHasher h2, InlineHasher h3,
-    InlineHasher h4, InlineHasher h5, InlineHasher h6)
-{
-    return _Find(pTopLevel, h1.m_Hash, h2.m_Hash, h3.m_Hash, h4.m_Hash, h5.m_Hash, h6.m_Hash);
-}
-
-/**
- * Offset/Address/Size: 0x3DC | 0x800FC4E4 | size: 0x15C
- */
-template <>
-template <>
-TLInstance* FEFinder<TLInstance, 3>::_Find<TLInstance>(
-    TLInstance* pTopLevel, const unsigned long Level1, const unsigned long Level2,
-    const unsigned long Level3, const unsigned long Level4, const unsigned long Level5, const unsigned long Level6)
-{
-    void* pChild = FindItemByHashID<TLInstance>(pTopLevel->pChildren, Level1);
-    if (pChild == 0)
-        return 0;
-    if (Level2 == 0)
-        return (TLInstance*)pChild;
-    return _Find<TLInstance>(CastToSomeType<TLInstance>(pTopLevel->pChildren, pChild), Level2, Level3, Level4, Level5, Level6, 0);
-}
-
-/**
  * Offset/Address/Size: 0x2D4 | 0x800FC3DC | size: 0x84
  */
 #pragma dont_inline on
-template <>
-template <>
-TLInstance* FEFinder<TLInstance, 3>::_Find<FEPresentation>(
-    FEPresentation* pTopLevel, const unsigned long Level1, const unsigned long Level2,
-    const unsigned long Level3, const unsigned long Level4, const unsigned long Level5, const unsigned long Level6)
-{
-    void* pChild = FindItemByHashID<TLSlide>(pTopLevel->m_slides, Level1);
-    if (pChild == 0)
-        return 0;
-    if (Level2 == 0)
-        return (TLInstance*)pChild;
-    return _Find<TLSlide>(CastToSomeType<TLSlide>(pTopLevel->m_slides, pChild), Level2, Level3, Level4, Level5, Level6, 0);
-}
 #pragma dont_inline reset
 
 /**
  * Offset/Address/Size: 0x358 | 0x800FC460 | size: 0x84
  */
 #pragma dont_inline on
-template <>
-template <>
-TLInstance* FEFinder<TLInstance, 3>::_Find<TLSlide>(
-    TLSlide* pTopLevel, const unsigned long Level1, const unsigned long Level2,
-    const unsigned long Level3, const unsigned long Level4, const unsigned long Level5, const unsigned long Level6)
-{
-    void* pChild = FindItemByHashID<TLInstance>(pTopLevel->m_instances, Level1);
-    if (pChild == 0)
-        return 0;
-    if (Level2 == 0)
-        return (TLInstance*)pChild;
-    return _Find<TLInstance>(CastToSomeType<TLInstance>(pTopLevel->m_instances, pChild), Level2, Level3, Level4, Level5, Level6, 0);
-}
 #pragma dont_inline reset
 
-/**
- * Offset/Address/Size: 0x140 | 0x800FC248 | size: 0x15C
- */
-// void FEFinder<TLComponentInstance, 4>::_Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long)
-//{
-// }
-
-/**
- * Offset/Address/Size: 0xBC | 0x800FC1C4 | size: 0x84
- */
-// void FEFinder<TLComponentInstance, 4>::_Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long)
-//{
-// }
-
-/**
- * Offset/Address/Size: 0x38 | 0x800FC140 | size: 0x84
- */
-// void FEFinder<TLComponentInstance, 4>::_Find<FEPresentation>(FEPresentation*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long)
-//{
-// }
-
-/**
- * Offset/Address/Size: 0x0 | 0x800FC108 | size: 0x38
- */
-// void FEFinder<TLComponentInstance, 4>::Find<FEPresentation>(FEPresentation*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher)
-//{
-// }
-
-/**
- * Offset/Address/Size: 0x0 | 0x800FC098 | size: 0x70
- */
 /**
  * Stub only for field order; unreferenced so the linker drops it.
  * Forces emission of specific constants/operations so the compiler
