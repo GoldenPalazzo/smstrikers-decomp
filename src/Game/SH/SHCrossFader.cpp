@@ -94,9 +94,9 @@ void CrossFaderScene::SceneCreated()
 
     FEPresentation* pPresentation;
     bool doCrossFade = true;
-    if (Config::Global().Exists("CrossFade"))
+    if (Config::Global().Exists("showlegal"))
     {
-        doCrossFade = GetConfigBool(Config::Global(), "CrossFade", false);
+        doCrossFade = GetConfigBool(Config::Global(), "showlegal", false);
     }
 
     if (!doCrossFade)
@@ -124,7 +124,7 @@ void CrossFaderScene::SceneCreated()
 
         do
         {
-            nlSNPrintf(buf, 64, "CrossFadeImage%d", mNumImages);
+            nlSNPrintf(buf, 64, "screen%d", mNumImages);
 
             h0 = 0;
             h1 = 0;
@@ -136,7 +136,7 @@ void CrossFaderScene::SceneCreated()
             unsigned long hash = nlStringLowerHash(buf);
             h6 = hash;
             h7 = hash;
-            hash = nlStringLowerHash("Layer1");
+            hash = nlStringLowerHash("Layer");
             h8 = hash;
             h9 = hash;
             hash = nlStringLowerHash("Slide1");
@@ -169,7 +169,7 @@ void CrossFaderScene::SceneCreated()
 
         for (int i = 0; i < mNumImages; i++)
         {
-            nlSNPrintf(buf, 64, "CrossFadeImage%d", i);
+            nlSNPrintf(buf, 64, "screen%d", i);
 
             s0 = 0;
             h1 = 0;
@@ -181,7 +181,7 @@ void CrossFaderScene::SceneCreated()
             unsigned long hash = nlStringLowerHash(buf);
             s3 = hash;
             s4 = hash;
-            hash = nlStringLowerHash("Layer1");
+            hash = nlStringLowerHash("Layer");
             s5 = hash;
             s6 = hash;
             hash = nlStringLowerHash("Slide1");
@@ -228,10 +228,10 @@ void CrossFaderScene::SceneCreated()
         h5 = 0;
 
         {
-            unsigned long hash = nlStringLowerHash("CrossFadeMain");
+            unsigned long hash = nlStringLowerHash("whitebackground");
             t3 = hash;
             t4 = hash;
-            hash = nlStringLowerHash("Layer1");
+            hash = nlStringLowerHash("Layer");
             t5 = hash;
             t6 = hash;
             hash = nlStringLowerHash("Slide1");

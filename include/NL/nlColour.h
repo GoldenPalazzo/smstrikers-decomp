@@ -12,12 +12,6 @@ struct nlColour
 {
     unsigned char c[4];
 
-    void SetWhite()
-    {
-        static const nlColour w = { { 0xFF, 0xFF, 0xFF, 0xFF } };
-        *this = w;
-    }
-
     bool operator==(const nlColour& other) const
     {
         return *(u32*)&c[0] == *(u32*)&other.c[0];

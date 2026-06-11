@@ -50,7 +50,7 @@ public:
     /*  0x044 */ bool mLineOnScreen[10];           // offset 0x44, size 0xA
     /*  0x04E */ bool mAreCreditsOver;             // offset 0x4E, size 0x1
     /*  0x04F */ bool mFinalMessageDisplayed;      // offset 0x4F, size 0x1
-    /*  0x050 */ bool mTimeElapsed;                // offset 0x50, size 0x1
+    /*  0x050 */ bool mFadeStarted;                // offset 0x50, size 0x1
     /*  0x054 */ CreditParser mCreditParser;       // offset 0x54, size 0x524
     /*  0x578 */ unsigned short mStrings[10][64];  // offset 0x578, size 0x500
 }; // total size: 0xA78

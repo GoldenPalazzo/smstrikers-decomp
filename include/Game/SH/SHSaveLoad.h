@@ -55,6 +55,7 @@ public:
 
     static SaveLoadScene* mInstance;
     static bool mLastSaveLoadSuccess;
+    static bool mIsFirstTimeAboutIPL;
 }; // total size: 0x34
 
 // class FEFinder<TLComponentInstance, 4>

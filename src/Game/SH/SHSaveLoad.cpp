@@ -35,23 +35,27 @@ enum eSaveLoad
     ST_SHOULD_LOAD_OR_SAVE = 10,
 };
 
-extern int gSceneTypeStackDepth;
-extern enum eSaveLoad gSceneTypeStack[4];
-extern bool gSaveLoadStarted;
-extern bool gSaveLoadFinished;
-extern bool gCallbackMade;
-extern float gSceneTime;
-extern bool gIgnoreMinWait;
-extern bool gContinueWithoutOperation;
-extern bool gSaveLoadEnabled;
 extern bool g_e3_Build;
-extern long gResult;
-extern float gRetryTimerDelay;
 
-// extern bool s_InitDone__7MemCard;
-// extern declared in gcmemcard.h as: extern MemCard* g_MemCards[2];
-extern u8 WasCardRemoved;
-extern u8 PreviousNoCardInSlotState;
+// File-static and class-static globals owned by this TU.
+// Declaration order below reproduces the target .sbss/.sdata/.bss byte layout
+// (static-variable slots are allocated at parse time, top-to-bottom).
+bool SaveLoadScene::mLastSaveLoadSuccess;       // .sbss:0x0
+static u8 WasCardRemoved;                       // .sbss:0x1
+static u8 PreviousNoCardInSlotState;            // .sbss:0x2
+SaveLoadScene* SaveLoadScene::mInstance;        // .sbss:0x4
+static int gSceneTypeStackDepth;                // .sbss:0x8
+static float gSceneTime;                        // .sbss:0xC
+static bool gSaveLoadStarted;                   // .sbss:0x10
+static bool gSaveLoadFinished;                  // .sbss:0x11
+static bool gCallbackMade;                      // .sbss:0x12
+static bool gIgnoreMinWait;                     // .sbss:0x13
+static bool gContinueWithoutOperation;          // .sbss:0x14
+static float gRetryTimerDelay;                  // .sbss:0x18
+static bool gSaveLoadEnabled = true;            // .sdata:0x0
+bool SaveLoadScene::mIsFirstTimeAboutIPL = true; // .sdata:0x1
+static long gResult = -1;                       // .sdata:0x4
+static enum eSaveLoad gSceneTypeStack[4];       // .bss:0x0
 
 #pragma dont_inline on
 
@@ -797,8 +801,6 @@ SaveLoadScene::SaveLoadScene(SaveLoadScene::eSaveLoadMode saveLoadMode)
  */
 SaveLoadScene::~SaveLoadScene()
 {
-    extern bool mIsFirstTimeAboutIPL__13SaveLoadScene;
-
     g_pFEInput->PopExclusiveInputLock(this);
     mInstance = NULL;
 
@@ -808,7 +810,7 @@ SaveLoadScene::~SaveLoadScene()
         mButtonComponent = NULL;
     }
 
-    mIsFirstTimeAboutIPL__13SaveLoadScene = false;
+    mIsFirstTimeAboutIPL = false;
 }
 
 /**
@@ -1100,7 +1102,7 @@ void SaveLoadScene::Update(float fDeltaT)
 
     if (m_pFEPresentation->m_currentSlide == mAboutAutoSaveSlide)
     {
-        (this->*(&SaveLoadScene::UpdateForAboutToSaveSlide))();
+        UpdateForAboutToSaveSlide();
         return;
     }
 

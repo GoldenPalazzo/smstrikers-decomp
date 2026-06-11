@@ -206,7 +206,8 @@ void BlurHandler::RenderMesh(unsigned long uTexID)
     glSetCurrentTexture(uTexID, GLTT_Diffuse);
     glSetCurrentProgram(glGetProgram("3d unlit"));
 
-    colour.SetWhite();
+    static const nlColour white = { 0xFF, 0xFF, 0xFF, 0xFF };
+    colour = white;
     nonAdditiveAlpha = 0.0f;
 
     if (m_bAdditive)

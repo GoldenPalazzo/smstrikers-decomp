@@ -16,8 +16,8 @@
 
 #include "NL/nlMemFunBody.h"
 
-extern int sRowOffset;
-extern int sCurrentRow;
+static int sRowOffset;
+static int sCurrentRow;
 
 typedef void FnTLComponentInstanceCb(TLComponentInstance*);
 
@@ -349,9 +349,6 @@ void LessonSelectScene::SceneCreated()
     FEAudio::EnableSounds(true);
 }
 
-extern int sRowOffset;
-extern int sCurrentRow;
-
 /**
  * Offset/Address/Size: 0x7E0 | 0x8010B630 | size: 0x6B8
  * TODO: 90.70% match - callback tag checks and up/down navigation branch layout
@@ -676,9 +673,6 @@ void LessonSelectScene::Update(float fDeltaT)
     }
 }
 
-extern int sRowOffset;
-extern int sCurrentRow;
-
 /**
  * Offset/Address/Size: 0x334 | 0x8010B184 | size: 0x4AC
  * TODO: 96.1% match - stack frame 0x1B0 vs target 0x160; compiler does not reuse
@@ -873,7 +867,7 @@ void SetTickerLesson(int lesson)
         }
     }
 
-    nlSNPrintf(lessonTickerName, 64, "LOC_TUTORIAL_LESSON_%d", lesson + 1);
+    nlSNPrintf(lessonTickerName, 64, "TUTORIAL_INSTRUCTION_TICKER_%d", lesson + 1);
     ticker->EnableScrolling(true);
     ticker->SetDisplayMessage(lessonTickerName);
     ticker->OpenMessengerNow();

@@ -1,28 +1,19 @@
 #include "Game/SH/SHSkillSelect.h"
 #include "NL/nlFunction.h"
 
-/**
- * Offset/Address/Size: 0x0 | 0x800B0578 | size: 0x10
- */
+typedef BindExp1<void, void (*)(bool), bool> BindExp1_vfb;
+typedef Function0<void>::FunctorImpl<BindExp1_vfb> FunctorImpl_vfb;
+
+template <>
+void Function0<void>::FunctorImpl<BindExp1_vfb>::operator()()
+{
+    mBind.mFuncPtr(mBind.mArg);
+}
+
+static void _instantiate(const BindExp1_vfb& bind)
+{
+    FunctorImpl_vfb* f = new ((FunctorImpl_vfb*)nlMalloc(sizeof(FunctorImpl_vfb), 8, false)) FunctorImpl_vfb(bind);
+    (void)f;
+}
+
 template BindExp1<void, void (*)(bool), bool> Bind<void, void (*)(bool), bool>(void (*)(bool), const bool&);
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800B051C | size: 0x5C
-//  */
-// void Function0<void>::FunctorImpl<BindExp1<void, void (*)(bool), bool>>::~FunctorImpl()
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x68 | 0x800B04F0 | size: 0x2C
-//  */
-// void Function0<void>::FunctorImpl<BindExp1<void, void (*)(bool), bool>>::operator()()
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800B0488 | size: 0x68
-//  */
-// void Function0<void>::FunctorImpl<BindExp1<void, void (*)(bool), bool>>::Clone() const
-// {
-// }

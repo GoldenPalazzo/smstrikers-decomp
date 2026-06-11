@@ -18,6 +18,8 @@ static char* CREDITS_LINE_NAMES[] = {
     "Line10",
 };
 
+SceneList CreditScene::mNextScene = SCENE_MAIN_MENU;
+
 class AudioLoader
 {
 public:
@@ -30,7 +32,7 @@ public:
 CreditScene::CreditScene()
     : mAreCreditsOver(false)
     , mFinalMessageDisplayed(false)
-    , mTimeElapsed(false)
+    , mFadeStarted(false)
 {
     *(f32*)&mCreditParser.mFileSize = 0.0f;
 
@@ -96,7 +98,7 @@ void CreditScene::Update(float dt)
 void CreditScene::SetupForPhase()
 {
     FORCE_DONT_INLINE;
-    mTimeElapsed = 0;
+    mFadeStarted = 0;
     *(f32*)&mCreditParser.mFileSize = 0.0f;
 
     switch ((s32)mCreditParser.mFileData)
@@ -158,10 +160,7 @@ void CreditScene::SetupForCredits()
         presentation,
         InlineHasher(nlStringLowerHash("CREDITS")),
         InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("Final Message")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("Final Message")));
     pFinalText->m_bVisible = false;
 
     mCreditParser.mActualData = (char*)nlLoadEntireFile("credits.txt", &mCreditParser.mActualSize, 0x20, (eAllocType)1);
@@ -169,32 +168,43 @@ void CreditScene::SetupForCredits()
 
     nlVector2 boxSize = { 1280.0f, 480.0f };
 
-    s32 i = 0;
-    yOffset = 0;
-    for (; i < 10; i++)
+    s32 i;
+    for (i = 0, yOffset = 0; i < 10; i++, yOffset += 46)
     {
         m_pTextLines[i] = FEFinder<TLTextInstance, 3>::Find<FEPresentation>(
             presentation,
             InlineHasher(nlStringLowerHash("CREDITS")),
             InlineHasher(nlStringLowerHash("Layer")),
-            InlineHasher(nlStringLowerHash(CREDITS_LINE_NAMES[i])),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0));
+            InlineHasher(nlStringLowerHash(CREDITS_LINE_NAMES[i])));
 
         m_pTextLines[i]->SetAssetScale(0.75f, 0.75f, 1.0f);
-        m_pTextLines[i]->m_OverloadFlags |= 0x10;
-        m_pTextLines[i]->m_DrawOptions |= 0x10;
-        m_pTextLines[i]->m_OverloadedAttributes.BoxSize = boxSize;
-        m_pTextLines[i]->m_OverloadFlags |= 0x4;
+
+        TLTextInstance* pText = m_pTextLines[i];
+        pText->m_OverloadFlags |= 0x10;
+        pText->m_DrawOptions |= 0x10;
+
+        pText = m_pTextLines[i];
+        pText->m_OverloadedAttributes.BoxSize = boxSize;
+        pText->m_OverloadFlags |= 0x4;
 
         feVector3 pos = m_pTextLines[i]->GetAssetPosition();
         m_pTextLines[i]->SetAssetPosition(pos.f.x, (f32)(-230 - yOffset), pos.f.z);
-
-        yOffset += 46;
     }
 
     AudioLoader::StartFEStream("FE_Credits", true, "FE");
+}
+
+/**
+ * Stub only for .data layout; unreferenced so the linker drops it.
+ * Forces the "NINTENDO" string literal to be allocated between
+ * SetupForNLGMovie's and SetupForCredits' literals so the .data
+ * symbol order matches the original binary. SetupForPhase reuses
+ * the pooled literal.
+ */
+void SHCredits_stub()
+{
+    const char* volatile forceNintendoString = "NINTENDO";
+    (void)forceNintendoString;
 }
 
 /**
@@ -207,7 +217,7 @@ void CreditScene::SetupForNLGMovie()
 
     nlSingleton<FESceneManager>::s_pInstance->ForceImmediateStackProcessing();
 
-    m_pFEPresentation->SetActiveSlide("nlg");
+    m_pFEPresentation->SetActiveSlide("NLG");
 
     typedef TLImageInstance* (*FindByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
     typedef TLImageInstance* (*FindByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
@@ -229,7 +239,7 @@ void CreditScene::SetupForNLGMovie()
     f.m_Hash = 0;
     g.m_Hash = 0;
     h.m_Hash = 0;
-    u32 hash1 = nlStringLowerHash("NLG Logo");
+    u32 hash1 = nlStringLowerHash("A_button");
     nLocal.m_Hash = hash1;
     nRef.m_Hash = hash1;
     u32 hash2 = nlStringLowerHash("Layer");
@@ -250,7 +260,7 @@ void CreditScene::UpdateForCopyrightMessage(float dt)
     f32 timeElapsed = *(f32*)&mCreditParser.mFileSize;
     timeElapsed += dt;
     *(f32*)&mCreditParser.mFileSize = timeElapsed;
-    if (timeElapsed < 1.0f)
+    if (timeElapsed < 3.0f)
     {
         return;
     }
@@ -259,10 +269,10 @@ void CreditScene::UpdateForCopyrightMessage(float dt)
     TLSlide* pSlide2 = pWhiteFade->GetActiveSlide();
     if (pSlide2->m_time >= slideEnd)
     {
-        if (!mTimeElapsed)
+        if (!mFadeStarted)
         {
-            pWhiteFade->SetActiveSlide("credits");
-            mTimeElapsed = 1;
+            pWhiteFade->SetActiveSlide("FADEIN");
+            mFadeStarted = 1;
         }
         else
         {
@@ -273,10 +283,13 @@ void CreditScene::UpdateForCopyrightMessage(float dt)
 
 /**
  * Offset/Address/Size: 0x1BC | 0x8010F318 | size: 0x398
+ * TODO: 99.59% match - register permutation in the two string-copy loops:
+ * dst cursor gets r3/r4 (first) instead of r5/r6 (last); count/src/index
+ * shift accordingly. Instruction sequence is otherwise identical.
  */
 void CreditScene::UpdateForCredits(float dt)
 {
-    s32 yDelta = (s32)(-120.0f * (dt / 1000.0f));
+    s32 yDelta = (s32)(460.0f * (dt / 5.0f));
     f32 resetY = -230.0f;
     s32 lineCount = 0;
 
@@ -294,7 +307,7 @@ void CreditScene::UpdateForCredits(float dt)
                 if (pToken[0] == '+')
                 {
                     u32 count = 64;
-                    const unsigned char* pSrc = (const unsigned char*)"";
+                    const unsigned char* pSrc = (const unsigned char*)" ";
                     s32 k = 0;
                     while (count-- && (mStrings[i][k] = *pSrc) != 0)
                     {
@@ -333,7 +346,7 @@ void CreditScene::UpdateForCredits(float dt)
         }
         else
         {
-            if (pos.f.y >= -720.0f && mLineOnScreen[i] == true)
+            if (pos.f.y >= 230.0f && mLineOnScreen[i] == true)
             {
                 mLineOnScreen[i] = false;
                 pos.f.y = resetY;
@@ -357,15 +370,15 @@ void CreditScene::UpdateForCredits(float dt)
         mAreCreditsOver = true;
     }
 
-    if (!mTimeElapsed)
+    if (!mFadeStarted)
     {
         bool shouldFade = false;
 
-        if (!mAreCreditsOver)
+        if (mAreCreditsOver == true)
         {
             *(f32*)&mCreditParser.mFileSize += dt;
 
-            if (*(f32*)&mCreditParser.mFileSize >= 2.0 && !mFinalMessageDisplayed)
+            if (*(f32*)&mCreditParser.mFileSize >= 0.0 && !mFinalMessageDisplayed)
             {
                 shouldFade = true;
             }
@@ -381,7 +394,7 @@ void CreditScene::UpdateForCredits(float dt)
 
         if (shouldFade)
         {
-            mTimeElapsed = 1;
+            mFadeStarted = 1;
 
             TLComponentInstance* pWhiteFade = GetWhiteFadeComponent();
             pWhiteFade->SetActiveSlide("FADEIN");
@@ -417,7 +430,7 @@ void CreditScene::UpdateForNintendoLogo(float dt)
     f32 timeElapsed = *(f32*)&mCreditParser.mFileSize;
     timeElapsed += dt;
     *(f32*)&mCreditParser.mFileSize = timeElapsed;
-    if (timeElapsed < 1.0f)
+    if (timeElapsed < 3.0f)
     {
         return;
     }
@@ -426,10 +439,10 @@ void CreditScene::UpdateForNintendoLogo(float dt)
     TLSlide* pSlide2 = pWhiteFade->GetActiveSlide();
     if (pSlide2->m_time >= slideEnd)
     {
-        if (!mTimeElapsed)
+        if (!mFadeStarted)
         {
             pWhiteFade->SetActiveSlide("FADEIN");
-            mTimeElapsed = 1;
+            mFadeStarted = 1;
         }
         else
         {
