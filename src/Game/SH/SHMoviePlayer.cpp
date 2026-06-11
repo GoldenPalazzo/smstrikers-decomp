@@ -13,6 +13,7 @@
 #include "Game/GameRenderTask.h"
 #include "Game/GameSceneManager.h"
 #include "Game/OverlayManager.h"
+#include "Game/Sys/movie.h"
 #include "NL/nlConfig.h"
 #include "NL/gl/gl.h"
 #include "NL/nlPrint.h"
@@ -20,58 +21,8 @@
 
 extern bool g_e3_Build;
 extern FEInput* g_pFEInput;
-extern bool MoviePlay();
-extern bool MovieStop();
-extern bool MovieStart(const char*, bool, bool);
+
 extern "C" void THPSimpleSetVolume(int, int);
-
-// /**
-//  * Offset/Address/Size: 0x2D4 | 0x800BD840 | size: 0x15C
-//  */
-// void FEFinder<TLImageInstance, 2>::_Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned
-// long, unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x250 | 0x800BD7BC | size: 0x84
-//  */
-// void FEFinder<TLImageInstance, 2>::_Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long,
-// unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x218 | 0x800BD784 | size: 0x38
-//  */
-// void FEFinder<TLImageInstance, 2>::Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher,
-// InlineHasher)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0xBC | 0x800BD628 | size: 0x15C
-//  */
-// void FEFinder<TLComponentInstance, 4>::_Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long,
-// unsigned long, unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x38 | 0x800BD5A4 | size: 0x84
-//  */
-// void FEFinder<TLComponentInstance, 4>::_Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned
-// long, unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800BD56C | size: 0x38
-//  */
-// void FEFinder<TLComponentInstance, 4>::Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher,
-// InlineHasher)
-// {
-// }
 
 /**
  * Offset/Address/Size: 0x81C | 0x800BD374 | size: 0x78
@@ -103,6 +54,7 @@ MoviePlayerScene::~MoviePlayerScene()
     {
         g_bRenderWorld = true;
     }
+
     if (g_pFEInput->HasInputLock(this))
     {
         g_pFEInput->PopExclusiveInputLock(this);
@@ -399,4 +351,5 @@ void LessonMoviePlayerScene::Update(float fDeltaT)
  */
 void NLGLogoMovieScene::OverrideMovieDimensions()
 {
+    // Empty
 }

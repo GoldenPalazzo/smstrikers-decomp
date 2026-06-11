@@ -60,8 +60,8 @@ public:
         mNextScene = SCENE_CREDITS;
     }
     virtual ~NLGLogoMovieScene() { };
-    virtual void PlayScreenBackSFX() { };
     virtual void PlayScreenForwardSFX() { };
+    virtual void PlayScreenBackSFX() { };
     virtual void OverrideMovieDimensions();
 };
 
