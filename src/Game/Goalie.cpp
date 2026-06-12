@@ -2932,11 +2932,13 @@ bool Goalie::IsLooseBallClose(float fDistFromBox)
 {
     bool bBallIsLoose = true;
     cBall* pBall = g_pBall;
+
     if (pBall->m_pPassTarget != NULL)
     {
         nlVector3 leftPost;
         nlVector3 rightPost;
         bool coneResult;
+
         if (pBall->m_pOwner != NULL)
         {
             coneResult = false;
@@ -2958,6 +2960,7 @@ bool Goalie::IsLooseBallClose(float fDistFromBox)
                 coneResult = IsPointInCone(ballVelocity, ballPos, rightPost, leftPost);
             }
         }
+
         do
         {
             if (coneResult)
@@ -2980,6 +2983,7 @@ bool Goalie::IsLooseBallClose(float fDistFromBox)
             bBallIsLoose = false;
         } while (false);
     }
+
     pBall = g_pBall;
     if ((pBall->m_pOwner == NULL) && bBallIsLoose)
     {
@@ -2988,10 +2992,12 @@ bool Goalie::IsLooseBallClose(float fDistFromBox)
         {
             return false;
         }
+
         float goalLineX = cField::GetGoalLineX(1U);
         float penaltyY = cField::GetPenaltyBoxY();
         float absBallX = (float)fabs(pBall->m_v3Position.f.x);
         float absBallY = (float)fabs(pBall->m_v3Position.f.y);
+
         if ((absBallX > (goalLineX - 2.0f)) && (absBallY < penaltyY))
         {
             return true;
@@ -3000,83 +3006,85 @@ bool Goalie::IsLooseBallClose(float fDistFromBox)
         {
             return false;
         }
+
+        float ballAbsXNew = (float)fabs(pBall->m_v3Position.f.x);
+        float ballPosX = pBall->m_v3Position.f.x;
+
+        bool innerCheck;
+        do
         {
-            float ballAbsXNew = (float)fabs(pBall->m_v3Position.f.x);
-            float ballPosX = pBall->m_v3Position.f.x;
-            bool innerCheck;
-            do
+            if (ballAbsXNew > cField::GetPenaltyBoxX(1U) - fDistFromBox)
             {
-                if (ballAbsXNew > cField::GetPenaltyBoxX(1U) - fDistFromBox)
+                if (ballPosX * m_v3Position.f.x > 0.0f)
                 {
-                    if (ballPosX * m_v3Position.f.x > 0.0f)
+                    float ballAbsYNew = (float)fabs(pBall->m_v3Position.f.y);
+                    if (ballAbsYNew < fDistFromBox + cField::GetPenaltyBoxY())
                     {
-                        float ballAbsYNew = (float)fabs(pBall->m_v3Position.f.y);
-                        if (ballAbsYNew < fDistFromBox + cField::GetPenaltyBoxY())
-                        {
-                            innerCheck = true;
-                            break;
-                        }
+                        innerCheck = true;
+                        break;
                     }
                 }
-                innerCheck = false;
-            } while (false);
-            if (innerCheck)
+            }
+            innerCheck = false;
+        } while (false);
+
+        if (innerCheck)
+        {
+            return true;
+        }
+
+        float netSideSign = m_pTeam->m_pNet->m_sideSign;
+        cBall* pBallVel = g_pBall;
+        float t = cField::GetPenaltyBoxX(1U) - fDistFromBox;
+        float penaltyBoxXLimit = (0.0f >= t) ? 0.0f : t;
+        float t2 = penaltyY + fDistFromBox;
+        float penaltyBoxYLimit = (0.0f >= t2) ? 0.0f : t2;
+
+        if (absBallX < penaltyBoxXLimit)
+        {
+            float fForwardVelX = pBallVel->m_v3Velocity.f.x * netSideSign;
+            if (fForwardVelX < 1.0f)
+            {
+                return false;
+            }
+            float fXtime = (penaltyBoxXLimit - absBallX) / fForwardVelX;
+            if (fXtime > 0.3f)
+            {
+                return false;
+            }
+            float projectedY = fXtime * pBallVel->m_v3Velocity.f.y + pBall->m_v3Position.f.y;
+            if ((float)fabs(projectedY) < penaltyBoxYLimit)
             {
                 return true;
             }
         }
-        float netSideSign = m_pTeam->m_pNet->m_sideSign;
-        cBall* pBallVel = g_pBall;
+
+        if (absBallY > penaltyBoxYLimit)
         {
-            float t = cField::GetPenaltyBoxX(1U) - fDistFromBox;
-            float penaltyBoxXLimit = (0.0f >= t) ? 0.0f : t;
-            float t2 = penaltyY + fDistFromBox;
-            float penaltyBoxYLimit = (0.0f >= t2) ? 0.0f : t2;
-            if (absBallX < penaltyBoxXLimit)
+            float ballY = pBall->m_v3Position.f.y;
+            float ySign;
+            if (ballY > 0.0f)
             {
-                float fForwardVelX = pBallVel->m_v3Velocity.f.x * netSideSign;
-                if (fForwardVelX < 1.0f)
-                {
-                    return false;
-                }
-                float fXtime = (penaltyBoxXLimit - absBallX) / fForwardVelX;
-                if (fXtime > 0.3f)
-                {
-                    return false;
-                }
-                float projectedY = fXtime * pBallVel->m_v3Velocity.f.y + pBall->m_v3Position.f.y;
-                if ((float)fabs(projectedY) < penaltyBoxYLimit)
-                {
-                    return true;
-                }
+                ySign = 1.0f;
             }
-            if (absBallY > penaltyBoxYLimit)
+            else
             {
-                float ballY = pBall->m_v3Position.f.y;
-                float ySign;
-                if (ballY > 0.0f)
-                {
-                    ySign = 1.0f;
-                }
-                else
-                {
-                    ySign = -1.0f;
-                }
-                float fForwardVelY = pBallVel->m_v3Velocity.f.y * ySign;
-                if (fForwardVelY > -1.0f)
-                {
-                    return false;
-                }
-                float fYtime = (penaltyBoxYLimit - absBallY) / fForwardVelY;
-                if (fYtime > 0.3f)
-                {
-                    return false;
-                }
-                float projectedX = fYtime * pBallVel->m_v3Velocity.f.x + pBall->m_v3Position.f.x;
-                if (projectedX * netSideSign > penaltyBoxXLimit)
-                {
-                    return true;
-                }
+                ySign = -1.0f;
+            }
+            float fForwardVelY = pBallVel->m_v3Velocity.f.y * ySign;
+            if (fForwardVelY > -1.0f)
+            {
+                return false;
+            }
+            float fYtime = (penaltyBoxYLimit - absBallY) / fForwardVelY;
+            if (fYtime > 0.3f)
+            {
+                return false;
+            }
+            float projectedX = fYtime * pBallVel->m_v3Velocity.f.x + pBall->m_v3Position.f.x;
+            if (projectedX * netSideSign > penaltyBoxXLimit)
+            {
+                return true;
             }
         }
     }

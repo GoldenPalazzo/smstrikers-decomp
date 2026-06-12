@@ -137,8 +137,8 @@ public:
     ~Goalie();
 
     void Update(float);
-    void CollideWithBallCallback(cBall*);
-    void CollideWithCharacterCallback(CollisionPlayerPlayerData*);
+    virtual void CollideWithBallCallback(cBall*);
+    virtual void CollideWithCharacterCallback(CollisionPlayerPlayerData*);
     bool PreCollideWithBallCallback(const dContact&);
     void ExecutePounce(cPlayer*, bool);
     void InitActionPass(bool);

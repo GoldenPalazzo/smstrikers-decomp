@@ -96,6 +96,8 @@ public:
     virtual void PrePhysicsUpdate(float);
     static void PlayerHeadTrackCallback(unsigned int, unsigned int, cPoseAccumulator*, unsigned int, int);
     cPN_SingleAxisBlender* CreateSingleAxisBlender(const int*, int, int, void (*)(unsigned int, cPN_SingleAxisBlender*), float, cPN_SAnimController*);
+    virtual void CollideWithBallCallback(cBall*);
+    virtual void CollideWithCharacterCallback(CollisionPlayerPlayerData*);
     virtual void CollideWithWallCallback(const CollisionPlayerWallData*);
     void SetPowerupAnimState(int);
     void ClearSwapControllerTimer();
@@ -111,8 +113,6 @@ public:
     void PlayAttackReactionSounds(float);
     void PickupBall(cBall*);
     cFielder* GetClosestOpponentFielder(nlVector3*);
-    virtual void CollideWithCharacterCallback(CollisionPlayerPlayerData*);
-    virtual void CollideWithBallCallback(cBall*);
     float DoFlashLight(const nlVector3&, unsigned short, float, float, float);
     static float DoFlashLight(const nlVector3&, const nlVector3&, unsigned short, float, float, float);
     virtual void SetAnimID(int);
