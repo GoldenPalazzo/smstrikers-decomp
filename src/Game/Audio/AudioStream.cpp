@@ -93,9 +93,14 @@ static const char* s_TeamNames[] = {
 // {
 // }
 
+static inline void SetIdleCallback(AudioStreamTrack::StreamTrack* track, const Function0<void>& f0)
+{
+    track->m_IdleCallback = Function<FnVoidVoid>(f0);
+}
+
 /**
  * Offset/Address/Size: 0x0 | 0x8014BFE8 | size: 0x274
- * TODO: 98.62% match - m_Track load scheduling, m_OrigStreamId/m_CapChant store order, stack temporary allocation order
+ * TODO: 98.51% match - m_Track load scheduling and m_OrigStreamId/m_CapChant store order
  */
 PriorityStream::PriorityStream(AudioStreamTrack::StreamTrack& track)
     : m_InPause(false)
@@ -107,7 +112,7 @@ PriorityStream::PriorityStream(AudioStreamTrack::StreamTrack& track)
     m_PStream.m_OrigStreamId = 0;
     Function0<void> f0(Bind<void>(MemFun<PriorityStream, void>(&PriorityStream::TrackIdleCB), this));
     AudioStreamTrack::StreamTrack& trackRef = m_Track;
-    trackRef.m_IdleCallback = Function<FnVoidVoid>(f0);
+    SetIdleCallback(&trackRef, f0);
 }
 
 // /**
@@ -311,8 +316,6 @@ void Audio::CreatePriorityStreams()
 
 /**
  * Offset/Address/Size: 0xDC | 0x8014B8F4 | size: 0x1A0
- * TODO: 98.98% match - stack temporary allocation swap (sp+0x08 vs sp+0x10 for
- * Function0<void> copy param and Function<FnVoidVoid> result)
  */
 void Audio::DestroyPriorityStreams()
 {
@@ -323,7 +326,7 @@ void Audio::DestroyPriorityStreams()
         {
             Function0<void> f0;
             f0.mTag = EMPTY;
-            track.m_IdleCallback = Function<FnVoidVoid>(f0);
+            SetIdleCallback(&track, f0);
         }
         delete ps;
     }

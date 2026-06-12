@@ -46,10 +46,13 @@ void DoNothingCallback()
 {
 }
 
+static inline void SetIdleCallback(AudioStreamTrack::StreamTrack* track, const Function0<void>& f0)
+{
+    track->m_IdleCallback = Function<FnVoidVoid>(f0);
+}
+
 /**
  * Offset/Address/Size: 0x7F0 | 0x800ACDAC | size: 0x204
- * TODO: 99.18% match - sp+0x08/0x10 stack offset swap for Function0<void>
- * copy and Function<FnVoidVoid> temporaries
  */
 TitleScene::TitleScene()
 {
@@ -64,7 +67,7 @@ TitleScene::TitleScene()
         Function0<void> f0;
         f0.mTag = FREE_FUNCTION;
         f0.mFreeFunction = DoNothingCallback;
-        track->m_IdleCallback = Function<FnVoidVoid>(f0);
+        SetIdleCallback(track, f0);
     }
 }
 
@@ -74,9 +77,6 @@ TitleScene::TitleScene()
 TitleScene::~TitleScene()
 {
 }
-
-// static const char sPressStart[] __attribute__((section(".sdata2"))) = "pressstart";
-// static const char sPressStartText[] __attribute__((section(".sdata2"))) = "PressStart";
 
 /**
  * Offset/Address/Size: 0x688 | 0x800ACC44 | size: 0x10C
@@ -161,9 +161,6 @@ void TitleScene::SceneCreated()
 
 /**
  * Offset/Address/Size: 0x254 | 0x800AC810 | size: 0x434
- * TODO: 99.89% match - +0x14 instruction address offset in diff listing and
- * branch target relocation around demo timeout path; remaining differences are
- * non-functional codegen placement.
  */
 void TitleScene::Update(float dt)
 {
@@ -285,9 +282,6 @@ void TitleScene::Update(float dt)
 
 /**
  * Offset/Address/Size: 0x0 | 0x800AC5BC | size: 0x254
- * TODO: 99.29% match - sp+0x08/0x10 stack offset swap for Function0<void>
- * copy and Function<FnVoidVoid> temporaries. MWCC internal temp allocation
- * order difference.
  */
 void TitleScene::StartIntroMovie()
 {
@@ -332,7 +326,7 @@ void TitleScene::StartIntroMovie()
 
             f0.mTag = FREE_FUNCTION;
             f0.mFreeFunction = StartMovieCB;
-            track->m_IdleCallback = Function<FnVoidVoid>(f0);
+            SetIdleCallback(track, f0);
         }
     }
 }

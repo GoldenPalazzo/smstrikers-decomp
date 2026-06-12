@@ -1279,10 +1279,13 @@ void Presentation::StopOverlay()
     mOverlayDelay = 0.0f;
 }
 
+static inline void SetIdleCallback(AudioStreamTrack::StreamTrack* track, const Function0<void>& f0)
+{
+    track->m_IdleCallback = Function<FnVoidVoid>(f0);
+}
+
 /**
  * Offset/Address/Size: 0x19C | 0x80124980 | size: 0x1D0
- * TODO: 99.04% match - sp+0x08/0x10 stack offset swap for Function0<void> copy
- * and Function<FnVoidVoid> temporaries. MWCC internal allocation order difference.
  */
 void CupWinStingerDone()
 {
@@ -1291,7 +1294,7 @@ void CupWinStingerDone()
     {
         Function0<void> emptyCallback;
         emptyCallback.mTag = EMPTY;
-        pTrack->m_IdleCallback = Function<FnVoidVoid>(emptyCallback);
+        SetIdleCallback(pTrack, emptyCallback);
     }
     pTrack->PlayStream(nlStringLowerHash("STAD_Intro"), 0.5f, true, 500, 500, "Stadium", Audio::MasterVolume::VG_Special);
 }

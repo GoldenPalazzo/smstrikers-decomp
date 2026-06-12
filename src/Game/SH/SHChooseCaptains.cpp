@@ -486,7 +486,6 @@ void ChooseCaptainsSceneV2::BindChooseSideInstances()
         // colour.c[2] = PAD_COLOURS[i][2];
         // colour.c[3] = 0xFF;
         nlColourSet(colour, PAD_COLOURS[i][0], PAD_COLOURS[i][1], PAD_COLOURS[i][2], 0xFF);
-
         mChooseSide.mInstanceTable[i + 8]->SetAssetColour(colour);
     }
 
