@@ -1,3 +1,6 @@
+#define MEMFUN_NO_DECL
+#define BIND_NO_DECL
+#define FUNCTION1_SPLIT_BODIES
 #include "Game/SH/SHSpoils.h"
 #include "Game/GameSceneManager.h"
 #include "Game/FE/feFinder.h"
@@ -8,6 +11,17 @@
 #include "NL/nlPrint.h"
 #include "NL/nlString.h"
 
+typedef Detail::MemFunImpl<void, void (SpoilsScene::*)(SpoilsScene::eSpoils)> MemFunImpl_Spoils_t;
+typedef BindExp2<void, MemFunImpl_Spoils_t, SpoilsScene*, SpoilsScene::eSpoils> BindExp2_Spoils_t;
+typedef Function1<void, TLComponentInstance*>::FunctorImpl<BindExp2_Spoils_t> FunctorImpl_Spoils_t;
+
+#define F1BODY_RET void
+#define F1BODY_PARAM TLComponentInstance*
+#define F1BODY_BIND BindExp2_Spoils_t
+#include "NL/nlFunction1Body.h"
+#include "NL/nlMemFunBody.h"
+#include "NL/nlBindBody.h"
+
 s32 SpoilsScene::mLastSelectedIndex = 0;
 
 namespace DoubleHighlite
@@ -15,16 +29,6 @@ namespace DoubleHighlite
 static const char* SLIDE_IN = "in";
 static const char* SLIDE_OUT = "out";
 } // namespace DoubleHighlite
-
-typedef Detail::MemFunImpl<void, void (SpoilsScene::*)(SpoilsScene::eSpoils)> MemFunImpl_Spoils_t;
-typedef BindExp2<void, MemFunImpl_Spoils_t, SpoilsScene*, SpoilsScene::eSpoils> BindExp2_Spoils_t;
-typedef Function1<void, TLComponentInstance*>::FunctorImpl<BindExp2_Spoils_t> FunctorImpl_Spoils_t;
-
-template <>
-void Function1<void, TLComponentInstance*>::FunctorImpl<BindExp2_Spoils_t>::operator()(TLComponentInstance*)
-{
-    (mBind.mT0->*mBind.mFunction.mMemFun)(mBind.mT1);
-}
 
 typedef TLInstance* (*FindInstByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
 typedef TLInstance* (*FindInstByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
@@ -317,10 +321,13 @@ void SpoilsScene::Update(float dt)
     }
 }
 
+static inline MenuItem<TLComponentInstance>* SpoilsItemAt(MenuList<TLComponentInstance>& menu, int idx)
+{
+    return &menu.mMenuItems[idx] - 1;
+}
+
 /**
  * Offset/Address/Size: 0xC4 | 0x800D0FB4 | size: 0x5F0
- * TODO: 98.5% match - item base register allocation (r25/r26/r27 cycle vs target) and
- *       one add/lwz scheduling swap after the mType store
  */
 void SpoilsScene::SceneCreated()
 {
@@ -341,8 +348,8 @@ void SpoilsScene::SceneCreated()
         compinstance->SetActiveSlide(i == SpoilsScene::mLastSelectedIndex ? DoubleHighlite::SLIDE_IN : DoubleHighlite::SLIDE_OUT);
 
         int idx = mMenuItems.mNumItemsAdded;
+        item = SpoilsItemAt(mMenuItems, idx);
         mMenuItems.mMenuItems[idx].mType = compinstance;
-        item = &mMenuItems.mMenuItems[idx] - 1;
         mMenuItems.mNumItemsAdded++;
 
         {

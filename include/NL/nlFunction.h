@@ -46,9 +46,16 @@ public:
             : mBind(b)
         {
         }
+#ifdef FUNCTION1_SPLIT_BODIES
+#define F1BODY_INCLASS
+#include "NL/nlFunction1Body.h"
+#undef F1BODY_INCLASS
+#include "NL/nlFunction1Dtor.h"
+#else
         virtual ~FunctorImpl() { }
         virtual ReturnType operator()(ParamType arg);
         virtual FunctorBase* Clone() const { return new (nlMalloc(sizeof(FunctorImpl), 8, false)) FunctorImpl(*this); }
+#endif
     };
 
     enum Tag mTag; // offset 0x0, size 0x4
@@ -319,6 +326,7 @@ struct BindExp1
     }
 };
 
+#ifndef BIND_NO_DECL
 template <typename R, typename F, typename A>
 BindExp1<R, F, A> Bind(F fn, const A& arg)
 {
@@ -333,6 +341,7 @@ BindExp1<R, Detail::MemFunImpl<R, MemPtr>, A> Bind(Detail::MemFunImpl<R, MemPtr>
 {
     return BindExp1<R, Detail::MemFunImpl<R, MemPtr>, A>(fn, arg);
 }
+#endif
 
 template <typename R, typename F, typename A, typename B>
 struct BindExp2
@@ -350,10 +359,12 @@ struct BindExp2
     }
 };
 
+#ifndef BIND_NO_DECL
 template <typename R, typename F, typename A, typename B>
 BindExp2<R, F, A, B> Bind(F fn, const A& t0, const B& t1)
 {
     return BindExp2<R, F, A, B>(fn, t0, t1);
 }
+#endif
 
 #endif // _FEFUNCTION_H_

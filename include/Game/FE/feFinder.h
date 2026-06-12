@@ -40,7 +40,7 @@ class FEFinder
 {
 public:
     template <typename U>
-    static T* Find(U* pTopLevel, InlineHasher h1, InlineHasher h2, InlineHasher h3 = 0, InlineHasher h4 = 0, InlineHasher h5 = 0, InlineHasher h6 = 0)
+    static T* Find(U* pTopLevel, InlineHasher h1, InlineHasher h2 = 0, InlineHasher h3 = 0, InlineHasher h4 = 0, InlineHasher h5 = 0, InlineHasher h6 = 0)
     {
         return _Find(pTopLevel, h1.m_Hash, h2.m_Hash, h3.m_Hash, h4.m_Hash, h5.m_Hash, h6.m_Hash);
     }

@@ -113,19 +113,13 @@ static const char* LAYER_NAME = "Layer";
     presentation,                                                                                                  \
     InlineHasher(nlStringLowerHash(slideName)),                                                                    \
     InlineHasher(nlStringLowerHash(LAYER_NAME)),                                                                   \
-    InlineHasher(nlStringLowerHash(name)),                                                                         \
-    InlineHasher(0),                                                                                               \
-    InlineHasher(0),                                                                                               \
-    InlineHasher(0))
+    InlineHasher(nlStringLowerHash(name)))
 
 #define FIND_COMPONENT_PRESENTATION(presentation, name, slideName) FEFinder<TLComponentInstance, 4>::Find<FEPresentation>( \
     presentation,                                                                                                          \
     InlineHasher(nlStringLowerHash(slideName)),                                                                            \
     InlineHasher(nlStringLowerHash(LAYER_NAME)),                                                                           \
-    InlineHasher(nlStringLowerHash(name)),                                                                                 \
-    InlineHasher(0),                                                                                                       \
-    InlineHasher(0),                                                                                                       \
-    InlineHasher(0))
+    InlineHasher(nlStringLowerHash(name)))
 
 /**
  * Offset/Address/Size: 0x124 | 0x800FA3BC | size: 0xCF0
@@ -691,29 +685,25 @@ void HUDOverlay::LoadHUDTextures()
         pComp = FIND_COMPONENT_PRESENTATION(presentation, LEFT_POWER_UP_IMAGE_NAMES[i], HUD_SLIDE_IN_NAME);
         m_pImagePowerUps[0][0][i] = FEFinder<TLImageInstance, 2>::Find<TLSlide>(
             pComp->GetActiveSlide(),
-            InlineHasher(nlStringLowerHash(LEFT_POWER_UP_IMAGE_NAMES[i])),
-            InlineHasher(0));
+            InlineHasher(nlStringLowerHash(LEFT_POWER_UP_IMAGE_NAMES[i])));
 
         pComp = FIND_COMPONENT_PRESENTATION(presentation, RIGHT_POWER_UP_IMAGE_NAMES[i], HUD_SLIDE_IN_NAME);
         m_pImagePowerUps[0][1][i] = FEFinder<TLImageInstance, 2>::Find<TLSlide>(
             pComp->GetActiveSlide(),
-            InlineHasher(nlStringLowerHash(RIGHT_POWER_UP_IMAGE_NAMES[i])),
-            InlineHasher(0));
+            InlineHasher(nlStringLowerHash(RIGHT_POWER_UP_IMAGE_NAMES[i])));
 
         pComp = FIND_COMPONENT_PRESENTATION(presentation, LEFT_FLARE_IMAGE_NAMES[i], HUD_SLIDE_IN_NAME);
         m_pComponentFlares[0][i] = pComp;
         m_pImageFlares[0][0][i] = FEFinder<TLImageInstance, 2>::Find<TLSlide>(
             pComp->GetActiveSlide(),
-            InlineHasher(nlStringLowerHash(LEFT_FLARE_IMAGE_NAMES[i])),
-            InlineHasher(0));
+            InlineHasher(nlStringLowerHash(LEFT_FLARE_IMAGE_NAMES[i])));
         m_pImageFlares[0][0][i]->m_bVisible = false;
 
         pComp = FIND_COMPONENT_PRESENTATION(presentation, RIGHT_FLARE_IMAGE_NAMES[i], HUD_SLIDE_IN_NAME);
         m_pComponentFlares[1][i] = pComp;
         m_pImageFlares[0][1][i] = FEFinder<TLImageInstance, 2>::Find<TLSlide>(
             pComp->GetActiveSlide(),
-            InlineHasher(nlStringLowerHash(RIGHT_FLARE_IMAGE_NAMES[i])),
-            InlineHasher(0));
+            InlineHasher(nlStringLowerHash(RIGHT_FLARE_IMAGE_NAMES[i])));
         m_pImageFlares[0][1][i]->m_bVisible = false;
 
         m_pPowerupTextComponents[0][0][i] = FIND_COMPONENT_PRESENTATION(presentation, LEFT_POWER_UP_TEXT_NAMES[i], HUD_SLIDE_IN_NAME);

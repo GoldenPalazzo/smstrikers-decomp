@@ -587,12 +587,17 @@ void FEPopupMenu::Update(float fDeltaT)
 
 /**
  * Offset/Address/Size: 0x2F24 | 0x8009B1D0 | size: 0x6B8
+ * TODO: 97.9% match - register permutation in the BasicString copy-on-write blocks
+ *       (string-ptr/m_data temps), a bne+b vs beq branch shape at the refcount check,
+ *       and a pMessage reload from this where target reuses the held pointer
  */
 void FEPopupMenu::SceneCreated()
 {
     typedef BasicString<unsigned short, Detail::TempStringAllocator> WStr;
 
     FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
+    int i;
+    int k;
 
     TLTextInstance* pText = FEFinder<TLTextInstance, 3>::Find<FEPresentation>(
         presentation,
@@ -611,8 +616,6 @@ void FEPopupMenu::SceneCreated()
         pText->m_OverloadFlags |= 4;
     }
 
-    int i;
-
     for (i = 0; i < mPopup.numOptions; i++)
     {
         pText = FEFinder<TLTextInstance, 3>::Find<FEPresentation>(
@@ -630,7 +633,7 @@ void FEPopupMenu::SceneCreated()
         }
     }
 
-    for (int k = mPopup.numOptions; k < 4; k++)
+    for (k = mPopup.numOptions; k < 4; k++)
     {
         pText = FEFinder<TLTextInstance, 3>::Find<FEPresentation>(
             presentation,

@@ -44,7 +44,11 @@ struct MenuItem
             return;
         if (action == ON_APPLY && mDisabled)
             return;
-        mCallbacks[action](mType);
+        T* type = mType;
+        if (mCallbacks[action].mTag == FREE_FUNCTION)
+            mCallbacks[action].mFreeFunction(type);
+        else
+            (*mCallbacks[action].mFunctor)(type);
     }
 }; // total size: 0x20
 

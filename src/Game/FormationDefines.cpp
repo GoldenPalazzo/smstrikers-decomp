@@ -210,7 +210,7 @@ FormationSet* FormationSet::LoadFormationSets(const char* filename, int& out_num
         nlSNPrintf(section_name, 127, "FORMATION_SET%d", i_set);
 
         int i_formation;
-        for (i_formation = 0;; i_formation++)
+        for (i_formation = 0;;)
         {
             nlSNPrintf(var_name, 127, "%s/F%d_NAME", section_name, i_formation);
             if (!config.Exists(var_name))
@@ -293,6 +293,7 @@ FormationSet* FormationSet::LoadFormationSets(const char* filename, int& out_num
                 formation.m_v2Center.f.y = cy;
             }
 
+            i_formation++;
             formation_id++;
         }
 

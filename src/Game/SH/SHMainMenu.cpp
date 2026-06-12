@@ -422,10 +422,21 @@ SHMainMenu::~SHMainMenu()
     }
 }
 
+static inline BackgroundScene* GetMarioBackground()
+{
+    return (BackgroundScene*)nlSingleton<GameSceneManager>::s_pInstance->GetScene(SCENE_MARIO_BACKGROUND);
+}
+
+static inline MenuItem<TLComponentInstance>* MainMenuItemAt(MenuList<TLComponentInstance>& menu, int idx)
+{
+    return &menu.mMenuItems[idx];
+}
+
 /**
  * Offset/Address/Size: 0xA3C | 0x800AA498 | size: 0x8C0
- * TODO: 85.8% match - r30/r26 register mismatch for scene variable cascades to all
- *       loop-carried vars; BindExp2 copy uses stb for Placeholder tail instead of stw
+ * TODO: 97.0% match - BindExp2 return-copy uses stb for Placeholder tail where target
+ *       word-copies it, bind temporaries get stack slots in swapped order, and the
+ *       instance copy chain picks r0 instead of r4
  */
 void SHMainMenu::SceneCreated()
 {
@@ -436,6 +447,8 @@ void SHMainMenu::SceneCreated()
     typedef TLComponentInstance* (*FindComponentByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
     typedef TLComponentInstance* (*FindComponentByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
     typedef void FnCallback(TLComponentInstance*);
+    typedef Detail::MemFunImpl<void, void (SHMainMenu::*)(TLComponentInstance*)> MainMenuMemFun;
+    typedef BindExp2<void, MainMenuMemFun, SHMainMenu*, Placeholder<0> > MainMenuBind;
     static const char* MenuNameTable[] = { "MENU ITEM1", "MENU ITEM2", "MENU ITEM3", "MENU ITEM4", "MENU ITEM7", "MENU ITEM5", "MENU ITEM6" };
     static void (*ApplyFuncTable[])(TLComponentInstance*) = { onSelectFriendly, onSelectCup, onSelectSuperCup, onSelectTournament, onSelect101, onSelectTrophies, onSelectOptions };
     FEMusic::StartStreamIfDifferent(0);
@@ -443,163 +456,107 @@ void SHMainMenu::SceneCreated()
     TLTextInstance* scrollText;
     const gl_ScreenInfo* screenInfo;
     char menuname[64];
-    TLInstance* instance;
-    TLComponentInstance* compinstance;
     TLComponentInstance* buttons;
-    volatile InlineHasher hB, hA, h8, h9, h7, h6, h5, h4, h3, h2, h1, h0;
-    h0.m_Hash = 0;
-    h1.m_Hash = 0;
-    h2.m_Hash = 0;
-    h3.m_Hash = 0;
-    h4.m_Hash = 0;
-    h5.m_Hash = 0;
-    h6.m_Hash = 0;
-    h7.m_Hash = 0;
-    unsigned long hash = nlStringLowerHash("TickerText");
-    h9.m_Hash = hash;
-    h8.m_Hash = hash;
-    hash = nlStringLowerHash("Layer");
-    hB.m_Hash = hash;
-    hA.m_Hash = hash;
-    union
-    {
-        FindTextByValue byValue;
-        FindTextByRef byRef;
-    } ft0;
-    ft0.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
-    scrollText = ft0.byRef(presentation->m_currentSlide, (InlineHasher&)hB, (InlineHasher&)h8, (InlineHasher&)h7, (InlineHasher&)h5, (InlineHasher&)h3, (InlineHasher&)h1);
+    MenuItem<TLComponentInstance>* item;
+    BackgroundScene* scene;
+    scrollText = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
+        presentation->m_currentSlide,
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("TickerText")));
     screenInfo = glGetScreenInfo();
     FEScrollText* feST = new (nlMalloc(sizeof(FEScrollText), 8, false)) FEScrollText(scrollText, 0, screenInfo->ScreenWidth + 50);
     m_itemDescriptions = feST;
-    BackgroundScene* scene = (BackgroundScene*)nlSingleton<GameSceneManager>::s_pInstance->GetScene(SCENE_MARIO_BACKGROUND);
+    scene = GetMarioBackground();
     scene->SetVisible(false);
-    int i;
-    for (i = 0; i < 7; i++)
+    for (int i = 0; i < 7; i++)
     {
         nlSNPrintf(menuname, 64, "MENU ITEM%d", i + 1);
-        volatile InlineHasher a7, a6, a5, a4, a3, a2, a1, a0;
-        a0.m_Hash = 0;
-        h1.m_Hash = 0;
-        a1.m_Hash = 0;
-        h3.m_Hash = 0;
-        a2.m_Hash = 0;
-        h5.m_Hash = 0;
-        a3.m_Hash = 0;
-        h7.m_Hash = 0;
-        hash = nlStringLowerHash(MenuNameTable[i]);
-        a4.m_Hash = hash;
-        a5.m_Hash = hash;
-        hash = nlStringLowerHash("Layer");
-        a7.m_Hash = hash;
-        a6.m_Hash = hash;
-        union
-        {
-            FindInstByValue byValue;
-            FindInstByRef byRef;
-        } fi0;
-        fi0.byValue = FEFinder<TLInstance, 4>::Find<TLSlide>;
-        instance = fi0.byRef(presentation->m_currentSlide, (InlineHasher&)a7, (InlineHasher&)a5, (InlineHasher&)h7, (InlineHasher&)h5, (InlineHasher&)h3, (InlineHasher&)h1);
-        compinstance = (TLComponentInstance*)instance;
+        TLInstance* instance = FEFinder<TLInstance, 4>::Find<TLSlide>(
+            presentation->m_currentSlide,
+            InlineHasher(nlStringLowerHash("Layer")),
+            InlineHasher(nlStringLowerHash(MenuNameTable[i])));
+        TLComponentInstance* compinstance = (TLComponentInstance*)instance;
         int numAdded = mMenuItems.mNumItemsAdded;
+        item = MainMenuItemAt(mMenuItems, numAdded);
         mMenuItems.mMenuItems[numAdded].mType = compinstance;
-        MenuItem<TLComponentInstance>& item = mMenuItems.mMenuItems[numAdded];
         mMenuItems.mNumItemsAdded++;
         {
-            BindExp2<void, Detail::MemFunImpl<void, void (SHMainMenu::*)(TLComponentInstance*)>, SHMainMenu*, Placeholder<0> > bindOpen = Bind<void>(MemFun<SHMainMenu, void, TLComponentInstance*>(&SHMainMenu::OpenItem), this, placeholder0);
-            item.mCallbacks[1] = Function<FnCallback>(bindOpen);
+            MainMenuBind bindOpen = Bind<void>(MemFun<SHMainMenu, void, TLComponentInstance*>(&SHMainMenu::OpenItem), this, placeholder0);
+            item->mCallbacks[1] = Function<FnCallback>(bindOpen);
         }
         {
-            BindExp2<void, Detail::MemFunImpl<void, void (SHMainMenu::*)(TLComponentInstance*)>, SHMainMenu*, Placeholder<0> > bindClose = Bind<void>(MemFun<SHMainMenu, void, TLComponentInstance*>(&SHMainMenu::CloseItem), this, placeholder0);
-            item.mCallbacks[2] = Function<FnCallback>(bindClose);
+            MainMenuBind bindClose = Bind<void>(MemFun<SHMainMenu, void, TLComponentInstance*>(&SHMainMenu::CloseItem), this, placeholder0);
+            item->mCallbacks[2] = Function<FnCallback>(bindClose);
         }
         {
             Function<FnCallback> applyFunc;
             applyFunc.mTag = FREE_FUNCTION;
             applyFunc.mFreeFunction = ApplyFuncTable[i];
-            item.mCallbacks[0] = applyFunc;
+            item->mCallbacks[0] = applyFunc;
         }
-        item.mLocked = false;
+        item->mLocked = false;
         if (i == mLastMenuItem)
         {
             OpenItem(compinstance);
-            item.mDisabled = false;
+            item->mDisabled = false;
         }
         else if (i == 2 && !g_e3_Build && !nlSingleton<GameInfoManager>::s_pInstance->IsSuperCupModeUnlocked())
         {
             CloseItem(compinstance);
-            item.mLocked = true;
+            item->mLocked = true;
         }
         else
         {
             CloseItem(compinstance);
             if (g_e3_Build)
             {
-                item.mDisabled = true;
+                item->mDisabled = true;
             }
         }
         if (i == 2)
         {
-            TLComponentInstance* lockedType = item.mType;
-            volatile InlineHasher b7, b6, b5, b4, b3, b2, b1, b0;
-            b0.m_Hash = 0;
-            h1.m_Hash = 0;
-            b1.m_Hash = 0;
-            h3.m_Hash = 0;
-            b2.m_Hash = 0;
-            h5.m_Hash = 0;
-            b3.m_Hash = 0;
-            h7.m_Hash = 0;
-            b4.m_Hash = 0;
-            b5.m_Hash = 0;
-            hash = nlStringLowerHash("locked");
-            b6.m_Hash = hash;
-            b7.m_Hash = hash;
-            union
-            {
-                FindComponentByValue byValue;
-                FindComponentByRef byRef;
-            } fc0;
-            fc0.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
-            TLComponentInstance* lockedComp = fc0.byRef(lockedType->GetActiveSlide(), (InlineHasher&)b7, (InlineHasher&)b5, (InlineHasher&)h7, (InlineHasher&)h5, (InlineHasher&)h3, (InlineHasher&)h1);
-            u8 locked = item.mLocked;
+            TLComponentInstance* lockedType = item->mType;
+            TLComponentInstance* lockedComp = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
+                lockedType->GetActiveSlide(),
+                InlineHasher(nlStringLowerHash("locked")),
+                InlineHasher(0));
+            u8 locked = item->mLocked;
             lockedComp->m_bVisible = (bool)locked;
         }
     }
     int lastItem = mLastMenuItem;
     {
-        MenuItem<TLComponentInstance>& cur = mMenuItems.mMenuItems[mMenuItems.mCurrentIndex];
-        cur.mCallbacks[2](cur.mType);
+        int curIdx = mMenuItems.mCurrentIndex;
+        int tag = mMenuItems.mMenuItems[curIdx].mCallbacks[2].mTag;
+        if (((u32)((-tag) | tag) >> 31) > 0)
+        {
+            TLComponentInstance* type = mMenuItems.mMenuItems[curIdx].mType;
+            if (tag == FREE_FUNCTION)
+                mMenuItems.mMenuItems[curIdx].mCallbacks[2].mFreeFunction(type);
+            else
+                (*mMenuItems.mMenuItems[curIdx].mCallbacks[2].mFunctor)(type);
+        }
     }
     mMenuItems.mCurrentIndex = lastItem;
     {
-        MenuItem<TLComponentInstance>& cur = mMenuItems.mMenuItems[mMenuItems.mCurrentIndex];
-        cur.mCallbacks[1](cur.mType);
+        int curIdx = mMenuItems.mCurrentIndex;
+        int tag = mMenuItems.mMenuItems[curIdx].mCallbacks[1].mTag;
+        if (((u32)((-tag) | tag) >> 31) > 0)
+        {
+            TLComponentInstance* type = mMenuItems.mMenuItems[curIdx].mType;
+            if (tag == FREE_FUNCTION)
+                mMenuItems.mMenuItems[curIdx].mCallbacks[1].mFreeFunction(type);
+            else
+                (*mMenuItems.mMenuItems[curIdx].mCallbacks[1].mFunctor)(type);
+        }
     }
     mMenuItems.mFlags = 1;
     scene->SetVisible(true);
     scene->mDesiredPlayMode = PM_STOP_AT_END;
-    volatile InlineHasher c7, c6, c5, c4, c3, c2, c1, c0;
-    c0.m_Hash = 0;
-    h1.m_Hash = 0;
-    c1.m_Hash = 0;
-    h3.m_Hash = 0;
-    c2.m_Hash = 0;
-    h5.m_Hash = 0;
-    c3.m_Hash = 0;
-    h7.m_Hash = 0;
-    hash = nlStringLowerHash("buttons");
-    c4.m_Hash = hash;
-    c5.m_Hash = hash;
-    hash = nlStringLowerHash("Layer");
-    c7.m_Hash = hash;
-    c6.m_Hash = hash;
-    union
-    {
-        FindComponentByValue byValue;
-        FindComponentByRef byRef;
-    } fc1;
-    fc1.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
-    buttons = fc1.byRef(presentation->m_currentSlide, (InlineHasher&)c7, (InlineHasher&)c5, (InlineHasher&)h7, (InlineHasher&)h5, (InlineHasher&)h3, (InlineHasher&)h1);
+    buttons = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
+        presentation->m_currentSlide,
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("buttons")));
     mButtons.mButtonInstance = buttons;
     mButtons.SetState(ButtonComponent::BS_A_AND_B);
     if (mSnapMenuIntoPosition)
@@ -610,8 +567,16 @@ void SHMainMenu::SceneCreated()
         FEAudio::EnableSounds(true);
     }
     {
-        MenuItem<TLComponentInstance>& cur = mMenuItems.mMenuItems[mMenuItems.mCurrentIndex];
-        cur.mCallbacks[1](cur.mType);
+        int curIdx = mMenuItems.mCurrentIndex;
+        int tag = mMenuItems.mMenuItems[curIdx].mCallbacks[1].mTag;
+        if (((u32)((-tag) | tag) >> 31) > 0)
+        {
+            TLComponentInstance* type = mMenuItems.mMenuItems[curIdx].mType;
+            if (tag == FREE_FUNCTION)
+                mMenuItems.mMenuItems[curIdx].mCallbacks[1].mFreeFunction(type);
+            else
+                (*mMenuItems.mMenuItems[curIdx].mCallbacks[1].mFunctor)(type);
+        }
     }
     mSnapMenuIntoPosition = true;
 }

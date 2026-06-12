@@ -123,12 +123,18 @@ BraggingRightsOverlay::~BraggingRightsOverlay()
     nlSingleton<GameInfoManager>::s_pInstance->IsInTournamentMode();
 }
 
+static inline MenuItem<TLComponentInstance>* BraggingItemAt(MenuList<TLComponentInstance>& menu, int idx)
+{
+    return &menu.mMenuItems[idx];
+}
+
 /**
  * Offset/Address/Size: 0x2E3C | 0x800D4E38 | size: 0x52C
- * TODO: 96.45% match - all remaining diffs are linker relocations only
+ * TODO: 99.97% match on scratch - two bl relocation-only diffs (extern-mangled local calls)
  */
 void BraggingRightsOverlay::SceneCreated()
 {
+    MenuItem<TLComponentInstance>* menuItem;
     FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
 
     TLComponentInstance* pTickerComponent = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
@@ -159,21 +165,22 @@ void BraggingRightsOverlay::SceneCreated()
 
         instance->SetActiveSlide((i == 0) ? SingleHighlite::SLIDE_IN : SingleHighlite::SLIDE_OUT);
 
-        MenuItem<TLComponentInstance>* menuItem = &mMenuItems.mMenuItems[mMenuItems.mNumItemsAdded];
-        menuItem->mType = instance;
+        int idx = mMenuItems.mNumItemsAdded;
+        menuItem = BraggingItemAt(mMenuItems, idx);
+        mMenuItems.mMenuItems[idx].mType = instance;
         mMenuItems.mNumItemsAdded++;
 
         {
-            Function<MenuItem<TLComponentInstance>::FnCallback> openFunc;
+            Function<TLComponentInstance*> openFunc;
             openFunc.mTag = FREE_FUNCTION;
             openFunc.mFreeFunction = SingleHighlite::OpenItem;
-            menuItem->mCallbacks[1] = openFunc;
+            *(Function<TLComponentInstance*>*)&menuItem->mCallbacks[1] = openFunc;
         }
         {
-            Function<MenuItem<TLComponentInstance>::FnCallback> closeFunc;
+            Function<TLComponentInstance*> closeFunc;
             closeFunc.mTag = FREE_FUNCTION;
             closeFunc.mFreeFunction = SingleHighlite::CloseItem;
-            menuItem->mCallbacks[2] = closeFunc;
+            *(Function<TLComponentInstance*>*)&menuItem->mCallbacks[2] = closeFunc;
         }
 
         menuItem->ApplyAction((i == 0) ? ON_HIGHLIGHT : ON_UNHIGHLIGHT);

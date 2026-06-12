@@ -83,18 +83,18 @@ public:
 
 namespace SingleHighlite
 {
-static void CloseItem(TLComponentInstance*);
-static void OpenItem(TLComponentInstance*);
-static void TempDisableSound();
+void CloseItem(TLComponentInstance*);
+void OpenItem(TLComponentInstance*);
+void TempDisableSound();
 
 extern bool TEMPDISABLESOUND;
 } // namespace SingleHighlite
 
 namespace DoubleHighlite
 {
-static void CloseItem(TLComponentInstance*);
-static void OpenItem(TLComponentInstance*);
-static void TempDisableSound();
+void CloseItem(TLComponentInstance*);
+void OpenItem(TLComponentInstance*);
+void TempDisableSound();
 } // namespace DoubleHighlite
 
 // class GetLOCStandingsName(GameInfoManager
