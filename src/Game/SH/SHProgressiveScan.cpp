@@ -175,10 +175,7 @@ void ProgressiveScanScene::Update(float fDeltaT)
             m_pFEPresentation,
             InlineHasher(nlStringLowerHash("Slide1")),
             InlineHasher(nlStringLowerHash("Layer")),
-            InlineHasher(nlStringLowerHash("ProgressiveScan_deu")),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0));
+            InlineHasher(nlStringLowerHash("ProgressiveScan_deu")));
         img->m_bVisible = true;
     }
     mUseProgressiveImage[1]->Update(true);

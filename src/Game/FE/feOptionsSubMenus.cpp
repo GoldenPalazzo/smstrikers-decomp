@@ -504,11 +504,7 @@ OptionsGameplayMenuV2::OptionsGameplayMenuV2(FEPresentation* presentation, Butto
         instance = FEFinder<TLInstance, 4>::Find<TLSlide>(
             currentSlide,
             InlineHasher(nlStringLowerHash("Layer")),
-            InlineHasher(nlStringLowerHash(menuname)),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0));
+            InlineHasher(nlStringLowerHash(menuname)));
 
         MenuItem<TLComponentInstance>* menuItem = &mMenuItems.mMenuItems[mMenuItems.mNumItemsAdded];
         TLComponentInstance* componentinstance = (TLComponentInstance*)instance;
@@ -548,21 +544,13 @@ OptionsGameplayMenuV2::OptionsGameplayMenuV2(FEPresentation* presentation, Butto
     compinstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
         currentSlide,
         InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("SKILLLEVEL")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("SKILLLEVEL")));
     BuildSkillLevelMenu(compinstance, settings.SkillLevel, skilltoskip);
 
     compinstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
         currentSlide,
         InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("GAME TIME")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("GAME TIME")));
 
     gtindex = 0;
     switch (settings.GameTime)
@@ -591,41 +579,25 @@ OptionsGameplayMenuV2::OptionsGameplayMenuV2(FEPresentation* presentation, Butto
     compinstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
         currentSlide,
         InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("PUPS")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("PUPS")));
     BuildSubMenuList(2, compinstance, true, settings.PowerUps ? 0 : 1);
 
     compinstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
         currentSlide,
         InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("S2S")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("S2S")));
     BuildSubMenuList(3, compinstance, true, settings.Shoot2Score ? 0 : 1);
 
     compinstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
         currentSlide,
         InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("RUMBLE")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("RUMBLE")));
     BuildSubMenuList(4, compinstance, true, settings.RumbleEnabled ? 0 : 1);
 
     compinstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
         currentSlide,
         InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("BOWSER")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("BOWSER")));
     BuildSubMenuList(5, compinstance, true, settings.BowserAttackEnabled ? 0 : 1);
 
     SlideMenuList* slideMenuList = (SlideMenuList*)mSlideMenuLists[mMenuItems.mCurrentIndex];
@@ -832,11 +804,7 @@ OptionsVisualMenuV2::OptionsVisualMenuV2(FEPresentation* pres, ButtonComponent::
         TLInstance* instance = FEFinder<TLInstance, 4>::Find<TLSlide>(
             currentSlide,
             InlineHasher(nlStringLowerHash("Layer")),
-            InlineHasher(nlStringLowerHash(*menuItems)),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0));
+            InlineHasher(nlStringLowerHash(*menuItems)));
 
         MenuItem<TLComponentInstance>* menuItem = &mMenuItems.mMenuItems[mMenuItems.mNumItemsAdded];
         menuItem->mType = (TLComponentInstance*)instance;
@@ -877,11 +845,7 @@ OptionsVisualMenuV2::OptionsVisualMenuV2(FEPresentation* pres, ButtonComponent::
     compinstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
         currentSlide,
         InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("CAMERA")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("CAMERA")));
 
     BuildSubMenuList(0, compinstance, true, mSettings.mIsAutoZoomCamera ? 0 : 1);
     compinstance->m_bVisible = true;
@@ -890,11 +854,7 @@ OptionsVisualMenuV2::OptionsVisualMenuV2(FEPresentation* pres, ButtonComponent::
     compinstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
         currentSlide,
         InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("ZOOM")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("ZOOM")));
 
     BuildSubMenuList(1, compinstance, false, (int)(10.0f * mSettings.mCameraZoomLevel));
     compinstance->m_bVisible = true;
@@ -903,11 +863,7 @@ OptionsVisualMenuV2::OptionsVisualMenuV2(FEPresentation* pres, ButtonComponent::
     compinstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
         currentSlide,
         InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("ASPECT")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("ASPECT")));
 
     BuildSubMenuList(2, compinstance, true, mSettings.mIsWidescreen ? 1 : 0);
     compinstance->m_bVisible = true;
@@ -1542,11 +1498,7 @@ OptionsAudioMenuV2::OptionsAudioMenuV2(FEPresentation* presentation, ButtonCompo
         instance = FEFinder<TLInstance, 4>::Find<TLSlide>(
             currentSlide,
             InlineHasher(nlStringLowerHash("Layer")),
-            InlineHasher(nlStringLowerHash(menuname)),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0));
+            InlineHasher(nlStringLowerHash(menuname)));
 
         MenuItem<TLComponentInstance>* menuItem = &mMenuItems.mMenuItems[mMenuItems.mNumItemsAdded];
         menuItem->mType = (TLComponentInstance*)instance;
@@ -1589,41 +1541,25 @@ OptionsAudioMenuV2::OptionsAudioMenuV2(FEPresentation* presentation, ButtonCompo
     compinstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
         currentSlide,
         InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("volume1")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("volume1")));
     BuildSubMenuList(0, compinstance, false, mSettings.MusicVolume);
 
     compinstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
         currentSlide,
         InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("volume2")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("volume2")));
     BuildSubMenuList(1, compinstance, false, mSettings.SFXVolume);
 
     compinstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
         currentSlide,
         InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("volume3")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("volume3")));
     BuildSubMenuList(2, compinstance, false, mSettings.VoiceVolume);
 
     compinstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
         currentSlide,
         InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("mode")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("mode")));
     BuildSubMenuList(3, compinstance, true, mSettings.Mode);
     ((SlideMenuList*)mSlideMenuLists[3])->mFlags = 1;
 
@@ -1844,10 +1780,6 @@ void OptionsCheatsMenu::BuildCustomPowerupsList(TLComponentInstance* compinstanc
             pText = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
                 compinstance->GetActiveSlide(),
                 InlineHasher(nlStringLowerHash("EXPLOSIVE")),
-                InlineHasher(0),
-                InlineHasher(0),
-                InlineHasher(0),
-                InlineHasher(0),
                 InlineHasher(0));
 
             pText->SetStringId("CHEAT_LOCKED");
@@ -1861,19 +1793,11 @@ void OptionsCheatsMenu::BuildCustomPowerupsList(TLComponentInstance* compinstanc
             pMenuComp = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
                 presentation->m_currentSlide,
                 InlineHasher(nlStringLowerHash("Layer")),
-                InlineHasher(nlStringLowerHash("MENU ITEM1")),
-                InlineHasher(0),
-                InlineHasher(0),
-                InlineHasher(0),
-                InlineHasher(0));
+                InlineHasher(nlStringLowerHash("MENU ITEM1")));
 
             pArrowComp = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
                 pMenuComp->GetActiveSlide(),
                 InlineHasher(nlStringLowerHash("ARROWS")),
-                InlineHasher(0),
-                InlineHasher(0),
-                InlineHasher(0),
-                InlineHasher(0),
                 InlineHasher(0));
 
             pArrowComp->m_bVisible = false;
@@ -1930,10 +1854,6 @@ void OptionsCheatsMenu::BuildLockableSubMenuList(int menuitem, TLComponentInstan
         TLTextInstance* pText = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
             compinstance->GetActiveSlide(),
             InlineHasher(nlStringLowerHash("OFF")),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
             InlineHasher(0));
 
         pText->SetStringId("CHEAT_LOCKED");
@@ -1951,21 +1871,13 @@ void OptionsCheatsMenu::BuildLockableSubMenuList(int menuitem, TLComponentInstan
         TLComponentInstance* pMenuComp = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
             presentation->m_currentSlide,
             InlineHasher(nlStringLowerHash("Layer")),
-            InlineHasher(nlStringLowerHash(slidename)),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0));
+            InlineHasher(nlStringLowerHash(slidename)));
 
         pMenuComp->SetActiveSlide("IN");
 
         TLComponentInstance* pArrowComp = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
             pMenuComp->GetActiveSlide(),
             InlineHasher(nlStringLowerHash("ARROWS")),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
             InlineHasher(0));
 
         pArrowComp->m_bVisible = false;
@@ -2150,11 +2062,7 @@ OptionsCheatsMenu::OptionsCheatsMenu(FEPresentation* pres, ButtonComponent::Butt
         instance = FEFinder<TLInstance, 4>::Find<TLSlide>(
             currentSlide,
             InlineHasher(nlStringLowerHash("Layer")),
-            InlineHasher(nlStringLowerHash(menuname)),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0));
+            InlineHasher(nlStringLowerHash(menuname)));
 
         MenuItem<TLComponentInstance>* menuItem = &mMenuItems.mMenuItems[mMenuItems.mNumItemsAdded];
         menuItem->mType = (TLComponentInstance*)instance;
@@ -2189,11 +2097,7 @@ OptionsCheatsMenu::OptionsCheatsMenu(FEPresentation* pres, ButtonComponent::Butt
     compinstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
         currentSlide,
         InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("CHOICES")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("CHOICES")));
     BuildCustomPowerupsList(compinstance, mSettings.mCustomPowerups, pres);
 
     GameInfoManager* gm = nlSingleton<GameInfoManager>::s_pInstance;
@@ -2201,41 +2105,25 @@ OptionsCheatsMenu::OptionsCheatsMenu(FEPresentation* pres, ButtonComponent::Butt
     compinstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
         currentSlide,
         InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("ON/OFF3")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("ON/OFF3")));
     BuildLockableSubMenuList(1, compinstance, pres, gm->IsGlassJawGoalieUnlocked(), mSettings.mStunnedGoalies);
 
     compinstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
         currentSlide,
         InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("ON/OFF4")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("ON/OFF4")));
     BuildLockableSubMenuList(2, compinstance, pres, gm->IsUnlimtedPowerupsUnlocked(), mSettings.mInfinitePowerups);
 
     compinstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
         currentSlide,
         InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("ON/OFF5")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("ON/OFF5")));
     BuildLockableSubMenuList(3, compinstance, pres, gm->IsTiltCheatUnlocked(), mSettings.mCheatTBD1Enabled);
 
     compinstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
         currentSlide,
         InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("ON/OFF6")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("ON/OFF6")));
     BuildLockableSubMenuList(4, compinstance, pres, gm->IsAllSTSCheatUnlocked(), mSettings.mCheatTBD2Enabled);
 
     memcpy(&mBackupSettings, &mSettings, sizeof(CheatSettings));

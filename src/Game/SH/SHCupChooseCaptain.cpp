@@ -151,33 +151,21 @@ void CupChooseCaptainSceneV2::SceneCreated()
     comp = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
         slide,
         InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("CHOOSE_SIDEKICKS_LEFT")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("CHOOSE_SIDEKICKS_LEFT")));
     comp->m_bVisible = false;
     mComponents[3] = comp;
 
     comp = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
         slide,
         InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("LEFT_SK")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("LEFT_SK")));
     comp->m_bVisible = false;
     mComponents[4] = comp;
 
     comp = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
         slide,
         InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("LEFT_CAPT")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("LEFT_CAPT")));
     comp->m_bVisible = false;
     mComponents[2] = comp;
 
@@ -189,22 +177,14 @@ void CupChooseCaptainSceneV2::SceneCreated()
     mComponents[1] = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
         slide,
         InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("CAPTAIN_CHOOSER_LEFT")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("CAPTAIN_CHOOSER_LEFT")));
 
     FEAudio::PlayAnimAudioEvent("sfx_character_group_left_enter", false);
 
     mComponents[0] = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
         slide,
         InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("CAPTAIN_NAME_RIGHT")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("CAPTAIN_NAME_RIGHT")));
 
     UpdateCaptainName();
 
@@ -212,11 +192,7 @@ void CupChooseCaptainSceneV2::SceneCreated()
         TLTextInstance* scrollText = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
             slide,
             InlineHasher(nlStringLowerHash("Layer")),
-            InlineHasher(nlStringLowerHash("TickerText")),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0));
+            InlineHasher(nlStringLowerHash("TickerText")));
 
         extern void* glGetScreenInfo();
         void* screenInfo = glGetScreenInfo();
@@ -232,30 +208,18 @@ void CupChooseCaptainSceneV2::SceneCreated()
         TLImageInstance* image = FEFinder<TLImageInstance, 2>::Find<TLSlide>(
             active,
             InlineHasher(nlStringLowerHash("CAPT_L")),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
             InlineHasher(0));
         mCaptainImageMain->mImageInstance = image;
 
         image = FEFinder<TLImageInstance, 2>::Find<TLSlide>(
             active,
             InlineHasher(nlStringLowerHash("CAPT_L_WHITE")),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
             InlineHasher(0));
         mCaptainImageFlash->mImageInstance = image;
 
         image = FEFinder<TLImageInstance, 2>::Find<TLSlide>(
             active,
             InlineHasher(nlStringLowerHash("CAPT_L_OUT")),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
             InlineHasher(0));
         mCaptainImageBG->mImageInstance = image;
     }
@@ -266,20 +230,12 @@ void CupChooseCaptainSceneV2::SceneCreated()
         TLImageInstance* image = FEFinder<TLImageInstance, 2>::Find<TLSlide>(
             active,
             InlineHasher(nlStringLowerHash("SK_L")),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
             InlineHasher(0));
         image->m_bVisible = false;
 
         image = FEFinder<TLImageInstance, 2>::Find<TLSlide>(
             active,
             InlineHasher(nlStringLowerHash("SK_L_OUT")),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
             InlineHasher(0));
         image->m_bVisible = false;
     }
@@ -287,11 +243,7 @@ void CupChooseCaptainSceneV2::SceneCreated()
     mSidekickMiniHead = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
         m_pFEPresentation->m_currentSlide,
         InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("sidekick icon right")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("sidekick icon right")));
     mSidekickMiniHead->m_bVisible = false;
 
     mCaptainGrid = new (nlMalloc(0x1C, 8, false)) ICaptainGridComponent(mComponents[1], false);
@@ -337,11 +289,7 @@ void CupChooseCaptainSceneV2::SceneCreated()
     mPressAComponent = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
         m_pFEScene->m_pFEPackage->GetPresentation()->m_currentSlide,
         InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("continue")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("continue")));
     mPressAComponent->m_bVisible = false;
 
     {
@@ -396,11 +344,7 @@ void CupChooseCaptainSceneV2::SceneCreated()
     mButtons.mButtonInstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
         m_pFEPresentation->m_currentSlide,
         InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("buttons")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("buttons")));
     mButtons.SetState(ButtonComponent::BS_A_AND_B);
 }
 

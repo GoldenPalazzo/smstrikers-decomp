@@ -161,10 +161,6 @@ void ISidekickGridComponent::RebuildInstanceTable()
         TLInstance* inst = FEFinder<TLInstance, 2>::Find<TLSlide>(
             activeslide,
             InlineHasher(nlStringLowerHash(SidekickCellItems[i].mIconName)),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
             InlineHasher(0));
 
         int iconType = SidekickCellItems[i].mIconType;

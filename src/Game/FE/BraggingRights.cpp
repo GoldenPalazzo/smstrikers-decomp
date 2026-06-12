@@ -134,20 +134,12 @@ void BraggingRightsOverlay::SceneCreated()
     TLComponentInstance* pTickerComponent = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
         presentation->m_currentSlide,
         InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("Component")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("Component")));
 
     TLTextInstance* scrollText = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
         pTickerComponent->GetActiveSlide(),
         InlineHasher(nlStringLowerHash("Group")),
-        InlineHasher(nlStringLowerHash("TickerText")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("TickerText")));
 
     const gl_ScreenInfo* screenInfo = glGetScreenInfo();
 
@@ -163,11 +155,7 @@ void BraggingRightsOverlay::SceneCreated()
         TLComponentInstance* instance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
             m_pFEPresentation->m_currentSlide,
             InlineHasher(nlStringLowerHash("Layer")),
-            InlineHasher(nlStringLowerHash(menuname)),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0));
+            InlineHasher(nlStringLowerHash(menuname)));
 
         instance->SetActiveSlide((i == 0) ? SingleHighlite::SLIDE_IN : SingleHighlite::SLIDE_OUT);
 
@@ -196,11 +184,7 @@ void BraggingRightsOverlay::SceneCreated()
     mButtons.mButtonInstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
         m_pFEPresentation->m_currentSlide,
         InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("buttons")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("buttons")));
 
     if (nlSingleton<GameInfoManager>::s_pInstance->IsInTournamentMode())
     {
@@ -411,10 +395,7 @@ void BraggingRightsOverlay::TournamentSceneCreated()
             presentation,
             InlineHasher(nlStringLowerHash("Slide1")),
             InlineHasher(nlStringLowerHash("Layer")),
-            InlineHasher(nlStringLowerHash(TEXT_NAMES[award])),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0));
+            InlineHasher(nlStringLowerHash(TEXT_NAMES[award])));
 
         if (mHighestStats[award] == 0)
         {
@@ -435,10 +416,7 @@ void BraggingRightsOverlay::TournamentSceneCreated()
         presentation,
         InlineHasher(nlStringLowerHash("Slide1")),
         InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("Placement")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("Placement")));
 
     unsigned long winningNameId = GetLOCCharacterName(info->FindWinningTeam(), false, false);
     nlLocalization* loc = g_pLocalization;
@@ -468,20 +446,13 @@ void BraggingRightsOverlay::TournamentSceneCreated()
         presentation,
         InlineHasher(nlStringLowerHash("Slide1")),
         InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("MENU ITEM5")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("MENU ITEM5")));
 
     pButtonComp->SetActiveSlide("IN");
 
     TLTextInstance* pAwardText = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
         pButtonComp->GetActiveSlide(),
         InlineHasher(nlStringLowerHash("R JUST")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
         InlineHasher(0));
     pAwardText->m_LocStrId = 0xB6940BE2;
     pAwardText->m_OverloadFlags |= 0x8;
@@ -491,10 +462,6 @@ void BraggingRightsOverlay::TournamentSceneCreated()
     pAwardText = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
         pButtonComp->GetActiveSlide(),
         InlineHasher(nlStringLowerHash("R JUST")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
         InlineHasher(0));
     pAwardText->m_LocStrId = 0xB6940BE2;
     pAwardText->m_OverloadFlags |= 0x8;

@@ -97,10 +97,7 @@ void FEPopupMenu::SetOptionTextColourOnCurrent(bool)
         presentation,
         InlineHasher(nlStringLowerHash("Slide1")),
         InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash(optionNames[mHighlightedOption])),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash(optionNames[mHighlightedOption])));
 }
 
 /**
@@ -122,20 +119,14 @@ void FEPopupMenu::ResizeHighlight()
         presentation,
         InlineHasher(nlStringLowerHash("Slide1")),
         InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash(optionNames[mHighlightedOption])),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash(optionNames[mHighlightedOption])));
     pText->SetAssetColour(mHighlightedOptionColour);
 
     pText = FEFinder<TLTextInstance, 3>::Find<FEPresentation>(
         presentation,
         InlineHasher(nlStringLowerHash("Slide1")),
         InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash(optionNames[mHighlightedOption])),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash(optionNames[mHighlightedOption])));
 
     nlTextBox::StringDrawInfo drawInfo = pText->m_DrawInfo;
 
@@ -143,10 +134,7 @@ void FEPopupMenu::ResizeHighlight()
         presentation,
         InlineHasher(nlStringLowerHash("Slide1")),
         InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("highlite")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("highlite")));
 
     textPosition = pText->GetAssetPosition();
     highlightPosition = pHighlight->GetAssetPosition();
@@ -157,10 +145,6 @@ void FEPopupMenu::ResizeHighlight()
     ((TLInstance*)FEFinder<TLImageInstance, 2>::Find<TLSlide>(
          pHighlight->GetActiveSlide(),
          InlineHasher(nlStringLowerHash("Highlight")),
-         InlineHasher(0),
-         InlineHasher(0),
-         InlineHasher(0),
-         InlineHasher(0),
          InlineHasher(0)))
         ->SetAssetScale(
             mHighlightSize.e[0],
@@ -259,19 +243,13 @@ void FEPopupMenu::SetPositions()
         presentation,
         InlineHasher(nlStringLowerHash("Slide1")),
         InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("highlite")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("highlite")));
 
     pText = FEFinder<TLTextInstance, 3>::Find<FEPresentation>(
         presentation,
         InlineHasher(nlStringLowerHash("Slide1")),
         InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("Message")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("Message")));
 
     messagePosition = pText->GetAssetPosition();
     struct Copy88
@@ -298,10 +276,7 @@ void FEPopupMenu::SetPositions()
                 presentation,
                 InlineHasher(nlStringLowerHash("Slide1")),
                 InlineHasher(nlStringLowerHash("Layer")),
-                InlineHasher(nlStringLowerHash(optionNames[i])),
-                InlineHasher(0),
-                InlineHasher(0),
-                InlineHasher(0));
+                InlineHasher(nlStringLowerHash(optionNames[i])));
 
             colour = pText->GetAssetColour();
             colour.c[3] = 0;
@@ -382,10 +357,7 @@ void FEPopupMenu::SetPositions()
             presentation,
             InlineHasher(nlStringLowerHash("Slide1")),
             InlineHasher(nlStringLowerHash("Layer")),
-            InlineHasher(nlStringLowerHash(optionNames[i2])),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0));
+            InlineHasher(nlStringLowerHash(optionNames[i2])));
 
         optionColour = pText->GetAssetColour();
         optionColour.c[3] = 0xFF;
@@ -422,29 +394,19 @@ void FEPopupMenu::SetPositions()
         presentation,
         InlineHasher(nlStringLowerHash("Slide1")),
         InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash(optionNames[mHighlightedOption])),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash(optionNames[mHighlightedOption])));
 
     pHighlight = FEFinder<TLComponentInstance, 4>::Find<FEPresentation>(
         presentation,
         InlineHasher(nlStringLowerHash("Slide1")),
         InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("highlite")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("highlite")));
 
     highlightPosition = pHighlight->GetAssetPosition();
 
     pImage = (TLInstance*)FEFinder<TLImageInstance, 2>::Find<TLSlide>(
         pHighlight->GetActiveSlide(),
         InlineHasher(nlStringLowerHash("Highlight")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
         InlineHasher(0));
 
     mHighlightSize = pImage->GetAssetScale();
@@ -545,10 +507,7 @@ void FEPopupMenu::Update(float fDeltaT)
             m_pFEPresentation,
             InlineHasher(nlStringLowerHash("Slide1")),
             InlineHasher(nlStringLowerHash("Layer")),
-            InlineHasher(nlStringLowerHash("highlite")),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0));
+            InlineHasher(nlStringLowerHash("highlite")));
 
         pComponent->SetActiveSlide("accept");
         pComponent->Update(0.0f);
@@ -639,10 +598,7 @@ void FEPopupMenu::SceneCreated()
         presentation,
         InlineHasher(nlStringLowerHash("Slide1")),
         InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("Message")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("Message")));
 
     (*mPopup.pMessage)[0];
     pText->SetString(mPopup.pMessage->m_data ? mPopup.pMessage->m_data->mData : NULL);
@@ -663,10 +619,7 @@ void FEPopupMenu::SceneCreated()
             presentation,
             InlineHasher(nlStringLowerHash("Slide1")),
             InlineHasher(nlStringLowerHash("Layer")),
-            InlineHasher(nlStringLowerHash(optionNames[i])),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0));
+            InlineHasher(nlStringLowerHash(optionNames[i])));
 
         (*mPopup.pOptionLabels[i])[0];
         pText->SetString(mPopup.pOptionLabels[i]->m_data ? mPopup.pOptionLabels[i]->m_data->mData : NULL);
@@ -683,10 +636,7 @@ void FEPopupMenu::SceneCreated()
             presentation,
             InlineHasher(nlStringLowerHash("Slide1")),
             InlineHasher(nlStringLowerHash("Layer")),
-            InlineHasher(nlStringLowerHash(optionNames[k])),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0));
+            InlineHasher(nlStringLowerHash(optionNames[k])));
 
         if (pText != NULL)
         {
@@ -720,21 +670,14 @@ void FEPopupMenu::SceneCreated()
         presentation,
         InlineHasher(nlStringLowerHash("Slide1")),
         InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("highlite")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("highlite")));
 
     pHighlight->SetActiveSlide("idle");
 
     mButtons.mButtonInstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
         presentation->m_currentSlide,
         InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("buttons")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("buttons")));
 
     if (mButtons.mButtonInstance != NULL)
     {

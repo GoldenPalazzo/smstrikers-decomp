@@ -216,11 +216,7 @@ void SuperLoadingScene::SceneCreated()
     mImageInstances[0][0] = FEFinder<TLImageInstance, 2>::Find<TLSlide>(
         slide,
         InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("leftimage")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("leftimage")));
 
     {
         InlineHasher z3(0);
@@ -399,19 +395,19 @@ void SuperLoadingScene::DisplayCupInfo()
 
     {
         statsText[0] = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
-            slide, InlineHasher(nlStringLowerHash("Layer")), InlineHasher(nlStringLowerHash("stats_left1")), InlineHasher(0), InlineHasher(0), InlineHasher(0), InlineHasher(0));
+            slide, InlineHasher(nlStringLowerHash("Layer")), InlineHasher(nlStringLowerHash("stats_left1")));
     }
     {
         statsText[1] = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
-            slide, InlineHasher(nlStringLowerHash("Layer")), InlineHasher(nlStringLowerHash("stats_left2")), InlineHasher(0), InlineHasher(0), InlineHasher(0), InlineHasher(0));
+            slide, InlineHasher(nlStringLowerHash("Layer")), InlineHasher(nlStringLowerHash("stats_left2")));
     }
     {
         statsText[2] = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
-            slide, InlineHasher(nlStringLowerHash("Layer")), InlineHasher(nlStringLowerHash("stats_right1")), InlineHasher(0), InlineHasher(0), InlineHasher(0), InlineHasher(0));
+            slide, InlineHasher(nlStringLowerHash("Layer")), InlineHasher(nlStringLowerHash("stats_right1")));
     }
     {
         statsText[3] = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
-            slide, InlineHasher(nlStringLowerHash("Layer")), InlineHasher(nlStringLowerHash("stats_right2")), InlineHasher(0), InlineHasher(0), InlineHasher(0), InlineHasher(0));
+            slide, InlineHasher(nlStringLowerHash("Layer")), InlineHasher(nlStringLowerHash("stats_right2")));
     }
 
     if (!gameInfo->IsInCupOrTournamentMode() || (gameInfo->IsInCupMode() && gameInfo->mDoingKnockout)

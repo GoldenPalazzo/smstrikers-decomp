@@ -164,11 +164,7 @@ void TournTeamSetupSceneV2::SceneCreated()
         TLComponentInstance* compinstance = (TLComponentInstance*)FEFinder<TLInstance, 4>::Find<TLSlide>(
             presentation->m_currentSlide,
             InlineHasher(nlStringLowerHash("Layer")),
-            InlineHasher(nlStringLowerHash(menuname)),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0));
+            InlineHasher(nlStringLowerHash(menuname)));
 
         if (i < mTournInfo.m_numTeams)
         {
@@ -240,53 +236,33 @@ void TournTeamSetupSceneV2::SceneCreated()
         TLComponentInstance* comp0 = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
             presentation->m_currentSlide,
             InlineHasher(nlStringLowerHash("Layer")),
-            InlineHasher(nlStringLowerHash("CAPTAIN_NAME_RIGHT")),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0));
+            InlineHasher(nlStringLowerHash("CAPTAIN_NAME_RIGHT")));
         comp0->m_bVisible = false;
         mComponents[0] = comp0;
 
         TLComponentInstance* comp1 = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
             presentation->m_currentSlide,
             InlineHasher(nlStringLowerHash("Layer")),
-            InlineHasher(nlStringLowerHash("CAPTAIN_CHOOSER_LEFT")),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0));
+            InlineHasher(nlStringLowerHash("CAPTAIN_CHOOSER_LEFT")));
         comp1->m_bVisible = false;
         mComponents[1] = comp1;
 
         TLComponentInstance* comp2 = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
             presentation->m_currentSlide,
             InlineHasher(nlStringLowerHash("Layer")),
-            InlineHasher(nlStringLowerHash("CHOOSE_SIDEKICKS_LEFT")),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0));
+            InlineHasher(nlStringLowerHash("CHOOSE_SIDEKICKS_LEFT")));
         comp2->m_bVisible = false;
         mComponents[2] = comp2;
 
         TLComponentInstance* chooserComp = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
             mComponents[1]->GetActiveSlide(),
             InlineHasher(nlStringLowerHash("HIGHLIGHT")),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
             InlineHasher(0));
         chooserComp->m_bVisible = false;
 
         chooserComp = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
             mComponents[2]->GetActiveSlide(),
             InlineHasher(nlStringLowerHash("HIGHLIGHT")),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
             InlineHasher(0));
         chooserComp->m_bVisible = false;
 
@@ -301,20 +277,12 @@ void TournTeamSetupSceneV2::SceneCreated()
         TLComponentInstance* tempComponent = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
             presentation->m_currentSlide,
             InlineHasher(nlStringLowerHash("Layer")),
-            InlineHasher(nlStringLowerHash("Component")),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0));
+            InlineHasher(nlStringLowerHash("Component")));
 
         TLTextInstance* scrollText = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
             tempComponent->GetActiveSlide(),
             InlineHasher(nlStringLowerHash("Group")),
-            InlineHasher(nlStringLowerHash("TickerText")),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0));
+            InlineHasher(nlStringLowerHash("TickerText")));
 
         gl_ScreenInfo* screenInfo = glGetScreenInfo();
         mTicker = new (nlMalloc(0x22C, 0x20, true)) FEScrollText(scrollText, 0, screenInfo->ScreenWidth + 0x32);
@@ -323,11 +291,7 @@ void TournTeamSetupSceneV2::SceneCreated()
         mPressStartComponent = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
             m_pFEScene->m_pFEPackage->GetPresentation()->m_currentSlide,
             InlineHasher(nlStringLowerHash("Layer")),
-            InlineHasher(nlStringLowerHash("START TO CONTINUE")),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0));
+            InlineHasher(nlStringLowerHash("START TO CONTINUE")));
         mPressStartComponent->m_bVisible = false;
     }
     else
@@ -337,11 +301,7 @@ void TournTeamSetupSceneV2::SceneCreated()
         mButtons1.mButtonInstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
             m_pFEPresentation->m_currentSlide,
             InlineHasher(nlStringLowerHash("Layer")),
-            InlineHasher(nlStringLowerHash("buttons")),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0));
+            InlineHasher(nlStringLowerHash("buttons")));
         mButtons1.SetState((ButtonComponent::ButtonState)3);
 
         presentation->SetActiveSlide("MENU IN");
@@ -349,22 +309,14 @@ void TournTeamSetupSceneV2::SceneCreated()
         mButtons2.mButtonInstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
             m_pFEPresentation->m_currentSlide,
             InlineHasher(nlStringLowerHash("Layer")),
-            InlineHasher(nlStringLowerHash("buttons")),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0));
+            InlineHasher(nlStringLowerHash("buttons")));
         mButtons2.SetState((ButtonComponent::ButtonState)3);
     }
 
     TLComponentInstance* tempComponent = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
         presentation->m_currentSlide,
         InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("ARROWS")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("ARROWS")));
 
     if (mTournInfo.m_numTeams < 5)
     {
@@ -374,19 +326,11 @@ void TournTeamSetupSceneV2::SceneCreated()
     mUpArrow = FEFinder<TLImageInstance, 2>::Find<TLSlide>(
         tempComponent->GetActiveSlide(),
         InlineHasher(nlStringLowerHash("arrow2")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
         InlineHasher(0));
 
     mDownArrow = FEFinder<TLImageInstance, 2>::Find<TLSlide>(
         tempComponent->GetActiveSlide(),
         InlineHasher(nlStringLowerHash("arrow")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
         InlineHasher(0));
 
     if (mCurrentRow == 0)
@@ -520,11 +464,7 @@ void TournTeamSetupSceneV2::Update(float fDeltaT)
     TLComponentInstance* pTickerComp = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
         presentation->m_currentSlide,
         InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("Component")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("Component")));
 
     TLSlide* tickerSlide = pTickerComp->GetActiveSlide();
     float endTime = tickerSlide->m_start + tickerSlide->m_duration;

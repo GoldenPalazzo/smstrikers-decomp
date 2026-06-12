@@ -784,10 +784,6 @@ void CupCheaterScene::UpdateSlides()
         pText = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
             pSlide,
             InlineHasher(nlStringLowerHash("number1")),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
             InlineHasher(0));
 
         BasicString<char, Detail::TempStringAllocator> Sniper(
@@ -798,10 +794,6 @@ void CupCheaterScene::UpdateSlides()
         pText = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
             pSlide,
             InlineHasher(nlStringLowerHash("number2")),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
             InlineHasher(0));
 
         BasicString<char, Detail::TempStringAllocator> Striker(
@@ -812,10 +804,6 @@ void CupCheaterScene::UpdateSlides()
         pText = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
             pSlide,
             InlineHasher(nlStringLowerHash("number3")),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
             InlineHasher(0));
 
         BasicString<char, Detail::TempStringAllocator> Tactician(
@@ -826,10 +814,6 @@ void CupCheaterScene::UpdateSlides()
         pText = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
             pSlide,
             InlineHasher(nlStringLowerHash("number4")),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
             InlineHasher(0));
 
         BasicString<char, Detail::TempStringAllocator> Paramedic(
@@ -840,10 +824,6 @@ void CupCheaterScene::UpdateSlides()
         pText = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
             pSlide,
             InlineHasher(nlStringLowerHash("number5")),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
             InlineHasher(0));
 
         BasicString<char, Detail::TempStringAllocator> Veteran(

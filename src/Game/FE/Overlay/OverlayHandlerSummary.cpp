@@ -167,10 +167,7 @@ void SummaryOverlay::SceneCreated()
         presentation,
         InlineHasher(nlStringLowerHash("Slide1")),
         InlineHasher(nlStringLowerHash("layer")),
-        InlineHasher(nlStringLowerHash("summary")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("summary")));
 
     mSlideMenu = new (nlMalloc(sizeof(FESlideMenu), 8, false)) FESlideMenu(pComp);
 
@@ -204,11 +201,7 @@ void SummaryOverlay::SceneCreated()
     mButtons.mButtonInstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
         presentation->m_currentSlide,
         InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("buttons")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("buttons")));
 
     mButtons.SetState(mButtonState);
 }
@@ -402,10 +395,6 @@ void SummaryOverlay::DisplayMatchSummary(eSummaryType matchSummaryType)
         pTitleText = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
             pSlide,
             InlineHasher(nlStringLowerHash("Title")),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
             InlineHasher(0));
         pTitleText->SetString(mTitleBuffer);
     }
@@ -413,10 +402,6 @@ void SummaryOverlay::DisplayMatchSummary(eSummaryType matchSummaryType)
     pTitleText = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
         pSlide,
         InlineHasher(nlStringLowerHash("Title")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
         InlineHasher(0));
 
     if (mContext == ENDGAME)
@@ -457,10 +442,6 @@ void SummaryOverlay::DisplayMatchSummary(eSummaryType matchSummaryType)
         pComponentInstances[team] = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
             pSlide,
             InlineHasher(nlStringLowerHash(SUMMARY_COL_NAMES[team])),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
             InlineHasher(0));
 
         pSlide = pComponentInstances[team]->GetActiveSlide();
@@ -468,10 +449,6 @@ void SummaryOverlay::DisplayMatchSummary(eSummaryType matchSummaryType)
         pTextInstanceRowHeading = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
             pSlide,
             InlineHasher(nlStringLowerHash("TEAM")),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
             InlineHasher(0));
         pTextInstanceRowHeading->m_LocStrId = GetLOCCharacterName((eTeamID)displayedStats[team]->mRecordType.mTeamID, false, false);
         pTextInstanceRowHeading->m_OverloadFlags |= 0x8;
@@ -481,10 +458,6 @@ void SummaryOverlay::DisplayMatchSummary(eSummaryType matchSummaryType)
             pTextInstanceRows[k] = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
                 pSlide,
                 InlineHasher(nlStringLowerHash(SUMMARY_ROW_NAMES[k])),
-                InlineHasher(0),
-                InlineHasher(0),
-                InlineHasher(0),
-                InlineHasher(0),
                 InlineHasher(0));
 
             nlStrToWcs(statsStrings[k].c_str(), mBuffersColBySide[team][k], 0x20);
@@ -607,10 +580,6 @@ void SummaryOverlay::DisplayUserSummary(eSummaryType matchSummaryType)
             pTitleText = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
                 pSlide,
                 InlineHasher(nlStringLowerHash("Title")),
-                InlineHasher(0),
-                InlineHasher(0),
-                InlineHasher(0),
-                InlineHasher(0),
                 InlineHasher(0));
             pTitleText->SetString(mTitleBuffer);
         }
@@ -630,10 +599,6 @@ void SummaryOverlay::DisplayUserSummary(eSummaryType matchSummaryType)
         pComponentInstances[user] = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
             mSlideMenu->m_pMenuComp->GetActiveSlide(),
             InlineHasher(nlStringLowerHash(SUMMARY_COL_NAMES[user])),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
             InlineHasher(0));
 
         if (nlSingleton<GameInfoManager>::s_pInstance->GetPlayingSide((unsigned short)user) == -1)
@@ -652,10 +617,6 @@ void SummaryOverlay::DisplayUserSummary(eSummaryType matchSummaryType)
             pTextInstanceRows[k] = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
                 pSlide,
                 InlineHasher(nlStringLowerHash(SUMMARY_ROW_NAMES[k])),
-                InlineHasher(0),
-                InlineHasher(0),
-                InlineHasher(0),
-                InlineHasher(0),
                 InlineHasher(0));
 
             nlStrToWcs(statsStrings[k].c_str(), mBuffersColByUser[user][k], 0x20);

@@ -931,11 +931,7 @@ void ChooseCupSceneV2::DisplayCup()
     TLTextInstance* pText = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
         slide,
         InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("TITLE")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("TITLE")));
 
     pText->m_LocStrId = GetLOCTrophyName(mCupToDisplay);
     pText->m_OverloadFlags |= 0x8;
@@ -945,11 +941,7 @@ void ChooseCupSceneV2::DisplayCup()
     TLImageInstance* pTrophyImage = FEFinder<TLImageInstance, 2>::Find<TLSlide>(
         m_pFEPresentation->m_currentSlide,
         InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("TROPHY")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("TROPHY")));
 
     bool canProceed;
     if (mIsSuperCup)
@@ -1026,11 +1018,7 @@ void ChooseCupSceneV2::DisplayCup()
         pText = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
             slide,
             InlineHasher(nlStringLowerHash("Layer")),
-            InlineHasher(nlStringLowerHash("DESCRIPTOR")),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0));
+            InlineHasher(nlStringLowerHash("DESCRIPTOR")));
 
         pText->SetString(mDescriptorBuffer);
 
@@ -1042,11 +1030,7 @@ void ChooseCupSceneV2::DisplayCup()
         pText = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
             slide,
             InlineHasher(nlStringLowerHash("Layer")),
-            InlineHasher(nlStringLowerHash("DESCRIPTOR")),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0));
+            InlineHasher(nlStringLowerHash("DESCRIPTOR")));
 
         pTrophyImage->SetAssetColour(CHOOSE_CUP_BLACK);
 
@@ -1069,11 +1053,7 @@ void ChooseCupSceneV2::DisplayCup()
     TLComponentInstance* progressComp = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
         slide,
         InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("cup in progress")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("cup in progress")));
 
     GameInfoManager::eGameModes cupMode = GameInfoManager::GM_MUSHROOM_CUP;
     switch (mCupToDisplay)
@@ -1114,10 +1094,6 @@ void ChooseCupSceneV2::DisplayCup()
         pText = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
             progressComp->GetActiveSlide(),
             InlineHasher(nlStringLowerHash("Text")),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
             InlineHasher(0));
 
         pText->SetStringId("INPROGRESS");
@@ -1148,10 +1124,6 @@ void ChooseCupSceneV2::SetCurrentChamp(eTeamID teamID, bool hasChamp, TLComponen
     TLTextInstance* text = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
         comp->GetActiveSlide(),
         InlineHasher(nlStringLowerHash("Text")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
         InlineHasher(0));
 
     if (hasChamp)

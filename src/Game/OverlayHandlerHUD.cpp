@@ -261,10 +261,7 @@ void HUDOverlay::Update(float fDeltaT)
                     m_pFEPresentation,
                     InlineHasher(nlStringLowerHash("IN")),
                     InlineHasher(nlStringLowerHash(LAYER_NAME)),
-                    InlineHasher(nlStringLowerHash("left_score")),
-                    InlineHasher(0),
-                    InlineHasher(0),
-                    InlineHasher(0));
+                    InlineHasher(nlStringLowerHash("left_score")));
             }
             else
             {
@@ -272,10 +269,7 @@ void HUDOverlay::Update(float fDeltaT)
                     m_pFEPresentation,
                     InlineHasher(nlStringLowerHash("IN")),
                     InlineHasher(nlStringLowerHash(LAYER_NAME)),
-                    InlineHasher(nlStringLowerHash("right_score")),
-                    InlineHasher(0),
-                    InlineHasher(0),
-                    InlineHasher(0));
+                    InlineHasher(nlStringLowerHash("right_score")));
             }
 
             TLSlide* activeSlide = pScoreComp->GetActiveSlide();
@@ -496,19 +490,13 @@ void HUDOverlay::SceneCreated()
         presentation,
         InlineHasher(nlStringLowerHash(HUD_SLIDE_IN_NAME)),
         InlineHasher(nlStringLowerHash(LAYER_NAME)),
-        InlineHasher(nlStringLowerHash("clock")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("clock")));
 
     m_pTextInstanceClock[1] = FEFinder<TLTextInstance, 3>::Find<FEPresentation>(
         presentation,
         InlineHasher(nlStringLowerHash(HUD_SLIDE_OUT_NAME)),
         InlineHasher(nlStringLowerHash(LAYER_NAME)),
-        InlineHasher(nlStringLowerHash("clock")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("clock")));
 
     mOriginalClockColour = m_pTextInstanceClock[0]->GetColour();
 
@@ -516,10 +504,7 @@ void HUDOverlay::SceneCreated()
         presentation,
         InlineHasher(nlStringLowerHash(HUD_SLIDE_IN_NAME)),
         InlineHasher(nlStringLowerHash(LAYER_NAME)),
-        InlineHasher(nlStringLowerHash("left_score")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("left_score")));
     {
         TLSlide* pSlide = pScoreComp->GetActiveSlide();
         pScoreComp->Update(pSlide->m_start + pSlide->m_duration);
@@ -527,20 +512,13 @@ void HUDOverlay::SceneCreated()
     m_pTextInstanceScore[0][0] = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
         pScoreComp->GetActiveSlide(),
         InlineHasher(nlStringLowerHash("left_score")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
         InlineHasher(0));
 
     pScoreComp = FEFinder<TLComponentInstance, 4>::Find<FEPresentation>(
         presentation,
         InlineHasher(nlStringLowerHash(HUD_SLIDE_IN_NAME)),
         InlineHasher(nlStringLowerHash(LAYER_NAME)),
-        InlineHasher(nlStringLowerHash("right_score")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("right_score")));
     {
         TLSlide* pSlide = pScoreComp->GetActiveSlide();
         pScoreComp->Update(pSlide->m_start + pSlide->m_duration);
@@ -548,47 +526,31 @@ void HUDOverlay::SceneCreated()
     m_pTextInstanceScore[0][1] = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
         pScoreComp->GetActiveSlide(),
         InlineHasher(nlStringLowerHash("right_score")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
         InlineHasher(0));
 
     m_pTextInstanceScore[1][0] = FEFinder<TLTextInstance, 3>::Find<FEPresentation>(
         presentation,
         InlineHasher(nlStringLowerHash(HUD_SLIDE_OUT_NAME)),
         InlineHasher(nlStringLowerHash(LAYER_NAME)),
-        InlineHasher(nlStringLowerHash("left_score")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("left_score")));
 
     m_pTextInstanceScore[1][1] = FEFinder<TLTextInstance, 3>::Find<FEPresentation>(
         presentation,
         InlineHasher(nlStringLowerHash(HUD_SLIDE_OUT_NAME)),
         InlineHasher(nlStringLowerHash(LAYER_NAME)),
-        InlineHasher(nlStringLowerHash("right_score")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("right_score")));
 
     mSuddenDeath[0] = FEFinder<TLComponentInstance, 4>::Find<FEPresentation>(
         presentation,
         InlineHasher(nlStringLowerHash(HUD_SLIDE_IN_NAME)),
         InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("SUDDEN DEATH")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("SUDDEN DEATH")));
 
     mSuddenDeath[1] = FEFinder<TLComponentInstance, 4>::Find<FEPresentation>(
         presentation,
         InlineHasher(nlStringLowerHash(HUD_SLIDE_OUT_NAME)),
         InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("SUDDEN DEATH")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("SUDDEN DEATH")));
 
     mSuddenDeath[0]->m_bVisible = false;
     mSuddenDeath[1]->m_bVisible = false;
@@ -602,10 +564,7 @@ void HUDOverlay::SceneCreated()
         presentation,
         InlineHasher(nlStringLowerHash(HUD_SLIDE_IN_NAME)),
         InlineHasher(nlStringLowerHash(LAYER_NAME)),
-        InlineHasher(nlStringLowerHash("LEFT NAME")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("LEFT NAME")));
     pTeamName->m_LocStrId = GetLOCCharacterName(team, true, false);
     pTeamName->m_OverloadFlags |= 8;
 
@@ -613,10 +572,7 @@ void HUDOverlay::SceneCreated()
         presentation,
         InlineHasher(nlStringLowerHash(HUD_SLIDE_OUT_NAME)),
         InlineHasher(nlStringLowerHash(LAYER_NAME)),
-        InlineHasher(nlStringLowerHash("LEFT NAME")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("LEFT NAME")));
     pTeamName->m_LocStrId = GetLOCCharacterName(team, true, false);
     pTeamName->m_OverloadFlags |= 8;
 
@@ -626,10 +582,7 @@ void HUDOverlay::SceneCreated()
         presentation,
         InlineHasher(nlStringLowerHash(HUD_SLIDE_IN_NAME)),
         InlineHasher(nlStringLowerHash(LAYER_NAME)),
-        InlineHasher(nlStringLowerHash("RIGHT NAME")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("RIGHT NAME")));
     pTeamName->m_LocStrId = GetLOCCharacterName(team, true, false);
     pTeamName->m_OverloadFlags |= 8;
 
@@ -637,10 +590,7 @@ void HUDOverlay::SceneCreated()
         presentation,
         InlineHasher(nlStringLowerHash(HUD_SLIDE_OUT_NAME)),
         InlineHasher(nlStringLowerHash(LAYER_NAME)),
-        InlineHasher(nlStringLowerHash("RIGHT NAME")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("RIGHT NAME")));
     pTeamName->m_LocStrId = GetLOCCharacterName(team, true, false);
     pTeamName->m_OverloadFlags |= 8;
 
@@ -742,20 +692,12 @@ void HUDOverlay::LoadHUDTextures()
         m_pImagePowerUps[0][0][i] = FEFinder<TLImageInstance, 2>::Find<TLSlide>(
             pComp->GetActiveSlide(),
             InlineHasher(nlStringLowerHash(LEFT_POWER_UP_IMAGE_NAMES[i])),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
             InlineHasher(0));
 
         pComp = FIND_COMPONENT_PRESENTATION(presentation, RIGHT_POWER_UP_IMAGE_NAMES[i], HUD_SLIDE_IN_NAME);
         m_pImagePowerUps[0][1][i] = FEFinder<TLImageInstance, 2>::Find<TLSlide>(
             pComp->GetActiveSlide(),
             InlineHasher(nlStringLowerHash(RIGHT_POWER_UP_IMAGE_NAMES[i])),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
             InlineHasher(0));
 
         pComp = FIND_COMPONENT_PRESENTATION(presentation, LEFT_FLARE_IMAGE_NAMES[i], HUD_SLIDE_IN_NAME);
@@ -763,10 +705,6 @@ void HUDOverlay::LoadHUDTextures()
         m_pImageFlares[0][0][i] = FEFinder<TLImageInstance, 2>::Find<TLSlide>(
             pComp->GetActiveSlide(),
             InlineHasher(nlStringLowerHash(LEFT_FLARE_IMAGE_NAMES[i])),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
             InlineHasher(0));
         m_pImageFlares[0][0][i]->m_bVisible = false;
 
@@ -775,10 +713,6 @@ void HUDOverlay::LoadHUDTextures()
         m_pImageFlares[0][1][i] = FEFinder<TLImageInstance, 2>::Find<TLSlide>(
             pComp->GetActiveSlide(),
             InlineHasher(nlStringLowerHash(RIGHT_FLARE_IMAGE_NAMES[i])),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
             InlineHasher(0));
         m_pImageFlares[0][1][i]->m_bVisible = false;
 
@@ -933,19 +867,13 @@ void HUDOverlay::SetTeamIcons()
         m_pFEPresentation,
         InlineHasher(nlStringLowerHash(HUD_SLIDE_IN_NAME)),
         InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("CAPTAIN SYMBOL L")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("CAPTAIN SYMBOL L")));
 
     TLComponentInstance* pCompRight = FEFinder<TLComponentInstance, 4>::Find<FEPresentation>(
         m_pFEPresentation,
         InlineHasher(nlStringLowerHash(HUD_SLIDE_IN_NAME)),
         InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("CAPTAIN SYMBOL R")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("CAPTAIN SYMBOL R")));
 
     const char* filename = "art/fe/CaptainIconsUI.res";
 
@@ -958,10 +886,6 @@ void HUDOverlay::SetTeamIcons()
     mAsyncImage[0]->mImageInstance = FEFinder<TLImageInstance, 2>::Find<TLSlide>(
         pCompLeft->GetActiveSlide(),
         InlineHasher(nlStringLowerHash("CAPTAIN_ICONS_MARIO")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
         InlineHasher(0));
 
     pImage = (AsyncImage*)nlMalloc(sizeof(AsyncImage), 8, false);
@@ -973,10 +897,6 @@ void HUDOverlay::SetTeamIcons()
     mAsyncImage[1]->mImageInstance = FEFinder<TLImageInstance, 2>::Find<TLSlide>(
         pCompRight->GetActiveSlide(),
         InlineHasher(nlStringLowerHash("CAPTAIN_ICONS_DK_r")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
         InlineHasher(0));
 
     NLString iconfilename[2];

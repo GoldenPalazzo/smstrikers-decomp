@@ -191,11 +191,7 @@ void LessonSelectScene::SceneCreated()
         TLComponentInstance* compinstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
             presentation->m_currentSlide,
             InlineHasher(nlStringLowerHash("Layer")),
-            InlineHasher(nlStringLowerHash(menuname)),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0));
+            InlineHasher(nlStringLowerHash(menuname)));
 
         compinstance->SetActiveSlide(i == 0 ? DoubleHighlite::SLIDE_IN : DoubleHighlite::SLIDE_OUT);
 
@@ -294,28 +290,16 @@ void LessonSelectScene::SceneCreated()
     TLComponentInstance* tempComponent = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
         presentation->m_currentSlide,
         InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("ARROWS")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("ARROWS")));
 
     mUpArrow = FEFinder<TLImageInstance, 2>::Find<TLSlide>(
         tempComponent->GetActiveSlide(),
         InlineHasher(nlStringLowerHash("arrow")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
         InlineHasher(0));
 
     mDownArrow = FEFinder<TLImageInstance, 2>::Find<TLSlide>(
         tempComponent->GetActiveSlide(),
         InlineHasher(nlStringLowerHash("arrow2")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
         InlineHasher(0));
 
     if (sCurrentRow == 0)
@@ -337,11 +321,7 @@ void LessonSelectScene::SceneCreated()
     TLComponentInstance* buttonComponent = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
         presentation->m_currentSlide,
         InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("buttons")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("buttons")));
 
     mButtons.mButtonInstance = buttonComponent;
     mButtons.SetState(ButtonComponent::BS_A_AND_B);
@@ -693,11 +673,7 @@ void LessonSelectScene::UpdateRow(int onScreenRow, bool playsound)
     TLComponentInstance* pComp = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
         presentation->m_currentSlide,
         InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash(menuname)),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash(menuname)));
 
     pComp->SetActiveSlide("IN");
     TLSlide* slide = pComp->GetActiveSlide();
@@ -706,19 +682,11 @@ void LessonSelectScene::UpdateRow(int onScreenRow, bool playsound)
     TLTextInstance* pText1 = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
         pComp->GetActiveSlide(),
         InlineHasher(nlStringLowerHash("Text")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
         InlineHasher(0));
 
     TLTextInstance* pNameText1 = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
         pComp->GetActiveSlide(),
         InlineHasher(nlStringLowerHash("pauseresume")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
         InlineHasher(0));
 
     pComp->SetActiveSlide("OUT");
@@ -728,19 +696,11 @@ void LessonSelectScene::UpdateRow(int onScreenRow, bool playsound)
     TLTextInstance* pText2 = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
         pComp->GetActiveSlide(),
         InlineHasher(nlStringLowerHash("Text")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
         InlineHasher(0));
 
     TLTextInstance* pNameText2 = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
         pComp->GetActiveSlide(),
         InlineHasher(nlStringLowerHash("pauseresume")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
         InlineHasher(0));
 
     if (onScreenRow == sCurrentRow - sRowOffset)

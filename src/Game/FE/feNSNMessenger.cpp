@@ -248,9 +248,7 @@ void NSNMessengerScene::SetDisplayMessage(const BasicString<unsigned short, Deta
         InlineHasher(nlStringLowerHash("Normal")),
         InlineHasher(nlStringLowerHash("Layer")),
         InlineHasher(nlStringLowerHash("Group")),
-        InlineHasher(nlStringLowerHash("Text")),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("Text")));
     textBox->SetString(m_displayMessage);
 
     {

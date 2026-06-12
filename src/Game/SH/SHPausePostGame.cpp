@@ -202,11 +202,7 @@ void PausePostGameScene::SceneCreated()
     TLComponentInstance* pButtonComp = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
         m_pFEPresentation->m_currentSlide,
         InlineHasher(nlStringLowerHash("buttons")),
-        InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("Layer")));
     mButtons.mButtonInstance = pButtonComp;
     mButtons.SetState(ButtonComponent::BS_A_AND_B);
 
@@ -218,11 +214,7 @@ void PausePostGameScene::SceneCreated()
         TLComponentInstance* instance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
             m_pFEPresentation->m_currentSlide,
             InlineHasher(nlStringLowerHash("Layer")),
-            InlineHasher(nlStringLowerHash(menuname)),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0));
+            InlineHasher(nlStringLowerHash(menuname)));
 
         instance->SetActiveSlide((i == 0) ? DoubleHighlite::SLIDE_IN : DoubleHighlite::SLIDE_OUT);
 
@@ -275,19 +267,11 @@ void PausePostGameScene::SceneCreated()
         TLComponentInstance* instance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
             m_pFEPresentation->m_currentSlide,
             InlineHasher(nlStringLowerHash("Layer")),
-            InlineHasher(nlStringLowerHash(compname)),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0));
+            InlineHasher(nlStringLowerHash(compname)));
 
         TLTextInstance* text = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
             instance->GetActiveSlide(),
             InlineHasher(nlStringLowerHash("TEAM")),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
             InlineHasher(0));
 
         text->m_LocStrId = GetLOCTeamName(nlSingleton<GameInfoManager>::s_pInstance->GetTeam((short)i));
@@ -296,10 +280,6 @@ void PausePostGameScene::SceneCreated()
         text = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
             instance->GetActiveSlide(),
             InlineHasher(nlStringLowerHash("LINE_0")),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
             InlineHasher(0));
 
         int numWins = nlSingleton<StatsTracker>::s_pInstance->mNumGamesWon[i];
@@ -319,11 +299,7 @@ void PausePostGameScene::SceneCreated()
     TLTextInstance* message = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
         m_pFEPresentation->m_currentSlide,
         InlineHasher(nlStringLowerHash("MESSAGE 1")),
-        InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("Layer")));
 
     BasicGameInfo* game = nlSingleton<GameInfoManager>::s_pInstance->mGameInfo[nlSingleton<GameInfoManager>::s_pInstance->mCurrentMode];
 

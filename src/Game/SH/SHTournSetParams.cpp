@@ -167,11 +167,7 @@ void TournSetParamsScene::SceneCreated()
         TLComponentInstance* instance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
             presentation->m_currentSlide,
             InlineHasher(nlStringLowerHash("Layer")),
-            InlineHasher(nlStringLowerHash(menuname)),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0));
+            InlineHasher(nlStringLowerHash(menuname)));
 
         MenuItem<TLComponentInstance>* menuItem = &mMenuItems.mMenuItems[mMenuItems.mNumItemsAdded];
         menuItem->mType = instance;
@@ -206,21 +202,13 @@ void TournSetParamsScene::SceneCreated()
     TLComponentInstance* instance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
         currentSlide,
         InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("CHOICES")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("CHOICES")));
     BuildSubMenuList(0, instance, true, 0);
 
     instance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
         currentSlide,
         InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("numbers")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("numbers")));
     BuildSubMenuList(1, instance, true, 0);
 
     mSlideMenuLists[1]->mFlags = 3;
@@ -228,11 +216,7 @@ void TournSetParamsScene::SceneCreated()
     instance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
         currentSlide,
         InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("numbers2")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("numbers2")));
     BuildSubMenuList(2, instance, true, 0);
 
     SlideMenuList* slideMenuList = mSlideMenuLists[mMenuItems.mCurrentIndex];
@@ -282,11 +266,7 @@ void TournSetParamsScene::SceneCreated()
     TLComponentInstance* buttonComponent = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
         presentation->m_currentSlide,
         InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("buttons")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("buttons")));
     mButtons.mButtonInstance = buttonComponent;
     mButtons.SetState(ButtonComponent::BS_A_AND_B);
 }

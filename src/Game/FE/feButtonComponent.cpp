@@ -88,11 +88,7 @@ void ButtonComponent::CentreButtons()
         TLImageInstance* pImage = FEFinder<TLImageInstance, 2>::Find<TLSlide>(
             pComponent->GetActiveSlide(),
             InlineHasher(nlStringLowerHash("Group")),
-            InlineHasher(nlStringLowerHash("darkblue_frame2")),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0));
+            InlineHasher(nlStringLowerHash("darkblue_frame2")));
 
         if (pImage != 0)
         {
@@ -102,11 +98,7 @@ void ButtonComponent::CentreButtons()
         pImage = FEFinder<TLImageInstance, 2>::Find<TLSlide>(
             pComponent->GetActiveSlide(),
             InlineHasher(nlStringLowerHash("Group")),
-            InlineHasher(nlStringLowerHash("darkblue_frame")),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0));
+            InlineHasher(nlStringLowerHash("darkblue_frame")));
 
         if (pImage != 0)
         {
@@ -319,5 +311,5 @@ ButtonComponent::ButtonComponent()
 void feButtonComponent_stub()
 {
     nlStrLen<unsigned short>((const unsigned short*)0);
-    FEFinder<TLTextInstance, 3>::Find<TLSlide>((TLSlide*)0, InlineHasher(0), InlineHasher(0), InlineHasher(0), InlineHasher(0), InlineHasher(0), InlineHasher(0));
+    FEFinder<TLTextInstance, 3>::Find<TLSlide>((TLSlide*)0, InlineHasher(0), InlineHasher(0));
 }
