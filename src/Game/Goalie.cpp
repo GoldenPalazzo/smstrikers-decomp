@@ -2927,11 +2927,7 @@ bool Goalie::CheckForSTSAttack()
 
 /**
  * Offset/Address/Size: 0x659C | 0x80049098 | size: 0x43C
- * TODO: 99.65% match - register allocation diffs: 8 FPR in pass-target
- * distance math and 6 FPR in inner ballPosX/fabs block.
  */
-extern float GonnaGetBall(cTeam*);
-
 bool Goalie::IsLooseBallClose(float fDistFromBox)
 {
     bool bBallIsLoose = true;
@@ -3005,8 +3001,8 @@ bool Goalie::IsLooseBallClose(float fDistFromBox)
             return false;
         }
         {
+            float ballAbsXNew = (float)fabs(pBall->m_v3Position.f.x);
             float ballPosX = pBall->m_v3Position.f.x;
-            float ballAbsXNew = (float)fabs(ballPosX);
             bool innerCheck;
             do
             {
