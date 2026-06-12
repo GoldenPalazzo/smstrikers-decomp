@@ -10,63 +10,6 @@
 #include "Game/SH/SHMainMenu.h"
 #include "Game/main.h"
 
-// /**
-//  * Offset/Address/Size: 0x2D4 | 0x800AD39C | size: 0x15C
-//  */
-// void FEFinder<TLComponentInstance, 4>::_Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long,
-//                                                          unsigned long, unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x250 | 0x800AD318 | size: 0x84
-//  */
-// void FEFinder<TLComponentInstance, 4>::_Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned
-// long,
-//                                                       unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x218 | 0x800AD2E0 | size: 0x38
-//  */
-// void FEFinder<TLComponentInstance, 4>::Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher,
-//                                                      InlineHasher)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0xBC | 0x800AD184 | size: 0x15C
-//  */
-// void FEFinder<TLTextInstance, 3>::_Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned
-// long,
-//                                                     unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x38 | 0x800AD100 | size: 0x84
-//  */
-// void FEFinder<TLTextInstance, 3>::_Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long,
-//                                                  unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800AD0C8 | size: 0x38
-//  */
-// void FEFinder<TLTextInstance, 3>::Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher,
-//                                                 InlineHasher)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800AD05C | size: 0x6C
-//  */
-// void 0x800AD0C8..0x800AD4F8 | size : 0x430
-// {
-// }
-
 /**
  * Offset/Address/Size: 0x9F8 | 0x800ACFB4 | size: 0xA8
  */
@@ -80,7 +23,7 @@ void StartMovieCB()
         sceneCount = GameSceneManager::Instance()->mCurrentStackDepth;
         if (sceneCount != 0)
         {
-            handler = GameSceneManager::Instance()->mBaseSceneHandlerStack[sceneCount];
+            handler = GameSceneManager::Instance()->mBaseSceneHandlerStack[sceneCount - 1];
         }
         else
         {
@@ -172,7 +115,7 @@ void TitleScene::SceneCreated()
     h5.m_Hash = 0;
     h6.m_Hash = 0;
     h7.m_Hash = 0;
-    u32 hash = nlStringLowerHash("title_screen_fe");
+    u32 hash = nlStringLowerHash("Component2");
     h8.m_Hash = hash;
     h9.m_Hash = hash;
     hash = nlStringLowerHash("Layer2");
@@ -254,9 +197,9 @@ void TitleScene::Update(float dt)
                 eSidekickID homeSidekick;
                 eTeamID awayTeam;
                 eTeamID homeTeam;
-                GameInfoManager* gim = nlSingleton<GameInfoManager>::s_pInstance;
+                GameInfoManager* gim;
 
-                gim->SetMode(GameInfoManager::GM_DEMO);
+                (gim = nlSingleton<GameInfoManager>::s_pInstance)->SetMode(GameInfoManager::GM_DEMO);
 
                 homeTeam = (eTeamID)nlRandom(8, &nlDefaultSeed);
                 awayTeam = homeTeam;
@@ -293,7 +236,7 @@ void TitleScene::Update(float dt)
 
                 homeSidekick = (eSidekickID)nlRandom(4, &nlDefaultSeed);
                 awaySidekick = homeSidekick;
-                while (homeSidekick == awaySidekick)
+                while (awaySidekick == homeSidekick)
                 {
                     awaySidekick = (eSidekickID)nlRandom(4, &nlDefaultSeed);
                 }
@@ -349,7 +292,7 @@ void TitleScene::Update(float dt)
 void TitleScene::StartIntroMovie()
 {
     AudioStreamTrack::TrackManagerBase* trackMgr = g_pTrackManager;
-    AudioStreamTrack::StreamTrack* track = trackMgr->GetTrack(nlStringLowerHash("music"));
+    AudioStreamTrack::StreamTrack* track = trackMgr->GetTrack(nlStringLowerHash("FE"));
 
     if (track != NULL)
     {

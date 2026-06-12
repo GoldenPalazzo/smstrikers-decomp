@@ -15,9 +15,9 @@ typedef Detail::MemFunImpl<void, void (SpoilsScene::*)(SpoilsScene::eSpoils)> Me
 typedef BindExp2<void, MemFunImpl_Spoils_t, SpoilsScene*, SpoilsScene::eSpoils> BindExp2_Spoils_t;
 typedef Function1<void, TLComponentInstance*>::FunctorImpl<BindExp2_Spoils_t> FunctorImpl_Spoils_t;
 
-#define F1BODY_RET void
+#define F1BODY_RET   void
 #define F1BODY_PARAM TLComponentInstance*
-#define F1BODY_BIND BindExp2_Spoils_t
+#define F1BODY_BIND  BindExp2_Spoils_t
 #include "NL/nlFunction1Body.h"
 #include "NL/nlMemFunBody.h"
 #include "NL/nlBindBody.h"
@@ -35,97 +35,6 @@ typedef TLInstance* (*FindInstByRef)(TLSlide*, InlineHasher&, InlineHasher&, Inl
 
 typedef TLComponentInstance* (*FindCompByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
 typedef TLComponentInstance* (*FindCompByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800D1FBC | size: 0x40
-//  */
-// void Bind<void, Detail::MemFunImpl<void, void (SpoilsScene::*)(SpoilsScene::eSpoils)>, SpoilsScene*, SpoilsScene::eSpoils>(
-//     Detail::MemFunImpl<void, void (SpoilsScene::*)(SpoilsScene::eSpoils)>, SpoilsScene* const&, const SpoilsScene::eSpoils&)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800D1FA0 | size: 0x1C
-//  */
-// void MemFun<SpoilsScene, void, SpoilsScene::eSpoils>(void (SpoilsScene::*)(SpoilsScene::eSpoils))
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800D1F44 | size: 0x5C
-//  */
-// void
-//     Function1<void, TLComponentInstance*>::FunctorImpl<BindExp2<void, Detail::MemFunImpl<void, void
-//     (SpoilsScene::*)(SpoilsScene::eSpoils)>,
-//                                                                 SpoilsScene*, SpoilsScene::eSpoils>>::~FunctorImpl()
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x80 | 0x800D1F10 | size: 0x34
-//  */
-// void Function1<void,
-//                TLComponentInstance*>::FunctorImpl<BindExp2<void, Detail::MemFunImpl<void, void (SpoilsScene::*)(SpoilsScene::eSpoils)>,
-//                                                            SpoilsScene*, SpoilsScene::eSpoils>>::operator()(TLComponentInstance*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800D1E90 | size: 0x80
-//  */
-// void Function1<void, TLComponentInstance*>::FunctorImpl<
-//     BindExp2<void, Detail::MemFunImpl<void, void (SpoilsScene::*)(SpoilsScene::eSpoils)>, SpoilsScene*, SpoilsScene::eSpoils>>::Clone()
-//     const
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x2D4 | 0x800D1D34 | size: 0x15C
-//  */
-// void FEFinder<TLInstance, 4>::_Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long,
-//                                                 unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x250 | 0x800D1CB0 | size: 0x84
-//  */
-// void FEFinder<TLInstance, 4>::_Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long,
-//                                              unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x218 | 0x800D1C78 | size: 0x38
-//  */
-// void FEFinder<TLInstance, 4>::Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0xBC | 0x800D1B1C | size: 0x15C
-//  */
-// void FEFinder<TLComponentInstance, 4>::_Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long,
-//                                                          unsigned long, unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x38 | 0x800D1A98 | size: 0x84
-//  */
-// void FEFinder<TLComponentInstance, 4>::_Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned
-// long,
-//                                                       unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800D1A60 | size: 0x38
-//  */
-// void FEFinder<TLComponentInstance, 4>::Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher,
-//                                                      InlineHasher)
-// {
-// }
 
 /**
  * Offset/Address/Size: 0xACC | 0x800D19BC | size: 0xA4

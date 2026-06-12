@@ -22,15 +22,15 @@ struct InlineHasher
     }
 }; // total size: 0x4
 
-static TLSlide* FEGetChildren(FEPresentation* p)
+static inline TLSlide* FEGetChildren(FEPresentation* p)
 {
     return p->m_slides;
 }
-static TLInstance* FEGetChildren(TLSlide* p)
+static inline TLInstance* FEGetChildren(TLSlide* p)
 {
     return p->m_instances;
 }
-static TLInstance* FEGetChildren(TLInstance* p)
+static inline TLInstance* FEGetChildren(TLInstance* p)
 {
     return p->pChildren;
 }

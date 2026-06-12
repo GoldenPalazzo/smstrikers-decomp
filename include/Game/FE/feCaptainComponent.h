@@ -75,7 +75,12 @@ public:
     void PushPlayerWithGameInfoDB();
     void MoveHighlightToCurrentCaptain(int);
     void SetupNameComponentToCurrentCaptain(int);
-    void SetPhaseReady(int);
+
+    void SetPhaseReady(int homeaway)
+    {
+        FORCE_DONT_INLINE;
+        mComponentState[homeaway].SetCurrentPhase(ComponentState::PHASE_READY);
+    }
 
     inline bool IsPlayerPushed(const int pad)
     {

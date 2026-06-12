@@ -39,7 +39,12 @@ class FEResourceManager : public nlTask, public nlSingleton<FEResourceManager>
 public:
     FEResourceManager();
     ~FEResourceManager();
-    virtual void Run(float);
+
+    void Run(float dt)
+    {
+        Update(dt);
+    }
+
     virtual const char* GetName() { return "FEResource Manager"; };
 
     void Cleanup();
