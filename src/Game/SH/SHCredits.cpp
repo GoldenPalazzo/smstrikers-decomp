@@ -281,11 +281,37 @@ void CreditScene::UpdateForCopyrightMessage(float dt)
     }
 }
 
+static inline void CopyCreditLine(CreditScene& scene, s32 i, const char* pToken)
+{
+    if (pToken[0] == '+')
+    {
+        const unsigned char* pSrc;
+        u32 count;
+        count = 64;
+        pSrc = (const unsigned char*)" ";
+        s32 k = 0;
+        while (count-- && (scene.mStrings[i][k] = *pSrc) != 0)
+        {
+            ++pSrc;
+            ++k;
+        }
+        scene.mStrings[i][63] = 0;
+    }
+    else
+    {
+        const unsigned char* pSrc = (const unsigned char*)pToken;
+        u32 count = 64;
+        s32 ch = 0;
+        while (count-- && (scene.mStrings[i][ch] = pSrc[ch]) != 0)
+        {
+            ch++;
+        }
+        scene.mStrings[i][63] = 0;
+    }
+}
+
 /**
  * Offset/Address/Size: 0x1BC | 0x8010F318 | size: 0x398
- * TODO: 99.59% match - register permutation in the two string-copy loops:
- * dst cursor gets r3/r4 (first) instead of r5/r6 (last); count/src/index
- * shift accordingly. Instruction sequence is otherwise identical.
  */
 void CreditScene::UpdateForCredits(float dt)
 {
@@ -304,29 +330,7 @@ void CreditScene::UpdateForCredits(float dt)
 
             if (pToken != NULL)
             {
-                if (pToken[0] == '+')
-                {
-                    u32 count = 64;
-                    const unsigned char* pSrc = (const unsigned char*)" ";
-                    s32 k = 0;
-                    while (count-- && (mStrings[i][k] = *pSrc) != 0)
-                    {
-                        ++pSrc;
-                        ++k;
-                    }
-                    mStrings[i][63] = 0;
-                }
-                else
-                {
-                    const unsigned char* pSrc = (const unsigned char*)pToken;
-                    u32 count = 64;
-                    s32 ch = 0;
-                    while (count-- && (mStrings[i][ch] = pSrc[ch]) != 0)
-                    {
-                        ch++;
-                    }
-                    mStrings[i][63] = 0;
-                }
+                CopyCreditLine(*this, i, pToken);
 
                 mCreditParser.mParser.AdvanceLine();
                 hasToken = true;

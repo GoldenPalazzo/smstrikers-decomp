@@ -1192,6 +1192,35 @@ unsigned long FormatCallbacks::FormatDoneCB(unsigned long channel, long result, 
     return (-result | result) >> 31;
 }
 
+static inline int BuildDefaultIconHeaderSize(MemCard::ICON_CONFIG& IconCfg)
+{
+    IconCfg.BannerFormat = 0;
+    IconCfg.IconCount = 0;
+    IconCfg.IconFormat = 0;
+    IconCfg.IconAnimType = 0;
+    memset(IconCfg.IconSpeeds, 0, 8);
+    memset(&IconCfg, 0, sizeof(MemCard::ICON_CONFIG));
+
+    int iconFormat = 2;
+    int iconCount = 1;
+    int negOne = -1;
+    int speed = 3;
+
+    IconCfg.IconCount = iconCount;
+    negOne = ~(iconCount | negOne);
+    int clutSize = 0x200;
+    int iconDataSize = iconCount * (iconFormat << 10);
+    IconCfg.IconFormat = iconFormat;
+    IconCfg.IconSpeeds[0] = speed;
+    int bannerClut = (negOne >> 31) & clutSize;
+    int bannerSize = iconFormat * 0xC00;
+    int iconClut = (negOne >> 31) & clutSize;
+    IconCfg.BannerFormat = iconFormat;
+    int total = bannerClut + bannerSize + iconDataSize + iconClut;
+
+    return (int)(IconCfg.HeaderSize = total + 0x40);
+}
+
 /**
  * Offset/Address/Size: 0x11DC | 0x8018AB38 | size: 0xC7C
  */
@@ -1216,54 +1245,22 @@ unsigned long SaveCallbacks::CardMountCB(unsigned long Slot, long Result, void* 
         if (errorCode == -4)
         {
             MemCard* card2 = g_MemCards[Slot];
-            long dataSize = nlSingleton<GameInfoManager>::s_pInstance->GetMemoryCardDataSize();
+            unsigned long dataSize = nlSingleton<GameInfoManager>::s_pInstance->GetMemoryCardDataSize();
             int numBlocks = 0;
             int origSize = (dataSize += 12);
-            dataSize = (u32)(dataSize + 0x1FFF) >> 13;
+            dataSize = (dataSize + 0x1FFF) >> 13;
             if (origSize > 0)
             {
-                while (dataSize > 0)
-                {
+                for (; dataSize > 0; dataSize--)
                     numBlocks++;
-                    dataSize--;
-                }
             }
             MemCard::ICON_CONFIG IconCfg;
-            IconCfg.BannerFormat = 0;
-            IconCfg.IconCount = 0;
-            IconCfg.IconFormat = 0;
-            IconCfg.IconAnimType = 0;
-            memset(IconCfg.IconSpeeds, 0, 8);
-            memset(&IconCfg, 0, sizeof(MemCard::ICON_CONFIG));
-            int negOne = -1;
-            int iconFormat = 2;
-            int iconCount = 1;
-            int speed = 3;
-            int iconPixelSize = iconFormat << 10;
-            IconCfg.IconCount = iconCount;
-            negOne = ~(iconCount | negOne);
-            int clutSize = 0x200;
-            int iconDataSize = iconCount * iconPixelSize;
-            IconCfg.IconFormat = iconFormat;
-            int bannerClutMask = negOne >> 31;
-            int iconClutMask = negOne >> 31;
-            IconCfg.IconSpeeds[0] = speed;
-            int bannerClutResult = clutSize & bannerClutMask;
-            int bannerDataSize = iconFormat * 0xC00;
-            int iconClutResult = clutSize & iconClutMask;
-            IconCfg.BannerFormat = iconFormat;
-            int total = bannerClutResult + bannerDataSize;
-            total += iconDataSize;
-            total += iconClutResult;
-            origSize = (int)(IconCfg.HeaderSize = total + 0x40);
+            origSize = BuildDefaultIconHeaderSize(IconCfg);
             dataSize = (u32)(origSize + 0x1FFF) >> 13;
             if (origSize > 0)
             {
-                while (dataSize > 0)
-                {
+                for (; dataSize > 0; dataSize--)
                     numBlocks++;
-                    dataSize--;
-                }
             }
             unsigned long sectorSize = card2->m_CardInfo.SectorSize;
             unsigned long bytestosave = numBlocks * sectorSize;
@@ -1307,54 +1304,22 @@ unsigned long SaveCallbacks::CardMountCB(unsigned long Slot, long Result, void* 
             if (errorCode == -4)
             {
                 MemCard* card2 = g_MemCards[Slot];
-                long ds = nlSingleton<GameInfoManager>::s_pInstance->GetMemoryCardDataSize();
+                unsigned long ds = nlSingleton<GameInfoManager>::s_pInstance->GetMemoryCardDataSize();
                 int numBlocks = 0;
                 int origSize = (ds += 12);
-                ds = (u32)(ds + 0x1FFF) >> 13;
+                ds = (ds + 0x1FFF) >> 13;
                 if (origSize > 0)
                 {
-                    while (ds > 0)
-                    {
+                    for (; ds > 0; ds--)
                         numBlocks++;
-                        ds--;
-                    }
                 }
                 MemCard::ICON_CONFIG IconCfg;
-                IconCfg.BannerFormat = 0;
-                IconCfg.IconCount = 0;
-                IconCfg.IconFormat = 0;
-                IconCfg.IconAnimType = 0;
-                memset(IconCfg.IconSpeeds, 0, 8);
-                memset(&IconCfg, 0, sizeof(MemCard::ICON_CONFIG));
-                int negOne = -1;
-                int iconFormat = 2;
-                int iconCount = 1;
-                int speed = 3;
-                int iconPixelSize = iconFormat << 10;
-                IconCfg.IconCount = iconCount;
-                negOne = ~(iconCount | negOne);
-                int clutSize = 0x200;
-                int iconDataSize2 = iconCount * iconPixelSize;
-                IconCfg.IconFormat = iconFormat;
-                int bannerClutMask = negOne >> 31;
-                int iconClutMask = negOne >> 31;
-                IconCfg.IconSpeeds[0] = speed;
-                int bannerClutResult = clutSize & bannerClutMask;
-                int bannerDataSize = iconFormat * 0xC00;
-                int iconClutResult = clutSize & iconClutMask;
-                IconCfg.BannerFormat = iconFormat;
-                int total = bannerClutResult + bannerDataSize;
-                total += iconDataSize2;
-                total += iconClutResult;
-                origSize = (int)(IconCfg.HeaderSize = total + 0x40);
+                origSize = BuildDefaultIconHeaderSize(IconCfg);
                 ds = (u32)(origSize + 0x1FFF) >> 13;
                 if (origSize > 0)
                 {
-                    while (ds > 0)
-                    {
+                    for (; ds > 0; ds--)
                         numBlocks++;
-                        ds--;
-                    }
                 }
                 unsigned long sectorSize = card2->m_CardInfo.SectorSize;
                 unsigned long bytestosave = numBlocks * sectorSize;
@@ -1449,54 +1414,22 @@ unsigned long SaveCallbacks::CardMountCB(unsigned long Slot, long Result, void* 
         if (errorCode == -4)
         {
             MemCard* card4 = g_MemCards[Slot];
-            long ds2 = nlSingleton<GameInfoManager>::s_pInstance->GetMemoryCardDataSize();
+            unsigned long ds2 = nlSingleton<GameInfoManager>::s_pInstance->GetMemoryCardDataSize();
             int numBlocks2 = 0;
             int origSize2 = (ds2 += 12);
-            ds2 = (u32)(ds2 + 0x1FFF) >> 13;
+            ds2 = (ds2 + 0x1FFF) >> 13;
             if (origSize2 > 0)
             {
-                while (ds2 > 0)
-                {
+                for (; ds2 > 0; ds2--)
                     numBlocks2++;
-                    ds2--;
-                }
             }
             MemCard::ICON_CONFIG IconCfg2;
-            IconCfg2.BannerFormat = 0;
-            IconCfg2.IconCount = 0;
-            IconCfg2.IconFormat = 0;
-            IconCfg2.IconAnimType = 0;
-            memset(IconCfg2.IconSpeeds, 0, 8);
-            memset(&IconCfg2, 0, sizeof(MemCard::ICON_CONFIG));
-            int negOne2 = -1;
-            int iconFormat2 = 2;
-            int iconCount3 = 1;
-            int speed2 = 3;
-            int iconPixelSize2 = iconFormat2 << 10;
-            IconCfg2.IconCount = iconCount3;
-            negOne2 = ~(iconCount3 | negOne2);
-            int clutSize2 = 0x200;
-            int iconDataSize3 = iconCount3 * iconPixelSize2;
-            IconCfg2.IconFormat = iconFormat2;
-            int bannerClutMask2 = negOne2 >> 31;
-            int iconClutMask2 = negOne2 >> 31;
-            IconCfg2.IconSpeeds[0] = speed2;
-            int bannerClutResult2 = clutSize2 & bannerClutMask2;
-            int bannerDataSize2 = iconFormat2 * 0xC00;
-            int iconClutResult2 = clutSize2 & iconClutMask2;
-            IconCfg2.BannerFormat = iconFormat2;
-            int total2 = bannerClutResult2 + bannerDataSize2;
-            total2 += iconDataSize3;
-            total2 += iconClutResult2;
-            origSize2 = (int)(IconCfg2.HeaderSize = total2 + 0x40);
+            origSize2 = BuildDefaultIconHeaderSize(IconCfg2);
             ds2 = (u32)(origSize2 + 0x1FFF) >> 13;
             if (origSize2 > 0)
             {
-                while (ds2 > 0)
-                {
+                for (; ds2 > 0; ds2--)
                     numBlocks2++;
-                    ds2--;
-                }
             }
             unsigned long sectorSize2 = card4->m_CardInfo.SectorSize;
             unsigned long bytestosave2 = numBlocks2 * sectorSize2;
@@ -1553,54 +1486,22 @@ unsigned long SaveCallbacks::CardMountCB(unsigned long Slot, long Result, void* 
         if (errorCode == -4)
         {
             MemCard* card6 = g_MemCards[Slot];
-            long ds3 = nlSingleton<GameInfoManager>::s_pInstance->GetMemoryCardDataSize();
+            unsigned long ds3 = nlSingleton<GameInfoManager>::s_pInstance->GetMemoryCardDataSize();
             int numBlocks3 = 0;
             int origSize3 = (ds3 += 12);
-            ds3 = (u32)(ds3 + 0x1FFF) >> 13;
+            ds3 = (ds3 + 0x1FFF) >> 13;
             if (origSize3 > 0)
             {
-                while (ds3 > 0)
-                {
+                for (; ds3 > 0; ds3--)
                     numBlocks3++;
-                    ds3--;
-                }
             }
             MemCard::ICON_CONFIG IconCfg3;
-            IconCfg3.BannerFormat = 0;
-            IconCfg3.IconCount = 0;
-            IconCfg3.IconFormat = 0;
-            IconCfg3.IconAnimType = 0;
-            memset(IconCfg3.IconSpeeds, 0, 8);
-            memset(&IconCfg3, 0, sizeof(MemCard::ICON_CONFIG));
-            int negOne3 = -1;
-            int iconFormat3 = 2;
-            int iconCount4 = 1;
-            int speed3 = 3;
-            int iconPixelSize3 = iconFormat3 << 10;
-            IconCfg3.IconCount = iconCount4;
-            negOne3 = ~(iconCount4 | negOne3);
-            int clutSize3 = 0x200;
-            int iconDataSize4 = iconCount4 * iconPixelSize3;
-            IconCfg3.IconFormat = iconFormat3;
-            int bannerClutMask3 = negOne3 >> 31;
-            int iconClutMask3 = negOne3 >> 31;
-            IconCfg3.IconSpeeds[0] = speed3;
-            int bannerClutResult3 = clutSize3 & bannerClutMask3;
-            int bannerDataSize3 = iconFormat3 * 0xC00;
-            int iconClutResult3 = clutSize3 & iconClutMask3;
-            IconCfg3.BannerFormat = iconFormat3;
-            int total3 = bannerClutResult3 + bannerDataSize3;
-            total3 += iconDataSize4;
-            total3 += iconClutResult3;
-            origSize3 = (int)(IconCfg3.HeaderSize = total3 + 0x40);
+            origSize3 = BuildDefaultIconHeaderSize(IconCfg3);
             ds3 = (u32)(origSize3 + 0x1FFF) >> 13;
             if (origSize3 > 0)
             {
-                while (ds3 > 0)
-                {
+                for (; ds3 > 0; ds3--)
                     numBlocks3++;
-                    ds3--;
-                }
             }
             unsigned long sectorSize3 = card6->m_CardInfo.SectorSize;
             unsigned long bytestosave3 = numBlocks3 * sectorSize3;
@@ -1637,54 +1538,22 @@ unsigned long SaveCallbacks::CardMountCB(unsigned long Slot, long Result, void* 
         if (errorCode == -4)
         {
             MemCard* card8 = g_MemCards[Slot];
-            long ds4 = nlSingleton<GameInfoManager>::s_pInstance->GetMemoryCardDataSize();
+            unsigned long ds4 = nlSingleton<GameInfoManager>::s_pInstance->GetMemoryCardDataSize();
             int numBlocks4 = 0;
             int origSize4 = (ds4 += 12);
-            ds4 = (u32)(ds4 + 0x1FFF) >> 13;
+            ds4 = (ds4 + 0x1FFF) >> 13;
             if (origSize4 > 0)
             {
-                while (ds4 > 0)
-                {
+                for (; ds4 > 0; ds4--)
                     numBlocks4++;
-                    ds4--;
-                }
             }
             MemCard::ICON_CONFIG IconCfg4;
-            IconCfg4.BannerFormat = 0;
-            IconCfg4.IconCount = 0;
-            IconCfg4.IconFormat = 0;
-            IconCfg4.IconAnimType = 0;
-            memset(IconCfg4.IconSpeeds, 0, 8);
-            memset(&IconCfg4, 0, sizeof(MemCard::ICON_CONFIG));
-            int negOne4 = -1;
-            int iconFormat4 = 2;
-            int iconCount5 = 1;
-            int speed4 = 3;
-            int iconPixelSize4 = iconFormat4 << 10;
-            IconCfg4.IconCount = iconCount5;
-            negOne4 = ~(iconCount5 | negOne4);
-            int clutSize4 = 0x200;
-            int iconDataSize5 = iconCount5 * iconPixelSize4;
-            IconCfg4.IconFormat = iconFormat4;
-            int bannerClutMask4 = negOne4 >> 31;
-            int iconClutMask4 = negOne4 >> 31;
-            IconCfg4.IconSpeeds[0] = speed4;
-            int bannerClutResult4 = clutSize4 & bannerClutMask4;
-            int bannerDataSize4 = iconFormat4 * 0xC00;
-            int iconClutResult4 = clutSize4 & iconClutMask4;
-            IconCfg4.BannerFormat = iconFormat4;
-            int total4 = bannerClutResult4 + bannerDataSize4;
-            total4 += iconDataSize5;
-            total4 += iconClutResult4;
-            origSize4 = (int)(IconCfg4.HeaderSize = total4 + 0x40);
+            origSize4 = BuildDefaultIconHeaderSize(IconCfg4);
             ds4 = (u32)(origSize4 + 0x1FFF) >> 13;
             if (origSize4 > 0)
             {
-                while (ds4 > 0)
-                {
+                for (; ds4 > 0; ds4--)
                     numBlocks4++;
-                    ds4--;
-                }
             }
             unsigned long sectorSize4 = card8->m_CardInfo.SectorSize;
             unsigned long bytestosave4 = numBlocks4 * sectorSize4;
@@ -2254,35 +2123,6 @@ long SaveLoad::StartMemoryCardIDCheck(int slot, void (*callback)(long))
  * TODO: 83.51% match - extra cmpwi/ble loop-guard checks in both block-counting
  * loops; CSE merges two srawi into one; mullw scheduled eagerly in inline.
  */
-static inline int BuildDefaultIconHeaderSize(MemCard::ICON_CONFIG& IconCfg)
-{
-    IconCfg.BannerFormat = 0;
-    IconCfg.IconCount = 0;
-    IconCfg.IconFormat = 0;
-    IconCfg.IconAnimType = 0;
-    memset(IconCfg.IconSpeeds, 0, 8);
-    memset(&IconCfg, 0, sizeof(MemCard::ICON_CONFIG));
-
-    int iconFormat = 2;
-    int iconCount = 1;
-    int negOne = -1;
-    int speed = 3;
-
-    IconCfg.IconCount = iconCount;
-    negOne = ~(iconCount | negOne);
-    int clutSize = 0x200;
-    int iconDataSize = iconCount * (iconFormat << 10);
-    IconCfg.IconFormat = iconFormat;
-    IconCfg.IconSpeeds[0] = speed;
-    int bannerClut = (negOne >> 31) & clutSize;
-    int bannerSize = iconFormat * 0xC00;
-    int iconClut = (negOne >> 31) & clutSize;
-    IconCfg.BannerFormat = iconFormat;
-    int total = bannerClut + bannerSize + iconDataSize + iconClut;
-
-    return (int)(IconCfg.HeaderSize = total + 0x40);
-}
-
 #pragma push
 #pragma opt_propagation off
 int SaveLoad::GetSaveBlockSize(int)
