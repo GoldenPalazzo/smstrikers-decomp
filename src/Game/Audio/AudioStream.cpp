@@ -115,19 +115,25 @@ PriorityStream::PriorityStream(AudioStreamTrack::StreamTrack& track)
     SetIdleCallback(&trackRef, f0);
 }
 
-// /**
-//  * Offset/Address/Size: 0xE4 | 0x8014BFB8 | size: 0x30
-//  */
-// void Function0<void>::FunctorImpl<BindExp1<void, Detail::MemFunImpl<void, void (PriorityStream::*)()>, PriorityStream*> >::operator()()
-// {
-// }
+/**
+ * Offset/Address/Size: 0xE4 | 0x8014BFB8 | size: 0x30
+ */
+template <>
+void Function0<void>::FunctorImpl<BindExp1<void, Detail::MemFunImpl<void, void (PriorityStream::*)()>, PriorityStream*> >::operator()()
+{
+    (mBind.mArg->*mBind.mFuncPtr.mMemFun)();
+}
 
-// /**
-//  * Offset/Address/Size: 0x6C | 0x8014BF40 | size: 0x78
-//  */
-// void Function0<void>::FunctorImpl<BindExp1<void, Detail::MemFunImpl<void, void (PriorityStream::*)()>, PriorityStream*> >::Clone() const
-// {
-// }
+/**
+ * Offset/Address/Size: 0x6C | 0x8014BF40 | size: 0x78
+ * Construct from mBind (target has no __ct copy-ctor).
+ */
+template <>
+Function0<void>::FunctorBase*
+Function0<void>::FunctorImpl<BindExp1<void, Detail::MemFunImpl<void, void (PriorityStream::*)()>, PriorityStream*> >::Clone() const
+{
+    return new (nlMalloc(sizeof(FunctorImpl), 8, false)) FunctorImpl(mBind);
+}
 
 /**
  * Offset/Address/Size: 0x69C | 0x8014BEB4 | size: 0x20

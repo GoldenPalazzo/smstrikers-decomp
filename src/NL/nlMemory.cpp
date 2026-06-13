@@ -111,8 +111,6 @@ void* nlVirtualAlloc(unsigned long size, bool bZero)
 
 /**
  * Offset/Address/Size: 0xA0 | 0x801D2140 | size: 0x1B8
- * TODO: 99.91% match - only symbol/label (`i`) diffs remain in scratch
- * (VMInit/VMAlloc mangling and string-literal label numbering)
  */
 void nlInitMemory()
 {

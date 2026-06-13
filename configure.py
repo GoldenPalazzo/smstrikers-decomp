@@ -1297,7 +1297,7 @@ config.libs = [
             Object(Matching, "NL/nlMain.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "NL/nlMath.cpp", extra_cflags=["-inline auto"]),
             Object(NonMatching, "NL/MemAlloc.cpp", extra_cflags=["-inline auto"]),
-            Object(NonMatching, "NL/nlMemory.cpp", extra_cflags=["-inline auto"]),
+            Object(Matching, "NL/nlMemory.cpp", extra_cflags=["-inline auto"]),
             Object(NonMatching, "NL/nlPrint.cpp"), # problem with stdarg.h .. but should otherwise be linkable
             Object(Matching, "NL/nlSlotPool.cpp", extra_cflags=["-inline auto"]),
             Object(NonMatching, "NL/nlString.cpp", extra_cflags=["-inline auto"]),
