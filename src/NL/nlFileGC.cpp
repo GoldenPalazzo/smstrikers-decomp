@@ -554,9 +554,6 @@ void nlServiceFileSystem()
 
 /**
  * Offset/Address/Size: 0x9A8 | 0x801CF6FC | size: 0x35C
- * TODO: 89.95% match - register off-by-1 (r4-r10 vs r5-r11) from missing
- * slwi/add residual pointer setup (compiler internal), AsyncManager r30 vs r0
- * for NULL stores
  */
 void nlInitFileSystem()
 {
@@ -572,17 +569,15 @@ void nlInitFileSystem()
         if (pAlloc != NULL)
         {
             u32 i;
-            u8* p = (u8*)pFile;
 
             pAlloc->m_pFree = pFile;
 
             for (i = 0; i < 31; i++)
             {
-                *(TDEVChunkFile**)p = (TDEVChunkFile*)(p + 0x20);
-                p += 0x20;
+                *(TDEVChunkFile**)(pFile + i) = pFile + i + 1;
             }
 
-            *(TDEVChunkFile**)((u8*)pFile + 0x3E0) = NULL;
+            *(TDEVChunkFile**)(pFile + 31) = NULL;
         }
 
         TDEVChunkFile::s_pAllocator = pAlloc;
@@ -599,17 +594,15 @@ void nlInitFileSystem()
         if (pAlloc != NULL)
         {
             u32 i;
-            u8* p = (u8*)pFile;
 
             pAlloc->m_pFree = pFile;
 
             for (i = 0; i < 31; i++)
             {
-                *(DolphinFile**)p = (DolphinFile*)(p + 0x48);
-                p += 0x48;
+                *(DolphinFile**)(pFile + i) = pFile + i + 1;
             }
 
-            *(DolphinFile**)((u8*)pFile + 0x8B8) = NULL;
+            *(DolphinFile**)(pFile + 31) = NULL;
         }
 
         DolphinFile::s_pAllocator = pAlloc;
@@ -627,10 +620,9 @@ void nlInitFileSystem()
             s32 i;
             AsyncEntry* pEntry = (AsyncEntry*)pManager;
 
-            pManager->m_freeEntryList = NULL;
-            pManager->m_activeEntryList = NULL;
+            pManager->m_activeEntryList = pManager->m_freeEntryList = (AsyncEntry*)(i = 0);
 
-            for (i = 0; i < 64; i++)
+            for (; i < 64; i++)
             {
                 nlDLRingAddStart<AsyncEntry>(&pManager->m_freeEntryList, pEntry);
                 pEntry = (AsyncEntry*)((u8*)pEntry + 0x28);

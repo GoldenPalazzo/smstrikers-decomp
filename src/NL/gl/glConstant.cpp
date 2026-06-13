@@ -1,3 +1,6 @@
+#define NL_AVLTREE_DECLARE_ONLY
+#define NL_AVLTREEBASE_DECLARE_ONLY
+
 #include "NL/gl/glConstant.h"
 #include "NL/nlAVLTree.h"
 #include "NL/nlString.h"
@@ -6,9 +9,116 @@ static int level = 0;
 
 // AVLTreeBase<unsigned long, nlVector4, NewAdapter<AVLTreeEntry<unsigned long, nlVector4> >, DefaultKeyCompare<unsigned long> >* constants[16] = { NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL };
 // nlAVLTree<unsigned long, nlVector4, NewAdapter<AVLTreeEntry<unsigned long, nlVector4> >, DefaultKeyCompare<unsigned long> >* constants[16] = { NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL };
-nlAVLTree<unsigned long, nlVector4, DefaultKeyCompare<unsigned long> >* constants[16] = { NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL };
+static nlAVLTree<unsigned long, nlVector4, DefaultKeyCompare<unsigned long> >* constants[16] = { NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL };
 
-nlVector4 vZero = { 0.0f, 0.0f, 0.0f, 0.0f };
+static nlVector4 vZero = { 0.0f, 0.0f, 0.0f, 0.0f };
+
+typedef AVLTreeEntry<unsigned long, nlVector4> GLCEntry;
+typedef AVLTreeBase<unsigned long, nlVector4, NewAdapter<GLCEntry>, DefaultKeyCompare<unsigned long> > GLCBase;
+
+template <>
+void GLCBase::DeleteEntry(GLCEntry*);
+template <>
+void GLCBase::Clear();
+template <>
+void GLCBase::DestroyTree(void (GLCBase::*)(GLCEntry*));
+template <>
+void GLCBase::PostorderTraversal(GLCEntry*, void (GLCBase::*)(GLCEntry*));
+template <>
+GLCEntry* GLCBase::CastUp(AVLTreeNode*) const;
+template <>
+int GLCBase::CompareNodes(AVLTreeNode*, AVLTreeNode*);
+template <>
+int GLCBase::CompareKey(void*, AVLTreeNode*);
+template <>
+AVLTreeNode* GLCBase::AllocateEntry(void*, void*);
+
+template <>
+inline void GLCBase::DeleteEntry(GLCEntry* entry)
+{
+    delete entry;
+}
+
+template <>
+inline void GLCBase::Clear()
+{
+    DestroyTree(&GLCBase::DeleteEntry);
+    m_NumElements = 0;
+}
+
+template <>
+inline void GLCBase::DestroyTree(void (GLCBase::*deleteFunc)(GLCEntry*))
+{
+    if (m_Root != NULL)
+    {
+        PostorderTraversal(m_Root, deleteFunc);
+        m_Root = NULL;
+        m_NumElements = 0;
+    }
+}
+
+template <>
+inline void GLCBase::PostorderTraversal(GLCEntry* curr, void (GLCBase::*cb)(GLCEntry*))
+{
+    if (curr->node.left != NULL)
+    {
+        PostorderTraversal(CastUp(curr->node.left), cb);
+    }
+    if (curr->node.right != NULL)
+    {
+        PostorderTraversal(CastUp(curr->node.right), cb);
+    }
+    (this->*cb)(curr);
+}
+
+template <>
+inline GLCEntry* GLCBase::CastUp(AVLTreeNode* node) const
+{
+    return (GLCEntry*)node;
+}
+
+template <>
+inline int GLCBase::CompareNodes(AVLTreeNode* a, AVLTreeNode* b)
+{
+    const unsigned long& keyA = ((GLCEntry*)a)->key;
+    const unsigned long& keyB = ((GLCEntry*)b)->key;
+    int result;
+    if (keyA == keyB)
+        result = 0;
+    else if (keyA < keyB)
+        result = -1;
+    else
+        result = 1;
+    return result;
+}
+
+template <>
+inline int GLCBase::CompareKey(void* key, AVLTreeNode* node)
+{
+    int result;
+    unsigned long k = *(unsigned long*)key;
+    GLCEntry* entry = (GLCEntry*)node;
+    if (k == entry->key)
+        result = 0;
+    else if (k < entry->key)
+        result = -1;
+    else
+        result = 1;
+    return result;
+}
+
+template <>
+inline AVLTreeNode* GLCBase::AllocateEntry(void* key, void* value)
+{
+    GLCEntry* newNode = NULL;
+    newNode = (GLCEntry*)nlMalloc(sizeof(GLCEntry), 8, false);
+    newNode->node.left = NULL;
+    newNode->node.right = NULL;
+    newNode->node.heavy = 0;
+    newNode->key = *(unsigned long*)key;
+    newNode->value = *(nlVector4*)value;
+    return (AVLTreeNode*)newNode;
+}
 
 static inline bool glConstantFindInTree(nlAVLTree<unsigned long, nlVector4, DefaultKeyCompare<unsigned long> >* tree, unsigned long key, nlVector4*& foundValue)
 {
@@ -52,7 +162,7 @@ static inline bool glConstantFindInTree(nlAVLTree<unsigned long, nlVector4, Defa
     return false;
 }
 
-static nlVector4 glConstantGet(unsigned long constantHash)
+static inline nlVector4 glConstantGet(unsigned long constantHash)
 {
     nlVector4* foundValue;
     nlVector4* result;

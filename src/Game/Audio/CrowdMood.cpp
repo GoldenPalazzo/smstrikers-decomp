@@ -1208,6 +1208,7 @@ void CrowdMood::Purge(bool bJustStopSFX)
     Audio::StopSFX(g_CrowdAudio.PositiveVoiceId);
     Audio::StopSFX(g_CrowdAudio.NegativeVoiceId);
 
+    GCAudioStreaming::MonoAudioStream* pHeckle;
     GCAudioStreaming::StereoAudioStream* pChant = g_CrowdAudio.pChantStream;
     if (pChant != NULL)
     {
@@ -1294,7 +1295,7 @@ void CrowdMood::Purge(bool bJustStopSFX)
         }
     }
 
-    GCAudioStreaming::MonoAudioStream* pHeckle = g_CrowdAudio.pHeckleStream;
+    pHeckle = g_CrowdAudio.pHeckleStream;
     if (pHeckle != NULL)
     {
         pHeckle->m_Flags &= ~(1 << GCAudioStreaming::SF_Play);
@@ -1382,14 +1383,8 @@ void CrowdMood::Purge(bool bJustStopSFX)
 
     if (!bJustStopSFX)
     {
-        if (g_CrowdAudio.pChantStream != NULL)
-        {
-            g_CrowdAudio.pChantStream->WarmReadDone((GCAudioStreaming::AudioStreamBuffer*)1);
-        }
-        if (g_CrowdAudio.pHeckleStream != NULL)
-        {
-            g_CrowdAudio.pHeckleStream->WarmReadDone((GCAudioStreaming::AudioStreamBuffer*)1);
-        }
+        delete g_CrowdAudio.pChantStream;
+        delete g_CrowdAudio.pHeckleStream;
         g_CrowdAudio.pChantStream = NULL;
         g_CrowdAudio.pHeckleStream = NULL;
         memset(&g_CrowdState, 0, 0x8C);

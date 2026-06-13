@@ -85,14 +85,14 @@ void TestTask::Run(float dt)
 
 /**
  * Offset/Address/Size: 0x424 | 0x8016CD20 | size: 0x2CC
- * TODO: 97.7% match - remaining diffs are register-allocation around `this` and
- * string temporaries (r29/r31), plus cleanup-path branch layout.
+ * TODO: 98.5% match - remaining diffs are r29/r31 register swap and
+ * stack offset for formatData (sp+0x08 vs target sp+0x10).
  */
-void TestTask::RunSmokeTest(float)
+static inline void RunSmokeTestBody(TestTask* self)
 {
-    if (mRunSmokeTest)
+    if (self->mRunSmokeTest)
     {
-        if (mTestTimeOut <= 0.0f)
+        if (self->mTestTimeOut <= 0.0f)
         {
             const char* text = smokeTestSuccessOutput;
             void* debugFile = nlOpenFileDebug(text, false, false);
@@ -137,11 +137,11 @@ void TestTask::RunSmokeTest(float)
                 configValue);
 
             const char* logText = ((BasicString<char, Detail::TempStringAllocator>*)&formattedData)->c_str();
-            if (mTestLog)
+            if (self->mTestLog)
             {
-                nlWriteLineDebug(mTestLog, logText, false);
-                nlWriteLineDebug(mTestLog, "\n", false);
-                nlFlushFileDebug(mTestLog);
+                nlWriteLineDebug(self->mTestLog, logText, false);
+                nlWriteLineDebug(self->mTestLog, "\n", false);
+                nlFlushFileDebug(self->mTestLog);
             }
 
             BasicStringInternal* toFree = formattedData;
@@ -183,6 +183,12 @@ void TestTask::RunSmokeTest(float)
             }
         }
     }
+}
+
+void TestTask::RunSmokeTest(float)
+{
+    RunSmokeTestBody(this);
+    FORCE_DONT_INLINE;
 }
 
 /**

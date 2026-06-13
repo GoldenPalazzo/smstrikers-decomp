@@ -6608,10 +6608,7 @@ PhysicsGoalie* Goalie::GetPhysicsGoalie()
 
 /**
  * Offset/Address/Size: 0x5B8 | 0x800430B4 | size: 0x384
- * TODO: 92.18% match - MWCC loads struct members by address (X before Y) regardless of source
- * declaration order, causing register swap (f9/f7) in offset section. Target has 2 extra frsp
- * per branch (for values read from v3TargetFacing struct members) that current compiler elides
- * because fsubs results are already single-precision. Cascading register diffs in normalize.
+ * TODO: 96.53% match - callee-saved float register swap (f27/f29) for fTfY and fBtgX in normalize section
  */
 void Goalie::SetDesiredSaveFacing(const nlVector3& v3BallPosition)
 {
@@ -6627,97 +6624,82 @@ void Goalie::SetDesiredSaveFacing(const nlVector3& v3BallPosition)
         return;
     }
 
-    nlVector3 v3TargetFacing;
-    nlVector3 v3BallOffset;
-    nlVector3 v3LeftPost;
-    nlVector3 v3RightPost;
+    nlVector3 v3Facing;
+    nlVector3 v3G2Ball;
+    nlVector3 v3G2Post1;
+    nlVector3 v3G2Post2;
 
-    v3BallOffset.f.x = v3BallPosition.f.x - m_v3Position.f.x;
-    v3BallOffset.f.y = v3BallPosition.f.y - m_v3Position.f.y;
-    v3BallOffset.f.z = v3BallPosition.f.z - m_v3Position.f.z;
+    nlVec3Sub(v3G2Ball, v3BallPosition, m_v3Position);
 
-    m_pTeam->m_pNet->GetPostLocation(v3LeftPost, 0, 0.5f);
-    m_pTeam->m_pNet->GetPostLocation(v3RightPost, 1, 0.5f);
+    m_pTeam->m_pNet->GetPostLocation(v3G2Post1, 0, 0.5f);
+    m_pTeam->m_pNet->GetPostLocation(v3G2Post2, 1, 0.5f);
 
-    float fLeftX = v3LeftPost.f.x - m_v3Position.f.x;
-    float fLeftY = v3LeftPost.f.y - m_v3Position.f.y;
-    float fLeftZ = v3LeftPost.f.z - m_v3Position.f.z;
-    float fRightX = v3RightPost.f.x - m_v3Position.f.x;
-    float fRightY = v3RightPost.f.y - m_v3Position.f.y;
-    float fRightZ = v3RightPost.f.z - m_v3Position.f.z;
+    nlVec3Sub(v3G2Post1, v3G2Post1, m_v3Position);
+    nlVec3Sub(v3G2Post2, v3G2Post2, m_v3Position);
 
-    v3LeftPost.f.x = fLeftX;
-    v3LeftPost.f.y = fLeftY;
-    v3LeftPost.f.z = fLeftZ;
-    v3RightPost.f.x = fRightX;
-    v3RightPost.f.y = fRightY;
-    v3RightPost.f.z = fRightZ;
+    float fLeftDot = nlVec3DotProduct(v3G2Ball, v3G2Post1);
+    float fRightDot = nlVec3DotProduct(v3G2Ball, v3G2Post2);
 
-    float fLeftDot = nlVec3DotProduct(v3BallOffset, v3LeftPost);
-    float fRightDot = nlVec3DotProduct(v3BallOffset, v3RightPost);
-
-    if ((fLeftDot > -1.0f) || (fRightDot > -1.0f))
+    if ((fLeftDot > 0.0f) || (fRightDot > 0.0f))
     {
         if (fLeftDot > fRightDot)
         {
-            v3TargetFacing.f.x = fLeftY;
-            v3TargetFacing.f.y = -fLeftX;
-            v3TargetFacing.f.z = -1.0f;
+            v3Facing.f.x = v3G2Post1.f.y;
+            v3Facing.f.y = -v3G2Post1.f.x;
+            v3Facing.f.z = 0.0f;
 
-            if (((v3TargetFacing.f.y * fRightY) + (v3TargetFacing.f.x * fRightX) + (v3TargetFacing.f.z * fRightZ)) > -1.0f)
+            if (nlVec3DotProduct(v3Facing, v3G2Post2) > 0.0f)
             {
-                v3TargetFacing.f.x = 0.5f * v3TargetFacing.f.x;
-                v3TargetFacing.f.y = 0.5f * v3TargetFacing.f.y;
-                v3TargetFacing.f.z = 0.5f * v3TargetFacing.f.z;
+                v3Facing.f.x = -1.0f * v3Facing.f.x;
+                v3Facing.f.y = -1.0f * v3Facing.f.y;
+                v3Facing.f.z = -1.0f * v3Facing.f.z;
             }
         }
         else
         {
-            v3TargetFacing.f.x = fRightY;
-            v3TargetFacing.f.y = -fRightX;
-            v3TargetFacing.f.z = -1.0f;
+            v3Facing.f.x = v3G2Post2.f.y;
+            v3Facing.f.y = -v3G2Post2.f.x;
+            v3Facing.f.z = 0.0f;
 
-            if (((v3TargetFacing.f.y * fLeftY) + (v3TargetFacing.f.x * fLeftX) + (v3TargetFacing.f.z * fLeftZ)) > -1.0f)
+            if (nlVec3DotProduct(v3Facing, v3G2Post1) > 0.0f)
             {
-                v3TargetFacing.f.x = 0.5f * v3TargetFacing.f.x;
-                v3TargetFacing.f.y = 0.5f * v3TargetFacing.f.y;
-                v3TargetFacing.f.z = 0.5f * v3TargetFacing.f.z;
+                v3Facing.f.x = -1.0f * v3Facing.f.x;
+                v3Facing.f.y = -1.0f * v3Facing.f.y;
+                v3Facing.f.z = -1.0f * v3Facing.f.z;
             }
         }
     }
     else
     {
-        v3TargetFacing = v3BallOffset;
+        v3Facing = v3G2Ball;
     }
 
-    float fBallOffMagSq = nlVec3DotProduct(v3BallOffset, v3BallOffset);
+    float fBallOffMagSq = nlVec3DotProduct(v3G2Ball, v3G2Ball);
 
     if (fBallOffMagSq < 1.44f)
     {
-        float fSqX = v3TargetFacing.f.x * v3TargetFacing.f.x;
-        float fTfY = v3TargetFacing.f.y;
-        float fTfZ = v3TargetFacing.f.z;
+        float fSqX = v3Facing.f.x * v3Facing.f.x;
+        float fTfZ = v3Facing.f.z;
+        float fTfY = v3Facing.f.y;
         float fSqY = fTfY * fTfY;
         float fSqZ = fTfZ * fTfZ;
-
         float fBtgZ = v3BallPosition.f.z - m_pTeam->m_pNet->m_baseLocation.f.z;
         float fBtgY = v3BallPosition.f.y - m_pTeam->m_pNet->m_baseLocation.f.y;
         float fBtgX = v3BallPosition.f.x - m_pTeam->m_pNet->m_baseLocation.f.x;
-
         float fRecip = nlRecipSqrt(fSqX + fSqY + fSqZ, true);
 
-        v3TargetFacing.f.y = fRecip * fTfY;
-        v3TargetFacing.f.x = fRecip * v3TargetFacing.f.x;
-        v3TargetFacing.f.z = fRecip * fTfZ;
+        v3Facing.f.y = fRecip * fTfY;
+        v3Facing.f.x = fRecip * v3Facing.f.x;
+        v3Facing.f.z = fRecip * fTfZ;
 
-        float fRecip2 = nlRecipSqrt(fBtgY * fBtgY + fBtgX * fBtgX + fBtgZ * fBtgZ, true);
+        float fRecip2 = nlRecipSqrt(fBtgX * fBtgX + fBtgY * fBtgY + fBtgZ * fBtgZ, true);
 
-        v3TargetFacing.f.x = 0.5f * (fRecip2 * fBtgX) + 0.5f * v3TargetFacing.f.x;
-        v3TargetFacing.f.y = 0.5f * (fRecip2 * fBtgY) + 0.5f * v3TargetFacing.f.y;
-        v3TargetFacing.f.z = 0.5f * (fRecip2 * fBtgZ) + 0.5f * v3TargetFacing.f.z;
+        v3Facing.f.x = 0.5f * (fRecip2 * fBtgX) + 0.5f * v3Facing.f.x;
+        v3Facing.f.y = 0.5f * (fRecip2 * fBtgY) + 0.5f * v3Facing.f.y;
+        v3Facing.f.z = 0.5f * (fRecip2 * fBtgZ) + 0.5f * v3Facing.f.z;
     }
 
-    m_aDesiredFacingDirection = (s16)(nlATan2f(v3TargetFacing.f.y, v3TargetFacing.f.x) * (32768.0f / 3.14159265f));
+    m_aDesiredFacingDirection = (s16)(nlATan2f(v3Facing.f.y, v3Facing.f.x) * (32768.0f / 3.14159265f));
 }
 
 /**

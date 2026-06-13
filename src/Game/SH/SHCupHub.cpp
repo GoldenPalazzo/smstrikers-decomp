@@ -247,6 +247,7 @@ Function0<void>::FunctorImpl<BindExp1<void, Detail::MemFunImpl<void, void (CupHu
 
 /**
  * Offset/Address/Size: 0x72C8 | 0x800F1024 | size: 0x6E4
+ * TODO: 99.89% match - previous TeamStats copy uses rotated offset registers for mTeamIndex and stat halfword stores.
  */
 CupHubScene::CupHubScene(bool doAnimations, bool playAllKnockoutAnimations)
     : mTextColour(HUB_COLOUR_WHITE)
@@ -269,8 +270,7 @@ CupHubScene::CupHubScene(bool doAnimations, bool playAllKnockoutAnimations)
     captainImage = new (captainImage) AsyncImage("art/fe/CupLoadingScreensUI.res", 0);
     mCaptainImage = captainImage;
 
-    gameInfo = nlSingleton<GameInfoManager>::s_pInstance;
-    lastResult = gameInfo->GetResultsOfLastUserGame();
+    lastResult = (gameInfo = nlSingleton<GameInfoManager>::s_pInstance)->GetResultsOfLastUserGame();
     mHasHumanTeamPlayed = gameInfo->HasHumanGameBeenPlayed();
 
     i = 0;

@@ -14,6 +14,7 @@ See https://decomp.dev/api for an API overview.
 [Code Progress]: https://decomp.dev/yannicksuter/smstrikers-decomp.svg?mode=shield&measure=code&label=Code
 [Data Progress]: https://decomp.dev/yannicksuter/smstrikers-decomp.svg?mode=shield&measure=data&label=Data
 [Link Progress]: https://decomp.dev/yannicksuter/smstrikers-decomp.svg?mode=shield&measure=complete_code_percent&label=Linked
+[Fuzzy Progress]: https://decomp.dev/yannicksuter/smstrikers-decomp.svg?mode=shield&measure=fuzzy_match_percent&label=Fuzzy
 [progress]: https://decomp.dev/yannicksuter/smstrikers-decomp
 <!--
 Replace with your Discord server's ID and invite URL.
@@ -47,40 +48,11 @@ Track the project decompilation progress and explore the interactive graph on [d
 Contributing
 ============
 
-Everybody is warmly welcome to contribute to this project! Whether you're experienced with decompilation or just getting started, your contributions are valuable.
+Everybody is warmly welcome to contribute! Whether you're experienced with decompilation or just getting started, your contributions are valuable.
 
-**Where the project stands:**
-The skeleton of the codebase is by now reasonably well defined — most of the core C++ classes are in place, and a large number of methods already match at 95%+. What's left is mostly the hard part: closing the last few percent on tricky functions, untangling subtle ABI / register-allocation quirks, and tightening up details that only show up once everything around them is in shape. Expect attention to detail, careful diffing, and patient iteration to matter much more than raw volume from here on.
+Please read [CONTRIBUTING.md](CONTRIBUTING.md) for the full guidelines — it covers where the project stands, how to set up your environment, pull request expectations, code style, tips for working on matches, header reorganisation, and the project's stance on AI-assisted contributions.
 
-As the puzzle pieces increasingly interlock, some header files will also need reorganisation. Improvements to the include layout, type ownership, and inter-module boundaries are very welcome — they often unlock matches elsewhere.
-
-**How to contribute:**
-
-1. **Make a pull request** – Create a pull request with your changes. Small, focused PRs that explain the *why* are easier to review and land quickly.
-2. **Join our Discord server** – Connect with other contributors to exchange ideas, coordinate work, or get help: [Discord Server](https://discord.gg/hKx3FJJgrV)
-
-**Partial matches welcome — but curated:**
-Partial matches are still valuable when they capture real structure or unblock surrounding work. What is *not* helpful at this stage is code that merely "looks plausible" without being verified against the diff. If something isn't matching yet, please say so explicitly in the PR rather than glossing over it.
-
-**Code style:**
-Please run [`clang-format`](https://clang.llvm.org/docs/ClangFormat.html) to ensure minimal, consistent formatting before committing.
-
-**Dumping DWARF info:**
-If you have legally acquired the game yourself and placed the original debug ELF at `orig/G4QE01/MarioSoccerR.elf`, you can dump its DWARF debug info into a human-readable `dwarf.txt` (used by some helper scripts):
-
-```bash
-./tools/scripts/dump_dwarf.sh
-```
-
-The script writes `dwarf.txt` to the project root. Run `python configure.py && ninja` at least once beforehand so that `build/tools/dtk` is available.
-
-**On the use of AI tools:**
-I use modern AI tools myself and have honestly learned a lot from them. They've surfaced solutions I would never have thought of on my own, and their ability to look at the code holistically has repeatedly helped me find improvements in completely unrelated areas. As an *assisting* tool to converge on a matching result, they have an absolutely fair place in this project.
-
-That said: **PRs consisting of uncurated, AI-generated output are explicitly low priority.** The phase where it made sense to generate code just to fill gaps is over. What this project needs now is attention to detail — understanding *why* something matches (or doesn't), reading the disassembly, and verifying against the diff. If you use AI assistance, please treat its output as a starting point, not a deliverable: review it, test it, diff it, and only submit what you actually understand and stand behind.
-
-**Learning together:**
-I'm still learning throughout this process, so I'm very open to adapting and improving how things are done here. Don't hesitate to suggest better approaches or point out areas that could be enhanced.
+For real-time discussion, coordination, and help, join the [Discord server](https://discord.gg/hKx3FJJgrV).
 
 Dependencies
 ============

@@ -152,6 +152,42 @@ static SwitchToStartScreenLoader switchToStartScreen;
 /**
  * Offset/Address/Size: 0x1A10 | 0x80172FE0 | size: 0x1E4
  */
+static void LoadFontsJapanese101()
+{
+    const char* TEXT_FONT_NAME = "fot-rodinprob18";
+    const char* HEADING_FONT_NAME = "cepoitalic24";
+    char textfontbundlename[64];
+    char textfontfilename[64];
+    char headingfontbundlename[64];
+    char headingfontfilename[64];
+    char langprefix[4] = "jpn";
+
+    nlSNPrintf(textfontbundlename, 64, "art/fe/fonts/%sfonttext10118.res", langprefix);
+    nlSNPrintf(textfontfilename, 64, "fe/fonts/%sfonttext10118", langprefix);
+    nlSNPrintf(headingfontbundlename, 64, "art/fe/fonts/%sfontheading10124.res", langprefix);
+    nlSNPrintf(headingfontfilename, 64, "fe/fonts/%sfontheading10124", langprefix);
+    nlSingleton<FontManager>::s_pInstance->LoadFont(textfontbundlename, textfontfilename, TEXT_FONT_NAME);
+    nlSingleton<FontManager>::s_pInstance->LoadFont(headingfontbundlename, headingfontfilename, HEADING_FONT_NAME);
+}
+
+static void LoadFontsJapaneseInGame()
+{
+    const char* TEXT_FONT_NAME = "fot-rodinprob18";
+    const char* HEADING_FONT_NAME = "cepoitalic24";
+    char textfontbundlename[64];
+    char textfontfilename[64];
+    char headingfontbundlename[64];
+    char headingfontfilename[64];
+    char langprefix[4] = "jpn";
+
+    nlSNPrintf(textfontbundlename, 64, "art/fe/fonts/%sfonttextingame18.res", langprefix);
+    nlSNPrintf(textfontfilename, 64, "fe/fonts/%sfonttextingame18", langprefix);
+    nlSNPrintf(headingfontbundlename, 64, "art/fe/fonts/%sfontheadingingame24.res", langprefix);
+    nlSNPrintf(headingfontfilename, 64, "fe/fonts/%sfontheadingingame24", langprefix);
+    nlSingleton<FontManager>::s_pInstance->LoadFont(textfontbundlename, textfontfilename, TEXT_FONT_NAME);
+    nlSingleton<FontManager>::s_pInstance->LoadFont(headingfontbundlename, headingfontfilename, HEADING_FONT_NAME);
+}
+
 void LoadFonts()
 {
     const char* fontFileName1 = "fot-rodinprob18";
@@ -637,8 +673,6 @@ void TransitionTask::StateTransition(unsigned int from, unsigned int to)
 
 /**
  * Offset/Address/Size: 0x888 | 0x80171E58 | size: 0x830
- * TODO: 98.1% match - remaining diffs: font section addi scheduling (2 extra mr per branch, -inline deferred artifact),
- *       rlwinm. vs cmplwi for disableRumble check, r29/r30 routing through temporaries
  */
 void TransitionTask::InitializeGameState()
 {
@@ -717,35 +751,11 @@ void TransitionTask::InitializeGameState()
     {
         if (nlSingleton<GameInfoManager>::s_pInstance->mIsInStrikers101Mode)
         {
-            char langCode[4] = "jpn";
-            const char* fontFileName2 = "cepoitalic24";
-            const char* fontFileName1 = "fot-rodinprob18";
-            char fontName2[64];
-            char bundlePath2[64];
-            char fontName1[64];
-            char bundlePath1[64];
-            nlSNPrintf(bundlePath1, 64, "art/fe/fonts/%sfonttext10118.res", langCode);
-            nlSNPrintf(fontName1, 64, "fe/fonts/%sfonttext10118", langCode);
-            nlSNPrintf(bundlePath2, 64, "art/fe/fonts/%sfontheading10124.res", langCode);
-            nlSNPrintf(fontName2, 64, "fe/fonts/%sfontheading10124", langCode);
-            nlSingleton<FontManager>::s_pInstance->LoadFont(bundlePath1, fontName1, fontFileName1);
-            nlSingleton<FontManager>::s_pInstance->LoadFont(bundlePath2, fontName2, fontFileName2);
+            LoadFontsJapanese101();
         }
         else
         {
-            char langCode[4] = "jpn";
-            const char* fontFileName2 = "cepoitalic24";
-            const char* fontFileName1 = "fot-rodinprob18";
-            char fontName2[64];
-            char bundlePath2[64];
-            char fontName1[64];
-            char bundlePath1[64];
-            nlSNPrintf(bundlePath1, 64, "art/fe/fonts/%sfonttextingame18.res", langCode);
-            nlSNPrintf(fontName1, 64, "fe/fonts/%sfonttextingame18", langCode);
-            nlSNPrintf(bundlePath2, 64, "art/fe/fonts/%sfontheadingingame24.res", langCode);
-            nlSNPrintf(fontName2, 64, "fe/fonts/%sfontheadingingame24", langCode);
-            nlSingleton<FontManager>::s_pInstance->LoadFont(bundlePath1, fontName1, fontFileName1);
-            nlSingleton<FontManager>::s_pInstance->LoadFont(bundlePath2, fontName2, fontFileName2);
+            LoadFontsJapaneseInGame();
         }
     }
     else
@@ -759,8 +769,8 @@ void TransitionTask::InitializeGameState()
     }
 
     nlSingleton<FEResourceManager>::s_pInstance->Initialize();
-    nlSingleton<FEResourceManager>::s_pInstance->LoadPermanentResourceBundle("art/fe/fepermanent.res");
-    nlSingleton<FEResourceManager>::s_pInstance->OpenOnDemandResourceBundle("art/fe/feondemand.res");
+    nlSingleton<FEResourceManager>::s_pInstance->LoadPermanentResourceBundle("art/fe/InGameUI.Res");
+    nlSingleton<FEResourceManager>::s_pInstance->OpenOnDemandResourceBundle("art/fe/InGameUI.Dmn");
 
     if (nlSingleton<FESceneManager>::s_pInstance == NULL)
     {
@@ -818,7 +828,7 @@ void TransitionTask::InitializeGameState()
     PauseMenuScene::mLastSelectedIndex = 0;
 
     const GameplaySettings& opts = nlSingleton<GameInfoManager>::s_pInstance->GetGameplayOptions();
-    bool disableRumble = !opts.RumbleEnabled;
+    bool disableRumble = opts.RumbleEnabled == false;
     if (!disableRumble)
     {
         disableRumble = GetConfigBool(Config::Global(), "m_bDisableRumble", false);
@@ -1038,7 +1048,7 @@ void TransitionTask::InitializeFEState()
     }
 
     nlSingleton<FEResourceManager>::s_pInstance->Initialize();
-    nlSingleton<FEResourceManager>::s_pInstance->LoadPermanentResourceBundle("art/fe/fepermanent.res");
+    nlSingleton<FEResourceManager>::s_pInstance->LoadPermanentResourceBundle("art/fe/MainUI.Dmn");
 
     if (nlSingleton<FESceneManager>::s_pInstance == NULL)
     {
@@ -1071,11 +1081,11 @@ void TransitionTask::InitializeFEState()
         if (SaveLoadScene::IsIOEnabled())
         {
             SaveLoadScene* scene = (SaveLoadScene*)nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_SHOULD_LOAD_OR_SAVE, (ScreenMovement)0, false);
-            scene->mNextScene = SCENE_POPUP_MENU;
+            scene->mNextScene = SCENE_LEGAL;
         }
         else
         {
-            nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_POPUP_MENU, (ScreenMovement)0, false);
+            nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_LEGAL, (ScreenMovement)0, false);
         }
     }
     else
@@ -1108,7 +1118,7 @@ void TransitionTask::InitializeFEState()
                     pGameInfo->IncreaseRoundNumber();
                 }
 
-                CupHubScene* scene = (CupHubScene*)nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_TOURNAMENT_STANDINGS, (ScreenMovement)0, false);
+                CupHubScene* scene = (CupHubScene*)nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_TOURNAMENT_STANDINGS_ANIM, (ScreenMovement)0, false);
                 scene->mDoAutoSave = true;
                 FEMusic::StartStreamIfDifferent(4);
             }

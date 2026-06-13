@@ -60,7 +60,6 @@ static unsigned char sbAllObjectsCanBeTransparent;
 static unsigned char sbPretendWereNotInGameplayCam;
 
 static LightObject fxLightObjects[4];
-static nlVector3 vLightDirection = { { 0.0f, 0.0f, -1.0f } };
 
 /**
  * Offset/Address/Size: 0x0 | 0x80194CC4 | size: 0x5C
@@ -1499,6 +1498,7 @@ void World::CreateLightUserData()
         *p32 = 1;
         GLLightUserData* glLight = (GLLightUserData*)(p32 + 1);
         nlZeroMemory(glLight, sizeof(GLLightUserData));
+        static nlVector3 vLightDirection = { { 0.0f, 0.0f, -1.0f } };
         glLight->worldPosition = vLightDirection;
         glLight->colour.c[0] = 1.0f;
         glLight->colour.c[1] = 1.0f;

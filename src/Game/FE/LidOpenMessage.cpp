@@ -52,22 +52,21 @@ void glx_ClearXFB(void*);
 
 static inline void UncompressLidMessage(const unsigned char* compressed, int compressedSize, unsigned char* uncompressed)
 {
+    const unsigned char* runSrc;
     int index = 0;
     int i = 0;
-    int k = 0;
 
     while (i < (compressedSize - 1))
     {
         const unsigned char* src = compressed + i;
-        unsigned char value = src[0];
-        if (value == 0)
+        if (src[0] == 0)
         {
-            const unsigned char* runSrc = src + 1;
+            runSrc = src + 1;
             int run = 0;
             unsigned char* dst = uncompressed + index;
             while (run < runSrc[0])
             {
-                *dst = (unsigned char)k;
+                *dst = 0;
                 index++;
                 dst++;
                 run++;
@@ -76,7 +75,7 @@ static inline void UncompressLidMessage(const unsigned char* compressed, int com
         }
         else
         {
-            uncompressed[index] = value;
+            uncompressed[index] = src[0];
             index++;
         }
         i++;
@@ -87,20 +86,25 @@ static inline void UncompressLidMessage(const unsigned char* compressed, int com
 
 /**
  * Offset/Address/Size: 0x624 | 0x80094540 | size: 0x26C
- * TODO: 96.87% match - arg0 register r18 vs r21, decompression counters/base
- * remain on r20/r10 instead of r26/r9, and xStart does not preserve through
- * mr r19,r5 before x-loop setup.
+ * TODO: 99.65% match - decompressor zero-fill and loaded byte registers
+ * remain swapped in the run/value handling block.
  */
 static void DisplayMessage(int arg0, int arg1, const unsigned char* arg2, int arg3, unsigned long arg4, bool arg5)
 {
     unsigned int centeredFlag;
-    int pass;
-    int xStart;
-    int xEnd;
+    int yStart;
+    unsigned char* expanded;
+    unsigned char* row;
     int yCenter;
     int yBottom;
     int rowBytes;
     void* fb;
+    int pass;
+    int xStart;
+    int xEnd;
+    int yEnd;
+    int y;
+    int x;
 
     GXDrawDone();
     VIWaitForRetrace();
@@ -114,27 +118,24 @@ static void DisplayMessage(int arg0, int arg1, const unsigned char* arg2, int ar
     lastImageData = arg2;
     lastImageSize = arg3;
 
-    unsigned char* expanded = (unsigned char*)nlMalloc((unsigned long)((arg0 * arg1) / 8), 0x20, 1);
+    expanded = (unsigned char*)nlMalloc((unsigned long)((arg0 * arg1) / 8), 0x20, 1);
 
     UncompressLidMessage(arg2, arg3, expanded);
 
     GXPokeColorUpdate(1);
     GXPokeBlendMode(0, 1, 0, 0xF);
 
-    xStart = (0x280 - arg0) / 2;
+    const int xStartTemp = (0x280 - arg0) / 2;
     centeredFlag = ((unsigned char)arg5 == 0);
     pass = 0;
-    xEnd = xStart + arg0;
     yCenter = (0x1C0 - arg1) / 2;
+    xStart = xStartTemp;
+    xEnd = xStartTemp + arg0;
     yBottom = 0x1A0 - arg1;
     rowBytes = arg0 / 8;
 
     while (pass < 4)
     {
-        int yStart;
-        int y;
-        int yEnd;
-
         if ((pass == 0) || (pass == 2))
         {
             fb = glxGetDisplayedBuffer();
@@ -156,9 +157,9 @@ static void DisplayMessage(int arg0, int arg1, const unsigned char* arg2, int ar
         yEnd = yStart + arg1;
         while (y < yEnd)
         {
-            int x = xStart;
+            x = xStart;
             int rowOffset = rowBytes * (y - yStart);
-            unsigned char* row = expanded + rowOffset;
+            row = expanded + rowOffset;
 
             while (x < xEnd)
             {

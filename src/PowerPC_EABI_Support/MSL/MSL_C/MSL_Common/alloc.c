@@ -667,6 +667,7 @@ static __mem_pool* get_malloc_pool(void)
 /**
  * @note Address: N/A
  * @note Size: 0x2D0
+ * TODO: 99.53% match - remaining r5/r9 swap between fixed-list head pointer and subblock loop counter.
  */
 void* allocate_from_fixed_pools(__mem_pool_obj* pool_obj, u32 size)
 {
@@ -691,8 +692,8 @@ void* allocate_from_fixed_pools(__mem_pool_obj* pool_obj, u32 size)
         u32 num_subblocks;
         u32 sub_size;
         FixBlock* b;
-        FixBlock* tail;
         FixBlock* head;
+        FixBlock* tail;
         u32 k;
         char* p;
 
@@ -754,10 +755,12 @@ void* allocate_from_fixed_pools(__mem_pool_obj* pool_obj, u32 size)
         for (k = 0; k < num_subblocks - 1; ++k)
         {
             char* np;
+            FixSubBlock* sb;
 
+            sb = (FixSubBlock*)p;
             np = p + sub_size;
-            ((FixSubBlock*)p)->block_ = b;
-            ((FixSubBlock*)p)->next_ = (FixSubBlock*)np;
+            sb->block_ = b;
+            sb->next_ = (FixSubBlock*)np;
             p = np;
         }
 

@@ -16,8 +16,6 @@ struct FE_FILE_HEADER
     unsigned int PointerTableLength;
 };
 
-// FEResourceHandle FEScene::m_resourceHandler;
-
 /**
  * Offset/Address/Size: 0x0 | 0x80209D74 | size: 0x24
  */

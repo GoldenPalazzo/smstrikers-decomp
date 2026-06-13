@@ -43,17 +43,4 @@ public:
     FEResourceManager* m_resourceManager;
 };
 
-// class nlWalkRing<FEResourceHandle, QueueResourceLoadCallback>(FEResourceHandle*, QueueResourceLoadCallback*, void
-// (QueueResourceLoadCallback
-// {
-// public:
-//     void *)(FEResourceHandle*));
-// };
-
-// class nlWalkRing<FEResourceHandle, UnloadResourceCallback>(FEResourceHandle*, UnloadResourceCallback*, void (UnloadResourceCallback
-// {
-// public:
-//     void *)(FEResourceHandle*));
-// };
-
 #endif // _FESCENE_H_

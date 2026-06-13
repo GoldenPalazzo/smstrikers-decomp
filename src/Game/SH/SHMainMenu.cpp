@@ -434,9 +434,8 @@ static inline MenuItem<TLComponentInstance>* MainMenuItemAt(MenuList<TLComponent
 
 /**
  * Offset/Address/Size: 0xA3C | 0x800AA498 | size: 0x8C0
- * TODO: 97.0% match - BindExp2 return-copy uses stb for Placeholder tail where target
- *       word-copies it, bind temporaries get stack slots in swapped order, and the
- *       instance copy chain picks r0 instead of r4
+ * TODO: 98.4% match - callback bind temporary tail uses byte stores instead of
+ *       word stores, and menu item setup uses r0/r4/r6 differently
  */
 void SHMainMenu::SceneCreated()
 {
@@ -482,11 +481,13 @@ void SHMainMenu::SceneCreated()
         mMenuItems.mNumItemsAdded++;
         {
             MainMenuBind bindOpen = Bind<void>(MemFun<SHMainMenu, void, TLComponentInstance*>(&SHMainMenu::OpenItem), this, placeholder0);
-            item->mCallbacks[1] = Function<FnCallback>(bindOpen);
+            Function<FnCallback> openFunc(bindOpen);
+            item->mCallbacks[1] = openFunc;
         }
         {
             MainMenuBind bindClose = Bind<void>(MemFun<SHMainMenu, void, TLComponentInstance*>(&SHMainMenu::CloseItem), this, placeholder0);
-            item->mCallbacks[2] = Function<FnCallback>(bindClose);
+            Function<FnCallback> closeFunc(bindClose);
+            item->mCallbacks[2] = closeFunc;
         }
         {
             Function<FnCallback> applyFunc;

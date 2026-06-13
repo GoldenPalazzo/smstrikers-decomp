@@ -119,6 +119,20 @@ Event* EventManager::CreateValidEvent(unsigned long eventID, unsigned long uSize
         return NULL;
     }
 
+    Event* e = GetFreeEvent();
+
+    if (!e)
+    {
+        return NULL;
+    }
+
+    e->m_uEventID = eventID; // stw at +0x08
+
+    return e;
+}
+
+inline Event* EventManager::GetFreeEvent()
+{
     Event* e;
     if (!m_free)
     {
@@ -137,14 +151,6 @@ Event* EventManager::CreateValidEvent(unsigned long eventID, unsigned long uSize
             nlDLRingAddEnd(&m_queue, e);
         }
     }
-
-    if (!e)
-    {
-        return NULL;
-    }
-
-    e->m_uEventID = eventID; // stw at +0x08
-
     return e;
 }
 
@@ -189,4 +195,11 @@ void EventManager::DispatchEvents()
     m_dispatching = 0;
     m_queue = m_deferred;
     m_deferred = NULL;
+}
+
+void eventman_stub()
+{
+    nlPrintf("Event Manager: There are no more free events in the free event list!\n"); // @293
+    nlPrintf("Event Manager: Size mismatch on event creation (%d vs %d)!\n");
+    nlPrintf("Event Manager: Allocating %d events of size %d. Total = %d bytes\n");
 }

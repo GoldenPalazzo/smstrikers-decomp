@@ -10,7 +10,7 @@ public:
     // For AVL Tree interface
     T* Allocate() { return (T*)nlMalloc(sizeof(T), 8, false); }
     void Allocate(T*& out) { out = (T*)nlMalloc(sizeof(T), 8, false); }
-    void Free(T* ptr) { nlFree(ptr); }
+    void Free(T* ptr) { delete ptr; }
     void Delete(T* ptr);
 
     // For List interface

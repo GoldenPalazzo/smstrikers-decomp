@@ -771,7 +771,7 @@ config.libs = [
             Object(Matching, "Game/Sys/clock.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Sys/debug.cpp", extra_cflags=["-inline auto"]),
             Object(Matching, "Game/Sys/simpleparser.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(NonMatching, "Game/Sys/eventman.cpp", extra_cflags=["-inline auto", "-O4 -inline deferred"]),
+            Object(NonMatching, "Game/Sys/eventman.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Sys/geventdst.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Sys/tweak.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Sys/FloatingPointExceptions.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
@@ -796,7 +796,7 @@ config.libs = [
             Object(Matching, "Game/Transitions/ColourBlendScreenTransition.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Transitions/ScriptedTransition.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Transitions/TransLight.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(NonMatching, "Game/Transitions/TransitionSequence.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(Matching, "Game/Transitions/TransitionSequence.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/Transitions/ModelTransition.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
 
             # Camera
@@ -866,7 +866,7 @@ config.libs = [
             Object(NonMatching, "Game/SAnim.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/SAnim/AnimRetargeter.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/SAnim/pnSAnimController.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(NonMatching, "Game/SAnim/pnBlender.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(Matching, "Game/SAnim/pnBlender.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/SAnim/pnSingleAxisBlender.cpp", extra_cflags=["-inline auto", "-inline deferred"], mw_version="GC/1.3.2"),
             Object(Matching, "Game/SAnim/pnFeather.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/AnimInventory.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
@@ -898,7 +898,7 @@ config.libs = [
 
             # Physics
             Object(NonMatching, "Game/Physics.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(NonMatching, "Game/RayCollider.cpp", extra_cflags=["-inline auto"]),
+            Object(Matching, "Game/RayCollider.cpp", extra_cflags=["-inline auto"]),
             Object(NonMatching, "Game/PhysicsAIBall.cpp", extra_cflags=["-inline auto"]),
             Object(Matching, "Game/Physics/PhysicsBox.cpp", extra_cflags=["-inline auto"]),
             Object(NonMatching, "Game/PhysicsShell.cpp", extra_cflags=["-inline auto"]),
@@ -1352,7 +1352,7 @@ config.libs = [
             Object(Matching, "NL/gl/glTarget.cpp", extra_cflags=["-inline auto"]),
             Object(NonMatching, "NL/gl/glView.cpp", extra_cflags=["-inline auto"]),
             Object(Matching, "NL/gl/glUserData.cpp", extra_cflags=["-inline auto"]),
-            Object(NonMatching, "NL/gl/glModel.cpp", extra_cflags=["-inline auto"]),
+            Object(Matching, "NL/gl/glModel.cpp", extra_cflags=["-inline auto"]),
             Object(Matching, "NL/gl/glTexture.cpp", extra_cflags=["-inline auto"]),
             Object(NonMatching, "NL/gl/glConstant.cpp", extra_cflags=["-inline auto"]),
             Object(NonMatching, "NL/gl/glAppAttach.cpp", extra_cflags=["-inline auto"]),

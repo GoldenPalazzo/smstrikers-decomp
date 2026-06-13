@@ -71,8 +71,6 @@ int PhysicsCompositeObject::AddObject(PhysicsObject* object)
 
 /**
  * Offset/Address/Size: 0x164 | 0x801FF80C | size: 0x110
- * TODO: 96.54% match - remaining mismatch is in auto-generated
- * m_Components cleanup (nlWalkDLRing vs nlWalkRing call shape/register order).
  */
 PhysicsCompositeObject::~PhysicsCompositeObject()
 {
@@ -130,16 +128,12 @@ PhysicsCompositeObject::PhysicsCompositeObject(PhysicsWorld* physicsWorld)
 
 /**
  * Offset/Address/Size: 0x0 | 0x801FF99C | size: 0x3C
- * TODO: 96.00% match - prologue scheduling mismatch remains.
- * Target orders `lwz r7, 0(r5)` before saving LR; current MWCC output saves LR first.
+ * nlWalkDLRing<Entry, Container> is emitted WEAK via implicit instantiation
+ * from the m_Components member destructor (~DLListContainerBase ->
+ * DestroyAllEntries -> nlWalkDLRing). An explicit `template void ...`
+ * instantiation directive here would force GLOBAL linkage and mismatch the
+ * target's weak symbol, so it is intentionally omitted.
  */
-typedef DLListEntry<PhysicsTransform*> Entry;
-typedef DLListContainerBase<PhysicsTransform*, NewAdapter<DLListEntry<PhysicsTransform*> > > Container;
-
-template void nlWalkDLRing<Entry, Container>(
-    Entry* head,
-    Container* callback,
-    void (Container::*callbackFunc)(Entry*));
 
 // /**
 //  * Offset/Address/Size: 0x3C | 0x801FF9D8 | size: 0x20

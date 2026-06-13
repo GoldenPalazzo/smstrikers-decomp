@@ -1700,8 +1700,8 @@ FuzzyVariant Fuzzy::GoodPassTargetFrom(cFielder* TheTargetFielder, cFielder* The
 
 /**
  * Offset/Address/Size: 0x95A0 | 0x80073770 | size: 0xB98
- * TODO: 92.97% match - remaining diffs are register allocation drift in cache
- *       lookup/add paths and confidence-branch temporaries.
+ * TODO: 95.35% match - remaining diffs are cache key kept on stack instead
+ *       of r31 and fBestConfidence using f28 instead of f29.
  */
 FuzzyVariant Fuzzy::GetBestHitTarget(cFielder* TheFielder)
 {
@@ -1711,9 +1711,8 @@ FuzzyVariant Fuzzy::GetBestHitTarget(cFielder* TheFielder)
     float fBestConfidence = 0.0f;
 
     FuzzyVariant fvFielder(TheFielder);
-    unsigned long funcAddr = (unsigned long)GetBestHitTarget;
-    unsigned long hash = ((Variant*)&fvFielder)->GetHash();
-    hash += funcAddr;
+    unsigned long hash = (unsigned long)GetBestHitTarget;
+    hash += ((Variant*)&fvFielder)->GetHash();
     FuzzyVariant fvFielder2(TheFielder);
 
     ScriptQuestionCache* cache = nlSingleton<ScriptQuestionCache>::s_pInstance;
@@ -1823,7 +1822,10 @@ FuzzyVariant Fuzzy::GetBestHitTarget(cFielder* TheFielder)
             SaveConfidence PushDOM(&fConfidence);
             fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
             if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
-                fConfidence = (float)fConfidence * fBranchRatio;
+            {
+                double d = fConfidence;
+                fConfidence = (float)d * fBranchRatio;
+            }
 
             float fChasingBall = ChasingBall((cPlayer*)theOpponent);
             float fReceivingPass = ReceivingPass(theOpponent);
@@ -1843,7 +1845,10 @@ FuzzyVariant Fuzzy::GetBestHitTarget(cFielder* TheFielder)
                 SaveConfidence PushDOM2(&fConfidence);
                 fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
                 if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
-                    fConfidence = (float)fConfidence * fBranchRatio2;
+                {
+                    double d = fConfidence;
+                    fConfidence = (float)d * fBranchRatio2;
+                }
 
                 float fTrueConfidence2 = 1.0f - FarTo((cPlayer*)TheFielder, (cPlayer*)theOpponent);
                 float fFalseConfidence2 = 1.0f - fTrueConfidence2;
@@ -1856,7 +1861,10 @@ FuzzyVariant Fuzzy::GetBestHitTarget(cFielder* TheFielder)
                     SaveConfidence PushDOM3(&fConfidence);
                     fConfidence = (fConfidence <= fTrueConfidence2) ? fConfidence : fTrueConfidence2;
                     if (fConfidence < fTrueConfidence2 && fTrueConfidence2 < 0.5f)
-                        fConfidence = (float)fConfidence * fBranchRatio2;
+                    {
+                        double d = fConfidence;
+                        fConfidence = (float)d * fBranchRatio2;
+                    }
                     if (fConfidence > fBestConfidence)
                     {
                         fBestConfidence = fConfidence;
@@ -1870,11 +1878,16 @@ FuzzyVariant Fuzzy::GetBestHitTarget(cFielder* TheFielder)
                 SaveConfidence PushDOM4(&fConfidence);
                 fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
                 if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
-                    fConfidence = (float)fConfidence * fBranchRatio2;
+                {
+                    double d = fConfidence;
+                    fConfidence = (float)d * fBranchRatio2;
+                }
 
                 float fFacing = Facing((cPlayer*)TheFielder, (cPlayer*)theOpponent);
                 float fNearTo = NearTo((cPlayer*)TheFielder, (cPlayer*)theOpponent);
-                float fTrueConfidence3 = fNearTo * 0.6f + fFacing * 0.3f;
+                float fZero = 0.0f;
+                float fTrueConfidence3 = fNearTo * 0.6f + fZero;
+                fTrueConfidence3 = fFacing * 0.3f + fTrueConfidence3;
                 float fFalseConfidence3 = 1.0f - fTrueConfidence3;
                 float fMinVal3 = (fTrueConfidence3 <= fFalseConfidence3) ? fTrueConfidence3 : fFalseConfidence3;
                 float fMaxVal3 = (fTrueConfidence3 >= fFalseConfidence3) ? fTrueConfidence3 : fFalseConfidence3;
@@ -1885,7 +1898,10 @@ FuzzyVariant Fuzzy::GetBestHitTarget(cFielder* TheFielder)
                     SaveConfidence PushDOM5(&fConfidence);
                     fConfidence = (fConfidence <= fTrueConfidence3) ? fConfidence : fTrueConfidence3;
                     if (fConfidence < fTrueConfidence3 && fTrueConfidence3 < 0.5f)
-                        fConfidence = (float)fConfidence * fBranchRatio3;
+                    {
+                        double d = fConfidence;
+                        fConfidence = (float)d * fBranchRatio3;
+                    }
                     if (fConfidence > fBestConfidence)
                     {
                         fBestConfidence = fConfidence;

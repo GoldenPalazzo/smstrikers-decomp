@@ -2,17 +2,10 @@
 #define _EVENTMAN_H_
 
 #include "types.h"
+#include "Game/Sys/EventData.h"
 
 class EventHandler;
 class EventManager;
-
-struct EventData
-{
-    // public:
-    // EventData() { }
-    // virtual ~EventData() { }
-    virtual u32 GetID() { return -1; }
-};
 
 class Event
 {
@@ -32,21 +25,6 @@ public:
 };
 
 typedef void (*EventCallback)(Event*, void*);
-
-// class EventHandler /* size >= 0x2C */
-// {
-// public:
-//     /* 0x00 */ EventHandler* m_next;
-//     /* 0x04 */ EventHandler* m_prev;
-//     /* 0x08 */ EventCallback callback;
-//     /* 0x0C */ void* param;
-//     /* 0x10 */ u32 mask;
-//     /* 0x14 */ s32 unk14;
-//     /* 0x18 */ s32 unk18;
-//     /* 0x1C */ Event* m_event;
-//     /* 0x20 */ EventManager* m_manager;
-//     /* 0x24 */ u32 unk24;
-// };
 
 class EventHandler
 {
@@ -74,6 +52,7 @@ public:
     EventHandler* AddEventHandler(EventCallback, void*, unsigned long);
     void RemoveEventHandler(EventHandler*);
     void AllocateDestArray(unsigned long, unsigned long);
+    inline Event* GetFreeEvent();
     Event* CreateValidEvent(unsigned long eventID, unsigned long uSize);
     void DispatchEvents();
 

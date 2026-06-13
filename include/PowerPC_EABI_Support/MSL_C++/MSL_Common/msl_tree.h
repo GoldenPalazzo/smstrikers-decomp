@@ -115,7 +115,8 @@ void __red_black_tree<N>::balance_insert(node_base* x, node_base* root)
     x->set_red();
     while (x != root && x->parent()->is_red())
     {
-        if (x->parent() == (node_base*)x->grandparent()->left_)
+        node_base*& left = (node_base*&)x->grandparent()->left_;
+        if (x->parent() == left)
         {
             y = (node_base*)x->grandparent()->right_;
             if (y != 0 && y->is_red())
@@ -139,7 +140,7 @@ void __red_black_tree<N>::balance_insert(node_base* x, node_base* root)
         }
         else
         {
-            y = (node_base*)x->grandparent()->left_;
+            y = left;
             if (y != 0 && y->is_red())
             {
                 x->parent()->set_black();
@@ -307,7 +308,6 @@ __tree<T, Compare, Allocator>::insert_node_at(node* p, bool leftchild, bool is_l
 
     return new_node;
 }
-
 
 template <class Key, class Value, class Compare = less<Key>, class Allocator = allocator<pair<const Key, Value> > >
 class map

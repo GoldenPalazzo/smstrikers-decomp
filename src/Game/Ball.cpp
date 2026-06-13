@@ -497,8 +497,8 @@ void cBall::ShootRelease(const nlVector3& v3Velocity, eSpinType SpinType)
 
 /**
  * Offset/Address/Size: 0xD2C | 0x8000A700 | size: 0x3AC
- * TODO: 98.69% match - register coloring diffs in cross product, distance calc,
- *       direction vectors, and sideline check. MWCC register allocator quirks.
+ * TODO: 99.55% match - FPR register differences remain in spin cross product,
+ *       distance loads, and first sideline comparison.
  */
 static inline float CalcSpinRand(eSpinType spin);
 
@@ -532,8 +532,8 @@ void cBall::Shoot(const nlVector3& v3Dir, const nlVector3& v3Spin, eSpinType spi
         v3Up.f.z = fSpinRand;
 
         float upX = v3Up.f.x;
-        float upY = v3Up.f.y;
         float dirZ = v3Dir.f.z;
+        float upY = v3Up.f.y;
         float dirY = v3Dir.f.y;
         float dirX = v3Dir.f.x;
 
@@ -577,26 +577,15 @@ void cBall::Shoot(const nlVector3& v3Dir, const nlVector3& v3Spin, eSpinType spi
 
     if (m_pPhysicsBall->m_bUseMagnusEffect)
     {
-        float dy = m_v3Position.f.y - m_v3ShotTarget.f.y;
         float dx = m_v3Position.f.x - m_v3ShotTarget.f.x;
+        float dy = m_v3Position.f.y - m_v3ShotTarget.f.y;
         float dz = m_v3Position.f.z - m_v3ShotTarget.f.z;
-        float fDist = nlSqrt(dy * dy + dx * dx + dz * dz, true);
+        float fDist = nlSqrt(dx * dx + dy * dy + dz * dz, true);
 
         FakeBallWorld::GetPredictedPosAtDistance(fDist, v3PredPos, v3PredVel);
 
-        float tZ = m_v3ShotTarget.f.z - m_v3Position.f.z;
-        float fZ = v3PredPos.f.z - m_v3Position.f.z;
-        float tY = m_v3ShotTarget.f.y - m_v3Position.f.y;
-        float fY = v3PredPos.f.y - m_v3Position.f.y;
-        float tX = m_v3ShotTarget.f.x - m_v3Position.f.x;
-        float fX = v3PredPos.f.x - m_v3Position.f.x;
-
-        v3ToDir.f.z = tZ;
-        v3ToDir.f.y = tY;
-        v3ToDir.f.x = tX;
-        v3FromDir.f.x = fX;
-        v3FromDir.f.y = fY;
-        v3FromDir.f.z = fZ;
+        nlVec3Sub(v3ToDir, m_v3ShotTarget, m_v3Position);
+        nlVec3Sub(v3FromDir, v3PredPos, m_v3Position);
 
         GetRotationBetweenVectors(qRot, v3FromDir, v3ToDir);
         RotateVector(m_v3Velocity, v3Dir, qRot);
