@@ -31,7 +31,7 @@ public:
         nlListContainer<char*>* memList = &m_lMemList;
         ListEntry<char*>** pTail = &memList->m_Tail;
         ListEntry<char*>** pHead = &memList->m_Head;
-        while (memList->m_Head != NULL)
+        while (m_lMemList.m_Head != NULL)
         {
             ListEntry<char*>* first = nlListRemoveStart<ListEntry<char*> >(pHead, pTail);
             void* mesh;

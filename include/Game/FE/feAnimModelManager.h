@@ -4,9 +4,10 @@
 #include "types.h"
 #include "NL/nlSingleton.h"
 #include "Game/Inventory.h"
+#include "Game/FE/feBasic3dModel.h"
+#include "Game/SAnim.h"
 
 class FEAnimModel;
-class FEBasic3dModel;
 class cSAnim;
 
 class FEAnimModelManager : public nlSingleton<FEAnimModelManager>
@@ -17,6 +18,92 @@ public:
 
     void Update(float);
     void Initialize();
+
+    // ---------------------------------------------------------------------------
+    // RECONSTRUCTED inline helpers. These methods are "Erased" (inlined) in the
+    // original TU (see dwarf.txt). The signatures come from DWARF; the bodies are
+    // best-effort reconstructions and are NOT byte-verified against the target.
+    // Added so future decomp runs of callers (AnimInventory, CharacterTemplate,
+    // FrontEndTask, ...) can inline them. REVISE each body before trusting it.
+    //
+    // NOTE: character-class params are typed `int` to avoid pulling the heavy
+    // Game/Character.h into this header; the real type is `eCharacterClass`.
+    // ---------------------------------------------------------------------------
+
+    // REVISE: look up a cached animation by hash id. Walk order / early-out
+    // unconfirmed; the inventory may instead key by something other than m_uHashID.
+    cSAnim* GetAnim(unsigned int animHashID)
+    {
+        ListEntry<cSAnim*>* entry = mAnimInventory.m_lItemList.m_Head;
+        while (entry != NULL)
+        {
+            if (entry->data->m_uHashID == animHashID)
+                return entry->data;
+            entry = entry->next;
+        }
+        return NULL;
+    }
+
+    // REVISE: advance the tweak-model cursor. This branch matches the inlined
+    // copy currently in Update(); the wrap-to-head fallback is assumed.
+    void GetNextTweakModel()
+    {
+        if (mCurrentTweakModel == NULL)
+            mCurrentTweakModel = mFEAnimModelTweakList;
+        else
+            mCurrentTweakModel = mCurrentTweakModel->next;
+    }
+
+    // REVISE: step the tweak-model cursor backwards (mirror of GetNextTweakModel,
+    // unconfirmed -- the real one may walk to the list tail on wrap).
+    void GetPrevTweakModel()
+    {
+        if (mCurrentTweakModel == NULL)
+            mCurrentTweakModel = mFEAnimModelTweakList;
+        else
+            mCurrentTweakModel = mCurrentTweakModel->prev;
+    }
+
+    // REVISE: insert a model at the head of the doubly-linked tweak list.
+    void AddModelToTweakList(FEBasic3dModel* model)
+    {
+        model->prev = NULL;
+        model->next = mFEAnimModelTweakList;
+        if (mFEAnimModelTweakList != NULL)
+            mFEAnimModelTweakList->prev = model;
+        mFEAnimModelTweakList = model;
+    }
+
+    // REVISE: unlink a model from the tweak list.
+    void RemoveModelFromTweakList(FEBasic3dModel* femodel)
+    {
+        if (femodel->prev != NULL)
+            femodel->prev->next = femodel->next;
+        else
+            mFEAnimModelTweakList = femodel->next;
+        if (femodel->next != NULL)
+            femodel->next->prev = femodel->prev;
+    }
+
+    // REVISE: register a loaded model in the per-class slot array.
+    void RegisterLoaded(int cc, FEAnimModel* animmodel)
+    {
+        mLoadedModels[cc] = animmodel;
+    }
+
+    // REVISE: true if a model for this class slot is already loaded.
+    u8 IsAlreadyLoaded(int cc) const
+    {
+        return mLoadedModels[cc] != NULL;
+    }
+
+    // REVISE: PURE PLACEHOLDER. The original builds a swap-texture identifier from
+    // the two character classes (DWARF shows a char[64] name buffer + a hash), so
+    // the real body almost certainly formats a string and hashes it. Replace this.
+    static unsigned long BuildSwapTextureID(int sidekickcc, int captaincc)
+    {
+        return ((unsigned long)captaincc << 16) | (unsigned long)sidekickcc;
+    }
 
     /* 0x04 */ FEAnimModel* mLoadedModels[22];
     /* 0x5C */ void* mLightData;

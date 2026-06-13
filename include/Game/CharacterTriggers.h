@@ -44,8 +44,6 @@ void EmitShootToScoreHyperStrike(cFielder*);
 void EmitGoalieCatch(cPlayer*, const char*, bool);
 void EmitBallWallHit(const char*);
 void CharacterElectrocutionEffect(cCharacter* pCharacter, const nlVector3& v3Position, const nlVector3& v3Normal);
-void ElectrocutionUpdateCallback(EmissionController&);
-void ElectrocutionFinishedCallback(EmissionController&);
 void EmitUnFreeze(cPlayer*);
 void EmitFreeze(cPlayer*);
 void KillDaze(cPlayer*);
@@ -61,8 +59,6 @@ void GetAnimTriggerInfo(cCharacter*, int, bool (*)(float, float, unsigned long, 
 void CharacterTriggerHandler(unsigned int);
 EmissionController* EmitGeneric(cCharacter*, const char*, const char*);
 void UpdateEmitterFromBall(EmissionController&);
-void UpdateEmitterPoseFromCharacter(EmissionController&);
-void UpdateEmitterFromCharacter(EmissionController&);
 void UpdateEmitterFromCharacterIdxWithCoordSys(EmissionController&, int);
 void UpdateEmitterFromCharacterIdxWithoutAnimController(EmissionController&, int);
 

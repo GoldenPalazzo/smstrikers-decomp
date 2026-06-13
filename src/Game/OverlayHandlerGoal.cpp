@@ -940,7 +940,6 @@ void GoalOverlay::SetHighlightNumber(int highlightNumber)
 
 /**
  * Offset/Address/Size: 0xDA4 | 0x80100E14 | size: 0x7EC
- * TODO: 88.52% match - control-flow ordering in cup-final checks and BasicString temporary lifetime blocks still produce register/branch diffs.
  */
 void GoalOverlay::DoMatchEndOverlay()
 {
@@ -952,13 +951,6 @@ void GoalOverlay::DoMatchEndOverlay()
         FindCompByValue byValue;
         FindCompByRef byRef;
     } findComp;
-
-    volatile InlineHasher hSlideB, hSlideA;
-    volatile InlineHasher hLayerB, hLayerA;
-    volatile InlineHasher hDescB, hDescA;
-    volatile InlineHasher h5, h4, h3, h2, h1, h0;
-
-    unsigned long hash;
 
     SetWinnerTitle();
 
@@ -972,33 +964,27 @@ void GoalOverlay::DoMatchEndOverlay()
         int round = (short)gameInfo->GetCurrentRoundNumber();
         int mode = ((GameInfoModeAccessor_DoMatchEndOverlay*)gameInfo)->mCurrentMode;
 
-        if (mode == GM_BOWSER_CUP_DoMatchEndOverlay)
+        if (mode == GM_BOWSER_CUP_DoMatchEndOverlay && ((round == -2 && gameInfo->IsSuperTeamUnlocked()) || round == -1))
         {
-            if ((round == -2 && gameInfo->IsSuperTeamUnlocked()) || round == -1)
+            isFinalGame = true;
+            winner = gameInfo->FindWinningTeam();
+        }
+        else if (mode == GM_BOWSER_CUP_DoMatchEndOverlay && round == -2 && !gameInfo->IsSuperTeamUnlocked())
+        {
+            winner = gameInfo->FindWinningTeam();
+            if (winner != gameInfo->GetUserSelectedCupTeam())
             {
                 isFinalGame = true;
-                winner = gameInfo->FindWinningTeam();
-            }
-            else if (round == -2)
-            {
-                winner = gameInfo->FindWinningTeam();
-                if (winner != gameInfo->GetUserSelectedCupTeam())
-                {
-                    isFinalGame = true;
-                }
             }
         }
-        else if (mode == GM_SUPER_BOWSER_CUP_DoMatchEndOverlay)
+        else if (mode == GM_SUPER_BOWSER_CUP_DoMatchEndOverlay && round == -2)
         {
-            if (round == -2)
-            {
-                isFinalGame = true;
-                winner = gameInfo->FindWinningTeam();
-            }
+            isFinalGame = true;
+            winner = gameInfo->FindWinningTeam();
         }
-        else
+        else if (mode != GM_BOWSER_CUP_DoMatchEndOverlay && mode != GM_SUPER_BOWSER_CUP_DoMatchEndOverlay)
         {
-            if (round == (u16)(gameInfo->GetNumRounds() - 1))
+            if (round == (u16)gameInfo->GetNumRounds() - 1)
             {
                 isFinalGame = true;
                 winner = gameInfo->FindWinningTeam();
@@ -1062,7 +1048,7 @@ void GoalOverlay::DoMatchEndOverlay()
             }
 
             BasicString<unsigned short, Detail::TempStringAllocator> unformatted(data);
-            int cup = gameInfo->GetTrophyTypeByCurrentMode();
+            int cup = nlSingleton<GameInfoManager>::s_pInstance->GetTrophyTypeByCurrentMode();
 
             unsigned long winnerLocID = GetLOCTeamName((eTeamID)winner);
             const unsigned short* winnerLocString;
@@ -1112,7 +1098,7 @@ void GoalOverlay::DoMatchEndOverlay()
         }
     }
 
-    if (!isFinalGame)
+    else
     {
         int scoreLeft = g_pTeams[0]->m_nScore;
         int scoreRight = g_pTeams[1]->m_nScore;
@@ -1139,7 +1125,7 @@ void GoalOverlay::DoMatchEndOverlay()
         }
 
         const unsigned short* formatLocString;
-        unsigned long key = 0x09B5BC7C;
+        unsigned long key = 0x09B4BC7C;
         nlLocalization* loc = g_pLocalization;
 
         if (loc->m_LookupTable == 0)
@@ -1176,8 +1162,7 @@ void GoalOverlay::DoMatchEndOverlay()
             data->mData = (unsigned short*)nlMalloc((data->mSize + 1) * 2, 8, true);
             data->mCapacity = data->mSize;
 
-            int i = 0;
-            int j = 0;
+            int j = 0, i = 0;
             while (i < data->mSize)
             {
                 *(unsigned short*)((char*)data->mData + j) = *formatLocString;
@@ -1237,6 +1222,13 @@ void GoalOverlay::DoMatchEndOverlay()
 
         formatted = Format(unformatted, winnerLocString, loserLocString);
     }
+
+    volatile InlineHasher hSlideB, hSlideA;
+    volatile InlineHasher hLayerB, hLayerA;
+    volatile InlineHasher hDescB, hDescA;
+    volatile InlineHasher h5, h4, h3, h2, h1, h0;
+
+    unsigned long hash;
 
     findComp.byValue = FEFinder<TLTextInstance, 3>::Find<FEPresentation>;
 
