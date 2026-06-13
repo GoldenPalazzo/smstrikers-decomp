@@ -1,3 +1,5 @@
+#define BIND_NO_DECL
+#define FUNCTION1_SPLIT_BODIES
 #include "Game/SH/SHLessonSelect.h"
 #include "Game/OverlayManager.h"
 #include "Game/SH/SHLesson.h"
@@ -15,6 +17,28 @@
 #include "NL/nlBasicString.h"
 
 #include "NL/nlMemFunBody.h"
+
+template <typename R, typename F, typename A>
+BindExp1<R, F, A> Bind(F fn, const A& arg)
+{
+    return BindExp1<R, F, A>(fn, arg);
+}
+
+typedef Detail::MemFunImpl<void, void (LessonSelectScene::*)()> MemFunImpl_LessonSelect_t;
+typedef BindExp1<void, MemFunImpl_LessonSelect_t, LessonSelectScene*> BindExp1_LessonSelect_t;
+
+template <>
+inline void Function1<void, TLComponentInstance*>::FunctorImpl<BindExp1_LessonSelect_t>::operator()(TLComponentInstance*)
+{
+    (mBind.mArg->*mBind.mFuncPtr.mMemFun)();
+}
+
+template <>
+inline Function1<void, TLComponentInstance*>::FunctorBase*
+Function1<void, TLComponentInstance*>::FunctorImpl<BindExp1_LessonSelect_t>::Clone() const
+{
+    return new (nlMalloc(sizeof(FunctorImpl), 8, false)) FunctorImpl(mBind);
+}
 
 static int sRowOffset;
 static int sCurrentRow;
@@ -179,8 +203,6 @@ void LessonSelectScene::SceneCreated()
     FEPresentation* presentation = m_pFEPresentation;
     FEAudio::EnableSounds(false);
 
-    typedef Detail::MemFunImpl<void, void (LessonSelectScene::*)()> MemFunImpl_LessonSelect_t;
-    typedef BindExp1<void, MemFunImpl_LessonSelect_t, LessonSelectScene*> BindExp1_LessonSelect_t;
     typedef Function<TLComponentInstance*> MenuCallback;
 
     for (int i = 0; i < 4; i++)
@@ -216,7 +238,7 @@ void LessonSelectScene::SceneCreated()
             }
 
             {
-                BindExp1_LessonSelect_t bind = Bind<void>(
+                BindExp1_LessonSelect_t bind = Bind<void, MemFunImpl_LessonSelect_t, LessonSelectScene*>(
                     MemFun<LessonSelectScene, void>(&LessonSelectScene::StartLesson), this);
                 MenuCallback applyFunc(bind);
                 *(MenuCallback*)&menuItem->mCallbacks[ON_APPLY] = applyFunc;

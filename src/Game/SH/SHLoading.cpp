@@ -617,8 +617,7 @@ void SuperLoadingScene::BuildPlayerStrings(TLTextInstance* pTextInst, int side, 
         }
 
         str = str.AppendInPlace(locText);
-        static unsigned short sClrPop[] = { (unsigned short)'{', (unsigned short)'c', (unsigned short)'l', (unsigned short)'r', (unsigned short)':', (unsigned short)'p', (unsigned short)'o', (unsigned short)'p', (unsigned short)'}', (unsigned short)'\n', 0 };
-        str = str.AppendInPlace(sClrPop);
+        str = str.AppendInPlace((const unsigned short*)L"{clr:pop}\n");
     }
 
     memcpy(side == 0 ? mPlayerStrings[0] : mPlayerStrings[1], str.c_str(), 255);

@@ -19,6 +19,10 @@ public:
     void Update(float);
     void Initialize();
 
+    // Inlined into Update() in the original (see dwarf.txt). Defined in the .cpp.
+    void CheckTweakModelSwitch();
+    void TweakModelPosition();
+
     // ---------------------------------------------------------------------------
     // RECONSTRUCTED inline helpers. These methods are "Erased" (inlined) in the
     // original TU (see dwarf.txt). The signatures come from DWARF; the bodies are

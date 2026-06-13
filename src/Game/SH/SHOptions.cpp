@@ -11,9 +11,10 @@
 #include "NL/glx/glxSwap.h"
 #include "NL/nlPrint.h"
 
+#include "NL/nlMemFunBody.h"
+
 extern bool DidContinueWithoutOperation();
 extern u8 mLastSaveLoadSuccess__13SaveLoadScene;
-extern unsigned long mUserInfoCRC__12OptionsScene;
 extern TLInstance* FindComponent(TLSlide*, const char*);
 
 namespace DoubleHighlite
@@ -119,6 +120,7 @@ static const eMenuState MenuToMenuStateMap[] = {
 // }
 
 s32 OptionsScene::mLastSelectedIndex;
+unsigned long mUserInfoCRC__12OptionsScene;
 
 /**
  * Offset/Address/Size: 0x1460 | 0x800B4A1C | size: 0x8C
@@ -192,9 +194,6 @@ OptionsScene::~OptionsScene()
         delete m_subMenu;
     }
 }
-
-template <typename T, typename R, typename P>
-Detail::MemFunImpl<R, void (T::*)(P)> MemFun(void (T::*)(P));
 
 typedef Detail::MemFunImpl<void, void (OptionsScene::*)(eMenuState)> MemFunImpl_Options_t;
 typedef BindExp2<void, MemFunImpl_Options_t, OptionsScene*, eMenuState> BindExp2_Options_t;

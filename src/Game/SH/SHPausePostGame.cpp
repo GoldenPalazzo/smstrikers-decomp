@@ -1,4 +1,7 @@
 #define BASICSTRING_OUTLINE_CTOR
+#define BIND_NO_DECL
+#define FUNCTION1_SPLIT_BODIES
+#define MEMFUN_NO_DECL
 #include "Game/SH/SHPausePostGame.h"
 
 #include "Game/Audio/AudioLoader.h"
@@ -14,17 +17,41 @@
 #include "NL/nlLocalization.h"
 #include "NL/nlString.h"
 
-static int gPadThatQuit;
+#include "NL/nlMemFunBody.h"
+
+template <typename R, typename F, typename A>
+BindExp1<R, F, A> Bind(F fn, const A& arg)
+{
+    return BindExp1<R, F, A>(fn, arg);
+}
+
+typedef Detail::MemFunImpl<void, void (PausePostGameScene::*)()> MemFunImpl_PausePostGame_t;
+typedef BindExp1<void, MemFunImpl_PausePostGame_t, PausePostGameScene*> BindExp1_PausePostGame_t;
+
+template <>
+inline void Function1<void, TLComponentInstance*>::FunctorImpl<BindExp1_PausePostGame_t>::operator()(TLComponentInstance*)
+{
+    (mBind.mArg->*mBind.mFuncPtr.mMemFun)();
+}
+
+template <>
+inline Function1<void, TLComponentInstance*>::FunctorBase*
+Function1<void, TLComponentInstance*>::FunctorImpl<BindExp1_PausePostGame_t>::Clone() const
+{
+    return new (nlMalloc(sizeof(FunctorImpl), 8, false)) FunctorImpl(mBind);
+}
+
+namespace DoubleHighlite
+{
+static const char* SLIDE_IN = "in";
+static const char* SLIDE_OUT = "out";
+} // namespace DoubleHighlite
+
+static int gPadThatQuit = 8;
 
 extern nlLocalization* g_pLocalization;
 extern const unsigned short LocalizationTableNotFound[];
 extern const unsigned short MissingLocString[];
-
-template <typename T, typename R>
-Detail::MemFunImpl<R, void (T::*)()> MemFun(void (T::*fn)())
-{
-    return Detail::MemFunImpl<R, void (T::*)()>(fn);
-}
 
 static inline const unsigned short* LookupLocHash(unsigned long hash)
 {
@@ -174,16 +201,10 @@ PausePostGameScene::~PausePostGameScene()
 /**
  * Offset/Address/Size: 0x608 | 0x8010770C | size: 0x187C
  */
-namespace DoubleHighlite
-{
-extern const char* SLIDE_IN;
-extern const char* SLIDE_OUT;
-} // namespace DoubleHighlite
-
 void PausePostGameScene::SceneCreated()
 {
-    typedef Detail::MemFunImpl<void, void (PausePostGameScene::*)()> PauseMemFun;
-    typedef BindExp1<void, PauseMemFun, PausePostGameScene*> PauseBind;
+    typedef MemFunImpl_PausePostGame_t PauseMemFun;
+    typedef BindExp1_PausePostGame_t PauseBind;
     typedef Function1<void, TLComponentInstance*>::FunctorImpl<PauseBind> PauseFunctorImpl;
 
     EnableAutoPressed();
@@ -237,7 +258,7 @@ void PausePostGameScene::SceneCreated()
         }
 
         {
-            PauseBind bind = Bind<void>(
+            PauseBind bind = Bind<void, MemFunImpl_PausePostGame_t, PausePostGameScene*>(
                 MemFun<PausePostGameScene, void>(FunctionTable[i]), this);
             PauseFunctorImpl* impl = new ((PauseFunctorImpl*)nlMalloc(sizeof(PauseFunctorImpl), 8, false)) PauseFunctorImpl(bind);
 

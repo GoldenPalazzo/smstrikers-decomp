@@ -1,3 +1,4 @@
+#define BIND_NO_DECL
 #include "Game/SH/SHCupTrophy.h"
 
 #include "Game/GameInfo.h"
@@ -728,8 +729,13 @@ enum ePopupMenu
     NUM_POPUP_MENUS = 47,
 };
 
-template <typename T, typename R>
-Detail::MemFunImpl<R, void (T::*)()> MemFun(void (T::*)());
+#include "NL/nlMemFunBody.h"
+
+template <typename R, typename F, typename A>
+BindExp1<R, F, A> Bind(F fn, const A& arg)
+{
+    return BindExp1<R, F, A>(fn, arg);
+}
 
 class FEPopupMenu
 {
@@ -784,7 +790,7 @@ void CupTrophyScene::HandleUnlockedTriggers()
         if ((gameInfo->mUnlockedTriggers & (1 << i)) != 0)
         {
             popup = (FEPopupMenu*)nlSingleton<GameSceneManager>::s_pInstance->Push(0x1B, 0, false);
-            BindExp1_vfmfcp bind = Bind<void>(
+            BindExp1_vfmfcp bind = Bind<void, MemFunImpl_CupTrophyScene_v, CupTrophyScene*>(
                 MemFun<CupTrophyScene, void>(&CupTrophyScene::HandleUnlockedTriggers), this);
 
             {

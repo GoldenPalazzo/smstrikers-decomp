@@ -1,3 +1,6 @@
+#define MEMFUN_NO_DECL
+#define BIND_NO_DECL
+#define FUNCTION1_SPLIT_BODIES
 #include "Game/SH/SHTournTeamSetup.h"
 #include "types.h"
 #include "Game/FE/feFinder.h"
@@ -8,6 +11,17 @@
 #include "Game/SH/SHCupHub.h"
 #include "NL/gl/glPlat.h"
 #include "NL/gl/glStruct.h"
+
+typedef Detail::MemFunImpl<void, void (TournTeamSetupSceneV2::*)(int)> MemFunImpl_Tourn_t;
+typedef BindExp2<void, MemFunImpl_Tourn_t, TournTeamSetupSceneV2*, int> BindExp2_Tourn_t;
+typedef Function1<void, TLComponentInstance*>::FunctorImpl<BindExp2_Tourn_t> FunctorImpl_Tourn_t;
+
+#define F1BODY_RET   void
+#define F1BODY_PARAM TLComponentInstance*
+#define F1BODY_BIND  BindExp2_Tourn_t
+#include "NL/nlFunction1Body.h"
+#include "NL/nlMemFunBody.h"
+#include "NL/nlBindBody.h"
 
 namespace DoubleHighlite
 {
@@ -152,9 +166,6 @@ void TournTeamSetupSceneV2::SceneCreated()
     FEAudio::EnableSounds(false);
 
     typedef void FnTLComponentInstanceCb(TLComponentInstance*);
-    typedef Detail::MemFunImpl<void, void (TournTeamSetupSceneV2::*)(int)> MemFunImpl_Tourn_t;
-    typedef BindExp2<void, MemFunImpl_Tourn_t, TournTeamSetupSceneV2*, int> BindExp2_Tourn_t;
-    typedef Function1<void, TLComponentInstance*>::FunctorImpl<BindExp2_Tourn_t> FunctorImpl_Tourn_t;
 
     for (int i = 0; i < 4; i++)
     {

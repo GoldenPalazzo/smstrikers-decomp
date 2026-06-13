@@ -1449,7 +1449,7 @@ void SaveLoadScene::HandleSaveLoadFinishedResult()
 
             if (mNextScene == SCENE_MOVIE_PLAYER)
             {
-                ((MoviePlayerScene*)scene)->SetMovieDetails("credits.thp", true, false);
+                ((MoviePlayerScene*)scene)->SetMovieDetails("intromovie.thp", true, false);
                 ((MoviePlayerScene*)scene)->mNextScene = SCENE_TITLE;
             }
         }

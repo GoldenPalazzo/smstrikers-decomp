@@ -51,14 +51,8 @@ void FEAnimModelManager::Initialize()
 {
 }
 
-/**
- * Offset/Address/Size: 0x0 | 0x800947AC | size: 0x210
- */
-void FEAnimModelManager::Update(float)
+inline void FEAnimModelManager::CheckTweakModelSwitch()
 {
-    if (!mTweak3dModels)
-        return;
-
     cGlobalPad* pad = cPadManager::GetPad(1);
     if (pad != NULL)
     {
@@ -78,12 +72,15 @@ void FEAnimModelManager::Update(float)
             }
         }
     }
+}
 
+void FEAnimModelManager::TweakModelPosition()
+{
     FEBasic3dModel* model = mCurrentTweakModel;
     if (model == NULL)
         return;
 
-    pad = cPadManager::GetPad(1);
+    cGlobalPad* pad = cPadManager::GetPad(1);
     if (pad == NULL)
         return;
 
@@ -93,9 +90,7 @@ void FEAnimModelManager::Update(float)
     model->mRotation.f.z -= pad->GetPressure(1, true);
     model->mRotation.f.z += pad->GetPressure(0, true);
 
-    nlColour rectanglecolour;
-    nlColour debugtextcolour = { 0x00, 0x00, 0x00, 0xC8 };
-    DrawTextRectangle(GLV_Debug, 0.0f, 0.0f, 45.0f, 1.0f, 0.0f, debugtextcolour, true);
+    DrawTextRectangle(GLV_Debug, 0.0f, 0.0f, 45.0f, 1.0f, 0.0f, (nlColour) { 0x00, 0x00, 0x00, 0xC8 }, true);
 
     glStateBundle state;
     glStateSave(state);
@@ -104,8 +99,19 @@ void FEAnimModelManager::Update(float)
     char tempbuffer[128];
     nlSNPrintf(tempbuffer, 128, "pos: %3.2f, %3.2f, %3.2f -- rot-z: %3.2f", model->mPosition.f.x, model->mPosition.f.y, model->mPosition.f.z, model->mRotation.f.z);
 
-    rectanglecolour = (nlColour){ 0xFF, 0xFF, 0xFF, 0xFF };
-    glFontPrint(GLV_Debug, 0, 0, rectanglecolour, tempbuffer);
+    glFontPrint(GLV_Debug, 0, 0, (nlColour) { 0xFF, 0xFF, 0xFF, 0xFF }, tempbuffer);
     glFontEnd();
     glStateRestore(state);
+}
+
+/**
+ * Offset/Address/Size: 0x0 | 0x800947AC | size: 0x210
+ */
+void FEAnimModelManager::Update(float)
+{
+    if (!mTweak3dModels)
+        return;
+
+    CheckTweakModelSwitch();
+    TweakModelPosition();
 }

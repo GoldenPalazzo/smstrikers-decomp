@@ -16,7 +16,7 @@
 template <typename Class, typename R, typename P>
 Detail::MemFunImpl<R, void (Class::*)(P)> MemFun(void (Class::*fn)(P))
 {
-    FORCE_DONT_INLINE;
+    return Detail::MemFunImpl<R, void (Class::*)(P)>(fn);
 }
 
 extern nlColour MenuHighliteColour;
@@ -450,7 +450,7 @@ void SHMainMenu::SceneCreated()
     typedef Detail::MemFunImpl<void, void (SHMainMenu::*)(TLComponentInstance*)> MainMenuMemFun;
     typedef BindExp2<void, MainMenuMemFun, SHMainMenu*, Placeholder<0> > MainMenuBind;
     static const char* MenuNameTable[] = { "MENU ITEM1", "MENU ITEM2", "MENU ITEM3", "MENU ITEM4", "MENU ITEM7", "MENU ITEM5", "MENU ITEM6" };
-    static void (*ApplyFuncTable[])(TLComponentInstance*) = { onSelectFriendly, onSelectCup, onSelectSuperCup, onSelectTournament, onSelect101, onSelectTrophies, onSelectOptions };
+    static void (*const ApplyFuncTable[])(TLComponentInstance*) = { onSelectFriendly, onSelectCup, onSelectSuperCup, onSelectTournament, onSelect101, onSelectTrophies, onSelectOptions };
     FEMusic::StartStreamIfDifferent(0);
     FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
     TLTextInstance* scrollText;

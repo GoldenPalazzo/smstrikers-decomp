@@ -10,6 +10,37 @@
 #include "NL/nlPrint.h"
 #include "types.h"
 
+eStadiumID STADIUM_ORDER[7] = {
+    STAD_MARIO_STADIUM,
+    STAD_PEACH_TOAD_STADIUM,
+    STAD_WARIO_STADIUM,
+    STAD_DK_DAISY,
+    STAD_YOSHI_STADIUM,
+    STAD_FORBIDDEN_DOME,
+    STAD_SUPER_STADIUM,
+};
+
+StadiumEntry StadiumEntries[8] = {
+    {STAD_PEACH_TOAD_STADIUM, "fe/mainv2/targas/stadium_peach"},
+    {STAD_MARIO_STADIUM, "fe/mainv2/targas/stadium_mario"},
+    {STAD_WARIO_STADIUM, "fe/mainv2/targas/stadium_wario"},
+    {STAD_DK_DAISY, "fe/mainv2/targas/stadium_dk"},
+    {STAD_YOSHI_STADIUM, "fe/mainv2/targas/stadium_yoshi"},
+    {STAD_FORBIDDEN_DOME, "fe/mainv2/targas/stadium_dome"},
+    {STAD_SUPER_STADIUM, "fe/mainv2/targas/stadium_super"},
+    {(eStadiumID)7, "fe/mainv2/targas/stadium_LOCKED"},
+};
+
+unsigned long StadiumDescriptions[7] = {
+    0xE2FCB05C,
+    0x065E30EC,
+    0xEF23A6A3,
+    0xEF484926,
+    0xF045B5A2,
+    0x618EAFC3,
+    0xEFDC5FC5,
+};
+
 static inline bool IsStadiumUnlocked(eStadiumID sid)
 {
     switch (sid)

@@ -1,3 +1,5 @@
+#define BIND_NO_DECL
+#define FUNCTION1_SPLIT_BODIES
 #include "Game/SH/SHPause.h"
 #include "Game/OverlayManager.h"
 
@@ -16,7 +18,10 @@
 
 extern FEInput* g_pFEInput;
 extern nlColour MenuHighliteColour;
-extern float mDelayBeforeUnpause__14PauseMenuScene;
+
+eFEINPUT_PAD PauseMenuScene::mControllingInput = FE_ALL_PADS;
+float mDelayBeforeUnpause__14PauseMenuScene = 0.1f;
+s32 PauseMenuScene::mLastSelectedIndex;
 
 namespace DoubleHighlite
 {
@@ -33,6 +38,48 @@ template <typename T, typename R, typename A>
 Detail::MemFunImpl<R, void (T::*)(A)> MemFun(void (T::*fn)(A))
 {
     return Detail::MemFunImpl<R, void (T::*)(A)>(fn);
+}
+
+template <typename R, typename F, typename A>
+BindExp1<R, F, A> Bind(F fn, const A& arg)
+{
+    return BindExp1<R, F, A>(fn, arg);
+}
+
+template <typename R, typename F, typename A, typename B>
+BindExp2<R, F, A, B> Bind(F fn, const A& t0, const B& t1)
+{
+    return BindExp2<R, F, A, B>(fn, t0, t1);
+}
+
+typedef Detail::MemFunImpl<void, void (PauseMenuScene::*)()> MemFunImpl_Pause_v_t;
+typedef Detail::MemFunImpl<void, void (PauseMenuScene::*)(TLComponentInstance*)> MemFunImpl_Pause_p_t;
+typedef BindExp1<void, MemFunImpl_Pause_v_t, PauseMenuScene*> BindExp1_Pause_t;
+typedef BindExp2<void, MemFunImpl_Pause_p_t, PauseMenuScene*, Placeholder<0> > BindExp2_Pause_t;
+
+template <>
+inline void Function0<void>::FunctorImpl<BindExp1_Pause_t>::operator()()
+{
+    FORCE_DONT_INLINE;
+    (mBind.mArg->*mBind.mFuncPtr.mMemFun)();
+}
+
+template <>
+inline Function0<void>::FunctorBase* Function0<void>::FunctorImpl<BindExp1_Pause_t>::Clone() const
+{
+    return new (nlMalloc(sizeof(FunctorImpl), 8, false)) FunctorImpl(mBind);
+}
+
+template <>
+inline void Function1<void, TLComponentInstance*>::FunctorImpl<BindExp2_Pause_t>::operator()(TLComponentInstance* arg)
+{
+    (mBind.mT0->*mBind.mFunction.mMemFun)(arg);
+}
+
+template <>
+inline Function1<void, TLComponentInstance*>::FunctorBase* Function1<void, TLComponentInstance*>::FunctorImpl<BindExp2_Pause_t>::Clone() const
+{
+    return new (nlMalloc(sizeof(FunctorImpl), 8, false)) FunctorImpl(mBind);
 }
 
 // /**
@@ -476,7 +523,7 @@ void PauseMenuScene::SceneCreated()
         static char* MENU_NAMES[6]
             = { "MENU ITEM1", "MENU ITEM2", "MENU ITEM3", "MENU ITEM6", "MENU ITEM4", "MENU ITEM5" };
 
-        static bool E3_BUILD_IS_DISABLED_OPTIONS[6] = { false, false, true, true, false, false };
+        static const bool E3_BUILD_IS_DISABLED_OPTIONS[6] = { false, false, true, true, false, false };
 
         int i;
         for (i = 0; i < 6; i++)

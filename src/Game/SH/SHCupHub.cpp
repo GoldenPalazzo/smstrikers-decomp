@@ -1,4 +1,5 @@
 #define BASICSTRING_OUTLINE_CTOR
+#define BIND_NO_DECL
 #include "Game/SH/SHCupHub.h"
 
 #include "Game/GameSceneManager.h"
@@ -74,11 +75,13 @@ public:
     void CreateTrophyScene(eTrophyType, ButtonComponent::ButtonState, bool);
 };
 
-template <typename T, typename R>
-Detail::MemFunImpl<R, void (T::*)()> MemFun(void (T::*)());
+#include "NL/nlMemFunBody.h"
 
 template <typename R, typename F, typename A>
-BindExp1<R, F, A> Bind(F fn, const A& arg);
+BindExp1<R, F, A> Bind(F fn, const A& arg)
+{
+    return BindExp1<R, F, A>(fn, arg);
+}
 
 enum ePopupMenu
 {
@@ -775,7 +778,7 @@ void CupHubScene::Update(float fDeltaT)
 
         pPopup = (FEPopupMenu*)nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
 
-        BindExp1_vfmfcp bind = Bind<void>(
+        BindExp1_vfmfcp bind = Bind<void, MemFunImpl_CupHubScene_v, CupHubScene*>(
             MemFun<CupHubScene, void>(&CupHubScene::ReturnToMainMenu), this);
 
         {
@@ -823,7 +826,7 @@ void CupHubScene::EndCup()
         {
             FEPopupMenu* popup = (FEPopupMenu*)nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
 
-            BindExp1_vfmfcp bind = Bind<void>(
+            BindExp1_vfmfcp bind = Bind<void, MemFunImpl_CupHubScene_v, CupHubScene*>(
                 MemFun<CupHubScene, void>(&CupHubScene::ReturnToMainMenu), self);
 
             {

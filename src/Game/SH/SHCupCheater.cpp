@@ -1,5 +1,6 @@
 #define NL_SINGLETON_NO_DEFINE
 #define NL_NO_LEXICALCAST_NLSTRING_INT
+#define BIND_NO_DECL
 #include "Game/SH/SHCupCheater.h"
 #include "Game/FE/FEAudio.h"
 #include "Game/FE/feFinder.h"
@@ -10,6 +11,12 @@
 #include "NL/nlLexicalCast.h"
 
 #include "NL/nlMemFunBody.h"
+
+template <typename R, typename F, typename A>
+BindExp1<R, F, A> Bind(F fn, const A& arg)
+{
+    return BindExp1<R, F, A>(fn, arg);
+}
 
 // /**
 //  * Offset/Address/Size: 0x0 | 0x800E9970 | size: 0x38
@@ -151,7 +158,7 @@ void CupCheaterScene::SceneCreated()
     m_SlideMenu = new ((FESlideMenu*)nlMalloc(sizeof(FESlideMenu), 8, false)) FESlideMenu(comp);
 
     {
-        BindExp1_vfmfcp bind = Bind<void>(
+        BindExp1_vfmfcp bind = Bind<void, MemFunImpl_CupCheaterScene_v, CupCheaterScene*>(
             MemFun<CupCheaterScene, void>(&CupCheaterScene::OnSelectGameplay), this);
 
         Function<FnVoidVoid> callback;
@@ -163,7 +170,7 @@ void CupCheaterScene::SceneCreated()
     }
 
     {
-        BindExp1_vfmfcp bind = Bind<void>(
+        BindExp1_vfmfcp bind = Bind<void, MemFunImpl_CupCheaterScene_v, CupCheaterScene*>(
             MemFun<CupCheaterScene, void>(&CupCheaterScene::OnSelectHomeWin), this);
 
         Function<FnVoidVoid> callback;
@@ -175,7 +182,7 @@ void CupCheaterScene::SceneCreated()
     }
 
     {
-        BindExp1_vfmfcp bind = Bind<void>(
+        BindExp1_vfmfcp bind = Bind<void, MemFunImpl_CupCheaterScene_v, CupCheaterScene*>(
             MemFun<CupCheaterScene, void>(&CupCheaterScene::OnSelectAwayWin), this);
 
         Function<FnVoidVoid> callback;
@@ -187,7 +194,7 @@ void CupCheaterScene::SceneCreated()
     }
 
     {
-        BindExp1_vfmfcp bind = Bind<void>(
+        BindExp1_vfmfcp bind = Bind<void, MemFunImpl_CupCheaterScene_v, CupCheaterScene*>(
             MemFun<CupCheaterScene, void>(&CupCheaterScene::OnSelectHomeOTWin), this);
 
         Function<FnVoidVoid> callback;
@@ -199,7 +206,7 @@ void CupCheaterScene::SceneCreated()
     }
 
     {
-        BindExp1_vfmfcp bind = Bind<void>(
+        BindExp1_vfmfcp bind = Bind<void, MemFunImpl_CupCheaterScene_v, CupCheaterScene*>(
             MemFun<CupCheaterScene, void>(&CupCheaterScene::OnSelectAwayOTWin), this);
 
         Function<FnVoidVoid> callback;

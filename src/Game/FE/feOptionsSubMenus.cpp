@@ -1629,15 +1629,13 @@ void OptionsCheatsMenu::BuildCustomPowerupsList(TLComponentInstance* compinstanc
     int startindex = 0;
     char slidename[64];
     int i;
-    unsigned char unlocked;
+    bool unlocked;
     TLTextInstance* pText;
     nlColour lockColour;
     TLComponentInstance* pMenuComp;
     TLComponentInstance* pArrowComp;
-    GameInfoManager* gm = nlSingleton<GameInfoManager>::s_pInstance;
 
-    SlideMenuList* list = new (nlMalloc(sizeof(SlideMenuList), 8, false)) SlideMenuList(compinstance);
-    mSlideMenuLists[0] = (MenuList<SlideMenuList>*)list;
+    mSlideMenuLists[0] = (MenuList<SlideMenuList>*)(new (nlMalloc(sizeof(SlideMenuList), 8, false)) SlideMenuList(compinstance));
 
     compinstance->SetActiveSlide("Slide1");
     {
@@ -1669,19 +1667,19 @@ void OptionsCheatsMenu::BuildCustomPowerupsList(TLComponentInstance* compinstanc
         switch (i)
         {
         case 1:
-            unlocked = gm->IsCustomExplosiveUnlocked();
+            unlocked = nlSingleton<GameInfoManager>::s_pInstance->IsCustomExplosiveUnlocked();
             break;
         case 2:
-            unlocked = gm->IsCustomFreezingUnlocked();
+            unlocked = nlSingleton<GameInfoManager>::s_pInstance->IsCustomFreezingUnlocked();
             break;
         case 3:
-            unlocked = gm->IsCustomShellsUnlocked();
+            unlocked = nlSingleton<GameInfoManager>::s_pInstance->IsCustomShellsUnlocked();
             break;
         case 4:
-            unlocked = gm->IsCustomGiantUnlocked();
+            unlocked = nlSingleton<GameInfoManager>::s_pInstance->IsCustomGiantUnlocked();
             break;
         case 5:
-            unlocked = gm->IsCustomEnhanceUnlocked();
+            unlocked = nlSingleton<GameInfoManager>::s_pInstance->IsCustomEnhanceUnlocked();
             break;
         }
 

@@ -24,6 +24,13 @@ StringType Format(const StringType& format, const T1& value1, const T2& value2, 
 
 typedef BasicString<unsigned short, Detail::TempStringAllocator> WideBasicString;
 
+// Force a non-weak (global) emission of FormatImpl<WideBasicString>::operator%<const
+// unsigned short*> in this TU. Target emits __md<PCUs> as a global symbol; the implicit
+// (weak/linkonce) instantiation MWCC would otherwise produce is uncreditable by objdiff.
+template FormatImpl<BasicString<unsigned short, Detail::TempStringAllocator> >&
+FormatImpl<BasicString<unsigned short, Detail::TempStringAllocator> >::operator% <const unsigned short*>(
+    const unsigned short* const& t);
+
 /**
  * Offset/Address/Size: 0x1058 | 0x800D0DD8 | size: 0x118
  * TODO: 98.36% match - return copy null/data path still stores through r4 instead of reloading through r0.

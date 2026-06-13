@@ -1,3 +1,5 @@
+#define BASICSTRING_OUTLINE_CTOR
+
 #include "Game/SH/SHChooseSides.h"
 
 #include "Game/FE/feFinder.h"
@@ -758,6 +760,7 @@ void SHChooseSides2::UpdateChooseSideComponent(float fDeltaT)
  * register-based zero stores vs target li+stw pattern, and fewer zero stores per call.
  * Inline InlineHasher(0) gives correct zero-store pattern but 0x1F0 frame (target 0x180).
  */
+#pragma inline_depth(8)
 void SHChooseSides2::BindChooseSideInstances()
 {
     extern unsigned char PAD_COLOURS[4][3];
@@ -872,6 +875,7 @@ void SHChooseSides2::BindChooseSideInstances()
 
     mChooseSide.ResetAndPositionControllers(false);
 }
+#pragma inline_depth()
 
 static inline void GetAllSides()
 {

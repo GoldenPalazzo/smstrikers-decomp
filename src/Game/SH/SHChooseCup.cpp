@@ -908,7 +908,7 @@ void ChooseCupSceneV2::DisplayCup()
         "fe/trophies/cups_lakitu",
     };
 
-    static const unsigned long CUP_EXPLANATIONS[8] = {
+    static unsigned long CUP_EXPLANATIONS[8] = {
         0x92E00D2D,
         0x4442C1E2,
         0x88ABDECD,
@@ -919,7 +919,7 @@ void ChooseCupSceneV2::DisplayCup()
         0xBFDC9213,
     };
 
-    static const unsigned short CUP_SEPARATOR[] = { ' ', 0 };
+    static unsigned short CUP_SEPARATOR[] = { ' ', 0 };
     static const nlColour CHOOSE_CUP_BLACK = { 0x00, 0x00, 0x00, 0xFF };
 
     FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();

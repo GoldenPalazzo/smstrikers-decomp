@@ -165,7 +165,7 @@ void ProgressiveScanScene::SceneCreated()
 /**
  * Offset/Address/Size: 0x940 | 0x80110E10 | size: 0x3C8
  */
-#pragma inline_depth(2)
+#pragma inline_depth(8)
 void ProgressiveScanScene::Update(float fDeltaT)
 {
     BaseSceneHandler::Update(fDeltaT);
