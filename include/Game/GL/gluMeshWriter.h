@@ -10,7 +10,6 @@ class GLMeshWriter : public GLMeshWriterCore
 public:
     GLMeshWriter()
         : GLMeshWriterCore() { };
-    // virtual ~GLMeshWriter() { };
 
     virtual bool End();
     virtual void Normal(const nlVector3&);

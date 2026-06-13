@@ -776,7 +776,7 @@ config.libs = [
             Object(Matching, "Game/Sys/tweak.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Sys/FloatingPointExceptions.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/Sys/CallStackDumper.cpp", extra_cflags=["-inline auto", "-inline deferred"]),    
-            Object(NonMatching, "Game/Core/mtRandom.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(Matching, "Game/Core/mtRandom.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
 
             Object(NonMatching, "Game/Sys/PlatStream.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/Sys/GCStream.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
@@ -1119,7 +1119,7 @@ config.libs = [
             Object(NonMatching, "Game/GL/GLInventory.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/GL/GLRenderBuffer.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/GL/GLSkinMesh.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(NonMatching, "Game/GL/gluMeshWriter.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(Matching, "Game/GL/gluMeshWriter.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/GL/gluSkinMesh.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/GL/ShaderSkinMesh.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
 
@@ -1284,7 +1284,7 @@ config.libs = [
         "NL (Next Level Library)",
         [
             Object(NonMatching, "NL/nlBind.cpp", extra_cflags=["-inline auto"]),
-            Object(NonMatching, "NL/nlAVLTree.cpp", extra_cflags=["-inline auto"]),
+            Object(Matching, "NL/nlAVLTree.cpp", extra_cflags=["-inline auto"]),
             Object(NonMatching, "NL/nlBundleFile.cpp", extra_cflags=["-inline auto"]),
             Object(NonMatching, "NL/nlConfig.cpp", extra_cflags=["-inline auto"]),
             Object(Matching, "NL/nlDebug.cpp", extra_cflags=["-inline auto"]),

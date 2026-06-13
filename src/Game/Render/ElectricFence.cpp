@@ -7,7 +7,7 @@
 #include "Game/Game.h"
 #include "Game/GameTweaks.h"
 #include "Game/GL/GLMeshWriter.h"
-#include "NL/gl/gluMeshWriter.h"
+#include "Game/GL/gluMeshWriter.h"
 #include "Game/Net.h"
 #include "Game/Render/SidelineExplodable.h"
 #include "NL/gl/glDraw3.h"

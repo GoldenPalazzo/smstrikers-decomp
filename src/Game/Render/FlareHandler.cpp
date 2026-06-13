@@ -6,7 +6,7 @@
 #include "NL/nlMemory.h"
 #include "NL/gl/glView.h"
 
-#include "NL/gl/gluMeshWriter.h"
+#include "Game/GL/gluMeshWriter.h"
 
 FlareHandler FlareHandler::instance;
 
