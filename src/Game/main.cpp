@@ -128,6 +128,16 @@ void Function0<void>::FunctorImpl<BindExp1<void, Detail::MemFunImpl<void, void (
     (mBind.mArg->*mBind.mFuncPtr.mMemFun)();
 }
 
+// Explicit Clone spec so Clone emits into this TU's .text alongside operator()
+// (matching the target's [Clone, __cl] grouping). Construct from mBind (target
+// has no copy-ctor symbol).
+template <>
+Function0<void>::FunctorBase*
+Function0<void>::FunctorImpl<BindExp1<void, Detail::MemFunImpl<void, void (ResetTask::*)()>, ResetTask*> >::Clone() const
+{
+    return new (nlMalloc(sizeof(FunctorImpl), 8, false)) FunctorImpl(mBind);
+}
+
 static void Initialize();
 
 int main(void)

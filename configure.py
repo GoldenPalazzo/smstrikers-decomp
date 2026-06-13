@@ -774,7 +774,7 @@ config.libs = [
             Object(NonMatching, "Game/Sys/eventman.cpp", extra_cflags=["-inline auto", "-O4 -inline deferred"]),
             Object(Matching, "Game/Sys/geventdst.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Sys/tweak.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(NonMatching, "Game/Sys/FloatingPointExceptions.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(Matching, "Game/Sys/FloatingPointExceptions.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/Sys/CallStackDumper.cpp", extra_cflags=["-inline auto", "-inline deferred"]),    
             Object(NonMatching, "Game/Core/mtRandom.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
 
@@ -840,7 +840,7 @@ config.libs = [
             Object(NonMatching, "Game/NisPlayer.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
 
             # Game Render
-            Object(NonMatching, "Game/Render/FlareHandler.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(Matching, "Game/Render/FlareHandler.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/Render/Nis.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Render/CameraGuy.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/Render/SkinAnimatedNPC.cpp", extra_cflags=["-inline auto", "-inline deferred"]),

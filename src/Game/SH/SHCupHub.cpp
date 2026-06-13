@@ -147,8 +147,15 @@ void Function0<void>::FunctorImpl<BindExp1<void, Detail::MemFunImpl<void, void (
 
 /**
  * Offset/Address/Size: 0x0 | 0x800F1E0C | size: 0x78
- * Clone() generated from inline definition in NL/nlFunction.h
+ * Explicit Clone spec so it emits alongside operator() (target [Clone, __cl]
+ * grouping). Construct from mBind (target has no __ct copy-ctor).
  */
+template <>
+Function0<void>::FunctorBase*
+Function0<void>::FunctorImpl<BindExp1<void, Detail::MemFunImpl<void, void (CupHubScene::*)()>, CupHubScene*> >::Clone() const
+{
+    return new (nlMalloc(sizeof(FunctorImpl), 8, false)) FunctorImpl(mBind);
+}
 
 // /**
 //  * Offset/Address/Size: 0x680 | 0x800F1D88 | size: 0x84

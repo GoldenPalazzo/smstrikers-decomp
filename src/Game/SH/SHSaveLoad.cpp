@@ -40,22 +40,22 @@ extern bool g_e3_Build;
 // File-static and class-static globals owned by this TU.
 // Declaration order below reproduces the target .sbss/.sdata/.bss byte layout
 // (static-variable slots are allocated at parse time, top-to-bottom).
-bool SaveLoadScene::mLastSaveLoadSuccess;       // .sbss:0x0
-static u8 WasCardRemoved;                       // .sbss:0x1
-static u8 PreviousNoCardInSlotState;            // .sbss:0x2
-SaveLoadScene* SaveLoadScene::mInstance;        // .sbss:0x4
-static int gSceneTypeStackDepth;                // .sbss:0x8
-static float gSceneTime;                        // .sbss:0xC
-static bool gSaveLoadStarted;                   // .sbss:0x10
-static bool gSaveLoadFinished;                  // .sbss:0x11
-static bool gCallbackMade;                      // .sbss:0x12
-static bool gIgnoreMinWait;                     // .sbss:0x13
-static bool gContinueWithoutOperation;          // .sbss:0x14
-static float gRetryTimerDelay;                  // .sbss:0x18
-static bool gSaveLoadEnabled = true;            // .sdata:0x0
+bool SaveLoadScene::mLastSaveLoadSuccess;        // .sbss:0x0
+static u8 WasCardRemoved;                        // .sbss:0x1
+static u8 PreviousNoCardInSlotState;             // .sbss:0x2
+SaveLoadScene* SaveLoadScene::mInstance;         // .sbss:0x4
+static int gSceneTypeStackDepth;                 // .sbss:0x8
+static float gSceneTime;                         // .sbss:0xC
+static bool gSaveLoadStarted;                    // .sbss:0x10
+static bool gSaveLoadFinished;                   // .sbss:0x11
+static bool gCallbackMade;                       // .sbss:0x12
+static bool gIgnoreMinWait;                      // .sbss:0x13
+static bool gContinueWithoutOperation;           // .sbss:0x14
+static float gRetryTimerDelay;                   // .sbss:0x18
+static bool gSaveLoadEnabled = true;             // .sdata:0x0
 bool SaveLoadScene::mIsFirstTimeAboutIPL = true; // .sdata:0x1
-static long gResult = -1;                       // .sdata:0x4
-static enum eSaveLoad gSceneTypeStack[4];       // .bss:0x0
+static long gResult = -1;                        // .sdata:0x4
+static enum eSaveLoad gSceneTypeStack[4];        // .bss:0x0
 
 #pragma dont_inline on
 
@@ -1275,6 +1275,8 @@ void SaveLoadScene::SetupForAboutAutoSave()
  */
 void SaveLoadScene::UpdateForAboutToSaveSlide()
 {
+    FORCE_DONT_INLINE;
+
     if (PushNoCardMessage())
     {
         SceneCreated();

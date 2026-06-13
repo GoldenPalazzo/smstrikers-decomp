@@ -205,6 +205,15 @@ void Function1<void, TLComponentInstance*>::FunctorImpl<BindExp2_Options_t>::ope
     (mBind.mT0->*mBind.mFunction.mMemFun)(mBind.mT1);
 }
 
+// Explicit Clone spec so it emits alongside operator() (target [Clone, __cl]
+// grouping). Construct from mBind (target has no __ct copy-ctor).
+template <>
+Function1<void, TLComponentInstance*>::FunctorBase*
+Function1<void, TLComponentInstance*>::FunctorImpl<BindExp2_Options_t>::Clone() const
+{
+    return new (nlMalloc(sizeof(FunctorImpl_Options_t), 8, false)) FunctorImpl_Options_t(mBind);
+}
+
 typedef TLInstance* (*FindInstByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
 typedef TLComponentInstance* (*FindInstByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
 
