@@ -10,8 +10,6 @@
 
 void DrawTextRectangle(int, float, float, float, float, float, const nlColour&, bool);
 
-// Explicit (non-template) definition gives s_pInstance global linkage, matching the
-// target .sbss symbol (weak template instantiation otherwise). Same pattern as AISandbox.cpp.
 FEAnimModelManager* nlSingleton<FEAnimModelManager>::s_pInstance = NULL;
 
 /**
@@ -74,7 +72,7 @@ inline void FEAnimModelManager::CheckTweakModelSwitch()
     }
 }
 
-void FEAnimModelManager::TweakModelPosition()
+inline void FEAnimModelManager::TweakModelPosition()
 {
     FEBasic3dModel* model = mCurrentTweakModel;
     if (model == NULL)
