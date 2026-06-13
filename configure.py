@@ -1283,7 +1283,7 @@ config.libs = [
     GameLib(
         "NL (Next Level Library)",
         [
-            Object(NonMatching, "NL/nlBind.cpp", extra_cflags=["-inline auto"]),
+            Object(Matching, "NL/nlBind.cpp", extra_cflags=["-inline auto"]),
             Object(Matching, "NL/nlAVLTree.cpp", extra_cflags=["-inline auto"]),
             Object(NonMatching, "NL/nlBundleFile.cpp", extra_cflags=["-inline auto"]),
             Object(NonMatching, "NL/nlConfig.cpp", extra_cflags=["-inline auto"]),
@@ -1298,9 +1298,9 @@ config.libs = [
             Object(NonMatching, "NL/nlMath.cpp", extra_cflags=["-inline auto"]),
             Object(NonMatching, "NL/MemAlloc.cpp", extra_cflags=["-inline auto"]),
             Object(Matching, "NL/nlMemory.cpp", extra_cflags=["-inline auto"]),
-            Object(NonMatching, "NL/nlPrint.cpp"), # problem with stdarg.h .. but should otherwise be linkable
+            Object(Matching, "NL/nlPrint.cpp", extra_cflags=["-inline auto"]),
             Object(Matching, "NL/nlSlotPool.cpp", extra_cflags=["-inline auto"]),
-            Object(NonMatching, "NL/nlString.cpp", extra_cflags=["-inline auto"]),
+            Object(Matching, "NL/nlString.cpp", extra_cflags=["-inline auto"]),
             Object(Matching, "NL/nlTask.cpp", extra_cflags=["-inline auto"]),
             Object(NonMatching, "NL/nlTextBox.cpp", extra_cflags=["-inline auto"]),
             Object(NonMatching, "NL/nlTextEscape.cpp", extra_cflags=["-inline auto"]),

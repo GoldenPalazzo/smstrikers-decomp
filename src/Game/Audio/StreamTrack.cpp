@@ -190,19 +190,25 @@ typedef Function0<void>::FunctorImpl<BindExp2_T> FunctorImpl_T;
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0x80 | 0x801573BC | size: 0x34
-//  */
-// void Function0<void>::FunctorImpl<BindExp2<void, Detail::MemFunImpl<void, void (AudioStreamTrack::StreamTrack::*)(AudioStreamTrack::StreamTrack::QUEUED_STREAM*)>, AudioStreamTrack::StreamTrack*, AudioStreamTrack::StreamTrack::QUEUED_STREAM*> >::operator()()
-// {
-// }
+/**
+ * Offset/Address/Size: 0x80 | 0x801573BC | size: 0x34
+ */
+template <>
+void Function0<void>::FunctorImpl<BindExp2<void, Detail::MemFunImpl<void, void (AudioStreamTrack::StreamTrack::*)(AudioStreamTrack::StreamTrack::QUEUED_STREAM*)>, AudioStreamTrack::StreamTrack*, AudioStreamTrack::StreamTrack::QUEUED_STREAM*> >::operator()()
+{
+    (mBind.mT0->*mBind.mFunction.mMemFun)(mBind.mT1);
+}
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x8015733C | size: 0x80
-//  */
-// void Function0<void>::FunctorImpl<BindExp2<void, Detail::MemFunImpl<void, void (AudioStreamTrack::StreamTrack::*)(AudioStreamTrack::StreamTrack::QUEUED_STREAM*)>, AudioStreamTrack::StreamTrack*, AudioStreamTrack::StreamTrack::QUEUED_STREAM*> >::Clone() const
-// {
-// }
+/**
+ * Offset/Address/Size: 0x0 | 0x8015733C | size: 0x80
+ * Construct from mBind (target has no __ct copy-ctor).
+ */
+template <>
+Function0<void>::FunctorBase*
+Function0<void>::FunctorImpl<BindExp2<void, Detail::MemFunImpl<void, void (AudioStreamTrack::StreamTrack::*)(AudioStreamTrack::StreamTrack::QUEUED_STREAM*)>, AudioStreamTrack::StreamTrack*, AudioStreamTrack::StreamTrack::QUEUED_STREAM*> >::Clone() const
+{
+    return new (nlMalloc(sizeof(FunctorImpl), 8, false)) FunctorImpl(mBind);
+}
 
 /**
  * Offset/Address/Size: 0x24E4 | 0x8015723C | size: 0x100

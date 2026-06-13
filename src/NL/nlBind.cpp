@@ -1,3 +1,3 @@
-#include "types.h"
+#include "NL/nlFunction.h"
 
-u8 placeholder0 __attribute__((section(".sdata2"))) = 0x01;
+__declspec(section ".sdata2") Placeholder<0> placeholder0 = {};
