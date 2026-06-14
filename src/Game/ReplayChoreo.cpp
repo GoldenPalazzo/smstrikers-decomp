@@ -4,6 +4,7 @@
 #include "Game/Sys/audio.h"
 #include "Game/Team.h"
 #include "NL/nlDebug.h"
+#include "NL/nlFormat.h"
 #include "NL/nlTask.h"
 
 struct GoalScoredDataExt
@@ -23,35 +24,11 @@ public:
     void UpdateUntilRelaxed();
 };
 
-template <typename StringType>
-class FormatImpl
-{
-public:
-    StringType mString;
-    int mCurrentPos;
-
-    FormatImpl()
-        : mCurrentPos(0)
-    {
-    }
-
-    FormatImpl(BasicStringData<char>* data)
-        : mString(data)
-        , mCurrentPos(0)
-    {
-    }
-
-    operator StringType() const
-    {
-        return mString;
-    }
-
-    template <typename T>
-    FormatImpl& operator%(const T& t);
-};
-
-template <typename StringType, typename T1, typename T2, typename T3, typename T4>
-inline StringType Format(const StringType& format, const T1& value1, const T2& value2, const T3& value3, const T4& value4);
+// FormatImpl<> and the generic Format<> template come from NL/nlFormat.h.
+// The generic FormatImpl::operator%<T> body defined there provides the two
+// operator% instantiations (<const char*>, <int>) that this TU's Format<>
+// specialization (below) requires -- previously these were left as empty
+// stubs, so they were emitted as undefined references instead of local code.
 
 unsigned int nlRandom(unsigned int range, unsigned int* seed);
 extern unsigned int nlDefaultSeed;
@@ -65,22 +42,6 @@ char* zoneInWidthNames[3];
 char scriptName[128];
 int cameraPick;
 } // namespace
-
-extern "C" void CalcAutoReplayScriptName__12ReplayChoreoCF10ReplayType(BasicString<char, Detail::TempStringAllocator>*, const ReplayChoreo*, ReplayType);
-
-// /**
-//  * Offset/Address/Size: 0xEC4 | 0x80129A38 | size: 0xD74
-//  */
-// void FormatImpl<BasicString<char, Detail::TempStringAllocator>>::operator%<const char*>(const char* const&)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x150 | 0x80128CC4 | size: 0xD74
-//  */
-// void FormatImpl<BasicString<char, Detail::TempStringAllocator>>::operator%<int>(const int&)
-// {
-// }
 
 /**
  * Offset/Address/Size: 0x0 | 0x80128B74 | size: 0x150
@@ -289,8 +250,42 @@ void ReplayChoreo::DoFunctionCall(unsigned int func)
 // {
 // }
 
+template <typename StringType, typename T1, typename T2, typename T3, typename T4>
+void Format(StringType& result, const StringType& format, const T1& value1, const T2& value2, const T3& value3, const T4& value4);
+
+static inline void InitBasicStringFromCStr(BasicString<char, Detail::TempStringAllocator>& str, const char* src_str)
+{
+    BasicStringDataHack* data = (BasicStringDataHack*)nlMalloc(0x10, 8, true);
+    if (data != 0)
+    {
+        const char* src = src_str;
+        data->mData = 0;
+        data->mSize = 0;
+        data->mCapacity = 0;
+
+        const char* p = src;
+        while ((signed char)*p++ != 0)
+        {
+            data->mSize++;
+        }
+
+        data->mSize++;
+        data->mData = (char*)nlMalloc(data->mSize + 1, 8, true);
+        data->mCapacity = data->mSize;
+
+        for (int i = 0; i < data->mSize; i++)
+        {
+            data->mData[i] = *src++;
+        }
+
+        data->mRefCount = 1;
+    }
+    str.m_data = data;
+}
+
 /**
  * Offset/Address/Size: 0xCC8 | 0x80128334 | size: 0x314
+ * TODO: 97.94% match - register permutation (this=r27 vs r28, d=r28 vs r31, cursor/array base shifts)
  */
 void ReplayChoreo::LoadScript()
 {
@@ -300,7 +295,7 @@ void ReplayChoreo::LoadScript()
     }
 
     unsigned long fileSize = 0;
-    mByteCode = nlLoadEntireFile("replay/replay_choreo.byte_code", &fileSize, 0x20, (eAllocType)0);
+    mByteCode = nlLoadEntireFile("art/presentation/replay_choreo.byte_code", &fileSize, 0x20, (eAllocType)0);
     LoadByteCode(mByteCode);
 
     int j;
@@ -321,36 +316,11 @@ void ReplayChoreo::LoadScript()
                     BasicString<char, Detail::TempStringAllocator> name;
                     {
                         BasicString<char, Detail::TempStringAllocator> format;
-                        BasicStringDataHack* data = (BasicStringDataHack*)nlMalloc(0x10, 8, true);
-                        if (data != 0)
-                        {
-                            const char* src = "{0}_{1}_{2}_{3}";
-                            data->mData = 0;
-                            data->mSize = 0;
-                            data->mCapacity = 0;
-
-                            const char* p = src;
-                            while ((signed char)*p++ != 0)
-                            {
-                                data->mSize++;
-                            }
-
-                            data->mSize++;
-                            data->mData = (char*)nlMalloc(data->mSize + 1, 8, true);
-                            data->mCapacity = data->mSize;
-
-                            for (int i = 0; i < data->mSize; i++)
-                            {
-                                data->mData[i] = *src++;
-                            }
-
-                            data->mRefCount = 1;
-                        }
-                        format.m_data = data;
+                        InitBasicStringFromCStr(format, "{0}_{1}_{2}_{3}");
 
                         BasicString<char, Detail::TempStringAllocator> temp;
                         void* nameData;
-                        temp = Format<BasicString<char, Detail::TempStringAllocator>, const char*, const char*, const char*, int>(
+                        Format(temp,
                             format,
                             zoneDepthNames[d],
                             zoneInWidthNames[w],
@@ -472,10 +442,9 @@ void ReplayChoreo::Reset()
 
 /**
  * Offset/Address/Size: 0x698 | 0x80127D04 | size: 0x3E0
- * TODO: 95.2% match - register allocation: stmw r26 vs r27.
+ * TODO: 94.5% match - register allocation: stmw r26 vs r27 (data/goalType share r30 in target).
  */
-extern "C" void CalcAutoReplayScriptName__12ReplayChoreoCF10ReplayType(
-    BasicString<char, Detail::TempStringAllocator>* __return, const ReplayChoreo* __this, ReplayType)
+BasicString<char, Detail::TempStringAllocator> ReplayChoreo::CalcAutoReplayScriptName(ReplayType) const
 {
     BasicStringDataHack* data = (BasicStringDataHack*)nlMalloc(0x10, 8, true);
     if (data != 0)
@@ -508,47 +477,47 @@ extern "C" void CalcAutoReplayScriptName__12ReplayChoreoCF10ReplayType(
 
     int zoneInWidth = 0;
     int zoneDepth = 0;
-    int goalType = __this->mGoalScoredData.uGoalType;
+    int goalType = mGoalScoredData.uGoalType;
 
-    f32 halfField = 0.5f * cField::mv3FieldPosition.f.y;
-    f32 adjustedY = -1.0f * halfField + __this->mGoalScoredData.v3ShotPosition.f.y;
+    f32 fieldDepth = 2.0f * cField::mv3FieldPosition.f.y;
+    f32 y = 0.5f * fieldDepth + mGoalScoredData.v3ShotPosition.f.y;
 
-    if (adjustedY > 0.1f * halfField)
+    if (y > 0.66f * fieldDepth)
     {
         zoneInWidth = 2;
     }
-    else if (adjustedY < -0.33f * halfField)
+    else if (y < 0.33f * fieldDepth)
     {
         zoneInWidth = 1;
     }
 
-    f32 negGoalLineX = -cField::GetGoalLineX((unsigned int)__this->mGoalScoredData.uTeamIndex);
+    f32 negGoalLineX = -cField::GetGoalLineX((unsigned int)mGoalScoredData.uTeamIndex);
 
-    if ((f32)fabs(negGoalLineX - __this->mGoalScoredData.v3ShotPosition.f.x) < -0.33f * (f32)fabs(negGoalLineX))
+    if ((f32)fabs(negGoalLineX - mGoalScoredData.v3ShotPosition.f.x) < 0.33f * (f32)fabs(negGoalLineX))
     {
         zoneDepth = 1;
     }
-    if ((f32)fabs(negGoalLineX - __this->mGoalScoredData.v3ShotPosition.f.x) > 0.1f * (f32)fabs(negGoalLineX))
+    if ((f32)fabs(negGoalLineX - mGoalScoredData.v3ShotPosition.f.x) > 0.66f * (f32)fabs(negGoalLineX))
     {
         zoneDepth = 2;
     }
 
     while (true)
     {
-        if (__this->mNumScripts[zoneDepth][zoneInWidth][goalType] > 0)
+        if (mNumScripts[zoneDepth][zoneInWidth][goalType] > 0)
             break;
 
-        if (__this->mNumScripts[zoneDepth][0][goalType] > 0)
+        if (mNumScripts[zoneDepth][0][goalType] > 0)
         {
             zoneInWidth = 0;
             break;
         }
-        if (__this->mNumScripts[0][zoneInWidth][goalType] > 0)
+        if (mNumScripts[0][zoneInWidth][goalType] > 0)
         {
             zoneDepth = 0;
             break;
         }
-        if (__this->mNumScripts[0][0][goalType] > 0)
+        if (mNumScripts[0][0][goalType] > 0)
         {
             zoneDepth = 0;
             zoneInWidth = 0;
@@ -557,7 +526,7 @@ extern "C" void CalcAutoReplayScriptName__12ReplayChoreoCF10ReplayType(
         goalType = 0;
     }
 
-    if (!__this->mReplay->DidOccurInLastNumSeconds(2, 3.0f))
+    if (!mReplay->DidOccurInLastNumSeconds(2, 6.0f))
     {
         BasicStringDataHack* d2 = (BasicStringDataHack*)nlMalloc(0x10, 8, true);
         if (d2 != 0)
@@ -584,29 +553,17 @@ extern "C" void CalcAutoReplayScriptName__12ReplayChoreoCF10ReplayType(
 
             d2->mRefCount = 1;
         }
-        __return->m_data = d2;
-        return;
+        return BasicString<char, Detail::TempStringAllocator>(d2);
     }
 
-    typedef BasicString<char, Detail::TempStringAllocator> ReplayNameString;
-    typedef ReplayNameString (*FormatReplayNameRetFn)(
-        const ReplayNameString&, const char* const&, const char* const&, const char* const&, const int&);
-    typedef void (*FormatReplayNameFn)(ReplayNameString*,
-        const ReplayNameString&,
-        const char* const&,
-        const char* const&,
-        const char* const&,
-        const int&);
-
-    int pick = nlRandom(__this->mNumScripts[zoneDepth][zoneInWidth][goalType], &nlDefaultSeed);
+    int pick = nlRandom(mNumScripts[zoneDepth][zoneInWidth][goalType], &nlDefaultSeed);
     if (cameraPick > -1)
     {
-        pick = cameraPick % __this->mNumScripts[zoneDepth][zoneInWidth][goalType];
+        pick = cameraPick % mNumScripts[zoneDepth][zoneInWidth][goalType];
     }
 
-    FormatReplayNameRetFn formatFnIn = Format<ReplayNameString, const char*, const char*, const char*, int>;
-    ((FormatReplayNameFn)formatFnIn)(
-        __return, format, zoneDepthNames[zoneDepth], zoneInWidthNames[zoneInWidth], replayTypeNames[goalType], pick);
+    return Format<BasicString<char, Detail::TempStringAllocator>, const char*, const char*, const char*, int>(
+        format, zoneDepthNames[zoneDepth], zoneInWidthNames[zoneInWidth], replayTypeNames[goalType], pick);
 }
 
 /**
@@ -684,8 +641,7 @@ void ReplayChoreo::StartAutoReplay(ReplayType rt)
     }
 
     {
-        BasicString<char, Detail::TempStringAllocator> name;
-        CalcAutoReplayScriptName__12ReplayChoreoCF10ReplayType(&name, this, rt);
+        BasicString<char, Detail::TempStringAllocator> name = CalcAutoReplayScriptName(rt);
         nlStrNCpy(scriptName, name.c_str(), 0x80);
     }
 

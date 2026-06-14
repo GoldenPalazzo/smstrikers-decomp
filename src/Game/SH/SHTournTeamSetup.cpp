@@ -2360,6 +2360,16 @@ BasicString<char, Detail::TempStringAllocator> TournTeamSetupSceneV2::FindSideki
 }
 #pragma optimization_level 4
 
+static inline void AutoFillUpdateRows(TournTeamSetupSceneV2* scene)
+{
+    int i = 0;
+    int numRows = ((u32)(3 - (u32)scene->mTournInfo.m_numTeams) >> 31) + 3;
+    for (; i < numRows; i++)
+    {
+        scene->UpdateRow(i);
+    }
+}
+
 /**
  * Offset/Address/Size: 0x4B0 | 0x800E2354 | size: 0x2BC
  */
@@ -2462,12 +2472,7 @@ void TournTeamSetupSceneV2::AutoFill()
         ((IGridComponent<eTeamID>*)mSKGrid)->MoveHighlightToTarget((eTeamID)mCurrentSK);
         UpdateCaptainName();
 
-        int j = 0;
-        int numRows2 = ((u32)(3 - (u32)mTournInfo.m_numTeams) >> 31) + 3;
-        for (; j < numRows2; j++)
-        {
-            UpdateRow(j);
-        }
+        AutoFillUpdateRows(this);
     }
 }
 

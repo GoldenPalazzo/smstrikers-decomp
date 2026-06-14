@@ -32,7 +32,6 @@ public:
     /*  0x20 */ bool ownsKeyData;
 }; // total size: 0x24
 
-bool LoadAnimCameraData(nlChunk*, nlChunk*, cCameraData*, bool);
 void EnableDofDebug();
 
 class cAnimCamera : public cBaseCamera

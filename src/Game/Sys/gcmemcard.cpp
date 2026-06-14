@@ -184,10 +184,10 @@ static inline void ShiftCreateFileLookup(MemCard* self, nlSortedSlot<MemCard::MC
     {
         long next = idx + 1;
         nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>* src = &self->m_OpenFiles.m_pEntryLookup[next];
+        register unsigned long id = src->hash;
         nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>* dst = &self->m_OpenFiles.m_pEntryLookup[idx];
         idx = next;
-        register unsigned long id = src->hash;
-        register MemCard::MC_FILE* entry = src->pEntry;
+        MemCard::MC_FILE* entry = src->pEntry;
         dst->pEntry = entry;
         dst->hash = id;
     }
@@ -197,8 +197,7 @@ static inline void ShiftCreateFileLookup(MemCard* self, nlSortedSlot<MemCard::MC
 
 /**
  * Offset/Address/Size: 0x540 | 0x801CB080 | size: 0x1A0
- * TODO: 99.66% match - entry copy loop in ShiftCreateFileLookup keeps
- * r3/r4/r0 instead of target r4/r3/r5.
+ * TODO: 99.90% match - copied pEntry uses r0 instead of target r5.
  */
 void MemCard::CreateFileDoneCB(long channel, long result)
 {

@@ -562,8 +562,8 @@ static inline void DoPenaltyCardBookingInline(cFielder* pFouler, cFielder* pFoul
 
 /**
  * Offset/Address/Size: 0xAEBC | 0x800241F8 | size: 0x151C
- * TODO: 99.07% match - remaining diffs are register assignment order in prologue
- * and a shortened final slide-attack tail block near function epilogue.
+ * TODO: 99.59% match - remaining diffs are pData/hitter register assignment
+ * and the anim-controller reload in the simultaneous-hit compare.
  */
 void cFielder::CollideWithCharacterCallback(CollisionPlayerPlayerData* pData)
 {
@@ -671,13 +671,14 @@ done:
         if (m_pBall != 0 && attackIntensity > 0.4f)
             canPickup = 1;
 
-        InitActionHitReact(pFielderCollidedWith, pFielderCollidedWith->m_aActualFacingDirection, (bool)canPickup);
+        InitActionHitReact(pFielderCollidedWith, pFielderCollidedWith->m_aActualFacingDirection, canPickup != 0);
         BeginRumbleAction(RUMBLE_SOLID_CONTACT, pFielderCollidedWith->GetGlobalPad());
 
         Event* pEvent = g_pEventManager->CreateValidEvent(0x17, 0x28);
         PlayerAttackData* pAttackData = new ((u8*)pEvent + 0x10) PlayerAttackData();
         pAttackData->pAttacker = pFielderCollidedWith;
-        pAttackData->nAttackerPadID = pFielderCollidedWith->GetGlobalPad() ? pFielderCollidedWith->GetGlobalPad()->m_padIndex : -1;
+        u8 bHasGlobalPad = pFielderCollidedWith->GetGlobalPad() != 0;
+        pAttackData->nAttackerPadID = bHasGlobalPad ? pFielderCollidedWith->GetGlobalPad()->m_padIndex : -1;
         pAttackData->pTarget = this;
         pAttackData->fAttackIntensity = attackIntensity;
     }
@@ -3143,6 +3144,8 @@ void cFielder::DoFindBestShotTarget(nlVector3& v3PositionOut, float& fShotSpeed,
 
 /**
  * Offset/Address/Size: 0x6E28 | 0x80020164 | size: 0x590
+ * TODO: 99.87% match - remaining diffs are f1/f2 assignment in spin delta
+ * compare and r3/r4 assignment in final game-state event gate.
  */
 void cFielder::DoRegularShooting()
 {
@@ -3259,8 +3262,10 @@ void cFielder::DoRegularShooting()
         v3AngVel.f.z = 10.0f + nlRandomf(15.0f, &nlDefaultSeed);
 
         bool bNegZSpin = false;
-        f32 fDeltaX = v3Target.f.x;
-        f32 fDeltaY = v3Target.f.y;
+        f32 fDeltaX;
+        f32 fDeltaY;
+        fDeltaY = v3Target.f.y;
+        fDeltaX = v3Target.f.x;
         fDeltaY -= g_pBall->m_v3Position.f.y;
         fDeltaX -= g_pBall->m_v3Position.f.x;
 
@@ -3284,12 +3289,12 @@ void cFielder::DoRegularShooting()
         {
             nlVec3Scale(v3AngVel, 0.4f);
         }
-    }
 
-    if (m_pShotMeter->m_fSpeedValue >= 0.99f && !bIsSTS)
-    {
-        g_pBall->m_pPhysicsBall->m_bUseMagnusEffect = true;
-        g_pBall->m_unk_0xA6 = true;
+        if (m_pShotMeter->m_fSpeedValue >= 0.99f && !bIsSTS)
+        {
+            g_pBall->m_pPhysicsBall->m_bUseMagnusEffect = true;
+            g_pBall->m_unk_0xA6 = true;
+        }
     }
 
     g_pBall->Shoot(v3BallVelocity, v3AngVel, spinType, bIsSTS, m_pShotMeter->m_fSpeedValue >= 0.99f, mActionShotVars.bIsChipShot || mActionLooseBallShotVars.bIsChipShot);
@@ -5836,7 +5841,7 @@ inline void ExecutePowerupEffect(cFielder* pFielder)
     case POWER_UP_MUSHROOM:
     {
         f32 fTime = g_pGame->m_pGameTweaks->fMushroomEffectTime;
-        if (pFielder->m_eCharacterClass >= LUIGI && pFielder->m_eCharacterClass < PEACH)
+        if (pFielder->m_eCharacterClass < PEACH && pFielder->m_eCharacterClass >= LUIGI)
         {
             fTime *= 1.33f;
         }
@@ -5857,7 +5862,8 @@ inline void ExecutePowerupEffect(cFielder* pFielder)
     case POWER_UP_CHAIN_CHOMP:
     {
         cFielder* pTgt = pFielder->m_pPowerupTarget;
-        BasicStadium::GetCurrentStadium()->mpNPCManager->mpChainChomp->Fall(pFielder, pTgt);
+        BasicStadium* pStadium = BasicStadium::GetCurrentStadium();
+        pStadium->mpNPCManager->mpChainChomp->Fall(pFielder, pTgt);
         break;
     }
     }
@@ -5870,9 +5876,8 @@ inline void ExecutePowerupEffect(cFielder* pFielder)
 
 /**
  * Offset/Address/Size: 0x1D18 | 0x8001B054 | size: 0x4C0
- * TODO: 94.28% match - MWCC CSEs m_ePowerup across dispatch switch and inlined ExecutePowerupEffect,
- * using r3 instead of r0 for dispatch (~20 register diffs). Target validation switch also missing
- * explicit -1 check (~6 diffs) - adding case POWER_UP_NONE changes MWCC binary search pivot order.
+ * TODO: 96.38% match - remaining r3/r0 dispatch diffs in the powerup effect blocks
+ * and initial POWER_UP_NONE validation branch shape.
  */
 void cFielder::SetPowerup(ePowerUpType eNewPowerup, int nnumOfPowerups, cFielder* pTarget)
 {

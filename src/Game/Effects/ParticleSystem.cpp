@@ -631,6 +631,55 @@ void ParticleSystem::UpdateParticle(ParticleReturn* pReturn, Particle* pPart, Ef
     pReturn->position[3].f.z = (position.f.z + z0) - z1;
 }
 
+static inline void RenderLightOnField(const EffectsLight& light)
+{
+    float heightFrac = 1.0f - (light.m_v3Position.f.z / light.m_fRadius);
+    if (!(heightFrac <= 0.0f))
+    {
+        if (heightFrac > 1.0f)
+        {
+            heightFrac = 1.0f;
+        }
+
+        glSetDefaultState(true);
+        glSetCurrentTexture(glGetTexture("global/light_blob"), GLTT_Diffuse);
+        glSetRasterState(GLS_AlphaBlend, 3);
+        glSetRasterState(GLS_DepthWrite, 0);
+        glSetCurrentRasterState(glHandleizeRasterState());
+
+        float dim = 1.4f * ((2.0f * light.m_fRadius) * (heightFrac * heightFrac));
+        nlMatrix4 mRot;
+        mRot.SetIdentity();
+        glQuad3 q;
+        q.SetupRotatedRectangle(dim, dim, mRot, false, false);
+        q.SetColour(light.m_Colour);
+        nlColour* pColour = q.m_colour;
+        for (int i = 0; i < 2; i++)
+        {
+            int idx = i * 2;
+            q.m_pos[idx].f.x += light.m_v3Position.f.x;
+            q.m_pos[idx].f.y += light.m_v3Position.f.y;
+            q.m_pos[idx].f.z += light.m_v3Position.f.z;
+            q.m_pos[idx].f.z = 0.03125f;
+            pColour[0].c[3] = (unsigned char)((int)pColour[0].c[3] / 3);
+
+            idx++;
+            q.m_pos[idx].f.x += light.m_v3Position.f.x;
+            q.m_pos[idx].f.y += light.m_v3Position.f.y;
+            q.m_pos[idx].f.z += light.m_v3Position.f.z;
+            q.m_pos[idx].f.z = 0.03125f;
+            pColour[1].c[3] = (unsigned char)((int)pColour[1].c[3] / 3);
+
+            pColour += 2;
+        }
+
+        glModel* pModel = (glModel*)q.GetModel(true);
+        void* pUserData = glUserAlloc(GLUD_NoFog, 0, false);
+        glUserAttach(pUserData, pModel->packets, false);
+        glViewAttachModel((eGLView)7, 2, pModel);
+    }
+}
+
 /**
  * Offset/Address/Size: 0x970 | 0x801F5AC8 | size: 0xC3C
  */
@@ -658,22 +707,10 @@ void ParticleSystem::RenderAllParticles(eGLView view)
 
     if (m_pTemplate->m_eBillboard == EfBill_Billboard)
     {
-        float x;
-        float y;
-        float z;
         glViewGetViewMatrix(view, viewMatrix);
-        x = viewMatrix.e[0];
-        y = viewMatrix.e[4];
-        z = viewMatrix.e[8];
-        viewRight.f.x = x;
-        viewRight.f.y = y;
-        viewRight.f.z = z;
-        viewUp.f.x = viewMatrix.e[1];
-        viewUp.f.y = viewMatrix.e[5];
-        viewUp.f.z = viewMatrix.e[9];
-        viewRight.f.x = m_fAspect__14ParticleSystem * x;
-        viewRight.f.y = m_fAspect__14ParticleSystem * y;
-        viewRight.f.z = m_fAspect__14ParticleSystem * z;
+        nlVec3Set(viewRight, viewMatrix.e[0], viewMatrix.e[4], viewMatrix.e[8]);
+        nlVec3Set(viewUp, viewMatrix.e[1], viewMatrix.e[5], viewMatrix.e[9]);
+        nlVec3Scale(viewRight, m_fAspect__14ParticleSystem);
     }
     else if (m_pTemplate->m_eBillboard == EfBill_Groundboard)
     {
@@ -757,52 +794,7 @@ void ParticleSystem::RenderAllParticles(eGLView view)
 
             light.m_v3Position = position;
             EmissionManager::AddEffectsLight(light);
-
-            float alphaScale = 1.0f - (light.m_v3Position.f.z / light.m_fRadius);
-            if (alphaScale > 0.0f)
-            {
-                if (alphaScale > 1.0f)
-                {
-                    alphaScale = 1.0f;
-                }
-
-                glSetDefaultState(true);
-                glSetCurrentTexture(glGetTexture("global/light_blob"), GLTT_Diffuse);
-                glSetRasterState(GLS_AlphaBlend, 3);
-                glSetRasterState(GLS_DepthWrite, 0);
-                glSetCurrentRasterState(glHandleizeRasterState());
-
-                float size = 1.4f * ((2.0f * light.m_fRadius) * (alphaScale * alphaScale));
-                nlMatrix4 rot;
-                rot.SetIdentity();
-                glQuad3 q;
-                q.SetupRotatedRectangle(size, size, rot, false, false);
-                q.SetColour(light.m_Colour);
-                nlColour* pColour = q.m_colour;
-                for (int i = 0; i < 2; i++)
-                {
-                    int idx = i * 2;
-                    q.m_pos[idx].f.x += light.m_v3Position.f.x;
-                    q.m_pos[idx].f.y += light.m_v3Position.f.y;
-                    q.m_pos[idx].f.z += light.m_v3Position.f.z;
-                    q.m_pos[idx].f.z = 0.03125f;
-                    pColour[0].c[3] = (unsigned char)((int)pColour[0].c[3] / 3);
-
-                    idx++;
-                    q.m_pos[idx].f.x += light.m_v3Position.f.x;
-                    q.m_pos[idx].f.y += light.m_v3Position.f.y;
-                    q.m_pos[idx].f.z += light.m_v3Position.f.z;
-                    q.m_pos[idx].f.z = 0.03125f;
-                    pColour[1].c[3] = (unsigned char)((int)pColour[1].c[3] / 3);
-
-                    pColour += 2;
-                }
-
-                glModel* pModel = (glModel*)q.GetModel(true);
-                void* pUserData = glUserAlloc(GLUD_NoFog, 0, false);
-                glUserAttach(pUserData, pModel->packets, false);
-                glViewAttachModel((eGLView)7, 2, pModel);
-            }
+            RenderLightOnField(light);
             pPart = (Particle*)pPart->m_nextNode;
         }
     }
@@ -908,10 +900,10 @@ void ParticleSystem::RenderAllParticles(eGLView view)
                     glUserAttach(pUserData, pPacket, false);
                 }
 
-                GLTextureAnim* pTex = glInventory.GetTextureAnim(pPacket->state.texture[2]);
+                GLTextureAnim* pTex = glInventory.GetTextureAnim(pPacket->state.texture[0]);
                 if (pTex != nullptr)
                 {
-                    pPacket->state.texture[2] = pTex->GetTextureHandle(meshRateScale * pPart->timeElapsed);
+                    pPacket->state.texture[0] = pTex->GetTextureHandle(meshRateScale * pPart->timeElapsed);
                 }
                 pPacket = (glModelPacket*)((u8*)pPacket + sizeof(glModelPacket));
             }

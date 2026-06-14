@@ -50,10 +50,9 @@ const nlVector3 gv3HomePosition = { 0.0f, 0.0f, 10.0f };
  */
 ChainChomp::ChainChomp(cSHierarchy& pHierarchy, int nModelID, PhysicsNPC& rPhysObj, cInventory<cSAnim>* pInventorySAnim)
     : SkinAnimatedMovableNPC(pHierarchy, nModelID, rPhysObj)
+    , mpTarget(NULL)
+    , meChainChompState(CHAIN_STATE_HIDDEN)
 {
-    mpTarget = NULL;
-    meChainChompState = CHAIN_STATE_HIDDEN;
-    mtStateTimer.SetSeconds(0.0f);
     mpInEffectSFX = NULL;
     mtStateTimer.SetSeconds(0.0f);
 
@@ -76,7 +75,7 @@ ChainChomp::ChainChomp(cSHierarchy& pHierarchy, int nModelID, PhysicsNPC& rPhysO
 
     SetPosition(gv3HomePosition);
     mv3Velocity = v3Zero;
-    maDesiredFacingDirection = 0;
+    maFacingDirection = 0;
     mpPhysObj->DisableCollisions();
 
     mpThrower = NULL;

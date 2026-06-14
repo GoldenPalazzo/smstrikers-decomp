@@ -2342,11 +2342,12 @@ void cFielder::InitDesireReceivePassFromRun(const LooseBallContactAnimInfo* pAni
 
 /**
  * Offset/Address/Size: 0x130C | 0x80032090 | size: 0xADC
+ * TODO: 98.98% match - opening pass/ball direction dot product has FPR allocation mismatches for normalized direction and velocity terms
  */
 void cFielder::DesireReceivePassFromRun(float fDeltaT)
 {
-    float yDiff = m_DesireReceivePassSharedVars.v3BallPosition.f.y - g_pBall->m_v3Position.f.y;
-    float xDiff = m_DesireReceivePassSharedVars.v3BallPosition.f.x - g_pBall->m_v3Position.f.x;
+    float yDiff = m_DesireReceivePassSharedVars.v3BallPosition.f.x - g_pBall->m_v3Position.f.x;
+    float xDiff = m_DesireReceivePassSharedVars.v3BallPosition.f.y - g_pBall->m_v3Position.f.y;
 
     float invDist = nlRecipSqrt(yDiff * yDiff + xDiff * xDiff, true);
     float normY = invDist * yDiff;
@@ -2388,11 +2389,11 @@ void cFielder::DesireReceivePassFromRun(float fDeltaT)
         {
             if (m_pController != NULL && m_pController->IsTurboPressed())
             {
-                SetDesiredSpeed(m_pTweaks->fRunningSpeed, ((FielderTweaks*)m_pTweaks)->fRunningTurboSpeed);
+                SetDesiredSpeed(((FielderTweaks*)m_pTweaks)->fRunningWBSpeed, ((FielderTweaks*)m_pTweaks)->fRunningWBTurboSpeedLevel1);
             }
             else
             {
-                SetDesiredSpeed(m_pTweaks->fJoggingSpeed, m_pTweaks->fRunningSpeed);
+                SetDesiredSpeed(m_pTweaks->fJoggingSpeed, ((FielderTweaks*)m_pTweaks)->fRunningWBSpeed);
             }
 
             if (GetGlobalPad()->JustPressed(PAD_SHOOT, true))
@@ -2411,7 +2412,7 @@ void cFielder::DesireReceivePassFromRun(float fDeltaT)
             {
                 SetAttemptOneTouchShot();
             }
-            else if (GetGlobalPad()->JustPressed(PAD_DEKE, true))
+            else if (GetGlobalPad()->JustPressed(PAD_HIT, true))
             {
                 if (m_eDesireSubState != 1)
                 {
@@ -2441,7 +2442,7 @@ void cFielder::DesireReceivePassFromRun(float fDeltaT)
             else
             {
                 float actionRethinkTime = (m_DesireCommonVars.fMisc / 3.0f) - 0.1f;
-                m_DesireCommonVars.tMiscTimer.SetSeconds((actionRethinkTime <= 0.1f) ? 0.1f : actionRethinkTime);
+                m_DesireCommonVars.tMiscTimer.SetSeconds((0.1f >= actionRethinkTime) ? 0.1f : actionRethinkTime);
             }
         }
 
@@ -2449,13 +2450,12 @@ void cFielder::DesireReceivePassFromRun(float fDeltaT)
             && !m_DesireReceivePassSharedVars.bFailedToInitOneTouchShot)
         {
             bool bStrongOneTouch = m_DesireReceivePassSharedVars.iAttemptOneTouchShot == 2;
-            bool bVolleyPass = m_DesireReceivePassSharedVars.bVolleyPassReceive;
 
             bool bSuccess = InitDesireOneTimerFromRun(
                 m_aActualFacingDirection,
                 m_DesireReceivePassSharedVars.v3DesiredPosition,
                 m_DesireReceivePassSharedVars.v3BallPosition,
-                bVolleyPass,
+                m_DesireReceivePassSharedVars.bVolleyPassReceive,
                 bStrongOneTouch);
 
             if (bSuccess)
@@ -2463,7 +2463,7 @@ void cFielder::DesireReceivePassFromRun(float fDeltaT)
                 return;
             }
 
-            if (bVolleyPass)
+            if (m_DesireReceivePassSharedVars.bVolleyPassReceive)
             {
                 g_pGame->DoPerfectPassSlowDown();
             }
@@ -2526,7 +2526,7 @@ void cFielder::DesireReceivePassFromRun(float fDeltaT)
                 {
                     if (m_DesireReceivePassSharedVars.bFailedToInitOneTouchShot)
                     {
-                        if (GetGlobalPad() != NULL && GetGlobalPad()->JustPressed(PAD_SHOOT, true))
+                        if (GetGlobalPad() != NULL && GetGlobalPad()->IsPressed(PAD_SHOOT, true))
                         {
                             if (!ShouldStartCrossBlend(0x1A))
                             {
@@ -2545,7 +2545,7 @@ void cFielder::DesireReceivePassFromRun(float fDeltaT)
                         return;
                     }
 
-                    if (GetGlobalPad() != NULL && GetGlobalPad()->JustPressed(PAD_SHOOT, true))
+                    if (GetGlobalPad() != NULL && GetGlobalPad()->IsPressed(PAD_SHOOT, true))
                     {
                         if (!ShouldStartCrossBlend(0x1A))
                         {
@@ -2559,7 +2559,7 @@ void cFielder::DesireReceivePassFromRun(float fDeltaT)
                 }
                 else if (ShouldStartCrossBlend(0x1A))
                 {
-                    if (GetGlobalPad() != NULL && GetGlobalPad()->JustPressed(PAD_SHOOT, true))
+                    if (GetGlobalPad() != NULL && GetGlobalPad()->IsPressed(PAD_SHOOT, true))
                     {
                         DoResetShotMeter(0.0f);
                         SetDesireDuration(0.0f, true);

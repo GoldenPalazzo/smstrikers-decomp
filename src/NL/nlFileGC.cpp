@@ -821,7 +821,7 @@ loop_check:
 
 /**
  * Offset/Address/Size: 0xFE4 | 0x801CFD38 | size: 0x324
- * TODO: 98.81% match - srwi r0+mr r28 instead of direct srwi r28 for loadedSaveState
+ * TODO: 99.40% match - srwi r0+mr r28 instead of direct srwi r28 for loadedSaveState=(fileSystem!=eGC_TDEV)
  */
 static unsigned char GameCubeReadAsync(GCFile* pFile, ReadAsyncCallback callback, void* pBuffer, unsigned long uSize, unsigned long uParam)
 {
@@ -886,14 +886,15 @@ static unsigned char GameCubeReadAsync(GCFile* pFile, ReadAsyncCallback callback
             }
             else
             {
-                loadedSaveState = 0;
+                u8 loadedSaveState = 0;
+                s32 driveStatus;
                 Function<void(int)>* handleDVDMessageCB = &g_HandleDVDMessageCallback;
                 Function<FnVoidVoid>* checkForResetCB = &g_CheckForResetCB;
                 Function<void(int)>* handleDVDRetryCB = &g_HandleDVDRetryCB;
 
                 while (true)
                 {
-                    s32 driveStatus = DVDGetDriveStatus();
+                    driveStatus = DVDGetDriveStatus();
 
                     switch (driveStatus)
                     {
@@ -1003,6 +1004,7 @@ static unsigned char GameCubeReadAsync(GCFile* pFile, ReadAsyncCallback callback
 
 /**
  * Offset/Address/Size: 0x1308 | 0x801D005C | size: 0x6E0
+ * TODO: 97.92% match - pEntry uses r29 vs r31 and DVD error path callback state registers differ.
  */
 static unsigned char UpdateReadState(AsyncEntry* pEntry)
 {
@@ -1037,20 +1039,19 @@ static unsigned char UpdateReadState(AsyncEntry* pEntry)
 
         case eRS_WAIT_HEAD_READ:
             nStatus = pFile->GetReadStatus();
-            if (nStatus == DVD_STATE_BUSY)
+            switch (nStatus)
             {
+            case DVD_STATE_BUSY:
                 return 0;
-            }
 
-            if (nStatus == DVD_STATE_END)
-            {
+            case DVD_STATE_END:
                 readSize = pEntry->ReadNumBytes & ~31;
                 pEntry->m_uPosition += readSize;
                 pEntry->m_pBuffer = (char*)pEntry->m_pBuffer + readSize;
                 pEntry->Phase = eRS_ISSUE_TAIL_READ;
-                break;
-            }
+                continue;
 
+            default:
             {
                 u8 loadedSaveState = 0;
 
@@ -1193,7 +1194,8 @@ static unsigned char UpdateReadState(AsyncEntry* pEntry)
                     }
                 }
             }
-            return 0;
+                return 0;
+            }
 
         case eRS_ISSUE_TAIL_READ:
             uNumRead = pEntry->ReadNumBytes & ~31;
@@ -1210,21 +1212,20 @@ static unsigned char UpdateReadState(AsyncEntry* pEntry)
 
         case eRS_WAIT_TAIL_READ:
             nStatus = pFile->GetReadStatus();
-            if (nStatus == DVD_STATE_BUSY)
+            switch (nStatus)
             {
+            case DVD_STATE_BUSY:
                 return 0;
-            }
 
-            if (nStatus == DVD_STATE_END)
-            {
+            case DVD_STATE_END:
                 uNumRead = pEntry->ReadNumBytes - (pEntry->ReadNumBytes & ~31);
                 memcpy(pEntry->m_pBuffer, readBuffer32ByteLength, uNumRead);
                 pEntry->m_pBuffer = (char*)pEntry->m_pBuffer + uNumRead;
                 pEntry->m_uPosition += uNumRead;
                 pEntry->Phase = eRS_READ_COMPLETE;
-                break;
-            }
+                continue;
 
+            default:
             {
                 u8 loadedSaveState = 0;
                 Function<void(int)>* handleDVDMessageCallback = &g_HandleDVDMessageCallback;
@@ -1369,7 +1370,8 @@ static unsigned char UpdateReadState(AsyncEntry* pEntry)
                     }
                 }
             }
-            return 0;
+                return 0;
+            }
 
         case eRS_READ_COMPLETE:
             return 1;

@@ -8,6 +8,7 @@
 #include "Game/Camera/ReplayCamera.h"
 #include "Game/Goalie.h"
 #include "Game/Sys/eventman.h"
+#include "NL/nlBasicString.h"
 
 class ReplayChoreo : public InterpreterCore
 {
@@ -59,7 +60,7 @@ public:
     void EventHandler(Event*);
     static void EventHandler(Event* event, void* userData) { ((ReplayChoreo*)userData)->EventHandler(event); }
     void Reset();
-    void CalcAutoReplayScriptName(ReplayType) const;
+    BasicString<char, Detail::TempStringAllocator> CalcAutoReplayScriptName(ReplayType) const;
     void StartAutoReplay(ReplayType);
     void FlushHighlights();
     void Update(float);

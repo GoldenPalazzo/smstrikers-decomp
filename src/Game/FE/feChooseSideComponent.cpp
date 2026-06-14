@@ -685,64 +685,18 @@ void IChooseSide::CheckControllers(int disabledSide)
 
 /**
  * Offset/Address/Size: 0x4C0 | 0x800C3904 | size: 0x360
- * TODO: 97.88% match - loop index/base register roles remain shifted
- * (target r29/r30, current r30/r31), causing broad register-only diffs.
- * Ready-indicator gating still keeps an extra persistent temp register.
  */
 void IChooseSide::ResetAndPositionControllers(bool reset)
 {
     for (int i = 0; i < 4; i++)
     {
-        int side;
-
         mPlayerReady[i] = false;
         mInstanceTable[i + 4]->m_bVisible = false;
 
         TLInstance* readyIndicator = mInstanceTable[16];
         if (readyIndicator != NULL)
         {
-            u8 allReady;
-            if (mPlayerReady[0])
-            {
-                allReady = 1;
-            }
-            else if (mPlayingSides[0] != -1)
-            {
-                allReady = 0;
-                goto done_ready;
-            }
-
-            if (mPlayerReady[1])
-            {
-                allReady = 1;
-            }
-            else if (mPlayingSides[1] != -1)
-            {
-                allReady = 0;
-                goto done_ready;
-            }
-
-            if (mPlayerReady[2])
-            {
-                allReady = 1;
-            }
-            else if (mPlayingSides[2] != -1)
-            {
-                allReady = 0;
-                goto done_ready;
-            }
-
-            if (mPlayerReady[3])
-            {
-                allReady = 1;
-            }
-            else if (mPlayingSides[3] != -1)
-            {
-                allReady = 0;
-            }
-
-        done_ready:
-            if (allReady == 1)
+            if (AllPlayersReady())
                 readyIndicator->m_bVisible = true;
             else
                 readyIndicator->m_bVisible = false;
@@ -750,31 +704,8 @@ void IChooseSide::ResetAndPositionControllers(bool reset)
 
         if (!g_pFEInput->IsConnected((eFEINPUT_PAD)i))
         {
-            int destPosIndex;
-
             mPlayingSides[i] = -1;
-            side = mPlayingSides[i];
-            if (side == 0)
-            {
-                destPosIndex = 0;
-            }
-            else
-            {
-                destPosIndex = 2;
-                if (side == 1)
-                {
-                    destPosIndex = 1;
-                }
-            }
-
-            TLInstance* inst = mInstanceTable[i];
-            feVector3 localPos = inst->GetPosition();
-
-            mTweenManager.clearTweensOnObj(inst);
-            mInstanceTable[i]->SetAssetPosition(mControllerDestPos[destPosIndex], localPos.e[1], localPos.e[2]);
-
-            mInstanceTable[i + 12]->m_bVisible = (side == -1);
-            mInstanceTable[i + 8]->m_bVisible = (side != -1);
+            PositionController(i, false, true);
 
             if (mInstanceTable[i + 12] != NULL)
             {
@@ -788,59 +719,13 @@ void IChooseSide::ResetAndPositionControllers(bool reset)
         }
         else if (reset)
         {
-            int destPosIndex;
-
             mPlayingSides[i] = -1;
-            side = mPlayingSides[i];
-            if (side == 0)
-            {
-                destPosIndex = 0;
-            }
-            else
-            {
-                destPosIndex = 2;
-                if (side == 1)
-                {
-                    destPosIndex = 1;
-                }
-            }
-
-            TLInstance* inst = mInstanceTable[i];
-            feVector3 localPos = inst->GetPosition();
-
-            mTweenManager.clearTweensOnObj(inst);
-            mInstanceTable[i]->SetAssetPosition(mControllerDestPos[destPosIndex], localPos.e[1], localPos.e[2]);
-
-            mInstanceTable[i + 12]->m_bVisible = (side == -1);
-            mInstanceTable[i + 8]->m_bVisible = (side != -1);
+            PositionController(i, false, true);
         }
         else
         {
-            int destPosIndex;
-
             mPlayingSides[i] = (short)GameInfoManager::Instance()->GetPlayingSide((unsigned short)i);
-            side = mPlayingSides[i];
-            if (side == 0)
-            {
-                destPosIndex = 0;
-            }
-            else
-            {
-                destPosIndex = 2;
-                if (side == 1)
-                {
-                    destPosIndex = 1;
-                }
-            }
-
-            TLInstance* inst = mInstanceTable[i];
-            feVector3 localPos = inst->GetPosition();
-
-            mTweenManager.clearTweensOnObj(inst);
-            mInstanceTable[i]->SetAssetPosition(mControllerDestPos[destPosIndex], localPos.e[1], localPos.e[2]);
-
-            mInstanceTable[i + 12]->m_bVisible = (side == -1);
-            mInstanceTable[i + 8]->m_bVisible = (side != -1);
+            PositionController(i, false, true);
         }
     }
 }

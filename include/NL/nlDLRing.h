@@ -133,13 +133,15 @@ bool nlRingIsEnd(T* head, T* element)
 template <typename T>
 u32 nlRingCountElements(T* head)
 {
+    T* current;
     u32 count = 0;
+
     if (head == NULL)
     {
         return 0;
     }
 
-    T* current = head->m_next;
+    current = head->m_next;
     while (true)
     {
         T* next = current->m_next;

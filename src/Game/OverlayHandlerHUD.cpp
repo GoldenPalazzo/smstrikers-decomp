@@ -70,6 +70,8 @@ enum eWorldSFX
 
 class cWorldSFX
 {
+    char _padding[0x34];
+
 public:
     unsigned long Play(eWorldSFX, float, float, bool, float);
 };
@@ -231,71 +233,59 @@ void HUDOverlay::Update(float fDeltaT)
 
     for (int i = 0; i < 2; ++i)
     {
-        if (!mIsHUDSlideIn)
+        if (mIsHUDSlideIn && mScoreUpdateDelay[i] > 0.0f && m_pFEPresentation->m_currentSlide->m_time >= 1.0f)
         {
-            continue;
-        }
-
-        if (mScoreUpdateDelay[i] <= 0.0f)
-        {
-            continue;
-        }
-
-        if (m_pFEPresentation->m_currentSlide->m_time < 1.0f)
-        {
-            continue;
-        }
-
-        if (mStartScoreAnimation)
-        {
-            TLComponentInstance* pScoreComp;
-            if (i == 0)
+            if (mStartScoreAnimation)
             {
-                pScoreComp = FEFinder<TLComponentInstance, 4>::Find<FEPresentation>(
-                    m_pFEPresentation,
-                    InlineHasher(nlStringLowerHash("IN")),
-                    InlineHasher(nlStringLowerHash(LAYER_NAME)),
-                    InlineHasher(nlStringLowerHash("left_score")));
+                TLComponentInstance* pScoreComp;
+                if (i == 0)
+                {
+                    pScoreComp = FEFinder<TLComponentInstance, 4>::Find<FEPresentation>(
+                        m_pFEPresentation,
+                        InlineHasher(nlStringLowerHash("IN")),
+                        InlineHasher(nlStringLowerHash(LAYER_NAME)),
+                        InlineHasher(nlStringLowerHash("left_score")));
+                }
+                else
+                {
+                    pScoreComp = FEFinder<TLComponentInstance, 4>::Find<FEPresentation>(
+                        m_pFEPresentation,
+                        InlineHasher(nlStringLowerHash("IN")),
+                        InlineHasher(nlStringLowerHash(LAYER_NAME)),
+                        InlineHasher(nlStringLowerHash("right_score")));
+                }
+
+                TLSlide* activeSlide = pScoreComp->GetActiveSlide();
+                if (activeSlide->m_time >= activeSlide->m_start + activeSlide->m_duration)
+                {
+                    pScoreComp->SetActiveSlide("Slide1");
+                    pScoreComp->Update(0.0f);
+                    mStartScoreAnimation = false;
+                }
             }
             else
             {
-                pScoreComp = FEFinder<TLComponentInstance, 4>::Find<FEPresentation>(
-                    m_pFEPresentation,
-                    InlineHasher(nlStringLowerHash("IN")),
-                    InlineHasher(nlStringLowerHash(LAYER_NAME)),
-                    InlineHasher(nlStringLowerHash("right_score")));
-            }
+                mScoreUpdateDelay[i] -= fDeltaT;
 
-            TLSlide* activeSlide = pScoreComp->GetActiveSlide();
-            if (activeSlide->m_time >= activeSlide->m_start + activeSlide->m_duration)
-            {
-                pScoreComp->SetActiveSlide("Slide1");
-                pScoreComp->Update(0.0f);
-                mStartScoreAnimation = false;
-            }
-        }
-        else
-        {
-            mScoreUpdateDelay[i] -= fDeltaT;
-
-            if (mScoreUpdateDelay[i] <= 0.0f)
-            {
-                mScoreUpdateDelay[i] = 0.0f;
-                mScore[i] += 1;
-
-                if (mScore[i] < mNewScore[i])
+                if (mScoreUpdateDelay[i] <= 0.0f)
                 {
-                    mScoreUpdateDelay[i] = 0.5f;
-                    mStartScoreAnimation = true;
-                }
+                    mScoreUpdateDelay[i] = 0.0f;
+                    mScore[i] += 1;
 
-                BasicString<char, Detail::TempStringAllocator> scoreString = LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(mScore[i]);
-                nlStrToWcs(scoreString.c_str(), mScoreBuffer[i], 0x20);
-                m_pTextInstanceScore[0][i]->SetString(mScoreBuffer[i]);
-                m_pTextInstanceScore[1][i]->SetString(mScoreBuffer[i]);
+                    if (mScore[i] < mNewScore[i])
+                    {
+                        mScoreUpdateDelay[i] = 0.5f;
+                        mStartScoreAnimation = true;
+                    }
+
+                    BasicString<char, Detail::TempStringAllocator> scoreString = LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(mScore[i]);
+                    nlStrToWcs(scoreString.c_str(), mScoreBuffer[i], 0x20);
+                    m_pTextInstanceScore[0][i]->SetString(mScoreBuffer[i]);
+                    m_pTextInstanceScore[1][i]->SetString(mScoreBuffer[i]);
+                }
             }
+            break;
         }
-        break;
     }
 
     if (nlSingleton<GameInfoManager>::s_pInstance->mIsInStrikers101Mode)
@@ -304,21 +294,21 @@ void HUDOverlay::Update(float fDeltaT)
         return;
     }
 
+    unsigned long time;
     bool isOvertime = nlSingleton<StatsTracker>::s_pInstance->mIsOvertime;
 
-    float gameTime = g_pGame->GetGameTime();
-    float gameClockStart = g_pGame->mGameSettings->mClockStart;
+    float fTime = g_pGame->GetGameTime();
     float overtimeTime = 59999.0f;
-    float fTime = gameTime - gameClockStart;
-    float fRemainingTime = gameClockStart - gameTime;
+    float fRemainingTime = g_pGame->mGameSettings->mClockStart - fTime;
+    fTime -= g_pGame->mGameSettings->mClockStart;
 
     if (fTime <= overtimeTime)
     {
         overtimeTime = fTime;
     }
 
-    unsigned long time = (unsigned long)fRemainingTime;
-    unsigned long remainingTime = isOvertime ? (unsigned long)overtimeTime : time;
+    time = (unsigned long)fRemainingTime;
+    unsigned long remainingTime = (unsigned long)(isOvertime ? (double)overtimeTime : (double)time);
     unsigned long newMinutes = remainingTime / 60;
     unsigned long newSeconds = remainingTime - (newMinutes * 60);
     unsigned long newTenths = 0;
@@ -348,7 +338,7 @@ void HUDOverlay::Update(float fDeltaT)
         newTenths = (unsigned long)((fRemainingTime - (float)newSeconds) * 10.0f);
     }
 
-    if (!isOvertime && (float)remainingTime == gameClockStart && mClockColourChanged)
+    if (!isOvertime && (float)remainingTime == g_pGame->mGameSettings->mClockStart && mClockColourChanged)
     {
         mClockColourChanged = false;
         mOvertimeSFXPlayed = false;

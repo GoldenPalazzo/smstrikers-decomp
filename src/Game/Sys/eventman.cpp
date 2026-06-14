@@ -28,9 +28,6 @@ EventManager::~EventManager()
     }
 }
 
-/**
- * Offset/Address/Size: 0x370 | 0x801FACF0 | size: 0x118
- */
 inline EventManager::EventManager(unsigned long uEventCount, unsigned long uEventSize)
     : m_dispatching(false)
     , m_handlers(NULL)
@@ -43,6 +40,16 @@ inline EventManager::EventManager(unsigned long uEventCount, unsigned long uEven
     , m_count(uEventCount)
     , m_size(uEventSize)
 {
+    // The original FlushEventQueue() (inlined away in retail) issued a direct
+    // nlDLRingRemove<Event> on the queue, instantiating Remove<Event> ahead of
+    // RemoveEventHandler's Remove<EventHandler>. That ordering is what makes the
+    // weak COMDAT pair emit EventHandler-before-Event (matching target). The
+    // call is dead and emits no code; it only fixes the instantiation order.
+    if (false)
+    {
+        nlDLRingRemove<Event>(&m_queue, m_queue);
+    }
+
     u32 total = m_size * m_count;
     m_pool = (char*)nlMalloc(total, 8, false);
 
@@ -60,6 +67,9 @@ inline EventManager::EventManager(unsigned long uEventCount, unsigned long uEven
     SetupDestArray();
 }
 
+/**
+ * Offset/Address/Size: 0x370 | 0x801FACF0 | size: 0x118
+ */
 void EventManager::Create(unsigned long uEventCount, unsigned long uEventSize)
 {
     EventManager* m = new (nlMalloc(sizeof(EventManager), 8, false)) EventManager(uEventCount, uEventSize);
@@ -199,6 +209,8 @@ void EventManager::DispatchEvents()
 
 void eventman_stub()
 {
+    // just needed to get the string/symbols into the right order
+    // TODO: I am sure the erased inline methods in dwarf should get these strings in order without the stub
     nlPrintf("Event Manager: There are no more free events in the free event list!\n"); // @293
     nlPrintf("Event Manager: Size mismatch on event creation (%d vs %d)!\n");
     nlPrintf("Event Manager: Allocating %d events of size %d. Total = %d bytes\n");

@@ -62,7 +62,7 @@ void cHeadTrack::Update(const nlMatrix4& m4HeadMatrix, const nlMatrix4& m4Constr
 
         {
             int sign = nHeadSpin >> 31;
-            int absSpin = (nHeadSpin ^ sign) - sign;
+            int absSpin = (sign ^ nHeadSpin) - sign;
 
             if ((absSpin < (int)(unsigned int)aOOIConstraint) || (m_v3OOI.f.z > 1.5f))
             {
@@ -71,7 +71,7 @@ void cHeadTrack::Update(const nlMatrix4& m4HeadMatrix, const nlMatrix4& m4Constr
                 nAmountOfDeadZoneBehindHeadtrack = (((int)(unsigned int)aOOIConstraint - nHeadSpinMax) * 3) / 4;
 
                 sign = nHeadSpin >> 31;
-                absSpin = (nHeadSpin ^ sign) - sign;
+                absSpin = (sign ^ nHeadSpin) - sign;
                 if ((unsigned int)absSpin >= (unsigned int)nHeadSpinMax)
                 {
                     if (nHeadSpin > 0)

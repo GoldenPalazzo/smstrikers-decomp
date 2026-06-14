@@ -3762,8 +3762,9 @@ void AudioStreamTrack::TrackManager<3>::OnMasterVolumeChange(Audio::MasterVolume
         if (qs != NULL)
         {
             GCAudioStreaming::StereoAudioStream* pStream = qs->pStream;
+            DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>* fadeHead;
             DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>* fadeIter = nlDLRingGetStart(m_FadeMgr.m_Fades.m_Head);
-            DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>* fadeHead = m_FadeMgr.m_Fades.m_Head;
+            fadeHead = m_FadeMgr.m_Fades.m_Head;
             AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL* fadeCtrl = NULL;
 
             while (fadeIter != NULL)
@@ -3799,7 +3800,7 @@ void AudioStreamTrack::TrackManager<3>::OnMasterVolumeChange(Audio::MasterVolume
                     {
                         volatile unsigned long bufCounter = 0;
                         GCAudioStreaming::AudioStreamBuffer* buf = NULL;
-                        if (pStream->m_BufferCount > 0)
+                        if (pStream->m_BufferCount != 0)
                         {
                             buf = pStream->m_Buffers[0];
                         }

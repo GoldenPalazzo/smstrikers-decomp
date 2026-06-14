@@ -1569,7 +1569,7 @@ void cBall::CollideWithGroundCallback()
 
 /**
  * Offset/Address/Size: 0x2BD4 | 0x8000C5A8 | size: 0xA18
- * TODO: 98.34% match - remaining mismatch is pCharacter/pOwner register
+ * TODO: 99.37% match - remaining mismatch is pCharacter/pOwner register
  *       allocation in the cFielder collision branch.
  */
 void cBall::CollideWithCharacterCallback(cPlayer* pCharacter, const nlVector3& v3PreBallVelocity)
@@ -1764,9 +1764,8 @@ void cBall::CollideWithCharacterCallback(cPlayer* pCharacter, const nlVector3& v
             nlVector3 v3PhysicsRadialSpot;
             nlPolarToCartesian(v3PhysicsRadialSpot.f.x, v3PhysicsRadialSpot.f.y, pCharacter->m_aActualFacingDirection, pCharacter->m_pTweaks->fPhysCapsuleRadius);
 
-            v3ContactLocation.f.x += v3PhysicsRadialSpot.f.x;
-            v3ContactLocation.f.y += v3PhysicsRadialSpot.f.y;
-            v3ContactLocation.f.z += v3PhysicsRadialSpot.f.z;
+            v3PhysicsRadialSpot.f.z = 0.0f;
+            nlVec3Add(v3ContactLocation, v3ContactLocation, v3PhysicsRadialSpot);
 
             s16 nHitterContactLocationFacingDelta = pCharacter->GetFacingDeltaToPosition(v3ContactLocation);
             u16 absFacingDelta = nHitterContactLocationFacingDelta < 0 ? -nHitterContactLocationFacingDelta : nHitterContactLocationFacingDelta;
@@ -1830,7 +1829,7 @@ void cBall::CollideWithCharacterCallback(cPlayer* pCharacter, const nlVector3& v
 
             do
             {
-                if (!pCharacterFielder->IsFrozen() && (pCharacterFielder->IsRunning() || pCharacterFielder->IsSlideTackling()))
+                if (!pCharacterFielder->IsFrozen() && (pCharacterFielder->m_eActionState == ACTION_RUNNING || pCharacterFielder->m_eActionState == ACTION_SLIDE_ATTACK))
                 {
                     s16 delta = pCharacter->GetFacingDeltaToPosition(g_pBall->m_v3Position);
                     u16 absDelta = delta < 0 ? -delta : delta;

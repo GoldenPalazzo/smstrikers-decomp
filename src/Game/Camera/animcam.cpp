@@ -57,13 +57,31 @@ static inline nlChunk* nlGetNextChunk(nlChunk* chunk)
     return (nlChunk*)((u8*)chunk + chunk->m_Size + 8);
 }
 
+template <class T>
+static inline void nlGetChunkDataAs(nlChunk* chunk, T*& out)
+{
+    u32 alignField = chunk->m_ID & 0x7F000000;
+    u32 isAligned = ((-alignField) | alignField) >> 31;
+    if (isAligned != 0)
+    {
+        u32 alignment = 1u << (alignField >> 24);
+        out = (T*)((u32)chunk + alignment);
+        out = (T*)((u32)out + 7);
+        out = (T*)((u32)out & ~(alignment - 1));
+    }
+    else
+    {
+        out = (T*)((u8*)chunk + 8);
+    }
+}
+
 /**
  * Offset/Address/Size: 0xCA4 | 0x801A5898 | size: 0x498
- * TODO: 98.72% match - nlGetChunkData inline expansion still keeps chunk-data
- * pointers in r3 for vector/quaternion and float fallback cases where target
- * uses r5/r0 directly
+ * TODO: 99.54% match - aligned vector/quaternion chunk-data setup still has
+ * r3/r4 register swaps, and float fallback pointer stores still use r3 where
+ * target uses r0
  */
-bool LoadAnimCameraData(nlChunk* outerChunk, nlChunk* outerEnd, cCameraData* pAnimCameraData, bool ownsKeyData)
+static bool LoadAnimCameraData(nlChunk* outerChunk, nlChunk* outerEnd, cCameraData* pAnimCameraData, bool ownsKeyData)
 {
     pAnimCameraData->ownsKeyData = ownsKeyData;
     while (outerChunk < outerEnd)
@@ -93,7 +111,8 @@ bool LoadAnimCameraData(nlChunk* outerChunk, nlChunk* outerEnd, cCameraData* pAn
             break;
         case 0x15509:
         {
-            nlVector3* v3Pos = (nlVector3*)nlGetChunkData(outerChunk);
+            nlVector3* v3Pos;
+            nlGetChunkDataAs(outerChunk, v3Pos);
             if (ownsKeyData)
             {
                 unsigned long offset;
@@ -114,7 +133,8 @@ bool LoadAnimCameraData(nlChunk* outerChunk, nlChunk* outerEnd, cCameraData* pAn
         }
         case 0x1550C:
         {
-            nlVector3* v3Pos = (nlVector3*)nlGetChunkData(outerChunk);
+            nlVector3* v3Pos;
+            nlGetChunkDataAs(outerChunk, v3Pos);
             if (ownsKeyData)
             {
                 unsigned long offset;
@@ -135,7 +155,8 @@ bool LoadAnimCameraData(nlChunk* outerChunk, nlChunk* outerEnd, cCameraData* pAn
         }
         case 0x15511:
         {
-            nlQuaternion* rot = (nlQuaternion*)nlGetChunkData(outerChunk);
+            nlQuaternion* rot;
+            nlGetChunkDataAs(outerChunk, rot);
             if (ownsKeyData)
             {
                 unsigned long offset;

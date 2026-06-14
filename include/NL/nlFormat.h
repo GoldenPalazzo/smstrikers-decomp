@@ -53,10 +53,10 @@ FormatImpl<StringType>& FormatImpl<StringType>::operator%(const T& t)
         if (mString[i + 2] != '}')
             continue;
 
+        typename StringType::value_type* eraseStart = &mString[i];
         typename StringType::value_type* eraseEnd = &mString[i + 3];
         if (sizeof(typename StringType::value_type) == 1)
             mString[0];
-        typename StringType::value_type* eraseStart = &mString[i];
         BasicStringData<typename StringType::value_type>* data = mString.m_data;
         int eraseLen = eraseEnd - eraseStart;
         typename StringType::value_type* dst = &data->mData[eraseStart - data->mData];
@@ -66,7 +66,11 @@ FormatImpl<StringType>& FormatImpl<StringType>::operator%(const T& t)
         }
         data->mSize -= eraseLen;
 
-        mString.insert(&mString[i], &insert[0], &insert[(int)(insert.m_data ? insert.m_data->mSize - 1 : 0)]);
+        typename StringType::value_type* insertAt = &mString[i];
+        typename StringType::value_type* insertBegin = &insert[0];
+        int insertEndIdx = (int)(insert.m_data ? insert.m_data->mSize - 1 : 0);
+        typename StringType::value_type* insertEnd = &insert[insertEndIdx];
+        mString.insert(insertAt, insertBegin, insertEnd);
     }
 
     mCurrentPos++;

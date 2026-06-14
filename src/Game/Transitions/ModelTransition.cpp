@@ -741,8 +741,59 @@ static unsigned long GetParsedProgram(const char* pToken)
     return glGetProgram(name);
 }
 
+cSHierarchy* InitSHierarchyNoArg(cSHierarchy*);
+#pragma alias InitSHierarchyNoArg__FP11cSHierarchy "Initialize__11cSHierarchyFP7nlChunk"
+
+static inline void LoadModelTransition(ModeledScreenTransition* self, char* pToken)
+{
+    AVLTreeNode* existingNode;
+    u32 fileSize = 0;
+    TransitionModelStore* pModelStore;
+    u32 hash;
+    TransitionModelStore newStore;
+    char buf[128];
+    hash = glHash(pToken);
+
+    if (((ModelInventoryFindHelper*)&g_ModelInventory.m_Root)->FindGet(hash, &pModelStore))
+    {
+        CreateInstance(self, *pModelStore);
+    }
+    else
+    {
+        glSetIgnoreDuplicateModels(true);
+
+        nlSNPrintf(buf, 128, "transitions/%s.glg", pToken);
+        self->m_pModels = glLoadModel(buf, &self->m_nModels);
+
+        glSetIgnoreDuplicateModels(false);
+
+        newStore.pModels = self->m_pModels;
+        newStore.nModels = self->m_nModels;
+        g_ModelInventory.AddAVLNode(&((AVLTreeNode*&)g_ModelInventory.m_Root), (void*)&hash, (void*)&newStore, &existingNode, g_ModelInventory.m_NumElements);
+        if (existingNode == NULL)
+        {
+            g_ModelInventory.m_NumElements++;
+        }
+    }
+
+    nlSNPrintf(buf, 128, "art/transitions/%s.sanim", pToken);
+    self->m_pAnimFile = (char*)nlLoadEntireFile(buf, &fileSize, 0x20, AllocateStart);
+    self->m_pAnim = cSAnim::Initialize((nlChunk*)self->m_pAnimFile);
+
+    nlSNPrintf(buf, 128, "art/transitions/%s.shier", pToken);
+    self->m_pSkelFile = (char*)nlLoadEntireFile(buf, &fileSize, 0x20, AllocateStart);
+    self->m_pSkeleton = InitSHierarchyNoArg((cSHierarchy*)self->m_pSkelFile);
+
+    self->m_pModelMap = (int*)nlMalloc(self->m_nModels * 4, 8, false);
+    for (u32 i = 0; i < self->m_nModels; i++)
+    {
+        self->m_pModelMap[i] = self->m_pSkeleton->GetNodeIndexByID(self->m_pModels[i].id);
+    }
+}
+
 /**
  * Offset/Address/Size: 0x44 | 0x80202108 | size: 0x6C8
+ * TODO: 99.34% match - remaining name-token register allocation and final model/packet loop register rotation.
  */
 ModeledScreenTransition* ModeledScreenTransition::LoadFromParser(SimpleParser* parser)
 {
@@ -757,49 +808,7 @@ ModeledScreenTransition* ModeledScreenTransition::LoadFromParser(SimpleParser* p
         else if (nlStrCmp(pToken, "name") == 0)
         {
             pToken = parser->NextTokenOnLine(true);
-            u32 hash;
-            TransitionModelStore* pModelStore;
-            u32 fileSize = 0;
-            char buf[128];
-            hash = glHash(pToken);
-
-            if (((ModelInventoryFindHelper*)&g_ModelInventory.m_Root)->FindGet(hash, &pModelStore))
-            {
-                CreateInstance(this, *pModelStore);
-            }
-            else
-            {
-                glSetIgnoreDuplicateModels(true);
-
-                nlSNPrintf(buf, 128, "transitions/%s.glg", pToken);
-                m_pModels = glLoadModel(buf, &m_nModels);
-
-                glSetIgnoreDuplicateModels(false);
-
-                TransitionModelStore newStore;
-                newStore.pModels = m_pModels;
-                newStore.nModels = m_nModels;
-                AVLTreeNode* existingNode;
-                g_ModelInventory.AddAVLNode(&((AVLTreeNode*&)g_ModelInventory.m_Root), (void*)&hash, (void*)&newStore, &existingNode, g_ModelInventory.m_NumElements);
-                if (existingNode == NULL)
-                {
-                    g_ModelInventory.m_NumElements++;
-                }
-            }
-
-            nlSNPrintf(buf, 128, "art/transitions/%s.sanim", pToken);
-            m_pAnimFile = (char*)nlLoadEntireFile(buf, &fileSize, 0x20, AllocateStart);
-            m_pAnim = cSAnim::Initialize((nlChunk*)m_pAnimFile);
-
-            nlSNPrintf(buf, 128, "art/transitions/%s.shier", pToken);
-            m_pSkelFile = (char*)nlLoadEntireFile(buf, &fileSize, 0x20, AllocateStart);
-            m_pSkeleton = ((cSHierarchy*)m_pSkelFile)->Initialize((nlChunk*)m_pSkelFile);
-
-            m_pModelMap = (int*)nlMalloc(m_nModels * 4, 8, false);
-            for (u32 i = 0; i < m_nModels; i++)
-            {
-                m_pModelMap[i] = m_pSkeleton->GetNodeIndexByID(m_pModels[i].id);
-            }
+            LoadModelTransition(this, pToken);
         }
         else if (nlStrCmp(pToken, "screengrab") == 0)
         {
@@ -807,7 +816,8 @@ ModeledScreenTransition* ModeledScreenTransition::LoadFromParser(SimpleParser* p
         }
         else if (nlStrCmp(pToken, "effect") == 0)
         {
-            nlStrNCpy(m_EffectName, parser->NextTokenOnLine(true), 64);
+            char* effect = parser->NextTokenOnLine(true);
+            nlStrNCpy(m_EffectName, effect, 64);
         }
         else if (nlStrCmp(pToken, "outline") == 0)
         {

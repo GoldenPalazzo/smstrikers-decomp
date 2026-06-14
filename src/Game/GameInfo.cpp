@@ -3001,10 +3001,10 @@ void GameInfoManager::OnPostCupGameState()
         break;
     }
 
-    if (mDisplayTrophy[0])
-    {
-        bool hasTrophy;
+    bool hasTrophy = mDisplayTrophy[0];
 
+    if (hasTrophy)
+    {
         if (GetConfigBool(Config::Global(), "givealltrophies", false))
         {
             hasTrophy = true;
@@ -3014,9 +3014,9 @@ void GameInfoManager::OnPostCupGameState()
             int trophy = (int)tourneyCup;
             hasTrophy = (mUserInfo.mTrophies[trophy / 8] & (1 << (trophy % 8))) != 0;
         }
-
-        mDisplayTrophy[0] = hasTrophy;
     }
+
+    mDisplayTrophy[0] = hasTrophy;
 
     for (i = 0; i < 5; i++)
     {
@@ -3163,13 +3163,13 @@ void GameInfoManager::OnPostCupGameState()
         unlockedState |= 0x800;
     }
 
-    if (CheckUnlockStatus(isKongaUnlocked, mUserInfo.mTrophies[0], 0)
-        && CheckUnlockStatus(isYoshiUnlocked, mUserInfo.mTrophies[0], 1))
+    if (CheckUnlockStatusNoGlobal(mUserInfo.mTrophies[0], 0)
+        && CheckUnlockStatusNoGlobal(mUserInfo.mTrophies[0], 1))
     {
         unlockedState |= 0x1000;
     }
 
-    if (CheckUnlockStatus(false, mUserInfo.mTrophies[0], 3))
+    if (CheckUnlockStatusNoGlobal(mUserInfo.mTrophies[0], 3))
     {
         unlockedState |= 0x4000;
     }

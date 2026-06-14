@@ -575,9 +575,9 @@ TagValuePair& Config::FindTvp(const char* tag)
 
 /**
  * Offset/Address/Size: 0x1FEC | 0x801D4C50 | size: 0x534
- * TODO: 81.18% match - 4 vs 5 callee-saved register allocation (stw individual vs stmw r27),
- * dead loop in operator[] null case not reproducible (MWCC optimizes self-assignment away),
- * bne+b vs beq branch pattern for refcount==1 check
+ * TODO: 96.82% match - b param r28 vs target r31 register permutation,
+ * operator[] inlined COW check beq vs target bne+b (8 bytes shorter),
+ * loop condition addi placement before vs after null branch
  */
 bool Config::IsBool(const char* str, bool& b) const
 {

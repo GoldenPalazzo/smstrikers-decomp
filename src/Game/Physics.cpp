@@ -361,10 +361,12 @@ void PhysicsLoader::ConstructStaticPhysicsPrimitives(CharacterPhysicsData* pPhys
 bool PhysicsLoader::StartLoad(LoadingManager*)
 {
     PhysicsLoader* pThis = this;
+    int i;
+    int sidelineOffset;
     ListEntry<PhysicsObject*>** pHead;
     ListEntry<PhysicsObject*>** pTail;
-    int i;
     int j;
+    int cornerOffset;
     unsigned long uPositiveNetMeshID;
     unsigned long uNegativeNetMeshID;
     char szTemp[0x104];
@@ -407,16 +409,17 @@ bool PhysicsLoader::StartLoad(LoadingManager*)
     pTail = &g_StaticPhysicsPrimitives.m_Tail;
     nlListAddEnd(pHead, pTail, pEntry);
 
-    for (i = 0; i < 4; i++)
+    for (i = 0, sidelineOffset = 0; i < 4; i++, sidelineOffset += 0xC)
     {
+        sSideLinePlane* pSideline = (sSideLinePlane*)((unsigned long)cField::mSidelines + sidelineOffset);
         PhysicsWall* pWall = (PhysicsWall*)nlMalloc(0x2C, 8, false);
         if (pWall != NULL)
         {
             pWall = __ct__11PhysicsWallFP14CollisionSpacefff(pWall,
                 g_CollisionSpace,
-                cField::mSidelines[i].vNormal.f.x,
-                cField::mSidelines[i].vNormal.f.y,
-                cField::mSidelines[i].fDistance);
+                pSideline->vNormal.f.x,
+                pSideline->vNormal.f.y,
+                pSideline->fDistance);
         }
 
         void* pMem = nlMalloc(8, 8, false);
@@ -430,17 +433,18 @@ bool PhysicsLoader::StartLoad(LoadingManager*)
         nlListAddEnd(pHead, pTail, pWallEntry);
     }
 
-    for (j = 0; j < 4; j++)
+    for (j = 0, cornerOffset = 0; j < 4; j++, cornerOffset += 0x10)
     {
+        sCornerSegment* pCornerSegment = (sCornerSegment*)((unsigned long)cField::mCorners + cornerOffset);
         PhysicsRoundedCorner* pCorner = (PhysicsRoundedCorner*)nlMalloc(0x2C, 8, false);
         if (pCorner != NULL)
         {
             pCorner = __ct__20PhysicsRoundedCornerFP14CollisionSpaceRC9nlVector2fbb(pCorner,
                 g_CollisionSpace,
-                cField::mCorners[j].vCenter,
-                cField::mCorners[j].fRadius,
-                cField::mCorners[j].vCenter.f.x > 0.0f,
-                cField::mCorners[j].vCenter.f.y > 0.0f);
+                pCornerSegment->vCenter,
+                pCornerSegment->fRadius,
+                pCornerSegment->vCenter.f.x > 0.0f,
+                pCornerSegment->vCenter.f.y > 0.0f);
         }
         corners[j] = pCorner;
     }

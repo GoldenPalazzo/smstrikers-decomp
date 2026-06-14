@@ -142,8 +142,8 @@ BlurHandler* BlurManager::GetNewHandler(const char* szTextureName, float fLineWi
 
 /**
  * Offset/Address/Size: 0x2AC | 0x80162A80 | size: 0x514
- * TODO: 98.18% match - remaining diffs are in blended-endpoint address arithmetic for
- * interpolated top/bottom sampling.
+ * TODO: 98.30% match - remaining diffs are in blended-endpoint pointer collapse (MWCC CSE
+ * collapses v3Bottom to v3Top+0xc) and .sdata2 named-vs-anonymous label for static const white.
  */
 void BlurHandler::RenderMesh(unsigned long uTexID)
 {
@@ -265,8 +265,8 @@ void BlurHandler::RenderMesh(unsigned long uTexID)
                 }
 
                 f32 blendPct = ReplayManager::Instance()->mRender->mFrameBlendPercent;
-                BlurPointEntry* pB = &m_pointRingBuffer[pointIndexB];
                 BlurPointEntry* pA = &m_pointRingBuffer[pointIndexA];
+                BlurPointEntry* pB = &m_pointRingBuffer[pointIndexB];
 
                 f32 invBlend = 1.0f - blendPct;
 

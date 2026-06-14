@@ -14,11 +14,10 @@ extern bool g_bEnableGamecubePadMonkey;
 extern bool g_bTweaking;
 extern bool g_bProfiling;
 
-// Forward declarations for constructor/destructor functions
+// Forward declaration for the ReplayManager destructor registered with the
+// global destructor chain below.
 extern "C"
 {
-    void __ct__14RenderSnapshotFv(void*, int);
-    void __dt__14RenderSnapshotFv(void*, int);
     void __dt__13ReplayManagerFv(void*, int);
 }
 
@@ -127,12 +126,60 @@ void Replay::Play(float time, T& previous, T& current, float* blend) const
 #pragma inline_max_size(256)
 #pragma inline_max_total_size(10000)
 
-// /**
-//  * Offset/Address/Size: 0x3C | 0x8011294C | size: 0x168
-//  */
-// void Replay::Record<RenderSnapshot>(float, RenderSnapshot&, unsigned int)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x3C | 0x8011294C | size: 0x168
+ * TODO: 95.81% match - newFrame is held in a callee-saved register (r25) across
+ * the slot-pool allocation and Frame ctor, sharing its zero-init with mReelIdx;
+ * our build keeps it in temporaries, shifting the stmw base and the in/out moves.
+ */
+template <typename T>
+void Replay::Record(float time, T& snapshot, unsigned int events)
+{
+    for (int interval = 1; interval <= 3; interval++)
+    {
+        if (mTick % interval == 0)
+        {
+            NewFrame();
+
+            SaveFrame frame;
+            char* storage = mFree->mBegin;
+            frame.mInterval = interval;
+            frame.mStream.mCount = 0;
+            frame.mStream.mStorage = storage;
+            Replayable<0>(frame, snapshot);
+
+            int frameSize = frame.mStream.mStorage - mFree->mBegin;
+            if (mActualMaxFrameSize < frameSize)
+            {
+                mActualMaxFrameSize = frameSize;
+            }
+
+            mReels[0].mLast = mFree;
+            mFree->mReelIdx = 0;
+            mFree->mTime = time;
+            mFree->mInterval = interval;
+            mFree->mEvents = events;
+
+            if (Frame::mSlotPool.m_FreeList == NULL)
+            {
+                SlotPoolBase::BaseAddNewBlock(&Frame::mSlotPool, sizeof(Frame));
+            }
+            Frame* newFrame = NULL;
+            if (Frame::mSlotPool.m_FreeList != NULL)
+            {
+                newFrame = (Frame*)Frame::mSlotPool.m_FreeList;
+                Frame::mSlotPool.m_FreeList = Frame::mSlotPool.m_FreeList->m_next;
+            }
+            newFrame = new (newFrame) Frame(mFree->mBegin + frameSize, mFree->mSize - frameSize, mFree->mNext);
+
+            mFree->mNext = newFrame;
+            mFree->mSize = frameSize;
+            mFree = mFree->mNext;
+        }
+    }
+
+    mTick++;
+}
 
 // /**
 //  * Offset/Address/Size: 0x0 | 0x80112910 | size: 0x3C
@@ -205,7 +252,7 @@ ReplayManager* ReplayManager::Instance()
     {
         ReplayManager* instance = reinterpret_cast<ReplayManager*>(rm);
 
-        __construct_array(instance, __ct__14RenderSnapshotFv, __dt__14RenderSnapshotFv, sizeof(RenderSnapshot), 3);
+        new (instance->mSnapshots) RenderSnapshot[3];
         instance->mCurrent = instance->mSnapshots;
         instance->mPrevious = instance->mSnapshots + 1;
         instance->mRender = 0;
@@ -490,4 +537,11 @@ void ReplayManager::RenderSnapshotAt(float deltaTime)
     {
         mSnapshots[2].RenderDebugInfo(*mPrevious, *mCurrent, mBlend[0]);
     }
+}
+
+// Force emission of weak inline destructor -- REMOVE once real callers exist.
+void ReplayManager_stub()
+{
+    cFollowCamera* volatile p = 0;
+    delete p;
 }

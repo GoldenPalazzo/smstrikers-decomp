@@ -68,7 +68,7 @@ s32 GLRenderList::AttachModel(const glModel* pModel, unsigned long layer)
                 nlMatrix4 packetMatrix;
                 glGetMatrix(pPacket->state.matrix, packetMatrix);
                 nlMultPosVectorMatrix(out, *(nlVector3*)&packetMatrix.m[3][0], m);
-                sortKey = ((s32)(-out.f.z * 256.0f) << 12) | (sortKey & 0xFFF);
+                sortKey = ((s32)(-out.f.z * 100.0f) << 12) | (sortKey & 0xFFF);
                 pair.sortKey = sortKey;
                 uDepthInsertNumber++;
             }
@@ -78,7 +78,7 @@ s32 GLRenderList::AttachModel(const glModel* pModel, unsigned long layer)
                 glGetMatrix(pPacket->state.matrix, packetMatrix2);
                 nlVector3 out2;
                 nlMultPosVectorMatrix(out2, *(nlVector3*)pPacket->streams->address, m);
-                pair.sortKey = (s32)(-out2.f.z * 256.0f);
+                pair.sortKey = (s32)(-out2.f.z * 2147483648.0f);
             }
 
             pTree = depthPacketTree;

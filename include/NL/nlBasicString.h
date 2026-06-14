@@ -206,7 +206,11 @@ public:
         }
         else
         {
-            if (oldData->mRefCount != 1)
+            if (oldData->mRefCount == 1)
+            {
+                m_data = oldData;
+            }
+            else
             {
                 BasicStringData<CharT>* newData = (BasicStringData<CharT>*)Allocator::allocate(sizeof(BasicStringData<CharT>));
                 if (newData != 0)

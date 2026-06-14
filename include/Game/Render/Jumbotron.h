@@ -50,4 +50,6 @@ public:
     static Jumbotron instance;
 }; // total size: 0xE4
 
+extern void* g_TrophyTextureLocationInMemory;
+
 #endif // _JUMBOTRON_H_

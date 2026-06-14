@@ -136,8 +136,8 @@ u32 glplatFrameAlloc(unsigned long size, eGLMemory mem)
 
 /**
  * Offset/Address/Size: 0x200 | 0x801B6B28 | size: 0x110
- * TODO: 95.15% match - remaining mismatch is CTR-loop form
- * (mtctr/bdnz vs addic./bne)
+ * TODO: 95.15% match - MWCC 2.7 codegen: do-while(--count) emits
+ * addic./bne, target has mtctr/bdnz; while(count--) gets CTR but 4x unrolls
  */
 void glplatResourceRelease(unsigned long long resourceId)
 {
