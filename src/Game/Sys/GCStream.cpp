@@ -1112,20 +1112,21 @@ void GCAudioStreaming::StereoAudioStream::InterleavedHdrReadCB(nlFile* pFile, vo
 
 /**
  * Offset/Address/Size: 0x2A8 | 0x801C7A58 | size: 0x540
- * TODO: 93.29% match - r31/r30/r27 cyclic register swap for this/LengthB/MRAMOffsetB
+ * TODO: 93.66% match - MRAMOffsetA/LengthA/MRAMOffsetB register rotation and buffer-count branch selection
  */
 unsigned long GCAudioStreaming::StereoAudioStream::DoUpdateRead(unsigned long MRAMOffsetA, unsigned long LengthA, unsigned long MRAMOffsetB, unsigned long LengthB, GCAudioStreaming::AudioStreamBuffer* pRequestingBuffer)
 {
+    AudioStream* pAudioStream = this;
     bool serious;
-    if (m_Flags & (1 << SF_SeriousStop))
+    if (pAudioStream->m_Flags & (1 << SF_SeriousStop))
     {
-        switch (m_State)
+        switch (pAudioStream->m_State)
         {
         case SS_New:
         case SS_Initd:
             break;
         case SS_Warming:
-            m_State = SS_Warm;
+            pAudioStream->m_State = SS_Warm;
             break;
         case SS_Warm:
         case SS_Playing:
@@ -1139,30 +1140,30 @@ unsigned long GCAudioStreaming::StereoAudioStream::DoUpdateRead(unsigned long MR
     }
     if (serious)
         return 0;
-    if (pRequestingBuffer != m_Buffers[0])
+    if (pRequestingBuffer != pAudioStream->m_Buffers[0])
     {
         ___blank("Skiping right channel\n");
         return LengthA + LengthB;
     }
-    if (m_OldLength == 0)
-        m_OldLength = m_StreamLength;
-    if (m_Flags & (1 << SF_EndAtUpdate))
+    if (pAudioStream->m_OldLength == 0)
+        pAudioStream->m_OldLength = pAudioStream->m_StreamLength;
+    if (pAudioStream->m_Flags & (1 << SF_EndAtUpdate))
     {
         unsigned long EndOffset = MRAMOffsetA + LengthA;
-        ___blank("Lookat at stopping, last playable @ %d, currently @ %d for %d (%d) \n", m_LastPlayable, MRAMOffsetA, LengthA, EndOffset);
-        if (MRAMOffsetA < m_LastPlayable && EndOffset >= m_LastPlayable)
+        ___blank("Lookat at stopping, last playable @ %d, currently @ %d for %d (%d) \n", pAudioStream->m_LastPlayable, MRAMOffsetA, LengthA, EndOffset);
+        if (MRAMOffsetA < pAudioStream->m_LastPlayable && EndOffset >= pAudioStream->m_LastPlayable)
         {
-            Stop();
+            pAudioStream->Stop();
             return 0;
         }
         AudioStreamBuffer* pBuffer;
         volatile unsigned long BufferIndex = (unsigned long)(pBuffer = 0);
-        if (m_BufferCount <= 0)
+        if (pAudioStream->m_BufferCount <= 0)
         {
         }
         else
         {
-            pBuffer = m_Buffers[0];
+            pBuffer = pAudioStream->m_Buffers[0];
         }
         unsigned long ARAMLenA = (LengthA >> 3) * 0xe;
         unsigned long ARAMLenB = (LengthB >> 3) * 0xe;
@@ -1184,7 +1185,7 @@ unsigned long GCAudioStreaming::StereoAudioStream::DoUpdateRead(unsigned long MR
             OSRestoreInterrupts(enabled);
             if (pCBInfo)
             {
-                pCBInfo->m_next = (READ_CB_INFO*)this;
+                pCBInfo->m_next = (READ_CB_INFO*)pAudioStream;
                 pCBInfo->pBuffer = pBuffer;
             }
             AudioStream* pStream = (AudioStream*)pCBInfo->m_next;
@@ -1238,7 +1239,7 @@ unsigned long GCAudioStreaming::StereoAudioStream::DoUpdateRead(unsigned long MR
                 OSRestoreInterrupts(e3);
                 if (pCBInfo2)
                 {
-                    pCBInfo2->m_next = (READ_CB_INFO*)this;
+                    pCBInfo2->m_next = (READ_CB_INFO*)pAudioStream;
                     pCBInfo2->pBuffer = pBuffer;
                 }
                 AudioStream* pStream2 = (AudioStream*)pCBInfo2->m_next;
@@ -1279,8 +1280,8 @@ unsigned long GCAudioStreaming::StereoAudioStream::DoUpdateRead(unsigned long MR
             }
             unsigned long idx = BufferIndex + 1;
             BufferIndex = idx;
-            if (idx < m_BufferCount)
-                pBuffer = m_Buffers[idx];
+            if (idx < pAudioStream->m_BufferCount)
+                pBuffer = pAudioStream->m_Buffers[idx];
             else
                 pBuffer = 0;
         }
@@ -1289,17 +1290,17 @@ unsigned long GCAudioStreaming::StereoAudioStream::DoUpdateRead(unsigned long MR
     unsigned long TotalReadLen = LengthA + LengthB;
     AudioStreamBuffer* pBuffer;
     volatile unsigned long BufferIndex = (unsigned long)(pBuffer = 0);
-    if (m_BufferCount <= 0)
+    if (pAudioStream->m_BufferCount <= 0)
     {
     }
     else
     {
-        pBuffer = m_Buffers[0];
+        pBuffer = pAudioStream->m_Buffers[0];
     }
     while (pBuffer)
     {
         unsigned char* pMRAMBuffer = pBuffer->m_MRAMBuffer;
-        unsigned long filePos = nlGetFilePosition(m_pFile);
+        unsigned long filePos = nlGetFilePosition(((StereoAudioStream*)pAudioStream)->m_pFile);
         ___blank("Reading into %d %d and %d %d from %d\n", MRAMOffsetA, LengthA, MRAMOffsetB, LengthB, filePos);
         bool enabled = OSDisableInterrupts();
         READ_CB_INFO* pCBInfo = READ_CB_INFO::s_AllocPool.m_pFree;
@@ -1314,10 +1315,10 @@ unsigned long GCAudioStreaming::StereoAudioStream::DoUpdateRead(unsigned long MR
         OSRestoreInterrupts(enabled);
         if (pCBInfo)
         {
-            pCBInfo->m_next = (READ_CB_INFO*)this;
+            pCBInfo->m_next = (READ_CB_INFO*)pAudioStream;
             pCBInfo->pBuffer = pBuffer;
         }
-        nlReadAsync(m_pFile, pMRAMBuffer + MRAMOffsetA, LengthA, _UpdateReadCB, (unsigned long)pCBInfo);
+        nlReadAsync(((StereoAudioStream*)pAudioStream)->m_pFile, pMRAMBuffer + MRAMOffsetA, LengthA, _UpdateReadCB, (unsigned long)pCBInfo);
         if (LengthB != 0)
         {
             bool e2 = OSDisableInterrupts();
@@ -1333,31 +1334,31 @@ unsigned long GCAudioStreaming::StereoAudioStream::DoUpdateRead(unsigned long MR
             OSRestoreInterrupts(e2);
             if (pCBInfo2)
             {
-                pCBInfo2->m_next = (READ_CB_INFO*)this;
+                pCBInfo2->m_next = (READ_CB_INFO*)pAudioStream;
                 pCBInfo2->pBuffer = pBuffer;
             }
-            nlReadAsync(m_pFile, pMRAMBuffer + MRAMOffsetB, LengthB, _UpdateReadCB, (unsigned long)pCBInfo2);
+            nlReadAsync(((StereoAudioStream*)pAudioStream)->m_pFile, pMRAMBuffer + MRAMOffsetB, LengthB, _UpdateReadCB, (unsigned long)pCBInfo2);
         }
         unsigned long idx = BufferIndex + 1;
         BufferIndex = idx;
-        if (idx < m_BufferCount)
-            pBuffer = m_Buffers[idx];
+        if (idx < pAudioStream->m_BufferCount)
+            pBuffer = pAudioStream->m_Buffers[idx];
         else
             pBuffer = 0;
     }
-    m_StreamPos += TotalReadLen;
-    if (m_StreamPos >= m_StreamLength)
+    pAudioStream->m_StreamPos += TotalReadLen;
+    if (pAudioStream->m_StreamPos >= pAudioStream->m_StreamLength)
     {
         ___blank("Stream wrap\n");
-        m_StreamPos = 0;
-        nlSeek(m_pFile, 0xCC, 0);
-        if (!(m_Flags & (1 << SF_Loop)))
+        pAudioStream->m_StreamPos = 0;
+        nlSeek(((StereoAudioStream*)pAudioStream)->m_pFile, 0xCC, 0);
+        if (!(pAudioStream->m_Flags & (1 << SF_Loop)))
         {
             unsigned long lastPlayable = MRAMOffsetA + LengthA;
             if (LengthB != 0)
                 lastPlayable = MRAMOffsetB + LengthB;
-            m_LastPlayable = lastPlayable;
-            m_Flags = (m_Flags & ~(1 << SF_EndAtUpdate)) | (1 << SF_EndAtUpdate);
+            pAudioStream->m_LastPlayable = lastPlayable;
+            pAudioStream->m_Flags = (pAudioStream->m_Flags & ~(1 << SF_EndAtUpdate)) | (1 << SF_EndAtUpdate);
         }
     }
     return TotalReadLen;

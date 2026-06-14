@@ -25,6 +25,27 @@ SlotPool<SidelineExplodableNode> SidelineExplodableNode::sSidelineExplodableNode
 SlotPool<DrawableFragmentHandleNode> DrawableFragmentHandleNode::sDrawableFragmentHandleNodePool(16, 16);
 bool SidelineExplodableManager::sbIsInitialized;
 
+template <>
+void Vector<ExplosionFragment, DefaultAllocator>::reserve(int capacity)
+{
+    if (mCapacity < capacity)
+    {
+        Vector temp(capacity, NULL);
+        for (int i = 0; i < mSize; i++)
+        {
+            temp.mData[i] = mData[i];
+        }
+        temp.mSize = mSize;
+        mSize = temp.mSize;
+        int tmpCapacity = mCapacity;
+        mCapacity = temp.mCapacity;
+        temp.mCapacity = tmpCapacity;
+        ExplosionFragment* tmpData = mData;
+        mData = temp.mData;
+        temp.mData = tmpData;
+    }
+}
+
 /**
  * Offset/Address/Size: 0x214 | 0x80169954 | size: 0x27C
  */
@@ -181,6 +202,14 @@ void UpdateEmissionControllerPosition(EmissionController& ec, ExplosionFragment*
 void EmissionControllerFinished(EmissionController&, ExplosionFragment* p0)
 {
     p0->mpSmokeEmissionController = NULL;
+}
+
+typedef BindExp2<void, void (*)(EmissionController&, ExplosionFragment*), Placeholder<0>, ExplosionFragment*> BindExp2_EC_t;
+
+template <>
+inline void Function1<void, EmissionController&>::FunctorImpl<BindExp2_EC_t>::operator()(EmissionController& arg)
+{
+    mBind.mFunction(arg, mBind.mT1);
 }
 
 /**

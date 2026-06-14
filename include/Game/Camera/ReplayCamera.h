@@ -41,7 +41,7 @@ public:
     /* 0x20 */ virtual const nlVector3& GetTargetPosition() const { return mLookAt; };
     /* 0x24 */ virtual const nlVector3& GetCameraPosition() const { return mPosition; };
 
-    void UpdateTweakMode();
+    static void UpdateTweakMode();
     void ManualUpdate(float);
     void SetSideOfInterest(int);
     void CutTo(ReplayCameraPosition);

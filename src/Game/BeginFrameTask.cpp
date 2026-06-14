@@ -70,8 +70,6 @@ u8 g_bFrameStatsOnScreen;
 static u8 g_bDrawSafeFrame;
 static s32 g_nGridDisplaySpacing;
 static s32 g_eWaitMode;
-static u8 bGotWait;
-static s8 init;
 // /**
 //  * Offset/Address/Size: 0xA8 | 0x80170214 | size: 0x84
 //  */
@@ -236,16 +234,42 @@ void SetupMatrices()
 
 /**
  * Offset/Address/Size: 0x1068 | 0x8016F748 | size: 0x450
- * TODO: 99.09% match - r30/r31 register assignment remains swapped in the
- * default wait-mode BasicString setup and cleanup sequence.
  */
-void SetupRenderInfo()
+static inline BasicStringInternal* BuildDefaultStringData()
+{
+    BasicStringInternal* data = (BasicStringInternal*)nlMalloc(0x10, 8, true);
+    if (data != 0)
+    {
+        const char* str = "default";
+        data->mData = 0;
+        const char* s = str;
+        data->mSize = 0;
+        data->mCapacity = 0;
+        while (*s++ != 0)
+        {
+            data->mSize++;
+        }
+        data->mSize++;
+        data->mData = (char*)Detail::TempStringAllocator::allocate(data->mSize + 1);
+        data->mCapacity = data->mSize;
+        for (s32 i = 0; i < data->mSize; i++)
+        {
+            data->mData[i] = *str++;
+        }
+        data->mRefCount = 1;
+    }
+    return data;
+}
+
+static void SetupRenderInfo()
 {
     extern s32 m_ModelType__10cCharacter;
     extern void* s_World__12WorldManager;
     extern s32 s_GameplaySkin__14BeginFrameTask;
     extern s32 s_ReplaySkin__14BeginFrameTask;
     extern u8* g_pGame;
+    static u8 bGotWait;
+    static s8 init;
 
     if (s_GameplaySkin__14BeginFrameTask != 2)
     {
@@ -304,27 +328,7 @@ void SetupRenderInfo()
 
     if (!bGotWait)
     {
-        BasicStringInternal* data = (BasicStringInternal*)nlMalloc(0x10, 8, true);
-        if (data != 0)
-        {
-            const char* str = "default";
-            data->mData = 0;
-            const char* s = str;
-            data->mSize = 0;
-            data->mCapacity = 0;
-            while (*s++ != 0)
-            {
-                data->mSize++;
-            }
-            data->mSize++;
-            data->mData = (char*)Detail::TempStringAllocator::allocate(data->mSize + 1);
-            data->mCapacity = data->mSize;
-            for (s32 i = 0; i < data->mSize; i++)
-            {
-                data->mData[i] = *str++;
-            }
-            data->mRefCount = 1;
-        }
+        BasicStringInternal* data = BuildDefaultStringData();
 
         BasicString<char, Detail::TempStringAllocator> waitMode = Config::Global().Get<BasicString<char, Detail::TempStringAllocator> >(
             "wait_vblank", BasicString<char, Detail::TempStringAllocator>(data));

@@ -6,36 +6,34 @@
 #include "NL/gl/glState.h"
 #include "NL/gl/glAppAttach.h"
 #include "NL/gl/glUserData.h"
+#include "NL/glx/glxDisplayList.h"
 #include "NL/nlString.h"
 #include "Game/GameObjectLighting.h"
 #include "Game/GL/GLInventory.h"
 #include "Game/GL/GLVertexAnim.h"
 #include "Game/Render/Jumbotron.h"
 #include "Game/Render/CrowdManager.h"
+#include "Game/WorldManager.h"
 
-bool g_bShadowVolumes = true;
-bool g_bEnableDrawableSkinModel = true;
-bool g_bSkinModelTextureLighting = true;
 const u32 GLTT_BumpLocal_bit = 1 << (int)GLTT_BumpLocal;
 
-static unsigned long UnlitProgram;
-static unsigned long LitProgram;
-static unsigned long LightTexture;
-static unsigned long BlackTexture;
-static unsigned long WhiteTexture;
-static unsigned long UnlitCrowdProgram;
-static unsigned long LitCrowdProgram;
-static unsigned long BallModelID;
+static unsigned long UnlitProgram = glGetProgram("3d unlit");
+static unsigned long LitProgram = glGetProgram("3d pointlit");
+static unsigned long LightTexture = glGetTexture("global/lightramp");
+static unsigned long BlackTexture = glGetTexture("global/black");
+static unsigned long WhiteTexture = glGetTexture("global/white");
+static unsigned long UnlitCrowdProgram = glGetProgram("3d crowd");
+static unsigned long LitCrowdProgram = glGetProgram("3d crowd lit");
 
-static float sfCoPlanarZ = 0.1f;
-static float sfCoPlanar0Z = 0.041666668f;
-static float sfPlanarShadowOpacity = 0.3f;
+static bool g_bShadowVolumes;
+static unsigned char g_bDrawBoundingBoxes;
 
 static bool g_bEnableDrawableModel = true;
 static bool g_bLightDynamicObjects = true;
 static bool g_bDrawLitObjects = true;
 static bool g_bDrawSpecularObjects = true;
 static bool g_bCalculateFresnel = true;
+static bool g_bDrawPlanarShadows = true;
 static bool g_bDrawObjectsWithPlanarShadows = true;
 static bool g_bBallGlow = true;
 static float g_fBallGlowH = 1.0f;
@@ -45,223 +43,23 @@ static int g_nBallGlowA1 = 20;
 static int g_nBallGlowRed = 255;
 static int g_nBallGlowGreen = 255;
 static int g_nBallGlowBlue = 255;
+bool g_bCoPlanarPerObject = true;
+static float sfPlanarShadowOpacity = 0.3f;
+static float sfCoPlanarZ = 0.1f;
+static float sfCoPlanar0Z = 0.041666668f;
 static float g_fBallShadowH = 3.0f;
 static float g_fBallShadowR0 = 0.275f;
 static float g_fBallShadowR1 = 0.625f;
 static int g_nBallShadowA0 = 128;
 static int g_nBallShadowA1 = 72;
 static float g_fBallGlowR1;
+static unsigned char g_bCoPlanarReferenceVis;
+static unsigned char g_bCoPlanarIgnoreIdentity;
 unsigned char DrawableModel::sbBallShadowDisabled;
-static nlAVLTreeSlotPool<unsigned long, AABBDimensions, DefaultKeyCompare<unsigned long> > boundingBoxCache;
 
-extern "C"
-{
-    void __ct__12SlotPoolBaseFv(void*);
-    void* __register_global_object(void* object, void* destructor, void* registration);
-}
+static nlAVLTreeSlotPool<unsigned long, AABBDimensions, DefaultKeyCompare<unsigned long> > boundingBoxCache(16, 16);
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x8011FE0C | size: 0x3C
-//  */
-// void CleanBoundingBoxCache()
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x3C | 0x8011FE48 | size: 0x26C
-//  */
-// void RenderBoundingBox(const glModel*, const nlMatrix4&)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x2A8 | 0x801200B4 | size: 0x8
-//  */
-// float GetCoPlanar0Z()
-// {
-//     return sfCoPlanar0Z;
-// }
-
-// /**
-//  * Offset/Address/Size: 0x2B0 | 0x801200BC | size: 0x8
-//  */
-// void SetCoPlanarZ(float z)
-// {
-//     sfCoPlanarZ = z;
-// }
-
-// /**
-//  * Offset/Address/Size: 0x2B8 | 0x801200C4 | size: 0x8
-//  */
-// float GetCoPlanarZ()
-// {
-//     return sfCoPlanarZ;
-// }
-
-// /**
-//  * Offset/Address/Size: 0x2C0 | 0x801200CC | size: 0x8
-//  */
-// void SetPlanarShadowOpacity(float opacity)
-// {
-//     sfPlanarShadowOpacity = opacity;
-// }
-
-// /**
-//  * Offset/Address/Size: 0x2C8 | 0x801200D4 | size: 0x8
-//  */
-// float GetPlanarShadowOpacity()
-// {
-//     return sfPlanarShadowOpacity;
-// }
-
-// /**
-//  * Offset/Address/Size: 0x2D0 | 0x801200DC | size: 0x460
-//  */
-// void DrawPlanarShadow(const glModel*, const nlMatrix4&, float, bool, bool, bool, unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x730 | 0x8012053C | size: 0x234
-//  */
-// void DrawCoPlanarReference(eGLView, const glModel&, const nlMatrix4&, unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x964 | 0x80120770 | size: 0x290
-//  */
-// void GetShadowBoundingSquare(const glModel*, const nlMatrix4&, float&, float&, float&, float&, unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0xBF4 | 0x80120A00 | size: 0x84
-//  */
-// void DrawableModel::DrawPlanarShadow()
-// {
-//     glModel* model = glModelDupNoStreams(m_pModel, true, false);
-//     f32 opacity = sfPlanarShadowOpacity;
-//     const nlMatrix4& worldMtx = GetWorldMatrix();
-//     ::DrawPlanarShadow(model, worldMtx, opacity * m_translucency, true, false, true, (unsigned long)this);
-// }
-
-// /**
-//  * Offset/Address/Size: 0xC78 | 0x80120A84 | size: 0x78
-//  */
-// void DrawableShadow::Draw()
-// {
-//     if (g_bShadowVolumes)
-//     {
-//         u32 mtx;
-//         nlMatrix4& worldMtx = GetWorldMatrix();
-//         mtx = glAllocMatrix();
-//         if (mtx + 0x10000 != 0xFFFF)
-//         {
-//             glSetMatrix(mtx, worldMtx);
-//         }
-//         RenderShadowModel(2, m_pModel, mtx);
-//     }
-// }
-
-// /**
-//  * Offset/Address/Size: 0xCF0 | 0x80120AFC | size: 0x28
-//  * TODO: Instruction scheduling differs - li r5,0 should come before lwz r3,0x9c(r3)
-//  */
-// void DrawableModel::GetAABBDimensions(AABBDimensions& dims, bool) const
-// {
-//     GetAABBDimensions(GetModel(), dims, 0);
-// }
-
-// /**
-//  * Offset/Address/Size: 0xD18 | 0x80120B24 | size: 0x38C
-//  */
-// void GetAABBDimensions(const glModel*, AABBDimensions&, unsigned long)
-// {
-//     FORCE_DONT_INLINE;
-// }
-
-// /**
-//  * Offset/Address/Size: 0x10A4 | 0x80120EB0 | size: 0x1C8
-//  */
-// DrawableObject* DrawableModel::Clone() const
-// {
-//     return NULL;
-// }
-
-// /**
-//  * Offset/Address/Size: 0x126C | 0x80121078 | size: 0x38
-//  */
-// "art/effects/templates.fx"
-// /**
-//  * Offset/Address/Size: 0x12A4 | 0x801210B0 | size: 0x598
-//  */
-// void DrawableModel::DrawModel(const nlMatrix4&)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x183C | 0x80121648 | size: 0x598
-//  */
-// void Fresnelify(glModelPacket*, eGLView)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x1DD4 | 0x80121BE0 | size: 0x214
-//  */
-// void DrawBallShadow(const nlVector3&, const BallShadowParams&, bool)
-// {
-// }
-
-// // /**
-// //  * Offset/Address/Size: 0x1FE8 | 0x80121DF4 | size: 0x60
-// //  */
-// // DrawableModel::~DrawableModel()
-// // {
-// // }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x80121E54 | size: 0x60
-//  */
-// DrawableShadow::~DrawableShadow()
-// {
-// }
-
-/**
- * Offset/Address/Size: 0x60 | 0x80121EB4 | size: 0x60
- */
-// void nlAVLTreeSlotPool<unsigned long, AABBDimensions, DefaultKeyCompare<unsigned long>>::~nlAVLTreeSlotPool()
-// {
-// }
-
-/**
- * Offset/Address/Size: 0x0 | 0x80121F14 | size: 0x58
- */
-// void AVLTreeBase<unsigned long, AABBDimensions, BasicSlotPool<AVLTreeEntry<unsigned long, AABBDimensions>>, DefaultKeyCompare<unsigned long>>::Clear()
-// {
-// }
-
-/**
- * Offset/Address/Size: 0x58 | 0x80121F6C | size: 0x64
- */
-// void AVLTreeBase<unsigned long, AABBDimensions, BasicSlotPool<AVLTreeEntry<unsigned long, AABBDimensions>>, DefaultKeyCompare<unsigned long>>::DestroyTree(void (AVLTreeBase<unsigned long, AABBDimensions, BasicSlotPool<AVLTreeEntry<unsigned long, AABBDimensions>>, DefaultKeyCompare<unsigned long>>::*)(AVLTreeEntry<unsigned long, AABBDimensions>*))
-// {
-// }
-
-/**
- * Offset/Address/Size: 0xBC | 0x80121FD0 | size: 0x758
- */
-// void AVLTreeBase<unsigned long, AABBDimensions, BasicSlotPool<AVLTreeEntry<unsigned long, AABBDimensions>>, DefaultKeyCompare<unsigned long>>::PostorderTraversal(AVLTreeEntry<unsigned long, AABBDimensions>*, void (AVLTreeBase<unsigned long, AABBDimensions, BasicSlotPool<AVLTreeEntry<unsigned long, AABBDimensions>>, DefaultKeyCompare<unsigned long>>::*)(AVLTreeEntry<unsigned long, AABBDimensions>*))
-// {
-// }
-
-/**
- * Offset/Address/Size: 0x814 | 0x80122728 | size: 0x8
- */
-// void AVLTreeBase<unsigned long, AABBDimensions, BasicSlotPool<AVLTreeEntry<unsigned long, AABBDimensions>>, DefaultKeyCompare<unsigned long>>::CastUp(AVLTreeNode*) const
-// {
-// }
+static unsigned long BallModelID = nlStringHash("gameplay/ball");
 
 /**
  * Offset/Address/Size: 0x81C | 0x80122730 | size: 0x10
@@ -272,66 +70,6 @@ void AVLTreeBase<unsigned long, AABBDimensions, BasicSlotPool<AVLTreeEntry<unsig
     m_Allocator.Free(entry);
 }
 #pragma inline_depth()
-
-/**
- * Offset/Address/Size: 0x8B4 | 0x80122740 | size: 0x12C
- * TODO: 90.11% match - still differs in r30/r31 aliasing and relocation-backed
- *       symbol loads for vtable/destructor labels in the cache init block.
- */
-extern "C" void __sinit_DrawableModel_cpp()
-{
-    UnlitProgram = glGetProgram("3d unlit");
-    LitProgram = glGetProgram("3d pointlit");
-    LightTexture = glGetTexture("global/lightramp");
-    BlackTexture = glGetTexture("global/black");
-    WhiteTexture = glGetTexture("global/white");
-    UnlitCrowdProgram = glGetProgram("3d crowd");
-    LitCrowdProgram = glGetProgram("3d crowd lit");
-
-    unsigned long* cache = (unsigned long*)&boundingBoxCache;
-    unsigned long* cache30 = cache;
-    unsigned long* cache31 = cache;
-
-    cache[0] = 0x802A4B5C;
-    cache[0] = 0x802AECF0;
-
-    __ct__12SlotPoolBaseFv((void*)(cache + 1));
-
-    cache31[9] = 0;
-    cache31[7] = 0;
-    cache31[8] = 0;
-    cache30[0] = 0x802AECDC;
-    cache30[1] = 0x10;
-
-    SlotPoolBase::BaseAddNewBlock((SlotPoolBase*)(cache30 + 1), 0x34);
-
-    cache30[2] = 0x10;
-
-    __register_global_object((void*)cache30, (void*)0x80121EB4, (void*)0x80321F88);
-
-    BallModelID = nlStringHash("gameplay/ball");
-}
-
-/**
- * Offset/Address/Size: 0x958 | 0x8012286C | size: 0x7C
- */
-// void AVLTreeBase<unsigned long, AABBDimensions, BasicSlotPool<AVLTreeEntry<unsigned long, AABBDimensions>>, DefaultKeyCompare<unsigned long>>::~AVLTreeBase()
-// {
-// }
-
-/**
- * Offset/Address/Size: 0x9D4 | 0x801228E8 | size: 0x2C
- */
-// void AVLTreeBase<unsigned long, AABBDimensions, BasicSlotPool<AVLTreeEntry<unsigned long, AABBDimensions>>, DefaultKeyCompare<unsigned long>>::CompareNodes(AVLTreeNode*, AVLTreeNode*)
-// {
-// }
-
-/**
- * Offset/Address/Size: 0xA00 | 0x80122914 | size: 0x2C
- */
-// void AVLTreeBase<unsigned long, AABBDimensions, BasicSlotPool<AVLTreeEntry<unsigned long, AABBDimensions>>, DefaultKeyCompare<unsigned long>>::CompareKey(void*, AVLTreeNode*)
-// {
-// }
 
 /**
  * Offset/Address/Size: 0xA2C | 0x80122940 | size: 0xE0
@@ -363,120 +101,6 @@ AVLTreeNode* AVLTreeBase<unsigned long, AABBDimensions, BasicSlotPool<AVLTreeEnt
 
     return (AVLTreeNode*)entry;
 }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x80122A20 | size: 0x8
-//  */
-// bool DrawableModel::IsDrawableModel()
-// {
-//     return true;
-// }
-
-// /**
-//  * Offset/Address/Size: 0x8 | 0x80122A28 | size: 0x4
-//  */
-// DrawableModel* DrawableModel::AsDrawableModel()
-// {
-//     return NULL;
-// }
-
-// /**
-//  * Offset/Address/Size: 0x8 | 0x80122A28 | size: 0x4
-//  */
-//  void DrawableModel::AsDrawableModel()
-//  {
-//  }
-
-//  /**
-//   * Offset/Address/Size: 0x0 | 0x80122A20 | size: 0x8
-//   */
-//  void DrawableModel::IsDrawableModel()
-//  {
-//  }
-
-//  /**
-//   * Offset/Address/Size: 0xA2C | 0x80122940 | size: 0xE0
-//   */
-//  void AVLTreeBase<unsigned long, AABBDimensions, BasicSlotPool<AVLTreeEntry<unsigned long, AABBDimensions>>, DefaultKeyCompare<unsigned long>>::AllocateEntry(void*, void*)
-//  {
-//  }
-
-//  /**
-//   * Offset/Address/Size: 0xA00 | 0x80122914 | size: 0x2C
-//   */
-//  void AVLTreeBase<unsigned long, AABBDimensions, BasicSlotPool<AVLTreeEntry<unsigned long, AABBDimensions>>, DefaultKeyCompare<unsigned long>>::CompareKey(void*, AVLTreeNode*)
-//  {
-//  }
-
-//  /**
-//   * Offset/Address/Size: 0x9D4 | 0x801228E8 | size: 0x2C
-//   */
-//  void AVLTreeBase<unsigned long, AABBDimensions, BasicSlotPool<AVLTreeEntry<unsigned long, AABBDimensions>>, DefaultKeyCompare<unsigned long>>::CompareNodes(AVLTreeNode*, AVLTreeNode*)
-//  {
-//  }
-
-//  /**
-//   * Offset/Address/Size: 0x958 | 0x8012286C | size: 0x7C
-//   */
-//  void AVLTreeBase<unsigned long, AABBDimensions, BasicSlotPool<AVLTreeEntry<unsigned long, AABBDimensions>>, DefaultKeyCompare<unsigned long>>::~AVLTreeBase()
-//  {
-//  }
-
-//  /**
-//   * Offset/Address/Size: 0x81C | 0x80122730 | size: 0x10
-//   */
-//  void AVLTreeBase<unsigned long, AABBDimensions, BasicSlotPool<AVLTreeEntry<unsigned long, AABBDimensions>>, DefaultKeyCompare<unsigned long>>::DeleteEntry(AVLTreeEntry<unsigned long, AABBDimensions>*)
-//  {
-//  }
-
-//  /**
-//   * Offset/Address/Size: 0x814 | 0x80122728 | size: 0x8
-//   */
-//  void AVLTreeBase<unsigned long, AABBDimensions, BasicSlotPool<AVLTreeEntry<unsigned long, AABBDimensions>>, DefaultKeyCompare<unsigned long>>::CastUp(AVLTreeNode*) const
-//  {
-//  }
-
-//  /**
-//   * Offset/Address/Size: 0xBC | 0x80121FD0 | size: 0x758
-//   */
-//  void AVLTreeBase<unsigned long, AABBDimensions, BasicSlotPool<AVLTreeEntry<unsigned long, AABBDimensions>>, DefaultKeyCompare<unsigned long>>::PostorderTraversal(AVLTreeEntry<unsigned long, AABBDimensions>*, void (AVLTreeBase<unsigned long, AABBDimensions, BasicSlotPool<AVLTreeEntry<unsigned long, AABBDimensions>>, DefaultKeyCompare<unsigned long>>::*)(AVLTreeEntry<unsigned long, AABBDimensions>*))
-//  {
-//  }
-
-//  /**
-//   * Offset/Address/Size: 0x58 | 0x80121F6C | size: 0x64
-//   */
-//  void AVLTreeBase<unsigned long, AABBDimensions, BasicSlotPool<AVLTreeEntry<unsigned long, AABBDimensions>>, DefaultKeyCompare<unsigned long>>::DestroyTree(void (AVLTreeBase<unsigned long, AABBDimensions, BasicSlotPool<AVLTreeEntry<unsigned long, AABBDimensions>>, DefaultKeyCompare<unsigned long>>::*)(AVLTreeEntry<unsigned long, AABBDimensions>*))
-//  {
-//  }
-
-//  /**
-//   * Offset/Address/Size: 0x0 | 0x80121F14 | size: 0x58
-//   */
-//  void AVLTreeBase<unsigned long, AABBDimensions, BasicSlotPool<AVLTreeEntry<unsigned long, AABBDimensions>>, DefaultKeyCompare<unsigned long>>::Clear()
-//  {
-//  }
-
-//  /**
-//   * Offset/Address/Size: 0x60 | 0x80121EB4 | size: 0x60
-//   */
-//  void nlAVLTreeSlotPool<unsigned long, AABBDimensions, DefaultKeyCompare<unsigned long>>::~nlAVLTreeSlotPool()
-//  {
-//  }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x80121E54 | size: 0x60
-//  */
-// DrawableShadow::~DrawableShadow()
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x1FE8 | 0x80121DF4 | size: 0x60
-//  */
-// DrawableModel::~DrawableModel()
-// {
-// }
 
 /**
  * Offset/Address/Size: 0x1DD4 | 0x80121BE0 | size: 0x214
@@ -551,7 +175,7 @@ static void DrawBallShadow(const nlVector3& vPosition, const BallShadowParams& p
     glSetRasterState(GLS_DepthWrite, 0);
     glSetCurrentRasterState(glHandleizeRasterState());
 
-    glSetCurrentTexture(glGetTexture(bGlow ? "global/ballshadowglow" : "global/ballshadow"), GLTT_Diffuse);
+    glSetCurrentTexture(glGetTexture(bGlow ? "global/light_blob" : "global/ball_shadow"), GLTT_Diffuse);
     glSetTextureState(GLTS_DiffuseWrap, 3);
     glSetCurrentTextureState(glHandleizeTextureState());
 
@@ -579,8 +203,6 @@ static inline void* FindStream(glModelPacket* pPacket, int streamID)
  */
 void Fresnelify(glModelPacket* pPacket, eGLView view)
 {
-    extern void* dlGetStruct(unsigned long);
-
     nlMatrix4 viewMat;
     nlMatrix4 objectMat;
     nlMatrix4 modelview;
@@ -1013,8 +635,6 @@ DrawableObject* DrawableModel::Clone() const
  */
 void GetAABBDimensions(const glModel* model, AABBDimensions& dimensions, unsigned long boundingBoxCacheKey)
 {
-    extern void* dlGetStruct(unsigned long);
-
     AABBDimensions* foundValue = NULL;
     AVLTreeEntry<unsigned long, AABBDimensions>* node = boundingBoxCache.m_Root;
 
@@ -1102,7 +722,7 @@ void GetAABBDimensions(const glModel* model, AABBDimensions& dimensions, unsigne
             else
             {
                 s16* src = (s16*)((u8*)stream->address + vert * stride);
-                float scale = 0.01f;
+                float scale = 1.0f / 256.0f;
 
                 point.f.x = (float)src[0] * scale;
                 point.f.y = (float)src[1] * scale;
@@ -1215,7 +835,6 @@ void DrawableModel::DrawPlanarShadow()
  */
 void GetShadowBoundingSquare(const glModel* model, const nlMatrix4& matrix, float& x0, float& x1, float& y0, float& y1, unsigned long userData)
 {
-    extern World* s_World__12WorldManager;
 
     AABBDimensions dimensions;
     GetAABBDimensions(model, dimensions, userData);
@@ -1281,7 +900,7 @@ void GetShadowBoundingSquare(const glModel* model, const nlMatrix4& matrix, floa
     points[7].f.z = maxZ;
     points[7].f.w = zero;
 
-    u32 lightPtr = *(u32*)((u8*)s_World__12WorldManager + 0x138);
+    u32 lightPtr = *(u32*)((u8*)WorldManager::s_World + 0x138);
     float lightX = *(float*)(lightPtr + 4);
     float lightY = *(float*)(lightPtr + 8);
     float lightZ = *(float*)(lightPtr + 0xC);
@@ -1344,8 +963,6 @@ void GetShadowBoundingSquare(const glModel* model, const nlMatrix4& matrix, floa
  */
 void DrawCoPlanarReference(eGLView view, const glModel& model, const nlMatrix4& mtx, unsigned long userData)
 {
-    extern unsigned char g_bCoPlanarReferenceVis;
-    extern unsigned long ResolvedWhiteTexture;
 
     float z;
     if (view == GLV_CoPlanar0)
@@ -1399,7 +1016,7 @@ void DrawCoPlanarReference(eGLView view, const glModel& model, const nlMatrix4& 
     glSetRasterState(GLS_DepthWrite, 0);
 
     glSetCurrentRasterState(glHandleizeRasterState());
-    glSetCurrentTexture(ResolvedWhiteTexture, GLTT_Diffuse);
+    glSetCurrentTexture((u32)ResolvedWhiteTexture, GLTT_Diffuse);
 
     glQuad3 quad;
     quad.m_pos[0] = points[0];
@@ -1475,12 +1092,6 @@ static inline void ComputeShadowMtx(nlMatrix4& dst, const nlMatrix4& src, u32 li
 
 void DrawPlanarShadow(const glModel* model, const nlMatrix4& worldMatrix, float shadowTranslucency, bool ignorePacketMatrices, bool isModelPosed, bool bFieldOnlyShadow, unsigned long boundingBoxCacheKey)
 {
-    extern unsigned char g_bDrawBoundingBoxes;
-    extern unsigned char g_bDrawPlanarShadows;
-    extern unsigned char g_bCoPlanarPerObject;
-    extern unsigned char g_bCoPlanarIgnoreIdentity;
-    extern unsigned long ResolvedBlackTexture;
-    extern World* s_World__12WorldManager;
 
     nlMatrix4 packetMatrix;
     nlMatrix4 packetShadowMatrix;
@@ -1550,11 +1161,11 @@ void DrawPlanarShadow(const glModel* model, const nlMatrix4& worldMatrix, float 
                 nlMultMatrices(transformedPacketMatrix, worldMatrix, packetMatrix);
             }
 
-            ComputeShadowMtx(packetShadowMatrix, transformedPacketMatrix, *(u32*)((u8*)s_World__12WorldManager + 0x138));
+            ComputeShadowMtx(packetShadowMatrix, transformedPacketMatrix, *(u32*)((u8*)WorldManager::s_World + 0x138));
         }
         else
         {
-            ComputeShadowMtx(packetShadowMatrix, worldMatrix, *(u32*)((u8*)s_World__12WorldManager + 0x138));
+            ComputeShadowMtx(packetShadowMatrix, worldMatrix, *(u32*)((u8*)WorldManager::s_World + 0x138));
         }
 
         unsigned long shadowMatrix = glAllocMatrix();
@@ -1564,7 +1175,7 @@ void DrawPlanarShadow(const glModel* model, const nlMatrix4& worldMatrix, float 
         }
 
         pPacket->state.matrix = shadowMatrix;
-        pPacket->state.texture[0] = ResolvedBlackTexture;
+        pPacket->state.texture[0] = (u32)ResolvedBlackTexture;
         pPacket->state.program = program;
 
         glUserAttach(pTransData, pPacket, false);
@@ -1619,7 +1230,6 @@ float GetCoPlanar0Z()
 
 /**
  * Offset/Address/Size: 0x3C | 0x8011FE48 | size: 0x26C
- * TODO: 99.35% match - float register allocation cycle (f4/f6/f2/f3) in AABB corner setup and remaining literal pool symbol mismatch for colour load
  */
 void RenderBoundingBox(const glModel* model, const nlMatrix4& matrix)
 {
@@ -1627,6 +1237,9 @@ void RenderBoundingBox(const glModel* model, const nlMatrix4& matrix)
     GetAABBDimensions(model, dimensions, 0);
 
     nlVector4 points[8];
+    float minx = dimensions.mMin.f.x;
+    float miny = dimensions.mMin.f.y;
+    float minz = dimensions.mMin.f.z;
 
     nlVector4* p1 = &points[1];
     nlVector4* p2 = &points[2];
@@ -1640,36 +1253,36 @@ void RenderBoundingBox(const glModel* model, const nlMatrix4& matrix)
     nlVector4* p0 = &points[0];
     int i = 0;
 
-    nlVec4Set(points[0], dimensions.mMin.f.x, dimensions.mMin.f.y, dimensions.mMin.f.z, 1.0f);
-    nlVec4Set(*p1, dimensions.mMin.f.x, dimensions.mMin.f.y, dimensions.mMax.f.z, 1.0f);
-    nlVec4Set(*p2, dimensions.mMin.f.x, dimensions.mMax.f.y, dimensions.mMax.f.z, 1.0f);
-    nlVec4Set(*p3, dimensions.mMin.f.x, dimensions.mMax.f.y, dimensions.mMin.f.z, 1.0f);
-    nlVec4Set(*p4, dimensions.mMax.f.x, dimensions.mMin.f.y, dimensions.mMin.f.z, 1.0f);
-    nlVec4Set(*p5, dimensions.mMax.f.x, dimensions.mMin.f.y, dimensions.mMax.f.z, 1.0f);
+    nlVec4Set(points[0], minx, miny, minz, 1.0f);
+    nlVec4Set(*p1, minx, miny, dimensions.mMax.f.z, 1.0f);
+    nlVec4Set(*p2, minx, dimensions.mMax.f.y, dimensions.mMax.f.z, 1.0f);
+    nlVec4Set(*p3, minx, dimensions.mMax.f.y, minz, 1.0f);
+    nlVec4Set(*p4, dimensions.mMax.f.x, miny, minz, 1.0f);
+    nlVec4Set(*p5, dimensions.mMax.f.x, miny, dimensions.mMax.f.z, 1.0f);
     nlVec4Set(*p6, dimensions.mMax.f.x, dimensions.mMax.f.y, dimensions.mMax.f.z, 1.0f);
-    nlVec4Set(*p7, dimensions.mMax.f.x, dimensions.mMax.f.y, dimensions.mMin.f.z, 1.0f);
+    nlVec4Set(*p7, dimensions.mMax.f.x, dimensions.mMax.f.y, minz, 1.0f);
 
     for (; i < 8; i++, p0++)
     {
         nlMultVectorMatrix(*p0, *p0, matrix);
     }
 
-    const nlColour colour = { 0xFF, 0xFF, 0xFF, 0xFF };
+    const nlColour blue = { 0, 0, 0xFF, 0 };
 
-    g_ShapeRenderer.DrawLine3D((nlVector3&)points[0], (nlVector3&)*p1, colour, true);
-    g_ShapeRenderer.DrawLine3D((nlVector3&)*p1, (nlVector3&)*p2, colour, true);
-    g_ShapeRenderer.DrawLine3D((nlVector3&)*p2, (nlVector3&)*p3, colour, true);
-    g_ShapeRenderer.DrawLine3D((nlVector3&)*p3, (nlVector3&)points[0], colour, true);
+    g_ShapeRenderer.DrawLine3D((nlVector3&)points[0], (nlVector3&)*p1, blue, true);
+    g_ShapeRenderer.DrawLine3D((nlVector3&)*p1, (nlVector3&)*p2, blue, true);
+    g_ShapeRenderer.DrawLine3D((nlVector3&)*p2, (nlVector3&)*p3, blue, true);
+    g_ShapeRenderer.DrawLine3D((nlVector3&)*p3, (nlVector3&)points[0], blue, true);
 
-    g_ShapeRenderer.DrawLine3D((nlVector3&)*p4, (nlVector3&)*p5, colour, true);
-    g_ShapeRenderer.DrawLine3D((nlVector3&)*p5, (nlVector3&)*p6, colour, true);
-    g_ShapeRenderer.DrawLine3D((nlVector3&)*p6, (nlVector3&)*p7, colour, true);
-    g_ShapeRenderer.DrawLine3D((nlVector3&)*p7, (nlVector3&)*p4, colour, true);
+    g_ShapeRenderer.DrawLine3D((nlVector3&)*p4, (nlVector3&)*p5, blue, true);
+    g_ShapeRenderer.DrawLine3D((nlVector3&)*p5, (nlVector3&)*p6, blue, true);
+    g_ShapeRenderer.DrawLine3D((nlVector3&)*p6, (nlVector3&)*p7, blue, true);
+    g_ShapeRenderer.DrawLine3D((nlVector3&)*p7, (nlVector3&)*p4, blue, true);
 
-    g_ShapeRenderer.DrawLine3D((nlVector3&)*p4, (nlVector3&)points[0], colour, true);
-    g_ShapeRenderer.DrawLine3D((nlVector3&)*p5, (nlVector3&)*p1, colour, true);
-    g_ShapeRenderer.DrawLine3D((nlVector3&)*p6, (nlVector3&)*p2, colour, true);
-    g_ShapeRenderer.DrawLine3D((nlVector3&)*p7, (nlVector3&)*p3, colour, true);
+    g_ShapeRenderer.DrawLine3D((nlVector3&)*p4, (nlVector3&)points[0], blue, true);
+    g_ShapeRenderer.DrawLine3D((nlVector3&)*p5, (nlVector3&)*p1, blue, true);
+    g_ShapeRenderer.DrawLine3D((nlVector3&)*p6, (nlVector3&)*p2, blue, true);
+    g_ShapeRenderer.DrawLine3D((nlVector3&)*p7, (nlVector3&)*p3, blue, true);
 }
 
 /**

@@ -340,9 +340,8 @@ static inline BallCacheInfo* AddCacheEntry(PhysicsBall* pPhysicsBall)
 
 /**
  * Offset/Address/Size: 0x7B0 | 0x80137B9C | size: 0x600
- * TODO: 94.4% match - 214 register-only diffs from systematic GPR/FPR
- *       allocation shift (v3Position r24 vs target r23, fDistance f27 vs
- *       target f26, cascading across both loops).
+ * TODO: 96.51% match - output refs use r24/r25 instead of target r23/r24;
+ *       fPhysicsTick uses f29 instead of target f28.
  */
 float FakeBallWorld::GetPredictedPosAtDistance(float fDistance, nlVector3& v3Position, nlVector3& v3Velocity)
 {
@@ -366,9 +365,12 @@ float FakeBallWorld::GetPredictedPosAtDistance(float fDistance, nlVector3& v3Pos
         return -1.5f;
     }
 
-    float fPhysicsTick = FixedUpdateTask::GetPhysicsUpdateTick();
-    float fDistanceTargetSq = fDistance * fDistance;
-    float fSimulationTime = FixedUpdateTask::mSimulationTime;
+    float fSimulationTime;
+    float fDistanceTargetSq;
+    float fPhysicsTick;
+    fPhysicsTick = FixedUpdateTask::GetPhysicsUpdateTick();
+    fDistanceTargetSq = fDistance * fDistance;
+    fSimulationTime = FixedUpdateTask::mSimulationTime;
 
     DLListEntry<BallCacheInfo*>** ppHead = &mBallCacheList.m_Head;
     DLListEntry<BallCacheInfo*>* pHead = *ppHead;
@@ -379,10 +381,7 @@ float FakeBallWorld::GetPredictedPosAtDistance(float fDistance, nlVector3& v3Pos
         DLListEntry<BallCacheInfo*>* pHeadRef = *ppHead;
         BallCacheInfo* pNext = pListEntry->m_data;
 
-        float dx0 = pNext->mv3Position.f.x - pBall->m_v3Position.f.x;
-        float dy0 = pNext->mv3Position.f.y - pBall->m_v3Position.f.y;
-        float dz0 = pNext->mv3Position.f.z - pBall->m_v3Position.f.z;
-        float fDistanceNextSq = dx0 * dx0 + dy0 * dy0 + dz0 * dz0;
+        float fDistanceNextSq = nlGetLengthSquared3D(pNext->mv3Position.f.x - pBall->m_v3Position.f.x, pNext->mv3Position.f.y - pBall->m_v3Position.f.y, pNext->mv3Position.f.z - pBall->m_v3Position.f.z);
 
         while (!nlDLRingIsEnd(pHeadRef, pListEntry))
         {
@@ -395,10 +394,7 @@ float FakeBallWorld::GetPredictedPosAtDistance(float fDistance, nlVector3& v3Pos
             pNext = pListEntry->m_data;
             float fDistancePrevSq = fDistanceNextSq;
 
-            float dx = pNext->mv3Position.f.x - pBall->m_v3Position.f.x;
-            float dy = pNext->mv3Position.f.y - pBall->m_v3Position.f.y;
-            float dz = pNext->mv3Position.f.z - pBall->m_v3Position.f.z;
-            fDistanceNextSq = dx * dx + dy * dy + dz * dz;
+            fDistanceNextSq = nlGetLengthSquared3D(pNext->mv3Position.f.x - pBall->m_v3Position.f.x, pNext->mv3Position.f.y - pBall->m_v3Position.f.y, pNext->mv3Position.f.z - pBall->m_v3Position.f.z);
 
             if (fDistanceNextSq > fDistanceTargetSq)
             {
@@ -408,12 +404,12 @@ float FakeBallWorld::GetPredictedPosAtDistance(float fDistance, nlVector3& v3Pos
                 float fTime = Interpolate(pPrev->mfTime, pNext->mfTime, fPercent) - fSimulationTime;
 
                 float fInvPercent = 1.0f - fPercent;
-                v3Position.f.x = fPercent * pNext->mv3Position.f.x + fInvPercent * pPrev->mv3Position.f.x;
-                v3Position.f.y = fPercent * pNext->mv3Position.f.y + fInvPercent * pPrev->mv3Position.f.y;
-                v3Position.f.z = fPercent * pNext->mv3Position.f.z + fInvPercent * pPrev->mv3Position.f.z;
-                v3Velocity.f.x = fPercent * pNext->mv3LinearVelocity.f.x + fInvPercent * pPrev->mv3LinearVelocity.f.x;
-                v3Velocity.f.y = fPercent * pNext->mv3LinearVelocity.f.y + fInvPercent * pPrev->mv3LinearVelocity.f.y;
-                v3Velocity.f.z = fPercent * pNext->mv3LinearVelocity.f.z + fInvPercent * pPrev->mv3LinearVelocity.f.z;
+                v3Position.f.x = fInvPercent * pPrev->mv3Position.f.x + fPercent * pNext->mv3Position.f.x;
+                v3Position.f.y = fInvPercent * pPrev->mv3Position.f.y + fPercent * pNext->mv3Position.f.y;
+                v3Position.f.z = fInvPercent * pPrev->mv3Position.f.z + fPercent * pNext->mv3Position.f.z;
+                v3Velocity.f.x = fInvPercent * pPrev->mv3LinearVelocity.f.x + fPercent * pNext->mv3LinearVelocity.f.x;
+                v3Velocity.f.y = fInvPercent * pPrev->mv3LinearVelocity.f.y + fPercent * pNext->mv3LinearVelocity.f.y;
+                v3Velocity.f.z = fInvPercent * pPrev->mv3LinearVelocity.f.z + fPercent * pNext->mv3LinearVelocity.f.z;
 
                 return fTime;
             }
@@ -432,10 +428,7 @@ float FakeBallWorld::GetPredictedPosAtDistance(float fDistance, nlVector3& v3Pos
 
     float fMaxTime = 6.0f + fSimulationTime;
 
-    float dx0 = pCurCache->mv3Position.f.x - pBall->m_v3Position.f.x;
-    float dy0 = pCurCache->mv3Position.f.y - pBall->m_v3Position.f.y;
-    float dz0 = pCurCache->mv3Position.f.z - pBall->m_v3Position.f.z;
-    float fDistanceCurSq = dx0 * dx0 + dy0 * dy0 + dz0 * dz0;
+    float fDistanceCurSq = nlGetLengthSquared3D(pCurCache->mv3Position.f.x - pBall->m_v3Position.f.x, pCurCache->mv3Position.f.y - pBall->m_v3Position.f.y, pCurCache->mv3Position.f.z - pBall->m_v3Position.f.z);
 
     while (mfLastCacheTime < fMaxTime)
     {
@@ -449,10 +442,7 @@ float FakeBallWorld::GetPredictedPosAtDistance(float fDistance, nlVector3& v3Pos
 
         pCurCache = pNewInfo;
 
-        float dx = pNewInfo->mv3Position.f.x - pBall->m_v3Position.f.x;
-        float dy = pNewInfo->mv3Position.f.y - pBall->m_v3Position.f.y;
-        float dz = pNewInfo->mv3Position.f.z - pBall->m_v3Position.f.z;
-        fDistanceCurSq = dx * dx + dy * dy + dz * dz;
+        fDistanceCurSq = nlGetLengthSquared3D(pNewInfo->mv3Position.f.x - pBall->m_v3Position.f.x, pNewInfo->mv3Position.f.y - pBall->m_v3Position.f.y, pNewInfo->mv3Position.f.z - pBall->m_v3Position.f.z);
 
         if (fDistanceCurSq > fDistanceTargetSq)
         {
@@ -462,12 +452,12 @@ float FakeBallWorld::GetPredictedPosAtDistance(float fDistance, nlVector3& v3Pos
             float fTime = Interpolate(pLastCache->mfTime, pNewInfo->mfTime, fPercent) - fSimulationTime;
 
             float fInvPercent = 1.0f - fPercent;
-            v3Position.f.x = fPercent * pNewInfo->mv3Position.f.x + fInvPercent * pLastCache->mv3Position.f.x;
-            v3Position.f.y = fPercent * pNewInfo->mv3Position.f.y + fInvPercent * pLastCache->mv3Position.f.y;
-            v3Position.f.z = fPercent * pNewInfo->mv3Position.f.z + fInvPercent * pLastCache->mv3Position.f.z;
-            v3Velocity.f.x = fPercent * pNewInfo->mv3LinearVelocity.f.x + fInvPercent * pLastCache->mv3LinearVelocity.f.x;
-            v3Velocity.f.y = fPercent * pNewInfo->mv3LinearVelocity.f.y + fInvPercent * pLastCache->mv3LinearVelocity.f.y;
-            v3Velocity.f.z = fPercent * pNewInfo->mv3LinearVelocity.f.z + fInvPercent * pLastCache->mv3LinearVelocity.f.z;
+            v3Position.f.x = fInvPercent * pLastCache->mv3Position.f.x + fPercent * pNewInfo->mv3Position.f.x;
+            v3Position.f.y = fInvPercent * pLastCache->mv3Position.f.y + fPercent * pNewInfo->mv3Position.f.y;
+            v3Position.f.z = fInvPercent * pLastCache->mv3Position.f.z + fPercent * pNewInfo->mv3Position.f.z;
+            v3Velocity.f.x = fInvPercent * pLastCache->mv3LinearVelocity.f.x + fPercent * pNewInfo->mv3LinearVelocity.f.x;
+            v3Velocity.f.y = fInvPercent * pLastCache->mv3LinearVelocity.f.y + fPercent * pNewInfo->mv3LinearVelocity.f.y;
+            v3Velocity.f.z = fInvPercent * pLastCache->mv3LinearVelocity.f.z + fPercent * pNewInfo->mv3LinearVelocity.f.z;
 
             return fTime;
         }

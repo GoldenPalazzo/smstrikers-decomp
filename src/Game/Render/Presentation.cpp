@@ -13,6 +13,7 @@
 #include "Game/Effects/EmissionController.h"
 #include "Game/AI/AIPad.h"
 #include "Game/CharacterTemplate.h"
+#include "Game/Debug/ShapeRender.h"
 #include "Game/FE/feHelpFuncs.h"
 #include "Game/FE/feManager.h"
 #include "Game/GameInfo.h"
@@ -48,6 +49,7 @@ public:
     char _pad[0x24];
     eGameState m_eGameState;
     void ChangeGameState(eGameState);
+    float GetGameTime();
 };
 
 extern cGame* g_pGame;
@@ -59,14 +61,6 @@ public:
     void DoMatchEndOverlay();
     void DoCupWinOverlay();
 };
-
-class ShapeRender
-{
-public:
-    void DrawRectangle2D(float x, float y, float w, float h, float z, const nlColour& colour, int view) const;
-};
-
-extern ShapeRender g_ShapeRenderer;
 
 extern unsigned long cupTrophyHash;
 char trophyFileName[0xFF];
@@ -411,9 +405,8 @@ void Presentation::Update(float deltaT)
 
         Run();
 
-        ReplayChoreo& replayChoreo = ReplayChoreo::Instance();
-        replayChoreo.Update(deltaT);
-        replayChoreo.mCamera.UpdateTweakMode();
+        ReplayChoreo::Instance().Update(deltaT);
+        ReplayCamera::UpdateTweakMode();
 
         if (!mSkipPressed)
         {
@@ -469,14 +462,13 @@ void Presentation::Update(float deltaT)
                     if (nlStrCmp<char>(mCurrentFunction, "PlayHighlight") != 0 && !trophyShown)
                     {
                         pressedSkip = false;
-                        mSkipPressed = pressedSkip;
-                        goto done_skip_detect;
+                        goto set_skip_pressed;
                     }
                 }
 
                 bool duringEndPresentation = DuringEndOfGamePresentation();
 
-                if (duringEndPresentation & (mTimeInFunction >= 1.2f))
+                if (duringEndPresentation & (mTimeInFunction <= 1.2f))
                 {
                     pressedSkip = false;
                 }
@@ -484,7 +476,6 @@ void Presentation::Update(float deltaT)
                 {
                     if (nlTaskManager::m_pInstance->m_CurrState == 0x100 || nlTaskManager::m_pInstance->m_CurrState == 0x10)
                     {
-                        pressedSkip = false;
                         for (int i = 0; i < 4; i++)
                         {
                             if (!mIsAllowedToSkip[i])
@@ -501,18 +492,16 @@ void Presentation::Update(float deltaT)
                                 if (cPadManager::GetPad(i)->JustPressed(7, true))
                                 {
                                     pressedSkip = true;
-                                    break;
+                                    goto set_skip_pressed;
                                 }
                             }
                         }
                     }
-                    else
-                    {
-                        pressedSkip = false;
-                    }
+                    pressedSkip = false;
                 }
             }
 
+        set_skip_pressed:
             mSkipPressed = pressedSkip;
         }
 
@@ -537,8 +526,14 @@ void Presentation::Update(float deltaT)
         }
     }
 
-    float renderDelta;
+    bool isPausedForRender = false;
     if (!FrontEnd::m_bGameOver && nlTaskManager::m_pInstance->m_CurrState == 1)
+    {
+        isPausedForRender = true;
+    }
+
+    float renderDelta;
+    if (isPausedForRender)
     {
         renderDelta = 0.0f;
     }
@@ -830,7 +825,6 @@ void Presentation::EventHandler(Event* event)
     };
 
     extern unsigned int nlDefaultSeed;
-    extern float GetGameTime__5cGameFv(cGame*);
 
     if (g_pGame == 0)
     {
@@ -981,7 +975,7 @@ void Presentation::EventHandler(Event* event)
                 if (g_pGame != 0)
                 {
                     float duration = ((GameLocal*)g_pGame)->m_fGameDuration;
-                    if (GetGameTime__5cGameFv(g_pGame) >= duration)
+                    if (g_pGame->GetGameTime() >= duration)
                     {
                         s32 awayScore = g_pTeams[1]->m_nScore;
                         s32 homeScore = g_pTeams[0]->m_nScore;

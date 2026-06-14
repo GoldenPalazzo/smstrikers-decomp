@@ -46,8 +46,8 @@ inline unsigned long PriorityStream::GetNextStreamId(unsigned long SimpleStreamI
 
 /**
  * Offset/Address/Size: 0xA34 | 0x801584E8 | size: 0x474
- * TODO: 99.07% match - register allocation drift remains in PLAY_RECORD setup
- *   (pSlot r5->r9, volGroup r6->r7, queue r7->r8) and inlined crowd-id path
+ * TODO: 99.09% match - register allocation drift remains in PLAY_RECORD setup
+ *   (pSlot r5->r9, volGroup r6->r8) and inlined crowd-id path
  *   (counter pointer and looping-byte loads use shifted registers).
  */
 enum Type
@@ -142,8 +142,8 @@ void PriorityStream::PlayStream(unsigned long StreamId, float Volume, bool Loopi
     }
 
     unsigned long active = GrabCrowdStream(ExistingFadeOut);
-    unsigned long volGroup = 0;
     unsigned long queue = 1;
+    unsigned long volGroup = 0;
 
     switch (StreamId)
     {
@@ -591,19 +591,17 @@ extern "C"
 {
     void sndStreamMixParameterEx(unsigned long stid, unsigned char vol, unsigned char pan, unsigned char span, unsigned char auxa, unsigned char auxb);
     void sndStreamDeactivate(unsigned long stid);
-    void AttachStream__Q216AudioStreamTrack11StreamTrackFPQ216GCAudioStreaming17StereoAudioStreamQ35Audio12MasterVolume12VOLUME_GROUPUlUlbb(
-        AudioStreamTrack::StreamTrack*, GCAudioStreaming::StereoAudioStream*, Audio::MasterVolume::VOLUME_GROUP, unsigned long, unsigned long, bool, bool);
-    void StopHead__Q216AudioStreamTrack11StreamTrackFUl(AudioStreamTrack::StreamTrack*, unsigned long);
 }
 
 /**
  * Offset/Address/Size: 0x3DC | 0x800C3820 | size: 0x380
- * TODO: 96.32% match - ble vs beq at 0xc0, stack offset 0xc vs 0x10 at 0x180 in case 4 free loop
+ * TODO: 99.97% match - stack offsets swap between first free loop and second volume loop
  */
 unsigned long PriorityStream::GrabCrowdStream(unsigned long Fadeout)
 {
     GCAudioStreaming::StereoAudioStream* pStream;
     unsigned long result = 0;
+    unsigned long zero = 0;
 
     if (!CrowdMood::IsStreamLocked())
     {
@@ -617,9 +615,9 @@ unsigned long PriorityStream::GrabCrowdStream(unsigned long Fadeout)
                 if (Fadeout != 0)
                 {
                     result = 1;
-                    AttachStream__Q216AudioStreamTrack11StreamTrackFPQ216GCAudioStreaming17StereoAudioStreamQ35Audio12MasterVolume12VOLUME_GROUPUlUlbb(
-                        &m_Track, pStream, (Audio::MasterVolume::VOLUME_GROUP)4, (unsigned long)-1, 0, 0, 0);
-                    StopHead__Q216AudioStreamTrack11StreamTrackFUl(&m_Track, Fadeout);
+                    m_Track.AttachStream(
+                        pStream, (Audio::MasterVolume::VOLUME_GROUP)4, (unsigned long)-1, 0, 0, 0);
+                    m_Track.StopHead(Fadeout);
                 }
                 else
                 {
@@ -630,7 +628,7 @@ unsigned long PriorityStream::GrabCrowdStream(unsigned long Fadeout)
                         GCAudioStreaming::AudioStreamBuffer* pBuffer;
                         volatile unsigned long i = (unsigned long)(pBuffer = NULL);
 
-                        if (pStream->m_BufferCount > 0)
+                        if (pStream->m_BufferCount > zero)
                         {
                             pBuffer = pStream->m_Buffers[0];
                         }
@@ -673,7 +671,7 @@ unsigned long PriorityStream::GrabCrowdStream(unsigned long Fadeout)
 
                             pStream->m_Flags = (pStream->m_Flags & ~(1 << GCAudioStreaming::SF_SeriousStop)) | (1 << GCAudioStreaming::SF_SeriousStop);
 
-                            if (pStream->m_BufferCount > 0)
+                            if (pStream->m_BufferCount > zero)
                             {
                                 pBuffer = pStream->m_Buffers[0];
                             }
@@ -714,7 +712,7 @@ unsigned long PriorityStream::GrabCrowdStream(unsigned long Fadeout)
                     GCAudioStreaming::AudioStreamBuffer* pBuffer;
                     volatile unsigned long i = (unsigned long)(pBuffer = NULL);
 
-                    if (pStream->m_BufferCount > 0)
+                    if (pStream->m_BufferCount > zero)
                     {
                         pBuffer = pStream->m_Buffers[0];
                     }
@@ -757,7 +755,7 @@ unsigned long PriorityStream::GrabCrowdStream(unsigned long Fadeout)
 
                         pStream->m_Flags = (pStream->m_Flags & ~(1 << GCAudioStreaming::SF_SeriousStop)) | (1 << GCAudioStreaming::SF_SeriousStop);
 
-                        if (pStream->m_BufferCount > 0)
+                        if (pStream->m_BufferCount > zero)
                         {
                             pBuffer = pStream->m_Buffers[0];
                         }

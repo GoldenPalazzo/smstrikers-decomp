@@ -243,6 +243,45 @@ public:
     }
 };
 
+template <typename R, typename P1, typename P2, typename P3>
+class Function<R(P1, P2, P3)>
+{
+public:
+    struct FunctorBase
+    {
+        virtual ~FunctorBase() { };
+        virtual R operator()(P1, P2, P3) = 0;
+        virtual FunctorBase* Clone() const = 0;
+    };
+
+    enum Tag mTag; // offset 0x0, size 0x4
+    union
+    {
+        R (*mFreeFunction)(P1, P2, P3); // offset 0x4, size 0x4
+        FunctorBase* mFunctor;          // offset 0x4, size 0x4
+    };
+
+    Function()
+    {
+        mTag = EMPTY;
+    }
+
+    Function(R (*fn)(P1, P2, P3))
+    {
+        mTag = FREE_FUNCTION;
+        mFreeFunction = fn;
+    }
+
+    ~Function()
+    {
+        if (mTag == FUNCTOR)
+        {
+            delete mFunctor;
+        }
+        mTag = EMPTY;
+    }
+}; // total size: 0x8
+
 typedef void FnVoidVoid();
 
 template <>

@@ -19,6 +19,15 @@ Detail::MemFunImpl<R, void (Class::*)(P)> MemFun(void (Class::*fn)(P))
     return Detail::MemFunImpl<R, void (Class::*)(P)>(fn);
 }
 
+typedef Detail::MemFunImpl<void, void (SHMainMenu::*)(TLComponentInstance*)> MainMenuMemFun_t;
+typedef BindExp2<void, MainMenuMemFun_t, SHMainMenu*, Placeholder<0> > MainMenuBind_t;
+
+template <>
+inline void Function1<void, TLComponentInstance*>::FunctorImpl<MainMenuBind_t>::operator()(TLComponentInstance* arg)
+{
+    (mBind.mT0->*mBind.mFunction.mMemFun)(arg);
+}
+
 extern nlColour MenuHighliteColour;
 
 static unsigned long sUnlockedTickerMessages[7] = {

@@ -6,7 +6,6 @@
 
 void DrawGrid(int);
 void DrawSafeFrame();
-void SetupRenderInfo();
 void SetupMatrices();
 glModel* cb_ParticleLighting(glModel* pModel);
 

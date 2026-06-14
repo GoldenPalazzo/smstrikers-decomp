@@ -1,3 +1,4 @@
+#define BIND_NO_DECL
 #include "Game/Audio/AudioStream.h"
 #include "Game/Sys/PlatStream.h"
 #include "Game/Audio/AudioLoader.h"
@@ -14,6 +15,12 @@
 #include "Game/FE/feHelpFuncs.h"
 
 #include "NL/nlMemFunBody.h"
+
+template <typename R, typename F, typename A>
+BindExp1<R, F, A> Bind(F fn, const A& arg)
+{
+    return BindExp1<R, F, A>(fn, arg);
+}
 
 extern cTeam* g_pTeams[2];
 extern unsigned int nlDefaultSeed;

@@ -32,7 +32,7 @@ SpaceSearch::~SpaceSearch()
 
 /**
  * Offset/Address/Size: 0x1284 | 0x80063BD4 | size: 0x5F0
- * TODO: 90.91% match - aDirection stays in r27 and fMaxRadius stays in f23, causing cascaded register and branch-offset diffs
+ * TODO: 90.80% match - pervasive register permutation through the body (every preserved float/int register is shifted relative to target) plus instruction scheduling differences in the aFromAngle/aToAngle/numRadiusSteps computation block
  */
 float SpaceSearch::FindBestPosition(nlVector3& v3Dest, const nlVector3& v3CenterPos, eFieldDirection eSearchDir, const nlVector3* pv3TargetOrDirection, float fMaxRadius, unsigned short aSearchCone)
 {
@@ -63,16 +63,10 @@ float SpaceSearch::FindBestPosition(nlVector3& v3Dest, const nlVector3& v3Center
         aSearchCone = 0xFFFF;
         break;
     case DIR_UPFIELD:
-        if (m_fNetDirection > 0.0f)
-            aDirection = 0x8000;
-        else
-            aDirection = 0;
+        aDirection = (m_fNetDirection > 0.0f) ? 0x8000 : 0;
         break;
     case DIR_DOWNFIELD:
-        if (m_fNetDirection > 0.0f)
-            aDirection = 0;
-        else
-            aDirection = 0x8000;
+        aDirection = (m_fNetDirection > 0.0f) ? 0 : 0x8000;
         break;
     case DIR_TOWARD_TARGET:
         aDirection = (unsigned short)(s32)(10430.378f * nlATan2f(pv3TargetOrDirection->f.y - v3CenterPos.f.y, pv3TargetOrDirection->f.x - v3CenterPos.f.x));

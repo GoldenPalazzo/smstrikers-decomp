@@ -1,4 +1,5 @@
 #include "Game/Drawable/DrawableNetMesh.h"
+#include "Game/Render/ShootToScoreArrow.h"
 #include "Game/Replay.h"
 #include "Game/Field.h"
 #include "Game/Net.h"
@@ -192,17 +193,6 @@ public:
     void Texcoord(short, short);
 };
 
-class WorldDarkening
-{
-public:
-    float mRate;
-    float mPos;
-    float mTo;
-    bool mActive;
-};
-
-extern WorldDarkening* Instance__14WorldDarkeningFv();
-
 struct DisplayList;
 
 void* glFrameAlloc(unsigned long, eGLMemory);
@@ -316,7 +306,7 @@ void DrawableNetMesh::Render() const
 
         void* pUserDataHandle = glUserAlloc(GLUD_ConstantColour, 4, false);
         u8* pColourData = (u8*)glUserGetData(pUserDataHandle);
-        WorldDarkening& wd = (*Instance__14WorldDarkeningFv());
+        WorldDarkening& wd = WorldDarkening::Instance();
         float darkScale = 255.0f;
         float darkBase = 1.0f - wd.mPos;
         u8 dark = (u8)(int)(darkScale * darkBase);
@@ -335,7 +325,7 @@ void DrawableNetMesh::Render() const
             for (int i = 0; i < m_unk18; i++, pIndex++)
             {
                 unsigned short index = *pIndex;
-                u8 dark = (u8)(int)((1.0f - (*Instance__14WorldDarkeningFv()).mPos) * 255.0);
+                u8 dark = (u8)(int)((1.0f - WorldDarkening::Instance().mPos) * 255.0);
                 shortVector2* pUV = &pTexcoord[index];
                 meshWriter.Texcoord(pUV->e[0], pUV->e[1]);
                 nlColour c;

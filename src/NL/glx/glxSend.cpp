@@ -1242,8 +1242,8 @@ void glud_Skin(void* pData, const glModelPacket* pPacket)
 
 /**
  * Offset/Address/Size: 0x1B8C | 0x801BB68C | size: 0x320
- * TODO: 99.13% match - block 1 FPR allocation (y,x,z loads vs target z,y,x),
- *       block 2 store order swap at 120/124, GXColor stack offset 0xC vs 0x08
+ * TODO: 99.70% match - block 1 FPR allocation still swaps x/z temps,
+ *       block 2 store order swap at 0x120/0x124, GXColor stack copy direction
  */
 void glud_Specular(void* pData)
 {
@@ -1292,13 +1292,13 @@ void glud_Specular(void* pData)
                     float recipLength = nlRecipSqrt(
                         pLight->worldDirection.f.x * pLight->worldDirection.f.x + pLight->worldDirection.f.y * pLight->worldDirection.f.y + pLight->worldDirection.f.z * pLight->worldDirection.f.z,
                         false);
+                    float worldX = pLight->worldDirection.f.x;
                     float worldZ = pLight->worldDirection.f.z;
                     float worldY = pLight->worldDirection.f.y;
-                    float worldX = pLight->worldDirection.f.x;
 
-                    worldDir.f.z = recipLength * worldZ;
                     worldDir.f.x = recipLength * worldX;
                     worldDir.f.y = recipLength * worldY;
+                    worldDir.f.z = recipLength * worldZ;
                 }
 
                 nlMultDirVectorMatrix(viewDir, worldDir, mview);
@@ -1382,8 +1382,8 @@ void glud_Specular(void* pData)
                 GXInitSpecularDir(&light, viewDir.f.x, viewDir.f.y, viewDir.f.z);
 
                 {
-                    float halfExponent = pLight->exponent;
-                    halfExponent *= 0.5f;
+                    float half = 0.5f;
+                    float halfExponent = pLight->exponent * half;
                     GXInitLightAttn(&light, 0.0f, 0.0f, 1.0f, halfExponent, 0.0f, 1.0f - halfExponent);
                 }
 

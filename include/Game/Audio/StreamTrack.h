@@ -41,6 +41,7 @@ class StreamTrack;
 class TrackManagerBase
 {
 public:
+    TrackManagerBase();
     virtual ~TrackManagerBase();
     /* 0x0C */ virtual void Update(float);
     /* 0x10 */ virtual StreamTrack& CreateTrack(const char*, Audio::MasterVolume::VOLUME_GROUP);
@@ -68,6 +69,8 @@ public:
         void UpdateFade(STREAM_FADE_CTRL*);
         void AddFade(GCAudioStreaming::StereoAudioStream*, unsigned long, unsigned long,
             Audio::MasterVolume::VOLUME_GROUP, unsigned long, const Function<FnVoidVoid>&);
+        bool ChangeFade(GCAudioStreaming::StereoAudioStream*, unsigned long, unsigned long,
+            const Function<FnVoidVoid>&);
 
         /* 0x00 */ FadeList m_Fades;
         /* 0x1C */ float m_dT;
@@ -132,6 +135,8 @@ public:
         /* 0xB */ unsigned long Loop : 1;
         /* 0xB */ unsigned long TrackOwnsStream : 1;
     }; // total size: 0xC
+
+    StreamTrack(TrackManagerBase& mgr, Audio::MasterVolume::VOLUME_GROUP volumeGroup);
 
     void Update(float);
     void PlayStream(unsigned long, float, bool, unsigned long, unsigned long, const char*, Audio::MasterVolume::VOLUME_GROUP);

@@ -137,58 +137,50 @@ extern "C" s32 THPSimpleGetTotalFrame()
 
 /**
  * Offset/Address/Size: 0xA14 | 0x801CC978 | size: 0x160
- * TODO: 97.7% match - r4/r5/r0 register swap for zero/base/-1 in final reset block
  */
 extern "C" int THPSimpleLoadStop()
 {
     long i;
-    THPSimpleControlWork* ctrl = (THPSimpleControlWork*)&SimpleControl;
 
-    if (ctrl->open && ctrl->audioState == 0)
+    if (SimpleControl.open && SimpleControl.audioState == 0)
     {
-        ctrl->preFetchState = 0;
+        SimpleControl.playing = 0;
 
-        if (ctrl->readProgress != 0)
+        if (SimpleControl.dvdBusy != 0)
         {
-            nlCancelPendingAsyncReads(ctrl->fileInfo, __THPAsyncCancelCB);
+            nlCancelPendingAsyncReads(SimpleControl.file, __THPAsyncCancelCB);
 
-            THPSimpleControlWork* ctrl2 = (THPSimpleControlWork*)&SimpleControl;
-            while (nlAsyncReadsPending(ctrl2->fileInfo))
+            while (nlAsyncReadsPending(SimpleControl.file))
             {
                 nlServiceFileSystem();
                 OSYieldThread();
             }
 
-            ctrl->readProgress = 0;
+            SimpleControl.dvdBusy = 0;
         }
 
         for (i = 0; i < 16; i++)
         {
-            ((THPSimpleControlWork*)&SimpleControl)->readBuffer[i].mIsValid = 0;
+            SimpleControl.readBuffers[i].mIsValid = 0;
         }
 
-        THPSimpleControlWork* sc = (THPSimpleControlWork*)&SimpleControl;
-        unsigned long movieOfs = sc->movieDataOffsets;
-        unsigned long frameSize = sc->firstFrameSize;
-        float targetVol = sc->targetVolume;
-
-        sc->audioBuffer[0].mValidSample = 0;
-        sc->audioBuffer[1].mValidSample = 0;
-        sc->audioBuffer[2].mValidSample = 0;
-        sc->audioBuffer[3].mValidSample = 0;
-        sc->audioBuffer[4].mValidSample = 0;
-        sc->audioBuffer[5].mValidSample = 0;
-        sc->textureSet.mFrameNumber = -1;
-        sc->curOffset = movieOfs;
-        sc->readSize = frameSize;
-        sc->readIndex = 0;
-        sc->totalReadFrame = 0;
-        sc->dvdError = 0;
-        sc->nextDecodeIndex = 0;
-        sc->audioDecodeIndex = 0;
-        sc->audioOutputIndex = 0;
-        sc->curVolume = targetVol;
-        sc->rampCount = 0;
+        SimpleControl.audioBuffer[0].mValidSample = 0;
+        SimpleControl.audioBuffer[1].mValidSample = 0;
+        SimpleControl.audioBuffer[2].mValidSample = 0;
+        SimpleControl.audioBuffer[3].mValidSample = 0;
+        SimpleControl.audioBuffer[4].mValidSample = 0;
+        SimpleControl.audioBuffer[5].mValidSample = 0;
+        SimpleControl.textureSet.mFrameNumber = -1;
+        SimpleControl.totalRead = SimpleControl.movieDataOffsets;
+        SimpleControl.nextSize = SimpleControl.firstFrameSize;
+        SimpleControl.readIdx = 0;
+        SimpleControl.frameCount = 0;
+        SimpleControl.unk74 = 0;
+        SimpleControl.nextDecodeIndex = 0;
+        SimpleControl.audioDecodeIndex = 0;
+        SimpleControl.audioOutputIndex = 0;
+        SimpleControl.curVolume = SimpleControl.targetVolume;
+        SimpleControl.rampCount = 0;
 
         return 1;
     }

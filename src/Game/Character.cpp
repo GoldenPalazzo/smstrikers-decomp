@@ -25,6 +25,8 @@
 #include "Game/Sys/audio.h"
 #include "Game/Sys/debug.h"
 #include "Game/GL/GLInventory.h"
+#include "Game/Render/Bowser.h"
+#include "Game/Render/ChainChomp.h"
 #include "types.h"
 
 static f32 CANT_COLLIDE = *(f32*)__float_max;
@@ -1420,8 +1422,6 @@ cCharacter::cCharacter(eCharacterClass cc, const int* nModelID, cSHierarchy* pHi
 /**
  * Offset/Address/Size: 0x26A0 | 0x800105EC | size: 0x1A58
  */
-extern "C" void FindTarget__6BowserFv(Bowser*);
-extern "C" void FindTarget__10ChainChompFP5cTeam(ChainChomp*, cTeam*);
 
 inline eVariantType VariantTypeOf(const nlVector3&)
 {
@@ -1942,7 +1942,7 @@ void AIEventHandler(Event* pEvent, void*)
 
         if (pEventData->pFielder == ((ChainChompView*)pEventData->pChain)->mpTarget)
         {
-            FindTarget__10ChainChompFP5cTeam(pEventData->pChain, pEventData->pFielder->m_pTeam);
+            pEventData->pChain->FindTarget(pEventData->pFielder->m_pTeam);
         }
 
         break;
@@ -1984,7 +1984,7 @@ void AIEventHandler(Event* pEvent, void*)
 
         if (pEventData->pFielder == ((BowserView*)pEventData->pBowser)->mpTarget)
         {
-            FindTarget__6BowserFv(pEventData->pBowser);
+            pEventData->pBowser->FindTarget();
         }
 
         ((BowserView*)pEventData->pBowser)->m_pCharacterSFX->PlayRandomCharDialogue((CharDialogueType)2, (PosUpdateMethod)2, 100.0f, -1.0f, true);

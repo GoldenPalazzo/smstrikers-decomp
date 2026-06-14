@@ -34,6 +34,14 @@ class EmissionController;
 
 typedef void (*NisEmissionFn)(EmissionController&, int);
 
+typedef BindExp2<void, void (*)(EmissionController&, int), Placeholder<0>, int> BindExp2_Nis_t;
+
+template <>
+inline void Function1<void, EmissionController&>::FunctorImpl<BindExp2_Nis_t>::operator()(EmissionController& arg)
+{
+    mBind.mFunction(arg, mBind.mT1);
+}
+
 struct BasicStringInternal
 {
     char* mData;

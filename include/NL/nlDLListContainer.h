@@ -62,11 +62,34 @@ public:
         m_Allocator.m_pFree = entry;
     }
 
+    T* AllocateAtEnd(unsigned long* outEntry);
+
     void DeleteEntry(DLListEntry<T>* entry);
 
     /* 0x0 */ Adapter m_Allocator;     // offset 0x0, size 0x18
     /* 0x18 */ DLListEntry<T>* m_Head; // offset 0x18, size 0x4
 }; // total size: 0x1C
+
+template <typename T, typename Adapter>
+T* DLListContainerBase<T, Adapter>::AllocateAtEnd(unsigned long* outEntry)
+{
+    // TODO: 54.10% match - emits 4 callee-saved registers vs the target's 5
+    // (the value-initialized temporary is not held in a register to scope end),
+    // shifting this/outEntry one register higher and permuting registers throughout.
+    DLListEntry<T>* entry = NULL;
+    T localData = T();
+    m_Allocator.Allocate(entry);
+    if (entry != NULL)
+    {
+        new (&entry->m_data) T(localData);
+    }
+    nlDLRingAddEnd(&m_Head, entry);
+    if (outEntry != NULL)
+    {
+        *outEntry = (unsigned long)entry;
+    }
+    return &entry->m_data;
+}
 
 template <typename T, typename Adapter>
 void DLListContainerBase<T, Adapter>::DeleteEntry(DLListEntry<T>* entry)

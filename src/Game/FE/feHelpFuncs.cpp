@@ -958,7 +958,6 @@ void SingleHighlite::CloseItem(TLComponentInstance* component)
 
 /**
  * Offset/Address/Size: 0x7DC | 0x800A3898 | size: 0x1B4
- * TODO: 99.6% match - r8/r9 register swap for suffix and NameTeamTable temp in team path
  */
 void CaptainSidekickFilename::Build(CaptainSidekickFilename::Type type, char* buf, int size, int id, int flag)
 {
@@ -987,11 +986,7 @@ void CaptainSidekickFilename::Build(CaptainSidekickFilename::Type type, char* bu
     else
     {
         const char* name = (char*)NameTeamTable[id].name;
-        suffix = 'r';
-        if (!flag)
-        {
-            suffix = 'l';
-        }
+        suffix = (flag == 0) ? 'l' : 'r';
         switch (type)
         {
         case TYPE_0:

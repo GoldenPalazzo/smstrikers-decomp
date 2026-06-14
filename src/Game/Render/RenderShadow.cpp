@@ -16,7 +16,6 @@ const unsigned long WhiteTexture = glGetTexture("global/white");
 int MaxProjectedShadows;
 
 extern GLInventory glInventory;
-extern unsigned long ResolvedWhiteTexture;
 
 static u8 g_bPreview;
 static u8 g_bShadowBlobs;
@@ -72,7 +71,7 @@ void RenderShadowModel(unsigned long flags, glModel* model, unsigned long matrix
         while (pkt < model->packets + model->numPackets)
         {
             glModelPacket* dup = glModelPacketDup(pkt, true);
-            dup->state.texture[0] = ResolvedWhiteTexture;
+            dup->state.texture[0] = (u32)ResolvedWhiteTexture;
             dup->state.matrix = matrix;
             glViewAttachPacket(GLV_Unshadowed, dup);
             pkt++;
@@ -174,7 +173,6 @@ void RenderCharacterIntoTexture(const ProjectedShadowParams& params)
     extern u8 g_bShadowBlobs;
     extern u8 g_bShadowPositionOverride;
     extern nlVector3 g_vShadowPosition;
-    extern unsigned long ResolvedBlackTexture;
 
     struct ShadowTextureUserData
     {
@@ -308,7 +306,7 @@ void RenderCharacterIntoTexture(const ProjectedShadowParams& params)
             glUserAttach(userData, pPacket, false);
         }
 
-        pPacket->state.texture[0] = ResolvedBlackTexture;
+        pPacket->state.texture[0] = (u32)ResolvedBlackTexture;
         glSetTextureState(pPacket->state.texturestate, (eGLTextureState)0xC, 0x3F);
 
         pPacket++;

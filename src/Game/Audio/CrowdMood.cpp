@@ -10,7 +10,7 @@
 #include "NL/nlString.h"
 
 extern GCAudioStreaming::AudioBufferMgr g_BufferMgr;
-extern void ___blank(const char*, ...);
+static void ___blank(const char*, ...);
 extern "C" void sndStreamMixParameterEx(unsigned long stid, unsigned char vol, unsigned char pan, unsigned char span, unsigned char auxa, unsigned char auxb);
 extern "C" void sndStreamLPFParameter(unsigned long, unsigned long, unsigned long);
 extern "C" void sndStreamDeactivate(unsigned long stid);
@@ -225,12 +225,12 @@ bool GCAudioStreaming::MonoAudioStream::SafeToPurge()
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0x3958 | 0x8015106C | size: 0x50
-//  */
-// void ___blank(const char*, ...)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x3958 | 0x8015106C | size: 0x50
+ */
+static void ___blank(const char*, ...)
+{
+}
 
 /**
  * Offset/Address/Size: 0x3948 | 0x8015105C | size: 0x10
@@ -1522,9 +1522,9 @@ void CrowdMood::Update(float dt)
         if (interp - oneConst > eps)
         {
             g_CrowdState.AtDestination = true;
-            g_CrowdState.BlendFast = false;
             g_CrowdState.Interpolant = oneConst;
             g_CrowdState._unk78 = 0.0f;
+            g_CrowdState.BlendFast = false;
         }
 
         f32 interpVal = g_CrowdState.Interpolant;

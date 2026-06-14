@@ -260,11 +260,7 @@ void PausePostGameScene::SceneCreated()
         {
             PauseBind bind = Bind<void, MemFunImpl_PausePostGame_t, PausePostGameScene*>(
                 MemFun<PausePostGameScene, void>(FunctionTable[i]), this);
-            PauseFunctorImpl* impl = new ((PauseFunctorImpl*)nlMalloc(sizeof(PauseFunctorImpl), 8, false)) PauseFunctorImpl(bind);
-
-            Function<TLComponentInstance*> applyFunction;
-            applyFunction.mTag = FUNCTOR;
-            applyFunction.mFunctor = impl;
+            Function<TLComponentInstance*> applyFunction(bind);
             *(Function<TLComponentInstance*>*)&menuItem->mCallbacks[ON_APPLY] = applyFunction;
         }
 
@@ -314,13 +310,15 @@ void PausePostGameScene::SceneCreated()
     }
 
     StatsTracker* tracker = nlSingleton<StatsTracker>::s_pInstance;
-    int pointdiff = tracker->mNumGamesWon[0] - tracker->mNumGamesWon[1];
+    int wins0 = tracker->mNumGamesWon[0];
+    int wins1 = tracker->mNumGamesWon[1];
+    int pointdiff = wins0 - wins1;
     unsigned int absdiff = (pointdiff < 0) ? -pointdiff : pointdiff;
 
     TLTextInstance* message = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
         m_pFEPresentation->m_currentSlide,
-        InlineHasher(nlStringLowerHash("MESSAGE 1")),
-        InlineHasher(nlStringLowerHash("Layer")));
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("MESSAGE 1")));
 
     BasicGameInfo* game = nlSingleton<GameInfoManager>::s_pInstance->mGameInfo[nlSingleton<GameInfoManager>::s_pInstance->mCurrentMode];
 
@@ -343,24 +341,27 @@ void PausePostGameScene::SceneCreated()
     }
 
     u8 hasAway = 0;
-    if (game->mPadSides[0] == 1)
+    if (hasHome)
     {
-        hasAway = 1;
-    }
-    else if (game->mPadSides[1] == 1)
-    {
-        hasAway = 1;
-    }
-    else if (game->mPadSides[2] == 1)
-    {
-        hasAway = 1;
-    }
-    else if (game->mPadSides[3] == 1)
-    {
-        hasAway = 1;
+        if (game->mPadSides[0] == 1)
+        {
+            hasAway = 1;
+        }
+        else if (game->mPadSides[1] == 1)
+        {
+            hasAway = 1;
+        }
+        else if (game->mPadSides[2] == 1)
+        {
+            hasAway = 1;
+        }
+        else if (game->mPadSides[3] == 1)
+        {
+            hasAway = 1;
+        }
     }
 
-    if (hasHome && hasAway)
+    if (hasAway)
     {
         if (absdiff == 0)
         {
@@ -368,7 +369,7 @@ void PausePostGameScene::SceneCreated()
             formatLoc = LookupLocHash(0x317831E4);
 
             BasicString<char, Detail::TempStringAllocator> score = LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(
-                tracker->mNumGamesWon[0] + tracker->mNumGamesWon[1] + 1);
+                wins0 + wins1 + 1);
             unsigned short wscore[8];
             nlStrToWcs(score.c_str(), wscore, 8);
 

@@ -49,13 +49,7 @@ GXRenderModeObj glPal480IntDf = { VI_TVMODE_PAL_INT,
     { 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6 },
     { 8, 8, 10, 12, 10, 8, 8 } };
 
-struct GXFrameBuffer
-{
-    void* unk0;
-    void* unk4;
-};
-
-static GXFrameBuffer glx_FrameBuffer;
+static void* glx_FrameBuffer[2];
 
 static bool glx_bFog = false;
 static bool glx_bProgressiveMode = false;
@@ -507,7 +501,7 @@ void virt_cb(unsigned long, unsigned long, unsigned long, unsigned long, int);
 
 /**
  * Offset/Address/Size: 0xA08 | 0x801B4FFC | size: 0x524
- * TODO: 98.45% match - r0/r5 VIWidth load, r5/r6 first loop scheduling and register swap
+ * TODO: 98.94% match - r5/r6 register swap in both memset loops (ptr vs counter)
  */
 bool glplatStartup(gl_ScreenInfo* screenInfo)
 {
@@ -586,8 +580,8 @@ bool glplatStartup(gl_ScreenInfo* screenInfo)
         glx_TargetFPS = 60;
     }
 
-    glx_rmode.viWidth = (s16)glx_VIWidth;
-    glx_rmode.viXOrigin = (s16)((720 - glx_VIWidth) / 2);
+    glx_rmode.viWidth = glx_VIWidth;
+    glx_rmode.viXOrigin = (720 - glx_VIWidth) / 2;
     VIConfigure(&glx_rmode);
     VIFlush();
     VIConfigure(&glx_rmode);
@@ -606,8 +600,8 @@ bool glplatStartup(gl_ScreenInfo* screenInfo)
     }
     totalSize = fbSize * 2;
     fbMem = nlMalloc(totalSize, 32, false);
-    glx_FrameBuffer.unk4 = (void*)((u8*)fbMem + fbSize);
-    glx_FrameBuffer.unk0 = fbMem;
+    glx_FrameBuffer[1] = (void*)((u8*)fbMem + fbSize);
+    glx_FrameBuffer[0] = fbMem;
     glx_FBSize = fbSize;
     ptr = (u32*)fbMem;
     i = 0;
@@ -618,7 +612,7 @@ bool glplatStartup(gl_ScreenInfo* screenInfo)
     }
     DCFlushRange(fbMem, glx_FBSize);
 
-    buf1 = glx_FrameBuffer.unk4;
+    buf1 = glx_FrameBuffer[1];
     ptr = (u32*)buf1;
     i = 0;
     while (i < glx_FBSize)
@@ -655,7 +649,7 @@ bool glplatStartup(gl_ScreenInfo* screenInfo)
     } while (j < 16);
 
     GXFlush();
-    VISetNextFrameBuffer(glx_FrameBuffer.unk0);
+    VISetNextFrameBuffer(glx_FrameBuffer[0]);
     glxSwapSetBlack(true);
     VIFlush();
     VIWaitForRetrace();
@@ -663,7 +657,7 @@ bool glplatStartup(gl_ScreenInfo* screenInfo)
     {
         VIWaitForRetrace();
     }
-    glxInitSwap(glx_FrameBuffer.unk0, glx_FrameBuffer.unk4);
+    glxInitSwap(glx_FrameBuffer[0], glx_FrameBuffer[1]);
     glxInitTex();
     glxInitTargets();
     VMSetLogStatsCallback((VMLogStatsCallback)virt_cb);

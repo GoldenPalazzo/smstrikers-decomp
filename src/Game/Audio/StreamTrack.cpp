@@ -10,6 +10,12 @@
 
 extern GCAudioStreaming::AudioBufferMgr g_BufferMgr;
 
+template <typename Class, typename R, typename P>
+Detail::MemFunImpl<R, void (Class::*)(P)> MemFun(void (Class::*fn)(P))
+{
+    return Detail::MemFunImpl<R, void (Class::*)(P)>(fn);
+}
+
 namespace AudioStreamTrack
 {
 TrackManagerBase::StreamFileLookup::StreamFileLookup(
@@ -21,6 +27,18 @@ TrackManagerBase::StreamFileLookup::StreamFileLookup(
     typedef ListContainerBase<LookupT, AdapterT> ContainerT;
     ContainerT container;
     nlWalkList(container.m_Head, &container, &ContainerT::DeleteEntry);
+}
+
+StreamTrack::StreamTrack(TrackManagerBase& mgr, Audio::MasterVolume::VOLUME_GROUP volumeGroup)
+    : m_TrackMgr(mgr)
+{
+    m_LPFFreq = 32000;
+    m_LPFOn = false;
+    m_InFakePause = false;
+    m_TrackOwnsStreams = true;
+    m_State = TS_Idle;
+    m_VolumeGroup = volumeGroup;
+    m_IdleCallback.mTag = EMPTY;
 }
 } // namespace AudioStreamTrack
 
@@ -183,6 +201,34 @@ typedef Function0<void>::FunctorImpl<BindExp2_T> FunctorImpl_T;
 // {
 // }
 
+/**
+ * Offset/Address/Size: 0x2038 | 0x80156D90 | size: 0x104
+ */
+void AudioStreamTrack::TrackManagerBase::FadeManager::AddFade(
+    GCAudioStreaming::StereoAudioStream* pStream, unsigned long startVol,
+    unsigned long endVol, Audio::MasterVolume::VOLUME_GROUP volGroup,
+    unsigned long fadeLength, const Function<FnVoidVoid>& callback)
+{
+    FORCE_DONT_INLINE;
+    typedef STREAM_FADE_CTRL FadeCtrl;
+
+    FadeCtrl* fadeCtrl = m_Fades.AllocateAtEnd(NULL);
+
+    if (fadeCtrl != NULL)
+    {
+        fadeCtrl->Callback.mTag = EMPTY;
+    }
+
+    fadeCtrl->pStream = pStream;
+    fadeCtrl->StartVol = startVol;
+    fadeCtrl->EndVol = endVol;
+    fadeCtrl->VolumeGroup = volGroup;
+    fadeCtrl->FadeLength = fadeLength;
+    fadeCtrl->Interp = 0.0f;
+
+    fadeCtrl->Callback = callback;
+}
+
 // /**
 //  * Offset/Address/Size: 0x0 | 0x801573F0 | size: 0x5C
 //  */
@@ -276,6 +322,87 @@ float GetVolume(VOLUME_GROUP);
 
 extern "C" void sndStreamMixParameterEx(unsigned long stid, unsigned char vol, unsigned char pan,
     unsigned char span, unsigned char auxa, unsigned char auxb);
+
+/**
+ * Offset/Address/Size: 0x1D60 | 0x80156AB8 | size: 0x2D8
+ */
+bool AudioStreamTrack::TrackManagerBase::FadeManager::ChangeFade(
+    GCAudioStreaming::StereoAudioStream* pStream, unsigned long endVol,
+    unsigned long fadeLength, const Function<FnVoidVoid>& callback)
+{
+    typedef STREAM_FADE_CTRL FadeCtrl;
+    typedef DLListEntry<FadeCtrl> FadeEntry;
+
+    FadeEntry* fadeIter = nlDLRingGetStart(m_Fades.m_Head);
+    FadeEntry* fadeHead = m_Fades.m_Head;
+    FadeCtrl* fadeCtrl;
+
+    while (fadeIter != NULL)
+    {
+        if (fadeIter->m_data.pStream == pStream)
+        {
+            fadeCtrl = &fadeIter->m_data;
+            goto fade_found;
+        }
+        if (nlDLRingIsEnd(fadeHead, fadeIter) || fadeIter == NULL)
+        {
+            fadeIter = NULL;
+        }
+        else
+        {
+            fadeIter = fadeIter->m_next;
+        }
+    }
+    fadeCtrl = NULL;
+fade_found:
+
+    if (fadeCtrl == NULL)
+    {
+        return false;
+    }
+
+    fadeCtrl->Callback = callback;
+
+    unsigned long startVol = fadeCtrl->StartVol;
+    unsigned long curEndVol = fadeCtrl->EndVol;
+    int diff = (int)curEndVol - (int)startVol;
+    int curVol = (int)(fadeCtrl->Interp * (float)diff + (float)startVol);
+
+    if (endVol == (unsigned long)(unsigned char)curVol)
+    {
+        Function<FnVoidVoid> Callback(fadeCtrl->Callback);
+
+        FadeEntry* entry = (FadeEntry*)((char*)fadeCtrl - 8);
+        nlDLRingIsEnd(m_Fades.m_Head, entry);
+        nlDLRingRemove(&m_Fades.m_Head, entry);
+
+        entry->~DLListEntry();
+
+        entry->m_next = (FadeEntry*)m_Fades.m_Allocator.m_FreeList;
+        m_Fades.m_Allocator.m_FreeList = (SlotPoolEntry*)entry;
+
+        if ((bool)Callback.mTag)
+        {
+            if (Callback.mTag == FREE_FUNCTION)
+            {
+                Callback.mFreeFunction();
+            }
+            else
+            {
+                (*Callback.mFunctor)();
+            }
+        }
+    }
+    else
+    {
+        fadeCtrl->StartVol = curVol;
+        fadeCtrl->Interp = 0.0f;
+        fadeCtrl->EndVol = endVol;
+        fadeCtrl->FadeLength = fadeLength;
+    }
+
+    return true;
+}
 
 /**
  * Offset/Address/Size: 0x1970 | 0x801566C8 | size: 0x3F0
@@ -968,6 +1095,38 @@ void AudioStreamTrack::StreamTrack::Stop(unsigned long Fadeout)
 }
 
 /**
+ * Offset/Address/Size: 0x9C4 | 0x801556A4 | size: 0xDC
+ */
+void AudioStreamTrack::StreamTrack::StartQStreamFadeout(
+    QUEUED_STREAM* pQS, unsigned long Fadeout, const Function<FnVoidVoid>& callback)
+{
+    FORCE_DONT_INLINE;
+    if (!m_TrackMgr.m_FadeMgr.ChangeFade(pQS->pStream, 0, Fadeout, callback))
+    {
+        GCAudioStreaming::StereoAudioStream* pStream = pQS->pStream;
+        unsigned char vol = (unsigned char)pStream->m_Volume;
+        if (vol != 0)
+        {
+            m_TrackMgr.m_FadeMgr.AddFade(pStream, vol, 0, (Audio::MasterVolume::VOLUME_GROUP)pQS->VolGroup, Fadeout, callback);
+        }
+        else
+        {
+            if ((bool)callback.mTag)
+            {
+                if (callback.mTag == FREE_FUNCTION)
+                {
+                    callback.mFreeFunction();
+                }
+                else
+                {
+                    (*callback.mFunctor)();
+                }
+            }
+        }
+    }
+}
+
+/**
  * Offset/Address/Size: 0x888 | 0x801555E0 | size: 0xC4
  */
 void AudioStreamTrack::StreamTrack::StopQStream(QUEUED_STREAM* pQueuedStream)
@@ -1356,7 +1515,7 @@ void AudioStreamTrack::StreamTrack::Resume()
 
 /**
  * Offset/Address/Size: 0x0 | 0x80154D58 | size: 0x1B8
- * TODO: 91.3% match - missing double QUEUED_STREAM stack copy, register allocation shift, null check pattern
+ * TODO: 97.8% match - stack temp offset and callee-saved register rotation remain
  */
 void AudioStreamTrack::StreamTrack::AttachStream(
     GCAudioStreaming::StereoAudioStream* pStream,
@@ -1376,8 +1535,23 @@ void AudioStreamTrack::StreamTrack::AttachStream(
         return;
     }
 
-    QUEUED_STREAM qs = { };
-    DLListEntry<QUEUED_STREAM>* entry = m_QueuedStreams.Allocate(qs);
+    const QUEUED_STREAM& qs = QUEUED_STREAM();
+    QUEUED_STREAM localData = qs;
+    DLListEntry<QUEUED_STREAM>* entry = m_QueuedStreams.m_Allocator.m_pFree;
+    if (entry == NULL)
+    {
+        entry = NULL;
+    }
+    else
+    {
+        m_QueuedStreams.m_Allocator.m_pFree = entry->m_next;
+    }
+    if (entry != NULL)
+    {
+        entry->m_next = NULL;
+        entry->m_prev = NULL;
+        entry->m_data = localData;
+    }
     nlDLRingAddEnd(&m_QueuedStreams.m_Head, entry);
 
     entry->m_data.StreamId = StreamId;

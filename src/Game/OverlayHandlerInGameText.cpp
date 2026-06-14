@@ -1,8 +1,12 @@
 #include "Game/OverlayHandlerInGameText.h"
 #include "Game/BaseSceneHandler.h"
+#include "Game/DB/StatsTracker.h"
 #include "Game/FE/FEPresentation.h"
 #include "Game/FE/tlSlide.h"
+#include "Game/Game.h"
+#include "Game/GameInfo.h"
 #include "Game/OverlayManager.h"
+#include "NL/nlLocalization.h"
 #include "NL/nlSingleton.h"
 #include "NL/nlTask.h"
 #include "Game/FE/feInput.h"
@@ -15,16 +19,6 @@
 
 extern FEInput* g_pFEInput;
 
-class GameInfoManager;
-class StatsTracker;
-
-extern "C" int GetTeam__15GameInfoManagerCFs(void*, short);
-extern "C" unsigned long GetLOCTeamName__F7eTeamID(int);
-extern "C" void Track__12StatsTrackerF12ePlayerStatsiiiiii(int, int, int, int, int, int, int);
-
-template <typename To, typename From>
-To LexicalCast(const From&);
-
 template <typename StringType, typename ValueType>
 StringType Format(const StringType&, const ValueType&);
 
@@ -34,31 +28,7 @@ StringType Format(const StringType&, const T1&, const T2&);
 template <typename T, typename Key>
 T* nlBSearch(const Key&, T*, int);
 
-struct LOCHeader
-{
-    char Thumbprint[4];
-    unsigned long Version;
-    unsigned long Language;
-    unsigned long StringCount;
-    unsigned long Flags;
-};
-
-class nlLocalization
-{
-public:
-    struct StringLookup
-    {
-        unsigned long hash;
-        unsigned long StringOffset;
-
-        operator unsigned long() const { return hash; }
-    };
-
-    LOCHeader* m_pFile;
-    StringLookup* m_LookupTable;
-    unsigned short* m_FirstString;
-    int m_CurrentLanguage;
-};
+unsigned long GetLOCTeamName(eTeamID);
 
 template <>
 nlLocalization::StringLookup* nlBSearch<nlLocalization::StringLookup, unsigned long>(
@@ -67,25 +37,6 @@ nlLocalization::StringLookup* nlBSearch<nlLocalization::StringLookup, unsigned l
 extern nlLocalization* g_pLocalization;
 extern const unsigned short LocalizationTableNotFound[];
 extern const unsigned short MissingLocString[];
-
-struct GameLocal
-{
-    char _padding[0x24];
-    int m_eGameState;
-};
-extern GameLocal* g_pGame;
-
-struct StatsTrackerAccessor
-{
-    char _padding[0x4B4];
-    int mNumGamesWon[2];
-};
-
-struct GameInfoModeAccessor
-{
-    char _padding[0x4954];
-    int mCurrentMode;
-};
 
 static char* TEAM_SLIDE_NAMES[8] = {
     "DAISY",
@@ -301,7 +252,7 @@ void InGameTextOverlay::DisplayFinalScore()
     nlStrToWcs(scoreRightString.c_str(), scoreRightWideString, 32);
 
     const unsigned short* formatLocString;
-    unsigned long key = 0x8C4180A4;
+    unsigned long scoreFormatKey = 0x8C4180A4;
     nlLocalization* loc = g_pLocalization;
 
     if (loc->m_LookupTable == 0)
@@ -310,7 +261,7 @@ void InGameTextOverlay::DisplayFinalScore()
     }
     else
     {
-        nlLocalization::StringLookup* entry = nlBSearch<nlLocalization::StringLookup, unsigned long>(key, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
+        nlLocalization::StringLookup* entry = nlBSearch<nlLocalization::StringLookup, unsigned long>(scoreFormatKey, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
         if (entry)
         {
             formatLocString = loc->m_FirstString + entry->StringOffset;
@@ -321,37 +272,7 @@ void InGameTextOverlay::DisplayFinalScore()
         }
     }
 
-    BasicStringData<unsigned short>* data = (BasicStringData<unsigned short>*)nlMalloc(0x10, 8, true);
-    if (data)
-    {
-        data->mData = 0;
-        data->mSize = 0;
-        data->mCapacity = 0;
-
-        const unsigned short* ptr = formatLocString;
-        while (*ptr++)
-        {
-            data->mSize++;
-        }
-
-        data->mSize++;
-        data->mData = (unsigned short*)nlMalloc((data->mSize + 1) * 2, 8, true);
-        data->mCapacity = data->mSize;
-
-        int i = 0;
-        int j = 0;
-        while (i < data->mSize)
-        {
-            *(unsigned short*)((char*)data->mData + j) = *formatLocString;
-            i++;
-            formatLocString++;
-            j += 2;
-        }
-
-        data->mRefCount = 1;
-    }
-
-    WideString unformatted(data);
+    WideString unformatted(formatLocString);
     WideString formatted(Format(unformatted, scoreLeftWideString, scoreRightWideString));
 
     FEPresentation* presentation = this->m_pFEScene->m_pFEPackage->GetPresentation();
@@ -399,11 +320,9 @@ void InGameTextOverlay::DisplayFinalScore()
 
         long winningSide = (scoreLeft > scoreRight) ? 0 : 1;
 
-        int winningTeam = GetTeam__15GameInfoManagerCFs(
-            nlSingleton<GameInfoManager>::s_pInstance,
-            (short)winningSide);
+        eTeamID winningTeam = nlSingleton<GameInfoManager>::s_pInstance->GetTeam((short)winningSide);
 
-        unsigned long teamNameStringID = GetLOCTeamName__F7eTeamID(winningTeam);
+        unsigned long teamNameStringID = GetLOCTeamName(winningTeam);
         const unsigned short* winnerLocString;
 
         loc = g_pLocalization;
@@ -425,78 +344,17 @@ void InGameTextOverlay::DisplayFinalScore()
             }
         }
 
-        BasicStringData<unsigned short>* winnerData = (BasicStringData<unsigned short>*)nlMalloc(0x10, 8, true);
-        if (winnerData)
-        {
-            winnerData->mData = 0;
-            winnerData->mSize = 0;
-            winnerData->mCapacity = 0;
-
-            const unsigned short* ptr = winnerLocString;
-            while (*ptr++)
-            {
-                winnerData->mSize++;
-            }
-
-            winnerData->mSize++;
-            winnerData->mData = (unsigned short*)nlMalloc((winnerData->mSize + 1) * 2, 8, true);
-            winnerData->mCapacity = winnerData->mSize;
-
-            int i = 0;
-            int j = 0;
-            while (i < winnerData->mSize)
-            {
-                *(unsigned short*)((char*)winnerData->mData + j) = *winnerLocString;
-                i++;
-                winnerLocString++;
-                j += 2;
-            }
-
-            winnerData->mRefCount = 1;
-        }
-
-        WideString winnerNameWideString(winnerData);
+        WideString winnerNameWideString(winnerLocString);
 
         if (winningTeam == 3)
         {
             static const unsigned short SPACE_WCS[2] = { 0x20, 0x0 };
 
-            BasicStringData<unsigned short>* spaceData = (BasicStringData<unsigned short>*)nlMalloc(0x10, 8, true);
-            if (spaceData)
-            {
-                spaceData->mData = 0;
-                spaceData->mSize = 0;
-                spaceData->mCapacity = 0;
-
-                const unsigned short* spaceLocString = SPACE_WCS;
-                const unsigned short* ptr = spaceLocString;
-                while (*ptr++)
-                {
-                    spaceData->mSize++;
-                }
-
-                spaceData->mSize++;
-                spaceData->mData = (unsigned short*)nlMalloc((spaceData->mSize + 1) * 2, 8, true);
-                spaceData->mCapacity = spaceData->mSize;
-
-                int i = 0;
-                int j = 0;
-                while (i < spaceData->mSize)
-                {
-                    *(unsigned short*)((char*)spaceData->mData + j) = *spaceLocString;
-                    i++;
-                    spaceLocString++;
-                    j += 2;
-                }
-
-                spaceData->mRefCount = 1;
-            }
-
-            WideString space(spaceData);
+            WideString space(SPACE_WCS);
             winnerNameWideString = space.Append(winnerNameWideString);
         }
 
-        key = 0x8610A152;
+        unsigned long winnerFormatKey = 0x8610A152;
         loc = g_pLocalization;
 
         if (loc->m_LookupTable == 0)
@@ -505,7 +363,7 @@ void InGameTextOverlay::DisplayFinalScore()
         }
         else
         {
-            nlLocalization::StringLookup* entry = nlBSearch<nlLocalization::StringLookup, unsigned long>(key, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
+            nlLocalization::StringLookup* entry = nlBSearch<nlLocalization::StringLookup, unsigned long>(winnerFormatKey, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
             if (entry)
             {
                 formatLocString = loc->m_FirstString + entry->StringOffset;
@@ -516,37 +374,7 @@ void InGameTextOverlay::DisplayFinalScore()
             }
         }
 
-        BasicStringData<unsigned short>* nameData = (BasicStringData<unsigned short>*)nlMalloc(0x10, 8, true);
-        if (nameData)
-        {
-            nameData->mData = 0;
-            nameData->mSize = 0;
-            nameData->mCapacity = 0;
-
-            const unsigned short* ptr = formatLocString;
-            while (*ptr++)
-            {
-                nameData->mSize++;
-            }
-
-            nameData->mSize++;
-            nameData->mData = (unsigned short*)nlMalloc((nameData->mSize + 1) * 2, 8, true);
-            nameData->mCapacity = nameData->mSize;
-
-            int i = 0;
-            int j = 0;
-            while (i < nameData->mSize)
-            {
-                *(unsigned short*)((char*)nameData->mData + j) = *formatLocString;
-                i++;
-                formatLocString++;
-                j += 2;
-            }
-
-            nameData->mRefCount = 1;
-        }
-
-        WideString unformattedName(nameData);
+        WideString unformattedName(formatLocString);
         WideString formattedName(Format(unformattedName, winnerNameWideString.c_str()));
 
         volatile InlineHasher hNameSlideB, hNameSlideA;
@@ -589,9 +417,7 @@ void InGameTextOverlay::DisplayFinalScore()
         memcpy(mWinnerBuffer, formattedName.c_str(), 0x40);
         winnerNameTextInstance->SetString(mWinnerBuffer);
 
-        int team = GetTeam__15GameInfoManagerCFs(
-            nlSingleton<GameInfoManager>::s_pInstance,
-            0);
+        eTeamID team = nlSingleton<GameInfoManager>::s_pInstance->GetTeam(0);
 
         volatile InlineHasher hFaceSlideB, hFaceSlideA;
         volatile InlineHasher hFaceLayerB, hFaceLayerA;
@@ -630,9 +456,7 @@ void InGameTextOverlay::DisplayFinalScore()
 
         pComponentInstance->SetActiveSlide(TEAM_SLIDE_NAMES[team]);
 
-        team = GetTeam__15GameInfoManagerCFs(
-            nlSingleton<GameInfoManager>::s_pInstance,
-            1);
+        team = nlSingleton<GameInfoManager>::s_pInstance->GetTeam(1);
 
         volatile InlineHasher hRFaceSlideB, hRFaceSlideA;
         volatile InlineHasher hRFaceLayerB, hRFaceLayerA;
@@ -669,20 +493,20 @@ void InGameTextOverlay::DisplayFinalScore()
 
         pComponentInstance->SetActiveSlide(TEAM_SLIDE_NAMES[team]);
 
-        if (((GameInfoModeAccessor*)nlSingleton<GameInfoManager>::s_pInstance)->mCurrentMode != 0)
+        if (nlSingleton<GameInfoManager>::s_pInstance->mCurrentMode != 0)
         {
-            if (g_pGame->m_eGameState == 5)
+            if (g_pGame->m_eGameState == GS_OVERTIME)
             {
-                Track__12StatsTrackerF12ePlayerStatsiiiiii(7, winningSide, 0, scoreLeft, scoreRight, 0, 0);
+                StatsTracker::Track(STATS_OT_WIN, winningSide, 0, scoreLeft, scoreRight, 0, 0);
             }
             else
             {
-                Track__12StatsTrackerF12ePlayerStatsiiiiii(6, winningSide, 0, scoreLeft, scoreRight, 0, 0);
+                StatsTracker::Track(STATS_WIN, winningSide, 0, scoreLeft, scoreRight, 0, 0);
             }
         }
         else
         {
-            ((StatsTrackerAccessor*)nlSingleton<StatsTracker>::s_pInstance)->mNumGamesWon[winningSide]++;
+            nlSingleton<StatsTracker>::s_pInstance->mNumGamesWon[winningSide]++;
         }
     }
 

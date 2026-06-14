@@ -699,9 +699,6 @@ bool ReplayChoreo::Done() const
  */
 void ReplayChoreo::SaveHighlight(ReplayChoreo::HighlightQuality quality)
 {
-#pragma cplusplus off
-    extern unsigned char LockReel__6ReplayFfii(void*, float, int, int);
-#pragma cplusplus reset
     extern u8 g_e3_Build;
 
     mReplayManager = ReplayManager::Instance();
@@ -771,7 +768,7 @@ void ReplayChoreo::SaveHighlight(ReplayChoreo::HighlightQuality quality)
 
     if (idx >= 0)
     {
-        if (LockReel__6ReplayFfii(mReplay, 0.0f, idx + 1, quality))
+        if (mReplay->LockReel(0.0f, idx + 1, quality))
         {
             char* highlight = (char*)this + idx * sizeof(Highlight);
 

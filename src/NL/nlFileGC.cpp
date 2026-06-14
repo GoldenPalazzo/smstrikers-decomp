@@ -18,7 +18,10 @@ static Function<void(int)> g_HandleDVDAllClearCallback;
 static Function<void(int)> g_HandleDVDRetryCB;
 static Function<FnVoidVoid> g_CheckForResetCB;
 
-static void AsyncToVirMemBufferCallback(nlFile*, void*, unsigned int, unsigned long);
+namespace
+{
+void AsyncToVirMemBufferCallback(nlFile*, void*, unsigned int, unsigned long);
+}
 static unsigned char UpdateReadState(AsyncEntry*);
 
 static AsyncEntry* nlDLRingRemoveStartAsyncEntry(AsyncEntry** head)
@@ -63,9 +66,6 @@ static u8 asyncToVirMemBuffer[0x4000];
 
 /**
  * Offset/Address/Size: 0x0 | 0x801CED54 | size: 0xEC
- * TODO: 98.6% in scratch - register swap r25/r26/r27 for counter1/counter2/chunkSize.
- * Scratch limitation: nlReadAsync gets inlined from context (defined later in TU).
- * In real build nlReadAsync should NOT inline, likely resolving register allocation.
  */
 void nlReadAsyncToVirtualMemory(nlFile* file, void* buffer, int size, ReadAsyncCallback callback, unsigned long param,
     unsigned long chunkSize, void* userData)
@@ -77,9 +77,12 @@ void nlReadAsyncToVirtualMemory(nlFile* file, void* buffer, int size, ReadAsyncC
         if (asyncToVirMemBufferLoad[i].numChunksLeft == 0)
         {
             unsigned int numChunks = (unsigned int)size / (unsigned int)chunkSize;
-            unsigned long counter2 = i;
-            unsigned long counter1 = i;
-            unsigned int sz = chunkSize;
+            unsigned long counter1;
+            unsigned int sz;
+            unsigned long counter2;
+            counter2 = i;
+            counter1 = i;
+            sz = chunkSize;
             asyncToVirMemBufferLoad[i].numChunksLeft = numChunks + 1;
             asyncToVirMemBufferLoad[i].param = param;
             asyncToVirMemBufferLoad[i].callback = callback;
@@ -110,7 +113,9 @@ void nlAsyncLoadFileToVirtualMemory(nlFile* file, int size, void* buffer, ReadAs
 /**
  * Offset/Address/Size: 0x124 | 0x801CEE78 | size: 0xAC
  */
-static void AsyncToVirMemBufferCallback(nlFile* pFile, void* buffer, unsigned int size, unsigned long param)
+namespace
+{
+void AsyncToVirMemBufferCallback(nlFile* pFile, void* buffer, unsigned int size, unsigned long param)
 {
     memcpy(asyncToVirMemBufferLoad[param].target, (char*)buffer - size, size);
     asyncToVirMemBufferLoad[param].target += size;
@@ -120,6 +125,7 @@ static void AsyncToVirMemBufferCallback(nlFile* pFile, void* buffer, unsigned in
         asyncToVirMemBufferLoad[param].callback(pFile, asyncToVirMemBufferLoad[param].target, asyncToVirMemBufferLoad[param].size, asyncToVirMemBufferLoad[param].param);
     }
 }
+} // namespace
 
 /**
  * Offset/Address/Size: 0x1D0 | 0x801CEF24 | size: 0xF4
@@ -1647,9 +1653,14 @@ u32 DolphinFile::GetDiscPosition()
 /**
  * Offset/Address/Size: 0x0 | 0x801D0E4C | size: 0x38
  */
-// nlDLRingRemoveStart<AsyncEntry>(AsyncEntry**)
-// {
-// }
+template <>
+AsyncEntry* nlDLRingRemoveStart<AsyncEntry>(AsyncEntry** current)
+{
+    AsyncEntry* temp_r31;
+    temp_r31 = (*current)->next;
+    nlDLRingRemove<AsyncEntry>(current, temp_r31);
+    return temp_r31;
+}
 
 /**
  * Offset/Address/Size: 0x38 | 0x801D0E84 | size: 0x18
@@ -1667,23 +1678,58 @@ AsyncEntry* nlDLRingGetStart<AsyncEntry>(AsyncEntry* current)
 /**
  * Offset/Address/Size: 0x50 | 0x801D0E9C | size: 0x44
  */
-// nlDLRingRemove<AsyncEntry>(AsyncEntry**, AsyncEntry*)
-// {
-// }
+template <>
+void nlDLRingRemove<AsyncEntry>(AsyncEntry** head, AsyncEntry* current)
+{
+    AsyncEntry* tmp_node = current->next;
+
+    if (tmp_node == current)
+    {
+        *head = NULL;
+        return;
+    }
+
+    current->prev->next = tmp_node;
+    current->next->prev = current->prev;
+
+    if (*head == current)
+    {
+        *head = current->prev;
+    }
+}
 
 /**
  * Offset/Address/Size: 0x94 | 0x801D0EE0 | size: 0x3C
  */
-// nlDLRingAddEnd<AsyncEntry>(AsyncEntry**, AsyncEntry*)
-// {
-// }
+template <>
+void nlDLRingAddEnd<AsyncEntry>(AsyncEntry** head, AsyncEntry* newNode)
+{
+    nlDLRingAddStart<AsyncEntry>(head, newNode);
+    *head = newNode;
+}
 
 /**
  * Offset/Address/Size: 0xD0 | 0x801D0F1C | size: 0x38
  */
-// nlDLRingAddStart<AsyncEntry>(AsyncEntry**, AsyncEntry*)
-// {
-// }
+template <>
+void nlDLRingAddStart<AsyncEntry>(AsyncEntry** head, AsyncEntry* newNode)
+{
+    AsyncEntry* temp;
+
+    temp = *head;
+    if (temp == NULL)
+    {
+        *head = newNode;
+        newNode->next = newNode;
+        newNode->prev = newNode;
+        return;
+    }
+
+    temp->next->prev = newNode;
+    newNode->next = temp->next;
+    newNode->prev = temp;
+    temp->next = newNode;
+}
 
 /**
  * Offset/Address/Size: 0x0 | 0x801D0F54 | size: 0x20

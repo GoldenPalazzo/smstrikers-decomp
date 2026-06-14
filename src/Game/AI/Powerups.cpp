@@ -140,7 +140,6 @@ extern void* __vt__8RedShell[];
 extern void* __vt__10SpinyShell[];
 extern void* __vt__9EventData[];
 extern void* __vt__20PowerupUsedEventData[];
-extern World* s_World__12WorldManager;
 
 // extern Audio::cWorldSFX gPowerupSFX;
 
@@ -992,7 +991,7 @@ PowerupBase* FindPowerUp(unsigned long hashOfDrawable)
 void PowerupModelPool::Initialize(int type, unsigned long objHashName)
 {
     int i = 0;
-    DrawableObject* obj = s_World__12WorldManager->FindDrawableObject(objHashName);
+    DrawableObject* obj = WorldManager::s_World->FindDrawableObject(objHashName);
 
     obj->m_uObjectFlags &= ~1;
     obj->m_uObjectFlags |= 0x80;
@@ -1006,7 +1005,7 @@ void PowerupModelPool::Initialize(int type, unsigned long objHashName)
         mObjs[type][i]->m_uHashID = nlStringLowerHash(name.c_str());
         mObjs[type][i]->m_uObjectFlags &= ~1;
 
-        s_World__12WorldManager->AddDrawableObject(mObjs[type][i]->m_uHashID, mObjs[type][i]);
+        WorldManager::s_World->AddDrawableObject(mObjs[type][i]->m_uHashID, mObjs[type][i]);
 
         mFree[type][i] = 1;
         mNum++;
@@ -2226,7 +2225,7 @@ void PowerupBase::Destroy(bool bSilent)
                 pControl->SetPosition(m_pPhysicsObject->GetPosition());
                 if ((m_v3Position.f.z - ((PhysicsSphere*)m_pPhysicsObject)->GetRadius()) < 1.0f)
                 {
-                    pControl = EmissionManager::Create(pGroundGroup, 0);
+                    EmissionController* pControl = EmissionManager::Create(pGroundGroup, 0);
                     pControl->SetPosition(m_pPhysicsObject->GetPosition());
                 }
                 FireCameraRumbleFilter(0.0f, 0.2f);

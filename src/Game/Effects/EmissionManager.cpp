@@ -744,12 +744,59 @@ void EmissionManager_stub()
     Replayable<0>(*(LoadFrame*)0, (const FloatCompressor<-255, 255, 6>&)fc);
 }
 
-// /**
-//  * Offset/Address/Size: 0x2C | 0x801FA600 | size: 0x254
-//  */
-//  void LoadFrame::Replayable<0, EmissionController>(EmissionController&, NotReplayablePod)
-//  {
-//  }
+/**
+ * Offset/Address/Size: 0x2C | 0x801FA600 | size: 0x254
+ */
+template <>
+void LoadFrame::Replayable<0, EmissionController>(EmissionController& current, NotReplayablePod)
+{
+    FORCE_DONT_INLINE;
+    ::Replayable<0>(*this, (unsigned int&)current.m_pPose);
+    ::Replayable<0>(*this, (unsigned int&)current.m_pAnimController);
+    memcpy(&current.m_uUserData, mStream.mStorage, sizeof(unsigned long));
+    mStream.mStorage += sizeof(unsigned long);
+    ::Replayable<0>(*this, current.m_fGround);
+    memcpy(&current.m_aFacing, mStream.mStorage, sizeof(unsigned short));
+    mStream.mStorage += sizeof(unsigned short);
+    ::Replayable<0>(*this, (char&)current.m_GlView);
+    ::Replayable<0>(*this, FloatCompressor<-255, 255, 6>(current.m_vPosition.f.x));
+    ::Replayable<0>(*this, FloatCompressor<-255, 255, 6>(current.m_vPosition.f.y));
+    ::Replayable<0>(*this, FloatCompressor<-255, 255, 6>(current.m_vPosition.f.z));
+    ::Replayable<0>(*this, FloatCompressor<-255, 255, 6>(current.m_vDirection.f.x));
+    ::Replayable<0>(*this, FloatCompressor<-255, 255, 6>(current.m_vDirection.f.y));
+    ::Replayable<0>(*this, FloatCompressor<-255, 255, 6>(current.m_vDirection.f.z));
+    ::Replayable<0>(*this, FloatCompressor<-255, 255, 6>(current.m_vVelocity.f.x));
+    ::Replayable<0>(*this, FloatCompressor<-255, 255, 6>(current.m_vVelocity.f.y));
+    ::Replayable<0>(*this, FloatCompressor<-255, 255, 6>(current.m_vVelocity.f.z));
+    current.m_Replaying = true;
+    float age = 0.0f;
+    ::Replayable<0>(*this, age);
+    age += mNonBlendableAheadOfFrame;
+    current.m_ReplayDeltaTime = age - current.m_Age;
+    current.m_Age = age;
+    unsigned int updateCb;
+    ::Replayable<0>(*this, updateCb);
+    if (updateCb != 0)
+    {
+        if (current.mUpdateCallback.mTag == FUNCTOR && current.mUpdateCallback.mFunctor != 0)
+        {
+            delete current.mUpdateCallback.mFunctor;
+        }
+        current.mUpdateCallback.mTag = FREE_FUNCTION;
+        current.mUpdateCallback.mFreeFunction = (void (*)(EmissionController&))updateCb;
+    }
+    unsigned int finishedCb;
+    ::Replayable<0>(*this, finishedCb);
+    if (finishedCb != 0)
+    {
+        if (current.mFinishedCallback.mTag == FUNCTOR && current.mFinishedCallback.mFunctor != 0)
+        {
+            delete current.mFinishedCallback.mFunctor;
+        }
+        current.mFinishedCallback.mTag = FREE_FUNCTION;
+        current.mFinishedCallback.mFreeFunction = (void (*)(EmissionController&))finishedCb;
+    }
+}
 
 /**
  * Offset/Address/Size: 0x0 | 0x801FA5D4 | size: 0x2C
@@ -795,12 +842,42 @@ void Replayable<0, LoadFrame, char>(LoadFrame& frame, char& value)
 }
 #pragma dont_inline reset
 
-//  /**
-//   * Offset/Address/Size: 0x128 | 0x801FA2BC | size: 0x1B8
-//   */
-//  void Replayable<0, SaveFrame, EmissionController>(SaveFrame&, EmissionController&)
-//  {
-//  }
+/**
+ * Offset/Address/Size: 0x128 | 0x801FA2BC | size: 0x1B8
+ */
+template <>
+void Replayable<0, SaveFrame, EmissionController>(SaveFrame& frame, EmissionController& controller)
+{
+    FORCE_DONT_INLINE;
+    Replayable<0>(frame, (unsigned int&)controller.m_pPose);
+    Replayable<0>(frame, (unsigned int&)controller.m_pAnimController);
+    memcpy(frame.mStream.mStorage, &controller.m_uUserData, sizeof(unsigned long));
+    frame.mStream.mStorage += sizeof(unsigned long);
+    Replayable<0>(frame, controller.m_fGround);
+    memcpy(frame.mStream.mStorage, &controller.m_aFacing, sizeof(unsigned short));
+    frame.mStream.mStorage += sizeof(unsigned short);
+    Replayable<0>(frame, (char&)controller.m_GlView);
+    Replayable<0>(frame, FloatCompressor<-255, 255, 6>(controller.m_vPosition.f.x));
+    Replayable<0>(frame, FloatCompressor<-255, 255, 6>(controller.m_vPosition.f.y));
+    Replayable<0>(frame, FloatCompressor<-255, 255, 6>(controller.m_vPosition.f.z));
+    Replayable<0>(frame, FloatCompressor<-255, 255, 6>(controller.m_vDirection.f.x));
+    Replayable<0>(frame, FloatCompressor<-255, 255, 6>(controller.m_vDirection.f.y));
+    Replayable<0>(frame, FloatCompressor<-255, 255, 6>(controller.m_vDirection.f.z));
+    Replayable<0>(frame, FloatCompressor<-255, 255, 6>(controller.m_vVelocity.f.x));
+    Replayable<0>(frame, FloatCompressor<-255, 255, 6>(controller.m_vVelocity.f.y));
+    Replayable<0>(frame, FloatCompressor<-255, 255, 6>(controller.m_vVelocity.f.z));
+    controller.m_Replaying = false;
+    controller.m_ReplayDeltaTime = 0.0f;
+    Replayable<0>(frame, controller.m_Age);
+    unsigned int updateCb = (controller.mUpdateCallback.mTag == FREE_FUNCTION)
+                              ? (unsigned int)controller.mUpdateCallback.mFreeFunction
+                              : 0;
+    Replayable<0>(frame, updateCb);
+    unsigned int finishedCb = (controller.mFinishedCallback.mTag == FREE_FUNCTION)
+                                ? (unsigned int)controller.mFinishedCallback.mFreeFunction
+                                : 0;
+    Replayable<0>(frame, finishedCb);
+}
 
 /**
  * Offset/Address/Size: 0xE8 | 0x801FA27C | size: 0x40

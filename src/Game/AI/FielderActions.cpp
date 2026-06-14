@@ -116,9 +116,7 @@ static bool sbDoShatteredGlassTransition;
 extern cCharacter* g_pCurrentlyUpdatingCharacter;
 extern float g_fFixedUpdateTick;
 extern unsigned char sSTSLighting__17DrawableCharacter;
-extern unsigned char sbIsHyperShootToScoreRenderingEnabled__5World;
 extern unsigned char sbShowPositiveXNetDuringHyperStrike__5World;
-extern void Flash__10PhotoFlashFv();
 class PhotoFlash
 {
 public:
@@ -149,12 +147,45 @@ int PassingAnims[4] = {
     0x34,
 };
 
-// /**
-//  * Offset/Address/Size: 0x13C | 0x80030010 | size: 0xD74
-//  */
-// void FormatImpl<BasicString<char, Detail::TempStringAllocator> >::operator% <const char*>(const char* const&)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x13C | 0x80030010 | size: 0xD74
+ */
+template <>
+template <>
+FormatImpl<BasicString<char, Detail::TempStringAllocator> >&
+    FormatImpl<BasicString<char, Detail::TempStringAllocator> >::operator% <const char*>(const char* const& t)
+{
+    BasicString<char, Detail::TempStringAllocator> insert = LexicalCast<BasicString<char, Detail::TempStringAllocator>, const char*>(t);
+    for (int i = 0; i < (mString.m_data ? mString.m_data->mSize - 1 : 0); i++)
+    {
+        if (mString[i] != '{')
+            continue;
+        if (i + 1 >= (mString.m_data ? mString.m_data->mSize - 1 : 0))
+            continue;
+        if (mString[i + 1] - '0' != mCurrentPos)
+            continue;
+        if (i + 2 >= (mString.m_data ? mString.m_data->mSize - 1 : 0))
+            continue;
+        if (mString[i + 2] != '}')
+            continue;
+        mString[0];
+        BasicStringData<char>* data = mString.m_data;
+        char* eraseStart = &mString[i];
+        char* eraseEnd = &mString[i + 3];
+        int eraseLen = eraseEnd - eraseStart;
+        char* at = data->mData + (eraseStart - data->mData);
+        while (eraseEnd != data->mData + data->mSize)
+        {
+            *at = *eraseEnd;
+            eraseEnd++;
+            at++;
+        }
+        data->mSize -= eraseLen;
+        mString.insert(&mString[i], &insert[0], &insert[(int)insert.size()]);
+    }
+    mCurrentPos++;
+    return *this;
+}
 
 // /**
 //  * Offset/Address/Size: 0x114 | 0x8002FFE8 | size: 0x28
@@ -3659,12 +3690,12 @@ void cFielder::ActionShootToScore(float)
                     const nlVector3& cameraPos = pCurrentCam->GetCameraPosition();
                     nlVector3* pBallPos = &g_pBall->m_v3Position;
 
-                    Flash__10PhotoFlashFv();
+                    PhotoFlash::Flash();
 
                     if (sbMatrixCamTurnOffModelRendering)
                     {
                         bool bShowPositiveXNet = pBallPos->f.x > 0.0f;
-                        sbIsHyperShootToScoreRenderingEnabled__5World = 1;
+                        World::sbIsHyperShootToScoreRenderingEnabled = 1;
                         sbShowPositiveXNetDuringHyperStrike__5World = bShowPositiveXNet;
                     }
 

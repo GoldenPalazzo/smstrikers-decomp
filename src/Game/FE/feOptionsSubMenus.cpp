@@ -401,6 +401,15 @@ Detail::MemFunImpl<R, void (T::*)()> MemFun(void (T::*)());
 
 extern char __vt__13SlideMenuItem[];
 
+typedef Detail::MemFunImpl<void, void (SlideMenuList::*)()> MemFunImpl_SML_t;
+typedef BindExp1<void, MemFunImpl_SML_t, SlideMenuList*> BindExp1_SML_t;
+
+template <>
+inline void Function1<void, SlideMenuItem*>::FunctorImpl<BindExp1_SML_t>::operator()(SlideMenuItem*)
+{
+    (mBind.mArg->*mBind.mFuncPtr.mMemFun)();
+}
+
 /**
  * Offset/Address/Size: 0xAA8 | 0x800B5AEC | size: 0x438
  * TODO: 96.11% match - callback temporary stack layout and callback field

@@ -16,6 +16,11 @@
 #include "Game/GameInfo.h"
 #include "Game/Render/Bowser.h"
 #include "Game/Render/ChainChomp.h"
+#include "Game/Render/ShootToScoreArrow.h"
+#include "Game/Drawable/DrawableCharacter.h"
+#include "Game/Camera/CameraMan.h"
+#include "Game/ParticleUpdateTask.h"
+#include "Game/FE/feHelpFuncs.h"
 #include "Game/DB/StatsTracker.h"
 #include "Game/RumbleActions.h"
 #include "Game/SAnim/pnBlender.h"
@@ -3996,48 +4001,40 @@ extern "C" void RumbleMeter__17ShootToScoreMeterFfff(ShootToScoreMeterScratch*, 
 void cFielder::CleanActionShootToScore()
 {
     FORCE_DONT_INLINE;
-    extern void SetTimeScale__18ParticleUpdateTaskFf(float);
-    extern void* Instance__14WorldDarkeningFv();
-    extern void Fade__14WorldDarkeningFff(void*, float, float);
-    extern void RenderAllCharacters__17DrawableCharacterFv();
-    extern char* GetTeamName__F7eTeamID(eTeamID);
-    extern void Remove__14cCameraManagerFRC11cBaseCamera(void*);
-    extern void AppendInPlace__45BasicString_c_Q26Detail19TempStringAllocator_FPCc(BasicString<char, Detail::TempStringAllocator>*, const char*);
-
     extern unsigned char sSTSLighting__17DrawableCharacter;
     extern unsigned char sbIsHyperShootToScoreRenderingEnabled__5World;
 
     Audio::FadeFilterFromCurrentToZero();
     FixedUpdateTask::mTimeScale = 1.0f;
-    SetTimeScale__18ParticleUpdateTaskFf(1.0f);
+    ParticleUpdateTask::SetTimeScale(1.0f);
     g_pEventManager->CreateValidEvent(0x41, 0x14);
 
     this->mActionShootToScoreVars.isCurrentlyInvincible = false;
     this->mActionShootToScoreVars.isInUnbreakablePart = false;
 
-    Fade__14WorldDarkeningFff(Instance__14WorldDarkeningFv(), 1.0f, 0.0f);
+    WorldDarkening::Instance().Fade(1.0f, 0.0f);
     instance__17ShootToScoreMeter.m_bMeterVisible = 0;
-    RenderAllCharacters__17DrawableCharacterFv();
+    DrawableCharacter::RenderAllCharacters();
     sSTSLighting__17DrawableCharacter = 0;
     g_pGame->mbCaptainShotToScoreOn = false;
 
     g_pBall->m_pDrawableBall->m_uObjectFlags &= ~0x40;
 
     BasicString<char, Detail::TempStringAllocator> effectName(
-        GetTeamName__F7eTeamID(nlSingleton<GameInfoManager>::s_pInstance->GetTeam((s16)this->m_pTeam->m_nSide)));
-    AppendInPlace__45BasicString_c_Q26Detail19TempStringAllocator_FPCc(&effectName, "shoot_to_score_shot");
+        GetTeamName(nlSingleton<GameInfoManager>::s_pInstance->GetTeam((s16)this->m_pTeam->m_nSide)));
+    effectName.AppendInPlace("shoot_to_score_shot");
     EffectsGroup* pGroup = fxGetGroup(effectName.c_str());
     this->KillEffect(pGroup);
     this->KillEffect(fxGetGroup("shoot_to_score_hyper"));
 
     if (this->mActionShootToScoreVars.captainStsCamera != NULL)
     {
-        Remove__14cCameraManagerFRC11cBaseCamera(this->mActionShootToScoreVars.captainStsCamera);
+        cCameraManager::Remove(*this->mActionShootToScoreVars.captainStsCamera);
         delete this->mActionShootToScoreVars.captainStsCamera;
         this->mActionShootToScoreVars.captainStsCamera = NULL;
     }
 
-    SetTimeScale__18ParticleUpdateTaskFf(1.0f);
+    ParticleUpdateTask::SetTimeScale(1.0f);
     sbIsHyperShootToScoreRenderingEnabled__5World = 0;
 }
 
@@ -5593,8 +5590,6 @@ void cFielder::PostPhysicsUpdate()
 
 /**
  * Offset/Address/Size: 0x234C | 0x8001B688 | size: 0x4A0
- * TODO: 95.95% match - bool materialization (missing b/li r0,0 false branch)
- *       and switch binary search vs sequential comparison for bIsActive
  */
 void cFielder::Update(float fDeltaT)
 {
@@ -5734,11 +5729,7 @@ void cFielder::Update(float fDeltaT)
         Audio::cCharacterSFX* pSFX = m_pCharacterSFX;
         bool bIsActive = false;
 
-        if (eAction == ACTION_RUNNING_WB)
-        {
-            bIsActive = true;
-        }
-        else if (eAction == ACTION_RUNNING_WB_TURBO || eAction == ACTION_RUNNING_WB_TURBO_TURN)
+        if (((int)eAction == ACTION_RUNNING_WB) || ((int)eAction == ACTION_RUNNING_WB_TURBO) || ((int)eAction == ACTION_RUNNING_WB_TURBO_TURN))
         {
             bIsActive = true;
         }

@@ -30,7 +30,7 @@ void ShotMeter::Update(float fDeltaT, bool bHoldTime)
     {
         if (m_fTime >= g_pGame->m_pGameTweaks->unk2D0)
         {
-            float fNetDirection = 0.0f;
+            float fNetDirection = -1.0f;
             cPlayer* pPrevOwner = g_pBall->m_pOwner;
             if (pPrevOwner != NULL)
             {
@@ -215,7 +215,7 @@ static inline void CalcShotAim(cFielder* pFielder, ShotMeter* pMeter)
     float fAimValue = 0.0f;
     if (pPad != NULL)
     {
-        if (pPad->GetMovementStickMagnitude() > 0.1f)
+        if (pPad->GetMovementStickMagnitude() > 0.0001f)
         {
             s16 dir = pPad->GetMovementStickDirection();
             if ((s16)(dir + 0x8000) >= 0)
@@ -233,29 +233,34 @@ static inline void CalcShotAim(cFielder* pFielder, ShotMeter* pMeter)
 
 static inline void CalcScoreValue(cFielder* pFielder, ShotMeter* pMeter)
 {
-    float fLikelyToScore = LikelyToScore(pFielder);
-    float fDistance = PlayerShotDistance(pFielder);
+    float fPlayerDistance;
+    float fNetOpeness;
+    float fChargedValue;
+    float fRatingsValue;
 
-    float fSpeedValue = pMeter->m_fSpeedValue;
+    fRatingsValue = LikelyToScore(pFielder);
+    fPlayerDistance = PlayerShotDistance(pFielder);
+    fChargedValue = pMeter->m_fSpeedValue;
+
     float fShooting = ((FielderTweaks*)pFielder->m_pTweaks)->fShooting;
     GameTweaks* pGameTweaks = g_pGame->m_pGameTweaks;
-    float fRatingsWeight = pGameTweaks->unk2D8;
+    float fPositionWeighting = pGameTweaks->unk2D8;
     bool bIsChipShot = pFielder->mActionShotVars.bIsChipShot || pFielder->mActionLooseBallShotVars.bIsChipShot;
 
     if (!bIsChipShot)
     {
-        float fDistWeight = pGameTweaks->unk2E0;
-        fShooting *= fRatingsWeight;
-        float fOpenWeight = pGameTweaks->unk2DC;
-        float fOpenVal = fLikelyToScore * fOpenWeight;
-        float fDistVal = fDistance * fDistWeight;
-        float fSumD = fDistWeight + fOpenWeight;
-        float fSumWeights = fRatingsWeight + fSumD;
-        float fResult = fOpenVal + fDistVal;
-        float fRemainder = 1.0f - fSumWeights;
-        fSpeedValue *= fRemainder;
-        fResult = fSpeedValue + fResult;
-        pMeter->m_fScoreValue = fShooting + fResult;
+        float fPlayerWeighting = pGameTweaks->unk2E0;
+        fShooting *= fPositionWeighting;
+        float fNetWeighting = pGameTweaks->unk2DC;
+        fNetOpeness = fRatingsValue * fNetWeighting;
+        fPlayerDistance *= fPlayerWeighting;
+        float fSumWeighting = fPlayerWeighting + fNetWeighting;
+        float fTotalWeighting = fPositionWeighting + fSumWeighting;
+        float fScore = fNetOpeness + fPlayerDistance;
+        float fRemainder = 1.0f - fTotalWeighting;
+        fChargedValue *= fRemainder;
+        fScore = fChargedValue + fScore;
+        pMeter->m_fScoreValue = fShooting + fScore;
     }
     else
     {
@@ -264,23 +269,24 @@ static inline void CalcScoreValue(cFielder* pFielder, ShotMeter* pMeter)
         pGameTweaks = g_pGame->m_pGameTweaks;
         float fGoalieVal = fGoalieOut;
         fGoalieVal *= fChipWeight;
-        fShooting *= fRatingsWeight;
+        fShooting *= fPositionWeighting;
         float fChipOpenWeight = pGameTweaks->unk2E8;
-        float fOpenVal = fLikelyToScore * fChipOpenWeight;
+        float fOpenVal = fRatingsValue * fChipOpenWeight;
         float fSum = fChipWeight + fChipOpenWeight;
-        float fSumWeights = fRatingsWeight + fSum;
+        float fSumWeights = fPositionWeighting + fSum;
         float fResult = fGoalieVal + fOpenVal;
         float fRemainder = 1.0f - fSumWeights;
-        fSpeedValue *= fRemainder;
-        fResult = fSpeedValue + fResult;
+        fChargedValue *= fRemainder;
+        fResult = fChargedValue + fResult;
         pMeter->m_fScoreValue = fShooting + fResult;
     }
 }
 
 /**
  * Offset/Address/Size: 0x0 | 0x80062120 | size: 0x1FC
- * TODO: 99.29% match - remaining register allocation diffs in CalcScoreValue
- * weighted arithmetic (non-chip f4/f5 vs f1/f3; chip f5/f1 swap chain).
+ * TODO: 99.37% match - the net-openness term (fRatingsValue * net weight) lands
+ * in f1 where the target uses f5; this cascades through the score accumulation
+ * (f0/f1 instead of f1/f0) in both the chip and non-chip shot branches.
  */
 void ShotMeter::ShotReleased(cFielder* pFielder)
 {
@@ -294,7 +300,7 @@ void ShotMeter::ShotReleased(cFielder* pFielder)
     }
     else
     {
-        m_fSpeedValue = Interpolate(0.0f, 1.0f, m_fTime / pGameTweaks->unk2D0);
+        m_fSpeedValue = Interpolate(0.25f, 1.0f, m_fTime / pGameTweaks->unk2D0);
     }
 
     CalcScoreValue(pFielder, this);

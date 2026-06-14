@@ -5,6 +5,7 @@
 #include "Game/GameAudio.h"
 #include "Game/Audio/WorldAudio.h"
 #include "Game/Audio/AudioLoader.h"
+#include "Game/Sys/GCStream.h"
 #include "Game/TransitionTask.h"
 #include "Game/BasicStadium.h"
 
@@ -1854,7 +1855,7 @@ void Update3DSFXEmitters()
 
 /**
  * Offset/Address/Size: 0x159C | 0x8013DAB0 | size: 0xA34
- * TODO: 94.61% match - remaining register allocation differences in emitter updates and team-loop blocks.
+ * TODO: 98.07% match - remaining velocity-copy word order and team-loop register allocation differences.
  */
 void UpdateFades(float fDeltaT)
 {
@@ -1931,26 +1932,39 @@ void UpdateFades(float fDeltaT)
 
                 if (*(u8*)((char*)pFadeData + 0x1D) != 0)
                 {
-                    SFXEmitter* pEmitter = (SFXEmitter*)*(u32*)((char*)pFadeData + 0x4);
-                    if (pEmitter->posUpdateMethod == PHYSOBJ)
+                    if (((SFXEmitter*)*(u32*)((char*)pFadeData + 0x4))->posUpdateMethod == PHYSOBJ)
                     {
                         nlVector3 vel = { 0.0f, 0.0f, 0.0f };
-                        if (pEmitter->pPhysObj->m_bodyID)
+                        if (((SFXEmitter*)*(u32*)((char*)pFadeData + 0x4))->pPhysObj->m_bodyID)
                         {
-                            nlVector3& linVel = pEmitter->pPhysObj->GetLinearVelocity();
-                            vel.as_u32[0] = linVel.as_u32[0];
-                            vel.as_u32[1] = linVel.as_u32[1];
+                            nlVector3& linVel = ((SFXEmitter*)*(u32*)((char*)pFadeData + 0x4))->pPhysObj->GetLinearVelocity();
+                            u32 velX = linVel.as_u32[0];
+                            u32 velY = linVel.as_u32[1];
+                            vel.as_u32[0] = velX;
+                            vel.as_u32[1] = velY;
                             vel.as_u32[2] = linVel.as_u32[2];
                         }
-                        PlatAudio::Update3DSFXEmitter(pEmitter, pEmitter->pPhysObj->GetPosition(), vel, newVol);
+                        PlatAudio::Update3DSFXEmitter(
+                            (SFXEmitter*)*(u32*)((char*)pFadeData + 0x4),
+                            ((SFXEmitter*)*(u32*)((char*)pFadeData + 0x4))->pPhysObj->GetPosition(),
+                            vel,
+                            newVol);
                     }
-                    else if (pEmitter->posUpdateMethod == PTRS_TO_VECTORS)
+                    else if (((SFXEmitter*)*(u32*)((char*)pFadeData + 0x4))->posUpdateMethod == PTRS_TO_VECTORS)
                     {
-                        PlatAudio::Update3DSFXEmitter(pEmitter, *pEmitter->pos.pvPos, *pEmitter->dir.pvDir, newVol);
+                        PlatAudio::Update3DSFXEmitter(
+                            (SFXEmitter*)*(u32*)((char*)pFadeData + 0x4),
+                            *((SFXEmitter*)*(u32*)((char*)pFadeData + 0x4))->pos.pvPos,
+                            *((SFXEmitter*)*(u32*)((char*)pFadeData + 0x4))->dir.pvDir,
+                            newVol);
                     }
-                    else if (pEmitter->posUpdateMethod == VECTORS)
+                    else if (((SFXEmitter*)*(u32*)((char*)pFadeData + 0x4))->posUpdateMethod == VECTORS)
                     {
-                        PlatAudio::Update3DSFXEmitter(pEmitter, pEmitter->pos.vPos, pEmitter->dir.vDir, newVol);
+                        PlatAudio::Update3DSFXEmitter(
+                            (SFXEmitter*)*(u32*)((char*)pFadeData + 0x4),
+                            ((SFXEmitter*)*(u32*)((char*)pFadeData + 0x4))->pos.vPos,
+                            ((SFXEmitter*)*(u32*)((char*)pFadeData + 0x4))->dir.vDir,
+                            newVol);
                     }
                 }
                 else
@@ -1965,28 +1979,39 @@ void UpdateFades(float fDeltaT)
             {
                 if (*(u8*)((char*)pFadeData + 0x1D) != 0)
                 {
-                    SFXEmitter* pEmitter = (SFXEmitter*)*(u32*)((char*)pFadeData + 0x4);
-                    if (pEmitter->posUpdateMethod == PHYSOBJ)
+                    if (((SFXEmitter*)*(u32*)((char*)pFadeData + 0x4))->posUpdateMethod == PHYSOBJ)
                     {
                         nlVector3 vel = { 0.0f, 0.0f, 0.0f };
-                        if (pEmitter->pPhysObj->m_bodyID)
+                        if (((SFXEmitter*)*(u32*)((char*)pFadeData + 0x4))->pPhysObj->m_bodyID)
                         {
-                            nlVector3& linVel = pEmitter->pPhysObj->GetLinearVelocity();
-                            vel.as_u32[0] = linVel.as_u32[0];
-                            vel.as_u32[1] = linVel.as_u32[1];
+                            nlVector3& linVel = ((SFXEmitter*)*(u32*)((char*)pFadeData + 0x4))->pPhysObj->GetLinearVelocity();
+                            u32 velX = linVel.as_u32[0];
+                            u32 velY = linVel.as_u32[1];
+                            vel.as_u32[0] = velX;
+                            vel.as_u32[1] = velY;
                             vel.as_u32[2] = linVel.as_u32[2];
                         }
-                        PlatAudio::Update3DSFXEmitter(pEmitter, pEmitter->pPhysObj->GetPosition(), vel, *(float*)((char*)pFadeData + 0x14));
+                        PlatAudio::Update3DSFXEmitter(
+                            (SFXEmitter*)*(u32*)((char*)pFadeData + 0x4),
+                            ((SFXEmitter*)*(u32*)((char*)pFadeData + 0x4))->pPhysObj->GetPosition(),
+                            vel,
+                            *(float*)((char*)pFadeData + 0x14));
                     }
-                    else if (pEmitter->posUpdateMethod == PTRS_TO_VECTORS)
+                    else if (((SFXEmitter*)*(u32*)((char*)pFadeData + 0x4))->posUpdateMethod == PTRS_TO_VECTORS)
                     {
                         PlatAudio::Update3DSFXEmitter(
-                            pEmitter, *pEmitter->pos.pvPos, *pEmitter->dir.pvDir, *(float*)((char*)pFadeData + 0x14));
+                            (SFXEmitter*)*(u32*)((char*)pFadeData + 0x4),
+                            *((SFXEmitter*)*(u32*)((char*)pFadeData + 0x4))->pos.pvPos,
+                            *((SFXEmitter*)*(u32*)((char*)pFadeData + 0x4))->dir.pvDir,
+                            *(float*)((char*)pFadeData + 0x14));
                     }
-                    else if (pEmitter->posUpdateMethod == VECTORS)
+                    else if (((SFXEmitter*)*(u32*)((char*)pFadeData + 0x4))->posUpdateMethod == VECTORS)
                     {
                         PlatAudio::Update3DSFXEmitter(
-                            pEmitter, pEmitter->pos.vPos, pEmitter->dir.vDir, *(float*)((char*)pFadeData + 0x14));
+                            (SFXEmitter*)*(u32*)((char*)pFadeData + 0x4),
+                            ((SFXEmitter*)*(u32*)((char*)pFadeData + 0x4))->pos.vPos,
+                            ((SFXEmitter*)*(u32*)((char*)pFadeData + 0x4))->dir.vDir,
+                            *(float*)((char*)pFadeData + 0x14));
                     }
                 }
                 else
@@ -2000,9 +2025,13 @@ void UpdateFades(float fDeltaT)
                     {
                         PlatAudio::RemoveEmitter((SFXEmitter*)*(u32*)((char*)pFadeData + 0x4));
                     }
-                    else if (g_bAudioInitialized)
+                    else
                     {
-                        PlatAudio::StopSFX(*(u32*)((char*)pFadeData + 0x4));
+                        u32 sfxID = *(u32*)((char*)pFadeData + 0x4);
+                        if (g_bAudioInitialized)
+                        {
+                            PlatAudio::StopSFX(sfxID);
+                        }
                     }
                 }
 
@@ -2058,14 +2087,8 @@ void UpdateFades(float fDeltaT)
 
                 float deltaVal = fDeltaT * *(float*)((char*)pFadeData + 0x8);
                 float newVal = *(float*)((char*)pFadeData + 0x18) + deltaVal;
-                if (newVal < 0.0f)
-                {
-                    newVal = 0.0f;
-                }
-                if (newVal > 1.0f)
-                {
-                    newVal = 1.0f;
-                }
+                newVal = (newVal >= 0.0f) ? newVal : 0.0f;
+                newVal = (newVal <= 1.0f) ? newVal : 1.0f;
 
                 float newFreq = 16383.0f * newVal;
                 if (newFreq < 0.0f)
@@ -2197,16 +2220,10 @@ void UpdateFades(float fDeltaT)
 
                 float deltaVal = fDeltaT * *(float*)((char*)pFadeData + 0x8);
                 float newVal = *(float*)((char*)pFadeData + 0x18) + deltaVal;
-                if (newVal < 0.0f)
-                {
-                    newVal = 0.0f;
-                }
-                if (newVal > 1.0f)
-                {
-                    newVal = 1.0f;
-                }
+                newVal = (newVal >= 0.0f) ? newVal : 0.0f;
+                newVal = (newVal <= 1.0f) ? newVal : 1.0f;
 
-                float newPitch = 8192.0f * newVal;
+                float newPitch = 8192.0f - (8192.0f - (8192.0f * newVal));
                 if (newPitch < 0.0f)
                 {
                     newPitch += -0.5f;
@@ -3720,12 +3737,20 @@ eClassType cGameSFX::GetClassType() const
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x80141518 | size: 0x1AC
-//  */
-// void CreateTrackMgr<3>()
-// {
-// }
+inline AudioStreamTrack::TrackManagerBase::TrackManagerBase()
+    : m_FileLookup("audio/data/streams/StreamNames.txt", Audio::TrackMgrFileNameParamLookup)
+    , m_StreamPool(16, 16)
+{
+}
+
+/**
+ * Offset/Address/Size: 0x0 | 0x80141518 | size: 0x1AC
+ */
+template <int N>
+void CreateTrackMgr()
+{
+    g_pTrackManager = new (8, false) AudioStreamTrack::TrackManager<N>();
+}
 
 AudioStreamTrack::TrackManagerBase::~TrackManagerBase()
 {
@@ -3871,12 +3896,50 @@ void AudioStreamTrack::TrackManager<3>::StopAllTracks(unsigned long FadeOut)
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0x970 | 0x80142034 | size: 0x1AC
-//  */
-// void AudioStreamTrack::TrackManager<3>::CreateTrack(const char*, MasterVolume::VOLUME_GROUP)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x970 | 0x80142034 | size: 0x1AC
+ */
+template <>
+AudioStreamTrack::StreamTrack& AudioStreamTrack::TrackManager<3>::CreateTrack(
+    const char* name, Audio::MasterVolume::VOLUME_GROUP volumeGroup)
+{
+    unsigned long hash = nlStringLowerHash(name);
+    StreamTrack* entry = m_Tracks.GetNewEntry();
+    if (m_Tracks.m_EntryCount == m_Tracks.m_LookupAllocated)
+    {
+        m_Tracks.ExpandLookup();
+    }
+
+    int lo = -1;
+    int hi = m_Tracks.m_EntryCount;
+    while (hi - lo > 1)
+    {
+        int mid = (lo + hi) >> 1;
+        if (m_Tracks.m_pEntryLookup[mid].hash <= hash)
+        {
+            lo = mid;
+        }
+        else
+        {
+            hi = mid;
+        }
+    }
+
+    unsigned long insertPos = lo + 1;
+    for (unsigned long i = m_Tracks.m_EntryCount; i != insertPos; i--)
+    {
+        m_Tracks.m_pEntryLookup[i] = m_Tracks.m_pEntryLookup[i - 1];
+    }
+    m_Tracks.m_pEntryLookup[insertPos].hash = hash;
+    m_Tracks.m_pEntryLookup[insertPos].pEntry = entry;
+    m_Tracks.m_EntryCount++;
+
+    if (entry != NULL)
+    {
+        new (entry) StreamTrack(*this, volumeGroup);
+    }
+    return *entry;
+}
 
 template <>
 void AudioStreamTrack::TrackManager<3>::DestroyAllTracks()

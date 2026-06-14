@@ -14,7 +14,6 @@
 #include "NL/nlMemFunBody.h"
 
 extern bool DidContinueWithoutOperation();
-extern u8 mLastSaveLoadSuccess__13SaveLoadScene;
 extern TLInstance* FindComponent(TLSlide*, const char*);
 
 namespace DoubleHighlite
@@ -170,7 +169,7 @@ OptionsScene::OptionsScene()
     {
         if (menuState == MS_SAVE_LOAD)
         {
-            if ((mLastSaveLoadSuccess__13SaveLoadScene != 0) && (DidContinueWithoutOperation() == false))
+            if ((SaveLoadScene::mLastSaveLoadSuccess != 0) && (DidContinueWithoutOperation() == false))
             {
                 mUserInfoCRC__12OptionsScene = nlChecksum32(&(nlSingleton<GameInfoManager>::s_pInstance->mUserInfo), 0x113C);
             }
@@ -181,7 +180,7 @@ OptionsScene::OptionsScene()
         }
     }
 
-    mLastSaveLoadSuccess__13SaveLoadScene = 0;
+    SaveLoadScene::mLastSaveLoadSuccess = 0;
 }
 
 /**
