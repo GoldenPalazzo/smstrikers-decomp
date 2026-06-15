@@ -21,9 +21,9 @@ public:
     void ApplyMenuDefaults();
     void InitializeMenu();
 
-    /* 0x01C */ MenuList<TLComponentInstance> mMenuItems;    // size 0x214
+    /* 0x01C */ MenuList<TLComponentInstance> mMenuItems; // size 0x214
     /* 0x230 */ SlideMenuList* mSlideMenuLists[3];
-    /* 0x23C */ u8 m_isLeagueMode;
+    /* 0x23C */ bool m_isLeagueMode;
     /* 0x23D */ char pad23D[3];
     /* 0x240 */ s32 m_numTeams;
     /* 0x244 */ s32 m_numGames;

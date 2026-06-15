@@ -21,14 +21,14 @@ eStadiumID STADIUM_ORDER[7] = {
 };
 
 StadiumEntry StadiumEntries[8] = {
-    {STAD_PEACH_TOAD_STADIUM, "fe/mainv2/targas/stadium_peach"},
-    {STAD_MARIO_STADIUM, "fe/mainv2/targas/stadium_mario"},
-    {STAD_WARIO_STADIUM, "fe/mainv2/targas/stadium_wario"},
-    {STAD_DK_DAISY, "fe/mainv2/targas/stadium_dk"},
-    {STAD_YOSHI_STADIUM, "fe/mainv2/targas/stadium_yoshi"},
-    {STAD_FORBIDDEN_DOME, "fe/mainv2/targas/stadium_dome"},
-    {STAD_SUPER_STADIUM, "fe/mainv2/targas/stadium_super"},
-    {(eStadiumID)7, "fe/mainv2/targas/stadium_LOCKED"},
+    { STAD_PEACH_TOAD_STADIUM, "fe/mainv2/targas/stadium_peach" },
+    { STAD_MARIO_STADIUM, "fe/mainv2/targas/stadium_mario" },
+    { STAD_WARIO_STADIUM, "fe/mainv2/targas/stadium_wario" },
+    { STAD_DK_DAISY, "fe/mainv2/targas/stadium_dk" },
+    { STAD_YOSHI_STADIUM, "fe/mainv2/targas/stadium_yoshi" },
+    { STAD_FORBIDDEN_DOME, "fe/mainv2/targas/stadium_dome" },
+    { STAD_SUPER_STADIUM, "fe/mainv2/targas/stadium_super" },
+    { (eStadiumID)7, "fe/mainv2/targas/stadium_LOCKED" },
 };
 
 unsigned long StadiumDescriptions[7] = {
@@ -223,14 +223,8 @@ StadiumSelectSceneV2::~StadiumSelectSceneV2()
 
 /**
  * Offset/Address/Size: 0x7D4 | 0x800D8D54 | size: 0xA5C
- * TODO: 80.31% match - volatile InlineHasher copy-back to parameter area before Find calls,
- * r26/r27 vs r27/r28 register allocation in loop, stack frame 0x10 too small
- */
-/**
- * Offset/Address/Size: 0x384 | 0x800D8D54 | size: 0xA5C
- * TODO: 89.52% scratch match - r28/r29 register swap (format string vs img) and dead hasher
- * store elimination due to union byRef trick + non-volatile narrow-scope hashers.
- * File uses -inline deferred which may affect build match differently.
+ * TODO: 99.90% match - first wrapped stadium index uses r28 instead of r29;
+ * stadium name slide pointer uses r26 instead of r28.
  */
 void StadiumSelectSceneV2::SceneCreated()
 {
@@ -315,38 +309,73 @@ void StadiumSelectSceneV2::SceneCreated()
 
     m_pTicker->SetDisplayMessage(StadiumDescriptions[mStadiumIndex]);
 
-    int idx;
-    idx = WrapStadiumIndex(mStadiumIndex - 4);
+    int idx = mStadiumIndex;
+    idx -= 4;
+    if (idx < 0)
+    {
+        idx += 7;
+    }
+    idx = idx % 7;
     eStadiumID sid = STADIUM_ORDER[idx];
     int loadIdx = IsStadiumUnlocked(sid) ? idx : 7;
     mImages[6]->QueueLoad(StadiumEntries[loadIdx].imagePath, true);
 
-    idx = WrapStadiumIndex(mStadiumIndex - 3);
+    idx = mStadiumIndex - 3;
+    if (idx < 0)
+    {
+        idx += 7;
+    }
+    idx = idx % 7;
     sid = STADIUM_ORDER[idx];
     loadIdx = IsStadiumUnlocked(sid) ? idx : 7;
     mImages[3]->QueueLoad(StadiumEntries[loadIdx].imagePath, true);
 
-    idx = WrapStadiumIndex(mStadiumIndex - 2);
+    idx = mStadiumIndex - 2;
+    if (idx < 0)
+    {
+        idx += 7;
+    }
+    idx = idx % 7;
     sid = STADIUM_ORDER[idx];
     loadIdx = IsStadiumUnlocked(sid) ? idx : 7;
     mImages[2]->QueueLoad(StadiumEntries[loadIdx].imagePath, true);
 
-    idx = WrapStadiumIndex(mStadiumIndex - 1);
+    idx = mStadiumIndex - 1;
+    if (idx < 0)
+    {
+        idx += 7;
+    }
+    idx = idx % 7;
     sid = STADIUM_ORDER[idx];
     loadIdx = IsStadiumUnlocked(sid) ? idx : 7;
     mImages[0]->QueueLoad(StadiumEntries[loadIdx].imagePath, true);
 
-    idx = WrapStadiumIndex(mStadiumIndex);
+    idx = mStadiumIndex;
+    if (idx < 0)
+    {
+        idx += 7;
+    }
+    idx = idx % 7;
     sid = STADIUM_ORDER[idx];
     loadIdx = IsStadiumUnlocked(sid) ? idx : 7;
     mImages[1]->QueueLoad(StadiumEntries[loadIdx].imagePath, true);
 
-    idx = WrapStadiumIndex(mStadiumIndex + 1);
+    idx = mStadiumIndex + 1;
+    if (idx < 0)
+    {
+        idx += 7;
+    }
+    idx = idx % 7;
     sid = STADIUM_ORDER[idx];
     loadIdx = IsStadiumUnlocked(sid) ? idx : 7;
     mImages[4]->QueueLoad(StadiumEntries[loadIdx].imagePath, true);
 
-    idx = WrapStadiumIndex(mStadiumIndex + 2);
+    idx = mStadiumIndex + 2;
+    if (idx < 0)
+    {
+        idx += 7;
+    }
+    idx = idx % 7;
     sid = STADIUM_ORDER[idx];
     loadIdx = IsStadiumUnlocked(sid) ? idx : 7;
     mImages[5]->QueueLoad(StadiumEntries[loadIdx].imagePath, true);

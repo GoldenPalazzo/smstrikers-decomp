@@ -47,8 +47,6 @@ static const unsigned long DETAIL_NAMES[6][2] = {
 static const int MILESTONE_GOALS[5] = { 100, 300, 100, 300, 1000 };
 extern u32 CONTROLLER_TEXT[4];
 extern u8 PAD_COLOURS[4][3];
-extern void TournamentSceneCreated__21BraggingRightsOverlayFv(BraggingRightsOverlay*);
-extern void ChangeTicker__21BraggingRightsOverlayFi(BraggingRightsOverlay*, int);
 
 namespace SingleHighlite
 {
@@ -196,7 +194,7 @@ void BraggingRightsOverlay::SceneCreated()
     if (nlSingleton<GameInfoManager>::s_pInstance->IsInTournamentMode())
     {
         mIsTournamentScene = 1;
-        TournamentSceneCreated__21BraggingRightsOverlayFv(this);
+        TournamentSceneCreated();
         mButtons.SetState(ButtonComponent::BS_A_AND_B);
     }
     else
@@ -205,7 +203,7 @@ void BraggingRightsOverlay::SceneCreated()
         mButtons.SetState(ButtonComponent::BS_A_ONLY);
     }
 
-    ChangeTicker__21BraggingRightsOverlayFi(this, 0);
+    ChangeTicker(0);
 }
 
 /**
@@ -322,15 +320,18 @@ void BraggingRightsOverlay::IngameSceneCreated()
  */
 void BraggingRightsOverlay::TournamentSceneCreated()
 {
-    GameInfoManager* info = nlSingleton<GameInfoManager>::s_pInstance;
     FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
+    GameInfoManager* info = nlSingleton<GameInfoManager>::s_pInstance;
     PlayerStats stats[8];
+    PlayerStats* statsBase = stats;
     int highestTieBreaker[5];
     int i;
 
+    PlayerStats* writeStats = statsBase;
     for (i = 0; i < (int)info->GetNumPlayingTeams(); i++)
     {
-        stats[i] = info->GetTeamStatsByIndex((unsigned short)i).mPlayerTotalStats;
+        *writeStats = info->GetTeamStatsByIndex((unsigned short)i).mPlayerTotalStats;
+        writeStats++;
     }
 
     for (int award = 0; award < 5; award++)
@@ -407,6 +408,7 @@ void BraggingRightsOverlay::TournamentSceneCreated()
         if (mHighestStats[award] == 0)
         {
             pText->m_LocStrId = 0x0316C79C;
+            pText->m_OverloadFlags |= 0x8;
         }
         else
         {
@@ -414,9 +416,8 @@ void BraggingRightsOverlay::TournamentSceneCreated()
                 (eTeamID)info->GetTeamStatsByIndex((unsigned short)mAwardWinners[award]).mTeamIndex,
                 false,
                 false);
+            pText->m_OverloadFlags |= 0x8;
         }
-
-        pText->m_OverloadFlags |= 0x8;
     }
 
     TLTextInstance* pPlacement = FEFinder<TLTextInstance, 3>::Find<FEPresentation>(
@@ -425,29 +426,8 @@ void BraggingRightsOverlay::TournamentSceneCreated()
         InlineHasher(nlStringLowerHash("Layer")),
         InlineHasher(nlStringLowerHash("Placement")));
 
-    unsigned long winningNameId = GetLOCCharacterName(info->FindWinningTeam(), false, false);
-    nlLocalization* loc = g_pLocalization;
-    const unsigned short* placementString;
-
-    if (loc->m_LookupTable == 0)
-    {
-        placementString = LocalizationTableNotFound;
-    }
-    else
-    {
-        nlLocalization::StringLookup* result = nlBSearch(winningNameId, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
-
-        if (result)
-        {
-            placementString = loc->m_FirstString + result->StringOffset;
-        }
-        else
-        {
-            placementString = MissingLocString;
-        }
-    }
-
-    pPlacement->SetString(placementString);
+    unsigned long winningNameId = GetLOCCharacterName(nlSingleton<GameInfoManager>::s_pInstance->FindWinningTeam(), false, false);
+    pPlacement->SetString(LookupLocHash(winningNameId));
 
     TLComponentInstance* pButtonComp = FEFinder<TLComponentInstance, 4>::Find<FEPresentation>(
         presentation,

@@ -61,7 +61,7 @@ void PhysicsShell::PostUpdate()
 
 /**
  * Offset/Address/Size: 0x10C | 0x8013BA74 | size: 0x898
- * TODO: 99.73% match - eventData temp register in non-fielder branch uses r25 instead of r29, net width half-scale fmsubs operand order, fabs register destination in net-height comparisons
+ * TODO: 99.85% match - net width half-scale fmsubs operand order and net-height load/fabs register order
  */
 ContactType PhysicsShell::Contact(PhysicsObject* obj, dContact* info, int numContacts)
 {
@@ -290,86 +290,86 @@ ContactType PhysicsShell::Contact(PhysicsObject* obj, dContact* info, int numCon
                 }
             }
         }
-        break;
-    }
-    }
 
-    nlVector3 v3PowerupPosition;
-    GetPosition(&v3PowerupPosition);
-    float fPowerupRadius = GetRadius();
+        nlVector3 v3PowerupPosition;
+        GetPosition(&v3PowerupPosition);
+        float fPowerupRadius = GetRadius();
 
-    if (mbIsInNet)
-    {
-        if ((float)fabs(v3PowerupPosition.f.y) > cNet::m_fNetWidth / 2.0f - fPowerupRadius)
+        if (mbIsInNet)
         {
-            m_pPowerupObject->m_bShouldDestroy = true;
-            return NO_CONTACT;
-        }
+            if ((float)fabs(v3PowerupPosition.f.y) > cNet::m_fNetWidth / 2.0f - fPowerupRadius)
+            {
+                m_pPowerupObject->m_bShouldDestroy = true;
+                return NO_CONTACT;
+            }
 
-        float fMaxX;
-        if (v3PowerupPosition.f.x > 0.0f)
-        {
-            NetMesh* pMesh = NetMesh::spPositiveXNetMesh;
+            float fMaxX;
             if (v3PowerupPosition.f.x > 0.0f)
             {
-                fMaxX = pMesh->mfMaxX;
+                NetMesh* pMesh = NetMesh::spPositiveXNetMesh;
+                if (v3PowerupPosition.f.x > 0.0f)
+                {
+                    fMaxX = pMesh->mfMaxX;
+                }
+                else
+                {
+                    fMaxX = pMesh->mfMinX;
+                }
             }
             else
             {
-                fMaxX = pMesh->mfMinX;
+                NetMesh* pMesh = NetMesh::spNegativeXNetMesh;
+                if (v3PowerupPosition.f.x > 0.0f)
+                {
+                    fMaxX = pMesh->mfMaxX;
+                }
+                else
+                {
+                    fMaxX = pMesh->mfMinX;
+                }
             }
-        }
-        else
-        {
-            NetMesh* pMesh = NetMesh::spNegativeXNetMesh;
-            if (v3PowerupPosition.f.x > 0.0f)
+
+            if ((float)fabs(v3PowerupPosition.f.x) > (float)fabs(fMaxX) - 2.0f * fPowerupRadius)
             {
-                fMaxX = pMesh->mfMaxX;
+                m_pPowerupObject->m_bShouldDestroy = true;
+                return NO_CONTACT;
             }
-            else
+
+            if ((float)fabs(v3PowerupPosition.f.z) > cNet::m_fNetHeight - fPowerupRadius)
             {
-                fMaxX = pMesh->mfMinX;
-            }
-        }
-
-        if ((float)fabs(v3PowerupPosition.f.x) > (float)fabs(fMaxX) - 2.0f * fPowerupRadius)
-        {
-            m_pPowerupObject->m_bShouldDestroy = true;
-            return NO_CONTACT;
-        }
-
-        if ((float)fabs(v3PowerupPosition.f.z) > cNet::m_fNetHeight - fPowerupRadius)
-        {
-            m_pPowerupObject->m_bShouldDestroy = true;
-            return NO_CONTACT;
-        }
-    }
-
-    if ((float)fabs(v3PowerupPosition.f.y) < cNet::m_fNetWidth / 2.0f - fPowerupRadius)
-    {
-        if ((float)fabs(v3PowerupPosition.f.x) > cField::GetGoalLineX(1u) - fPowerupRadius)
-        {
-            if ((float)fabs(v3PowerupPosition.f.z) < cNet::m_fNetHeight - fPowerupRadius)
-            {
-                mbIsInNet = true;
+                m_pPowerupObject->m_bShouldDestroy = true;
                 return NO_CONTACT;
             }
         }
-    }
 
-    for (int i = 0; i < numContacts; i++)
-    {
-        if (info[i].geom.normal[2] < 0.08f)
+        if ((float)fabs(v3PowerupPosition.f.y) < cNet::m_fNetWidth / 2.0f - fPowerupRadius)
         {
-            if (m_pPowerupObject->mtActiveTimer.m_uPackedTime == 0)
+            if ((float)fabs(v3PowerupPosition.f.x) > cField::GetGoalLineX(1u) - fPowerupRadius)
             {
-                m_pPowerupObject->m_bShouldDestroy = true;
-            }
-            else if (!mbIsInNet)
-            {
-                bWasRicochet = true;
+                if ((float)fabs(v3PowerupPosition.f.z) < cNet::m_fNetHeight - fPowerupRadius)
+                {
+                    mbIsInNet = true;
+                    return NO_CONTACT;
+                }
             }
         }
+
+        for (int i = 0; i < numContacts; i++)
+        {
+            if (info[i].geom.normal[2] < 0.08f)
+            {
+                if (m_pPowerupObject->mtActiveTimer.m_uPackedTime == 0)
+                {
+                    m_pPowerupObject->m_bShouldDestroy = true;
+                }
+                else if (!mbIsInNet)
+                {
+                    bWasRicochet = true;
+                }
+            }
+        }
+        break;
+    }
     }
 
     if (bWasRicochet)

@@ -2053,7 +2053,6 @@ void Goalie::ActionPreCrouch(float deltaTime)
 
 /**
  * Offset/Address/Size: 0xF9C | 0x8004F4D8 | size: 0x3C0
- * TODO: 99.85% match - f10/f2 register swap for dx4 subtraction in dist4Sq CalculateDistanceSquared2D
  */
 void Goalie::ActionPursueBallCarrier(float)
 {
@@ -2132,7 +2131,9 @@ void Goalie::ActionPursueBallCarrier(float)
         float dist3y = mv3LocalContactPosition.f.y * mv3LocalContactPosition.f.y;
         float dist2Sq = CalculateDistanceSquared2D(opponentLocalPos, mpLooseBallInfo->mv3PickupPos);
         float dist3Sq = dist3x + dist3y;
-        float dist4Sq = CalculateDistanceSquared2D(pOwnerFielder->m_v3Position, m_v3Position);
+        nlVector3 dist4Delta;
+        dist4Delta.Sub2D(pOwnerFielder->m_v3Position, m_v3Position);
+        float dist4Sq = dist4Delta.GetLengthSq2D();
 
         if ((mv3LocalContactPosition.f.x < -0.35f) || (dist1Sq > 0.36f && dist2Sq > 0.36f && dist3Sq > pickupDistanceSq && dist4Sq > pickupDistanceSq))
         {

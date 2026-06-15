@@ -82,23 +82,6 @@ inline Function1<void, TLComponentInstance*>::FunctorBase* Function1<void, TLCom
     return new (nlMalloc(sizeof(FunctorImpl), 8, false)) FunctorImpl(mBind);
 }
 
-// /**
-//  * Offset/Address/Size: 0x38 | 0x800B01B4 | size: 0x40
-//  */
-// void Bind<void, Detail::MemFunImpl<void, void (PauseMenuScene::*)(TLComponentInstance*)>, PauseMenuScene*, Placeholder<0>>(
-//     Detail::MemFunImpl<void, void (PauseMenuScene::*)(TLComponentInstance*)>, PauseMenuScene* const&, const Placeholder<0>&)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800B017C | size: 0x38
-//  */
-// void Bind<void>(Detail::MemFunImpl<void, void
-// (PauseMenuScene::*)()>,
-//                                                                                        PauseMenuScene* const&)
-// {
-// }
-
 /**
  * Offset/Address/Size: 0x1C | 0x800B0160 | size: 0x1C
  * TODO: 69.29% match - r0/r5 register allocation swap and load/store interleaving
@@ -112,143 +95,6 @@ MemFun<PauseMenuScene, void>(void (PauseMenuScene::*)());
  */
 template Detail::MemFunImpl<void, void (PauseMenuScene::*)(TLComponentInstance*)>
 MemFun<PauseMenuScene, void, TLComponentInstance*>(void (PauseMenuScene::*)(TLComponentInstance*));
-
-// /**
-//  * Offset/Address/Size: 0x5C | 0x800B00E8 | size: 0x5C
-//  */
-// void Function1<void, TLComponentInstance*>::FunctorImpl<BindExp2<
-//     void, Detail::MemFunImpl<void, void (PauseMenuScene::*)(TLComponentInstance*)>, PauseMenuScene*, Placeholder<0>>>::~FunctorImpl()
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800B008C | size: 0x5C
-//  */
-// void Function0<void>::FunctorImpl<BindExp1<void, Detail::MemFunImpl<void, void (PauseMenuScene::*)()>, PauseMenuScene*>>::~FunctorImpl()
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x128 | 0x800B005C | size: 0x30
-//  */
-// void Function0<void>::FunctorImpl<BindExp1<void, Detail::MemFunImpl<void, void (PauseMenuScene::*)()>, PauseMenuScene*>>::operator()()
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0xB0 | 0x800AFFE4 | size: 0x78
-//  */
-// void Function0<void>::FunctorImpl<BindExp1<void, Detail::MemFunImpl<void, void (PauseMenuScene::*)()>, PauseMenuScene*>>::Clone() const
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x80 | 0x800AFFB4 | size: 0x30
-//  */
-// void Function1<void,
-//                TLComponentInstance*>::FunctorImpl<BindExp2<void, Detail::MemFunImpl<void, void
-//                (PauseMenuScene::*)(TLComponentInstance*)>,
-//                                                            PauseMenuScene*, Placeholder<0>>>::operator()(TLComponentInstance*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800AFF34 | size: 0x80
-//  */
-// void Function1<void, TLComponentInstance*>::FunctorImpl<
-//     BindExp2<void, Detail::MemFunImpl<void, void (PauseMenuScene::*)(TLComponentInstance*)>, PauseMenuScene*, Placeholder<0>>>::Clone()
-//     const
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x6CC | 0x800AFEFC | size: 0x38
-//  */
-// void FEFinder<TLComponentInstance, 4>::Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher,
-//                                                      InlineHasher)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x570 | 0x800AFDA0 | size: 0x15C
-//  */
-// void FEFinder<TLComponentInstance, 4>::_Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long,
-//                                                          unsigned long, unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x4EC | 0x800AFD1C | size: 0x84
-//  */
-// void FEFinder<TLComponentInstance, 4>::_Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned
-// long,
-//                                                       unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x468 | 0x800AFC98 | size: 0x84
-//  */
-// void FEFinder<TLComponentInstance, 4>::_Find<FEPresentation>(FEPresentation*, unsigned long, unsigned long, unsigned long, unsigned long,
-//                                                              unsigned long, unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x430 | 0x800AFC60 | size: 0x38
-//  */
-// void FEFinder<TLComponentInstance, 4>::Find<FEPresentation>(FEPresentation*, InlineHasher, InlineHasher, InlineHasher, InlineHasher,
-//                                                             InlineHasher, InlineHasher)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x2D4 | 0x800AFB04 | size: 0x15C
-//  */
-// void FEFinder<TLInstance, 4>::_Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long,
-//                                                 unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x250 | 0x800AFA80 | size: 0x84
-//  */
-// void FEFinder<TLInstance, 4>::_Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long,
-//                                              unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x218 | 0x800AFA48 | size: 0x38
-//  */
-// void FEFinder<TLInstance, 4>::Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0xBC | 0x800AF8EC | size: 0x15C
-//  */
-// void FEFinder<TLTextInstance, 3>::_Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned
-// long,
-//                                                     unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x38 | 0x800AF868 | size: 0x84
-//  */
-// void FEFinder<TLTextInstance, 3>::_Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long,
-//                                                  unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800AF830 | size: 0x38
-//  */
-// void FEFinder<TLTextInstance, 3>::Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher,
-//                                                 InlineHasher)
-// {
-// }
 
 /**
  * Offset/Address/Size: 0x225C | 0x800AF754 | size: 0xDC
@@ -308,47 +154,42 @@ void PauseMenuScene::OnSelectQUIT(TLComponentInstance*)
 
         if (nlSingleton<GameInfoManager>::s_pInstance->mIsInStrikers101Mode)
         {
-            {
-                Detail::MemFunImpl<void, void (PauseMenuScene::*)()> (*makeMemFun)(void (PauseMenuScene::*)()) = MemFun<PauseMenuScene, void>;
-                Function<FnVoidVoid> yes(Bind<void>(
-                    makeMemFun(&PauseMenuScene::OnSelectPopupYESFORFEIT), this));
-                Function<FnVoidVoid> no(Bind<void>(
-                    makeMemFun(&PauseMenuScene::OnSelectPopupNOFORFEIT), this));
-                popup->Create(POPUP_INGAME_QUIT_STRIKERS_101, yes, no);
-            }
+            Detail::MemFunImpl<void, void (PauseMenuScene::*)()> (*makeYesMemFun)(void (PauseMenuScene::*)()) = MemFun<PauseMenuScene, void>;
+            Function<FnVoidVoid> yes(Bind<void>(
+                makeYesMemFun(&PauseMenuScene::OnSelectPopupYESFORFEIT), this));
+            Detail::MemFunImpl<void, void (PauseMenuScene::*)()> (*makeNoMemFun)(void (PauseMenuScene::*)()) = MemFun<PauseMenuScene, void>;
+            Function<FnVoidVoid> no(Bind<void>(
+                makeNoMemFun(&PauseMenuScene::OnSelectPopupNOFORFEIT), this));
+            popup->Create(POPUP_INGAME_QUIT_STRIKERS_101, yes, no);
         }
         else if (nlSingleton<GameInfoManager>::s_pInstance->mCurrentMode == GameInfoManager::GM_FRIENDLY || g_pGame->m_eGameState == GS_END_GAME)
         {
-            {
-                Detail::MemFunImpl<void, void (PauseMenuScene::*)()> (*makeMemFun)(void (PauseMenuScene::*)()) = MemFun<PauseMenuScene, void>;
-                Function<FnVoidVoid> yes(Bind<void>(
-                    makeMemFun(&PauseMenuScene::OnSelectPopupYESFORFEIT), this));
-                Function<FnVoidVoid> no(Bind<void>(
-                    makeMemFun(&PauseMenuScene::OnSelectPopupNOFORFEIT), this));
-                popup->Create(POPUP_INGAME_QUIT_MATCH, yes, no);
-            }
+            Detail::MemFunImpl<void, void (PauseMenuScene::*)()> (*makeYesMemFun)(void (PauseMenuScene::*)()) = MemFun<PauseMenuScene, void>;
+            Function<FnVoidVoid> yes(Bind<void>(
+                makeYesMemFun(&PauseMenuScene::OnSelectPopupYESFORFEIT), this));
+            Detail::MemFunImpl<void, void (PauseMenuScene::*)()> (*makeNoMemFun)(void (PauseMenuScene::*)()) = MemFun<PauseMenuScene, void>;
+            Function<FnVoidVoid> no(Bind<void>(
+                makeNoMemFun(&PauseMenuScene::OnSelectPopupNOFORFEIT), this));
+            popup->Create(POPUP_INGAME_QUIT_MATCH, yes, no);
         }
         else if (nlSingleton<GameInfoManager>::s_pInstance->IsInCupMode()
                  || (nlSingleton<GameInfoManager>::s_pInstance->IsInTournamentMode()
                      && nlSingleton<GameInfoManager>::s_pInstance->GetPlayingSide((unsigned short)mQuittingController) != -1))
         {
-            {
-                Detail::MemFunImpl<void, void (PauseMenuScene::*)()> (*makeMemFun)(void (PauseMenuScene::*)()) = MemFun<PauseMenuScene, void>;
-                Function<FnVoidVoid> yes(Bind<void>(
-                    makeMemFun(&PauseMenuScene::OnSelectPopupYESFORFEIT), this));
-                Function<FnVoidVoid> no(Bind<void>(
-                    makeMemFun(&PauseMenuScene::OnSelectPopupNOFORFEIT), this));
-                popup->Create(POPUP_INGAME_FORFEIT_MATCH, yes, no);
-            }
+            Detail::MemFunImpl<void, void (PauseMenuScene::*)()> (*makeYesMemFun)(void (PauseMenuScene::*)()) = MemFun<PauseMenuScene, void>;
+            Function<FnVoidVoid> yes(Bind<void>(
+                makeYesMemFun(&PauseMenuScene::OnSelectPopupYESFORFEIT), this));
+            Detail::MemFunImpl<void, void (PauseMenuScene::*)()> (*makeNoMemFun)(void (PauseMenuScene::*)()) = MemFun<PauseMenuScene, void>;
+            Function<FnVoidVoid> no(Bind<void>(
+                makeNoMemFun(&PauseMenuScene::OnSelectPopupNOFORFEIT), this));
+            popup->Create(POPUP_INGAME_FORFEIT_MATCH, yes, no);
         }
         else
         {
-            {
-                Detail::MemFunImpl<void, void (PauseMenuScene::*)()> (*makeMemFun)(void (PauseMenuScene::*)()) = MemFun<PauseMenuScene, void>;
-                Function<FnVoidVoid> no(Bind<void>(
-                    makeMemFun(&PauseMenuScene::OnSelectPopupNOFORFEIT), this));
-                popup->Create(POPUP_NO_FORFEIT, no);
-            }
+            Detail::MemFunImpl<void, void (PauseMenuScene::*)()> (*makeNoMemFun)(void (PauseMenuScene::*)()) = MemFun<PauseMenuScene, void>;
+            Function<FnVoidVoid> no(Bind<void>(
+                makeNoMemFun(&PauseMenuScene::OnSelectPopupNOFORFEIT), this));
+            popup->Create(POPUP_NO_FORFEIT, no);
         }
     }
 }
@@ -453,7 +294,6 @@ void PauseMenuScene::OnSelectPopupYESFORFEIT()
 
 /**
  * Offset/Address/Size: 0x1640 | 0x800AEB38 | size: 0x44
- * Todo: Figure out how to what scene this is connecting...
  */
 void PauseMenuScene::OnSelectLESSONS(TLComponentInstance*)
 {

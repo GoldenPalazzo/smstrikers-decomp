@@ -196,63 +196,13 @@ static inline const unsigned short* LookupLocText(unsigned long hash)
 
 /**
  * Offset/Address/Size: 0x360 | 0x800C8D34 | size: 0x190
- * TODO: 96.8% match - MWCC register allocation: this->r31/text->r29 instead of this->r29/text->r31, li r5,0 instead of mr r5,r4
+ * TODO: 97.6% match - this pointer and localized text pointer use swapped saved registers
  */
 void FEScrollText::SetDisplayMessage(unsigned long hash)
 {
     const unsigned short* text = LookupLocText(hash);
-
-    BasicStringInternal* data = (BasicStringInternal*)nlMalloc(0x10, 8, true);
-    if (data != 0)
-    {
-        data->mData = 0;
-        data->mSize = 0;
-        data->mCapacity = 0;
-
-        const unsigned short* ptr = text;
-        while (*ptr++ != 0)
-        {
-            data->mSize++;
-        }
-
-        data->mSize++;
-        data->mData = (char*)nlMalloc((data->mSize + 1) * 2, 8, true);
-        data->mCapacity = data->mSize;
-
-        int i = 0;
-        int j = i;
-        while (i < data->mSize)
-        {
-            *(unsigned short*)(data->mData + j) = *text;
-            i++;
-            text++;
-            j += 2;
-        }
-
-        data->mRefCount = 1;
-    }
-
-    BasicStringInternal* msgData = data;
-    SetDisplayMessage(*(const BasicString<unsigned short, Detail::TempStringAllocator>*)&msgData);
-
-    data = msgData;
-    if (data != 0)
-    {
-        if (--data->mRefCount == 0)
-        {
-            if (data != 0)
-            {
-                if (data != 0)
-                {
-                    delete[] data->mData;
-                }
-                if (data != 0)
-                {
-                    nlFree(data);
-                }
-            }
-        }
-    }
+    BasicString<unsigned short, Detail::TempStringAllocator> message(text);
+    SetDisplayMessage(message);
 }
 
 /**

@@ -5449,9 +5449,8 @@ void Goalie::InitActionSTSRecover()
 
 /**
  * Offset/Address/Size: 0x2600 | 0x800450FC | size: 0x224
- * TODO: 97.01% match - register allocation diffs in delta block (f3/f4 swap for
- * y/x/z deltas) and scale block (cascading register differences). All remaining
- * diffs are register-only (r markers), functionally equivalent.
+ * TODO: 98.07% match - register allocation diffs remain in the ball-target
+ * vector delta/scale block and final net-Y clamp temporary flow.
  */
 void Goalie::InitActionChipShotStumble()
 {
@@ -5489,8 +5488,8 @@ void Goalie::InitActionChipShotStumble()
 
     if (dist > 0.5f)
     {
+        float distPlusOne = 1.5f + dist;
         float sx = dirX;
-        float distPlusOne = 1.0f + dist;
         float sy = dirY;
         float sz = dirZ;
         float scale = distPlusOne / dist;
@@ -5504,14 +5503,14 @@ void Goalie::InitActionChipShotStumble()
         mv3NavTarget = pBall->m_v3ShotTarget;
         float pushX;
         if (mv3NavTarget.f.x > 0.0f)
-            pushX = 1.0f;
+            pushX = 1.5f;
         else
-            pushX = -1.0f;
+            pushX = -1.5f;
         mv3NavTarget.f.x += pushX;
     }
 
     float clampedY = mv3NavTarget.f.y;
-    float maxY = 0.5f * cNet::m_fNetWidth - 0.5f;
+    float maxY = 0.5f * cNet::m_fNetWidth - 1.0f;
     clampedY = (clampedY >= -maxY) ? clampedY : -maxY;
     clampedY = (clampedY <= maxY) ? clampedY : maxY;
     mv3NavTarget.f.y = clampedY;

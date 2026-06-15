@@ -367,8 +367,7 @@ static inline bool isElectrocuteSFXPlaying(Audio::cCharacterSFX* self)
 
 /**
  * Offset/Address/Size: 0xC5C | 0x8014D000 | size: 0x4D0
- * TODO: 98.38% match - r6/r7 register swap in walk/run clear loops (MWCC quirk),
- *       volume section addi+lfsx vs add+lfs addressing mode diff
+ * TODO: 99.71% match - r6/r7 register swap in walk/run clear loops
  */
 unsigned long cCharacterSFX::PlayRandomCharDialogue(CharDialogueType dType, PosUpdateMethod posUpdateMethod, float fVol, float fDelay, bool bAvoidCurrent)
 {
@@ -495,7 +494,8 @@ unsigned long cCharacterSFX::PlayRandomCharDialogue(CharDialogueType dType, PosU
     sfxAtr.mf_Volume = fVol;
     if (fVol != 100.0f)
     {
-        sfxAtr.mf_Volume = sfxAtr.mf_Volume * mpSFX[sfxAtr.mu_Type].fVolume;
+        SoundStrToIDNode* pSfxNode = &mpSFX[sfxAtr.mu_Type];
+        sfxAtr.mf_Volume = sfxAtr.mf_Volume * pSfxNode->fVolume;
     }
 
     sfxAtr.mf_DelayTime = fDelay;

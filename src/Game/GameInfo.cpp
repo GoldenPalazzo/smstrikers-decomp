@@ -1306,8 +1306,8 @@ void GameInfoManager::SetupTournamentKnockout(eTeamID* lineup, eSidekickID* skli
 
 /**
  * Offset/Address/Size: 0x78D8 | 0x8017CF7C | size: 0x618
- * TODO: 90.67% match - register allocation diffs only: cup r25 vs r22,
- * gamesPerRound r27 vs r21, sidekicks ptr r21 vs r25, loop i r22 vs r26
+ * TODO: 96.67% match - register allocation diffs in cup, gamesPerRound,
+ * round, team, and loop locals
  */
 unsigned char GameInfoManager::SetupKnockoutRound(short round)
 {
@@ -1403,14 +1403,7 @@ unsigned char GameInfoManager::SetupKnockoutRound(short round)
     {
         g = mCurrentCup->GetGameInfo((s16)currentRound, 0);
 
-        mUserInfo.mBowserCupFinalRound.mTeamIndex[0] = g->mTeamIndex[0];
-        mUserInfo.mBowserCupFinalRound.mTeamIndex[1] = g->mTeamIndex[1];
-        mUserInfo.mBowserCupFinalRound.mSidekickIndex[0] = g->mSidekickIndex[0];
-        mUserInfo.mBowserCupFinalRound.mSidekickIndex[1] = g->mSidekickIndex[1];
-        mUserInfo.mBowserCupFinalRound.mStadiumIndex = g->mStadiumIndex;
-        mUserInfo.mBowserCupFinalRound.mPadSides[0] = g->mPadSides[0];
-        mUserInfo.mBowserCupFinalRound.mPadSides[1] = g->mPadSides[1];
-        mUserInfo.mBowserCupFinalRound.mFinalScore[0] = g->mFinalScore[0];
+        mUserInfo.mBowserCupFinalRound = *g;
 
         g = mCurrentCup->GetGameInfo((s16)currentRound, 0);
         if (g->mFinalScore[0] < g->mFinalScore[1])
@@ -1434,7 +1427,7 @@ unsigned char GameInfoManager::SetupKnockoutRound(short round)
 
         if (winner != mCurrentCup->mUserSelectedTeam)
         {
-            goto end;
+            goto lbl_end;
         }
 
         g->mTeamIndex[0] = (eTeamID)3;
@@ -1455,9 +1448,10 @@ unsigned char GameInfoManager::SetupKnockoutRound(short round)
         g->mSidekickIndex[1] = sidekicks[winner];
         g->mStadiumIndex = PickStadium(true, STAD_INVALID);
         returnValue = 1;
-        gamesPerRound = 0;
 
-        for (i2 = 0; (u16)i2 < (u16)gamesPerRound; i2++)
+        for (i2 = 0;
+            (u16)i2 < (mCurrentMode == GM_BOWSER_CUP ? 8 : (mCurrentMode == GM_SUPER_BOWSER_CUP ? 8 : (u16)mCurrentCup->GetNumTeams()));
+            i2++)
         {
             TeamStats* ts;
             if (mCurrentMode == GM_BOWSER_CUP)
@@ -1483,7 +1477,7 @@ unsigned char GameInfoManager::SetupKnockoutRound(short round)
                 ts->mNumLosses = 0;
                 ts->mNumOTLosses = 0;
                 ts->mNumPoints = 0;
-                goto end;
+                goto lbl_end;
             }
         }
     }
@@ -1534,12 +1528,13 @@ unsigned char GameInfoManager::SetupKnockoutRound(short round)
             g->mTeamIndex[1] = away;
             g->mSidekickIndex[0] = sidekicks[home];
             g->mSidekickIndex[1] = sidekicks[away];
-            g->mStadiumIndex = PickStadium(true, mLastHumanStadium);
+            currentStadium = PickStadium(true, mLastHumanStadium);
+            g->mStadiumIndex = currentStadium;
 
             u16 humanTeams = mCurrentCup->mHumanTeams;
             if ((humanTeams & (1 << g->mTeamIndex[0])) || (humanTeams & (1 << g->mTeamIndex[1])))
             {
-                mLastHumanStadium = g->mStadiumIndex;
+                mLastHumanStadium = currentStadium;
             }
 
             if (home == mCurrentCup->mUserSelectedTeam || away == mCurrentCup->mUserSelectedTeam)
@@ -1560,7 +1555,7 @@ unsigned char GameInfoManager::SetupKnockoutRound(short round)
         }
     }
 
-end:
+lbl_end:
     return returnValue;
 }
 
@@ -3698,8 +3693,8 @@ bool GameInfoManager::IsCustomFreezingUnlocked() const
 
 /**
  * Offset/Address/Size: 0x41C | 0x80175AC0 | size: 0x2B4
- * TODO: 99.25% match - remaining diffs are register-only in the
- * games-per-round tail path (r4 carry chain vs r0 temporaries).
+ * TODO: 99.83% match - remaining diffs are register-only in the
+ * games-per-round tail result register (r4 vs r0).
  */
 bool GameInfoManager::HasHumanGameBeenPlayed() const
 {
@@ -3793,7 +3788,7 @@ bool GameInfoManager::HasHumanGameBeenPlayed() const
         }
         else if ((round == -5) && mDoingKnockout)
         {
-            gamesPerRound = 1;
+            gamesPerRound = mDoingKnockout;
         }
         else if (mDoingKnockout)
         {

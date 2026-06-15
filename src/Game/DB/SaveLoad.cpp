@@ -379,11 +379,40 @@ unsigned long LoadCallbacks::ReadDoneCB(unsigned long Slot, long Result, void* p
     return result;
 }
 
+static inline int BuildDefaultIconHeaderSize(MemCard::ICON_CONFIG& IconCfg)
+{
+    IconCfg.BannerFormat = 0;
+    IconCfg.IconCount = 0;
+    IconCfg.IconFormat = 0;
+    IconCfg.IconAnimType = 0;
+    memset(IconCfg.IconSpeeds, 0, 8);
+    memset(&IconCfg, 0, sizeof(MemCard::ICON_CONFIG));
+
+    int iconFormat = 2;
+    int iconCount = 1;
+    int negOne = -1;
+    int speed = 3;
+
+    IconCfg.IconCount = iconCount;
+    negOne = ~(iconCount | negOne);
+    int clutSize = 0x200;
+    int iconDataSize = iconCount * (iconFormat << 10);
+    IconCfg.IconFormat = iconFormat;
+    IconCfg.IconSpeeds[0] = speed;
+    int bannerClut = (negOne >> 31) & clutSize;
+    int bannerSize = iconFormat * 0xC00;
+    int iconClut = (negOne >> 31) & clutSize;
+    IconCfg.BannerFormat = iconFormat;
+    int total = bannerClut + bannerSize + iconDataSize + iconClut;
+
+    return (int)(IconCfg.HeaderSize = total + 0x40);
+}
+
 /**
  * Offset/Address/Size: 0x2DA8 | 0x8018C704 | size: 0x4AC
- * TODO: 87.38% match - opt_propagation off prevents icon config constant folding
- * but causes: this->r31 (should be r27), extra cmpwi+ble while loop guards,
- * srawi CSE (one srawi vs two in target), cascading register allocation diffs.
+ * TODO: 90.62% match - opt_propagation off causes register permutation
+ * (this->r31 should be r27, Result->r27 should be r28, Slot->r28 should be r29),
+ * extra cmpwi+ble while loop guards, srawi CSE in BuildDefaultIconHeaderSize.
  */
 #pragma push
 #pragma opt_propagation off
@@ -419,33 +448,7 @@ inline unsigned long SaveCallbacks::FileWriteCB(unsigned long Slot, long Result,
                 }
             }
             MemCard::ICON_CONFIG IconCfg;
-            IconCfg.BannerFormat = 0;
-            IconCfg.IconCount = 0;
-            IconCfg.IconFormat = 0;
-            IconCfg.IconAnimType = 0;
-            memset(IconCfg.IconSpeeds, 0, 8);
-            memset(&IconCfg, 0, sizeof(MemCard::ICON_CONFIG));
-            int iconFormat = 2;
-            int iconCount = 1;
-            int negOne = -1;
-            int speed = 3;
-            int iconPixelSize = iconFormat << 10;
-            IconCfg.IconCount = iconCount;
-            negOne = ~(iconCount | negOne);
-            int clutSize = 0x200;
-            int iconDataSize = iconCount * iconPixelSize;
-            IconCfg.IconFormat = iconFormat;
-            int bannerClutMask = negOne >> 31;
-            int iconClutMask = negOne >> 31;
-            IconCfg.IconSpeeds[0] = speed;
-            int bannerClutResult = clutSize & bannerClutMask;
-            int bannerDataSize = iconFormat * 0xC00;
-            int iconClutResult = clutSize & iconClutMask;
-            IconCfg.BannerFormat = iconFormat;
-            int total = bannerClutResult + bannerDataSize;
-            total += iconDataSize;
-            total += iconClutResult;
-            origSize = (int)(IconCfg.HeaderSize = total + 0x40);
+            origSize = BuildDefaultIconHeaderSize(IconCfg);
             dataSize = (u32)(origSize + 0x1FFF) >> 13;
             if (origSize > 0)
             {
@@ -476,7 +479,6 @@ inline unsigned long SaveCallbacks::FileWriteCB(unsigned long Slot, long Result,
         return -1;
     }
 
-    // Result == 0: check serial ID
     if (mRequiredMemoryCardID != 0)
     {
         s64 serialID = g_MemCards[Slot]->GetSerialID();
@@ -510,33 +512,7 @@ inline unsigned long SaveCallbacks::FileWriteCB(unsigned long Slot, long Result,
                     }
                 }
                 MemCard::ICON_CONFIG IconCfg;
-                IconCfg.BannerFormat = 0;
-                IconCfg.IconCount = 0;
-                IconCfg.IconFormat = 0;
-                IconCfg.IconAnimType = 0;
-                memset(IconCfg.IconSpeeds, 0, 8);
-                memset(&IconCfg, 0, sizeof(MemCard::ICON_CONFIG));
-                int iconFormat = 2;
-                int iconCount = 1;
-                int negOne = -1;
-                int speed = 3;
-                int iconPixelSize = iconFormat << 10;
-                IconCfg.IconCount = iconCount;
-                negOne = ~(iconCount | negOne);
-                int clutSize = 0x200;
-                int iconDataSize = iconCount * iconPixelSize;
-                IconCfg.IconFormat = iconFormat;
-                int bannerClutMask = negOne >> 31;
-                int iconClutMask = negOne >> 31;
-                IconCfg.IconSpeeds[0] = speed;
-                int bannerClutResult = clutSize & bannerClutMask;
-                int bannerDataSize = iconFormat * 0xC00;
-                int iconClutResult = clutSize & iconClutMask;
-                IconCfg.BannerFormat = iconFormat;
-                int total = bannerClutResult + bannerDataSize;
-                total += iconDataSize;
-                total += iconClutResult;
-                origSize = (int)(IconCfg.HeaderSize = total + 0x40);
+                origSize = BuildDefaultIconHeaderSize(IconCfg);
                 dataSize = (u32)(origSize + 0x1FFF) >> 13;
                 if (origSize > 0)
                 {
@@ -1190,35 +1166,6 @@ unsigned long FormatCallbacks::FormatDoneCB(unsigned long channel, long result, 
     InOperation = false;
     g_Callback(result);
     return (-result | result) >> 31;
-}
-
-static inline int BuildDefaultIconHeaderSize(MemCard::ICON_CONFIG& IconCfg)
-{
-    IconCfg.BannerFormat = 0;
-    IconCfg.IconCount = 0;
-    IconCfg.IconFormat = 0;
-    IconCfg.IconAnimType = 0;
-    memset(IconCfg.IconSpeeds, 0, 8);
-    memset(&IconCfg, 0, sizeof(MemCard::ICON_CONFIG));
-
-    int iconFormat = 2;
-    int iconCount = 1;
-    int negOne = -1;
-    int speed = 3;
-
-    IconCfg.IconCount = iconCount;
-    negOne = ~(iconCount | negOne);
-    int clutSize = 0x200;
-    int iconDataSize = iconCount * (iconFormat << 10);
-    IconCfg.IconFormat = iconFormat;
-    IconCfg.IconSpeeds[0] = speed;
-    int bannerClut = (negOne >> 31) & clutSize;
-    int bannerSize = iconFormat * 0xC00;
-    int iconClut = (negOne >> 31) & clutSize;
-    IconCfg.BannerFormat = iconFormat;
-    int total = bannerClut + bannerSize + iconDataSize + iconClut;
-
-    return (int)(IconCfg.HeaderSize = total + 0x40);
 }
 
 /**

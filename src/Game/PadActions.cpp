@@ -24,33 +24,43 @@ FormatImpl<BasicString<char, Detail::TempStringAllocator> >&
     FormatImpl<BasicString<char, Detail::TempStringAllocator> >::operator% <int>(const int& t)
 {
     BasicString<char, Detail::TempStringAllocator> insert = LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(t);
+
     for (int i = 0; i < (mString.m_data ? mString.m_data->mSize - 1 : 0); i++)
     {
         if (mString[i] != '{')
             continue;
+
         if (i + 1 >= (mString.m_data ? mString.m_data->mSize - 1 : 0))
             continue;
+
         if (mString[i + 1] - '0' != mCurrentPos)
             continue;
+
         if (i + 2 >= (mString.m_data ? mString.m_data->mSize - 1 : 0))
             continue;
+
         if (mString[i + 2] != '}')
             continue;
-        mString[0];
-        BasicStringData<char>* data = mString.m_data;
+
         char* eraseStart = &mString[i];
         char* eraseEnd = &mString[i + 3];
+        mString[0];
+        BasicStringData<char>* data = mString.m_data;
         int eraseLen = eraseEnd - eraseStart;
-        char* at = data->mData + (eraseStart - data->mData);
+        char* dst = &data->mData[eraseStart - data->mData];
         while (eraseEnd != data->mData + data->mSize)
         {
-            *at = *eraseEnd;
-            eraseEnd++;
-            at++;
+            *dst++ = *eraseEnd++;
         }
         data->mSize -= eraseLen;
-        mString.insert(&mString[i], &insert[0], &insert[(int)insert.size()]);
+
+        char* insertAt = &mString[i];
+        char* insertBegin = &insert[0];
+        int insertEndIdx = (int)(insert.m_data ? insert.m_data->mSize - 1 : 0);
+        char* insertEnd = &insert[insertEndIdx];
+        mString.insert(insertAt, insertBegin, insertEnd);
     }
+
     mCurrentPos++;
     return *this;
 }

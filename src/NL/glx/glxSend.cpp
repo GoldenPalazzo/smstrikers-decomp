@@ -18,6 +18,7 @@
 #include "NL/glx/glxTexture.h"
 #include "NL/glx/glxDisplayList.h"
 #include "dolphin/gx/GXDispList.h"
+#include "dolphin/gx/GXBump.h"
 #include "dolphin/gx/GXCull.h"
 #include "dolphin/gx/GXTexture.h"
 #include "NL/nlColour.h"
@@ -368,12 +369,6 @@ static void glx_DrawPacket(const glModelPacket* p)
 {
     extern bool glx_GetFog();
     extern void glx_Fog(bool);
-    void GXSetNumIndStages(unsigned char);
-    void GXSetIndTexOrder(GXIndTexStageID, GXTexCoordID, GXTexMapID);
-    void GXSetIndTexCoordScale(GXIndTexStageID, GXIndTexScale, GXIndTexScale);
-    void GXSetTevIndWarp(GXTevStageID, GXIndTexStageID, bool, bool, GXIndTexMtxID);
-    void GXSetIndTexMtx(GXIndTexMtxID, const float (*)[3], signed char);
-    void GXSetTevDirect(GXTevStageID);
 
     static float indMtx[2][3] = {
         { 1.0f, 0.0f, 0.0f },
@@ -409,7 +404,7 @@ static void glx_DrawPacket(const glModelPacket* p)
         GXSetNumIndStages(1);
         GXSetIndTexOrder((GXIndTexStageID)0, (GXTexCoordID)0, (GXTexMapID)1);
         GXSetIndTexCoordScale((GXIndTexStageID)0, (GXIndTexScale)1, (GXIndTexScale)1);
-        GXSetTevIndWarp((GXTevStageID)0, (GXIndTexStageID)0, true, false, (GXIndTexMtxID)1);
+        GXSetTevIndWarp((GXTevStageID)0, (GXIndTexStageID)0, 1, 0, (GXIndTexMtxID)1);
 
         {
             float scale = 1.0f / glx_IndDivisor;
@@ -454,10 +449,10 @@ static void glx_DrawPacket(const glModelPacket* p)
     // === Block 4: Env-diffuse / Mobile-diffuse matrix setup ===
     if (glx_envdiffuse)
     {
-        Mtx scaleMtx;
-        Mtx transMtx;
         Mtx finalMtx;
         Mtx invMtx;
+        Mtx transMtx;
+        Mtx scaleMtx;
         s32 glossMapCoord;
         s32 glossMapStage;
 
@@ -486,9 +481,9 @@ static void glx_DrawPacket(const glModelPacket* p)
     }
     else if (glx_mobilediffuse)
     {
-        Mtx mvCopy;
-        Mtx scaleMtx;
         Mtx transMtx;
+        Mtx scaleMtx;
+        Mtx mvCopy;
         static int n;
         static signed char init;
 
@@ -508,9 +503,9 @@ static void glx_DrawPacket(const glModelPacket* p)
         float invN = 1.0f / (float)n;
         u32 frame = glGetCurrentFrame();
         u32 frameMod = frame - (frame / n) * n;
-        float offset = 1.0f - 2.0f * invN * (float)frameMod;
-        mvCopy[0][3] = offset;
-        mvCopy[1][3] = offset;
+        float offset = 2.0f * (invN * frameMod) - 1.0f;
+        mvCopy[0][2] = offset;
+        mvCopy[1][2] = offset;
 
         GXLoadTexMtxImm(mvCopy, 0x39, (_GXTexMtxType)0);
     }
@@ -540,14 +535,14 @@ static void glx_DrawPacket(const glModelPacket* p)
     // === Block 6: Viewport setup (when glx_viewport flag is set) ===
     if (glx_viewport)
     {
-        nlMatrix4 srcProj;
-        nlMatrix4 srcView;
-        Mtx44 proj44;
         Mtx mv34;
-        u32 vx = g_viewport.x;
-        u32 vy = g_viewport.y;
-        u32 vw = g_viewport.w;
-        u32 vh = g_viewport.h;
+        Mtx44 proj44;
+        nlMatrix4 srcView;
+        nlMatrix4 srcProj;
+        s32 vx = g_viewport.x;
+        s32 vy = g_viewport.y;
+        s32 vw = g_viewport.w;
+        s32 vh = g_viewport.h;
 
         memcpy(&srcProj, (const void*)g_viewport.projection, sizeof(nlMatrix4));
         memcpy(&srcView, (const void*)g_viewport.view, sizeof(nlMatrix4));
@@ -573,16 +568,11 @@ static void glx_DrawPacket(const glModelPacket* p)
     // === Block 7: Draw - emit primitives or display list ===
     if (p->indexBuffer == 0)
     {
-        u32 j;
-        u32 stream;
-        u32 numIndices = glx_NumIndices;
-        u16 numVerts = p->numVertices;
+        GXBegin(primitives[p->primType], (_GXVtxFmt)gx_vtxfmt, p->numVertices);
 
-        GXBegin(primitives[p->primType], (_GXVtxFmt)gx_vtxfmt, numVerts);
-
-        for (j = 0; j < numVerts; j++)
+        for (j = 0; j < p->numVertices; j++)
         {
-            for (stream = 0; stream < numIndices; stream++)
+            for (i = 0; i < glx_NumIndices; i++)
             {
                 GXWGFifo.u16 = (u16)j;
             }
@@ -604,18 +594,13 @@ static void glx_DrawPacket(const glModelPacket* p)
         }
         else if (glx_AllowUncompiledDraws && glGetRasterState(p->state.raster, (eGLState)8) != 1)
         {
-            u32 j;
-            u32 stream;
-            u32 numIndices = glx_NumIndices;
-            u16 numVerts = p->numVertices;
-
             if (dlIsDisplayList(p->indexBuffer))
             {
                 DisplayList* dl = dlGetStruct(p->indexBuffer);
-                GXBegin(primitives[p->primType], (_GXVtxFmt)gx_vtxfmt, numVerts);
-                for (j = 0; j < numVerts; j++)
+                GXBegin(primitives[p->primType], (_GXVtxFmt)gx_vtxfmt, p->numVertices);
+                for (j = 0; j < p->numVertices; j++)
                 {
-                    for (stream = 0; stream < numIndices; stream++)
+                    for (i = 0; i < glx_NumIndices; i++)
                     {
                         u16* ptr;
                         if (((u16*)&dl->indices)[1] != 0)
@@ -646,10 +631,10 @@ static void glx_DrawPacket(const glModelPacket* p)
             else
             {
                 u16* idxPtr = (u16*)p->indexBuffer;
-                GXBegin(primitives[p->primType], (_GXVtxFmt)gx_vtxfmt, numVerts);
-                for (j = 0; j < numVerts; j++)
+                GXBegin(primitives[p->primType], (_GXVtxFmt)gx_vtxfmt, p->numVertices);
+                for (j = 0; j < p->numVertices; j++)
                 {
-                    for (stream = 0; stream < numIndices; stream++)
+                    for (i = 0; i < glx_NumIndices; i++)
                     {
                         GXWGFifo.u16 = idxPtr[j];
                     }
@@ -700,9 +685,9 @@ static void glx_DrawPacket(const glModelPacket* p)
             GXSetTevColorIn((GXTevStageID)0, (GXTevColorArg)15, (GXTevColorArg)10, (GXTevColorArg)8, (GXTevColorArg)15);
             gxSetTevAlphaIn(0, (_GXTevAlphaArg)7, (_GXTevAlphaArg)5, (_GXTevAlphaArg)4, (_GXTevAlphaArg)7);
         }
-        else if (glx_texconfig == 0x21)
+        else
         {
-            GXSetTevColorIn((GXTevStageID)1, (GXTevColorArg)15, (GXTevColorArg)0, (GXTevColorArg)8, (GXTevColorArg)15);
+            GXSetTevColorIn((GXTevStageID)1, (GXTevColorArg)15, (GXTevColorArg)10, (GXTevColorArg)8, (GXTevColorArg)15);
         }
     }
 
@@ -712,7 +697,7 @@ static void glx_DrawPacket(const glModelPacket* p)
         GXLoadPosMtxImm(gx_modelview, 0);
 
         _GXProjectionType projType;
-        if (-1.0f == gx_proj[3][2])
+        if (-1.0f == mproj.m[3][2])
         {
             projType = (_GXProjectionType)0;
         }

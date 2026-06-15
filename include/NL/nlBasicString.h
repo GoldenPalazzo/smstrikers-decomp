@@ -1,5 +1,6 @@
 #ifndef _BASICSTRING_H_
 #define _BASICSTRING_H_
+#define BASICSTRING_INLINE_ERASE
 
 #include "types.h"
 #include "NL/nlMemory.h"

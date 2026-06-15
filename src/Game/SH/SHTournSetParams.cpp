@@ -1,3 +1,4 @@
+#define BIND_NO_DECL
 #include "Game/SH/SHTournSetParams.h"
 
 #include "Game/FE/FEAudio.h"
@@ -6,6 +7,16 @@
 #include "Game/GameInfo.h"
 #include "Game/GameSceneManager.h"
 #include "NL/nlPrint.h"
+#undef BIND_NO_DECL
+
+template <typename R, typename F, typename A>
+BindExp1<R, F, A> Bind(F fn, const A& arg)
+{
+    BindExp1<R, F, A> result;
+    result.mFuncPtr = fn;
+    result.mArg = arg;
+    return result;
+}
 
 template <typename T, typename R>
 Detail::MemFunImpl<R, void (T::*)()> MemFun(void (T::*fn)());
@@ -150,9 +161,7 @@ void TournSetParamsScene::BuildSubMenuList(int menuitem, TLComponentInstance* co
 
 /**
  * Offset/Address/Size: 0x168C | 0x800E1060 | size: 0x644
- * TODO: 94.42% match - r30/r31 register swap for this/presentation,
- * stack frame 0x100 vs 0x140, Function<R(P)> constructor dead store,
- * ApplyAction inline re-evaluates ternary action index.
+ * TODO: 98.51% match - saved registers differ for this/presentation and nested slide iteration.
  */
 void TournSetParamsScene::SceneCreated()
 {
@@ -174,17 +183,17 @@ void TournSetParamsScene::SceneCreated()
         mMenuItems.mNumItemsAdded++;
 
         {
-            Function<FnTLComponentInstanceCb> openFunc;
+            Function<TLComponentInstance*> openFunc;
             openFunc.mTag = FREE_FUNCTION;
             openFunc.mFreeFunction = SingleHighlite::OpenItem;
-            menuItem->mCallbacks[ON_HIGHLIGHT] = openFunc;
+            *(Function<TLComponentInstance*>*)&menuItem->mCallbacks[ON_HIGHLIGHT] = openFunc;
         }
 
         {
-            Function<FnTLComponentInstanceCb> closeFunc;
+            Function<TLComponentInstance*> closeFunc;
             closeFunc.mTag = FREE_FUNCTION;
             closeFunc.mFreeFunction = SingleHighlite::CloseItem;
-            menuItem->mCallbacks[ON_UNHIGHLIGHT] = closeFunc;
+            *(Function<TLComponentInstance*>*)&menuItem->mCallbacks[ON_UNHIGHLIGHT] = closeFunc;
         }
 
         if (i == 0)
@@ -273,6 +282,8 @@ void TournSetParamsScene::SceneCreated()
 
 /**
  * Offset/Address/Size: 0xBA0 | 0x800E0574 | size: 0xAEC
+ * TODO: 97.24% match - this in r28 vs r30 cascading register permutation
+ * through all branches, lwzx vs add+lwz array access, srwi vs extrwi byte mask
  */
 #define CALL_MENU_CB_UPDATE_TOP(cur, action)                   \
     do                                                         \
@@ -652,17 +663,18 @@ void TournSetParamsScene::Update(float fDeltaT)
                 break;
             }
 
-            if (res == RES_OK)
+            switch (res)
             {
+            case RES_OK:
                 FEAudio::PlayAnimAudioEvent("sfx_option_scroll_left", false);
                 if (menuIndex == 0)
                 {
                     ApplyMenuDefaults();
                 }
-            }
-            else if (res == RES_NOT_CHANGED)
-            {
+                break;
+            case RES_NOT_CHANGED:
                 FEAudio::PlayAnimAudioEvent("sfx_deny", false);
+                break;
             }
         }
     }
@@ -708,17 +720,18 @@ void TournSetParamsScene::Update(float fDeltaT)
                 break;
             }
 
-            if (res == RES_OK)
+            switch (res)
             {
+            case RES_OK:
                 FEAudio::PlayAnimAudioEvent("sfx_option_scroll_right", false);
                 if (menuIndex == 0)
                 {
                     ApplyMenuDefaults();
                 }
-            }
-            else if (res == RES_NOT_CHANGED)
-            {
+                break;
+            case RES_NOT_CHANGED:
                 FEAudio::PlayAnimAudioEvent("sfx_deny", false);
+                break;
             }
         }
     }

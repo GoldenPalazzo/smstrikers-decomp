@@ -11,12 +11,6 @@ extern char* fgets(char*, int, FILE*);
 
 static const char* SIM_FILE = "";
 
-struct StatsPair
-{
-    float mMean;
-    float mStandardDeviation;
-};
-
 /**
  * Offset/Address/Size: 0x3D0 | 0x80191868 | size: 0x38
  */
@@ -45,12 +39,14 @@ Tokenizer<BasicString<char, Detail::TempStringAllocator> >::iterator Tokenizer<B
 /**
  * Offset/Address/Size: 0x398 | 0x80191830 | size: 0x38
  */
+#pragma dont_inline on
 Tokenizer<BasicString<char, Detail::TempStringAllocator> >::iterator& Tokenizer<BasicString<char, Detail::TempStringAllocator> >::iterator::operator++()
 {
     mIter = mEnd;
     FindNextToken();
     return *this;
 }
+#pragma dont_inline off
 
 /**
  * Offset/Address/Size: 0x88 | 0x80191520 | size: 0x310
@@ -157,8 +153,8 @@ Simulator::Simulator()
 
 /**
  * Offset/Address/Size: 0x0 | 0x8019087C | size: 0xC18
- * TODO: register allocation drift remains (`this`/flags/temps), plus a stable 0x4 stack-slot
- *       offset shift in the early BasicString temporaries before file processing.
+ * TODO: 97.3% match - this/flag/pFile registers still differ, with BasicString(line)
+ *       temp pointer register drift.
  */
 void Simulator::InitializeStats()
 {
@@ -225,7 +221,9 @@ void Simulator::InitializeStats()
             {
                 Tokenizer<BasicString<char, Detail::TempStringAllocator> > tokenizer(statString, ",");
                 int i = 0;
-                for (Tokenizer<BasicString<char, Detail::TempStringAllocator> >::iterator iter = tokenizer.begin();
+                Tokenizer<BasicString<char, Detail::TempStringAllocator> >::iterator iter = tokenizer.begin();
+                ++iter;
+                for (;
                     iter != tokenizer.end();
                     ++iter)
                 {
@@ -236,11 +234,11 @@ void Simulator::InitializeStats()
                     ePlayerStats stat = (ePlayerStats)i;
                     if (doMean == 1)
                     {
-                        ((StatsPair*)this)[stat].mMean = (float)atof(iter.mToken.c_str());
+                        mStatistics[stat].mMean = (float)atof(iter.mToken.c_str());
                     }
                     else
                     {
-                        ((StatsPair*)this)[stat].mStandardDeviation = (float)atof(iter.mToken.c_str());
+                        mStatistics[stat].mStandardDeviation = (float)atof(iter.mToken.c_str());
                     }
                     i = (int)(stat + 1);
                 }

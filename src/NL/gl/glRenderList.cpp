@@ -7,8 +7,8 @@
 
 /**
  * Offset/Address/Size: 0x0 | 0x801D92C0 | size: 0x36C
- * TODO: 97.6% match - pModel/layer register swap (r25/r26), pPacket r31 vs r29,
- *       extra mr before rlwimi, numPackets/index register rotation
+ * TODO: 97.8% match - pModel/layer register swap (r25/r26), pPacket r31 vs r29,
+ *       extra mr before rlwimi
  */
 s32 GLRenderList::AttachModel(const glModel* pModel, unsigned long layer)
 {
@@ -35,20 +35,18 @@ s32 GLRenderList::AttachModel(const glModel* pModel, unsigned long layer)
         if ((s32)gl_ModifyGetNum() > 0)
         {
             unsigned long numPackets = pModel->numPackets;
-            for (unsigned long i = 0; i < numPackets; i++)
+            for (unsigned long index = 0; index < numPackets; index++, pPacket = (glModelPacket*)((u8*)pPacket + 0x4A))
             {
                 glModelPacket* newPacket = gl_Modify(pPacket);
                 glplatAttachPacket((eGLView)m_unk_0x00, layer, newPacket == NULL ? pPacket : newPacket);
-                pPacket = (glModelPacket*)((u8*)pPacket + 0x4A);
             }
         }
         else
         {
             unsigned long numPackets = pModel->numPackets;
-            for (unsigned long i = 0; i < numPackets; i++)
+            for (unsigned long index = 0; index < numPackets; index++, pPacket = (glModelPacket*)((u8*)pPacket + 0x4A))
             {
                 glplatAttachPacket((eGLView)m_unk_0x00, layer, pPacket);
-                pPacket = (glModelPacket*)((u8*)pPacket + 0x4A);
             }
         }
     }
@@ -58,7 +56,7 @@ s32 GLRenderList::AttachModel(const glModel* pModel, unsigned long layer)
         glGetMatrix((unsigned long)glViewGetViewMatrix((eGLView)m_unk_0x00), m);
         unsigned long numPackets = pModel->numPackets;
 
-        for (unsigned long i = 0; i < numPackets; i++)
+        for (unsigned long index = 0; index < numPackets; index++, pPacket = (glModelPacket*)((u8*)pPacket + 0x4A))
         {
             pair.packet = pPacket;
 
@@ -99,14 +97,12 @@ s32 GLRenderList::AttachModel(const glModel* pModel, unsigned long layer)
             {
                 *pCount = *pCount + 1;
             }
-
-            pPacket = (glModelPacket*)((u8*)pPacket + 0x4A);
         }
     }
     else if (m_unk_0x04 == GLVSort_Reverse)
     {
         unsigned long numPackets = pModel->numPackets;
-        for (unsigned long i = 0; i < numPackets; i++)
+        for (unsigned long index = 0; index < numPackets; index++, pPacket = (glModelPacket*)((u8*)pPacket + 0x4A))
         {
             glModelPacket* modified = glplatModifyPacket((eGLView)m_unk_0x00, pPacket);
             pList = packetList;
@@ -132,13 +128,12 @@ s32 GLRenderList::AttachModel(const glModel* pModel, unsigned long layer)
             }
 
             nlDLRingAddStart(&pList->m_Head, p);
-            pPacket = (glModelPacket*)((u8*)pPacket + 0x4A);
         }
     }
     else if (m_unk_0x04 == GLVSort_None)
     {
         unsigned long numPackets = pModel->numPackets;
-        for (unsigned long i = 0; i < numPackets; i++)
+        for (unsigned long index = 0; index < numPackets; index++, pPacket = (glModelPacket*)((u8*)pPacket + 0x4A))
         {
             glModelPacket* modified = glplatModifyPacket((eGLView)m_unk_0x00, pPacket);
             pList = packetList;
@@ -164,7 +159,6 @@ s32 GLRenderList::AttachModel(const glModel* pModel, unsigned long layer)
             }
 
             nlDLRingAddEnd(&pList->m_Head, p);
-            pPacket = (glModelPacket*)((u8*)pPacket + 0x4A);
         }
     }
 

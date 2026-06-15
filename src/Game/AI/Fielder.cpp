@@ -3837,25 +3837,26 @@ void cFielder::CanBreakOutOfSlideTackle()
 /**
  * Offset/Address/Size: 0x5F54 | 0x8001F290 | size: 0x2DC
  */
-eStrafeDirection cFielder::CalculateStrafeDirection(unsigned short aDesiredFacingDir, unsigned short aDesiredMovementDir)
+eStrafeDirection cFielder::CalculateStrafeDirection(unsigned short aDesiredFacingDirection, unsigned short aDesiredMovementDirection)
 {
-    s32 lastStrafeDirection = mActionRunningVars.eLastStrafeDirection;
-    s16 angleDelta = (s16)(aDesiredMovementDir - aDesiredFacingDir);
-    float strafeToRunDelta;
-    float backwardsToStrafeRunDelta;
+    s16 nMovementFacingDelta = (s16)(aDesiredMovementDirection - aDesiredFacingDirection);
+    float fTransitionToForwardDelta;
+    float fTransitionToBackWardsDelta;
 
-    switch (lastStrafeDirection)
+    switch (mActionRunningVars.eLastStrafeDirection)
     {
     case STRAFE_RIGHT:
     case STRAFE_LEFT:
-        strafeToRunDelta = (float)g_pGame->m_pGameTweaks->nStrafeToRunOutDirectionDelta;
-        backwardsToStrafeRunDelta = (float)g_pGame->m_pGameTweaks->nBackwardsToStrafeRunOutDirectionDelta;
+        fTransitionToForwardDelta = (float)g_pGame->m_pGameTweaks->nStrafeToRunOutDirectionDelta;
+        fTransitionToBackWardsDelta = (float)g_pGame->m_pGameTweaks->nBackwardsToStrafeRunOutDirectionDelta;
         break;
 
+    case STRAFE_IDLE:
+    case STRAFE_FORWARD:
     case STRAFE_BACK:
     default:
-        strafeToRunDelta = (float)g_pGame->m_pGameTweaks->nStrafeToRunInDirectionDelta;
-        backwardsToStrafeRunDelta = (float)g_pGame->m_pGameTweaks->nBackwardsToStrafeRunInDirectionDelta;
+        fTransitionToForwardDelta = (float)g_pGame->m_pGameTweaks->nStrafeToRunInDirectionDelta;
+        fTransitionToBackWardsDelta = (float)g_pGame->m_pGameTweaks->nBackwardsToStrafeRunInDirectionDelta;
         break;
     }
 
@@ -3876,22 +3877,22 @@ eStrafeDirection cFielder::CalculateStrafeDirection(unsigned short aDesiredFacin
             return STRAFE_FORWARD;
         }
 
-        if ((float)(u16)((angleDelta < 0) ? -angleDelta : angleDelta) < strafeToRunDelta)
+        if ((float)(u16)((nMovementFacingDelta < 0) ? -nMovementFacingDelta : nMovementFacingDelta) < fTransitionToForwardDelta)
         {
             return STRAFE_FORWARD;
         }
 
-        if ((float)angleDelta > -backwardsToStrafeRunDelta)
+        if ((float)nMovementFacingDelta > -fTransitionToBackWardsDelta)
         {
-            if ((float)angleDelta <= strafeToRunDelta)
+            if ((float)nMovementFacingDelta <= fTransitionToForwardDelta)
             {
                 return STRAFE_RIGHT;
             }
         }
 
-        if ((float)angleDelta < backwardsToStrafeRunDelta)
+        if ((float)nMovementFacingDelta < fTransitionToBackWardsDelta)
         {
-            if ((float)angleDelta >= strafeToRunDelta)
+            if ((float)nMovementFacingDelta >= fTransitionToForwardDelta)
             {
                 return STRAFE_LEFT;
             }
@@ -3900,22 +3901,22 @@ eStrafeDirection cFielder::CalculateStrafeDirection(unsigned short aDesiredFacin
         return STRAFE_BACK;
     }
 
-    if ((float)(u16)((angleDelta < 0) ? -angleDelta : angleDelta) < strafeToRunDelta)
+    if ((float)(u16)((nMovementFacingDelta < 0) ? -nMovementFacingDelta : nMovementFacingDelta) < fTransitionToForwardDelta)
     {
         return STRAFE_FORWARD;
     }
 
-    if ((float)angleDelta > -backwardsToStrafeRunDelta)
+    if ((float)nMovementFacingDelta > -fTransitionToBackWardsDelta)
     {
-        if ((float)angleDelta <= strafeToRunDelta)
+        if ((float)nMovementFacingDelta <= fTransitionToForwardDelta)
         {
             return STRAFE_RIGHT;
         }
     }
 
-    if ((float)angleDelta < backwardsToStrafeRunDelta)
+    if ((float)nMovementFacingDelta < fTransitionToBackWardsDelta)
     {
-        if ((float)angleDelta >= strafeToRunDelta)
+        if ((float)nMovementFacingDelta >= fTransitionToForwardDelta)
         {
             return STRAFE_LEFT;
         }

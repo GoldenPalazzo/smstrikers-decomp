@@ -430,24 +430,24 @@ void SHChooseSides2::SceneCreated()
             InlineHasher(nlStringLowerHash("Layer")),
             InlineHasher(nlStringLowerHash("CAPTAIN_NAME_LEFT")));
 
-        pNameComp = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
+        TLComponentInstance* pIconComp = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
             pNameComp->GetActiveSlide(),
             InlineHasher(nlStringLowerHash("COMPONENT")),
             InlineHasher(0));
 
-        pNameComp->SetActiveSlide(GetTeamName(nlSingleton<GameInfoManager>::s_pInstance->GetTeam((short)0)));
+        pIconComp->SetActiveSlide(GetTeamName(nlSingleton<GameInfoManager>::s_pInstance->GetTeam((short)0)));
 
         pNameComp = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
             currentSlide,
             InlineHasher(nlStringLowerHash("Layer")),
             InlineHasher(nlStringLowerHash("CAPTAIN_NAME_RIGHT")));
 
-        pNameComp = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
+        pIconComp = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
             pNameComp->GetActiveSlide(),
             InlineHasher(nlStringLowerHash("COMPONENT")),
             InlineHasher(0));
 
-        pNameComp->SetActiveSlide(GetTeamName(nlSingleton<GameInfoManager>::s_pInstance->GetTeam((short)1)));
+        pIconComp->SetActiveSlide(GetTeamName(nlSingleton<GameInfoManager>::s_pInstance->GetTeam((short)1)));
     }
     else
     {

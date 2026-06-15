@@ -28,22 +28,29 @@ bool SidelineExplodableManager::sbIsInitialized;
 template <>
 void Vector<ExplosionFragment, DefaultAllocator>::reserve(int capacity)
 {
-    if (mCapacity < capacity)
+    if (mCapacity >= capacity)
     {
-        Vector temp(capacity, NULL);
-        for (int i = 0; i < mSize; i++)
-        {
-            temp.mData[i] = mData[i];
-        }
-        temp.mSize = mSize;
-        mSize = temp.mSize;
-        int tmpCapacity = mCapacity;
-        mCapacity = temp.mCapacity;
-        temp.mCapacity = tmpCapacity;
-        ExplosionFragment* tmpData = mData;
-        mData = temp.mData;
-        temp.mData = tmpData;
+        return;
     }
+
+    Vector temp(capacity, (const char*)0);
+    int i = 0;
+    for (; i < mSize; i++)
+    {
+        temp.mData[i] = mData[i];
+    }
+    temp.mSize = mSize;
+    int newSize = temp.mSize;
+    mSize = newSize;
+    temp.mSize = newSize;
+
+    int oldCapacity = mCapacity;
+    mCapacity = temp.mCapacity;
+    temp.mCapacity = oldCapacity;
+
+    ExplosionFragment* oldData = mData;
+    mData = temp.mData;
+    temp.mData = oldData;
 }
 
 /**
@@ -1121,7 +1128,6 @@ void SidelineExplodableManager::SetVisibilityOfUnexplodedModels(bool* visibility
 
 /**
  * Offset/Address/Size: 0x650 | 0x801679B0 | size: 0xF4
- * TODO: 99.51% match - loop body still has f0/f1 register assignment swap on m42/m41/m43 loads
  */
 void SidelineExplodableManager::TriggerExplosions(const nlVector3& pos, float explosionRadius)
 {
@@ -1130,19 +1136,18 @@ void SidelineExplodableManager::TriggerExplosions(const nlVector3& pos, float ex
     float posX;
     float posY;
     float posZ;
-    float triggerRadius = 1.2f * explosionRadius;
+    float triggerDist = 1.2f * explosionRadius;
     posZ = pos.f.z;
     posY = pos.f.y;
     posX = pos.f.x;
 
     while (node != NULL)
     {
-        const nlMatrix4& worldMtx = node->mpExplodable->GetWorldMatrix();
-        float dy = worldMtx.f.m43 - posZ;
-        float dx = worldMtx.f.m41 - posX;
-        float dz = worldMtx.f.m42 - posY;
-        float dist = nlSqrt(dy * dy + (dx * dx + dz * dz), true);
-        if (dist < triggerRadius)
+        nlVector3 delta;
+        const nlVector3& position = node->mpExplodable->GetWorldMatrix().GetTranslation();
+        nlVec3Sub(delta, position, pos);
+        float dist = nlSqrt(delta.GetLengthSq3D(), true);
+        if (dist < triggerDist)
         {
             node->mpExplodable->mfExplodeTime = dist / divisor;
         }

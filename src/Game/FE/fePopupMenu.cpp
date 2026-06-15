@@ -6,6 +6,7 @@
 #include "Game/OverlayManager.h"
 #include "Game/FE/feFinder.h"
 #include "Game/FE/tlTextInstance.h"
+#include "Game/FE/feText.h"
 #include "Game/FE/feTemplates.h"
 #include "NL/nlBSearch.h"
 #include "NL/nlConfig.h"
@@ -156,8 +157,7 @@ void FEPopupMenu::ResizeHighlight()
 
 /**
  * Offset/Address/Size: 0x460 | 0x8009870C | size: 0x1C0
- * TODO: 93.76% match - stack frame 0xa0 vs 0x90: MWCC not reusing InlineHasher(0) argument copy
- * stack locations between pre-loop and loop Find calls.
+ * TODO: 99.76% match - remaining differences are InlineHasher argument copy stack slots.
  */
 void FEPopupMenu::CentrePopup(float totalHeight, float topOfMessageBox)
 {
@@ -166,10 +166,8 @@ void FEPopupMenu::CentrePopup(float totalHeight, float topOfMessageBox)
     float offset;
     FEPresentation* presentation;
     TLTextInstance* pText;
-    InlineHasher h4;
-    InlineHasher h5;
-    InlineHasher h6;
     feVector3 position;
+    InlineHasher h[3];
     int i;
 
     half = totalHeight;
@@ -177,34 +175,34 @@ void FEPopupMenu::CentrePopup(float totalHeight, float topOfMessageBox)
     offset = half - topOfMessageBox;
     presentation = m_pFEScene->m_pFEPackage->GetPresentation();
 
-    h6 = InlineHasher(0);
-    h5 = InlineHasher(0);
-    h4 = InlineHasher(0);
+    h[2] = InlineHasher(0);
+    h[1] = InlineHasher(0);
+    h[0] = InlineHasher(0);
     pText = FEFinder<TLTextInstance, 3>::Find<FEPresentation>(
         presentation,
         InlineHasher(nlStringLowerHash("Slide1")),
         InlineHasher(nlStringLowerHash("Layer")),
         InlineHasher(nlStringLowerHash("Message")),
-        h4,
-        h5,
-        h6);
+        h[0],
+        h[1],
+        h[2]);
 
     position = pText->GetAssetPosition();
     pText->SetAssetPosition(position.e[0], position.e[1] + offset, position.e[2]);
 
     for (i = 0; i < mPopup.numOptions; i++)
     {
-        h6 = InlineHasher(0);
-        h5 = InlineHasher(0);
-        h4 = InlineHasher(0);
+        h[2] = InlineHasher(0);
+        h[1] = InlineHasher(0);
+        h[0] = InlineHasher(0);
         pText = FEFinder<TLTextInstance, 3>::Find<FEPresentation>(
             presentation,
             InlineHasher(nlStringLowerHash("Slide1")),
             InlineHasher(nlStringLowerHash("Layer")),
             InlineHasher(nlStringLowerHash(optionNames[i])),
-            h4,
-            h5,
-            h6);
+            h[0],
+            h[1],
+            h[2]);
 
         position = pText->GetAssetPosition();
         pText->SetAssetPosition(position.e[0], position.e[1] + offset, position.e[2]);
@@ -252,12 +250,13 @@ void FEPopupMenu::SetPositions()
         InlineHasher(nlStringLowerHash("Message")));
 
     messagePosition = pText->GetAssetPosition();
+    const nlFont* pFont = ((const FEText*)pText->m_component)->m_pFeFontResource->m_font;
     struct Copy88
     {
         unsigned long w[22];
     };
     *(Copy88*)&drawInfo = *(Copy88*)&pText->m_DrawInfo;
-    messageHeight = (float)(drawInfo.RowCount * drawInfo.pFont->m_Metrics.RenderHeight);
+    messageHeight = (float)(drawInfo.RowCount * pFont->m_Metrics.Height);
     prevOptionHeight = messageHeight * 0.5f;
     totalHeight += messageHeight;
     topOfMessage = messagePosition.e[1] + prevOptionHeight;
@@ -363,8 +362,11 @@ void FEPopupMenu::SetPositions()
         optionColour.c[3] = 0xFF;
         pText->SetAssetColour(optionColour);
 
-        drawInfo = pText->m_DrawInfo;
-        optionHeight = (float)(drawInfo.RowCount * drawInfo.pFont->m_Metrics.RenderHeight);
+        {
+            const nlFont* pFont = ((const FEText*)pText->m_component)->m_pFeFontResource->m_font;
+            drawInfo = pText->m_DrawInfo;
+            optionHeight = (float)(drawInfo.RowCount * pFont->m_Metrics.Height);
+        }
 
         totalHeight += optionHeight;
 
@@ -382,7 +384,8 @@ void FEPopupMenu::SetPositions()
         prevOptionHeight = optionHeight;
 
         optionPosition = pText->GetAssetPosition();
-        pText->SetAssetPosition(optionPosition.e[0], optionY, optionPosition.e[2]);
+        optionPosition.e[1] = optionY;
+        pText->SetAssetPosition(optionPosition.e[0], optionPosition.e[1], optionPosition.e[2]);
 
         if (i2 == mHighlightedOption)
         {

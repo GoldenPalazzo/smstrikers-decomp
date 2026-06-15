@@ -711,7 +711,6 @@ SaveData* GoalieSave::FindBestSave(SaveBlendInfo& blendInfo, const nlVector3& v3
     SaveData* pSaveData;
     MyMiniListShim mylist;
     MyMiniData griddata[7][5];
-    int dist;
     int dz;
     int across;
     int up;
@@ -753,19 +752,20 @@ SaveData* GoalieSave::FindBestSave(SaveBlendInfo& blendInfo, const nlVector3& v3
 
         for (across = 0; across < 7; across++)
         {
+            MyMiniData* gridRow = griddata[across];
+            nlListContainer<SaveData*>* saveRow = gSaveGrid[across];
             dz = i - across;
-            dist = dz * dz;
 
             for (up = 0; up < 5; up++)
             {
                 int du = j - up;
-                int testDist = dist + du * du;
+                int testDist = dz * dz + du * du;
 
                 if (testDist <= 8)
                 {
-                    griddata[across][up].dist = testDist;
-                    griddata[across][up].list = &gSaveGrid[across][up];
-                    InsertSorted(*(nlDLListContainer<MyMiniData*>*)&mylist, &griddata[across][up]);
+                    gridRow[up].dist = testDist;
+                    gridRow[up].list = &saveRow[up];
+                    InsertSorted(*(nlDLListContainer<MyMiniData*>*)&mylist, &gridRow[up]);
                 }
             }
         }

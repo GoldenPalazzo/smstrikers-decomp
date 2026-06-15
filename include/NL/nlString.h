@@ -64,10 +64,6 @@ int nlStrCmp(const CharT* a, const CharT* b)
     return (CharT)c1 - (CharT)c2;
 }
 
-/**
- * Offset/Address/Size: 0x0 | 0x801514FC | size: 0x48
- * TODO: 87.78% match - two lbz instructions in swapped order (c2/b loaded before c1/a), beq branch prediction bit
- */
 template <typename CharT>
 int nlStrNCmp(const CharT* a, const CharT* b, unsigned long maxsize)
 {
@@ -178,8 +174,16 @@ CharT* nlStrNCpy(CharT* str1, const CharT* str2, unsigned long len)
     p = str1;
     goto test;
 loop:
-    p++;
-    str2++;
+    if (sizeof(CharT) == 1)
+    {
+        p++;
+        str2++;
+    }
+    else
+    {
+        str2++;
+        p++;
+    }
 test:
     if (n-- == 0)
         goto done;

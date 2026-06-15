@@ -1116,19 +1116,18 @@ void ChooseCupSceneV2::DisplayCup()
 
 /**
  * Offset/Address/Size: 0x438 | 0x800DA6BC | size: 0x374
- * TODO: 97.27% match - InlineHasher temps at sp+0x18 vs target sp+0x1c (4-byte stack shift),
- * r30/r31 swap for locString/data (r30=locString/r31=data vs target r31=locString/r30=data)
+ * TODO: 99.4% match - r30/r31 swap for locString/data
  */
-void ChooseCupSceneV2::SetCurrentChamp(eTeamID teamID, bool hasChamp, TLComponentInstance* comp)
+void ChooseCupSceneV2::SetCurrentChamp(eTeamID currentChamp, bool isCPUChamp, TLComponentInstance* cupInProgressComponent)
 {
-    TLTextInstance* text = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
-        comp->GetActiveSlide(),
+    TLTextInstance* pText = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
+        cupInProgressComponent->GetActiveSlide(),
         InlineHasher(nlStringLowerHash("Text")),
         InlineHasher(0));
 
-    if (hasChamp)
+    if (isCPUChamp)
     {
-        const unsigned short* locString = LookupLocString("CupChampion");
+        const unsigned short* locString = LookupLocString("CUPCHAMP");
 
         BasicStringData<unsigned short>* data = (BasicStringData<unsigned short>*)nlMalloc(0x10, 8, true);
         if (data != 0)
@@ -1136,19 +1135,16 @@ void ChooseCupSceneV2::SetCurrentChamp(eTeamID teamID, bool hasChamp, TLComponen
             CopyWideString(data, locString);
         }
 
-        unsigned long charHash = GetLOCCharacterName(teamID, false, false);
-        const unsigned short* charName = LookupLocHash(charHash);
-
-        BasicString<unsigned short, Detail::TempStringAllocator> formattedResult = Format(
+        BasicString<unsigned short, Detail::TempStringAllocator> formatted = Format(
             BasicString<unsigned short, Detail::TempStringAllocator>(data),
-            charName);
+            LookupLocHash(GetLOCCharacterName(currentChamp, false, false)));
 
-        memcpy(mChampBuffer, formattedResult.c_str(), 0x200);
-        text->SetString(mChampBuffer);
+        memcpy(mChampBuffer, formatted.c_str(), 0x200);
+        pText->SetString(mChampBuffer);
     }
     else
     {
-        text->SetStringId("");
+        pText->SetStringId("CUPCHAMP_USER");
     }
 }
 

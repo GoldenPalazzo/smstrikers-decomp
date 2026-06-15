@@ -176,10 +176,10 @@ config.reconfig_deps = []
 
 # Progress
 config.progress_use_fancy = True
-config.progress_code_fancy_frac = 293
-config.progress_code_fancy_item = "Trophies"
-config.progress_data_fancy_frac = 51
-config.progress_data_fancy_item = "Event Matches"
+config.progress_code_fancy_frac = 250
+config.progress_code_fancy_item = "Fans in the Stadium"
+config.progress_data_fancy_frac = 90
+config.progress_data_fancy_item = "Megastrikes"
 
 # Optional numeric ID for decomp.me preset
 # Can be overridden in libraries or objects

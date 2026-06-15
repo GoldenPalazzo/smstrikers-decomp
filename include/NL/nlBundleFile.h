@@ -46,15 +46,16 @@ public:
     static inline u32 HashFilename(const char* filename)
     {
         char fixedName[256];
-        char* src = (char*)filename;
-        unsigned long index = 0;
         char* dst = fixedName;
+        unsigned long index = 0;
+        char slash = '/';
+        char* src = (char*)filename;
         for (; index < nlStrLen<char>(filename); dst++, index++, src++)
         {
             *dst = nlToLower<char>(*src);
             if (*src == 0x5C)
             {
-                *dst = 0x2f;
+                *dst = slash;
             }
         }
         fixedName[index] = 0;

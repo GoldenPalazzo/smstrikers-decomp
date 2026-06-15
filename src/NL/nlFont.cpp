@@ -91,27 +91,43 @@ void nlFont::SetScissorBox(const ScissorBox& other) const
  */
 void nlFont::DrawString(eGLView View, const FontCharString& Text, const nlVector2& Position, const nlColour& Colour, const nlColour& EffectColour, int Length, nlFont::TextPass Passes, bool FlipY, unsigned long* pMatrix, nlColour* pOverrideColour) const
 {
+    float PositionY = Position.f.y;
+    float CurrentY;
+    float CurrentX;
     float StartingX;
-    float CurrentY = Position.f.y;
-    int renderAscent = m_Metrics.RenderAscent;
+    int renderAscent;
     if (FlipY)
     {
-        renderAscent = -renderAscent;
+        renderAscent = -m_Metrics.RenderAscent;
+    }
+    else
+    {
+        renderAscent = m_Metrics.RenderAscent;
     }
 
     StartingX = Position.f.x;
-    CurrentY -= (float)renderAscent;
+    CurrentY = PositionY - (float)renderAscent;
 
+    unsigned short EscapeBegin;
+    int StringLength;
     if (Length == -1)
     {
-        Length = nlStrLen(Text.m_pString);
+        StringLength = nlStrLen(Text.m_pString);
+    }
+    else
+    {
+        StringLength = Length;
     }
 
-    glPoly2* pQuads = (glPoly2*)__alloca((unsigned long)(Length * sizeof(glPoly2)));
+    const GlyphInfo* pGlyph;
+    glPoly2* pQuads = (glPoly2*)__alloca((unsigned long)(StringLength * sizeof(glPoly2)));
     glPoly2* pCurrentQuad = pQuads;
 
     gl_ScreenInfo* pScreenInfo = glGetScreenInfo();
     float PixelCenter = pScreenInfo->PixelCentre;
+    unsigned long HandledChars = 0;
+    unsigned long CurrentPage = 0;
+    const unsigned short* pCurrentChar;
     StartingX += PixelCenter;
     CurrentY += PixelCenter;
 
@@ -150,14 +166,11 @@ void nlFont::DrawString(eGLView View, const FontCharString& Text, const nlVector
         OverrideColour = *pOverrideColour;
     }
 
-    const unsigned short EscapeBegin = nlEscapeSequence::ESCAPE_BEGIN;
+    EscapeBegin = nlEscapeSequence::ESCAPE_BEGIN;
     const unsigned short* PushColourIndex = 0;
     nlColour LastPushedColour = OverrideColour;
 
-    unsigned long HandledChars = 0;
-    unsigned long CurrentPage = 0;
-
-    while (HandledChars < (unsigned long)Length)
+    while (HandledChars < (unsigned long)StringLength)
     {
         bool useEffectTextures = false;
         if (Passes == PASS_Effect && m_TextureType == SplitFX)
@@ -168,13 +181,13 @@ void nlFont::DrawString(eGLView View, const FontCharString& Text, const nlVector
         const unsigned long* textureHandles = useEffectTextures ? m_EffectTextureHandles : m_TextureHandles;
         glSetCurrentTexture(textureHandles[CurrentPage], GLTT_Diffuse);
 
-        float CurrentX = StartingX;
+        CurrentX = StartingX;
         unsigned long i = 0;
-        const unsigned short* pCurrentChar = Text.m_pString;
+        pCurrentChar = Text.m_pString;
 
-        while (*pCurrentChar != 0 && HandledChars < (unsigned long)Length && i < (unsigned long)Length)
+        while (*pCurrentChar != 0 && HandledChars < (unsigned long)StringLength && i < (unsigned long)StringLength)
         {
-            unsigned short Char = *pCurrentChar;
+            unsigned long Char = *pCurrentChar;
             if (Char == EscapeBegin)
             {
                 nlEscapeSequence escape(pCurrentChar);
@@ -205,14 +218,14 @@ void nlFont::DrawString(eGLView View, const FontCharString& Text, const nlVector
                     break;
 
                 case ESC_NON_BREAKING_SPACE:
-                    CurrentX += (float)((int)m_GlyphLookup[0].Advance + (int)m_GlyphLookup[0].Offset);
+                    CurrentX += (float)((int)m_GlyphLookup[0].Offset + (int)m_GlyphLookup[0].Advance);
                     break;
                 default:
                     break;
                 }
 
                 int consumed = (int)(escape.m_pEnd - pCurrentChar);
-                i += consumed;
+                i = consumed + i;
                 i -= 1;
                 if (CurrentPage == 0)
                 {
@@ -222,7 +235,6 @@ void nlFont::DrawString(eGLView View, const FontCharString& Text, const nlVector
             }
             else
             {
-                const GlyphInfo* pGlyph;
                 if (Char > 0x7F)
                 {
                     pGlyph = &m_pExtendedGlyphs[Char - 0x80];
@@ -252,10 +264,14 @@ void nlFont::DrawString(eGLView View, const FontCharString& Text, const nlVector
                         pCurrentQuad->m_pos[3].f.y = CurrentY;
                         pCurrentQuad->m_pos[0].f.y = CurrentY;
 
-                        int renderHeight = m_Metrics.RenderHeight;
+                        int renderHeight;
                         if (FlipY)
                         {
-                            renderHeight = -renderHeight;
+                            renderHeight = -m_Metrics.RenderHeight;
+                        }
+                        else
+                        {
+                            renderHeight = m_Metrics.RenderHeight;
                         }
 
                         float EndY = CurrentY + (float)renderHeight;

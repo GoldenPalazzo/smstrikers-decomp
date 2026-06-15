@@ -850,6 +850,8 @@ void CupChooseCaptainSceneV2::ChangeState(CupChooseCaptainSceneV2::eCupCaptainSt
     typedef TLComponentInstance* (*FindCompByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
 
     TLComponentInstance* pCursorComp;
+    volatile InlineHasher hB, hA;
+    volatile InlineHasher h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
     if (from == CUP_STATE_CAPTAIN && to == CUP_STATE_SK)
     {
         mComponents[0]->SetActiveSlide("Slide2");
@@ -868,10 +870,6 @@ void CupChooseCaptainSceneV2::ChangeState(CupChooseCaptainSceneV2::eCupCaptainSt
                 FindCompByRef byRef;
             } findComp;
 
-            volatile InlineHasher hB, hA;
-            volatile InlineHasher h9, h8;
-            volatile InlineHasher h7, h6, h5, h4, h3, h2, h1, h0;
-
             findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
 
             h0.m_Hash = 0;
@@ -886,8 +884,8 @@ void CupChooseCaptainSceneV2::ChangeState(CupChooseCaptainSceneV2::eCupCaptainSt
             h9.m_Hash = 0;
 
             unsigned long hash = nlStringLowerHash("HIGHLIGHT");
-            hA.m_Hash = hash;
             hB.m_Hash = hash;
+            hA.m_Hash = hash;
 
             pCursorComp = findComp.byRef(
                 mComponents[1]->GetActiveSlide(),
@@ -923,8 +921,7 @@ void CupChooseCaptainSceneV2::ChangeState(CupChooseCaptainSceneV2::eCupCaptainSt
             } findComp;
 
             volatile InlineHasher hB, hA;
-            volatile InlineHasher h9, h8;
-            volatile InlineHasher h7, h6, h5, h4, h3, h2, h1, h0;
+            volatile InlineHasher h8, h6, h4, h2, h0;
 
             findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
             h0.m_Hash = 0;
@@ -939,8 +936,8 @@ void CupChooseCaptainSceneV2::ChangeState(CupChooseCaptainSceneV2::eCupCaptainSt
             h9.m_Hash = 0;
 
             unsigned long hash = nlStringLowerHash("HIGHLIGHT");
-            hA.m_Hash = hash;
             hB.m_Hash = hash;
+            hA.m_Hash = hash;
 
             pCursorComp = findComp.byRef(
                 mComponents[3]->GetActiveSlide(),
@@ -983,8 +980,7 @@ void CupChooseCaptainSceneV2::ChangeState(CupChooseCaptainSceneV2::eCupCaptainSt
             } findComp;
 
             volatile InlineHasher hB, hA;
-            volatile InlineHasher h9, h8;
-            volatile InlineHasher h7, h6, h5, h4, h3, h2, h1, h0;
+            volatile InlineHasher h8, h6, h4, h2, h0;
 
             findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
             h0.m_Hash = 0;
@@ -999,8 +995,8 @@ void CupChooseCaptainSceneV2::ChangeState(CupChooseCaptainSceneV2::eCupCaptainSt
             h9.m_Hash = 0;
 
             unsigned long hash = nlStringLowerHash("HIGHLIGHT");
-            hA.m_Hash = hash;
             hB.m_Hash = hash;
+            hA.m_Hash = hash;
 
             pCursorComp = findComp.byRef(
                 mComponents[1]->GetActiveSlide(),
@@ -1028,8 +1024,7 @@ void CupChooseCaptainSceneV2::ChangeState(CupChooseCaptainSceneV2::eCupCaptainSt
             } findComp;
 
             volatile InlineHasher hB, hA;
-            volatile InlineHasher h9, h8;
-            volatile InlineHasher h7, h6, h5, h4, h3, h2, h1, h0;
+            volatile InlineHasher h8, h6, h4, h2, h0;
 
             findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
             h0.m_Hash = 0;
@@ -1044,8 +1039,8 @@ void CupChooseCaptainSceneV2::ChangeState(CupChooseCaptainSceneV2::eCupCaptainSt
             h9.m_Hash = 0;
 
             unsigned long hash = nlStringLowerHash("HIGHLIGHT");
-            hA.m_Hash = hash;
             hB.m_Hash = hash;
+            hA.m_Hash = hash;
 
             pCursorComp = findComp.byRef(
                 mComponents[3]->GetActiveSlide(),
@@ -1059,11 +1054,11 @@ void CupChooseCaptainSceneV2::ChangeState(CupChooseCaptainSceneV2::eCupCaptainSt
 
         pCursorComp->m_bVisible = true;
 
-        mCaptainGrid->RebindHighliteComponent("HIGHLIGHT");
         mComponents[2]->m_bVisible = false;
         mPressAComponent->m_bVisible = false;
+        mCaptainGrid->RebindHighliteComponent("HIGHLIGHT");
 
-        mTicker->SetDisplayMessage(0x4B68A61F);
+        mTicker->SetDisplayMessage(0x4B67A61F);
         mRemainingSoundDelay = 0.0f;
     }
     else if (from == CUP_STATE_SK && to == CUP_STATE_READY)
@@ -1079,8 +1074,7 @@ void CupChooseCaptainSceneV2::ChangeState(CupChooseCaptainSceneV2::eCupCaptainSt
             } findComp;
 
             volatile InlineHasher hB, hA;
-            volatile InlineHasher h9, h8;
-            volatile InlineHasher h7, h6, h5, h4, h3, h2, h1, h0;
+            volatile InlineHasher h8, h6, h4, h2, h0;
 
             findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
             h0.m_Hash = 0;
@@ -1095,8 +1089,8 @@ void CupChooseCaptainSceneV2::ChangeState(CupChooseCaptainSceneV2::eCupCaptainSt
             h9.m_Hash = 0;
 
             unsigned long hash = nlStringLowerHash("HIGHLIGHT");
-            hA.m_Hash = hash;
             hB.m_Hash = hash;
+            hA.m_Hash = hash;
 
             pCursorComp = findComp.byRef(
                 mComponents[3]->GetActiveSlide(),
@@ -1140,8 +1134,7 @@ void CupChooseCaptainSceneV2::ChangeState(CupChooseCaptainSceneV2::eCupCaptainSt
             } findComp;
 
             volatile InlineHasher hB, hA;
-            volatile InlineHasher h9, h8;
-            volatile InlineHasher h7, h6, h5, h4, h3, h2, h1, h0;
+            volatile InlineHasher h8, h6, h4, h2, h0;
 
             findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
             h0.m_Hash = 0;
@@ -1156,8 +1149,8 @@ void CupChooseCaptainSceneV2::ChangeState(CupChooseCaptainSceneV2::eCupCaptainSt
             h9.m_Hash = 0;
 
             unsigned long hash = nlStringLowerHash("HIGHLIGHT");
-            hA.m_Hash = hash;
             hB.m_Hash = hash;
+            hA.m_Hash = hash;
 
             pCursorComp = findComp.byRef(
                 mComponents[3]->GetActiveSlide(),
@@ -1177,7 +1170,7 @@ void CupChooseCaptainSceneV2::ChangeState(CupChooseCaptainSceneV2::eCupCaptainSt
         mComponents[4]->m_bVisible = false;
         mPressAComponent->m_bVisible = false;
 
-        mTicker->SetDisplayMessage(0x4B68A61F);
+        mTicker->SetDisplayMessage(0x4B67A61F);
         mRemainingSoundDelay = 0.0f;
     }
 

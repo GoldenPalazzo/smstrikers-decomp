@@ -391,9 +391,7 @@ void glxSwapPre(bool bSend)
 
 /**
  * Offset/Address/Size: 0x734 | 0x801BF484 | size: 0x260
- * TODO: 97.8% match - r30/r31 register swap (data/str) and copy ctor
- * missing reload at 0x11c. Fixing nlBasicString.h copy ctor regresses 26
- * other functions.
+ * TODO: 98.52% match - r30/r31 register swap (data/str)
  */
 void glxInitSwap(void* arg0, void* arg1)
 {

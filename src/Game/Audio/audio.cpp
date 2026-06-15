@@ -3948,6 +3948,7 @@ void AudioStreamTrack::TrackManager<3>::DestroyAllTracks()
 
     unsigned long trackOffset;
     unsigned long i;
+    EL* entryLookup;
     EL* foundSlot;
     AudioStreamTrack::StreamTrack* track;
 
@@ -3957,7 +3958,7 @@ void AudioStreamTrack::TrackManager<3>::DestroyAllTracks()
     {
         track = ((EL*)m_Tracks.m_pEntryLookup)->pEntry;
         if (track == NULL)
-            break;
+            continue;
 
         if (track)
         {
@@ -3986,13 +3987,14 @@ void AudioStreamTrack::TrackManager<3>::DestroyAllTracks()
         }
 
         if (track == NULL)
-            break;
+            continue;
 
         for (i = 0, trackOffset = 0; i < m_Tracks.m_EntryCount; trackOffset += 8, i++)
         {
-            if (((EL*)((char*)m_Tracks.m_pEntryLookup + trackOffset))->pEntry == track)
+            entryLookup = m_Tracks.m_pEntryLookup;
+            if (((EL*)((char*)entryLookup + trackOffset))->pEntry == track)
             {
-                foundSlot = (EL*)((char*)m_Tracks.m_pEntryLookup + i * 8);
+                foundSlot = (EL*)((char*)entryLookup + i * 8);
                 goto found_slot;
             }
         }

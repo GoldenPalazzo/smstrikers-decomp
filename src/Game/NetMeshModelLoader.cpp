@@ -434,13 +434,10 @@ void NetMeshModelLoader::AddEdge(const glModelPacket& packet, unsigned short idx
     }
 }
 
-extern void AddTriangleFromGeometry__18NetMeshModelLoaderFRC13glModelPacketPUs(
-    NetMeshModelLoader*, const glModelPacket&, unsigned short*);
-
 /**
  * Offset/Address/Size: 0xA80 | 0x80130BD8 | size: 0x110
- * TODO: 96.91% match - inner-loop temporaries still map to
- * r4/r5/r3/r6 instead of r7/r3/r4/r6.
+ * TODO: 97.43% match - inner-loop temporaries still map to
+ * r5/r6/r3/r4 instead of r7/r3/r4/r6.
  */
 void NetMeshModelLoader::ReadEdgesFromGeometryPacket(const glModelPacket& packet)
 {
@@ -457,19 +454,24 @@ void NetMeshModelLoader::ReadEdgesFromGeometryPacket(const glModelPacket& packet
         u16 vertexIndices[3];
         u16* pVtx = vertexIndices;
         s32 j = 0;
+        u16* ptr;
+        u16 ns;
+        s32 vertOff;
+        s32 stride;
+        s32 offset;
+        u8* ptr8;
 
         while (j < 3)
         {
-            u16* ptr;
             if (((u16*)&pList->indices)[1] != 0)
             {
-                u16 ns = ((u16*)&pList->indices)[0];
-                s32 vertOff = i;
+                ns = ((u16*)&pList->indices)[0];
+                vertOff = i;
                 vertOff += j;
                 vertOff -= 2;
-                s32 stride = (ns - 1) * 2 + 1;
-                s32 offset = stride * vertOff;
-                u8* ptr8 = (u8*)pList->list;
+                stride = (ns - 1) * 2 + 1;
+                offset = stride * vertOff;
+                ptr8 = (u8*)pList->list;
                 ptr8 += offset;
                 ptr = (u16*)ptr8;
                 ptr8 = (u8*)ptr;
@@ -478,13 +480,13 @@ void NetMeshModelLoader::ReadEdgesFromGeometryPacket(const glModelPacket& packet
             }
             else
             {
-                u16 ns = ((u16*)&pList->indices)[0];
-                s32 vertOff = i;
+                ns = ((u16*)&pList->indices)[0];
+                vertOff = i;
                 vertOff += j;
                 vertOff -= 2;
-                s32 stride = ns * 2;
-                s32 offset = stride * vertOff;
-                u8* ptr8 = (u8*)pList->list;
+                stride = ns * 2;
+                offset = stride * vertOff;
+                ptr8 = (u8*)pList->list;
                 ptr8 += offset;
                 ptr = (u16*)ptr8;
                 ptr8 = (u8*)ptr;
@@ -499,7 +501,7 @@ void NetMeshModelLoader::ReadEdgesFromGeometryPacket(const glModelPacket& packet
             j++;
         }
 
-        AddTriangleFromGeometry__18NetMeshModelLoaderFRC13glModelPacketPUs(this, packet, vertexIndices);
+        AddTriangleFromGeometry(packet, vertexIndices);
         i++;
     }
 
@@ -509,6 +511,7 @@ void NetMeshModelLoader::ReadEdgesFromGeometryPacket(const glModelPacket& packet
 /**
  * Offset/Address/Size: 0xB90 | 0x80130CE8 | size: 0xB4
  */
+#pragma dont_inline on
 void NetMeshModelLoader::AddTriangleFromGeometry(const glModelPacket& packet, unsigned short* vertexIndices)
 {
     unsigned char isThin = 0;
@@ -526,6 +529,7 @@ void NetMeshModelLoader::AddTriangleFromGeometry(const glModelPacket& packet, un
         }
     }
 }
+#pragma dont_inline reset
 
 /**
  * Offset/Address/Size: 0x780 | 0x801308D8 | size: 0x300

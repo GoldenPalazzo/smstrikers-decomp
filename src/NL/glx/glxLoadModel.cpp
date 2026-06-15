@@ -525,7 +525,7 @@ static u8* GetChunkDataPointer(nlChunk* chunk)
 
 /**
  * Offset/Address/Size: 0xC08 | 0x801C0828 | size: 0x2A0
- * TODO: 98.18% match - register allocation diffs remain in chunk type masking and
+ * TODO: 98.24% match - register allocation diffs remain in chunk type masking and
  * case-local loop/morph temporaries
  */
 GLSkinMesh* glx_MakeSkinMesh(nlChunk* outerChunk, glModel* models)
@@ -563,6 +563,8 @@ GLSkinMesh* glx_MakeSkinMesh(nlChunk* outerChunk, glModel* models)
 
         switch (chunkType)
         {
+        case 0x1B009:
+            break;
         case 0x1B00A:
         {
             i = 0;
@@ -623,6 +625,8 @@ GLSkinMesh* glx_MakeSkinMesh(nlChunk* outerChunk, glModel* models)
             mesh->SetMorphDeltas(*(int*)p, (const MorphDelta*)(p + 4));
             break;
         }
+        case 0x1B00F:
+            break;
         case 0x1B010:
             mesh->AppendStitchingInfo(*(int*)(data + 4), *(int*)(data + 0), (int)chunkSize - 8, data + 8);
             break;

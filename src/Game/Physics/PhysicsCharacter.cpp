@@ -153,9 +153,9 @@ ContactType PhysicsCharacter::Contact(PhysicsObject* pOther, dContact* contacts,
             {
                 if (fielder->IsCharacterInAir(true))
                     return NO_CONTACT;
-                if (fielder->m_eAnimID == 0x74 || fielder->m_eAnimID == 0x75)
-                    return ONE_WAY_CONTACT_OTHER;
-                return ONE_WAY_CONTACT_THIS;
+                if (fielder->m_eAnimID != 0x74 && fielder->m_eAnimID != 0x75)
+                    return ONE_WAY_CONTACT_THIS;
+                return ONE_WAY_CONTACT_OTHER;
             }
         }
         return ONE_WAY_CONTACT_OTHER;
@@ -188,9 +188,9 @@ ContactType PhysicsCharacter::Contact(PhysicsObject* pOther, dContact* contacts,
                 {
                     if (!otherFielder->IsHitting())
                     {
-                        if (fielder->m_eAnimID == 0x74 || fielder->m_eAnimID == 0x75)
-                            return ONE_WAY_CONTACT_OTHER;
-                        return ONE_WAY_CONTACT_THIS;
+                        if (fielder->m_eAnimID != 0x74 && fielder->m_eAnimID != 0x75)
+                            return ONE_WAY_CONTACT_THIS;
+                        return ONE_WAY_CONTACT_OTHER;
                     }
                     return TWO_WAY_CONTACT;
                 }
@@ -198,9 +198,9 @@ ContactType PhysicsCharacter::Contact(PhysicsObject* pOther, dContact* contacts,
                 {
                     if (!fielder->IsHitting())
                     {
-                        if (otherFielder->m_eAnimID == 0x74 || otherFielder->m_eAnimID == 0x75)
-                            return ONE_WAY_CONTACT_THIS;
-                        return ONE_WAY_CONTACT_OTHER;
+                        if (otherFielder->m_eAnimID != 0x74 && otherFielder->m_eAnimID != 0x75)
+                            return ONE_WAY_CONTACT_OTHER;
+                        return ONE_WAY_CONTACT_THIS;
                     }
                     return TWO_WAY_CONTACT;
                 }

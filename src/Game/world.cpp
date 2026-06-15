@@ -285,6 +285,41 @@ struct DrawableMapFindHelper
         }
         return false;
     }
+
+    struct EqualFirstCompare
+    {
+        inline int operator()(unsigned long key, unsigned long nodeKey) const
+        {
+            if (key == nodeKey)
+                return 0;
+            if (key < nodeKey)
+                return -1;
+            return 1;
+        }
+    };
+
+    inline bool FindGetEqualFirst(unsigned long key, DrawableObject*** foundValue) const
+    {
+        AVLTreeEntry<unsigned long, DrawableObject*>* node = m_Root;
+        while (node != NULL)
+        {
+            int cmpResult = EqualFirstCompare()(key, node->key);
+            if (cmpResult == 0)
+            {
+                if (foundValue != NULL)
+                    *foundValue = &node->value;
+                return true;
+            }
+            else
+            {
+                if (cmpResult < 0)
+                    node = (AVLTreeEntry<unsigned long, DrawableObject*>*)node->node.left;
+                else
+                    node = (AVLTreeEntry<unsigned long, DrawableObject*>*)node->node.right;
+            }
+        }
+        return false;
+    }
 };
 
 /**
@@ -1970,8 +2005,8 @@ static const unsigned long eOC_ENV_SHINY = 0x00000010;
 
 /**
  * Offset/Address/Size: 0x3420 | 0x801980E4 | size: 0x274
- * TODO: 97.48% match - remaining diffs are key/register ordering in the inlined DrawableMap FindGet path
- *       and float register assignment/order in bounding-radius max selection.
+ * TODO: 99.30% match - remaining diffs are in the bounding-radius max selection branch shape
+ *       and the resulting branch target offsets.
  */
 bool World::LoadGeometry(glModel* gModel, unsigned long uNumModels, bool bMakeDrawables, bool keepTransform, unsigned long* pDrawableObjectHashes, int* pNumObjectsLoaded, bool bVar)
 {
@@ -1998,8 +2033,6 @@ bool World::LoadGeometry(glModel* gModel, unsigned long uNumModels, bool bMakeDr
         char pad[0x9C];
         glModel* m_pModel;
     };
-
-    extern void glGetMatrix(unsigned long, nlMatrix4&);
 
     WorldObjectDataLocal data;
     AABBDimensions aabb;
@@ -2041,7 +2074,7 @@ bool World::LoadGeometry(glModel* gModel, unsigned long uNumModels, bool bMakeDr
             data.m_fRadius = radius;
             HandleObjectCreation((WorldObjectData*)&data);
 
-            if (((DrawableMapFindHelper*)&m_drawableMap)->FindGet(pModel->id, &foundValue))
+            if (((DrawableMapFindHelper*)&m_drawableMap)->FindGetEqualFirst(pModel->id, &foundValue))
             {
                 pObject = *foundValue;
             }
@@ -2071,11 +2104,6 @@ bool World::LoadGeometry(glModel* gModel, unsigned long uNumModels, bool bMakeDr
 
             pObject->GetAABBDimensions(aabb, false);
 
-            /**
-             * TODO: 97.83% match - r0/r4 register swap in DrawableMapFindHelper::FindGet
-             * inlined BST lookup (MWCC volatile register allocation quirk, 7 diffs) and
-             * ble-+b vs bgt- branch structure difference (MWCC optimizes && to || negation, 3 diffs)
-             */
             {
                 float dimX = aabb.mDim.f.x;
                 if (!(dimX >= aabb.mDim.f.y) || !(dimX > aabb.mDim.f.z))

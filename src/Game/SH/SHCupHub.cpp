@@ -69,6 +69,31 @@ extern nlLocalization* g_pLocalization;
 extern const unsigned short LocalizationTableNotFound[];
 extern const unsigned short MissingLocString[];
 
+static inline BasicStringData<unsigned short>* BuildWideStringData(const unsigned short* str)
+{
+    BasicStringData<unsigned short>* data = (BasicStringData<unsigned short>*)Detail::TempStringAllocator::allocate(sizeof(BasicStringData<unsigned short>));
+    if (data != 0)
+    {
+        data->mData = 0;
+        data->mSize = 0;
+        data->mCapacity = 0;
+        const unsigned short* s = str;
+        while (*s++ != 0)
+        {
+            data->mSize++;
+        }
+        data->mSize++;
+        data->mData = (unsigned short*)Detail::TempStringAllocator::allocate((data->mSize + 1) * sizeof(unsigned short));
+        data->mCapacity = data->mSize;
+        for (int i = 0; i < data->mSize; i++)
+        {
+            data->mData[i] = *str++;
+        }
+        data->mRefCount = 1;
+    }
+    return data;
+}
+
 class CupTrophyScene
 {
 public:
@@ -1431,7 +1456,7 @@ void CupHubScene::CreateLeague()
             }
         }
 
-        BasicString<unsigned short, Detail::TempStringAllocator> teamNameStr(locString);
+        BasicString<unsigned short, Detail::TempStringAllocator> teamNameStr(BuildWideStringData(locString));
         memcpy(mColumnsByRowsBuffers[0][row], teamNameStr.c_str(), 0x40);
         pTextInstance->SetString(mColumnsByRowsBuffers[0][row]);
 

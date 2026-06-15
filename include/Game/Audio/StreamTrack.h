@@ -217,6 +217,7 @@ void TrackManager<N>::DestroyAllTracks()
 
     unsigned long trackOffset;
     unsigned long i;
+    EL* entryLookup;
     EL* foundSlot;
     StreamTrack* track;
 
@@ -226,7 +227,7 @@ void TrackManager<N>::DestroyAllTracks()
     {
         track = ((EL*)m_Tracks.m_pEntryLookup)->pEntry;
         if (track == NULL)
-            break;
+            continue;
 
         if (track)
         {
@@ -255,13 +256,14 @@ void TrackManager<N>::DestroyAllTracks()
         }
 
         if (track == NULL)
-            break;
+            continue;
 
         for (i = 0, trackOffset = 0; i < m_Tracks.m_EntryCount; trackOffset += 8, i++)
         {
-            if (((EL*)((char*)m_Tracks.m_pEntryLookup + trackOffset))->pEntry == track)
+            entryLookup = m_Tracks.m_pEntryLookup;
+            if (((EL*)((char*)entryLookup + trackOffset))->pEntry == track)
             {
-                foundSlot = (EL*)((char*)m_Tracks.m_pEntryLookup + i * 8);
+                foundSlot = (EL*)((char*)entryLookup + i * 8);
                 goto found_slot;
             }
         }

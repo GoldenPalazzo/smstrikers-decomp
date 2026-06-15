@@ -745,7 +745,7 @@ void cGame::PostResetCallback(unsigned long, unsigned long)
 
 /**
  * Offset/Address/Size: 0x113C | 0x8003D6B0 | size: 0x5A0
- * TODO: 97.43% match - register allocation still starts at r25 instead of r24,
+ * TODO: 97.74% match - saved-register mismatch still starts at r25 instead of r24,
  * with remaining cascading r-diffs in early loops and vector stack-slot ordering.
  */
 void cGame::BeginGame(bool bRematch, bool bStraightToKickoff)
@@ -759,7 +759,6 @@ void cGame::BeginGame(bool bRematch, bool bStraightToKickoff)
 
     m_bBallInNet = false;
     mInSuddenDeath = false;
-    cTeam** pTeams = g_pTeams;
 
     for (i = 0; i < 5; i++)
     {
@@ -782,6 +781,8 @@ void cGame::BeginGame(bool bRematch, bool bStraightToKickoff)
             m_pRandomPlayersArray[j] = temp;
         }
     }
+
+    cTeam** pTeams = g_pTeams;
 
     for (i = 0; i < 2; i++)
     {
@@ -1202,9 +1203,8 @@ static inline void UpdatePowerUpObjects(float fDeltaT)
 
 /**
  * Offset/Address/Size: 0x5A4 | 0x8003CB18 | size: 0x47C
- * TODO: 98.55% match - conversion section f-register shift (f1/f2/f3 rotated),
- *       goalie r3/r4 swap for g_pCharacters base + blt vs bge branch inversion,
- *       end section r27/r28 vs r29/r30 for score variables
+ * TODO: 99.60% match - tilt conversion f-register shift (f1/f2/f3 rotated),
+ *       goalie state/pointer r3/r4 swap, and score-temp r27/r28 vs r29/r30.
  */
 void cGame::Update(float deltaTime)
 {
@@ -1330,12 +1330,15 @@ void cGame::Update(float deltaTime)
 
         for (int goalie = 0; !bSTSActive && goalie < 2; goalie++)
         {
-            if (goalieState < GOALIEACTION_PASS)
+            switch (goalieState)
             {
-                if (goalieState >= GOALIEACTION_STS_SETUP)
-                {
-                    bSTSActive = true;
-                }
+            case GOALIEACTION_STS_SETUP:
+            case GOALIEACTION_STS:
+            case GOALIEACTION_STS_RECOVER:
+            case GOALIEACTION_STS_ATTACK_SETUP:
+            case GOALIEACTION_STS_ATTACK:
+                bSTSActive = true;
+                break;
             }
             goalieState = (eGoalieActionState)((Goalie*)pAwayGoalie)->mGoalieActionState;
         }

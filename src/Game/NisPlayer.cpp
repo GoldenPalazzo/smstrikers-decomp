@@ -577,10 +577,15 @@ bool NisPlayer::WorldIsFrozen() const
 
 /**
  * Offset/Address/Size: 0x2F64 | 0x80117C40 | size: 0x318
- * TODO: 95.38% match - register allocation diffs from -inline deferred string literal hoisting in BasicString ctor
+ * TODO: 97.90% match - register allocation diffs around this, loop, string data, and file temporaries
  */
 void NisPlayer::HandleAsyncs()
 {
+    char* loadAt;
+    nlFile* file;
+    const char* str;
+    BasicStringData<char>* data;
+
     for (int i = 0; i < 4; i++)
     {
         if (mLoadQueue[i] != 0)
@@ -605,7 +610,7 @@ void NisPlayer::HandleAsyncs()
                     used = mUsedFromFront;
                 }
 
-                char* loadAt = mMemory + used;
+                loadAt = mMemory + used;
                 loadAt = loadAt + (0x20 - ((unsigned int)loadAt & 0x1F));
 
                 if (!mLoadingFromBack)
@@ -619,12 +624,34 @@ void NisPlayer::HandleAsyncs()
                     nlBreak();
                 }
 
-                BasicString<char, Detail::TempStringAllocator> fileName("art/nis/");
+                data = (BasicStringData<char>*)nlMalloc(sizeof(BasicStringData<char>), 8, true);
+                if (data != 0)
+                {
+                    data->mData = 0;
+                    data->mSize = 0;
+                    data->mCapacity = 0;
+                    str = "art/nis/";
+                    const char* s = str;
+                    while ((signed char)*s++ != 0)
+                    {
+                        data->mSize++;
+                    }
+                    data->mSize++;
+                    data->mData = (char*)nlMalloc(data->mSize + 1, 8, true);
+                    data->mCapacity = data->mSize;
+                    for (int j = 0; j < data->mSize; j++)
+                    {
+                        data->mData[j] = *str++;
+                    }
+                    data->mRefCount = 1;
+                }
+
+                BasicString<char, Detail::TempStringAllocator> fileName(data);
                 fileName.AppendInPlace(mLoadQueue[i]->name);
 
                 if (useAsyncLoading)
                 {
-                    nlFile* file = nlOpen(fileName.c_str());
+                    file = nlOpen(fileName.c_str());
                     if ((OSGetConsoleType() & 0x20000000) != 0)
                     {
                         nlReadAsync(file, loadAt, mLoadQueue[i]->size, AsyncLoad, (unsigned long)mLoadQueue[i]);
@@ -1088,8 +1115,7 @@ void NisPlayer::Load(const char* nisType, NisTarget target, NisUseStadiumOffset 
             {
                 if (useFilter == NIS_NO_FILTER || nlStrLen(mExtraNameFilter) == 0 || strstr(mDict[e].name, mExtraNameFilter) != NULL)
                 {
-                    availableNis[numAvailableNis] = &mDict[e];
-                    numAvailableNis++;
+                    availableNis[numAvailableNis++] = &mDict[e];
                 }
             }
         }
@@ -1125,40 +1151,14 @@ void NisPlayer::Load(const char* nisType, NisTarget target, NisUseStadiumOffset 
             float scale = (useStadiumOffset == NIS_AWAY_STADIUM_OFFSET) ? -1.0f : 1.0f;
             BasicString<char, Detail::TempStringAllocator> formatString("nisHeader/{0}_offset");
 
-            const char* stadiumName;
             eStadiumID stadium = GameInfoManager::s_pInstance->GetStadium();
-            if (stadium == STAD_PEACH_TOAD_STADIUM)
-            {
-                stadiumName = "the_palace";
-            }
-            else if (stadium == STAD_MARIO_STADIUM)
-            {
-                stadiumName = "pipeline_central";
-            }
-            else if (stadium == STAD_WARIO_STADIUM)
-            {
-                stadiumName = "wario_stadium";
-            }
-            else if (stadium == STAD_DK_DAISY)
-            {
-                stadiumName = "dk_daisy";
-            }
-            else if (stadium == STAD_YOSHI_STADIUM)
-            {
-                stadiumName = "yoshi_stadium";
-            }
-            else if (stadium == STAD_SUPER_STADIUM)
-            {
-                stadiumName = "super_stadium";
-            }
-            else if (stadium == STAD_FORBIDDEN_DOME)
-            {
-                stadiumName = "forbidden_dome";
-            }
-            else
-            {
-                stadiumName = "";
-            }
+            const char* stadiumName = (stadium == STAD_PEACH_TOAD_STADIUM) ? "the_palace" : (stadium == STAD_MARIO_STADIUM) ? "pipeline_central"
+                                                                                      : (stadium == STAD_WARIO_STADIUM)     ? "wario_stadium"
+                                                                                      : (stadium == STAD_DK_DAISY)          ? "dk_daisy"
+                                                                                      : (stadium == STAD_YOSHI_STADIUM)     ? "yoshi_stadium"
+                                                                                      : (stadium == STAD_SUPER_STADIUM)     ? "super_stadium"
+                                                                                      : (stadium == STAD_FORBIDDEN_DOME)    ? "forbidden_dome"
+                                                                                                                            : "";
 
             BasicString<char, Detail::TempStringAllocator> key = Format(formatString, stadiumName);
 

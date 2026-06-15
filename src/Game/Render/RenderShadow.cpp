@@ -228,20 +228,8 @@ void RenderCharacterIntoTexture(const ProjectedShadowParams& params)
     else
     {
         float scale = s_fLightDist * radius;
-        float tx = targetPos.f.x;
-        float ty = targetPos.f.y;
-        float tz = targetPos.f.z;
-        float dx = tx - shadowPos.f.x;
-        float dy = ty - shadowPos.f.y;
-        float dz = tz - shadowPos.f.z;
-
-        eyePos.f.x = dx;
-        eyePos.f.y = dy;
-        eyePos.f.z = dz;
-
-        eyePos.f.x = tx + scale * eyePos.f.x;
-        eyePos.f.y = ty + scale * eyePos.f.y;
-        eyePos.f.z = tz + scale * eyePos.f.z;
+        nlVec3Sub(eyePos, targetPos, shadowPos);
+        nlVec3ScaleAdd(eyePos, scale, eyePos, targetPos);
     }
 
     float dx = targetPos.f.x - eyePos.f.x;
@@ -705,8 +693,8 @@ void RenderProjectedShadow(const ProjectedShadowParams& params)
         float crossZ = vx * vUp.f.y - vy * vUp.f.x;
 
         float halfW = 0.5f * width;
-        float negHalfW = -halfW;
-        float negHalfH = -halfH;
+        float negHalfW = -0.5f * width;
+        float negHalfH = -0.5f * height;
 
         vTemp.f.x = params.vPosition.f.x;
         vTemp.f.y = params.vPosition.f.y;

@@ -153,9 +153,10 @@ void ChainChomp::Update(float fDeltaT)
                 int i;
                 for (i = numSpecs; i > 0; i--)
                 {
-                    if (pSpec->m_pTemplate != NULL)
+                    EffectsTemplate* pTemplate = pSpec->m_pTemplate;
+                    if (pTemplate != NULL)
                     {
-                        pSpec->m_pTemplate->m_fFountainLife = 12.0f;
+                        pTemplate->m_fFountainLife = 12.0f;
                     }
                     pSpec++;
                 }

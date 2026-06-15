@@ -13,6 +13,7 @@
 #include "NL/nlFunction.h"
 #include "NL/nlList.h"
 #include "NL/nlString.h"
+#include "NL/nlFormat.h"
 
 #include "types.h"
 
@@ -42,117 +43,34 @@ inline void Function1<void, EmissionController&>::FunctorImpl<BindExp2_Nis_t>::o
     mBind.mFunction(arg, mBind.mT1);
 }
 
-struct BasicStringInternal
+// BasicString<>, Detail::TempStringAllocator, FormatImpl<> and the generic
+// Format<>/operator% templates come from NL/nlFormat.h. The TU-unique wrapper
+// Format<..., char[64], int> (char[64] = NisHeader::name) is the only piece not
+// in the header; defining it here instantiates the generic operator%<const char*>
+// and operator%<int> bodies as this TU's local copies (matching the target's
+// scope:local emission), with the wrapper itself emitted weak.
+template <>
+inline BasicString<char, Detail::TempStringAllocator>
+Format<BasicString<char, Detail::TempStringAllocator>, char[64], int>(
+    const BasicString<char, Detail::TempStringAllocator>& format,
+    const char (&value1)[64],
+    const int& value2)
 {
-    char* mData;
-    int mSize;
-    int mCapacity;
-    int mRefCount;
-};
-
-namespace Detail
-{
-class TempStringAllocator
-{
-public:
-    static void* allocate(unsigned long size)
+    BasicStringData<char>* data = format.m_data;
+    if (data != 0)
     {
-        return nlMalloc(size, 8, true);
+        data->mRefCount++;
+    }
+    else
+    {
+        data = 0;
     }
 
-    static void deallocate(void* ptr)
-    {
-        nlFree(ptr);
-    }
-};
-} // namespace Detail
+    FormatImpl<BasicString<char, Detail::TempStringAllocator> > impl(data);
 
-template <typename CharT, typename Allocator>
-class BasicString
-{
-public:
-    BasicStringInternal* m_data;
-
-    BasicString()
-        : m_data(0)
-    {
-    }
-
-    BasicString(const CharT* str)
-    {
-        BasicStringInternal* data = (BasicStringInternal*)Allocator::allocate(sizeof(BasicStringInternal));
-        if (data != 0)
-        {
-            data->mData = 0;
-            data->mSize = 0;
-            data->mCapacity = 0;
-
-            const CharT* s = str;
-            while ((signed char)*s++ != 0)
-            {
-                data->mSize++;
-            }
-            data->mSize++;
-
-            data->mData = (char*)Allocator::allocate(data->mSize + 1);
-            data->mCapacity = data->mSize;
-
-            for (int i = 0; i < data->mSize; i++)
-            {
-                data->mData[i] = *str++;
-            }
-
-            data->mRefCount = 1;
-        }
-        m_data = data;
-    }
-
-    BasicString(const BasicString& other)
-    {
-        BasicStringInternal* data;
-        if (other.m_data)
-        {
-            other.m_data->mRefCount++;
-            data = other.m_data;
-        }
-        else
-        {
-            data = 0;
-        }
-        m_data = data;
-    }
-
-    ~BasicString()
-    {
-        if (m_data)
-        {
-            BasicStringInternal* data = m_data;
-            if (--data->mRefCount == 0)
-            {
-                if (data)
-                {
-                    if (data)
-                    {
-                        delete[] data->mData;
-                    }
-                    if (data)
-                    {
-                        nlFree(data);
-                    }
-                }
-            }
-        }
-    }
-
-    const CharT* c_str() const
-    {
-        static CharT emptyString = '\0';
-        return m_data ? m_data->mData : &emptyString;
-    }
-};
-
-template <typename StringType, typename Arg0, typename Arg1>
-StringType Format(const StringType&, const Arg0&, const Arg1&);
+    return BasicString<char, Detail::TempStringAllocator>(
+        (BasicString<char, Detail::TempStringAllocator>)((impl % (const char*)value1) % value2));
+}
 
 /**
  * Offset/Address/Size: 0x1658 | 0x8012CA68 | size: 0x53C

@@ -1816,6 +1816,7 @@ void OptionsCheatsMenu::BuildCustomPowerupsList(TLComponentInstance* compinstanc
 
 /**
  * Offset/Address/Size: 0x3D3C | 0x800B8D80 | size: 0x7D4
+ * TODO: 99.76% match - remaining string-label relocation around the Slide2 active-slide call.
  */
 void OptionsCheatsMenu::BuildLockableSubMenuList(int menuitem, TLComponentInstance* compinstance, FEPresentation* presentation, bool unlocked, int startindex)
 {
@@ -1924,12 +1925,36 @@ void OptionsCheatsMenu::BuildLockableSubMenuList(int menuitem, TLComponentInstan
     {
         SlideMenuList* s = (SlideMenuList*)mSlideMenuLists[menuitem];
         MenuItem<SlideMenuItem>* mi = &s->mMenuItems[s->mCurrentIndex];
-        mi->mCallbacks[2](mi->mType);
+        int tag = mi->mCallbacks[2].mTag;
+        if (((u32)((-tag) | tag) >> 31) > 0)
+        {
+            SlideMenuItem* type = mi->mType;
+            if (tag == FREE_FUNCTION)
+            {
+                mi->mCallbacks[2].mFreeFunction(type);
+            }
+            else
+            {
+                (*mi->mCallbacks[2].mFunctor)(type);
+            }
+        }
 
         s->mCurrentIndex = startindex;
 
         mi = &s->mMenuItems[s->mCurrentIndex];
-        mi->mCallbacks[1](mi->mType);
+        tag = mi->mCallbacks[1].mTag;
+        if (((u32)((-tag) | tag) >> 31) > 0)
+        {
+            SlideMenuItem* type = mi->mType;
+            if (tag == FREE_FUNCTION)
+            {
+                mi->mCallbacks[1].mFreeFunction(type);
+            }
+            else
+            {
+                (*mi->mCallbacks[1].mFunctor)(type);
+            }
+        }
 
         if (wraps)
         {
@@ -2381,7 +2406,7 @@ void OptionsSubMenu::Update(float)
     if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xD, true, NULL))
     {
         SlideMenuList* activeList = (SlideMenuList*)mSlideMenuLists[mMenuItems.mCurrentIndex];
-        int locked;
+        unsigned char locked;
         if (activeList != NULL)
         {
             locked = activeList->mMenuItems[activeList->mCurrentIndex].mLocked;
@@ -2466,11 +2491,35 @@ void OptionsSubMenu::Update(float)
                 }
             }
 
-            mMenuItems.mMenuItems[oldIndex].mCallbacks[2](mMenuItems.mMenuItems[oldIndex].mType);
+            int tag = mMenuItems.mMenuItems[oldIndex].mCallbacks[2].mTag;
+            if (((u32)((-tag) | tag) >> 31) > 0)
+            {
+                TLComponentInstance* type = mMenuItems.mMenuItems[oldIndex].mType;
+                if (tag == FREE_FUNCTION)
+                {
+                    mMenuItems.mMenuItems[oldIndex].mCallbacks[2].mFreeFunction(type);
+                }
+                else
+                {
+                    (*mMenuItems.mMenuItems[oldIndex].mCallbacks[2].mFunctor)(type);
+                }
+            }
 
             mMenuItems.mCurrentIndex = newIndex;
 
-            mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[1](mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mType);
+            tag = mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[1].mTag;
+            if (((u32)((-tag) | tag) >> 31) > 0)
+            {
+                TLComponentInstance* type = mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mType;
+                if (tag == FREE_FUNCTION)
+                {
+                    mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[1].mFreeFunction(type);
+                }
+                else
+                {
+                    (*mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[1].mFunctor)(type);
+                }
+            }
             break;
         }
 
@@ -2536,7 +2585,7 @@ void OptionsSubMenu::Update(float)
     if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xE, true, NULL))
     {
         SlideMenuList* activeList = (SlideMenuList*)mSlideMenuLists[mMenuItems.mCurrentIndex];
-        int locked;
+        unsigned char locked;
         if (activeList != NULL)
         {
             locked = activeList->mMenuItems[activeList->mCurrentIndex].mLocked;
@@ -2618,11 +2667,35 @@ void OptionsSubMenu::Update(float)
                 }
             }
 
-            mMenuItems.mMenuItems[oldIndex].mCallbacks[2](mMenuItems.mMenuItems[oldIndex].mType);
+            int tag = mMenuItems.mMenuItems[oldIndex].mCallbacks[2].mTag;
+            if (((u32)((-tag) | tag) >> 31) > 0)
+            {
+                TLComponentInstance* type = mMenuItems.mMenuItems[oldIndex].mType;
+                if (tag == FREE_FUNCTION)
+                {
+                    mMenuItems.mMenuItems[oldIndex].mCallbacks[2].mFreeFunction(type);
+                }
+                else
+                {
+                    (*mMenuItems.mMenuItems[oldIndex].mCallbacks[2].mFunctor)(type);
+                }
+            }
 
             mMenuItems.mCurrentIndex = newIndex;
 
-            mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[1](mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mType);
+            tag = mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[1].mTag;
+            if (((u32)((-tag) | tag) >> 31) > 0)
+            {
+                TLComponentInstance* type = mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mType;
+                if (tag == FREE_FUNCTION)
+                {
+                    mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[1].mFreeFunction(type);
+                }
+                else
+                {
+                    (*mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[1].mFunctor)(type);
+                }
+            }
             break;
         }
 

@@ -53,24 +53,12 @@ FormatImpl<StringType>& FormatImpl<StringType>::operator%(const T& t)
         if (mString[i + 2] != '}')
             continue;
 
-        typename StringType::value_type* eraseStart = &mString[i];
-        typename StringType::value_type* eraseEnd = &mString[i + 3];
-        if (sizeof(typename StringType::value_type) == 1)
-            mString[0];
-        BasicStringData<typename StringType::value_type>* data = mString.m_data;
-        int eraseLen = eraseEnd - eraseStart;
-        typename StringType::value_type* dst = &data->mData[eraseStart - data->mData];
-        while (eraseEnd != data->mData + data->mSize)
-        {
-            *dst++ = *eraseEnd++;
-        }
-        data->mSize -= eraseLen;
-
-        typename StringType::value_type* insertAt = &mString[i];
+        mString.erase(&mString[i], &mString[i + 3]);
+        mString[i];
+        typename StringType::value_type* mStringData = mString.m_data ? mString.m_data->mData : 0;
         typename StringType::value_type* insertBegin = &insert[0];
-        int insertEndIdx = (int)(insert.m_data ? insert.m_data->mSize - 1 : 0);
-        typename StringType::value_type* insertEnd = &insert[insertEndIdx];
-        mString.insert(insertAt, insertBegin, insertEnd);
+        typename StringType::value_type* insertEndCow = &insert[(int)(insert.m_data ? insert.m_data->mSize - 1 : 0)];
+        mString.insert(mStringData + i, insertBegin, insert.m_data ? &insert.m_data->mData[insert.m_data->mSize - 1] : (typename StringType::value_type*)0);
     }
 
     mCurrentPos++;
@@ -702,10 +690,10 @@ inline BasicString<char, Detail::TempStringAllocator> Format<BasicString<char, D
     {
         data = 0;
     }
-    BasicString<char, Detail::TempStringAllocator> implString(data);
-    ((FormatImpl<BasicString<char, Detail::TempStringAllocator> >&)implString).mCurrentPos = 0;
+    FormatImpl<BasicString<char, Detail::TempStringAllocator> > impl(data);
+
     return BasicString<char, Detail::TempStringAllocator>(
-        (BasicString<char, Detail::TempStringAllocator>)(((FormatImpl<BasicString<char, Detail::TempStringAllocator> >&)implString) % value));
+        (BasicString<char, Detail::TempStringAllocator>)(impl % value));
 }
 
 template <>

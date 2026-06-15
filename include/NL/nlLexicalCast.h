@@ -84,39 +84,14 @@ inline WideBasicString Detail::LexicalCastImpl<WideBasicString, WideBasicString>
 
 /**
  * Offset/Address/Size: 0x80 | 0x8009CF48 | size: 0xF4
- * TODO: 87.21% match - return-buffer/source-pointer and copy-loop index/offset
- * register assignments differ from target.
+ * TODO: 97.43% match - return-buffer/source-pointer register roles are
+ * swapped (r29/r31).
  */
 template <>
 inline WideBasicString Detail::LexicalCastImpl<WideBasicString, const unsigned short*>::Do(
     const unsigned short* const& f)
 {
-    BasicStringData<unsigned short>* data = (BasicStringData<unsigned short>*)nlMalloc(0x10, 8, true);
-    if (data != 0)
-    {
-        data->mData = 0;
-        data->mSize = 0;
-        data->mCapacity = 0;
-
-        const unsigned short* s = f;
-        while (*s++ != 0)
-        {
-            data->mSize++;
-        }
-
-        data->mSize++;
-        data->mData = (unsigned short*)nlMalloc((data->mSize + 1) * 2, 8, true);
-        data->mCapacity = data->mSize;
-
-        s = f;
-        for (int i = 0; i < data->mSize; i++)
-        {
-            data->mData[i] = *s++;
-        }
-
-        data->mRefCount = 1;
-    }
-    return WideBasicString(data);
+    return WideBasicString(f);
 }
 
 /**

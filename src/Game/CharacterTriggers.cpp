@@ -446,9 +446,18 @@ void CharacterTriggerHandler(unsigned int uParam)
     {
         cBall* pBall = g_pBall;
         bool bPlayLine7 = false;
-        if (pBall != NULL && pBall->m_pPassTarget == NULL)
+        bool bNoPassTarget = false;
+        if (pBall != NULL)
         {
+            if (pBall->m_pPassTarget == NULL)
+                bNoPassTarget = true;
+        }
+        if (bNoPassTarget)
+        {
+            bool bOwnerOrPrev = false;
             if (pBall->m_pOwner == (cPlayer*)pCharacter || pBall->m_pPrevOwner == (cPlayer*)pCharacter)
+                bOwnerOrPrev = true;
+            if (bOwnerOrPrev)
                 bPlayLine7 = true;
         }
 
@@ -697,7 +706,9 @@ void CharacterTriggerHandler(unsigned int uParam)
     {
         if (!g_pCurrentlyUpdatingCharacter->IsPlayingEffect(fxGetGroup("shoot_to_score_windup")))
             break;
-        nlMatrix4& nodeMatrix = g_pCurrentlyUpdatingCharacter->m_pPoseAccumulator->GetNodeMatrix(g_pCurrentlyUpdatingCharacter->m_nHeadJointIndex);
+        cCharacter* pHeadCharacter = g_pCurrentlyUpdatingCharacter;
+        int headJointIndex = pHeadCharacter->m_nHeadJointIndex;
+        nlMatrix4& nodeMatrix = pHeadCharacter->m_pPoseAccumulator->GetNodeMatrix(headJointIndex);
         nlVector3 nodePos = *(nlVector3*)&nodeMatrix.m[3][0];
         {
             Audio::SoundAttributes attrs;
@@ -731,7 +742,9 @@ void CharacterTriggerHandler(unsigned int uParam)
     case 0xEE2E062C:
     {
         pCharacter->StopSFX((Audio::eCharSFX)0x4E);
-        nlMatrix4& nodeMatrix = g_pCurrentlyUpdatingCharacter->m_pPoseAccumulator->GetNodeMatrix(g_pCurrentlyUpdatingCharacter->m_nHeadJointIndex);
+        cCharacter* pHeadCharacter = g_pCurrentlyUpdatingCharacter;
+        int headJointIndex = pHeadCharacter->m_nHeadJointIndex;
+        nlMatrix4& nodeMatrix = pHeadCharacter->m_pPoseAccumulator->GetNodeMatrix(headJointIndex);
         nlVector3 nodePos = *(nlVector3*)&nodeMatrix.m[3][0];
         Audio::SoundAttributes attrs;
         attrs.Init();
@@ -840,7 +853,7 @@ void CharacterTriggerHandler(unsigned int uParam)
         if (pCharacter->m_eClassType == GOALIE)
         {
             pCharacter->Play3DSFX((Audio::eCharSFX)0x62, (PosUpdateMethod)2, 1.0f);
-            pCharacter->PlayRandomCharDialogue(1, (PosUpdateMethod)2, 100.0f, -1.0f);
+            g_pCurrentlyUpdatingCharacter->PlayRandomCharDialogue(1, (PosUpdateMethod)2, 100.0f, -1.0f);
         }
         break;
 
@@ -858,9 +871,9 @@ void CharacterTriggerHandler(unsigned int uParam)
         attrs.m_unk_0x7B = true;
         g_pCurrentlyUpdatingCharacter->PlaySFX(attrs);
         attrs.Init();
-        attrs.SetSoundType(0x11, true);
         attrs.UseStationaryPosVector(g_pCurrentlyUpdatingCharacter->m_v3Position);
         attrs.m_unk_0x7B = true;
+        attrs.mb_Is3D = true;
         g_pCurrentlyUpdatingCharacter->m_pCharacterSFX->PlayRandomCharDialogue((CharDialogueType)3, attrs, true, NULL);
         break;
     }
@@ -871,8 +884,9 @@ void CharacterTriggerHandler(unsigned int uParam)
             Audio::SoundAttributes attrs;
             attrs.Init();
             attrs.SetSoundType(0x54, true);
+            attrs.UseStationaryPosVector(g_pCurrentlyUpdatingCharacter->m_v3Position);
             attrs.m_unk_0x7B = true;
-            pCharacter->PlaySFX(attrs);
+            g_pCurrentlyUpdatingCharacter->PlaySFX(attrs);
         }
         else
             pCharacter->Play3DSFX((Audio::eCharSFX)0x54, (PosUpdateMethod)1, 1.0f);
@@ -888,7 +902,7 @@ void CharacterTriggerHandler(unsigned int uParam)
             Audio::SoundAttributes attrs;
             attrs.Init();
             attrs.SetSoundType(0xB7, true);
-            attrs.UseStationaryPosVector(pCharacter->m_v3Position);
+            attrs.UseStationaryPosVector(g_pCurrentlyUpdatingCharacter->m_v3Position);
             Audio::gStadGenSFX.Play(attrs);
         }
         break;
@@ -899,7 +913,7 @@ void CharacterTriggerHandler(unsigned int uParam)
             Audio::SoundAttributes attrs;
             attrs.Init();
             attrs.SetSoundType(0xBE, true);
-            attrs.UseStationaryPosVector(pCharacter->m_v3Position);
+            attrs.UseStationaryPosVector(g_pCurrentlyUpdatingCharacter->m_v3Position);
             Audio::gStadGenSFX.Play(attrs);
         }
         break;
@@ -909,7 +923,7 @@ void CharacterTriggerHandler(unsigned int uParam)
         Audio::SoundAttributes attrs;
         attrs.Init();
         attrs.SetSoundType(0xC0, true);
-        attrs.UseStationaryPosVector(pCharacter->m_v3Position);
+        attrs.UseStationaryPosVector(g_pCurrentlyUpdatingCharacter->m_v3Position);
         Audio::gStadGenSFX.Play(attrs);
         break;
     }
@@ -920,7 +934,7 @@ void CharacterTriggerHandler(unsigned int uParam)
             Audio::SoundAttributes attrs;
             attrs.Init();
             attrs.SetSoundType(0xB6, true);
-            attrs.UseStationaryPosVector(pCharacter->m_v3Position);
+            attrs.UseStationaryPosVector(g_pCurrentlyUpdatingCharacter->m_v3Position);
             Audio::gStadGenSFX.Play(attrs);
         }
         break;

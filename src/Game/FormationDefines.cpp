@@ -186,7 +186,7 @@ FormationSpec* FormationSet::GetFormationSpecFromID(int formationID) const
 
 /**
  * Offset/Address/Size: 0x0 | 0x8003AE10 | size: 0xC08
- * TODO: 97.8% match - r21/r22 register swap for formationList base and r4/r5 in copy loop
+ * TODO: 98.5% match - r21/r22 register swap for formationList base and r4/r5 in copy loop
  */
 FormationSet* FormationSet::LoadFormationSets(const char* filename, int& out_numsets)
 {
@@ -271,20 +271,18 @@ FormationSet* FormationSet::LoadFormationSets(const char* filename, int& out_num
             formation.m_v2Center.f.x = 0.0f;
             formation.m_v2Center.f.y = 0.0f;
 
-            FormationPos* pp = &formation.m_Positions[0];
-            for (int n = 4; n != 0; n--)
+            for (int n = 0; n < 4; n++)
             {
-                formation.m_v2Min.f.x = (formation.m_v2Min.f.x <= pp->m_Location.f.x) ? formation.m_v2Min.f.x : pp->m_Location.f.x;
-                formation.m_v2Min.f.y = (formation.m_v2Min.f.y <= pp->m_Location.f.y) ? formation.m_v2Min.f.y : pp->m_Location.f.y;
-                formation.m_v2Max.f.x = (formation.m_v2Max.f.x >= pp->m_Location.f.x) ? formation.m_v2Max.f.x : pp->m_Location.f.x;
-                formation.m_v2Max.f.y = (formation.m_v2Max.f.y >= pp->m_Location.f.y) ? formation.m_v2Max.f.y : pp->m_Location.f.y;
+                formation.m_v2Min.f.x = (formation.m_v2Min.f.x <= formation.m_Positions[n].m_Location.f.x) ? formation.m_v2Min.f.x : formation.m_Positions[n].m_Location.f.x;
+                formation.m_v2Min.f.y = (formation.m_v2Min.f.y <= formation.m_Positions[n].m_Location.f.y) ? formation.m_v2Min.f.y : formation.m_Positions[n].m_Location.f.y;
+                formation.m_v2Max.f.x = (formation.m_v2Max.f.x >= formation.m_Positions[n].m_Location.f.x) ? formation.m_v2Max.f.x : formation.m_Positions[n].m_Location.f.x;
+                formation.m_v2Max.f.y = (formation.m_v2Max.f.y >= formation.m_Positions[n].m_Location.f.y) ? formation.m_v2Max.f.y : formation.m_Positions[n].m_Location.f.y;
                 {
-                    float cx = formation.m_v2Center.f.x + pp->m_Location.f.x;
-                    float cy = formation.m_v2Center.f.y + pp->m_Location.f.y;
+                    float cx = formation.m_v2Center.f.x + formation.m_Positions[n].m_Location.f.x;
+                    float cy = formation.m_v2Center.f.y + formation.m_Positions[n].m_Location.f.y;
                     formation.m_v2Center.f.x = cx;
                     formation.m_v2Center.f.y = cy;
                 }
-                pp++;
             }
             {
                 float cx = formation.m_v2Center.f.x * 0.25f;
