@@ -572,42 +572,6 @@ bool glx_AddTex(unsigned long handle, PlatTexture* platTex)
     return true;
 }
 
-struct TextureFindHelper
-{
-    char pad[0x8];
-    AVLTreeEntry<unsigned long, PlatTexture*>* m_Root;
-
-    inline bool FindGet(unsigned long key, PlatTexture*** foundValue) const
-    {
-        AVLTreeEntry<unsigned long, PlatTexture*>* node = m_Root;
-        while (node != NULL)
-        {
-            int cmpResult;
-            if (key == node->key)
-                cmpResult = 0;
-            else if (key < node->key)
-                cmpResult = -1;
-            else
-                cmpResult = 1;
-
-            if (cmpResult == 0)
-            {
-                if (foundValue != NULL)
-                    *foundValue = &node->value;
-                return true;
-            }
-            else
-            {
-                if (cmpResult < 0)
-                    node = (AVLTreeEntry<unsigned long, PlatTexture*>*)node->node.left;
-                else
-                    node = (AVLTreeEntry<unsigned long, PlatTexture*>*)node->node.right;
-            }
-        }
-        return false;
-    }
-};
-
 /**
  * Offset/Address/Size: 0xF94 | 0x801B8250 | size: 0x194
  * TODO: 99.90% match - grid-call still computes shifted args into r3/r4 in the
@@ -638,7 +602,7 @@ PlatTexture* glx_GetTex(unsigned long handle, bool bMissingFatal, bool bAllowGri
 
     for (int index = currentMarkerLevel; index >= 0; index--)
     {
-        bool found = ((TextureFindHelper*)textures[index])->FindGet(handle, &tex);
+        bool found = textures[index]->FindGet(handle, &tex);
 
         if (found)
         {

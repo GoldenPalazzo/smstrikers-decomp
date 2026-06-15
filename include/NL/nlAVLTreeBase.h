@@ -166,6 +166,50 @@ public:
         return foundValue;
     }
 
+    inline bool FindGet(const KeyType& key, ValueType** foundValue) const
+    {
+        AVLTreeEntry<KeyType, ValueType>* node = m_Root;
+
+        while (node != nullptr)
+        {
+            int cmpResult;
+            if (key == node->key)
+            {
+                cmpResult = 0;
+            }
+            else if (key < node->key)
+            {
+                cmpResult = -1;
+            }
+            else
+            {
+                cmpResult = 1;
+            }
+
+            if (cmpResult == 0)
+            {
+                if (foundValue != nullptr)
+                {
+                    *foundValue = &node->value;
+                }
+                return true;
+            }
+            else
+            {
+                if (cmpResult < 0)
+                {
+                    node = (AVLTreeEntry<KeyType, ValueType>*)node->node.left;
+                }
+                else
+                {
+                    node = (AVLTreeEntry<KeyType, ValueType>*)node->node.right;
+                }
+            }
+        }
+
+        return false;
+    }
+
     virtual int CompareNodes(AVLTreeNode* a, AVLTreeNode* b);
 
     virtual int CompareKey(void* key, AVLTreeNode* node);
