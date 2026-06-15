@@ -27,83 +27,6 @@ struct ColourKeyListShim
     DLListEntry<ColourKey>* m_Head;
 };
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x801F29E8 | size: 0x60
-//  */
-// void nlWalkRing<DLListEntry<ColourKey>, DLListContainerBase<ColourKey, NewAdapter<DLListEntry<ColourKey> > > >(DLListEntry<ColourKey>*, DLListContainerBase<ColourKey, NewAdapter<DLListEntry<ColourKey> > >*, void (DLListContainerBase<ColourKey, NewAdapter<DLListEntry<ColourKey> > >::*)(DLListEntry<ColourKey>*))
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0xB0 | 0x801F29B0 | size: 0x38
-//  */
-// void nlDLRingAddStart<DLListEntry<ColourKey> >(DLListEntry<ColourKey>**, DLListEntry<ColourKey>*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x74 | 0x801F2974 | size: 0x3C
-//  */
-// void nlDLRingAddEnd<DLListEntry<ColourKey> >(DLListEntry<ColourKey>**, DLListEntry<ColourKey>*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x5C | 0x801F295C | size: 0x18
-//  */
-// void nlDLRingGetStart<DLListEntry<ColourKey> >(DLListEntry<ColourKey>*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x3C | 0x801F293C | size: 0x20
-//  */
-// void nlDLRingIsEnd<DLListEntry<ColourKey> >(DLListEntry<ColourKey>*, DLListEntry<ColourKey>*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x801F2900 | size: 0x3C
-//  */
-// void nlWalkDLRing<DLListEntry<ColourKey>, DLListContainerBase<ColourKey, NewAdapter<DLListEntry<ColourKey> > > >(DLListEntry<ColourKey>*, DLListContainerBase<ColourKey, NewAdapter<DLListEntry<ColourKey> > >*, void (DLListContainerBase<ColourKey, NewAdapter<DLListEntry<ColourKey> > >::*)(DLListEntry<ColourKey>*))
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x801F28DC | size: 0x24
-//  */
-// void DLListContainerBase<ColourKey, NewAdapter<DLListEntry<ColourKey> > >::DeleteEntry(DLListEntry<ColourKey>*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x801F28B8 | size: 0x24
-//  */
-// void NewAdapter<AVLTreeEntry<unsigned long, EffectsTemplate*> >::Delete(AVLTreeEntry<unsigned long, EffectsTemplate*>*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x994 | 0x801F2854 | size: 0x64
-//  */
-// void AVLTreeBase<unsigned long, EffectsTemplate*, NewAdapter<AVLTreeEntry<unsigned long, EffectsTemplate*> >, DefaultKeyCompare<unsigned long> >::AllocateEntry(void*, void*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x968 | 0x801F2828 | size: 0x2C
-//  */
-// void AVLTreeBase<unsigned long, EffectsTemplate*, NewAdapter<AVLTreeEntry<unsigned long, EffectsTemplate*> >, DefaultKeyCompare<unsigned long> >::CompareKey(void*, AVLTreeNode*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x93C | 0x801F27FC | size: 0x2C
-//  */
-// void AVLTreeBase<unsigned long, EffectsTemplate*, NewAdapter<AVLTreeEntry<unsigned long, EffectsTemplate*> >, DefaultKeyCompare<unsigned long> >::CompareNodes(AVLTreeNode*, AVLTreeNode*)
-// {
-// }
-
 #pragma inline_depth(0)
 /**
  * Offset/Address/Size: 0x8E4 | 0x801F27A4 | size: 0x58
@@ -115,48 +38,6 @@ void AVLTreeBase<unsigned long, EffectsTemplate*, NewAdapter<AVLTreeEntry<unsign
     m_NumElements = 0;
 }
 #pragma inline_depth(255)
-
-// /**
-//  * Offset/Address/Size: 0x8DC | 0x801F279C | size: 0x8
-//  */
-// void AVLTreeBase<unsigned long, EffectsTemplate*, NewAdapter<AVLTreeEntry<unsigned long, EffectsTemplate*> >, DefaultKeyCompare<unsigned long> >::CastUp(AVLTreeNode*) const
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x184 | 0x801F2044 | size: 0x758
-//  */
-// void AVLTreeBase<unsigned long, EffectsTemplate*, NewAdapter<AVLTreeEntry<unsigned long, EffectsTemplate*> >, DefaultKeyCompare<unsigned long> >::PostorderTraversal(AVLTreeEntry<unsigned long, EffectsTemplate*>*, void (AVLTreeBase<unsigned long, EffectsTemplate*, NewAdapter<AVLTreeEntry<unsigned long, EffectsTemplate*> >, DefaultKeyCompare<unsigned long> >::*)(AVLTreeEntry<unsigned long, EffectsTemplate*>*))
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x120 | 0x801F1FE0 | size: 0x64
-//  */
-// void AVLTreeBase<unsigned long, EffectsTemplate*, NewAdapter<AVLTreeEntry<unsigned long, EffectsTemplate*> >, DefaultKeyCompare<unsigned long> >::DestroyTree(void (AVLTreeBase<unsigned long, EffectsTemplate*, NewAdapter<AVLTreeEntry<unsigned long, EffectsTemplate*> >, DefaultKeyCompare<unsigned long> >::*)(AVLTreeEntry<unsigned long, EffectsTemplate*>*))
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0xC8 | 0x801F1F88 | size: 0x58
-//  */
-// void AVLTreeBase<unsigned long, EffectsTemplate*, NewAdapter<AVLTreeEntry<unsigned long, EffectsTemplate*> >, DefaultKeyCompare<unsigned long> >::Clear()
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x6C | 0x801F1F2C | size: 0x5C
-//  */
-// void AVLTreeBase<unsigned long, EffectsTemplate*, NewAdapter<AVLTreeEntry<unsigned long, EffectsTemplate*> >, DefaultKeyCompare<unsigned long> >::~AVLTreeBase()
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x48 | 0x801F1F08 | size: 0x24
-//  */
-// void AVLTreeBase<unsigned long, EffectsTemplate*, NewAdapter<AVLTreeEntry<unsigned long, EffectsTemplate*> >, DefaultKeyCompare<unsigned long> >::DeleteEntry(AVLTreeEntry<unsigned long, EffectsTemplate*>*)
-// {
-// }
 
 /**
  * Offset/Address/Size: 0x0 | 0x801F1EC0 | size: 0x48

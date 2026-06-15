@@ -572,13 +572,6 @@ bool glx_AddTex(unsigned long handle, PlatTexture* platTex)
     return true;
 }
 
-/**
- * Offset/Address/Size: 0xF94 | 0x801B8250 | size: 0x194
- * TODO: 99.90% match - grid-call still computes shifted args into r3/r4 in the
- *       opposite order (target wants r4 from height, r3 from width), and the
- *       missing-text debug literal still binds to a different pool label
- */
-
 struct TextureFindHelper
 {
     char pad[0x8];
@@ -615,6 +608,12 @@ struct TextureFindHelper
     }
 };
 
+/**
+ * Offset/Address/Size: 0xF94 | 0x801B8250 | size: 0x194
+ * TODO: 99.90% match - grid-call still computes shifted args into r3/r4 in the
+ *       opposite order (target wants r4 from height, r3 from width), and the
+ *       missing-text debug literal still binds to a different pool label
+ */
 PlatTexture* glx_GetTex(unsigned long handle, bool bMissingFatal, bool bAllowGrids)
 {
     PlatTexture** tex;
@@ -872,116 +871,3 @@ glxTextureLoadCallback_t glx_SetLoadCallback(glxTextureLoadCallback_t callback)
     glxTextureLoad_cb = callback;
     return oldCallback;
 }
-// /**
-//  * Offset/Address/Size: 0x0 | 0x801B8CA8 | size: 0x24
-//  */
-// void AVLTreeBase<unsigned long, PlatTexture*, NewAdapter<AVLTreeEntry<unsigned long, PlatTexture*>>, DefaultKeyCompare<unsigned
-// long>>::DeleteEntry(AVLTreeEntry<unsigned long, PlatTexture*>*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x24 | 0x801B8CCC | size: 0x58
-//  */
-// void AVLTreeBase<unsigned long, PlatTexture*, NewAdapter<AVLTreeEntry<unsigned long, PlatTexture*>>, DefaultKeyCompare<unsigned
-// long>>::Clear()
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x7C | 0x801B8D24 | size: 0x64
-//  */
-// void AVLTreeBase<unsigned long, PlatTexture*, NewAdapter<AVLTreeEntry<unsigned long, PlatTexture*>>, DefaultKeyCompare<unsigned
-// long>>::DestroyTree(void (AVLTreeBase<unsigned long, PlatTexture*, NewAdapter<AVLTreeEntry<unsigned long, PlatTexture*>>,
-// DefaultKeyCompare<unsigned long>>::*)(AVLTreeEntry<unsigned long, PlatTexture*>*))
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0xE0 | 0x801B8D88 | size: 0x758
-//  */
-// void AVLTreeBase<unsigned long, PlatTexture*, NewAdapter<AVLTreeEntry<unsigned long, PlatTexture*>>, DefaultKeyCompare<unsigned
-// long>>::PostorderTraversal(AVLTreeEntry<unsigned long, PlatTexture*>*, void (AVLTreeBase<unsigned long, PlatTexture*,
-// NewAdapter<AVLTreeEntry<unsigned long, PlatTexture*>>, DefaultKeyCompare<unsigned long>>::*)(AVLTreeEntry<unsigned long, PlatTexture*>*))
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x838 | 0x801B94E0 | size: 0x8
-//  */
-// void AVLTreeBase<unsigned long, PlatTexture*, NewAdapter<AVLTreeEntry<unsigned long, PlatTexture*>>, DefaultKeyCompare<unsigned
-// long>>::CastUp(AVLTreeNode*) const
-// {
-// }
-
-/**
- * Offset/Address/Size: 0x840 | 0x801B94E8 | size: 0x44
- * TODO: 96.47% match - prologue scheduling differs (`lwz r8, 0(r5)` placement).
- */
-// /**
-//  * Offset/Address/Size: 0x884 | 0x801B952C | size: 0x2CC
-//  */
-// void AVLTreeBase<unsigned long, PlatTexture*, NewAdapter<AVLTreeEntry<unsigned long, PlatTexture*>>, DefaultKeyCompare<unsigned
-// long>>::InorderWalk<TexDestructor>(AVLTreeEntry<unsigned long, PlatTexture*>*, TexDestructor*, void (TexDestructor::*)(const unsigned
-// long&, PlatTexture**))
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0xB50 | 0x801B97F8 | size: 0x2C
-//  */
-// void AVLTreeBase<unsigned long, PlatTexture*, NewAdapter<AVLTreeEntry<unsigned long, PlatTexture*>>, DefaultKeyCompare<unsigned
-// long>>::CompareNodes(AVLTreeNode*, AVLTreeNode*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0xB7C | 0x801B9824 | size: 0x2C
-//  */
-// void AVLTreeBase<unsigned long, PlatTexture*, NewAdapter<AVLTreeEntry<unsigned long, PlatTexture*>>, DefaultKeyCompare<unsigned
-// long>>::CompareKey(void*, AVLTreeNode*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0xBA8 | 0x801B9850 | size: 0x64
-//  */
-// void AVLTreeBase<unsigned long, PlatTexture*, NewAdapter<AVLTreeEntry<unsigned long, PlatTexture*>>, DefaultKeyCompare<unsigned
-// long>>::AllocateEntry(void*, void*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x801B98B4 | size: 0x28
-//  */
-// void nlQSort<glTexBundleDict>(glTexBundleDict*, int, int (*)(const glTexBundleDict*, const glTexBundleDict*))
-// {
-// }
-
-/**
- * Offset/Address/Size: 0x0 | 0x801B98DC | size: 0x28
- */
-template void nlListAddStart<ListEntry<PlatTexture*> >(ListEntry<PlatTexture*>**, ListEntry<PlatTexture*>*, ListEntry<PlatTexture*>**);
-
-// /**
-//  * Offset/Address/Size: 0x28 | 0x801B9904 | size: 0x68
-//  */
-// void nlWalkList<ListEntry<PlatTexture*>, ListContainerBase<PlatTexture*, NewAdapter<ListEntry<PlatTexture*>>>>(ListEntry<PlatTexture*>*,
-// ListContainerBase<PlatTexture*, NewAdapter<ListEntry<PlatTexture*>>>*, void (ListContainerBase<PlatTexture*,
-// NewAdapter<ListEntry<PlatTexture*>>>::*)(ListEntry<PlatTexture*>*))
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0xE4 | 0x801B9A50 | size: 0x24
-//  */
-// void ListContainerBase<PlatTexture*, NewAdapter<ListEntry<PlatTexture*>>>::DeleteEntry(ListEntry<PlatTexture*>*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x108 | 0x801B9A74 | size: 0x8C
-//  */
-// void nlListContainer<PlatTexture*>::~nlListContainer()
-// {
-// }

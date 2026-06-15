@@ -922,9 +922,13 @@ unsigned long SaveCallbacks::FileWriteIconCB(unsigned long channel, long result,
  */
 unsigned long SaveCallbacks::CreateFileCB(unsigned long Slot, long Result, void* pUserData)
 {
+    typedef unsigned long (SaveCallbacks::*MemberCB)(unsigned long, long, void*);
+    MemberCB cb;
+    long errorCode;
+
     if (Result != 0)
     {
-        long errorCode = Result;
+        errorCode = Result;
         m_pSaveFile = NULL;
         if (m_pSaveFile != NULL)
         {
@@ -1054,14 +1058,13 @@ unsigned long SaveCallbacks::CreateFileCB(unsigned long Slot, long Result, void*
     u32 crc = nlChecksum32(cache->mIconHdrBuffer, headerSize);
     m_IconCRC = crc;
     gIconCRC = m_IconCRC;
-    typedef unsigned long (SaveCallbacks::*MemberCB)(unsigned long, long, void*);
-    MemberCB cb2 = &SaveCallbacks::FileWriteIconCB;
+    cb = &SaveCallbacks::FileWriteIconCB;
     MemCardFunctor functor;
-    new (functor.m_FunctorMem) MemCardFunctor::MCMemberFunctor<SaveCallbacks>(this, cb2, cache->mIconDataInfo.pHeaderData);
+    new (functor.m_FunctorMem) MemCardFunctor::MCMemberFunctor<SaveCallbacks>(this, cb, cache->mIconDataInfo.pHeaderData);
     Result = g_MemCards[m_Slot]->WriteFileIconData(m_pSaveFile, (void*)cache->mIconDataInfo.pHeaderData, functor);
     if (Result != 0)
     {
-        long errorCode = Result;
+        errorCode = Result;
         unsigned long slot2 = m_Slot;
         if (m_pSaveFile != NULL)
         {
