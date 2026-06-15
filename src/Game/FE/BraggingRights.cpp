@@ -14,10 +14,12 @@
 #include "Game/SH/SHMainMenu.h"
 #include "Game/SH/SHSaveLoad.h"
 #include "NL/gl/glStruct.h"
+#include "NL/nlBSearch.h"
 #include "NL/nlColour.h"
 #include "NL/nlMath.h"
 #include "NL/nlPrint.h"
 #include "NL/nlFormat.h"
+#include "NL/nlLocalization.h"
 #include "NL/nlString.h"
 
 namespace SingleHighlite
@@ -54,51 +56,29 @@ void OpenItem(TLComponentInstance*);
 void CloseItem(TLComponentInstance*);
 } // namespace SingleHighlite
 
-struct LOCHeader
-{
-    char Thumbprint[4];
-    unsigned long Version;
-    unsigned long Language;
-    unsigned long StringCount;
-    unsigned long Flags;
-};
-
-class nlLocalization
-{
-public:
-    struct StringLookup
-    {
-        unsigned long hash;
-        unsigned long StringOffset;
-        operator unsigned long() const { return hash; }
-    };
-
-    LOCHeader* m_pFile;
-    StringLookup* m_LookupTable;
-    unsigned short* m_FirstString;
-    int m_CurrentLanguage;
-};
-
 extern nlLocalization* g_pLocalization;
 extern const unsigned short LocalizationTableNotFound[];
 extern const unsigned short MissingLocString[];
-extern nlLocalization::StringLookup* nlBSearch(const unsigned long&, nlLocalization::StringLookup*, int);
 
-static const unsigned short* LookupLocHash(unsigned long hash)
+static inline const unsigned short* LookupLocHash(nlLocalization* loc, unsigned long hash)
 {
-    nlLocalization* loc = g_pLocalization;
     if (loc->m_LookupTable == 0)
     {
         return LocalizationTableNotFound;
     }
 
-    nlLocalization::StringLookup* entry = nlBSearch(hash, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
+    nlLocalization::StringLookup* entry = nlBSearch<nlLocalization::StringLookup, unsigned long>(hash, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
     if (entry)
     {
         return loc->m_FirstString + entry->StringOffset;
     }
 
     return MissingLocString;
+}
+
+static const unsigned short* LookupLocHash(unsigned long hash)
+{
+    return LookupLocHash(g_pLocalization, hash);
 }
 
 /**
@@ -816,7 +796,7 @@ void BraggingRightsScene::SceneCreated()
         InlineHasher(0),
         InlineHasher(0),
         InlineHasher(0));
-    pTitleText->m_LocStrId = 0xB1839C7A;
+    pTitleText->m_LocStrId = 0xB1829C7A;
     pTitleText->m_OverloadFlags |= 0x8;
 
     TLComponentInstance* buttonComponent = FEFinder<TLComponentInstance, 4>::Find(
@@ -860,12 +840,11 @@ void BraggingRightsScene::SceneCreated()
                 = LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(MILESTONE_GOALS[i]);
             unsigned short statWideString[32];
             unsigned short currentStatWideString[32];
-            BasicString<unsigned short, Detail::TempStringAllocator> formatted;
 
             nlStrToWcs(statString.c_str(), statWideString, 32);
             nlStrToWcs(currentStatString.c_str(), currentStatWideString, 32);
 
-            formatted = Format<BasicString<unsigned short, Detail::TempStringAllocator>, unsigned short[32], unsigned short[32]>(
+            BasicString<unsigned short, Detail::TempStringAllocator> formatted = Format<BasicString<unsigned short, Detail::TempStringAllocator>, unsigned short[32], unsigned short[32]>(
                 unformatted, statWideString, currentStatWideString);
 
             memcpy(mBuffer[i], formatted.c_str(), sizeof(mBuffer[i]));
@@ -905,7 +884,7 @@ void BraggingRightsScene::SceneCreated()
         }
     }
 
-    mUserPlace = info->DetermineUserPlacement(NULL);
+    mUserPlace = nlSingleton<GameInfoManager>::s_pInstance->DetermineUserPlacement(NULL);
 
     BasicString<char, Detail::TempStringAllocator> winString
         = LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(wins);
@@ -917,11 +896,11 @@ void BraggingRightsScene::SceneCreated()
     nlStrToWcs(winString.c_str(), winWideString, 32);
     nlStrToWcs(lossString.c_str(), lossWideString, 32);
 
+    nlLocalization* loc = g_pLocalization;
     BasicString<unsigned short, Detail::TempStringAllocator> unformatted(
-        LookupLocHash(nlStringLowerHash("BRAG_RATIO")));
-    BasicString<unsigned short, Detail::TempStringAllocator> formatted;
+        LookupLocHash(loc, nlStringLowerHash("BRAG_RATIO")));
 
-    formatted = Format<BasicString<unsigned short, Detail::TempStringAllocator>, unsigned short[32], unsigned short[32]>(
+    BasicString<unsigned short, Detail::TempStringAllocator> formatted = Format<BasicString<unsigned short, Detail::TempStringAllocator>, unsigned short[32], unsigned short[32]>(
         unformatted, winWideString, lossWideString);
     memcpy(mRatioBuffer, formatted.c_str(), sizeof(mRatioBuffer));
 

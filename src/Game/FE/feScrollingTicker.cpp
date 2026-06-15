@@ -219,20 +219,14 @@ void ScrollingTickerScene::SceneCreated()
         pres,
         InlineHasher(nlStringLowerHash("closed")),
         InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("ticker_ball_left")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("ticker_ball_left")));
     m_leftBallClosedPos = temp->GetPosition();
 
     temp = FEFinder<TLInstance, 2>::Find(
         pres,
         InlineHasher(nlStringLowerHash("closed")),
         InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("ticker_ball_right")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("ticker_ball_right")));
     m_rightBallClosedPos = temp->GetPosition();
     m_ballClosedScale = temp->GetScale();
 
@@ -240,10 +234,7 @@ void ScrollingTickerScene::SceneCreated()
         pres,
         InlineHasher(nlStringLowerHash("closed")),
         InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("Rectangle")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("Rectangle")));
     m_grayClosedScale = temp->GetScale();
 
     pres->SetActiveSlide("open");
@@ -252,37 +243,25 @@ void ScrollingTickerScene::SceneCreated()
         pres,
         InlineHasher(nlStringLowerHash("open")),
         InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("Text")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("Text")));
 
     m_leftBall = FEFinder<TLInstance, 2>::Find(
         pres,
         InlineHasher(nlStringLowerHash("open")),
         InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("ticker_ball_left")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("ticker_ball_left")));
 
     m_rightBall = FEFinder<TLInstance, 2>::Find(
         pres,
         InlineHasher(nlStringLowerHash("open")),
         InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("ticker_ball_right")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("ticker_ball_right")));
 
     m_backRectangle = FEFinder<TLInstance, 2>::Find(
         pres,
         InlineHasher(nlStringLowerHash("open")),
         InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("Rectangle")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("Rectangle")));
 
     m_leftBallOpenPos = m_leftBall->GetPosition();
     m_rightBallOpenPos = m_rightBall->GetPosition();

@@ -484,10 +484,10 @@ EffectsTerrainSpec* parse_terrain_spec(SimpleParser* parser)
 
 /**
  * Offset/Address/Size: 0x338 | 0x801F2D80 | size: 0x4D4
- * TODO: 99.05% match - pGroup register r26 vs target r30 (cascading),
- * pSpecEntry stores via r4 vs r3, user specs loop register diffs.
+ * TODO: 99.14% match - pGroup register r26 vs target r30, pSpecEntry stores
+ * via r4 vs r3, user-spec copy loop pNode/pWalk register diffs.
  */
-EffectsGroup* parse_group(SimpleParser* parser)
+static EffectsGroup* parse_group(SimpleParser* parser)
 {
     unsigned long hashID;
     EffectsSpec specs[64];
@@ -525,8 +525,6 @@ EffectsGroup* parse_group(SimpleParser* parser)
     token = parser->NextToken(true);
     if (token == nullptr)
     {
-        nlWalkDLRing(userSpecs.m_Head, (UserSpecContainer*)&userSpecs, &UserSpecContainer::DeleteEntry);
-        userSpecs.m_Head = nullptr;
         return nullptr;
     }
 
@@ -539,8 +537,6 @@ EffectsGroup* parse_group(SimpleParser* parser)
         token = parser->NextToken(true);
         if (token == nullptr)
         {
-            nlWalkDLRing(userSpecs.m_Head, (UserSpecContainer*)&userSpecs, &UserSpecContainer::DeleteEntry);
-            userSpecs.m_Head = nullptr;
             return nullptr;
         }
 
@@ -642,8 +638,9 @@ EffectsGroup* parse_group(SimpleParser* parser)
     if (i > 0)
     {
         UserEffectSpec** pUserSpecs = (UserEffectSpec**)nlMalloc(i * 4, 8, false);
+        DLListEntry<UserEffectSpec*>* pHead;
         DLListEntry<UserEffectSpec*>* pNode = nlDLRingGetStart(userSpecs.m_Head);
-        DLListEntry<UserEffectSpec*>* pHead = userSpecs.m_Head;
+        pHead = userSpecs.m_Head;
         UserEffectSpec** pWalk = pUserSpecs;
 
         while (pNode != nullptr)
@@ -668,8 +665,6 @@ EffectsGroup* parse_group(SimpleParser* parser)
         }
     }
 
-    nlWalkDLRing(userSpecs.m_Head, (UserSpecContainer*)&userSpecs, &UserSpecContainer::DeleteEntry);
-    userSpecs.m_Head = nullptr;
     return pGroup;
 }
 

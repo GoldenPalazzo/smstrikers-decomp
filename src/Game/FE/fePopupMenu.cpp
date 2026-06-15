@@ -1,4 +1,5 @@
 #define FEPOPUPMENU_INTERNAL_BYVAL
+#define BASICSTRING_INLINE_ERASE
 #include "Game/FE/fePopupMenu.h"
 
 #include "Game/BaseGameSceneManager.h"

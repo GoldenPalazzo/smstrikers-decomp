@@ -693,7 +693,8 @@ FuzzyVariant Fuzzy::ShouldIMarkBallOwner(cFielder* pFielder)
         confidence = (confidence <= score) ? confidence : score;
         if (confidence < score && score < 0.5f)
         {
-            confidence = (float)confidence * ratio;
+            double d = confidence;
+            confidence = (float)d * ratio;
         }
 
         cFielder* marker = g_pScriptBallOwner != NULL ? g_pScriptBallOwner->m_pMarker : NULL;
@@ -716,7 +717,8 @@ FuzzyVariant Fuzzy::ShouldIMarkBallOwner(cFielder* pFielder)
             confidence = (confidence <= combined) ? confidence : combined;
             if (confidence < combined && combined < 0.5f)
             {
-                confidence = (float)confidence * ratio2;
+                double d = confidence;
+                confidence = (float)d * ratio2;
             }
 
             if (confidence > 0.0f)
@@ -734,7 +736,8 @@ FuzzyVariant Fuzzy::ShouldIMarkBallOwner(cFielder* pFielder)
             confidence = (confidence <= notCombined) ? confidence : notCombined;
             if (confidence < notCombined && notCombined < 0.5f)
             {
-                confidence = (float)confidence * ratio2;
+                double d = confidence;
+                confidence = (float)d * ratio2;
             }
 
             if (confidence > bestConfidence)
@@ -753,7 +756,8 @@ FuzzyVariant Fuzzy::ShouldIMarkBallOwner(cFielder* pFielder)
         confidence = (confidence <= complement) ? confidence : complement;
         if (confidence < complement && complement < 0.5f)
         {
-            confidence = (float)confidence * ratio;
+            double d = confidence;
+            confidence = (float)d * ratio;
         }
 
         if (confidence > bestConfidence)

@@ -199,7 +199,10 @@ static glModel* glxLoadModelFromMemory(char* data, int size, unsigned long* pNum
                 if (((-alignBits | alignBits) >> 31) != 0)
                 {
                     u32 align = 1u << (alignBits >> 24);
-                    chunkData = (u8*)(((u32)((u8*)chunk + align) + 7) & ~(align - 1));
+                    u32 ptr = (u32)chunk + align;
+                    ptr += 7;
+                    ptr &= ~(align - 1);
+                    chunkData = (u8*)ptr;
                 }
                 else
                 {
@@ -274,13 +277,13 @@ static glModel* glxLoadModelFromMemory(char* data, int size, unsigned long* pNum
                     u32 animId = *(u32*)chunkData;
                     if (glInventory.GetTextureAnim(animId) == NULL)
                     {
-                        u8* pTexData = chunkData + 12;
+                        u32* pTexData = (u32*)(chunkData + 12);
                         int numTextures = *(int*)(chunkData + 4);
                         GLTextureAnim* pAnim;
                         u32 mode = *(u32*)(chunkData + 8);
                         f32 tempRate;
                         memcpy(&tempRate, pTexData, 4);
-                        pTexData += 4;
+                        pTexData++;
                         pAnim = (GLTextureAnim*)nlMalloc(0x20, 8, false);
                         if (pAnim != NULL)
                             new (pAnim) GLTextureAnim();
@@ -290,14 +293,13 @@ static glModel* glxLoadModelFromMemory(char* data, int size, unsigned long* pNum
                         pAnim->SetFrame((int)tempRate);
                         for (u32 t = 0; t < (u32)numTextures; t++)
                         {
-                            u32 texHandle = *(u32*)pTexData;
-                            pTexData += 4;
+                            animTex.textureHandle = *(u32*)pTexData;
+                            pTexData++;
                             f32 timeVal;
                             memcpy(&timeVal, pTexData, 4);
-                            animTex.textureHandle = texHandle;
                             animTex.time = timeVal;
+                            pTexData++;
                             pAnim->SetTexture(t, animTex);
-                            pTexData += 4;
                         }
                         glInventory.AddTextureAnim(animId, pAnim);
                     }

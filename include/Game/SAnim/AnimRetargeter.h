@@ -14,7 +14,7 @@ public:
 class AnimRetargetList : public cIdentifier
 {
 public:
-    void Initialize(nlChunk*);
+    static AnimRetargetList* Initialize(nlChunk*);
     AnimRetarget* GetAnimRetargetWithSignature(const cSAnim*);
 
     /* 0x8 */ long m_NumAnimRetargets;

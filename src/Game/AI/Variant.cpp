@@ -1,3 +1,4 @@
+#define BASICSTRING_INLINE_ERASE
 #include "Game/AI/Variant.h"
 #include "NL/nlFormat.h"
 #include "NL/nlLexicalCast.h"

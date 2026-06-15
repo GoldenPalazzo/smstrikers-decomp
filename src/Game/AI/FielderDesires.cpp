@@ -1307,7 +1307,7 @@ void cFielder::DesireMark(float fDeltaT)
         return;
     }
 
-    if (IsOnSameTeam(m_pMark) || bBestBallInterceptor)
+    if (IsOnSameTeam(g_pBall->m_pOwner) || bBestBallInterceptor)
     {
         bool bStale = m_DesireCommonVars.tAge.GetSeconds() > 0.5f;
         if (bStale)
@@ -1340,14 +1340,16 @@ void cFielder::DesireMark(float fDeltaT)
                 fTimeDelay + (nlRandomf(fTimeDelayRange, &nlDefaultSeed) - (0.5f * fTimeDelayRange)));
         }
 
+        fTotalWeight_v3 = 0.0f;
         v3NetPosition = m_pTeam->m_pNet->m_baseLocation;
 
         float fMarkY = m_pMark->m_v3Position.f.y + (0.1f * m_pMark->m_v3Velocity.f.y);
         float fMarkX = m_pMark->m_v3Position.f.x + (0.1f * m_pMark->m_v3Velocity.f.x);
+        float fMarkZ = 0.0f;
 
         float dirY = v3NetPosition.f.y - fMarkY;
         float dirX = v3NetPosition.f.x - fMarkX;
-        float dirZ = v3NetPosition.f.z - 0.0f;
+        float dirZ = v3NetPosition.f.z - fMarkZ;
 
         {
             float fInvLength = nlRecipSqrt((dirY * dirY) + (dirX * dirX) + (dirZ * dirZ), true);
@@ -1357,7 +1359,6 @@ void cFielder::DesireMark(float fDeltaT)
         }
 
         vAccumulated_v3 = v3Zero;
-        fTotalWeight_v3 = 0.0f;
 
         fMarkingNetPassBalance = Interpolate(
             g_vMarkingNetPassBalance.f.x,
@@ -1383,9 +1384,9 @@ void cFielder::DesireMark(float fDeltaT)
         fDistanceMultiplier = Interpolate(0.5f, 1.0f, FarToTheirNet(m_pMark));
         fMarkingDistance = fMarkingDistance * fDistanceMultiplier;
 
-        if (UserControlledT(m_pTeam) != 0.0f)
+        if (UserControlledT(m_pTeam))
         {
-            if (ReceivingPass(m_pMark) != 0.0f || WindingUpForShot(m_pMark) != 0.0f)
+            if (ReceivingPass(m_pMark) || WindingUpForShot(m_pMark))
             {
                 fMarkingDistance = fMarkingDistance * fMarkThreatCoeff;
             }
@@ -1403,7 +1404,7 @@ void cFielder::DesireMark(float fDeltaT)
 
                 float sbcDirY = fSBCY - fMarkY;
                 float sbcDirX = fSBCX - fMarkX;
-                float sbcDirZ = fSBCZ - 0.0f;
+                float sbcDirZ = fSBCZ - fMarkZ;
 
                 {
                     float fSBCInvLength = nlRecipSqrt((sbcDirY * sbcDirY) + (sbcDirX * sbcDirX) + (sbcDirZ * sbcDirZ), true);
@@ -1445,7 +1446,7 @@ void cFielder::DesireMark(float fDeltaT)
         {
             float fMarkTargetY = (fMarkingDistance * dirY) + fMarkY;
             float fMarkTargetX = (fMarkingDistance * dirX) + fMarkX;
-            float fMarkTargetZ = (fMarkingDistance * dirZ) + 0.0f;
+            float fMarkTargetZ = (fMarkingDistance * dirZ) + fMarkZ;
 
             vAccumulated_v3.f.y = (fMarkFormationBalance * fMarkTargetY) + vAccumulated_v3.f.y;
             vAccumulated_v3.f.x = (fMarkFormationBalance * fMarkTargetX) + vAccumulated_v3.f.x;
@@ -1470,8 +1471,8 @@ void cFielder::DesireMark(float fDeltaT)
         if (fTotalWeight_v3 > 0.0f)
         {
             float fInvTotalWeight = 1.0f / fTotalWeight_v3;
-            v3DesiredPos.f.x = fInvTotalWeight * vAccumulated_v3.f.x;
             v3DesiredPos.f.y = fInvTotalWeight * vAccumulated_v3.f.y;
+            v3DesiredPos.f.x = fInvTotalWeight * vAccumulated_v3.f.x;
             v3DesiredPos.f.z = fInvTotalWeight * vAccumulated_v3.f.z;
         }
         else
@@ -1486,9 +1487,25 @@ void cFielder::DesireMark(float fDeltaT)
     ShouldIStrafe();
 }
 
+static inline float SupportClampLower(float x, float min)
+{
+    if (x >= min)
+        return x;
+    else
+        return min;
+}
+
+static inline float SupportClampUpper(float x, float max)
+{
+    if (x <= max)
+        return x;
+    else
+        return max;
+}
+
 /**
  * Offset/Address/Size: 0x35E4 | 0x80034368 | size: 0x408
- * TODO: 93.62% match - remaining diffs are register allocation around this pointer and clamp compare form in support-location loop
+ * TODO: 98.90% match - remaining diffs are float register allocation in support-location clamp and weighted accumulation
  */
 void cFielder::DesireSupportBall(float fDeltaT, bool bDefensive)
 {
@@ -1547,25 +1564,13 @@ void cFielder::DesireSupportBall(float fDeltaT, bool bDefensive)
         v2OffsetFromBall[i_rule].f.y = pLocation->y1 - pLocation->y0;
 
         float x = v3BallAILoc.f.x + v2OffsetFromBall[i_rule].f.x;
-        if (!(x >= 0.0f))
-        {
-            x = 0.0f;
-        }
-        if (!(x <= 4.0f))
-        {
-            x = 4.0f;
-        }
+        x = SupportClampLower(x, 0.0f);
+        x = SupportClampUpper(x, 4.0f);
         v2TargetPositions[i_rule].f.x = x;
 
         float y = v3BallAILoc.f.y + v2OffsetFromBall[i_rule].f.y;
-        if (!(y >= -1.0f))
-        {
-            y = -1.0f;
-        }
-        if (!(y <= 1.0f))
-        {
-            y = 1.0f;
-        }
+        y = SupportClampLower(y, -1.0f);
+        y = SupportClampUpper(y, 1.0f);
         v2TargetPositions[i_rule].f.y = y;
     }
 
@@ -1576,9 +1581,10 @@ void cFielder::DesireSupportBall(float fDeltaT, bool bDefensive)
     };
 
     float t = best_rule_distance[1] / (best_rule_distance[0] + best_rule_distance[1]);
+    float oneMinusT = 1.0f - t;
 
-    v3SupportPosition.f.x = (t * v2TargetPositions[0].f.x) + ((1.0f - t) * v2TargetPositions[1].f.x);
-    v3SupportPosition.f.y = (t * v2TargetPositions[0].f.y) + ((1.0f - t) * v2TargetPositions[1].f.y);
+    v3SupportPosition.f.x = ((1.0f - oneMinusT) * v2TargetPositions[0].f.x) + (oneMinusT * v2TargetPositions[1].f.x);
+    v3SupportPosition.f.y = ((1.0f - oneMinusT) * v2TargetPositions[0].f.y) + (oneMinusT * v2TargetPositions[1].f.y);
 
     AILocToFieldLoc(v3SupportPosition, v3SupportPosition, (eTeamSide)m_pTeam->m_nSide);
 
@@ -1587,10 +1593,12 @@ void cFielder::DesireSupportBall(float fDeltaT, bool bDefensive)
 
     nlVector3 vAccumulated_v3 = v3Zero;
     vAccumulated_v3.f.y = (fAIBallLocationWeight * v3SupportPosition.f.y) + vAccumulated_v3.f.y;
-    vAccumulated_v3.f.x = (fAIBallLocationWeight * v3SupportPosition.f.x) + vAccumulated_v3.f.x;
     vAccumulated_v3.f.z = (fAIBallLocationWeight * v3SupportPosition.f.z) + vAccumulated_v3.f.z;
+    vAccumulated_v3.f.x = (fAIBallLocationWeight * v3SupportPosition.f.x) + vAccumulated_v3.f.x;
 
     fTotalWeight_v3 = fTotalWeight_v3 + fAIBallLocationWeight;
+
+    float fFormationWeight = 0.3f;
 
     nlVector3 v3FormationPosition;
     m_DesireCommonVars.bInPosition = GetFormationPosition(v3FormationPosition, 0.0f);
@@ -1599,7 +1607,6 @@ void cFielder::DesireSupportBall(float fDeltaT, bool bDefensive)
         v3FormationPosition = m_v3Position;
     }
 
-    float fFormationWeight = 0.3f;
     fTotalWeight_v3 = fTotalWeight_v3 + fFormationWeight;
 
     vAccumulated_v3.f.z = (fFormationWeight * v3FormationPosition.f.z) + vAccumulated_v3.f.z;

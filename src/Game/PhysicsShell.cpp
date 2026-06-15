@@ -17,46 +17,21 @@ extern CollisionSpace* g_CollisionSpace;
 extern PhysicsWorld* g_PhysicsWorld;
 
 /**
- * Offset/Address/Size: 0x0 | 0x8013B968 | size: 0x94
+ * Offset/Address/Size: 0x9A4 | 0x8013C30C | size: 0x7C
  */
-bool PhysicsShell::SetContactInfo(dContact* contact, PhysicsObject* other, bool first)
+PhysicsShell::PhysicsShell(float radius)
+    : PhysicsSphere(g_CollisionSpace, g_PhysicsWorld, radius)
 {
-    if (first)
-    {
-        SetDefaultContactInfo(contact);
-    }
 
-    if (other->GetObjectType() == 0x11)
-    {
-        contact->surface.bounce = g_pGame->m_pGameTweaks->fShellBounceGround;
-    }
-    else
-    {
-        contact->surface.bounce = g_pGame->m_pGameTweaks->fShellBounce;
-    }
+    m_pTriggerCallbackFunc = 0;
+    m_pCallbackParam = 0;
+    m_pPowerupObject = 0;
+    mbIsInNet = false;
+    m_bIsSupportedByGround = false;
 
-    contact->surface.bounce_vel = 0.0f;
-    contact->surface.mu = 0.005f;
-
-    return true;
-}
-
-/**
- * Offset/Address/Size: 0x94 | 0x8013B9FC | size: 0x78
- */
-void PhysicsShell::PostUpdate()
-{
-    PhysicsObject::PostUpdate();
-
-    nlVector3 velocity;
-    GetLinearVelocity(&velocity);
-
-    nlVector3& pos = GetPosition();
-    if (pos.f.z > 20.0f && velocity.f.z > 0.0f)
-    {
-        velocity.f.z *= 0.9f;
-        SetLinearVelocity(velocity);
-    }
+    SetCollide(0xef);
+    SetCategory(0x20);
+    m_gravity = -32.f;
 }
 
 /**
@@ -407,19 +382,44 @@ ContactType PhysicsShell::Contact(PhysicsObject* obj, dContact* info, int numCon
 }
 
 /**
- * Offset/Address/Size: 0x9A4 | 0x8013C30C | size: 0x7C
+ * Offset/Address/Size: 0x94 | 0x8013B9FC | size: 0x78
  */
-PhysicsShell::PhysicsShell(float radius)
-    : PhysicsSphere(g_CollisionSpace, g_PhysicsWorld, radius)
+void PhysicsShell::PostUpdate()
 {
+    PhysicsObject::PostUpdate();
 
-    m_pTriggerCallbackFunc = 0;
-    m_pCallbackParam = 0;
-    m_pPowerupObject = 0;
-    mbIsInNet = false;
-    m_bIsSupportedByGround = false;
+    nlVector3 velocity;
+    GetLinearVelocity(&velocity);
 
-    SetCollide(0xef);
-    SetCategory(0x20);
-    m_gravity = -32.f;
+    nlVector3& pos = GetPosition();
+    if (pos.f.z > 20.0f && velocity.f.z > 0.0f)
+    {
+        velocity.f.z *= 0.9f;
+        SetLinearVelocity(velocity);
+    }
+}
+
+/**
+ * Offset/Address/Size: 0x0 | 0x8013B968 | size: 0x94
+ */
+bool PhysicsShell::SetContactInfo(dContact* contact, PhysicsObject* other, bool first)
+{
+    if (first)
+    {
+        SetDefaultContactInfo(contact);
+    }
+
+    if (other->GetObjectType() == 0x11)
+    {
+        contact->surface.bounce = g_pGame->m_pGameTweaks->fShellBounceGround;
+    }
+    else
+    {
+        contact->surface.bounce = g_pGame->m_pGameTweaks->fShellBounce;
+    }
+
+    contact->surface.bounce_vel = 0.0f;
+    contact->surface.mu = 0.005f;
+
+    return true;
 }

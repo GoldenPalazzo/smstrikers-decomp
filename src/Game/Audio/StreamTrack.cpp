@@ -1164,7 +1164,7 @@ void AudioStreamTrack::StreamTrack::StopQStream(QUEUED_STREAM* pQueuedStream)
 
 /**
  * Offset/Address/Size: 0x5B0 | 0x80155308 | size: 0x2D8
- * TODO: 96.27% match - fadeCtrl in callee-saved r25 vs volatile r3, volatile counter init doesn't reuse buf register, second loop ci/nextCI r3/r4 swap
+ * TODO: 96.58% match - fadeCtrl still uses r25, volatile counter init doesn't reuse buf register, second loop ci/nextCI r3/r4 swap
  */
 void AudioStreamTrack::StreamTrack::StopStream(GCAudioStreaming::StereoAudioStream* pStream, bool TrackOwns)
 {
@@ -1234,8 +1234,9 @@ void AudioStreamTrack::StreamTrack::StopStream(GCAudioStreaming::StereoAudioStre
     typedef DLListEntry<FadeCtrl> FadeEntry;
 
     TrackManagerBase& mgr = m_TrackMgr;
+    FadeEntry* fadeHead;
     FadeEntry* fadeIter = nlDLRingGetStart(mgr.m_FadeMgr.m_Fades.m_Head);
-    FadeEntry* fadeHead = mgr.m_FadeMgr.m_Fades.m_Head;
+    fadeHead = mgr.m_FadeMgr.m_Fades.m_Head;
     FadeCtrl* fadeCtrl = NULL;
 
     while (fadeIter != NULL)

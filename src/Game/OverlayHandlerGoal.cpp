@@ -64,18 +64,6 @@ class StatsTracker;
 extern "C" double ceil(double);
 extern "C" double floor(double);
 
-enum eGameModes_DoMatchEndOverlay
-{
-    GM_BOWSER_CUP_DoMatchEndOverlay = 4,
-    GM_SUPER_BOWSER_CUP_DoMatchEndOverlay = 8,
-};
-
-struct GameInfoModeAccessor_DoMatchEndOverlay
-{
-    char _padding[0x4954];
-    int mCurrentMode;
-};
-
 void OverlayHandlerGoal_stub()
 {
     typedef BasicString<unsigned short, Detail::TempStringAllocator> WideBasicString;
@@ -956,20 +944,20 @@ void GoalOverlay::DoMatchEndOverlay()
 
     GameInfoManager* gameInfo = nlSingleton<GameInfoManager>::s_pInstance;
     BasicString<unsigned short, Detail::TempStringAllocator> formatted;
-    int winner = -1;
-    bool isFinalGame = false;
+    unsigned char isFinalGame = false;
+    eTeamID winner = TEAM_INVALID;
 
     if (gameInfo->IsInCupMode())
     {
-        int round = (short)gameInfo->GetCurrentRoundNumber();
-        int mode = ((GameInfoModeAccessor_DoMatchEndOverlay*)gameInfo)->mCurrentMode;
+        int round = gameInfo->GetCurrentRoundNumber();
+        GameInfoManager::eGameModes mode = gameInfo->mCurrentMode;
 
-        if (mode == GM_BOWSER_CUP_DoMatchEndOverlay && ((round == -2 && gameInfo->IsSuperTeamUnlocked()) || round == -1))
+        if (mode == GameInfoManager::GM_BOWSER_CUP && ((round == -2 && gameInfo->IsSuperTeamUnlocked()) || round == -1))
         {
             isFinalGame = true;
             winner = gameInfo->FindWinningTeam();
         }
-        else if (mode == GM_BOWSER_CUP_DoMatchEndOverlay && round == -2 && !gameInfo->IsSuperTeamUnlocked())
+        else if (mode == GameInfoManager::GM_BOWSER_CUP && round == -2 && !gameInfo->IsSuperTeamUnlocked())
         {
             winner = gameInfo->FindWinningTeam();
             if (winner != gameInfo->GetUserSelectedCupTeam())
@@ -977,12 +965,12 @@ void GoalOverlay::DoMatchEndOverlay()
                 isFinalGame = true;
             }
         }
-        else if (mode == GM_SUPER_BOWSER_CUP_DoMatchEndOverlay && round == -2)
+        else if (mode == GameInfoManager::GM_SUPER_BOWSER_CUP && round == -2)
         {
             isFinalGame = true;
             winner = gameInfo->FindWinningTeam();
         }
-        else if (mode != GM_BOWSER_CUP_DoMatchEndOverlay && mode != GM_SUPER_BOWSER_CUP_DoMatchEndOverlay)
+        else if (mode != GameInfoManager::GM_BOWSER_CUP && mode != GameInfoManager::GM_SUPER_BOWSER_CUP)
         {
             if (round == (u16)gameInfo->GetNumRounds() - 1)
             {
@@ -992,112 +980,78 @@ void GoalOverlay::DoMatchEndOverlay()
         }
     }
 
-    if (isFinalGame)
+    if (isFinalGame && (winner == gameInfo->GetTeam(0) || winner == gameInfo->GetTeam(1)))
     {
-        if (winner == gameInfo->GetTeam(0) || winner == gameInfo->GetTeam(1))
+        const unsigned short* formatLocString;
+        unsigned long key = 0x736E7F17;
+        nlLocalization* loc = g_pLocalization;
+
+        if (loc->m_LookupTable == 0)
         {
-            const unsigned short* formatLocString;
-            unsigned long key = 0x736E7F17;
-            nlLocalization* loc = g_pLocalization;
-
-            if (loc->m_LookupTable == 0)
-            {
-                formatLocString = LocalizationTableNotFound;
-            }
-            else
-            {
-                nlLocalization::StringLookup* entry = nlBSearch<nlLocalization::StringLookup, unsigned long>(key, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
-                if (entry)
-                {
-                    formatLocString = loc->m_FirstString + entry->StringOffset;
-                }
-                else
-                {
-                    formatLocString = MissingLocString;
-                }
-            }
-
-            BasicStringData<unsigned short>* data = (BasicStringData<unsigned short>*)nlMalloc(0x10, 8, true);
-            if (data)
-            {
-                data->mData = 0;
-                data->mSize = 0;
-                data->mCapacity = 0;
-
-                const unsigned short* ptr = formatLocString;
-                while (*ptr++)
-                {
-                    data->mSize++;
-                }
-
-                data->mSize++;
-                data->mData = (unsigned short*)nlMalloc((data->mSize + 1) * 2, 8, true);
-                data->mCapacity = data->mSize;
-
-                int i = 0;
-                int j = 0;
-                while (i < data->mSize)
-                {
-                    *(unsigned short*)((char*)data->mData + j) = *formatLocString;
-                    i++;
-                    formatLocString++;
-                    j += 2;
-                }
-
-                data->mRefCount = 1;
-            }
-
-            BasicString<unsigned short, Detail::TempStringAllocator> unformatted(data);
-            int cup = nlSingleton<GameInfoManager>::s_pInstance->GetTrophyTypeByCurrentMode();
-
-            unsigned long winnerLocID = GetLOCTeamName((eTeamID)winner);
-            const unsigned short* winnerLocString;
-
-            loc = g_pLocalization;
-
-            if (loc->m_LookupTable == 0)
-            {
-                winnerLocString = LocalizationTableNotFound;
-            }
-            else
-            {
-                nlLocalization::StringLookup* entry = nlBSearch<nlLocalization::StringLookup, unsigned long>(winnerLocID, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
-                if (entry)
-                {
-                    winnerLocString = loc->m_FirstString + entry->StringOffset;
-                }
-                else
-                {
-                    winnerLocString = MissingLocString;
-                }
-            }
-
-            unsigned long trophyLocID = GetLOCTrophyName((eTrophyType)cup);
-            const unsigned short* trophyLocString;
-
-            loc = g_pLocalization;
-
-            if (loc->m_LookupTable == 0)
-            {
-                trophyLocString = LocalizationTableNotFound;
-            }
-            else
-            {
-                nlLocalization::StringLookup* entry = nlBSearch<nlLocalization::StringLookup, unsigned long>(trophyLocID, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
-                if (entry)
-                {
-                    trophyLocString = loc->m_FirstString + entry->StringOffset;
-                }
-                else
-                {
-                    trophyLocString = MissingLocString;
-                }
-            }
-
-            formatted = Format(unformatted, winnerLocString, trophyLocString);
+            formatLocString = LocalizationTableNotFound;
         }
-    }
+        else
+        {
+            nlLocalization::StringLookup* entry = nlBSearch<nlLocalization::StringLookup, unsigned long>(key, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
+            if (entry)
+            {
+                formatLocString = loc->m_FirstString + entry->StringOffset;
+            }
+            else
+            {
+                formatLocString = MissingLocString;
+            }
+        }
 
+        BasicString<unsigned short, Detail::TempStringAllocator> unformatted(formatLocString);
+        int cup = nlSingleton<GameInfoManager>::s_pInstance->GetTrophyTypeByCurrentMode();
+
+        unsigned long winnerLocID = GetLOCTeamName(winner);
+        const unsigned short* winnerLocString;
+
+        loc = g_pLocalization;
+
+        if (loc->m_LookupTable == 0)
+        {
+            winnerLocString = LocalizationTableNotFound;
+        }
+        else
+        {
+            nlLocalization::StringLookup* entry = nlBSearch<nlLocalization::StringLookup, unsigned long>(winnerLocID, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
+            if (entry)
+            {
+                winnerLocString = loc->m_FirstString + entry->StringOffset;
+            }
+            else
+            {
+                winnerLocString = MissingLocString;
+            }
+        }
+
+        unsigned long trophyLocID = GetLOCTrophyName((eTrophyType)cup);
+        const unsigned short* trophyLocString;
+
+        loc = g_pLocalization;
+
+        if (loc->m_LookupTable == 0)
+        {
+            trophyLocString = LocalizationTableNotFound;
+        }
+        else
+        {
+            nlLocalization::StringLookup* entry = nlBSearch<nlLocalization::StringLookup, unsigned long>(trophyLocID, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
+            if (entry)
+            {
+                trophyLocString = loc->m_FirstString + entry->StringOffset;
+            }
+            else
+            {
+                trophyLocString = MissingLocString;
+            }
+        }
+
+        formatted = Format(unformatted, winnerLocString, trophyLocString);
+    }
     else
     {
         int scoreLeft = g_pTeams[0]->m_nScore;
@@ -1145,36 +1099,7 @@ void GoalOverlay::DoMatchEndOverlay()
             }
         }
 
-        BasicStringData<unsigned short>* data = (BasicStringData<unsigned short>*)nlMalloc(0x10, 8, true);
-        if (data)
-        {
-            data->mData = 0;
-            data->mSize = 0;
-            data->mCapacity = 0;
-
-            const unsigned short* ptr = formatLocString;
-            while (*ptr++)
-            {
-                data->mSize++;
-            }
-
-            data->mSize++;
-            data->mData = (unsigned short*)nlMalloc((data->mSize + 1) * 2, 8, true);
-            data->mCapacity = data->mSize;
-
-            int j = 0, i = 0;
-            while (i < data->mSize)
-            {
-                *(unsigned short*)((char*)data->mData + j) = *formatLocString;
-                i++;
-                formatLocString++;
-                j += 2;
-            }
-
-            data->mRefCount = 1;
-        }
-
-        BasicString<unsigned short, Detail::TempStringAllocator> unformatted(data);
+        BasicString<unsigned short, Detail::TempStringAllocator> unformatted(formatLocString);
 
         unsigned long winnerLocID = GetLOCCharacterName((eTeamID)winnerID, true, false);
         const unsigned short* winnerLocString;

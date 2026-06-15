@@ -1,3 +1,4 @@
+#define BASICSTRING_INLINE_ERASE
 #include "Game/PadActions.h"
 
 #include "NL/platpad.h"

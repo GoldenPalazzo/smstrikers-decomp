@@ -427,17 +427,14 @@ void cTeam::PreUpdate(float dt)
     }
 }
 
-static void UpdateBallInterceptTime(cTeam* pTeam);
+static inline void CalculateInterceptTimes(cTeam* pTeam);
 /**
  * Offset/Address/Size: 0x132C | 0x800656D8 | size: 0x2CC
- * TODO: 98.94% match - remaining diffs are stalling-threshold 1.0f load reuse and
- * r30/r28 loop-counter allocation in ball-intercept/update-play loops
+ * TODO: 99.55% match - r30/r28 loop-counter register swap in ball-intercept loop
  */
 void cTeam::Update(float dt)
 {
-
     g_pCurrentlyUpdatingTeam = this;
-
     if (g_pGame->IsGameplayOrOvertime())
     {
         mfPowerupTimer -= dt;
@@ -445,39 +442,28 @@ void cTeam::Update(float dt)
         {
             mfPowerupTimer = 10.0f;
             if (nlSingleton<GameInfoManager>::s_pInstance->IsInfinitePowerupsOn())
-            {
                 PowerupBase::AwardPowerup(this);
-            }
         }
-
         mtTeamStyleTimer.Countdown(dt, 0.0f);
         mtMarkTimer.Countdown(dt, 0.0f);
         mtRoleTimer.Countdown(dt, 0.0f);
         mtBallInterceptTimer.Countdown(dt, 0.0f);
-
         float offensive = Offensive(this);
         if (offensive && InOffensiveZone(g_pBall->m_v3Position, (eTeamSide)m_nSide) < 0.5f)
         {
             float stalling = Stalling(this);
             if (stalling < 1.0f)
-            {
                 mtDefensiveZoneTimer.Countup(dt, 10.0f);
-            }
         }
         else
-        {
             mtDefensiveZoneTimer.Countdown(2.0f * dt, 0.0f);
-        }
     }
-
-    UpdateBallInterceptTime(this);
-
+    CalculateInterceptTimes(this);
+    qsort(m_pBallInterceptOrderedFielders, 4, 4, BestAbleToInterceptBall);
+    mtBallInterceptTimer.SetSeconds(1.0f / 30.0f);
     UpdateTeamAI(dt);
-
     for (int i = 0; i < 4; i++)
-    {
         m_pAIOrderedFielders[i]->UpdatePlay(dt);
-    }
 }
 
 /**
@@ -761,7 +747,7 @@ bool cTeam::CalculateFormationPosition(nlVector3& pos, cFielder* pFielder, bool 
     return m_pFormationManager->CalculateFielderPosition(pos, pFielder, bParam, fParam);
 }
 
-static void UpdateBallInterceptTime(cTeam* pTeam)
+static inline void CalculateInterceptTimes(cTeam* pTeam)
 {
     for (int i = 0; i < 4; i++)
     {
@@ -770,47 +756,42 @@ static void UpdateBallInterceptTime(cTeam* pTeam)
         float runSpeed = pPlayer->m_pTweaks->fRunningSpeed;
         speed = (speed >= runSpeed) ? speed : runSpeed;
 
-        nlVector3 v3LandingSpot;
-        float landingTime = g_pBall->PredictLandingSpotAndTime(v3LandingSpot);
+        nlVector3 v3PredictedLandingSpot;
+        float landingTime = g_pBall->PredictLandingSpotAndTime(v3PredictedLandingSpot);
         float interceptTime;
 
         if (landingTime > 0.0f)
         {
-            float x = v3LandingSpot.f.x - pPlayer->m_v3Position.f.x;
-            float y = v3LandingSpot.f.y - pPlayer->m_v3Position.f.y;
-            interceptTime = nlSqrt((x * x) + (y * y), true) / speed;
+            float dx = v3PredictedLandingSpot.f.x - pPlayer->m_v3Position.f.x;
+            float dy = v3PredictedLandingSpot.f.y - pPlayer->m_v3Position.f.y;
+            interceptTime = nlSqrt(dx * dx + dy * dy, true) / speed;
         }
         else
         {
-            cBall* pBall = g_pBall;
-            int nFoundSolutions = 0;
-            float fSolutions[2];
-
+            int nNumSolutions = 0;
             interceptTime = 100000000.0f;
-            nlVector3* pBallPosition = &pBall->m_v3Position;
-            nlVector3* pAIVelocity = pBall->GetAIVelocity();
-            CalcInterceptXY(pPlayer->m_v3Position, speed, 0.0f, *pBallPosition, *pAIVelocity, nFoundSolutions, fSolutions);
+            nlVector3* pBallPosition = &g_pBall->m_v3Position;
+            nlVector3* pAIVelocity = g_pBall->GetAIVelocity();
+            float pSolutions[2];
+            CalcInterceptXY(pPlayer->m_v3Position, speed, 0.0f, *pBallPosition, *pAIVelocity, nNumSolutions, pSolutions);
 
-            if (nFoundSolutions != 0)
+            if (nNumSolutions != 0)
             {
-                if (nFoundSolutions == 2)
+                if (nNumSolutions == 2)
                 {
-                    float solution1 = fSolutions[1];
-                    interceptTime = fSolutions[0];
+                    float solution1 = pSolutions[1];
+                    interceptTime = pSolutions[0];
                     interceptTime = (interceptTime <= solution1) ? interceptTime : solution1;
                 }
                 else
                 {
-                    interceptTime = fSolutions[0];
+                    interceptTime = pSolutions[0];
                 }
             }
         }
 
         pTeam->mfBallInterceptTimes[i] = interceptTime;
     }
-
-    qsort(pTeam->m_pBallInterceptOrderedFielders, 4, 4, BestAbleToInterceptBall);
-    pTeam->mtBallInterceptTimer.SetSeconds(1.0f / 30.0f);
 }
 /**
  * Offset/Address/Size: 0xA68 | 0x80064E14 | size: 0x68

@@ -1322,7 +1322,7 @@ void Goalie::ActionSaveReposition(float deltaTime)
 
 /**
  * Offset/Address/Size: 0x20BC | 0x800505F8 | size: 0x51C
- * TODO: 98.48% match - fAnimTime in f28 instead of target f31, cascading register diffs in smoothstep/ball-catch sections
+ * TODO: 99.20% match - animation time/reach threshold use f30 instead of target f31, with head-track/catch load-order diffs
  */
 void Goalie::ActionSave(float)
 {
@@ -1393,7 +1393,7 @@ void Goalie::ActionSave(float)
 
     SaveData* pSaveData = mpSaveData;
     float fTakeoffTime = pSaveData->mfMilestonePercent[1];
-    float fAnimTime = m_pCurrentAnimController->m_fTime;
+    fDX = m_pCurrentAnimController->m_fTime;
     float fCrouchTime = pSaveData->mfMilestonePercent[0];
 
     if (fTakeoffTime <= 0.0f)
@@ -1403,7 +1403,7 @@ void Goalie::ActionSave(float)
         fCrouchTime = 0.4f * fGoalTime;
     }
 
-    if (fAnimTime <= fTakeoffTime)
+    if (fDX <= fTakeoffTime)
     {
         if (m_pBall == NULL)
         {
@@ -1414,7 +1414,7 @@ void Goalie::ActionSave(float)
             }
             if (deflectResult > 0.0f)
             {
-                if (fAnimTime < fCrouchTime)
+                if (fDX < fCrouchTime)
                 {
                     mGoalieActionState = GOALIEACTION_SAVE_REPOSITION;
                 }
@@ -1430,12 +1430,10 @@ void Goalie::ActionSave(float)
 
     if (mbDoHeadTrack)
     {
-        float dZ = g_pBall->m_v3Position.f.y - m_v3Position.f.y;
         float dX = g_pBall->m_v3Position.f.x - m_v3Position.f.x;
+        float dZ = g_pBall->m_v3Position.f.y - m_v3Position.f.y;
         float dY = 0.0f;
-        float distSq = dZ * dZ;
-        distSq = dX * dX + distSq;
-        distSq = dY + distSq;
+        float distSq = dX * dX + dZ * dZ + dY;
         float m00 = m_m4WorldMatrix.m[0][0];
         float m01 = m_m4WorldMatrix.m[0][1];
         float m02 = m_m4WorldMatrix.m[0][2];
@@ -1445,9 +1443,9 @@ void Goalie::ActionSave(float)
         }
     }
 
-    if (fAnimTime < mpSaveData->mfMilestonePercent[2])
+    if (fDX < mpSaveData->mfMilestonePercent[2])
     {
-        float t = fAnimTime / mpSaveData->mfMilestonePercent[2];
+        float t = fDX / mpSaveData->mfMilestonePercent[2];
         float smoothstep = -2.0f * t + 3.0f;
         smoothstep = t * smoothstep;
         smoothstep = t * smoothstep;
@@ -1472,9 +1470,7 @@ void Goalie::ActionSave(float)
                 float dY = g_pBall->m_v3Position.f.y - v3LHand.f.y;
                 float dX = g_pBall->m_v3Position.f.x - v3LHand.f.x;
                 float dZ = g_pBall->m_v3Position.f.z - v3LHand.f.z;
-                float distSqL = dY * dY;
-                distSqL = dX * dX + distSqL;
-                distSqL = dZ * dZ + distSqL;
+                float distSqL = dY * dY + dX * dX + dZ * dZ;
 
                 if (distSqL < fReachSq)
                 {
@@ -1484,9 +1480,7 @@ void Goalie::ActionSave(float)
                 dY = g_pBall->m_v3Position.f.y - v3RHand.f.y;
                 dX = g_pBall->m_v3Position.f.x - v3RHand.f.x;
                 dZ = g_pBall->m_v3Position.f.z - v3RHand.f.z;
-                float distSqR = dY * dY;
-                distSqR = dX * dX + distSqR;
-                distSqR = dZ * dZ + distSqR;
+                float distSqR = dY * dY + dX * dX + dZ * dZ;
 
                 if (distSqR < fReachSq)
                 {

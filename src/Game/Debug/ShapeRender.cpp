@@ -16,7 +16,7 @@ static unsigned char g_bLit;
 
 /**
  * Offset/Address/Size: 0x149C | 0x801FC72C | size: 0x418
- * TODO: 97.12% match - callee-saved FPR register allocation and constant-load ordering still differ.
+ * TODO: 97.92% match - ring and segment temporaries still use different saved registers.
  */
 void ShapeRender::CreateHemisphereGeometry(PrimitiveShape& prim)
 {
@@ -55,11 +55,16 @@ void ShapeRender::CreateHemisphereGeometry(PrimitiveShape& prim)
     {
         int angle0;
         int angle1;
+        float fAngle;
 
-        angle0 = (int)(10430.378f * ((float)nRing * 0.31415927f));
+        fAngle = (float)nRing;
+        fAngle *= 0.31415927f;
+        angle0 = (int)(fAngle * 10430.378f);
         z0 = 0.5f * nlSin((u16)angle0);
 
-        angle1 = (int)(10430.378f * ((float)(nRing + 1) * 0.31415927f));
+        fAngle = (float)(nRing + 1);
+        fAngle *= 0.31415927f;
+        angle1 = (int)(fAngle * 10430.378f);
         z1 = 0.5f * nlSin((u16)angle1);
 
         ring0 = nlSin((u16)((u16)angle0 + 0x4000));
@@ -72,8 +77,10 @@ void ShapeRender::CreateHemisphereGeometry(PrimitiveShape& prim)
         {
             int angle;
             int angle90;
+            float fSegmentAngle;
 
-            angle = (int)(10430.378f * ((float)nSegment * 0.41887903f));
+            fSegmentAngle = (float)nSegment;
+            angle = (int)((fSegmentAngle *= 0.41887903f) * 10430.378f);
 
             x0 = 0.5f * (ring0 * nlSin((u16)angle));
 

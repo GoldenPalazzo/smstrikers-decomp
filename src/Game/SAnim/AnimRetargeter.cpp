@@ -50,10 +50,10 @@ static inline void* GetChunkData_ARL(nlChunk* chunk)
  * TODO: 96.8% match - first chunk-data result register and loop chunk-pointer
  * setup still differ.
  */
-void AnimRetargetList::Initialize(nlChunk*)
+AnimRetargetList* AnimRetargetList::Initialize(nlChunk* chunkData)
 {
     AnimRetargetList* data;
-    nlChunk* chunk = (nlChunk*)&m_NumAnimRetargets;
+    nlChunk* chunk = (nlChunk*)((u8*)chunkData + 8);
     u32 align = chunk->m_ID & 0x7F000000;
     u32 ptr;
 
@@ -86,4 +86,6 @@ void AnimRetargetList::Initialize(nlChunk*)
         off += 0xC;
         i++;
     }
+
+    return data;
 }

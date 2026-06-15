@@ -284,6 +284,20 @@ void cFielder::AbortPendingThoughts()
 
 static bool IsGameplayOrOvertime(eGameState state);
 
+static inline bool HasNoDesire(const cFielder* pFielder)
+{
+    bool bNoDesire;
+    if (pFielder->m_eFielderDesireState == FIELDERDESIRE_NEED_DESIRE || pFielder->m_tDesireDuration.m_uPackedTime == 0)
+    {
+        bNoDesire = true;
+    }
+    else
+    {
+        bNoDesire = false;
+    }
+    return bNoDesire;
+}
+
 /**
  * Offset/Address/Size: 0xC890 | 0x80025BCC | size: 0x944
  */
@@ -316,8 +330,7 @@ void cFielder::CalculateNewDesire()
             InitDesire(FIELDERDESIRE_WAIT_FOR_THOUGHT_CAP, 0.5f, -1.0f, fvNotSet, fvNotSet);
     }
 
-    bool bNoDesire = (!m_eFielderDesireState || !m_tDesireDuration.m_uPackedTime);
-    if (bNoDesire)
+    if (HasNoDesire(this))
     {
         if (m_eFielderDesireState != FIELDERDESIRE_WAIT_FOR_THOUGHT_CAP)
         {
@@ -6494,6 +6507,8 @@ void cFielder::StartRunning()
 
 /**
  * Offset/Address/Size: 0xC14 | 0x80019F50 | size: 0x598
+ * TODO: 99.87% match - remaining diffs in slide-attack ball argument setup,
+ * HIT target temporary register, and USE_POWERUP GetCurrentPowerUp stack slots
  */
 bool cFielder::DoAILooseBallActionSelection()
 {
@@ -6537,8 +6552,7 @@ bool cFielder::DoAILooseBallActionSelection()
         case FIELDERDESIRE_SLIDE_ATTACK:
         {
             float fReactionRandom = 0.5f * fPerturbPercent;
-            float fReactionOffset = nlRandomf(fReactionRandom, &nlDefaultSeed) - 0.5f * fReactionRandom;
-            if (!(fActionScore >= 0.5f + fReactionOffset))
+            if (!(fActionScore >= 0.5f + (nlRandomf(fReactionRandom, &nlDefaultSeed) - 0.5f * fReactionRandom)))
                 break;
             float fTime;
             if (!CanISlideAttack(g_pBall->m_v3Position, g_pBall->m_v3Velocity, &fTime))
@@ -6551,8 +6565,7 @@ bool cFielder::DoAILooseBallActionSelection()
         case FIELDERDESIRE_SHOOT:
         {
             float fReactionRandom = 0.5f * fPerturbPercent;
-            float fReactionOffset = nlRandomf(fReactionRandom, &nlDefaultSeed) - 0.5f * fReactionRandom;
-            if (!(fActionScore >= 0.5f + fReactionOffset))
+            if (!(fActionScore >= 0.5f + (nlRandomf(fReactionRandom, &nlDefaultSeed) - 0.5f * fReactionRandom)))
                 break;
             InitActionLooseBallShot(looseBallAction.ExtraData.mData.b);
             bDidSomething = true;
@@ -6561,8 +6574,7 @@ bool cFielder::DoAILooseBallActionSelection()
         case FIELDERDESIRE_PASS:
         {
             float fReactionRandom = 0.5f * fPerturbPercent;
-            float fReactionOffset = nlRandomf(fReactionRandom, &nlDefaultSeed) - 0.5f * fReactionRandom;
-            if (!(fActionScore >= 0.5f + fReactionOffset))
+            if (!(fActionScore >= 0.5f + (nlRandomf(fReactionRandom, &nlDefaultSeed) - 0.5f * fReactionRandom)))
                 break;
             cFielder* pTarget = (cFielder*)looseBallAction.ExtraData.mData.pPlayer;
             InitActionLooseBallPass(pTarget, OpenTo(g_pScriptCurrentFielder, pTarget) < 0.5f);

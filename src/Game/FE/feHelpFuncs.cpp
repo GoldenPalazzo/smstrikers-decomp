@@ -288,7 +288,7 @@ TakeGameMemSnapshot::Detail::LexicalCastImpl<BasicString<char, ::Detail::TempStr
 
 /**
  * Offset/Address/Size: 0xED8 | 0x800A579C | size: 0xD74
- * TODO: 92.65% match - register allocation off by 1 (stmw r25 vs r26), bne+b vs beq branch pattern in operator[] COW check (9 sites)
+ * TODO: 94.79% match - operator[] unique-ref branch still emits an extra store in the COW path.
  */
 
 // /**
@@ -1108,11 +1108,11 @@ FormatImpl<StringType>& FormatImpl<StringType>::operator%(const T& t)
             continue;
 
         mString.erase(&mString[i], &mString[i + 3]);
-        char* insertAt = &mString[i];
-        char* insertBegin = &insert[0];
-        int insertEndIdx = insert.size() - 1;
-        char* insertEnd = &insert[insertEndIdx];
-        mString.insert(insertAt, insertBegin, insertEnd);
+        mString[i];
+        typename StringType::value_type* mStringData = mString.m_data ? mString.m_data->mData : 0;
+        typename StringType::value_type* insertBegin = &insert[0];
+        typename StringType::value_type* insertEndCow = &insert[(int)(insert.m_data ? insert.m_data->mSize - 1 : 0)];
+        mString.insert(mStringData + i, insertBegin, insert.m_data ? &insert.m_data->mData[insert.m_data->mSize - 1] : (typename StringType::value_type*)0);
     }
 
     mCurrentPos++;

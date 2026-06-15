@@ -381,20 +381,25 @@ void IChooseCaptain::ComponentState::GotoPreviousPhase()
  */
 void IChooseCaptain::NameComponent::SetSidekickName(unsigned long id)
 {
+    FORCE_DONT_INLINE;
     SetTextName(mSidekickObjName, id);
 }
 
 /**
  * Offset/Address/Size: 0x1AC | 0x800BF950 | size: 0x874
- * TODO: 88.46% match - register allocation and call inlining still differ in phase transitions.
+ * TODO: 99.76% match - captaingridmenu and firstcaptain registers are swapped in the selection loop.
  */
 void IChooseCaptain::ComponentState::SetCurrentPhase(Phase phase)
 {
     ICaptainGridComponent* captaingrid;
+    NameComponent* namecomponent;
+    FEMapMenu* captaingridmenu;
     int firstcaptain;
     int rowfirstcaptain;
     ISidekickGridComponent* gridcomponent;
-    FEMapMenu* captaingridmenu;
+    IChooseCaptain* parent;
+    int teamID;
+    int homeaway;
     char filename2[0x80];
     char filename1[0x80];
     char filename0[0x80];
@@ -454,8 +459,9 @@ void IChooseCaptain::ComponentState::SetCurrentPhase(Phase phase)
         mParent->mCaptainComponents[mHomeAway]->m_bVisible = false;
         mParent->mSidekickComponents[mHomeAway]->m_bVisible = false;
 
-        mParent->mNameComponents[mHomeAway].mComponent->SetActiveSlide("Slide1");
-        mParent->mNameComponents[mHomeAway].mComponent->Update(0.0f);
+        namecomponent = &mParent->mNameComponents[mHomeAway];
+        namecomponent->mComponent->SetActiveSlide("Slide1");
+        namecomponent->mComponent->Update(0.0f);
         mParent->mNameComponents[mHomeAway].SetCaptainName(GetLOCCharacterName(captaingrid->GetSelectedItem(), false, true));
         mParent->mNameComponents[mHomeAway].SetCaptainLogo(GetTeamName(captaingrid->GetSelectedItem()));
 
@@ -478,8 +484,9 @@ void IChooseCaptain::ComponentState::SetCurrentPhase(Phase phase)
 
         FEAudio::PlayAnimAudioEvent(mHomeAway == 0 ? "sfx_character_group_left_enter" : "sfx_character_group_right_enter", false);
 
-        mParent->mNameComponents[mHomeAway].mComponent->SetActiveSlide("Slide2");
-        mParent->mNameComponents[mHomeAway].mComponent->Update(0.0f);
+        namecomponent = &mParent->mNameComponents[mHomeAway];
+        namecomponent->mComponent->SetActiveSlide("Slide2");
+        namecomponent->mComponent->Update(0.0f);
         mParent->mNameComponents[mHomeAway].SetCaptainName(GetLOCCharacterName((eTeamID)mParent->mHomeAwayTeam[mHomeAway], false, false));
         mParent->mNameComponents[mHomeAway].SetSidekickName(GetLOCSidekickName(gridcomponent->GetSelectedItem()));
         mParent->mNameComponents[mHomeAway].SetCaptainLogo(GetTeamName((eTeamID)mParent->mHomeAwayTeam[mHomeAway]));
@@ -491,28 +498,30 @@ void IChooseCaptain::ComponentState::SetCurrentPhase(Phase phase)
 
     case PHASE_READY:
     {
-        int homeaway = mHomeAway;
-        int teamID = mParent->mHomeAwayTeam[homeaway];
         mParent->mCaptainGridComponents[mHomeAway]->mParentComponent->m_bVisible = false;
         mParent->mSidekickGridComponents[mHomeAway]->mParentComponent->m_bVisible = true;
         mParent->mSidekickGridComponents[mHomeAway]->mParentComponent->SetActiveSlide("in");
         mParent->mSidekickGridComponents[mHomeAway]->SetVisibleInstanceTable(false);
         mParent->mSidekickGridComponents[mHomeAway]->mHighliteComponent->m_bVisible = false;
 
+        homeaway = mHomeAway;
+        parent = mParent;
+        teamID = parent->mHomeAwayTeam[homeaway];
         CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_0, filename0, 0x80, teamID, homeaway);
         CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_1, filename1, 0x80, teamID, homeaway);
         CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_2, filename2, 0x80, teamID, homeaway);
-        mParent->mAsyncImage[homeaway][0]->QueueLoad(filename0, true);
-        mParent->mAsyncImage[homeaway][1]->QueueLoad(filename1, true);
-        mParent->mAsyncImage[homeaway][2]->QueueLoad(filename2, true);
-        mParent->mDidSwapCaptains[homeaway] = false;
+        parent->mAsyncImage[homeaway][0]->QueueLoad(filename0, true);
+        parent->mAsyncImage[homeaway][1]->QueueLoad(filename1, true);
+        parent->mAsyncImage[homeaway][2]->QueueLoad(filename2, true);
+        parent->mDidSwapCaptains[homeaway] = false;
 
         mParent->mCaptainComponents[mHomeAway]->m_bVisible = true;
         if (mParent->mHomeAwayTeam[mHomeAway] != TEAM_MYSTERY)
         {
             mParent->mSidekickComponents[mHomeAway]->m_bVisible = false;
-            mParent->mNameComponents[mHomeAway].mComponent->SetActiveSlide("Slide2");
-            mParent->mNameComponents[mHomeAway].mComponent->Update(0.0f);
+            namecomponent = &mParent->mNameComponents[mHomeAway];
+            namecomponent->mComponent->SetActiveSlide("Slide2");
+            namecomponent->mComponent->Update(0.0f);
             mParent->mNameComponents[mHomeAway].SetSidekickName(GetLOCSidekickName((eSidekickID)mParent->mHomeAwaySidekicks[mHomeAway]));
         }
 
@@ -1203,9 +1212,12 @@ void IChooseCaptain::SceneCreated(FEPresentation* presentation)
     mAsyncImage[0][2]->QueueLoad(filenameC2, true);
     mDidSwapCaptains[0] = false;
 
-    CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_0, filenameS0, 0x80, mHomeAwayTeam[1], 1);
-    CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_1, filenameS1, 0x80, mHomeAwayTeam[1], 1);
-    CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_2, filenameS2, 0x80, mHomeAwayTeam[1], 1);
+    {
+        int team1 = mHomeAwayTeam[1];
+        CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_0, filenameS0, 0x80, team1, 1);
+        CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_1, filenameS1, 0x80, team1, 1);
+        CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_2, filenameS2, 0x80, team1, 1);
+    }
     mAsyncImage[1][0]->QueueLoad(filenameS0, true);
     mAsyncImage[1][1]->QueueLoad(filenameS1, true);
     mAsyncImage[1][2]->QueueLoad(filenameS2, true);
@@ -1294,8 +1306,7 @@ void IChooseCaptain::SceneCreated(FEPresentation* presentation)
     ICaptainGridComponent* captainGrid = (ICaptainGridComponent*)nlMalloc(sizeof(ICaptainGridComponent), 8, false);
     if (captainGrid)
     {
-        volatile InlineHasher hB, hA;
-        volatile InlineHasher h9, h8, h6, h4, h2, h0;
+        volatile InlineHasher h0, h2, h4, h6, h9, h8, hB, hA;
 
         h0.m_Hash = 0;
         h1.m_Hash = 0;
@@ -1331,8 +1342,7 @@ void IChooseCaptain::SceneCreated(FEPresentation* presentation)
     captainGrid = (ICaptainGridComponent*)nlMalloc(sizeof(ICaptainGridComponent), 8, false);
     if (captainGrid)
     {
-        volatile InlineHasher hB, hA;
-        volatile InlineHasher h9, h8, h6, h4, h2, h0;
+        volatile InlineHasher h0, h2, h4, h6, h9, h8, hB, hA;
 
         h0.m_Hash = 0;
         h1.m_Hash = 0;
@@ -1371,8 +1381,7 @@ void IChooseCaptain::SceneCreated(FEPresentation* presentation)
     ISidekickGridComponent* sidekickGrid = (ISidekickGridComponent*)nlMalloc(sizeof(ISidekickGridComponent), 8, false);
     if (sidekickGrid)
     {
-        volatile InlineHasher hB, hA;
-        volatile InlineHasher h9, h8, h6, h4, h2, h0;
+        volatile InlineHasher h0, h2, h4, h6, h9, h8, hB, hA;
 
         h0.m_Hash = 0;
         h1.m_Hash = 0;
@@ -1408,8 +1417,7 @@ void IChooseCaptain::SceneCreated(FEPresentation* presentation)
     sidekickGrid = (ISidekickGridComponent*)nlMalloc(sizeof(ISidekickGridComponent), 8, false);
     if (sidekickGrid)
     {
-        volatile InlineHasher hB, hA;
-        volatile InlineHasher h9, h8, h6, h4, h2, h0;
+        volatile InlineHasher h0, h2, h4, h6, h9, h8, hB, hA;
 
         h0.m_Hash = 0;
         h1.m_Hash = 0;

@@ -225,7 +225,7 @@ static inline nlChunk* nlGetNextChunk(nlChunk* chunk)
  */
 cSHierarchy* cSHierarchy::Initialize(nlChunk* chunkData)
 {
-    nlChunk* chunk = (nlChunk*)&m_nodeCount;
+    nlChunk* chunk = (nlChunk*)((u8*)chunkData + 8);
     cSHierarchy* hier = (cSHierarchy*)nlGetChunkData(chunk);
 
     chunk = nlGetNextChunk(chunk);

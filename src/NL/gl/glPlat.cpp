@@ -617,8 +617,9 @@ bool glplatStartup(gl_ScreenInfo* screenInfo)
     i = 0;
     while (i < glx_FBSize)
     {
-        *ptr++ = 0x10801080;
+        *ptr = 0x10801080;
         i += 4;
+        ptr++;
     }
     DCFlushRange(buf1, glx_FBSize);
 

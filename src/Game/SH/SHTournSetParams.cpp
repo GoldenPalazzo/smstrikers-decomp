@@ -89,9 +89,8 @@ TournSetParamsScene::~TournSetParamsScene()
 
 /**
  * Offset/Address/Size: 0x1CD0 | 0x800E16A4 | size: 0x434
- * TODO: 97.74% match - r28/r29 register swap for this+offset vs
- * memcpy-temp/menuItem, stack layout inversion for bind/callback
- * intermediates, post-loop mType load scheduling (before vs after tag check).
+ * TODO: 99.60% match - r28/r29 register swap for this+offset vs
+ * memcpy-temp/menuItem, stack layout inversion for bind/callback intermediates.
  */
 void TournSetParamsScene::BuildSubMenuList(int menuitem, TLComponentInstance* compinstance, bool wraps, int startindex)
 {
@@ -146,12 +145,28 @@ void TournSetParamsScene::BuildSubMenuList(int menuitem, TLComponentInstance* co
 
     list = mSlideMenuLists[menuitem];
     menuItem = &list->mMenuItems[list->mCurrentIndex];
-    menuItem->mCallbacks[2](menuItem->mType);
+    int tag = menuItem->mCallbacks[2].mTag;
+    if (((u32)((-tag) | tag) >> 31) > 0)
+    {
+        SlideMenuItem* type = menuItem->mType;
+        if (tag == FREE_FUNCTION)
+            menuItem->mCallbacks[2].mFreeFunction(type);
+        else
+            (*menuItem->mCallbacks[2].mFunctor)(type);
+    }
 
     list->mCurrentIndex = startindex;
 
     menuItem = &list->mMenuItems[list->mCurrentIndex];
-    menuItem->mCallbacks[1](menuItem->mType);
+    tag = menuItem->mCallbacks[1].mTag;
+    if (((u32)((-tag) | tag) >> 31) > 0)
+    {
+        SlideMenuItem* type = menuItem->mType;
+        if (tag == FREE_FUNCTION)
+            menuItem->mCallbacks[1].mFreeFunction(type);
+        else
+            (*menuItem->mCallbacks[1].mFunctor)(type);
+    }
 
     if (wraps)
     {
@@ -282,8 +297,8 @@ void TournSetParamsScene::SceneCreated()
 
 /**
  * Offset/Address/Size: 0xBA0 | 0x800E0574 | size: 0xAEC
- * TODO: 97.24% match - this in r28 vs r30 cascading register permutation
- * through all branches, lwzx vs add+lwz array access, srwi vs extrwi byte mask
+ * TODO: 97.53% match - this in r28 vs r30 cascading register permutation
+ * through all branches, srwi vs extrwi byte mask
  */
 #define CALL_MENU_CB_UPDATE_TOP(cur, action)                   \
     do                                                         \
@@ -330,15 +345,18 @@ void TournSetParamsScene::Update(float fDeltaT)
     {
         SlideMenuList* list = mSlideMenuLists[0];
         CustomTournament* customTourn = &nlSingleton<GameInfoManager>::s_pInstance->mCustomTournamentInfo;
-        SlideMenuItem* item = list->mMenuItems[list->mCurrentIndex].mType;
+        SlideMenuItem** itemPtr = &list->mMenuItems[list->mCurrentIndex].mType;
+        SlideMenuItem* item = *itemPtr;
         m_isLeagueMode = !item->mUserEnumType;
 
         list = mSlideMenuLists[1];
-        item = list->mMenuItems[list->mCurrentIndex].mType;
+        itemPtr = &list->mMenuItems[list->mCurrentIndex].mType;
+        item = *itemPtr;
         m_numTeams = item->mUserEnumType + 3;
 
         list = mSlideMenuLists[2];
-        item = list->mMenuItems[list->mCurrentIndex].mType;
+        itemPtr = &list->mMenuItems[list->mCurrentIndex].mType;
+        item = *itemPtr;
         m_numGames = (item->mUserEnumType == 0) ? 1 : 2;
 
         customTourn->m_tournMode = (eTournamentMode)!m_isLeagueMode;

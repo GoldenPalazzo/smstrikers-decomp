@@ -107,6 +107,8 @@ public:
 
 IndicatorInfo indicatorInfo[10];
 
+static void UpdateAndRenderPlayerIndicators(float);
+
 /**
  * Offset/Address/Size: 0x868 | 0x8015FACC | size: 0x440
  * TODO: 95.82% match - f29/f30 swap (dt vs x callee-saved register allocation),
@@ -315,10 +317,10 @@ static void DrawIndicator(int xCentre, int yCentre, float fPixelWidth, float fPi
 
 /**
  * Offset/Address/Size: 0xA8 | 0x8015F30C | size: 0x7C0
- * TODO: 98.26% match - remaining diffs are callee-saved integer register
- * allocation rotation (r25-r31 shifted by 2 positions).
+ * TODO: 99.55% match - remaining diffs are callee-saved integer register
+ * allocation rotation for loop cursors and texture IDs.
  */
-void UpdateAndRenderPlayerIndicators(float)
+static void UpdateAndRenderPlayerIndicators(float)
 {
     static int whoHadBall;
     static signed char init;
@@ -398,14 +400,8 @@ void UpdateAndRenderPlayerIndicators(float)
                 s_fGlowIntensityScale = 0.0f;
             }
 
-            switchScale = 1.0f;
-            if (s_bPulseGlowTexture)
-            {
-                switchScale = s_fGlowIntensityScale;
-            }
-
+            DrawIndicator((int)fX, (int)fY, s_fOverheadSize * s_fAdditiveTextureScale, s_fOverheadSize * s_fAdditiveTextureScale, s_fAdditiveBlendingIntensity * (s_bPulseGlowTexture ? s_fGlowIntensityScale : 1.0f), glowTexID, 0.0f, 2);
             fDistInPixels = s_fOverheadSize;
-            DrawIndicator((int)fX, (int)fY, s_fAdditiveTextureScale * fDistInPixels, s_fAdditiveTextureScale * fDistInPixels, s_fAdditiveBlendingIntensity * switchScale, glowTexID, 0.0f, 2);
             DrawIndicator((int)fX, (int)fY, fDistInPixels, fDistInPixels, fOpacity, indicatorTexID, 0.0f, 1);
         }
         else

@@ -1084,8 +1084,8 @@ SaveData* GoalieSave::FindBestInList(SaveBlendInfo& blendInfo, nlListContainer<S
 
 /**
  * Offset/Address/Size: 0xF90 | 0x800543B0 | size: 0xA8C
- * TODO: 81.83% match - branch structure and register usage still diverge in
- * vertical row traversal and edge-selection blending paths.
+ * TODO: 91.25% match - pClosest/pEdge register allocation and an extra f24
+ * save still diverge in edge-selection blending paths.
  */
 SaveData* GoalieSave::GetClosestBlendedPos(SaveBlendInfo& blendInfo, const nlVector3& v3TargetPos, SaveData* pSaveData)
 {
@@ -1108,8 +1108,8 @@ SaveData* GoalieSave::GetClosestBlendedPos(SaveBlendInfo& blendInfo, const nlVec
     {
         if (pSaveData->mv3GroupMinCoords.f.y < v3TargetPos.f.y)
         {
-            SaveData* pPrev = pSaveData;
             SaveData* pCur = pSaveData;
+            SaveData* pPrev = pSaveData;
 
             while (pCur != NULL && v3TargetPos.f.z > pCur->mv3SavePos.f.z)
             {
@@ -1147,7 +1147,12 @@ SaveData* GoalieSave::GetClosestBlendedPos(SaveBlendInfo& blendInfo, const nlVec
             {
                 if (v3TargetPos.f.y <= pLeft->mv3SavePos.f.y || v3TargetPos.f.y <= pRight->mv3SavePos.f.y)
                 {
-                    if (v3TargetPos.f.y < pLeft->mv3SavePos.f.y && v3TargetPos.f.y < pRight->mv3SavePos.f.y && pLeft->mpConnectedSaveData[3] != NULL)
+                    if (v3TargetPos.f.y >= pLeft->mv3SavePos.f.y || v3TargetPos.f.y >= pRight->mv3SavePos.f.y || pLeft->mpConnectedSaveData[3] == NULL)
+                    {
+                        pEdge = pLeft;
+                        break;
+                    }
+                    else
                     {
                         SaveData* pNextRow = pLeft->mpConnectedSaveData[3];
                         SaveData* pNextPrev = pNextRow;
@@ -1184,15 +1189,15 @@ SaveData* GoalieSave::GetClosestBlendedPos(SaveBlendInfo& blendInfo, const nlVec
                             pRight = pNextCur;
                         }
                     }
-                    else
-                    {
-                        pEdge = pLeft;
-                        break;
-                    }
                 }
                 else if (v3TargetPos.f.y >= pLeftUp->mv3SavePos.f.y || v3TargetPos.f.y >= pRightUp->mv3SavePos.f.y)
                 {
-                    if (v3TargetPos.f.y > pLeftUp->mv3SavePos.f.y && v3TargetPos.f.y > pRightUp->mv3SavePos.f.y && pLeftUp->mpConnectedSaveData[2] != NULL)
+                    if (v3TargetPos.f.y <= pLeftUp->mv3SavePos.f.y || v3TargetPos.f.y <= pRightUp->mv3SavePos.f.y || pLeftUp->mpConnectedSaveData[2] == NULL)
+                    {
+                        pEdge = pLeftUp;
+                        break;
+                    }
+                    else
                     {
                         SaveData* pNextRow = pLeftUp->mpConnectedSaveData[2];
                         SaveData* pNextPrev = pNextRow;
@@ -1228,11 +1233,6 @@ SaveData* GoalieSave::GetClosestBlendedPos(SaveBlendInfo& blendInfo, const nlVec
                             pLeftUp = pNextPrev;
                             pRightUp = pNextCur;
                         }
-                    }
-                    else
-                    {
-                        pEdge = pLeftUp;
-                        break;
                     }
                 }
                 else

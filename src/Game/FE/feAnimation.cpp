@@ -5,72 +5,58 @@
 /**
  * Offset/Address/Size: 0x0 | 0x8020E580 | size: 0x19C
  */
-void FEAnimation::Update(float arg0)
+void FEAnimation::Update(float fCurrentTime)
 {
-    f32 temp_f0;
-    f32 temp_f2;
-    f32 var_f31;
     fAnimationKeyframe* currentFrame;
-    u16 temp_r0;
-    fAnimationKeyframe* temp_r9;
-    nlVector4 spC;
-    const nlVector4 sZero = { 0.0f, 0.0f, 0.0f, 0.0f };
+    float fAnimatedResult;
 
-    temp_r0 = this->m_cast_type;
-    switch (temp_r0)
+    switch (m_cast_type)
     {
     case 1:
-        AnimateTargetAtTimeWithVector3(arg0);
+        AnimateTargetAtTimeWithVector3(fCurrentTime);
         return;
 
     case 0:
-        currentFrame = nlDLRingGetStart<fAnimationKeyframe>((fAnimationKeyframe*)this->m_DLRingHead);
+        currentFrame = nlDLRingGetStart<fAnimationKeyframe>((fAnimationKeyframe*)m_DLRingHead);
         if (currentFrame != currentFrame->m_next)
         {
-            if (arg0 >= currentFrame->pKeyFrameData.m_fTime)
+            if (fCurrentTime >= currentFrame->pKeyFrameData.m_fTime)
             {
-                goto loop_check;
-
-            loop_body:
-                currentFrame = currentFrame->m_next;
-                if (nlDLRingIsEnd<fAnimationKeyframe>((fAnimationKeyframe*)this->m_DLRingHead, currentFrame) != 0)
+                while (fCurrentTime > currentFrame->pKeyFrameData.m_fTime)
                 {
-                    goto loop_end;
+                    currentFrame = currentFrame->m_next;
+                    if (nlDLRingIsEnd<fAnimationKeyframe>((fAnimationKeyframe*)m_DLRingHead, currentFrame))
+                    {
+                        break;
+                    }
                 }
 
-            loop_check:
-                if (arg0 > currentFrame->pKeyFrameData.m_fTime)
+                float fTime = currentFrame->pKeyFrameData.m_fTime;
+                if (fCurrentTime == fTime)
                 {
-                    goto loop_body;
+                    fAnimatedResult = currentFrame->pKeyFrameData.m_fPoint;
                 }
-
-            loop_end:
-                temp_f2 = currentFrame->pKeyFrameData.m_fTime;
-                if (arg0 == temp_f2)
+                else if (!(fCurrentTime > fTime) || currentFrame->pKeyFrameData.m_fControl1 != -1.0f)
                 {
-                    var_f31 = currentFrame->pKeyFrameData.m_fPoint;
-                }
-                else if (!(arg0 > temp_f2) || (currentFrame->pKeyFrameData.m_fControl1 != -1.0f))
-                {
-                    temp_r9 = currentFrame->m_prev;
-                    temp_f0 = temp_r9->pKeyFrameData.m_fTime;
-                    spC = sZero;
-                    spC.f.x = temp_r9->pKeyFrameData.m_fPoint;
-                    spC.f.y = temp_r9->pKeyFrameData.m_fControl1;
-                    spC.f.z = temp_r9->pKeyFrameData.m_fControl2;
-                    spC.f.w = currentFrame->pKeyFrameData.m_fPoint;
-                    var_f31 = nlBezier(&spC.f.x, 3, (arg0 - temp_f0) / (temp_f2 - temp_f0));
+                    fAnimationKeyframe* prevFrame = currentFrame->m_prev;
+                    float fPrevTime = prevFrame->pKeyFrameData.m_fTime;
+                    float controlPoints[4] = { 0.0f };
+                    controlPoints[0] = prevFrame->pKeyFrameData.m_fPoint;
+                    controlPoints[1] = prevFrame->pKeyFrameData.m_fControl1;
+                    controlPoints[2] = prevFrame->pKeyFrameData.m_fControl2;
+                    controlPoints[3] = currentFrame->pKeyFrameData.m_fPoint;
+                    fAnimatedResult = nlBezier(controlPoints, 3, (fCurrentTime - fPrevTime) / (fTime - fPrevTime));
                 }
                 else
                 {
-                    var_f31 = currentFrame->pKeyFrameData.m_fPoint;
+                    fAnimatedResult = currentFrame->pKeyFrameData.m_fPoint;
                 }
 
-                if ((var_f31 != -1.0f) && (this->m_type == eAnimOpacity))
+                if (fAnimatedResult != -1.0f && m_type == eAnimOpacity)
                 {
-                    nlColour newColor = m_pTLInstanceTarget->GetAssetColour();
-                    newColor.c[3] = (u8)var_f31;
-                    m_pTLInstanceTarget->SetAssetColour(newColor);
+                    nlColour newColour = m_pTLInstanceTarget->GetAssetColour();
+                    newColour.c[3] = (u8)fAnimatedResult;
+                    m_pTLInstanceTarget->SetAssetColour(newColour);
                 }
             }
         }

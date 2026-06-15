@@ -901,7 +901,7 @@ static char* GetCharacterTriggerFileName(eCharacterClass cc);
 
 /**
  * Offset/Address/Size: 0x1CFC | 0x80013FE4 | size: 0x3F0
- * TODO: 98.87% match - register allocation differs in hierarchy/retarget inventory temporaries (r27/r26/r28)
+ * TODO: 99.03% match - extra return-value move remains after hierarchy file load; retarget inventory uses r29 instead of r28
  */
 void CharacterLoadingGuts(tCharacterTemplate* pCharacterTemplate, const tCharacterTemplateInfo& charTemplateInfo, eCharacterClass cc, bool bForViewer)
 {
@@ -912,6 +912,7 @@ void CharacterLoadingGuts(tCharacterTemplate* pCharacterTemplate, const tCharact
     pCharacterTemplate->nCharacterModelID[1] = pBlendCharacterModel->id;
 
     cInventory<cSHierarchy>* pHierInv = new (nlMalloc(sizeof(cInventory<cSHierarchy>), 8, false)) cInventory<cSHierarchy>();
+    cInventory<AnimRetargetList>* pRetInv;
     pCharacterTemplate->pHierarchyInventory = pHierInv;
 
     u32 hierFileSize;
@@ -934,7 +935,7 @@ void CharacterLoadingGuts(tCharacterTemplate* pCharacterTemplate, const tCharact
     {
         if ((hierData->m_ID & 0x80FFFFFF) == 0x80018000)
         {
-            cSHierarchy* hier = ((cSHierarchy*)hierData)->Initialize(hierData);
+            cSHierarchy* hier = cSHierarchy::Initialize(hierData);
 
             ListEntry<cSHierarchy*>* itemEntry = (ListEntry<cSHierarchy*>*)nlMalloc(8, 8, false);
             if (itemEntry != NULL)
@@ -1004,7 +1005,7 @@ void CharacterLoadingGuts(tCharacterTemplate* pCharacterTemplate, const tCharact
         pCharacterTemplate->pAnimRetargetListInventory = pRetargetInv;
 
         u32 retargetFileSize;
-        cInventory<AnimRetargetList>* pRetInv = pCharacterTemplate->pAnimRetargetListInventory;
+        pRetInv = pCharacterTemplate->pAnimRetargetListInventory;
         nlChunk* retargetData = (nlChunk*)nlLoadEntireFile(charTemplateInfo.szAnimRetargetFilename, &retargetFileSize, 0x20, AllocateStart);
 
         ListEntry<char*>* retMemEntry = (ListEntry<char*>*)nlMalloc(8, 8, false);
@@ -1023,8 +1024,7 @@ void CharacterLoadingGuts(tCharacterTemplate* pCharacterTemplate, const tCharact
         {
             if ((retargetData->m_ID & 0x80FFFFFF) == 0x80017104)
             {
-                AnimRetargetList* retarget = (AnimRetargetList*)retargetData;
-                retarget->Initialize(retargetData);
+                AnimRetargetList* retarget = AnimRetargetList::Initialize(retargetData);
 
                 ListEntry<AnimRetargetList*>* retItemEntry = (ListEntry<AnimRetargetList*>*)nlMalloc(8, 8, false);
                 if (retItemEntry != NULL)

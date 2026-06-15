@@ -889,10 +889,8 @@ void FormationEval::GetKeyPositions(cFielder* pFielder, nlVector3& v3KeyAIPositi
 
 /**
  * Offset/Address/Size: 0x1330 | 0x80039580 | size: 0x158
- * TODO: 98.78% match - float register allocation: X clamp uses f4/f5/f6 shifted by +1
- * (target: f5=minX, f6=clampX, f4=maxX; actual: f4=minX, f5=clampX, f6=maxX).
- * Y clamp uses f0/f3 swapped (target: f0=minY, f3=clampY; actual: f3=minY, f0=clampY).
- * All 16 diffs are register-only (r markers).
+ * TODO: 99.05% match - Y clamp f0/f3 register swap (target: f0=minY, f3=clampY;
+ * actual: f3=minY, f0=clampY). Remaining diffs are register-only.
  */
 void FormationEval::CalculateDesiredLocation(nlVector3& destPosition, cFielder* pFielder, bool bExtrapolate)
 {
@@ -923,8 +921,8 @@ void FormationEval::CalculateDesiredLocation(nlVector3& destPosition, cFielder* 
     f32 dx = posLocX - locX;
 
     f32 clampX = v3KeyAIPosition.f.x;
-    clampX = (clampX >= minX) ? clampX : minX;
-    clampX = (clampX <= maxX) ? clampX : maxX;
+    clampX = (minX <= clampX) ? clampX : minX;
+    clampX = (maxX >= clampX) ? clampX : maxX;
 
     destPosition.f.x = dx + clampX;
 
@@ -932,7 +930,7 @@ void FormationEval::CalculateDesiredLocation(nlVector3& destPosition, cFielder* 
     f32 clampY = v3KeyAIPosition.f.y;
     f32 minY = v2FormationMin.f.y;
 
-    clampY = (clampY >= minY) ? clampY : minY;
+    clampY = (minY <= clampY) ? clampY : minY;
     clampY = (clampY <= maxY) ? clampY : maxY;
 
     destPosition.f.y = dy + clampY;

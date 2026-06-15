@@ -2220,8 +2220,8 @@ BasicString<char, Detail::TempStringAllocator> TournTeamSetupSceneV2::FindCaptai
 
 /**
  * Offset/Address/Size: 0x76C | 0x800E2610 | size: 0x4C8
- * TODO: 97.97% match - temporary string object and literal pointer registers are
- * swapped in sidekick branches
+ * TODO: 98.30% match - data and literal pointer registers are swapped during
+ * sidekick string construction
  */
 #pragma optimization_level 2
 BasicString<char, Detail::TempStringAllocator> TournTeamSetupSceneV2::FindSidekickSlideName(eSidekickID sidekick)
@@ -2232,7 +2232,7 @@ BasicString<char, Detail::TempStringAllocator> TournTeamSetupSceneV2::FindSideki
     {
     case SK_TOAD:
     {
-        BasicStringData<char>* data = (BasicStringData<char>*)nlMalloc(0x10, 8, true);
+        BasicStringData<char>* data = (BasicStringData<char>*)Detail::TempStringAllocator::allocate(sizeof(BasicStringData<char>));
         if (data != 0)
         {
             data->mData = 0;
@@ -2247,7 +2247,7 @@ BasicString<char, Detail::TempStringAllocator> TournTeamSetupSceneV2::FindSideki
             }
 
             data->mSize++;
-            data->mData = (char*)nlMalloc(data->mSize + 1, 8, true);
+            data->mData = (char*)Detail::TempStringAllocator::allocate((data->mSize + 1) * sizeof(char));
             data->mCapacity = data->mSize;
 
             for (int i = 0; i < data->mSize; i++)
@@ -2263,7 +2263,7 @@ BasicString<char, Detail::TempStringAllocator> TournTeamSetupSceneV2::FindSideki
     }
     case SK_KOOPA:
     {
-        BasicStringData<char>* data = (BasicStringData<char>*)nlMalloc(0x10, 8, true);
+        BasicStringData<char>* data = (BasicStringData<char>*)Detail::TempStringAllocator::allocate(sizeof(BasicStringData<char>));
         if (data != 0)
         {
             data->mData = 0;
@@ -2278,7 +2278,7 @@ BasicString<char, Detail::TempStringAllocator> TournTeamSetupSceneV2::FindSideki
             }
 
             data->mSize++;
-            data->mData = (char*)nlMalloc(data->mSize + 1, 8, true);
+            data->mData = (char*)Detail::TempStringAllocator::allocate((data->mSize + 1) * sizeof(char));
             data->mCapacity = data->mSize;
 
             for (int i = 0; i < data->mSize; i++)
@@ -2294,7 +2294,7 @@ BasicString<char, Detail::TempStringAllocator> TournTeamSetupSceneV2::FindSideki
     }
     case SK_HAMMERBROS:
     {
-        BasicStringData<char>* data = (BasicStringData<char>*)nlMalloc(0x10, 8, true);
+        BasicStringData<char>* data = (BasicStringData<char>*)Detail::TempStringAllocator::allocate(sizeof(BasicStringData<char>));
         if (data != 0)
         {
             data->mData = 0;
@@ -2309,7 +2309,7 @@ BasicString<char, Detail::TempStringAllocator> TournTeamSetupSceneV2::FindSideki
             }
 
             data->mSize++;
-            data->mData = (char*)nlMalloc(data->mSize + 1, 8, true);
+            data->mData = (char*)Detail::TempStringAllocator::allocate((data->mSize + 1) * sizeof(char));
             data->mCapacity = data->mSize;
 
             for (int i = 0; i < data->mSize; i++)
@@ -2325,7 +2325,7 @@ BasicString<char, Detail::TempStringAllocator> TournTeamSetupSceneV2::FindSideki
     }
     case SK_BIRDO:
     {
-        BasicStringData<char>* data = (BasicStringData<char>*)nlMalloc(0x10, 8, true);
+        BasicStringData<char>* data = (BasicStringData<char>*)Detail::TempStringAllocator::allocate(sizeof(BasicStringData<char>));
         if (data != 0)
         {
             data->mData = 0;
@@ -2340,7 +2340,7 @@ BasicString<char, Detail::TempStringAllocator> TournTeamSetupSceneV2::FindSideki
             }
 
             data->mSize++;
-            data->mData = (char*)nlMalloc(data->mSize + 1, 8, true);
+            data->mData = (char*)Detail::TempStringAllocator::allocate((data->mSize + 1) * sizeof(char));
             data->mCapacity = data->mSize;
 
             for (int i = 0; i < data->mSize; i++)

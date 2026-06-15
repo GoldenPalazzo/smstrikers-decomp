@@ -882,7 +882,7 @@ config.libs = [
             Object(Matching, "Game/TerrainTypes.cpp", extra_cflags=["-inline auto"]),
 
             # Audio
-            Object(NonMatching, "Game/Audio/CharacterAudio.cpp", extra_cflags=["-inline auto", "-inline deferred"]),   
+            Object(Matching, "Game/Audio/CharacterAudio.cpp", extra_cflags=["-inline auto", "-inline deferred"]),   
             Object(NonMatching, "Game/Audio/GameAudio.cpp", extra_cflags=["-inline auto", "-inline deferred"]),   
             Object(NonMatching, "Game/Audio/audio.cpp", extra_cflags=["-inline auto"]),   
             Object(Matching, "Game/Audio/SebringSoundDefines.cpp" , extra_cflags=["-inline auto", "-inline deferred"]),   
@@ -901,7 +901,7 @@ config.libs = [
             Object(Matching, "Game/RayCollider.cpp", extra_cflags=["-inline auto"]),
             Object(NonMatching, "Game/PhysicsAIBall.cpp", extra_cflags=["-inline auto"]),
             Object(Matching, "Game/Physics/PhysicsBox.cpp", extra_cflags=["-inline auto"]),
-            Object(NonMatching, "Game/PhysicsShell.cpp", extra_cflags=["-inline auto"]),
+            Object(NonMatching, "Game/PhysicsShell.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/PhysicsColumn.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/PhysicsCapsule.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/PhysicsFakeBall.cpp", extra_cflags=["-inline auto"]),

@@ -471,31 +471,6 @@ void SummaryOverlay::DisplayMatchSummary(eSummaryType matchSummaryType)
  */
 void SummaryOverlay::DisplayUserSummary(eSummaryType matchSummaryType)
 {
-    struct LOCHeaderLocal
-    {
-        char Thumbprint[4];
-        unsigned long Version;
-        unsigned long Language;
-        unsigned long StringCount;
-        unsigned long Flags;
-    };
-
-    struct StringLookupLocal
-    {
-        unsigned long hash;
-        unsigned long StringOffset;
-
-        operator unsigned long() const { return hash; }
-    };
-
-    struct LocalizationLocal
-    {
-        LOCHeaderLocal* m_pFile;
-        StringLookupLocal* m_LookupTable;
-        unsigned short* m_FirstString;
-        int m_CurrentLanguage;
-    };
-
     extern nlLocalization* g_pLocalization;
     extern const unsigned short LocalizationTableNotFound[];
     extern const unsigned short MissingLocString[];
@@ -541,40 +516,37 @@ void SummaryOverlay::DisplayUserSummary(eSummaryType matchSummaryType)
         }
         else
         {
-            const unsigned short* locString;
             unsigned long key;
-            LocalizationLocal* loc;
-            StringLookupLocal* entry;
+            nlLocalization* loc;
+            nlLocalization::StringLookup* entry;
 
             displayedStats[j] = &mCumulativeUserStats[j];
 
-            loc = (LocalizationLocal*)g_pLocalization;
+            loc = g_pLocalization;
             key = nlStringLowerHash("TOTAL_USER_STATS");
 
             if (loc->m_LookupTable == 0)
             {
-                locString = LocalizationTableNotFound;
+                loc = (nlLocalization*)LocalizationTableNotFound;
             }
             else
             {
-                entry = nlBSearch<StringLookupLocal, unsigned long>(key, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
+                entry = nlBSearch<nlLocalization::StringLookup, unsigned long>(key, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
                 if (entry)
                 {
-                    locString = loc->m_FirstString + entry->StringOffset;
+                    loc = (nlLocalization*)(loc->m_FirstString + entry->StringOffset);
                 }
                 else
                 {
-                    locString = MissingLocString;
+                    loc = (nlLocalization*)MissingLocString;
                 }
             }
 
-            WideBasicString unformatted(locString);
+            WideBasicString unformatted((const unsigned short*)loc);
             NLString numGamesString(LexicalCast<NLString, int>((int)nlSingleton<StatsTracker>::s_pInstance->mNumConsecutiveGamesPlayed));
             unsigned short tempBuffer[32];
-            WideBasicString formatted;
-
             nlStrToWcs(numGamesString.c_str(), tempBuffer, 0x40);
-            formatted = Format(unformatted, tempBuffer);
+            WideBasicString formatted(Format(unformatted, tempBuffer));
             memcpy(mTitleBuffer, formatted.c_str(), 0x80);
 
             pTitleText = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
@@ -596,8 +568,9 @@ void SummaryOverlay::DisplayUserSummary(eSummaryType matchSummaryType)
         statsStrings[4] = LexicalCast<NLString, int>((int)displayedStats[user]->mNumPowerupsHit);
         statsStrings[5] = LexicalCast<NLString, int>((int)displayedStats[user]->mNumSTSAttempts);
 
+        pSlide = mSlideMenu->m_pMenuComp->GetActiveSlide();
         pComponentInstances[user] = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
-            mSlideMenu->m_pMenuComp->GetActiveSlide(),
+            pSlide,
             InlineHasher(nlStringLowerHash(SUMMARY_COL_NAMES[user])),
             InlineHasher(0));
 

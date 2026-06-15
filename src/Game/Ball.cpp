@@ -497,8 +497,8 @@ void cBall::ShootRelease(const nlVector3& v3Velocity, eSpinType SpinType)
 
 /**
  * Offset/Address/Size: 0xD2C | 0x8000A700 | size: 0x3AC
- * TODO: 99.55% match - FPR register differences remain in spin cross product,
- *       distance loads, and first sideline comparison.
+ * TODO: 99.68% match - FPR register differences remain in spin cross product
+ *       and distance loads.
  */
 static inline float CalcSpinRand(eSpinType spin);
 
@@ -595,8 +595,8 @@ void cBall::Shoot(const nlVector3& v3Dir, const nlVector3& v3Spin, eSpinType spi
             m_v3Velocity.f.z = 1.0f;
         }
 
-        float fSidelineY = cField::GetSidelineY(1);
-        if (m_v3Position.f.y > fSidelineY - 0.5f && m_v3Velocity.f.y > -0.1f)
+        float fSidelineY = cField::GetSidelineY(1) - 0.5f;
+        if (m_v3Position.f.y > fSidelineY && m_v3Velocity.f.y > -0.1f)
         {
             m_v3Velocity.f.y = -0.1f;
         }

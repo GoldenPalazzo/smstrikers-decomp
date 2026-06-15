@@ -299,7 +299,7 @@ SkillTweaks::SkillTweaks()
     SkillTweak** pEnd;
     void* mem;
     SkillTweak* node;
-    const char* fmtChance;
+    int i_sit;
 
     mem = nlMalloc(0x88, 8, false);
     node = (SkillTweak*)mem;
@@ -707,35 +707,33 @@ SkillTweaks::SkillTweaks()
     }
     nlListAddEnd<SkillTweak>(&mSkillTweaksList.m_pStart, pEnd, node);
 
-    fmtChance = "%s %s Chance";
-    for (int var_r24 = 0; var_r24 < 3; var_r24++)
+    for (i_sit = 0; i_sit < 3; i_sit++)
     {
-        const char* var_r29;
-        switch (var_r24)
+        SkillTweak* loopNode;
+        const char* sSituationName;
+        switch (i_sit)
         {
         case 1:
-            var_r29 = "Defensive";
+            sSituationName = "Defensive";
             break;
         case 0:
-            var_r29 = "Offensive";
+            sSituationName = "Offensive";
             break;
-        default:
-            var_r29 = "Loose";
+        case 2:
+            sSituationName = "Loose";
             break;
         }
 
-        for (int var_r23 = 0; var_r23 < 9; var_r23++)
+        for (int i_powerup = 0; i_powerup < 9; i_powerup++)
         {
-            char sp8[0x40];
-            const char* powerName = GetPowerupName(var_r23);
+            char sTweakName[0x40];
+            nlSNPrintf(sTweakName, 0x3F, "%s %s Chance", sSituationName, GetPowerupName(i_powerup));
 
-            nlSNPrintf(sp8, 0x3F, fmtChance, var_r29, powerName);
-
-            SkillTweak* loopNode = (SkillTweak*)nlMalloc(0x88, 8, false);
+            loopNode = (SkillTweak*)nlMalloc(0x88, 8, false);
             if (loopNode != NULL)
             {
-                loopNode->mpValue = &PowerupUsageChance[var_r24][var_r23];
-                nlSNPrintf(loopNode->mNameInFile, 0x7F, "%s", sp8);
+                loopNode->mpValue = &PowerupUsageChance[i_sit][i_powerup];
+                nlSNPrintf(loopNode->mNameInFile, 0x7F, "%s", sTweakName);
             }
             nlListAddEnd<SkillTweak>(&mSkillTweaksList.m_pStart, pEnd, loopNode);
         }

@@ -10,7 +10,6 @@
 #include "Game/World/WorldLoader.h"
 
 extern bool g_e3_Build;
-extern void OnPreCupGameState__15GameInfoManagerFv(GameInfoManager*);
 
 static bool isFreezingUnlocked = false;
 static bool isShellsUnlocked = false;
@@ -1179,8 +1178,6 @@ unsigned char GameInfoManager::SetupBowserKnockout()
     return returnValue;
 }
 
-extern eStadiumID PickStadium__15GameInfoManagerCFb10eStadiumID(const GameInfoManager*, bool, eStadiumID);
-
 /**
  * Offset/Address/Size: 0x7EF0 | 0x8017D594 | size: 0x2DC
  */
@@ -1270,7 +1267,7 @@ void GameInfoManager::SetupTournamentKnockout(eTeamID* lineup, eSidekickID* skli
         }
 
         {
-            eStadiumID currentStadium = PickStadium__15GameInfoManagerCFb10eStadiumID(this, false, mLastHumanStadium);
+            eStadiumID currentStadium = PickStadium(false, mLastHumanStadium);
             g->mStadiumIndex = currentStadium;
 
             u16 humanTeams = mCurrentCup->mHumanTeams;
@@ -1561,8 +1558,8 @@ lbl_end:
 
 /**
  * Offset/Address/Size: 0x7534 | 0x8017CBD8 | size: 0x3A4
- * TODO: 99.61% match - dnmflags r29 vs r27 register allocation diff cascades
- * to flag extraction regs and inner temp regs (away r6 vs r8). All diffs register-only.
+ * TODO: 99.68% match - dnmflags r29 vs r27 register allocation diff cascades
+ * to flag extraction regs and inner temp regs (away/cup r6/r8 swap).
  */
 unsigned char GameInfoManager::DetermineNextMatchups(int dnmflags)
 {
@@ -1617,10 +1614,10 @@ unsigned char GameInfoManager::DetermineNextMatchups(int dnmflags)
 
         if (dnmflags & 0x1)
         {
-            u16 humanTeams = mCurrentCup->mHumanTeams;
-            if ((humanTeams & (1 << home)) || (humanTeams & (1 << away)))
+            BaseCup* cup = mCurrentCup;
+            if ((cup->mHumanTeams & (1 << home)) || (cup->mHumanTeams & (1 << away)))
             {
-                mGameInfo[mCurrentMode]->mPadSides[(u16)userPad] = (home != mCurrentCup->mUserSelectedTeam);
+                mGameInfo[mCurrentMode]->mPadSides[(u16)userPad] = (home != cup->mUserSelectedTeam);
                 return 1;
             }
         }
@@ -2466,7 +2463,7 @@ void GameInfoManager::OnPreGameState()
 
     if (inCupMode)
     {
-        OnPreCupGameState__15GameInfoManagerFv(this);
+        OnPreCupGameState();
     }
 
     if (mCurrentMode == GM_DEMO)
@@ -2677,8 +2674,6 @@ static eTrophyType MILESTONES[5] = {
  */
 void GameInfoManager::OnPreCupGameState()
 {
-    extern bool IsSuperCupModeUnlocked__15GameInfoManagerCFv(const GameInfoManager*);
-
     eTrophyType tourneyCup = INVALID_TROPHY;
     int i;
 
@@ -2736,7 +2731,7 @@ void GameInfoManager::OnPreCupGameState()
     {
         *(volatile u32*)&mPreGameUnlockedState = mPreGameUnlockedState;
     }
-    if (IsSuperCupModeUnlocked__15GameInfoManagerCFv(this))
+    if (IsSuperCupModeUnlocked())
     {
         mPreGameUnlockedState |= 0x8;
     }
@@ -2813,8 +2808,10 @@ void GameInfoManager::OnPreCupGameState()
         *(volatile u32*)&mPreGameUnlockedState = mPreGameUnlockedState;
     }
 
-    if (CheckUnlockStatusNoGlobal(mUserInfo.mTrophies[0], 0)
-        && CheckUnlockStatusNoGlobal(mUserInfo.mTrophies[0], 1))
+    bool allBasicUnlocked = CheckUnlockStatusNoGlobal(mUserInfo.mTrophies[0], 0)
+                         && CheckUnlockStatusNoGlobal(mUserInfo.mTrophies[0], 1)
+                         && CheckUnlockStatusNoGlobal(mUserInfo.mTrophies[0], 2);
+    if (allBasicUnlocked)
     {
         mPreGameUnlockedState |= 0x1000;
     }
@@ -2832,13 +2829,24 @@ void GameInfoManager::OnPreCupGameState()
         *(volatile u32*)&mPreGameUnlockedState = mPreGameUnlockedState;
     }
 
-    if (CheckUnlockStatusNoGlobal(mUserInfo.mTrophies[tourneyCup / 8], tourneyCup % 8))
     {
-        mDisplayTrophy[0] = false;
-    }
-    else
-    {
-        mDisplayTrophy[0] = true;
+        bool unlocked;
+        if (GetConfigBool(Config::Global(), "givealltrophies", false))
+        {
+            unlocked = true;
+        }
+        else
+        {
+            unlocked = mUserInfo.mTrophies[tourneyCup / 8] & (1 << (tourneyCup % 8));
+        }
+        if (unlocked)
+        {
+            mDisplayTrophy[0] = false;
+        }
+        else
+        {
+            mDisplayTrophy[0] = true;
+        }
     }
 
     for (i = 0; i < 5; i++)
@@ -2873,7 +2881,7 @@ void GameInfoManager::OnPreCupGameState()
         return;
     }
 
-    if (mCurrentCup->mRoundNumber != (short)(mCurrentCup->GetNumRounds() - 1))
+    if (mCurrentCup->mRoundNumber != mCurrentCup->GetNumRounds() - 1)
     {
         mCupMatchRequirement = RESULT_INVALID;
         return;
@@ -2896,18 +2904,17 @@ void GameInfoManager::OnPreCupGameState()
         if (mCurrentMode == GM_BOWSER_CUP)
         {
             *pTemp = *mBowserCupSeries.GetTeamStats((unsigned short)j);
-            *team = *pTemp;
         }
         else if (mCurrentMode == GM_SUPER_BOWSER_CUP)
         {
             *pTemp = *mSuperBowserCupSeries.GetTeamStats((unsigned short)j);
-            *team = *pTemp;
         }
         else
         {
             *pTemp = *mCurrentCup->GetTeamStats((unsigned short)j);
-            *team = *pTemp;
         }
+
+        *team = *pTemp;
 
         if (team->mNumPoints > highPoints)
         {
@@ -2922,16 +2929,8 @@ void GameInfoManager::OnPreCupGameState()
         else
         {
             BasicGameInfo* gameInfo = mGameInfo[mCurrentMode];
-            eTeamID team0 = TEAM_INVALID;
-            eTeamID team1 = TEAM_INVALID;
-
-            if (gameInfo != nullptr)
-            {
-                team0 = gameInfo->mTeamIndex[0];
-                team1 = gameInfo->mTeamIndex[1];
-            }
-
-            if (team->mTeamIndex == team0 || team->mTeamIndex == team1)
+            if (team->mTeamIndex == (gameInfo ? gameInfo->mTeamIndex[0] : TEAM_INVALID)
+                || team->mTeamIndex == (gameInfo ? gameInfo->mTeamIndex[1] : TEAM_INVALID))
             {
                 opponentTeam = *team;
             }
@@ -3098,8 +3097,7 @@ void GameInfoManager::OnPostCupGameState()
 
     IncreaseRoundNumber();
 
-    extern void DetermineNextCupScreen__15GameInfoManagerFv(GameInfoManager*);
-    DetermineNextCupScreen__15GameInfoManagerFv(this);
+    DetermineNextCupScreen();
 
     mUnlockedTriggers = 0;
 
@@ -3237,6 +3235,8 @@ void GameInfoManager::OnPostCupGameState()
  */
 void GameInfoManager::DetermineNextCupScreen()
 {
+    FORCE_DONT_INLINE;
+
     int i = 0;
     while (i < 5)
     {

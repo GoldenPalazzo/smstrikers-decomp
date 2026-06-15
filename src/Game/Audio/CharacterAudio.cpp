@@ -12,70 +12,6 @@
 
 extern cTeam* g_pTeams[2];
 
-// CharFootstepSFX charFootstepSFX;
-Audio::eCharSFX charFootstepSFX[2][5] = {
-    {
-        Audio::CHARSFX_RUN_01,
-        Audio::CHARSFX_RUN_02,
-        Audio::CHARSFX_RUN_03,
-        Audio::CHARSFX_RUN_04,
-        Audio::CHARSFX_RUN_05,
-    },
-    {
-        Audio::CHARSFX_WALK_01,
-        Audio::CHARSFX_WALK_02,
-        Audio::CHARSFX_WALK_03,
-        Audio::CHARSFX_WALK_04,
-        Audio::CHARSFX_WALK_05,
-    },
-};
-
-CharDialogueSFXInfo charDialogueSFXInfo[11] = {
-    { 0x00, 0x03 }, // 0, 3
-    { 0x03, 0x03 }, // 3, 3
-    { 0x06, 0x03 }, // 6, 3
-    { 0x09, 0x03 }, // 9, 3
-    { 0x0C, 0x03 }, // 12, 3
-    { 0x0F, 0x05 }, // 15, 5
-    { 0x14, 0x03 }, // 20, 3
-    { 0x17, 0x03 }, // 23, 3
-    { 0x1A, 0x03 }, // 26, 3
-    { 0x1A, 0x00 }, // 26, 0
-    { 0x1A, 0x00 }, // 26, 0
-};
-
-Audio::eCharSFX charDialogueSFX[29] = {
-    Audio::CHARSFX_EFFORTS_ATTACK_01,      // 0x21 = 33
-    Audio::CHARSFX_EFFORTS_ATTACK_02,      // 0x22 = 34
-    Audio::CHARSFX_EFFORTS_ATTACK_03,      // 0x23 = 35
-    Audio::CHARSFX_EFFORTS_GET_HIT_01,     // 0x27 = 39
-    Audio::CHARSFX_EFFORTS_GET_HIT_02,     // 0x28 = 40
-    Audio::CHARSFX_EFFORTS_GET_HIT_03,     // 0x29 = 41
-    Audio::CHARSFX_EFFORTS_HIT_01,         // 0x24 = 36
-    Audio::CHARSFX_EFFORTS_HIT_02,         // 0x25 = 37
-    Audio::CHARSFX_EFFORTS_HIT_03,         // 0x26 = 38
-    Audio::CHARSFX_EFFORTS_PAIN_01,        // 0x2A = 42
-    Audio::CHARSFX_EFFORTS_PAIN_02,        // 0x2B = 43
-    Audio::CHARSFX_EFFORTS_PAIN_03,        // 0x2C = 44
-    Audio::CHARSFX_EFFORTS_PAIN_04,        // 0x2D = 45
-    Audio::CHARSFX_EFFORTS_PAIN_05,        // 0x2E = 46
-    Audio::CHARSFX_EFFORTS_ELECTROCUTE_01, // 0x2F = 47
-    Audio::CHARSFX_EFFORTS_PERFECT_PASS,   // 0x3F = 63
-    Audio::CHARSFX_BREATH_WITH_BALL,       // 0x40 = 64
-    Audio::CHARSFX_CALL_HEY_01,            // 0x41 = 65
-    Audio::CHARSFX_CALL_HEY_02,            // 0x42 = 66
-    Audio::CHARSFX_CALL_WO_01,             // 0x43 = 67
-    Audio::CHARSFX_EFFORTS_ELECTROCUTE_02, // 0x30 = 48
-    Audio::CHARSFX_EFFORTS_ELECTROCUTE_03, // 0x31 = 49
-    Audio::CHARSFX_EFFORTS_EXERT_01,       // 0x32 = 50
-    Audio::CHARSFX_EFFORTS_EXERT_02,       // 0x33 = 51
-    Audio::CHARSFX_EFFORTS_EXERT_03,       // 0x34 = 52
-    Audio::CHARSFX_EFFORTS_KICK_01,        // 0x35 = 53
-    Audio::CHARSFX_GEN_STOS_FLOAT,         // 0x51 = 81
-    Audio::CHARSFX_GEN_STOS_FLOAT_HYPER,   // 0x52 = 82
-    Audio::CHARSFX_NIS_CLAP_01,            // 0x53 = 83
-};
-
 namespace Audio
 {
 
@@ -256,6 +192,107 @@ const char* gCharSoundTable[] = {
     "NUM_CHARSFX"
 };
 
+} // namespace Audio
+
+static Audio::eCharSFX charDialogueSFX[29] = {
+    Audio::CHARSFX_EFFORTS_ATTACK_01,      // 0x21 = 33
+    Audio::CHARSFX_EFFORTS_ATTACK_02,      // 0x22 = 34
+    Audio::CHARSFX_EFFORTS_ATTACK_03,      // 0x23 = 35
+    Audio::CHARSFX_EFFORTS_GET_HIT_01,     // 0x27 = 39
+    Audio::CHARSFX_EFFORTS_GET_HIT_02,     // 0x28 = 40
+    Audio::CHARSFX_EFFORTS_GET_HIT_03,     // 0x29 = 41
+    Audio::CHARSFX_EFFORTS_HIT_01,         // 0x24 = 36
+    Audio::CHARSFX_EFFORTS_HIT_02,         // 0x25 = 37
+    Audio::CHARSFX_EFFORTS_HIT_03,         // 0x26 = 38
+    Audio::CHARSFX_EFFORTS_PAIN_01,        // 0x2A = 42
+    Audio::CHARSFX_EFFORTS_PAIN_02,        // 0x2B = 43
+    Audio::CHARSFX_EFFORTS_PAIN_03,        // 0x2C = 44
+    Audio::CHARSFX_EFFORTS_PAIN_04,        // 0x2D = 45
+    Audio::CHARSFX_EFFORTS_PAIN_05,        // 0x2E = 46
+    Audio::CHARSFX_EFFORTS_ELECTROCUTE_01, // 0x2F = 47
+    Audio::CHARSFX_EFFORTS_PERFECT_PASS,   // 0x3F = 63
+    Audio::CHARSFX_BREATH_WITH_BALL,       // 0x40 = 64
+    Audio::CHARSFX_CALL_HEY_01,            // 0x41 = 65
+    Audio::CHARSFX_CALL_HEY_02,            // 0x42 = 66
+    Audio::CHARSFX_CALL_WO_01,             // 0x43 = 67
+    Audio::CHARSFX_EFFORTS_ELECTROCUTE_02, // 0x30 = 48
+    Audio::CHARSFX_EFFORTS_ELECTROCUTE_03, // 0x31 = 49
+    Audio::CHARSFX_EFFORTS_EXERT_01,       // 0x32 = 50
+    Audio::CHARSFX_EFFORTS_EXERT_02,       // 0x33 = 51
+    Audio::CHARSFX_EFFORTS_EXERT_03,       // 0x34 = 52
+    Audio::CHARSFX_EFFORTS_KICK_01,        // 0x35 = 53
+    Audio::CHARSFX_GEN_STOS_FLOAT,         // 0x51 = 81
+    Audio::CHARSFX_GEN_STOS_FLOAT_HYPER,   // 0x52 = 82
+    Audio::CHARSFX_NIS_CLAP_01,            // 0x53 = 83
+};
+
+static CharDialogueSFXInfo charDialogueSFXInfo[11] = {
+    { 0x00, 0x03 }, // 0, 3
+    { 0x03, 0x03 }, // 3, 3
+    { 0x06, 0x03 }, // 6, 3
+    { 0x09, 0x03 }, // 9, 3
+    { 0x0C, 0x03 }, // 12, 3
+    { 0x0F, 0x05 }, // 15, 5
+    { 0x14, 0x03 }, // 20, 3
+    { 0x17, 0x03 }, // 23, 3
+    { 0x1A, 0x03 }, // 26, 3
+    { 0x1A, 0x00 }, // 26, 0
+    { 0x1A, 0x00 }, // 26, 0
+};
+
+static Audio::eCharSFX charFootstepSFX[2][5] = {
+    {
+        Audio::CHARSFX_RUN_01,
+        Audio::CHARSFX_RUN_02,
+        Audio::CHARSFX_RUN_03,
+        Audio::CHARSFX_RUN_04,
+        Audio::CHARSFX_RUN_05,
+    },
+    {
+        Audio::CHARSFX_WALK_01,
+        Audio::CHARSFX_WALK_02,
+        Audio::CHARSFX_WALK_03,
+        Audio::CHARSFX_WALK_04,
+        Audio::CHARSFX_WALK_05,
+    },
+};
+
+namespace Audio
+{
+
+static inline bool isElectrocuteSFXPlaying(Audio::cCharacterSFX* self)
+{
+    for (s32 i = charDialogueSFXInfo[CHAR_DIALOGUE_ELECTROCUTE].charDialogueSFXIndex;
+        i < charDialogueSFXInfo[CHAR_DIALOGUE_ELECTROCUTE].charDialogueSFXIndex + charDialogueSFXInfo[CHAR_DIALOGUE_ELECTROCUTE].numRandomSFX;
+        i++)
+    {
+        if (self->IsKeepingTrackOf(charDialogueSFX[i], NULL))
+            return true;
+    }
+    return false;
+}
+
+static inline void ClearFootstepFlags(cCharacterSFX* self, eCharSFX* pSFX, eCharSFX* pLimitSFX)
+{
+    for (int i = pSFX[0]; i < (int)pLimitSFX[2]; i++)
+    {
+        self->mCharSFX[i].m_unk_0x40 = false;
+    }
+}
+
+inline void cCharacterSFX::StopPlayingAllCharDialogue()
+{
+    s32 limit = charDialogueSFXInfo[6].numRandomSFX + 0x14;
+    s32 i = 0;
+    for (; i < limit; i++)
+    {
+        if (IsKeepingTrackOf(charDialogueSFX[i], NULL))
+        {
+            Stop(charDialogueSFX[i], cGameSFX::SFX_STOP_FIRST);
+        }
+    }
+}
+
 /**
  * Offset/Address/Size: 0x1310 | 0x8014D6B4 | size: 0x60
  */
@@ -324,6 +361,15 @@ void Audio::cCharacterSFX::Init()
     cGameSFX::Init();
 }
 
+// Forces the 0.0f float constant to be allocated into .sdata2 ahead of the
+// -1.0f constant owned by Init(), matching the target pool order
+// (100.0f, 0.0f, -1.0f). With -inline deferred this stub emits before Init(),
+// so its 0.0f literal is numbered first. Unreferenced -> dead-stripped at link.
+void CharacterAudio_stub(float* p)
+{
+    *p = 0.0f;
+}
+
 /**
  * Offset/Address/Size: 0x114C | 0x8014D4F0 | size: 0x7C
  */
@@ -353,42 +399,8 @@ void cCharacterSFX::Stop(eCharSFX sfxType, cGameSFX::StopFlag flag)
     cGameSFX::Stop(sfxType, flag);
 }
 
-static inline bool isElectrocuteSFXPlaying(Audio::cCharacterSFX* self)
-{
-    for (s32 i = charDialogueSFXInfo[CHAR_DIALOGUE_ELECTROCUTE].charDialogueSFXIndex;
-        i < charDialogueSFXInfo[CHAR_DIALOGUE_ELECTROCUTE].charDialogueSFXIndex + charDialogueSFXInfo[CHAR_DIALOGUE_ELECTROCUTE].numRandomSFX;
-        i++)
-    {
-        if (self->IsKeepingTrackOf(charDialogueSFX[i], NULL))
-            return true;
-    }
-    return false;
-}
-
-static inline void ClearFootstepFlags(cCharacterSFX* self, eCharSFX* pSFX, eCharSFX* pLimitSFX)
-{
-    for (int i = pSFX[0]; i < (int)pLimitSFX[2]; i++)
-    {
-        self->mCharSFX[i].m_unk_0x40 = false;
-    }
-}
-
-inline void cCharacterSFX::StopPlayingAllCharDialogue()
-{
-    s32 limit = charDialogueSFXInfo[6].numRandomSFX + 0x14;
-    s32 i = 0;
-    for (; i < limit; i++)
-    {
-        if (IsKeepingTrackOf(charDialogueSFX[i], NULL))
-        {
-            Stop(charDialogueSFX[i], cGameSFX::SFX_STOP_FIRST);
-        }
-    }
-}
-
 /**
  * Offset/Address/Size: 0xC5C | 0x8014D000 | size: 0x4D0
- * TODO: 99.71% match - r6/r7 register swap in walk/run clear loops
  */
 unsigned long cCharacterSFX::PlayRandomCharDialogue(CharDialogueType dType, PosUpdateMethod posUpdateMethod, float fVol, float fDelay, bool bAvoidCurrent)
 {
@@ -419,10 +431,6 @@ unsigned long cCharacterSFX::PlayRandomCharDialogue(CharDialogueType dType, PosU
             sfxType = walkSFX[(randomIndex + 1) % 5];
         }
 
-        // for (int i = walkSFX[0]; i < (int)charFootstepSFX[1][2]; i++)
-        // {
-        //     mCharSFX[i].m_unk_0x40 = false;
-        // }
         ClearFootstepFlags(this, walkSFX, charFootstepSFX[1]);
 
         mCharSFX[sfxType].m_unk_0x40 = true;
@@ -450,10 +458,6 @@ unsigned long cCharacterSFX::PlayRandomCharDialogue(CharDialogueType dType, PosU
             sfxType = runSFX[(randomIndex + 1) % 5];
         }
 
-        // for (int i = runSFX[0]; i < (int)charFootstepSFX[0][2]; i++)
-        // {
-        //     mCharSFX[i].m_unk_0x40 = false;
-        // }
         ClearFootstepFlags(this, runSFX, charFootstepSFX[0]);
 
         mCharSFX[sfxType].m_unk_0x40 = true;
@@ -557,10 +561,6 @@ unsigned long cCharacterSFX::PlayRandomCharDialogue(CharDialogueType dType, Audi
             sfxType = pSFX[(randomIndex + 1) % 5];
         }
 
-        // for (int i = pSFX[0]; i < (int)charFootstepSFX[1][2]; i++)
-        // {
-        //     mCharSFX[i].m_unk_0x40 = false;
-        // }
         ClearFootstepFlags(this, pSFX, charFootstepSFX[1]);
 
         mCharSFX[sfxType].m_unk_0x40 = true;
@@ -590,10 +590,6 @@ unsigned long cCharacterSFX::PlayRandomCharDialogue(CharDialogueType dType, Audi
             sfxType = pSFX[(randomIndex + 1) % 5];
         }
 
-        // for (int i = pSFX[0]; i < (int)charFootstepSFX[0][2]; i++)
-        // {
-        //     mCharSFX[i].m_unk_0x40 = false;
-        // }
         ClearFootstepFlags(this, pSFX, charFootstepSFX[0]);
 
         mCharSFX[sfxType].m_unk_0x40 = true;
@@ -706,8 +702,6 @@ void cCharacterSFX::StopPlayingAllRandomCharDialogue()
 
 /**
  * Offset/Address/Size: 0x4B8 | 0x8014C85C | size: 0x148
- * TODO: 99.45% match - r6/r7 register allocation differs in the footstep flag
- *       clearing loop.
  */
 int cCharacterSFX::PlayRandomWalkFootstep(float, bool bAvoidCurrent)
 {
@@ -738,10 +732,7 @@ int cCharacterSFX::PlayRandomWalkFootstep(float, bool bAvoidCurrent)
         }
     }
 
-    for (int i = walkSFX[0]; i < (int)charFootstepSFX[1][2]; i++)
-    {
-        mCharSFX[i].m_unk_0x40 = false;
-    }
+    ClearFootstepFlags(this, walkSFX, charFootstepSFX[1]);
 
     mCharSFX[sfxType].m_unk_0x40 = true;
 
@@ -753,18 +744,16 @@ int cCharacterSFX::PlayRandomWalkFootstep(float, bool bAvoidCurrent)
 
 /**
  * Offset/Address/Size: 0x2F0 | 0x8014C694 | size: 0x1C8
- * TODO: 99.43% match - remaining diffs are r22/r24 register assignment swaps
- *       in the captain/sidekick loops.
  */
 unsigned long cCharacterSFX::PlayNISRandomCharDialogue(CharDialogueType dialogueType, NisCharacterClass charIdentifier, float fVol, float fDelay, bool bIs3D, const nlVector3* pInitialPosVector, const nlVector3* pInitialDirVector, unsigned long* unkPtr)
 {
+    cCharacter* pChar;
     CharDialogueType dType = dialogueType;
     NisCharacterClass charId = charIdentifier;
     bool is3D = bIs3D;
     const nlVector3* initialPos = pInitialPosVector;
     const nlVector3* initialDir = pInitialDirVector;
     unsigned long* pType = unkPtr;
-    cCharacter* pChar;
 
     if (!Audio::IsInited())
     {
@@ -776,54 +765,7 @@ unsigned long cCharacterSFX::PlayNISRandomCharDialogue(CharDialogueType dialogue
         return -1;
     }
 
-    pChar = NULL;
-
-    switch (charId)
-    {
-    case NIS_CHAR_CLASS_DAISY:
-    case NIS_CHAR_CLASS_DONKEYKONG:
-    case NIS_CHAR_CLASS_LUIGI:
-    case NIS_CHAR_CLASS_MARIO:
-    case NIS_CHAR_CLASS_PEACH:
-    case NIS_CHAR_CLASS_WALUIGI:
-    case NIS_CHAR_CLASS_WARIO:
-    case NIS_CHAR_CLASS_YOSHI:
-    case NIS_CHAR_CLASS_MYSTERY:
-        for (int team = 0; team < 2; team++)
-        {
-            cTeam* pTeam = g_pTeams[team];
-            if ((u32)charId == (u32)pTeam->GetCaptain()->m_eCharacterClass)
-            {
-                pChar = pTeam->GetCaptain();
-                break;
-            }
-        }
-        break;
-    case NIS_CHAR_CLASS_BIRDO:
-    case NIS_CHAR_CLASS_HAMMERBROS:
-    case NIS_CHAR_CLASS_KOOPA:
-    case NIS_CHAR_CLASS_TOAD:
-        for (int team = 0; team < 2; team++)
-        {
-            if ((u32)charId == (u32)ConvertToCharacterClass(GameInfoManager::Instance()->GetSidekick((short)team)))
-            {
-                pChar = g_pTeams[team]->GetFielder(1);
-                break;
-            }
-        }
-        break;
-    case NIS_CHAR_CLASS_HOME_GOALIE:
-    case NIS_CHAR_CLASS_AWAY_GOALIE:
-    {
-        int team = 0;
-        if (charId == NIS_CHAR_CLASS_AWAY_GOALIE)
-        {
-            team = 1;
-        }
-        pChar = g_pTeams[team]->GetGoalie();
-        break;
-    }
-    }
+    pChar = GetCharacterFromNisCharClass(charId);
 
     if (pChar == NULL)
     {
@@ -935,7 +877,6 @@ void cCharacterSFX::StopMovementLoop()
 {
     if (mpMovementLoopSound)
     {
-        // Stop emitter with stop flag 0
         cGameSFX::StopEmitter(mpMovementLoopSound, 0);
         mpMovementLoopSound = nullptr;
         m_unk_0x33A0 = false;

@@ -612,6 +612,7 @@ static void FindBoundingSphereAccurate(nlVector3* pOutSphere, float* pOutRadius,
 
 /**
  * Offset/Address/Size: 0x1AE4 | 0x8011A994 | size: 0x808
+ * TODO: 93.67% match - remaining register rotations in character/fxtex setup and visible/debug packet loops.
  */
 void DrawableCharacter::SendToGl(const cCharacter& character) const
 {
@@ -671,7 +672,7 @@ void DrawableCharacter::SendToGl(const cCharacter& character) const
     void* pLightData;
     if (sSTSLighting__17DrawableCharacter != 0)
     {
-        pLightData = world->m_pIntensityData;
+        pLightData = world->m_pSpecularData;
     }
     else if (DrawableCharacter::sCameraRelativeLighting || AlwaysUseCameraRelativeCharacterLighting())
     {
@@ -691,7 +692,7 @@ void DrawableCharacter::SendToGl(const cCharacter& character) const
     void* pSpecularData = WorldManager::s_World->m_pSTSIntensity;
     glModel* pModel = glModelDup(skinMesh->pModel, true);
 
-    u8 isVisible;
+    bool isVisible;
     if (nlTaskManager::m_pInstance->m_CurrState == 0x100)
     {
         isVisible = 1;
@@ -876,6 +877,7 @@ void DrawableCharacter::SendToGl(const cCharacter& character) const
                 counter = 0;
             }
 
+            float sphereRadius = fRadius;
             u32 debugColour = 0xFFFF4050;
             glModel* pSphereModel = glModelDup(glInventory.GetModel(nlStringHash("debug/sphere")), true);
 
@@ -884,9 +886,9 @@ void DrawableCharacter::SendToGl(const cCharacter& character) const
             sphereWorldMatrix.f.m42 = vCenter.f.y;
             sphereWorldMatrix.f.m43 = vCenter.f.z;
             sphereWorldMatrix.f.m44 = 1.0f;
-            sphereWorldMatrix.f.m11 = fRadius;
-            sphereWorldMatrix.f.m22 = fRadius;
-            sphereWorldMatrix.f.m33 = fRadius;
+            sphereWorldMatrix.f.m11 = sphereRadius;
+            sphereWorldMatrix.f.m22 = sphereRadius;
+            sphereWorldMatrix.f.m33 = sphereRadius;
 
             unsigned long matrix = glAllocMatrix();
             if (matrix != 0xFFFFFFFF)
@@ -952,10 +954,13 @@ void DrawableCharacter::SendToGl(const cCharacter& character) const
 
             fRadius *= g_fRadiusScale;
             fHeight *= s_fHeightFudge;
+            float lightX = pLight->f.y;
+            float lightY = pLight->f.z;
+            float lightZ = pLight->f.w;
 
-            params.vLight.f.x = pLight->f.y;
-            params.vLight.f.y = pLight->f.z;
-            params.vLight.f.z = pLight->f.w;
+            params.vLight.f.x = lightX;
+            params.vLight.f.y = lightY;
+            params.vLight.f.z = lightZ;
             params.vLight.f.w = 1.0f;
             params.vPosition = mBip01Position;
             params.fRadius = fRadius;

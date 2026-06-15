@@ -206,9 +206,9 @@ static const int gl_stream_stride[15] = {
 
 /**
  * Offset/Address/Size: 0x3DC | 0x80114414 | size: 0x464
- * TODO: 92.86% match - one early-return branch shape, vtable setup ordering
- * after GLMeshWriterCore construction, stream stride load sequence, and
- * r25/r27 plus f30/f31 loop register allocation differences remain.
+ * TODO: 93.96% match - vtable setup ordering after GLMeshWriterCore
+ * construction, stream stride load sequence, and loop index/register
+ * allocation differences remain.
  */
 void DrawableNetMesh::Render() const
 {
@@ -321,11 +321,13 @@ void DrawableNetMesh::Render() const
     {
         if (meshWriter.Begin(m_unk18, GLP_TriStrip, 3, streamDecl, false))
         {
+            int i;
             unsigned short* pIndex = pTriIndices;
-            for (int i = 0; i < m_unk18; i++, pIndex++)
+            for (i = 0; i < m_unk18; pIndex++, i++)
             {
                 unsigned short index = *pIndex;
-                u8 dark = (u8)(int)((1.0f - WorldDarkening::Instance().mPos) * 255.0);
+                float darkPos = WorldDarkening::Instance().mPos;
+                u8 dark = (u8)(int)((1.0f - darkPos) * 255.0);
                 shortVector2* pUV = &pTexcoord[index];
                 meshWriter.Texcoord(pUV->e[0], pUV->e[1]);
                 nlColour c;

@@ -405,12 +405,10 @@ SidelineExplodable::~SidelineExplodable()
 /**
  * Offset/Address/Size: 0x1CC4 | 0x80169024 | size: 0xB0
  */
-extern "C" void Allocate__18SidelineExplodableFv(SidelineExplodable*);
-
 void SidelineExplodable::Initialize(int numFragmentModels)
 {
     mNumFragmentModels = numFragmentModels;
-    Allocate__18SidelineExplodableFv(this);
+    Allocate();
 
     SidelineExplodableNode* node = NULL;
 
@@ -449,17 +447,14 @@ void SidelineExplodable::Allocate()
 
 /**
  * Offset/Address/Size: 0x19A0 | 0x80168D00 | size: 0x2FC
- * TODO: 99.32% match - remaining diff is register allocation in the fragment
- * cleanup path (m_uObjectFlags clear + mpPhysicsObject NULL store uses r4/r0
- * instead of r0/r24 sequence).
+ * TODO: 99.79% match - remaining diff is r29/r30 allocation between the
+ * fragment offset and unused-fragment tail address in the deactivation path.
  */
 void SidelineExplodable::Update(float fDeltaT)
 {
     if (mNumActiveFragments != 0)
     {
-        SlotPool<DrawableFragmentHandleNode>* pPool = &DrawableFragmentHandleNode::sDrawableFragmentHandleNodePool;
         int fragmentOffset;
-        DrawableFragmentHandleNode** pTail = &SidelineExplodableManager::sUnusedDrawableFragments.m_pEnd;
         ExplosionFragment* fragment;
         int i;
 
@@ -476,40 +471,7 @@ void SidelineExplodable::Update(float fDeltaT)
                 {
                     if (fragment->mbIsActive)
                     {
-                        if (fragment->mpPhysicsObject != NULL)
-                        {
-                            delete fragment->mpPhysicsObject;
-                        }
-
-                        DrawableObject* drawable = WorldManager::s_World->FindDrawableObject(fragment->mFragmentModelHash);
-                        drawable->m_uObjectFlags = (drawable->m_uObjectFlags & ~1);
-                        fragment->mpPhysicsObject = NULL;
-                        u16 handle = fragment->mDrawableFragmentID;
-                        DrawableFragmentHandleNode* node = NULL;
-
-                        if (pPool->m_FreeList == NULL)
-                        {
-                            SlotPoolBase::BaseAddNewBlock(&DrawableFragmentHandleNode::sDrawableFragmentHandleNodePool, 8);
-                        }
-
-                        SlotPoolEntry* entry = pPool->m_FreeList;
-                        if (entry != NULL)
-                        {
-                            node = (DrawableFragmentHandleNode*)entry;
-                            pPool->m_FreeList = (SlotPoolEntry*)entry->m_next;
-                        }
-
-                        if (node != NULL)
-                        {
-                            node->mID = 0;
-                            node->next = NULL;
-                        }
-
-                        node->mID = handle;
-                        nlListAddEnd<DrawableFragmentHandleNode>(&SidelineExplodableManager::sUnusedDrawableFragments.m_pStart, pTail, node);
-                        SidelineExplodableManager::sFragmentLookupTable[handle] = NULL;
-                        fragment->mDrawableFragmentID = 0xFFFF;
-                        fragment->mbIsActive = false;
+                        DeactivateExplosionFragment(fragment);
                     }
 
                     fragment->mFragmentModelHash = 0;
@@ -877,7 +839,7 @@ Bind<void, void (*)(EmissionController&, ExplosionFragment*), Placeholder<0>, Ex
 
 /**
  * Offset/Address/Size: 0xC08 | 0x80167F68 | size: 0x27C
- * TODO: 98.40% match - remaining diffs are late-function register allocation/order in the two final nlAddPolarToCartesian setups and min/max output stores.
+ * TODO: 98.84% match - remaining diffs are late-function register allocation/order in the two final nlAddPolarToCartesian setups.
  */
 void SidelineExplodable::FindExplosionAngleRange(unsigned short& min, unsigned short& max) const
 {
@@ -939,8 +901,11 @@ void SidelineExplodable::FindExplosionAngleRange(unsigned short& min, unsigned s
         ((SidelineExplodable*)this)->mbAngleRangeInitialized = true;
     }
 
-    min = mMinExplosionAngle;
-    max = mMaxExplosionAngle;
+    const volatile SidelineExplodable* self = (const volatile SidelineExplodable*)this;
+    volatile unsigned short& minOut = (volatile unsigned short&)min;
+    volatile unsigned short& maxOut = (volatile unsigned short&)max;
+    minOut = self->mMinExplosionAngle;
+    maxOut = self->mMaxExplosionAngle;
 }
 
 /**

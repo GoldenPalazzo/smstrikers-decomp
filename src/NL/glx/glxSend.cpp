@@ -1801,6 +1801,13 @@ void glx_SwitchRaster(const glModelPacket* p)
     }
 }
 
+static inline GXColor makeKonstColor(f32 level)
+{
+    int val = (int)(255.5f * level);
+    GXColor c = { (u8)val, (u8)val, (u8)val, (u8)val };
+    return c;
+}
+
 /**
  * Offset/Address/Size: 0x2690 | 0x801BC190 | size: 0x48C
  * TODO: 95.8% match - stack offset diffs for GXColor locals (MWCC allocates
@@ -1838,8 +1845,7 @@ static void glx_SwitchTextureState(const glModelPacket* p)
         level = (f32)raw * (1.0f / 63.0f);
         if (level != glx_konstlevel[0])
         {
-            int val = (int)(255.5f * level);
-            GXColor c = { (u8)val, (u8)val, (u8)val, (u8)val };
+            GXColor c = makeKonstColor(level);
             GXSetTevKColor(GX_KCOLOR0, c);
             glx_konstlevel[0] = level;
         }
@@ -1848,8 +1854,7 @@ static void glx_SwitchTextureState(const glModelPacket* p)
         level = (f32)raw * (1.0f / 63.0f);
         if (level != glx_konstlevel[1])
         {
-            int val = (int)(255.5f * level);
-            GXColor c = { (u8)val, (u8)val, (u8)val, (u8)val };
+            GXColor c = makeKonstColor(level);
             GXSetTevKColor(GX_KCOLOR1, c);
             glx_konstlevel[1] = level;
         }
@@ -1861,8 +1866,7 @@ static void glx_SwitchTextureState(const glModelPacket* p)
         }
         if (level != glx_konstlevel[2])
         {
-            int val = (int)(255.5f * level);
-            GXColor c = { (u8)val, (u8)val, (u8)val, (u8)val };
+            GXColor c = makeKonstColor(level);
             GXSetTevKColor(GX_KCOLOR2, c);
             glx_konstlevel[2] = level;
         }
@@ -1871,8 +1875,7 @@ static void glx_SwitchTextureState(const glModelPacket* p)
         level = (f32)raw * (1.0f / 63.0f);
         if (level != glx_konstlevel[3])
         {
-            int val = (int)(255.5f * level);
-            GXColor c = { (u8)val, (u8)val, (u8)val, (u8)val };
+            GXColor c = makeKonstColor(level);
             GXSetTevKColor(GX_KCOLOR3, c);
             glx_konstlevel[3] = level;
         }

@@ -20,7 +20,7 @@ public:
     s32 GetNodeIndexByID(unsigned int) const;
     s32 GetChild(int, int) const;
     void BuildPushPopFlags(int, int, int&);
-    cSHierarchy* Initialize(nlChunk*);
+    static cSHierarchy* Initialize(nlChunk*);
 
     inline u32* GetNodeIDs() const { return m_nodeIDs; }
     inline s32 GetNodeCount() const { return m_nodeCount; }

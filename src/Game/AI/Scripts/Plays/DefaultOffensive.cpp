@@ -552,7 +552,7 @@ void Fuzzy::GoodBallCarrier(cFielder* TheFielder)
             float fLessWindup = FLESS(fWindupScore, 0.8f);
             float fNotCloseToNet = 1.0f - CloseToMyNet(g_pScriptCurrentFielder);
             float fNotInDanger = 1.0f - InDangerDelayed(g_pScriptCurrentFielder).mData.f;
-            fNotCloseToNet = (fLessWindup <= fNotCloseToNet) ? fLessWindup : fNotCloseToNet;
+            fNotCloseToNet = (fNotCloseToNet <= fLessWindup) ? fNotCloseToNet : fLessWindup;
             fNotInDanger = (fNotCloseToNet <= fNotInDanger) ? fNotCloseToNet : fNotInDanger;
             bestValue = FuzzyVariant(fNotInDanger);
         }

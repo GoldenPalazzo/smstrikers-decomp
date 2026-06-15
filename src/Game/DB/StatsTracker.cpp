@@ -1,3 +1,4 @@
+#define BASICSTRING_INLINE_ERASE
 #include "Game/DB/StatsTracker.h"
 #include "Game/AI/FielderActions.h"
 #include "Game/FE/feHelpFuncs.h"

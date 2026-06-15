@@ -93,10 +93,10 @@ public:
     /* 0x028! */ DLListContainerBase<WorldAnimController*, NewAdapter<DLListEntry<WorldAnimController*> > > m_animControllerList;
     /* 0x030 */ void* m_pLightData;
     // /* 0x034 */ void* m_pPlayerNISLightData;
-    /* 0x038 */ void* m_pIntensityPerm;
-    /* 0x03C */ void* m_pIntensityData;
+    /* 0x034 */ void* m_pIntensityPerm;
+    /* 0x038 */ void* m_pIntensityData;
+    /* 0x03C */ void* m_pSpecularData;
     /* 0x040 */ void* m_pSTSIntensity;
-    /* 0x044 */ void* m_pSpecularData;
     /* 0x044 */ nlAVLTree<unsigned long, DrawableObject*, DefaultKeyCompare<unsigned long> > m_drawableMap;
     /* 0x060! */ nlAVLTree<unsigned long, DrawableObject*, DefaultKeyCompare<unsigned long> > m_hyperSTSDrawableMap; // verified
     /* 0x070 */ nlAVLTree<unsigned long, HelperObject*, DefaultKeyCompare<unsigned long> > m_helperMap;
