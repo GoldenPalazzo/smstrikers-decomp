@@ -373,6 +373,19 @@ static inline void ClearFootstepFlags(cCharacterSFX* self, eCharSFX* pSFX, eChar
     }
 }
 
+inline void cCharacterSFX::StopPlayingAllCharDialogue()
+{
+    s32 limit = charDialogueSFXInfo[6].numRandomSFX + 0x14;
+    s32 i = 0;
+    for (; i < limit; i++)
+    {
+        if (IsKeepingTrackOf(charDialogueSFX[i], NULL))
+        {
+            Stop(charDialogueSFX[i], cGameSFX::SFX_STOP_FIRST);
+        }
+    }
+}
+
 /**
  * Offset/Address/Size: 0xC5C | 0x8014D000 | size: 0x4D0
  * TODO: 99.71% match - r6/r7 register swap in walk/run clear loops
@@ -519,8 +532,6 @@ unsigned long cCharacterSFX::PlayRandomCharDialogue(CharDialogueType dType, PosU
 
 /**
  * Offset/Address/Size: 0x7C4 | 0x8014CB68 | size: 0x498
- * TODO: 99.54% match - r6/r7 register swap in footstep flag-clearing loops,
- *       r27/r29 swap in dialogue cleanup loop (MWCC allocator quirk).
  */
 unsigned long cCharacterSFX::PlayRandomCharDialogue(CharDialogueType dType, Audio::SoundAttributes& sndAttributes, bool bAvoidCurrent, unsigned long* pOutSfx)
 {
@@ -604,15 +615,7 @@ unsigned long cCharacterSFX::PlayRandomCharDialogue(CharDialogueType dType, Audi
         }
     }
 
-    s32 limit = charDialogueSFXInfo[6].numRandomSFX + 0x14;
-    s32 i = 0;
-    for (; i < limit; i++)
-    {
-        if (IsKeepingTrackOf(charDialogueSFX[i], NULL))
-        {
-            Stop(charDialogueSFX[i], cGameSFX::SFX_STOP_FIRST);
-        }
-    }
+    StopPlayingAllCharDialogue();
 
     if (mpMovementLoopSound != NULL)
     {

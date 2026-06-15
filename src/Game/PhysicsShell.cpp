@@ -35,8 +35,8 @@ bool PhysicsShell::SetContactInfo(dContact* contact, PhysicsObject* other, bool 
         contact->surface.bounce = g_pGame->m_pGameTweaks->fShellBounce;
     }
 
-    contact->surface.bounce_vel = 5.0f;
-    contact->surface.mu = 0.0f;
+    contact->surface.bounce_vel = 0.0f;
+    contact->surface.mu = 0.005f;
 
     return true;
 }
