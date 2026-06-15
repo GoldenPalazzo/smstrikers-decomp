@@ -8,6 +8,7 @@ void __OSSystemCallVectorStart(void);
 void __OSSystemCallVectorEnd(void);
 
 #ifdef __GEKKO__
+// clang-format off
 static asm void SystemCallVector(void) {
 entry __OSSystemCallVectorStart
     nofralloc
@@ -21,9 +22,11 @@ entry __OSSystemCallVectorStart
 entry __OSSystemCallVectorEnd
     nop
 }
+// clang-format on
 #endif
 
-void __OSInitSystemCall(void) {
+void __OSInitSystemCall(void)
+{
     void* addr = (void*)OSPhysicalToCached(0xC00);
 
     memcpy(addr, __OSSystemCallVectorStart, (u32)&__OSSystemCallVectorEnd - (u32)&__OSSystemCallVectorStart);

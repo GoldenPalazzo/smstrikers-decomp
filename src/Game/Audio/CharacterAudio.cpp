@@ -365,6 +365,14 @@ static inline bool isElectrocuteSFXPlaying(Audio::cCharacterSFX* self)
     return false;
 }
 
+static inline void ClearFootstepFlags(cCharacterSFX* self, eCharSFX* pSFX, eCharSFX* pLimitSFX)
+{
+    for (int i = pSFX[0]; i < (int)pLimitSFX[2]; i++)
+    {
+        self->mCharSFX[i].m_unk_0x40 = false;
+    }
+}
+
 /**
  * Offset/Address/Size: 0xC5C | 0x8014D000 | size: 0x4D0
  * TODO: 99.71% match - r6/r7 register swap in walk/run clear loops
@@ -398,10 +406,11 @@ unsigned long cCharacterSFX::PlayRandomCharDialogue(CharDialogueType dType, PosU
             sfxType = walkSFX[(randomIndex + 1) % 5];
         }
 
-        for (int i = walkSFX[0]; i < (int)charFootstepSFX[1][2]; i++)
-        {
-            mCharSFX[i].m_unk_0x40 = false;
-        }
+        // for (int i = walkSFX[0]; i < (int)charFootstepSFX[1][2]; i++)
+        // {
+        //     mCharSFX[i].m_unk_0x40 = false;
+        // }
+        ClearFootstepFlags(this, walkSFX, charFootstepSFX[1]);
 
         mCharSFX[sfxType].m_unk_0x40 = true;
         walkAtr.SetSoundType(sfxType, true);
@@ -428,10 +437,11 @@ unsigned long cCharacterSFX::PlayRandomCharDialogue(CharDialogueType dType, PosU
             sfxType = runSFX[(randomIndex + 1) % 5];
         }
 
-        for (int i = runSFX[0]; i < (int)charFootstepSFX[0][2]; i++)
-        {
-            mCharSFX[i].m_unk_0x40 = false;
-        }
+        // for (int i = runSFX[0]; i < (int)charFootstepSFX[0][2]; i++)
+        // {
+        //     mCharSFX[i].m_unk_0x40 = false;
+        // }
+        ClearFootstepFlags(this, runSFX, charFootstepSFX[0]);
 
         mCharSFX[sfxType].m_unk_0x40 = true;
         runAtr.SetSoundType(sfxType, true);
@@ -447,15 +457,13 @@ unsigned long cCharacterSFX::PlayRandomCharDialogue(CharDialogueType dType, PosU
         }
     }
 
+    s32 i = 0;
+    s32 limit = charDialogueSFXInfo[6].numRandomSFX + 0x14;
+    for (; i < limit; i++)
     {
-        s32 i = 0;
-        s32 limit = charDialogueSFXInfo[6].numRandomSFX + 0x14;
-        for (; i < limit; i++)
+        if (IsKeepingTrackOf(charDialogueSFX[i], NULL))
         {
-            if (IsKeepingTrackOf(charDialogueSFX[i], NULL))
-            {
-                cGameSFX::Stop(charDialogueSFX[i], cGameSFX::SFX_STOP_FIRST);
-            }
+            cGameSFX::Stop(charDialogueSFX[i], cGameSFX::SFX_STOP_FIRST);
         }
     }
 
@@ -538,10 +546,11 @@ unsigned long cCharacterSFX::PlayRandomCharDialogue(CharDialogueType dType, Audi
             sfxType = pSFX[(randomIndex + 1) % 5];
         }
 
-        for (int i = pSFX[0]; i < (int)charFootstepSFX[1][2]; i++)
-        {
-            mCharSFX[i].m_unk_0x40 = false;
-        }
+        // for (int i = pSFX[0]; i < (int)charFootstepSFX[1][2]; i++)
+        // {
+        //     mCharSFX[i].m_unk_0x40 = false;
+        // }
+        ClearFootstepFlags(this, pSFX, charFootstepSFX[1]);
 
         mCharSFX[sfxType].m_unk_0x40 = true;
         sndAttributes.SetSoundType(sfxType, true);
@@ -570,10 +579,11 @@ unsigned long cCharacterSFX::PlayRandomCharDialogue(CharDialogueType dType, Audi
             sfxType = pSFX[(randomIndex + 1) % 5];
         }
 
-        for (int i = pSFX[0]; i < (int)charFootstepSFX[0][2]; i++)
-        {
-            mCharSFX[i].m_unk_0x40 = false;
-        }
+        // for (int i = pSFX[0]; i < (int)charFootstepSFX[0][2]; i++)
+        // {
+        //     mCharSFX[i].m_unk_0x40 = false;
+        // }
+        ClearFootstepFlags(this, pSFX, charFootstepSFX[0]);
 
         mCharSFX[sfxType].m_unk_0x40 = true;
         sndAttributes.SetSoundType(sfxType, true);
@@ -594,15 +604,13 @@ unsigned long cCharacterSFX::PlayRandomCharDialogue(CharDialogueType dType, Audi
         }
     }
 
+    s32 limit = charDialogueSFXInfo[6].numRandomSFX + 0x14;
+    s32 i = 0;
+    for (; i < limit; i++)
     {
-        s32 limit = charDialogueSFXInfo[6].numRandomSFX + 0x14;
-        s32 i = 0;
-        for (; i < limit; i++)
+        if (IsKeepingTrackOf(charDialogueSFX[i], NULL))
         {
-            if (IsKeepingTrackOf(charDialogueSFX[i], NULL))
-            {
-                Stop(charDialogueSFX[i], cGameSFX::SFX_STOP_FIRST);
-            }
+            Stop(charDialogueSFX[i], cGameSFX::SFX_STOP_FIRST);
         }
     }
 

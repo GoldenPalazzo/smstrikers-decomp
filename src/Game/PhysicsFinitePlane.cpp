@@ -29,16 +29,16 @@ PhysicsFinitePlane::PhysicsFinitePlane(CollisionSpace* collision_space, nlVector
 
     nlMatrix3 R;
     nlVector3 normal;
-    nlVec3Cross(normal, v1, v2);
+    nlVec3CrossProductAlt(normal, v1, v2);
     R.m[0] = v1.f.x;
     R.m[1] = v1.f.y;
     R.m[2] = v1.f.z;
     R.m[3] = v2.f.x;
     R.m[4] = v2.f.y;
     R.m[5] = v2.f.z;
-    R.m[6] = normal.f.x;
+    R.m[6] = normal.f.z;
     R.m[7] = normal.f.y;
-    R.m[8] = normal.f.z;
+    R.m[8] = normal.f.x;
 
     dSpaceID space = NULL;
     if (collision_space != NULL)

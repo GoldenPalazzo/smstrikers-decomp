@@ -54,12 +54,11 @@ extern cGame* g_pGame;
 
 /**
  * Offset/Address/Size: 0x0 | 0x801423B4 | size: 0x1A18
- * TODO: ~92.0% match. Stack frame 0x30 bytes larger in source (mwcc allocates more
- * scratch slots for case 105's PowerUpTeamType locals or similar). Cases 0/1 hash
- * switch register choice differs (target uses r0 for the match flag, source uses
- * r5). Case 49 halfMaxSat reuses f29 in source vs f31 in target. Tweaks accessed:
- * unk244, unk268/26C/274 (case 32), unk278/27C/280/284 (case 49), gStadGenSFX.mpSFX
- * [0xC4/0xC5/0xC7].fVolume as ratio multipliers.
+ * TODO: 97.35% match. Remaining diffs include the initial null-check branch shape,
+ * queued-stream iterator stack slot offsets, and later branch/register choices in
+ * event-data handling. Tweaks accessed: unk244, unk268/26C/274 (case 32),
+ * unk278/27C/280/284 (case 49), gStadGenSFX.mpSFX[0xC4/0xC5/0xC7].fVolume as
+ * ratio multipliers.
  */
 void Audio::AudioEventHandler(Event* pEvent, void*)
 {
@@ -80,24 +79,37 @@ void Audio::AudioEventHandler(Event* pEvent, void*)
         Audio::gbGameIsPaused = true;
         Audio::GetPriorityStream()->FakePause(0);
 
+        AudioStreamTrack::TrackManagerBase* pTrackMgr = g_pTrackManager;
         AudioStreamTrack::StreamTrack* pTrack = (AudioStreamTrack::StreamTrack*)
-                                                    g_pTrackManager->GetTrack(nlStringLowerHash("Music"));
+                                                    pTrackMgr->GetTrack(nlStringLowerHash("Music"));
         DLListEntry<AudioStreamTrack::StreamTrack::QUEUED_STREAM>* qentry;
         AudioStreamTrack::StreamTrack::QUEUED_STREAM* qs;
-        if (pTrack->m_QueuedStreams.m_Head != NULL)
+        if (pTrack->m_QueuedStreams.m_Head == NULL)
         {
-            qentry = nlDLRingGetStart(pTrack->m_QueuedStreams.m_Head);
-            qs = &qentry->m_data;
+            qs = NULL;
         }
         else
         {
-            qs = NULL;
+            struct Iter
+            {
+                DLListEntry<AudioStreamTrack::StreamTrack::QUEUED_STREAM>* m_head;
+                DLListEntry<AudioStreamTrack::StreamTrack::QUEUED_STREAM>* m_current;
+                ~Iter() { }
+            };
+            qentry = nlDLRingGetStart(pTrack->m_QueuedStreams.m_Head);
+            Iter iter;
+            iter.m_current = qentry;
+            iter.m_head = pTrack->m_QueuedStreams.m_Head;
+            qs = &iter.m_current->m_data;
         }
         g_MusicTrackPrePauseStreamId = qs ? qs->StreamId : 0;
 
         bool bMatchPause;
         switch (g_MusicTrackPrePauseStreamId)
         {
+        case 0:
+            bMatchPause = false;
+            break;
         case 0x78058345:
         case 0x78B7044D:
         case 0x8FBB8496:
@@ -109,7 +121,8 @@ void Audio::AudioEventHandler(Event* pEvent, void*)
         }
         if (bMatchPause)
         {
-            ((AudioStreamTrack::StreamTrack*)g_pTrackManager->GetTrack(
+            AudioStreamTrack::TrackManagerBase* pTrackMgr = g_pTrackManager;
+            ((AudioStreamTrack::StreamTrack*)pTrackMgr->GetTrack(
                  nlStringLowerHash("Music")))
                 ->Pause(0, false);
         }
@@ -216,6 +229,9 @@ void Audio::AudioEventHandler(Event* pEvent, void*)
         bool bMatchResume;
         switch (g_MusicTrackPrePauseStreamId)
         {
+        case 0:
+            bMatchResume = false;
+            break;
         case 0x78058345:
         case 0x78B7044D:
         case 0x8FBB8496:
@@ -227,7 +243,8 @@ void Audio::AudioEventHandler(Event* pEvent, void*)
         }
         if (bMatchResume)
         {
-            ((AudioStreamTrack::StreamTrack*)g_pTrackManager->GetTrack(
+            AudioStreamTrack::TrackManagerBase* pTrackMgr = g_pTrackManager;
+            ((AudioStreamTrack::StreamTrack*)pTrackMgr->GetTrack(
                  nlStringLowerHash("Music")))
                 ->Resume();
         }
@@ -394,9 +411,9 @@ void Audio::AudioEventHandler(Event* pEvent, void*)
         float vol = len / maxDist;
         if (vol < minRatio)
             vol = minRatio;
-        float halfMaxSat = (maxDist + satDist) * 0.5f;
+        maxDist = (maxDist + satDist) * 0.5f;
         float fSpreadsheetVol;
-        if (len < halfMaxSat)
+        if (len < maxDist)
         {
             fSpreadsheetVol = Audio::gStadGenSFX.mpSFX[0xC5].fVolume;
         }
@@ -427,7 +444,7 @@ void Audio::AudioEventHandler(Event* pEvent, void*)
 
         Audio::SoundAttributes sndAtr;
         sndAtr.Init();
-        if (len < halfMaxSat)
+        if (len < maxDist)
         {
             sndAtr.SetSoundType(0xC5, true);
         }
@@ -908,13 +925,7 @@ void Audio::AudioEventHandler(Event* pEvent, void*)
         if (nlTaskManager::m_pInstance->m_CurrState & 0x20110)
             break;
 
-        struct PowerupAcquireEventDataFields
-        {
-            void* vtbl;
-            int mHomeAway;
-        };
-
-        PowerupAcquireEventDataFields* pData;
+        PowerupAcquireEventData* pData;
         if ((int)pEvent->m_data.GetID() == -1)
         {
             nlPrintf("Error: Trying to get event data on event with none!\n");
@@ -927,24 +938,20 @@ void Audio::AudioEventHandler(Event* pEvent, void*)
         }
         else
         {
-            pData = (PowerupAcquireEventDataFields*)&pEvent->m_data;
+            pData = (PowerupAcquireEventData*)&pEvent->m_data;
         }
 
         bool bOnlySlot0 = false;
-        PowerUpTeamType pup1 = g_pTeams[pData->mHomeAway]->GetPowerUpByIndex(0);
-        if ((int)pup1.eType != -1)
+        if ((int)g_pTeams[pData->mHomeAway]->GetPowerUpByIndex(0).eType != -1)
         {
-            PowerUpTeamType pup2 = g_pTeams[pData->mHomeAway]->GetPowerUpByIndex(1);
-            if ((int)pup2.eType == -1)
+            if ((int)g_pTeams[pData->mHomeAway]->GetPowerUpByIndex(1).eType == -1)
                 bOnlySlot0 = true;
         }
 
         bool bOnlySlot1 = false;
-        PowerUpTeamType pup3 = g_pTeams[pData->mHomeAway]->GetPowerUpByIndex(0);
-        if ((int)pup3.eType == -1)
+        if ((int)g_pTeams[pData->mHomeAway]->GetPowerUpByIndex(0).eType == -1)
         {
-            PowerUpTeamType pup4 = g_pTeams[pData->mHomeAway]->GetPowerUpByIndex(1);
-            if ((int)pup4.eType != -1)
+            if ((int)g_pTeams[pData->mHomeAway]->GetPowerUpByIndex(1).eType != -1)
                 bOnlySlot1 = true;
         }
 

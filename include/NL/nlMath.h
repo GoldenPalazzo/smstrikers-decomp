@@ -36,30 +36,7 @@ public:
             float y; // offset 0x4, size 0x4
         } f;
     };
-
-    // nlVector2() { }
-    // nlVector2(float _x, float _y)
-    // {
-    //     e[0] = _x;
-    //     e[1] = _y;
-    // }
 };
-
-// #define NL_VECTOR3_SET(v, xval, yval, zval) \
-//     do                                      \
-//     {                                       \
-//         (v).f.x = (xval);                   \
-//         (v).f.y = (yval);                   \
-//         (v).f.z = (zval);                   \
-//     } while (0)
-
-// #define NL_VECTOR4_SET(v, xval, yval, zval) \
-//     do                                      \
-//     {                                       \
-//         (v).f.x = (xval);                   \
-//         (v).f.y = (yval);                   \
-//         (v).f.z = (zval);                   \
-//     } while (0)
 
 struct nlVector3_
 {
@@ -195,6 +172,15 @@ inline void nlVec3CrossProduct(nlVector3& result, const nlVector3& a, const nlVe
         (a.f.y * b.f.z) - (a.f.z * b.f.y),
         (a.f.z * b.f.x) - (a.f.x * b.f.z),
         (a.f.x * b.f.y) - (a.f.y * b.f.x));
+}
+
+// this version is used by PhysicsFinitePlane.cpp and seems to be correct!
+inline void nlVec3CrossProductAlt(nlVector3& result, const nlVector3& a, const nlVector3& b)
+{
+    nlVec3Set(result,
+        (a.f.x * b.f.y) - (a.f.y * b.f.x),
+        (-a.f.x * b.f.z) + (a.f.z * b.f.x),
+        (a.f.y * b.f.z) - (a.f.z * b.f.y));
 }
 
 inline float nlVec3LengthSquared(const nlVector3& v)

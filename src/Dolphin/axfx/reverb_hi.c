@@ -15,34 +15,40 @@ static void HandleReverb(s32* sptr, AXFX_REVHI_WORK* rv, s32 k);
 static void ReverbHICallback(s32* left, s32* right, s32* surround, AXFX_REVHI_WORK* rv);
 static void ReverbHIFree(AXFX_REVHI_WORK* rv);
 
-static void DLsetdelay(AXFX_REVHI_DELAYLINE* dl, s32 lag) {
+static void DLsetdelay(AXFX_REVHI_DELAYLINE* dl, s32 lag)
+{
     dl->outPoint = dl->inPoint - (lag * 4);
-    while (dl->outPoint < 0) {
+    while (dl->outPoint < 0)
+    {
         dl->outPoint += dl->length;
     }
 }
 
-static int DLcreate(AXFX_REVHI_DELAYLINE* dl, s32 max_length) {
+static int DLcreate(AXFX_REVHI_DELAYLINE* dl, s32 max_length)
+{
     dl->length = (max_length * 4);
     dl->inputs = __AXFXAlloc(max_length << 2);
-	ASSERTMSGLINE(51, dl->inputs, "Can't allocate the memory.");
-	if (dl->inputs == NULL) {
-		return 0;
-	}
+    ASSERTMSGLINE(51, dl->inputs, "Can't allocate the memory.");
+    if (dl->inputs == NULL)
+    {
+        return 0;
+    }
 
     memset(dl->inputs, 0, max_length << 2);
     dl->lastOutput = 0.0f;
     DLsetdelay(dl, max_length >> 1);
     dl->inPoint = 0;
     dl->outPoint = 0;
-	return 1;
+    return 1;
 }
 
-static void DLdelete(AXFX_REVHI_DELAYLINE* dl) {
+static void DLdelete(AXFX_REVHI_DELAYLINE* dl)
+{
     __AXFXFree(dl->inputs);
 }
 
-static int ReverbHICreate(AXFX_REVHI_WORK* rv, f32 coloration, f32 time, f32 mix, f32 damping, f32 preDelay, f32 crosstalk) {
+static int ReverbHICreate(AXFX_REVHI_WORK* rv, f32 coloration, f32 time, f32 mix, f32 damping, f32 preDelay, f32 crosstalk)
+{
     u8 i;
     u8 k;
     static s32 lens[8] = {
@@ -56,48 +62,49 @@ static int ReverbHICreate(AXFX_REVHI_WORK* rv, f32 coloration, f32 time, f32 mix
         0x00000043
     };
 
-	ASSERTMSGLINE(105, coloration >= 0.0f && coloration <= 1.0f &&
-				  time >= 0.01f && time <= 10.0f &&
-				  mix >= 0.0f && mix <= 1.0f &&
-				  crosstalk >= 0.0f && crosstalk <= 1.0f &&
-				  damping >= 0.0f && damping <= 1.0f &&
-				  preDelay >= 0.0f && preDelay <= 0.1f,
-				  "The value of specified parameter is out of range.");
+    ASSERTMSGLINE(105, coloration >= 0.0f && coloration <= 1.0f && time >= 0.01f && time <= 10.0f && mix >= 0.0f && mix <= 1.0f && crosstalk >= 0.0f && crosstalk <= 1.0f && damping >= 0.0f && damping <= 1.0f && preDelay >= 0.0f && preDelay <= 0.1f, "The value of specified parameter is out of range.");
 
-    if ((coloration < 0.0f ) || (coloration > 1.0f )
-     || (time       < 0.01f) || (time       > 10.0f)
-     || (mix        < 0.0f ) || (mix        > 1.0f )
-     || (crosstalk  < 0.0f ) || (crosstalk  > 1.0f )
-     || (damping    < 0.0f ) || (damping    > 1.0f )
-     || (preDelay   < 0.0f ) || (preDelay   > 0.1f )) {
+    if ((coloration < 0.0f) || (coloration > 1.0f)
+        || (time < 0.01f) || (time > 10.0f)
+        || (mix < 0.0f) || (mix > 1.0f)
+        || (crosstalk < 0.0f) || (crosstalk > 1.0f)
+        || (damping < 0.0f) || (damping > 1.0f)
+        || (preDelay < 0.0f) || (preDelay > 0.1f))
+    {
         return 0;
     }
 
     memset(rv, 0, sizeof(AXFX_REVHI_WORK));
 
-    for (k = 0; k < 3; k++) {
-        for (i = 0; i < 3; i++) {
-            if (DLcreate(&rv->C[i + (k * 3)], lens[i] + 2) == 0) {
-				ReverbHIFree(rv);
-				return 0;
-			}
+    for (k = 0; k < 3; k++)
+    {
+        for (i = 0; i < 3; i++)
+        {
+            if (DLcreate(&rv->C[i + (k * 3)], lens[i] + 2) == 0)
+            {
+                ReverbHIFree(rv);
+                return 0;
+            }
 
             DLsetdelay(&rv->C[i + (k * 3)], lens[i]);
             rv->combCoef[i + (k * 3)] = powf(10.0f, (lens[i] * -3) / (32000.0f * time));
         }
 
-        for (i = 0; i < 2; i++) {
-            if (DLcreate(&rv->AP[i + (k * 3)], lens[i + 3] + 2) == 0) {
-				ReverbHIFree(rv);
-				return 0;
-			}
+        for (i = 0; i < 2; i++)
+        {
+            if (DLcreate(&rv->AP[i + (k * 3)], lens[i + 3] + 2) == 0)
+            {
+                ReverbHIFree(rv);
+                return 0;
+            }
             DLsetdelay(&rv->AP[i + (k * 3)], lens[i + 3]);
         }
 
-        if (DLcreate(&rv->AP[2 + (k * 3)], lens[k + 5] + 2) == 0) {
-			ReverbHIFree(rv);
-			return 0;
-		}
+        if (DLcreate(&rv->AP[2 + (k * 3)], lens[k + 5] + 2) == 0)
+        {
+            ReverbHIFree(rv);
+            return 0;
+        }
         DLsetdelay(&rv->AP[2 + (k * 3)], lens[k + 5]);
         rv->lpLastout[k] = 0.0f;
     }
@@ -106,27 +113,34 @@ static int ReverbHICreate(AXFX_REVHI_WORK* rv, f32 coloration, f32 time, f32 mix
     rv->level = mix;
     rv->crosstalk = crosstalk;
     rv->damping = damping;
-    if (rv->damping < 0.05f) {
+    if (rv->damping < 0.05f)
+    {
         rv->damping = 0.05f;
     }
     rv->damping = (1.0f - (0.05f + (0.8f * rv->damping)));
 
-    if (0.0f != preDelay) {
+    if (0.0f != preDelay)
+    {
         rv->preDelayTime = (32000.0f * preDelay);
-        for(i = 0; i < 3; i++) {
+        for (i = 0; i < 3; i++)
+        {
             rv->preDelayLine[i] = __AXFXAlloc(rv->preDelayTime * 4);
-			ASSERTMSGLINE(173, rv->preDelayLine[i], "Can't allocate the memory.");
-			if (rv->preDelayLine[i] == NULL) {
-				ReverbHIFree(rv);
-				return 0;
-			}
+            ASSERTMSGLINE(173, rv->preDelayLine[i], "Can't allocate the memory.");
+            if (rv->preDelayLine[i] == NULL)
+            {
+                ReverbHIFree(rv);
+                return 0;
+            }
 
             memset(rv->preDelayLine[i], 0, rv->preDelayTime * 4);
             rv->preDelayPtr[i] = rv->preDelayLine[i];
         }
-    } else {
+    }
+    else
+    {
         rv->preDelayTime = 0;
-        for(i = 0; i < 3; i++) {
+        for (i = 0; i < 3; i++)
+        {
             rv->preDelayPtr[i] = 0;
             rv->preDelayLine[i] = 0;
         }
@@ -135,23 +149,19 @@ static int ReverbHICreate(AXFX_REVHI_WORK* rv, f32 coloration, f32 time, f32 mix
     return 1;
 }
 
-static int ReverbHIModify(AXFX_REVHI_WORK* rv, f32 coloration, f32 time, f32 mix, f32 damping, f32 preDelay, f32 crosstalk) {
+static int ReverbHIModify(AXFX_REVHI_WORK* rv, f32 coloration, f32 time, f32 mix, f32 damping, f32 preDelay, f32 crosstalk)
+{
     u8 i;
 
-	ASSERTMSGLINE(209, coloration >= 0.0f && coloration <= 1.0f &&
-				  time >= 0.01f && time <= 10.0f &&
-				  mix >= 0.0f && mix <= 1.0f &&
-				  crosstalk >= 0.0f && crosstalk <= 1.0f &&
-				  damping >= 0.0f && damping <= 1.0f &&
-				  preDelay >= 0.0f && preDelay <= 0.1f,
-				  "The value of specified parameter is out of range.");
+    ASSERTMSGLINE(209, coloration >= 0.0f && coloration <= 1.0f && time >= 0.01f && time <= 10.0f && mix >= 0.0f && mix <= 1.0f && crosstalk >= 0.0f && crosstalk <= 1.0f && damping >= 0.0f && damping <= 1.0f && preDelay >= 0.0f && preDelay <= 0.1f, "The value of specified parameter is out of range.");
 
-    if ((coloration < 0.0f ) || (coloration > 1.0f  )
-     || (time       < 0.01f) || (time       > 10.0f )
-     || (mix        < 0.0f ) || (mix        > 1.0f  )
-     || (crosstalk  < 0.0f ) || (crosstalk  > 1.0f  )
-     || (damping    < 0.0f ) || (damping    > 1.0f  )
-     || (preDelay   < 0.0f ) || (preDelay   > 0.1f)) {
+    if ((coloration < 0.0f) || (coloration > 1.0f)
+        || (time < 0.01f) || (time > 10.0f)
+        || (mix < 0.0f) || (mix > 1.0f)
+        || (crosstalk < 0.0f) || (crosstalk > 1.0f)
+        || (damping < 0.0f) || (damping > 1.0f)
+        || (preDelay < 0.0f) || (preDelay > 0.1f))
+    {
         return 0;
     }
 
@@ -159,21 +169,26 @@ static int ReverbHIModify(AXFX_REVHI_WORK* rv, f32 coloration, f32 time, f32 mix
     rv->level = mix;
     rv->crosstalk = crosstalk;
     rv->damping = damping;
-    if (rv->damping < 0.05f) {
+    if (rv->damping < 0.05f)
+    {
         rv->damping = 0.05f;
     }
     rv->damping = (1.0f - (0.05f + (0.8f * rv->damping)));
 
-    for (i = 0; i < 9; i++) {
+    for (i = 0; i < 9; i++)
+    {
         DLdelete(&rv->AP[i]);
     }
 
-    for (i = 0; i < 9; i++) {
+    for (i = 0; i < 9; i++)
+    {
         DLdelete(&rv->C[i]);
     }
 
-    if (rv->preDelayTime) {
-        for (i = 0; i < 3; i++) {
+    if (rv->preDelayTime)
+    {
+        for (i = 0; i < 3; i++)
+        {
             __AXFXFree(rv->preDelayLine[i]);
         }
     }
@@ -186,6 +201,7 @@ const static f32 value1_0 = 1.0f;
 const static f32 value0_3 = 0.3f;
 const static f32 value0_6 = 0.6f;
 
+// clang-format off
 asm static void DoCrossTalk(register s32* l, register s32* r, register f32 cross, register f32 invcross) {
     nofralloc
 	stwu r1, -48(r1)
@@ -647,56 +663,70 @@ L_00000C7C:
 	addi r1, r1, 0xc0
 	blr
 }
+// clang-format on
 
-static void ReverbHICallback(s32* left, s32* right, s32* surround, AXFX_REVHI_WORK* rv) {
+static void ReverbHICallback(s32* left, s32* right, s32* surround, AXFX_REVHI_WORK* rv)
+{
     u8 k;
 
-    for (k = 0; k < 3; k++) {
-        switch(k) {
-		case 0:
-			if (0.0f != rv->crosstalk) {
-				DoCrossTalk(left, right, 0.5f * rv->crosstalk, 1.0f - (0.5f * rv->crosstalk));
-			}
-			HandleReverb(left, rv, 0);
-			break;
-		case 1:
-			HandleReverb(right, rv, 1);
-			break;
-		case 2:
-			HandleReverb(surround, rv, 2);
-			break;
+    for (k = 0; k < 3; k++)
+    {
+        switch (k)
+        {
+        case 0:
+            if (0.0f != rv->crosstalk)
+            {
+                DoCrossTalk(left, right, 0.5f * rv->crosstalk, 1.0f - (0.5f * rv->crosstalk));
+            }
+            HandleReverb(left, rv, 0);
+            break;
+        case 1:
+            HandleReverb(right, rv, 1);
+            break;
+        case 2:
+            HandleReverb(surround, rv, 2);
+            break;
         }
     }
 }
 
-static void ReverbHIFree(AXFX_REVHI_WORK* rv) {
+static void ReverbHIFree(AXFX_REVHI_WORK* rv)
+{
     u8 i;
 
-    for (i = 0; i < 9; i++) {
-		if (rv->AP[i].inputs != 0) {
-			DLdelete(&rv->AP[i]);
-			rv->AP[i].inputs = NULL;
-		}
+    for (i = 0; i < 9; i++)
+    {
+        if (rv->AP[i].inputs != 0)
+        {
+            DLdelete(&rv->AP[i]);
+            rv->AP[i].inputs = NULL;
+        }
     }
 
-    for (i = 0; i < 9; i++) {
-		if (rv->C[i].inputs != 0) {
-			DLdelete(&rv->C[i]);
-			rv->C[i].inputs = NULL;
-		}
+    for (i = 0; i < 9; i++)
+    {
+        if (rv->C[i].inputs != 0)
+        {
+            DLdelete(&rv->C[i]);
+            rv->C[i].inputs = NULL;
+        }
     }
 
-    if (rv->preDelayTime) {
-        for (i = 0; i < 3; i++) {
-			if (rv->preDelayLine[i] != 0) {
-				__AXFXFree(rv->preDelayLine[i]);
-				rv->preDelayLine[i] = NULL;
-			}
+    if (rv->preDelayTime)
+    {
+        for (i = 0; i < 3; i++)
+        {
+            if (rv->preDelayLine[i] != 0)
+            {
+                __AXFXFree(rv->preDelayLine[i]);
+                rv->preDelayLine[i] = NULL;
+            }
         }
     }
 }
 
-int AXFXReverbHiInit(AXFX_REVERBHI* rev) {
+int AXFXReverbHiInit(AXFX_REVERBHI* rev)
+{
     int ret;
     BOOL old;
 
@@ -707,7 +737,8 @@ int AXFXReverbHiInit(AXFX_REVERBHI* rev) {
     return ret;
 }
 
-int AXFXReverbHiShutdown(AXFX_REVERBHI* rev) {
+int AXFXReverbHiShutdown(AXFX_REVERBHI* rev)
+{
     BOOL old;
 
     old = OSDisableInterrupts();
@@ -716,8 +747,9 @@ int AXFXReverbHiShutdown(AXFX_REVERBHI* rev) {
     return 1;
 }
 
-int AXFXReverbHiSettings(AXFX_REVERBHI* rev) {
-	int ret;
+int AXFXReverbHiSettings(AXFX_REVERBHI* rev)
+{
+    int ret;
     BOOL old;
 
     old = OSDisableInterrupts();
@@ -728,8 +760,10 @@ int AXFXReverbHiSettings(AXFX_REVERBHI* rev) {
     return ret;
 }
 
-void AXFXReverbHiCallback(AXFX_BUFFERUPDATE* bufferUpdate, AXFX_REVERBHI* reverb) {
-    if (reverb->tempDisableFX == 0) {
+void AXFXReverbHiCallback(AXFX_BUFFERUPDATE* bufferUpdate, AXFX_REVERBHI* reverb)
+{
+    if (reverb->tempDisableFX == 0)
+    {
         ReverbHICallback(bufferUpdate->left, bufferUpdate->right, bufferUpdate->surround, &reverb->rv);
     }
 }

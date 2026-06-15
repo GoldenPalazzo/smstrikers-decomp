@@ -907,7 +907,7 @@ config.libs = [
             Object(NonMatching, "Game/PhysicsFakeBall.cpp", extra_cflags=["-inline auto"]),
             Object(NonMatching, "Game/Physics/PhysicsBall.cpp", extra_cflags=["-inline auto"]),
             Object(Matching, "Game/PhysicsSphere.cpp", extra_cflags=["-inline auto"]),
-            Object(NonMatching, "Game/PhysicsFinitePlane.cpp", extra_cflags=["-inline auto"]),
+            Object(Matching, "Game/PhysicsFinitePlane.cpp", extra_cflags=["-inline auto"]),
             Object(Matching, "Game/PhysicsGroundPlane.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/PhysicsPlane.cpp", extra_cflags=["-inline auto"]),
             Object(Matching, "Game/PhysicsRoundedCorner.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
@@ -1639,7 +1639,7 @@ config.libs = [
             Object(NonMatching, "SDK/TRK_MINNOW_DOLPHIN/main_gdev.c", extra_cflags=["-inline auto", "-sdatathreshold 8"]),
             Object(NonMatching, "SDK/TRK_MINNOW_DOLPHIN/__exception.s", extra_cflags=["-inline auto"]),
 
-            Object(NonMatching, "SDK/TRK_MINNOW_DOLPHIN/targimpl.c", extra_cflags=["-inline auto"]),
+            Object(Matching, "SDK/TRK_MINNOW_DOLPHIN/targimpl.c", extra_cflags=["-inline auto"]),
             Object(Matching, "SDK/TRK_MINNOW_DOLPHIN/mslsupp.c", extra_cflags=["-inline auto", "-enum int"]),
         ]
     ),

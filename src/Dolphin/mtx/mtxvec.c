@@ -2,7 +2,8 @@
 #include <dolphin/mtx.h>
 #include <math.h>
 
-void C_MTXMultVec(const Mtx m, const Vec* src, Vec* dst) {
+void C_MTXMultVec(const Mtx m, const Vec* src, Vec* dst)
+{
     Vec vTmp;
 
     ASSERTMSGLINE(66, m, "MTXMultVec():  NULL MtxPtr 'm' ");
@@ -17,6 +18,7 @@ void C_MTXMultVec(const Mtx m, const Vec* src, Vec* dst) {
     dst->z = vTmp.z;
 }
 
+// clang-format off
 asm void PSMTXMultVec(const register Mtx m, const register Vec* src, register Vec* dst) {
     nofralloc
     psq_l f0, Vec.x(src), 0, 0
@@ -41,8 +43,10 @@ asm void PSMTXMultVec(const register Mtx m, const register Vec* src, register Ve
     psq_st f6, Vec.z(dst), 1, 0
     blr
 }
+// clang-format on
 
-void C_MTXMultVecArray(const Mtx m, const Vec* srcBase, Vec* dstBase, u32 count) {
+void C_MTXMultVecArray(const Mtx m, const Vec* srcBase, Vec* dstBase, u32 count)
+{
     u32 i;
     Vec vTmp;
 
@@ -51,7 +55,8 @@ void C_MTXMultVecArray(const Mtx m, const Vec* srcBase, Vec* dstBase, u32 count)
     ASSERTMSGLINE(170, dstBase, "MTXMultVecArray():  NULL VecPtr 'dstBase' ");
     ASSERTMSGLINE(171, count > 1, "MTXMultVecArray():  count must be greater than 1.");
 
-    for(i = 0; i < count; i++) {
+    for (i = 0; i < count; i++)
+    {
         vTmp.x = m[0][3] + ((m[0][2] * srcBase->z) + ((m[0][0] * srcBase->x) + (m[0][1] * srcBase->y)));
         vTmp.y = m[1][3] + ((m[1][2] * srcBase->z) + ((m[1][0] * srcBase->x) + (m[1][1] * srcBase->y)));
         vTmp.z = m[2][3] + ((m[2][2] * srcBase->z) + ((m[2][0] * srcBase->x) + (m[2][1] * srcBase->y)));
@@ -63,6 +68,7 @@ void C_MTXMultVecArray(const Mtx m, const Vec* srcBase, Vec* dstBase, u32 count)
     }
 }
 
+// clang-format off
 asm void PSMTXMultVecArray(const register Mtx m, const register Vec* srcBase, register Vec* dstBase, register u32 count) {
     nofralloc
     psq_l f13, 0x0(m), 0, 0
@@ -102,8 +108,10 @@ L_000003C4:
     psq_stu f13, 0x8(dstBase), 1, 0
     blr
 }
+// clang-format on
 
-void C_MTXMultVecSR(const Mtx m, const Vec* src, Vec* dst) {
+void C_MTXMultVecSR(const Mtx m, const Vec* src, Vec* dst)
+{
     Vec vTmp;
 
     ASSERTMSGLINE(313, m, "MTXMultVecSR():  NULL MtxPtr 'm' ");
@@ -118,6 +126,7 @@ void C_MTXMultVecSR(const Mtx m, const Vec* src, Vec* dst) {
     dst->z = vTmp.z;
 }
 
+// clang-format off
 asm void PSMTXMultVecSR(const register Mtx m, const register Vec* src, register Vec* dst) {
     nofralloc
     psq_l f0, 0x0(m), 0, 0
@@ -142,8 +151,10 @@ asm void PSMTXMultVecSR(const register Mtx m, const register Vec* src, register 
     psq_st f13, 0x8(dst), 1, 0
     blr
 }
+// clang-format on
 
-void C_MTXMultVecArraySR(const Mtx m, const Vec* srcBase, Vec* dstBase, u32 count) {
+void C_MTXMultVecArraySR(const Mtx m, const Vec* srcBase, Vec* dstBase, u32 count)
+{
     u32 i;
     Vec vTmp;
 
@@ -152,7 +163,8 @@ void C_MTXMultVecArraySR(const Mtx m, const Vec* srcBase, Vec* dstBase, u32 coun
     ASSERTMSGLINE(412, dstBase, "MTXMultVecArraySR():  NULL VecPtr 'dstBase' ");
     ASSERTMSGLINE(413, count > 1, "MTXMultVecArraySR():  count must be greater than 1.");
 
-    for(i = 0; i < count; i++) {
+    for (i = 0; i < count; i++)
+    {
         vTmp.x = (m[0][2] * srcBase->z) + ((m[0][0] * srcBase->x) + (m[0][1] * srcBase->y));
         vTmp.y = (m[1][2] * srcBase->z) + ((m[1][0] * srcBase->x) + (m[1][1] * srcBase->y));
         vTmp.z = (m[2][2] * srcBase->z) + ((m[2][0] * srcBase->x) + (m[2][1] * srcBase->y));
@@ -164,6 +176,7 @@ void C_MTXMultVecArraySR(const Mtx m, const Vec* srcBase, Vec* dstBase, u32 coun
     }
 }
 
+// clang-format off
 asm void PSMTXMultVecArraySR(const register Mtx m, const register Vec* srcBase, register Vec* dstBase, register u32 count) {
     nofralloc
     psq_l f13, 0x0(m), 0, 0
@@ -202,3 +215,4 @@ L_000007D0:
     psq_stu f13, 0x8(dstBase), 1, 0
     blr
 }
+// clang-format on

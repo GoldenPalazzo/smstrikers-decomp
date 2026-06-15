@@ -123,8 +123,8 @@ void __GXVerifyBUMP(void)
             {
                 matrix = (matrix & 3) - 1;
                 if (((u32)(__gxVerif->rasRegs[(matrix * 3) + 6] & 0xFF000000) + 0x01000000 == 0
-                     || (u32)(__gxVerif->rasRegs[(matrix * 3) + 7] & 0xFF000000) + 0x01000000 == 0U
-                     || (u32)(__gxVerif->rasRegs[(matrix * 3) + 8] & 0xFF000000) + 0x01000000 == 0U)
+                        || (u32)(__gxVerif->rasRegs[(matrix * 3) + 7] & 0xFF000000) + 0x01000000 == 0U
+                        || (u32)(__gxVerif->rasRegs[(matrix * 3) + 8] & 0xFF000000) + 0x01000000 == 0U)
                     && __gxVerif->verifyLevel >= __gxvWarnLev[9])
                 {
                     sprintf(__gxvDummyStr, __gxvWarnings[9], matrix, i);
@@ -297,10 +297,10 @@ void __GXVerifyTEX(void)
             if (__gxVerif->verifyLevel >= GX_WARN_SEVERE)
             {
                 if (((u32)(__gxVerif->rasRegs[0x80 + SOMEINDEX(texId)] & 0xFF000000) + 0x01000000 == 0
-                     || (u32)(__gxVerif->rasRegs[0x84 + SOMEINDEX(texId)] & 0xFF000000) + 0x01000000 == 0
-                     || (u32)(__gxVerif->rasRegs[0x88 + SOMEINDEX(texId)] & 0xFF000000) + 0x01000000 == 0
-                     || (u32)(__gxVerif->rasRegs[0x8C + SOMEINDEX(texId)] & 0xFF000000) + 0x01000000 == 0
-                     || (u32)(__gxVerif->rasRegs[0x90 + SOMEINDEX(texId)] & 0xFF000000) + 0x01000000 == 0)
+                        || (u32)(__gxVerif->rasRegs[0x84 + SOMEINDEX(texId)] & 0xFF000000) + 0x01000000 == 0
+                        || (u32)(__gxVerif->rasRegs[0x88 + SOMEINDEX(texId)] & 0xFF000000) + 0x01000000 == 0
+                        || (u32)(__gxVerif->rasRegs[0x8C + SOMEINDEX(texId)] & 0xFF000000) + 0x01000000 == 0
+                        || (u32)(__gxVerif->rasRegs[0x90 + SOMEINDEX(texId)] & 0xFF000000) + 0x01000000 == 0)
                     && __gxVerif->verifyLevel >= __gxvWarnLev[19])
                 {
                     sprintf(__gxvDummyStr, __gxvWarnings[19], texId);
@@ -316,8 +316,8 @@ void __GXVerifyTEX(void)
                 }
 
                 if (((u32)GET_REG_FIELD(__gxVerif->rasRegs[0x88 + SOMEINDEX(texId)], 4, 20) == 8
-                     || (u32)GET_REG_FIELD(__gxVerif->rasRegs[0x88 + SOMEINDEX(texId)], 4, 20) == 9
-                     || (u32)GET_REG_FIELD(__gxVerif->rasRegs[0x88 + SOMEINDEX(texId)], 4, 20) == 10)
+                        || (u32)GET_REG_FIELD(__gxVerif->rasRegs[0x88 + SOMEINDEX(texId)], 4, 20) == 9
+                        || (u32)GET_REG_FIELD(__gxVerif->rasRegs[0x88 + SOMEINDEX(texId)], 4, 20) == 10)
                     && (__gxVerif->rasRegs[0x98 + SOMEINDEX(texId)] & 0xFF000000) + 0x01000000 == 0U
                     && __gxVerif->verifyLevel >= __gxvWarnLev[21])
                 {
@@ -401,9 +401,9 @@ void __GXVerifyTEX(void)
 
                 for (nlevels = 0; (MAX((u32)GET_REG_FIELD(__gxVerif->rasRegs[0x88 + SOMEINDEX(texId)], 10, 0) + 1,
                                        (u32)GET_REG_FIELD(__gxVerif->rasRegs[0x88 + SOMEINDEX(texId)], 10, 10) + 1)
-                                   >> nlevels)
+                                      >> nlevels)
                                   != 0;
-                     nlevels++)
+                    nlevels++)
                 {
                 }
 
@@ -440,7 +440,7 @@ void __GXVerifyTEX(void)
             if (GET_REG_FIELD(__gxVerif->rasRegs[0x80 + SOMEINDEX(texId)], 1, 18) != 0)
             {
                 if (((u32)GET_REG_FIELD(__gxVerif->rasRegs[0x80 + SOMEINDEX(texId)], 3, 5) != 4
-                     || (u32)GET_REG_FIELD(__gxVerif->rasRegs[0x80 + SOMEINDEX(texId)], 1, 4) != 1)
+                        || (u32)GET_REG_FIELD(__gxVerif->rasRegs[0x80 + SOMEINDEX(texId)], 1, 4) != 1)
                     && __gxVerif->verifyLevel >= __gxvWarnLev[29])
                 {
                     sprintf(__gxvDummyStr, __gxvWarnings[29], texId);
@@ -448,8 +448,8 @@ void __GXVerifyTEX(void)
                 }
 
                 if ((!GET_REG_FIELD(__gxVerif->rasRegs[0x80 + SOMEINDEX(texId)], 1, 17)
-                     || (u32)GET_REG_FIELD(__gxVerif->rasRegs[0x88 + SOMEINDEX(texId)], 4, 20) != 1
-                     || (u32)GET_REG_FIELD(__gxVerif->rasRegs[0x80 + SOMEINDEX(texId)], 2, 19) != 0)
+                        || (u32)GET_REG_FIELD(__gxVerif->rasRegs[0x88 + SOMEINDEX(texId)], 4, 20) != 1
+                        || (u32)GET_REG_FIELD(__gxVerif->rasRegs[0x80 + SOMEINDEX(texId)], 2, 19) != 0)
                     && __gxVerif->verifyLevel >= __gxvWarnLev[30])
                 {
                     sprintf(__gxvDummyStr, __gxvWarnings[30], texId);
@@ -460,8 +460,8 @@ void __GXVerifyTEX(void)
             if (GET_REG_FIELD(__gxVerif->rasRegs[0x80 + SOMEINDEX(texId)], 1, 17) != 0)
             {
                 if (((u32)GET_REG_FIELD(__gxVerif->rasRegs[0x88 + SOMEINDEX(texId)], 4, 20) == 8
-                     || (u32)GET_REG_FIELD(__gxVerif->rasRegs[0x88 + SOMEINDEX(texId)], 4, 20) == 9
-                     || (u32)GET_REG_FIELD(__gxVerif->rasRegs[0x88 + SOMEINDEX(texId)], 4, 20) == 10)
+                        || (u32)GET_REG_FIELD(__gxVerif->rasRegs[0x88 + SOMEINDEX(texId)], 4, 20) == 9
+                        || (u32)GET_REG_FIELD(__gxVerif->rasRegs[0x88 + SOMEINDEX(texId)], 4, 20) == 10)
                     && __gxVerif->verifyLevel >= __gxvWarnLev[31])
                 {
                     sprintf(__gxvDummyStr, __gxvWarnings[31], texId);
@@ -483,11 +483,13 @@ static char _521[] = "A";
 static char _522[] = "B";
 static char _523[] = "C";
 static char _524[] = "D";
+// clang-format off
 asm void __GXVerifyTEV(void)
 {
     nofralloc
 #include "../../nonmatchings/__GXVerifyTEV.s"
 }
+// clang-format on
 #pragma peephole on
 #else
 void __GXVerifyTEV(void)
@@ -613,9 +615,7 @@ void __GXVerifyTEV(void)
                         ? !Awritten[GET_REG_FIELD(__gxVerif->rasRegs[(i * 2) + 0xC0], 3, 13)]
                         : !Cwritten[GET_REG_FIELD(__gxVerif->rasRegs[(i * 2) + 0xC0], 3, 13)])
                 {
-                    sprintf(__gxvDummyStr, __gxvWarnings[0x24], "A", i,
-                            GET_REG_FIELD(__gxVerif->rasRegs[(i * 2) + 0xC0], 1, 0xCU) ? "alpha" : "color",
-                            (__gxVerif->rasRegs[(i * 2) + 0xC0] >> 0xDU) & 7);
+                    sprintf(__gxvDummyStr, __gxvWarnings[0x24], "A", i, GET_REG_FIELD(__gxVerif->rasRegs[(i * 2) + 0xC0], 1, 0xCU) ? "alpha" : "color", (__gxVerif->rasRegs[(i * 2) + 0xC0] >> 0xDU) & 7);
                     __gxVerif->cb(1, 0x24U, __gxvDummyStr);
                 }
             }
@@ -627,9 +627,7 @@ void __GXVerifyTEV(void)
                         ? !Awritten[GET_REG_FIELD(__gxVerif->rasRegs[(i * 2) + 0xC0], 3, 9)]
                         : !Cwritten[GET_REG_FIELD(__gxVerif->rasRegs[(i * 2) + 0xC0], 3, 9)])
                 {
-                    sprintf(__gxvDummyStr, __gxvWarnings[0x24], "B", i,
-                            GET_REG_FIELD(__gxVerif->rasRegs[(i * 2) + 0xC0], 1, 8U) ? "alpha" : "color",
-                            (__gxVerif->rasRegs[(i * 2) + 0xC0] >> 9U) & 7);
+                    sprintf(__gxvDummyStr, __gxvWarnings[0x24], "B", i, GET_REG_FIELD(__gxVerif->rasRegs[(i * 2) + 0xC0], 1, 8U) ? "alpha" : "color", (__gxVerif->rasRegs[(i * 2) + 0xC0] >> 9U) & 7);
                     __gxVerif->cb(1, 0x24U, __gxvDummyStr);
                 }
             }
@@ -641,9 +639,7 @@ void __GXVerifyTEV(void)
                         ? !Awritten[GET_REG_FIELD(__gxVerif->rasRegs[(i * 2) + 0xC0], 3, 5)]
                         : !Cwritten[GET_REG_FIELD(__gxVerif->rasRegs[(i * 2) + 0xC0], 3, 5)])
                 {
-                    sprintf(__gxvDummyStr, __gxvWarnings[0x24], "C", i,
-                            GET_REG_FIELD(__gxVerif->rasRegs[(i * 2) + 0xC0], 1, 4U) ? "alpha" : "color",
-                            (__gxVerif->rasRegs[(i * 2) + 0xC0] >> 5U) & 7);
+                    sprintf(__gxvDummyStr, __gxvWarnings[0x24], "C", i, GET_REG_FIELD(__gxVerif->rasRegs[(i * 2) + 0xC0], 1, 4U) ? "alpha" : "color", (__gxVerif->rasRegs[(i * 2) + 0xC0] >> 5U) & 7);
                     __gxVerif->cb(1, 0x24U, __gxvDummyStr);
                 }
             }
@@ -655,8 +651,7 @@ void __GXVerifyTEV(void)
                         ? !Awritten[GET_REG_FIELD(__gxVerif->rasRegs[(i * 2) + 0xC0], 3, 1)]
                         : !Cwritten[GET_REG_FIELD(__gxVerif->rasRegs[(i * 2) + 0xC0], 3, 1)])
                 {
-                    sprintf(__gxvDummyStr, __gxvWarnings[0x24], "D", i, (__gxVerif->rasRegs[(i * 2) + 0xC0] & 1) ? "alpha" : "color",
-                            (__gxVerif->rasRegs[(i * 2) + 0xC0] >> 1U) & 7);
+                    sprintf(__gxvDummyStr, __gxvWarnings[0x24], "D", i, (__gxVerif->rasRegs[(i * 2) + 0xC0] & 1) ? "alpha" : "color", (__gxVerif->rasRegs[(i * 2) + 0xC0] >> 1U) & 7);
                     __gxVerif->cb(1, 0x24U, __gxvDummyStr);
                 }
             }
@@ -702,9 +697,7 @@ void __GXVerifyTEV(void)
                         ? Alh[GET_REG_FIELD(__gxVerif->rasRegs[(i * 2) + 0xC0], 3, 13)]
                         : Clh[GET_REG_FIELD(__gxVerif->rasRegs[(i * 2) + 0xC0], 3, 13)])
                 {
-                    sprintf(__gxvDummyStr, __gxvWarnings[0x26], "A", i,
-                            GET_REG_FIELD(__gxVerif->rasRegs[(i * 2) + 0xC0], 1, 12) ? "alpha" : "color",
-                            GET_REG_FIELD(__gxVerif->rasRegs[(i * 2) + 0xC0], 3, 13));
+                    sprintf(__gxvDummyStr, __gxvWarnings[0x26], "A", i, GET_REG_FIELD(__gxVerif->rasRegs[(i * 2) + 0xC0], 1, 12) ? "alpha" : "color", GET_REG_FIELD(__gxVerif->rasRegs[(i * 2) + 0xC0], 3, 13));
                     __gxVerif->cb(3, 0x26U, __gxvDummyStr);
                 }
             }
@@ -714,9 +707,7 @@ void __GXVerifyTEV(void)
                 if (GET_REG_FIELD(__gxVerif->rasRegs[(i * 2) + 0xC0], 1, 8) ? Alh[GET_REG_FIELD(__gxVerif->rasRegs[(i * 2) + 0xC0], 3, 9)]
                                                                             : Clh[GET_REG_FIELD(__gxVerif->rasRegs[(i * 2) + 0xC0], 3, 9)])
                 {
-                    sprintf(__gxvDummyStr, __gxvWarnings[0x26], "B", i,
-                            GET_REG_FIELD(__gxVerif->rasRegs[(i * 2) + 0xC0], 1, 8) ? "alpha" : "color",
-                            GET_REG_FIELD(__gxVerif->rasRegs[(i * 2) + 0xC0], 3, 9));
+                    sprintf(__gxvDummyStr, __gxvWarnings[0x26], "B", i, GET_REG_FIELD(__gxVerif->rasRegs[(i * 2) + 0xC0], 1, 8) ? "alpha" : "color", GET_REG_FIELD(__gxVerif->rasRegs[(i * 2) + 0xC0], 3, 9));
                     __gxVerif->cb(3, 0x26U, __gxvDummyStr);
                 }
             }
@@ -726,9 +717,7 @@ void __GXVerifyTEV(void)
                 if (GET_REG_FIELD(__gxVerif->rasRegs[(i * 2) + 0xC0], 1, 4) ? Alh[GET_REG_FIELD(__gxVerif->rasRegs[(i * 2) + 0xC0], 3, 5)]
                                                                             : Clh[GET_REG_FIELD(__gxVerif->rasRegs[(i * 2) + 0xC0], 3, 5)])
                 {
-                    sprintf(__gxvDummyStr, __gxvWarnings[0x26], "C", i,
-                            GET_REG_FIELD(__gxVerif->rasRegs[(i * 2) + 0xC0], 1, 4) ? "alpha" : "color",
-                            GET_REG_FIELD(__gxVerif->rasRegs[(i * 2) + 0xC0], 3, 5));
+                    sprintf(__gxvDummyStr, __gxvWarnings[0x26], "C", i, GET_REG_FIELD(__gxVerif->rasRegs[(i * 2) + 0xC0], 1, 4) ? "alpha" : "color", GET_REG_FIELD(__gxVerif->rasRegs[(i * 2) + 0xC0], 3, 5));
                     __gxVerif->cb(3, 0x26U, __gxvDummyStr);
                 }
             }
@@ -850,7 +839,7 @@ void __GXVerifyPE(void)
         for (i = 0; i < 4; i++)
         {
             if (((u32)GET_REG_FIELD(__gxVerif->rasRegs[i + 1], 4, 4) > GET_REG_FIELD(__gxVerif->rasRegs[i + 1], 4, 12)
-                 || (u32)GET_REG_FIELD(__gxVerif->rasRegs[i + 1], 4, 12) > (u32)GET_REG_FIELD(__gxVerif->rasRegs[i + 1], 4, 20))
+                    || (u32)GET_REG_FIELD(__gxVerif->rasRegs[i + 1], 4, 12) > (u32)GET_REG_FIELD(__gxVerif->rasRegs[i + 1], 4, 20))
                 && (u32)GET_REG_FIELD(__gxVerif->rasRegs[0x43], 3, 0) == 2 && __gxVerif->verifyLevel >= __gxvWarnLev[0x33])
             {
                 sprintf(__gxvDummyStr, __gxvWarnings[0x33], i);

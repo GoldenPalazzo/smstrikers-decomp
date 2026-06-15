@@ -5,57 +5,76 @@
 
 // These macros are copied from OSThread.c. Or ARE they the same
 // macros? They dont seem to be in the SDK headers.
-#define ENQUEUE_INFO(info, queue)                            \
-    do {                                                     \
+#define ENQUEUE_INFO(info, queue)                    \
+    do                                               \
+    {                                                \
         OSResetFunctionInfo* __prev = (queue)->tail; \
-        if (__prev == 0) {                                   \
-            (queue)->head = (info);                          \
-        } else {                                             \
-            __prev->next = (info);                           \
-        }                                                    \
-        (info)->prev = __prev;                               \
-        (info)->next = 0;                                    \
-        (queue)->tail = (info);                              \
-    } while(0);
+        if (__prev == 0)                             \
+        {                                            \
+            (queue)->head = (info);                  \
+        }                                            \
+        else                                         \
+        {                                            \
+            __prev->next = (info);                   \
+        }                                            \
+        (info)->prev = __prev;                       \
+        (info)->next = 0;                            \
+        (queue)->tail = (info);                      \
+    } while (0);
 
-#define DEQUEUE_INFO(info, queue)                           \
-    do {                                                    \
+#define DEQUEUE_INFO(info, queue)                   \
+    do                                              \
+    {                                               \
         OSResetFunctionInfo* __next = (info)->next; \
         OSResetFunctionInfo* __prev = (info)->prev; \
-        if (__next == 0) {                                  \
-            (queue)->tail = __prev;                         \
-        } else {                                            \
-            __next->prev = __prev;                          \
-        }                                                   \
-        if (__prev == 0) {                                  \
-            (queue)->head = __next;                         \
-        } else {                                            \
-            __prev->next = __next;                          \
-        }                                                   \
-    } while(0);
+        if (__next == 0)                            \
+        {                                           \
+            (queue)->tail = __prev;                 \
+        }                                           \
+        else                                        \
+        {                                           \
+            __next->prev = __prev;                  \
+        }                                           \
+        if (__prev == 0)                            \
+        {                                           \
+            (queue)->head = __next;                 \
+        }                                           \
+        else                                        \
+        {                                           \
+            __prev->next = __next;                  \
+        }                                           \
+    } while (0);
 
-#define ENQUEUE_INFO_PRIO(info, queue)               \
-    do {                                             \
-        OSResetFunctionInfo* __prev;         \
-        OSResetFunctionInfo* __next;         \
-        for(__next = (queue)->head; __next           \
-          && (__next->priority <= (info)->priority); \
-                __next = __next->next) ;             \
-                                                     \
-        if (__next == 0) {                           \
-            ENQUEUE_INFO(info, queue);               \
-        } else {                                     \
-            (info)->next = __next;                   \
-            __prev = __next->prev;                   \
-            __next->prev = (info);                   \
-            (info)->prev = __prev;                   \
-            if (__prev == 0) {                       \
-                (queue)->head = (info);              \
-            } else {                                 \
-                __prev->next = (info);               \
-            }                                        \
-        }                                            \
-    } while(0);
+#define ENQUEUE_INFO_PRIO(info, queue)                                          \
+    do                                                                          \
+    {                                                                           \
+        OSResetFunctionInfo* __prev;                                            \
+        OSResetFunctionInfo* __next;                                            \
+        for (__next = (queue)->head; __next                                     \
+                                     && (__next->priority <= (info)->priority); \
+            __next = __next->next)                                              \
+            ;                                                                   \
+                                                                                \
+        if (__next == 0)                                                        \
+        {                                                                       \
+            ENQUEUE_INFO(info, queue);                                          \
+        }                                                                       \
+        else                                                                    \
+        {                                                                       \
+            (info)->next = __next;                                              \
+            __prev = __next->prev;                                              \
+            __next->prev = (info);                                              \
+            (info)->prev = __prev;                                              \
+            if (__prev == 0)                                                    \
+            {                                                                   \
+                (queue)->head = (info);                                         \
+            }                                                                   \
+            else                                                                \
+            {                                                                   \
+                __prev->next = (info);                                          \
+            }                                                                   \
+        }                                                                       \
+    } while (0);
 
 static OSResetFunctionQueue ResetFunctionQueue;
 static u32 bootThisDol;
@@ -64,17 +83,20 @@ static u32 bootThisDol;
 static int CallResetFunctions(int final);
 static void Reset(u32 resetCode);
 
-void OSRegisterResetFunction(OSResetFunctionInfo* info) {
+void OSRegisterResetFunction(OSResetFunctionInfo* info)
+{
     ASSERTLINE(208, info->func);
 
     ENQUEUE_INFO_PRIO(info, &ResetFunctionQueue);
 }
 
-void OSUnregisterResetFunction(OSResetFunctionInfo* info) {
+void OSUnregisterResetFunction(OSResetFunctionInfo* info)
+{
     DEQUEUE_INFO(info, &ResetFunctionQueue);
 }
 
-int __OSCallResetFunctions(BOOL final) {
+int __OSCallResetFunctions(BOOL final)
+{
     OSResetFunctionInfo* info;
     int err;
     u32 priority;
@@ -82,7 +104,8 @@ int __OSCallResetFunctions(BOOL final) {
     priority = 0;
     err = 0;
 
-    for (info = ResetFunctionQueue.head; info != 0;) {
+    for (info = ResetFunctionQueue.head; info != 0;)
+    {
         if (err != 0 && priority != info->priority)
             break;
         err |= !info->func(final);
@@ -91,13 +114,15 @@ int __OSCallResetFunctions(BOOL final) {
     }
 
     err |= !__OSSyncSram();
-    if (err) {
+    if (err)
+    {
         return 0;
     }
     return 1;
 }
 
 #ifdef __GEKKO__
+// clang-format off
 static asm void Reset(u32 resetCode) {
     nofralloc
     b L_000001BC
@@ -138,15 +163,19 @@ L_00000200:
 L_00000208:
     b L_000001A0
 }
+// clang-format on
 #endif
 
-static void KillThreads(void) {
+static void KillThreads(void)
+{
     OSThread* thread;
     OSThread* next;
 
-    for (thread = __OSActiveThreadQueue.head; thread; thread = next) {
+    for (thread = __OSActiveThreadQueue.head; thread; thread = next)
+    {
         next = thread->linkActive.next;
-        switch (thread->state) {
+        switch (thread->state)
+        {
         case 1:
         case 4:
             OSCancelThread(thread);
@@ -157,25 +186,32 @@ static void KillThreads(void) {
     }
 }
 
-void __OSDoHotReset(u32 resetCode) {
+void __OSDoHotReset(u32 resetCode)
+{
     OSDisableInterrupts();
     __VIRegs[1] = 0;
     ICFlashInvalidate();
     Reset(resetCode * 8);
 }
 
-void __OSShutdownDevices(BOOL doRecal) {
+void __OSShutdownDevices(BOOL doRecal)
+{
     int rc;
     BOOL disableRecalibration;
 
     __OSStopAudioSystem();
 
-    if (!doRecal) {
+    if (!doRecal)
+    {
         disableRecalibration = __PADDisableRecalibration(TRUE);
     }
 
-    do {} while (!__OSCallResetFunctions(FALSE));
-    do {} while (!__OSSyncSram());
+    do
+    {
+    } while (!__OSCallResetFunctions(FALSE));
+    do
+    {
+    } while (!__OSSyncSram());
 
     OSDisableInterrupts();
 
@@ -183,19 +219,22 @@ void __OSShutdownDevices(BOOL doRecal) {
     ASSERTLINE(408, rc);
 
     LCDisable();
-    if (!doRecal) {
+    if (!doRecal)
+    {
         __PADDisableRecalibration(disableRecalibration);
     }
 
     KillThreads();
 }
 
-void OSResetSystem(BOOL reset, u32 resetCode, BOOL forceMenu) {
+void OSResetSystem(BOOL reset, u32 resetCode, BOOL forceMenu)
+{
     OSSram* sram;
 
     OSDisableScheduler();
 
-    if (reset == TRUE && forceMenu) {
+    if (reset == TRUE && forceMenu)
+    {
         sram = __OSLockSram();
         sram->flags |= 0x40;
         __OSUnlockSram(1);
@@ -203,18 +242,23 @@ void OSResetSystem(BOOL reset, u32 resetCode, BOOL forceMenu) {
         resetCode = 0;
     }
 
-    if (reset == OS_RESET_SHUTDOWN ||
-        (reset == OS_RESET_RESTART && (bootThisDol || resetCode + 0x3fff0000 == 0)))
+    if (reset == OS_RESET_SHUTDOWN || (reset == OS_RESET_RESTART && (bootThisDol || resetCode + 0x3fff0000 == 0)))
     {
         __OSShutdownDevices(FALSE);
-    } else {
+    }
+    else
+    {
         __OSShutdownDevices(TRUE);
     }
 
-    if (reset == OS_RESET_HOTRESET) {
+    if (reset == OS_RESET_HOTRESET)
+    {
         __OSDoHotReset(resetCode);
-    } else if (reset == OS_RESET_RESTART) {
-        if (forceMenu == TRUE) {
+    }
+    else if (reset == OS_RESET_RESTART)
+    {
+        if (forceMenu == TRUE)
+        {
             OSReport("OSResetSystem(): You can't specify TRUE to forceMenu if you restart. Ignored\n");
         }
         OSEnableScheduler();
@@ -229,7 +273,8 @@ void OSResetSystem(BOOL reset, u32 resetCode, BOOL forceMenu) {
     memset(OSPhysicalToCached(0x30e2), 0, 1);
 }
 
-u32 OSGetResetCode() {
+u32 OSGetResetCode()
+{
     u32 resetCode;
     if (__OSRebootParams.valid)
         resetCode = 0x80000000 | __OSRebootParams.restartCode;
@@ -239,7 +284,8 @@ u32 OSGetResetCode() {
     return resetCode;
 }
 
-u32 OSSetBootDol(u32 dolOffset) {
+u32 OSSetBootDol(u32 dolOffset)
+{
     u32 oldDol;
 
     oldDol = bootThisDol;

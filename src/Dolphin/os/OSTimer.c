@@ -3,7 +3,8 @@
 
 #include "__os.h"
 
-struct Timer {
+struct Timer
+{
     OSTimerCallback callback;
     u32 currval;
     u32 startval;
@@ -16,11 +17,13 @@ static struct Timer Timer;
 // prototypes
 static void DecrementerExceptionHandler(__OSException exception, OSContext* context);
 
-OSTimerCallback OSSetTimerCallback(OSTimerCallback callback) {
+OSTimerCallback OSSetTimerCallback(OSTimerCallback callback)
+{
     OSTimerCallback prevCallback;
 
 #if DEBUG
-    if(!Timer.initialized) {
+    if (!Timer.initialized)
+    {
         OSPanic(__FILE__, 135, "OSSetTimerCallback(): timer is not initialized.");
     }
 #endif
@@ -31,9 +34,11 @@ OSTimerCallback OSSetTimerCallback(OSTimerCallback callback) {
     return prevCallback;
 }
 
-void OSInitTimer(u32 time, u32 mode) {
+void OSInitTimer(u32 time, u32 mode)
+{
 #if DEBUG
-    if (time >= 0x80000000) {
+    if (time >= 0x80000000)
+    {
         OSPanic(__FILE__, 159, "OSInitTimer(): time param must be less than 0x80000000.");
     }
 #endif
@@ -43,7 +48,8 @@ void OSInitTimer(u32 time, u32 mode) {
     Timer.startval = time;
     Timer.mode = mode;
 
-    if (!Timer.initialized) {
+    if (!Timer.initialized)
+    {
         __OSSetExceptionHandler(8, &DecrementerExceptionHandler);
         Timer.initialized = TRUE;
         Timer.callback = 0;
@@ -53,11 +59,13 @@ void OSInitTimer(u32 time, u32 mode) {
     }
 }
 
-void OSStartTimer(void) {
+void OSStartTimer(void)
+{
     BOOL enabled;
 
 #if DEBUG
-    if (!Timer.initialized) {
+    if (!Timer.initialized)
+    {
         OSPanic(__FILE__, 192, "OSStartTimer(): timer is not initialized.");
     }
 #endif
@@ -67,40 +75,49 @@ void OSStartTimer(void) {
     OSRestoreInterrupts(enabled);
 }
 
-void OSStopTimer(void) {
+void OSStopTimer(void)
+{
     BOOL enabled;
 
 #if DEBUG
-    if (!Timer.initialized) {
+    if (!Timer.initialized)
+    {
         OSPanic(__FILE__, 216, "OSStopTimer(): timer is not initialized.");
     }
 #endif
 
     enabled = OSDisableInterrupts();
-    if (!Timer.stopped) {
+    if (!Timer.stopped)
+    {
         Timer.stopped = TRUE;
         Timer.currval = PPCMfdec();
-        if (Timer.currval & 0x80000000) {
+        if (Timer.currval & 0x80000000)
+        {
             Timer.currval = 0;
         }
     }
     OSRestoreInterrupts(enabled);
 }
 
-static void DecrementerExceptionCallback(__OSException exception, OSContext* context) {
+static void DecrementerExceptionCallback(__OSException exception, OSContext* context)
+{
     OSContext exceptionContext;
 
     OSClearContext(&exceptionContext);
     OSSetCurrentContext(&exceptionContext);
 
-    if (!Timer.stopped) {
-        if (Timer.mode == 1) {
+    if (!Timer.stopped)
+    {
+        if (Timer.mode == 1)
+        {
             PPCMtdec(Timer.startval);
         }
-        if (Timer.mode == 2) {
+        if (Timer.mode == 2)
+        {
             Timer.stopped = TRUE;
         }
-        if (Timer.callback) {
+        if (Timer.callback)
+        {
             Timer.callback();
         }
     }
@@ -110,6 +127,7 @@ static void DecrementerExceptionCallback(__OSException exception, OSContext* con
 }
 
 #ifdef __GEKKO__
+// clang-format off
 static asm void DecrementerExceptionHandler(__OSException exception,
                                             register OSContext* context) {
     nofralloc
@@ -137,4 +155,5 @@ static asm void DecrementerExceptionHandler(__OSException exception,
     stwu r1, -0x8(r1)
     b DecrementerExceptionCallback
 }
+// clang-format on
 #endif

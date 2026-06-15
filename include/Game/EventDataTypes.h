@@ -31,6 +31,14 @@ struct PowerupData : public EventData
     /* 0x08 */ float fAwardWorth;
 };
 
+struct PowerupAcquireEventData : public EventData
+{
+    PowerupAcquireEventData() { }
+    virtual u32 GetID();
+
+    /* 0x04 */ int mHomeAway;
+}; // total size: 0x8
+
 struct PenaltyData : public EventData
 {
     PenaltyData() { }

@@ -10,7 +10,8 @@ extern volatile u8 g_unk_800030E2 AT_ADDRESS(0x800030E2);
 
 static int Prepared;
 
-static int PackArgs(void* addr, s32 argc, char** argv) {
+static int PackArgs(void* addr, s32 argc, char** argv)
+{
     s32 numArgs;
     char* bootInfo2;
     char* ptr;
@@ -20,12 +21,16 @@ static int PackArgs(void* addr, s32 argc, char** argv) {
     bootInfo2 = (char*)addr;
     memset(bootInfo2, 0, 0x2000);
 
-    if (argc == 0) {
+    if (argc == 0)
+    {
         *(u32*)(bootInfo2 + 8) = 0;
-    } else {
+    }
+    else
+    {
         numArgs = argc;
         ptr = bootInfo2 + 0x2000;
-        while (--argc >= 0) {
+        while (--argc >= 0)
+        {
             ptr -= strlen(argv[argc]) + 1;
             strcpy(ptr, argv[argc]);
             argv[argc] = (char*)(ptr - bootInfo2);
@@ -35,7 +40,8 @@ static int PackArgs(void* addr, s32 argc, char** argv) {
         ptr -= ((numArgs + 1) * 4);
         list = (char**)ptr;
 
-        for (i = 0; i < numArgs + 1; i++) {
+        for (i = 0; i < numArgs + 1; i++)
+        {
             list[i] = argv[i];
         }
 
@@ -51,6 +57,7 @@ static int PackArgs(void* addr, s32 argc, char** argv) {
 }
 
 #ifdef __GEKKO__
+// clang-format off
 static asm void Run(register void* entryPoint) {
     nofralloc
 
@@ -71,9 +78,11 @@ static asm void Run(register void* entryPoint) {
     mtlr r0
     blr
 }
+// clang-format on
 #endif
 
-static void StartDol(const OSExecParams* params, void* entry) {
+static void StartDol(const OSExecParams* params, void* entry)
+{
     OSExecParams* paramsWork = OSAllocFromArenaLo(sizeof(OSExecParams), 1);
 
     __OSSetExecParams(params, paramsWork);
@@ -83,7 +92,8 @@ static void StartDol(const OSExecParams* params, void* entry) {
     Run(entry);
 }
 
-static void ReadDisc(void* addr, s32 length, s32 offset) {
+static void ReadDisc(void* addr, s32 length, s32 offset)
+{
     DVDCommandBlock block;
 #if SDK_REVISION < 1
     OSTime start;
@@ -91,11 +101,12 @@ static void ReadDisc(void* addr, s32 length, s32 offset) {
 
     DVDReadAbsAsyncPrio(&block, addr, length, offset, NULL, 0);
 
-#if SDK_REVISION < 1    
+#if SDK_REVISION < 1
     start = OSGetTime();
 #endif
 
-    while (DVDGetCommandBlockStatus(&block)) {
+    while (DVDGetCommandBlockStatus(&block))
+    {
 #if SDK_REVISION < 1
         if (!DVDCheckDisk() || OS_TIMER_CLOCK < (OSGetTime() - start))
 #else
@@ -107,38 +118,48 @@ static void ReadDisc(void* addr, s32 length, s32 offset) {
     }
 }
 
-static void Callback(s32, DVDCommandBlock*) {
+static void Callback(s32, DVDCommandBlock*)
+{
     Prepared = TRUE;
 }
 
-static int IsStreamEnabled() {
-    if (DVDGetCurrentDiskID()->streaming) {
+static int IsStreamEnabled()
+{
+    if (DVDGetCurrentDiskID()->streaming)
+    {
         return TRUE;
     }
 
     return FALSE;
 }
 
-void __OSGetExecParams(OSExecParams* params) {
-    if (0x80000000 <= (u32)__OSExecParams) {
+void __OSGetExecParams(OSExecParams* params)
+{
+    if (0x80000000 <= (u32)__OSExecParams)
+    {
         memcpy(params, __OSExecParams, sizeof(OSExecParams));
-    } else {
+    }
+    else
+    {
         params->valid = FALSE;
     }
 }
 
-void __OSSetExecParams(const OSExecParams* params, OSExecParams* addr) {
+void __OSSetExecParams(const OSExecParams* params, OSExecParams* addr)
+{
     memcpy(addr, params, sizeof(OSExecParams));
     __OSExecParams = addr;
 }
 
-static void StopStreaming() {
+static void StopStreaming()
+{
     DVDCommandBlock block;
 #if SDK_REVISION < 1
     OSTime start;
 #endif
 
-    if (!__OSIsGcam && IsStreamEnabled()) {
+    if (!__OSIsGcam && IsStreamEnabled())
+    {
         AISetStreamVolLeft(0);
         AISetStreamVolRight(0);
         DVDCancelStreamAsync(&block, NULL);
@@ -147,7 +168,8 @@ static void StopStreaming() {
         start = OSGetTime();
 #endif
 
-        while (DVDGetCommandBlockStatus(&block)) {
+        while (DVDGetCommandBlockStatus(&block))
+        {
 #if SDK_REVISION < 1
             if (!DVDCheckDisk() || OS_TIMER_CLOCK < (OSGetTime() - start))
 #else
@@ -162,30 +184,36 @@ static void StopStreaming() {
     }
 }
 
-static int GetApploaderPosition(void) {
+static int GetApploaderPosition(void)
+{
     static s32 apploaderPosition;
 
     u32* tgcHeader;
     s32 apploaderOffsetInTGC;
 
-    if (apploaderPosition != 0) {
+    if (apploaderPosition != 0)
+    {
         return apploaderPosition;
     }
 
-    if (__OSAppLoaderOffset != 0) {
+    if (__OSAppLoaderOffset != 0)
+    {
         tgcHeader = OSAllocFromArenaLo(0x40, DOLPHIN_ALIGNMENT);
         ReadDisc(tgcHeader, 0x40, __OSAppLoaderOffset);
         apploaderOffsetInTGC = tgcHeader[14];
         ASSERTMSGLINE(LINE(370, 376, 378), apploaderOffsetInTGC != 0, "OSExec() or OSResetSystem(): Wrong apploader offset. Maybe converted by an\nolder version of gcm2tgc. Use gcm2tgc v.1.20 or later.");
 
         apploaderPosition = __OSAppLoaderOffset + apploaderOffsetInTGC;
-    } else {
+    }
+    else
+    {
         apploaderPosition = 0x2440;
     }
     return apploaderPosition;
 }
 
-typedef struct {
+typedef struct
+{
     char date[16];
     u32 entry;
     u32 size;
@@ -193,7 +221,8 @@ typedef struct {
     u32 reserved2;
 } AppLoaderStruct;
 
-static AppLoaderStruct* LoadApploader() {
+static AppLoaderStruct* LoadApploader()
+{
     AppLoaderStruct* header;
 
     header = (AppLoaderStruct*)OSAllocFromArenaLo(sizeof(AppLoaderStruct), DOLPHIN_ALIGNMENT);
@@ -205,7 +234,8 @@ static AppLoaderStruct* LoadApploader() {
     return header;
 }
 
-static void* LoadDol(const OSExecParams* params, AppLoaderCallback getInterface) {
+static void* LoadDol(const OSExecParams* params, AppLoaderCallback getInterface)
+{
     appInitCallback appInit;
     appGetNextCallback appGetNext;
     appGetEntryCallback appGetEntry;
@@ -217,21 +247,24 @@ static void* LoadDol(const OSExecParams* params, AppLoaderCallback getInterface)
     getInterface(&appInit, &appGetNext, &appGetEntry);
     paramsWork = (OSExecParams*)OSAllocFromArenaLo(sizeof(OSExecParams), 1);
     __OSSetExecParams(params, paramsWork);
-    appInit((void(*)(char*))OSReport);
+    appInit((void (*)(char*))OSReport);
     OSSetArenaLo(paramsWork);
 
-    while (appGetNext(&addr, &length, &offset) != 0) {
+    while (appGetNext(&addr, &length, &offset) != 0)
+    {
         ReadDisc(addr, length, offset);
     }
 
     return appGetEntry();
 }
 
-static BOOL IsNewApploader(AppLoaderStruct* header) {
+static BOOL IsNewApploader(AppLoaderStruct* header)
+{
     return strncmp(header->date, "2004/02/01", 10) > 0 ? TRUE : FALSE;
 }
 
-void __OSBootDolSimple(u32 doloffset, u32 restartCode, void* regionStart, void* regionEnd, BOOL argsUseDefault, s32 argc, char** argv) {
+void __OSBootDolSimple(u32 doloffset, u32 restartCode, void* regionStart, void* regionEnd, BOOL argsUseDefault, s32 argc, char** argv)
+{
     OSExecParams* params;
     void* dolEntry;
     AppLoaderStruct* header;
@@ -248,7 +281,8 @@ void __OSBootDolSimple(u32 doloffset, u32 restartCode, void* regionStart, void* 
     params->regionEnd = regionEnd;
     params->argsUseDefault = argsUseDefault;
 
-    if (!argsUseDefault) {
+    if (!argsUseDefault)
+    {
         params->argsAddr = OSAllocFromArenaLo(0x2000, 1);
         PackArgs(params->argsAddr, argc, argv);
     }
@@ -268,7 +302,8 @@ void __OSBootDolSimple(u32 doloffset, u32 restartCode, void* regionStart, void* 
     start = OSGetTime();
 #endif
 
-    while (Prepared != TRUE) {
+    while (Prepared != TRUE)
+    {
 #if SDK_REVISION < 1
         if (!DVDCheckDisk() || OS_TIMER_CLOCK < (OSGetTime() - start))
 #else
@@ -282,15 +317,19 @@ void __OSBootDolSimple(u32 doloffset, u32 restartCode, void* regionStart, void* 
     StopStreaming();
 
     header = LoadApploader();
-    if (IsNewApploader(header)) {
-        if (doloffset == 0xFFFFFFFF) {
+    if (IsNewApploader(header))
+    {
+        if (doloffset == 0xFFFFFFFF)
+        {
             doloffset = (GetApploaderPosition() + 0x20) + header->size;
         }
 
         params->bootDol = doloffset;
         dolEntry = LoadDol(params, (AppLoaderCallback)header->entry);
         StartDol(params, dolEntry);
-    } else {
+    }
+    else
+    {
         BOOT_REGION_START = (u32)regionStart;
         BOOT_REGION_END = (u32)regionEnd;
         g_unk_800030E2 = 1;
@@ -303,7 +342,8 @@ void __OSBootDolSimple(u32 doloffset, u32 restartCode, void* regionStart, void* 
     }
 }
 
-void __OSBootDol(u32 doloffset, u32 restartCode, const char** argv) {
+void __OSBootDol(u32 doloffset, u32 restartCode, const char** argv)
+{
     char doloffInString[20];
     s32 argvlen;
     char** argvToPass;
@@ -315,8 +355,10 @@ void __OSBootDol(u32 doloffset, u32 restartCode, const char** argv) {
     sprintf(doloffInString, "%d", doloffset);
     argvlen = 0;
 
-    if (argv != 0) {
-        while (argv[argvlen] != 0) {
+    if (argv != 0)
+    {
+        while (argv[argvlen] != 0)
+        {
             argvlen++;
         }
     }
@@ -325,22 +367,29 @@ void __OSBootDol(u32 doloffset, u32 restartCode, const char** argv) {
     argvToPass = OSAllocFromArenaLo((argvlen + 1) * 4, 1);
     *argvToPass = doloffInString;
 
-    for (i = 1; i < argvlen; i++) {
+    for (i = 1; i < argvlen; i++)
+    {
         argvToPass[i] = (char*)argv[i - 1];
     }
 
     __OSBootDolSimple(-1, restartCode, saveStart, saveEnd, FALSE, argvlen, argvToPass);
 }
 
-static void ExecCommon(const char* dolfile, const char** argv) {
+static void ExecCommon(const char* dolfile, const char** argv)
+{
     DVDFileInfo fileInfo;
     u32 doloff;
 
-    if ((s8)*dolfile == '\0') {
+    if ((s8)*dolfile == '\0')
+    {
         doloff = 0;
-    } else if (DVDOpen((char*)dolfile, &fileInfo)) {
+    }
+    else if (DVDOpen((char*)dolfile, &fileInfo))
+    {
         doloff = fileInfo.startAddr;
-    } else {
+    }
+    else
+    {
         ASSERTMSGLINE(LINE(689, 695, 697), 0, "OSExec(): The specified file doesn't exist");
         return;
     }
@@ -348,7 +397,8 @@ static void ExecCommon(const char* dolfile, const char** argv) {
     __OSBootDol(doloff, 0xC0000000, argv);
 }
 
-void OSExecv(const char* dolfile, const char** argv) {
+void OSExecv(const char* dolfile, const char** argv)
+{
     ASSERTMSGLINE(LINE(718, 724, 726), dolfile != 0, "OSExecv(): null pointer was specified for the dol file name.");
     ASSERTMSGLINE(LINE(719, 725, 727), argv != 0, "OSExecv(): null pointer was specified for argv.");
 
@@ -360,7 +410,8 @@ void OSExecv(const char* dolfile, const char** argv) {
     ExecCommon(dolfile, argv);
 }
 
-void OSExecl(const char* dolfile, const char* arg0, ...) {
+void OSExecl(const char* dolfile, const char* arg0, ...)
+{
     va_list vl;
     char* ptr;
     s32 i;
@@ -380,7 +431,8 @@ void OSExecl(const char* dolfile, const char* arg0, ...) {
     *argv = (char*)arg0;
 
     i = 1;
-    do {
+    do
+    {
         ptr = va_arg(vl, char*);
         argv[i++] = ptr;
     } while (ptr != 0);
@@ -389,9 +441,10 @@ void OSExecl(const char* dolfile, const char* arg0, ...) {
     ptr = (char*)arg0;
     goto setarg;
 
-    do {
+    do
+    {
         ptr = va_arg(vl, char*);
-setarg:
+    setarg:
         argv[i++] = ptr;
     } while (ptr != 0);
 #endif

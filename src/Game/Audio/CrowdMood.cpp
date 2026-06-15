@@ -100,13 +100,15 @@ static void WarmRandomStream(const RANDOM_STREAMS& RandomStreams, T* pStream)
     const char* filename = RandomStreams.Files[randomIndex];
 
     pStream->m_StreamLength = 0;
-    pStream->m_OldLength = 0;
-    pStream->m_StreamPos = 0;
 
     unsigned long iVal;
     unsigned long* i = &iVal;
     *i = 0;
     GCAudioStreaming::AudioStreamBuffer* buf = NULL;
+
+    pStream->m_OldLength = 0;
+    pStream->m_StreamPos = 0;
+
     if (pStream->m_BufferCount > 0)
     {
         buf = pStream->m_Buffers[0];

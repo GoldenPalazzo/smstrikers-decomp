@@ -2,6 +2,7 @@
 #include <dolphin/mtx.h>
 #include "fake_tgmath.h"
 
+// clang-format off
 asm void PSMTXReorder(const register Mtx src, register ROMtx dest) {
     psq_l f0, 0(src), 0, 0
     psq_l f2, 16(src), 0, 0
@@ -334,3 +335,4 @@ loop:
     psq_stu f11, 4(dstBase), 1, 0
     psq_stu f13, 4(dstBase), 1, 0
 }
+// clang-format on

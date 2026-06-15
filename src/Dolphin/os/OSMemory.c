@@ -4,8 +4,8 @@
 
 #include "__os.h"
 
-#define TRUNC(n, a) (((u32)(n)) & ~((a)-1))
-#define ROUND(n, a) (((u32)(n) + (a)-1) & ~((a)-1))
+#define TRUNC(n, a) (((u32)(n)) & ~((a) - 1))
+#define ROUND(n, a) (((u32)(n) + (a) - 1) & ~((a) - 1))
 
 static BOOL OnReset(BOOL final);
 
@@ -16,7 +16,8 @@ static OSResetFunctionInfo ResetFunctionInfo = {
     NULL
 };
 
-u32 OSGetPhysicalMemSize(void) {
+u32 OSGetPhysicalMemSize(void)
+{
 #if DEBUG
     OSBootInfo* BootInfo = (OSBootInfo*)OSPhysicalToCached(0);
 
@@ -26,7 +27,8 @@ u32 OSGetPhysicalMemSize(void) {
 #endif
 }
 
-u32 OSGetConsoleSimulatedMemSize(void) {
+u32 OSGetConsoleSimulatedMemSize(void)
+{
 #if DEBUG
     u32* memSize = (u32*)OSPhysicalToCached(0xF0);
 
@@ -36,8 +38,10 @@ u32 OSGetConsoleSimulatedMemSize(void) {
 #endif
 }
 
-static BOOL OnReset(BOOL final) {
-    if (final != FALSE) {
+static BOOL OnReset(BOOL final)
+{
+    if (final != FALSE)
+    {
         __MEMRegs[8] = 0xFF;
         __OSMaskInterrupts(OS_INTERRUPTMASK_MEM_RESET);
     }
@@ -46,7 +50,8 @@ static BOOL OnReset(BOOL final) {
 
 void (*__OSErrorTable[])(u16, OSContext*, ...);
 
-static void MEMIntrruptHandler(__OSInterrupt interrupt, OSContext* context) {
+static void MEMIntrruptHandler(__OSInterrupt interrupt, OSContext* context)
+{
     u32 addr;
     u32 cause;
 
@@ -54,7 +59,8 @@ static void MEMIntrruptHandler(__OSInterrupt interrupt, OSContext* context) {
     addr = (((u32)__MEMRegs[0x12] & 0x3ff) << 16) | __MEMRegs[0x11];
     __MEMRegs[0x10] = 0;
 
-    if (__OSErrorTable[__OS_EXCEPTION_MEMORY_PROTECTION]) {
+    if (__OSErrorTable[__OS_EXCEPTION_MEMORY_PROTECTION])
+    {
         __OSErrorTable[__OS_EXCEPTION_MEMORY_PROTECTION](__OS_EXCEPTION_MEMORY_PROTECTION, context, cause, addr);
         return;
     }
@@ -62,7 +68,8 @@ static void MEMIntrruptHandler(__OSInterrupt interrupt, OSContext* context) {
     __OSUnhandledException(__OS_EXCEPTION_MEMORY_PROTECTION, context, cause, addr);
 }
 
-void OSProtectRange(u32 chan, void* addr, u32 nBytes, u32 control) {
+void OSProtectRange(u32 chan, void* addr, u32 nBytes, u32 control)
+{
     BOOL enabled;
     u32 start;
     u32 end;
@@ -71,7 +78,8 @@ void OSProtectRange(u32 chan, void* addr, u32 nBytes, u32 control) {
     ASSERTLINE(206, chan < 4);
     ASSERTLINE(207, (control & ~(OS_PROTECT_CONTROL_RDWR)) == 0);
 
-    if (4 <= chan) {
+    if (4 <= chan)
+    {
         return;
     }
 
@@ -95,7 +103,8 @@ void OSProtectRange(u32 chan, void* addr, u32 nBytes, u32 control) {
     reg |= control << 2 * chan;
     __MEMRegs[8] = reg;
 
-    if (control != 3) {
+    if (control != 3)
+    {
         __OSUnmaskInterrupts(OS_INTERRUPTMASK(__OS_INTERRUPT_MEM_0 + chan));
     }
 
@@ -103,6 +112,7 @@ void OSProtectRange(u32 chan, void* addr, u32 nBytes, u32 control) {
 }
 
 #ifdef __GEKKO__
+// clang-format off
 static asm void Config24MB(void) {
     nofralloc
     li r7, 0x0
@@ -138,9 +148,11 @@ static asm void Config24MB(void) {
     mtsrr0 r3
     rfi
 }
+// clang-format on
 #endif
 
 #ifdef __GEKKO__
+// clang-format off
 static asm void Config48MB(void) {
     nofralloc
     li r7, 0x0
@@ -176,9 +188,11 @@ static asm void Config48MB(void) {
     mtsrr0 r3
     rfi
 }
+// clang-format on
 #endif
 
 #ifdef __GEKKO__
+// clang-format off
 static asm void RealMode(register u32 addr) {
     nofralloc
     clrlwi addr, addr, 2
@@ -188,9 +202,11 @@ static asm void RealMode(register u32 addr) {
     mtsrr1 addr
     rfi
 }
+// clang-format on
 #endif
 
-void __OSInitMemoryProtection(void) {
+void __OSInitMemoryProtection(void)
+{
 #ifndef DEBUG
     u32 padding[9];
     u32 temp;
@@ -204,8 +220,7 @@ void __OSInitMemoryProtection(void) {
     __MEMRegs[16] = 0;
     __MEMRegs[8] = 0xFF;
 
-    __OSMaskInterrupts(OS_INTERRUPTMASK_MEM_0 | OS_INTERRUPTMASK_MEM_1 | OS_INTERRUPTMASK_MEM_2 |
-                       OS_INTERRUPTMASK_MEM_3);
+    __OSMaskInterrupts(OS_INTERRUPTMASK_MEM_0 | OS_INTERRUPTMASK_MEM_1 | OS_INTERRUPTMASK_MEM_2 | OS_INTERRUPTMASK_MEM_3);
     __OSSetInterruptHandler(__OS_INTERRUPT_MEM_0, MEMIntrruptHandler);
     __OSSetInterruptHandler(__OS_INTERRUPT_MEM_1, MEMIntrruptHandler);
     __OSSetInterruptHandler(__OS_INTERRUPT_MEM_2, MEMIntrruptHandler);
@@ -216,7 +231,7 @@ void __OSInitMemoryProtection(void) {
 #ifdef DEBUG
     if (OSGetConsoleSimulatedMemSize() < OSGetPhysicalMemSize() && OSGetConsoleSimulatedMemSize() == 0x1800000)
 #else
-    temp = OSGetConsoleSimulatedMemSize();  // not sure how else to get the order right on retail
+    temp = OSGetConsoleSimulatedMemSize(); // not sure how else to get the order right on retail
     if (temp < OSGetPhysicalMemSize() && temp == 0x1800000)
 #endif
     {
@@ -224,9 +239,12 @@ void __OSInitMemoryProtection(void) {
         __MEMRegs[20] = 2;
     }
 
-    if (size <= 0x1800000) {
+    if (size <= 0x1800000)
+    {
         RealMode((u32)&Config24MB);
-    } else if (size <= 0x3000000) {
+    }
+    else if (size <= 0x3000000)
+    {
         RealMode((u32)&Config48MB);
     }
 

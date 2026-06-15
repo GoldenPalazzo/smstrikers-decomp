@@ -228,6 +228,7 @@ public:
     bool IsPlayingRandomCharDialogue(CharDialogueType);
     void StopPlayingRandomCharDialogue(CharDialogueType);
     void StopPlayingAllRandomCharDialogue();
+    void StopPlayingAllCharDialogue();
     int PlayRandomWalkFootstep(float, bool);
     static unsigned long PlayNISRandomCharDialogue(CharDialogueType, NisCharacterClass, float, float, bool, const nlVector3*, const nlVector3*, unsigned long*);
     static cCharacter* GetCharacterFromNisCharClass(NisCharacterClass charIdentifier);

@@ -1076,17 +1076,19 @@ void DrawableCharacter::Blend(const float* blendFactors, const DrawableCharacter
         mPoseAccumulator = new (nlMalloc(sizeof(cPoseAccumulator), 8, false)) cPoseAccumulator(lhs.mPoseAccumulator->m_BaseSHierarchy, false);
     }
     mPoseAccumulator->InitAccumulators();
-    float oneMinusT = 1.0f - *blendFactors;
+    const float one = 1.0f;
+    const float rhsWeight = *blendFactors;
+    float oneMinusT = one - rhsWeight;
     cPoseAccumulator* lhsPoseAccum = lhs.mPoseAccumulator;
     cPoseAccumulator* rhsPoseAccum = rhs.mPoseAccumulator;
     for (int i = 0; i < mPoseAccumulator->GetNumNodes(); i++)
     {
         RotAccum* lhsRot = &lhsPoseAccum->m_rot.mData[i];
         RotAccum* rhsRot = &rhsPoseAccum->m_rot.mData[i];
-        float rhsRotAroundZWeight = rhsRot->rotAroundZAccumulatedWeight * *blendFactors;
+        float rhsRotAroundZWeight = rhsRot->rotAroundZAccumulatedWeight * rhsWeight;
         mPoseAccumulator->BlendRotAroundZ(i, lhsRot->rotAroundZ, lhsRot->rotAroundZAccumulatedWeight * oneMinusT);
         mPoseAccumulator->BlendRotAroundZ(i, rhsRot->rotAroundZ, rhsRotAroundZWeight);
-        float rhsQuatWeight = rhsRot->quatAccumulatedWeight * *blendFactors;
+        float rhsQuatWeight = rhsRot->quatAccumulatedWeight * rhsWeight;
         mPoseAccumulator->BlendRot(i, &lhsRot->q, lhsRot->quatAccumulatedWeight * oneMinusT, false);
         mPoseAccumulator->BlendRot(i, &rhsRot->q, rhsQuatWeight, false);
         mPoseAccumulator->BlendTrans(i, &lhsPoseAccum->m_trans.mData[i].t, 1.0f - *blendFactors, false);
@@ -1094,7 +1096,7 @@ void DrawableCharacter::Blend(const float* blendFactors, const DrawableCharacter
         mPoseAccumulator->BlendScale(i, &lhsPoseAccum->m_scale.mData[i].s, 1.0f - *blendFactors, false);
         mPoseAccumulator->BlendScale(i, &rhsPoseAccum->m_scale.mData[i].s, *blendFactors, false);
     }
-    oneMinusT = 1.0f - *blendFactors;
+    oneMinusT = one - *blendFactors;
     t = *blendFactors;
     lhsPoseAccum = lhs.mPoseAccumulator;
     rhsPoseAccum = rhs.mPoseAccumulator;

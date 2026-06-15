@@ -1,6 +1,7 @@
 #define NL_SINGLETON_NO_DEFINE
 #define NL_NO_LEXICALCAST_NLSTRING_INT
 #include "Game/OverlayHandlerHUD.h"
+#include "Game/EventDataTypes.h"
 #include "Game/FE/feFinder.h"
 #include "Game/Team.h"
 #include "Game/Sys/eventman.h"
@@ -9,13 +10,6 @@
 #include "NL/nlFormat.h"
 
 extern cTeam* g_pTeams[];
-
-struct PowerupAcquireEventData : public EventData
-{
-    virtual u32 GetID();
-
-    int mHomeAway;
-};
 
 template <class T>
 T* FindItemByHashID(T* head, unsigned long hash);
