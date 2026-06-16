@@ -53,8 +53,8 @@ void TopDownCamera::Update(float)
  */
 const nlMatrix4& TopDownCamera::GetViewMatrix() const
 {
-    nlVector3_ up = { 0.0f, 1.0f, 0.0f };
-    glMatrixLookAt((nlMatrix4&)m_View, m_Position, m_Target, (nlVector3&)up);
+    nlVector3 up = { 0.0f, 1.0f, 0.0f };
+    glMatrixLookAt((nlMatrix4&)m_View, m_Position, m_Target, up);
     return m_View;
 }
 
@@ -63,4 +63,5 @@ const nlMatrix4& TopDownCamera::GetViewMatrix() const
  */
 TopDownCamera::~TopDownCamera()
 {
+    // empty
 }

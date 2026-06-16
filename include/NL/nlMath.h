@@ -18,32 +18,26 @@ unsigned int nlRandom(unsigned int, unsigned int*);
 void nlSetRandomSeed(unsigned int, unsigned int*);
 void nlInitRandom();
 
-struct nlVector2_
+inline float AngUnitsToRad_fromUnsignedShort(unsigned short sUnits)
 {
-    float f[2];
-};
+    return (float)sUnits * 0.0000958738f;
+}
 
-struct nlVector2
+class nlVector2
 {
 public:
     union
-    {               // inferred
-        float e[2]; // offset 0x0, size 0x8
+    {
+        float e[2];
         u32 as_u32[2];
         struct
-        {            // inferred
-            float x; // offset 0x0, size 0x4
-            float y; // offset 0x4, size 0x4
+        {
+            float x;
+            float y;
         } f;
     };
 };
 
-struct nlVector3_
-{
-    float f[3];
-};
-
-// struct nlVector3
 class nlVector3
 {
 public:

@@ -16,3 +16,37 @@ fill_gaps: false # Alignments known
 
 write_asm: true
 ldscript_template: config/G4QE01/ldscript.tpl
+
+# Suppress dtk false-positive data relocations in LidOpenMessage image data.
+# These 27 words inside HEADER_*::g_ImageData arrays coincidentally hold values
+# matching code-symbol addresses (UpdateDesireState, cCharacter dtor, FormatImpl,
+# etc.); they are raw compressed-image bytes, not pointers. Blocking lets the
+# target object store the literal bytes so the C source byte-matches.
+block_relocations:
+  - source: .rodata:0x8028EC80
+  - source: .rodata:0x8028F78C
+  - source: .rodata:0x8028F928
+  - source: .rodata:0x8028FA54
+  - source: .rodata:0x80290684
+  - source: .rodata:0x80290778
+  - source: .rodata:0x80290CB4
+  - source: .rodata:0x80290D28
+  - source: .rodata:0x80291114
+  - source: .rodata:0x80291208
+  - source: .rodata:0x80291898
+  - source: .rodata:0x80292484
+  - source: .rodata:0x8029249C
+  - source: .rodata:0x80292A1C
+  - source: .rodata:0x802935DC
+  - source: .rodata:0x80293670
+  - source: .rodata:0x80294150
+  - source: .rodata:0x80294154
+  - source: .rodata:0x80294158
+  - source: .rodata:0x8029417C
+  - source: .rodata:0x80294FD0
+  - source: .rodata:0x80295050
+  - source: .rodata:0x802950D4
+  - source: .rodata:0x80295A24
+  - source: .rodata:0x80295B84
+  - source: .rodata:0x80298BE4
+  - source: .rodata:0x80299F30

@@ -4,4 +4,5 @@
 void DisplayLoadingMessageFast();
 void DVDAllClearSebring(int);
 void DisplayDVDMessageSebring(int);
+
 #endif // _LIDOPENMESSAGE_H_

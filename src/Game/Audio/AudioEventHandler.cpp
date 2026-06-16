@@ -54,11 +54,9 @@ extern cGame* g_pGame;
 
 /**
  * Offset/Address/Size: 0x0 | 0x801423B4 | size: 0x1A18
- * TODO: 97.35% match. Remaining diffs include the initial null-check branch shape,
- * queued-stream iterator stack slot offsets, and later branch/register choices in
- * event-data handling. Tweaks accessed: unk244, unk268/26C/274 (case 32),
- * unk278/27C/280/284 (case 49), gStadGenSFX.mpSFX[0xC4/0xC5/0xC7].fVolume as
- * ratio multipliers.
+ * TODO: 99.77% match. Remaining diffs include the initial null-check branch shape,
+ * queued-stream iterator stack slot offsets, bowser SFX stack slot offsets, and
+ * later branch/register choices in event-data handling.
  */
 void Audio::AudioEventHandler(Event* pEvent, void*)
 {
@@ -279,7 +277,7 @@ void Audio::AudioEventHandler(Event* pEvent, void*)
                 bNoCrowd = false;
             }
         }
-        if (bNoCrowd)
+        if (bNoCrowd == true)
             break;
 
         CrowdMood::RestartLoops();
@@ -325,12 +323,14 @@ void Audio::AudioEventHandler(Event* pEvent, void*)
         {
             Audio::gbGameIsPaused = false;
         }
+        break;
 
     case 6:
         if (Audio::gbGameIsPaused)
         {
             Audio::gbGameIsPaused = false;
         }
+        break;
 
     case 10:
         if (Audio::IsWorldSFXLoaded())
@@ -353,6 +353,7 @@ void Audio::AudioEventHandler(Event* pEvent, void*)
                 Audio::gbStartingGame = false;
             }
         }
+        break;
 
     case 3:
     {
@@ -372,6 +373,7 @@ void Audio::AudioEventHandler(Event* pEvent, void*)
             Audio::gWorldSFX.Play((Audio::eWorldSFX)0x4F, 100.0f, 0.5f, true, 100.0f);
             Audio::gWorldSFX.Play((Audio::eWorldSFX)0x50, 100.0f, 1.0f, true, 100.0f);
         }
+        break;
 
     case 49:
     {
@@ -423,7 +425,7 @@ void Audio::AudioEventHandler(Event* pEvent, void*)
         }
         vol *= fSpreadsheetVol;
 
-        static bool init = false;
+        static signed char init;
         static float fTimer;
         if (!init)
         {
@@ -488,12 +490,10 @@ void Audio::AudioEventHandler(Event* pEvent, void*)
             speed = maxSpeed;
         if (speed < minSpeed)
             break;
-        if (speed < 0.0f)
-            speed = -speed;
-        float vol = speed / maxSpeed;
+        float vol = fabsf(speed) / maxSpeed;
         vol *= Audio::gStadGenSFX.mpSFX[0xC7].fVolume;
 
-        static bool init = false;
+        static signed char init;
         static float fTimer;
         if (!init)
         {
@@ -540,7 +540,7 @@ void Audio::AudioEventHandler(Event* pEvent, void*)
             pData = (CollisionBallGroundData*)&pEvent->m_data;
         }
 
-        if (pData->fVecZComponent >= -2.0f)
+        if (!(pData->fVecZComponent < -2.0f))
             break;
         float fVol = pData->fVecZComponent / -8.0f;
         if (fVol > 1.0f)
@@ -614,7 +614,7 @@ void Audio::AudioEventHandler(Event* pEvent, void*)
     {
         if (Audio::IsWorldSFXLoaded())
         {
-            static bool init = false;
+            static signed char init;
             static float fTimer;
             float currTime;
 
@@ -679,6 +679,7 @@ void Audio::AudioEventHandler(Event* pEvent, void*)
             sndAtr.UseStationaryPosVector(pGoalie->m_v3Position);
             Audio::gStadGenSFX.Play(sndAtr);
         }
+        break;
 
     case 16:
         if (Audio::IsWorldSFXLoaded())
@@ -706,6 +707,7 @@ void Audio::AudioEventHandler(Event* pEvent, void*)
             sndAtr.UseStationaryPosVector(pGoalie->m_v3Position);
             Audio::gStadGenSFX.Play(sndAtr);
         }
+        break;
 
     case 18:
         if (Audio::IsWorldSFXLoaded())
@@ -733,6 +735,7 @@ void Audio::AudioEventHandler(Event* pEvent, void*)
             sndAtr.UseStationaryPosVector(pGoalie->m_v3Position);
             Audio::gStadGenSFX.Play(sndAtr);
         }
+        break;
 
     case 19:
         if (Audio::IsWorldSFXLoaded())
@@ -755,12 +758,14 @@ void Audio::AudioEventHandler(Event* pEvent, void*)
 
             pData->pGoalie->PlayRandomCharDialogue(6, (PosUpdateMethod)2, 100.0f, -1.0f);
         }
+        break;
 
     case 88:
         if (Audio::gStadGenSFX.IsKeepingTrackOf(0xCE, NULL))
         {
             Audio::gStadGenSFX.Stop((Audio::eWorldSFX)0xCE, cGameSFX::SFX_STOP_OLDEST);
         }
+        break;
 
     case 89:
         BasicStadium::GetCurrentStadium()->mpNPCManager->mpBowser->PlaySFX(

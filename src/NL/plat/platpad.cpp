@@ -48,8 +48,8 @@ cPlatPad::~cPlatPad()
 
 /**
  * Offset/Address/Size: 0x5C | 0x801C300C | size: 0x524
- * TODO: 98.18% match - deadzone branch-shape mismatch and setup scheduling around
- * pad category initialization remain
+ * TODO: 98.51% match - remaining deadzone branch shape and setup scheduling
+ * around pad category initialization differ
  */
 void VBlankPadUpdate()
 {
@@ -81,7 +81,13 @@ void VBlankPadUpdate()
 
             if (fabsf(normalizedX) >= 0.6f || fabsf(normalizedY) >= 0.6f)
             {
-                normalizedX = (fabsf(normalizedX) >= 0.6f) ? normalizedX : 0.0f;
+                if (fabsf(normalizedX) >= 0.6f)
+                {
+                }
+                else
+                {
+                    normalizedX = 0.0f;
+                }
                 normalizedY = (fabsf(normalizedY) >= 0.6f) ? normalizedY : 0.0f;
 
                 float angle = nlATan2f(normalizedY, normalizedX);

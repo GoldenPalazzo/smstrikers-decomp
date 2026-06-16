@@ -130,7 +130,7 @@ void cHeadTrack::Update(const nlMatrix4& m4HeadMatrix, const nlMatrix4& m4Constr
     float spinVel;
     float omega = 2.0f / fSmoothTime;
     x = omega * fDeltaT;
-    float exp = 1.0f / ((x * (0.235f * x * x)) + ((0.48f * x * x) + (1.0f + x)));
+    float exp = 1.0f / (((0.48f * x * x) + (1.0f + x)) + (x * (0.235f * x * x)));
 
     spinChange = m_fHeadSpin - m_fDesiredHeadSpin;
     spinVel = m_fHeadSpinSeekVel;
@@ -143,11 +143,6 @@ void cHeadTrack::Update(const nlMatrix4& m4HeadMatrix, const nlMatrix4& m4Constr
 
     m_fHeadTiltSeekVel = exp * (tiltVel - (omega * (fDeltaT * ((omega * tiltChange) + tiltVel))));
     m_fHeadTilt = (exp * (tiltChange + (fDeltaT * ((omega * tiltChange) + tiltVel)))) + m_fDesiredHeadTilt;
-}
-
-inline float AngUnitsToRad_fromUnsignedShort(unsigned short sUnits)
-{
-    return (float)sUnits * 0.0000958738f;
 }
 
 /**

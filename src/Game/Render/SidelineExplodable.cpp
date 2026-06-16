@@ -552,8 +552,6 @@ void SidelineExplodable::Update(float fDeltaT)
 
 /**
  * Offset/Address/Size: 0x1710 | 0x80168A70 | size: 0x290
- * TODO: 99.21% match - remaining diff is in the m_uObjectFlags/mpPhysicsObject
- * cleanup path (r4/r0 vs target r0/r23 usage sequence).
  */
 void SidelineExplodable::DestroyAllActiveFragments(bool renewExplodables)
 {
@@ -577,40 +575,7 @@ void SidelineExplodable::DestroyAllActiveFragments(bool renewExplodables)
                 {
                     if (*(volatile bool*)&fragment->mbIsActive)
                     {
-                        if (fragment->mpPhysicsObject != NULL)
-                        {
-                            delete fragment->mpPhysicsObject;
-                        }
-
-                        DrawableObject* drawable = WorldManager::s_World->FindDrawableObject(fragment->mFragmentModelHash);
-                        drawable->m_uObjectFlags &= ~1;
-                        fragment->mpPhysicsObject = NULL;
-                        u16 handle = fragment->mDrawableFragmentID;
-                        DrawableFragmentHandleNode* node = NULL;
-
-                        if (pPool->m_FreeList == NULL)
-                        {
-                            SlotPoolBase::BaseAddNewBlock(&DrawableFragmentHandleNode::sDrawableFragmentHandleNodePool, 8);
-                        }
-
-                        SlotPoolEntry* entry = pPool->m_FreeList;
-                        if (entry != NULL)
-                        {
-                            node = (DrawableFragmentHandleNode*)entry;
-                            pPool->m_FreeList = (SlotPoolEntry*)entry->m_next;
-                        }
-
-                        if (node != NULL)
-                        {
-                            node->mID = 0;
-                            node->next = NULL;
-                        }
-
-                        node->mID = handle;
-                        nlListAddEnd<DrawableFragmentHandleNode>(&SidelineExplodableManager::sUnusedDrawableFragments.m_pStart, pTail, node);
-                        SidelineExplodableManager::sFragmentLookupTable[handle] = NULL;
-                        fragment->mDrawableFragmentID = 0xFFFF;
-                        fragment->mbIsActive = false;
+                        ExplosionFragment_Deactivate(fragment, pPool, pTail);
                     }
 
                     fragment->mFragmentModelHash = 0;

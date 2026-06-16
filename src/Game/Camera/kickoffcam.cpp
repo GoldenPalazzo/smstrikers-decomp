@@ -4,16 +4,16 @@
 
 #include "NL/gl/glMatrix.h"
 
-nlVector3_ vecCameraDefault = { 0.0f, -18.0f, 8.0f };
-nlVector3_ vecTargetDefault = { 0.0f, 0.0f, 0.0f };
+nlVector3 vecCameraDefault = { 0.0f, -18.0f, 8.0f };
+nlVector3 vecTargetDefault = { 0.0f, 0.0f, 0.0f };
 
 /**
  * Offset/Address/Size: 0x90 | 0x801A6184 | size: 0x78
  */
 cKickOffCamera::cKickOffCamera()
 {
-    m_v3Camera = *(nlVector3*)&vecCameraDefault;
-    m_v3Target = *(nlVector3*)&vecTargetDefault;
+    m_v3Camera = vecCameraDefault;
+    m_v3Target = vecTargetDefault;
 }
 
 /**
