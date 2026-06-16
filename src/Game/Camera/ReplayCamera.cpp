@@ -247,7 +247,7 @@ float ReplayCamera::GetFov(ReplayCameraPosition position) const
 
 /**
  * Offset/Address/Size: 0x0 | 0x801AAD04 | size: 0x11AC
- * TODO: 94.07% match - f23 callee-saved register not allocated, causing all float register numbers to shift by 2 and stack offsets by 0x10. Zero structural differences.
+ * TODO: 98.88% match - r28/r29 register swap in generic camera string construction.
  */
 nlVector3 ReplayCamera::GetPosition(ReplayCameraPosition position, float direction) const
 {
@@ -281,25 +281,20 @@ nlVector3 ReplayCamera::GetPosition(ReplayCameraPosition position, float directi
         RenderSnapshot* render = ReplayManager::Instance()->mRender;
         nlVector3 ballPos = render->mBall.mPosition;
         nlVector3 goalPos = { 0.0f, 0.0f, 0.0f };
-        float goalX = 30.0f * direction + goalLineX;
+        goalPos.f.x = 30.0f * direction + goalLineX;
 
-        float dy = goalPos.f.y - ballPos.f.y;
-        float dx = goalX - ballPos.f.x;
-        float dz = goalPos.f.z - ballPos.f.z;
-        goalPos.f.x = goalX;
-
-        float normDx, normDy, normDz;
-        {
-            float invLen = nlRecipSqrt(dx * dx + dy * dy + dz * dz, false);
-            normDy = invLen * dy;
-            normDz = invLen * dz;
-            normDx = invLen * dx;
-        }
+        nlVector3 ballToGoal;
+        nlVec3Sub(ballToGoal, goalPos, ballPos);
+        nlVec3Scale(ballToGoal, nlRecipSqrt(ballToGoal.GetLengthSq3D(), false));
 
         float behindDist = GetConfigFloat(Config::Global(), "replay/camera_ball_to_goal_behind_dist", 16.0f);
-        result.f.x = ballPos.f.x + (-behindDist) * normDx;
-        result.f.y = ballPos.f.y + (-behindDist) * normDy;
-        result.f.z = ballPos.f.z + (-behindDist) * normDz;
+        float scale = -behindDist;
+        float offsetX = scale * ballToGoal.f.x;
+        float offsetY = scale * ballToGoal.f.y;
+        float offsetZ = scale * ballToGoal.f.z;
+        result.f.x = ballPos.f.x + offsetX;
+        result.f.y = ballPos.f.y + offsetY;
+        result.f.z = ballPos.f.z + offsetZ;
 
         float minHeight = GetConfigFloat(Config::Global(), "replay/camera_ball_to_goal_min_height", 3.0f);
         if (result.f.z < minHeight)

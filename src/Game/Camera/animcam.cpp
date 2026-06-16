@@ -64,10 +64,12 @@ static inline void nlGetChunkDataAs(nlChunk* chunk, T*& out)
     u32 isAligned = ((-alignField) | alignField) >> 31;
     if (isAligned != 0)
     {
-        u32 alignment = 1u << (alignField >> 24);
-        out = (T*)((u32)chunk + alignment);
-        out = (T*)((u32)out + 7);
-        out = (T*)((u32)out & ~(alignment - 1));
+        u32 alignment;
+        T* ptr;
+        alignment = 1u << (alignField >> 24);
+        ptr = (T*)((u32)chunk + alignment);
+        ptr = (T*)((u32)ptr + 7);
+        out = (T*)((u32)ptr & ~(alignment - 1));
     }
     else
     {
@@ -77,9 +79,6 @@ static inline void nlGetChunkDataAs(nlChunk* chunk, T*& out)
 
 /**
  * Offset/Address/Size: 0xCA4 | 0x801A5898 | size: 0x498
- * TODO: 99.54% match - aligned vector/quaternion chunk-data setup still has
- * r3/r4 register swaps, and float fallback pointer stores still use r3 where
- * target uses r0
  */
 static bool LoadAnimCameraData(nlChunk* outerChunk, nlChunk* outerEnd, cCameraData* pAnimCameraData, bool ownsKeyData)
 {
@@ -204,7 +203,11 @@ static bool LoadAnimCameraData(nlChunk* outerChunk, nlChunk* outerEnd, cCameraDa
                 }
             }
             else
-                pAnimCameraData->fFOV = (float*)nlGetChunkData(outerChunk);
+            {
+                float* data;
+                nlGetChunkDataAs(outerChunk, data);
+                pAnimCameraData->fFOV = data;
+            }
             break;
         case 0x15510:
             if (ownsKeyData)
@@ -235,7 +238,11 @@ static bool LoadAnimCameraData(nlChunk* outerChunk, nlChunk* outerEnd, cCameraDa
                 }
             }
             else
-                pAnimCameraData->fFocalLength = (float*)nlGetChunkData(outerChunk);
+            {
+                float* data;
+                nlGetChunkDataAs(outerChunk, data);
+                pAnimCameraData->fFocalLength = data;
+            }
             break;
         }
         outerChunk = nlGetNextChunk(outerChunk);

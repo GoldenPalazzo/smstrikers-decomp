@@ -299,21 +299,26 @@ void ChangeCrowdVolume(float NewVolume)
 
 /**
  * Offset/Address/Size: 0x31F8 | 0x8015090C | size: 0x588
+ * TODO: 87.53% match - remaining diffs are blend/vocal temp register order and shortened fallback branch offsets.
  */
 static inline void ScaleAndAddVocalDef(CROWD_VOCAL_DEFINITION& Dest, const CROWD_VOCAL_DEFINITION& Src, float Scale)
 {
-    Dest.Volume += Src.Volume * Scale;
+    float srcVolume = Src.Volume;
+    Dest.Volume += srcVolume * Scale;
     Dest.VolumeRange += Src.VolumeRange * Scale;
-    if (Src.Volume)
+    if (srcVolume)
     {
+        float delayAdd;
         if (Src.Delay)
         {
-            Dest.Delay += (1.0f / Src.Delay) * Scale;
+            delayAdd = 1.0f / Src.Delay;
+            delayAdd *= Scale;
         }
         else
         {
-            Dest.Delay += 1000000.0f;
+            delayAdd = 1000000.0f;
         }
+        Dest.Delay += delayAdd;
     }
     else
     {
@@ -345,18 +350,12 @@ static void MoodDefFromBlend(float* MoodBlend, MOOD_DEFINITION& MoodDef)
 
         float blendVal = MoodBlend[(int)mood];
 
-        float* pNewMax;
         if (blendVal > *pMaxBlend)
         {
-            pNewMax = &MoodBlend[(int)mood];
-        }
-        else
-        {
-            pNewMax = pMaxBlend;
+            pMaxBlend = &MoodBlend[(int)mood];
         }
 
         AccountedFor += g_CrowdState.CurrentMoodBlend[mood];
-        pMaxBlend = pNewMax;
         MoodDef.NeutralVol += g_MoodDefs[mood].NeutralVol * blendVal;
 
         MoodDef.PositiveVol += g_MoodDefs[mood].PositiveVol * MoodBlend[mood];
@@ -367,10 +366,7 @@ static void MoodDefFromBlend(float* MoodBlend, MOOD_DEFINITION& MoodDef)
     }
 
     float remainWeight = 1.0f - AccountedFor;
-    if (remainWeight < 0.0f)
-    {
-        remainWeight = 0.0f;
-    }
+    remainWeight = (remainWeight >= 0.0f) ? remainWeight : 0.0f;
 
     const MOOD_DEFINITION& SatMoodDef = g_MoodDefs[CrowdMood::CM_Neutral];
     MoodDef.NeutralVol += SatMoodDef.NeutralVol * remainWeight;
@@ -379,15 +375,8 @@ static void MoodDefFromBlend(float* MoodBlend, MOOD_DEFINITION& MoodDef)
     ScaleAndAddVocalDef(MoodDef.Chant, SatMoodDef.Chant, remainWeight);
     ScaleAndAddVocalDef(MoodDef.Heckle, SatMoodDef.Heckle, remainWeight);
 
-    if (MoodDef.Chant.Delay)
-    {
-        MoodDef.Chant.Delay = 1.0f / MoodDef.Chant.Delay;
-    }
-
-    if (MoodDef.Heckle.Delay)
-    {
-        MoodDef.Heckle.Delay = 1.0f / MoodDef.Heckle.Delay;
-    }
+    MoodDef.Chant.Delay = (MoodDef.Chant.Delay != 0.0f) ? (1.0f / MoodDef.Chant.Delay) : 0.0f;
+    MoodDef.Heckle.Delay = (MoodDef.Heckle.Delay != 0.0f) ? (1.0f / MoodDef.Heckle.Delay) : 0.0f;
 
     if (*pMaxBlend < remainWeight)
     {
@@ -411,15 +400,16 @@ static void MoodDefFromBlend(float* MoodBlend, MOOD_DEFINITION& MoodDef)
         {
             float satFactor = (*pMaxBlend - SatDef.SaturationStart) / (1.0f - SatDef.SaturationStart);
             MoodDef.SaturationVolume = satFactor * SatDef.SaturationVolume;
+            CROWD_AUDIO_INIT& CrowdAudio = g_CrowdAudio;
             const char* sampleName = g_Settings.SaturationSampleNames[dominantMood];
-            if (g_CrowdAudio.CurrentSaturationSampleName != sampleName)
+            if (CrowdAudio.CurrentSaturationSampleName != sampleName)
             {
-                g_CrowdAudio.CurrentSaturationSampleName = sampleName;
+                CrowdAudio.CurrentSaturationSampleName = sampleName;
                 MoodDef.SaturationSFXId = AudioLoader::GetSFXIDFromStr(sampleName, 0);
             }
             else
             {
-                MoodDef.SaturationSFXId = g_CrowdAudio.CurrentSaturationSFXId;
+                MoodDef.SaturationSFXId = CrowdAudio.CurrentSaturationSFXId;
             }
         }
         else

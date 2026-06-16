@@ -112,9 +112,8 @@ void Fuzzy::DefaultOffensivePlay(cDecisionEntity* pDecision)
 
         fBestConfidence = fDoPassing;
 
-        FuzzyBuf goodBallCarrierBuf;
-        ((Fuzzy*)&goodBallCarrierBuf)->GoodBallCarrier(g_pScriptCurrentFielder);
-        float fGoodBallCarrier = ((FuzzyVariant&)goodBallCarrierBuf).mData.f;
+        const FuzzyVariant& goodBallCarrier = GoodBallCarrier(g_pScriptCurrentFielder);
+        float fGoodBallCarrier = goodBallCarrier.mData.f;
 
         float fNotRepeatingDeke = 1.0f - RepeatingLastDesire(g_pScriptCurrentFielder, edDeke);
         float fNotCloseSideline = 1.0f - CloseToSideline(g_pScriptCurrentFielder);
@@ -260,9 +259,8 @@ void Fuzzy::DefaultOffensivePlay(cDecisionEntity* pDecision)
         if (fConfidence < fFalseConfidence && fFalseConfidence < 0.5f)
             fConfidence = fConfidence * fBranchRatio;
 
-        FuzzyBuf cutAndBreakBuf;
-        ((Fuzzy*)&cutAndBreakBuf)->CutAndBreak(g_pScriptCurrentFielder);
-        float fCutAndBreak = ((FuzzyVariant&)cutAndBreakBuf).mData.f;
+        FuzzyVariant cutAndBreak = CutAndBreak(g_pScriptCurrentFielder);
+        float fCutAndBreak = cutAndBreak.mData.f;
 
         fTrueConfidence = Striker(g_pScriptCurrentFielder);
         fTrueConfidence = (fTrueConfidence <= fCutAndBreak) ? fTrueConfidence : fCutAndBreak;
@@ -495,9 +493,9 @@ void Fuzzy::DoPassing(float fConfidence, cDecisionEntity* pDecision)
 
 /**
  * Offset/Address/Size: 0x4490 | 0x80090F1C | size: 0x604
- * TODO: 98.96% match - f30/f31 register swap for fBestConfidence/fWindupScore
+ * TODO: 99.25% match - InDangerDelayed and final FuzzyVariant temporary stack slots still differ.
  */
-void Fuzzy::GoodBallCarrier(cFielder* TheFielder)
+FuzzyVariant Fuzzy::GoodBallCarrier(cFielder* TheFielder)
 {
     extern cFielder* g_pScriptCurrentFielder;
 
@@ -560,9 +558,7 @@ void Fuzzy::GoodBallCarrier(cFielder* TheFielder)
 
     bestValue.Confidence = fBestConfidence;
 
-    FuzzyVariant* pOut = (FuzzyVariant*)this;
-    new (pOut) FuzzyVariant;
-    *pOut = bestValue;
+    return bestValue;
 }
 
 /**
@@ -986,10 +982,8 @@ FuzzyVariant Fuzzy::InGoodWindupPosition(cFielder* TheFielder)
 
 /**
  * Offset/Address/Size: 0x2B2C | 0x8008F5B8 | size: 0x5FC
- * TODO: 97.32% match - SpaceSearch destructor call shape and final output
- * initialization null-check branch still differ.
  */
-void Fuzzy::CutAndBreak(cFielder* TheFielder)
+FuzzyVariant Fuzzy::CutAndBreak(cFielder* TheFielder)
 {
     FuzzyVariant bestValue;
     float fConfidence = 1.0f;
@@ -1043,9 +1037,7 @@ void Fuzzy::CutAndBreak(cFielder* TheFielder)
 
     bestValue.Confidence = fBestConfidence;
 
-    FuzzyVariant* pOut = (FuzzyVariant*)this;
-    new (pOut) FuzzyVariant;
-    *pOut = bestValue;
+    return bestValue;
 }
 
 /**
@@ -1412,8 +1404,7 @@ void Fuzzy::UsePowerupOffensive(float fConfidence, cDecisionEntity* pDecision)
 
                 float fOpen = Open(g_pScriptCurrentFielder);
                 float fOpenToNet = OpenToTheirNet(g_pScriptCurrentFielder);
-                FuzzyVariant goodBallCarrier;
-                ((Fuzzy*)&goodBallCarrier)->GoodBallCarrier(g_pScriptCurrentFielder);
+                const FuzzyVariant& goodBallCarrier = GoodBallCarrier(g_pScriptCurrentFielder);
                 float fGoodBallCarrier = goodBallCarrier.mData.f;
 
                 float fOpenScore = fOpenToNet * 0.3f + fGoodBallCarrier * 0.55f + fOpen * 0.15f;

@@ -10,9 +10,8 @@ static nlVector3 v3TransIdentity = { 0.0f, 0.0f, 0.0f };
 
 /**
  * Offset/Address/Size: 0xCD8 | 0x801EC278 | size: 0x1D74
- * TODO: 93.4% match - register allocation off by 1 (stmw r17 vs target stmw r16).
- *       All remaining diffs are register-only. Target assigns this=r27, hier=r28, bool=r29
- *       but compiler assigns this=r29, hier=r30, bool=r28.
+ * TODO: 99.18% match. Remaining differences are constructor initialization
+ *       loop register allocation around matrix and accumulator setup.
  */
 cPoseAccumulator::cPoseAccumulator(cSHierarchy* pSHierarchy, bool bStorePrevNodeMatrices)
 {
@@ -92,7 +91,7 @@ cPoseAccumulator::cPoseAccumulator(cSHierarchy* pSHierarchy, bool bStorePrevNode
 
     {
         int n = pSHierarchy->m_nodeCount;
-        m_cb.mData = new (nlMalloc(n * sizeof(cBuildNodeMatrixCallbackInfo) + 0x10, 8, 0)) cBuildNodeMatrixCallbackInfo[n];
+        m_cb.mData = new (nlMalloc(n * 0xC + 0x10, 8, 0)) cBuildNodeMatrixCallbackInfo[n];
         m_cb.mSize = n;
         m_cb.mCapacity = n;
 

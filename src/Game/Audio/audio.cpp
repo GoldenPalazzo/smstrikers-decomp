@@ -3761,7 +3761,7 @@ AudioStreamTrack::TrackManagerBase::~TrackManagerBase()
 
 /**
  * Offset/Address/Size: 0x3F8 | 0x80141ABC | size: 0x1EC
- * TODO: 92.06% match - fadeCtrl uses extra callee-saved register (stmw r23 vs r24), 3 missing pTrack dead stores at 0x0c/0x10/0x58
+ * TODO: 95.16% match - register allocation differs for track, queued stream, and volume locals
  */
 template <>
 void AudioStreamTrack::TrackManager<3>::OnMasterVolumeChange(Audio::MasterVolume::VOLUME_GROUP VolumeGroup)
@@ -3780,7 +3780,15 @@ void AudioStreamTrack::TrackManager<3>::OnMasterVolumeChange(Audio::MasterVolume
         }
         else
         {
+            struct Iter
+            {
+                DLListEntry<AudioStreamTrack::StreamTrack::QUEUED_STREAM>* m_head;
+                DLListEntry<AudioStreamTrack::StreamTrack::QUEUED_STREAM>* m_current;
+            };
             DLListEntry<AudioStreamTrack::StreamTrack::QUEUED_STREAM>* qentry = nlDLRingGetStart(pTrack->m_QueuedStreams.m_Head);
+            volatile Iter iter;
+            iter.m_current = qentry;
+            iter.m_head = pTrack->m_QueuedStreams.m_Head;
             qs = &qentry->m_data;
         }
 
@@ -3790,14 +3798,14 @@ void AudioStreamTrack::TrackManager<3>::OnMasterVolumeChange(Audio::MasterVolume
             DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>* fadeHead;
             DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>* fadeIter = nlDLRingGetStart(m_FadeMgr.m_Fades.m_Head);
             fadeHead = m_FadeMgr.m_Fades.m_Head;
-            AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL* fadeCtrl = NULL;
+            AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL* fadeCtrl;
 
             while (fadeIter != NULL)
             {
                 if (fadeIter->m_data.pStream == pStream)
                 {
                     fadeCtrl = &fadeIter->m_data;
-                    break;
+                    goto fade_found;
                 }
 
                 if (nlDLRingIsEnd(fadeHead, fadeIter) || fadeIter == NULL)
@@ -3809,6 +3817,8 @@ void AudioStreamTrack::TrackManager<3>::OnMasterVolumeChange(Audio::MasterVolume
                     fadeIter = fadeIter->m_next;
                 }
             }
+            fadeCtrl = NULL;
+        fade_found:
 
             if (fadeCtrl == NULL)
             {

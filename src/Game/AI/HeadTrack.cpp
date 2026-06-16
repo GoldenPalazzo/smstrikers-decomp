@@ -22,7 +22,6 @@ cHeadTrack::cHeadTrack()
 
 /**
  * Offset/Address/Size: 0x160 | 0x80056F64 | size: 0x450
- * TODO: 98.19% match - 1 extra instruction causes branch target offset diff (beq 36c vs 370)
  */
 void cHeadTrack::Update(const nlMatrix4& m4HeadMatrix, const nlMatrix4& m4ConstraintMatrix, float fDeltaT, unsigned short aOOIConstraint, int nHeadSpinMax, int nHeadTiltMax, float fSmoothTime)
 {
@@ -61,8 +60,7 @@ void cHeadTrack::Update(const nlMatrix4& m4HeadMatrix, const nlMatrix4& m4Constr
         nHeadTilt = (nHeadTilt << 16) >> 16;
 
         {
-            int sign = nHeadSpin >> 31;
-            int absSpin = (sign ^ nHeadSpin) - sign;
+            int absSpin = (nHeadSpin < 0) ? -nHeadSpin : nHeadSpin;
 
             if ((absSpin < (int)(unsigned int)aOOIConstraint) || (m_v3OOI.f.z > 1.5f))
             {
@@ -70,8 +68,7 @@ void cHeadTrack::Update(const nlMatrix4& m4HeadMatrix, const nlMatrix4& m4Constr
                 nHeadTilt = (int)(0.5f * (float)nHeadTilt);
                 nAmountOfDeadZoneBehindHeadtrack = (((int)(unsigned int)aOOIConstraint - nHeadSpinMax) * 3) / 4;
 
-                sign = nHeadSpin >> 31;
-                absSpin = (sign ^ nHeadSpin) - sign;
+                absSpin = (nHeadSpin < 0) ? -nHeadSpin : nHeadSpin;
                 if ((unsigned int)absSpin >= (unsigned int)nHeadSpinMax)
                 {
                     if (nHeadSpin > 0)
@@ -109,8 +106,10 @@ void cHeadTrack::Update(const nlMatrix4& m4HeadMatrix, const nlMatrix4& m4Constr
 
         if (&m4HeadMatrix != &m4ConstraintMatrix)
         {
-            float headM21 = m4HeadMatrix.f.m21;
-            float headM22 = m4HeadMatrix.f.m22;
+            float headM21;
+            float headM22;
+            headM22 = m4HeadMatrix.f.m22;
+            headM21 = m4HeadMatrix.f.m21;
             float constraintAtan = nlATan2f(m4Constrain.f.m22, m4Constrain.f.m21);
             float headAtan = nlATan2f(headM22, headM21);
             unsigned short spinConstraint = (unsigned short)(int)(10430.378f * constraintAtan);
@@ -126,23 +125,24 @@ void cHeadTrack::Update(const nlMatrix4& m4HeadMatrix, const nlMatrix4& m4Constr
         m_fDesiredHeadTilt = 0.0f;
     }
 
+    float spinChange;
+    float x;
+    float spinVel;
     float omega = 2.0f / fSmoothTime;
-    float x = omega * fDeltaT;
+    x = omega * fDeltaT;
     float exp = 1.0f / ((x * (0.235f * x * x)) + ((0.48f * x * x) + (1.0f + x)));
 
-    float spinChange = m_fHeadSpin - m_fDesiredHeadSpin;
-    float spinVel = m_fHeadSpinSeekVel;
-    float spinTemp = fDeltaT * ((spinChange * omega) + spinVel);
+    spinChange = m_fHeadSpin - m_fDesiredHeadSpin;
+    spinVel = m_fHeadSpinSeekVel;
 
-    m_fHeadSpinSeekVel = exp * (spinVel - (omega * spinTemp));
-    m_fHeadSpin = (exp * (spinChange + spinTemp)) + m_fDesiredHeadSpin;
+    m_fHeadSpinSeekVel = exp * (spinVel - (omega * (fDeltaT * ((omega * spinChange) + spinVel))));
+    m_fHeadSpin = (exp * (spinChange + (fDeltaT * ((omega * spinChange) + spinVel)))) + m_fDesiredHeadSpin;
 
     float tiltChange = m_fHeadTilt - m_fDesiredHeadTilt;
     float tiltVel = m_fHeadTiltSeekVel;
-    float tiltTemp = fDeltaT * ((tiltChange * omega) + tiltVel);
 
-    m_fHeadTiltSeekVel = exp * (tiltVel - (omega * tiltTemp));
-    m_fHeadTilt = (exp * (tiltChange + tiltTemp)) + m_fDesiredHeadTilt;
+    m_fHeadTiltSeekVel = exp * (tiltVel - (omega * (fDeltaT * ((omega * tiltChange) + tiltVel))));
+    m_fHeadTilt = (exp * (tiltChange + (fDeltaT * ((omega * tiltChange) + tiltVel)))) + m_fDesiredHeadTilt;
 }
 
 inline float AngUnitsToRad_fromUnsignedShort(unsigned short sUnits)

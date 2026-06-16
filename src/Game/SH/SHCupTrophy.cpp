@@ -1020,8 +1020,7 @@ static const char* CUP_FIRST_TEXT_NAME_LEFT = "FIRST WON TIME";
 
 /**
  * Offset/Address/Size: 0x1524 | 0x800CABD8 | size: 0x3F8
- * TODO: 94.57% match - register allocation (this=r28/r30, locString=r31/r28) and stack offset
- * shift are -inline deferred artifacts; file compiled with -inline deferred but scratch uses -inline auto
+ * TODO: 97.50% match - remaining register and stack-slot layout differs in BasicString temporary paths
  */
 void CupTrophyScene::SetWinRecord(Spoil& spoil)
 {
@@ -1054,37 +1053,7 @@ void CupTrophyScene::SetWinRecord(Spoil& spoil)
         }
     }
 
-    BasicStringData<unsigned short>* data = (BasicStringData<unsigned short>*)nlMalloc(0x10, 8, true);
-    if (data != 0)
-    {
-        data->mData = 0;
-        data->mSize = 0;
-        data->mCapacity = 0;
-
-        const unsigned short* ptr = locString;
-        while (*ptr++ != 0)
-        {
-            data->mSize++;
-        }
-
-        data->mSize++;
-        data->mData = (unsigned short*)nlMalloc((data->mSize + 1) * 2, 8, true);
-        data->mCapacity = data->mSize;
-
-        int i = 0;
-        int j = i;
-        while (i < data->mSize)
-        {
-            *(unsigned short*)((char*)data->mData + j) = *locString;
-            i++;
-            locString++;
-            j += 2;
-        }
-
-        data->mRefCount = 1;
-    }
-
-    BasicString<unsigned short, Detail::TempStringAllocator> msg(data);
+    BasicString<unsigned short, Detail::TempStringAllocator> msg(locString);
     BasicString<unsigned short, Detail::TempStringAllocator> formattedResult = Format(msg, winBuf);
 
     memcpy(mFirstWinBuffer, formattedResult.c_str(), 0x100);

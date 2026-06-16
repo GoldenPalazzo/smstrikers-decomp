@@ -23,6 +23,8 @@ extern bool g_e3_Build;
 
 static inline void GetAllSides();
 static inline void SetAllSides(IChooseSide& cs);
+static inline eDifficultyID GetDifficulty0(GameInfoManager* gameInfo);
+static inline eDifficultyID GetDifficulty1(GameInfoManager* gameInfo);
 
 // /**
 //  * Offset/Address/Size: 0x0 | 0x800C7D40 | size: 0xEC
@@ -652,8 +654,8 @@ void SHChooseSides2::UpdateChooseSideComponent(float fDeltaT)
                     g_pTeams[1]->UpdateControllers();
                     nlSingleton<GameInfoManager>::s_pInstance->ApplyDifficultySettings();
                     g_pGame->SetDifficulty(
-                        nlSingleton<GameInfoManager>::s_pInstance->mCurrentDifficulty[0],
-                        nlSingleton<GameInfoManager>::s_pInstance->mCurrentDifficulty[1],
+                        GetDifficulty0(nlSingleton<GameInfoManager>::s_pInstance),
+                        GetDifficulty1(nlSingleton<GameInfoManager>::s_pInstance),
                         (eDifficultyID)3);
                 }
 
@@ -712,7 +714,7 @@ void SHChooseSides2::UpdateChooseSideComponent(float fDeltaT)
             {
                 if (!GetConfigBool(Config::Global(), "no_humans", false))
                 {
-                    FEPopupMenu* popup = (FEPopupMenu*)nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
+                    FEPopupMenu* popup = (FEPopupMenu*)nlSingleton<OverlayManager>::s_pInstance->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
                     popup->Create(POPUP_NO_SIDES_CHOSEN);
                     break;
                 }
@@ -729,8 +731,8 @@ void SHChooseSides2::UpdateChooseSideComponent(float fDeltaT)
                 g_pTeams[1]->UpdateControllers();
                 nlSingleton<GameInfoManager>::s_pInstance->ApplyDifficultySettings();
                 g_pGame->SetDifficulty(
-                    nlSingleton<GameInfoManager>::s_pInstance->mCurrentDifficulty[0],
-                    nlSingleton<GameInfoManager>::s_pInstance->mCurrentDifficulty[1],
+                    GetDifficulty0(nlSingleton<GameInfoManager>::s_pInstance),
+                    GetDifficulty1(nlSingleton<GameInfoManager>::s_pInstance),
                     (eDifficultyID)3);
             }
 
@@ -891,6 +893,16 @@ static inline void SetAllSides(IChooseSide& cs)
     {
         nlSingleton<GameInfoManager>::s_pInstance->SetPlayingSide((u16)i, (short)cs.mPlayingSides[i]);
     }
+}
+
+static inline eDifficultyID GetDifficulty0(GameInfoManager* gameInfo)
+{
+    return gameInfo->mCurrentDifficulty[0];
+}
+
+static inline eDifficultyID GetDifficulty1(GameInfoManager* gameInfo)
+{
+    return gameInfo->mCurrentDifficulty[1];
 }
 
 /**

@@ -310,8 +310,8 @@ void NetMeshModelLoader::AddEdge(const glModelPacket& packet, unsigned short idx
 
 /**
  * Offset/Address/Size: 0xA80 | 0x80130BD8 | size: 0x110
- * TODO: 97.43% match - inner-loop temporaries still map to
- * r5/r6/r3/r4 instead of r7/r3/r4/r6.
+ * TODO: 98.46% match - inner-loop destination cursor uses r6 instead of r7,
+ * with branch temporaries shifted between r4-r6.
  */
 void NetMeshModelLoader::ReadEdgesFromGeometryPacket(const glModelPacket& packet)
 {
@@ -327,7 +327,6 @@ void NetMeshModelLoader::ReadEdgesFromGeometryPacket(const glModelPacket& packet
     {
         u16 vertexIndices[3];
         u16* pVtx = vertexIndices;
-        s32 j = 0;
         u16* ptr;
         u16 ns;
         s32 vertOff;
@@ -335,7 +334,7 @@ void NetMeshModelLoader::ReadEdgesFromGeometryPacket(const glModelPacket& packet
         s32 offset;
         u8* ptr8;
 
-        while (j < 3)
+        for (s32 j = 0; j < 3; j++)
         {
             if (((u16*)&pList->indices)[1] != 0)
             {
@@ -372,7 +371,6 @@ void NetMeshModelLoader::ReadEdgesFromGeometryPacket(const glModelPacket& packet
             if (*pVtx > maxVertex)
                 maxVertex = *pVtx;
             pVtx++;
-            j++;
         }
 
         AddTriangleFromGeometry(packet, vertexIndices);
@@ -520,8 +518,8 @@ void NetMeshModelLoader::ProcessEdges(const glModelPacket& packet, int maxVertex
 
 /**
  * Offset/Address/Size: 0x0 | 0x80130158 | size: 0x780
- * TODO: 99.16% match - register allocation still differs for iterator/tree
- * pointers and constrained-counter locals across AVL traversals/writeback.
+ * TODO: 99.28% match - register allocation still differs for iterator/tree
+ * pointers and vertex writeback temporaries.
  */
 void NetMeshModelLoader::CreateNetMeshFromVertexList()
 {
@@ -542,8 +540,8 @@ void NetMeshModelLoader::CreateNetMeshFromVertexList()
 
     VertexIter* vertexIter;
     VertexTree* vertexTree;
-    int numEdges = 0;
     int numConstrainedVertices = 0;
+    int numEdges = 0;
     int numVertices = 0;
 
     vertexTree = m_VertexList;
@@ -776,14 +774,18 @@ void NetMeshModelLoader::CreateNetMeshFromVertexList()
         }
     }
 
+    int index1;
+    int index2;
+    EdgeEntry* edgeEntry;
+
     while (edgeIter->m_NumStackEntries != 0)
     {
-        EdgeEntry* edgeEntry = edgeIter->m_Stack[edgeIter->m_NumStackEntries - 1];
+        edgeEntry = edgeIter->m_Stack[edgeIter->m_NumStackEntries - 1];
 
         if (edgeEntry->value > 1)
         {
-            int index1 = edgeEntry->key.mpVertex1->mParticleIndex;
-            int index2 = edgeEntry->key.mpVertex2->mParticleIndex;
+            index1 = edgeEntry->key.mpVertex1->mParticleIndex;
+            index2 = edgeEntry->key.mpVertex2->mParticleIndex;
 
             nlVector3 position1 = *edgeEntry->key.mpVertex1->GetPosition();
             nlVector3 position2 = *edgeEntry->key.mpVertex2->GetPosition();

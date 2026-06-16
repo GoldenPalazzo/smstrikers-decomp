@@ -314,8 +314,6 @@ void Update3DSFXEmitter(SFXEmitter* pSFXEmitter, const nlVector3& position, cons
 
 /**
  * Offset/Address/Size: 0x588 | 0x801C4D84 | size: 0x2E4
- * TODO: 99.57% match - remaining mismatch is pitch-check register allocation
- * (r5 vs r0) and debug-print address load register ordering.
  */
 void Add3DSFXEmitter(const EmitterStartInfo& info)
 {
@@ -436,8 +434,7 @@ void Add3DSFXEmitter(const EmitterStartInfo& info)
     {
         if (info.pitch != 0x2000)
         {
-            const char* msg = "pitch bend should be non-default\n";
-            tDebugPrintManager::Print(DC_SOUND, msg);
+            tDebugPrintManager::Print(DC_SOUND, "emitter started with pitch %d\n", info.pitch);
         }
 
         pParaArray[currParaIndex].ctrl = 0x80;

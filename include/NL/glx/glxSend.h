@@ -16,6 +16,5 @@ void glx_SwitchStreams(const glModelPacket*);
 void glx_SwitchRaster(const glModelPacket*);
 void glx_SendEnd();
 void glx_SendReset();
-void GetConstants();
 
 #endif // _GLXSEND_H_

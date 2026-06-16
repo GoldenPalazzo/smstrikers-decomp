@@ -8,8 +8,13 @@
 #include "Game/FE/tlComponentInstance.h"
 #include "NL/nlLexicalCast.h"
 #include "NL/nlFormat.h"
+#include "NL/nlBSearch.h"
+#include "NL/nlLocalization.h"
 
 extern cTeam* g_pTeams[];
+extern void* g_pLocalization;
+extern const unsigned short LocalizationTableNotFound[];
+extern const unsigned short MissingLocString[];
 
 template <class T>
 T* FindItemByHashID(T* head, unsigned long hash);
@@ -187,35 +192,6 @@ void HUDOverlay::Update(float fDeltaT)
 {
     typedef BasicString<unsigned short, Detail::TempStringAllocator> WideString;
 
-    struct LOCHeader
-    {
-        char Thumbprint[4];
-        unsigned long Version;
-        unsigned long Language;
-        unsigned long StringCount;
-        unsigned long Flags;
-    };
-
-    class nlLocalization
-    {
-    public:
-        struct StringLookup
-        {
-            unsigned long hash;
-            unsigned long StringOffset;
-        };
-
-        LOCHeader* m_pFile;
-        StringLookup* m_LookupTable;
-        unsigned short* m_FirstString;
-        int m_CurrentLanguage;
-    };
-
-    extern nlLocalization* g_pLocalization;
-    extern const unsigned short LocalizationTableNotFound[];
-    extern const unsigned short MissingLocString[];
-    nlLocalization::StringLookup* nlBSearch(const unsigned long&, nlLocalization::StringLookup*, int);
-
     BaseSceneHandler::Update(fDeltaT);
     mAsyncImage[0]->Update(true);
     mAsyncImage[1]->Update(true);
@@ -227,7 +203,8 @@ void HUDOverlay::Update(float fDeltaT)
 
     for (int i = 0; i < 2; ++i)
     {
-        if (mIsHUDSlideIn && mScoreUpdateDelay[i] > 0.0f && m_pFEPresentation->m_currentSlide->m_time >= 1.0f)
+        TLSlide* currentSlide = m_pFEPresentation->m_currentSlide;
+        if (mIsHUDSlideIn && mScoreUpdateDelay[i] > 0.0f && currentSlide->m_time >= 1.0f)
         {
             if (mStartScoreAnimation)
             {
@@ -250,7 +227,8 @@ void HUDOverlay::Update(float fDeltaT)
                 }
 
                 TLSlide* activeSlide = pScoreComp->GetActiveSlide();
-                if (activeSlide->m_time >= activeSlide->m_start + activeSlide->m_duration)
+                float endTime = activeSlide->m_start + activeSlide->m_duration;
+                if (pScoreComp->GetActiveSlide()->m_time >= endTime)
                 {
                     pScoreComp->SetActiveSlide("Slide1");
                     pScoreComp->Update(0.0f);
@@ -296,18 +274,18 @@ void HUDOverlay::Update(float fDeltaT)
     float fRemainingTime = g_pGame->mGameSettings->mClockStart - fTime;
     fTime -= g_pGame->mGameSettings->mClockStart;
 
-    if (fTime <= overtimeTime)
+    if (fTime < 59999.0f)
     {
         overtimeTime = fTime;
     }
 
     time = (unsigned long)fRemainingTime;
-    unsigned long remainingTime = (unsigned long)(isOvertime ? (double)overtimeTime : (double)time);
+    unsigned long remainingTime = (unsigned long)(isOvertime ? overtimeTime : (float)time);
     unsigned long newMinutes = remainingTime / 60;
     unsigned long newSeconds = remainingTime - (newMinutes * 60);
     unsigned long newTenths = 0;
 
-    if (fRemainingTime < 30.0f || isOvertime)
+    if (fRemainingTime <= 30.0f || isOvertime)
     {
         if (!mClockColourChanged)
         {
@@ -364,6 +342,9 @@ void HUDOverlay::Update(float fDeltaT)
             Audio::gWorldSFX.Play(Audio::WORLDSFX_HUD_ACCEPT, 100.0f, -1.0f, true, 100.0f);
         }
 
+        WideString unformatted;
+        WideString formatted;
+
         mSeconds = newSeconds;
         mMinutes = newMinutes;
         mTenths = newTenths;
@@ -372,29 +353,26 @@ void HUDOverlay::Update(float fDeltaT)
         char secondsString[8];
         unsigned short minutesWideString[8];
         unsigned short secondsWideString[8];
-        WideString unformatted;
-        WideString formatted;
         const unsigned short* formatLocString;
-        unsigned long key;
         nlLocalization* loc;
 
         if (mMinutes == 0 && fRemainingTime < 30.0f && !isOvertime)
         {
-            nlSNPrintf(minutesString, 8, "%d", mSeconds);
-            nlSNPrintf(secondsString, 8, "%d", mTenths);
+            nlSNPrintf(minutesString, 8, "%d", newSeconds);
+            nlSNPrintf(secondsString, 8, "%d", newTenths);
 
             nlStrToWcs(minutesString, minutesWideString, 8);
             nlStrToWcs(secondsString, secondsWideString, 8);
 
-            key = 0xA1D5611D;
-            loc = g_pLocalization;
+            unsigned long key = 0xA1D5611D;
+            loc = (nlLocalization*)g_pLocalization;
             if (loc->m_LookupTable == 0)
             {
                 formatLocString = LocalizationTableNotFound;
             }
             else
             {
-                nlLocalization::StringLookup* entry = nlBSearch(key, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
+                nlLocalization::StringLookup* entry = nlBSearch<nlLocalization::StringLookup, unsigned long>(key, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
                 if (entry)
                 {
                     formatLocString = loc->m_FirstString + entry->StringOffset;
@@ -412,27 +390,27 @@ void HUDOverlay::Update(float fDeltaT)
         {
             if (mSeconds < 10)
             {
-                nlSNPrintf(secondsString, 8, "0%d", mSeconds);
+                nlSNPrintf(secondsString, 8, "0%d", newSeconds);
             }
             else
             {
-                nlSNPrintf(secondsString, 8, "%d", mSeconds);
+                nlSNPrintf(secondsString, 8, "%d", newSeconds);
             }
 
-            nlSNPrintf(minutesString, 8, "%d", mMinutes);
+            nlSNPrintf(minutesString, 8, "%d", newMinutes);
 
             nlStrToWcs(minutesString, minutesWideString, 8);
             nlStrToWcs(secondsString, secondsWideString, 8);
 
-            key = 0x04E76F8B;
-            loc = g_pLocalization;
+            unsigned long key = 0x04E76F8B;
+            loc = (nlLocalization*)g_pLocalization;
             if (loc->m_LookupTable == 0)
             {
                 formatLocString = LocalizationTableNotFound;
             }
             else
             {
-                nlLocalization::StringLookup* entry = nlBSearch(key, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
+                nlLocalization::StringLookup* entry = nlBSearch<nlLocalization::StringLookup, unsigned long>(key, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
                 if (entry)
                 {
                     formatLocString = loc->m_FirstString + entry->StringOffset;

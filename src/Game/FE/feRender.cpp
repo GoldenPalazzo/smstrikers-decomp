@@ -247,13 +247,8 @@ void FERender::RenderPresentation(const FEPresentation* presentation)
 
 /**
  * Offset/Address/Size: 0x528 | 0x8020A7B0 | size: 0x42C
- * TODO: 92.2% match - same MWCC register-allocator coloring as RenderSlide:
- * outer-loop instance/nextInstance and inner-loop child/nextChild swap pairs
- * vs target, plus v3Pos/oldChildColour stack-slot swap. No opcode diffs.
- * ConvertColour kept as a real call via #pragma inline_depth(0)/() around the
- * TLAT_TEXT call site; grandchild operator= is forced via the extern __as__
- * declaration above. The combination of pragma here + pragma in RenderSlide is
- * the local optimum; removing either regresses the other by more than it gains.
+ * TODO: 99.64% match - activeSlide/nextInstance, first colour-loop base/index,
+ * and nextChild use different registers.
  */
 void FERender::RenderComponentInstance(TLComponentInstance* componentInstance)
 {
@@ -268,12 +263,10 @@ void FERender::RenderComponentInstance(TLComponentInstance* componentInstance)
     {
         return;
     }
-
     if (activeSlide == 0)
     {
         return;
     }
-
     if (activeSlide->m_instances == 0)
     {
         return;
@@ -289,6 +282,7 @@ void FERender::RenderComponentInstance(TLComponentInstance* componentInstance)
 
         if (instance->IsValidAtTime(time) && instance->m_bVisible)
         {
+            nlFloatColour oldChildColour;
             nlMatrix4 rotationMatrix;
             nlMatrix4 scaleMatrix;
             nlMatrix4 combinedMatrix;
@@ -338,9 +332,7 @@ void FERender::RenderComponentInstance(TLComponentInstance* componentInstance)
                 ((TLTextInstance*)instance)->SetMatrix(&textMatrix);
 
                 nlColour colour;
-#pragma inline_depth(0)
                 ConvertColour(colour, s_currentAssetColour);
-#pragma inline_depth()
 
                 ((TLTextInstance*)instance)->Render((eGLView)m_pRenderScene->GetRenderView(), colour);
                 break;
@@ -367,7 +359,12 @@ void FERender::RenderComponentInstance(TLComponentInstance* componentInstance)
 
                 while (true)
                 {
-                    nlFloatColour oldChildColour = s_currentAssetColour;
+                    u32* saveDst = (u32*)&oldChildColour;
+                    u32* saveSrc = (u32*)&s_currentAssetColour;
+                    saveDst[0] = saveSrc[0];
+                    saveDst[1] = saveSrc[1];
+                    saveDst[2] = saveSrc[2];
+                    saveDst[3] = saveSrc[3];
                     TLInstance* nextChild = child->m_next;
 
                     if (child->IsValidAtTime(time) && child->IsVisible())
@@ -392,30 +389,35 @@ void FERender::RenderComponentInstance(TLComponentInstance* componentInstance)
 
                         if (child->pChildren != 0)
                         {
-                            TLInstance* grandchild = child->pChildren->m_next;
+                            TLInstance* nextGrandchild;
 
-                            while (true)
+                            for (TLInstance* grandchild = child->pChildren->m_next;; grandchild = nextGrandchild)
                             {
-                                TLInstance* nextGrandchild = grandchild->m_next;
+                                nextGrandchild = grandchild->m_next;
                                 nlFloatColour oldGrandchildColour = s_currentAssetColour;
 
                                 RenderTimeLineAsset(grandchild, time);
 
-                                s_currentAssetColour = oldGrandchildColour;
+#pragma inline_depth(0)
+                                s_currentAssetColour.operator=(oldGrandchildColour);
+#pragma inline_depth()
 
                                 if (grandchild == child->pChildren)
                                 {
                                     break;
                                 }
-
-                                grandchild = nextGrandchild;
                             }
                         }
 
                         PopTransformMatrix();
                     }
 
-                    s_currentAssetColour = oldChildColour;
+                    u32* childDst = (u32*)&s_currentAssetColour;
+                    u32* childSrc = (u32*)&oldChildColour;
+                    childDst[0] = childSrc[0];
+                    childDst[1] = childSrc[1];
+                    childDst[2] = childSrc[2];
+                    childDst[3] = childSrc[3];
 
                     if (child == instance->pChildren)
                     {
@@ -429,7 +431,10 @@ void FERender::RenderComponentInstance(TLComponentInstance* componentInstance)
             m_pMatrixStack->PopMatrix();
         }
 
-        s_currentAssetColour = oldSlideColour;
+        *(u32*)&s_currentAssetColour.c[0] = *(u32*)&oldSlideColour.c[0];
+        *(u32*)&s_currentAssetColour.c[1] = *(u32*)&oldSlideColour.c[1];
+        *(u32*)&s_currentAssetColour.c[2] = *(u32*)&oldSlideColour.c[2];
+        *(u32*)&s_currentAssetColour.c[3] = *(u32*)&oldSlideColour.c[3];
 
         if (instance == activeSlide->m_instances)
         {
@@ -442,16 +447,15 @@ void FERender::RenderComponentInstance(TLComponentInstance* componentInstance)
 
 /**
  * Offset/Address/Size: 0x978 | 0x8020AC00 | size: 0x418
- * TODO: 98.84% match - MWCC register allocation: instance r30 vs target r28,
- * nextInstance r29 vs target r27, child r28 vs target r29, nextChild r27 vs
- * target r30, grandchild r23/r22 swapped. Stack: v3Pos at 0x2c vs target 0x1c,
- * oldChildColour at 0x1c vs target 0x28 (v3Pos and oldChildColour swapped in
- * frame). No opcode or control-flow diffs -- purely allocator choices.
- * ConvertColour kept as a real call via #pragma inline_depth(0)/() around the
- * TLAT_TEXT call site (call-site-local rather than body-level FDI).
+ * TODO: 99.75% match - colour loop pointer/index registers differ, and the
+ * child colour restore reloads use the previous asset-colour base for offsets
+ * 4, 8, and 12. No opcode or control-flow diffs.
  */
 void FERender::RenderSlide(const TLSlide* slide)
 {
+    TLInstance* nextChild;
+    TLInstance* child;
+
     if (slide == nullptr)
     {
         return;
@@ -547,7 +551,7 @@ void FERender::RenderSlide(const TLSlide* slide)
 
             if (instance->pChildren != 0)
             {
-                TLInstance* child = instance->pChildren->m_next;
+                child = instance->pChildren->m_next;
 
                 while (true)
                 {
@@ -555,7 +559,7 @@ void FERender::RenderSlide(const TLSlide* slide)
                     *(u32*)&oldChildColour.c[1] = *(u32*)&s_currentAssetColour.c[1];
                     *(u32*)&oldChildColour.c[2] = *(u32*)&s_currentAssetColour.c[2];
                     *(u32*)&oldChildColour.c[3] = *(u32*)&s_currentAssetColour.c[3];
-                    TLInstance* nextChild = child->m_next;
+                    nextChild = child->m_next;
 
                     if (child->IsValidAtTime(time) && child->IsVisible())
                     {
@@ -579,11 +583,12 @@ void FERender::RenderSlide(const TLSlide* slide)
 
                         if (child->pChildren != 0)
                         {
+                            TLInstance* nextGrandchild;
                             TLInstance* grandchild = child->pChildren->m_next;
 
                             while (true)
                             {
-                                TLInstance* nextGrandchild = grandchild->m_next;
+                                nextGrandchild = grandchild->m_next;
                                 nlFloatColour oldGrandchildColour = s_currentAssetColour;
 
                                 RenderTimeLineAsset(grandchild, time);
@@ -637,10 +642,9 @@ void FERender::RenderSlide(const TLSlide* slide)
 
 /**
  * Offset/Address/Size: 0xD90 | 0x8020B018 | size: 0x7A8
- * TODO: 98.82% match - 131 pure register-allocation diffs: pTLInstance r26 vs
- * target r31, colour loop base r31 vs target r27, cascading through all
- * nested loop variables. Stack offsets shifted accordingly. No opcode or
- * control-flow diffs.
+ * TODO: 99.04% match - pTLInstance, colour-loop base, and nested-loop
+ * registers still differ from target. Stack offsets are shifted accordingly.
+ * No opcode or control-flow diffs.
  */
 void FERender::RenderTimeLineAsset(TLInstance* pTLInstance, float fCurrentTime)
 {
@@ -657,6 +661,8 @@ void FERender::RenderTimeLineAsset(TLInstance* pTLInstance, float fCurrentTime)
     nlMatrix4 rotationMatrix;
     nlMatrix4 scaleMatrix;
     nlMatrix4 combinedMatrix;
+    TLInstance* curr;
+    TLInstance* next;
 
     const feVector3& rotZ = pTLInstance->GetRotation();
     const feVector3& rotY = pTLInstance->GetRotation();
@@ -728,12 +734,12 @@ void FERender::RenderTimeLineAsset(TLInstance* pTLInstance, float fCurrentTime)
             {
                 if (slide != 0 && slide->m_instances != 0)
                 {
-                    TLInstance* curr = slide->m_instances->m_next;
+                    curr = slide->m_instances->m_next;
 
                     while (true)
                     {
                         nlFloatColour oldSlideColour = s_currentAssetColour;
-                        TLInstance* next = curr->m_next;
+                        next = curr->m_next;
 
                         float slideTime = slide->GetCurrentTime();
                         if (curr->IsValidAtTime(slideTime) && curr->IsVisible())
@@ -814,12 +820,12 @@ void FERender::RenderTimeLineAsset(TLInstance* pTLInstance, float fCurrentTime)
 
     if (pTLInstance->pChildren != 0)
     {
-        TLInstance* curr = pTLInstance->pChildren->m_next;
+        curr = pTLInstance->pChildren->m_next;
 
         while (true)
         {
             nlFloatColour colour = s_currentAssetColour;
-            TLInstance* next = curr->m_next;
+            next = curr->m_next;
 
             if (curr->IsValidAtTime(fCurrentTime) && curr->m_bVisible)
             {

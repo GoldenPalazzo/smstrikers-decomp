@@ -588,7 +588,7 @@ void AudioStreamTrack::StreamTrack::Update(float)
 
 /**
  * Offset/Address/Size: 0x14D4 | 0x8015622C | size: 0x428
- * TODO: 92.9% match - stack frame size/local layout differs around queue restore; loop remove-start setup and memfun bind sequence still differ
+ * TODO: 99.1% match - stack frame size differs; loop remove-start setup and restore-copy stack slots still differ
  */
 void AudioStreamTrack::StreamTrack::PlayStream(
     unsigned long StreamId, float Volume, bool Looping,
@@ -667,6 +667,15 @@ void AudioStreamTrack::StreamTrack::PlayStream(
     nlDLRingAddEnd(&m_QueuedStreams.m_Head, newTail);
 
     DLListEntry<QUEUED_STREAM>* startEntry = nlDLRingGetStart(m_QueuedStreams.m_Head);
+    struct Iter
+    {
+        DLListEntry<QUEUED_STREAM>* m_head;
+        DLListEntry<QUEUED_STREAM>* m_current;
+        ~Iter() { }
+    };
+    Iter iter;
+    iter.m_head = m_QueuedStreams.m_Head;
+    iter.m_current = startEntry;
     QUEUED_STREAM* qs = &startEntry->m_data;
 
     BindExp2_T bind = Bind<void>(
@@ -1303,7 +1312,7 @@ void AudioStreamTrack::StreamTrack::FadeOutDoneStartNext(AudioStreamTrack::Strea
 
 /**
  * Offset/Address/Size: 0x1E8 | 0x80154F40 | size: 0x374
- * TODO: 97.73% match - r25/r27 register swap for fadeIter/fadeHead in both fade search loops
+ * TODO: 98.33% match - second fade search manager/stream/head register rotation and buffer iterator register differences remain
  */
 void AudioStreamTrack::StreamTrack::Pause(unsigned long Fadeout, bool bPause)
 {
@@ -1343,8 +1352,9 @@ void AudioStreamTrack::StreamTrack::Pause(unsigned long Fadeout, bool bPause)
     TrackManagerBase& mgr = m_TrackMgr;
     GCAudioStreaming::StereoAudioStream* pStream = qs->pStream;
 
+    FadeEntry* fadeHead;
     FadeEntry* fadeIter = nlDLRingGetStart(mgr.m_FadeMgr.m_Fades.m_Head);
-    FadeEntry* fadeHead = mgr.m_FadeMgr.m_Fades.m_Head;
+    fadeHead = mgr.m_FadeMgr.m_Fades.m_Head;
 
     FadeCtrl* fadeCtrl;
     while (fadeIter != NULL)
@@ -1369,7 +1379,10 @@ fade_found:
     bool hasEndVol;
     if (fadeCtrl != NULL)
     {
-        new (&endVol) unsigned long(fadeCtrl->EndVol);
+        if (&endVol != NULL)
+        {
+            endVol = fadeCtrl->EndVol;
+        }
         hasEndVol = true;
     }
     else
@@ -1383,11 +1396,12 @@ fade_found:
         return;
     }
 
-    TrackManagerBase* pMgr = &m_TrackMgr;
+    TrackManagerBase& pMgr = m_TrackMgr;
     pStream = qs->pStream;
 
-    FadeEntry* fadeIter2 = nlDLRingGetStart(pMgr->m_FadeMgr.m_Fades.m_Head);
-    FadeEntry* fadeHead2 = pMgr->m_FadeMgr.m_Fades.m_Head;
+    FadeEntry* fadeHead2;
+    FadeEntry* fadeIter2 = nlDLRingGetStart(pMgr.m_FadeMgr.m_Fades.m_Head);
+    fadeHead2 = pMgr.m_FadeMgr.m_Fades.m_Head;
     FadeCtrl* fadeCtrl2;
 
     while (fadeIter2 != NULL)
@@ -1412,15 +1426,15 @@ fade2_found:
     if (fadeCtrl2 != NULL)
     {
         FadeEntry* fadeEntry2 = (FadeEntry*)((char*)fadeCtrl2 - 8);
-        nlDLRingIsEnd(pMgr->m_FadeMgr.m_Fades.m_Head, fadeEntry2);
-        nlDLRingRemove(&pMgr->m_FadeMgr.m_Fades.m_Head, fadeEntry2);
+        nlDLRingIsEnd(pMgr.m_FadeMgr.m_Fades.m_Head, fadeEntry2);
+        nlDLRingRemove(&pMgr.m_FadeMgr.m_Fades.m_Head, fadeEntry2);
 
         if (fadeEntry2 != NULL)
         {
             fadeEntry2->m_data.~FadeCtrl();
         }
 
-        pMgr->m_FadeMgr.m_Fades.m_Allocator.Free(fadeEntry2);
+        pMgr.m_FadeMgr.m_Fades.m_Allocator.Free(fadeEntry2);
     }
 
     if (bPause)

@@ -39,18 +39,21 @@ static inline void ProcessBackground()
             unsigned long r;
             unsigned long g;
             unsigned long b;
+            u8 a;
 
             GXPeekARGB((unsigned short)j, (unsigned short)i, &color);
             r = (color >> 16) & 0xFF;
             g = (color >> 8) & 0xFF;
+            a = color >> 24;
             b = color & 0xFF;
-            color >>= 24;
+            color = 0;
+            color |= a;
             color <<= 8;
-            color |= r / 3;
+            color |= (u8)(r / 3);
             color <<= 8;
-            color |= g / 3;
+            color |= (u8)(g / 3);
             color <<= 8;
-            color |= b / 3;
+            color |= (u8)(b / 3);
             GXPokeARGB((unsigned short)j, (unsigned short)i, color);
         }
     }

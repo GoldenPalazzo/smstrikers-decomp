@@ -81,20 +81,8 @@ void VBlankPadUpdate()
 
             if (fabsf(normalizedX) >= 0.6f || fabsf(normalizedY) >= 0.6f)
             {
-                if (fabsf(normalizedX) >= 0.6f)
-                {
-                }
-                else
-                {
-                    normalizedX = 0.0f;
-                }
-                if (fabsf(normalizedY) >= 0.6f)
-                {
-                }
-                else
-                {
-                    normalizedY = 0.0f;
-                }
+                normalizedX = (fabsf(normalizedX) >= 0.6f) ? normalizedX : 0.0f;
+                normalizedY = (fabsf(normalizedY) >= 0.6f) ? normalizedY : 0.0f;
 
                 float angle = nlATan2f(normalizedY, normalizedX);
                 u16 angleU16 = (u16)(int)(angle * 10430.378f);

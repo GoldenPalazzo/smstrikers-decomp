@@ -1417,16 +1417,35 @@ void StatsTracker::GetSortedTeamStats(TeamStats* source, int numsource, int* des
     }
 }
 
+static inline void AccumulateUserStats(PlayerStats* us, const PlayerStats& current)
+{
+    us->mNumShotsOnGoal += current.mNumShotsOnGoal;
+    us->mNumGoalsFor += current.mNumGoalsFor;
+    us->mNumGoalsAgainst = current.mNumGoalsAgainst;
+    us->mNumAssists += current.mNumAssists;
+    us->mNumFouls += current.mNumFouls;
+    us->mNumPowerupsUsed += current.mNumPowerupsUsed;
+    us->mNumPowerupsHit += current.mNumPowerupsHit;
+    us->mNumShootToScoreGoals += current.mNumShootToScoreGoals;
+    us->mNumPassesMade += current.mNumPassesMade;
+    us->mNumPassesReceived += current.mNumPassesReceived;
+    us->mNumPassesIntercepted += current.mNumPassesIntercepted;
+    us->mNumHitsMade += current.mNumHitsMade;
+    us->mNumSteals += current.mNumSteals;
+    us->mBallPossessionTime += current.mBallPossessionTime;
+    us->mNumButtonPresses += current.mNumButtonPresses;
+    us->mNumGoalsOneTimers += current.mNumGoalsOneTimers;
+    us->mNumSTSAttempts += current.mNumSTSAttempts;
+    us->mNumPerfectPasses += current.mNumPerfectPasses;
+    us->mNumGamesPlayed = current.mNumGamesPlayed;
+}
+
 /**
  * Offset/Address/Size: 0x2E00 | 0x80184360 | size: 0x540
  */
-/**
- * TODO: 99.08% match - final user-stats accumulation loop still assigns source
- * and destination pointers to different registers than target.
- */
 void StatsTracker::CompileEndOfGameStats()
 {
-    int homeAwayIndex[2] = { 0, 0 };
+    int homeAwayIndex[2] = { -1, -1 };
     eTeamID homeid = mBasicGameInfo->mTeamIndex[0];
     eTeamID awayid = mBasicGameInfo->mTeamIndex[1];
     GameInfoManager* gameInfoMgr = nlSingleton<GameInfoManager>::Instance();
@@ -1536,27 +1555,7 @@ void StatsTracker::CompileEndOfGameStats()
 
     for (int i = 0; i < 4; i++)
     {
-        const PlayerStats& current = mCurrentUserStats[i];
-        PlayerStats* us = &nlSingleton<GameInfoManager>::s_pInstance->mUserStats[i];
-        us->mNumShotsOnGoal += current.mNumShotsOnGoal;
-        us->mNumGoalsFor += current.mNumGoalsFor;
-        us->mNumGoalsAgainst = current.mNumGoalsAgainst;
-        us->mNumAssists += current.mNumAssists;
-        us->mNumFouls += current.mNumFouls;
-        us->mNumPowerupsUsed += current.mNumPowerupsUsed;
-        us->mNumPowerupsHit += current.mNumPowerupsHit;
-        us->mNumShootToScoreGoals += current.mNumShootToScoreGoals;
-        us->mNumPassesMade += current.mNumPassesMade;
-        us->mNumPassesReceived += current.mNumPassesReceived;
-        us->mNumPassesIntercepted += current.mNumPassesIntercepted;
-        us->mNumHitsMade += current.mNumHitsMade;
-        us->mNumSteals += current.mNumSteals;
-        us->mBallPossessionTime += current.mBallPossessionTime;
-        us->mNumButtonPresses += current.mNumButtonPresses;
-        us->mNumGoalsOneTimers += current.mNumGoalsOneTimers;
-        us->mNumSTSAttempts += current.mNumSTSAttempts;
-        us->mNumPerfectPasses += current.mNumPerfectPasses;
-        us->mNumGamesPlayed = current.mNumGamesPlayed;
+        AccumulateUserStats(&nlSingleton<GameInfoManager>::s_pInstance->mUserStats[i], mCurrentUserStats[i]);
     }
 }
 

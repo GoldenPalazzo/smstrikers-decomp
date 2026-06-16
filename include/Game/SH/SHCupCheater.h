@@ -17,6 +17,7 @@ public:
     void OnSelectAwayWin();
     void OnSelectHomeOTWin();
     void OnSelectAwayOTWin();
+    void AddMilestoneStats();
     void UpdateSlides();
 
     /* 0x1C */ FESlideMenu* m_SlideMenu;            // size 0x4

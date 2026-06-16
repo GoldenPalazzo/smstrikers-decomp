@@ -73,22 +73,26 @@ public:
 template <typename T, typename Adapter>
 T* DLListContainerBase<T, Adapter>::AllocateAtEnd(unsigned long* outEntry)
 {
-    // TODO: 54.10% match - emits 4 callee-saved registers vs the target's 5
-    // (the value-initialized temporary is not held in a register to scope end),
-    // shifting this/outEntry one register higher and permuting registers throughout.
-    DLListEntry<T>* entry = NULL;
-    T localData = T();
-    m_Allocator.Allocate(entry);
-    if (entry != NULL)
+    // TODO: 93.53% match - residual is an r27/r28 callee-saved register swap
+    // (compiler internal allocation order difference), not a source-shape issue.
+    DLListEntry<T>* result;
     {
-        new (&entry->m_data) T(localData);
+        T data;
+        DLListEntry<T> localEntry(data);
+        result = NULL;
+
+        m_Allocator.Allocate(result);
+        result = new (result) DLListEntry<T>(localEntry);
     }
-    nlDLRingAddEnd(&m_Head, entry);
+
+    nlDLRingAddEnd(&m_Head, result);
+
     if (outEntry != NULL)
     {
-        *outEntry = (unsigned long)entry;
+        *outEntry = (unsigned long)result;
     }
-    return &entry->m_data;
+
+    return &result->m_data;
 }
 
 template <typename T, typename Adapter>

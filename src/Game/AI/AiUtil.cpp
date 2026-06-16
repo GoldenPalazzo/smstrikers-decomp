@@ -459,38 +459,36 @@ void RotateVectorZAxis(nlVector3& v3Out, const nlVector3& v3In, unsigned short a
  */
 void GetRotationBetweenVectors(nlQuaternion& quat, const nlVector3& v3Vec1, const nlVector3& v3Vec2)
 {
-    f32 fInvR1R2 = 1.0f / nlSqrt(v3Vec1.GetLengthSq3D() * v3Vec2.GetLengthSq3D(), true);
-    f32 fCosAngle = fInvR1R2 * nlVec3DotProduct(v3Vec1, v3Vec2);
+    const float fInvR1R2 = 1.0f / nlSqrt(v3Vec1.GetLengthSq3D() * v3Vec2.GetLengthSq3D(), true);
+    float fCosAngle = fInvR1R2 * nlVec3DotProduct(v3Vec1, v3Vec2);
 
-    if (fCosAngle > 0.999999f)
+    if (fCosAngle > 0.99999f)
     {
         nlQuatIdentity(quat);
     }
-    else if (fCosAngle < -0.999999f)
+    else if (fCosAngle < -0.99999f)
     {
-        f32 ax;
-        f32 ay;
-        f32 az;
+        nlVector3 axis;
+        axis.f.x = 1.0f;
 
         if (v3Vec1.f.x > v3Vec1.f.z || v3Vec1.f.y > v3Vec1.f.z)
         {
-            ax = 0.0f;
-            ay = 0.0f;
-            az = 1.0f;
+            axis.f.x = 0.0f;
+            axis.f.z = 1.0f;
+            axis.f.y = axis.f.x;
         }
         else
         {
-            ax = 1.0f;
-            ay = 0.0f;
-            az = 0.0f;
+            axis.f.y = 0.0f;
+            axis.f.z = axis.f.y;
         }
 
-        f32 nax = -ax;
-        f32 cy = az * v3Vec1.f.x + nax * v3Vec1.f.z;
-        f32 cx = ay * v3Vec1.f.z - az * v3Vec1.f.y;
-        f32 cz = ax * v3Vec1.f.y - ay * v3Vec1.f.x;
+        float nax = -axis.f.x;
+        float cz = axis.f.x * v3Vec1.f.y - axis.f.y * v3Vec1.f.x;
+        float cy = axis.f.z * v3Vec1.f.x + nax * v3Vec1.f.z;
+        float cx = axis.f.y * v3Vec1.f.z - axis.f.z * v3Vec1.f.y;
 
-        f32 invLen = nlRecipSqrt(cx * cx + cy * cy + cz * cz, true);
+        float invLen = nlRecipSqrt(cy * cy + cx * cx + cz * cz, true);
 
         quat.f.x = invLen * cx;
         quat.f.y = invLen * cy;
@@ -499,19 +497,19 @@ void GetRotationBetweenVectors(nlQuaternion& quat, const nlVector3& v3Vec1, cons
     }
     else
     {
-        f32 fMagic = nlSqrt((f32)(0.5 * (1.0 + fCosAngle)), true);
-        f32 fMultiplier = fInvR1R2 / fMagic;
+        float fMagic = nlSqrt((float)(0.5 * (1.0 + fCosAngle)), true);
+        float fMultiplier = fInvR1R2 / fMagic;
 
-        f32 cx_init = v3Vec1.f.z * v3Vec2.f.y;
-        f32 cz_init = v3Vec1.f.y * v3Vec2.f.x;
-        f32 negX = -v3Vec1.f.x;
+        float cx_init = v3Vec1.f.z * v3Vec2.f.y;
+        float cz_init = v3Vec1.f.y * v3Vec2.f.x;
+        float negX = -v3Vec1.f.x;
 
         quat.f.w = 0.5f * fMagic;
 
-        f32 cy_init = v3Vec1.f.z * v3Vec2.f.x;
-        f32 cx = v3Vec1.f.y * v3Vec2.f.z - cx_init;
-        f32 cz = v3Vec1.f.x * v3Vec2.f.y - cz_init;
-        f32 cy = negX * v3Vec2.f.z + cy_init;
+        float cy_init = v3Vec1.f.z * v3Vec2.f.x;
+        float cx = v3Vec1.f.y * v3Vec2.f.z - cx_init;
+        float cz = v3Vec1.f.x * v3Vec2.f.y - cz_init;
+        float cy = negX * v3Vec2.f.z + cy_init;
 
         quat.f.x = cx * fMultiplier;
         quat.f.y = cy * fMultiplier;

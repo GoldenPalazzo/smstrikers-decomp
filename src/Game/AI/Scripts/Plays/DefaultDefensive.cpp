@@ -422,6 +422,10 @@ FuzzyVariant Fuzzy::DefendPassInPlay(float fConfidence, cDecisionEntity* pEntity
     return FuzzyVariant(fBestConfidence);
 }
 
+/**
+ * Offset/Address/Size: 0x2140 | 0x800877F8 | size: 0x1918
+ * TODO: 99.26% match - remaining diffs are register allocation in weighted confidence accumulators.
+ */
 FuzzyVariant Fuzzy::TryAttacking(float fConfidence, cDecisionEntity* pEntity)
 {
     float fBestConfidence = 0.0f;
@@ -726,9 +730,7 @@ FuzzyVariant Fuzzy::TryAttacking(float fConfidence, cDecisionEntity* pEntity)
                 float fFacing = Facing(g_pScriptCurrentFielder, g_pScriptBallOwner);
                 float fInControl2 = InControlOfBall(g_pScriptBallOwner);
                 float fNearTo3 = NearTo(g_pScriptBallOwner, g_pScriptCurrentFielder);
-                float fWeighted2 = (1.0f - fInControl2) * 0.35f;
-                fWeighted2 += fNearTo3 * 0.3f;
-                fWeighted2 += fFacing * 0.35f;
+                float fWeighted2 = (1.0f - fInControl2) * 0.35f + fNearTo3 * 0.3f + fFacing * 0.35f;
                 float fFalseConf16 = 1.0f - fWeighted2;
                 float fMin16 = (fWeighted2 <= fFalseConf16) ? fWeighted2 : fFalseConf16;
                 float fMax16 = (fWeighted2 >= fFalseConf16) ? fWeighted2 : fFalseConf16;
@@ -764,19 +766,18 @@ FuzzyVariant Fuzzy::TryAttacking(float fConfidence, cDecisionEntity* pEntity)
                 fWeighted3 += fOpenTheirNet * 0.2f;
                 fWeighted3 += fNearTo4 * 0.2f;
                 fWeighted3 += (1.0f - fInControl3) * 0.3f;
-                fWeighted3 += fFacing2;
-                fWeighted3 += (-0.5f);
+                float fWeighted3Final = fFacing2 + fWeighted3 + (-0.5f);
 
-                float fFalseConf17 = 1.0f - fWeighted3;
-                float fMin17 = (fWeighted3 <= fFalseConf17) ? fWeighted3 : fFalseConf17;
-                float fMax17 = (fWeighted3 >= fFalseConf17) ? fWeighted3 : fFalseConf17;
+                float fFalseConf17 = 1.0f - fWeighted3Final;
+                float fMin17 = (fWeighted3Final <= fFalseConf17) ? fWeighted3Final : fFalseConf17;
+                float fMax17 = (fWeighted3Final >= fFalseConf17) ? fWeighted3Final : fFalseConf17;
                 float fRatio17 = fMin17 / fMax17;
 
-                if (fWeighted3 > 0.0f)
+                if (fWeighted3Final > 0.0f)
                 {
                     SaveConfidence PushDOM21(&fConfidence);
-                    fConfidence = (fConfidence <= fWeighted3) ? fConfidence : fWeighted3;
-                    if (fConfidence < fWeighted3 && fWeighted3 < 0.2f)
+                    fConfidence = (fConfidence <= fWeighted3Final) ? fConfidence : fWeighted3Final;
+                    if (fConfidence < fWeighted3Final && fWeighted3Final < 0.2f)
                         fConfidence = fConfidence * fRatio17;
                     float fResult3 = AttackBallOwner(fConfidence, pEntity).mData.f;
                     if (fResult3 >= fBestConfidence)

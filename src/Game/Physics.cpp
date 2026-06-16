@@ -154,8 +154,8 @@ void PhysicsUpdate(PhysicsWorld* pWorld, float fDeltaT)
 
 /**
  * Offset/Address/Size: 0x14C | 0x80132C5C | size: 0x244
- * TODO: 95.6% match - r29/r30/r31 register assignment still shifted in early loops,
- *       plus @425/@438 member-function pointer constant index differences.
+ * TODO: 98.31% match - mesh-list iterator uses r29 instead of r31 around
+ *       g_NetPhysicsObjects clear; member-function pointer constants differ.
  */
 void PhysicsLoader::DestroyPhysics()
 {
@@ -195,10 +195,12 @@ void PhysicsLoader::DestroyPhysics()
     s_PhysicsMeshes.m_lItemList.m_Head = NULL;
     s_PhysicsMeshes.m_lItemList.m_Tail = NULL;
 
-    ListEntry<char*>** memTail = &s_PhysicsMeshes.m_lMemList.m_Tail;
+    nlListContainer<char*>* memList = &s_PhysicsMeshes.m_lMemList;
+    ListEntry<char*>** memTail = &memList->m_Tail;
+    ListEntry<char*>** memHead = &memList->m_Head;
     while (s_PhysicsMeshes.m_lMemList.m_Head != NULL)
     {
-        ListEntry<char*>* removed = nlListRemoveStart<ListEntry<char*> >(&s_PhysicsMeshes.m_lMemList.m_Head, memTail);
+        ListEntry<char*>* removed = nlListRemoveStart<ListEntry<char*> >(memHead, memTail);
         void* mesh;
         if (&mesh != NULL)
         {
@@ -229,9 +231,6 @@ PhysicsRoundedCorner::~PhysicsRoundedCorner()
 
 /**
  * Offset/Address/Size: 0x3F0 | 0x80132F00 | size: 0x338
- * TODO: 97.59% match - remaining diffs are -inline deferred vs -inline auto float register
- *       allocation: f0/f1 swap for centre.x in nlVec3Set, m31 control flow (hoisted load
- *       + shared li vs duplicate), v1/v2 float register naming. Integer regs now correct.
  */
 void PhysicsLoader::ConstructStaticPhysicsPrimitives(CharacterPhysicsData* pPhysicsData)
 {
@@ -291,34 +290,13 @@ void PhysicsLoader::ConstructStaticPhysicsPrimitives(CharacterPhysicsData* pPhys
 
             float m31 = physElement->matLocalToParent.f.m31;
 
-            if (centre.f.x > 0.0f)
+            if ((centre.f.x > 0.0f && m31 > 0.01f) || (centre.f.x < 0.0f && m31 < -0.01f))
             {
-                if (m31 > 0.01f)
-                {
-                    normalPointsAwayFromField = true;
-                }
-            }
-            else if (centre.f.x < 0.0f)
-            {
-                if (m31 < -0.01f)
-                {
-                    normalPointsAwayFromField = true;
-                }
+                normalPointsAwayFromField = true;
             }
 
-            {
-                float halfWidth = 0.5f * physElement->fWidth;
-                v1.f.z = halfWidth * v1.f.z;
-                v1.f.y = halfWidth * v1.f.y;
-                v1.f.x = halfWidth * v1.f.x;
-            }
-
-            {
-                float halfLength = 0.5f * physElement->fLength;
-                v2.f.z = halfLength * v2.f.z;
-                v2.f.y = halfLength * v2.f.y;
-                v2.f.x = halfLength * v2.f.x;
-            }
+            nlVec3Scale(v1, 0.5f * physElement->fWidth);
+            nlVec3Scale(v2, 0.5f * physElement->fLength);
 
             obj = new (nlMalloc(0x44, 8, false)) PhysicsFinitePlane(NULL, centre, v1, v2, true, normalPointsAwayFromField ? sfStaticFinitePlaneThinDepth : sfStaticFinitePlaneThickDepth);
             {

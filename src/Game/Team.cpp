@@ -430,7 +430,7 @@ void cTeam::PreUpdate(float dt)
 static inline void CalculateInterceptTimes(cTeam* pTeam);
 /**
  * Offset/Address/Size: 0x132C | 0x800656D8 | size: 0x2CC
- * TODO: 99.55% match - r30/r28 loop-counter register swap in ball-intercept loop
+ * TODO: 99.72% match - landing-distance float temps and final UpdatePlay loop counter differ
  */
 void cTeam::Update(float dt)
 {
@@ -549,7 +549,7 @@ void cTeam::UpdateControllers()
 
 /**
  * Offset/Address/Size: 0x3DC | 0x80065044 | size: 0x468
- * TODO: 95.56% match - register allocation still differs in controller assignment
+ * TODO: 97.19% match - register allocation still differs in controller assignment
  * and kickoff setup blocks.
  */
 void cTeam::ResetCharacters()
@@ -609,12 +609,12 @@ void cTeam::ResetCharacters()
     if (g_pGame->m_nLastTeamToScore == g_pTeams[m_nSide == 0 ? 1 : 0]->m_nSide)
     {
         pFacingDirectionTable = g_aAdvantagePlayerFacingDirections;
-        pFormation = m_pFormationManager->GetFormationSpec(FORMATION_OFF_DEF_KICKOFF_ADVANTAGE);
+        pFormation = FormationManager::GetFormationSpec(FORMATION_OFF_DEF_KICKOFF_ADVANTAGE);
     }
     else
     {
         pFacingDirectionTable = g_aNeutralPlayerFacingDirections;
-        pFormation = m_pFormationManager->GetFormationSpec(FORMATION_OFF_DEF_KICKOFF_NEUTRAL);
+        pFormation = FormationManager::GetFormationSpec(FORMATION_OFF_DEF_KICKOFF_NEUTRAL);
     }
 
     bFlipPositions = 0;
@@ -623,7 +623,7 @@ void cTeam::ResetCharacters()
         bFlipPositions = 1;
     }
 
-    for (int i = 0; i < 5; i++, pOrder++, pFacingDirectionTable++)
+    for (int i = 0; i < 5; i++, pFacingDirectionTable++, pOrder++)
     {
         pFielder = m_pPlayers[*pOrder];
         unsigned short aNewFacingDirection = *pFacingDirectionTable;
@@ -649,7 +649,7 @@ void cTeam::ResetCharacters()
 
         if (bFlipPositions)
         {
-            aNewFacingDirection = (unsigned short)(aNewFacingDirection + (((s16)(0x4000 - aNewFacingDirection)) * 2));
+            aNewFacingDirection += ((s16)(0x4000 - aNewFacingDirection)) * 2;
         }
         else
         {
@@ -749,9 +749,13 @@ bool cTeam::CalculateFormationPosition(nlVector3& pos, cFielder* pFielder, bool 
 
 static inline void CalculateInterceptTimes(cTeam* pTeam)
 {
-    for (int i = 0; i < 4; i++)
+    nlVector3* pBallPosition;
+    cFielder* pPlayer;
+    int i;
+
+    for (i = 0; i < 4; i++)
     {
-        cFielder* pPlayer = pTeam->m_pPlayers[i];
+        pPlayer = pTeam->m_pPlayers[i];
         float speed = pPlayer->m_fActualSpeed;
         float runSpeed = pPlayer->m_pTweaks->fRunningSpeed;
         speed = (speed >= runSpeed) ? speed : runSpeed;
@@ -770,7 +774,7 @@ static inline void CalculateInterceptTimes(cTeam* pTeam)
         {
             int nNumSolutions = 0;
             interceptTime = 100000000.0f;
-            nlVector3* pBallPosition = &g_pBall->m_v3Position;
+            pBallPosition = &g_pBall->m_v3Position;
             nlVector3* pAIVelocity = g_pBall->GetAIVelocity();
             float pSolutions[2];
             CalcInterceptXY(pPlayer->m_v3Position, speed, 0.0f, *pBallPosition, *pAIVelocity, nNumSolutions, pSolutions);

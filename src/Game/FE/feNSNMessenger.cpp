@@ -251,33 +251,21 @@ void NSNMessengerScene::SetDisplayMessage(const BasicString<unsigned short, Deta
         InlineHasher(nlStringLowerHash("Text")));
     textBox->SetString(m_displayMessage);
 
-    {
-        InlineHasher z1(0);
-        InlineHasher z2(0);
-        textBox = FEFinder<TLTextInstance, 3>::Find<FEPresentation>(
-            pres,
-            InlineHasher(nlStringLowerHash("Intro")),
-            InlineHasher(nlStringLowerHash("Layer")),
-            InlineHasher(nlStringLowerHash("Group")),
-            InlineHasher(nlStringLowerHash("Text")),
-            z1,
-            z2);
-        textBox->SetString(m_displayMessage);
-    }
+    textBox = FEFinder<TLTextInstance, 3>::Find<FEPresentation>(
+        pres,
+        InlineHasher(nlStringLowerHash("Intro")),
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("Group")),
+        InlineHasher(nlStringLowerHash("Text")));
+    textBox->SetString(m_displayMessage);
 
-    {
-        InlineHasher z1(0);
-        InlineHasher z2(0);
-        textBox = FEFinder<TLTextInstance, 3>::Find<FEPresentation>(
-            pres,
-            InlineHasher(nlStringLowerHash("Outro")),
-            InlineHasher(nlStringLowerHash("Layer")),
-            InlineHasher(nlStringLowerHash("Group")),
-            InlineHasher(nlStringLowerHash("Text")),
-            z1,
-            z2);
-        textBox->SetString(m_displayMessage);
-    }
+    textBox = FEFinder<TLTextInstance, 3>::Find<FEPresentation>(
+        pres,
+        InlineHasher(nlStringLowerHash("Outro")),
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("Group")),
+        InlineHasher(nlStringLowerHash("Text")));
+    textBox->SetString(m_displayMessage);
 
     if (m_scrollText != NULL)
     {

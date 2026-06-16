@@ -128,6 +128,7 @@ static GLViewportUserData g_viewport;
 static void glx_SwitchTextureState(const glModelPacket*);
 static unsigned long glx_SwitchTexConfig(const glModelPacket*);
 static void glx_DrawPacket(const glModelPacket*);
+static void GetConstants();
 
 /**
  * Offset/Address/Size: 0x0 | 0x801B9B00 | size: 0x538
@@ -1958,13 +1959,13 @@ static void glx_SwitchTextureState(const glModelPacket* p)
 
 /**
  * Offset/Address/Size: 0x2B1C | 0x801BC61C | size: 0x2154
- * TODO: 23.37% match - large switch coverage added; remaining mismatches are
- * concentrated in texconfig 0x07 and 0x23 program-split paths and several
- * high-value gloss/raster stage sequences.
+ * TODO: 99.13% match - gx_vtxfmt setup and texture-attribute loop still use
+ * different temp registers and branch shape.
  */
 static unsigned long glx_SwitchTexConfig(const glModelPacket* p)
 {
     int texnum;
+    unsigned long texconfig;
     int bit;
     unsigned long extra;
 
@@ -1981,10 +1982,11 @@ static unsigned long glx_SwitchTexConfig(const glModelPacket* p)
 #define SET_TEX_GEN(stage, type, src, mtx) \
     gxSetTexCoordGen((int)(stage), (_GXTexGenType)(type), (_GXTexGenSrc)(src), (u32)(mtx))
 
-    glx_texconfig = p->state.texconfig;
+    texconfig = p->state.texconfig;
+    glx_texconfig = texconfig;
     extra = 0x40;
 
-    if (glx_texconfig & 0x10)
+    if (texconfig & 0x10)
     {
         if (glx_normals == 0)
         {
@@ -2017,7 +2019,7 @@ static unsigned long glx_SwitchTexConfig(const glModelPacket* p)
     bit = 0;
     do
     {
-        if (glx_texconfig & (1 << bit))
+        if (texconfig & (1 << bit))
         {
             gx_texattr[bit] = (GXAttr)(texnum + 13);
             texnum++;
@@ -2686,32 +2688,35 @@ static inline GXColor makeColor(f32 r, f32 g, f32 b, f32 a)
 
 /**
  * Offset/Address/Size: 0x4E94 | 0x801BE994 | size: 0x310
- * TODO: 99.18% match - 30 stack offset diffs from compiler GXColor temp ordering
- *       (decomp.me interleaves col/tmp per scope, target groups all cols then all tmps)
  */
-void GetConstants()
+static void GetConstants()
 {
     nlVector4 vMult;
     nlVector4 vTexel;
     Mtx crowdMatrix;
+    GXColor shadow0;
+    GXColor shadow1;
+    GXColor ambient;
 
     {
         const nlVector4& v = glConstantGet("shadow/pass0_colour");
-        rshadow_colour[0] = makeColor(v.f.x, v.f.y, v.f.z, v.f.w);
+        shadow0 = makeColor(v.f.x, v.f.y, v.f.z, v.f.w);
+        rshadow_colour[0] = shadow0;
     }
 
     {
         const nlVector4& v = glConstantGet("shadow/pass1_colour");
-        rshadow_colour[1] = makeColor(v.f.x, v.f.y, v.f.z, v.f.w);
+        shadow1 = makeColor(v.f.x, v.f.y, v.f.z, v.f.w);
+        rshadow_colour[1] = shadow1;
     }
 
     {
         const nlVector4& v = glConstantGet("lighting/ambient_colour");
-        GXColor tmp = makeColor(v.f.x, v.f.y, v.f.z, v.f.w);
-        world_ambient.c[0] = tmp.r;
-        world_ambient.c[1] = tmp.g;
-        world_ambient.c[2] = tmp.b;
-        world_ambient.c[3] = tmp.a;
+        ambient = makeColor(v.f.x, v.f.y, v.f.z, v.f.w);
+        world_ambient.c[0] = ambient.r;
+        world_ambient.c[1] = ambient.g;
+        world_ambient.c[2] = ambient.b;
+        world_ambient.c[3] = ambient.a;
     }
 
     glConstantGet("water/scale", water_Scale);

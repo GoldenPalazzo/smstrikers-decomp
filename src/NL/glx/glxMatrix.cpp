@@ -2,12 +2,11 @@
 #include "math.h"
 
 #include <stddef.h>
-void* memcpy(void* dest, const void* src, size_t num);
 
-// s8 init_near = 0;
-// s8 init_far = 0;
-// f32 fNear = 0.0f;
-// f32 fFar = 0.0f;
+extern "C"
+{
+    void* memcpy(void* dest, const void* src, size_t num);
+}
 
 /**
  * Offset/Address/Size: 0x0 | 0x801B6568 | size: 0x64
@@ -58,72 +57,72 @@ void glplatMatrixLookAt(nlMatrix4& arg0, const nlVector3& arg1, const nlVector3&
     float f28 = az - bz;
 
     float f1 = nlRecipSqrt(f28 * f28 + (f27 * f27 + f0), true);
-    float f31 = f1 * f27;
     float upz = arg3.f.z;
     float upy = arg3.f.y;
-    float f30 = f1 * f26;
+    float f31 = f1 * f27;
     float upx = arg3.f.x;
+    float f30 = f1 * f26;
     float f29 = f1 * f28;
 
     float negUpx = -upx;
     float fA = upz * f31;
     float fB = upz * f30;
     float fC = upy * f31;
-    f26 = upy * f29 - fB;
-    f27 = negUpx * f29 + fA;
-    f28 = upx * f30 - fC;
+    f28 = upy * f29 - fB;
+    f26 = negUpx * f29 + fA;
+    f27 = upx * f30 - fC;
 
-    f1 = nlRecipSqrt(f28 * f28 + (f26 * f26 + f27 * f27), true);
-    float f12 = f1 * f27;
-    float eyeY = arg1.f.y;
-    float f11 = f1 * f26;
-    float eyeX = arg1.f.x;
-    float f2 = f30 * eyeY;
-    float eyeZ = arg1.f.z;
-    float f00 = f12 * eyeY;
+    f1 = nlRecipSqrt(f27 * f27 + (f28 * f28 + f26 * f26), true);
+    float f9 = f1 * f26;
+    float f11 = arg1.f.y;
+    float f3 = f1 * f28;
+    float f12 = arg1.f.x;
+    float eyeX = arg1.f.z;
+    float f2 = f30 * f11;
+    float f00 = f9 * f11;
 
-    arg0.m[0][0] = f11;
+    arg0.m[0][0] = f3;
 
-    float f13 = f1 * f28;
+    float f10 = f1 * f27;
     float zero = 0.0f;
     float f8 = -f31;
 
-    arg0.m[1][0] = f12;
+    arg0.m[1][0] = f9;
 
-    float f4 = f29 * f11;
+    float f4 = f29 * f3;
 
-    arg0.m[2][0] = f13;
+    arg0.m[2][0] = f10;
 
-    float f3 = f11 * eyeX + f00;
+    float f13 = f3 * f12 + f00;
     float one = 1.0f;
-    float f9 = f29 * f12;
-    float f10 = f8 * f13 + f4;
-    f4 = f13 * eyeZ + f3;
-    f8 = f30 * f11;
-    f9 = f30 * f13 - f9;
-    f3 = f10 * eyeY;
+    float f5 = f29 * f9;
+    float f6 = f8 * f10 + f4;
+    f4 = f10 * eyeX + f13;
+    float f7 = f30 * f3;
+    f5 = f30 * f10 - f5;
+    f13 = f6 * f11;
     f4 = -f4;
-    float f5 = f31 * f12 - f8;
-    f3 = f9 * eyeX + f3;
+    f7 = f31 * f9 - f7;
+    f13 = f5 * f12 + f13;
 
     arg0.m[3][0] = f4;
 
-    f2 = f31 * eyeX + f2;
+    f2 = f31 * f12 + f2;
 
-    arg0.m[0][1] = f9;
+    arg0.m[0][1] = f5;
 
-    f3 = f5 * eyeZ + f3;
-    f2 = f29 * eyeZ + f2;
+    f13 = f7 * eyeX + f13;
+    f2 = f29 * eyeX + f2;
 
-    arg0.m[1][1] = f10;
+    arg0.m[1][1] = f6;
 
-    f3 = -f3;
+    f13 = -f13;
 
-    arg0.m[2][1] = f5;
+    arg0.m[2][1] = f7;
 
     f2 = -f2;
 
-    arg0.m[3][1] = f3;
+    arg0.m[3][1] = f13;
     arg0.m[0][2] = f31;
     arg0.m[1][2] = f30;
     arg0.m[2][2] = f29;
@@ -132,9 +131,6 @@ void glplatMatrixLookAt(nlMatrix4& arg0, const nlVector3& arg1, const nlVector3&
     arg0.m[1][3] = zero;
     arg0.m[2][3] = zero;
     arg0.m[3][3] = one;
-
-    // TODO: 93.26% match - remaining diffs are rotated f26/f27/f28 register assignment in the
-    // side-vector normalization path and downstream eye-basis register allocation mismatches.
 }
 
 /**

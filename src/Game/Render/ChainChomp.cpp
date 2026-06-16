@@ -412,9 +412,25 @@ void UpdateChainEmitter(EmissionController& controller)
     }
 }
 
+static inline float ChainChompTargetScore(ChainChomp* pChomp, cFielder* pCandidate)
+{
+    float dy;
+    float dx;
+
+    dy = pCandidate->m_v3Position.f.y - pChomp->mv3Position.f.y;
+    dx = pCandidate->m_v3Position.f.x - pChomp->mv3Position.f.x;
+    float fDist = nlSqrt(dx * dx + dy * dy, true);
+    float fConverted = 10430.378f * nlATan2f(dy, dx);
+    s16 angleDiff = (s16)(pChomp->maFacingDirection - (u16)(s32)fConverted);
+    u16 absDelta = (u16)((angleDiff < 0) ? -angleDiff : angleDiff);
+    float fAngleWeighting = g_pGame->m_pGameTweaks->fAngleWeighting;
+
+    return fDist * (1.0f - fAngleWeighting) + (float)absDelta * fAngleWeighting;
+}
+
 /**
  * Offset/Address/Size: 0x608 | 0x8015E30C | size: 0x2E0
- * TODO: 99.24% match - remaining FPR allocation/scheduling mismatch in score weighting.
+ * TODO: 99.48% match - remaining instruction scheduling mismatch in score weighting.
  */
 void ChainChomp::FindTarget(cTeam* pTeam)
 {
@@ -454,18 +470,7 @@ void ChainChomp::FindTarget(cTeam* pTeam)
 
             if (!pCandidate->IsFallenDown(0.0f) && pCandidate != mpTarget)
             {
-                float dx;
-                float dy;
-
-                dy = pCandidate->m_v3Position.f.y - mv3Position.f.y;
-                dx = pCandidate->m_v3Position.f.x - mv3Position.f.x;
-                float fDist = nlSqrt(dx * dx + dy * dy, true);
-                float fConverted = 10430.378f * nlATan2f(dy, dx);
-                s16 angleDiff = (s16)(maFacingDirection - (u16)(s32)fConverted);
-                u16 absDelta = (u16)((angleDiff < 0) ? -angleDiff : angleDiff);
-                float fAngleWeighting = g_pGame->m_pGameTweaks->fAngleWeighting;
-
-                fTempScore = fDist * (1.0f - fAngleWeighting) + (float)absDelta * fAngleWeighting;
+                fTempScore = ChainChompTargetScore(this, pCandidate);
             }
 
             if (fTempScore < fBestScore)

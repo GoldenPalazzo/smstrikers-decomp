@@ -52,30 +52,25 @@ void glx_ClearXFB(void*);
 
 static inline void UncompressLidMessage(const unsigned char* compressed, int compressedSize, unsigned char* uncompressed)
 {
-    const unsigned char* runSrc;
     int index = 0;
     int i = 0;
 
     while (i < (compressedSize - 1))
     {
-        const unsigned char* src = compressed + i;
-        if (src[0] == 0)
+        if (compressed[i] == 0)
         {
-            runSrc = src + 1;
-            int run = 0;
-            unsigned char* dst = uncompressed + index;
-            while (run < runSrc[0])
+            int k = 0;
+            while (k < compressed[i + 1])
             {
-                *dst = 0;
+                uncompressed[index] = 0;
                 index++;
-                dst++;
-                run++;
+                k++;
             }
             i++;
         }
         else
         {
-            uncompressed[index] = src[0];
+            uncompressed[index] = compressed[i];
             index++;
         }
         i++;
@@ -86,8 +81,6 @@ static inline void UncompressLidMessage(const unsigned char* compressed, int com
 
 /**
  * Offset/Address/Size: 0x624 | 0x80094540 | size: 0x26C
- * TODO: 99.65% match - decompressor zero-fill and loaded byte registers
- * remain swapped in the run/value handling block.
  */
 static void DisplayMessage(int arg0, int arg1, const unsigned char* arg2, int arg3, unsigned long arg4, bool arg5)
 {

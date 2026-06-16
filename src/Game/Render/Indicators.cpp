@@ -330,6 +330,8 @@ static void UpdateAndRenderPlayerIndicators(float)
     float fX;
     float fY;
     float fOpacity;
+    unsigned long indicatorTexID;
+    unsigned long glowTexID;
     int whoHasBall;
     int i;
     float fDistInPixels;
@@ -348,8 +350,6 @@ static void UpdateAndRenderPlayerIndicators(float)
         ReplayManager* pReplay;
         ReplayIndicatorSnapshot* pSnapshot;
         GameTweaksOverlay* pTweaks;
-        unsigned long indicatorTexID;
-        unsigned long glowTexID;
 
         if (((cPlayer*)g_pCharacters[i])->GetGlobalPad() == 0)
         {

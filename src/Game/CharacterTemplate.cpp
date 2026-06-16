@@ -823,6 +823,22 @@ static inline cSHierarchy* FindHierarchy(ListEntry<cSHierarchy*>* hEntry, u32 ha
     return NULL;
 }
 
+template <typename T>
+static inline nlChunk* AddLoadedInventoryMemory(cInventory<T>* inv, nlChunk* data)
+{
+    ListEntry<char*>* entry = (ListEntry<char*>*)nlMalloc(8, 8, false);
+    if (entry != NULL)
+    {
+        entry->next = NULL;
+        entry->data = (char*)data;
+    }
+    nlListAddStart<ListEntry<char*> >(
+        (ListEntry<char*>**)&inv->m_lMemList.m_Head,
+        entry,
+        (ListEntry<char*>**)&inv->m_lMemList.m_Tail);
+    return data;
+}
+
 /**
  * Offset/Address/Size: 0x1ABC | 0x80013DA4 | size: 0x240
  */
@@ -901,7 +917,7 @@ static char* GetCharacterTriggerFileName(eCharacterClass cc);
 
 /**
  * Offset/Address/Size: 0x1CFC | 0x80013FE4 | size: 0x3F0
- * TODO: 99.03% match - extra return-value move remains after hierarchy file load; retarget inventory uses r29 instead of r28
+ * TODO: 99.23% match - hierarchy file load keeps an extra return-value move; retarget load loop keeps inventory/data register differences
  */
 void CharacterLoadingGuts(tCharacterTemplate* pCharacterTemplate, const tCharacterTemplateInfo& charTemplateInfo, eCharacterClass cc, bool bForViewer)
 {
@@ -1006,18 +1022,9 @@ void CharacterLoadingGuts(tCharacterTemplate* pCharacterTemplate, const tCharact
 
         u32 retargetFileSize;
         pRetInv = pCharacterTemplate->pAnimRetargetListInventory;
-        nlChunk* retargetData = (nlChunk*)nlLoadEntireFile(charTemplateInfo.szAnimRetargetFilename, &retargetFileSize, 0x20, AllocateStart);
-
-        ListEntry<char*>* retMemEntry = (ListEntry<char*>*)nlMalloc(8, 8, false);
-        if (retMemEntry != NULL)
-        {
-            retMemEntry->next = NULL;
-            retMemEntry->data = (char*)retargetData;
-        }
-        nlListAddStart<ListEntry<char*> >(
-            (ListEntry<char*>**)&pRetInv->m_lMemList.m_Head,
-            retMemEntry,
-            (ListEntry<char*>**)&pRetInv->m_lMemList.m_Tail);
+        nlChunk* retargetData = AddLoadedInventoryMemory(
+            pRetInv,
+            (nlChunk*)nlLoadEntireFile(charTemplateInfo.szAnimRetargetFilename, &retargetFileSize, 0x20, AllocateStart));
 
         nlChunk* retargetEnd = (nlChunk*)((char*)retargetData + retargetFileSize);
         while (retargetData != retargetEnd)

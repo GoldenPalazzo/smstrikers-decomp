@@ -479,50 +479,44 @@ GCAudioStreaming::StereoAudioStream::~StereoAudioStream()
     Destructor();
 }
 
-/**
- * Offset/Address/Size: 0x3F48 | 0x80147D14 | size: 0x14C
- * TODO: 96% match, something with SebringSoundDefines ref is still wrong...
- */
 void AudioLoader::SetupSoundDefinesAVLTree()
 {
-    u32 numDefines = GetNumSoundDefines();
-    SoundDefinesTable* pDefines = &SebringSoundDefines[0];
-    AVLTreeNode** const ppRoot = (AVLTreeNode**)((char*)&gMusyXSoundDefineMap.m_Root);
+    unsigned long numSoundDefines = GetNumSoundDefines();
 
-    for (u32 i = 0; i < numDefines; pDefines++, i++)
+    for (int i = 0; i < numSoundDefines; i++)
     {
-        SoundStrToIDNode* p = (SoundStrToIDNode*)nlMalloc(sizeof(SoundStrToIDNode), 8, false);
-        SoundStrToIDNode* newNode = p;
-        p->typeID = -1;
-        p->typeStr = NULL;
-        p->musyxStr = NULL;
-        p->musyxID = -1;
-        p->fVolume = 100.0f;
-        p->fDelay = -1.0f;
-        p->fVolReverb = 100.0f;
-        p->volGrp = -1;
-        p->sfxPriority = 0;
-        p->uHashVal = 0;
-        p->pSoundPropAccessor = NULL;
-        p->bSoundPropTableReloaded = 0;
-        p->pSoundProp = NULL;
-        p->pOwner = NULL;
-        p->lastVoiceID = -1;
-        p->pLastEmitter = NULL;
-        p->m_unk_0x40 = false;
+        SoundStrToIDNode* pNode = (SoundStrToIDNode*)nlMalloc(sizeof(SoundStrToIDNode), 8, false);
+        SoundStrToIDNode* newNode = pNode;
+        pNode->typeID = -1;
+        pNode->typeStr = NULL;
+        pNode->musyxStr = NULL;
+        pNode->musyxID = -1;
+        pNode->fVolume = 100.0f;
+        pNode->fDelay = -1.0f;
+        pNode->fVolReverb = 100.0f;
+        pNode->volGrp = -1;
+        pNode->sfxPriority = 0;
+        pNode->uHashVal = 0;
+        pNode->pSoundPropAccessor = NULL;
+        pNode->bSoundPropTableReloaded = 0;
+        pNode->pSoundProp = NULL;
+        pNode->pOwner = NULL;
+        pNode->lastVoiceID = -1;
+        pNode->pLastEmitter = NULL;
+        pNode->m_unk_0x40 = false;
 
-        newNode->musyxID = pDefines->musyxID;
-        newNode->musyxStr = pDefines->musyxStr;
+        newNode->musyxID = SebringSoundDefines[i].musyxID;
+        newNode->musyxStr = SebringSoundDefines[i].musyxStr;
         newNode->uHashVal = nlStringLowerHash(newNode->musyxStr);
 
         unsigned int key = newNode->uHashVal;
         AVLTreeNode* existingNode;
 
-        ((AVLTreeUntemplated*)&gMusyXSoundDefineMap)->AddAVLNode(ppRoot, &key, &newNode, &existingNode, *(unsigned int*)((char*)&gMusyXSoundDefineMap + 0x24));
+        gMusyXSoundDefineMap.AddAVLNode((AVLTreeNode**)&gMusyXSoundDefineMap.m_Root, &key, &newNode, &existingNode, gMusyXSoundDefineMap.m_NumElements);
 
         if (existingNode == NULL)
         {
-            (*(unsigned int*)((char*)&gMusyXSoundDefineMap + 0x24))++;
+            gMusyXSoundDefineMap.m_NumElements++;
         }
     }
 }
@@ -2117,7 +2111,6 @@ void AudioLoader::SetupBowserStadiumSoundTable(Bowser* bowser)
 
 /**
  * Offset/Address/Size: 0x8E4 | 0x801446B0 | size: 0x350
- * TODO: 99.72% match - r4/r5 register swap for bAlreadyLoaded in loaded-group checks
  */
 unsigned char AudioLoader::LoadStadiumSpecificSoundGroups(eStadiumID stadiumID)
 {
@@ -2171,22 +2164,8 @@ unsigned char AudioLoader::LoadStadiumSpecificSoundGroups(eStadiumID stadiumID)
     }
 
     s32 loadedGroup = gLoadedSurfaceGroup;
-    bool bAlreadyLoaded;
 
-    if (loadedGroup < 0)
-    {
-        bAlreadyLoaded = false;
-    }
-    else
-    {
-        bAlreadyLoaded = false;
-        if (sebringAudioGroups[loadedGroup].uLoadOrder > -1 && sebringAudioGroups[loadedGroup].stackEnum > -1)
-        {
-            bAlreadyLoaded = true;
-        }
-    }
-
-    if (bAlreadyLoaded == false)
+    if (AudioLoader::IsSoundGroupLoaded(loadedGroup, 1) == false)
     {
         bool loaded;
         if (gbDisableAudio)
@@ -2213,20 +2192,7 @@ unsigned char AudioLoader::LoadStadiumSpecificSoundGroups(eStadiumID stadiumID)
     }
 
     loadedGroup = gLoadedStadiumGroup;
-    if (loadedGroup < 0)
-    {
-        bAlreadyLoaded = false;
-    }
-    else
-    {
-        bAlreadyLoaded = false;
-        if (sebringAudioGroups[loadedGroup].uLoadOrder > -1 && sebringAudioGroups[loadedGroup].stackEnum > -1)
-        {
-            bAlreadyLoaded = true;
-        }
-    }
-
-    if (bAlreadyLoaded == false)
+    if (AudioLoader::IsSoundGroupLoaded(loadedGroup, 1) == false)
     {
         bool loaded;
         if (gbDisableAudio)

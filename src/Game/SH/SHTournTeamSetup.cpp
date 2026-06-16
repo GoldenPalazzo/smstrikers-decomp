@@ -2176,7 +2176,8 @@ void TournTeamSetupSceneV2::Proceed()
 
 /**
  * Offset/Address/Size: 0xC34 | 0x800E2AD8 | size: 0x9C0
- * TODO: 96.09% match - string literal hoisted before nlMalloc in inlined BasicString constructor
+ * TODO: 98.33% match - data and literal pointer registers are swapped during
+ * captain string construction
  */
 #pragma optimization_level 2
 BasicString<char, Detail::TempStringAllocator> TournTeamSetupSceneV2::FindCaptainSlideName(eTeamID captain)
@@ -2186,32 +2187,284 @@ BasicString<char, Detail::TempStringAllocator> TournTeamSetupSceneV2::FindCaptai
     switch (captain)
     {
     case TEAM_DAISY:
-        returnValue = "daisy";
+    {
+        BasicStringData<char>* data = (BasicStringData<char>*)Detail::TempStringAllocator::allocate(sizeof(BasicStringData<char>));
+        if (data != 0)
+        {
+            data->mData = 0;
+            data->mSize = 0;
+            data->mCapacity = 0;
+
+            const char* text = "daisy";
+            const char* scan = text;
+            while (*scan++ != 0)
+            {
+                data->mSize++;
+            }
+
+            data->mSize++;
+            data->mData = (char*)Detail::TempStringAllocator::allocate((data->mSize + 1) * sizeof(char));
+            data->mCapacity = data->mSize;
+
+            for (int i = 0; i < data->mSize; i++)
+            {
+                data->mData[i] = *text++;
+            }
+
+            data->mRefCount = 1;
+        }
+
+        returnValue = BasicString<char, Detail::TempStringAllocator>(data);
         break;
+    }
     case TEAM_DONKEYKONG:
-        returnValue = "dk";
+    {
+        BasicStringData<char>* data = (BasicStringData<char>*)Detail::TempStringAllocator::allocate(sizeof(BasicStringData<char>));
+        if (data != 0)
+        {
+            data->mData = 0;
+            data->mSize = 0;
+            data->mCapacity = 0;
+
+            const char* text = "dk";
+            const char* scan = text;
+            while (*scan++ != 0)
+            {
+                data->mSize++;
+            }
+
+            data->mSize++;
+            data->mData = (char*)Detail::TempStringAllocator::allocate((data->mSize + 1) * sizeof(char));
+            data->mCapacity = data->mSize;
+
+            for (int i = 0; i < data->mSize; i++)
+            {
+                data->mData[i] = *text++;
+            }
+
+            data->mRefCount = 1;
+        }
+
+        returnValue = BasicString<char, Detail::TempStringAllocator>(data);
         break;
+    }
     case TEAM_LUIGI:
-        returnValue = "luigi";
+    {
+        BasicStringData<char>* data = (BasicStringData<char>*)Detail::TempStringAllocator::allocate(sizeof(BasicStringData<char>));
+        if (data != 0)
+        {
+            data->mData = 0;
+            data->mSize = 0;
+            data->mCapacity = 0;
+
+            const char* text = "luigi";
+            const char* scan = text;
+            while (*scan++ != 0)
+            {
+                data->mSize++;
+            }
+
+            data->mSize++;
+            data->mData = (char*)Detail::TempStringAllocator::allocate((data->mSize + 1) * sizeof(char));
+            data->mCapacity = data->mSize;
+
+            for (int i = 0; i < data->mSize; i++)
+            {
+                data->mData[i] = *text++;
+            }
+
+            data->mRefCount = 1;
+        }
+
+        returnValue = BasicString<char, Detail::TempStringAllocator>(data);
         break;
+    }
     case TEAM_MARIO:
-        returnValue = "mario";
+    {
+        BasicStringData<char>* data = (BasicStringData<char>*)Detail::TempStringAllocator::allocate(sizeof(BasicStringData<char>));
+        if (data != 0)
+        {
+            data->mData = 0;
+            data->mSize = 0;
+            data->mCapacity = 0;
+
+            const char* text = "mario";
+            const char* scan = text;
+            while (*scan++ != 0)
+            {
+                data->mSize++;
+            }
+
+            data->mSize++;
+            data->mData = (char*)Detail::TempStringAllocator::allocate((data->mSize + 1) * sizeof(char));
+            data->mCapacity = data->mSize;
+
+            for (int i = 0; i < data->mSize; i++)
+            {
+                data->mData[i] = *text++;
+            }
+
+            data->mRefCount = 1;
+        }
+
+        returnValue = BasicString<char, Detail::TempStringAllocator>(data);
         break;
+    }
     case TEAM_PEACH:
-        returnValue = "peach";
+    {
+        BasicStringData<char>* data = (BasicStringData<char>*)Detail::TempStringAllocator::allocate(sizeof(BasicStringData<char>));
+        if (data != 0)
+        {
+            data->mData = 0;
+            data->mSize = 0;
+            data->mCapacity = 0;
+
+            const char* text = "peach";
+            const char* scan = text;
+            while (*scan++ != 0)
+            {
+                data->mSize++;
+            }
+
+            data->mSize++;
+            data->mData = (char*)Detail::TempStringAllocator::allocate((data->mSize + 1) * sizeof(char));
+            data->mCapacity = data->mSize;
+
+            for (int i = 0; i < data->mSize; i++)
+            {
+                data->mData[i] = *text++;
+            }
+
+            data->mRefCount = 1;
+        }
+
+        returnValue = BasicString<char, Detail::TempStringAllocator>(data);
         break;
+    }
     case TEAM_WALUIGI:
-        returnValue = "waluigi";
+    {
+        BasicStringData<char>* data = (BasicStringData<char>*)Detail::TempStringAllocator::allocate(sizeof(BasicStringData<char>));
+        if (data != 0)
+        {
+            data->mData = 0;
+            data->mSize = 0;
+            data->mCapacity = 0;
+
+            const char* text = "waluigi";
+            const char* scan = text;
+            while (*scan++ != 0)
+            {
+                data->mSize++;
+            }
+
+            data->mSize++;
+            data->mData = (char*)Detail::TempStringAllocator::allocate((data->mSize + 1) * sizeof(char));
+            data->mCapacity = data->mSize;
+
+            for (int i = 0; i < data->mSize; i++)
+            {
+                data->mData[i] = *text++;
+            }
+
+            data->mRefCount = 1;
+        }
+
+        returnValue = BasicString<char, Detail::TempStringAllocator>(data);
         break;
+    }
     case TEAM_WARIO:
-        returnValue = "wario";
+    {
+        BasicStringData<char>* data = (BasicStringData<char>*)Detail::TempStringAllocator::allocate(sizeof(BasicStringData<char>));
+        if (data != 0)
+        {
+            data->mData = 0;
+            data->mSize = 0;
+            data->mCapacity = 0;
+
+            const char* text = "wario";
+            const char* scan = text;
+            while (*scan++ != 0)
+            {
+                data->mSize++;
+            }
+
+            data->mSize++;
+            data->mData = (char*)Detail::TempStringAllocator::allocate((data->mSize + 1) * sizeof(char));
+            data->mCapacity = data->mSize;
+
+            for (int i = 0; i < data->mSize; i++)
+            {
+                data->mData[i] = *text++;
+            }
+
+            data->mRefCount = 1;
+        }
+
+        returnValue = BasicString<char, Detail::TempStringAllocator>(data);
         break;
+    }
     case TEAM_YOSHI:
-        returnValue = "yoshi";
+    {
+        BasicStringData<char>* data = (BasicStringData<char>*)Detail::TempStringAllocator::allocate(sizeof(BasicStringData<char>));
+        if (data != 0)
+        {
+            data->mData = 0;
+            data->mSize = 0;
+            data->mCapacity = 0;
+
+            const char* text = "yoshi";
+            const char* scan = text;
+            while (*scan++ != 0)
+            {
+                data->mSize++;
+            }
+
+            data->mSize++;
+            data->mData = (char*)Detail::TempStringAllocator::allocate((data->mSize + 1) * sizeof(char));
+            data->mCapacity = data->mSize;
+
+            for (int i = 0; i < data->mSize; i++)
+            {
+                data->mData[i] = *text++;
+            }
+
+            data->mRefCount = 1;
+        }
+
+        returnValue = BasicString<char, Detail::TempStringAllocator>(data);
         break;
+    }
     case TEAM_MYSTERY:
-        returnValue = "super";
+    {
+        BasicStringData<char>* data = (BasicStringData<char>*)Detail::TempStringAllocator::allocate(sizeof(BasicStringData<char>));
+        if (data != 0)
+        {
+            data->mData = 0;
+            data->mSize = 0;
+            data->mCapacity = 0;
+
+            const char* text = "super";
+            const char* scan = text;
+            while (*scan++ != 0)
+            {
+                data->mSize++;
+            }
+
+            data->mSize++;
+            data->mData = (char*)Detail::TempStringAllocator::allocate((data->mSize + 1) * sizeof(char));
+            data->mCapacity = data->mSize;
+
+            for (int i = 0; i < data->mSize; i++)
+            {
+                data->mData[i] = *text++;
+            }
+
+            data->mRefCount = 1;
+        }
+
+        returnValue = BasicString<char, Detail::TempStringAllocator>(data);
         break;
+    }
     }
 
     return returnValue;

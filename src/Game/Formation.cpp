@@ -160,7 +160,7 @@ FormationSpec* FormationManager::GetFormationSpec(eFormation formation)
     FORCE_DONT_INLINE;
     FormationSpec* result = nullptr;
     int offset = 0;
-    eFormation id = (eFormation)(int)this;
+    eFormation id = formation;
     int i = 0;
 
     while (i < m_NumFormationSets)
@@ -1237,10 +1237,6 @@ void FormationBallPosition::Update(float fDeltaT)
 /**
  * Offset/Address/Size: 0x618 | 0x80038868 | size: 0x318
  */
-/**
- * Offset/Address/Size: 0x618 | 0x80038868 | size: 0x318
- * TODO: 99.80% match - 4 register diffs (f1/f2 swap in first distance block at offsets 0x80-0x8C)
- */
 bool FormationBallPosition::SelectClosestBallFormations(const nlVector2& v2AIBallLoc)
 {
     FormationSpec* pClosest[2] = { NULL, NULL };
@@ -1254,8 +1250,9 @@ bool FormationBallPosition::SelectClosestBallFormations(const nlVector2& v2AIBal
     {
         FormationSpec* pSpec = m_pFormationSet->GetFormationSpec(i);
         nlVector2& keyLoc = pSpec->GetKeyLocation();
-        float dy = ballY - keyLoc.f.y;
-        float dx = ballX - keyLoc.f.x;
+        float dx, dy;
+        dy = ballY - keyLoc.f.y;
+        dx = ballX - keyLoc.f.x;
         float dist = nlSqrt(dx * dx + dy * dy, true);
 
         if (dist < fDist[0])

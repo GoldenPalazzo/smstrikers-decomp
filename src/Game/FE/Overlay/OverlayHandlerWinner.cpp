@@ -1,9 +1,12 @@
 #include "Game/FE/Overlay/OverlayHandlerWinner.h"
 #include "Game/FE/feFinder.h"
+#include "Game/FE/feHelpFuncs.h"
 #include "Game/FE/feInput.h"
 #include "Game/FE/Overlay/OverlayHandlerSummary.h"
 #include "Game/GameInfo.h"
 #include "Game/OverlayManager.h"
+#include "NL/nlBSearch.h"
+#include "NL/nlLocalization.h"
 
 static char* WINNER_TEXTURES[9][3] = {
     { "fe/winners/daisy_action", "fe/winners/daisy_action_OUTLINE", "fe/winners/daisy_action_WHITE" },
@@ -105,7 +108,7 @@ WinnerOverlay::~WinnerOverlay()
 
 /**
  * Offset/Address/Size: 0x304 | 0x80105970 | size: 0xCE0
- * TODO: 92.66% match - stack/register differences remain in localization
+ * TODO: 93.64% match - stack/register differences remain in localization
  * lookup/result wiring and final image lookup call-site setup.
  */
 
@@ -115,39 +118,12 @@ StringType Format(const StringType&, const ValueType&);
 template <typename StringType, typename ValueType1, typename ValueType2>
 StringType Format(const StringType&, const ValueType1&, const ValueType2&);
 
-extern void* g_pLocalization;
+extern nlLocalization* g_pLocalization;
 extern const unsigned short LocalizationTableNotFound[];
 extern const unsigned short MissingLocString[];
 
-unsigned long GetLOCTeamName(eTeamID);
-
 void WinnerOverlay::SceneCreated()
 {
-    struct LOCHeaderLocal
-    {
-        char Thumbprint[4];
-        unsigned long Version;
-        unsigned long Language;
-        unsigned long StringCount;
-        unsigned long Flags;
-    };
-
-    struct StringLookupLocal
-    {
-        unsigned long hash;
-        unsigned long StringOffset;
-
-        operator unsigned long() const { return hash; }
-    };
-
-    struct LocalizationLocal
-    {
-        LOCHeaderLocal* m_pFile;
-        StringLookupLocal* m_LookupTable;
-        unsigned short* m_FirstString;
-        int m_CurrentLanguage;
-    };
-
     typedef TLTextInstance* (*FindTextByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
     typedef TLTextInstance* (*FindTextByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
     typedef TLImageInstance* (*FindImageByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
@@ -173,16 +149,6 @@ void WinnerOverlay::SceneCreated()
         FindCompByRef byRef;
     } findComp;
 
-    unsigned long hash;
-
-    volatile InlineHasher hB, hA;
-    volatile InlineHasher h9, h8;
-    volatile InlineHasher h7, h6, h5, h4, h3, h2, h1, h0;
-    volatile InlineHasher gB, gA;
-    volatile InlineHasher g5, g4, g3, g2, g1, g0;
-    volatile InlineHasher fB, fA;
-    volatile InlineHasher f5, f4, f3, f2, f1, f0;
-
     int scoreLeft = g_pTeams[0]->m_nScore;
     int scoreRight = g_pTeams[1]->m_nScore;
 
@@ -198,8 +164,8 @@ void WinnerOverlay::SceneCreated()
     nlStrToWcs(scoreRightString.c_str(), scoreRightWideString, 32);
 
     const unsigned short* formatLocString;
-    unsigned long key = 0x8C4280A4;
-    LocalizationLocal* loc = (LocalizationLocal*)g_pLocalization;
+    unsigned long key = 0x8C4180A4;
+    nlLocalization* loc = g_pLocalization;
 
     if (loc->m_LookupTable == 0)
     {
@@ -207,7 +173,7 @@ void WinnerOverlay::SceneCreated()
     }
     else
     {
-        StringLookupLocal* entry = nlBSearch<StringLookupLocal, unsigned long>(key, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
+        nlLocalization::StringLookup* entry = nlBSearch<nlLocalization::StringLookup, unsigned long>(key, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
         if (entry)
         {
             formatLocString = loc->m_FirstString + entry->StringOffset;
@@ -218,37 +184,7 @@ void WinnerOverlay::SceneCreated()
         }
     }
 
-    BasicStringData<unsigned short>* scoreFormatData = (BasicStringData<unsigned short>*)nlMalloc(0x10, 8, true);
-    if (scoreFormatData)
-    {
-        scoreFormatData->mData = 0;
-        scoreFormatData->mSize = 0;
-        scoreFormatData->mCapacity = 0;
-
-        const unsigned short* ptr = formatLocString;
-        while (*ptr++)
-        {
-            scoreFormatData->mSize++;
-        }
-
-        scoreFormatData->mSize++;
-        scoreFormatData->mData = (unsigned short*)nlMalloc((scoreFormatData->mSize + 1) * 2, 8, true);
-        scoreFormatData->mCapacity = scoreFormatData->mSize;
-
-        int i = 0;
-        int j = 0;
-        while (i < scoreFormatData->mSize)
-        {
-            *(unsigned short*)((char*)scoreFormatData->mData + j) = *formatLocString;
-            i++;
-            formatLocString++;
-            j += 2;
-        }
-
-        scoreFormatData->mRefCount = 1;
-    }
-
-    BasicString<unsigned short, Detail::TempStringAllocator> unformatted(scoreFormatData);
+    BasicString<unsigned short, Detail::TempStringAllocator> unformatted(formatLocString);
     BasicString<unsigned short, Detail::TempStringAllocator> formatted;
 
     if (scoreLeft > scoreRight)
@@ -265,14 +201,13 @@ void WinnerOverlay::SceneCreated()
     FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
     presentation->SetActiveSlide("MENU IN2");
 
-    GameInfoManager* gameInfo = nlSingleton<GameInfoManager>::s_pInstance;
     short winnerSide = (scoreLeft > scoreRight) ? 0 : 1;
-    mWinningTeam = (eTeamID)gameInfo->GetTeam(winnerSide);
+    mWinningTeam = (eTeamID)nlSingleton<GameInfoManager>::s_pInstance->GetTeam(winnerSide);
 
     unsigned long winnerLocID = GetLOCTeamName((eTeamID)mWinningTeam);
     const unsigned short* winnerLocString;
 
-    loc = (LocalizationLocal*)g_pLocalization;
+    loc = g_pLocalization;
 
     if (loc->m_LookupTable == 0)
     {
@@ -280,7 +215,7 @@ void WinnerOverlay::SceneCreated()
     }
     else
     {
-        StringLookupLocal* entry = nlBSearch<StringLookupLocal, unsigned long>(winnerLocID, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
+        nlLocalization::StringLookup* entry = nlBSearch<nlLocalization::StringLookup, unsigned long>(winnerLocID, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
         if (entry)
         {
             winnerLocString = loc->m_FirstString + entry->StringOffset;
@@ -291,42 +226,12 @@ void WinnerOverlay::SceneCreated()
         }
     }
 
-    BasicStringData<unsigned short>* winnerNameData = (BasicStringData<unsigned short>*)nlMalloc(0x10, 8, true);
-    if (winnerNameData)
-    {
-        winnerNameData->mData = 0;
-        winnerNameData->mSize = 0;
-        winnerNameData->mCapacity = 0;
+    BasicString<unsigned short, Detail::TempStringAllocator> winnerNameWideString(winnerLocString);
 
-        const unsigned short* ptr = winnerLocString;
-        while (*ptr++)
-        {
-            winnerNameData->mSize++;
-        }
-
-        winnerNameData->mSize++;
-        winnerNameData->mData = (unsigned short*)nlMalloc((winnerNameData->mSize + 1) * 2, 8, true);
-        winnerNameData->mCapacity = winnerNameData->mSize;
-
-        int i = 0;
-        int j = 0;
-        while (i < winnerNameData->mSize)
-        {
-            *(unsigned short*)((char*)winnerNameData->mData + j) = *winnerLocString;
-            i++;
-            winnerLocString++;
-            j += 2;
-        }
-
-        winnerNameData->mRefCount = 1;
-    }
-
-    BasicString<unsigned short, Detail::TempStringAllocator> winnerNameWideString(winnerNameData);
-
-    key = 0x8611A152;
+    key = 0x8610A152;
     const unsigned short* winnerFormatLocString;
 
-    loc = (LocalizationLocal*)g_pLocalization;
+    loc = g_pLocalization;
 
     if (loc->m_LookupTable == 0)
     {
@@ -334,7 +239,7 @@ void WinnerOverlay::SceneCreated()
     }
     else
     {
-        StringLookupLocal* entry = nlBSearch<StringLookupLocal, unsigned long>(key, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
+        nlLocalization::StringLookup* entry = nlBSearch<nlLocalization::StringLookup, unsigned long>(key, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
         if (entry)
         {
             winnerFormatLocString = loc->m_FirstString + entry->StringOffset;
@@ -345,40 +250,20 @@ void WinnerOverlay::SceneCreated()
         }
     }
 
-    BasicStringData<unsigned short>* winnerFormatData = (BasicStringData<unsigned short>*)nlMalloc(0x10, 8, true);
-    if (winnerFormatData)
-    {
-        winnerFormatData->mData = 0;
-        winnerFormatData->mSize = 0;
-        winnerFormatData->mCapacity = 0;
-
-        const unsigned short* ptr = winnerFormatLocString;
-        while (*ptr++)
-        {
-            winnerFormatData->mSize++;
-        }
-
-        winnerFormatData->mSize++;
-        winnerFormatData->mData = (unsigned short*)nlMalloc((winnerFormatData->mSize + 1) * 2, 8, true);
-        winnerFormatData->mCapacity = winnerFormatData->mSize;
-
-        int i = 0;
-        int j = 0;
-        while (i < winnerFormatData->mSize)
-        {
-            *(unsigned short*)((char*)winnerFormatData->mData + j) = *winnerFormatLocString;
-            i++;
-            winnerFormatLocString++;
-            j += 2;
-        }
-
-        winnerFormatData->mRefCount = 1;
-    }
-
-    BasicString<unsigned short, Detail::TempStringAllocator> unformattedName(winnerFormatData);
+    BasicString<unsigned short, Detail::TempStringAllocator> unformattedName(winnerFormatLocString);
     BasicString<unsigned short, Detail::TempStringAllocator> formattedName(Format(unformattedName, winnerNameWideString.c_str()));
 
     memcpy(mWinnerBuffer, formattedName.c_str(), 0x40);
+
+    unsigned long hash;
+
+    volatile InlineHasher hB, hA;
+    volatile InlineHasher h9, h8;
+    volatile InlineHasher h7, h6, h5, h4, h3, h2, h1, h0;
+    volatile InlineHasher gB, gA;
+    volatile InlineHasher g5, g4, g3, g2, g1, g0;
+    volatile InlineHasher fB, fA;
+    volatile InlineHasher f5, f4, f3, f2, f1, f0;
 
     for (int i = 0; i < 2; i++)
     {
@@ -533,7 +418,7 @@ void WinnerOverlay::SceneCreated()
     mWinnerActionWhite->mImageInstance = pImage;
     mWinnerActionWhite->QueueLoad(WINNER_TEXTURES[mWinningTeam][2], false);
 
-    if (gameInfo->IsInDemoMode())
+    if (nlSingleton<GameInfoManager>::s_pInstance->IsInDemoMode())
     {
         findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
 

@@ -1107,7 +1107,7 @@ FormatImpl<StringType>& FormatImpl<StringType>::operator%(const T& t)
         if (mString[i + 2] != '}')
             continue;
 
-        mString.erase(&mString[i], &mString[i + 3]);
+        mString.erase(&mString[i], &mString[i] + 3);
         mString[i];
         typename StringType::value_type* mStringData = mString.m_data ? mString.m_data->mData : 0;
         typename StringType::value_type* insertBegin = &insert[0];

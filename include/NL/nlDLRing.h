@@ -27,6 +27,13 @@ public:
         , m_data(data)
     {
     }
+
+    DLListEntry(const T& data)
+        : m_next(nullptr)
+        , m_prev(nullptr)
+        , m_data(data)
+    {
+    }
 }; // total size: 0xC
 
 template <typename T>

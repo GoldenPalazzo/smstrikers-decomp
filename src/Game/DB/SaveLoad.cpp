@@ -203,8 +203,8 @@ void LoadMemoryCardIconData()
 
 /**
  * Offset/Address/Size: 0x355C | 0x8018CEB8 | size: 0x1C4
- * TODO: 98.32% match - Slot/Result move order, early li r6, and
- * header-term register flow still differ; file CRC compare uses r4.
+ * TODO: 98.41% match - Slot/Result move order, early li r6, and
+ * header-term register flow still differ.
  */
 unsigned long LoadCallbacks::LoadIconDataDoneCB(unsigned long Slot, long Result, void* pUserData)
 {
@@ -242,7 +242,7 @@ unsigned long LoadCallbacks::LoadIconDataDoneCB(unsigned long Slot, long Result,
         return -1;
     }
 
-    gIconCRC = crc;
+    gIconCRC = ((unsigned long*)pReadBuf)[2];
     if (m_TestGameID)
     {
         *(u8*)&m_GameIDTestResult = nlSingleton<GameInfoManager>::s_pInstance->CheckSaveIDChanged((void*)((u8*)m_pReadBuffer + 12));
@@ -916,9 +916,9 @@ unsigned long SaveCallbacks::FileWriteIconCB(unsigned long channel, long result,
 
 /**
  * Offset/Address/Size: 0x1F30 | 0x8018B88C | size: 0x5BC
- * TODO: 77.30% match - rlwinm vs and for 0x200 mask (target uses li+and, compiler
+ * TODO: 81.75% match - rlwinm vs and for 0x200 mask (target uses li+and, compiler
  * optimizes to rlwinm). Extra cmpwi loop guards before unrolled while loops (4x).
- * CSE puts Slot*4 in r30 vs target's r27 mutation. Stack offset +0xC shift.
+ * CSE keeps Slot*4 in r30 instead of mutating r27 in error-space checks.
  */
 unsigned long SaveCallbacks::CreateFileCB(unsigned long Slot, long Result, void* pUserData)
 {
@@ -1008,10 +1008,10 @@ unsigned long SaveCallbacks::CreateFileCB(unsigned long Slot, long Result, void*
     MemCard::ICON_DATA_INFO localDataInfo1;
     m_pSaveFile->IconCfg.GetValidDataInfo(localDataInfo1);
     IconDataCache* cache = &gIconDataCache;
-    void* pHdrBuf = cache->mIconHdrBuffer;
+    localDataInfo1.pHeaderData = (unsigned char*)cache->mIconHdrBuffer;
     void* bannerBuf = cache->mBannerBuffer;
     u32 bannerOfs = localDataInfo1.BannerOffset;
-    void* destBanner = (u8*)pHdrBuf + bannerOfs;
+    void* destBanner = localDataInfo1.pHeaderData + bannerOfs;
     u8 bannerFmt = m_pSaveFile->IconCfg.BannerFormat;
     u32 tableOfs = *(u32*)((u8*)bannerBuf + 8);
     u32 entryVal = *(u32*)((u8*)bannerBuf + tableOfs);
@@ -1026,10 +1026,10 @@ unsigned long SaveCallbacks::CreateFileCB(unsigned long Slot, long Result, void*
     memcpy(destBanner, srcBanner, bannerCopySize);
     MemCard::ICON_DATA_INFO localDataInfo2;
     m_pSaveFile->IconCfg.GetValidDataInfo(localDataInfo2);
-    void* pHdrBuf2 = cache->mIconHdrBuffer;
+    localDataInfo2.pHeaderData = (unsigned char*)cache->mIconHdrBuffer;
     void* iconBuf = cache->mIconBuffer;
     u32 iconOfs = localDataInfo2.IconOffset[0];
-    void* destIcon = (u8*)pHdrBuf2 + iconOfs;
+    void* destIcon = localDataInfo2.pHeaderData + iconOfs;
     s8 iconFmtS = m_pSaveFile->IconCfg.IconFormat;
     u32 itableOfs = *(u32*)((u8*)iconBuf + 8);
     u32 ientryVal = *(u32*)((u8*)iconBuf + itableOfs);
@@ -1055,7 +1055,7 @@ unsigned long SaveCallbacks::CreateFileCB(unsigned long Slot, long Result, void*
     headerTotal += iconClut2;
     u32 headerSize = headerTotal + 0x40;
     m_pSaveFile->IconCfg.HeaderSize = headerSize;
-    u32 crc = nlChecksum32(cache->mIconHdrBuffer, headerSize);
+    u32 crc = nlChecksum32(localDataInfo2.pHeaderData, headerSize);
     m_IconCRC = crc;
     gIconCRC = m_IconCRC;
     cb = &SaveCallbacks::FileWriteIconCB;
@@ -1173,6 +1173,8 @@ unsigned long FormatCallbacks::FormatDoneCB(unsigned long channel, long result, 
 
 /**
  * Offset/Address/Size: 0x11DC | 0x8018AB38 | size: 0xC7C
+ * TODO: 85.45% match - Slot register allocation, extra block-count loop guards,
+ * and ICON_CONFIG stack slots differ.
  */
 #pragma push
 #pragma opt_propagation off
@@ -1219,10 +1221,10 @@ unsigned long SaveCallbacks::CardMountCB(unsigned long Slot, long Result, void* 
             u8 hasSpace;
             if (alignedSize > mc->m_CardInfo.FreeBytes)
                 hasSpace = 0;
-            else if (mc->m_CardInfo.FreeFiles >= 1)
-                hasSpace = 1;
-            else
+            else if (mc->m_CardInfo.FreeFiles < 1)
                 hasSpace = 0;
+            else
+                hasSpace = 1;
             if (hasSpace == 0)
                 errorCode = -9;
         }
@@ -1232,8 +1234,8 @@ unsigned long SaveCallbacks::CardMountCB(unsigned long Slot, long Result, void* 
         return -1;
     }
     long dataSize = nlSingleton<GameInfoManager>::s_pInstance->GetMemoryCardDataSize() + 12;
-    long fileExistsResult = g_MemCards[Slot]->FileExists(MarioSoccerFileName);
-    if (fileExistsResult == 0)
+    Result = g_MemCards[Slot]->FileExists(MarioSoccerFileName);
+    if (Result == 0)
     {
         m_pSaveFile = NULL;
         unsigned long openSize;
@@ -1293,10 +1295,10 @@ unsigned long SaveCallbacks::CardMountCB(unsigned long Slot, long Result, void* 
         MemCard::ICON_DATA_INFO localDataInfo1;
         m_pSaveFile->IconCfg.GetValidDataInfo(localDataInfo1);
         IconDataCache* cache = &gIconDataCache;
-        void* pHdrBuf = cache->mIconHdrBuffer;
+        localDataInfo1.pHeaderData = (unsigned char*)cache->mIconHdrBuffer;
         void* bannerBuf = cache->mBannerBuffer;
         u32 bannerOfs = localDataInfo1.BannerOffset;
-        void* destBanner = (u8*)pHdrBuf + bannerOfs;
+        void* destBanner = localDataInfo1.pHeaderData + bannerOfs;
         u8 bannerFmt = m_pSaveFile->IconCfg.BannerFormat;
         u32 tableOfs = *(u32*)((u8*)bannerBuf + 8);
         u32 entryVal = *(u32*)((u8*)bannerBuf + tableOfs);
@@ -1305,16 +1307,17 @@ unsigned long SaveCallbacks::CardMountCB(unsigned long Slot, long Result, void* 
         int bfm1 = bannerFmt - 1;
         int bfm2 = 1 - bannerFmt;
         int bannerMask = ~(bfm1 | bfm2);
-        int bannerClutV = 0x200 & (bannerMask >> 31);
+        int clutSize = 0x200;
+        int bannerClutV = clutSize & (bannerMask >> 31);
         int banDataV = bannerFmt * 0xC00;
         u32 bannerCopySize = bannerClutV + banDataV;
         memcpy(destBanner, srcBanner, bannerCopySize);
         MemCard::ICON_DATA_INFO localDataInfo2;
         m_pSaveFile->IconCfg.GetValidDataInfo(localDataInfo2);
-        void* pHdrBuf2 = cache->mIconHdrBuffer;
+        localDataInfo2.pHeaderData = (unsigned char*)cache->mIconHdrBuffer;
         void* iconBuf = cache->mIconBuffer;
         u32 iconOfs = localDataInfo2.IconOffset[0];
-        void* destIcon = (u8*)pHdrBuf2 + iconOfs;
+        void* destIcon = localDataInfo2.pHeaderData + iconOfs;
         s8 iconFmtS = m_pSaveFile->IconCfg.IconFormat;
         u32 itableOfs = *(u32*)((u8*)iconBuf + 8);
         u32 ientryVal = *(u32*)((u8*)iconBuf + itableOfs);
@@ -1329,19 +1332,20 @@ unsigned long SaveCallbacks::CardMountCB(unsigned long Slot, long Result, void* 
         int bf1 = bannerFmt2 - 1;
         int bf2 = 1 - bannerFmt2;
         int banClutMask = ~(bf1 | bf2);
-        int banClutH = 0x200 & (banClutMask >> 31);
+        int clutSize2 = 0x200;
+        int banClutH = clutSize2 & (banClutMask >> 31);
         int banDatH = bannerFmt2 * 0xC00;
         int if1 = iconFmt2 - 1;
         int if2 = 1 - iconFmt2;
         int icnClutMask = ~(if1 | if2);
-        int icnClutH = 0x200 & (icnClutMask >> 31);
+        int icnClutH = clutSize2 & (icnClutMask >> 31);
         u32 icnPixels = iconCount2 * (iconFmt2 << 10);
         int headerTotal = banClutH + banDatH + icnPixels + icnClutH;
         u32 headerSize = headerTotal + 0x40;
         pFile->IconCfg.HeaderSize = headerSize;
-        u32 crc = nlChecksum32(pHdrBuf2, headerSize);
+        u32 crc = nlChecksum32(localDataInfo2.pHeaderData, headerSize);
         m_IconCRC = crc;
-        gIconCRC = crc;
+        gIconCRC = m_IconCRC;
         typedef unsigned long (SaveCallbacks::*MemberCB)(unsigned long, long, void*);
         MemberCB cb2 = &SaveCallbacks::FileWriteIconCB;
         MemCardFunctor functor;
@@ -1388,10 +1392,10 @@ unsigned long SaveCallbacks::CardMountCB(unsigned long Slot, long Result, void* 
             u8 hasSpace2;
             if (alignedSize2 > mc2->m_CardInfo.FreeBytes)
                 hasSpace2 = 0;
-            else if (mc2->m_CardInfo.FreeFiles >= 1)
-                hasSpace2 = 1;
-            else
+            else if (mc2->m_CardInfo.FreeFiles < 1)
                 hasSpace2 = 0;
+            else
+                hasSpace2 = 1;
             if (hasSpace2 == 0)
                 errorCode = -9;
         }
@@ -1400,7 +1404,7 @@ unsigned long SaveCallbacks::CardMountCB(unsigned long Slot, long Result, void* 
         ResetTask::s_resetPaused = false;
         return -1;
     }
-    else if (fileExistsResult == -4)
+    else if (Result == -4)
     {
         MemCard::ICON_CONFIG IconCfg;
         IconCfg.BannerFormat = 0;
@@ -1460,10 +1464,10 @@ unsigned long SaveCallbacks::CardMountCB(unsigned long Slot, long Result, void* 
             u8 hasSpace3;
             if (alignedSize3 > mc3->m_CardInfo.FreeBytes)
                 hasSpace3 = 0;
-            else if (mc3->m_CardInfo.FreeFiles >= 1)
-                hasSpace3 = 1;
-            else
+            else if (mc3->m_CardInfo.FreeFiles < 1)
                 hasSpace3 = 0;
+            else
+                hasSpace3 = 1;
             if (hasSpace3 == 0)
                 errorCode = -9;
         }
@@ -1474,7 +1478,7 @@ unsigned long SaveCallbacks::CardMountCB(unsigned long Slot, long Result, void* 
     }
     else
     {
-        long errorCode = fileExistsResult;
+        long errorCode = Result;
         if (m_pSaveFile != NULL)
         {
             g_MemCards[Slot]->CloseFile(m_pSaveFile);
@@ -1512,10 +1516,10 @@ unsigned long SaveCallbacks::CardMountCB(unsigned long Slot, long Result, void* 
             u8 hasSpace4;
             if (alignedSize4 > mc4->m_CardInfo.FreeBytes)
                 hasSpace4 = 0;
-            else if (mc4->m_CardInfo.FreeFiles >= 1)
-                hasSpace4 = 1;
-            else
+            else if (mc4->m_CardInfo.FreeFiles < 1)
                 hasSpace4 = 0;
+            else
+                hasSpace4 = 1;
             if (hasSpace4 == 0)
                 errorCode = -9;
         }

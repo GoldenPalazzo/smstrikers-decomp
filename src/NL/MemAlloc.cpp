@@ -109,7 +109,7 @@ void MemoryAllocator::Initialize(void* arg0, unsigned int arg1)
 
 /**
  * Offset/Address/Size: 0x1D8 | 0x801CD924 | size: 0x35C
- * TODO: 94.33% match - remaining diffs are register assignments in both
+ * TODO: 95.51% match - remaining diffs are register assignments in both
  * allocation paths (size/offset and current/start-end iterator registers),
  * plus paired address-calculation ordering around suffix metadata writes.
  */
@@ -119,6 +119,7 @@ void* MemoryAllocator::Allocate(unsigned long size, unsigned int alignment, bool
     LargestFreeBlockCallback lfbcA;
     TotalFreeMemCallback tfmcB;
     LargestFreeBlockCallback lfbcB;
+    void* result;
 
     if (alignment < 4)
         alignment = 4;
@@ -187,8 +188,7 @@ void* MemoryAllocator::Allocate(unsigned long size, unsigned int alignment, bool
                 *(u32*)(((u32)allocPtr + savedSize + 3) & ~3u) = suffixGap;
             }
             *(u32*)((char*)allocPtr - 4) = header;
-            void* result = allocPtr;
-            return result;
+            result = allocPtr;
         }
     }
     else
@@ -259,10 +259,11 @@ void* MemoryAllocator::Allocate(unsigned long size, unsigned int alignment, bool
                 *(u32*)(((u32)allocPtr + savedSize + 3) & ~3u) = suffixSize;
             }
             *(u32*)((char*)allocPtr - 4) = header;
-            void* result = allocPtr;
-            return result;
+            result = allocPtr;
         }
     }
+
+    return result;
 }
 
 /**

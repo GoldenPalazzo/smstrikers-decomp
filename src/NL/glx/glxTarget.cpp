@@ -236,20 +236,19 @@ void glxPostInitTargets()
 
 /**
  * Offset/Address/Size: 0x67C | 0x801C2D58 | size: 0x1EC
- * TODO: 99.47% match - r29/r30 swap for sharedSize/singleSize in grab texture section, MWCC register allocator quirk
  */
 void glxInitTargets()
 {
+    unsigned long sharedSize;
+    unsigned long singleSize;
     PlatTexture* pTex;
     unsigned long numBytes;
     void* sharedMemory;
-    unsigned long sharedSize;
-    unsigned long singleSize;
 
     numBytes = 0;
 
-    singleSize = GCTextureSize(GXTex_RGB565, 320, 224, 1, (u32)-1);
-    singleSize = (singleSize + 31) & ~31;
+    sharedSize = GCTextureSize(GXTex_RGB565, 320, 224, 1, (u32)-1);
+    singleSize = (sharedSize + 31) & ~31;
     sharedSize = singleSize * 2;
 
     sharedMemory = (void*)glResourceAlloc(sharedSize + 320 * 224, GLM_TextureData);

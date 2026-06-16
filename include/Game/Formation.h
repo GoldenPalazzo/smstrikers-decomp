@@ -148,7 +148,7 @@ public:
 
     static void LoadFormationSets();
     static void UnloadFormationSets();
-    FormationSpec* GetFormationSpec(eFormation);
+    static FormationSpec* GetFormationSpec(eFormation);
     void Update(float);
     void ChooseNewFormations();
     void SetNewFormationEval(eFormationType, eFormation);

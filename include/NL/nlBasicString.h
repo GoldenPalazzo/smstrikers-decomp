@@ -208,6 +208,7 @@ public:
         {
             if (oldData->mRefCount == 1)
             {
+                oldData = m_data;
             }
             else
             {
@@ -311,6 +312,7 @@ public:
 template <typename CharT, typename Allocator>
 BasicString<CharT, Allocator>::BasicString(const CharT* str)
 {
+    const CharT* src = str;
     BasicStringData<CharT>* data = (BasicStringData<CharT>*)Allocator::allocate(sizeof(BasicStringData<CharT>));
     if (data != 0)
     {
@@ -327,7 +329,7 @@ BasicString<CharT, Allocator>::BasicString(const CharT* str)
         data->mCapacity = data->mSize;
         for (int i = 0; i < data->mSize; i++)
         {
-            data->mData[i] = *str++;
+            data->mData[i] = *src++;
         }
         data->mRefCount = 1;
     }
@@ -370,60 +372,7 @@ template <typename CharT, typename Allocator>
 template <typename OtherAllocator>
 BasicString<CharT, Allocator>& BasicString<CharT, Allocator>::AppendInPlace(const BasicString<CharT, OtherAllocator>& rhs)
 {
-    BasicStringData<CharT>* oldData = m_data;
-    BasicStringData<CharT>* data;
-    if (oldData == 0)
-    {
-        data = (BasicStringData<CharT>*)Allocator::allocate(sizeof(BasicStringData<CharT>));
-        if (data != 0)
-        {
-            data->mData = (CharT*)Allocator::allocate(1);
-            int j = 0;
-            data->mSize = 1;
-            data->mCapacity = 1;
-            data->mData[0] = j;
-            data->mRefCount = 1;
-            for (; j < data->mSize - 1; j++)
-            {
-                data->mData[j] = ((CharT*)0)[j];
-            }
-        }
-        m_data = data;
-    }
-    else
-    {
-        if (oldData->mRefCount != 1)
-        {
-            data = (BasicStringData<CharT>*)Allocator::allocate(sizeof(BasicStringData<CharT>));
-            if (data != 0)
-            {
-                data->mData = (CharT*)Allocator::allocate(oldData->mSize);
-                data->mSize = oldData->mSize;
-                data->mCapacity = oldData->mSize;
-                for (int j = 0; j < data->mSize; j++)
-                {
-                    data->mData[j] = oldData->mData[j];
-                }
-                data->mRefCount = 1;
-            }
-            if (--oldData->mRefCount == 0)
-            {
-                if (oldData)
-                {
-                    if (oldData)
-                    {
-                        delete[] oldData->mData;
-                    }
-                    if (oldData)
-                    {
-                        nlFree(oldData);
-                    }
-                }
-            }
-            oldData = data;
-        }
-        m_data = oldData;
-    }
+    (*this)[0];
 
     CharT* at;
     BasicStringData<CharT>* currentData = m_data;

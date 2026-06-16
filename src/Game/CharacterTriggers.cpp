@@ -1185,12 +1185,14 @@ void EmitBallPass(cPlayer* pPlayer)
 
 /**
  * Offset/Address/Size: 0x1B10 | 0x801A08C0 | size: 0xB48
+ * TODO: 99.77% match - BasicString constructor register swap and chip/default callback stack slot swaps remain.
  */
 void EmitBallShot(cPlayer* pCharacter, eBallShotEffectType eNewBallEffect, cPlayer*, bool bSilent)
 {
     EmissionController* pControl = NULL;
     EmissionController* pGlowControl = NULL;
     unsigned long kickSound = (unsigned long)-1;
+    Function<EmissionController&> update2;
 
     switch (eNewBallEffect)
     {
@@ -1310,10 +1312,12 @@ void EmitBallShot(cPlayer* pCharacter, eBallShotEffectType eNewBallEffect, cPlay
         g_pBall->InitiateBallBlur(eNewBallEffect, NULL);
         pCharacter->Play3DSFX((Audio::eCharSFX)0x3D, (PosUpdateMethod)2, 1.0f);
 
-        const float dx = g_pBall->m_v3Position.f.x - g_pBall->m_pPassTarget->m_v3Position.f.x;
-        const float dy = g_pBall->m_v3Position.f.y - g_pBall->m_pPassTarget->m_v3Position.f.y;
-        const float dz = g_pBall->m_v3Position.f.z - g_pBall->m_pPassTarget->m_v3Position.f.z;
-        const float distSq = dx * dx + dy * dy + dz * dz;
+        const nlVector3& ballPos = g_pBall->m_v3Position;
+        const nlVector3& targetPos = g_pBall->m_pPassTarget->m_v3Position;
+        const float dx = ballPos.f.x - targetPos.f.x;
+        const float dy = ballPos.f.y - targetPos.f.y;
+        const float dz = ballPos.f.z - targetPos.f.z;
+        const float distSq = dy * dy + dx * dx + dz * dz;
         if (distSq > g_pGame->m_pGameTweaks->unk22C)
         {
             Audio::SoundAttributes attrs;
@@ -1360,8 +1364,6 @@ void EmitBallShot(cPlayer* pCharacter, eBallShotEffectType eNewBallEffect, cPlay
         // fall through
     }
     case BALL_EFFECT_REGULAR_SHOT:
-        g_pBall->InitiateBallBlur(eNewBallEffect, NULL);
-        // fall through
     default:
     {
         EmissionController* pController = EmissionManager::Create(fxGetGroup("ball_shot"), 0);
@@ -1408,10 +1410,9 @@ void EmitBallShot(cPlayer* pCharacter, eBallShotEffectType eNewBallEffect, cPlay
         pGlowControl->SetPosition(g_pBall->m_v3Position);
         pGlowControl->SetVelocity(pCharacter->m_v3Velocity);
 
-        Function<EmissionController&> update;
-        update.mTag = FREE_FUNCTION;
-        update.mFreeFunction = UpdateEmitterFromBall;
-        pGlowControl->SetUpdateCallback(update);
+        update2.mTag = FREE_FUNCTION;
+        update2.mFreeFunction = UpdateEmitterFromBall;
+        pGlowControl->SetUpdateCallback(update2);
     }
 }
 

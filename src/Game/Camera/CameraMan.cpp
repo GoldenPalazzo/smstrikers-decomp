@@ -595,15 +595,7 @@ void cCameraManager::Remove(eCameraType type, bool bDeleteAfterRemoving)
     cCameraManager::m_fTransitionSpeed = 1.0f / fDuration;
     cCameraManager::m_fTransitionTime = 1.0f - cCameraManager::m_fTransitionTime;
 
-    cBaseCamera* pRemoved = nlDLRingRemoveStart<cBaseCamera>(&cCameraManager::m_cameraStack);
-
-    if (cCameraManager::PeekCamera()->m_pFilter != NULL)
-    {
-        cCameraManager::PeekCamera()->m_pFilter->Reset();
-        cCameraManager::PeekCamera()->Reactivate();
-    }
-
-    return pRemoved;
+    return cCameraManager::PerformCameraPop();
 }
 
 /**

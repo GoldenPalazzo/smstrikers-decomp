@@ -52,6 +52,19 @@ public:
         return pCamera;
     }
 
+    static inline cBaseCamera* PerformCameraPop()
+    {
+        cBaseCamera* pCamera = nlDLRingRemoveStart<cBaseCamera>(&m_cameraStack);
+
+        if (PeekCamera()->m_pFilter != NULL)
+        {
+            PeekCamera()->m_pFilter->Reset();
+            PeekCamera()->Reactivate();
+        }
+
+        return pCamera;
+    }
+
     template <typename T>
     static T* GetCamera(eCameraType type);
 

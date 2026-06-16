@@ -731,7 +731,7 @@ typedef DLListContainerBase<BallCacheInfo*, BasicSlotPool<DLListEntry<BallCacheI
 
 /**
  * Offset/Address/Size: 0x1768 | 0x80138B54 | size: 0x6C0
- * TODO: 94.71% match - r23 register pressure and cache-iteration branch ordering still diverge
+ * TODO: 97.96% match - cache cleanup register allocation and callback label selection still diverge
  */
 
 bool FakeBallWorld::GetPredictedBallPosition(float fDeltaTime, nlVector3& v3Position, nlVector3& v3Velocity)
@@ -747,11 +747,10 @@ bool FakeBallWorld::GetPredictedBallPosition(float fDeltaTime, nlVector3& v3Posi
     float fSimTime = FixedUpdateTask::mSimulationTime;
     if (mfLastCacheTime < fSimTime)
     {
-        nlDLListSlotPool<BallCacheInfo*>* pCacheRef = &mBallCacheList;
-        if (pCacheRef->m_Head != NULL)
+        if (mBallCacheList.m_Head != NULL)
         {
-            DLListEntry<BallCacheInfo*>* start = nlDLRingGetStart(pCacheRef->m_Head);
-            DLListEntry<BallCacheInfo*>* end = pCacheRef->m_Head;
+            DLListEntry<BallCacheInfo*>* start = nlDLRingGetStart(mBallCacheList.m_Head);
+            DLListEntry<BallCacheInfo*>* end = mBallCacheList.m_Head;
             DLListEntry<BallCacheInfo*>* current = start;
             SlotPool<BallCacheInfo>* pBCIPool = &BallCacheInfo::mBallCacheInfoSlotPool;
             while (current != NULL)
@@ -769,8 +768,8 @@ bool FakeBallWorld::GetPredictedBallPosition(float fDeltaTime, nlVector3& v3Posi
                 }
             }
             nlWalkDLRing<DLListEntry<BallCacheInfo*>, BallCacheListBase>(
-                pCacheRef->m_Head, (BallCacheListBase*)&mBallCacheList, (void (BallCacheListBase::*)(DLListEntry<BallCacheInfo*>*))&BallCacheListBase::DeleteEntry);
-            pCacheRef->m_Head = NULL;
+                mBallCacheList.m_Head, (BallCacheListBase*)&mBallCacheList, (void (BallCacheListBase::*)(DLListEntry<BallCacheInfo*>*))&BallCacheListBase::DeleteEntry);
+            mBallCacheList.m_Head = NULL;
         }
         mfLastCacheTime = -1.0f;
     }
@@ -885,12 +884,8 @@ bool FakeBallWorld::GetPredictedBallPosition(float fDeltaTime, nlVector3& v3Posi
         DLListEntry<BallCacheInfo*>* pListEntry = pStartEntry;
         DLListEntry<BallCacheInfo*>* pHead = *pHeadRef;
         pPrev = pNext;
-        while (!nlDLRingIsEnd(pHead, pListEntry))
+        while (!nlDLRingIsEnd(pHead, pListEntry) && pNext->mfTime < fTargetTime)
         {
-            if (pNext->mfTime >= fTargetTime)
-            {
-                break;
-            }
             pPrev = pNext;
             if (nlDLRingIsEnd(pHead, pListEntry) || pListEntry == NULL)
             {
@@ -910,12 +905,8 @@ bool FakeBallWorld::GetPredictedBallPosition(float fDeltaTime, nlVector3& v3Posi
         DLListEntry<BallCacheInfo*>* pListEntry = pEndEntry;
         DLListEntry<BallCacheInfo*>* pHead = *pHeadRef;
         pPrev = pNext;
-        while (!nlDLRingIsStart(pHead, pListEntry))
+        while (!nlDLRingIsStart(pHead, pListEntry) && pPrev->mfTime >= fTargetTime)
         {
-            if (pPrev->mfTime < fTargetTime)
-            {
-                break;
-            }
             pNext = pPrev;
             if (nlDLRingIsStart(pHead, pListEntry))
             {

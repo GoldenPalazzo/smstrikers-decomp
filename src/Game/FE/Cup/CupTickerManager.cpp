@@ -151,10 +151,44 @@ CupTickerManager::~CupTickerManager()
     }
 }
 
+static inline BasicStringData<unsigned short>* BuildTickerMessageData(CupTickerManager* manager)
+{
+    BasicStringInternal* data = (BasicStringInternal*)nlMalloc(0x10, 8, true);
+    if (data)
+    {
+        const unsigned short* src = manager->mMessageBuffer;
+        data->mData = 0;
+        const unsigned short* ptr = src;
+        data->mSize = 0;
+        data->mCapacity = 0;
+
+        while (*ptr++)
+        {
+            data->mSize++;
+        }
+
+        data->mSize++;
+        data->mData = (char*)nlMalloc((data->mSize + 1) * 2, 8, true);
+        data->mCapacity = data->mSize;
+
+        int j = 0;
+        int i = j;
+        while (i < data->mSize)
+        {
+            *(unsigned short*)(data->mData + j) = *src;
+            i++;
+            src++;
+            j += 2;
+        }
+
+        data->mRefCount = 1;
+    }
+    return (BasicStringData<unsigned short>*)data;
+}
+
 /**
  * Offset/Address/Size: 0x1968 | 0x800F3930 | size: 0x328
- * TODO: 95.99% match - mTicker load/store scheduling, string init ordering,
- * and cleanup r30/r31 register allocation differ due to -inline deferred vs -inline auto.
+ * TODO: 99.93% match - copy-loop index and byte-offset zero initialization still swap r4/r5.
  */
 void CupTickerManager::SetTickerTextInstance(TLTextInstance* tickerText)
 {
@@ -169,7 +203,7 @@ void CupTickerManager::SetTickerTextInstance(TLTextInstance* tickerText)
             FEScrollText(tickerText, 0, screenInfo->ScreenWidth + 0x32);
 
         {
-            BindExp1_vfmfcp bind = Bind<void>(
+            BindExp1_vfmfcp bind = Bind<void, MemFunImpl_CupTickerManager_v, CupTickerManager*>(
                 MemFun<CupTickerManager, void>(&CupTickerManager::CreateNewMessage), this);
 
             Function<FnVoidVoid> callback;
@@ -185,58 +219,7 @@ void CupTickerManager::SetTickerTextInstance(TLTextInstance* tickerText)
         this->CreateNewMessage();
     }
 
-    BasicStringInternal* data = (BasicStringInternal*)nlMalloc(0x10, 8, true);
-    if (data)
-    {
-        const unsigned short* src = mMessageBuffer;
-        data->mData = 0;
-        const unsigned short* ptr = src;
-        data->mSize = 0;
-        data->mCapacity = 0;
-
-        while (*ptr++)
-        {
-            data->mSize++;
-        }
-
-        data->mSize++;
-        data->mData = (char*)nlMalloc((data->mSize + 1) * 2, 8, true);
-        data->mCapacity = data->mSize;
-
-        int i = 0;
-        int j = i;
-        while (i < data->mSize)
-        {
-            *(unsigned short*)(data->mData + j) = *src;
-            i++;
-            src++;
-            j += 2;
-        }
-
-        data->mRefCount = 1;
-    }
-
-    BasicStringInternal* msgData = data;
-    mTicker->SetDisplayMessage(*(const BasicString<unsigned short, Detail::TempStringAllocator>*)&msgData);
-
-    data = msgData;
-    if (data)
-    {
-        if (--data->mRefCount == 0)
-        {
-            if (data)
-            {
-                if (data)
-                {
-                    delete[] data->mData;
-                }
-                if (data)
-                {
-                    nlFree(data);
-                }
-            }
-        }
-    }
+    mTicker->SetDisplayMessage(BasicString<unsigned short, Detail::TempStringAllocator>(BuildTickerMessageData(this)));
 }
 
 #define LOC_LOOKUP(_hashExpr, _locVar)                                                                                     \

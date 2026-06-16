@@ -90,7 +90,6 @@ void IChooseCaptain::ComponentState::GotoNextPhase()
 {
     ICaptainGridComponent* captaingrid;
     ISidekickGridComponent* sidekickgrid;
-    ISidekickGridComponent* sidekickgrid2;
     eTeamID chosenteam;
     char filenameC2[0x80];
     char filenameC1[0x80];
@@ -143,8 +142,9 @@ void IChooseCaptain::ComponentState::GotoNextPhase()
 
             FEAudio::PlayAnimAudioEvent((mHomeAway == 0) ? "sfx_character_group_left_enter" : "sfx_character_group_right_enter", false);
 
-            mParent->mNameComponents[mHomeAway].mComponent->SetActiveSlide("Slide2");
-            mParent->mNameComponents[mHomeAway].mComponent->Update(0.0f);
+            NameComponent* namecomponent = &mParent->mNameComponents[mHomeAway];
+            namecomponent->mComponent->SetActiveSlide("Slide2");
+            namecomponent->mComponent->Update(0.0f);
             mParent->mNameComponents[mHomeAway].SetCaptainName(GetLOCCharacterName((eTeamID)mParent->mHomeAwayTeam[mHomeAway], false, false));
             mParent->mNameComponents[mHomeAway].SetCaptainLogo(GetTeamName((eTeamID)mParent->mHomeAwayTeam[mHomeAway]));
             mParent->mNameComponents[mHomeAway].SetSidekickName(GetLOCSidekickName(sidekickgrid->GetSelectedItem()));
@@ -158,9 +158,9 @@ void IChooseCaptain::ComponentState::GotoNextPhase()
         }
         else
         {
-            int homeaway = mHomeAway;
+            int teamID = mParent->mHomeAwayTeam[mHomeAway];
             IChooseCaptain* parent = mParent;
-            int teamID = parent->mHomeAwayTeam[homeaway];
+            int homeaway = mHomeAway;
 
             CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_0, filenameC0, 0x80, teamID, homeaway);
             CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_1, filenameC1, 0x80, teamID, homeaway);
@@ -179,7 +179,7 @@ void IChooseCaptain::ComponentState::GotoNextPhase()
         break;
 
     case PHASE_CHOOSING_SIDEKICK:
-        sidekickgrid2 = mParent->mSidekickGridComponents[mHomeAway];
+        ISidekickGridComponent* sidekickgrid2 = mParent->mSidekickGridComponents[mHomeAway];
 
         sidekickgrid2->mParentComponent->SetActiveSlide("OUT");
         sidekickgrid2->mParentComponent->Update(0.0f);
@@ -197,9 +197,9 @@ void IChooseCaptain::ComponentState::GotoNextPhase()
 
         mParent->mHomeAwaySidekicks[mHomeAway] = sidekickgrid2->GetSelectedItem();
         {
-            int homeaway = mHomeAway;
+            int teamID = mParent->mHomeAwayTeam[mHomeAway];
             IChooseCaptain* parent = mParent;
-            int teamID = parent->mHomeAwayTeam[homeaway];
+            int homeaway = mHomeAway;
 
             CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_0, filenameS0, 0x80, teamID, homeaway);
             CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_1, filenameS1, 0x80, teamID, homeaway);
@@ -210,7 +210,7 @@ void IChooseCaptain::ComponentState::GotoNextPhase()
             parent->mAsyncImage[homeaway][2]->QueueLoad(filenameS2, false);
 
             parent->mDidSwapCaptains[homeaway] = false;
-            parent->StartSidekickMiniHead(homeaway, (eSidekickID)parent->mHomeAwaySidekicks[homeaway]);
+            mParent->StartSidekickMiniHead(mHomeAway, (eSidekickID)mParent->mHomeAwaySidekicks[mHomeAway]);
         }
         mCurrentPhase = PHASE_READY;
 
@@ -387,16 +387,14 @@ void IChooseCaptain::NameComponent::SetSidekickName(unsigned long id)
 
 /**
  * Offset/Address/Size: 0x1AC | 0x800BF950 | size: 0x874
- * TODO: 99.76% match - captaingridmenu and firstcaptain registers are swapped in the selection loop.
+ * TODO: 99.84% match - parent/teamID registers are swapped in the ready-phase image queue setup.
  */
 void IChooseCaptain::ComponentState::SetCurrentPhase(Phase phase)
 {
     ICaptainGridComponent* captaingrid;
     NameComponent* namecomponent;
-    FEMapMenu* captaingridmenu;
-    int firstcaptain;
-    int rowfirstcaptain;
     ISidekickGridComponent* gridcomponent;
+    FEMapMenu* menu;
     IChooseCaptain* parent;
     int teamID;
     int homeaway;
@@ -433,13 +431,13 @@ void IChooseCaptain::ComponentState::SetCurrentPhase(Phase phase)
 
         if (mParent->mComponentState[mHomeAway ^ 1].mCurrentPhase > PHASE_CHOOSING_CAPTAIN)
         {
-            captaingridmenu = captaingrid->mMapMenu;
+            FEMapMenu* captaingridmenu = captaingrid->mMapMenu;
             captaingridmenu->SetItemActive(mParent->mCaptainGridComponents[mHomeAway ^ 1]->mMapMenu->GetSelectedItem(), false);
         }
 
-        captaingridmenu = captaingrid->mMapMenu;
-        firstcaptain = captaingridmenu->GetSelectedItem();
-        rowfirstcaptain = firstcaptain;
+        FEMapMenu* captaingridmenu = captaingrid->mMapMenu;
+        int firstcaptain = captaingridmenu->GetSelectedItem();
+        int rowfirstcaptain = firstcaptain;
 
         while (!captaingridmenu->IsSelectedItemActive())
         {
@@ -531,7 +529,7 @@ void IChooseCaptain::ComponentState::SetCurrentPhase(Phase phase)
         mParent->mCaptainGridComponents[mHomeAway]->mMapMenu->SetSelectedItem(mParent->mHomeAwayTeam[mHomeAway]);
         mParent->mCaptainGridComponents[mHomeAway ^ 1]->mMapMenu->SetSelectedItem(mParent->mHomeAwayTeam[mHomeAway ^ 1]);
 
-        FEMapMenu* menu = mParent->mCaptainGridComponents[mHomeAway]->mMapMenu;
+        menu = mParent->mCaptainGridComponents[mHomeAway]->mMapMenu;
         menu->SetItemActive(menu->GetSelectedItem(), false);
 
         menu = mParent->mCaptainGridComponents[mHomeAway ^ 1]->mMapMenu;

@@ -928,13 +928,12 @@ OptionsVisualMenuV2::OptionsVisualMenuV2(FEPresentation* pres, ButtonComponent::
 
 /**
  * Offset/Address/Size: 0x20C8 | 0x800B710C | size: 0xA3C
- * TODO: 91.53% match - remaining diffs are register assignment drift in
- * menu traversal/callback paths and unresolved string-label references.
+ * TODO: 98.49% match - remaining diffs are register assignment drift in
+ * slide traversal and ischaractervol.
  */
 void OptionsAudioMenuV2::Update(float)
 {
     bool ischaractervol = (mMenuItems.mCurrentIndex == 2);
-    FEAudio* audio = (FEAudio*)this;
     mButtons.CentreButtons();
 
     if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xD, true, NULL))
@@ -1011,11 +1010,39 @@ void OptionsAudioMenuV2::Update(float)
                 }
             }
 
-            mMenuItems.mMenuItems[oldIndex].mCallbacks[2](mMenuItems.mMenuItems[oldIndex].mType);
+            {
+                int tag = mMenuItems.mMenuItems[oldIndex].mCallbacks[2].mTag;
+                if (((u32)((-tag) | tag) >> 31) > 0)
+                {
+                    TLComponentInstance* type = mMenuItems.mMenuItems[oldIndex].mType;
+                    if (tag == FREE_FUNCTION)
+                    {
+                        mMenuItems.mMenuItems[oldIndex].mCallbacks[2].mFreeFunction(type);
+                    }
+                    else
+                    {
+                        (*mMenuItems.mMenuItems[oldIndex].mCallbacks[2].mFunctor)(type);
+                    }
+                }
+            }
 
             mMenuItems.mCurrentIndex = newIndex;
 
-            mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[1](mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mType);
+            {
+                int tag = mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[1].mTag;
+                if (((u32)((-tag) | tag) >> 31) > 0)
+                {
+                    TLComponentInstance* type = mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mType;
+                    if (tag == FREE_FUNCTION)
+                    {
+                        mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[1].mFreeFunction(type);
+                    }
+                    else
+                    {
+                        (*mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[1].mFunctor)(type);
+                    }
+                }
+            }
             break;
         }
 
@@ -1133,11 +1160,39 @@ void OptionsAudioMenuV2::Update(float)
                 }
             }
 
-            mMenuItems.mMenuItems[oldIndex].mCallbacks[2](mMenuItems.mMenuItems[oldIndex].mType);
+            {
+                int tag = mMenuItems.mMenuItems[oldIndex].mCallbacks[2].mTag;
+                if (((u32)((-tag) | tag) >> 31) > 0)
+                {
+                    TLComponentInstance* type = mMenuItems.mMenuItems[oldIndex].mType;
+                    if (tag == FREE_FUNCTION)
+                    {
+                        mMenuItems.mMenuItems[oldIndex].mCallbacks[2].mFreeFunction(type);
+                    }
+                    else
+                    {
+                        (*mMenuItems.mMenuItems[oldIndex].mCallbacks[2].mFunctor)(type);
+                    }
+                }
+            }
 
             mMenuItems.mCurrentIndex = newIndex;
 
-            mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[1](mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mType);
+            {
+                int tag = mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[1].mTag;
+                if (((u32)((-tag) | tag) >> 31) > 0)
+                {
+                    TLComponentInstance* type = mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mType;
+                    if (tag == FREE_FUNCTION)
+                    {
+                        mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[1].mFreeFunction(type);
+                    }
+                    else
+                    {
+                        (*mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[1].mFunctor)(type);
+                    }
+                }
+            }
             break;
         }
 
@@ -1222,12 +1277,40 @@ void OptionsAudioMenuV2::Update(float)
                 }
 
                 MenuItem<SlideMenuItem>* oldSlideItem = &slideMenuList->mMenuItems[oldIndex];
-                oldSlideItem->mCallbacks[2](oldSlideItem->mType);
+                {
+                    int tag = oldSlideItem->mCallbacks[2].mTag;
+                    if (((u32)((-tag) | tag) >> 31) > 0)
+                    {
+                        SlideMenuItem* type = oldSlideItem->mType;
+                        if (tag == FREE_FUNCTION)
+                        {
+                            oldSlideItem->mCallbacks[2].mFreeFunction(type);
+                        }
+                        else
+                        {
+                            (*oldSlideItem->mCallbacks[2].mFunctor)(type);
+                        }
+                    }
+                }
 
                 slideMenuList->mCurrentIndex = newIndex;
 
                 MenuItem<SlideMenuItem>* curSlideItem = &slideMenuList->mMenuItems[slideMenuList->mCurrentIndex];
-                curSlideItem->mCallbacks[1](curSlideItem->mType);
+                {
+                    int tag = curSlideItem->mCallbacks[1].mTag;
+                    if (((u32)((-tag) | tag) >> 31) > 0)
+                    {
+                        SlideMenuItem* type = curSlideItem->mType;
+                        if (tag == FREE_FUNCTION)
+                        {
+                            curSlideItem->mCallbacks[1].mFreeFunction(type);
+                        }
+                        else
+                        {
+                            (*curSlideItem->mCallbacks[1].mFunctor)(type);
+                        }
+                    }
+                }
 
                 res = RES_OK;
                 break;
@@ -1237,7 +1320,7 @@ void OptionsAudioMenuV2::Update(float)
             {
                 if (ischaractervol)
                 {
-                    audio->PlayRandomVoiceToggleSFX();
+                    ((FEAudio*)this)->PlayRandomVoiceToggleSFX();
                 }
                 else
                 {
@@ -1317,12 +1400,40 @@ void OptionsAudioMenuV2::Update(float)
                 }
 
                 MenuItem<SlideMenuItem>* oldSlideItem = &slideMenuList->mMenuItems[oldIndex];
-                oldSlideItem->mCallbacks[2](oldSlideItem->mType);
+                {
+                    int tag = oldSlideItem->mCallbacks[2].mTag;
+                    if (((u32)((-tag) | tag) >> 31) > 0)
+                    {
+                        SlideMenuItem* type = oldSlideItem->mType;
+                        if (tag == FREE_FUNCTION)
+                        {
+                            oldSlideItem->mCallbacks[2].mFreeFunction(type);
+                        }
+                        else
+                        {
+                            (*oldSlideItem->mCallbacks[2].mFunctor)(type);
+                        }
+                    }
+                }
 
                 slideMenuList->mCurrentIndex = newIndex;
 
                 MenuItem<SlideMenuItem>* curSlideItem = &slideMenuList->mMenuItems[slideMenuList->mCurrentIndex];
-                curSlideItem->mCallbacks[1](curSlideItem->mType);
+                {
+                    int tag = curSlideItem->mCallbacks[1].mTag;
+                    if (((u32)((-tag) | tag) >> 31) > 0)
+                    {
+                        SlideMenuItem* type = curSlideItem->mType;
+                        if (tag == FREE_FUNCTION)
+                        {
+                            curSlideItem->mCallbacks[1].mFreeFunction(type);
+                        }
+                        else
+                        {
+                            (*curSlideItem->mCallbacks[1].mFunctor)(type);
+                        }
+                    }
+                }
 
                 res = RES_OK;
                 break;
@@ -1332,7 +1443,7 @@ void OptionsAudioMenuV2::Update(float)
             {
                 if (ischaractervol)
                 {
-                    audio->PlayRandomVoiceToggleSFX();
+                    ((FEAudio*)this)->PlayRandomVoiceToggleSFX();
                 }
                 else
                 {

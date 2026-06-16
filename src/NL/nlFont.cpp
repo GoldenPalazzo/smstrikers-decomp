@@ -235,14 +235,7 @@ void nlFont::DrawString(eGLView View, const FontCharString& Text, const nlVector
             }
             else
             {
-                if (Char > 0x7F)
-                {
-                    pGlyph = &m_pExtendedGlyphs[Char - 0x80];
-                }
-                else
-                {
-                    pGlyph = &m_GlyphLookup[Char - 0x20];
-                }
+                pGlyph = (Char > 0x7F) ? &m_pExtendedGlyphs[Char - 0x80] : &m_GlyphLookup[Char - 0x20];
 
                 unsigned long Page = pGlyph->Page;
                 if (Page > 0x10)
@@ -280,15 +273,17 @@ void nlFont::DrawString(eGLView View, const FontCharString& Text, const nlVector
 
                         pCurrentQuad->depth = 0.0f;
 
-                        pCurrentQuad->m_uv[1].f.x = pGlyph->uv.f.x;
-                        pCurrentQuad->m_uv[0].f.x = pGlyph->uv.f.x;
+                        float GlyphU = pGlyph->uv.f.x;
+                        pCurrentQuad->m_uv[1].f.x = GlyphU;
+                        pCurrentQuad->m_uv[0].f.x = GlyphU;
 
                         float EndU = pGlyph->uv.f.x + (0.999f * ((float)pGlyph->RenderWidth * m_InvTexSize));
                         pCurrentQuad->m_uv[3].f.x = EndU;
                         pCurrentQuad->m_uv[2].f.x = EndU;
 
-                        pCurrentQuad->m_uv[3].f.y = pGlyph->uv.f.y;
-                        pCurrentQuad->m_uv[0].f.y = pGlyph->uv.f.y;
+                        float GlyphV = pGlyph->uv.f.y;
+                        pCurrentQuad->m_uv[3].f.y = GlyphV;
+                        pCurrentQuad->m_uv[0].f.y = GlyphV;
 
                         float EndV = pGlyph->uv.f.y + GlyphRenderHeightVOffset;
                         pCurrentQuad->m_uv[2].f.y = EndV;
@@ -515,7 +510,7 @@ unsigned char nlFont::Load(const char* szFontName, char* pFontDescData, unsigned
                 else
                 {
                     ListEntry<nlFont::GlyphInfo>* pEntry = NULL;
-                    nlFont::GlyphInfo zeroedInfo = sZeroGlyphInfo;
+                    ListEntry<nlFont::GlyphInfo> entryData(sZeroGlyphInfo);
 
                     if (ExtendedGlyphList.m_Allocator.m_FreeList == NULL)
                     {
@@ -530,7 +525,7 @@ unsigned char nlFont::Load(const char* szFontName, char* pFontDescData, unsigned
 
                     if (pEntry != NULL)
                     {
-                        *pEntry = ListEntry<nlFont::GlyphInfo>(zeroedInfo);
+                        *pEntry = entryData;
                     }
 
                     nlListAddStart<ListEntry<nlFont::GlyphInfo> >(&ExtendedGlyphList.m_Head, pEntry, &ExtendedGlyphList.m_Tail);

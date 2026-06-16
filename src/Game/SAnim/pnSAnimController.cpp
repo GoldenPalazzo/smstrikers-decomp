@@ -36,8 +36,8 @@ cPN_SAnimController::cPN_SAnimController(cSAnim* pSAnim, const AnimRetarget* pAn
 
 /**
  * Offset/Address/Size: 0xAF0 | 0x801EB14C | size: 0x2D0
- * TODO: 99.29% match - synchronized ratio block still differs in
- * f2/f3/f4/f7 register allocation.
+ * TODO: 99.69% match - synchronized ratio block still differs in
+ * f0/f2/f4/f7 register allocation.
  */
 cPoseNode* cPN_SAnimController::Update(float dt)
 {
@@ -58,10 +58,11 @@ cPoseNode* cPN_SAnimController::Update(float dt)
             }
 
             cPN_SAnimController* pSyncController = m_pSynchronizedController;
-            float syncDuration = (float)pSyncController->m_pSAnim->m_nNumKeys / 30.0f;
             float thisDuration = (float)m_pSAnim->m_nNumKeys / 30.0f;
-            float ratio = (thisDuration / m_fPlaybackSpeedScale)
-                        / (syncDuration / pSyncController->m_fPlaybackSpeedScale);
+            float syncRatio = (float)pSyncController->m_pSAnim->m_nNumKeys / 30.0f;
+            syncRatio = syncRatio / pSyncController->m_fPlaybackSpeedScale;
+            float ratio = thisDuration / m_fPlaybackSpeedScale;
+            ratio = ratio / syncRatio;
 
             playbackSpeedScale *= m_fSynchronizedWeight * (ratio - 1.0f) + 1.0f;
         }

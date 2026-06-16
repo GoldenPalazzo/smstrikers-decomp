@@ -612,7 +612,7 @@ static void FindBoundingSphereAccurate(nlVector3* pOutSphere, float* pOutRadius,
 
 /**
  * Offset/Address/Size: 0x1AE4 | 0x8011A994 | size: 0x808
- * TODO: 93.67% match - remaining register rotations in character/fxtex setup and visible/debug packet loops.
+ * TODO: 94.90% match - remaining this/model register swap and debug/shadow register ordering.
  */
 void DrawableCharacter::SendToGl(const cCharacter& character) const
 {
@@ -669,6 +669,7 @@ void DrawableCharacter::SendToGl(const cCharacter& character) const
         lightTexture = GetGameObjectLightRamp();
     }
 
+    void* pSpecularData;
     void* pLightData;
     if (sSTSLighting__17DrawableCharacter != 0)
     {
@@ -689,7 +690,7 @@ void DrawableCharacter::SendToGl(const cCharacter& character) const
         pEnviroData = glUserAlloc((eGLUserData)0xE, 0, false);
     }
 
-    void* pSpecularData = WorldManager::s_World->m_pSTSIntensity;
+    pSpecularData = WorldManager::s_World->m_pSTSIntensity;
     glModel* pModel = glModelDup(skinMesh->pModel, true);
 
     bool isVisible;
@@ -724,8 +725,8 @@ void DrawableCharacter::SendToGl(const cCharacter& character) const
 
     if (isVisible)
     {
-        u8 dirtValue = (u8)(int)(63.0f * (1.0f - ((float)mDirt / 255.0f)));
         glModelPacket* pPacket = pModel->packets;
+        u32 dirtValue = (u32)(u8)(int)(63.0f * (1.0f - ((float)mDirt / 255.0f)));
 
         for (; pPacket < pModel->packets + pModel->numPackets; pPacket++)
         {
@@ -758,8 +759,10 @@ void DrawableCharacter::SendToGl(const cCharacter& character) const
                     }
                     else
                     {
-                        pPacket->state.texture[GLTT_Detail] = fxtex->m_uTexture;
-                        pPacket->state.texconfig |= GLTT_Detail_bit;
+                        u32 detailTexture = fxtex->m_uTexture;
+                        u32 detailBit = GLTT_Detail_bit;
+                        pPacket->state.texture[GLTT_Detail] = detailTexture;
+                        pPacket->state.texconfig |= detailBit;
                         glSetTextureState(pPacket->state.texturestate, (eGLTextureState)0xC, 0xF);
                     }
                 }
@@ -1433,6 +1436,7 @@ void cPN_SingleAxisBlender::Replay<SaveFrame>(SaveFrame& frame)
 
 /**
  * Offset/Address/Size: 0x4920 | 0x8011D7E0 | size: 0xD8
+ * TODO: 98.61% match - stream cursor/result registers differ in compressed time byte read.
  */
 template <>
 void cPN_SAnimController::Replay<LoadFrame>(LoadFrame& frame)
@@ -1441,7 +1445,8 @@ void cPN_SAnimController::Replay<LoadFrame>(LoadFrame& frame)
     Replayable<0>(frame, (cPoseNode&)*this);
 
     const char* cursor = frame.mStream.mStorage;
-    unsigned short value = (unsigned short)(((unsigned char)cursor[1] << 8) | (unsigned char)cursor[0]);
+    unsigned int value = (unsigned int)(unsigned char)cursor[1] << 8;
+    value = (value & 0xFF00) | (unsigned int)(unsigned char)cursor[0];
     frame.mStream.mStorage = cursor + 2;
     m_fTime = (float)value / 32768.0f;
 

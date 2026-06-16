@@ -185,25 +185,7 @@ glxTextureLoadCallback_t glx_SetLoadCallback(glxTextureLoadCallback_t callback);
 class TexDestructor
 {
 public:
-    /**
-     * Offset/Address/Size: 0x197C | 0x801B8C38 | size: 0x48
-     */
-    void CallDestructor(const unsigned long&, PlatTexture** texture)
-    {
-        PlatTexture* texture_ptr;
-        void* linear_data;
-
-        texture_ptr = *texture;
-        if (texture_ptr != NULL)
-        {
-            linear_data = texture_ptr->m_LinearData;
-            if (linear_data != NULL)
-            {
-                nlFree(linear_data);
-                texture_ptr->m_LinearData = NULL;
-            }
-        }
-    }
+    void CallDestructor(const unsigned long&, PlatTexture** texture);
 };
 
 #endif // _GLXTEXTURE_H_

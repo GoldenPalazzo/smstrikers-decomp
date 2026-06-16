@@ -650,6 +650,7 @@ void BraggingRightsOverlay::Update(float fDeltaT)
 
 /**
  * Offset/Address/Size: 0x15A4 | 0x800D35A0 | size: 0x8FC
+ * TODO: 98.66% match - remaining r28/r29/r30 register swaps in BasicString<unsigned short> construction paths
  */
 void BraggingRightsOverlay::ChangeTicker(int tickerRow)
 {
@@ -677,28 +678,23 @@ void BraggingRightsOverlay::ChangeTicker(int tickerRow)
                 tickerRow++;
             }
 
-            BasicString<unsigned short, Detail::TempStringAllocator> detail(
-                LookupLocHash(DETAIL_NAMES[tickerRow][useDetailName2]));
-            const unsigned short* winnerName = LookupLocHash(GetLOCCharacterName(winningTeam, false, false));
-
             formatted = Format<BasicString<unsigned short, Detail::TempStringAllocator>, const unsigned short*, unsigned short[16]>(
-                detail, winnerName, statWideString);
+                BasicString<unsigned short, Detail::TempStringAllocator>(LookupLocHash(DETAIL_NAMES[tickerRow][useDetailName2 != false])),
+                LookupLocHash(GetLOCCharacterName(winningTeam, false, false)),
+                statWideString);
         }
         else
         {
-            BasicString<unsigned short, Detail::TempStringAllocator> detail(
-                LookupLocHash(DETAIL_NAMES[tickerRow][useDetailName2]));
-            const unsigned short* winnerName = LookupLocHash(CONTROLLER_TEXT[mAwardWinners[tickerRow]]);
-
             formatted = Format<BasicString<unsigned short, Detail::TempStringAllocator>, const unsigned short*, unsigned short[16]>(
-                detail, winnerName, statWideString);
+                BasicString<unsigned short, Detail::TempStringAllocator>(LookupLocHash(DETAIL_NAMES[tickerRow][useDetailName2 != false])),
+                LookupLocHash(CONTROLLER_TEXT[mAwardWinners[tickerRow]]),
+                statWideString);
         }
     }
 
     memcpy(mBuffer, formatted.c_str(), sizeof(mBuffer));
 
-    BasicString<unsigned short, Detail::TempStringAllocator> message(mBuffer);
-    mTicker->SetDisplayMessage(message);
+    mTicker->SetDisplayMessage(BasicString<unsigned short, Detail::TempStringAllocator>(mBuffer));
 }
 
 /**

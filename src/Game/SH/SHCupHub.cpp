@@ -36,9 +36,6 @@ public:
 extern cWorldSFX gWorldSFX;
 } // namespace Audio
 
-extern "C" unsigned char UpdateKnockout4__11CupHubSceneFf(CupHubScene*, float);
-extern "C" unsigned char UpdateKnockout2__11CupHubSceneFf(CupHubScene*, float);
-
 struct LOCHeader
 {
     char Thumbprint[4];
@@ -551,10 +548,10 @@ void CupHubScene::Update(float fDeltaT)
             inputAllowed = UpdateKnockout8(fDeltaT);
             break;
         case HUB_KNOCKOUT4:
-            inputAllowed = UpdateKnockout4__11CupHubSceneFf(this, fDeltaT);
+            inputAllowed = UpdateKnockout4(fDeltaT);
             break;
         case HUB_KNOCKOUT2:
-            inputAllowed = UpdateKnockout2__11CupHubSceneFf(this, fDeltaT);
+            inputAllowed = UpdateKnockout2(fDeltaT);
             break;
         }
     }
@@ -895,13 +892,9 @@ void CupHubScene::ReturnToMainMenu()
 
 /**
  * Offset/Address/Size: 0x5F08 | 0x800EFC64 | size: 0x7C0
- * TODO: 90.18% match - stack slot placement and temporary register allocation diverge across per-stat update branches.
  */
 unsigned char CupHubScene::UpdateDisplayedStat()
 {
-    typedef TLTextInstance* (*FindTextByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-    typedef TLTextInstance* (*FindTextByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
-
     TLSlide* pSlide;
     TLTextInstance* pTextInstance;
     int standingsIndices[8];
@@ -916,38 +909,7 @@ unsigned char CupHubScene::UpdateDisplayedStat()
 
         if (mOldStats[i][0] != mAllTeamStats[mStandingsIndices[i]].mNumWins)
         {
-            volatile InlineHasher hB, hA, h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
-
-            h0.m_Hash = 0;
-            h1.m_Hash = 0;
-            h2.m_Hash = 0;
-            h3.m_Hash = 0;
-            h4.m_Hash = 0;
-            h5.m_Hash = 0;
-            h6.m_Hash = 0;
-            h7.m_Hash = 0;
-            h8.m_Hash = 0;
-            h9.m_Hash = 0;
-
-            unsigned long hash = nlStringLowerHash("wins");
-            hA.m_Hash = hash;
-            hB.m_Hash = hash;
-
-            union
-            {
-                FindTextByValue byValue;
-                FindTextByRef byRef;
-            } findText;
-
-            findText.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
-            pTextInstance = findText.byRef(
-                pSlide,
-                (InlineHasher&)hB,
-                (InlineHasher&)h9,
-                (InlineHasher&)h7,
-                (InlineHasher&)h5,
-                (InlineHasher&)h3,
-                (InlineHasher&)h1);
+            pTextInstance = FEFinder<TLTextInstance, 3>::Find<TLSlide>(pSlide, InlineHasher(nlStringLowerHash("wins")));
 
             BasicString<char, Detail::TempStringAllocator> winsString = LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>((int)mAllTeamStats[mStandingsIndices[i]].mNumWins);
 
@@ -960,38 +922,7 @@ unsigned char CupHubScene::UpdateDisplayedStat()
 
         if (mOldStats[i][1] != mAllTeamStats[mStandingsIndices[i]].mNumOTLosses)
         {
-            volatile InlineHasher hB, hA, h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
-
-            h0.m_Hash = 0;
-            h1.m_Hash = 0;
-            h2.m_Hash = 0;
-            h3.m_Hash = 0;
-            h4.m_Hash = 0;
-            h5.m_Hash = 0;
-            h6.m_Hash = 0;
-            h7.m_Hash = 0;
-            h8.m_Hash = 0;
-            h9.m_Hash = 0;
-
-            unsigned long hash = nlStringLowerHash("draws");
-            hA.m_Hash = hash;
-            hB.m_Hash = hash;
-
-            union
-            {
-                FindTextByValue byValue;
-                FindTextByRef byRef;
-            } findText;
-
-            findText.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
-            pTextInstance = findText.byRef(
-                pSlide,
-                (InlineHasher&)hB,
-                (InlineHasher&)h9,
-                (InlineHasher&)h7,
-                (InlineHasher&)h5,
-                (InlineHasher&)h3,
-                (InlineHasher&)h1);
+            pTextInstance = FEFinder<TLTextInstance, 3>::Find<TLSlide>(pSlide, InlineHasher(nlStringLowerHash("draws")));
 
             BasicString<char, Detail::TempStringAllocator> drawsString = LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>((int)mAllTeamStats[mStandingsIndices[i]].mNumOTLosses);
 
@@ -1004,38 +935,7 @@ unsigned char CupHubScene::UpdateDisplayedStat()
 
         if (mOldStats[i][2] != mAllTeamStats[mStandingsIndices[i]].mNumLosses)
         {
-            volatile InlineHasher hB, hA, h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
-
-            h0.m_Hash = 0;
-            h1.m_Hash = 0;
-            h2.m_Hash = 0;
-            h3.m_Hash = 0;
-            h4.m_Hash = 0;
-            h5.m_Hash = 0;
-            h6.m_Hash = 0;
-            h7.m_Hash = 0;
-            h8.m_Hash = 0;
-            h9.m_Hash = 0;
-
-            unsigned long hash = nlStringLowerHash("losses");
-            hA.m_Hash = hash;
-            hB.m_Hash = hash;
-
-            union
-            {
-                FindTextByValue byValue;
-                FindTextByRef byRef;
-            } findText;
-
-            findText.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
-            pTextInstance = findText.byRef(
-                pSlide,
-                (InlineHasher&)hB,
-                (InlineHasher&)h9,
-                (InlineHasher&)h7,
-                (InlineHasher&)h5,
-                (InlineHasher&)h3,
-                (InlineHasher&)h1);
+            pTextInstance = FEFinder<TLTextInstance, 3>::Find<TLSlide>(pSlide, InlineHasher(nlStringLowerHash("losses")));
 
             BasicString<char, Detail::TempStringAllocator> lossesString = LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>((int)mAllTeamStats[mStandingsIndices[i]].mNumLosses);
 
@@ -1048,38 +948,7 @@ unsigned char CupHubScene::UpdateDisplayedStat()
 
         if (mOldStats[i][3] != mAllTeamStats[mStandingsIndices[i]].mNumPoints)
         {
-            volatile InlineHasher hB, hA, h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
-
-            h0.m_Hash = 0;
-            h1.m_Hash = 0;
-            h2.m_Hash = 0;
-            h3.m_Hash = 0;
-            h4.m_Hash = 0;
-            h5.m_Hash = 0;
-            h6.m_Hash = 0;
-            h7.m_Hash = 0;
-            h8.m_Hash = 0;
-            h9.m_Hash = 0;
-
-            unsigned long hash = nlStringLowerHash("points");
-            hA.m_Hash = hash;
-            hB.m_Hash = hash;
-
-            union
-            {
-                FindTextByValue byValue;
-                FindTextByRef byRef;
-            } findText;
-
-            findText.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
-            pTextInstance = findText.byRef(
-                pSlide,
-                (InlineHasher&)hB,
-                (InlineHasher&)h9,
-                (InlineHasher&)h7,
-                (InlineHasher&)h5,
-                (InlineHasher&)h3,
-                (InlineHasher&)h1);
+            pTextInstance = FEFinder<TLTextInstance, 3>::Find<TLSlide>(pSlide, InlineHasher(nlStringLowerHash("points")));
 
             BasicString<char, Detail::TempStringAllocator> pointsString = LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>((int)mAllTeamStats[mStandingsIndices[i]].mNumPoints);
 
@@ -2430,6 +2299,7 @@ void CupHubScene::CreateKnockout()
     typedef TLTextInstance* (*FindTextByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
 
     GameInfoManager* gameInfo = nlSingleton<GameInfoManager>::s_pInstance;
+    GameInfoManager::eGameModes currentMode = gameInfo->mCurrentMode;
     u16 numTeams;
     FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
     eTeamID knockoutTeams[8];
@@ -2532,7 +2402,7 @@ void CupHubScene::CreateKnockout()
         round = -3;
         numTeams = 4;
     }
-    else
+    else if (mHubState == HUB_KNOCKOUT2)
     {
         presentation->SetActiveSlide(nlStringLowerHash(HUB_KNOCKOUT2_SLIDE_NAME));
         round = -2;
@@ -2598,7 +2468,7 @@ void CupHubScene::CreateKnockout()
     {
         pGame = &gameInfo->mUserInfo.mBowserCupFinalRound;
     }
-    else if (mSuperTeamAnimation)
+    else if (mSuperTeamAnimation == true)
     {
         pGame = &gameInfo->mUserInfo.mBowserCupFinalRound;
     }
@@ -2619,6 +2489,8 @@ void CupHubScene::CreateKnockout()
     }
 
     UpdateProgressIndicator();
+    gameInfo->GetUserSelectedCupTeam();
+    TLSlide* currentSlide = presentation->m_currentSlide;
 
     {
         volatile InlineHasher hB, hA, h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
@@ -2648,7 +2520,7 @@ void CupHubScene::CreateKnockout()
 
         findText.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
         title = findText.byRef(
-            presentation->m_currentSlide,
+            currentSlide,
             (InlineHasher&)hB,
             (InlineHasher&)h9,
             (InlineHasher&)h7,
@@ -2657,21 +2529,13 @@ void CupHubScene::CreateKnockout()
             (InlineHasher&)h1);
     }
 
-    title->m_LocStrId = GetLOCStandingsName(gameInfo->mCurrentMode);
+    title->m_LocStrId = GetLOCStandingsName(currentMode);
     title->m_OverloadFlags |= 8;
 
     for (i = 0; i < numTeams; i++)
     {
         eTeamID currentTeam = knockoutTeams[i];
-        bool useHighlightColour = false;
-
-        if (gameInfo->mCurrentCup->mHumanTeams & (1 << currentTeam))
-        {
-            if (gameInfo->GetNumHumanTeams() == 1 && currentTeam == gameInfo->GetUserSelectedCupTeam())
-            {
-                useHighlightColour = true;
-            }
-        }
+        bool useHighlightColour = IsUserRow(currentTeam);
 
         if (useHighlightColour)
         {
@@ -2710,7 +2574,7 @@ void CupHubScene::CreateKnockout()
 
             findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
             pComp = findComp.byRef(
-                presentation->m_currentSlide,
+                currentSlide,
                 (InlineHasher&)hB,
                 (InlineHasher&)h9,
                 (InlineHasher&)h7,
@@ -2750,7 +2614,7 @@ void CupHubScene::CreateKnockout()
                 (InlineHasher&)h5,
                 (InlineHasher&)h3,
                 (InlineHasher&)h1,
-                (InlineHasher&)h0,
+                (InlineHasher&)h2,
                 (InlineHasher&)h0);
         }
 
@@ -2785,11 +2649,18 @@ void CupHubScene::CreateKnockout()
                 (InlineHasher&)h5,
                 (InlineHasher&)h3,
                 (InlineHasher&)h1,
-                (InlineHasher&)h0,
+                (InlineHasher&)h2,
                 (InlineHasher&)h0);
         }
 
-        pXComponent->m_bVisible = (loserTeams[i / 2] == currentTeam) && mHasHumanTeamPlayed;
+        if ((loserTeams[i / 2] == currentTeam) && mHasHumanTeamPlayed)
+        {
+            pXComponent->m_bVisible = true;
+        }
+        else
+        {
+            pXComponent->m_bVisible = false;
+        }
 
         pComp->SetActiveSlide("Move");
         pComp->Update(0.0f);
@@ -2821,7 +2692,7 @@ void CupHubScene::CreateKnockout()
                 (InlineHasher&)h5,
                 (InlineHasher&)h3,
                 (InlineHasher&)h1,
-                (InlineHasher&)h0,
+                (InlineHasher&)h2,
                 (InlineHasher&)h0);
         }
 
@@ -2856,7 +2727,7 @@ void CupHubScene::CreateKnockout()
                 (InlineHasher&)h5,
                 (InlineHasher&)h3,
                 (InlineHasher&)h1,
-                (InlineHasher&)h0,
+                (InlineHasher&)h2,
                 (InlineHasher&)h0);
         }
 
@@ -2892,7 +2763,7 @@ void CupHubScene::CreateKnockout()
                 (InlineHasher&)h5,
                 (InlineHasher&)h3,
                 (InlineHasher&)h1,
-                (InlineHasher&)h0,
+                (InlineHasher&)h2,
                 (InlineHasher&)h0);
         }
 
@@ -2927,11 +2798,18 @@ void CupHubScene::CreateKnockout()
                 (InlineHasher&)h5,
                 (InlineHasher&)h3,
                 (InlineHasher&)h1,
-                (InlineHasher&)h0,
+                (InlineHasher&)h2,
                 (InlineHasher&)h0);
         }
 
-        pXComponent->m_bVisible = (loserTeams[i / 2] == currentTeam) && mHasHumanTeamPlayed;
+        if ((loserTeams[i / 2] == currentTeam) && mHasHumanTeamPlayed)
+        {
+            pXComponent->m_bVisible = true;
+        }
+        else
+        {
+            pXComponent->m_bVisible = false;
+        }
     }
 
     if (mDoAnimations)
@@ -2955,7 +2833,7 @@ void CupHubScene::CreateKnockout()
         {
             pGame = &gameInfo->mUserInfo.mBowserCupFinalRound;
         }
-        else if (mSuperTeamAnimation)
+        else if (mSuperTeamAnimation == true)
         {
             pGame = &gameInfo->mUserInfo.mBowserCupFinalRound;
         }
@@ -2995,7 +2873,7 @@ void CupHubScene::CreateKnockout()
 
             findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
             pComp = findComp.byRef(
-                presentation->m_currentSlide,
+                currentSlide,
                 (InlineHasher&)hB,
                 (InlineHasher&)h9,
                 (InlineHasher&)h7,
@@ -3037,7 +2915,7 @@ void CupHubScene::CreateKnockout()
 
             findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
             pComp = findComp.byRef(
-                presentation->m_currentSlide,
+                currentSlide,
                 (InlineHasher&)hB,
                 (InlineHasher&)h9,
                 (InlineHasher&)h7,
@@ -3073,22 +2951,22 @@ void CupHubScene::CreateKnockout()
                 (InlineHasher&)h5,
                 (InlineHasher&)h3,
                 (InlineHasher&)h1,
-                (InlineHasher&)h0,
+                (InlineHasher&)h2,
                 (InlineHasher&)h0);
         }
 
-        if (mHubState == HUB_KNOCKOUT4)
+        switch (mHubState)
         {
+        case HUB_KNOCKOUT4:
             pText->SetStringId("STANDINGS_SEMI");
-        }
-        else if (mHubState == HUB_KNOCKOUT2)
-        {
+            break;
+        case HUB_KNOCKOUT2:
             pText->SetStringId("STANDINGS_FINAL");
-        }
-        else if (mHubState >= HUB_KNOCKOUT8 && mHubState < NUM_HUB_STATES)
-        {
+            break;
+        case HUB_KNOCKOUT8:
             pText->SetStringId("STANDINGS_QUARTER");
             starComp->m_bVisible = false;
+            break;
         }
 
         if (!mAllKnockoutAnimations && mPlayPopSound)
@@ -3128,7 +3006,7 @@ void CupHubScene::CreateKnockout()
 
             findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
             pComp = findComp.byRef(
-                presentation->m_currentSlide,
+                currentSlide,
                 (InlineHasher&)hB,
                 (InlineHasher&)h9,
                 (InlineHasher&)h7,
@@ -3168,7 +3046,7 @@ void CupHubScene::CreateKnockout()
 
         findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
         pComp = findComp.byRef(
-            presentation->m_currentSlide,
+            currentSlide,
             (InlineHasher&)hB,
             (InlineHasher&)h9,
             (InlineHasher&)h7,
@@ -3557,7 +3435,7 @@ unsigned char CupHubScene::UpdateKnockout8(float fDeltaT)
  * than target (0x68-0x74 vs 0x4c-0x64), plus SDA21 offset diffs for globals. All remaining
  * diffs are s/i (stack offset and immediate) only - no register or instruction diffs.
  */
-s32 CupHubScene::UpdateKnockout4(float fDeltaT)
+unsigned char CupHubScene::UpdateKnockout4(float fDeltaT)
 {
     typedef TLComponentInstance* (*FindCompByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
     typedef TLComponentInstance* (*FindCompByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);

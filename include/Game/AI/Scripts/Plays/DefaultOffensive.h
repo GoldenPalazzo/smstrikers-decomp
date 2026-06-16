@@ -18,9 +18,9 @@ public:
     static FuzzyVariant AbortOffensivePlay(cDecisionEntity*);
     void DefaultOffensivePlay(cDecisionEntity*);
     void DoPassing(float, cDecisionEntity*);
-    void GoodBallCarrier(cFielder*);
+    static FuzzyVariant GoodBallCarrier(cFielder*);
     static FuzzyVariant InGoodWindupPosition(cFielder*);
-    void CutAndBreak(cFielder*);
+    static FuzzyVariant CutAndBreak(cFielder*);
     void DoShooting(float, cDecisionEntity*);
     static FuzzyVariant FurthestBackOnMyTeam(cFielder*);
     void UsePowerupOffensive(float, cDecisionEntity*);

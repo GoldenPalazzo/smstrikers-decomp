@@ -92,6 +92,7 @@ public:
     static void PlayFETitleMusicWithFade();
     static void StartFEStream(const char*, bool, const char*);
     static bool IsInited();
+    static unsigned char IsSoundGroupLoaded(int, unsigned long);
     static bool Initialize();
     static bool ActivateDPL2(bool, bool);
     static void SetupSoundGroups();
@@ -113,6 +114,25 @@ public:
     static nlAVLTreeSlotPool<int, SoundStrToIDNode*, DefaultKeyCompare<int> > gWorldSoundDefineMap;
     static nlAVLTreeSlotPool<int, SoundStrToIDNode*, DefaultKeyCompare<int> > gCharSoundDefineMap;
 };
+
+inline unsigned char AudioLoader::IsSoundGroupLoaded(int groupEnum, unsigned long)
+{
+    bool bAlreadyLoaded;
+    if (groupEnum < 0)
+    {
+        bAlreadyLoaded = false;
+    }
+    else
+    {
+        bAlreadyLoaded = false;
+        if (sebringAudioGroups[groupEnum].uLoadOrder > -1 && sebringAudioGroups[groupEnum].stackEnum > -1)
+        {
+            bAlreadyLoaded = true;
+        }
+    }
+
+    return bAlreadyLoaded;
+}
 
 // class GCAudioStreaming
 // {

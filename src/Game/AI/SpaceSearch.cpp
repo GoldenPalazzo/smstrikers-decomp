@@ -32,10 +32,12 @@ SpaceSearch::~SpaceSearch()
 
 /**
  * Offset/Address/Size: 0x1284 | 0x80063BD4 | size: 0x5F0
- * TODO: 90.80% match - pervasive register permutation through the body (every preserved float/int register is shifted relative to target) plus instruction scheduling differences in the aFromAngle/aToAngle/numRadiusSteps computation block
+ * TODO: 96.63% match - preserved float register allocation still differs from target
  */
 float SpaceSearch::FindBestPosition(nlVector3& v3Dest, const nlVector3& v3CenterPos, eFieldDirection eSearchDir, const nlVector3* pv3TargetOrDirection, float fMaxRadius, unsigned short aSearchCone)
 {
+    int numAngleSteps;
+    int numRadiusSteps;
     unsigned short aDirection;
     nlVector3 v3BestOpenPosition;
     float fOriginalPositionScore;
@@ -52,8 +54,6 @@ float SpaceSearch::FindBestPosition(nlVector3& v3Dest, const nlVector3& v3Center
     nlVector3 v3TestPosition;
     float fScore;
     nlColour colour;
-    int numRadiusSteps;
-    int numAngleSteps;
 
     aDirection = 0;
 
@@ -90,19 +90,19 @@ float SpaceSearch::FindBestPosition(nlVector3& v3Dest, const nlVector3& v3Center
         fMaxRadius = 4.0f;
     }
 
-    m_unk_0x0C = fMaxRadius;
-
     aFromAngle = (unsigned short)(int)((float)aDirection - 0.5f * (float)aSearchCone);
     aToAngle = (unsigned short)(int)((float)aDirection + 0.5f * (float)aSearchCone);
     aDelta = (short)(aToAngle - aFromAngle);
 
     numRadiusSteps = 5;
-    if ((int)(0.5f + fMaxRadius / 1.5f) < 5)
+    if ((int)(0.5f + (fMaxRadius - pLocation.r) / 1.5f) < 5)
     {
-        numRadiusSteps = (int)(0.5f + fMaxRadius / 1.5f);
+        numRadiusSteps = (int)(0.5f + (fMaxRadius - pLocation.r) / 1.5f);
     }
 
-    fRadiusDelta = fMaxRadius / (float)numRadiusSteps;
+    m_unk_0x0C = fMaxRadius;
+
+    fRadiusDelta = (fMaxRadius - pLocation.r) / (float)numRadiusSteps;
 
     v3LastPos = v3CenterPos;
     numIterations = 0;
@@ -114,6 +114,10 @@ float SpaceSearch::FindBestPosition(nlVector3& v3Dest, const nlVector3& v3Center
         maxIterations = 0;
         init = 1;
     }
+
+    float fCenterZ = v3CenterPos.f.z;
+    float fCenterY = v3CenterPos.f.y;
+    float fCenterX = v3CenterPos.f.x;
 
     for (i_radius = 0; i_radius < numRadiusSteps; i_radius++)
     {
@@ -143,9 +147,9 @@ float SpaceSearch::FindBestPosition(nlVector3& v3Dest, const nlVector3& v3Center
             }
 
             nlPolarToCartesian(v3TestPosition, pLocation);
-            v3TestPosition.f.x += v3CenterPos.f.x;
-            v3TestPosition.f.y += v3CenterPos.f.y;
-            v3TestPosition.f.z += v3CenterPos.f.z;
+            v3TestPosition.f.z += fCenterZ;
+            v3TestPosition.f.y += fCenterY;
+            v3TestPosition.f.x += fCenterX;
             v3TestPosition.f.z = 0.0f;
 
             cField::FixOutOfBoundsPosition(v3TestPosition, 0.2f);
@@ -647,11 +651,4 @@ float SSearchCutAndBreak::EvaluatePosition(const nlVector3& v3TestPosition, cons
         return fWeightedSum / fTotalWeight;
     }
     return 0.0f;
-}
-
-/**
- * Offset/Address/Size: 0x0 | 0x80062950 | size: 0x5C
- */
-SSearchCutAndBreak::~SSearchCutAndBreak()
-{
 }

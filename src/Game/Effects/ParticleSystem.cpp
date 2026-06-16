@@ -653,24 +653,23 @@ static inline void RenderLightOnField(const EffectsLight& light)
         glQuad3 q;
         q.SetupRotatedRectangle(dim, dim, mRot, false, false);
         q.SetColour(light.m_Colour);
-        nlColour* pColour = q.m_colour;
-        for (int i = 0; i < 2; i++)
+        nlVector3* pPos = q.m_pos;
+        for (int i = 0, idx = 0; i < 2; i++, idx += 2)
         {
-            int idx = i * 2;
-            q.m_pos[idx].f.x += light.m_v3Position.f.x;
-            q.m_pos[idx].f.y += light.m_v3Position.f.y;
-            q.m_pos[idx].f.z += light.m_v3Position.f.z;
-            q.m_pos[idx].f.z = 0.03125f;
-            pColour[0].c[3] = (unsigned char)((int)pColour[0].c[3] / 3);
+            pPos[0].f.x += light.m_v3Position.f.x;
+            pPos[0].f.y += light.m_v3Position.f.y;
+            pPos[0].f.z += light.m_v3Position.f.z;
+            pPos[0].f.z = 0.03125f;
+            q.m_colour[idx].c[3] = (unsigned char)((int)q.m_colour[idx].c[3] / 3);
 
-            idx++;
-            q.m_pos[idx].f.x += light.m_v3Position.f.x;
-            q.m_pos[idx].f.y += light.m_v3Position.f.y;
-            q.m_pos[idx].f.z += light.m_v3Position.f.z;
-            q.m_pos[idx].f.z = 0.03125f;
-            pColour[1].c[3] = (unsigned char)((int)pColour[1].c[3] / 3);
+            int idx2 = idx + 1;
+            pPos[1].f.x += light.m_v3Position.f.x;
+            pPos[1].f.y += light.m_v3Position.f.y;
+            pPos[1].f.z += light.m_v3Position.f.z;
+            pPos[1].f.z = 0.03125f;
+            q.m_colour[idx2].c[3] = (unsigned char)((int)q.m_colour[idx2].c[3] / 3);
 
-            pColour += 2;
+            pPos += 2;
         }
 
         glModel* pModel = (glModel*)q.GetModel(true);
@@ -800,6 +799,7 @@ void ParticleSystem::RenderAllParticles(eGLView view)
     }
     else if (m_pTemplate->m_uModelID != 0xFFFFFFFF)
     {
+        glModel* pModel;
         GLVertexAnim* pAnim = glInventory.GetVertexAnim(m_pTemplate->m_uModelID);
         eEffectsBlend blendType;
 
@@ -822,7 +822,6 @@ void ParticleSystem::RenderAllParticles(eGLView view)
             break;
         }
 
-        glModel* pModel;
         Particle* pPart = (Particle*)m_Particles.m_headNode;
         const nlMatrix4* pCoord = m_pTemplate->m_bLocalSpace ? &mCoordSys : nullptr;
 
@@ -937,9 +936,10 @@ void ParticleSystem::RenderAllParticles(eGLView view)
             while (pPart != nullptr)
             {
                 UpdateParticle(&ret, pPart, m_pTemplate, viewRight, viewUp, pCoord);
+                int i;
                 if (bQuads)
                 {
-                    for (int i = 0; i < 4; i++)
+                    for (i = 0; i < 4; i++)
                     {
                         mesh.Texcoord(ret.texcoord[i][0], ret.texcoord[i][1]);
                         mesh.Colour(ret.c);
@@ -948,7 +948,7 @@ void ParticleSystem::RenderAllParticles(eGLView view)
                 }
                 else
                 {
-                    for (int i = 0; i < 6; i++)
+                    for (i = 0; i < 6; i++)
                     {
                         mesh.Texcoord(ret.texcoord[_tris[i]][0], ret.texcoord[_tris[i]][1]);
                         mesh.Colour(ret.c);

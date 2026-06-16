@@ -1,11 +1,14 @@
 #include "NL/glx/glxTexture.h"
 
+#define NL_AVLTREE_DECLARE_ONLY
+#define NL_AVLTREEBASE_DECLARE_ONLY
 #include "NL/nlAVLTree.h"
+#undef NL_AVLTREEBASE_DECLARE_ONLY
+#undef NL_AVLTREE_DECLARE_ONLY
 #include "NL/nlList.h"
 #include "NL/nlQSort.h"
 #include "NL/nlFile.h"
 #include "NL/nlFileGC.h"
-#include "NL/nlString.h"
 #include "NL/gl/glTexture.h"
 #include "NL/gl/glMemory.h"
 #include "NL/gc/gcSwizzler.h"
@@ -13,30 +16,42 @@
 #include "Game/GL/GLInventory.h"
 #include "Game/Sys/debug.h"
 
+template <typename CharT>
+CharT* nlStrNCat(CharT* dest, const CharT* a, const CharT* b, unsigned long maxsize);
+
+extern int nlPrintf(const char*, ...);
 extern GLInventory glInventory;
 
 static glxTextureLoadCallback_t glxTextureLoad_cb;
 static int currentMarkerLevel = 0;
 static bool glx_bGridMode = false;
 
+static nlAVLTree<unsigned long, PlatTexture*, DefaultKeyCompare<unsigned long> >* textures[16];
 static nlListContainer<PlatTexture*> gridTextures;
 static unsigned long nGridMemory;
-static const u8 kDefaultBits[4] = { 5, 6, 5, 0 };
-
-static nlAVLTree<unsigned long, PlatTexture*, DefaultKeyCompare<unsigned long> >* textures[16];
 static PlatTexture texobj;
 
-static GXTexFmt gx_format[9] = {
-    GX_TF_RGB565,
-    GX_TF_RGB5A3,
-    GX_TF_CMPR,
-    GX_TF_RGBA8,
-    GX_TF_I8,
-    GX_TF_I4,
-    GX_TF_I8,
-    GX_TF_IA8,
-    (GXTexFmt)0x9
-};
+static inline void (TexDestructor::* glx_GetTexDestructorCallback())(const unsigned long&, PlatTexture**)
+{
+    return &TexDestructor::CallDestructor;
+}
+
+static inline GXTexFmt* glx_GetGXFormatTable()
+{
+    static GXTexFmt gx_format[9] = {
+        GX_TF_RGB565,
+        GX_TF_RGB5A3,
+        GX_TF_CMPR,
+        GX_TF_RGBA8,
+        GX_TF_I8,
+        GX_TF_I4,
+        GX_TF_I8,
+        GX_TF_IA8,
+        (GXTexFmt)0x9
+    };
+
+    return gx_format;
+}
 
 /**
  * Offset/Address/Size: 0x0 | 0x801B72BC | size: 0x230
@@ -66,12 +81,12 @@ void glplatTextureReplace(unsigned long handle, const void* textureData, unsigne
 
     if (pTex->m_Format == GXTex_CI8)
     {
-        GXInitTexObjCI(&pTex->m_TexObj, pTex->m_SwizzledData, pTex->m_Width, pTex->m_Height, (GXCITexFmt)gx_format[pTex->m_Format], GX_CLAMP, GX_CLAMP, pTex->m_Levels > 1 ? 1 : 0, 0);
+        GXInitTexObjCI(&pTex->m_TexObj, pTex->m_SwizzledData, pTex->m_Width, pTex->m_Height, (GXCITexFmt)glx_GetGXFormatTable()[pTex->m_Format], GX_CLAMP, GX_CLAMP, pTex->m_Levels > 1 ? 1 : 0, 0);
         GXInitTexObjLOD(&pTex->m_TexObj, (pTex->m_Levels == 1) ? GX_LINEAR : GX_LIN_MIP_NEAR, GX_LINEAR, 0.0f, (float)(pTex->m_MaxLevel - 1), 0.0f, GX_DISABLE, GX_DISABLE, GX_ANISO_1);
         return;
     }
 
-    GXInitTexObj(&pTex->m_TexObj, pTex->m_SwizzledData, pTex->m_Width, pTex->m_Height, gx_format[pTex->m_Format], GX_CLAMP, GX_CLAMP, pTex->m_Levels > 1 ? 1 : 0);
+    GXInitTexObj(&pTex->m_TexObj, pTex->m_SwizzledData, pTex->m_Width, pTex->m_Height, glx_GetGXFormatTable()[pTex->m_Format], GX_CLAMP, GX_CLAMP, pTex->m_Levels > 1 ? 1 : 0);
     GXInitTexObjLOD(&pTex->m_TexObj, (pTex->m_Levels == 1) ? GX_LINEAR : GX_LIN_MIP_LIN, GX_LINEAR, 0.0f, (float)(pTex->m_MaxLevel - 1), 0.0f, GX_DISABLE, GX_DISABLE, GX_ANISO_1);
 }
 
@@ -113,11 +128,11 @@ void PlatTexture::Prepare()
     }
     if (m_Format == GXTex_CI8)
     {
-        GXInitTexObjCI(&m_TexObj, m_SwizzledData, m_Width, m_Height, (GXCITexFmt)gx_format[m_Format], GX_CLAMP, GX_CLAMP, m_Levels > 1 ? 1 : 0, 0);
+        GXInitTexObjCI(&m_TexObj, m_SwizzledData, m_Width, m_Height, (GXCITexFmt)glx_GetGXFormatTable()[m_Format], GX_CLAMP, GX_CLAMP, m_Levels > 1 ? 1 : 0, 0);
         GXInitTexObjLOD(&m_TexObj, (m_Levels == 1) ? GX_LINEAR : GX_LIN_MIP_NEAR, GX_LINEAR, 0.0f, (float)(m_MaxLevel - 1), 0.0f, GX_DISABLE, GX_DISABLE, GX_ANISO_1);
         return;
     }
-    GXInitTexObj(&m_TexObj, m_SwizzledData, m_Width, m_Height, gx_format[m_Format], GX_CLAMP, GX_CLAMP, m_Levels > 1 ? 1 : 0);
+    GXInitTexObj(&m_TexObj, m_SwizzledData, m_Width, m_Height, glx_GetGXFormatTable()[m_Format], GX_CLAMP, GX_CLAMP, m_Levels > 1 ? 1 : 0);
     GXInitTexObjLOD(&m_TexObj, (m_Levels == 1) ? GX_LINEAR : GX_LIN_MIP_LIN, GX_LINEAR, 0.0f, (float)(m_MaxLevel - 1), 0.0f, GX_DISABLE, GX_DISABLE, GX_ANISO_1);
 }
 
@@ -233,7 +248,7 @@ int glplatTextureGetNumBits(int component)
     if (texobj.m_Bits[component] == 0xFF)
     {
         u32 format = texobj.m_Format;
-        u8 bits[4] = { 5, 6, 5, 0 };
+        u8 bits[4] = { 0, 0, 0, 0 };
 
         switch (format)
         {
@@ -804,9 +819,29 @@ void glx_BackupTexMarkerLevel(int level)
     while (currentMarkerLevel != level)
     {
         TexDestructor texDtor;
-        textures[currentMarkerLevel]->Walk<TexDestructor>(&texDtor, &TexDestructor::CallDestructor);
+        textures[currentMarkerLevel]->Walk<TexDestructor>(&texDtor, glx_GetTexDestructorCallback());
         textures[currentMarkerLevel]->Clear();
         currentMarkerLevel -= 1;
+    }
+}
+
+/**
+ * Offset/Address/Size: 0x197C | 0x801B8C38 | size: 0x48
+ */
+inline void TexDestructor::CallDestructor(const unsigned long&, PlatTexture** texture)
+{
+    PlatTexture* texture_ptr;
+    void* linear_data;
+
+    texture_ptr = *texture;
+    if (texture_ptr != NULL)
+    {
+        linear_data = texture_ptr->m_LinearData;
+        if (linear_data != NULL)
+        {
+            nlFree(linear_data);
+            texture_ptr->m_LinearData = NULL;
+        }
     }
 }
 

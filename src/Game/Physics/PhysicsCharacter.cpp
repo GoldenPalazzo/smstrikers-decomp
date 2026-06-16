@@ -380,7 +380,7 @@ PhysicsBoneID PhysicsCharacter::ResolvePhysicsBoneIDFromName(const char* name)
 
 /**
  * Offset/Address/Size: 0x100 | 0x80136318 | size: 0x608
- * TODO: 98.24% match - register allocation diffs for this/pFldr/pBall and dy/dx velocity dot-product ordering
+ * TODO: 98.35% match - register allocation diffs for this/pFldr/pBall and velocity component temporaries remain
  */
 void PhysicsCharacter::PostUpdate()
 {
@@ -495,9 +495,10 @@ void PhysicsCharacter::PostUpdate()
                     v3BallVel.f.x = -0.1f * pBall->m_v3Velocity.f.x;
                     v3BallVel.f.y = -0.1f * pBall->m_v3Velocity.f.y;
 
-                    float dot2 = (pBall->m_v3Position.f.y - characterPosition.f.y) * v3BallVel.f.y
-                               + (pBall->m_v3Position.f.x - characterPosition.f.x) * v3BallVel.f.x
-                               + (pBall->m_v3Position.f.z - characterPosition.f.z) * v3BallVel.f.z;
+                    float dx2 = pBall->m_v3Position.f.x - characterPosition.f.x;
+                    float dy2 = pBall->m_v3Position.f.y - characterPosition.f.y;
+                    float dz2 = pBall->m_v3Position.f.z - characterPosition.f.z;
+                    float dot2 = dx2 * v3BallVel.f.x + dy2 * v3BallVel.f.y + dz2 * v3BallVel.f.z;
 
                     if (dot2 < 0.0f)
                     {

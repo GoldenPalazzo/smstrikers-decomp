@@ -542,19 +542,13 @@ u8 PowerupCreateAndThrow(cFielder* pThrower, ePowerUpType eType, int nnumOfPower
             {
                 eStyle = THROW_ARROW;
             }
-            else if (fRandom < fSpreadChance)
+            else if ((fRandom < fSpreadChance) && (eType != POWER_UP_BANANA) && (eType != POWER_UP_SPINY_SHELL))
             {
-                if ((eType != POWER_UP_BANANA) && (eType != POWER_UP_SPINY_SHELL))
-                {
-                    eStyle = THROW_SPREAD;
-                }
+                eStyle = THROW_SPREAD;
             }
-            else if (fRandom < fSurroundChance)
+            else if ((fRandom < fSurroundChance) && (eType != POWER_UP_BANANA) && (eType != POWER_UP_SPINY_SHELL))
             {
-                if ((eType != POWER_UP_BANANA) && (eType != POWER_UP_SPINY_SHELL))
-                {
-                    eStyle = THROW_SURROUND;
-                }
+                eStyle = THROW_SURROUND;
             }
             else if (fRandom < fHorizChance)
             {
@@ -684,14 +678,14 @@ u8 PowerupCreateAndThrow(cFielder* pThrower, ePowerUpType eType, int nnumOfPower
 
                 switch (eSize)
                 {
+                case POWERUPSIZE_LARGE:
+                    fBananaRadius = g_pGame->m_pGameTweaks->fBananaBigRadius;
+                    break;
                 case POWERUPSIZE_MEDIUM:
                     fBananaRadius = g_pGame->m_pGameTweaks->fBananaMediumRadius;
                     break;
                 case POWERUPSIZE_SMALL:
                     fBananaRadius = g_pGame->m_pGameTweaks->fBananaSmallRadius;
-                    break;
-                case POWERUPSIZE_LARGE:
-                    fBananaRadius = g_pGame->m_pGameTweaks->fBananaBigRadius;
                     break;
                 }
 
@@ -720,14 +714,14 @@ u8 PowerupCreateAndThrow(cFielder* pThrower, ePowerUpType eType, int nnumOfPower
             {
                 switch (eSize)
                 {
+                case POWERUPSIZE_LARGE:
+                    fBobombRadius = g_pGame->m_pGameTweaks->fBobombBigRadius;
+                    break;
                 case POWERUPSIZE_MEDIUM:
                     fBobombRadius = g_pGame->m_pGameTweaks->fBobombMediumRadius;
                     break;
                 case POWERUPSIZE_SMALL:
                     fBobombRadius = g_pGame->m_pGameTweaks->fBobombSmallRadius;
-                    break;
-                case POWERUPSIZE_LARGE:
-                    fBobombRadius = g_pGame->m_pGameTweaks->fBobombBigRadius;
                     break;
                 }
 
@@ -766,14 +760,14 @@ u8 PowerupCreateAndThrow(cFielder* pThrower, ePowerUpType eType, int nnumOfPower
             {
                 switch (eSize)
                 {
+                case POWERUPSIZE_LARGE:
+                    fGreenShellRadius = g_pGame->m_pGameTweaks->fShellBigRadius;
+                    break;
                 case POWERUPSIZE_MEDIUM:
                     fGreenShellRadius = g_pGame->m_pGameTweaks->fShellMediumRadius;
                     break;
                 case POWERUPSIZE_SMALL:
                     fGreenShellRadius = g_pGame->m_pGameTweaks->fShellSmallRadius;
-                    break;
-                case POWERUPSIZE_LARGE:
-                    fGreenShellRadius = g_pGame->m_pGameTweaks->fShellBigRadius;
                     break;
                 }
 
@@ -802,14 +796,14 @@ u8 PowerupCreateAndThrow(cFielder* pThrower, ePowerUpType eType, int nnumOfPower
             {
                 switch (eSize)
                 {
+                case POWERUPSIZE_LARGE:
+                    fFreezeShellRadius = g_pGame->m_pGameTweaks->fShellBigRadius;
+                    break;
                 case POWERUPSIZE_MEDIUM:
                     fFreezeShellRadius = g_pGame->m_pGameTweaks->fShellMediumRadius;
                     break;
                 case POWERUPSIZE_SMALL:
                     fFreezeShellRadius = g_pGame->m_pGameTweaks->fShellSmallRadius;
-                    break;
-                case POWERUPSIZE_LARGE:
-                    fFreezeShellRadius = g_pGame->m_pGameTweaks->fShellBigRadius;
                     break;
                 }
 
@@ -838,14 +832,14 @@ u8 PowerupCreateAndThrow(cFielder* pThrower, ePowerUpType eType, int nnumOfPower
             {
                 switch (eSize)
                 {
+                case POWERUPSIZE_LARGE:
+                    fRedShellRadius = g_pGame->m_pGameTweaks->fShellBigRadius;
+                    break;
                 case POWERUPSIZE_MEDIUM:
                     fRedShellRadius = g_pGame->m_pGameTweaks->fShellMediumRadius;
                     break;
                 case POWERUPSIZE_SMALL:
                     fRedShellRadius = g_pGame->m_pGameTweaks->fShellSmallRadius;
-                    break;
-                case POWERUPSIZE_LARGE:
-                    fRedShellRadius = g_pGame->m_pGameTweaks->fShellBigRadius;
                     break;
                 }
 
@@ -874,14 +868,14 @@ u8 PowerupCreateAndThrow(cFielder* pThrower, ePowerUpType eType, int nnumOfPower
             {
                 switch (eSize)
                 {
+                case POWERUPSIZE_LARGE:
+                    fSpinyShellRadius = g_pGame->m_pGameTweaks->fShellBigRadius;
+                    break;
                 case POWERUPSIZE_MEDIUM:
                     fSpinyShellRadius = g_pGame->m_pGameTweaks->fShellMediumRadius;
                     break;
                 case POWERUPSIZE_SMALL:
                     fSpinyShellRadius = g_pGame->m_pGameTweaks->fShellSmallRadius;
-                    break;
-                case POWERUPSIZE_LARGE:
-                    fSpinyShellRadius = g_pGame->m_pGameTweaks->fShellBigRadius;
                     break;
                 }
 
@@ -1745,8 +1739,8 @@ check_event:
 
 /**
  * Offset/Address/Size: 0x3374 | 0x8005DC60 | size: 0x540
- * TODO: 94.25% match - GPR r27/r28/r29 and FPR f27 register allocation
- * differ due to -inline deferred vs -inline auto compiler flag difference
+ * TODO: 99.76% match - r27/r28/r29 swap in initial sound setup and
+ * f27/f30 swap for dx/normDz in fallback velocity
  */
 void PowerupBase::ThrowAt(cFielder* pThrower, Bowser*)
 {
@@ -1850,6 +1844,9 @@ void PowerupBase::ThrowAt(cFielder* pThrower, Bowser*)
     float fSpeed = 0.0f;
     switch (m_eType)
     {
+    case POWER_UP_FREEZE_SHELL:
+        fSpeed += g_pGame->m_pGameTweaks->fFreezeShellSpeed;
+        break;
     case POWER_UP_GREEN_SHELL:
         fSpeed += g_pGame->m_pGameTweaks->fGreenShellSpeed;
         break;
@@ -1859,19 +1856,14 @@ void PowerupBase::ThrowAt(cFielder* pThrower, Bowser*)
     case POWER_UP_SPINY_SHELL:
         fSpeed += g_pGame->m_pGameTweaks->fSpinyShellSpeed;
         break;
-    case POWER_UP_FREEZE_SHELL:
-        fSpeed += g_pGame->m_pGameTweaks->fFreezeShellSpeed;
-        break;
     case POWER_UP_BANANA:
         if (pThrower != NULL)
         {
             s16 fFacingDelta = pThrower->GetFacingDeltaToPosition(m_pTarget->m_v3Position);
             float fMinSpeed = g_pGame->m_pGameTweaks->fBananaSpeed;
             float fMaxSpeed = fMinSpeed + pThrower->m_fActualSpeed;
-            s16 absDelta = fFacingDelta;
-            if (fFacingDelta < 0)
-                absDelta = -fFacingDelta;
-            fSpeed = InterpolateRangeClamped(fMinSpeed, fMaxSpeed, 32000.0f, 12500.0f, (float)(u16)absDelta);
+            u16 absDelta = (fFacingDelta < 0) ? -fFacingDelta : fFacingDelta;
+            fSpeed = InterpolateRangeClamped(fMinSpeed, fMaxSpeed, 32000.0f, 12500.0f, (float)absDelta);
         }
         else
         {
@@ -1884,19 +1876,24 @@ void PowerupBase::ThrowAt(cFielder* pThrower, Bowser*)
 
     if (m_eType != POWER_UP_BANANA)
     {
-        if (meSize == POWERUPSIZE_LARGE)
+        switch (meSize)
         {
+        case POWERUPSIZE_SMALL:
+        case POWERUPSIZE_MEDIUM:
+            break;
+        case POWERUPSIZE_LARGE:
             fSpeed -= 1.0f;
+            break;
         }
     }
 
+    float dz = v3TargetPos.f.z - m_v3Position.f.z;
     float dy = v3TargetPos.f.y - m_v3Position.f.y;
     float dx = v3TargetPos.f.x - m_v3Position.f.x;
-    float dz = v3TargetPos.f.z - m_v3Position.f.z;
     float invDist = nlRecipSqrt(dx * dx + dy * dy + dz * dz, true);
-    float normDz = invDist * dz;
-    float normDy = invDist * dy;
-    float normDx = invDist * dx;
+    dz = invDist * dz;
+    dy = invDist * dy;
+    dx = invDist * dx;
 
     int nNumSolutions;
     float pSolutions[2];
@@ -1926,9 +1923,9 @@ void PowerupBase::ThrowAt(cFielder* pThrower, Bowser*)
     else
     {
         nlVector3 v3Velocity;
-        v3Velocity.f.x = fSpeed * normDx;
-        v3Velocity.f.y = fSpeed * normDy;
-        v3Velocity.f.z = fSpeed * normDz;
+        v3Velocity.f.x = fSpeed * dx;
+        v3Velocity.f.y = fSpeed * dy;
+        v3Velocity.f.z = fSpeed * dz;
         v3Velocity.f.z = 0.0f;
         m_v3Velocity = v3Velocity;
         m_pPhysicsObject->SetLinearVelocity(v3Velocity);

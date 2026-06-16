@@ -1505,7 +1505,6 @@ static inline float SupportClampUpper(float x, float max)
 
 /**
  * Offset/Address/Size: 0x35E4 | 0x80034368 | size: 0x408
- * TODO: 98.90% match - remaining diffs are float register allocation in support-location clamp and weighted accumulation
  */
 void cFielder::DesireSupportBall(float fDeltaT, bool bDefensive)
 {
@@ -1560,18 +1559,13 @@ void cFielder::DesireSupportBall(float fDeltaT, bool bDefensive)
     {
         const SupportBallAILocation* pLocation = &pAILocations[best_rule_i[i_rule]];
 
-        v2OffsetFromBall[i_rule].f.x = pLocation->x1 - pLocation->x0;
-        v2OffsetFromBall[i_rule].f.y = pLocation->y1 - pLocation->y0;
+        float offsetX = pLocation->x1 - pLocation->x0;
+        float offsetY = pLocation->y1 - pLocation->y0;
+        v2OffsetFromBall[i_rule].f.x = offsetX;
+        v2OffsetFromBall[i_rule].f.y = offsetY;
 
-        float x = v3BallAILoc.f.x + v2OffsetFromBall[i_rule].f.x;
-        x = SupportClampLower(x, 0.0f);
-        x = SupportClampUpper(x, 4.0f);
-        v2TargetPositions[i_rule].f.x = x;
-
-        float y = v3BallAILoc.f.y + v2OffsetFromBall[i_rule].f.y;
-        y = SupportClampLower(y, -1.0f);
-        y = SupportClampUpper(y, 1.0f);
-        v2TargetPositions[i_rule].f.y = y;
+        v2TargetPositions[i_rule].f.x = SupportClampUpper(SupportClampLower(v3BallAILoc.f.x + v2OffsetFromBall[i_rule].f.x, 0.0f), 4.0f);
+        v2TargetPositions[i_rule].f.y = SupportClampUpper(SupportClampLower(v3BallAILoc.f.y + v2OffsetFromBall[i_rule].f.y, -1.0f), 1.0f);
     }
 
     nlVector3 v3SupportPosition = {
@@ -1592,11 +1586,14 @@ void cFielder::DesireSupportBall(float fDeltaT, bool bDefensive)
     float fAIBallLocationWeight = 0.7f;
 
     nlVector3 vAccumulated_v3 = v3Zero;
-    vAccumulated_v3.f.y = (fAIBallLocationWeight * v3SupportPosition.f.y) + vAccumulated_v3.f.y;
-    vAccumulated_v3.f.z = (fAIBallLocationWeight * v3SupportPosition.f.z) + vAccumulated_v3.f.z;
-    vAccumulated_v3.f.x = (fAIBallLocationWeight * v3SupportPosition.f.x) + vAccumulated_v3.f.x;
-
     fTotalWeight_v3 = fTotalWeight_v3 + fAIBallLocationWeight;
+
+    float fWeightedX = (fAIBallLocationWeight * v3SupportPosition.f.x) + vAccumulated_v3.f.x;
+    float fWeightedZ = (fAIBallLocationWeight * v3SupportPosition.f.z) + vAccumulated_v3.f.z;
+    float fWeightedY = (fAIBallLocationWeight * v3SupportPosition.f.y) + vAccumulated_v3.f.y;
+    vAccumulated_v3.f.x = fWeightedX;
+    vAccumulated_v3.f.y = fWeightedY;
+    vAccumulated_v3.f.z = fWeightedZ;
 
     float fFormationWeight = 0.3f;
 
@@ -1609,9 +1606,12 @@ void cFielder::DesireSupportBall(float fDeltaT, bool bDefensive)
 
     fTotalWeight_v3 = fTotalWeight_v3 + fFormationWeight;
 
-    vAccumulated_v3.f.z = (fFormationWeight * v3FormationPosition.f.z) + vAccumulated_v3.f.z;
-    vAccumulated_v3.f.y = (fFormationWeight * v3FormationPosition.f.y) + vAccumulated_v3.f.y;
-    vAccumulated_v3.f.x = (fFormationWeight * v3FormationPosition.f.x) + vAccumulated_v3.f.x;
+    float fFormationWeightedX = (fFormationWeight * v3FormationPosition.f.x) + vAccumulated_v3.f.x;
+    float fFormationWeightedZ = (fFormationWeight * v3FormationPosition.f.z) + vAccumulated_v3.f.z;
+    float fFormationWeightedY = (fFormationWeight * v3FormationPosition.f.y) + vAccumulated_v3.f.y;
+    vAccumulated_v3.f.x = fFormationWeightedX;
+    vAccumulated_v3.f.y = fFormationWeightedY;
+    vAccumulated_v3.f.z = fFormationWeightedZ;
 
     nlVector3 v3DesiredPos;
     if (fTotalWeight_v3 > 0.0f)
@@ -2990,7 +2990,7 @@ void cFielder::DesireUsePowerup(float)
 
 /**
  * Offset/Address/Size: 0x0 | 0x80030D84 | size: 0x41C
- * TODO: 99.26% match - r3/r4 register swap for m_pShotMeter ptr vs shotMeterState, instruction scheduling in FuzzyVariant construction
+ * TODO: 99.28% match - r3/r4 register swap for m_pShotMeter ptr vs shotMeterState, instruction scheduling in FuzzyVariant construction
  */
 void cFielder::DesireWindupShot(float)
 {

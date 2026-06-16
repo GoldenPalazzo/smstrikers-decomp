@@ -139,7 +139,7 @@ void GetWallPoint(const nlVector3& impactPosition, float xOffset, float zOffset,
 /**
  * Offset/Address/Size: 0x12CC | 0x8016C2FC | size: 0xA4
  */
-void ElectricFenceFinished(EmissionController& controller)
+static void ElectricFenceFinished(EmissionController& controller)
 {
     ElectricFenceData* node = ElectricFenceData::sActiveElectricFences.m_pStart;
     while (node != NULL)
@@ -254,27 +254,31 @@ static inline void DrawPrimitive(const ElectricFenceGeometry& prim, const nlMatr
 
 /**
  * Offset/Address/Size: 0x89C | 0x8016B8CC | size: 0x420
- * TODO: 96.4% match - remaining register allocation diffs in the active-fence
- *       lookup and inlined DrawPrimitive pointer/index assignments.
+ * TODO: 98.67% match - allocation temp and DrawPrimitive geometry/matrix
+ *       registers differ.
  */
-void RenderElectricFence(EmissionController& ec)
+static inline ElectricFenceData* FindElectricFenceData(EmissionController* pEmissionController)
+{
+    ElectricFenceData* data = ElectricFenceData::sActiveElectricFences.m_pStart;
+    while (data != NULL)
+    {
+        if (data->mpEmissionController == pEmissionController)
+        {
+            return data;
+        }
+        data = data->next;
+    }
+    return NULL;
+}
+
+static void RenderElectricFence(EmissionController& ec)
 {
     extern float sfFadeOutTime;
     extern float sfGridTextureSize;
     extern const unsigned long GridTexture;
 
     EmissionController* pController = &ec;
-    ElectricFenceData* pElectricFenceData = NULL;
-    ElectricFenceData* p = ElectricFenceData::sActiveElectricFences.m_pStart;
-    while (p != NULL)
-    {
-        if (p->mpEmissionController == pController)
-        {
-            pElectricFenceData = p;
-            break;
-        }
-        p = p->next;
-    }
+    ElectricFenceData* pElectricFenceData = FindElectricFenceData(pController);
 
     float intensity = 1.0f;
     float remainingTime = pController->GetRemainingTime();

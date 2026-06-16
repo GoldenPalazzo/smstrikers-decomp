@@ -42,21 +42,20 @@ RenderSnapshot& RenderSnapshot::GetMutable()
  */
 void RenderSnapshot::Blend(const float* blendFactors, const RenderSnapshot& lhs, const RenderSnapshot& rhs)
 {
-    int i;
     mFrameBlendPercent = blendFactors[0];
     mValid = true;
 
-    for (i = 0; i < 10; i++)
+    for (int i = 0; i < 10; i++)
     {
         mCharacters[i].Blend(blendFactors, lhs.mCharacters[i], rhs.mCharacters[i]);
     }
 
-    for (i = 0; i < 150; i++)
+    for (int i = 0; i < 150; i++)
     {
         mPowerups[i].Blend(blendFactors, lhs.mPowerups[i], rhs.mPowerups[i]);
     }
 
-    for (i = 0; i < 20; i++)
+    for (int i = 0; i < 20; i++)
     {
         mExplosionFragments[i].Blend(blendFactors, lhs.mExplosionFragments[i], rhs.mExplosionFragments[i]);
     }
@@ -77,18 +76,14 @@ void RenderSnapshot::Blend(const float* blendFactors, const RenderSnapshot& lhs,
     mDoGoalieNetTestPosX = rhs.mDoGoalieNetTestPosX;
     mDoGoalieNetTestNegX = rhs.mDoGoalieNetTestNegX;
 
-    const unsigned char* pLhsVis = lhs.mpExplodableVisibilityRecords;
-    const unsigned char* pRhsVis = rhs.mpExplodableVisibilityRecords;
-    for (int j = 0; j < mNumExplodables; j++)
+    for (int i = 0; i < mNumExplodables; i++)
     {
         unsigned char visible = 0;
-        if (*pLhsVis || *pRhsVis)
+        if (lhs.mpExplodableVisibilityRecords[i] || rhs.mpExplodableVisibilityRecords[i])
         {
             visible = 1;
         }
-        mpExplodableVisibilityRecords[j] = visible;
-        pRhsVis++;
-        pLhsVis++;
+        mpExplodableVisibilityRecords[i] = visible;
     }
 }
 

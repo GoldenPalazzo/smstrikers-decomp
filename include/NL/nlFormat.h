@@ -38,7 +38,7 @@ FormatImpl<StringType>& FormatImpl<StringType>::operator%(const T& t)
 
     for (int i = 0; i < (mString.m_data ? mString.m_data->mSize - 1 : 0); i++)
     {
-        if (mString[i] != '{')
+        if (mString[i] != (typename StringType::value_type)'{')
             continue;
 
         if (i + 1 >= (mString.m_data ? mString.m_data->mSize - 1 : 0))
@@ -50,7 +50,7 @@ FormatImpl<StringType>& FormatImpl<StringType>::operator%(const T& t)
         if (i + 2 >= (mString.m_data ? mString.m_data->mSize - 1 : 0))
             continue;
 
-        if (mString[i + 2] != '}')
+        if (mString[i + 2] != (typename StringType::value_type)'}')
             continue;
 
         mString.erase(&mString[i], &mString[i + 3]);
@@ -544,7 +544,6 @@ inline BasicString<char, Detail::TempStringAllocator> Format<BasicString<char, D
 }
 /**
  * Offset/Address/Size: 0xEB0 | 0x80068108 | size: 0x114
- * TODO: 95.52% match - format data is kept in r6 with an extra zero-store before impl.mString assignment.
  */
 template <>
 inline BasicString<char, Detail::TempStringAllocator> Format<BasicString<char, Detail::TempStringAllocator>, char>(
@@ -561,24 +560,19 @@ inline BasicString<char, Detail::TempStringAllocator> Format<BasicString<char, D
         data = 0;
     }
 
-    FormatImplLayoutCharTemp impl;
-    impl.mString.m_data = data;
-    impl.mCurrentPos = 0;
+    FormatImpl<BasicString<char, Detail::TempStringAllocator> > impl(data);
 
     return BasicString<char, Detail::TempStringAllocator>(
         (BasicString<char, Detail::TempStringAllocator>)(((FormatImpl<BasicString<char, Detail::TempStringAllocator> >&)impl) % value));
 }
 /**
  * Offset/Address/Size: 0x0 | 0x8002FED4 | size: 0x114
- * TODO: 92.39% match - an extra early zero-initialization store remains for impl.mString,
- * shifting branch targets and a null-path move/store register pair.
  */
 template <>
 inline BasicString<char, Detail::TempStringAllocator> Format<BasicString<char, Detail::TempStringAllocator>, const char*>(
     const BasicString<char, Detail::TempStringAllocator>& format,
     const char* const& value)
 {
-    FormatImpl<BasicString<char, Detail::TempStringAllocator> > impl;
     BasicStringData<char>* data = format.m_data;
     if (data != 0)
     {
@@ -589,11 +583,10 @@ inline BasicString<char, Detail::TempStringAllocator> Format<BasicString<char, D
         data = 0;
     }
 
-    impl.mString.m_data = data;
-    impl.mCurrentPos = 0;
-    impl % value;
+    FormatImpl<BasicString<char, Detail::TempStringAllocator> > impl(data);
 
-    return BasicString<char, Detail::TempStringAllocator>((BasicString<char, Detail::TempStringAllocator>)impl);
+    return BasicString<char, Detail::TempStringAllocator>(
+        (BasicString<char, Detail::TempStringAllocator>)(impl % value));
 }
 /**
  * Offset/Address/Size: 0x2BC0 | 0x80069E18 | size: 0x114

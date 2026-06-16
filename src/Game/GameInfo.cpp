@@ -669,13 +669,13 @@ eStadiumID GameInfoManager::PickStadium(bool isLastRound, eStadiumID excludeStad
 
             if (mode2 < GM_SUPER_MUSHROOM_CUP)
             {
-                if (mode2 >= GM_MUSHROOM_CUP)
+                if (mode2 < GM_MUSHROOM_CUP)
                 {
-                    shouldRepick = true;
+                    shouldRepick = false;
                 }
                 else
                 {
-                    shouldRepick = false;
+                    shouldRepick = true;
                 }
             }
             else
@@ -687,13 +687,13 @@ eStadiumID GameInfoManager::PickStadium(bool isLastRound, eStadiumID excludeStad
             {
                 if (mode2 < GM_TOURNAMENT)
                 {
-                    if (mode2 >= GM_SUPER_MUSHROOM_CUP)
+                    if (mode2 < GM_SUPER_MUSHROOM_CUP)
                     {
-                        shouldRepick = true;
+                        shouldRepick = false;
                     }
                     else
                     {
-                        shouldRepick = false;
+                        shouldRepick = true;
                     }
                 }
                 else
@@ -3376,15 +3376,15 @@ signed char GameInfoManager::DetermineUserPlacement(Spoil* pSpoil)
 
 /**
  * Offset/Address/Size: 0x196C | 0x80177010 | size: 0x43C
- * TODO: 91.04% match - register selection around mNumRecords checks and the
- * CupHistory shift loop shape still differ from target.
+ * TODO: 98.99% match - r6/r8 register swap between the index and destination
+ * pointer in the CupHistory shift loop.
  */
 void GameInfoManager::TimeStampCupEnd()
 {
     struct CupRecordRaw
     {
         OSCalendarTime mDate;
-        signed char mPlace;
+        int mPlace;
         eTeamID mTeam;
         GameplaySettings::eSkillLevel mDifficulty;
     };
@@ -3421,9 +3421,12 @@ void GameInfoManager::TimeStampCupEnd()
         break;
     }
 
-    Spoil* pSpoil = &mUserInfo.mSpoils[trophy];
+    UserInfo* userInfo = &mUserInfo;
+    Spoil* pSpoil = &userInfo->mSpoils[trophy];
     CupRecord record;
     CupRecordRaw copyRecord;
+    CupRecord* dest;
+    CupRecord* src;
 
     OSTicksToCalendarTime(OSGetTime(), &record.mDate);
 
@@ -3440,7 +3443,9 @@ void GameInfoManager::TimeStampCupEnd()
 
     for (int i = pSpoil->mNumRecords - 1; i > 0; --i)
     {
-        pSpoil->mCupHistory[i] = pSpoil->mCupHistory[i - 1];
+        dest = &pSpoil->mCupHistory[i];
+        src = &pSpoil->mCupHistory[i - 1];
+        *dest = *src;
     }
 
     pSpoil->mCupHistory[0] = *(CupRecord*)&copyRecord;

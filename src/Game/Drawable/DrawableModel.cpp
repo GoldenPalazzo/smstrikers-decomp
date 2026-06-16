@@ -199,9 +199,9 @@ static inline void* FindStream(glModelPacket* pPacket, int streamID)
 
 /**
  * Offset/Address/Size: 0x183C | 0x80121648 | size: 0x598
- * TODO: 99.75% match - 9 commutative operand swaps on mullw/add in display list vertex indexing
+ * TODO: 99.83% match - 6 commutative operand swaps on add in display list vertex indexing
  */
-void Fresnelify(glModelPacket* pPacket, eGLView view)
+static void Fresnelify(glModelPacket* pPacket, eGLView view)
 {
     nlMatrix4 viewMat;
     nlMatrix4 objectMat;
@@ -235,13 +235,15 @@ void Fresnelify(glModelPacket* pPacket, eGLView view)
             if (*(u16*)((u8*)pList + 0x0E) != 0)
             {
                 u16 ns = *(u16*)((u8*)pList + 0x0C);
-                int offset = index * ((ns - 1) * 2 + 1) + 4;
+                int stride = (ns - 1) * 2 + 1;
+                int offset = stride * index + 4;
                 pVert = (u16*)((u8*)*(u32*)((u8*)pList + 0x04) + offset);
             }
             else
             {
                 u16 ns = *(u16*)((u8*)pList + 0x0C);
-                int offset = index * (ns * 2) + 3;
+                int stride = ns * 2;
+                int offset = index * stride + 3;
                 pVert = (u16*)((u8*)*(u32*)((u8*)pList + 0x04) + offset);
             }
             int vertIndex = *pVert;
@@ -270,13 +272,15 @@ void Fresnelify(glModelPacket* pPacket, eGLView view)
             if (*(u16*)((u8*)pList + 0x0E) != 0)
             {
                 u16 ns = *(u16*)((u8*)pList + 0x0C);
-                int offset = index * ((ns - 1) * 2 + 1) + 4;
+                int stride = (ns - 1) * 2 + 1;
+                int offset = stride * index + 4;
                 pVert = (u16*)((u8*)*(u32*)((u8*)pList + 0x04) + offset);
             }
             else
             {
                 u16 ns = *(u16*)((u8*)pList + 0x0C);
-                int offset = index * (ns * 2) + 3;
+                int stride = ns * 2;
+                int offset = index * stride + 3;
                 pVert = (u16*)((u8*)*(u32*)((u8*)pList + 0x04) + offset);
             }
             int vertIndex = *pVert;
@@ -305,13 +309,15 @@ void Fresnelify(glModelPacket* pPacket, eGLView view)
             if (*(u16*)((u8*)pList + 0x0E) != 0)
             {
                 u16 ns = *(u16*)((u8*)pList + 0x0C);
-                int offset = index * ((ns - 1) * 2 + 1) + 4;
+                int stride = (ns - 1) * 2 + 1;
+                int offset = stride * index + 4;
                 pVert = (u16*)((u8*)*(u32*)((u8*)pList + 0x04) + offset);
             }
             else
             {
                 u16 ns = *(u16*)((u8*)pList + 0x0C);
-                int offset = index * (ns * 2) + 3;
+                int stride = ns * 2;
+                int offset = index * stride + 3;
                 pVert = (u16*)((u8*)*(u32*)((u8*)pList + 0x04) + offset);
             }
             int vertIndex = *pVert;

@@ -67,8 +67,8 @@ FuzzyVariant Fuzzy::AbortLoosePlay(cDecisionEntity*)
 
 /**
  * Offset/Address/Size: 0x0 | 0x8008B084 | size: 0x15CC
- * TODO: 91.36% match - remaining diffs include register allocation in
- * confidence min/max branches and goalie/interceptor control-flow shaping.
+ * TODO: 94.34% match - remaining diffs include register allocation in
+ * confidence min/max branches and final fallback control-flow shaping.
  */
 FuzzyVariant Fuzzy::DefaultLoosePlay(cDecisionEntity* pDecision)
 {
@@ -127,8 +127,7 @@ FuzzyVariant Fuzzy::DefaultLoosePlay(cDecisionEntity* pDecision)
                     if (fConfidence < fNotChasing && fNotChasing < 0.5f)
                         fConfidence = fConfidence * fBranchRatio2;
 
-                    if (fBestConfidence < fConfidence)
-                        fBestConfidence = fConfidence;
+                    fBestConfidence = (fBestConfidence >= fConfidence) ? fBestConfidence : fConfidence;
 
                     pDecision->QueueActionSetDesire(5, fConfidence, 0.0f, FuzzyVariant((cPlayer*)theOpponent), fvNotSet);
                     SkillTweaks* pTweaks = SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide);
@@ -152,11 +151,9 @@ FuzzyVariant Fuzzy::DefaultLoosePlay(cDecisionEntity* pDecision)
         if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
             fConfidence = fConfidence * fBranchRatio;
 
-        cTeam* pCurrentTeam = g_pScriptCurrentFielder ? g_pScriptCurrentFielder->m_pTeam : (cTeam*)0;
-        cTeam* pOtherTeam = pCurrentTeam ? pCurrentTeam->GetOtherTeam() : (cTeam*)0;
-        float fGoaliePickup = GoalieAndGonnaPickupBall((cPlayer*)(pCurrentTeam ? pCurrentTeam->GetGoalie() : (Goalie*)0)).Confidence;
-        float fOtherGoaliePickup = GoalieAndGonnaPickupBall((cPlayer*)(pOtherTeam ? pOtherTeam->GetGoalie() : (Goalie*)0)).Confidence;
+        float fOtherGoaliePickup = GoalieAndGonnaPickupBall((cPlayer*)(g_pScriptCurrentFielder ? (g_pScriptCurrentFielder ? g_pScriptCurrentFielder->m_pTeam : (cTeam*)0)->GetOtherTeam()->GetGoalie() : (Goalie*)0)).Confidence;
         float fNotOtherGoaliePickup = 1.0f - fOtherGoaliePickup;
+        float fGoaliePickup = GoalieAndGonnaPickupBall((cPlayer*)(g_pScriptCurrentFielder ? (g_pScriptCurrentFielder ? g_pScriptCurrentFielder->m_pTeam : (cTeam*)0)->GetGoalie() : (Goalie*)0)).Confidence;
         fFalseConfidence = 1.0f - fGoaliePickup;
 
         fFalseConfidence = (fFalseConfidence <= fNotOtherGoaliePickup) ? fFalseConfidence : fNotOtherGoaliePickup;
@@ -173,8 +170,7 @@ FuzzyVariant Fuzzy::DefaultLoosePlay(cDecisionEntity* pDecision)
             if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
                 fConfidence = fConfidence * fBranchRatio;
 
-            if (fBestConfidence < fConfidence)
-                fBestConfidence = fConfidence;
+            fBestConfidence = (fBestConfidence >= fConfidence) ? fBestConfidence : fConfidence;
 
             pDecision->QueueActionSetDesire(6, fConfidence, -1.0f, fvNotSet, fvNotSet);
         }
@@ -186,8 +182,7 @@ FuzzyVariant Fuzzy::DefaultLoosePlay(cDecisionEntity* pDecision)
             if (fConfidence < fFalseConfidence && fFalseConfidence < 0.5f)
                 fConfidence = fConfidence * fBranchRatio;
 
-            if (fBestConfidence < fConfidence)
-                fBestConfidence = fConfidence;
+            fBestConfidence = (fBestConfidence >= fConfidence) ? fBestConfidence : fConfidence;
 
             pDecision->QueueActionSetDesire(10, fConfidence, -1.0f, fvNotSet, fvNotSet);
         }
@@ -231,8 +226,7 @@ FuzzyVariant Fuzzy::DefaultLoosePlay(cDecisionEntity* pDecision)
                 if (fConfidence < fCanGetBall && fCanGetBall < 0.5f)
                     fConfidence = fConfidence * fBranchRatio4;
 
-                if (fBestConfidence < fConfidence)
-                    fBestConfidence = fConfidence;
+                fBestConfidence = (fBestConfidence >= fConfidence) ? fBestConfidence : fConfidence;
                 pDecision->QueueActionSetDesire(7, fConfidence, -1.0f, fvNotSet, fvNotSet);
             }
 
@@ -255,8 +249,7 @@ FuzzyVariant Fuzzy::DefaultLoosePlay(cDecisionEntity* pDecision)
                     fConfidence = (fConfidence <= fInDefensive) ? fConfidence : fInDefensive;
                     if (fConfidence < fInDefensive && fInDefensive < 0.5f)
                         fConfidence = fConfidence * fBranchRatio5;
-                    if (fBestConfidence < fConfidence)
-                        fBestConfidence = fConfidence;
+                    fBestConfidence = (fBestConfidence >= fConfidence) ? fBestConfidence : fConfidence;
                     pDecision->QueueActionSetDesire(10, fConfidence, -1.0f, fvNotSet, fvNotSet);
                 }
 
@@ -279,8 +272,7 @@ FuzzyVariant Fuzzy::DefaultLoosePlay(cDecisionEntity* pDecision)
                         fConfidence = (fConfidence <= fInOffensive) ? fConfidence : fInOffensive;
                         if (fConfidence < fInOffensive && fInOffensive < 0.5f)
                             fConfidence = fConfidence * fBranchRatio6;
-                        if (fBestConfidence < fConfidence)
-                            fBestConfidence = fConfidence;
+                        fBestConfidence = (fBestConfidence >= fConfidence) ? fBestConfidence : fConfidence;
                         pDecision->QueueActionSetDesire(1, fConfidence, -1.0f, fvNotSet, fvNotSet);
                     }
 
@@ -290,8 +282,7 @@ FuzzyVariant Fuzzy::DefaultLoosePlay(cDecisionEntity* pDecision)
                         fConfidence = (fConfidence <= fNotOffensive) ? fConfidence : fNotOffensive;
                         if (fConfidence < fNotOffensive && fNotOffensive < 0.5f)
                             fConfidence = fConfidence * fBranchRatio6;
-                        if (fBestConfidence < fConfidence)
-                            fBestConfidence = fConfidence;
+                        fBestConfidence = (fBestConfidence >= fConfidence) ? fBestConfidence : fConfidence;
                         pDecision->QueueActionSetDesire(4, fConfidence, -1.0f, fvNotSet, fvNotSet);
                     }
                 }
@@ -328,8 +319,7 @@ FuzzyVariant Fuzzy::DefaultLoosePlay(cDecisionEntity* pDecision)
                 fConfidence = (fConfidence <= fRole) ? fConfidence : fRole;
                 if (fConfidence < fRole && fRole < 0.5f)
                     fConfidence = fConfidence * fBranchRatio7;
-                if (fBestConfidence < fConfidence)
-                    fBestConfidence = fConfidence;
+                fBestConfidence = (fBestConfidence >= fConfidence) ? fBestConfidence : fConfidence;
                 pDecision->QueueActionSetDesire(7, fConfidence, -1.0f, fvNotSet, fvNotSet);
             }
 
@@ -352,8 +342,7 @@ FuzzyVariant Fuzzy::DefaultLoosePlay(cDecisionEntity* pDecision)
                     fConfidence = (fConfidence <= fNearMyNet) ? fConfidence : fNearMyNet;
                     if (fConfidence < fNearMyNet && fNearMyNet < 0.5f)
                         fConfidence = fConfidence * fBranchRatio8;
-                    if (fBestConfidence < fConfidence)
-                        fBestConfidence = fConfidence;
+                    fBestConfidence = (fBestConfidence >= fConfidence) ? fBestConfidence : fConfidence;
                     pDecision->QueueActionSetDesire(10, fConfidence, -1.0f, fvNotSet, fvNotSet);
                 }
 
@@ -376,8 +365,7 @@ FuzzyVariant Fuzzy::DefaultLoosePlay(cDecisionEntity* pDecision)
                         fConfidence = (fConfidence <= fInOffensive2) ? fConfidence : fInOffensive2;
                         if (fConfidence < fInOffensive2 && fInOffensive2 < 0.5f)
                             fConfidence = fConfidence * fBranchRatio9;
-                        if (fBestConfidence < fConfidence)
-                            fBestConfidence = fConfidence;
+                        fBestConfidence = (fBestConfidence >= fConfidence) ? fBestConfidence : fConfidence;
                         pDecision->QueueActionSetDesire(4, fConfidence, -1.0f, fvNotSet, fvNotSet);
                     }
 
@@ -387,8 +375,7 @@ FuzzyVariant Fuzzy::DefaultLoosePlay(cDecisionEntity* pDecision)
                         fConfidence = (fConfidence <= fNotInOffensive2) ? fConfidence : fNotInOffensive2;
                         if (fConfidence < fNotInOffensive2 && fNotInOffensive2 < 0.5f)
                             fConfidence = fConfidence * fBranchRatio9;
-                        if (fBestConfidence < fConfidence)
-                            fBestConfidence = fConfidence;
+                        fBestConfidence = (fBestConfidence >= fConfidence) ? fBestConfidence : fConfidence;
                         pDecision->QueueActionSetDesire(3, fConfidence, -1.0f, fvNotSet, fvNotSet);
                     }
                 }
@@ -425,8 +412,7 @@ FuzzyVariant Fuzzy::DefaultLoosePlay(cDecisionEntity* pDecision)
             if (fConfidence < fIdealTackle && fIdealTackle < 0.5f)
                 fConfidence = fConfidence * fBranchRatio11;
 
-            if (fBestConfidence < fConfidence)
-                fBestConfidence = fConfidence;
+            fBestConfidence = (fBestConfidence >= fConfidence) ? fBestConfidence : fConfidence;
 
             pDecision->QueueActionSetDesire(5, fConfidence, 0.0f, FuzzyVariant((cPlayer*)g_pScriptCurrentMark), fvNotSet);
             SkillTweaks* pTweaks = SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide);
@@ -446,8 +432,7 @@ FuzzyVariant Fuzzy::DefaultLoosePlay(cDecisionEntity* pDecision)
         fConfidence = (fConfidence <= fNearBall) ? fConfidence : fNearBall;
         if (fConfidence < fNearBall && fNearBall < 0.5f)
             fConfidence = fConfidence * fBranchRatio10;
-        if (fBestConfidence <= fConfidence)
-            fBestConfidence = fConfidence;
+        fBestConfidence = (fBestConfidence >= fConfidence) ? fBestConfidence : fConfidence;
         pDecision->QueueActionSetDesire(11, fConfidence, -1.0f, fvNotSet, fvNotSet);
     }
 

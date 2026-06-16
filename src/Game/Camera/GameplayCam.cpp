@@ -267,21 +267,50 @@ void GameplayCamera::Reactivate()
     m_farZoom.m_fDampenedTargetY = m_farZoom.m_fDesiredTargetY;
 }
 
+static inline float MapFromFieldPosToTargetPos(float fPos, const float* pFieldKnots, const float* pTargetKnots, int nNumKnots)
+{
+    float fMin = pFieldKnots[0];
+    float fMax = pFieldKnots[nNumKnots - 1] - 0.001f;
+
+    fPos = (fPos >= fMin) ? fPos : fMin;
+    fPos = (fPos <= fMax) ? fPos : fMax;
+
+    int nKnot;
+    for (nKnot = 0; nKnot < nNumKnots - 1; nKnot++)
+    {
+        if (fPos < pFieldKnots[nKnot + 1])
+        {
+            break;
+        }
+    }
+
+    float fKnotPercent;
+    if (pFieldKnots[nKnot] == pFieldKnots[nKnot + 1])
+    {
+        fKnotPercent = 0.0f;
+    }
+    else
+    {
+        fKnotPercent = (fPos - pFieldKnots[nKnot]) / (pFieldKnots[nKnot + 1] - pFieldKnots[nKnot]);
+    }
+
+    return Interpolate(pTargetKnots[nKnot], pTargetKnots[nKnot + 1], fKnotPercent);
+}
+
 /**
  * Offset/Address/Size: 0x470 | 0x801A9AB0 | size: 0x404
- * TODO: 95.95% match - remaining diffs are register allocation cascades
- * (this in r29 vs target r28) through interpolation paths.
+ * TODO: 99.46% match - extra base register setup remains in blend queue accumulation.
  */
 void GameplayCameraZoomLevel::CalcDesiredTarget()
 {
-    int i;
     nlVector3 v3OOIPos = { 0.0f, 0.0f, 0.0f };
     float fKnotTableBlendWeights[3];
     float fCurrWeight;
     float fDampenedBlendRiser;
     float fAccumulatedWeight;
     float fBlendPercent;
-    float* pKnotTableBlendWeights = fKnotTableBlendWeights;
+    float* pKnotTableBlendWeights;
+    int i;
 
     if (gGameplayCameraInReplay == false)
     {
@@ -308,6 +337,8 @@ void GameplayCameraZoomLevel::CalcDesiredTarget()
         }
     }
 
+    pKnotTableBlendWeights = fKnotTableBlendWeights;
+
     pKnotTableBlendWeights[0] = 0.0f;
     pKnotTableBlendWeights[1] = 0.0f;
     pKnotTableBlendWeights[2] = 0.0f;
@@ -328,77 +359,16 @@ void GameplayCameraZoomLevel::CalcDesiredTarget()
     m_fDesiredTargetX = 0.0f;
     m_fDesiredTargetY = 0.0f;
 
-    for (i = 0; i < 3; i++, pKnotTableBlendWeights++)
+    i = 0;
+
+    for (; i < 3; pKnotTableBlendWeights++, i++)
     {
         if (*pKnotTableBlendWeights > 0.0f)
         {
             fAccumulatedWeight += *pKnotTableBlendWeights;
 
-            const float* pFieldKnotsX = m_CameraData->fieldKnotsX[i];
-            const float* pTargetKnotsX = m_CameraData->targetKnotsX[i];
-            int nNumKnotsX = m_CameraData->numKnotsX;
-
-            float fFieldPosX = v3OOIPos.f.x;
-            float fXMin = pFieldKnotsX[0];
-            float fXMax = pFieldKnotsX[nNumKnotsX - 1] - 0.001f;
-
-            fFieldPosX = (fFieldPosX >= fXMin) ? fFieldPosX : fXMin;
-            fFieldPosX = (fFieldPosX <= fXMax) ? fFieldPosX : fXMax;
-
-            int nXKnot = 0;
-            for (int n = nNumKnotsX - 1; n > 0; n--)
-            {
-                if (fFieldPosX < pFieldKnotsX[nXKnot + 1])
-                {
-                    break;
-                }
-                nXKnot++;
-            }
-
-            float fXKnotPercent;
-            if (pFieldKnotsX[nXKnot] == pFieldKnotsX[nXKnot + 1])
-            {
-                fXKnotPercent = 0.0f;
-            }
-            else
-            {
-                fXKnotPercent = (fFieldPosX - pFieldKnotsX[nXKnot]) / (pFieldKnotsX[nXKnot + 1] - pFieldKnotsX[nXKnot]);
-            }
-
-            float fMappedX = Interpolate(pTargetKnotsX[nXKnot], pTargetKnotsX[nXKnot + 1], fXKnotPercent);
-
-            const float* pFieldKnotsY = m_CameraData->fieldKnotsY[i];
-            const float* pTargetKnotsY = m_CameraData->targetKnotsY[i];
-            int nNumKnotsY = m_CameraData->numKnotsY;
-
-            float fFieldPosY = v3OOIPos.f.y;
-            float fYMin = pFieldKnotsY[0];
-            float fYMax = pFieldKnotsY[nNumKnotsY - 1] - 0.001f;
-
-            fFieldPosY = (fFieldPosY >= fYMin) ? fFieldPosY : fYMin;
-            fFieldPosY = (fFieldPosY <= fYMax) ? fFieldPosY : fYMax;
-
-            int nYKnot = 0;
-            for (int n = nNumKnotsY - 1; n > 0; n--)
-            {
-                if (fFieldPosY < pFieldKnotsY[nYKnot + 1])
-                {
-                    break;
-                }
-                nYKnot++;
-            }
-
-            float fYKnotPercent;
-            if (pFieldKnotsY[nYKnot] == pFieldKnotsY[nYKnot + 1])
-            {
-                fYKnotPercent = 0.0f;
-            }
-            else
-            {
-                fYKnotPercent = (fFieldPosY - pFieldKnotsY[nYKnot]) / (pFieldKnotsY[nYKnot + 1] - pFieldKnotsY[nYKnot]);
-            }
-
-            float fMappedY = Interpolate(pTargetKnotsY[nYKnot], pTargetKnotsY[nYKnot + 1], fYKnotPercent);
+            float fMappedX = MapFromFieldPosToTargetPos(v3OOIPos.f.x, m_CameraData->fieldKnotsX[i], m_CameraData->targetKnotsX[i], m_CameraData->numKnotsX);
+            float fMappedY = MapFromFieldPosToTargetPos(v3OOIPos.f.y, m_CameraData->fieldKnotsY[i], m_CameraData->targetKnotsY[i], m_CameraData->numKnotsY);
             fBlendPercent = *pKnotTableBlendWeights / fAccumulatedWeight;
 
             m_fDesiredTargetX = Interpolate(m_fDesiredTargetX, fMappedX, fBlendPercent);

@@ -1896,6 +1896,7 @@ void Goalie::FindDesiredGoaliePosition(nlVector3& pos, nlVector3& dir, nlVector3
 {
     cNet* pNet = m_pTeam->m_pNet;
     nlVector3 targetPos;
+    float breakaway;
     float goalX;
     nlVector3 desiredVec;
     float goalY = 0.0f;
@@ -1945,14 +1946,23 @@ void Goalie::FindDesiredGoaliePosition(nlVector3& pos, nlVector3& dir, nlVector3
 
     float goalLine = cField::GetGoalLineX(1U) - 0.5f;
     float goalieDist = nlSqrt(desiredVec.f.x * desiredVec.f.x + desiredVec.f.y * desiredVec.f.y + desiredVec.f.z * desiredVec.f.z, true);
-    float breakaway = 0.0f;
+    breakaway = 0.0f;
     float targetDist = goalieDist - 0.5f;
 
+    cFielder* ownerFielder2;
     cFielder* ownerFielder = g_pBall->GetOwnerFielder();
     if (ownerFielder != NULL && !IsOnSameTeam(ownerFielder))
     {
-        cFielder* ownerFielder2 = g_pBall->GetOwnerFielder();
-        bool isShooting = (ownerFielder2 != NULL && !IsOnSameTeam(ownerFielder2) && ownerFielder2->m_eActionState == ACTION_SHOOT_TO_SCORE);
+        ownerFielder2 = g_pBall->GetOwnerFielder();
+        bool isShooting;
+        if (ownerFielder2 != NULL && !IsOnSameTeam(ownerFielder2) && ownerFielder2->m_eActionState == ACTION_SHOOT_TO_SCORE)
+        {
+            isShooting = true;
+        }
+        else
+        {
+            isShooting = false;
+        }
         if (isShooting)
         {
             breakaway = 0.0f;
@@ -1962,8 +1972,9 @@ void Goalie::FindDesiredGoaliePosition(nlVector3& pos, nlVector3& dir, nlVector3
             breakaway = OnBreakaway(ownerFielder);
             if (breakaway > 0.8f)
             {
+                int i;
                 cTeam* opponentTeam = ownerFielder->m_pTeam;
-                for (int i = 0; i < 4; i++)
+                for (i = 0; i < 4; i++)
                 {
                     cFielder* fielder = opponentTeam->GetFielder(i);
                     if (fielder == ownerFielder)
@@ -1975,11 +1986,9 @@ void Goalie::FindDesiredGoaliePosition(nlVector3& pos, nlVector3& dir, nlVector3
                         float factor = 1.0f - 0.5f * (absX - 2.0f) / 10.0f;
                         if (0.0f >= factor)
                         {
+                            factor = 0.0f;
                         }
-                        else
-                        {
-                            breakaway *= factor;
-                        }
+                        breakaway *= factor;
                     }
                 }
             }
@@ -2789,8 +2798,8 @@ static inline float clamp_lower(float x, float lo)
 
 /**
  * Offset/Address/Size: 0x69D8 | 0x800494D4 | size: 0x3A8
- * TODO: 96.11% match - FPR allocation around ownerDistSq/net-zone math, fmadds
- * operand order in net-width check, and clamp compare branch direction (beq vs bne).
+ * TODO: 98.65% match - FPR allocation in save-margin/goal-distance checks
+ * and final target-time clamp branch.
  */
 bool Goalie::CheckForSTSAttack()
 {
@@ -2810,8 +2819,8 @@ bool Goalie::CheckForSTSAttack()
 
     if (bCanAttack)
     {
-        f32 fSaveIgnoreMargin;
         f32 fAnimScale;
+        f32 fSaveIgnoreMargin;
         f32 ownerDistSq;
         f32 fCloseDistSq;
         f32 fMaxDistSq;
@@ -2830,9 +2839,7 @@ bool Goalie::CheckForSTSAttack()
         {
             do
             {
-                f32 dy = pOppFielder->m_v3Position.f.y - m_v3Position.f.y;
-                f32 dx = pOppFielder->m_v3Position.f.x - m_v3Position.f.x;
-                ownerDistSq = dx * dx + dy * dy;
+                ownerDistSq = pOppFielder->m_v3Position.CalculateDistanceSquared2D(m_v3Position);
 
                 f32 fCloseDist = LooseBallAnims::mAttackSTSInfo.mfPickupDistance + ((GoalieTweaks*)m_pTweaks)->fSTSAttackCloseDistance;
                 f32 fMaxDist = LooseBallAnims::mAttackSTSInfo.mfPickupDistance + ((GoalieTweaks*)m_pTweaks)->fSTSAttackMaxDistance;
@@ -2866,12 +2873,8 @@ bool Goalie::CheckForSTSAttack()
 
                 v3GoalPos.f.y = clampedY;
 
-                f32 dfx = v3GoalPos.f.x - pOppFielder->m_v3Position.f.x;
-                f32 dfy = v3GoalPos.f.y - pOppFielder->m_v3Position.f.y;
-                f32 dgx = v3GoalPos.f.x - m_v3Position.f.x;
-                f32 dgy = v3GoalPos.f.y - m_v3Position.f.y;
-                f32 distSqFielder = dfx * dfx + dfy * dfy;
-                f32 distSqGoalie = dgx * dgx + dgy * dgy;
+                f32 distSqFielder = v3GoalPos.CalculateDistanceSquared2D(pOppFielder->m_v3Position);
+                f32 distSqGoalie = v3GoalPos.CalculateDistanceSquared2D(m_v3Position);
 
                 static FilteredRandomChance randgenSTS;
 
@@ -3472,7 +3475,7 @@ inline cPN_Blender* AllocateBlender()
 
 /**
  * Offset/Address/Size: 0x58E4 | 0x800483E0 | size: 0x458
- * TODO: 87.63% match - this=r28 vs r29 (dual pool alloc shifts register), slwi r0 vs r4 (prevents lfsx pattern)
+ * TODO: 96.26% match - this pointer remains r28 vs target r29; positive milestone loads still use r0/add+lfs instead of r4/lfsx.
  */
 void Goalie::PlayBlendedAnims(float fStartTime, int nMilestone)
 {
@@ -3491,7 +3494,8 @@ void Goalie::PlayBlendedAnims(float fStartTime, int nMilestone)
             fStartTime = mBlendInfo.mfMilestoneTime[nMilestone];
             if (fStartTime <= 0.0f)
             {
-                fStartTime = fDefaultStartPercent[nMilestone] * (mpSaveData->mfMilestonePercent[2] * mpSaveData->mfDuration);
+                float* pDefaultStartPercent = fDefaultStartPercent;
+                fStartTime = pDefaultStartPercent[nMilestone] * (mpSaveData->mfMilestonePercent[2] * mpSaveData->mfDuration);
             }
         }
 
@@ -3516,38 +3520,48 @@ void Goalie::PlayBlendedAnims(float fStartTime, int nMilestone)
             {
                 if (mBlendInfo.mpSaveData[0] != NULL)
                 {
-                    fStartPercent[0] = mBlendInfo.mpSaveData[0]->mfMilestonePercent[nMilestone];
+                    float* pPercent = mBlendInfo.mpSaveData[0]->mfMilestonePercent;
+                    fStartPercent[0] = pPercent[nMilestone];
                 }
                 if (mBlendInfo.mpSaveData[1] != NULL)
                 {
-                    fStartPercent[1] = mBlendInfo.mpSaveData[1]->mfMilestonePercent[nMilestone];
+                    float* pPercent = mBlendInfo.mpSaveData[1]->mfMilestonePercent;
+                    fStartPercent[1] = pPercent[nMilestone];
                 }
                 if (mBlendInfo.mpSaveData[2] != NULL)
                 {
-                    fStartPercent[2] = mBlendInfo.mpSaveData[2]->mfMilestonePercent[nMilestone];
+                    float* pPercent = mBlendInfo.mpSaveData[2]->mfMilestonePercent;
+                    fStartPercent[2] = pPercent[nMilestone];
                 }
                 if (mBlendInfo.mpSaveData[3] != NULL)
                 {
-                    fStartPercent[3] = mBlendInfo.mpSaveData[3]->mfMilestonePercent[nMilestone];
+                    float* pPercent = mBlendInfo.mpSaveData[3]->mfMilestonePercent;
+                    fStartPercent[3] = pPercent[nMilestone];
                 }
             }
             else
             {
+                float* pDefaultStartPercent = fDefaultStartPercent;
+
                 if (mBlendInfo.mpSaveData[0] != NULL)
                 {
-                    fStartPercent[0] = fDefaultStartPercent[nMilestone] * mBlendInfo.mpSaveData[0]->mfMilestonePercent[2];
+                    float fDefaultStart = pDefaultStartPercent[nMilestone];
+                    fStartPercent[0] = fDefaultStart * mBlendInfo.mpSaveData[0]->mfMilestonePercent[2];
                 }
                 if (mBlendInfo.mpSaveData[1] != NULL)
                 {
-                    fStartPercent[1] = fDefaultStartPercent[nMilestone] * mBlendInfo.mpSaveData[1]->mfMilestonePercent[2];
+                    float fDefaultStart = pDefaultStartPercent[nMilestone];
+                    fStartPercent[1] = fDefaultStart * mBlendInfo.mpSaveData[1]->mfMilestonePercent[2];
                 }
                 if (mBlendInfo.mpSaveData[2] != NULL)
                 {
-                    fStartPercent[2] = fDefaultStartPercent[nMilestone] * mBlendInfo.mpSaveData[2]->mfMilestonePercent[2];
+                    float fDefaultStart = pDefaultStartPercent[nMilestone];
+                    fStartPercent[2] = fDefaultStart * mBlendInfo.mpSaveData[2]->mfMilestonePercent[2];
                 }
                 if (mBlendInfo.mpSaveData[3] != NULL)
                 {
-                    fStartPercent[3] = fDefaultStartPercent[nMilestone] * mBlendInfo.mpSaveData[3]->mfMilestonePercent[2];
+                    float fDefaultStart = pDefaultStartPercent[nMilestone];
+                    fStartPercent[3] = fDefaultStart * mBlendInfo.mpSaveData[3]->mfMilestonePercent[2];
                 }
             }
         }
@@ -3568,7 +3582,6 @@ void Goalie::PlayBlendedAnims(float fStartTime, int nMilestone)
             fStartTime = NormalizeVal(fStartTime, fPrevMilestone, mBlendInfo.mfMilestoneTime[milestone]);
 
             int prevMilestone = milestone - 1;
-            int currMilestone = milestone;
 
             for (int i = 0; i < 4; i++)
             {
@@ -3581,7 +3594,7 @@ void Goalie::PlayBlendedAnims(float fStartTime, int nMilestone)
                         fStart = pData->mfMilestonePercent[prevMilestone];
                     }
 
-                    fStartPercent[i] = Interpolate(fStart, pData->mfMilestonePercent[currMilestone], fStartTime);
+                    fStartPercent[i] = Interpolate(fStart, pData->mfMilestonePercent[milestone], fStartTime);
                 }
             }
         }

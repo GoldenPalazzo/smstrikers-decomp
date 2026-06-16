@@ -389,25 +389,12 @@ void glxSwapPre(bool bSend)
     }
 }
 
-/**
- * Offset/Address/Size: 0x734 | 0x801BF484 | size: 0x260
- * TODO: 98.52% match - r30/r31 register swap (data/str)
- */
-void glxInitSwap(void* arg0, void* arg1)
+static inline BasicStringInternal* MakeHitzData()
 {
-    BasicStringInternal* data;
-    const char* str;
-
-    glx_FrameBuffer[0] = arg0;
-    glx_FrameBuffer[1] = arg1;
-    glx_nBuffer = 0;
-    nFirstFrame = 3;
-    glx_bAllowDrawSync = 1;
-
-    data = (BasicStringInternal*)nlMalloc(0x10, 8, true);
+    BasicStringInternal* data = (BasicStringInternal*)nlMalloc(0x10, 8, true);
     if (data != 0)
     {
-        str = "hitz";
+        const char* str = "hitz";
         data->mData = 0;
         const char* s = str;
         data->mSize = 0;
@@ -425,7 +412,22 @@ void glxInitSwap(void* arg0, void* arg1)
         }
         data->mRefCount = 1;
     }
+    return data;
+}
 
+/**
+ * Offset/Address/Size: 0x734 | 0x801BF484 | size: 0x260
+ * TODO: 99.31% match - r30/r31 register swap in fallback string data construction
+ */
+void glxInitSwap(void* arg0, void* arg1)
+{
+    glx_FrameBuffer[0] = arg0;
+    glx_FrameBuffer[1] = arg1;
+    glx_nBuffer = 0;
+    nFirstFrame = 3;
+    glx_bAllowDrawSync = 1;
+
+    BasicStringInternal* data = MakeHitzData();
     BasicString<char, Detail::TempStringAllocator> mode(
         Config::Global().Get<BasicString<char, Detail::TempStringAllocator> >(
             "swapmode", BasicString<char, Detail::TempStringAllocator>(data)));

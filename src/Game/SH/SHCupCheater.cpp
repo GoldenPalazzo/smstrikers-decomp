@@ -2,6 +2,8 @@
 #define NL_NO_LEXICALCAST_NLSTRING_INT
 #define BIND_NO_DECL
 #include "Game/SH/SHCupCheater.h"
+#include "Game/GameInfo.h"
+#include "Game/SH/SHCupHub.h"
 #include "Game/FE/FEAudio.h"
 #include "Game/FE/feFinder.h"
 #include "Game/FE/feInput.h"
@@ -9,6 +11,7 @@
 #include "Game/FE/tlTextInstance.h"
 #include "NL/nlBasicString.h"
 #include "NL/nlLexicalCast.h"
+#include "NL/nlMath.h"
 
 #include "NL/nlMemFunBody.h"
 
@@ -339,81 +342,51 @@ void CupCheaterScene::OnSelectGameplay()
     scene->m_SlideMenu = NULL;
 }
 
-enum ePlayerStats
+inline void CupCheaterScene::AddMilestoneStats()
 {
-    STATS_GOALS_FOR = 1,
-    STATS_WIN = 6,
-    STATS_OT_WIN = 7,
-    STATS_GAMES_PLAYED = 16,
-    STATS_HITS_MADE = 19,
-    STATS_STS_ATTEMPTS = 21,
-    STATS_PERFECT_PASSES = 22,
-};
+    BasicGameInfo* gameInfo;
+    GameInfoManager* gameInfoManagerCup = nlSingleton<GameInfoManager>::s_pInstance;
+    gameInfo = gameInfoManagerCup->mGameInfo[gameInfoManagerCup->mCurrentMode];
 
-struct BasicGameInfo
-{
-    int mTeamIndex[2];
-};
-
-class StatsTracker
-{
-public:
-    void SimulateRemainingGames();
-    void SetBasicGameInfoPointer(BasicGameInfo*, bool);
-    void TrackStat(ePlayerStats, int, int, int, int, int, int);
-    void AddStat(ePlayerStats, int, int, int);
-    void AddMilestoneUserStat(ePlayerStats, int);
-    void CompileEndOfGameStats();
-};
-
-class GameInfoManager
-{
-public:
-    enum eGameModes
+    if (gameInfoManagerCup->IsInCupMode())
     {
-        GM_INVALID = -1,
-        GM_MUSHROOM_CUP = 1,
-        GM_SUPER_BOWSER_CUP = 8,
-    };
+        int team0 = gameInfo->mTeamIndex[0];
+        bool homeAway = team0 != gameInfoManagerCup->GetUserSelectedCupTeam();
 
-    bool IsInCupMode() const;
-    void OnPreCupGameState();
-    void OnPostCupGameState();
-    int GetUserSelectedCupTeam() const;
-    bool DetermineNextMatchups(int);
-    s16 GetCurrentRoundNumber() const;
-    void IncreaseRoundNumber();
-    void IncreaseGameNumber(bool);
-    void SetRoundResult(bool, int);
+        if (mSniper > 0)
+        {
+            nlSingleton<StatsTracker>::s_pInstance->AddStat(STATS_GOALS_FOR, homeAway, 0, mSniper);
+        }
 
-    char _pad0[0x10];
-    BasicGameInfo* mGameInfo[11];
-    char _pad1[0x4954 - 0x3C];
-    eGameModes mCurrentMode;
-};
+        if (mStriker > 0)
+        {
+            nlSingleton<StatsTracker>::s_pInstance->AddStat(STATS_STS_ATTEMPTS, homeAway, 0, mStriker);
+        }
 
-class CupHubScene : public BaseSceneHandler
-{
-public:
-    char _pad0[0x226 - 0x1C];
-    bool mDoAutoSave;
-};
+        if (mTactician > 0)
+        {
+            nlSingleton<StatsTracker>::s_pInstance->AddStat(STATS_PERFECT_PASSES, homeAway, 0, mTactician);
+        }
 
-extern unsigned int nlDefaultSeed;
-extern unsigned int nlRandom(unsigned int, unsigned int*);
+        if (mParamedic > 0)
+        {
+            nlSingleton<StatsTracker>::s_pInstance->AddStat(STATS_HITS_MADE, homeAway, 0, mParamedic);
+        }
+
+        if (mVeteran > 0)
+        {
+            nlSingleton<StatsTracker>::s_pInstance->AddMilestoneUserStat(STATS_GAMES_PLAYED, mVeteran);
+        }
+    }
+}
 
 /**
  * Offset/Address/Size: 0xE90 | 0x800E85E0 | size: 0x26C
- * TODO: 99.71% match - r29/r31 register coalescing for gameInfoManager, r28 load scheduling for gameInfoManagerCup
+ * TODO: 99.87% match - r28/r29 register swap for gameInfoManager before SetBasicGameInfoPointer and SetRoundResult
  */
 void CupCheaterScene::OnSelectHomeWin()
 {
-    CupCheaterScene* const self = this;
-    bool homeAway;
     GameInfoManager* gameInfoManager = nlSingleton<GameInfoManager>::s_pInstance;
-    GameInfoManager* gameInfoManagerPost;
-    GameInfoManager* gameInfoManagerCup;
-    BasicGameInfo* gameInfo;
     CupHubScene* hubScene;
 
     if (gameInfoManager->mCurrentMode >= GameInfoManager::GM_MUSHROOM_CUP
@@ -434,43 +407,11 @@ void CupCheaterScene::OnSelectHomeWin()
     nlSingleton<StatsTracker>::s_pInstance->TrackStat(STATS_WIN, 0, 0, 1, 0, 0, 0);
 
     gameInfoManager->SetRoundResult(false, 0);
-    gameInfoManagerPost = nlSingleton<GameInfoManager>::s_pInstance;
+    GameInfoManager* gameInfoManagerPost = nlSingleton<GameInfoManager>::s_pInstance;
 
     nlSingleton<GameSceneManager>::s_pInstance->PopEntireStack();
 
-    gameInfoManagerCup = nlSingleton<GameInfoManager>::s_pInstance;
-    gameInfo = gameInfoManagerCup->mGameInfo[gameInfoManagerCup->mCurrentMode];
-
-    if (gameInfoManagerCup->IsInCupMode())
-    {
-        int team0 = gameInfo->mTeamIndex[0];
-        homeAway = team0 != gameInfoManagerCup->GetUserSelectedCupTeam();
-
-        if (self->mSniper > 0)
-        {
-            nlSingleton<StatsTracker>::s_pInstance->AddStat(STATS_GOALS_FOR, homeAway, 0, self->mSniper);
-        }
-
-        if (self->mStriker > 0)
-        {
-            nlSingleton<StatsTracker>::s_pInstance->AddStat(STATS_STS_ATTEMPTS, homeAway, 0, self->mStriker);
-        }
-
-        if (self->mTactician > 0)
-        {
-            nlSingleton<StatsTracker>::s_pInstance->AddStat(STATS_PERFECT_PASSES, homeAway, 0, self->mTactician);
-        }
-
-        if (self->mParamedic > 0)
-        {
-            nlSingleton<StatsTracker>::s_pInstance->AddStat(STATS_HITS_MADE, homeAway, 0, self->mParamedic);
-        }
-
-        if (self->mVeteran > 0)
-        {
-            nlSingleton<StatsTracker>::s_pInstance->AddMilestoneUserStat(STATS_GAMES_PLAYED, self->mVeteran);
-        }
-    }
+    AddMilestoneStats();
 
     nlSingleton<StatsTracker>::s_pInstance->CompileEndOfGameStats();
 
@@ -784,8 +725,9 @@ void CupCheaterScene::OnSelectAwayOTWin()
 void CupCheaterScene::UpdateSlides()
 {
     CupCheaterScene* const self = this;
+    TLComponentInstance* pComp;
     int currentSlide = self->m_SlideMenu->m_currentSlide;
-    TLComponentInstance* pComp = self->m_SlideMenu->m_pMenuComp;
+    pComp = self->m_SlideMenu->m_pMenuComp;
     TLTextInstance* pText;
     TLSlide* pSlide;
 

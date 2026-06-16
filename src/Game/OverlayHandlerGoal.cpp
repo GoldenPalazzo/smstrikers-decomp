@@ -1211,16 +1211,17 @@ void GoalOverlay::SetWinnerTitle()
     nlStrToWcs(scoreLeftString.c_str(), scoreLeftWideString, 32);
     nlStrToWcs(scoreRightString.c_str(), scoreRightWideString, 32);
 
+    BasicStringData<unsigned short>* data;
     const unsigned short* formatLocString;
     unsigned long key = 0x4543196B;
-    nlLocalization* loc = g_pLocalization;
 
-    if (loc->m_LookupTable == 0)
+    if (g_pLocalization->m_LookupTable == 0)
     {
         formatLocString = LocalizationTableNotFound;
     }
     else
     {
+        nlLocalization* loc = g_pLocalization;
         nlLocalization::StringLookup* entry = nlBSearch<nlLocalization::StringLookup, unsigned long>(key, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
         if (entry)
         {
@@ -1232,7 +1233,7 @@ void GoalOverlay::SetWinnerTitle()
         }
     }
 
-    BasicStringData<unsigned short>* data = (BasicStringData<unsigned short>*)nlMalloc(0x10, 8, true);
+    data = (BasicStringData<unsigned short>*)nlMalloc(0x10, 8, true);
     if (data)
     {
         data->mData = 0;
@@ -1265,19 +1266,23 @@ void GoalOverlay::SetWinnerTitle()
     BasicString<unsigned short, Detail::TempStringAllocator> unformatted(data);
     BasicString<unsigned short, Detail::TempStringAllocator> formatted;
 
-    int winningTeam = nlSingleton<GameInfoManager>::s_pInstance->GetTeam((short)((scoreRight >> 31) + ((unsigned int)scoreLeft >> 31) + ((unsigned int)scoreRight >= (unsigned int)scoreLeft)));
+    signed short teamIndex = (signed short)(scoreRight >> 31);
+    teamIndex += (unsigned int)scoreLeft >> 31;
+    teamIndex += scoreRight >= scoreLeft;
+    int winningTeam = nlSingleton<GameInfoManager>::s_pInstance->GetTeam(teamIndex);
 
     if (scoreLeft > scoreRight)
     {
         unsigned long teamNameStringID = GetLOCTeamName((eTeamID)winningTeam);
         const unsigned short* winnerLocString;
 
-        if (loc->m_LookupTable == 0)
+        if (g_pLocalization->m_LookupTable == 0)
         {
             winnerLocString = LocalizationTableNotFound;
         }
         else
         {
+            nlLocalization* loc = g_pLocalization;
             nlLocalization::StringLookup* entry = nlBSearch<nlLocalization::StringLookup, unsigned long>(teamNameStringID, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
             if (entry)
             {
@@ -1296,12 +1301,13 @@ void GoalOverlay::SetWinnerTitle()
         unsigned long teamNameStringID = GetLOCTeamName((eTeamID)winningTeam);
         const unsigned short* winnerLocString;
 
-        if (loc->m_LookupTable == 0)
+        if (g_pLocalization->m_LookupTable == 0)
         {
             winnerLocString = LocalizationTableNotFound;
         }
         else
         {
+            nlLocalization* loc = g_pLocalization;
             nlLocalization::StringLookup* entry = nlBSearch<nlLocalization::StringLookup, unsigned long>(teamNameStringID, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
             if (entry)
             {
@@ -1318,80 +1324,21 @@ void GoalOverlay::SetWinnerTitle()
 
     memcpy(mScoresBuffer, formatted.c_str(), 0x100);
 
-    typedef TLTextInstance* (*FindCompByValue)(FEPresentation*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-    typedef TLTextInstance* (*FindCompByRef)(FEPresentation*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
-
-    union
-    {
-        FindCompByValue byValue;
-        FindCompByRef byRef;
-    } findComp;
-
-    volatile InlineHasher hSlideB, hSlideA;
-    volatile InlineHasher hLayerB, hLayerA;
-    volatile InlineHasher hNameB, hNameA;
-    volatile InlineHasher hTimeB, hTimeA;
-    volatile InlineHasher h5, h4, h3, h2, h1, h0;
-
-    unsigned long hash;
     TLTextInstance* pText;
 
-    findComp.byValue = FEFinder<TLTextInstance, 3>::Find<FEPresentation>;
-
-    h0.m_Hash = 0;
-    h1.m_Hash = 0;
-    h2.m_Hash = 0;
-    h3.m_Hash = 0;
-    h4.m_Hash = 0;
-    h5.m_Hash = 0;
-
-    hash = nlStringLowerHash("Name");
-    hNameA.m_Hash = hash;
-    hNameB.m_Hash = hash;
-
-    hash = nlStringLowerHash("Layer");
-    hLayerA.m_Hash = hash;
-    hLayerB.m_Hash = hash;
-
-    hash = nlStringLowerHash("Slide1");
-    hSlideA.m_Hash = hash;
-    hSlideB.m_Hash = hash;
-
-    pText = findComp.byRef(
+    pText = FEFinder<TLTextInstance, 3>::Find<FEPresentation>(
         m_pFEPresentation,
-        (InlineHasher&)hSlideB,
-        (InlineHasher&)hLayerB,
-        (InlineHasher&)hNameB,
-        (InlineHasher&)h5,
-        (InlineHasher&)h3,
-        (InlineHasher&)h1);
+        InlineHasher(nlStringLowerHash("Slide1")),
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("Name")));
 
     pText->SetString(mScoresBuffer);
 
-    h1.m_Hash = 0;
-    h3.m_Hash = 0;
-    h5.m_Hash = 0;
-
-    hash = nlStringLowerHash("Time");
-    hTimeA.m_Hash = hash;
-    hTimeB.m_Hash = hash;
-
-    hash = nlStringLowerHash("Layer");
-    hLayerA.m_Hash = hash;
-    hLayerB.m_Hash = hash;
-
-    hash = nlStringLowerHash("Slide1");
-    hSlideA.m_Hash = hash;
-    hSlideB.m_Hash = hash;
-
-    pText = findComp.byRef(
+    pText = FEFinder<TLTextInstance, 3>::Find<FEPresentation>(
         m_pFEPresentation,
-        (InlineHasher&)hSlideB,
-        (InlineHasher&)hLayerB,
-        (InlineHasher&)hTimeB,
-        (InlineHasher&)h5,
-        (InlineHasher&)h3,
-        (InlineHasher&)h1);
+        InlineHasher(nlStringLowerHash("Slide1")),
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("Time")));
 
     pText->m_bVisible = false;
 }

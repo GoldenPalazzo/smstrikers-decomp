@@ -4,9 +4,49 @@
 #include "NL/nlList.h"
 #include "NL/nlSlotPool.h"
 
+template <typename T>
+class ListContainerBase<T, BasicSlotPool<ListEntry<T> > >
+{
+public:
+    ListContainerBase()
+        : m_Head(NULL)
+        , m_Tail(NULL)
+    {
+    }
+
+    static void DestroyAllEntries(ListContainerBase* container)
+    {
+        void (ListContainerBase::*func)(ListEntry<T>*) = &ListContainerBase::DeleteEntry;
+        nlWalkList(container->m_Head, container, func);
+        container->m_Head = NULL;
+        container->m_Tail = NULL;
+    }
+
+    ~ListContainerBase()
+    {
+        DestroyAllEntries(this);
+    }
+
+    void DeleteEntry(ListEntry<T>* entry)
+    {
+        m_Allocator.DeleteEntry(entry);
+    }
+
+    void AddEntry(ListEntry<T>* entry)
+    {
+    }
+
+    void RemoveEntry(ListEntry<T>* entry)
+    {
+    }
+
+    /* 0x0 */ BasicSlotPool<ListEntry<T> > m_Allocator;
+    ListEntry<T>* m_Head;
+    ListEntry<T>* m_Tail;
+};
+
 /**
  * Offset/Address/Size: 0xE0 | 0x8014B590 | size: 0xCC
- * TODO: 97.94% match - extra beq from two-level implicit member destruction (BasicSlotPool+SlotPoolBase)
  */
 template <typename T>
 class nlListSlotPool : public ListContainerBase<T, BasicSlotPool<ListEntry<T> > >
@@ -27,20 +67,6 @@ public:
 
     ~nlListSlotPool()
     {
-        if (this != NULL)
-        {
-            typedef void (ListContainerBase<T, BasicSlotPool<ListEntry<T> > >::*DeleteFn)(ListEntry<T>*);
-            DeleteFn cb = &ListContainerBase<T, BasicSlotPool<ListEntry<T> > >::DeleteEntry;
-            ListEntry<T>* list = this->m_Head;
-            while (list != NULL)
-            {
-                ListEntry<T>* next = list->next;
-                (static_cast<ListContainerBase<T, BasicSlotPool<ListEntry<T> > >*>(this)->*cb)(list);
-                list = next;
-            }
-        }
-        this->m_Head = NULL;
-        this->m_Tail = NULL;
     }
 };
 

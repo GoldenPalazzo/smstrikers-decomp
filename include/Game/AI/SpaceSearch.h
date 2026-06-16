@@ -48,7 +48,7 @@ class SSearchCutAndBreak : public SpaceSearch
 {
 public:
     SSearchCutAndBreak(cPlayer*);
-    virtual ~SSearchCutAndBreak();
+    virtual ~SSearchCutAndBreak() { }
     virtual float EvaluatePosition(const nlVector3&, const nlVector3&, eFieldDirection, unsigned short);
 
     /* 0x10 */ cPlayer* m_pPlayer;

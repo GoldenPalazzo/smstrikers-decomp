@@ -497,8 +497,7 @@ void cBall::ShootRelease(const nlVector3& v3Velocity, eSpinType SpinType)
 
 /**
  * Offset/Address/Size: 0xD2C | 0x8000A700 | size: 0x3AC
- * TODO: 99.68% match - FPR register differences remain in spin cross product
- *       and distance loads.
+ * TODO: 99.96% match - local constant label relocations remain in scratch diff.
  */
 static inline float CalcSpinRand(eSpinType spin);
 
@@ -531,15 +530,11 @@ void cBall::Shoot(const nlVector3& v3Dir, const nlVector3& v3Spin, eSpinType spi
         v3Up = kZero;
         v3Up.f.z = fSpinRand;
 
-        float upX = v3Up.f.x;
-        float dirZ = v3Dir.f.z;
-        float upY = v3Up.f.y;
-        float dirY = v3Dir.f.y;
-        float dirX = v3Dir.f.x;
-
-        v3AngVel.f.x = (upY * dirZ) - (v3Up.f.z * dirY);
-        v3AngVel.f.y = (-upX * dirZ) + (v3Up.f.z * dirX);
-        v3AngVel.f.z = (upX * dirY) - (upY * dirX);
+        nlVector3 v3Cross;
+        nlVec3CrossProductAlt(v3Cross, v3Up, v3Dir);
+        v3AngVel.f.x = v3Cross.f.z;
+        v3AngVel.f.y = v3Cross.f.y;
+        v3AngVel.f.z = v3Cross.f.x;
     }
     else if (spinType == SPINTYPE_ROLLING)
     {
@@ -577,10 +572,7 @@ void cBall::Shoot(const nlVector3& v3Dir, const nlVector3& v3Spin, eSpinType spi
 
     if (m_pPhysicsBall->m_bUseMagnusEffect)
     {
-        float dx = m_v3Position.f.x - m_v3ShotTarget.f.x;
-        float dy = m_v3Position.f.y - m_v3ShotTarget.f.y;
-        float dz = m_v3Position.f.z - m_v3ShotTarget.f.z;
-        float fDist = nlSqrt(dx * dx + dy * dy + dz * dz, true);
+        float fDist = nlSqrt(nlGetLengthSquared3D(m_v3Position.f.x - m_v3ShotTarget.f.x, m_v3Position.f.y - m_v3ShotTarget.f.y, m_v3Position.f.z - m_v3ShotTarget.f.z), true);
 
         FakeBallWorld::GetPredictedPosAtDistance(fDist, v3PredPos, v3PredVel);
 

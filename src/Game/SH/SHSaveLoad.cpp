@@ -1308,7 +1308,7 @@ void SaveLoadScene::UpdateForAboutToSaveSlide()
 
 /**
  * Offset/Address/Size: 0x224 | 0x800B07AC | size: 0x3DC
- * TODO: 97.94% match - r0/r3 register swap in FORMAT case (4 diffs), likely -inline deferred flag difference
+ * TODO: 99.03% match - scene stack base/current scene register allocation cascade, plus r0/r3 swaps in push-back branches
  */
 void SaveLoadScene::HandleSaveLoadFinishedResult()
 {
@@ -1434,10 +1434,11 @@ void SaveLoadScene::HandleSaveLoadFinishedResult()
             {
                 if (mNextScene != SCENE_LEGAL)
                 {
-                    int oldMode = nlSingleton<GameInfoManager>::s_pInstance->mCurGameAudioSettings.Mode;
+                    eAudioMode currentMode = (eAudioMode)nlSingleton<GameInfoManager>::s_pInstance->mCurGameAudioSettings.Mode;
                     AudioSettings& opts = nlSingleton<GameInfoManager>::s_pInstance->GetAudioOptions();
+                    eAudioMode memCardMode = (eAudioMode)opts.Mode;
                     bool playMusic = false;
-                    if (oldMode == 2 || opts.Mode == 2)
+                    if (currentMode == DOLBY || memCardMode == DOLBY)
                     {
                         playMusic = true;
                     }
@@ -1472,8 +1473,8 @@ void SaveLoadScene::HandleSaveLoadFinishedResult()
 
     case ST_CHECKING:
     {
-        gSaveLoadFinished = false;
         int stackIndex = --gSceneTypeStackDepth;
+        gSaveLoadFinished = false;
         eSaveLoad prevScene = gSceneTypeStack[stackIndex];
         gSaveLoadStarted = false;
         ResetTask::s_resetPaused = (prevScene == 0);
@@ -1514,7 +1515,7 @@ void SaveLoadScene::HandleSaveLoadFinishedResult()
         break;
     }
 
-    SaveLoad().FreeAllCallbackMemory();
+    SaveLoad::FreeAllCallbackMemory();
 }
 
 /**

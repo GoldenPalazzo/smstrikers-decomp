@@ -499,15 +499,14 @@ UpdateResult IChooseSide::UpdateForPause(float, eFEINPUT_PAD* pad)
 
 /**
  * Offset/Address/Size: 0x820 | 0x800C3C64 | size: 0x4BC
- * TODO: 98.75% match - callee-saved register rotation (r29/r31 this, r28/r30 advPtr)
- * across entire function; all 29 diffs are register-only.
+ * TODO: 99.08% match - callee-saved register rotation (r29/r31 this, r28/r30 advPtr)
+ * across entire function; remaining diffs are register-only.
  */
 void IChooseSide::CheckControllers(int disabledSide)
 {
     int newSide;
     int destIndex;
     TLInstance* inst;
-    bool allReady;
 
     for (int i = 0; i < 4; i++)
     {
@@ -579,19 +578,7 @@ void IChooseSide::CheckControllers(int disabledSide)
             TLInstance* readyIndicator = mInstanceTable[16];
             if (readyIndicator != NULL)
             {
-                allReady = false;
-                for (int k = 0; k < 4; k++)
-                {
-                    if (mPlayerReady[k])
-                        allReady = true;
-                    else if (mPlayingSides[k] != -1)
-                    {
-                        allReady = false;
-                        break;
-                    }
-                }
-
-                if ((u8)allReady == 1)
+                if (AllPlayersReady())
                     readyIndicator->m_bVisible = true;
                 else
                     readyIndicator->m_bVisible = false;
@@ -662,19 +649,7 @@ void IChooseSide::CheckControllers(int disabledSide)
             TLInstance* readyIndicator = mInstanceTable[16];
             if (readyIndicator != NULL)
             {
-                allReady = false;
-                for (int k = 0; k < 4; k++)
-                {
-                    if (mPlayerReady[k])
-                        allReady = true;
-                    else if (mPlayingSides[k] != -1)
-                    {
-                        allReady = false;
-                        break;
-                    }
-                }
-
-                if ((u8)allReady == 1)
+                if (AllPlayersReady())
                     readyIndicator->m_bVisible = true;
                 else
                     readyIndicator->m_bVisible = false;

@@ -2418,12 +2418,11 @@ bool cFielder::DoLooseBallContactFromIdle(nlVector3& v3AnimStartPosition, float&
 
 /**
  * Offset/Address/Size: 0x87A8 | 0x80021AE4 | size: 0x270
- * TODO: 99.07% match - f30/f31 register swap for fMaxSimulatedTime/bestTime (MWCC allocator quirk)
+ * TODO: 99.33% match - remaining temporary register differences in contact-offset rotation block
  */
 bool cFielder::DoLooseBallContactFromRun(nlVector3& v3AnimStartPosition, float& fAnimStartTime, nlVector3& v3BallContactPosition, float& fBallContactTime,
     const LooseBallContactAnimInfo* pBestBallContactAnimInfo, const nlVector3& v3PassIntercept)
 {
-    float bestTime;
     float fMaxSimulatedTime;
     float passInterceptY;
     float passInterceptX;
@@ -2446,6 +2445,7 @@ bool cFielder::DoLooseBallContactFromRun(nlVector3& v3AnimStartPosition, float& 
     bestDistToPassInterceptSquared = 0.0f;
     passInterceptY = v3PassIntercept.f.y;
     fMaxSimulatedTime = 2.0f;
+    float bestTime;
 
     while (fSimulatedTime < fMaxSimulatedTime)
     {
@@ -3162,8 +3162,8 @@ void cFielder::DoFindBestShotTarget(nlVector3& v3PositionOut, float& fShotSpeed,
 
 /**
  * Offset/Address/Size: 0x6E28 | 0x80020164 | size: 0x590
- * TODO: 99.87% match - remaining diffs are f1/f2 assignment in spin delta
- * compare and r3/r4 assignment in final game-state event gate.
+ * TODO: 99.94% match - remaining diffs are f1/f2 assignment in spin delta
+ * compare.
  */
 void cFielder::DoRegularShooting()
 {
@@ -3320,9 +3320,7 @@ void cFielder::DoRegularShooting()
     g_pBall->m_pShooter = this;
     SetNoPickUpTime(0.2f);
 
-    bool bCreateEvent = false;
-    if (g_pGame->m_eGameState == GS_GAMEPLAY || g_pGame->m_eGameState == GS_OVERTIME)
-        bCreateEvent = true;
+    bool bCreateEvent = g_pGame->IsGameplayOrOvertime();
 
     if (bCreateEvent)
     {

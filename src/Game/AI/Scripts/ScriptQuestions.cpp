@@ -2925,8 +2925,7 @@ float CloseToSideline(const nlVector3& v3Position, const nlVector2* vDistanceCon
 
 /**
  * Offset/Address/Size: 0x1BD4 | 0x8008065C | size: 0x134
- * TODO: 99.16% match - remaining MWCC callee-saved allocation differs for
- *       fZero/posX/posY and base/offset ordering.
+ * TODO: 99.61% match - sideline base and byte offset use swapped saved registers.
  */
 static inline float NearToSidelineImpl(const nlVector3& v3Position, const nlVector2* pConfidence)
 {
@@ -2938,8 +2937,6 @@ static inline float NearToSidelineImpl(const nlVector3& v3Position, const nlVect
     u32 posU1 = v3Position.as_u32[1];
     u32 posU2 = v3Position.as_u32[2];
     f32 fZero = fScore;
-    f32 posX = v3Position.f.x;
-    f32 posY = v3Position.f.y;
 
     for (; i < 4; i++, offset += 0xC)
     {
@@ -2960,9 +2957,7 @@ static inline float NearToSidelineImpl(const nlVector3& v3Position, const nlVect
             v3Pt.f.x = sideline->fDistance * sideline->vNormal.f.x;
         }
 
-        f32 dx = v3Pt.f.x - posX;
-        f32 dy = v3Pt.f.y - posY;
-        float fDistance = nlSqrt(dx * dx + dy * dy, true);
+        float fDistance = nlSqrt(v3Pt.CalculateDistanceSquared2D(v3Position), true);
         float fNormalized = NormalizeVal(fDistance, *pConfidence);
 
         if (fScore >= fNormalized)

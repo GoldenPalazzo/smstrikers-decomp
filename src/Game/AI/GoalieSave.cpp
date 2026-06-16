@@ -916,8 +916,8 @@ SaveData* GoalieSave::FindBestInList(SaveBlendInfo& blendInfo, nlListContainer<S
 
 /**
  * Offset/Address/Size: 0xF90 | 0x800543B0 | size: 0xA8C
- * TODO: 91.25% match - pClosest/pEdge register allocation and an extra f24
- * save still diverge in edge-selection blending paths.
+ * TODO: 97.19% match - pClosest/pEdge register allocation still diverges in
+ * edge-selection paths.
  */
 SaveData* GoalieSave::GetClosestBlendedPos(SaveBlendInfo& blendInfo, const nlVector3& v3TargetPos, SaveData* pSaveData)
 {
@@ -1087,7 +1087,6 @@ SaveData* GoalieSave::GetClosestBlendedPos(SaveBlendInfo& blendInfo, const nlVec
                     float fLefty = Interpolate(pLeft->mv3SavePos.f.y, pRight->mv3SavePos.f.y, fScaleLeft);
                     float fRighty = Interpolate(pLeftUp->mv3SavePos.f.y, pRightUp->mv3SavePos.f.y, fScaleRight);
                     float fComposite = (v3TargetPos.f.y - fLefty) / (fRighty - fLefty);
-                    blendInfo.mfSaveBlendComposite = fComposite;
 
                     if (fComposite <= 0.001f)
                     {
@@ -1102,6 +1101,7 @@ SaveData* GoalieSave::GetClosestBlendedPos(SaveBlendInfo& blendInfo, const nlVec
                     }
 
                     done = 1;
+                    blendInfo.mfSaveBlendComposite = fComposite;
 
                     float fTimeLeft[5];
                     float fLeftZ;
@@ -1124,10 +1124,7 @@ SaveData* GoalieSave::GetClosestBlendedPos(SaveBlendInfo& blendInfo, const nlVec
                                 float fTime0 = pLeft->mfMilestonePercent[milestone] * pLeft->mfDuration;
                                 float fTime1 = pRight->mfMilestonePercent[milestone] * pRight->mfDuration;
 
-                                if (fTime0 <= 0.001f)
-                                    fTimeLeft[milestone] = 0.0f;
-                                else
-                                    fTimeLeft[milestone] = Interpolate(fTime0, fTime1, fScaleLeft);
+                                fTimeLeft[milestone] = (fTime0 <= 0.001f) ? 0.0f : Interpolate(fTime0, fTime1, fScaleLeft);
                             }
                         }
                         else
@@ -1164,10 +1161,7 @@ SaveData* GoalieSave::GetClosestBlendedPos(SaveBlendInfo& blendInfo, const nlVec
                                 float fTime0 = pLeftUp->mfMilestonePercent[milestone] * pLeftUp->mfDuration;
                                 float fTime1 = pRightUp->mfMilestonePercent[milestone] * pRightUp->mfDuration;
 
-                                if (fTime0 <= 0.001f)
-                                    fTimeRight[milestone] = 0.0f;
-                                else
-                                    fTimeRight[milestone] = Interpolate(fTime0, fTime1, fScaleRight);
+                                fTimeRight[milestone] = (fTime0 <= 0.001f) ? 0.0f : Interpolate(fTime0, fTime1, fScaleRight);
                             }
                         }
                         else
@@ -1194,10 +1188,9 @@ SaveData* GoalieSave::GetClosestBlendedPos(SaveBlendInfo& blendInfo, const nlVec
 
                     for (milestone = 0; milestone < 5; milestone++)
                     {
-                        if (fTimeLeft[milestone] <= 0.001f)
-                            blendInfo.mfMilestoneTime[milestone] = 0.0f;
-                        else
-                            blendInfo.mfMilestoneTime[milestone] = Interpolate(fTimeLeft[milestone], fTimeRight[milestone], fComposite);
+                        float fLeftTime = fTimeLeft[milestone];
+                        float fRightTime = fTimeRight[milestone];
+                        blendInfo.mfMilestoneTime[milestone] = (fLeftTime <= 0.001f) ? 0.0f : Interpolate(fLeftTime, fRightTime, fComposite);
                     }
 
                     if (fComposite <= 0.5f)
@@ -1313,10 +1306,7 @@ SaveData* GoalieSave::GetClosestBlendedPos(SaveBlendInfo& blendInfo, const nlVec
                     float fTime0 = pDown->mfMilestonePercent[milestone] * pDown->mfDuration;
                     float fTime1 = pUp->mfMilestonePercent[milestone] * pUp->mfDuration;
 
-                    if (fTime0 <= 0.001f)
-                        blendInfo.mfMilestoneTime[milestone] = 0.0f;
-                    else
-                        blendInfo.mfMilestoneTime[milestone] = Interpolate(fTime0, fTime1, fPrimary);
+                    blendInfo.mfMilestoneTime[milestone] = (fTime0 <= 0.001f) ? 0.0f : Interpolate(fTime0, fTime1, fPrimary);
                 }
             }
         }
@@ -1330,15 +1320,13 @@ SaveData* GoalieSave::GetClosestBlendedPos(SaveBlendInfo& blendInfo, const nlVec
 
             if (pDown->mpConnectedSaveData[1] == NULL && pDown->mpConnectedSaveData[0] == NULL)
             {
-                float fTargetY = v3TargetPos.f.y;
-                float fCurrentY = pDown->mv3SavePos.f.y;
                 const float fNudge = 0.1f;
 
-                if (fabsf(fCurrentY - fTargetY) < fNudge)
+                if (fabsf(pDown->mv3SavePos.f.y - v3TargetPos.f.y) < fNudge)
                 {
-                    blendInfo.mv3BlendedSavePos.f.y = fTargetY;
+                    blendInfo.mv3BlendedSavePos.f.y = v3TargetPos.f.y;
                 }
-                else if (fCurrentY > fTargetY)
+                else if (pDown->mv3SavePos.f.y > v3TargetPos.f.y)
                 {
                     blendInfo.mv3BlendedSavePos.f.y -= fNudge;
                 }
@@ -1347,14 +1335,11 @@ SaveData* GoalieSave::GetClosestBlendedPos(SaveBlendInfo& blendInfo, const nlVec
                     blendInfo.mv3BlendedSavePos.f.y += fNudge;
                 }
 
-                float fTargetZ = v3TargetPos.f.z;
-                float fCurrentZ = pDown->mv3SavePos.f.z;
-
-                if (fabsf(fCurrentZ - fTargetZ) < fNudge)
+                if (fabsf(pDown->mv3SavePos.f.z - v3TargetPos.f.z) < fNudge)
                 {
-                    blendInfo.mv3BlendedSavePos.f.z = fTargetZ;
+                    blendInfo.mv3BlendedSavePos.f.z = v3TargetPos.f.z;
                 }
-                else if (fCurrentZ > fTargetZ)
+                else if (pDown->mv3SavePos.f.z > v3TargetPos.f.z)
                 {
                     blendInfo.mv3BlendedSavePos.f.z -= fNudge;
                 }

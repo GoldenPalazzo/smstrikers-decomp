@@ -568,7 +568,7 @@ BasicString<char, Detail::TempStringAllocator> ReplayChoreo::CalcAutoReplayScrip
 
 /**
  * Offset/Address/Size: 0x428 | 0x80127A94 | size: 0x270
- * TODO: 95.00% match - remaining diffs are register allocation in highlight init/copy block and scriptName symbol placement.
+ * TODO: 98.76% match - remaining diffs are register allocation in highlight copy block and scriptName symbol placement.
  */
 void ReplayChoreo::StartAutoReplay(ReplayType rt)
 {
@@ -587,8 +587,9 @@ void ReplayChoreo::StartAutoReplay(ReplayType rt)
     if (rt == REPLAY_TYPE_HIGHLIGHT)
     {
         mReplayManager = ReplayManager::Instance();
-        int i = 0;
-        int validReels = i;
+        int i;
+        int validReels = 0;
+        i = validReels;
         mReplay = mReplayManager->mReplay;
 
         while (i < 3)
@@ -613,9 +614,7 @@ void ReplayChoreo::StartAutoReplay(ReplayType rt)
         } while (!mReplay->IsReelValid(mHighlightIndex + 1));
 
         mReplay->PlayReel(mHighlightIndex + 1);
-        int highlightOffset = mHighlightIndex * 0x34;
-        int* highlight = (int*)((char*)this + highlightOffset);
-        mCamera.SetSideOfInterest(*(int*)((char*)highlight + 0x238));
+        mCamera.SetSideOfInterest(mHighlights[mHighlightIndex].mReplayPad);
 
         int* pHighlight = (int*)((char*)this + mHighlightIndex * 0x34 + 0x23C);
         int* pGoal = (int*)((char*)&mGoalScoredData + 0x4);
@@ -640,11 +639,7 @@ void ReplayChoreo::StartAutoReplay(ReplayType rt)
         mReplay->mReelIdx = 0;
     }
 
-    {
-        BasicString<char, Detail::TempStringAllocator> name = CalcAutoReplayScriptName(rt);
-        nlStrNCpy(scriptName, name.c_str(), 0x80);
-    }
-
+    nlStrNCpy(scriptName, CalcAutoReplayScriptName(rt).c_str(), 0x80);
     CallFunction(nlStringHash(scriptName));
 }
 
