@@ -3123,8 +3123,20 @@ FuzzyVariant Fuzzy::GetBestLooseBallAction(cFielder* TheFielder)
         float fNotOpen = 1.0f - Open(TheFielder);
         float fPressured = Pressured(TheFielder);
 
-        fOwnerless = (fOwnerless >= fOnMushrooms) ? fOwnerless : fOnMushrooms;
-        fNotOpen = (fNotOpen >= fOwnerless) ? fNotOpen : fOwnerless;
+        if (fOwnerless >= fOnMushrooms)
+        {
+        }
+        else
+        {
+            fOwnerless = fOnMushrooms;
+        }
+        if (fNotOpen >= fOwnerless)
+        {
+        }
+        else
+        {
+            fNotOpen = fOwnerless;
+        }
         if (fPressured >= fNotOpen)
         {
             fNotOpen = fPressured;
@@ -3184,9 +3196,27 @@ FuzzyVariant Fuzzy::GetBestLooseBallAction(cFielder* TheFielder)
         float fOnScreen2 = OnScreen(otherSBC.mData.pPlayer);
         float fNotFarToBall = 1.0f - FarToBall((cPlayer*)TheFielder);
 
-        fNotSeparating = (fNotSeparating <= fCloseTo) ? fNotSeparating : fCloseTo;
-        fOnScreen2 = (fOnScreen2 <= fNotSeparating) ? fOnScreen2 : fNotSeparating;
-        fNotFarToBall = (fNotFarToBall <= fOnScreen2) ? fNotFarToBall : fOnScreen2;
+        if (fNotSeparating <= fCloseTo)
+        {
+        }
+        else
+        {
+            fNotSeparating = fCloseTo;
+        }
+        if (fOnScreen2 <= fNotSeparating)
+        {
+        }
+        else
+        {
+            fOnScreen2 = fNotSeparating;
+        }
+        if (fNotFarToBall <= fOnScreen2)
+        {
+        }
+        else
+        {
+            fNotFarToBall = fOnScreen2;
+        }
 
         fTrueConfidence = fNotFarToBall;
         fFalseConfidence = 1.0f - fTrueConfidence;
@@ -3267,7 +3297,13 @@ FuzzyVariant Fuzzy::GetBestLooseBallAction(cFielder* TheFielder)
                 {
                     float fRecvPass = ReceivingPassDelayed((cFielder*)otherSBC.mData.pPlayer);
                     float fChasing = ChasingBall(otherSBC.mData.pPlayer);
-                    fChasing = (fChasing >= fRecvPass) ? fChasing : fRecvPass;
+                    if (fChasing >= fRecvPass)
+                    {
+                    }
+                    else
+                    {
+                        fChasing = fRecvPass;
+                    }
 
                     if (fChasing != 0.0f)
                     {
@@ -3528,7 +3564,13 @@ FuzzyVariant Fuzzy::GetBestLooseBallAction(cFielder* TheFielder)
         }
 
         float fDanger = Fuzzy::InDangerDelayed(TheFielder).mData.f;
-        fDanger = (fDanger >= fClosingTo) ? fDanger : fClosingTo;
+        if (fDanger >= fClosingTo)
+        {
+        }
+        else
+        {
+            fDanger = fClosingTo;
+        }
 
         float fNotCloseToPass = 1.0f - CloseTo(bestPassTargetFielder.mData.pPlayer, (cPlayer*)TheFielder);
         float fGreater2 = FGREATER(1.0f - fNotCloseToPass, bestPassTargetFielder.SelectionChance);

@@ -771,8 +771,6 @@ void CrowdMood::ReadConfig()
     char IniTag[256];
     char* TagEnd;
     unsigned long MaxTagLen;
-    const char* HeckleDelayTag = "HeckleDelay";
-    const char* HeckleDelayRangeTag = "HeckleDelayRange";
     CROWD_MOOD mood = CM_Positive;
 
     for (; mood < CM_END; Increment(mood))
@@ -781,11 +779,9 @@ void CrowdMood::ReadConfig()
         nlStrNCpy(IniTag, MoodNames[mood], 0x100);
 
         TagEnd = IniTag + nlStrLen(IniTag);
+        MaxTagLen = 0xFF - (TagEnd - IniTag);
         *TagEnd = '_';
-        TagEnd = TagEnd + 1;
-        MaxTagLen = 0x100 - (TagEnd - IniTag);
-
-        nlStrNCpy(TagEnd, "NeutralVol", MaxTagLen);
+        nlStrNCpy(++TagEnd, "NeutralVol", MaxTagLen);
         MoodDef.NeutralVol = GetConfigFloat(config, IniTag, 0.0f) / 100.0f;
 
         nlStrNCpy(TagEnd, "NegativeVol", MaxTagLen);
@@ -809,25 +805,13 @@ void CrowdMood::ReadConfig()
                 config.Set(IniTag, "none");
                 sampleName = "none";
             }
-            else if (tvp.type == _BOOL)
-            {
-                sampleName = LexicalCast<const char*, bool>(tvp.value.b);
-            }
-            else if (tvp.type == _INT)
-            {
-                sampleName = LexicalCast<const char*, int>(tvp.value.i);
-            }
-            else if (tvp.type == _FLOAT)
-            {
-                sampleName = LexicalCast<const char*, float>(tvp.value.f);
-            }
-            else if (tvp.type == _STRING)
-            {
-                sampleName = LexicalCast<const char*, const char*>(tvp.value.s);
-            }
             else
             {
-                sampleName = NULL;
+                sampleName = (tvp.type == _BOOL)   ? LexicalCast<const char*, bool>(tvp.value.b)
+                           : (tvp.type == _INT)    ? LexicalCast<const char*, int>(tvp.value.i)
+                           : (tvp.type == _FLOAT)  ? LexicalCast<const char*, float>(tvp.value.f)
+                           : (tvp.type == _STRING) ? LexicalCast<const char*, const char*>(tvp.value.s)
+                                                   : NULL;
             }
             nlStrNCpy(settings.SaturationSampleNames[mood], sampleName, 0x100);
         }
@@ -850,10 +834,10 @@ void CrowdMood::ReadConfig()
         nlStrNCpy(TagEnd, "HeckleVolumeRange", MaxTagLen);
         MoodDef.Heckle.VolumeRange = GetConfigFloat(config, IniTag, 0.0f) / 100.0f;
 
-        nlStrNCpy(TagEnd, HeckleDelayTag, MaxTagLen);
+        nlStrNCpy(TagEnd, "HeckleDelay", MaxTagLen);
         MoodDef.Heckle.Delay = GetConfigFloat(config, IniTag, 0.0f) / 100.0f;
 
-        nlStrNCpy(TagEnd, HeckleDelayRangeTag, MaxTagLen);
+        nlStrNCpy(TagEnd, "HeckleDelayRange", MaxTagLen);
         MoodDef.Heckle.DelayRange = GetConfigFloat(config, IniTag, 0.0f) / 100.0f;
 
         MoodDef.Chant.Delay /= 10.0;
@@ -882,25 +866,13 @@ void CrowdMood::ReadConfig()
             config.Set("NeutralSample", "none");
             sampleName = "none";
         }
-        else if (tvp.type == _BOOL)
-        {
-            sampleName = LexicalCast<const char*, bool>(tvp.value.b);
-        }
-        else if (tvp.type == _INT)
-        {
-            sampleName = LexicalCast<const char*, int>(tvp.value.i);
-        }
-        else if (tvp.type == _FLOAT)
-        {
-            sampleName = LexicalCast<const char*, float>(tvp.value.f);
-        }
-        else if (tvp.type == _STRING)
-        {
-            sampleName = LexicalCast<const char*, const char*>(tvp.value.s);
-        }
         else
         {
-            sampleName = NULL;
+            sampleName = (tvp.type == _BOOL)   ? LexicalCast<const char*, bool>(tvp.value.b)
+                       : (tvp.type == _INT)    ? LexicalCast<const char*, int>(tvp.value.i)
+                       : (tvp.type == _FLOAT)  ? LexicalCast<const char*, float>(tvp.value.f)
+                       : (tvp.type == _STRING) ? LexicalCast<const char*, const char*>(tvp.value.s)
+                                               : NULL;
         }
         nlStrNCpy(settings.NeutralSampleName, sampleName, 0x100);
     }
@@ -913,25 +885,13 @@ void CrowdMood::ReadConfig()
             config.Set("PositiveSample", "none");
             sampleName = "none";
         }
-        else if (tvp.type == _BOOL)
-        {
-            sampleName = LexicalCast<const char*, bool>(tvp.value.b);
-        }
-        else if (tvp.type == _INT)
-        {
-            sampleName = LexicalCast<const char*, int>(tvp.value.i);
-        }
-        else if (tvp.type == _FLOAT)
-        {
-            sampleName = LexicalCast<const char*, float>(tvp.value.f);
-        }
-        else if (tvp.type == _STRING)
-        {
-            sampleName = LexicalCast<const char*, const char*>(tvp.value.s);
-        }
         else
         {
-            sampleName = NULL;
+            sampleName = (tvp.type == _BOOL)   ? LexicalCast<const char*, bool>(tvp.value.b)
+                       : (tvp.type == _INT)    ? LexicalCast<const char*, int>(tvp.value.i)
+                       : (tvp.type == _FLOAT)  ? LexicalCast<const char*, float>(tvp.value.f)
+                       : (tvp.type == _STRING) ? LexicalCast<const char*, const char*>(tvp.value.s)
+                                               : NULL;
         }
         nlStrNCpy(settings.PositiveSampleName, sampleName, 0x100);
     }
@@ -944,121 +904,87 @@ void CrowdMood::ReadConfig()
             config.Set("NegativeSample", "none");
             sampleName = "none";
         }
-        else if (tvp.type == _BOOL)
-        {
-            sampleName = LexicalCast<const char*, bool>(tvp.value.b);
-        }
-        else if (tvp.type == _INT)
-        {
-            sampleName = LexicalCast<const char*, int>(tvp.value.i);
-        }
-        else if (tvp.type == _FLOAT)
-        {
-            sampleName = LexicalCast<const char*, float>(tvp.value.f);
-        }
-        else if (tvp.type == _STRING)
-        {
-            sampleName = LexicalCast<const char*, const char*>(tvp.value.s);
-        }
         else
         {
-            sampleName = NULL;
+            sampleName = (tvp.type == _BOOL)   ? LexicalCast<const char*, bool>(tvp.value.b)
+                       : (tvp.type == _INT)    ? LexicalCast<const char*, int>(tvp.value.i)
+                       : (tvp.type == _FLOAT)  ? LexicalCast<const char*, float>(tvp.value.f)
+                       : (tvp.type == _STRING) ? LexicalCast<const char*, const char*>(tvp.value.s)
+                                               : NULL;
         }
         nlStrNCpy(settings.NegativeSampleName, sampleName, 0x100);
     }
 
-    nlStrNCpy(IniTag, "RandomChant", 0x100);
-    TagEnd = IniTag + nlStrLen(IniTag);
-
-    RANDOM_STREAMS* pStreams = &g_RandomChants;
-    pStreams->Count = 0;
-
-    while (pStreams->Count <= 0x20)
     {
-        nlSNPrintf(TagEnd, 4, "%d", pStreams->Count + 1);
-
+        nlStrNCpy(IniTag, "RandomChant", 0x100);
         const char* sampleName;
-        TagValuePair& tvp = config.FindTvp(IniTag);
-        if (tvp.tag == NULL)
-        {
-            config.Set(IniTag, "none");
-            sampleName = "none";
-        }
-        else if (tvp.type == _BOOL)
-        {
-            sampleName = LexicalCast<const char*, bool>(tvp.value.b);
-        }
-        else if (tvp.type == _INT)
-        {
-            sampleName = LexicalCast<const char*, int>(tvp.value.i);
-        }
-        else if (tvp.type == _FLOAT)
-        {
-            sampleName = LexicalCast<const char*, float>(tvp.value.f);
-        }
-        else if (tvp.type == _STRING)
-        {
-            sampleName = LexicalCast<const char*, const char*>(tvp.value.s);
-        }
-        else
-        {
-            sampleName = NULL;
-        }
+        char* tagEnd = IniTag + nlStrLen(IniTag);
+        RANDOM_STREAMS* pStreams = &g_RandomChants;
+        pStreams->Count = 0;
 
-        if (nlStrNCmp<char>(sampleName, "none", 4) == 0)
+        while (pStreams->Count <= 0x20)
         {
-            break;
-        }
+            nlSNPrintf(tagEnd, 4, "%d", pStreams->Count + 1);
 
-        nlStrNCpy(pStreams->Files[pStreams->Count], sampleName, 0x100);
-        pStreams->Count++;
+            TagValuePair& tvp = config.FindTvp(IniTag);
+            if (tvp.tag == NULL)
+            {
+                config.Set(IniTag, "none");
+                sampleName = "none";
+            }
+            else
+            {
+                sampleName = (tvp.type == _BOOL)   ? LexicalCast<const char*, bool>(tvp.value.b)
+                           : (tvp.type == _INT)    ? LexicalCast<const char*, int>(tvp.value.i)
+                           : (tvp.type == _FLOAT)  ? LexicalCast<const char*, float>(tvp.value.f)
+                           : (tvp.type == _STRING) ? LexicalCast<const char*, const char*>(tvp.value.s)
+                                                   : NULL;
+            }
+
+            if (nlStrNCmp<char>(sampleName, "none", 4) == 0)
+            {
+                break;
+            }
+
+            nlStrNCpy(pStreams->Files[pStreams->Count], sampleName, 0x100);
+            pStreams->Count++;
+        }
     }
 
-    nlStrNCpy(IniTag, "RandomHeckle", 0x100);
-    TagEnd = IniTag + nlStrLen(IniTag);
-
-    pStreams = &g_RandomHeckles;
-    pStreams->Count = 0;
-
-    while (pStreams->Count <= 0x20)
     {
-        nlSNPrintf(TagEnd, 4, "%d", pStreams->Count + 1);
-
+        nlStrNCpy(IniTag, "RandomHeckle", 0x100);
         const char* sampleName;
-        TagValuePair& tvp = config.FindTvp(IniTag);
-        if (tvp.tag == NULL)
-        {
-            config.Set(IniTag, "none");
-            sampleName = "none";
-        }
-        else if (tvp.type == _BOOL)
-        {
-            sampleName = LexicalCast<const char*, bool>(tvp.value.b);
-        }
-        else if (tvp.type == _INT)
-        {
-            sampleName = LexicalCast<const char*, int>(tvp.value.i);
-        }
-        else if (tvp.type == _FLOAT)
-        {
-            sampleName = LexicalCast<const char*, float>(tvp.value.f);
-        }
-        else if (tvp.type == _STRING)
-        {
-            sampleName = LexicalCast<const char*, const char*>(tvp.value.s);
-        }
-        else
-        {
-            sampleName = NULL;
-        }
+        char* tagEnd = IniTag + nlStrLen(IniTag);
+        RANDOM_STREAMS* pStreams = &g_RandomHeckles;
+        pStreams->Count = 0;
 
-        if (nlStrNCmp<char>(sampleName, "none", 4) == 0)
+        while (pStreams->Count <= 0x20)
         {
-            break;
-        }
+            nlSNPrintf(tagEnd, 4, "%d", pStreams->Count + 1);
 
-        nlStrNCpy(pStreams->Files[pStreams->Count], sampleName, 0x100);
-        pStreams->Count++;
+            TagValuePair& tvp = config.FindTvp(IniTag);
+            if (tvp.tag == NULL)
+            {
+                config.Set(IniTag, "none");
+                sampleName = "none";
+            }
+            else
+            {
+                sampleName = (tvp.type == _BOOL)   ? LexicalCast<const char*, bool>(tvp.value.b)
+                           : (tvp.type == _INT)    ? LexicalCast<const char*, int>(tvp.value.i)
+                           : (tvp.type == _FLOAT)  ? LexicalCast<const char*, float>(tvp.value.f)
+                           : (tvp.type == _STRING) ? LexicalCast<const char*, const char*>(tvp.value.s)
+                                                   : NULL;
+            }
+
+            if (nlStrNCmp<char>(sampleName, "none", 4) == 0)
+            {
+                break;
+            }
+
+            nlStrNCpy(pStreams->Files[pStreams->Count], sampleName, 0x100);
+            pStreams->Count++;
+        }
     }
 
     settings.NoStreaming = GetConfigBool(Config::Global(), "no_stream", false);

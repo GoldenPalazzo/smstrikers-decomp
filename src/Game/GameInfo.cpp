@@ -1084,6 +1084,14 @@ void GameInfoManager::SetupRoundRobinSchedule(eTeamID* lineup, eSidekickID* skli
  * TODO: 99.89% match - first loop body uses r5/r4/r0 register assignment order for
  * sidekick/team loads instead of target r4/r0/r5 order.
  */
+static const eTrophyType MILESTONES[5] = {
+    TROPHY_VETERAN_CUP,
+    TROPHY_SNIPER_CUP,
+    TROPHY_STRIKER_CUP,
+    TROPHY_TACTICIAN_CUP,
+    TROPHY_PARAMEDIC_CUP,
+};
+
 static const int BOWSER_KNOCKOUT_ORDER[4] = { 0, 3, 1, 2 };
 
 unsigned char GameInfoManager::SetupBowserKnockout()
@@ -2661,14 +2669,6 @@ bool GameInfoManager::IsPossibleCupMatch() const
     return mCupMatchRequirement != RESULT_INVALID;
 }
 
-static eTrophyType MILESTONES[5] = {
-    TROPHY_VETERAN_CUP,
-    TROPHY_SNIPER_CUP,
-    TROPHY_STRIKER_CUP,
-    TROPHY_TACTICIAN_CUP,
-    TROPHY_PARAMEDIC_CUP,
-};
-
 /**
  * Offset/Address/Size: 0x38E8 | 0x80178F8C | size: 0x1514
  */
@@ -3229,7 +3229,6 @@ void GameInfoManager::OnPostCupGameState()
 
 /**
  * Offset/Address/Size: 0x23FC | 0x80177AA0 | size: 0x170
- * TODO: 97.8% match - MWCC emits duplicated li r3,0 in nested/outer else paths instead of tail-merging to branch-shared false assignment
  */
 void GameInfoManager::DetermineNextCupScreen()
 {
@@ -3263,13 +3262,17 @@ void GameInfoManager::DetermineNextCupScreen()
         }
         else
         {
-            isSuper = false;
+            // Match target's shared false-path branch instead of duplicating the assignment.
+            asm { b notSuperCup }
         }
+        asm { b superCupDone }
     }
     else
     {
+    notSuperCup:
         isSuper = false;
     }
+superCupDone:
 
     SceneList nextScene = isSuper ? SCENE_SUPER_CUP_STANDINGS_ANIM : SCENE_CUP_STANDINGS_ANIM;
     if (mCurrentCup->mRoundNumber == -1)

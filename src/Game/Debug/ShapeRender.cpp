@@ -651,8 +651,8 @@ void ShapeRender::Initialize()
         {
             int base = i * 4;
             nlVector3* faceVerts[4];
-            nlVector3* faceNorms[4];
             nlVector2* faceUVs[4];
+            nlVector3* faceNorms[4];
 
             faceVerts[0] = &data_vert[ind_vert[base + 0]];
             faceNorms[0] = &data_norm[base + 0];

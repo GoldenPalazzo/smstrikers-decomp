@@ -65,7 +65,7 @@ bool PhysicsGoalie::SweepTestForBallContact(const nlVector3& ballPrevPosition, c
 
 /**
  * Offset/Address/Size: 0x4A8 | 0x80139F28 | size: 0x2D8
- * TODO: 98.01% match - list entry and contact count registers still differ.
+ * TODO: 96.88% match - list entry and contact count registers still differ.
  */
 bool PhysicsGoalie::SweepTestEveryBone(float ballRadius, const nlVector3& ballPrevPosition, const nlVector3& ballCurrentPosition, nlVector3& outContactNormal, nlVector3& outContactPos) const
 {
@@ -106,10 +106,7 @@ bool PhysicsGoalie::SweepTestEveryBone(float ballRadius, const nlVector3& ballPr
 
             float oneMinusSweepResult = 1.0f - sweepResult;
 
-            nlVec3Set(outContactPos,
-                (oneMinusSweepResult * ballPrevPosition.f.x) + (sweepResult * ballCurrentPosition.f.x),
-                (oneMinusSweepResult * ballPrevPosition.f.y) + (sweepResult * ballCurrentPosition.f.y),
-                (oneMinusSweepResult * ballPrevPosition.f.z) + (sweepResult * ballCurrentPosition.f.z));
+            nlVec3WeightedSum(outContactPos, oneMinusSweepResult, ballPrevPosition, sweepResult, ballCurrentPosition);
 
             nlVec3Set(outContactNormal,
                 outContactPos.f.x - ((oneMinusSweepResult * prevBonePos.f.x) + (sweepResult * currentBonePos.f.x)),
@@ -135,13 +132,8 @@ bool PhysicsGoalie::SweepTestEveryBone(float ballRadius, const nlVector3& ballPr
         float oneMinusSweepResult = 1.0f - smallestSweepResult;
         float invHitCount = 1.0f / (float)hitCount;
 
-        outContactNormal.f.x = invHitCount * accumulatedNormal.f.x;
-        outContactNormal.f.y = invHitCount * accumulatedNormal.f.y;
-        outContactNormal.f.z = invHitCount * accumulatedNormal.f.z;
-
-        outContactPos.f.x = (oneMinusSweepResult * ballPrevPosition.f.x) + (smallestSweepResult * ballCurrentPosition.f.x);
-        outContactPos.f.y = (oneMinusSweepResult * ballPrevPosition.f.y) + (smallestSweepResult * ballCurrentPosition.f.y);
-        outContactPos.f.z = (oneMinusSweepResult * ballPrevPosition.f.z) + (smallestSweepResult * ballCurrentPosition.f.z);
+        nlVec3Scale(outContactNormal, accumulatedNormal, invHitCount);
+        nlVec3WeightedSum(outContactPos, oneMinusSweepResult, ballPrevPosition, smallestSweepResult, ballCurrentPosition);
     }
 
     return didHitBone;

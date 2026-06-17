@@ -264,7 +264,7 @@ static inline void InitBasicStringFromCStr(BasicString<char, Detail::TempStringA
         data->mCapacity = 0;
 
         const char* p = src;
-        while ((signed char)*p++ != 0)
+        while (*p++ != 0)
         {
             data->mSize++;
         }
@@ -316,7 +316,7 @@ void ReplayChoreo::LoadScript()
                     BasicString<char, Detail::TempStringAllocator> name;
                     {
                         BasicString<char, Detail::TempStringAllocator> format;
-                        InitBasicStringFromCStr(format, "{0}_{1}_{2}_{3}");
+                        InitBasicStringFromCStr(format, (char*)"{0}_{1}_{2}_{3}");
 
                         BasicString<char, Detail::TempStringAllocator> temp;
                         void* nameData;

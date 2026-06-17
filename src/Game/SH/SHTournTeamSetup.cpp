@@ -1373,7 +1373,7 @@ void TournTeamSetupSceneV2::UpdateRow(int onScreenRow)
     if (onScreenRow == (mCurrentRow - mRowOffset))
     {
         pComp->SetActiveSlide("IN");
-        mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[ON_HIGHLIGHT](mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mType);
+        mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].ApplyAction(ON_HIGHLIGHT);
         arrow1->m_bVisible = true;
         arrow2->m_bVisible = true;
     }

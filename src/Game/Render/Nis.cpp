@@ -219,8 +219,8 @@ void Nis::UpdateTriggers(float oldTime, float newTime, float duration)
 
 /**
  * Offset/Address/Size: 0xF80 | 0x8012C390 | size: 0x2F0
- * TODO: 96.01% match - remaining diffs are MWCC register allocation and literal
- * symbol selection (`this`/camera/temp register rotation and local constant labels).
+ * TODO: 97.37% match - remaining diff is the r30/r31 register swap in the
+ * inlined BasicString literal construction.
  */
 void Nis::SelectCamera(cAnimCamera& camera, int cameraIndex)
 {
@@ -230,7 +230,7 @@ void Nis::SelectCamera(cAnimCamera& camera, int cameraIndex)
     }
 
     int index = cameraIndex % mNumCameras;
-    BasicString<char, Detail::TempStringAllocator> cameraName = Format(BasicString<char, Detail::TempStringAllocator>("{0}_{1}"), mHeader->name, index);
+    BasicString<char, Detail::TempStringAllocator> cameraName = Format(BasicString<char, Detail::TempStringAllocator>(((void)0, "{0}_{1}")), mHeader->name, index);
 
     camera.SelectCameraAnimation(cameraName.c_str());
 

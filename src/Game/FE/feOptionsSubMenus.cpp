@@ -2195,8 +2195,8 @@ OptionsCheatsMenu::~OptionsCheatsMenu()
 
 /**
  * Offset/Address/Size: 0x47AC | 0x800B97F0 | size: 0x720
- * TODO: 59.06% match - prologue register/stack layout and constructor store ordering differ,
- * callback setup and hash temporary stack offsets are still mismatched.
+ * TODO: 97.55% match - first menu item callback setup register allocation and
+ * loop temporaries still differ.
  */
 OptionsCheatsMenu::OptionsCheatsMenu(FEPresentation* pres, ButtonComponent::ButtonState btnState, CheatSettings& settings)
     : OptionsSubMenu(pres, btnState)
@@ -2219,8 +2219,8 @@ OptionsCheatsMenu::OptionsCheatsMenu(FEPresentation* pres, ButtonComponent::Butt
     }
 
     TLSlide* currentSlide = pres->m_currentSlide;
-    void (*closeItem)(TLComponentInstance*) = SingleHighlite::CloseItem;
     void (*openItem)(TLComponentInstance*) = SingleHighlite::OpenItem;
+    void (*closeItem)(TLComponentInstance*) = SingleHighlite::CloseItem;
 
     for (i = 0; i < 5; i++)
     {
@@ -2254,7 +2254,7 @@ OptionsCheatsMenu::OptionsCheatsMenu(FEPresentation* pres, ButtonComponent::Butt
             SingleHighlite::TempDisableSound();
         }
 
-        menuItem->mCallbacks[(i == 0) ? 1 : 2](menuItem->mType);
+        menuItem->ApplyAction((i == 0) ? ON_HIGHLIGHT : ON_UNHIGHLIGHT);
 
         mSlideMenuLists[i] = NULL;
     }
@@ -2273,25 +2273,29 @@ OptionsCheatsMenu::OptionsCheatsMenu(FEPresentation* pres, ButtonComponent::Butt
         currentSlide,
         InlineHasher(nlStringLowerHash("Layer")),
         InlineHasher(nlStringLowerHash("ON/OFF3")));
-    BuildLockableSubMenuList(1, compinstance, pres, gm->IsGlassJawGoalieUnlocked(), mSettings.mStunnedGoalies);
+    bool stunnedGoalies = mSettings.mStunnedGoalies;
+    BuildLockableSubMenuList(1, compinstance, pres, gm->IsGlassJawGoalieUnlocked(), stunnedGoalies);
 
     compinstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
         currentSlide,
         InlineHasher(nlStringLowerHash("Layer")),
         InlineHasher(nlStringLowerHash("ON/OFF4")));
-    BuildLockableSubMenuList(2, compinstance, pres, gm->IsUnlimtedPowerupsUnlocked(), mSettings.mInfinitePowerups);
+    bool infinitePowerups = mSettings.mInfinitePowerups;
+    BuildLockableSubMenuList(2, compinstance, pres, gm->IsUnlimtedPowerupsUnlocked(), infinitePowerups);
 
     compinstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
         currentSlide,
         InlineHasher(nlStringLowerHash("Layer")),
         InlineHasher(nlStringLowerHash("ON/OFF5")));
-    BuildLockableSubMenuList(3, compinstance, pres, gm->IsTiltCheatUnlocked(), mSettings.mCheatTBD1Enabled);
+    bool cheatTBD1 = mSettings.mCheatTBD1Enabled;
+    BuildLockableSubMenuList(3, compinstance, pres, gm->IsTiltCheatUnlocked(), cheatTBD1);
 
     compinstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
         currentSlide,
         InlineHasher(nlStringLowerHash("Layer")),
         InlineHasher(nlStringLowerHash("ON/OFF6")));
-    BuildLockableSubMenuList(4, compinstance, pres, gm->IsAllSTSCheatUnlocked(), mSettings.mCheatTBD2Enabled);
+    bool cheatTBD2 = mSettings.mCheatTBD2Enabled;
+    BuildLockableSubMenuList(4, compinstance, pres, gm->IsAllSTSCheatUnlocked(), cheatTBD2);
 
     memcpy(&mBackupSettings, &mSettings, sizeof(CheatSettings));
     mSettingsCRC = nlChecksum32(&mBackupSettings, sizeof(CheatSettings));

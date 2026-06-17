@@ -916,12 +916,12 @@ SaveData* GoalieSave::FindBestInList(SaveBlendInfo& blendInfo, nlListContainer<S
 
 /**
  * Offset/Address/Size: 0xF90 | 0x800543B0 | size: 0xA8C
- * TODO: 97.19% match - pClosest/pEdge register allocation still diverges in
+ * TODO: 97.55% match - pClosest/pEdge register allocation still diverges in
  * edge-selection paths.
  */
-SaveData* GoalieSave::GetClosestBlendedPos(SaveBlendInfo& blendInfo, const nlVector3& v3TargetPos, SaveData* pSaveData)
+SaveData* GoalieSave::GetClosestBlendedPos(SaveBlendInfo& blendInfo, const nlVector3& v3TargetPos, SaveData* pClosest)
 {
-    SaveData* pClosest = pSaveData;
+    SaveData* const pSaveData = pClosest;
     SaveData* pEdge = NULL;
 
     SaveData* pLeft = NULL;
@@ -1213,10 +1213,11 @@ SaveData* GoalieSave::GetClosestBlendedPos(SaveBlendInfo& blendInfo, const nlVec
         else
         {
             SaveData* pLast;
-            while (pSaveData != NULL)
+            SaveData* pCurEdge = pSaveData;
+            while (pCurEdge != NULL)
             {
-                pLast = pSaveData;
-                pSaveData = pSaveData->mpConnectedSaveData[3];
+                pLast = pCurEdge;
+                pCurEdge = pCurEdge->mpConnectedSaveData[3];
             }
             pEdge = pLast;
         }
@@ -1224,10 +1225,11 @@ SaveData* GoalieSave::GetClosestBlendedPos(SaveBlendInfo& blendInfo, const nlVec
     else
     {
         SaveData* pLast;
-        while (pSaveData != NULL)
+        SaveData* pCurEdge = pSaveData;
+        while (pCurEdge != NULL)
         {
-            pLast = pSaveData;
-            pSaveData = pSaveData->mpConnectedSaveData[2];
+            pLast = pCurEdge;
+            pCurEdge = pCurEdge->mpConnectedSaveData[2];
         }
         pEdge = pLast;
     }

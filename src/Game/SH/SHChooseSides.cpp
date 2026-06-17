@@ -907,7 +907,6 @@ static inline eDifficultyID GetDifficulty1(GameInfoManager* gameInfo)
 
 /**
  * Offset/Address/Size: 0x0 | 0x800C4BC0 | size: 0x350
- * TODO: 99.58% match - r4/r5 register swap for SetDifficulty arguments
  */
 void SHChooseSides2::Update(float fDeltaT)
 {
@@ -935,8 +934,8 @@ void SHChooseSides2::Update(float fDeltaT)
                 g_pTeams[1]->UpdateControllers();
                 nlSingleton<GameInfoManager>::s_pInstance->ApplyDifficultySettings();
                 g_pGame->SetDifficulty(
-                    nlSingleton<GameInfoManager>::s_pInstance->mCurrentDifficulty[0],
-                    nlSingleton<GameInfoManager>::s_pInstance->mCurrentDifficulty[1],
+                    GetDifficulty0(nlSingleton<GameInfoManager>::s_pInstance),
+                    GetDifficulty1(nlSingleton<GameInfoManager>::s_pInstance),
                     (eDifficultyID)3);
             }
 
@@ -1004,9 +1003,10 @@ void SHChooseSides2::Update(float fDeltaT)
 
         if (currentSlide->m_time < (currentSlide->m_start + currentSlide->m_duration))
         {
+            TLInstance* instance;
             for (int i = 0; i < 4; i++)
             {
-                TLInstance* instance = mChooseSide.mInstanceTable[i];
+                instance = mChooseSide.mInstanceTable[i];
 
                 if (g_pFEInput->IsConnected((eFEINPUT_PAD)i))
                 {

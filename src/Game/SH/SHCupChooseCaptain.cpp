@@ -10,6 +10,21 @@ extern nlLocalization* g_pLocalization;
 extern unsigned short LocalizationTableNotFound[];
 extern unsigned short MissingLocString[];
 
+static inline const unsigned short* LookupCupCaptainLoc(unsigned long hash)
+{
+    nlLocalization* loc = g_pLocalization;
+    if (loc->m_LookupTable == 0)
+    {
+        return LocalizationTableNotFound;
+    }
+    nlLocalization::StringLookup* entry = nlBSearch(hash, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
+    if (entry != 0)
+    {
+        return loc->m_FirstString + entry->StringOffset;
+    }
+    return MissingLocString;
+}
+
 static unsigned long CAPTAIN_DESCRIPTIONS[] = {
     0xFF68ABBA,
     0xE2D37C19,
@@ -295,49 +310,8 @@ void CupChooseCaptainSceneV2::SceneCreated()
     {
         GameInfoManager* pGameInfo = nlSingleton<GameInfoManager>::s_pInstance;
         GameInfoManager::eGameModes gameMode = pGameInfo->mCurrentMode;
-        unsigned long _hash = 0xB862AB94;
-        nlLocalization* _loc = g_pLocalization;
-
-        const unsigned short* teamStr;
-        if (_loc->m_LookupTable == 0)
-        {
-            teamStr = LocalizationTableNotFound;
-        }
-        else
-        {
-            nlLocalization::StringLookup* _entry = nlBSearch(_hash, _loc->m_LookupTable, (int)_loc->m_pFile->StringCount);
-            if (_entry != 0)
-            {
-                teamStr = _loc->m_FirstString + _entry->StringOffset;
-            }
-            else
-            {
-                teamStr = MissingLocString;
-            }
-        }
-
-        BasicString<unsigned short, Detail::TempStringAllocator> teamNameBS(teamStr);
-
-        unsigned long modeHash = GetLOCModeName(gameMode);
-        const unsigned short* modeStr;
-        _loc = g_pLocalization;
-        if (_loc->m_LookupTable == 0)
-        {
-            modeStr = LocalizationTableNotFound;
-        }
-        else
-        {
-            nlLocalization::StringLookup* _entry = nlBSearch(modeHash, _loc->m_LookupTable, (int)_loc->m_pFile->StringCount);
-            if (_entry != 0)
-            {
-                modeStr = _loc->m_FirstString + _entry->StringOffset;
-            }
-            else
-            {
-                modeStr = MissingLocString;
-            }
-        }
-
+        BasicString<unsigned short, Detail::TempStringAllocator> teamNameBS(LookupCupCaptainLoc(0xB862AB94));
+        const unsigned short* modeStr = LookupCupCaptainLoc(GetLOCModeName(gameMode));
         mCupStartString = Format(teamNameBS, modeStr);
     }
 

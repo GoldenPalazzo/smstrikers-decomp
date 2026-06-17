@@ -455,18 +455,14 @@ BasicString<CharT, Allocator> BasicString<CharT, Allocator>::Trim(const CharT* c
 template <typename CharT, typename Allocator>
 void BasicString<CharT, Allocator>::insert(CharT* at, const CharT* begin, const CharT* end)
 {
-    BasicString<CharT, Allocator>* self = this;
-    const CharT* from = begin;
-    const CharT* to = end;
-
     (*this)[0];
-    int offset = at - (self->m_data ? self->m_data->mData : (CharT*)0);
+    int offset = at - (m_data ? m_data->mData : (CharT*)0);
     (*this)[0];
     (*this)[0];
 
-    BasicStringData<CharT>* data = self->m_data;
+    BasicStringData<CharT>* data = m_data;
     CharT* dataPtr = data ? data->mData : (CharT*)0;
-    int size = to - from;
+    int size = end - begin;
     int insertPos = (dataPtr + offset) - data->mData;
     int newSize = data->mSize + size;
 
@@ -485,9 +481,14 @@ void BasicString<CharT, Allocator>::insert(CharT* at, const CharT* begin, const 
         {
             *dst++ = data->mData[i];
         }
+        int oldSize = data->mSize;
         CharT* oldBuf = data->mData;
-        data->mData = newVec.mData;
+        int oldCapacity = data->mCapacity;
+        data->mSize = oldSize;
         data->mCapacity = newVec.mCapacity;
+        data->mData = newVec.mData;
+        newVec.mSize = oldSize;
+        newVec.mCapacity = oldCapacity;
         newVec.mData = oldBuf;
     }
 
@@ -498,10 +499,10 @@ void BasicString<CharT, Allocator>::insert(CharT* at, const CharT* begin, const 
         *(t + size) = *t;
         t--;
     }
-    while (from != to)
+    while (begin != end)
     {
-        *pos = *from;
-        from++;
+        *pos = *begin;
+        begin++;
         pos++;
     }
     data->mSize += size;

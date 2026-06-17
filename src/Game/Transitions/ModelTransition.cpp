@@ -791,9 +791,51 @@ static inline void LoadModelTransition(ModeledScreenTransition* self, char* pTok
     }
 }
 
+static inline void FixupModelTransition(ModeledScreenTransition* self)
+{
+    u64 savedTextureState = glGetCurrentTextureState();
+    u32 savedRasterState = glGetCurrentRasterState();
+
+    for (u32 i = 0; i < self->m_nModels; i++)
+    {
+        if (self->m_pLight != NULL)
+        {
+            self->m_pLight->AttachToModel(&self->m_pModels[i]);
+        }
+
+        for (u32 j = 0; j < self->m_pModels[i].numPackets; j++)
+        {
+            glSetCurrentTextureState(self->m_pModels[i].packets[j].state.texturestate);
+            glSetTextureState(GLTS_DiffuseWrap, 3);
+
+            glSetCurrentRasterState(self->m_pModels[i].packets[j].state.raster);
+            glSetRasterState(GLS_AlphaBlend, 0);
+            glSetRasterState(GLS_Culling, 0);
+            glSetRasterState(GLS_DepthTest, 1);
+            glSetRasterState(GLS_DepthWrite, 1);
+
+            glSetCurrentProgram(self->m_nProgram);
+
+            if (self->m_nTexture != 0xFFFFFFFF)
+            {
+                self->m_pModels[i].packets[j].state.texture[0] = self->m_nTexture;
+            }
+
+            self->m_pModels[i].packets[j].state.raster = glHandleizeRasterState();
+
+            u64 texHandle = glHandleizeTextureState();
+            self->m_pModels[i].packets[j].state.texturestate = texHandle;
+
+            self->m_pModels[i].packets[j].state.program = self->m_nProgram;
+        }
+    }
+
+    glSetCurrentTextureState(savedTextureState);
+    glSetCurrentRasterState(savedRasterState);
+}
+
 /**
  * Offset/Address/Size: 0x44 | 0x80202108 | size: 0x6C8
- * TODO: 99.34% match - remaining name-token register allocation and final model/packet loop register rotation.
  */
 ModeledScreenTransition* ModeledScreenTransition::LoadFromParser(SimpleParser* parser)
 {
@@ -849,45 +891,7 @@ ModeledScreenTransition* ModeledScreenTransition::LoadFromParser(SimpleParser* p
 
     m_pPoseAccumulator = new (nlMalloc(0x58, 8, false)) cPoseAccumulator(m_pSkeleton, false);
 
-    u64 savedTextureState = glGetCurrentTextureState();
-    u32 savedRasterState = glGetCurrentRasterState();
-
-    for (u32 i = 0; i < m_nModels; i++)
-    {
-        if (m_pLight != NULL)
-        {
-            m_pLight->AttachToModel(&m_pModels[i]);
-        }
-
-        for (u32 j = 0; j < m_pModels[i].numPackets; j++)
-        {
-            glSetCurrentTextureState(m_pModels[i].packets[j].state.texturestate);
-            glSetTextureState(GLTS_DiffuseWrap, 3);
-
-            glSetCurrentRasterState(m_pModels[i].packets[j].state.raster);
-            glSetRasterState(GLS_AlphaBlend, 0);
-            glSetRasterState(GLS_Culling, 0);
-            glSetRasterState(GLS_DepthTest, 1);
-            glSetRasterState(GLS_DepthWrite, 1);
-
-            glSetCurrentProgram(m_nProgram);
-
-            if (m_nTexture != 0xFFFFFFFF)
-            {
-                m_pModels[i].packets[j].state.texture[0] = m_nTexture;
-            }
-
-            m_pModels[i].packets[j].state.raster = glHandleizeRasterState();
-
-            u64 texHandle = glHandleizeTextureState();
-            m_pModels[i].packets[j].state.texturestate = texHandle;
-
-            m_pModels[i].packets[j].state.program = m_nProgram;
-        }
-    }
-
-    glSetCurrentTextureState(savedTextureState);
-    glSetCurrentRasterState(savedRasterState);
+    FixupModelTransition(this);
 }
 
 /**

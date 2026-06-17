@@ -642,7 +642,6 @@ void RenderProjectedShadow(const ProjectedShadowParams& params)
     float width;
     float height;
     nlColour c;
-    int i;
     nlVector3 dir;
     nlColour colour;
     nlMatrix4 mLight;
@@ -670,51 +669,59 @@ void RenderProjectedShadow(const ProjectedShadowParams& params)
     vTemp = params.vPosition;
 
     {
+        nlVector3 vDir;
+        nlVector3 vCross;
         float dx = vTemp.f.x - vLight.f.x;
         float dy = vTemp.f.y - vLight.f.y;
         float dz = 0.0f;
-        float halfH = 0.5f * height;
-        vTemp.f.z += halfH;
+        vTemp.f.z += 0.5f * height;
 
         float invLen = nlRecipSqrt(dx * dx + dy * dy + dz * dz, false);
 
-        nlVector3 vDir;
         vDir.f.x = dx;
         vDir.f.y = dy;
         vDir.f.z = dz;
         nlVec3Scale(vDir, invLen);
-
-        float vx = vDir.f.x;
-        float vy = vDir.f.y;
-        float vz = vDir.f.z;
-
-        float crossX = vy * vUp.f.z - vz * vUp.f.y;
-        float crossY = vz * vUp.f.x - vx * vUp.f.z;
-        float crossZ = vx * vUp.f.y - vy * vUp.f.x;
+        nlVec3Cross(vCross, vDir, vUp);
 
         float halfW = 0.5f * width;
         float negHalfW = -0.5f * width;
-        float negHalfH = -0.5f * height;
 
         vTemp.f.x = params.vPosition.f.x;
         vTemp.f.y = params.vPosition.f.y;
-        vTemp.f.z = params.vPosition.f.z + halfH;
+        vTemp.f.z = params.vPosition.f.z + 0.5f * height;
 
-        p[0].f.x = vTemp.f.x + halfW * crossX + negHalfH * vUp.f.x;
-        p[0].f.y = vTemp.f.y + halfW * crossY + negHalfH * vUp.f.y;
-        p[0].f.z = vTemp.f.z + halfW * crossZ + negHalfH * vUp.f.z;
+        p[0].f.x = vTemp.f.x + halfW * vCross.f.x;
+        p[0].f.y = vTemp.f.y + halfW * vCross.f.y;
+        p[0].f.z = vTemp.f.z + halfW * vCross.f.z;
 
-        p[1].f.x = vTemp.f.x + negHalfW * crossX + negHalfH * vUp.f.x;
-        p[1].f.y = vTemp.f.y + negHalfW * crossY + negHalfH * vUp.f.y;
-        p[1].f.z = vTemp.f.z + negHalfW * crossZ + negHalfH * vUp.f.z;
+        p[1].f.x = vTemp.f.x + negHalfW * vCross.f.x;
+        p[1].f.y = vTemp.f.y + negHalfW * vCross.f.y;
+        p[1].f.z = vTemp.f.z + negHalfW * vCross.f.z;
 
-        p[2].f.x = vTemp.f.x + negHalfW * crossX + halfH * vUp.f.x;
-        p[2].f.y = vTemp.f.y + negHalfW * crossY + halfH * vUp.f.y;
-        p[2].f.z = vTemp.f.z + negHalfW * crossZ + halfH * vUp.f.z;
+        p[2].f.x = vTemp.f.x + negHalfW * vCross.f.x;
+        p[2].f.y = vTemp.f.y + negHalfW * vCross.f.y;
+        p[2].f.z = vTemp.f.z + negHalfW * vCross.f.z;
 
-        p[3].f.x = vTemp.f.x + halfW * crossX + halfH * vUp.f.x;
-        p[3].f.y = vTemp.f.y + halfW * crossY + halfH * vUp.f.y;
-        p[3].f.z = vTemp.f.z + halfW * crossZ + halfH * vUp.f.z;
+        p[3].f.x = vTemp.f.x + halfW * vCross.f.x;
+        p[3].f.y = vTemp.f.y + halfW * vCross.f.y;
+        p[3].f.z = vTemp.f.z + halfW * vCross.f.z;
+
+        p[0].f.x += (-0.5f * height) * vUp.f.x;
+        p[0].f.y += (-0.5f * height) * vUp.f.y;
+        p[0].f.z += (-0.5f * height) * vUp.f.z;
+
+        p[1].f.x += (-0.5f * height) * vUp.f.x;
+        p[1].f.y += (-0.5f * height) * vUp.f.y;
+        p[1].f.z += (-0.5f * height) * vUp.f.z;
+
+        p[2].f.x += (0.5f * height) * vUp.f.x;
+        p[2].f.y += (0.5f * height) * vUp.f.y;
+        p[2].f.z += (0.5f * height) * vUp.f.z;
+
+        p[3].f.x += (0.5f * height) * vUp.f.x;
+        p[3].f.y += (0.5f * height) * vUp.f.y;
+        p[3].f.z += (0.5f * height) * vUp.f.z;
     }
 
     nlVector3* p1 = &p[1];
@@ -735,6 +742,7 @@ void RenderProjectedShadow(const ProjectedShadowParams& params)
 
     {
         nlVector3* pPoint = p;
+        int i;
         for (i = 0; i < 4; i++, pPoint++)
         {
             if (g_bShadowDirectional)
@@ -759,8 +767,8 @@ void RenderProjectedShadow(const ProjectedShadowParams& params)
     }
 
     {
-        float yAdjust = g_fProjectionAdjust * dir.f.y;
         float xAdjust = g_fProjectionAdjust * dir.f.x;
+        float yAdjust = g_fProjectionAdjust * dir.f.y;
 
         p[0].f.x += xAdjust;
         p[0].f.y += yAdjust;
@@ -785,13 +793,12 @@ void RenderProjectedShadow(const ProjectedShadowParams& params)
     }
 
     {
-        const static u32 zeroColour = 0x0;
+        static u32 zeroColour;
         float newAntiFlimmer = GetCoPlanarZ();
         float oldAntiFlimmer = g_AntiFlimmer;
         g_AntiFlimmer = newAntiFlimmer;
 
         *(u32*)&colour = zeroColour;
-        // nlColourSet(colour, 0, 0, 0, g_Alpha[0]);
         colour.c[3] = (u8)g_Alpha[0];
 
         RenderBlobShadow(params.vPosition, p, params.nPartitionIndex, NULL, &colour);

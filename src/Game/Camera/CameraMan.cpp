@@ -600,6 +600,7 @@ void cCameraManager::Remove(eCameraType type, bool bDeleteAfterRemoving)
 
 /**
  * Offset/Address/Size: 0x200 | 0x801A6888 | size: 0x390
+ * TODO: 96.95% match - plane-normal loop register and load ordering differs
  */
 unsigned char cCameraManager::IsObjectOccludingField(const DrawableObject* drawable)
 {
@@ -701,21 +702,16 @@ unsigned char cCameraManager::IsObjectOccludingField(const DrawableObject* drawa
         pNormal++;
     }
 
-    float objectDeltaX = objectPosition.f.x - cameraPosition->f.x;
     float objectDeltaY = objectPosition.f.y - cameraPosition->f.y;
+    float objectDeltaX = objectPosition.f.x - cameraPosition->f.x;
     float objectDeltaZ = objectPosition.f.z - cameraPosition->f.z;
 
-    if ((pNormals[0].f.x * objectDeltaX + pNormals[0].f.y * objectDeltaY + pNormals[0].f.z * objectDeltaZ) > objectRadius)
-        return false;
-    if ((pNormals[1].f.x * objectDeltaX + pNormals[1].f.y * objectDeltaY + pNormals[1].f.z * objectDeltaZ) > objectRadius)
-        return false;
-    if ((pNormals[2].f.x * objectDeltaX + pNormals[2].f.y * objectDeltaY + pNormals[2].f.z * objectDeltaZ) > objectRadius)
-        return false;
-
-    float lastDot = pNormals[3].f.x * objectDeltaX + pNormals[3].f.y * objectDeltaY + pNormals[3].f.z * objectDeltaZ;
-    if (lastDot > objectRadius)
-        return 0;
-    return 1;
+    for (i = 0; i < 4; i++)
+    {
+        if ((pNormals[i].f.x * objectDeltaX + pNormals[i].f.y * objectDeltaY + pNormals[i].f.z * objectDeltaZ) > objectRadius)
+            return false;
+    }
+    return true;
 }
 
 /**

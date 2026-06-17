@@ -188,7 +188,7 @@ void ReadTrophyModel(void* data, unsigned long size, void* userData)
 
 /**
  * Offset/Address/Size: 0x1848 | 0x8012602C | size: 0x460
- * TODO: 71.39% match - remaining diffs in hasCupOverride temporary lifetime and cupName register flow
+ * TODO: 82.90% match - remaining diffs in hasCupOverride register flow and prefix lifetime
  */
 void Presentation::LoadTrophyModel()
 {
@@ -205,10 +205,9 @@ void Presentation::LoadTrophyModel()
 
     cupTrophyHash = 1;
     const char* cupName = (const char*)0;
-    BasicString<char, Detail::TempStringAllocator> trophyName;
+    BasicString<char, Detail::TempStringAllocator> prefix("Gameplay/");
     if (hasCupOverride)
     {
-        BasicString<char, Detail::TempStringAllocator> prefix("Gameplay/");
         Config& cfg = Config::Global();
         TagValuePair& tvp = cfg.FindTvp("gimme_cup_trophy");
         if (tvp.tag == NULL)
@@ -232,16 +231,13 @@ void Presentation::LoadTrophyModel()
         {
             cupName = LexicalCast<const char*, const char*>(tvp.value.s);
         }
+    }
 
-        trophyName = prefix.Append(cupName);
-    }
-    else
-    {
-        BasicString<char, Detail::TempStringAllocator> cupModel(
-            GetThrophyModelName(
-                nlSingleton<GameInfoManager>::s_pInstance->GetTrophyTypeByCurrentMode()));
-        trophyName = cupModel;
-    }
+    BasicString<char, Detail::TempStringAllocator> trophyName(
+        hasCupOverride
+            ? prefix.Append(cupName)
+            : BasicString<char, Detail::TempStringAllocator>(
+                  GetThrophyModelName(nlSingleton<GameInfoManager>::s_pInstance->GetTrophyTypeByCurrentMode())));
 
     nlSNPrintf(trophyFileName, 0xFF, "%s.glg", trophyName.c_str());
     glBeginLoadModel(trophyFileName, ReadTrophyModel, NULL);

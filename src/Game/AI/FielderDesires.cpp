@@ -1932,7 +1932,7 @@ void cFielder::InitDesireReceivePassFromIdle(const LooseBallContactAnimInfo* pAn
 
 /**
  * Offset/Address/Size: 0x2080 | 0x80032E04 | size: 0xC88
- * TODO: 94.36% match - one-touch shot/pass state paths still differ in register allocation and branch layout.
+ * TODO: 99.14% match - opening vector normalization and one-timer flag/register allocation still differ.
  */
 void cFielder::DesireReceivePassFromIdle(float fDeltaT)
 {
@@ -1980,11 +1980,11 @@ void cFielder::DesireReceivePassFromIdle(float fDeltaT)
         {
             if (m_pController != NULL && m_pController->IsTurboPressed())
             {
-                SetDesiredSpeed(m_pTweaks->fRunningSpeed, ((FielderTweaks*)m_pTweaks)->fRunningTurboSpeed);
+                SetDesiredSpeed(((FielderTweaks*)m_pTweaks)->fRunningWBSpeed, ((FielderTweaks*)m_pTweaks)->fRunningWBTurboSpeedLevel1);
             }
             else
             {
-                SetDesiredSpeed(m_pTweaks->fJoggingSpeed, m_pTweaks->fRunningSpeed);
+                SetDesiredSpeed(m_pTweaks->fJoggingSpeed, ((FielderTweaks*)m_pTweaks)->fRunningWBSpeed);
             }
 
             if (GetGlobalPad()->JustPressed(PAD_SHOOT, true))
@@ -2031,7 +2031,7 @@ void cFielder::DesireReceivePassFromIdle(float fDeltaT)
             else
             {
                 float actionRethinkTime = (m_DesireCommonVars.fMisc / 3.0f) - 0.1f;
-                m_DesireCommonVars.tMiscTimer.SetSeconds((actionRethinkTime <= 0.1f) ? 0.1f : actionRethinkTime);
+                m_DesireCommonVars.tMiscTimer.SetSeconds((0.1f >= actionRethinkTime) ? 0.1f : actionRethinkTime);
             }
         }
 
@@ -2053,21 +2053,26 @@ void cFielder::DesireReceivePassFromIdle(float fDeltaT)
             const cSAnim* contactAnim = m_pAnimInventory->GetAnim(pBestBallContactAnimInfo->nAnimID);
             m_DesireOneTimerVars.fOneTimerAnimTime = pBestBallContactAnimInfo->fAnimContactFrame / (float)contactAnim->m_nNumKeys;
 
-            bool bFoundContact = DoLooseBallContactFromIdle(
-                m_DesireOneTimerVars.v3DesiredPosition,
-                m_DesireOneTimerVars.fDesiredTime,
-                m_DesireOneTimerVars.v3BallPosition,
-                fBallContactTime,
-                m_aActualFacingDirection,
-                pBestBallContactAnimInfo);
-
-            if (bFoundContact)
+            bool bFoundContact;
+            if (!DoLooseBallContactFromIdle(
+                    m_DesireOneTimerVars.v3DesiredPosition,
+                    m_DesireOneTimerVars.fDesiredTime,
+                    m_DesireOneTimerVars.v3BallPosition,
+                    fBallContactTime,
+                    m_aActualFacingDirection,
+                    pBestBallContactAnimInfo))
+            {
+                bFoundContact = false;
+            }
+            else
             {
                 m_DesireOneTimerVars.aDesiredFacingDirection = m_aActualFacingDirection;
                 m_DesireOneTimerVars.bIsChipShot = bIsChipShot;
                 m_DesireOneTimerVars.bVolleyPassReceive = bVolleyPass;
 
-                if (m_DesireOneTimerVars.fDesiredTime >= 0.0f)
+                bFoundContact = true;
+
+                if (m_DesireOneTimerVars.fDesiredTime < 0.0f)
                 {
                     const cSAnim* pOneTimerAnim = m_pAnimInventory->GetAnim(m_DesireOneTimerVars.nOneTimerAnim);
                     float fAnimTimeInSecs = m_DesireOneTimerVars.fOneTimerAnimTime * ((float)pOneTimerAnim->m_nNumKeys / 30.0f);
@@ -2088,8 +2093,13 @@ void cFielder::DesireReceivePassFromIdle(float fDeltaT)
                     SetNoPickUpTime(3.0f);
                     g_pBall->SetPassTargetTimer(fBallContactTime);
                     m_pAvoidance->SetThingsToAvoid(0);
-                    return;
+                    bFoundContact = true;
                 }
+            }
+
+            if (bFoundContact)
+            {
+                return;
             }
 
             if (bVolleyPass)
@@ -2160,7 +2170,7 @@ void cFielder::DesireReceivePassFromIdle(float fDeltaT)
                 {
                     if (m_DesireReceivePassSharedVars.bFailedToInitOneTouchShot)
                     {
-                        if (GetGlobalPad() != NULL && GetGlobalPad()->JustPressed(PAD_SHOOT, true))
+                        if (GetGlobalPad() != NULL && GetGlobalPad()->IsPressed(PAD_SHOOT, true))
                         {
                             if (!ShouldStartCrossBlend(0x1A))
                             {
@@ -2173,13 +2183,14 @@ void cFielder::DesireReceivePassFromIdle(float fDeltaT)
                         }
 
                         DoResetShotMeter(0.0f);
-                        m_pShotMeter->CalcOneTimerValue(this, UsePerfectPass());
+                        ShotMeter* pShotMeter = m_pShotMeter;
+                        pShotMeter->CalcOneTimerValue(this, UsePerfectPass());
                         InitDesire(FIELDERDESIRE_FINISH_ACTION, 0.5f, -1.0f, fvNotSet, fvNotSet);
                         InitActionShot(m_DesireReceivePassSharedVars.iAttemptOneTouchShot == 2);
                         return;
                     }
 
-                    if (GetGlobalPad() != NULL && GetGlobalPad()->JustPressed(PAD_SHOOT, true))
+                    if (GetGlobalPad() != NULL && GetGlobalPad()->IsPressed(PAD_SHOOT, true))
                     {
                         if (!ShouldStartCrossBlend(0x1A))
                         {
@@ -2193,7 +2204,7 @@ void cFielder::DesireReceivePassFromIdle(float fDeltaT)
                 }
                 else if (ShouldStartCrossBlend(0x1A))
                 {
-                    if (GetGlobalPad() != NULL && GetGlobalPad()->JustPressed(PAD_SHOOT, true))
+                    if (GetGlobalPad() != NULL && GetGlobalPad()->IsPressed(PAD_SHOOT, true))
                     {
                         DoResetShotMeter(0.0f);
                         SetDesireDuration(0.0f, true);
@@ -2201,7 +2212,8 @@ void cFielder::DesireReceivePassFromIdle(float fDeltaT)
                     else
                     {
                         DoResetShotMeter(0.0f);
-                        m_pShotMeter->CalcOneTimerValue(this, UsePerfectPass());
+                        ShotMeter* pShotMeter = m_pShotMeter;
+                        pShotMeter->CalcOneTimerValue(this, UsePerfectPass());
                         InitDesire(FIELDERDESIRE_FINISH_ACTION, 0.5f, -1.0f, fvNotSet, fvNotSet);
                         InitActionShot(m_DesireReceivePassSharedVars.iAttemptOneTouchShot == 2);
                     }

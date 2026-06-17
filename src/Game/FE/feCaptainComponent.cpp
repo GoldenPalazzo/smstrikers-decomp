@@ -766,15 +766,12 @@ void IChooseCaptain::UpdateSound(float dt)
 
 /**
  * Offset/Address/Size: 0x141C | 0x800BEDB8 | size: 0x694
- * TODO: 95.10% match - helper dispatch and early control-flow blocks still differ.
+ * TODO: 98.25% match - r3/r4 side-count setup and temp register allocation still differ.
  */
-extern void CheckForDisconnectedHumanPlayers__14IChooseCaptainFv(class IChooseCaptain*);
-extern void FindAliveHumanPlayers__14IChooseCaptainFv(class IChooseCaptain*);
-
 UpdateResult IChooseCaptain::Update(float)
 {
-    CheckForDisconnectedHumanPlayers__14IChooseCaptainFv(this);
-    FindAliveHumanPlayers__14IChooseCaptainFv(this);
+    CheckForDisconnectedHumanPlayers();
+    FindAliveHumanPlayers();
 
     int numSide1;
     mIsSinglePlayerInput = numSide1 = 0;
@@ -855,10 +852,18 @@ UpdateResult IChooseCaptain::Update(float)
 
             switch (mComponentState[side].mCurrentPhase)
             {
+            case PHASE_READY:
+                mComponentState[side].GotoPreviousPhase();
+                break;
+
+            case PHASE_CHOOSING_SIDEKICK:
+                mComponentState[side].GotoPreviousPhase();
+                break;
+
             case PHASE_CHOOSING_CAPTAIN:
                 if (mIsSinglePlayerInput)
                 {
-                    if (side == 1)
+                    if (side == 1 && mIsSinglePlayerInput)
                     {
                         mComponentState[1].GotoPreviousPhase();
                         mComponentState[0].GotoPreviousPhase();
@@ -872,11 +877,6 @@ UpdateResult IChooseCaptain::Update(float)
                 {
                     goback = true;
                 }
-                break;
-
-            case PHASE_CHOOSING_SIDEKICK:
-            case PHASE_READY:
-                mComponentState[side].GotoPreviousPhase();
                 break;
             }
 
@@ -895,38 +895,42 @@ UpdateResult IChooseCaptain::Update(float)
             case PHASE_CHOOSING_CAPTAIN:
             {
                 TLSlide* slide = mCaptainGridComponents[side]->mParentComponent->GetActiveSlide();
+                unsigned char done;
 
                 if (slide == NULL)
                 {
-                    isdoneanimating = 1;
+                    done = 1;
                 }
                 else if (slide->m_time >= slide->m_start + slide->m_duration)
                 {
-                    isdoneanimating = 1;
+                    done = 1;
                 }
                 else
                 {
-                    isdoneanimating = 0;
+                    done = 0;
                 }
+                isdoneanimating = done;
                 break;
             }
 
             case PHASE_CHOOSING_SIDEKICK:
             {
                 TLSlide* slide = mSidekickGridComponents[side]->mParentComponent->GetActiveSlide();
+                unsigned char done;
 
                 if (slide == NULL)
                 {
-                    isdoneanimating = 1;
+                    done = 1;
                 }
                 else if (slide->m_time >= slide->m_start + slide->m_duration)
                 {
-                    isdoneanimating = 1;
+                    done = 1;
                 }
                 else
                 {
-                    isdoneanimating = 0;
+                    done = 0;
                 }
+                isdoneanimating = done;
                 break;
             }
             }
@@ -1842,6 +1846,7 @@ void IChooseCaptain::StartSidekickMiniHead(int homeaway, eSidekickID sidekick)
  */
 void IChooseCaptain::CheckForDisconnectedHumanPlayers()
 {
+    FORCE_DONT_INLINE;
     for (int i = 0; i < 4; i++)
     {
         if (IsPlayerPushed(i))
@@ -1861,6 +1866,7 @@ void IChooseCaptain::CheckForDisconnectedHumanPlayers()
  */
 void IChooseCaptain::FindAliveHumanPlayers()
 {
+    FORCE_DONT_INLINE;
     for (int i = 0; i < 4; i++)
     {
         eFEINPUT_PAD pad = (eFEINPUT_PAD)i;

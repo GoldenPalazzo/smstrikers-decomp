@@ -620,7 +620,7 @@ void PauseMenuScene::SceneCreated()
 
 /**
  * Offset/Address/Size: 0x268 | 0x800AD760 | size: 0x5E4
- * TODO: 87.80% match - controller loop register assignment and final resume-call sequence still differ
+ * TODO: 96.19% match - this/temp register swap and final resume-call sequence still differ
  */
 void PauseMenuScene::Update(float fDeltaT)
 {
@@ -660,21 +660,23 @@ void PauseMenuScene::Update(float fDeltaT)
         if (!(currentTime >= endTime))
             return;
 
-        if (mTransitionTo != TT_OUT)
+        switch (mTransitionTo)
         {
-        }
-        else
-        {
+        case TT_OUT:
             FrontEnd::ExitMenuState();
+            break;
+        default:
+            break;
         }
         mIsInTransition = false;
         mTransitionTo = (TransitionType)0;
         return;
     }
 
-    register int i = 0;
+    register u8* connState;
     register u8 goToChooseSides = 0;
-    register u8* connState = &FrontEnd::m_ctrlConnectedState[0];
+    register int i = 0;
+    connState = &FrontEnd::m_ctrlConnectedState[0];
 
     for (; i < 4; i++)
     {
@@ -687,28 +689,10 @@ void PauseMenuScene::Update(float fDeltaT)
                 if (!goToChooseSides)
                 {
                     OverlayManager* om = nlSingleton<OverlayManager>::s_pInstance;
-                    BaseSceneHandler* top;
-                    if (om->mCurrentStackDepth != 0)
-                    {
-                        top = om->mBaseSceneHandlerStack[om->mCurrentStackDepth - 1];
-                    }
-                    else
-                    {
-                        top = NULL;
-                    }
-                    while (top != (BaseSceneHandler*)this)
+                    while (((om = nlSingleton<OverlayManager>::s_pInstance)->mCurrentStackDepth != 0 ? om->mBaseSceneHandlerStack[om->mCurrentStackDepth - 1] : NULL) != (BaseSceneHandler*)this)
                     {
                         om->Pop();
                         nlSingleton<FESceneManager>::s_pInstance->ForceImmediateStackProcessing();
-                        om = nlSingleton<OverlayManager>::s_pInstance;
-                        if (om->mCurrentStackDepth != 0)
-                        {
-                            top = om->mBaseSceneHandlerStack[om->mCurrentStackDepth - 1];
-                        }
-                        else
-                        {
-                            top = NULL;
-                        }
                     }
                     om->Push(IGSCENE_CHOOSE_SIDES, SCREEN_FORWARD, true);
                 }
@@ -761,11 +745,11 @@ void PauseMenuScene::Update(float fDeltaT)
             newIndex = newIndex - 1;
         }
 
-        mMenuItems.mMenuItems[currentIndex].ApplyAction(ON_UNHIGHLIGHT);
+        mMenuItems.mMenuItems[currentIndex].mCallbacks[ON_UNHIGHLIGHT](mMenuItems.mMenuItems[currentIndex].mType);
 
         mMenuItems.mCurrentIndex = newIndex;
         int idx = mMenuItems.mCurrentIndex;
-        mMenuItems.mMenuItems[idx].ApplyAction(ON_HIGHLIGHT);
+        mMenuItems.mMenuItems[idx].mCallbacks[ON_HIGHLIGHT](mMenuItems.mMenuItems[idx].mType);
         return;
     }
 
@@ -798,11 +782,11 @@ void PauseMenuScene::Update(float fDeltaT)
             newIndex = newIndex + 1;
         }
 
-        mMenuItems.mMenuItems[currentIndex].ApplyAction(ON_UNHIGHLIGHT);
+        mMenuItems.mMenuItems[currentIndex].mCallbacks[ON_UNHIGHLIGHT](mMenuItems.mMenuItems[currentIndex].mType);
 
         mMenuItems.mCurrentIndex = newIndex;
         int idx = mMenuItems.mCurrentIndex;
-        mMenuItems.mMenuItems[idx].ApplyAction(ON_HIGHLIGHT);
+        mMenuItems.mMenuItems[idx].mCallbacks[ON_HIGHLIGHT](mMenuItems.mMenuItems[idx].mType);
         return;
     }
 
@@ -811,7 +795,8 @@ void PauseMenuScene::Update(float fDeltaT)
         int selectedIndex = mMenuItems.mCurrentIndex;
         MenuResult result;
 
-        if (mMenuItems.mMenuItems[selectedIndex].mCallbacks[ON_APPLY].mTag != EMPTY)
+        int tag = mMenuItems.mMenuItems[selectedIndex].mCallbacks[ON_APPLY].mTag;
+        if (((u32)((-tag) | tag) >> 31) > 0)
         {
             if (mMenuItems.mMenuItems[selectedIndex].mDisabled)
             {
@@ -819,7 +804,10 @@ void PauseMenuScene::Update(float fDeltaT)
             }
             else
             {
-                mMenuItems.mMenuItems[selectedIndex].mCallbacks[ON_APPLY](mMenuItems.mMenuItems[selectedIndex].mType);
+                if (tag == FREE_FUNCTION)
+                    mMenuItems.mMenuItems[selectedIndex].mCallbacks[ON_APPLY].mFreeFunction(mMenuItems.mMenuItems[selectedIndex].mType);
+                else
+                    (*mMenuItems.mMenuItems[selectedIndex].mCallbacks[ON_APPLY].mFunctor)(mMenuItems.mMenuItems[selectedIndex].mType);
                 result = RES_OK;
             }
         }

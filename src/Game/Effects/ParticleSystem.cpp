@@ -1152,26 +1152,33 @@ static void ParticleConstructor(void* ptr, int)
     new (ptr) Particle();
 }
 
+static void AllocateParticles()
+{
+    int offset;
+    int i;
+    int count = MaxNumParticles;
+
+    particleMemory = new (nlMalloc(count * 0x4C + 0x10, 8, false)) Particle[count];
+
+    tDebugPrintManager::Print(DC_RENDER, "%dKB used by Particle pool\n", (unsigned)(MaxNumParticles * 0x4C) >> 10);
+
+    offset = 0;
+    i = offset;
+    for (; i < MaxNumParticles; offset += sizeof(Particle), i++)
+    {
+        freeParticles.Insert((efBaseNode*)((u8*)particleMemory + offset));
+    }
+}
+
 /**
  * Offset/Address/Size: 0xAC | 0x801F5204 | size: 0xCC
- * TODO: 94.9% match - instruction scheduling diff at loop init: li r30/mr r29 ordering
+ * TODO: 99.41% match - allocation count uses r29 instead of r31; loop init zero-copy uses r29/r30 in reverse
  */
 bool fxParticleStartup(int maxNumParticles)
 {
     MaxNumParticles = maxNumParticles;
     BuildFrameTable();
-
-    particleMemory = new (nlMalloc(MaxNumParticles * 0x4C + 0x10, 8, false)) Particle[MaxNumParticles];
-
-    tDebugPrintManager::Print(DC_RENDER, "%dKB used by Particle pool\n", (unsigned)(MaxNumParticles * 0x4C) >> 10);
-
-    int i = 0;
-    int offset = i;
-    for (; i < MaxNumParticles; offset += sizeof(Particle), i++)
-    {
-        freeParticles.Insert((efBaseNode*)((u8*)particleMemory + offset));
-    }
-
+    AllocateParticles();
     return true;
 }
 

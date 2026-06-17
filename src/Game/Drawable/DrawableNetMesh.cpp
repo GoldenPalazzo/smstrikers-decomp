@@ -52,8 +52,7 @@ DrawableNetMesh::~DrawableNetMesh()
 
 /**
  * Offset/Address/Size: 0x91C | 0x80114878 | size: 0x264
- * TODO: 96.86% match - floating-point register allocation and constant-load
- *       placement still differ in plane transform setup.
+ * TODO: 99.61% match - netHeight and half-height still use swapped floating-point registers.
  */
 void DrawableNetMesh::RenderInvisiblePlanes() const
 {
@@ -74,7 +73,6 @@ void DrawableNetMesh::RenderInvisiblePlanes() const
     nlMatrix4 matrix;
     nlMakeRotationMatrixY(matrix, 1.5707964f);
 
-    float halfHeight = 0.5f * netHeight;
     float netPlaneX;
 
     nlColour c = { 0xFF, 0xFF, 0xFF, 0x00 };
@@ -85,7 +83,7 @@ void DrawableNetMesh::RenderInvisiblePlanes() const
     netPlaneX = goalLineX - 0.05f;
     matrix.m[3][0] = netPlaneX;
     matrix.m[3][1] = 0.0f;
-    matrix.m[3][2] = halfHeight;
+    matrix.m[3][2] = 0.5f * netHeight;
     matrix.m[3][3] = 1.0f;
     quad.SetupRotatedRectangle(netHeight, netWidth, matrix, false, false);
     quad.SetColour(c);
@@ -94,7 +92,7 @@ void DrawableNetMesh::RenderInvisiblePlanes() const
     netPlaneX = 0.05f + goalLineX;
     matrix.m[3][0] = netPlaneX;
     matrix.m[3][1] = 0.0f;
-    matrix.m[3][2] = halfHeight;
+    matrix.m[3][2] = 0.5f * netHeight;
     matrix.m[3][3] = 1.0f;
     quad.SetupRotatedRectangle(netHeight, netWidth, matrix, false, false);
     quad.SetColour(c);
@@ -103,7 +101,7 @@ void DrawableNetMesh::RenderInvisiblePlanes() const
     netPlaneX = -goalLineX - 0.05f;
     matrix.m[3][0] = netPlaneX;
     matrix.m[3][1] = 0.0f;
-    matrix.m[3][2] = halfHeight;
+    matrix.m[3][2] = 0.5f * netHeight;
     matrix.m[3][3] = 1.0f;
     quad.SetupRotatedRectangle(netHeight, netWidth, matrix, false, false);
     quad.SetColour(c);
@@ -112,7 +110,7 @@ void DrawableNetMesh::RenderInvisiblePlanes() const
     netPlaneX = 0.05f - goalLineX;
     matrix.m[3][0] = netPlaneX;
     matrix.m[3][1] = 0.0f;
-    matrix.m[3][2] = halfHeight;
+    matrix.m[3][2] = 0.5f * netHeight;
     matrix.m[3][3] = 1.0f;
     quad.SetupRotatedRectangle(netHeight, netWidth, matrix, false, false);
     quad.SetColour(c);
