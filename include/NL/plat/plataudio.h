@@ -228,7 +228,7 @@ SFXEmitter* GetFreeEmitter(unsigned long&);
 SND_VOICEID GetEmitterVoiceID(SFXEmitter*);
 bool IsEmitterActive(SFXEmitter*);
 void Update3DSFXEmitter(SFXEmitter*, const nlVector3&, const nlVector3&, float);
-void Add3DSFXEmitter(const EmitterStartInfo&);
+unsigned long Add3DSFXEmitter(const EmitterStartInfo&);
 void Remove3DSFXListener(SND_LISTENER*);
 void Update3DSFXListener(SND_LISTENER*, const nlVector3&, const nlVector3&, const nlVector3&, const nlVector3&, float);
 void Add3DSFXListener(SND_LISTENER*, const nlVector3&, const nlVector3&, const nlVector3&, const nlVector3&, float, float, float, float,

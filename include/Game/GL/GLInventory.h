@@ -6,9 +6,9 @@
 
 #include "Game/SAnim.h"
 #include "Game/GL/GLMaterial.h"
+#include "Game/GL/GLShadowVolume.h"
 #include "Game/GL/GLVertexAnim.h"
 #include "Game/GL/GLTextureAnim.h"
-class GLShadowVolume;
 class GLSkinMesh;
 class glModel;
 

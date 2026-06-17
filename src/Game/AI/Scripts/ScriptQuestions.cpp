@@ -2838,9 +2838,7 @@ float FarToTheirGoalie(cPlayer* pPlayer)
 
 /**
  * Offset/Address/Size: 0x1D08 | 0x80080790 | size: 0x170
- * TODO: 98.32% match - MWCC still rotates callee-saved mapping for
- *       score/zero (f30/f31), base/invert/offset (r30/r31/r26),
- *       and posU0/posU2 (r29/r27).
+ * TODO: 99.51% match - sideline base, invert flag, and byte offset use rotated saved registers.
  */
 float CloseToSideline(const nlVector3& v3Position, const nlVector2* vDistanceConfidence, bool bInvert)
 {
@@ -2859,9 +2857,12 @@ float CloseToSideline(const nlVector3& v3Position, const nlVector2* vDistanceCon
         fScore = 0.0f;
     }
 
-    u32 posU0 = v3Position.as_u32[0];
-    u32 posU1 = v3Position.as_u32[1];
-    u32 posU2 = v3Position.as_u32[2];
+    u32 posU2;
+    u32 posU1;
+    u32 posU0;
+    posU0 = v3Position.as_u32[0];
+    posU1 = v3Position.as_u32[1];
+    posU2 = v3Position.as_u32[2];
     const u8* pBase = (const u8*)cField::mSidelines;
     s32 offset = 0;
     s32 i = offset;
@@ -2888,9 +2889,7 @@ float CloseToSideline(const nlVector3& v3Position, const nlVector2* vDistanceCon
             v3SidelinePos.f.x = sideline->fDistance * sideline->vNormal.f.x;
         }
 
-        f32 dx = v3SidelinePos.f.x - posX;
-        f32 dy = v3SidelinePos.f.y - posY;
-        float fDistance = nlSqrt(dx * dx + dy * dy, true);
+        float fDistance = nlSqrt(v3SidelinePos.CalculateDistanceSquared2D(v3Position), true);
 
         if (bInvert)
         {

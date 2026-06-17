@@ -354,7 +354,7 @@ void DrawableModel::DrawModel(const nlMatrix4& worldMatrix)
     void* pNoFogData = NULL;
     unsigned long LightTexture;
     unsigned char bJumbotron;
-    unsigned char bCrowd;
+    unsigned long bCrowd;
     unsigned long litProgram;
     unsigned long unlitProgram;
     unsigned char bLight;

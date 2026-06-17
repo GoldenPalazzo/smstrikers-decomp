@@ -424,7 +424,7 @@ FuzzyVariant Fuzzy::DefendPassInPlay(float fConfidence, cDecisionEntity* pEntity
 
 /**
  * Offset/Address/Size: 0x2140 | 0x800877F8 | size: 0x1918
- * TODO: 99.26% match - remaining diffs are register allocation in weighted confidence accumulators.
+ * TODO: 99.79% match - remaining diffs are register allocation in final weighted confidence accumulator.
  */
 FuzzyVariant Fuzzy::TryAttacking(float fConfidence, cDecisionEntity* pEntity)
 {
@@ -492,7 +492,7 @@ FuzzyVariant Fuzzy::TryAttacking(float fConfidence, cDecisionEntity* pEntity)
             if (fConfidence < fTrueConf4 && fTrueConf4 < 0.2f)
                 fConfidence = fConfidence * fRatio4;
 
-            float fNotRepeatSlide, fOnMush2;
+            float fOnMush2, fNotRepeatSlide;
             fNotRepeatSlide = 1.0f - RepeatingLastDesire(g_pScriptCurrentFielder, edSlideAttack);
             fOnMush2 = OnMushrooms(g_pScriptCurrentFielder);
             float fNearTo = NearTo(g_pScriptCurrentFielder, g_pScriptBallOwner);
@@ -513,8 +513,7 @@ FuzzyVariant Fuzzy::TryAttacking(float fConfidence, cDecisionEntity* pEntity)
                     fBestConfidence = fBestConfidence;
                 else
                     fBestConfidence = fConfidence;
-                cFielder* pBallOwner1 = g_pScriptBallOwner;
-                pEntity->QueueActionSetDesire(15, fConfidence, 0.0f, FuzzyVariant(pBallOwner1), fvNotSet);
+                pEntity->QueueActionSetDesire(15, fConfidence, 0.0f, FuzzyVariant(g_pScriptBallOwner), fvNotSet);
             }
         }
 
@@ -564,8 +563,7 @@ FuzzyVariant Fuzzy::TryAttacking(float fConfidence, cDecisionEntity* pEntity)
                         fBestConfidence = fBestConfidence;
                     else
                         fBestConfidence = fConfidence;
-                    cFielder* pBallOwner2 = g_pScriptBallOwner;
-                    pEntity->QueueActionSetDesire(5, fConfidence, 0.0f, FuzzyVariant(pBallOwner2), fvNotSet);
+                    pEntity->QueueActionSetDesire(5, fConfidence, 0.0f, FuzzyVariant(g_pScriptBallOwner), fvNotSet);
                     SkillTweaks* pTweaks = SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide);
                     pEntity->m_pLastQueuedAction->m_fSelectionChance = CalcSelectChance(pTweaks->Def_BlockShotChance, Aggressive(g_pScriptCurrentFielder));
                 }
@@ -651,8 +649,7 @@ FuzzyVariant Fuzzy::TryAttacking(float fConfidence, cDecisionEntity* pEntity)
                     fBestConfidence = fBestConfidence;
                 else
                     fBestConfidence = fConfidence;
-                cFielder* pBallOwner3 = g_pScriptBallOwner;
-                pEntity->QueueActionSetDesire(5, fConfidence, 0.0f, FuzzyVariant(pBallOwner3), fvNotSet);
+                pEntity->QueueActionSetDesire(5, fConfidence, 0.0f, FuzzyVariant(g_pScriptBallOwner), fvNotSet);
             }
 
             if (fFalseConf12 > 0.0f)
@@ -685,9 +682,7 @@ FuzzyVariant Fuzzy::TryAttacking(float fConfidence, cDecisionEntity* pEntity)
             float fInControl = InControlOfBall(g_pScriptBallOwner);
             float fOpenMyNet = OpenToMyNet(g_pScriptBallOwner);
             float fLikelyScore = LikelyToScore(g_pScriptBallOwner);
-            float fWeighted1 = fOpenMyNet * 0.3f;
-            fWeighted1 += fLikelyScore * 0.3f;
-            fWeighted1 += (1.0f - fInControl) * 0.4f;
+            float fWeighted1 = fLikelyScore * 0.4f + fOpenMyNet * 0.4f + (1.0f - fInControl) * 0.2f;
             float fWindUp2 = WindingUpForShot(g_pScriptBallOwner);
             float fTrueConf14 = (fWindUp2 >= fWeighted1) ? fWindUp2 : fWeighted1;
             float fFalseConf14 = 1.0f - fTrueConf14;
@@ -730,7 +725,7 @@ FuzzyVariant Fuzzy::TryAttacking(float fConfidence, cDecisionEntity* pEntity)
                 float fFacing = Facing(g_pScriptCurrentFielder, g_pScriptBallOwner);
                 float fInControl2 = InControlOfBall(g_pScriptBallOwner);
                 float fNearTo3 = NearTo(g_pScriptBallOwner, g_pScriptCurrentFielder);
-                float fWeighted2 = (1.0f - fInControl2) * 0.35f + fNearTo3 * 0.3f + fFacing * 0.35f;
+                float fWeighted2 = fNearTo3 * 0.4f + (1.0f - fInControl2) * 0.3f + fFacing * 0.3f;
                 float fFalseConf16 = 1.0f - fWeighted2;
                 float fMin16 = (fWeighted2 <= fFalseConf16) ? fWeighted2 : fFalseConf16;
                 float fMax16 = (fWeighted2 >= fFalseConf16) ? fWeighted2 : fFalseConf16;
@@ -762,11 +757,11 @@ FuzzyVariant Fuzzy::TryAttacking(float fConfidence, cDecisionEntity* pEntity)
                 float fLikelyScore2 = LikelyToScore(g_pScriptCurrentFielder);
 
                 float fWeighted3 = fLikelyScore2 * 0.2f;
-                fWeighted3 += fConfidence * 0.1f;
+                fWeighted3 += fConfidence * 0.13f;
                 fWeighted3 += fOpenTheirNet * 0.2f;
                 fWeighted3 += fNearTo4 * 0.2f;
-                fWeighted3 += (1.0f - fInControl3) * 0.3f;
-                float fWeighted3Final = fFacing2 + fWeighted3 + (-0.5f);
+                fWeighted3 += (1.0f - fInControl3) * 0.12f;
+                float fWeighted3Final = fFacing2 + fWeighted3 + 0.15f;
 
                 float fFalseConf17 = 1.0f - fWeighted3Final;
                 float fMin17 = (fWeighted3Final <= fFalseConf17) ? fWeighted3Final : fFalseConf17;

@@ -433,11 +433,11 @@ bool PhysicsNet::SweepTestForBallContact(const nlVector3& startPos, const nlVect
         // nlVec3Set(contactNormal, normalLength * contactNormal.f.x, normalLength * contactNormal.f.y, normalLength * contactNormal.f.z);
         nlVec3Scale(contactNormal, normalLength);
 
-        const float tx = contactPos.f.x - goalPost0Location.f.x;
         const float ty = contactPos.f.y - goalPost0Location.f.y;
+        const float tx = contactPos.f.x - goalPost0Location.f.x;
         const float tz = contactPos.f.z - goalPost0Location.f.z;
 
-        if ((tx * tx + ty * ty + tz * tz) < (height * height))
+        if (nlGetLengthSquared3D(tx, ty, tz) < (height * height))
         {
             nlVec3Set(contactPos,
                 (height * contactNormal.f.x) + goalPost0Location.f.x,

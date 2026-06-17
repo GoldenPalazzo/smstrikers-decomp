@@ -206,50 +206,47 @@ extern "C" void THPSimpleAudioStart()
 
 /**
  * Offset/Address/Size: 0xB9C | 0x801CCB00 | size: 0x170
- * TODO: 91.41% match - addi+lwzx vs add+lwz for nlRead readBuffer arg, r4/r5 swap on xoris/readSize load and ternary
  */
 extern "C" int THPSimplePreLoad(long loop)
 {
     unsigned long i;
     unsigned long readNum;
-    THPSimpleControlWork* ctrl = (THPSimpleControlWork*)&SimpleControl;
 
-    if (ctrl->open && ctrl->preFetchState == 0)
+    if (SimpleControl.open && SimpleControl.playing == 0)
     {
         readNum = NumReadBuffers;
-        if (loop == 0 && ctrl->numFrames < (unsigned long)NumReadBuffers)
+        if (loop == 0 && SimpleControl.numFrames < (unsigned long)NumReadBuffers)
         {
-            readNum = ctrl->numFrames;
+            readNum = SimpleControl.numFrames;
         }
 
-        THPSimpleControlWork* sc = (THPSimpleControlWork*)&SimpleControl;
         for (i = 0; i < readNum; i++)
         {
-            nlSeek(sc->fileInfo, sc->curOffset, 0);
-            nlRead(sc->fileInfo, sc->readBuffer[sc->readIndex].mPtr, sc->readSize);
+            nlSeek(SimpleControl.file, SimpleControl.totalRead, 0);
+            nlRead(SimpleControl.file, SimpleControl.readBuffers[SimpleControl.readIdx].mPtr, SimpleControl.nextSize);
 
-            long idx = sc->readIndex;
-            sc->curOffset += sc->readSize;
-            sc->readSize = *(long*)sc->readBuffer[idx].mPtr;
-            sc->readBuffer[idx].mIsValid = 1;
-            sc->readBuffer[idx].mFrameNumber = sc->totalReadFrame;
+            long idx = SimpleControl.readIdx;
+            SimpleControl.totalRead += SimpleControl.nextSize;
+            SimpleControl.nextSize = *(long*)SimpleControl.readBuffers[idx].mPtr;
+            SimpleControl.readBuffers[idx].mIsValid = 1;
+            SimpleControl.readBuffers[SimpleControl.readIdx].mFrameNumber = SimpleControl.frameCount;
 
-            sc->totalReadFrame++;
-            sc->readIndex = (sc->readIndex + 1 >= NumReadBuffers) ? 0 : sc->readIndex + 1;
+            SimpleControl.readIdx = (SimpleControl.readIdx + 1 >= NumReadBuffers) ? 0 : SimpleControl.readIdx + 1;
+            SimpleControl.frameCount++;
 
-            if ((unsigned long)sc->totalReadFrame > sc->numFrames - 1)
+            if ((unsigned long)SimpleControl.frameCount > SimpleControl.numFrames - 1)
             {
-                if (sc->loop == 1)
+                if (SimpleControl.loop == 1)
                 {
-                    sc->totalReadFrame = 0;
-                    sc->curOffset = sc->movieDataOffsets;
-                    sc->readSize = sc->firstFrameSize;
+                    SimpleControl.frameCount = 0;
+                    SimpleControl.totalRead = SimpleControl.movieDataOffsets;
+                    SimpleControl.nextSize = SimpleControl.firstFrameSize;
                 }
             }
         }
 
-        sc->loop = loop;
-        ctrl->preFetchState = 1;
+        SimpleControl.loop = loop;
+        SimpleControl.playing = 1;
         return 1;
     }
 

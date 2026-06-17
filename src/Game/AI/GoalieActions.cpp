@@ -2351,7 +2351,7 @@ void Goalie::ActionOffplay(float)
 
 /**
  * Offset/Address/Size: 0x860 | 0x8004ED9C | size: 0x21C
- * TODO: there are still some register swaps caused by CalculateDistanceSquared2D
+ * TODO: 99.78% match - m_v3Position x/y float registers swapped in first distance/angle block
  */
 void Goalie::ActionLooseBallPursueBouncing(float deltaTime)
 {
@@ -2391,7 +2391,8 @@ void Goalie::ActionLooseBallPursueBouncing(float deltaTime)
     }
 
     // Calculate angle to predicted position and set facing direction
-    float angle = nlATan2f(predictedPos.f.y - m_v3Position.f.y, predictedPos.f.x - m_v3Position.f.x);
+    const nlVector3& pos = m_v3Position;
+    float angle = nlATan2f(predictedPos.f.y - pos.f.y, predictedPos.f.x - pos.f.x);
     m_aDesiredFacingDirection = (u16)(s32)(10430.378f * angle);
 
     if (CalculateDistanceSquared(predictedPos, mv3TargetPosition) > mfTargetDist)

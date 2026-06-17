@@ -146,38 +146,32 @@ void glplatAbortFrame()
     VIWaitForRetrace();
 }
 
-/**
- * Offset/Address/Size: 0x160 | 0x801B4754 | size: 0x2FC
- * TODO: 97.33% match - first static init block generates extra instruction
- * (doesn't reuse r31 for init flag), counter increment register is r3 instead of r5
- */
-void glplatSendFrame()
+static inline void glx_SendFrame(bool bSend)
 {
     glPoly2 sp1C;
-    f32 sp18;
-    f32 sp14;
-    f32 sp10;
-    f32 spC;
     nlColour sp8;
-    s32 var_r30;
-    s32 var_r31;
-    u32 temp_r30;
+    f32 spC;
+    f32 sp10;
+    f32 sp14;
+    f32 sp18;
+    s32 nLines;
+    s32 lineNo;
+    u32 bytesFree;
 
-    glxSwapPre(true);
-    var_r30 = 0;
+    nLines = 0;
     if (glx_Perf != false)
     {
-        var_r30 = 1;
+        nLines = 1;
     }
     if (glx_Virt != false)
     {
-        var_r30 += 1;
+        nLines += 1;
     }
 
-    if (var_r30 != 0)
+    if (nLines != 0)
     {
         glFontVirtualPosToScreenCoordPos(0.f, 36.f, spC, sp10);
-        glFontVirtualPosToScreenCoordPos(0.f, (f32)(var_r30 + 0x24), sp14, sp18);
+        glFontVirtualPosToScreenCoordPos(0.f, (f32)(nLines + 0x24), sp14, sp18);
         glSetDefaultState(false);
         sp1C.SetupRectangle(0.f, sp10 - 2.f, 640.f, 4.f + (sp18 - sp10), 10000000000.f);
         *(volatile u32*)&sp8 = *(volatile u32*)&glx_FogColour;
@@ -185,13 +179,12 @@ void glplatSendFrame()
         sp8.c[1] = 0x6E;
         sp8.c[2] = 0xA5;
         sp8.c[3] = 0xFF;
-        // SetColour(&sp1C, &sp8, 0xA5, 0x6E, 0x3A);
         sp1C.SetColour(sp8);
         sp1C.Attach((eGLView)0x21, 0, 0, -1);
-        var_r31 = 0;
+        lineNo = 0;
         if ((u8)glx_Perf != 0)
         {
-            var_r31 = 1;
+            lineNo = 1;
             static u32 print_val0 = 0;
             static u32 print_val1 = 0;
             static int counter = 0;
@@ -205,9 +198,8 @@ void glplatSendFrame()
                 total_val0 = 0;
                 total_val1 = 0;
                 counter = 0;
-                tv1 = tv1 / (u32)cnt;
                 print_val0 = tv0;
-                print_val1 = tv1;
+                print_val1 = tv1 / (u32)cnt;
             }
             glFontBegin(false);
             glFontPrintf((eGLView)0x21, 1, 0x24, "%u %s, %u %s", print_val0, str_perf0[glx_perf0], print_val1, str_perf1[glx_perf1]);
@@ -226,12 +218,21 @@ void glplatSendFrame()
                 print1 = glx_VirtLatency;
                 print2 = glGetCurrentFrame();
             }
-            temp_r30 = nlVirtualLargestBlock();
+            bytesFree = nlVirtualLargestBlock();
             glFontBegin(0);
-            glFontPrintf((eGLView)0x21, 1, var_r31 + 0x24, "%uKB free : %u misses, %u us latency (frame %u)", temp_r30 >> 0xAU, print0, print1, print2);
+            glFontPrintf((eGLView)0x21, 1, lineNo + 0x24, "%uKB free : %u misses, %u us latency (frame %u)", bytesFree >> 0xAU, print0, print1, print2);
             glFontEnd();
         }
     }
+}
+
+/**
+ * Offset/Address/Size: 0x160 | 0x801B4754 | size: 0x2FC
+ */
+void glplatSendFrame()
+{
+    glxSwapPre(true);
+    glx_SendFrame(true);
     glx_SendViews();
     glxSwapPost(true);
     glplatFrameAllocNextFrame();

@@ -563,8 +563,8 @@ bool AvoidController::CalcFielderRepulsionVector(nlVector3& v3OutRepulsion)
 
 /**
  * Offset/Address/Size: 0xE08 | 0x8000845C | size: 0x258
- * TODO: 98.97% match - remaining register-only diffs are in delta load FPR assignment,
- * r7 vs r4 setup for GetClosingSpeed2D(m_pFielder->...), and fContribution/output FPR allocation.
+ * TODO: 99.49% match - remaining register-only diffs are in delta load FPR assignment
+ * and r7 vs r4 setup for GetClosingSpeed2D(m_pFielder->...).
  */
 bool AvoidController::CalcPowerupRepulsionVector(nlVector3& v3OutRepulsion)
 {
@@ -648,15 +648,7 @@ bool AvoidController::CalcPowerupRepulsionVector(nlVector3& v3OutRepulsion)
                 fContribution = fMagnitude;
             }
 
-            float fOutY = v3OutRepulsion.f.y;
-            float fOutX = v3OutRepulsion.f.x;
-            fOutY = fContribution * fDeltaY + fOutY;
-            float fOutZ = v3OutRepulsion.f.z;
-            fOutX = fContribution * fDeltaX + fOutX;
-            fOutZ = fContribution * fDeltaZ + fOutZ;
-            v3OutRepulsion.f.x = fOutX;
-            v3OutRepulsion.f.y = fOutY;
-            v3OutRepulsion.f.z = fOutZ;
+            nlVec3Add(v3OutRepulsion, fContribution * fDeltaX, fContribution * fDeltaY, fContribution * fDeltaZ);
             bAvoidedSomething = true;
         }
     }

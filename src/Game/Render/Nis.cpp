@@ -362,8 +362,8 @@ void Nis::AddTrigger(NisTriggerType triggerType, float frameNumber, const char* 
 
 /**
  * Offset/Address/Size: 0x834 | 0x8012BC44 | size: 0x3DC
- * TODO: ~97% scratch match (9984U). Transferred from decomp.me scratch on
- * 2026-05-11 to preserve progress baseline for collaborator.
+ * TODO: 99.62% scratch match (Zi1L5). Remaining diffs: hasOffset loop
+ * count uses r4 vs target r0; helper-object World load uses r3 then r29.
  */
 void Nis::Trigger::FireEffect(const Nis& nis) const
 {
@@ -395,13 +395,15 @@ void Nis::Trigger::FireEffect(const Nis& nis) const
         if (idx < 0)
             idx = 0;
 
-        s32 index = nis.mMainCharacterIndex;
-        if (index < 0)
+        int charIdx;
+        if (nis.mMainCharacterIndex >= 0)
         {
-            index = NisPlayer::Instance()->TargetToIndex(nis.mTarget, idx, nis.mWinnerType);
+            charIdx = nis.mMainCharacterIndex;
         }
-
-        int charIdx = index;
+        else
+        {
+            charIdx = NisPlayer::Instance()->TargetToIndex(nis.mTarget, idx, nis.mWinnerType);
+        }
         if (charIdx >= 10)
             return;
 
@@ -427,9 +429,9 @@ void Nis::Trigger::FireEffect(const Nis& nis) const
         else
         {
             hasOffset = 0;
-            for (int i = 0; i < group->m_numSpecs; i++)
+            for (int count = group->m_numSpecs; count > 0; count--, specs++)
             {
-                if (specs[i].m_vLocalOffset.f.x != 0.0f || specs[i].m_vLocalOffset.f.y != 0.0f || specs[i].m_vLocalOffset.f.z != 0.0f)
+                if (specs->m_vLocalOffset.f.x != 0.0f || specs->m_vLocalOffset.f.y != 0.0f || specs->m_vLocalOffset.f.z != 0.0f)
                 {
                     hasOffset = 1;
                     break;

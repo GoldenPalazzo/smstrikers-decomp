@@ -404,7 +404,6 @@ void Fuzzy::DoPassing(float fConfidence, cDecisionEntity* pDecision)
 {
     extern cFielder* g_pScriptCurrentFielder;
     extern cTeam* g_pCurrentlyUpdatingTeam;
-    extern FuzzyVariant GetBestPassTarget__5FuzzyFP7cPlayer(cPlayer*);
 
     float fBestConfidence = 0.0f;
 
@@ -423,8 +422,9 @@ void Fuzzy::DoPassing(float fConfidence, cDecisionEntity* pDecision)
             fConfidence = fConfidence * fBranchRatio;
 
         float fAvoidingPowerups = AvoidingPowerups(g_pScriptCurrentFielder);
-        FuzzyVariant theBestPassTarget = GetBestPassTarget__5FuzzyFP7cPlayer(g_pScriptCurrentFielder);
-        float fAdjustedConfidence = theBestPassTarget.Confidence * (1.0f - fAvoidingPowerups) + 1.0f * fAvoidingPowerups;
+        float fOne = 1.0f;
+        FuzzyVariant theBestPassTarget = GetBestPassTarget(g_pScriptCurrentFielder);
+        float fAdjustedConfidence = theBestPassTarget.Confidence * (fOne - fAvoidingPowerups) + fOne * fAvoidingPowerups;
 
         fTrueConfidence = FGREATER(theBestPassTarget.Confidence, 0.15f);
         fTrueConfidence = (fTrueConfidence <= fAdjustedConfidence) ? fTrueConfidence : fAdjustedConfidence;

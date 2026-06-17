@@ -148,7 +148,7 @@ void ClearFadeData();
 bool IsEmitterActive(SFXEmitter*);
 u32 GetEmitterVoiceID(SFXEmitter*);
 bool Remove3DSFXEmitter(SFXEmitter*);
-void Add3DSFXEmitter(const EmitterStartInfo&);
+unsigned long Add3DSFXEmitter(const EmitterStartInfo&);
 SFXEmitter* GetFreeEmitter(unsigned long&);
 SFXEmitter* GetEmitter(unsigned long);
 extern SND_LISTENER gListener;

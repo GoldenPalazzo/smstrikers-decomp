@@ -377,11 +377,6 @@ void GameplayCameraZoomLevel::CalcDesiredTarget()
     }
 }
 
-/**
- * Offset/Address/Size: 0x5C | 0x801A969C | size: 0x414
- * TODO: 99.58% decomp.me match (100% instruction match, offset-only diffs from
- * standalone CalcCurrentKnotTable copy). Real build should be 100%.
- */
 static inline void CalcCurrentKnotTable(GameplayCameraZoomLevel* self, bool forceNeutral)
 {
     cPlayer* pBallOwner;
@@ -430,6 +425,9 @@ static inline void CalcCurrentKnotTable(GameplayCameraZoomLevel* self, bool forc
     }
 }
 
+/**
+ * Offset/Address/Size: 0x5C | 0x801A969C | size: 0x414
+ */
 void GameplayCameraZoomLevel::Update(float fDeltaT, bool forceNeutral)
 {
     float fSin;
@@ -465,27 +463,29 @@ void GameplayCameraZoomLevel::Update(float fDeltaT, bool forceNeutral)
     CalcDesiredTarget();
 
     {
+        float change;
+        float x;
         float omega = 2.0f / m_fTargetSeekTime;
-        float x = omega * fDeltaT;
+        x = omega * fDeltaT;
         float exp = 1.0f / ((x * (0.235f * x * x)) + ((0.48f * x * x) + (1.0f + x)));
-        float change = m_fDampenedTargetX - m_fDesiredTargetX;
+        change = m_fDampenedTargetX - m_fDesiredTargetX;
         float currentVelocity = m_fTargetSeekSpeedX;
-        float temp = fDeltaT * ((change * omega) + currentVelocity);
 
-        m_fTargetSeekSpeedX = exp * (currentVelocity - (omega * temp));
-        m_fDampenedTargetX = (exp * (change + temp)) + m_fDesiredTargetX;
+        m_fTargetSeekSpeedX = exp * (currentVelocity - (omega * (fDeltaT * ((omega * change) + currentVelocity))));
+        m_fDampenedTargetX = (exp * (change + (fDeltaT * ((omega * change) + currentVelocity)))) + m_fDesiredTargetX;
     }
 
     {
+        float change;
+        float x;
         float omega = 2.0f / m_fTargetSeekTime;
-        float x = omega * fDeltaT;
+        x = omega * fDeltaT;
         float exp = 1.0f / ((x * (0.235f * x * x)) + ((0.48f * x * x) + (1.0f + x)));
-        float change = m_fDampenedTargetY - m_fDesiredTargetY;
+        change = m_fDampenedTargetY - m_fDesiredTargetY;
         float currentVelocity = m_fTargetSeekSpeedY;
-        float temp = fDeltaT * ((change * omega) + currentVelocity);
 
-        m_fTargetSeekSpeedY = exp * (currentVelocity - (omega * temp));
-        m_fDampenedTargetY = (exp * (change + temp)) + m_fDesiredTargetY;
+        m_fTargetSeekSpeedY = exp * (currentVelocity - (omega * (fDeltaT * ((omega * change) + currentVelocity))));
+        m_fDampenedTargetY = (exp * (change + (fDeltaT * ((omega * change) + currentVelocity)))) + m_fDesiredTargetY;
     }
 
     nlSinCos(&fSin, &fCos, ((s32)(65536.0f * m_CameraData->pitch)) / 360);

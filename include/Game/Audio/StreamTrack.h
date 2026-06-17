@@ -66,6 +66,8 @@ public:
 
         typedef nlDLListSlotPool<STREAM_FADE_CTRL> FadeList;
 
+        ~FadeManager();
+
         void UpdateFade(STREAM_FADE_CTRL*);
         void AddFade(GCAudioStreaming::StereoAudioStream*, unsigned long, unsigned long,
             Audio::MasterVolume::VOLUME_GROUP, unsigned long, const Function<FnVoidVoid>&);

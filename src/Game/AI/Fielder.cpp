@@ -2512,7 +2512,7 @@ bool cFielder::DoLooseBallContactFromRun(nlVector3& v3AnimStartPosition, float& 
 
 /**
  * Offset/Address/Size: 0x84AC | 0x800217E8 | size: 0x2FC
- * TODO: 97.07% match - scratch register allocation in sin/cos rotation block and Z crossing branch structure differ (cror+bne vs blt pattern)
+ * TODO: 99.84% match - remaining temporary register differences in contact-offset rotation block
  */
 bool cFielder::DoLooseBallContactFromRunVolley(nlVector3& v3AnimStartPosition, float& fAnimStartTime, nlVector3& v3BallContactPosition, float& fBallContactTime,
     const LooseBallContactAnimInfo* pBestBallContactAnimInfo, const nlVector3& v3PassIntercept)
@@ -2561,7 +2561,7 @@ bool cFielder::DoLooseBallContactFromRunVolley(nlVector3& v3AnimStartPosition, f
 
         if (fSimulatedTime > FixedUpdateTask::GetPhysicsUpdateTick())
         {
-            if ((((v3SimulatedBallPos.f.z >= v3ContactOffsetWorld.f.z) && (fPrevBallZ < v3ContactOffsetWorld.f.z)) || ((v3SimulatedBallPos.f.z < v3ContactOffsetWorld.f.z) && (fPrevBallZ >= v3ContactOffsetWorld.f.z))) || (currDistZ >= prevDistZ))
+            if (((v3SimulatedBallPos.f.z < v3ContactOffsetWorld.f.z) || (fPrevBallZ < v3ContactOffsetWorld.f.z)) && ((v3SimulatedBallPos.f.z >= v3ContactOffsetWorld.f.z) || (fPrevBallZ >= v3ContactOffsetWorld.f.z)) || (currDistZ >= prevDistZ))
             {
                 float deltaY = v3SimulatedBallPos.f.y - v3PassIntercept.f.y;
                 float deltaX = v3SimulatedBallPos.f.x - v3PassIntercept.f.x;

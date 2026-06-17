@@ -184,17 +184,22 @@ void GCAudioStreaming::StereoAudioStream::CancelPendingReads()
 
 /**
  * Offset/Address/Size: 0x0 | 0x801C9184 | size: 0x20C
- * TODO: 91.83% match - FreeBuffer inline offset folding, init pattern extra li, ble/beq branch hints
+ * TODO: 96.15% match - branch form differences around empty buffer checks and one clear-slot zero register
  */
 void GCAudioStreaming::AudioStream::Stop()
 {
     m_Flags &= ~(1 << SF_Play);
     if (m_State == SS_Playing)
     {
-        AudioStreamBuffer* next = 0;
-        volatile unsigned long BufferIndex = (unsigned long)next;
-        if (m_BufferCount > 0)
+        AudioStreamBuffer* next;
+        volatile unsigned long BufferIndex = (unsigned long)(next = 0);
+        if (m_BufferCount <= 0)
+        {
+        }
+        else
+        {
             next = m_Buffers[0];
+        }
         AudioStreamBuffer* pBuffer = next;
         while (pBuffer)
         {
@@ -219,17 +224,43 @@ void GCAudioStreaming::AudioStream::Stop()
         m_Flags &= ~(1 << SF_CoolOnStop);
         if (m_State > SS_Initd)
         {
-            AudioStreamBuffer* pBuffer = 0;
-            volatile unsigned long BufferIndex = 0;
+            AudioStreamBuffer* pBuffer;
+            volatile unsigned long BufferIndex = (unsigned long)(pBuffer = 0);
             m_Flags = (m_Flags & ~(1 << SF_SeriousStop)) | (1 << SF_SeriousStop);
-            if (m_BufferCount > 0)
+            if (m_BufferCount <= 0)
+            {
+            }
+            else
+            {
                 pBuffer = m_Buffers[0];
+            }
             while (pBuffer)
             {
-                m_BuffMgr.FreeBuffer(pBuffer);
+                AudioBufferMgr& mgr = m_BuffMgr;
+                int buff = pBuffer - mgr.m_Buffers;
+                AudioStreamBuffer* pFree = &mgr.m_Buffers[buff];
+                int mask = 1 << buff;
+                pFree->m_pStream = 0;
+                pFree->m_UpdateOffset = 0;
+                pFree->m_Volume = 0x7F;
+                pFree->m_Pan = 0x40;
+
+                unsigned long cleared = mgr.m_BuffersFree & ~mask;
+                mgr.m_BuffersFree = cleared | mask;
+
+                unsigned long free = mgr.m_BuffersFree;
+                buff = 0;
+                while (free)
+                {
+                    free &= (free - 1);
+                    buff++;
+                }
+
+                ___blank("After buffer free there are %d availible\n", buff);
+
                 unsigned long idx = BufferIndex;
                 pBuffer = 0;
-                m_Buffers[idx] = pBuffer;
+                m_Buffers[idx] = 0;
                 idx++;
                 BufferIndex = idx;
                 if (idx < m_BufferCount)

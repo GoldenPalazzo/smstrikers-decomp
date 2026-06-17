@@ -2003,10 +2003,27 @@ u8 World::HandleObjectCreation(WorldObjectData* pObjectData)
 
 static const unsigned long eOC_ENV_SHINY = 0x00000010;
 
+static inline float World_SelectBoundingRadius(AABBDimensions& aabb)
+{
+    float dimX = aabb.mDim.f.x;
+    float dimY = aabb.mDim.f.y;
+    if (dimX >= dimY && dimX > aabb.mDim.f.z)
+    {
+        return dimX;
+    }
+    else
+    {
+        dimX = aabb.mDim.f.z;
+        if (dimY >= dimX)
+        {
+            dimX = dimY;
+        }
+        return dimX;
+    }
+}
+
 /**
  * Offset/Address/Size: 0x3420 | 0x801980E4 | size: 0x274
- * TODO: 99.30% match - remaining diffs are in the bounding-radius max selection branch shape
- *       and the resulting branch target offsets.
  */
 bool World::LoadGeometry(glModel* gModel, unsigned long uNumModels, bool bMakeDrawables, bool keepTransform, unsigned long* pDrawableObjectHashes, int* pNumObjectsLoaded, bool bVar)
 {
@@ -2104,18 +2121,7 @@ bool World::LoadGeometry(glModel* gModel, unsigned long uNumModels, bool bMakeDr
 
             pObject->GetAABBDimensions(aabb, false);
 
-            {
-                float dimX = aabb.mDim.f.x;
-                if (!(dimX >= aabb.mDim.f.y) || !(dimX > aabb.mDim.f.z))
-                {
-                    dimX = aabb.mDim.f.z;
-                    if (aabb.mDim.f.y >= dimX)
-                    {
-                        dimX = aabb.mDim.f.y;
-                    }
-                }
-                pObject->m_fBoundingRadius = dimX;
-            }
+            pObject->m_fBoundingRadius = World_SelectBoundingRadius(aabb);
 
             if (pDrawableObjectHashes != NULL)
             {
@@ -2356,7 +2362,7 @@ World::World(const char* szWorldName)
 
     m_pWorldAnimManager = new (nlMalloc(sizeof(WorldAnimManager), 8, false)) WorldAnimManager();
 
-    m_pIntensityPerm = NULL;
+    m_pPlayerNISLightData = NULL;
 
     m_LightRampTexA = glGetTexture("global/lightramp");
     m_LightRampTexB = m_LightRampTexA;

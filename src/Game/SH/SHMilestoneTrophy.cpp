@@ -28,8 +28,8 @@ typedef BasicString<unsigned short, Detail::TempStringAllocator> WideBasicString
 // unsigned short*> in this TU. Target emits __md<PCUs> as a global symbol; the implicit
 // (weak/linkonce) instantiation MWCC would otherwise produce is uncreditable by objdiff.
 template FormatImpl<BasicString<unsigned short, Detail::TempStringAllocator> >&
-FormatImpl<BasicString<unsigned short, Detail::TempStringAllocator> >::operator% <const unsigned short*>(
-    const unsigned short* const& t);
+    FormatImpl<BasicString<unsigned short, Detail::TempStringAllocator> >::operator% <const unsigned short*>(
+        const unsigned short* const& t);
 
 /**
  * Offset/Address/Size: 0x1058 | 0x800D0DD8 | size: 0x118
@@ -438,7 +438,7 @@ void MilestoneTrophyScene::SceneCreated()
     BasicString<unsigned short, Detail::TempStringAllocator> unformatted(locString);
     BasicString<unsigned short, Detail::TempStringAllocator> stat;
     BasicString<unsigned short, Detail::TempStringAllocator> unlockable;
-    BasicString<unsigned short, Detail::TempStringAllocator> formatted;
+    BasicString<unsigned short, Detail::TempStringAllocator> description;
 
     switch (mTrophy)
     {
@@ -508,7 +508,7 @@ void MilestoneTrophyScene::SceneCreated()
         break;
     }
 
-    formatted = Format(unformatted, stat.c_str());
+    BasicString<unsigned short, Detail::TempStringAllocator> formatted = Format(unformatted, stat.c_str());
 
     memcpy(mTotalBuffer, formatted.c_str(), 0x100);
 
@@ -595,7 +595,7 @@ void MilestoneTrophyScene::SceneCreated()
         arrows->m_bVisible = false;
     }
 
-    eMilestoneColour levelReached = gameInfo->GetMilestoneLevel(mTrophy);
+    eMilestoneColour levelReached = nlSingleton<GameInfoManager>::s_pInstance->GetMilestoneLevel(mTrophy);
     BasicString<char, Detail::TempStringAllocator> fileName(TROPHY_TEXTURE_FILENAMES[(int)mTrophy]);
     if (levelReached == MILESTONE_BLACK)
     {
@@ -635,8 +635,6 @@ void MilestoneTrophyScene::SceneCreated()
         pTrophyImage->SetAssetColour(colour);
     }
     mDoBlockLoad = false;
-
-    BasicString<unsigned short, Detail::TempStringAllocator> description;
 
     if (nlSingleton<GameInfoManager>::s_pInstance->HasTrophy(mTrophy))
     {

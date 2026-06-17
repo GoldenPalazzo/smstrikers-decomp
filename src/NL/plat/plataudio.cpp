@@ -315,7 +315,7 @@ void Update3DSFXEmitter(SFXEmitter* pSFXEmitter, const nlVector3& position, cons
 /**
  * Offset/Address/Size: 0x588 | 0x801C4D84 | size: 0x2E4
  */
-void Add3DSFXEmitter(const EmitterStartInfo& info)
+unsigned long Add3DSFXEmitter(const EmitterStartInfo& info)
 {
     SND_FVECTOR svPos;
     SND_FVECTOR svDir;
@@ -496,7 +496,7 @@ void Add3DSFXEmitter(const EmitterStartInfo& info)
         }
         temp_f6 += var_f0;
 
-        sndAddEmitter2StudioPara((SND_EMITTER*)pSFXEmitter, &svPos, &svDir, info.maxDist, info.comp, flags, (u16)info.uSFXID, (u8)(s32)temp_f6, minVol, 0, pParaInfo);
+        return sndAddEmitter2StudioPara((SND_EMITTER*)pSFXEmitter, &svPos, &svDir, info.maxDist, info.comp, flags, (u16)info.uSFXID, (u8)(s32)temp_f6, minVol, 0, pParaInfo);
     }
 }
 

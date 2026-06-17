@@ -672,10 +672,11 @@ long SaveCallbacks::DoSave(unsigned long Slot)
     {
         MemCard::ICON_DATA_INFO localDataInfo1;
         m_pSaveFile->IconCfg.GetValidDataInfo(localDataInfo1);
-        void* pHdrBuf = gIconDataCache.mIconHdrBuffer;
-        void* bannerBuf = gIconDataCache.mBannerBuffer;
+        IconDataCache* cache = &gIconDataCache;
+        localDataInfo1.pHeaderData = (unsigned char*)cache->mIconHdrBuffer;
+        void* bannerBuf = cache->mBannerBuffer;
         u32 bannerOfs = localDataInfo1.BannerOffset;
-        void* destBanner = (u8*)pHdrBuf + bannerOfs;
+        void* destBanner = localDataInfo1.pHeaderData + bannerOfs;
         u8 bannerFmt = m_pSaveFile->IconCfg.BannerFormat;
         u32 tableOfs = *(u32*)((u8*)bannerBuf + 8);
         u32 entryVal = *(u32*)((u8*)bannerBuf + tableOfs);
@@ -690,9 +691,10 @@ long SaveCallbacks::DoSave(unsigned long Slot)
         memcpy(destBanner, srcBanner, bannerCopySize);
         MemCard::ICON_DATA_INFO localDataInfo2;
         m_pSaveFile->IconCfg.GetValidDataInfo(localDataInfo2);
-        void* iconBuf = gIconDataCache.mIconBuffer;
+        localDataInfo2.pHeaderData = (unsigned char*)cache->mIconHdrBuffer;
+        void* iconBuf = cache->mIconBuffer;
         u32 iconOfs = localDataInfo2.IconOffset[0];
-        void* destIcon = (u8*)gIconDataCache.mIconHdrBuffer + iconOfs;
+        void* destIcon = localDataInfo2.pHeaderData + iconOfs;
         s8 iconFmtS = m_pSaveFile->IconCfg.IconFormat;
         u32 itableOfs = *(u32*)((u8*)iconBuf + 8);
         u32 ientryVal = *(u32*)((u8*)iconBuf + itableOfs);
@@ -716,7 +718,7 @@ long SaveCallbacks::DoSave(unsigned long Slot)
         int headerTotal = banClutH + banDatH + icnPixels + icnClutH;
         u32 headerSize = headerTotal + 0x40;
         m_pSaveFile->IconCfg.HeaderSize = headerSize;
-        u32 crc = nlChecksum32(gIconDataCache.mIconHdrBuffer, headerSize);
+        u32 crc = nlChecksum32(localDataInfo2.pHeaderData, headerSize);
         m_IconCRC = crc;
         gIconCRC = m_IconCRC;
     }

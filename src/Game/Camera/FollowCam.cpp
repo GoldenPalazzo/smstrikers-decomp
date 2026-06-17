@@ -43,7 +43,7 @@ cFollowCamera::cFollowCamera(FollowTarget followTarget)
 
 /**
  * Offset/Address/Size: 0x0 | 0x801A8F18 | size: 0x668
- * TODO: 96.4% match - GPR r28-r31 allocation rotated (this=r29 should be r28, pad=r31 should be r29); dampening/vector math float scheduling differs
+ * TODO: 96.8% match - GPR r28-r31 allocation rotated; remaining diffs are vector math float scheduling
  */
 void cFollowCamera::Update(float dt)
 {
@@ -117,15 +117,13 @@ void cFollowCamera::Update(float dt)
         return;
     }
 
-    const float frac = (m_fOOIDistance - g_fMinDistance) / (g_fMaxDistance - g_fMinDistance);
-    const float zOff = nlLerp(g_fFollowCamMinZOffset, g_fFollowCamMaxZOffset, frac);
-    m_v3OOI.f.z += zOff;
+    m_v3OOI.f.z += g_fFollowCamMinZOffset + (g_fFollowCamMaxZOffset - g_fFollowCamMinZOffset) * ((m_fOOIDistance - g_fMinDistance) / (g_fMaxDistance - g_fMinDistance));
 
     m_v3OOIDampenedPrev = m_v3OOIDampened;
 
-    m_v3OOIDampened.f.x = g_fFollowCamOOISeek * m_v3OOI.f.x + (1.0f - g_fFollowCamOOISeek) * m_v3OOIDampened.f.x;
-    m_v3OOIDampened.f.y = g_fFollowCamOOISeek * m_v3OOI.f.y + (1.0f - g_fFollowCamOOISeek) * m_v3OOIDampened.f.y;
-    m_v3OOIDampened.f.z = g_fFollowCamOOIZSeek * m_v3OOI.f.z + (1.0f - g_fFollowCamOOIZSeek) * m_v3OOIDampened.f.z;
+    m_v3OOIDampened.f.x = (1.0f - g_fFollowCamOOISeek) * m_v3OOIDampened.f.x + g_fFollowCamOOISeek * m_v3OOI.f.x;
+    m_v3OOIDampened.f.y = (1.0f - g_fFollowCamOOISeek) * m_v3OOIDampened.f.y + g_fFollowCamOOISeek * m_v3OOI.f.y;
+    m_v3OOIDampened.f.z = (1.0f - g_fFollowCamOOIZSeek) * m_v3OOIDampened.f.z + g_fFollowCamOOIZSeek * m_v3OOI.f.z;
 
     const float aL = cPadManager::GetPad(0)->GetPressure(0x400, false);
     const float aR = cPadManager::GetPad(0)->GetPressure(0x800, false);

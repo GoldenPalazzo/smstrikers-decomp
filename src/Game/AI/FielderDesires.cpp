@@ -867,7 +867,7 @@ void cFielder::UpdateDesireState(float fDeltaT)
             float fFormationBlend = InterpolateRangeClamped(g_vUpFieldMaxDistance.f.y, g_vUpFieldMaxDistance.f.x, g_vUpFieldRange.f.x, g_vUpFieldRange.f.y, m_v3AIPosition.f.x);
             if (g_pBall->GetOwnerGoalie() != NULL)
             {
-                fFormationBlend = fFormationBlend * 2.0f;
+                fFormationBlend *= 2.0f;
             }
             float fSign = AIsgn(m_pTeam->m_pNet->m_baseLocation.f.x);
             v3DesiredPosition.f.x = v3DesiredPosition.f.x + (fFormationBlend * fSign);
@@ -931,7 +931,7 @@ void cFielder::UpdateDesireState(float fDeltaT)
                     }
                     else
                     {
-                        m_DesireCommonVars.fMisc = -(g_pGame->m_pGameTweaks->unk298 + (float)(0.6f * GenerateFilteredRandom() - 0.30000001192092896));
+                        m_DesireCommonVars.fMisc = -((float)(0.6f * GenerateFilteredRandom() - 0.30000001192092896) + g_pGame->m_pGameTweaks->unk298);
                     }
                     mActionShootToScoreVars.bShootWasPressed = false;
                 }
@@ -1007,7 +1007,7 @@ void cFielder::UpdateDesireState(float fDeltaT)
         break;
     case FIELDERDESIRE_WINDUP_PASS:
     {
-        if (m_pBall == NULL || Incapacitated(mActionPassingVars.pPassTarget) != 0.0f)
+        if (m_pBall == NULL || Incapacitated(mActionPassingVars.pPassTarget))
         {
             SetDesireDuration(0.0f, true);
             break;

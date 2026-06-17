@@ -176,8 +176,8 @@ bool glViewGetDepthClear(eGLView view)
 
 /**
  * Offset/Address/Size: 0x30C | 0x801DE7B0 | size: 0x164
- * TODO: 97.58% match - r24/r28 register allocation swap in setup and loop
- * index path (views base/init ordering still differs).
+ * TODO: 98.71% match - screen dimension and views/gl_ViewEnable base
+ * registers are rotated in setup and repeated view loads.
  */
 void gl_ViewStartup()
 {
@@ -189,7 +189,6 @@ void gl_ViewStartup()
     glView** viewSlot;
     s32 i;
     u32 identityMatrix;
-    bool* viewEnable;
 
     screenWidth = glGetScreenWidth();
     screenHeight = glGetScreenHeight();
@@ -198,10 +197,9 @@ void gl_ViewStartup()
     i = 0;
     offset = 0;
     viewSlot = views;
-    viewEnable = gl_ViewEnable;
     do
     {
-        *viewEnable = TRUE;
+        gl_ViewEnable[offset / 4] = TRUE;
 
         view = (glView*)nlMalloc(0xFC, 8, FALSE);
         if (view != NULL)
@@ -232,8 +230,6 @@ void gl_ViewStartup()
 
         view = views[offset / 4];
         view->m_target = GLTG_None;
-
-        viewEnable++;
 
         view = views[offset / 4];
         view->m_unk_0x04 = 0;

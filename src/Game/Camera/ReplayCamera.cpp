@@ -213,7 +213,7 @@ void ReplayCamera::CutTo(ReplayCameraPosition camPos)
 
 /**
  * Offset/Address/Size: 0x11AC | 0x801ABEB0 | size: 0x4BC
- * TODO: 96.29% match - r29/r31 register swap for position parameter; string literal address loaded before nlMalloc instead of after
+ * TODO: 97.72% match - r29/r30 register swap remains for position and config temporaries
  */
 float ReplayCamera::GetFov(ReplayCameraPosition position) const
 {
@@ -232,9 +232,51 @@ float ReplayCamera::GetFov(ReplayCameraPosition position) const
     default:
         if (position >= REPLAY_CAMERA_POSITION_GENERIC_0 && position <= REPLAY_CAMERA_POSITION_GENERIC_LAST)
         {
-            BasicString<char, Detail::TempStringAllocator> prefix("replay/camera_");
+            BasicStringData<char>* prefixData = (BasicStringData<char>*)nlMalloc(sizeof(BasicStringData<char>), 8, true);
+            if (prefixData != 0)
             {
-                BasicString<char, Detail::TempStringAllocator> formatStr("generic_{0}_fov");
+                prefixData->mData = 0;
+                prefixData->mSize = 0;
+                prefixData->mCapacity = 0;
+                const char* str = "replay/camera_";
+                const char* s = str;
+                while ((signed char)*s++ != 0)
+                {
+                    prefixData->mSize++;
+                }
+                prefixData->mSize++;
+                prefixData->mData = (char*)nlMalloc(prefixData->mSize + 1, 8, true);
+                prefixData->mCapacity = prefixData->mSize;
+                for (int i = 0; i < prefixData->mSize; i++)
+                {
+                    prefixData->mData[i] = *str++;
+                }
+                prefixData->mRefCount = 1;
+            }
+            BasicString<char, Detail::TempStringAllocator> prefix(prefixData);
+            {
+                BasicStringData<char>* formatData = (BasicStringData<char>*)nlMalloc(sizeof(BasicStringData<char>), 8, true);
+                if (formatData != 0)
+                {
+                    formatData->mData = 0;
+                    formatData->mSize = 0;
+                    formatData->mCapacity = 0;
+                    const char* str = "generic_{0}_fov";
+                    const char* s = str;
+                    while ((signed char)*s++ != 0)
+                    {
+                        formatData->mSize++;
+                    }
+                    formatData->mSize++;
+                    formatData->mData = (char*)nlMalloc(formatData->mSize + 1, 8, true);
+                    formatData->mCapacity = formatData->mSize;
+                    for (int i = 0; i < formatData->mSize; i++)
+                    {
+                        formatData->mData[i] = *str++;
+                    }
+                    formatData->mRefCount = 1;
+                }
+                BasicString<char, Detail::TempStringAllocator> formatStr(formatData);
                 int idx = position - REPLAY_CAMERA_POSITION_GENERIC_0;
                 prefix.AppendInPlace(Format(formatStr, idx));
             }

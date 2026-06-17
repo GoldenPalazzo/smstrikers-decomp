@@ -1144,7 +1144,7 @@ static inline float clampAbove(float minVal, float x)
 
 /**
  * Offset/Address/Size: 0x1E54 | 0x8000B828 | size: 0x400
- * TODO: 97.0% match - saved FPR allocation: prevPos.y/z get f31/f30 instead of f22/f23, causing register cascade
+ * TODO: 98.5% match - prevPosition.y/z use f31/f30 instead of f22/f23, cascading through interpolation registers
  */
 void cBall::PostPhysicsUpdate(float fDeltaT)
 {
@@ -1233,9 +1233,7 @@ void cBall::PostPhysicsUpdate(float fDeltaT)
         float zVelocity = m_v3Velocity.f.z;
         velocity.f.z = zVelocity;
 
-        float zVelSq = zVelocity * zVelocity;
-        float speedSq = velocity.f.x * velocity.f.x + velocity.f.y * velocity.f.y;
-        speedSq += zVelSq;
+        float speedSq = velocity.GetLengthSq3D();
         if (speedSq < 400.0f)
         {
             float speed = nlSqrt(speedSq, true);

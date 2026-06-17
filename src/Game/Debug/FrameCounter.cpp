@@ -218,7 +218,7 @@ void DrawCircle(nlVector3 p0, float fRadius, float fScaleX, nlColour colour)
 
 /**
  * Offset/Address/Size: 0x904 | 0x801FD4A0 | size: 0x358
- * TODO: 99.51% match - temp FPR allocation differs in setup/loop body sections.
+ * TODO: 99.88% match - loop y rescale keeps the y result and p0.x in swapped FPRs.
  */
 void DrawSmile(nlVector3 p0, float fRadius, float fScaleX, nlColour colour, float fLineThickness)
 {
@@ -247,12 +247,10 @@ void DrawSmile(nlVector3 p0, float fRadius, float fScaleX, nlColour colour, floa
         nlSinCos(&v3point.f.x, &v3point.f.y, (u16)(int)(10430.378f * fRadians));
 
         float fXFromAngle = v3point.f.x * fRadius;
-        float fYFromAngle = (v3point.f.y * fRadius) + p0.f.y;
-        float fYTop = p0.f.y + fRadius;
-
-        v3point.f.y = fYFromAngle;
         v3point.f.x = (fScaleX * fXFromAngle) + p0.f.x;
-
+        v3point.f.y = (v3point.f.y * fRadius) + p0.f.y;
+        float fYFromAngle = v3point.f.y;
+        float fYTop = p0.f.y + fRadius;
         float middleY = 0.5f * (fYFromAngle + fYTop);
 
         int i = 0;
@@ -261,12 +259,10 @@ void DrawSmile(nlVector3 p0, float fRadius, float fScaleX, nlColour colour, floa
             nlSinCos(&v3point.f.x, &v3point.f.y, (u16)(int)(10430.378f * fRadians));
 
             float fXCurrent = v3point.f.x * fRadius;
-            float fYCurrent = (v3point.f.y * fRadius) + p0.f.y;
-
-            v3point.f.y = fYCurrent;
+            v3point.f.y = (v3point.f.y * fRadius) + p0.f.y;
             v3point.f.x = (fScaleX * fXCurrent) + p0.f.x;
 
-            v3point.f.y = fYCurrent - middleY;
+            v3point.f.y = v3point.f.y - middleY;
             v3point.f.y = v3point.f.y * yScale;
             v3point.f.y = v3point.f.y + middleY;
 

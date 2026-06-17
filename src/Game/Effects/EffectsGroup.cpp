@@ -364,7 +364,7 @@ EffectsTerrainSpec* parse_terrain_spec(SimpleParser* parser)
 {
     unsigned long terrainIDs[256];
     unsigned long offset = 0;
-    unsigned long numTerrains = 0;
+    int numTerrains = 0;
     SimpleParser* p = parser;
 
     while (true)
@@ -375,7 +375,7 @@ EffectsTerrainSpec* parse_terrain_spec(SimpleParser* parser)
             break;
         }
 
-        *(unsigned long*)((char*)terrainIDs + offset) = nlStringLowerHash(token);
+        terrainIDs[offset >> 2] = nlStringLowerHash(token);
         numTerrains++;
         offset += 4;
     }
@@ -396,55 +396,9 @@ EffectsTerrainSpec* parse_terrain_spec(SimpleParser* parser)
     checksum.ChecksumInt(pSpec->m_uNumTerrains);
     checksum.ChecksumData(pSpec->m_pTerrainIDs, pSpec->m_uNumTerrains * 4);
 
-    AVLTreeEntry<unsigned long, EffectsTerrainSpec*>* node = pTerrainSpecMap->m_Root;
     unsigned long hashID = ~checksum.m_nChecksum;
-    unsigned char found;
     EffectsTerrainSpec** foundValue;
-
-    while (node != nullptr)
-    {
-        int cmpResult;
-
-        if (hashID == node->key)
-        {
-            cmpResult = 0;
-        }
-        else if (hashID < node->key)
-        {
-            cmpResult = -1;
-        }
-        else
-        {
-            cmpResult = 1;
-        }
-
-        if (cmpResult == 0)
-        {
-            if (&foundValue != nullptr)
-            {
-                foundValue = &node->value;
-            }
-
-            found = true;
-            break;
-        }
-
-        if (cmpResult < 0)
-        {
-            node = (AVLTreeEntry<unsigned long, EffectsTerrainSpec*>*)node->node.left;
-        }
-        else
-        {
-            node = (AVLTreeEntry<unsigned long, EffectsTerrainSpec*>*)node->node.right;
-        }
-    }
-
-    if (node == nullptr)
-    {
-        found = false;
-    }
-
-    EffectsTerrainSpec* existingSpec = found ? *foundValue : nullptr;
+    EffectsTerrainSpec* existingSpec = pTerrainSpecMap->FindGet(hashID, &foundValue) ? *foundValue : nullptr;
 
     if (existingSpec == nullptr)
     {

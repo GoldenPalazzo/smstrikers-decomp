@@ -156,134 +156,117 @@ static void Block_construct(Block* ths, u32 size)
     Block_link(ths, sb);
 }
 
+static inline void SubBlock_construct(SubBlock* ths, u32 size, Block* bp, int prev_alloc, int this_alloc)
+{
+    ths->block = (Block*)((u32)bp | 1);
+    ths->size = size;
+    if (prev_alloc)
+        ths->size |= 4;
+    if (this_alloc)
+    {
+        ths->size |= 2;
+        *(u32*)((char*)ths + size) |= 4;
+    }
+    else
+    {
+        *(u32*)((char*)ths + size - sizeof(u32)) = size;
+    }
+}
+
+static inline SubBlock* SubBlock_split(SubBlock* ths, u32 size)
+{
+    u32 origsize;
+    int isfree;
+    int isprevalloc;
+    SubBlock* np;
+    Block* bp;
+
+    origsize = SubBlock_size(ths);
+    isfree = SubBlock_is_free(ths);
+    isprevalloc = ths->size & 4;
+    np = (SubBlock*)((char*)ths + size);
+    bp = SubBlock_block(ths);
+
+    SubBlock_construct(ths, size, bp, isprevalloc, !isfree);
+    SubBlock_construct(np, origsize - size, bp, !isfree, !isfree);
+    if (isfree)
+    {
+        np->next = ths->next;
+        np->next->prev = np;
+        np->prev = ths;
+        ths->next = np;
+    }
+    return np;
+}
+
+static inline void Block_unlink(Block* ths, SubBlock* sb)
+{
+    SubBlock** st;
+    u32 tag;
+    u32 tag_size;
+
+    tag = sb->size;
+    sb->size = tag | 2;
+    tag_size = tag & ~7;
+    *(u32*)((char*)sb + tag_size) |= 4;
+
+    st = &Block_start(ths);
+    if (*st == sb)
+        *st = sb->next;
+    if (*st == sb)
+    {
+        *st = 0;
+        ths->max_size = 0;
+    }
+    else
+    {
+        sb->next->prev = sb->prev;
+        sb->prev->next = sb->next;
+    }
+}
+
 /**
  * Offset/Address/Size: 0x0 | 0x8022BBAC | size: 0x1E4
- * TODO: 92.2% match - r5/r6 and r5/r8 register allocation mismatch in loop/split paths,
- *       plus split scheduling differences around rlwinm./clrrwi and stw ordering
  */
-SubBlock* Block_subBlock(Block* ths, u32 size)
+static SubBlock* Block_subBlock(Block* ths, u32 size)
 {
     SubBlock* sb;
-    SubBlock* start;
+    SubBlock* st;
     u32 sb_size;
     u32 max_size;
 
-    start = Block_start(ths);
+    st = Block_start(ths);
 
-    if (start == NULL)
+    if (st == 0)
     {
         ths->max_size = 0;
-        return NULL;
+        return 0;
     }
 
-    sb = start;
-    sb_size = SubBlock_size(start);
+    sb = st;
+    sb_size = SubBlock_size(sb);
     max_size = sb_size;
 
     while (sb_size < size)
     {
-        start = start->next;
-        sb_size = SubBlock_size(start);
+        sb = sb->next;
+        sb_size = SubBlock_size(sb);
         if (max_size < sb_size)
             max_size = sb_size;
-        if (start == sb)
+        if (sb == st)
         {
             ths->max_size = max_size;
-            return NULL;
+            return 0;
         }
     }
 
     if (sb_size - size >= 0x50)
-    {
-        SubBlock* new_sb;
-        u32 old_tag;
-        u32 old_size;
-        u32 block_val;
-        u32 block_or_1;
-        int was_free;
-        int was_alloc;
-        u32 new_size;
+        SubBlock_split(sb, size);
 
-        old_tag = start->size;
-        new_sb = (SubBlock*)((char*)start + size);
-        block_val = (u32)(start->block) & ~1;
-        block_or_1 = block_val | 1;
+    Block_start(ths) = sb->next;
+    Block_unlink(ths, sb);
 
-        was_free = !(old_tag & 2);
-        was_alloc = !was_free;
-
-        start->block = (Block*)block_or_1;
-        start->size = size;
-
-        if (old_tag & 4)
-            start->size |= 4;
-
-        old_size = old_tag & ~7;
-
-        if (was_alloc)
-        {
-            start->size |= 2;
-            new_sb->size |= 4;
-        }
-        else
-        {
-            *(u32*)((char*)new_sb - 4) = size;
-        }
-
-        new_sb->block = (Block*)block_or_1;
-        new_size = old_size - size;
-        new_sb->size = new_size;
-
-        if (was_alloc)
-            new_sb->size |= 4;
-
-        if (was_alloc)
-        {
-            new_sb->size |= 2;
-            *(u32*)((char*)new_sb + new_size) |= 4;
-        }
-        else
-        {
-            *(u32*)((char*)new_sb + new_size - 4) = new_size;
-        }
-
-        if (was_free)
-        {
-            new_sb->next = start->next;
-            new_sb->next->prev = new_sb;
-            new_sb->prev = start;
-            start->next = new_sb;
-        }
-    }
-
-    {
-        u32 tag;
-        u32 tag_size;
-
-        Block_start(ths) = start->next;
-
-        tag = start->size;
-        start->size = tag | 2;
-        tag_size = tag & ~7;
-        *(u32*)((char*)start + tag_size) |= 4;
-
-        if (Block_start(ths) == start)
-        {
-            Block_start(ths) = start->next;
-        }
-        if (Block_start(ths) == start)
-        {
-            Block_start(ths) = 0;
-            ths->max_size = 0;
-        }
-        else
-        {
-            start->next->prev = start->prev;
-            start->prev->next = start->next;
-        }
-    }
-
-    return start;
+    return sb;
 }
 
 void Block_link(Block* ths, SubBlock* sb)
@@ -314,36 +297,9 @@ void Block_link(Block* ths, SubBlock* sb)
 
 /**
  * @note Address: N/A
- * @note Size: 0x74
- */
-void Block_unlink(void)
-{
-    // UNUSED FUNCTION
-}
-
-/**
- * @note Address: N/A
  * @note Size: 0x284
  */
 void Block_report(void)
-{
-    // UNUSED FUNCTION
-}
-
-/**
- * @note Address: N/A
- * @note Size: 0x50
- */
-void SubBlock_construct(void)
-{
-    // UNUSED FUNCTION
-}
-
-/**
- * @note Address: N/A
- * @note Size: 0xE0
- */
-void SubBlock_split(void)
 {
     // UNUSED FUNCTION
 }

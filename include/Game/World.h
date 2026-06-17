@@ -92,9 +92,12 @@ public:
     /* 0x024! */ unsigned long m_uNumModels;
     /* 0x028! */ DLListContainerBase<WorldAnimController*, NewAdapter<DLListEntry<WorldAnimController*> > > m_animControllerList;
     /* 0x030 */ void* m_pLightData;
-    // /* 0x034 */ void* m_pPlayerNISLightData;
-    /* 0x034 */ void* m_pIntensityPerm;
-    /* 0x038 */ void* m_pIntensityData;
+    /* 0x034 */ void* m_pPlayerNISLightData;
+    /* 0x038 */ union
+    {
+        void* m_pIntensityPerm;
+        void* m_pIntensityData;
+    };
     /* 0x03C */ void* m_pSpecularData;
     /* 0x040 */ void* m_pSTSIntensity;
     /* 0x044 */ nlAVLTree<unsigned long, DrawableObject*, DefaultKeyCompare<unsigned long> > m_drawableMap;

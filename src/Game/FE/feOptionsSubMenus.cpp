@@ -412,8 +412,8 @@ inline void Function1<void, SlideMenuItem*>::FunctorImpl<BindExp1_SML_t>::operat
 
 /**
  * Offset/Address/Size: 0xAA8 | 0x800B5AEC | size: 0x438
- * TODO: 96.11% match - callback temporary stack layout and callback field
- * assignment offsets still differ in the menu item callback setup path.
+ * TODO: 99.91% match - callback construction temporary stack layout still
+ * differs in the menu item callback setup path.
  */
 void OptionsGameplayMenuV2::BuildSkillLevelMenu(TLComponentInstance* compinstance, int startindex, int skilltoskip)
 {
@@ -456,7 +456,7 @@ void OptionsGameplayMenuV2::BuildSkillLevelMenu(TLComponentInstance* compinstanc
         sml->mNumItemsAdded++;
 
         {
-            BindExp1_SML bind = Bind<void>(
+            BindExp1_SML bind = Bind<void, MemFunImpl_SML, SlideMenuList*>(
                 MemFun<SlideMenuList, void>(&SlideMenuList::SetSlide), sml);
             Function<FnSlideMenuItemCb> callback(bind);
             menuItem->mCallbacks[1] = callback;
@@ -472,10 +472,34 @@ void OptionsGameplayMenuV2::BuildSkillLevelMenu(TLComponentInstance* compinstanc
 
     SlideMenuList* sml = (SlideMenuList*)mSlideMenuLists[0];
     menuItem = &sml->mMenuItems[sml->mCurrentIndex];
-    menuItem->mCallbacks[2](menuItem->mType);
+    int tag = menuItem->mCallbacks[2].mTag;
+    if (((u32)((-tag) | tag) >> 31) > 0)
+    {
+        SlideMenuItem* type = menuItem->mType;
+        if (tag == FREE_FUNCTION)
+        {
+            menuItem->mCallbacks[2].mFreeFunction(type);
+        }
+        else
+        {
+            (*menuItem->mCallbacks[2].mFunctor)(type);
+        }
+    }
     sml->mCurrentIndex = startindex - 1;
     menuItem = &sml->mMenuItems[sml->mCurrentIndex];
-    menuItem->mCallbacks[1](menuItem->mType);
+    tag = menuItem->mCallbacks[1].mTag;
+    if (((u32)((-tag) | tag) >> 31) > 0)
+    {
+        SlideMenuItem* type = menuItem->mType;
+        if (tag == FREE_FUNCTION)
+        {
+            menuItem->mCallbacks[1].mFreeFunction(type);
+        }
+        else
+        {
+            (*menuItem->mCallbacks[1].mFunctor)(type);
+        }
+    }
     ((SlideMenuList*)mSlideMenuLists[0])->mFlags = 3;
 }
 

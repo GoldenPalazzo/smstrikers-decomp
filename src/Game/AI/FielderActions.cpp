@@ -3220,14 +3220,24 @@ static void UnFreezeEveryoneButCaptain(cFielder* pCaptain)
     }
 }
 
+static float FindSTSDistanceAffectedPercentage(cFielder* pFielder, float fMinAmount, float fMaxAmount)
+{
+    const nlVector3& v3OffNet = pFielder->GetAIOffNetLocation(NULL);
+    float dy = pFielder->m_v3Position.f.y - v3OffNet.f.y;
+    float dx = pFielder->m_v3Position.f.x - v3OffNet.f.x;
+    float dz = pFielder->m_v3Position.f.z - v3OffNet.f.z;
+    float fDist = nlSqrt(dx * dx + dy * dy + dz * dz, true);
+    float fPercent = InterpolateRangeClamped(fMinAmount, fMaxAmount, 9.0f, 18.0f, fDist);
+    return fPercent;
+}
+
 /**
  * Offset/Address/Size: 0x17D0 | 0x80028308 | size: 0x147C
  */
 /**
  * Offset/Address/Size: 0x16D0 | 0x80028308 | size: 0x1480
- * TODO: 90.12% match - f30/f31 register swap (fHalfAnimationTime/fGreenRegionMaxWidth),
- * missing f25 callee-saved for fMinOverMax, missing r26 for g_pTeams iteration,
- * r4/r5 swap for pTweaks/isCaptainSts
+ * TODO: 98.38% match - remaining f0/f1 swaps in meter timing comparisons and
+ * r26/r30 swaps in camera/effect string setup
  */
 void cFielder::ActionShootToScore(float)
 {
@@ -3323,12 +3333,7 @@ void cFielder::ActionShootToScore(float)
             {
                 float fShootToScoreSlowMoMax = g_pGame->m_pGameTweaks->unk1EC;
                 float fShootToScoreSlowMoMin = g_pGame->m_pGameTweaks->unk1E8;
-                const nlVector3& v3OffNet = GetAIOffNetLocation(NULL);
-                float dy = m_v3Position.f.y - v3OffNet.f.y;
-                float dx = m_v3Position.f.x - v3OffNet.f.x;
-                float dz = m_v3Position.f.z - v3OffNet.f.z;
-                float fDist = nlSqrt(dy * dy + dx * dx + dz * dz, true);
-                float fTimeScale = InterpolateRangeClamped(fShootToScoreSlowMoMin, fShootToScoreSlowMoMax, 9.0f, 18.0f, fDist);
+                float fTimeScale = FindSTSDistanceAffectedPercentage(this, fShootToScoreSlowMoMin, fShootToScoreSlowMoMax);
                 FixedUpdateTask::mTimeScale = fTimeScale;
                 ParticleUpdateTask::SetTimeScale(fTimeScale);
             }
@@ -3459,12 +3464,7 @@ void cFielder::ActionShootToScore(float)
         {
             float fNewWidth = InterpolateRangeClamped(pGameTweaks->unk29C, fMultiplier, mActionShootToScoreVars.fCaptainYellowWidth, pGameTweaks->unk29C, fAbsSweetSpotPercent);
             float fMinOverMax = g_pGame->m_pGameTweaks->unk29C / g_pGame->m_pGameTweaks->unk2A0;
-            const nlVector3& v3OffNet2 = GetAIOffNetLocation(NULL);
-            float dy2 = m_v3Position.f.y - v3OffNet2.f.y;
-            float dx2 = m_v3Position.f.x - v3OffNet2.f.x;
-            float dz2 = m_v3Position.f.z - v3OffNet2.f.z;
-            float fDist2 = nlSqrt(dy2 * dy2 + dx2 * dx2 + dz2 * dz2, true);
-            InterpolateRangeClamped(1.0f, fMinOverMax, 9.0f, 18.0f, fDist2);
+            FindSTSDistanceAffectedPercentage(this, 1.0f, fMinOverMax);
 
             mActionShootToScoreVars.fGreenRegionWidth = fNewWidth;
 
@@ -3501,10 +3501,11 @@ void cFielder::ActionShootToScore(float)
     static signed char init2;
     static float sfTimeSinceLastRumbleFilter;
     float fTotalTime2 = (float)nTotalFrames2;
+    float hyperStrikeAnimCamBeginTime;
     float lightOffTime = 94.0f / fTotalTime2;
     float firstKickTime = sfFirstKickFrame / (float)nTotalFrames2;
     float shaolinTime = 67.0f / (float)nTotalFrames2;
-    float hyperStrikeAnimCamBeginTime = sfHyperStrikeAnimCamBeginFrame / (float)nTotalFrames2;
+    hyperStrikeAnimCamBeginTime = sfHyperStrikeAnimCamBeginFrame / (float)nTotalFrames2;
 
     if (!init2)
     {
@@ -3585,7 +3586,7 @@ void cFielder::ActionShootToScore(float)
                     float fSpinRate = sfOtherMatrixCamSpinRate * (bIsSpinMirrored ? -1.0f : 1.0f);
                     pMatrixCam->mfSpinRate = fSpinRate;
 
-                    cBaseCamera* pCurrentCam = nlDLRingGetStart<cBaseCamera>(cCameraManager::m_cameraStack);
+                    cBaseCamera* pCurrentCam = cCameraManager::m_cameraStack->m_next;
                     const nlVector3& cameraPos = pCurrentCam->GetCameraPosition();
 
                     m_pPoseAccumulator->GetNodeMatrix(g_pCurrentlyUpdatingCharacter->m_nHeadJointIndex);
@@ -3622,11 +3623,11 @@ void cFielder::ActionShootToScore(float)
                         FireCameraRumbleFilter(0.0f, fIntensity);
                         sfTimeSinceLastRumbleFilter = 0.0f;
 
-                        cBaseCamera* pTopCam = nlDLRingGetStart<cBaseCamera>(cCameraManager::m_cameraStack);
+                        cBaseCamera* pTopCam = cCameraManager::m_cameraStack->m_next;
                         if (pTopCam->m_pFilter != NULL)
                         {
-                            nlDLRingGetStart<cBaseCamera>(cCameraManager::m_cameraStack)->m_pFilter->Ks = sfHyperStrikeRumbleSpringConstant;
-                            nlDLRingGetStart<cBaseCamera>(cCameraManager::m_cameraStack)->m_pFilter->Kd = sfHyperStrikeRumbleDampingConstant;
+                            cCameraManager::m_cameraStack->m_next->m_pFilter->Ks = sfHyperStrikeRumbleSpringConstant;
+                            cCameraManager::m_cameraStack->m_next->m_pFilter->Kd = sfHyperStrikeRumbleDampingConstant;
                         }
                     }
 
@@ -3686,7 +3687,7 @@ void cFielder::ActionShootToScore(float)
             {
                 if (m_pCurrentAnimController->TestTrigger(matrixCamStartTime))
                 {
-                    cBaseCamera* pCurrentCam = nlDLRingGetStart<cBaseCamera>(cCameraManager::m_cameraStack);
+                    cBaseCamera* pCurrentCam = cCameraManager::m_cameraStack->m_next;
                     const nlVector3& cameraPos = pCurrentCam->GetCameraPosition();
                     nlVector3* pBallPos = &g_pBall->m_v3Position;
 

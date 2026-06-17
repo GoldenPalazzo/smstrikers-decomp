@@ -633,7 +633,7 @@ void FormationEval::AssignPositionsToFielders(unsigned int* pFielderPosAssignmen
 
 /**
  * Offset/Address/Size: 0x1798 | 0x800399E8 | size: 0x27C
- * TODO: 97.94% match - remaining diffs are this/team/pFielder GPR swap, prologue mr order, and center-add float register allocation cascade
+ * TODO: 98.27% match - remaining diffs are this/v2Center prologue mr order, team/pFielder GPR swap, and formation-position temp register order
  */
 void FormationEval::SortPlayers(const nlVector2* v2Center)
 {
@@ -699,14 +699,22 @@ void FormationEval::SortPlayers(const nlVector2* v2Center)
         v2CenterOfPlayers.f.x -= self->m_pFormationSpec->m_v2Center.f.x;
     }
 
-    av2FormationPositions[0].f.y = self->m_pFormationSpec->m_Positions[0].m_Location.f.y + v2CenterOfPlayers.f.y;
-    av2FormationPositions[0].f.x = self->m_pFormationSpec->m_Positions[0].m_Location.f.x + v2CenterOfPlayers.f.x;
-    av2FormationPositions[1].f.x = self->m_pFormationSpec->m_Positions[1].m_Location.f.x + v2CenterOfPlayers.f.x;
-    av2FormationPositions[1].f.y = self->m_pFormationSpec->m_Positions[1].m_Location.f.y + v2CenterOfPlayers.f.y;
-    av2FormationPositions[2].f.x = self->m_pFormationSpec->m_Positions[2].m_Location.f.x + v2CenterOfPlayers.f.x;
-    av2FormationPositions[2].f.y = self->m_pFormationSpec->m_Positions[2].m_Location.f.y + v2CenterOfPlayers.f.y;
-    av2FormationPositions[3].f.y = self->m_pFormationSpec->m_Positions[3].m_Location.f.y + v2CenterOfPlayers.f.y;
-    av2FormationPositions[3].f.x = self->m_pFormationSpec->m_Positions[3].m_Location.f.x + v2CenterOfPlayers.f.x;
+    f32 y0 = self->m_pFormationSpec->m_Positions[0].m_Location.f.y + v2CenterOfPlayers.f.y;
+    f32 y2 = self->m_pFormationSpec->m_Positions[2].m_Location.f.y + v2CenterOfPlayers.f.y;
+    f32 y1 = self->m_pFormationSpec->m_Positions[1].m_Location.f.y + v2CenterOfPlayers.f.y;
+    f32 y3 = self->m_pFormationSpec->m_Positions[3].m_Location.f.y + v2CenterOfPlayers.f.y;
+    f32 x0 = self->m_pFormationSpec->m_Positions[0].m_Location.f.x + v2CenterOfPlayers.f.x;
+    f32 x1 = self->m_pFormationSpec->m_Positions[1].m_Location.f.x + v2CenterOfPlayers.f.x;
+    f32 x2 = self->m_pFormationSpec->m_Positions[2].m_Location.f.x + v2CenterOfPlayers.f.x;
+    f32 x3 = self->m_pFormationSpec->m_Positions[3].m_Location.f.x + v2CenterOfPlayers.f.x;
+    av2FormationPositions[0].f.y = y0;
+    av2FormationPositions[0].f.x = x0;
+    av2FormationPositions[1].f.x = x1;
+    av2FormationPositions[1].f.y = y1;
+    av2FormationPositions[2].f.x = x2;
+    av2FormationPositions[2].f.y = y2;
+    av2FormationPositions[3].f.x = x3;
+    av2FormationPositions[3].f.y = y3;
 
     pFormPositions = av2FormationPositions;
     self->GetKeyPlayer();

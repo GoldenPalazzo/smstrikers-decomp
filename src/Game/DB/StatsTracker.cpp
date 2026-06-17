@@ -25,25 +25,25 @@ typedef FormatImpl<NLString> NLFormatImpl;
 
 /**
  * Offset/Address/Size: 0x1DAC | 0x80188948 | size: 0xD74
- * TODO: 90.21% match - r27/r28 swap in operator[] COW path, copy ctor reload, bne/b vs beq branch
+ * TODO: 93.98% match - r27/r28 register swap in operator[] copy-on-write paths and insert argument setup differs
  */
 template <>
 NLFormatImpl& NLFormatImpl::operator% <const char*>(const char* const& t)
 {
     NLString insert = LexicalCast<NLString, const char*>(t);
 
-    for (int i = 0; i < (int)mString.size() - 1; i++)
+    for (int i = 0; i < (mString.m_data ? mString.m_data->mSize - 1 : 0); i++)
     {
         if (mString[i] != '{')
             continue;
 
-        if (i + 1 >= (int)mString.size() - 1)
+        if (i + 1 >= (mString.m_data ? mString.m_data->mSize - 1 : 0))
             continue;
 
         if (mString[i + 1] - '0' != mCurrentPos)
             continue;
 
-        if (i + 2 >= (int)mString.size() - 1)
+        if (i + 2 >= (mString.m_data ? mString.m_data->mSize - 1 : 0))
             continue;
 
         if (mString[i + 2] != '}')
@@ -73,24 +73,25 @@ NLFormatImpl& NLFormatImpl::operator% <const char*>(const char* const& t)
 
 /**
  * Offset/Address/Size: 0x1038 | 0x80187BD4 | size: 0xD74
+ * TODO: 93.98% match - r27/r28 register swap in operator[] copy-on-write paths
  */
 template <>
 NLFormatImpl& NLFormatImpl::operator% <float>(const float& t)
 {
     NLString insert = LexicalCast<NLString, float>(t);
 
-    for (int i = 0; i < (int)mString.size() - 1; i++)
+    for (int i = 0; i < (mString.m_data ? mString.m_data->mSize - 1 : 0); i++)
     {
         if (mString[i] != '{')
             continue;
 
-        if (i + 1 >= (int)mString.size() - 1)
+        if (i + 1 >= (mString.m_data ? mString.m_data->mSize - 1 : 0))
             continue;
 
         if (mString[i + 1] - '0' != mCurrentPos)
             continue;
 
-        if (i + 2 >= (int)mString.size() - 1)
+        if (i + 2 >= (mString.m_data ? mString.m_data->mSize - 1 : 0))
             continue;
 
         if (mString[i + 2] != '}')
@@ -1189,9 +1190,9 @@ void StatsTracker::TrackStat(ePlayerStats stat, int homeaway, int playerindex, i
 
 /**
  * Offset/Address/Size: 0x3708 | 0x80184C68 | size: 0x7E8
- * TODO: 95.19% match - r29/r31 swap in unrolled init loop, clrlwi truncation from unsigned char CompareInt return assigned to int, xor/and operand swap in branchless comparison
+ * TODO: 95.37% match - r29/r31 swap in unrolled init loop, extra clrlwi after compare assignments, xor/and operand swaps in stat comparisons
  */
-static inline unsigned char CompareInt(eSortOrder sortOrder, int a, int b)
+static inline int CompareInt(eSortOrder sortOrder, int a, int b)
 {
     if (sortOrder == SORT_DESCENDING)
     {
@@ -1222,7 +1223,7 @@ void StatsTracker::GetSortedStats(PlayerStats* source, int numsource, int* dest,
             if (nexti >= numsource)
                 break;
 
-            int doswap = 0;
+            unsigned char doswap = 0;
 
             switch (statType)
             {

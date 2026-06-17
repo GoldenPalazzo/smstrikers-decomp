@@ -729,8 +729,8 @@ long MemCard::CreateFile(const char* FileName, unsigned long FileSize, MemCard::
 
 /**
  * Offset/Address/Size: 0xBE8 | 0x801CA358 | size: 0x340
- * TODO: 96.13% match - insert shift loop still uses r5/r6 for destination index and
- * lookup base where target keeps r6/r8.
+ * TODO: 96.20% match - insert shift loop still keeps the insertion index in r5
+ * and copied fields in r6/r0 instead of the target r6/r4/r5.
  */
 extern "C" void* memset(void*, int, unsigned long);
 
@@ -754,6 +754,8 @@ long MemCard::OpenFile(const char* FileName, MemCard::MC_FILE*& pFile, unsigned 
     long middle;
     long low = -1;
     long high;
+    unsigned long id;
+    MC_FILE* entry;
     unsigned long count = m_OpenFiles.m_EntryCount;
     high = count;
 
@@ -775,8 +777,8 @@ long MemCard::OpenFile(const char* FileName, MemCard::MC_FILE*& pFile, unsigned 
     {
         unsigned long prev = count - 1;
         nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>* lookup = m_OpenFiles.m_pEntryLookup;
-        unsigned long id = lookup[prev].hash;
-        MC_FILE* entry = lookup[prev].pEntry;
+        id = lookup[prev].hash;
+        entry = lookup[prev].pEntry;
         lookup[count].pEntry = entry;
         lookup[count].hash = id;
         count = prev;

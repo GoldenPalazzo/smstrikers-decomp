@@ -1180,9 +1180,8 @@ void CupChooseCaptainSceneV2::ChangeState(CupChooseCaptainSceneV2::eCupCaptainSt
 
 /**
  * Offset/Address/Size: 0x15C | 0x800DD028 | size: 0x1D4
- * TODO: 98.8% match - remaining register allocation mismatch is in
- * numPlayingTeams/slot and lineup/sklineup traversal registers
- * (target r26/r31 + r29/r25/r27 vs current r31/r27 + r25/r26/r29).
+ * TODO: 98.80% match - remaining register allocation mismatch is in
+ * numPlayingTeams/slot, saved sidekick, and lineup/sklineup traversal registers.
  */
 void CupChooseCaptainSceneV2::CreateLineup()
 {
@@ -1213,7 +1212,7 @@ void CupChooseCaptainSceneV2::CreateLineup()
 
     for (i = 0; i < numPlayingTeams; i++)
     {
-        if ((u32)i == slot)
+        if (slot == (u32)i)
         {
             continue;
         }

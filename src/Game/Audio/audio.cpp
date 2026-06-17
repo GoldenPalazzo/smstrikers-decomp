@@ -1489,9 +1489,9 @@ bool Remove3DSFXEmitter(SFXEmitter* emitter)
 /**
  * Offset/Address/Size: 0xD64 | 0x8013D278 | size: 0x20
  */
-void Add3DSFXEmitter(const EmitterStartInfo& emitterStartInfo)
+unsigned long Add3DSFXEmitter(const EmitterStartInfo& emitterStartInfo)
 {
-    PlatAudio::Add3DSFXEmitter(emitterStartInfo);
+    return PlatAudio::Add3DSFXEmitter(emitterStartInfo);
 }
 
 /**
@@ -1855,7 +1855,7 @@ void Update3DSFXEmitters()
 
 /**
  * Offset/Address/Size: 0x159C | 0x8013DAB0 | size: 0xA34
- * TODO: 98.07% match - remaining velocity-copy word order and team-loop register allocation differences.
+ * TODO: 98.78% match - remaining delete-next registers, velocity-copy word order, and team-loop register allocation differences.
  */
 void UpdateFades(float fDeltaT)
 {
@@ -2091,14 +2091,16 @@ void UpdateFades(float fDeltaT)
                 newVal = (newVal <= 1.0f) ? newVal : 1.0f;
 
                 float newFreq = 16383.0f * newVal;
+                float roundOffset;
                 if (newFreq < 0.0f)
                 {
-                    newFreq += -0.5f;
+                    roundOffset = -0.5f;
                 }
                 else
                 {
-                    newFreq += 0.5f;
+                    roundOffset = 0.5f;
                 }
+                newFreq += roundOffset;
 
                 unsigned short targetFreq = (unsigned short)(s32)newFreq;
                 if (targetFreq > 0x3FFF)
@@ -2132,14 +2134,16 @@ void UpdateFades(float fDeltaT)
             if (*(float*)((char*)pFadeData + 0x10) <= 0.0f)
             {
                 float targetFreqFloat = 16383.0f * *(float*)((char*)pFadeData + 0x14);
+                float roundOffset;
                 if (targetFreqFloat < 0.0f)
                 {
-                    targetFreqFloat += -0.5f;
+                    roundOffset = -0.5f;
                 }
                 else
                 {
-                    targetFreqFloat += 0.5f;
+                    roundOffset = 0.5f;
                 }
+                targetFreqFloat += roundOffset;
 
                 unsigned short targetFreq = (unsigned short)(s32)targetFreqFloat;
                 if (targetFreq > 0x3FFF)
@@ -2224,14 +2228,17 @@ void UpdateFades(float fDeltaT)
                 newVal = (newVal <= 1.0f) ? newVal : 1.0f;
 
                 float newPitch = 8192.0f - (8192.0f - (8192.0f * newVal));
+                cGame* game = g_pGame;
+                float roundOffset;
                 if (newPitch < 0.0f)
                 {
-                    newPitch += -0.5f;
+                    roundOffset = -0.5f;
                 }
                 else
                 {
-                    newPitch += 0.5f;
+                    roundOffset = 0.5f;
                 }
+                newPitch += roundOffset;
 
                 unsigned short targetFreq = (unsigned short)(s32)newPitch;
                 if (targetFreq > 0x3FFF)
@@ -2239,7 +2246,7 @@ void UpdateFades(float fDeltaT)
                     targetFreq = 0x3FFF;
                 }
 
-                if (g_pGame != NULL)
+                if (game != NULL)
                 {
                     for (t = 0; t < 2; t++)
                     {
@@ -3752,12 +3759,18 @@ void CreateTrackMgr()
     g_pTrackManager = new (8, false) AudioStreamTrack::TrackManager<N>();
 }
 
+#pragma inline_depth(255)
+inline AudioStreamTrack::TrackManagerBase::FadeManager::~FadeManager()
+{
+    FadeList::DestroyAllEntries(&m_Fades);
+    SlotPoolBase::BaseFreeBlocks(&m_Fades.m_Allocator, sizeof(DLListEntry<STREAM_FADE_CTRL>));
+}
+
 AudioStreamTrack::TrackManagerBase::~TrackManagerBase()
 {
-    FadeManager::FadeList::DestroyAllEntries(&m_FadeMgr.m_Fades);
-    SlotPoolBase::BaseFreeBlocks(&m_FadeMgr.m_Fades.m_Allocator, sizeof(DLListEntry<FadeManager::STREAM_FADE_CTRL>));
     SlotPoolBase::BaseFreeBlocks(&m_StreamPool, sizeof(GCAudioStreaming::StereoAudioStream));
 }
+#pragma inline_depth(0)
 
 /**
  * Offset/Address/Size: 0x3F8 | 0x80141ABC | size: 0x1EC
@@ -4033,6 +4046,10 @@ void AudioStreamTrack::TrackManager<3>::DestroyAllTracks()
     }
 }
 
+/**
+ * Offset/Address/Size: 0x1F4 | 0x801418B8 | size: 0x204
+ * TODO: 99.94% match - stream delete and fade cleanup pointer-to-member stack slots are swapped
+ */
 #pragma inline_depth(255)
 template <>
 AudioStreamTrack::TrackManager<3>::~TrackManager()

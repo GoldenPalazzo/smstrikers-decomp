@@ -90,70 +90,80 @@ static inline u32 GetHashFromTextureFile(const char* szTextureFileName)
         c = szPath[0];
         if (c == '\\' || c == '/')
         {
-            pSrc = szTextureFileName + count + 1;
+            count++;
+            pSrc = szTextureFileName + count;
             goto foundSlash;
         }
         count++;
         c = szPath[1];
         if (c == '\\' || c == '/')
         {
-            pSrc = szTextureFileName + count + 1;
+            count++;
+            pSrc = szTextureFileName + count;
             goto foundSlash;
         }
         count++;
         c = szPath[2];
         if (c == '\\' || c == '/')
         {
-            pSrc = szTextureFileName + count + 1;
+            count++;
+            pSrc = szTextureFileName + count;
             goto foundSlash;
         }
         count++;
         c = szPath[3];
         if (c == '\\' || c == '/')
         {
-            pSrc = szTextureFileName + count + 1;
+            count++;
+            pSrc = szTextureFileName + count;
             goto foundSlash;
         }
         count++;
         c = szPath[4];
         if (c == '\\' || c == '/')
         {
-            pSrc = szTextureFileName + count + 1;
+            count++;
+            pSrc = szTextureFileName + count;
             goto foundSlash;
         }
         count++;
         c = szPath[5];
         if (c == '\\' || c == '/')
         {
-            pSrc = szTextureFileName + count + 1;
+            count++;
+            pSrc = szTextureFileName + count;
             goto foundSlash;
         }
         count++;
         c = szPath[6];
         if (c == '\\' || c == '/')
         {
-            pSrc = szTextureFileName + count + 1;
+            count++;
+            pSrc = szTextureFileName + count;
             goto foundSlash;
         }
         count++;
         c = szPath[7];
         if (c == '\\' || c == '/')
         {
-            pSrc = szTextureFileName + count + 1;
+            count++;
+            pSrc = szTextureFileName + count;
             goto foundSlash;
         }
         count++;
         c = szPath[8];
         if (c == '\\' || c == '/')
         {
-            pSrc = szTextureFileName + count + 1;
+            count++;
+            pSrc = szTextureFileName + count;
             goto foundSlash;
         }
         count++;
         c = szPath[9];
         if (c == '\\' || c == '/')
         {
-            pSrc = szTextureFileName + count + 1;
+            count++;
+            pSrc = szTextureFileName + count;
             goto foundSlash;
         }
         count++;
@@ -166,7 +176,9 @@ foundSlash:
             goto copyDone;
         if (*pSrc == '.')
             goto copyDone;
-        *pDest++ = *pSrc++;
+        *pDest = *pSrc;
+        pSrc++;
+        pDest++;
         continue;
     copyDone:
         *pDest = '\0';
@@ -216,7 +228,7 @@ s32 GetCharacterIndex(const cCharacter* character)
 
 /**
  * Offset/Address/Size: 0x294 | 0x8001257C | size: 0x6C0
- * TODO: 98.28% match - register allocation differences and callback literal-pool/address diffs
+ * TODO: 99.44% match - character cleanup index register and callback literal-pool/address diffs
  * across inventory cleanup paths.
  */
 void DestroyCharacters()
@@ -224,6 +236,8 @@ void DestroyCharacters()
     typedef ListContainerBase<cSHierarchy*, NewAdapter<ListEntry<cSHierarchy*> > > HierListBase;
     typedef ListContainerBase<char*, NewAdapter<ListEntry<char*> > > FileListBase;
     typedef ListContainerBase<AnimRetargetList*, NewAdapter<ListEntry<AnimRetargetList*> > > RetargetListBase;
+    cInventory<cSHierarchy>* pHierInv;
+    cInventory<AnimRetargetList>* pRetInv;
 
     delete g_pAnimScriptInterp;
     g_pAnimScriptInterp = NULL;
@@ -234,12 +248,12 @@ void DestroyCharacters()
         g_pCharacters[charIndex] = NULL;
     }
 
-    for (int i = 0; i < 13; i++)
+    tCharacterTemplate** ppCharacterTemplate = g_aCharacterTemplates;
+    for (int i = 0; i < 13; i++, ppCharacterTemplate++)
     {
-        tCharacterTemplate** ppCharacterTemplate = &g_aCharacterTemplates[i];
         if (*ppCharacterTemplate != NULL)
         {
-            cInventory<cSHierarchy>* pHierInv = (*ppCharacterTemplate)->pHierarchyInventory;
+            pHierInv = (*ppCharacterTemplate)->pHierarchyInventory;
             if (pHierInv != NULL)
             {
                 ListEntry<cSHierarchy*>* hierEntry = pHierInv->m_lItemList.m_Head;
@@ -281,8 +295,8 @@ void DestroyCharacters()
 
             delete (*ppCharacterTemplate)->pPhysicsData;
 
-            cInventory<AnimRetargetList>* pRetInv = (*ppCharacterTemplate)->pAnimRetargetListInventory;
-            if (pRetInv != NULL)
+            pRetInv = (*ppCharacterTemplate)->pAnimRetargetListInventory;
+            if (pRetInv != NULL && pRetInv != NULL)
             {
                 ListEntry<AnimRetargetList*>* retEntry = pRetInv->m_lItemList.m_Head;
                 while (retEntry != NULL)
@@ -323,7 +337,7 @@ void DestroyCharacters()
 
     if (g_GoalieTemplate != NULL)
     {
-        cInventory<cSHierarchy>* pHierInv = g_GoalieTemplate->pHierarchyInventory;
+        pHierInv = g_GoalieTemplate->pHierarchyInventory;
         if (pHierInv != NULL)
         {
             ListEntry<cSHierarchy*>* hierEntry = pHierInv->m_lItemList.m_Head;
@@ -365,8 +379,8 @@ void DestroyCharacters()
 
         delete g_GoalieTemplate->pPhysicsData;
 
-        cInventory<AnimRetargetList>* pRetInv = g_GoalieTemplate->pAnimRetargetListInventory;
-        if (pRetInv != NULL)
+        pRetInv = g_GoalieTemplate->pAnimRetargetListInventory;
+        if (pRetInv != NULL && pRetInv != NULL)
         {
             ListEntry<AnimRetargetList*>* retEntry = pRetInv->m_lItemList.m_Head;
             while (retEntry != NULL)
@@ -621,9 +635,9 @@ void CreateCharacters()
 
 /**
  * Offset/Address/Size: 0xE70 | 0x80013158 | size: 0x634
- * TODO: 91.42% match - hierarchy inventory register and branch shape differ;
+ * TODO: 93.07% match - hierarchy inventory register and branch shape differ;
  * GetHashFromTextureFile inlined slash-scan/copy loops still use different
- * path/count/destination registers.
+ * count/destination registers.
  */
 cPlayer* CreateGoalie(eCharacterClass gcc, bool bForViewer)
 {

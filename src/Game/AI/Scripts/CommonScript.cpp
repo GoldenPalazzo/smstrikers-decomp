@@ -458,8 +458,8 @@ FuzzyVariant Fuzzy::GetBestBallInterceptor(cTeam* TheTeam)
 
 /**
  * Offset/Address/Size: 0xE40C | 0x800785DC | size: 0x5D0
- * TODO: 95.26% match - stack offset diffs for FuzzyVariant temps and SRP
- * slot from -inline deferred vs -inline auto compilation
+ * TODO: 97.23% match - lfs relocations use duplicate 0.0f/1.0f labels for
+ * the first FuzzyVariant(cPlayer*) temp
  */
 FuzzyVariant Fuzzy::GetSwapControllerScore(cPlayer* ThePlayer)
 {
@@ -783,7 +783,8 @@ FuzzyVariant Fuzzy::ShouldIAttemptOneTimer(cFielder* TheFielder)
     float fBestConfidence = 0.0f;
 
     FuzzyVariant fvFielder((cPlayer*)TheFielder);
-    unsigned long hash = (unsigned long)ShouldIAttemptOneTimer + ((Variant*)&fvFielder)->GetHash();
+    unsigned long hash = (unsigned long)ShouldIAttemptOneTimer;
+    hash += ((Variant*)&fvFielder)->GetHash();
     FuzzyVariant fvFielder2((cPlayer*)TheFielder);
 
     ScriptQuestionCache* cache = ScriptQuestionCache::Instance();

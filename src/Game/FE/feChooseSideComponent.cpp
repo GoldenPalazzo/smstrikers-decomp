@@ -707,34 +707,19 @@ void IChooseSide::ResetAndPositionControllers(bool reset)
 
 /**
  * Offset/Address/Size: 0x3DC | 0x800C3820 | size: 0xE4
- * TODO: 98.25% match - extra `li r4, 0` dead store on first loop break path;
- * -inline deferred eliminates it (allReady already false from init), decomp.me -inline auto does not
  */
 void IChooseSide::SetReady(int controllerIdx, bool ready)
 {
     mPlayerReady[controllerIdx] = ready;
     mInstanceTable[controllerIdx + 4]->m_bVisible = ready;
 
-    bool allReady;
     TLInstance* readyIndicator = mInstanceTable[16];
     if (readyIndicator == NULL)
     {
         return;
     }
 
-    allReady = false;
-    for (int i = 0; i < 4; i++)
-    {
-        if (mPlayerReady[i])
-            allReady = true;
-        else if (mPlayingSides[i] != -1)
-        {
-            allReady = false;
-            break;
-        }
-    }
-
-    if ((u8)allReady == 1)
+    if (AllPlayersReady())
         readyIndicator->m_bVisible = true;
     else
         readyIndicator->m_bVisible = false;

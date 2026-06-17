@@ -3062,7 +3062,9 @@ void GameInfoManager::OnPostCupGameState()
 
                 allStats[i] = *pTemp;
 
-                if (allStats[i].mTeamIndex == mCurrentCup->mUserSelectedTeam)
+                eTeamID teamIndex = allStats[i].mTeamIndex;
+
+                if (teamIndex == mCurrentCup->mUserSelectedTeam)
                 {
                     userIndex = i;
                 }
@@ -3078,19 +3080,13 @@ void GameInfoManager::OnPostCupGameState()
                 }
             }
 
-            if (mCurrentMode == GM_MUSHROOM_CUP)
+            if (mCurrentMode == GM_MUSHROOM_CUP && (unsigned int)userRank < 3)
             {
-                if ((unsigned int)userRank < 3)
-                {
-                    mUserInfo.mIsFlowerCupUnlocked = true;
-                }
+                mUserInfo.mIsFlowerCupUnlocked = true;
             }
-            else if (mCurrentMode == GM_FLOWER_CUP)
+            else if (mCurrentMode == GM_FLOWER_CUP && (unsigned int)userRank < 3)
             {
-                if ((unsigned int)userRank < 3)
-                {
-                    mUserInfo.mIsStarCupUnlocked = true;
-                }
+                mUserInfo.mIsStarCupUnlocked = true;
             }
         }
     }
@@ -3101,12 +3097,7 @@ void GameInfoManager::OnPostCupGameState()
 
     mUnlockedTriggers = 0;
 
-    u32 unlockedState = 0;
-
-    if (CheckUnlockStatus(isKongaUnlocked, mUserInfo.mTrophies[0], 0))
-    {
-        unlockedState |= 0x1;
-    }
+    u32 unlockedState = CheckUnlockStatus(isKongaUnlocked, mUserInfo.mTrophies[0], 0) ? 0x1 : 0;
     if (CheckUnlockStatus(isYoshiUnlocked, mUserInfo.mTrophies[0], 1))
     {
         unlockedState |= 0x2;
@@ -3124,11 +3115,15 @@ void GameInfoManager::OnPostCupGameState()
         unlockedState |= 0x10;
     }
 
-    unlockedState |= 0x20;
+    u32 unlockedStateWithUnknown = unlockedState | 0x20;
 
     if (CheckUnlockStatus(isSuperStadUnlocked, mUserInfo.mTrophies[0], 3))
     {
-        unlockedState |= 0x40;
+        unlockedState = unlockedStateWithUnknown | 0x40;
+    }
+    else
+    {
+        unlockedState = unlockedStateWithUnknown;
     }
     if (CheckUnlockStatus(isAllSTSUnlocked, mUserInfo.mTrophies[0], 4))
     {
@@ -3156,8 +3151,11 @@ void GameInfoManager::OnPostCupGameState()
         unlockedState |= 0x800;
     }
 
-    if (CheckUnlockStatusNoGlobal(mUserInfo.mTrophies[0], 0)
-        && CheckUnlockStatusNoGlobal(mUserInfo.mTrophies[0], 1))
+    bool allBasicUnlocked = CheckUnlockStatusNoGlobal(mUserInfo.mTrophies[0], 0)
+                         && CheckUnlockStatusNoGlobal(mUserInfo.mTrophies[0], 1)
+                         && CheckUnlockStatusNoGlobal(mUserInfo.mTrophies[0], 2);
+
+    if (allBasicUnlocked)
     {
         unlockedState |= 0x1000;
     }

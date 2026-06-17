@@ -729,11 +729,38 @@ float FakeBallWorld::GetPredictedPlaneIntersectTime(const nlVector4& v4Plane, nl
 
 typedef DLListContainerBase<BallCacheInfo*, BasicSlotPool<DLListEntry<BallCacheInfo*> > > BallCacheListBase;
 
+static inline void ClearBallCacheInline(SlotPool<BallCacheInfo>* pBCIPool)
+{
+    if (FakeBallWorld::mBallCacheList.m_Head != NULL)
+    {
+        DLListEntry<BallCacheInfo*>* start = nlDLRingGetStart(FakeBallWorld::mBallCacheList.m_Head);
+        DLListEntry<BallCacheInfo*>* end = FakeBallWorld::mBallCacheList.m_Head;
+        DLListEntry<BallCacheInfo*>* current = start;
+        while (current != NULL)
+        {
+            BallCacheInfo* data = current->m_data;
+            ((SlotPoolEntry*)data)->m_next = pBCIPool->m_FreeList;
+            pBCIPool->m_FreeList = (SlotPoolEntry*)data;
+            if (nlDLRingIsEnd(end, current) || current == NULL)
+            {
+                current = NULL;
+            }
+            else
+            {
+                current = current->m_next;
+            }
+        }
+        nlWalkDLRing<DLListEntry<BallCacheInfo*>, BallCacheListBase>(
+            FakeBallWorld::mBallCacheList.m_Head, (BallCacheListBase*)&FakeBallWorld::mBallCacheList, (void (BallCacheListBase::*)(DLListEntry<BallCacheInfo*>*))&BallCacheListBase::DeleteEntry);
+        FakeBallWorld::mBallCacheList.m_Head = NULL;
+    }
+    FakeBallWorld::mfLastCacheTime = -1.0f;
+}
+
 /**
  * Offset/Address/Size: 0x1768 | 0x80138B54 | size: 0x6C0
- * TODO: 97.96% match - cache cleanup register allocation and callback label selection still diverge
+ * TODO: 98.05% match - cache cleanup/final traversal register allocation and callback label selection still diverge
  */
-
 bool FakeBallWorld::GetPredictedBallPosition(float fDeltaTime, nlVector3& v3Position, nlVector3& v3Velocity)
 {
     cBall* pBall = mpPredictWorld->mpBall;
@@ -747,31 +774,7 @@ bool FakeBallWorld::GetPredictedBallPosition(float fDeltaTime, nlVector3& v3Posi
     float fSimTime = FixedUpdateTask::mSimulationTime;
     if (mfLastCacheTime < fSimTime)
     {
-        if (mBallCacheList.m_Head != NULL)
-        {
-            DLListEntry<BallCacheInfo*>* start = nlDLRingGetStart(mBallCacheList.m_Head);
-            DLListEntry<BallCacheInfo*>* end = mBallCacheList.m_Head;
-            DLListEntry<BallCacheInfo*>* current = start;
-            SlotPool<BallCacheInfo>* pBCIPool = &BallCacheInfo::mBallCacheInfoSlotPool;
-            while (current != NULL)
-            {
-                BallCacheInfo* data = current->m_data;
-                ((SlotPoolEntry*)data)->m_next = pBCIPool->m_FreeList;
-                pBCIPool->m_FreeList = (SlotPoolEntry*)data;
-                if (nlDLRingIsEnd(end, current) || current == NULL)
-                {
-                    current = NULL;
-                }
-                else
-                {
-                    current = current->m_next;
-                }
-            }
-            nlWalkDLRing<DLListEntry<BallCacheInfo*>, BallCacheListBase>(
-                mBallCacheList.m_Head, (BallCacheListBase*)&mBallCacheList, (void (BallCacheListBase::*)(DLListEntry<BallCacheInfo*>*))&BallCacheListBase::DeleteEntry);
-            mBallCacheList.m_Head = NULL;
-        }
-        mfLastCacheTime = -1.0f;
+        ClearBallCacheInline(&BallCacheInfo::mBallCacheInfoSlotPool);
     }
     else if (mBallCacheList.m_Head != NULL)
     {
@@ -818,38 +821,12 @@ bool FakeBallWorld::GetPredictedBallPosition(float fDeltaTime, nlVector3& v3Posi
                         pCur = pLast;
                     }
                 }
-                float dx = pCur->mv3Position.f.x - mpPredictWorld->mpBall->m_v3Position.f.x;
-                float dy = pCur->mv3Position.f.y - mpPredictWorld->mpBall->m_v3Position.f.y;
-                float dz = pCur->mv3Position.f.z - mpPredictWorld->mpBall->m_v3Position.f.z;
-                float distSq = dy * dy + dx * dx + dz * dz;
+                float distSq = nlGetLengthSquared3D(pCur->mv3Position.f.x - mpPredictWorld->mpBall->m_v3Position.f.x, pCur->mv3Position.f.y - mpPredictWorld->mpBall->m_v3Position.f.y, pCur->mv3Position.f.z - mpPredictWorld->mpBall->m_v3Position.f.z);
                 if (!(distSq > 0.0025f))
                 {
                     break;
                 }
-                if (*pHeadRef != NULL)
-                {
-                    DLListEntry<BallCacheInfo*>* walkStart = nlDLRingGetStart(*pHeadRef);
-                    DLListEntry<BallCacheInfo*>* walkHead = *pHeadRef;
-                    DLListEntry<BallCacheInfo*>* walkEntry = walkStart;
-                    while (walkEntry != NULL)
-                    {
-                        BallCacheInfo* data = walkEntry->m_data;
-                        ((SlotPoolEntry*)data)->m_next = pBCIPool->m_FreeList;
-                        pBCIPool->m_FreeList = (SlotPoolEntry*)data;
-                        if (nlDLRingIsEnd(walkHead, walkEntry) || walkEntry == NULL)
-                        {
-                            walkEntry = NULL;
-                        }
-                        else
-                        {
-                            walkEntry = walkEntry->m_next;
-                        }
-                    }
-                    nlWalkDLRing<DLListEntry<BallCacheInfo*>, BallCacheListBase>(
-                        *pHeadRef, (BallCacheListBase*)&mBallCacheList, (void (BallCacheListBase::*)(DLListEntry<BallCacheInfo*>*))&BallCacheListBase::DeleteEntry);
-                    *pHeadRef = NULL;
-                }
-                mfLastCacheTime = -1.0f;
+                ClearBallCacheInline(pBCIPool);
                 break;
             }
         }

@@ -6,6 +6,8 @@
 #include "Game/AI/FuzzyVariant.h"
 #include "Game/Team.h"
 
+class cPlayer;
+
 template <typename T>
 nlVector3& PositionOf(T pObject)
 {
@@ -18,6 +20,7 @@ public:
     static FuzzyVariant AbortOffensivePlay(cDecisionEntity*);
     void DefaultOffensivePlay(cDecisionEntity*);
     void DoPassing(float, cDecisionEntity*);
+    static FuzzyVariant GetBestPassTarget(cPlayer*);
     static FuzzyVariant GoodBallCarrier(cFielder*);
     static FuzzyVariant InGoodWindupPosition(cFielder*);
     static FuzzyVariant CutAndBreak(cFielder*);

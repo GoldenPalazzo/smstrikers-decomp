@@ -553,17 +553,20 @@ void EmissionManager::Replay(LoadFrame& frame)
     oldControllers.m_tailNode = nullptr;
     oldControllers.m_numNodes = 0;
 
+    efBaseNode* head;
+    efBaseNode* tail;
+    int num;
     efList* const ctrl = controllers;
 
-    efBaseNode* head = ctrl->m_headNode;
+    head = ctrl->m_headNode;
     ctrl->m_headNode = oldControllers.m_headNode;
     oldControllers.m_headNode = head;
 
-    efBaseNode* tail = ctrl->m_tailNode;
+    tail = ctrl->m_tailNode;
     ctrl->m_tailNode = oldControllers.m_tailNode;
     oldControllers.m_tailNode = tail;
 
-    int num = ctrl->m_numNodes;
+    num = ctrl->m_numNodes;
     ctrl->m_numNodes = oldControllers.m_numNodes;
     oldControllers.m_numNodes = num;
 
