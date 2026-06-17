@@ -29,10 +29,5 @@ GLRenderBuffer::~GLRenderBuffer()
         }
     }
 
-    typedef void (*WalkFn)(DLListEntry<GLDrawableData*>*, DLListContainerBase<GLDrawableData*, NewAdapter<DLListEntry<GLDrawableData*> > >*, void (DLListContainerBase<GLDrawableData*, NewAdapter<DLListEntry<GLDrawableData*> > >::*)(DLListEntry<GLDrawableData*>*));
-    void (DLListContainerBase<GLDrawableData*, NewAdapter<DLListEntry<GLDrawableData*> > >::*func)(DLListEntry<GLDrawableData*>*) = &DLListContainerBase<GLDrawableData*, NewAdapter<DLListEntry<GLDrawableData*> > >::DeleteEntry;
-    WalkFn walk = &nlWalkDLRing<DLListEntry<GLDrawableData*>, DLListContainerBase<GLDrawableData*, NewAdapter<DLListEntry<GLDrawableData*> > > >;
-    walk(m_drawableData.m_Head, &m_drawableData, func);
-
-    m_drawableData.m_Head = 0;
+    DLListContainerBase<GLDrawableData*, NewAdapter<DLListEntry<GLDrawableData*> > >::DestroyAllEntries(&m_drawableData);
 }
