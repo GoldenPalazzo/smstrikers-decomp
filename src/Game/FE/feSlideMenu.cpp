@@ -1,3 +1,5 @@
+#define FESLIDEMENU_FUNCTION_CTOR_INIT
+
 #include "Game/FE/feSlideMenu.h"
 
 #include "NL/nlString.h"
@@ -221,9 +223,9 @@ FESlideMenu::~FESlideMenu()
 /**
  * Offset/Address/Size: 0x4E0 | 0x80097134 | size: 0x64
  */
-// void FESlideMenu::MenuItem::~MenuItem()
-// {
-// }
+inline FESlideMenu::MenuItem::~MenuItem()
+{
+}
 
 /**
  * Offset/Address/Size: 0x5C8 | 0x8009721C | size: 0x8C
@@ -245,12 +247,7 @@ FESlideMenu::FESlideMenu(TLComponentInstance* pWorkPres)
 /**
  * Offset/Address/Size: 0x654 | 0x800972A8 | size: 0x4C
  */
-// void FESlideMenu::MenuItem::MenuItem()
-// {
-// }
+inline FESlideMenu::MenuItem::MenuItem()
+{
+}
 
-/**
- * Offset/Address/Size: 0x0 | 0x800972F4 | size: 0xC
- */
-// Force instantiation
-Function<FnVoidVoid> __dummy_inst;

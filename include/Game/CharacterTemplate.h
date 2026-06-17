@@ -57,7 +57,6 @@ void DestroyCharacters();
 void CreateCharacters();
 cPlayer* CreateGoalie(eCharacterClass, bool);
 cPlayer* CreateSidekick(int, int, eCharacterClass, eCharacterClass, bool);
-s32 SidekickTexture_cb(unsigned long);
 cPlayer* CreateCharacter(int, int, eCharacterClass, bool);
 void CharacterLoadingGuts(tCharacterTemplate*, const tCharacterTemplateInfo&, eCharacterClass, bool);
 bool IsCaptain(eCharacterClass);

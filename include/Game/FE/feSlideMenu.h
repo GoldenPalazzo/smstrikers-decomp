@@ -68,8 +68,8 @@ class FESlideMenu
 public:
     struct MenuItem
     {
-        MenuItem() { };
-        ~MenuItem() { };
+        MenuItem();
+        ~MenuItem();
 
         /* 0x0 */ unsigned long ItemSlide;
         /* 0x4 */ Function<FnVoidVoid> ItemCBFuncs[2];

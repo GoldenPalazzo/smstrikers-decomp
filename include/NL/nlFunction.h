@@ -291,6 +291,9 @@ public:
     Function()
         : Function0<void>()
     {
+#ifdef FESLIDEMENU_FUNCTION_CTOR_INIT
+        mTag = EMPTY;
+#endif
     }
 
     Function(Tag t)

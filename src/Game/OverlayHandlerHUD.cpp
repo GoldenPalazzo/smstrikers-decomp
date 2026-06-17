@@ -812,6 +812,9 @@ u32 PowerupAcquireEventData::GetID()
 
 /**
  * Offset/Address/Size: 0x3C0 | 0x800F66A0 | size: 0xDA8
+ * TODO: 91.9% match - residual diffs are r26/r27 register swap throughout the
+ * per-case BasicString temp construction, plus a uniform +4 stack-offset shift
+ * on the FEFinder::Find argument temporaries (0x4c-0xc0 region).
  */
 void HUDOverlay::SetTeamIcons()
 {
@@ -830,10 +833,7 @@ void HUDOverlay::SetTeamIcons()
     const char* filename = "art/fe/CaptainIconsUI.res";
 
     AsyncImage* pImage = (AsyncImage*)nlMalloc(sizeof(AsyncImage), 8, false);
-    if (pImage != 0)
-    {
-        pImage = new (pImage) AsyncImage(filename, 0);
-    }
+    pImage = new (pImage) AsyncImage(filename, 0);
     mAsyncImage[0] = pImage;
     mAsyncImage[0]->mImageInstance = FEFinder<TLImageInstance, 2>::Find<TLSlide>(
         pCompLeft->GetActiveSlide(),
@@ -841,10 +841,7 @@ void HUDOverlay::SetTeamIcons()
         InlineHasher(0));
 
     pImage = (AsyncImage*)nlMalloc(sizeof(AsyncImage), 8, false);
-    if (pImage != 0)
-    {
-        pImage = new (pImage) AsyncImage(filename, 0);
-    }
+    pImage = new (pImage) AsyncImage(filename, 0);
     mAsyncImage[1] = pImage;
     mAsyncImage[1]->mImageInstance = FEFinder<TLImageInstance, 2>::Find<TLSlide>(
         pCompRight->GetActiveSlide(),

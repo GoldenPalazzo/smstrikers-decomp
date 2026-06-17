@@ -7,17 +7,14 @@ template <typename T>
 class nlArrayAllocator
 {
 public:
-    void DeleteEntry(T* entry);
+    void DeleteEntry(T* entry)
+    {
+        entry->m_next = m_pFree;
+        m_pFree = entry;
+    }
 
     /* 0x0 */ T* m_pFree; // size 0x4
 }; // total size: 0x4
-
-template <typename T>
-void nlArrayAllocator<T>::DeleteEntry(T* entry)
-{
-    entry->m_next = m_pFree;
-    m_pFree = entry;
-}
 
 template <typename T, int N>
 class nlStaticArrayAllocator : public nlArrayAllocator<T>

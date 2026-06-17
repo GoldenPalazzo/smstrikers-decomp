@@ -10,7 +10,10 @@
 
 int nlSNPrintf(char*, unsigned long, const char*, ...);
 
-static bool gbAsyncLoadEntireSampleFileIntoMemRequestMade;
+// NOTE: gbAsyncLoadEntireSampleFileIntoMemRequestMade, gbStream and the
+// AudioLoader bool statics / gLoaded* group cursors are defined below (after the
+// vtable-bearing globals) so the .sbss / .sdata symbol order and initial values
+// match the target object exactly.
 
 /**
  * Helper struct for inlining FindGet with bool return to match target assembly.
@@ -52,12 +55,17 @@ struct SoundDefineMapType
     }
 };
 
-static int gLoadedStadiumGroup;
-static int gLoadedHomeCaptainGroup;
-static int gLoadedAwayCaptainGroup;
-static int gLoadedHomeSidekickGroup;
-static int gLoadedAwaySidekickGroup;
-static int gLoadedSurfaceGroup;
+// .sdata: gbStream (global, =1) first, then the six group-load cursors
+// (local, =-1). Initializing them to -1 places them in .sdata (initialized
+// small data) rather than .sbss, matching the target.
+bool AudioLoader::gbStream = true;
+
+static int gLoadedStadiumGroup = -1;
+static int gLoadedHomeCaptainGroup = -1;
+static int gLoadedAwayCaptainGroup = -1;
+static int gLoadedHomeSidekickGroup = -1;
+static int gLoadedAwaySidekickGroup = -1;
+static int gLoadedSurfaceGroup = -1;
 
 typedef DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL> FadeDLListEntry;
 typedef DLListContainerBase<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL, BasicSlotPool<FadeDLListEntry> > FadeDLListContainer;
@@ -83,6 +91,17 @@ class GameSceneManager;
 // (filled at runtime from gp*SoundPropAccessor globals via a dummy-ctor
 // struct), then the three AVL maps with explicit (initial, delta) ctors.
 AudioLoader TheAudioLoader;
+
+// .sbss (uninitialized small data), in this exact source order:
+//   TheAudioLoader, gbDisableAudio, g_BGM_Off, gbDisableCrowd,
+//   gbDisableReverb, gReverbOn, gbAsyncLoadEntireSampleFileIntoMemRequestMade.
+bool AudioLoader::gbDisableAudio;
+bool AudioLoader::g_BGM_Off;
+bool AudioLoader::gbDisableCrowd;
+bool AudioLoader::gbDisableReverb;
+bool AudioLoader::gReverbOn;
+static bool gbAsyncLoadEntireSampleFileIntoMemRequestMade;
+
 Config g_FEStreamConfig(Config::ALLOCATE_HIGH);
 
 extern SoundPropAccessor* gpBIRDOGRASSSoundPropAccessor;
@@ -156,6 +175,61 @@ extern SoundPropAccessor* gpBOWSERCONCRETESoundPropAccessor;
 extern SoundPropAccessor* gpBOWSERRUBBERSoundPropAccessor;
 extern SoundPropAccessor* gpBOWSERWOODSoundPropAccessor;
 
+// .data: the sebring sound-group table. Each entry is
+// { szGroupName, groupID=0xFFFF, stackEnum=-1, uLoadOrder=-1, loadType=0 }.
+// The 47th (empty-name) entry is the terminator; numSoundGroups is 46 (0x2E).
+// The GRP*_SFX string literals are emitted into .data (and the empty string
+// into .sdata) in this initializer order, ahead of surfaceSoundPropTables.
+SndGroupData sebringAudioGroups[47] = {
+    { "GRPFE_Main_SFX", 0xFFFF, -1, -1, SND_GROUP_LOAD_NOT_LOADED },
+    { "GRPFE_Char_SFX", 0xFFFF, -1, -1, SND_GROUP_LOAD_NOT_LOADED },
+    { "GRPFE_Button_SFX", 0xFFFF, -1, -1, SND_GROUP_LOAD_NOT_LOADED },
+    { "GRPFE_Char_Nintendo_SFX", 0xFFFF, -1, -1, SND_GROUP_LOAD_NOT_LOADED },
+    { "GRPFE_Char_NLG_SFX", 0xFFFF, -1, -1, SND_GROUP_LOAD_NOT_LOADED },
+    { "GRPCrowd_Gen_SFX", 0xFFFF, -1, -1, SND_GROUP_LOAD_NOT_LOADED },
+    { "GRPStad_Gen_SFX", 0xFFFF, -1, -1, SND_GROUP_LOAD_NOT_LOADED },
+    { "GRPStad_Palace_SFX", 0xFFFF, -1, -1, SND_GROUP_LOAD_NOT_LOADED },
+    { "GRPStad_Pipeline_SFX", 0xFFFF, -1, -1, SND_GROUP_LOAD_NOT_LOADED },
+    { "GRPStad_Underground_SFX", 0xFFFF, -1, -1, SND_GROUP_LOAD_NOT_LOADED },
+    { "GRPStad_Konga_SFX", 0xFFFF, -1, -1, SND_GROUP_LOAD_NOT_LOADED },
+    { "GRPStad_Yoshi_SFX", 0xFFFF, -1, -1, SND_GROUP_LOAD_NOT_LOADED },
+    { "GRPStad_Super_SFX", 0xFFFF, -1, -1, SND_GROUP_LOAD_NOT_LOADED },
+    { "GRPStad_Mystery_SFX", 0xFFFF, -1, -1, SND_GROUP_LOAD_NOT_LOADED },
+    { "GRPStad_Grass_SFX", 0xFFFF, -1, -1, SND_GROUP_LOAD_NOT_LOADED },
+    { "GRPStad_Metal_SFX", 0xFFFF, -1, -1, SND_GROUP_LOAD_NOT_LOADED },
+    { "GRPStad_Concrete_SFX", 0xFFFF, -1, -1, SND_GROUP_LOAD_NOT_LOADED },
+    { "GRPStad_Rubber_SFX", 0xFFFF, -1, -1, SND_GROUP_LOAD_NOT_LOADED },
+    { "GRPStad_Wood_SFX", 0xFFFF, -1, -1, SND_GROUP_LOAD_NOT_LOADED },
+    { "GRPChar_Gen_SFX", 0xFFFF, -1, -1, SND_GROUP_LOAD_NOT_LOADED },
+    { "GRPChar_Critter_SFX", 0xFFFF, -1, -1, SND_GROUP_LOAD_NOT_LOADED },
+    { "GRPChar_Daisy_SFX", 0xFFFF, -1, -1, SND_GROUP_LOAD_NOT_LOADED },
+    { "GRPChar_DK_SFX", 0xFFFF, -1, -1, SND_GROUP_LOAD_NOT_LOADED },
+    { "GRPChar_Luigi_SFX", 0xFFFF, -1, -1, SND_GROUP_LOAD_NOT_LOADED },
+    { "GRPChar_MARIO_SFX", 0xFFFF, -1, -1, SND_GROUP_LOAD_NOT_LOADED },
+    { "GRPChar_Peach_SFX", 0xFFFF, -1, -1, SND_GROUP_LOAD_NOT_LOADED },
+    { "GRPChar_Waluigi_SFX", 0xFFFF, -1, -1, SND_GROUP_LOAD_NOT_LOADED },
+    { "GRPChar_Wario_SFX", 0xFFFF, -1, -1, SND_GROUP_LOAD_NOT_LOADED },
+    { "GRPChar_Yoshi_SFX", 0xFFFF, -1, -1, SND_GROUP_LOAD_NOT_LOADED },
+    { "GRPChar_Mystery_SFX", 0xFFFF, -1, -1, SND_GROUP_LOAD_NOT_LOADED },
+    { "GRPChar_Birdo_SFX", 0xFFFF, -1, -1, SND_GROUP_LOAD_NOT_LOADED },
+    { "GRPChar_Koopa_SFX", 0xFFFF, -1, -1, SND_GROUP_LOAD_NOT_LOADED },
+    { "GRPChar_Toad_SFX", 0xFFFF, -1, -1, SND_GROUP_LOAD_NOT_LOADED },
+    { "GRPChar_Ham_SFX", 0xFFFF, -1, -1, SND_GROUP_LOAD_NOT_LOADED },
+    { "GRPChar_Bowser_SFX", 0xFFFF, -1, -1, SND_GROUP_LOAD_NOT_LOADED },
+    { "GRPPower_Up_Gen_SFX", 0xFFFF, -1, -1, SND_GROUP_LOAD_NOT_LOADED },
+    { "GRPPower_Up_Bana_SFX", 0xFFFF, -1, -1, SND_GROUP_LOAD_NOT_LOADED },
+    { "GRPPower_Up_Bomb_SFX", 0xFFFF, -1, -1, SND_GROUP_LOAD_NOT_LOADED },
+    { "GRPPower_Up_Mush_SFX", 0xFFFF, -1, -1, SND_GROUP_LOAD_NOT_LOADED },
+    { "GRPPower_Up_Shell_Freeze_SFX", 0xFFFF, -1, -1, SND_GROUP_LOAD_NOT_LOADED },
+    { "GRPPower_Up_Shell_Green_SFX", 0xFFFF, -1, -1, SND_GROUP_LOAD_NOT_LOADED },
+    { "GRPPower_Up_Shell_Red_SFX", 0xFFFF, -1, -1, SND_GROUP_LOAD_NOT_LOADED },
+    { "GRPPower_Up_Shell_Spiny_SFX", 0xFFFF, -1, -1, SND_GROUP_LOAD_NOT_LOADED },
+    { "GRPPower_Up_Star_SFX", 0xFFFF, -1, -1, SND_GROUP_LOAD_NOT_LOADED },
+    { "GRPPower_Up_Chain_Chomp_SFX", 0xFFFF, -1, -1, SND_GROUP_LOAD_NOT_LOADED },
+    { "GRPHUD_In_Game_FE_SFX", 0xFFFF, -1, -1, SND_GROUP_LOAD_NOT_LOADED },
+    { "", 0xFFFF, -1, -1, SND_GROUP_LOAD_NOT_LOADED },
+};
+
 SoundPropAccessor* surfaceSoundPropTables[14][5] = {
     { gpBIRDOGRASSSoundPropAccessor, gpBIRDOMETALSoundPropAccessor, gpBIRDOCONCRETESoundPropAccessor, gpBIRDORUBBERSoundPropAccessor, gpBIRDOWOODSoundPropAccessor },
     { gpDAISYGRASSSoundPropAccessor, gpDAISYMETALSoundPropAccessor, gpDAISYCONCRETESoundPropAccessor, gpDAISYRUBBERSoundPropAccessor, gpDAISYWOODSoundPropAccessor },
@@ -171,6 +245,21 @@ SoundPropAccessor* surfaceSoundPropTables[14][5] = {
     { gpYOSHIGRASSSoundPropAccessor, gpYOSHIMETALSoundPropAccessor, gpYOSHICONCRETESoundPropAccessor, gpYOSHIRUBBERSoundPropAccessor, gpYOSHIWOODSoundPropAccessor },
     { gpSUPERGRASSSoundPropAccessor, gpSUPERMETALSoundPropAccessor, gpSUPERCONCRETESoundPropAccessor, gpSUPERRUBBERSoundPropAccessor, gpSUPERWOODSoundPropAccessor },
     { gpBOWSERGRASSSoundPropAccessor, gpBOWSERMETALSoundPropAccessor, gpBOWSERCONCRETESoundPropAccessor, gpBOWSERRUBBERSoundPropAccessor, gpBOWSERWOODSoundPropAccessor },
+};
+
+// .data: the sebring path strings (.pool/.samp/.proj/.sdir) emit here, after
+// surfaceSoundPropTables, followed by the AudioFileData record itself.
+AudioFileData AudioLoader::sebringAudioFileData = {
+    "/audio/data/sebring.pool",
+    "/audio/data/sebring.samp",
+    "/audio/data/sebring.proj",
+    "/audio/data/sebring.sdir",
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    sebringAudioGroups,
+    0x2E,
 };
 
 nlAVLTreeSlotPool<int, SoundStrToIDNode*, DefaultKeyCompare<int> > AudioLoader::gMusyXSoundDefineMap(0x438, 0);
@@ -261,8 +350,11 @@ nlAVLTreeSlotPool<int, SoundStrToIDNode*, DefaultKeyCompare<int> > AudioLoader::
 //  {
 //  }
 
-// Force template instantiation for AVLTreeBase<int, SoundStrToIDNode*, ...>
-template class AVLTreeBase<int, SoundStrToIDNode*, BasicSlotPool<AVLTreeEntry<int, SoundStrToIDNode*> >, DefaultKeyCompare<int> >;
+// AVLTreeBase<int, SoundStrToIDNode*, ...> methods are instantiated implicitly
+// (weak) through the map ctors/dtors and vtable below -- matching the target,
+// where every method is weak. Do NOT add an explicit `template class ...`
+// instantiation here: it forces GLOBAL linkage and drags in unused methods
+// (DeleteValue/DeleteValues) the target object does not contain.
 
 /**
  * Offset/Address/Size: 0x398 | 0x801481F8 | size: 0xD4

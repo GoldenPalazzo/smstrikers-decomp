@@ -40,25 +40,29 @@ extern SoundPropAccessor* gpCRITTERSoundPropAccessor;
 
 extern SebringAnimTagScriptInterpreter* g_pAnimScriptInterp;
 
+extern AnimProperties GLOBALAnimProperties[];
+extern AnimProperties GOALIEAnimProperties[];
+void AnimTriggerCallback_MARIO(unsigned int);
+
 cCharacter* g_pCharacters[10];
 static tCharacterTemplateInfo g_aCharacterTemplateInfo[13] = {
-    { NULL, (eClassTypes)0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, gpBIRDOSoundPropAccessor },
-    { NULL, (eClassTypes)0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, gpDAISYSoundPropAccessor },
-    { NULL, (eClassTypes)0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, gpDKSoundPropAccessor },
-    { NULL, (eClassTypes)0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, gpHAMBROSSoundPropAccessor },
-    { NULL, (eClassTypes)0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, gpKOOPASoundPropAccessor },
-    { NULL, (eClassTypes)0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, gpLUIGISoundPropAccessor },
-    { NULL, (eClassTypes)0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, gpMARIOSoundPropAccessor },
-    { NULL, (eClassTypes)0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, gpPEACHSoundPropAccessor },
-    { NULL, (eClassTypes)0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, gpTOADSoundPropAccessor },
-    { NULL, (eClassTypes)0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, gpWALUIGISoundPropAccessor },
-    { NULL, (eClassTypes)0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, gpWARIOSoundPropAccessor },
-    { NULL, (eClassTypes)0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, gpYOSHISoundPropAccessor },
-    { NULL, (eClassTypes)0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, gpSUPERSoundPropAccessor },
+    { "birdo", FIELDER, "characters/birdo/birdo.glg", "characters/birdo/birdo_blend.glg", "characters/birdo/birdo.glt", "art/animation/birdo.trg", AnimTriggerCallback_MARIO, "art/animation/birdo.shier", "birdo", GLOBALAnimProperties, 119, "art/animation/birdo.sanim", "mario", gpBIRDOSoundPropAccessor, "art/animation/birdo.cph", "birdo.ini", "art/characters/birdo/animretarget/birdo.bin" },
+    { "daisy", FIELDER, "characters/daisy/daisy.glg", "characters/daisy/daisy_blend.glg", "characters/daisy/daisy.glt", "art/animation/daisy.trg", AnimTriggerCallback_MARIO, "art/animation/daisy.shier", "daisy", GLOBALAnimProperties, 119, "art/animation/daisy.sanim", "daisy", gpDAISYSoundPropAccessor, "art/animation/daisy.cph", "daisy.ini", "art/characters/daisy/animretarget/daisy.bin" },
+    { "donkeykong", FIELDER, "characters/donkeykong/donkeykong.glg", "characters/donkeykong/donkeykong_blend.glg", "characters/donkeykong/donkeykong.glt", "art/animation/donkeykong.trg", AnimTriggerCallback_MARIO, "art/animation/donkeykong.shier", "donkeykong", GLOBALAnimProperties, 119, "art/animation/donkeykong.sanim", "donkeykong", gpDKSoundPropAccessor, "art/animation/DonkeyKong.cph", "dk.ini", "art/characters/donkeykong/animretarget/donkeykong.bin" },
+    { "hammerbro", FIELDER, "characters/hammerbro/hammerbro.glg", "characters/hammerbro/hammerbro_blend.glg", "characters/hammerbro/hammerbro.glt", "art/animation/hammerbro.trg", AnimTriggerCallback_MARIO, "art/animation/hammerbro.shier", "hammerbro", GLOBALAnimProperties, 119, "art/animation/hammerbro.sanim", "hammerbro", gpHAMBROSSoundPropAccessor, "art/animation/hammerbro.cph", "hammerbros.ini", "art/characters/hammerbro/animretarget/hammerbro.bin" },
+    { "koopa", FIELDER, "characters/koopa/koopa.glg", "characters/koopa/koopa_blend.glg", "characters/koopa/koopa.glt", "art/animation/koopa.trg", AnimTriggerCallback_MARIO, "art/animation/koopa.shier", "koopa", GLOBALAnimProperties, 119, "art/animation/koopa.sanim", "mario", gpKOOPASoundPropAccessor, "art/animation/koopa.cph", "koopa.ini", "art/characters/koopa/animretarget/koopa.bin" },
+    { "luigi", FIELDER, "characters/luigi/luigi.glg", "characters/luigi/luigi_blend.glg", "characters/luigi/luigi.glt", "art/animation/luigi.trg", NULL, "art/animation/luigi.shier", "luigi", GLOBALAnimProperties, 119, "art/animation/luigi.sanim", "luigi", gpLUIGISoundPropAccessor, "art/animation/mario.cph", "luigi.ini", "art/characters/luigi/animretarget/luigi.bin" },
+    { "mario", FIELDER, "characters/mario/mario.glg", "characters/mario/mario_blend.glg", "characters/mario/mario.glt", "art/animation/mario.trg", AnimTriggerCallback_MARIO, "art/animation/mario.shier", "mario", GLOBALAnimProperties, 119, "art/animation/mario.sanim", "mario", gpMARIOSoundPropAccessor, "art/animation/mario.cph", "mario.ini", "art/characters/mario/animretarget/mario.bin" },
+    { "peach", FIELDER, "characters/peach/peach.glg", "characters/peach/peach_blend.glg", "characters/peach/peach.glt", "art/animation/peach.trg", AnimTriggerCallback_MARIO, "art/animation/peach.shier", "peach", GLOBALAnimProperties, 119, "art/animation/peach.sanim", "peach", gpPEACHSoundPropAccessor, "art/animation/peach.cph", "peach.ini", "art/characters/peach/animretarget/peach.bin" },
+    { "toad", FIELDER, "characters/toad/toad.glg", "characters/toad/toad_blend.glg", "characters/toad/toad.glt", "art/animation/toad.trg", AnimTriggerCallback_MARIO, "art/animation/toad.shier", "toad", GLOBALAnimProperties, 119, "art/animation/toad.sanim", "toad", gpTOADSoundPropAccessor, "art/animation/toad.cph", "toad.ini", "art/characters/toad/animretarget/toad.bin" },
+    { "waluigi", FIELDER, "characters/waluigi/waluigi.glg", "characters/waluigi/waluigi_blend.glg", "characters/waluigi/waluigi.glt", "art/animation/waluigi.trg", NULL, "art/animation/waluigi.shier", "waluigi", GLOBALAnimProperties, 119, "art/animation/waluigi.sanim", "waluigi", gpWALUIGISoundPropAccessor, "art/animation/waluigi.cph", "waluigi.ini", "art/characters/waluigi/animretarget/waluigi.bin" },
+    { "wario", FIELDER, "characters/wario/wario.glg", "characters/wario/wario_blend.glg", "characters/wario/wario.glt", "art/animation/wario.trg", NULL, "art/animation/wario.shier", "wario", GLOBALAnimProperties, 119, "art/animation/wario.sanim", "wario", gpWARIOSoundPropAccessor, "art/animation/wario.cph", "wario.ini", "art/characters/wario/animretarget/wario.bin" },
+    { "yoshi", FIELDER, "characters/yoshi/yoshi.glg", "characters/yoshi/yoshi_blend.glg", "characters/yoshi/yoshi.glt", "art/animation/yoshi.trg", AnimTriggerCallback_MARIO, "art/animation/yoshi.shier", "yoshi", GLOBALAnimProperties, 119, "art/animation/yoshi.sanim", "yoshi", gpYOSHISoundPropAccessor, "art/animation/yoshi.cph", "yoshi.ini", "art/characters/yoshi/animretarget/yoshi.bin" },
+    { "superteam", FIELDER, "characters/superteam/superteam.glg", "characters/superteam/superteam_blend.glg", "characters/superteam/superteam.glt", "art/animation/superteam.trg", NULL, "art/animation/superteam.shier", "superteam", GLOBALAnimProperties, 119, "art/animation/superteam.sanim", "superteam", gpSUPERSoundPropAccessor, "art/animation/superteam.cph", "superteam.ini", "art/characters/superteam/animretarget/superteam.bin" },
 };
 static tCharacterTemplate* g_aCharacterTemplates[13];
 static tCharacterTemplateInfo g_GoalieTemplateInfo = {
-    NULL, (eClassTypes)0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, gpCRITTERSoundPropAccessor
+    "mariogoalie", GOALIE, "characters/mariogoalie/mariogoalie.glg", "characters/mariogoalie/mariogoalie_blend.glg", "characters/mariogoalie/mariogoalie.glt", "art/animation/mariogoalie.trg", NULL, "art/animation/mariogoalie.shier", "mariogoalie", GOALIEAnimProperties, 149, "art/animation/mariogoalie.sanim", "mario", gpCRITTERSoundPropAccessor, "art/animation/mariogoalie.cph", "goalie.ini", NULL
 };
 static tCharacterTemplate* g_GoalieTemplate;
 
@@ -187,43 +191,692 @@ foundSlash:
     return 0;
 }
 
-/**
- * Offset/Address/Size: 0x0 | 0x800122E8 | size: 0x1C0
- */
-s32 GetGoalieIndex(int arg0)
+static inline cSHierarchy* FindHierarchy(ListEntry<cSHierarchy*>* hEntry, u32 hash)
 {
-    if (arg0 == 0)
+    cSHierarchy* pHierarchy;
+    while (hEntry != NULL)
     {
-        cCharacter** ptr = g_pCharacters;
-        for (s32 i = 0; i < 10; ++i, ptr++)
+        pHierarchy = hEntry->data;
+        if (hash == hEntry->data->m_uHashID)
         {
-            if (*ptr == g_pCharacters[8])
-                return i;
+            return pHierarchy;
         }
-        return -1;
+        hEntry = hEntry->next;
     }
+    return NULL;
+}
 
-    cCharacter** ptr = g_pCharacters;
-    for (s32 i = 0; i < 10; ++i, ptr++)
+template <typename T>
+static inline nlChunk* AddLoadedInventoryMemory(cInventory<T>* inv, nlChunk* data)
+{
+    ListEntry<char*>* entry = (ListEntry<char*>*)nlMalloc(8, 8, false);
+    if (entry != NULL)
     {
-        if (*ptr == g_pCharacters[9])
-            return i;
+        entry->next = NULL;
+        entry->data = (char*)data;
     }
-    return -1;
+    nlListAddStart<ListEntry<char*> >(
+        (ListEntry<char*>**)&inv->m_lMemList.m_Head,
+        entry,
+        (ListEntry<char*>**)&inv->m_lMemList.m_Tail);
+    return data;
+}
+
+extern SebringAnimTagScriptInterpreter* g_pAnimScriptInterp;
+
+static cAnimInventory* FindDuplicateAnimInventory(int nCurIndex, unsigned long uHashID);
+static char* GetCharacterTriggerFileName(eCharacterClass cc);
+
+/**
+ * Offset/Address/Size: 0x2128 | 0x80014410 | size: 0x34
+ */
+char* GetCharacterName(eCharacterClass cc)
+{
+    if (cc < 13)
+    {
+        return (char*)g_aCharacterTemplateInfo[cc].szCharName;
+    }
+    return (char*)g_GoalieTextureInfo[cc - 13].szCharName;
 }
 
 /**
- * Offset/Address/Size: 0x1C0 | 0x800124A8 | size: 0xD4
+ * Offset/Address/Size: 0x20EC | 0x800143D4 | size: 0x3C
  */
-s32 GetCharacterIndex(const cCharacter* character)
+bool IsCaptain(eCharacterClass cc)
 {
-    cCharacter** ptr = g_pCharacters;
-    for (s32 i = 0; i < 10; ++i, ptr++)
+    if (((cc - 1) <= 1U) || ((cc - 5) <= 2U) || ((cc - 9) <= 2U) || (cc == 0xC))
     {
-        if (*ptr == character)
-            return i;
+        return true;
     }
-    return -1;
+    return false;
+}
+
+/**
+ * Offset/Address/Size: 0x1CFC | 0x80013FE4 | size: 0x3F0
+ * TODO: 99.23% match - hierarchy file load keeps an extra return-value move; retarget load loop keeps inventory/data register differences
+ */
+void CharacterLoadingGuts(tCharacterTemplate* pCharacterTemplate, const tCharacterTemplateInfo& charTemplateInfo, eCharacterClass cc, bool bForViewer)
+{
+    glModel* pRigidCharacterModel = glLoadModel(charTemplateInfo.szModelFilename, NULL);
+    glModel* pBlendCharacterModel = glLoadModel(charTemplateInfo.szBlendedModelFilename, NULL);
+
+    pCharacterTemplate->nCharacterModelID[0] = pRigidCharacterModel->id;
+    pCharacterTemplate->nCharacterModelID[1] = pBlendCharacterModel->id;
+
+    cInventory<cSHierarchy>* pHierInv = new (nlMalloc(sizeof(cInventory<cSHierarchy>), 8, false)) cInventory<cSHierarchy>();
+    cInventory<AnimRetargetList>* pRetInv;
+    pCharacterTemplate->pHierarchyInventory = pHierInv;
+
+    u32 hierFileSize;
+    cInventory<cSHierarchy>* pHierInv2 = pCharacterTemplate->pHierarchyInventory;
+    nlChunk* hierData = (nlChunk*)nlLoadEntireFile(charTemplateInfo.szHierarchyFilename, &hierFileSize, 0x20, AllocateStart);
+
+    ListEntry<char*>* memEntry = (ListEntry<char*>*)nlMalloc(8, 8, false);
+    if (memEntry != NULL)
+    {
+        memEntry->next = NULL;
+        memEntry->data = (char*)hierData;
+    }
+    nlListAddStart<ListEntry<char*> >(
+        (ListEntry<char*>**)&pHierInv2->m_lMemList.m_Head,
+        memEntry,
+        (ListEntry<char*>**)&pHierInv2->m_lMemList.m_Tail);
+
+    nlChunk* hierEnd = (nlChunk*)((char*)hierData + hierFileSize);
+    while (hierData != hierEnd)
+    {
+        if ((hierData->m_ID & 0x80FFFFFF) == 0x80018000)
+        {
+            cSHierarchy* hier = cSHierarchy::Initialize(hierData);
+
+            ListEntry<cSHierarchy*>* itemEntry = (ListEntry<cSHierarchy*>*)nlMalloc(8, 8, false);
+            if (itemEntry != NULL)
+            {
+                itemEntry->next = NULL;
+                itemEntry->data = hier;
+            }
+            nlListAddStart<ListEntry<cSHierarchy*> >(
+                &pHierInv2->m_lItemList.m_Head,
+                itemEntry,
+                &pHierInv2->m_lItemList.m_Tail);
+            pHierInv2->m_nItemCount++;
+        }
+        else
+        {
+            nlPrintf("Warning: inventory encountered an unknown chunk type\n");
+        }
+        hierData = (nlChunk*)((char*)hierData + hierData->m_Size + 8);
+    }
+
+    if (!bForViewer)
+    {
+        CharacterPhysicsData* pPhys = new (nlMalloc(sizeof(CharacterPhysicsData), 8, false)) CharacterPhysicsData();
+        pCharacterTemplate->pPhysicsData = pPhys;
+        LoadCharacterPhysicsElements(charTemplateInfo.szPhysicsFilename, (CharacterPhysicsData*)pCharacterTemplate->pPhysicsData);
+    }
+    else
+    {
+        pCharacterTemplate->pPhysicsData = NULL;
+    }
+
+    pCharacterTemplate->uAnimInventoryHashID = nlStringLowerHash(charTemplateInfo.szAnimFilename);
+
+    cAnimInventory* found = FindDuplicateAnimInventory(cc, pCharacterTemplate->uAnimInventoryHashID);
+
+    if (found != NULL)
+    {
+        pCharacterTemplate->pAnimInventory = found;
+        pCharacterTemplate->bAnimInventoryCopy = true;
+    }
+    else
+    {
+        cAnimInventory* pAnim = new (nlMalloc(sizeof(cAnimInventory), 8, false))
+            cAnimInventory(charTemplateInfo.pAnimProperties, charTemplateInfo.nNumAnimProperties);
+        pCharacterTemplate->pAnimInventory = pAnim;
+        pCharacterTemplate->pAnimInventory->AddAnimBundle(charTemplateInfo.szAnimFilename);
+        pCharacterTemplate->bAnimInventoryCopy = false;
+
+        cAnimInventory* pAI = pCharacterTemplate->pAnimInventory;
+        cInventory<cSAnim>* pAnimCont = (cInventory<cSAnim>*)pAI->m_cont;
+        SebringAnimTagScriptInterpreter* pInterp = g_pAnimScriptInterp;
+        const char* triggerFilename;
+        if (cc < NUM_FIELDER_CLASSES)
+        {
+            triggerFilename = g_aCharacterTemplateInfo[cc].szTriggerFilename;
+        }
+        else
+        {
+            triggerFilename = g_GoalieTemplateInfo.szTriggerFilename;
+        }
+        pInterp->SetupAnimationTriggers(triggerFilename, pAnimCont);
+    }
+
+    if (charTemplateInfo.szAnimRetargetFilename != NULL)
+    {
+        cInventory<AnimRetargetList>* pRetargetInv = new (nlMalloc(sizeof(cInventory<AnimRetargetList>), 8, false)) cInventory<AnimRetargetList>();
+        pCharacterTemplate->pAnimRetargetListInventory = pRetargetInv;
+
+        u32 retargetFileSize;
+        pRetInv = pCharacterTemplate->pAnimRetargetListInventory;
+        nlChunk* retargetData = AddLoadedInventoryMemory(
+            pRetInv,
+            (nlChunk*)nlLoadEntireFile(charTemplateInfo.szAnimRetargetFilename, &retargetFileSize, 0x20, AllocateStart));
+
+        nlChunk* retargetEnd = (nlChunk*)((char*)retargetData + retargetFileSize);
+        while (retargetData != retargetEnd)
+        {
+            if ((retargetData->m_ID & 0x80FFFFFF) == 0x80017104)
+            {
+                AnimRetargetList* retarget = AnimRetargetList::Initialize(retargetData);
+
+                ListEntry<AnimRetargetList*>* retItemEntry = (ListEntry<AnimRetargetList*>*)nlMalloc(8, 8, false);
+                if (retItemEntry != NULL)
+                {
+                    retItemEntry->next = NULL;
+                    retItemEntry->data = retarget;
+                }
+                nlListAddStart<ListEntry<AnimRetargetList*> >(
+                    &pRetInv->m_lItemList.m_Head,
+                    retItemEntry,
+                    &pRetInv->m_lItemList.m_Tail);
+                pRetInv->m_nItemCount++;
+            }
+            else
+            {
+                nlPrintf("Warning: inventory encountered an unknown chunk type\n");
+            }
+            retargetData = (nlChunk*)((char*)retargetData + retargetData->m_Size + 8);
+        }
+    }
+    else
+    {
+        pCharacterTemplate->pAnimRetargetListInventory = NULL;
+    }
+}
+
+static cAnimInventory* FindDuplicateAnimInventory(int nCurIndex, unsigned long uHashID)
+{
+    for (int index = 0; index < NUM_FIELDER_CLASSES; index++)
+    {
+        if (index == nCurIndex)
+            continue;
+        if (g_aCharacterTemplates[index] == NULL)
+            continue;
+        if (uHashID != g_aCharacterTemplates[index]->uAnimInventoryHashID)
+            continue;
+        return g_aCharacterTemplates[index]->pAnimInventory;
+    }
+    return NULL;
+}
+
+static char* GetCharacterTriggerFileName(eCharacterClass cc)
+{
+    if (cc < NUM_FIELDER_CLASSES)
+    {
+        return (char*)g_aCharacterTemplateInfo[cc].szTriggerFilename;
+    }
+    return (char*)g_GoalieTemplateInfo.szTriggerFilename;
+}
+
+/**
+ * Offset/Address/Size: 0x1ABC | 0x80013DA4 | size: 0x240
+ */
+cPlayer* CreateCharacter(int nPlayerID, int nTeamID, eCharacterClass cc, bool bForViewer)
+{
+    if (cc >= NUM_FIELDER_CLASSES)
+    {
+        return CreateGoalie(cc, bForViewer);
+    }
+
+    if (g_aCharacterTemplates[cc] == NULL)
+    {
+        glLoadTextureBundle(g_aCharacterTemplateInfo[cc].szTextureFilename);
+        g_aCharacterTemplates[cc] = (tCharacterTemplate*)nlMalloc(sizeof(tCharacterTemplate), 8, false);
+        CharacterLoadingGuts(g_aCharacterTemplates[cc], g_aCharacterTemplateInfo[cc], cc, bForViewer);
+    }
+
+    cInventory<cSHierarchy>* pHierInv = g_aCharacterTemplates[cc]->pHierarchyInventory;
+    u32 hash = nlStringHash(g_aCharacterTemplateInfo[cc].szHierarchy);
+
+    AnimRetargetList* pAnimRetarget;
+    FielderTweaks* pTweaks;
+    cSHierarchy* pHierarchy = FindHierarchy(pHierInv->m_lItemList.m_Head, hash);
+
+    pAnimRetarget = NULL;
+    if (g_aCharacterTemplates[cc]->pAnimRetargetListInventory != NULL)
+    {
+        int idx = 0;
+        ListEntry<AnimRetargetList*>* retEntry = g_aCharacterTemplates[cc]->pAnimRetargetListInventory->m_lItemList.m_Head;
+        u32 retData;
+        while (retEntry != NULL)
+        {
+            if (idx == 0)
+            {
+                retData = (u32)retEntry->data;
+                goto retFound;
+            }
+            retEntry = retEntry->next;
+            idx++;
+        }
+        retData = 0;
+
+    retFound:
+        pAnimRetarget = (AnimRetargetList*)retData;
+    }
+
+    pTweaks = new (nlMalloc(0x124, 8, false)) FielderTweaks(g_aCharacterTemplateInfo[cc].szTweaksFilename);
+
+    cPlayer* pPlayer;
+    if (!bForViewer)
+    {
+        cFielder* pFielder = new (nlMalloc(0x3EC, 8, false)) cFielder(
+            nPlayerID, nTeamID, cc, (const int*)g_aCharacterTemplates[cc], pHierarchy, g_aCharacterTemplates[cc]->pAnimInventory, g_aCharacterTemplates[cc]->pPhysicsData, pTweaks, pAnimRetarget);
+        pPlayer = pFielder;
+    }
+    else
+    {
+        cPlayer* p = new (nlMalloc(0x1D4, 8, false)) cPlayer(
+            nPlayerID, cc, (const int*)g_aCharacterTemplates[cc], pHierarchy, g_aCharacterTemplates[cc]->pAnimInventory, g_aCharacterTemplates[cc]->pPhysicsData, (PlayerTweaks*)pTweaks, pAnimRetarget, (eClassTypes)1);
+        pPlayer = p;
+    }
+
+    pPlayer->m_szEffectsName = g_aCharacterTemplateInfo[cc].szEffectsName;
+    if (!AudioLoader::gbDisableAudio)
+    {
+        pPlayer->SetSFX(g_aCharacterTemplateInfo[cc].pSFXPropAccessor);
+    }
+
+    return pPlayer;
+}
+
+/**
+ * Offset/Address/Size: 0x1AA0 | 0x80013D88 | size: 0x1C
+ */
+static s32 SidekickTexture_cb(unsigned long arg0)
+{
+    s32 var_r4 = -1;
+    if (arg0 != skiptexture)
+    {
+        var_r4 = arg0;
+    }
+    return var_r4;
+}
+
+/**
+ * Offset/Address/Size: 0x14A4 | 0x8001378C | size: 0x5FC
+ */
+cPlayer* CreateSidekick(int nPlayerID, int nTeamID, eCharacterClass cc, eCharacterClass captainCC, bool bForViewer)
+{
+    char szTexPath[64];
+    char szArtPath[64];
+    char szBundlePath[64];
+    char szPlayerPath[64];
+
+    glxTextureLoadCallback_t oldCallback = glx_SetLoadCallback((glxTextureLoadCallback_t)SidekickTexture_cb);
+
+    if (cc == HAMMERBROS)
+    {
+        nlSNPrintf(szTexPath, 64, "hammerbro/hammer_mario");
+    }
+    else
+    {
+        nlSNPrintf(szTexPath, 64, "%s/%s_mario", GetCharacterName(cc), GetCharacterName(cc));
+    }
+
+    skiptexture = glGetTexture(szTexPath);
+
+    cPlayer* pPlayer = CreateCharacter(nPlayerID, nTeamID, cc, bForViewer);
+
+    glx_SetLoadCallback(oldCallback);
+
+    bool bLoaded = false;
+
+    if (cc == HAMMERBROS)
+    {
+        nlSNPrintf(szBundlePath, 64, "characters/%s/hammer_%s.glt", GetCharacterName(cc), GetCharacterName(captainCC));
+        nlSNPrintf(szArtPath, 64, "art/characters/%s/hammer_%s.glt", GetCharacterName(cc), GetCharacterName(captainCC));
+    }
+    else
+    {
+        nlSNPrintf(szBundlePath, 64, "characters/%s/%s_%s.glt", GetCharacterName(cc), GetCharacterName(cc), GetCharacterName(captainCC));
+        nlSNPrintf(szArtPath, 64, "art/characters/%s/%s_%s.glt", GetCharacterName(cc), GetCharacterName(cc), GetCharacterName(captainCC));
+    }
+
+    if (cc == HAMMERBROS)
+    {
+        nlSNPrintf(szPlayerPath, 64, "hammer_%s/hammer_%s", GetCharacterName(captainCC), GetCharacterName(captainCC));
+    }
+    else
+    {
+        nlSNPrintf(szPlayerPath, 64, "%s_%s/%s_%s", GetCharacterName(cc), GetCharacterName(captainCC), GetCharacterName(cc), GetCharacterName(captainCC));
+    }
+
+    if (glTextureLoad(glGetTexture(szPlayerPath)))
+    {
+        bLoaded = true;
+    }
+    else
+    {
+        nlFile* fp = nlOpen(szArtPath);
+        if (fp != NULL)
+        {
+            nlClose(fp);
+            bLoaded = glLoadTextureBundle(szBundlePath);
+        }
+    }
+
+    if (bLoaded)
+    {
+        if (cc == HAMMERBROS)
+        {
+            nlSNPrintf(szBundlePath, 64, "%s/hammer_mario", GetCharacterName(cc));
+        }
+        else
+        {
+            nlSNPrintf(szBundlePath, 64, "%s/%s_mario", GetCharacterName(cc), GetCharacterName(cc));
+        }
+        pPlayer->m_uNormalTextureID = glGetTexture(szBundlePath);
+        pPlayer->m_uSwapTextureID = glGetTexture(szPlayerPath);
+    }
+    else
+    {
+        pPlayer->m_uNormalTextureID = (u32)-1;
+        pPlayer->m_uSwapTextureID = (u32)-1;
+    }
+
+    return pPlayer;
+}
+
+/**
+ * Offset/Address/Size: 0xE70 | 0x80013158 | size: 0x634
+ * TODO: 93.07% match - hierarchy inventory register and branch shape differ;
+ * GetHashFromTextureFile inlined slash-scan/copy loops still use different
+ * count/destination registers.
+ */
+cPlayer* CreateGoalie(eCharacterClass gcc, bool bForViewer)
+{
+    s32 goalieIdx = gcc - NUM_FIELDER_CLASSES;
+    if (!g_GoalieTextureInfo[goalieIdx].bLoaded)
+    {
+        glLoadTextureBundle(g_GoalieTextureInfo[goalieIdx].szTextureFilename);
+        g_GoalieTextureInfo[goalieIdx].bLoaded = 1;
+    }
+
+    if (g_GoalieTemplate == NULL)
+    {
+        g_GoalieTemplate = (tCharacterTemplate*)nlMalloc(sizeof(tCharacterTemplate), 8, false);
+        CharacterLoadingGuts(g_GoalieTemplate, g_GoalieTemplateInfo, gcc, bForViewer);
+    }
+
+    cSHierarchy* pHierarchy;
+
+    cInventory<cSHierarchy>* pHierInv = g_GoalieTemplate->pHierarchyInventory;
+    u32 hash = nlStringHash(g_GoalieTemplateInfo.szHierarchy);
+
+    ListEntry<cSHierarchy*>* hEntry = pHierInv->m_lItemList.m_Head;
+    while (hEntry != NULL)
+    {
+        pHierarchy = hEntry->data;
+        if (hash != pHierarchy->m_uHashID)
+        {
+            hEntry = hEntry->next;
+        }
+        else
+        {
+            goto hierFound;
+        }
+    }
+    pHierarchy = NULL;
+hierFound:
+
+    AnimRetargetList* pAnimRetarget = NULL;
+    if (g_GoalieTemplate->pAnimRetargetListInventory != NULL)
+    {
+        int idx = 0;
+        ListEntry<AnimRetargetList*>* retEntry = g_GoalieTemplate->pAnimRetargetListInventory->m_lItemList.m_Head;
+        AnimRetargetList* retResult;
+        while (retEntry != NULL)
+        {
+            if (idx == 0)
+            {
+                retResult = retEntry->data;
+                goto retDone;
+            }
+            retEntry = retEntry->next;
+            idx++;
+        }
+        retResult = NULL;
+    retDone:
+        pAnimRetarget = retResult;
+    }
+
+    GoalieTweaks* pTweaks = new (nlMalloc(0xF4, 8, false)) GoalieTweaks(g_GoalieTemplateInfo.szTweaksFilename);
+
+    cPlayer* pPlayer;
+    if (!bForViewer)
+    {
+        Goalie* pGoalie = new (nlMalloc(0x310, 8, false)) Goalie(
+            gcc, (const int*)g_GoalieTemplate, pHierarchy, g_GoalieTemplate->pAnimInventory, g_GoalieTemplate->pPhysicsData, pTweaks, pAnimRetarget);
+        pPlayer = pGoalie;
+    }
+    else
+    {
+        cPlayer* p = new (nlMalloc(0x1D4, 8, false)) cPlayer(
+            4, gcc, (const int*)g_GoalieTemplate, pHierarchy, g_GoalieTemplate->pAnimInventory, g_GoalieTemplate->pPhysicsData, (PlayerTweaks*)pTweaks, pAnimRetarget, (eClassTypes)3);
+        pPlayer = p;
+    }
+
+    pPlayer->m_szEffectsName = g_GoalieTemplateInfo.szEffectsName;
+    pPlayer->m_uNormalTextureID = GetHashFromTextureFile(g_GoalieTemplateInfo.szTextureFilename);
+    pPlayer->m_uSwapTextureID = GetHashFromTextureFile(g_GoalieTextureInfo[goalieIdx].szTextureFilename);
+
+    if (!AudioLoader::gbDisableAudio)
+    {
+        pPlayer->SetSFX(g_GoalieTemplateInfo.pSFXPropAccessor);
+    }
+
+    return pPlayer;
+}
+
+/**
+ * Offset/Address/Size: 0x954 | 0x80012C3C | size: 0x51C
+ * TODO: 97.23% match - register allocation diffs throughout both loops (r21<>r28 for g_pCharacters,
+ * r23<>r21 for teami, r27<>r30 for captain values). Inner loop compare loads sidekick/captain into
+ * r5/r6 (reused as args) vs target r3/r0 (reloads into r5/r6), causing 2 instruction size difference.
+ */
+static inline eCharacterClass GetGoalieFromCaptain(eCharacterClass captain)
+{
+    switch (captain)
+    {
+    case DAISY:
+        return DAISY_GOALIE;
+    case DONKEYKONG:
+        return DONKEYKONG_GOALIE;
+    case LUIGI:
+        return LUIGI_GOALIE;
+    case MARIO:
+        return MARIO_GOALIE;
+    case PEACH:
+        return PEACH_GOALIE;
+    case WALUIGI:
+        return WALUIGI_GOALIE;
+    case WARIO:
+        return WARIO_GOALIE;
+    case YOSHI:
+        return YOSHI_GOALIE;
+    case MYSTERY:
+        return SUPERTEAM_GOALIE;
+    default:
+        return MARIO_GOALIE;
+    }
+}
+
+struct PosBlock
+{
+    nlVector3 v[8];
+};
+struct GoaliePosBlock
+{
+    nlVector3 v[2];
+};
+
+/**
+ * Offset/Address/Size: 0x3DC | 0x80012C3C | size: 0x51C
+ * TODO: 97.39% match - register allocation diffs in both loops, 2 instruction
+ * size difference from CSE of comparison values in inner loop
+ */
+void CreateCharacters()
+{
+    eCharacterClass captain[2];
+    eCharacterClass sidekick[2];
+    eCharacterClass goalie[2];
+    PosBlock posBlock;
+    GoaliePosBlock goaliePosBlock;
+    int plrindex;
+    int teami;
+
+    captain[0] = ConvertToCharacterClass(nlSingleton<GameInfoManager>::s_pInstance->GetTeam(0));
+    captain[1] = ConvertToCharacterClass(nlSingleton<GameInfoManager>::s_pInstance->GetTeam(1));
+    sidekick[0] = ConvertToCharacterClass(nlSingleton<GameInfoManager>::s_pInstance->GetSidekick(0));
+    sidekick[1] = ConvertToCharacterClass(nlSingleton<GameInfoManager>::s_pInstance->GetSidekick(1));
+
+    goalie[0] = GetGoalieFromCaptain(captain[0]);
+    goalie[1] = GetGoalieFromCaptain(captain[1]);
+
+    Config& cfg = Config::Global();
+    TagValuePair& tvp = cfg.FindTvp("allcaptains");
+    bool allcaptains;
+    if (tvp.tag == NULL)
+    {
+        cfg.Set("allcaptains", false);
+        allcaptains = false;
+    }
+    else if (tvp.type == _BOOL)
+    {
+        allcaptains = LexicalCast<bool, bool>(tvp.value.b);
+    }
+    else if (tvp.type == _INT)
+    {
+        allcaptains = LexicalCast<bool, int>(tvp.value.i);
+    }
+    else if (tvp.type == _FLOAT)
+    {
+        bool (*castFloat)(const float&) = LexicalCast<bool, float>;
+        allcaptains = castFloat(tvp.value.f);
+    }
+    else if (tvp.type == _STRING)
+    {
+        allcaptains = LexicalCast<bool, const char*>(tvp.value.s);
+    }
+    else
+    {
+        allcaptains = 0;
+    }
+    if (allcaptains)
+    {
+        sidekick[0] = captain[0];
+        sidekick[1] = captain[1];
+    }
+
+    if (captain[0] == MYSTERY)
+    {
+        sidekick[0] = MYSTERY;
+    }
+    else if (captain[1] == MYSTERY)
+    {
+        sidekick[1] = MYSTERY;
+    }
+
+    static const PosBlock s_Positions = { {
+        { 1.5f, 1.5f, 0.0f },
+        { 1.5f, -1.5f, 0.0f },
+        { 1.5f, 0.0f, 0.0f },
+        { 1.5f, 2.5f, 0.0f },
+        { -1.5f, 1.5f, 0.0f },
+        { -1.5f, -1.5f, 0.0f },
+        { -1.5f, 0.0f, 0.0f },
+        { -1.5f, 2.5f, 0.0f },
+    } };
+
+    static const GoaliePosBlock s_GoaliePositions = { {
+        { 18.0f, 0.0f, 0.0f },
+        { -18.0f, 0.0f, 0.0f },
+    } };
+
+    posBlock = s_Positions;
+    goaliePosBlock = s_GoaliePositions;
+
+    SebringAnimTagScriptInterpreter* pInterp = new (nlMalloc(sizeof(SebringAnimTagScriptInterpreter), 8, false)) SebringAnimTagScriptInterpreter();
+
+    g_pAnimScriptInterp = pInterp;
+
+    for (teami = 0; teami < 2; teami++)
+    {
+        if (captain[0] > captain[1])
+        {
+            plrindex = !teami;
+        }
+        else
+        {
+            plrindex = teami;
+        }
+
+        int idx = plrindex * 4;
+        g_pCharacters[idx] = CreateCharacter(0, plrindex, captain[plrindex], false);
+        g_pCharacters[idx]->SetPosition(posBlock.v[idx]);
+        ((Audio::cCharacterSFX*)g_pCharacters[idx]->m_pCharacterSFX)->mGroup = idx;
+
+        g_pTeams[plrindex]->SetPlayer((cPlayer*)g_pCharacters[idx], 0);
+        ((cPlayer*)g_pCharacters[idx])->m_pTeam = g_pTeams[plrindex];
+
+        g_pCharacters[plrindex + 8] = CreateGoalie(goalie[plrindex], false);
+        g_pCharacters[plrindex + 8]->SetPosition(goaliePosBlock.v[plrindex]);
+
+        g_pTeams[plrindex]->SetGoalie((Goalie*)g_pCharacters[plrindex + 8]);
+        ((cPlayer*)g_pCharacters[plrindex + 8])->m_pTeam = g_pTeams[plrindex];
+    }
+
+    for (teami = 0; teami < 2; teami++)
+    {
+        if (sidekick[0] > sidekick[1])
+        {
+            plrindex = !teami;
+        }
+        else
+        {
+            plrindex = teami;
+        }
+
+        int charIdx = plrindex * 4 + 1;
+        volatile eCharacterClass* vpSidekick = sidekick;
+        volatile eCharacterClass* vpCaptain = captain;
+        cCharacter** pChar = &g_pCharacters[charIdx];
+        nlVector3* pPos = &posBlock.v[charIdx];
+
+        for (int index = 1; index < 4; index++)
+        {
+            if (vpSidekick[plrindex] == vpCaptain[plrindex])
+            {
+                *pChar = CreateCharacter(index, plrindex, captain[plrindex], false);
+            }
+            else
+            {
+                *pChar = (cCharacter*)CreateSidekick(index, plrindex, sidekick[plrindex], captain[plrindex], false);
+            }
+
+            (*pChar)->SetPosition(*pPos);
+            ((Audio::cCharacterSFX*)(*pChar)->m_pCharacterSFX)->mGroup = charIdx;
+
+            g_pTeams[plrindex]->SetPlayer((cPlayer*)*pChar, index);
+            ((cPlayer*)*pChar)->m_pTeam = g_pTeams[plrindex];
+
+            pChar++;
+            pPos++;
+            charIdx++;
+        }
+
+        g_pTeams[plrindex]->UpdateControllers();
+    }
 }
 
 /**
@@ -433,691 +1086,42 @@ void DestroyCharacters()
 }
 
 /**
- * Offset/Address/Size: 0x954 | 0x80012C3C | size: 0x51C
- * TODO: 97.23% match - register allocation diffs throughout both loops (r21<>r28 for g_pCharacters,
- * r23<>r21 for teami, r27<>r30 for captain values). Inner loop compare loads sidekick/captain into
- * r5/r6 (reused as args) vs target r3/r0 (reloads into r5/r6), causing 2 instruction size difference.
+ * Offset/Address/Size: 0x1C0 | 0x800124A8 | size: 0xD4
  */
-static eCharacterClass GetGoalieFromCaptain(eCharacterClass captain)
+s32 GetCharacterIndex(const cCharacter* character)
 {
-    switch (captain)
+    cCharacter** ptr = g_pCharacters;
+    for (s32 i = 0; i < 10; ++i, ptr++)
     {
-    case DAISY:
-        return DAISY_GOALIE;
-    case DONKEYKONG:
-        return DONKEYKONG_GOALIE;
-    case LUIGI:
-        return LUIGI_GOALIE;
-    case MARIO:
-        return MARIO_GOALIE;
-    case PEACH:
-        return PEACH_GOALIE;
-    case WALUIGI:
-        return WALUIGI_GOALIE;
-    case WARIO:
-        return WARIO_GOALIE;
-    case YOSHI:
-        return YOSHI_GOALIE;
-    case MYSTERY:
-        return SUPERTEAM_GOALIE;
-    default:
-        return MARIO_GOALIE;
+        if (*ptr == character)
+            return i;
     }
-}
-
-struct PosBlock
-{
-    nlVector3 v[8];
-};
-struct GoaliePosBlock
-{
-    nlVector3 v[2];
-};
-
-/**
- * Offset/Address/Size: 0x3DC | 0x80012C3C | size: 0x51C
- * TODO: 97.39% match - register allocation diffs in both loops, 2 instruction
- * size difference from CSE of comparison values in inner loop
- */
-void CreateCharacters()
-{
-    eCharacterClass captain[2];
-    eCharacterClass sidekick[2];
-    eCharacterClass goalie[2];
-    PosBlock posBlock;
-    GoaliePosBlock goaliePosBlock;
-    int plrindex;
-    int teami;
-
-    captain[0] = ConvertToCharacterClass(nlSingleton<GameInfoManager>::s_pInstance->GetTeam(0));
-    captain[1] = ConvertToCharacterClass(nlSingleton<GameInfoManager>::s_pInstance->GetTeam(1));
-    sidekick[0] = ConvertToCharacterClass(nlSingleton<GameInfoManager>::s_pInstance->GetSidekick(0));
-    sidekick[1] = ConvertToCharacterClass(nlSingleton<GameInfoManager>::s_pInstance->GetSidekick(1));
-
-    goalie[0] = GetGoalieFromCaptain(captain[0]);
-    goalie[1] = GetGoalieFromCaptain(captain[1]);
-
-    Config& cfg = Config::Global();
-    TagValuePair& tvp = cfg.FindTvp("allcaptains");
-    bool allcaptains;
-    if (tvp.tag == NULL)
-    {
-        cfg.Set("allcaptains", false);
-        allcaptains = false;
-    }
-    else if (tvp.type == _BOOL)
-    {
-        allcaptains = LexicalCast<bool, bool>(tvp.value.b);
-    }
-    else if (tvp.type == _INT)
-    {
-        allcaptains = LexicalCast<bool, int>(tvp.value.i);
-    }
-    else if (tvp.type == _FLOAT)
-    {
-        bool (*castFloat)(const float&) = LexicalCast<bool, float>;
-        allcaptains = castFloat(tvp.value.f);
-    }
-    else if (tvp.type == _STRING)
-    {
-        allcaptains = LexicalCast<bool, const char*>(tvp.value.s);
-    }
-    else
-    {
-        allcaptains = 0;
-    }
-    if (allcaptains)
-    {
-        sidekick[0] = captain[0];
-        sidekick[1] = captain[1];
-    }
-
-    if (captain[0] == MYSTERY)
-    {
-        sidekick[0] = MYSTERY;
-    }
-    else if (captain[1] == MYSTERY)
-    {
-        sidekick[1] = MYSTERY;
-    }
-
-    static const PosBlock s_Positions = { {
-        { 1.5f, 1.5f, 0.0f },
-        { 1.5f, -1.5f, 0.0f },
-        { 1.5f, 0.0f, 0.0f },
-        { 1.5f, 2.5f, 0.0f },
-        { -1.5f, 1.5f, 0.0f },
-        { -1.5f, -1.5f, 0.0f },
-        { -1.5f, 0.0f, 0.0f },
-        { -1.5f, 2.5f, 0.0f },
-    } };
-
-    static const GoaliePosBlock s_GoaliePositions = { {
-        { 18.0f, 0.0f, 0.0f },
-        { -18.0f, 0.0f, 0.0f },
-    } };
-
-    posBlock = s_Positions;
-    goaliePosBlock = s_GoaliePositions;
-
-    SebringAnimTagScriptInterpreter* pInterp = new (nlMalloc(sizeof(SebringAnimTagScriptInterpreter), 8, false)) SebringAnimTagScriptInterpreter();
-
-    g_pAnimScriptInterp = pInterp;
-
-    for (teami = 0; teami < 2; teami++)
-    {
-        if (captain[0] > captain[1])
-        {
-            plrindex = !teami;
-        }
-        else
-        {
-            plrindex = teami;
-        }
-
-        int idx = plrindex * 4;
-        g_pCharacters[idx] = CreateCharacter(0, plrindex, captain[plrindex], false);
-        g_pCharacters[idx]->SetPosition(posBlock.v[idx]);
-        ((Audio::cCharacterSFX*)g_pCharacters[idx]->m_pCharacterSFX)->mGroup = idx;
-
-        g_pTeams[plrindex]->SetPlayer((cPlayer*)g_pCharacters[idx], 0);
-        ((cPlayer*)g_pCharacters[idx])->m_pTeam = g_pTeams[plrindex];
-
-        g_pCharacters[plrindex + 8] = CreateGoalie(goalie[plrindex], false);
-        g_pCharacters[plrindex + 8]->SetPosition(goaliePosBlock.v[plrindex]);
-
-        g_pTeams[plrindex]->SetGoalie((Goalie*)g_pCharacters[plrindex + 8]);
-        ((cPlayer*)g_pCharacters[plrindex + 8])->m_pTeam = g_pTeams[plrindex];
-    }
-
-    for (teami = 0; teami < 2; teami++)
-    {
-        if (sidekick[0] > sidekick[1])
-        {
-            plrindex = !teami;
-        }
-        else
-        {
-            plrindex = teami;
-        }
-
-        int charIdx = plrindex * 4 + 1;
-        volatile eCharacterClass* vpSidekick = sidekick;
-        volatile eCharacterClass* vpCaptain = captain;
-        cCharacter** pChar = &g_pCharacters[charIdx];
-        nlVector3* pPos = &posBlock.v[charIdx];
-
-        for (int index = 1; index < 4; index++)
-        {
-            if (vpSidekick[plrindex] == vpCaptain[plrindex])
-            {
-                *pChar = CreateCharacter(index, plrindex, captain[plrindex], false);
-            }
-            else
-            {
-                *pChar = (cCharacter*)CreateSidekick(index, plrindex, sidekick[plrindex], captain[plrindex], false);
-            }
-
-            (*pChar)->SetPosition(*pPos);
-            ((Audio::cCharacterSFX*)(*pChar)->m_pCharacterSFX)->mGroup = charIdx;
-
-            g_pTeams[plrindex]->SetPlayer((cPlayer*)*pChar, index);
-            ((cPlayer*)*pChar)->m_pTeam = g_pTeams[plrindex];
-
-            pChar++;
-            pPos++;
-            charIdx++;
-        }
-
-        g_pTeams[plrindex]->UpdateControllers();
-    }
+    return -1;
 }
 
 /**
- * Offset/Address/Size: 0xE70 | 0x80013158 | size: 0x634
- * TODO: 93.07% match - hierarchy inventory register and branch shape differ;
- * GetHashFromTextureFile inlined slash-scan/copy loops still use different
- * count/destination registers.
+ * Offset/Address/Size: 0x0 | 0x800122E8 | size: 0x1C0
  */
-cPlayer* CreateGoalie(eCharacterClass gcc, bool bForViewer)
+s32 GetGoalieIndex(int arg0)
 {
-    s32 goalieIdx = gcc - NUM_FIELDER_CLASSES;
-    if (!g_GoalieTextureInfo[goalieIdx].bLoaded)
+    if (arg0 == 0)
     {
-        glLoadTextureBundle(g_GoalieTextureInfo[goalieIdx].szTextureFilename);
-        g_GoalieTextureInfo[goalieIdx].bLoaded = 1;
-    }
-
-    if (g_GoalieTemplate == NULL)
-    {
-        g_GoalieTemplate = (tCharacterTemplate*)nlMalloc(sizeof(tCharacterTemplate), 8, false);
-        CharacterLoadingGuts(g_GoalieTemplate, g_GoalieTemplateInfo, gcc, bForViewer);
-    }
-
-    cSHierarchy* pHierarchy;
-
-    cInventory<cSHierarchy>* pHierInv = g_GoalieTemplate->pHierarchyInventory;
-    u32 hash = nlStringHash(g_GoalieTemplateInfo.szHierarchy);
-
-    ListEntry<cSHierarchy*>* hEntry = pHierInv->m_lItemList.m_Head;
-    while (hEntry != NULL)
-    {
-        pHierarchy = hEntry->data;
-        if (hash != pHierarchy->m_uHashID)
+        cCharacter** ptr = g_pCharacters;
+        for (s32 i = 0; i < 10; ++i, ptr++)
         {
-            hEntry = hEntry->next;
+            if (*ptr == g_pCharacters[8])
+                return i;
         }
-        else
-        {
-            goto hierFound;
-        }
+        return -1;
     }
-    pHierarchy = NULL;
-hierFound:
 
-    AnimRetargetList* pAnimRetarget = NULL;
-    if (g_GoalieTemplate->pAnimRetargetListInventory != NULL)
+    cCharacter** ptr = g_pCharacters;
+    for (s32 i = 0; i < 10; ++i, ptr++)
     {
-        int idx = 0;
-        ListEntry<AnimRetargetList*>* retEntry = g_GoalieTemplate->pAnimRetargetListInventory->m_lItemList.m_Head;
-        AnimRetargetList* retResult;
-        while (retEntry != NULL)
-        {
-            if (idx == 0)
-            {
-                retResult = retEntry->data;
-                goto retDone;
-            }
-            retEntry = retEntry->next;
-            idx++;
-        }
-        retResult = NULL;
-    retDone:
-        pAnimRetarget = retResult;
+        if (*ptr == g_pCharacters[9])
+            return i;
     }
-
-    GoalieTweaks* pTweaks = new (nlMalloc(0xF4, 8, false)) GoalieTweaks(g_GoalieTemplateInfo.szTweaksFilename);
-
-    cPlayer* pPlayer;
-    if (!bForViewer)
-    {
-        Goalie* pGoalie = new (nlMalloc(0x310, 8, false)) Goalie(
-            gcc, (const int*)g_GoalieTemplate, pHierarchy, g_GoalieTemplate->pAnimInventory, g_GoalieTemplate->pPhysicsData, pTweaks, pAnimRetarget);
-        pPlayer = pGoalie;
-    }
-    else
-    {
-        cPlayer* p = new (nlMalloc(0x1D4, 8, false)) cPlayer(
-            4, gcc, (const int*)g_GoalieTemplate, pHierarchy, g_GoalieTemplate->pAnimInventory, g_GoalieTemplate->pPhysicsData, (PlayerTweaks*)pTweaks, pAnimRetarget, (eClassTypes)3);
-        pPlayer = p;
-    }
-
-    pPlayer->m_szEffectsName = g_GoalieTemplateInfo.szEffectsName;
-    pPlayer->m_uNormalTextureID = GetHashFromTextureFile(g_GoalieTemplateInfo.szTextureFilename);
-    pPlayer->m_uSwapTextureID = GetHashFromTextureFile(g_GoalieTextureInfo[goalieIdx].szTextureFilename);
-
-    if (!AudioLoader::gbDisableAudio)
-    {
-        pPlayer->SetSFX(g_GoalieTemplateInfo.pSFXPropAccessor);
-    }
-
-    return pPlayer;
-}
-
-/**
- * Offset/Address/Size: 0x14A4 | 0x8001378C | size: 0x5FC
- */
-cPlayer* CreateSidekick(int nPlayerID, int nTeamID, eCharacterClass cc, eCharacterClass captainCC, bool bForViewer)
-{
-    char szTexPath[64];
-    char szArtPath[64];
-    char szBundlePath[64];
-    char szPlayerPath[64];
-
-    glxTextureLoadCallback_t oldCallback = glx_SetLoadCallback((glxTextureLoadCallback_t)SidekickTexture_cb);
-
-    if (cc == HAMMERBROS)
-    {
-        nlSNPrintf(szTexPath, 64, "hammerbro/hammer_mario");
-    }
-    else
-    {
-        nlSNPrintf(szTexPath, 64, "%s/%s_mario", GetCharacterName(cc), GetCharacterName(cc));
-    }
-
-    skiptexture = glGetTexture(szTexPath);
-
-    cPlayer* pPlayer = CreateCharacter(nPlayerID, nTeamID, cc, bForViewer);
-
-    glx_SetLoadCallback(oldCallback);
-
-    bool bLoaded = false;
-
-    if (cc == HAMMERBROS)
-    {
-        nlSNPrintf(szBundlePath, 64, "characters/%s/hammer_%s.glt", GetCharacterName(cc), GetCharacterName(captainCC));
-        nlSNPrintf(szArtPath, 64, "art/characters/%s/hammer_%s.glt", GetCharacterName(cc), GetCharacterName(captainCC));
-    }
-    else
-    {
-        nlSNPrintf(szBundlePath, 64, "characters/%s/%s_%s.glt", GetCharacterName(cc), GetCharacterName(cc), GetCharacterName(captainCC));
-        nlSNPrintf(szArtPath, 64, "art/characters/%s/%s_%s.glt", GetCharacterName(cc), GetCharacterName(cc), GetCharacterName(captainCC));
-    }
-
-    if (cc == HAMMERBROS)
-    {
-        nlSNPrintf(szPlayerPath, 64, "hammer_%s/hammer_%s", GetCharacterName(captainCC), GetCharacterName(captainCC));
-    }
-    else
-    {
-        nlSNPrintf(szPlayerPath, 64, "%s_%s/%s_%s", GetCharacterName(cc), GetCharacterName(captainCC), GetCharacterName(cc), GetCharacterName(captainCC));
-    }
-
-    if (glTextureLoad(glGetTexture(szPlayerPath)))
-    {
-        bLoaded = true;
-    }
-    else
-    {
-        nlFile* fp = nlOpen(szArtPath);
-        if (fp != NULL)
-        {
-            nlClose(fp);
-            bLoaded = glLoadTextureBundle(szBundlePath);
-        }
-    }
-
-    if (bLoaded)
-    {
-        if (cc == HAMMERBROS)
-        {
-            nlSNPrintf(szBundlePath, 64, "%s/hammer_mario", GetCharacterName(cc));
-        }
-        else
-        {
-            nlSNPrintf(szBundlePath, 64, "%s/%s_mario", GetCharacterName(cc), GetCharacterName(cc));
-        }
-        pPlayer->m_uNormalTextureID = glGetTexture(szBundlePath);
-        pPlayer->m_uSwapTextureID = glGetTexture(szPlayerPath);
-    }
-    else
-    {
-        pPlayer->m_uNormalTextureID = (u32)-1;
-        pPlayer->m_uSwapTextureID = (u32)-1;
-    }
-
-    return pPlayer;
-}
-
-/**
- * Offset/Address/Size: 0x1AA0 | 0x80013D88 | size: 0x1C
- */
-s32 SidekickTexture_cb(unsigned long arg0)
-{
-    s32 var_r4 = -1;
-    if (arg0 != skiptexture)
-    {
-        var_r4 = arg0;
-    }
-    return var_r4;
-}
-
-static inline cSHierarchy* FindHierarchy(ListEntry<cSHierarchy*>* hEntry, u32 hash)
-{
-    cSHierarchy* pHierarchy;
-    while (hEntry != NULL)
-    {
-        pHierarchy = hEntry->data;
-        if (hash == hEntry->data->m_uHashID)
-        {
-            return pHierarchy;
-        }
-        hEntry = hEntry->next;
-    }
-    return NULL;
-}
-
-template <typename T>
-static inline nlChunk* AddLoadedInventoryMemory(cInventory<T>* inv, nlChunk* data)
-{
-    ListEntry<char*>* entry = (ListEntry<char*>*)nlMalloc(8, 8, false);
-    if (entry != NULL)
-    {
-        entry->next = NULL;
-        entry->data = (char*)data;
-    }
-    nlListAddStart<ListEntry<char*> >(
-        (ListEntry<char*>**)&inv->m_lMemList.m_Head,
-        entry,
-        (ListEntry<char*>**)&inv->m_lMemList.m_Tail);
-    return data;
-}
-
-/**
- * Offset/Address/Size: 0x1ABC | 0x80013DA4 | size: 0x240
- */
-cPlayer* CreateCharacter(int nPlayerID, int nTeamID, eCharacterClass cc, bool bForViewer)
-{
-    if (cc >= NUM_FIELDER_CLASSES)
-    {
-        return CreateGoalie(cc, bForViewer);
-    }
-
-    if (g_aCharacterTemplates[cc] == NULL)
-    {
-        glLoadTextureBundle(g_aCharacterTemplateInfo[cc].szTextureFilename);
-        g_aCharacterTemplates[cc] = (tCharacterTemplate*)nlMalloc(sizeof(tCharacterTemplate), 8, false);
-        CharacterLoadingGuts(g_aCharacterTemplates[cc], g_aCharacterTemplateInfo[cc], cc, bForViewer);
-    }
-
-    cInventory<cSHierarchy>* pHierInv = g_aCharacterTemplates[cc]->pHierarchyInventory;
-    u32 hash = nlStringHash(g_aCharacterTemplateInfo[cc].szHierarchy);
-
-    AnimRetargetList* pAnimRetarget;
-    FielderTweaks* pTweaks;
-    cSHierarchy* pHierarchy = FindHierarchy(pHierInv->m_lItemList.m_Head, hash);
-
-    pAnimRetarget = NULL;
-    if (g_aCharacterTemplates[cc]->pAnimRetargetListInventory != NULL)
-    {
-        int idx = 0;
-        ListEntry<AnimRetargetList*>* retEntry = g_aCharacterTemplates[cc]->pAnimRetargetListInventory->m_lItemList.m_Head;
-        u32 retData;
-        while (retEntry != NULL)
-        {
-            if (idx == 0)
-            {
-                retData = (u32)retEntry->data;
-                goto retFound;
-            }
-            retEntry = retEntry->next;
-            idx++;
-        }
-        retData = 0;
-
-    retFound:
-        pAnimRetarget = (AnimRetargetList*)retData;
-    }
-
-    pTweaks = new (nlMalloc(0x124, 8, false)) FielderTweaks(g_aCharacterTemplateInfo[cc].szTweaksFilename);
-
-    cPlayer* pPlayer;
-    if (!bForViewer)
-    {
-        cFielder* pFielder = new (nlMalloc(0x3EC, 8, false)) cFielder(
-            nPlayerID, nTeamID, cc, (const int*)g_aCharacterTemplates[cc], pHierarchy, g_aCharacterTemplates[cc]->pAnimInventory, g_aCharacterTemplates[cc]->pPhysicsData, pTweaks, pAnimRetarget);
-        pPlayer = pFielder;
-    }
-    else
-    {
-        cPlayer* p = new (nlMalloc(0x1D4, 8, false)) cPlayer(
-            nPlayerID, cc, (const int*)g_aCharacterTemplates[cc], pHierarchy, g_aCharacterTemplates[cc]->pAnimInventory, g_aCharacterTemplates[cc]->pPhysicsData, (PlayerTweaks*)pTweaks, pAnimRetarget, (eClassTypes)1);
-        pPlayer = p;
-    }
-
-    pPlayer->m_szEffectsName = g_aCharacterTemplateInfo[cc].szEffectsName;
-    if (!AudioLoader::gbDisableAudio)
-    {
-        pPlayer->SetSFX(g_aCharacterTemplateInfo[cc].pSFXPropAccessor);
-    }
-
-    return pPlayer;
-}
-
-extern SebringAnimTagScriptInterpreter* g_pAnimScriptInterp;
-
-static cAnimInventory* FindDuplicateAnimInventory(int nCurIndex, unsigned long uHashID);
-static char* GetCharacterTriggerFileName(eCharacterClass cc);
-
-/**
- * Offset/Address/Size: 0x1CFC | 0x80013FE4 | size: 0x3F0
- * TODO: 99.23% match - hierarchy file load keeps an extra return-value move; retarget load loop keeps inventory/data register differences
- */
-void CharacterLoadingGuts(tCharacterTemplate* pCharacterTemplate, const tCharacterTemplateInfo& charTemplateInfo, eCharacterClass cc, bool bForViewer)
-{
-    glModel* pRigidCharacterModel = glLoadModel(charTemplateInfo.szModelFilename, NULL);
-    glModel* pBlendCharacterModel = glLoadModel(charTemplateInfo.szBlendedModelFilename, NULL);
-
-    pCharacterTemplate->nCharacterModelID[0] = pRigidCharacterModel->id;
-    pCharacterTemplate->nCharacterModelID[1] = pBlendCharacterModel->id;
-
-    cInventory<cSHierarchy>* pHierInv = new (nlMalloc(sizeof(cInventory<cSHierarchy>), 8, false)) cInventory<cSHierarchy>();
-    cInventory<AnimRetargetList>* pRetInv;
-    pCharacterTemplate->pHierarchyInventory = pHierInv;
-
-    u32 hierFileSize;
-    cInventory<cSHierarchy>* pHierInv2 = pCharacterTemplate->pHierarchyInventory;
-    nlChunk* hierData = (nlChunk*)nlLoadEntireFile(charTemplateInfo.szHierarchyFilename, &hierFileSize, 0x20, AllocateStart);
-
-    ListEntry<char*>* memEntry = (ListEntry<char*>*)nlMalloc(8, 8, false);
-    if (memEntry != NULL)
-    {
-        memEntry->next = NULL;
-        memEntry->data = (char*)hierData;
-    }
-    nlListAddStart<ListEntry<char*> >(
-        (ListEntry<char*>**)&pHierInv2->m_lMemList.m_Head,
-        memEntry,
-        (ListEntry<char*>**)&pHierInv2->m_lMemList.m_Tail);
-
-    nlChunk* hierEnd = (nlChunk*)((char*)hierData + hierFileSize);
-    while (hierData != hierEnd)
-    {
-        if ((hierData->m_ID & 0x80FFFFFF) == 0x80018000)
-        {
-            cSHierarchy* hier = cSHierarchy::Initialize(hierData);
-
-            ListEntry<cSHierarchy*>* itemEntry = (ListEntry<cSHierarchy*>*)nlMalloc(8, 8, false);
-            if (itemEntry != NULL)
-            {
-                itemEntry->next = NULL;
-                itemEntry->data = hier;
-            }
-            nlListAddStart<ListEntry<cSHierarchy*> >(
-                &pHierInv2->m_lItemList.m_Head,
-                itemEntry,
-                &pHierInv2->m_lItemList.m_Tail);
-            pHierInv2->m_nItemCount++;
-        }
-        else
-        {
-            nlPrintf("Warning: inventory encountered an unknown chunk type\n");
-        }
-        hierData = (nlChunk*)((char*)hierData + hierData->m_Size + 8);
-    }
-
-    if (!bForViewer)
-    {
-        CharacterPhysicsData* pPhys = new (nlMalloc(sizeof(CharacterPhysicsData), 8, false)) CharacterPhysicsData();
-        pCharacterTemplate->pPhysicsData = pPhys;
-        LoadCharacterPhysicsElements(charTemplateInfo.szPhysicsFilename, (CharacterPhysicsData*)pCharacterTemplate->pPhysicsData);
-    }
-    else
-    {
-        pCharacterTemplate->pPhysicsData = NULL;
-    }
-
-    pCharacterTemplate->uAnimInventoryHashID = nlStringLowerHash(charTemplateInfo.szAnimFilename);
-
-    cAnimInventory* found = FindDuplicateAnimInventory(cc, pCharacterTemplate->uAnimInventoryHashID);
-
-    if (found != NULL)
-    {
-        pCharacterTemplate->pAnimInventory = found;
-        pCharacterTemplate->bAnimInventoryCopy = true;
-    }
-    else
-    {
-        cAnimInventory* pAnim = new (nlMalloc(sizeof(cAnimInventory), 8, false))
-            cAnimInventory(charTemplateInfo.pAnimProperties, charTemplateInfo.nNumAnimProperties);
-        pCharacterTemplate->pAnimInventory = pAnim;
-        pCharacterTemplate->pAnimInventory->AddAnimBundle(charTemplateInfo.szAnimFilename);
-        pCharacterTemplate->bAnimInventoryCopy = false;
-
-        cAnimInventory* pAI = pCharacterTemplate->pAnimInventory;
-        cInventory<cSAnim>* pAnimCont = (cInventory<cSAnim>*)pAI->m_cont;
-        SebringAnimTagScriptInterpreter* pInterp = g_pAnimScriptInterp;
-        const char* triggerFilename;
-        if (cc < NUM_FIELDER_CLASSES)
-        {
-            triggerFilename = g_aCharacterTemplateInfo[cc].szTriggerFilename;
-        }
-        else
-        {
-            triggerFilename = g_GoalieTemplateInfo.szTriggerFilename;
-        }
-        pInterp->SetupAnimationTriggers(triggerFilename, pAnimCont);
-    }
-
-    if (charTemplateInfo.szAnimRetargetFilename != NULL)
-    {
-        cInventory<AnimRetargetList>* pRetargetInv = new (nlMalloc(sizeof(cInventory<AnimRetargetList>), 8, false)) cInventory<AnimRetargetList>();
-        pCharacterTemplate->pAnimRetargetListInventory = pRetargetInv;
-
-        u32 retargetFileSize;
-        pRetInv = pCharacterTemplate->pAnimRetargetListInventory;
-        nlChunk* retargetData = AddLoadedInventoryMemory(
-            pRetInv,
-            (nlChunk*)nlLoadEntireFile(charTemplateInfo.szAnimRetargetFilename, &retargetFileSize, 0x20, AllocateStart));
-
-        nlChunk* retargetEnd = (nlChunk*)((char*)retargetData + retargetFileSize);
-        while (retargetData != retargetEnd)
-        {
-            if ((retargetData->m_ID & 0x80FFFFFF) == 0x80017104)
-            {
-                AnimRetargetList* retarget = AnimRetargetList::Initialize(retargetData);
-
-                ListEntry<AnimRetargetList*>* retItemEntry = (ListEntry<AnimRetargetList*>*)nlMalloc(8, 8, false);
-                if (retItemEntry != NULL)
-                {
-                    retItemEntry->next = NULL;
-                    retItemEntry->data = retarget;
-                }
-                nlListAddStart<ListEntry<AnimRetargetList*> >(
-                    &pRetInv->m_lItemList.m_Head,
-                    retItemEntry,
-                    &pRetInv->m_lItemList.m_Tail);
-                pRetInv->m_nItemCount++;
-            }
-            else
-            {
-                nlPrintf("Warning: inventory encountered an unknown chunk type\n");
-            }
-            retargetData = (nlChunk*)((char*)retargetData + retargetData->m_Size + 8);
-        }
-    }
-    else
-    {
-        pCharacterTemplate->pAnimRetargetListInventory = NULL;
-    }
-}
-
-static cAnimInventory* FindDuplicateAnimInventory(int nCurIndex, unsigned long uHashID)
-{
-    for (int index = 0; index < NUM_FIELDER_CLASSES; index++)
-    {
-        if (index == nCurIndex)
-            continue;
-        if (g_aCharacterTemplates[index] == NULL)
-            continue;
-        if (uHashID != g_aCharacterTemplates[index]->uAnimInventoryHashID)
-            continue;
-        return g_aCharacterTemplates[index]->pAnimInventory;
-    }
-    return NULL;
-}
-
-static char* GetCharacterTriggerFileName(eCharacterClass cc)
-{
-    if (cc < NUM_FIELDER_CLASSES)
-    {
-        return (char*)g_aCharacterTemplateInfo[cc].szTriggerFilename;
-    }
-    return (char*)g_GoalieTemplateInfo.szTriggerFilename;
-}
-
-/**
- * Offset/Address/Size: 0x20EC | 0x800143D4 | size: 0x3C
- */
-bool IsCaptain(eCharacterClass cc)
-{
-    if (((cc - 1) <= 1U) || ((cc - 5) <= 2U) || ((cc - 9) <= 2U) || (cc == 0xC))
-    {
-        return true;
-    }
-    return false;
-}
-
-/**
- * Offset/Address/Size: 0x2128 | 0x80014410 | size: 0x34
- */
-char* GetCharacterName(eCharacterClass cc)
-{
-    if (cc < 13)
-    {
-        return (char*)g_aCharacterTemplateInfo[cc].szCharName;
-    }
-    return (char*)g_GoalieTextureInfo[cc - 13].szCharName;
+    return -1;
 }
 
 // /**
