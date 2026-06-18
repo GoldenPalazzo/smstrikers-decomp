@@ -33,6 +33,20 @@ struct glModelData
 
 extern "C" cSHierarchy* Initialize__11cSHierarchyFP7nlChunk(nlChunk*);
 
+static inline cSAnim* FindAnimByHash(cInventory<cSAnim>* animInv, u32 hash)
+{
+    ListEntry<cSAnim*>* animEntry = animInv->m_lItemList.m_Head;
+    cSAnim* foundAnim;
+    while (animEntry != NULL)
+    {
+        foundAnim = animEntry->data;
+        if (hash == foundAnim->m_uHashID)
+            return foundAnim;
+        animEntry = animEntry->next;
+    }
+    return NULL;
+}
+
 // /**
 //  * Offset/Address/Size: 0x68 | 0x80167338 | size: 0x28
 //  */
@@ -56,10 +70,11 @@ extern "C" cSHierarchy* Initialize__11cSHierarchyFP7nlChunk(nlChunk*);
 
 /**
  * Offset/Address/Size: 0x8AC | 0x80166770 | size: 0xB3C
- * TODO: 96.50% match - decomp.me generates beq for while+break instead of target's
- * bne+b pattern, causing li r26,0 placement diff (before loop vs fall-through).
- * Also r26/r27 swap for animInv in else-if blocks 1-4. Likely inherent decomp.me
- * compiler optimization difference.
+ * TODO: 98.13% match - remaining diffs are an r26/r27 register permutation
+ * (foundAnim vs the AVL node/animInv pointers, target r27 / ours r26) across the
+ * tree-walk and the five NPC blocks, plus the two CollisionCallback registrations
+ * materializing a 12-byte member-pointer to a stack temp (forcing a 0x40 frame vs
+ * target's 0x20 with a direct function-address load).
  */
 NPCManager::NPCManager()
     : mpInventorySAnim(NULL)
@@ -104,15 +119,7 @@ NPCManager::NPCManager()
             CreateNPCTemplate(0, true);
             cInventory<cSAnim>* animInv = mpInventorySAnim;
             u32 hash = nlStringHash("camera_idle");
-            ListEntry<cSAnim*>* animEntry = animInv->m_lItemList.m_Head;
-            cSAnim* foundAnim = NULL;
-            while (animEntry != NULL)
-            {
-                foundAnim = animEntry->data;
-                if (hash == foundAnim->m_uHashID)
-                    break;
-                animEntry = animEntry->next;
-            }
+            cSAnim* foundAnim = FindAnimByHash(animInv, hash);
             CameraGuy* guy = new (nlMalloc(sizeof(CameraGuy), 8, false)) CameraGuy(*mNPCTemplate[0].hierarchy, mNPCTemplate[0].modelID);
             guy->Init();
             guy->SetIdleAnim(*foundAnim);
@@ -131,15 +138,7 @@ NPCManager::NPCManager()
             CreateNPCTemplate(1, true);
             cInventory<cSAnim>* animInv = mpInventorySAnim;
             u32 hash = nlStringHash("standupcamera_idle");
-            ListEntry<cSAnim*>* animEntry = animInv->m_lItemList.m_Head;
-            cSAnim* foundAnim = NULL;
-            while (animEntry != NULL)
-            {
-                foundAnim = animEntry->data;
-                if (hash == foundAnim->m_uHashID)
-                    break;
-                animEntry = animEntry->next;
-            }
+            cSAnim* foundAnim = FindAnimByHash(animInv, hash);
             CameraGuy* guy = new (nlMalloc(sizeof(CameraGuy), 8, false)) CameraGuy(*mNPCTemplate[1].hierarchy, mNPCTemplate[1].modelID);
             guy->Init();
             guy->SetIdleAnim(*foundAnim);
@@ -158,15 +157,7 @@ NPCManager::NPCManager()
             CreateNPCTemplate(2, true);
             cInventory<cSAnim>* animInv = mpInventorySAnim;
             u32 hash = nlStringHash("medic_idle");
-            ListEntry<cSAnim*>* animEntry = animInv->m_lItemList.m_Head;
-            cSAnim* foundAnim = NULL;
-            while (animEntry != NULL)
-            {
-                foundAnim = animEntry->data;
-                if (hash == foundAnim->m_uHashID)
-                    break;
-                animEntry = animEntry->next;
-            }
+            cSAnim* foundAnim = FindAnimByHash(animInv, hash);
             SkinAnimatedNPC* npc = new (nlMalloc(sizeof(SkinAnimatedNPC), 8, false)) SkinAnimatedNPC(*mNPCTemplate[2].hierarchy, mNPCTemplate[2].modelID);
             npc->SetAnimState(*foundAnim, 0.2f, (ePlayMode)0);
             npc->mWorldMatrix = ((AVLTreeEntry<unsigned long, HelperObject*>**)stack[0])[stack[1] - 1]->value->m_worldMatrix;
@@ -183,15 +174,7 @@ NPCManager::NPCManager()
             CreateNPCTemplate(3, true);
             cInventory<cSAnim>* animInv = mpInventorySAnim;
             u32 hash = nlStringHash("securityguard_idle");
-            ListEntry<cSAnim*>* animEntry = animInv->m_lItemList.m_Head;
-            cSAnim* foundAnim = NULL;
-            while (animEntry != NULL)
-            {
-                foundAnim = animEntry->data;
-                if (hash == foundAnim->m_uHashID)
-                    break;
-                animEntry = animEntry->next;
-            }
+            cSAnim* foundAnim = FindAnimByHash(animInv, hash);
             SkinAnimatedNPC* npc = new (nlMalloc(sizeof(SkinAnimatedNPC), 8, false)) SkinAnimatedNPC(*mNPCTemplate[3].hierarchy, mNPCTemplate[3].modelID);
             npc->SetAnimState(*foundAnim, 0.2f, (ePlayMode)0);
             npc->mWorldMatrix = ((AVLTreeEntry<unsigned long, HelperObject*>**)stack[0])[stack[1] - 1]->value->m_worldMatrix;
@@ -208,15 +191,7 @@ NPCManager::NPCManager()
             CreateNPCTemplate(4, true);
             cInventory<cSAnim>* animInv = mpInventorySAnim;
             u32 hash = nlStringHash("blimp_idle");
-            ListEntry<cSAnim*>* animEntry = animInv->m_lItemList.m_Head;
-            cSAnim* foundAnim = NULL;
-            while (animEntry != NULL)
-            {
-                foundAnim = animEntry->data;
-                if (hash == foundAnim->m_uHashID)
-                    break;
-                animEntry = animEntry->next;
-            }
+            cSAnim* foundAnim = FindAnimByHash(animInv, hash);
             SkinAnimatedNPC* npc = new (nlMalloc(sizeof(SkinAnimatedNPC), 8, false)) SkinAnimatedNPC(*mNPCTemplate[4].hierarchy, mNPCTemplate[4].modelID);
             npc->SetAnimState(*foundAnim, 0.2f, (ePlayMode)0);
             npc->mWorldMatrix = ((AVLTreeEntry<unsigned long, HelperObject*>**)stack[0])[stack[1] - 1]->value->m_worldMatrix;

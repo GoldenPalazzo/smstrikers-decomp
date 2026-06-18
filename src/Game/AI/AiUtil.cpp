@@ -196,8 +196,10 @@ float SeekSpeed(float fCurrent, float fDesired, float fSeekAccel, float fSeekDec
 
 /**
  * Offset/Address/Size: 0xFA4 | 0x80006A50 | size: 0x11C
- * TODO: 98.66% match - speed2Sq lands in f11 instead of target f9, cascading
- * one register up through the vector math block.
+ * TODO: 98.80% match - identical instruction schedule; pure FPR coloring diff
+ * in the magnitude block. The pos2.x load lands in f6 instead of target f7,
+ * cascading the velocity-component temps up to f9/f10 (target f4/f5) and
+ * speed2Sq to f11 (target f9).
  */
 void CalcInterceptXY(const nlVector3& pos1, f32 speed1, f32 speed2, const nlVector3& pos2, const nlVector3& vel, int& count, f32* times)
 {
@@ -207,7 +209,7 @@ void CalcInterceptXY(const nlVector3& pos1, f32 speed1, f32 speed2, const nlVect
     nlVector3 delta;
     nlVec3Sub2D(delta, pos2, pos1);
 
-    f32 dotVelDelta = nlVec3DotProduct2D(delta, vel);
+    f32 dotVelDelta = nlVec3DotProduct2D(vel, delta);
     f32 velSq = vel.GetLengthSq2D();
     f32 distSq = delta.GetLengthSq2D();
 

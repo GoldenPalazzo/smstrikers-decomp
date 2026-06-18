@@ -25,7 +25,8 @@ typedef FormatImpl<NLString> NLFormatImpl;
 
 /**
  * Offset/Address/Size: 0x1DAC | 0x80188948 | size: 0xD74
- * TODO: 93.98% match - r27/r28 register swap in operator[] copy-on-write paths and insert argument setup differs
+ * TODO: 96.56% match - reconstructed-template wall: marker checks emit indexed
+ * lbzx vs target base+disp lbz, and insert lacks a null-check branch.
  */
 template <>
 NLFormatImpl& NLFormatImpl::operator% <const char*>(const char* const& t)
@@ -34,7 +35,7 @@ NLFormatImpl& NLFormatImpl::operator% <const char*>(const char* const& t)
 
     for (int i = 0; i < (mString.m_data ? mString.m_data->mSize - 1 : 0); i++)
     {
-        if (mString[i] != '{')
+        if (mString[i] != (char)'{')
             continue;
 
         if (i + 1 >= (mString.m_data ? mString.m_data->mSize - 1 : 0))
@@ -46,25 +47,15 @@ NLFormatImpl& NLFormatImpl::operator% <const char*>(const char* const& t)
         if (i + 2 >= (mString.m_data ? mString.m_data->mSize - 1 : 0))
             continue;
 
-        if (mString[i + 2] != '}')
+        if (mString[i + 2] != (char)'}')
             continue;
 
-        mString[0];
-        char* eraseStart = &mString[i];
-        char* eraseEnd = &mString[i + 3];
-        BasicStringData<char>* data = mString.m_data;
-        int size = eraseEnd - eraseStart;
-        char* dst = data->mData + (eraseStart - data->mData);
-        const char* src = eraseEnd;
-        while (src != data->mData + data->mSize)
-        {
-            *dst++ = *src++;
-        }
-        data->mSize -= size;
-
+        mString.erase(&mString[i], &mString[i + 3]);
+        mString[i];
+        char* mStringData = mString.m_data ? mString.m_data->mData : 0;
         char* insertBegin = &insert[0];
-        char* insertEnd = &insert[(int)insert.size() - 1];
-        mString.insert(&mString[i], insertBegin, insertEnd);
+        char* insertEndCow = &insert[(int)(insert.m_data ? insert.m_data->mSize - 1 : 0)];
+        mString.insert(mStringData + i, insertBegin, insert.m_data ? &insert.m_data->mData[insert.m_data->mSize - 1] : (char*)0);
     }
 
     mCurrentPos++;
@@ -73,7 +64,8 @@ NLFormatImpl& NLFormatImpl::operator% <const char*>(const char* const& t)
 
 /**
  * Offset/Address/Size: 0x1038 | 0x80187BD4 | size: 0xD74
- * TODO: 93.98% match - r27/r28 register swap in operator[] copy-on-write paths
+ * TODO: 96.56% match - reconstructed-template wall: marker checks emit indexed
+ * lbzx vs target base+disp lbz, and insert lacks a null-check branch.
  */
 template <>
 NLFormatImpl& NLFormatImpl::operator% <float>(const float& t)
@@ -82,7 +74,7 @@ NLFormatImpl& NLFormatImpl::operator% <float>(const float& t)
 
     for (int i = 0; i < (mString.m_data ? mString.m_data->mSize - 1 : 0); i++)
     {
-        if (mString[i] != '{')
+        if (mString[i] != (char)'{')
             continue;
 
         if (i + 1 >= (mString.m_data ? mString.m_data->mSize - 1 : 0))
@@ -94,25 +86,15 @@ NLFormatImpl& NLFormatImpl::operator% <float>(const float& t)
         if (i + 2 >= (mString.m_data ? mString.m_data->mSize - 1 : 0))
             continue;
 
-        if (mString[i + 2] != '}')
+        if (mString[i + 2] != (char)'}')
             continue;
 
-        mString[0];
-        char* eraseStart = &mString[i];
-        char* eraseEnd = &mString[i + 3];
-        BasicStringData<char>* data = mString.m_data;
-        int size = eraseEnd - eraseStart;
-        char* dst = data->mData + (eraseStart - data->mData);
-        const char* src = eraseEnd;
-        while (src != data->mData + data->mSize)
-        {
-            *dst++ = *src++;
-        }
-        data->mSize -= size;
-
+        mString.erase(&mString[i], &mString[i + 3]);
+        mString[i];
+        char* mStringData = mString.m_data ? mString.m_data->mData : 0;
         char* insertBegin = &insert[0];
-        char* insertEnd = &insert[(int)insert.size() - 1];
-        mString.insert(&mString[i], insertBegin, insertEnd);
+        char* insertEndCow = &insert[(int)(insert.m_data ? insert.m_data->mSize - 1 : 0)];
+        mString.insert(mStringData + i, insertBegin, insert.m_data ? &insert.m_data->mData[insert.m_data->mSize - 1] : (char*)0);
     }
 
     mCurrentPos++;

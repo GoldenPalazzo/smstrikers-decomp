@@ -2268,6 +2268,7 @@ float Open(cFielder* pFielder)
     {
         cPlayer* pPlayers[2] = { NULL, NULL };
         pPlayers[0] = pOtherTeam->GetPlayer(i);
+        pPlayers[1] = NULL;
         cPlayer** ppPlayer = pPlayers;
 
         for (i_player = 0; i_player < 2; i_player++, ppPlayer++)
@@ -2329,7 +2330,7 @@ float Open(cFielder* pFielder)
                 }
             }
 
-            if (fIncapacitated == 0.0f)
+            if (!fIncapacitated)
             {
                 f32 dx = pFielder->m_v3Position.f.x - (*ppPlayer)->m_v3Position.f.x;
                 f32 dy = pFielder->m_v3Position.f.y - (*ppPlayer)->m_v3Position.f.y;
@@ -2344,24 +2345,7 @@ float Open(cFielder* pFielder)
         }
     }
 
-    f32 fResult = 1.0f - fTotal;
-    if (fResult >= 0.0f)
-    {
-    }
-    else
-    {
-        fResult = 0.0f;
-    }
-
-    if (fResult <= 1.0f)
-    {
-    }
-    else
-    {
-        fResult = 1.0f;
-    }
-
-    return fResult;
+    return min_float(max_float(1.0f - fTotal, 0.0f), 1.0f);
 }
 
 /**
@@ -3877,16 +3861,7 @@ float GonnaGetBall(cTeam* team)
 
     fScore = min_float(fScore, fAvg);
 
-    float fHasBall;
-    if (pPlayer == NULL)
-        fHasBall = 0.0f;
-    else if (pPlayer->m_pBall != NULL)
-        fHasBall = 1.0f;
-    else
-        fHasBall = 0.0f;
-
-    fHasBall = max_float(fScore, fHasBall);
-    score[0] = fHasBall;
+    score[0] = max_float((pPlayer == NULL) ? 0.0f : ((pPlayer->m_pBall != NULL) ? 1.0f : 0.0f), fScore);
 
     // === OPPONENT SECTION ===
     float fDist2;
@@ -3962,16 +3937,7 @@ float GonnaGetBall(cTeam* team)
 
     fScore = min_float(fAvg, fScore);
 
-    float fHasBall2;
-    if (pOpponent == NULL)
-        fHasBall2 = 0.0f;
-    else if (pOpponent->m_pBall != NULL)
-        fHasBall2 = 1.0f;
-    else
-        fHasBall2 = 0.0f;
-
-    fHasBall2 = max_float(fScore, fHasBall2);
-    score[1] = fHasBall2;
+    score[1] = max_float(fScore, (pOpponent == NULL) ? 0.0f : ((pOpponent->m_pBall != NULL) ? 1.0f : 0.0f));
 
     float total = score[0] + score[1];
     if (total > 0.0f)

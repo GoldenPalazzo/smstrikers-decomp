@@ -253,7 +253,7 @@ void ReplayChoreo::DoFunctionCall(unsigned int func)
 template <typename StringType, typename T1, typename T2, typename T3, typename T4>
 void Format(StringType& result, const StringType& format, const T1& value1, const T2& value2, const T3& value3, const T4& value4);
 
-static inline void InitBasicStringFromCStr(BasicString<char, Detail::TempStringAllocator>& str, const char* src_str)
+static inline BasicStringDataHack* MakeStringData(const char* src_str)
 {
     BasicStringDataHack* data = (BasicStringDataHack*)nlMalloc(0x10, 8, true);
     if (data != 0)
@@ -280,12 +280,12 @@ static inline void InitBasicStringFromCStr(BasicString<char, Detail::TempStringA
 
         data->mRefCount = 1;
     }
-    str.m_data = data;
+    return data;
 }
 
 /**
  * Offset/Address/Size: 0xCC8 | 0x80128334 | size: 0x314
- * TODO: 97.94% match - register permutation (this=r27 vs r28, d=r28 vs r31, cursor/array base shifts)
+ * TODO: 96.16% match - register permutation (this=r27 vs r28, d=r28 vs r31, cursor/array base shifts)
  */
 void ReplayChoreo::LoadScript()
 {
@@ -315,8 +315,7 @@ void ReplayChoreo::LoadScript()
                 {
                     BasicString<char, Detail::TempStringAllocator> name;
                     {
-                        BasicString<char, Detail::TempStringAllocator> format;
-                        InitBasicStringFromCStr(format, (char*)"{0}_{1}_{2}_{3}");
+                        BasicString<char, Detail::TempStringAllocator> format(MakeStringData((char*)"{0}_{1}_{2}_{3}"));
 
                         BasicString<char, Detail::TempStringAllocator> temp;
                         void* nameData;

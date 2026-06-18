@@ -813,9 +813,69 @@ static inline void KillLowerPrioritySFX(cGameSFX* pGameSFX, int priority)
     }
 }
 
+static inline bool FindRepeatTrackedSFX(cGameSFX* self, unsigned long type, SFXPlaySet** pGrabTrackedSFX)
+{
+    if (pGrabTrackedSFX != NULL)
+    {
+        *pGrabTrackedSFX = NULL;
+    }
+
+    if (!self->mbCurPlaySetIsValid)
+    {
+        return false;
+    }
+
+    DLListEntry<SFXPlaySet*>* head = self->mpCurPlaySet.m_Head;
+    DLListEntry<SFXPlaySet*>* current = nlDLRingGetStart(head);
+    head = self->mpCurPlaySet.m_Head;
+
+    while (current != NULL)
+    {
+        SFXPlaySet* pTrackedSFX = current->m_data;
+
+        if (pTrackedSFX->type == type)
+        {
+            if (pTrackedSFX->bIs3D && pTrackedSFX->emitter != NULL && Audio::IsEmitterActive(pTrackedSFX->emitter))
+            {
+                pTrackedSFX->voiceID = Audio::GetEmitterVoiceID(pTrackedSFX->emitter);
+            }
+
+            if ((pTrackedSFX->delay < 0.0f && pTrackedSFX->bIs3D && pTrackedSFX->voiceID == (unsigned long)Audio::GetSndIDError()) || Audio::IsSFXPlaying(pTrackedSFX->voiceID))
+            {
+                if (pGrabTrackedSFX != NULL)
+                {
+                    *pGrabTrackedSFX = pTrackedSFX;
+                }
+                return true;
+            }
+
+            if (pTrackedSFX->delay >= 0.0f)
+            {
+                if (pGrabTrackedSFX != NULL)
+                {
+                    *pGrabTrackedSFX = pTrackedSFX;
+                }
+                return true;
+            }
+        }
+
+        if (nlDLRingIsEnd(head, current) || current == NULL)
+        {
+            current = NULL;
+        }
+        else
+        {
+            current = current->m_next;
+        }
+    }
+
+    return false;
+}
+
 /**
  * Offset/Address/Size: 0x1104 | 0x80152648 | size: 0xACC
- * TODO: 93.54% match - remaining stack frame/register allocation and 3D setup stack-slot ordering diffs.
+ * TODO: 94.87% match - remaining callee-saved register role permutation (this/attributes/pSFXEmitter)
+ * and stack-slot offset diffs; one SoundStrToIDNode struct copy vs two in target.
  */
 unsigned long cGameSFX::Play(Audio::SoundAttributes& attributes)
 {
@@ -867,67 +927,7 @@ unsigned long cGameSFX::Play(Audio::SoundAttributes& attributes)
 
     if (attributes.mb_NoPhasingFilter)
     {
-        SFXPlaySet** ppTrackedSFX = &pTrackedSFX;
-        unsigned long muType = attributes.mu_Type;
-        bool found;
-        if (ppTrackedSFX != NULL)
-        {
-            *ppTrackedSFX = NULL;
-        }
-
-        if (mbCurPlaySetIsValid)
-        {
-            DLListEntry<SFXPlaySet*>* head = mpCurPlaySet.m_Head;
-            DLListEntry<SFXPlaySet*>* current = nlDLRingGetStart(head);
-            head = mpCurPlaySet.m_Head;
-
-            while (current != NULL)
-            {
-                SFXPlaySet* tracked = current->m_data;
-
-                if (tracked->type == muType)
-                {
-                    if (tracked->bIs3D)
-                    {
-                        if (tracked->emitter != NULL && Audio::IsEmitterActive(tracked->emitter))
-                        {
-                            tracked->voiceID = Audio::GetEmitterVoiceID(tracked->emitter);
-                        }
-                    }
-
-                    if ((tracked->delay < 0.0f && tracked->bIs3D && tracked->voiceID == (unsigned long)Audio::GetSndIDError()) || Audio::IsSFXPlaying(tracked->voiceID))
-                    {
-                        if (ppTrackedSFX != NULL)
-                        {
-                            *ppTrackedSFX = tracked;
-                        }
-                        found = true;
-                        break;
-                    }
-
-                    if (tracked->delay >= 0.0f)
-                    {
-                        if (ppTrackedSFX != NULL)
-                        {
-                            *ppTrackedSFX = tracked;
-                        }
-                        found = true;
-                        break;
-                    }
-                }
-
-                if (nlDLRingIsEnd(head, current) || current == NULL)
-                {
-                    current = NULL;
-                }
-                else
-                {
-                    current = current->m_next;
-                }
-            }
-        }
-
-        if (found)
+        if (FindRepeatTrackedSFX(this, attributes.mu_Type, &pTrackedSFX))
         {
             currTime = Audio::GetAudioTimer();
 
@@ -953,10 +953,9 @@ unsigned long cGameSFX::Play(Audio::SoundAttributes& attributes)
             fVolume = attributes.mf_Volume;
         }
 
-        SoundStrToIDNode sfxInfo2 = mpSFX[attributes.mu_Type];
         if (attributes.mf_VolReverb == 100.0f)
         {
-            fVolReverb = sfxInfo2.fVolReverb;
+            fVolReverb = sfxInfo.fVolReverb;
         }
         else
         {

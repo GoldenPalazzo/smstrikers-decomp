@@ -101,8 +101,6 @@ void InitializeGameObjectLighting()
     s32 stadium;
     nlMatrix4 matZ;
     nlMatrix4 matY;
-    nlVector3 fillDirection;
-    nlVector3 keyDirection;
 
     g_pCameraRelativeLightData = glUserAlloc(GLUD_Light, 0x54, true);
     pLightArray = (GameObjectLightArray*)glUserGetData(g_pCameraRelativeLightData);
@@ -125,46 +123,52 @@ void InitializeGameObjectLighting()
     g_pInGameLightData = glUserAlloc(GLUD_Light, 0x54, true);
     pLightArray = (GameObjectLightArray*)glUserGetData(g_pInGameLightData);
     pLightArray->numLights = 2;
-    pLight = pLightArray->lights;
-
-    for (i = 0; i < 2; i++)
     {
-        nlZeroMemory(pLight, 0x28);
-        pLight->colour.c[0] = 1.0f;
-        pLight->colour.c[1] = 0.0f;
-        pLight->colour.c[2] = 0.0f;
-        pLight->colour.c[3] = 1.0f;
-        pLight->intensity = 1.0f;
-        pLight->innerRadius = 0.0f;
-        pLight->outerRadius = 0.0f;
-        pLight++;
+        GLLightUserData* pLight2 = pLightArray->lights;
+        s32 j;
+        for (j = 0; j < 2; j++)
+        {
+            nlZeroMemory(pLight2, 0x28);
+            pLight2->colour.c[0] = 1.0f;
+            pLight2->colour.c[1] = 0.0f;
+            pLight2->colour.c[2] = 0.0f;
+            pLight2->colour.c[3] = 1.0f;
+            pLight2->intensity = 1.0f;
+            pLight2->innerRadius = 0.0f;
+            pLight2->outerRadius = 0.0f;
+            pLight2++;
+        }
     }
 
     pLightArray = (GameObjectLightArray*)glUserGetData(g_pInGameLightData);
     stadium = nlSingleton<GameInfoManager>::s_pInstance->GetStadium();
     pParams = (StadiumLightingParamsInit*)&gStadiumGameObjectLightingParams[stadium];
 
-    nlVector3 initialDirection = { 1.0f, 0.0f, 0.0f };
+    {
+        nlVector3 initialDirection = { 1.0f, 0.0f, 0.0f };
+        nlVector3 keyDirection;
+        nlVector3 fillDirection;
 
-    nlMakeRotationMatrixY(matY, (3.1415927f * pParams->inGameKeyRotYDeg) / 180.0f);
-    nlMakeRotationMatrixZ(matZ, (3.1415927f * pParams->inGameKeyRotZDeg) / 180.0f);
-    nlMultDirVectorMatrix(keyDirection, initialDirection, matY);
-    nlMultDirVectorMatrix(keyDirection, keyDirection, matZ);
+        nlMakeRotationMatrixY(matY, (3.1415927f * pParams->inGameKeyRotYDeg) / 180.0f);
+        nlMakeRotationMatrixZ(matZ, (3.1415927f * pParams->inGameKeyRotZDeg) / 180.0f);
+        nlMultDirVectorMatrix(keyDirection, initialDirection, matY);
+        nlMultDirVectorMatrix(keyDirection, keyDirection, matZ);
 
-    nlMakeRotationMatrixY(matY, (3.1415927f * pParams->inGameFillRotYDeg) / 180.0f);
-    nlMakeRotationMatrixZ(matZ, (3.1415927f * pParams->inGameFillRotZDeg) / 180.0f);
-    nlMultDirVectorMatrix(fillDirection, initialDirection, matY);
-    nlMultDirVectorMatrix(fillDirection, fillDirection, matZ);
+        nlMakeRotationMatrixY(matY, (3.1415927f * pParams->inGameFillRotYDeg) / 180.0f);
+        nlMakeRotationMatrixZ(matZ, (3.1415927f * pParams->inGameFillRotZDeg) / 180.0f);
+        nlMultDirVectorMatrix(fillDirection, initialDirection, matY);
+        nlMultDirVectorMatrix(fillDirection, fillDirection, matZ);
 
-    pLightArray->lights[0].worldPosition.f.x = -keyDirection.f.x;
-    pLightArray->lights[0].worldPosition.f.y = -keyDirection.f.y;
-    pLightArray->lights[0].worldPosition.f.z = -keyDirection.f.z;
-    pLightArray->lights[0].intensity = pParams->inGameKeyIntensity;
+        pLightArray->lights[0].worldPosition.f.x = -keyDirection.f.x;
+        pLightArray->lights[0].worldPosition.f.y = -keyDirection.f.y;
+        pLightArray->lights[0].worldPosition.f.z = -keyDirection.f.z;
+        pLightArray->lights[0].intensity = pParams->inGameKeyIntensity;
 
-    pLightArray->lights[1].worldPosition.f.x = -fillDirection.f.x;
-    pLightArray->lights[1].worldPosition.f.y = -fillDirection.f.y;
-    pLightArray->lights[1].worldPosition.f.z = -fillDirection.f.z;
-    pLightArray->lights[1].intensity = pParams->inGameFillIntensity;
+        pLightArray->lights[1].worldPosition.f.x = -fillDirection.f.x;
+        pLightArray->lights[1].worldPosition.f.y = -fillDirection.f.y;
+        pLightArray->lights[1].worldPosition.f.z = -fillDirection.f.z;
+        pLightArray->lights[1].intensity = pParams->inGameFillIntensity;
+    }
 
     stadium = nlSingleton<GameInfoManager>::s_pInstance->GetStadium();
     pRampTexture = glx_CreatePlatTexture();

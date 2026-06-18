@@ -664,9 +664,10 @@ unsigned char cCameraManager::IsObjectOccludingField(const DrawableObject* drawa
     fieldCorners[3].f.y = -sidelineY;
     fieldCorners[3].f.z = 0.0f;
 
-    nlVector3* pNormals = &planeNormals[0];
     nlVector3* pCorner = &fieldCorners[0];
-    nlVector3* pNormal = pNormals;
+    nlVector3* pNormal;
+    nlVector3* pNormals = &planeNormals[0];
+    pNormal = pNormals;
     int i;
     for (i = 0; i < 4; i++)
     {

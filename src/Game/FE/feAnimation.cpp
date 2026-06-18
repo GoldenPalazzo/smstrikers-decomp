@@ -70,7 +70,8 @@ void FEAnimation::Update(float fCurrentTime)
 void FEAnimation::AnimateTargetAtTimeWithVector3(float fCurrentTime)
 {
     v3AnimationKeyframe* currentFrame;
-    f32 resultX, resultY, resultZ;
+    f32 result[3];
+    f32 fMu;
 
     currentFrame = nlDLRingGetStart<v3AnimationKeyframe>((v3AnimationKeyframe*)this->m_DLRingHead);
 
@@ -79,10 +80,10 @@ void FEAnimation::AnimateTargetAtTimeWithVector3(float fCurrentTime)
         fCurrentTime = currentFrame->pKeyFrameDataX.m_fTime;
     }
 
-    resultX = -1.0f;
+    result[0] = -1.0f;
     while (fCurrentTime > currentFrame->pKeyFrameDataX.m_fTime
-           && (resultX != currentFrame->pKeyFrameDataX.m_fControl1
-               || resultX != currentFrame->pKeyFrameDataX.m_fControl2))
+           && (result[0] != currentFrame->pKeyFrameDataX.m_fControl1
+               || result[0] != currentFrame->pKeyFrameDataX.m_fControl2))
     {
         currentFrame = currentFrame->m_next;
         if (nlDLRingIsEnd<v3AnimationKeyframe>((v3AnimationKeyframe*)this->m_DLRingHead, currentFrame))
@@ -95,9 +96,9 @@ void FEAnimation::AnimateTargetAtTimeWithVector3(float fCurrentTime)
 
     if (fCurrentTime == currentTime)
     {
-        resultX = currentFrame->pKeyFrameDataX.m_fPoint;
-        resultY = currentFrame->pKeyFrameDataY.m_fPoint;
-        resultZ = currentFrame->pKeyFrameDataZ.m_fPoint;
+        result[0] = currentFrame->pKeyFrameDataX.m_fPoint;
+        result[1] = currentFrame->pKeyFrameDataY.m_fPoint;
+        result[2] = currentFrame->pKeyFrameDataZ.m_fPoint;
     }
     else if (!(fCurrentTime > currentTime) || currentFrame->pKeyFrameDataX.m_fControl1 != -1.0f)
     {
@@ -122,49 +123,28 @@ void FEAnimation::AnimateTargetAtTimeWithVector3(float fCurrentTime)
         controlPointsZ[2] = prevFrame->pKeyFrameDataZ.m_fControl2;
         controlPointsZ[3] = currentFrame->pKeyFrameDataZ.m_fPoint;
 
-        f32 fMu = (fCurrentTime - prevTime) / (currentTime - prevTime);
-        resultX = nlBezier(controlPointsX, 3, fMu);
-        resultY = nlBezier(controlPointsY, 3, fMu);
-        resultZ = nlBezier(controlPointsZ, 3, fMu);
+        fMu = (fCurrentTime - prevTime) / (currentTime - prevTime);
+        result[0] = nlBezier(controlPointsX, 3, fMu);
+        result[1] = nlBezier(controlPointsY, 3, fMu);
+        result[2] = nlBezier(controlPointsZ, 3, fMu);
     }
     else
     {
-        resultX = currentFrame->pKeyFrameDataX.m_fPoint;
-        resultY = currentFrame->pKeyFrameDataY.m_fPoint;
-        resultZ = currentFrame->pKeyFrameDataZ.m_fPoint;
+        result[0] = currentFrame->pKeyFrameDataX.m_fPoint;
+        result[1] = currentFrame->pKeyFrameDataY.m_fPoint;
+        result[2] = currentFrame->pKeyFrameDataZ.m_fPoint;
     }
 
     switch (m_type)
     {
     case eAnimPosition:
-        m_pTLInstanceTarget->SetAssetPosition(resultX, resultY, resultZ);
+        m_pTLInstanceTarget->SetAssetPosition(result[0], result[1], result[2]);
         break;
     case eAnimRotation:
-        m_pTLInstanceTarget->SetAssetRotation(resultX, resultY, resultZ);
+        m_pTLInstanceTarget->SetAssetRotation(result[0], result[1], result[2]);
         break;
     case eAnimScale:
-        m_pTLInstanceTarget->SetAssetScale(resultX, resultY, resultZ);
+        m_pTLInstanceTarget->SetAssetScale(result[0], result[1], result[2]);
         break;
     }
 }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x8020E9B4 | size: 0x20
-//  */
-// void nlDLRingIsEnd<v3AnimationKeyframe>(v3AnimationKeyframe*, v3AnimationKeyframe*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x20 | 0x8020E9D4 | size: 0x20
-//  */
-// void nlDLRingIsEnd<fAnimationKeyframe>(fAnimationKeyframe*, v3AnimationKeyframe*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x40 | 0x8020E9F4 | size: 0x18
-//  */
-// void nlDLRingGetStart<v3AnimationKeyframe>(v3AnimationKeyframe*)
-// {
-// }

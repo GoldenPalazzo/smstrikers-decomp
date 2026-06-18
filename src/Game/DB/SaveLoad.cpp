@@ -149,7 +149,7 @@ bool SaveLoad::CardBusy()
 
 /**
  * Offset/Address/Size: 0x3720 | 0x8018D07C | size: 0x1BC
- * TODO: 99.46% match - header-size regalloc still differs (iconFmt and iconCount swap source registers and the
+ * TODO: 99.55% match - header-size regalloc still differs (iconFmt and iconCount swap source registers and the
  * accumulation still keeps r6 live at the final add chain). Literal symbol IDs for "@2009" and "@2010" also remain
  * different in scratch context.
  */
@@ -176,7 +176,7 @@ void LoadMemoryCardIconData()
     headerSize += ((bannerFmt == 1) ? 0x200 : 0);
     headerSize += bannerFmt * 0xC00;
     headerSize += ((iconFmt == 1) ? 0x200 : 0);
-    headerSize += iconCount * (iconFmt << 10);
+    headerSize += (iconFmt << 10) * iconCount;
     headerSize += 0x40;
     gIconDataCache.mIconConfig.HeaderSize = headerSize;
 
@@ -820,10 +820,12 @@ long SaveCallbacks::DoSave(unsigned long Slot)
 
 /**
  * Offset/Address/Size: 0x24EC | 0x8018BE48 | size: 0x21C
- * TODO: 87.58% match - icon calc nor/srawi/and constant-folded, CSE of channel*4
- * into r31, extra cmpwi loop guards, numBlocks r28 vs r29. hasSpace condition fixed
- * (FreeFiles < 1 with swapped branches). Remaining diffs are compiler heuristics.
+ * TODO: 90.37% match - CSE of channel*4 into r31, extra cmpwi loop guards,
+ * numBlocks r28 vs r29, card2 r29 vs r31. Remaining diffs are compiler
+ * register-allocation heuristics (same wall as sibling FileWriteCB).
  */
+#pragma push
+#pragma opt_propagation off
 unsigned long SaveCallbacks::FileWriteIconCB(unsigned long channel, long result, void* data)
 {
     if (result != 0)
@@ -859,29 +861,7 @@ unsigned long SaveCallbacks::FileWriteIconCB(unsigned long channel, long result,
             }
 
             MemCard::ICON_CONFIG IconCfg;
-            IconCfg.BannerFormat = 0;
-            IconCfg.IconCount = 0;
-            IconCfg.IconFormat = 0;
-            IconCfg.IconAnimType = 0;
-            memset(IconCfg.IconSpeeds, 0, 8);
-            memset(&IconCfg, 0, sizeof(MemCard::ICON_CONFIG));
-
-            IconCfg.IconCount = 1;
-            IconCfg.IconFormat = 2;
-            IconCfg.IconSpeeds[0] = 3;
-            IconCfg.BannerFormat = 2;
-
-            int iconFormat = IconCfg.IconFormat;
-            int iconCount = IconCfg.IconCount;
-            int iconSize = (iconFormat << 10) * iconCount;
-            int temp = ~(iconCount | -1);
-            int bannerClut = (temp >> 31) & 0x200;
-            int bannerSize = iconFormat * 0xC00;
-            int iconClut = (temp >> 31) & 0x200;
-            int total = bannerClut + bannerSize;
-            total += iconSize;
-            total += iconClut;
-            origSize = (int)(IconCfg.HeaderSize = total + 0x40);
+            origSize = BuildDefaultIconHeaderSize(IconCfg);
             dataSize = (u32)(origSize + 0x1FFF) >> 13;
             if (origSize > 0)
             {
@@ -915,6 +895,7 @@ unsigned long SaveCallbacks::FileWriteIconCB(unsigned long channel, long result,
 
     DoSave(channel);
 }
+#pragma pop
 
 /**
  * Offset/Address/Size: 0x1F30 | 0x8018B88C | size: 0x5BC

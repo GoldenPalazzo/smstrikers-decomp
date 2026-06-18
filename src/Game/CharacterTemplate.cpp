@@ -589,9 +589,10 @@ cPlayer* CreateSidekick(int nPlayerID, int nTeamID, eCharacterClass cc, eCharact
 
 /**
  * Offset/Address/Size: 0xE70 | 0x80013158 | size: 0x634
- * TODO: 93.07% match - hierarchy inventory register and branch shape differ;
- * GetHashFromTextureFile inlined slash-scan/copy loops still use different
- * count/destination registers.
+ * TODO: 93.35% match - hierarchy inventory load uses r26 vs r29; the two
+ * inlined GetHashFromTextureFile scan loops fold the running count into the
+ * found-offset immediate instead of keeping it in a register (extra addi per
+ * char in target), and the copy loop reloads *pSrc instead of reusing it.
  */
 cPlayer* CreateGoalie(eCharacterClass gcc, bool bForViewer)
 {
@@ -608,26 +609,10 @@ cPlayer* CreateGoalie(eCharacterClass gcc, bool bForViewer)
         CharacterLoadingGuts(g_GoalieTemplate, g_GoalieTemplateInfo, gcc, bForViewer);
     }
 
-    cSHierarchy* pHierarchy;
-
     cInventory<cSHierarchy>* pHierInv = g_GoalieTemplate->pHierarchyInventory;
     u32 hash = nlStringHash(g_GoalieTemplateInfo.szHierarchy);
 
-    ListEntry<cSHierarchy*>* hEntry = pHierInv->m_lItemList.m_Head;
-    while (hEntry != NULL)
-    {
-        pHierarchy = hEntry->data;
-        if (hash != pHierarchy->m_uHashID)
-        {
-            hEntry = hEntry->next;
-        }
-        else
-        {
-            goto hierFound;
-        }
-    }
-    pHierarchy = NULL;
-hierFound:
+    cSHierarchy* pHierarchy = FindHierarchy(pHierInv->m_lItemList.m_Head, hash);
 
     AnimRetargetList* pAnimRetarget = NULL;
     if (g_GoalieTemplate->pAnimRetargetListInventory != NULL)

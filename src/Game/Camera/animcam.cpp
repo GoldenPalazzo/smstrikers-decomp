@@ -357,15 +357,15 @@ cAnimCamera::~cAnimCamera()
  */
 void cAnimCamera::BuildAnimViewMatrix(nlMatrix4& mView)
 {
-    nlMatrix4 viewMatrix;
-    nlMatrix4 facingAngleMatrix;
     float fRealIndex = m_fAnimationTime * (float)(m_pActiveCameraData->m_uKeyCount - 1);
-    nlVector3 cameraPos = { };
-    nlVector3 targetPos = { };
-    nlQuaternion cameraRot = { };
     int nIndex = (int)fRealIndex;
     float fWeightB = fRealIndex - (float)nIndex;
     float fWeightA = 1.0f - fWeightB;
+    nlVector3 cameraPos = { };
+    nlVector3 targetPos = { };
+    nlQuaternion cameraRot = { };
+    nlMatrix4 viewMatrix;
+    nlMatrix4 facingAngleMatrix;
     if (m_fAnimationTime >= 1.0f)
     {
         m_Fov = m_pActiveCameraData->fFOV[nIndex];
@@ -381,7 +381,8 @@ void cAnimCamera::BuildAnimViewMatrix(nlMatrix4& mView)
         float dy = cpK.f.y - cpN.f.y;
         float dx = cpK.f.x - cpN.f.x;
         float dz = cpK.f.z - cpN.f.z;
-        float distSq = dy * dy + dx * dx + dz * dz;
+        float dyy = dy * dy;
+        float distSq = dyy + dx * dx + dz * dz;
         if (distSq > 16.0f)
         {
             if (fWeightB < 0.5f)
@@ -419,7 +420,8 @@ void cAnimCamera::BuildAnimViewMatrix(nlMatrix4& mView)
     float dy = m_vecCamera.f.y - m_vecTarget.f.y;
     float dx = m_vecCamera.f.x - m_vecTarget.f.x;
     float dz = m_vecCamera.f.z - m_vecTarget.f.z;
-    float dist = nlSqrt(dy * dy + dx * dx + dz * dz, true);
+    float dyy2 = dy * dy;
+    float dist = nlSqrt(dyy2 + dx * dx + dz * dz, true);
     DepthOfFieldManager::instance.m_fDistanceFromCamera = dofBehindTarget + dist;
     cameraPos.f.x *= m_Mirror.f.x;
     cameraPos.f.y *= m_Mirror.f.y;
@@ -433,15 +435,8 @@ void cAnimCamera::BuildAnimViewMatrix(nlMatrix4& mView)
         cameraRot.f.y *= -m_Mirror.f.y;
         cameraRot.f.z *= -m_Mirror.f.z;
     }
-    m_vecCamera.f.x = cameraPos.f.x + m_OffsetPos.f.x;
-    m_vecCamera.f.y = cameraPos.f.y + m_OffsetPos.f.y;
-    m_vecCamera.f.z = cameraPos.f.z + m_OffsetPos.f.z;
-    float tx = targetPos.f.x + m_OffsetPos.f.x;
-    float ty = targetPos.f.y + m_OffsetPos.f.y;
-    float tz = targetPos.f.z + m_OffsetPos.f.z;
-    m_vecTarget.f.x = tx;
-    m_vecTarget.f.y = ty;
-    m_vecTarget.f.z = tz;
+    nlVec3Add(m_vecCamera, cameraPos, m_OffsetPos);
+    nlVec3Add(m_vecTarget, targetPos, m_OffsetPos);
     GetLocalPoint(m_vecCamera, m_vecCamera, m_OffsetPos, 0);
     GetWorldPoint(m_vecCamera, m_vecCamera, m_OffsetPos, mFacingAngle);
     if (m_bUnusedPad)

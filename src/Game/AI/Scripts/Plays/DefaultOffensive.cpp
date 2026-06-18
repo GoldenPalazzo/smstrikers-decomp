@@ -613,8 +613,9 @@ FuzzyVariant Fuzzy::InGoodWindupPosition(cFielder* TheFielder)
     float fBestConfidence = 0.0f;
 
     FuzzyVariant fvFielder((cPlayer*)TheFielder);
-    unsigned long hash = (unsigned long)InGoodWindupPosition;
-    hash += ((Variant*)&fvFielder)->GetHash();
+    volatile unsigned long funcAddrTemp = (unsigned long)InGoodWindupPosition;
+    unsigned long hash = ((Variant*)&fvFielder)->GetHash();
+    hash += funcAddrTemp;
     FuzzyVariant fvFielder2((cPlayer*)TheFielder);
 
     ScriptQuestionCache* cache = nlSingleton<ScriptQuestionCache>::s_pInstance;

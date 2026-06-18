@@ -25,10 +25,19 @@ static inline nlChunk* nlGetNextChunk(nlChunk* chunk)
     return (nlChunk*)((u8*)chunk + chunk->m_Size + 8);
 }
 
+static inline void CopyPhysicsElements(CharacterPhysicsData* pPhysicsData, CharacterPhysicsElement* pSrc)
+{
+    u32 n;
+    for (n = 0; n < pPhysicsData->physicsElementCount; n++)
+    {
+        pPhysicsData->pPhysicsElements[n] = pSrc[n];
+    }
+}
+
 /**
  * Offset/Address/Size: 0x0 | 0x801FE13C | size: 0x2AC
- * TODO: 96.84% match - nlGetChunkData return-via-r3 forces extra mr r5,r3
- * in case 2, and copy-loop counter n stays in r4 instead of r3.
+ * TODO: 99.80% match - nlGetChunkData alignment/ptr internal register
+ * coloring in case 2 (alignment lands in r3 instead of r4).
  */
 bool LoadCharacterPhysicsElements(const char* pFileData, CharacterPhysicsData* pPhysicsData)
 {
@@ -62,18 +71,7 @@ bool LoadCharacterPhysicsElements(const char* pFileData, CharacterPhysicsData* p
 
         case 0x0001D002:
         {
-            u32 n;
-            u8* var_r5 = (u8*)nlGetChunkData(var_r30);
-
-            n = 0;
-            unsigned long i = n;
-            while (n < pPhysicsData->physicsElementCount)
-            {
-                *(CharacterPhysicsElement*)((u8*)pPhysicsData->pPhysicsElements + i) = *(CharacterPhysicsElement*)var_r5;
-                n++;
-                i += sizeof(CharacterPhysicsElement);
-                var_r5 += sizeof(CharacterPhysicsElement);
-            }
+            CopyPhysicsElements(pPhysicsData, (CharacterPhysicsElement*)nlGetChunkData(var_r30));
             break;
         }
         }

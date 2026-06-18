@@ -530,8 +530,8 @@ void BasicString<CharT, Allocator>::erase(const CharT* begin, const CharT* end)
 template <typename CharT, typename Allocator>
 void BasicString<CharT, Allocator>::TrimInPlace(const CharT* chars)
 {
-    const CharT* c;
     int i = 0;
+    const CharT* c;
     while (i < (int)(m_data ? m_data->mSize - 1 : 0))
     {
         c = chars;

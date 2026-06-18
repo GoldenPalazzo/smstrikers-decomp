@@ -392,8 +392,11 @@ bool EmissionController::Update(float dt)
         return true;
     }
 
-    int numSys = 0;
+    ParticleSystem* pNext;
+    EffectsSpec* pSpec;
+    ParticleSystem* pSys;
     int numDel = 0;
+    int numSys = 0;
     UserEffectInfo info;
 
     if (m_Replaying)
@@ -422,15 +425,15 @@ bool EmissionController::Update(float dt)
         return true;
     }
 
-    ParticleSystem* pSys = (ParticleSystem*)m_Systems.m_headNode;
+    pSys = (ParticleSystem*)m_Systems.m_headNode;
 
     while (pSys != NULL)
     {
-        ParticleSystem* pNext = (ParticleSystem*)pSys->m_nextNode;
+        pNext = (ParticleSystem*)pSys->m_nextNode;
 
         pSys->m_aFacing = m_aFacing;
 
-        EffectsSpec* pSpec = pSys->m_pSpec;
+        pSpec = pSys->m_pSpec;
         EffectsTerrainSpec* pTerrain = pSpec->m_pTerrainSpec;
 
         if (pTerrain != NULL)

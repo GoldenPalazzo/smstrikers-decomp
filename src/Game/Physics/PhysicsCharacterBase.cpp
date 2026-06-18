@@ -297,18 +297,19 @@ extern "C" void __ct__14PhysicsCapsuleFP14CollisionSpaceP12PhysicsWorldff(Physic
 
 /**
  * Offset/Address/Size: 0x80 | 0x801FEB7C | size: 0x280
- * TODO: 97.06% match - remaining diffs are preserved-register allocation shifts in
- * object/element/bone-volume loop temporaries.
+ * TODO: 98.00% match - remaining diffs are a preserved-register coloring shift:
+ * pose occupies r31 instead of r21, shifting this/physicsWorld/collisionSpace down
+ * by one register.
  */
 void PhysicsCharacterBase::AddBoneVolumes(PhysicsWorld* physicsWorld, CollisionSpace* collisionSpace, cPoseAccumulator* pose, const CharacterPhysicsData* physicsData, unsigned long category, unsigned long collideMask)
 {
-    u8* elements = *(u8**)((u8*)physicsData + 8);
-    unsigned long count = *(u32*)((u8*)physicsData + 4);
     ListEntry<PhysicsBoneVolume*>** pTail = &m_BoneVolumes.m_Tail;
-    ListEntry<PhysicsBoneVolume*>** pHead = &m_BoneVolumes.m_Head;
+    u8* elements = *(u8**)((u8*)physicsData + 8);
     unsigned int i = 0;
-    unsigned long offset = 0;
     AddBoneVolumesElement* element;
+    unsigned long count = *(u32*)((u8*)physicsData + 4);
+    unsigned long offset = 0;
+    ListEntry<PhysicsBoneVolume*>** pHead = &m_BoneVolumes.m_Head;
 
     while (i < count)
     {

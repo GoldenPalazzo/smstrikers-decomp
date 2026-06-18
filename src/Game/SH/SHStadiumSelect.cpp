@@ -551,7 +551,7 @@ void StadiumSelectSceneV2::SceneCreated()
 
 /**
  * Offset/Address/Size: 0x210 | 0x800D8790 | size: 0x5C4
- * TODO: 97.97% match - r4/r0 register swap in WrapStadiumIndex result (subf dest)
+ * TODO: 98.29% match - r4/r0 register swap in WrapStadiumIndex result (subf dest)
  */
 void StadiumSelectSceneV2::Update(float dt)
 {
@@ -649,7 +649,7 @@ void StadiumSelectSceneV2::Update(float dt)
             }
         }
 
-        mLastDirection = (Direction)(rightPressed == false);
+        mLastDirection = (Direction)(rightPressed == 0 ? 1 : 0);
         FEAudio::PlayAnimAudioEvent("sfx_toggle_stadium", false);
 
         eStadiumID sid = StadiumEntries[mStadiumIndex].stadiumID;

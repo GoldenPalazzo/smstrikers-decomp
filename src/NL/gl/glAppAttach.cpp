@@ -72,8 +72,6 @@ PlatTexture* ResolvedWhiteTexture __attribute__((section(".sdata"))) = (PlatText
 
 /**
  * Offset/Address/Size: 0x0 | 0x80191948 | size: 0x41C
- * TODO: 95.53% match - remaining diffs are in the newView/newLayer branch flow
- * near the WorldDarkening check and the view 0xB path ordering.
  */
 void glplatAttachPacket(eGLView view, unsigned long layer, const glModelPacket* pPacket)
 {
@@ -184,18 +182,17 @@ void glplatAttachPacket(eGLView view, unsigned long layer, const glModelPacket* 
         newLayer++;
     }
 
-    if ((s32)newView >= 8)
+    switch ((s32)newView)
     {
-        if ((s32)newView == 0xB)
+    case 0xB:
+        if (glGetRasterState(pPacket->state.raster, (eGLState)5) != 0)
         {
-            if (glGetRasterState(pPacket->state.raster, (eGLState)5) != 0)
-            {
-                newLayer++;
-            }
+            newLayer++;
         }
-    }
-    else if (((s32)newView == 3) || ((s32)newView >= 6))
-    {
+        break;
+    case 3:
+    case 6:
+    case 7:
         if (glGetRasterState(pPacket->state.raster, (eGLState)5) != 0)
         {
             if (WorldDarkening::Instance().mActive)
@@ -209,6 +206,7 @@ void glplatAttachPacket(eGLView view, unsigned long layer, const glModelPacket* 
                 newLayer += 2;
             }
         }
+        break;
     }
 
     if (glUserHasType((eGLUserData)6, pPacket))

@@ -4,6 +4,10 @@
 #include "NL/nlMemory.h"
 #include "NL/nlList.h"
 
+#pragma inline_depth(8)
+#pragma inline_max_size(0x10000)
+#pragma inline_max_total_size(0x10000)
+
 /**
  * Offset/Address/Size: 0x1420 | 0x801EA634 | size: 0x28
  */
@@ -22,49 +26,21 @@ void nlListAddStart<cSAnimCallback>(cSAnimCallback** head, cSAnimCallback* entry
     *head = entry;
 }
 
-static inline void* nlGetChunkData(nlChunk* chunk)
-{
-    u32 alignField = chunk->m_ID & 0x7F000000;
-    if (((-alignField) | alignField) >> 31)
-    {
-        alignField = 1u << (alignField >> 24);
-        u32 result = (u32)chunk + alignField;
-        result = (result + 7) & ~(alignField - 1);
-        return (void*)result;
-    }
-    return (void*)((u8*)chunk + 8);
-}
+#define NL_CHUNK_ALIGN(chunk)     ((chunk)->m_ID & 0x7F000000)
+#define NL_CHUNK_ALIGN_POW(chunk) (1u << (NL_CHUNK_ALIGN(chunk) >> 24))
+#define nlGetChunkData(chunk)                                                                            \
+    ((((-NL_CHUNK_ALIGN(chunk)) | NL_CHUNK_ALIGN(chunk)) >> 31)                                          \
+            ? (void*)(((u32)(chunk) + NL_CHUNK_ALIGN_POW(chunk) + 7) & ~(NL_CHUNK_ALIGN_POW(chunk) - 1)) \
+            : (void*)((u8*)(chunk) + 8))
 
-static inline nlChunk* nlGetNextChunk(nlChunk* chunk)
-{
-    return (nlChunk*)((u8*)chunk + chunk->m_Size + 8);
-}
-
-static inline void InitializeNodeData(cSAnim* pRetval, nlChunk* nodeChunk, u32 nodeIndex)
-{
-    nlChunk* subChunk = (nlChunk*)((u8*)nodeChunk + 8);
-    nlChunk* subEnd = nlGetNextChunk(nodeChunk);
-
-    while (subChunk != subEnd)
-    {
-        u32 subType = subChunk->m_ID & 0x80FFFFFF;
-        if (subType == 0x17101)
-            ((void**)pRetval->m_pRotKeys)[nodeIndex] = nlGetChunkData(subChunk);
-        else if (subType == 0x17102)
-            pRetval->m_pTransKeys[nodeIndex] = (PackedTrans*)nlGetChunkData(subChunk);
-        else if (subType == 0x17103)
-            pRetval->m_pScaleKeys[nodeIndex] = (PackedScale*)nlGetChunkData(subChunk);
-
-        subChunk = nlGetNextChunk(subChunk);
-    }
-}
+#define nlGetNextChunk(chunk) ((nlChunk*)((u8*)(chunk) + (chunk)->m_Size + 8))
 
 /**
  * Offset/Address/Size: 0xD40 | 0x801E9F54 | size: 0x68C
- * TODO: 93.43% match - remaining register allocation differences in chunk-data setup
- * and root-key interpolation block.
+ * TODO: 79.51% match - inlined chunk-data alignment emits subi+nor+and where the
+ * target uses a single andc, shifting register coloring (align temp r3 vs r5) and
+ * cascading register/scheduling diffs through the node loop and root-key block.
  */
-#pragma inline_depth(smart)
 cSAnim* cSAnim::Initialize(nlChunk* pChunk)
 {
     nlChunk* chunkA = (nlChunk*)((u8*)pChunk + 8);
@@ -100,7 +76,22 @@ cSAnim* cSAnim::Initialize(nlChunk* pChunk)
     {
         if (type == 0x80017100)
         {
-            InitializeNodeData(pRetval, nodeChunk, nodeIndex);
+            nlChunk* subChunk = (nlChunk*)((u8*)nodeChunk + 8);
+            nlChunk* subEnd = nlGetNextChunk(nodeChunk);
+
+            while (subChunk != subEnd)
+            {
+                u32 subType = subChunk->m_ID & 0x80FFFFFF;
+                if (subType == 0x17101)
+                    ((void**)pRetval->m_pRotKeys)[nodeIndex] = nlGetChunkData(subChunk);
+                else if (subType == 0x17102)
+                    pRetval->m_pTransKeys[nodeIndex] = (PackedTrans*)nlGetChunkData(subChunk);
+                else if (subType == 0x17103)
+                    pRetval->m_pScaleKeys[nodeIndex] = (PackedScale*)nlGetChunkData(subChunk);
+
+                subChunk = nlGetNextChunk(subChunk);
+            }
+
             nodeIndex++;
         }
 
@@ -121,7 +112,9 @@ cSAnim* cSAnim::Initialize(nlChunk* pChunk)
 
             if (numRootKeys == 1)
             {
-                v3PosStart = rootTrans[lastIndex];
+                v3PosStart.as_u32[0] = rootTrans[lastIndex].as_u32[0];
+                v3PosStart.as_u32[1] = rootTrans[lastIndex].as_u32[1];
+                v3PosStart.as_u32[2] = rootTrans[lastIndex].as_u32[2];
             }
             else
             {
@@ -146,7 +139,9 @@ cSAnim* cSAnim::Initialize(nlChunk* pChunk)
         if (numRootKeys != 0)
         {
             u32 lastIndex = numRootKeys - 1;
-            v3PosEnd = rootTrans[lastIndex];
+            v3PosEnd.as_u32[0] = rootTrans[lastIndex].as_u32[0];
+            v3PosEnd.as_u32[1] = rootTrans[lastIndex].as_u32[1];
+            v3PosEnd.as_u32[2] = rootTrans[lastIndex].as_u32[2];
         }
         else
         {
@@ -434,7 +429,12 @@ void cSAnim::GetRootTrans(float t, nlVector3* out) const
     {
         if (t == 1.0f || m_nNumRootKeys == 1)
         {
-            *out = m_pRootTrans[m_nNumRootKeys - 1];
+            const nlVector3* pSrc = &m_pRootTrans[m_nNumRootKeys - 1];
+            u32 w0 = pSrc->as_u32[0];
+            u32 w1 = pSrc->as_u32[1];
+            out->as_u32[0] = w0;
+            out->as_u32[1] = w1;
+            out->as_u32[2] = pSrc->as_u32[2];
             return;
         }
 

@@ -2484,18 +2484,7 @@ bool AudioLoader::LoadInGameAudioData()
     }
 
     loadedGroup = homeCaptainGroup;
-    if (loadedGroup < 0)
-    {
-        bAlreadyLoaded = false;
-    }
-    else
-    {
-        bAlreadyLoaded = false;
-        if (sebringAudioGroups[loadedGroup].uLoadOrder > -1 && sebringAudioGroups[loadedGroup].stackEnum > -1)
-        {
-            bAlreadyLoaded = true;
-        }
-    }
+    bAlreadyLoaded = AudioLoader::IsSoundGroupLoaded(loadedGroup, 1);
 
     if (bAlreadyLoaded == false)
     {
@@ -2524,18 +2513,7 @@ bool AudioLoader::LoadInGameAudioData()
 
     {
         const int g = gLoadedAwayCaptainGroup;
-        if (g < 0)
-        {
-            bAlreadyLoaded = false;
-        }
-        else
-        {
-            bAlreadyLoaded = false;
-            if (sebringAudioGroups[g].uLoadOrder > -1 && sebringAudioGroups[g].stackEnum > -1)
-            {
-                bAlreadyLoaded = true;
-            }
-        }
+        bAlreadyLoaded = AudioLoader::IsSoundGroupLoaded(g, 1);
 
         if (bAlreadyLoaded == false)
         {
@@ -2669,18 +2647,7 @@ bool AudioLoader::LoadInGameAudioData()
     }
 
     loadedGroup = homeSidekickGroup;
-    if (loadedGroup < 0)
-    {
-        bAlreadyLoaded = false;
-    }
-    else
-    {
-        bAlreadyLoaded = false;
-        if (sebringAudioGroups[loadedGroup].uLoadOrder > -1 && sebringAudioGroups[loadedGroup].stackEnum > -1)
-        {
-            bAlreadyLoaded = true;
-        }
-    }
+    bAlreadyLoaded = AudioLoader::IsSoundGroupLoaded(loadedGroup, 1);
 
     if (bAlreadyLoaded == false)
     {
@@ -2709,18 +2676,7 @@ bool AudioLoader::LoadInGameAudioData()
 
     {
         const int g = gLoadedAwaySidekickGroup;
-        if (g < 0)
-        {
-            bAlreadyLoaded = false;
-        }
-        else
-        {
-            bAlreadyLoaded = false;
-            if (sebringAudioGroups[g].uLoadOrder > -1 && sebringAudioGroups[g].stackEnum > -1)
-            {
-                bAlreadyLoaded = true;
-            }
-        }
+        bAlreadyLoaded = AudioLoader::IsSoundGroupLoaded(g, 1);
 
         if (bAlreadyLoaded == false)
         {

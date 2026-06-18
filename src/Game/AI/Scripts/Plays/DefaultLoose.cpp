@@ -112,7 +112,7 @@ FuzzyVariant Fuzzy::DefaultLoosePlay(cDecisionEntity* pDecision)
                 float fNotChasing;
 
                 fChasing = (fChasing <= fNotRepeating) ? fChasing : fNotRepeating;
-                fChasing = (fChasing <= fIdealTackle) ? fChasing : fIdealTackle;
+                fChasing = (fIdealTackle <= fChasing) ? fIdealTackle : fChasing;
                 fNotChasing = 1.0f - fChasing;
 
                 float fNotNotChasing = 1.0f - fNotChasing;
@@ -301,11 +301,10 @@ FuzzyVariant Fuzzy::DefaultLoosePlay(cDecisionEntity* pDecision)
                 fConfidence = fConfidence * fBranchRatio3;
 
             float fCanGetBall2 = GonnaGetBall(g_pScriptCurrentTeam);
-            float fNotInOffZone2 = 1.0f - InOffensiveZoneOfPlayer(g_pScriptBall, (cPlayer*)g_pScriptCurrentFielder);
-            float fNotInDefZone2 = 1.0f - InDefensiveZoneOfPlayer(g_pScriptBall, (cPlayer*)g_pScriptCurrentFielder);
-
             fRole = (fRole <= fCanGetBall2) ? fRole : fCanGetBall2;
+            float fNotInOffZone2 = 1.0f - InOffensiveZoneOfPlayer(g_pScriptBall, (cPlayer*)g_pScriptCurrentFielder);
             fRole = (fRole <= fNotInOffZone2) ? fRole : fNotInOffZone2;
+            float fNotInDefZone2 = 1.0f - InDefensiveZoneOfPlayer(g_pScriptBall, (cPlayer*)g_pScriptCurrentFielder);
             fRole = (fRole <= fNotInDefZone2) ? fRole : fNotInDefZone2;
 
             float fNotRole = 1.0f - fRole;

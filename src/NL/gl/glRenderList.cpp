@@ -434,10 +434,10 @@ void PacketCallbackManager::DoCallback(const glModelPacket* p, unsigned int coun
     }
 
     glModelStream* lastStreams = m_LastStreams;
-    int numStreams = p->numStreams;
+    int numStreams;
     unsigned int streamChanged;
 
-    if (m_LastNumStreams != numStreams)
+    if (m_LastNumStreams != (numStreams = p->numStreams))
     {
         streamChanged = 1;
     }

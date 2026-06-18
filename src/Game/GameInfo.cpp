@@ -3614,6 +3614,7 @@ bool GameInfoManager::IsSuperTeamUnlocked() const
  */
 bool GameInfoManager::IsSuperCupModeUnlocked() const
 {
+    FORCE_DONT_INLINE;
     return IsUserQualified(GM_NUM_MODES);
 }
 

@@ -8,6 +8,7 @@
 
 enum AnimType
 {
+    eAnimUnknown = 0,
     eAnimPosition = 1,
     eAnimRotation = 2,
     eAnimScale = 3,
@@ -44,10 +45,11 @@ typedef struct v3AnimationKeyframe
 class FEAnimation /* size >= 0x1C */
 {
 public:
+    virtual ~FEAnimation() { }
+
     void Update(float);
     void AnimateTargetAtTimeWithVector3(float);
 
-    /* 0x00 */ char pad0[4]; // vtable
     /* 0x04 */ FEAnimation* m_next;
     /* 0x08 */ FEAnimation* m_prev;
     /* 0x0C */ TLInstance* m_pTLInstanceTarget;
@@ -56,12 +58,5 @@ public:
     /* 0x14 */ AnimType m_type;
     /* 0x18 */ void* m_DLRingHead;
 };
-
-// // Template function declarations
-// template <typename T>
-// T* nlDLRingGetStart(T* current);
-
-// template <typename T>
-// bool nlDLRingIsEnd(T* head, T* current);
 
 #endif // _FEANIMATION_H_

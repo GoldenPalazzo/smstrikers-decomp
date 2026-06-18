@@ -536,6 +536,8 @@ GLSkinMesh* glx_MakeSkinMesh(nlChunk* outerChunk, glModel* models)
 
     mesh->pModel = models;
 
+    u32 align;
+    u32 count;
     u32 i;
     nlChunk* chunkEnd = (nlChunk*)((u8*)outerChunk + outerChunk->m_Size + 8);
     u32 chunkSize;
@@ -551,10 +553,9 @@ GLSkinMesh* glx_MakeSkinMesh(nlChunk* outerChunk, glModel* models)
         u8* result;
         if (((-alignBits | alignBits) >> 31) != 0)
         {
-            u32 align = 1 << (alignBits >> 24);
+            align = 1 << (alignBits >> 24);
             u32 ptr = (u32)chunk + align;
-            ptr += 7;
-            ptr &= ~(align - 1);
+            ptr = (ptr + 7) & ~(align - 1);
             result = (u8*)ptr;
         }
         else
@@ -570,7 +571,7 @@ GLSkinMesh* glx_MakeSkinMesh(nlChunk* outerChunk, glModel* models)
         case 0x1B00A:
         {
             i = 0;
-            u32 count = chunkSize / 0x44;
+            count = chunkSize / 0x44;
             while (i < count)
             {
                 u32 boneID = *(u32*)data;
@@ -589,7 +590,7 @@ GLSkinMesh* glx_MakeSkinMesh(nlChunk* outerChunk, glModel* models)
             SkinMeshBoneMapNode* node = new (nlMalloc(sizeof(SkinMeshBoneMapNode), 8, false)) SkinMeshBoneMapNode;
 
             i = 0;
-            u32 count = chunkSize >> 3;
+            count = chunkSize >> 3;
             node->m_next = NULL;
             AVLTreeNode** root = (AVLTreeNode**)&node->boneMap.m_Root;
             while (i < count)

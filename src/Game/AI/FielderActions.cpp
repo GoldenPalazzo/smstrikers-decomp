@@ -2928,7 +2928,6 @@ void cFielder::ActionShot(float)
 void cFielder::InitActionShootToScore()
 {
     ActionShootToScoreVars stsVars;
-    memset(&stsVars, 0, sizeof(stsVars));
     mActionShootToScoreVars = stsVars;
 
     m_pCharacterSFX->StopMovementLoop();

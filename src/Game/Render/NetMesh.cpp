@@ -287,6 +287,10 @@ void NetMesh::JoltNet(float zDisplacement)
  * (dx/dy/dz in f29/f30/f28 vs target f29/f30/f27) and remaining
  * penetration-loop float register diffs.
  */
+/**
+ * TODO: 99.06% match - radius register allocation (f29 vs f30) cascades through the
+ * displacement block; plus a 0.0f constant load and a couple of component load-order diffs.
+ */
 void NetMesh::SatisfyConstraints(const nlVector3& ballPosition, bool bExaggerateBallSize)
 {
     static float fDeltaZero = 0.001f;
@@ -300,11 +304,14 @@ void NetMesh::SatisfyConstraints(const nlVector3& ballPosition, bool bExaggerate
             nlVector3& x1 = m_v3Position[c.nParticleA];
             nlVector3& x2 = m_v3Position[c.nParticleB];
 
-            float dy = x1.f.y - x2.f.y;
-            float dx = x1.f.x - x2.f.x;
-            float dz = x1.f.z - x2.f.z;
+            nlVector3 d;
+            nlVec3Sub(d, x1, x2);
+            float dy = d.f.y;
+            float dyy = dy * dy;
+            float dx = d.f.x;
+            float dz = d.f.z;
 
-            float length = nlSqrt((dy * dy) + (dx * dx) + (dz * dz), true);
+            float length = nlSqrt(dyy + (dx * dx) + (dz * dz), true);
 
             if ((float)fabs(length) > fDeltaZero)
             {
@@ -345,16 +352,12 @@ void NetMesh::SatisfyConstraints(const nlVector3& ballPosition, bool bExaggerate
                         radius = s_fBallRadiusExaggerationFactor2 * g_pBall->m_pPhysicsBall->GetRadius();
                     }
 
-                    float dy = ballPosition.f.y - particlePosition.f.y;
-                    float dx = ballPosition.f.x - particlePosition.f.x;
-                    float dz = ballPosition.f.z - particlePosition.f.z;
-
-                    float dot = (dy * particleNormal.f.y) + (dx * particleNormal.f.x) + (dz * particleNormal.f.z);
-                    float ndot = -dot;
-                    float perpY = (ndot * particleNormal.f.y) + dy;
-                    float perpX = (ndot * particleNormal.f.x) + dx;
-                    float perpZ = (ndot * particleNormal.f.z) + dz;
-                    float perpDistSq = (perpY * perpY) + (perpX * perpX) + (perpZ * perpZ);
+                    nlVector3 d;
+                    nlVec3Sub(d, ballPosition, particlePosition);
+                    float dot = nlVec3DotProduct(d, particleNormal);
+                    nlVector3 perp;
+                    nlVec3ScaleAdd(perp, -dot, particleNormal, d);
+                    float perpDistSq = nlVec3LengthSquared(perp);
 
                     if ((perpDistSq < closestParticleDistSq) || (i == 0))
                     {
@@ -408,9 +411,10 @@ void NetMesh::SatisfyConstraints(const nlVector3& ballPosition, bool bExaggerate
                 float centerY = 0.5f * (mfMinY + mfMaxY);
                 float centerX = 0.5f * (mfMinX + mfMaxX);
                 float dy = ballPosition.f.y - centerY;
+                float dyy = dy * dy;
                 float dx = ballPosition.f.x - centerX;
                 float dz = ballPosition.f.z - 0.0f;
-                m_fBallPenetrationDepth = nlSqrt((dy * dy) + (dx * dx) + (dz * dz), true);
+                m_fBallPenetrationDepth = nlSqrt(dyy + (dx * dx) + (dz * dz), true);
             }
         }
 

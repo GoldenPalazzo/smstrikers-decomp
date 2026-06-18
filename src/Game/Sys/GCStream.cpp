@@ -1064,10 +1064,15 @@ void GCAudioStreaming::StereoAudioStream::InterleavedHdrReadCB(nlFile* pFile, vo
     m_StreamLength = pHdr->StreamLength;
     nlFree(pHdr);
 
-    AudioStreamBuffer* pBuffer = NULL;
-    volatile unsigned long BufferIndex = (unsigned long)pBuffer;
-    if (m_BufferCount > 0)
+    AudioStreamBuffer* pBuffer;
+    volatile unsigned long BufferIndex = (unsigned long)(pBuffer = 0);
+    if (m_BufferCount <= 0)
+    {
+    }
+    else
+    {
         pBuffer = m_Buffers[0];
+    }
 
     while (pBuffer)
     {

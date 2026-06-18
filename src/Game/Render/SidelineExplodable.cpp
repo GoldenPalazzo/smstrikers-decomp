@@ -753,11 +753,12 @@ void SidelineExplodable::Explode()
                 vel.f.y = fragmentHeight * nlSin(speedAngleU16);
 
                 nlVector3 angVel;
-                angVel.f.x = nlRandomf(-6.0f, 6.0f, &nlDefaultSeed);
+                float angVelX = nlRandomf(-6.0f, 6.0f, &nlDefaultSeed);
                 float angVelY = nlRandomf(-6.0f, 6.0f, &nlDefaultSeed);
                 float angVelZ = nlRandomf(-6.0f, 6.0f, &nlDefaultSeed);
-                angVel.f.y = angVelZ;
-                angVel.f.z = angVelY;
+                angVel.f.x = angVelZ;
+                angVel.f.y = angVelY;
+                angVel.f.z = angVelX;
                 pPhysicsObject->SetLinearVelocity(vel);
                 pPhysicsObject->SetAngularVelocity(angVel);
             }

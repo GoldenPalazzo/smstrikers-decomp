@@ -709,7 +709,6 @@ SkillTweaks::SkillTweaks()
 
     for (i_sit = 0; i_sit < 3; i_sit++)
     {
-        SkillTweak* loopNode;
         const char* sSituationName;
         switch (i_sit)
         {
@@ -729,13 +728,13 @@ SkillTweaks::SkillTweaks()
             char sTweakName[0x40];
             nlSNPrintf(sTweakName, 0x3F, "%s %s Chance", sSituationName, GetPowerupName(i_powerup));
 
-            loopNode = (SkillTweak*)nlMalloc(0x88, 8, false);
-            if (loopNode != NULL)
+            node = (SkillTweak*)nlMalloc(0x88, 8, false);
+            if (node != NULL)
             {
-                loopNode->mpValue = &PowerupUsageChance[i_sit][i_powerup];
-                nlSNPrintf(loopNode->mNameInFile, 0x7F, "%s", sTweakName);
+                node->mpValue = &PowerupUsageChance[i_sit][i_powerup];
+                nlSNPrintf(node->mNameInFile, 0x7F, "%s", sTweakName);
             }
-            nlListAddEnd<SkillTweak>(&mSkillTweaksList.m_pStart, pEnd, loopNode);
+            nlListAddEnd<SkillTweak>(&mSkillTweaksList.m_pStart, pEnd, node);
         }
     }
 }

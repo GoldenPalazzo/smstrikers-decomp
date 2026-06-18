@@ -319,7 +319,7 @@ void BraggingRightsOverlay::TournamentSceneCreated()
         mHighestStats[award] = -1;
         highestTieBreaker[award] = -1;
 
-        PlayerStats* userStats = stats;
+        PlayerStats* userStats = statsBase;
         int user = 0;
         int mainStat;
         int tieBreaker;
@@ -725,6 +725,10 @@ inline TeamStats::TeamStats()
 
 /**
  * Offset/Address/Size: 0x2E4 | 0x800D22E0 | size: 0x11E0
+ * TODO: 98.33% match - presentation and info hold the wrong callee-saved
+ *       registers (presentation r31 vs r24, info r30 vs r31), cascading a
+ *       one-register shift through the stat loops. Declaration reordering
+ *       regresses; the frame and stack offsets already match.
  */
 void BraggingRightsScene::SceneCreated()
 {
@@ -787,22 +791,14 @@ void BraggingRightsScene::SceneCreated()
     TLTextInstance* pTitleText = FEFinder<TLTextInstance, 3>::Find(
         presentation->m_currentSlide,
         InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("Title")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("Title")));
     pTitleText->m_LocStrId = 0xB1829C7A;
     pTitleText->m_OverloadFlags |= 0x8;
 
     TLComponentInstance* buttonComponent = FEFinder<TLComponentInstance, 4>::Find(
         presentation->m_currentSlide,
         InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("buttons")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("buttons")));
     mButtons.mButtonInstance = buttonComponent;
     mButtons.SetState(ButtonComponent::BS_A_AND_B);
 
@@ -811,21 +807,13 @@ void BraggingRightsScene::SceneCreated()
         TLTextInstance* pLabelText = FEFinder<TLTextInstance, 3>::Find(
             presentation->m_currentSlide,
             InlineHasher(nlStringLowerHash("Layer")),
-            InlineHasher(nlStringLowerHash(CUP_BRAG_TEXT[i][0])),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0));
+            InlineHasher(nlStringLowerHash(CUP_BRAG_TEXT[i][0])));
         pLabelText->SetStringId(CUP_BRAG_TEXT[i][1]);
 
         TLTextInstance* pStatText = FEFinder<TLTextInstance, 3>::Find(
             presentation->m_currentSlide,
             InlineHasher(nlStringLowerHash("Layer")),
-            InlineHasher(nlStringLowerHash(CUP_BRAG_TEXT[i][3])),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0));
+            InlineHasher(nlStringLowerHash(CUP_BRAG_TEXT[i][3])));
 
         if (!complete[i])
         {
@@ -857,11 +845,7 @@ void BraggingRightsScene::SceneCreated()
         pText = FEFinder<TLTextInstance, 3>::Find(
             presentation->m_currentSlide,
             InlineHasher(nlStringLowerHash("Layer")),
-            InlineHasher(nlStringLowerHash(CUP_BRAG_TEXT[i][2])),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0));
+            InlineHasher(nlStringLowerHash(CUP_BRAG_TEXT[i][2])));
 
         BasicString<char, Detail::TempStringAllocator> currentStatString
             = LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(currentStats[i]);
@@ -904,29 +888,18 @@ void BraggingRightsScene::SceneCreated()
         presentation,
         InlineHasher(nlStringLowerHash("Slide1")),
         InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("Win_Loss_Record")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("Win_Loss_Record")));
     pText->SetString(mRatioBuffer);
 
     TLComponentInstance* pTemp = FEFinder<TLComponentInstance, 4>::Find(
         presentation,
         InlineHasher(nlStringLowerHash("Slide1")),
         InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("Placement")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("Placement")));
 
     pText = FEFinder<TLTextInstance, 3>::Find(
         pTemp->GetActiveSlide(),
-        InlineHasher(nlStringLowerHash("Placement")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("Placement")));
 
     if (mUserPlace == -2)
     {

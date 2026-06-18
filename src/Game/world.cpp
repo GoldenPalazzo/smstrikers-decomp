@@ -1460,7 +1460,8 @@ void World::CreateLightUserData()
             intensityColour.c[3] = fOne;
             intensityColour.c[0] = fIntensity;
 
-            glLight->colour = intensityColour;
+            nlFloatColour copyColour = intensityColour;
+            glLight->colour = copyColour;
             glLight->worldPosition = pLight->m_worldPosition;
             glLight->intensity = pLight->m_fIntensity;
             if (pLight->m_emitFlags & 0x8)

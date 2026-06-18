@@ -235,14 +235,45 @@ inline NLString Detail::LexicalCastImpl<NLString, char>::Do(char t)
 
 /**
  * Offset/Address/Size: 0x390F4 | 0x8003C1B4 | size: 0xFC
- * TODO: 93.35% match - r30/r31 role swap for return-buffer vs allocated data pointer in inlined string construction path.
+ * TODO: 97.62% match - return-slot/data pointer register roles are swapped
+ * (r30/r31) in the inlined string construction path.
  */
 template <>
 inline NLString Detail::LexicalCastImpl<NLString, float>::Do(float f)
 {
+    BasicStringData<char>* data;
     char string[0x40];
     nlSNPrintf(string, 0x40, "%f", f);
-    return NLString(string);
+
+    data = (BasicStringData<char>*)nlMalloc(0x10, 8, true);
+    if (data != 0)
+    {
+        char* start = string;
+        char* p = start;
+
+        data->mData = 0;
+        data->mSize = 0;
+        data->mCapacity = 0;
+
+        while (*p++ != 0)
+        {
+            data->mSize++;
+        }
+
+        data->mSize++;
+        data->mData = (char*)nlMalloc(data->mSize + 1, 8, true);
+        data->mCapacity = data->mSize;
+
+        for (int i = 0; i < data->mSize; i++)
+        {
+            data->mData[i] = *start;
+            start++;
+        }
+
+        data->mRefCount = 1;
+    }
+
+    return NLString(data);
 }
 
 template <>

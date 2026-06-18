@@ -134,53 +134,6 @@ u32 glplatFrameAlloc(unsigned long size, eGLMemory mem)
     return out;
 }
 
-/**
- * Offset/Address/Size: 0x200 | 0x801B6B28 | size: 0x110
- * TODO: 95.15% match - MWCC 2.7 codegen: do-while(--count) emits
- * addic./bne, target has mtctr/bdnz; while(count--) gets CTR but 4x unrolls
- */
-void glplatResourceRelease(unsigned long long resourceId)
-{
-    int level = (int)(resourceId & 0xFFFFFFFF);
-
-    n_phys = (u32)(resourceId >> 32);
-
-    glx_BackupTexMarkerLevel(level);
-    gl_ConstantMarkerBackup(level);
-    glInventory.ResourceRelease(level);
-
-    while ((s32)g_uResourceMarker != level)
-    {
-        g_uResourceMarker--;
-    }
-
-    u32 totalAlloc = 0;
-    u32 marker = g_uResourceMarker;
-    u32 totalTex = totalAlloc;
-    GLXMemoryInfo* p = g_uResourceAlloc;
-    s32 count = marker + 1;
-    if ((s32)marker >= 0)
-    {
-        do
-        {
-            u32 a = p->m_uBytes[0] + p->m_uBytes[1];
-            a = a + p->m_uBytes[2];
-            a = a + p->m_uBytes[3];
-            u32 e = p->m_uBytes[4];
-            u32 g = p->m_uTexBundle;
-            a = a + e;
-            a = a + p->m_uBytes[5];
-            totalAlloc = totalAlloc + a;
-            totalTex = totalTex + (e - g);
-            p++;
-        } while (--count != 0);
-    }
-
-    f32 fConst = 1.0f / 1024.0f;
-    f32 fMB = (f32)totalAlloc * fConst;
-    tDebugPrintManager::Print(DC_GLPLAT, "total : (%0.3fMB) %uKB .. %uKB dTex\n", totalAlloc >> 10, totalTex >> 10, fMB * fConst);
-}
-
 static inline void ResourceAllocMark()
 {
     s32 level = g_uResourceMarker + 1;
@@ -199,31 +152,22 @@ static inline void ResourceAllocMark()
 static inline void ResourceAllocTotal(u32* pTotalAlloc, u32* pTotalTex)
 {
     u32 totalAlloc = 0;
-    u32 totalTex = 0;
-    s32 level = g_uResourceMarker;
+    u32 totalTex = totalAlloc;
+    u32 marker = g_uResourceMarker;
     GLXMemoryInfo* p = g_uResourceAlloc;
-    u32 count = (u32)(level + 1);
-    if (level >= 0)
+    u32 i;
+    for (i = 0; i <= marker; i++)
     {
-        do
-        {
-            u32 a = p->m_uBytes[0];
-            u32 b = p->m_uBytes[1];
-            u32 c = p->m_uBytes[2];
-            a = a + b;
-            b = p->m_uBytes[3];
-            a = a + c;
-            u32 e = p->m_uBytes[4];
-            a = a + b;
-            u32 g = p->m_uTexBundle;
-            u32 f = p->m_uBytes[5];
-            a = a + e;
-            u32 tex = e - g;
-            p++;
-            a = a + f;
-            totalAlloc = totalAlloc + a;
-            totalTex = totalTex + tex;
-        } while (--count);
+        u32 a = p->m_uBytes[0] + p->m_uBytes[1];
+        a = a + p->m_uBytes[2];
+        a = a + p->m_uBytes[3];
+        u32 e = p->m_uBytes[4];
+        u32 g = p->m_uTexBundle;
+        a = a + e;
+        a = a + p->m_uBytes[5];
+        totalAlloc = totalAlloc + a;
+        totalTex = totalTex + (e - g);
+        p++;
     }
 
     *pTotalAlloc = totalAlloc;
@@ -231,8 +175,56 @@ static inline void ResourceAllocTotal(u32* pTotalAlloc, u32* pTotalTex)
 }
 
 /**
+ * Offset/Address/Size: 0x200 | 0x801B6B28 | size: 0x110
+ * TODO: 96.47% match - loop-setup register/order diffs: totalAlloc/count/p
+ * emitted in a different order, totalTex materialized via li r6,0 instead of
+ * mr r6,r5, and p needs an extra mr into r7
+ */
+#pragma optimize_for_size on
+void glplatResourceRelease(unsigned long long resourceId)
+{
+    int level = (int)(resourceId & 0xFFFFFFFF);
+
+    n_phys = (u32)(resourceId >> 32);
+
+    glx_BackupTexMarkerLevel(level);
+    gl_ConstantMarkerBackup(level);
+    glInventory.ResourceRelease(level);
+
+    while ((s32)g_uResourceMarker != level)
+    {
+        g_uResourceMarker--;
+    }
+
+    u32 totalAlloc = 0;
+    u32 totalTex = totalAlloc;
+    u32 marker = g_uResourceMarker;
+    u32 i;
+    GLXMemoryInfo* p = g_uResourceAlloc;
+    for (i = 0; i <= marker; i++)
+    {
+        u32 a = p->m_uBytes[0] + p->m_uBytes[1];
+        a = a + p->m_uBytes[2];
+        a = a + p->m_uBytes[3];
+        u32 e = p->m_uBytes[4];
+        u32 g = p->m_uTexBundle;
+        a = a + e;
+        a = a + p->m_uBytes[5];
+        totalAlloc = totalAlloc + a;
+        totalTex = totalTex + (e - g);
+        p++;
+    }
+
+    f32 fConst = 1.0f / 1024.0f;
+    f32 fMB = (f32)totalAlloc * fConst;
+    tDebugPrintManager::Print(DC_GLPLAT, "total : (%0.3fMB) %uKB .. %uKB dTex\n", totalAlloc >> 10, totalTex >> 10, fMB * fConst);
+}
+#pragma optimize_for_size reset
+
+/**
  * Offset/Address/Size: 0x310 | 0x801B6C38 | size: 0x130
  */
+#pragma optimize_for_size on
 unsigned long long glplatResourceMark()
 {
     int texLevel = glx_GetTexMarkerLevel();
@@ -254,6 +246,7 @@ unsigned long long glplatResourceMark()
 
     return marker;
 }
+#pragma optimize_for_size reset
 
 /**
  * Offset/Address/Size: 0x440 | 0x801B6D68 | size: 0xB4

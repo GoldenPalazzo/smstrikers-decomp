@@ -18,6 +18,9 @@ s32 g_pPadRemapArray[38] = {
 
 /**
  * Offset/Address/Size: 0x128 | 0x80193720 | size: 0xD74
+ * TODO: 96.56% match - the {n} marker char checks load via indexed addressing
+ * (addi/lbzx) instead of base+displacement (add/lbz), and the erase/insert bounds
+ * pointers lack a null-check branch; these shift register allocation across the body.
  */
 template <>
 template <>
@@ -43,23 +46,12 @@ FormatImpl<BasicString<char, Detail::TempStringAllocator> >&
         if (mString[i + 2] != '}')
             continue;
 
-        char* eraseStart = &mString[i];
-        char* eraseEnd = &mString[i + 3];
-        mString[0];
-        BasicStringData<char>* data = mString.m_data;
-        int eraseLen = eraseEnd - eraseStart;
-        char* dst = &data->mData[eraseStart - data->mData];
-        while (eraseEnd != data->mData + data->mSize)
-        {
-            *dst++ = *eraseEnd++;
-        }
-        data->mSize -= eraseLen;
-
-        char* insertAt = &mString[i];
+        mString.erase(&mString[i], &mString[i + 3]);
+        mString[i];
+        char* mStringData = mString.m_data ? mString.m_data->mData : 0;
         char* insertBegin = &insert[0];
-        int insertEndIdx = (int)(insert.m_data ? insert.m_data->mSize - 1 : 0);
-        char* insertEnd = &insert[insertEndIdx];
-        mString.insert(insertAt, insertBegin, insertEnd);
+        char* insertEndCow = &insert[(int)(insert.m_data ? insert.m_data->mSize - 1 : 0)];
+        mString.insert(mStringData + i, insertBegin, insert.m_data ? &insert.m_data->mData[insert.m_data->mSize - 1] : (char*)0);
     }
 
     mCurrentPos++;

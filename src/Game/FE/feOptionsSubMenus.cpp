@@ -950,10 +950,51 @@ OptionsVisualMenuV2::OptionsVisualMenuV2(FEPresentation* pres, ButtonComponent::
     mSettingsCRC = nlChecksum32(&mBackupSettings, sizeof(VisualSettings));
 }
 
+static inline void HighliteSlideComponent(TLComponentInstance* comp, const nlColour& colour)
+{
+    if (comp != NULL && comp->GetActiveSlide() != NULL)
+    {
+        TLSlide* startSlide = comp->GetActiveSlide();
+        TLSlide* currentSlide = startSlide;
+
+        do
+        {
+            comp->SetActiveSlide(currentSlide);
+            TLInstance* firstChild = comp->GetActiveSlide()->m_instances;
+            TLInstance* inst = firstChild;
+
+            if (firstChild != NULL)
+            {
+                do
+                {
+                    if (inst->m_type == TLAT_TEXT)
+                    {
+                        inst->SetAssetColour(colour);
+                    }
+                    else if (inst->m_type == TLAT_IMAGE)
+                    {
+                        unsigned long hash = inst->m_hash;
+                        if (hash != nlStringLowerHash("white_box"))
+                        {
+                            inst->SetAssetColour(colour);
+                        }
+                    }
+
+                    inst = inst->m_next;
+                } while (inst != firstChild);
+            }
+
+            currentSlide = currentSlide->m_next;
+        } while (currentSlide != startSlide);
+
+        comp->SetActiveSlide(startSlide);
+    }
+}
+
 /**
  * Offset/Address/Size: 0x20C8 | 0x800B710C | size: 0xA3C
- * TODO: 98.49% match - remaining diffs are register assignment drift in
- * slide traversal and ischaractervol.
+ * TODO: 98.93% match - register assignment drift in branch 0xD; ischaractervol
+ * lands in r31 vs target r30.
  */
 void OptionsAudioMenuV2::Update(float)
 {
@@ -966,43 +1007,7 @@ void OptionsAudioMenuV2::Update(float)
         if (slideMenuList != NULL)
         {
             TLComponentInstance* comp = slideMenuList->mComponentInstance;
-            if (comp != NULL && comp->GetActiveSlide() != NULL)
-            {
-                TLSlide* startSlide = comp->GetActiveSlide();
-                TLSlide* currentSlide = startSlide;
-
-                do
-                {
-                    comp->SetActiveSlide(currentSlide);
-                    TLInstance* firstChild = comp->GetActiveSlide()->m_instances;
-                    TLInstance* inst = firstChild;
-
-                    if (firstChild != NULL)
-                    {
-                        do
-                        {
-                            if (inst->m_type == TLAT_TEXT)
-                            {
-                                inst->SetAssetColour(SubMenuUnhighliteColour);
-                            }
-                            else if (inst->m_type == TLAT_IMAGE)
-                            {
-                                unsigned long hash = inst->m_hash;
-                                if (hash != nlStringLowerHash("white_box"))
-                                {
-                                    inst->SetAssetColour(SubMenuUnhighliteColour);
-                                }
-                            }
-
-                            inst = inst->m_next;
-                        } while (inst != firstChild);
-                    }
-
-                    currentSlide = currentSlide->m_next;
-                } while (currentSlide != startSlide);
-
-                comp->SetActiveSlide(startSlide);
-            }
+            HighliteSlideComponent(comp, SubMenuUnhighliteColour);
         }
 
         int oldIndex = mMenuItems.mCurrentIndex;
@@ -1074,43 +1079,7 @@ void OptionsAudioMenuV2::Update(float)
         if (slideMenuList != NULL)
         {
             TLComponentInstance* comp = slideMenuList->mComponentInstance;
-            if (comp != NULL && comp->GetActiveSlide() != NULL)
-            {
-                TLSlide* startSlide = comp->GetActiveSlide();
-                TLSlide* currentSlide = startSlide;
-
-                do
-                {
-                    comp->SetActiveSlide(currentSlide);
-                    TLInstance* firstChild = comp->GetActiveSlide()->m_instances;
-                    TLInstance* inst = firstChild;
-
-                    if (firstChild != NULL)
-                    {
-                        do
-                        {
-                            if (inst->m_type == TLAT_TEXT)
-                            {
-                                inst->SetAssetColour(SubMenuHighliteColour);
-                            }
-                            else if (inst->m_type == TLAT_IMAGE)
-                            {
-                                unsigned long hash = inst->m_hash;
-                                if (hash != nlStringLowerHash("white_box"))
-                                {
-                                    inst->SetAssetColour(SubMenuHighliteColour);
-                                }
-                            }
-
-                            inst = inst->m_next;
-                        } while (inst != firstChild);
-                    }
-
-                    currentSlide = currentSlide->m_next;
-                } while (currentSlide != startSlide);
-
-                comp->SetActiveSlide(startSlide);
-            }
+            HighliteSlideComponent(comp, SubMenuHighliteColour);
         }
     }
     else if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xE, true, NULL))
@@ -1119,43 +1088,7 @@ void OptionsAudioMenuV2::Update(float)
         if (slideMenuList != NULL)
         {
             TLComponentInstance* comp = slideMenuList->mComponentInstance;
-            if (comp != NULL && comp->GetActiveSlide() != NULL)
-            {
-                TLSlide* startSlide = comp->GetActiveSlide();
-                TLSlide* currentSlide = startSlide;
-
-                do
-                {
-                    comp->SetActiveSlide(currentSlide);
-                    TLInstance* firstChild = comp->GetActiveSlide()->m_instances;
-                    TLInstance* inst = firstChild;
-
-                    if (firstChild != NULL)
-                    {
-                        do
-                        {
-                            if (inst->m_type == TLAT_TEXT)
-                            {
-                                inst->SetAssetColour(SubMenuUnhighliteColour);
-                            }
-                            else if (inst->m_type == TLAT_IMAGE)
-                            {
-                                unsigned long hash = inst->m_hash;
-                                if (hash != nlStringLowerHash("white_box"))
-                                {
-                                    inst->SetAssetColour(SubMenuUnhighliteColour);
-                                }
-                            }
-
-                            inst = inst->m_next;
-                        } while (inst != firstChild);
-                    }
-
-                    currentSlide = currentSlide->m_next;
-                } while (currentSlide != startSlide);
-
-                comp->SetActiveSlide(startSlide);
-            }
+            HighliteSlideComponent(comp, SubMenuUnhighliteColour);
         }
 
         int oldIndex = mMenuItems.mCurrentIndex;
@@ -1224,43 +1157,7 @@ void OptionsAudioMenuV2::Update(float)
         if (slideMenuList != NULL)
         {
             TLComponentInstance* comp = slideMenuList->mComponentInstance;
-            if (comp != NULL && comp->GetActiveSlide() != NULL)
-            {
-                TLSlide* startSlide = comp->GetActiveSlide();
-                TLSlide* currentSlide = startSlide;
-
-                do
-                {
-                    comp->SetActiveSlide(currentSlide);
-                    TLInstance* firstChild = comp->GetActiveSlide()->m_instances;
-                    TLInstance* inst = firstChild;
-
-                    if (firstChild != NULL)
-                    {
-                        do
-                        {
-                            if (inst->m_type == TLAT_TEXT)
-                            {
-                                inst->SetAssetColour(SubMenuHighliteColour);
-                            }
-                            else if (inst->m_type == TLAT_IMAGE)
-                            {
-                                unsigned long hash = inst->m_hash;
-                                if (hash != nlStringLowerHash("white_box"))
-                                {
-                                    inst->SetAssetColour(SubMenuHighliteColour);
-                                }
-                            }
-
-                            inst = inst->m_next;
-                        } while (inst != firstChild);
-                    }
-
-                    currentSlide = currentSlide->m_next;
-                } while (currentSlide != startSlide);
-
-                comp->SetActiveSlide(startSlide);
-            }
+            HighliteSlideComponent(comp, SubMenuHighliteColour);
         }
     }
     else if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xB, true, NULL))
@@ -2537,6 +2434,9 @@ void OptionsSubMenu::GoBack()
 
 /**
  * Offset/Address/Size: 0x55A4 | 0x800BA5E8 | size: 0xA30
+ * TODO: 96.21% match - this lands in r31 vs target r30, leaving the loop/index
+ * temps a register lower; residual lbzx vs lbz and slideMenuList reload follow
+ * from the same allocation drift.
  */
 void OptionsSubMenu::Update(float)
 {
@@ -2545,14 +2445,14 @@ void OptionsSubMenu::Update(float)
     if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xD, true, NULL))
     {
         SlideMenuList* activeList = (SlideMenuList*)mSlideMenuLists[mMenuItems.mCurrentIndex];
-        unsigned char locked;
-        if (activeList != NULL)
+        bool locked;
+        if (activeList != NULL && activeList->mMenuItems[activeList->mCurrentIndex].mLocked)
         {
-            locked = activeList->mMenuItems[activeList->mCurrentIndex].mLocked;
+            locked = true;
         }
         else
         {
-            locked = 0;
+            locked = false;
         }
 
         if (!locked)
@@ -2561,43 +2461,7 @@ void OptionsSubMenu::Update(float)
             if (slideMenuList != NULL)
             {
                 TLComponentInstance* comp = slideMenuList->mComponentInstance;
-                if (comp != NULL && comp->GetActiveSlide() != NULL)
-                {
-                    TLSlide* startSlide = comp->GetActiveSlide();
-                    TLSlide* currentSlide = startSlide;
-
-                    do
-                    {
-                        comp->SetActiveSlide(currentSlide);
-                        TLInstance* firstChild = comp->GetActiveSlide()->m_instances;
-                        TLInstance* inst = firstChild;
-
-                        if (firstChild != NULL)
-                        {
-                            do
-                            {
-                                if (inst->m_type == TLAT_TEXT)
-                                {
-                                    inst->SetAssetColour(SubMenuUnhighliteColour);
-                                }
-                                else if (inst->m_type == TLAT_IMAGE)
-                                {
-                                    unsigned long hash = inst->m_hash;
-                                    if (hash != nlStringLowerHash("white_box"))
-                                    {
-                                        inst->SetAssetColour(SubMenuUnhighliteColour);
-                                    }
-                                }
-
-                                inst = inst->m_next;
-                            } while (inst != firstChild);
-                        }
-
-                        currentSlide = currentSlide->m_next;
-                    } while (currentSlide != startSlide);
-
-                    comp->SetActiveSlide(startSlide);
-                }
+                HighliteSlideComponent(comp, SubMenuUnhighliteColour);
             }
         }
 
@@ -2663,13 +2527,13 @@ void OptionsSubMenu::Update(float)
         }
 
         activeList = (SlideMenuList*)mSlideMenuLists[mMenuItems.mCurrentIndex];
-        if (activeList != NULL)
+        if (activeList != NULL && activeList->mMenuItems[activeList->mCurrentIndex].mLocked)
         {
-            locked = activeList->mMenuItems[activeList->mCurrentIndex].mLocked;
+            locked = true;
         }
         else
         {
-            locked = 0;
+            locked = false;
         }
 
         if (!locked)
@@ -2678,43 +2542,7 @@ void OptionsSubMenu::Update(float)
             if (slideMenuList != NULL)
             {
                 TLComponentInstance* comp = slideMenuList->mComponentInstance;
-                if (comp != NULL && comp->GetActiveSlide() != NULL)
-                {
-                    TLSlide* startSlide = comp->GetActiveSlide();
-                    TLSlide* currentSlide = startSlide;
-
-                    do
-                    {
-                        comp->SetActiveSlide(currentSlide);
-                        TLInstance* firstChild = comp->GetActiveSlide()->m_instances;
-                        TLInstance* inst = firstChild;
-
-                        if (firstChild != NULL)
-                        {
-                            do
-                            {
-                                if (inst->m_type == TLAT_TEXT)
-                                {
-                                    inst->SetAssetColour(SubMenuHighliteColour);
-                                }
-                                else if (inst->m_type == TLAT_IMAGE)
-                                {
-                                    unsigned long hash = inst->m_hash;
-                                    if (hash != nlStringLowerHash("white_box"))
-                                    {
-                                        inst->SetAssetColour(SubMenuHighliteColour);
-                                    }
-                                }
-
-                                inst = inst->m_next;
-                            } while (inst != firstChild);
-                        }
-
-                        currentSlide = currentSlide->m_next;
-                    } while (currentSlide != startSlide);
-
-                    comp->SetActiveSlide(startSlide);
-                }
+                HighliteSlideComponent(comp, SubMenuHighliteColour);
             }
         }
 
@@ -2724,14 +2552,14 @@ void OptionsSubMenu::Update(float)
     if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xE, true, NULL))
     {
         SlideMenuList* activeList = (SlideMenuList*)mSlideMenuLists[mMenuItems.mCurrentIndex];
-        unsigned char locked;
-        if (activeList != NULL)
+        bool locked;
+        if (activeList != NULL && activeList->mMenuItems[activeList->mCurrentIndex].mLocked)
         {
-            locked = activeList->mMenuItems[activeList->mCurrentIndex].mLocked;
+            locked = true;
         }
         else
         {
-            locked = 0;
+            locked = false;
         }
 
         if (!locked)
@@ -2740,43 +2568,7 @@ void OptionsSubMenu::Update(float)
             if (slideMenuList != NULL)
             {
                 TLComponentInstance* comp = slideMenuList->mComponentInstance;
-                if (comp != NULL && comp->GetActiveSlide() != NULL)
-                {
-                    TLSlide* startSlide = comp->GetActiveSlide();
-                    TLSlide* currentSlide = startSlide;
-
-                    do
-                    {
-                        comp->SetActiveSlide(currentSlide);
-                        TLInstance* firstChild = comp->GetActiveSlide()->m_instances;
-                        TLInstance* inst = firstChild;
-
-                        if (firstChild != NULL)
-                        {
-                            do
-                            {
-                                if (inst->m_type == TLAT_TEXT)
-                                {
-                                    inst->SetAssetColour(SubMenuUnhighliteColour);
-                                }
-                                else if (inst->m_type == TLAT_IMAGE)
-                                {
-                                    unsigned long hash = inst->m_hash;
-                                    if (hash != nlStringLowerHash("white_box"))
-                                    {
-                                        inst->SetAssetColour(SubMenuUnhighliteColour);
-                                    }
-                                }
-
-                                inst = inst->m_next;
-                            } while (inst != firstChild);
-                        }
-
-                        currentSlide = currentSlide->m_next;
-                    } while (currentSlide != startSlide);
-
-                    comp->SetActiveSlide(startSlide);
-                }
+                HighliteSlideComponent(comp, SubMenuUnhighliteColour);
             }
         }
 
@@ -2839,13 +2631,13 @@ void OptionsSubMenu::Update(float)
         }
 
         activeList = (SlideMenuList*)mSlideMenuLists[mMenuItems.mCurrentIndex];
-        if (activeList != NULL)
+        if (activeList != NULL && activeList->mMenuItems[activeList->mCurrentIndex].mLocked)
         {
-            locked = activeList->mMenuItems[activeList->mCurrentIndex].mLocked;
+            locked = true;
         }
         else
         {
-            locked = 0;
+            locked = false;
         }
 
         if (!locked)
@@ -2854,43 +2646,7 @@ void OptionsSubMenu::Update(float)
             if (slideMenuList != NULL)
             {
                 TLComponentInstance* comp = slideMenuList->mComponentInstance;
-                if (comp != NULL && comp->GetActiveSlide() != NULL)
-                {
-                    TLSlide* startSlide = comp->GetActiveSlide();
-                    TLSlide* currentSlide = startSlide;
-
-                    do
-                    {
-                        comp->SetActiveSlide(currentSlide);
-                        TLInstance* firstChild = comp->GetActiveSlide()->m_instances;
-                        TLInstance* inst = firstChild;
-
-                        if (firstChild != NULL)
-                        {
-                            do
-                            {
-                                if (inst->m_type == TLAT_TEXT)
-                                {
-                                    inst->SetAssetColour(SubMenuHighliteColour);
-                                }
-                                else if (inst->m_type == TLAT_IMAGE)
-                                {
-                                    unsigned long hash = inst->m_hash;
-                                    if (hash != nlStringLowerHash("white_box"))
-                                    {
-                                        inst->SetAssetColour(SubMenuHighliteColour);
-                                    }
-                                }
-
-                                inst = inst->m_next;
-                            } while (inst != firstChild);
-                        }
-
-                        currentSlide = currentSlide->m_next;
-                    } while (currentSlide != startSlide);
-
-                    comp->SetActiveSlide(startSlide);
-                }
+                HighliteSlideComponent(comp, SubMenuHighliteColour);
             }
         }
 

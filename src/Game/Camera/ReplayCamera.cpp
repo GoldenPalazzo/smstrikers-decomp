@@ -235,11 +235,11 @@ float ReplayCamera::GetFov(ReplayCameraPosition position) const
             BasicStringData<char>* prefixData = (BasicStringData<char>*)nlMalloc(sizeof(BasicStringData<char>), 8, true);
             if (prefixData != 0)
             {
+                const char* s = "replay/camera_";
+                const char* str = s;
                 prefixData->mData = 0;
                 prefixData->mSize = 0;
                 prefixData->mCapacity = 0;
-                const char* str = "replay/camera_";
-                const char* s = str;
                 while ((signed char)*s++ != 0)
                 {
                     prefixData->mSize++;
@@ -258,11 +258,11 @@ float ReplayCamera::GetFov(ReplayCameraPosition position) const
                 BasicStringData<char>* formatData = (BasicStringData<char>*)nlMalloc(sizeof(BasicStringData<char>), 8, true);
                 if (formatData != 0)
                 {
+                    const char* s = "generic_{0}_fov";
+                    const char* str = s;
                     formatData->mData = 0;
                     formatData->mSize = 0;
                     formatData->mCapacity = 0;
-                    const char* str = "generic_{0}_fov";
-                    const char* s = str;
                     while ((signed char)*s++ != 0)
                     {
                         formatData->mSize++;

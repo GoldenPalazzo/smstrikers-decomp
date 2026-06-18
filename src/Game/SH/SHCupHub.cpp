@@ -3544,6 +3544,7 @@ void CupHubScene::UpdateProgressIndicator()
     int numRounds;
     int round;
     int currentRound;
+    GameInfoManager* const gameInfo = nlSingleton<GameInfoManager>::s_pInstance;
     int displayRounds[16];
     eHubColour nodeColours[16];
     TLSlide* pSlide;
@@ -3551,8 +3552,6 @@ void CupHubScene::UpdateProgressIndicator()
     int i;
     TLImageInstance* nodeImage;
     feVector3 position;
-
-    GameInfoManager* const gameInfo = nlSingleton<GameInfoManager>::s_pInstance;
 
     numRounds = gameInfo->GetNumRounds();
     if (gameInfo->mDidRoundJustEnd && mDoAnimations && gameInfo->GetCurrentRoundNumber() != -5)
@@ -3836,11 +3835,7 @@ void CupHubScene::UpdateProgressIndicator()
                     displayRounds[i] = i / 2;
                 }
             }
-            else if (i == 14)
-            {
-                displayRounds[i] = i;
-            }
-            else if (i == 15)
+            else if (i == 14 || i == 15)
             {
                 displayRounds[i] = i;
             }

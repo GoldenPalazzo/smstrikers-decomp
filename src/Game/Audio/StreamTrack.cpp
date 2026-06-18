@@ -740,8 +740,7 @@ void AudioStreamTrack::StreamTrack::QueueStream(
         return;
     }
 
-    QUEUED_STREAM qs = { };
-    DLListEntry<QUEUED_STREAM>* entry = m_QueuedStreams.Allocate(qs);
+    DLListEntry<QUEUED_STREAM>* entry = m_QueuedStreams.Allocate(QUEUED_STREAM());
     nlDLRingAddEnd(&m_QueuedStreams.m_Head, entry);
 
     entry->m_data.StreamId = StreamId;

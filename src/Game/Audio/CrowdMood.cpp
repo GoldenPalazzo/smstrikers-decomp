@@ -1021,6 +1021,11 @@ inline GCAudioStreaming::MonoAudioStream::MonoAudioStream(GCAudioStreaming::Audi
  * TODO: 92.23% match - instruction scheduling diffs from -inline deferred vs
  *       -inline auto; beq-/b vs bne- branch pattern; Config/loop register swaps
  */
+/**
+ * TODO: 83.80% match - residual is register permutation in the loop/stream
+ *       section (r28/r30 swap: Config/gCrowdSFX pointer vs loop counter) and a
+ *       beq/b vs bne branch form on the early crowdOff return.
+ */
 void CrowdMood::Init()
 {
     if (g_Initd)
@@ -1558,6 +1563,8 @@ void CrowdMood::InitiateFastCrowdTransition()
 /**
  * Offset/Address/Size: 0x65C | 0x8014DD70 | size: 0x18C
  */
+#pragma push
+#pragma dont_inline on
 void CrowdMood::SetCrowdVolume(unsigned long Volume, unsigned long FadeTime)
 {
     MOOD_DEFINITION MoodDef;
@@ -1583,6 +1590,7 @@ void CrowdMood::SetCrowdVolume(unsigned long Volume, unsigned long FadeTime)
         g_CrowdState.VolumeFade.Interp = 0.0f;
     }
 }
+#pragma pop
 
 /**
  * Offset/Address/Size: 0x490 | 0x8014DBA4 | size: 0x1CC

@@ -213,6 +213,11 @@ void FEPopupMenu::CentrePopup(float totalHeight, float topOfMessageBox)
 /**
  * Offset/Address/Size: 0x620 | 0x800988CC | size: 0x8A0
  */
+/**
+ * TODO: 98.89% match - target allocates one extra callee-saved FP register
+ * (f22), so every callee-saved float is one register lower than ours; the
+ * resulting frame-size delta shifts all save/restore and stack offsets.
+ */
 void FEPopupMenu::SetPositions()
 {
     feVector3 optionPosition;
@@ -231,7 +236,7 @@ void FEPopupMenu::SetPositions()
     int i;
     nlColour colour2;
     int i2;
-    double optionY;
+    float optionY;
     nlColour optionColour;
     feVector3 highlightPosition;
     TLInstance* pImage;
@@ -291,65 +296,8 @@ void FEPopupMenu::SetPositions()
     colour2.c[3] = 0xFF;
     pText->SetAssetColour(colour2);
 
-    Config& cfg = Config::Global();
-    TagValuePair& firstOptionSpacingTvp = cfg.FindTvp("popup_first_option_spacing");
-    float firstOptionSpacing;
-
-    if (firstOptionSpacingTvp.tag == NULL)
-    {
-        cfg.Set("popup_first_option_spacing", 75.0f);
-        firstOptionSpacing = 75.0f;
-    }
-    else if (firstOptionSpacingTvp.type == _BOOL)
-    {
-        firstOptionSpacing = LexicalCast<float, bool>(firstOptionSpacingTvp.value.b);
-    }
-    else if (firstOptionSpacingTvp.type == _INT)
-    {
-        firstOptionSpacing = LexicalCast<float, int>(firstOptionSpacingTvp.value.i);
-    }
-    else if (firstOptionSpacingTvp.type == _FLOAT)
-    {
-        firstOptionSpacing = LexicalCast<float, float>(firstOptionSpacingTvp.value.f);
-    }
-    else if (firstOptionSpacingTvp.type == _STRING)
-    {
-        firstOptionSpacing = LexicalCast<float, const char*>(firstOptionSpacingTvp.value.s);
-    }
-    else
-    {
-        firstOptionSpacing = 0.0f;
-    }
-
-    Config& cfg2 = Config::Global();
-    TagValuePair& otherOptionSpacingTvp = cfg2.FindTvp("popup_other_option_spacing");
-    float otherOptionSpacing;
-
-    if (otherOptionSpacingTvp.tag == NULL)
-    {
-        cfg2.Set("popup_other_option_spacing", 12.5f);
-        otherOptionSpacing = 12.5f;
-    }
-    else if (otherOptionSpacingTvp.type == _BOOL)
-    {
-        otherOptionSpacing = LexicalCast<float, bool>(otherOptionSpacingTvp.value.b);
-    }
-    else if (otherOptionSpacingTvp.type == _INT)
-    {
-        otherOptionSpacing = LexicalCast<float, int>(otherOptionSpacingTvp.value.i);
-    }
-    else if (otherOptionSpacingTvp.type == _FLOAT)
-    {
-        otherOptionSpacing = LexicalCast<float, float>(otherOptionSpacingTvp.value.f);
-    }
-    else if (otherOptionSpacingTvp.type == _STRING)
-    {
-        otherOptionSpacing = LexicalCast<float, const char*>(otherOptionSpacingTvp.value.s);
-    }
-    else
-    {
-        otherOptionSpacing = 0.0f;
-    }
+    float firstOptionSpacing = GetConfigFloat(Config::Global(), "popup_first_option_spacing", 75.0f);
+    float otherOptionSpacing = GetConfigFloat(Config::Global(), "popup_other_option_spacing", 12.5f);
 
     for (i2 = 0; i2 < mPopup.numOptions; i2++)
     {
@@ -365,7 +313,8 @@ void FEPopupMenu::SetPositions()
 
         {
             const nlFont* pFont = ((const FEText*)pText->m_component)->m_pFeFontResource->m_font;
-            drawInfo = pText->m_DrawInfo;
+            nlTextBox::StringDrawInfo info = pText->m_DrawInfo;
+            drawInfo = info;
             optionHeight = (float)(drawInfo.RowCount * pFont->m_Metrics.Height);
         }
 

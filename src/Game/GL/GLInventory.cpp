@@ -1,7 +1,14 @@
 #include "Game/GL/GLInventory.h"
 #include "NL/glx/glxLoadModel.h"
 
-GLInventory::GLInventory()
+typedef ListContainerBase<void*, NewAdapter<ListEntry<void*> > > FileDataListBase;
+
+static inline void (FileDataListBase::* GetFileDataDeleteEntry())(ListEntry<void*>*)
+{
+    return &FileDataListBase::DeleteEntry;
+}
+
+inline GLInventory::GLInventory()
 {
     m_bCreated = false;
     for (int i = 0; i < 16; i++)
@@ -18,16 +25,6 @@ GLInventory::GLInventory()
 }
 
 GLInventory glInventory;
-
-void GLInventoryModelsDtor(clearing_GLInventory<glModel>*, int);
-#pragma alias GLInventoryModelsDtor "__dt__30clearing_GLInventory<7glModel>Fv"
-
-template <>
-clearing_GLInventory<glModel>::~clearing_GLInventory()
-{
-    m_pItems->Clear();
-    delete m_pItems;
-}
 
 /**
  * Offset/Address/Size: 0x1058 | 0x801E32F0 | size: 0x50
@@ -136,7 +133,7 @@ void GLInventory::Delete()
         nlWalkList<ListEntry<void*>, ListContainerBase<void*, NewAdapter<ListEntry<void*> > > >(
             fileData->m_Head,
             fileData,
-            &ListContainerBase<void*, NewAdapter<ListEntry<void*> > >::DeleteEntry);
+            GetFileDataDeleteEntry());
 
         fileData->m_Head = NULL;
         fileData->m_Tail = NULL;
@@ -146,7 +143,7 @@ void GLInventory::Delete()
 
     done_file_data:
         delete ((freeing_GLInventory<nlChunk>**)current)[16];
-        GLInventoryModelsDtor(((clearing_GLInventory<glModel>**)current)[32], 1);
+        delete ((clearing_GLInventory<glModel>**)current)[32];
         delete ((deleting_GLInventory<GLShadowVolume>**)current)[48];
         delete ((deleting_GLInventory<GLTextureAnim>**)current)[64];
         delete ((deleting_GLInventory<GLVertexAnim>**)current)[80];
@@ -154,24 +151,27 @@ void GLInventory::Delete()
     }
 }
 
-/**
- * Offset/Address/Size: 0xB68 | 0x801E2E00 | size: 0xE4
- * TODO: 94.91% match - r30/r31 register swap for nLevel index vs current pointer
- */
-void GLInventory::ReleaseLevel(int nLevel)
+static inline void DeleteFileEntries(ListEntry<void*>* current)
 {
-    ListEntry<void*>* current = m_pFileData[nLevel]->m_Head;
     while (current != NULL)
     {
         delete current->data;
         current = current->next;
     }
+}
+
+/**
+ * Offset/Address/Size: 0xB68 | 0x801E2E00 | size: 0xE4
+ */
+void GLInventory::ReleaseLevel(int nLevel)
+{
+    DeleteFileEntries(m_pFileData[nLevel]->m_Head);
 
     nlListContainer<void*>* fileData = m_pFileData[nLevel];
     nlWalkList<ListEntry<void*>, ListContainerBase<void*, NewAdapter<ListEntry<void*> > > >(
         fileData->m_Head,
         fileData,
-        &ListContainerBase<void*, NewAdapter<ListEntry<void*> > >::DeleteEntry);
+        GetFileDataDeleteEntry());
 
     fileData->m_Head = NULL;
     fileData->m_Tail = NULL;

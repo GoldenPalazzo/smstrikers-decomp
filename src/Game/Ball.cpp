@@ -1155,7 +1155,7 @@ void cBall::PostPhysicsUpdate(float fDeltaT)
     if (m_unk_0xA6 && mpDamageTarget != NULL)
     {
         float targetDist;
-        float targetDeltaX, targetDeltaY, targetDeltaZ;
+        float targetDeltaZ, targetDeltaY, targetDeltaX;
         float currentDeltaX, currentDeltaY, currentDeltaZ;
 
         nlVector3 targetPosition = mpDamageTarget->GetJointPosition(mpDamageTarget->m_pPoseAccumulator->m_BaseSHierarchy->m_nPelvisNodeIndex);
@@ -1651,8 +1651,8 @@ void cBall::CollideWithCharacterCallback(cPlayer* pCharacter, const nlVector3& v
         }
     }
 
-    cFielder* pOwnerFielder;
-    if (m_pOwner != NULL && m_pOwner->m_eClassType == FIELDER)
+    cFielder* pOwnerFielder = (cFielder*)m_pOwner;
+    if (pOwnerFielder != NULL && pOwnerFielder->m_eClassType == FIELDER)
     {
         pOwnerFielder = (cFielder*)m_pOwner;
     }
@@ -1746,9 +1746,9 @@ void cBall::CollideWithCharacterCallback(cPlayer* pCharacter, const nlVector3& v
     {
         cFielder* pCharacterFielder = (cFielder*)pCharacter;
 
-        pOwnerFielder->TestCollisionForInvicibility(pCharacterFielder);
+        pOwnerFielder->TestCollisionForInvicibility((cFielder*)pCharacter);
 
-        if (pCharacterFielder->IsSlideTackling())
+        if (((cFielder*)pCharacter)->IsSlideTackling())
         {
             nlVector3 v3ContactLocation = pCharacter->m_v3Position;
             nlVector3 v3PhysicsRadialSpot;
@@ -1769,11 +1769,11 @@ void cBall::CollideWithCharacterCallback(cPlayer* pCharacter, const nlVector3& v
 
                     if (absOwnerFacingDelta < 0x2000)
                     {
-                        if (pOwnerFielder->m_fActualSpeed < pCharacter->m_fActualSpeed)
+                        if (pOwnerFielder->m_fActualSpeed < pCharacterFielder->m_fActualSpeed)
                         {
-                            pOwnerFielder->InitActionSlideAttackReact(pCharacter, false);
+                            pOwnerFielder->InitActionSlideAttackReact(pCharacterFielder, false);
                             pCharacterFielder->SetSlideAttackSuccessFlag();
-                            pCharacter->PickupBall(g_pBall);
+                            pCharacterFielder->PickupBall(g_pBall);
                             pCharacterFielder->DoSlideAttackStats();
                         }
                         else
@@ -1784,57 +1784,57 @@ void cBall::CollideWithCharacterCallback(cPlayer* pCharacter, const nlVector3& v
                     }
                     else
                     {
-                        pOwnerFielder->InitActionSlideAttackReact(pCharacter, false);
+                        pOwnerFielder->InitActionSlideAttackReact(pCharacterFielder, false);
                         pCharacterFielder->DoPenaltyCardBooking(pOwnerFielder, PEN_TYPE_SLIDE_WITH_BALL);
                         pCharacterFielder->SetSlideAttackSuccessFlag();
 
                         if (pCharacterFielder->CanPickupBall(g_pBall))
                         {
-                            pCharacter->PickupBall(g_pBall);
+                            pCharacterFielder->PickupBall(g_pBall);
                             pCharacterFielder->DoSlideAttackStats();
                         }
                     }
                 }
                 else
                 {
-                    pOwnerFielder->InitActionSlideAttackReact(pCharacter, false);
+                    pOwnerFielder->InitActionSlideAttackReact(pCharacterFielder, false);
                     pCharacterFielder->DoPenaltyCardBooking(pOwnerFielder, PEN_TYPE_SLIDE_WITH_BALL);
                     pCharacterFielder->SetSlideAttackSuccessFlag();
-                    pCharacter->PickupBall(g_pBall);
+                    pCharacterFielder->PickupBall(g_pBall);
                     pCharacterFielder->DoSlideAttackStats();
                 }
             }
         }
         else if (pOwnerFielder->IsSlideTackling())
         {
-            if (!pCharacterFielder->IsHitting())
+            if (!((cFielder*)pCharacter)->IsHitting())
             {
-                pCharacterFielder->InitActionSlideAttackReact(pOwnerFielder, false);
+                ((cFielder*)pCharacter)->InitActionSlideAttackReact(pOwnerFielder, false);
                 pOwnerFielder->SetSlideAttackSuccessFlag();
             }
         }
-        else if (pOwnerFielder->IsBallAwayFromCarrier() && !pCharacterFielder->IsFallenDown(0.0f))
+        else if (pOwnerFielder->IsBallAwayFromCarrier() && !((cFielder*)pCharacter)->IsFallenDown(0.0f))
         {
             pOwnerFielder->ReleaseBall();
 
             do
             {
-                if (!pCharacterFielder->IsFrozen() && (pCharacterFielder->m_eActionState == ACTION_RUNNING || pCharacterFielder->m_eActionState == ACTION_SLIDE_ATTACK))
+                if (!((cFielder*)pCharacter)->IsFrozen() && (((cFielder*)pCharacter)->m_eActionState == ACTION_RUNNING || ((cFielder*)pCharacter)->m_eActionState == ACTION_SLIDE_ATTACK))
                 {
-                    s16 delta = pCharacter->GetFacingDeltaToPosition(g_pBall->m_v3Position);
+                    s16 delta = pCharacterFielder->GetFacingDeltaToPosition(g_pBall->m_v3Position);
                     u16 absDelta = delta < 0 ? -delta : delta;
 
                     if (absDelta < 0x4000)
                     {
-                        pCharacter->PickupBall(g_pBall);
+                        pCharacterFielder->PickupBall(g_pBall);
                         pCharacterFielder->InitActionRunningWB(false);
                         break;
                     }
                 }
 
-                pOwnerFielder->ShootBallDueToContact(pCharacter->m_v3Velocity);
+                pOwnerFielder->ShootBallDueToContact(pCharacterFielder->m_v3Velocity);
                 pOwnerFielder->SetNoPickUpTime(0.33f);
-                pCharacter->SetNoPickUpTime(0.33f);
+                pCharacterFielder->SetNoPickUpTime(0.33f);
             } while (0);
 
             pOwnerFielder->InitDesire(FIELDERDESIRE_FINISH_ACTION, 0.5f, -1.0f, fvNotSet, fvNotSet);
