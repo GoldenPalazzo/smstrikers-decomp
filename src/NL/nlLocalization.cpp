@@ -3,7 +3,36 @@
 #include "NL/nlFile.h"
 #include "NL/nlPrint.h"
 
-extern void* g_pLocalization;
+extern const unsigned short LocalizationTableNotFound[] = L"Localization Table Not Found";
+extern const unsigned short MissingLocString[] = L"missing loc string";
+
+const unsigned long nlLocalization::LanguageId[] = {
+    0x7A947B29,
+    0xA93C2035,
+    0xAAAD26B9,
+    0xB482A4B5,
+    0xBC0FCCA1,
+    0x95F1D726,
+    0x5F2F5E69,
+    0x983D29BB,
+    0x00012332,
+};
+
+char* nlLocalization::LanguageName[] = {
+    "English",
+    "French",
+    "German",
+    "Spanish",
+    "Italian",
+    "Japanese",
+    "UKEnglish",
+    "Longest",
+    "Bob",
+};
+
+const char nlLocalization::Thumbprint[4] = { 'N', 'L', 'O', 'C' };
+
+void* g_pLocalization;
 
 /**
  * Offset/Address/Size: 0x0 | 0x802107AC | size: 0x148
@@ -15,11 +44,11 @@ unsigned char nlLocalization::Load(nlLanguage Language, bool ingameloc)
     char Filename[64];
     if (ingameloc)
     {
-        nlSNPrintf(Filename, 64, "localization/%s/%s", LanguageName[Language]);
+        nlSNPrintf(Filename, 64, "art/fe/%s_game.loc", LanguageName[Language]);
     }
     else
     {
-        nlSNPrintf(Filename, 64, "localization/%s", LanguageName[Language]);
+        nlSNPrintf(Filename, 64, "art/fe/%s.loc", LanguageName[Language]);
     }
 
     unsigned long FileSize;

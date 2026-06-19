@@ -348,11 +348,11 @@ static void MoodDefFromBlend(float* MoodBlend, MOOD_DEFINITION& MoodDef)
             continue;
         }
 
-        float blendVal = MoodBlend[(int)mood];
+        float blendVal = MoodBlend[mood];
 
         if (blendVal > *pMaxBlend)
         {
-            pMaxBlend = &MoodBlend[(int)mood];
+            pMaxBlend = &MoodBlend[mood];
         }
 
         AccountedFor += g_CrowdState.CurrentMoodBlend[mood];

@@ -168,19 +168,16 @@ void GCSwizzle(void* dst_, const void* src_, unsigned short w, unsigned short h,
         if (swap16)
         {
             int count = ww * h;
-            if (count > 0)
+            unsigned short* p = (unsigned short*)dst_;
+            int i = 0;
+            while (i < count)
             {
-                unsigned short* p = (unsigned short*)dst_;
-                int i = 0;
-                while (i < count)
-                {
-                    unsigned short swapped;
-                    unsigned short val = p[i];
-                    ((unsigned char*)&swapped)[0] = ((unsigned char*)&val)[1];
-                    ((unsigned char*)&swapped)[1] = ((unsigned char*)&val)[0];
-                    p[i] = swapped;
-                    i++;
-                }
+                unsigned short swapped;
+                unsigned short val = p[i];
+                ((unsigned char*)&swapped)[0] = ((unsigned char*)&val)[1];
+                ((unsigned char*)&swapped)[1] = ((unsigned char*)&val)[0];
+                p[i] = swapped;
+                i++;
             }
         }
         return;

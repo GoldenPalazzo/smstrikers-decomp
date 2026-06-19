@@ -289,7 +289,7 @@ unsigned long LoadCallbacks::ReadDoneCB(unsigned long Slot, long Result, void* p
     localCfg.IconSpeeds[0] = 3;
     localCfg.BannerFormat = 2;
 
-    u8 configValid;
+    bool configValid;
     if (memcmp(&localCfg, &pFile->IconCfg, 1) != 0)
     {
         configValid = 0;

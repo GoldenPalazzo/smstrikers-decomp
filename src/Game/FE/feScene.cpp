@@ -6,7 +6,7 @@
 #include "NL/gl/glMatrix.h"
 #include "NL/nlDLRing.h"
 
-extern bool gSebringLoadPackageToVirtualMemory;
+bool gSebringLoadPackageToVirtualMemory = false;
 
 struct FE_FILE_HEADER
 {
@@ -14,6 +14,20 @@ struct FE_FILE_HEADER
     unsigned int Version;
     unsigned int DataLength;
     unsigned int PointerTableLength;
+};
+
+class QueueResourceLoadCallback
+{
+public:
+    void Callback(FEResourceHandle*);
+    FEResourceManager* m_resourceManager;
+};
+
+class UnloadResourceCallback
+{
+public:
+    void Callback(FEResourceHandle*);
+    FEResourceManager* m_resourceManager;
 };
 
 /**

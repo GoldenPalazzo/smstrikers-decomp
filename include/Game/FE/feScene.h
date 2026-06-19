@@ -29,18 +29,4 @@ public:
     /* 0x50 */ FESceneResource m_feSceneResourceHandle; // size 0x20
 }; // total size: 0x70
 
-class QueueResourceLoadCallback
-{
-public:
-    void Callback(FEResourceHandle*);
-    FEResourceManager* m_resourceManager;
-};
-
-class UnloadResourceCallback
-{
-public:
-    void Callback(FEResourceHandle*);
-    FEResourceManager* m_resourceManager;
-};
-
 #endif // _FESCENE_H_

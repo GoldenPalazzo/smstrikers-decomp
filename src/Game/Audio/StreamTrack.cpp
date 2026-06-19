@@ -1019,7 +1019,7 @@ void AudioStreamTrack::StreamTrack::StopHead(unsigned long Fadeout)
 
 /**
  * Offset/Address/Size: 0xA28 | 0x80155780 | size: 0x268
- * TODO: 94.1% match - r-diffs: qs in r8 vs r30, Fadeout in r30 vs r29; compiler uses 3 callee-saved registers instead of 4
+ * TODO: 98.50% match - post-fade list head uses r29 vs r28 and curQs uses r30 vs r29
  */
 void AudioStreamTrack::StreamTrack::Stop(unsigned long Fadeout)
 {
@@ -1031,11 +1031,18 @@ void AudioStreamTrack::StreamTrack::Stop(unsigned long Fadeout)
 
     if (Fadeout == 0)
     {
+        struct Iter
+        {
+            DLListEntry<QUEUED_STREAM>* m_head;
+            DLListEntry<QUEUED_STREAM>* m_current;
+            ~Iter() { }
+        } iter;
+
         while (m_QueuedStreams.m_Head != NULL)
         {
-            entry = nlDLRingGetStart(m_QueuedStreams.m_Head);
-            head = m_QueuedStreams.m_Head;
-            StopQStream(&entry->m_data);
+            iter.m_current = nlDLRingGetStart(m_QueuedStreams.m_Head);
+            iter.m_head = m_QueuedStreams.m_Head;
+            StopQStream(&iter.m_current->m_data);
         }
         return;
     }
@@ -1048,7 +1055,7 @@ void AudioStreamTrack::StreamTrack::Stop(unsigned long Fadeout)
 
     {
         BindExp2_T bind = Bind<void>(
-            MemFun<StreamTrack, void, QUEUED_STREAM*>(&StreamTrack::FadeOutDone), this, qs);
+            MemFun<StreamTrack, void, QUEUED_STREAM*>(&StreamTrack::FadeOutDone), this, &entry->m_data);
 
         Function<FnVoidVoid> callback;
         callback.mTag = FUNCTOR;

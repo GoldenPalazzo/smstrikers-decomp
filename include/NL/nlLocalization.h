@@ -45,8 +45,8 @@ public:
     nlLanguage m_CurrentLanguage;
 
     static char* LanguageName[];
-    static unsigned long LanguageId[];
-    static char Thumbprint[4];
+    static const unsigned long LanguageId[];
+    static const char Thumbprint[4];
 };
 
 #endif // _NLLOCALIZATION_H_
