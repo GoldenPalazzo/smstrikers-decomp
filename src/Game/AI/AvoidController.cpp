@@ -875,9 +875,17 @@ bool AvoidController::CalcDesiredVelocityToAvoidCorner(
 
 /**
  * Offset/Address/Size: 0x41C | 0x80007A70 | size: 0x4AC
- * TODO: 98.62% match - remaining differences are loop register allocation
- * and sideline-normal floating-point register ordering.
+ * TODO: 99.77% match - remaining pBase/byteOffset register swap in
+ * corner/sideline loops.
  */
+static inline f32 ClampRunningWBSpeed(f32 speed, f32 maxSpeed)
+{
+    if (speed <= maxSpeed)
+        return speed;
+    else
+        return maxSpeed;
+}
+
 bool AvoidController::AvoidSidelines()
 {
     bool bHitSideline;
@@ -886,6 +894,7 @@ bool AvoidController::AvoidSidelines()
     nlVector2 vCurrentDesiredVelDir;
     nlVector2 vNewDesiredVelDir;
     sCornerSegment corner;
+    int byteOffset;
 
     if (m_pFielder->GetDistanceToDesiredPos() <= 0.25f)
     {
@@ -903,7 +912,7 @@ bool AvoidController::AvoidSidelines()
 
     {
         u8* pBase = (u8*)cField::mCorners;
-        int byteOffset = 0;
+        byteOffset = 0;
         int i = 0;
         for (; i < 4; i++)
         {
@@ -922,7 +931,7 @@ bool AvoidController::AvoidSidelines()
     if (!bHitSideline)
     {
         u8* pBase = (u8*)cField::mSidelines;
-        int byteOffset = 0;
+        byteOffset = 0;
         int i = 0;
         for (; i < 4; i++)
         {
@@ -974,14 +983,7 @@ bool AvoidController::AvoidSidelines()
         {
             if (m_pFielder->m_pBall != NULL)
             {
-                f32 fDesiredSpeed = m_pFielder->m_fDesiredSpeed;
-                if (fDesiredSpeed <= m_pFTweaks->fRunningWBSpeed)
-                {
-                }
-                else
-                {
-                    fDesiredSpeed = m_pFTweaks->fRunningWBSpeed;
-                }
+                f32 fDesiredSpeed = ClampRunningWBSpeed(m_pFielder->m_fDesiredSpeed, m_pFTweaks->fRunningWBSpeed);
                 u16 aDesiredMovementDir = m_pFielder->m_aDesiredMovementDirection;
                 if (m_pFielder->IsTurboing())
                 {

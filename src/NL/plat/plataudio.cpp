@@ -1461,45 +1461,9 @@ bool UpdateAuxEffectA(MusyXEffectType type, void* auxEffectSettings)
 
 } // namespace PlatAudio
 
-/**
- * Offset/Address/Size: 0x2028 | 0x801C6824 | size: 0x244
- * TODO: 96.17% match - register allocation mismatch for type/data/arg2/arg3 and callback (r25-r29 swap), causing extra moves in callback setup paths.
- */
-bool AddAuxEffect(MusyXEffectType type, void* data, bool arg2, unsigned char arg3)
+static inline void (*InitAuxEffect(MusyXEffectType type, void* data))(u8 reason, SND_AUX_INFO* info, void* user)
 {
-    FORCE_DONT_INLINE;
-    if ((arg2 == 0) && (PlatAudio::gUsingDolbyProLogic2) && (type != 0))
-    {
-        return false;
-    }
-
-    void* pAuxEffectSettings;
-    MusyXEffectType* pAuxEffect;
     void (*callback)(u8 reason, SND_AUX_INFO* info, void* user);
-
-    if (PlatAudio::gUsingDolbyProLogic2)
-    {
-        if (arg2)
-        {
-            pAuxEffectSettings = &gDPL2AuxAEffectSettings;
-            pAuxEffect = (MusyXEffectType*)&gDPL2AuxAEffect;
-        }
-        else
-        {
-            pAuxEffectSettings = &gDPL2AuxBEffectSettings;
-            pAuxEffect = (MusyXEffectType*)&gDPL2AuxBEffect;
-        }
-    }
-    else if (arg2)
-    {
-        pAuxEffectSettings = &gAuxAEffectSettings;
-        pAuxEffect = (MusyXEffectType*)&gAuxAEffect;
-    }
-    else
-    {
-        pAuxEffectSettings = &gAuxBEffectSettings;
-        pAuxEffect = (MusyXEffectType*)&gAuxBEffect;
-    }
 
     switch (type)
     {
@@ -1543,6 +1507,51 @@ bool AddAuxEffect(MusyXEffectType type, void* data, bool arg2, unsigned char arg
         nlPrintf("InitAuxEffect: Unaccounted-for case.\n");
         break;
     }
+
+    return callback;
+}
+
+/**
+ * Offset/Address/Size: 0x2028 | 0x801C6824 | size: 0x244
+ * TODO: 98.52% match - register allocation mismatch across type/data/arg2/arg3, callback, and aux effect storage locals.
+ */
+static bool AddAuxEffect(MusyXEffectType type, void* data, bool arg2, unsigned char arg3)
+{
+    FORCE_DONT_INLINE;
+    if ((arg2 == 0) && (PlatAudio::gUsingDolbyProLogic2) && (type != 0))
+    {
+        return false;
+    }
+
+    void* pAuxEffectSettings;
+    MusyXEffectType* pAuxEffect;
+    void (*callback)(u8 reason, SND_AUX_INFO* info, void* user);
+
+    if (PlatAudio::gUsingDolbyProLogic2)
+    {
+        if (arg2)
+        {
+            pAuxEffectSettings = &gDPL2AuxAEffectSettings;
+            pAuxEffect = (MusyXEffectType*)&gDPL2AuxAEffect;
+        }
+        else
+        {
+            pAuxEffectSettings = &gDPL2AuxBEffectSettings;
+            pAuxEffect = (MusyXEffectType*)&gDPL2AuxBEffect;
+        }
+    }
+    else if (arg2)
+    {
+        pAuxEffectSettings = &gAuxAEffectSettings;
+        pAuxEffect = (MusyXEffectType*)&gAuxAEffect;
+    }
+    else
+    {
+        pAuxEffectSettings = &gAuxBEffectSettings;
+        pAuxEffect = (MusyXEffectType*)&gAuxBEffect;
+    }
+
+    callback = InitAuxEffect(type, data);
 
     if (callback == NULL)
     {

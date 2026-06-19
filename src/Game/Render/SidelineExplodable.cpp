@@ -712,6 +712,7 @@ void SidelineExplodable::Explode()
 
         pFragment->mfRemainingLifespan = nlRandomf(-0.0f, 0.0f, &nlDefaultSeed) + 2.0f;
 
+        nlMatrix4 transform;
         if (!pFragment->mbIsStationary)
         {
             SidelineExplosionPhysicsObject* pPhysicsObject = (SidelineExplosionPhysicsObject*)nlMalloc(0x30, 8, false);
@@ -723,14 +724,13 @@ void SidelineExplodable::Explode()
             }
             pPhysicsObject->SetDensity(5.0f);
 
-            nlMatrix4 initialTransform;
-            initialTransform = *(nlMatrix4*)((u8*)GetCategoryData().mInitialTransforms + transformOffset);
-            nlMultMatrices(initialTransform, initialTransform, GetWorldMatrix());
+            transform = *(nlMatrix4*)((u8*)GetCategoryData().mInitialTransforms + transformOffset);
+            nlMultMatrices(transform, transform, GetWorldMatrix());
 
             bool isStationary = pFragment->mbIsStationary;
             unsigned short minLocal, maxLocal;
             FindExplosionAngleRange(minLocal, maxLocal);
-            pPhysicsObject->SetWorldMatrix(initialTransform);
+            pPhysicsObject->SetWorldMatrix(transform);
 
             if (!isStationary)
             {
@@ -766,13 +766,12 @@ void SidelineExplodable::Explode()
         }
         else
         {
-            nlMatrix4 stationaryTransform;
-            stationaryTransform = *(nlMatrix4*)((u8*)GetCategoryData().mInitialTransforms + transformOffset);
-            nlMultMatrices(stationaryTransform, stationaryTransform, GetWorldMatrix());
+            transform = *(nlMatrix4*)((u8*)GetCategoryData().mInitialTransforms + transformOffset);
+            nlMultMatrices(transform, transform, GetWorldMatrix());
 
             if (pFragment->mStationaryTransform == NULL)
                 pFragment->mStationaryTransform = (nlMatrix4*)nlMalloc(0x40, 8, false);
-            *pFragment->mStationaryTransform = stationaryTransform;
+            *pFragment->mStationaryTransform = transform;
             pFragment->mbInfiniteLifespan = true;
         }
 

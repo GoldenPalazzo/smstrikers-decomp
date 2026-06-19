@@ -221,20 +221,20 @@ typedef TLComponentInstance* (*FindCompByRef)(TLSlide*, InlineHasher&, InlineHas
 
 /**
  * Offset/Address/Size: 0xB5C | 0x800B4118 | size: 0x6E0
- * TODO: 88.27% match - stack frame 0x130 vs 0x120, register allocation shift,
- * item pointer stwx vs stw addressing
+ * TODO: 98.08% match - stack frame 0x130 vs 0x120 and shifted
+ * presentation/menu map/item registers
  */
 void OptionsScene::SceneCreated()
 {
     FEAudio::EnableSounds(false);
 
     FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
+    MenuItem<TLComponentInstance>* item;
 
     for (int i = 0; i < 6; i++)
     {
         char menuname[64];
         nlSNPrintf(menuname, 64, "MENU ITEM%d", i + 1);
-        MenuItem<TLComponentInstance>* item;
 
         union
         {
@@ -287,37 +287,64 @@ void OptionsScene::SceneCreated()
         mMenuItems.mNumItemsAdded++;
 
         {
-            Function<TLComponentInstance*> callback;
-            callback.mTag = FREE_FUNCTION;
-            callback.mFreeFunction = DoubleHighlite::OpenItem;
-            item->mCallbacks[1] = callback;
+            Function<TLComponentInstance*> openFunc;
+            openFunc.mTag = FREE_FUNCTION;
+            openFunc.mFreeFunction = DoubleHighlite::OpenItem;
+            *(Function<TLComponentInstance*>*)&item->mCallbacks[1] = openFunc;
+        }
 
-            callback.mTag = FREE_FUNCTION;
-            callback.mFreeFunction = DoubleHighlite::CloseItem;
-            item->mCallbacks[2] = callback;
+        {
+            Function<TLComponentInstance*> closeFunc;
+            closeFunc.mTag = FREE_FUNCTION;
+            closeFunc.mFreeFunction = DoubleHighlite::CloseItem;
+            *(Function<TLComponentInstance*>*)&item->mCallbacks[2] = closeFunc;
+        }
 
+        {
             BindExp2_Options_t bind = Bind<void, MemFunImpl_Options_t, OptionsScene*, eMenuState>(
                 MemFun<OptionsScene, void, eMenuState>(&OptionsScene::ChangeMenuState),
                 this,
                 MenuToMenuStateMap[i]);
 
-            FunctorImpl_Options_t* impl = new ((FunctorImpl_Options_t*)nlMalloc(sizeof(FunctorImpl_Options_t), 8, false))
-                FunctorImpl_Options_t(bind);
-
+            Function<TLComponentInstance*> callback;
             callback.mTag = FUNCTOR;
-            callback.mFunctor = impl;
-            item->mCallbacks[0] = callback;
+            callback.mFunctor = new ((FunctorImpl_Options_t*)nlMalloc(sizeof(FunctorImpl_Options_t), 8, false)) FunctorImpl_Options_t(bind);
+            *(Function<TLComponentInstance*>*)&item->mCallbacks[0] = callback;
         }
 
         FindComponent(instance->GetActiveSlide(), "highlite");
 
         if (i == mLastSelectedIndex)
         {
-            item->mCallbacks[1](item->mType);
+            int tag = item->mCallbacks[1].mTag;
+            if (((u32)((-tag) | tag) >> 31) > 0)
+            {
+                TLComponentInstance* type = item->mType;
+                if (tag == FREE_FUNCTION)
+                {
+                    item->mCallbacks[1].mFreeFunction(type);
+                }
+                else
+                {
+                    (*item->mCallbacks[1].mFunctor)(type);
+                }
+            }
         }
         else
         {
-            item->mCallbacks[2](item->mType);
+            int tag = item->mCallbacks[2].mTag;
+            if (((u32)((-tag) | tag) >> 31) > 0)
+            {
+                TLComponentInstance* type = item->mType;
+                if (tag == FREE_FUNCTION)
+                {
+                    item->mCallbacks[2].mFreeFunction(type);
+                }
+                else
+                {
+                    (*item->mCallbacks[2].mFunctor)(type);
+                }
+            }
 
             TLSlide* slide = instance->GetActiveSlide();
             instance->Update(1.0f + (slide->m_start + slide->m_duration));

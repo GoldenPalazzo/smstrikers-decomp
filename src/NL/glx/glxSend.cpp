@@ -129,6 +129,7 @@ static GLViewportUserData g_viewport;
 static void glx_SwitchTextureState(const glModelPacket*);
 static unsigned long glx_SwitchTexConfig(const glModelPacket*);
 static void glx_DrawPacket(const glModelPacket*);
+static void glx_SwitchUserData(const glModelPacket*);
 static void GetConstants();
 
 /**
@@ -718,7 +719,7 @@ static void glx_DrawPacket(const glModelPacket* p)
 /**
  * Offset/Address/Size: 0x1058 | 0x801BAB58 | size: 0x964
  */
-void glx_SwitchUserData(const glModelPacket* p)
+static void glx_SwitchUserData(const glModelPacket* p)
 {
     void GXSetScissor(u32, u32, u32, u32);
 
@@ -739,20 +740,22 @@ void glx_SwitchUserData(const glModelPacket* p)
 
     {
         nlColour amb;
-        nlColourSet(amb, world_ambient.c[0], world_ambient.c[1], world_ambient.c[2], world_ambient.c[3]);
+        nlColour temp = { };
+        nlColourSet(temp, world_ambient.c[0], world_ambient.c[1], world_ambient.c[2], world_ambient.c[3]);
+        amb = temp;
         gxSetChanAmbColour(0, amb);
     }
 
     if (glx_prevLightMask)
     {
-        GXSetChanCtrl(GX_COLOR0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, (GXLightID)glx_prevLightMask, GX_DF_NONE, GX_AF_SPEC);
+        GXSetChanCtrl(GX_COLOR0, GX_FALSE, GX_SRC_REG, GX_SRC_VTX, (GXLightID)glx_prevLightMask, GX_DF_NONE, GX_AF_NONE);
         glx_prevLightMask = 0;
     }
 
     if (glx_prevSpecMask)
     {
         gxSetNumChans(1);
-        GXSetChanCtrl(GX_COLOR1, GX_FALSE, GX_SRC_REG, GX_SRC_REG, (GXLightID)glx_prevSpecMask, GX_DF_NONE, GX_AF_SPEC);
+        GXSetChanCtrl(GX_COLOR1, GX_FALSE, GX_SRC_REG, GX_SRC_VTX, (GXLightID)glx_prevSpecMask, GX_DF_NONE, GX_AF_NONE);
         glx_prevSpecMask = 0;
     }
 
@@ -762,7 +765,7 @@ void glx_SwitchUserData(const glModelPacket* p)
     }
     else if (glx_GlossMapStage >= 0)
     {
-        gxSetTexCoordGen(glx_GlossMapStage, GX_TG_MTX3x4, (_GXTexGenSrc)(glx_GlossMapStage + 4), GX_IDENTITY);
+        gxSetTexCoordGen(glx_GlossMapStage, GX_TG_MTX2x4, (_GXTexGenSrc)(glx_GlossMapStage + 4), GX_IDENTITY);
         glx_DirtyFlags |= glv_TexConfigChanged;
     }
 
@@ -844,11 +847,13 @@ void glx_SwitchUserData(const glModelPacket* p)
             colour.c[3] = (u8)(255.0f * pColour->c[3]);
             gxSetChanMatColour(0, colour);
 
-            if (glx_prevLightMask)
+            u32 lightMask = glx_prevLightMask;
+            if (lightMask)
             {
                 if (g_bAllowLighting)
                 {
-                    GXSetChanCtrl(GX_COLOR0, GX_TRUE, GX_SRC_REG, GX_SRC_REG, glx_prevLightMask, GX_DF_CLAMP, GX_AF_SPOT);
+                    glx_prevLightMask = lightMask;
+                    GXSetChanCtrl(GX_COLOR0, GX_TRUE, GX_SRC_REG, GX_SRC_REG, lightMask, GX_DF_CLAMP, GX_AF_SPOT);
                 }
             }
             break;
@@ -862,15 +867,15 @@ void glx_SwitchUserData(const glModelPacket* p)
         {
             static u32 gxLights[4] = { 1, 2, 4, 8 };
 
-            glx_ReloadPointLights = true;
-
             u32 numLights = *(u32*)pData;
+            glx_ReloadPointLights = true;
             if (numLights != 0)
             {
                 u32 lightMask = 0;
                 int index = 0;
                 GLDirectionalLightUserData* pLight = (GLDirectionalLightUserData*)((u8*)pData + 4);
                 GLDirectionalLightUserData* pEndLight = pLight + numLights;
+                u32* pGXLight = gxLights;
 
                 while (pLight < pEndLight)
                 {
@@ -879,12 +884,16 @@ void glx_SwitchUserData(const glModelPacket* p)
                         break;
                     }
 
+                    GLDirectionalLightUserData* pCurrentLight = pLight;
                     GXLightID lightID = (GXLightID)gxLights[index];
-                    lightMask |= gxLights[index];
+                    lightMask |= *pGXLight;
+                    pGXLight++;
+                    pLight++;
+                    index += 1;
 
                     GXColor colour;
                     {
-                        int value = (int)(pLight->colour.c[0] * 255.5f);
+                        int value = (int)(pCurrentLight->colour.c[0] * 255.5f);
                         if (value < 0)
                         {
                             value = 0;
@@ -900,7 +909,7 @@ void glx_SwitchUserData(const glModelPacket* p)
                         colour.r = value;
                     }
                     {
-                        int value = (int)(pLight->colour.c[1] * 255.5f);
+                        int value = (int)(pCurrentLight->colour.c[1] * 255.5f);
                         if (value < 0)
                         {
                             value = 0;
@@ -916,7 +925,7 @@ void glx_SwitchUserData(const glModelPacket* p)
                         colour.g = value;
                     }
                     {
-                        int value = (int)(pLight->colour.c[2] * 255.5f);
+                        int value = (int)(pCurrentLight->colour.c[2] * 255.5f);
                         if (value < 0)
                         {
                             value = 0;
@@ -932,7 +941,7 @@ void glx_SwitchUserData(const glModelPacket* p)
                         colour.b = value;
                     }
                     {
-                        int value = (int)(pLight->colour.c[3] * 255.5f);
+                        int value = (int)(pCurrentLight->colour.c[3] * 255.5f);
                         if (value < 0)
                         {
                             value = 0;
@@ -952,7 +961,7 @@ void glx_SwitchUserData(const glModelPacket* p)
                     GXInitLightColor(&light, colour);
 
                     nlVector3 viewDir;
-                    nlMultDirVectorMatrix(viewDir, pLight->direction, mview);
+                    nlMultDirVectorMatrix(viewDir, pCurrentLight->direction, mview);
                     viewDir.f.x *= 1048576.0f;
                     viewDir.f.y *= 1048576.0f;
                     viewDir.f.z *= 1048576.0f;
@@ -961,9 +970,6 @@ void glx_SwitchUserData(const glModelPacket* p)
                     GXInitLightAttnA(&light, 1.0f, 0.0f, 0.0f);
                     GXInitLightDistAttn(&light, 1048576.0f, 1.0f, GX_DA_OFF);
                     GXLoadLightObjImm(&light, lightID);
-
-                    pLight++;
-                    index += 1;
                 }
 
                 if (g_bAllowLighting != 0)
@@ -983,7 +989,7 @@ void glx_SwitchUserData(const glModelPacket* p)
             break;
 
         case GLUD_ShadowVolume:
-            if (*(u32*)pData == 3)
+            if (*(s32*)pData == 3)
             {
                 static bool bEnabled;
                 static signed char init;
@@ -1006,7 +1012,7 @@ void glx_SwitchUserData(const glModelPacket* p)
                 bEnabled = true;
                 gxSetNumTevStages(3);
 
-                gxSetTevAlphaOp(0, (_GXTevOp)0, (_GXTevBias)0, (_GXTevScale)0, true, (_GXTevRegID)0);
+                gxSetTevAlphaOp(0, (_GXTevOp)0xE, (_GXTevBias)0, (_GXTevScale)0, true, (_GXTevRegID)0);
                 gxSetTevAlphaOp(1, (_GXTevOp)1, (_GXTevBias)0, (_GXTevScale)0, true, (_GXTevRegID)0);
 
                 GXSetTevColorIn((GXTevStageID)0, (GXTevColorArg)0xF, (GXTevColorArg)0xF, (GXTevColorArg)0xF, (GXTevColorArg)4);
@@ -1029,7 +1035,7 @@ void glx_SwitchUserData(const glModelPacket* p)
             {
                 alpha = 0;
             }
-            else if (alpha > 255)
+            if (alpha > 255)
             {
                 alpha = 255;
             }
@@ -1059,16 +1065,30 @@ void glx_SwitchUserData(const glModelPacket* p)
         }
 
         case GLUD_Scissor:
+        {
+            u32 xOrig;
+            u32 yOrig;
+            u32 wd;
+            u32 ht;
+
             if (pData == NULL)
             {
-                GXSetScissor(0, 0, 640, 448);
+                xOrig = 0;
+                yOrig = xOrig;
+                wd = 640;
+                ht = 448;
             }
             else
             {
                 GLScissorUserData* pScissor = (GLScissorUserData*)pData;
-                GXSetScissor((u32)pScissor->xOrig, (u32)pScissor->yOrig, (u32)pScissor->wd, (u32)pScissor->ht);
+                xOrig = pScissor->xOrig;
+                yOrig = pScissor->yOrig;
+                wd = pScissor->wd;
+                ht = pScissor->ht;
             }
-            break;
+            GXSetScissor(xOrig, yOrig, wd, ht);
+        }
+        break;
 
         case GLUD_EnvDiffuse:
             if (!glx_allowSpecular)

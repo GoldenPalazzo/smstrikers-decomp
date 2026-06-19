@@ -31,6 +31,8 @@ static nlListContainer<PlatTexture*> gridTextures;
 static unsigned long nGridMemory;
 static PlatTexture texobj;
 
+static PlatTexture* glx_MakeGridTexture(int width, int height);
+
 static inline void (TexDestructor::* glx_GetTexDestructorCallback())(const unsigned long&, PlatTexture**)
 {
     return &TexDestructor::CallDestructor;
@@ -703,7 +705,7 @@ PlatTexture* glx_GetGridTexture(int width, int height)
  *       gridColor 0xFFFF not materialized as lis+addi (compiler folds u16 constant),
  *       loop register allocation shifted by missing gridColor register
  */
-PlatTexture* glx_MakeGridTexture(int w, int h)
+static PlatTexture* glx_MakeGridTexture(int w, int h)
 {
     PlatTexture* pTex;
     u8 bits[4] = { 5, 6, 5, 0 };

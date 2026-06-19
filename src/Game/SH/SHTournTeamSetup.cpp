@@ -2323,11 +2323,6 @@ BasicString<char, Detail::TempStringAllocator> TournTeamSetupSceneV2::FindCaptai
 }
 #pragma optimization_level 4
 
-/**
- * Offset/Address/Size: 0x76C | 0x800E2610 | size: 0x4C8
- * TODO: 98.30% match - data and literal pointer registers are swapped during
- * sidekick string construction
- */
 #pragma optimization_level 2
 BasicString<char, Detail::TempStringAllocator> TournTeamSetupSceneV2::FindSidekickSlideName(eSidekickID sidekick)
 {
@@ -2340,27 +2335,7 @@ BasicString<char, Detail::TempStringAllocator> TournTeamSetupSceneV2::FindSideki
         BasicStringData<char>* data = (BasicStringData<char>*)Detail::TempStringAllocator::allocate(sizeof(BasicStringData<char>));
         if (data != 0)
         {
-            data->mData = 0;
-            data->mSize = 0;
-            data->mCapacity = 0;
-
-            const char* text = "toad";
-            const char* scan = text;
-            while (*scan++ != 0)
-            {
-                data->mSize++;
-            }
-
-            data->mSize++;
-            data->mData = (char*)Detail::TempStringAllocator::allocate((data->mSize + 1) * sizeof(char));
-            data->mCapacity = data->mSize;
-
-            for (int i = 0; i < data->mSize; i++)
-            {
-                data->mData[i] = *text++;
-            }
-
-            data->mRefCount = 1;
+            InitCaptainSlideStringData(data, "toad");
         }
 
         returnValue = BasicString<char, Detail::TempStringAllocator>(data);
@@ -2371,27 +2346,7 @@ BasicString<char, Detail::TempStringAllocator> TournTeamSetupSceneV2::FindSideki
         BasicStringData<char>* data = (BasicStringData<char>*)Detail::TempStringAllocator::allocate(sizeof(BasicStringData<char>));
         if (data != 0)
         {
-            data->mData = 0;
-            data->mSize = 0;
-            data->mCapacity = 0;
-
-            const char* text = "koopa";
-            const char* scan = text;
-            while (*scan++ != 0)
-            {
-                data->mSize++;
-            }
-
-            data->mSize++;
-            data->mData = (char*)Detail::TempStringAllocator::allocate((data->mSize + 1) * sizeof(char));
-            data->mCapacity = data->mSize;
-
-            for (int i = 0; i < data->mSize; i++)
-            {
-                data->mData[i] = *text++;
-            }
-
-            data->mRefCount = 1;
+            InitCaptainSlideStringData(data, "koopa");
         }
 
         returnValue = BasicString<char, Detail::TempStringAllocator>(data);
@@ -2402,27 +2357,7 @@ BasicString<char, Detail::TempStringAllocator> TournTeamSetupSceneV2::FindSideki
         BasicStringData<char>* data = (BasicStringData<char>*)Detail::TempStringAllocator::allocate(sizeof(BasicStringData<char>));
         if (data != 0)
         {
-            data->mData = 0;
-            data->mSize = 0;
-            data->mCapacity = 0;
-
-            const char* text = "hammer";
-            const char* scan = text;
-            while (*scan++ != 0)
-            {
-                data->mSize++;
-            }
-
-            data->mSize++;
-            data->mData = (char*)Detail::TempStringAllocator::allocate((data->mSize + 1) * sizeof(char));
-            data->mCapacity = data->mSize;
-
-            for (int i = 0; i < data->mSize; i++)
-            {
-                data->mData[i] = *text++;
-            }
-
-            data->mRefCount = 1;
+            InitCaptainSlideStringData(data, "hammer");
         }
 
         returnValue = BasicString<char, Detail::TempStringAllocator>(data);
@@ -2433,27 +2368,7 @@ BasicString<char, Detail::TempStringAllocator> TournTeamSetupSceneV2::FindSideki
         BasicStringData<char>* data = (BasicStringData<char>*)Detail::TempStringAllocator::allocate(sizeof(BasicStringData<char>));
         if (data != 0)
         {
-            data->mData = 0;
-            data->mSize = 0;
-            data->mCapacity = 0;
-
-            const char* text = "birdo";
-            const char* scan = text;
-            while (*scan++ != 0)
-            {
-                data->mSize++;
-            }
-
-            data->mSize++;
-            data->mData = (char*)Detail::TempStringAllocator::allocate((data->mSize + 1) * sizeof(char));
-            data->mCapacity = data->mSize;
-
-            for (int i = 0; i < data->mSize; i++)
-            {
-                data->mData[i] = *text++;
-            }
-
-            data->mRefCount = 1;
+            InitCaptainSlideStringData(data, "birdo");
         }
 
         returnValue = BasicString<char, Detail::TempStringAllocator>(data);
@@ -2461,7 +2376,17 @@ BasicString<char, Detail::TempStringAllocator> TournTeamSetupSceneV2::FindSideki
     }
     }
 
-    return returnValue;
+    BasicStringData<char>* resultData = returnValue.m_data;
+    if (resultData != 0)
+    {
+        resultData->mRefCount++;
+    }
+    else
+    {
+        resultData = 0;
+    }
+
+    return BasicString<char, Detail::TempStringAllocator>(resultData);
 }
 #pragma optimization_level 4
 

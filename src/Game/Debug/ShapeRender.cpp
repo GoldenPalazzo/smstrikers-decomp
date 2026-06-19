@@ -143,24 +143,47 @@ void ShapeRender::CreateHemisphereGeometry(PrimitiveShape& prim)
 
 /**
  * Offset/Address/Size: 0x11C0 | 0x801FC450 | size: 0x2DC
- * TODO: 66.07% match - register allocation and constant ordering in the segment loop still differ.
+ * TODO: 95.88% match - saved-FPR allocation for pre-loop zero and angle constants still differs.
  */
 void ShapeRender::CreateFlatCylinderEndGeometry(PrimitiveShape& prim)
 {
     nlVector3 vNormal;
-    int nSegment;
+    int angle;
+    int angle90;
     nlVector3* pdst;
     nlVector3* ndst;
     nlVector2* tdst;
+    int nSegment;
+    float z0;
+    float z0Sq;
+    float angleFactor;
+    float segmentFactor;
+    float half;
+    float one;
+    float texDenom;
     float x0;
     float y0;
     float x1;
     float y1;
+    float x0Sq;
+    float y0Sq;
+    float x1Sq;
+    float y1Sq;
+    float invLen;
 
     prim.vertCount = 0x20;
     prim.position = (nlVector3*)glResourceAlloc(0x180, GLM_VertexData);
     prim.normal = (nlVector3*)glResourceAlloc(0x180, GLM_VertexData);
     prim.texcoord = (nlVector2*)glResourceAlloc(0x100, GLM_VertexData);
+
+    z0 = 0.0f;
+    z0Sq = z0;
+    z0Sq *= z0;
+    angleFactor = 10430.378f;
+    segmentFactor = 0.41887903f;
+    half = 0.5f;
+    one = 1.0f;
+    texDenom = 15.0f;
 
     pdst = prim.position;
     ndst = prim.normal;
@@ -168,42 +191,55 @@ void ShapeRender::CreateFlatCylinderEndGeometry(PrimitiveShape& prim)
 
     for (nSegment = 0; nSegment < 0x10; nSegment++)
     {
-        u16 angle = (u16)(10430.378f * ((float)nSegment * 0.3926991f));
+        angle = (int)(angleFactor * ((float)nSegment * segmentFactor));
 
-        x0 = 2.0f * (0.5f * nlSin(angle));
-        y0 = 2.0f * (0.5f * nlSin((u16)(angle + 0x4000)));
-        x1 = 2.0f * (1.0f * nlSin(angle));
-        y1 = 2.0f * (1.0f * nlSin((u16)(angle + 0x4000)));
+        x0 = half * (one * nlSin((u16)angle));
+
+        angle90 = (u16)angle + 0x4000;
+        y0 = half * (one * nlSin((u16)angle90));
+
+        x1 = half * (z0 * nlSin((u16)angle));
+        y1 = half * (z0 * nlSin((u16)angle90));
+
+        x0Sq = x0 * x0;
+        y0Sq = y0 * y0;
+
+        vNormal.f.x = x0;
+        vNormal.f.y = y0;
+        vNormal.f.z = z0;
+
+        invLen = nlRecipSqrt(z0Sq + (x0Sq + y0Sq), true);
 
         pdst->f.x = x0;
+        vNormal.f.x = invLen * vNormal.f.x;
         pdst->f.y = y0;
-        pdst->f.z = 0.5f;
-
-        {
-            float invLen = nlRecipSqrt((0.5f * 0.5f) + (x0 * x0 + y0 * y0), true);
-            vNormal.f.x = invLen * x0;
-            vNormal.f.y = invLen * y0;
-            vNormal.f.z = invLen * 0.5f;
-        }
+        vNormal.f.y = invLen * vNormal.f.y;
+        pdst->f.z = z0;
+        vNormal.f.z = invLen * vNormal.f.z;
         *ndst = vNormal;
 
-        tdst->f.x = (float)nSegment / 16.0f;
-        tdst->f.y = 0.5f;
+        tdst->f.x = (float)nSegment / texDenom;
+        tdst->f.y = z0;
+
+        x1Sq = x1 * x1;
+        y1Sq = y1 * y1;
+
+        vNormal.f.x = x1;
+        vNormal.f.y = y1;
+        vNormal.f.z = z0;
+
+        invLen = nlRecipSqrt(z0Sq + (x1Sq + y1Sq), true);
 
         pdst[1].f.x = x1;
+        vNormal.f.x = invLen * vNormal.f.x;
         pdst[1].f.y = y1;
-        pdst[1].f.z = 0.5f;
-
-        {
-            float invLen = nlRecipSqrt((0.5f * 0.5f) + (x1 * x1 + y1 * y1), true);
-            vNormal.f.x = invLen * x1;
-            vNormal.f.y = invLen * y1;
-            vNormal.f.z = invLen * 0.5f;
-        }
+        vNormal.f.y = invLen * vNormal.f.y;
+        pdst[1].f.z = z0;
+        vNormal.f.z = invLen * vNormal.f.z;
         ndst[1] = vNormal;
 
-        tdst[1].f.x = (float)nSegment / 16.0f;
-        tdst[1].f.y = 1.0f;
+        tdst[1].f.x = (float)nSegment / texDenom;
+        tdst[1].f.y = one;
 
         pdst += 2;
         ndst += 2;

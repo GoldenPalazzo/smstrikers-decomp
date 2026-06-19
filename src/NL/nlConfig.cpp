@@ -179,6 +179,8 @@ static bool IsFloatValue(const char* str, float& out)
 
 /**
  * Offset/Address/Size: 0x165C | 0x801D42C0 | size: 0x56C
+ * TODO: 94.9% match - this/tag register allocation differs through hash/probe/copy paths;
+ * hash loop uses nlToUpper<unsigned char> call sites where target uses nlToUpper<char>
  */
 void Config::Set(const char* tag, const char* value)
 {
@@ -221,7 +223,8 @@ void Config::Set(const char* tag, const char* value)
             {
                 if (mStringEnd - mStringMemory >= 0x27FF)
                 {
-                    break;
+                    tvp->tag = dest;
+                    return;
                 }
                 *mStringEnd = nlToUpper(c);
                 tag++;
@@ -267,7 +270,8 @@ void Config::Set(const char* tag, const char* value)
             {
                 if (mStringEnd - mStringMemory >= 0x27FF)
                 {
-                    break;
+                    tvp->tag = dest;
+                    return;
                 }
                 *mStringEnd = nlToUpper(c);
                 tag++;
@@ -313,7 +317,8 @@ void Config::Set(const char* tag, const char* value)
             {
                 if (mStringEnd - mStringMemory >= 0x27FF)
                 {
-                    break;
+                    tvp->tag = dest;
+                    return;
                 }
                 *mStringEnd = nlToUpper(c);
                 tag++;
@@ -355,7 +360,7 @@ void Config::Set(const char* tag, const char* value)
         {
             if (mStringEnd - mStringMemory >= 0x27FF)
             {
-                break;
+                goto value_done;
             }
             *mStringEnd = *value;
             value++;
@@ -363,6 +368,7 @@ void Config::Set(const char* tag, const char* value)
         }
         *mStringEnd = 0;
         mStringEnd++;
+    value_done:
         tvp->value.s = valDest;
 
         if (tvp->tag == NULL)
@@ -373,7 +379,8 @@ void Config::Set(const char* tag, const char* value)
             {
                 if (mStringEnd - mStringMemory >= 0x27FF)
                 {
-                    break;
+                    tvp->tag = dest;
+                    return;
                 }
                 *mStringEnd = nlToUpper(c);
                 tag++;
@@ -578,14 +585,13 @@ TagValuePair& Config::FindTvp(const char* tag)
 
 /**
  * Offset/Address/Size: 0x1FEC | 0x801D4C50 | size: 0x534
- * TODO: 96.82% match - b param r28 vs target r31 register permutation,
- * operator[] inlined COW check beq vs target bne+b (8 bytes shorter),
- * loop condition addi placement before vs after null branch
+ * TODO: 98.45% match - b param r28 vs target r31 register permutation,
+ * operator[] inlined COW check differs in branch layout
  */
 bool Config::IsBool(const char* str, bool& b) const
 {
     BasicString<char, Detail::TempStringAllocator> s(str);
-    for (int i = 0; i < (int)s.size() - 1; i++)
+    for (int i = 0; i < (s.m_data ? s.m_data->mSize - 1 : 0); i++)
     {
         char& r = s[i];
         r = _tolower(s[i]);

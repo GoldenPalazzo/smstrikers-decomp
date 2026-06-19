@@ -348,8 +348,8 @@ UpdateResult IChooseSide::UpdateForFE(float, eFEINPUT_PAD* pad)
 
 /**
  * Offset/Address/Size: 0xCDC | 0x800C4120 | size: 0x2F8
- * TODO: 95.97% match - loop index/base pointer callee-save allocation (r29/r30/r31)
- * and residual branch/register drift in disconnected ready-indicator flow.
+ * TODO: 97.76% match - outer loop register allocation is shifted, and
+ * the connected destination-index branch still emits an extra immediate load.
  */
 UpdateResult IChooseSide::UpdateForPause(float, eFEINPUT_PAD* pad)
 {
@@ -433,47 +433,7 @@ UpdateResult IChooseSide::UpdateForPause(float, eFEINPUT_PAD* pad)
             readyIndicator = mInstanceTable[16];
             if (readyIndicator != NULL)
             {
-                if (mPlayerReady[0])
-                {
-                    allReady = 1;
-                }
-                else if (mPlayingSides[0] != -1)
-                {
-                    allReady = 0;
-                    goto done_ready;
-                }
-
-                if (mPlayerReady[1])
-                {
-                    allReady = 1;
-                }
-                else if (mPlayingSides[1] != -1)
-                {
-                    allReady = 0;
-                    goto done_ready;
-                }
-
-                if (mPlayerReady[2])
-                {
-                    allReady = 1;
-                }
-                else if (mPlayingSides[2] != -1)
-                {
-                    allReady = 0;
-                    goto done_ready;
-                }
-
-                if (mPlayerReady[3])
-                {
-                    allReady = 1;
-                }
-                else if (mPlayingSides[3] != -1)
-                {
-                    allReady = 0;
-                }
-
-            done_ready:
-                if ((u8)allReady == 1)
+                if (AllPlayersReady())
                     readyIndicator->m_bVisible = true;
                 else
                     readyIndicator->m_bVisible = false;

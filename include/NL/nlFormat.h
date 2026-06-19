@@ -155,6 +155,34 @@ Format<BasicString<unsigned short, Detail::TempStringAllocator>, unsigned short[
 }
 
 /**
+ * Offset/Address/Size: 0x0 | 0x801037FC | size: 0x12C
+ */
+template <>
+inline BasicString<unsigned short, Detail::TempStringAllocator>
+Format<BasicString<unsigned short, Detail::TempStringAllocator>,
+    const unsigned short*, unsigned short[32], unsigned short[32]>(
+    const BasicString<unsigned short, Detail::TempStringAllocator>& format,
+    const unsigned short* const& value1,
+    const unsigned short (&value2)[32],
+    const unsigned short (&value3)[32])
+{
+    BasicStringData<unsigned short>* data = format.m_data;
+    if (data != 0)
+    {
+        data->mRefCount++;
+    }
+    else
+    {
+        data = 0;
+    }
+
+    FormatImplLayoutWideTemp impl(data);
+
+    return BasicString<unsigned short, Detail::TempStringAllocator>(
+        (BasicString<unsigned short, Detail::TempStringAllocator>)(((((FormatImpl<BasicString<unsigned short, Detail::TempStringAllocator> >&)impl) % value1) % (const unsigned short*)value2) % (const unsigned short*)value3));
+}
+
+/**
  * Offset/Address/Size: 0xF40 | 0x8010473C | size: 0x12C
  */
 template <>

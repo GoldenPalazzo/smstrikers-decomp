@@ -221,7 +221,8 @@ typedef double dReal;
         dJointTypeHinge2,
         dJointTypeFixed,
         dJointTypeNull,
-        dJointTypeAMotor
+        dJointTypeAMotor,
+        dJointTypeCharacter
     };
 
     /* an alternative way of setting joint parameters, using joint parameter

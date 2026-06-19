@@ -2680,126 +2680,200 @@ void GameInfoManager::OnPreCupGameState()
 
     mPreGameUnlockedState = 0;
 
-    if (CheckUnlockStatus(isKongaUnlocked, mUserInfo.mTrophies[0], 0))
     {
-        mPreGameUnlockedState |= 0x1;
+        u32 unlockedState;
+        if (CheckUnlockStatus(isKongaUnlocked, mUserInfo.mTrophies[0], 0))
+        {
+            unlockedState = mPreGameUnlockedState | 0x1;
+            mPreGameUnlockedState = unlockedState;
+        }
+        else
+        {
+            unlockedState = mPreGameUnlockedState;
+        }
+        mPreGameUnlockedState = unlockedState;
     }
-    else
     {
-        *(volatile u32*)&mPreGameUnlockedState = mPreGameUnlockedState;
+        u32 unlockedState;
+        if (CheckUnlockStatus(isYoshiUnlocked, mUserInfo.mTrophies[0], 1))
+        {
+            unlockedState = mPreGameUnlockedState | 0x2;
+            mPreGameUnlockedState = unlockedState;
+        }
+        else
+        {
+            unlockedState = mPreGameUnlockedState;
+        }
+        mPreGameUnlockedState = unlockedState;
     }
-    if (CheckUnlockStatus(isYoshiUnlocked, mUserInfo.mTrophies[0], 1))
     {
-        mPreGameUnlockedState |= 0x2;
+        u32 unlockedState;
+        if (CheckUnlockStatus(isForbiddenUnlocked, mUserInfo.mTrophies[0], 2))
+        {
+            unlockedState = mPreGameUnlockedState | 0x4;
+            mPreGameUnlockedState = unlockedState;
+        }
+        else
+        {
+            unlockedState = mPreGameUnlockedState;
+        }
+        mPreGameUnlockedState = unlockedState;
     }
-    else
     {
-        *(volatile u32*)&mPreGameUnlockedState = mPreGameUnlockedState;
+        u32 unlockedState;
+        if (IsSuperCupModeUnlocked())
+        {
+            unlockedState = mPreGameUnlockedState | 0x8;
+            mPreGameUnlockedState = unlockedState;
+        }
+        else
+        {
+            unlockedState = mPreGameUnlockedState;
+        }
+        mPreGameUnlockedState = unlockedState;
     }
-    if (CheckUnlockStatus(isForbiddenUnlocked, mUserInfo.mTrophies[0], 2))
     {
-        mPreGameUnlockedState |= 0x4;
-    }
-    else
-    {
-        *(volatile u32*)&mPreGameUnlockedState = mPreGameUnlockedState;
-    }
-    if (IsSuperCupModeUnlocked())
-    {
-        mPreGameUnlockedState |= 0x8;
-    }
-    else
-    {
-        *(volatile u32*)&mPreGameUnlockedState = mPreGameUnlockedState;
-    }
-    if (CheckUnlockStatus(isSuperTeamUnlocked, mUserInfo.mTrophies[0], 3))
-    {
-        mPreGameUnlockedState |= 0x10;
-    }
-    else
-    {
-        *(volatile u32*)&mPreGameUnlockedState = mPreGameUnlockedState;
-    }
-
-    mPreGameUnlockedState |= 0x20;
-
-    if (CheckUnlockStatus(isSuperStadUnlocked, mUserInfo.mTrophies[0], 3))
-    {
-        mPreGameUnlockedState |= 0x40;
-    }
-    else
-    {
-        *(volatile u32*)&mPreGameUnlockedState = mPreGameUnlockedState;
-    }
-    if (CheckUnlockStatus(isAllSTSUnlocked, mUserInfo.mTrophies[0], 4))
-    {
-        mPreGameUnlockedState |= 0x80;
-    }
-    else
-    {
-        *(volatile u32*)&mPreGameUnlockedState = mPreGameUnlockedState;
-    }
-    if (CheckUnlockStatus(isTiltUnlocked, mUserInfo.mTrophies[0], 5))
-    {
-        mPreGameUnlockedState |= 0x100;
-    }
-    else
-    {
-        *(volatile u32*)&mPreGameUnlockedState = mPreGameUnlockedState;
-    }
-    if (CheckUnlockStatus(isGoalieUnlocked, mUserInfo.mTrophies[0], 6))
-    {
-        mPreGameUnlockedState |= 0x2000;
-    }
-    else
-    {
-        *(volatile u32*)&mPreGameUnlockedState = mPreGameUnlockedState;
-    }
-    if (CheckUnlockStatus(isUnlimitedUnlocked, mUserInfo.mTrophies[0], 7))
-    {
-        mPreGameUnlockedState |= 0x200;
-    }
-    else
-    {
-        *(volatile u32*)&mPreGameUnlockedState = mPreGameUnlockedState;
+        u32 unlockedState;
+        if (CheckUnlockStatus(isSuperTeamUnlocked, mUserInfo.mTrophies[0], 3))
+        {
+            unlockedState = mPreGameUnlockedState | 0x10;
+            mPreGameUnlockedState = unlockedState;
+        }
+        else
+        {
+            unlockedState = mPreGameUnlockedState;
+        }
+        mPreGameUnlockedState = unlockedState;
     }
 
-    if (mUserInfo.mIsFlowerCupUnlocked)
     {
-        mPreGameUnlockedState |= 0x400;
+        u32 unlockedState = mPreGameUnlockedState | 0x20;
+        mPreGameUnlockedState = unlockedState;
+        mPreGameUnlockedState = unlockedState;
     }
-    else
+
     {
-        *(volatile u32*)&mPreGameUnlockedState = mPreGameUnlockedState;
+        u32 unlockedState;
+        if (CheckUnlockStatus(isSuperStadUnlocked, mUserInfo.mTrophies[0], 3))
+        {
+            unlockedState = mPreGameUnlockedState | 0x40;
+            mPreGameUnlockedState = unlockedState;
+        }
+        else
+        {
+            unlockedState = mPreGameUnlockedState;
+        }
+        mPreGameUnlockedState = unlockedState;
     }
-    if (mUserInfo.mIsStarCupUnlocked)
     {
-        mPreGameUnlockedState |= 0x800;
+        u32 unlockedState;
+        if (CheckUnlockStatus(isAllSTSUnlocked, mUserInfo.mTrophies[0], 4))
+        {
+            unlockedState = mPreGameUnlockedState | 0x80;
+            mPreGameUnlockedState = unlockedState;
+        }
+        else
+        {
+            unlockedState = mPreGameUnlockedState;
+        }
+        mPreGameUnlockedState = unlockedState;
     }
-    else
     {
-        *(volatile u32*)&mPreGameUnlockedState = mPreGameUnlockedState;
+        u32 unlockedState;
+        if (CheckUnlockStatus(isTiltUnlocked, mUserInfo.mTrophies[0], 5))
+        {
+            unlockedState = mPreGameUnlockedState | 0x100;
+            mPreGameUnlockedState = unlockedState;
+        }
+        else
+        {
+            unlockedState = mPreGameUnlockedState;
+        }
+        mPreGameUnlockedState = unlockedState;
+    }
+    {
+        u32 unlockedState;
+        if (CheckUnlockStatus(isGoalieUnlocked, mUserInfo.mTrophies[0], 6))
+        {
+            unlockedState = mPreGameUnlockedState | 0x2000;
+            mPreGameUnlockedState = unlockedState;
+        }
+        else
+        {
+            unlockedState = mPreGameUnlockedState;
+        }
+        mPreGameUnlockedState = unlockedState;
+    }
+    {
+        u32 unlockedState;
+        if (CheckUnlockStatus(isUnlimitedUnlocked, mUserInfo.mTrophies[0], 7))
+        {
+            unlockedState = mPreGameUnlockedState | 0x200;
+            mPreGameUnlockedState = unlockedState;
+        }
+        else
+        {
+            unlockedState = mPreGameUnlockedState;
+        }
+        mPreGameUnlockedState = unlockedState;
+    }
+
+    {
+        u32 unlockedState;
+        if (mUserInfo.mIsFlowerCupUnlocked)
+        {
+            unlockedState = mPreGameUnlockedState | 0x400;
+            mPreGameUnlockedState = unlockedState;
+        }
+        else
+        {
+            unlockedState = mPreGameUnlockedState;
+        }
+        mPreGameUnlockedState = unlockedState;
+    }
+    {
+        u32 unlockedState;
+        if (mUserInfo.mIsStarCupUnlocked)
+        {
+            unlockedState = mPreGameUnlockedState | 0x800;
+            mPreGameUnlockedState = unlockedState;
+        }
+        else
+        {
+            unlockedState = mPreGameUnlockedState;
+        }
+        mPreGameUnlockedState = unlockedState;
     }
 
     bool allBasicUnlocked = CheckUnlockStatusNoGlobal(mUserInfo.mTrophies[0], 0)
                          && CheckUnlockStatusNoGlobal(mUserInfo.mTrophies[0], 1)
                          && CheckUnlockStatusNoGlobal(mUserInfo.mTrophies[0], 2);
-    if (allBasicUnlocked)
     {
-        mPreGameUnlockedState |= 0x1000;
-    }
-    else
-    {
-        *(volatile u32*)&mPreGameUnlockedState = mPreGameUnlockedState;
+        u32 unlockedState;
+        if (allBasicUnlocked)
+        {
+            unlockedState = mPreGameUnlockedState | 0x1000;
+            mPreGameUnlockedState = unlockedState;
+        }
+        else
+        {
+            unlockedState = mPreGameUnlockedState;
+        }
+        mPreGameUnlockedState = unlockedState;
     }
 
-    if (CheckUnlockStatusNoGlobal(mUserInfo.mTrophies[0], 3))
     {
-        mPreGameUnlockedState |= 0x4000;
-    }
-    else
-    {
-        *(volatile u32*)&mPreGameUnlockedState = mPreGameUnlockedState;
+        u32 unlockedState;
+        if (CheckUnlockStatusNoGlobal(mUserInfo.mTrophies[0], 3))
+        {
+            unlockedState = mPreGameUnlockedState | 0x4000;
+            mPreGameUnlockedState = unlockedState;
+        }
+        else
+        {
+            unlockedState = mPreGameUnlockedState;
+        }
+        mPreGameUnlockedState = unlockedState;
     }
 
     {
@@ -2827,108 +2901,95 @@ void GameInfoManager::OnPreCupGameState()
         mTrophyColourState[i] = GetMilestoneLevel(MILESTONES[i]);
     }
 
-    if (mCurrentMode == GM_BOWSER_CUP
-        && !CheckUnlockStatus(isSuperTeamUnlocked, mUserInfo.mTrophies[0], 3)
-        && mCurrentCup->mRoundNumber == -1)
+    if ((mCurrentMode == GM_BOWSER_CUP
+            && !CheckUnlockStatus(isSuperTeamUnlocked, mUserInfo.mTrophies[0], 3)
+            && mCurrentCup->mRoundNumber == -1)
+        || (CheckUnlockStatus(isSuperTeamUnlocked, mUserInfo.mTrophies[0], 3)
+            && mCurrentCup->mRoundNumber == -2))
     {
         mCupMatchRequirement = RESULT_USER_OT_WINS;
-        return;
     }
-
-    if (CheckUnlockStatus(isSuperTeamUnlocked, mUserInfo.mTrophies[0], 3)
-        && mCurrentCup->mRoundNumber == -2)
+    else if (mCurrentMode == GM_SUPER_BOWSER_CUP && mCurrentCup->mRoundNumber == -2)
     {
         mCupMatchRequirement = RESULT_USER_OT_WINS;
-        return;
     }
-
-    if (mCurrentMode == GM_SUPER_BOWSER_CUP && mCurrentCup->mRoundNumber == -2)
+    else if (mCurrentMode != GM_BOWSER_CUP && mCurrentMode != GM_SUPER_BOWSER_CUP
+             && mCurrentCup->mRoundNumber == mCurrentCup->GetNumRounds() - 1)
     {
-        mCupMatchRequirement = RESULT_USER_OT_WINS;
-        return;
-    }
+        TeamStats userTeam;
+        TeamStats opponentTeam;
+        TeamStats highestTeam;
+        int highPoints;
+        int j;
+        int teamBuf[16];
+        int tempBuf[16];
+        TeamStats* team = (TeamStats*)teamBuf;
+        TeamStats* pTemp = (TeamStats*)tempBuf;
 
-    if (mCurrentMode == GM_BOWSER_CUP || mCurrentMode == GM_SUPER_BOWSER_CUP)
-    {
-        mCupMatchRequirement = RESULT_INVALID;
-        return;
-    }
+        highPoints = 0;
 
-    if (mCurrentCup->mRoundNumber != mCurrentCup->GetNumRounds() - 1)
-    {
-        mCupMatchRequirement = RESULT_INVALID;
-        return;
-    }
-
-    TeamStats userTeam;
-    TeamStats opponentTeam;
-    TeamStats highestTeam;
-    int highPoints;
-    int j;
-    int teamBuf[16];
-    int tempBuf[16];
-    TeamStats* team = (TeamStats*)teamBuf;
-    TeamStats* pTemp = (TeamStats*)tempBuf;
-
-    highPoints = 0;
-
-    for (j = 0; j < ((mCurrentMode == GM_BOWSER_CUP || mCurrentMode == GM_SUPER_BOWSER_CUP) ? 8 : mCurrentCup->GetNumTeams()); j++)
-    {
-        if (mCurrentMode == GM_BOWSER_CUP)
+        for (j = 0; j < (mCurrentMode == GM_BOWSER_CUP ? 8 : (mCurrentMode == GM_SUPER_BOWSER_CUP ? 8 : mCurrentCup->GetNumTeams())); j++)
         {
-            *pTemp = *mBowserCupSeries.GetTeamStats((unsigned short)j);
-        }
-        else if (mCurrentMode == GM_SUPER_BOWSER_CUP)
-        {
-            *pTemp = *mSuperBowserCupSeries.GetTeamStats((unsigned short)j);
-        }
-        else
-        {
-            *pTemp = *mCurrentCup->GetTeamStats((unsigned short)j);
-        }
-
-        *team = *pTemp;
-
-        if (team->mNumPoints > highPoints)
-        {
-            highestTeam = *team;
-            highPoints = team->mNumPoints;
-        }
-
-        if (team->mTeamIndex == mCurrentCup->mUserSelectedTeam)
-        {
-            userTeam = *team;
-        }
-        else
-        {
-            BasicGameInfo* gameInfo = mGameInfo[mCurrentMode];
-            if (team->mTeamIndex == (gameInfo ? gameInfo->mTeamIndex[0] : TEAM_INVALID)
-                || team->mTeamIndex == (gameInfo ? gameInfo->mTeamIndex[1] : TEAM_INVALID))
+            if (mCurrentMode == GM_BOWSER_CUP)
             {
-                opponentTeam = *team;
+                *pTemp = *mBowserCupSeries.GetTeamStats((unsigned short)j);
+            }
+            else if (mCurrentMode == GM_SUPER_BOWSER_CUP)
+            {
+                *pTemp = *mSuperBowserCupSeries.GetTeamStats((unsigned short)j);
+            }
+            else
+            {
+                *pTemp = *mCurrentCup->GetTeamStats((unsigned short)j);
+            }
+
+            *team = *pTemp;
+
+            if (team->mNumPoints > highPoints)
+            {
+                highestTeam = *team;
+                highPoints = team->mNumPoints;
+            }
+
+            if (team->mTeamIndex == mCurrentCup->mUserSelectedTeam)
+            {
+                userTeam = *team;
+            }
+            else
+            {
+                BasicGameInfo* gameInfo = mGameInfo[mCurrentMode];
+                if (team->mTeamIndex == (gameInfo ? gameInfo->mTeamIndex[0] : TEAM_INVALID)
+                    || team->mTeamIndex == (gameInfo ? gameInfo->mTeamIndex[1] : TEAM_INVALID))
+                {
+                    opponentTeam = *team;
+                }
             }
         }
-    }
 
-    if (userTeam.mNumPoints >= highestTeam.mNumPoints && userTeam.mNumPoints >= opponentTeam.mNumPoints + 3)
-    {
-        mCupMatchRequirement = RESULT_CUP_WIN;
-    }
-    else if (userTeam.mNumPoints + 1 >= highestTeam.mNumPoints && userTeam.mNumPoints + 1 >= opponentTeam.mNumPoints + 3)
-    {
-        mCupMatchRequirement = RESULT_USER_OT_LOSES;
-    }
-    else if (userTeam.mNumPoints + 3 >= highestTeam.mNumPoints && userTeam.mNumPoints + 3 >= opponentTeam.mNumPoints + 1)
-    {
-        mCupMatchRequirement = RESULT_USER_OT_WINS;
-    }
-    else if (userTeam.mNumPoints + 3 >= highestTeam.mNumPoints && userTeam.mNumPoints + 3 >= opponentTeam.mNumPoints)
-    {
-        mCupMatchRequirement = RESULT_USER_WINS;
+        if (userTeam.mNumPoints >= highestTeam.mNumPoints && userTeam.mNumPoints >= opponentTeam.mNumPoints + 3)
+        {
+            mCupMatchRequirement = RESULT_CUP_WIN;
+        }
+        else if (userTeam.mNumPoints + 1 >= highestTeam.mNumPoints && userTeam.mNumPoints + 1 >= opponentTeam.mNumPoints + 3)
+        {
+            mCupMatchRequirement = RESULT_USER_OT_LOSES;
+        }
+        else if (userTeam.mNumPoints + 3 >= highestTeam.mNumPoints && userTeam.mNumPoints + 3 >= opponentTeam.mNumPoints + 1)
+        {
+            mCupMatchRequirement = RESULT_USER_OT_WINS;
+        }
+        else if (userTeam.mNumPoints + 3 >= highestTeam.mNumPoints && userTeam.mNumPoints + 3 >= opponentTeam.mNumPoints)
+        {
+            mCupMatchRequirement = RESULT_USER_WINS;
+        }
+        else
+        {
+            mCupMatchRequirement = RESULT_USER_LOSES;
+        }
     }
     else
     {
-        mCupMatchRequirement = RESULT_USER_LOSES;
+        mCupMatchRequirement = RESULT_INVALID;
     }
 }
 

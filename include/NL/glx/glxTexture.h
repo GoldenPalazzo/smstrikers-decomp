@@ -174,7 +174,6 @@ PlatTexture* glx_MakeTexture(GXTextureHeader* header, unsigned long handle);
 bool glx_AddTex(unsigned long handle, PlatTexture* platTex);
 PlatTexture* glx_GetTex(unsigned long, bool, bool);
 PlatTexture* glx_GetGridTexture(int width, int height);
-PlatTexture* glx_MakeGridTexture(int width, int height);
 bool glx_SetGridMode(bool bGrid);
 void glxInitTex();
 void glx_BackupTexMarkerLevel(int level);

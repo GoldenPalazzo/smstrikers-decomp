@@ -2533,8 +2533,22 @@ void PowerupBase::UpdateTransform()
 
 /**
  * Offset/Address/Size: 0x2360 | 0x8005CC4C | size: 0x16C
- * TODO: 99.12% match - r5/r6 register swap in second loop (registry ptr vs j counter)
  */
+static inline void RegisterPowerup(unsigned long hashID, PowerupBase* powerup)
+{
+    int j = 0;
+    for (; j < 25; j++)
+    {
+        if (powerupRegistry.registry[j].hashId == 0)
+        {
+            powerupRegistry.registry[j].hashId = hashID;
+            powerupRegistry.registry[j].powerup = powerup;
+            return;
+        }
+    }
+    nlBreak();
+}
+
 void PowerupBase::Init(cFielder* pFielder, Bowser* pBowser)
 {
     int i;
@@ -2559,21 +2573,9 @@ found1:
         DrawableObject* pD = m_pDrawableObj;
         pD->m_uObjectFlags |= 0x100;
         unsigned long hashID = m_pDrawableObj->m_uHashID;
-        int j = 0;
-
-        for (; j < 25; j++)
-        {
-            if (powerupRegistry.registry[j].hashId == 0)
-            {
-                powerupRegistry.registry[j].hashId = hashID;
-                powerupRegistry.registry[j].powerup = this;
-                goto found2;
-            }
-        }
-        nlBreak();
+        RegisterPowerup(hashID, this);
     }
 
-found2:
     PreThrow(pFielder, pBowser);
 
     m_pThrower = pFielder;

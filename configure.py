@@ -547,6 +547,13 @@ def ODELib(lib_name: str, objects: Objects, cflags=cflags_ode) -> Library:
         lib_name,
         objects,
         includes=[
+            # Internal ODE headers (src/ode/objects.h, obstack.h, array.h) share
+            # basenames with the public API copies under include/ode. Source files
+            # directly in src/ode/ pick up the internal versions via -cwd source,
+            # but files in src/ode/ext/ miss the cwd lookup and would otherwise
+            # resolve the public include/ode/objects.h (no struct defs). List
+            # src/ode first so the internal headers win for all ODE objects.
+            "src/ode",
             *includes_base,
             "include/ode",
         ],
@@ -841,7 +848,7 @@ config.libs = [
 
             # Game Render
             Object(Matching, "Game/Render/FlareHandler.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(NonMatching, "Game/Render/Nis.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(NonMatching, "Game/Render/Nis.cpp", extra_cflags=["-inline auto"]),
             Object(Matching, "Game/Render/CameraGuy.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/Render/SkinAnimatedNPC.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Render/depthoffield.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
@@ -1373,7 +1380,7 @@ config.libs = [
     ODELib(
         "Open Dynamics Engine (ODE)",
         [
-            Object(NonMatching, "ode/NLGAdditions.cpp", extra_cflags=["-inline auto", "-inline auto, deferred"]),
+            Object(Matching, "ode/NLGAdditions.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "ode/collision_kernel.cpp", extra_cflags=["-inline auto"]),
             Object(Matching, "ode/collision_space.cpp", extra_cflags=["-inline auto"]),
             Object(NonMatching, "ode/collision_std.cpp", extra_cflags=["-inline auto", "-fp_contract on"]),

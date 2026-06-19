@@ -132,8 +132,7 @@ void FEAudio::ResetRandomVoiceToggleSFX()
 
 /**
  * Offset/Address/Size: 0x290 | 0x8009F03C | size: 0x360
- * TODO: 66.2% match - r30/r31 register swap for pGIM/randomElementIndex
- * and static variable label numbering differences
+ * TODO: 99.75% match - pGIM and fallback event pointers use different registers
  */
 void FEAudio::PlayRandomVoiceToggleSFX()
 {
@@ -151,10 +150,11 @@ void FEAudio::PlayRandomVoiceToggleSFX()
             init = 1;
         }
 
-        GameInfoManager* pGIM = nlSingleton<GameInfoManager>::s_pInstance;
+        GameInfoManager* const pGIM = nlSingleton<GameInfoManager>::s_pInstance;
         pGIM->GetSidekick(0);
         pGIM->GetSidekick(0);
 
+        Audio::eCharSFX newSound;
         unsigned int randomElementIndex = nlRandom(26, &nlDefaultSeed);
 
         if (lastSoundPlayedType != Audio::CHARSFX_NONE)
@@ -180,7 +180,7 @@ void FEAudio::PlayRandomVoiceToggleSFX()
             gpLastSoundFromPlayer = NULL;
         }
 
-        Audio::eCharSFX newSound = charInGameDialogueTypes[randomElementIndex];
+        newSound = charInGameDialogueTypes[randomElementIndex];
         lastSoundPlayedType = newSound;
 
         if (newSound < Audio::CHARSFX_BOWSER_ENTER && newSound != Audio::CHARSFX_EFFORTS_KICK_03)

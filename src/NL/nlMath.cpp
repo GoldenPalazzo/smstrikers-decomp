@@ -18,9 +18,6 @@ struct coeffs
     s32 coeffs7;
 };
 
-// const struct coeffs coeffs1 = { 0, 0x3b85739f, 0x3c92a2f4, 0x3d3741dd, 0x3dad0097, 0x3e09f123, 0x3e44b6ba, 0x3e81b9e9 };
-// const struct coeffs coeffs2 = { 0x3f7f567a, 0x3f77098b, 0x3f690bc9, 0x3f56c9b8, 0x3f42760a, 0x3f2de0fe, 0x3f1a4609, 0x3f0854e4 };
-
 extern void seedMT(u32 p);
 
 /**
@@ -160,15 +157,18 @@ float nlTan(unsigned short angle)
     return (float)tan(angle * 0.0000958738f);
 }
 
+static inline f32 nlACosMax(f32 a, f32 b)
+{
+    return (a >= b) ? a : b;
+}
+
 /**
  * Offset/Address/Size: 0x460 | 0x801D18D4 | size: 0x12C
- * TODO: 98.20% match - clamp handoff still materializes a temp in f5 (extra fmr)
- *       instead of keeping clamped rad in f7 through the rsqrt/compare path
  */
 int nlACos(float x)
 {
     u8 complement = (x < 0.0f);
-    f32 y, temp, sqrtVal, rad, rad2;
+    f32 y, temp, sqrtVal, rad;
 
     x = 1.0f - (f32)fabs(x);
 
@@ -178,15 +178,7 @@ int nlACos(float x)
     y = x * y + 2.0002916f;
     y = x * y + -0.000007239284f;
 
-    rad2 = 2.0f * x;
-    if (rad2 >= 0.00001f)
-    {
-        rad = rad2;
-    }
-    else
-    {
-        rad = 0.00001f;
-    }
+    rad = nlACosMax(2.0f * x, 0.00001f);
 
     if (rad > 0.0f)
     {
@@ -222,7 +214,7 @@ int nlACos(float x)
  */
 void nlSinCos(float* presult_sin, float* presult_cos, unsigned short angle)
 {
-    float angle_rad = (6.283185f / 65536.0f) * (float)angle;
+    float angle_rad = (6.2831855f / 65536.0f) * (float)angle;
     float octants = 1.2732395f * angle_rad;
     int k = (int)octants;
     float oct_f = (float)k;
@@ -313,15 +305,15 @@ void nlSinCos(float* presult_sin, float* presult_cos, unsigned short angle)
 
 float nlSin(unsigned short angle)
 {
-    float a = (float)angle * (6.283185f / 65536.0f);
+    float a = (float)angle * (6.2831855f / 65536.0f);
     float working_a = a;
     float flip_sign = 1.0f;
 
     if (a >= 4.7123889f) // 3*PI/2
     {
-        working_a = a - 6.283185f; // 2*PI
+        working_a = a - 6.2831855f; // 2*PI
     }
-    else if (a >= 1.5707963f) // PI/2
+    else if (a >= 1.5707964f) // PI/2
     {
         flip_sign = -flip_sign;
         working_a = a - 3.14159265f; // PI
@@ -329,7 +321,7 @@ float nlSin(unsigned short angle)
 
     // Taylor series
     float a_squared = working_a * working_a;
-    float result = working_a * (1.0f + a_squared * (-0.16666667f + a_squared * (0.008332208f + a_squared * (-0.00019841f + a_squared * 0.0000027557319f))));
+    float result = working_a * (1.0f + a_squared * (-0.16666667f + a_squared * (0.0083333337f + a_squared * (-0.0001984127f + a_squared * 0.0000027557319f))));
 
     return flip_sign * result;
 }

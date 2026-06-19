@@ -5844,9 +5844,14 @@ inline void ExecutePowerupEffect(cFielder* pFielder)
     case POWER_UP_MUSHROOM:
     {
         f32 fTime = g_pGame->m_pGameTweaks->fMushroomEffectTime;
-        if (pFielder->m_eCharacterClass < PEACH && pFielder->m_eCharacterClass >= LUIGI)
+        switch (pFielder->m_eCharacterClass)
         {
+        case LUIGI:
+        case MARIO:
             fTime *= 1.33f;
+            break;
+        default:
+            break;
         }
         pFielder->m_tPowerupEffectTime.SetSeconds(fTime);
         EmitMushroom(pFielder);
@@ -5879,7 +5884,7 @@ inline void ExecutePowerupEffect(cFielder* pFielder)
 
 /**
  * Offset/Address/Size: 0x1D18 | 0x8001B054 | size: 0x4C0
- * TODO: 96.38% match - remaining r3/r0 dispatch diffs in the powerup effect blocks
+ * TODO: 98.49% match - remaining cached powerup dispatch register diffs
  * and initial POWER_UP_NONE validation branch shape.
  */
 void cFielder::SetPowerup(ePowerUpType eNewPowerup, int nnumOfPowerups, cFielder* pTarget)
@@ -5944,7 +5949,8 @@ void cFielder::SetPowerup(ePowerUpType eNewPowerup, int nnumOfPowerups, cFielder
     if (m_tFrozenTimer.m_uPackedTime != 0)
         return;
 
-    switch (m_ePowerup)
+    ePowerUpType ePowerup = m_ePowerup;
+    switch (ePowerup)
     {
     case POWER_UP_CHAIN_CHOMP:
         ExecutePowerupEffect(this);

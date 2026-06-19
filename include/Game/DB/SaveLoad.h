@@ -12,7 +12,7 @@ public:
     static bool CardBusy();
     static long StartSave(int, void (*)(long));
     static long StartLoad(int, void (*)(long), bool, bool);
-    bool DidGameIDChange();
+    static bool DidGameIDChange();
     static long StartDelete(int, void (*)(long));
     static long StartFormat(int, void (*)(long));
     static long StartFileExistsCheck(int, void (*)(long));

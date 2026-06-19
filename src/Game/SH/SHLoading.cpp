@@ -576,9 +576,13 @@ void SuperLoadingScene::DisplayCupInfo()
 
 /**
  * Offset/Address/Size: 0x0 | 0x800A6770 | size: 0x3C4
- * TODO: 90.49% match - register allocation mismatch (r28-r31 vs r25-r28 for
- * this/pTextInst/side/i), stack temp offset (sp+0x14 vs sp+0x10 for copy-ctor
- * temporaries). File uses -inline deferred. Compiler-internal allocation.
+ * TODO: 96.74% match - nonvolatile register allocation differs for
+ * this/pTextInst/side/checkConnected/i, and BasicString temp stack slots remain
+ * 4 bytes lower than target.
+ * NOTE: do NOT add #define BASICSTRING_NO_COPY_REREAD - it is TU-wide and lifts
+ * this fn to ~98.5% but regresses Format<BasicString>__F... A2/A16 from 100% to
+ * 98.43% (net TU regression). The reread macro helps here but not the Format
+ * template instances in the same TU.
  */
 void SuperLoadingScene::BuildPlayerStrings(TLTextInstance* pTextInst, int side, bool checkConnected)
 {
@@ -617,7 +621,7 @@ void SuperLoadingScene::BuildPlayerStrings(TLTextInstance* pTextInst, int side, 
         }
 
         str = str.AppendInPlace(locText);
-        str = str.AppendInPlace((const unsigned short*)L"{clr:pop}\n");
+        str = str.AppendInPlace((const unsigned short*)L"{clr:pop} ");
     }
 
     memcpy(side == 0 ? mPlayerStrings[0] : mPlayerStrings[1], str.c_str(), 255);

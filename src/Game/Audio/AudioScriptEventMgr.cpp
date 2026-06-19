@@ -1,5 +1,6 @@
 #include "Game/Audio/AudioScriptEventMgr.h"
 #include "Game/Audio/SoundEventScript.h"
+#include "Game/EventDataTypes.h"
 #include "Game/Game.h"
 #include "Game/Goalie.h"
 #include "Game/Physics/PhysicsNet.h"
@@ -187,6 +188,90 @@ public:
     static bool IsInited();
 };
 
+struct PlayerAttackData : public EventData
+{
+    /* 0x04 */ const cFielder* pAttacker;
+    /* 0x08 */ int nAttackerPadID;
+    /* 0x0C */ cFielder* pTarget;
+    /* 0x10 */ float fAttackIntensity;
+};
+
+struct PowerupUsedEventData : public EventData
+{
+    /* 0x04 */ int Type;
+    /* 0x08 */ cPlayer* Thrower;
+    /* 0x0C */ cPlayer* Target;
+};
+
+struct PowerupHitPlayerEventData : public EventData
+{
+    /* 0x04 */ int Type;
+    /* 0x08 */ cPlayer* Thrower;
+    /* 0x0C */ cPlayer* Target;
+};
+
+struct NISData : public EventData
+{
+    /* 0x04 */ const char* Type;
+    /* 0x08 */ const char* Param;
+};
+
+namespace Audio
+{
+enum eWorldSFX
+{
+    STADSFX_GEN_FIREWORKS_FLOOR = 198,
+};
+
+bool IsWorldSFXLoaded();
+float GetAudioTimer();
+
+struct SoundStrToIDNode
+{
+    /* 0x00 */ char _pad00[0x10];
+    /* 0x10 */ float fVolume;
+    /* 0x14 */ char _pad14[0x30];
+}; // total size: 0x44
+
+class cWorldSFX
+{
+public:
+    unsigned long Play(Audio::eWorldSFX, float, float, bool, float);
+
+    /* 0x00 */ char _pad00[0x10];
+    /* 0x10 */ SoundStrToIDNode* mpSFX;
+};
+
+extern cWorldSFX gStadGenSFX;
+} // namespace Audio
+
+static AudioScriptEventMgr::AUDIO_EVENT_TEAM GetPlayerTeam(cPlayer* pPlayer)
+{
+    AudioScriptEventMgr::AUDIO_EVENT_TEAM team = AudioScriptEventMgr::AET_Home;
+    if (pPlayer->m_pTeam->m_nSide != 0)
+    {
+        team = AudioScriptEventMgr::AET_Away;
+    }
+    return team;
+}
+
+#define GET_EVENT_DATA(T, pData, id)                                       \
+    T* pData;                                                              \
+    if ((s32)pEvent->m_data.GetID() == -1)                                 \
+    {                                                                      \
+        nlPrintf("Error: Trying to get event data on event with none!\n"); \
+        pData = NULL;                                                      \
+    }                                                                      \
+    else if ((s32)pEvent->m_data.GetID() != (id))                          \
+    {                                                                      \
+        nlPrintf("Error: GetData() failed! Data types do not match!\n");   \
+        pData = NULL;                                                      \
+    }                                                                      \
+    else                                                                   \
+    {                                                                      \
+        pData = (T*)&pEvent->m_data;                                       \
+    }
+
 static unsigned char g_InBowserAttack;
 static unsigned char g_InGoal;
 
@@ -262,6 +347,7 @@ void WalkHelper<AUDIO_EVENT_RECORD, ListEntry<AUDIO_EVENT_RECORD>, _AudioEventRa
 template <typename T>
 static AudioScriptEventMgr::AUDIO_EVENT_TEAM GetEventTeam(Event* pEvent, bool Invert)
 {
+    FORCE_DONT_INLINE;
     T* pEventData;
     if ((s32)pEvent->m_data.GetID() == -1)
     {
@@ -380,6 +466,32 @@ void _AudioEventRaiser::RaiseEvent(AUDIO_EVENT_RECORD* pEvent)
  */
 void AudioScriptEventMgr::FireEvent(AudioScriptEventMgr::AUDIO_EVENT Event, AudioScriptEventMgr::AUDIO_EVENT_TEAM Team)
 {
+    FORCE_DONT_INLINE;
+    AUDIO_EVENT_RECORD aer = { Event, Team };
+    union
+    {
+        AUDIO_EVENT_RECORD val;
+        u64 _align;
+    } temp;
+    temp.val = aer;
+
+    ListEntry<AUDIO_EVENT_RECORD>* entry = NULL;
+    g_PendingEvents.m_Allocator.Allocate(entry);
+
+    if (entry != NULL)
+    {
+        entry->next = NULL;
+        entry->data = temp.val;
+    }
+
+    nlListAddEnd(&g_PendingEvents.m_Head, &g_PendingEvents.m_Tail, entry);
+}
+
+// Inline twin of FireEvent for callers whose target inlines the body
+// (Poll, RecordExcitingEvent). The standalone FireEvent above carries
+// FORCE_DONT_INLINE so AudioScriptEventHandler calls it out-of-line.
+static inline void FireEventInline(AudioScriptEventMgr::AUDIO_EVENT Event, AudioScriptEventMgr::AUDIO_EVENT_TEAM Team)
+{
     AUDIO_EVENT_RECORD aer = { Event, Team };
     union
     {
@@ -459,7 +571,7 @@ static void Poll()
 
     if (g_ScriptPollState.GameTimeToggle == 1 && event != (AudioScriptEventMgr::AUDIO_EVENT)-1)
     {
-        AudioScriptEventMgr::FireEvent(event, team);
+        FireEventInline(event, team);
     }
 
     cFielder* pBallOwner = g_pBall->GetOwnerFielder();
@@ -485,14 +597,14 @@ static void Poll()
                     eventTeam = AudioScriptEventMgr::AET_Away;
                 }
 
-                AudioScriptEventMgr::FireEvent(AudioScriptEventMgr::AE_GoodPosition, eventTeam);
+                FireEventInline(AudioScriptEventMgr::AE_GoodPosition, eventTeam);
                 g_ScriptPollState.LastExcitementTime = g_pGame->GetGameTime();
 
                 if (g_ScriptPollState.AmBored)
                 {
                     nlPrintf("END bored\n");
                     g_ScriptPollState.AmBored = 0;
-                    AudioScriptEventMgr::FireEvent(AudioScriptEventMgr::AE_BoredEnd, AudioScriptEventMgr::AET_Neutral);
+                    FireEventInline(AudioScriptEventMgr::AE_BoredEnd, AudioScriptEventMgr::AET_Neutral);
                 }
             }
         }
@@ -508,7 +620,7 @@ static void Poll()
             {
                 nlPrintf("END bored\n");
                 g_ScriptPollState.AmBored = 0;
-                AudioScriptEventMgr::FireEvent(AudioScriptEventMgr::AE_BoredEnd, AudioScriptEventMgr::AET_Neutral);
+                FireEventInline(AudioScriptEventMgr::AE_BoredEnd, AudioScriptEventMgr::AET_Neutral);
             }
 
             g_ScriptPollState.LastOwningTeam = g_pBall->m_pOwner->m_pTeam;
@@ -520,7 +632,7 @@ static void Poll()
                 {
                     eventTeam = AudioScriptEventMgr::AET_Away;
                 }
-                AudioScriptEventMgr::FireEvent(AudioScriptEventMgr::AE_GotPossession, eventTeam);
+                FireEventInline(AudioScriptEventMgr::AE_GotPossession, eventTeam);
             }
 
             g_ScriptPollState.NoOwnerTime = -1.0f;
@@ -539,7 +651,7 @@ static void Poll()
             g_ScriptPollState.AmBored = 1;
             g_ScriptPollState.LastExcitementTime = g_pGame->GetGameTime();
             nlPrintf("START bored %.2f\n", timeSinceExcitement);
-            AudioScriptEventMgr::FireEvent(AudioScriptEventMgr::AE_BoredStart, AudioScriptEventMgr::AET_Neutral);
+            FireEventInline(AudioScriptEventMgr::AE_BoredStart, AudioScriptEventMgr::AET_Neutral);
         }
     }
     else if (timeSinceExcitement > g_ScriptSettings.BoredPeriod)
@@ -548,7 +660,7 @@ static void Poll()
         {
             g_ScriptPollState.LastExcitementTime = g_pGame->GetGameTime();
             nlPrintf("PERIOD bored %.2f\n", timeSinceExcitement);
-            AudioScriptEventMgr::FireEvent(AudioScriptEventMgr::AE_BoredPeriod, AudioScriptEventMgr::AET_Neutral);
+            FireEventInline(AudioScriptEventMgr::AE_BoredPeriod, AudioScriptEventMgr::AET_Neutral);
         }
     }
 }
@@ -564,13 +676,13 @@ void RecordExcitingEvent()
     {
         nlPrintf("END bored\n");
         g_ScriptPollState.AmBored = 0;
-        AudioScriptEventMgr::FireEvent(AudioScriptEventMgr::AE_BoredEnd, AudioScriptEventMgr::AET_Neutral);
+        FireEventInline(AudioScriptEventMgr::AE_BoredEnd, AudioScriptEventMgr::AET_Neutral);
     }
 }
 
 /**
  * Offset/Address/Size: 0x0 | 0x80149154 | size: 0xFF8
- * TODO: 11.35% match - major event switch cases are still missing.
+ * TODO: case 45 (AE_HitPost breakaway) not yet implemented.
  */
 static void AudioScriptEventHandler(Event* pEvent, void*)
 {
@@ -586,6 +698,82 @@ static void AudioScriptEventHandler(Event* pEvent, void*)
 
     switch (pEvent->m_uEventID)
     {
+    case 32:
+    {
+        GET_EVENT_DATA(CollisionBallWallData, pData, 0x78);
+        if (!pData->bIsShot)
+        {
+            return;
+        }
+        AudioScriptEventMgr::FireEvent(AudioScriptEventMgr::AE_MissShot,
+            pData->position.f.x > 0.0f ? AudioScriptEventMgr::AET_Home : AudioScriptEventMgr::AET_Away);
+        return;
+    }
+    case 45:
+    {
+        if (!Audio::IsWorldSFXLoaded())
+        {
+            return;
+        }
+        GET_EVENT_DATA(CollisionBallGoalpostData, pData, 0x10E);
+        nlVector3 vel = pData->v3CollisionVelocity;
+        float speed = nlSqrt(nlGetLengthSquared3D(vel.f.x, vel.f.y, vel.f.z), true);
+        if (speed > 35.0f)
+        {
+            speed = 35.0f;
+        }
+        if (speed < 1.0f)
+        {
+            return;
+        }
+        float intensity = speed / 35.0f;
+        if (intensity < 0.3f)
+        {
+            intensity = 0.3f;
+        }
+
+        static float fLastFireworkTime;
+        static bool bFireworkTimerInited;
+
+        intensity = intensity * Audio::gStadGenSFX.mpSFX[Audio::STADSFX_GEN_FIREWORKS_FLOOR].fVolume;
+        if (!bFireworkTimerInited)
+        {
+            bFireworkTimerInited = true;
+            fLastFireworkTime = 0.0f;
+        }
+
+        float now = Audio::GetAudioTimer();
+        if (now < fLastFireworkTime)
+        {
+            fLastFireworkTime = 0.0f;
+        }
+        if (fLastFireworkTime != 0.0f && now - fLastFireworkTime < 0.2f)
+        {
+            return;
+        }
+
+        fLastFireworkTime = Audio::GetAudioTimer();
+        Audio::gStadGenSFX.Play(Audio::STADSFX_GEN_FIREWORKS_FLOOR, intensity, -1.0f, true, 100.0f);
+        AudioScriptEventMgr::FireEvent(AudioScriptEventMgr::AE_HitPost, GetEventTeam<CollisionBallGoalpostData>(pEvent, false));
+        return;
+    }
+    case 11:
+        g_InBowserAttack = 0;
+        g_InGoal = 0;
+        AudioScriptEventMgr::FireEvent(AudioScriptEventMgr::AE_KickOff, AudioScriptEventMgr::AET_Neutral);
+        return;
+    case 5:
+        g_InBowserAttack = 0;
+        g_InGoal = 1;
+        if (g_pGame->mInSuddenDeath)
+        {
+            AudioScriptEventMgr::FireEvent(AudioScriptEventMgr::AE_SDWin, GetEventTeam<GoalScoredData>(pEvent, false));
+        }
+        else
+        {
+            AudioScriptEventMgr::FireEvent(AudioScriptEventMgr::AE_Goal, GetEventTeam<GoalScoredData>(pEvent, false));
+        }
+        return;
     case 4:
     {
         cTeam* pHome = g_pTeams[0];
@@ -605,30 +793,212 @@ static void AudioScriptEventHandler(Event* pEvent, void*)
         AudioScriptEventMgr::FireEvent(event, team);
         return;
     }
-    case 5:
+    case 63:
     {
-        g_InBowserAttack = 0;
-        g_InGoal = 1;
-
-        AudioScriptEventMgr::AUDIO_EVENT_TEAM team = GetEventTeam<GoalScoredData>(pEvent, false);
-        if (g_pGame->mInSuddenDeath)
+        GET_EVENT_DATA(ShotAtGoalData, pData, 0x14A);
+        if (pData->pShooter->IsCaptain())
         {
-            AudioScriptEventMgr::FireEvent(AudioScriptEventMgr::AE_SDWin, team);
+            AudioScriptEventMgr::FireEvent(AudioScriptEventMgr::AE_CaptainS2S, GetPlayerTeam(pData->pShooter));
         }
         else
         {
-            AudioScriptEventMgr::FireEvent(AudioScriptEventMgr::AE_Goal, team);
+            AudioScriptEventMgr::FireEvent(AudioScriptEventMgr::AE_ShootToScore, GetPlayerTeam(pData->pShooter));
         }
         return;
     }
-    case 11:
-        g_InBowserAttack = 0;
-        g_InGoal = 0;
-        AudioScriptEventMgr::FireEvent(AudioScriptEventMgr::AE_KickOff, AudioScriptEventMgr::AET_Neutral);
+    case 65:
+        AudioScriptEventMgr::FireEvent(AudioScriptEventMgr::AE_GenericS2SEnd, AudioScriptEventMgr::AET_Neutral);
         return;
+    case 68:
+        AudioScriptEventMgr::FireEvent(AudioScriptEventMgr::AE_SuperStrikeFloat, GetPlayerTeam(g_pBall->m_pOwner));
+        return;
+    case 67:
+    {
+        GET_EVENT_DATA(ShotAtGoalData, pData, 0x14A);
+        AudioScriptEventMgr::FireEvent(AudioScriptEventMgr::AE_HyperStrike, GetPlayerTeam(pData->pShooter));
+        return;
+    }
+    case 15:
+    {
+        GET_EVENT_DATA(GoalieSaveData, pData, 0x13C);
+        AudioScriptEventMgr::FireEvent(AudioScriptEventMgr::AE_GoalieSave,
+            (AudioScriptEventMgr::AUDIO_EVENT_TEAM)(GetPlayerTeam(pData->pGoalie) ^ AudioScriptEventMgr::AET_Special));
+        return;
+    }
+    case 20:
+    {
+        GET_EVENT_DATA(ShotAtGoalData, pData, 0x14A);
+        AudioScriptEventMgr::FireEvent(AudioScriptEventMgr::AE_Shot, GetPlayerTeam(pData->pShooter));
+        RecordExcitingEvent();
+        return;
+    }
+    case 22:
+    case 24:
+    {
+        GET_EVENT_DATA(PlayerAttackData, pData, 0x19A);
+        if (pData->pTarget == NULL)
+        {
+            return;
+        }
+        AudioScriptEventMgr::FireEvent(AudioScriptEventMgr::AE_Attack, GetPlayerTeam((cPlayer*)pData->pAttacker));
+        return;
+    }
+    case 23:
+    case 26:
+    {
+        GET_EVENT_DATA(PlayerAttackData, pData, 0x19A);
+        if (pData->pTarget == NULL)
+        {
+            return;
+        }
+        AudioScriptEventMgr::FireEvent(AudioScriptEventMgr::AE_HitPlayer,
+            (AudioScriptEventMgr::AUDIO_EVENT_TEAM)(GetPlayerTeam((cPlayer*)pData->pAttacker) ^ AudioScriptEventMgr::AET_Special));
+        return;
+    }
+    case 21:
+    {
+        GET_EVENT_DATA(ShotAtGoalData, pData, 0x14A);
+        AudioScriptEventMgr::FireEvent(AudioScriptEventMgr::AE_WindUp, GetPlayerTeam(pData->pShooter));
+        return;
+    }
+    case 69:
+    {
+        GET_EVENT_DATA(PassBallData, pData, 0x131);
+        AudioScriptEventMgr::FireEvent(AudioScriptEventMgr::AE_PerfectPass, GetPlayerTeam(pData->pPasser));
+        return;
+    }
+    case 71:
+    {
+        GET_EVENT_DATA(PassBallData, pData, 0x131);
+        AudioScriptEventMgr::FireEvent(AudioScriptEventMgr::AE_PerfectPassEnd, GetPlayerTeam(pData->pPasser));
+        return;
+    }
+    case 51:
+    {
+        GET_EVENT_DATA(ShotAtGoalData, pData, 0x14A);
+        AudioScriptEventMgr::FireEvent(AudioScriptEventMgr::AE_ChainChomp, GetPlayerTeam(pData->pShooter));
+        return;
+    }
+    case 52:
+    {
+        GET_EVENT_DATA(ShotAtGoalData, pData, 0x14A);
+        AudioScriptEventMgr::FireEvent(AudioScriptEventMgr::AE_ChainChompEnd, GetPlayerTeam(pData->pShooter));
+        return;
+    }
+    case 53:
+        if (GetConfigBool(Config::Global(), "e3_build", false))
+        {
+            return;
+        }
+        if (g_pGame->m_eGameState != GS_GAMEPLAY && g_pGame->m_eGameState != GS_OVERTIME)
+        {
+            return;
+        }
+        if (g_InGoal)
+        {
+            return;
+        }
+        g_InBowserAttack = 1;
+        AudioScriptEventMgr::FireEvent(AudioScriptEventMgr::AE_BowserAttackStart, AudioScriptEventMgr::AET_Neutral);
+        return;
+    case 59:
+        if (GetConfigBool(Config::Global(), "e3_build", false))
+        {
+            return;
+        }
+        if (!g_InBowserAttack)
+        {
+            return;
+        }
+        if (g_InGoal)
+        {
+            return;
+        }
+        AudioScriptEventMgr::FireEvent(AudioScriptEventMgr::AE_BowserAttackEnd, AudioScriptEventMgr::AET_Neutral);
+        return;
+    case 56:
+        if (GetConfigBool(Config::Global(), "e3_build", false))
+        {
+            return;
+        }
+        if (g_InGoal)
+        {
+            return;
+        }
+        AudioScriptEventMgr::FireEvent(AudioScriptEventMgr::AE_BowserTilt, AudioScriptEventMgr::AET_Neutral);
+        return;
+    case 58:
+        if (GetConfigBool(Config::Global(), "e3_build", false))
+        {
+            return;
+        }
+        if (g_InGoal)
+        {
+            return;
+        }
+        AudioScriptEventMgr::FireEvent(AudioScriptEventMgr::AE_BowserLevel, AudioScriptEventMgr::AET_Neutral);
+        return;
+    case 57:
+        if (g_InGoal)
+        {
+            return;
+        }
+        AudioScriptEventMgr::FireEvent(AudioScriptEventMgr::AE_BowserLandTilt, AudioScriptEventMgr::AET_Neutral);
+        return;
+    case 54:
+        if (g_InGoal)
+        {
+            return;
+        }
+        AudioScriptEventMgr::FireEvent(AudioScriptEventMgr::AE_BowserLandReg, AudioScriptEventMgr::AET_Neutral);
+        return;
+    case 29:
+    {
+        GET_EVENT_DATA(PowerupUsedEventData, pData, 0x1AF);
+        if (pData->Thrower == NULL)
+        {
+            return;
+        }
+        AudioScriptEventMgr::AUDIO_EVENT_TEAM team = GetPlayerTeam(pData->Thrower);
+        AudioScriptEventMgr::AUDIO_EVENT event = AudioScriptEventMgr::AE_PowerUpDisperse;
+        if (pData->Type > 6)
+        {
+            event = AudioScriptEventMgr::AE_PowerUpActivate;
+        }
+        AudioScriptEventMgr::FireEvent(event, team);
+        return;
+    }
+    case 30:
+    {
+        GET_EVENT_DATA(PowerupHitPlayerEventData, pData, 0x1B9);
+        AudioScriptEventMgr::FireEvent(AudioScriptEventMgr::AE_PowerUpHit, GetPlayerTeam(pData->Target));
+        return;
+    }
     case 12:
         AudioScriptEventMgr::FireEvent(AudioScriptEventMgr::AE_SuddenDeath, AudioScriptEventMgr::AET_Neutral);
         return;
+    case 86:
+    {
+        GET_EVENT_DATA(NISData, pData, 0x1A5);
+        NIS_EVENT_LOOKUP* pFound = nlBSearch<NIS_EVENT_LOOKUP, unsigned long>(
+            nlStringLowerHash(pData->Type), g_NisEventLookup, 4);
+        AUDIO_EVENT_RECORD* pRecord = pFound != NULL ? &pFound->Event : NULL;
+        if (pRecord != NULL)
+        {
+            AudioScriptEventMgr::FireEvent(
+                (AudioScriptEventMgr::AUDIO_EVENT)pRecord->Event,
+                (AudioScriptEventMgr::AUDIO_EVENT_TEAM)pRecord->Team);
+        }
+        else
+        {
+            if (nlStrCmp(pData->Param, "MusicGoal") == 0 && g_pGame->mInSuddenDeath)
+            {
+                pData->Param = "MusicSDGoal";
+            }
+            SoundEventScript::Instance().Call(pData->Param);
+        }
+        return;
+    }
     default:
         return;
     }

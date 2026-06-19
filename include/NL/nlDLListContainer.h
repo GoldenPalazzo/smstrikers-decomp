@@ -73,8 +73,8 @@ public:
 template <typename T, typename Adapter>
 T* DLListContainerBase<T, Adapter>::AllocateAtEnd(unsigned long* outEntry)
 {
-    // TODO: 93.53% match - residual is an r27/r28 callee-saved register swap
-    // (compiler internal allocation order difference), not a source-shape issue.
+    // TODO: 98.97% match - residual is a pure r27/r28 callee-saved register swap
+    // between the allocated entry pointer and the cleanup-tracking pointer.
     DLListEntry<T>* result;
     {
         T data;

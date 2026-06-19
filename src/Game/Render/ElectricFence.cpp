@@ -271,6 +271,24 @@ static inline ElectricFenceData* FindElectricFenceData(EmissionController* pEmis
     return NULL;
 }
 
+static inline ElectricFenceData* CreateAndAssignElectricFenceData(EmissionController* pController)
+{
+    ElectricFenceData* data = NULL;
+
+    if (ElectricFenceData::sElectricFenceDataPool.m_FreeList == NULL)
+    {
+        SlotPoolBase::BaseAddNewBlock(&ElectricFenceData::sElectricFenceDataPool, sizeof(ElectricFenceData));
+    }
+
+    if (ElectricFenceData::sElectricFenceDataPool.m_FreeList != NULL)
+    {
+        data = (ElectricFenceData*)ElectricFenceData::sElectricFenceDataPool.m_FreeList;
+        ElectricFenceData::sElectricFenceDataPool.m_FreeList = ElectricFenceData::sElectricFenceDataPool.m_FreeList->m_next;
+    }
+    data = new ((u8*)data) ElectricFenceData(pController);
+    return data;
+}
+
 static void RenderElectricFence(EmissionController& ec)
 {
     extern float sfFadeOutTime;
@@ -289,26 +307,7 @@ static void RenderElectricFence(EmissionController& ec)
 
     if (pElectricFenceData == NULL)
     {
-        ElectricFenceData* data = NULL;
-
-        if (ElectricFenceData::sElectricFenceDataPool.m_FreeList == NULL)
-        {
-            SlotPoolBase::BaseAddNewBlock(&ElectricFenceData::sElectricFenceDataPool, sizeof(ElectricFenceData));
-        }
-
-        SlotPoolEntry* freeSlot = ElectricFenceData::sElectricFenceDataPool.m_FreeList;
-        if (freeSlot != NULL)
-        {
-            data = (ElectricFenceData*)freeSlot;
-            ElectricFenceData::sElectricFenceDataPool.m_FreeList = freeSlot->m_next;
-        }
-
-        if (data != NULL)
-        {
-            data = new (data) ElectricFenceData(pController);
-        }
-
-        pElectricFenceData = data;
+        pElectricFenceData = CreateAndAssignElectricFenceData(pController);
     }
 
     if (pElectricFenceData == NULL)

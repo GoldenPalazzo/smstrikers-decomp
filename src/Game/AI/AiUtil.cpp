@@ -490,7 +490,7 @@ void GetRotationBetweenVectors(nlQuaternion& quat, const nlVector3& v3Vec1, cons
         float cy = axis.f.z * v3Vec1.f.x + nax * v3Vec1.f.z;
         float cx = axis.f.y * v3Vec1.f.z - axis.f.z * v3Vec1.f.y;
 
-        float invLen = nlRecipSqrt(cy * cy + cx * cx + cz * cz, true);
+        float invLen = nlRecipSqrt(cx * cx + cy * cy + cz * cz, true);
 
         quat.f.x = invLen * cx;
         quat.f.y = invLen * cy;

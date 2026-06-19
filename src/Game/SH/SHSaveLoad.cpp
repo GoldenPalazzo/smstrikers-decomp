@@ -42,7 +42,7 @@ extern bool g_e3_Build;
 // (static-variable slots are allocated at parse time, top-to-bottom).
 bool SaveLoadScene::mLastSaveLoadSuccess;        // .sbss:0x0
 static u8 WasCardRemoved;                        // .sbss:0x1
-static u8 PreviousNoCardInSlotState;             // .sbss:0x2
+static bool PreviousNoCardInSlotState;           // .sbss:0x2
 SaveLoadScene* SaveLoadScene::mInstance;         // .sbss:0x4
 static int gSceneTypeStackDepth;                 // .sbss:0x8
 static float gSceneTime;                         // .sbss:0xC
@@ -951,8 +951,8 @@ void SaveLoadScene::SceneCreated()
 
 /**
  * Offset/Address/Size: 0x8C8 | 0x800B0E50 | size: 0x644
- * TODO: 97.20% match - remaining diffs are in InlineHasher stack slot ordering and
- * srwi vs rlwinm bool materialization for PreviousNoCardInSlotState
+ * TODO: 99.13% match - remaining diffs are in InlineHasher stack slot ordering
+ * and popup callback Function stack slots
  */
 void SaveLoadScene::Update(float fDeltaT)
 {
@@ -1166,7 +1166,7 @@ void SaveLoadScene::Update(float fDeltaT)
         {
             if (gSceneTypeStack[gSceneTypeStackDepth - 1] == ST_GAMESAVEIDTEST)
             {
-                if (SaveLoad().DidGameIDChange())
+                if (SaveLoad::DidGameIDChange())
                 {
                     FEPopupMenu* pPopup = (FEPopupMenu*)nlSingleton<GameSceneManager>::s_pInstance
                                               ->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);

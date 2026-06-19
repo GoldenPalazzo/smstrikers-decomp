@@ -1154,7 +1154,6 @@ static void ParticleConstructor(void* ptr, int)
 
 static void AllocateParticles()
 {
-    int offset;
     int i;
     int count = MaxNumParticles;
 
@@ -1162,17 +1161,15 @@ static void AllocateParticles()
 
     tDebugPrintManager::Print(DC_RENDER, "%dKB used by Particle pool\n", (unsigned)(MaxNumParticles * 0x4C) >> 10);
 
-    offset = 0;
-    i = offset;
-    for (; i < MaxNumParticles; offset += sizeof(Particle), i++)
+    for (i = 0; i < MaxNumParticles; i++)
     {
-        freeParticles.Insert((efBaseNode*)((u8*)particleMemory + offset));
+        freeParticles.Insert(&particleMemory[i]);
     }
 }
 
 /**
  * Offset/Address/Size: 0xAC | 0x801F5204 | size: 0xCC
- * TODO: 99.41% match - allocation count uses r29 instead of r31; loop init zero-copy uses r29/r30 in reverse
+ * TODO: 99.71% match - allocation count uses r29 instead of r31
  */
 bool fxParticleStartup(int maxNumParticles)
 {

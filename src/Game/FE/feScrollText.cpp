@@ -201,6 +201,7 @@ void FEScrollText::SetDisplayMessage(unsigned long hash)
 
 /**
  * Offset/Address/Size: 0x4F0 | 0x800C8EC4 | size: 0x578
+ * TODO: 90.9% match - this pointer and loop locals use different saved registers; escape sequence locals use different stack slots
  */
 void FEScrollText::SetDisplayMessage(const BasicString<unsigned short, Detail::TempStringAllocator>& theMessage)
 {
@@ -228,7 +229,7 @@ void FEScrollText::SetDisplayMessage(const BasicString<unsigned short, Detail::T
 
     while (*src != 0)
     {
-        unsigned short ch = *src;
+        unsigned int ch = *src;
         if (ch == escBegin)
         {
             nlEscapeSequence EscSeq(src);
@@ -262,7 +263,7 @@ void FEScrollText::SetDisplayMessage(const BasicString<unsigned short, Detail::T
                                 glyph = &font->m_GlyphLookup[(unsigned short)ch - 0x20];
                             if (glyph->UnicodeChar != 0xFFFF)
                                 break;
-                            ch = (unsigned short)((unsigned short)ch + 1);
+                            ch++;
                         }
                     }
                 }
@@ -292,15 +293,17 @@ void FEScrollText::SetDisplayMessage(const BasicString<unsigned short, Detail::T
         else
         {
             unsigned short mappedCh = fontcharstring.m_pString[i];
+            int charWidth;
             if (i != 0)
             {
                 unsigned short prevChar = fontcharstring.m_pString[i - 1];
-                m_messageWidth += (int)m_textFont->GetCharWidth(mappedCh, prevChar);
+                charWidth = (int)m_textFont->GetCharWidth(mappedCh, prevChar);
             }
             else
             {
-                m_messageWidth += (int)m_textFont->GetCharWidth(mappedCh, 0);
+                charWidth = (int)m_textFont->GetCharWidth(mappedCh, 0);
             }
+            m_messageWidth += charWidth;
         }
         i++;
     }
@@ -312,43 +315,7 @@ void FEScrollText::SetDisplayMessage(const BasicString<unsigned short, Detail::T
     const feVector3& scale = m_controlText->GetScale();
     m_messageWidth = (int)((float)m_messageWidth * scale.f.x);
 
-    if (m_textFont == NULL)
-    {
-        SetDisplayMessage(m_message);
-        if (m_textFont == NULL)
-        {
-            return;
-        }
-    }
-
-    m_controlText->m_bVisible = true;
-    m_msgTime += 0.0f;
-
-    float pixPerSec = (float)m_width / TEXT_TIME;
-    feVector3 pos = m_controlText->GetPosition();
-    int halfWidth = m_width / 2;
-    float x = (float)(m_pos + halfWidth);
-    x = x - m_msgTime * pixPerSec;
-    m_controlText->SetAssetPosition(x, pos.f.y, pos.f.z);
-
-    if (x + (float)m_messageWidth < m_leftEdge)
-    {
-        if (m_messageFinishedCB.mTag != EMPTY)
-        {
-            if (m_messageFinishedCB.mTag == FREE_FUNCTION)
-            {
-                ((void (*)())m_messageFinishedCB.mFreeFunction)();
-            }
-            else
-            {
-                (*((FunctorBase*)m_messageFinishedCB.mFunctor))();
-            }
-        }
-        else
-        {
-            m_msgTime = 0.0f;
-        }
-    }
+    Update(0.0f);
 }
 
 static unsigned short sEmptyStringData[] = { 0 };

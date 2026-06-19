@@ -866,42 +866,43 @@ void ChooseCupSceneV2::Update(float fDeltaT)
     }
 }
 
+static const char* TROPHY_TEXTURE_FILENAMES[13] = {
+    "fe/trophies/cups_mushroom",
+    "fe/trophies/cups_flower",
+    "fe/trophies/cups_star",
+    "fe/trophies/cups_bowser",
+    "fe/trophies/cups_super_mushroom",
+    "fe/trophies/cups_super_flower",
+    "fe/trophies/cups_super_star",
+    "fe/trophies/cups_super_bowser",
+    "fe/trophies/cups_veteran",
+    "fe/trophies/cups_sniper",
+    "fe/trophies/cups_super_striker",
+    "fe/trophies/cups_super_team",
+    "fe/trophies/cups_lakitu",
+};
+
+static unsigned long CUP_EXPLANATIONS[8] = {
+    0x92E00D2D,
+    0x4442C1E2,
+    0x88ABDECD,
+    0x3B28BAE5,
+    0x13E667DB,
+    0xC8F69910,
+    0x3684127B,
+    0xBFDC9213,
+};
+
+static unsigned short CUP_SEPARATOR[] = { ' ', 0 };
+static const nlColour CHOOSE_CUP_BLACK = { 0x00, 0x00, 0x00, 0xFF };
+
 /**
  * Offset/Address/Size: 0x7AC | 0x800DAA30 | size: 0xB80
+ * TODO: 99.16% match - pText/canProceed and localized string temps use opposite r26/r27 allocation.
  */
 void ChooseCupSceneV2::DisplayCup()
 {
     unsigned long GetLOCTrophyName(eTrophyType);
-
-    static const char* TROPHY_TEXTURE_FILENAMES[13] = {
-        "fe/trophies/cups_mushroom",
-        "fe/trophies/cups_flower",
-        "fe/trophies/cups_star",
-        "fe/trophies/cups_bowser",
-        "fe/trophies/cups_super_mushroom",
-        "fe/trophies/cups_super_flower",
-        "fe/trophies/cups_super_star",
-        "fe/trophies/cups_super_bowser",
-        "fe/trophies/cups_veteran",
-        "fe/trophies/cups_sniper",
-        "fe/trophies/cups_super_striker",
-        "fe/trophies/cups_super_team",
-        "fe/trophies/cups_lakitu",
-    };
-
-    static unsigned long CUP_EXPLANATIONS[8] = {
-        0x92E00D2D,
-        0x4442C1E2,
-        0x88ABDECD,
-        0x3B28BAE5,
-        0x13E667DB,
-        0xC8F69910,
-        0x3684127B,
-        0xBFDC9213,
-    };
-
-    static unsigned short CUP_SEPARATOR[] = { ' ', 0 };
-    static const nlColour CHOOSE_CUP_BLACK = { 0x00, 0x00, 0x00, 0xFF };
 
     FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
     TLSlide* slide = presentation->m_currentSlide;
@@ -924,12 +925,8 @@ void ChooseCupSceneV2::DisplayCup()
         InlineHasher(nlStringLowerHash("Layer")),
         InlineHasher(nlStringLowerHash("TROPHY")));
 
-    bool canProceed;
-    if (mIsSuperCup)
-    {
-        canProceed = true;
-    }
-    else
+    bool canProceed = true;
+    if (!mIsSuperCup)
     {
         switch (mCupToDisplay)
         {
@@ -1036,7 +1033,7 @@ void ChooseCupSceneV2::DisplayCup()
         InlineHasher(nlStringLowerHash("Layer")),
         InlineHasher(nlStringLowerHash("cup in progress")));
 
-    GameInfoManager::eGameModes cupMode = GameInfoManager::GM_MUSHROOM_CUP;
+    GameInfoManager::eGameModes cupMode;
     switch (mCupToDisplay)
     {
     case TROPHY_MUSHROOM_CUP:
@@ -1062,8 +1059,6 @@ void ChooseCupSceneV2::DisplayCup()
         break;
     case TROPHY_SUPER_BOWSER_CUP:
         cupMode = GameInfoManager::GM_SUPER_BOWSER_CUP;
-        break;
-    default:
         break;
     }
 

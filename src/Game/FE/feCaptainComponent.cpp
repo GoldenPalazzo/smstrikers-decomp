@@ -197,9 +197,9 @@ void IChooseCaptain::ComponentState::GotoNextPhase()
 
         mParent->mHomeAwaySidekicks[mHomeAway] = sidekickgrid2->GetSelectedItem();
         {
-            int teamID = mParent->mHomeAwayTeam[mHomeAway];
             IChooseCaptain* parent = mParent;
             int homeaway = mHomeAway;
+            int teamID = parent->mHomeAwayTeam[homeaway];
 
             CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_0, filenameS0, 0x80, teamID, homeaway);
             CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_1, filenameS1, 0x80, teamID, homeaway);

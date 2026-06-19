@@ -34,7 +34,6 @@ enum MusyXOutputType
     MusyXOutputType_SURROUND
 };
 
-bool AddAuxEffect(MusyXEffectType type, void*, bool, unsigned char);
 void PrintSoundStackInfo();
 // void PrintAvailableARAMMemory();
 void musyXFree(void*);

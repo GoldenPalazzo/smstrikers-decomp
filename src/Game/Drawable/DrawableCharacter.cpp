@@ -848,13 +848,7 @@ void DrawableCharacter::SendToGl(const cCharacter& character) const
                     float dy = points[i].f.y - vCenter.f.y;
                     float dz = points[i].f.z - vCenter.f.z;
                     float distSq = dx * dx + dy * dy + dz * dz;
-                    if (maxDistSq >= distSq)
-                    {
-                    }
-                    else
-                    {
-                        maxDistSq = distSq;
-                    }
+                    maxDistSq = (maxDistSq >= distSq) ? maxDistSq : distSq;
                 }
 
                 fRadius = nlSqrt(maxDistSq, false);
@@ -872,9 +866,9 @@ void DrawableCharacter::SendToGl(const cCharacter& character) const
             if (counter >= 0x1E0)
             {
                 float ms = nlGetTickerDifference(0, tDiff);
+                ms = 8.0f * (ms / (float)counter);
                 u32 avgTicks = tDiff / counter;
                 tDiff = avgTicks;
-                ms = 8.0f * (ms / (float)counter);
                 OSReport("%u avg ticks (%0.3fms for 8 chars) to find bounding sphere\n", avgTicks, ms);
                 tDiff = 0;
                 counter = 0;

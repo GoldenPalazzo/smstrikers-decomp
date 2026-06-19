@@ -1235,14 +1235,7 @@ void CupHubScene::CreateBowserLeague()
     extern char* HUB_ROWS[8];
     extern char* TEAM_NAMES[8];
 
-    typedef TLComponentInstance* (*FindCompByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-    typedef TLComponentInstance* (*FindCompByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
-    typedef TLComponentInstance* (*FindCompByValuePres)(FEPresentation*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-    typedef TLComponentInstance* (*FindCompByRefPres)(FEPresentation*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
-    typedef TLTextInstance* (*FindTextByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-    typedef TLTextInstance* (*FindTextByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
-
-    GameInfoManager* gameInfo = nlSingleton<GameInfoManager>::s_pInstance;
+    GameInfoManager* const gameInfo = nlSingleton<GameInfoManager>::s_pInstance;
     GameInfoManager::eGameModes mode = gameInfo->mCurrentMode;
     u16 numTeams = gameInfo->GetNumPlayingTeams();
     FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
@@ -1255,42 +1248,10 @@ void CupHubScene::CreateBowserLeague()
     TLTextInstance* title;
     int row;
 
-    {
-        volatile InlineHasher hB, hA, h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
-
-        h0.m_Hash = 0;
-        h1.m_Hash = 0;
-        h2.m_Hash = 0;
-        h3.m_Hash = 0;
-        h4.m_Hash = 0;
-        h5.m_Hash = 0;
-        h6.m_Hash = 0;
-        h7.m_Hash = 0;
-
-        unsigned long hash = nlStringLowerHash("star rotation");
-        h8.m_Hash = hash;
-        h9.m_Hash = hash;
-
-        hash = nlStringLowerHash(CUP_HUB_LAYER_NAME);
-        hA.m_Hash = hash;
-        hB.m_Hash = hash;
-
-        union
-        {
-            FindCompByValue byValue;
-            FindCompByRef byRef;
-        } findComp;
-
-        findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
-        starComp = findComp.byRef(
-            presentation->m_currentSlide,
-            (InlineHasher&)hB,
-            (InlineHasher&)h9,
-            (InlineHasher&)h7,
-            (InlineHasher&)h5,
-            (InlineHasher&)h3,
-            (InlineHasher&)h1);
-    }
+    starComp = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
+        presentation->m_currentSlide,
+        InlineHasher(nlStringLowerHash(CUP_HUB_LAYER_NAME)),
+        InlineHasher(nlStringLowerHash("star rotation")));
 
     f32 starTime = starComp->GetActiveSlide()->m_time;
 
@@ -1298,82 +1259,18 @@ void CupHubScene::CreateBowserLeague()
 
     UpdateProgressIndicator();
 
-    {
-        volatile InlineHasher hB, hA, h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
-
-        h0.m_Hash = 0;
-        h1.m_Hash = 0;
-        h2.m_Hash = 0;
-        h3.m_Hash = 0;
-        h4.m_Hash = 0;
-        h5.m_Hash = 0;
-        h6.m_Hash = 0;
-        h7.m_Hash = 0;
-
-        unsigned long hash = nlStringLowerHash("star rotation");
-        h8.m_Hash = hash;
-        h9.m_Hash = hash;
-
-        hash = nlStringLowerHash(CUP_HUB_LAYER_NAME);
-        hA.m_Hash = hash;
-        hB.m_Hash = hash;
-
-        union
-        {
-            FindCompByValue byValue;
-            FindCompByRef byRef;
-        } findComp;
-
-        findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
-        starComp = findComp.byRef(
-            presentation->m_currentSlide,
-            (InlineHasher&)hB,
-            (InlineHasher&)h9,
-            (InlineHasher&)h7,
-            (InlineHasher&)h5,
-            (InlineHasher&)h3,
-            (InlineHasher&)h1);
-    }
+    starComp = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
+        presentation->m_currentSlide,
+        InlineHasher(nlStringLowerHash(CUP_HUB_LAYER_NAME)),
+        InlineHasher(nlStringLowerHash("star rotation")));
 
     starComp->SetActiveSlide("Slide1");
     starComp->Update(starTime);
 
-    {
-        volatile InlineHasher hB, hA, h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
-
-        h0.m_Hash = 0;
-        h1.m_Hash = 0;
-        h2.m_Hash = 0;
-        h3.m_Hash = 0;
-        h4.m_Hash = 0;
-        h5.m_Hash = 0;
-        h6.m_Hash = 0;
-        h7.m_Hash = 0;
-
-        unsigned long hash = nlStringLowerHash("STANDINGS SCREEN");
-        h8.m_Hash = hash;
-        h9.m_Hash = hash;
-
-        hash = nlStringLowerHash(CUP_HUB_LAYER_NAME);
-        hA.m_Hash = hash;
-        hB.m_Hash = hash;
-
-        union
-        {
-            FindTextByValue byValue;
-            FindTextByRef byRef;
-        } findText;
-
-        findText.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
-        title = findText.byRef(
-            presentation->m_currentSlide,
-            (InlineHasher&)hB,
-            (InlineHasher&)h9,
-            (InlineHasher&)h7,
-            (InlineHasher&)h5,
-            (InlineHasher&)h3,
-            (InlineHasher&)h1);
-    }
+    title = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
+        presentation->m_currentSlide,
+        InlineHasher(nlStringLowerHash(CUP_HUB_LAYER_NAME)),
+        InlineHasher(nlStringLowerHash("STANDINGS SCREEN")));
 
     title->m_LocStrId = GetLOCStandingsName(mode);
     title->m_OverloadFlags |= 8;
@@ -1382,91 +1279,28 @@ void CupHubScene::CreateBowserLeague()
 
     for (row = 0; row < 8; row++)
     {
-        {
-            volatile InlineHasher hB, hA, h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
-
-            h0.m_Hash = 0;
-            h1.m_Hash = 0;
-            h2.m_Hash = 0;
-            h3.m_Hash = 0;
-            h4.m_Hash = 0;
-            h5.m_Hash = 0;
-            unsigned long hash = nlStringLowerHash("ranks");
-            h6.m_Hash = hash;
-            h7.m_Hash = hash;
-
-            hash = nlStringLowerHash(CUP_HUB_LAYER_NAME);
-            h8.m_Hash = hash;
-            h9.m_Hash = hash;
-
-            hash = nlStringLowerHash(HUB_LEAGUE_SLIDE_NAME);
-            hA.m_Hash = hash;
-            hB.m_Hash = hash;
-
-            union
-            {
-                FindCompByValuePres byValue;
-                FindCompByRefPres byRef;
-            } findComp;
-
-            findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<FEPresentation>;
-            pComp = findComp.byRef(
-                presentation,
-                (InlineHasher&)hB,
-                (InlineHasher&)h9,
-                (InlineHasher&)h7,
-                (InlineHasher&)h5,
-                (InlineHasher&)h3,
-                (InlineHasher&)h1);
-        }
+        pComp = FEFinder<TLComponentInstance, 4>::Find<FEPresentation>(
+            presentation,
+            InlineHasher(nlStringLowerHash(HUB_LEAGUE_SLIDE_NAME)),
+            InlineHasher(nlStringLowerHash(CUP_HUB_LAYER_NAME)),
+            InlineHasher(nlStringLowerHash("ranks")));
 
         pSlide = pComp->GetActiveSlide();
 
-        {
-            volatile InlineHasher hB, hA, h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
-
-            h0.m_Hash = 0;
-            h1.m_Hash = 0;
-            h2.m_Hash = 0;
-            h3.m_Hash = 0;
-            h4.m_Hash = 0;
-            h5.m_Hash = 0;
-            h8.m_Hash = 0;
-            h9.m_Hash = 0;
-            hA.m_Hash = 0;
-            hB.m_Hash = 0;
-
-            unsigned long hash = nlStringLowerHash(HUBstandingsRowNames[row]);
-            h6.m_Hash = hash;
-            h7.m_Hash = hash;
-
-            union
-            {
-                FindTextByValue byValue;
-                FindTextByRef byRef;
-            } findText;
-
-            findText.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
-            pTextInstance = findText.byRef(
-                pSlide,
-                (InlineHasher&)h7,
-                (InlineHasher&)hB,
-                (InlineHasher&)h9,
-                (InlineHasher&)h5,
-                (InlineHasher&)h3,
-                (InlineHasher&)h1);
-        }
+        pTextInstance = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
+            pSlide,
+            InlineHasher(nlStringLowerHash(HUBstandingsRowNames[row])));
 
         eTeamID currentTeam = mAllTeamStats[standingsIndices[row]].mTeamIndex;
-        gameInfo = nlSingleton<GameInfoManager>::s_pInstance;
-        eTeamID rowUserTeam = gameInfo->GetUserSelectedCupTeam();
+        GameInfoManager* const rowGameInfo = nlSingleton<GameInfoManager>::s_pInstance;
+        eTeamID rowUserTeam = rowGameInfo->GetUserSelectedCupTeam();
         bool useHighlightColour;
 
-        if (!(gameInfo->mCurrentCup->mHumanTeams & (1 << currentTeam)))
+        if (!(rowGameInfo->mCurrentCup->mHumanTeams & (1 << currentTeam)))
         {
             useHighlightColour = false;
         }
-        else if (gameInfo->GetNumHumanTeams() == 1 && currentTeam == rowUserTeam)
+        else if (rowGameInfo->GetNumHumanTeams() == 1 && currentTeam == rowUserTeam)
         {
             useHighlightColour = true;
         }
@@ -1484,42 +1318,10 @@ void CupHubScene::CreateBowserLeague()
             pTextInstance->SetAssetColour(mTextColour);
         }
 
-        {
-            volatile InlineHasher hB, hA, h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
-
-            h0.m_Hash = 0;
-            h1.m_Hash = 0;
-            h2.m_Hash = 0;
-            h3.m_Hash = 0;
-            h4.m_Hash = 0;
-            h5.m_Hash = 0;
-            h6.m_Hash = 0;
-            h7.m_Hash = 0;
-
-            unsigned long hash = nlStringLowerHash(TEAM_NAMES[row]);
-            h8.m_Hash = hash;
-            h9.m_Hash = hash;
-
-            hash = nlStringLowerHash(CUP_HUB_LAYER_NAME);
-            hA.m_Hash = hash;
-            hB.m_Hash = hash;
-
-            union
-            {
-                FindTextByValue byValue;
-                FindTextByRef byRef;
-            } findText;
-
-            findText.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
-            pTextInstance = findText.byRef(
-                presentation->m_currentSlide,
-                (InlineHasher&)hB,
-                (InlineHasher&)h9,
-                (InlineHasher&)h7,
-                (InlineHasher&)h5,
-                (InlineHasher&)h3,
-                (InlineHasher&)h1);
-        }
+        pTextInstance = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
+            presentation->m_currentSlide,
+            InlineHasher(nlStringLowerHash(CUP_HUB_LAYER_NAME)),
+            InlineHasher(nlStringLowerHash(TEAM_NAMES[row])));
 
         if (useHighlightColour)
         {
@@ -1551,86 +1353,19 @@ void CupHubScene::CreateBowserLeague()
             }
         }
 
-        BasicString<unsigned short, Detail::TempStringAllocator> teamNameWideString(teamNameLookup);
+        BasicString<unsigned short, Detail::TempStringAllocator> teamNameWideString(BuildWideStringData(teamNameLookup));
         memcpy(mColumnsByRowsBuffers[0][row], teamNameWideString.c_str(), 0x40);
         pTextInstance->SetString(mColumnsByRowsBuffers[0][row]);
 
-        {
-            volatile InlineHasher hB, hA, h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
-
-            h0.m_Hash = 0;
-            h1.m_Hash = 0;
-            h2.m_Hash = 0;
-            h3.m_Hash = 0;
-            h4.m_Hash = 0;
-            h5.m_Hash = 0;
-
-            unsigned long hash = nlStringLowerHash(HUB_ROWS[row]);
-            h8.m_Hash = hash;
-            h9.m_Hash = hash;
-
-            hash = nlStringLowerHash(CUP_HUB_LAYER_NAME);
-            hA.m_Hash = hash;
-            hB.m_Hash = hash;
-
-            hash = nlStringLowerHash(HUB_BOWSER_SLIDE_NAME);
-            h6.m_Hash = hash;
-            h7.m_Hash = hash;
-
-            union
-            {
-                FindCompByValuePres byValue;
-                FindCompByRefPres byRef;
-            } findComp;
-
-            findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<FEPresentation>;
-            pComp = findComp.byRef(
-                presentation,
-                (InlineHasher&)h7,
-                (InlineHasher&)hB,
-                (InlineHasher&)h9,
-                (InlineHasher&)h5,
-                (InlineHasher&)h3,
-                (InlineHasher&)h1);
-        }
+        pComp = FEFinder<TLComponentInstance, 4>::Find<FEPresentation>(
+            presentation,
+            InlineHasher(nlStringLowerHash(HUB_BOWSER_SLIDE_NAME)),
+            InlineHasher(nlStringLowerHash(CUP_HUB_LAYER_NAME)),
+            InlineHasher(nlStringLowerHash(HUB_ROWS[row])));
 
         pSlide = pComp->GetActiveSlide();
 
-        {
-            volatile InlineHasher hB, hA, h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
-
-            h0.m_Hash = 0;
-            h1.m_Hash = 0;
-            h2.m_Hash = 0;
-            h3.m_Hash = 0;
-            h4.m_Hash = 0;
-            h5.m_Hash = 0;
-            h8.m_Hash = 0;
-            h9.m_Hash = 0;
-            hA.m_Hash = 0;
-            hB.m_Hash = 0;
-
-            unsigned long hash = nlStringLowerHash("wins");
-            h6.m_Hash = hash;
-            h7.m_Hash = hash;
-
-            union
-            {
-                FindTextByValue byValue;
-                FindTextByRef byRef;
-            } findText;
-
-            findText.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
-            pTextInstance = findText.byRef(
-                pSlide,
-                (InlineHasher&)h7,
-                (InlineHasher&)hB,
-                (InlineHasher&)h9,
-                (InlineHasher&)h5,
-                (InlineHasher&)h3,
-                (InlineHasher&)h1);
-        }
-
+        pTextInstance = FEFinder<TLTextInstance, 3>::Find<TLSlide>(pSlide, InlineHasher(nlStringLowerHash("wins")));
         mOldStats[row][0] = mAllTeamStats[standingsIndices[row]].mNumWins;
         BasicString<char, Detail::TempStringAllocator> winsString = LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>((int)mOldStats[row][0]);
         nlStrToWcs(winsString.c_str(), mColumnsByRowsBuffers[1][row], 0x20);
@@ -1645,40 +1380,7 @@ void CupHubScene::CreateBowserLeague()
             pTextInstance->SetAssetColour(mTextColour);
         }
 
-        {
-            volatile InlineHasher hB, hA, h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
-
-            h0.m_Hash = 0;
-            h1.m_Hash = 0;
-            h2.m_Hash = 0;
-            h3.m_Hash = 0;
-            h4.m_Hash = 0;
-            h5.m_Hash = 0;
-            h8.m_Hash = 0;
-            h9.m_Hash = 0;
-            hA.m_Hash = 0;
-            hB.m_Hash = 0;
-
-            unsigned long hash = nlStringLowerHash("draws");
-            h6.m_Hash = hash;
-            h7.m_Hash = hash;
-
-            union
-            {
-                FindTextByValue byValue;
-                FindTextByRef byRef;
-            } findText;
-
-            findText.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
-            pTextInstance = findText.byRef(
-                pSlide,
-                (InlineHasher&)h7,
-                (InlineHasher&)hB,
-                (InlineHasher&)h9,
-                (InlineHasher&)h5,
-                (InlineHasher&)h3,
-                (InlineHasher&)h1);
-        }
+        pTextInstance = FEFinder<TLTextInstance, 3>::Find<TLSlide>(pSlide, InlineHasher(nlStringLowerHash("draws")));
 
         if (useHighlightColour)
         {
@@ -1694,40 +1396,7 @@ void CupHubScene::CreateBowserLeague()
         nlStrToWcs(drawsString.c_str(), mColumnsByRowsBuffers[2][row], 0x20);
         pTextInstance->SetString(mColumnsByRowsBuffers[2][row]);
 
-        {
-            volatile InlineHasher hB, hA, h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
-
-            h0.m_Hash = 0;
-            h1.m_Hash = 0;
-            h2.m_Hash = 0;
-            h3.m_Hash = 0;
-            h4.m_Hash = 0;
-            h5.m_Hash = 0;
-            h8.m_Hash = 0;
-            h9.m_Hash = 0;
-            hA.m_Hash = 0;
-            hB.m_Hash = 0;
-
-            unsigned long hash = nlStringLowerHash("losses");
-            h6.m_Hash = hash;
-            h7.m_Hash = hash;
-
-            union
-            {
-                FindTextByValue byValue;
-                FindTextByRef byRef;
-            } findText;
-
-            findText.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
-            pTextInstance = findText.byRef(
-                pSlide,
-                (InlineHasher&)h7,
-                (InlineHasher&)hB,
-                (InlineHasher&)h9,
-                (InlineHasher&)h5,
-                (InlineHasher&)h3,
-                (InlineHasher&)h1);
-        }
+        pTextInstance = FEFinder<TLTextInstance, 3>::Find<TLSlide>(pSlide, InlineHasher(nlStringLowerHash("losses")));
 
         if (useHighlightColour)
         {
@@ -1743,40 +1412,7 @@ void CupHubScene::CreateBowserLeague()
         nlStrToWcs(lossesString.c_str(), mColumnsByRowsBuffers[3][row], 0x20);
         pTextInstance->SetString(mColumnsByRowsBuffers[3][row]);
 
-        {
-            volatile InlineHasher hB, hA, h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
-
-            h0.m_Hash = 0;
-            h1.m_Hash = 0;
-            h2.m_Hash = 0;
-            h3.m_Hash = 0;
-            h4.m_Hash = 0;
-            h5.m_Hash = 0;
-            h8.m_Hash = 0;
-            h9.m_Hash = 0;
-            hA.m_Hash = 0;
-            hB.m_Hash = 0;
-
-            unsigned long hash = nlStringLowerHash("points");
-            h6.m_Hash = hash;
-            h7.m_Hash = hash;
-
-            union
-            {
-                FindTextByValue byValue;
-                FindTextByRef byRef;
-            } findText;
-
-            findText.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
-            pTextInstance = findText.byRef(
-                pSlide,
-                (InlineHasher&)h7,
-                (InlineHasher&)hB,
-                (InlineHasher&)h9,
-                (InlineHasher&)h5,
-                (InlineHasher&)h3,
-                (InlineHasher&)h1);
-        }
+        pTextInstance = FEFinder<TLTextInstance, 3>::Find<TLSlide>(pSlide, InlineHasher(nlStringLowerHash("points")));
 
         if (useHighlightColour)
         {
@@ -1793,125 +1429,30 @@ void CupHubScene::CreateBowserLeague()
         pTextInstance->SetString(mColumnsByRowsBuffers[4][row]);
     }
 
-    {
-        volatile InlineHasher hB, hA, h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
-
-        h0.m_Hash = 0;
-        h1.m_Hash = 0;
-        h2.m_Hash = 0;
-        h3.m_Hash = 0;
-        h4.m_Hash = 0;
-        h5.m_Hash = 0;
-        h6.m_Hash = 0;
-        h7.m_Hash = 0;
-
-        unsigned long hash = nlStringLowerHash("message");
-        h8.m_Hash = hash;
-        h9.m_Hash = hash;
-
-        hash = nlStringLowerHash(CUP_HUB_LAYER_NAME);
-        hA.m_Hash = hash;
-        hB.m_Hash = hash;
-
-        union
-        {
-            FindCompByValue byValue;
-            FindCompByRef byRef;
-        } findComp;
-
-        findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
-        pComp = findComp.byRef(
-            presentation->m_currentSlide,
-            (InlineHasher&)hB,
-            (InlineHasher&)h9,
-            (InlineHasher&)h7,
-            (InlineHasher&)h5,
-            (InlineHasher&)h3,
-            (InlineHasher&)h1);
-    }
+    pComp = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
+        presentation->m_currentSlide,
+        InlineHasher(nlStringLowerHash(CUP_HUB_LAYER_NAME)),
+        InlineHasher(nlStringLowerHash("message")));
 
     pComp->m_bVisible = false;
 
-    {
-        volatile InlineHasher hB, hA, h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
-
-        h0.m_Hash = 0;
-        h1.m_Hash = 0;
-        h2.m_Hash = 0;
-        h3.m_Hash = 0;
-        h4.m_Hash = 0;
-        h5.m_Hash = 0;
-        h6.m_Hash = 0;
-        h7.m_Hash = 0;
-
-        unsigned long hash = nlStringLowerHash("TICKER2");
-        h8.m_Hash = hash;
-        h9.m_Hash = hash;
-
-        hash = nlStringLowerHash(CUP_HUB_LAYER_NAME);
-        hA.m_Hash = hash;
-        hB.m_Hash = hash;
-
-        union
-        {
-            FindCompByValue byValue;
-            FindCompByRef byRef;
-        } findComp;
-
-        findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
-        pComp = findComp.byRef(
-            presentation->m_currentSlide,
-            (InlineHasher&)hB,
-            (InlineHasher&)h9,
-            (InlineHasher&)h7,
-            (InlineHasher&)h5,
-            (InlineHasher&)h3,
-            (InlineHasher&)h1);
-    }
+    pComp = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
+        presentation->m_currentSlide,
+        InlineHasher(nlStringLowerHash(CUP_HUB_LAYER_NAME)),
+        InlineHasher(nlStringLowerHash("TICKER2")));
 
     pSlide = pComp->GetActiveSlide();
 
-    {
-        volatile InlineHasher hB, hA, h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
-
-        h0.m_Hash = 0;
-        h1.m_Hash = 0;
-        h2.m_Hash = 0;
-        h3.m_Hash = 0;
-        h4.m_Hash = 0;
-        h5.m_Hash = 0;
-        h6.m_Hash = 0;
-        h7.m_Hash = 0;
-
-        unsigned long hash = nlStringLowerHash("TickerText");
-        h6.m_Hash = hash;
-        h7.m_Hash = hash;
-
-        hash = nlStringLowerHash("Group");
-        h8.m_Hash = hash;
-        h9.m_Hash = hash;
-
-        union
-        {
-            FindTextByValue byValue;
-            FindTextByRef byRef;
-        } findText;
-
-        findText.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
-        pTextInstance = findText.byRef(
-            pSlide,
-            (InlineHasher&)h9,
-            (InlineHasher&)h7,
-            (InlineHasher&)h5,
-            (InlineHasher&)h3,
-            (InlineHasher&)h1,
-            (InlineHasher&)h0);
-    }
+    pTextInstance = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
+        pSlide,
+        InlineHasher(nlStringLowerHash("Group")),
+        InlineHasher(nlStringLowerHash("TickerText")));
 
     mTickerManager.SetTickerTextInstance(pTextInstance);
 
     HandleButtonComponent();
 }
+
 /**
  * Offset/Address/Size: 0x32FC | 0x800ED058 | size: 0xD1C
  */
@@ -1938,7 +1479,7 @@ void CupHubScene::CreateKnockout()
         TEAM_INVALID,
         TEAM_INVALID,
     };
-    s16 round;
+    int round;
     TLComponentInstance* starComp;
     TLTextInstance* pTextInstance;
     TLComponentInstance* pComp;

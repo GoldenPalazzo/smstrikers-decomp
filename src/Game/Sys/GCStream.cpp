@@ -635,8 +635,9 @@ unsigned long GCAudioStreaming::MonoAudioStream::DoUpdateRead(unsigned long MRAM
         OSRestoreInterrupts(enabled);
         if (pCBInfo)
         {
+            AudioStreamBuffer* pB = m_Buffers[0];
             pCBInfo->m_next = (READ_CB_INFO*)this;
-            pCBInfo->pBuffer = m_Buffers[0];
+            pCBInfo->pBuffer = pB;
         }
         AudioStream* pStream = (AudioStream*)pCBInfo->m_next;
         bool serious;
@@ -689,8 +690,9 @@ unsigned long GCAudioStreaming::MonoAudioStream::DoUpdateRead(unsigned long MRAM
             OSRestoreInterrupts(e3);
             if (pCBInfo2)
             {
+                AudioStreamBuffer* pB = m_Buffers[0];
                 pCBInfo2->m_next = (READ_CB_INFO*)this;
-                pCBInfo2->pBuffer = m_Buffers[0];
+                pCBInfo2->pBuffer = pB;
             }
             AudioStream* pStream2 = (AudioStream*)pCBInfo2->m_next;
             bool serious2;
@@ -772,8 +774,9 @@ unsigned long GCAudioStreaming::MonoAudioStream::DoUpdateRead(unsigned long MRAM
                 OSRestoreInterrupts(e4);
                 if (pCBInfo3)
                 {
+                    AudioStreamBuffer* pB = m_Buffers[0];
                     pCBInfo3->m_next = (READ_CB_INFO*)this;
-                    pCBInfo3->pBuffer = m_Buffers[0];
+                    pCBInfo3->pBuffer = pB;
                 }
                 AudioStream* pStream3 = (AudioStream*)pCBInfo3->m_next;
                 bool serious3;
@@ -830,8 +833,9 @@ unsigned long GCAudioStreaming::MonoAudioStream::DoUpdateRead(unsigned long MRAM
         OSRestoreInterrupts(e5);
         if (pCBInfo4)
         {
+            AudioStreamBuffer* pB = m_Buffers[0];
             pCBInfo4->m_next = (READ_CB_INFO*)this;
-            pCBInfo4->pBuffer = m_Buffers[0];
+            pCBInfo4->pBuffer = pB;
         }
         nlReadAsync(m_pFile, pMRAMBuffer + MRAMOffset, ReadASize, _UpdateReadCB, (unsigned long)pCBInfo4);
         if (ReadBSize != 0)
@@ -853,8 +857,9 @@ unsigned long GCAudioStreaming::MonoAudioStream::DoUpdateRead(unsigned long MRAM
             OSRestoreInterrupts(e6);
             if (pCBInfo5)
             {
+                AudioStreamBuffer* pB = m_Buffers[0];
                 pCBInfo5->m_next = (READ_CB_INFO*)this;
-                pCBInfo5->pBuffer = m_Buffers[0];
+                pCBInfo5->pBuffer = pB;
             }
             nlReadAsync(m_pFile, pMRAMBuffer + MRAMOffset + ReadASize, ReadBSize, _UpdateReadCB, (unsigned long)pCBInfo5);
         }

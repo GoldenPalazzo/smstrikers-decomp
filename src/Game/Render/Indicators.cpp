@@ -56,27 +56,19 @@ typedef struct
     ReplayIndicatorCharacter mCharacters[10];
 } ReplayIndicatorSnapshot;
 
-unsigned long uIndicatorTexID[4];
-unsigned long uGlowTexID[4];
-
-namespace
-{
-struct IndicatorsInit
-{
-    IndicatorsInit()
-    {
-        uIndicatorTexID[0] = nlStringLowerHash("fe/controller_1_indicator");
-        uIndicatorTexID[1] = nlStringLowerHash("fe/controller_2_indicator");
-        uIndicatorTexID[2] = nlStringLowerHash("fe/controller_3_indicator");
-        uIndicatorTexID[3] = nlStringLowerHash("fe/controller_4_indicator");
-        uGlowTexID[0] = nlStringLowerHash("fe/controller_1_indicator_E");
-        uGlowTexID[1] = nlStringLowerHash("fe/controller_2_indicator_E");
-        uGlowTexID[2] = nlStringLowerHash("fe/controller_3_indicator_E");
-        uGlowTexID[3] = nlStringLowerHash("fe/controller_4_indicator_E");
-    }
+unsigned long uIndicatorTexID[4] = {
+    nlStringLowerHash("fe/controller_1_indicator"),
+    nlStringLowerHash("fe/controller_2_indicator"),
+    nlStringLowerHash("fe/controller_3_indicator"),
+    nlStringLowerHash("fe/controller_4_indicator")
 };
-IndicatorsInit s_indicatorsInit;
-} // namespace
+
+unsigned long uGlowTexID[4] = {
+    nlStringLowerHash("fe/controller_1_indicator_E"),
+    nlStringLowerHash("fe/controller_2_indicator_E"),
+    nlStringLowerHash("fe/controller_3_indicator_E"),
+    nlStringLowerHash("fe/controller_4_indicator_E")
+};
 
 float fMaxAlpha = 0.9f;
 float fOpacityFadePerSecond = 1.2f;
@@ -107,14 +99,19 @@ public:
 
 IndicatorInfo indicatorInfo[10];
 
-static void UpdateAndRenderPlayerIndicators(float);
+static inline void SetIndicatorPolyColour(glPoly2& poly, unsigned char r, unsigned char g, unsigned char b, unsigned char a)
+{
+    nlColour c = { 0, 0, 0, 0 };
+    nlColourSet(c, r, g, b, a);
+    poly.SetColour(c);
+}
 
 /**
  * Offset/Address/Size: 0x868 | 0x8015FACC | size: 0x440
  * TODO: 95.82% match - f29/f30 swap (dt vs x callee-saved register allocation),
  * r3/r4 swap (g_pGame/drawIndicator), mr vs li constant propagation for insideXY
  */
-void UpdateAndRenderOffScreenIndicators(float dt)
+static void UpdateAndRenderOffScreenIndicators(float dt)
 {
     nlVector3 worldPos = { 0 };
     float half;
@@ -241,9 +238,7 @@ void UpdateAndRenderOffScreenIndicators(float dt)
 
                     if ((u8)glTextureLoad(texID))
                     {
-                        static nlColour cInit;
                         glPoly2 quad;
-                        nlColour c;
 
                         glSetDefaultState(0);
                         glSetRasterState(GLS_AlphaBlend, 1);
@@ -256,12 +251,7 @@ void UpdateAndRenderOffScreenIndicators(float dt)
 
                         quad.SetupRotatedRectangle((float)xPixels, (float)yPixels, size, size, 0.0f, 10000000000.0f);
 
-                        c = cInit;
-                        c.c[0] = 0xFF;
-                        c.c[1] = 0xFF;
-                        c.c[2] = 0xFF;
-                        c.c[3] = (unsigned char)(255.0f * opacity);
-                        quad.SetColour(c);
+                        SetIndicatorPolyColour(quad, 0xFF, 0xFF, 0xFF, (unsigned char)(255.0f * opacity));
 
                         quad.depth = -0.5f;
                         quad.Attach((eGLView)27, 0, 0, (unsigned long)-1);
@@ -272,14 +262,12 @@ void UpdateAndRenderOffScreenIndicators(float dt)
     }
 }
 
-static void DrawIndicator(int xCentre, int yCentre, float fPixelWidth, float fPixelHeight, float fOpacity, unsigned long uTexID,
+static inline void DrawIndicator(int xCentre, int yCentre, float fPixelWidth, float fPixelHeight, float fOpacity, unsigned long uTexID,
     float rotationAngle, unsigned char additiveBlending)
 {
     if ((u8)glTextureLoad(uTexID))
     {
-        static nlColour cInit;
         glPoly2 poly;
-        nlColour c;
 
         glSetDefaultState(0);
         glSetRasterState(GLS_AlphaBlend, additiveBlending);
@@ -292,39 +280,39 @@ static void DrawIndicator(int xCentre, int yCentre, float fPixelWidth, float fPi
 
         poly.SetupRotatedRectangle((float)xCentre, (float)yCentre, fPixelWidth, fPixelHeight, rotationAngle, 10000000000.0f);
 
-        c = cInit;
         if (additiveBlending == 2)
         {
             unsigned char intensity = (unsigned char)(255.0f * fOpacity);
-            c.c[0] = intensity;
-            c.c[1] = intensity;
-            c.c[2] = intensity;
-            c.c[3] = 0xFF;
+            SetIndicatorPolyColour(poly, intensity, intensity, intensity, 0xFF);
         }
         else
         {
-            c.c[0] = 0xFF;
-            c.c[1] = 0xFF;
-            c.c[2] = 0xFF;
-            c.c[3] = (unsigned char)(255.0f * fOpacity);
+            SetIndicatorPolyColour(poly, 0xFF, 0xFF, 0xFF, (unsigned char)(255.0f * fOpacity));
         }
-        poly.SetColour(c);
 
         poly.depth = -0.5f;
         poly.Attach((eGLView)27, 0, 0, (unsigned long)-1);
     }
 }
 
+static inline unsigned long GetCharacterTexID(cPlayer* pCharacter)
+{
+    return uIndicatorTexID[pCharacter->GetGlobalPad()->m_padIndex];
+}
+
+static inline unsigned long GetCharacterGlowTexID(cPlayer* pCharacter)
+{
+    return uGlowTexID[pCharacter->GetGlobalPad()->m_padIndex];
+}
+
 /**
  * Offset/Address/Size: 0xA8 | 0x8015F30C | size: 0x7C0
- * TODO: 99.55% match - remaining diffs are callee-saved integer register
- * allocation rotation for loop cursors and texture IDs.
+ * TODO: 99.90% match - remaining diffs are local static and literal relocation labels.
  */
 static void UpdateAndRenderPlayerIndicators(float)
 {
     static int whoHadBall;
     static signed char init;
-    cGlobalPad* pController;
     nlVector3 v3Position;
     nlVector3 v3ScreenPosition;
     float fX;
@@ -362,10 +350,8 @@ static void UpdateAndRenderPlayerIndicators(float)
             continue;
         }
 
-        pController = ((cPlayer*)g_pCharacters[i])->GetGlobalPad();
-        indicatorTexID = uIndicatorTexID[pController->m_padIndex];
-        pController = ((cPlayer*)g_pCharacters[i])->GetGlobalPad();
-        glowTexID = uGlowTexID[pController->m_padIndex];
+        indicatorTexID = GetCharacterTexID((cPlayer*)g_pCharacters[i]);
+        glowTexID = GetCharacterGlowTexID((cPlayer*)g_pCharacters[i]);
 
         pReplay = ReplayManager::Instance();
         pSnapshot = (ReplayIndicatorSnapshot*)pReplay->mRender;
@@ -377,8 +363,8 @@ static void UpdateAndRenderPlayerIndicators(float)
 
         glViewProjectPoint((eGLView)7, v3Position, v3ScreenPosition);
 
-        fY = 240.0f * v3ScreenPosition.f.y + 240.0f;
         fX = 320.0f * v3ScreenPosition.f.x + 320.0f;
+        fY = 240.0f * v3ScreenPosition.f.y + 240.0f;
         fY -= switchScale;
 
         if (((cPlayerIndicatorState*)g_pCharacters[i])->mSwitchScale < 0.5f)
