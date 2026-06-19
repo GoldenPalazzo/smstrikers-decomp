@@ -63,7 +63,7 @@ public:
     virtual ~Bowser();
     virtual SkinAnimatedNPC_Type GetSkinAnimatedNPC_Type() const { return SkinAnimatedNPC_BOWSER; };
     virtual void Update(float);
-    void CollisionCallback(PhysicsObject*, PhysicsObject*, const nlVector3&);
+    static void CollisionCallback(PhysicsObject*, PhysicsObject*, const nlVector3&);
     void ActionInit();
     void ActionThrow();
     void ActionRoll();

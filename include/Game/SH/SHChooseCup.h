@@ -36,7 +36,9 @@ public:
     /* 0x434 */ FEScrollText* mTicker;                 // size 0x4
     /* 0x438 */ ButtonComponent mButtons;              // size 0x24
     /* 0x45C */ ButtonComponent mButtons2;             // size 0x24
-}; // total size: 0x480
+    /* 0x480 */ bool mCupInProgressVisible;            // size 0x1
+    /* 0x481 */ bool mCupInProgressDirty;              // size 0x1
+}; // total size: 0x484
 
 // class FEFinder<TLComponentInstance, 4>
 // {

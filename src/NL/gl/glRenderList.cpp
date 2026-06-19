@@ -339,8 +339,8 @@ static unsigned long glv_StreamsChanged __attribute__((section(".sdata2"))) = 0x
 
 /**
  * Offset/Address/Size: 0x748 | 0x801D9A08 | size: 0x298
- * TODO: 97.14% match - register allocation/order differs in texconfig, texture,
- * and stream comparison blocks around 0x801D9B1C-0x801D9C50.
+ * TODO: 98.61% match - register swaps remain in texconfig, texture,
+ * and stream update blocks around 0x801D9B1C-0x801D9C50.
  */
 void PacketCallbackManager::DoCallback(const glModelPacket* p, unsigned int count)
 {
@@ -434,6 +434,7 @@ void PacketCallbackManager::DoCallback(const glModelPacket* p, unsigned int coun
     }
 
     glModelStream* lastStreams = m_LastStreams;
+    glModelStream* streams;
     int numStreams;
     unsigned int streamChanged;
 
@@ -443,7 +444,7 @@ void PacketCallbackManager::DoCallback(const glModelPacket* p, unsigned int coun
     }
     else
     {
-        glModelStream* streams = p->streams;
+        streams = p->streams;
 
         for (int i = numStreams; i > 0; i--)
         {

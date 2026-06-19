@@ -31,8 +31,6 @@ struct glModelData
     /* 0x04 */ s32 numModels;
 };
 
-extern "C" cSHierarchy* Initialize__11cSHierarchyFP7nlChunk(nlChunk*);
-
 static inline cSAnim* FindAnimByHash(cInventory<cSAnim>* animInv, u32 hash)
 {
     ListEntry<cSAnim*>* animEntry = animInv->m_lItemList.m_Head;
@@ -70,11 +68,8 @@ static inline cSAnim* FindAnimByHash(cInventory<cSAnim>* animInv, u32 hash)
 
 /**
  * Offset/Address/Size: 0x8AC | 0x80166770 | size: 0xB3C
- * TODO: 98.13% match - remaining diffs are an r26/r27 register permutation
- * (foundAnim vs the AVL node/animInv pointers, target r27 / ours r26) across the
- * tree-walk and the five NPC blocks, plus the two CollisionCallback registrations
- * materializing a 12-byte member-pointer to a stack temp (forcing a 0x40 frame vs
- * target's 0x20 with a direct function-address load).
+ * TODO: 99.83% match - remaining diffs are an r26/r27 register permutation
+ * in the AVL node/animInv pointers across the tree-walk and the five NPC blocks.
  */
 NPCManager::NPCManager()
     : mpInventorySAnim(NULL)
@@ -230,15 +225,7 @@ NPCManager::NPCManager()
     PhysicsNPC* chainPhysics = new (nlMalloc(sizeof(PhysicsNPC), 8, false)) PhysicsNPC(g_pGame->m_pGameTweaks->fChainChompRadius);
     ChainChomp* chainChomp = new (nlMalloc(sizeof(ChainChomp), 8, false)) ChainChomp(*mNPCTemplate[5].hierarchy, mNPCTemplate[5].modelID, *chainPhysics, mpInventorySAnim);
     mpChainChomp = chainChomp;
-    {
-        union
-        {
-            void (ChainChomp::*mfp)(PhysicsObject*, PhysicsObject*, const nlVector3&);
-            PhysicsNPC::CallbackFn fp;
-        } u;
-        u.mfp = &ChainChomp::CollisionCallback;
-        chainPhysics->SetCallbackFunction(u.fp);
-    }
+    chainPhysics->SetCallbackFunction(&ChainChomp::CollisionCallback);
 
     if (nlSingleton<GameInfoManager>::s_pInstance->mIsInStrikers101Mode)
         CreateNPCTemplate(6, false);
@@ -248,15 +235,7 @@ NPCManager::NPCManager()
     PhysicsNPC* bowserPhysics = new (nlMalloc(sizeof(PhysicsNPC), 8, false)) PhysicsNPC(g_pGame->m_pGameTweaks->unk304);
     Bowser* bowser = new (nlMalloc(sizeof(Bowser), 8, false)) Bowser(*mNPCTemplate[6].hierarchy, mNPCTemplate[6].modelID, *bowserPhysics, mpInventorySAnim);
     mpBowser = bowser;
-    {
-        union
-        {
-            void (Bowser::*mfp)(PhysicsObject*, PhysicsObject*, const nlVector3&);
-            PhysicsNPC::CallbackFn fp;
-        } u;
-        u.mfp = &Bowser::CollisionCallback;
-        bowserPhysics->SetCallbackFunction(u.fp);
-    }
+    bowserPhysics->SetCallbackFunction(&Bowser::CollisionCallback);
 }
 
 /**
@@ -442,7 +421,7 @@ void NPCManager::CreateNPCTemplate(int templateIndex, bool loadTextures)
     {
         if ((hierData->m_ID & 0x80FFFFFF) == 0x80018000)
         {
-            cSHierarchy* hier = Initialize__11cSHierarchyFP7nlChunk(hierData);
+            cSHierarchy* hier = cSHierarchy::Initialize(hierData);
 
             ListEntry<cSHierarchy*>* itemEntry = (ListEntry<cSHierarchy*>*)nlMalloc(8, 8, false);
             if (itemEntry != NULL)

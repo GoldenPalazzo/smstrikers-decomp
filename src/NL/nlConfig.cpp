@@ -388,10 +388,9 @@ void Config::Set(const char* tag, const char* value)
 
 /**
  * Offset/Address/Size: 0x1BC8 | 0x801D482C | size: 0x12C
- * TODO: 94.3% match - r28/r30 register swap for hash/idx in probe setup,
- * r29/r30 register swap for idx/offset and r28/r29 swap for dest/src in copy loop,
- * nlToUpper<Uc> vs nlToUpper<c> template instantiation (i diff),
- * bge vs blt/b branch pattern in copy loop
+ * TODO: 97.0% match - hash takes r30 vs r28 in probe setup, cascading
+ * idx/offset/tvp and dest/src register swaps; nlToUpper<Uc> vs nlToUpper<c>
+ * template instantiation; one extra tvp->tag store on the buffer-full path
  */
 void Config::Set(const char* tag, float value)
 {
@@ -428,7 +427,8 @@ void Config::Set(const char* tag, float value)
         {
             if (mStringEnd - mStringMemory >= 0x27FF)
             {
-                break;
+                tvp->tag = dest;
+                return;
             }
             *mStringEnd = nlToUpper((u8)*src);
             src++;
@@ -546,30 +546,33 @@ void Config::Set(const char* tag, int value)
     }
 }
 
+static inline u32 ConfigHash(const char* str)
+{
+    u32 hash = 0x1505;
+    while (*str != 0)
+    {
+        s8 c = (s8)nlToUpper((u8)*str++);
+        hash = hash + (hash << 5) + c;
+    }
+    return hash;
+}
+
 /**
  * Offset/Address/Size: 0x1F34 | 0x801D4B98 | size: 0xB8
- * TODO: 98.9% match - nlToUpper<Uc> vs nlToUpper<c> template instantiation (i diff),
- * r30/r31 register swap for idx/offset in probe loop (MWCC allocator quirk)
  */
 TagValuePair& Config::FindTvp(const char* tag)
 {
-    u32 hash = 0x1505;
-    const char* p = tag;
-    while (*p != 0)
-    {
-        s8 c = (s8)nlToUpper((u8)*p++);
-        hash = hash + (hash << 5) + c;
-    }
-    u32 idx = hash & 0x3FF;
+    unsigned int i = ConfigHash(tag) & 0x3FF;
 
     while (true)
     {
-        u32 offset = idx * 12;
-        if (mTvpHash[idx].tag == NULL || nlStrICmp(mTvpHash[idx].tag, tag) == 0)
+        u32 offset = i * 12;
+        if (mTvpHash[i].tag == NULL || nlStrICmp(mTvpHash[i].tag, tag) == 0)
         {
             return *(TagValuePair*)((char*)mTvpHash + offset);
         }
-        idx = (idx + 1) & 0x3FF;
+        i++;
+        i &= 0x3FF;
     }
 }
 

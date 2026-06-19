@@ -1702,7 +1702,7 @@ float InFrontOfTheirNet(cFielder* pFielder)
 
 /**
  * Offset/Address/Size: 0x36FC | 0x80082184 | size: 0x3D0
- * TODO: 94.86% match - FPR f31/f30/f28 swap, closestPt/hidden return stack swap, fmuls operand order
+ * TODO: 99.41% match - saved float registers and closestPt stack slot differ
  */
 float OnBreakaway(cFielder* pFielder)
 {
@@ -1733,7 +1733,8 @@ float OnBreakaway(cFielder* pFielder)
             v3OppPos = pOpponent->m_v3Position;
             cNet* pOtherNet = pFielder->m_pTeam->GetOtherNet();
             float sign = AIsgn(pOtherNet->m_baseLocation.f.x);
-            fUpfieldScore = NormalizeVal((v3MyPos.f.x - v3OppPos.f.x) * sign, 0.0f, g_pGame->m_pFuzzyTweaks->fUpfieldMaxDistance);
+            float upfieldDist = v3MyPos.f.x - v3OppPos.f.x;
+            fUpfieldScore = NormalizeVal(upfieldDist * sign, 0.0f, g_pGame->m_pFuzzyTweaks->fUpfieldMaxDistance);
         }
         float fInterceptScore;
         if (pOpponent == NULL)
@@ -1751,24 +1752,35 @@ float OnBreakaway(cFielder* pFielder)
             cNet* pOppNet = pOpponent->m_pTeam->m_pNet;
             const nlVector3* pNetPos = &pOppNet->m_baseLocation;
             nlVector3 closestPt = GetClosestPointOnLineABFromPointC(*pMyPos, *pNetPos, *pOppPos);
-            fInterceptScore = 0.0f;
-            do
+
+            bool isMyPos = (pMyPos->f.x == closestPt.f.x && pMyPos->f.y == closestPt.f.y && pMyPos->f.z == closestPt.f.z);
+            if (isMyPos)
             {
-                bool isMyPos = (pMyPos->f.x == closestPt.f.x && pMyPos->f.y == closestPt.f.y && pMyPos->f.z == closestPt.f.z);
-                if (isMyPos)
-                    break;
+                goto OnBreakaway_ReturnZero;
+            }
+
+            {
                 bool isNetPos = (pNetPos->f.x == closestPt.f.x && pNetPos->f.y == closestPt.f.y && pNetPos->f.z == closestPt.f.z);
-                if (isNetPos)
-                    break;
-                float dx1 = pMyPos->f.x - closestPt.f.x;
-                float dy1 = pMyPos->f.y - closestPt.f.y;
-                float dist1 = nlSqrt(dy1 * dy1 + dx1 * dx1, true);
-                fInterceptScore = InterpolateRangeClamped(g_pGame->m_pFuzzyTweaks->vInBetweenConeWidth, g_pGame->m_pFuzzyTweaks->vInBetweenInterceptRange, dist1);
-                float dy2 = closestPt.f.y - pOppPos->f.y;
-                float dx2 = closestPt.f.x - pOppPos->f.x;
-                float dist2 = nlSqrt(dx2 * dx2 + dy2 * dy2, true);
-                fInterceptScore = InterpolateRangeClamped(fWeight, 0.0f, 0.0f, fInterceptScore, dist2);
-            } while (false);
+                if (!isNetPos)
+                {
+                    goto OnBreakaway_Compute;
+                }
+            }
+
+        OnBreakaway_ReturnZero:
+            fInterceptScore = 0.0f;
+            goto OnBreakaway_Done;
+
+        OnBreakaway_Compute:
+            float dx1 = pMyPos->f.x - closestPt.f.x;
+            float dy1 = pMyPos->f.y - closestPt.f.y;
+            float dist1 = nlSqrt(dx1 * dx1 + dy1 * dy1, true);
+            fInterceptScore = InterpolateRangeClamped(g_pGame->m_pFuzzyTweaks->vInBetweenConeWidth, g_pGame->m_pFuzzyTweaks->vInBetweenInterceptRange, dist1);
+            float dy2 = closestPt.f.y - pOppPos->f.y;
+            float dx2 = closestPt.f.x - pOppPos->f.x;
+            fInterceptScore = InterpolateRangeClamped(fWeight, 0.0f, 0.0f, fInterceptScore, nlSqrt(dx2 * dx2 + dy2 * dy2, true));
+
+        OnBreakaway_Done:;
         }
         float fProximityScore;
         if (pFielder == NULL)
@@ -1806,8 +1818,8 @@ float OnBreakaway(cFielder* pFielder)
             {
                 pRange = &g_pGame->m_pFuzzyTweaks->vNearOpponentConfidenceDistance;
             }
-            float dy = pFielder->m_v3Position.f.y - pOpponent->m_v3Position.f.y;
             float dx = pFielder->m_v3Position.f.x - pOpponent->m_v3Position.f.x;
+            float dy = pFielder->m_v3Position.f.y - pOpponent->m_v3Position.f.y;
             float dist = nlSqrt(dx * dx + dy * dy, true);
             fProximityScore = NormalizeVal(dist, *pRange);
         }

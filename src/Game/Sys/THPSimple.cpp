@@ -562,30 +562,27 @@ static int VideoDecode(unsigned char* videoFrame)
 
 /**
  * Offset/Address/Size: 0x684 | 0x801CC5E8 | size: 0x390
- * TODO: 92.82% match - readBuffer base pointer still emits lwzu from +0x9C
- * instead of separate +0xA4/+0x9C bases; loop counter register allocation and
- * return-3 branch placement still differ.
  */
 extern "C" long THPSimpleDecode(long audioTrack)
 {
+    int* validBuffer;
     THPReadBuffer* readBuffer;
-    long nextDecodeIndex;
     int old;
     unsigned long i;
     unsigned char* ptr;
     unsigned long* compSizePtr;
     unsigned long sample;
 
-    readBuffer = ((THPSimpleControlWork*)&SimpleControl)->readBuffer;
-    nextDecodeIndex = ((THPSimpleControlWork*)&SimpleControl)->nextDecodeIndex;
+    validBuffer = &((THPSimpleControlWork*)&SimpleControl)->readBuffer[0].mIsValid;
 
-    if (readBuffer[nextDecodeIndex].mIsValid == 0)
+    if (validBuffer[((THPSimpleControlWork*)&SimpleControl)->nextDecodeIndex * 3] == 0)
     {
         goto ret2;
     }
 
-    compSizePtr = (unsigned long*)(readBuffer[nextDecodeIndex].mPtr + 8);
-    ptr = readBuffer[nextDecodeIndex].mPtr + ((THPSimpleControlWork*)&SimpleControl)->compInfo.mNumComponents * 4 + 8;
+    readBuffer = ((THPSimpleControlWork*)&SimpleControl)->readBuffer;
+    compSizePtr = (unsigned long*)(readBuffer[((THPSimpleControlWork*)&SimpleControl)->nextDecodeIndex].mPtr + 8);
+    ptr = readBuffer[((THPSimpleControlWork*)&SimpleControl)->nextDecodeIndex].mPtr + ((THPSimpleControlWork*)&SimpleControl)->compInfo.mNumComponents * 4 + 8;
 
     if (((THPSimpleControlWork*)&SimpleControl)->audioExist != 0 && AudioSystem != 1)
     {
@@ -627,31 +624,33 @@ extern "C" long THPSimpleDecode(long audioTrack)
             ptr += *compSizePtr;
             compSizePtr++;
         }
-    }
-    else
-    {
-        for (i = 0; i < ((THPSimpleControlWork*)&SimpleControl)->compInfo.mNumComponents; i++)
-        {
-            switch (((THPSimpleControlWork*)&SimpleControl)->compInfo.mFrameComp[i])
-            {
-            case 0:
-                if (!VideoDecode(ptr))
-                {
-                    return 1;
-                }
-                break;
-            }
-            ptr += *compSizePtr;
-            compSizePtr++;
-        }
+        goto decoded;
+    ret3:
+        return 3;
     }
 
-    readBuffer[nextDecodeIndex].mIsValid = 0;
+    for (i = 0; i < ((THPSimpleControlWork*)&SimpleControl)->compInfo.mNumComponents; i++)
+    {
+        switch (((THPSimpleControlWork*)&SimpleControl)->compInfo.mFrameComp[i])
+        {
+        case 0:
+            if (!VideoDecode(ptr))
+            {
+                return 1;
+            }
+            break;
+        }
+        ptr += *compSizePtr;
+        compSizePtr++;
+    }
+
+decoded:
+    validBuffer[((THPSimpleControlWork*)&SimpleControl)->nextDecodeIndex * 3] = 0;
     ((THPSimpleControlWork*)&SimpleControl)->nextDecodeIndex = (((THPSimpleControlWork*)&SimpleControl)->nextDecodeIndex + 1 >= NumReadBuffers) ? 0 : ((THPSimpleControlWork*)&SimpleControl)->nextDecodeIndex + 1;
 
     old = OSDisableInterrupts();
 
-    if (readBuffer[((THPSimpleControlWork*)&SimpleControl)->readIndex].mIsValid == 0 && ((THPSimpleControlWork*)&SimpleControl)->readProgress == 0 && ((THPSimpleControlWork*)&SimpleControl)->dvdError == 0 && ((THPSimpleControlWork*)&SimpleControl)->preFetchState == 1)
+    if (validBuffer[((THPSimpleControlWork*)&SimpleControl)->readIndex * 3] == 0 && ((THPSimpleControlWork*)&SimpleControl)->readProgress == 0 && ((THPSimpleControlWork*)&SimpleControl)->dvdError == 0 && ((THPSimpleControlWork*)&SimpleControl)->preFetchState == 1)
     {
         if ((unsigned long)((THPSimpleControlWork*)&SimpleControl)->totalReadFrame > ((THPSimpleControlWork*)&SimpleControl)->numFrames - 1)
         {
@@ -675,8 +674,6 @@ extern "C" long THPSimpleDecode(long audioTrack)
 done:
     OSRestoreInterrupts(old);
     return 0;
-ret3:
-    return 3;
 ret2:
     return 2;
 }

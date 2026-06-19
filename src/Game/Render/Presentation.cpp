@@ -791,37 +791,6 @@ void Presentation::EventHandler(Event* event)
         float m_fGameDuration;
     };
 
-    struct NisPlayerGoalData
-    {
-        char _pad[0xBD28];
-        s32 mWinnerSide[2];
-    };
-
-    struct GoalieSaveDataLocal : EventData
-    {
-        nlVector3 v3BallVelocity;
-        void* pGoalie;
-        void* pShooter;
-        u32 saveType;
-        float fWowFactor;
-        unsigned int isSTS : 1;
-        unsigned int padding : 31;
-    };
-
-    struct GoalScoredDataLocal : EventData
-    {
-        unsigned int uTeamIndex : 8;
-        unsigned int uNumGoalsScored : 8;
-        unsigned int uGoalType : 15;
-        unsigned int uIsHyper : 1;
-        nlVector3 v3ShotPosition;
-        cPlayer* pScorer;
-        cPlayer* pAssister;
-        cPlayer* pLastTouch[2];
-    };
-
-    extern unsigned int nlDefaultSeed;
-
     if (g_pGame == 0)
     {
         return;
@@ -872,7 +841,10 @@ void Presentation::EventHandler(Event* event)
             return;
         }
 
-        GoalScoredDataLocal* gsd;
+        bool takeTheLead;
+        bool inSuddenDeath;
+        GoalScoredData* gsd;
+        bool tiesTheGame;
         s32 id = event->m_data.GetID();
         if (id == -1)
         {
@@ -889,25 +861,25 @@ void Presentation::EventHandler(Event* event)
             }
             else
             {
-                gsd = (GoalScoredDataLocal*)&event->m_data;
+                gsd = (GoalScoredData*)&event->m_data;
             }
         }
 
         if (gsd != 0)
         {
-            ((NisPlayerGoalData*)NisPlayer::Instance())->mWinnerSide[1] = gsd->uTeamIndex;
+            NisPlayer::Instance()->mWinnerSide[1] = gsd->uTeamIndex;
 
             cTeam* team = g_pTeams[gsd->uTeamIndex];
             s32 scoreDiff = team->m_nScore - team->GetOtherTeam()->m_nScore;
-            bool tiesTheGame = (scoreDiff == 0);
+            tiesTheGame = (scoreDiff == 0);
 
-            bool takeTheLead = true;
+            takeTheLead = true;
             if (scoreDiff != 1 && scoreDiff != (s32)gsd->uNumGoalsScored)
             {
                 takeTheLead = false;
             }
 
-            bool inSuddenDeath = (g_pGame->m_eGameState == GS_OVERTIME);
+            inSuddenDeath = (g_pGame->m_eGameState == GS_OVERTIME);
 
             bool byCaptain;
             if (gsd->uGoalType == 5)
@@ -975,8 +947,9 @@ void Presentation::EventHandler(Event* event)
                     {
                         s32 awayScore = g_pTeams[1]->m_nScore;
                         s32 homeScore = g_pTeams[0]->m_nScore;
-                        ((NisPlayerGoalData*)NisPlayer::Instance())->mWinnerSide[0] = (awayScore < homeScore);
+                        NisPlayer* nisPlayer = NisPlayer::Instance();
                         script = "GoalSuddenDeath";
+                        nisPlayer->mWinnerSide[0] = (awayScore < homeScore);
                     }
                 }
             }
@@ -1009,7 +982,7 @@ void Presentation::EventHandler(Event* event)
                 cPlayer** character = (cPlayer**)g_pCharacters;
                 for (s32 j = 0; j < 5; j++)
                 {
-                    cPlayer* c0 = character[0];
+                    cPlayer* c0 = *character;
                     if (c0->m_pController == aiPad)
                     {
                         if ((s32)gsd->uTeamIndex == c0->m_pTeam->m_nSide)
@@ -1023,7 +996,7 @@ void Presentation::EventHandler(Event* event)
                         }
                     }
 
-                    cPlayer* c1 = character[1];
+                    cPlayer* c1 = *++character;
                     if (c1->m_pController == aiPad)
                     {
                         if ((s32)gsd->uTeamIndex == c1->m_pTeam->m_nSide)
@@ -1037,7 +1010,7 @@ void Presentation::EventHandler(Event* event)
                         }
                     }
 
-                    character += 2;
+                    character++;
                 }
                 aiPad++;
             }
@@ -1054,7 +1027,7 @@ void Presentation::EventHandler(Event* event)
 
     if (event->m_uEventID == 0xF)
     {
-        GoalieSaveDataLocal* gsd;
+        GoalieSaveData* gsd;
 
         s32 id = event->m_data.GetID();
         if (id == -1)
@@ -1072,7 +1045,7 @@ void Presentation::EventHandler(Event* event)
             }
             else
             {
-                gsd = (GoalieSaveDataLocal*)&event->m_data;
+                gsd = (GoalieSaveData*)&event->m_data;
             }
         }
 

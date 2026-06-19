@@ -146,37 +146,31 @@ static inline BasicStringInternal* BuildScrollString(const unsigned short* text)
     return data;
 }
 
+static inline const unsigned short* LookupLocTextChar(nlLocalization* loc, unsigned long hash)
+{
+    if (loc->m_LookupTable == 0)
+    {
+        return LocalizationTableNotFound;
+    }
+    nlLocalization::StringLookup* lookup = nlBSearch<nlLocalization::StringLookup, unsigned long>(hash, loc->m_LookupTable, loc->m_pFile->StringCount);
+    if (lookup != 0)
+    {
+        return loc->m_FirstString + lookup->StringOffset;
+    }
+    return MissingLocString;
+}
+
 /**
  * Offset/Address/Size: 0x1C8 | 0x800C8B9C | size: 0x198
- * TODO: 95.1% match - MWCC keeps this in r30 and loc/data in r29 (target is this->r29, loc/data->r30)
+ * TODO: 96.9% match - this uses r31 while target uses r29; lookup text uses r29 while target uses r31
  */
-void FEScrollText::SetDisplayMessage(const char* id)
+void FEScrollText::SetDisplayMessage(const char* locMessage)
 {
-    unsigned long hash = nlStringLowerHash(id);
-    const unsigned short* text = LookupLocTextChar(hash);
-    BasicStringInternal* data = BuildScrollString(text);
-
-    BasicStringInternal* msgData = data;
-    SetDisplayMessage(*(const BasicString<unsigned short, Detail::TempStringAllocator>*)&msgData);
-
-    data = msgData;
-    if (data != 0)
-    {
-        if (--data->mRefCount == 0)
-        {
-            if (data != 0)
-            {
-                if (data != 0)
-                {
-                    delete[] data->mData;
-                }
-                if (data != 0)
-                {
-                    nlFree(data);
-                }
-            }
-        }
-    }
+    nlLocalization* loc = (nlLocalization*)g_pLocalization;
+    unsigned long hash = nlStringLowerHash(locMessage);
+    const unsigned short* text = LookupLocTextChar(loc, hash);
+    BasicString<unsigned short, Detail::TempStringAllocator> message(text);
+    SetDisplayMessage(message);
 }
 
 static inline const unsigned short* LookupLocText(unsigned long hash)

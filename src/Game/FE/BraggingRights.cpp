@@ -331,16 +331,19 @@ void BraggingRightsOverlay::TournamentSceneCreated()
                 switch (award)
                 {
                 case 0:
-                    mainStat = userStats->mNumShotsOnGoal;
-                    if (mainStat == 0)
+                {
+                    unsigned short shotsOnGoal = userStats->mNumShotsOnGoal;
+                    mainStat = shotsOnGoal;
+                    if (shotsOnGoal == 0)
                     {
                         tieBreaker = 0;
                     }
                     else
                     {
-                        tieBreaker = (int)(100.0f * (float)userStats->mNumGoalsFor / (float)userStats->mNumShotsOnGoal);
+                        tieBreaker = (int)(((float)userStats->mNumGoalsFor / (float)shotsOnGoal) * 100.0f);
                     }
                     break;
+                }
 
                 case 1:
                     mainStat = userStats->mNumHitsMade;

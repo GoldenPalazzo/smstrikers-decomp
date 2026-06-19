@@ -1905,10 +1905,10 @@ void Goalie::FindDesiredGoaliePosition(nlVector3& pos, nlVector3& dir, nlVector3
 
     if (pThreatPos == NULL)
     {
-        cPlayer* pOwner = g_pBall->m_pOwner;
         cBall* pBall = g_pBall;
-        if (pOwner != NULL)
+        if (pBall->m_pOwner != NULL)
         {
+            cPlayer* pOwner = pBall->m_pOwner;
             targetPos.f.x = 0.18f * pOwner->m_v3Velocity.f.x + pBall->m_v3Position.f.x;
             targetPos.f.y = 0.18f * pOwner->m_v3Velocity.f.y + pBall->m_v3Position.f.y;
             targetPos.f.z = 0.18f * pOwner->m_v3Velocity.f.z + pBall->m_v3Position.f.z;
@@ -1929,7 +1929,7 @@ void Goalie::FindDesiredGoaliePosition(nlVector3& pos, nlVector3& dir, nlVector3
     float goalLineX = cField::GetGoalLineX(1U);
     float absTargetY = (float)fabs(targetPos.f.y);
     float fNetY = cField::GetSidelineY(1U);
-    float limit = goalLineX - absTargetY * 3.0f / fNetY;
+    float limit = goalLineX - 3.0f * absTargetY / fNetY;
 
     if (targetPos.f.x > limit)
     {
@@ -2031,9 +2031,9 @@ void Goalie::FindDesiredGoaliePosition(nlVector3& pos, nlVector3& dir, nlVector3
     }
 
     float ratio = (goalieDist + 0.5f) / (targetDist + 0.5f);
-    float desiredX = ratio * desiredVec.f.x + goalX;
-    float desiredY = ratio * desiredVec.f.y + goalY;
     float desiredZ = ratio * desiredVec.f.z + goalY;
+    float desiredY = ratio * desiredVec.f.y + goalY;
+    float desiredX = ratio * desiredVec.f.x + goalX;
 
     if ((float)fabs(m_v3Position.f.x) > cField::GetGoalLineX(1U))
     {
@@ -3475,7 +3475,7 @@ inline cPN_Blender* AllocateBlender()
 
 /**
  * Offset/Address/Size: 0x58E4 | 0x800483E0 | size: 0x458
- * TODO: 96.26% match - this pointer remains r28 vs target r29; positive milestone loads still use r0/add+lfs instead of r4/lfsx.
+ * TODO: 98.09% match - this pointer remains r28 vs target r29.
  */
 void Goalie::PlayBlendedAnims(float fStartTime, int nMilestone)
 {
@@ -3518,25 +3518,13 @@ void Goalie::PlayBlendedAnims(float fStartTime, int nMilestone)
 
             if (mBlendInfo.mfMilestoneTime[nMilestone] > 0.0f)
             {
-                if (mBlendInfo.mpSaveData[0] != NULL)
+                for (int i = 0; i < 4; i++)
                 {
-                    float* pPercent = mBlendInfo.mpSaveData[0]->mfMilestonePercent;
-                    fStartPercent[0] = pPercent[nMilestone];
-                }
-                if (mBlendInfo.mpSaveData[1] != NULL)
-                {
-                    float* pPercent = mBlendInfo.mpSaveData[1]->mfMilestonePercent;
-                    fStartPercent[1] = pPercent[nMilestone];
-                }
-                if (mBlendInfo.mpSaveData[2] != NULL)
-                {
-                    float* pPercent = mBlendInfo.mpSaveData[2]->mfMilestonePercent;
-                    fStartPercent[2] = pPercent[nMilestone];
-                }
-                if (mBlendInfo.mpSaveData[3] != NULL)
-                {
-                    float* pPercent = mBlendInfo.mpSaveData[3]->mfMilestonePercent;
-                    fStartPercent[3] = pPercent[nMilestone];
+                    SaveData* pData = mBlendInfo.mpSaveData[i];
+                    if (pData != NULL)
+                    {
+                        fStartPercent[i] = pData->mfMilestonePercent[nMilestone];
+                    }
                 }
             }
             else
@@ -3838,14 +3826,8 @@ void Goalie::InitActionLooseBallSetup()
         }
     }
 
-    f32 fVelX = pBallVelocity->f.x;
-    f32 fVelY = pBallVelocity->f.y;
-    f32 fVelXSq = fVelX * fVelX;
-    f32 fVelZ = pBallVelocity->f.z;
-    f32 fVelYSq = fVelY * fVelY;
-    f32 fVelZSq = fVelZ * fVelZ;
-    f32 fBallSpeed = fVelXSq + fVelYSq;
-    fBallSpeed = fVelZSq + fBallSpeed;
+    f32 fBallSpeed = pBallVelocity->f.x * pBallVelocity->f.x + pBallVelocity->f.y * pBallVelocity->f.y
+                   + pBallVelocity->f.z * pBallVelocity->f.z;
 
     if (fBallSpeed > 100.0f && bInCone)
     {
@@ -3901,9 +3883,11 @@ void Goalie::InitActionLooseBallSetup()
                     mpSaveData = GoalieSave::FindBestSave(mBlendInfo, mv3LocalContactPosition, fTimeTilSave, false, uSaveType, false);
                 }
 
+                bool bAdjustSave = false;
                 if (mpSaveData != NULL)
                 {
                     mbPlayMiss = false;
+                    bAdjustSave = true;
                 }
                 else
                 {
@@ -3915,10 +3899,11 @@ void Goalie::InitActionLooseBallSetup()
                     {
                         mpSaveData = GoalieSave::FindBestSave(mBlendInfo, mv3LocalContactPosition, 5.0f, true, uSaveType & 0x3FFF, false);
                         mbPlayMiss = true;
+                        bAdjustSave = true;
                     }
                 }
 
-                if (mpSaveData != NULL)
+                if (bAdjustSave)
                 {
                     f32 fSavePosX = mpSaveData->mv3SavePos.f.x;
                     f32 fLocalX = mv3LocalContactPosition.f.x;
@@ -3992,13 +3977,20 @@ void Goalie::InitActionLooseBallSetup()
             f32 fAbsBallX2 = (f32)fabs(v3BallPosition.f.x);
             f32 fPenaltyBoxX = cField::GetPenaltyBoxX(1U);
             bool bInPenaltyArea = false;
-            if (fAbsBallX2 > fPenaltyBoxX + 2.0f)
+            if (fAbsBallX2 > fPenaltyBoxX - 2.0f)
             {
                 if (v3BallPosition.f.x * m_v3Position.f.x > 0.0f)
                 {
                     f32 fAbsBallY = (f32)fabs(v3BallPosition.f.y);
                     f32 fPenaltyBoxY = cField::GetPenaltyBoxY();
-                    bInPenaltyArea = fAbsBallY < fPenaltyBoxY - 1.0f;
+                    if (fAbsBallY < fPenaltyBoxY - 1.0f)
+                    {
+                        bInPenaltyArea = true;
+                    }
+                    else
+                    {
+                        bInPenaltyArea = false;
+                    }
                 }
             }
 
@@ -4589,7 +4581,14 @@ void Goalie::InitActionLooseBallSetup()
                         {
                             f32 fAbsIntY = (f32)fabs(v3IntPos.f.y);
                             f32 fPenaltyBoxY = cField::GetPenaltyBoxY();
-                            bInPenaltyArea = fAbsIntY < 0.0f + fPenaltyBoxY;
+                            if (fAbsIntY < 0.0f + fPenaltyBoxY)
+                            {
+                                bInPenaltyArea = true;
+                            }
+                            else
+                            {
+                                bInPenaltyArea = false;
+                            }
                         }
                     }
 

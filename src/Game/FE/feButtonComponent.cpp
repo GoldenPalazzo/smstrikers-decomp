@@ -7,9 +7,34 @@
 #include "Game/FE/feFinder.h"
 #include "NL/glx/glxTexture.h"
 
+static inline int GetRenderedStringLength(const unsigned short* pString, const nlFont* pFont)
+{
+    int returnValue;
+    unsigned char firstChar;
+    unsigned short* pCurrentChar;
+    const unsigned short* pLastChar;
+
+    returnValue = 0;
+    pCurrentChar = 0;
+    firstChar = true;
+    {
+        FontCharString fcs(pString, pFont, (unsigned short*)0);
+        pLastChar = fcs.m_pString;
+
+        while (*pLastChar != 0)
+        {
+            returnValue += pFont->GetCharWidth(*pLastChar, firstChar ? 0 : *pCurrentChar);
+            pCurrentChar = (unsigned short*)pLastChar;
+            firstChar = false;
+            pLastChar++;
+        }
+    }
+
+    return returnValue;
+}
+
 /**
  * Offset/Address/Size: 0x0 | 0x8010DC04 | size: 0x3F8
- * TODO: 96.94% match - stack frame +0x10 due to InlineHasher temp slot reuse, fmuls operand swap at halfWidth and componentPosition
  */
 void ButtonComponent::CentreButtons()
 {
@@ -32,16 +57,13 @@ void ButtonComponent::CentreButtons()
 
     for (i = 0; i < mNumButtons; i++)
     {
-        unsigned short* pLastChar;
-        unsigned short* pCurrentChar;
-        bool firstChar;
         int renderedLength;
 
         texture = glx_GetTex(mButtonImages[i]->m_pTextureResource->m_glTextureHandle, true, true);
         buttonWidth = (float)texture->m_Width;
 
         imagePosition = mButtonImages[i]->GetAssetPosition();
-        float halfWidth = buttonWidth * 0.5f;
+        float halfWidth = buttonWidth / 2.0f;
         mButtonImages[i]->SetAssetPosition(totalLength + halfWidth, imagePosition.f.y, imagePosition.f.z);
         totalLength += buttonWidth;
 
@@ -55,21 +77,7 @@ void ButtonComponent::CentreButtons()
 
         labelScale = mButtonLabels[i]->GetAssetScale();
 
-        renderedLength = 0;
-        pCurrentChar = 0;
-        firstChar = true;
-        {
-            FontCharString fcs(buffer, pFont, (unsigned short*)0);
-            pLastChar = fcs.m_pString;
-
-            while (*pLastChar != 0)
-            {
-                renderedLength += pFont->GetCharWidth(*pLastChar, firstChar ? 0 : *pCurrentChar);
-                pCurrentChar = pLastChar;
-                firstChar = false;
-                pLastChar++;
-            }
-        }
+        renderedLength = GetRenderedStringLength(buffer, pFont);
 
         totalLength += (float)(int)(labelScale.f.x * (float)renderedLength);
         totalLength += 32.0f;
@@ -78,7 +86,7 @@ void ButtonComponent::CentreButtons()
     totalLength -= 32.0f;
 
     componentPosition = mButtonInstance->GetAssetPosition();
-    mButtonInstance->SetAssetPosition(-(totalLength * 0.5f), componentPosition.f.y, componentPosition.f.z);
+    mButtonInstance->SetAssetPosition(-(totalLength / 2.0f), componentPosition.f.y, componentPosition.f.z);
     mButtonInstance->m_bVisible = true;
     mAlreadyCentred = true;
 

@@ -385,9 +385,8 @@ BasicString<CharT, Allocator>& BasicString<CharT, Allocator>::AppendInPlace(cons
         at = 0;
     }
 
-    const CharT* begin;
-    const CharT* end;
     BasicStringData<CharT>* rhsData = rhs.m_data;
+    const CharT* begin;
     if (rhsData != 0)
     {
         begin = rhsData->mData;
@@ -397,16 +396,7 @@ BasicString<CharT, Allocator>& BasicString<CharT, Allocator>::AppendInPlace(cons
         begin = 0;
     }
 
-    if (rhsData != 0)
-    {
-        end = rhsData->mData + rhsData->mSize - 1;
-    }
-    else
-    {
-        end = 0;
-    }
-
-    insert(at, begin, end);
+    insert(at, begin, rhsData != 0 ? rhsData->mData + rhsData->mSize - 1 : 0);
     return *this;
 }
 
@@ -555,7 +545,8 @@ void BasicString<CharT, Allocator>::TrimInPlace(const CharT* chars)
         (*this)[0];
         BasicStringData<CharT>* data = m_data;
         int size = eraseEnd - eraseBegin;
-        CharT* at = data->mData + (eraseBegin - data->mData);
+        int offset = eraseBegin - data->mData;
+        CharT* at = data->mData + offset;
         while (eraseEnd != data->mData + data->mSize)
         {
             *at = *eraseEnd;
@@ -593,7 +584,8 @@ void BasicString<CharT, Allocator>::TrimInPlace(const CharT* chars)
         (*this)[0];
         BasicStringData<CharT>* data = m_data;
         int size = trailEnd - trailBegin;
-        CharT* at = data->mData + (trailBegin - data->mData);
+        int offset = trailBegin - data->mData;
+        CharT* at = data->mData + offset;
         while (trailEnd != data->mData + data->mSize)
         {
             *at = *trailEnd;

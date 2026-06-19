@@ -842,7 +842,7 @@ extern "C" void sndStreamDeactivate(unsigned long stid);
 
 /**
  * Offset/Address/Size: 0xE20 | 0x80155B78 | size: 0x29C
- * TODO: 98.59% match - loop-zero register selection and r3/r4 choice differ in buffer-init/flag-update paths
+ * TODO: 99.25% match - second activate-loop buffer pointer uses r3 instead of r4
  */
 void AudioStreamTrack::StreamTrack::ProcessNewHeadStream()
 {
@@ -897,8 +897,8 @@ void AudioStreamTrack::StreamTrack::ProcessNewHeadStream()
 
     if (pStream->m_State >= GCAudioStreaming::SS_Warming)
     {
-        GCAudioStreaming::AudioStreamBuffer* buf = NULL;
-        volatile unsigned long bufCounter = zero;
+        GCAudioStreaming::AudioStreamBuffer* buf;
+        volatile unsigned long bufCounter = (unsigned long)(buf = NULL);
         if (pStream->m_BufferCount > zero)
         {
             buf = pStream->m_Buffers[0];
@@ -924,18 +924,8 @@ void AudioStreamTrack::StreamTrack::ProcessNewHeadStream()
     pStream->m_Volume = zero;
     GCAudioStreaming::StereoAudioStream* pStreamActive = pEntry->m_data.pStream;
 
-    {
-        unsigned long flags = pStreamActive->m_Flags;
-        unsigned long loopBit = (pEntry->m_data.Loop);
-        flags = (flags & ~(1 << 1)) | (loopBit << 1);
-        pStreamActive->m_Flags = flags;
-    }
-
-    {
-        unsigned long flags = pStreamActive->m_Flags;
-        flags = (flags & ~(1 << 2)) | (1 << 2);
-        pStreamActive->m_Flags = flags;
-    }
+    pStreamActive->m_Flags = (pStreamActive->m_Flags & ~(1 << 1)) | (pEntry->m_data.Loop << 1);
+    pStreamActive->m_Flags = (pStreamActive->m_Flags & ~(1 << 2)) | (1 << 2);
 
     switch (pStreamActive->m_State)
     {

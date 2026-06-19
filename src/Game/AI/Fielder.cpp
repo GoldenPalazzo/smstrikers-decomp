@@ -2484,9 +2484,9 @@ bool cFielder::DoLooseBallContactFromRun(nlVector3& v3AnimStartPosition, float& 
     nlVector3* pContactOffsetWorld = &v3ContactOffsetWorld;
     float ySin = v3ContactOffsetLocal.f.y * fSin;
     float xSin = v3ContactOffsetLocal.f.x * fSin;
-    pContactOffsetWorld->f.z = v3ContactOffsetLocal.f.z;
     pContactOffsetWorld->f.x = (v3ContactOffsetLocal.f.x * fCos) - ySin;
     pContactOffsetWorld->f.y = (v3ContactOffsetLocal.f.y * fCos) + xSin;
+    pContactOffsetWorld->f.z = v3ContactOffsetLocal.f.z;
 
     float fDesiredSpeedToAnimStart = (float)nNumKeys / 30.0f;
     float fBestSpeedToAnimStartDelta = fAnimTimeToContact * fDesiredSpeedToAnimStart;

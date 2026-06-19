@@ -819,7 +819,7 @@ unsigned long PlaySFX(const SFXStartInfo& info)
     {
         if (pInfo->uPitchBend != 0x2000)
         {
-            tDebugPrintManager::Print(DC_SOUND, "pitch bend should be non-default\n");
+            tDebugPrintManager::Print(DC_SOUND, "emitter started with pitch %d\n", pInfo->uPitchBend);
         }
 
         {

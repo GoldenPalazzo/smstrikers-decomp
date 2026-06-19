@@ -349,9 +349,9 @@ void ChainChomp::Update(float fDeltaT)
 /**
  * Offset/Address/Size: 0x97C | 0x8015E680 | size: 0x12C
  */
-void ChainChomp::CollisionCallback(PhysicsObject* pObjA, PhysicsObject* pObjB, const nlVector3& v3Normal)
+void ChainChomp::CollisionCallback(PhysicsObject* pPhysObj, PhysicsObject* pObjA, const nlVector3&)
 {
-    ChainChomp* pChainChomp = (ChainChomp*)((PhysicsNPC*)this)->mpAINPC;
+    ChainChomp* pChainChomp = (ChainChomp*)((PhysicsNPC*)pPhysObj)->mpAINPC;
     cFielder* pFielder = NULL;
 
     switch (pObjA->GetObjectType())

@@ -149,9 +149,7 @@ bool SaveLoad::CardBusy()
 
 /**
  * Offset/Address/Size: 0x3720 | 0x8018D07C | size: 0x1BC
- * TODO: 99.55% match - header-size regalloc still differs (iconFmt and iconCount swap source registers and the
- * accumulation still keeps r6 live at the final add chain). Literal symbol IDs for "@2009" and "@2010" also remain
- * different in scratch context.
+ * TODO: 99.64% match - iconFmt/iconCount load registers and final headerSize add destination registers still differ.
  */
 void LoadMemoryCardIconData()
 {
@@ -175,8 +173,9 @@ void LoadMemoryCardIconData()
     u32 headerSize = 0;
     headerSize += ((bannerFmt == 1) ? 0x200 : 0);
     headerSize += bannerFmt * 0xC00;
-    headerSize += ((iconFmt == 1) ? 0x200 : 0);
+    u32 iconClut = ((iconFmt == 1) ? 0x200 : 0);
     headerSize += (iconFmt << 10) * iconCount;
+    headerSize += iconClut;
     headerSize += 0x40;
     gIconDataCache.mIconConfig.HeaderSize = headerSize;
 

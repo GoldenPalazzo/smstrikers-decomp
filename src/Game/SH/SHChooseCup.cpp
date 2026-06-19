@@ -301,11 +301,11 @@ ChooseCupSceneV2::ChooseCupSceneV2(bool isSuperCup)
     , mIsFirstSlide(true)
     , mTicker(NULL)
 {
-    ((u8*)this)[0x480] = 0;
+    mCupInProgressVisible = false;
 
     const char* TROPHY_FILE_NAME = "art/fe/TrophiesUI.res";
 
-    ((u8*)this)[0x481] = 0;
+    mCupInProgressDirty = false;
 
     mCupImage = new ((AsyncImage*)nlMalloc(0x1C, 0x20, true)) AsyncImage(TROPHY_FILE_NAME, NULL);
 
@@ -536,7 +536,20 @@ void ChooseCupSceneV2::Update(float fDeltaT)
         FindTextByRef byRef;
     } findText;
 
-    bool canProceed = false;
+    volatile unsigned long hB, hA;
+    volatile unsigned long h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
+    volatile unsigned long sA, sB;
+    volatile unsigned long s9, s8, s6, s4, s2, s0;
+    volatile unsigned long tB, tA;
+    volatile unsigned long t9, t8, t6, t4, t2, t0;
+    volatile unsigned long yA, yB;
+    volatile unsigned long y9, y8, y6, y4, y2, y0;
+    volatile unsigned long vA, vB;
+    volatile unsigned long v9, v8, v6, v4, v2, v0;
+    volatile unsigned long wB, wA;
+    volatile unsigned long w9, w8, w6, w4, w2, w0;
+    volatile unsigned long xA, xB;
+    volatile unsigned long x9, x8, x6, x4, x2, x0;
 
     BaseSceneHandler::Update(fDeltaT);
     mButtons.CentreButtons();
@@ -546,7 +559,7 @@ void ChooseCupSceneV2::Update(float fDeltaT)
     FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
     TLSlide* activeSlide = presentation->m_currentSlide;
 
-    if (((u8*)this)[0x481])
+    if (mCupInProgressDirty)
     {
         GameSceneManager* gsm = nlSingleton<GameSceneManager>::s_pInstance;
         BaseSceneHandler* currentScene;
@@ -562,9 +575,6 @@ void ChooseCupSceneV2::Update(float fDeltaT)
 
         if (currentScene == this)
         {
-            volatile unsigned long hB, hA;
-            volatile unsigned long h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
-
             findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
 
             h0 = 0;
@@ -586,8 +596,8 @@ void ChooseCupSceneV2::Update(float fDeltaT)
 
             TLComponentInstance* textComp = findComp.byRef(activeSlide, (InlineHasher&)hB, (InlineHasher&)h9, (InlineHasher&)h7, (InlineHasher&)h5, (InlineHasher&)h3, (InlineHasher&)h1);
 
-            *(u8*)&textComp->m_bVisible = ((u8*)this)[0x480];
-            ((u8*)this)[0x481] = 0;
+            textComp->m_bVisible = mCupInProgressVisible;
+            mCupInProgressDirty = false;
         }
     }
 
@@ -608,6 +618,8 @@ void ChooseCupSceneV2::Update(float fDeltaT)
 
     if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x100, false, NULL))
     {
+        bool canProceed;
+
         if (mIsSuperCup)
         {
             canProceed = true;
@@ -629,7 +641,6 @@ void ChooseCupSceneV2::Update(float fDeltaT)
                 canProceed = nlSingleton<GameInfoManager>::s_pInstance->IsUserQualified(GameInfoManager::GM_BOWSER_CUP);
                 break;
             default:
-                canProceed = false;
                 break;
             }
         }
@@ -667,107 +678,92 @@ void ChooseCupSceneV2::Update(float fDeltaT)
 
         presentation = m_pFEPresentation;
 
+        findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
+
+        s0 = 0;
+        h1 = 0;
+        s2 = 0;
+        h3 = 0;
+        s4 = 0;
+        h5 = 0;
+        s6 = 0;
+        h7 = 0;
+
+        unsigned long hash = nlStringLowerHash("star rotation");
+        s8 = hash;
+        s9 = hash;
+
+        hash = nlStringLowerHash("Layer");
+        sA = hash;
+        sB = hash;
+
+        TLComponentInstance* starComp = findComp.byRef(presentation->m_currentSlide, (InlineHasher&)sA, (InlineHasher&)s9, (InlineHasher&)h7, (InlineHasher&)h5, (InlineHasher&)h3, (InlineHasher&)h1);
+
+        float starTime = starComp->GetActiveSlide()->m_time;
+
+        presentation->SetActiveSlide("CHANGE CUPS");
+        presentation->Update(0.0f);
+
+        mUpdateSlide = true;
+        FEAudio::PlayAnimAudioEvent("sfx_cup_toggle_left", false);
+
+        if (mIsFirstSlide)
         {
-            volatile unsigned long hB, hA;
-            volatile unsigned long h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
+            mIsFirstSlide = false;
 
-            findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
+            activeSlide = presentation->m_currentSlide;
 
-            h0 = 0;
+            findText.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
+
+            t0 = 0;
             h1 = 0;
-            h2 = 0;
+            t2 = 0;
             h3 = 0;
-            h4 = 0;
+            t4 = 0;
             h5 = 0;
-            h6 = 0;
+            t6 = 0;
             h7 = 0;
 
-            unsigned long hash = nlStringLowerHash("star rotation");
-            h8 = hash;
-            h9 = hash;
+            unsigned long hash2 = nlStringLowerHash("TickerText");
+            t8 = hash2;
+            t9 = hash2;
 
-            hash = nlStringLowerHash("Layer");
-            hA = hash;
-            hB = hash;
+            hash2 = nlStringLowerHash("Layer");
+            tA = hash2;
+            tB = hash2;
 
-            TLComponentInstance* starComp = findComp.byRef(presentation->m_currentSlide, (InlineHasher&)hB, (InlineHasher&)h9, (InlineHasher&)h7, (InlineHasher&)h5, (InlineHasher&)h3, (InlineHasher&)h1);
+            TLTextInstance* scrollText = findText.byRef(activeSlide, (InlineHasher&)tB, (InlineHasher&)t9, (InlineHasher&)h7, (InlineHasher&)h5, (InlineHasher&)h3, (InlineHasher&)h1);
 
-            float starTime = starComp->GetActiveSlide()->m_time;
+            scrollText->SetStringId("CHOOSE_CUP_TICKER");
+            mTicker->ApplyNewTextInstancePointer(scrollText, 8000.0f, 100.0f);
 
-            presentation->SetActiveSlide("CHANGE CUPS");
-            presentation->Update(0.0f);
-
-            mUpdateSlide = true;
-            FEAudio::PlayAnimAudioEvent("sfx_cup_toggle_left", false);
-
-            if (mIsFirstSlide)
-            {
-                mIsFirstSlide = false;
-
-                activeSlide = presentation->m_currentSlide;
-
-                {
-                    volatile unsigned long hB2, hA2;
-                    volatile unsigned long h92, h82, h72, h62, h52, h42, h32, h22, h12, h02;
-
-                    findText.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
-
-                    h02 = 0;
-                    h12 = 0;
-                    h22 = 0;
-                    h32 = 0;
-                    h42 = 0;
-                    h52 = 0;
-                    h62 = 0;
-                    h72 = 0;
-
-                    unsigned long hash2 = nlStringLowerHash("TickerText");
-                    h82 = hash2;
-                    h92 = hash2;
-
-                    hash2 = nlStringLowerHash("Layer");
-                    hA2 = hash2;
-                    hB2 = hash2;
-
-                    TLTextInstance* scrollText = findText.byRef(activeSlide, (InlineHasher&)hB2, (InlineHasher&)h92, (InlineHasher&)h72, (InlineHasher&)h52, (InlineHasher&)h32, (InlineHasher&)h12);
-
-                    scrollText->SetStringId("CHOOSE_CUP_TICKER");
-                    mTicker->ApplyNewTextInstancePointer(scrollText, 8000.0f, 100.0f);
-                }
-
-                mTicker->Update(fDeltaT);
-            }
-
-            {
-                volatile unsigned long hB2, hA2;
-                volatile unsigned long h92, h82, h72, h62, h52, h42, h32, h22, h12, h02;
-
-                findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
-
-                h02 = 0;
-                h12 = 0;
-                h22 = 0;
-                h32 = 0;
-                h42 = 0;
-                h52 = 0;
-                h62 = 0;
-                h72 = 0;
-
-                unsigned long hash2 = nlStringLowerHash("star rotation");
-                h82 = hash2;
-                h92 = hash2;
-
-                hash2 = nlStringLowerHash("Layer");
-                hA2 = hash2;
-                hB2 = hash2;
-
-                TLComponentInstance* starComp = findComp.byRef(presentation->m_currentSlide, (InlineHasher&)hB2, (InlineHasher&)h92, (InlineHasher&)h72, (InlineHasher&)h52, (InlineHasher&)h32, (InlineHasher&)h12);
-
-                starComp->Update(starTime);
-            }
-
-            return;
+            mTicker->Update(fDeltaT);
         }
+
+        findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
+
+        y0 = 0;
+        h1 = 0;
+        y2 = 0;
+        h3 = 0;
+        y4 = 0;
+        h5 = 0;
+        y6 = 0;
+        h7 = 0;
+
+        hash = nlStringLowerHash("star rotation");
+        y8 = hash;
+        y9 = hash;
+
+        hash = nlStringLowerHash("Layer");
+        yA = hash;
+        yB = hash;
+
+        starComp = findComp.byRef(presentation->m_currentSlide, (InlineHasher&)yA, (InlineHasher&)y9, (InlineHasher&)h7, (InlineHasher&)h5, (InlineHasher&)h3, (InlineHasher&)h1);
+
+        starComp->Update(starTime);
+
+        return;
     }
 
     if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0x0C, true, NULL))
@@ -783,105 +779,90 @@ void ChooseCupSceneV2::Update(float fDeltaT)
 
         presentation = m_pFEPresentation;
 
+        findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
+
+        v0 = 0;
+        h1 = 0;
+        v2 = 0;
+        h3 = 0;
+        v4 = 0;
+        h5 = 0;
+        v6 = 0;
+        h7 = 0;
+
+        unsigned long hash = nlStringLowerHash("star rotation");
+        v8 = hash;
+        v9 = hash;
+
+        hash = nlStringLowerHash("Layer");
+        vA = hash;
+        vB = hash;
+
+        TLComponentInstance* starComp = findComp.byRef(presentation->m_currentSlide, (InlineHasher&)vA, (InlineHasher&)v9, (InlineHasher&)h7, (InlineHasher&)h5, (InlineHasher&)h3, (InlineHasher&)h1);
+
+        float starTime = starComp->GetActiveSlide()->m_time;
+
+        presentation->SetActiveSlide("CHANGE CUPS");
+        presentation->Update(0.0f);
+
+        mUpdateSlide = true;
+        FEAudio::PlayAnimAudioEvent("sfx_cup_toggle_right", false);
+
+        if (mIsFirstSlide)
         {
-            volatile unsigned long hB, hA;
-            volatile unsigned long h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
+            mIsFirstSlide = false;
 
-            findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
+            activeSlide = presentation->m_currentSlide;
 
-            h0 = 0;
+            findText.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
+
+            w0 = 0;
             h1 = 0;
-            h2 = 0;
+            w2 = 0;
             h3 = 0;
-            h4 = 0;
+            w4 = 0;
             h5 = 0;
-            h6 = 0;
+            w6 = 0;
             h7 = 0;
 
-            unsigned long hash = nlStringLowerHash("star rotation");
-            h8 = hash;
-            h9 = hash;
+            unsigned long hash2 = nlStringLowerHash("TickerText");
+            w8 = hash2;
+            w9 = hash2;
 
-            hash = nlStringLowerHash("Layer");
-            hA = hash;
-            hB = hash;
+            hash2 = nlStringLowerHash("Layer");
+            wA = hash2;
+            wB = hash2;
 
-            TLComponentInstance* starComp = findComp.byRef(presentation->m_currentSlide, (InlineHasher&)hB, (InlineHasher&)h9, (InlineHasher&)h7, (InlineHasher&)h5, (InlineHasher&)h3, (InlineHasher&)h1);
+            TLTextInstance* scrollText = findText.byRef(activeSlide, (InlineHasher&)wB, (InlineHasher&)w9, (InlineHasher&)h7, (InlineHasher&)h5, (InlineHasher&)h3, (InlineHasher&)h1);
 
-            float starTime = starComp->GetActiveSlide()->m_time;
+            scrollText->SetStringId("CHOOSE_CUP_TICKER");
+            mTicker->ApplyNewTextInstancePointer(scrollText, 8000.0f, 100.0f);
 
-            presentation->SetActiveSlide("CHANGE CUPS");
-            presentation->Update(0.0f);
-
-            mUpdateSlide = true;
-            FEAudio::PlayAnimAudioEvent("sfx_cup_toggle_right", false);
-
-            if (mIsFirstSlide)
-            {
-                mIsFirstSlide = false;
-
-                activeSlide = presentation->m_currentSlide;
-
-                {
-                    volatile unsigned long hB2, hA2;
-                    volatile unsigned long h92, h82, h72, h62, h52, h42, h32, h22, h12, h02;
-
-                    findText.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
-
-                    h02 = 0;
-                    h12 = 0;
-                    h22 = 0;
-                    h32 = 0;
-                    h42 = 0;
-                    h52 = 0;
-                    h62 = 0;
-                    h72 = 0;
-
-                    unsigned long hash2 = nlStringLowerHash("TickerText");
-                    h82 = hash2;
-                    h92 = hash2;
-
-                    hash2 = nlStringLowerHash("Layer");
-                    hA2 = hash2;
-                    hB2 = hash2;
-
-                    TLTextInstance* scrollText = findText.byRef(activeSlide, (InlineHasher&)hB2, (InlineHasher&)h92, (InlineHasher&)h72, (InlineHasher&)h52, (InlineHasher&)h32, (InlineHasher&)h12);
-
-                    scrollText->SetStringId("CHOOSE_CUP_TICKER");
-                    mTicker->ApplyNewTextInstancePointer(scrollText, 8000.0f, 100.0f);
-                }
-
-                mTicker->Update(fDeltaT);
-            }
-
-            {
-                volatile unsigned long hB2, hA2;
-                volatile unsigned long h92, h82, h72, h62, h52, h42, h32, h22, h12, h02;
-
-                findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
-
-                h02 = 0;
-                h12 = 0;
-                h22 = 0;
-                h32 = 0;
-                h42 = 0;
-                h52 = 0;
-                h62 = 0;
-                h72 = 0;
-
-                unsigned long hash2 = nlStringLowerHash("star rotation");
-                h82 = hash2;
-                h92 = hash2;
-
-                hash2 = nlStringLowerHash("Layer");
-                hA2 = hash2;
-                hB2 = hash2;
-
-                TLComponentInstance* starComp = findComp.byRef(presentation->m_currentSlide, (InlineHasher&)hB2, (InlineHasher&)h92, (InlineHasher&)h72, (InlineHasher&)h52, (InlineHasher&)h32, (InlineHasher&)h12);
-
-                starComp->Update(starTime);
-            }
+            mTicker->Update(fDeltaT);
         }
+
+        findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
+
+        x0 = 0;
+        h1 = 0;
+        x2 = 0;
+        h3 = 0;
+        x4 = 0;
+        h5 = 0;
+        x6 = 0;
+        h7 = 0;
+
+        hash = nlStringLowerHash("star rotation");
+        x8 = hash;
+        x9 = hash;
+
+        hash = nlStringLowerHash("Layer");
+        xA = hash;
+        xB = hash;
+
+        starComp = findComp.byRef(presentation->m_currentSlide, (InlineHasher&)xA, (InlineHasher&)x9, (InlineHasher&)h7, (InlineHasher&)h5, (InlineHasher&)h3, (InlineHasher&)h1);
+
+        starComp->Update(starTime);
     }
 }
 
@@ -1300,8 +1281,8 @@ void ChooseCupSceneV2::Proceed()
             (InlineHasher&)h3,
             (InlineHasher&)h1);
 
-        ((u8*)this)[0x480] = text->m_bVisible;
+        mCupInProgressVisible = text->m_bVisible;
         text->m_bVisible = false;
-        ((u8*)this)[0x481] = 1;
+        mCupInProgressDirty = true;
     }
 }

@@ -729,8 +729,8 @@ long MemCard::CreateFile(const char* FileName, unsigned long FileSize, MemCard::
 
 /**
  * Offset/Address/Size: 0xBE8 | 0x801CA358 | size: 0x340
- * TODO: 96.20% match - insert shift loop still keeps the insertion index in r5
- * and copied fields in r6/r0 instead of the target r6/r4/r5.
+ * TODO: 96.78% match - insert shift loop copy still keeps source/destination
+ * pointers and copied fields in different registers from target.
  */
 extern "C" void* memset(void*, int, unsigned long);
 
@@ -772,8 +772,8 @@ long MemCard::OpenFile(const char* FileName, MemCard::MC_FILE*& pFile, unsigned 
         }
     }
 
-    high = low + 1;
-    while (count != (unsigned long)high)
+    long insertPos = high = low + 1;
+    while (count != (unsigned long)insertPos)
     {
         unsigned long prev = count - 1;
         nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>* lookup = m_OpenFiles.m_pEntryLookup;
@@ -784,8 +784,8 @@ long MemCard::OpenFile(const char* FileName, MemCard::MC_FILE*& pFile, unsigned 
         count = prev;
     }
 
-    m_OpenFiles.m_pEntryLookup[high].hash = hash;
-    m_OpenFiles.m_pEntryLookup[high].pEntry = pNewFile;
+    m_OpenFiles.m_pEntryLookup[insertPos].hash = hash;
+    m_OpenFiles.m_pEntryLookup[insertPos].pEntry = pNewFile;
     m_OpenFiles.m_EntryCount = m_OpenFiles.m_EntryCount + 1;
 
     pFile = pNewFile;
@@ -811,23 +811,7 @@ long MemCard::OpenFile(const char* FileName, MemCard::MC_FILE*& pFile, unsigned 
         {
             m_OpenFiles.FreeEntry(pFound->pEntry);
 
-            long idx = pFound - m_OpenFiles.m_pEntryLookup;
-            unsigned long total = m_OpenFiles.m_EntryCount;
-
-            while ((unsigned long)idx != total)
-            {
-                long next = idx + 1;
-                nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>* lookup = m_OpenFiles.m_pEntryLookup;
-                nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>* src = &lookup[next];
-                nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>* dst = &lookup[idx];
-                idx = next;
-                unsigned long id = src->hash;
-                MC_FILE* entry = src->pEntry;
-                dst->pEntry = entry;
-                dst->hash = id;
-            }
-
-            m_OpenFiles.m_EntryCount = m_OpenFiles.m_EntryCount - 1;
+            ShiftCreateFileLookup(this, pFound);
         }
     }
     else
@@ -1194,8 +1178,8 @@ long MemCard::InternalWriteFile(MC_FILE* pFile, void* Buffer, unsigned long Leng
 
 /**
  * Offset/Address/Size: 0x620 | 0x801C9D90 | size: 0x120
- * TODO: 99.58% match - copy loop keeps slwi/add/lwz+stw on r0 where target keeps
- * those on r3/r5.
+ * TODO: 99.86% match - copy loop still loads and stores pEntry through r0
+ * instead of target r5.
  */
 static inline nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>* FindOpenFileLookup(nlStaticSortedSlot<MemCard::MC_FILE, 16>& openFiles, MemCard::MC_FILE* pFile)
 {
@@ -1219,10 +1203,10 @@ static inline void ShiftCloseFileEntries(nlStaticSortedSlot<MemCard::MC_FILE, 16
     while ((unsigned long)idx != total)
     {
         next = idx + 1;
-        nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>* dst = &openFiles.m_pEntryLookup[idx];
         nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>* src = &openFiles.m_pEntryLookup[next];
-        idx = next;
         unsigned long id = src->hash;
+        nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>* dst = &openFiles.m_pEntryLookup[idx];
+        idx = next;
         MemCard::MC_FILE* entry = src->pEntry;
         dst->pEntry = entry;
         dst->hash = id;

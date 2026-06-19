@@ -74,6 +74,7 @@ bool PhysicsGoalie::SweepTestEveryBone(float ballRadius, const nlVector3& ballPr
     float smallestSweepResult = 99999.0f;
 
     PhysicsBoneVolume* boneVolume;
+    ListEntry<PhysicsBoneVolume*>* boneVolumeEntry;
     int hitCount = 0;
     bool didHitBone = false;
 
@@ -83,7 +84,7 @@ bool PhysicsGoalie::SweepTestEveryBone(float ballRadius, const nlVector3& ballPr
     }
 
     cantCollide = CANT_COLLIDE;
-    for (ListEntry<PhysicsBoneVolume*>* boneVolumeEntry = m_BoneVolumes.m_Head; boneVolumeEntry != NULL; boneVolumeEntry = boneVolumeEntry->next)
+    for (boneVolumeEntry = m_BoneVolumes.m_Head; boneVolumeEntry != NULL; boneVolumeEntry = boneVolumeEntry->next)
     {
         boneVolume = boneVolumeEntry->data;
         PhysicsObject* object = boneVolume->m_pObject;

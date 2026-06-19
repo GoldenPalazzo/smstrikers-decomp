@@ -877,7 +877,7 @@ void StatsTracker::TrackStat(ePlayerStats stat, int homeaway, int playerindex, i
         {
             nlSingleton<StatsTracker>::s_pInstance->TrackStat(STATS_ASSISTS, homeaway, param0, 0, 0, 0, 0);
         }
-        nlSingleton<StatsTracker>::s_pInstance->TrackStat(STATS_GOALS_AGAINST, homeaway == 0, playerindex, param2, 0, 0, 0);
+        nlSingleton<StatsTracker>::s_pInstance->TrackStat(STATS_GOALS_AGAINST, ((homeaway == 0) ? 1 : 0), playerindex, param2, 0, 0, 0);
         break;
     case STATS_GOALS_AGAINST:
         AddStat(STATS_GOALS_AGAINST, homeaway, -1, param0);
@@ -961,9 +961,9 @@ void StatsTracker::TrackStat(ePlayerStats stat, int homeaway, int playerindex, i
         AddStat(STATS_WIN, homeaway, -1, 1);
         mBasicGameInfo->mFinalScore[0] = param0;
         mBasicGameInfo->mFinalScore[1] = param1;
-        nlSingleton<StatsTracker>::s_pInstance->TrackStat(STATS_LOSS, homeaway == 0, 0, 0, 0, 0, 0);
+        nlSingleton<StatsTracker>::s_pInstance->TrackStat(STATS_LOSS, ((homeaway == 0) ? 1 : 0), 0, 0, 0, 0, 0);
 
-        gameInfoManager = nlSingleton<GameInfoManager>::s_pInstance;
+        gameInfoManager = nlSingleton<GameInfoManager>::Instance();
         if (gameInfoManager->IsInCupMode() == 1)
         {
             if (gameInfoManager->mCupMatchRequirement != RESULT_INVALID)
@@ -995,9 +995,9 @@ void StatsTracker::TrackStat(ePlayerStats stat, int homeaway, int playerindex, i
         AddStat(STATS_OT_WIN, homeaway, -1, 1);
         mBasicGameInfo->mFinalScore[0] = param0;
         mBasicGameInfo->mFinalScore[1] = param1;
-        nlSingleton<StatsTracker>::s_pInstance->TrackStat(STATS_OT_LOSS, homeaway == 0, 0, 0, 0, 0, 0);
+        nlSingleton<StatsTracker>::s_pInstance->TrackStat(STATS_OT_LOSS, ((homeaway == 0) ? 1 : 0), 0, 0, 0, 0, 0);
 
-        gameInfoManager = nlSingleton<GameInfoManager>::s_pInstance;
+        gameInfoManager = nlSingleton<GameInfoManager>::Instance();
         if (gameInfoManager->IsInCupMode() == 1)
         {
             if (gameInfoManager->mCupMatchRequirement != RESULT_INVALID)

@@ -3280,7 +3280,7 @@ void cFielder::ActionShootToScore(float)
     static bool bShotNISCaptainS2S;
     static signed char init;
     fSweetSpotDiff = (float)fabs(fSweetSpotDiff);
-    float fSweetSpotHalfWidth = fSweetSpotDiff * 0.5f;
+    float fSweetSpotHalfWidth = fSweetSpotDiff / 2.0f;
     float fSweetSpotCenter = fShootToScore1stJumpTime + fSweetSpotHalfWidth;
     if (!init)
     {

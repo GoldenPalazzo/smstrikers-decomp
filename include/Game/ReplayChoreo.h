@@ -36,7 +36,7 @@ public:
         float mTime;                    // offset 0x4, size 0x4
         int mReplayPad;                 // offset 0x8, size 0x4
         GoalScoredData mGoalScoredData; // offset 0xC, size 0x24
-        u8 pad[0x4];                    // padding to 0x34
+        int mSavedReplayPad;            // offset 0x30, size 0x4
     }; // total size: 0x34
 
     /**

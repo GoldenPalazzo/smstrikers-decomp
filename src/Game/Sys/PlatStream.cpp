@@ -79,8 +79,7 @@ void PlatAudio::InitStreaming()
 
 /**
  * Offset/Address/Size: 0x208 | 0x801C72CC | size: 0x36C
- * TODO: 94.5% match - teardown-pass induction registers still differ, and
- * both m_BufferCount guard checks still compile as beq instead of ble.
+ * TODO: 95.5% match - teardown-pass induction and slot-pointer registers still differ.
  */
 void PlatAudio::ShutdownStreaming()
 {
@@ -90,6 +89,7 @@ void PlatAudio::ShutdownStreaming()
     unsigned long lookupOffset = 0;
     AudioStream* stream;
     AudioStreamBuffer* buffer;
+    unsigned long zero = 0;
 
     while (streamIndex < g_Streams.m_EntryCount)
     {
@@ -99,10 +99,7 @@ void PlatAudio::ShutdownStreaming()
         if (stream->m_State == SS_Playing)
         {
             volatile unsigned long i = (unsigned long)(buffer = NULL);
-            if (stream->m_BufferCount <= 0)
-            {
-            }
-            else
+            if (zero < stream->m_BufferCount)
                 buffer = stream->m_Buffers[0];
 
             while (buffer != NULL)
@@ -139,10 +136,7 @@ void PlatAudio::ShutdownStreaming()
 
                 volatile unsigned long i = 0;
                 buffer = NULL;
-                if (stream->m_BufferCount <= 0)
-                {
-                }
-                else
+                if (zero < stream->m_BufferCount)
                     buffer = stream->m_Buffers[0];
 
                 while (buffer != NULL)
@@ -173,9 +167,9 @@ void PlatAudio::ShutdownStreaming()
     lookupOffset = 0;
     while (streamIndex < g_Streams.m_EntryCount)
     {
+        nlSortedSlot<GCAudioStreaming::AudioStream*, 7>::EntryLookup<GCAudioStreaming::AudioStream*>* removedLookup;
         AudioStream** pStream;
         nlSortedSlot<GCAudioStreaming::AudioStream*, 7>::EntryLookup<GCAudioStreaming::AudioStream*>* pEntryLookup;
-        nlSortedSlot<GCAudioStreaming::AudioStream*, 7>::EntryLookup<GCAudioStreaming::AudioStream*>* removedLookup;
         unsigned long index;
         unsigned long count;
 
@@ -188,7 +182,6 @@ void PlatAudio::ShutdownStreaming()
         if (pStream != NULL)
         {
             pEntryLookup = g_Streams.m_pEntryLookup;
-            removedLookup = NULL;
             index = 0;
             count = g_Streams.m_EntryCount;
 
@@ -197,13 +190,15 @@ void PlatAudio::ShutdownStreaming()
                 if (pEntryLookup->pEntry == pStream)
                 {
                     removedLookup = &g_Streams.m_pEntryLookup[index];
-                    break;
+                    goto found_stream;
                 }
 
                 pEntryLookup++;
                 index++;
             }
 
+            removedLookup = NULL;
+        found_stream:
             ((nlSortedSlot<AudioStream*, 7>*)&g_Streams)->FreeEntry(pStream);
 
             index = (unsigned long)(removedLookup - g_Streams.m_pEntryLookup);

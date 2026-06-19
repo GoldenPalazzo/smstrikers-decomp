@@ -56,8 +56,6 @@ static inline void GetNextBallPosVelInline(nlVector3& v3BallPos, nlVector3& v3Ba
     FakeBallWorld::mfLastCacheTime += tick;
 
     BallCacheInfo* newInfo = NULL;
-    PhysicsObject* physObj = FakeBallWorld::mpPredictWorld->mpPhysicsBall;
-
     if (BallCacheInfo::mBallCacheInfoSlotPool.m_FreeList == NULL)
     {
         SlotPoolBase::BaseAddNewBlock((SlotPoolBase*)&BallCacheInfo::mBallCacheInfoSlotPool, sizeof(BallCacheInfo));
@@ -69,8 +67,8 @@ static inline void GetNextBallPosVelInline(nlVector3& v3BallPos, nlVector3& v3Ba
     }
 
     newInfo->mfTime = FakeBallWorld::mfLastCacheTime;
-    newInfo->mv3Position = physObj->GetPosition();
-    newInfo->mv3LinearVelocity = physObj->GetLinearVelocity();
+    newInfo->mv3Position = FakeBallWorld::mpPredictWorld->mpPhysicsBall->GetPosition();
+    newInfo->mv3LinearVelocity = FakeBallWorld::mpPredictWorld->mpPhysicsBall->GetLinearVelocity();
 
     DLListEntry<BallCacheInfo*>* newEntry = NULL;
     if (FakeBallWorld::mBallCacheList.m_Allocator.m_FreeList == NULL)
@@ -618,6 +616,7 @@ float FakeBallWorld::GetPredictedPlaneIntersectTime(const nlVector4& v4Plane, nl
         DLListEntry<BallCacheInfo*>* pEntry = nlDLRingGetStart(pHead);
         BallCacheInfo* pNext = pEntry->m_data;
         DLListEntry<BallCacheInfo*>* pListEntry = pEntry;
+        BallCacheInfo* pPrev;
 
         fDistanceNext = pNext->mv3Position.f.x * v4Plane.f.x
                       + pNext->mv3Position.f.y * v4Plane.f.y
@@ -637,7 +636,7 @@ float FakeBallWorld::GetPredictedPlaneIntersectTime(const nlVector4& v4Plane, nl
                 pListEntry = pListEntry->m_next;
             }
 
-            BallCacheInfo* pPrev = pNext;
+            pPrev = pNext;
             pNext = pListEntry->m_data;
             float fDistancePrev = fDistanceNext;
 

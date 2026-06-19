@@ -243,6 +243,7 @@ bool cFielder::InitDesire(const sDesireParams* pParams, float fConfidence)
 
 /**
  * Offset/Address/Size: 0x54DC | 0x80036260 | size: 0xD30
+ * TODO: 99.64% match - remaining register swaps in WINDUP_PASS, USE_POWERUP, and queued fvNotSet copies.
  */
 bool cFielder::InitDesire(eFielderDesireState eDesireType, float fConfidence, float fDuration, FuzzyVariant opt1, FuzzyVariant opt2)
 {
@@ -484,13 +485,15 @@ bool cFielder::InitDesire(eFielderDesireState eDesireType, float fConfidence, fl
             if (bShootToScore)
             {
                 SkillTweaks* pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide);
-                if (GenerateFilteredRandom() < pSkillTweaks->Shoot_CaptainS2SFirstButtonChance)
+                bool bDidHit = GenerateFilteredRandom() < pSkillTweaks->Shoot_CaptainS2SFirstButtonChance;
+                if (bDidHit)
                 {
                     m_DesireCommonVars.fMisc = g_pGame->m_pGameTweaks->unk294;
                 }
                 else
                 {
-                    m_DesireCommonVars.fMisc = g_pGame->m_pGameTweaks->unk294 + (float)(0.6f * GenerateFilteredRandom() - 0.30000001192092896);
+                    float fRandomError = (float)(0.6f * GenerateFilteredRandom() - 0.30000001192092896);
+                    m_DesireCommonVars.fMisc = fRandomError + g_pGame->m_pGameTweaks->unk294;
                 }
                 SetDesireDuration(100000000.0f, true);
                 mActionShotVars.bIsShootToScore = true;
@@ -546,10 +549,7 @@ bool cFielder::InitDesire(eFielderDesireState eDesireType, float fConfidence, fl
         {
             mActionPassingVars.pPassTarget = pTarget;
             mActionPassingVars.bVolleyPass = opt2.mData.b;
-            if (m_fActualSpeed > ((FielderTweaks*)m_pTweaks)->fRunningWBSpeed)
-            {
-                m_fDesiredSpeed = ((FielderTweaks*)m_pTweaks)->fRunningWBSpeed;
-            }
+            m_fDesiredSpeed = (((FielderTweaks*)m_pTweaks)->fRunningWBSpeed < m_fActualSpeed) ? ((FielderTweaks*)m_pTweaks)->fRunningWBSpeed : m_fActualSpeed;
             m_pAvoidance->SetThingsToAvoid(0);
         }
         else
@@ -597,7 +597,7 @@ bool cFielder::InitDesire(eFielderDesireState eDesireType, float fConfidence, fl
     case FIELDERDESIRE_USE_POWERUP:
     {
         cFielder* pTarget = (cFielder*)opt2.mData.pPlayer;
-        if (pTarget != NULL && pTarget->m_eClassType == FIELDER)
+        if (pTarget == NULL || pTarget->m_eClassType == FIELDER)
         {
             ePowerUpType powerupType = (ePowerUpType)opt1.mData.i;
             if (powerupType == m_pTeam->GetCurrentPowerUp().eType && !IsPlayingPowerupAnim())

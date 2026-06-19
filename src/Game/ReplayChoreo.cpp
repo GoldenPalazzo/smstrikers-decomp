@@ -285,7 +285,7 @@ static inline BasicStringDataHack* MakeStringData(const char* src_str)
 
 /**
  * Offset/Address/Size: 0xCC8 | 0x80128334 | size: 0x314
- * TODO: 96.16% match - register permutation (this=r27 vs r28, d=r28 vs r31, cursor/array base shifts)
+ * TODO: 98.10% match - remaining register permutation in this/loop cursor allocation
  */
 void ReplayChoreo::LoadScript()
 {
@@ -313,31 +313,12 @@ void ReplayChoreo::LoadScript()
 
                 for (j = 0; j < 8; j++)
                 {
-                    BasicString<char, Detail::TempStringAllocator> name;
-                    {
-                        BasicString<char, Detail::TempStringAllocator> format(MakeStringData((char*)"{0}_{1}_{2}_{3}"));
-
-                        BasicString<char, Detail::TempStringAllocator> temp;
-                        void* nameData;
-                        Format(temp,
-                            format,
-                            zoneDepthNames[d],
-                            zoneInWidthNames[w],
-                            replayTypeNames[t],
-                            j);
-
-                        if (temp.m_data != 0)
-                        {
-                            temp.m_data->mRefCount = temp.m_data->mRefCount + 1;
-                            nameData = temp.m_data;
-                        }
-                        else
-                        {
-                            nameData = 0;
-                        }
-
-                        name.m_data = (BasicStringDataHack*)nameData;
-                    }
+                    BasicString<char, Detail::TempStringAllocator> name = Format<BasicString<char, Detail::TempStringAllocator>, const char*, const char*, const char*, int>(
+                        BasicString<char, Detail::TempStringAllocator>(MakeStringData((char*)"{0}_{1}_{2}_{3}")),
+                        zoneDepthNames[d],
+                        zoneInWidthNames[w],
+                        replayTypeNames[t],
+                        j);
 
                     if (FunctionExists(nlStringHash(name.c_str())))
                     {
@@ -441,16 +422,16 @@ void ReplayChoreo::Reset()
 
 /**
  * Offset/Address/Size: 0x698 | 0x80127D04 | size: 0x3E0
- * TODO: 94.5% match - register allocation: stmw r26 vs r27 (data/goalType share r30 in target).
+ * TODO: 95.09% match - register allocation: stmw r26 vs r27 (data/replayType share r30 in target).
  */
 BasicString<char, Detail::TempStringAllocator> ReplayChoreo::CalcAutoReplayScriptName(ReplayType) const
 {
     BasicStringDataHack* data = (BasicStringDataHack*)nlMalloc(0x10, 8, true);
     if (data != 0)
     {
-        const char* src = "{0}_{1}_{2}_{3}";
+        const char* p = "{0}_{1}_{2}_{3}";
         data->mData = 0;
-        const char* p = src;
+        const char* src = p;
         data->mSize = 0;
         data->mCapacity = 0;
 
@@ -530,9 +511,9 @@ BasicString<char, Detail::TempStringAllocator> ReplayChoreo::CalcAutoReplayScrip
         BasicStringDataHack* d2 = (BasicStringDataHack*)nlMalloc(0x10, 8, true);
         if (d2 != 0)
         {
-            const char* src2 = "MID_CENTER_OWN_GOAL_0";
+            const char* p2 = "MID_CENTER_OWN_GOAL_0";
             d2->mData = 0;
-            const char* p2 = src2;
+            const char* src2 = p2;
             d2->mSize = 0;
             d2->mCapacity = 0;
 
@@ -567,7 +548,7 @@ BasicString<char, Detail::TempStringAllocator> ReplayChoreo::CalcAutoReplayScrip
 
 /**
  * Offset/Address/Size: 0x428 | 0x80127A94 | size: 0x270
- * TODO: 98.76% match - remaining diffs are register allocation in highlight copy block and scriptName symbol placement.
+ * TODO: 99.36% match - remaining diffs are reel counter initialization and temporary string cleanup.
  */
 void ReplayChoreo::StartAutoReplay(ReplayType rt)
 {
@@ -615,21 +596,9 @@ void ReplayChoreo::StartAutoReplay(ReplayType rt)
         mReplay->PlayReel(mHighlightIndex + 1);
         mCamera.SetSideOfInterest(mHighlights[mHighlightIndex].mReplayPad);
 
-        int* pHighlight = (int*)((char*)this + mHighlightIndex * 0x34 + 0x23C);
-        int* pGoal = (int*)((char*)&mGoalScoredData + 0x4);
-        pGoal[0] = pHighlight[1];
-        int p8 = pHighlight[2];
-        int pC = pHighlight[3];
-        pGoal[1] = p8;
-        pGoal[2] = pC;
-        pGoal[3] = pHighlight[4];
-        pGoal[4] = pHighlight[5];
-        pGoal[5] = pHighlight[6];
-        int p1C = pHighlight[7];
-        int p20 = pHighlight[8];
-        pGoal[6] = p1C;
-        pGoal[7] = p20;
-        pGoal[8] = pHighlight[9];
+        GoalScoredDataExt* goal = (GoalScoredDataExt*)&mHighlights[mHighlightIndex].mGoalScoredData;
+        mGoalScoredData = goal->data;
+        mReplayPad = goal->sideOfInterest;
 
         rt = REPLAY_TYPE_GOAL;
     }

@@ -46,7 +46,7 @@ static inline const nlFont* GetFontFromComponent(TLComponent* comp)
 
 /**
  * Offset/Address/Size: 0x38 | 0x80210210 | size: 0x250
- * TODO: 99.2% match - remaining diffs are sdata2 literal labels and late `drawAt.f.x` store scheduling around scissor setup
+ * TODO: 95.7% match - ProcessString argument setup register/order diffs and drawAt.f.x store scheduling around scissor setup
  */
 void TLTextInstance::Render(eGLView view, const nlColour& colour) const
 {
@@ -108,11 +108,6 @@ void TLTextInstance::Render(eGLView view, const nlColour& colour) const
 
         ((TLTextInstance*)this)->m_DrawInfo.String = charString.m_pString;
         nlTextBox::ProcessString(&charString, pFont, m_OverloadedAttributes.BoxSize, m_DrawOptions | 0x800, m_DrawInfo.pMatrix, (nlTextBox::StringDrawInfo&)m_DrawInfo);
-
-        if (charString.m_InternalBuffer)
-        {
-            delete[] charString.m_pString;
-        }
     }
     else if (m_pFontString == NULL)
     {

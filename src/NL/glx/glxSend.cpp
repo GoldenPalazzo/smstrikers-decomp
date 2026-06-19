@@ -9,6 +9,7 @@
 #include "NL/gl/glConstant.h"
 #include "NL/gl/glLightUserData.h"
 #include "NL/gl/glMatrix.h"
+#include "NL/gl/glPlat.h"
 #include "NL/gl/gl.h"
 #include "NL/gl/glState.h"
 #include "NL/gl/glUserData.h"
@@ -328,7 +329,9 @@ inline void EnableTranslucent(bool enable)
         if (enable)
         {
             argSaved = (_GXTevAlphaArg)gxSetTevAlphaIn(
-                glx_RasterizedAlphaStage, glx_RasterizedAlphaArg, (_GXTevAlphaArg)3);
+                glx_RasterizedAlphaStage,
+                glx_RasterizedAlphaArg,
+                (glx_texconfig & 0x20) ? (_GXTevAlphaArg)3 : (_GXTevAlphaArg)3);
         }
         else
         {
@@ -368,9 +371,6 @@ inline void EnableNoRasterizedAlpha(bool enable)
  */
 static void glx_DrawPacket(const glModelPacket* p)
 {
-    extern bool glx_GetFog();
-    extern void glx_Fog(bool);
-
     static float indMtx[2][3] = {
         { 1.0f, 0.0f, 0.0f },
         { 0.0f, 1.0f, 0.0f },

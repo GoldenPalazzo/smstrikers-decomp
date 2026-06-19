@@ -29,7 +29,7 @@ public:
     virtual ~ChainChomp();
     virtual SkinAnimatedNPC_Type GetSkinAnimatedNPC_Type() const { return SkinAnimatedNPC_CHAIN_CHOMP; };
     virtual void Update(float);
-    void CollisionCallback(PhysicsObject*, PhysicsObject*, const nlVector3&);
+    static void CollisionCallback(PhysicsObject*, PhysicsObject*, const nlVector3&);
     void FindTarget(cTeam*);
     void Fall(cFielder*, cFielder*);
     void Hide(bool);

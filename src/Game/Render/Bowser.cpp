@@ -278,9 +278,9 @@ void Bowser::Update(float fDeltaT)
  * damage gate; switch jump table body matches target with case set
  * 0x04/0x0D/0x0E/0x0F/0x13/0x14.
  */
-void Bowser::CollisionCallback(PhysicsObject* pObjA, PhysicsObject*, const nlVector3&)
+void Bowser::CollisionCallback(PhysicsObject* pPhysObj, PhysicsObject* pObjA, const nlVector3&)
 {
-    Bowser* pObj = (Bowser*)((PhysicsNPC*)this)->mpAINPC;
+    Bowser* pObj = (Bowser*)((PhysicsNPC*)pPhysObj)->mpAINPC;
     cCharacter* pCharacter = NULL;
     int type = pObjA->GetObjectType();
 

@@ -2374,6 +2374,9 @@ const PowerupSettings& GameInfoManager::GetPowerupOptions() const
 
 /**
  * Offset/Address/Size: 0x5040 | 0x8017A6E4 | size: 0xD98
+ * TODO: 97.46% match - BasicString default temporaries use different r29/r30
+ *       registers, pad-side loop has r3/r4 swaps, and DifficultyMap writeback
+ *       stores before the second load.
  */
 void GameInfoManager::OnPreGameState()
 {
@@ -2439,37 +2442,7 @@ void GameInfoManager::OnPreGameState()
         mGameInfo[mCurrentMode]->mSidekickIndex[1] = ConvertToSidekickID(sidekickString.c_str());
     }
 
-    bool inCupMode;
-    if (mCurrentMode < GM_SUPER_MUSHROOM_CUP)
-    {
-        inCupMode = false;
-        if (mCurrentMode >= GM_MUSHROOM_CUP)
-        {
-            inCupMode = true;
-        }
-    }
-    else
-    {
-        inCupMode = false;
-    }
-
-    if (!inCupMode)
-    {
-        if (mCurrentMode < GM_TOURNAMENT)
-        {
-            inCupMode = false;
-            if (mCurrentMode >= GM_SUPER_MUSHROOM_CUP)
-            {
-                inCupMode = true;
-            }
-        }
-        else
-        {
-            inCupMode = false;
-        }
-    }
-
-    if (inCupMode)
+    if (IsInCupMode())
     {
         OnPreCupGameState();
     }
@@ -2507,7 +2480,7 @@ void GameInfoManager::OnPreGameState()
 
     for (int i = 0; i < 4; i++)
     {
-        s16 padSide = mGameInfo[mCurrentMode]->mPadSides[i];
+        s16 padSide = mGameInfo[mCurrentMode]->mPadSides[(unsigned short)i];
         if (padSide == 0)
         {
             humansOnSide[0] = 1;

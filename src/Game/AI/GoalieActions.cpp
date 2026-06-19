@@ -914,6 +914,7 @@ inline void Goalie::StartRunBlend()
 
 /**
  * Offset/Address/Size: 0x27FC | 0x80050D38 | size: 0x874
+ * TODO: 99.70% match - remaining clamp direction register swaps and extra sign-extension in no-pad turn check.
  */
 void Goalie::ActionMoveWB(float fDeltaT)
 {
@@ -1195,38 +1196,43 @@ no_pad:
 
     case 4:
     {
-        float posY = m_v3Position.f.y;
-        float posX = m_v3Position.f.x;
-        float angle = nlATan2f(-posY, -posX);
-        m_aDesiredFacingDirection = (u16)(s32)(10430.378f * angle);
+        do
+        {
+            float posY = m_v3Position.f.y;
+            float posX = m_v3Position.f.x;
+            float angle = nlATan2f(-posY, -posX);
+            m_aDesiredFacingDirection = (u16)(s32)(10430.378f * angle);
 
-        float absX = (float)fabs(m_v3Position.f.x);
-        float goalLineX = cField::GetGoalLineX(1U) - 3.0f;
-        if (absX > goalLineX)
-        {
-        }
-        else
-        {
-            s16 diff = (s16)(m_aDesiredFacingDirection - m_aActualFacingDirection);
-            if (diff < 0)
+            float absX = (float)fabs(m_v3Position.f.x);
+            float goalLineX = cField::GetGoalLineX(1U) - 3.0f;
+            if (absX > goalLineX)
             {
-                diff = -diff;
             }
-            if ((u16)diff <= 0xDAC)
+            else
             {
-                mnSubstate = 7;
+                s16 diff = (s16)(m_aDesiredFacingDirection - m_aActualFacingDirection);
+                if (diff < 0)
+                {
+                    diff = -diff;
+                }
+                if ((u16)diff <= 0xDAC)
+                {
+                    break;
+                }
+            }
+
+            m_fDesiredSpeed = m_pTweaks->fRunningSpeed;
+
+            if (m_eAnimID == 0x1F)
+            {
                 return;
             }
-        }
 
-        m_fDesiredSpeed = m_pTweaks->fRunningSpeed;
-
-        if (m_eAnimID == 0x1F)
-        {
+            StartRunBlend();
             return;
-        }
+        } while (false);
 
-        StartRunBlend();
+        mnSubstate = 7;
         return;
     }
 

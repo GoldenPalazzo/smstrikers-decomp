@@ -28,6 +28,7 @@ void TempDisableSound();
 } // namespace SingleHighlite
 
 static const char* MAIN_MENU_SLIDE = "Slide1";
+static const char* AUDIO_MENU_SLIDE = "Slide2";
 static const char* VISUAL_MENU_SLIDE = "Slide6";
 static const char* GAMEPLAY_MENU_SLIDE = "Slide3";
 static const char* SAVE_LOAD_SLIDE = "Slide_SaveLoad";
@@ -1504,11 +1505,13 @@ OptionsAudioMenuV2::OptionsAudioMenuV2(FEPresentation* presentation, ButtonCompo
 {
     extern int nlSNPrintf(char*, unsigned long, const char*, ...);
 
-    unsigned char inpausestate;
+    bool inpausestate;
     char menuname[64];
     int i;
     TLInstance* instance;
     TLComponentInstance* compinstance;
+
+    mbUpdateMode = false;
 
     inpausestate = (nlTaskManager::m_pInstance->m_CurrState == 1);
     if (inpausestate)
@@ -1517,7 +1520,7 @@ OptionsAudioMenuV2::OptionsAudioMenuV2(FEPresentation* presentation, ButtonCompo
     }
     else
     {
-        presentation->SetActiveSlide("Slide2");
+        presentation->SetActiveSlide(AUDIO_MENU_SLIDE);
     }
 
     presentation->Update(0.0f);
@@ -1529,8 +1532,6 @@ OptionsAudioMenuV2::OptionsAudioMenuV2(FEPresentation* presentation, ButtonCompo
     }
 
     TLSlide* currentSlide = presentation->m_currentSlide;
-    void (*openItem)(TLComponentInstance*) = SingleHighlite::OpenItem;
-    void (*closeItem)(TLComponentInstance*) = SingleHighlite::CloseItem;
 
     for (i = 0; i < 4; i++)
     {
@@ -1548,14 +1549,14 @@ OptionsAudioMenuV2::OptionsAudioMenuV2(FEPresentation* presentation, ButtonCompo
         {
             Function<FnTLComponentInstanceCb> openFunc;
             openFunc.mTag = FREE_FUNCTION;
-            openFunc.mFreeFunction = openItem;
+            openFunc.mFreeFunction = SingleHighlite::OpenItem;
             menuItem->mCallbacks[1] = openFunc;
         }
 
         {
             Function<FnTLComponentInstanceCb> closeFunc;
             closeFunc.mTag = FREE_FUNCTION;
-            closeFunc.mFreeFunction = closeItem;
+            closeFunc.mFreeFunction = SingleHighlite::CloseItem;
             menuItem->mCallbacks[2] = closeFunc;
         }
 
@@ -1580,25 +1581,25 @@ OptionsAudioMenuV2::OptionsAudioMenuV2(FEPresentation* presentation, ButtonCompo
     mMenuItems.mFlags = 3;
 
     compinstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
-        currentSlide,
+        presentation->m_currentSlide,
         InlineHasher(nlStringLowerHash("Layer")),
         InlineHasher(nlStringLowerHash("volume1")));
     BuildSubMenuList(0, compinstance, false, mSettings.MusicVolume);
 
     compinstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
-        currentSlide,
+        presentation->m_currentSlide,
         InlineHasher(nlStringLowerHash("Layer")),
         InlineHasher(nlStringLowerHash("volume2")));
     BuildSubMenuList(1, compinstance, false, mSettings.SFXVolume);
 
     compinstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
-        currentSlide,
+        presentation->m_currentSlide,
         InlineHasher(nlStringLowerHash("Layer")),
         InlineHasher(nlStringLowerHash("volume3")));
     BuildSubMenuList(2, compinstance, false, mSettings.VoiceVolume);
 
     compinstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
-        currentSlide,
+        presentation->m_currentSlide,
         InlineHasher(nlStringLowerHash("Layer")),
         InlineHasher(nlStringLowerHash("mode")));
     BuildSubMenuList(3, compinstance, true, mSettings.Mode);

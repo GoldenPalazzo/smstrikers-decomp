@@ -1097,9 +1097,9 @@ FuzzyVariant Fuzzy::UsePowerupDefensive(float fConfidence, cDecisionEntity* pEnt
 
 /**
  * Offset/Address/Size: 0x0 | 0x800856B8 | size: 0x5C4
- * TODO: 91.49% match on decomp.me (-inline auto) - 22 stack offset diffs
- * File uses -inline deferred which may resolve stack layout (generalThreatConfidence
- * at function scope before fvTeam/fvTeam2 should give correct stack order with deferred).
+ * TODO: 98.55% match - remaining diffs are stack slot order for fvTeam,
+ * fvTeam2, and generalThreatConfidence plus f27/f28/f2 register allocation in
+ * the threat and marking branches.
  */
 FuzzyVariant Fuzzy::GetPowerupTargetDefensive(cTeam* TheTeam)
 {
@@ -1114,7 +1114,8 @@ FuzzyVariant Fuzzy::GetPowerupTargetDefensive(cTeam* TheTeam)
         cFielder* theOpponent = g_pScriptOtherTeam->GetFielder(i);
         float fNotInvincible = 1.0f - Invincible(theOpponent);
         float fTrueConfidence = 1.0f - Incapacitated((cPlayer*)theOpponent);
-        fTrueConfidence = (fTrueConfidence <= fNotInvincible) ? fTrueConfidence : fNotInvincible;
+        if (fTrueConfidence > fNotInvincible)
+            fTrueConfidence = fNotInvincible;
         float fFalseConfidence = 1.0f - fTrueConfidence;
         float fMin = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
         float fMax = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
@@ -1123,7 +1124,7 @@ FuzzyVariant Fuzzy::GetPowerupTargetDefensive(cTeam* TheTeam)
         {
             SaveConfidence PushDOM(&fConfidence);
             fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
-            if (fConfidence < fTrueConfidence && fTrueConfidence < 1.0f)
+            if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
                 fConfidence = fConfidence * fBranchRatio;
             float fReceivingPass = ReceivingPassDelayed(theOpponent);
             float fBallOwner = BallOwner((cPlayer*)theOpponent);
@@ -1141,7 +1142,7 @@ FuzzyVariant Fuzzy::GetPowerupTargetDefensive(cTeam* TheTeam)
             {
                 SaveConfidence PushDOM2(&fConfidence);
                 fConfidence = (fConfidence <= fTrueConfidence2) ? fConfidence : fTrueConfidence2;
-                if (fConfidence < fTrueConfidence2 && fTrueConfidence2 < 1.0f)
+                if (fConfidence < fTrueConfidence2 && fTrueConfidence2 < 0.5f)
                     fConfidence = fConfidence * fBranchRatio2;
                 if (fConfidence > fBestConfidence)
                 {

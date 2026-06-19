@@ -382,8 +382,7 @@ bool EmissionController::IsLingering() const
 
 /**
  * Offset/Address/Size: 0x32C | 0x801F7C1C | size: 0x5EC
- * TODO: 96.97% match - register allocation diffs (r26/r30 numSys, r27/r29 numDel, r29/r26 pSpec,
- * r30/r27 pNext, r20/r24 pTerrain, f1/f2 float swap).
+ * TODO: 98.85% match - remaining register allocation diffs in terrain, joint ascent, and user effect loop.
  */
 bool EmissionController::Update(float dt)
 {
@@ -395,9 +394,11 @@ bool EmissionController::Update(float dt)
     ParticleSystem* pNext;
     EffectsSpec* pSpec;
     ParticleSystem* pSys;
-    int numDel = 0;
-    int numSys = 0;
+    int numDel;
+    int numSys;
     UserEffectInfo info;
+    numSys = 0;
+    numDel = 0;
 
     if (m_Replaying)
     {
@@ -470,12 +471,17 @@ bool EmissionController::Update(float dt)
                     jointID = pSpec->m_uJointID;
                 }
 
-                const cPoseAccumulator* pPose = m_pPose;
-                float fDist = fAge * fJointVelocity;
-                cSHierarchy* pHier = pPose->m_BaseSHierarchy;
+                int parentIndex;
+                int jointIndex;
+                const cPoseAccumulator* pPose;
+                cSHierarchy* pHier;
 
-                int jointIndex = pHier->GetNodeIndexByID(jointID);
-                int parentIndex = pHier->GetParent(jointIndex);
+                pPose = m_pPose;
+                float fDist = fAge * fJointVelocity;
+                pHier = pPose->m_BaseSHierarchy;
+
+                jointIndex = pHier->GetNodeIndexByID(jointID);
+                parentIndex = pHier->GetParent(jointIndex);
 
                 while (parentIndex != -1)
                 {
@@ -483,8 +489,8 @@ bool EmissionController::Update(float dt)
                     const nlMatrix4& parentMat = pPose->GetNodeMatrix(parentIndex);
 
                     float dy = parentMat.m[3][1] - currentMat.m[3][1];
-                    float dx = parentMat.m[3][0] - currentMat.m[3][0];
                     float dz = parentMat.m[3][2] - currentMat.m[3][2];
+                    float dx = parentMat.m[3][0] - currentMat.m[3][0];
                     float dist = nlSqrt(dx * dx + dy * dy + dz * dz, true);
 
                     if (dist >= fDist)
@@ -521,8 +527,7 @@ bool EmissionController::Update(float dt)
                 {
                     cSHierarchy* pHier = m_pPose->m_BaseSHierarchy;
                     int nodeIndex = pHier->GetNodeIndexByID(jointID);
-                    int mirroredIndex = pHier->GetMirroredNode(nodeIndex);
-                    jointID = pHier->GetNodeID(mirroredIndex);
+                    jointID = pHier->GetNodeID(pHier->GetMirroredNode(nodeIndex));
                 }
 
                 u32 finalJointID = m_uJointIDOverride;

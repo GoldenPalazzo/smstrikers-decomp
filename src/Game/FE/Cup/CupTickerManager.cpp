@@ -423,8 +423,7 @@ void CupTickerManager::CreateNewMessage()
             {
                 int roundNumber = gameInfo->GetPreviousRoundNumber(-7);
                 int numGames = (int)gameInfo->GetNumGamesPerRound(roundNumber);
-                int gameNumber = 0;
-                while (gameNumber < numGames)
+                for (int gameNumber = 0; gameNumber < numGames; gameNumber++)
                 {
                     BasicGameInfo* game;
                     if (gameInfo->GetCurrentRoundNumber() == -1)
@@ -484,7 +483,6 @@ void CupTickerManager::CreateNewMessage()
                             Format<WideBasicString, unsigned short*, unsigned short*, unsigned short[16], unsigned short[16]>(
                                 fmtWBS, t1Str, t0Str, wideScore1, wideScore0));
                     }
-                    gameNumber++;
                 }
                 messageDisplayed = true;
             }

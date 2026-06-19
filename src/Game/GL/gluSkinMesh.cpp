@@ -86,6 +86,7 @@ void TempMatrixCopier::CopyMatrix(const unsigned long& boneId, unsigned long* ou
 
 /**
  * Offset/Address/Size: 0x0 | 0x801B5B44 | size: 0x4F0
+ * TODO: 96.77% match - inner skin-pair loop keeps pair offset/index and normal-scale constants in different registers.
  */
 void ShaderSkinMesh::AttachSkinData(unsigned long program, const nlMatrix4* pReflect)
 {
@@ -140,7 +141,7 @@ void ShaderSkinMesh::AttachSkinData(unsigned long program, const nlMatrix4* pRef
                 }
                 // clang-format on
 
-                for (unsigned int i = 0; i < curr->num; i++)
+                for (int i = 0; i < (int)curr->num; i++)
                 {
                     SkinPair& pair = curr->pairs[i];
                     vertexWeight = (float)pair.vertexWeight / 65535.0f;
@@ -195,10 +196,10 @@ void ShaderSkinMesh::AttachSkinData(unsigned long program, const nlMatrix4* pRef
                         ps_madds0 f16, f16, f12, f20
                         ps_madds0 f10, f10, f12, f13
                         ps_madds0 f11, f11, f12, f14
-                        psq_st f15, 0x0(pOutV), 0, qr0
-                        psq_st f16, 0x8(pOutV), 1, qr0
                         psq_st f10, 0x0(pOutN), 0, qr0
                         psq_st f11, 0x8(pOutN), 1, qr0
+                        psq_st f15, 0x0(pOutV), 0, qr0
+                        psq_st f16, 0x8(pOutV), 1, qr0
                     }
                     // clang-format on
                 }

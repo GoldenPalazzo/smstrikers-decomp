@@ -432,10 +432,18 @@ void cBall::ShootAtFast(nlVector3& v3Vel, const nlVector3& v3Target, float fDesi
     v3Vel.f.z = kSquaredOverOneMinusEToTheNegativeKT * (oneOverK * (v3Target.f.z - m_v3Position.f.z - g * fDesiredTime / k)) + g / k;
 }
 
+static inline float CalcSpinRand(eSpinType spin)
+{
+    float fSpinRand = 0.5f + nlRandomf(2.0f, &nlDefaultSeed);
+    if (spin == SPINTYPE_BACK)
+    {
+        fSpinRand *= -1.0f;
+    }
+    return fSpinRand;
+}
+
 /**
  * Offset/Address/Size: 0xB40 | 0x8000A514 | size: 0x1EC
- * TODO: 99.23% match - FPR register coloring: fSpinRand allocated to f7 instead of f4,
- *       cascading through cross product temporaries. Same MWCC quirk as SetVelocity (99.27%).
  */
 void cBall::ShootRelease(const nlVector3& v3Velocity, eSpinType SpinType)
 {
@@ -453,24 +461,17 @@ void cBall::ShootRelease(const nlVector3& v3Velocity, eSpinType SpinType)
     }
     else if ((SpinType == SPINTYPE_FORWARD) || (SpinType == SPINTYPE_BACK))
     {
-        float fSpinRand = 0.5f + nlRandomf(2.0f, &nlDefaultSeed);
-        if (SpinType == SPINTYPE_BACK)
-        {
-            fSpinRand *= -1.0f;
-        }
+        float fSpinRand = CalcSpinRand(SpinType);
 
         static const nlVector3 kZero = { 0.0f, 0.0f, 0.0f };
         v3Up = kZero;
         v3Up.f.z = fSpinRand;
 
-        float upX = v3Up.f.x;
-        float upY = v3Up.f.y;
-        float velY = v3Velocity.f.y;
-        float velX = v3Velocity.f.x;
-
-        v3AngVel.f.x = (upY * v3Velocity.f.z) - (v3Up.f.z * velY);
-        v3AngVel.f.y = (-upX * v3Velocity.f.z) + (v3Up.f.z * velX);
-        v3AngVel.f.z = (upX * velY) - (upY * velX);
+        nlVector3 v3Cross;
+        nlVec3CrossProductAlt(v3Cross, v3Up, v3Velocity);
+        v3AngVel.f.x = v3Cross.f.z;
+        v3AngVel.f.y = v3Cross.f.y;
+        v3AngVel.f.z = v3Cross.f.x;
     }
     else if (SpinType == SPINTYPE_ROLLING)
     {
@@ -499,8 +500,6 @@ void cBall::ShootRelease(const nlVector3& v3Velocity, eSpinType SpinType)
  * Offset/Address/Size: 0xD2C | 0x8000A700 | size: 0x3AC
  * TODO: 99.96% match - local constant label relocations remain in scratch diff.
  */
-static inline float CalcSpinRand(eSpinType spin);
-
 void cBall::Shoot(const nlVector3& v3Dir, const nlVector3& v3Spin, eSpinType spinType, bool bCanDamage, bool bParam5, bool bParam6)
 {
     nlVector3 v3PredPos;
@@ -623,16 +622,6 @@ void cBall::SetVisible(bool visible)
         return;
     }
     drawable->m_uObjectFlags = (drawable->m_uObjectFlags & 0xFFFFFFFE);
-}
-
-static inline float CalcSpinRand(eSpinType spin)
-{
-    float fSpinRand = 0.5f + nlRandomf(2.0f, &nlDefaultSeed);
-    if (spin == SPINTYPE_BACK)
-    {
-        fSpinRand *= -1.0f;
-    }
-    return fSpinRand;
 }
 
 /**

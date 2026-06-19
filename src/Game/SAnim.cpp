@@ -37,15 +37,15 @@ void nlListAddStart<cSAnimCallback>(cSAnimCallback** head, cSAnimCallback* entry
 
 /**
  * Offset/Address/Size: 0xD40 | 0x801E9F54 | size: 0x68C
- * TODO: 79.51% match - inlined chunk-data alignment emits subi+nor+and where the
- * target uses a single andc, shifting register coloring (align temp r3 vs r5) and
- * cascading register/scheduling diffs through the node loop and root-key block.
+ * TODO: 79.68% match - chunk walking is closer, but the chunk-data alignment
+ * still emits not+and where the target uses andc.
  */
 cSAnim* cSAnim::Initialize(nlChunk* pChunk)
 {
     nlChunk* chunkA = (nlChunk*)((u8*)pChunk + 8);
     nlChunk* end = nlGetNextChunk(pChunk);
     nlChunk* chunkB;
+    nlChunk* chunkC;
 
     cSAnim* pRetval = (cSAnim*)nlGetChunkData(chunkA);
     pRetval->m_pCallbackList = NULL;
@@ -53,24 +53,24 @@ cSAnim* cSAnim::Initialize(nlChunk* pChunk)
     chunkB = (nlChunk*)((u8*)chunkA + chunkA->m_Size + 8);
     pRetval->m_szName = (const char*)nlGetChunkData(chunkB);
 
-    chunkA = (nlChunk*)((u8*)chunkB + chunkB->m_Size + 8);
-    pRetval->m_pRotKeys = nlGetChunkData(chunkA);
+    chunkC = (nlChunk*)((u8*)chunkB + chunkB->m_Size + 8);
+    pRetval->m_pRotKeys = nlGetChunkData(chunkC);
 
-    chunkB = (nlChunk*)((u8*)chunkA + chunkA->m_Size + 8);
-    pRetval->m_pTransKeys = (PackedTrans**)nlGetChunkData(chunkB);
+    chunkA = (nlChunk*)((u8*)chunkC + chunkC->m_Size + 8);
+    pRetval->m_pTransKeys = (PackedTrans**)nlGetChunkData(chunkA);
 
-    chunkA = (nlChunk*)((u8*)chunkB + chunkB->m_Size + 8);
-    pRetval->m_pScaleKeys = (PackedScale**)nlGetChunkData(chunkA);
+    chunkC = (nlChunk*)((u8*)chunkA + chunkA->m_Size + 8);
+    pRetval->m_pScaleKeys = (PackedScale**)nlGetChunkData(chunkC);
 
-    chunkB = (nlChunk*)((u8*)chunkA + chunkA->m_Size + 8);
-    pRetval->m_pRootRot = (unsigned short*)nlGetChunkData(chunkB);
+    chunkA = (nlChunk*)((u8*)chunkC + chunkC->m_Size + 8);
+    pRetval->m_pRootRot = (unsigned short*)nlGetChunkData(chunkA);
 
-    chunkA = (nlChunk*)((u8*)chunkB + chunkB->m_Size + 8);
-    pRetval->m_pRootTrans = (nlVector3*)nlGetChunkData(chunkA);
+    chunkC = (nlChunk*)((u8*)chunkA + chunkA->m_Size + 8);
+    pRetval->m_pRootTrans = (nlVector3*)nlGetChunkData(chunkC);
 
     u32 nodeIndex = 0;
     u32 type;
-    nlChunk* nodeChunk = nlGetNextChunk(chunkA);
+    nlChunk* nodeChunk = nlGetNextChunk(chunkC);
 
     while (nodeChunk != end && ((type = nodeChunk->m_ID & 0x80FFFFFF) == 0x80017100 || type == 0x1001))
     {

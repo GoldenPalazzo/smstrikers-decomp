@@ -590,11 +590,11 @@ static FEResourceHandle* FindExistingResourceInResourceList_Inline(FEResourceHan
         unsigned long nodeKey = node->key;
         int cmpResult;
 
-        if (key == nodeKey)
+        if (nodeKey == key)
         {
             cmpResult = 0;
         }
-        else if (key < nodeKey)
+        else if (nodeKey > key)
         {
             cmpResult = -1;
         }
@@ -718,8 +718,8 @@ static ResourceResult IssueResourceLoadRequest_Inline(FEResourceHandle* pFeResou
 
 /**
  * Offset/Address/Size: 0x0 | 0x8020BB40 | size: 0x29C
- * TODO: 98.39% match - r0/r4 register swap for key variable in inlined AVL
- * search cascades to 18 instruction diffs in the FERT_TEXTURE path
+ * TODO: 99.36% match - compare-result branch/register mismatch remains in
+ * inlined AVL loaded-resource lookup
  */
 void FEResourceManager::Update(float)
 {

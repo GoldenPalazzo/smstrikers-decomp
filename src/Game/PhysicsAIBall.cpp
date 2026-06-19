@@ -91,13 +91,8 @@ bool PhysicsAIBall::DidBallJustEnterNet(const nlVector3& oldPos, nlVector3 newPo
 }
 
 /**
- * Offset/Address/Size: 0x224 | 0x80133C58 | size: 0x310
- * TODO: 96.37% match - sweep-contact bool live range still spills through r0,
- * and FP register allocation differs slightly in the reflection math block.
- */
-/**
  * Offset/Address/Size: 0x0 | 0x80133C58 | size: 0x310
- * TODO: 97.67% match - FPR allocation diffs: f4/f5 swap for 0.005f, f11/f7 f12/f10 f10/f11 for vel/normal temporaries
+ * TODO: 98.28% match - FPR allocation diffs in contact offset and reflection math
  */
 void PhysicsAIBall::CheckIfBallWentThroughGoalPost()
 {
@@ -185,8 +180,10 @@ void PhysicsAIBall::CheckIfBallWentThroughGoalPost()
             GetAngularVelocity(&v3AngVel);
 
             v3AngVel.f.z = 0.8f * v3AngVel.f.z;
-            v3AngVel.f.x = 0.8f * v3AngVel.f.x;
-            v3AngVel.f.y = 0.8f * v3AngVel.f.y;
+            float scaledAngY = 0.8f * v3AngVel.f.y;
+            float scaledAngX = 0.8f * v3AngVel.f.x;
+            v3AngVel.f.x = scaledAngX;
+            v3AngVel.f.y = scaledAngY;
 
             SetPosition(ballPosition, PhysicsObject::WORLD_COORDINATES);
             SetLinearVelocity(v3ExitVel);
@@ -196,8 +193,9 @@ void PhysicsAIBall::CheckIfBallWentThroughGoalPost()
             FakeBallWorld::InvalidateBallCache();
 
             m_pAIBall->m_bBallPathChangeCount += 1;
-            m_pAIBall->m_unk_0xA6 = false;
-            m_pAIBall->mpDamageTarget = NULL;
+            cBall* pAIBall = m_pAIBall;
+            pAIBall->m_unk_0xA6 = false;
+            pAIBall->mpDamageTarget = NULL;
         }
     }
 }

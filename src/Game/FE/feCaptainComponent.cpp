@@ -248,10 +248,12 @@ void IChooseCaptain::ComponentState::GotoNextPhase()
 void IChooseCaptain::ComponentState::GotoPreviousPhase()
 {
     ICaptainGridComponent* gridcomponent;
+    ISidekickGridComponent* sidekickgrid;
     ICaptainGridComponent* captaingrid;
     ICaptainGridComponent* othercaptaingrid;
     ICaptainGridComponent* captaingrid2;
     ICaptainGridComponent* othercaptaingrid2;
+    NameComponent* namecomponent;
 
     switch (mCurrentPhase)
     {
@@ -294,8 +296,9 @@ void IChooseCaptain::ComponentState::GotoPreviousPhase()
         captaingrid->RebuildInstanceTable();
         captaingrid->SetAllItemsActive();
 
-        mParent->mNameComponents[mHomeAway].mComponent->SetActiveSlide("Slide1");
-        mParent->mNameComponents[mHomeAway].mComponent->Update(0.0f);
+        namecomponent = &mParent->mNameComponents[mHomeAway];
+        namecomponent->mComponent->SetActiveSlide("Slide1");
+        namecomponent->mComponent->Update(0.0f);
         mParent->mNameComponents[mHomeAway].SetCaptainName(GetLOCCharacterName(captaingrid->GetSelectedItem(), false, false));
         mParent->mNameComponents[mHomeAway].SetCaptainLogo(GetTeamName(captaingrid->GetSelectedItem()));
 
@@ -305,6 +308,8 @@ void IChooseCaptain::ComponentState::GotoPreviousPhase()
             menu->SetItemActive(othercaptaingrid->mMapMenu->GetSelectedItem(), false);
         }
 
+        mParent->mSidekickMiniHeadComponents[mHomeAway]->m_bVisible = false;
+
         FEAudio::PlayAnimAudioEvent("sfx_back_no_screen_change", false);
         break;
 
@@ -313,11 +318,11 @@ void IChooseCaptain::ComponentState::GotoPreviousPhase()
         {
             mCurrentPhase = PHASE_CHOOSING_SIDEKICK;
 
-            gridcomponent = (ICaptainGridComponent*)mParent->mSidekickGridComponents[mHomeAway];
-            gridcomponent->mParentComponent->SetActiveSlide("SELECT");
-            gridcomponent->mParentComponent->Update(0.0f);
-            gridcomponent->RebuildInstanceTable();
-            gridcomponent->mMapMenu->UpdateAllItems();
+            sidekickgrid = mParent->mSidekickGridComponents[mHomeAway];
+            sidekickgrid->mParentComponent->SetActiveSlide("SELECT");
+            sidekickgrid->mParentComponent->Update(0.0f);
+            sidekickgrid->RebuildInstanceTable();
+            sidekickgrid->mMapMenu->UpdateAllItems();
 
             mParent->mSidekickGridComponents[mHomeAway]->RebindHighliteComponent("HIGHLIGHT");
             mParent->mSidekickGridComponents[mHomeAway]->mHighliteComponent->m_bVisible = true;
@@ -355,8 +360,9 @@ void IChooseCaptain::ComponentState::GotoPreviousPhase()
             captaingrid2->RebuildInstanceTable();
             captaingrid2->SetAllItemsActive();
 
-            mParent->mNameComponents[mHomeAway].mComponent->SetActiveSlide("Slide1");
-            mParent->mNameComponents[mHomeAway].mComponent->Update(0.0f);
+            namecomponent = &mParent->mNameComponents[mHomeAway];
+            namecomponent->mComponent->SetActiveSlide("Slide1");
+            namecomponent->mComponent->Update(0.0f);
             mParent->mNameComponents[mHomeAway].SetCaptainName(GetLOCCharacterName(captaingrid2->GetSelectedItem(), false, false));
             mParent->mNameComponents[mHomeAway].SetCaptainLogo(GetTeamName(captaingrid2->GetSelectedItem()));
 
