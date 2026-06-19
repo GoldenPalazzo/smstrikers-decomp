@@ -725,8 +725,7 @@ inline GCAudioStreaming::StereoAudioStream::StereoAudioStream(
 
 /**
  * Offset/Address/Size: 0x10BC | 0x80155E14 | size: 0x418
- * TODO: 93.8% match - QUEUED_STREAM double copy elided by MWCC (Allocate localData optimization),
- * register allocation cascade from missing copy (r23 not saved), ble vs beq on buffer count check
+ * TODO: 96.1% match - saved-register rotation for stream arguments and queued-entry temp stack offsets remain
  */
 void AudioStreamTrack::StreamTrack::QueueStream(
     unsigned long StreamId, float Volume, bool Looping,
@@ -740,7 +739,23 @@ void AudioStreamTrack::StreamTrack::QueueStream(
         return;
     }
 
-    DLListEntry<QUEUED_STREAM>* entry = m_QueuedStreams.Allocate(QUEUED_STREAM());
+    const QUEUED_STREAM& qs = QUEUED_STREAM();
+    QUEUED_STREAM localData = qs;
+    DLListEntry<QUEUED_STREAM>* entry = m_QueuedStreams.m_Allocator.m_pFree;
+    if (entry == NULL)
+    {
+        entry = NULL;
+    }
+    else
+    {
+        m_QueuedStreams.m_Allocator.m_pFree = entry->m_next;
+    }
+    if (entry != NULL)
+    {
+        entry->m_next = NULL;
+        entry->m_prev = NULL;
+        entry->m_data = localData;
+    }
     nlDLRingAddEnd(&m_QueuedStreams.m_Head, entry);
 
     entry->m_data.StreamId = StreamId;
@@ -768,8 +783,9 @@ void AudioStreamTrack::StreamTrack::QueueStream(
     entry->m_data.TrackOwnsStream = m_TrackOwnsStreams;
 
     nlStrNCpy<char>(FileName, "audio/data/streams/", 0x100);
+    unsigned long lookupKey = StreamId;
     TrackManagerBase::StreamFileLookup::STREAM_FILE_LOOKUP* lookup = nlBSearch<TrackManagerBase::StreamFileLookup::STREAM_FILE_LOOKUP, unsigned long>(
-        StreamId, mgr.m_FileLookup.m_pLookup, mgr.m_FileLookup.m_StreamCount);
+        lookupKey, mgr.m_FileLookup.m_pLookup, mgr.m_FileLookup.m_StreamCount);
 
     char* percentPos = strchr(lookup->value, '%');
     if (percentPos != NULL)

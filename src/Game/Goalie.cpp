@@ -6229,13 +6229,9 @@ void Goalie::DoPassRelease()
             const nlVector3* pCurBallPos = &GetJointPosition(nBallJoint);
 
             float invTick = 1.0f / g_fSimulationTick;
-            float dz = pCurBallPos->f.z - pPrevBallPos->f.z;
-            float dy = pCurBallPos->f.y - pPrevBallPos->f.y;
-            float dx = pCurBallPos->f.x - pPrevBallPos->f.x;
             nlVector3 v3BallVel;
-            v3BallVel.f.x = invTick * dx;
-            v3BallVel.f.y = invTick * dy;
-            v3BallVel.f.z = invTick * dz;
+            nlVec3Sub(v3BallVel, *pCurBallPos, *pPrevBallPos);
+            nlVec3Scale(v3BallVel, invTick);
 
             ReleaseBall();
             g_pBall->SetVelocity(v3BallVel, SPINTYPE_NONE, NULL);
@@ -6250,12 +6246,12 @@ void Goalie::DoPassRelease()
 
             nlVector3 v3BallVel;
             nlVector3 v3BallTarget = mpShooter->m_v3Position;
-            v3BallTarget.f.z += 0.5f;
 
             float dy = m_v3Position.f.y - v3BallTarget.f.y;
             float dx = m_v3Position.f.x - v3BallTarget.f.x;
             float fDistance = nlSqrt((dx * dx) + (dy * dy), true);
             float fShotSpeed = InterpolateRangeClamped(22.0f, 28.0f, 5.0f, 15.0f, fDistance);
+            v3BallTarget.f.z += 0.5f;
 
             ReleaseBall();
             g_pBall->ShootAtFast(v3BallVel, v3BallTarget, fDistance / fShotSpeed);
@@ -6285,12 +6281,12 @@ void Goalie::DoPassRelease()
     bool bIsKick = false;
     if (m_eAnimID < 6 && m_eAnimID >= 2)
     {
+        bIsKick = true;
         Event* pEvent = g_pEventManager->CreateValidEvent(0x10, 0x38);
         GoalieSaveData* pSaveData = new ((u8*)pEvent + 0x10) GoalieSaveData();
         pSaveData->saveType = g_pBall->m_uGoalType;
         pSaveData->pShooter = g_pBall->m_pShooter;
         pSaveData->pGoalie = this;
-        bIsKick = true;
     }
 
     if (mpPassTarget != NULL)

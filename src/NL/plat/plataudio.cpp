@@ -902,10 +902,27 @@ static inline SndGroupData* GetSoundGroupAt(SndGroupData* data, int idx)
     return &data[idx];
 }
 
+static inline void ResetSoundGroupsOnStack(AudioFileData& fileData, unsigned long stackEnum)
+{
+    SndGroupData* grp;
+    int i = 0;
+    while (i < fileData.numSoundGroups)
+    {
+        grp = GetSoundGroupAt(fileData.soundGroups, i);
+        if (stackEnum == (unsigned long)grp->stackEnum)
+        {
+            grp->stackEnum = -1;
+            grp->uLoadOrder = -1;
+            grp->loadType = (LoadType)0;
+        }
+        i++;
+    }
+}
+
 /**
  * Offset/Address/Size: 0x107C | 0x801C5878 | size: 0x150
- * TODO: 98.93% match - remaining MWCC register allocator diffs: r29/r30 swap
- * (fileData/offset) and r5/r6 swap in the first soundGroups loop
+ * TODO: 98.99% match - remaining r29/r30 fileData/offset swap and r5/r7
+ * counter/offset swap in the first soundGroups loop
  */
 bool UnloadAllSoundGroups(AudioFileData& fileData)
 {
@@ -947,21 +964,7 @@ bool UnloadAllSoundGroups(AudioFileData& fileData)
             *numPtr = 0;
         }
 
-        {
-            SndGroupData* grp;
-            i = 0;
-            while (i < fileData.numSoundGroups)
-            {
-                grp = GetSoundGroupAt(fileData.soundGroups, i);
-                if ((unsigned long)stackEnum == (unsigned long)grp->stackEnum)
-                {
-                    grp->stackEnum = -1;
-                    grp->uLoadOrder = -1;
-                    grp->loadType = (LoadType)0;
-                }
-                i++;
-            }
-        }
+        ResetSoundGroupsOnStack(fileData, stackEnum);
 
     next:
         stackEnum--;

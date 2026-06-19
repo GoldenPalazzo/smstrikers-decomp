@@ -421,14 +421,9 @@ void MixAudio(short* destination, short* source, unsigned long sample)
                 audio->mCurPtr = thpsrc;
 
                 audio = &simple->audioBuffer[simple->audioOutputIndex];
-                if (audio->mValidSample == 0)
+                if ((audio->mValidSample == 0) && (++simple->audioOutputIndex >= NumAudioBuffers))
                 {
-                    i = simple->audioOutputIndex + 1;
-                    simple->audioOutputIndex = i;
-                    if ((int)i >= NumAudioBuffers)
-                    {
-                        simple->audioOutputIndex = 0;
-                    }
+                    simple->audioOutputIndex = 0;
                 }
 
                 if (sample == 0)
@@ -518,14 +513,9 @@ void MixAudio(short* destination, short* source, unsigned long sample)
                 audio->mCurPtr = thpsrc;
 
                 audio = &simple->audioBuffer[simple->audioOutputIndex];
-                if (audio->mValidSample == 0)
+                if ((audio->mValidSample == 0) && (++simple->audioOutputIndex >= NumAudioBuffers))
                 {
-                    i = simple->audioOutputIndex + 1;
-                    simple->audioOutputIndex = i;
-                    if ((int)i >= NumAudioBuffers)
-                    {
-                        simple->audioOutputIndex = 0;
-                    }
+                    simple->audioOutputIndex = 0;
                 }
 
                 if (sample == 0)

@@ -94,12 +94,14 @@ template <>
 FloatCompressor<0, 1, 15>::FloatCompressor(float& f)
     : mF(f)
 {
+    FORCE_DONT_INLINE;
 }
 
 template <>
 FloatCompressor<0, 1, 7>::FloatCompressor(float& f)
     : mF(f)
 {
+    FORCE_DONT_INLINE;
 }
 
 template <>
@@ -1424,8 +1426,17 @@ void cPN_SingleAxisBlender::Replay<SaveFrame>(SaveFrame& frame)
 {
     FORCE_DONT_INLINE;
     Replayable<0>(frame, (cPoseNode&)*this);
-    FloatCompressor<0, 1, 7> proxy(m_fSmoothedWeight);
-    proxy.Replay(frame);
+
+    float weight = m_fSmoothedWeight;
+    if (weight > 1.0f)
+        weight = 1.0f;
+    if (weight < 0.0f)
+        weight = 0.0f;
+    weight *= 128.0f;
+
+    char* cursor = frame.mStream.mStorage;
+    *cursor++ = (char)(unsigned int)weight;
+    frame.mStream.mStorage = cursor;
 }
 
 /**
@@ -1462,8 +1473,18 @@ void cPN_SAnimController::Replay<SaveFrame>(SaveFrame& frame)
     FORCE_DONT_INLINE;
     Replayable<0>(frame, (cPoseNode&)*this);
 
-    FloatCompressor<0, 1, 15> proxy(m_fTime);
-    proxy.Replay(frame);
+    float time = m_fTime;
+    if (time > 1.0f)
+        time = 1.0f;
+    if (time < 0.0f)
+        time = 0.0f;
+    time *= 32768.0f;
+
+    unsigned int value = (unsigned int)time;
+    char* cursor = frame.mStream.mStorage;
+    *cursor++ = (char)value;
+    *cursor++ = (char)((value >> 8) & 0xFF);
+    frame.mStream.mStorage = cursor;
 
     unsigned int animPtr = 0;
     animPtr = (unsigned int)m_pSAnim;
@@ -1522,8 +1543,8 @@ void cPN_Blender::Replay<LoadFrame>(LoadFrame& frame)
 template <>
 void cPN_Blender::Replay<SaveFrame>(SaveFrame& frame)
 {
-    cPoseNode* child;
     int i;
+    cPoseNode* child;
     char type;
 
     memcpy(frame.mStream.mStorage, &m_numChildren, sizeof(int));
@@ -1547,8 +1568,7 @@ void cPN_Blender::Replay<SaveFrame>(SaveFrame& frame)
             if (type == 0)
             {
                 Replayable<0>(frame, (cPoseNode&)*child);
-                const FloatCompressor<0, 1, 7> proxy0(((cPN_Blender*)child)->m_fBlendTime);
-                Replayable<0>(frame, proxy0);
+                Replayable<0>(frame, FloatCompressor<0, 1, 7>(((cPN_Blender*)child)->m_fBlendTime));
             }
             else if (type == 1)
             {
@@ -1557,8 +1577,7 @@ void cPN_Blender::Replay<SaveFrame>(SaveFrame& frame)
             else if (type == 2)
             {
                 Replayable<0>(frame, (cPoseNode&)*child);
-                const FloatCompressor<0, 1, 15> proxy2(((cPN_SAnimController*)child)->m_fTime);
-                Replayable<0>(frame, proxy2);
+                Replayable<0>(frame, FloatCompressor<0, 1, 15>(((cPN_SAnimController*)child)->m_fTime));
                 unsigned int animPtr = 0;
                 animPtr = (unsigned int)((cPN_SAnimController*)child)->m_pSAnim;
                 if (((cPN_SAnimController*)child)->m_bMirror)
@@ -1569,14 +1588,21 @@ void cPN_Blender::Replay<SaveFrame>(SaveFrame& frame)
             else if (type == 3)
             {
                 Replayable<0>(frame, (cPoseNode&)*child);
-                const FloatCompressor<0, 1, 7> proxy3(((cPN_SingleAxisBlender*)child)->m_fSmoothedWeight);
-                Replayable<0>(frame, proxy3);
+                Replayable<0>(frame, FloatCompressor<0, 1, 7>(((cPN_SingleAxisBlender*)child)->m_fSmoothedWeight));
             }
         }
     }
 
-    FloatCompressor<0, 1, 7> blendProxy(m_fBlendTime);
-    blendProxy.Replay(frame);
+    float blendTime = m_fBlendTime;
+    if (blendTime > 1.0f)
+        blendTime = 1.0f;
+    if (blendTime < 0.0f)
+        blendTime = 0.0f;
+    blendTime *= 128.0f;
+
+    char* cursor = frame.mStream.mStorage;
+    *cursor++ = (char)(unsigned int)blendTime;
+    frame.mStream.mStorage = cursor;
 }
 
 #pragma dont_inline on

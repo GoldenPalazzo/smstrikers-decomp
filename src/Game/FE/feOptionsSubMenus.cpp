@@ -1511,17 +1511,17 @@ OptionsAudioMenuV2::OptionsAudioMenuV2(FEPresentation* presentation, ButtonCompo
         mMenuItems.mNumItemsAdded++;
 
         {
-            Function<FnTLComponentInstanceCb> openFunc;
+            Function<TLComponentInstance*> openFunc;
             openFunc.mTag = FREE_FUNCTION;
             openFunc.mFreeFunction = SingleHighlite::OpenItem;
-            menuItem->mCallbacks[1] = openFunc;
+            *(Function<TLComponentInstance*>*)&menuItem->mCallbacks[1] = openFunc;
         }
 
         {
-            Function<FnTLComponentInstanceCb> closeFunc;
+            Function<TLComponentInstance*> closeFunc;
             closeFunc.mTag = FREE_FUNCTION;
             closeFunc.mFreeFunction = SingleHighlite::CloseItem;
-            menuItem->mCallbacks[2] = closeFunc;
+            *(Function<TLComponentInstance*>*)&menuItem->mCallbacks[2] = closeFunc;
         }
 
         if (i == 0)
@@ -1600,7 +1600,8 @@ OptionsAudioMenuV2::OptionsAudioMenuV2(FEPresentation* presentation, ButtonCompo
                             }
                             else if (inst->m_type == TLAT_IMAGE)
                             {
-                                if (inst->m_hash != nlStringLowerHash("white_box"))
+                                u32 imageHash = inst->m_hash;
+                                if (imageHash != nlStringLowerHash("white_box"))
                                 {
                                     inst->SetAssetColour(SubMenuHighliteColour);
                                 }

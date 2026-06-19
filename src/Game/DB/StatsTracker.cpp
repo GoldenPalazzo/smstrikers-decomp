@@ -1172,7 +1172,7 @@ void StatsTracker::TrackStat(ePlayerStats stat, int homeaway, int playerindex, i
 
 /**
  * Offset/Address/Size: 0x3708 | 0x80184C68 | size: 0x7E8
- * TODO: 95.37% match - r29/r31 swap in unrolled init loop, extra clrlwi after compare assignments, xor/and operand swaps in stat comparisons
+ * TODO: 95.42% match - r29/r31 swap in unrolled init loop, extra clrlwi after compare assignments, remaining register swaps in stat comparisons and copy loop
  */
 static inline int CompareInt(eSortOrder sortOrder, int a, int b)
 {
@@ -1213,7 +1213,7 @@ void StatsTracker::GetSortedStats(PlayerStats* source, int numsource, int* dest,
             {
                 unsigned short a = source[tempsorted[nexti]].mNumShotsOnGoal;
                 unsigned short b = source[*sorted].mNumShotsOnGoal;
-                doswap = CompareInt(sortOrder, a, b);
+                doswap = CompareInt(sortOrder, b, a);
                 break;
             }
             case STATS_GOALS_FOR:

@@ -1426,28 +1426,9 @@ void GoalOverlay::SetWinnerTitle()
  */
 void GoalOverlay::DoCupWinOverlay()
 {
-    typedef TLTextInstance* (*FindCompByValue)(FEPresentation*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-    typedef TLTextInstance* (*FindCompByRef)(FEPresentation*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
-
-    union
-    {
-        FindCompByValue byValue;
-        FindCompByRef byRef;
-    } findComp;
-
-    volatile InlineHasher hSlideB, hSlideA;
-    volatile InlineHasher hLayerB, hLayerA;
-    volatile InlineHasher hNameB, hNameA;
-    volatile InlineHasher hDescB, hDescA;
-    volatile InlineHasher hTimeB, hTimeA;
-    volatile InlineHasher h5, h4, h3, h2, h1, h0;
-
-    unsigned long hash;
-    TLTextInstance* pText;
-    GoalOverlay* self = this;
-
     eTeamID winners = (eTeamID)nlSingleton<GameInfoManager>::s_pInstance->GetUserSelectedCupTeam();
 
+    BasicStringData<unsigned short>* data;
     const unsigned short* formatLocString;
     unsigned long key = 0xB49CF8B5;
     nlLocalization* loc = g_pLocalization;
@@ -1469,7 +1450,7 @@ void GoalOverlay::DoCupWinOverlay()
         }
     }
 
-    BasicStringData<unsigned short>* data = (BasicStringData<unsigned short>*)nlMalloc(0x10, 8, true);
+    data = (BasicStringData<unsigned short>*)nlMalloc(0x10, 8, true);
     if (data)
     {
         data->mData = 0;
@@ -1524,39 +1505,17 @@ void GoalOverlay::DoCupWinOverlay()
     BasicString<unsigned short, Detail::TempStringAllocator> formatted(
         Format(BasicString<unsigned short, Detail::TempStringAllocator>(data), winnerLocString));
 
-    memcpy(self->mScoresBuffer, formatted.c_str(), 0x100);
+    memcpy(mScoresBuffer, formatted.c_str(), 0x100);
 
-    findComp.byValue = FEFinder<TLTextInstance, 3>::Find<FEPresentation>;
+    TLTextInstance* pText;
 
-    h0.m_Hash = 0;
-    h1.m_Hash = 0;
-    h2.m_Hash = 0;
-    h3.m_Hash = 0;
-    h4.m_Hash = 0;
-    h5.m_Hash = 0;
+    pText = FEFinder<TLTextInstance, 3>::Find<FEPresentation>(
+        m_pFEPresentation,
+        InlineHasher(nlStringLowerHash("Slide1")),
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("Name")));
 
-    hash = nlStringLowerHash("Name");
-    hNameA.m_Hash = hash;
-    hNameB.m_Hash = hash;
-
-    hash = nlStringLowerHash("Layer");
-    hLayerA.m_Hash = hash;
-    hLayerB.m_Hash = hash;
-
-    hash = nlStringLowerHash("Slide1");
-    hSlideA.m_Hash = hash;
-    hSlideB.m_Hash = hash;
-
-    pText = findComp.byRef(
-        self->m_pFEPresentation,
-        (InlineHasher&)hSlideB,
-        (InlineHasher&)hLayerB,
-        (InlineHasher&)hNameB,
-        (InlineHasher&)h5,
-        (InlineHasher&)h3,
-        (InlineHasher&)h1);
-
-    pText->SetString(self->mScoresBuffer);
+    pText->SetString(mScoresBuffer);
 
     eTrophyType cup = (eTrophyType)nlSingleton<GameInfoManager>::s_pInstance->GetTrophyTypeByCurrentMode();
 
@@ -1634,70 +1593,22 @@ void GoalOverlay::DoCupWinOverlay()
 
     formatted = Format(BasicString<unsigned short, Detail::TempStringAllocator>(data), trophyLocString);
 
-    memcpy(self->mDescriptionBuffer, formatted.c_str(), 0x100);
+    memcpy(mDescriptionBuffer, formatted.c_str(), 0x100);
 
-    h0.m_Hash = 0;
-    h1.m_Hash = 0;
-    h2.m_Hash = 0;
-    h3.m_Hash = 0;
-    h4.m_Hash = 0;
-    h5.m_Hash = 0;
-
-    hash = nlStringLowerHash("Description");
-    hDescA.m_Hash = hash;
-    hDescB.m_Hash = hash;
-
-    hash = nlStringLowerHash("Layer");
-    hLayerA.m_Hash = hash;
-    hLayerB.m_Hash = hash;
-
-    hash = nlStringLowerHash("Slide1");
-    hSlideA.m_Hash = hash;
-    hSlideB.m_Hash = hash;
-
-    findComp.byValue = FEFinder<TLTextInstance, 3>::Find<FEPresentation>;
-
-    pText = findComp.byRef(
-        self->m_pFEPresentation,
-        (InlineHasher&)hSlideB,
-        (InlineHasher&)hLayerB,
-        (InlineHasher&)hDescB,
-        (InlineHasher&)h5,
-        (InlineHasher&)h3,
-        (InlineHasher&)h1);
+    pText = FEFinder<TLTextInstance, 3>::Find<FEPresentation>(
+        m_pFEPresentation,
+        InlineHasher(nlStringLowerHash("Slide1")),
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("Description")));
 
     MakeTextBoxReallyWide(*pText);
-    pText->SetString(self->mDescriptionBuffer);
+    pText->SetString(mDescriptionBuffer);
 
-    h0.m_Hash = 0;
-    h1.m_Hash = 0;
-    h2.m_Hash = 0;
-    h3.m_Hash = 0;
-    h4.m_Hash = 0;
-    h5.m_Hash = 0;
-
-    hash = nlStringLowerHash("Time");
-    hTimeA.m_Hash = hash;
-    hTimeB.m_Hash = hash;
-
-    hash = nlStringLowerHash("Layer");
-    hLayerA.m_Hash = hash;
-    hLayerB.m_Hash = hash;
-
-    hash = nlStringLowerHash("Slide1");
-    hSlideA.m_Hash = hash;
-    hSlideB.m_Hash = hash;
-
-    findComp.byValue = FEFinder<TLTextInstance, 3>::Find<FEPresentation>;
-
-    pText = findComp.byRef(
-        self->m_pFEPresentation,
-        (InlineHasher&)hSlideB,
-        (InlineHasher&)hLayerB,
-        (InlineHasher&)hTimeB,
-        (InlineHasher&)h5,
-        (InlineHasher&)h3,
-        (InlineHasher&)h1);
+    pText = FEFinder<TLTextInstance, 3>::Find<FEPresentation>(
+        m_pFEPresentation,
+        InlineHasher(nlStringLowerHash("Slide1")),
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("Time")));
 
     pText->m_bVisible = false;
 }

@@ -55,8 +55,6 @@ void MakePerpendicularPlane(const nlVector3& v3Position, const nlVector3& v3Norm
 
 /**
  * Offset/Address/Size: 0x1204 | 0x80006CB0 | size: 0x150
- * TODO: 98.15% match - inner block normY=f7 (target f9) and zeroVal=f5 (target f7)
- * register allocation shift cascading into dot product computations.
  */
 bool IsPointInCone(const nlVector3& v3Point, const nlVector3& v3Pivot, const nlVector3& v3Plane1, const nlVector3& v3Plane2)
 {
@@ -67,11 +65,6 @@ bool IsPointInCone(const nlVector3& v3Point, const nlVector3& v3Pivot, const nlV
 
     if (distSqP < distSqA)
     {
-        f32 dotApexY;
-        f32 normZ;
-        f32 dotLeftY;
-        f32 dotRightY;
-
         f32 dirX = v3Pivot.f.x - v3Point.f.x;
         f32 zeroVal = 0.0f;
         f32 dirY = pivotY - pointY;
@@ -80,33 +73,15 @@ bool IsPointInCone(const nlVector3& v3Point, const nlVector3& v3Pivot, const nlV
         f32 lenSq = perpY * perpY + dirX * dirX;
         f32 invLen = nlRecipSqrt(zeroVal + lenSq, true);
 
-        f32 normY = invLen * perpY;
-        f32 normX = invLen * dirX;
+        nlVector4 v4Plane;
+        nlVector3& v3Plane = *(nlVector3*)&v4Plane;
+        v3Plane.f.x = invLen * perpY;
+        v3Plane.f.y = invLen * dirX;
+        v3Plane.f.z = invLen * zeroVal;
+        v4Plane.f.w = zeroVal + (v3Pivot.f.x * v4Plane.f.x + v3Pivot.f.y * v4Plane.f.y + v3Pivot.f.z * v4Plane.f.z);
 
-        dotApexY = v3Pivot.f.y * normX;
-        normZ = invLen * zeroVal;
-        dotLeftY = v3Plane1.f.y * normX;
-        dotRightY = v3Plane2.f.y * normX;
-
-        f32 dotApex = v3Pivot.f.x * normY + dotApexY;
-        dotApex += v3Pivot.f.z * normZ;
-
-        f32 dotLeft = v3Plane1.f.x * normY + dotLeftY;
-        f32 dotRight = v3Plane2.f.x * normY + dotRightY;
-
-        f32 bias = zeroVal + dotApex;
-
-        dotLeft += v3Plane1.f.z * normZ;
-        dotRight += v3Plane2.f.z * normZ;
-
-        nlVector3 normalStore;
-        normalStore.f.x = normY;
-        normalStore.f.y = normX;
-        normalStore.f.z = normZ;
-        *(float*)((u8*)&normalStore + 0xC) = bias;
-
-        f32 sideLeft = dotLeft - bias;
-        f32 sideRight = dotRight - bias;
+        f32 sideLeft = (v3Plane1.f.x * v4Plane.f.x + v3Plane1.f.y * v4Plane.f.y + v3Plane1.f.z * v4Plane.f.z) - v4Plane.f.w;
+        f32 sideRight = (v3Plane2.f.x * v4Plane.f.x + v3Plane2.f.y * v4Plane.f.y + v3Plane2.f.z * v4Plane.f.z) - v4Plane.f.w;
 
         if (sideLeft * sideRight < zeroVal)
         {

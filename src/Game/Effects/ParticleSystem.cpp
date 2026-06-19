@@ -656,18 +656,17 @@ static inline void RenderLightOnField(const EffectsLight& light)
         nlVector3* pPos = q.m_pos;
         for (int i = 0, idx = 0; i < 2; i++, idx += 2)
         {
-            pPos[0].f.x += light.m_v3Position.f.x;
-            pPos[0].f.y += light.m_v3Position.f.y;
-            pPos[0].f.z += light.m_v3Position.f.z;
-            pPos[0].f.z = 0.03125f;
-            q.m_colour[idx].c[3] = (unsigned char)((int)q.m_colour[idx].c[3] / 3);
-
             int idx2 = idx + 1;
-            pPos[1].f.x += light.m_v3Position.f.x;
-            pPos[1].f.y += light.m_v3Position.f.y;
-            pPos[1].f.z += light.m_v3Position.f.z;
+            nlColour& c0 = q.m_colour[idx];
+            nlColour& c1 = q.m_colour[idx2];
+
+            nlVec3Add(pPos[0], pPos[0], light.m_v3Position);
+            pPos[0].f.z = 0.03125f;
+            c0.c[3] = (unsigned char)((int)c0.c[3] / 3);
+
+            nlVec3Add(pPos[1], pPos[1], light.m_v3Position);
             pPos[1].f.z = 0.03125f;
-            q.m_colour[idx2].c[3] = (unsigned char)((int)q.m_colour[idx2].c[3] / 3);
+            c1.c[3] = (unsigned char)((int)c1.c[3] / 3);
 
             pPos += 2;
         }
@@ -838,7 +837,7 @@ void ParticleSystem::RenderAllParticles(eGLView view)
             float size = ret.position[1].f.x;
             if (m_pTemplate->m_eBillboard == EfBill_Billboard)
             {
-                float facingRot = 0.0000958738f * (float)(short)m_aFacing;
+                float facingRot = 0.0000958738f * (float)(unsigned short)(m_aFacing + 0x8000);
                 rotRad += facingRot;
             }
 
