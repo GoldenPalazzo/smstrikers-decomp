@@ -85,8 +85,8 @@ void TestTask::Run(float dt)
 
 /**
  * Offset/Address/Size: 0x424 | 0x8016CD20 | size: 0x2CC
- * TODO: 98.5% match - remaining diffs are r29/r31 register swap and
- * stack offset for formatData (sp+0x08 vs target sp+0x10).
+ * TODO: 98.55% match - remaining diff is a r29/r31 register swap
+ * (this-pointer held in r31 vs target r29; text string in r29 vs r31).
  */
 static inline void RunSmokeTestBody(TestTask* self)
 {
@@ -128,9 +128,12 @@ static inline void RunSmokeTestBody(TestTask* self)
                 data->mRefCount = 1;
             }
 
-            BasicStringInternal* formatData = data;
-            float configValue = GetConfigFloat(Config::Global(), "test/time_out_sec ", 10.0f);
             BasicStringInternal* formattedData;
+            float configValue;
+            BasicStringInternal* formatData;
+
+            formatData = data;
+            configValue = GetConfigFloat(Config::Global(), "test/time_out_sec ", 10.0f);
 
             Format(*(BasicString<char, Detail::TempStringAllocator>*)&formattedData,
                 *(BasicString<char, Detail::TempStringAllocator>*)&formatData,

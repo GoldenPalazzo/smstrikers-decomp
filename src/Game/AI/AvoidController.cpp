@@ -1080,8 +1080,8 @@ void AvoidController::ApplyRepulsionVector(nlVector3 v3Repulsion)
 
         f32 fDesX = v.desiredVelDir.f.x;
         f32 fDesY = v.desiredVelDir.f.y;
-        f32 fParallelY = fDesX * fSin + fDesY * fCos;
         f32 fParallelX = fDesX * fCos - fDesY * fSin;
+        f32 fParallelY = fDesX * fSin + fDesY * fCos;
 
         v.repulsionDir.f.y = fParallelY;
         v.repulsionDir.f.x = fParallelX;
@@ -1093,10 +1093,8 @@ void AvoidController::ApplyRepulsionVector(nlVector3 v3Repulsion)
 
     if (m_VeryCloseToSideline)
     {
-        f32 fNormalY = m_SidelineNormal.f.y;
-        f32 fNormalX = m_SidelineNormal.f.x;
-        f32 fDotNormalVel = v.repulsionDir.f.y * fNormalY;
-        fDotNormalVel = v.repulsionDir.f.x * fNormalX + fDotNormalVel;
+        f32 fDotNormalVel = v.repulsionDir.f.y * m_SidelineNormal.f.y;
+        fDotNormalVel = v.repulsionDir.f.x * m_SidelineNormal.f.x + fDotNormalVel;
 
         if (fDotNormalVel < -0.1f)
         {
@@ -1141,8 +1139,8 @@ void AvoidController::ApplyRepulsionVector(nlVector3 v3Repulsion)
             }
             else
             {
-                v3Repulsion.f.x = fRepulsionMag * fNormalX;
-                v3Repulsion.f.y = fRepulsionMag * fNormalY;
+                v3Repulsion.f.x = fRepulsionMag * m_SidelineNormal.f.x;
+                v3Repulsion.f.y = fRepulsionMag * m_SidelineNormal.f.y;
             }
         }
     }
@@ -1178,13 +1176,5 @@ void AvoidController::ApplyRepulsionVector(nlVector3 v3Repulsion)
         }
     }
 
-    f32 speed = m_pFielder->m_fDesiredSpeed;
-    if (speed >= fDesiredSpeed)
-    {
-    }
-    else
-    {
-        speed = fDesiredSpeed;
-    }
-    m_pFielder->m_fDesiredSpeed = speed;
+    m_pFielder->m_fDesiredSpeed = (m_pFielder->m_fDesiredSpeed >= fDesiredSpeed) ? m_pFielder->m_fDesiredSpeed : fDesiredSpeed;
 }

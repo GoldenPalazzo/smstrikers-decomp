@@ -282,14 +282,8 @@ void NetMesh::JoltNet(float zDisplacement)
 }
 
 /**
- * Offset/Address/Size: 0x550 | 0x8012F370 | size: 0x510
- * TODO: 92.26% match - first distance-constraint loop register routing
- * (dx/dy/dz in f29/f30/f28 vs target f29/f30/f27) and remaining
- * penetration-loop float register diffs.
- */
-/**
- * TODO: 99.06% match - radius register allocation (f29 vs f30) cascades through the
- * displacement block; plus a 0.0f constant load and a couple of component load-order diffs.
+ * TODO: 99.56% match - radius register allocation (f29 vs f30) cascades through the
+ * displacement block; remaining center-distance and position-constraint register swaps.
  */
 void NetMesh::SatisfyConstraints(const nlVector3& ballPosition, bool bExaggerateBallSize)
 {
@@ -413,7 +407,9 @@ void NetMesh::SatisfyConstraints(const nlVector3& ballPosition, bool bExaggerate
                 float dy = ballPosition.f.y - centerY;
                 float dyy = dy * dy;
                 float dx = ballPosition.f.x - centerX;
-                float dz = ballPosition.f.z - 0.0f;
+                float zero = 0.0f;
+                float dz = ballPosition.f.z;
+                dz -= zero;
                 m_fBallPenetrationDepth = nlSqrt(dyy + (dx * dx) + (dz * dz), true);
             }
         }
@@ -422,8 +418,8 @@ void NetMesh::SatisfyConstraints(const nlVector3& ballPosition, bool bExaggerate
         {
             cPositionConstraint& c = m_aPositionConstraints[i];
             nlVector3& x = m_v3Position[c.nParticle];
-            float ty = c.v3Position.f.y;
             float tz = c.v3Position.f.z;
+            float ty = c.v3Position.f.y;
             float tx = c.v3Position.f.x;
             x.f.x = tx;
             x.f.y = ty;

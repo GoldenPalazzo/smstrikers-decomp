@@ -173,7 +173,7 @@ SFXEmitter* GetSFXEmitter(unsigned long id)
 
 /**
  * Offset/Address/Size: 0x15C | 0x801C4958 | size: 0x35C
- * TODO: 92.96% match - r4/r5 volatile register scheduling in both init blocks, r27/r29 callee-saved swap in second block
+ * TODO: 94.31% match - remaining fallback register allocation around emitter reset and debug print
  */
 SFXEmitter* GetFreeEmitter(unsigned long& index)
 {
@@ -188,31 +188,7 @@ SFXEmitter* GetFreeEmitter(unsigned long& index)
             sndRemoveEmitter((SND_EMITTER*)&gEmitters[i]);
             gEmitters[i].bInUse = true;
             index = i;
-            gEmitters[i].bKeepTrack = true;
-            gEmitters[i].soundType = (unsigned long)-1;
-            gEmitters[i].fTimeStamp = -1.0f;
-            gEmitters[i].bIsStopping = false;
-            gEmitters[i].bInUse = false;
-            gEmitters[i].bIsFilterOn = false;
-            gEmitters[i].m_unk_0x5F = false;
-            gEmitters[i].pPhysObj = NULL;
-            gEmitters[i].pOwner = NULL;
-            gEmitters[i].pos.pvPos = NULL;
-            gEmitters[i].dir.pvDir = NULL;
-            gEmitters[i].pos.vPos.f.x = 0.0f;
-            gEmitters[i].pos.vPos.f.y = 0.0f;
-            gEmitters[i].pos.vPos.f.z = 0.0f;
-            gEmitters[i].dir.vDir.f.x = 0.0f;
-            gEmitters[i].dir.vDir.f.y = 0.0f;
-            gEmitters[i].dir.vDir.f.z = 0.0f;
-            gEmitters[i].posUpdateMethod = NONE;
-            if (gEmitters[i].pMIDIControllerInfo != NULL)
-            {
-                if (gEmitters[i].pMIDIControllerInfo->paraArray != NULL)
-                    delete[] (char*)gEmitters[i].pMIDIControllerInfo->paraArray;
-                delete gEmitters[i].pMIDIControllerInfo;
-            }
-            gEmitters[i].pMIDIControllerInfo = NULL;
+            InitEmitter(i);
             break;
         }
     }

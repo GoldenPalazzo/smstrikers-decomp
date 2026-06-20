@@ -1509,8 +1509,8 @@ void World::CreateLightUserData()
 
 /**
  * Offset/Address/Size: 0x264C | 0x80197310 | size: 0x9D4
- * TODO: 93.58% match - remaining diffs are in switch-dispatch register/branch shape,
- *       light/helper AddAVLNode temporary stack-slot placement, and inner physics copy loop setup.
+ * TODO: 94.69% match - remaining diffs are in switch-dispatch register/branch shape,
+ *       light/helper AddAVLNode temporary stack-slot placement, and physics copy loop register roles.
  */
 extern u32 __vt__20CharacterPhysicsData[];
 static const int LF_NOLIGHT = 4;
@@ -1732,16 +1732,13 @@ bool World::LoadObjectData(const char* szWorldName)
                 }
                 case 0x1D002:
                 {
-                    u8* pInnerData = (u8*)nlGetChunkData(pInnerChunk);
+                    CharacterPhysicsElement* pSrc = (CharacterPhysicsElement*)nlGetChunkData(pInnerChunk);
                     u32 i = 0;
-                    u32 offset = 0;
-                    while (i < *(u32*)((u8*)(*(CharacterPhysicsData**)((u8*)this + 0x134)) + 0x4))
+                    while (i < (*(CharacterPhysicsData**)((u8*)this + 0x134))->physicsElementCount)
                     {
                         CharacterPhysicsData* pPhysData = *(CharacterPhysicsData**)((u8*)this + 0x134);
-                        *(CharacterPhysicsElement*)((u8*)pPhysData->pPhysicsElements + offset) = *(CharacterPhysicsElement*)pInnerData;
+                        pPhysData->pPhysicsElements[i] = pSrc[i];
                         i++;
-                        offset += sizeof(CharacterPhysicsElement);
-                        pInnerData += sizeof(CharacterPhysicsElement);
                     }
                     break;
                 }

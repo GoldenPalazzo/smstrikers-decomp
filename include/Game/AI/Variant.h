@@ -60,6 +60,13 @@ class Variant
 public:
     Variant() { Reset(); };
 
+    Variant(eVariantType type, const nlVector3& value)
+    {
+        Reset();
+        mData.vector = value;
+        mType = type;
+    }
+
     template <typename T>
     Variant(eVariantType type, T value)
     {

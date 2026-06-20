@@ -912,7 +912,7 @@ static const int EIGHT_TEAM_MATCHUPS[28][2] = {
 };
 
 /**
- * TODO: 93.77% match - target spills numplayingteams to the stack and keeps the
+ * TODO: 94.80% match - target spills numplayingteams to the stack and keeps the
  * round-count value (i == ...) in a callee-saved register; ours keeps
  * numplayingteams in a register, which shifts register coloring across the body.
  */
@@ -932,13 +932,17 @@ void GameInfoManager::SetupRoundRobinSchedule(eTeamID* lineup, eSidekickID* skli
     int j;
     BasicGameInfo* g;
 
-    if (mDoingKnockout)
     {
-        numGamesPerRound = mPreviousCup->GetNumTeams() / 2;
-    }
-    else
-    {
-        numGamesPerRound = GetNumPlayingTeams() / 2;
+        u16 tempNumGamesPerRound;
+        if (mDoingKnockout)
+        {
+            tempNumGamesPerRound = mPreviousCup->GetNumTeams() / 2;
+        }
+        else
+        {
+            tempNumGamesPerRound = GetNumPlayingTeams() / 2;
+        }
+        numGamesPerRound = tempNumGamesPerRound;
     }
 
     mLastHumanStadium = STAD_INVALID;
@@ -948,17 +952,33 @@ void GameInfoManager::SetupRoundRobinSchedule(eTeamID* lineup, eSidekickID* skli
 
     {
         bool isRegularCup;
-        if (mCurrentMode < GM_SUPER_MUSHROOM_CUP && mCurrentMode >= GM_MUSHROOM_CUP)
+        switch (mCurrentMode)
+        {
+        case GM_MUSHROOM_CUP:
+        case GM_FLOWER_CUP:
+        case GM_STAR_CUP:
+        case GM_BOWSER_CUP:
             isRegularCup = true;
-        else
+            break;
+        default:
             isRegularCup = false;
+            break;
+        }
         if (!isRegularCup)
         {
             bool isSuperCup;
-            if (mCurrentMode < GM_TOURNAMENT && mCurrentMode >= GM_SUPER_MUSHROOM_CUP)
+            switch (mCurrentMode)
+            {
+            case GM_SUPER_MUSHROOM_CUP:
+            case GM_SUPER_FLOWER_CUP:
+            case GM_SUPER_STAR_CUP:
+            case GM_SUPER_BOWSER_CUP:
                 isSuperCup = true;
-            else
+                break;
+            default:
                 isSuperCup = false;
+                break;
+            }
             if (!isSuperCup)
             {
                 if (gamemode != GM_TOURNAMENT)

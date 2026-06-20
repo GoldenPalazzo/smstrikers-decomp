@@ -1855,15 +1855,15 @@ void Update3DSFXEmitters()
 
 /**
  * Offset/Address/Size: 0x159C | 0x8013DAB0 | size: 0xA34
- * TODO: 98.78% match - remaining delete-next registers, velocity-copy word order, and team-loop register allocation differences.
+ * TODO: 98.85% match - remaining delete-next registers, velocity-copy word order, and team-loop register allocation differences.
  */
 void UpdateFades(float fDeltaT)
 {
     FadeAudioData* pFadeData;
     float newVol;
-    int t;
-    int p;
     cTeam* team;
+    int p;
+    int t;
 
     pFadeData = g_pFadeList;
     while (pFadeData != NULL)
@@ -2305,7 +2305,7 @@ void UpdateFades(float fDeltaT)
 
 /**
  * Offset/Address/Size: 0x1FD0 | 0x8013E4E4 | size: 0x354
- * TODO: 99.46% match - extra mr r30,r0 for gDelayedSFX address load (MWCC register coalescing)
+ * TODO: 99.45% match - delayed SFX pointer setup has one extra move; listener camera x/y copy uses swapped temporary registers
  */
 void Update(float fDeltaT)
 {
@@ -2403,8 +2403,19 @@ void Update(float fDeltaT)
             nlVector3 vUp;
 
             cBaseCamera* pCamera = nlDLRingGetStart<cBaseCamera>(cCameraManager::m_cameraStack);
-            vCameraPos = pCamera->GetCameraPosition();
-            vDir = sListenerZero;
+            const nlVector3& cameraPos = pCamera->GetCameraPosition();
+            u32 cameraX = cameraPos.as_u32[0];
+            u32 cameraY = cameraPos.as_u32[1];
+            u32 zeroX = sListenerZero.as_u32[0];
+            vCameraPos.as_u32[0] = cameraX;
+            u32 zeroY = sListenerZero.as_u32[1];
+            vCameraPos.as_u32[1] = cameraY;
+            u32 zeroZ = sListenerZero.as_u32[2];
+            u32 cameraZ = cameraPos.as_u32[2];
+            vCameraPos.as_u32[2] = cameraZ;
+            vDir.as_u32[0] = zeroX;
+            vDir.as_u32[1] = zeroY;
+            vDir.as_u32[2] = zeroZ;
             cCameraManager::GetViewVector(vHeading);
             cCameraManager::GetUpVector(vUp);
 

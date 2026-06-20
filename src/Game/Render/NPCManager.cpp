@@ -251,29 +251,100 @@ NPCManager::NPCManager()
     bowserPhysics->SetCallbackFunction(&Bowser::CollisionCallback);
 }
 
-/**
- * Offset/Address/Size: 0x4D8 | 0x8016639C | size: 0x3D4
- * TODO: 98.01% match - remaining diffs are callback temporary stack slot
- * placement in inventory cleanup walks and an r27/r28 register swap in the
- * cSAnim destroy loop.
- */
-NPCManager::~NPCManager()
-{
-    typedef ListContainerBase<SkinAnimatedNPC*, NewAdapter<ListEntry<SkinAnimatedNPC*> > > NPCListBase;
-    typedef ListContainerBase<cSHierarchy*, NewAdapter<ListEntry<cSHierarchy*> > > HierListBase;
-    typedef ListContainerBase<cSAnim*, NewAdapter<ListEntry<cSAnim*> > > SAnimListBase;
-    typedef ListContainerBase<char*, NewAdapter<ListEntry<char*> > > FileListBase;
+typedef ListContainerBase<SkinAnimatedNPC*, NewAdapter<ListEntry<SkinAnimatedNPC*> > > NPCListBaseHelper;
+typedef ListContainerBase<cSHierarchy*, NewAdapter<ListEntry<cSHierarchy*> > > HierListBaseHelper;
+typedef ListContainerBase<cSAnim*, NewAdapter<ListEntry<cSAnim*> > > SAnimListBaseHelper;
 
-    ListEntry<SkinAnimatedNPC*>* npcEntry = mNPCList.m_Head;
+static inline void DestroyNPCList(nlListContainer<SkinAnimatedNPC*>* npcList)
+{
+    ListEntry<SkinAnimatedNPC*>* npcEntry = npcList->m_Head;
     while (npcEntry != NULL)
     {
         delete npcEntry->data;
         npcEntry = npcEntry->next;
     }
 
-    nlWalkList(mNPCList.m_Head, (NPCListBase*)&mNPCList, &NPCListBase::DeleteEntry);
-    mNPCList.m_Head = NULL;
-    mNPCList.m_Tail = NULL;
+    nlWalkList(npcList->m_Head, (NPCListBaseHelper*)npcList, &NPCListBaseHelper::DeleteEntry);
+    npcList->m_Head = NULL;
+    npcList->m_Tail = NULL;
+}
+
+static inline void DestroyHierarchyInventory(cInventory<cSHierarchy>* pHierInv)
+{
+    ListEntry<cSHierarchy*>* hierEntry = pHierInv->m_lItemList.m_Head;
+    while (hierEntry != NULL)
+    {
+        hierEntry = hierEntry->next;
+    }
+
+    void (HierListBaseHelper::*cbHier)(ListEntry<cSHierarchy*>*) = &HierListBaseHelper::DeleteEntry;
+    nlWalkList(pHierInv->m_lItemList.m_Head, (HierListBaseHelper*)pHierInv, cbHier);
+
+    ListEntry<char*>** pHead;
+    ListEntry<char*>** pTail = &pHierInv->m_lMemList.m_Tail;
+    pHierInv->m_lItemList.m_Head = NULL;
+    pHead = &pHierInv->m_lMemList.m_Head;
+    pHierInv->m_lItemList.m_Tail = NULL;
+    while (pHierInv->m_lMemList.m_Head != NULL)
+    {
+        ListEntry<char*>* first = nlListRemoveStart<ListEntry<char*> >(pHead, pTail);
+        void* mesh;
+        if (&mesh != NULL)
+        {
+            mesh = first->data;
+        }
+        ::operator delete(first);
+        ::operator delete(mesh);
+    }
+
+    pHierInv->m_nItemCount = 0;
+    pHierInv->m_lMemList.~nlListContainer();
+    pHierInv->m_lItemList.~nlListContainer();
+    ::operator delete(pHierInv);
+}
+
+static inline void DestroySAnimInventory(cInventory<cSAnim>* pSAnimInv)
+{
+    ListEntry<cSAnim*>* animEntry = pSAnimInv->m_lItemList.m_Head;
+    while (animEntry != NULL)
+    {
+        animEntry->data->Destroy();
+        animEntry = animEntry->next;
+    }
+
+    void (SAnimListBaseHelper::*cbAnim)(ListEntry<cSAnim*>*) = &SAnimListBaseHelper::DeleteEntry;
+    nlWalkList(pSAnimInv->m_lItemList.m_Head, (SAnimListBaseHelper*)pSAnimInv, cbAnim);
+
+    ListEntry<char*>** pHead2;
+    ListEntry<char*>** pTail2 = &pSAnimInv->m_lMemList.m_Tail;
+    pSAnimInv->m_lItemList.m_Head = NULL;
+    pHead2 = &pSAnimInv->m_lMemList.m_Head;
+    pSAnimInv->m_lItemList.m_Tail = NULL;
+    while (pSAnimInv->m_lMemList.m_Head != NULL)
+    {
+        ListEntry<char*>* first = nlListRemoveStart<ListEntry<char*> >(pHead2, pTail2);
+        void* mesh;
+        if (&mesh != NULL)
+        {
+            mesh = first->data;
+        }
+        ::operator delete(first);
+        ::operator delete(mesh);
+    }
+
+    pSAnimInv->m_nItemCount = 0;
+    pSAnimInv->m_lMemList.~nlListContainer();
+    pSAnimInv->m_lItemList.~nlListContainer();
+    ::operator delete(pSAnimInv);
+}
+
+/**
+ * Offset/Address/Size: 0x4D8 | 0x8016639C | size: 0x3D4
+ * TODO: 99.90% match - remaining diff is the cSAnim destroy loop register.
+ */
+NPCManager::~NPCManager()
+{
+    DestroyNPCList(&mNPCList);
 
     delete mpBowser;
     delete mpChainChomp;
@@ -281,70 +352,13 @@ NPCManager::~NPCManager()
     cInventory<cSHierarchy>* pHierInv = mpInventorySHierarchy;
     if (pHierInv != NULL)
     {
-        ListEntry<cSHierarchy*>* hierEntry = pHierInv->m_lItemList.m_Head;
-        while (hierEntry != NULL)
-        {
-            hierEntry = hierEntry->next;
-        }
-
-        void (HierListBase::*cbHier)(ListEntry<cSHierarchy*>*) = &HierListBase::DeleteEntry;
-        nlWalkList(pHierInv->m_lItemList.m_Head, (HierListBase*)pHierInv, cbHier);
-
-        ListEntry<char*>** pTail = &pHierInv->m_lMemList.m_Tail;
-        pHierInv->m_lItemList.m_Head = NULL;
-        ListEntry<char*>** pHead = &pHierInv->m_lMemList.m_Head;
-        pHierInv->m_lItemList.m_Tail = NULL;
-        while (pHierInv->m_lMemList.m_Head != NULL)
-        {
-            ListEntry<char*>* first = nlListRemoveStart<ListEntry<char*> >(pHead, pTail);
-            void* mesh;
-            if (&mesh != NULL)
-            {
-                mesh = first->data;
-            }
-            ::operator delete(first);
-            ::operator delete(mesh);
-        }
-
-        pHierInv->m_nItemCount = 0;
-        pHierInv->m_lMemList.~nlListContainer();
-        pHierInv->m_lItemList.~nlListContainer();
-        ::operator delete(pHierInv);
+        DestroyHierarchyInventory(pHierInv);
     }
 
     cInventory<cSAnim>* pSAnimInv = mpInventorySAnim;
     if (pSAnimInv != NULL)
     {
-        ListEntry<cSAnim*>* animEntry = pSAnimInv->m_lItemList.m_Head;
-        while (animEntry != NULL)
-        {
-            animEntry->data->Destroy();
-            animEntry = animEntry->next;
-        }
-
-        void (SAnimListBase::*cbAnim)(ListEntry<cSAnim*>*) = &SAnimListBase::DeleteEntry;
-        nlWalkList(pSAnimInv->m_lItemList.m_Head, (SAnimListBase*)pSAnimInv, cbAnim);
-
-        ListEntry<char*>** pTail2 = &pSAnimInv->m_lMemList.m_Tail;
-        pSAnimInv->m_lItemList.m_Head = NULL;
-        ListEntry<char*>** pHead2 = &pSAnimInv->m_lMemList.m_Head;
-        pSAnimInv->m_lItemList.m_Tail = NULL;
-        while (pSAnimInv->m_lMemList.m_Head != NULL)
-        {
-            ListEntry<char*>* first = nlListRemoveStart<ListEntry<char*> >(pHead2, pTail2);
-            void* mesh;
-            if (&mesh != NULL)
-            {
-                mesh = first->data;
-            }
-            ::operator delete(first);
-            ::operator delete(mesh);
-        }
-
-        pSAnimInv->m_nItemCount = 0;
-        pSAnimInv->m_lMemList.~nlListContainer();
-        pSAnimInv->m_lItemList.~nlListContainer();
-        ::operator delete(pSAnimInv);
+        DestroySAnimInventory(pSAnimInv);
     }
 }
 

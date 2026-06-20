@@ -277,8 +277,8 @@ bool Nis::SelectRandomCamera(cAnimCamera& camera)
 
 /**
  * Offset/Address/Size: 0xD18 | 0x8012C128 | size: 0x200
- * TODO: 97.62% match - remaining diffs are r29/r30/r31 role rotation
- * for this/snapshot/current drawable and GetRootRot load order.
+ * TODO: 99.26% match - remaining diffs are r29/r30/r31 role rotation
+ * for this/snapshot/current drawable.
  */
 void Nis::Render()
 {
@@ -296,9 +296,9 @@ void Nis::Render()
 
         nlVector3 rootTrans = { 0.0f, 0.0f, 0.0f };
         u16 angle = 0;
-        float fTime = mCharacterControllers[i]->m_fTime;
+        float fTime = mCharacterControllers[i]->get_fTime();
         mCharacterControllers[i]->m_pSAnim->GetRootTrans(fTime, &rootTrans);
-        fTime = mCharacterControllers[i]->m_fTime;
+        fTime = mCharacterControllers[i]->get_fTime();
         mCharacterControllers[i]->m_pSAnim->GetRootRot(fTime, &angle);
         if (mMirrored)
         {

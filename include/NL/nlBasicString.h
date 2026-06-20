@@ -32,7 +32,8 @@
 namespace Detail
 {
 class TempStringAllocator;
-}
+struct EmptyStringTag;
+} // namespace Detail
 
 template <typename CharT, typename Allocator>
 class BasicString;
@@ -64,6 +65,10 @@ public:
     {
         nlFree(ptr);
     }
+};
+
+struct EmptyStringTag
+{
 };
 } // namespace Detail
 
@@ -124,6 +129,32 @@ public:
     BasicString(BasicStringData<CharT>* p)
         : m_data(p)
     {
+    }
+
+    BasicString(Detail::EmptyStringTag)
+    {
+        BasicStringData<CharT>* data = (BasicStringData<CharT>*)Allocator::allocate(sizeof(BasicStringData<CharT>));
+        if (data != 0)
+        {
+            const CharT* str = (const CharT*)L"";
+            data->mData = 0;
+            data->mSize = 0;
+            data->mCapacity = 0;
+            const CharT* s = str;
+            while (*s++ != 0)
+            {
+                data->mSize++;
+            }
+            data->mSize++;
+            data->mData = (CharT*)Allocator::allocate((data->mSize + 1) * sizeof(CharT));
+            data->mCapacity = data->mSize;
+            for (int i = 0; i < data->mSize; i++)
+            {
+                data->mData[i] = *str++;
+            }
+            data->mRefCount = 1;
+        }
+        m_data = data;
     }
 
     BasicString(const BasicString& other)

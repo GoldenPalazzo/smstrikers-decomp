@@ -215,7 +215,7 @@ void cPoseAccumulator::InitAccumulators()
 
 /**
  * Offset/Address/Size: 0x644 | 0x801EBBE4 | size: 0x3F4
- * TODO: 99.11% match - pLocalMatrix in r27 vs target r31, strength-reduced counters shifted by 1
+ * TODO: 99.86% match - parent branch computes output/parent matrix addresses in different order
  */
 void cPoseAccumulator::BuildNodeMatrices(const nlMatrix4& world)
 {
@@ -236,7 +236,7 @@ void cPoseAccumulator::BuildNodeMatrices(const nlMatrix4& world)
     int nStackIndex = -1;
     for (int i = 0; i < m_BaseSHierarchy->m_nodeCount; i++)
     {
-        pLocalMatrix = &m_NodeMatrices.mData[i + 1];
+        pLocalMatrix = &GetNodeMatrix(i + 1);
         if (!m_rot.mData[i].bIdentity)
         {
             if (m_rot.mData[i].quatAccumulatedWeight == 0.0f)

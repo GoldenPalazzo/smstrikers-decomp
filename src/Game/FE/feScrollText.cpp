@@ -319,9 +319,6 @@ void FEScrollText::SetDisplayMessage(const BasicString<unsigned short, Detail::T
     Update(0.0f);
 }
 
-static unsigned short sEmptyStringData[] = { 0 };
-static unsigned short* sEmptyString = sEmptyStringData;
-
 inline void FEScrollText::SetMetrics(int pos, int width)
 {
     const gl_ScreenInfo* screenInfo = glGetScreenInfo();
@@ -336,10 +333,11 @@ inline void FEScrollText::SetMetrics(int pos, int width)
 
 /**
  * Offset/Address/Size: 0xA68 | 0x800C943C | size: 0x1E8
+ * TODO: 99.1% match - allocated string data and empty string pointer use swapped saved registers
  */
 FEScrollText::FEScrollText(TLTextInstance* controlText, int pos, int width)
     : m_controlText(controlText)
-    , m_message(sEmptyString)
+    , m_message(Detail::EmptyStringTag())
 {
     m_messageWidth = 0;
 

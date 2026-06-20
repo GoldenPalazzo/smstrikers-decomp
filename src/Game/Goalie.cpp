@@ -589,6 +589,7 @@ void Goalie::CollideWithBallCallback(cBall* pBall)
 
 /**
  * Offset/Address/Size: 0xA178 | 0x8004CC74 | size: 0x6F4
+ * TODO: 97.64% match - remaining diff is branch shape around same-animation SetAnimState checks.
  */
 void Goalie::CollideWithCharacterCallback(CollisionPlayerPlayerData* pData)
 {
@@ -654,23 +655,7 @@ void Goalie::CollideWithCharacterCallback(CollisionPlayerPlayerData* pData)
             anim = 0x0C;
         }
 
-        if (anim == m_eAnimID)
-        {
-            bool bAtEnd = false;
-            cPN_SAnimController* pAnim = m_pCurrentAnimController;
-            if (pAnim->m_ePlayMode == PM_HOLD)
-            {
-                if (pAnim->m_fTime == 1.0f)
-                {
-                    bAtEnd = true;
-                }
-            }
-            if (bAtEnd)
-            {
-                SetAnimState(anim, true, 0.2f, false, false);
-            }
-        }
-        else
+        if (anim != m_eAnimID || (m_pCurrentAnimController->m_ePlayMode == PM_HOLD && m_pCurrentAnimController->m_fTime == 1.0f))
         {
             SetAnimState(anim, true, 0.2f, false, false);
         }
@@ -732,10 +717,7 @@ void Goalie::CollideWithCharacterCallback(CollisionPlayerPlayerData* pData)
         pFldr->PlayAttackReactionSounds(g_pGame->m_pGameTweaks->unk264);
 
         nlVector3 v3NewVel;
-        f32 velScale = -((GoalieTweaks*)m_pTweaks)->fSTSAttackBallVelMult;
-        v3NewVel.f.z = velScale * m_v3Position.f.z;
-        v3NewVel.f.y = velScale * m_v3Position.f.y;
-        v3NewVel.f.x = velScale * m_v3Position.f.x;
+        nlVec3Scale(v3NewVel, m_v3Position, -((GoalieTweaks*)m_pTweaks)->fSTSAttackBallVelMult);
 
         f32 yRand = nlRandomf(5.0f, &nlDefaultSeed);
         if ((u32)nlRandom(100, &nlDefaultSeed) > 50)
@@ -846,8 +828,8 @@ void Goalie::CollideWithCharacterCallback(CollisionPlayerPlayerData* pData)
                 {
                     SetAnimState(mpLooseBallInfo->mnAnimID, true, 0.2f, false, false);
                     cPN_SAnimController* pAnim = m_pCurrentAnimController;
-                    f32 targetTime = 0.5f * mpLooseBallInfo->mfPickupTime;
                     f32 curTime = pAnim->m_fTime;
+                    f32 targetTime = 0.5f * mpLooseBallInfo->mfPickupTime;
                     pAnim->m_fPrevTime = curTime;
                     pAnim->m_fTime = targetTime;
                     InitMovementFromAnim(0, v3Zero, 1.0f, false);

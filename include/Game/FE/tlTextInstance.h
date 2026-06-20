@@ -29,7 +29,7 @@ public:
     /* 0x80 */ unsigned long m_LocStrId;
     /* 0x84 */ FETextLibObjectAttributes m_OverloadedAttributes;
     /* 0x90 */ unsigned long m_OverloadFlags;
-    /* 0x94 */ nlTextBox::StringDrawInfo m_DrawInfo;
+    /* 0x94 */ mutable nlTextBox::StringDrawInfo m_DrawInfo;
     /* 0xEC */ FontCharString* m_pFontString;
     /* 0xF0 */ unsigned long m_DrawOptions;
     /* 0xF4 */ const unsigned short* m_wcUserString;

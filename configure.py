@@ -1072,7 +1072,7 @@ config.libs = [
             Object(Matching, "Game/FE/tlInstance.cpp", extra_cflags=["-inline auto"]),
             Object(Matching, "Game/FE/tlComponentInstance.cpp", extra_cflags=["-inline auto"]),
             Object(Matching, "Game/FE/tlTextInstance.cpp", extra_cflags=["-inline auto"]),
-            Object(NonMatching, "Game/FE/tlTextInstance_runtime.cpp", extra_cflags=["-inline auto"]),
+            Object(Matching, "Game/FE/tlTextInstance_runtime.cpp", extra_cflags=["-inline auto"]),
 
             Object(Matching, "Game/SH/SHBackground.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/SH/SHChooseCaptains.cpp", extra_cflags=["-inline auto", "-inline deferred"]),

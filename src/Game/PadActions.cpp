@@ -18,9 +18,10 @@ s32 g_pPadRemapArray[38] = {
 
 /**
  * Offset/Address/Size: 0x128 | 0x80193720 | size: 0xD74
- * TODO: 96.56% match - the {n} marker char checks load via indexed addressing
- * (addi/lbzx) instead of base+displacement (add/lbz), and the erase/insert bounds
- * pointers lack a null-check branch; these shift register allocation across the body.
+ * TODO: 96.90% match - the {n} marker char reads (mString[i+1], mString[i+2]) use
+ * indexed addressing (addi/lbzx) where the target uses base+displacement (add/lbz),
+ * and the erase/insert base pointers omit a null-check branch; the string copy-on-write
+ * temporary lands in a swapped preserved register (r26/r27) across the erase/insert region.
  */
 template <>
 template <>
@@ -46,7 +47,7 @@ FormatImpl<BasicString<char, Detail::TempStringAllocator> >&
         if (mString[i + 2] != '}')
             continue;
 
-        mString.erase(&mString[i], &mString[i + 3]);
+        mString.erase(&mString[0] + i, &mString[0] + i + 3);
         mString[i];
         char* mStringData = mString.m_data ? mString.m_data->mData : 0;
         char* insertBegin = &insert[0];

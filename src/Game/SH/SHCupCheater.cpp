@@ -392,6 +392,18 @@ static inline void TrackHomeWinResult()
     gameInfoManager->SetRoundResult(false, 0);
 }
 
+static inline void TrackAwayWinResult()
+{
+    GameInfoManager* gameInfoManager = nlSingleton<GameInfoManager>::s_pInstance;
+
+    nlSingleton<StatsTracker>::s_pInstance->SetBasicGameInfoPointer(gameInfoManager->mGameInfo[gameInfoManager->mCurrentMode], true);
+
+    nlSingleton<StatsTracker>::s_pInstance->TrackStat(STATS_GOALS_FOR, 1, nlRandom(4, &nlDefaultSeed), -1, 0, 1, 0);
+    nlSingleton<StatsTracker>::s_pInstance->TrackStat(STATS_WIN, 1, 0, 0, 1, 0, 0);
+
+    gameInfoManager->SetRoundResult(false, 1);
+}
+
 /**
  * Offset/Address/Size: 0xE90 | 0x800E85E0 | size: 0x26C
  */
@@ -445,7 +457,6 @@ void CupCheaterScene::OnSelectHomeWin()
 
 /**
  * Offset/Address/Size: 0xC24 | 0x800E8374 | size: 0x26C
- * TODO: 99.87% match - r28/r29 register swap for gameInfoManager before SetBasicGameInfoPointer and SetRoundResult
  */
 void CupCheaterScene::OnSelectAwayWin()
 {
@@ -463,13 +474,7 @@ void CupCheaterScene::OnSelectAwayWin()
         nlSingleton<GameInfoManager>::s_pInstance->OnPreCupGameState();
     }
 
-    gameInfoManager = nlSingleton<GameInfoManager>::s_pInstance;
-    nlSingleton<StatsTracker>::s_pInstance->SetBasicGameInfoPointer(gameInfoManager->mGameInfo[gameInfoManager->mCurrentMode], true);
-
-    nlSingleton<StatsTracker>::s_pInstance->TrackStat(STATS_GOALS_FOR, 1, nlRandom(4, &nlDefaultSeed), -1, 0, 1, 0);
-    nlSingleton<StatsTracker>::s_pInstance->TrackStat(STATS_WIN, 1, 0, 0, 1, 0, 0);
-
-    gameInfoManager->SetRoundResult(false, 1);
+    TrackAwayWinResult();
     GameInfoManager* gameInfoManagerPost = nlSingleton<GameInfoManager>::s_pInstance;
 
     nlSingleton<GameSceneManager>::s_pInstance->PopEntireStack();

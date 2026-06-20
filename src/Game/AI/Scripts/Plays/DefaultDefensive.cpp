@@ -1097,18 +1097,17 @@ FuzzyVariant Fuzzy::UsePowerupDefensive(float fConfidence, cDecisionEntity* pEnt
 
 /**
  * Offset/Address/Size: 0x0 | 0x800856B8 | size: 0x5C4
- * TODO: 98.55% match - remaining diffs are stack slot order for fvTeam,
- * fvTeam2, and generalThreatConfidence plus f27/f28/f2 register allocation in
- * the threat and marking branches.
+ * TODO: 99.09% match - remaining diffs: the fNotInvincible clamp branches with a
+ * single ble where the target uses an equivalent two-step compare/branch, and
+ * fThreat is held in f28 instead of f27 through the threat/marking branch.
  */
 FuzzyVariant Fuzzy::GetPowerupTargetDefensive(cTeam* TheTeam)
 {
     FuzzyVariant bestValue;
     float fConfidence = 1.0f;
     float fBestConfidence = 0.0f;
-    FuzzyVariant fvTeam(TheTeam);
-    ((Variant*)&fvTeam)->GetHash();
-    FuzzyVariant fvTeam2(TheTeam);
+    FuzzyVariant(TheTeam).GetHash();
+    (void)FuzzyVariant(TheTeam);
     for (int i = 0; i < 4; i++)
     {
         cFielder* theOpponent = g_pScriptOtherTeam->GetFielder(i);
@@ -1133,7 +1132,7 @@ FuzzyVariant Fuzzy::GetPowerupTargetDefensive(cTeam* TheTeam)
             fThreat = (fChasingBall >= fThreat) ? fChasingBall : fThreat;
             FuzzyVariant generalThreatConfidence(fThreat);
             float fMarking = Marking(g_pScriptCurrentFielder, (cPlayer*)theOpponent);
-            float fTrueConfidence2 = (fThreat <= fMarking) ? fThreat : fMarking;
+            float fTrueConfidence2 = (generalThreatConfidence.mData.f <= fMarking) ? generalThreatConfidence.mData.f : fMarking;
             float fFalseConfidence2 = 1.0f - fTrueConfidence2;
             float fMin2 = (fTrueConfidence2 <= fFalseConfidence2) ? fTrueConfidence2 : fFalseConfidence2;
             float fMax2 = (fTrueConfidence2 >= fFalseConfidence2) ? fTrueConfidence2 : fFalseConfidence2;

@@ -1098,13 +1098,17 @@ FormatImpl<StringType>& FormatImpl<StringType>::operator%(const T& t)
         if (i + 1 >= (mString.m_data ? mString.m_data->mSize - 1 : 0))
             continue;
 
-        if (mString[i + 1] - '0' != mCurrentPos)
+        mString[i + 1];
+        typename StringType::value_type* matchString = mString.m_data->mData + i;
+        if (mCurrentPos != matchString[1] - '0')
             continue;
 
         if (i + 2 >= (mString.m_data ? mString.m_data->mSize - 1 : 0))
             continue;
 
-        if (mString[i + 2] != '}')
+        mString[i + 2];
+        matchString = mString.m_data->mData + i;
+        if (matchString[2] != '}')
             continue;
 
         mString.erase(&mString[i], &mString[i] + 3);
@@ -1112,7 +1116,7 @@ FormatImpl<StringType>& FormatImpl<StringType>::operator%(const T& t)
         typename StringType::value_type* mStringData = mString.m_data ? mString.m_data->mData : 0;
         typename StringType::value_type* insertBegin = &insert[0];
         typename StringType::value_type* insertEndCow = &insert[(int)(insert.m_data ? insert.m_data->mSize - 1 : 0)];
-        mString.insert(mStringData + i, insertBegin, insert.m_data ? &insert.m_data->mData[insert.m_data->mSize - 1] : (typename StringType::value_type*)0);
+        mString.insert(mStringData + i, insertBegin, insert.m_data ? insert.m_data->mData + insert.m_data->mSize - 1 : (typename StringType::value_type*)0);
     }
 
     mCurrentPos++;
