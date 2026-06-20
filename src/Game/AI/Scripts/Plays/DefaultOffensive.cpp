@@ -1043,8 +1043,8 @@ FuzzyVariant Fuzzy::CutAndBreak(cFielder* TheFielder)
 
 /**
  * Offset/Address/Size: 0x22A0 | 0x8008ED2C | size: 0x88C
- * TODO: 98.59% match - CROR condition encoding differences in GoodToChipShot
- * and InDanger/FurthestBack confidence branches.
+ * TODO: 98.75% match - GoodToChipShot return register, InDanger/FurthestBack
+ * temporary stack slots, and final return construction differ.
  */
 void Fuzzy::DoShooting(float fConfidence, cDecisionEntity* pDecision)
 {
@@ -1053,8 +1053,6 @@ void Fuzzy::DoShooting(float fConfidence, cDecisionEntity* pDecision)
     extern cTeam* g_pCurrentlyUpdatingTeam;
     extern cGame* g_pGame;
     extern FuzzyVariant fvNotSet;
-    extern FuzzyVariant GoodToChipShot__5FuzzyFP8cFielder(cFielder*);
-    extern FuzzyVariant InDanger__5FuzzyFP8cFielder(cFielder*);
 
     float fBestConfidence = 0.0f;
 
@@ -1085,68 +1083,72 @@ void Fuzzy::DoShooting(float fConfidence, cDecisionEntity* pDecision)
         pDecision->m_pLastQueuedAction->m_fSelectionChance = CalcSelectChance(pTweaks->Off_ShootingChance, Shooter(g_pScriptCurrentFielder));
     }
 
-    fTrueConfidence = GoodToChipShot__5FuzzyFP8cFielder(g_pScriptCurrentFielder).mData.f;
-    float fFarToMyNet = FarToMyNet(g_pScriptCurrentFielder);
-    fTrueConfidence = (fFarToMyNet <= fTrueConfidence) ? fFarToMyNet : fTrueConfidence;
-    fFalseConfidence = 1.0f - fTrueConfidence;
-
-    fMin = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
-    fMax = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
-    fBranchRatio = fMin / fMax;
-
-    if (fTrueConfidence > 0.0f)
     {
-        SaveConfidence PushDOM(&fConfidence);
-        fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
+        fTrueConfidence = GoodToChipShot(g_pScriptCurrentFielder).mData.f;
+        float fFarToMyNet = FarToMyNet(g_pScriptCurrentFielder);
+        fTrueConfidence = (fFarToMyNet <= fTrueConfidence) ? fFarToMyNet : fTrueConfidence;
+        float fFalseConfidence = 1.0f - fTrueConfidence;
 
-        if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
-            fConfidence = fConfidence * fBranchRatio;
+        float fMin = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+        float fMax = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+        float fBranchRatio = fMin / fMax;
 
-        if (fBestConfidence <= fConfidence)
-            fBestConfidence = fConfidence;
+        if (fTrueConfidence > 0.0f)
+        {
+            SaveConfidence PushDOM(&fConfidence);
+            fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
 
-        pDecision->QueueActionSetDesire(14, fConfidence, 0.0f, FuzzyVariant(false), FuzzyVariant(true));
+            if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
+                fConfidence = fConfidence * fBranchRatio;
 
-        SkillTweaks* pTweaks = SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide);
-        pDecision->m_pLastQueuedAction->m_fSelectionChance = CalcSelectChance(pTweaks->Off_ChipShotChance, Shooter(g_pScriptCurrentFielder));
+            if (fBestConfidence <= fConfidence)
+                fBestConfidence = fConfidence;
+
+            pDecision->QueueActionSetDesire(14, fConfidence, 0.0f, FuzzyVariant(false), FuzzyVariant(true));
+
+            SkillTweaks* pTweaks = SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide);
+            pDecision->m_pLastQueuedAction->m_fSelectionChance = CalcSelectChance(pTweaks->Off_ChipShotChance, Shooter(g_pScriptCurrentFielder));
+        }
     }
 
-    fTrueConfidence = Winning(g_pScriptCurrentTeam);
-    float fTimeNearlyOver = TimeNearlyOver(g_pGame);
-    fTrueConfidence = (fTimeNearlyOver <= fTrueConfidence) ? fTimeNearlyOver : fTrueConfidence;
-
-    float fInDanger = InDanger__5FuzzyFP8cFielder(g_pScriptCurrentFielder).mData.f;
-    float fStunnedGoalie = Stunned(g_pScriptCurrentTeam->GetGoalie());
-    float fCloseToNet = CloseToMyNet(g_pScriptCurrentFielder);
-
-    fStunnedGoalie = (fStunnedGoalie <= fInDanger) ? fStunnedGoalie : fInDanger;
-    fStunnedGoalie = (fCloseToNet <= fStunnedGoalie) ? fCloseToNet : fStunnedGoalie;
-
-    float fFurthestBack = FGREATER(FurthestBackOnMyTeam(g_pScriptCurrentFielder).mData.f, 0.5f);
-    fStunnedGoalie = (fStunnedGoalie >= fTrueConfidence) ? fStunnedGoalie : fTrueConfidence;
-    fStunnedGoalie = (fFurthestBack >= fStunnedGoalie) ? fStunnedGoalie : fFurthestBack;
-
-    fTrueConfidence = InDefensiveZone(g_pScriptCurrentFielder);
-    fTrueConfidence = (fTrueConfidence <= fStunnedGoalie) ? fTrueConfidence : fStunnedGoalie;
-
-    fFalseConfidence = 1.0f - fTrueConfidence;
-    fMin = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
-    fMax = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
-    fBranchRatio = fMin / fMax;
-
-    if (fTrueConfidence > 0.0f)
     {
-        SaveConfidence PushDOM(&fConfidence);
-        fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
+        fTrueConfidence = Winning(g_pScriptCurrentTeam);
+        float fTimeNearlyOver = TimeNearlyOver(g_pGame);
+        fTrueConfidence = (fTimeNearlyOver <= fTrueConfidence) ? fTimeNearlyOver : fTrueConfidence;
 
-        if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
-            fConfidence = fConfidence * fBranchRatio;
+        float fInDanger = InDanger(g_pScriptCurrentFielder).mData.f;
+        float fStunnedGoalie = Stunned(g_pScriptCurrentTeam->GetGoalie());
+        float fCloseToNet = CloseToMyNet(g_pScriptCurrentFielder);
 
-        if (fBestConfidence <= fConfidence)
-            fBestConfidence = fConfidence;
+        fStunnedGoalie = (fStunnedGoalie <= fInDanger) ? fStunnedGoalie : fInDanger;
+        fStunnedGoalie = (fCloseToNet <= fStunnedGoalie) ? fCloseToNet : fStunnedGoalie;
 
-        pDecision->QueueActionSetDesire(14, fConfidence, -1.0f, fvNotSet, fvNotSet);
-        pDecision->m_pLastQueuedAction->m_fSelectionChance = 0.3f;
+        float fFurthestBack = FGREATER(FurthestBackOnMyTeam(g_pScriptCurrentFielder).mData.f, 0.5f);
+        fStunnedGoalie = (fStunnedGoalie >= fTrueConfidence) ? fStunnedGoalie : fTrueConfidence;
+        fStunnedGoalie = (fFurthestBack >= fStunnedGoalie) ? fStunnedGoalie : fFurthestBack;
+
+        fTrueConfidence = InDefensiveZone(g_pScriptCurrentFielder);
+        fTrueConfidence = (fTrueConfidence <= fStunnedGoalie) ? fTrueConfidence : fStunnedGoalie;
+
+        float fFalseConfidence = 1.0f - fTrueConfidence;
+        float fMin = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+        float fMax = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+        float fBranchRatio = fMin / fMax;
+
+        if (fTrueConfidence > 0.0f)
+        {
+            SaveConfidence PushDOM(&fConfidence);
+            fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
+
+            if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
+                fConfidence = fConfidence * fBranchRatio;
+
+            if (fBestConfidence <= fConfidence)
+                fBestConfidence = fConfidence;
+
+            pDecision->QueueActionSetDesire(14, fConfidence, -1.0f, fvNotSet, fvNotSet);
+            pDecision->m_pLastQueuedAction->m_fSelectionChance = 0.3f;
+        }
     }
 
     new ((FuzzyVariant*)this) FuzzyVariant(fBestConfidence);

@@ -79,6 +79,14 @@ struct sDesireParams
     /* 0x04 */ eFielderDesireState eDesireType; // size 0x4
     /* 0x08 */ FuzzyVariant opt1;               // size 0x30
     /* 0x38 */ FuzzyVariant opt2;               // size 0x30
+
+    sDesireParams()
+    {
+        fDuration = 0.0f;
+        eDesireType = FIELDERDESIRE_NEED_DESIRE;
+        opt1 = fvNotSet;
+        opt2 = fvNotSet;
+    }
 }; // total size: 0x68
 
 class ScriptAction

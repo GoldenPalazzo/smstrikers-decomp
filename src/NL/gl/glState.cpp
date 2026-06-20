@@ -159,18 +159,6 @@ void glSetRasterStateDefaults()
 }
 
 static inline unsigned long SetTextureStateImpl(unsigned long long* pState, eGLTextureState state, unsigned long value);
-static inline unsigned long SetTextureStateRefImpl(unsigned long long* pState, eGLTextureState state, unsigned long value);
-
-/**
- * Offset/Address/Size: 0x1CC | 0x801DBE10 | size: 0x12C
- * TODO: 99.53% match - 5 diffs: else-branch NOT dest is r0 instead of r3
- * (compiler in-place NOT vs separate dest reg). MWCC allocator decision
- * immune to C-level changes.
- */
-unsigned long glSetTextureState(unsigned long long& texture, eGLTextureState state, unsigned long value)
-{
-    return SetTextureStateRefImpl(&texture, state, value);
-}
 
 static inline unsigned long SetTextureStateRefImpl(unsigned long long* pState, eGLTextureState state, unsigned long value)
 {
@@ -224,6 +212,16 @@ static inline unsigned long SetTextureStateRefImpl(unsigned long long* pState, e
     }
 
     return out;
+}
+
+/**
+ * Offset/Address/Size: 0x1CC | 0x801DBE10 | size: 0x12C
+ * TODO: 99.53% match - clear-bit path uses different temporary registers for
+ * the inverted mask and low-word store.
+ */
+unsigned long glSetTextureState(unsigned long long& texture, eGLTextureState state, unsigned long value)
+{
+    return SetTextureStateRefImpl(&texture, state, value);
 }
 
 static inline unsigned long SetTextureStateImpl(unsigned long long* pState, eGLTextureState state, unsigned long value)

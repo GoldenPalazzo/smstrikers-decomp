@@ -179,8 +179,9 @@ static bool IsFloatValue(const char* str, float& out)
 
 /**
  * Offset/Address/Size: 0x165C | 0x801D42C0 | size: 0x56C
- * TODO: 94.9% match - this/tag register allocation differs through hash/probe/copy paths;
- * hash loop uses nlToUpper<unsigned char> call sites where target uses nlToUpper<char>
+ * TODO: 95.95% match - this/tag register allocation still differs through
+ * hash/probe/tag-copy paths; hash loops call nlToUpper<unsigned char> where
+ * target calls nlToUpper<char>
  */
 void Config::Set(const char* tag, const char* value)
 {
@@ -284,6 +285,7 @@ void Config::Set(const char* tag, const char* value)
     }
     else if (IsBool(value, b))
     {
+        bool boolValue = b;
         const char* p = tag;
         u32 hash = 0x1505;
         while (*p != 0)
@@ -307,7 +309,7 @@ void Config::Set(const char* tag, const char* value)
         }
 
         tvp->type = _BOOL;
-        tvp->value.b = b;
+        tvp->value.b = boolValue;
 
         if (tvp->tag == NULL)
         {
@@ -355,15 +357,16 @@ void Config::Set(const char* tag, const char* value)
 
         tvp->type = _STRING;
 
+        const char* valueSrc = value;
         char* valDest = mStringEnd;
-        while (*value != 0)
+        while (*valueSrc != 0)
         {
             if (mStringEnd - mStringMemory >= 0x27FF)
             {
                 goto value_done;
             }
-            *mStringEnd = *value;
-            value++;
+            *mStringEnd = *valueSrc;
+            valueSrc++;
             mStringEnd++;
         }
         *mStringEnd = 0;

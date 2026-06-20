@@ -64,8 +64,8 @@ int glFontPrintf(eGLView view, int x, int y, const char* format, ...)
 
 /**
  * Offset/Address/Size: 0x1DC | 0x801D8574 | size: 0x3EC
- * TODO: 60.40% match - glyph-loop register allocation and stack-temporary placement still diverge, especially around UV conversion.
  */
+#pragma optimize_for_size on
 int glFontPrint(eGLView view, int virtual_x, int virtual_y, const nlColour& colour, const char* str)
 {
     if (nlStrLen(str) == 0)
@@ -91,9 +91,8 @@ int glFontPrint(eGLView view, int virtual_x, int virtual_y, const nlColour& colo
     {
         if (((s8)*cp >= 0x20) && ((s8)*cp <= 0x7E))
         {
-            int i = (s8)*cp - 0x20;
-            int j = (i % 8) * 8;
-            i = (i / 8) * 8;
+            int j = (((s8)*cp - 0x20) % 8) * 8;
+            int i = (((s8)*cp - 0x20) / 8) * 8;
             float s = (float)j;
             float t = (float)i;
             pPoly->m_uv[0].f.x = s * 0.015625f;
@@ -165,10 +164,10 @@ int glFontPrint(eGLView view, int virtual_x, int virtual_y, const nlColour& colo
         }
         glAttachPoly2(view, numChars, g_poly, 0, 0);
         n = numChars;
-        if (n > 0)
+        while (n > 0)
         {
-            do
             {
+                float fz = font_z;
                 *(u32*)&pPoly->m_colour[0].c[0] = *(u32*)&colour.c[0];
                 pPoly->m_pos[0].f.x -= 3.0f;
                 pPoly->m_pos[0].f.y -= 3.0f;
@@ -181,14 +180,16 @@ int glFontPrint(eGLView view, int virtual_x, int virtual_y, const nlColour& colo
                 *(u32*)&pPoly->m_colour[3].c[0] = *(u32*)&colour.c[0];
                 pPoly->m_pos[3].f.x -= 3.0f;
                 pPoly->m_pos[3].f.y -= 3.0f;
-                pPoly->depth = font_z;
+                pPoly->depth = fz;
                 pPoly++;
-            } while (--n);
+            }
+            n--;
         }
     }
     glAttachPoly2(view, numChars, g_poly, 0, 0);
     return numChars;
 }
+#pragma optimize_for_size reset
 
 /**
  * Offset/Address/Size: 0x5C8 | 0x801D8960 | size: 0x18

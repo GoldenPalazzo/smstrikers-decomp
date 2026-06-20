@@ -990,16 +990,16 @@ void CrowdMood::ReadConfig()
 }
 
 inline GCAudioStreaming::AudioStream::AudioStream(GCAudioStreaming::AudioBufferMgr& mgr, unsigned long bufCount)
-    : m_BuffMgr(mgr)
+    : m_FlagAtDelete(0)
+    , m_State(GCAudioStreaming::SS_New)
+    , m_StreamLength((unsigned long)-1)
+    , m_StreamPos(0)
+    , m_OldLength(0)
+    , m_BuffMgr(mgr)
+    , m_Flags(0)
+    , m_BufferCount(bufCount)
 {
-    m_FlagAtDelete = 0;
-    m_State = GCAudioStreaming::SS_New;
-    m_StreamLength = (unsigned long)-1;
-    m_StreamPos = 0;
-    memset(m_Buffers, 0, sizeof(m_Buffers));
-    m_OldLength = 0;
-    m_Flags = 0;
-    m_BufferCount = bufCount;
+    memset(m_Buffers, sizeof(m_Buffers), 0);
 }
 
 inline GCAudioStreaming::StereoAudioStream::StereoAudioStream(GCAudioStreaming::AudioBufferMgr& mgr)
@@ -1017,20 +1017,15 @@ inline GCAudioStreaming::MonoAudioStream::MonoAudioStream(GCAudioStreaming::Audi
 
 /**
  * Offset/Address/Size: 0x1300 | 0x8014EA14 | size: 0x3E4
- * TODO: 92.23% match - instruction scheduling diffs from -inline deferred vs
- *       -inline auto; beq-/b vs bne- branch pattern; Config/loop register swaps
- */
-/**
- * TODO: 83.80% match - residual is register permutation in the loop/stream
- *       section (r28/r30 swap: Config/gCrowdSFX pointer vs loop counter) and a
- *       beq/b vs bne branch form on the early crowdOff return.
+ * TODO: 92.23% match - residual beq/b vs bne branch form and register swaps
+ *       for Config, gCrowdSFX, loop counter, and stream pointers.
  */
 void CrowdMood::Init()
 {
     if (g_Initd)
         return;
 
-    bool crowdOff = GetConfigBool(Config::Global(), "CrowdOff", false);
+    bool crowdOff = GetConfigBool(Config::Global(), "no_crowd", false);
     if (crowdOff)
         return;
 
@@ -1052,9 +1047,9 @@ void CrowdMood::Init()
     };
 
     LOOP_LOAD LoadData[3] = {
-        { 0, 0, &g_CrowdAudio.NeutralVoiceId },
-        { 0, 0, &g_CrowdAudio.PositiveVoiceId },
-        { 0, 0, &g_CrowdAudio.NegativeVoiceId },
+        { g_Settings.NeutralSampleName, Audio::CROWDSFX_EVENT_YEAH_SMALL1, &g_CrowdAudio.NeutralVoiceId },
+        { g_Settings.PositiveSampleName, Audio::CROWDSFX_EVENT_YEAH_BIG, &g_CrowdAudio.PositiveVoiceId },
+        { g_Settings.NegativeSampleName, Audio::CROWDSFX_EVENT_YEAH_SMALL2, &g_CrowdAudio.NegativeVoiceId },
     };
 
     for (u32 i = 0; i < 3; i++)

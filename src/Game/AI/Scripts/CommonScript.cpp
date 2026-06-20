@@ -231,8 +231,8 @@ FuzzyVariant Fuzzy::GetStrategicBallCarrier(cTeam* TheTeam)
 
 /**
  * Offset/Address/Size: 0xE9DC | 0x80078BAC | size: 0x7D4
- * TODO: 96.7% match - residual register-allocation drift around hash key
- * and cache temporaries, plus literal-pool offset numbering in .sdata2
+ * TODO: 99.36% match - residual hash/cache register rotation and stack
+ * slots for cache insertion temporaries
  */
 FuzzyVariant Fuzzy::GetBestBallInterceptor(cTeam* TheTeam)
 {
@@ -241,129 +241,46 @@ FuzzyVariant Fuzzy::GetBestBallInterceptor(cTeam* TheTeam)
     float fBestConfidence = 0.0f;
 
     FuzzyVariant fvTeam(TheTeam);
-    volatile unsigned long funcAddrTemp = (unsigned long)GetBestBallInterceptor;
-    unsigned long hash = ((Variant*)&fvTeam)->GetHash();
-    hash += funcAddrTemp;
+    volatile unsigned long funcAddr = (unsigned long)GetBestBallInterceptor;
+    unsigned long hash = funcAddr + ((Variant*)&fvTeam)->GetHash();
     FuzzyVariant fvTeam2(TheTeam);
 
-    unsigned long hashKey = hash;
-    unsigned char lookupFound;
-    FuzzyVariant* pValue;
-
-    ScriptQuestionCache* pCache;
-    pCache = nlSingleton<ScriptQuestionCache>::s_pInstance;
-    pCache->mTotalLookups++;
-
-    if (g_bScriptQuestionCachingUseSTD)
+    if (ScriptQuestionCache::Instance()->Lookup(hash, bestValue, NULL))
     {
-        StdMapNode* stdFound = (StdMapNode*)pCache->mQuestionCacheMapSTD.find(hashKey).ptr_;
-        if ((StdMapNodeBase*)stdFound != &((StdMapTree*)&pCache->mQuestionCacheMapSTD)->x4)
-        {
-            pCache->mCacheHits++;
-            bestValue = stdFound->value;
-            lookupFound = 1;
-        }
-    }
-    else
-    {
-        AVLTreeEntry<unsigned long, FuzzyVariant>* node = pCache->mQuestionCacheMap.m_Root;
-        while (node != NULL)
-        {
-            int cmpResult;
-            if (hashKey == node->key)
-                cmpResult = 0;
-            else if (hashKey < node->key)
-                cmpResult = -1;
-            else
-                cmpResult = 1;
-            if (cmpResult == 0)
-            {
-                if (&pValue != NULL)
-                    pValue = &node->value;
-                lookupFound = 1;
-                goto found_done;
-            }
-            if (cmpResult < 0)
-                node = (AVLTreeEntry<unsigned long, FuzzyVariant>*)node->node.left;
-            else
-                node = (AVLTreeEntry<unsigned long, FuzzyVariant>*)node->node.right;
-        }
-
-        lookupFound = 0;
-
-    found_done:
-        if (lookupFound)
-        {
-            pCache->mCacheHits++;
-            bestValue = *pValue;
-        }
-    }
-
-    if (lookupFound)
-    {
-        unsigned long hashCopy1 = hashKey;
-        if (g_bScriptQuestionCachingOn)
-        {
-            if (g_bScriptQuestionCachingUseSTD)
-            {
-                std::pair<const unsigned long, FuzzyVariant>& pair = pCache->mQuestionCacheMapSTD.tree_.find_or_insert<unsigned long, FuzzyVariant>(hashCopy1);
-                pair.second = bestValue;
-            }
-            else
-            {
-                AVLTreeNode* existingNode1;
-                pCache->mQuestionCacheMap.AddAVLNode((AVLTreeNode**)&pCache->mQuestionCacheMap.m_Root, (void*)&hashCopy1, (void*)&bestValue, &existingNode1, pCache->mQuestionCacheMap.m_NumElements);
-                if (existingNode1 == NULL)
-                    pCache->mQuestionCacheMap.m_NumElements++;
-            }
-        }
+        bestValue.Confidence = bestValue.Confidence;
+        const FuzzyVariant& cacheValue = bestValue;
+        ScriptQuestionCache::Instance()->AddToCache(hash, cacheValue, NULL);
         return bestValue;
     }
 
     for (int i = 0; i < 4; i++)
     {
-        cFielder* fielder = TheTeam->GetFielder(i);
-        float score = AbleToInterceptBall((cPlayer*)fielder);
-        float complement = 1.0f - score;
-        float minVal = (score <= complement) ? score : complement;
-        float maxVal = (score >= complement) ? score : complement;
-        float ratio = minVal / maxVal;
+        cFielder* pFielder = TheTeam->GetFielder(i);
+        float fTrueConfidence = AbleToInterceptBall((cPlayer*)pFielder);
+        float fFalseConfidence = 1.0f - fTrueConfidence;
+        float fMinVal = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+        float fMaxVal = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+        float fBranchRatio = fMinVal / fMaxVal;
 
-        if (score > 0.0f)
+        if (fTrueConfidence > 0.0f)
         {
-            SaveConfidence sc(&fConfidence);
-            fConfidence = (fConfidence <= score) ? fConfidence : score;
-            if (fConfidence < score && score < 0.5f)
+            SaveConfidence PushDOM(&fConfidence);
+            fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
+            if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
             {
-                double d = fConfidence;
-                fConfidence = (float)d * ratio;
+                fConfidence = (float)(double)fConfidence * fBranchRatio;
             }
             if (fConfidence > fBestConfidence)
             {
                 fBestConfidence = fConfidence;
-                bestValue = FuzzyVariant((cPlayer*)fielder);
+                bestValue = FuzzyVariant((cPlayer*)pFielder);
             }
         }
     }
 
     bestValue.Confidence = fBestConfidence;
-    unsigned long hashCopy2 = hashKey;
-    if (g_bScriptQuestionCachingOn)
-    {
-        if (g_bScriptQuestionCachingUseSTD)
-        {
-            std::pair<const unsigned long, FuzzyVariant>& pair = pCache->mQuestionCacheMapSTD.tree_.find_or_insert<unsigned long, FuzzyVariant>(hashCopy2);
-            pair.second = bestValue;
-        }
-        else
-        {
-            AVLTreeNode* existingNode2;
-            pCache->mQuestionCacheMap.AddAVLNode((AVLTreeNode**)&pCache->mQuestionCacheMap.m_Root, (void*)&hashCopy2, (void*)&bestValue, &existingNode2, pCache->mQuestionCacheMap.m_NumElements);
-            if (existingNode2 == NULL)
-                pCache->mQuestionCacheMap.m_NumElements++;
-        }
-    }
-
+    const FuzzyVariant& cacheValue = bestValue;
+    ScriptQuestionCache::Instance()->AddToCache(hash, cacheValue, NULL);
     return bestValue;
 }
 
@@ -2140,10 +2057,14 @@ FuzzyVariant Fuzzy::GoodToChipShot(cFielder* TheFielder)
     float fTrueConfidence = ReceivingVolleyPass((cPlayer*)TheFielder);
     float fInFrontOfNet = 1.0f - InFrontOfTheirNet(TheFielder);
 
-    Goalie* pGoalieOnScreen = NULL;
+    Goalie* pGoalieOnScreen;
     if (TheFielder != NULL)
     {
         pGoalieOnScreen = (TheFielder != NULL) ? TheFielder->m_pTeam->GetOtherTeam()->GetGoalie() : NULL;
+    }
+    else
+    {
+        pGoalieOnScreen = NULL;
     }
 
     float fGoalieOffScreen = 1.0f - OnScreen((cPlayer*)pGoalieOnScreen);
@@ -2189,8 +2110,8 @@ FuzzyVariant Fuzzy::GoodToChipShot(cFielder* TheFielder)
         float fNetOpeness = LikelyToScore(TheFielder);
         float fPositionWeighting = g_pGame->m_pGameTweaks->unk2E4;
         float fNetWeighting = g_pGame->m_pGameTweaks->unk2E8;
-        float fTotalSum = 0.0f;
         float fTotalWeight = 0.0f;
+        float fTotalSum = 0.0f;
 
         fTotalWeight += fPositionWeighting;
         fTotalSum += fPositionScore * fPositionWeighting;
@@ -2203,27 +2124,29 @@ FuzzyVariant Fuzzy::GoodToChipShot(cFielder* TheFielder)
             fPositionScore = fTotalSum / fTotalWeight;
         }
 
-        if (fPositionScore < 0.0f)
-        {
-            fPositionScore = 0.0f;
-        }
-        if (fPositionScore > 1.0f)
-        {
-            fPositionScore = 1.0f;
-        }
+        fPositionScore = (fPositionScore >= 0.0f) ? fPositionScore : 0.0f;
+        fPositionScore = (fPositionScore <= 1.0f) ? fPositionScore : 1.0f;
 
-        Goalie* pGoalieOutOfNet = NULL;
+        Goalie* pGoalieOutOfNet;
         if (TheFielder != NULL)
         {
             pGoalieOutOfNet = (TheFielder != NULL) ? TheFielder->m_pTeam->GetOtherTeam()->GetGoalie() : NULL;
         }
+        else
+        {
+            pGoalieOutOfNet = NULL;
+        }
 
         float fOutOfNetScore = OutOfNet(pGoalieOutOfNet);
 
-        Goalie* pGoalieStunned = NULL;
+        Goalie* pGoalieStunned;
         if (TheFielder != NULL)
         {
             pGoalieStunned = (TheFielder != NULL) ? TheFielder->m_pTeam->GetOtherTeam()->GetGoalie() : NULL;
+        }
+        else
+        {
+            pGoalieStunned = NULL;
         }
 
         {

@@ -86,27 +86,98 @@ s32 cSHierarchy::GetChild(int parentIndex, int childIndex) const
     return m_childArrays[parentIndex][childIndex];
 }
 
-// NONMATCHING - regalloc
+static inline void BuildPushPopFlagsChild(cSHierarchy* hierarchy, int nodeIndex, int currentDepth, int& stackDepth)
+{
+    int gchild;
+    int newSD3;
+    int ggchild;
+    int cc3;
+    int l;
+    int newSD2;
+    int cc2;
+    int k;
+    int newSD1;
+    int childCount;
+    int j;
+
+    if (currentDepth != stackDepth)
+    {
+        hierarchy->m_pushPopFlags[nodeIndex - 1] = currentDepth - stackDepth;
+        stackDepth = currentDepth;
+    }
+
+    childCount = hierarchy->m_childCounts[nodeIndex];
+    if (childCount != 0)
+    {
+        hierarchy->m_pushPopFlags[nodeIndex] = 1;
+        stackDepth += 1;
+        newSD1 = stackDepth;
+
+        for (j = 0; j < childCount; j++)
+        {
+            gchild = hierarchy->m_childArrays[nodeIndex][j];
+
+            if (newSD1 != stackDepth)
+            {
+                hierarchy->m_pushPopFlags[gchild - 1] = newSD1 - stackDepth;
+                stackDepth = newSD1;
+            }
+
+            cc2 = hierarchy->m_childCounts[gchild];
+            if (cc2 != 0)
+            {
+                hierarchy->m_pushPopFlags[gchild] = 1;
+                stackDepth += 1;
+                newSD2 = stackDepth;
+
+                for (k = 0; k < cc2; k++)
+                {
+                    ggchild = hierarchy->GetChild(gchild, k);
+
+                    if (newSD2 != stackDepth)
+                    {
+                        hierarchy->m_pushPopFlags[ggchild - 1] = newSD2 - stackDepth;
+                        stackDepth = newSD2;
+                    }
+
+                    cc3 = hierarchy->m_childCounts[ggchild];
+                    if (cc3 != 0)
+                    {
+                        hierarchy->m_pushPopFlags[ggchild] = 1;
+                        stackDepth += 1;
+                        newSD3 = stackDepth;
+
+                        for (l = 0; l < cc3; l++)
+                        {
+                            hierarchy->BuildPushPopFlags(hierarchy->GetChild(ggchild, l), newSD3, stackDepth);
+                        }
+                    }
+                    else
+                    {
+                        hierarchy->m_pushPopFlags[ggchild] = 0;
+                    }
+                }
+            }
+            else
+            {
+                hierarchy->m_pushPopFlags[gchild] = 0;
+            }
+        }
+    }
+    else
+    {
+        hierarchy->m_pushPopFlags[nodeIndex] = 0;
+    }
+}
+
 /**
  * Offset/Address/Size: 0xD0 | 0x801EE0BC | size: 0x284
  */
 void cSHierarchy::BuildPushPopFlags(int nodeIndex, int currentDepth, int& stackDepth)
 {
-    int newSD1;
     int child;
-    int k;
-    int cc2;
-    int newSD2;
-    int l;
-    int cc3;
-    int ggchild;
-    int newSD3;
-    int gchild;
-    int j;
-    int cc1;
     int i;
     int childCount;
-    int newSD0;
 
     if (currentDepth != stackDepth)
     {
@@ -119,80 +190,12 @@ void cSHierarchy::BuildPushPopFlags(int nodeIndex, int currentDepth, int& stackD
     {
         m_pushPopFlags[nodeIndex] = 1;
         stackDepth += 1;
-        newSD0 = stackDepth;
+        currentDepth = stackDepth;
 
         for (i = 0; i < childCount; i++)
         {
             child = m_childArrays[nodeIndex][i];
-
-            if (newSD0 != stackDepth)
-            {
-                m_pushPopFlags[child - 1] = newSD0 - stackDepth;
-                stackDepth = newSD0;
-            }
-
-            cc1 = m_childCounts[child];
-            if (cc1 != 0)
-            {
-                m_pushPopFlags[child] = 1;
-                stackDepth += 1;
-                newSD1 = stackDepth;
-
-                for (j = 0; j < cc1; j++)
-                {
-                    gchild = m_childArrays[child][j];
-
-                    if (newSD1 != stackDepth)
-                    {
-                        m_pushPopFlags[gchild - 1] = newSD1 - stackDepth;
-                        stackDepth = newSD1;
-                    }
-
-                    cc2 = m_childCounts[gchild];
-                    if (cc2 != 0)
-                    {
-                        m_pushPopFlags[gchild] = 1;
-                        stackDepth += 1;
-                        newSD2 = stackDepth;
-
-                        for (k = 0; k < cc2; k++)
-                        {
-                            ggchild = GetChild(gchild, k);
-
-                            if (newSD2 != stackDepth)
-                            {
-                                m_pushPopFlags[ggchild - 1] = newSD2 - stackDepth;
-                                stackDepth = newSD2;
-                            }
-
-                            cc3 = m_childCounts[ggchild];
-                            if (cc3 != 0)
-                            {
-                                m_pushPopFlags[ggchild] = 1;
-                                stackDepth += 1;
-                                newSD3 = stackDepth;
-
-                                for (l = 0; l < cc3; l++)
-                                {
-                                    BuildPushPopFlags(GetChild(ggchild, l), newSD3, stackDepth);
-                                }
-                            }
-                            else
-                            {
-                                m_pushPopFlags[ggchild] = 0;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        m_pushPopFlags[gchild] = 0;
-                    }
-                }
-            }
-            else
-            {
-                m_pushPopFlags[child] = 0;
-            }
+            BuildPushPopFlagsChild(this, child, currentDepth, stackDepth);
         }
     }
     else

@@ -28,6 +28,12 @@ namespace DoubleHighlite
 void OpenItem(TLComponentInstance*);
 }
 
+static inline MenuItem<TLComponentInstance>* PauseMenuItemAt(MenuList<TLComponentInstance>& menu, int idx)
+{
+    return &menu.mMenuItems[idx];
+}
+
+#pragma dont_inline on
 template <typename T, typename R>
 Detail::MemFunImpl<R, void (T::*)()> MemFun(void (T::*fn)())
 {
@@ -39,6 +45,7 @@ Detail::MemFunImpl<R, void (T::*)(A)> MemFun(void (T::*fn)(A))
 {
     return Detail::MemFunImpl<R, void (T::*)(A)>(fn);
 }
+#pragma dont_inline reset
 
 template <typename R, typename F, typename A>
 BindExp1<R, F, A> Bind(F fn, const A& arg)
@@ -125,6 +132,7 @@ PauseMenuScene::~PauseMenuScene()
 /**
  * Offset/Address/Size: 0x2158 | 0x800AF650 | size: 0x54
  */
+#pragma dont_inline on
 void PauseMenuScene::OnSelectRESUME(TLComponentInstance*)
 {
     TransitionOut(TT_OUT);
@@ -133,6 +141,7 @@ void PauseMenuScene::OnSelectRESUME(TLComponentInstance*)
     FEAudio::PlayAnimAudioEvent("sfx_pause_resume", false);
     mLastSelectedIndex = 0;
 }
+#pragma dont_inline reset
 
 /**
  * Offset/Address/Size: 0x18CC | 0x800AEDC4 | size: 0x88C
@@ -399,8 +408,9 @@ void PauseMenuScene::SceneCreated()
                 (InlineHasher&)h3,
                 (InlineHasher&)h1);
 
-            MenuItem<TLComponentInstance>* menuItem = &mMenuItems.mMenuItems[mMenuItems.mNumItemsAdded];
-            menuItem->mType = compinstance;
+            int numAdded = mMenuItems.mNumItemsAdded;
+            MenuItem<TLComponentInstance>* menuItem = PauseMenuItemAt(mMenuItems, numAdded);
+            mMenuItems.mMenuItems[numAdded].mType = compinstance;
             mMenuItems.mNumItemsAdded++;
 
             void (PauseMenuScene::*openCB)(TLComponentInstance*) = &PauseMenuScene::OpenItem;
@@ -425,11 +435,35 @@ void PauseMenuScene::SceneCreated()
 
             if (i == mLastSelectedIndex)
             {
-                menuItem->mCallbacks[ON_HIGHLIGHT](menuItem->mType);
+                int tag = menuItem->mCallbacks[ON_HIGHLIGHT].mTag;
+                if (((u32)((-tag) | tag) >> 31) > 0)
+                {
+                    TLComponentInstance* type = menuItem->mType;
+                    if (tag == FREE_FUNCTION)
+                    {
+                        menuItem->mCallbacks[ON_HIGHLIGHT].mFreeFunction(type);
+                    }
+                    else
+                    {
+                        (*menuItem->mCallbacks[ON_HIGHLIGHT].mFunctor)(type);
+                    }
+                }
             }
             else
             {
-                menuItem->mCallbacks[ON_UNHIGHLIGHT](menuItem->mType);
+                int tag = menuItem->mCallbacks[ON_UNHIGHLIGHT].mTag;
+                if (((u32)((-tag) | tag) >> 31) > 0)
+                {
+                    TLComponentInstance* type = menuItem->mType;
+                    if (tag == FREE_FUNCTION)
+                    {
+                        menuItem->mCallbacks[ON_UNHIGHLIGHT].mFreeFunction(type);
+                    }
+                    else
+                    {
+                        (*menuItem->mCallbacks[ON_UNHIGHLIGHT].mFunctor)(type);
+                    }
+                }
 
                 TLSlide* slide = compinstance->GetActiveSlide();
                 compinstance->Update(1.0f + (slide->m_start + slide->m_duration));
@@ -443,7 +477,20 @@ void PauseMenuScene::SceneCreated()
 
         mMenuItems.mFlags = 1;
         mMenuItems.mCurrentIndex = mLastSelectedIndex;
-        mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[ON_HIGHLIGHT](mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mType);
+        int curIdx = mMenuItems.mCurrentIndex;
+        int tag = mMenuItems.mMenuItems[curIdx].mCallbacks[ON_HIGHLIGHT].mTag;
+        if (((u32)((-tag) | tag) >> 31) > 0)
+        {
+            TLComponentInstance* type = mMenuItems.mMenuItems[curIdx].mType;
+            if (tag == FREE_FUNCTION)
+            {
+                mMenuItems.mMenuItems[curIdx].mCallbacks[ON_HIGHLIGHT].mFreeFunction(type);
+            }
+            else
+            {
+                (*mMenuItems.mMenuItems[curIdx].mCallbacks[ON_HIGHLIGHT].mFunctor)(type);
+            }
+        }
         break;
     }
     case SC_101_PAUSE:
@@ -526,11 +573,35 @@ void PauseMenuScene::SceneCreated()
 
             if (i == mLastSelectedIndex)
             {
-                menuItem->mCallbacks[ON_HIGHLIGHT](menuItem->mType);
+                int tag = menuItem->mCallbacks[ON_HIGHLIGHT].mTag;
+                if (((u32)((-tag) | tag) >> 31) > 0)
+                {
+                    TLComponentInstance* type = menuItem->mType;
+                    if (tag == FREE_FUNCTION)
+                    {
+                        menuItem->mCallbacks[ON_HIGHLIGHT].mFreeFunction(type);
+                    }
+                    else
+                    {
+                        (*menuItem->mCallbacks[ON_HIGHLIGHT].mFunctor)(type);
+                    }
+                }
             }
             else
             {
-                menuItem->mCallbacks[ON_UNHIGHLIGHT](menuItem->mType);
+                int tag = menuItem->mCallbacks[ON_UNHIGHLIGHT].mTag;
+                if (((u32)((-tag) | tag) >> 31) > 0)
+                {
+                    TLComponentInstance* type = menuItem->mType;
+                    if (tag == FREE_FUNCTION)
+                    {
+                        menuItem->mCallbacks[ON_UNHIGHLIGHT].mFreeFunction(type);
+                    }
+                    else
+                    {
+                        (*menuItem->mCallbacks[ON_UNHIGHLIGHT].mFunctor)(type);
+                    }
+                }
 
                 TLSlide* slide = compinstance->GetActiveSlide();
                 compinstance->Update(1.0f + (slide->m_start + slide->m_duration));
@@ -539,7 +610,20 @@ void PauseMenuScene::SceneCreated()
 
         mMenuItems.mFlags = 1;
         mMenuItems.mCurrentIndex = mLastSelectedIndex;
-        mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[ON_HIGHLIGHT](mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mType);
+        int curIdx = mMenuItems.mCurrentIndex;
+        int tag = mMenuItems.mMenuItems[curIdx].mCallbacks[ON_HIGHLIGHT].mTag;
+        if (((u32)((-tag) | tag) >> 31) > 0)
+        {
+            TLComponentInstance* type = mMenuItems.mMenuItems[curIdx].mType;
+            if (tag == FREE_FUNCTION)
+            {
+                mMenuItems.mMenuItems[curIdx].mCallbacks[ON_HIGHLIGHT].mFreeFunction(type);
+            }
+            else
+            {
+                (*mMenuItems.mMenuItems[curIdx].mCallbacks[ON_HIGHLIGHT].mFunctor)(type);
+            }
+        }
         break;
     }
     default:
@@ -745,11 +829,31 @@ void PauseMenuScene::Update(float fDeltaT)
             newIndex = newIndex - 1;
         }
 
-        mMenuItems.mMenuItems[currentIndex].mCallbacks[ON_UNHIGHLIGHT](mMenuItems.mMenuItems[currentIndex].mType);
+        {
+            int tag = mMenuItems.mMenuItems[currentIndex].mCallbacks[ON_UNHIGHLIGHT].mTag;
+            if (((u32)((-tag) | tag) >> 31) > 0)
+            {
+                TLComponentInstance* type = mMenuItems.mMenuItems[currentIndex].mType;
+                if (tag == FREE_FUNCTION)
+                    mMenuItems.mMenuItems[currentIndex].mCallbacks[ON_UNHIGHLIGHT].mFreeFunction(type);
+                else
+                    (*mMenuItems.mMenuItems[currentIndex].mCallbacks[ON_UNHIGHLIGHT].mFunctor)(type);
+            }
+        }
 
         mMenuItems.mCurrentIndex = newIndex;
         int idx = mMenuItems.mCurrentIndex;
-        mMenuItems.mMenuItems[idx].mCallbacks[ON_HIGHLIGHT](mMenuItems.mMenuItems[idx].mType);
+        {
+            int tag = mMenuItems.mMenuItems[idx].mCallbacks[ON_HIGHLIGHT].mTag;
+            if (((u32)((-tag) | tag) >> 31) > 0)
+            {
+                TLComponentInstance* type = mMenuItems.mMenuItems[idx].mType;
+                if (tag == FREE_FUNCTION)
+                    mMenuItems.mMenuItems[idx].mCallbacks[ON_HIGHLIGHT].mFreeFunction(type);
+                else
+                    (*mMenuItems.mMenuItems[idx].mCallbacks[ON_HIGHLIGHT].mFunctor)(type);
+            }
+        }
         return;
     }
 
@@ -782,11 +886,31 @@ void PauseMenuScene::Update(float fDeltaT)
             newIndex = newIndex + 1;
         }
 
-        mMenuItems.mMenuItems[currentIndex].mCallbacks[ON_UNHIGHLIGHT](mMenuItems.mMenuItems[currentIndex].mType);
+        {
+            int tag = mMenuItems.mMenuItems[currentIndex].mCallbacks[ON_UNHIGHLIGHT].mTag;
+            if (((u32)((-tag) | tag) >> 31) > 0)
+            {
+                TLComponentInstance* type = mMenuItems.mMenuItems[currentIndex].mType;
+                if (tag == FREE_FUNCTION)
+                    mMenuItems.mMenuItems[currentIndex].mCallbacks[ON_UNHIGHLIGHT].mFreeFunction(type);
+                else
+                    (*mMenuItems.mMenuItems[currentIndex].mCallbacks[ON_UNHIGHLIGHT].mFunctor)(type);
+            }
+        }
 
         mMenuItems.mCurrentIndex = newIndex;
         int idx = mMenuItems.mCurrentIndex;
-        mMenuItems.mMenuItems[idx].mCallbacks[ON_HIGHLIGHT](mMenuItems.mMenuItems[idx].mType);
+        {
+            int tag = mMenuItems.mMenuItems[idx].mCallbacks[ON_HIGHLIGHT].mTag;
+            if (((u32)((-tag) | tag) >> 31) > 0)
+            {
+                TLComponentInstance* type = mMenuItems.mMenuItems[idx].mType;
+                if (tag == FREE_FUNCTION)
+                    mMenuItems.mMenuItems[idx].mCallbacks[ON_HIGHLIGHT].mFreeFunction(type);
+                else
+                    (*mMenuItems.mMenuItems[idx].mCallbacks[ON_HIGHLIGHT].mFunctor)(type);
+            }
+        }
         return;
     }
 
@@ -804,10 +928,11 @@ void PauseMenuScene::Update(float fDeltaT)
             }
             else
             {
+                TLComponentInstance* type = mMenuItems.mMenuItems[selectedIndex].mType;
                 if (tag == FREE_FUNCTION)
-                    mMenuItems.mMenuItems[selectedIndex].mCallbacks[ON_APPLY].mFreeFunction(mMenuItems.mMenuItems[selectedIndex].mType);
+                    mMenuItems.mMenuItems[selectedIndex].mCallbacks[ON_APPLY].mFreeFunction(type);
                 else
-                    (*mMenuItems.mMenuItems[selectedIndex].mCallbacks[ON_APPLY].mFunctor)(mMenuItems.mMenuItems[selectedIndex].mType);
+                    (*mMenuItems.mMenuItems[selectedIndex].mCallbacks[ON_APPLY].mFunctor)(type);
                 result = RES_OK;
             }
         }
@@ -841,7 +966,7 @@ void PauseMenuScene::Update(float fDeltaT)
 
     if (!FrontEnd::m_bGameOver)
     {
-        (this->*(&PauseMenuScene::OnSelectRESUME))(NULL);
+        OnSelectRESUME(NULL);
     }
     else
     {

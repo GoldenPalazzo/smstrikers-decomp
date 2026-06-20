@@ -59,26 +59,72 @@ extern int g_Language;
 
 /**
  * Offset/Address/Size: 0xD08 | 0x801111D8 | size: 0x374
- * TODO: 89.03% match - all instructions correct, stack frame 0x20 too large
- * due to MWCC not reusing InlineHasher parameter copy slots across Find calls.
  */
 void ProgressiveScanScene::SceneCreated()
 {
-    FEPresentation* presentation;
+    typedef TLComponentInstance* (*FindComponentByValue)(FEPresentation*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
+    typedef TLComponentInstance* (*FindComponentByRef)(FEPresentation*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
+    typedef TLImageInstance* (*FindImageByValue)(FEPresentation*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
+    typedef TLImageInstance* (*FindImageByRef)(FEPresentation*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
 
-    presentation = m_pFEPresentation;
+    union
+    {
+        FindComponentByValue byValue;
+        FindComponentByRef byRef;
+    } findComponent;
+    union
+    {
+        FindImageByValue byValue;
+        FindImageByRef byRef;
+    } findImage;
 
-    TLComponentInstance* (*findComponent)(
-        FEPresentation*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher) = FEFinder<TLComponentInstance, 4>::Find<FEPresentation>;
+    volatile InlineHasher c1NameB, c1NameA;
+    volatile InlineHasher c1LayerB, c1LayerA;
+    volatile InlineHasher c1SlideB, c1SlideA;
+    volatile InlineHasher z5, z4, z3, z2, z1, z0;
+    volatile InlineHasher c2NameB, c2NameA;
+    volatile InlineHasher c2LayerB, c2LayerA;
+    volatile InlineHasher c2SlideB, c2SlideA;
+    volatile InlineHasher c2z4, c2z2, c2z0;
+    volatile InlineHasher c3NameB, c3NameA;
+    volatile InlineHasher c3LayerB, c3LayerA;
+    volatile InlineHasher c3SlideB, c3SlideA;
+    volatile InlineHasher c3z4, c3z2, c3z0;
+    volatile InlineHasher c4NameB, c4NameA;
+    volatile InlineHasher c4LayerB, c4LayerA;
+    volatile InlineHasher c4SlideB, c4SlideA;
+    volatile InlineHasher c4z4, c4z2, c4z0;
 
-    mSelectorComponent = findComponent(
+    unsigned long hash;
+    FEPresentation* presentation = m_pFEPresentation;
+
+    findComponent.byValue = FEFinder<TLComponentInstance, 4>::Find<FEPresentation>;
+
+    z0.m_Hash = 0;
+    z2.m_Hash = 0;
+    z4.m_Hash = 0;
+    z1.m_Hash = 0;
+    z3.m_Hash = 0;
+    z5.m_Hash = 0;
+
+    hash = nlStringLowerHash("highlite");
+    c1SlideA.m_Hash = hash;
+    c1SlideB.m_Hash = hash;
+    hash = nlStringLowerHash("Layer");
+    c1LayerA.m_Hash = hash;
+    c1LayerB.m_Hash = hash;
+    hash = nlStringLowerHash("Slide1");
+    c1NameA.m_Hash = hash;
+    c1NameB.m_Hash = hash;
+
+    mSelectorComponent = findComponent.byRef(
         presentation,
-        InlineHasher(nlStringLowerHash("Slide1")),
-        InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("highlite")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        (InlineHasher&)c1NameB,
+        (InlineHasher&)c1LayerB,
+        (InlineHasher&)c1SlideB,
+        (InlineHasher&)z5,
+        (InlineHasher&)z3,
+        (InlineHasher&)z1);
 
     mSelectorComponent->m_bVisible = false;
 
@@ -93,37 +139,87 @@ void ProgressiveScanScene::SceneCreated()
 
     mSelectorComponent->Update(0.0f);
 
-    TLImageInstance* (*findImage)(
-        FEPresentation*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher) = FEFinder<TLImageInstance, 2>::Find<FEPresentation>;
+    findImage.byValue = FEFinder<TLImageInstance, 2>::Find<FEPresentation>;
 
-    TLImageInstance* img = findImage(
+    c2z0.m_Hash = 0;
+    z1.m_Hash = 0;
+    c2z2.m_Hash = 0;
+    z3.m_Hash = 0;
+    c2z4.m_Hash = 0;
+    z5.m_Hash = 0;
+
+    hash = nlStringLowerHash("ProgressiveScan_deu");
+    c2SlideA.m_Hash = hash;
+    c2SlideB.m_Hash = hash;
+    hash = nlStringLowerHash("Layer");
+    c2LayerA.m_Hash = hash;
+    c2LayerB.m_Hash = hash;
+    hash = nlStringLowerHash("Slide1");
+    c2NameA.m_Hash = hash;
+    c2NameB.m_Hash = hash;
+
+    TLImageInstance* img = findImage.byRef(
         presentation,
-        InlineHasher(nlStringLowerHash("Slide1")),
-        InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("ProgressiveScan_deu")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        (InlineHasher&)c2NameB,
+        (InlineHasher&)c2LayerB,
+        (InlineHasher&)c2SlideB,
+        (InlineHasher&)z5,
+        (InlineHasher&)z3,
+        (InlineHasher&)z1);
     mUseProgressiveImage[0]->mImageInstance = img;
     img->m_bVisible = false;
 
-    mUseProgressiveImage[1]->mImageInstance = findImage(
-        presentation,
-        InlineHasher(nlStringLowerHash("Slide3")),
-        InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("ProgressiveScan_deu")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+    c3z0.m_Hash = 0;
+    z1.m_Hash = 0;
+    c3z2.m_Hash = 0;
+    z3.m_Hash = 0;
+    c3z4.m_Hash = 0;
+    z5.m_Hash = 0;
 
-    mConfirmationImage->mImageInstance = findImage(
+    hash = nlStringLowerHash("ProgressiveScan_deu");
+    c3SlideA.m_Hash = hash;
+    c3SlideB.m_Hash = hash;
+    hash = nlStringLowerHash("Layer");
+    c3LayerA.m_Hash = hash;
+    c3LayerB.m_Hash = hash;
+    hash = nlStringLowerHash("Slide3");
+    c3NameA.m_Hash = hash;
+    c3NameB.m_Hash = hash;
+
+    mUseProgressiveImage[1]->mImageInstance = findImage.byRef(
         presentation,
-        InlineHasher(nlStringLowerHash("Slide2")),
-        InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("ProgressiveScan_deu")),
-        InlineHasher(0),
-        InlineHasher(0),
-        InlineHasher(0));
+        (InlineHasher&)c3NameB,
+        (InlineHasher&)c3LayerB,
+        (InlineHasher&)c3SlideB,
+        (InlineHasher&)z5,
+        (InlineHasher&)z3,
+        (InlineHasher&)z1);
+
+    c4z0.m_Hash = 0;
+    z1.m_Hash = 0;
+    c4z2.m_Hash = 0;
+    z3.m_Hash = 0;
+    c4z4.m_Hash = 0;
+    z5.m_Hash = 0;
+
+    hash = nlStringLowerHash("ProgressiveScan_deu");
+    c4SlideA.m_Hash = hash;
+    c4SlideB.m_Hash = hash;
+    hash = nlStringLowerHash("Layer");
+    c4LayerA.m_Hash = hash;
+    c4LayerB.m_Hash = hash;
+    hash = nlStringLowerHash("Slide2");
+    c4NameA.m_Hash = hash;
+    c4NameB.m_Hash = hash;
+
+    mConfirmationImage->mImageInstance = findImage.byRef(
+        presentation,
+        (InlineHasher&)c4NameB,
+        (InlineHasher&)c4LayerB,
+        (InlineHasher&)c4SlideB,
+        (InlineHasher&)z5,
+        (InlineHasher&)z3,
+        (InlineHasher&)z1);
 
     char texturePath[0x40] = "";
     const char* language;

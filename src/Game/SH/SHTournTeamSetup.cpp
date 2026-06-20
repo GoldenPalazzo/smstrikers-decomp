@@ -1433,8 +1433,6 @@ void TournTeamSetupSceneV2::UpdateRow(int onScreenRow)
 
 /**
  * Offset/Address/Size: 0x1F30 | 0x800E3DD4 | size: 0x5D0
- * TODO: 98.12% match - r4/r5 register swap in the STATE_SCROLLING team loop and
- * post-loop sentinel comparison chain differs from target.
  */
 void TournTeamSetupSceneV2::ChangeState(TournTeamSetupSceneV2::eTeamChooserState from, TournTeamSetupSceneV2::eTeamChooserState to)
 {
@@ -1462,8 +1460,6 @@ void TournTeamSetupSceneV2::ChangeState(TournTeamSetupSceneV2::eTeamChooserState
 
     TLComponentInstance* pCursorComp;
     unsigned long hash;
-    int humanCount;
-    int numTeams;
 
     if (from == STATE_CAPTAIN && to == STATE_SIDEKICK)
     {
@@ -1702,45 +1698,9 @@ void TournTeamSetupSceneV2::ChangeState(TournTeamSetupSceneV2::eTeamChooserState
         pCursorComp->m_bVisible = false;
     }
 
-    if (to == STATE_SCROLLING)
+    if (to == STATE_SCROLLING && CanProceed() == 1)
     {
-        humanCount = 0;
-        numTeams = mTournInfo.m_numTeams;
-
-        for (int i = 0; i < numTeams; i++)
-        {
-            if (mTeamData[i].isEmpty)
-            {
-                numTeams = -1;
-                break;
-            }
-
-            if (mTeamData[i].isHumanPlayer)
-            {
-                humanCount++;
-            }
-        }
-
-        if (numTeams != -1)
-        {
-            if (humanCount < 1)
-            {
-                numTeams = -2;
-            }
-            else
-            {
-                numTeams = 1;
-            }
-        }
-
-        if (numTeams == 1)
-        {
-            mPressStartComponent->m_bVisible = true;
-        }
-        else
-        {
-            mPressStartComponent->m_bVisible = false;
-        }
+        mPressStartComponent->m_bVisible = true;
     }
     else
     {

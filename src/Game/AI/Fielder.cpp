@@ -165,7 +165,7 @@ u32 PlayerAttackData::GetID()
 
 /**
  * Offset/Address/Size: 0xD2E8 | 0x80026624 | size: 0x474
- * TODO: 94.74% match - extra Timer SetSeconds calls for 0x2D0/0x2D4/0x368/0x36C/0x380 before queued desire initialization
+ * TODO: 98.95% match - extra mtBombImpactTime SetSeconds before powerup field initialization
  */
 cFielder::cFielder(int nPlayerID, int nTeamID, eCharacterClass cc, const int* nModelID,
     cSHierarchy* pHierarchy, cAnimInventory* pAnimInventory,
@@ -179,16 +179,6 @@ cFielder::cFielder(int nPlayerID, int nTeamID, eCharacterClass cc, const int* nM
     , m_ePrevFielderDesireState((eFielderDesireState)0)
     , m_tDesireDuration(0.0f)
 {
-    m_sQueuedDesireParams.fDuration = 0.0f;
-    m_sQueuedDesireParams.eDesireType = (eFielderDesireState)0;
-    m_sQueuedDesireParams.opt1 = fvNotSet;
-    m_sQueuedDesireParams.opt2 = fvNotSet;
-
-    m_DesireCommonVars.tMiscTimer.SetSeconds(0.0f);
-    m_DesireCommonVars.tAge.SetSeconds(0.0f);
-    mtKickOffWaitTimer.SetSeconds(0.0f);
-    m_tPowerupEffectTime.SetSeconds(0.0f);
-
     m_ePowerup = (ePowerUpType)-1;
     mnNumPowerups = 0;
     m_pPowerupTarget = NULL;

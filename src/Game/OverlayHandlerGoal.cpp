@@ -925,7 +925,7 @@ void GoalOverlay::UpdateGoalInfo(int homeAway, int playerIndex, bool isCaptainS2
 
 /**
  * Offset/Address/Size: 0x1590 | 0x80101600 | size: 0x418
- * TODO: 97.89% match - +0x0C hasher stack slot offset and localization pointer register swaps remain.
+ * TODO: 98.69% match - +0x0C hasher stack slot offset and loc-string/data pointer register swaps remain.
  */
 void GoalOverlay::SetHighlightNumber(int highlightNumber)
 {
@@ -985,27 +985,7 @@ void GoalOverlay::SetHighlightNumber(int highlightNumber)
         return;
     }
 
-    const unsigned short* locString;
-    unsigned long key = 0xF3DDE99C;
-    nlLocalization* loc = g_pLocalization;
-
-    if (loc->m_LookupTable == 0)
-    {
-        locString = LocalizationTableNotFound;
-    }
-    else
-    {
-        nlLocalization::StringLookup* entry = nlBSearch<nlLocalization::StringLookup, unsigned long>(key, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
-        if (entry)
-        {
-            locString = loc->m_FirstString + entry->StringOffset;
-        }
-        else
-        {
-            locString = MissingLocString;
-        }
-    }
-
+    const unsigned short* locString = LookupLocHash(0xF3DDE99C);
     BasicString<unsigned short, Detail::TempStringAllocator> unformatted(locString);
 
     int highlight = highlightNumber + 1;

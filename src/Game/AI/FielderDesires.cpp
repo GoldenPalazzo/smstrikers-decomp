@@ -2638,7 +2638,7 @@ void cFielder::DesireReceivePassFromRun(float fDeltaT)
 
 /**
  * Offset/Address/Size: 0xEE4 | 0x80031C68 | size: 0x428
- * TODO: 91.25% match - normalization instruction scheduling (fmuls/fadds swap) cascades to callee-saved FPR allocation diffs in turbo/reaction sections
+ * TODO: 99.32% match - Open/OpenToPosition f30/f31 and breakaway/reaction f29/f30 register rotation in turbo tail
  */
 bool cFielder::InitDesireRunToNet()
 {
@@ -2670,12 +2670,14 @@ bool cFielder::InitDesireRunToNet()
 
     nlVec3Scale(v3DesiredVelDirection, fInvDistance);
 
-    float fInvVelocity = nlRecipSqrt(
-        (m_v3Velocity.f.x * m_v3Velocity.f.x) + (m_v3Velocity.f.y * m_v3Velocity.f.y) + (m_v3Velocity.f.z * m_v3Velocity.f.z), true);
+    float fVelocityLengthSq = m_v3Velocity.GetLengthSq3D();
+    float fInvVelocity = nlRecipSqrt(fVelocityLengthSq, true);
 
-    float fNormVelY = fInvVelocity * m_v3Velocity.f.y;
-    float fNormVelX = fInvVelocity * m_v3Velocity.f.x;
-    float fNormVelZ = fInvVelocity * m_v3Velocity.f.z;
+    nlVector3 v3NormVelocity;
+    nlVec3Scale(v3NormVelocity, m_v3Velocity, fInvVelocity);
+    float fNormVelY = v3NormVelocity.f.y;
+    float fNormVelX = v3NormVelocity.f.x;
+    float fNormVelZ = v3NormVelocity.f.z;
 
     float fDot = (fNormVelX * v3DesiredVelDirection.f.x) + (fNormVelY * v3DesiredVelDirection.f.y) + (fNormVelZ * v3DesiredVelDirection.f.z);
 
@@ -2687,15 +2689,19 @@ bool cFielder::InitDesireRunToNet()
         nlVector3 v3ToPosition;
         nlVec3ScaleAdd(v3ToPosition, 8.0f, v3DesiredVelDirection, m_v3Position);
 
-        float bTurboChance = (float)g_vDesireCommonData[m_eFielderDesireState].m_RandomChanceGen.genrand(
+        float fOpen;
+        float fOpenToPosition;
+        float fBreakaway;
+        float bTurboChance;
+        bTurboChance = (float)g_vDesireCommonData[m_eFielderDesireState].m_RandomChanceGen.genrand(
             SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide)->Off_TurboChance);
 
-        float fOpenToPosition = OpenToPosition(m_v3Position, v3ToPosition, m_pTeam->GetOtherTeam(), this, NULL, false);
-        float fOpen = Open(g_pScriptCurrentFielder);
-        float fBreakaway = OnBreakaway(g_pScriptCurrentFielder);
+        fOpenToPosition = OpenToPosition(m_v3Position, v3ToPosition, m_pTeam->GetOtherTeam(), this, NULL, false);
+        fOpen = Open(g_pScriptCurrentFielder);
+        fBreakaway = OnBreakaway(g_pScriptCurrentFielder);
         float fInvincible = Invincible(g_pScriptCurrentFielder);
 
-        fOpen = (fOpen >= fOpenToPosition) ? fOpen : fOpenToPosition;
+        fOpen = (fOpenToPosition <= fOpen) ? fOpen : fOpenToPosition;
         fBreakaway = (fBreakaway >= fOpen) ? fBreakaway : fOpen;
 
         if (fInvincible >= fBreakaway)
@@ -2706,7 +2712,7 @@ bool cFielder::InitDesireRunToNet()
         float fFarToGoalie = FarToTheirGoalie(g_pScriptCurrentFielder);
 
         u8 bForceTurbo = 0;
-        if (bTurboChance != 0.0f)
+        if (bTurboChance)
         {
             fFarToGoalie = (fFarToGoalie <= fBreakaway) ? fFarToGoalie : fBreakaway;
 
@@ -2719,8 +2725,8 @@ bool cFielder::InitDesireRunToNet()
         m_DesireCommonVars.turboRequest = (bForceTurbo != 0) ? TR_FORCED_ON : TR_FAR_DISTANCE;
     }
 
-    float fReaction = SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide)->Off_Reaction;
-    float fReactionRandom = 0.7f * (0.3f * (1.0f - fReaction));
+    SkillTweaks* pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide);
+    float fReactionRandom = 0.7f * (0.3f * (1.0f - pSkillTweaks->Off_Reaction));
     float fReactionOffset = nlRandomf(fReactionRandom, &nlDefaultSeed) - (0.5f * fReactionRandom);
     m_DesireCommonVars.fMisc = 0.7f + fReactionOffset;
 

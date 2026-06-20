@@ -143,7 +143,7 @@ void ShapeRender::CreateHemisphereGeometry(PrimitiveShape& prim)
 
 /**
  * Offset/Address/Size: 0x11C0 | 0x801FC450 | size: 0x2DC
- * TODO: 95.88% match - saved-FPR allocation for pre-loop zero and angle constants still differs.
+ * TODO: 98.42% match - saved-FPR allocation for pre-loop zero and angle constants still differs.
  */
 void ShapeRender::CreateFlatCylinderEndGeometry(PrimitiveShape& prim)
 {
@@ -211,9 +211,9 @@ void ShapeRender::CreateFlatCylinderEndGeometry(PrimitiveShape& prim)
         invLen = nlRecipSqrt(z0Sq + (x0Sq + y0Sq), true);
 
         pdst->f.x = x0;
+        vNormal.f.y = invLen * vNormal.f.y;
         vNormal.f.x = invLen * vNormal.f.x;
         pdst->f.y = y0;
-        vNormal.f.y = invLen * vNormal.f.y;
         pdst->f.z = z0;
         vNormal.f.z = invLen * vNormal.f.z;
         *ndst = vNormal;
@@ -231,11 +231,9 @@ void ShapeRender::CreateFlatCylinderEndGeometry(PrimitiveShape& prim)
         invLen = nlRecipSqrt(z0Sq + (x1Sq + y1Sq), true);
 
         pdst[1].f.x = x1;
-        vNormal.f.x = invLen * vNormal.f.x;
         pdst[1].f.y = y1;
-        vNormal.f.y = invLen * vNormal.f.y;
         pdst[1].f.z = z0;
-        vNormal.f.z = invLen * vNormal.f.z;
+        nlVec3Scale(vNormal, invLen);
         ndst[1] = vNormal;
 
         tdst[1].f.x = (float)nSegment / texDenom;

@@ -1193,13 +1193,12 @@ void cBall::PostPhysicsUpdate(float fDeltaT)
         if (targetDist < 5.0f)
         {
             float falloff = 1.0f - targetDist / 5.0f;
-            targetWeight = 0.5f + 0.5f * falloff;
+            targetWeight += 0.5f * falloff;
         }
 
-        float currentWeight = 1.0f - targetWeight;
-        currentDeltaX = currentWeight * currentDeltaX + targetWeight * targetDeltaX;
-        currentDeltaY = currentWeight * currentDeltaY + targetWeight * targetDeltaY;
-        currentDeltaZ = currentWeight * currentDeltaZ + targetWeight * targetDeltaZ;
+        currentDeltaX = (1.0f - targetWeight) * currentDeltaX + targetWeight * targetDeltaX;
+        currentDeltaY = (1.0f - targetWeight) * currentDeltaY + targetWeight * targetDeltaY;
+        currentDeltaZ = (1.0f - targetWeight) * currentDeltaZ + targetWeight * targetDeltaZ;
 
         nlVec3Set(position, prevPosition.f.x + currentDeltaX, prevPosition.f.y + currentDeltaY, prevPosition.f.z + currentDeltaZ);
 

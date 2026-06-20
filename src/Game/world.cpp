@@ -1274,8 +1274,9 @@ void World::CreateLightUserData()
         if ((pLight->m_emitFlags & 0x4) == 0)
         {
             numLights++;
-            ListEntry<LightObject*>* entry = (ListEntry<LightObject*>*)nlMalloc(8, 8, false);
-            if (entry != NULL)
+            void* entryMem = nlMalloc(8, 8, false);
+            ListEntry<LightObject*>* entry = (ListEntry<LightObject*>*)entryMem;
+            if (entryMem != NULL)
             {
                 entry->next = NULL;
                 entry->data = pLight;
@@ -1286,8 +1287,9 @@ void World::CreateLightUserData()
         if ((pLight->m_emitFlags & 0x2) != 0)
         {
             numSpecLights++;
-            ListEntry<LightObject*>* entry = (ListEntry<LightObject*>*)nlMalloc(8, 8, false);
-            if (entry != NULL)
+            void* entryMem = nlMalloc(8, 8, false);
+            ListEntry<LightObject*>* entry = (ListEntry<LightObject*>*)entryMem;
+            if (entryMem != NULL)
             {
                 entry->next = NULL;
                 entry->data = pLight;

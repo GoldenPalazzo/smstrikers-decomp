@@ -42,6 +42,7 @@ void glxCopyMatrix(float (&arg0)[4][4], const nlMatrix4& arg1)
 
 /**
  * Offset/Address/Size: 0x88 | 0x801B65F0 | size: 0x1CC
+ * TODO: 94.83% match - remaining f-register allocation differs in initial eye delta loads and second-axis translation math.
  */
 void glplatMatrixLookAt(nlMatrix4& arg0, const nlVector3& arg1, const nlVector3& arg2, const nlVector3& arg3)
 {
@@ -73,17 +74,16 @@ void glplatMatrixLookAt(nlMatrix4& arg0, const nlVector3& arg1, const nlVector3&
     f27 = upx * f30 - fC;
 
     f1 = nlRecipSqrt(f27 * f27 + (f28 * f28 + f26 * f26), true);
-    float f9 = f1 * f26;
-    float f11 = arg1.f.y;
     float f3 = f1 * f28;
-    float f12 = arg1.f.x;
-    float eyeX = arg1.f.z;
-    float f2 = f30 * f11;
-    float f00 = f9 * f11;
-
     arg0.m[0][0] = f3;
 
     float f10 = f1 * f27;
+    float f12 = arg1.f.x;
+    float eyeX = arg1.f.z;
+    float f11 = arg1.f.y;
+    float f2 = f30 * f11;
+    float f9 = f1 * f26;
+    float f00 = f9 * f11;
     float zero = 0.0f;
     float f8 = -f31;
 

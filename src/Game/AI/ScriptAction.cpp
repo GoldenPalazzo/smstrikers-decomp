@@ -13,11 +13,6 @@ SlotPool<ScriptAction> ScriptAction::m_ScriptActionSlotPool(0xA, 0xA);
  */
 ScriptAction::ScriptAction(eScriptActionType action_type, float fConfidence)
 {
-    m_sDesireParams.fDuration = 0.0f;
-    m_sDesireParams.eDesireType = FIELDERDESIRE_NEED_DESIRE;
-    m_sDesireParams.opt1 = fvNotSet;
-    m_sDesireParams.opt2 = fvNotSet;
-
     m_sPlayParams.ePlayType = 0;
     m_sPlayParams.fDuration = 0.0f;
 

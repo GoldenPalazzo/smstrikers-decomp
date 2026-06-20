@@ -7,10 +7,15 @@ extern nlLocalization* g_pLocalization;
 extern const unsigned short LocalizationTableNotFound[];
 extern const unsigned short MissingLocString[];
 
-template <typename T, typename U>
-T* nlBSearch(const U& key, T* table, int count);
-template <typename T>
-unsigned long nlStrLen(const T*);
+static inline const nlFont* GetFontFromComponent(TLComponent* comp)
+{
+    struct FontResource
+    {
+        unsigned char _pad[0x14];
+        const nlFont* m_font;
+    };
+    return ((const FontResource*)comp->pChildren)->m_font;
+}
 
 /**
  * Offset/Address/Size: 0x0 | 0x802101D8 | size: 0x1C
@@ -32,16 +37,6 @@ void TLTextInstance::SetString(const unsigned short* utf16)
     m_wcUserString = utf16;
     m_pFontString = NULL;
     m_OverloadFlags &= 0xFFFFFFF7;
-}
-
-static inline const nlFont* GetFontFromComponent(TLComponent* comp)
-{
-    struct FontResource
-    {
-        unsigned char _pad[0x14];
-        const nlFont* m_font;
-    };
-    return ((const FontResource*)comp->pChildren)->m_font;
 }
 
 /**
@@ -167,7 +162,6 @@ void TLTextInstance::Render(eGLView view, const nlColour& colour) const
 
 /**
  * Offset/Address/Size: 0x288 | 0x80210460 | size: 0x94
- * TODO: prologue stw r31 scheduling diff (2 swapped instructions)
  */
 const unsigned short* TLTextInstance::GetString() const
 {

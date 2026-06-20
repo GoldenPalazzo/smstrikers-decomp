@@ -22,7 +22,9 @@ public:
     void DoPassing(float, cDecisionEntity*);
     static FuzzyVariant GetBestPassTarget(cPlayer*);
     static FuzzyVariant GoodBallCarrier(cFielder*);
+    static FuzzyVariant GoodToChipShot(cFielder*);
     static FuzzyVariant InGoodWindupPosition(cFielder*);
+    static FuzzyVariant InDanger(cFielder*);
     static FuzzyVariant CutAndBreak(cFielder*);
     void DoShooting(float, cDecisionEntity*);
     static FuzzyVariant FurthestBackOnMyTeam(cFielder*);

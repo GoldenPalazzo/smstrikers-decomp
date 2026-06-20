@@ -3,6 +3,10 @@
 
 #include "NL/nlMath.h"
 #include "NL/gl/gl.h"
+#include "NL/nlBSearch.h"
+#include "NL/nlMemory.h"
+#include "NL/nlString.h"
+#include "NL/nlTextEscape.h"
 
 struct nlColour;
 class FontCharString;
@@ -117,6 +121,91 @@ public:
     /* 0x6D4 */ KernPair* m_pKernTable;
     /* 0x6D8 */ unsigned long m_KernTableSize;
 }; // total size: 0x6DC
+
+class FontCharString
+{
+public:
+    FontCharString() { }
+    ~FontCharString()
+    {
+        if (m_InternalBuffer != 0)
+        {
+            delete[] m_pString;
+        }
+    }
+    template <typename T>
+    FontCharString(const T*, const nlFont*, T*);
+
+    /* 0x0 */ unsigned short* m_pString;
+    /* 0x4 */ unsigned char m_InternalBuffer;
+}; // total size: 0x8
+
+// TODO: 95.12% match - remaining diffs are current-character register allocation and escape-copy loop guard shape.
+template <typename T>
+FontCharString::FontCharString(const T* Source, const nlFont* pFont, T* pBuffer)
+{
+    m_InternalBuffer = 0;
+    if (pBuffer == 0)
+    {
+        m_pString = (unsigned short*)nlMalloc((nlStrLen<T>(Source) + 1) * sizeof(T), 8, false);
+        m_InternalBuffer = 1;
+    }
+    else
+    {
+        m_pString = pBuffer;
+    }
+
+    unsigned short* dest = m_pString;
+    const T* src = Source;
+    unsigned short escBegin = nlEscapeSequence::ESCAPE_BEGIN;
+    unsigned int ch;
+
+    while ((ch = *src) != 0)
+    {
+        if (ch == escBegin)
+        {
+            nlEscapeSequence EscSeq(src);
+            int count = (int)((unsigned int)((int)EscSeq.m_pEnd + 1 - (int)src) >> 1);
+            if (src < EscSeq.m_pEnd)
+            {
+                for (int k = count - 1; k >= 0; k--)
+                {
+                    *dest++ = *src++;
+                }
+            }
+        }
+        else
+        {
+            if (ch > 0x7F)
+            {
+                nlFont::GlyphInfo key;
+                key.UnicodeChar = ch;
+                if (pFont->m_pExtendedGlyphs != 0 && pFont->m_ExtendedGlyphCount != 0)
+                {
+                    nlFont::GlyphInfo* result = nlBSearch<nlFont::GlyphInfo, nlFont::GlyphInfo>(key, pFont->m_pExtendedGlyphs, pFont->m_ExtendedGlyphCount);
+                    if (result != 0)
+                    {
+                        unsigned int glyph = (unsigned int)((result - pFont->m_pExtendedGlyphs) + 0x80);
+                        ch = (unsigned short)glyph;
+                    }
+                    else
+                    {
+                        unsigned int glyph = 0x30;
+                        while (((unsigned short)glyph > 0x7F ? pFont->m_pExtendedGlyphs[(unsigned short)glyph - 0x80] : pFont->m_GlyphLookup[(unsigned short)glyph - 0x20]).UnicodeChar == 0xFFFF)
+                        {
+                            glyph++;
+                        }
+                        ch = glyph;
+                    }
+                }
+            }
+            *dest++ = ch;
+            src++;
+        }
+    }
+
+    *dest = 0;
+}
 
 // class ListContainerBase<nlFont
 // {

@@ -1266,7 +1266,7 @@ void IChooseCaptain::SceneCreated(FEPresentation* presentation)
     mSidekickComponents[0] = compinstance;
     {
         TLSlide* slide = compinstance->GetActiveSlide();
-        mSidekickSlideDurations[0] = (slide->m_start + slide->m_duration) * 0.5f;
+        mSidekickSlideDurations[0] = (slide->m_start + slide->m_duration) / 2.0f;
     }
     compinstance->m_bVisible = false;
     mSidekickComponents[0]->m_bVisible = false;
@@ -1306,157 +1306,145 @@ void IChooseCaptain::SceneCreated(FEPresentation* presentation)
     mSidekickComponents[1] = compinstance;
     {
         TLSlide* slide = compinstance->GetActiveSlide();
-        mSidekickSlideDurations[1] = (slide->m_start + slide->m_duration) * 0.5f;
+        mSidekickSlideDurations[1] = (slide->m_start + slide->m_duration) / 2.0f;
     }
     compinstance->m_bVisible = false;
     mSidekickComponents[1]->m_bVisible = false;
 
-    ICaptainGridComponent* captainGrid = (ICaptainGridComponent*)nlMalloc(sizeof(ICaptainGridComponent), 8, false);
-    if (captainGrid)
     {
         volatile InlineHasher h0, h2, h4, h6, h9, h8, hB, hA;
+        unsigned long hash;
 
-        h0.m_Hash = 0;
-        h1.m_Hash = 0;
-        h2.m_Hash = 0;
-        h3.m_Hash = 0;
-        h4.m_Hash = 0;
-        h5.m_Hash = 0;
-        h6.m_Hash = 0;
-        h7.m_Hash = 0;
-
-        unsigned long hash = nlStringLowerHash("CAPTAIN_CHOOSER_LEFT");
-        h8.m_Hash = hash;
-        h9.m_Hash = hash;
-
-        hash = nlStringLowerHash("Layer");
-        hB.m_Hash = hash;
-        hA.m_Hash = hash;
-
-        findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
-        compinstance = findComp.byRef(
-            presentation->m_currentSlide,
-            (InlineHasher&)hB,
-            (InlineHasher&)h9,
-            (InlineHasher&)h7,
-            (InlineHasher&)h5,
-            (InlineHasher&)h3,
-            (InlineHasher&)h1);
-        ;
-        captainGrid = new (captainGrid) ICaptainGridComponent(compinstance, false);
+        ICaptainGridComponent* captainGrid = new (8, false) ICaptainGridComponent(
+            (h0.m_Hash = 0,
+                h1.m_Hash = 0,
+                h2.m_Hash = 0,
+                h3.m_Hash = 0,
+                h4.m_Hash = 0,
+                h5.m_Hash = 0,
+                h6.m_Hash = 0,
+                h7.m_Hash = 0,
+                hash = nlStringLowerHash("CAPTAIN_CHOOSER_LEFT"),
+                h8.m_Hash = hash,
+                h9.m_Hash = hash,
+                hash = nlStringLowerHash("Layer"),
+                hB.m_Hash = hash,
+                hA.m_Hash = hash,
+                findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>,
+                compinstance = findComp.byRef(
+                    presentation->m_currentSlide,
+                    (InlineHasher&)hB,
+                    (InlineHasher&)h9,
+                    (InlineHasher&)h7,
+                    (InlineHasher&)h5,
+                    (InlineHasher&)h3,
+                    (InlineHasher&)h1),
+                compinstance),
+            false);
+        mCaptainGridComponents[0] = captainGrid;
     }
-    mCaptainGridComponents[0] = captainGrid;
 
-    captainGrid = (ICaptainGridComponent*)nlMalloc(sizeof(ICaptainGridComponent), 8, false);
-    if (captainGrid)
     {
         volatile InlineHasher h0, h2, h4, h6, h9, h8, hB, hA;
+        unsigned long hash;
 
-        h0.m_Hash = 0;
-        h1.m_Hash = 0;
-        h2.m_Hash = 0;
-        h3.m_Hash = 0;
-        h4.m_Hash = 0;
-        h5.m_Hash = 0;
-        h6.m_Hash = 0;
-        h7.m_Hash = 0;
-
-        unsigned long hash = nlStringLowerHash("CAPTAIN_CHOOSER_RIGHT");
-        h8.m_Hash = hash;
-        h9.m_Hash = hash;
-
-        hash = nlStringLowerHash("Layer");
-        hB.m_Hash = hash;
-        hA.m_Hash = hash;
-
-        findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
-        compinstance = findComp.byRef(
-            presentation->m_currentSlide,
-            (InlineHasher&)hB,
-            (InlineHasher&)h9,
-            (InlineHasher&)h7,
-            (InlineHasher&)h5,
-            (InlineHasher&)h3,
-            (InlineHasher&)h1);
-        ;
-        captainGrid = new (captainGrid) ICaptainGridComponent(compinstance, true);
+        ICaptainGridComponent* captainGrid = new (8, false) ICaptainGridComponent(
+            (h0.m_Hash = 0,
+                h1.m_Hash = 0,
+                h2.m_Hash = 0,
+                h3.m_Hash = 0,
+                h4.m_Hash = 0,
+                h5.m_Hash = 0,
+                h6.m_Hash = 0,
+                h7.m_Hash = 0,
+                hash = nlStringLowerHash("CAPTAIN_CHOOSER_RIGHT"),
+                h8.m_Hash = hash,
+                h9.m_Hash = hash,
+                hash = nlStringLowerHash("Layer"),
+                hB.m_Hash = hash,
+                hA.m_Hash = hash,
+                findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>,
+                compinstance = findComp.byRef(
+                    presentation->m_currentSlide,
+                    (InlineHasher&)hB,
+                    (InlineHasher&)h9,
+                    (InlineHasher&)h7,
+                    (InlineHasher&)h5,
+                    (InlineHasher&)h3,
+                    (InlineHasher&)h1),
+                compinstance),
+            true);
+        mCaptainGridComponents[1] = captainGrid;
     }
-    mCaptainGridComponents[1] = captainGrid;
 
     mCaptainGridComponents[0]->BuildMapMenu();
     mCaptainGridComponents[1]->BuildMapMenu();
 
-    ISidekickGridComponent* sidekickGrid = (ISidekickGridComponent*)nlMalloc(sizeof(ISidekickGridComponent), 8, false);
-    if (sidekickGrid)
     {
         volatile InlineHasher h0, h2, h4, h6, h9, h8, hB, hA;
+        unsigned long hash;
 
-        h0.m_Hash = 0;
-        h1.m_Hash = 0;
-        h2.m_Hash = 0;
-        h3.m_Hash = 0;
-        h4.m_Hash = 0;
-        h5.m_Hash = 0;
-        h6.m_Hash = 0;
-        h7.m_Hash = 0;
-
-        unsigned long hash = nlStringLowerHash("CHOOSE_SIDEKICKS_LEFT");
-        h8.m_Hash = hash;
-        h9.m_Hash = hash;
-
-        hash = nlStringLowerHash("Layer");
-        hB.m_Hash = hash;
-        hA.m_Hash = hash;
-
-        findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
-        compinstance = findComp.byRef(
-            presentation->m_currentSlide,
-            (InlineHasher&)hB,
-            (InlineHasher&)h9,
-            (InlineHasher&)h7,
-            (InlineHasher&)h5,
-            (InlineHasher&)h3,
-            (InlineHasher&)h1);
-        ;
-        sidekickGrid = new (sidekickGrid) ISidekickGridComponent(compinstance, false);
+        ISidekickGridComponent* sidekickGrid = new (8, false) ISidekickGridComponent(
+            (h0.m_Hash = 0,
+                h1.m_Hash = 0,
+                h2.m_Hash = 0,
+                h3.m_Hash = 0,
+                h4.m_Hash = 0,
+                h5.m_Hash = 0,
+                h6.m_Hash = 0,
+                h7.m_Hash = 0,
+                hash = nlStringLowerHash("CHOOSE_SIDEKICKS_LEFT"),
+                h8.m_Hash = hash,
+                h9.m_Hash = hash,
+                hash = nlStringLowerHash("Layer"),
+                hB.m_Hash = hash,
+                hA.m_Hash = hash,
+                findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>,
+                compinstance = findComp.byRef(
+                    presentation->m_currentSlide,
+                    (InlineHasher&)hB,
+                    (InlineHasher&)h9,
+                    (InlineHasher&)h7,
+                    (InlineHasher&)h5,
+                    (InlineHasher&)h3,
+                    (InlineHasher&)h1),
+                compinstance),
+            false);
+        mSidekickGridComponents[0] = sidekickGrid;
     }
-    mSidekickGridComponents[0] = sidekickGrid;
 
-    sidekickGrid = (ISidekickGridComponent*)nlMalloc(sizeof(ISidekickGridComponent), 8, false);
-    if (sidekickGrid)
     {
         volatile InlineHasher h0, h2, h4, h6, h9, h8, hB, hA;
+        unsigned long hash;
 
-        h0.m_Hash = 0;
-        h1.m_Hash = 0;
-        h2.m_Hash = 0;
-        h3.m_Hash = 0;
-        h4.m_Hash = 0;
-        h5.m_Hash = 0;
-        h6.m_Hash = 0;
-        h7.m_Hash = 0;
-
-        unsigned long hash = nlStringLowerHash("CHOOSE_SIDEKICKS_RIGHT");
-        h8.m_Hash = hash;
-        h9.m_Hash = hash;
-
-        hash = nlStringLowerHash("Layer");
-        hB.m_Hash = hash;
-        hA.m_Hash = hash;
-
-        findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
-        compinstance = findComp.byRef(
-            presentation->m_currentSlide,
-            (InlineHasher&)hB,
-            (InlineHasher&)h9,
-            (InlineHasher&)h7,
-            (InlineHasher&)h5,
-            (InlineHasher&)h3,
-            (InlineHasher&)h1);
-        ;
-        sidekickGrid = new (sidekickGrid) ISidekickGridComponent(compinstance, true);
+        ISidekickGridComponent* sidekickGrid = new (8, false) ISidekickGridComponent(
+            (h0.m_Hash = 0,
+                h1.m_Hash = 0,
+                h2.m_Hash = 0,
+                h3.m_Hash = 0,
+                h4.m_Hash = 0,
+                h5.m_Hash = 0,
+                h6.m_Hash = 0,
+                h7.m_Hash = 0,
+                hash = nlStringLowerHash("CHOOSE_SIDEKICKS_RIGHT"),
+                h8.m_Hash = hash,
+                h9.m_Hash = hash,
+                hash = nlStringLowerHash("Layer"),
+                hB.m_Hash = hash,
+                hA.m_Hash = hash,
+                findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>,
+                compinstance = findComp.byRef(
+                    presentation->m_currentSlide,
+                    (InlineHasher&)hB,
+                    (InlineHasher&)h9,
+                    (InlineHasher&)h7,
+                    (InlineHasher&)h5,
+                    (InlineHasher&)h3,
+                    (InlineHasher&)h1),
+                compinstance),
+            true);
+        mSidekickGridComponents[1] = sidekickGrid;
     }
-    mSidekickGridComponents[1] = sidekickGrid;
 
     mSidekickGridComponents[0]->mParentComponent->m_bVisible = false;
     mSidekickGridComponents[1]->mParentComponent->m_bVisible = false;

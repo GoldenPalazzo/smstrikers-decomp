@@ -858,7 +858,7 @@ extern "C" void sndStreamDeactivate(unsigned long stid);
 
 /**
  * Offset/Address/Size: 0xE20 | 0x80155B78 | size: 0x29C
- * TODO: 99.25% match - second activate-loop buffer pointer uses r3 instead of r4
+ * TODO: 99.82% match - activate-loop buffer pointer uses r3 instead of r4 and zero-count path skips null check
  */
 void AudioStreamTrack::StreamTrack::ProcessNewHeadStream()
 {
@@ -962,25 +962,24 @@ void AudioStreamTrack::StreamTrack::ProcessNewHeadStream()
     }
     case GCAudioStreaming::SS_Warm:
     {
-        GCAudioStreaming::AudioStreamBuffer* buf = NULL;
         volatile unsigned long bufCounter2 = zero;
         if (pStreamActive->m_BufferCount > zero)
         {
-            buf = pStreamActive->m_Buffers[0];
-        }
+            GCAudioStreaming::AudioStreamBuffer* buf = pStreamActive->m_Buffers[0];
 
-        while (buf != NULL)
-        {
-            sndStreamActivate(buf->m_StreamId);
-            unsigned long cj = bufCounter2 + 1;
-            bufCounter2 = cj;
-            if (cj < pStreamActive->m_BufferCount)
+            while (buf != NULL)
             {
-                buf = pStreamActive->m_Buffers[cj];
-            }
-            else
-            {
-                buf = NULL;
+                sndStreamActivate(buf->m_StreamId);
+                unsigned long cj = bufCounter2 + 1;
+                bufCounter2 = cj;
+                if (cj < pStreamActive->m_BufferCount)
+                {
+                    buf = pStreamActive->m_Buffers[cj];
+                }
+                else
+                {
+                    buf = NULL;
+                }
             }
         }
         pStreamActive->m_State = GCAudioStreaming::SS_Playing;

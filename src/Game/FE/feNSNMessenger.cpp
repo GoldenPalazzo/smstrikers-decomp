@@ -31,9 +31,6 @@ extern void* g_pLocalization;
 extern const unsigned short LocalizationTableNotFound[];
 extern const unsigned short MissingLocString[];
 
-template <typename T, typename U>
-T* nlBSearch(const U&, T*, int);
-
 static float MESSAGE_DISPLAY_TIME;
 extern "C" FEScrollText* __ct__12FEScrollTextFP14TLTextInstanceii(FEScrollText*, TLTextInstance*, int, int);
 

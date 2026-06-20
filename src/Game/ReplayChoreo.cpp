@@ -422,35 +422,11 @@ void ReplayChoreo::Reset()
 
 /**
  * Offset/Address/Size: 0x698 | 0x80127D04 | size: 0x3E0
- * TODO: 95.09% match - register allocation: stmw r26 vs r27 (data/replayType share r30 in target).
+ * TODO: 95.35% match - register allocation: stmw r26 vs r27 (data/replayType share r30 in target).
  */
 BasicString<char, Detail::TempStringAllocator> ReplayChoreo::CalcAutoReplayScriptName(ReplayType) const
 {
-    BasicStringDataHack* data = (BasicStringDataHack*)nlMalloc(0x10, 8, true);
-    if (data != 0)
-    {
-        const char* p = "{0}_{1}_{2}_{3}";
-        data->mData = 0;
-        const char* src = p;
-        data->mSize = 0;
-        data->mCapacity = 0;
-
-        while ((signed char)*p++ != 0)
-        {
-            data->mSize++;
-        }
-
-        data->mSize++;
-        data->mData = (char*)nlMalloc(data->mSize + 1, 8, true);
-        data->mCapacity = data->mSize;
-
-        for (int i = 0; i < data->mSize; i++)
-        {
-            data->mData[i] = *src++;
-        }
-
-        data->mRefCount = 1;
-    }
+    BasicStringDataHack* data = MakeStringData("{0}_{1}_{2}_{3}");
 
     BasicString<char, Detail::TempStringAllocator> format;
     format.m_data = data;
@@ -508,31 +484,7 @@ BasicString<char, Detail::TempStringAllocator> ReplayChoreo::CalcAutoReplayScrip
 
     if (!mReplay->DidOccurInLastNumSeconds(2, 6.0f))
     {
-        BasicStringDataHack* d2 = (BasicStringDataHack*)nlMalloc(0x10, 8, true);
-        if (d2 != 0)
-        {
-            const char* p2 = "MID_CENTER_OWN_GOAL_0";
-            d2->mData = 0;
-            const char* src2 = p2;
-            d2->mSize = 0;
-            d2->mCapacity = 0;
-
-            while ((signed char)*p2++ != 0)
-            {
-                d2->mSize++;
-            }
-
-            d2->mSize++;
-            d2->mData = (char*)nlMalloc(d2->mSize + 1, 8, true);
-            d2->mCapacity = d2->mSize;
-
-            for (int i = 0; i < d2->mSize; i++)
-            {
-                d2->mData[i] = *src2++;
-            }
-
-            d2->mRefCount = 1;
-        }
+        BasicStringDataHack* d2 = MakeStringData("MID_CENTER_OWN_GOAL_0");
         return BasicString<char, Detail::TempStringAllocator>(d2);
     }
 
