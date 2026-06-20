@@ -26,16 +26,8 @@
 #include "dolphin/vm/VM.h"
 #include "Game/Sys/debug.h"
 
-// Performance metric string array
-static const char* str_perf0[]
-    = { "VERTICES", "CLIP_VTX", "CLIP_CLKS", "XF_WAIT_IN", "XF_WAIT_OUT", "XF_XFRM_CLKS", "XF_LIT_CLKS", "XF_BOT_CLKS", "XF_REGLD_CLKS", "XF_REGRD_CLKS", "CLIP_RATIO", "TRIANGLES", "TRIANGLES_CULLED", "TRIANGLES_PASSED", "TRIANGLES_SCISSORED", "TRIANGLES_0TEX", "TRIANGLES_1TEX", "TRIANGLES_2TEX", "TRIANGLES_3TEX", "TRIANGLES_4TEX", "TRIANGLES_5TEX", "TRIANGLES_6TEX", "TRIANGLES_7TEX", "TRIANGLES_8TEX", "TRIANGLES_0CLR", "TRIANGLES_1CLR", "TRIANGLES_2CLR", "QUAD_0CVG", "QUAD_NON0CVG", "QUAD_1CVG", "QUAD_2CVG", "QUAD_3CVG", "QUAD_4CVG", "AVG_QUAD_CNT", "CLOCKS" };
-
-// Performance counter string array for GPU/texture metrics
-static const char* str_perf1[] = { "TEXELS", "TX_IDLE", "TX_REGS", "TX_MEMSTALL", "TC_CHECK1_2", "TC_CHECK3_4", "TC_CHECK5_6", "TC_CHECK7_8", "TC_MISS", "VC_ELEMQ_FULL", "VC_MISSQ_FULL", "VC_MEMREQ_FULL", "VC_STATUS7", "VC_MISSREP_FULL", "VC_STREAMBUF_LOW", "VC_ALL_STALLS", "VERTICES", "FIFO_REQ", "CALL_REQ", "VC_MISS_REQ", "CP_ALL_REQ", "CLOCKS" };
-
-GXRenderModeObj glx_rmode;
-
-GXRenderModeObj glPal480IntDf = { VI_TVMODE_PAL_INT,
+// PAL 480i deflicker render mode (first symbol in .data)
+static GXRenderModeObj glPal480IntDf = { VI_TVMODE_PAL_INT,
     640,
     480,
     542,
@@ -49,42 +41,60 @@ GXRenderModeObj glPal480IntDf = { VI_TVMODE_PAL_INT,
     { 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6 },
     { 8, 8, 10, 12, 10, 8, 8 } };
 
-static void* glx_FrameBuffer[2];
+static GXRenderModeObj glx_rmode;
 
-static bool glx_bFog = false;
+// Declaration order below mirrors the original TU: the .sdata (initialised)
+// and .sbss (zero) symbols are interleaved exactly as MWCC laid them out.
 static bool glx_bProgressiveMode = false;
-static u32 glx_TargetFPS = 60;
-static s32 glx_FBSize;
+static bool glx_Virt;
+static bool glx_Perf;
+static bool glx_PerfSync;
 static GXPerf0 glx_perf0 = GX_PERF0_TRIANGLES;
 static GXPerf1 glx_perf1 = GX_PERF1_VERTICES;
-bool glx_Virt = true;
-bool glx_Perf = true;
-bool glx_PerfSync = true;
 static s32 glx_ViewFence = -1;
 static u32 glx_NumVirtMisses = 0;
 static u32 glx_VirtLatency = 0;
-static f32 glx_CopyDispScaleFactor = 1.f;
-static eVideoMode glx_VideoMode;
-
-static void* glx_FIFOMem = nullptr;
-static GXFifoObj* glx_FIFO = nullptr;
-static u32 glx_FIFOSize = 393216;
-
 static bool glx_bFogAdjust = true;
+static bool glx_bFog = false;
 static u32 glx_FogType = 4;
 static bool glx_bFogSky = true;
 static f32 glx_FogStart = 5.f;
 static f32 glx_FogEnd = 160.f;
 static f32 glx_FogIntensity = 1.f;
 static GXColor glx_FogColour = { 0xFF, 0xFF, 0xFF, 0xFF };
+static s32 prev_VIWidth = 0x00000294;
+static s32 glx_VIWidth = 0x00000294;
+static u32 glx_FIFOSize = 393216;
+static eVideoMode glx_VideoMode;
+static void* glx_FIFOMem = nullptr;
+static GXFifoObj* glx_FIFO = nullptr;
+static f32 glx_CopyDispScaleFactor = 1.f;
+static u32 glx_TargetFPS = 60;
+static void* glx_FrameBuffer[2];
+static u32 total_val0 = 0;
+static u32 total_val1 = 0;
+static s32 glx_FBSize;
+
+// Performance metric string array
+static const char* str_perf0[]
+    = { "VERTICES", "CLIP_VTX", "CLIP_CLKS", "XF_WAIT_IN", "XF_WAIT_OUT", "XF_XFRM_CLKS", "XF_LIT_CLKS", "XF_BOT_CLKS", "XF_REGLD_CLKS", "XF_REGRD_CLKS", "CLIP_RATIO", "TRIANGLES", "TRIANGLES_CULLED", "TRIANGLES_PASSED", "TRIANGLES_SCISSORED", "TRIANGLES_0TEX", "TRIANGLES_1TEX", "TRIANGLES_2TEX", "TRIANGLES_3TEX", "TRIANGLES_4TEX", "TRIANGLES_5TEX", "TRIANGLES_6TEX", "TRIANGLES_7TEX", "TRIANGLES_8TEX", "TRIANGLES_0CLR", "TRIANGLES_1CLR", "TRIANGLES_2CLR", "QUAD_0CVG", "QUAD_NON0CVG", "QUAD_1CVG", "QUAD_2CVG", "QUAD_3CVG", "QUAD_4CVG", "AVG_QUAD_CNT", "CLOCKS" };
+
+// Performance counter string array for GPU/texture metrics
+static const char* str_perf1[] = { "TEXELS", "TX_IDLE", "TX_REGS", "TX_MEMSTALL", "TC_CHECK1_2", "TC_CHECK3_4", "TC_CHECK5_6", "TC_CHECK7_8", "TC_MISS", "VC_ELEMQ_FULL", "VC_MISSQ_FULL", "VC_MEMREQ_FULL", "VC_STATUS7", "VC_MISSREP_FULL", "VC_STREAMBUF_LOW", "VC_ALL_STALLS", "VERTICES", "FIFO_REQ", "CALL_REQ", "VC_MISS_REQ", "CP_ALL_REQ", "CLOCKS" };
 
 static u32 fogtype[5] = { GX_FOG_PERSP_LIN, GX_FOG_PERSP_EXP, GX_FOG_PERSP_EXP2, GX_FOG_PERSP_REVEXP, GX_FOG_PERSP_REVEXP2 };
 
-static s32 glx_VIWidth = 0x00000294;
-static s32 prev_VIWidth = 0x00000294;
+static const GXColor glx_CopyClearColour = { 0, 0, 0, 0x40 };
 
-static u32 total_val0 = 0;
-static u32 total_val1 = 0;
+static void glx_SendViews();
+
+// No-fog colour passed via a void helper so the by-value arg copy is an
+// inline-expansion temporary that grabs the lowest stack slot (0x18),
+// pushing the fog-path build temp up to 0x1c to match the target layout.
+static inline void glx_SetFogNone()
+{
+    GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, glx_FogColour);
+}
 
 /**
  * Offset/Address/Size: 0x0 | 0x801B45F4 | size: 0xB0
@@ -146,14 +156,41 @@ void glplatAbortFrame()
     VIWaitForRetrace();
 }
 
+// Sets the perf-overlay rect colour. By-reference helper so the nlColour is an
+// inline-expansion temporary (no named local in glx_PerfBG) and lands in the
+// lowest stack slot (0x8); the {0,0,0,0} decl-init keeps the .sbss2 zero const.
+static inline void glx_SetPerfBGColour(glPoly2& p)
+{
+    nlColour c = { 0, 0, 0, 0 };
+    c.c[0] = 0x3A;
+    c.c[1] = 0x6E;
+    c.c[2] = 0xA5;
+    c.c[3] = 0xFF;
+    p.SetColour(c);
+}
+
+// Draws the dark background rectangle behind the perf/virt overlay text.
+// Inlined (and erased by the linker) in the original; the nlColour is a
+// temporary so it lands in the first stack slot (0x8).
+static inline void glx_PerfBG(int nLines)
+{
+    glPoly2 p;
+    f32 y1;
+    f32 x1;
+    f32 y0;
+    f32 x0;
+
+    glFontVirtualPosToScreenCoordPos(0.f, 36.f, y1, x1);
+    glFontVirtualPosToScreenCoordPos(0.f, (f32)(nLines + 0x24), y0, x0);
+    glSetDefaultState(false);
+    p.SetupRectangle(0.f, x1 - 2.f, 640.f, 4.f + (x0 - x1), 10000000000.f);
+
+    glx_SetPerfBGColour(p);
+    p.Attach((eGLView)0x21, 0, 0, -1);
+}
+
 static inline void glx_SendFrame(bool bSend)
 {
-    glPoly2 sp1C;
-    nlColour sp8;
-    f32 spC;
-    f32 sp10;
-    f32 sp14;
-    f32 sp18;
     s32 nLines;
     s32 lineNo;
     u32 bytesFree;
@@ -170,17 +207,7 @@ static inline void glx_SendFrame(bool bSend)
 
     if (nLines != 0)
     {
-        glFontVirtualPosToScreenCoordPos(0.f, 36.f, spC, sp10);
-        glFontVirtualPosToScreenCoordPos(0.f, (f32)(nLines + 0x24), sp14, sp18);
-        glSetDefaultState(false);
-        sp1C.SetupRectangle(0.f, sp10 - 2.f, 640.f, 4.f + (sp18 - sp10), 10000000000.f);
-        *(volatile u32*)&sp8 = *(volatile u32*)&glx_FogColour;
-        sp8.c[0] = 0x3A;
-        sp8.c[1] = 0x6E;
-        sp8.c[2] = 0xA5;
-        sp8.c[3] = 0xFF;
-        sp1C.SetColour(sp8);
-        sp1C.Attach((eGLView)0x21, 0, 0, -1);
+        glx_PerfBG(nLines);
         lineNo = 0;
         if ((u8)glx_Perf != 0)
         {
@@ -240,29 +267,65 @@ void glplatSendFrame()
     glx_VirtLatency = 0;
 }
 
+// Begin/end GP performance-metric capture. Both were inlined (and erased by
+// the linker) in the original; glx_StopMetrics' val0/val1 temps are what place
+// the GXReadGPMetric pairs on glx_SendViews' frame.
+static inline void glx_StartMetrics()
+{
+    if (glx_PerfSync)
+    {
+        GXDrawDone();
+    }
+    GXClearGPMetric();
+    GXSetGPMetric(glx_perf0, glx_perf1);
+}
+
+static inline void glx_StopMetrics()
+{
+    u32 val0;
+    u32 val1;
+
+    if (glx_PerfSync)
+    {
+        GXDrawDone();
+    }
+    GXReadGPMetric(&val0, &val1);
+    total_val0 += val0;
+    total_val1 += val1;
+}
+
+// Builds the per-view fog colour. Inlined (and erased by the linker) in the
+// original; returning the GXColor by value makes it a temporary on
+// glx_SendViews' frame (build slot below the GXSetFog by-value arg copy).
+static inline GXColor glx_GetFogColour()
+{
+    GXColor c;
+    s32 r = (s32)(glx_FogIntensity * glx_FogColour.r);
+    s32 g = (s32)(glx_FogIntensity * glx_FogColour.g);
+    s32 b = (s32)(glx_FogIntensity * glx_FogColour.b);
+
+    c.r = r;
+    c.g = g;
+    c.b = b;
+    c.a = glx_FogColour.a;
+    return c;
+}
+
 /**
  * Offset/Address/Size: 0x45C | 0x801B4A50 | size: 0x470
  */
-void glx_SendViews()
+static void glx_SendViews()
 {
     GLRenderList* renderList;
     nlVector4 dofRange;
-    nlVector4 dofRangeCopy;
     bool isEmpty;
     bool useFog;
     PlatTexture* tex;
     u32 textureHandle;
     u16 fenceMetricPending;
     s32 view;
-    u32 loopPerf1;
-    u32 loopPerf0;
-    GXColor fogColour;
-    u32 perf1;
-    u32 perf0;
     nlMatrix4 projection;
     GXFogAdjTable fogAdjTable;
-
-    static u32 fogtype[5] = { GX_FOG_PERSP_LIN, GX_FOG_PERSP_EXP, GX_FOG_PERSP_EXP2, GX_FOG_PERSP_REVEXP, GX_FOG_PERSP_REVEXP2 };
 
     glx_SendReset();
 
@@ -274,16 +337,10 @@ void glx_SendViews()
 
     if (glx_ViewFence < 0)
     {
-        if (glx_PerfSync)
-        {
-            GXDrawDone();
-        }
-        GXClearGPMetric();
-        GXSetGPMetric(glx_perf0, glx_perf1);
+        glx_StartMetrics();
     }
 
     dofRange = glConstantGet("dof/range");
-    dofRangeCopy = dofRange;
 
     for (view = 0; view < 0x22; view++)
     {
@@ -328,15 +385,7 @@ void glx_SendViews()
             }
 
             {
-                s32 r = (s32)(glx_FogIntensity * glx_FogColour.r);
-                s32 g = (s32)(glx_FogIntensity * glx_FogColour.g);
-                s32 b = (s32)(glx_FogIntensity * glx_FogColour.b);
-
-                fogColour.r = r;
-                fogColour.g = g;
-                fogColour.b = b;
-                fogColour.a = glx_FogColour.a;
-                GXSetFog((GXFogType)fogtype[glx_FogType], glx_FogStart, glx_FogEnd, 0.25f, 130.0f, fogColour);
+                GXSetFog((GXFogType)fogtype[glx_FogType], glx_FogStart, glx_FogEnd, 0.25f, 130.0f, glx_GetFogColour());
 
                 if (glx_bFogAdjust)
                 {
@@ -353,7 +402,7 @@ void glx_SendViews()
         }
 
     no_fog:
-        GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, glx_FogColour);
+        glx_SetFogNone();
 
     fog_done:
         if (view == glx_ViewFence)
@@ -362,12 +411,7 @@ void glx_SendViews()
             fenceMetricPending = 0;
             if (glx_Perf)
             {
-                if (glx_PerfSync)
-                {
-                    GXDrawDone();
-                }
-                GXClearGPMetric();
-                GXSetGPMetric(glx_perf0, glx_perf1);
+                glx_StartMetrics();
             }
         }
 
@@ -377,7 +421,7 @@ void glx_SendViews()
             continue;
 
         case 0x11:
-            glx_DOFUpdate(dofRangeCopy.f.x);
+            glx_DOFUpdate(dofRange.f.x);
             glx_DOFGrab();
             break;
 
@@ -421,13 +465,7 @@ void glx_SendViews()
 
         if ((u16)fenceMetricPending != 0)
         {
-            if (glx_PerfSync)
-            {
-                GXDrawDone();
-            }
-            GXReadGPMetric(&loopPerf0, &loopPerf1);
-            total_val0 += loopPerf0;
-            total_val1 += loopPerf1;
+            glx_StopMetrics();
         }
 
         if (glViewGetFilter((eGLView)view) == (eGLFilter)6)
@@ -446,14 +484,7 @@ void glx_SendViews()
     glx_SendEnd();
     if (glx_ViewFence < 0)
     {
-        if (glx_PerfSync)
-        {
-            GXDrawDone();
-        }
-
-        GXReadGPMetric(&perf0, &perf1);
-        total_val0 += perf0;
-        total_val1 += perf1;
+        glx_StopMetrics();
     }
 }
 
@@ -500,9 +531,22 @@ bool glplatPostStartup()
 // Forward declaration for virt_cb (defined later in this file)
 void virt_cb(unsigned long, unsigned long, unsigned long, unsigned long, int);
 
+static inline void ClearXFBInline(void* cache)
+{
+    s32 var_r6 = 0;
+    u8* var_r5 = (u8*)cache;
+
+    while (var_r6 < (s32)glx_FBSize)
+    {
+        *(u32*)var_r5 = 0x10801080;
+        var_r6 += 4;
+        var_r5 += 4;
+    }
+    DCFlushRange(cache, glx_FBSize);
+}
+
 /**
  * Offset/Address/Size: 0xA08 | 0x801B4FFC | size: 0x524
- * TODO: 98.94% match - r5/r6 register swap in both memset loops (ptr vs counter)
  */
 bool glplatStartup(gl_ScreenInfo* screenInfo)
 {
@@ -604,14 +648,7 @@ bool glplatStartup(gl_ScreenInfo* screenInfo)
     glx_FrameBuffer[1] = (void*)((u8*)fbMem + fbSize);
     glx_FrameBuffer[0] = fbMem;
     glx_FBSize = fbSize;
-    ptr = (u32*)fbMem;
-    i = 0;
-    while (i < glx_FBSize)
-    {
-        *ptr++ = 0x10801080;
-        i += 4;
-    }
-    DCFlushRange(fbMem, glx_FBSize);
+    ClearXFBInline(glx_FrameBuffer[0]);
 
     buf1 = glx_FrameBuffer[1];
     ptr = (u32*)buf1;
@@ -638,8 +675,7 @@ bool glplatStartup(gl_ScreenInfo* screenInfo)
     gxSetColourUpdate(true);
     gxSetAlphaUpdate(true);
 
-    GXColor sp8 = { 0, 0, 0, 0x40 };
-    GXSetCopyClear(sp8, 0xFFFFFF);
+    GXSetCopyClear(glx_CopyClearColour, 0xFFFFFF);
     GXSetDispCopyGamma(GX_GM_1_0);
 
     j = 0;

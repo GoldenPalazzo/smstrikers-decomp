@@ -620,8 +620,8 @@ float cGame::GetGameTime()
 
 /**
  * Offset/Address/Size: 0x1720 | 0x8003DC94 | size: 0x3EC
- * TODO: 91.98% match - this in r29 vs r30 (register allocation shift due to
- * -inline deferred), nlVector3 stack offsets swapped (sp+0x14/0x20)
+ * TODO: 97.00% match - r27/r28/r31 loop register diffs in player/powerup loops
+ * and nlVector3 copy store order.
  */
 void cGame::ResetForKickOff()
 {
@@ -651,7 +651,7 @@ void cGame::ResetForKickOff()
     {
         g_pTeams[i]->ResetCharacters();
     }
-    nlVector3 position = { 0.0f, 0.0f, 0.0f };
+    nlVector3 position = { 0.0f, 0.0f, 0.18f };
     nlVector3 velocity = { 0.0f, 0.0f, 0.0f };
     if (g_pBall->m_pOwner != NULL)
     {
@@ -704,12 +704,12 @@ void cGame::ResetForKickOff()
     BasicStadium::GetCurrentStadium()->mpNPCManager->mpBowser->ActionHide();
     if (mBowserTimer.m_uPackedTime != 0)
     {
-        if (mBowserTimer.GetSeconds() < 5.0f)
+        if (mBowserTimer.GetSeconds() < 6.0f)
         {
-            mBowserTimer.SetSeconds(5.0f);
+            mBowserTimer.SetSeconds(6.0f);
         }
     }
-    m_pPostResetClock->Reset(0.0f, 1.0f, 0.0f);
+    m_pPostResetClock->Reset(0.0f, 2.0f, 1.0f);
     m_pPostResetClock->Start();
     cCameraManager::Remove(eCameraType_MatrixEffect, true);
     GameplayCamera* gpc = cCameraManager::GetCamera<GameplayCamera>(eCameraType_Gameplay);

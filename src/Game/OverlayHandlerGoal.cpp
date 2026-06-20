@@ -53,6 +53,23 @@ void MakeTextBoxReallyWide(TLTextInstance&);
 unsigned long GetLOCCharacterName(eTeamID, bool, bool);
 unsigned long GetLOCTrophyName(eTrophyType);
 unsigned long GetLOCTeamName(eTeamID);
+
+static inline const unsigned short* LookupLocHash(unsigned long key)
+{
+    nlLocalization* loc = g_pLocalization;
+    if (loc->m_LookupTable == 0)
+    {
+        return LocalizationTableNotFound;
+    }
+
+    nlLocalization::StringLookup* entry = nlBSearch<nlLocalization::StringLookup, unsigned long>(key, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
+    if (entry)
+    {
+        return loc->m_FirstString + entry->StringOffset;
+    }
+
+    return MissingLocString;
+}
 struct StatsTrackerOvertimeAccessor
 {
     char _pad[0x4C1];
@@ -1429,26 +1446,7 @@ void GoalOverlay::DoCupWinOverlay()
     eTeamID winners = (eTeamID)nlSingleton<GameInfoManager>::s_pInstance->GetUserSelectedCupTeam();
 
     BasicStringData<unsigned short>* data;
-    const unsigned short* formatLocString;
-    unsigned long key = 0xB49CF8B5;
-    nlLocalization* loc = g_pLocalization;
-
-    if (loc->m_LookupTable == 0)
-    {
-        formatLocString = LocalizationTableNotFound;
-    }
-    else
-    {
-        nlLocalization::StringLookup* entry = nlBSearch<nlLocalization::StringLookup, unsigned long>(key, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
-        if (entry)
-        {
-            formatLocString = loc->m_FirstString + entry->StringOffset;
-        }
-        else
-        {
-            formatLocString = MissingLocString;
-        }
-    }
+    const unsigned short* formatLocString = LookupLocHash(0xB49CF8B5);
 
     data = (BasicStringData<unsigned short>*)nlMalloc(0x10, 8, true);
     if (data)
@@ -1480,30 +1478,8 @@ void GoalOverlay::DoCupWinOverlay()
         data->mRefCount = 1;
     }
 
-    unsigned long winnerLocID = GetLOCCharacterName(winners, true, false);
-    const unsigned short* winnerLocString;
-
-    loc = g_pLocalization;
-
-    if (loc->m_LookupTable == 0)
-    {
-        winnerLocString = LocalizationTableNotFound;
-    }
-    else
-    {
-        nlLocalization::StringLookup* entry = nlBSearch<nlLocalization::StringLookup, unsigned long>(winnerLocID, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
-        if (entry)
-        {
-            winnerLocString = loc->m_FirstString + entry->StringOffset;
-        }
-        else
-        {
-            winnerLocString = MissingLocString;
-        }
-    }
-
     BasicString<unsigned short, Detail::TempStringAllocator> formatted(
-        Format(BasicString<unsigned short, Detail::TempStringAllocator>(data), winnerLocString));
+        Format(BasicString<unsigned short, Detail::TempStringAllocator>(data), LookupLocHash(GetLOCCharacterName(winners, true, false))));
 
     memcpy(mScoresBuffer, formatted.c_str(), 0x100);
 
@@ -1519,25 +1495,7 @@ void GoalOverlay::DoCupWinOverlay()
 
     eTrophyType cup = (eTrophyType)nlSingleton<GameInfoManager>::s_pInstance->GetTrophyTypeByCurrentMode();
 
-    key = 0x4E704897;
-    loc = g_pLocalization;
-
-    if (loc->m_LookupTable == 0)
-    {
-        formatLocString = LocalizationTableNotFound;
-    }
-    else
-    {
-        nlLocalization::StringLookup* entry = nlBSearch<nlLocalization::StringLookup, unsigned long>(key, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
-        if (entry)
-        {
-            formatLocString = loc->m_FirstString + entry->StringOffset;
-        }
-        else
-        {
-            formatLocString = MissingLocString;
-        }
-    }
+    formatLocString = LookupLocHash(0x4E704897);
 
     data = (BasicStringData<unsigned short>*)nlMalloc(0x10, 8, true);
     if (data)
@@ -1569,29 +1527,7 @@ void GoalOverlay::DoCupWinOverlay()
         data->mRefCount = 1;
     }
 
-    unsigned long trophyLocID = GetLOCTrophyName(cup);
-    const unsigned short* trophyLocString;
-
-    loc = g_pLocalization;
-
-    if (loc->m_LookupTable == 0)
-    {
-        trophyLocString = LocalizationTableNotFound;
-    }
-    else
-    {
-        nlLocalization::StringLookup* entry = nlBSearch<nlLocalization::StringLookup, unsigned long>(trophyLocID, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
-        if (entry)
-        {
-            trophyLocString = loc->m_FirstString + entry->StringOffset;
-        }
-        else
-        {
-            trophyLocString = MissingLocString;
-        }
-    }
-
-    formatted = Format(BasicString<unsigned short, Detail::TempStringAllocator>(data), trophyLocString);
+    formatted = Format(BasicString<unsigned short, Detail::TempStringAllocator>(data), LookupLocHash(GetLOCTrophyName(cup)));
 
     memcpy(mDescriptionBuffer, formatted.c_str(), 0x100);
 

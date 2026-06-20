@@ -1,5 +1,7 @@
 #include "Game/AI/AvoidController.h"
+#include "Game/AI/AiUtil.h"
 #include "Game/BasicStadium.h"
+#include "Game/Team.h"
 
 static const nlVector3 v3Zero = { 0.0f, 0.0f, 0.0f };
 static const nlVector2 v2Zero = { 0.0f, 0.0f };
@@ -459,15 +461,12 @@ void AvoidController::Update(float)
 
 /**
  * Offset/Address/Size: 0x1060 | 0x800086B4 | size: 0x25C
- * TODO: 96.62% match - remaining diffs are x/z delta load order,
- * GetClosingSpeed2D setup register allocation, and fContribution/output FPR allocation.
+ * TODO: 95.48% match - remaining diffs are r7/r8 setup around radius loads
+ * and GetClosingSpeed2D arguments.
  */
 bool AvoidController::CalcFielderRepulsionVector(nlVector3& v3OutRepulsion)
 {
-    extern cTeam* g_pTeams[];
     extern cTeam* g_pCurrentlyUpdatingTeam;
-    extern float GetClosingSpeed2D(const nlVector3&, const nlVector3&, const nlVector3&, const nlVector3&);
-    extern float NormalizeVal(float, float, float);
 
     bool bAvoidedSomething = false;
     float fDeltaX, fDeltaY, fDeltaZ;
@@ -488,8 +487,8 @@ bool AvoidController::CalcFielderRepulsionVector(nlVector3& v3OutRepulsion)
             }
 
             fDeltaZ = m_pFielder->m_v3Position.f.y - pFielder->m_v3Position.f.y;
-            fDeltaY = m_pFielder->m_v3Position.f.x - pFielder->m_v3Position.f.x;
-            fDeltaX = m_pFielder->m_v3Position.f.z - pFielder->m_v3Position.f.z;
+            fDeltaX = m_pFielder->m_v3Position.f.x - pFielder->m_v3Position.f.x;
+            fDeltaY = m_pFielder->m_v3Position.f.z - pFielder->m_v3Position.f.z;
 
             float fDistanceSq = fDeltaZ * fDeltaZ;
             fDistanceSq += fDeltaX * fDeltaX;
@@ -514,7 +513,7 @@ bool AvoidController::CalcFielderRepulsionVector(nlVector3& v3OutRepulsion)
 
             if (m_UseMinimumAvoidance)
             {
-                fMagnitude *= 2.0f;
+                fMagnitude *= 0.3f;
             }
 
             m_pFielder->IsOnSameTeam(pFielder);
@@ -525,7 +524,7 @@ bool AvoidController::CalcFielderRepulsionVector(nlVector3& v3OutRepulsion)
 
             if (pFielder == m_pIgnoreThisPlayer)
             {
-                fMagnitude *= 2.0f;
+                fMagnitude *= 0.3f;
             }
 
             if (m_pFielder->m_pBall != NULL)
@@ -545,15 +544,7 @@ bool AvoidController::CalcFielderRepulsionVector(nlVector3& v3OutRepulsion)
                 fContribution = fMagnitude;
             }
 
-            float fOutY = v3OutRepulsion.f.y;
-            float fOutX = v3OutRepulsion.f.x;
-            fOutY = fContribution * fDeltaZ + fOutY;
-            float fOutZ = v3OutRepulsion.f.z;
-            fOutX = fContribution * fDeltaX + fOutX;
-            fOutZ = fContribution * fDeltaY + fOutZ;
-            v3OutRepulsion.f.x = fOutX;
-            v3OutRepulsion.f.y = fOutY;
-            v3OutRepulsion.f.z = fOutZ;
+            nlVec3Add(v3OutRepulsion, fContribution * fDeltaX, fContribution * fDeltaZ, fContribution * fDeltaY);
             bAvoidedSomething = true;
         }
     }

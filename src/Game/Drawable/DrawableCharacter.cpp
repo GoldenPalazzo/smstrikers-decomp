@@ -12,6 +12,7 @@
 #include "Game/Render/RenderShadow.h"
 #include "Game/GameObjectLighting.h"
 #include "Game/WorldManager.h"
+#include "Game/BasicStadium.h"
 #include "Game/GL/GLInventory.h"
 #include "NL/gl/glView.h"
 #include "NL/gl/glModel.h"
@@ -89,6 +90,7 @@ int charSizes[] = {
 
 static float g_fRadiusScale = 1.175f;
 static unsigned char g_bSloppyBounds = 1;
+static u32 debugColourValue = 0xFFFF4050;
 
 template <>
 FloatCompressor<0, 1, 15>::FloatCompressor(float& f)
@@ -621,11 +623,6 @@ void DrawableCharacter::SendToGl(const cCharacter& character) const
     extern GLInventory glInventory;
     extern unsigned long ResolvedWhiteTexture;
 
-    struct WorldShadowData
-    {
-        unsigned char padding[0x138];
-        nlVector4* pLight;
-    };
     ProjectedShadowParams params;
     nlMatrix4 mWorld;
     nlMatrix4 sphereWorldMatrix;
@@ -868,7 +865,8 @@ void DrawableCharacter::SendToGl(const cCharacter& character) const
             if (counter >= 0x1E0)
             {
                 float ms = nlGetTickerDifference(0, tDiff);
-                ms = 8.0f * (ms / (float)counter);
+                ms = ms / (float)counter;
+                ms = 8.0f * ms;
                 u32 avgTicks = tDiff / counter;
                 tDiff = avgTicks;
                 OSReport("%u avg ticks (%0.3fms for 8 chars) to find bounding sphere\n", avgTicks, ms);
@@ -877,7 +875,9 @@ void DrawableCharacter::SendToGl(const cCharacter& character) const
             }
 
             float sphereRadius = fRadius;
-            u32 debugColour = 0xFFFF4050;
+            u32 debugColour = debugColourValue;
+            void* pConstantColour;
+            glModelPacket* pSpherePacket;
             glModel* pSphereModel = glModelDup(glInventory.GetModel(nlStringHash("debug/sphere")), true);
 
             sphereWorldMatrix.SetIdentity();
@@ -895,19 +895,19 @@ void DrawableCharacter::SendToGl(const cCharacter& character) const
                 glSetMatrix(matrix, sphereWorldMatrix);
             }
 
-            void* pConstantColour = glUserAlloc(GLUD_ConstantColour, 4, false);
-            *(u32*)glUserGetData(pConstantColour) = debugColour;
-
+            pConstantColour = glUserAlloc(GLUD_ConstantColour, 4, false);
+            u32* pDebugColour = (u32*)glUserGetData(pConstantColour);
             u8 alpha = ((u8*)&debugColour)[3];
-            for (glModelPacket* pPacket = pSphereModel->packets; pPacket < pSphereModel->packets + pSphereModel->numPackets; pPacket++)
+            *pDebugColour = debugColour;
+            for (pSpherePacket = pSphereModel->packets; pSpherePacket < pSphereModel->packets + pSphereModel->numPackets; pSpherePacket++)
             {
-                pPacket->state.matrix = matrix;
-                pPacket->state.texture[GLTT_Diffuse] = ResolvedWhiteTexture;
+                pSpherePacket->state.matrix = matrix;
+                pSpherePacket->state.texture[GLTT_Diffuse] = ResolvedWhiteTexture;
                 if (alpha != 0xFF)
                 {
-                    glSetRasterState(pPacket->state.raster, GLS_AlphaBlend, GLB_Standard);
+                    glSetRasterState(pSpherePacket->state.raster, GLS_AlphaBlend, GLB_Standard);
                 }
-                glUserAttach(pConstantColour, pPacket, false);
+                glUserAttach(pConstantColour, pSpherePacket, false);
             }
 
             glViewAttachModel(GLV_Characters, 6, pSphereModel);
@@ -916,7 +916,7 @@ void DrawableCharacter::SendToGl(const cCharacter& character) const
 
     if (sShadowRenderingDisabled__17DrawableCharacter == 0)
     {
-        nlVector4* pLight = ((WorldShadowData*)WorldManager::s_World)->pLight;
+        LightObject* pLight = ((BasicStadium*)WorldManager::s_World)->m_pShadowLight;
         if (pLight != nullptr)
         {
             static float s_fHeightFudge;
@@ -953,9 +953,9 @@ void DrawableCharacter::SendToGl(const cCharacter& character) const
 
             fRadius *= g_fRadiusScale;
             fHeight *= s_fHeightFudge;
-            float lightX = pLight->f.y;
-            float lightY = pLight->f.z;
-            float lightZ = pLight->f.w;
+            float lightX = pLight->m_worldPosition.f.x;
+            float lightY = pLight->m_worldPosition.f.y;
+            float lightZ = pLight->m_worldPosition.f.z;
 
             params.vLight.f.x = lightX;
             params.vLight.f.y = lightY;

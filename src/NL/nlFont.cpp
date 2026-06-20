@@ -505,12 +505,13 @@ unsigned char nlFont::Load(const char* szFontName, char* pFontDescData, unsigned
 
                 if (Character < 0x7F)
                 {
-                    pInfo = &m_GlyphLookup[Character - 0x20];
+                    pInfo = m_GlyphLookup + Character - 0x20;
                 }
                 else
                 {
                     ListEntry<nlFont::GlyphInfo>* pEntry = NULL;
-                    ListEntry<nlFont::GlyphInfo> entryData(sZeroGlyphInfo);
+                    nlFont::GlyphInfo glyphInfo = sZeroGlyphInfo;
+                    ListEntry<nlFont::GlyphInfo> entryData = ListEntry<nlFont::GlyphInfo>(glyphInfo);
 
                     if (ExtendedGlyphList.m_Allocator.m_FreeList == NULL)
                     {
@@ -592,7 +593,6 @@ unsigned char nlFont::Load(const char* szFontName, char* pFontDescData, unsigned
                 while ((unsigned long)pToken != 1)
                 {
                     ListEntry<nlFont::KernPair>* pEntry = NULL;
-                    nlFont::KernPair entryData;
 
                     kp.s.A = Base;
                     if (pToken[1] != ' ')
@@ -606,9 +606,7 @@ unsigned char nlFont::Load(const char* szFontName, char* pFontDescData, unsigned
 
                     pToken = nlStrChr(pToken, ' ') + 1;
                     kp.Kern = atoi(pToken);
-
-                    entryData.hash = kp.hash;
-                    entryData.Kern = kp.Kern;
+                    ListEntry<nlFont::KernPair> entryData(kp);
 
                     if (KernList.m_Allocator.m_FreeList == NULL)
                     {
@@ -623,8 +621,7 @@ unsigned char nlFont::Load(const char* szFontName, char* pFontDescData, unsigned
 
                     if (pEntry != NULL)
                     {
-                        pEntry->next = NULL;
-                        pEntry->data = entryData;
+                        *pEntry = entryData;
                     }
 
                     nlListAddStart<ListEntry<nlFont::KernPair> >(&KernList.m_Head, pEntry, &KernList.m_Tail);

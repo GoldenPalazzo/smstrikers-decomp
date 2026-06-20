@@ -898,7 +898,7 @@ static const nlColour CHOOSE_CUP_BLACK = { 0x00, 0x00, 0x00, 0xFF };
 
 /**
  * Offset/Address/Size: 0x7AC | 0x800DAA30 | size: 0xB80
- * TODO: 99.16% match - pText/canProceed and localized string temps use opposite r26/r27 allocation.
+ * TODO: 99.44% match - pText/canProceed and localized string temps use opposite r26/r27 allocation.
  */
 void ChooseCupSceneV2::DisplayCup()
 {
@@ -925,8 +925,12 @@ void ChooseCupSceneV2::DisplayCup()
         InlineHasher(nlStringLowerHash("Layer")),
         InlineHasher(nlStringLowerHash("TROPHY")));
 
-    bool canProceed = true;
-    if (!mIsSuperCup)
+    bool canProceed;
+    if (mIsSuperCup)
+    {
+        canProceed = true;
+    }
+    else
     {
         switch (mCupToDisplay)
         {
@@ -1076,7 +1080,8 @@ void ChooseCupSceneV2::DisplayCup()
     }
     else
     {
-        Spoil cupSpoil = nlSingleton<GameInfoManager>::s_pInstance->mUserInfo.mSpoils[(int)mCupToDisplay];
+        Spoil* cupSpoils = nlSingleton<GameInfoManager>::s_pInstance->mUserInfo.mSpoils;
+        Spoil cupSpoil = cupSpoils[(int)mCupToDisplay];
 
         if (cupSpoil.mCurrentChamp == TEAM_INVALID)
         {

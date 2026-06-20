@@ -152,7 +152,7 @@ void GameRenderTask::Run(float fDeltaT)
     if (((-hasWorld) | hasWorld) >> 31)
     {
         nlVector3 shadowPos = { 0.0f, 0.0f, 0.0f };
-        ((BasicStadium*)WorldManager::s_World)->m_unk138 = (u32)WorldManager::s_World->GetShadowLight(shadowPos, 10000000000.0f);
+        ((BasicStadium*)WorldManager::s_World)->m_pShadowLight = WorldManager::s_World->GetShadowLight(shadowPos, 10000000000.0f);
     }
 
     for (shadowIndex = 0; shadowIndex < MaxProjectedShadows; shadowIndex++)

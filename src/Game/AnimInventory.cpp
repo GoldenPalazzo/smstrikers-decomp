@@ -24,6 +24,16 @@ static inline void ClearFileList(cInventory<cSAnim>* c)
     c->m_lMemList.m_Tail = 0;
 }
 
+static inline cSAnim* FindAnim(ListEntry<cSAnim*>* pEntry, unsigned int hash)
+{
+    for (; pEntry != 0; pEntry = pEntry->next)
+    {
+        if (hash == pEntry->data->m_uHashID)
+            return pEntry->data;
+    }
+    return 0;
+}
+
 /**
  * Offset/Address/Size: 0x438 | 0x800073B4 | size: 0xA0
  */
@@ -107,15 +117,18 @@ cAnimInventory::~cAnimInventory()
 
 /**
  * Offset/Address/Size: 0x88 | 0x80007004 | size: 0x214
- * TODO: 94.3% match - callee-saved register assignment still differs (this and
- * filename), and search-loop found-pointer placement is not exact
+ * TODO: 98.27% match - instruction stream is byte-exact; only the callee-saved
+ * register assignment differs (this/filename get r27/r28 instead of r30/r31, with
+ * pMem/len shifted to r30/r31 instead of r28/r27)
  */
 void cAnimInventory::AddAnimBundle(const char* szFilename)
 {
+    int i;
     int len;
+    cInventory<cSAnim>* inv;
     char* pMem = (char*)nlLoadEntireFileToVirtualMemory(szFilename, &len, 0x10000, 0, AllocateStart);
     int bundleLen = len;
-    cInventory<cSAnim>* inv = m_cont;
+    inv = m_cont;
 
     ListEntry<char*>* pFileEntry = (ListEntry<char*>*)nlMalloc(8, 8, 0);
     if (pFileEntry != 0)
@@ -148,57 +161,30 @@ void cAnimInventory::AddAnimBundle(const char* szFilename)
         pMem = (char*)(((nlChunk*)pMem)->m_Size + pMem + 8);
     }
 
-    int propOffset = 0;
-    int i = 0;
-    int animOffset = propOffset;
+    i = 0;
     while (i < m_count)
     {
         cInventory<cSAnim>* pInv = m_cont;
-        unsigned int hash = nlStringHash(*(const char**)((char*)m_props + propOffset + 4));
-        ListEntry<cSAnim*>* pList = pInv->m_lItemList.m_Head;
-        cSAnim* pFound = 0;
+        unsigned int hash = nlStringHash(m_props[i].name);
+        cSAnim* pFound = FindAnim(pInv->m_lItemList.m_Head, hash);
 
-        while (pList != 0)
-        {
-            cSAnim* pEntryAnim = pList->data;
-            if (hash == pEntryAnim->m_uHashID)
-            {
-                pFound = pEntryAnim;
-                break;
-            }
-            pList = pList->next;
-        }
-
-        *(cSAnim**)((char*)m_anims + animOffset) = pFound;
-        if (*(cSAnim**)((char*)m_anims + animOffset) == 0)
+        m_anims[i] = pFound;
+        if (m_anims[i] == 0)
         {
             nlPrintf("Warning! Could not find \"%s\" in bundle \"%s\"\n",
-                *(const char**)((char*)m_props + propOffset + 4),
+                m_props[i].name,
                 szFilename);
             cInventory<cSAnim>* pDefaultInv = g_pDefaultSAnimInventory;
-            hash = nlStringHash(*(const char**)((char*)m_props + propOffset + 4));
-            pList = pDefaultInv->m_lItemList.m_Head;
-            pFound = 0;
-            while (pList != 0)
-            {
-                cSAnim* pEntryAnim = pList->data;
-                if (hash == pEntryAnim->m_uHashID)
-                {
-                    pFound = pEntryAnim;
-                    break;
-                }
-                pList = pList->next;
-            }
+            hash = nlStringHash(m_props[i].name);
+            pFound = FindAnim(pDefaultInv->m_lItemList.m_Head, hash);
 
-            *(cSAnim**)((char*)m_anims + animOffset) = pFound;
-            if (*(cSAnim**)((char*)m_anims + animOffset) == 0)
+            m_anims[i] = pFound;
+            if (m_anims[i] == 0)
             {
-                *(cSAnim**)((char*)m_anims + animOffset) = m_anims[0];
+                m_anims[i] = m_anims[0];
             }
         }
 
-        propOffset += sizeof(AnimProperties);
-        animOffset += sizeof(cSAnim*);
         i++;
     }
 }

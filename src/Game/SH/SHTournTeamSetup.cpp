@@ -363,6 +363,63 @@ void TournTeamSetupSceneV2::SceneCreated()
     FEAudio::EnableSounds(true);
 }
 
+inline void TournTeamSetupSceneV2::UpdateArrowVisibility()
+{
+    if (mCurrentRow == 0)
+    {
+        mUpArrow->m_bVisible = false;
+        mDownArrow->m_bVisible = true;
+    }
+    else if (mCurrentRow == (int)mTournInfo.m_numTeams - 1)
+    {
+        mUpArrow->m_bVisible = true;
+        mDownArrow->m_bVisible = false;
+    }
+    else
+    {
+        mUpArrow->m_bVisible = true;
+        mDownArrow->m_bVisible = true;
+    }
+}
+
+inline bool TournTeamSetupSceneV2::HasEmptyTeam() const
+{
+    for (int i = 0; i < mTournInfo.m_numTeams; i++)
+    {
+        if (mTeamData[i].isEmpty)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+inline int TournTeamSetupSceneV2::CanProceed() const
+{
+    int numHumans = 0;
+
+    for (int i = 0; i < mTournInfo.m_numTeams; i++)
+    {
+        if (mTeamData[i].isEmpty)
+        {
+            return -1;
+        }
+
+        if (mTeamData[i].isHumanPlayer)
+        {
+            numHumans++;
+        }
+    }
+
+    if (numHumans < 1)
+    {
+        return -2;
+    }
+
+    return 1;
+}
+
 /**
  * Offset/Address/Size: 0x32F4 | 0x800E5198 | size: 0xBE0
  */
@@ -392,43 +449,14 @@ void TournTeamSetupSceneV2::Update(float fDeltaT)
 
     case STATE_SCROLLING:
     {
-        bool hasEmpty = false;
-        for (int i = 0; i < mTournInfo.m_numTeams; i++)
-        {
-            if (mTeamData[i].isEmpty)
-            {
-                hasEmpty = true;
-                break;
-            }
-        }
-
-        if (hasEmpty)
+        if (HasEmptyTeam())
         {
             mButtons1.SetState(ButtonComponent::BS_A_AND_B_AND_Y);
             mButtons2.SetState(ButtonComponent::BS_A_AND_B_AND_Y);
         }
         else
         {
-            int numHumans = 0;
-            int result = 0;
-
-            for (int i = 0; i < mTournInfo.m_numTeams; i++)
-            {
-                if (mTeamData[i].isEmpty)
-                {
-                    result = -1;
-                    break;
-                }
-                if (mTeamData[i].isHumanPlayer)
-                {
-                    numHumans++;
-                }
-            }
-
-            if (result != -1)
-            {
-                result = (numHumans < 1) ? -2 : 1;
-            }
+            int result = CanProceed();
 
             if (result == 1)
             {
@@ -491,7 +519,20 @@ void TournTeamSetupSceneV2::Update(float fDeltaT)
 
         if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x100, false, NULL))
         {
-            mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].ApplyAction(ON_APPLY);
+            int currentIndex = mMenuItems.mCurrentIndex;
+            int tag = mMenuItems.mMenuItems[currentIndex].mCallbacks[ON_APPLY].mTag;
+            if (((u32)((-tag) | tag) >> 31) > 0 && !mMenuItems.mMenuItems[currentIndex].mDisabled)
+            {
+                TLComponentInstance* type = mMenuItems.mMenuItems[currentIndex].mType;
+                if (tag == FREE_FUNCTION)
+                {
+                    mMenuItems.mMenuItems[currentIndex].mCallbacks[ON_APPLY].mFreeFunction(type);
+                }
+                else
+                {
+                    (*mMenuItems.mMenuItems[currentIndex].mCallbacks[ON_APPLY].mFunctor)(type);
+                }
+            }
             FEAudio::PlayAnimAudioEvent("sfx_accept", false);
         }
         else if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x200, false, NULL))
@@ -503,27 +544,14 @@ void TournTeamSetupSceneV2::Update(float fDeltaT)
         {
             AutoFill();
 
-            int result = 0;
-            int numHumans = 0;
-            for (int i = 0; i < mTournInfo.m_numTeams; i++)
+            if (CanProceed() == 1)
             {
-                if (mTeamData[i].isEmpty)
-                {
-                    result = -1;
-                    break;
-                }
-                if (mTeamData[i].isHumanPlayer)
-                {
-                    numHumans++;
-                }
+                mPressStartComponent->m_bVisible = true;
             }
-
-            if (result != -1)
+            else
             {
-                result = (numHumans < 1) ? -2 : 1;
+                mPressStartComponent->m_bVisible = false;
             }
-
-            mPressStartComponent->m_bVisible = (result == 1);
         }
         else if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xD, true, NULL))
         {
@@ -537,32 +565,19 @@ void TournTeamSetupSceneV2::Update(float fDeltaT)
         {
             if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xB, true, NULL) || g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xC, true, NULL))
             {
-                TeamData* data = &mTeamData[mCurrentRow];
-                if (!data->isEmpty)
+                if (!mTeamData[mCurrentRow].isEmpty)
                 {
-                    data->isHumanPlayer = !data->isHumanPlayer;
+                    mTeamData[mCurrentRow].isHumanPlayer = !mTeamData[mCurrentRow].isHumanPlayer;
                     UpdateControllerIcon(mMenuItems.mCurrentIndex);
 
-                    int result = 0;
-                    int numHumans = 0;
-                    for (int i = 0; i < mTournInfo.m_numTeams; i++)
+                    if (CanProceed() == 1)
                     {
-                        if (mTeamData[i].isEmpty)
-                        {
-                            result = -1;
-                            break;
-                        }
-                        if (mTeamData[i].isHumanPlayer)
-                        {
-                            numHumans++;
-                        }
+                        mPressStartComponent->m_bVisible = true;
                     }
-
-                    if (result != -1)
+                    else
                     {
-                        result = (numHumans < 1) ? -2 : 1;
+                        mPressStartComponent->m_bVisible = false;
                     }
-                    mPressStartComponent->m_bVisible = (result == 1);
 
                     if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xB, true, NULL))
                     {
@@ -576,25 +591,7 @@ void TournTeamSetupSceneV2::Update(float fDeltaT)
             }
             else if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x1000, false, NULL))
             {
-                int result = 0;
-                int numHumans = 0;
-                for (int i = 0; i < mTournInfo.m_numTeams; i++)
-                {
-                    if (mTeamData[i].isEmpty)
-                    {
-                        result = -1;
-                        break;
-                    }
-                    if (mTeamData[i].isHumanPlayer)
-                    {
-                        numHumans++;
-                    }
-                }
-
-                if (result != -1)
-                {
-                    result = (numHumans < 1) ? -2 : 1;
-                }
+                int result = CanProceed();
 
                 if (result == 1)
                 {
@@ -614,21 +611,7 @@ void TournTeamSetupSceneV2::Update(float fDeltaT)
             }
         }
 
-        if (mCurrentRow == 0)
-        {
-            mUpArrow->m_bVisible = false;
-            mDownArrow->m_bVisible = true;
-        }
-        else if (mCurrentRow == (int)mTournInfo.m_numTeams - 1)
-        {
-            mUpArrow->m_bVisible = true;
-            mDownArrow->m_bVisible = false;
-        }
-        else
-        {
-            mUpArrow->m_bVisible = true;
-            mDownArrow->m_bVisible = true;
-        }
+        UpdateArrowVisibility();
     }
     else if (mCurrentState == STATE_CAPTAIN)
     {

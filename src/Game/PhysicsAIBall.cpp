@@ -126,9 +126,12 @@ void PhysicsAIBall::CheckIfBallWentThroughGoalPost()
 
         if ((contact != 0) && (m_unk_0x59 == 0))
         {
-            ballPosition.f.z = (0.005f * contactNormal.f.z) + ballPosition.f.z;
-            ballPosition.f.y = (0.005f * contactNormal.f.y) + ballPosition.f.y;
-            ballPosition.f.x = (0.005f * contactNormal.f.x) + ballPosition.f.x;
+            float contactZ = (0.005f * contactNormal.f.z) + ballPosition.f.z;
+            float contactY = (0.005f * contactNormal.f.y) + ballPosition.f.y;
+            float contactX = (0.005f * contactNormal.f.x) + ballPosition.f.x;
+            ballPosition.f.x = contactX;
+            ballPosition.f.y = contactY;
+            ballPosition.f.z = contactZ;
 
             const nlVector3& v3BallVel = GetLinearVelocity();
             float velY = v3BallVel.f.y;

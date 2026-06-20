@@ -4031,15 +4031,10 @@ FuzzyVariant Fuzzy::GetPowerupToUseForWindupDefence(cFielder* TheFielder)
 
 /**
  * Offset/Address/Size: 0xE64 | 0x8006B034 | size: 0x7BC
- * TODO: 92.91% match - r28/r29/r30/r31 differ in the cache path.
+ * TODO: 98.00% match - r28/r29/r30/r31 differ in the cache path and final copy.
  */
 FuzzyVariant Fuzzy::InDanger(cFielder* TheFielder)
 {
-    /**
-     * Offset/Address/Size: 0x68074 | 0x8006B0A0 | size: 0x7BC
-     * TODO: 96.49% match - cyclic register rotation of the 4 callee-saved temps
-     * (sret/TheFielder/hash/result); target colors sret r28, ours r29.
-     */
     FuzzyVariant bestValue;
 
     FuzzyVariant fvFielder((cPlayer*)TheFielder);
@@ -4049,7 +4044,9 @@ FuzzyVariant Fuzzy::InDanger(cFielder* TheFielder)
 
     if (ScriptQuestionCache::Instance()->Lookup(hash, bestValue, NULL))
     {
-        ScriptQuestionCache::Instance()->AddToCache(hash, bestValue, NULL);
+        bestValue.Confidence = bestValue.Confidence;
+        const FuzzyVariant& cacheValue = bestValue;
+        ScriptQuestionCache::Instance()->AddToCache(hash, cacheValue, NULL);
         return bestValue;
     }
 
@@ -4059,16 +4056,17 @@ FuzzyVariant Fuzzy::InDanger(cFielder* TheFielder)
     float fFourth = Pressured(TheFielder);
     float fFifth = Attacked(TheFielder);
 
-    fOther = (fOther >= fDanger) ? fOther : fDanger;
-    fThird = (fThird >= fOther) ? fThird : fOther;
-    fFourth = (fFourth >= fThird) ? fFourth : fThird;
-    fFourth = (fFifth >= fFourth) ? fFifth : fFourth;
+    fDanger = (fDanger >= fOther) ? fDanger : fOther;
+    fOther = (fThird >= fDanger) ? fThird : fDanger;
+    fThird = (fFourth >= fOther) ? fFourth : fOther;
+    fFourth = (fFifth >= fThird) ? fFifth : fThird;
 
     FuzzyVariant fvResult(fFourth);
     bestValue = fvResult;
     bestValue.Confidence = 1.0f;
 
-    ScriptQuestionCache::Instance()->AddToCache(hash, bestValue, NULL);
+    const FuzzyVariant& cacheValue = bestValue;
+    ScriptQuestionCache::Instance()->AddToCache(hash, cacheValue, NULL);
     return bestValue;
 }
 

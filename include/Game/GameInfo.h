@@ -127,6 +127,55 @@ public:
     s16 GetPreviousRoundNumber(short) const;
     signed short GetFirstRoundNumber() const;
     u16 GetNumGamesPerRound(int) const;
+    u16 GetNumGamesPerRound(BaseCup* currentCup, int round) const
+    {
+        unsigned short returnValue;
+
+        if (round == -4)
+        {
+            return 4;
+        }
+
+        if (round == -3)
+        {
+            return 2;
+        }
+
+        if (round == -2 || round == -1)
+        {
+            return 1;
+        }
+
+        if (round == -5)
+        {
+            if (mDoingKnockout)
+            {
+                return 1;
+            }
+        }
+
+        if (mDoingKnockout)
+        {
+            returnValue = mPreviousCup->GetNumTeams() >> 1;
+        }
+        else
+        {
+            unsigned short temp;
+
+            if (mCurrentMode == GM_BOWSER_CUP || mCurrentMode == GM_SUPER_BOWSER_CUP)
+            {
+                temp = 8;
+            }
+            else
+            {
+                temp = currentCup->GetNumTeams();
+            }
+
+            returnValue = temp >> 1;
+        }
+
+        return returnValue;
+    }
     eTeamID GetUserSelectedCupTeam() const;
     void SetStadium(eStadiumID);
     eStadiumID PickStadium(bool, eStadiumID) const;

@@ -30,6 +30,7 @@ public:
     void ChangeState(CupChooseCaptainSceneV2::eCupCaptainState, CupChooseCaptainSceneV2::eCupCaptainState);
     void CreateLineup();
     void StartSidekickMiniHead(eSidekickID);
+    void UpdateImages();
 
     /* 0x1C */ TLComponentInstance* mComponents[5];                                      // size 0x14
     /* 0x30 */ TLComponentInstance* mPressAComponent;                                    // size 0x4

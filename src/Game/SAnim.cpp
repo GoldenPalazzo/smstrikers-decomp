@@ -419,8 +419,8 @@ void cSAnim::GetRootRot(float fTime, unsigned short* pRootRot) const
 }
 /**
  * Offset/Address/Size: 0x1E0 | 0x801E93F4 | size: 0x10C
- * TODO: 99.18% match - interpolation setup keeps index in r5 instead of r7 and
- * propagates float temporary register swaps.
+ * TODO: 99.00% match - first two word-copy loads are swapped and
+ * interpolation setup keeps index in r5 instead of r7.
  */
 #pragma inline_depth(8)
 void cSAnim::GetRootTrans(float t, nlVector3* out) const
@@ -429,9 +429,11 @@ void cSAnim::GetRootTrans(float t, nlVector3* out) const
     {
         if (t == 1.0f || m_nNumRootKeys == 1)
         {
+            u32 w0;
+            u32 w1;
             const nlVector3* pSrc = &m_pRootTrans[m_nNumRootKeys - 1];
-            u32 w0 = pSrc->as_u32[0];
-            u32 w1 = pSrc->as_u32[1];
+            w0 = pSrc->as_u32[0];
+            w1 = pSrc->as_u32[1];
             out->as_u32[0] = w0;
             out->as_u32[1] = w1;
             out->as_u32[2] = pSrc->as_u32[2];

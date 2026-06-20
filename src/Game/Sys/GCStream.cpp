@@ -606,6 +606,8 @@ done_alloc:
 
 /**
  * Offset/Address/Size: 0xDCC | 0x801C857C | size: 0x598
+ * TODO: 97.81% match - r20/r23 register choice for the pMRAMBuffer+MRAMOffsetA sum,
+ *       plus loop-counter/MRAMOffset r27/r28 swap and m_StreamPos reload scheduling in the wrap path.
  */
 unsigned long GCAudioStreaming::MonoAudioStream::DoUpdateRead(unsigned long MRAMOffsetA, unsigned long LengthA, unsigned long MRAMOffsetB, unsigned long LengthB, GCAudioStreaming::AudioStreamBuffer* pRequestingBuffer)
 {
@@ -623,15 +625,7 @@ unsigned long GCAudioStreaming::MonoAudioStream::DoUpdateRead(unsigned long MRAM
         ___blank("Read of zereos %d %d and %d %d\n", MRAMOffsetA, LengthA, MRAMOffsetB, LengthB);
         memset(pMRAMBuffer + MRAMOffsetA, 0, LengthA);
         bool enabled = OSDisableInterrupts();
-        register READ_CB_INFO* pCBInfo = READ_CB_INFO::s_AllocPool.m_pFree;
-        if (!pCBInfo)
-        {
-            pCBInfo = 0;
-        }
-        else
-        {
-            READ_CB_INFO::s_AllocPool.m_pFree = pCBInfo->m_next;
-        }
+        register READ_CB_INFO* pCBInfo = READ_CB_INFO::s_AllocPool.Allocate();
         OSRestoreInterrupts(enabled);
         if (pCBInfo)
         {
@@ -678,15 +672,7 @@ unsigned long GCAudioStreaming::MonoAudioStream::DoUpdateRead(unsigned long MRAM
         {
             memset(pMRAMBuffer + MRAMOffsetB, 0, LengthB);
             bool e3 = OSDisableInterrupts();
-            READ_CB_INFO* pCBInfo2 = READ_CB_INFO::s_AllocPool.m_pFree;
-            if (!pCBInfo2)
-            {
-                pCBInfo2 = 0;
-            }
-            else
-            {
-                READ_CB_INFO::s_AllocPool.m_pFree = pCBInfo2->m_next;
-            }
+            READ_CB_INFO* pCBInfo2 = READ_CB_INFO::s_AllocPool.Allocate();
             OSRestoreInterrupts(e3);
             if (pCBInfo2)
             {
@@ -762,15 +748,7 @@ unsigned long GCAudioStreaming::MonoAudioStream::DoUpdateRead(unsigned long MRAM
                 ___blank("EOS zeros %d %d\n", eosOff, ReadBSize);
                 memset(pMRAMBuffer + ReadASize, 0, ReadBSize);
                 bool e4 = OSDisableInterrupts();
-                READ_CB_INFO* pCBInfo3 = READ_CB_INFO::s_AllocPool.m_pFree;
-                if (!pCBInfo3)
-                {
-                    pCBInfo3 = 0;
-                }
-                else
-                {
-                    READ_CB_INFO::s_AllocPool.m_pFree = pCBInfo3->m_next;
-                }
+                READ_CB_INFO* pCBInfo3 = READ_CB_INFO::s_AllocPool.Allocate();
                 OSRestoreInterrupts(e4);
                 if (pCBInfo3)
                 {
@@ -821,15 +799,7 @@ unsigned long GCAudioStreaming::MonoAudioStream::DoUpdateRead(unsigned long MRAM
         unsigned long filePos = nlGetFilePosition(m_pFile);
         ___blank("Reading into %d %d from %d\n", MRAMOffset, ReadASize, filePos);
         bool e5 = OSDisableInterrupts();
-        READ_CB_INFO* pCBInfo4 = READ_CB_INFO::s_AllocPool.m_pFree;
-        if (!pCBInfo4)
-        {
-            pCBInfo4 = 0;
-        }
-        else
-        {
-            READ_CB_INFO::s_AllocPool.m_pFree = pCBInfo4->m_next;
-        }
+        READ_CB_INFO* pCBInfo4 = READ_CB_INFO::s_AllocPool.Allocate();
         OSRestoreInterrupts(e5);
         if (pCBInfo4)
         {
@@ -845,15 +815,7 @@ unsigned long GCAudioStreaming::MonoAudioStream::DoUpdateRead(unsigned long MRAM
             ___blank("Also reading into %d %d from %d\n", MRAMOffset + ReadASize, ReadBSize, filePos2);
             OSGetConsoleType();
             bool e6 = OSDisableInterrupts();
-            READ_CB_INFO* pCBInfo5 = READ_CB_INFO::s_AllocPool.m_pFree;
-            if (!pCBInfo5)
-            {
-                pCBInfo5 = 0;
-            }
-            else
-            {
-                READ_CB_INFO::s_AllocPool.m_pFree = pCBInfo5->m_next;
-            }
+            READ_CB_INFO* pCBInfo5 = READ_CB_INFO::s_AllocPool.Allocate();
             OSRestoreInterrupts(e6);
             if (pCBInfo5)
             {
@@ -869,7 +831,7 @@ unsigned long GCAudioStreaming::MonoAudioStream::DoUpdateRead(unsigned long MRAM
 
 /**
  * Offset/Address/Size: 0xA48 | 0x801C81F8 | size: 0x384
- * TODO: 87.93% match - buffer allocation loops and callback-pool path still have register-allocation differences
+ * TODO: 94.00% match - buffer allocation loops still use different registers for the index, manager, and buffer pointer
  */
 void GCAudioStreaming::StereoAudioStream::Warm(bool CoolOnStop)
 {
@@ -1008,15 +970,7 @@ done_alloc_1:
         void* pADPCMHdr = (void*)(((unsigned long)m_BuffMgr.m_ADPCMHdrMem + 0x1F) & ~0x1F);
 
         bool enabled = OSDisableInterrupts();
-        READ_CB_INFO* pCBInfo = READ_CB_INFO::s_AllocPool.m_pFree;
-        if (!pCBInfo)
-        {
-            pCBInfo = 0;
-        }
-        else
-        {
-            READ_CB_INFO::s_AllocPool.m_pFree = pCBInfo->m_next;
-        }
+        READ_CB_INFO* pCBInfo = READ_CB_INFO::s_AllocPool.Allocate();
         OSRestoreInterrupts(enabled);
 
         if (pCBInfo)
@@ -1153,21 +1107,21 @@ void GCAudioStreaming::StereoAudioStream::InterleavedHdrReadCB(nlFile* pFile, vo
 
 /**
  * Offset/Address/Size: 0x2A8 | 0x801C7A58 | size: 0x540
- * TODO: 93.66% match - MRAMOffsetA/LengthA/MRAMOffsetB register rotation and buffer-count branch selection
+ * TODO: 97.77% match - this/MRAMOffsetB/LengthB three-register coloring rotation (this is r27 vs r31),
+ *       plus an m_BufferCount<=0 ble/beq branch difference and one mr scheduling diff in the read-log call
  */
 unsigned long GCAudioStreaming::StereoAudioStream::DoUpdateRead(unsigned long MRAMOffsetA, unsigned long LengthA, unsigned long MRAMOffsetB, unsigned long LengthB, GCAudioStreaming::AudioStreamBuffer* pRequestingBuffer)
 {
-    AudioStream* pAudioStream = this;
     bool serious;
-    if (pAudioStream->m_Flags & (1 << SF_SeriousStop))
+    if (this->m_Flags & (1 << SF_SeriousStop))
     {
-        switch (pAudioStream->m_State)
+        switch (this->m_State)
         {
         case SS_New:
         case SS_Initd:
             break;
         case SS_Warming:
-            pAudioStream->m_State = SS_Warm;
+            this->m_State = SS_Warm;
             break;
         case SS_Warm:
         case SS_Playing:
@@ -1181,31 +1135,33 @@ unsigned long GCAudioStreaming::StereoAudioStream::DoUpdateRead(unsigned long MR
     }
     if (serious)
         return 0;
-    if (pRequestingBuffer != pAudioStream->m_Buffers[0])
+    if (pRequestingBuffer != this->m_Buffers[0])
     {
         ___blank("Skiping right channel\n");
         return LengthA + LengthB;
     }
-    if (pAudioStream->m_OldLength == 0)
-        pAudioStream->m_OldLength = pAudioStream->m_StreamLength;
-    if (pAudioStream->m_Flags & (1 << SF_EndAtUpdate))
+    if (this->m_OldLength == 0)
+        this->m_OldLength = this->m_StreamLength;
+    if (this->m_Flags & (1 << SF_EndAtUpdate))
     {
         unsigned long EndOffset = MRAMOffsetA + LengthA;
-        ___blank("Lookat at stopping, last playable @ %d, currently @ %d for %d (%d) \n", pAudioStream->m_LastPlayable, MRAMOffsetA, LengthA, EndOffset);
-        if (MRAMOffsetA < pAudioStream->m_LastPlayable && EndOffset >= pAudioStream->m_LastPlayable)
+        ___blank("Lookat at stopping, last playable @ %d, currently @ %d for %d (%d) \n", this->m_LastPlayable, MRAMOffsetA, LengthA, EndOffset);
+        if (MRAMOffsetA < this->m_LastPlayable && EndOffset >= this->m_LastPlayable)
         {
-            pAudioStream->Stop();
+            this->Stop();
             return 0;
         }
         AudioStreamBuffer* pBuffer;
-        volatile unsigned long BufferIndex = (unsigned long)(pBuffer = 0);
-        if (pAudioStream->m_BufferCount <= 0)
+        AudioStreamBuffer* init;
+        volatile unsigned long BufferIndex = (unsigned long)(init = 0);
+        if (this->m_BufferCount <= 0)
         {
         }
         else
         {
-            pBuffer = pAudioStream->m_Buffers[0];
+            init = this->m_Buffers[0];
         }
+        pBuffer = init;
         unsigned long ARAMLenA = (LengthA >> 3) * 0xe;
         unsigned long ARAMLenB = (LengthB >> 3) * 0xe;
         while (pBuffer)
@@ -1214,19 +1170,11 @@ unsigned long GCAudioStreaming::StereoAudioStream::DoUpdateRead(unsigned long MR
             ___blank("Read of zereos %d %d and %d %d\n", MRAMOffsetA, LengthA, MRAMOffsetB, LengthB);
             memset(pMRAMBuffer + MRAMOffsetA, 0, LengthA);
             bool enabled = OSDisableInterrupts();
-            READ_CB_INFO* pCBInfo = READ_CB_INFO::s_AllocPool.m_pFree;
-            if (!pCBInfo)
-            {
-                pCBInfo = 0;
-            }
-            else
-            {
-                READ_CB_INFO::s_AllocPool.m_pFree = pCBInfo->m_next;
-            }
+            READ_CB_INFO* pCBInfo = READ_CB_INFO::s_AllocPool.Allocate();
             OSRestoreInterrupts(enabled);
             if (pCBInfo)
             {
-                pCBInfo->m_next = (READ_CB_INFO*)pAudioStream;
+                pCBInfo->m_next = (READ_CB_INFO*)this;
                 pCBInfo->pBuffer = pBuffer;
             }
             AudioStream* pStream = (AudioStream*)pCBInfo->m_next;
@@ -1268,19 +1216,11 @@ unsigned long GCAudioStreaming::StereoAudioStream::DoUpdateRead(unsigned long MR
             {
                 memset(pMRAMBuffer + MRAMOffsetB, 0, LengthB);
                 bool e3 = OSDisableInterrupts();
-                READ_CB_INFO* pCBInfo2 = READ_CB_INFO::s_AllocPool.m_pFree;
-                if (!pCBInfo2)
-                {
-                    pCBInfo2 = 0;
-                }
-                else
-                {
-                    READ_CB_INFO::s_AllocPool.m_pFree = pCBInfo2->m_next;
-                }
+                READ_CB_INFO* pCBInfo2 = READ_CB_INFO::s_AllocPool.Allocate();
                 OSRestoreInterrupts(e3);
                 if (pCBInfo2)
                 {
-                    pCBInfo2->m_next = (READ_CB_INFO*)pAudioStream;
+                    pCBInfo2->m_next = (READ_CB_INFO*)this;
                     pCBInfo2->pBuffer = pBuffer;
                 }
                 AudioStream* pStream2 = (AudioStream*)pCBInfo2->m_next;
@@ -1321,85 +1261,75 @@ unsigned long GCAudioStreaming::StereoAudioStream::DoUpdateRead(unsigned long MR
             }
             unsigned long idx = BufferIndex + 1;
             BufferIndex = idx;
-            if (idx < pAudioStream->m_BufferCount)
-                pBuffer = pAudioStream->m_Buffers[idx];
+            AudioStreamBuffer* next;
+            if (idx < this->m_BufferCount)
+                next = this->m_Buffers[idx];
             else
-                pBuffer = 0;
+                next = 0;
+            pBuffer = next;
         }
         return LengthA + LengthB;
     }
     unsigned long TotalReadLen = LengthA + LengthB;
     AudioStreamBuffer* pBuffer;
-    volatile unsigned long BufferIndex = (unsigned long)(pBuffer = 0);
-    if (pAudioStream->m_BufferCount <= 0)
+    AudioStreamBuffer* init;
+    volatile unsigned long BufferIndex = (unsigned long)(init = 0);
+    if (this->m_BufferCount <= 0)
     {
     }
     else
     {
-        pBuffer = pAudioStream->m_Buffers[0];
+        init = this->m_Buffers[0];
     }
+    pBuffer = init;
     while (pBuffer)
     {
         unsigned char* pMRAMBuffer = pBuffer->m_MRAMBuffer;
-        unsigned long filePos = nlGetFilePosition(((StereoAudioStream*)pAudioStream)->m_pFile);
+        unsigned long filePos = nlGetFilePosition(this->m_pFile);
         ___blank("Reading into %d %d and %d %d from %d\n", MRAMOffsetA, LengthA, MRAMOffsetB, LengthB, filePos);
         bool enabled = OSDisableInterrupts();
-        READ_CB_INFO* pCBInfo = READ_CB_INFO::s_AllocPool.m_pFree;
-        if (!pCBInfo)
-        {
-            pCBInfo = 0;
-        }
-        else
-        {
-            READ_CB_INFO::s_AllocPool.m_pFree = pCBInfo->m_next;
-        }
+        READ_CB_INFO* pCBInfo = READ_CB_INFO::s_AllocPool.Allocate();
         OSRestoreInterrupts(enabled);
         if (pCBInfo)
         {
-            pCBInfo->m_next = (READ_CB_INFO*)pAudioStream;
+            pCBInfo->m_next = (READ_CB_INFO*)this;
             pCBInfo->pBuffer = pBuffer;
         }
-        nlReadAsync(((StereoAudioStream*)pAudioStream)->m_pFile, pMRAMBuffer + MRAMOffsetA, LengthA, _UpdateReadCB, (unsigned long)pCBInfo);
+        nlReadAsync(this->m_pFile, pMRAMBuffer + MRAMOffsetA, LengthA, _UpdateReadCB, (unsigned long)pCBInfo);
         if (LengthB != 0)
         {
             bool e2 = OSDisableInterrupts();
-            READ_CB_INFO* pCBInfo2 = READ_CB_INFO::s_AllocPool.m_pFree;
-            if (!pCBInfo2)
-            {
-                pCBInfo2 = 0;
-            }
-            else
-            {
-                READ_CB_INFO::s_AllocPool.m_pFree = pCBInfo2->m_next;
-            }
+            READ_CB_INFO* pCBInfo2 = READ_CB_INFO::s_AllocPool.Allocate();
             OSRestoreInterrupts(e2);
             if (pCBInfo2)
             {
-                pCBInfo2->m_next = (READ_CB_INFO*)pAudioStream;
+                pCBInfo2->m_next = (READ_CB_INFO*)this;
                 pCBInfo2->pBuffer = pBuffer;
             }
-            nlReadAsync(((StereoAudioStream*)pAudioStream)->m_pFile, pMRAMBuffer + MRAMOffsetB, LengthB, _UpdateReadCB, (unsigned long)pCBInfo2);
+            nlReadAsync(this->m_pFile, pMRAMBuffer + MRAMOffsetB, LengthB, _UpdateReadCB, (unsigned long)pCBInfo2);
         }
         unsigned long idx = BufferIndex + 1;
         BufferIndex = idx;
-        if (idx < pAudioStream->m_BufferCount)
-            pBuffer = pAudioStream->m_Buffers[idx];
+        AudioStreamBuffer* next;
+        if (idx < this->m_BufferCount)
+            next = this->m_Buffers[idx];
         else
-            pBuffer = 0;
+            next = 0;
+        pBuffer = next;
     }
-    pAudioStream->m_StreamPos += TotalReadLen;
-    if (pAudioStream->m_StreamPos >= pAudioStream->m_StreamLength)
+    this->m_StreamPos += TotalReadLen;
+    if (this->m_StreamPos >= this->m_StreamLength)
     {
         ___blank("Stream wrap\n");
-        pAudioStream->m_StreamPos = 0;
-        nlSeek(((StereoAudioStream*)pAudioStream)->m_pFile, 0xCC, 0);
-        if (!(pAudioStream->m_Flags & (1 << SF_Loop)))
+        this->m_StreamPos = 0;
+        nlSeek(this->m_pFile, 0xCC, 0);
+        if (!(this->m_Flags & (1 << SF_Loop)))
         {
             unsigned long lastPlayable = MRAMOffsetA + LengthA;
             if (LengthB != 0)
                 lastPlayable = MRAMOffsetB + LengthB;
-            pAudioStream->m_LastPlayable = lastPlayable;
-            pAudioStream->m_Flags = (pAudioStream->m_Flags & ~(1 << SF_EndAtUpdate)) | (1 << SF_EndAtUpdate);
+            this->m_LastPlayable = lastPlayable;
+            this->m_Flags = (this->m_Flags & ~(1 << SF_EndAtUpdate)) | (1 << SF_EndAtUpdate);
         }
     }
     return TotalReadLen;

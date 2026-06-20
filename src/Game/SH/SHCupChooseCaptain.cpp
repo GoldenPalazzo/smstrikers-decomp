@@ -3,6 +3,7 @@
 #include "Game/GameInfo.h"
 #include "Game/GameSceneManager.h"
 #include "Game/FE/feHelpFuncs.h"
+#include "NL/gl/glStruct.h"
 #include "NL/nlLocalization.h"
 #include "NL/nlBSearch.h"
 
@@ -153,6 +154,38 @@ CupChooseCaptainSceneV2::~CupChooseCaptainSceneV2()
     }
 }
 
+inline void CupChooseCaptainSceneV2::UpdateImages()
+{
+    char filename[128];
+    char filenamebg[128];
+    char filenameflash[128];
+    char skfilename[128];
+    char skfilenamebg[128];
+    const char* captainname = GetTeamName(mCurrentCaptain);
+    const char* sidekickname = GetSidekickName(mCurrentSK);
+
+    if (!mIsSuperCup)
+    {
+        nlSNPrintf(filename, 0x80, "fe/cup_loadingscreens/%s_l", captainname);
+        nlSNPrintf(filenamebg, 0x80, "fe/cup_loadingscreens/%s_l_bg", captainname);
+        nlSNPrintf(filenameflash, 0x80, "fe/cup_loadingscreens/%s_l_white", captainname);
+        nlSNPrintf(skfilename, 0x80, "fe/cup_loadingscreenssidekicks/%s_%s_l", sidekickname, captainname);
+        nlSNPrintf(skfilenamebg, 0x80, "fe/cup_loadingscreenssidekicks/%s_%s_l_bg", sidekickname, captainname);
+    }
+    else
+    {
+        nlSNPrintf(filename, 0x80, "fe/supercup_loadingscreens/%s_l", captainname);
+        nlSNPrintf(filenamebg, 0x80, "fe/supercup_loadingscreens/%s_l_bg", captainname);
+        nlSNPrintf(filenameflash, 0x80, "fe/supercup_loadingscreens/%s_l_white", captainname);
+        nlSNPrintf(skfilename, 0x80, "fe/supercup_loadingscreenssidekicks/%s_%s_l", sidekickname, captainname);
+        nlSNPrintf(skfilenamebg, 0x80, "fe/supercup_loadingscreenssidekicks/%s_%s_l_bg", sidekickname, captainname);
+    }
+
+    mCaptainImageMain->QueueLoad(filename, false);
+    mCaptainImageBG->QueueLoad(filenamebg, false);
+    mCaptainImageFlash->QueueLoad(filenameflash, false);
+}
+
 /**
  * Offset/Address/Size: 0x1654 | 0x800DE520 | size: 0xB14
  */
@@ -209,10 +242,9 @@ void CupChooseCaptainSceneV2::SceneCreated()
             InlineHasher(nlStringLowerHash("Layer")),
             InlineHasher(nlStringLowerHash("TickerText")));
 
-        extern void* glGetScreenInfo();
-        void* screenInfo = glGetScreenInfo();
+        const gl_ScreenInfo* screenInfo = glGetScreenInfo();
 
-        FEScrollText* ticker = new (nlMalloc(0x22C, 0x20, true)) FEScrollText(scrollText, 0, *(int*)screenInfo + 0x32);
+        FEScrollText* ticker = new (nlMalloc(0x22C, 0x20, true)) FEScrollText(scrollText, 0, screenInfo->ScreenWidth + 0x32);
         mTicker = ticker;
         mTicker->SetDisplayMessage("CHOOSE_CAPTAIN_TICKER_CHOOSE_CAPTAIN");
     }
@@ -267,39 +299,8 @@ void CupChooseCaptainSceneV2::SceneCreated()
     mSKGrid = new (nlMalloc(0x1C, 8, false)) ISidekickGridComponent(mComponents[3], false);
     mSKGrid->BuildMapMenu();
 
-    {
-        const char* sidekickName;
-        const char* captainName = GetTeamName(mCurrentCaptain);
-        sidekickName = GetSidekickName(mCurrentSK);
-
-        char filename[128];
-        char filenamebg[128];
-        char filenameflash[128];
-        char skfilename[128];
-        char skfilenamebg[128];
-
-        if (!mIsSuperCup)
-        {
-            nlSNPrintf(filename, 0x80, "fe/cup_loadingscreens/%s_l", captainName);
-            nlSNPrintf(filenamebg, 0x80, "fe/cup_loadingscreens/%s_l_bg", captainName);
-            nlSNPrintf(filenameflash, 0x80, "fe/cup_loadingscreens/%s_l_white", captainName);
-            nlSNPrintf(skfilename, 0x80, "fe/cup_loadingscreenssidekicks/%s_%s_l", sidekickName, captainName);
-            nlSNPrintf(skfilenamebg, 0x80, "fe/cup_loadingscreenssidekicks/%s_%s_l_bg", sidekickName, captainName);
-        }
-        else
-        {
-            nlSNPrintf(filename, 0x80, "fe/supercup_loadingscreens/%s_l", captainName);
-            nlSNPrintf(filenamebg, 0x80, "fe/supercup_loadingscreens/%s_l_bg", captainName);
-            nlSNPrintf(filenameflash, 0x80, "fe/supercup_loadingscreens/%s_l_white", captainName);
-            nlSNPrintf(skfilename, 0x80, "fe/supercup_loadingscreenssidekicks/%s_%s_l", sidekickName, captainName);
-            nlSNPrintf(skfilenamebg, 0x80, "fe/supercup_loadingscreenssidekicks/%s_%s_l_bg", sidekickName, captainName);
-        }
-
-        mCaptainImageMain->QueueLoad(filename, false);
-        mCaptainImageBG->QueueLoad(filenamebg, false);
-        mCaptainImageFlash->QueueLoad(filenameflash, false);
-        mNumImagesLoaded = 0;
-    }
+    UpdateImages();
+    mNumImagesLoaded = 0;
 
     mPressAComponent = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
         m_pFEScene->m_pFEPackage->GetPresentation()->m_currentSlide,
@@ -308,11 +309,10 @@ void CupChooseCaptainSceneV2::SceneCreated()
     mPressAComponent->m_bVisible = false;
 
     {
-        GameInfoManager* pGameInfo = nlSingleton<GameInfoManager>::s_pInstance;
-        GameInfoManager::eGameModes gameMode = pGameInfo->mCurrentMode;
-        BasicString<unsigned short, Detail::TempStringAllocator> teamNameBS(LookupCupCaptainLoc(0xB862AB94));
-        const unsigned short* modeStr = LookupCupCaptainLoc(GetLOCModeName(gameMode));
-        mCupStartString = Format(teamNameBS, modeStr);
+        GameInfoManager::eGameModes gameMode = nlSingleton<GameInfoManager>::s_pInstance->mCurrentMode;
+        mCupStartString = Format(
+            BasicString<unsigned short, Detail::TempStringAllocator>(LookupCupCaptainLoc(0xB862AB94)),
+            LookupCupCaptainLoc(GetLOCModeName(gameMode)));
     }
 
     mButtons.mButtonInstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
@@ -932,7 +932,7 @@ void CupChooseCaptainSceneV2::ChangeState(CupChooseCaptainSceneV2::eCupCaptainSt
         mPressAComponent->m_bVisible = true;
 
         {
-            UpdateImages(this);
+            ::UpdateImages(this);
         }
 
         mNumImagesLoaded = 0;
@@ -1089,7 +1089,7 @@ void CupChooseCaptainSceneV2::ChangeState(CupChooseCaptainSceneV2::eCupCaptainSt
         mPressAComponent->m_bVisible = true;
 
         {
-            UpdateImages(this);
+            ::UpdateImages(this);
         }
 
         mNumImagesLoaded = 0;

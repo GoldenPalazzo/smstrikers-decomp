@@ -2173,11 +2173,15 @@ void cFielder::DoClearBall()
     EmitBallImpact(this, true);
 }
 
+static inline bool IsShotMeterActive(eShotMeterState state)
+{
+    return (state == SHOT_METER_ACTIVE || state == SHOT_METER_STS_ACTIVE || state == SHOT_METER_STS_TRANSISTION);
+}
+
 /**
  * Offset/Address/Size: 0x8CA8 | 0x80021FE4 | size: 0x2B4
- * TODO: 98.29% match - remaining gap is an extra early branch around the
- * ACTION_SHOOT_TO_SCORE return path and first ShotMeter active-state r4/r3
- * register ordering.
+ * TODO: 99.36% match - remaining gap is an extra early branch around the
+ * ACTION_SHOOT_TO_SCORE return path.
  */
 void cFielder::DoHandleActiveShotMeter()
 {
@@ -2232,12 +2236,7 @@ void cFielder::DoHandleActiveShotMeter()
     }
 
     ShotMeter* pShotMeter = m_pShotMeter;
-    bool bIsActive = false;
-    eShotMeterState meterState = pShotMeter->m_eShotMeterState;
-    if (meterState == SHOT_METER_ACTIVE || meterState == SHOT_METER_STS_ACTIVE || meterState == SHOT_METER_STS_TRANSISTION)
-    {
-        bIsActive = true;
-    }
+    bool bIsActive = IsShotMeterActive(pShotMeter->m_eShotMeterState);
     if (bIsActive)
     {
         if (pShotMeter->m_eShotMeterState == SHOT_METER_STS_TRANSISTION)
@@ -2258,12 +2257,7 @@ void cFielder::DoHandleActiveShotMeter()
     }
 
     pShotMeter = m_pShotMeter;
-    bIsActive = false;
-    meterState = pShotMeter->m_eShotMeterState;
-    if (meterState == SHOT_METER_ACTIVE || meterState == SHOT_METER_STS_ACTIVE || meterState == SHOT_METER_STS_TRANSISTION)
-    {
-        bIsActive = true;
-    }
+    bIsActive = IsShotMeterActive(pShotMeter->m_eShotMeterState);
     if (bIsActive)
     {
         bool bCanShootToScore = false;

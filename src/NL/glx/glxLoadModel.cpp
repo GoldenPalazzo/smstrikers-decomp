@@ -527,8 +527,8 @@ static u8* GetChunkDataPointer(nlChunk* chunk)
 
 /**
  * Offset/Address/Size: 0xC08 | 0x801C0828 | size: 0x2A0
- * TODO: 98.24% match - register allocation diffs remain in chunk type masking and
- * case-local loop/morph temporaries
+ * TODO: 98.7% match - loop counter/root register diffs remain in bone matrix
+ * and bone map cases
  */
 GLSkinMesh* glx_MakeSkinMesh(nlChunk* outerChunk, glModel* models)
 {
@@ -554,8 +554,10 @@ GLSkinMesh* glx_MakeSkinMesh(nlChunk* outerChunk, glModel* models)
         if (((-alignBits | alignBits) >> 31) != 0)
         {
             align = 1 << (alignBits >> 24);
-            u32 ptr = (u32)chunk + align;
-            ptr = (ptr + 7) & ~(align - 1);
+            u32 ptr = (u32)chunk;
+            ptr += align;
+            ptr += 7;
+            ptr &= ~(align - 1);
             result = (u8*)ptr;
         }
         else
@@ -618,14 +620,14 @@ GLSkinMesh* glx_MakeSkinMesh(nlChunk* outerChunk, glModel* models)
         case 0x1B00C:
         {
             u32 numMorphs = *(u32*)(data + 0);
-            u8* p = data + 8;
             mesh->numMorphs = (int)numMorphs;
             mesh->numBaseVerts = *(u32*)(data + 4);
-            mesh->SetMorphIDs((const u32*)p);
-            p += numMorphs * 4;
-            mesh->SetMorphNumDeltas((const u32*)p);
-            p += numMorphs * 4;
-            mesh->SetMorphDeltas(*(int*)p, (const MorphDelta*)(p + 4));
+            data += 8;
+            mesh->SetMorphIDs((const u32*)data);
+            data += numMorphs * 4;
+            mesh->SetMorphNumDeltas((const u32*)data);
+            data += numMorphs * 4;
+            mesh->SetMorphDeltas(*(int*)data, (const MorphDelta*)(data + 4));
             break;
         }
         case 0x1B00F:

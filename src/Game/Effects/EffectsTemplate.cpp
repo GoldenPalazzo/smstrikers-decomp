@@ -76,9 +76,8 @@ float RandomizedValue(float base, float range)
 
 /**
  * Offset/Address/Size: 0xFD4 | 0x801F1B98 | size: 0x28C
- * TODO: 84.24% match - stmw r24 vs r25 register allocation mismatch;
- * compiler uses 8 callee-saved regs instead of 7, causing cascading
- * stack frame (0x90 vs 0xa0) and register assignment differences.
+ * TODO: 93.59% match - residual temporary key stack slots and span-loop
+ * register allocation differ.
  */
 static void BlendSpan(nlColour* pColour, int cindex, const ColourKey& k0, const ColourKey& k1)
 {
@@ -101,7 +100,7 @@ static void BlendSpan(nlColour* pColour, int cindex, const ColourKey& k0, const 
     }
 }
 
-void GetColourComponent(SimpleParser* parser, nlColour* pColour, int cindex)
+static void GetColourComponent(SimpleParser* parser, nlColour* pColour, int cindex)
 {
     typedef DLListContainerBase<ColourKey, NewAdapter<DLListEntry<ColourKey> > > ColourKeyList;
     ColourKey keyTmp;
@@ -117,19 +116,17 @@ void GetColourComponent(SimpleParser* parser, nlColour* pColour, int cindex)
             break;
         char* cp = token;
         int i = 0;
-        char* indp = ind;
         while (*cp != ':')
         {
-            *indp++ = *cp++;
+            ind[i] = *cp++;
             i++;
         }
         ind[i] = 0;
         cp++;
         i = 0;
-        char* valp = val;
         while ((char)*cp != 0)
         {
-            *valp++ = *cp++;
+            val[i] = *cp++;
             i++;
         }
         val[i] = 0;
@@ -142,14 +139,8 @@ void GetColourComponent(SimpleParser* parser, nlColour* pColour, int cindex)
         pKey->value = value;
         *pKeyTmp = *pKey;
 
-        DLListEntry<ColourKey>* entry = (DLListEntry<ColourKey>*)nlMalloc(0x10, 8, false);
-        if (entry != NULL)
-        {
-            entry->m_next = NULL;
-            entry->m_prev = NULL;
-            entry->m_data.index = index;
-            entry->m_data.value = pKeyTmp->value;
-        }
+        DLListEntry<ColourKey>* entry = keys.m_Allocator.Allocate();
+        entry = new (entry) DLListEntry<ColourKey>(*pKeyTmp);
         nlDLRingAddEnd<DLListEntry<ColourKey> >(&keys.m_Head, entry);
     }
     DLListEntry<ColourKey>* start = nlDLRingGetStart<DLListEntry<ColourKey> >(keys.m_Head);

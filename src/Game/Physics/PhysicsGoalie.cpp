@@ -142,7 +142,7 @@ bool PhysicsGoalie::SweepTestEveryBone(float ballRadius, const nlVector3& ballPr
 
 /**
  * Offset/Address/Size: 0x70 | 0x80139AF0 | size: 0x438
- * TODO: 93.67% match - callee-saved float register allocation (f28/f27 vs f31/f30) cannot be controlled from C source.
+ * TODO: 96.81% match - remaining float register and loop cursor differences in the post collision loop.
  */
 void PhysicsGoalie::CollideGoalieWithPost()
 {
@@ -193,13 +193,13 @@ void PhysicsGoalie::CollideGoalieWithPost()
             float y = v3JointPos[i].f.y;
 
             nlVector3 v3JointWorldPos;
-            v3JointWorldPos.f.y = v3GoaliePos.f.y + ((fCos * y) + (fSin * x));
             v3JointWorldPos.f.x = v3GoaliePos.f.x + ((fCos * x) - (fSin * y));
+            v3JointWorldPos.f.y = v3GoaliePos.f.y + ((fCos * y) + (fSin * x));
             v3JointWorldPos.f.z = v3PostPos.f.z;
 
-            float postToJointY = v3PostPos.f.y - v3JointWorldPos.f.y;
             float postToJointX = v3PostPos.f.x - v3JointWorldPos.f.x;
-            float jointDistSq = (postToJointY * postToJointY) + (postToJointX * postToJointX);
+            float postToJointY = v3PostPos.f.y - v3JointWorldPos.f.y;
+            float jointDistSq = (postToJointX * postToJointX) + (postToJointY * postToJointY);
             float fMinDist = postRadius + fJointRadius[i];
 
             if (i == 0)
@@ -213,23 +213,24 @@ void PhysicsGoalie::CollideGoalieWithPost()
 
                     if ((v3PostPos.f.x * v3Norm.f.x) < 0.0f)
                     {
-                        v3Norm.f.x = v3Norm.f.x * -1.0f;
-                        v3Norm.f.y = v3Norm.f.y * -1.0f;
+                        v3Norm.f.x *= -1.0f;
+                        v3Norm.f.y *= -1.0f;
                     }
 
                     nlVector4 v4Plane;
                     MakePerpendicularPlane(v3JointWorldPos, v3Norm, v4Plane, 0.0f);
 
-                    float fCurDist = ((v3PostPos.f.y * v4Plane.f.y) + (v3PostPos.f.x * v4Plane.f.x) + (v3PostPos.f.z * v4Plane.f.z)) - v4Plane.f.w;
+                    float fCurDist = ((v3PostPos.f.x * v4Plane.f.x) + (v3PostPos.f.y * v4Plane.f.y) + (v3PostPos.f.z * v4Plane.f.z)) - v4Plane.f.w;
                     float fCurDistAbs = (float)fabs(fCurDist);
 
                     if (fCurDistAbs < fMinDist)
                     {
-                        float fMoveDist = InterpolateRangeClamped(0.0f, fMinDist - fCurDistAbs, onePlusPostRadius, 0.0f, nlSqrt(jointDistSq, true));
+                        float fJointDist = nlSqrt(jointDistSq, true);
+                        float fMoveDist = InterpolateRangeClamped(0.0f, fMinDist - fCurDistAbs, onePlusPostRadius, 0.0f, fJointDist);
 
                         if ((fCurDist > 0.0f) || m_CanCollidedWithGoalLine)
                         {
-                            fMoveDist = fMoveDist * -1.0f;
+                            fMoveDist *= -1.0f;
                         }
 
                         v3GoaliePos.f.z = v3GoaliePos.f.z + (fMoveDist * v4Plane.f.z);

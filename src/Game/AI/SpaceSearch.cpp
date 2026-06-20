@@ -32,7 +32,7 @@ SpaceSearch::~SpaceSearch()
 
 /**
  * Offset/Address/Size: 0x1284 | 0x80063BD4 | size: 0x5F0
- * TODO: 96.63% match - preserved float register allocation still differs from target
+ * TODO: 99.79% match - integer register allocation differs in radial and angle step counters
  */
 float SpaceSearch::FindBestPosition(nlVector3& v3Dest, const nlVector3& v3CenterPos, eFieldDirection eSearchDir, const nlVector3* pv3TargetOrDirection, float fMaxRadius, unsigned short aSearchCone)
 {
@@ -42,8 +42,8 @@ float SpaceSearch::FindBestPosition(nlVector3& v3Dest, const nlVector3& v3Center
     nlVector3 v3BestOpenPosition;
     float fOriginalPositionScore;
     float fBestPositionScore;
-    unsigned short aFromAngle;
-    unsigned short aToAngle;
+    int aFromAngle;
+    int aToAngle;
     long aDelta;
     float fRadiusDelta;
     nlVector3 v3LastPos;
@@ -84,25 +84,26 @@ float SpaceSearch::FindBestPosition(nlVector3& v3Dest, const nlVector3& v3Center
     fBestPositionScore = fOriginalPositionScore;
 
     nlPolar pLocation = { 0, 0.0f };
+    float fMinRadius = 0.0f;
 
     if (fMaxRadius <= 0.0f)
     {
         fMaxRadius = 4.0f;
     }
 
-    aFromAngle = (unsigned short)(int)((float)aDirection - 0.5f * (float)aSearchCone);
-    aToAngle = (unsigned short)(int)((float)aDirection + 0.5f * (float)aSearchCone);
+    m_unk_0x0C = fMaxRadius;
+
+    aFromAngle = (int)((float)aDirection - 0.5f * (float)aSearchCone);
+    aToAngle = (int)((float)aDirection + 0.5f * (float)aSearchCone);
     aDelta = (short)(aToAngle - aFromAngle);
 
     numRadiusSteps = 5;
-    if ((int)(0.5f + (fMaxRadius - pLocation.r) / 1.5f) < 5)
+    if ((int)(0.5f + (fMaxRadius - fMinRadius) / 1.5f) < 5)
     {
-        numRadiusSteps = (int)(0.5f + (fMaxRadius - pLocation.r) / 1.5f);
+        numRadiusSteps = (int)(0.5f + (fMaxRadius - fMinRadius) / 1.5f);
     }
 
-    m_unk_0x0C = fMaxRadius;
-
-    fRadiusDelta = (fMaxRadius - pLocation.r) / (float)numRadiusSteps;
+    fRadiusDelta = (fMaxRadius - fMinRadius) / (float)numRadiusSteps;
 
     v3LastPos = v3CenterPos;
     numIterations = 0;
@@ -114,10 +115,6 @@ float SpaceSearch::FindBestPosition(nlVector3& v3Dest, const nlVector3& v3Center
         maxIterations = 0;
         init = 1;
     }
-
-    float fCenterZ = v3CenterPos.f.z;
-    float fCenterY = v3CenterPos.f.y;
-    float fCenterX = v3CenterPos.f.x;
 
     for (i_radius = 0; i_radius < numRadiusSteps; i_radius++)
     {
@@ -147,9 +144,7 @@ float SpaceSearch::FindBestPosition(nlVector3& v3Dest, const nlVector3& v3Center
             }
 
             nlPolarToCartesian(v3TestPosition, pLocation);
-            v3TestPosition.f.z += fCenterZ;
-            v3TestPosition.f.y += fCenterY;
-            v3TestPosition.f.x += fCenterX;
+            nlVec3Add(v3TestPosition, v3TestPosition, v3CenterPos);
             v3TestPosition.f.z = 0.0f;
 
             cField::FixOutOfBoundsPosition(v3TestPosition, 0.2f);
@@ -423,8 +418,8 @@ float CalcIdealShootingPositionScore(const nlVector3& v3TestPosition, const nlVe
 
 /**
  * Offset/Address/Size: 0x594 | 0x80062EE4 | size: 0x47C
- * TODO: 99.46% match - register assignment differences remain in the pass-target
- * velocity normalization and lead-pass distance calculations
+ * TODO: 99.62% match - register assignment differences remain in the sideline,
+ * pass-target velocity, and lead-pass distance calculations
  */
 float SSearchBestPass::EvaluatePosition(const nlVector3& position, const nlVector3& v3OtherPosition, eFieldDirection eSearchDir, unsigned short aDirection)
 {
@@ -469,9 +464,9 @@ float SSearchBestPass::EvaluatePosition(const nlVector3& position, const nlVecto
         {
             float fInvPassTargetVelocity = nlRecipSqrt(fPassTargetVelocitySq, true);
 
-            float fDy = position.f.y - v3OtherPosition.f.y;
             nlVec3Scale(v3PassTargetVelocity, fInvPassTargetVelocity);
 
+            float fDy = position.f.y - v3OtherPosition.f.y;
             float fDx = position.f.x - v3OtherPosition.f.x;
             float fDz = position.f.z - v3OtherPosition.f.z;
             float fDistSq = fDy * fDy + fDx * fDx + fDz * fDz;
@@ -507,7 +502,15 @@ float SSearchBestPass::EvaluatePosition(const nlVector3& position, const nlVecto
                 fTotalWeight += 0.15f;
             }
 
-            float fPassSpeed = m_bAllowLeadPass ? m_SSearchOpenLane.m_pBallOwner->m_pTweaks->fPassVolleySpeedMax : m_SSearchOpenLane.m_pBallOwner->m_pTweaks->fPassGroundSpeedMax;
+            float fPassSpeed;
+            if (m_bAllowLeadPass)
+            {
+                fPassSpeed = m_SSearchOpenLane.m_pBallOwner->m_pTweaks->fPassVolleySpeedMax;
+            }
+            else
+            {
+                fPassSpeed = m_SSearchOpenLane.m_pBallOwner->m_pTweaks->fPassGroundSpeedMax;
+            }
 
             float fDy3 = m_SSearchOpenLane.m_pBallOwner->m_v3Position.f.x - position.f.x;
             float fDx3 = m_SSearchOpenLane.m_pBallOwner->m_v3Position.f.y - position.f.y;

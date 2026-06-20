@@ -292,11 +292,12 @@ void FEScrollText::SetDisplayMessage(const BasicString<unsigned short, Detail::T
         }
         else
         {
-            unsigned short mappedCh = fontcharstring.m_pString[i];
+            unsigned short* fontBuffer = fontcharstring.m_pString;
+            unsigned short mappedCh = fontBuffer[i];
             int charWidth;
             if (i != 0)
             {
-                unsigned short prevChar = fontcharstring.m_pString[i - 1];
+                unsigned short prevChar = fontBuffer[i - 1];
                 charWidth = (int)m_textFont->GetCharWidth(mappedCh, prevChar);
             }
             else

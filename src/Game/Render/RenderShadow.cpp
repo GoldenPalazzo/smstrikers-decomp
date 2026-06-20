@@ -630,7 +630,7 @@ static void CastPoint(nlVector3& p, const nlVector3& vLight)
 
 /**
  * Offset/Address/Size: 0x0 | 0x80123034 | size: 0x750
- * TODO: 84.62% match - register allocation and scheduling still differ in corner setup
+ * TODO: 92.07% match - register allocation and scheduling still differ in corner setup
  *       and directional/point cast paths.
  */
 void RenderProjectedShadow(const ProjectedShadowParams& params)
@@ -682,7 +682,9 @@ void RenderProjectedShadow(const ProjectedShadowParams& params)
         vDir.f.y = dy;
         vDir.f.z = dz;
         nlVec3Scale(vDir, invLen);
-        nlVec3Cross(vCross, vDir, vUp);
+        vCross.f.x = (vDir.f.y * vUp.f.z) - (vDir.f.z * vUp.f.y);
+        vCross.f.y = (-vDir.f.x * vUp.f.z) + (vDir.f.z * vUp.f.x);
+        vCross.f.z = (vDir.f.x * vUp.f.y) - (vDir.f.y * vUp.f.x);
 
         float halfW = 0.5f * width;
         float negHalfW = -0.5f * width;
@@ -691,37 +693,45 @@ void RenderProjectedShadow(const ProjectedShadowParams& params)
         vTemp.f.y = params.vPosition.f.y;
         vTemp.f.z = params.vPosition.f.z + 0.5f * height;
 
-        p[0].f.x = vTemp.f.x + halfW * vCross.f.x;
-        p[0].f.y = vTemp.f.y + halfW * vCross.f.y;
-        p[0].f.z = vTemp.f.z + halfW * vCross.f.z;
+        float halfCrossX = halfW * vCross.f.x;
+        float halfCrossY = halfW * vCross.f.y;
+        float halfCrossZ = halfW * vCross.f.z;
+        float negCrossX = negHalfW * vCross.f.x;
+        float negCrossY = negHalfW * vCross.f.y;
+        float negCrossZ = negHalfW * vCross.f.z;
 
-        p[1].f.x = vTemp.f.x + negHalfW * vCross.f.x;
-        p[1].f.y = vTemp.f.y + negHalfW * vCross.f.y;
-        p[1].f.z = vTemp.f.z + negHalfW * vCross.f.z;
+        p[0].f.x = vTemp.f.x + halfCrossX;
+        p[0].f.y = vTemp.f.y + halfCrossY;
+        p[0].f.z = vTemp.f.z + halfCrossZ;
+        p[1].f.x = vTemp.f.x + negCrossX;
+        p[1].f.y = vTemp.f.y + negCrossY;
+        p[1].f.z = vTemp.f.z + negCrossZ;
+        p[2].f.x = vTemp.f.x + negCrossX;
+        p[2].f.y = vTemp.f.y + negCrossY;
+        p[2].f.z = vTemp.f.z + negCrossZ;
+        p[3].f.x = vTemp.f.x + halfCrossX;
+        p[3].f.y = vTemp.f.y + halfCrossY;
+        p[3].f.z = vTemp.f.z + halfCrossZ;
 
-        p[2].f.x = vTemp.f.x + negHalfW * vCross.f.x;
-        p[2].f.y = vTemp.f.y + negHalfW * vCross.f.y;
-        p[2].f.z = vTemp.f.z + negHalfW * vCross.f.z;
+        float negHeightX = (-0.5f * height) * vUp.f.x;
+        float negHeightY = (-0.5f * height) * vUp.f.y;
+        float negHeightZ = (-0.5f * height) * vUp.f.z;
+        float heightX = (0.5f * height) * vUp.f.x;
+        float heightY = (0.5f * height) * vUp.f.y;
+        float heightZ = (0.5f * height) * vUp.f.z;
 
-        p[3].f.x = vTemp.f.x + halfW * vCross.f.x;
-        p[3].f.y = vTemp.f.y + halfW * vCross.f.y;
-        p[3].f.z = vTemp.f.z + halfW * vCross.f.z;
-
-        p[0].f.x += (-0.5f * height) * vUp.f.x;
-        p[0].f.y += (-0.5f * height) * vUp.f.y;
-        p[0].f.z += (-0.5f * height) * vUp.f.z;
-
-        p[1].f.x += (-0.5f * height) * vUp.f.x;
-        p[1].f.y += (-0.5f * height) * vUp.f.y;
-        p[1].f.z += (-0.5f * height) * vUp.f.z;
-
-        p[2].f.x += (0.5f * height) * vUp.f.x;
-        p[2].f.y += (0.5f * height) * vUp.f.y;
-        p[2].f.z += (0.5f * height) * vUp.f.z;
-
-        p[3].f.x += (0.5f * height) * vUp.f.x;
-        p[3].f.y += (0.5f * height) * vUp.f.y;
-        p[3].f.z += (0.5f * height) * vUp.f.z;
+        p[0].f.x += negHeightX;
+        p[0].f.y += negHeightY;
+        p[0].f.z += negHeightZ;
+        p[1].f.x += negHeightX;
+        p[1].f.y += negHeightY;
+        p[1].f.z += negHeightZ;
+        p[2].f.x += heightX;
+        p[2].f.y += heightY;
+        p[2].f.z += heightZ;
+        p[3].f.x += heightX;
+        p[3].f.y += heightY;
+        p[3].f.z += heightZ;
     }
 
     nlVector3* p1 = &p[1];

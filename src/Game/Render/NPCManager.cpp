@@ -45,6 +45,19 @@ static inline cSAnim* FindAnimByHash(cInventory<cSAnim>* animInv, u32 hash)
     return NULL;
 }
 
+static inline cSHierarchy* FindHierarchy(ListEntry<cSHierarchy*>* hEntry, u32 hash)
+{
+    while (hEntry != NULL)
+    {
+        if (hash == hEntry->data->m_uHashID)
+        {
+            return hEntry->data;
+        }
+        hEntry = hEntry->next;
+    }
+    return NULL;
+}
+
 // /**
 //  * Offset/Address/Size: 0x68 | 0x80167338 | size: 0x28
 //  */
@@ -372,9 +385,9 @@ void NPCManager::UpdateAINPCs(float dt)
 
 /**
  * Offset/Address/Size: 0x0 | 0x80165EC4 | size: 0x3D0
- * TODO: 97.21% match - extra move pair (mr r0,r3; mr r25,r0) remains at
- * nlLoadEntireFile return sites (hierarchy + non-virtual anim branch), plus
- * register allocation differences in the final hierarchy search loop.
+ * TODO: 98.77% match - extra return-value move remains after hierarchy and
+ * non-virtual anim file loads, plus animation inventory/end register allocation
+ * differences.
  */
 void NPCManager::CreateNPCTemplate(int templateIndex, bool loadTextures)
 {
@@ -491,8 +504,9 @@ void NPCManager::CreateNPCTemplate(int templateIndex, bool loadTextures)
     }
     else
     {
+        nlChunk* animData;
         cInventory<cSAnim>* animInv = mpInventorySAnim;
-        nlChunk* animData = (nlChunk*)nlLoadEntireFile(
+        animData = (nlChunk*)nlLoadEntireFile(
             gNPCTemplateInfo[templateIndex].animFilename,
             &animFileSize,
             0x20,
@@ -539,18 +553,6 @@ void NPCManager::CreateNPCTemplate(int templateIndex, bool loadTextures)
 
     cInventory<cSHierarchy>* searchInv = mpInventorySHierarchy;
     u32 hash = nlStringHash(gNPCTemplateInfo[templateIndex].hierarchyName);
-    ListEntry<cSHierarchy*>* entry = (ListEntry<cSHierarchy*>*)searchInv->m_lItemList.m_Head;
-    cSHierarchy* foundHier = NULL;
-    while (entry != NULL)
-    {
-        if (hash == entry->data->m_uHashID)
-        {
-            foundHier = entry->data;
-            break;
-        }
-        entry = entry->next;
-    }
-
-    mNPCTemplate[templateIndex].hierarchy = foundHier;
+    mNPCTemplate[templateIndex].hierarchy = FindHierarchy(searchInv->m_lItemList.m_Head, hash);
     mNPCTemplate[templateIndex].loaded = true;
 }

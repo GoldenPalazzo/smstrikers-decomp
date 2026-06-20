@@ -1,4 +1,5 @@
 #include "NL/gl/glRenderList.h"
+#include "Game/GL/GLRenderBuffer.h"
 #include "NL/gl/glAppAttach.h"
 #include "NL/gl/glMatrix.h"
 #include "NL/gl/glModify.h"
@@ -7,21 +8,12 @@
 
 /**
  * Offset/Address/Size: 0x0 | 0x801D92C0 | size: 0x36C
- * TODO: 97.8% match - pModel/layer register swap (r25/r26), pPacket r31 vs r29,
+ * TODO: 97.9% match - pModel/layer register swap (r25/r26), pPacket r31 vs r29,
  *       extra mr before rlwimi
  */
 s32 GLRenderList::AttachModel(const glModel* pModel, unsigned long layer)
 {
     glModelPacket* pPacket;
-    DepthPacketPair pair;
-    nlMatrix4 m;
-    GLDepthPacketTree* pTree;
-    AVLTreeNode* existingNode;
-    unsigned int* pCount;
-    unsigned long sortKey;
-    nlVector3 out;
-    GLPacketList* pList;
-    DLListEntry<const glModelPacket*>* p;
 
     if ((s32)m_unk_0x00 < 0x1A && glRenderBuffer.m_bEnabled && glRenderBuffer.m_bExclusive && !glRenderBuffer.m_bSending)
     {
@@ -52,6 +44,13 @@ s32 GLRenderList::AttachModel(const glModel* pModel, unsigned long layer)
     }
     else if (m_unk_0x04 == GLVSort_TransformedDepth || m_unk_0x04 == GLVSort_TransformedMatrixDepth)
     {
+        DepthPacketPair pair;
+        nlMatrix4 m;
+        GLDepthPacketTree* pTree;
+        AVLTreeNode* existingNode;
+        unsigned int* pCount;
+        unsigned long sortKey;
+        nlVector3 out;
         glGetIdentityMatrix();
         glGetMatrix((unsigned long)glViewGetViewMatrix((eGLView)m_unk_0x00), m);
         unsigned long numPackets = pModel->numPackets;
@@ -101,6 +100,8 @@ s32 GLRenderList::AttachModel(const glModel* pModel, unsigned long layer)
     }
     else if (m_unk_0x04 == GLVSort_Reverse)
     {
+        GLPacketList* pList;
+        DLListEntry<const glModelPacket*>* p;
         unsigned long numPackets = pModel->numPackets;
         for (unsigned long index = 0; index < numPackets; index++, pPacket = (glModelPacket*)((u8*)pPacket + 0x4A))
         {
@@ -132,6 +133,8 @@ s32 GLRenderList::AttachModel(const glModel* pModel, unsigned long layer)
     }
     else if (m_unk_0x04 == GLVSort_None)
     {
+        GLPacketList* pList;
+        DLListEntry<const glModelPacket*>* p;
         unsigned long numPackets = pModel->numPackets;
         for (unsigned long index = 0; index < numPackets; index++, pPacket = (glModelPacket*)((u8*)pPacket + 0x4A))
         {

@@ -192,8 +192,7 @@ void cCharacter::SetSFX(SoundPropAccessor* pSoundPropAccessor)
 
 /**
  * Offset/Address/Size: 0x40C | 0x8000E358 | size: 0x650
- * TODO: 98.32% match - r-diffs in DECELERATE (f3/f4 swap),
- * FROM_ANIM smoothstep/AnimMoveAdjust/RootTrans register cascade,
+ * TODO: 98.41% match - FROM_ANIM smoothstep/AnimMoveAdjust/RootTrans register cascade,
  * RUNNING abs() r0/r3
  */
 void cCharacter::UpdateMovementState(float fDeltaT)
@@ -231,7 +230,9 @@ void cCharacter::UpdateMovementState(float fDeltaT)
 
     case MOVEMENT_DECELERATE_EXPONENTIAL:
     {
-        float difference = fDesiredSpeed - m_fActualSpeed;
+        float difference;
+        float actualSpeed = m_fActualSpeed;
+        difference = fDesiredSpeed - actualSpeed;
         float fDecel = m_fDecel;
         float distance = fabs(difference);
         float newSpeed;
@@ -240,11 +241,11 @@ void cCharacter::UpdateMovementState(float fDeltaT)
             float adjustment = distance - (1.0f / (fDecel * fDeltaT + 1.0f / distance));
             if (difference > 0.0f)
             {
-                newSpeed = m_fActualSpeed + adjustment;
+                newSpeed = actualSpeed + adjustment;
             }
             else
             {
-                newSpeed = m_fActualSpeed - adjustment;
+                newSpeed = actualSpeed - adjustment;
             }
         }
         else

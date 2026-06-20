@@ -3083,7 +3083,7 @@ void cFielder::SetupCaptainSTSAnimCam(bool arg1)
     mActionShootToScoreVars.captainStsCamera = new ((cAnimCamera*)nlMalloc(sizeof(cAnimCamera), 8, false)) cAnimCamera();
 
     BasicString<char, Detail::TempStringAllocator> cameraName = Format(BasicString<char, Detail::TempStringAllocator>("{0}_ShootToScoreCamera"),
-        GetTeamName(nlSingleton<GameInfoManager>::s_pInstance
+        (const char*)GetTeamName(nlSingleton<GameInfoManager>::s_pInstance
                 ->mGameInfo[nlSingleton<GameInfoManager>::s_pInstance->mCurrentMode]
                 ->mTeamIndex[(s16)m_pTeam->m_nSide]));
 
@@ -3129,8 +3129,9 @@ void cFielder::SetupCaptainSTSAnimCam(bool arg1)
 
     if (arg1)
     {
-        mActionShootToScoreVars.captainStsCamera->m_fAnimationTime = sfHyperStrikeAnimCamStartTime;
-        mActionShootToScoreVars.captainStsCamera->BuildAnimViewMatrix(mActionShootToScoreVars.captainStsCamera->m_matView);
+        cAnimCamera* pCam = mActionShootToScoreVars.captainStsCamera;
+        pCam->m_fAnimationTime = sfHyperStrikeAnimCamStartTime;
+        pCam->BuildAnimViewMatrix(pCam->m_matView);
         PhotoFlash::Flash();
         cCameraManager::PushCamera(mActionShootToScoreVars.captainStsCamera);
     }
@@ -3986,6 +3987,7 @@ void cFielder::InitActionSlideAttack(cFielder* pTarget, float fTime)
 
 /**
  * Offset/Address/Size: 0xE2C | 0x80027964 | size: 0x59C
+ * TODO: 99.84% match - star slide block load order and pBall register allocation differ.
  */
 void cFielder::ActionSlideAttack(float fDeltaTime)
 {
@@ -3996,44 +3998,47 @@ void cFielder::ActionSlideAttack(float fDeltaTime)
 
     if (!mActionSlideAttackVars.bAttackSucceeded && mActionSlideAttackVars.eSlideAttackState == SLIDE_ATTACK_DOWN && m_ePowerup == POWER_UP_STAR)
     {
-        float dx = g_pBall->m_v3Position.f.x - m_v3Position.f.x;
-        float dy = g_pBall->m_v3Position.f.y - m_v3Position.f.y;
-        float dist = dx * dx + dy * dy;
-        nlSqrt(dist, true);
-        dist = nlSqrt(dist, true);
-        float invDist = 1.0f / dist;
+        float fCurrSpeed;
+        float dx, dy;
+        float newVelY, newVelX;
+        nlVector3 v3NewVelocity;
 
-        dy = invDist * dy;
+        dy = g_pBall->m_v3Position.f.y - m_v3Position.f.y;
+        dx = g_pBall->m_v3Position.f.x - m_v3Position.f.x;
+
+        float distSq = dy * dy + dx * dx;
+        nlSqrt(distSq, true);
+        float invDist = 1.0f / nlSqrt(distSq, true);
         dx = invDist * dx;
-        float speed = nlGetLength2D(m_v3Velocity.f.x, m_v3Velocity.f.y);
+        dy = invDist * dy;
 
-        float scaledDy = 8.5f * dy;
-        float scaledDx = 8.5f * dx;
-        float slideVelY = scaledDy + m_v3Velocity.f.y;
-        float slideVelX = scaledDx + m_v3Velocity.f.x;
+        float velY = m_v3Velocity.f.y;
+        float velX = m_v3Velocity.f.x;
+        fCurrSpeed = nlGetLength2D(velX, velY);
 
-        float slideMag = nlSqrt(slideVelY * slideVelY + slideVelX * slideVelX, true);
-        float invSlideMag = 1.0f / slideMag;
-        float normSlideY = invSlideMag * slideVelY;
-        float normSlideX = invSlideMag * slideVelX;
+        float turnRate = 8.5f;
+        float steerY = turnRate * dy;
+        float steerX = turnRate * dx;
+        newVelY = steerY + m_v3Velocity.f.y;
+        newVelX = steerX + m_v3Velocity.f.x;
 
-        float dot = normSlideY * dx + normSlideX * dy;
+        float newSpeed = nlSqrt(newVelY * newVelY + newVelX * newVelX, true);
+        float invNewSpeed = 1.0f / newSpeed;
+        float normNewVelY = invNewSpeed * newVelY;
+        float normNewVelX = invNewSpeed * newVelX;
+
+        float dot = normNewVelY * dy + normNewVelX * dx;
 
         if (dot >= 0.0f)
         {
-            float vx = speed * normSlideY;
-            float vy = speed * normSlideX;
-            nlVector3 vel;
-            vel.f.z = 0.0f;
-            vel.f.x = vx;
-            vel.f.y = vy;
+            nlVec3Set(v3NewVelocity, fCurrSpeed * normNewVelY, fCurrSpeed * normNewVelX, 0.0f);
 
             nlPolar polar;
-            nlCartesianToPolar(polar, vx, vy);
+            nlCartesianToPolar(polar, v3NewVelocity.f.x, v3NewVelocity.f.y);
             m_aDesiredFacingDirection = polar.a;
             m_aActualFacingDirection = m_aDesiredFacingDirection;
             m_aActualMovementDirection = m_aActualFacingDirection;
-            SetVelocity(vel);
+            SetVelocity(v3NewVelocity);
         }
     }
 

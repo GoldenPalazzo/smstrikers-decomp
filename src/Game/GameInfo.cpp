@@ -911,6 +911,11 @@ static const int EIGHT_TEAM_MATCHUPS[28][2] = {
     { 0, 3 },
 };
 
+/**
+ * TODO: 93.77% match - target spills numplayingteams to the stack and keeps the
+ * round-count value (i == ...) in a callee-saved register; ours keeps
+ * numplayingteams in a register, which shifts register coloring across the body.
+ */
 void GameInfoManager::SetupRoundRobinSchedule(eTeamID* lineup, eSidekickID* sklineup)
 {
     eGameModes gamemode = mCurrentMode;
@@ -942,10 +947,18 @@ void GameInfoManager::SetupRoundRobinSchedule(eTeamID* lineup, eSidekickID* skli
     lastHumanStadium = STAD_INVALID;
 
     {
-        bool isRegularCup = (mCurrentMode < GM_SUPER_MUSHROOM_CUP && mCurrentMode >= GM_MUSHROOM_CUP);
+        bool isRegularCup;
+        if (mCurrentMode < GM_SUPER_MUSHROOM_CUP && mCurrentMode >= GM_MUSHROOM_CUP)
+            isRegularCup = true;
+        else
+            isRegularCup = false;
         if (!isRegularCup)
         {
-            bool isSuperCup = (mCurrentMode < GM_TOURNAMENT && mCurrentMode >= GM_SUPER_MUSHROOM_CUP);
+            bool isSuperCup;
+            if (mCurrentMode < GM_TOURNAMENT && mCurrentMode >= GM_SUPER_MUSHROOM_CUP)
+                isSuperCup = true;
+            else
+                isSuperCup = false;
             if (!isSuperCup)
             {
                 if (gamemode != GM_TOURNAMENT)
@@ -970,7 +983,7 @@ void GameInfoManager::SetupRoundRobinSchedule(eTeamID* lineup, eSidekickID* skli
 
     for (i = 0; i < numRounds; i++)
     {
-        if (i == numplayingteams - (numplayingteams % 2))
+        if (i == ((numplayingteams % 2 == 0) ? numplayingteams - 1 : numplayingteams))
         {
             superRounds = 1;
             superOffset = i;
@@ -1039,13 +1052,12 @@ void GameInfoManager::SetupRoundRobinSchedule(eTeamID* lineup, eSidekickID* skli
             if (i == numRounds - 1 && gamemode != GM_BOWSER_CUP && gamemode != GM_SUPER_BOWSER_CUP)
             {
                 currentStadium = PickStadium(true, lastHumanStadium);
-                g->mStadiumIndex = currentStadium;
             }
             else
             {
                 currentStadium = PickStadium(false, lastHumanStadium);
-                g->mStadiumIndex = currentStadium;
             }
+            g->mStadiumIndex = currentStadium;
 
             if ((mCurrentCup->mHumanTeams & (1 << g->mTeamIndex[0])) || (mCurrentCup->mHumanTeams & (1 << g->mTeamIndex[1])))
             {
@@ -1311,7 +1323,7 @@ void GameInfoManager::SetupTournamentKnockout(eTeamID* lineup, eSidekickID* skli
 
 /**
  * Offset/Address/Size: 0x78D8 | 0x8017CF7C | size: 0x618
- * TODO: 96.67% match - register allocation diffs in cup, gamesPerRound,
+ * TODO: 97.84% match - register allocation diffs in cup, gamesPerRound,
  * round, team, and loop locals
  */
 unsigned char GameInfoManager::SetupKnockoutRound(short round)
@@ -1331,7 +1343,6 @@ unsigned char GameInfoManager::SetupKnockoutRound(short round)
     BasicGameInfo* g2;
     eTeamID losingTeam;
     int i2;
-    int i3;
     BasicGameInfo* g3;
 
     if (round == -4)
@@ -1455,7 +1466,7 @@ unsigned char GameInfoManager::SetupKnockoutRound(short round)
         returnValue = 1;
 
         for (i2 = 0;
-            (u16)i2 < (mCurrentMode == GM_BOWSER_CUP ? 8 : (mCurrentMode == GM_SUPER_BOWSER_CUP ? 8 : (u16)mCurrentCup->GetNumTeams()));
+            i2 < (mCurrentMode == GM_BOWSER_CUP ? 8 : (mCurrentMode == GM_SUPER_BOWSER_CUP ? 8 : (u16)mCurrentCup->GetNumTeams()));
             i2++)
         {
             TeamStats* ts;
@@ -1490,11 +1501,10 @@ unsigned char GameInfoManager::SetupKnockoutRound(short round)
     {
         previousRound = (s16)previousRound;
         currentRound = (s16)currentRound;
-        i3 = 0;
         int gameIdx0 = 0;
         int gameIdx1 = 1;
 
-        for (; i3 < gamesPerRound; i3++)
+        for (int i3 = 0; i3 < gamesPerRound; i3++)
         {
             g = mCurrentCup->GetGameInfo(previousRound, gameIdx0);
             if (g->mFinalScore[0] > g->mFinalScore[1])
@@ -3734,8 +3744,6 @@ bool GameInfoManager::IsCustomFreezingUnlocked() const
 
 /**
  * Offset/Address/Size: 0x41C | 0x80175AC0 | size: 0x2B4
- * TODO: 99.83% match - remaining diffs are register-only in the
- * games-per-round tail result register (r4 vs r0).
  */
 bool GameInfoManager::HasHumanGameBeenPlayed() const
 {
@@ -3813,45 +3821,7 @@ bool GameInfoManager::HasHumanGameBeenPlayed() const
 
         game++;
 
-        u16 gamesPerRound;
-
-        if (round == -4)
-        {
-            gamesPerRound = 4;
-        }
-        else if (round == -3)
-        {
-            gamesPerRound = 2;
-        }
-        else if ((round == -2) || (round == -1))
-        {
-            gamesPerRound = 1;
-        }
-        else if ((round == -5) && mDoingKnockout)
-        {
-            gamesPerRound = mDoingKnockout;
-        }
-        else if (mDoingKnockout)
-        {
-            gamesPerRound = mPreviousCup->GetNumTeams() >> 1;
-        }
-        else
-        {
-            u16 temp;
-
-            if ((mCurrentMode == GM_BOWSER_CUP) || (mCurrentMode == GM_SUPER_BOWSER_CUP))
-            {
-                temp = 8;
-            }
-            else
-            {
-                temp = currentCup->GetNumTeams();
-            }
-
-            gamesPerRound = temp >> 1;
-        }
-
-        if (game == gamesPerRound)
+        if (game == GetNumGamesPerRound(currentCup, round))
         {
             game = 0;
             round = GetNextRoundNumber(round);

@@ -2685,9 +2685,7 @@ bool cFielder::InitDesireRunToNet()
     if (fDot >= 0.8f)
     {
         nlVector3 v3ToPosition;
-        v3ToPosition.f.z = m_v3Position.f.z + (8.0f * v3DesiredVelDirection.f.z);
-        v3ToPosition.f.x = m_v3Position.f.x + (8.0f * v3DesiredVelDirection.f.x);
-        v3ToPosition.f.y = m_v3Position.f.y + (8.0f * v3DesiredVelDirection.f.y);
+        nlVec3ScaleAdd(v3ToPosition, 8.0f, v3DesiredVelDirection, m_v3Position);
 
         float bTurboChance = (float)g_vDesireCommonData[m_eFielderDesireState].m_RandomChanceGen.genrand(
             SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide)->Off_TurboChance);
@@ -2697,8 +2695,8 @@ bool cFielder::InitDesireRunToNet()
         float fBreakaway = OnBreakaway(g_pScriptCurrentFielder);
         float fInvincible = Invincible(g_pScriptCurrentFielder);
 
-        fOpen = (fOpen < fOpenToPosition) ? fOpenToPosition : fOpen;
-        fBreakaway = (fBreakaway < fOpen) ? fOpen : fBreakaway;
+        fOpen = (fOpen >= fOpenToPosition) ? fOpen : fOpenToPosition;
+        fBreakaway = (fBreakaway >= fOpen) ? fBreakaway : fOpen;
 
         if (fInvincible >= fBreakaway)
         {
@@ -2710,7 +2708,7 @@ bool cFielder::InitDesireRunToNet()
         u8 bForceTurbo = 0;
         if (bTurboChance != 0.0f)
         {
-            fFarToGoalie = (fFarToGoalie > fBreakaway) ? fBreakaway : fFarToGoalie;
+            fFarToGoalie = (fFarToGoalie <= fBreakaway) ? fFarToGoalie : fBreakaway;
 
             if (fFarToGoalie >= 0.7f)
             {

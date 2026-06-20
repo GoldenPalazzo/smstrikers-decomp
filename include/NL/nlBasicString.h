@@ -466,19 +466,22 @@ void BasicString<CharT, Allocator>::insert(CharT* at, const CharT* begin, const 
         {
             newVec.mData[i] = 0;
         }
-        CharT* dst = newVec.mData;
-        for (int i = 0; i < data->mSize; i++)
+        int i = 0;
+        for (; i < data->mSize; i++)
         {
-            *dst++ = data->mData[i];
+            newVec.mData[i] = data->mData[i];
         }
-        int oldSize = data->mSize;
-        CharT* oldBuf = data->mData;
+        newVec.mSize = data->mSize;
+        int newVecSize = newVec.mSize;
+        data->mSize = newVecSize;
+        newVec.mSize = newVecSize;
+
         int oldCapacity = data->mCapacity;
-        data->mSize = oldSize;
         data->mCapacity = newVec.mCapacity;
-        data->mData = newVec.mData;
-        newVec.mSize = oldSize;
         newVec.mCapacity = oldCapacity;
+
+        CharT* oldBuf = data->mData;
+        data->mData = newVec.mData;
         newVec.mData = oldBuf;
     }
 

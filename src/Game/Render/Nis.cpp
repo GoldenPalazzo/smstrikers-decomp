@@ -74,13 +74,14 @@ Format<BasicString<char, Detail::TempStringAllocator>, char[64], int>(
 
 /**
  * Offset/Address/Size: 0x1658 | 0x8012CA68 | size: 0x53C
- * TODO: 94.63% scratch match (uVwFo). Remaining diffs are register-allocation
- * permutation (target uses r25/r28/r30/r31 for header/this/end/chunk where
- * MWCC here picks r26/r25/r27/r28) plus an extra `li r7,0` at the
- * LoadCameraAnimation call site (target omits r7 even though signature is 4-arg).
+ * TODO: 97.18% match - remaining diffs are an r26/r27 swap between the
+ * animation index and SAnim slot pool, plus extra zero setup at LoadCameraAnimation.
  */
 Nis::Nis(NisHeader& header, char* data, int size)
 {
+    cSAnim* anim;
+    int i;
+
     mHeader = &header;
     mTarget = header.target;
     mWinnerType = header.winnerType;
@@ -105,8 +106,8 @@ Nis::Nis(NisHeader& header, char* data, int size)
     {
         if ((chunk->m_ID & 0x80FFFFFF) == 0x80017000)
         {
-            cSAnim* anim = cSAnim::Initialize(chunk);
-            int i = NisPlayer::Instance()->TargetToIndex(mTarget, numAnimations, mWinnerType);
+            anim = cSAnim::Initialize(chunk);
+            i = NisPlayer::Instance()->TargetToIndex(mTarget, numAnimations, mWinnerType);
             if (NisPlayer::Instance()->mGoalScorerCharIndex >= 0 && mTarget == NIS_TARGET_WINNER_SIDEKICK)
             {
                 int goalScorer = NisPlayer::Instance()->mGoalScorerCharIndex;
@@ -146,7 +147,8 @@ Nis::Nis(NisHeader& header, char* data, int size)
         {
             BasicString<char, Detail::TempStringAllocator> name = Format(BasicString<char, Detail::TempStringAllocator>("{0}_{1}"), mHeader->name, mNumCameras);
             cAnimCamera* cam = (cAnimCamera*)((char*)chunk + 8);
-            cam->LoadCameraAnimation((nlChunk*)((char*)chunk + chunk->m_Size + 8), (nlChunk*)name.c_str(), (const char*)0, false);
+            nlChunk* cameraEnd = (nlChunk*)((char*)chunk + chunk->m_Size + 8);
+            cam->LoadCameraAnimation(cameraEnd, (nlChunk*)name.c_str(), (const char*)0, false);
             mNumCameras++;
         }
         chunk = (nlChunk*)((char*)chunk + chunk->m_Size + 8);

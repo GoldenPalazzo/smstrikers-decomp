@@ -254,7 +254,7 @@ static inline void DrawPrimitive(const ElectricFenceGeometry& prim, const nlMatr
 
 /**
  * Offset/Address/Size: 0x89C | 0x8016B8CC | size: 0x420
- * TODO: 98.67% match - allocation temp and DrawPrimitive geometry/matrix
+ * TODO: 99.05% match - allocation temp and DrawPrimitive geometry/matrix
  *       registers differ.
  */
 static inline ElectricFenceData* FindElectricFenceData(EmissionController* pEmissionController)
@@ -289,6 +289,7 @@ static inline ElectricFenceData* CreateAndAssignElectricFenceData(EmissionContro
     return data;
 }
 
+static void RenderElectricFence(EmissionController& ec);
 static void RenderElectricFence(EmissionController& ec)
 {
     extern float sfFadeOutTime;
@@ -504,8 +505,8 @@ void FreeElectricFence()
 
 /**
  * Offset/Address/Size: 0x5A0 | 0x8016B5D0 | size: 0x448
- * TODO: 95.3% match - neg GPR r27 vs r30, loop body GPR/FPR swap (r27/r29,
- *   f24-f27 reversed) and instruction scheduling diffs in corner-case branch.
+ * TODO: 96.39% match - neg flag still uses r30 vs r27, and curved-branch
+ *   geometry/index registers plus f24-f27 loop values are still swapped.
  */
 ElectricFenceData::ElectricFenceData(EmissionController* pEmissionController)
 {
@@ -613,6 +614,7 @@ ElectricFenceData::ElectricFenceData(EmissionController* pEmissionController)
         mpGeometry = geom;
 
         nlVector3 impactPosition = mPosition;
+        ElectricFenceGeometry* activeGeom = mpGeometry;
 
         cField::GetCornerRadius();
         cField::GetGoalLineX(1U);
@@ -620,10 +622,10 @@ ElectricFenceData::ElectricFenceData(EmissionController* pEmissionController)
         cField::GetSidelineY(1U);
         AIsgn(impactPosition.f.y);
 
-        geom->vertCount = 32;
+        activeGeom->vertCount = 32;
 
-        nlVector3* outPosition = geom->position;
-        nlVector2* outTexcoord = (nlVector2*)&geom->texcoord;
+        nlVector3* outPosition = activeGeom->position;
+        nlVector2* outTexcoord = (nlVector2*)&activeGeom->texcoord;
 
         half = 0.5f;
         grid = sfGridTextureSize;

@@ -524,7 +524,7 @@ void CupTickerManager_stub()
 
 /**
  * Offset/Address/Size: 0x3DC | 0x800F23A4 | size: 0x654
- * TODO: 92.74% match - 20 register-only diffs (r25-r31 allocation)
+ * TODO: 97.73% match - remaining register allocation and stack-slot diffs in the formatting loop.
  */
 void CupTickerManager::BuildGoalTotalTickerMessage(
     BasicString<unsigned short, Detail::TempStringAllocator>& result, bool bIsHuman)
@@ -569,7 +569,7 @@ void CupTickerManager::BuildGoalTotalTickerMessage(
     int* pSorted = sortedIndices;
     PlayerStats* pStats = playerStats;
 
-    for (int j = 0; j < numTeams; j++)
+    for (int j = 0; j < numTeams; pSorted++, j++)
     {
         unsigned long teamNameHash = GetLOCTeamName(pStats[pSorted[0]].mRecordType.mTeamID);
 
@@ -596,10 +596,7 @@ void CupTickerManager::BuildGoalTotalTickerMessage(
         unsigned short* teamNameLocStr;
         LOC_LOOKUP(teamNameHash, teamNameLocStr);
 
-        WideBasicString formatted = Format<WideBasicString, const unsigned short*, unsigned short[16]>(
-            fmtWBS, teamNameLocStr, wideGoals);
-        result.AppendInPlace(formatted);
-
-        pSorted++;
+        result = result.Append(Format<WideBasicString, const unsigned short*, unsigned short[16]>(
+            fmtWBS, teamNameLocStr, wideGoals));
     }
 }

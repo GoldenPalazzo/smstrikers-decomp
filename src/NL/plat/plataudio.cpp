@@ -1516,7 +1516,7 @@ static inline void (*InitAuxEffect(MusyXEffectType type, void* data))(u8 reason,
 
 /**
  * Offset/Address/Size: 0x2028 | 0x801C6824 | size: 0x244
- * TODO: 98.52% match - register allocation mismatch across type/data/arg2/arg3, callback, and aux effect storage locals.
+ * TODO: 98.69% match - callback occupies r31 instead of r25, shifting the type/data/arg2/arg3 params and the settings pointer up one register.
  */
 static bool AddAuxEffect(MusyXEffectType type, void* data, bool arg2, unsigned char arg3)
 {
@@ -1526,8 +1526,8 @@ static bool AddAuxEffect(MusyXEffectType type, void* data, bool arg2, unsigned c
         return false;
     }
 
-    void* pAuxEffectSettings;
     MusyXEffectType* pAuxEffect;
+    void* pAuxEffectSettings;
     void (*callback)(u8 reason, SND_AUX_INFO* info, void* user);
 
     if (PlatAudio::gUsingDolbyProLogic2)

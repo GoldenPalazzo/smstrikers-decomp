@@ -47,10 +47,35 @@ AudioSettings::AudioSettings()
 
 /**
  * Offset/Address/Size: 0xBB0 | 0x801902BC | size: 0x438
- * TODO: 98.37% match - r29/r30 register-allocation swap in the "undefined"
- * BasicString data construction/destruction path (data->r30/str->r29 vs
- * target data->r29/str->r30); extra mr instruction and copy-ctor reload diff.
+ * TODO: 99.61% match - r29/r30 register-allocation swap in the "undefined"
+ * BasicString fallback data construction/destruction path.
  */
+static inline BasicStringInternal* BuildAudioModeDefaultStringData()
+{
+    BasicStringInternal* data = (BasicStringInternal*)nlMalloc(0x10, 8, true);
+    if (data != 0)
+    {
+        const char* str = "undefined";
+        data->mData = 0;
+        const char* s = str;
+        data->mSize = 0;
+        data->mCapacity = 0;
+        while (*s++ != 0)
+        {
+            data->mSize++;
+        }
+        data->mSize++;
+        data->mData = (char*)nlMalloc(data->mSize + 1, 8, true);
+        data->mCapacity = data->mSize;
+        for (s32 i = 0; i < data->mSize; i++)
+        {
+            data->mData[i] = *str++;
+        }
+        data->mRefCount = 1;
+    }
+    return data;
+}
+
 void AudioSettings::InitializeDefaults()
 {
     Config cfg(Config::ALLOCATE_HIGH);
@@ -60,38 +85,9 @@ void AudioSettings::InitializeDefaults()
     SFXVolume = GetConfigInt(cfg, "SFX Volume", 0xA);
     VoiceVolume = GetConfigInt(cfg, "Voice Volume", 0xA);
 
-    BasicStringInternal* data = (BasicStringInternal*)nlMalloc(0x10, 8, true);
-    if (data != 0)
-    {
-        const char* p = "undefined";
-        const char* str = p;
-        data->mData = 0;
-        data->mSize = 0;
-        data->mCapacity = 0;
-
-        while ((signed char)*p++ != 0)
-        {
-            data->mSize = data->mSize + 1;
-        }
-
-        data->mSize = data->mSize + 1;
-        data->mData = (char*)nlMalloc(data->mSize + 1, 8, true);
-
-        s32 i = 0;
-        data->mCapacity = data->mSize;
-        while (i < data->mSize)
-        {
-            data->mData[i] = *str;
-            str++;
-            i++;
-        }
-
-        data->mRefCount = 1;
-    }
-
     BasicString<char, Detail::TempStringAllocator> mode(
         cfg.Get<BasicString<char, Detail::TempStringAllocator> >(
-            "Mode", BasicString<char, Detail::TempStringAllocator>(data)));
+            "Mode", BasicString<char, Detail::TempStringAllocator>(BuildAudioModeDefaultStringData())));
 
     if (mode == "STEREO")
     {

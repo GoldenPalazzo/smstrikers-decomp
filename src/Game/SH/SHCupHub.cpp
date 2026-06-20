@@ -16,8 +16,11 @@ static const char* CUP_HUB_LAYER_NAME;
 static const nlColour HUB_COLOUR_WHITE = { { 0xFF, 0xFF, 0xFF, 0xFF } };
 static nlColour HUB_COLOUR_HIGHLIGHT;
 static char* HUBstandingsRowNames[10];
-static unsigned char gHubLeagueMovementSoundIsPlaying;
-static unsigned char gHubKnockoutMovementSoundIsPlaying;
+namespace
+{
+unsigned char gHubLeagueMovementSoundIsPlaying;
+unsigned char gHubKnockoutMovementSoundIsPlaying;
+} // namespace
 static unsigned char IsUserRow(eTeamID teamInRow);
 
 namespace Audio
@@ -1043,8 +1046,6 @@ void CupHubScene::CreateLeague()
         pTextInstance = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
             pSlide,
             InlineHasher(nlStringLowerHash(HUBstandingsRowNames[row])));
-
-        useHighlight = false;
 
         if (row < numTeams)
         {

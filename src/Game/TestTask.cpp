@@ -198,6 +198,8 @@ void TestTask::RunSmokeTest(float)
  */
 void TestTask::RunFrameRateTest(float dt)
 {
+    const char* text;
+
     if (mRunFrameRateTest)
     {
         float frameRateThreshold = 1.0f / mMinimumFrameRate;
@@ -209,7 +211,7 @@ void TestTask::RunFrameRateTest(float dt)
             BasicStringInternal* data = (BasicStringInternal*)nlMalloc(0x10, 8, true);
             if (data)
             {
-                const char* text = "FAILURE: frame rate dropped below {0}, namely {1}";
+                text = "FAILURE: frame rate dropped below {0}, namely {1}";
                 data->mData = 0;
                 data->mSize = 0;
                 data->mCapacity = 0;
@@ -248,39 +250,39 @@ void TestTask::RunFrameRateTest(float dt)
                 nlFlushFileDebug(mTestLog);
             }
 
-            BasicStringInternal* toFree = formattedData;
-            if (toFree)
+            data = formattedData;
+            if (data)
             {
-                if (--toFree->mRefCount == 0)
+                if (--data->mRefCount == 0)
                 {
-                    if (toFree)
+                    if (data)
                     {
-                        if (toFree)
+                        if (data)
                         {
-                            delete[] toFree->mData;
+                            delete[] data->mData;
                         }
-                        if (toFree)
+                        if (data)
                         {
-                            nlFree(toFree);
+                            nlFree(data);
                         }
                     }
                 }
             }
 
-            toFree = formatData;
-            if (toFree)
+            data = formatData;
+            if (data)
             {
-                if (--toFree->mRefCount == 0)
+                if (--data->mRefCount == 0)
                 {
-                    if (toFree)
+                    if (data)
                     {
-                        if (toFree)
+                        if (data)
                         {
-                            delete[] toFree->mData;
+                            delete[] data->mData;
                         }
-                        if (toFree)
+                        if (data)
                         {
-                            nlFree(toFree);
+                            nlFree(data);
                         }
                     }
                 }
@@ -289,7 +291,7 @@ void TestTask::RunFrameRateTest(float dt)
 
         if (mTestTimeOut <= 0.0f && !mFrameRateTestFailure)
         {
-            const char* text = frameRateTestSuccessOutput;
+            text = frameRateTestSuccessOutput;
             void* debugFile = nlOpenFileDebug(text, false, false);
             if (debugFile)
             {
@@ -338,39 +340,39 @@ void TestTask::RunFrameRateTest(float dt)
                 nlFlushFileDebug(mTestLog);
             }
 
-            BasicStringInternal* toFree = formattedData;
-            if (toFree)
+            data = formattedData;
+            if (data)
             {
-                if (--toFree->mRefCount == 0)
+                if (--data->mRefCount == 0)
                 {
-                    if (toFree)
+                    if (data)
                     {
-                        if (toFree)
+                        if (data)
                         {
-                            delete[] toFree->mData;
+                            delete[] data->mData;
                         }
-                        if (toFree)
+                        if (data)
                         {
-                            nlFree(toFree);
+                            nlFree(data);
                         }
                     }
                 }
             }
 
-            toFree = formatData;
-            if (toFree)
+            data = formatData;
+            if (data)
             {
-                if (--toFree->mRefCount == 0)
+                if (--data->mRefCount == 0)
                 {
-                    if (toFree)
+                    if (data)
                     {
-                        if (toFree)
+                        if (data)
                         {
-                            delete[] toFree->mData;
+                            delete[] data->mData;
                         }
-                        if (toFree)
+                        if (data)
                         {
-                            nlFree(toFree);
+                            nlFree(data);
                         }
                     }
                 }

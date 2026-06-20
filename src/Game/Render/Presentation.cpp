@@ -186,9 +186,37 @@ void ReadTrophyModel(void* data, unsigned long size, void* userData)
     obj->m_uObjectFlags &= ~1;
 }
 
+static const char* GetGimmeCupTrophyName()
+{
+    Config& cfg = Config::Global();
+    TagValuePair& tvp = cfg.FindTvp("gimme_cup_trophy");
+    if (tvp.tag == NULL)
+    {
+        cfg.Set("gimme_cup_trophy", "FlowerCup");
+        return "FlowerCup";
+    }
+    else if (tvp.type == _BOOL)
+    {
+        return LexicalCast<const char*, bool>(tvp.value.b);
+    }
+    else if (tvp.type == _INT)
+    {
+        return LexicalCast<const char*, int>(tvp.value.i);
+    }
+    else if (tvp.type == _FLOAT)
+    {
+        return LexicalCast<const char*, float>(tvp.value.f);
+    }
+    else if (tvp.type == _STRING)
+    {
+        return LexicalCast<const char*, const char*>(tvp.value.s);
+    }
+    return (const char*)0;
+}
+
 /**
  * Offset/Address/Size: 0x1848 | 0x8012602C | size: 0x460
- * TODO: 82.90% match - remaining diffs in hasCupOverride register flow and prefix lifetime
+ * TODO: 96.12% match - prefix "Gameplay/" literal materialized before nlMalloc instead of after, shifting r28/r29 coloring
  */
 void Presentation::LoadTrophyModel()
 {
@@ -204,38 +232,10 @@ void Presentation::LoadTrophyModel()
     }
 
     cupTrophyHash = 1;
-    const char* cupName = (const char*)0;
-    BasicString<char, Detail::TempStringAllocator> prefix("Gameplay/");
-    if (hasCupOverride)
-    {
-        Config& cfg = Config::Global();
-        TagValuePair& tvp = cfg.FindTvp("gimme_cup_trophy");
-        if (tvp.tag == NULL)
-        {
-            cfg.Set("gimme_cup_trophy", "FlowerCup");
-            cupName = "FlowerCup";
-        }
-        else if (tvp.type == _BOOL)
-        {
-            cupName = LexicalCast<const char*, bool>(tvp.value.b);
-        }
-        else if (tvp.type == _INT)
-        {
-            cupName = LexicalCast<const char*, int>(tvp.value.i);
-        }
-        else if (tvp.type == _FLOAT)
-        {
-            cupName = LexicalCast<const char*, float>(tvp.value.f);
-        }
-        else if (tvp.type == _STRING)
-        {
-            cupName = LexicalCast<const char*, const char*>(tvp.value.s);
-        }
-    }
 
     BasicString<char, Detail::TempStringAllocator> trophyName(
         hasCupOverride
-            ? prefix.Append(cupName)
+            ? BasicString<char, Detail::TempStringAllocator>("Gameplay/").Append(GetGimmeCupTrophyName())
             : BasicString<char, Detail::TempStringAllocator>(
                   GetThrophyModelName(nlSingleton<GameInfoManager>::s_pInstance->GetTrophyTypeByCurrentMode())));
 

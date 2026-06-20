@@ -68,6 +68,7 @@ public:
     void StartSidekickMiniHead(int, eSidekickID);
     void CheckForDisconnectedHumanPlayers();
     void FindAliveHumanPlayers();
+    void UpdateSinglePlayerState();
     void SetupForLastPhase(eFEINPUT_PAD);
     void PushPlayer(eFEINPUT_PAD, int);
     void PopPlayer(eFEINPUT_PAD);

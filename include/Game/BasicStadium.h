@@ -25,7 +25,7 @@ public:
 
     // DWARF seems wrong here
     /* 0x134 */ u32 m_unk134;
-    /* 0x138 */ u32 m_unk138;
+    /* 0x138 */ LightObject* m_pShadowLight;
 
     /* 0x13C */ nlVector3* m_CameraFlashPositions;
     /* 0x140 */ s32 m_NumCameraFlashPositions;

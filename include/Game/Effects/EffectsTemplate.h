@@ -74,7 +74,6 @@ bool fxUnloadTemplates();
 bool fxLoadTemplateBundle(void*, unsigned long);
 bool fxLoadTemplateBundle(const char*);
 EffectsTemplate* parse_template(SimpleParser*, bool);
-void GetColourComponent(SimpleParser*, nlColour*, int);
 float RandomizedValue(float, float);
 float RandomizedValue(float);
 

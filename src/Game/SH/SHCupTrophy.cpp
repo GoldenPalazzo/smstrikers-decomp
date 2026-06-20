@@ -241,27 +241,6 @@ static const char* TROPHY_RECORD_ROW_NAMES[3] = {
 static const nlColour SPOILS_COLOUR_HIGHLIGHT = { 0xFE, 0xEE, 0x00, 0xFF };
 static const nlColour SPOILS_COLOUR_NORMAL = { 0xFF, 0xFF, 0xFF, 0xFF };
 
-struct SpoilNumCupWinsView
-{
-    unsigned char mPad[0x20E];
-    unsigned short mNumCupWins;
-};
-
-struct TLTextLocView
-{
-    unsigned char mPad0[0x80];
-    unsigned long mLocStrId;
-    unsigned char mPad1[0x0C];
-    unsigned long mOverloadFlags;
-};
-
-struct CupTrophySpoilView
-{
-    unsigned char mPad[0x208];
-    unsigned char mNumRecords;
-    unsigned char mTailPad[0x0F];
-};
-
 struct LOCHeader
 {
     char Thumbprint[4];
@@ -290,6 +269,23 @@ extern nlLocalization* g_pLocalization;
 extern const unsigned short LocalizationTableNotFound[];
 extern const unsigned short MissingLocString[];
 
+static inline const unsigned short* LookupCupTrophyLoc(unsigned long key)
+{
+    nlLocalization* loc = g_pLocalization;
+    if (loc->m_LookupTable == 0)
+    {
+        return LocalizationTableNotFound;
+    }
+
+    nlLocalization::StringLookup* entry = nlBSearch(key, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
+    if (entry != 0)
+    {
+        return loc->m_FirstString + entry->StringOffset;
+    }
+
+    return MissingLocString;
+}
+
 /**
  * Offset/Address/Size: 0x1F54 | 0x800CB608 | size: 0x7B8
  */
@@ -304,17 +300,21 @@ void CupTrophyScene::SceneCreated()
     typedef TLComponentInstance* (*FindCompPresByValue)(FEPresentation*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
     typedef TLComponentInstance* (*FindCompPresByRef)(FEPresentation*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
 
+    TLTextInstance* pText;
+    TLImageInstance* pTrophyImage;
+    Spoil* pSpoil;
+    nlColour trophyColour;
+
     *(int*)&unk_gap[121] = 0;
     *(int*)&unk_gap[123] = 0;
 
     FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
     char* gameInfoBase = (char*)nlSingleton<GameInfoManager>::s_pInstance;
     gameInfoBase += mTrophy * 0x218;
-    Spoil* pSpoil = (Spoil*)(gameInfoBase + 0x2F24);
+    pSpoil = (Spoil*)(gameInfoBase + 0x2F24);
 
     volatile InlineHasher h7, h6, h5, h4, h3, h2, h1, h0;
 
-    TLTextInstance* pText;
     {
         union
         {
@@ -354,10 +354,9 @@ void CupTrophyScene::SceneCreated()
             (InlineHasher&)h1);
     }
 
-    ((TLTextLocView*)pText)->mLocStrId = GetLOCTrophyName(mTrophy);
-    ((TLTextLocView*)pText)->mOverloadFlags |= 0x8;
+    pText->m_LocStrId = GetLOCTrophyName(mTrophy);
+    pText->m_OverloadFlags |= 0x8;
 
-    TLImageInstance* pTrophyImage;
     {
         union
         {
@@ -440,7 +439,7 @@ void CupTrophyScene::SceneCreated()
             (InlineHasher&)h5,
             (InlineHasher&)h3,
             (InlineHasher&)h1);
-        if (((CupTrophySpoilView*)pSpoil)->mNumRecords <= 3)
+        if (pSpoil->mNumRecords <= 3)
         {
             arrowComp->m_bVisible = false;
         }
@@ -496,7 +495,7 @@ void CupTrophyScene::SceneCreated()
 
     if (nlSingleton<GameInfoManager>::s_pInstance->HasTrophy(mTrophy))
     {
-        nlColour trophyColour = ((FELibObject*)pTrophyImage->m_component)->GetColour();
+        trophyColour = ((FELibObject*)pTrophyImage->m_component)->GetColour();
         pTrophyImage->SetAssetColour(trophyColour);
     }
     else
@@ -600,7 +599,7 @@ void CupTrophyScene::SceneCreated()
         mButtons2.SetState(mButtonState);
     }
 
-    BasicString<char, Detail::TempStringAllocator> timesWon = LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>((int)((SpoilNumCupWinsView&)(*pSpoil)).mNumCupWins);
+    BasicString<char, Detail::TempStringAllocator> timesWon = LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>((int)pSpoil->mNumCupWins);
 
     unsigned short timesWonWide[32];
     nlStrToWcs(timesWon.c_str(), timesWonWide, 32);
@@ -882,12 +881,12 @@ void CupTrophyScene::Update(float fDeltaT)
 
     if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xE, true, NULL))
     {
-        if (((CupTrophySpoilView*)pSpoil)->mNumRecords > 3)
+        if (pSpoil->mNumRecords > 3)
         {
             char* pBase2 = (char*)nlSingleton<GameInfoManager>::s_pInstance;
             pBase2 += mTrophy * 0x218;
             Spoil* pSpoil = (Spoil*)(pBase2 + 0x2F24);
-            unsigned char numRecords = ((CupTrophySpoilView*)pSpoil)->mNumRecords;
+            unsigned char numRecords = pSpoil->mNumRecords;
 
             if (numRecords > 1)
             {
@@ -914,7 +913,7 @@ void CupTrophyScene::Update(float fDeltaT)
 
     if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xD, true, NULL))
     {
-        unsigned char numRecords = ((CupTrophySpoilView*)pSpoil)->mNumRecords;
+        unsigned char numRecords = pSpoil->mNumRecords;
         if (numRecords > 3)
         {
             if (numRecords > 1)
@@ -1231,23 +1230,7 @@ void CupTrophyScene::SetHistory(Spoil& spoil)
     typedef TLImageInstance* (*FindImageByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
     typedef TLImageInstance* (*FindImageByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
 
-    struct CupRecordView
-    {
-        OSCalendarTime mDate;
-        signed char mPlace;
-        unsigned char mPad0[3];
-        int mTeam;
-        int mDifficulty;
-    };
-
-    struct SpoilHistoryView
-    {
-        CupRecordView mCupHistory[10];
-        unsigned char mNumRecords;
-    };
-
     FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
-    SpoilHistoryView& spoilView = (SpoilHistoryView&)spoil;
     volatile InlineHasher h7, h5, h3, h1;
 
     for (int i = 0; i < 3; i++)
@@ -1331,12 +1314,12 @@ void CupTrophyScene::SetHistory(Spoil& spoil)
         }
         *(unsigned long*)((unsigned char*)pText + 0x90) |= 4;
 
-        if (i == *(int*)&unk_gap[123] && (spoilView.mNumRecords == 0 || spoilView.mNumRecords > 3))
+        if (i == *(int*)&unk_gap[123] && (spoil.mNumRecords == 0 || spoil.mNumRecords > 3))
             ((TLInstance*)pText)->SetAssetColour(SPOILS_COLOUR_HIGHLIGHT);
         else
             ((TLInstance*)pText)->SetAssetColour(SPOILS_COLOUR_NORMAL);
 
-        if (record == 0 && spoilView.mNumRecords == 0)
+        if (record == 0 && spoil.mNumRecords == 0)
         {
             TLTextInstance* pEmptyText;
             {
@@ -1370,13 +1353,13 @@ void CupTrophyScene::SetHistory(Spoil& spoil)
                     (InlineHasher&)h3,
                     (InlineHasher&)h1);
             }
-            ((TLTextLocView*)pEmptyText)->mLocStrId = 0x745863BC;
-            ((TLTextLocView*)pEmptyText)->mOverloadFlags |= 0x8;
+            pEmptyText->m_LocStrId = 0x745863BC;
+            pEmptyText->m_OverloadFlags |= 0x8;
             ((TLInstance*)pEmptyText)->m_bVisible = true;
             continue;
         }
 
-        if (i >= (int)spoilView.mNumRecords)
+        if (i >= (int)spoil.mNumRecords)
         {
             ((TLInstance*)pText)->m_bVisible = false;
             continue;
@@ -1400,18 +1383,17 @@ void CupTrophyScene::SetHistory(Spoil& spoil)
             zeroData->mData = (char*)nlMalloc(zeroData->mSize + 1, 8, true);
             zeroData->mCapacity = zeroData->mSize;
             int idx = 0;
-            const char* src = str;
             while (idx < zeroData->mSize)
             {
-                zeroData->mData[idx] = *src;
+                zeroData->mData[idx] = *str;
                 idx++;
-                src++;
+                str++;
             }
             zeroData->mRefCount = 1;
         }
         BasicString<char, Detail::TempStringAllocator> zero(zeroData);
 
-        CupRecordView* pRecord = &spoilView.mCupHistory[record];
+        CupRecord* pRecord = &spoil.mCupHistory[record];
 
         BasicString<char, Detail::TempStringAllocator> dayString = LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(pRecord->mDate.mday);
         dayString = (pRecord->mDate.mday < 10) ? zero.Append(dayString) : dayString;
@@ -1434,20 +1416,7 @@ void CupTrophyScene::SetHistory(Spoil& spoil)
         if ((signed char)pRecord->mPlace != -2)
         {
             unsigned long locHash = 0x4EEF03CB;
-            nlLocalization* loc = g_pLocalization;
-            const unsigned short* locString;
-            if (loc->m_LookupTable == 0)
-            {
-                locString = LocalizationTableNotFound;
-            }
-            else
-            {
-                nlLocalization::StringLookup* entry = nlBSearch(locHash, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
-                if (entry != 0)
-                    locString = loc->m_FirstString + entry->StringOffset;
-                else
-                    locString = MissingLocString;
-            }
+            const unsigned short* locString = LookupCupTrophyLoc(locHash);
             BasicStringData<unsigned short>* data = (BasicStringData<unsigned short>*)nlMalloc(0x10, 8, true);
             if (data != 0)
             {
@@ -1476,69 +1445,17 @@ void CupTrophyScene::SetHistory(Spoil& spoil)
             BasicString<unsigned short, Detail::TempStringAllocator> unformatted(data);
 
             unsigned long charNameHash = GetLOCCharacterName((eTeamID)pRecord->mTeam, true, false);
-            loc = g_pLocalization;
-            const unsigned short* charNameStr;
-            if (loc->m_LookupTable == 0)
-            {
-                charNameStr = LocalizationTableNotFound;
-            }
-            else
-            {
-                nlLocalization::StringLookup* entry = nlBSearch(charNameHash, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
-                if (entry != 0)
-                    charNameStr = loc->m_FirstString + entry->StringOffset;
-                else
-                    charNameStr = MissingLocString;
-            }
+            const unsigned short* charNameStr = LookupCupTrophyLoc(charNameHash);
             unsigned long rankHash = GetLOCRank((signed char)pRecord->mPlace);
-            loc = g_pLocalization;
-            const unsigned short* rankStr;
-            if (loc->m_LookupTable == 0)
-            {
-                rankStr = LocalizationTableNotFound;
-            }
-            else
-            {
-                nlLocalization::StringLookup* entry = nlBSearch(rankHash, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
-                if (entry != 0)
-                    rankStr = loc->m_FirstString + entry->StringOffset;
-                else
-                    rankStr = MissingLocString;
-            }
+            const unsigned short* rankStr = LookupCupTrophyLoc(rankHash);
             unsigned long diffHash = GetLOCDifficultyName((GameplaySettings::eSkillLevel)pRecord->mDifficulty);
-            loc = g_pLocalization;
-            const unsigned short* diffStr;
-            if (loc->m_LookupTable == 0)
-            {
-                diffStr = LocalizationTableNotFound;
-            }
-            else
-            {
-                nlLocalization::StringLookup* entry = nlBSearch(diffHash, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
-                if (entry != 0)
-                    diffStr = loc->m_FirstString + entry->StringOffset;
-                else
-                    diffStr = MissingLocString;
-            }
+            const unsigned short* diffStr = LookupCupTrophyLoc(diffHash);
             formatted = Format(unformatted, monthWideString, dayWideString, yearWideString, charNameStr, rankStr, diffStr);
         }
         else
         {
             unsigned long locHash = 0xB4B37E9E;
-            nlLocalization* loc = g_pLocalization;
-            const unsigned short* locString;
-            if (loc->m_LookupTable == 0)
-            {
-                locString = LocalizationTableNotFound;
-            }
-            else
-            {
-                nlLocalization::StringLookup* entry = nlBSearch(locHash, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
-                if (entry != 0)
-                    locString = loc->m_FirstString + entry->StringOffset;
-                else
-                    locString = MissingLocString;
-            }
+            const unsigned short* locString = LookupCupTrophyLoc(locHash);
             BasicStringData<unsigned short>* data = (BasicStringData<unsigned short>*)nlMalloc(0x10, 8, true);
             if (data != 0)
             {
@@ -1567,35 +1484,9 @@ void CupTrophyScene::SetHistory(Spoil& spoil)
             BasicString<unsigned short, Detail::TempStringAllocator> unformatted(data);
 
             unsigned long charNameHash = GetLOCCharacterName((eTeamID)pRecord->mTeam, true, false);
-            loc = g_pLocalization;
-            const unsigned short* charNameStr;
-            if (loc->m_LookupTable == 0)
-            {
-                charNameStr = LocalizationTableNotFound;
-            }
-            else
-            {
-                nlLocalization::StringLookup* entry = nlBSearch(charNameHash, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
-                if (entry != 0)
-                    charNameStr = loc->m_FirstString + entry->StringOffset;
-                else
-                    charNameStr = MissingLocString;
-            }
+            const unsigned short* charNameStr = LookupCupTrophyLoc(charNameHash);
             unsigned long diffHash = GetLOCDifficultyName((GameplaySettings::eSkillLevel)pRecord->mDifficulty);
-            loc = g_pLocalization;
-            const unsigned short* diffStr;
-            if (loc->m_LookupTable == 0)
-            {
-                diffStr = LocalizationTableNotFound;
-            }
-            else
-            {
-                nlLocalization::StringLookup* entry = nlBSearch(diffHash, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
-                if (entry != 0)
-                    diffStr = loc->m_FirstString + entry->StringOffset;
-                else
-                    diffStr = MissingLocString;
-            }
+            const unsigned short* diffStr = LookupCupTrophyLoc(diffHash);
             formatted = Format(unformatted, monthWideString, dayWideString, yearWideString, charNameStr, diffStr);
         }
 
@@ -1658,6 +1549,8 @@ void CupTrophyScene::SetHistory(Spoil& spoil)
         h5.m_Hash = 0;
         h6.m_Hash = 0;
         h7.m_Hash = 0;
+        hLayerB.m_Hash = 0;
+        hLayerA.m_Hash = 0;
         unsigned long hash = nlStringLowerHash("arrow");
         hNameA.m_Hash = hash;
         hNameB.m_Hash = hash;
@@ -1669,7 +1562,7 @@ void CupTrophyScene::SetHistory(Spoil& spoil)
             (InlineHasher&)h3,
             (InlineHasher&)h1);
     }
-    if (currentRecord < (int)spoilView.mNumRecords - 1)
+    if (currentRecord < (int)spoil.mNumRecords - 1)
         pArrowDown->m_bVisible = true;
     else
         pArrowDown->m_bVisible = false;
@@ -1693,6 +1586,8 @@ void CupTrophyScene::SetHistory(Spoil& spoil)
         h5.m_Hash = 0;
         h6.m_Hash = 0;
         h7.m_Hash = 0;
+        hLayerB.m_Hash = 0;
+        hLayerA.m_Hash = 0;
         unsigned long hash = nlStringLowerHash("arrow2");
         hNameA.m_Hash = hash;
         hNameB.m_Hash = hash;

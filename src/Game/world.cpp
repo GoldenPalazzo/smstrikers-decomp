@@ -343,10 +343,51 @@ void DoTranslucency(DrawableObject* pObject);
 
 static void World_DrawCullingInfo(int nDrawn, int nSubmitted);
 
+static inline u8 World_IsSphereInFrustum(const nlVector4* pPlanes, const nlMatrix4& mWorld, f32 fRadius)
+{
+    nlVector3 v3Position;
+    v3Position.as_u32[0] = *(u32*)&mWorld.m[3][0];
+    v3Position.as_u32[1] = *(u32*)&mWorld.m[3][1];
+    v3Position.as_u32[2] = *(u32*)&mWorld.m[3][2];
+    f32 negRadius = -fRadius;
+    for (int i = 0; i < 6; i++)
+    {
+        if (nlPlaneDot(pPlanes[i], v3Position) < negRadius)
+            return false;
+    }
+    return true;
+}
+
+static inline void RenderBoundingSphere(const nlMatrix4& matWorld, f32 fRadius)
+{
+    glModel* pSphere = glModelDup(glInventory.GetModel(nlStringHash("debug/sphere")), true);
+    nlMatrix4 m;
+    m.SetIdentity();
+    m.m[3][0] = matWorld.m[3][0];
+    m.m[3][1] = matWorld.m[3][1];
+    m.m[3][2] = matWorld.m[3][2];
+    m.m[3][3] = 1.0f;
+    m.m[0][0] = fRadius;
+    m.m[1][1] = fRadius;
+    m.m[2][2] = fRadius;
+    u32 whiteTex = WhiteTexture;
+    glModelPacket* pPacket = pSphere->packets;
+    while (pPacket < (glModelPacket*)((u8*)pSphere->packets + pSphere->numPackets * 0x4A))
+    {
+        glSetRasterState(pPacket->state.raster, (eGLState)5, 1);
+        u32 matID = glAllocMatrix();
+        if ((matID + 0x10000) != 0xFFFF)
+            glSetMatrix(matID, m);
+        pPacket->state.matrix = matID;
+        pPacket->state.texture[0] = whiteTex;
+        pPacket = (glModelPacket*)((u8*)pPacket + 0x4A);
+    }
+    glViewAttachModel((eGLView)7, pSphere);
+}
+
 /**
  * Offset/Address/Size: 0x434 | 0x801950F8 | size: 0xB20
- * TODO: 70.1% match - register allocation shifts (stmw r23 vs r24)
- *       and g_pGame branch direction differences pending resolution.
+ * TODO: 97.8% match - remaining this/pObject register rotation and iterator branch offset diffs.
  */
 void World::Render()
 {
@@ -424,45 +465,36 @@ void World::Render()
             if (sbIsHyperShootToScoreRenderingEnabled)
             {
                 const nlMatrix4& mat = pObject->GetWorldMatrix();
-                if (mat.m[3][0] < 0.0f && sbShowPositiveXNetDuringHyperStrike__5World)
+                if (mat.m[3][0] < 0.0f)
                 {
-                    iter->count--;
-                    {
-                        Entry* right = (Entry*)iter->data[iter->count]->node.right;
-                        if (right != NULL)
-                        {
-                            while (right->node.left != NULL)
-                            {
-                                iter->data[iter->count] = right;
-                                iter->count++;
-                                right = (Entry*)right->node.left;
-                            }
-                            iter->data[iter->count] = right;
-                            iter->count++;
-                        }
-                    }
-                    continue;
+                    if (sbShowPositiveXNetDuringHyperStrike__5World)
+                        goto hyperCull;
                 }
                 const nlMatrix4& mat2 = pObject->GetWorldMatrix();
-                if (mat2.m[3][0] > 0.0f && !sbShowPositiveXNetDuringHyperStrike__5World)
+                if (mat2.m[3][0] > 0.0f)
                 {
-                    iter->count--;
+                    if (!sbShowPositiveXNetDuringHyperStrike__5World)
+                        goto hyperCull;
+                }
+                goto hyperNoCull;
+            hyperCull:
+                iter->count--;
+                {
+                    Entry* right = (Entry*)iter->data[iter->count]->node.right;
+                    if (right != NULL)
                     {
-                        Entry* right = (Entry*)iter->data[iter->count]->node.right;
-                        if (right != NULL)
+                        while (right->node.left != NULL)
                         {
-                            while (right->node.left != NULL)
-                            {
-                                iter->data[iter->count] = right;
-                                iter->count++;
-                                right = (Entry*)right->node.left;
-                            }
                             iter->data[iter->count] = right;
                             iter->count++;
+                            right = (Entry*)right->node.left;
                         }
+                        iter->data[iter->count] = right;
+                        iter->count++;
                     }
-                    continue;
                 }
+                continue;
+            hyperNoCull:;
             }
             {
                 u8 bHammer = 0;
@@ -543,75 +575,19 @@ void World::Render()
                         if (!(objectFlags & 0x10))
                         {
                             f32 fBoundingRadius = pObject->m_fBoundingRadius;
-                            volatile u32 tz;
-                            volatile u32 ty;
-                            volatile u32 tx;
                             const nlMatrix4& mat = pObject->GetWorldMatrix();
-                            tx = *(u32*)&mat.m[3][0];
-                            f32 negRadius = -fBoundingRadius;
-                            ty = *(u32*)&mat.m[3][1];
-                            s32 numSets = 2;
-                            tz = *(u32*)&mat.m[3][2];
-                            u8* pThisOff = (u8*)this;
-                            f32 posX = *(f32*)&tx;
-                            f32* plane = (f32*)(pThisOff + 0x80);
-                            s32 count = 0;
-                            f32 posY = *(f32*)&ty;
-                            f32 posZ = *(f32*)&tz;
-                            do
-                            {
-                                if ((posZ * plane[2] + (posX * plane[0] + posY * plane[1]) + *(f32*)(pThisOff + 0x8C)) < negRadius)
-                                {
-                                    visible = 0;
-                                    break;
-                                }
-                                if ((posZ * plane[6] + (posX * plane[4] + posY * plane[5]) + *(f32*)(pThisOff + 0x9C)) < negRadius)
-                                {
-                                    visible = 0;
-                                    break;
-                                }
-                                if ((posZ * plane[10] + (posX * plane[8] + posY * plane[9]) + *(f32*)(pThisOff + 0xAC)) < negRadius)
-                                {
-                                    visible = 0;
-                                    break;
-                                }
-                                plane += 12;
-                                pThisOff += 0x30;
-                                count += 2;
-                            } while (--numSets != 0);
+                            visible = World_IsSphereInFrustum(m_frustumPlane, mat, fBoundingRadius);
                         }
                         if (visible)
                         {
-                            if (pObject->m_uObjectCreationFlags & 0xF0000)
+                            if (pObject->m_uObjectCreationFlags & 0xF000)
                                 DoTranslucency(pObject);
                             pObject->Draw();
                             if (g_bDrawBoundingSphere)
                             {
                                 f32 fRad = pObject->m_fBoundingRadius;
                                 const nlMatrix4& wmDraw = pObject->GetWorldMatrix();
-                                glModel* pSphere = glModelDup(glInventory.GetModel(nlStringHash("debug/sphere")), true);
-                                nlMatrix4 mtx;
-                                mtx.SetIdentity();
-                                mtx.m[3][0] = wmDraw.m[3][0];
-                                mtx.m[3][1] = wmDraw.m[3][1];
-                                mtx.m[3][2] = wmDraw.m[3][2];
-                                mtx.m[3][3] = 1.0f;
-                                mtx.m[0][0] = fRad;
-                                mtx.m[1][1] = fRad;
-                                mtx.m[2][2] = fRad;
-                                u32 whiteTex = WhiteTexture;
-                                glModelPacket* pPkt = pSphere->packets;
-                                while (pPkt < (glModelPacket*)((u8*)pSphere->packets + pSphere->numPackets * 0x4A))
-                                {
-                                    glSetRasterState(pPkt->state.raster, (eGLState)5, 1);
-                                    u32 matID = glAllocMatrix();
-                                    if ((matID + 0x10000) != 0xFFFF)
-                                        glSetMatrix(matID, mtx);
-                                    pPkt->state.matrix = matID;
-                                    pPkt->state.texture[0] = whiteTex;
-                                    pPkt = (glModelPacket*)((u8*)pPkt + 0x4A);
-                                }
-                                glViewAttachModel((eGLView)7, pSphere);
+                                RenderBoundingSphere(wmDraw, fRad);
                             }
                             nDrawn++;
                         }
@@ -623,6 +599,7 @@ void World::Render()
                             if (pObject->m_translucency > 1.0f)
                                 pObject->m_translucency = 1.0f;
                         }
+                        nSubmitted++;
                     }
                     else
                     {
@@ -634,7 +611,6 @@ void World::Render()
                     }
                 }
             }
-            nSubmitted++;
             iter->count--;
             {
                 Entry* right = (Entry*)iter->data[iter->count]->node.right;
@@ -659,36 +635,14 @@ void World::Render()
             DrawableObject* pObject = iter->data[iter->count - 1]->value;
             if (pObject->m_uObjectFlags & 0x1)
             {
-                if (pObject->m_uObjectCreationFlags & 0xF0000)
+                if (pObject->m_uObjectCreationFlags & 0xF000)
                     DoTranslucency(pObject);
                 pObject->Draw();
                 if (g_bDrawBoundingSphere)
                 {
                     f32 fRad = pObject->m_fBoundingRadius;
                     const nlMatrix4& wmDraw = pObject->GetWorldMatrix();
-                    glModel* pSphere = glModelDup(glInventory.GetModel(nlStringHash("debug/sphere")), true);
-                    nlMatrix4 mtx;
-                    mtx.SetIdentity();
-                    mtx.m[3][0] = wmDraw.m[3][0];
-                    mtx.m[3][1] = wmDraw.m[3][1];
-                    mtx.m[3][2] = wmDraw.m[3][2];
-                    mtx.m[3][3] = 1.0f;
-                    mtx.m[0][0] = fRad;
-                    mtx.m[1][1] = fRad;
-                    mtx.m[2][2] = fRad;
-                    u32 whiteTex = WhiteTexture;
-                    glModelPacket* pPkt = pSphere->packets;
-                    while (pPkt < (glModelPacket*)((u8*)pSphere->packets + pSphere->numPackets * 0x4A))
-                    {
-                        glSetRasterState(pPkt->state.raster, (eGLState)5, 1);
-                        u32 matID = glAllocMatrix();
-                        if ((matID + 0x10000) != 0xFFFF)
-                            glSetMatrix(matID, mtx);
-                        pPkt->state.matrix = matID;
-                        pPkt->state.texture[0] = whiteTex;
-                        pPkt = (glModelPacket*)((u8*)pPkt + 0x4A);
-                    }
-                    glViewAttachModel((eGLView)7, pSphere);
+                    RenderBoundingSphere(wmDraw, fRad);
                 }
                 nDrawn++;
             }
@@ -1367,10 +1321,10 @@ void World::CreateLightUserData()
         delete (u8*)pStack;
     }
 
-    int numExtra = 0;
-    int i = 0;
     LightObject* pFXBase = fxLightObjects;
     LightObject* pFX = pFXBase;
+    int numExtra = 0;
+    int i = 0;
     for (; i < EmissionManager::GetNumLights(); i++)
     {
         const EffectsLight* pLight = EmissionManager::GetLight(i);

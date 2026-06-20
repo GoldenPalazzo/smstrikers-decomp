@@ -3509,7 +3509,7 @@ inline cPN_Blender* AllocateBlender()
 
 /**
  * Offset/Address/Size: 0x58E4 | 0x800483E0 | size: 0x458
- * TODO: 98.09% match - this pointer remains r28 vs target r29.
+ * TODO: 98.18% match - this pointer remains r28 vs target r29, with late blender allocation registers shifted.
  */
 void Goalie::PlayBlendedAnims(float fStartTime, int nMilestone)
 {
@@ -3594,7 +3594,7 @@ void Goalie::PlayBlendedAnims(float fStartTime, int nMilestone)
             milestone = 0;
             while (milestone < 4 && fStartTime >= mBlendInfo.mfMilestoneTime[milestone])
             {
-                if (mBlendInfo.mfMilestoneTime[milestone] > fPrevMilestone)
+                if (mBlendInfo.mfMilestoneTime[milestone] > 0.0f)
                 {
                     fPrevMilestone = mBlendInfo.mfMilestoneTime[milestone];
                 }
@@ -6727,25 +6727,17 @@ void Goalie::SetDesiredSaveFacing(const nlVector3& v3BallPosition)
 
     if (fBallOffMagSq < 1.44f)
     {
-        float fSqX = v3Facing.f.x * v3Facing.f.x;
-        float fTfZ = v3Facing.f.z;
-        float fTfY = v3Facing.f.y;
-        float fSqY = fTfY * fTfY;
-        float fSqZ = fTfZ * fTfZ;
-        float fBtgZ = v3BallPosition.f.z - m_pTeam->m_pNet->m_baseLocation.f.z;
-        float fBtgY = v3BallPosition.f.y - m_pTeam->m_pNet->m_baseLocation.f.y;
-        float fBtgX = v3BallPosition.f.x - m_pTeam->m_pNet->m_baseLocation.f.x;
-        float fRecip = nlRecipSqrt(fSqX + fSqY + fSqZ, true);
+        nlVector3 v3BallToGoal;
+        float fLengthSq = nlVec3LengthSquared(v3Facing);
+        nlVec3Sub(v3BallToGoal, v3BallPosition, m_pTeam->m_pNet->m_baseLocation);
 
-        v3Facing.f.y = fRecip * fTfY;
-        v3Facing.f.x = fRecip * v3Facing.f.x;
-        v3Facing.f.z = fRecip * fTfZ;
+        float fRecip = nlRecipSqrt(fLengthSq, true);
+        nlVec3Scale(v3Facing, fRecip);
 
-        float fRecip2 = nlRecipSqrt(fBtgX * fBtgX + fBtgY * fBtgY + fBtgZ * fBtgZ, true);
+        float fRecip2 = nlRecipSqrt(nlVec3LengthSquared(v3BallToGoal), true);
+        nlVec3Scale(v3BallToGoal, fRecip2);
 
-        v3Facing.f.x = 0.5f * (fRecip2 * fBtgX) + 0.5f * v3Facing.f.x;
-        v3Facing.f.y = 0.5f * (fRecip2 * fBtgY) + 0.5f * v3Facing.f.y;
-        v3Facing.f.z = 0.5f * (fRecip2 * fBtgZ) + 0.5f * v3Facing.f.z;
+        nlVec3WeightedSum(v3Facing, 0.5f, v3Facing, 0.5f, v3BallToGoal);
     }
 
     m_aDesiredFacingDirection = (s16)(nlATan2f(v3Facing.f.y, v3Facing.f.x) * (32768.0f / 3.14159265f));

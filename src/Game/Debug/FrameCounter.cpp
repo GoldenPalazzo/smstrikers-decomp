@@ -394,7 +394,7 @@ void DrawBrow(const nlVector3& leftEyeCentre, const nlVector3& rightEyeCentre, f
 
 /**
  * Offset/Address/Size: 0x0 | 0x801FCB9C | size: 0x588
- * TODO: 86.75% match - colour lerp scheduling: MWCC interleaves byte loads with float ops but our code batches them. Eye section has f4/f6 f5/f7 register swap.
+ * TODO: 97.03% match - colour lerp scheduling still uses different FPRs in both branches.
  */
 void FrameCounter::DisplayFrameSmiler()
 {
@@ -478,13 +478,8 @@ void FrameCounter::DisplayFrameSmiler()
     rightEyeCentre.f.x = circleRadius * sfEyeSeparation;
     rightEyeCentre.f.y = -circleRadius * sfEyeHeight;
 
-    leftEyeCentre.f.x += circleCentre.f.x;
-    leftEyeCentre.f.y += circleCentre.f.y;
-    leftEyeCentre.f.z += circleCentre.f.z;
-
-    rightEyeCentre.f.x += circleCentre.f.x;
-    rightEyeCentre.f.y += circleCentre.f.y;
-    rightEyeCentre.f.z += circleCentre.f.z;
+    nlVec3Add(leftEyeCentre, leftEyeCentre, circleCentre);
+    nlVec3Add(rightEyeCentre, rightEyeCentre, circleCentre);
 
     DrawCircle(circleCentre, 3.0f + circleRadius, 1.2f, black);
     DrawCircle(circleCentre, circleRadius, 1.2f, colour);

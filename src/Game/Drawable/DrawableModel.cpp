@@ -199,7 +199,7 @@ static inline void* FindStream(glModelPacket* pPacket, int streamID)
 
 /**
  * Offset/Address/Size: 0x183C | 0x80121648 | size: 0x598
- * TODO: 99.83% match - 6 commutative operand swaps on add in display list vertex indexing
+ * TODO: 99.92% match - colour-stream display list cursor updates the base register before the +4 byte step
  */
 static void Fresnelify(glModelPacket* pPacket, eGLView view)
 {
@@ -223,7 +223,7 @@ static void Fresnelify(glModelPacket* pPacket, eGLView view)
     nlInvertMatrix(modelview, modelview);
     nlTransposeMatrix(modelview, modelview);
 
-    void* pList = dlGetStruct(pPacket->indexBuffer);
+    DisplayList* pList = dlGetStruct(pPacket->indexBuffer);
     s32 index = 0;
     s32 numVerts = pPacket->numVertices;
 
@@ -232,19 +232,29 @@ static void Fresnelify(glModelPacket* pPacket, eGLView view)
         while (index < numVerts)
         {
             u16* pVert;
-            if (*(u16*)((u8*)pList + 0x0E) != 0)
+            if (((u16*)&pList->indices)[1] != 0)
             {
-                u16 ns = *(u16*)((u8*)pList + 0x0C);
+                u16 ns = ((u16*)&pList->indices)[0];
                 int stride = (ns - 1) * 2 + 1;
-                int offset = stride * index + 4;
-                pVert = (u16*)((u8*)*(u32*)((u8*)pList + 0x04) + offset);
+                int offset = stride * index;
+                u8* ptr8 = (u8*)pList->list;
+                ptr8 += offset;
+                pVert = (u16*)ptr8;
+                ptr8 = (u8*)pVert;
+                ptr8 += 4;
+                pVert = (u16*)ptr8;
             }
             else
             {
-                u16 ns = *(u16*)((u8*)pList + 0x0C);
+                u16 ns = ((u16*)&pList->indices)[0];
                 int stride = ns * 2;
-                int offset = index * stride + 3;
-                pVert = (u16*)((u8*)*(u32*)((u8*)pList + 0x04) + offset);
+                int offset = index * stride;
+                u8* ptr8 = (u8*)pList->list;
+                ptr8 += offset;
+                pVert = (u16*)ptr8;
+                ptr8 = (u8*)pVert;
+                ptr8 += 3;
+                pVert = (u16*)ptr8;
             }
             int vertIndex = *pVert;
             s8* pNormal = pNormals + vertIndex * 3;
@@ -269,19 +279,29 @@ static void Fresnelify(glModelPacket* pPacket, eGLView view)
         while (index < numVerts)
         {
             u16* pVert;
-            if (*(u16*)((u8*)pList + 0x0E) != 0)
+            if (((u16*)&pList->indices)[1] != 0)
             {
-                u16 ns = *(u16*)((u8*)pList + 0x0C);
+                u16 ns = ((u16*)&pList->indices)[0];
                 int stride = (ns - 1) * 2 + 1;
-                int offset = stride * index + 4;
-                pVert = (u16*)((u8*)*(u32*)((u8*)pList + 0x04) + offset);
+                int offset = stride * index;
+                u8* ptr8 = (u8*)pList->list;
+                ptr8 += offset;
+                pVert = (u16*)ptr8;
+                ptr8 = (u8*)pVert;
+                ptr8 += 4;
+                pVert = (u16*)ptr8;
             }
             else
             {
-                u16 ns = *(u16*)((u8*)pList + 0x0C);
+                u16 ns = ((u16*)&pList->indices)[0];
                 int stride = ns * 2;
-                int offset = index * stride + 3;
-                pVert = (u16*)((u8*)*(u32*)((u8*)pList + 0x04) + offset);
+                int offset = index * stride;
+                u8* ptr8 = (u8*)pList->list;
+                ptr8 += offset;
+                pVert = (u16*)ptr8;
+                ptr8 = (u8*)pVert;
+                ptr8 += 3;
+                pVert = (u16*)ptr8;
             }
             int vertIndex = *pVert;
             s8* pNormal = pNormals + vertIndex * 3;
@@ -306,19 +326,29 @@ static void Fresnelify(glModelPacket* pPacket, eGLView view)
         while (index < numVerts)
         {
             u16* pVert;
-            if (*(u16*)((u8*)pList + 0x0E) != 0)
+            if (((u16*)&pList->indices)[1] != 0)
             {
-                u16 ns = *(u16*)((u8*)pList + 0x0C);
+                u16 ns = ((u16*)&pList->indices)[0];
                 int stride = (ns - 1) * 2 + 1;
-                int offset = stride * index + 4;
-                pVert = (u16*)((u8*)*(u32*)((u8*)pList + 0x04) + offset);
+                int offset = stride * index;
+                u8* ptr8 = (u8*)pList->list;
+                ptr8 += offset;
+                pVert = (u16*)ptr8;
+                ptr8 = (u8*)pVert;
+                ptr8 += 4;
+                pVert = (u16*)ptr8;
             }
             else
             {
-                u16 ns = *(u16*)((u8*)pList + 0x0C);
+                u16 ns = ((u16*)&pList->indices)[0];
                 int stride = ns * 2;
-                int offset = index * stride + 3;
-                pVert = (u16*)((u8*)*(u32*)((u8*)pList + 0x04) + offset);
+                int offset = index * stride;
+                u8* ptr8 = (u8*)pList->list;
+                ptr8 += offset;
+                pVert = (u16*)ptr8;
+                ptr8 = (u8*)pVert;
+                ptr8 += 3;
+                pVert = (u16*)ptr8;
             }
             int vertIndex = *pVert;
             s8* pNormal = pNormals + vertIndex * 3;
@@ -635,14 +665,17 @@ DrawableObject* DrawableModel::Clone() const
 
 /**
  * Offset/Address/Size: 0xD18 | 0x80120B24 | size: 0x38C
- * TODO: 98.70% match - register allocation diff: dimensions r22 vs target r23,
- *       bbCache r30 vs target r28. Cascading register diffs and commutative
- *       operand order swaps in mullw/add.
+ * TODO: 98.96% match - register allocation diff: dimensions r22 vs target r23,
+ *       numPackets r23 vs target r22. Remaining diffs include mullw/add operand
+ *       order in index setup and final dimension float register scheduling.
  */
 void GetAABBDimensions(const glModel* model, AABBDimensions& dimensions, unsigned long boundingBoxCacheKey)
 {
     AABBDimensions* foundValue = NULL;
-    AVLTreeEntry<unsigned long, AABBDimensions>* node = boundingBoxCache.m_Root;
+    u8* packets;
+    int packetOffset;
+    AVLTreeNode** root = (AVLTreeNode**)&boundingBoxCache.m_Root;
+    AVLTreeEntry<unsigned long, AABBDimensions>* node = (AVLTreeEntry<unsigned long, AABBDimensions>*)*root;
 
     while (node != NULL)
     {
@@ -685,18 +718,19 @@ void GetAABBDimensions(const glModel* model, AABBDimensions& dimensions, unsigne
         return;
     }
 
-    u8* packets = (u8*)model->packets;
-    unsigned int numPackets = model->numPackets;
+    packets = (u8*)model->packets;
     unsigned char first = 1;
     unsigned int packetIndex = 0;
-    int packetOffset = 0;
+    glModelPacket* packet;
     int vertexIndex;
+    unsigned int numPackets = model->numPackets;
+    packetOffset = 0;
     nlVector3 min;
     nlVector3 max;
 
     while (packetIndex < numPackets)
     {
-        glModelPacket* packet = (glModelPacket*)(packets + packetOffset);
+        packet = (glModelPacket*)(packets + packetOffset);
         void* list = dlGetStruct(packet->indexBuffer);
         vertexIndex = 0;
 
@@ -786,7 +820,7 @@ void GetAABBDimensions(const glModel* model, AABBDimensions& dimensions, unsigne
     {
         AVLTreeNode* existingNode;
 
-        boundingBoxCache.AddAVLNode((AVLTreeNode**)&boundingBoxCache.m_Root, &boundingBoxCacheKey, &dimensions, &existingNode, boundingBoxCache.m_NumElements);
+        boundingBoxCache.AddAVLNode(root, &boundingBoxCacheKey, &dimensions, &existingNode, boundingBoxCache.m_NumElements);
 
         if (existingNode == NULL)
         {
@@ -964,8 +998,8 @@ void GetShadowBoundingSquare(const glModel* model, const nlMatrix4& matrix, floa
 
 /**
  * Offset/Address/Size: 0x730 | 0x8012053C | size: 0x234
- * TODO: 98.40% match - culling-state setup still schedules `li r3, 6` after
- *       the visibility branch instead of before `cmplwi`.
+ * TODO: 99.29% match - one residual `li r3, 6` inside the visibility branch;
+ *       target emits only `li r4, 0` there.
  */
 void DrawCoPlanarReference(eGLView view, const glModel& model, const nlMatrix4& mtx, unsigned long userData)
 {
@@ -1015,6 +1049,7 @@ void DrawCoPlanarReference(eGLView view, const glModel& model, const nlMatrix4& 
     if (g_bCoPlanarReferenceVis)
     {
         cullMode = 0;
+        cullState = GLS_Culling;
     }
 
     glSetRasterState(cullState, cullMode);

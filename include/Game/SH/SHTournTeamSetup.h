@@ -51,6 +51,9 @@ public:
     BasicString<char, Detail::TempStringAllocator> FindSidekickSlideName(eSidekickID);
     void AutoFill();
     void UpdateForCurrentRow();
+    void UpdateArrowVisibility();
+    bool HasEmptyTeam() const;
+    int CanProceed() const;
     void ScrollUp(bool);
     void ScrollDown(bool);
 

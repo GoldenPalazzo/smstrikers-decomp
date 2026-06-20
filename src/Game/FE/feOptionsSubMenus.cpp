@@ -1632,21 +1632,24 @@ void OptionsCheatsMenu::BuildCustomPowerupsList(TLComponentInstance* compinstanc
     typedef Detail::MemFunImpl<void, void (SlideMenuList::*)()> MemFunImpl_SML;
     typedef BindExp1<void, MemFunImpl_SML, SlideMenuList*> BindExp1_SML;
 
+    GameInfoManager* gameInfo = nlSingleton<GameInfoManager>::s_pInstance;
     int slidesAdded = 1;
     int startindex = 0;
     char slidename[64];
-    int i;
     bool unlocked;
+    int i;
     TLTextInstance* pText;
     nlColour lockColour;
     TLComponentInstance* pMenuComp;
     TLComponentInstance* pArrowComp;
+    unsigned long slideHash;
+    MenuItem<SlideMenuItem>* menuItem;
 
     mSlideMenuLists[0] = (MenuList<SlideMenuList>*)(new (nlMalloc(sizeof(SlideMenuList), 8, false)) SlideMenuList(compinstance));
 
     compinstance->SetActiveSlide("Slide1");
     {
-        unsigned long slideHash = compinstance->GetActiveSlide()->m_hash;
+        slideHash = compinstance->GetActiveSlide()->m_hash;
         SlideMenuList* sml = (SlideMenuList*)mSlideMenuLists[0];
         SlideMenuItem* item = (SlideMenuItem*)nlMalloc(sizeof(SlideMenuItem), 8, true);
         if (item != NULL)
@@ -1659,14 +1662,13 @@ void OptionsCheatsMenu::BuildCustomPowerupsList(TLComponentInstance* compinstanc
         }
         item->mSlideMenuHash = slideHash;
 
-        MenuItem<SlideMenuItem>* menuItem = &sml->mMenuItems[sml->mNumItemsAdded];
+        menuItem = &sml->mMenuItems[sml->mNumItemsAdded];
         menuItem->mType = item;
         sml->mNumItemsAdded++;
 
-        BindExp1_SML bind = Bind<void>(
+        BindExp1_SML bind = Bind<void, MemFunImpl_SML, SlideMenuList*>(
             MemFun<SlideMenuList, void>(&SlideMenuList::SetSlide), sml);
-        Function<FnSlideMenuItemCb> callback(bind);
-        menuItem->mCallbacks[1] = callback;
+        menuItem->mCallbacks[1] = Function<FnSlideMenuItemCb>(bind);
     }
 
     for (i = 1; i < 6; i++)
@@ -1674,19 +1676,19 @@ void OptionsCheatsMenu::BuildCustomPowerupsList(TLComponentInstance* compinstanc
         switch (i)
         {
         case 1:
-            unlocked = nlSingleton<GameInfoManager>::s_pInstance->IsCustomExplosiveUnlocked();
+            unlocked = gameInfo->IsCustomExplosiveUnlocked();
             break;
         case 2:
-            unlocked = nlSingleton<GameInfoManager>::s_pInstance->IsCustomFreezingUnlocked();
+            unlocked = gameInfo->IsCustomFreezingUnlocked();
             break;
         case 3:
-            unlocked = nlSingleton<GameInfoManager>::s_pInstance->IsCustomShellsUnlocked();
+            unlocked = gameInfo->IsCustomShellsUnlocked();
             break;
         case 4:
-            unlocked = nlSingleton<GameInfoManager>::s_pInstance->IsCustomGiantUnlocked();
+            unlocked = gameInfo->IsCustomGiantUnlocked();
             break;
         case 5:
-            unlocked = nlSingleton<GameInfoManager>::s_pInstance->IsCustomEnhanceUnlocked();
+            unlocked = gameInfo->IsCustomEnhanceUnlocked();
             break;
         }
 
@@ -1695,7 +1697,7 @@ void OptionsCheatsMenu::BuildCustomPowerupsList(TLComponentInstance* compinstanc
             nlSNPrintf(slidename, 64, "Slide%d", i + 1);
             compinstance->SetActiveSlide(slidename);
 
-            unsigned long slideHash = compinstance->GetActiveSlide()->m_hash;
+            slideHash = compinstance->GetActiveSlide()->m_hash;
             SlideMenuList* sml = (SlideMenuList*)mSlideMenuLists[0];
             SlideMenuItem* item = (SlideMenuItem*)nlMalloc(sizeof(SlideMenuItem), 8, true);
             if (item != NULL)
@@ -1708,14 +1710,13 @@ void OptionsCheatsMenu::BuildCustomPowerupsList(TLComponentInstance* compinstanc
             }
             item->mSlideMenuHash = slideHash;
 
-            MenuItem<SlideMenuItem>* menuItem = &sml->mMenuItems[sml->mNumItemsAdded];
+            menuItem = &sml->mMenuItems[sml->mNumItemsAdded];
             menuItem->mType = item;
             sml->mNumItemsAdded++;
 
-            BindExp1_SML bind = Bind<void>(
+            BindExp1_SML bind = Bind<void, MemFunImpl_SML, SlideMenuList*>(
                 MemFun<SlideMenuList, void>(&SlideMenuList::SetSlide), sml);
-            Function<FnSlideMenuItemCb> callback(bind);
-            menuItem->mCallbacks[1] = callback;
+            menuItem->mCallbacks[1] = Function<FnSlideMenuItemCb>(bind);
 
             if (startOption == i)
             {
@@ -1728,13 +1729,37 @@ void OptionsCheatsMenu::BuildCustomPowerupsList(TLComponentInstance* compinstanc
 
     {
         SlideMenuList* sml = (SlideMenuList*)mSlideMenuLists[0];
-        MenuItem<SlideMenuItem>* menuItem = &sml->mMenuItems[sml->mCurrentIndex];
-        menuItem->mCallbacks[2](menuItem->mType);
+        menuItem = &sml->mMenuItems[sml->mCurrentIndex];
+        int tag = menuItem->mCallbacks[2].mTag;
+        if (((u32)((-tag) | tag) >> 31) > 0)
+        {
+            SlideMenuItem* type = menuItem->mType;
+            if (tag == FREE_FUNCTION)
+            {
+                menuItem->mCallbacks[2].mFreeFunction(type);
+            }
+            else
+            {
+                (*menuItem->mCallbacks[2].mFunctor)(type);
+            }
+        }
 
         sml->mCurrentIndex = startindex;
 
         menuItem = &sml->mMenuItems[sml->mCurrentIndex];
-        menuItem->mCallbacks[1](menuItem->mType);
+        tag = menuItem->mCallbacks[1].mTag;
+        if (((u32)((-tag) | tag) >> 31) > 0)
+        {
+            SlideMenuItem* type = menuItem->mType;
+            if (tag == FREE_FUNCTION)
+            {
+                menuItem->mCallbacks[1].mFreeFunction(type);
+            }
+            else
+            {
+                (*menuItem->mCallbacks[1].mFunctor)(type);
+            }
+        }
 
         if (slidesAdded > 1)
         {
@@ -2058,8 +2083,7 @@ OptionsCheatsMenu::~OptionsCheatsMenu()
 
 /**
  * Offset/Address/Size: 0x47AC | 0x800B97F0 | size: 0x720
- * TODO: 97.55% match - first menu item callback setup register allocation and
- * loop temporaries still differ.
+ * TODO: 98.78% match - loop counter, slide-list offset, and menu item registers differ.
  */
 OptionsCheatsMenu::OptionsCheatsMenu(FEPresentation* pres, ButtonComponent::ButtonState btnState, CheatSettings& settings)
     : OptionsSubMenu(pres, btnState)
@@ -2082,8 +2106,6 @@ OptionsCheatsMenu::OptionsCheatsMenu(FEPresentation* pres, ButtonComponent::Butt
     }
 
     TLSlide* currentSlide = pres->m_currentSlide;
-    void (*openItem)(TLComponentInstance*) = SingleHighlite::OpenItem;
-    void (*closeItem)(TLComponentInstance*) = SingleHighlite::CloseItem;
 
     for (i = 0; i < 5; i++)
     {
@@ -2099,17 +2121,17 @@ OptionsCheatsMenu::OptionsCheatsMenu(FEPresentation* pres, ButtonComponent::Butt
         mMenuItems.mNumItemsAdded++;
 
         {
-            Function<FnTLComponentInstanceCb> openFunc;
+            Function<TLComponentInstance*> openFunc;
             openFunc.mTag = FREE_FUNCTION;
-            openFunc.mFreeFunction = openItem;
-            menuItem->mCallbacks[1] = openFunc;
+            openFunc.mFreeFunction = SingleHighlite::OpenItem;
+            *(Function<TLComponentInstance*>*)&menuItem->mCallbacks[1] = openFunc;
         }
 
         {
-            Function<FnTLComponentInstanceCb> closeFunc;
+            Function<TLComponentInstance*> closeFunc;
             closeFunc.mTag = FREE_FUNCTION;
-            closeFunc.mFreeFunction = closeItem;
-            menuItem->mCallbacks[2] = closeFunc;
+            closeFunc.mFreeFunction = SingleHighlite::CloseItem;
+            *(Function<TLComponentInstance*>*)&menuItem->mCallbacks[2] = closeFunc;
         }
 
         if (i == 0)
@@ -2272,34 +2294,34 @@ void OptionsSubMenu::SetButtonState(ButtonComponent::ButtonState buttonState)
 
 /**
  * Offset/Address/Size: 0x504C | 0x800BA090 | size: 0x434
- * TODO: 88.99% match - r28/r29 register swap for this+listIndex offset and bulk copy temp
+ * TODO: 99.60% match - r28/r29 register swap for this+menuitem offset and bind/callback temporary stack layout
  */
-void OptionsSubMenu::BuildSubMenuList(int listIndex, TLComponentInstance* compInstance, bool setFlag, int currentIndex)
+void OptionsSubMenu::BuildSubMenuList(int menuitem, TLComponentInstance* compinstance, bool wraps, int startindex)
 {
     extern int nlSNPrintf(char*, unsigned long, const char*, ...);
     typedef Detail::MemFunImpl<void, void (SlideMenuList::*)()> MemFunImpl_SML;
     typedef BindExp1<void, MemFunImpl_SML, SlideMenuList*> BindExp1_SML;
 
-    MenuItem<SlideMenuItem>* menuItem;
-    SlideMenuList* list = new ((SlideMenuList*)nlMalloc(sizeof(SlideMenuList), 8, false)) SlideMenuList(compInstance);
-    mSlideMenuLists[listIndex] = (MenuList<SlideMenuList>*)list;
+    SlideMenuList* list = new (nlMalloc(sizeof(SlideMenuList), 8, false)) SlideMenuList(compinstance);
+    mSlideMenuLists[menuitem] = (MenuList<SlideMenuList>*)list;
 
+    MenuItem<SlideMenuItem>* menuItem;
     char slidename[64] = { 0 };
 
     int slidenum = 0;
-    while (true)
+    do
     {
         nlSNPrintf(slidename, 64, "Slide%d", slidenum + 1);
-        compInstance->SetActiveSlide(slidename);
+        compinstance->SetActiveSlide(slidename);
 
-        if (compInstance->GetActiveSlide() == NULL)
+        if (compinstance->GetActiveSlide() == NULL)
         {
             break;
         }
 
-        unsigned long slideHash = compInstance->GetActiveSlide()->m_hash;
+        unsigned long slideHash = compinstance->GetActiveSlide()->m_hash;
 
-        SlideMenuList* sml = (SlideMenuList*)mSlideMenuLists[listIndex];
+        SlideMenuList* sml = (SlideMenuList*)mSlideMenuLists[menuitem];
 
         SlideMenuItem* item = (SlideMenuItem*)nlMalloc(sizeof(SlideMenuItem), 8, true);
         if (item != NULL)
@@ -2312,32 +2334,46 @@ void OptionsSubMenu::BuildSubMenuList(int listIndex, TLComponentInstance* compIn
         }
         item->mSlideMenuHash = slideHash;
 
-        menuItem = &sml->mMenuItems[sml->mNumItemsAdded];
+        menuItem = ((MenuItem<SlideMenuItem>*)sml) + sml->mNumItemsAdded;
         menuItem->mType = item;
         sml->mNumItemsAdded++;
 
         {
-            BindExp1_SML bind = Bind<void>(
+            BindExp1_SML bind = Bind<void, MemFunImpl_SML, SlideMenuList*>(
                 MemFun<SlideMenuList, void>(&SlideMenuList::SetSlide), sml);
             Function<FnSlideMenuItemCb> callback(bind);
             menuItem->mCallbacks[1] = callback;
         }
+    } while (++slidenum);
 
-        slidenum++;
+    list = (SlideMenuList*)mSlideMenuLists[menuitem];
+    menuItem = &list->mMenuItems[list->mCurrentIndex];
+    int tag = menuItem->mCallbacks[2].mTag;
+    if (((u32)((-tag) | tag) >> 31) > 0)
+    {
+        SlideMenuItem* type = menuItem->mType;
+        if (tag == FREE_FUNCTION)
+            menuItem->mCallbacks[2].mFreeFunction(type);
+        else
+            (*menuItem->mCallbacks[2].mFunctor)(type);
     }
 
-    SlideMenuList* sml = (SlideMenuList*)mSlideMenuLists[listIndex];
-    menuItem = &sml->mMenuItems[sml->mCurrentIndex];
-    menuItem->mCallbacks[2](menuItem->mType);
+    list->mCurrentIndex = startindex;
 
-    sml->mCurrentIndex = currentIndex;
-
-    menuItem = &sml->mMenuItems[sml->mCurrentIndex];
-    menuItem->mCallbacks[1](menuItem->mType);
-
-    if (setFlag)
+    menuItem = &list->mMenuItems[list->mCurrentIndex];
+    tag = menuItem->mCallbacks[1].mTag;
+    if (((u32)((-tag) | tag) >> 31) > 0)
     {
-        sml->mFlags = 1;
+        SlideMenuItem* type = menuItem->mType;
+        if (tag == FREE_FUNCTION)
+            menuItem->mCallbacks[1].mFreeFunction(type);
+        else
+            (*menuItem->mCallbacks[1].mFunctor)(type);
+    }
+
+    if (wraps)
+    {
+        ((SlideMenuList*)mSlideMenuLists[menuitem])->mFlags = 1;
     }
 }
 

@@ -377,9 +377,10 @@ void EmitSpindularPosition(nlVector3& vPosition, nlVector3& vDirection, EffectsT
         localDir.f.x = (dirX * cos) + (localDir.f.z * sin);
         localDir.f.z = (-dirX * sin) + (localDir.f.z * cos);
 
-        localPos.f.x = (posX * cos) + (localPos.f.z * sin);
-        localPos.f.y = localPos.f.y;
-        localPos.f.z = (-posX * sin) + (localPos.f.z * cos);
+        nlVec3Set(localPos,
+            (posX * cos) + (localPos.f.z * sin),
+            localPos.f.y,
+            (-posX * sin) + (localPos.f.z * cos));
     }
 
     if (pSpec != nullptr)

@@ -427,7 +427,6 @@ static inline void SkipLine(const char*& data)
 
 /**
  * Offset/Address/Size: 0x3408 | 0x801180E4 | size: 0x588
- * TODO: 99.69% match - r15/r16 register swap in active reset cleanup loop
  */
 NisPlayer::NisPlayer()
     : InterpreterCore(10)
@@ -503,24 +502,7 @@ NisPlayer::NisPlayer()
         nlFree(data);
     }
 
-    if (mActive)
-    {
-        for (int i = 0; i < 4; i++)
-        {
-            delete mPlaying[i];
-            delete mLoaded[i];
-            mPlaying[i] = NULL;
-            mLoaded[i] = NULL;
-            mLoadQueue[i] = NULL;
-            mAsyncStarted[i] = false;
-        }
-        mActive = false;
-        mLoadingFromBack = false;
-        mUsedFromFront = 0;
-        mUsedFromBack = 0x70800;
-        mCamera.UnselectCameraAnimation();
-        cCameraManager::Remove(mCamera);
-    }
+    Reset();
 
     unsigned long fileSize = 0;
     byteCode = nlLoadEntireFile("art/presentation/nis_triggers.byte_code", &fileSize, 0x20, AllocateStart);

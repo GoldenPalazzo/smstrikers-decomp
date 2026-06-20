@@ -8,7 +8,11 @@
 #include "NL/gl/glView.h"
 #include "NL/nlAVLTreeSlotPool.h"
 #include "NL/nlDLListSlotPool.h"
-#include "Game/GL/GLRenderBuffer.h"
+// Forward-declare instead of #include: only "extern GLRenderBuffer glRenderBuffer;"
+// below needs the name, and pulling the full definition (with its inline ctor)
+// into every includer forces a spurious DLListContainer DeleteEntry/PTMF
+// instantiation in TUs that use GLRenderList only by pointer (e.g. glPlat, glView).
+class GLRenderBuffer;
 
 class glModel;
 
@@ -185,16 +189,6 @@ public:
 
 class GLPacketList : public nlDLListSlotPool<const glModelPacket*>
 {
-public:
-    GLPacketList()
-        : nlDLListSlotPool<const glModelPacket*>()
-    {
-    }
-    GLPacketList(int initial, int delta)
-        : nlDLListSlotPool<const glModelPacket*>(initial, delta)
-    {
-    }
-    ~GLPacketList() { }
 };
 
 extern GLRenderBuffer glRenderBuffer;

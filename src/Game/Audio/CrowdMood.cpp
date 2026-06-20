@@ -422,11 +422,9 @@ static void MoodDefFromBlend(float* MoodBlend, MOOD_DEFINITION& MoodDef)
 
 /**
  * Offset/Address/Size: 0x2EA0 | 0x801505B4 | size: 0x358
- * TODO: 96.89% match - remaining diffs are m_BufferCount gate branch opcodes
- *       (`beq` vs `ble`) and LPF loop r28/r29 register allocation swap.
- *       Both appear to be MWCC compiler behavior differences.
+ * TODO: 99.70% match - LPF loop keeps lpfFreq and pBuf in swapped registers.
  */
-bool PlayVocal(const CROWD_VOCAL_DEFINITION& VocalDef, CROWD_STATE::VOCALIZATION_STATE& VocalState, GCAudioStreaming::AudioStream* pStream)
+static bool PlayVocal(const CROWD_VOCAL_DEFINITION& VocalDef, CROWD_STATE::VOCALIZATION_STATE& VocalState, GCAudioStreaming::AudioStream* pStream)
 {
     if (g_Settings.NoStreaming)
     {
@@ -465,6 +463,7 @@ bool PlayVocal(const CROWD_VOCAL_DEFINITION& VocalDef, CROWD_STATE::VOCALIZATION
             scalar = scalar * crowdVol;
             int tmpVol = (int)scalar;
             unsigned long streamVol = 0x7F;
+            unsigned long zeroCount = 0;
 
             if ((unsigned char)tmpVol <= 0x7F)
             {
@@ -476,7 +475,7 @@ bool PlayVocal(const CROWD_VOCAL_DEFINITION& VocalDef, CROWD_STATE::VOCALIZATION
                 GCAudioStreaming::AudioStreamBuffer* buf;
                 volatile unsigned long i = (unsigned long)(buf = NULL);
 
-                if (pStream->m_BufferCount > 0)
+                if (pStream->m_BufferCount > zeroCount)
                 {
                     buf = pStream->m_Buffers[0];
                 }
@@ -508,7 +507,7 @@ bool PlayVocal(const CROWD_VOCAL_DEFINITION& VocalDef, CROWD_STATE::VOCALIZATION
                 GCAudioStreaming::AudioStreamBuffer* pBuf;
                 i = (unsigned long)(pBuf = NULL);
 
-                if (pStream->m_BufferCount > 0)
+                if (pStream->m_BufferCount > zeroCount)
                 {
                     pBuf = pStream->m_Buffers[0];
                 }
@@ -545,7 +544,7 @@ bool PlayVocal(const CROWD_VOCAL_DEFINITION& VocalDef, CROWD_STATE::VOCALIZATION
             {
             case GCAudioStreaming::SS_Initd:
                 pStream->m_Flags = (pStream->m_Flags & ~(1 << GCAudioStreaming::SF_Play)) | (1 << GCAudioStreaming::SF_Play);
-                pStream->WarmReadDone((GCAudioStreaming::AudioStreamBuffer*)1);
+                pStream->Warm(true);
                 break;
             case GCAudioStreaming::SS_Warming:
                 pStream->m_Flags = (pStream->m_Flags & ~(1 << GCAudioStreaming::SF_Play)) | (1 << GCAudioStreaming::SF_Play);
@@ -555,7 +554,7 @@ bool PlayVocal(const CROWD_VOCAL_DEFINITION& VocalDef, CROWD_STATE::VOCALIZATION
                 GCAudioStreaming::AudioStreamBuffer* buf;
                 volatile unsigned long i = (unsigned long)(buf = NULL);
 
-                if (pStream->m_BufferCount > 0)
+                if (pStream->m_BufferCount > zeroCount)
                 {
                     buf = pStream->m_Buffers[0];
                 }
@@ -1091,12 +1090,17 @@ void CrowdMood::Init()
 
 /**
  * Offset/Address/Size: 0xF4C | 0x8014E660 | size: 0x3B4
- * TODO: 94.79% match - register allocation diffs (r29/r31, r30/r28 swapped),
- *       ble vs beq for m_BufferCount<=0 checks, r3/r4 swap in free-buffer loops,
- *       stack offset diffs (0x0C vs 0x10). Same known MWCC quirks as UnlockStream.
+ * TODO: 99.24% match - remaining register allocation differs for bJustStopSFX,
+ *       g_CrowdAudio base pointers, and the heckle stream pointer.
  */
 void CrowdMood::Purge(bool bJustStopSFX)
 {
+    volatile unsigned long chantPlayI;
+    volatile unsigned long hecklePlayI;
+    volatile unsigned long chantFreeI;
+    volatile unsigned long heckleFreeI;
+    unsigned long zeroCount = 0;
+
     g_CrowdSFXStopped = true;
 
     Audio::StopSFX(g_CrowdAudio.NeutralVoiceId);
@@ -1112,12 +1116,9 @@ void CrowdMood::Purge(bool bJustStopSFX)
         if (pChant->m_State == GCAudioStreaming::SS_Playing)
         {
             GCAudioStreaming::AudioStreamBuffer* buf;
-            volatile unsigned long i = (unsigned long)(buf = NULL);
+            chantPlayI = (unsigned long)(buf = NULL);
 
-            if (pChant->m_BufferCount <= 0)
-            {
-            }
-            else
+            if (pChant->m_BufferCount > zeroCount)
             {
                 buf = pChant->m_Buffers[0];
             }
@@ -1129,8 +1130,8 @@ void CrowdMood::Purge(bool bJustStopSFX)
                 sndStreamDeactivate(buf->m_StreamId);
                 pChant->m_State = GCAudioStreaming::SS_Warm;
 
-                unsigned long ci = i + 1;
-                i = ci;
+                unsigned long ci = chantPlayI + 1;
+                chantPlayI = ci;
                 if (ci < pChant->m_BufferCount)
                 {
                     buf = pChant->m_Buffers[ci];
@@ -1154,14 +1155,11 @@ void CrowdMood::Purge(bool bJustStopSFX)
             if (pChant->m_State > GCAudioStreaming::SS_Initd)
             {
                 GCAudioStreaming::AudioStreamBuffer* buf;
-                volatile unsigned long i = (unsigned long)(buf = NULL);
+                chantFreeI = (unsigned long)(buf = NULL);
 
                 pChant->m_Flags = (pChant->m_Flags & ~(1 << GCAudioStreaming::SF_SeriousStop)) | (1 << GCAudioStreaming::SF_SeriousStop);
 
-                if (pChant->m_BufferCount <= 0)
-                {
-                }
-                else
+                if (pChant->m_BufferCount > zeroCount)
                 {
                     buf = pChant->m_Buffers[0];
                 }
@@ -1170,14 +1168,15 @@ void CrowdMood::Purge(bool bJustStopSFX)
                 {
                     pChant->m_BuffMgr.FreeBuffer(buf);
 
-                    unsigned long bi = i;
-                    unsigned long ci = bi + 1;
-                    i = ci;
+                    unsigned long bi = chantFreeI;
+                    buf = NULL;
                     pChant->m_Buffers[bi] = NULL;
+                    bi++;
+                    chantFreeI = bi;
 
-                    if (ci < pChant->m_BufferCount)
+                    if (bi < pChant->m_BufferCount)
                     {
-                        buf = pChant->m_Buffers[ci];
+                        buf = pChant->m_Buffers[bi];
                     }
                     else
                     {
@@ -1198,12 +1197,9 @@ void CrowdMood::Purge(bool bJustStopSFX)
         if (pHeckle->m_State == GCAudioStreaming::SS_Playing)
         {
             GCAudioStreaming::AudioStreamBuffer* buf;
-            volatile unsigned long i = (unsigned long)(buf = NULL);
+            hecklePlayI = (unsigned long)(buf = NULL);
 
-            if (pHeckle->m_BufferCount <= 0)
-            {
-            }
-            else
+            if (pHeckle->m_BufferCount > zeroCount)
             {
                 buf = pHeckle->m_Buffers[0];
             }
@@ -1215,8 +1211,8 @@ void CrowdMood::Purge(bool bJustStopSFX)
                 sndStreamDeactivate(buf->m_StreamId);
                 pHeckle->m_State = GCAudioStreaming::SS_Warm;
 
-                unsigned long ci = i + 1;
-                i = ci;
+                unsigned long ci = hecklePlayI + 1;
+                hecklePlayI = ci;
                 if (ci < pHeckle->m_BufferCount)
                 {
                     buf = pHeckle->m_Buffers[ci];
@@ -1240,14 +1236,11 @@ void CrowdMood::Purge(bool bJustStopSFX)
             if (pHeckle->m_State > GCAudioStreaming::SS_Initd)
             {
                 GCAudioStreaming::AudioStreamBuffer* buf;
-                volatile unsigned long i = (unsigned long)(buf = NULL);
+                heckleFreeI = (unsigned long)(buf = NULL);
 
                 pHeckle->m_Flags = (pHeckle->m_Flags & ~(1 << GCAudioStreaming::SF_SeriousStop)) | (1 << GCAudioStreaming::SF_SeriousStop);
 
-                if (pHeckle->m_BufferCount <= 0)
-                {
-                }
-                else
+                if (pHeckle->m_BufferCount > zeroCount)
                 {
                     buf = pHeckle->m_Buffers[0];
                 }
@@ -1256,14 +1249,15 @@ void CrowdMood::Purge(bool bJustStopSFX)
                 {
                     pHeckle->m_BuffMgr.FreeBuffer(buf);
 
-                    unsigned long bi = i;
-                    unsigned long ci = bi + 1;
-                    i = ci;
+                    unsigned long bi = heckleFreeI;
+                    buf = NULL;
                     pHeckle->m_Buffers[bi] = NULL;
+                    bi++;
+                    heckleFreeI = bi;
 
-                    if (ci < pHeckle->m_BufferCount)
+                    if (bi < pHeckle->m_BufferCount)
                     {
-                        buf = pHeckle->m_Buffers[ci];
+                        buf = pHeckle->m_Buffers[bi];
                     }
                     else
                     {

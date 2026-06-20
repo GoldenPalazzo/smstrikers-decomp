@@ -26,6 +26,12 @@ struct LookupBlock
     unsigned long w[14];
 };
 
+struct LookupEntryBlock
+{
+    unsigned long next;
+    LookupBlock data;
+};
+
 /**
  * Offset/Address/Size: 0x0 | 0x8009EDAC | size: 0x8
  */
@@ -370,8 +376,7 @@ long FEAudio::PlayAnimAudioEvent(const char* eventName, bool)
 
 /**
  * Offset/Address/Size: 0x7F4 | 0x8009F5A0 | size: 0x408
- * TODO: 98.38% match - stack frame 0x5F0 vs 0x600 (16-byte alignment boundary),
- * pEntry r29 vs r31, r22-relative vs sp-relative init stores
+ * TODO: 98.68% match - pEntry and list head/tail use different registers
  */
 void FEAudio::BuildAnimAudioEventLookup()
 {
@@ -382,13 +387,14 @@ void FEAudio::BuildAnimAudioEventLookup()
     static AnimAudioEventLookup blankEntry;
     FELookupPool LookupList(0x10, 0x10);
 
-    AnimAudioEventLookup entry;
     AnimAudioEventLookup temp;
+    LookupEntryBlock entry;
 
     SimpleParser parser;
     parser.StartParsing(pFileData, fileSize, false);
 
     char* pToken;
+    char* pSFXTypeStr;
 
     do
     {
@@ -400,9 +406,9 @@ void FEAudio::BuildAnimAudioEventLookup()
             {
                 pEntry = NULL;
                 equalPos[-1] = '\0';
-                char* pSFXTypeStr = equalPos + 2;
-                *(LookupBlock*)&entry = *(LookupBlock*)&blankEntry;
-                *(LookupBlock*)&temp = *(LookupBlock*)&entry;
+                pSFXTypeStr = equalPos + 2;
+                *(LookupBlock*)&temp = *(LookupBlock*)&blankEntry;
+                entry.data = *(LookupBlock*)&temp;
 
                 if (LookupList.m_Allocator.m_FreeList == NULL)
                 {
@@ -417,7 +423,7 @@ void FEAudio::BuildAnimAudioEventLookup()
                 if (pEntry != NULL)
                 {
                     pEntry->next = NULL;
-                    *(LookupBlock*)&pEntry->data = *(LookupBlock*)&temp;
+                    *(LookupBlock*)&pEntry->data = entry.data;
                 }
 
                 nlListAddEnd(&LookupList.m_Head, &LookupList.m_Tail, pEntry);

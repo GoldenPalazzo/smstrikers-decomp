@@ -1182,7 +1182,8 @@ void TakeGameMemSnapshot::ResetTimers()
 
 /**
  * Offset/Address/Size: 0x130 | 0x800A31EC | size: 0x504
- * TODO: 89.66% match - r29/r30 register swap for pFile after third fopen
+ * TODO: 98.16% match - r29/r30 register swap between the append file handle
+ * and the temporary format string data.
  */
 namespace TakeGameMemSnapshot
 {
@@ -1214,8 +1215,7 @@ void TakeGameMemSnapshot::WriteToDisk()
     }
     fclose(pFile);
 
-    FILE* appendFile;
-    appendFile = fopen(filename, "at");
+    pFile = fopen(filename, "at");
 
     BasicString<char, ::Detail::TempStringAllocator> data;
     data.AppendInPlace(NameTeamTable[GameInfoManager::GetInstance()->GetTeam(0)].name);
@@ -1235,7 +1235,7 @@ void TakeGameMemSnapshot::WriteToDisk()
     data.AppendInPlace(StadiumNames[GameInfoManager::GetInstance()->GetStadium()]);
     data.AppendInPlace(",");
 
-    fwrite(data.c_str(), 1, data.m_data ? data.m_data->mSize - 1 : 0, appendFile);
+    fwrite(data.c_str(), 1, data.m_data ? data.m_data->mSize - 1 : 0, pFile);
 
     BasicString<char, ::Detail::TempStringAllocator> stats;
     {
@@ -1251,8 +1251,8 @@ void TakeGameMemSnapshot::WriteToDisk()
         stats = Format<BasicString<char, ::Detail::TempStringAllocator>, unsigned long, unsigned int, unsigned int>(fmt, largestFree, freeVM, largestFreeVM);
     }
 
-    fwrite(stats.c_str(), 1, stats.m_data ? stats.m_data->mSize - 1 : 0, appendFile);
-    fclose(appendFile);
+    fwrite(stats.c_str(), 1, stats.m_data ? stats.m_data->mSize - 1 : 0, pFile);
+    fclose(pFile);
 }
 
 /**

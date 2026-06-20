@@ -51,22 +51,19 @@ UpdateResult IChooseSide::Update(float dt, eFEINPUT_PAD* pad, int param)
 
 /**
  * Offset/Address/Size: 0xFD4 | 0x800C4418 | size: 0x600
- * TODO: 97.25% match - stmw r25 vs r24 (7 vs 8 callee-saved regs).
- * Target keeps an extra callee-saved register live (constant 0 reused across
- * the loop), shifting all register numbers off by one. The connected branch
- * also reuses r0=1 (mr) for destPosIndex=1 vs our li. Residual diffs are all
- * register 'r' diffs from the off-by-one numbering.
+ * TODO: 98.38% match - loop index/base registers are shifted, and the
+ * connected destination-index branch still emits an extra immediate load.
  */
 UpdateResult IChooseSide::UpdateForFE(float, eFEINPUT_PAD* pad)
 {
-    int allReady = 0;
     for (int i = 0; i < 4; i++)
     {
+        int destPosIndex;
+        TLInstance** readyInstances = &mInstanceTable[4];
         TLInstance* inst = mInstanceTable[i];
         if (g_pFEInput->IsConnected((eFEINPUT_PAD)i))
         {
             int side;
-            int destPosIndex;
             feVector3 localPos;
 
             inst->m_bVisible = true;
@@ -96,10 +93,8 @@ UpdateResult IChooseSide::UpdateForFE(float, eFEINPUT_PAD* pad)
         else
         {
             int side;
-            int destPosIndex;
             feVector3 localPos;
             TLInstance* readyIndicator;
-            allReady = 0;
 
             inst->m_bVisible = false;
             mPlayingSides[i] = -1;
@@ -133,53 +128,13 @@ UpdateResult IChooseSide::UpdateForFE(float, eFEINPUT_PAD* pad)
             mTweenManager.clearTweensOnObj(inst);
             mInstanceTable[i]->SetAssetPosition(mControllerDestPos[destPosIndex], localPos.e[1], localPos.e[2]);
 
-            mPlayerReady[i] = (u8)allReady;
-            mInstanceTable[i + 4]->m_bVisible = (u8)allReady;
+            mPlayerReady[i] = false;
+            readyInstances[i]->m_bVisible = false;
 
             readyIndicator = mInstanceTable[16];
             if (readyIndicator != NULL)
             {
-                if (mPlayerReady[0])
-                {
-                    allReady = 1;
-                }
-                else if (mPlayingSides[0] != -1)
-                {
-                    allReady = 0;
-                    goto done_ready1;
-                }
-
-                if (mPlayerReady[1])
-                {
-                    allReady = 1;
-                }
-                else if (mPlayingSides[1] != -1)
-                {
-                    allReady = 0;
-                    goto done_ready1;
-                }
-
-                if (mPlayerReady[2])
-                {
-                    allReady = 1;
-                }
-                else if (mPlayingSides[2] != -1)
-                {
-                    allReady = 0;
-                    goto done_ready1;
-                }
-
-                if (mPlayerReady[3])
-                {
-                    allReady = 1;
-                }
-                else if (mPlayingSides[3] != -1)
-                {
-                    allReady = 0;
-                }
-
-            done_ready1:
-                if ((u8)allReady == 1)
+                if (AllPlayersReady())
                     readyIndicator->m_bVisible = true;
                 else
                     readyIndicator->m_bVisible = false;
@@ -191,52 +146,11 @@ UpdateResult IChooseSide::UpdateForFE(float, eFEINPUT_PAD* pad)
             if (mPlayerReady[i])
             {
                 mPlayerReady[i] = false;
-                mInstanceTable[i + 4]->m_bVisible = false;
+                readyInstances[i]->m_bVisible = false;
                 TLInstance* ri2 = mInstanceTable[16];
                 if (ri2 != NULL)
                 {
-                    allReady = 0;
-                    if (mPlayerReady[0])
-                    {
-                        allReady = 1;
-                    }
-                    else if (mPlayingSides[0] != -1)
-                    {
-                        allReady = 0;
-                        goto done_ready2;
-                    }
-
-                    if (mPlayerReady[1])
-                    {
-                        allReady = 1;
-                    }
-                    else if (mPlayingSides[1] != -1)
-                    {
-                        allReady = 0;
-                        goto done_ready2;
-                    }
-
-                    if (mPlayerReady[2])
-                    {
-                        allReady = 1;
-                    }
-                    else if (mPlayingSides[2] != -1)
-                    {
-                        allReady = 0;
-                        goto done_ready2;
-                    }
-
-                    if (mPlayerReady[3])
-                    {
-                        allReady = 1;
-                    }
-                    else if (mPlayingSides[3] != -1)
-                    {
-                        allReady = 0;
-                    }
-
-                done_ready2:
-                    if ((u8)allReady == 1)
+                    if (AllPlayersReady())
                         ri2->m_bVisible = true;
                     else
                         ri2->m_bVisible = false;
@@ -268,52 +182,11 @@ UpdateResult IChooseSide::UpdateForFE(float, eFEINPUT_PAD* pad)
             if (mPlayingSides[i] != -1)
             {
                 mPlayerReady[i] = true;
-                mInstanceTable[i + 4]->m_bVisible = true;
+                readyInstances[i]->m_bVisible = true;
                 TLInstance* ri3 = mInstanceTable[16];
                 if (ri3 != NULL)
                 {
-                    allReady = 0;
-                    if (mPlayerReady[0])
-                    {
-                        allReady = 1;
-                    }
-                    else if (mPlayingSides[0] != -1)
-                    {
-                        allReady = 0;
-                        goto done_ready3;
-                    }
-
-                    if (mPlayerReady[1])
-                    {
-                        allReady = 1;
-                    }
-                    else if (mPlayingSides[1] != -1)
-                    {
-                        allReady = 0;
-                        goto done_ready3;
-                    }
-
-                    if (mPlayerReady[2])
-                    {
-                        allReady = 1;
-                    }
-                    else if (mPlayingSides[2] != -1)
-                    {
-                        allReady = 0;
-                        goto done_ready3;
-                    }
-
-                    if (mPlayerReady[3])
-                    {
-                        allReady = 1;
-                    }
-                    else if (mPlayingSides[3] != -1)
-                    {
-                        allReady = 0;
-                    }
-
-                done_ready3:
-                    if ((u8)allReady == 1)
+                    if (AllPlayersReady())
                         ri3->m_bVisible = true;
                     else
                         ri3->m_bVisible = false;
@@ -348,18 +221,18 @@ UpdateResult IChooseSide::UpdateForFE(float, eFEINPUT_PAD* pad)
 
 /**
  * Offset/Address/Size: 0xCDC | 0x800C4120 | size: 0x2F8
- * TODO: 97.76% match - outer loop register allocation is shifted, and
- * the connected destination-index branch still emits an extra immediate load.
+ * TODO: 98.55% match - loop index/base registers are shifted, and the
+ * connected destination-index branch still emits an extra immediate load.
  */
 UpdateResult IChooseSide::UpdateForPause(float, eFEINPUT_PAD* pad)
 {
     for (int i = 0; i < 4; i++)
     {
+        int destPosIndex;
         TLInstance* inst = mInstanceTable[i];
         if (g_pFEInput->IsConnected((eFEINPUT_PAD)i))
         {
             int side;
-            int destPosIndex;
             feVector3 localPos;
 
             inst->m_bVisible = true;
@@ -390,7 +263,6 @@ UpdateResult IChooseSide::UpdateForPause(float, eFEINPUT_PAD* pad)
         else
         {
             int side;
-            int destPosIndex;
             feVector3 localPos;
             TLInstance* readyIndicator;
             int allReady = 0;

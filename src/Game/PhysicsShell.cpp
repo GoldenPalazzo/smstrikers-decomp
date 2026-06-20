@@ -36,7 +36,7 @@ PhysicsShell::PhysicsShell(float radius)
 
 /**
  * Offset/Address/Size: 0x10C | 0x8013BA74 | size: 0x898
- * TODO: 99.85% match - net width half-scale fmsubs operand order and net-height load/fabs register order
+ * TODO: 99.89% match - net width half-scale operand order and net-height f1/f2 register allocation
  */
 ContactType PhysicsShell::Contact(PhysicsObject* obj, dContact* info, int numContacts)
 {
@@ -310,7 +310,9 @@ ContactType PhysicsShell::Contact(PhysicsObject* obj, dContact* info, int numCon
                 return NO_CONTACT;
             }
 
-            if ((float)fabs(v3PowerupPosition.f.z) > cNet::m_fNetHeight - fPowerupRadius)
+            float fPowerupZ = v3PowerupPosition.f.z;
+            float fNetHeight = cNet::m_fNetHeight;
+            if ((float)fabs(fPowerupZ) > fNetHeight - fPowerupRadius)
             {
                 m_pPowerupObject->m_bShouldDestroy = true;
                 return NO_CONTACT;
@@ -321,7 +323,9 @@ ContactType PhysicsShell::Contact(PhysicsObject* obj, dContact* info, int numCon
         {
             if ((float)fabs(v3PowerupPosition.f.x) > cField::GetGoalLineX(1u) - fPowerupRadius)
             {
-                if ((float)fabs(v3PowerupPosition.f.z) < cNet::m_fNetHeight - fPowerupRadius)
+                float fPowerupZ = v3PowerupPosition.f.z;
+                float fNetHeight = cNet::m_fNetHeight;
+                if ((float)fabs(fPowerupZ) < fNetHeight - fPowerupRadius)
                 {
                     mbIsInNet = true;
                     return NO_CONTACT;

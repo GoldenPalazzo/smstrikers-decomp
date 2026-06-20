@@ -65,11 +65,7 @@ void BundleFile::ReadFile(unsigned long hash, void* buffer, unsigned long arg3)
  */
 void BundleFile::ReadFile(const char* filename, void* pBuffer, unsigned long)
 {
-    u32 hash = HashFilename(filename);
-    u32 index = FindHashIndex(hash);
-    BundleFileDirectoryEntry* pEntry = &m_pDirectory[index];
-    nlSeek(m_pFile, pEntry->m_blockNumber * m_pHeader->nSectorSize, 0);
-    nlRead(m_pFile, pBuffer, pEntry->m_length);
+    LoadFile(HashFilename(filename), pBuffer);
 }
 
 /**

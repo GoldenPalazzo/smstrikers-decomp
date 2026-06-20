@@ -508,9 +508,9 @@ void IChooseCaptain::ComponentState::SetCurrentPhase(Phase phase)
         mParent->mSidekickGridComponents[mHomeAway]->SetVisibleInstanceTable(false);
         mParent->mSidekickGridComponents[mHomeAway]->mHighliteComponent->m_bVisible = false;
 
-        homeaway = mHomeAway;
+        teamID = mParent->mHomeAwayTeam[mHomeAway];
         parent = mParent;
-        teamID = parent->mHomeAwayTeam[homeaway];
+        homeaway = mHomeAway;
         CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_0, filename0, 0x80, teamID, homeaway);
         CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_1, filename1, 0x80, teamID, homeaway);
         CaptainSidekickFilename::Build(CaptainSidekickFilename::TYPE_2, filename2, 0x80, teamID, homeaway);
@@ -1907,13 +1907,9 @@ void IChooseCaptain::FindAliveHumanPlayers()
     }
 }
 
-/**
- * Offset/Address/Size: 0x3DC | 0x800BDD24 | size: 0x158
- * TODO: 96.2% match - first counting loop still has r3/r6 swap (numSide1 vs array traversal),
- * and prologue/branch layout differs around that loop due MWCC register reuse.
- */
-void IChooseCaptain::SetupForLastPhase(eFEINPUT_PAD pad)
+inline void IChooseCaptain::UpdateSinglePlayerState()
 {
+    int numSide1;
     int numSide0;
     mIsSinglePlayerInput = numSide0 = 0;
 
@@ -1940,6 +1936,14 @@ void IChooseCaptain::SetupForLastPhase(eFEINPUT_PAD pad)
             mIsSinglePlayerInput = true;
         }
     }
+}
+
+/**
+ * Offset/Address/Size: 0x3DC | 0x800BDD24 | size: 0x158
+ */
+void IChooseCaptain::SetupForLastPhase(eFEINPUT_PAD pad)
+{
+    UpdateSinglePlayerState();
 
     if (mIsSinglePlayerInput)
     {

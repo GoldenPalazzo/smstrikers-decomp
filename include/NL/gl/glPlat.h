@@ -46,7 +46,6 @@ void glplatBeginFrame();
 void glplatFinish();
 void glplatAbortFrame();
 void glplatSendFrame();
-void glx_SendViews();
 void glx_Fog(bool);
 bool glx_GetFog();
 bool glplatPostStartup();

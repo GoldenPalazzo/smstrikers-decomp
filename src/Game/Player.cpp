@@ -1596,8 +1596,6 @@ cPlayer::~cPlayer()
 
 /**
  * Offset/Address/Size: 0x2FAC | 0x8005A4FC | size: 0x380
- * TODO: 97.23% match - remaining mismatch in cPN_Feather allocation control flow
- * for receive-pass and powerup layer construction.
  */
 cPlayer::cPlayer(int arg0, eCharacterClass characterClass, const int* arg2, cSHierarchy* hierarchy, cAnimInventory* animInventory, const CharacterPhysicsData* physData, PlayerTweaks* playerTweaks, AnimRetargetList* animRetargetList, eClassTypes classType)
     : cCharacter(characterClass, arg2, hierarchy, animInventory, physData, playerTweaks->fPhysCapsuleHeight, playerTweaks->fPhysCapsuleRadius, animRetargetList, classType)
@@ -1641,11 +1639,7 @@ cPlayer::cPlayer(int arg0, eCharacterClass characterClass, const int* arg2, cSHi
     baseHierarchy = m_pPoseAccumulator->m_BaseSHierarchy;
     m_nRightHandJointIndex = baseHierarchy->GetNodeIndexByID(nlStringLowerHash("bip01 r hand"));
 
-    cPN_Feather* receivePassLayer = AllocateFeather();
-    if (receivePassLayer != NULL)
-    {
-        receivePassLayer = new (receivePassLayer) cPN_Feather(m_pPoseAccumulator->m_BaseSHierarchy, NULL, 0);
-    }
+    cPN_Feather* receivePassLayer = new (AllocateFeather()) cPN_Feather(m_pPoseAccumulator->m_BaseSHierarchy, NULL, 0);
     m_pReceivePassLayer = receivePassLayer;
 
     baseHierarchy = m_pPoseAccumulator->m_BaseSHierarchy;
@@ -1654,11 +1648,7 @@ cPlayer::cPlayer(int arg0, eCharacterClass characterClass, const int* arg2, cSHi
     m_pReceivePassLayer->SetNodeWeight(m_nBallJointIndex, 1.0f);
     m_pAILayer = m_pReceivePassLayer->GetChildPtr(0);
 
-    cPN_Feather* powerupLayer = AllocateFeather();
-    if (powerupLayer != NULL)
-    {
-        powerupLayer = new (powerupLayer) cPN_Feather(m_pPoseAccumulator->m_BaseSHierarchy, NULL, 0);
-    }
+    cPN_Feather* powerupLayer = new (AllocateFeather()) cPN_Feather(m_pPoseAccumulator->m_BaseSHierarchy, NULL, 0);
     m_pPowerupLayer = powerupLayer;
     m_pPowerupLayer->SetChild(0, m_pReceivePassLayer);
     m_pPoseTree = m_pPowerupLayer;

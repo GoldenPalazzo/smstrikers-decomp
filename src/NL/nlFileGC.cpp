@@ -827,7 +827,6 @@ loop_check:
 
 /**
  * Offset/Address/Size: 0xFE4 | 0x801CFD38 | size: 0x324
- * TODO: 99.40% match - srwi r0+mr r28 instead of direct srwi r28 for loadedSaveState=(fileSystem!=eGC_TDEV)
  */
 static unsigned char GameCubeReadAsync(GCFile* pFile, ReadAsyncCallback callback, void* pBuffer, unsigned long uSize, unsigned long uParam)
 {
@@ -839,7 +838,7 @@ static unsigned char GameCubeReadAsync(GCFile* pFile, ReadAsyncCallback callback
     extern Function<void(int)> g_HandleDVDRetryCB;
     extern Function<FnVoidVoid> g_CheckForResetCB;
 
-    u8 loadedSaveState = 0;
+    u32 loadedSaveState = 0;
     AsyncManager* manager = s_pAsyncManager;
 
     if (manager->m_freeEntryList != NULL)
@@ -859,12 +858,12 @@ static unsigned char GameCubeReadAsync(GCFile* pFile, ReadAsyncCallback callback
         if (manager->m_activeEntryList == NULL)
         {
             GCFileSystem fs = fileSystem;
-            loadedSaveState = (u8)(((u32)(1 - fs) | (u32)(fs - 1)) >> 31);
+            loadedSaveState = (((u32)(1 - fs) | (u32)(fs - 1)) >> 31);
         }
 
         nlDLRingAddEnd<AsyncEntry>(&manager->m_activeEntryList, entry);
 
-        if (loadedSaveState)
+        if ((u8)loadedSaveState)
         {
             entry = manager->m_activeEntryList;
 
@@ -1490,7 +1489,7 @@ nlFile* nlOpen(const char* fileName)
 
 /**
  * Offset/Address/Size: 0x1B78 | 0x801D08CC | size: 0xB0
- * TODO: 97.6% match - pre-fread register allocation still differs
+ * TODO: 98.1% match - pre-fread register allocation still differs
  *   (amountRead/length/remainingBytes stay in r3/r6 vs target r7/r3/r6),
  *   and epilogue scheduling keeps `lwz r31` after `cntlzw/srwi`.
  */
@@ -1507,8 +1506,9 @@ s32 TDEVChunkFile::GetReadStatus()
     u32 bytesRead = fread(dest, 1, (remainingBytes <= 0x3000U) ? remainingBytes : 0x3000U, m_pFile);
     u32 nextAmount = m_CurrentRead.AmountRead + bytesRead;
     m_CurrentRead.AmountRead = nextAmount;
-    u32 currentLength = m_CurrentRead.Length;
+    u32 currentLength;
     u32 currentAmount = m_CurrentRead.AmountRead;
+    currentLength = m_CurrentRead.Length;
     bool isComplete = (currentAmount == currentLength) || ((currentLength == 0x20U) && (currentAmount != 0U));
 
     return isComplete ? 0 : 1;

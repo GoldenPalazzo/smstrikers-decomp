@@ -61,10 +61,10 @@ static inline void ProcessBackground()
 
 static inline void PutChar(int x, int y, int scale, char c, unsigned long color)
 {
-    char* charBitMap = (char*)CallstackDumpFont + ((((signed char)c) - 0x20) * 0x24);
     int endx = x + scale;
     int endy = y + 0x12;
     int i;
+    char* charBitMap = (char*)CallstackDumpFont + ((((signed char)c) - 0x20) * 0x24);
 
     for (i = y; i < endy; i++)
     {
@@ -115,11 +115,11 @@ static void ErrorHandler(unsigned short err, OSContext* ctx, unsigned long dsisr
     unsigned long i;
     unsigned long* p;
     unsigned short* frameBuffer;
-    int bufferLoop;
     char buf[60];
     int y;
     int x;
     int callStackY;
+    int bufferLoop;
 
     ProcessBackground();
 
@@ -149,13 +149,12 @@ static void ErrorHandler(unsigned short err, OSContext* ctx, unsigned long dsisr
         p = (unsigned long*)ctx->gpr[1];
         y = callStackY + 0x13;
         i = 0;
-        while ((p != 0) && (p != (unsigned long*)0xFFFFFFFF) && (i < 0x10))
+        while ((p != 0) && (p != (unsigned long*)0xFFFFFFFF) && (i++ < 0x10))
         {
             nlSNPrintf(buf, 0x3C, "%08x", p[1]);
             PutString(0x0F, y, 0x0B, buf, (unsigned long)0xFFFF8888);
             p = (unsigned long*)p[0];
             y += 0x13;
-            i++;
         }
 
         x = (((int)nlStrLen(buf) + 4) * 0x0B) + 0x0F;
@@ -169,8 +168,8 @@ static void ErrorHandler(unsigned short err, OSContext* ctx, unsigned long dsisr
             nlSNPrintf(buf, 0x3C, "r%-2d=%08x r%-2d=%08x", i, p[0], i + 0x10, p[0x10]);
             PutString(x, y, 0x0B, buf, 0xFF8888FF);
             i++;
-            p++;
             y += 0x13;
+            p++;
         }
 
         x += ((int)nlStrLen(buf) + 2) * 0x0B;

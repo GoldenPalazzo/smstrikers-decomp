@@ -1363,7 +1363,7 @@ config.libs = [
             Object(Matching, "NL/gl/glTexture.cpp", extra_cflags=["-inline auto"]),
             Object(NonMatching, "NL/gl/glConstant.cpp", extra_cflags=["-inline auto"]),
             Object(NonMatching, "NL/gl/glAppAttach.cpp", extra_cflags=["-inline auto"]),
-            Object(NonMatching, "NL/gl/glPlat.cpp", extra_cflags=["-inline auto"]),
+            Object(Matching, "NL/gl/glPlat.cpp", extra_cflags=["-inline auto"]),
         ],
     ),
 

@@ -7,6 +7,15 @@ template <typename T>
 class nlArrayAllocator
 {
 public:
+    T* Allocate()
+    {
+        T* entry = m_pFree;
+        if (entry == 0)
+            return 0;
+        m_pFree = entry->m_next;
+        return entry;
+    }
+
     void DeleteEntry(T* entry)
     {
         entry->m_next = m_pFree;
