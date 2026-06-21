@@ -55,6 +55,8 @@ static inline void GetNextBallPosVelInline(nlVector3& v3BallPos, nlVector3& v3Ba
     PhysicsUpdate(FakeBallWorld::mpPredictWorld->mpPhysicsWorld, tick);
     FakeBallWorld::mfLastCacheTime += tick;
 
+    FakePhysicsBall* physicsBall = FakeBallWorld::mpPredictWorld->mpPhysicsBall;
+
     BallCacheInfo* newInfo = NULL;
     if (BallCacheInfo::mBallCacheInfoSlotPool.m_FreeList == NULL)
     {
@@ -67,8 +69,8 @@ static inline void GetNextBallPosVelInline(nlVector3& v3BallPos, nlVector3& v3Ba
     }
 
     newInfo->mfTime = FakeBallWorld::mfLastCacheTime;
-    newInfo->mv3Position = FakeBallWorld::mpPredictWorld->mpPhysicsBall->GetPosition();
-    newInfo->mv3LinearVelocity = FakeBallWorld::mpPredictWorld->mpPhysicsBall->GetLinearVelocity();
+    newInfo->mv3Position = physicsBall->GetPosition();
+    newInfo->mv3LinearVelocity = physicsBall->GetLinearVelocity();
 
     DLListEntry<BallCacheInfo*>* newEntry = NULL;
     if (FakeBallWorld::mBallCacheList.m_Allocator.m_FreeList == NULL)

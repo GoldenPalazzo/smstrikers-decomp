@@ -16,6 +16,7 @@ public:
     virtual ContactType Contact(PhysicsObject*, dContact*, int);
 
     void CalcAngularFromLinearVelocity(nlVector3&);
+    void CalcSurfaceVelocity(nlVector3&);
     void SetUseAngularVelocity(bool);
     void ScaleAngularVelocity(float);
     void AddResistanceForces();

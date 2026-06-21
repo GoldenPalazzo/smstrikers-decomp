@@ -334,15 +334,9 @@ UpdateResult IChooseSide::UpdateForPause(float, eFEINPUT_PAD* pad)
 
 /**
  * Offset/Address/Size: 0x820 | 0x800C3C64 | size: 0x4BC
- * TODO: 99.08% match - callee-saved register rotation (r29/r31 this, r28/r30 advPtr)
- * across entire function; remaining diffs are register-only.
  */
 void IChooseSide::CheckControllers(int disabledSide)
 {
-    int newSide;
-    int destIndex;
-    TLInstance* inst;
-
     for (int i = 0; i < 4; i++)
     {
         if (mPlayerReady[i])
@@ -379,36 +373,7 @@ void IChooseSide::CheckControllers(int disabledSide)
                 FEAudio::PlayAnimAudioEvent("sfx_deny", false);
             }
 
-            newSide = mPlayingSides[i];
-            if (newSide == 0)
-            {
-                destIndex = 0;
-            }
-            else
-            {
-                destIndex = 2;
-                if (newSide == 1)
-                {
-                    destIndex = 1;
-                }
-            }
-
-            inst = mInstanceTable[i];
-            feVector3 startPos = inst->GetPosition();
-
-            mTweenManager.clearTweensOnObj(inst);
-            mTweenManager.startTween(mTweenManager.createTween(
-                (float*)&startPos,
-                &mControllerDestPos[destIndex],
-                0.075f,
-                0.0f,
-                1,
-                TweenFunctions::linear,
-                inst,
-                TweenSetPosCallback));
-
-            mInstanceTable[i + 12]->m_bVisible = (newSide == -1);
-            mInstanceTable[i + 8]->m_bVisible = (newSide != -1);
+            PositionController(i, true, true);
 
             TLInstance* readyIndicator = mInstanceTable[16];
             if (readyIndicator != NULL)
@@ -450,36 +415,7 @@ void IChooseSide::CheckControllers(int disabledSide)
                 FEAudio::PlayAnimAudioEvent("sfx_deny", false);
             }
 
-            newSide = mPlayingSides[i];
-            if (newSide == 0)
-            {
-                destIndex = 0;
-            }
-            else
-            {
-                destIndex = 2;
-                if (newSide == 1)
-                {
-                    destIndex = 1;
-                }
-            }
-
-            inst = mInstanceTable[i];
-            feVector3 startPos = inst->GetPosition();
-
-            mTweenManager.clearTweensOnObj(inst);
-            mTweenManager.startTween(mTweenManager.createTween(
-                (float*)&startPos,
-                &mControllerDestPos[destIndex],
-                0.075f,
-                0.0f,
-                1,
-                TweenFunctions::linear,
-                inst,
-                TweenSetPosCallback));
-
-            mInstanceTable[i + 12]->m_bVisible = (newSide == -1);
-            mInstanceTable[i + 8]->m_bVisible = (newSide != -1);
+            PositionController(i, true, true);
 
             TLInstance* readyIndicator = mInstanceTable[16];
             if (readyIndicator != NULL)

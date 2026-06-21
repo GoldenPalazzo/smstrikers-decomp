@@ -222,8 +222,8 @@ FuzzyVariant Fuzzy::DefaultDefencePlay(cDecisionEntity* pDecision)
 
 /**
  * Offset/Address/Size: 0x3A58 | 0x80089110 | size: 0xE5C
- * TODO: 98.16% match - initial InPassingLane clamp still uses temporary `f0`
- * instead of in-place `f28`; remaining diffs are nested branch/register layout.
+ * TODO: 99.55% match - initial InPassingLane clamp still uses temporary `f0`
+ * instead of in-place `f28`; final current-mark confidence has f1/f2 register swaps.
  */
 FuzzyVariant Fuzzy::DefendPassInPlay(float fConfidence, cDecisionEntity* pEntity)
 {
@@ -265,7 +265,9 @@ FuzzyVariant Fuzzy::DefendPassInPlay(float fConfidence, cDecisionEntity* pEntity
             if (fConfidence < fInPassingLane && fInPassingLane < 0.2f)
                 fConfidence = fConfidence * fRatio2;
 
-            if (fConfidence > 0.0f)
+            if (fConfidence <= 0.0f)
+                fBestConfidence = 0.0f;
+            else
                 fBestConfidence = fConfidence;
 
             pEntity->QueueActionSetDesire(6, fConfidence, 0.5f, fvNotSet, fvNotSet);
@@ -343,7 +345,9 @@ FuzzyVariant Fuzzy::DefendPassInPlay(float fConfidence, cDecisionEntity* pEntity
                             if (fConfidence < fNotRepeat && fNotRepeat < 0.2f)
                                 fConfidence = fConfidence * fRatio6;
 
-                            if (fConfidence > fBestConfidence)
+                            if (fBestConfidence >= fConfidence)
+                                fBestConfidence = fBestConfidence;
+                            else
                                 fBestConfidence = fConfidence;
 
                             pEntity->QueueActionSetDesire(5, fConfidence, 0.0f, FuzzyVariant(pTarget), fvNotSet);
@@ -374,7 +378,9 @@ FuzzyVariant Fuzzy::DefendPassInPlay(float fConfidence, cDecisionEntity* pEntity
                             if (fConfidence < fNotRepeat2 && fNotRepeat2 < 0.2f)
                                 fConfidence = fConfidence * fRatio7;
 
-                            if (fConfidence > fBestConfidence)
+                            if (fBestConfidence >= fConfidence)
+                                fBestConfidence = fBestConfidence;
+                            else
                                 fBestConfidence = fConfidence;
 
                             pEntity->QueueActionSetDesire(5, fConfidence, 0.0f, FuzzyVariant(pTarget), fvNotSet);
@@ -406,7 +412,9 @@ FuzzyVariant Fuzzy::DefendPassInPlay(float fConfidence, cDecisionEntity* pEntity
                         if (fConfidence < fIsCurrentMark && fIsCurrentMark < 0.2f)
                             fConfidence = fConfidence * fRatio8;
 
-                        if (fConfidence > fBestConfidence)
+                        if (fBestConfidence >= fConfidence)
+                            fBestConfidence = fBestConfidence;
+                        else
                             fBestConfidence = fConfidence;
 
                         pEntity->QueueActionSetDesire(6, fConfidence, 0.5f, fvNotSet, fvNotSet);

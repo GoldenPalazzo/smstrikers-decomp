@@ -957,22 +957,26 @@ u8 PowerupCreateAndThrow(cFielder* pThrower, ePowerUpType eType, int nnumOfPower
 
     return 1;
 }
-/**
- * Offset/Address/Size: 0x4EB4 | 0x8005F7A0 | size: 0x4C
- * TODO: 98.8% match - r4/r5 register swap on strength-reduced loop pointer and index.
- * File uses -inline deferred.
- */
-PowerupBase* FindPowerUp(unsigned long hashOfDrawable)
+static inline PowerupBase* FindPowerUpImpl(unsigned long hashOfDrawable)
 {
     const Pair* entry = powerupRegistry.registry;
-    for (int i = 0; i < 25; ++i, ++entry)
+    for (int i = 0; i < 25; ++i)
     {
         if (hashOfDrawable == entry->hashId)
         {
             return const_cast<PowerupBase*>(powerupRegistry.registry[i].powerup);
         }
+        ++entry;
     }
     return nullptr;
+}
+
+/**
+ * Offset/Address/Size: 0x4EB4 | 0x8005F7A0 | size: 0x4C
+ */
+PowerupBase* FindPowerUp(unsigned long hashOfDrawable)
+{
+    return FindPowerUpImpl(hashOfDrawable);
 }
 
 // /**
@@ -980,12 +984,12 @@ PowerupBase* FindPowerUp(unsigned long hashOfDrawable)
 //  */
 /**
  * Offset/Address/Size: 0x4C00 | 0x8005F4EC | size: 0x2B4
- * TODO: 93.5% match - extra prologue loop-counter init and callee-saved register shift remain.
+ * TODO: 97.2% match - callee-saved registers for type, object, loop, and string temporary remain rotated.
  */
 void PowerupModelPool::Initialize(int type, unsigned long objHashName)
 {
-    int i = 0;
     DrawableObject* obj = WorldManager::s_World->FindDrawableObject(objHashName);
+    int i = 0;
 
     obj->m_uObjectFlags &= ~1;
     obj->m_uObjectFlags |= 0x80;
@@ -994,7 +998,28 @@ void PowerupModelPool::Initialize(int type, unsigned long objHashName)
     {
         mObjs[type][i] = obj->Clone();
 
-        BasicString<char, Detail::TempStringAllocator> name = Format(BasicString<char, Detail::TempStringAllocator>("powerup_generated_{0}"), mNum);
+        BasicStringData<char>* data = (BasicStringData<char>*)Detail::TempStringAllocator::allocate(sizeof(BasicStringData<char>));
+        if (data != 0)
+        {
+            data->mData = 0;
+            data->mSize = 0;
+            data->mCapacity = 0;
+            const char* str = "powerup_generated_{0}";
+            const char* s = str;
+            while (*s++ != 0)
+            {
+                data->mSize++;
+            }
+            data->mSize++;
+            data->mData = (char*)Detail::TempStringAllocator::allocate((data->mSize + 1) * sizeof(char));
+            data->mCapacity = data->mSize;
+            for (int j = 0; j < data->mSize; j++)
+            {
+                data->mData[j] = *str++;
+            }
+            data->mRefCount = 1;
+        }
+        BasicString<char, Detail::TempStringAllocator> name = Format(BasicString<char, Detail::TempStringAllocator>(data), mNum);
 
         mObjs[type][i]->m_uHashID = nlStringLowerHash(name.c_str());
         mObjs[type][i]->m_uObjectFlags &= ~1;
@@ -1252,7 +1277,7 @@ void PowerupBase::Update(float dt)
 
 /**
  * Offset/Address/Size: 0x3DFC | 0x8005E6E8 | size: 0x608
- * TODO: 98.69% match - remaining second-loop index and chance accumulator register allocation diffs
+ * TODO: 98.82% match - remaining second-loop index and chance accumulator register allocation diffs
  */
 int PowerupBase::AwardPowerup(cTeam* pTeam)
 {
@@ -1362,17 +1387,17 @@ int PowerupBase::AwardPowerup(cTeam* pTeam)
         nChanceForStar = 0;
     }
 
-    nChanceForSpinyShell = g_pGame->m_pGameTweaks->nChanceForSpinyShell + ((FielderTweaks*)pCaptain->m_pTweaks)->nChanceForSpinyShell + ((FielderTweaks*)pSideKick->m_pTweaks)->nChanceForSpinyShell + (nChanceForStar > 0 ? nChanceForStar : 0) - nDifference;
+    nChanceForSpinyShell = g_pGame->m_pGameTweaks->nChanceForSpinyShell + ((FielderTweaks*)pSideKick->m_pTweaks)->nChanceForSpinyShell + ((FielderTweaks*)pCaptain->m_pTweaks)->nChanceForSpinyShell + (nChanceForStar > 0 ? nChanceForStar : 0) - nDifference;
 
     nChanceForRedShell = g_pGame->m_pGameTweaks->nChanceForRedShell + ((FielderTweaks*)pCaptain->m_pTweaks)->nChanceForRedShell + ((FielderTweaks*)pSideKick->m_pTweaks)->nChanceForRedShell + (nChanceForSpinyShell > 0 ? nChanceForSpinyShell : 0) - nDifference;
 
     nChanceForBanana = g_pGame->m_pGameTweaks->nChanceForBanana + ((FielderTweaks*)pCaptain->m_pTweaks)->nChanceForBanana + ((FielderTweaks*)pSideKick->m_pTweaks)->nChanceForBanana + (nChanceForRedShell > 0 ? nChanceForRedShell : 0) + nDifference;
 
-    nChanceForBoBomb = ((FielderTweaks*)pCaptain->m_pTweaks)->nChanceForBoBomb + ((FielderTweaks*)pSideKick->m_pTweaks)->nChanceForBoBomb;
+    nChanceForBoBomb = ((FielderTweaks*)pSideKick->m_pTweaks)->nChanceForBoBomb + ((FielderTweaks*)pCaptain->m_pTweaks)->nChanceForBoBomb;
     nChanceForBoBomb += nChanceForBanana > 0 ? nChanceForBanana : 0;
     nChanceForBoBomb += g_pGame->m_pGameTweaks->nChanceForBoBomb;
 
-    nChanceForMushroom = ((FielderTweaks*)pCaptain->m_pTweaks)->nChanceForMushroom + ((FielderTweaks*)pSideKick->m_pTweaks)->nChanceForMushroom;
+    nChanceForMushroom = ((FielderTweaks*)pSideKick->m_pTweaks)->nChanceForMushroom + ((FielderTweaks*)pCaptain->m_pTweaks)->nChanceForMushroom;
     nChanceForMushroom += nChanceForBoBomb > 0 ? nChanceForBoBomb : 0;
     nChanceForMushroom += g_pGame->m_pGameTweaks->nChanceForMushroom;
     nChanceForMushroom += nDifference;

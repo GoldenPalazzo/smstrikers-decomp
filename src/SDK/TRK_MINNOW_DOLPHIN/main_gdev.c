@@ -6,23 +6,25 @@
 
 #define GDEV_BUF_SIZE (0x500)
 
-extern CircleBuffer gRecvCB_80346D50;
-extern u8 gRecvBuf[GDEV_BUF_SIZE];
+static CircleBuffer gRecvCB;
+static u8 gRecvBuf[GDEV_BUF_SIZE];
 
-extern BOOL gIsInitialized;
+static BOOL gIsInitialized = FALSE;
 
+/**
+ * Offset/Address/Size: 0x2C4 | 0x8022AE34 | size: 0x88
+ */
 int gdev_cc_initialize(void* flagOut, __OSInterruptHandler handler)
 {
     MWTRACE(1, "CALLING EXI2_Init\n");
     DBInitComm(flagOut, (int*)handler);
     MWTRACE(1, "DONE CALLING EXI2_Init\n");
-    CircleBufferInitialize(&gRecvCB_80346D50, gRecvBuf, GDEV_BUF_SIZE);
+    CircleBufferInitialize(&gRecvCB, gRecvBuf, GDEV_BUF_SIZE);
     return 0;
 }
 
 /**
- * @note Address: 0x800C14B8
- * @note Size: 0x8
+ * Offset/Address/Size: 0x2BC | 0x8022AE2C | size: 0x8
  */
 int gdev_cc_shutdown()
 {
@@ -30,8 +32,7 @@ int gdev_cc_shutdown()
 }
 
 /**
- * @note Address: 0x800C1494
- * @note Size: 0x24
+ * Offset/Address/Size: 0x298 | 0x8022AE08 | size: 0x24
  */
 int gdev_cc_open()
 {
@@ -45,8 +46,7 @@ int gdev_cc_open()
 }
 
 /**
- * @note Address: 0x800C148C
- * @note Size: 0x8
+ * Offset/Address/Size: 0x290 | 0x8022AE00 | size: 0x8
  */
 int gdev_cc_close()
 {
@@ -54,8 +54,7 @@ int gdev_cc_close()
 }
 
 /**
- * @note Address: 0x800C1398
- * @note Size: 0xF4
+ * Offset/Address/Size: 0x19C | 0x8022AD0C | size: 0xF4
  */
 int gdev_cc_read(u8* data, int size)
 {
@@ -74,7 +73,7 @@ int gdev_cc_read(u8* data, int size)
 
     p1 = size;
     p2 = size;
-    while ((u32)CBGetBytesAvailableForRead(&gRecvCB_80346D50) < p2)
+    while ((u32)CBGetBytesAvailableForRead(&gRecvCB) < p2)
     {
         retval = 0;
         poll = DBQueryData();
@@ -83,14 +82,14 @@ int gdev_cc_read(u8* data, int size)
             retval = DBRead(buff, p2);
             if (retval == 0)
             {
-                CircleBufferWriteBytes(&gRecvCB_80346D50, buff, poll);
+                CircleBufferWriteBytes(&gRecvCB, buff, poll);
             }
         }
     }
 
     if (retval == 0)
     {
-        CircleBufferReadBytes(&gRecvCB_80346D50, data, p1);
+        CircleBufferReadBytes(&gRecvCB, data, p1);
     }
     else
     {
@@ -101,8 +100,7 @@ int gdev_cc_read(u8* data, int size)
 }
 
 /**
- * @note Address: 0x800C12D8
- * @note Size: 0xC0
+ * Offset/Address/Size: 0xDC | 0x8022AC4C | size: 0xC0
  */
 int gdev_cc_write(const u8* bytes, int length)
 {
@@ -137,8 +135,7 @@ int gdev_cc_write(const u8* bytes, int length)
 }
 
 /**
- * @note Address: 0x800C12B4
- * @note Size: 0x24
+ * Offset/Address/Size: 0xB8 | 0x8022AC28 | size: 0x24
  */
 int gdev_cc_pre_continue()
 {
@@ -147,8 +144,7 @@ int gdev_cc_pre_continue()
 }
 
 /**
- * @note Address: 0x800C1290
- * @note Size: 0x24
+ * Offset/Address/Size: 0x94 | 0x8022AC04 | size: 0x24
  */
 int gdev_cc_post_stop()
 {
@@ -157,8 +153,7 @@ int gdev_cc_post_stop()
 }
 
 /**
- * @note Address: 0x800C1220
- * @note Size: 0x70
+ * Offset/Address/Size: 0x24 | 0x8022AB94 | size: 0x70
  */
 int gdev_cc_peek()
 {
@@ -173,7 +168,7 @@ int gdev_cc_peek()
 
     if ((int)DBRead(buff, poll) == 0)
     {
-        CircleBufferWriteBytes(&gRecvCB_80346D50, buff, poll);
+        CircleBufferWriteBytes(&gRecvCB, buff, poll);
     }
     else
     {
@@ -184,8 +179,7 @@ int gdev_cc_peek()
 }
 
 /**
- * @note Address: 0x800C11FC
- * @note Size: 0x24
+ * Offset/Address/Size: 0x0 | 0x8022AB70 | size: 0x24
  */
 int gdev_cc_initinterrupts()
 {

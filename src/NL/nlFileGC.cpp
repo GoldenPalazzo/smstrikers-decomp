@@ -315,8 +315,7 @@ void* nlLoadEntireFileToVirtualMemory(const char* fileName, int* size, unsigned 
 
     alloc_fallback:
     {
-        unsigned int totalFree = nlVirtualTotalFree();
-        OSReport("VIRTUAL MEMORY WARNING ~ nlLoadEntireFileToVirtualMemory had to fall back to MRAM\n\tsize: %d file: %s\n\tLargest block: %d Total free: %d\n", fileSize, fileName, nlVirtualLargestBlock(), totalFree);
+        OSReport("VIRTUAL MEMORY WARNING ~ nlLoadEntireFileToVirtualMemory had to fall back to MRAM\n\tsize: %d file: %s\n\tLargest block: %d Total free: %d\n", fileSize, fileName, nlVirtualLargestBlock(), nlVirtualTotalFree());
         buffer = nlMalloc(fileSize, 0x20, false);
         nlRead(pGCFile, buffer, fileSize);
     }

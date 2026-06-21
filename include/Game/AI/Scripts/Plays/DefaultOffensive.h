@@ -19,7 +19,7 @@ class Fuzzy
 public:
     static FuzzyVariant AbortOffensivePlay(cDecisionEntity*);
     void DefaultOffensivePlay(cDecisionEntity*);
-    void DoPassing(float, cDecisionEntity*);
+    static FuzzyVariant DoPassing(float, cDecisionEntity*);
     static FuzzyVariant GetBestPassTarget(cPlayer*);
     static FuzzyVariant GoodBallCarrier(cFielder*);
     static FuzzyVariant GoodToChipShot(cFielder*);

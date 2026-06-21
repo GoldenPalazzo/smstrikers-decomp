@@ -49,6 +49,7 @@ public:
 
     void Cleanup();
     void LoadPermanentResourceBundle(const char*);
+    void LoadPermanentTextures();
     bool OpenOnDemandResourceBundle(const char*);
     void Initialize();
     void Update(float);

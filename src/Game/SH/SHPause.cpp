@@ -37,12 +37,14 @@ static inline MenuItem<TLComponentInstance>* PauseMenuItemAt(MenuList<TLComponen
 template <typename T, typename R>
 Detail::MemFunImpl<R, void (T::*)()> MemFun(void (T::*fn)())
 {
+    FORCE_DONT_INLINE;
     return Detail::MemFunImpl<R, void (T::*)()>(fn);
 }
 
 template <typename T, typename R, typename A>
 Detail::MemFunImpl<R, void (T::*)(A)> MemFun(void (T::*fn)(A))
 {
+    FORCE_DONT_INLINE;
     return Detail::MemFunImpl<R, void (T::*)(A)>(fn);
 }
 #pragma dont_inline reset

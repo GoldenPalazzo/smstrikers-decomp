@@ -107,6 +107,30 @@ static inline void LoadFontTexture(BundleFile& fileBundle, unsigned long fileHas
     }
 }
 
+static inline void AddFontEntry(BasicSlotPool<DLListEntry<nlFont*> >& alloc, DLListEntry<nlFont*>** head, nlFont* newFont)
+{
+    DLListEntry<nlFont*>* entry = NULL;
+    if (alloc.m_FreeList == NULL)
+    {
+        SlotPoolBase::BaseAddNewBlock(&alloc, sizeof(DLListEntry<nlFont*>));
+    }
+
+    if (alloc.m_FreeList != NULL)
+    {
+        entry = (DLListEntry<nlFont*>*)alloc.m_FreeList;
+        alloc.m_FreeList = alloc.m_FreeList->m_next;
+    }
+
+    if (entry != NULL)
+    {
+        entry->m_next = NULL;
+        entry->m_prev = NULL;
+        entry->m_data = newFont;
+    }
+
+    nlDLRingAddEnd(head, entry);
+}
+
 bool FontManager::LoadFont(const char* bundlePath, const char* fontName, const char* fontFileName)
 {
     BundleFile bundleFile;
@@ -126,26 +150,7 @@ bool FontManager::LoadFont(const char* bundlePath, const char* fontName, const c
         return false;
     }
 
-    DLListEntry<nlFont*>* slot = NULL;
-    if (m_fonts.m_Allocator.m_FreeList == NULL)
-    {
-        SlotPoolBase::BaseAddNewBlock(&m_fonts.m_Allocator, sizeof(DLListEntry<nlFont*>));
-    }
-
-    if (m_fonts.m_Allocator.m_FreeList != NULL)
-    {
-        slot = (DLListEntry<nlFont*>*)m_fonts.m_Allocator.m_FreeList;
-        m_fonts.m_Allocator.m_FreeList = m_fonts.m_Allocator.m_FreeList->m_next;
-    }
-
-    if (slot != NULL)
-    {
-        slot->m_next = NULL;
-        slot->m_prev = NULL;
-        slot->m_data = newFont;
-    }
-
-    nlDLRingAddEnd(&m_fonts.m_Head, slot);
+    AddFontEntry(m_fonts.m_Allocator, &m_fonts.m_Head, newFont);
 
     for (unsigned long i = 0; i < newFont->m_PageCount; i++)
     {

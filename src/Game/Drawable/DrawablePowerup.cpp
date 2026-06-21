@@ -36,8 +36,8 @@ static inline char* PowerupLookupString(int idx)
 
 /**
  * Offset/Address/Size: 0x0 | 0x8011EC74 | size: 0xF8
- * TODO: 90.8% match - MWCC still reorders FPR usage around duplicated
- * blendFactors[2] loads used for scale interpolation.
+ * TODO: 92.8% match - FPR registers still differ around blend factor
+ * temporaries used for scale and position interpolation.
  */
 void DrawablePowerup::Blend(const float* blendFactors, const DrawablePowerup& lhs, const DrawablePowerup& rhs)
 {
@@ -49,18 +49,21 @@ void DrawablePowerup::Blend(const float* blendFactors, const DrawablePowerup& lh
     float one = 1.0f;
     float invT = one - t;
 
-    // Defeat MWCC CSE: force a second independent load of blendFactors[2].
+    // Force a second independent load of blendFactors[2].
     float t2 = ((const volatile float*)blendFactors)[2];
 
+    float scale = (one - t2) * lhs.mScale + t2 * rhs.mScale;
+    float posX = invT * lhs.mPosition.f.x + t * rhs.mPosition.f.x;
+    float posY = invT * lhs.mPosition.f.y + t * rhs.mPosition.f.y;
+    float posZ = invT * lhs.mPosition.f.z + t * rhs.mPosition.f.z;
+
     mType = lhs.mType;
-    mScale = (one - t2) * lhs.mScale + t2 * rhs.mScale;
+    mScale = scale;
     mRadius = lhs.mRadius;
-
     mOrientation = lhs.mOrientation + (s16)((s16)(rhs.mOrientation - lhs.mOrientation) * t);
-
-    mPosition.f.x = invT * lhs.mPosition.f.x + t * rhs.mPosition.f.x;
-    mPosition.f.y = invT * lhs.mPosition.f.y + t * rhs.mPosition.f.y;
-    mPosition.f.z = invT * lhs.mPosition.f.z + t * rhs.mPosition.f.z;
+    mPosition.f.x = posX;
+    mPosition.f.y = posY;
+    mPosition.f.z = posZ;
 }
 
 /**

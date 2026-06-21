@@ -28,29 +28,10 @@
 /**
  * Offset/Address/Size: 0x310 | 0x801B6480 | size: 0x8
  */
-static AVLTreeEntry<unsigned long, unsigned long>* force_inst(
-    const AVLTreeBase<unsigned long, unsigned long, NewAdapter<AVLTreeEntry<unsigned long, unsigned long> >, DefaultKeyCompare<unsigned long> >* t,
-    AVLTreeNode* n)
+static inline int SkinIndexOf(const SkinPair& p)
 {
-    return t->CastUp(n);
+    return p.vertexIndex;
 }
-
-// /**
-//  * Offset/Address/Size: 0x44 | 0x801B61B4 | size: 0x2CC
-//  */
-// void AVLTreeBase<unsigned long, unsigned long, NewAdapter<AVLTreeEntry<unsigned long, unsigned long>>, DefaultKeyCompare<unsigned
-// long>>::InorderWalk<TempMatrixCopier>(AVLTreeEntry<unsigned long, unsigned long>*, TempMatrixCopier*, void (TempMatrixCopier::*)(const
-// unsigned long&, unsigned long*))
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x801B6170 | size: 0x44
-//  */
-// void AVLTreeBase<unsigned long, unsigned long, NewAdapter<AVLTreeEntry<unsigned long, unsigned long>>, DefaultKeyCompare<unsigned
-// long>>::Walk<TempMatrixCopier>(TempMatrixCopier*, void (TempMatrixCopier::*)(const unsigned long&, unsigned long*))
-// {
-// }
 
 /**
  * Offset/Address/Size: 0x550 | 0x801B6094 | size: 0xDC
@@ -86,7 +67,6 @@ void TempMatrixCopier::CopyMatrix(const unsigned long& boneId, unsigned long* ou
 
 /**
  * Offset/Address/Size: 0x0 | 0x801B5B44 | size: 0x4F0
- * TODO: 96.77% match - inner skin-pair loop keeps pair offset/index and normal-scale constants in different registers.
  */
 void ShaderSkinMesh::AttachSkinData(unsigned long program, const nlMatrix4* pReflect)
 {
@@ -120,14 +100,11 @@ void ShaderSkinMesh::AttachSkinData(unsigned long program, const nlMatrix4* pRef
 
         if (curr != NULL)
         {
-            const float invNormalScale = 0.015625f;
-
             while (true)
             {
-                register const nlMatrix4* pMatrix = &tempMatrices[matrixOffset];
-
                 // clang-format off
                 if (curr->num != 0) {
+                    register const nlMatrix4* pMatrix = &tempMatrices[matrixOffset];
                     asm {
                         psq_l f2, 0x0(pMatrix), 0, qr0
                         psq_l f3, 0x8(pMatrix), 0, qr0
@@ -143,29 +120,22 @@ void ShaderSkinMesh::AttachSkinData(unsigned long program, const nlMatrix4* pRef
 
                 for (int i = 0; i < (int)curr->num; i++)
                 {
-                    SkinPair& pair = curr->pairs[i];
+                    const SkinPair& pair = curr->pairs[i];
                     vertexWeight = (float)pair.vertexWeight / 65535.0f;
-                    int index = pair.vertexIndex;
+                    int index = SkinIndexOf(pair);
 
-                    register const nlVector3* inVertex;
-                    if (morphBuffer != NULL)
-                    {
-                        inVertex = &morphBuffer[index];
-                    }
-                    else
-                    {
-                        inVertex = &softwareVertices[index].position;
-                    }
+                    register const nlVector3& inVertex = (morphBuffer != NULL) ? morphBuffer[index] : softwareVertices[index].position;
 
                     const signed char* packed = softwareVertices[index].packed_normal;
+                    float invNormalScale = 0.015625f;
                     nlVector3 inNormal;
                     inNormal.f.x = (float)packed[0] * invNormalScale;
                     inNormal.f.y = (float)packed[1] * invNormalScale;
                     inNormal.f.z = (float)packed[2] * invNormalScale;
 
                     register const nlVector3* pInN = &inNormal;
-                    register nlVector3* pOutV = &outVertices[index];
-                    register nlVector3* pOutN = &outNormals[index];
+                    register nlVector3& outVertex = outVertices[index];
+                    register nlVector3& outNormal = outNormals[index];
 
                     // clang-format off
                     asm {
@@ -187,19 +157,19 @@ void ShaderSkinMesh::AttachSkinData(unsigned long program, const nlMatrix4* pRef
                         ps_madds1 f11, f5, f0, f11
                         ps_madds0 f10, f6, f1, f10
                         ps_madds0 f11, f7, f1, f11
-                        psq_l f19, 0x0(pOutV), 0, qr0
-                        psq_l f20, 0x8(pOutV), 1, qr0
-                        psq_l f13, 0x0(pOutN), 0, qr0
-                        psq_l f14, 0x8(pOutN), 1, qr0
                         lfs f12, vertexWeight
+                        psq_l f19, 0x0(outVertex), 0, qr0
+                        psq_l f20, 0x8(outVertex), 1, qr0
+                        psq_l f13, 0x0(outNormal), 0, qr0
+                        psq_l f14, 0x8(outNormal), 1, qr0
                         ps_madds0 f15, f15, f12, f19
                         ps_madds0 f16, f16, f12, f20
                         ps_madds0 f10, f10, f12, f13
                         ps_madds0 f11, f11, f12, f14
-                        psq_st f10, 0x0(pOutN), 0, qr0
-                        psq_st f11, 0x8(pOutN), 1, qr0
-                        psq_st f15, 0x0(pOutV), 0, qr0
-                        psq_st f16, 0x8(pOutV), 1, qr0
+                        psq_st f10, 0x0(outNormal), 0, qr0
+                        psq_st f11, 0x8(outNormal), 1, qr0
+                        psq_st f15, 0x0(outVertex), 0, qr0
+                        psq_st f16, 0x8(outVertex), 1, qr0
                     }
                     // clang-format on
                 }
@@ -259,23 +229,4 @@ void ShaderSkinMesh::AttachSkinData(unsigned long program, const nlMatrix4* pRef
         mapList = mapList->m_next;
         pPacket++;
     }
-}
-
-/**
- * Stub only for field order; unreferenced so the linker drops it.
- * Forces emission of specific constants/operations so the compiler lays out the related fields to match the original binary.
- */
-/**
- * Stub only for field order; unreferenced so the linker drops it.
- * Forces emission of specific constants/operations so the compiler
- * lays out the related fields to match the original binary.
- */
-void gluSkinMesh_stub()
-{
-    bool (*volatile forceNlRingIsEnd)(SkinPairList*, SkinPairList*) = &nlRingIsEnd<SkinPairList>;
-    BoneMapList* (*volatile forceBoneMapListStart)(BoneMapList*) = &nlRingGetStart<BoneMapList>;
-    SkinPairList* (*volatile forceSkinPairListStart)(SkinPairList*) = &nlRingGetStart<SkinPairList>;
-    (void)forceNlRingIsEnd;
-    (void)forceSkinPairListStart;
-    (void)forceBoneMapListStart;
 }

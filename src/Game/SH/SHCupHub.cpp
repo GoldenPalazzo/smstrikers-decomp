@@ -94,6 +94,23 @@ static inline BasicStringData<unsigned short>* BuildWideStringData(const unsigne
     return data;
 }
 
+static inline const unsigned short* LookupLocHash(unsigned long key)
+{
+    nlLocalization* loc = g_pLocalization;
+    if (loc->m_LookupTable == NULL)
+    {
+        return LocalizationTableNotFound;
+    }
+
+    nlLocalization::StringLookup* lookup = nlBSearch<nlLocalization::StringLookup, unsigned long>(key, loc->m_LookupTable, loc->m_pFile->StringCount);
+    if (lookup != NULL)
+    {
+        return loc->m_FirstString + lookup->StringOffset;
+    }
+
+    return MissingLocString;
+}
+
 class CupTrophyScene
 {
 public:
@@ -1333,26 +1350,7 @@ void CupHubScene::CreateBowserLeague()
             pTextInstance->SetAssetColour(mTextColour);
         }
 
-        unsigned long locString = GetLOCTeamName((eTeamID)mAllTeamStats[standingsIndices[row]].mTeamIndex);
-        nlLocalization* loc = g_pLocalization;
-        const unsigned short* teamNameLookup;
-
-        if (loc->m_LookupTable == NULL)
-        {
-            teamNameLookup = LocalizationTableNotFound;
-        }
-        else
-        {
-            nlLocalization::StringLookup* lookup = nlBSearch<nlLocalization::StringLookup, unsigned long>(locString, loc->m_LookupTable, loc->m_pFile->StringCount);
-            if (lookup != NULL)
-            {
-                teamNameLookup = loc->m_FirstString + lookup->StringOffset;
-            }
-            else
-            {
-                teamNameLookup = MissingLocString;
-            }
-        }
+        const unsigned short* teamNameLookup = LookupLocHash(GetLOCTeamName((eTeamID)mAllTeamStats[standingsIndices[row]].mTeamIndex));
 
         BasicString<unsigned short, Detail::TempStringAllocator> teamNameWideString(BuildWideStringData(teamNameLookup));
         memcpy(mColumnsByRowsBuffers[0][row], teamNameWideString.c_str(), 0x40);

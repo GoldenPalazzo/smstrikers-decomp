@@ -681,9 +681,8 @@ void StopDisplayingElectricFence()
 
 /**
  * Offset/Address/Size: 0x0 | 0x8016B030 | size: 0x560
- * TODO: 96.22% match - register/literal allocation and instruction ordering diffs
- *   in the scale/sideLineY else-branch, an extra reload from cNet::m_fNetWidth,
- *   and a duplicate beq around the placement-new of ElectricFenceData.
+ * TODO: 99.97% match - r0/r4 register swap while incrementing counter
+ *   and computing useNoSpark.
  */
 void UpdateElectricFence(float fDeltaT)
 {
@@ -739,21 +738,17 @@ void UpdateElectricFence(float fDeltaT)
             if (goalLineScale < sideLineScale)
             {
                 scale = goalLineScale;
-                randomAngleOffset = 0.0f;
                 sideLineY = 1.0f;
+                randomAngleOffset = 0.0f;
             }
             else
             {
                 scale = sideLineScale;
-                randomAngleOffset = 1.0f;
                 sideLineY = 0.0f;
+                randomAngleOffset = 1.0f;
             }
         }
-        float zComp = pos.f.z;
-        float yComp = pos.f.y;
-        pos.f.x = scale * pos.f.x;
-        pos.f.y = scale * yComp;
-        pos.f.z = scale * zComp;
+        nlVec3Scale(pos, pos, scale);
         pos.f.z = nlRandomf(0.0f, 5.0f, &nlDefaultSeed);
         if ((counter & 1) == 0)
         {
@@ -768,16 +763,16 @@ void UpdateElectricFence(float fDeltaT)
                 pos.f.z = nlRandomf(netHeight, 5.0f, &nlDefaultSeed);
             }
         }
-        u8 useNoSpark = !sbUseSparksDuringElectricFenceFlyBy;
+        ElectricFenceData* data;
+        const char* groupName;
+        EmissionController* controller;
+        bool useNoSpark = !sbUseSparksDuringElectricFenceFlyBy;
         unsigned long counterVal = counter;
-        counter = counterVal + 1;
+        counter++;
         if (g_pGame->mbCaptainShotToScoreOn)
             goto next;
         {
-            nlVector3 clampedPos;
-            ((u32*)&clampedPos)[0] = ((u32*)&pos)[0];
-            ((u32*)&clampedPos)[1] = ((u32*)&pos)[1];
-            ((u32*)&clampedPos)[2] = ((u32*)&pos)[2];
+            nlVector3 clampedPos = pos;
             float goalLineX2 = cField::GetGoalLineX(1U);
             if ((float)__fabs((float)__fabs(clampedPos.f.x) - goalLineX2) < 0.2f)
             {
@@ -790,14 +785,14 @@ void UpdateElectricFence(float fDeltaT)
                     clampedPos.f.x = -goalLineX2;
                 }
             }
-            const char* groupName = useNoSpark != 0 ? "electric_fence_nospark" : "electric_fence";
+            groupName = useNoSpark ? "electric_fence_nospark" : "electric_fence";
             if (!EmissionManager::IsPlaying(counterVal, fxGetGroup(groupName)))
             {
-                EmissionController* controller = EmissionManager::Create(fxGetGroup(groupName), 0);
+                controller = EmissionManager::Create(fxGetGroup(groupName), 0);
                 controller->m_uUserData = counterVal;
                 controller->SetPosition(clampedPos);
                 float atan = nlATan2f(randomAngleOffset, sideLineY);
-                ElectricFenceData* data = NULL;
+                data = NULL;
                 controller->m_aFacing = (u16)(s32)(10430.378f * atan);
                 if (ElectricFenceData::sElectricFenceDataPool.m_FreeList == NULL)
                 {
@@ -810,13 +805,14 @@ void UpdateElectricFence(float fDeltaT)
                     ElectricFenceData::sElectricFenceDataPool.m_FreeList = freeSlot->m_next;
                 }
                 new (data) ElectricFenceData(controller);
+                Function<EmissionController&> finishedCb;
+
                 {
                     Function<EmissionController&> updateCb;
                     updateCb.mTag = FREE_FUNCTION;
                     updateCb.mFreeFunction = RenderElectricFence;
                     controller->SetUpdateCallback(updateCb);
                 }
-                Function<EmissionController&> finishedCb;
                 finishedCb.mTag = FREE_FUNCTION;
                 finishedCb.mFreeFunction = ElectricFenceFinished;
                 controller->SetFinishedCallback(finishedCb);

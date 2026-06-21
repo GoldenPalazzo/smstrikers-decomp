@@ -423,23 +423,25 @@ static inline float ChainChompTargetScore(ChainChomp* pChomp, cFielder* pCandida
     float fConverted = 10430.378f * nlATan2f(dy, dx);
     s16 angleDiff = (s16)(pChomp->maFacingDirection - (u16)(s32)fConverted);
     u16 absDelta = (u16)((angleDiff < 0) ? -angleDiff : angleDiff);
+    float fDistWeight = 1.0f;
     float fAngleWeighting = g_pGame->m_pGameTweaks->fAngleWeighting;
+    fDistWeight -= fAngleWeighting;
 
-    return fDist * (1.0f - fAngleWeighting) + (float)absDelta * fAngleWeighting;
+    return fDist * fDistWeight + (float)absDelta * fAngleWeighting;
 }
 
 /**
  * Offset/Address/Size: 0x608 | 0x8015E30C | size: 0x2E0
- * TODO: 99.48% match - remaining instruction scheduling mismatch in score weighting.
+ * TODO: 99.95% match - remaining f1/f3 register mismatch in inverse score weight.
  */
 void ChainChomp::FindTarget(cTeam* pTeam)
 {
+    float fTempScore;
     float fBestScore = 99999.9f;
     cFielder* pBestCandidate = NULL;
     cFielder* pFielder;
     cFielder* pFielder2;
     int i;
-    float fTempScore;
     cFielder* pCandidate;
 
     if (g_pBall->GetOwnerFielder() != NULL)

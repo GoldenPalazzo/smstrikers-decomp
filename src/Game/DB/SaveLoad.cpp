@@ -1633,9 +1633,7 @@ unsigned long LoadCallbacks::CardMountCB(unsigned long channel, long result, voi
 
 /**
  * Offset/Address/Size: 0xBFC | 0x8018A558 | size: 0x28C
- * TODO: 91.2% match - register allocation diffs in icon header size calculation
- * due to -inline deferred vs -inline auto optimization difference in scratch.
- * Code structure and logic is correct.
+ * TODO: 97.5% match - remaining register diffs in icon header size calculations.
  */
 #pragma push
 #pragma opt_propagation off
@@ -1646,7 +1644,7 @@ long SaveLoad::StartLoad(int Slot, void (*pCB)(long), bool PerformLoad, bool tes
     MemberCB cb;
     MemCard::ICON_CONFIG IconCfg;
 
-    tDebugPrintManager::Print(DC_FE, "StartLoad\n");
+    tDebugPrintManager::Print(DC_FE, "Starting memory card load\n");
 
     if (LoadSystem.m_MustFreeBuffers)
     {
@@ -1677,7 +1675,6 @@ long SaveLoad::StartLoad(int Slot, void (*pCB)(long), bool PerformLoad, bool tes
         int negOne = -1;
         int iconFormat = 2;
         int iconCount = 1;
-        int speed = 3;
         int iconPixelSize = iconFormat << 10;
         IconCfg.IconCount = iconCount;
         negOne = ~(iconCount | negOne);
@@ -1688,6 +1685,7 @@ long SaveLoad::StartLoad(int Slot, void (*pCB)(long), bool PerformLoad, bool tes
         int iconClutNeg = negOne;
         int bannerClutMask = bannerClutNeg >> 31;
         int iconClutMask = iconClutNeg >> 31;
+        int speed = 3;
         IconCfg.IconSpeeds[0] = speed;
         int bannerClutResult = clutSize & bannerClutMask;
         int bannerDataSize = iconFormat * 0xC00;
@@ -1702,15 +1700,15 @@ long SaveLoad::StartLoad(int Slot, void (*pCB)(long), bool PerformLoad, bool tes
         u32 allocSize = (IconCfg.HeaderSize + 0x1FF) & ~0x1FF;
         LoadSystem.m_pIconReadBuffer = nlMalloc(allocSize, 0x20, true);
 
-        u8 bannerFmt = IconCfg.BannerFormat;
-        u8 iconCnt = IconCfg.IconCount;
-        s8 iconFmt = IconCfg.IconFormat;
+        int iconFmt = IconCfg.IconFormat;
+        int iconCnt = IconCfg.IconCount;
+        int bannerFmt = IconCfg.BannerFormat;
 
         u32 headerSize = 0;
         headerSize += ((bannerFmt == 1) ? 0x200 : 0);
         headerSize += bannerFmt * 0xC00;
-        headerSize += ((iconFmt == 1) ? 0x200 : 0);
         headerSize += iconCnt * (iconFmt << 10);
+        headerSize += ((iconFmt == 1) ? 0x200 : 0);
         headerSize += 0x40;
         IconCfg.HeaderSize = headerSize;
 

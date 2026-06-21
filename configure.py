@@ -1292,12 +1292,12 @@ config.libs = [
         [
             Object(Matching, "NL/nlBind.cpp", extra_cflags=["-inline auto"]),
             Object(Matching, "NL/nlAVLTree.cpp", extra_cflags=["-inline auto"]),
-            Object(NonMatching, "NL/nlBundleFile.cpp", extra_cflags=["-inline auto"]),
+            Object(Matching, "NL/nlBundleFile.cpp", extra_cflags=["-inline auto"]),
             Object(NonMatching, "NL/nlConfig.cpp", extra_cflags=["-inline auto"]),
             Object(Matching, "NL/nlDebug.cpp", extra_cflags=["-inline auto"]),
             Object(Matching, "NL/nlDebugFile.cpp", extra_cflags=["-inline auto"]),
             Object(Matching, "NL/nlEndian.cpp", extra_cflags=["-inline auto"]),
-            Object(NonMatching, "NL/nlFile.cpp", extra_cflags=["-inline auto"]),
+            Object(Matching, "NL/nlFile.cpp", extra_cflags=["-inline auto"]),
             Object(NonMatching, "NL/nlFileGC.cpp", extra_cflags=["-inline auto"]),
             Object(NonMatching, "NL/nlFont.cpp", extra_cflags=["-inline auto"]),
             Object(Matching, "NL/nlLocalization.cpp", extra_cflags=["-inline auto"]),
@@ -1641,10 +1641,9 @@ config.libs = [
             Object(Matching, "SDK/TRK_MINNOW_DOLPHIN/MWTrace.c", extra_cflags=["-inline auto"]),
             Object(Matching, "SDK/TRK_MINNOW_DOLPHIN/MWCriticalSection_gc.cpp", extra_cflags=["-inline auto"]),
 
-            # NonMatchin...
-            Object(NonMatching, "SDK/TRK_MINNOW_DOLPHIN/main.c", extra_cflags=["-inline auto", "-sdatathreshold 8"]),
-            Object(NonMatching, "SDK/TRK_MINNOW_DOLPHIN/main_gdev.c", extra_cflags=["-inline auto", "-sdatathreshold 8"]),
-            Object(NonMatching, "SDK/TRK_MINNOW_DOLPHIN/__exception.s", extra_cflags=["-inline auto"]),
+            Object(Matching, "SDK/TRK_MINNOW_DOLPHIN/main.c", extra_cflags=["-inline auto", "-sdatathreshold 8"]),
+            Object(Matching, "SDK/TRK_MINNOW_DOLPHIN/main_gdev.c", extra_cflags=["-inline auto", "-sdatathreshold 8"]),
+            Object(Matching, "SDK/TRK_MINNOW_DOLPHIN/__exception.s", extra_cflags=["-inline auto"]),
 
             Object(Matching, "SDK/TRK_MINNOW_DOLPHIN/targimpl.c", extra_cflags=["-inline auto"]),
             Object(Matching, "SDK/TRK_MINNOW_DOLPHIN/mslsupp.c", extra_cflags=["-inline auto", "-enum int"]),

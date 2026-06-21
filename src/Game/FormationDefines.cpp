@@ -186,7 +186,7 @@ FormationSpec* FormationSet::GetFormationSpecFromID(int formationID) const
 
 /**
  * Offset/Address/Size: 0x0 | 0x8003AE10 | size: 0xC08
- * TODO: 98.5% match - r21/r22 register swap for formationList base and r4/r5 in copy loop
+ * TODO: 98.9% match - r21/r22 register swap for formationList base
  */
 FormationSet* FormationSet::LoadFormationSets(const char* filename, int& out_numsets)
 {
@@ -302,7 +302,8 @@ FormationSet* FormationSet::LoadFormationSets(const char* filename, int& out_num
 
         for (int j = 0; j < i_formation; j++)
         {
-            setList[i_set].m_FormationDefArray[j] = formationList[j];
+            FormationSpec& src = formationList[j];
+            setList[i_set].m_FormationDefArray[j] = src;
         }
     }
 

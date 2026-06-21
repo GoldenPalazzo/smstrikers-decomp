@@ -3266,7 +3266,7 @@ FuzzyVariant Fuzzy::GetBestLooseBallAction(cFielder* TheFielder)
 
 /**
  * Offset/Address/Size: 0x2CB4 | 0x8006CE84 | size: 0x131C
- * TODO: 96.37% match - residual cache hash/cache register coloring and late confidence branch scheduling
+ * TODO: 97.08% match - residual cache hash/cache register coloring and late confidence branch scheduling
  */
 FuzzyVariant Fuzzy::GetBestWindupShotAction(cFielder* TheFielder)
 {
@@ -3274,10 +3274,10 @@ FuzzyVariant Fuzzy::GetBestWindupShotAction(cFielder* TheFielder)
     float fConfidence = 1.0f;
     float fBestConfidence = 0.0f;
 
-    FuzzyVariant fvFielder((cPlayer*)TheFielder);
+    const FuzzyVariant& fvFielder = FuzzyVariant((cPlayer*)TheFielder);
     volatile unsigned long funcAddr = (unsigned long)GetBestWindupShotAction;
     unsigned long hash = funcAddr + ((Variant*)&fvFielder)->GetHash();
-    FuzzyVariant fvFielder2((cPlayer*)TheFielder);
+    FuzzyVariant((cPlayer*)TheFielder);
 
     if (ScriptQuestionCache::Instance()->Lookup(hash, bestValue, NULL))
     {

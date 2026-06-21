@@ -4976,17 +4976,17 @@ SDK/TRK_MINNOW_DOLPHIN/UDP_Stubs.c:
 SDK/TRK_MINNOW_DOLPHIN/main.c:
 	.text       start:0x8022A5C4 end:0x8022A908
 	.rodata     start:0x802A0FD8 end:0x802A10B8
-	.rodata     start:0x802A10B8 end:0x802A1198
 	.bss        start:0x80346030 end:0x80346850
-	.bss        start:0x80346850 end:0x80346D70
 	.sbss       start:0x803744A8 end:0x803744B0
-	.sbss       start:0x803744B0 end:0x803744B8
 
 SDK/TRK_MINNOW_DOLPHIN/CircleBuffer.c:
 	.text       start:0x8022A908 end:0x8022AB70
 
 SDK/TRK_MINNOW_DOLPHIN/main_gdev.c:
 	.text       start:0x8022AB70 end:0x8022AEBC
+	.rodata     start:0x802A10B8 end:0x802A1198
+	.bss        start:0x80346850 end:0x80346D70
+	.sbss       start:0x803744B0 end:0x803744B8
 
 SDK/TRK_MINNOW_DOLPHIN/MWTrace.c:
 	.text       start:0x8022AEBC end:0x8022AF0C

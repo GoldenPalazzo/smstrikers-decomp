@@ -2958,7 +2958,7 @@ void GameInfoManager::OnPreCupGameState()
 
         highPoints = 0;
 
-        for (j = 0; j < (mCurrentMode == GM_BOWSER_CUP ? 8 : (mCurrentMode == GM_SUPER_BOWSER_CUP ? 8 : mCurrentCup->GetNumTeams())); j++)
+        for (j = 0; j < GetNumPlayingTeams(); j++)
         {
             if (mCurrentMode == GM_BOWSER_CUP)
             {
@@ -2988,8 +2988,8 @@ void GameInfoManager::OnPreCupGameState()
             else
             {
                 BasicGameInfo* gameInfo = mGameInfo[mCurrentMode];
-                if (team->mTeamIndex == (gameInfo ? gameInfo->mTeamIndex[0] : TEAM_INVALID)
-                    || team->mTeamIndex == (gameInfo ? gameInfo->mTeamIndex[1] : TEAM_INVALID))
+                if (team->mTeamIndex == (gameInfo == NULL ? TEAM_INVALID : gameInfo->mTeamIndex[0])
+                    || team->mTeamIndex == (gameInfo == NULL ? TEAM_INVALID : gameInfo->mTeamIndex[1]))
                 {
                     opponentTeam = *team;
                 }

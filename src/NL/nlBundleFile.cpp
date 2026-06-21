@@ -34,9 +34,7 @@ void BundleFile::ReadFileAsync(const char* filename, void* buffer, unsigned long
  */
 void BundleFile::LoadFile(const char* filename, void* pBuffer)
 {
-    BundleFileDirectoryEntry* pEntry = &m_pDirectory[FindHashIndex(HashFilename(filename))];
-    nlSeek(m_pFile, pEntry->m_blockNumber * m_pHeader->nSectorSize, 0);
-    nlRead(m_pFile, pBuffer, pEntry->m_length);
+    LoadFile(HashFilename(filename), pBuffer);
 }
 
 /**

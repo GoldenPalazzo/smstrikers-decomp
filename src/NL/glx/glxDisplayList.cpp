@@ -26,7 +26,7 @@ struct DisplayListEx
 
 /**
  * Offset/Address/Size: 0x0 | 0x801C1E5C | size: 0x2A8
- * TODO: 93.65% match - primType/numVertices setup register allocation still differs.
+ * TODO: 98.12% match - primType/numVertices setup register allocation and loop branch forms still differ.
  */
 DisplayList* dlMakeDisplayList(const glModelPacket* packet, bool permanent)
 {
@@ -119,11 +119,12 @@ DisplayList* dlMakeDisplayList(const glModelPacket* packet, bool permanent)
         pList = (DisplayList*)glFrameAlloc(0x10, GLM_Header);
     }
 
-    pList->magic = DISPLAY_LIST_HEADER;
-    pList->list = p;
-    pList->size = size;
-    ((u16*)&pList->indices)[0] = packet->numStreams;
-    ((u16*)&pList->indices)[1] = ((u32)(-bStitch | bStitch) >> 31);
+    DisplayListEx* pListEx = (DisplayListEx*)pList;
+    pListEx->m_header = DISPLAY_LIST_HEADER;
+    pListEx->m_displayList = p;
+    pListEx->m_size = size;
+    pListEx->m_numStreams = packet->numStreams;
+    pListEx->m_hasColorStream = bStitch != 0;
 
     DCFlushRangeNoSync(pList->list, pList->size);
     PPCSync();

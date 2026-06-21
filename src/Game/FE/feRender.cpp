@@ -50,8 +50,7 @@ inline void GLMeshWriterCore::Position(const nlVector3& v)
 
 /**
  * Offset/Address/Size: 0x0 | 0x8020A288 | size: 0x3BC
- * TODO: 99.58% match - r28/r29/r30 cyclic register swap for texconfig/pMap/matrixHandle.
- * MWCC allocator heuristic, not controllable from source.
+ * TODO: 99.87% match - textureHandle/view register allocation plus cosmetic local static/sdata label diffs.
  */
 unsigned char FERender::RenderImageInstance(const TLImageInstance* pTLImageInstance)
 {
@@ -100,8 +99,8 @@ unsigned char FERender::RenderImageInstance(const TLImageInstance* pTLImageInsta
 
     glSetDefaultState(false);
 
-    static signed char init;
     static unsigned char bAlpha;
+    static signed char init;
     if (!init)
     {
         bAlpha = 1;
@@ -128,16 +127,19 @@ unsigned char FERender::RenderImageInstance(const TLImageInstance* pTLImageInsta
 
     GLMeshWriter meshWriter;
 
-    u8 texconfig = gl_GetCurrentStateBundle()->texconfig;
-
-    unsigned long program = glSetCurrentProgram(drawQuadProgram);
-    matrixHandle = glSetCurrentMatrix(matrixHandle);
-
-    static int stripmap[4];
-    static int quadmap[4];
-
-    int* pMap;
+    unsigned long program;
     eGLPrimitive prim;
+    int* pMap;
+    unsigned long matrix;
+    u8 texconfig;
+
+    texconfig = gl_GetCurrentStateBundle()->texconfig;
+    program = glSetCurrentProgram(drawQuadProgram);
+    matrix = glSetCurrentMatrix(matrixHandle);
+
+    static int stripmap[4] = { 3, 0, 2, 1 };
+    static int quadmap[4] = { 0, 1, 2, 3 };
+
     if (glHasQuads())
     {
         pMap = quadmap;
@@ -176,7 +178,7 @@ unsigned char FERender::RenderImageInstance(const TLImageInstance* pTLImageInsta
     }
 
     glSetCurrentProgram(program);
-    glSetCurrentMatrix(matrixHandle);
+    glSetCurrentMatrix(matrix);
 
     return 1;
 }

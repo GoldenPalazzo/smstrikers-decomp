@@ -63,8 +63,8 @@ bool PhysicsAIBall::DidBallJustEnterNet(const nlVector3& oldPos, nlVector3 newPo
                 planeX = -threshold;
             }
 
+            f32 t = (planeX - oldPos.f.x) / xDelta;
             f32 oldX = oldPos.f.x;
-            f32 t = (planeX - oldX) / xDelta;
             xDelta = 1.0f - t;
 
             impactPos.f.x = (xDelta * oldX) + (t * newPos.f.x);

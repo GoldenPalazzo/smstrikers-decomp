@@ -300,6 +300,7 @@ static inline void ClearCharacterEffectsAndResetPowerups()
 
 /**
  * Offset/Address/Size: 0x10B8 | 0x80172688 | size: 0x920
+ * TODO: 99.79% match - branch target offsets in progressive-scan check and register allocation in character cleanup loops.
  */
 void TransitionTask::StateTransition(unsigned int from, unsigned int to)
 {
@@ -556,12 +557,15 @@ void TransitionTask::StateTransition(unsigned int from, unsigned int to)
         nlSingleton<OverlayManager>::s_pInstance->HandleStateTransition(from, to);
     }
 
+    efList* container;
+    EmissionController* node;
+
     if ((to & 0x110) || to == 0x20000)
     {
-        efList* container = EmissionManager::GetContainer();
+        container = EmissionManager::GetContainer();
         if (container != NULL)
         {
-            EmissionController* node = (EmissionController*)container->m_headNode;
+            node = (EmissionController*)container->m_headNode;
             while (node != NULL)
             {
                 if (node->m_uUserData == 0xDEADBEEF)
@@ -608,10 +612,10 @@ void TransitionTask::StateTransition(unsigned int from, unsigned int to)
     }
     else
     {
-        efList* container = EmissionManager::GetContainer();
+        container = EmissionManager::GetContainer();
         if (container != NULL)
         {
-            EmissionController* node = (EmissionController*)container->m_headNode;
+            node = (EmissionController*)container->m_headNode;
             while (node != NULL)
             {
                 if (node->m_uUserData == 0xDEADBEEF)

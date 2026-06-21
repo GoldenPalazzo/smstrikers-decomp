@@ -1172,7 +1172,7 @@ void StatsTracker::TrackStat(ePlayerStats stat, int homeaway, int playerindex, i
 
 /**
  * Offset/Address/Size: 0x3708 | 0x80184C68 | size: 0x7E8
- * TODO: 95.42% match - r29/r31 swap in unrolled init loop, extra clrlwi after compare assignments, remaining register swaps in stat comparisons and copy loop
+ * TODO: 95.79% match - r29/r31 swap in unrolled init loop, extra clrlwi after compare assignments, r10/r11 source/index swaps in stat loop and copy tail
  */
 static inline int CompareInt(eSortOrder sortOrder, int a, int b)
 {
@@ -1193,11 +1193,9 @@ void StatsTracker::GetSortedStats(PlayerStats* source, int numsource, int* dest,
         tempsorted[i] = i;
     }
 
-    int* base = tempsorted;
     unsigned char swapped;
     do
     {
-        int* sorted = base;
         swapped = 0;
         for (i = 0; i < numsource; i++)
         {
@@ -1212,35 +1210,35 @@ void StatsTracker::GetSortedStats(PlayerStats* source, int numsource, int* dest,
             case STATS_SHOTS_ON_GOAL:
             {
                 unsigned short a = source[tempsorted[nexti]].mNumShotsOnGoal;
-                unsigned short b = source[*sorted].mNumShotsOnGoal;
+                unsigned short b = source[tempsorted[i]].mNumShotsOnGoal;
                 doswap = CompareInt(sortOrder, b, a);
                 break;
             }
             case STATS_GOALS_FOR:
             {
                 unsigned short a = source[tempsorted[nexti]].mNumGoalsFor;
-                unsigned short b = source[*sorted].mNumGoalsFor;
+                unsigned short b = source[tempsorted[i]].mNumGoalsFor;
                 doswap = CompareInt(sortOrder, a, b);
                 break;
             }
             case STATS_GOALS_AGAINST:
             {
                 unsigned short a = source[tempsorted[nexti]].mNumGoalsAgainst;
-                unsigned short b = source[*sorted].mNumGoalsAgainst;
+                unsigned short b = source[tempsorted[i]].mNumGoalsAgainst;
                 doswap = CompareInt(sortOrder, a, b);
                 break;
             }
             case STATS_ASSISTS:
             {
                 unsigned short a = source[tempsorted[nexti]].mNumAssists;
-                unsigned short b = source[*sorted].mNumAssists;
+                unsigned short b = source[tempsorted[i]].mNumAssists;
                 doswap = CompareInt(sortOrder, a, b);
                 break;
             }
             case STATS_FOULS:
             {
                 unsigned short a = source[tempsorted[nexti]].mNumFouls;
-                unsigned short b = source[*sorted].mNumFouls;
+                unsigned short b = source[tempsorted[i]].mNumFouls;
                 doswap = CompareInt(sortOrder, a, b);
                 break;
             }
@@ -1252,77 +1250,77 @@ void StatsTracker::GetSortedStats(PlayerStats* source, int numsource, int* dest,
             case STATS_POWERUPS_USED:
             {
                 unsigned short a = source[tempsorted[nexti]].mNumPowerupsUsed;
-                unsigned short b = source[*sorted].mNumPowerupsUsed;
+                unsigned short b = source[tempsorted[i]].mNumPowerupsUsed;
                 doswap = CompareInt(sortOrder, a, b);
                 break;
             }
             case STATS_POWERUPS_HIT:
             {
                 unsigned short a = source[tempsorted[nexti]].mNumPowerupsHit;
-                unsigned short b = source[*sorted].mNumPowerupsHit;
+                unsigned short b = source[tempsorted[i]].mNumPowerupsHit;
                 doswap = CompareInt(sortOrder, a, b);
                 break;
             }
             case STATS_GOALS_FOR_STS:
             {
                 unsigned short a = source[tempsorted[nexti]].mNumShootToScoreGoals;
-                unsigned short b = source[*sorted].mNumShootToScoreGoals;
+                unsigned short b = source[tempsorted[i]].mNumShootToScoreGoals;
                 doswap = CompareInt(sortOrder, a, b);
                 break;
             }
             case STATS_PASSES_MADE:
             {
                 unsigned short a = source[tempsorted[nexti]].mNumPassesMade;
-                unsigned short b = source[*sorted].mNumPassesMade;
+                unsigned short b = source[tempsorted[i]].mNumPassesMade;
                 doswap = CompareInt(sortOrder, a, b);
                 break;
             }
             case STATS_PASSES_RECEIVED:
             {
                 unsigned short a = source[tempsorted[nexti]].mNumPassesMade;
-                unsigned short b = source[*sorted].mNumPassesMade;
+                unsigned short b = source[tempsorted[i]].mNumPassesMade;
                 doswap = CompareInt(sortOrder, a, b);
                 break;
             }
             case STATS_PASSES_INTERCEPTED:
             {
                 unsigned short a = source[tempsorted[nexti]].mNumPassesIntercepted;
-                unsigned short b = source[*sorted].mNumPassesIntercepted;
+                unsigned short b = source[tempsorted[i]].mNumPassesIntercepted;
                 doswap = CompareInt(sortOrder, a, b);
                 break;
             }
             case STATS_POSSESION_TIME:
             {
                 unsigned long a = source[tempsorted[nexti]].mBallPossessionTime;
-                unsigned long b = source[*sorted].mBallPossessionTime;
+                unsigned long b = source[tempsorted[i]].mBallPossessionTime;
                 doswap = CompareInt(sortOrder, a, b);
                 break;
             }
             case STATS_GAMES_PLAYED:
             {
                 unsigned short a = source[tempsorted[nexti]].mNumGamesPlayed;
-                unsigned short b = source[*sorted].mNumGamesPlayed;
+                unsigned short b = source[tempsorted[i]].mNumGamesPlayed;
                 doswap = CompareInt(sortOrder, a, b);
                 break;
             }
             case STATS_STEALS:
             {
                 unsigned short a = source[tempsorted[nexti]].mNumSteals;
-                unsigned short b = source[*sorted].mNumSteals;
+                unsigned short b = source[tempsorted[i]].mNumSteals;
                 doswap = CompareInt(sortOrder, a, b);
                 break;
             }
             case STATS_BUTTON_PRESSES:
             {
                 unsigned long a = source[tempsorted[nexti]].mNumButtonPresses;
-                unsigned long b = source[*sorted].mNumButtonPresses;
+                unsigned long b = source[tempsorted[i]].mNumButtonPresses;
                 doswap = CompareInt(sortOrder, a, b);
                 break;
             }
             case STATS_HITS_MADE:
             {
                 unsigned short a = source[tempsorted[nexti]].mNumHitsMade;
-                unsigned short b = source[*sorted].mNumHitsMade;
+                unsigned short b = source[tempsorted[i]].mNumHitsMade;
                 doswap = CompareInt(sortOrder, a, b);
                 break;
             }
@@ -1330,12 +1328,11 @@ void StatsTracker::GetSortedStats(PlayerStats* source, int numsource, int* dest,
 
             if (doswap)
             {
-                int temp = sorted[1];
-                sorted[1] = sorted[0];
-                sorted[0] = temp;
+                int temp = tempsorted[i + 1];
+                tempsorted[i + 1] = tempsorted[i];
+                tempsorted[i] = temp;
                 swapped = 1;
             }
-            sorted++;
         }
     } while (swapped);
 

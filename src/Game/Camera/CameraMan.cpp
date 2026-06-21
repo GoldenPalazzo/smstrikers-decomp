@@ -600,7 +600,9 @@ void cCameraManager::Remove(eCameraType type, bool bDeleteAfterRemoving)
 
 /**
  * Offset/Address/Size: 0x200 | 0x801A6888 | size: 0x390
- * TODO: 96.95% match - plane-normal loop register and load ordering differs
+ * TODO: 99.02% match - residual is an MWCC scheduler tiebreak in the cross-product
+ * loop: target loads the delta .y pair before the .z pair (ours reversed) and emits
+ * the -edgeX fneg after both fmuls (ours between them). Data flow + regs already match.
  */
 unsigned char cCameraManager::IsObjectOccludingField(const DrawableObject* drawable)
 {
@@ -672,44 +674,29 @@ unsigned char cCameraManager::IsObjectOccludingField(const DrawableObject* drawa
     for (i = 0; i < 4; i++)
     {
         int next = (i + 1) % 4;
-        nlVector3* pNextCorner = &fieldCorners[next];
-
-        float deltaY = pCorner->f.y - cameraPosition->f.y;
-        float deltaX = pCorner->f.x - cameraPosition->f.x;
-        float deltaZ = pCorner->f.z - cameraPosition->f.z;
-
-        float edgeX = pNextCorner->f.x - pCorner->f.x;
-        float edgeY = pNextCorner->f.y - pCorner->f.y;
-        float edgeZ = pNextCorner->f.z - pCorner->f.z;
-
-        pNormal->f.x = edgeY * deltaZ - edgeZ * deltaY;
-        pNormal->f.y = -(edgeX * deltaZ) + edgeZ * deltaX;
-        pNormal->f.z = edgeX * deltaY - edgeY * deltaX;
+        nlVector3 edge;
+        nlVector3 delta;
+        nlVec3Sub(edge, fieldCorners[next], *pCorner);
+        nlVec3Sub(delta, *pCorner, *cameraPosition);
+        nlVec3Cross(*pNormal, edge, delta);
 
         float invLength = nlRecipSqrt(
             pNormal->f.x * pNormal->f.x
                 + pNormal->f.y * pNormal->f.y
                 + pNormal->f.z * pNormal->f.z,
             true);
-
-        float nx = pNormal->f.x;
-        float ny = pNormal->f.y;
-        float nz = pNormal->f.z;
-        pNormal->f.x = invLength * nx;
-        pNormal->f.y = invLength * ny;
-        pNormal->f.z = invLength * nz;
+        nlVec3Scale(*pNormal, invLength);
 
         pCorner++;
         pNormal++;
     }
 
-    float objectDeltaY = objectPosition.f.y - cameraPosition->f.y;
-    float objectDeltaX = objectPosition.f.x - cameraPosition->f.x;
-    float objectDeltaZ = objectPosition.f.z - cameraPosition->f.z;
+    nlVector3 objectDelta;
+    nlVec3Sub(objectDelta, objectPosition, *cameraPosition);
 
     for (i = 0; i < 4; i++)
     {
-        if ((pNormals[i].f.x * objectDeltaX + pNormals[i].f.y * objectDeltaY + pNormals[i].f.z * objectDeltaZ) > objectRadius)
+        if (nlVec3DotProduct(pNormals[i], objectDelta) > objectRadius)
             return false;
     }
     return true;

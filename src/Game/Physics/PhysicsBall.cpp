@@ -27,9 +27,9 @@ void PhysicsBall::CalcAngularFromLinearVelocity(nlVector3& v3AngularVel)
     nlVector3 v3Velocity;
     GetLinearVelocity(&v3Velocity);
 
-    nlVector3 v3Up = { 0.0f, 1.0f, 0.0f };
+    nlVector3 v3Up = { 0.0f, 0.0f, 0.0f };
     f32 invRadius = 1.0f / GetRadius();
-    nlVector3 v3Look = { 0.0f, 0.0f, 1.0f };
+    nlVector3 v3Look = { 0.0f, 0.0f, 0.0f };
 
     v3Up.f.z = invRadius;
     v3Look.f.x = v3Velocity.f.x;
@@ -66,6 +66,20 @@ void PhysicsBall::ScaleAngularVelocity(float scale)
         nlVec3Scale(v, scale);
         SetAngularVelocity(v);
     }
+}
+
+inline void PhysicsBall::CalcSurfaceVelocity(nlVector3& v3VelocityOut)
+{
+    nlVector3 v3AngVelocity;
+    GetAngularVelocity(&v3AngVelocity);
+    v3AngVelocity.f.z = 0.0f;
+
+    nlVector3 v3Up = { 0.0f, 0.0f, 0.0f };
+    v3Up.f.z = GetRadius();
+
+    v3VelocityOut.f.z = v3AngVelocity.f.x * v3Up.f.y - v3AngVelocity.f.y * v3Up.f.x;
+    v3VelocityOut.f.y = -v3AngVelocity.f.x * v3Up.f.z + v3AngVelocity.f.z * v3Up.f.x;
+    v3VelocityOut.f.x = v3AngVelocity.f.y * v3Up.f.z - v3AngVelocity.f.z * v3Up.f.y;
 }
 
 // const uint vec_zero[3] __attribute__((section(".rodata"))) = {0, 0, 0};
@@ -126,30 +140,13 @@ void PhysicsBall::AddResistanceForces()
         f32 threshold = 0.02f + GetRadius();
         if (GetPosition().f.z < threshold)
         {
-            nlVector3 v3LinVel1;
-            GetLinearVelocity(&v3LinVel1);
-            nlVector3 localNorm = { 0.f, 0.f, 0.f };
-            f32 invR = 1.0f / GetRadius();
-            nlVector3 localGndVel = { 0.f, 0.f, 0.f };
-            localNorm.f.z = invR;
-            localGndVel.f.x = v3LinVel1.f.x;
-            localGndVel.f.y = v3LinVel1.f.y;
+            CalcAngularFromLinearVelocity(v3BallSurfaceSpeed);
             GetAngularVelocity(&v3CurAngularVel);
-            f32 crossX = localNorm.f.y * localGndVel.f.z - localNorm.f.z * localGndVel.f.y;
-            f32 crossY = -localNorm.f.x * localGndVel.f.z + localNorm.f.z * localGndVel.f.x;
-            f32 crossZ = localNorm.f.x * localGndVel.f.y - localNorm.f.y * localGndVel.f.x;
-            f32 torqueZ = 0.25f * (crossZ - v3CurAngularVel.f.z);
-            f32 torqueX = 0.25f * (crossX - v3CurAngularVel.f.x);
-            f32 torqueY = 0.25f * (crossY - v3CurAngularVel.f.y);
+            f32 torqueZ = 0.25f * (v3BallSurfaceSpeed.f.z - v3CurAngularVel.f.z);
+            f32 torqueX = 0.25f * (v3BallSurfaceSpeed.f.x - v3CurAngularVel.f.x);
+            f32 torqueY = 0.25f * (v3BallSurfaceSpeed.f.y - v3CurAngularVel.f.y);
             dBodyAddTorque(m_bodyID, torqueX, torqueY, torqueZ);
-            nlVector3 v3AngVel2;
-            GetAngularVelocity(&v3AngVel2);
-            v3AngVel2.f.z = 0.f;
-            nlVector3 localRad = { 0.f, 0.f, 0.f };
-            localRad.f.z = GetRadius();
-            v3BallSurfaceSpeed.f.z = v3AngVel2.f.x * localRad.f.y - v3AngVel2.f.y * localRad.f.x;
-            v3BallSurfaceSpeed.f.y = -v3AngVel2.f.x * localRad.f.z + v3AngVel2.f.z * localRad.f.x;
-            v3BallSurfaceSpeed.f.x = v3AngVel2.f.y * localRad.f.z - v3AngVel2.f.z * localRad.f.y;
+            CalcSurfaceVelocity(v3BallSurfaceSpeed);
             GetLinearVelocity(&v3CurBallSpeed);
             v3BallSurfaceSpeed.f.z = v3BallSurfaceSpeed.f.z - v3CurBallSpeed.f.z;
             v3BallSurfaceSpeed.f.y = v3BallSurfaceSpeed.f.y - v3CurBallSpeed.f.y;

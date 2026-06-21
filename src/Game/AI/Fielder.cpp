@@ -5386,8 +5386,7 @@ bool cFielder::TestQueuedActions()
 
 /**
  * Offset/Address/Size: 0x2BB0 | 0x8001BEEC | size: 0x8BC
- * TODO: 99.48% match - register allocation artifact in inlined SetAttemptOneTouchPass
- * (target reuses r28/this for pPassTarget2; scratch compiler picks r26 instead).
+ * TODO: 99.62% match - zero-float literal label differs in ReceivingVolleyPass bool conversion.
  */
 void cFielder::TestButtonsRunning()
 {
@@ -5409,7 +5408,25 @@ void cFielder::TestButtonsRunning()
 
         if (bIsVolleyPassToMe)
         {
-            ((cFielder*)g_pBall->GetPassTargetFielder())->SetAttemptOneTouchPass();
+            bool shouldAttempt;
+            GameTweaks* tweaks;
+            cFielder* pOneTouchTarget = (cFielder*)g_pBall->GetPassTargetFielder();
+            shouldAttempt = false;
+
+            cGlobalPad* pad = pOneTouchTarget->GetGlobalPad();
+            if (pad != NULL)
+            {
+                tweaks = g_pGame->m_pGameTweaks;
+                float pressure = pOneTouchTarget->GetGlobalPad()->GetPressure(PAD_AIM, true);
+                if (pressure > tweaks->unk2B0)
+                {
+                    shouldAttempt = true;
+                }
+            }
+
+            pOneTouchTarget->m_DesireReceivePassSharedVars.iAttemptOneTouchPass = shouldAttempt ? 2 : 1;
+            pOneTouchTarget->m_DesireReceivePassSharedVars.pOneTouchPassTarget = pOneTouchTarget->DoFindBestPassTarget(ReceivingVolleyPass(pOneTouchTarget), shouldAttempt);
+            pOneTouchTarget->m_DesireReceivePassSharedVars.iAttemptOneTouchShot = 0;
         }
         else if (CanLooseBallPass())
         {

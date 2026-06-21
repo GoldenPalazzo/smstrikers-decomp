@@ -1146,9 +1146,10 @@ void PitchBend(float param1, float param2, float param3, float param4)
             if (g_pGame != NULL)
             {
                 int p;
+                cTeam* team;
                 for (int t = 0; t < 2; t++)
                 {
-                    cTeam* team = g_pTeams[t];
+                    team = g_pTeams[t];
                     for (p = 0; p < 5; p++)
                     {
                         team->GetPlayer(p)->m_pCharacterSFX->SetPitchBendOnAllDialogueSFX(pitchBend);

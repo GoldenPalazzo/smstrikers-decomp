@@ -1,5 +1,15 @@
 .include "macros.inc"
 
+# The original __exception.o stores this .init vector table as a raw blob: the
+# TRKInterruptHandler @h/@l pairs and the System Reset branch are baked in as
+# absolute immediates with NO relocations (dtk extracts the section verbatim from
+# the DOL). Defining TRKInterruptHandler as an absolute constant makes the
+# assembler fold lis/ori at assembly time instead of emitting R_PPC_ADDR16_HI/LO
+# relocations; --strip-local-absolute then drops the symbol so the symtab still
+# holds only gTRKInterruptVectorTable / gTRKInterruptVectorTableEnd. Value is the
+# linked address of TRKInterruptHandler (.text:0x80227424, see symbols.txt).
+.set TRKInterruptHandler, 0x80227424
+
 .section .init, "ax"  # 0x80003100 - 0x80005600
 
 .global gTRKInterruptVectorTable
@@ -13,7 +23,10 @@ gTRKInterruptVectorTable:
 #############################################
 
 # Slot 0x0100: System Reset Exception
-    b __TRK_reset
+# __TRK_reset sits immediately after this table (symbols.txt: __TRK_reset ==
+# gTRKInterruptVectorTableEnd == .init:0x80005088). Branch to a section-local
+# label at that address so the offset folds in-section with no R_PPC_REL24 reloc.
+    b .L_TRK_reset
 .fill 0xFC
 
 # Slot 0x0200: Machine Check Exception
@@ -474,3 +487,4 @@ gTRKInterruptVectorTable:
 /* 80005084 00002084  4C 00 00 64 */	rfi 
 .global gTRKInterruptVectorTableEnd
 gTRKInterruptVectorTableEnd:
+.L_TRK_reset:

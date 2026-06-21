@@ -102,31 +102,4 @@ public:
     /* 0x68 */ float morphWeights[8];
 }; // total size: 0x88
 
-// class nlAVLTree<unsigned long, SkinMatrix, DefaultKeyCompare<unsigned long> >
-// {
-// public:
-//     void ~nlAVLTree();
-// };
-
-// class AVLTreeBase<unsigned long, unsigned long, NewAdapter<AVLTreeEntry<unsigned long, unsigned long> >, DefaultKeyCompare<unsigned long> >
-// {
-// public:
-//     void InorderWalk<UserDataBuilder>(AVLTreeEntry<unsigned long, unsigned long>*, UserDataBuilder*, void (UserDataBuilder::*)(const unsigned long&, unsigned long*));
-//     void Walk<UserDataBuilder>(UserDataBuilder*, void (UserDataBuilder::*)(const unsigned long&, unsigned long*));
-// };
-
-// class AVLTreeBase<unsigned long, SkinMatrix, NewAdapter<AVLTreeEntry<unsigned long, SkinMatrix> >, DefaultKeyCompare<unsigned long> >
-// {
-// public:
-//     void DeleteEntry(AVLTreeEntry<unsigned long, SkinMatrix>*);
-//     void AllocateEntry(void*, void*);
-//     void CompareKey(void*, AVLTreeNode*);
-//     void CompareNodes(AVLTreeNode*, AVLTreeNode*);
-//     void CastUp(AVLTreeNode*) const;
-//     void PostorderTraversal(AVLTreeEntry<unsigned long, SkinMatrix>*, void (AVLTreeBase<unsigned long, SkinMatrix, NewAdapter<AVLTreeEntry<unsigned long, SkinMatrix> >, DefaultKeyCompare<unsigned long> >::*)(AVLTreeEntry<unsigned long, SkinMatrix>*));
-//     void DestroyTree(void (AVLTreeBase<unsigned long, SkinMatrix, NewAdapter<AVLTreeEntry<unsigned long, SkinMatrix> >, DefaultKeyCompare<unsigned long> >::*)(AVLTreeEntry<unsigned long, SkinMatrix>*));
-//     void Clear();
-//     void ~AVLTreeBase();
-// };
-
 #endif // _SHADERSKINMESH_H_

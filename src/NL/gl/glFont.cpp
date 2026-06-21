@@ -93,16 +93,18 @@ int glFontPrint(eGLView view, int virtual_x, int virtual_y, const nlColour& colo
         {
             int j = (((s8)*cp - 0x20) % 8) * 8;
             int i = (((s8)*cp - 0x20) / 8) * 8;
+            float us = 0.015625f;
+            float vs = 0.0078125f;
             float s = (float)j;
             float t = (float)i;
-            pPoly->m_uv[0].f.x = s * 0.015625f;
-            pPoly->m_uv[0].f.y = t * 0.0078125f;
-            pPoly->m_uv[1].f.x = s * 0.015625f;
-            pPoly->m_uv[1].f.y = (t + 8.0f) * 0.0078125f;
-            pPoly->m_uv[2].f.x = (s + 8.0f) * 0.015625f;
-            pPoly->m_uv[2].f.y = (t + 8.0f) * 0.0078125f;
-            pPoly->m_uv[3].f.x = (s + 8.0f) * 0.015625f;
-            pPoly->m_uv[3].f.y = t * 0.0078125f;
+            pPoly->m_uv[0].f.x = s * us;
+            pPoly->m_uv[0].f.y = t * vs;
+            pPoly->m_uv[1].f.x = s * us;
+            pPoly->m_uv[1].f.y = (t + 8.0f) * vs;
+            pPoly->m_uv[2].f.x = (s + 8.0f) * us;
+            pPoly->m_uv[2].f.y = (t + 8.0f) * vs;
+            pPoly->m_uv[3].f.x = (s + 8.0f) * us;
+            pPoly->m_uv[3].f.y = t * vs;
             pPoly->m_pos[0].f.x = screen_x;
             pPoly->m_pos[0].f.y = screen_y;
             pPoly->m_pos[1].f.x = screen_x;

@@ -404,9 +404,21 @@ fade_found:
     return true;
 }
 
+static inline float ClampFadeInterp(float x)
+{
+    if (x <= 1.0f)
+    {
+        return x;
+    }
+    else
+    {
+        return 1.0f;
+    }
+}
+
 /**
  * Offset/Address/Size: 0x1970 | 0x801566C8 | size: 0x3F0
- * TODO: 98.39% match - clamp compare branch and two buffer-count gate branches differ, plus r28/r29 assignment in the second buffer-volume loop
+ * TODO: 99.88% match - early fade interpolation f-register and second buffer-volume clampedVol register differ
  */
 void AudioStreamTrack::TrackManagerBase::FadeManager::UpdateFade(STREAM_FADE_CTRL* pFade)
 {
@@ -425,14 +437,7 @@ void AudioStreamTrack::TrackManagerBase::FadeManager::UpdateFade(STREAM_FADE_CTR
     interp = interp + (m_dT / totalTime);
     pFade->Interp = interp;
 
-    float newVal = pFade->Interp;
-    if (newVal <= 1.0f)
-    {
-    }
-    else
-    {
-        newVal = 1.0f;
-    }
+    float newVal = ClampFadeInterp(pFade->Interp);
     pFade->Interp = newVal;
 
     float absDiff = (float)__fabs(pFade->Interp - 1.0f);
@@ -453,9 +458,10 @@ void AudioStreamTrack::TrackManagerBase::FadeManager::UpdateFade(STREAM_FADE_CTR
 
         if (pStream->m_State >= 2)
         {
-            volatile unsigned long i = 0;
-            GCAudioStreaming::AudioStreamBuffer* buf = NULL;
-            if (pStream->m_BufferCount > 0)
+            unsigned long zero = 0;
+            GCAudioStreaming::AudioStreamBuffer* buf;
+            volatile unsigned long i = (unsigned long)(buf = NULL);
+            if (pStream->m_BufferCount > zero)
             {
                 buf = pStream->m_Buffers[0];
             }
@@ -513,8 +519,8 @@ void AudioStreamTrack::TrackManagerBase::FadeManager::UpdateFade(STREAM_FADE_CTR
 
         float masterVol = Audio::MasterVolume::GetVolume(vg);
 
-        int clampedVol = 0x7F;
         GCAudioStreaming::StereoAudioStream* pStream = pFade->pStream;
+        int clampedVol = 0x7F;
         int vol = (int)((float)(u8)interpVolInt * masterVol);
         if ((u32)(u8)vol <= 0x7Fu)
         {
@@ -523,9 +529,10 @@ void AudioStreamTrack::TrackManagerBase::FadeManager::UpdateFade(STREAM_FADE_CTR
 
         if (pStream->m_State >= 2)
         {
-            volatile unsigned long i = 0;
-            GCAudioStreaming::AudioStreamBuffer* buf = NULL;
-            if (pStream->m_BufferCount > 0)
+            unsigned long zero = 0;
+            GCAudioStreaming::AudioStreamBuffer* buf;
+            volatile unsigned long i = (unsigned long)(buf = NULL);
+            if (pStream->m_BufferCount > zero)
             {
                 buf = pStream->m_Buffers[0];
             }
@@ -1039,7 +1046,6 @@ void AudioStreamTrack::StreamTrack::StopHead(unsigned long Fadeout)
 void AudioStreamTrack::StreamTrack::Stop(unsigned long Fadeout)
 {
     DLListEntry<QUEUED_STREAM>* entry;
-    DLListEntry<QUEUED_STREAM>* head;
 
     if (m_InFakePause)
         return;
@@ -1081,9 +1087,9 @@ void AudioStreamTrack::StreamTrack::Stop(unsigned long Fadeout)
         StartQStreamFadeout(&entry->m_data, Fadeout, callback);
     }
 
-    head = m_QueuedStreams.m_Head;
-    DLListEntry<QUEUED_STREAM>* iter = nlDLRingGetStart(head);
-    head = m_QueuedStreams.m_Head;
+    QUEUED_STREAM* curQs;
+    DLListEntry<QUEUED_STREAM>* iter = nlDLRingGetStart(m_QueuedStreams.m_Head);
+    DLListEntry<QUEUED_STREAM>* head = m_QueuedStreams.m_Head;
 
     if (&iter->m_data == qs)
     {
@@ -1099,7 +1105,7 @@ void AudioStreamTrack::StreamTrack::Stop(unsigned long Fadeout)
 
     while (iter != NULL)
     {
-        QUEUED_STREAM* curQs = &iter->m_data;
+        curQs = &iter->m_data;
 
         if (nlDLRingIsEnd(head, iter) || iter == NULL)
         {

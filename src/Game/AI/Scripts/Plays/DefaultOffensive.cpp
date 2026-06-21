@@ -105,9 +105,7 @@ void Fuzzy::DefaultOffensivePlay(cDecisionEntity* pDecision)
         ((Fuzzy*)&doShootingBuf)->DoShooting(fConfidence, pDecision);
         float fDoShooting = (((FuzzyVariant&)doShootingBuf).mData.f >= 0.0f) ? ((FuzzyVariant&)doShootingBuf).mData.f : 0.0f;
 
-        FuzzyBuf doPassingBuf;
-        ((Fuzzy*)&doPassingBuf)->DoPassing(fConfidence, pDecision);
-        float fDoPassing = ((FuzzyVariant&)doPassingBuf).mData.f;
+        float fDoPassing = DoPassing(fConfidence, pDecision).mData.f;
         fDoPassing = (fDoPassing >= fDoShooting) ? fDoPassing : fDoShooting;
 
         fBestConfidence = fDoPassing;
@@ -400,7 +398,7 @@ void Fuzzy::DefaultOffensivePlay(cDecisionEntity* pDecision)
 /**
  * Offset/Address/Size: 0x4A94 | 0x80091520 | size: 0x744
  */
-void Fuzzy::DoPassing(float fConfidence, cDecisionEntity* pDecision)
+FuzzyVariant Fuzzy::DoPassing(float fConfidence, cDecisionEntity* pDecision)
 {
     extern cFielder* g_pScriptCurrentFielder;
     extern cTeam* g_pCurrentlyUpdatingTeam;
@@ -488,7 +486,7 @@ void Fuzzy::DoPassing(float fConfidence, cDecisionEntity* pDecision)
         }
     }
 
-    new ((FuzzyVariant*)this) FuzzyVariant(fBestConfidence);
+    return FuzzyVariant(fBestConfidence);
 }
 
 /**

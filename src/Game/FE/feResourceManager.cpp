@@ -145,6 +145,73 @@ void FEResourceManager::Cleanup()
     s_loadedResourceList.Clear();
 }
 
+inline void FEResourceManager::LoadPermanentTextures()
+{
+    FETextureResource* pTextureResource;
+    u32 fileCount = s_pPermanentBundle->m_pHeader->nNumFiles;
+    u32 fileIndex;
+
+    for (fileIndex = 0; fileIndex < fileCount; fileIndex++)
+    {
+        BundleFileDirectoryEntry fileDirectoryEntry;
+
+        if (!s_pPermanentBundle->GetFileInfoByIndex(fileIndex, &fileDirectoryEntry))
+        {
+            nlPrintf("FEResourceManager Error: Failed to get file information in permanent bundle!\n");
+        }
+        else
+        {
+            u32 fileLength = fileDirectoryEntry.m_length;
+            u32 fileHash = fileDirectoryEntry.m_hash;
+
+            pTextureResource = new (nlMalloc(sizeof(FETextureResource), 8, false)) FETextureResource();
+            pTextureResource->m_hashID = fileHash;
+
+            s_pResourceLoadBuffer = (unsigned char*)nlMalloc(fileLength, 0x20, true);
+            s_pPermanentBundle->ReadFileByIndex(fileIndex, s_pResourceLoadBuffer, fileLength);
+            glTextureAdd(pTextureResource->m_hashID, s_pResourceLoadBuffer, fileLength);
+
+            delete[] s_pResourceLoadBuffer;
+            s_pResourceLoadBuffer = NULL;
+
+            pTextureResource->m_glTextureHandle = pTextureResource->m_hashID;
+
+            AVLTreeNode* existingNodeB;
+            AVLTreeNode* existingNodeA;
+            FEResourceHandle* valueA = pTextureResource;
+            u32 keyA = pTextureResource->m_hashID;
+            s_loadedResourceList.AddAVLNode(
+                (AVLTreeNode**)&s_loadedResourceList.m_Root,
+                &keyA,
+                &valueA,
+                &existingNodeB,
+                s_loadedResourceList.m_NumElements);
+            if (existingNodeB == NULL)
+            {
+                s_loadedResourceList.m_NumElements++;
+            }
+            pTextureResource->m_bValid = true;
+
+            delete[] s_pResourceLoadBuffer;
+            s_pResourceLoadBuffer = NULL;
+
+            FEResourceHandle* valueB = pTextureResource;
+            u32 keyB = pTextureResource->m_hashID;
+            s_loadedResourceList.AddAVLNode(
+                (AVLTreeNode**)&s_loadedResourceList.m_Root,
+                &keyB,
+                &valueB,
+                &existingNodeA,
+                s_loadedResourceList.m_NumElements);
+            if (existingNodeA == NULL)
+            {
+                s_loadedResourceList.m_NumElements++;
+            }
+            pTextureResource->m_bValid = true;
+        }
+    }
+}
+
 /**
  * Offset/Address/Size: 0x848 | 0x8020C388 | size: 0x2AC
  */
@@ -175,60 +242,7 @@ void FEResourceManager::LoadPermanentResourceBundle(const char* szBundleFileName
     s_pPermanentBundle = new (nlMalloc(sizeof(BundleFile), 8, false)) BundleFile();
     s_pPermanentBundle->Open(m_szPermanentBundleFileName);
 
-    u32 fileCount = s_pPermanentBundle->m_pHeader->nNumFiles;
-    u32 fileIndex;
-    AVLTreeNode** pRoot = (AVLTreeNode**)&s_loadedResourceList.m_Root;
-    FETextureResource* pTextureResource;
-
-    for (fileIndex = 0; fileIndex < fileCount; fileIndex++)
-    {
-        BundleFileDirectoryEntry fileDirectoryEntry;
-
-        if (!s_pPermanentBundle->GetFileInfoByIndex(fileIndex, &fileDirectoryEntry))
-        {
-            nlPrintf("FEResourceManager Error: Failed to get file information in permanent bundle!\n");
-        }
-        else
-        {
-            u32 fileHash = fileDirectoryEntry.m_hash;
-            u32 fileLength = fileDirectoryEntry.m_length;
-
-            pTextureResource = new (nlMalloc(sizeof(FETextureResource), 8, false)) FETextureResource();
-            pTextureResource->m_hashID = fileHash;
-
-            s_pResourceLoadBuffer = (unsigned char*)nlMalloc(fileLength, 0x20, true);
-            s_pPermanentBundle->ReadFileByIndex(fileIndex, s_pResourceLoadBuffer, fileLength);
-            glTextureAdd(pTextureResource->m_hashID, s_pResourceLoadBuffer, fileLength);
-
-            delete[] s_pResourceLoadBuffer;
-            s_pResourceLoadBuffer = NULL;
-
-            pTextureResource->m_glTextureHandle = pTextureResource->m_hashID;
-
-            FEResourceHandle* valueA = pTextureResource;
-            u32 keyA = pTextureResource->m_hashID;
-            AVLTreeNode* existingNodeB;
-            s_loadedResourceList.AddAVLNode(pRoot, &keyA, &valueA, &existingNodeB, s_loadedResourceList.m_NumElements);
-            if (existingNodeB == NULL)
-            {
-                s_loadedResourceList.m_NumElements++;
-            }
-            pTextureResource->m_bValid = true;
-
-            delete[] s_pResourceLoadBuffer;
-            s_pResourceLoadBuffer = NULL;
-
-            FEResourceHandle* valueB = pTextureResource;
-            u32 keyB = pTextureResource->m_hashID;
-            AVLTreeNode* existingNodeA;
-            s_loadedResourceList.AddAVLNode(pRoot, &keyB, &valueB, &existingNodeA, s_loadedResourceList.m_NumElements);
-            if (existingNodeA == NULL)
-            {
-                s_loadedResourceList.m_NumElements++;
-            }
-            pTextureResource->m_bValid = true;
-        }
-    }
+    LoadPermanentTextures();
 
     s_pPermanentBundle->Close();
     delete s_pPermanentBundle;

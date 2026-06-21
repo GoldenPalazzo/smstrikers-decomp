@@ -12,8 +12,11 @@
 static CircleBuffer gRecvCB;
 static u8 gRecvBuf[DDH_BUF_SIZE];
 
-/*__declspec(section ".sbss")*/ static BOOL gIsInitialized = FALSE;
+static BOOL gIsInitialized = FALSE;
 
+/**
+ * Offset/Address/Size: 0x2BC | 0x8022A880 | size: 0x88
+ */
 int ddh_cc_initialize(void* flagOut, __OSInterruptHandler handler)
 {
     MWTRACE(1, "CALLING EXI2_Init\n");
@@ -23,11 +26,17 @@ int ddh_cc_initialize(void* flagOut, __OSInterruptHandler handler)
     return 0;
 }
 
+/**
+ * Offset/Address/Size: 0x2B4 | 0x8022A878 | size: 0x8
+ */
 int ddh_cc_shutdown()
 {
     return 0;
 }
 
+/**
+ * Offset/Address/Size: 0x290 | 0x8022A854 | size: 0x24
+ */
 int ddh_cc_open()
 {
     if (gIsInitialized != 0)
@@ -39,11 +48,17 @@ int ddh_cc_open()
     return 0;
 }
 
+/**
+ * Offset/Address/Size: 0x288 | 0x8022A84C | size: 0x8
+ */
 int ddh_cc_close()
 {
     return 0;
 }
 
+/**
+ * Offset/Address/Size: 0x19C | 0x8022A760 | size: 0xEC
+ */
 int ddh_cc_read(u8* data, int size)
 {
     u8 buff[DDH_BUF_SIZE];
@@ -88,6 +103,9 @@ int ddh_cc_read(u8* data, int size)
     return result;
 }
 
+/**
+ * Offset/Address/Size: 0xDC | 0x8022A6A0 | size: 0xC0
+ */
 int ddh_cc_write(const u8* bytes, int length)
 {
     int exi2Len;
@@ -120,18 +138,27 @@ int ddh_cc_write(const u8* bytes, int length)
     return 0;
 }
 
+/**
+ * Offset/Address/Size: 0xB8 | 0x8022A67C | size: 0x24
+ */
 int ddh_cc_pre_continue()
 {
     EXI2_Unreserve();
     return 0;
 }
 
+/**
+ * Offset/Address/Size: 0x94 | 0x8022A658 | size: 0x24
+ */
 int ddh_cc_post_stop()
 {
     EXI2_Reserve();
     return 0;
 }
 
+/**
+ * Offset/Address/Size: 0x24 | 0x8022A5E8 | size: 0x70
+ */
 int ddh_cc_peek()
 {
     int poll;
@@ -155,7 +182,9 @@ int ddh_cc_peek()
     return poll;
 }
 
-/* 8037235C-80372380 36CC9C 0024+00 0/0 1/1 0/0 .text            ddh_cc_initinterrupts */
+/**
+ * Offset/Address/Size: 0x0 | 0x8022A5C4 | size: 0x24
+ */
 int ddh_cc_initinterrupts()
 {
     EXI2_EnableInterrupts();

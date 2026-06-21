@@ -7,6 +7,7 @@
 #include "Game/AI/Scripts/ScriptQuestions.h"
 #include "Game/CharacterAudio.h"
 #include "Game/SAnim.h"
+#include "Game/SAnim/pnBlender.h"
 #include "Game/SAnim/pnSingleAxisBlender.h"
 #include "Game/Physics/PhysicsGoalie.h"
 #include "Game/Physics/PhysicsFakeBall.h"
@@ -43,9 +44,6 @@ extern cWorldSFX gStadGenSFX;
 } // namespace Audio
 
 extern cTeam* g_pCurrentlyUpdatingTeam;
-class cPN_Blender;
-extern "C" cPN_Blender* __ct__11cPN_BlenderFP9cPoseNodeP9cPoseNodef(cPN_Blender*, cPoseNode*, cPoseNode*, float);
-cPN_Blender* AllocateBlender();
 
 namespace Fuzzy
 {
@@ -217,6 +215,7 @@ void Goalie::CollideWithBallCallback(cBall* pBall)
     }
 
     cPlayer* pOwner = pBall->m_pOwner;
+    cFielder* pFldr;
     if (pOwner != this)
     {
         switch (mGoalieActionState)
@@ -290,49 +289,56 @@ void Goalie::CollideWithBallCallback(cBall* pBall)
 
         case GOALIEACTION_LOOSEBALL_PURSUE_ROLLING:
         {
-            cFielder* pFldr = static_cast<cFielder*>(pOwner);
-            if (pFldr != NULL)
+            pFldr = static_cast<cFielder*>(pOwner);
+            if (pOwner != NULL)
             {
-                if (IsOnSameTeam(pFldr))
+                if (IsOnSameTeam(pOwner))
                     break;
 
-                if (!pFldr->IsFallenDown(0.0f) && !pFldr->IsInvincible() && pFldr != NULL && pFldr->m_eClassType == FIELDER)
+                if (!pFldr->IsFallenDown(0.0f) && !pFldr->IsInvincible() && pOwner != NULL && pOwner->m_eClassType == FIELDER)
                 {
-                    if (!pFldr->IsFallenDown(0.0f))
+                    if (!((cFielder*)pOwner)->IsFallenDown(0.0f))
                     {
-                        pFldr->PlayRandomCharDialogue(CHAR_DIALOGUE_HIT, VECTORS, 100.0f, -1.0f);
-                        if (pFldr->m_pBall != NULL)
+                        pOwner->PlayRandomCharDialogue(CHAR_DIALOGUE_HIT, VECTORS, 100.0f, -1.0f);
+                        if (pOwner->m_pBall != NULL)
                         {
-                            pFldr->ReleaseBall();
+                            pOwner->ReleaseBall();
                         }
-                        if (IsOnSameTeam(pFldr))
+                        if (IsOnSameTeam(pOwner))
                         {
-                            pFldr->EndDesire(false);
-                            pFldr->EndAction();
+                            ((cFielder*)pOwner)->EndDesire(false);
+                            ((cFielder*)pOwner)->EndAction();
                         }
                         else
                         {
-                            pFldr->InitActionSlideAttackReact(this, false);
+                            ((cFielder*)pOwner)->InitActionSlideAttackReact(this, false);
                         }
                     }
                 }
             }
 
             int animID = mpLooseBallInfo->mnAnimID;
-            if (animID != m_eAnimID
-                || (m_pCurrentAnimController->m_ePlayMode == PM_HOLD && m_pCurrentAnimController->m_fTime == 1.0f))
+            if (animID != m_eAnimID)
             {
-                SetAnimState(animID, true, 0.2f, false, false);
-            }
+                bool bShouldSetAnim = false;
+                if (m_pCurrentAnimController->m_ePlayMode == PM_HOLD && m_pCurrentAnimController->m_fTime == 1.0f)
+                {
+                    bShouldSetAnim = true;
+                }
+                if (animID != m_eAnimID || bShouldSetAnim)
+                {
+                    SetAnimState(animID, true, 0.2f, false, false);
+                }
 
-            {
-                cPN_SAnimController* pAnim = m_pCurrentAnimController;
-                float targetTime = 0.5f * mpLooseBallInfo->mfPickupTime;
-                float currentTime = pAnim->m_fTime;
-                pAnim->m_fPrevTime = currentTime;
-                pAnim->m_fTime = targetTime;
+                {
+                    cPN_SAnimController* pAnim = m_pCurrentAnimController;
+                    float targetTime = 0.5f * mpLooseBallInfo->mfPickupTime;
+                    float currentTime = pAnim->m_fTime;
+                    pAnim->m_fPrevTime = currentTime;
+                    pAnim->m_fTime = targetTime;
+                }
+                InitMovementFromAnim(0, v3Zero, 1.0f, false);
             }
-            InitMovementFromAnim(0, v3Zero, 1.0f, false);
 
             if (m_pBall == NULL)
             {
@@ -392,7 +398,7 @@ void Goalie::CollideWithBallCallback(cBall* pBall)
 
             if (mpSaveData != NULL && (mpSaveData->muSaveType & 3) != 0)
             {
-                cFielder* pFldr = g_pBall->GetOwnerFielder();
+                pFldr = g_pBall->GetOwnerFielder();
                 if (pFldr != NULL && pFldr->m_eClassType == FIELDER)
                 {
                     if (!pFldr->IsFallenDown(0.0f))
@@ -429,7 +435,7 @@ void Goalie::CollideWithBallCallback(cBall* pBall)
                 {
                     MakeSaveEvent(false);
 
-                    cFielder* pFldr = g_pBall->GetOwnerFielder();
+                    pFldr = g_pBall->GetOwnerFielder();
                     if (pFldr != NULL && pFldr->m_eClassType == FIELDER)
                     {
                         if (!pFldr->IsFallenDown(0.0f))
@@ -563,7 +569,7 @@ void Goalie::CollideWithBallCallback(cBall* pBall)
         case GOALIEACTION_PURSUE_BALL_CARRIER:
         case GOALIEACTION_PURSUE_BALL_POUNCE:
         {
-            cFielder* pFldr = pBall->GetOwnerFielder();
+            pFldr = pBall->GetOwnerFielder();
             if (pFldr != NULL && !IsOnSameTeam(pFldr))
             {
                 ExecutePounce(pFldr, true);
@@ -1899,7 +1905,7 @@ void Goalie::DoNavigation(float fDeltaT, float fIdleDistance, Goalie::eNaviMode 
     cPN_Blender* pBlender = AllocateBlender();
     if (pBlender)
     {
-        pBlender = __ct__11cPN_BlenderFP9cPoseNodeP9cPoseNodef(pBlender, *m_pAILayer, pDirBlender, 0.1f);
+        pBlender = new (pBlender) cPN_Blender(*m_pAILayer, pDirBlender, 0.1f);
     }
 
     *m_pAILayer = (cPoseNode*)pBlender;
@@ -3456,42 +3462,7 @@ cPoseNode* Goalie::SetupBlender(bool bPrimary, const float* fStartPercent, int n
 
 /**
  * Offset/Address/Size: 0x58E4 | 0x800483E0 | size: 0x458
- * TODO: 87.30% match - this-pointer register allocation remains shifted (r28 vs r29),
- * and milestone array loads still compile as add+lfs instead of addi+lfsx in several blocks.
- */
-class cPN_Blender : public cPoseNode
-{
-public:
-    cPN_Blender(cPoseNode*, cPoseNode*, float);
-    virtual ~cPN_Blender() { };
-    virtual void Evaluate(float, cPoseAccumulator*) const;
-    virtual void Evaluate(int, float, cPoseAccumulator*) const;
-    virtual cPoseNode* Update(float);
-    virtual int GetType() { return 0x0; };
-    virtual void BlendRootTrans(nlVector3*, float, float*);
-    virtual void BlendRootRot(unsigned short*, float, float*);
-
-    static SlotPool<cPN_Blender> m_BlenderSlotPool;
-};
-
-inline cPN_Blender* AllocateBlender()
-{
-    cPN_Blender* pBlender = NULL;
-    if (cPN_Blender::m_BlenderSlotPool.m_FreeList == NULL)
-    {
-        SlotPoolBase::BaseAddNewBlock(&cPN_Blender::m_BlenderSlotPool, 0x1C);
-    }
-    if (cPN_Blender::m_BlenderSlotPool.m_FreeList != NULL)
-    {
-        pBlender = (cPN_Blender*)cPN_Blender::m_BlenderSlotPool.m_FreeList;
-        cPN_Blender::m_BlenderSlotPool.m_FreeList = cPN_Blender::m_BlenderSlotPool.m_FreeList->m_next;
-    }
-    return pBlender;
-}
-
-/**
- * Offset/Address/Size: 0x58E4 | 0x800483E0 | size: 0x458
- * TODO: 98.18% match - this pointer remains r28 vs target r29, with late blender allocation registers shifted.
+ * TODO: 99.15% match - default-percent block has r3/r5 swapped, and interpolation reuses the milestone offset before NormalizeVal.
  */
 void Goalie::PlayBlendedAnims(float fStartTime, int nMilestone)
 {
@@ -3611,17 +3582,18 @@ void Goalie::PlayBlendedAnims(float fStartTime, int nMilestone)
             milestone = 0;
         }
 
-        cPoseNode* pMainNode = SetupBlender(true, fStartPercent, nMainAnimID, milestone);
+        cPoseNode* pNode1 = SetupBlender(true, fStartPercent, nMainAnimID, milestone);
+        cPoseNode* pMainNode = pNode1;
 
         if (mBlendInfo.mfSaveBlendComposite >= 0.001f)
         {
-            cPoseNode* pOther = SetupBlender(false, fStartPercent, nMainAnimID, milestone);
+            cPoseNode* pNode2 = SetupBlender(false, fStartPercent, nMainAnimID, milestone);
             cPN_SingleAxisBlender* pBlend = new (AllocateSingleAxisBlender()) cPN_SingleAxisBlender(2, NULL, 0, 0.1f);
 
             pBlend->m_fDesiredWeight = mBlendInfo.mfSaveBlendComposite;
             pBlend->m_fSmoothedWeight = mBlendInfo.mfSaveBlendComposite;
-            pBlend->SetChild(0, pMainNode);
-            pBlend->SetChild(1, pOther);
+            pBlend->SetChild(0, pNode1);
+            pBlend->SetChild(1, pNode2);
 
             pMainNode = pBlend;
         }
