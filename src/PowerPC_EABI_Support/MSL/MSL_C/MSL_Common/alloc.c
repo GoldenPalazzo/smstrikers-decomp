@@ -645,8 +645,15 @@ static __mem_pool* get_malloc_pool(void)
  * @note Size: 0x2D0
  * TODO: 99.61% match. Extracting the subblock fill into FixBlock_fill_subblocks (computing
  * sub_size from the index) fixed the head/k/sub_size coloring. Remaining 14 diffs are a single
- * p<->tail volatile swap (cursor p wants r10, tail wants r8); proven irreducible to source form
- * across two parallel compile-test searches + ~40 manual variants (MWCC 2.5 coloring tiebreak).
+ * p<->tail volatile swap: the loop-carried subblock cursor 'p' wants r10 (target) but MWCC 2.5
+ * gives it r8 (ours); 'tail' and the intra-iteration scratch then take the complementary reg.
+ * Proven irreducible to source form across THREE parallel compile-test searches + ~40 manual
+ * variants. Confirmed dead ends (do not retry): register/volatile hints on cursor/scratch (no
+ * effect on volatile selection), ping-pong/two-cursor forms, scratch-born-first, typed (FixSubBlock*)
+ * cursor, np=(char*)sb+sub_size, precomputed end-pointer bound, count-down loop, and all caller
+ * outer-block register-pressure perturbations. Anything that keeps the instruction stream
+ * byte-identical holds at exactly 99.611115 with the cursor stuck on r8; anything that moves it
+ * restructures the unrolled loop and regresses to 72-91%. MWCC 2.5 coloring tiebreak; NonMatching.
  */
 void* allocate_from_fixed_pools(__mem_pool_obj* pool_obj, u32 size)
 {

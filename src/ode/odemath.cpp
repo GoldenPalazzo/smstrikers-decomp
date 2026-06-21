@@ -37,7 +37,11 @@ float nlRecipSqrt(float, bool);
 
 void dNormalize3(dVector3 a)
 {
-    // TODO: 99.8% match - initial dFabs/frsp staging still differs (f1/f2/f3).
+    // 99.80% - irreducible single-register coloring tiebreak in the dFabs/frsp
+    // staging: instructions/opcodes/final regs all correct, only the intermediate
+    // fabs scratch reg differs (target aa1->f1->f2, aa2->f3 in-place; ours mirrors).
+    // Exhausted via /decomp2 (2 rounds, 26 forms): cast-split/named-temp/fabsf-direct/
+    // load-reorder/volatile/branch-restructure all no-op (DCE) or regress. Best form below.
     dReal aa0, aa1, aa2, a0, a1, a2, l;
     dAASSERT(a);
     a0 = a[0];
