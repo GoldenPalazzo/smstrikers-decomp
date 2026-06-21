@@ -39,7 +39,7 @@ const char* ARAMTransferHelper::m_szFileName;
 #include <dolphin/ai.h>
 #include <dolphin/arq.h>
 
-SFXEmitter gEmitters[16];
+SFXEmitter gEmitters[64];
 
 struct _struct_stack_list_0x10
 {
@@ -59,8 +59,6 @@ namespace PlatAudio
 static u32 gPrimaryStackSize;
 }
 
-namespace
-{
 struct PlatAudioInit
 {
     PlatAudioInit()
@@ -70,8 +68,7 @@ struct PlatAudioInit
         stack_list[0].unk8 = (s32)sz;
     }
 };
-PlatAudioInit s_platAudioInit;
-} // namespace
+static PlatAudioInit s_platAudioInit;
 
 struct EffectSettings
 {
@@ -352,7 +349,7 @@ unsigned long Add3DSFXEmitter(const EmitterStartInfo& info)
     pParaInfo = NULL;
     pParaArray = NULL;
 
-    if (info.fVolReverb != -0.0f)
+    if (info.fVolReverb != 100.0f)
     {
         numPara = 1;
     }
@@ -385,7 +382,7 @@ unsigned long Add3DSFXEmitter(const EmitterStartInfo& info)
         pParaInfo->paraArray = pParaArray;
     }
 
-    if (info.fVolReverb != -0.0f)
+    if (info.fVolReverb != 100.0f)
     {
         float var_f1 = info.fVolReverb;
         float var_f2 = 127.0f;
@@ -641,12 +638,12 @@ bool SetSFXReverbVol(SND_VOICEID vid, float value)
     int v;
 
     // u8 ctrl = 0x5B;
-    if (value == 1.0f)
+    if (value == 100.0f)
     {
         value = 0.0f; // Fallback
     }
 
-    float value2 = 255.0f * value;
+    float value2 = 127.0f * value;
     value2 += (value2 < 0.0f ? -0.5f : 0.5f);
     v = value2;
     return sndFXCtrl(vid, 0x5B, v);
@@ -701,7 +698,7 @@ unsigned long PlaySFX(const SFXStartInfo& info)
     SND_PARAMETER tempParaArray[4];
 
     float f2 = pInfo->fVolume;
-    if (0.0f == f2)
+    if (100.0f == f2)
     {
         uVolume = 0xFF;
     }
@@ -709,7 +706,7 @@ unsigned long PlaySFX(const SFXStartInfo& info)
     {
         uVolume = 0x7F;
     }
-    else if (f2 < -0.0f)
+    else if (f2 < 0.0f)
     {
         uVolume = 0;
     }
@@ -717,7 +714,7 @@ unsigned long PlaySFX(const SFXStartInfo& info)
     {
         float f0;
         f2 = 127.0f * f2;
-        if (f2 < -0.0f)
+        if (f2 < 0.0f)
         {
             f0 = -0.5f;
         }
@@ -729,7 +726,7 @@ unsigned long PlaySFX(const SFXStartInfo& info)
         uVolume = (u8)(s32)f0;
     }
 
-    if (0.0f == pInfo->fPan)
+    if (100.0f == pInfo->fPan)
     {
         uPan = 0xFF;
     }
@@ -737,7 +734,7 @@ unsigned long PlaySFX(const SFXStartInfo& info)
     {
         float f3 = 0.5f;
         float f1 = 127.0f * (f3 * (1.0f + pInfo->fPan));
-        if (f1 < -0.0f)
+        if (f1 < 0.0f)
         {
             f3 = -0.5f;
         }
@@ -751,7 +748,7 @@ unsigned long PlaySFX(const SFXStartInfo& info)
     tempParaInfo.numPara = 0;
     tempParaInfo.paraArray = NULL;
 
-    if (0.0f != pInfo->fVolReverb)
+    if (100.0f != pInfo->fVolReverb)
     {
         numPara = 1;
     }
@@ -773,12 +770,12 @@ unsigned long PlaySFX(const SFXStartInfo& info)
         tempParaInfo.paraArray = pParaArray;
     }
 
-    if (0.0f != pInfo->fVolReverb)
+    if (100.0f != pInfo->fVolReverb)
     {
         float f0;
         float f1v = 127.0f * pInfo->fVolReverb;
         pParaArray[0].ctrl = 0x5B;
-        if (f1v < -0.0f)
+        if (f1v < 0.0f)
         {
             f0 = -0.5f;
         }
@@ -846,7 +843,7 @@ bool UnloadAllSoundGroupsOnStack(AudioFileData& fileData, unsigned long stackEnu
     {
         if (!sndPopGroup())
         {
-            tDebugPrintManager::Print(DC_SOUND, "sndPopGroup failed on stack %d\n", stackEnum);
+            tDebugPrintManager::Print(DC_SOUND, "Could not unload sound group %d because numGroupsOnStack count is incorrect.\n", stackEnum);
             return 0;
         }
         PrintSoundStackInfo();
@@ -930,7 +927,7 @@ bool UnloadAllSoundGroups(AudioFileData& fileData)
             {
                 if (!sndPopGroup())
                 {
-                    tDebugPrintManager::Print(DC_SOUND, "sndPopGroup failed on stack %d\n", stackEnum);
+                    tDebugPrintManager::Print(DC_SOUND, "Could not unload sound group %d because numGroupsOnStack count is incorrect.\n", stackEnum);
                     goto next;
                 }
                 PrintSoundStackInfo();
@@ -980,7 +977,7 @@ bool UnloadSoundGroup(AudioFileData& fileData, unsigned long groupEnum)
 
         if (!(unsigned char)sndPopGroup())
         {
-            tDebugPrintManager::Print(DC_SOUND, "sndPopGroup failed for %s\n", fileData.soundGroups[groupEnum].szGroupName);
+            tDebugPrintManager::Print(DC_SOUND, "Could not unload sound group %s for some unknown reason.\n", fileData.soundGroups[groupEnum].szGroupName);
             return false;
         }
 
@@ -1000,7 +997,7 @@ bool UnloadSoundGroup(AudioFileData& fileData, unsigned long groupEnum)
         return true;
     }
 
-    tDebugPrintManager::Print(DC_SOUND, "Can't unload %s\n", fileData.soundGroups[groupEnum].szGroupName);
+    tDebugPrintManager::Print(DC_SOUND, "Could not unload sound group %s because it isn't on top.\n", fileData.soundGroups[groupEnum].szGroupName);
     return false;
 }
 
@@ -1237,7 +1234,7 @@ bool Initialize(bool bUseDSP)
 {
     SND_HOOKS hooks;
 
-    tDebugPrintManager::Print(DC_SOUND, "Initializing PlatAudio\n");
+    tDebugPrintManager::Print(DC_SOUND, "GameCube Platform Audio Initialized\n");
 
     hooks.malloc = sndHookMalloc;
     hooks.free = sndHookFree;
@@ -1315,7 +1312,7 @@ unsigned char ReadEntireSampleFileIntoMemSync(const char* sampleFile)
     ARAMTransferHelperLoadEntireFile::s_pFile = nlOpen(sampleFile);
     if (ARAMTransferHelperLoadEntireFile::s_pFile == NULL)
     {
-        tDebugPrintManager::Print(DC_SOUND, "ReadEntireSampleFileIntoMem: Could not open file.\n");
+        tDebugPrintManager::Print(DC_SOUND, "nlLoadEntireFileAsync() call inside ReadEntireSampleFileIntoMemSync() failed!\n");
         return 0;
     }
 
@@ -1363,7 +1360,7 @@ unsigned char ReadEntireSampleFileIntoMem(const char* sampleFile)
     ARAMTransferHelperLoadEntireFile::s_pFile = nlOpen(sampleFile);
     if (ARAMTransferHelperLoadEntireFile::s_pFile == NULL)
     {
-        tDebugPrintManager::Print(DC_SOUND, "ReadEntireSampleFileIntoMem: Could not open file.\n");
+        tDebugPrintManager::Print(DC_SOUND, "nlLoadEntireFileAsync() call inside LoadSoundGroup() failed!\n");
         return 0;
     }
 
@@ -1387,6 +1384,138 @@ unsigned char ReadEntireSampleFileIntoMem(const char* sampleFile)
     return 1;
 }
 
+} // namespace PlatAudio
+
+/**
+ * Offset/Address/Size: 0x1C44 | 0x801C6440 | size: 0x54
+ */
+void ARAMTransferHelperLoadEntireFile::LoadEntireFileCallback(nlFile* pFile, void* pBuffer, unsigned int size, unsigned long halfIndex)
+{
+    unsigned int fileSize;
+    if (halfIndex == 0)
+    {
+        gpEntireSampleFileBufferFirstHalf = (void*)((char*)pBuffer - size);
+    }
+    else
+    {
+        gpEntireSampleFileBufferSecondHalf = (void*)((char*)pBuffer - size);
+        ARAMTransferHelperLoadEntireFile::m_uFileSize = nlFileSize(pFile, &fileSize);
+        nlClose(ARAMTransferHelperLoadEntireFile::s_pFile);
+        ARAMTransferHelperLoadEntireFile::s_pFile = NULL;
+    }
+}
+
+/**
+ * Offset/Address/Size: 0x1C98 | 0x801C6494 | size: 0x13C
+ */
+void* ARAMTransferHelperLoadEntireFile::sndPushGroupCallback(unsigned long uOffset, unsigned long uSize)
+{
+    unsigned long uRemSize = uSize;
+    unsigned char* pARAMBlock = ARAMTransferHelperLoadEntireFile::m_pARAMHelper->m_pARAMXferBlockBaseAddress;
+
+    while (uRemSize != 0)
+    {
+        unsigned long uCopySize = uRemSize < 0x20000 ? uRemSize : (unsigned long)0x20000;
+
+        if (uOffset > gEntireSampleFileFirstHalfAllocSize + gEntireSampleFileSecondHalfAllocSize)
+        {
+            nlRead(ARAMTransferHelperLoadEntireFile::s_pFile, pARAMBlock, uCopySize);
+        }
+        else
+        {
+            unsigned long totalBufSize = gEntireSampleFileFirstHalfAllocSize + gEntireSampleFileSecondHalfAllocSize;
+            if (uOffset + uCopySize > totalBufSize)
+            {
+                unsigned long firstCopySize = totalBufSize - uOffset;
+                unsigned char* pSrc = (unsigned char*)gpEntireSampleFileBufferSecondHalf + (uOffset - gEntireSampleFileFirstHalfAllocSize);
+                memcpy(pARAMBlock, pSrc, firstCopySize);
+                nlRead(ARAMTransferHelperLoadEntireFile::s_pFile, pARAMBlock + firstCopySize, uCopySize - firstCopySize);
+            }
+        }
+
+        {
+            unsigned long firstHalfSize = gEntireSampleFileFirstHalfAllocSize;
+            if (uOffset > firstHalfSize)
+            {
+                unsigned char* pSrc2 = (unsigned char*)gpEntireSampleFileBufferSecondHalf + (uOffset - firstHalfSize);
+                memcpy(pARAMBlock, pSrc2, uCopySize);
+            }
+            else if (uOffset + uCopySize > firstHalfSize)
+            {
+                unsigned long firstCopySize2 = firstHalfSize - uOffset;
+                memcpy(pARAMBlock, (unsigned char*)gpEntireSampleFileBufferFirstHalf + uOffset, firstCopySize2);
+                memcpy(pARAMBlock + firstCopySize2, gpEntireSampleFileBufferSecondHalf, uCopySize - firstCopySize2);
+            }
+            else
+            {
+                memcpy(pARAMBlock, (unsigned char*)gpEntireSampleFileBufferFirstHalf + uOffset, uCopySize);
+            }
+        }
+
+        uRemSize -= uCopySize;
+        uOffset += uCopySize;
+        pARAMBlock += uCopySize;
+    }
+
+    return ARAMTransferHelperLoadEntireFile::m_pARAMHelper->m_pARAMXferBlockBaseAddress;
+}
+
+/**
+ * Offset/Address/Size: 0x1DD4 | 0x801C65D0 | size: 0x148
+ */
+void* ARAMTransferHelper::sndPushGroupCallback(unsigned long arg0, unsigned long arg1)
+{
+    unsigned long uSize = arg1;
+    unsigned char* pARAMBlock = ARAMTransferHelper::m_pARAMHelper->m_pARAMXferBlockBaseAddress;
+    unsigned long uOffset = arg0;
+
+    while (uSize != 0)
+    {
+        if (uOffset >= ARAMTransferHelper::m_pARAMHelper->m_uCachedDataOffset && uOffset < ARAMTransferHelper::m_pARAMHelper->m_uCachedDataOffset + 0x20000)
+        {
+            if (!ARAMTransferHelper::m_bFileOpened)
+            {
+                ARAMTransferHelper::m_pFile = nlOpen(ARAMTransferHelper::m_szFileName);
+                ARAMTransferHelper::m_bFileOpened = 1;
+            }
+
+            unsigned long uOffsetInBlock = uOffset - ARAMTransferHelper::m_pARAMHelper->m_uCachedDataOffset;
+            unsigned long uRemainingInCache = 0x20000 - uOffsetInBlock;
+            unsigned long uCopySize = uSize;
+            if (uRemainingInCache <= uSize)
+                uCopySize = uRemainingInCache;
+
+            memcpy(pARAMBlock, ARAMTransferHelper::m_pARAMHelper->m_pDiskCacheBaseAddress + uOffsetInBlock, uCopySize);
+            uSize -= uCopySize;
+            uOffset += uCopySize;
+            pARAMBlock += uCopySize;
+        }
+        else
+        {
+            if (!ARAMTransferHelper::m_bFileOpened)
+            {
+                ARAMTransferHelper::m_pFile = nlOpen(ARAMTransferHelper::m_szFileName);
+                ARAMTransferHelper::m_bFileOpened = 1;
+            }
+
+            unsigned long uSeekPosition = uOffset & ~0x1FFFF;
+            nlSeek(ARAMTransferHelper::m_pFile, uSeekPosition, 0);
+
+            nlFile* pFile = ARAMTransferHelper::m_pFile;
+            unsigned long uFileRemaining = ARAMTransferHelper::m_pARAMHelper->m_uFileSize - uSeekPosition;
+            unsigned char* pDiskCache = ARAMTransferHelper::m_pARAMHelper->m_pDiskCacheBaseAddress;
+            unsigned long uReadSize = uFileRemaining < 0x20000 ? uFileRemaining : (unsigned long)0x20000;
+            nlRead(pFile, pDiskCache, uReadSize);
+            ARAMTransferHelper::m_pARAMHelper->m_uCachedDataOffset = uSeekPosition;
+        }
+    }
+
+    return ARAMTransferHelper::m_pARAMHelper->m_pARAMXferBlockBaseAddress;
+}
+
+namespace PlatAudio
+{
+
 /**
  * Offset/Address/Size: 0x1F1C | 0x801C6718 | size: 0x10C
  */
@@ -1402,7 +1531,7 @@ bool UpdateAuxEffectA(MusyXEffectType type, void* auxEffectSettings)
         result = sndAuxCallbackUpdateSettingsReverbSTD((SND_AUX_REVERBSTD*)auxEffectSettings);
         if (!result)
         {
-            nlPrintf("UpdateAuxEffectA: sndAuxCallbackUpdateSettingsReverbSTD failed.\n");
+            nlPrintf("UpdateAuxEffect: MUSYX_EFFECT_REVERB passed in, sndAuxCallbackUpdateSettingsReverbSTD() return is FALSE.\n");
             return false;
         }
         break;
@@ -1410,7 +1539,7 @@ bool UpdateAuxEffectA(MusyXEffectType type, void* auxEffectSettings)
         result = sndAuxCallbackUpdateSettingsReverbHI((SND_AUX_REVERBHI*)auxEffectSettings);
         if (!result)
         {
-            nlPrintf("UpdateAuxEffectA: sndAuxCallbackUpdateSettingsReverbHI failed.\n");
+            nlPrintf("UpdateAuxEffect: MUSYX_EFFECT_REVERB_HI passed in, sndAuxCallbackUpdateSettingsReverbHI() return is NULL.\n");
             return false;
         }
         break;
@@ -1418,7 +1547,7 @@ bool UpdateAuxEffectA(MusyXEffectType type, void* auxEffectSettings)
         result = sndAuxCallbackUpdateSettingsChorus((SND_AUX_CHORUS*)auxEffectSettings);
         if (!result)
         {
-            nlPrintf("UpdateAuxEffectA: sndAuxCallbackUpdateSettingsChorus failed.\n");
+            nlPrintf("UpdateAuxEffect: MUSYX_EFFECT_CHORUS passed in, sndAuxCallbackUpdateSettingsChorus() return is NULL.\n");
             return false;
         }
         break;
@@ -1426,12 +1555,12 @@ bool UpdateAuxEffectA(MusyXEffectType type, void* auxEffectSettings)
         result = sndAuxCallbackUpdateSettingsDelay((SND_AUX_DELAY*)auxEffectSettings);
         if (!result)
         {
-            nlPrintf("UpdateAuxEffectA: sndAuxCallbackUpdateSettingsDelay failed.\n");
+            nlPrintf("UpdateAuxEffect: MUSYX_EFFECT_DELAY passed in, sndAuxCallbackUpdateSettingsDelay() return is NULL.\n");
             return false;
         }
         break;
     default:
-        nlPrintf("UpdateAuxEffectA: Unrecognized effect type.\n");
+        nlPrintf("UpdateAuxEffect: Unaccounted-for case.\n");
         return false;
     }
 
@@ -1576,7 +1705,7 @@ bool ShutdownAuxEffectA()
 
         if (effect == 0)
         {
-            nlPrintf("ShutdownAuxEffectA: No effect to shut down\n");
+            nlPrintf("PlatAudio::ShutdownAuxEffect() trying to shutdown with MUSYX_EFFECT_NONE.\n");
             return true;
         }
 
@@ -1591,7 +1720,7 @@ bool ShutdownAuxEffectA()
         case MUSYX_EFFECT_REVERB_HI:
             if (!sndAuxCallbackShutdownReverbHI((SND_AUX_REVERBHI*)settings))
             {
-                nlPrintf("ShutdownAuxEffectA: Reverb HI shut down\n");
+                nlPrintf("sndAuxCallbackShutdownReverbHI() returned false.\n");
                 return false;
             }
             break;
@@ -1614,7 +1743,7 @@ bool ShutdownAuxEffectA()
 
         if (effect == 0)
         {
-            nlPrintf("ShutdownAuxEffectA: No effect to shut down\n");
+            nlPrintf("PlatAudio::ShutdownAuxEffect() trying to shutdown with MUSYX_EFFECT_NONE.\n");
             return true;
         }
 
@@ -1629,7 +1758,7 @@ bool ShutdownAuxEffectA()
         case MUSYX_EFFECT_REVERB_HI:
             if (!sndAuxCallbackShutdownReverbHI((SND_AUX_REVERBHI*)settings))
             {
-                nlPrintf("ShutdownAuxEffectA: Reverb HI shut down\n");
+                nlPrintf("sndAuxCallbackShutdownReverbHI() returned false.\n");
                 return false;
             }
             break;
@@ -1695,133 +1824,6 @@ void SetOutputMode(MusyXOutputType outputType)
 } // namespace PlatAudio
 
 /**
- * Offset/Address/Size: 0x1C44 | 0x801C6440 | size: 0x54
- */
-void ARAMTransferHelperLoadEntireFile::LoadEntireFileCallback(nlFile* pFile, void* pBuffer, unsigned int size, unsigned long halfIndex)
-{
-    unsigned int fileSize;
-    if (halfIndex == 0)
-    {
-        gpEntireSampleFileBufferFirstHalf = (void*)((char*)pBuffer - size);
-    }
-    else
-    {
-        gpEntireSampleFileBufferSecondHalf = (void*)((char*)pBuffer - size);
-        ARAMTransferHelperLoadEntireFile::m_uFileSize = nlFileSize(pFile, &fileSize);
-        nlClose(ARAMTransferHelperLoadEntireFile::s_pFile);
-        ARAMTransferHelperLoadEntireFile::s_pFile = NULL;
-    }
-}
-
-/**
- * Offset/Address/Size: 0x1C98 | 0x801C6494 | size: 0x13C
- */
-void* ARAMTransferHelperLoadEntireFile::sndPushGroupCallback(unsigned long uOffset, unsigned long uSize)
-{
-    unsigned long uRemSize = uSize;
-    unsigned char* pARAMBlock = ARAMTransferHelperLoadEntireFile::m_pARAMHelper->m_pARAMXferBlockBaseAddress;
-
-    while (uRemSize != 0)
-    {
-        unsigned long uCopySize = uRemSize < 0x20000 ? uRemSize : (unsigned long)0x20000;
-
-        if (uOffset > gEntireSampleFileFirstHalfAllocSize + gEntireSampleFileSecondHalfAllocSize)
-        {
-            nlRead(ARAMTransferHelperLoadEntireFile::s_pFile, pARAMBlock, uCopySize);
-        }
-        else
-        {
-            unsigned long totalBufSize = gEntireSampleFileFirstHalfAllocSize + gEntireSampleFileSecondHalfAllocSize;
-            if (uOffset + uCopySize > totalBufSize)
-            {
-                unsigned long firstCopySize = totalBufSize - uOffset;
-                unsigned char* pSrc = (unsigned char*)gpEntireSampleFileBufferSecondHalf + (uOffset - gEntireSampleFileFirstHalfAllocSize);
-                memcpy(pARAMBlock, pSrc, firstCopySize);
-                nlRead(ARAMTransferHelperLoadEntireFile::s_pFile, pARAMBlock + firstCopySize, uCopySize - firstCopySize);
-            }
-        }
-
-        {
-            unsigned long firstHalfSize = gEntireSampleFileFirstHalfAllocSize;
-            if (uOffset > firstHalfSize)
-            {
-                unsigned char* pSrc2 = (unsigned char*)gpEntireSampleFileBufferSecondHalf + (uOffset - firstHalfSize);
-                memcpy(pARAMBlock, pSrc2, uCopySize);
-            }
-            else if (uOffset + uCopySize > firstHalfSize)
-            {
-                unsigned long firstCopySize2 = firstHalfSize - uOffset;
-                memcpy(pARAMBlock, (unsigned char*)gpEntireSampleFileBufferFirstHalf + uOffset, firstCopySize2);
-                memcpy(pARAMBlock + firstCopySize2, gpEntireSampleFileBufferSecondHalf, uCopySize - firstCopySize2);
-            }
-            else
-            {
-                memcpy(pARAMBlock, (unsigned char*)gpEntireSampleFileBufferFirstHalf + uOffset, uCopySize);
-            }
-        }
-
-        uRemSize -= uCopySize;
-        uOffset += uCopySize;
-        pARAMBlock += uCopySize;
-    }
-
-    return ARAMTransferHelperLoadEntireFile::m_pARAMHelper->m_pARAMXferBlockBaseAddress;
-}
-
-/**
- * Offset/Address/Size: 0x1DD4 | 0x801C65D0 | size: 0x148
- */
-void* ARAMTransferHelper::sndPushGroupCallback(unsigned long arg0, unsigned long arg1)
-{
-    unsigned long uSize = arg1;
-    unsigned char* pARAMBlock = ARAMTransferHelper::m_pARAMHelper->m_pARAMXferBlockBaseAddress;
-    unsigned long uOffset = arg0;
-
-    while (uSize != 0)
-    {
-        if (uOffset >= ARAMTransferHelper::m_pARAMHelper->m_uCachedDataOffset && uOffset < ARAMTransferHelper::m_pARAMHelper->m_uCachedDataOffset + 0x20000)
-        {
-            if (!ARAMTransferHelper::m_bFileOpened)
-            {
-                ARAMTransferHelper::m_pFile = nlOpen(ARAMTransferHelper::m_szFileName);
-                ARAMTransferHelper::m_bFileOpened = 1;
-            }
-
-            unsigned long uOffsetInBlock = uOffset - ARAMTransferHelper::m_pARAMHelper->m_uCachedDataOffset;
-            unsigned long uRemainingInCache = 0x20000 - uOffsetInBlock;
-            unsigned long uCopySize = uSize;
-            if (uRemainingInCache <= uSize)
-                uCopySize = uRemainingInCache;
-
-            memcpy(pARAMBlock, ARAMTransferHelper::m_pARAMHelper->m_pDiskCacheBaseAddress + uOffsetInBlock, uCopySize);
-            uSize -= uCopySize;
-            uOffset += uCopySize;
-            pARAMBlock += uCopySize;
-        }
-        else
-        {
-            if (!ARAMTransferHelper::m_bFileOpened)
-            {
-                ARAMTransferHelper::m_pFile = nlOpen(ARAMTransferHelper::m_szFileName);
-                ARAMTransferHelper::m_bFileOpened = 1;
-            }
-
-            unsigned long uSeekPosition = uOffset & ~0x1FFFF;
-            nlSeek(ARAMTransferHelper::m_pFile, uSeekPosition, 0);
-
-            nlFile* pFile = ARAMTransferHelper::m_pFile;
-            unsigned long uFileRemaining = ARAMTransferHelper::m_pARAMHelper->m_uFileSize - uSeekPosition;
-            unsigned char* pDiskCache = ARAMTransferHelper::m_pARAMHelper->m_pDiskCacheBaseAddress;
-            unsigned long uReadSize = uFileRemaining < 0x20000 ? uFileRemaining : (unsigned long)0x20000;
-            nlRead(pFile, pDiskCache, uReadSize);
-            ARAMTransferHelper::m_pARAMHelper->m_uCachedDataOffset = uSeekPosition;
-        }
-    }
-
-    return ARAMTransferHelper::m_pARAMHelper->m_pARAMXferBlockBaseAddress;
-}
-
-/**
  * Offset/Address/Size: 0x2558 | 0x801C6D54 | size: 0x278
  * TODO: 99.37% match - remaining i-diffs are local static/string pool symbol IDs in this partially decompiled TU.
  */
@@ -1834,7 +1836,7 @@ void PrintSoundStackInfo()
     for (int i = 0; i < 2; i++)
     {
         u32 available = sndStackGetAvailableSampleMemory(stack_list[i].id);
-        nlPrintf("Stack %d available sample memory %d\n", stack_list[i].id, available);
+        nlPrintf("Available sample memory in sound stack ID %d: %d\n", stack_list[i].id, available);
 
         if (bRunOnce)
         {
@@ -1842,11 +1844,11 @@ void PrintSoundStackInfo()
             u32 end;
             if ((unsigned char)sndStackGetARAMAddressRange(stack_list[i].id, &start, &end))
             {
-                tDebugPrintManager::Print(DC_SOUND, "Stack %d ARAM range start 0x%x end 0x%x\n", stack_list[i].id, start, end);
+                tDebugPrintManager::Print(DC_SOUND, "ARAM address range for sound stack ID %d: %d (start) to %d (end)\n", stack_list[i].id, start, end);
             }
             else
             {
-                tDebugPrintManager::Print(DC_SOUND, "Stack %d ARAM range not available\n", stack_list[i].id);
+                tDebugPrintManager::Print(DC_SOUND, "Could not get ARAM address range for stack ID %d!\n", stack_list[i].id);
             }
         }
 
@@ -1854,46 +1856,46 @@ void PrintSoundStackInfo()
         {
             if (available < prevAvailPrimaryStackSampleMem)
             {
-                tDebugPrintManager::Print(DC_SOUND, "Primary stack dropped by %d\n", prevAvailPrimaryStackSampleMem - available);
+                tDebugPrintManager::Print(DC_SOUND, "Primary sound stack ARAM used: %d\n", prevAvailPrimaryStackSampleMem - available);
                 prevAvailPrimaryStackSampleMem = available;
             }
             else if (available > prevAvailPrimaryStackSampleMem)
             {
-                tDebugPrintManager::Print(DC_SOUND, "Primary stack increased by %d\n", available - prevAvailPrimaryStackSampleMem);
+                tDebugPrintManager::Print(DC_SOUND, "Primary sound stack ARAM freed: %d\n", available - prevAvailPrimaryStackSampleMem);
                 prevAvailPrimaryStackSampleMem = available;
             }
             else if (available == prevAvailPrimaryStackSampleMem)
             {
-                tDebugPrintManager::Print(DC_SOUND, "Primary stack unchanged\n");
+                tDebugPrintManager::Print(DC_SOUND, "Primary sound stack ARAM used/freed: 0\n");
             }
 
             if (available == PlatAudio::gPrimaryStackSize - 0x500)
             {
                 prevAvailPrimaryStackSampleMem = PlatAudio::gPrimaryStackSize - 0x500;
-                tDebugPrintManager::Print(DC_SOUND, "Primary stack is fully available\n");
+                tDebugPrintManager::Print(DC_SOUND, "Primary sound stack is now empty.\n");
             }
         }
         else
         {
             if (available < prevAvailSecondaryStackSampleMem)
             {
-                tDebugPrintManager::Print(DC_SOUND, "Secondary stack dropped by %d\n", prevAvailSecondaryStackSampleMem - available);
+                tDebugPrintManager::Print(DC_SOUND, "Secondary sound stack ARAM used: %d\n", prevAvailSecondaryStackSampleMem - available);
                 prevAvailSecondaryStackSampleMem = available;
             }
             else if (available > prevAvailSecondaryStackSampleMem)
             {
-                tDebugPrintManager::Print(DC_SOUND, "Secondary stack increased by %d\n", available - prevAvailSecondaryStackSampleMem);
+                tDebugPrintManager::Print(DC_SOUND, "Secondary sound stack ARAM freed: %d\n", available - prevAvailSecondaryStackSampleMem);
                 prevAvailSecondaryStackSampleMem = available;
             }
             else if (available == prevAvailSecondaryStackSampleMem)
             {
-                tDebugPrintManager::Print(DC_SOUND, "Secondary stack unchanged\n");
+                tDebugPrintManager::Print(DC_SOUND, "Secondary sound stack ARAM used/freed: 0\n");
             }
 
             if (available == 0x2B4000)
             {
                 prevAvailSecondaryStackSampleMem = 0x2B4000;
-                tDebugPrintManager::Print(DC_SOUND, "Secondary stack is fully available\n");
+                tDebugPrintManager::Print(DC_SOUND, "Secondary sound stack is now empty.\n");
             }
         }
     }
@@ -1909,7 +1911,7 @@ void PrintAvailableARAMMemory()
     for (int i = 0; i < 2; i++)
     {
         u32 available = sndStackGetAvailableSampleMemory(stack_list[i].id);
-        tDebugPrintManager::Print(DC_MEMORY, "Available ARAM: %d\n", available);
+        tDebugPrintManager::Print(DC_MEMORY, "Free Aram: %u\n", available);
     }
 }
 

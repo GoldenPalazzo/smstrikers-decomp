@@ -7,8 +7,6 @@
 
 static int level = 0;
 
-// AVLTreeBase<unsigned long, nlVector4, NewAdapter<AVLTreeEntry<unsigned long, nlVector4> >, DefaultKeyCompare<unsigned long> >* constants[16] = { NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL };
-// nlAVLTree<unsigned long, nlVector4, NewAdapter<AVLTreeEntry<unsigned long, nlVector4> >, DefaultKeyCompare<unsigned long> >* constants[16] = { NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL };
 static nlAVLTree<unsigned long, nlVector4, DefaultKeyCompare<unsigned long> >* constants[16] = { NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL };
 
 static nlVector4 vZero = { 0.0f, 0.0f, 0.0f, 0.0f };
@@ -26,99 +24,6 @@ template <>
 void GLCBase::PostorderTraversal(GLCEntry*, void (GLCBase::*)(GLCEntry*));
 template <>
 GLCEntry* GLCBase::CastUp(AVLTreeNode*) const;
-template <>
-int GLCBase::CompareNodes(AVLTreeNode*, AVLTreeNode*);
-template <>
-int GLCBase::CompareKey(void*, AVLTreeNode*);
-template <>
-AVLTreeNode* GLCBase::AllocateEntry(void*, void*);
-
-template <>
-inline void GLCBase::DeleteEntry(GLCEntry* entry)
-{
-    delete entry;
-}
-
-template <>
-inline void GLCBase::Clear()
-{
-    DestroyTree(&GLCBase::DeleteEntry);
-    m_NumElements = 0;
-}
-
-template <>
-inline void GLCBase::DestroyTree(void (GLCBase::*deleteFunc)(GLCEntry*))
-{
-    if (m_Root != NULL)
-    {
-        PostorderTraversal(m_Root, deleteFunc);
-        m_Root = NULL;
-        m_NumElements = 0;
-    }
-}
-
-template <>
-inline void GLCBase::PostorderTraversal(GLCEntry* curr, void (GLCBase::*cb)(GLCEntry*))
-{
-    if (curr->node.left != NULL)
-    {
-        PostorderTraversal(CastUp(curr->node.left), cb);
-    }
-    if (curr->node.right != NULL)
-    {
-        PostorderTraversal(CastUp(curr->node.right), cb);
-    }
-    (this->*cb)(curr);
-}
-
-template <>
-inline GLCEntry* GLCBase::CastUp(AVLTreeNode* node) const
-{
-    return (GLCEntry*)node;
-}
-
-template <>
-inline int GLCBase::CompareNodes(AVLTreeNode* a, AVLTreeNode* b)
-{
-    const unsigned long& keyA = ((GLCEntry*)a)->key;
-    const unsigned long& keyB = ((GLCEntry*)b)->key;
-    int result;
-    if (keyA == keyB)
-        result = 0;
-    else if (keyA < keyB)
-        result = -1;
-    else
-        result = 1;
-    return result;
-}
-
-template <>
-inline int GLCBase::CompareKey(void* key, AVLTreeNode* node)
-{
-    int result;
-    unsigned long k = *(unsigned long*)key;
-    GLCEntry* entry = (GLCEntry*)node;
-    if (k == entry->key)
-        result = 0;
-    else if (k < entry->key)
-        result = -1;
-    else
-        result = 1;
-    return result;
-}
-
-template <>
-inline AVLTreeNode* GLCBase::AllocateEntry(void* key, void* value)
-{
-    GLCEntry* newNode = NULL;
-    newNode = (GLCEntry*)nlMalloc(sizeof(GLCEntry), 8, false);
-    newNode->node.left = NULL;
-    newNode->node.right = NULL;
-    newNode->node.heavy = 0;
-    newNode->key = *(unsigned long*)key;
-    newNode->value = *(nlVector4*)value;
-    return (AVLTreeNode*)newNode;
-}
 
 static inline bool glConstantFindInTree(nlAVLTree<unsigned long, nlVector4, DefaultKeyCompare<unsigned long> >* tree, unsigned long key, nlVector4*& foundValue)
 {
@@ -289,10 +194,6 @@ void gl_ConstantMarkerAdvance()
  */
 void gl_ConstantStartup()
 {
-    // for (int i = 0; i < 16; i++)
-    // {
-    //     constants[i] = new (nlMalloc(0x14, 8, 0)) AVLTreeBase<unsigned long, nlVector4, NewAdapter<AVLTreeEntry<unsigned long, nlVector4> >, DefaultKeyCompare<unsigned long> >();
-    // }
     for (int i = 0; i < 16; i++)
     {
         constants[i] = new (nlMalloc(0x14, 8, 0)) nlAVLTree<unsigned long, nlVector4, DefaultKeyCompare<unsigned long> >();
@@ -300,63 +201,46 @@ void gl_ConstantStartup()
     level = 0;
 }
 
-// /*
-// // Fake template specialization implementations - these were never in the original code
-// // They are decompiler artifacts from template instantiation
+template <>
+void GLCBase::DeleteEntry(GLCEntry* entry)
+{
+    delete entry;
+}
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x801DF68C | size: 0x24
-//  */
-// void AVLTreeBase<unsigned long, nlVector4, NewAdapter<AVLTreeEntry<unsigned long, nlVector4>>, DefaultKeyCompare<unsigned long>>::DeleteEntry(AVLTreeEntry<unsigned long, nlVector4>*)
-// {
-// }
+template <>
+void GLCBase::Clear()
+{
+    DestroyTree(&GLCBase::DeleteEntry);
+    m_NumElements = 0;
+}
 
-// /**
-//  * Offset/Address/Size: 0x24 | 0x801DF6B0 | size: 0x58
-//  */
-// void AVLTreeBase<unsigned long, nlVector4, NewAdapter<AVLTreeEntry<unsigned long, nlVector4>>, DefaultKeyCompare<unsigned long>>::Clear()
-// {
-// }
+template <>
+void GLCBase::DestroyTree(void (GLCBase::*deleteFunc)(GLCEntry*))
+{
+    if (m_Root != NULL)
+    {
+        PostorderTraversal(m_Root, deleteFunc);
+        m_Root = NULL;
+        m_NumElements = 0;
+    }
+}
 
-// /**
-//  * Offset/Address/Size: 0x7C | 0x801DF708 | size: 0x64
-//  */
-// void AVLTreeBase<unsigned long, nlVector4, NewAdapter<AVLTreeEntry<unsigned long, nlVector4>>, DefaultKeyCompare<unsigned long>>::DestroyTree(void (AVLTreeBase<unsigned long, nlVector4, NewAdapter<AVLTreeEntry<unsigned long, nlVector4>>, DefaultKeyCompare<unsigned long>>::*)(AVLTreeEntry<unsigned long, nlVector4>*))
-// {
-// }
+template <>
+void GLCBase::PostorderTraversal(GLCEntry* curr, void (GLCBase::*cb)(GLCEntry*))
+{
+    if (curr->node.left != NULL)
+    {
+        PostorderTraversal(CastUp(curr->node.left), cb);
+    }
+    if (curr->node.right != NULL)
+    {
+        PostorderTraversal(CastUp(curr->node.right), cb);
+    }
+    (this->*cb)(curr);
+}
 
-// /**
-//  * Offset/Address/Size: 0xE0 | 0x801DF76C | size: 0x758
-//  */
-// void AVLTreeBase<unsigned long, nlVector4, NewAdapter<AVLTreeEntry<unsigned long, nlVector4>>, DefaultKeyCompare<unsigned long>>::PostorderTraversal(AVLTreeEntry<unsigned long, nlVector4>*, void (AVLTreeBase<unsigned long, nlVector4, NewAdapter<AVLTreeEntry<unsigned long, nlVector4>>, DefaultKeyCompare<unsigned long>>::*)(AVLTreeEntry<unsigned long, nlVector4>*))
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x838 | 0x801DFEC4 | size: 0x8
-//  */
-// void AVLTreeBase<unsigned long, nlVector4, NewAdapter<AVLTreeEntry<unsigned long, nlVector4>>, DefaultKeyCompare<unsigned long>>::CastUp(AVLTreeNode*) const
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x840 | 0x801DFECC | size: 0x2C
-//  */
-// void AVLTreeBase<unsigned long, nlVector4, NewAdapter<AVLTreeEntry<unsigned long, nlVector4>>, DefaultKeyCompare<unsigned long>>::CompareNodes(AVLTreeNode*, AVLTreeNode*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x86C | 0x801DFEF8 | size: 0x2C
-//  */
-// void AVLTreeBase<unsigned long, nlVector4, NewAdapter<AVLTreeEntry<unsigned long, nlVector4>>, DefaultKeyCompare<unsigned long>>::CompareKey(void*, AVLTreeNode*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x898 | 0x801DFF24 | size: 0x7C
-//  */
-// void AVLTreeBase<unsigned long, nlVector4, NewAdapter<AVLTreeEntry<unsigned long, nlVector4>>, DefaultKeyCompare<unsigned long>>::AllocateEntry(void*, void*)
-// {
-// }
-// */
+template <>
+GLCEntry* GLCBase::CastUp(AVLTreeNode* node) const
+{
+    return (GLCEntry*)node;
+}

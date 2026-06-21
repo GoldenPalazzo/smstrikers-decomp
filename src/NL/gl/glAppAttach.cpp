@@ -362,10 +362,3 @@ char* gld_ViewName(int view)
     }
     return (char*)view_names[view];
 }
-
-/**
- * Offset/Address/Size: 0x708 | 0x80192050 | size: 0xA0
-//  */
-// void 0x8028D344..0x8028D348 | size: 0x4
-// {
-// }
