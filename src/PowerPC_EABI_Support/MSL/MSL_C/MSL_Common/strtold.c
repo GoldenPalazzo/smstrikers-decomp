@@ -617,7 +617,7 @@ long double __strtold(int max_width, int (*ReadProc)(void*, int, int), void* Rea
         {
             if (exp_negative)
             {
-                return 0.0;
+                return 0.0L;
             }
             else
             {
@@ -629,7 +629,7 @@ long double __strtold(int max_width, int (*ReadProc)(void*, int, int), void* Rea
 
         result = __dec2num(&d);
 
-        if (result != 0.0 && result < LDBL_MIN)
+        if (result != 0.0L && result < LDBL_MIN)
         {
             *overflow = 1;
         }
@@ -668,10 +668,10 @@ long double __strtold(int max_width, int (*ReadProc)(void*, int, int), void* Rea
             *(short*)(&result) |= ((exponent + 1023) << 4);
 
             *chars_scanned = spaces + sign_detected + NibbleIndex + 1 + exp_digits;
-            if (result != 0.0 && result < LDBL_MIN)
+            if (result != 0.0L && result < LDBL_MIN)
             {
                 *overflow = 1;
-                result = 0.0;
+                result = 0.0L;
             }
             else if (result > LDBL_MAX)
             {
@@ -685,7 +685,7 @@ long double __strtold(int max_width, int (*ReadProc)(void*, int, int), void* Rea
         }
         else
         {
-            result = 0.0;
+            result = 0.0L;
         }
         return result;
     }
@@ -707,7 +707,7 @@ inline double strtod(const char* str, char** end)
 
     abs_value = fabs(value);
 
-    if (overflow || (value != 0.0 && (abs_value < DBL_MIN || abs_value > DBL_MAX)))
+    if (overflow || (value != 0.0L && (abs_value < DBL_MIN || abs_value > DBL_MAX)))
         errno = ERANGE;
 
     return value;
