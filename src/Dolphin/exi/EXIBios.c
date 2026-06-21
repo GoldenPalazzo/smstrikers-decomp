@@ -967,16 +967,6 @@ char* EXIGetTypeString(u32 type)
         return "Memory Card 2043";
     case EXI_USB_ADAPTER:
         return "USB Adapter";
-    case EXI_NPDP_GDEV:
-        return "GDEV";
-    case EXI_MODEM:
-        return "Modem";
-    case EXI_MARLIN:
-        return "Marlin";
-    case EXI_AD16:
-        return "AD16";
-    case EXI_RS232C:
-        return "RS232C";
     case 0x80000020:
     case 0x80000080:
     case 0x80000040:
@@ -991,13 +981,11 @@ char* EXIGetTypeString(u32 type)
     case EXI_ETHER:
     case 0x4220000:
         return "Broadband Adapter";
-    case EXI_MIC:
-        return "Mic";
     case EXI_STREAM_HANGER:
         return "Stream Hanger";
     case EXI_IS_VIEWER:
         return "IS-DOL-VIEWER";
     default:
-        return "Unknown";
+        return NULL;
     }
 }

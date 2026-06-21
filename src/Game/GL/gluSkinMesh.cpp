@@ -13,6 +13,19 @@
 
 #define qr0 0
 
+class TempMatrixCopier
+{
+public:
+    void CopyMatrix(const unsigned long& boneId, unsigned long* outValue)
+    {
+        SkinMatrix& matrix = (SkinMatrix&)m_Mesh->GetPoseMatrix(boneId);
+        matrix.Get(m_TempMatrices[*outValue]);
+    }
+
+    /* 0x00 */ nlMatrix4* m_TempMatrices;
+    /* 0x04 */ ShaderSkinMesh* m_Mesh;
+}; // total size: 0x8
+
 /**
  * Offset/Address/Size: 0x20 | 0x801B64A8 | size: 0x18
  */
@@ -56,14 +69,6 @@ void ShaderSkinMesh::StitchModel()
     }
 }
 
-/**
- * Offset/Address/Size: 0x4F0 | 0x801B6034 | size: 0x60
- */
-void TempMatrixCopier::CopyMatrix(const unsigned long& boneId, unsigned long* outValue)
-{
-    SkinMatrix& matrix = (SkinMatrix&)m_Mesh->GetPoseMatrix(boneId);
-    matrix.Get(m_TempMatrices[*outValue]);
-}
 
 /**
  * Offset/Address/Size: 0x0 | 0x801B5B44 | size: 0x4F0

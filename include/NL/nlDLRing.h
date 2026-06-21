@@ -128,16 +128,6 @@ bool nlDLRingIsEnd(T* head, T* current)
 }
 
 template <typename T>
-bool nlRingIsEnd(T* head, T* element)
-{
-    if (head == NULL)
-    {
-        return true;
-    }
-    return head == element;
-}
-
-template <typename T>
 u32 nlRingCountElements(T* head)
 {
     T* current;
@@ -314,6 +304,16 @@ T* nlRingGetStart(T* head)
         return NULL;
     }
     return head->m_next;
+}
+
+template <typename T>
+bool nlRingIsEnd(T* head, T* element)
+{
+    if (head == NULL)
+    {
+        return true;
+    }
+    return head == element;
 }
 
 template <typename T, typename CallbackType>

@@ -147,11 +147,11 @@ long double __strtold(int max_width, int (*ReadProc)(void*, int, int), void* Rea
             {
                 if (sig_negative)
                 {
-                    result = -HUGE_VALF;
+                    result = -INFINITY;
                 }
                 else
                 {
-                    result = HUGE_VALF;
+                    result = INFINITY;
                 }
 
                 *chars_scanned = spaces + i + sign_detected;
@@ -169,7 +169,7 @@ long double __strtold(int max_width, int (*ReadProc)(void*, int, int), void* Rea
         {
             int i = 1, j = 0;
             char model[] = "NAN(";
-            char nan_arg[32] = "";
+            char nan_arg[32];
             while ((i < 4) && (toupper(c) == model[i]))
             {
                 i++;

@@ -508,14 +508,16 @@ unsigned char nlFont::Load(const char* szFontName, char* pFontDescData, unsigned
 
             case 'G':
             {
+                int nChar;
                 if (pToken[1] != ' ')
                 {
-                    Character = (unsigned short)atoi(pToken);
+                    nChar = atoi(pToken);
                 }
                 else
                 {
-                    Character = (unsigned short)(signed char)pToken[0];
+                    nChar = (signed char)pToken[0];
                 }
+                Character = (unsigned short)nChar;
 
                 if (Character < 0x7F)
                 {
@@ -575,22 +577,27 @@ unsigned char nlFont::Load(const char* szFontName, char* pFontDescData, unsigned
                 }
 
                 pInfo->Page = CurrentPage;
-                pInfo->uv.f.x = (float)CurrentTexelX * m_InvTexSize;
-                pInfo->uv.f.y = (float)CurrentTexelY * m_InvTexSize;
+                {
+                    float fInvTexSize = m_InvTexSize;
+                    pInfo->uv.f.x = (float)CurrentTexelX * fInvTexSize;
+                    pInfo->uv.f.y = (float)CurrentTexelY * fInvTexSize;
+                }
                 CurrentTexelX += pInfo->RenderWidth;
                 break;
             }
 
             case 'K':
             {
+                int nBase;
                 if (pToken[1] != ' ')
                 {
-                    Base = (unsigned short)atoi(pToken);
+                    nBase = atoi(pToken);
                 }
                 else
                 {
-                    Base = (unsigned short)(signed char)pToken[0];
+                    nBase = (signed char)pToken[0];
                 }
+                Base = (unsigned short)nBase;
 
                 if (Base > 0x7F)
                 {
@@ -609,13 +616,17 @@ unsigned char nlFont::Load(const char* szFontName, char* pFontDescData, unsigned
                     ListEntry<nlFont::KernPair>* pEntry = NULL;
 
                     kp.s.A = Base;
-                    if (pToken[1] != ' ')
                     {
-                        kp.s.B = (unsigned short)atoi(pToken);
-                    }
-                    else
-                    {
-                        kp.s.B = (unsigned short)(signed char)pToken[0];
+                        int nB;
+                        if (pToken[1] != ' ')
+                        {
+                            nB = atoi(pToken);
+                        }
+                        else
+                        {
+                            nB = (signed char)pToken[0];
+                        }
+                        kp.s.B = (unsigned short)nB;
                     }
 
                     pToken = nlStrChr(pToken, ' ') + 1;

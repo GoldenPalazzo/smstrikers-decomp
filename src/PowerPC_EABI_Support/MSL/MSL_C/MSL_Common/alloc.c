@@ -141,6 +141,26 @@ static const u32 fix_pool_sizes[] = { 4, 12, 20, 36, 52, 68 };
 #define fix_var_flag    0x01
 #define this_alloc_flag 0x02
 
+static inline void FixBlock_fill_subblocks(FixBlock* b, char* p, u32 msize, u32 index)
+{
+    u32 sub_size = fix_pool_sizes[index] + 4;
+    u32 num_subblocks = (msize - 0x14) / sub_size;
+    u32 k;
+    for (k = 0; k < num_subblocks - 1; ++k)
+    {
+        char* np;
+        FixSubBlock* sb;
+
+        sb = (FixSubBlock*)p;
+        np = p + sub_size;
+        sb->block_ = b;
+        sb->next_ = (FixSubBlock*)np;
+        p = np;
+    }
+    ((FixSubBlock*)p)->block_ = b;
+    ((FixSubBlock*)p)->next_ = NULL;
+}
+
 static void Block_construct(Block* ths, u32 size)
 {
     SubBlock* sb = (SubBlock*)((char*)ths + sizeof(Block));
@@ -623,7 +643,10 @@ static __mem_pool* get_malloc_pool(void)
 /**
  * @note Address: N/A
  * @note Size: 0x2D0
- * TODO: 99.53% match - remaining r5/r9 swap between fixed-list head pointer and subblock loop counter.
+ * TODO: 99.61% match. Extracting the subblock fill into FixBlock_fill_subblocks (computing
+ * sub_size from the index) fixed the head/k/sub_size coloring. Remaining 14 diffs are a single
+ * p<->tail volatile swap (cursor p wants r10, tail wants r8); proven irreducible to source form
+ * across two parallel compile-test searches + ~40 manual variants (MWCC 2.5 coloring tiebreak).
  */
 void* allocate_from_fixed_pools(__mem_pool_obj* pool_obj, u32 size)
 {
@@ -645,12 +668,9 @@ void* allocate_from_fixed_pools(__mem_pool_obj* pool_obj, u32 size)
         void* block;
         u32 max_free_size;
         u32 msize;
-        u32 num_subblocks;
-        u32 sub_size;
         FixBlock* b;
         FixBlock* head;
         FixBlock* tail;
-        u32 k;
         char* p;
 
         if (n > 0x100)
@@ -695,11 +715,9 @@ void* allocate_from_fixed_pools(__mem_pool_obj* pool_obj, u32 size)
             fs->tail_ = (FixBlock*)block;
         }
 
-        sub_size = pool_sizes[i] + 4;
         b = (FixBlock*)block;
         head = fs->head_;
         tail = fs->tail_;
-        num_subblocks = (msize - 0x14) / sub_size;
         p = (char*)b + 0x14;
 
         b->prev_ = tail;
@@ -708,20 +726,8 @@ void* allocate_from_fixed_pools(__mem_pool_obj* pool_obj, u32 size)
         head->prev_ = b;
         b->client_size_ = pool_sizes[i];
 
-        for (k = 0; k < num_subblocks - 1; ++k)
-        {
-            char* np;
-            FixSubBlock* sb;
+        FixBlock_fill_subblocks(b, p, msize, i);
 
-            sb = (FixSubBlock*)p;
-            np = p + sub_size;
-            sb->block_ = b;
-            sb->next_ = (FixSubBlock*)np;
-            p = np;
-        }
-
-        ((FixSubBlock*)p)->block_ = b;
-        ((FixSubBlock*)p)->next_ = NULL;
         b->start_ = (FixSubBlock*)((char*)block + 0x14);
         b->n_allocated_ = 0;
         fs->head_ = b;

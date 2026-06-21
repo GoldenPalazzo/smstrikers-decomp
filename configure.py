@@ -700,7 +700,7 @@ config.libs = [
             Object(Matching, "PowerPC_EABI_Support/Runtime/ptmf.c", extra_cflags=["-inline auto"]),
             Object(Matching, "PowerPC_EABI_Support/Runtime/runtime.c", extra_cflags=["-inline auto"]),
             Object(Matching, "PowerPC_EABI_Support/Runtime/Gecko_ExceptionPPC.cpp", extra_cflags=["-inline auto"]),
-            Object(NonMatching, "PowerPC_EABI_Support/Runtime/NMWException.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(Matching, "PowerPC_EABI_Support/Runtime/NMWException.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "PowerPC_EABI_Support/Runtime/GCN_mem_alloc.c", extra_cflags=["-inline auto"]),
         ],
     ),
@@ -720,28 +720,28 @@ config.libs = [
             Object(Matching, "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/direct_io.c", extra_cflags=["-inline auto"]),
             Object(Matching, "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/mbstring.c", extra_cflags=["-inline auto", "-inline noauto"]),
             Object(Matching, "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/mem.c", extra_cflags=["-inline auto"]),
-            Object(NonMatching, "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/mem_funcs.c", extra_cflags=["-inline auto"]),
+            Object(Matching, "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/mem_funcs.c", extra_cflags=["-inline auto"]),
             Object(Matching, "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/misc_io.c", extra_cflags=["-inline auto"]),
             Object(Matching, "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/printf.c", extra_cflags=["-inline auto"]),
             Object(Matching, "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/scanf.c", extra_cflags=["-inline auto"]),
             Object(Matching, "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/string.c", extra_cflags=["-inline auto"]),
             Object(NonMatching, "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/strtold.c", extra_cflags=["-inline auto"]),
-            Object(NonMatching, "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/strtoul.c", extra_cflags=["-inline auto"]),
+            Object(Matching, "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/strtoul.c", extra_cflags=["-inline auto"]),
             Object(Matching, "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/char_io.c", extra_cflags=["-inline auto"]),
             Object(Matching, "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/wchar_io.c", extra_cflags=["-inline auto"]),
             Object(Matching, "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/float.c", extra_cflags=["-inline auto"]),
             Object(Matching, "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/signal.c", extra_cflags=["-inline auto"]),
-            Object(NonMatching, "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/file_io.c", extra_cflags=["-inline auto"]),
+            Object(Matching, "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/file_io.c", extra_cflags=["-inline auto"]),
             Object(Matching, "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/file_pos.c", extra_cflags=["-inline auto"]),
             Object(Matching, "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/qsort.c", extra_cflags=["-inline auto"]),
-            Object(NonMatching, "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/wctype.c", extra_cflags=["-inline auto"]),
+            Object(Matching, "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/wctype.c", extra_cflags=["-inline auto"]),
 
             Object(Matching, "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/wcstoul.c", extra_cflags=["-inline auto"]),
-            Object(NonMatching, "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/wscanf.c", extra_cflags=["-inline auto"]),
+            Object(Matching, "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/wscanf.c", extra_cflags=["-inline auto"]),
 
             Object(Matching, "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/e_acos.c", extra_cflags=["-inline auto", "-inline off"]),
             Object(Matching, "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/e_fmod.c", extra_cflags=["-inline auto"]),
-            Object(NonMatching, "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/e_pow.c", extra_cflags=["-inline auto", "-inline off"]),
+            Object(Matching, "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/e_pow.c", extra_cflags=["-inline auto", "-inline off"]),
             Object(Matching, "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/e_rem_pio2.c", extra_cflags=["-inline auto"]),
             Object(Matching, "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/k_cos.c", extra_cflags=["-inline auto"]),
             Object(Matching, "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/k_rem_pio2.c", extra_cflags=["-inline auto"]),
@@ -1127,7 +1127,7 @@ config.libs = [
             Object(Matching, "Game/GL/GLRenderBuffer.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/GL/GLSkinMesh.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/GL/gluMeshWriter.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(NonMatching, "Game/GL/gluSkinMesh.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(Matching, "Game/GL/gluSkinMesh.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/GL/ShaderSkinMesh.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
 
             # FX
@@ -1421,7 +1421,7 @@ config.libs = [
         "Dolfin SDK",
         [
             # Dolphin/OS
-            Object(NonMatching, "Dolphin/exi/EXIBios.c", extra_cflags=["-inline auto"]),
+            Object(Matching, "Dolphin/exi/EXIBios.c", extra_cflags=["-inline auto"]),
         ]
     ),
     DolphinLib(

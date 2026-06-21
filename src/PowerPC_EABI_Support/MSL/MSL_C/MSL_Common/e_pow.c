@@ -112,7 +112,12 @@
 
 #include "types.h"
 #include "errno.h"
+/* math.h provides a `static inline double sqrt(double)` for MWCC; shunt it aside so
+ * the sqrt() call below binds to the external library sqrt (the form the original used). */
+#define sqrt _msl_unused_inline_sqrt
 #include "math.h"
+#undef sqrt
+extern double sqrt(double);
 
 #ifndef _DOUBLE_IS_32BITS
 
@@ -172,10 +177,10 @@ double x, y;
     int hx, hy, ix, iy;
     u32 lx, ly;
 
-    // double one = 1.0;
-
-    i0 = ((*(int*)&one) >> 29) ^ 1;
-    i1 = 1 - i0;
+    /* big-endian: high word is index 0 (taking &one here would force a second,
+     * un-pooled copy of the 1.0 constant into .sdata2). */
+    i0 = 0;
+    i1 = 1;
     hx = __HI(x);
     lx = __LO(x);
     hy = __HI(y);

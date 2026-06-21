@@ -76,38 +76,7 @@ static inline void __construct_array_loop(char* ptr, ConstructorDestructor ctor,
 
 extern void __construct_array(void* ptr, ConstructorDestructor ctor, ConstructorDestructor dtor, size_t size, size_t n)
 {
-    class __partial_array_destructor_construct_array
-    {
-    public:
-        void* p;
-        volatile size_t size;
-        size_t n;
-        ConstructorDestructor dtor;
-        size_t i;
-
-        __partial_array_destructor_construct_array(void* array, size_t elementsize, size_t nelements, ConstructorDestructor destructor)
-        {
-            p = array;
-            size = elementsize;
-            n = nelements;
-            dtor = destructor;
-            i = n;
-        }
-
-        ~__partial_array_destructor_construct_array()
-        {
-            char* ptr;
-
-            if (i < n && dtor)
-            {
-                for (ptr = (char*)p + size * i; i > 0; i--)
-                {
-                    ptr -= size;
-                    DTORCALL_COMPLETE(dtor, ptr);
-                }
-            }
-        }
-    } pad(ptr, size, n, dtor);
+    __partial_array_destructor pad(ptr, size, n, dtor);
 
     __construct_array_loop((char*)ptr, ctor, size, n, &pad.i);
 }
