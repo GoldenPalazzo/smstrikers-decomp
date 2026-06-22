@@ -309,9 +309,7 @@ cflags_musyx = [
     "-nosyspath",
     "-i include",
     "-i extern/musyx/include",
-    # "-i libc",
     "-inline auto,depth=4",
-    # "-inline auto",
     "-O4,p",
     "-fp hard",
     "-enum int",
@@ -329,7 +327,6 @@ cflags_musyx_debug = [
     "-nosyspath",
     "-i include",
     "-i extern/musyx/include",
-    # "-i libc",
     "-g",
     "-sym on",
     "-D_DEBUG=1",
@@ -338,13 +335,6 @@ cflags_musyx_debug = [
     "-Cpp_exceptions off",
     "-DMUSY_TARGET=MUSY_TARGET_DOLPHIN",
 ]
-
-# # REL flags
-# cflags_rel = [
-#     *cflags_base,
-#     "-sdata 0",
-#     "-sdata2 0",
-# ]
 
 cflags_nl = [
     *cflags_base,
@@ -921,7 +911,7 @@ config.libs = [
             Object(Matching, "Game/PhysicsWall.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Equivalent, "Game/PhysicsNPC.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/PhysicsObject.cpp", extra_cflags=["-inline auto", "-inline noauto, deferred"]),
-            Object(NonMatching, "Game/PhysicsCompositeObject.cpp", extra_cflags=["-inline auto"]),
+            Object(Matching, "Game/PhysicsCompositeObject.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/Physics/PhysicsCharacterBase.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/Physics/PhysicsCharacter.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Physics/CollisionSpace.cpp" , extra_cflags=["-inline auto", "-inline deferred"]),
@@ -1519,7 +1509,7 @@ config.libs = [
 
             # Dolphin/MTX
             Object(Matching, "Dolphin/mtx/mtx.c", extra_cflags=["-inline auto", "-char signed"]),
-            Object(NonMatching, "Dolphin/mtx/mtx44.c", extra_cflags=["-inline auto", "-char signed"]),
+            Object(Matching, "Dolphin/mtx/mtx44.c", extra_cflags=["-inline auto", "-char signed"]),
             Object(Matching, "Dolphin/mtx/quat.c", extra_cflags=["-inline deferred", "-char signed", "-fp_contract off"]),
 
             # Dolphin/PAD
@@ -1574,7 +1564,7 @@ config.libs = [
             Object(Matching, "musyx/runtime/synth.c", extra_cflags=["-inline auto"]),
             Object(Matching, "musyx/runtime/seq_api.c", extra_cflags=["-inline auto"]),
             Object(Matching, "musyx/runtime/snd_synthapi.c", extra_cflags=["-inline auto"]),
-            Object(NonMatching, "musyx/runtime/stream.c", extra_cflags=["-inline auto"]),
+            Object(Matching, "musyx/runtime/stream.c", extra_cflags=["-inline auto"]),
             Object(Matching, "musyx/runtime/synthdata.c", extra_cflags=["-inline auto"]),
             Object(Matching, "musyx/runtime/synthmacros.c", extra_cflags=["-inline auto"]),
             Object(Matching, "musyx/runtime/synthvoice.c", extra_cflags=["-inline auto"]),

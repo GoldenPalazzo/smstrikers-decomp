@@ -3414,10 +3414,10 @@ static inline void ProcessBackground()
             u8 a;
 
             GXPeekARGB((unsigned short)j, (unsigned short)i, &color);
+            b = color & 0xFF;
+            a = color >> 24;
             r = (color >> 16) & 0xFF;
             g = (color >> 8) & 0xFF;
-            a = color >> 24;
-            b = color & 0xFF;
             color = 0;
             color |= a;
             color <<= 8;
@@ -3490,13 +3490,13 @@ static inline int DrawStatLine(int x, int y, const char* str)
  */
 static void ErrorHandler(unsigned short err, OSContext* ctx, unsigned long dsisr, unsigned long dar)
 {
+    int callStackY;
     unsigned long i;
     unsigned long* p;
     unsigned short* frameBuffer;
     char buf[60];
     int y;
     int x;
-    int callStackY;
     int bufferLoop;
 
     ProcessBackground();

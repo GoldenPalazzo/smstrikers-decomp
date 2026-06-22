@@ -5,6 +5,80 @@
 
 #include "NL/nlMemory.h"
 
+// NOTE: functions are intentionally in REVERSE target order (ctor, dtor,
+// AddObject, AdjustTransform). This TU is built with `-inline deferred`,
+// under which MWCC emits bottom-up; the reversal makes .text emit forward
+// AND places the weak vtable copy (GetObjectType) before the DLListContainer
+// DeleteEntry linkonce, matching the target .o layout. Do not reorder.
+
+/**
+ * Offset/Address/Size: 0x274 | 0x801FF91C | size: 0x54
+ */
+PhysicsCompositeObject::PhysicsCompositeObject(PhysicsWorld* physicsWorld)
+    : PhysicsObject(physicsWorld)
+{
+    m_Components.m_Head = NULL;
+    numComponents = 0;
+    dBodySetData(m_bodyID, this);
+}
+
+/**
+ * Offset/Address/Size: 0x164 | 0x801FF80C | size: 0x110
+ */
+PhysicsCompositeObject::~PhysicsCompositeObject()
+{
+    DLListEntry<PhysicsTransform*>* start;
+    DLListEntry<PhysicsTransform*>* head;
+    DLListEntry<PhysicsTransform*>* current;
+
+    start = nlDLRingGetStart<DLListEntry<PhysicsTransform*> >(m_Components.m_Head);
+    head = m_Components.m_Head;
+    current = start;
+
+    while (current != NULL)
+    {
+        PhysicsTransform* physObj = (PhysicsTransform*)current->m_data;
+
+        physObj->m_bodyID = NULL;
+        delete physObj;
+
+        if (nlDLRingIsEnd<DLListEntry<PhysicsTransform*> >(head, current) || current == NULL)
+        {
+            current = NULL;
+        }
+        else
+        {
+            current = current->m_next;
+        }
+    }
+}
+
+/**
+ * Offset/Address/Size: 0xA8 | 0x801FF750 | size: 0xBC
+ */
+int PhysicsCompositeObject::AddObject(PhysicsObject* object)
+{
+    object->MakeStatic();
+    PhysicsTransform* transform = new (nlMalloc(0x30, 8, false)) PhysicsTransform();
+
+    transform->Attach(object, this);
+
+    DLListEntry<PhysicsTransform*>* entry = (DLListEntry<PhysicsTransform*>*)nlMalloc(0xC, 8, 0);
+
+    if (entry != nullptr)
+    {
+        entry->m_next = nullptr;
+        entry->m_prev = nullptr;
+        entry->m_data = transform;
+    }
+
+    nlDLRingAddEnd<DLListEntry<PhysicsTransform*> >(&m_Components.m_Head, entry);
+
+    numComponents++;
+
+    return numComponents - 1;
+}
+
 /**
  * Offset/Address/Size: 0x0 | 0x801FF6A8 | size: 0xA8
  */
@@ -41,74 +115,6 @@ void PhysicsCompositeObject::AdjustTransform(int i, nlMatrix4& m)
     transformObj = (PhysicsTransform*)current->m_data;
 call_transform:
     transformObj->SetSubObjectTransform(m, PhysicsObject::RELATIVE_TO_PARENT);
-}
-
-/**
- * Offset/Address/Size: 0xA8 | 0x801FF750 | size: 0xBC
- */
-int PhysicsCompositeObject::AddObject(PhysicsObject* object)
-{
-    object->MakeStatic();
-    PhysicsTransform* transform = new (nlMalloc(0x30, 8, false)) PhysicsTransform();
-
-    transform->Attach(object, this);
-
-    DLListEntry<PhysicsTransform*>* entry = (DLListEntry<PhysicsTransform*>*)nlMalloc(0xC, 8, 0);
-
-    if (entry != nullptr)
-    {
-        entry->m_next = nullptr;
-        entry->m_prev = nullptr;
-        entry->m_data = transform;
-    }
-
-    nlDLRingAddEnd<DLListEntry<PhysicsTransform*> >(&m_Components.m_Head, entry);
-
-    numComponents++;
-
-    return numComponents - 1;
-}
-
-/**
- * Offset/Address/Size: 0x164 | 0x801FF80C | size: 0x110
- */
-PhysicsCompositeObject::~PhysicsCompositeObject()
-{
-    DLListEntry<PhysicsTransform*>* start;
-    DLListEntry<PhysicsTransform*>* head;
-    DLListEntry<PhysicsTransform*>* current;
-
-    start = nlDLRingGetStart<DLListEntry<PhysicsTransform*> >(m_Components.m_Head);
-    head = m_Components.m_Head;
-    current = start;
-
-    while (current != NULL)
-    {
-        PhysicsTransform* physObj = (PhysicsTransform*)current->m_data;
-
-        physObj->m_bodyID = NULL;
-        delete physObj;
-
-        if (nlDLRingIsEnd<DLListEntry<PhysicsTransform*> >(head, current) || current == NULL)
-        {
-            current = NULL;
-        }
-        else
-        {
-            current = current->m_next;
-        }
-    }
-}
-
-/**
- * Offset/Address/Size: 0x274 | 0x801FF91C | size: 0x54
- */
-PhysicsCompositeObject::PhysicsCompositeObject(PhysicsWorld* physicsWorld)
-    : PhysicsObject(physicsWorld)
-{
-    m_Components.m_Head = NULL;
-    numComponents = 0;
-    dBodySetData(m_bodyID, this);
 }
 
 /**

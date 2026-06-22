@@ -43,7 +43,7 @@ static cAnimCamera sNisCam;
 static unsigned char gbChainChompProjectedShadow;
 
 const nlVector3 v3Zero = { 0.0f, 0.0f, 0.0f };
-const nlVector3 gv3HomePosition = { 0.0f, 0.0f, 10.0f };
+const nlVector3 gv3HomePosition = { 0.0f, 0.0f, -10.0f };
 
 /**
  * Offset/Address/Size: 0x12BC | 0x8015EFC0 | size: 0x1D8
@@ -678,15 +678,15 @@ void ChainChomp::DrawShadow(const cPoseAccumulator& pa, const nlMatrix4& worldMa
     nlVector3 v3ModelPosition = nodeMatrix.GetTranslation();
     float y = v3ModelPosition.f.y;
 
-    float frac = (mv3Position.f.z - 55.0f) / 200.0f;
+    float frac = (mv3Position.f.z - 25.0f) / 75.0f;
     if (frac < 0.0f)
         frac = 0.0f;
     if (frac > 1.0f)
         frac = 1.0f;
 
-    float fAlpha = 200.0f * (1.0f - frac) + 80.0f * frac;
+    float fAlpha = 128.0f * (1.0f - frac) + 50.0f * frac;
     float radius = g_pGame->m_pGameTweaks->fChainChompRadius;
-    float half_dim = 5.0f * frac + (1.0f - frac) * (1.5f * radius);
+    float half_dim = 7.0f * frac + (1.0f - frac) * (2.0f * radius);
 
     int alpha = (int)fAlpha;
     if (alpha < 0)
@@ -703,16 +703,16 @@ void ChainChomp::DrawShadow(const cPoseAccumulator& pa, const nlMatrix4& worldMa
     glQuad3 quad;
     quad.m_pos[0].f.x = v3ModelPosition.f.x - half_dim;
     quad.m_pos[0].f.y = y - half_dim;
-    quad.m_pos[0].f.z = 0.02f;
+    quad.m_pos[0].f.z = 0.015625f;
     quad.m_pos[1].f.x = v3ModelPosition.f.x - half_dim;
     quad.m_pos[1].f.y = y + half_dim;
-    quad.m_pos[1].f.z = 0.02f;
+    quad.m_pos[1].f.z = 0.015625f;
     quad.m_pos[2].f.x = v3ModelPosition.f.x + half_dim;
     quad.m_pos[2].f.y = y + half_dim;
-    quad.m_pos[2].f.z = 0.02f;
+    quad.m_pos[2].f.z = 0.015625f;
     quad.m_pos[3].f.x = v3ModelPosition.f.x + half_dim;
     quad.m_pos[3].f.y = y - half_dim;
-    quad.m_pos[3].f.z = 0.02f;
+    quad.m_pos[3].f.z = 0.015625f;
 
     quad.m_uv[0].f.x = 1.0f;
     quad.m_uv[0].f.y = 1.0f;
