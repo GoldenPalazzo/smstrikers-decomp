@@ -1488,18 +1488,17 @@ nlFile* nlOpen(const char* fileName)
 
 /**
  * Offset/Address/Size: 0x1B78 | 0x801D08CC | size: 0xB0
- * TODO: 98.1% match - pre-fread register allocation still differs
- *   (amountRead/length/remainingBytes stay in r3/r6 vs target r7/r3/r6),
- *   and epilogue scheduling keeps `lwz r31` after `cntlzw/srwi`.
+ * TODO: 98.6% match - epilogue restores r31 after bool-to-int conversion
+ *   instead of before it.
  */
 s32 TDEVChunkFile::GetReadStatus()
 {
     fseek(m_pFile, m_CurrentRead.Pos + m_CurrentRead.AmountRead, 0);
 
+    u32 remainingBytes;
     u32 length = m_CurrentRead.Length;
     u32 amountRead = m_CurrentRead.AmountRead;
-    u32 remainingBytes = length;
-    remainingBytes -= amountRead;
+    remainingBytes = length - amountRead;
     u8* dest = m_CurrentRead.Buffer + amountRead;
 
     u32 bytesRead = fread(dest, 1, (remainingBytes <= 0x3000U) ? remainingBytes : 0x3000U, m_pFile);

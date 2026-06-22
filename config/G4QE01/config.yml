@@ -50,3 +50,25 @@ block_relocations:
   - source: .rodata:0x80295B84
   - source: .rodata:0x80298BE4
   - source: .rodata:0x80299F30
+
+# OS.c OSInit references __ArenaLo / _stack_addr (linker-script symbols) by
+# relocation, exactly like the 100%-matching ac-decomp source. dtk cannot evaluate
+# the ldscript stack arithmetic (_stack_addr = ((_stack_end + ...) & ...)) during
+# target reconstruction, so without these it bakes literal hex addresses -- a cosmetic
+# fuzzy diff -- instead of the relocations our source emits. __ArenaHi (= $ARENAHI, a
+# concrete value dtk can resolve) is auto-relocated and is intentionally not listed.
+# The DOL links from src/Dolphin/os/OS.o, so injecting these into the target .o leaves
+# the linked main.dol (and its sha1) unchanged.
+add_relocations:
+  - source: .text:0x80253438
+    type: ha
+    target: __ArenaLo
+  - source: .text:0x8025343C
+    type: l
+    target: __ArenaLo
+  - source: .text:0x80253470
+    type: ha
+    target: _stack_addr
+  - source: .text:0x80253474
+    type: l
+    target: _stack_addr
