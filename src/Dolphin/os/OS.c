@@ -38,7 +38,7 @@ const char* __OSVersion = "<< Dolphin SDK - OS\tdebug build: " BUILD_DATE " " DB
 const char* __OSVersion = "<< Dolphin SDK - OS\trelease build: " BUILD_DATE " " RBUILD_TIME " (0x2301) >>";
 #endif
 
-static DVDDriveInfo DriveInfo;
+static DVDDriveInfo DriveInfo ATTRIBUTE_ALIGN(32);
 static DVDCommandBlock DriveBlock;
 OSExecParams __OSRebootParams;
 
@@ -77,10 +77,12 @@ void __OSDBINTEND(void);
 void __OSDBJUMPSTART(void);
 void __OSDBJUMPEND(void);
 
+#if 0
 u32 __OSIsDebuggerPresent(void)
 {
     return *(u32*)OSPhysicalToCached(0x40);
 }
+#endif
 
 /* clang-format off */
 #ifdef __GEKKO__
@@ -171,7 +173,7 @@ skip_ps_init:
 }
 #endif
 
-static void DisableWriteGatherPipe(void)
+static inline void DisableWriteGatherPipe(void)
 {
     u32 hid2;
 
@@ -193,7 +195,7 @@ u32 OSGetConsoleType(void)
 #undef NULL
 #define NULL 0
 
-static void ClearArena(void)
+static inline void ClearArena(void)
 {
     if (!((OSGetResetCode() & 0x80000000) ? TRUE : FALSE))
     {

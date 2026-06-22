@@ -67,6 +67,9 @@ u8 g_bCoPlanarDepthTest;
 u8 g_bCoPlanarDepthWrite;
 u8 g_bFrameSmiler;
 u8 g_bFrameStatsOnScreen;
+u8 BeginFrameTask::s_FramerateLocked;
+eModelSkinMethod BeginFrameTask::s_GameplaySkin;
+eModelSkinMethod BeginFrameTask::s_ReplaySkin;
 static u8 g_bDrawSafeFrame;
 static s32 g_nGridDisplaySpacing;
 static s32 g_eWaitMode;
@@ -265,15 +268,13 @@ static void SetupRenderInfo()
 {
     extern s32 m_ModelType__10cCharacter;
     extern void* s_World__12WorldManager;
-    extern s32 s_GameplaySkin__14BeginFrameTask;
-    extern s32 s_ReplaySkin__14BeginFrameTask;
     extern u8* g_pGame;
     static u8 bGotWait;
     static s8 init;
 
-    if (s_GameplaySkin__14BeginFrameTask != 2)
+    if (BeginFrameTask::s_GameplaySkin != 2)
     {
-        m_ModelType__10cCharacter = (s_GameplaySkin__14BeginFrameTask != 0);
+        m_ModelType__10cCharacter = (BeginFrameTask::s_GameplaySkin != 0);
     }
     else
     {
@@ -292,7 +293,7 @@ static void SetupRenderInfo()
                 m_ModelType__10cCharacter = 1;
                 break;
             case 0x20000:
-                if (s_ReplaySkin__14BeginFrameTask == 0)
+                if (BeginFrameTask::s_ReplaySkin == 0)
                 {
                     m_ModelType__10cCharacter = 0;
                 }

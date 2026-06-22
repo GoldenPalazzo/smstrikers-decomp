@@ -1418,7 +1418,7 @@ config.libs = [
         "Dolfin SDK",
         [
             # Dolphin/OS
-            Object(NonMatching, "Dolphin/os/OS.c", extra_cflags=["-inline auto"]),
+            Object(Matching, "Dolphin/os/OS.c", extra_cflags=["-inline auto"]),
             Object(Matching, "Dolphin/os/OSAlarm.c", extra_cflags=["-inline auto"]),
             Object(Matching, "Dolphin/os/OSAlloc.c", extra_cflags=["-inline auto"]),
             Object(Matching, "Dolphin/os/OSArena.c", extra_cflags=["-inline auto"]),

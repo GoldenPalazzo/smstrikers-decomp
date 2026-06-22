@@ -407,7 +407,7 @@ void UpdateChainEmitter(EmissionController& controller)
             ReplayManager* replayManager = ReplayManager::Instance();
             controller.SetVelocity(replayManager->mRender->mChainChomp.mVelocity);
         }
-        nlVector3 direction = { 0.0f, 0.0f, 0.0f };
+        nlVector3 direction = { 0.0f, 0.0f, 1.0f };
         controller.SetDirection(direction);
     }
 }
@@ -733,7 +733,7 @@ void ChainChomp::DrawShadow(const cPoseAccumulator& pa, const nlMatrix4& worldMa
     glSetRasterState(GLS_Culling, 0);
     glSetRasterState(GLS_DepthWrite, 0);
     glSetCurrentRasterState(glHandleizeRasterState());
-    glSetCurrentTexture(glGetTexture("shadows/blob"), GLTT_Diffuse);
+    glSetCurrentTexture(glGetTexture("global/ball_shadow"), GLTT_Diffuse);
     glSetTextureState(GLTS_DiffuseWrap, 3);
     glSetCurrentTextureState(glHandleizeTextureState());
 
