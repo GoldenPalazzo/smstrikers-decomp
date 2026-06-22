@@ -196,6 +196,8 @@ LessonSelectScene::~LessonSelectScene()
 
 /**
  * Offset/Address/Size: 0xE98 | 0x8010BCE8 | size: 0x838
+ * TODO: 99.61% match - menu item base pointer computation is scheduled later
+ * than target in the slide-in callback setup.
  */
 void LessonSelectScene::SceneCreated()
 {
@@ -219,8 +221,9 @@ void LessonSelectScene::SceneCreated()
 
         if (mDoSlideIn)
         {
-            menuItem = &mMenuItems.mMenuItems[mMenuItems.mNumItemsAdded];
-            menuItem->mType = compinstance;
+            int numItemsAdded = mMenuItems.mNumItemsAdded;
+            mMenuItems.mMenuItems[numItemsAdded].mType = compinstance;
+            menuItem = &mMenuItems.mMenuItems[numItemsAdded];
             mMenuItems.mNumItemsAdded++;
 
             {
@@ -316,13 +319,11 @@ void LessonSelectScene::SceneCreated()
 
     mUpArrow = FEFinder<TLImageInstance, 2>::Find<TLSlide>(
         tempComponent->GetActiveSlide(),
-        InlineHasher(nlStringLowerHash("arrow")),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("arrow")));
 
     mDownArrow = FEFinder<TLImageInstance, 2>::Find<TLSlide>(
         tempComponent->GetActiveSlide(),
-        InlineHasher(nlStringLowerHash("arrow2")),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("arrow2")));
 
     if (sCurrentRow == 0)
     {

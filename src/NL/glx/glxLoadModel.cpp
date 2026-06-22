@@ -285,8 +285,7 @@ static glModel* glxLoadModelFromMemory(char* data, int size, unsigned long* pNum
                         memcpy(&tempRate, pTexData, 4);
                         pTexData++;
                         pAnim = (GLTextureAnim*)nlMalloc(0x20, 8, false);
-                        if (pAnim != NULL)
-                            new (pAnim) GLTextureAnim();
+                        new (pAnim) GLTextureAnim();
                         pAnim->m_unk_0x00 = (s32)animId;
                         pAnim->SetNumTextures(numTextures);
                         pAnim->m_mode = mode;
@@ -316,10 +315,9 @@ static glModel* glxLoadModelFromMemory(char* data, int size, unsigned long* pNum
                     int numFrames = *(int*)(chunkData + 4);
                     int numVerts = *(int*)(chunkData + 8);
                     u32 frameRateU = *(u32*)(chunkData + 12);
-                    int dataSize = numFrames * 12 * numVerts;
                     GLVertexAnim* pAnim = (GLVertexAnim*)nlMalloc(0x28, 8, false);
-                    if (pAnim != NULL)
-                        new (pAnim) GLVertexAnim();
+                    new (pAnim) GLVertexAnim();
+                    int dataSize = numFrames * 12 * numVerts;
                     pAnim->m_uHashID = modelId;
                     pAnim->m_nNumFrames = numFrames;
                     pAnim->m_nNumVertices = numVerts;
@@ -339,8 +337,7 @@ static glModel* glxLoadModelFromMemory(char* data, int size, unsigned long* pNum
                     u8* pMatData = chunkData + 8;
                     int numMats = *(int*)(chunkData + 4);
                     GLMaterialList* pList = (GLMaterialList*)nlMalloc(0x0C, 8, false);
-                    if (pList != NULL)
-                        new (pList) GLMaterialList();
+                    new (pList) GLMaterialList();
                     pList->m_uHashID = listId;
                     pList->SetMaterials(numMats, (const GLMaterialEntry*)pMatData);
                     glInventory.AddMaterialList(listId, pList);

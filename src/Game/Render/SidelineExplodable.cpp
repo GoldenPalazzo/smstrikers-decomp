@@ -447,14 +447,14 @@ void SidelineExplodable::Allocate()
 
 /**
  * Offset/Address/Size: 0x19A0 | 0x80168D00 | size: 0x2FC
- * TODO: 99.79% match - remaining diff is r29/r30 allocation between the
- * fragment offset and unused-fragment tail address in the deactivation path.
  */
 void SidelineExplodable::Update(float fDeltaT)
 {
     if (mNumActiveFragments != 0)
     {
+        SlotPool<DrawableFragmentHandleNode>* pPool = &DrawableFragmentHandleNode::sDrawableFragmentHandleNodePool;
         int fragmentOffset;
+        DrawableFragmentHandleNode** pTail = &SidelineExplodableManager::sUnusedDrawableFragments.m_pEnd;
         ExplosionFragment* fragment;
         int i;
 
@@ -471,7 +471,7 @@ void SidelineExplodable::Update(float fDeltaT)
                 {
                     if (fragment->mbIsActive)
                     {
-                        DeactivateExplosionFragment(fragment);
+                        ExplosionFragment_Deactivate(fragment, pPool, pTail);
                     }
 
                     fragment->mFragmentModelHash = 0;

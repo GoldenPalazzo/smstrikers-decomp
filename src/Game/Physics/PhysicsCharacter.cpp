@@ -407,11 +407,10 @@ void PhysicsCharacter::PostUpdate()
             if (pCharacter->m_eClassType == FIELDER)
             {
                 pFldr = (cFielder*)pCharacter;
-                cPlayer* prevOwner = pBall->m_pPrevOwner;
                 float dx, dy, dz;
-                dy = pBall->m_v3Position.f.y - prevOwner->m_v3Position.f.y;
-                dx = pBall->m_v3Position.f.x - prevOwner->m_v3Position.f.x;
-                dz = pBall->m_v3Position.f.z - prevOwner->m_v3Position.f.z;
+                dy = pBall->m_v3Position.f.y - pBall->m_pPrevOwner->m_v3Position.f.y;
+                dx = pBall->m_v3Position.f.x - pBall->m_pPrevOwner->m_v3Position.f.x;
+                dz = pBall->m_v3Position.f.z - pBall->m_pPrevOwner->m_v3Position.f.z;
                 s32 rawAngle = (s32)(10430.378f * nlATan2f(dy, dx));
                 u16 angle = (u16)rawAngle;
 

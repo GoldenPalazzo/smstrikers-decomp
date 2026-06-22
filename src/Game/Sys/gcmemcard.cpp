@@ -547,8 +547,8 @@ s32 MemCard::BeginCardAccess(const MemCardFunctor& Callback)
 
 /**
  * Offset/Address/Size: 0xF28 | 0x801CA698 | size: 0x3B4
- * TODO: 93.80% match - shift-up/shift-down loops still keep r4/r6 swapped,
- * and sector-alignment emits `not`+`and` where target uses `andc`.
+ * TODO: 98.61% match - shift-up loop and header-size calculation keep
+ * different temp registers; icon-speed copy uses reversed source temp regs.
  */
 long MemCard::CreateFile(const char* FileName, unsigned long FileSize, MemCard::ICON_CONFIG* pIconConfig, MemCard::MC_FILE*& pFile, const MemCardFunctor& Callback)
 {
@@ -668,13 +668,15 @@ long MemCard::CreateFile(const char* FileName, unsigned long FileSize, MemCard::
     mcFile->IconCfg.IconCount = pIconConfig->IconCount;
     mcFile->IconCfg.IconFormat = pIconConfig->IconFormat;
     mcFile->IconCfg.IconAnimType = pIconConfig->IconAnimType;
-    *(unsigned long*)&mcFile->IconCfg.IconSpeeds[0] = *(unsigned long*)&pIconConfig->IconSpeeds[0];
-    *(unsigned long*)&mcFile->IconCfg.IconSpeeds[4] = *(unsigned long*)&pIconConfig->IconSpeeds[4];
+    unsigned long iconSpeeds0 = *(unsigned long*)&pIconConfig->IconSpeeds[0];
+    unsigned long iconSpeeds1 = *(unsigned long*)&pIconConfig->IconSpeeds[4];
+    *(unsigned long*)&mcFile->IconCfg.IconSpeeds[0] = iconSpeeds0;
+    *(unsigned long*)&mcFile->IconCfg.IconSpeeds[4] = iconSpeeds1;
     mcFile->IconCfg.HeaderSize = pIconConfig->HeaderSize;
 
-    mcFile->TotalHeaderSize = (pIconConfig->HeaderSize + (m_CardInfo.SectorSize - 1)) & ~(m_CardInfo.SectorSize - 1);
+    m_pFileCB->TotalHeaderSize = AlignBytesToSectorSize(pIconConfig->HeaderSize);
 
-    unsigned long totalSize = mcFile->TotalHeaderSize + ((FileSize + (m_CardInfo.SectorSize - 1)) & ~(m_CardInfo.SectorSize - 1));
+    unsigned long totalSize = m_pFileCB->TotalHeaderSize + AlignBytesToSectorSize(FileSize);
 
     m_LastTransferSize = CARDGetXferredBytes(m_Slot);
     m_TargetTransferSize = 0x4000;
@@ -702,21 +704,7 @@ long MemCard::CreateFile(const char* FileName, unsigned long FileSize, MemCard::
         {
             m_OpenFiles.FreeEntry(pFound->pEntry);
 
-            long idx = pFound - m_OpenFiles.m_pEntryLookup;
-            unsigned long total = m_OpenFiles.m_EntryCount;
-
-            while ((unsigned long)idx != total)
-            {
-                long next = idx + 1;
-                nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>* lookup = m_OpenFiles.m_pEntryLookup;
-                unsigned long id = lookup[next].hash;
-                MC_FILE* entry = lookup[next].pEntry;
-                lookup[idx].pEntry = entry;
-                lookup[idx].hash = id;
-                idx = next;
-            }
-
-            m_OpenFiles.m_EntryCount = m_OpenFiles.m_EntryCount - 1;
+            ShiftCreateFileLookup(this, pFound);
         }
 
         pFile = NULL;

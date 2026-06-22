@@ -290,421 +290,149 @@ void GameTweaks::Init()
 
 /**
  * Offset/Address/Size: 0x2E8 | 0x800404D4 | size: 0xF44
- * TODO: 99.43% match - 12 diffs remaining in loop section
  */
 SkillTweaks::SkillTweaks()
 {
     mSkillTweaksList.m_pEnd = NULL;
     mSkillTweaksList.m_pStart = NULL;
     SkillTweak** pEnd;
-    void* mem;
     SkillTweak* node;
     int i_sit;
 
-    mem = nlMalloc(0x88, 8, false);
-    node = (SkillTweak*)mem;
-    if (mem != NULL)
-    {
-        ((SkillTweak*)mem)->mpValue = &Off_Avoidance;
-        nlSNPrintf(((SkillTweak*)mem)->mNameInFile, 0x7F, "%s", "Avoidance Effectiveness");
-    }
+    node = new (nlMalloc(sizeof(SkillTweak), 8, false)) SkillTweak(&Off_Avoidance, "Avoidance Effectiveness");
     pEnd = &mSkillTweaksList.m_pEnd;
     nlListAddEnd<SkillTweak>(&mSkillTweaksList.m_pStart, pEnd, node);
 
-    mem = nlMalloc(0x88, 8, false);
-    node = (SkillTweak*)mem;
-    if (mem != NULL)
-    {
-        ((SkillTweak*)mem)->mpValue = &Off_DekeChance;
-        nlSNPrintf(((SkillTweak*)mem)->mNameInFile, 0x7F, "%s", "Deke Chance");
-    }
+    node = new (nlMalloc(sizeof(SkillTweak), 8, false)) SkillTweak(&Off_DekeChance, "Deke Chance");
     nlListAddEnd<SkillTweak>(&mSkillTweaksList.m_pStart, pEnd, node);
 
-    mem = nlMalloc(0x88, 8, false);
-    node = (SkillTweak*)mem;
-    if (mem != NULL)
-    {
-        ((SkillTweak*)mem)->mpValue = &Off_GroundPassChance;
-        nlSNPrintf(((SkillTweak*)mem)->mNameInFile, 0x7F, "%s", "Ground Pass Chance");
-    }
+    node = new (nlMalloc(sizeof(SkillTweak), 8, false)) SkillTweak(&Off_GroundPassChance, "Ground Pass Chance");
     nlListAddEnd<SkillTweak>(&mSkillTweaksList.m_pStart, pEnd, node);
 
-    mem = nlMalloc(0x88, 8, false);
-    node = (SkillTweak*)mem;
-    if (mem != NULL)
-    {
-        ((SkillTweak*)mem)->mpValue = &Off_VolleyPassChance;
-        nlSNPrintf(((SkillTweak*)mem)->mNameInFile, 0x7F, "%s", "Volley Pass Chance");
-    }
+    node = new (nlMalloc(sizeof(SkillTweak), 8, false)) SkillTweak(&Off_VolleyPassChance, "Volley Pass Chance");
     nlListAddEnd<SkillTweak>(&mSkillTweaksList.m_pStart, pEnd, node);
 
-    mem = nlMalloc(0x88, 8, false);
-    node = (SkillTweak*)mem;
-    if (mem != NULL)
-    {
-        ((SkillTweak*)mem)->mpValue = &Off_ShootingChance;
-        nlSNPrintf(((SkillTweak*)mem)->mNameInFile, 0x7F, "%s", "Shooting Chance");
-    }
+    node = new (nlMalloc(sizeof(SkillTweak), 8, false)) SkillTweak(&Off_ShootingChance, "Shooting Chance");
     nlListAddEnd<SkillTweak>(&mSkillTweaksList.m_pStart, pEnd, node);
 
-    mem = nlMalloc(0x88, 8, false);
-    node = (SkillTweak*)mem;
-    if (mem != NULL)
-    {
-        ((SkillTweak*)mem)->mpValue = &Off_ChipShotChance;
-        nlSNPrintf(((SkillTweak*)mem)->mNameInFile, 0x7F, "%s", "Chip Shot Chance");
-    }
+    node = new (nlMalloc(sizeof(SkillTweak), 8, false)) SkillTweak(&Off_ChipShotChance, "Chip Shot Chance");
     nlListAddEnd<SkillTweak>(&mSkillTweaksList.m_pStart, pEnd, node);
 
-    mem = nlMalloc(0x88, 8, false);
-    node = (SkillTweak*)mem;
-    if (mem != NULL)
-    {
-        ((SkillTweak*)mem)->mpValue = &Off_CaptainS2SChance;
-        nlSNPrintf(((SkillTweak*)mem)->mNameInFile, 0x7F, "%s", "Captain ShootToScore Chance");
-    }
+    node = new (nlMalloc(sizeof(SkillTweak), 8, false)) SkillTweak(&Off_CaptainS2SChance, "Captain ShootToScore Chance");
     nlListAddEnd<SkillTweak>(&mSkillTweaksList.m_pStart, pEnd, node);
 
-    mem = nlMalloc(0x88, 8, false);
-    node = (SkillTweak*)mem;
-    if (mem != NULL)
-    {
-        ((SkillTweak*)mem)->mpValue = &Off_GroundOneTimerChance;
-        nlSNPrintf(((SkillTweak*)mem)->mNameInFile, 0x7F, "%s", "Ground OneTimer Chance");
-    }
+    node = new (nlMalloc(sizeof(SkillTweak), 8, false)) SkillTweak(&Off_GroundOneTimerChance, "Ground OneTimer Chance");
     nlListAddEnd<SkillTweak>(&mSkillTweaksList.m_pStart, pEnd, node);
 
-    mem = nlMalloc(0x88, 8, false);
-    node = (SkillTweak*)mem;
-    if (mem != NULL)
-    {
-        ((SkillTweak*)mem)->mpValue = &Off_VolleyOneTimerChance;
-        nlSNPrintf(((SkillTweak*)mem)->mNameInFile, 0x7F, "%s", "Volley OneTimer Chance");
-    }
+    node = new (nlMalloc(sizeof(SkillTweak), 8, false)) SkillTweak(&Off_VolleyOneTimerChance, "Volley OneTimer Chance");
     nlListAddEnd<SkillTweak>(&mSkillTweaksList.m_pStart, pEnd, node);
 
-    mem = nlMalloc(0x88, 8, false);
-    node = (SkillTweak*)mem;
-    if (mem != NULL)
-    {
-        ((SkillTweak*)mem)->mpValue = &Off_OneTouchGroundPassChance;
-        nlSNPrintf(((SkillTweak*)mem)->mNameInFile, 0x7F, "%s", "OneTouch Ground Pass Chance");
-    }
+    node = new (nlMalloc(sizeof(SkillTweak), 8, false)) SkillTweak(&Off_OneTouchGroundPassChance, "OneTouch Ground Pass Chance");
     nlListAddEnd<SkillTweak>(&mSkillTweaksList.m_pStart, pEnd, node);
 
-    mem = nlMalloc(0x88, 8, false);
-    node = (SkillTweak*)mem;
-    if (mem != NULL)
-    {
-        ((SkillTweak*)mem)->mpValue = &Off_OneTouchVolleyPassChance;
-        nlSNPrintf(((SkillTweak*)mem)->mNameInFile, 0x7F, "%s", "OneTouch Volley Pass Chance");
-    }
+    node = new (nlMalloc(sizeof(SkillTweak), 8, false)) SkillTweak(&Off_OneTouchVolleyPassChance, "OneTouch Volley Pass Chance");
     nlListAddEnd<SkillTweak>(&mSkillTweaksList.m_pStart, pEnd, node);
 
-    mem = nlMalloc(0x88, 8, false);
-    node = (SkillTweak*)mem;
-    if (mem != NULL)
-    {
-        ((SkillTweak*)mem)->mpValue = &Off_PassReceiveHitChance;
-        nlSNPrintf(((SkillTweak*)mem)->mNameInFile, 0x7F, "%s", "PassReceive Hit Chance");
-    }
+    node = new (nlMalloc(sizeof(SkillTweak), 8, false)) SkillTweak(&Off_PassReceiveHitChance, "PassReceive Hit Chance");
     nlListAddEnd<SkillTweak>(&mSkillTweaksList.m_pStart, pEnd, node);
 
-    mem = nlMalloc(0x88, 8, false);
-    node = (SkillTweak*)mem;
-    if (mem != NULL)
-    {
-        ((SkillTweak*)mem)->mpValue = &Off_PassReceivePowerupChance;
-        nlSNPrintf(((SkillTweak*)mem)->mNameInFile, 0x7F, "%s", "PassReceive Powerup Chance");
-    }
+    node = new (nlMalloc(sizeof(SkillTweak), 8, false)) SkillTweak(&Off_PassReceivePowerupChance, "PassReceive Powerup Chance");
     nlListAddEnd<SkillTweak>(&mSkillTweaksList.m_pStart, pEnd, node);
 
-    mem = nlMalloc(0x88, 8, false);
-    node = (SkillTweak*)mem;
-    if (mem != NULL)
-    {
-        ((SkillTweak*)mem)->mpValue = &Off_WindupDekeChance;
-        nlSNPrintf(((SkillTweak*)mem)->mNameInFile, 0x7F, "%s", "Windup Deke Chance");
-    }
+    node = new (nlMalloc(sizeof(SkillTweak), 8, false)) SkillTweak(&Off_WindupDekeChance, "Windup Deke Chance");
     nlListAddEnd<SkillTweak>(&mSkillTweaksList.m_pStart, pEnd, node);
 
-    mem = nlMalloc(0x88, 8, false);
-    node = (SkillTweak*)mem;
-    if (mem != NULL)
-    {
-        ((SkillTweak*)mem)->mpValue = &Off_WindupPassChance;
-        nlSNPrintf(((SkillTweak*)mem)->mNameInFile, 0x7F, "%s", "Windup Pass Chance");
-    }
+    node = new (nlMalloc(sizeof(SkillTweak), 8, false)) SkillTweak(&Off_WindupPassChance, "Windup Pass Chance");
     nlListAddEnd<SkillTweak>(&mSkillTweaksList.m_pStart, pEnd, node);
 
-    mem = nlMalloc(0x88, 8, false);
-    node = (SkillTweak*)mem;
-    if (mem != NULL)
-    {
-        ((SkillTweak*)mem)->mpValue = &Off_WindupPowerupChance;
-        nlSNPrintf(((SkillTweak*)mem)->mNameInFile, 0x7F, "%s", "Windup Powerup Chance");
-    }
+    node = new (nlMalloc(sizeof(SkillTweak), 8, false)) SkillTweak(&Off_WindupPowerupChance, "Windup Powerup Chance");
     nlListAddEnd<SkillTweak>(&mSkillTweaksList.m_pStart, pEnd, node);
 
-    mem = nlMalloc(0x88, 8, false);
-    node = (SkillTweak*)mem;
-    if (mem != NULL)
-    {
-        ((SkillTweak*)mem)->mpValue = &Off_CutAndBreakChance;
-        nlSNPrintf(((SkillTweak*)mem)->mNameInFile, 0x7F, "%s", "Cut And Break Chance");
-    }
+    node = new (nlMalloc(sizeof(SkillTweak), 8, false)) SkillTweak(&Off_CutAndBreakChance, "Cut And Break Chance");
     nlListAddEnd<SkillTweak>(&mSkillTweaksList.m_pStart, pEnd, node);
 
-    mem = nlMalloc(0x88, 8, false);
-    node = (SkillTweak*)mem;
-    if (mem != NULL)
-    {
-        ((SkillTweak*)mem)->mpValue = &Off_TurboChance;
-        nlSNPrintf(((SkillTweak*)mem)->mNameInFile, 0x7F, "%s", "Turbo With Ball Chance");
-    }
+    node = new (nlMalloc(sizeof(SkillTweak), 8, false)) SkillTweak(&Off_TurboChance, "Turbo With Ball Chance");
     nlListAddEnd<SkillTweak>(&mSkillTweaksList.m_pStart, pEnd, node);
 
-    mem = nlMalloc(0x88, 8, false);
-    node = (SkillTweak*)mem;
-    if (mem != NULL)
-    {
-        ((SkillTweak*)mem)->mpValue = &Off_Reaction;
-        nlSNPrintf(((SkillTweak*)mem)->mNameInFile, 0x7F, "%s", "Reaction");
-    }
+    node = new (nlMalloc(sizeof(SkillTweak), 8, false)) SkillTweak(&Off_Reaction, "Reaction");
     nlListAddEnd<SkillTweak>(&mSkillTweaksList.m_pStart, pEnd, node);
 
-    mem = nlMalloc(0x88, 8, false);
-    node = (SkillTweak*)mem;
-    if (mem != NULL)
-    {
-        ((SkillTweak*)mem)->mpValue = &Def_BlockPassChance;
-        nlSNPrintf(((SkillTweak*)mem)->mNameInFile, 0x7F, "%s", "Block Pass Chance");
-    }
+    node = new (nlMalloc(sizeof(SkillTweak), 8, false)) SkillTweak(&Def_BlockPassChance, "Block Pass Chance");
     nlListAddEnd<SkillTweak>(&mSkillTweaksList.m_pStart, pEnd, node);
 
-    mem = nlMalloc(0x88, 8, false);
-    node = (SkillTweak*)mem;
-    if (mem != NULL)
-    {
-        ((SkillTweak*)mem)->mpValue = &Def_BlockShotChance;
-        nlSNPrintf(((SkillTweak*)mem)->mNameInFile, 0x7F, "%s", "Block Shot Chance");
-    }
+    node = new (nlMalloc(sizeof(SkillTweak), 8, false)) SkillTweak(&Def_BlockShotChance, "Block Shot Chance");
     nlListAddEnd<SkillTweak>(&mSkillTweaksList.m_pStart, pEnd, node);
 
-    mem = nlMalloc(0x88, 8, false);
-    node = (SkillTweak*)mem;
-    if (mem != NULL)
-    {
-        ((SkillTweak*)mem)->mpValue = &Def_SlideAttackChance;
-        nlSNPrintf(((SkillTweak*)mem)->mNameInFile, 0x7F, "%s", "Slide Attack Chance");
-    }
+    node = new (nlMalloc(sizeof(SkillTweak), 8, false)) SkillTweak(&Def_SlideAttackChance, "Slide Attack Chance");
     nlListAddEnd<SkillTweak>(&mSkillTweaksList.m_pStart, pEnd, node);
 
-    mem = nlMalloc(0x88, 8, false);
-    node = (SkillTweak*)mem;
-    if (mem != NULL)
-    {
-        ((SkillTweak*)mem)->mpValue = &Def_HeavyAttackChance;
-        nlSNPrintf(((SkillTweak*)mem)->mNameInFile, 0x7F, "%s", "Heavy Attack Chance");
-    }
+    node = new (nlMalloc(sizeof(SkillTweak), 8, false)) SkillTweak(&Def_HeavyAttackChance, "Heavy Attack Chance");
     nlListAddEnd<SkillTweak>(&mSkillTweaksList.m_pStart, pEnd, node);
 
-    mem = nlMalloc(0x88, 8, false);
-    node = (SkillTweak*)mem;
-    if (mem != NULL)
-    {
-        ((SkillTweak*)mem)->mpValue = &Def_VolleyPassDefendChance;
-        nlSNPrintf(((SkillTweak*)mem)->mNameInFile, 0x7F, "%s", "Defend VolleyPass Chance");
-    }
+    node = new (nlMalloc(sizeof(SkillTweak), 8, false)) SkillTweak(&Def_VolleyPassDefendChance, "Defend VolleyPass Chance");
     nlListAddEnd<SkillTweak>(&mSkillTweaksList.m_pStart, pEnd, node);
 
-    mem = nlMalloc(0x88, 8, false);
-    node = (SkillTweak*)mem;
-    if (mem != NULL)
-    {
-        ((SkillTweak*)mem)->mpValue = &Def_Marking;
-        nlSNPrintf(((SkillTweak*)mem)->mNameInFile, 0x7F, "%s", "Marking Effectiveness");
-    }
+    node = new (nlMalloc(sizeof(SkillTweak), 8, false)) SkillTweak(&Def_Marking, "Marking Effectiveness");
     nlListAddEnd<SkillTweak>(&mSkillTweaksList.m_pStart, pEnd, node);
 
-    mem = nlMalloc(0x88, 8, false);
-    node = (SkillTweak*)mem;
-    if (mem != NULL)
-    {
-        ((SkillTweak*)mem)->mpValue = &Loose_HeavyAttackChance;
-        nlSNPrintf(((SkillTweak*)mem)->mNameInFile, 0x7F, "%s", "Loose Heavy Attack Chance");
-    }
+    node = new (nlMalloc(sizeof(SkillTweak), 8, false)) SkillTweak(&Loose_HeavyAttackChance, "Loose Heavy Attack Chance");
     nlListAddEnd<SkillTweak>(&mSkillTweaksList.m_pStart, pEnd, node);
 
-    mem = nlMalloc(0x88, 8, false);
-    node = (SkillTweak*)mem;
-    if (mem != NULL)
-    {
-        ((SkillTweak*)mem)->mpValue = &Loose_ShotChance;
-        nlSNPrintf(((SkillTweak*)mem)->mNameInFile, 0x7F, "%s", "Loose Shot Chance");
-    }
+    node = new (nlMalloc(sizeof(SkillTweak), 8, false)) SkillTweak(&Loose_ShotChance, "Loose Shot Chance");
     nlListAddEnd<SkillTweak>(&mSkillTweaksList.m_pStart, pEnd, node);
 
-    mem = nlMalloc(0x88, 8, false);
-    node = (SkillTweak*)mem;
-    if (mem != NULL)
-    {
-        ((SkillTweak*)mem)->mpValue = &Loose_GroundPassChance;
-        nlSNPrintf(((SkillTweak*)mem)->mNameInFile, 0x7F, "%s", "Loose Ground Pass Chance");
-    }
+    node = new (nlMalloc(sizeof(SkillTweak), 8, false)) SkillTweak(&Loose_GroundPassChance, "Loose Ground Pass Chance");
     nlListAddEnd<SkillTweak>(&mSkillTweaksList.m_pStart, pEnd, node);
 
-    mem = nlMalloc(0x88, 8, false);
-    node = (SkillTweak*)mem;
-    if (mem != NULL)
-    {
-        ((SkillTweak*)mem)->mpValue = &Loose_VolleyPassChance;
-        nlSNPrintf(((SkillTweak*)mem)->mNameInFile, 0x7F, "%s", "Loose Volley Pass Chance");
-    }
+    node = new (nlMalloc(sizeof(SkillTweak), 8, false)) SkillTweak(&Loose_VolleyPassChance, "Loose Volley Pass Chance");
     nlListAddEnd<SkillTweak>(&mSkillTweaksList.m_pStart, pEnd, node);
 
-    mem = nlMalloc(0x88, 8, false);
-    node = (SkillTweak*)mem;
-    if (mem != NULL)
-    {
-        ((SkillTweak*)mem)->mpValue = &Shoot_CaptainS2SFirstButtonChance;
-        nlSNPrintf(((SkillTweak*)mem)->mNameInFile, 0x7F, "%s", "Captain S2S Perfect First Button Chance");
-    }
+    node = new (nlMalloc(sizeof(SkillTweak), 8, false)) SkillTweak(&Shoot_CaptainS2SFirstButtonChance, "Captain S2S Perfect First Button Chance");
     nlListAddEnd<SkillTweak>(&mSkillTweaksList.m_pStart, pEnd, node);
 
-    mem = nlMalloc(0x88, 8, false);
-    node = (SkillTweak*)mem;
-    if (mem != NULL)
-    {
-        ((SkillTweak*)mem)->mpValue = &Shoot_CaptainS2SSecondButtonChance;
-        nlSNPrintf(((SkillTweak*)mem)->mNameInFile, 0x7F, "%s", "Captain S2S Perfect Second Button Chance");
-    }
+    node = new (nlMalloc(sizeof(SkillTweak), 8, false)) SkillTweak(&Shoot_CaptainS2SSecondButtonChance, "Captain S2S Perfect Second Button Chance");
     nlListAddEnd<SkillTweak>(&mSkillTweaksList.m_pStart, pEnd, node);
 
-    mem = nlMalloc(0x88, 8, false);
-    node = (SkillTweak*)mem;
-    if (mem != NULL)
-    {
-        ((SkillTweak*)mem)->mpValue = &fShotValue1;
-        nlSNPrintf(((SkillTweak*)mem)->mNameInFile, 0x7F, "%s", "Shot Value 1");
-    }
+    node = new (nlMalloc(sizeof(SkillTweak), 8, false)) SkillTweak(&fShotValue1, "Shot Value 1");
     nlListAddEnd<SkillTweak>(&mSkillTweaksList.m_pStart, pEnd, node);
 
-    mem = nlMalloc(0x88, 8, false);
-    node = (SkillTweak*)mem;
-    if (mem != NULL)
-    {
-        ((SkillTweak*)mem)->mpValue = &fShotValue2;
-        nlSNPrintf(((SkillTweak*)mem)->mNameInFile, 0x7F, "%s", "Shot Value 2");
-    }
+    node = new (nlMalloc(sizeof(SkillTweak), 8, false)) SkillTweak(&fShotValue2, "Shot Value 2");
     nlListAddEnd<SkillTweak>(&mSkillTweaksList.m_pStart, pEnd, node);
 
-    mem = nlMalloc(0x88, 8, false);
-    node = (SkillTweak*)mem;
-    if (mem != NULL)
-    {
-        ((SkillTweak*)mem)->mpValue = &fShotValue3;
-        nlSNPrintf(((SkillTweak*)mem)->mNameInFile, 0x7F, "%s", "Shot Value 3");
-    }
+    node = new (nlMalloc(sizeof(SkillTweak), 8, false)) SkillTweak(&fShotValue3, "Shot Value 3");
     nlListAddEnd<SkillTweak>(&mSkillTweaksList.m_pStart, pEnd, node);
 
-    mem = nlMalloc(0x88, 8, false);
-    node = (SkillTweak*)mem;
-    if (mem != NULL)
-    {
-        ((SkillTweak*)mem)->mpValue = &fShotChance0;
-        nlSNPrintf(((SkillTweak*)mem)->mNameInFile, 0x7F, "%s", "Shot Chance 0");
-    }
+    node = new (nlMalloc(sizeof(SkillTweak), 8, false)) SkillTweak(&fShotChance0, "Shot Chance 0");
     nlListAddEnd<SkillTweak>(&mSkillTweaksList.m_pStart, pEnd, node);
 
-    mem = nlMalloc(0x88, 8, false);
-    node = (SkillTweak*)mem;
-    if (mem != NULL)
-    {
-        ((SkillTweak*)mem)->mpValue = &fShotChance1;
-        nlSNPrintf(((SkillTweak*)mem)->mNameInFile, 0x7F, "%s", "Shot Chance 1");
-    }
+    node = new (nlMalloc(sizeof(SkillTweak), 8, false)) SkillTweak(&fShotChance1, "Shot Chance 1");
     nlListAddEnd<SkillTweak>(&mSkillTweaksList.m_pStart, pEnd, node);
 
-    mem = nlMalloc(0x88, 8, false);
-    node = (SkillTweak*)mem;
-    if (mem != NULL)
-    {
-        ((SkillTweak*)mem)->mpValue = &fShotChance2;
-        nlSNPrintf(((SkillTweak*)mem)->mNameInFile, 0x7F, "%s", "Shot Chance 2");
-    }
+    node = new (nlMalloc(sizeof(SkillTweak), 8, false)) SkillTweak(&fShotChance2, "Shot Chance 2");
     nlListAddEnd<SkillTweak>(&mSkillTweaksList.m_pStart, pEnd, node);
 
-    mem = nlMalloc(0x88, 8, false);
-    node = (SkillTweak*)mem;
-    if (mem != NULL)
-    {
-        ((SkillTweak*)mem)->mpValue = &fShotChance3;
-        nlSNPrintf(((SkillTweak*)mem)->mNameInFile, 0x7F, "%s", "Shot Chance 3");
-    }
+    node = new (nlMalloc(sizeof(SkillTweak), 8, false)) SkillTweak(&fShotChance3, "Shot Chance 3");
     nlListAddEnd<SkillTweak>(&mSkillTweaksList.m_pStart, pEnd, node);
 
-    mem = nlMalloc(0x88, 8, false);
-    node = (SkillTweak*)mem;
-    if (mem != NULL)
-    {
-        ((SkillTweak*)mem)->mpValue = &fShotChance4;
-        nlSNPrintf(((SkillTweak*)mem)->mNameInFile, 0x7F, "%s", "Shot Chance 4");
-    }
+    node = new (nlMalloc(sizeof(SkillTweak), 8, false)) SkillTweak(&fShotChance4, "Shot Chance 4");
     nlListAddEnd<SkillTweak>(&mSkillTweaksList.m_pStart, pEnd, node);
 
-    mem = nlMalloc(0x88, 8, false);
-    node = (SkillTweak*)mem;
-    if (mem != NULL)
-    {
-        ((SkillTweak*)mem)->mpValue = &fSTSWindupTime;
-        nlSNPrintf(((SkillTweak*)mem)->mNameInFile, 0x7F, "%s", "STS Windup Time");
-    }
+    node = new (nlMalloc(sizeof(SkillTweak), 8, false)) SkillTweak(&fSTSWindupTime, "STS Windup Time");
     nlListAddEnd<SkillTweak>(&mSkillTweaksList.m_pStart, pEnd, node);
 
-    mem = nlMalloc(0x88, 8, false);
-    node = (SkillTweak*)mem;
-    if (mem != NULL)
-    {
-        ((SkillTweak*)mem)->mpValue = &fAttackCarrierDistance;
-        nlSNPrintf(((SkillTweak*)mem)->mNameInFile, 0x7F, "%s", "Attack Carrier Range");
-    }
+    node = new (nlMalloc(sizeof(SkillTweak), 8, false)) SkillTweak(&fAttackCarrierDistance, "Attack Carrier Range");
     nlListAddEnd<SkillTweak>(&mSkillTweaksList.m_pStart, pEnd, node);
 
-    mem = nlMalloc(0x88, 8, false);
-    node = (SkillTweak*)mem;
-    if (mem != NULL)
-    {
-        ((SkillTweak*)mem)->mpValue = &fLooseBallChaseDistance;
-        nlSNPrintf(((SkillTweak*)mem)->mNameInFile, 0x7F, "%s", "Loose Ball Range");
-    }
+    node = new (nlMalloc(sizeof(SkillTweak), 8, false)) SkillTweak(&fLooseBallChaseDistance, "Loose Ball Range");
     nlListAddEnd<SkillTweak>(&mSkillTweaksList.m_pStart, pEnd, node);
 
-    mem = nlMalloc(0x88, 8, false);
-    node = (SkillTweak*)mem;
-    if (mem != NULL)
-    {
-        ((SkillTweak*)mem)->mpValue = &fGoalieCanInterceptPass;
-        nlSNPrintf(((SkillTweak*)mem)->mNameInFile, 0x7F, "%s", "Goalie Intercept Pass");
-    }
+    node = new (nlMalloc(sizeof(SkillTweak), 8, false)) SkillTweak(&fGoalieCanInterceptPass, "Goalie Intercept Pass");
     nlListAddEnd<SkillTweak>(&mSkillTweaksList.m_pStart, pEnd, node);
 
-    mem = nlMalloc(0x88, 8, false);
-    node = (SkillTweak*)mem;
-    if (mem != NULL)
-    {
-        ((SkillTweak*)mem)->mpValue = &fGoalieDekeChance;
-        nlSNPrintf(((SkillTweak*)mem)->mNameInFile, 0x7F, "%s", "Goalie Deke Chance");
-    }
+    node = new (nlMalloc(sizeof(SkillTweak), 8, false)) SkillTweak(&fGoalieDekeChance, "Goalie Deke Chance");
     nlListAddEnd<SkillTweak>(&mSkillTweaksList.m_pStart, pEnd, node);
 
-    mem = nlMalloc(0x88, 8, false);
-    node = (SkillTweak*)mem;
-    if (mem != NULL)
-    {
-        ((SkillTweak*)mem)->mpValue = &fGoalieDekeSpeed;
-        nlSNPrintf(((SkillTweak*)mem)->mNameInFile, 0x7F, "%s", "Goalie Deke Speed");
-    }
+    node = new (nlMalloc(sizeof(SkillTweak), 8, false)) SkillTweak(&fGoalieDekeSpeed, "Goalie Deke Speed");
     nlListAddEnd<SkillTweak>(&mSkillTweaksList.m_pStart, pEnd, node);
 
     for (i_sit = 0; i_sit < 3; i_sit++)
@@ -728,12 +456,7 @@ SkillTweaks::SkillTweaks()
             char sTweakName[0x40];
             nlSNPrintf(sTweakName, 0x3F, "%s %s Chance", sSituationName, GetPowerupName(i_powerup));
 
-            node = (SkillTweak*)nlMalloc(0x88, 8, false);
-            if (node != NULL)
-            {
-                node->mpValue = &PowerupUsageChance[i_sit][i_powerup];
-                nlSNPrintf(node->mNameInFile, 0x7F, "%s", sTweakName);
-            }
+            node = new (nlMalloc(sizeof(SkillTweak), 8, false)) SkillTweak(&PowerupUsageChance[i_sit][i_powerup], sTweakName);
             nlListAddEnd<SkillTweak>(&mSkillTweaksList.m_pStart, pEnd, node);
         }
     }

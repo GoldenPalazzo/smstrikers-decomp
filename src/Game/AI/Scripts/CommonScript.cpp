@@ -1459,8 +1459,8 @@ FuzzyVariant Fuzzy::GoodPassTargetFrom(cFielder* TheTargetFielder, cFielder* The
 
 /**
  * Offset/Address/Size: 0x95A0 | 0x80073770 | size: 0xB98
- * TODO: 95.35% match - remaining diffs are cache key kept on stack instead
- *       of r31 and fBestConfidence using f28 instead of f29.
+ * TODO: 96.32% match - remaining diffs are confidence branch and weighted
+ *       expression register/order differences.
  */
 FuzzyVariant Fuzzy::GetBestHitTarget(cFielder* TheFielder)
 {
@@ -1472,6 +1472,7 @@ FuzzyVariant Fuzzy::GetBestHitTarget(cFielder* TheFielder)
     FuzzyVariant fvFielder(TheFielder);
     unsigned long hash = (unsigned long)GetBestHitTarget;
     hash += ((Variant*)&fvFielder)->GetHash();
+    unsigned long hashKey = hash;
     FuzzyVariant fvFielder2(TheFielder);
 
     ScriptQuestionCache* cache = nlSingleton<ScriptQuestionCache>::s_pInstance;
@@ -1544,20 +1545,21 @@ FuzzyVariant Fuzzy::GetBestHitTarget(cFielder* TheFielder)
 
     if (lookupFound)
     {
-        unsigned long hashCopy1 = hash;
+        unsigned long hashCopy1 = hashKey;
+        ScriptQuestionCache* addCache = nlSingleton<ScriptQuestionCache>::s_pInstance;
         if (g_bScriptQuestionCachingOn)
         {
             if (g_bScriptQuestionCachingUseSTD)
             {
-                std::pair<const unsigned long, FuzzyVariant>& pair = cache->mQuestionCacheMapSTD.tree_.find_or_insert<unsigned long, FuzzyVariant>(hashCopy1);
+                std::pair<const unsigned long, FuzzyVariant>& pair = addCache->mQuestionCacheMapSTD.tree_.find_or_insert<unsigned long, FuzzyVariant>(hashCopy1);
                 pair.second = bestValue;
             }
             else
             {
                 AVLTreeNode* existingNode1;
-                cache->mQuestionCacheMap.AddAVLNode((AVLTreeNode**)&cache->mQuestionCacheMap.m_Root, (void*)&hashCopy1, (void*)&bestValue, &existingNode1, cache->mQuestionCacheMap.m_NumElements);
+                addCache->mQuestionCacheMap.AddAVLNode((AVLTreeNode**)&addCache->mQuestionCacheMap.m_Root, (void*)&hashCopy1, (void*)&bestValue, &existingNode1, addCache->mQuestionCacheMap.m_NumElements);
                 if (existingNode1 == NULL)
-                    cache->mQuestionCacheMap.m_NumElements++;
+                    addCache->mQuestionCacheMap.m_NumElements++;
             }
         }
         return bestValue;
@@ -1567,9 +1569,9 @@ FuzzyVariant Fuzzy::GetBestHitTarget(cFielder* TheFielder)
     {
         cFielder* theOpponent = g_pScriptOtherTeam->GetFielder(i);
 
-        float fTrueConfidence = 1.0f - Invincible(theOpponent);
+        float fNotInvincible = 1.0f - Invincible(theOpponent);
         float fNotFallen = 1.0f - FallenDown(theOpponent);
-        fTrueConfidence = (fNotFallen <= fTrueConfidence) ? fNotFallen : fTrueConfidence;
+        float fTrueConfidence = (fNotFallen <= fNotInvincible) ? fNotFallen : fNotInvincible;
 
         float fFalseConfidence = 1.0f - fTrueConfidence;
         float fMinVal = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
@@ -1673,20 +1675,21 @@ FuzzyVariant Fuzzy::GetBestHitTarget(cFielder* TheFielder)
 
     bestValue.Confidence = fBestConfidence;
 
-    unsigned long hashCopy2 = hash;
+    unsigned long hashCopy2 = hashKey;
+    ScriptQuestionCache* addCache = nlSingleton<ScriptQuestionCache>::s_pInstance;
     if (g_bScriptQuestionCachingOn)
     {
         if (g_bScriptQuestionCachingUseSTD)
         {
-            std::pair<const unsigned long, FuzzyVariant>& pair = cache->mQuestionCacheMapSTD.tree_.find_or_insert<unsigned long, FuzzyVariant>(hashCopy2);
+            std::pair<const unsigned long, FuzzyVariant>& pair = addCache->mQuestionCacheMapSTD.tree_.find_or_insert<unsigned long, FuzzyVariant>(hashCopy2);
             pair.second = bestValue;
         }
         else
         {
             AVLTreeNode* existingNode2;
-            cache->mQuestionCacheMap.AddAVLNode((AVLTreeNode**)&cache->mQuestionCacheMap.m_Root, (void*)&hashCopy2, (void*)&bestValue, &existingNode2, cache->mQuestionCacheMap.m_NumElements);
+            addCache->mQuestionCacheMap.AddAVLNode((AVLTreeNode**)&addCache->mQuestionCacheMap.m_Root, (void*)&hashCopy2, (void*)&bestValue, &existingNode2, addCache->mQuestionCacheMap.m_NumElements);
             if (existingNode2 == NULL)
-                cache->mQuestionCacheMap.m_NumElements++;
+                addCache->mQuestionCacheMap.m_NumElements++;
         }
     }
 

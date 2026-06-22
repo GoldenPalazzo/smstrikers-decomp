@@ -165,7 +165,6 @@ u32 PlayerAttackData::GetID()
 
 /**
  * Offset/Address/Size: 0xD2E8 | 0x80026624 | size: 0x474
- * TODO: 98.95% match - extra mtBombImpactTime SetSeconds before powerup field initialization
  */
 cFielder::cFielder(int nPlayerID, int nTeamID, eCharacterClass cc, const int* nModelID,
     cSHierarchy* pHierarchy, cAnimInventory* pAnimInventory,
@@ -178,13 +177,12 @@ cFielder::cFielder(int nPlayerID, int nTeamID, eCharacterClass cc, const int* nM
     , m_eFielderDesireState((eFielderDesireState)0)
     , m_ePrevFielderDesireState((eFielderDesireState)0)
     , m_tDesireDuration(0.0f)
+    , m_ePowerup((ePowerUpType)-1)
+    , mnNumPowerups(0)
+    , m_pPowerupTarget(NULL)
+    , m_nPowerupAnimID(-1)
+    , mtBombImpactTime(0.0f)
 {
-    m_ePowerup = (ePowerUpType)-1;
-    mnNumPowerups = 0;
-    m_pPowerupTarget = NULL;
-    m_nPowerupAnimID = -1;
-    mtBombImpactTime.SetSeconds(0.0f);
-
     m_ePenaltyCardStatus = PENALTY_CARD_NONE;
     m_pMark = NULL;
     m_pMarker = NULL;

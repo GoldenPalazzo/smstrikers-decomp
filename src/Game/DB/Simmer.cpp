@@ -4,10 +4,7 @@
 #include "NL/nlString.h"
 #include "PowerPC_EABI_Support/MSL_C/MSL_Common/stdio.h"
 
-typedef struct _FILE FILE;
-extern FILE* fopen(const char*, const char*);
-extern int fclose(FILE*);
-extern char* fgets(char*, int, FILE*);
+extern "C" char* fgets(char*, int, FILE*);
 
 static const char* SIM_FILE = "";
 
@@ -153,7 +150,7 @@ Simulator::Simulator()
 
 /**
  * Offset/Address/Size: 0x0 | 0x8019087C | size: 0xC18
- * TODO: 97.3% match - this/flag/pFile registers still differ, with BasicString(line)
+ * TODO: 97.83% match - this/flag registers still differ, with BasicString(line)
  *       temp pointer register drift.
  */
 void Simulator::InitializeStats()
@@ -161,6 +158,7 @@ void Simulator::InitializeStats()
     eDifficultyID diff;
     GameplaySettings::eSkillLevel skillLevel = GameInfoManager::s_pInstance->GetGameplayOptions().SkillLevel;
     int length = GameInfoManager::s_pInstance->GetGameplayOptions().GameTime;
+    FILE* pFile;
     unsigned char isMeanFound = 0;
     unsigned char isSDFound = 0;
     unsigned char doMean = 1;
@@ -193,7 +191,7 @@ void Simulator::InitializeStats()
     BasicString<char, Detail::TempStringAllocator> SDString = searchString.Append(" StdDev");
     BasicString<char, Detail::TempStringAllocator> statString;
     char line[0x100];
-    FILE* pFile = fopen(SIM_FILE, "r");
+    pFile = fopen(SIM_FILE, "r");
     if (pFile)
     {
         while (fgets(line, 0x100, pFile) != 0)
@@ -224,8 +222,7 @@ void Simulator::InitializeStats()
                 Tokenizer<BasicString<char, Detail::TempStringAllocator> >::iterator iter = tokenizer.begin();
                 ++iter;
                 for (;
-                    iter != tokenizer.end();
-                    ++iter)
+                    iter != tokenizer.end();)
                 {
                     while (i == 2 || (unsigned)(i - 6) <= 3u || i == 16 || i == 18)
                     {
@@ -240,6 +237,7 @@ void Simulator::InitializeStats()
                     {
                         mStatistics[stat].mStandardDeviation = (float)atof(iter.mToken.c_str());
                     }
+                    ++iter;
                     i = (int)(stat + 1);
                 }
                 if (isMeanFound == 1 && isSDFound == 1)

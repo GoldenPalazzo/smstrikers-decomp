@@ -3,6 +3,7 @@
 
 #include "Game/TweaksBase.h"
 #include "NL/nlMath.h"
+#include "NL/nlPrint.h"
 #include "NL/nlList.h"
 
 enum eDifficultyID
@@ -21,6 +22,12 @@ enum eDifficultyID
 class SkillTweak
 {
 public:
+    SkillTweak(float* valuePointer, const char* sNameInFile)
+    {
+        mpValue = valuePointer;
+        nlSNPrintf(mNameInFile, 0x7F, "%s", sNameInFile);
+    }
+
     /* 0x00 */ SkillTweak* next;
     /* 0x04 */ char mNameInFile[128];
     /* 0x84 */ float* mpValue;

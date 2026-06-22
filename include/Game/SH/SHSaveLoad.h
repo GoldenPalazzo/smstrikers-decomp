@@ -5,7 +5,6 @@
 #include "Game/FE/feButtonComponent.h"
 
 bool PushNoCardMessage();
-void CheckResults();
 void CreateFileAndSaveCB();
 void OverwriteFileAndContinueCB();
 void ManageMemCardCB();

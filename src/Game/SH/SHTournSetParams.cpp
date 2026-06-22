@@ -303,7 +303,7 @@ void TournSetParamsScene::SceneCreated()
 
 /**
  * Offset/Address/Size: 0xBA0 | 0x800E0574 | size: 0xAEC
- * TODO: 98.56% match - remaining this-register and slide traversal register swaps
+ * TODO: 98.91% match - remaining this-register and slide traversal register swaps
  */
 #define CALL_MENU_CB_UPDATE_TOP(cur, action)                   \
     do                                                         \
@@ -391,17 +391,23 @@ void TournSetParamsScene::Update(float fDeltaT)
         SlideMenuList* slideMenuList = mSlideMenuLists[mMenuItems.mCurrentIndex];
         if (slideMenuList != NULL)
         {
-            TLComponentInstance* comp = slideMenuList->mComponentInstance;
+            TLInstance* firstChild;
+            TLInstance* inst;
+            TLSlide* currentSlide;
+            TLSlide* startSlide;
+            TLComponentInstance* comp;
+            unsigned long hash;
+            comp = slideMenuList->mComponentInstance;
             if (comp != NULL && comp->GetActiveSlide() != NULL)
             {
-                TLSlide* startSlide = comp->GetActiveSlide();
-                TLSlide* currentSlide = startSlide;
+                startSlide = comp->GetActiveSlide();
+                currentSlide = startSlide;
 
                 do
                 {
                     comp->SetActiveSlide(currentSlide);
-                    TLInstance* firstChild = comp->GetActiveSlide()->m_instances;
-                    TLInstance* inst = firstChild;
+                    firstChild = comp->GetActiveSlide()->m_instances;
+                    inst = firstChild;
 
                     if (firstChild != NULL)
                     {
@@ -413,7 +419,7 @@ void TournSetParamsScene::Update(float fDeltaT)
                             }
                             else if (inst->m_type == TLAT_IMAGE)
                             {
-                                unsigned long hash = inst->m_hash;
+                                hash = inst->m_hash;
                                 if (hash != nlStringLowerHash("white_box"))
                                 {
                                     inst->SetAssetColour(SubMenuUnhighliteColour);
@@ -474,17 +480,23 @@ void TournSetParamsScene::Update(float fDeltaT)
             slideMenuList = mSlideMenuLists[mMenuItems.mCurrentIndex];
             if (slideMenuList != NULL)
             {
-                TLComponentInstance* comp = slideMenuList->mComponentInstance;
+                TLComponentInstance* comp;
+                TLInstance* firstChild;
+                TLInstance* inst;
+                TLSlide* startSlide;
+                TLSlide* currentSlide;
+                unsigned long hash;
+                comp = slideMenuList->mComponentInstance;
                 if (comp != NULL && comp->GetActiveSlide() != NULL)
                 {
-                    TLSlide* startSlide = comp->GetActiveSlide();
-                    TLSlide* currentSlide = startSlide;
+                    startSlide = comp->GetActiveSlide();
+                    currentSlide = startSlide;
 
                     do
                     {
                         comp->SetActiveSlide(currentSlide);
-                        TLInstance* firstChild = comp->GetActiveSlide()->m_instances;
-                        TLInstance* inst = firstChild;
+                        firstChild = comp->GetActiveSlide()->m_instances;
+                        inst = firstChild;
 
                         if (firstChild != NULL)
                         {
@@ -496,7 +508,7 @@ void TournSetParamsScene::Update(float fDeltaT)
                                 }
                                 else if (inst->m_type == TLAT_IMAGE)
                                 {
-                                    unsigned long hash = inst->m_hash;
+                                    hash = inst->m_hash;
                                     if (hash != nlStringLowerHash("white_box"))
                                     {
                                         inst->SetAssetColour(SubMenuHighliteColour);
@@ -520,17 +532,23 @@ void TournSetParamsScene::Update(float fDeltaT)
         SlideMenuList* slideMenuList = mSlideMenuLists[mMenuItems.mCurrentIndex];
         if (slideMenuList != NULL)
         {
-            TLComponentInstance* comp = slideMenuList->mComponentInstance;
+            TLComponentInstance* comp;
+            TLInstance* firstChild;
+            TLInstance* inst;
+            TLSlide* startSlide;
+            TLSlide* currentSlide;
+            unsigned long hash;
+            comp = slideMenuList->mComponentInstance;
             if (comp != NULL && comp->GetActiveSlide() != NULL)
             {
-                TLSlide* startSlide = comp->GetActiveSlide();
-                TLSlide* currentSlide = startSlide;
+                startSlide = comp->GetActiveSlide();
+                currentSlide = startSlide;
 
                 do
                 {
                     comp->SetActiveSlide(currentSlide);
-                    TLInstance* firstChild = comp->GetActiveSlide()->m_instances;
-                    TLInstance* inst = firstChild;
+                    firstChild = comp->GetActiveSlide()->m_instances;
+                    inst = firstChild;
 
                     if (firstChild != NULL)
                     {
@@ -542,7 +560,7 @@ void TournSetParamsScene::Update(float fDeltaT)
                             }
                             else if (inst->m_type == TLAT_IMAGE)
                             {
-                                unsigned long hash = inst->m_hash;
+                                hash = inst->m_hash;
                                 if (hash != nlStringLowerHash("white_box"))
                                 {
                                     inst->SetAssetColour(SubMenuUnhighliteColour);
@@ -600,17 +618,23 @@ void TournSetParamsScene::Update(float fDeltaT)
             slideMenuList = mSlideMenuLists[mMenuItems.mCurrentIndex];
             if (slideMenuList != NULL)
             {
-                TLComponentInstance* comp = slideMenuList->mComponentInstance;
+                TLComponentInstance* comp;
+                TLInstance* firstChild;
+                TLInstance* inst;
+                TLSlide* startSlide;
+                TLSlide* currentSlide;
+                unsigned long hash;
+                comp = slideMenuList->mComponentInstance;
                 if (comp != NULL && comp->GetActiveSlide() != NULL)
                 {
-                    TLSlide* startSlide = comp->GetActiveSlide();
-                    TLSlide* currentSlide = startSlide;
+                    startSlide = comp->GetActiveSlide();
+                    currentSlide = startSlide;
 
                     do
                     {
                         comp->SetActiveSlide(currentSlide);
-                        TLInstance* firstChild = comp->GetActiveSlide()->m_instances;
-                        TLInstance* inst = firstChild;
+                        firstChild = comp->GetActiveSlide()->m_instances;
+                        inst = firstChild;
 
                         if (firstChild != NULL)
                         {
@@ -622,7 +646,7 @@ void TournSetParamsScene::Update(float fDeltaT)
                                 }
                                 else if (inst->m_type == TLAT_IMAGE)
                                 {
-                                    unsigned long hash = inst->m_hash;
+                                    hash = inst->m_hash;
                                     if (hash != nlStringLowerHash("white_box"))
                                     {
                                         inst->SetAssetColour(SubMenuHighliteColour);

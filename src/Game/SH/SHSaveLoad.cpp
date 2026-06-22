@@ -57,6 +57,8 @@ bool SaveLoadScene::mIsFirstTimeAboutIPL = true; // .sdata:0x1
 static long gResult = -1;                        // .sdata:0x4
 static enum eSaveLoad gSceneTypeStack[4];        // .bss:0x0
 
+static void CheckResults();
+
 #pragma dont_inline on
 
 /**
@@ -309,7 +311,7 @@ void CreateFileAndSaveCB()
 /**
  * Offset/Address/Size: 0x15E4 | 0x800B1B6C | size: 0xE3C
  */
-void CheckResults()
+static void CheckResults()
 {
     eSaveLoad sceneType = gSceneTypeStack[gSceneTypeStackDepth - 1];
 
@@ -411,16 +413,22 @@ void CheckResults()
         sceneType = gSceneTypeStack[gSceneTypeStackDepth - 1];
         if (sceneType != ST_ASK_SAVE)
         {
-            if (sceneType >= ST_ASK_SAVE)
+            if (sceneType < ST_ASK_SAVE)
             {
-                if (sceneType != ST_SHOULD_LOAD_OR_SAVE)
+                if (sceneType >= ST_DELETE || sceneType < ST_SAVE)
                 {
                     return;
                 }
             }
-            else if (sceneType >= ST_DELETE || sceneType < ST_SAVE)
+            else
             {
-                return;
+                switch (sceneType)
+                {
+                case ST_SHOULD_LOAD_OR_SAVE:
+                    break;
+                default:
+                    return;
+                }
             }
         }
 
@@ -611,7 +619,6 @@ void CheckResults()
         if (sceneType == ST_GAMESAVEIDTEST)
         {
             gSaveLoadFinished = true;
-            return;
         }
 
         return;

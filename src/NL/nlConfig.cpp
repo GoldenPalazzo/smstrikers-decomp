@@ -87,42 +87,45 @@ void Config::Parse(const char* s, Config::Parser& parser)
 
 /**
  * Offset/Address/Size: 0x13EC | 0x801D4050 | size: 0x21C
- * TODO: 91.0% match - unresolved debug format literal (@2685) and remaining
- * r29/r30/r27 register-allocation differences in buffer sizing and copy loops
+ * TODO: 99.93% match - end pointer temp uses r27 where target keeps it in r30
  */
+static inline void InitFileStringData(BasicStringInternal* data, char* buffer, char* end, s32 length)
+{
+    if (data != 0)
+    {
+        s32 size = length + 1;
+        data->mData = (char*)nlMalloc(size, 8, true);
+        data->mSize = size;
+        data->mCapacity = size;
+
+        for (s32 i = 0; i < length + 1; i++)
+        {
+            data->mData[i] = 0;
+        }
+
+        data->mRefCount = 1;
+        for (s32 i = 0; i < data->mSize - 1; i++)
+        {
+            data->mData[i] = buffer[i];
+        }
+    }
+}
+
 BasicString<char, Detail::TempStringAllocator> Config::LoadFileAsString(const char* filename)
 {
-    tDebugPrintManager::Print(DC_CONFIG_SYSTEM, "Loading config file: %s\n", filename);
+    tDebugPrintManager::Print(DC_CONFIG_SYSTEM, "reading config file: %s\n", filename);
     nlFlushFileCash();
 
     unsigned long fileSize = 0;
-    char* src = (char*)nlLoadEntireFile(filename, &fileSize, 0x20, AllocateEnd);
-    if (src != 0)
+    char* buffer = (char*)nlLoadEntireFile(filename, &fileSize, 0x20, AllocateEnd);
+    if (buffer != 0)
     {
-        char* end = src + fileSize;
+        char* end = buffer + fileSize;
         BasicStringInternal* data = (BasicStringInternal*)nlMalloc(0x10, 8, true);
-        if (data != 0)
-        {
-            s32 length = end - src;
-            s32 size = length + 1;
-            data->mData = (char*)nlMalloc(size, 8, true);
-            data->mSize = size;
-            data->mCapacity = size;
-
-            for (s32 i = 0; i < length + 1; i++)
-            {
-                data->mData[i] = 0;
-            }
-
-            data->mRefCount = 1;
-            for (s32 i = 0; i < data->mSize - 1; i++)
-            {
-                data->mData[i] = src[i];
-            }
-        }
+        InitFileStringData(data, buffer, end, end - buffer);
 
         BasicString<char, Detail::TempStringAllocator> s(data);
-        nlFree(src);
+        nlFree(buffer);
         nlFlushFileCash();
         return s;
     }
