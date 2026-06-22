@@ -146,6 +146,35 @@ static inline BasicStringInternal* BuildScrollString(const unsigned short* text)
     return data;
 }
 
+static inline BasicStringData<unsigned short>* BuildEmptyScrollStringData()
+{
+    if (BasicStringData<unsigned short>* data = (BasicStringData<unsigned short>*)Detail::TempStringAllocator::allocate(sizeof(BasicStringData<unsigned short>)))
+    {
+        const unsigned short* str = (const unsigned short*)L"";
+        data->mData = 0;
+        data->mSize = 0;
+        data->mCapacity = 0;
+        const unsigned short* s = str;
+        while (*s++ != 0)
+        {
+            data->mSize++;
+        }
+        data->mSize++;
+        data->mData = (unsigned short*)Detail::TempStringAllocator::allocate((data->mSize + 1) * sizeof(unsigned short));
+        data->mCapacity = data->mSize;
+        for (int i = 0; i < data->mSize; i++)
+        {
+            data->mData[i] = *str++;
+        }
+        data->mRefCount = 1;
+        return data;
+    }
+    else
+    {
+        return data;
+    }
+}
+
 static inline const unsigned short* LookupLocTextChar(nlLocalization* loc, unsigned long hash)
 {
     if (loc->m_LookupTable == 0)
@@ -333,11 +362,10 @@ inline void FEScrollText::SetMetrics(int pos, int width)
 
 /**
  * Offset/Address/Size: 0xA68 | 0x800C943C | size: 0x1E8
- * TODO: 99.1% match - allocated string data and empty string pointer use swapped saved registers
  */
 FEScrollText::FEScrollText(TLTextInstance* controlText, int pos, int width)
     : m_controlText(controlText)
-    , m_message(Detail::EmptyStringTag())
+    , m_message(BuildEmptyScrollStringData())
 {
     m_messageWidth = 0;
 

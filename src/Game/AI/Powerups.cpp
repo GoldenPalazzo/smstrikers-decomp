@@ -984,12 +984,13 @@ PowerupBase* FindPowerUp(unsigned long hashOfDrawable)
 //  */
 /**
  * Offset/Address/Size: 0x4C00 | 0x8005F4EC | size: 0x2B4
- * TODO: 97.2% match - callee-saved registers for type, object, loop, and string temporary remain rotated.
+ * TODO: 97.4% match - type, loop, row pointer, and string temporary registers remain rotated.
  */
 void PowerupModelPool::Initialize(int type, unsigned long objHashName)
 {
+    int i;
     DrawableObject* obj = WorldManager::s_World->FindDrawableObject(objHashName);
-    int i = 0;
+    i = 0;
 
     obj->m_uObjectFlags &= ~1;
     obj->m_uObjectFlags |= 0x80;

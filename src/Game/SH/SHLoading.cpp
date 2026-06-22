@@ -387,6 +387,21 @@ inline TeamStats::TeamStats()
     mNumPoints = 0;
 }
 
+static inline const unsigned short* LookupLocHash(unsigned long key)
+{
+    nlLocalization* loc = g_pLocalization;
+    if (loc->m_LookupTable == NULL)
+    {
+        return LocalizationTableNotFound;
+    }
+    nlLocalization::StringLookup* entry = nlBSearch(key, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
+    if (entry != NULL)
+    {
+        return loc->m_FirstString + entry->StringOffset;
+    }
+    return MissingLocString;
+}
+
 void SuperLoadingScene::DisplayCupInfo()
 {
     TLSlide* slide = m_pFEPresentation->m_currentSlide;
@@ -432,101 +447,21 @@ void SuperLoadingScene::DisplayCupInfo()
 
     WideString unformatted[4];
 
-    {
-        nlLocalization* loc = g_pLocalization;
-        const unsigned short* locString;
-        nlLocalization::StringLookup* entry;
-
-        unsigned long key = 0xF0BEFFA7;
-        if (loc->m_LookupTable == NULL)
-        {
-            locString = LocalizationTableNotFound;
-        }
-        else
-        {
-            entry = nlBSearch(key, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
-            if (entry != NULL)
-            {
-                locString = loc->m_FirstString + entry->StringOffset;
-            }
-            else
-            {
-                locString = MissingLocString;
-            }
-        }
-        unformatted[0] = WideString(locString);
-
-        key = 0x18CDE978;
-        loc = g_pLocalization;
-        if (loc->m_LookupTable == NULL)
-        {
-            locString = LocalizationTableNotFound;
-        }
-        else
-        {
-            entry = nlBSearch(key, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
-            if (entry != NULL)
-            {
-                locString = loc->m_FirstString + entry->StringOffset;
-            }
-            else
-            {
-                locString = MissingLocString;
-            }
-        }
-        unformatted[1] = WideString(locString);
-
-        key = 0xF0BEFFA7;
-        loc = g_pLocalization;
-        if (loc->m_LookupTable == NULL)
-        {
-            locString = LocalizationTableNotFound;
-        }
-        else
-        {
-            entry = nlBSearch(key, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
-            if (entry != NULL)
-            {
-                locString = loc->m_FirstString + entry->StringOffset;
-            }
-            else
-            {
-                locString = MissingLocString;
-            }
-        }
-        unformatted[2] = WideString(locString);
-
-        key = 0x18CDE978;
-        loc = g_pLocalization;
-        if (loc->m_LookupTable == NULL)
-        {
-            locString = LocalizationTableNotFound;
-        }
-        else
-        {
-            entry = nlBSearch(key, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
-            if (entry != NULL)
-            {
-                locString = loc->m_FirstString + entry->StringOffset;
-            }
-            else
-            {
-                locString = MissingLocString;
-            }
-        }
-        unformatted[3] = WideString(locString);
-    }
+    unformatted[0] = WideString(LookupLocHash(0xF0BEFFA7));
+    unformatted[1] = WideString(LookupLocHash(0x18CDE978));
+    unformatted[2] = WideString(LookupLocHash(0xF0BEFFA7));
+    unformatted[3] = WideString(LookupLocHash(0x18CDE978));
 
     for (int i = 0; i < numTeams; i++)
     {
-        TeamStats teamStats = gameInfo->mPreviousTeamStats[i];
+        TeamStats teamStats = gameInfo->mPreviousTeamStats[(unsigned short)i];
         allTeamStats[i] = teamStats;
 
-        if (teamStats.mTeamIndex == gameInfo->GetTeam(0))
+        if (allTeamStats[i].mTeamIndex == gameInfo->GetTeam(0))
         {
             homeAwayIndex[0] = i;
         }
-        else if (teamStats.mTeamIndex == gameInfo->GetTeam(1))
+        else if (allTeamStats[i].mTeamIndex == gameInfo->GetTeam(1))
         {
             homeAwayIndex[1] = i;
         }

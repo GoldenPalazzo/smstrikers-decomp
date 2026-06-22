@@ -623,6 +623,8 @@ public:
     {
         Frame(char* begin, int size, Frame* next);
 
+        char* End() const { return mBegin + mSize; }
+
         /* 0x00 */ float mTime;
         /* 0x04 */ char* mBegin;
         /* 0x08 */ int mSize;

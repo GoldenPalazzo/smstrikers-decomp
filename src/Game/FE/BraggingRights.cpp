@@ -728,7 +728,7 @@ inline TeamStats::TeamStats()
 
 /**
  * Offset/Address/Size: 0x2E4 | 0x800D22E0 | size: 0x11E0
- * TODO: 98.33% match - presentation and info hold the wrong callee-saved
+ * TODO: 98.72% match - presentation and info hold the wrong callee-saved
  *       registers (presentation r31 vs r24, info r30 vs r31), cascading a
  *       one-register shift through the stat loops. Declaration reordering
  *       regresses; the frame and stack offsets already match.
@@ -753,6 +753,7 @@ void BraggingRightsScene::SceneCreated()
         if (tempStats.mTeamIndex == info->GetUserSelectedCupTeam())
         {
             userStats = tempStats;
+            break;
         }
     }
 

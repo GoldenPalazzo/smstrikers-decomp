@@ -1121,26 +1121,7 @@ void CupHubScene::CreateLeague()
             pTextInstance->SetAssetColour(mTextColour);
         }
 
-        unsigned long teamHash = GetLOCTeamName(mAllTeamStats[mStandingsIndices[row]].mTeamIndex);
-        nlLocalization* loc = g_pLocalization;
-        const unsigned short* locString;
-
-        if (loc->m_LookupTable == NULL)
-        {
-            locString = LocalizationTableNotFound;
-        }
-        else
-        {
-            nlLocalization::StringLookup* lookup = nlBSearch<nlLocalization::StringLookup, unsigned long>(teamHash, loc->m_LookupTable, loc->m_pFile->StringCount);
-            if (lookup != NULL)
-            {
-                locString = loc->m_FirstString + lookup->StringOffset;
-            }
-            else
-            {
-                locString = MissingLocString;
-            }
-        }
+        const unsigned short* locString = LookupLocHash(GetLOCTeamName(mAllTeamStats[mStandingsIndices[row]].mTeamIndex));
 
         BasicString<unsigned short, Detail::TempStringAllocator> teamNameStr(BuildWideStringData(locString));
         memcpy(mColumnsByRowsBuffers[0][row], teamNameStr.c_str(), 0x40);

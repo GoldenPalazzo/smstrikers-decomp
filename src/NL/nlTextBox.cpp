@@ -81,16 +81,15 @@ void nlTextBox::DrawString(const nlTextBox::StringDrawInfo& DrawInfo, const nlVe
 
 /**
  * Offset/Address/Size: 0x244 | 0x8021216C | size: 0x3B0
- * TODO: 96.57% match - remaining blockers: prologue instruction scheduling diffs
- * (MWCC param save interleaving order), fmuls f0,f2,f0 vs fmuls f0,f0,f2
- * operand order at 0x354 (commutative but different register assignment)
+ * TODO: 96.93% match - remaining blocker: entry setup/store scheduling around
+ * DrawInfo initialization.
  */
 void nlTextBox::ProcessString(const FontCharString* pString, const nlFont* pFont, const nlVector2& BoxSize, unsigned long DrawOptions, const nlMatrix4* pMatrix, nlTextBox::StringDrawInfo& DrawInfo)
 {
     DrawInfo.pFont = pFont;
     const unsigned short* str = pString->m_pString;
-    DrawInfo.String = str;
     DrawInfo.DrawOptions = DrawOptions;
+    DrawInfo.String = str;
     DrawInfo.pMatrix = pMatrix;
     DrawInfo.RowCount = 0;
 
@@ -223,7 +222,7 @@ void nlTextBox::ProcessString(const FontCharString* pString, const nlFont* pFont
         }
         else if (DrawOptions & 0x10)
         {
-            DrawInfo.YOffset = (signed short)((int)(BoxSize.f.y * 0.5f) - (totalHeight >> 1));
+            DrawInfo.YOffset = (signed short)((int)(BoxSize.f.y / 2.0f) - (totalHeight >> 1));
         }
         else
         {

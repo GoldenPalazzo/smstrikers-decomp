@@ -110,7 +110,7 @@ FormatImpl<BasicString<unsigned short, Detail::TempStringAllocator> >&
         if (mString[i + 2] != (unsigned short)'}')
             continue;
 
-        mString.erase(&mString[i], &mString[i] + 3);
+        mString.erase(&mString[0] + i, &mString[0] + i + 3);
         mString[i];
         unsigned short* mStringData = mString.m_data ? mString.m_data->mData : 0;
         unsigned short* insertBegin = &insert[0];

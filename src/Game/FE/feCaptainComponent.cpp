@@ -2004,11 +2004,10 @@ void IChooseCaptain::PushPlayer(eFEINPUT_PAD pad, int side)
 
 /**
  * Offset/Address/Size: 0x1DC | 0x800BDB78 | size: 0x15C
- * TODO: 98.7% match - still emits lbz reload for side-count init and shifted
- *       branch prologue around mIsSinglePlayerInput clear in else path.
  */
 void IChooseCaptain::PopPlayer(eFEINPUT_PAD pad)
 {
+    FORCE_DONT_INLINE;
     int foundIndex = 0;
     int idx = 0;
     for (int i = 0; i < mNumTotalPushedPlayers; i++, idx++)
@@ -2027,38 +2026,7 @@ void IChooseCaptain::PopPlayer(eFEINPUT_PAD pad)
     }
 
     mNumTotalPushedPlayers--;
-
-    int numSide1;
-    int numSide0;
-    mIsSinglePlayerInput = 0;
-    numSide1 = numSide0 = mIsSinglePlayerInput;
-
-    if (mNumTotalPushedPlayers == 1)
-    {
-        mIsSinglePlayerInput = true;
-    }
-    else
-    {
-        numSide1 = numSide0;
-        IChooseCaptain* p = this;
-        for (int i = 0; i < mNumTotalPushedPlayers; i++)
-        {
-            if (p->mAllPushedPlayerSides[0] == 0)
-            {
-                numSide0++;
-            }
-            else if (p->mAllPushedPlayerSides[0] == 1)
-            {
-                numSide1++;
-            }
-            p = (IChooseCaptain*)((u8*)p + 4);
-        }
-
-        if (numSide0 == 0 || numSide1 == 0)
-        {
-            mIsSinglePlayerInput = true;
-        }
-    }
+    UpdateSinglePlayerState();
 
     if (mNumTotalPushedPlayers != 0 && mIsSinglePlayerInput && mComponentState[1].mCurrentPhase != PHASE_READY)
     {

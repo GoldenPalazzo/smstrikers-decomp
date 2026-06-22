@@ -551,7 +551,7 @@ void StadiumSelectSceneV2::SceneCreated()
 
 /**
  * Offset/Address/Size: 0x210 | 0x800D8790 | size: 0x5C4
- * TODO: 98.29% match - r4/r0 register swap in WrapStadiumIndex result (subf dest)
+ * TODO: 98.55% match - stadium entry lookup and stadium name finder setup scheduling
  */
 void StadiumSelectSceneV2::Update(float dt)
 {
@@ -580,11 +580,19 @@ void StadiumSelectSceneV2::Update(float dt)
         int newIndex;
         if (rightPressed)
         {
-            newIndex = WrapStadiumIndex(mStadiumIndex + 1);
+            if ((newIndex = mStadiumIndex + 1) < 0)
+            {
+                newIndex += 7;
+            }
+            newIndex %= 7;
         }
         else
         {
-            newIndex = WrapStadiumIndex(mStadiumIndex - 1);
+            if ((newIndex = mStadiumIndex - 1) < 0)
+            {
+                newIndex += 7;
+            }
+            newIndex %= 7;
         }
         mStadiumIndex = newIndex;
 

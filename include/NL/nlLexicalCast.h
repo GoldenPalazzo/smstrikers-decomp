@@ -151,7 +151,7 @@ inline NLString Detail::LexicalCastImpl<NLString, int>::Do(int t)
 
 /**
  * Offset/Address/Size: 0x168 | 0x8006A094 | size: 0x100
- * TODO: 95.38% match - r30/r31 register roles are swapped between return
+ * TODO: 97.66% match - r30/r31 register roles are swapped between return
  * slot and the allocated BasicStringData pointer.
  */
 template <>
@@ -188,7 +188,7 @@ inline NLString Detail::LexicalCastImpl<NLString, unsigned long>::Do(unsigned lo
         data->mRefCount = 1;
     }
 
-    return NLString((BasicStringData<char>*)data);
+    return NLString(data);
 }
 
 /**

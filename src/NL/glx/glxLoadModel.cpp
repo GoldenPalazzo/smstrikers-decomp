@@ -557,8 +557,7 @@ GLSkinMesh* glx_MakeSkinMesh(nlChunk* outerChunk, glModel* models)
             u32 ptr = (u32)chunk;
             ptr += align;
             ptr += 7;
-            ptr &= ~(align - 1);
-            result = (u8*)ptr;
+            result = (u8*)(ptr & ~(align - 1));
         }
         else
         {
@@ -592,8 +591,8 @@ GLSkinMesh* glx_MakeSkinMesh(nlChunk* outerChunk, glModel* models)
             SkinMeshBoneMapNode* node = new (nlMalloc(sizeof(SkinMeshBoneMapNode), 8, false)) SkinMeshBoneMapNode;
 
             i = 0;
-            count = chunkSize >> 3;
             node->m_next = NULL;
+            count = chunkSize >> 3;
             AVLTreeNode** root = (AVLTreeNode**)&node->boneMap.m_Root;
             while (i < count)
             {

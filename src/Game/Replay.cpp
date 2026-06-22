@@ -147,9 +147,6 @@ float Replay::TimeOfLastOccurence(unsigned int events) const
 
 /**
  * Offset/Address/Size: 0x49C | 0x80213D48 | size: 0x17C
- * TODO: 98.63% match - r4/r5 register swap for mFree->mBegin/mSize loads
- * in merge section. Likely -inline deferred vs -inline auto register
- * allocation difference.
  */
 void Replay::NewFrame()
 {
@@ -176,7 +173,7 @@ void Replay::NewFrame()
                 mReels[0].mBegin = Next(mReels[0].mBegin, 0);
             }
 
-            if (mFree->mBegin + mFree->mSize == mFree->mNext->mBegin)
+            if (mFree->End() == mFree->mNext->mBegin)
             {
                 Frame* nextFrame = mFree->mNext;
                 mFree->mSize += nextFrame->mSize;

@@ -826,7 +826,7 @@ config.libs = [
             Object(NonMatching, "Game/Replay.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/ReplayChoreo.cpp", extra_cflags=["-inline auto", "-inline deferred"]),    
             Object(NonMatching, "Game/ReplayManager.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(NonMatching, "Game/RenderSnapshot.cpp", extra_cflags=["-inline auto"]),
+            Object(Matching, "Game/RenderSnapshot.cpp", extra_cflags=["-inline auto"]),
 
             Object(NonMatching, "Game/Ball.cpp", extra_cflags=["-inline auto"]),
             Object(Matching, "Game/Net.cpp", extra_cflags=["-inline auto", "-inline deferred"]),

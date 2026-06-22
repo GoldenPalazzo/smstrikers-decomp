@@ -665,9 +665,9 @@ DrawableObject* DrawableModel::Clone() const
 
 /**
  * Offset/Address/Size: 0xD18 | 0x80120B24 | size: 0x38C
- * TODO: 98.96% match - register allocation diff: dimensions r22 vs target r23,
- *       numPackets r23 vs target r22. Remaining diffs include mullw/add operand
- *       order in index setup and final dimension float register scheduling.
+ * TODO: 99.23% match - saved-register swap: dimensions r22 vs target r23,
+ *       numPackets r23 vs target r22. The first indexed display-list cursor
+ *       also keeps the +4 base in r4 where target uses r3.
  */
 void GetAABBDimensions(const glModel* model, AABBDimensions& dimensions, unsigned long boundingBoxCacheKey)
 {
@@ -731,23 +731,35 @@ void GetAABBDimensions(const glModel* model, AABBDimensions& dimensions, unsigne
     while (packetIndex < numPackets)
     {
         packet = (glModelPacket*)(packets + packetOffset);
-        void* list = dlGetStruct(packet->indexBuffer);
+        DisplayList* list = dlGetStruct(packet->indexBuffer);
         vertexIndex = 0;
 
         while (vertexIndex < packet->numVertices)
         {
             u16* pVert;
-            if (*(u16*)((u8*)list + 0x0E) != 0)
+            if (((u16*)&list->indices)[1] != 0)
             {
-                u16 ns = *(u16*)((u8*)list + 0x0C);
-                int offset = ((ns - 1) * 2 + 1) * vertexIndex + 4;
-                pVert = (u16*)((u8*)*(u32*)((u8*)list + 0x04) + offset);
+                u16 ns = ((u16*)&list->indices)[0];
+                int stride = (ns - 1) * 2 + 1;
+                int offset = stride * vertexIndex;
+                u8* ptr8 = (u8*)list->list;
+                ptr8 += offset;
+                pVert = (u16*)ptr8;
+                ptr8 = (u8*)pVert;
+                ptr8 += 4;
+                pVert = (u16*)ptr8;
             }
             else
             {
-                u16 ns = *(u16*)((u8*)list + 0x0C);
-                int offset = (ns * 2) * vertexIndex + 3;
-                pVert = (u16*)((u8*)*(u32*)((u8*)list + 0x04) + offset);
+                u16 ns = ((u16*)&list->indices)[0];
+                int stride = ns * 2;
+                int offset = vertexIndex * stride;
+                u8* ptr8 = (u8*)list->list;
+                ptr8 += offset;
+                pVert = (u16*)ptr8;
+                ptr8 = (u8*)pVert;
+                ptr8 += 3;
+                pVert = (u16*)ptr8;
             }
 
             glModelStream* stream = packet->streams;
@@ -809,9 +821,9 @@ void GetAABBDimensions(const glModel* model, AABBDimensions& dimensions, unsigne
 
     dimensions.mMin = min;
     dimensions.mMax = max;
-    float dx = dimensions.mMax.f.x - dimensions.mMin.f.x;
-    float dy = dimensions.mMax.f.y - dimensions.mMin.f.y;
     float dz = dimensions.mMax.f.z - dimensions.mMin.f.z;
+    float dy = dimensions.mMax.f.y - dimensions.mMin.f.y;
+    float dx = dimensions.mMax.f.x - dimensions.mMin.f.x;
     dimensions.mDim.f.x = dx;
     dimensions.mDim.f.y = dy;
     dimensions.mDim.f.z = dz;

@@ -333,8 +333,7 @@ extern "C" int THPSimpleGetVideoInfo(THPVideoInfo* videoInfo)
 
 /**
  * Offset/Address/Size: 0x31C | 0x801CC280 | size: 0x368
- * TODO: 89.5% match - MWCC register allocation puts requestSample in r0 vs r11, cascading to
- * inner loop register diffs and post-loop addressing mode differences (addi+lwzx vs add+lwz)
+ * TODO: 99.5% match - extra move after audio-buffer valid-sample load shifts branch targets
  */
 void MixAudio(short* destination, short* source, unsigned long sample)
 {
@@ -353,13 +352,11 @@ void MixAudio(short* destination, short* source, unsigned long sample)
 
     if (source != NULL)
     {
-        THPSimpleControlWork* simple = (THPSimpleControlWork*)&SimpleControl;
-
-        if ((simple->open != 0) && (simple->audioState == 1) && (simple->audioExist != 0))
+        if ((SimpleControl.open != 0) && (SimpleControl.audioState == 1) && (SimpleControl.audioExist != 0))
         {
             while (1)
             {
-                requestSample = simple->audioBuffer[simple->audioOutputIndex].mValidSample;
+                requestSample = SimpleControl.audioBuffer[SimpleControl.audioOutputIndex].mValidSample;
                 if (requestSample == 0)
                 {
                     break;
@@ -367,23 +364,23 @@ void MixAudio(short* destination, short* source, unsigned long sample)
 
                 requestSample = (requestSample >= sample) ? sample : requestSample;
 
-                thpsrc = simple->audioBuffer[simple->audioOutputIndex].mCurPtr;
+                thpsrc = SimpleControl.audioBuffer[SimpleControl.audioOutputIndex].mCurPtr;
                 dst = destination;
                 libsrc = source;
 
                 for (i = 0; i < requestSample; i++)
                 {
-                    if (simple->rampCount != 0)
+                    if (SimpleControl.rampCount != 0)
                     {
-                        simple->rampCount--;
-                        simple->curVolume += simple->deltaVolume;
+                        SimpleControl.rampCount--;
+                        SimpleControl.curVolume += SimpleControl.deltaVolume;
                     }
                     else
                     {
-                        simple->curVolume = simple->targetVolume;
+                        SimpleControl.curVolume = SimpleControl.targetVolume;
                     }
 
-                    vol = VolumeTable[(long)simple->curVolume];
+                    vol = VolumeTable[(long)SimpleControl.curVolume];
 
                     mix = libsrc[0] + ((vol * thpsrc[0]) >> 15);
                     if (mix < -0x8000)
@@ -414,16 +411,12 @@ void MixAudio(short* destination, short* source, unsigned long sample)
 
                 sample -= requestSample;
 
-                THPAudioBuffer* audio = &simple->audioBuffer[simple->audioOutputIndex];
-                audio->mValidSample -= requestSample;
+                SimpleControl.audioBuffer[SimpleControl.audioOutputIndex].mValidSample -= requestSample;
+                SimpleControl.audioBuffer[SimpleControl.audioOutputIndex].mCurPtr = thpsrc;
 
-                audio = &simple->audioBuffer[simple->audioOutputIndex];
-                audio->mCurPtr = thpsrc;
-
-                audio = &simple->audioBuffer[simple->audioOutputIndex];
-                if ((audio->mValidSample == 0) && (++simple->audioOutputIndex >= NumAudioBuffers))
+                if ((SimpleControl.audioBuffer[SimpleControl.audioOutputIndex].mValidSample == 0) && (++SimpleControl.audioOutputIndex >= NumAudioBuffers))
                 {
-                    simple->audioOutputIndex = 0;
+                    SimpleControl.audioOutputIndex = 0;
                 }
 
                 if (sample == 0)
@@ -444,13 +437,11 @@ void MixAudio(short* destination, short* source, unsigned long sample)
     }
     else
     {
-        THPSimpleControlWork* simple = (THPSimpleControlWork*)&SimpleControl;
-
-        if ((simple->open != 0) && (simple->audioState == 1) && (simple->audioExist != 0))
+        if ((SimpleControl.open != 0) && (SimpleControl.audioState == 1) && (SimpleControl.audioExist != 0))
         {
             while (1)
             {
-                requestSample = simple->audioBuffer[simple->audioOutputIndex].mValidSample;
+                requestSample = SimpleControl.audioBuffer[SimpleControl.audioOutputIndex].mValidSample;
                 if (requestSample == 0)
                 {
                     break;
@@ -461,22 +452,22 @@ void MixAudio(short* destination, short* source, unsigned long sample)
                     requestSample = sample;
                 }
 
-                thpsrc = simple->audioBuffer[simple->audioOutputIndex].mCurPtr;
+                thpsrc = SimpleControl.audioBuffer[SimpleControl.audioOutputIndex].mCurPtr;
                 dst = destination;
 
                 for (i = 0; i < requestSample; i++)
                 {
-                    if (simple->rampCount != 0)
+                    if (SimpleControl.rampCount != 0)
                     {
-                        simple->rampCount--;
-                        simple->curVolume += simple->deltaVolume;
+                        SimpleControl.rampCount--;
+                        SimpleControl.curVolume += SimpleControl.deltaVolume;
                     }
                     else
                     {
-                        simple->curVolume = simple->targetVolume;
+                        SimpleControl.curVolume = SimpleControl.targetVolume;
                     }
 
-                    vol = VolumeTable[(long)simple->curVolume];
+                    vol = VolumeTable[(long)SimpleControl.curVolume];
 
                     mix = (vol * thpsrc[0]) >> 15;
                     if (mix < -0x8000)
@@ -506,16 +497,12 @@ void MixAudio(short* destination, short* source, unsigned long sample)
 
                 sample -= requestSample;
 
-                THPAudioBuffer* audio = &simple->audioBuffer[simple->audioOutputIndex];
-                audio->mValidSample -= requestSample;
+                SimpleControl.audioBuffer[SimpleControl.audioOutputIndex].mValidSample -= requestSample;
+                SimpleControl.audioBuffer[SimpleControl.audioOutputIndex].mCurPtr = thpsrc;
 
-                audio = &simple->audioBuffer[simple->audioOutputIndex];
-                audio->mCurPtr = thpsrc;
-
-                audio = &simple->audioBuffer[simple->audioOutputIndex];
-                if ((audio->mValidSample == 0) && (++simple->audioOutputIndex >= NumAudioBuffers))
+                if ((SimpleControl.audioBuffer[SimpleControl.audioOutputIndex].mValidSample == 0) && (++SimpleControl.audioOutputIndex >= NumAudioBuffers))
                 {
-                    simple->audioOutputIndex = 0;
+                    SimpleControl.audioOutputIndex = 0;
                 }
 
                 if (sample == 0)

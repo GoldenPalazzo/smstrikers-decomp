@@ -9,10 +9,10 @@ struct CellItem
     const char* mIconName;
 };
 
-extern CellItem CaptainCellItems[];
+extern CellItem CaptainCellItems[9];
 extern int NUM_CAPTAIN_CELL_ITEMS;
-extern CellItem LeipzigCaptainCellItems[];
-extern CellItem NormalCaptainCellItems[];
+extern const CellItem LeipzigCaptainCellItems[4];
+extern const CellItem NormalCaptainCellItems[9];
 
 /**
  * Offset/Address/Size: 0x0 | 0x800C16F4 | size: 0x24
@@ -437,8 +437,8 @@ ICaptainGridComponent::~ICaptainGridComponent()
 
 /**
  * Offset/Address/Size: 0x950 | 0x800C2044 | size: 0x228
- * TODO: 90.68% match - constructor setup still uses different register allocation for
- * g_e3_Build/numItems and the first copy branch still emits mismatched load/store pairing
+ * TODO: 94.35% match - remaining constructor setup uses different registers for
+ * g_e3_Build/item counts and copied CellItem load/store order.
  */
 ICaptainGridComponent::ICaptainGridComponent(TLComponentInstance* parentcomponent, bool ismirrored)
     : IGridComponent<eTeamID>(parentcomponent, "highlight", ismirrored)
@@ -456,9 +456,9 @@ ICaptainGridComponent::ICaptainGridComponent(TLComponentInstance* parentcomponen
     }
     NUM_CAPTAIN_CELL_ITEMS = totalItems;
 
-    CellItem* leipzigSrc = LeipzigCaptainCellItems;
+    const CellItem* leipzigSrc = LeipzigCaptainCellItems;
     CellItem* dst = CaptainCellItems;
-    CellItem* normalSrc = NormalCaptainCellItems;
+    const CellItem* normalSrc = NormalCaptainCellItems;
 
     if (g_e3_Build)
     {
