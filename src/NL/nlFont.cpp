@@ -613,8 +613,6 @@ unsigned char nlFont::Load(const char* szFontName, char* pFontDescData, unsigned
                 pToken = nlStrChr(pToken, ' ') + 1;
                 while ((unsigned long)pToken != 1)
                 {
-                    ListEntry<nlFont::KernPair>* pEntry = NULL;
-
                     kp.s.A = Base;
                     {
                         int nB;
@@ -632,6 +630,7 @@ unsigned char nlFont::Load(const char* szFontName, char* pFontDescData, unsigned
                     pToken = nlStrChr(pToken, ' ') + 1;
                     kp.Kern = atoi(pToken);
                     ListEntry<nlFont::KernPair> entryData(kp);
+                    ListEntry<nlFont::KernPair>* pEntry = NULL;
 
                     if (KernList.m_Allocator.m_FreeList == NULL)
                     {

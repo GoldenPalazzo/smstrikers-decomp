@@ -25,7 +25,7 @@ nlArrayAllocator<AudioStream::READ_CB_INFO> AudioStream::READ_CB_INFO::s_AllocPo
 
 }
 
-GCAudioStreaming::AudioStream::READ_CB_INFO ARRAY_ALLOCATOR_MEMORY_class_name_s_AllocPool[32];
+unsigned char ARRAY_ALLOCATOR_MEMORY_class_name_s_AllocPool[sizeof(GCAudioStreaming::AudioStream::READ_CB_INFO) * 32];
 
 namespace
 {
@@ -34,10 +34,12 @@ struct GCStreamAllocPoolInit
     GCStreamAllocPoolInit()
     {
         typedef GCAudioStreaming::AudioStream::READ_CB_INFO Slot;
-        Slot* mem = ARRAY_ALLOCATOR_MEMORY_class_name_s_AllocPool;
-        for (int i = 0; i < 31; i++)
+        Slot* mem = (Slot*)ARRAY_ALLOCATOR_MEMORY_class_name_s_AllocPool;
+        Slot* entry = mem;
+        for (int i = 1; i < 32; i++)
         {
-            mem[i].m_next = &mem[i + 1];
+            entry->m_next = &mem[i];
+            entry++;
         }
         GCAudioStreaming::AudioStream::READ_CB_INFO::s_AllocPool.m_pFree = &mem[0];
         mem[31].m_next = 0;
@@ -433,7 +435,7 @@ void GCAudioStreaming::AudioStream::_UpdateReadCB(nlFile*, void* pData, unsigned
 
 /**
  * Offset/Address/Size: 0x1364 | 0x801C8B14 | size: 0x3A0
- * TODO: 88.69% match - register allocation differences remain in callback pool paths
+ * TODO: 95.04% match - object pointer and allocation-loop registers still differ
  */
 void GCAudioStreaming::MonoAudioStream::Warm(bool CoolOnStop)
 {
@@ -499,21 +501,14 @@ done_alloc:
     unsigned long alignedHdr = ((unsigned long)m_BuffMgr.m_ADPCMHdrMem + 0x1F) & ~0x1F;
 
     bool enabled = OSDisableInterrupts();
-    READ_CB_INFO* pCBInfo = READ_CB_INFO::s_AllocPool.m_pFree;
-    if (!pCBInfo)
-    {
-        pCBInfo = 0;
-    }
-    else
-    {
-        READ_CB_INFO::s_AllocPool.m_pFree = pCBInfo->m_next;
-    }
+    READ_CB_INFO* pCBInfo = READ_CB_INFO::s_AllocPool.Allocate();
     OSRestoreInterrupts(enabled);
 
     if (pCBInfo)
     {
+        AudioStreamBuffer* pBuffer = m_Buffers[0];
         pCBInfo->m_next = (READ_CB_INFO*)this;
-        pCBInfo->pBuffer = m_Buffers[0];
+        pCBInfo->pBuffer = pBuffer;
     }
 
     nlReadAsync(m_pFile, (void*)alignedHdr, sizeof(sDSPADPCM), _HdrReadCB, (unsigned long)pCBInfo);
@@ -521,21 +516,14 @@ done_alloc:
     unsigned char* pDataBuf = m_Buffers[0]->m_MRAMBuffer;
 
     enabled = OSDisableInterrupts();
-    READ_CB_INFO* pCBInfo2 = READ_CB_INFO::s_AllocPool.m_pFree;
-    if (!pCBInfo2)
-    {
-        pCBInfo2 = 0;
-    }
-    else
-    {
-        READ_CB_INFO::s_AllocPool.m_pFree = pCBInfo2->m_next;
-    }
+    READ_CB_INFO* pCBInfo2 = READ_CB_INFO::s_AllocPool.Allocate();
     OSRestoreInterrupts(enabled);
 
     if (pCBInfo2)
     {
+        AudioStreamBuffer* pBuffer = m_Buffers[0];
         pCBInfo2->m_next = (READ_CB_INFO*)this;
-        pCBInfo2->pBuffer = m_Buffers[0];
+        pCBInfo2->pBuffer = pBuffer;
     }
 
     nlReadAsync(m_pFile, pDataBuf, ReadLen, _WarmReadCB, (unsigned long)pCBInfo2);

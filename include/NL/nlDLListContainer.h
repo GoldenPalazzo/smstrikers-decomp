@@ -73,15 +73,11 @@ public:
 template <typename T, typename Adapter>
 T* DLListContainerBase<T, Adapter>::AllocateAtEnd(unsigned long* outEntry)
 {
-    // TODO: 98.97% match - residual is a pure r27/r28 callee-saved register swap
-    // between the allocated entry pointer and the cleanup-tracking pointer.
     DLListEntry<T>* result;
     {
         T data;
         DLListEntry<T> localEntry(data);
-        result = NULL;
-
-        m_Allocator.Allocate(result);
+        result = m_Allocator.Allocate();
         result = new (result) DLListEntry<T>(localEntry);
     }
 

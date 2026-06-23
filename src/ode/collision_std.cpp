@@ -994,7 +994,7 @@ int dBoxBox(const dVector3 p1, const dMatrix3 R1,
 
     // find the four corners of the incident face, in reference-face coordinates
     dReal quad[8]; // 2D coordinate of incident face (x,y pairs)
-    dReal c1, c2, m11, m12, m21, m22;
+    dReal m11, m12, m21, m22, c1, c2;
     c1 = dDOT14(center, Ra + code1);
     c2 = dDOT14(center, Ra + code2);
     // optimize this? - we have already computed this data above, but it is not

@@ -48,12 +48,47 @@ void Variant_stub()
     fn3(format, value1, value2, value3);
 }
 
-// /**
-//  * Offset/Address/Size: 0x1E4C | 0x800690A4 | size: 0xD74
-//  */
-// void FormatImpl<BasicString<char, Detail::TempStringAllocator>>::operator%<unsigned long>(const unsigned long&)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x1E4C | 0x800690A4 | size: 0xD74
+ * TODO: 97.45% match - residual erase/insert register swaps and insert-end pointer branch offsets.
+ */
+template <>
+template <>
+FormatImpl<BasicString<char, Detail::TempStringAllocator> >&
+    FormatImpl<BasicString<char, Detail::TempStringAllocator> >::operator% <unsigned long>(const unsigned long& t)
+{
+    BasicString<char, Detail::TempStringAllocator> insert = LexicalCast<BasicString<char, Detail::TempStringAllocator>, unsigned long>(t);
+
+    for (int i = 0; i < (mString.m_data ? mString.m_data->mSize - 1 : 0); i++)
+    {
+        if (mString[i] != '{')
+            continue;
+
+        if (i + 1 >= (mString.m_data ? mString.m_data->mSize - 1 : 0))
+            continue;
+
+        char* marker = &mString[i];
+        if (mCurrentPos != marker[1] - '0')
+            continue;
+
+        if (i + 2 >= (mString.m_data ? mString.m_data->mSize - 1 : 0))
+            continue;
+
+        char* markerEnd = &mString[i];
+        if (markerEnd[2] != '}')
+            continue;
+
+        mString.erase(&mString[0] + i, &mString[0] + i + 3);
+        mString[i];
+        char* mStringData = mString.m_data ? mString.m_data->mData : 0;
+        char* insertBegin = &insert[0];
+        char* insertEndCow = &insert[(int)(insert.m_data ? insert.m_data->mSize - 1 : 0)];
+        mString.insert(mStringData + i, insertBegin, insert.m_data ? insert.m_data->mData + insert.m_data->mSize - 1 : (char*)0);
+    }
+
+    mCurrentPos++;
+    return *this;
+}
 
 // /**
 //  * Offset/Address/Size: 0x1D38 | 0x80068F90 | size: 0x114

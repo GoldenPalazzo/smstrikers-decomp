@@ -997,7 +997,7 @@ void GoalOverlay::DoMatchEndOverlay()
 
 /**
  * Offset/Address/Size: 0x6E8 | 0x80100758 | size: 0x6BC
- * TODO: 98.73% match - remaining saved-register swaps between the object pointer and localization string data.
+ * TODO: 99.21% match - remaining saved-register swaps between the object pointer and localization string data.
  */
 void GoalOverlay::SetWinnerTitle()
 {
@@ -1018,8 +1018,7 @@ void GoalOverlay::SetWinnerTitle()
     BasicString<unsigned short, Detail::TempStringAllocator> unformatted(LookupLocHash(0x4543196B));
     BasicString<unsigned short, Detail::TempStringAllocator> formatted;
 
-    int teamIndex = scoreLeft <= scoreRight;
-    eTeamID winningTeam = nlSingleton<GameInfoManager>::s_pInstance->GetTeam(teamIndex);
+    eTeamID winningTeam = nlSingleton<GameInfoManager>::s_pInstance->GetTeam((scoreLeft <= scoreRight) ? 1 : 0);
 
     if (scoreLeft > scoreRight)
     {

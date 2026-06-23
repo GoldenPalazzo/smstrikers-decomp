@@ -21,7 +21,9 @@ public:
     void DefaultOffensivePlay(cDecisionEntity*);
     static FuzzyVariant DoPassing(float, cDecisionEntity*);
     static FuzzyVariant GetBestPassTarget(cPlayer*);
+    static FuzzyVariant GetStrategicBallCarrier(cTeam*);
     static FuzzyVariant GoodBallCarrier(cFielder*);
+    static FuzzyVariant GoodToShoot(cFielder*);
     static FuzzyVariant GoodToChipShot(cFielder*);
     static FuzzyVariant InGoodWindupPosition(cFielder*);
     static FuzzyVariant InDanger(cFielder*);

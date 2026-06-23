@@ -817,28 +817,14 @@ cPN_SAnimController* cCharacter::NewAnimController(int animID, bool bRestartCycl
     cSAnim* anim = m_pAnimInventory->GetAnim(animID);
     cPN_SAnimController* controller = AllocateSAnimController();
 
-    if (controller != NULL)
-    {
-        bool mirrored;
-        if (bMirrorSwap)
-        {
-            mirrored = !m_pAnimInventory->GetMirrored(animID);
-        }
-        else
-        {
-            mirrored = m_pAnimInventory->GetMirrored(animID);
-        }
-
-        const AnimRetarget* retarget = NULL;
-        if (m_pAnimRetargetList != NULL)
-        {
-            retarget = m_pAnimRetargetList->GetAnimRetargetWithSignature(anim);
-        }
-
-        extern cPN_SAnimController* __ct__19cPN_SAnimControllerFP6cSAnimPC12AnimRetarget9ePlayModePFUiP19cPN_SAnimController_vUib(cPN_SAnimController*, cSAnim*, const AnimRetarget*, ePlayMode, void (*)(unsigned int, cPN_SAnimController*), unsigned int, bool);
-        ePlayMode playMode = m_pAnimInventory->GetPlayMode(animID);
-        controller = __ct__19cPN_SAnimControllerFP6cSAnimPC12AnimRetarget9ePlayModePFUiP19cPN_SAnimController_vUib(controller, anim, retarget, playMode, playbackSpeedCallback, playbackSpeedCallbackParam, mirrored);
-    }
+    const AnimRetarget* retarget;
+    controller = new (&*controller) cPN_SAnimController(
+        anim,
+        (retarget = NULL, m_pAnimRetargetList != NULL && (retarget = m_pAnimRetargetList->GetAnimRetargetWithSignature(anim), true), retarget),
+        m_pAnimInventory->GetPlayMode(animID),
+        playbackSpeedCallback,
+        playbackSpeedCallbackParam,
+        bMirrorSwap ? !m_pAnimInventory->GetMirrored(animID) : m_pAnimInventory->GetMirrored(animID));
 
     controller->m_fPrevTime = controller->m_fTime;
     controller->m_fTime = startTime;
@@ -1181,6 +1167,16 @@ s16 cCharacter::GetFacingDeltaToPosition(const nlVector3& position)
     return (s16)(targetAngle - m_aActualFacingDirection);
 }
 
+static inline AnimRetarget* GetCharacterAnimRetarget(const cCharacter* character, const cSAnim* pSAnim)
+{
+    AnimRetarget* result = NULL;
+    if (character->m_pAnimRetargetList != NULL)
+    {
+        result = character->m_pAnimRetargetList->GetAnimRetargetWithSignature(pSAnim);
+    }
+    return result;
+}
+
 /**
  * Offset/Address/Size: 0x1E5C | 0x8000FDA8 | size: 0x148
  */
@@ -1188,20 +1184,16 @@ s16 cCharacter::CalcAnimTurnAdjust(unsigned short aFacingDirection, unsigned sho
 {
     unsigned short aAnimRot;
     unsigned short aFinalFacingDirection;
-    cSAnim* pAnim = m_pAnimInventory->GetAnim(nAnimID);
+    cSAnim* const pAnim = m_pAnimInventory->GetAnim(nAnimID);
     cPN_SAnimController* pAnimController = AllocateSAnimController();
 
-    if (pAnimController != NULL)
-    {
-        const AnimRetarget* pAnimRetarget = NULL;
-        if (m_pAnimRetargetList != NULL)
-        {
-            pAnimRetarget = m_pAnimRetargetList->GetAnimRetargetWithSignature(pAnim);
-        }
-
-        bool bMirror = m_pAnimInventory->GetMirrored(nAnimID);
-        pAnimController = new (pAnimController) cPN_SAnimController(pAnim, pAnimRetarget, m_pAnimInventory->GetPlayMode(nAnimID), NULL, 0, bMirror);
-    }
+    pAnimController = new (&*pAnimController) cPN_SAnimController(
+        pAnim,
+        GetCharacterAnimRetarget(this, pAnim),
+        m_pAnimInventory->GetPlayMode(nAnimID),
+        NULL,
+        0,
+        m_pAnimInventory->GetMirrored(nAnimID));
 
     pAnimController->m_fPrevTime = pAnimController->m_fTime;
     pAnimController->m_fTime = 0.0f;

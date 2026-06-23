@@ -78,6 +78,28 @@ public:
         }
     }
 
+    void AllocateForReturn(T*& out)
+    {
+        T* entry = NULL;
+        if (m_FreeList == NULL)
+        {
+            BaseAddNewBlock(this, sizeof(T));
+        }
+        if (m_FreeList != NULL)
+        {
+            entry = (T*)m_FreeList;
+            m_FreeList = m_FreeList->m_next;
+        }
+        out = entry;
+    }
+
+    T* Allocate()
+    {
+        T* out = NULL;
+        AllocateForReturn(out);
+        return out;
+    }
+
     // Return an entry back to the free list
     void Free(T* entry)
     {

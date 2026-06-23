@@ -2035,6 +2035,7 @@ FuzzyVariant Fuzzy::GoodToChipShot(cFielder* TheFielder)
 
     if (lookupFound)
     {
+        const FuzzyVariant& cacheValue1 = bestValue;
         unsigned long hashCopy1 = hash;
         if (g_bScriptQuestionCachingOn)
         {
@@ -2042,12 +2043,12 @@ FuzzyVariant Fuzzy::GoodToChipShot(cFielder* TheFielder)
             if (g_bScriptQuestionCachingUseSTD)
             {
                 std::pair<const unsigned long, FuzzyVariant>& pair = addCache->mQuestionCacheMapSTD.tree_.find_or_insert<unsigned long, FuzzyVariant>(hashCopy1);
-                pair.second = bestValue;
+                pair.second = cacheValue1;
             }
             else
             {
                 AVLTreeNode* existingNode1;
-                addCache->mQuestionCacheMap.AddAVLNode((AVLTreeNode**)&addCache->mQuestionCacheMap.m_Root, (void*)&hashCopy1, (void*)&bestValue, &existingNode1, addCache->mQuestionCacheMap.m_NumElements);
+                addCache->mQuestionCacheMap.AddAVLNode((AVLTreeNode**)&addCache->mQuestionCacheMap.m_Root, (void*)&hashCopy1, (void*)&cacheValue1, &existingNode1, addCache->mQuestionCacheMap.m_NumElements);
                 if (existingNode1 == NULL)
                     addCache->mQuestionCacheMap.m_NumElements++;
             }
@@ -2223,6 +2224,7 @@ FuzzyVariant Fuzzy::GoodToChipShot(cFielder* TheFielder)
 
     bestValue.Confidence = fBestConfidence;
 
+    const FuzzyVariant& cacheValue2 = bestValue;
     unsigned long hashCopy2 = hash;
     if (g_bScriptQuestionCachingOn)
     {
@@ -2230,12 +2232,12 @@ FuzzyVariant Fuzzy::GoodToChipShot(cFielder* TheFielder)
         if (g_bScriptQuestionCachingUseSTD)
         {
             std::pair<const unsigned long, FuzzyVariant>& pair = addCache->mQuestionCacheMapSTD.tree_.find_or_insert<unsigned long, FuzzyVariant>(hashCopy2);
-            pair.second = bestValue;
+            pair.second = cacheValue2;
         }
         else
         {
             AVLTreeNode* existingNode2;
-            addCache->mQuestionCacheMap.AddAVLNode((AVLTreeNode**)&addCache->mQuestionCacheMap.m_Root, (void*)&hashCopy2, (void*)&bestValue, &existingNode2, addCache->mQuestionCacheMap.m_NumElements);
+            addCache->mQuestionCacheMap.AddAVLNode((AVLTreeNode**)&addCache->mQuestionCacheMap.m_Root, (void*)&hashCopy2, (void*)&cacheValue2, &existingNode2, addCache->mQuestionCacheMap.m_NumElements);
             if (existingNode2 == NULL)
                 addCache->mQuestionCacheMap.m_NumElements++;
         }

@@ -964,7 +964,7 @@ void TournTeamSetupSceneV2::UpdateRow(int onScreenRow)
     TLComponentInstance* arrow1;
     TLComponentInstance* arrow2;
 
-    volatile InlineHasher hB, hA;
+    volatile InlineHasher hA, hB;
     volatile InlineHasher h9, h8;
     volatile InlineHasher h7, h6, h5, h4, h3, h2, h1, h0;
 
@@ -1356,7 +1356,15 @@ void TournTeamSetupSceneV2::UpdateRow(int onScreenRow)
     if (onScreenRow == (mCurrentRow - mRowOffset))
     {
         pComp->SetActiveSlide("IN");
-        mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].ApplyAction(ON_HIGHLIGHT);
+        int tag = mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[ON_HIGHLIGHT].mTag;
+        if (((u32)((-tag) | tag) >> 31) > 0)
+        {
+            TLComponentInstance* type = mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mType;
+            if (tag == FREE_FUNCTION)
+                mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[ON_HIGHLIGHT].mFreeFunction(type);
+            else
+                (*mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[ON_HIGHLIGHT].mFunctor)(type);
+        }
         arrow1->m_bVisible = true;
         arrow2->m_bVisible = true;
     }

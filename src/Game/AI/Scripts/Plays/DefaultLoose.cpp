@@ -67,8 +67,8 @@ FuzzyVariant Fuzzy::AbortLoosePlay(cDecisionEntity*)
 
 /**
  * Offset/Address/Size: 0x0 | 0x8008B084 | size: 0x15CC
- * TODO: 96.85% match - remaining diffs include f-register allocation in
- * min/max branches and goalie pickup temporary ordering.
+ * TODO: 97.14% match - remaining diffs include f-register allocation in
+ * opponent min branches and goalie pickup temporary ordering.
  */
 FuzzyVariant Fuzzy::DefaultLoosePlay(cDecisionEntity* pDecision)
 {
@@ -115,16 +115,15 @@ FuzzyVariant Fuzzy::DefaultLoosePlay(cDecisionEntity* pDecision)
                 fChasing = (fIdealTackle <= fChasing) ? fIdealTackle : fChasing;
                 fNotChasing = 1.0f - fChasing;
 
-                float fNotNotChasing = 1.0f - fNotChasing;
-                float fMin2 = (fNotChasing <= fNotNotChasing) ? fNotChasing : fNotNotChasing;
-                float fMax2 = (fNotChasing >= fNotNotChasing) ? fNotChasing : fNotNotChasing;
+                float fMin2 = (fChasing <= fNotChasing) ? fChasing : fNotChasing;
+                float fMax2 = (fChasing >= fNotChasing) ? fChasing : fNotChasing;
                 float fBranchRatio2 = fMin2 / fMax2;
 
-                if (fNotChasing > 0.0f)
+                if (fChasing > 0.0f)
                 {
                     SaveConfidence PushDOM3(&fConfidence);
-                    fConfidence = (fConfidence <= fNotChasing) ? fConfidence : fNotChasing;
-                    if (fConfidence < fNotChasing && fNotChasing < 0.5f)
+                    fConfidence = (fConfidence <= fChasing) ? fConfidence : fChasing;
+                    if (fConfidence < fChasing && fChasing < 0.5f)
                         fConfidence = fConfidence * fBranchRatio2;
 
                     if (fBestConfidence >= fConfidence)
@@ -154,7 +153,7 @@ FuzzyVariant Fuzzy::DefaultLoosePlay(cDecisionEntity* pDecision)
         if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
             fConfidence = fConfidence * fBranchRatio;
 
-        float fOtherGoaliePickup = GoalieAndGonnaPickupBall((cPlayer*)(g_pScriptCurrentFielder ? (g_pScriptCurrentFielder ? g_pScriptCurrentFielder->m_pTeam : (cTeam*)0)->GetOtherTeam()->GetGoalie() : (Goalie*)0)).Confidence;
+        float fOtherGoaliePickup = GoalieAndGonnaPickupBall((cPlayer*)(g_pScriptCurrentFielder ? (g_pScriptCurrentFielder ? g_pScriptCurrentFielder->m_pTeam->GetOtherTeam() : (cTeam*)0)->GetGoalie() : (Goalie*)0)).Confidence;
         float fNotOtherGoaliePickup = 1.0f - fOtherGoaliePickup;
         float fGoaliePickup = GoalieAndGonnaPickupBall((cPlayer*)(g_pScriptCurrentFielder ? (g_pScriptCurrentFielder ? g_pScriptCurrentFielder->m_pTeam : (cTeam*)0)->GetGoalie() : (Goalie*)0)).Confidence;
         fFalseConfidence = 1.0f - fGoaliePickup;

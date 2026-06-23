@@ -362,10 +362,22 @@ void Nis::AddTrigger(NisTriggerType triggerType, float frameNumber, const char* 
     mNumTriggers++;
 }
 
+static inline bool EffectNeedsValidCoordSys(EffectsGroup* pGroup)
+{
+    EffectsSpec* pSpec = pGroup->m_specs;
+    if (pSpec == NULL)
+        return false;
+
+    for (int i = pGroup->m_numSpecs; i > 0; i--, pSpec++)
+    {
+        if (pSpec->m_vLocalOffset.f.x != 0.0f || pSpec->m_vLocalOffset.f.y != 0.0f || pSpec->m_vLocalOffset.f.z != 0.0f)
+            return true;
+    }
+    return false;
+}
+
 /**
  * Offset/Address/Size: 0x834 | 0x8012BC44 | size: 0x3DC
- * TODO: 99.62% scratch match (Zi1L5). Remaining diffs: hasOffset loop
- * count uses r4 vs target r0; helper-object World load uses r3 then r29.
  */
 void Nis::Trigger::FireEffect(const Nis& nis) const
 {
@@ -422,25 +434,7 @@ void Nis::Trigger::FireEffect(const Nis& nis) const
             nlVector3 mirror = { -1.0f, 1.0f, 1.0f };
             ctrl->m_Mirror = mirror;
         }
-        u8 hasOffset;
-        EffectsSpec* specs = group->m_specs;
-        if (specs == NULL)
-        {
-            hasOffset = 0;
-        }
-        else
-        {
-            hasOffset = 0;
-            for (int count = group->m_numSpecs; count > 0; count--, specs++)
-            {
-                if (specs->m_vLocalOffset.f.x != 0.0f || specs->m_vLocalOffset.f.y != 0.0f || specs->m_vLocalOffset.f.z != 0.0f)
-                {
-                    hasOffset = 1;
-                    break;
-                }
-            }
-        }
-        if (hasOffset)
+        if (EffectNeedsValidCoordSys(group))
         {
             Function<EmissionController&> callback(
                 Bind<void>(UpdateEmitterFromCharacterIdxWithCoordSys, placeholder0, charIdx));
@@ -455,7 +449,7 @@ void Nis::Trigger::FireEffect(const Nis& nis) const
     }
     else
     {
-        World* world = WorldManager::s_World;
+        World* const world = WorldManager::s_World;
         HelperObject* helperObj = world->FindHelperObject(world->GetHashIdForGenericName(target));
         if (helperObj == NULL)
             return;

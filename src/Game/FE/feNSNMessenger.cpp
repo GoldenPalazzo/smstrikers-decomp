@@ -403,12 +403,13 @@ NSNMessengerScene::NSNMessengerScene()
     m_scrollText = NULL;
 }
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800A1E60 | size: 0xA8
-//  */
-// void 0x800A1F08..0x800A1F0C | size: 0x4
-// {
-// }
+/**
+ * Offset/Address/Size: 0x0 | 0x800A1E60 | size: 0xA8
+ */
+inline void NSNMessengerScene::SetMessageFinishedCB(const Function<FnVoidVoid>& cb)
+{
+    m_messageFinishedCB = cb;
+}
 
 // /**
 //  * Offset/Address/Size: 0x0 | 0x800A1F08 | size: 0x4

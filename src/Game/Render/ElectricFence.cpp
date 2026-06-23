@@ -505,7 +505,7 @@ void FreeElectricFence()
 
 /**
  * Offset/Address/Size: 0x5A0 | 0x8016B5D0 | size: 0x448
- * TODO: 96.39% match - neg flag still uses r30 vs r27, and curved-branch
+ * TODO: 97.12% match - neg flag still uses r30 vs r27, and curved-branch
  *   geometry/index registers plus f24-f27 loop values are still swapped.
  */
 ElectricFenceData::ElectricFenceData(EmissionController* pEmissionController)
@@ -658,6 +658,7 @@ ElectricFenceData::ElectricFenceData(EmissionController* pEmissionController)
             outPosition += 2;
             outTexcoord += 2;
         }
+        return;
     }
 }
 

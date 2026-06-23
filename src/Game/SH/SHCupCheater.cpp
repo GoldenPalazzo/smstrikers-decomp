@@ -516,8 +516,8 @@ void CupCheaterScene::OnSelectHomeOTWin()
     bool homeAway;
     GameInfoManager* gameInfoManager = nlSingleton<GameInfoManager>::s_pInstance;
     GameInfoManager* gameInfoManagerPost;
-    GameInfoManager* gameInfoManagerCup;
     BasicGameInfo* gameInfo;
+    GameInfoManager* gameInfoManagerCup;
     CupHubScene* hubScene;
 
     if (gameInfoManager->mCurrentMode >= GameInfoManager::GM_MUSHROOM_CUP

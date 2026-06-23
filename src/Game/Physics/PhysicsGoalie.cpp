@@ -65,7 +65,7 @@ bool PhysicsGoalie::SweepTestForBallContact(const nlVector3& ballPrevPosition, c
 
 /**
  * Offset/Address/Size: 0x4A8 | 0x80139F28 | size: 0x2D8
- * TODO: 96.88% match - list entry and contact count registers still differ.
+ * TODO: 97.13% match - extra loop cursor move and vector scheduling/store order diffs remain.
  */
 bool PhysicsGoalie::SweepTestEveryBone(float ballRadius, const nlVector3& ballPrevPosition, const nlVector3& ballCurrentPosition, nlVector3& outContactNormal, nlVector3& outContactPos) const
 {
@@ -75,8 +75,8 @@ bool PhysicsGoalie::SweepTestEveryBone(float ballRadius, const nlVector3& ballPr
 
     PhysicsBoneVolume* boneVolume;
     ListEntry<PhysicsBoneVolume*>* boneVolumeEntry;
-    int hitCount = 0;
     bool didHitBone = false;
+    int hitCount = 0;
 
     if (m_BoneVolumes.m_Head == NULL)
     {
