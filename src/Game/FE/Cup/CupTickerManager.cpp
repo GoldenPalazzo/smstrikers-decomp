@@ -244,6 +244,22 @@ void CupTickerManager::SetTickerTextInstance(TLTextInstance* tickerText)
         }                                                                                                                  \
     }
 
+static inline unsigned short* CupTickerLookupLocString(unsigned long hash)
+{
+    nlLocalization* loc = g_pLocalization;
+    if (loc->m_LookupTable == 0)
+    {
+        return LocalizationTableNotFound;
+    }
+
+    nlLocalization::StringLookup* entry = nlBSearch(hash, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
+    if (entry != 0)
+    {
+        return loc->m_FirstString + entry->StringOffset;
+    }
+    return MissingLocString;
+}
+
 /**
  * Offset/Address/Size: 0x680 | 0x800F2648 | size: 0x12E8
  */
@@ -529,8 +545,10 @@ void CupTickerManager_stub()
 void CupTickerManager::BuildGoalTotalTickerMessage(
     BasicString<unsigned short, Detail::TempStringAllocator>& result, bool bIsHuman)
 {
+    int i;
     int numValid = 0;
     GameInfoManager* gameInfo = nlSingleton<GameInfoManager>::s_pInstance;
+    PlayerStats* pStats;
 
     int numTeams;
     if (bIsHuman)
@@ -544,7 +562,7 @@ void CupTickerManager::BuildGoalTotalTickerMessage(
 
     PlayerStats playerStats[8];
 
-    for (int i = 0; i < (int)gameInfo->GetNumPlayingTeams(); i++)
+    for (i = 0; i < (int)gameInfo->GetNumPlayingTeams(); i++)
     {
         TeamStats teamStats = gameInfo->GetTeamStatsByIndex((unsigned short)i);
 
@@ -567,7 +585,7 @@ void CupTickerManager::BuildGoalTotalTickerMessage(
         playerStats, numTeams, sortedIndices, numTeams, (ePlayerStats)1, (eSortOrder)1);
 
     int* pSorted = sortedIndices;
-    PlayerStats* pStats = playerStats;
+    pStats = playerStats;
 
     for (int j = 0; j < numTeams; pSorted++, j++)
     {
@@ -589,14 +607,7 @@ void CupTickerManager::BuildGoalTotalTickerMessage(
         unsigned short wideGoals[16];
         nlStrToWcs(goalsStr.c_str(), wideGoals, 16);
 
-        unsigned short* fmtLocStr;
-        LOC_LOOKUP(formatHash, fmtLocStr);
-        WideBasicString fmtWBS(fmtLocStr);
-
-        unsigned short* teamNameLocStr;
-        LOC_LOOKUP(teamNameHash, teamNameLocStr);
-
         result = result.Append(Format<WideBasicString, const unsigned short*, unsigned short[16]>(
-            fmtWBS, teamNameLocStr, wideGoals));
+            WideBasicString(CupTickerLookupLocString(formatHash)), CupTickerLookupLocString(teamNameHash), wideGoals));
     }
 }

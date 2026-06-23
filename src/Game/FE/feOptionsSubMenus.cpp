@@ -117,6 +117,7 @@ void TempDisableSound();
 
 /**
  * Offset/Address/Size: 0x210 | 0x800B5254 | size: 0x410
+ * TODO: 98.20% match - callback/menu-item loop still uses r24/r26/r27 register coloring instead of target r29/r29/r26.
  */
 OptionsSaveLoad::OptionsSaveLoad(FEPresentation* presentation, ButtonComponent::ButtonState buttonstate)
     : OptionsSubMenu(presentation, buttonstate)
@@ -153,17 +154,17 @@ OptionsSaveLoad::OptionsSaveLoad(FEPresentation* presentation, ButtonComponent::
         mMenuItems.mNumItemsAdded++;
 
         {
-            Function<FnTLComponentInstanceCb> openFunc;
+            Function<TLComponentInstance*> openFunc;
             openFunc.mTag = FREE_FUNCTION;
             openFunc.mFreeFunction = openItem;
-            menuItem->mCallbacks[1] = openFunc;
+            *(Function<TLComponentInstance*>*)&menuItem->mCallbacks[1] = openFunc;
         }
 
         {
-            Function<FnTLComponentInstanceCb> closeFunc;
+            Function<TLComponentInstance*> closeFunc;
             closeFunc.mTag = FREE_FUNCTION;
             closeFunc.mFreeFunction = closeItem;
-            menuItem->mCallbacks[2] = closeFunc;
+            *(Function<TLComponentInstance*>*)&menuItem->mCallbacks[2] = closeFunc;
         }
 
         if (i == 0)
@@ -397,8 +398,7 @@ OptionsGameplayMenuV2::~OptionsGameplayMenuV2()
 {
 }
 
-template <typename T, typename R>
-Detail::MemFunImpl<R, void (T::*)()> MemFun(void (T::*)());
+#include "NL/nlMemFunBody.h"
 
 extern char __vt__13SlideMenuItem[];
 

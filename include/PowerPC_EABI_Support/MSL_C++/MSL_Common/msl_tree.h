@@ -290,7 +290,8 @@ __tree<T, Compare, Allocator>::insert_node_at(node* p, bool leftchild, bool is_l
         abort();
     }
 
-    new (&new_node->data_) T(x);
+    void* data = &new_node->data_;
+    new (data) T(x);
     new_node->right_ = 0;
     new_node->left_ = 0;
     new_node->parent_ = (void*)((unsigned long)p | ((unsigned long)new_node->parent_ & 1));

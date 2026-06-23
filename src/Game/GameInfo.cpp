@@ -55,6 +55,110 @@ static inline bool CheckUnlockStatusNoGlobal(const unsigned char& trophyValue, c
     }
 }
 
+static inline BasicStringInternal* BuildMarioStringData()
+{
+    BasicStringInternal* data = (BasicStringInternal*)Detail::TempStringAllocator::allocate(0x10);
+    if (data != 0)
+    {
+        const char* str = "mario";
+        data->mData = 0;
+        const char* s = str;
+        data->mSize = 0;
+        data->mCapacity = 0;
+        while (*s++ != 0)
+        {
+            data->mSize++;
+        }
+        data->mSize++;
+        data->mData = (char*)Detail::TempStringAllocator::allocate(data->mSize + 1);
+        data->mCapacity = data->mSize;
+        for (s32 i = 0; i < data->mSize; i++)
+        {
+            data->mData[i] = *str++;
+        }
+        data->mRefCount = 1;
+    }
+    return data;
+}
+
+static inline BasicStringInternal* BuildLuigiStringData()
+{
+    BasicStringInternal* data = (BasicStringInternal*)Detail::TempStringAllocator::allocate(0x10);
+    if (data != 0)
+    {
+        const char* str = "luigi";
+        data->mData = 0;
+        const char* s = str;
+        data->mSize = 0;
+        data->mCapacity = 0;
+        while (*s++ != 0)
+        {
+            data->mSize++;
+        }
+        data->mSize++;
+        data->mData = (char*)Detail::TempStringAllocator::allocate(data->mSize + 1);
+        data->mCapacity = data->mSize;
+        for (s32 i = 0; i < data->mSize; i++)
+        {
+            data->mData[i] = *str++;
+        }
+        data->mRefCount = 1;
+    }
+    return data;
+}
+
+static inline BasicStringInternal* BuildToadStringData()
+{
+    BasicStringInternal* data = (BasicStringInternal*)Detail::TempStringAllocator::allocate(0x10);
+    if (data != 0)
+    {
+        const char* str = "toad";
+        data->mData = 0;
+        const char* s = str;
+        data->mSize = 0;
+        data->mCapacity = 0;
+        while (*s++ != 0)
+        {
+            data->mSize++;
+        }
+        data->mSize++;
+        data->mData = (char*)Detail::TempStringAllocator::allocate(data->mSize + 1);
+        data->mCapacity = data->mSize;
+        for (s32 i = 0; i < data->mSize; i++)
+        {
+            data->mData[i] = *str++;
+        }
+        data->mRefCount = 1;
+    }
+    return data;
+}
+
+static inline BasicStringInternal* BuildKoopaStringData()
+{
+    BasicStringInternal* data = (BasicStringInternal*)Detail::TempStringAllocator::allocate(0x10);
+    if (data != 0)
+    {
+        const char* str = "koopa";
+        data->mData = 0;
+        const char* s = str;
+        data->mSize = 0;
+        data->mCapacity = 0;
+        while (*s++ != 0)
+        {
+            data->mSize++;
+        }
+        data->mSize++;
+        data->mData = (char*)Detail::TempStringAllocator::allocate(data->mSize + 1);
+        data->mCapacity = data->mSize;
+        for (s32 i = 0; i < data->mSize; i++)
+        {
+            data->mData[i] = *str++;
+        }
+        data->mRefCount = 1;
+    }
+    return data;
+}
+
 /**
  * Offset/Address/Size: 0x9E90 | 0x8017F534 | size: 0xB84
  */
@@ -2404,9 +2508,9 @@ const PowerupSettings& GameInfoManager::GetPowerupOptions() const
 
 /**
  * Offset/Address/Size: 0x5040 | 0x8017A6E4 | size: 0xD98
- * TODO: 97.46% match - BasicString default temporaries use different r29/r30
- *       registers, pad-side loop has r3/r4 swaps, and DifficultyMap writeback
- *       stores before the second load.
+ * TODO: 99.24% match - fallback string data builders still have r29/r30 swaps,
+ *       pad-side loop has r3/r4 swaps, and DifficultyMap writeback stores
+ *       before the second load.
  */
 void GameInfoManager::OnPreGameState()
 {
@@ -2436,7 +2540,7 @@ void GameInfoManager::OnPreGameState()
     if (Config::Global().Exists("team1"))
     {
         BasicString<char, Detail::TempStringAllocator> teamString = Config::Global().Get<BasicString<char, Detail::TempStringAllocator> >(
-            "team1", BasicString<char, Detail::TempStringAllocator>("mario"));
+            "team1", BasicString<char, Detail::TempStringAllocator>(BuildMarioStringData()));
 
         mGameInfo[mCurrentMode]->mTeamIndex[0] = ConvertToTeamID(teamString.c_str());
     }
@@ -2444,7 +2548,7 @@ void GameInfoManager::OnPreGameState()
     if (Config::Global().Exists("team2"))
     {
         BasicString<char, Detail::TempStringAllocator> teamString = Config::Global().Get<BasicString<char, Detail::TempStringAllocator> >(
-            "team2", BasicString<char, Detail::TempStringAllocator>("luigi"));
+            "team2", BasicString<char, Detail::TempStringAllocator>(BuildLuigiStringData()));
 
         mGameInfo[mCurrentMode]->mTeamIndex[1] = ConvertToTeamID(teamString.c_str());
     }
@@ -2458,7 +2562,7 @@ void GameInfoManager::OnPreGameState()
     {
         BasicString<char, Detail::TempStringAllocator> sidekickString
             = Config::Global().Get<BasicString<char, Detail::TempStringAllocator> >(
-                "sidekick1", BasicString<char, Detail::TempStringAllocator>("toad"));
+                "sidekick1", BasicString<char, Detail::TempStringAllocator>(BuildToadStringData()));
 
         mGameInfo[mCurrentMode]->mSidekickIndex[0] = ConvertToSidekickID(sidekickString.c_str());
     }
@@ -2467,7 +2571,7 @@ void GameInfoManager::OnPreGameState()
     {
         BasicString<char, Detail::TempStringAllocator> sidekickString
             = Config::Global().Get<BasicString<char, Detail::TempStringAllocator> >(
-                "sidekick2", BasicString<char, Detail::TempStringAllocator>("koopa"));
+                "sidekick2", BasicString<char, Detail::TempStringAllocator>(BuildKoopaStringData()));
 
         mGameInfo[mCurrentMode]->mSidekickIndex[1] = ConvertToSidekickID(sidekickString.c_str());
     }

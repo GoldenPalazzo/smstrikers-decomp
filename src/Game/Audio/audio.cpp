@@ -3093,9 +3093,45 @@ bool ShutdownReverb()
     return true;
 }
 
+static inline char* GetStadiumStr(eStadiumID stadiumID)
+{
+    char* retval;
+
+    switch (stadiumID)
+    {
+    case STAD_MARIO_STADIUM:
+        retval = "STAD_MARIO";
+        break;
+    case STAD_PEACH_TOAD_STADIUM:
+        retval = "STAD_PEACH";
+        break;
+    case STAD_DK_DAISY:
+        retval = "STAD_DK";
+        break;
+    case STAD_WARIO_STADIUM:
+        retval = "STAD_WARIO";
+        break;
+    case STAD_YOSHI_STADIUM:
+        retval = "STAD_YOSHI";
+        break;
+    case STAD_SUPER_STADIUM:
+        retval = "STAD_SUPER";
+        break;
+    case STAD_FORBIDDEN_DOME:
+        retval = "STAD_DOME";
+        break;
+    default:
+        retval = "NOT_YET_DEFINED";
+        break;
+    }
+
+    return retval;
+}
+
 /**
  * Offset/Address/Size: 0x337C | 0x8013F890 | size: 0x734
  */
+#pragma inline_depth(255)
 bool InitializeReverb(eStadiumID stadiumID, unsigned char studio)
 {
     MusyXEffectType type;
@@ -3129,36 +3165,7 @@ bool InitializeReverb(eStadiumID stadiumID, unsigned char studio)
     }
     else
     {
-        const char* stadiumStr;
-
-        switch (stadiumID)
-        {
-        case STAD_MARIO_STADIUM:
-            stadiumStr = "STAD_MARIO";
-            break;
-        case STAD_PEACH_TOAD_STADIUM:
-            stadiumStr = "STAD_PEACH";
-            break;
-        case STAD_DK_DAISY:
-            stadiumStr = "STAD_DK";
-            break;
-        case STAD_WARIO_STADIUM:
-            stadiumStr = "STAD_WARIO";
-            break;
-        case STAD_YOSHI_STADIUM:
-            stadiumStr = "STAD_YOSHI";
-            break;
-        case STAD_SUPER_STADIUM:
-            stadiumStr = "STAD_SUPER";
-            break;
-        case STAD_FORBIDDEN_DOME:
-            stadiumStr = "STAD_DOME";
-            break;
-        default:
-            stadiumStr = "NOT_YET_DEFINED";
-            break;
-        }
-
+        char* stadiumStr = GetStadiumStr(stadiumID);
         nlStrNCpy(headerStr, stadiumStr, 0x50);
     }
 
@@ -3481,6 +3488,7 @@ bool InitializeReverb(eStadiumID stadiumID, unsigned char studio)
     nlPrintf("Audio::InitializeReverb() unsuccessful.\n");
     return false;
 }
+#pragma inline_depth
 
 /**
  * Offset/Address/Size: 0x4A10 | 0x80140F24 | size: 0x15C

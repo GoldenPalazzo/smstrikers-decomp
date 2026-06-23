@@ -74,8 +74,6 @@ FuzzyVariant Fuzzy::AbortOffensivePlay(cDecisionEntity*)
  */
 void Fuzzy::DefaultOffensivePlay(cDecisionEntity* pDecision)
 {
-    extern FuzzyVariant GetStrategicBallCarrier__5FuzzyFP5cTeam(cTeam*);
-
     struct FuzzyBuf
     {
         int _[12];
@@ -284,7 +282,7 @@ void Fuzzy::DefaultOffensivePlay(cDecisionEntity* pDecision)
             pDecision->m_pLastQueuedAction->m_fSelectionChance = pTweaks->Off_CutAndBreakChance;
         }
 
-        FuzzyVariant strategicBallOwner = GetStrategicBallCarrier__5FuzzyFP5cTeam(g_pScriptCurrentTeam);
+        FuzzyVariant strategicBallOwner = GetStrategicBallCarrier(g_pScriptCurrentTeam);
 
         {
             float fBallOwnerGoalie = BallOwner(g_pScriptCurrentTeam->GetGoalie());
@@ -584,6 +582,8 @@ struct StdMapNode
     FuzzyVariant value;
 };
 
+#include "Game/AI/Scripts/ScriptCaching.h"
+
 FuzzyVariant Fuzzy::InGoodWindupPosition(cFielder* TheFielder)
 {
     extern unsigned char g_bScriptQuestionCachingUseSTD;
@@ -603,8 +603,6 @@ FuzzyVariant Fuzzy::InGoodWindupPosition(cFielder* TheFielder)
     extern float TimeNearlyOver(cGame*);
     extern float FLESS(float, float);
     extern float FGREATER(float, float);
-    extern FuzzyVariant InDanger__5FuzzyFP8cFielder(cFielder*);
-    extern FuzzyVariant GoodToShoot__5FuzzyFP8cFielder(cFielder*);
 
     FuzzyVariant bestValue;
     float fConfidence = 1.0f;
@@ -616,91 +614,11 @@ FuzzyVariant Fuzzy::InGoodWindupPosition(cFielder* TheFielder)
     hash += funcAddrTemp;
     FuzzyVariant fvFielder2((cPlayer*)TheFielder);
 
-    ScriptQuestionCache* cache = nlSingleton<ScriptQuestionCache>::s_pInstance;
-    cache->mTotalLookups++;
-
-    FuzzyVariant* pValue;
-    unsigned char lookupFound;
-
-    if (g_bScriptQuestionCachingUseSTD)
+    if (ScriptQuestionCache::Instance()->Lookup(hash, bestValue, NULL))
     {
-        StdMapNode* stdFound = (StdMapNode*)cache->mQuestionCacheMapSTD.tree_.find(hash).ptr_;
-        if ((StdMapNodeBase*)stdFound != &((StdMapTree*)&cache->mQuestionCacheMapSTD)->x4)
-        {
-            cache->mCacheHits++;
-            bestValue = stdFound->value;
-            lookupFound = 1;
-        }
-    }
-    else
-    {
-        AVLTreeEntry<unsigned long, FuzzyVariant>* node = cache->mQuestionCacheMap.m_Root;
-        unsigned long key = hash;
-
-        while (node != NULL)
-        {
-            int cmpResult;
-            if (key == node->key)
-            {
-                cmpResult = 0;
-            }
-            else if (key < node->key)
-            {
-                cmpResult = -1;
-            }
-            else
-            {
-                cmpResult = 1;
-            }
-
-            if (cmpResult == 0)
-            {
-                if (&pValue != NULL)
-                {
-                    pValue = &node->value;
-                }
-                lookupFound = 1;
-                goto found_done;
-            }
-
-            if (cmpResult < 0)
-            {
-                node = (AVLTreeEntry<unsigned long, FuzzyVariant>*)node->node.left;
-            }
-            else
-            {
-                node = (AVLTreeEntry<unsigned long, FuzzyVariant>*)node->node.right;
-            }
-        }
-
-        lookupFound = 0;
-
-    found_done:
-
-        if (lookupFound)
-        {
-            cache->mCacheHits++;
-            bestValue = *pValue;
-        }
-    }
-
-    if (lookupFound)
-    {
-        unsigned long hashCopy1 = hash;
-        if (g_bScriptQuestionCachingOn)
-        {
-            if (g_bScriptQuestionCachingUseSTD)
-            {
-                cache->mQuestionCacheMapSTD.tree_.find_or_insert<unsigned long, FuzzyVariant>(hashCopy1).second = bestValue;
-            }
-            else
-            {
-                AVLTreeNode* existingNode1;
-                cache->mQuestionCacheMap.AddAVLNode((AVLTreeNode**)&cache->mQuestionCacheMap.m_Root, (void*)&hashCopy1, (void*)&bestValue, &existingNode1, cache->mQuestionCacheMap.m_NumElements);
-                if (existingNode1 == NULL)
-                    cache->mQuestionCacheMap.m_NumElements++;
-            }
-        }
+        bestValue.Confidence = bestValue.Confidence;
+        const FuzzyVariant& cacheValue = bestValue;
+        ScriptQuestionCache::Instance()->AddToCache(hash, cacheValue, NULL);
         return bestValue;
     }
 
@@ -799,7 +717,7 @@ FuzzyVariant Fuzzy::InGoodWindupPosition(cFielder* TheFielder)
                     fConfidence = (float)d * fOpenBranchRatio;
                 }
 
-                float fNotInDanger = 1.0f - InDanger__5FuzzyFP8cFielder(g_pScriptCurrentFielder).mData.f;
+                float fNotInDanger = 1.0f - InDanger(g_pScriptCurrentFielder).mData.f;
                 float fNotFarToTheirNet = 1.0f - FarToTheirNet(g_pScriptCurrentFielder);
                 fNotFarToTheirNet = (fNotFarToTheirNet <= fNotInDanger) ? fNotFarToTheirNet : fNotInDanger;
 
@@ -843,7 +761,7 @@ FuzzyVariant Fuzzy::InGoodWindupPosition(cFielder* TheFielder)
                         if (fConfidence > fBestConfidence)
                         {
                             fBestConfidence = fConfidence;
-                            float fGoodToShoot = GoodToShoot__5FuzzyFP8cFielder(g_pScriptCurrentFielder).mData.f;
+                            float fGoodToShoot = GoodToShoot(g_pScriptCurrentFielder).mData.f;
                             FuzzyVariant returnValue(fGoodToShoot * 0.5f + fLosing * 0.5f);
                             bestValue = returnValue;
                         }
@@ -863,7 +781,7 @@ FuzzyVariant Fuzzy::InGoodWindupPosition(cFielder* TheFielder)
                         if (fConfidence > fBestConfidence)
                         {
                             fBestConfidence = fConfidence;
-                            bestValue = GoodToShoot__5FuzzyFP8cFielder(g_pScriptCurrentFielder);
+                            bestValue = GoodToShoot(g_pScriptCurrentFielder);
                         }
                     }
                 }
@@ -924,7 +842,7 @@ FuzzyVariant Fuzzy::InGoodWindupPosition(cFielder* TheFielder)
                         if (fConfidence > fBestConfidence)
                         {
                             fBestConfidence = fConfidence;
-                            float fGoodToShoot = GoodToShoot__5FuzzyFP8cFielder(g_pScriptCurrentFielder).mData.f;
+                            float fGoodToShoot = GoodToShoot(g_pScriptCurrentFielder).mData.f;
                             fGoodToShoot = (fNotFarToTheirNet <= fGoodToShoot) ? fNotFarToTheirNet : fGoodToShoot;
                             fGoodToShoot = (fOpen <= fGoodToShoot) ? fOpen : fGoodToShoot;
                             FuzzyVariant returnValue(fLosing * 0.25f + fGoodToShoot * 0.55f + InFrontOfTheirNet(g_pScriptCurrentFielder) * 0.2f);
@@ -946,7 +864,7 @@ FuzzyVariant Fuzzy::InGoodWindupPosition(cFielder* TheFielder)
                         if (fConfidence > fBestConfidence)
                         {
                             fBestConfidence = fConfidence;
-                            float fGoodToShoot = GoodToShoot__5FuzzyFP8cFielder(g_pScriptCurrentFielder).mData.f;
+                            float fGoodToShoot = GoodToShoot(g_pScriptCurrentFielder).mData.f;
                             fGoodToShoot = (fNotFarToTheirNet <= fGoodToShoot) ? fNotFarToTheirNet : fGoodToShoot;
                             fGoodToShoot = (fOpen <= fGoodToShoot) ? fOpen : fGoodToShoot;
                             FuzzyVariant returnValue(fGoodToShoot * 0.7f + InFrontOfTheirNet(g_pScriptCurrentFielder) * 0.3f);
@@ -960,21 +878,8 @@ FuzzyVariant Fuzzy::InGoodWindupPosition(cFielder* TheFielder)
 
     bestValue.Confidence = fBestConfidence;
 
-    unsigned long hashCopy2 = hash;
-    if (g_bScriptQuestionCachingOn)
-    {
-        if (g_bScriptQuestionCachingUseSTD)
-        {
-            cache->mQuestionCacheMapSTD.tree_.find_or_insert<unsigned long, FuzzyVariant>(hashCopy2).second = bestValue;
-        }
-        else
-        {
-            AVLTreeNode* existingNode2;
-            cache->mQuestionCacheMap.AddAVLNode((AVLTreeNode**)&cache->mQuestionCacheMap.m_Root, (void*)&hashCopy2, (void*)&bestValue, &existingNode2, cache->mQuestionCacheMap.m_NumElements);
-            if (existingNode2 == NULL)
-                cache->mQuestionCacheMap.m_NumElements++;
-        }
-    }
+    const FuzzyVariant& cacheValue = bestValue;
+    ScriptQuestionCache::Instance()->AddToCache(hash, cacheValue, NULL);
 
     return bestValue;
 }
@@ -1195,7 +1100,7 @@ FuzzyVariant Fuzzy::FurthestBackOnMyTeam(cFielder* TheFielder)
 /**
  * Offset/Address/Size: 0x560 | 0x8008CFEC | size: 0x1998
  */
-void Fuzzy::UsePowerupOffensive(float fConfidence, cDecisionEntity* pDecision)
+FuzzyVariant Fuzzy::UsePowerupOffensive(float fConfidence, cDecisionEntity* pDecision)
 {
     extern cFielder* g_pScriptCurrentFielder;
     extern cTeam* g_pScriptCurrentTeam;
@@ -1522,7 +1427,7 @@ void Fuzzy::UsePowerupOffensive(float fConfidence, cDecisionEntity* pDecision)
         }
     }
 
-    new ((FuzzyVariant*)this) FuzzyVariant(fBestConfidence);
+    return FuzzyVariant(fBestConfidence);
 }
 
 /**

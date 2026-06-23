@@ -370,31 +370,39 @@ void ProgressiveScanScene::Update(float fDeltaT)
 #pragma inline_depth()
 
 /**
- * TODO: 97.24% match - r31/r30 register swap (this vs confirmationText)
- *       and r29/r28 swap (data vs str) across 8 switch cases
+ * TODO: 99.31% match - r31/r29 register swap (this vs language literal)
+ *       across 8 switch cases
  */
+static inline void InitProgressiveScanLanguageStringData(BasicStringData<char>* data, const char* text)
+{
+    data->mData = 0;
+    data->mSize = 0;
+    data->mCapacity = 0;
+
+    const char* scan = text;
+    while (*scan++ != 0)
+    {
+        data->mSize++;
+    }
+
+    data->mSize++;
+    data->mData = (char*)nlMalloc((data->mSize + 1) * sizeof(char), 8, true);
+    data->mCapacity = data->mSize;
+
+    for (int i = 0; i < data->mSize; i++)
+    {
+        data->mData[i] = *text++;
+    }
+
+    data->mRefCount = 1;
+}
+
 #define ASSIGN_LANG(langLiteral)                                                                                \
     {                                                                                                           \
         BasicStringData<char>* data = (BasicStringData<char>*)nlMalloc(sizeof(BasicStringData<char>), 8, true); \
         if (data != 0)                                                                                          \
         {                                                                                                       \
-            const char* str = langLiteral;                                                                      \
-            data->mData = 0;                                                                                    \
-            data->mSize = 0;                                                                                    \
-            data->mCapacity = 0;                                                                                \
-            const char* s = str;                                                                                \
-            while (*s++ != 0)                                                                                   \
-            {                                                                                                   \
-                data->mSize++;                                                                                  \
-            }                                                                                                   \
-            data->mSize++;                                                                                      \
-            data->mData = (char*)nlMalloc((data->mSize + 1) * sizeof(char), 8, true);                           \
-            data->mCapacity = data->mSize;                                                                      \
-            for (int i = 0; i < data->mSize; i++)                                                               \
-            {                                                                                                   \
-                data->mData[i] = *str++;                                                                        \
-            }                                                                                                   \
-            data->mRefCount = 1;                                                                                \
+            InitProgressiveScanLanguageStringData(data, langLiteral);                                           \
         }                                                                                                       \
         languageString = BasicString<char, Detail::TempStringAllocator>(data);                                  \
     }

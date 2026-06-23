@@ -3440,8 +3440,8 @@ static inline void PutChar(int x, int y, int scale, char c, unsigned long color)
 
     for (i = y; i < endy; i++)
     {
-        char* rowData = charBitMap + (((i - y)) * 2);
         int j;
+        char* rowData = charBitMap + (((i - y)) * 2);
 
         for (j = x; j < endx; j++)
         {

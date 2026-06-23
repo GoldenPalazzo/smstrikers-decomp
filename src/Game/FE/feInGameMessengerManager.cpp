@@ -68,9 +68,8 @@ void FEInGameMessengerManager::Update(float fDeltaT)
 
 /**
  * Offset/Address/Size: 0x140 | 0x800FFA5C | size: 0x414
- * TODO: 96.19% match - remaining diffs are this/timeState register swap
- * (r30/r31), stack frame size (0x60 vs 0x50), and EARLYMID constructor
- * pattern (decomp.me MWCC volatile reload vs build MWCC callee-saved reuse).
+ * TODO: 97.52% match - remaining diffs are this/timeState register swap
+ * (r30/r31) and ListEntry constructor temporary register ordering.
  */
 #pragma opt_common_subs off
 void FEInGameMessengerManager::EnterNewTimeState(FEInGameMessengerManager::eTimeStates timeState)
@@ -107,7 +106,8 @@ void FEInGameMessengerManager::EnterNewTimeState(FEInGameMessengerManager::eTime
                     m_waitedToDisplay = 0.0f;
                 }
 
-                volatile eInGameMessages stackMsg = msg;
+                volatile eInGameMessages stackMsg[2];
+                stackMsg[1] = msg;
 
                 ListEntry<eInGameMessages>* entry = new (nlMalloc(sizeof(ListEntry<eInGameMessages>), 8, false)) ListEntry<eInGameMessages>(msg);
                 nlListAddEnd<ListEntry<eInGameMessages> >(pHead, pTail, entry);
@@ -143,9 +143,10 @@ void FEInGameMessengerManager::EnterNewTimeState(FEInGameMessengerManager::eTime
                     m_waitedToDisplay = 0.0f;
                 }
 
-                volatile eInGameMessages stackMsg = msg;
+                volatile eInGameMessages stackMsg[2];
+                stackMsg[0] = msg;
 
-                ListEntry<eInGameMessages>* entry = new (nlMalloc(sizeof(ListEntry<eInGameMessages>), 8, false)) ListEntry<eInGameMessages>((eInGameMessages)stackMsg);
+                ListEntry<eInGameMessages>* entry = new (nlMalloc(sizeof(ListEntry<eInGameMessages>), 8, false)) ListEntry<eInGameMessages>(stackMsg[0]);
                 nlListAddEnd<ListEntry<eInGameMessages> >(pHead, pTail, entry);
             }
         }
@@ -208,7 +209,8 @@ void FEInGameMessengerManager::EnterNewTimeState(FEInGameMessengerManager::eTime
                         m_waitedToDisplay = 0.0f;
                     }
 
-                    volatile eInGameMessages stackMsg = msg;
+                    volatile eInGameMessages stackMsg[2];
+                    stackMsg[1] = msg;
 
                     ListEntry<eInGameMessages>* entry = new (nlMalloc(sizeof(ListEntry<eInGameMessages>), 8, false)) ListEntry<eInGameMessages>(msg);
                     nlListAddEnd<ListEntry<eInGameMessages> >(pHead, pTail, entry);
@@ -231,7 +233,8 @@ void FEInGameMessengerManager::EnterNewTimeState(FEInGameMessengerManager::eTime
                         m_waitedToDisplay = 0.0f;
                     }
 
-                    volatile eInGameMessages stackMsg = msg;
+                    volatile eInGameMessages stackMsg[2];
+                    stackMsg[1] = msg;
 
                     ListEntry<eInGameMessages>* entry = new (nlMalloc(sizeof(ListEntry<eInGameMessages>), 8, false)) ListEntry<eInGameMessages>(msg);
                     nlListAddEnd<ListEntry<eInGameMessages> >(pHead, pTail, entry);
@@ -263,9 +266,10 @@ void FEInGameMessengerManager::EnterNewTimeState(FEInGameMessengerManager::eTime
                     m_waitedToDisplay = 0.0f;
                 }
 
-                volatile eInGameMessages stackMsg = msg;
+                volatile eInGameMessages stackMsg[2];
+                stackMsg[0] = msg;
 
-                ListEntry<eInGameMessages>* entry = new (nlMalloc(sizeof(ListEntry<eInGameMessages>), 8, false)) ListEntry<eInGameMessages>((eInGameMessages)stackMsg);
+                ListEntry<eInGameMessages>* entry = new (nlMalloc(sizeof(ListEntry<eInGameMessages>), 8, false)) ListEntry<eInGameMessages>(stackMsg[0]);
                 nlListAddEnd<ListEntry<eInGameMessages> >(pHead, pTail, entry);
             }
         }

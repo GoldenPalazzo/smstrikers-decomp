@@ -1,3 +1,4 @@
+#define NL_SINGLETON_NO_DEFINE
 #include "Game/OverlayManager.h"
 #include "Game/BaseGameSceneManager.h"
 #include "Game/FE/feInGameMessengerManager.h"
@@ -19,11 +20,45 @@
 
 extern bool g_e3_Build;
 
-static bool isGoalScored;
-static bool isSlowMotionOn;
+template <>
+OverlayManager* nlSingleton<OverlayManager>::s_pInstance = 0;
 
-// nlSingleton<OverlayManager> OverlayManager::s_pInstance;
-//
+static bool isSlowMotionOn;
+static bool isGoalScored;
+
+static inline BasicStringData<char>*
+CopyBasicStringDataNoReread(const BasicString<char, Detail::TempStringAllocator>& other)
+{
+    BasicStringData<char>* data = other.m_data;
+    if (data != NULL)
+    {
+        data->mRefCount++;
+    }
+    else
+    {
+        data = NULL;
+    }
+    return data;
+}
+
+static inline void SetOverlayVisibleNoReread(
+    OverlayManager* manager, SceneList scene, bool visibility, bool overrideStateSettings)
+{
+    if (nlSingleton<GameInfoManager>::s_pInstance->mCurrentMode == GameInfoManager::GM_DEMO && scene != OVERLAY_HUD)
+    {
+        return;
+    }
+
+    BasicString<char, Detail::TempStringAllocator> fileName(
+        CopyBasicStringDataNoReread(manager->GetFileName(scene)));
+    BaseOverlayHandler* sceneHandler = (BaseOverlayHandler*)nlSingleton<FESceneManager>::s_pInstance->GetSceneHandler(nlStringLowerHash(fileName.c_str()));
+    u32 state = nlTaskManager::m_pInstance->m_CurrState;
+
+    if (overrideStateSettings || (sceneHandler->mVisibilityMask & state))
+    {
+        sceneHandler->SetVisible(visibility);
+    }
+}
 
 /**
  * Offset/Address/Size: 0xB48 | 0x800C8974 | size: 0x60
@@ -193,7 +228,7 @@ void OverlayManager::FEEventHandler(Event* pEvent, void*)
     }
     case 9:
     {
-        nlSingleton<OverlayManager>::s_pInstance->SetVisible(OVERLAY_HUD, true, true);
+        SetOverlayVisibleNoReread(nlSingleton<OverlayManager>::s_pInstance, OVERLAY_HUD, true, true);
         OverlayManager* inst = nlSingleton<OverlayManager>::s_pInstance;
         inst->mHUDDelay = 0.25f;
         inst->mDoHUDSlideIn = true;
@@ -209,7 +244,7 @@ void OverlayManager::FEEventHandler(Event* pEvent, void*)
     }
     case 10:
     {
-        nlSingleton<OverlayManager>::s_pInstance->SetVisible(OVERLAY_TEXT, false, false);
+        SetOverlayVisibleNoReread(nlSingleton<OverlayManager>::s_pInstance, OVERLAY_TEXT, false, false);
         break;
     }
     case 0x46:

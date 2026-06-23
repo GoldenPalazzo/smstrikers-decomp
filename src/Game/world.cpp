@@ -1537,6 +1537,70 @@ static inline nlChunk* nlGetNextChunk(nlChunk* pChunk)
     return (nlChunk*)((u8*)pChunk + pChunk->m_Size + 8);
 }
 
+static inline void World_AssignLightBitmasks(World* world)
+{
+    typedef AVLTreeEntry<unsigned long, LightObject*> LightEntry;
+
+    struct NodeStack
+    {
+        LightEntry** data;
+        u32 count;
+    };
+
+    NodeStack* stack;
+    LightEntry* node;
+
+    stack = (NodeStack*)nlMalloc(sizeof(NodeStack), 8, false);
+    if (stack != NULL)
+    {
+        u32 numElements = world->m_lightMap.m_NumElements;
+        node = world->m_lightMap.m_Root;
+        stack->data = (LightEntry**)nlMalloc((numElements + 1) * sizeof(LightEntry*), 8, false);
+        stack->count = 0;
+
+        if (node != NULL)
+        {
+            while (node->node.left != NULL)
+            {
+                stack->data[stack->count] = node;
+                stack->count++;
+                node = (LightEntry*)node->node.left;
+            }
+            stack->data[stack->count] = node;
+            stack->count++;
+        }
+    }
+
+    u32 bit = 1;
+    while (stack->count > 0)
+    {
+        LightObject* pLight = stack->data[stack->count - 1]->value;
+        pLight->m_bit = bit;
+        bit <<= 1;
+
+        stack->count--;
+
+        LightEntry* right = (LightEntry*)stack->data[stack->count]->node.right;
+        if (right != NULL)
+        {
+            while (right->node.left != NULL)
+            {
+                stack->data[stack->count] = right;
+                stack->count++;
+                right = (LightEntry*)right->node.left;
+            }
+            stack->data[stack->count] = right;
+            stack->count++;
+        }
+    }
+
+    if (stack != NULL)
+    {
+        delete[] stack->data;
+        delete stack;
+    }
+}
+
 bool World::LoadObjectData(const char* szWorldName)
 {
     typedef AVLTreeEntry<unsigned long, LightObject*> LightEntry;
@@ -1757,65 +1821,7 @@ bool World::LoadObjectData(const char* szWorldName)
 
     operator delete(pWorldData);
 
-    // Iterative inorder AVL traversal to assign light render bits
-    struct NodeStack
-    {
-        LightEntry** data;
-        u32 count;
-    };
-
-    NodeStack* stack;
-    LightEntry* node;
-
-    stack = (NodeStack*)nlMalloc(sizeof(NodeStack), 8, false);
-    if (stack != NULL)
-    {
-        u32 numElements = m_lightMap.m_NumElements;
-        node = m_lightMap.m_Root;
-        stack->data = (LightEntry**)nlMalloc((numElements + 1) * sizeof(LightEntry*), 8, false);
-        stack->count = 0;
-
-        if (node != NULL)
-        {
-            while (node->node.left != NULL)
-            {
-                stack->data[stack->count] = node;
-                stack->count++;
-                node = (LightEntry*)node->node.left;
-            }
-            stack->data[stack->count] = node;
-            stack->count++;
-        }
-    }
-
-    u32 bit = 1;
-    while (stack->count > 0)
-    {
-        LightObject* pLight = stack->data[stack->count - 1]->value;
-        pLight->m_bit = bit;
-        bit <<= 1;
-
-        stack->count--;
-
-        LightEntry* right = (LightEntry*)stack->data[stack->count]->node.right;
-        if (right != NULL)
-        {
-            while (right->node.left != NULL)
-            {
-                stack->data[stack->count] = right;
-                stack->count++;
-                right = (LightEntry*)right->node.left;
-            }
-            stack->data[stack->count] = right;
-            stack->count++;
-        }
-    }
-
-    if (stack != NULL)
-    {
-        delete[] stack->data;
-        delete stack;
-    }
+    World_AssignLightBitmasks(this);
 
     return true;
 }

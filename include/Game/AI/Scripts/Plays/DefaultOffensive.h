@@ -21,14 +21,16 @@ public:
     void DefaultOffensivePlay(cDecisionEntity*);
     static FuzzyVariant DoPassing(float, cDecisionEntity*);
     static FuzzyVariant GetBestPassTarget(cPlayer*);
+    static FuzzyVariant GetStrategicBallCarrier(cTeam*);
     static FuzzyVariant GoodBallCarrier(cFielder*);
+    static FuzzyVariant GoodToShoot(cFielder*);
     static FuzzyVariant GoodToChipShot(cFielder*);
     static FuzzyVariant InGoodWindupPosition(cFielder*);
     static FuzzyVariant InDanger(cFielder*);
     static FuzzyVariant CutAndBreak(cFielder*);
     void DoShooting(float, cDecisionEntity*);
     static FuzzyVariant FurthestBackOnMyTeam(cFielder*);
-    void UsePowerupOffensive(float, cDecisionEntity*);
+    static FuzzyVariant UsePowerupOffensive(float, cDecisionEntity*);
     static FuzzyVariant GetPowerupTargetOffensive(cTeam*);
     static FuzzyVariant InDangerDelayed(cFielder*);
 };

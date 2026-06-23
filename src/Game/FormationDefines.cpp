@@ -186,7 +186,7 @@ FormationSpec* FormationSet::GetFormationSpecFromID(int formationID) const
 
 /**
  * Offset/Address/Size: 0x0 | 0x8003AE10 | size: 0xC08
- * TODO: 98.9% match - r21/r22 register swap for formationList base
+ * TODO: 99.0% match - r21/r22 register swap for formationList base
  */
 FormationSet* FormationSet::LoadFormationSets(const char* filename, int& out_numsets)
 {
@@ -204,12 +204,14 @@ FormationSet* FormationSet::LoadFormationSets(const char* filename, int& out_num
     char var_name[128];
     FormationSpec formationList[42];
     int formation_id = 0;
+    int i_set;
+    int i_formation;
+    int i_pos;
 
-    for (int i_set = 0; i_set < out_numsets; i_set++)
+    for (i_set = 0; i_set < out_numsets; i_set++)
     {
         nlSNPrintf(section_name, 127, "FORMATION_SET%d", i_set);
 
-        int i_formation;
         for (i_formation = 0;;)
         {
             nlSNPrintf(var_name, 127, "%s/F%d_NAME", section_name, i_formation);
@@ -239,7 +241,7 @@ FormationSet* FormationSet::LoadFormationSets(const char* filename, int& out_num
             formation.m_InRadius = inRadius;
             formation.m_OutRadius = outRadius;
 
-            for (int i_pos = 0; i_pos < 4; i_pos++)
+            for (i_pos = 0; i_pos < 4; i_pos++)
             {
                 FormationPos& position = formation.m_Positions[i_pos];
 
@@ -300,10 +302,10 @@ FormationSet* FormationSet::LoadFormationSets(const char* filename, int& out_num
         setList[i_set].m_AutoDelete = true;
         setList[i_set].m_FormationDefArray = new (8, false) FormationSpec[i_formation];
 
-        for (int j = 0; j < i_formation; j++)
+        for (i_pos = 0; i_pos < i_formation; i_pos++)
         {
-            FormationSpec& src = formationList[j];
-            setList[i_set].m_FormationDefArray[j] = src;
+            FormationSpec& src = formationList[i_pos];
+            setList[i_set].m_FormationDefArray[i_pos] = src;
         }
     }
 

@@ -1186,8 +1186,8 @@ void TakeGameMemSnapshot::ResetTimers()
 
 /**
  * Offset/Address/Size: 0x130 | 0x800A31EC | size: 0x504
- * TODO: 98.16% match - r29/r30 register swap between the append file handle
- * and the temporary format string data.
+ * TODO: 98.37% match - callee-saved register roles still differ between
+ * filename/file handles and string temporaries.
  */
 namespace TakeGameMemSnapshot
 {
@@ -1243,7 +1243,28 @@ void TakeGameMemSnapshot::WriteToDisk()
 
     BasicString<char, ::Detail::TempStringAllocator> stats;
     {
-        BasicString<char, ::Detail::TempStringAllocator> fmt("{0},{1},{2}\n");
+        BasicStringData<char>* fmtData = (BasicStringData<char>*)nlMalloc(0x10, 8, true);
+        if (fmtData != 0)
+        {
+            const char* fmtString = "{0},{1},{2}\n";
+            fmtData->mData = 0;
+            fmtData->mSize = 0;
+            fmtData->mCapacity = 0;
+            const char* s = fmtString;
+            while (*s++ != 0)
+            {
+                fmtData->mSize++;
+            }
+            fmtData->mSize++;
+            fmtData->mData = (char*)nlMalloc(fmtData->mSize + 1, 8, true);
+            fmtData->mCapacity = fmtData->mSize;
+            for (int i = 0; i < fmtData->mSize; i++)
+            {
+                fmtData->mData[i] = *fmtString++;
+            }
+            fmtData->mRefCount = 1;
+        }
+        BasicString<char, ::Detail::TempStringAllocator> fmt(fmtData);
         unsigned long largestFree;
         unsigned int freeVM;
         unsigned int largestFreeVM;

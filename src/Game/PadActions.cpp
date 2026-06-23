@@ -18,10 +18,8 @@ s32 g_pPadRemapArray[38] = {
 
 /**
  * Offset/Address/Size: 0x128 | 0x80193720 | size: 0xD74
- * TODO: 96.90% match - the {n} marker char reads (mString[i+1], mString[i+2]) use
- * indexed addressing (addi/lbzx) where the target uses base+displacement (add/lbz),
- * and the erase/insert base pointers omit a null-check branch; the string copy-on-write
- * temporary lands in a swapped preserved register (r26/r27) across the erase/insert region.
+ * TODO: 97.45% match - erase/insert setup still has swapped preserved registers
+ * and the erase end pointer omits a null-check/data-pointer branch.
  */
 template <>
 template <>
@@ -38,13 +36,15 @@ FormatImpl<BasicString<char, Detail::TempStringAllocator> >&
         if (i + 1 >= (mString.m_data ? mString.m_data->mSize - 1 : 0))
             continue;
 
-        if (mString[i + 1] - '0' != mCurrentPos)
+        char* marker = &mString[i];
+        if (mCurrentPos != marker[1] - '0')
             continue;
 
         if (i + 2 >= (mString.m_data ? mString.m_data->mSize - 1 : 0))
             continue;
 
-        if (mString[i + 2] != '}')
+        char* markerEnd = &mString[i];
+        if (markerEnd[2] != '}')
             continue;
 
         mString.erase(&mString[0] + i, &mString[0] + i + 3);
@@ -52,7 +52,7 @@ FormatImpl<BasicString<char, Detail::TempStringAllocator> >&
         char* mStringData = mString.m_data ? mString.m_data->mData : 0;
         char* insertBegin = &insert[0];
         char* insertEndCow = &insert[(int)(insert.m_data ? insert.m_data->mSize - 1 : 0)];
-        mString.insert(mStringData + i, insertBegin, insert.m_data ? &insert.m_data->mData[insert.m_data->mSize - 1] : (char*)0);
+        mString.insert(mStringData + i, insertBegin, insert.m_data ? insert.m_data->mData + insert.m_data->mSize - 1 : (char*)0);
     }
 
     mCurrentPos++;

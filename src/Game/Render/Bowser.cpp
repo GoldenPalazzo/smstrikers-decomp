@@ -148,8 +148,7 @@ extern "C" cPN_SAnimController* __ct__19cPN_SAnimControllerFP6cSAnimPC12AnimReta
 void Bowser::Update(float fDeltaT)
 {
     bool bIsSTS = false;
-    cFielder* ownerFielder = g_pBall->GetOwnerFielder();
-    if (ownerFielder != NULL)
+    if (g_pBall->GetOwnerFielder() != NULL)
     {
         if (g_pBall->GetOwnerFielder()->m_eActionState == ACTION_SHOOT_TO_SCORE)
         {
@@ -222,36 +221,528 @@ void Bowser::Update(float fDeltaT)
         mbIsVisible = false;
         break;
     case BOWSER_STATE_FALL:
-        ActionFall();
-        break;
+    {
+        if (!mbIsVisible)
+        {
+            if (mAttackType != BOWSER_ATTACK_STOMP)
+            {
+                cBaseCamera* camera = nlDLRingGetStart<cBaseCamera>(cCameraManager::m_cameraStack);
+                const nlVector3& cameraTarget = camera->GetTargetPosition();
+                if (fabsf(mv3TargetPos.f.x - cameraTarget.f.x) > 8.0f)
+                {
+                    return;
+                }
+            }
+
+            mbIsVisible = true;
+            if (GameInfoManager::s_pInstance->IsBowserAttackEnabled())
+            {
+                if (mAttackType != BOWSER_ATTACK_STOMP)
+                {
+                    g_pEventManager->CreateValidEvent(0x35, 0x14);
+                }
+                else if (mStompStage != 2)
+                {
+                    g_pEventManager->CreateValidEvent(0x38, 0x14);
+                }
+                else
+                {
+                    g_pEventManager->CreateValidEvent(0x3A, 0x14);
+                }
+            }
+            g_pEventManager->CreateValidEvent(0x59, 0x14);
+        }
+
+        Move(fDeltaT);
+
+        bool bLand1 = mpAnimController->TestTrigger(0.14f);
+        bool bLand2 = mpAnimController->TestTrigger(0.3f);
+        if (bLand1 || bLand2)
+        {
+            if (!g_pGame->mbCaptainShotToScoreOn)
+            {
+                EmissionController* pControl = EmissionManager::Create(fxGetGroup("bowser_land"), 0);
+                pControl->SetPosition(mv3Position);
+                pControl->SetPoseAccumulator(*mpPoseAccumulator);
+                Function<EmissionController&> update;
+                update.mTag = FREE_FUNCTION;
+                update.mFreeFunction = UpdateBowserLandEmitter;
+                pControl->SetUpdateCallback(update);
+            }
+
+            if (mbFirstTime)
+            {
+                mbFirstTime = false;
+                if (GameInfoManager::s_pInstance->IsBowserAttackEnabled())
+                {
+                    if (mAttackType == BOWSER_ATTACK_STOMP)
+                    {
+                        g_pEventManager->CreateValidEvent(0x39, 0x14);
+                    }
+                    else
+                    {
+                        g_pEventManager->CreateValidEvent(0x36, 0x14);
+                    }
+                }
+            }
+
+            if (bLand1)
+            {
+                FireCameraRumbleFilter(0.0f, 0.2f);
+                NetMesh::spPositiveXNetMesh->JoltNet(0.04f);
+                NetMesh::spNegativeXNetMesh->JoltNet(0.04f);
+            }
+
+            mpPhysObj->EnableCollisions();
+
+            if (mbDoTilt)
+            {
+                GameTweaks* pTweaks = g_pGame->m_pGameTweaks;
+                float fTiltForce = pTweaks->unk324 + nlRandomf(pTweaks->unk328 - pTweaks->unk324, &nlDefaultSeed);
+                float fNewTilt = mfYAxisTilt - (fTiltForce * mv3Position.f.x);
+                float fMaxTilt = g_pGame->m_pGameTweaks->unk32C;
+                if (fNewTilt > fMaxTilt)
+                {
+                    fNewTilt = fMaxTilt;
+                }
+                else if (fNewTilt < -fMaxTilt)
+                {
+                    fNewTilt = -fMaxTilt;
+                }
+                SetTiltParameters(fNewTilt);
+            }
+
+            mfDesiredSpeed = 0.0f;
+        }
+
+        if (mpAnimController->m_fTime >= 0.3f)
+        {
+            if (CheckForAbort())
+            {
+                break;
+            }
+        }
+
+        if (mpAnimController->TestTrigger(0.4f))
+        {
+            EmissionManager::Destroy((unsigned long)this, fxGetGroup("bowser_fire"));
+            g_pEventManager->CreateValidEvent(0x65, 0x14);
+            EmissionController* pControl = EmissionManager::Create(fxGetGroup("bowser_fire"), 0);
+            pControl->m_uUserData = (unsigned long)this;
+            Function<EmissionController&> update;
+            update.mTag = FREE_FUNCTION;
+            update.mFreeFunction = UpdateFireEmitter;
+            pControl->SetUpdateCallback(update);
+            g_pEventManager->CreateValidEvent(0x64, 0x14);
+        }
+
+        if (mpAnimController->m_ePlayMode == PM_HOLD && mpAnimController->m_fTime == 1.0f)
+        {
+            if (mtActiveTimer.m_uPackedTime != 0)
+            {
+                if (mAttackType == BOWSER_ATTACK_ROLL)
+                {
+                    ActionRoll();
+                }
+                else
+                {
+                    ActionIdle();
+                }
+            }
+            else
+            {
+                if (fabsf(mfYAxisTilt) < g_pGame->m_pGameTweaks->unk32C)
+                {
+                    ActionIdle();
+                }
+                else
+                {
+                    ActionLeave();
+                }
+            }
+        }
+    }
+    break;
     case BOWSER_STATE_JUMP:
-        ActionJump();
+        if (mpAnimController->m_fTime > 0.6458333f)
+        {
+            Move(fDeltaT);
+            if (mpAnimController->TestFrameTrigger(16.0f))
+            {
+                mpPhysObj->DisableCollisions();
+            }
+        }
+        if (mpAnimController->m_ePlayMode == PM_HOLD && mpAnimController->m_fTime == 1.0f)
+        {
+            ActionDescend(0.1f);
+        }
         break;
     case BOWSER_STATE_IDLE:
-        ActionIdle();
-        break;
-    case BOWSER_STATE_THROW:
-        ActionThrow();
-        break;
-    case BOWSER_STATE_ROAR:
-        ActionStomp();
-        break;
-    case BOWSER_STATE_ROLL:
-        ActionRoll();
-        break;
-    case BOWSER_STATE_LEAVE:
-        ActionLeave();
+    {
+        if (!CheckForAbort())
+        {
+            nlVector3 v3BallPos = g_pBall->m_v3Position;
+            float fLimitX = cField::GetGoalLineX(1U) - 3.0f;
+            if (fabsf(v3BallPos.f.x) > fLimitX)
+            {
+                if (v3BallPos.f.x > 0.0f)
+                {
+                    v3BallPos.f.x = fLimitX;
+                }
+                else
+                {
+                    v3BallPos.f.x = -fLimitX;
+                }
+            }
+            float fLimitY = cField::GetSidelineY(1U) - 3.0f;
+            if (fabsf(v3BallPos.f.y) > fLimitY)
+            {
+                if (v3BallPos.f.y < 0.0f)
+                {
+                    v3BallPos.f.y = -fLimitY;
+                }
+                else
+                {
+                    v3BallPos.f.y = fLimitY;
+                }
+            }
+
+            maDesiredFacingDirection = (u16)(s32)(10430.378f * nlATan2f(v3BallPos.f.y - mv3Position.f.y, v3BallPos.f.x - mv3Position.f.x));
+            AnimMoveSeek(fDeltaT, 40000.0f, 3000.0f, false);
+
+            bool bMoved = false;
+            nlVector3 v3Pos = mv3Position;
+            fLimitX = cField::GetGoalLineX(1U) - 3.0f;
+            if (fabsf(v3Pos.f.x) > fLimitX)
+            {
+                if (v3Pos.f.x > 0.0f)
+                {
+                    v3Pos.f.x = fLimitX;
+                }
+                else
+                {
+                    v3Pos.f.x = -fLimitX;
+                }
+                bMoved = true;
+            }
+            fLimitY = cField::GetSidelineY(1U) - 3.0f;
+            if (fabsf(v3Pos.f.y) > fLimitY)
+            {
+                if (v3Pos.f.y < 0.0f)
+                {
+                    v3Pos.f.y = -fLimitY;
+                }
+                else
+                {
+                    v3Pos.f.y = fLimitY;
+                }
+                bMoved = true;
+            }
+            if (bMoved)
+            {
+                SetPosition(v3Pos);
+            }
+
+            CheckFootSteps();
+
+            if (mAttackType == BOWSER_ATTACK_STOMP)
+            {
+                if (!mbDoTilt || fabsf(mfYAxisTilt) >= g_pGame->m_pGameTweaks->unk32C)
+                {
+                    EmissionManager::Destroy((unsigned long)this, fxGetGroup("bowser_fire"));
+                    g_pEventManager->CreateValidEvent(0x65, 0x14);
+                    ActionLeave();
+                }
+            }
+            else if (mtStateTimer.Countdown(fDeltaT, 0.0f))
+            {
+                EmissionManager::Destroy((unsigned long)this, fxGetGroup("bowser_fire"));
+                g_pEventManager->CreateValidEvent(0x65, 0x14);
+                if (mtActiveTimer.m_uPackedTime == 0)
+                {
+                    ActionLeave();
+                }
+                else if (mAttackType == BOWSER_ATTACK_JUMP)
+                {
+                    ActionJump();
+                }
+                else
+                {
+                    ActionThrow();
+                }
+            }
+        }
         break;
     }
-
-    if (bIsSTS && meBowserState == BOWSER_STATE_FALL)
+    case BOWSER_STATE_THROW:
     {
-        if (mpAnimController->TestTrigger(0.14f) || mpAnimController->TestTrigger(0.3f))
+        if (!CheckForAbort())
         {
-            FireCameraRumbleFilter(0.0f, 0.5f);
-            NetMesh::spPositiveXNetMesh->JoltNet(0.04f);
-            NetMesh::spNegativeXNetMesh->JoltNet(0.04f);
+            nlVector3 v3TargetPos = mpTarget->m_v3Position;
+            float fLimitX = cField::GetGoalLineX(1U) - 3.0f;
+            if (fabsf(v3TargetPos.f.x) > fLimitX)
+            {
+                if (v3TargetPos.f.x > 0.0f)
+                {
+                    v3TargetPos.f.x = fLimitX;
+                }
+                else
+                {
+                    v3TargetPos.f.x = -fLimitX;
+                }
+            }
+            float fLimitY = cField::GetSidelineY(1U) - 3.0f;
+            if (fabsf(v3TargetPos.f.y) > fLimitY)
+            {
+                if (v3TargetPos.f.y < 0.0f)
+                {
+                    v3TargetPos.f.y = -fLimitY;
+                }
+                else
+                {
+                    v3TargetPos.f.y = fLimitY;
+                }
+            }
+
+            maDesiredFacingDirection = (u16)(s32)(10430.378f * nlATan2f(v3TargetPos.f.y - mv3Position.f.y, v3TargetPos.f.x - mv3Position.f.x));
+            AnimMoveSeek(fDeltaT, 40000.0f, 3000.0f, false);
+
+            bool bMoved = false;
+            nlVector3 v3Pos = mv3Position;
+            fLimitX = cField::GetGoalLineX(1U) - 3.0f;
+            if (fabsf(v3Pos.f.x) > fLimitX)
+            {
+                if (v3Pos.f.x > 0.0f)
+                {
+                    v3Pos.f.x = fLimitX;
+                }
+                else
+                {
+                    v3Pos.f.x = -fLimitX;
+                }
+                bMoved = true;
+            }
+            fLimitY = cField::GetSidelineY(1U) - 3.0f;
+            if (fabsf(v3Pos.f.y) > fLimitY)
+            {
+                if (v3Pos.f.y < 0.0f)
+                {
+                    v3Pos.f.y = -fLimitY;
+                }
+                else
+                {
+                    v3Pos.f.y = fLimitY;
+                }
+                bMoved = true;
+            }
+            if (bMoved)
+            {
+                SetPosition(v3Pos);
+            }
+
+            if (mpFeatherController->TestTrigger(0.5f))
+            {
+                ePowerUpType eType = (ePowerUpType)nlRandom(3, &nlDefaultSeed);
+                PowerupCreateAndThrow(NULL, eType, 1, this);
+            }
+
+            if (mpFeatherController->m_ePlayMode == PM_HOLD && mpFeatherController->m_fTime == 1.0f)
+            {
+                if (mtActiveTimer.m_uPackedTime == 0)
+                {
+                    ActionLeave();
+                }
+                else if (mAttackType == BOWSER_ATTACK_CRAZY && nlRandom(100, &nlDefaultSeed) < 70)
+                {
+                    if (mpFeatherBlender->GetChild(1) != NULL)
+                    {
+                        mpFeatherBlender->BeginBlendOut(0.1f);
+                    }
+                    mpFeatherController = NULL;
+                    ActionJump();
+                }
+                else if ((mv3Position.f.x - mpTarget->m_v3Position.f.x) * (mv3Position.f.x - mpTarget->m_v3Position.f.x)
+                             + (mv3Position.f.y - mpTarget->m_v3Position.f.y) * (mv3Position.f.y - mpTarget->m_v3Position.f.y)
+                         < 64.0f)
+                {
+                    if (nlRandom(100, &nlDefaultSeed) < 50)
+                    {
+                        ActionThrow();
+                    }
+                    else
+                    {
+                        ActionIdle();
+                    }
+                }
+                else
+                {
+                    if (mpFeatherBlender->GetChild(1) != NULL)
+                    {
+                        mpFeatherBlender->BeginBlendOut(0.1f);
+                    }
+                    mpFeatherController = NULL;
+                    ActionRoll();
+                }
+            }
+
+            CheckFootSteps();
         }
+        break;
+    }
+    case BOWSER_STATE_ROAR:
+        if (!CheckForAbort())
+        {
+            if (mpAnimController->m_ePlayMode == PM_HOLD && mpAnimController->m_fTime == 1.0f)
+            {
+                if (mtActiveTimer.m_uPackedTime == 0)
+                {
+                    ActionLeave();
+                }
+                else
+                {
+                    ActionThrow();
+                }
+            }
+        }
+        break;
+    case BOWSER_STATE_ROLL:
+    {
+        nlVector3 v3TargetPos;
+        if (bIsSTS)
+        {
+            v3TargetPos = g_pBall->GetOwnerFielder()->m_pTeam->m_pNet->m_baseLocation;
+        }
+        else if (mpTarget != NULL)
+        {
+            v3TargetPos = mpTarget->m_v3Position;
+        }
+        else
+        {
+            v3TargetPos = mv3TargetPos;
+        }
+
+        float fLimitX = cField::GetGoalLineX(1U) - 3.0f;
+        if (fabsf(v3TargetPos.f.x) > fLimitX)
+        {
+            if (v3TargetPos.f.x > 0.0f)
+            {
+                v3TargetPos.f.x = fLimitX;
+            }
+            else
+            {
+                v3TargetPos.f.x = -fLimitX;
+            }
+        }
+        float fLimitY = cField::GetSidelineY(1U) - 3.0f;
+        if (fabsf(v3TargetPos.f.y) > fLimitY)
+        {
+            if (v3TargetPos.f.y < 0.0f)
+            {
+                v3TargetPos.f.y = -fLimitY;
+            }
+            else
+            {
+                v3TargetPos.f.y = fLimitY;
+            }
+        }
+
+        maDesiredFacingDirection = (u16)(s32)(10430.378f * nlATan2f(v3TargetPos.f.y - mv3Position.f.y, v3TargetPos.f.x - mv3Position.f.x));
+        AnimMoveSeek(fDeltaT, 40000.0f, 3000.0f, false);
+
+        bool bMoved = false;
+        nlVector3 v3Pos = mv3Position;
+        fLimitX = cField::GetGoalLineX(1U) - 3.0f;
+        if (fabsf(v3Pos.f.x) > fLimitX)
+        {
+            if (v3Pos.f.x > 0.0f)
+            {
+                v3Pos.f.x = fLimitX;
+            }
+            else
+            {
+                v3Pos.f.x = -fLimitX;
+            }
+            bMoved = true;
+        }
+        fLimitY = cField::GetSidelineY(1U) - 3.0f;
+        if (fabsf(v3Pos.f.y) > fLimitY)
+        {
+            if (v3Pos.f.y < 0.0f)
+            {
+                v3Pos.f.y = -fLimitY;
+            }
+            else
+            {
+                v3Pos.f.y = fLimitY;
+            }
+            bMoved = true;
+        }
+        if (bMoved)
+        {
+            SetPosition(v3Pos);
+        }
+
+        if (mpAnimController->m_ePlayMode == PM_HOLD && mpAnimController->m_fTime == 1.0f)
+        {
+            if (mtActiveTimer.m_uPackedTime == 0)
+            {
+                ActionLeave();
+            }
+            else
+            {
+                ActionThrow();
+            }
+        }
+        break;
+    }
+    case BOWSER_STATE_LEAVE:
+    {
+        if (mpAnimController->m_fTime > 0.6666667f)
+        {
+            maFacingDirection = SeekDirection(maFacingDirection, maDesiredFacingDirection, 0.05f, 0.5f, fDeltaT);
+            mpPhysObj->DisableCollisions();
+
+            nlVector3 v3Velocity = mv3Velocity;
+            nlVector3 v3Position = mv3Position;
+            if (fabsf(v3Velocity.f.z) < 1.0f && v3Position.f.z < 0.05f)
+            {
+                v3Velocity.f.z = 0.0f;
+                v3Position.f.z = 0.0f;
+            }
+            else
+            {
+                float fGravity = g_pGame->m_pGameTweaks->unk330;
+                v3Position.f.z += (v3Velocity.f.z + (0.1f * fGravity * fDeltaT)) * fDeltaT;
+                v3Velocity.f.z += fGravity * fDeltaT;
+                if (v3Position.f.z < 0.0f)
+                {
+                    v3Position.f.z = 0.0f;
+                    v3Velocity.f.z *= g_pGame->m_pGameTweaks->unk334;
+                }
+            }
+
+            v3Position.f.x += v3Velocity.f.x * fDeltaT;
+            v3Position.f.y += v3Velocity.f.y * fDeltaT;
+            SetPosition(v3Position);
+            mv3Velocity = v3Velocity;
+
+            if (mAttackType != BOWSER_ATTACK_STOMP || mStompStage == 2)
+            {
+                float fNewTilt = 0.95f * mfYAxisTilt;
+                if (fabsf(fNewTilt) < 0.01f)
+                {
+                    fNewTilt = 0.0f;
+                }
+                SetTiltParameters(fNewTilt);
+            }
+        }
+
+        if (mtStateTimer.Countdown(fDeltaT, 0.0f))
+        {
+            ActionHide();
+        }
+        break;
+    }
     }
 
     SkinAnimatedNPC::Update(fDeltaT);

@@ -5824,8 +5824,8 @@ float Goalie::CalcTimeToPlane()
  * Offset/Address/Size: 0x18C8 | 0x800443C4 | size: 0x4AC
  */
 /**
- * TODO: 97.76% match - r4/r5 pBall register swap, missing addi r3 hoisting,
- * cascading register diffs in distance and dot-product sections, milestone else f0/f1 swap
+ * TODO: 97.99% match - r4/r5 pBall register swap, missing addi r3 hoisting,
+ * cascading register diffs in distance sections, milestone else f0/f1 swap
  */
 bool Goalie::CanInterceptPass()
 {
@@ -5932,7 +5932,7 @@ bool Goalie::CanInterceptPass()
                 f32 dx = mv3TargetPosition.f.x - m_v3Position.f.x;
                 f32 dy = m_v3Position.f.y - mv3TargetPosition.f.y;
                 f32 dz = 0.0f;
-                f32 dot = dx * g_pBall->m_v3Velocity.f.y + dy * g_pBall->m_v3Velocity.f.x + dz * g_pBall->m_v3Velocity.f.z;
+                f32 dot = dy * g_pBall->m_v3Velocity.f.x + dx * g_pBall->m_v3Velocity.f.y + dz * g_pBall->m_v3Velocity.f.z;
 
                 if (dot > 0.0f)
                 {

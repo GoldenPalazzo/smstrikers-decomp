@@ -654,22 +654,11 @@ static inline void RenderLightOnField(const EffectsLight& light)
         glQuad3 q;
         q.SetupRotatedRectangle(dim, dim, mRot, false, false);
         q.SetColour(light.m_Colour);
-        nlVector3* pPos = q.m_pos;
-        for (int i = 0, idx = 0; i < 2; i++, idx += 2)
+        for (int i = 0; i < 4; i++)
         {
-            int idx2 = idx + 1;
-            nlColour& c0 = q.m_colour[idx];
-            nlColour& c1 = q.m_colour[idx2];
-
-            nlVec3Add(pPos[0], pPos[0], light.m_v3Position);
-            pPos[0].f.z = 0.03125f;
-            c0.c[3] = (unsigned char)((int)c0.c[3] / 3);
-
-            nlVec3Add(pPos[1], pPos[1], light.m_v3Position);
-            pPos[1].f.z = 0.03125f;
-            c1.c[3] = (unsigned char)((int)c1.c[3] / 3);
-
-            pPos += 2;
+            nlVec3Add(q.m_pos[i], q.m_pos[i], light.m_v3Position);
+            q.m_pos[i].f.z = 0.03125f;
+            q.m_colour[i].c[3] = (unsigned char)((int)q.m_colour[i].c[3] / 3);
         }
 
         glModel* pModel = (glModel*)q.GetModel(true);
@@ -870,7 +859,8 @@ void ParticleSystem::RenderAllParticles(eGLView view)
                 if (m_pTemplate->m_bMatchLifespan)
                 {
                     meshRateScale = (((float)pAnim->m_nNumFrames) / pAnim->m_fFrameRate) / pPart->lifeSpan;
-                    float frame = (pPart->timeElapsed / pPart->lifeSpan) * (float)(pAnim->m_nNumFrames - 1);
+                    float frameFrac = pPart->timeElapsed / pPart->lifeSpan;
+                    float frame = frameFrac * (float)(pAnim->m_nNumFrames - 1);
                     pModel = pAnim->GetModel((int)frame);
                 }
                 else

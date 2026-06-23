@@ -12,6 +12,9 @@
 #include "Game/AI/FuzzyVariant.h"
 #include "PowerPC_EABI_Support/MSL_C++/MSL_Common/msl_tree.h"
 
+extern unsigned char g_bScriptQuestionCachingOn;
+extern unsigned char g_bScriptQuestionCachingUseSTD;
+
 enum eScriptFielderDesire
 {
     edNone = 0,
@@ -53,6 +56,8 @@ public:
     {
     }
     ~ScriptQuestionCache();
+    unsigned char Lookup(unsigned long, FuzzyVariant&, const char*);
+    const FuzzyVariant& AddToCache(unsigned long, const FuzzyVariant&, const char*);
     void Clear();
 
     /* 0x00 */ nlAVLTreeSlotPool<unsigned long, FuzzyVariant, DefaultKeyCompare<unsigned long> > mQuestionCacheMap;

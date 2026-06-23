@@ -249,18 +249,23 @@ void FERender::RenderPresentation(const FEPresentation* presentation)
 
 /**
  * Offset/Address/Size: 0x528 | 0x8020A7B0 | size: 0x42C
- * TODO: 99.64% match - activeSlide/nextInstance, first colour-loop base/index,
- * and nextChild use different registers.
+ * TODO: 99.81% match - first colour-loop base/index registers differ.
  */
 void FERender::RenderComponentInstance(TLComponentInstance* componentInstance)
 {
+    TLInstance* nextInstance;
+    TLInstance* instance;
+    TLInstance* nextChild;
+    TLInstance* child;
+    TLSlide* activeSlide;
+
     TLComponent* component = ((TLInstance*)componentInstance)->m_component;
     if (component == 0)
     {
         return;
     }
 
-    TLSlide* activeSlide = component->m_pActiveSlide;
+    activeSlide = component->m_pActiveSlide;
     if (activeSlide == 0)
     {
         return;
@@ -274,13 +279,13 @@ void FERender::RenderComponentInstance(TLComponentInstance* componentInstance)
         return;
     }
 
-    TLInstance* instance = activeSlide->m_instances->m_next;
+    instance = activeSlide->m_instances->m_next;
 
     while (true)
     {
         float time = activeSlide->m_time;
         nlFloatColour oldSlideColour = s_currentAssetColour;
-        TLInstance* nextInstance = instance->m_next;
+        nextInstance = instance->m_next;
 
         if (instance->IsValidAtTime(time) && instance->m_bVisible)
         {
@@ -357,7 +362,7 @@ void FERender::RenderComponentInstance(TLComponentInstance* componentInstance)
 
             if (instance->pChildren != 0)
             {
-                TLInstance* child = instance->pChildren->m_next;
+                child = instance->pChildren->m_next;
 
                 while (true)
                 {
@@ -367,7 +372,7 @@ void FERender::RenderComponentInstance(TLComponentInstance* componentInstance)
                     saveDst[1] = saveSrc[1];
                     saveDst[2] = saveSrc[2];
                     saveDst[3] = saveSrc[3];
-                    TLInstance* nextChild = child->m_next;
+                    nextChild = child->m_next;
 
                     if (child->IsValidAtTime(time) && child->IsVisible())
                     {

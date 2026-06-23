@@ -303,7 +303,7 @@ void TournSetParamsScene::SceneCreated()
 
 /**
  * Offset/Address/Size: 0xBA0 | 0x800E0574 | size: 0xAEC
- * TODO: 98.91% match - remaining this-register and slide traversal register swaps
+ * TODO: 99.31% match - remaining slide traversal register swaps
  */
 #define CALL_MENU_CB_UPDATE_TOP(cur, action)                   \
     do                                                         \
@@ -345,6 +345,8 @@ void TournSetParamsScene::Update(float fDeltaT)
 {
     BaseSceneHandler::Update(fDeltaT);
     mButtons.CentreButtons();
+
+    int newIndex;
 
     if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x100, false, NULL))
     {
@@ -438,11 +440,11 @@ void TournSetParamsScene::Update(float fDeltaT)
         }
 
         MenuResult res = RES_ERROR;
-        int oldIndex = mMenuItems.mCurrentIndex;
         int flags = mMenuItems.mFlags;
         int wrapList = flags & 1;
         int skipDisabled = flags & 2;
-        int newIndex = oldIndex - 1;
+        int oldIndex = mMenuItems.mCurrentIndex;
+        newIndex = oldIndex - 1;
 
         while (true)
         {
@@ -579,11 +581,11 @@ void TournSetParamsScene::Update(float fDeltaT)
         }
 
         MenuResult res = RES_ERROR;
-        int oldIndex = mMenuItems.mCurrentIndex;
         int flags = mMenuItems.mFlags;
         int wrapList = flags & 1;
         int skipDisabled = flags & 2;
-        int newIndex = oldIndex + 1;
+        int oldIndex = mMenuItems.mCurrentIndex;
+        newIndex = oldIndex + 1;
 
         while (true)
         {
@@ -673,11 +675,11 @@ void TournSetParamsScene::Update(float fDeltaT)
         {
             MenuResult res = RES_ERROR;
 
-            int oldIndex = slideMenuList->mCurrentIndex;
             int flags = slideMenuList->mFlags;
             int wrapList = flags & 1;
             int skipDisabled = flags & 2;
-            int newIndex = oldIndex - 1;
+            int oldIndex = slideMenuList->mCurrentIndex;
+            newIndex = oldIndex - 1;
 
             while (true)
             {
@@ -735,11 +737,11 @@ void TournSetParamsScene::Update(float fDeltaT)
         {
             MenuResult res = RES_ERROR;
 
-            int oldIndex = slideMenuList->mCurrentIndex;
             int flags = slideMenuList->mFlags;
             int wrapList = flags & 1;
             int skipDisabled = flags & 2;
-            int newIndex = oldIndex + 1;
+            int oldIndex = slideMenuList->mCurrentIndex;
+            newIndex = oldIndex + 1;
 
             while (true)
             {
