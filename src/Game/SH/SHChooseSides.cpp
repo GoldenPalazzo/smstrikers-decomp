@@ -374,20 +374,17 @@ void SHChooseSides2::SceneCreated()
 
         mAsyncImage[0][0]->mImageInstance = FEFinder<TLImageInstance, 2>::Find<TLSlide>(
             captainactiveslide,
-            InlineHasher(nlStringLowerHash("CAPT_L")),
-            InlineHasher(0));
+            InlineHasher(nlStringLowerHash("CAPT_L")));
 
         mAsyncImage[0][2]->mImageInstance = FEFinder<TLImageInstance, 2>::Find<TLSlide>(
             captainactiveslide,
-            InlineHasher(nlStringLowerHash("CAPT_L_WHITE")),
-            InlineHasher(0));
+            InlineHasher(nlStringLowerHash("CAPT_L_WHITE")));
 
         mAsyncImage[0][1]->mImageInstance = FEFinder<TLImageInstance, 2>::Find<TLSlide>(
             captainactiveslide,
-            InlineHasher(nlStringLowerHash("CAPT_L_OUT")),
-            InlineHasher(0));
+            InlineHasher(nlStringLowerHash("CAPT_L_OUT")));
 
-        mSoundDelay = (captainactiveslide->m_start + captainactiveslide->m_duration) * 0.5f;
+        mSoundDelay = (captainactiveslide->m_start + captainactiveslide->m_duration) / 2.0f;
 
         captaincomponent = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
             currentSlide,
@@ -398,18 +395,15 @@ void SHChooseSides2::SceneCreated()
 
         mAsyncImage[1][0]->mImageInstance = FEFinder<TLImageInstance, 2>::Find<TLSlide>(
             captainactiveslide,
-            InlineHasher(nlStringLowerHash("CAPT_R")),
-            InlineHasher(0));
+            InlineHasher(nlStringLowerHash("CAPT_R")));
 
         mAsyncImage[1][2]->mImageInstance = FEFinder<TLImageInstance, 2>::Find<TLSlide>(
             captainactiveslide,
-            InlineHasher(nlStringLowerHash("CAPT_R_WHITE")),
-            InlineHasher(0));
+            InlineHasher(nlStringLowerHash("CAPT_R_WHITE")));
 
         mAsyncImage[1][1]->mImageInstance = FEFinder<TLImageInstance, 2>::Find<TLSlide>(
             captainactiveslide,
-            InlineHasher(nlStringLowerHash("CAPT_R_OUT")),
-            InlineHasher(0));
+            InlineHasher(nlStringLowerHash("CAPT_R_OUT")));
 
         char mainfilename[128] = { };
         char outlinefilename[128] = { };
@@ -434,8 +428,7 @@ void SHChooseSides2::SceneCreated()
 
         TLComponentInstance* pIconComp = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
             pNameComp->GetActiveSlide(),
-            InlineHasher(nlStringLowerHash("COMPONENT")),
-            InlineHasher(0));
+            InlineHasher(nlStringLowerHash("COMPONENT")));
 
         pIconComp->SetActiveSlide(GetTeamName(nlSingleton<GameInfoManager>::s_pInstance->GetTeam((short)0)));
 
@@ -446,8 +439,7 @@ void SHChooseSides2::SceneCreated()
 
         pIconComp = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
             pNameComp->GetActiveSlide(),
-            InlineHasher(nlStringLowerHash("COMPONENT")),
-            InlineHasher(0));
+            InlineHasher(nlStringLowerHash("COMPONENT")));
 
         pIconComp->SetActiveSlide(GetTeamName(nlSingleton<GameInfoManager>::s_pInstance->GetTeam((short)1)));
     }
@@ -529,8 +521,7 @@ void SHChooseSides2::SceneCreated()
 
     TLTextInstance* captaintext = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
         captainnamecomponent->GetActiveSlide(),
-        InlineHasher(nlStringLowerHash("CAPTAIN_NAME")),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("CAPTAIN_NAME")));
 
     captaintext->m_LocStrId = GetLOCTeamName(nlSingleton<GameInfoManager>::s_pInstance->GetTeam((short)0));
     captaintext->m_OverloadFlags |= 8;
@@ -542,8 +533,7 @@ void SHChooseSides2::SceneCreated()
 
     captaintext = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
         captainnamecomponent->GetActiveSlide(),
-        InlineHasher(nlStringLowerHash("CAPTAIN_NAME")),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("CAPTAIN_NAME")));
 
     captaintext->m_LocStrId = GetLOCTeamName(nlSingleton<GameInfoManager>::s_pInstance->GetTeam((short)1));
     captaintext->m_OverloadFlags |= 8;
@@ -567,7 +557,7 @@ void SHChooseSides2::SceneCreated()
         }
     }
 
-    GameInfoManager* gim = nlSingleton<GameInfoManager>::s_pInstance;
+    GameInfoManager* const gim = nlSingleton<GameInfoManager>::s_pInstance;
 
     if (gim->IsInCupMode())
     {

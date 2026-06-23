@@ -221,52 +221,19 @@ UpdateResult IChooseSide::UpdateForFE(float, eFEINPUT_PAD* pad)
 
 /**
  * Offset/Address/Size: 0xCDC | 0x800C4120 | size: 0x2F8
- * TODO: 98.55% match - loop index/base registers are shifted, and the
- * connected destination-index branch still emits an extra immediate load.
  */
 UpdateResult IChooseSide::UpdateForPause(float, eFEINPUT_PAD* pad)
 {
     for (int i = 0; i < 4; i++)
     {
-        int destPosIndex;
         TLInstance* inst = mInstanceTable[i];
         if (g_pFEInput->IsConnected((eFEINPUT_PAD)i))
         {
-            int side;
-            feVector3 localPos;
-
             inst->m_bVisible = true;
-            side = mPlayingSides[i];
-
-            if (side == 0)
-            {
-                destPosIndex = 0;
-            }
-            else
-            {
-                int temp = 2;
-                if (side == 1)
-                {
-                    temp = 1;
-                }
-                destPosIndex = temp;
-            }
-
-            inst = mInstanceTable[i];
-            localPos = inst->GetPosition();
-            mTweenManager.clearTweensOnObj(inst);
-            mInstanceTable[i]->SetAssetPosition(mControllerDestPos[destPosIndex], localPos.e[1], localPos.e[2]);
-
-            mInstanceTable[i + 12]->m_bVisible = (side == -1);
-            mInstanceTable[i + 8]->m_bVisible = (side != -1);
+            PositionController(i, false, true);
         }
         else
         {
-            int side;
-            feVector3 localPos;
-            TLInstance* readyIndicator;
-            int allReady = 0;
-
             inst->m_bVisible = false;
             mPlayingSides[i] = -1;
 
@@ -280,36 +247,8 @@ UpdateResult IChooseSide::UpdateForPause(float, eFEINPUT_PAD* pad)
                 mInstanceTable[i + 12]->m_bVisible = false;
             }
 
-            side = mPlayingSides[i];
-            if (side == 0)
-            {
-                destPosIndex = 0;
-            }
-            else
-            {
-                destPosIndex = 2;
-                if (side == 1)
-                {
-                    destPosIndex = 1;
-                }
-            }
-
-            inst = mInstanceTable[i];
-            localPos = inst->GetPosition();
-            mTweenManager.clearTweensOnObj(inst);
-            mInstanceTable[i]->SetAssetPosition(mControllerDestPos[destPosIndex], localPos.e[1], localPos.e[2]);
-
-            mPlayerReady[i] = (u8)allReady;
-            mInstanceTable[i + 4]->m_bVisible = (u8)allReady;
-
-            readyIndicator = mInstanceTable[16];
-            if (readyIndicator != NULL)
-            {
-                if (AllPlayersReady())
-                    readyIndicator->m_bVisible = true;
-                else
-                    readyIndicator->m_bVisible = false;
-            }
+            PositionController(i, false, false);
+            SetReady(i, false);
         }
 
         if (g_pFEInput->JustPressed((eFEINPUT_PAD)i, 0x200, false, NULL))

@@ -170,7 +170,7 @@ SFXEmitter* GetSFXEmitter(unsigned long id)
 
 /**
  * Offset/Address/Size: 0x15C | 0x801C4958 | size: 0x35C
- * TODO: 94.31% match - remaining fallback register allocation around emitter reset and debug print
+ * TODO: 94.37% match - remaining reset-block register allocation around emitter pointer and debug print
  */
 SFXEmitter* GetFreeEmitter(unsigned long& index)
 {
@@ -192,16 +192,19 @@ SFXEmitter* GetFreeEmitter(unsigned long& index)
 
     if (i == 64)
     {
-        int minIndex = 0;
+        int minIndex;
         float* pFirstTimeStamp = &gEmitters[0].fTimeStamp;
+        i = 1;
+        minIndex = 0;
         float min = *pFirstTimeStamp;
-        for (i = 1; i < 64; i++)
+        while (i < 64)
         {
             if (gEmitters[i].fTimeStamp < min)
             {
                 min = gEmitters[i].fTimeStamp;
                 minIndex = i;
             }
+            i++;
         }
 
         int emitterOffset = minIndex * sizeof(SFXEmitter);

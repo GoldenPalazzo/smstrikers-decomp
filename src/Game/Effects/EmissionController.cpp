@@ -380,9 +380,53 @@ bool EmissionController::IsLingering() const
     return m_pGroup->m_isLingering;
 }
 
+static inline void ComputeAscendingJointPosition(nlVector3& out, const cPoseAccumulator* pPose, u32 uJointID, float fVelocity, float fcurrentTime)
+{
+    float fsetDistance = fcurrentTime * fVelocity;
+    cSHierarchy* pHier = pPose->m_BaseSHierarchy;
+    int jointIndex = pHier->GetNodeIndexByID(uJointID);
+    int parentIndex = pHier->GetParent(jointIndex);
+
+    while (parentIndex != -1)
+    {
+        const nlMatrix4& jointMat = pPose->GetNodeMatrix(jointIndex);
+        const nlMatrix4& parentMat = pPose->GetNodeMatrix(parentIndex);
+
+        float dy = parentMat.m[3][1] - jointMat.m[3][1];
+        float dz = parentMat.m[3][2] - jointMat.m[3][2];
+        float dx = parentMat.m[3][0] - jointMat.m[3][0];
+        float dist = nlSqrt(dx * dx + dy * dy + dz * dz, true);
+
+        if (dist >= fsetDistance)
+        {
+            float ratio = fsetDistance / dist;
+            float invRatio = 1.0f - ratio;
+            float x = ratio * parentMat.m[3][0];
+            float y = ratio * parentMat.m[3][1];
+            float z = ratio * parentMat.m[3][2];
+            out.f.x = invRatio * jointMat.m[3][0] + x;
+            out.f.y = invRatio * jointMat.m[3][1] + y;
+            out.f.z = invRatio * jointMat.m[3][2] + z;
+            break;
+        }
+
+        fsetDistance -= dist;
+        jointIndex = parentIndex;
+        parentIndex = pHier->GetParent(parentIndex);
+    }
+
+    if (parentIndex == -1)
+    {
+        const nlMatrix4& jointMat = pPose->GetNodeMatrix(jointIndex);
+        out.as_u32[0] = ((u32*)&jointMat.m[3][0])[0];
+        out.as_u32[1] = ((u32*)&jointMat.m[3][0])[1];
+        out.as_u32[2] = ((u32*)&jointMat.m[3][0])[2];
+    }
+}
+
 /**
  * Offset/Address/Size: 0x32C | 0x801F7C1C | size: 0x5EC
- * TODO: 98.85% match - remaining register allocation diffs in terrain, joint ascent, and user effect loop.
+ * TODO: 99.08% match - remaining register allocation diffs in joint helper pose/hierarchy locals and user effect loop.
  */
 bool EmissionController::Update(float dt)
 {
@@ -471,53 +515,7 @@ bool EmissionController::Update(float dt)
                     jointID = pSpec->m_uJointID;
                 }
 
-                int parentIndex;
-                int jointIndex;
-                const cPoseAccumulator* pPose;
-                cSHierarchy* pHier;
-
-                pPose = m_pPose;
-                float fDist = fAge * fJointVelocity;
-                pHier = pPose->m_BaseSHierarchy;
-
-                jointIndex = pHier->GetNodeIndexByID(jointID);
-                parentIndex = pHier->GetParent(jointIndex);
-
-                while (parentIndex != -1)
-                {
-                    const nlMatrix4& currentMat = pPose->GetNodeMatrix(jointIndex);
-                    const nlMatrix4& parentMat = pPose->GetNodeMatrix(parentIndex);
-
-                    float dy = parentMat.m[3][1] - currentMat.m[3][1];
-                    float dz = parentMat.m[3][2] - currentMat.m[3][2];
-                    float dx = parentMat.m[3][0] - currentMat.m[3][0];
-                    float dist = nlSqrt(dx * dx + dy * dy + dz * dz, true);
-
-                    if (dist >= fDist)
-                    {
-                        float ratio = fDist / dist;
-                        float invRatio = 1.0f - ratio;
-                        float x = ratio * parentMat.m[3][0];
-                        float y = ratio * parentMat.m[3][1];
-                        float z = ratio * parentMat.m[3][2];
-                        pos.f.x = invRatio * currentMat.m[3][0] + x;
-                        pos.f.y = invRatio * currentMat.m[3][1] + y;
-                        pos.f.z = invRatio * currentMat.m[3][2] + z;
-                        break;
-                    }
-
-                    fDist -= dist;
-                    jointIndex = parentIndex;
-                    parentIndex = pHier->GetParent(parentIndex);
-                }
-
-                if (parentIndex == -1)
-                {
-                    const nlMatrix4& mat = pPose->GetNodeMatrix(jointIndex);
-                    pos.as_u32[0] = ((u32*)&mat.m[3][0])[0];
-                    pos.as_u32[1] = ((u32*)&mat.m[3][0])[1];
-                    pos.as_u32[2] = ((u32*)&mat.m[3][0])[2];
-                }
+                ComputeAscendingJointPosition(pos, m_pPose, jointID, fJointVelocity, fAge);
             }
             else if (m_pPose != NULL)
             {

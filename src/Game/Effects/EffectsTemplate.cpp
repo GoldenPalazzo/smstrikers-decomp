@@ -76,7 +76,7 @@ float RandomizedValue(float base, float range)
 
 /**
  * Offset/Address/Size: 0xFD4 | 0x801F1B98 | size: 0x28C
- * TODO: 93.59% match - residual temporary key stack slots and span-loop
+ * TODO: 95.13% match - residual temporary key stack slots and span-loop
  * register allocation differ.
  */
 static void BlendSpan(nlColour* pColour, int cindex, const ColourKey& k0, const ColourKey& k1)
@@ -118,16 +118,14 @@ static void GetColourComponent(SimpleParser* parser, nlColour* pColour, int cind
         int i = 0;
         while (*cp != ':')
         {
-            ind[i] = *cp++;
-            i++;
+            ind[i++] = *cp++;
         }
         ind[i] = 0;
         cp++;
         i = 0;
         while ((char)*cp != 0)
         {
-            val[i] = *cp++;
-            i++;
+            val[i++] = *cp++;
         }
         val[i] = 0;
 

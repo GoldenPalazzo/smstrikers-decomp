@@ -16,14 +16,14 @@ public:
         mCapacity = count;
         for (int i = 0; i < count; i++)
         {
-            T temp;
-            mData[i] = temp;
+            mData[i] = T();
         }
     }
     ~Vector()
     {
         delete[] mData;
     }
+    void Swap(Vector& other);
     void reserve(int capacity);
     void resize(int size);
     void push_back(const T& value);
@@ -75,6 +75,36 @@ void Vector<T, Allocator>::insert(T* at, const T* begin, const T* end)
         at++;
     }
     mSize += size;
+}
+
+template <typename T, typename Allocator>
+inline void Vector<T, Allocator>::Swap(Vector<T, Allocator>& other)
+{
+    int oldSize = mSize;
+    mSize = other.mSize;
+    other.mSize = oldSize;
+    int oldCapacity = mCapacity;
+    mCapacity = other.mCapacity;
+    other.mCapacity = oldCapacity;
+    T* oldData = mData;
+    mData = other.mData;
+    other.mData = oldData;
+}
+
+template <typename T, typename Allocator>
+void Vector<T, Allocator>::reserve(int capacity)
+{
+    FORCE_DONT_INLINE;
+    if (mCapacity < capacity)
+    {
+        Vector<T, Allocator> other(capacity, 0);
+        for (int i = 0; i < mSize; i++)
+        {
+            other.mData[i] = mData[i];
+        }
+        other.mSize = mSize;
+        Swap(other);
+    }
 }
 
 #endif // _NLVECTOR_H_

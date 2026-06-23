@@ -159,8 +159,8 @@ SuperLoadingScene::~SuperLoadingScene()
 
 /**
  * Offset/Address/Size: 0x1428 | 0x800A7B98 | size: 0x520
- * TODO: 66.91% match - remaining diffs in InlineHasher argument copy sequence
- * and register usage around hash/FEFinder setup blocks.
+ * TODO: 99.18% match - remaining diffs swap team1 and bundleFile
+ * nonvolatile registers through the texture loading blocks.
  */
 void SuperLoadingScene::SceneCreated()
 {
@@ -218,36 +218,15 @@ void SuperLoadingScene::SceneCreated()
         InlineHasher(nlStringLowerHash("Layer")),
         InlineHasher(nlStringLowerHash("leftimage")));
 
-    {
-        InlineHasher z3(0);
-        InlineHasher z2(0);
-        InlineHasher z1(0);
-        InlineHasher z0(0);
-        mImageInstances[1][0] = FEFinder<TLImageInstance, 2>::Find<TLSlide>(
-            slide,
-            InlineHasher(nlStringLowerHash("Layer")),
-            InlineHasher(nlStringLowerHash("rightimage")),
-            z0,
-            z1,
-            z2,
-            z3);
-    }
+    mImageInstances[1][0] = FEFinder<TLImageInstance, 2>::Find<TLSlide>(
+        slide,
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("rightimage")));
 
-    TLTextInstance* stadiumText;
-    {
-        InlineHasher z3(0);
-        InlineHasher z2(0);
-        InlineHasher z1(0);
-        InlineHasher z0(0);
-        stadiumText = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
-            slide,
-            InlineHasher(nlStringLowerHash("Layer")),
-            InlineHasher(nlStringLowerHash("stadiumname")),
-            z0,
-            z1,
-            z2,
-            z3);
-    }
+    TLTextInstance* stadiumText = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
+        slide,
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("stadiumname")));
     if (stadiumText != NULL)
     {
         stadiumText->m_LocStrId = GetStadiumStringID(nlSingleton<GameInfoManager>::s_pInstance->GetStadium());
@@ -256,21 +235,10 @@ void SuperLoadingScene::SceneCreated()
 
     DisplayCupInfo();
 
-    TLComponentInstance* periodComp;
-    {
-        InlineHasher z3(0);
-        InlineHasher z2(0);
-        InlineHasher z1(0);
-        InlineHasher z0(0);
-        periodComp = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
-            slide,
-            InlineHasher(nlStringLowerHash("Layer")),
-            InlineHasher(nlStringLowerHash("period")),
-            z0,
-            z1,
-            z2,
-            z3);
-    }
+    TLComponentInstance* periodComp = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
+        slide,
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("period")));
     if (periodComp != NULL)
     {
         if (g_Language == 2)
@@ -279,41 +247,19 @@ void SuperLoadingScene::SceneCreated()
             periodComp->m_bVisible = false;
     }
 
-    TLTextInstance* playersLeft;
-    {
-        InlineHasher z3(0);
-        InlineHasher z2(0);
-        InlineHasher z1(0);
-        InlineHasher z0(0);
-        playersLeft = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
-            slide,
-            InlineHasher(nlStringLowerHash("Layer")),
-            InlineHasher(nlStringLowerHash("playersleft")),
-            z0,
-            z1,
-            z2,
-            z3);
-    }
+    TLTextInstance* playersLeft = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
+        slide,
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("playersleft")));
     if (playersLeft != NULL)
     {
         BuildPlayerStrings(playersLeft, 0, false);
     }
 
-    TLTextInstance* playersRight;
-    {
-        InlineHasher z3(0);
-        InlineHasher z2(0);
-        InlineHasher z1(0);
-        InlineHasher z0(0);
-        playersRight = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
-            slide,
-            InlineHasher(nlStringLowerHash("Layer")),
-            InlineHasher(nlStringLowerHash("playersright")),
-            z0,
-            z1,
-            z2,
-            z3);
-    }
+    TLTextInstance* playersRight = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
+        slide,
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("playersright")));
     if (playersRight != NULL)
     {
         BuildPlayerStrings(playersRight, 1, false);

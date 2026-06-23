@@ -28,7 +28,7 @@ public:
     static FuzzyVariant CutAndBreak(cFielder*);
     void DoShooting(float, cDecisionEntity*);
     static FuzzyVariant FurthestBackOnMyTeam(cFielder*);
-    void UsePowerupOffensive(float, cDecisionEntity*);
+    static FuzzyVariant UsePowerupOffensive(float, cDecisionEntity*);
     static FuzzyVariant GetPowerupTargetOffensive(cTeam*);
     static FuzzyVariant InDangerDelayed(cFielder*);
 };

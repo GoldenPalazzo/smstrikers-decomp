@@ -985,7 +985,7 @@ done_alloc_1:
 
 /**
  * Offset/Address/Size: 0x7E8 | 0x801C7F98 | size: 0x260
- * TODO: 95.82% match - r27/r29 register allocation swap for pBuffer/pCBInfo in warm buffer loop
+ * TODO: 99.57% match - ble/beq branch form for initial buffer-count guard
  */
 void GCAudioStreaming::StereoAudioStream::InterleavedHdrReadCB(nlFile* pFile, void* pData, unsigned int Length)
 {
@@ -1023,31 +1023,24 @@ void GCAudioStreaming::StereoAudioStream::InterleavedHdrReadCB(nlFile* pFile, vo
     m_StreamLength = pHdr->StreamLength;
     nlFree(pHdr);
 
+    unsigned char* pMRAMBuffer;
+    unsigned long aramLen;
     AudioStreamBuffer* pBuffer;
-    volatile unsigned long BufferIndex = (unsigned long)(pBuffer = 0);
-    if (m_BufferCount <= 0)
+    AudioStreamBuffer* init;
+    volatile unsigned long BufferIndex = (unsigned long)(init = 0);
+    if (m_BufferCount > 0)
     {
+        init = m_Buffers[0];
     }
-    else
-    {
-        pBuffer = m_Buffers[0];
-    }
+    pBuffer = init;
 
     while (pBuffer)
     {
         pBuffer->m_UpdateOffset += m_Interleave;
-        unsigned char* pMRAMBuffer = pBuffer->m_MRAMBuffer;
+        pMRAMBuffer = pBuffer->m_MRAMBuffer;
 
         bool enabled = OSDisableInterrupts();
-        register READ_CB_INFO* pCBInfo = READ_CB_INFO::s_AllocPool.m_pFree;
-        if (!pCBInfo)
-        {
-            pCBInfo = 0;
-        }
-        else
-        {
-            READ_CB_INFO::s_AllocPool.m_pFree = pCBInfo->m_next;
-        }
+        register READ_CB_INFO* pCBInfo = READ_CB_INFO::s_AllocPool.Allocate();
         OSRestoreInterrupts(enabled);
 
         if (pCBInfo)
@@ -1071,7 +1064,7 @@ void GCAudioStreaming::StereoAudioStream::InterleavedHdrReadCB(nlFile* pFile, vo
     m_StreamPos = m_Interleave;
     unsigned long readLen = GetUpdateReadLength();
     AudioStreamBuffer* pBuf = m_Buffers[0];
-    unsigned long aramLen = (readLen / 8) * 14;
+    aramLen = (readLen / 8) * 14;
 
     if (aramLen == 0)
         return;

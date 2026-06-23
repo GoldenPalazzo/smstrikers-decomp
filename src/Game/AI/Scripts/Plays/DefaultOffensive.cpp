@@ -1195,7 +1195,7 @@ FuzzyVariant Fuzzy::FurthestBackOnMyTeam(cFielder* TheFielder)
 /**
  * Offset/Address/Size: 0x560 | 0x8008CFEC | size: 0x1998
  */
-void Fuzzy::UsePowerupOffensive(float fConfidence, cDecisionEntity* pDecision)
+FuzzyVariant Fuzzy::UsePowerupOffensive(float fConfidence, cDecisionEntity* pDecision)
 {
     extern cFielder* g_pScriptCurrentFielder;
     extern cTeam* g_pScriptCurrentTeam;
@@ -1522,7 +1522,7 @@ void Fuzzy::UsePowerupOffensive(float fConfidence, cDecisionEntity* pDecision)
         }
     }
 
-    new ((FuzzyVariant*)this) FuzzyVariant(fBestConfidence);
+    return FuzzyVariant(fBestConfidence);
 }
 
 /**

@@ -277,9 +277,8 @@ void GameRenderTask::Run(float fDeltaT)
 
     gl_ModifyClearMappings();
 
-    nlTaskManager* taskMgr;
-    u32 currState = (taskMgr = nlTaskManager::m_pInstance)->m_CurrState;
-    if (currState == 2 || (currState == 1 && taskMgr->m_PrevState == 2))
+    nlTaskManager* taskMgr = nlTaskManager::m_pInstance;
+    if (taskMgr->m_CurrState == 2 || (taskMgr->m_CurrState == 1 && taskMgr->m_PrevState == 2))
     {
         glInventory.Update(fDeltaT);
 
@@ -300,7 +299,7 @@ void GameRenderTask::Run(float fDeltaT)
         WorldDarkening::Instance().UpdateAndRender(fDeltaT);
         ShootToScoreMeter::instance.UpdateAndRender(fDeltaT);
     }
-    else if (currState == 0x100)
+    else if (taskMgr->m_CurrState == 0x100)
     {
         if (!init)
         {

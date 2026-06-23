@@ -132,6 +132,7 @@ static void glx_SwitchTextureState(const glModelPacket*);
 static unsigned long glx_SwitchTexConfig(const glModelPacket*);
 static void glx_DrawPacket(const glModelPacket*);
 static void glx_SwitchUserData(const glModelPacket*);
+static void glx_LoadLight(GLLightUserData*, _GXLightID);
 static void GetConstants();
 
 /**
@@ -1490,7 +1491,7 @@ void glud_Light(void* pUserData)
  * TODO: 96.22% match - directional branch register/order mismatch in worldDir normalization
  *       and viewDir scaling by -1.0f; static local/sdata constant references also differ.
  */
-void glx_LoadLight(GLLightUserData* pLight, _GXLightID lightId)
+static void glx_LoadLight(GLLightUserData* pLight, _GXLightID lightId)
 {
     static float refMult;
     static signed char init;
@@ -1615,7 +1616,10 @@ void glx_LoadLight(GLLightUserData* pLight, _GXLightID lightId)
         worldDir.f.z = worldZ;
 
         {
-            float recipLength = nlRecipSqrt(worldDir.f.x * worldDir.f.x + worldDir.f.y * worldDir.f.y + worldDir.f.z * worldDir.f.z, true);
+            float lengthSq = worldDir.f.x * worldDir.f.x;
+            lengthSq += worldDir.f.y * worldDir.f.y;
+            lengthSq += worldDir.f.z * worldDir.f.z;
+            float recipLength = nlRecipSqrt(lengthSq, true);
 
             nlVec3Scale(worldDir, recipLength);
         }

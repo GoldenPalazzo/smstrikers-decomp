@@ -10,11 +10,21 @@
 
 struct StadiumLightingParams
 {
-    u32 lightRamp;          // +0x00
-    u8 pad1[0x18];          // +0x04
-    f32 keyLightIntensity;  // +0x1C
-    f32 fillLightIntensity; // +0x20
-    u8 pad2[0x18];          // +0x24
+    /* 0x00 */ u32 lightRamp;
+    /* 0x04 */ s32 rampStartR;
+    /* 0x08 */ s32 rampStartG;
+    /* 0x0C */ s32 rampStartB;
+    /* 0x10 */ s32 rampEndR;
+    /* 0x14 */ s32 rampEndG;
+    /* 0x18 */ s32 rampEndB;
+    /* 0x1C */ f32 keyLightIntensity;
+    /* 0x20 */ f32 fillLightIntensity;
+    /* 0x24 */ f32 inGameKeyIntensity;
+    /* 0x28 */ f32 inGameFillIntensity;
+    /* 0x2C */ f32 inGameKeyRotYDeg;
+    /* 0x30 */ f32 inGameKeyRotZDeg;
+    /* 0x34 */ f32 inGameFillRotYDeg;
+    /* 0x38 */ f32 inGameFillRotZDeg;
 }; // total size: 0x3C
 
 struct GameObjectLightArray
@@ -67,25 +77,6 @@ bool AlwaysUseCameraRelativeCharacterLighting()
  */
 void InitializeGameObjectLighting()
 {
-    struct StadiumLightingParamsInit
-    {
-        /* 0x00 */ u32 lightRamp;
-        /* 0x04 */ s32 rampStartR;
-        /* 0x08 */ s32 rampStartG;
-        /* 0x0C */ s32 rampStartB;
-        /* 0x10 */ s32 rampEndR;
-        /* 0x14 */ s32 rampEndG;
-        /* 0x18 */ s32 rampEndB;
-        /* 0x1C */ f32 cameraRelativeKeyIntensity;
-        /* 0x20 */ f32 cameraRelativeFillIntensity;
-        /* 0x24 */ f32 inGameKeyIntensity;
-        /* 0x28 */ f32 inGameFillIntensity;
-        /* 0x2C */ f32 inGameKeyRotYDeg;
-        /* 0x30 */ f32 inGameKeyRotZDeg;
-        /* 0x34 */ f32 inGameFillRotYDeg;
-        /* 0x38 */ f32 inGameFillRotZDeg;
-    };
-
     extern void* g_pInGameLightData;
     extern PlatTexture* g_pGameObjectLightRamp;
 
@@ -95,9 +86,9 @@ void InitializeGameObjectLighting()
     f32 deltaB;
     f32 deltaG;
     f32 deltaR;
+    StadiumLightingParams* pParams;
     u8* pTextureData;
     PlatTexture* pRampTexture;
-    StadiumLightingParamsInit* pParams;
     s32 stadium;
     nlMatrix4 matZ;
     nlMatrix4 matY;
@@ -142,12 +133,12 @@ void InitializeGameObjectLighting()
 
     pLightArray = (GameObjectLightArray*)glUserGetData(g_pInGameLightData);
     stadium = nlSingleton<GameInfoManager>::s_pInstance->GetStadium();
-    pParams = (StadiumLightingParamsInit*)&gStadiumGameObjectLightingParams[stadium];
+    pParams = &gStadiumGameObjectLightingParams[stadium];
 
     {
         nlVector3 initialDirection = { 1.0f, 0.0f, 0.0f };
-        nlVector3 keyDirection;
         nlVector3 fillDirection;
+        nlVector3 keyDirection;
 
         nlMakeRotationMatrixY(matY, (3.1415927f * pParams->inGameKeyRotYDeg) / 180.0f);
         nlMakeRotationMatrixZ(matZ, (3.1415927f * pParams->inGameKeyRotZDeg) / 180.0f);
@@ -159,39 +150,87 @@ void InitializeGameObjectLighting()
         nlMultDirVectorMatrix(fillDirection, initialDirection, matY);
         nlMultDirVectorMatrix(fillDirection, fillDirection, matZ);
 
-        pLightArray->lights[0].worldPosition.f.x = -keyDirection.f.x;
-        pLightArray->lights[0].worldPosition.f.y = -keyDirection.f.y;
-        pLightArray->lights[0].worldPosition.f.z = -keyDirection.f.z;
+        nlVec3Set(pLightArray->lights[0].worldPosition, -keyDirection.f.x, -keyDirection.f.y, -keyDirection.f.z);
         pLightArray->lights[0].intensity = pParams->inGameKeyIntensity;
 
-        pLightArray->lights[1].worldPosition.f.x = -fillDirection.f.x;
-        pLightArray->lights[1].worldPosition.f.y = -fillDirection.f.y;
-        pLightArray->lights[1].worldPosition.f.z = -fillDirection.f.z;
+        nlVec3Set(pLightArray->lights[1].worldPosition, -fillDirection.f.x, -fillDirection.f.y, -fillDirection.f.z);
         pLightArray->lights[1].intensity = pParams->inGameFillIntensity;
     }
 
     stadium = nlSingleton<GameInfoManager>::s_pInstance->GetStadium();
-    pRampTexture = glx_CreatePlatTexture();
-    g_pGameObjectLightRamp = pRampTexture;
+    g_pGameObjectLightRamp = glx_CreatePlatTexture();
+    pRampTexture = g_pGameObjectLightRamp;
     glx_AddTex(gStadiumGameObjectLightingParams[stadium].lightRamp, pRampTexture);
     g_pGameObjectLightRamp->Create(0x100, 4, GXTex_RGBA8, 1, true, false);
 
     stadium = nlSingleton<GameInfoManager>::s_pInstance->GetStadium();
-    pParams = (StadiumLightingParamsInit*)&gStadiumGameObjectLightingParams[stadium];
+    pRampTexture = g_pGameObjectLightRamp;
+    pParams = &gStadiumGameObjectLightingParams[stadium];
 
     deltaR = (f32)(pParams->rampEndR - pParams->rampStartR);
     deltaG = (f32)(pParams->rampEndG - pParams->rampStartG);
     deltaB = (f32)(pParams->rampEndB - pParams->rampStartB);
 
-    pTextureData = (u8*)g_pGameObjectLightRamp->m_LinearData;
-    for (i = 0; i < 0x100; i++)
+    pTextureData = (u8*)pRampTexture->m_LinearData;
+    for (i = 0; i < 0x100; i += 8)
     {
-        f32 t = (f32)i * (1.0f / 256.0f);
-        pTextureData[0] = (u8)(t * deltaR + (f32)pParams->rampStartR);
-        pTextureData[1] = (u8)(t * deltaG + (f32)pParams->rampStartG);
-        pTextureData[2] = (u8)(t * deltaB + (f32)pParams->rampStartB);
-        pTextureData[3] = 0xFF;
-        pTextureData += 4;
+        {
+            f32 t = (f32)i * (1.0f / 256.0f);
+            pTextureData[0] = (u8)(t * deltaR + (f32)pParams->rampStartR);
+            pTextureData[1] = (u8)(t * deltaG + (f32)pParams->rampStartG);
+            pTextureData[2] = (u8)(t * deltaB + (f32)pParams->rampStartB);
+            pTextureData[3] = 0xFF;
+        }
+        {
+            f32 t = (f32)(i + 1) * (1.0f / 256.0f);
+            pTextureData[4] = (u8)(t * deltaR + (f32)pParams->rampStartR);
+            pTextureData[5] = (u8)(t * deltaG + (f32)pParams->rampStartG);
+            pTextureData[6] = (u8)(t * deltaB + (f32)pParams->rampStartB);
+            pTextureData[7] = 0xFF;
+        }
+        {
+            f32 t = (f32)(i + 2) * (1.0f / 256.0f);
+            pTextureData[8] = (u8)(t * deltaR + (f32)pParams->rampStartR);
+            pTextureData[9] = (u8)(t * deltaG + (f32)pParams->rampStartG);
+            pTextureData[10] = (u8)(t * deltaB + (f32)pParams->rampStartB);
+            pTextureData[11] = 0xFF;
+        }
+        {
+            f32 t = (f32)(i + 3) * (1.0f / 256.0f);
+            pTextureData[12] = (u8)(t * deltaR + (f32)pParams->rampStartR);
+            pTextureData[13] = (u8)(t * deltaG + (f32)pParams->rampStartG);
+            pTextureData[14] = (u8)(t * deltaB + (f32)pParams->rampStartB);
+            pTextureData[15] = 0xFF;
+        }
+        {
+            f32 t = (f32)(i + 4) * (1.0f / 256.0f);
+            pTextureData[16] = (u8)(t * deltaR + (f32)pParams->rampStartR);
+            pTextureData[17] = (u8)(t * deltaG + (f32)pParams->rampStartG);
+            pTextureData[18] = (u8)(t * deltaB + (f32)pParams->rampStartB);
+            pTextureData[19] = 0xFF;
+        }
+        {
+            f32 t = (f32)(i + 5) * (1.0f / 256.0f);
+            pTextureData[20] = (u8)(t * deltaR + (f32)pParams->rampStartR);
+            pTextureData[21] = (u8)(t * deltaG + (f32)pParams->rampStartG);
+            pTextureData[22] = (u8)(t * deltaB + (f32)pParams->rampStartB);
+            pTextureData[23] = 0xFF;
+        }
+        {
+            f32 t = (f32)(i + 6) * (1.0f / 256.0f);
+            pTextureData[24] = (u8)(t * deltaR + (f32)pParams->rampStartR);
+            pTextureData[25] = (u8)(t * deltaG + (f32)pParams->rampStartG);
+            pTextureData[26] = (u8)(t * deltaB + (f32)pParams->rampStartB);
+            pTextureData[27] = 0xFF;
+        }
+        {
+            f32 t = (f32)(i + 7) * (1.0f / 256.0f);
+            pTextureData[28] = (u8)(t * deltaR + (f32)pParams->rampStartR);
+            pTextureData[29] = (u8)(t * deltaG + (f32)pParams->rampStartG);
+            pTextureData[30] = (u8)(t * deltaB + (f32)pParams->rampStartB);
+            pTextureData[31] = 0xFF;
+        }
+        pTextureData += 0x20;
     }
 
     for (i = 1; i < 4; i++)

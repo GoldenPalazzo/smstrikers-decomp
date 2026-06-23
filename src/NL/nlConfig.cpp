@@ -191,6 +191,7 @@ void Config::Set(const char* tag, const char* value)
     bool b = false;
     float f = 0.0f;
     int i = 0;
+    TagValuePair* tvp;
 
     if (IsIntValue(value, i))
     {
@@ -203,7 +204,6 @@ void Config::Set(const char* tag, const char* value)
         }
         u32 idx = hash & 0x3FF;
 
-        TagValuePair* tvp;
         while (true)
         {
             u32 offset = idx * 12;
@@ -222,7 +222,7 @@ void Config::Set(const char* tag, const char* value)
         if (tvp->tag == NULL)
         {
             char* dest = mStringEnd;
-            char c;
+            s32 c;
             while ((c = *tag) != 0)
             {
                 if (mStringEnd - mStringMemory >= 0x27FF)
@@ -250,7 +250,6 @@ void Config::Set(const char* tag, const char* value)
         }
         u32 idx = hash & 0x3FF;
 
-        TagValuePair* tvp;
         while (true)
         {
             u32 offset = idx * 12;
@@ -269,7 +268,7 @@ void Config::Set(const char* tag, const char* value)
         if (tvp->tag == NULL)
         {
             char* dest = mStringEnd;
-            char c;
+            s32 c;
             while ((c = *tag) != 0)
             {
                 if (mStringEnd - mStringMemory >= 0x27FF)
@@ -298,7 +297,6 @@ void Config::Set(const char* tag, const char* value)
         }
         u32 idx = hash & 0x3FF;
 
-        TagValuePair* tvp;
         while (true)
         {
             u32 offset = idx * 12;
@@ -317,7 +315,7 @@ void Config::Set(const char* tag, const char* value)
         if (tvp->tag == NULL)
         {
             char* dest = mStringEnd;
-            char c;
+            s32 c;
             while ((c = *tag) != 0)
             {
                 if (mStringEnd - mStringMemory >= 0x27FF)
@@ -345,7 +343,6 @@ void Config::Set(const char* tag, const char* value)
         }
         u32 idx = hash & 0x3FF;
 
-        TagValuePair* tvp;
         while (true)
         {
             u32 offset = idx * 12;
@@ -380,7 +377,7 @@ void Config::Set(const char* tag, const char* value)
         if (tvp->tag == NULL)
         {
             char* dest = mStringEnd;
-            char c;
+            s32 c;
             while ((c = *tag) != 0)
             {
                 if (mStringEnd - mStringMemory >= 0x27FF)
