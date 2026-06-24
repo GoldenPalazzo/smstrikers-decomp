@@ -100,7 +100,7 @@ void Goalie::ActionLooseBallCatch(float deltaTime)
 
 /**
  * Offset/Address/Size: 0x3E6C | 0x800523A8 | size: 0x6AC
- * TODO: 96.97% match - remaining register/stack allocation diffs
+ * TODO: 98.49% match - remaining pickup-time load order and register/stack allocation diffs
  */
 void Goalie::ActionLooseBallDesperate(float fDeltaT)
 {
@@ -153,12 +153,14 @@ void Goalie::ActionLooseBallDesperate(float fDeltaT)
                     fClampedX = -fLimit;
                 if ((float)fabs(pBall->m_v3Position.f.x) < fLimit)
                 {
-                    float fDX = pBall->m_v3Position.f.x - fClampedX;
-                    float fDY = pBall->m_v3Position.f.y - v3GuessBallPos.f.y;
-                    float fDXOrig = pBall->m_v3Position.f.x - v3GuessBallPos.f.x;
+                    float fBallX = pBall->m_v3Position.f.x;
+                    float fBallY = pBall->m_v3Position.f.y;
+                    float fDX = fBallX - fClampedX;
+                    float fDY = fBallY - v3GuessBallPos.f.y;
+                    float fDXOrig = fBallX - v3GuessBallPos.f.x;
                     float fNewY = fDX * fDY;
                     fNewY = fNewY / fDXOrig;
-                    fNewY = pBall->m_v3Position.f.y - fNewY;
+                    fNewY = fBallY - fNewY;
                     v3GuessBallPos.f.y = fNewY;
                 }
                 v3GuessBallPos.f.x = fClampedX;

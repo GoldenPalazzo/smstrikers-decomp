@@ -741,6 +741,8 @@ void FERender::RenderTimeLineAsset(TLInstance* pTLInstance, float fCurrentTime)
             {
                 if (slide != 0 && slide->m_instances != 0)
                 {
+                    TLInstance* nextChild;
+                    TLInstance* child;
                     curr = slide->m_instances->m_next;
 
                     while (true)
@@ -775,11 +777,11 @@ void FERender::RenderTimeLineAsset(TLInstance* pTLInstance, float fCurrentTime)
 
                             if (curr->pChildren != 0)
                             {
-                                TLInstance* child = curr->pChildren->m_next;
+                                child = curr->pChildren->m_next;
 
                                 while (true)
                                 {
-                                    TLInstance* nextChild = child->m_next;
+                                    nextChild = child->m_next;
                                     nlFloatColour oldChildColour = s_currentAssetColour;
 
                                     RenderTimeLineAsset(child, slideTime);
@@ -942,11 +944,13 @@ void FERender::RenderTimeLineAsset(TLInstance* pTLInstance, float fCurrentTime)
 
                             if (grandchild->pChildren != 0)
                             {
-                                TLInstance* greatGrand = grandchild->pChildren->m_next;
+                                TLInstance* nextGreat;
+                                TLInstance* greatGrand;
+                                greatGrand = grandchild->pChildren->m_next;
 
                                 while (true)
                                 {
-                                    TLInstance* nextGreat = greatGrand->m_next;
+                                    nextGreat = greatGrand->m_next;
                                     nlFloatColour oldGreatColour = s_currentAssetColour;
 
                                     RenderTimeLineAsset(greatGrand, fCurrentTime);

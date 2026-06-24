@@ -958,8 +958,8 @@ OptionsVisualMenuV2::OptionsVisualMenuV2(FEPresentation* pres, ButtonComponent::
 
 /**
  * Offset/Address/Size: 0x20C8 | 0x800B710C | size: 0xA3C
- * TODO: 98.93% match - register assignment drift in branch 0xD; ischaractervol
- * lands in r31 vs target r30.
+ * TODO: 99.24% match - menu navigation branches keep ischaractervol in r31
+ * instead of target r30.
  */
 void OptionsAudioMenuV2::Update(float)
 {
@@ -1206,7 +1206,7 @@ void OptionsAudioMenuV2::Update(float)
             {
                 if (ischaractervol)
                 {
-                    ((FEAudio*)this)->PlayRandomVoiceToggleSFX();
+                    FEAudio::PlayRandomVoiceToggleSFX();
                 }
                 else
                 {
@@ -1329,7 +1329,7 @@ void OptionsAudioMenuV2::Update(float)
             {
                 if (ischaractervol)
                 {
-                    ((FEAudio*)this)->PlayRandomVoiceToggleSFX();
+                    FEAudio::PlayRandomVoiceToggleSFX();
                 }
                 else
                 {

@@ -819,16 +819,18 @@ long SaveCallbacks::DoSave(unsigned long Slot)
 
 /**
  * Offset/Address/Size: 0x24EC | 0x8018BE48 | size: 0x21C
- * TODO: 90.37% match - CSE of channel*4 into r31, extra cmpwi loop guards,
- * numBlocks r28 vs r29, card2 r29 vs r31. Remaining diffs are compiler
- * register-allocation heuristics (same wall as sibling FileWriteCB).
+ * TODO: 90.48% match - Slot/Result/card2 register allocation, channel offset
+ * reuse, extra block-count loop guards, and icon header arithmetic registers
+ * still differ.
  */
 #pragma push
 #pragma opt_propagation off
-unsigned long SaveCallbacks::FileWriteIconCB(unsigned long channel, long result, void* data)
+inline unsigned long SaveCallbacks::FileWriteIconCB(unsigned long channel, long result, void* data)
 {
     if (result != 0)
     {
+        MemCard* card2;
+        int numBlocks;
         long errorCode = result;
         if (m_pSaveFile != NULL)
         {
@@ -845,9 +847,9 @@ unsigned long SaveCallbacks::FileWriteIconCB(unsigned long channel, long result,
 
         if (errorCode == -4)
         {
-            MemCard* card2 = g_MemCards[channel];
+            card2 = g_MemCards[channel];
             long dataSize = nlSingleton<GameInfoManager>::s_pInstance->GetMemoryCardDataSize();
-            int numBlocks = 0;
+            numBlocks = 0;
             int origSize = (dataSize += 12);
             dataSize = (u32)(dataSize + 0x1FFF) >> 13;
             if (origSize > 0)
@@ -1040,10 +1042,11 @@ unsigned long SaveCallbacks::CreateFileCB(unsigned long Slot, long Result, void*
     u32 crc = nlChecksum32(localDataInfo2.pHeaderData, headerSize);
     m_IconCRC = crc;
     gIconCRC = m_IconCRC;
+    void* headerData = cache->mIconDataInfo.pHeaderData;
     cb = &SaveCallbacks::FileWriteIconCB;
     MemCardFunctor functor;
-    new (functor.m_FunctorMem) MemCardFunctor::MCMemberFunctor<SaveCallbacks>(this, cb, cache->mIconDataInfo.pHeaderData);
-    Result = g_MemCards[m_Slot]->WriteFileIconData(m_pSaveFile, (void*)cache->mIconDataInfo.pHeaderData, functor);
+    new (functor.m_FunctorMem) MemCardFunctor::MCMemberFunctor<SaveCallbacks>(this, cb, headerData);
+    Result = g_MemCards[m_Slot]->WriteFileIconData(m_pSaveFile, headerData, functor);
     if (Result != 0)
     {
         errorCode = Result;

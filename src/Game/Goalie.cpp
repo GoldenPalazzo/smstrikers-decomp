@@ -595,7 +595,7 @@ void Goalie::CollideWithBallCallback(cBall* pBall)
 
 /**
  * Offset/Address/Size: 0xA178 | 0x8004CC74 | size: 0x6F4
- * TODO: 97.64% match - remaining diff is branch shape around same-animation SetAnimState checks.
+ * TODO: 99.93% match - f0/f2 register swap in loose-ball animation time stores.
  */
 void Goalie::CollideWithCharacterCallback(CollisionPlayerPlayerData* pData)
 {
@@ -661,7 +661,8 @@ void Goalie::CollideWithCharacterCallback(CollisionPlayerPlayerData* pData)
             anim = 0x0C;
         }
 
-        if (anim != m_eAnimID || (m_pCurrentAnimController->m_ePlayMode == PM_HOLD && m_pCurrentAnimController->m_fTime == 1.0f))
+        bool bShouldSetAnim = false;
+        if (anim != m_eAnimID || (bShouldSetAnim = (m_pCurrentAnimController->m_ePlayMode == PM_HOLD && m_pCurrentAnimController->m_fTime == 1.0f)))
         {
             SetAnimState(anim, true, 0.2f, false, false);
         }
@@ -805,41 +806,52 @@ void Goalie::CollideWithCharacterCallback(CollisionPlayerPlayerData* pData)
     case GOALIEACTION_LOOSEBALL_DESPERATE:
         if (pPlayer == g_pBall->m_pOwner)
         {
-            if (pPlayer != NULL && !IsOnSameTeam(pPlayer) && !((cFielder*)pPlayer)->IsFallenDown(0.0f) && !((cFielder*)pPlayer)->IsInvincible())
+            if (pPlayer != NULL)
             {
-                if (pPlayer != NULL && pPlayer->m_eClassType == FIELDER && !((cFielder*)pPlayer)->IsFallenDown(0.0f))
+                if (IsOnSameTeam(pPlayer))
                 {
-                    pPlayer->PlayRandomCharDialogue(CHAR_DIALOGUE_HIT, VECTORS, 100.0f, -1.0f);
+                    return;
+                }
 
-                    if (pPlayer->m_pBall != NULL)
+                if (!((cFielder*)pPlayer)->IsFallenDown(0.0f) && !((cFielder*)pPlayer)->IsInvincible())
+                {
+                    if (pPlayer != NULL && pPlayer->m_eClassType == FIELDER && !((cFielder*)pPlayer)->IsFallenDown(0.0f))
                     {
-                        pPlayer->ReleaseBall();
-                    }
+                        pPlayer->PlayRandomCharDialogue(CHAR_DIALOGUE_HIT, VECTORS, 100.0f, -1.0f);
 
-                    if (IsOnSameTeam(pPlayer))
-                    {
-                        ((cFielder*)pPlayer)->EndDesire(false);
-                        ((cFielder*)pPlayer)->EndAction();
-                    }
-                    else
-                    {
-                        ((cFielder*)pPlayer)->InitActionSlideAttackReact(this, false);
+                        if (pPlayer->m_pBall != NULL)
+                        {
+                            pPlayer->ReleaseBall();
+                        }
+
+                        if (IsOnSameTeam(pPlayer))
+                        {
+                            ((cFielder*)pPlayer)->EndDesire(false);
+                            ((cFielder*)pPlayer)->EndAction();
+                        }
+                        else
+                        {
+                            ((cFielder*)pPlayer)->InitActionSlideAttackReact(this, false);
+                        }
                     }
                 }
             }
 
-            if (mpLooseBallInfo->mnAnimID != m_eAnimID)
+            anim = mpLooseBallInfo->mnAnimID;
+            if (anim != m_eAnimID)
             {
-                if (mpLooseBallInfo->mnAnimID != m_eAnimID || (m_pCurrentAnimController->m_ePlayMode == PM_HOLD && m_pCurrentAnimController->m_fTime == 1.0f))
+                bool bShouldSetLooseAnim = false;
+                if (anim != m_eAnimID || (bShouldSetLooseAnim = (m_pCurrentAnimController->m_ePlayMode == PM_HOLD && m_pCurrentAnimController->m_fTime == 1.0f)))
                 {
-                    SetAnimState(mpLooseBallInfo->mnAnimID, true, 0.2f, false, false);
-                    cPN_SAnimController* pAnim = m_pCurrentAnimController;
-                    f32 curTime = pAnim->m_fTime;
-                    f32 targetTime = 0.5f * mpLooseBallInfo->mfPickupTime;
-                    pAnim->m_fPrevTime = curTime;
-                    pAnim->m_fTime = targetTime;
-                    InitMovementFromAnim(0, v3Zero, 1.0f, false);
+                    SetAnimState(anim, true, 0.2f, false, false);
                 }
+
+                cPN_SAnimController* pAnim = m_pCurrentAnimController;
+                f32 curTime = pAnim->m_fTime;
+                f32 targetTime = 0.5f * mpLooseBallInfo->mfPickupTime;
+                pAnim->m_fPrevTime = curTime;
+                pAnim->m_fTime = targetTime;
+                InitMovementFromAnim(0, v3Zero, 1.0f, false);
             }
 
             if (m_pBall == NULL)
@@ -6699,8 +6711,6 @@ void Goalie::SetDesiredSaveFacing(const nlVector3& v3BallPosition)
 
 /**
  * Offset/Address/Size: 0x3C4 | 0x80042EC0 | size: 0x1F4
- * TODO: 97.52% match - velocity clamp temporaries still map to different FP registers,
- * with remaining branch-shape differences in the clamp blocks.
  */
 void Goalie::TrackTarget(const nlVector3& v3Target, float fRatio)
 {
@@ -6721,17 +6731,18 @@ void Goalie::TrackTarget(const nlVector3& v3Target, float fRatio)
     s32 iTurn = (iRatio * aDiff) / 1024;
     SetFacingDirection((u16)(iTurn + m_aActualFacingDirection));
 
-    float fVelX = fRatio * fDeltaX;
-    float fVelY = fRatio * fDeltaY;
-    float fVelZ = 0.0f;
-    fVelZ *= fRatio;
+    nlVector3 v3Velocity;
+    float fZero = 0.0f;
+    v3Velocity.f.z = fRatio * fZero;
+    v3Velocity.f.x = fRatio * fDeltaX;
+    v3Velocity.f.y = fRatio * fDeltaY;
 
-    fVelX = fVelX >= -0.12f ? fVelX : -0.12f;
-    fVelX = fVelX <= 0.12f ? fVelX : 0.12f;
-    fVelY = fVelY >= -0.12f ? fVelY : -0.12f;
-    fVelY = fVelY <= 0.12f ? fVelY : 0.12f;
+    v3Velocity.f.x = v3Velocity.f.x >= -0.12f ? v3Velocity.f.x : -0.12f;
+    v3Velocity.f.x = v3Velocity.f.x <= 0.12f ? v3Velocity.f.x : 0.12f;
+    v3Velocity.f.y = v3Velocity.f.y >= -0.12f ? v3Velocity.f.y : -0.12f;
+    v3Velocity.f.y = v3Velocity.f.y <= 0.12f ? v3Velocity.f.y : 0.12f;
 
-    nlVec3Set(v3FuturePos, fVelX + m_v3Position.f.x, fVelY + m_v3Position.f.y, fVelZ + m_v3Position.f.z);
+    nlVec3Set(v3FuturePos, v3Velocity.f.x + m_v3Position.f.x, v3Velocity.f.y + m_v3Position.f.y, v3Velocity.f.z + m_v3Position.f.z);
 
     SetPosition(v3FuturePos);
 }

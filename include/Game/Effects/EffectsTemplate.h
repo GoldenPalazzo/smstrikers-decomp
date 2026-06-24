@@ -73,7 +73,6 @@ EffectsTemplate* fxGetTemplate(unsigned long);
 bool fxUnloadTemplates();
 bool fxLoadTemplateBundle(void*, unsigned long);
 bool fxLoadTemplateBundle(const char*);
-EffectsTemplate* parse_template(SimpleParser*, bool);
 float RandomizedValue(float, float);
 float RandomizedValue(float);
 

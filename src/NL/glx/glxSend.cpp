@@ -137,7 +137,7 @@ static void GetConstants();
 
 /**
  * Offset/Address/Size: 0x0 | 0x801B9B00 | size: 0x538
- * TODO: 95.97% match - isCoPlanar: target uses subfic+orc branchless pattern, ours uses cmplwi branch; texture loop: register permutation (texnum/i at r25/r24 vs target r29/r28, sliding ptr/arrays shifted +2)
+ * TODO: 98.27% match - texture loop register permutation: texnum/i at r25/r24 vs target r29/r28, sliding texture/output pointers shifted.
  */
 void glx_SendFrame_cb(eGLView view, unsigned long flags, const glModelPacket* p)
 {
@@ -174,9 +174,7 @@ void glx_SendFrame_cb(eGLView view, unsigned long flags, const glModelPacket* p)
                 if (view != prev_view)
                 {
                     prev_view = view;
-                    glx_IsCoPlanarView = true;
-                    if ((unsigned int)(view - GLV_CoPlanar0) > 1)
-                        glx_IsCoPlanarView = false;
+                    glx_IsCoPlanarView = (view == GLV_CoPlanar0 || view == GLV_CoPlanar);
                     glViewGetProjectionMatrix(view, mproj);
                     glViewGetViewMatrix(view, mview);
                     glxCopyMatrix(gx_mview, mview);
@@ -764,8 +762,8 @@ static void glx_DrawPacket(const glModelPacket* p)
         Mtx invMtx;
         Mtx transMtx;
         Mtx scaleMtx;
-        s32 glossMapCoord;
         s32 glossMapStage;
+        s32 glossMapCoord;
 
         PSMTXScale(scaleMtx, 0.5f, -0.5f, 0.0f);
         PSMTXTrans(transMtx, 0.5f, 0.5f, 1.0f);
@@ -813,8 +811,10 @@ static void glx_DrawPacket(const glModelPacket* p)
 
         float invN = 1.0f / (float)n;
         u32 frame = glGetCurrentFrame();
-        u32 frameMod = frame - (frame / n) * n;
-        float offset = 2.0f * (invN * frameMod) - 1.0f;
+        u32 frameDiv = frame / n;
+        u32 frameMod = frame - frameDiv * n;
+        float offset = invN * frameMod;
+        offset = 2.0f * offset - 1.0f;
         mvCopy[0][2] = offset;
         mvCopy[1][2] = offset;
 
@@ -881,11 +881,11 @@ static void glx_DrawPacket(const glModelPacket* p)
     {
         GXBegin(primitives[p->primType], (_GXVtxFmt)gx_vtxfmt, p->numVertices);
 
-        for (j = 0; j < p->numVertices; j++)
+        for (i = 0; i < p->numVertices; i++)
         {
-            for (i = 0; i < glx_NumIndices; i++)
+            for (j = 0; j < glx_NumIndices; j++)
             {
-                GXWGFifo.u16 = (u16)j;
+                GXWGFifo.u16 = (u16)i;
             }
         }
     }
@@ -943,11 +943,11 @@ static void glx_DrawPacket(const glModelPacket* p)
             {
                 u16* idxPtr = (u16*)p->indexBuffer;
                 GXBegin(primitives[p->primType], (_GXVtxFmt)gx_vtxfmt, p->numVertices);
-                for (j = 0; j < p->numVertices; j++)
+                for (i = 0; i < p->numVertices; i++)
                 {
-                    for (i = 0; i < glx_NumIndices; i++)
+                    for (j = 0; j < glx_NumIndices; j++)
                     {
-                        GXWGFifo.u16 = idxPtr[j];
+                        GXWGFifo.u16 = idxPtr[i];
                     }
                 }
             }

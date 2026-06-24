@@ -929,8 +929,8 @@ FuzzyVariant Fuzzy::ShouldIAttemptOneTimer(cFielder* TheFielder)
 
 /**
  * Offset/Address/Size: 0xB89C | 0x80075A6C | size: 0x8A8
- * TODO: 97.58% match - callee-saved registers r28-r31 are rotated by one vs
- * target (target: hash=r31, TheFielder=r30, retptr=r29, cache=r28).
+ * TODO: 98.14% match - remaining register allocation differs in cache
+ * pointer/hash/sret paths and second confidence gate temporaries.
  */
 FuzzyVariant Fuzzy::GetBestLooseBallPassTarget(cFielder* TheFielder)
 {
@@ -938,14 +938,16 @@ FuzzyVariant Fuzzy::GetBestLooseBallPassTarget(cFielder* TheFielder)
     float fConfidence = 1.0f;
     float fBestConfidence = 0.0f;
 
-    FuzzyVariant fvFielder((cPlayer*)TheFielder);
+    const FuzzyVariant& fvFielder = FuzzyVariant((cPlayer*)TheFielder);
     volatile unsigned long funcAddr = (unsigned long)GetBestLooseBallPassTarget;
     unsigned long hash = funcAddr + ((Variant*)&fvFielder)->GetHash();
-    FuzzyVariant fvFielder2((cPlayer*)TheFielder);
+    FuzzyVariant((cPlayer*)TheFielder);
 
     if (ScriptQuestionCache::Instance()->Lookup(hash, bestValue, NULL))
     {
-        ScriptQuestionCache::Instance()->AddToCache(hash, bestValue, NULL);
+        bestValue.Confidence = bestValue.Confidence;
+        const FuzzyVariant& cacheValue = bestValue;
+        ScriptQuestionCache::Instance()->AddToCache(hash, cacheValue, NULL);
         return bestValue;
     }
 
@@ -985,7 +987,8 @@ FuzzyVariant Fuzzy::GetBestLooseBallPassTarget(cFielder* TheFielder)
     }
 
     bestValue.Confidence = fBestConfidence;
-    ScriptQuestionCache::Instance()->AddToCache(hash, bestValue, NULL);
+    const FuzzyVariant& cacheValue = bestValue;
+    ScriptQuestionCache::Instance()->AddToCache(hash, cacheValue, NULL);
     return bestValue;
 }
 
@@ -1261,20 +1264,20 @@ FuzzyVariant Fuzzy::GetBestPassTarget(cPlayer* ThePlayer)
 
 /**
  * Offset/Address/Size: 0xA138 | 0x80074308 | size: 0xAFC
- * TODO: 98.41% match - residual diffs are an f30/f31 register swap between
- *       fBestConfidence and fFalseConfidence (cascades through the tree),
- *       FuzzyVariant temporary stack-slot ordering, and sda21 pool-label
- *       numbering.
+ * TODO: 98.61% match - residual diffs are branch-ratio transient registers,
+ *       weighted-score expression registers, FuzzyVariant temporary
+ *       stack-slot ordering, and sda21 pool-label numbering.
  */
 FuzzyVariant Fuzzy::GoodPassTargetFrom(cFielder* TheTargetFielder, cFielder* TheBallOwner)
 {
 
     FuzzyVariant bestValue;
     float fConfidence = 1.0f;
+    float fFalseConfidence;
     float fBestConfidence = 0.0f;
 
     float fTrueConfidence = Incapacitated((cPlayer*)TheTargetFielder);
-    float fFalseConfidence = 1.0f - fTrueConfidence;
+    fFalseConfidence = 1.0f - fTrueConfidence;
     float fBranchRatio = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
     fBranchRatio = fBranchRatio / ((fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence);
 
@@ -1325,10 +1328,9 @@ FuzzyVariant Fuzzy::GoodPassTargetFrom(cFielder* TheTargetFielder, cFielder* The
             float fTargetCanShoot = Fuzzy::GoodToShoot(TheTargetFielder).mData.f;
             float fNetOpeness = FGREATER(fTargetCanShoot, fOwnerCanShoot);
             float fPlayerDistance = FGREATER(Fuzzy::GoodToShoot(TheTargetFielder).mData.f, 0.3f);
-            float fTotalSum = 0.5f * fNetOpeness + 0.5f * fPlayerDistance;
-
             float fCaptainBonus = 1.0f;
-            if (AbleToUsePowerup(TheTargetFielder, 8) != 0.0f && Captain(TheTargetFielder) != 0.0f)
+            float fTotalSum = 0.5f * fNetOpeness + 0.5f * fPlayerDistance;
+            if (AbleToUsePowerup(TheTargetFielder, 8) && Captain(TheTargetFielder))
             {
                 fCaptainBonus = 2.0f;
             }
@@ -2808,7 +2810,14 @@ FuzzyVariant Fuzzy::GetBestLooseBallAction(cFielder* TheFielder)
 
         fTrueConfidence = fCanSlide;
         fFalseConfidence = 1.0f - fTrueConfidence;
-        fMinVal = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+        if (fTrueConfidence <= fFalseConfidence)
+        {
+            fMinVal = fTrueConfidence;
+        }
+        else
+        {
+            fMinVal = fFalseConfidence;
+        }
         fMaxVal = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
         fBranchRatio = fMinVal / fMaxVal;
 
@@ -2877,7 +2886,14 @@ FuzzyVariant Fuzzy::GetBestLooseBallAction(cFielder* TheFielder)
 
         fTrueConfidence = fNotFarToBall;
         fFalseConfidence = 1.0f - fTrueConfidence;
-        fMinVal = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+        if (fTrueConfidence <= fFalseConfidence)
+        {
+            fMinVal = fTrueConfidence;
+        }
+        else
+        {
+            fMinVal = fFalseConfidence;
+        }
         fMaxVal = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
         fBranchRatio = fMinVal / fMaxVal;
 
@@ -3024,7 +3040,14 @@ FuzzyVariant Fuzzy::GetBestLooseBallAction(cFielder* TheFielder)
         SkillTweaks* pSkillTweaks2 = SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide);
         returnAction2.SelectionChance = CalcSelectChance(pSkillTweaks2->Off_PassReceivePowerupChance, Aggressive(TheFielder));
 
-        fTrueConfidence = (powerupToUse.mData.i == 7) ? 1.0f : 0.0f;
+        if (powerupToUse.mData.i == 7)
+        {
+            fTrueConfidence = 1.0f;
+        }
+        else
+        {
+            fTrueConfidence = 0.0f;
+        }
         fTrueConfidence = (fTrueConfidence <= powerupToUse.Confidence) ? fTrueConfidence : powerupToUse.Confidence;
 
         fFalseConfidence = 1.0f - fTrueConfidence;
@@ -3140,7 +3163,14 @@ FuzzyVariant Fuzzy::GetBestLooseBallAction(cFielder* TheFielder)
         FuzzyVariant oneTimerScore = Fuzzy::ShouldIAttemptOneTimer(TheFielder);
 
         float fCanShoot = TheFielder->CanLooseBallShoot() ? 1.0f : 0.0f;
-        fTrueConfidence = (oneTimerScore.mData.f <= fCanShoot) ? oneTimerScore.mData.f : fCanShoot;
+        if (oneTimerScore.mData.f <= fCanShoot)
+        {
+            fTrueConfidence = oneTimerScore.mData.f;
+        }
+        else
+        {
+            fTrueConfidence = fCanShoot;
+        }
 
         fFalseConfidence = 1.0f - fTrueConfidence;
         fMinVal = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;

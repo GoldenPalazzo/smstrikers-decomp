@@ -8,6 +8,7 @@
 #include "Game/FE/feHelpFuncs.h"
 #include "Game/GameInfo.h"
 #include "Game/SH/SHSaveLoad.h"
+#include "NL/nlFormat.h"
 #include "NL/nlMath.h"
 #include "NL/nlMemory.h"
 #include "NL/nlPrint.h"
@@ -3775,26 +3776,9 @@ void CupHubScene::UpdateRoundMessage(bool hideMessage)
     static const unsigned short sColourOpen[] = { '{', 'c', 'l', 'r', ':', 'F', 'F', 'F', 'F', '0', '0', 'F', 'F', '}', 0 };
     static const unsigned short sColourClose[] = { '{', 'c', 'l', 'r', ':', 'p', 'o', 'p', '}', 0 };
 
-#define LOOKUP_LOC_STRING(_hashExpr, _locVar)                                                                              \
-    {                                                                                                                      \
-        unsigned long _hash = (_hashExpr);                                                                                 \
-        nlLocalization* _loc = g_pLocalization;                                                                            \
-        if (_loc->m_LookupTable == 0)                                                                                      \
-        {                                                                                                                  \
-            (_locVar) = LocalizationTableNotFound;                                                                         \
-        }                                                                                                                  \
-        else                                                                                                               \
-        {                                                                                                                  \
-            nlLocalization::StringLookup* _entry = nlBSearch(_hash, _loc->m_LookupTable, (int)_loc->m_pFile->StringCount); \
-            if (_entry != 0)                                                                                               \
-            {                                                                                                              \
-                (_locVar) = _loc->m_FirstString + _entry->StringOffset;                                                    \
-            }                                                                                                              \
-            else                                                                                                           \
-            {                                                                                                              \
-                (_locVar) = MissingLocString;                                                                              \
-            }                                                                                                              \
-        }                                                                                                                  \
+#define LOOKUP_LOC_STRING(_hashExpr, _locVar) \
+    {                                         \
+        (_locVar) = LookupLocHash(_hashExpr); \
     }
 
     GameInfoManager* gameInfo = *(GameInfoManager* volatile*)&nlSingleton<GameInfoManager>::s_pInstance;
@@ -3980,12 +3964,6 @@ void CupHubScene::UpdateRoundMessage(bool hideMessage)
             unformatted = BasicString<unsigned short, Detail::TempStringAllocator>(locString);
         }
     }
-
-    extern BasicString<unsigned short, Detail::TempStringAllocator> Format(
-        const BasicString<unsigned short, Detail::TempStringAllocator>&,
-        const BasicString<unsigned short, Detail::TempStringAllocator>&,
-        const BasicString<unsigned short, Detail::TempStringAllocator>&,
-        const BasicString<unsigned short, Detail::TempStringAllocator>&);
 
     BasicString<unsigned short, Detail::TempStringAllocator> formatted = Format(unformatted, roundWideString, leftTeam, rightTeam);
 

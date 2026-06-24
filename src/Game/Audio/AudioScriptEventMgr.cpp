@@ -104,7 +104,7 @@ struct AUDIO_SCRIPT_POLL_STATE
     /* 0x18 */ cTeam* LastOwningTeam;
 };
 
-extern AUDIO_SCRIPT_POLL_STATE g_ScriptPollState;
+AUDIO_SCRIPT_POLL_STATE g_ScriptPollState;
 
 struct AUDIO_SCRIPT_SETTINGS
 {
@@ -119,7 +119,7 @@ struct AUDIO_SCRIPT_SETTINGS
     /* 0x20 */ unsigned long MaxFreeBallTime;
 };
 
-static AUDIO_SCRIPT_SETTINGS g_ScriptSettings;
+static const AUDIO_SCRIPT_SETTINGS g_ScriptSettings = { 0 };
 
 struct AUDIO_EVENT_RECORD
 {
@@ -148,15 +148,63 @@ NIS_EVENT_LOOKUP g_NisEventLookup[4] = {
     { 0, "EnterStadiumAway", NIS_EVENT_PACK(AudioScriptEventMgr::AE_TeamIntro, AudioScriptEventMgr::AET_Away) },
 };
 
-extern char* AUDIO_EVENT_FUNC_NAMES[];
+char* AUDIO_EVENT_FUNC_NAMES[] = {
+    "NULL",
+    "Goal",
+    "KickOff",
+    "Shot",
+    "Post",
+    "Win",
+    "SDWin",
+    "Attack",
+    "Hit",
+    "OpeningFlyby",
+    "Intro",
+    "PreKickOff",
+    "Miss",
+    "Save",
+    "GoodPosition",
+    "WindUp",
+    "HalfTime",
+    "LastPeriod",
+    "FinalSecondsLeading",
+    "FinalSecondsCloseScore",
+    "SuddenDeath",
+    "ShootToScore",
+    "CaptainS2S",
+    "S2SMiss",
+    "S2STackled",
+    "GenericS2SEnd",
+    "HyperStrike",
+    "SuperStrikeFloat",
+    "PowerUpActivate",
+    "PowerUpDisperse",
+    "PowerUpHit",
+    "BoredStart",
+    "BoredEnd",
+    "BoredPeriod",
+    "ChainChomp",
+    "ChainChompEnd",
+    "BowserAttackStart",
+    "BowserAttackEnd",
+    "BowserTilt",
+    "BowserLevel",
+    "BowserLandTilt",
+    "BowserLandReg",
+    "PerfectPass",
+    "PerfectPassEnd",
+    "LosingBadly",
+    "Comeback",
+    "GotPossession",
+};
 
 typedef ListContainerBase<AUDIO_EVENT_RECORD, BasicSlotPool<ListEntry<AUDIO_EVENT_RECORD> > > AudioEventList;
 
 template class ListContainerBase<AUDIO_EVENT_RECORD, BasicSlotPool<ListEntry<AUDIO_EVENT_RECORD> > >;
 template class nlListSlotPool<AUDIO_EVENT_RECORD>;
 
-extern EventHandler* g_pAudioEventHandler;
-extern _AudioEventRaiser g_AudioEventRaiser;
+EventHandler* g_pAudioEventHandler;
+_AudioEventRaiser g_AudioEventRaiser;
 
 namespace
 {
@@ -391,7 +439,7 @@ void AudioScriptEventMgr::Init()
 {
     g_pAudioEventHandler = g_pEventManager->AddEventHandler(AudioScriptEventHandler, NULL, (unsigned long)-1);
 
-    AUDIO_SCRIPT_SETTINGS& settings = g_ScriptSettings;
+    AUDIO_SCRIPT_SETTINGS& settings = (AUDIO_SCRIPT_SETTINGS&)g_ScriptSettings;
 
     settings.HalfTime = GetConfigInt(Config::Global(), "HalfTime", 50);
     settings.LastPeriod = GetConfigInt(Config::Global(), "LastPeriod", 75);
@@ -592,7 +640,7 @@ static void Poll()
                 g_ScriptPollState.NextPossibleGoodPositionTime = g_pGame->GetGameTime() + (float)g_ScriptSettings.MinGoodPositionPeriod;
                 AudioScriptEventMgr::AUDIO_EVENT_TEAM eventTeam = AudioScriptEventMgr::AET_Home;
 
-                if (((cPlayer*)pBallOwner)->m_pTeam->m_nSide != 0)
+                if ((unsigned int)((cPlayer*)pBallOwner)->m_pTeam->m_nSide != 0)
                 {
                     eventTeam = AudioScriptEventMgr::AET_Away;
                 }
@@ -628,7 +676,7 @@ static void Poll()
             if (g_pGame->m_eGameState > GS_END_GAME)
             {
                 AudioScriptEventMgr::AUDIO_EVENT_TEAM eventTeam = AudioScriptEventMgr::AET_Home;
-                if (g_pBall->m_pOwner->m_pTeam->m_nSide != 0)
+                if ((unsigned int)g_pBall->m_pOwner->m_pTeam->m_nSide != 0)
                 {
                     eventTeam = AudioScriptEventMgr::AET_Away;
                 }
@@ -644,24 +692,18 @@ static void Poll()
     }
 
     float timeSinceExcitement = g_pGame->GetGameTime() - g_ScriptPollState.LastExcitementTime;
-    if (timeSinceExcitement > g_ScriptSettings.TimeToBored)
+    if (timeSinceExcitement > g_ScriptSettings.TimeToBored && !g_ScriptPollState.AmBored)
     {
-        if (!g_ScriptPollState.AmBored)
-        {
-            g_ScriptPollState.AmBored = 1;
-            g_ScriptPollState.LastExcitementTime = g_pGame->GetGameTime();
-            nlPrintf("START bored %.2f\n", timeSinceExcitement);
-            FireEventInline(AudioScriptEventMgr::AE_BoredStart, AudioScriptEventMgr::AET_Neutral);
-        }
+        g_ScriptPollState.AmBored = 1;
+        g_ScriptPollState.LastExcitementTime = g_pGame->GetGameTime();
+        nlPrintf("START bored %.2f\n", timeSinceExcitement);
+        FireEventInline(AudioScriptEventMgr::AE_BoredStart, AudioScriptEventMgr::AET_Neutral);
     }
-    else if (timeSinceExcitement > g_ScriptSettings.BoredPeriod)
+    else if (timeSinceExcitement > g_ScriptSettings.BoredPeriod && g_ScriptPollState.AmBored)
     {
-        if (g_ScriptPollState.AmBored)
-        {
-            g_ScriptPollState.LastExcitementTime = g_pGame->GetGameTime();
-            nlPrintf("PERIOD bored %.2f\n", timeSinceExcitement);
-            FireEventInline(AudioScriptEventMgr::AE_BoredPeriod, AudioScriptEventMgr::AET_Neutral);
-        }
+        g_ScriptPollState.LastExcitementTime = g_pGame->GetGameTime();
+        nlPrintf("PERIOD bored %.2f\n", timeSinceExcitement);
+        FireEventInline(AudioScriptEventMgr::AE_BoredPeriod, AudioScriptEventMgr::AET_Neutral);
     }
 }
 
@@ -732,27 +774,27 @@ static void AudioScriptEventHandler(Event* pEvent, void*)
             intensity = 0.3f;
         }
 
-        static float fLastFireworkTime;
-        static bool bFireworkTimerInited;
+        static float fTimer;
+        static bool init;
 
         intensity = intensity * Audio::gStadGenSFX.mpSFX[Audio::STADSFX_GEN_FIREWORKS_FLOOR].fVolume;
-        if (!bFireworkTimerInited)
+        if (!init)
         {
-            bFireworkTimerInited = true;
-            fLastFireworkTime = 0.0f;
+            init = true;
+            fTimer = 0.0f;
         }
 
         float now = Audio::GetAudioTimer();
-        if (now < fLastFireworkTime)
+        if (now < fTimer)
         {
-            fLastFireworkTime = 0.0f;
+            fTimer = 0.0f;
         }
-        if (fLastFireworkTime != 0.0f && now - fLastFireworkTime < 0.2f)
+        if (fTimer != 0.0f && now - fTimer < 0.2f)
         {
             return;
         }
 
-        fLastFireworkTime = Audio::GetAudioTimer();
+        fTimer = Audio::GetAudioTimer();
         Audio::gStadGenSFX.Play(Audio::STADSFX_GEN_FIREWORKS_FLOOR, intensity, -1.0f, true, 100.0f);
         AudioScriptEventMgr::FireEvent(AudioScriptEventMgr::AE_HitPost, GetEventTeam<CollisionBallGoalpostData>(pEvent, false));
         return;

@@ -272,6 +272,7 @@ public:
     static u32 m_uFileSize;
     static nlFile* s_pFile;
     static ARAMTransferHelperLoadEntireFile* m_pARAMHelper;
+    static const char* m_szFileName;
 };
 
 class ARAMTransferHelper

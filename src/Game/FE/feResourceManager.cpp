@@ -385,8 +385,8 @@ void FEResourceManager::UnloadResource(FEResourceHandle* pFeResourceHandle)
 
 /**
  * Offset/Address/Size: 0x344 | 0x8020BE84 | size: 0x2B0
- * TODO: 98.91% match - remaining stack slot/register allocation mismatch in
- * AVL search/remove temporaries (`foundValue`/`key`, r28/r30 ownership).
+ * TODO: 99.85% match - remaining r30/r31 register swap for fileCount vs
+ * loaded-resource root pointer in the permanent-bundle cleanup loop.
  */
 void FEResourceManager::UnloadPermanentResourceBundle()
 {
@@ -394,12 +394,18 @@ void FEResourceManager::UnloadPermanentResourceBundle()
     s_pPermanentBundle->Open(m_szPermanentBundleFileName);
 
     FESceneResource* pPermanentSceneResource = s_pPermanentBundleSceneResource;
-    u32 fileCount = s_pPermanentBundle->m_pHeader->nNumFiles;
+    unsigned long fileCount = s_pPermanentBundle->m_pHeader->nNumFiles;
+    BundleFileDirectoryEntry fileDirectoryEntry;
+    unsigned long fileIndex;
+    AVLTreeNode** pRoot;
+    FEResourceHandle** pLoadedResourceHandle;
+    u32 hashtodelete;
 
     switch (pPermanentSceneResource->m_type)
     {
     case FERT_TEXTURE:
     {
+        u32 key;
         FEResourceHandle** foundValue;
         u32 searchState = pPermanentSceneResource->m_hashID;
         AVLTreeEntry<unsigned long, FEResourceHandle*>* node = s_loadedResourceList.m_Root;
@@ -451,7 +457,7 @@ void FEResourceManager::UnloadPermanentResourceBundle()
         if (*foundValue != pPermanentSceneResource)
             break;
 
-        u32 key = pPermanentSceneResource->m_hashID;
+        key = pPermanentSceneResource->m_hashID;
         AVLTreeNode* removedNode = s_loadedResourceList.RemoveAVLNode(
             (AVLTreeNode**)&s_loadedResourceList.m_Root,
             &key,
@@ -471,82 +477,29 @@ void FEResourceManager::UnloadPermanentResourceBundle()
         break;
     }
 
-    u32 fileIndex = 0;
-    AVLTreeNode** pRoot = (AVLTreeNode**)&s_loadedResourceList.m_Root;
-    nlAVLTreeSlotPool<unsigned long, FEResourceHandle*, DefaultKeyCompare<unsigned long> >* pLoadedResourceList = &s_loadedResourceList;
-
-    while (fileIndex < fileCount)
+    pRoot = (AVLTreeNode**)&s_loadedResourceList.m_Root;
+    for (fileIndex = 0; fileIndex < fileCount; fileIndex++)
     {
-        BundleFileDirectoryEntry fileDirectoryEntry;
-        FEResourceHandle** foundValue;
-        unsigned char found;
-
         s_pPermanentBundle->GetFileInfoByIndex(fileIndex, &fileDirectoryEntry);
 
-        AVLTreeEntry<unsigned long, FEResourceHandle*>* node = (AVLTreeEntry<unsigned long, FEResourceHandle*>*)*pRoot;
-        u32 searchKey = fileDirectoryEntry.m_hash;
-
-        while (node != NULL)
+        bool found = s_loadedResourceList.FindGet(fileDirectoryEntry.m_hash, &pLoadedResourceHandle);
+        if (found)
         {
-            unsigned long nodeKey = node->key;
-            int cmpResult;
-
-            if (searchKey == nodeKey)
-            {
-                cmpResult = 0;
-            }
-            else if (searchKey < nodeKey)
-            {
-                cmpResult = -1;
-            }
-            else
-            {
-                cmpResult = 1;
-            }
-
-            if (cmpResult == 0)
-            {
-                if (&foundValue != NULL)
-                {
-                    foundValue = (FEResourceHandle**)&node->value;
-                }
-                found = 1;
-                goto check_found;
-            }
-            else
-            {
-                if (cmpResult < 0)
-                {
-                    node = (AVLTreeEntry<unsigned long, FEResourceHandle*>*)node->node.left;
-                }
-                else
-                {
-                    node = (AVLTreeEntry<unsigned long, FEResourceHandle*>*)node->node.right;
-                }
-            }
-        }
-
-        found = 0;
-    check_found:
-        if ((u8)found)
-        {
-            u32 key = (*foundValue)->m_hashID;
-            ::operator delete(*foundValue);
+            hashtodelete = (*pLoadedResourceHandle)->m_hashID;
+            ::operator delete(*pLoadedResourceHandle);
 
             AVLTreeNode* removedNode = s_loadedResourceList.RemoveAVLNode(
                 pRoot,
-                &key,
-                pLoadedResourceList->m_NumElements);
+                &hashtodelete,
+                s_loadedResourceList.m_NumElements);
 
             if (removedNode != NULL)
             {
-                removedNode->left = (AVLTreeNode*)pLoadedResourceList->m_Allocator.m_FreeList;
-                pLoadedResourceList->m_Allocator.m_FreeList = (SlotPoolEntry*)removedNode;
-                pLoadedResourceList->m_NumElements--;
+                removedNode->left = (AVLTreeNode*)s_loadedResourceList.m_Allocator.m_FreeList;
+                s_loadedResourceList.m_Allocator.m_FreeList = (SlotPoolEntry*)removedNode;
+                s_loadedResourceList.m_NumElements--;
             }
         }
-
-        fileIndex++;
     }
 
     s_pPermanentBundle->Close();

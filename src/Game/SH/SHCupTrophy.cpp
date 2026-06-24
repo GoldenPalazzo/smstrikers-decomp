@@ -604,26 +604,7 @@ void CupTrophyScene::SceneCreated()
     unsigned short timesWonWide[32];
     nlStrToWcs(timesWon.c_str(), timesWonWide, 32);
 
-    unsigned long locHash = 0x103642ED;
-    nlLocalization* loc = g_pLocalization;
-    const unsigned short* locString;
-
-    if (loc->m_LookupTable == 0)
-    {
-        locString = LocalizationTableNotFound;
-    }
-    else
-    {
-        nlLocalization::StringLookup* entry = nlBSearch(locHash, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
-        if (entry != 0)
-        {
-            locString = loc->m_FirstString + entry->StringOffset;
-        }
-        else
-        {
-            locString = MissingLocString;
-        }
-    }
+    const unsigned short* locString = LookupCupTrophyLoc(0x103642ED);
 
     BasicStringData<unsigned short>* data = (BasicStringData<unsigned short>*)nlMalloc(0x10, 8, true);
     if (data != 0)

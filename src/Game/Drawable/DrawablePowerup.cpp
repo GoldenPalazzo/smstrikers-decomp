@@ -36,7 +36,7 @@ static inline char* PowerupLookupString(int idx)
 
 /**
  * Offset/Address/Size: 0x0 | 0x8011EC74 | size: 0xF8
- * TODO: 92.8% match - FPR registers still differ around blend factor
+ * TODO: 93.1% match - FPR registers still differ around blend factor
  * temporaries used for scale and position interpolation.
  */
 void DrawablePowerup::Blend(const float* blendFactors, const DrawablePowerup& lhs, const DrawablePowerup& rhs)
@@ -45,17 +45,23 @@ void DrawablePowerup::Blend(const float* blendFactors, const DrawablePowerup& lh
     if (!mVisible)
         return;
 
-    float t = blendFactors[2];
-    float one = 1.0f;
-    float invT = one - t;
+    float posZ;
+    float posY;
+    float posX;
+    float scale;
+    float t2;
+    float t;
+    float one;
+    float invT;
 
-    // Force a second independent load of blendFactors[2].
-    float t2 = ((const volatile float*)blendFactors)[2];
-
-    float scale = (one - t2) * lhs.mScale + t2 * rhs.mScale;
-    float posX = invT * lhs.mPosition.f.x + t * rhs.mPosition.f.x;
-    float posY = invT * lhs.mPosition.f.y + t * rhs.mPosition.f.y;
-    float posZ = invT * lhs.mPosition.f.z + t * rhs.mPosition.f.z;
+    t = blendFactors[2];
+    one = 1.0f;
+    invT = one - t;
+    t2 = ((const volatile float*)blendFactors)[2];
+    scale = (one - t2) * lhs.mScale + t2 * rhs.mScale;
+    posX = invT * lhs.mPosition.f.x + t * rhs.mPosition.f.x;
+    posY = invT * lhs.mPosition.f.y + t * rhs.mPosition.f.y;
+    posZ = invT * lhs.mPosition.f.z + t * rhs.mPosition.f.z;
 
     mType = lhs.mType;
     mScale = scale;

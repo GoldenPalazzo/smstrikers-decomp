@@ -178,7 +178,7 @@ static inline fxRange GetRange(SimpleParser* parser)
     return value;
 }
 
-EffectsTemplate* parse_template(SimpleParser* parser, bool bQuick)
+static EffectsTemplate* parse_template(SimpleParser* parser, bool bQuick)
 {
     char name[128];
     EffectsTemplate t;
@@ -186,6 +186,7 @@ EffectsTemplate* parse_template(SimpleParser* parser, bool bQuick)
     nlColour colours[50];
     bool bFountain;
     bool bFountainForever;
+    bool bValue;
     char texname[264];
     char modelname[264];
     int i;
@@ -239,13 +240,15 @@ EffectsTemplate* parse_template(SimpleParser* parser, bool bQuick)
 
         if (nlStrCmp<char>(token, "fountainmode") == 0)
         {
-            bFountain = (nlStrCmp<char>(parser->NextToken(true), "true") == 0);
+            bValue = (nlStrCmp<char>(parser->NextToken(true), "true") == 0);
+            bFountain = bValue;
             continue;
         }
 
         if (nlStrCmp<char>(token, "fountainforever") == 0)
         {
-            bFountainForever = (nlStrCmp<char>(parser->NextToken(true), "true") == 0);
+            bValue = (nlStrCmp<char>(parser->NextToken(true), "true") == 0);
+            bFountainForever = bValue;
             continue;
         }
 

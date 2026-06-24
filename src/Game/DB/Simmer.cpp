@@ -150,8 +150,7 @@ Simulator::Simulator()
 
 /**
  * Offset/Address/Size: 0x0 | 0x8019087C | size: 0xC18
- * TODO: 97.83% match - this/flag registers still differ, with BasicString(line)
- *       temp pointer register drift.
+ * TODO: 98.52% match - this/flag registers still differ around the tokenizer loop.
  */
 void Simulator::InitializeStats()
 {
@@ -159,9 +158,9 @@ void Simulator::InitializeStats()
     GameplaySettings::eSkillLevel skillLevel = GameInfoManager::s_pInstance->GetGameplayOptions().SkillLevel;
     int length = GameInfoManager::s_pInstance->GetGameplayOptions().GameTime;
     FILE* pFile;
+    unsigned char doMean = 1;
     unsigned char isMeanFound = 0;
     unsigned char isSDFound = 0;
-    unsigned char doMean = 1;
     if (skillLevel == GameplaySettings::ROOKIE)
     {
         diff = (eDifficultyID)1;
@@ -199,14 +198,56 @@ void Simulator::InitializeStats()
             unsigned char isLineFound;
             if (nlStrNCmp<char>(meanString.c_str(), line, meanString.m_data ? (unsigned long)(meanString.m_data->mSize - 1) : 0) == 0)
             {
-                statString = BasicString<char, Detail::TempStringAllocator>(line);
+                BasicStringData<char>* data = (BasicStringData<char>*)Detail::TempStringAllocator::allocate(sizeof(BasicStringData<char>));
+                if (data != 0)
+                {
+                    data->mData = 0;
+                    data->mSize = 0;
+                    data->mCapacity = 0;
+                    const char* str = line;
+                    const char* s = str;
+                    while (*s++ != 0)
+                    {
+                        data->mSize++;
+                    }
+                    data->mSize++;
+                    data->mData = (char*)Detail::TempStringAllocator::allocate((data->mSize + 1) * sizeof(char));
+                    data->mCapacity = data->mSize;
+                    for (int j = 0; j < data->mSize; j++)
+                    {
+                        data->mData[j] = *str++;
+                    }
+                    data->mRefCount = 1;
+                }
+                statString = BasicString<char, Detail::TempStringAllocator>(data);
                 isLineFound = 1;
                 isMeanFound = 1;
                 doMean = 1;
             }
             else if (nlStrNCmp<char>(SDString.c_str(), line, SDString.m_data ? (unsigned long)(SDString.m_data->mSize - 1) : 0) == 0)
             {
-                statString = BasicString<char, Detail::TempStringAllocator>(line);
+                BasicStringData<char>* data = (BasicStringData<char>*)Detail::TempStringAllocator::allocate(sizeof(BasicStringData<char>));
+                if (data != 0)
+                {
+                    data->mData = 0;
+                    data->mSize = 0;
+                    data->mCapacity = 0;
+                    const char* str = line;
+                    const char* s = str;
+                    while (*s++ != 0)
+                    {
+                        data->mSize++;
+                    }
+                    data->mSize++;
+                    data->mData = (char*)Detail::TempStringAllocator::allocate((data->mSize + 1) * sizeof(char));
+                    data->mCapacity = data->mSize;
+                    for (int j = 0; j < data->mSize; j++)
+                    {
+                        data->mData[j] = *str++;
+                    }
+                    data->mRefCount = 1;
+                }
+                statString = BasicString<char, Detail::TempStringAllocator>(data);
                 isLineFound = 1;
                 isSDFound = 1;
                 doMean = 0;

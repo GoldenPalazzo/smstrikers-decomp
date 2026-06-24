@@ -433,10 +433,12 @@ void RotateVectorZAxis(nlVector3& v3Out, const nlVector3& v3In, unsigned short a
 
 /**
  * Offset/Address/Size: 0x814 | 0x800062C0 | size: 0x210
+ * TODO: 98.51% match - fInvR1R2 and the antiparallel/final cross-product
+ * temporaries use f29/f31 differently from target.
  */
 void GetRotationBetweenVectors(nlQuaternion& quat, const nlVector3& v3Vec1, const nlVector3& v3Vec2)
 {
-    const float fInvR1R2 = 1.0f / nlSqrt(v3Vec1.GetLengthSq3D() * v3Vec2.GetLengthSq3D(), true);
+    float fInvR1R2 = 1.0f / nlSqrt(v3Vec1.GetLengthSq3D() * v3Vec2.GetLengthSq3D(), true);
     float fCosAngle = fInvR1R2 * nlVec3DotProduct(v3Vec1, v3Vec2);
 
     if (fCosAngle > 0.99999f)
@@ -460,10 +462,9 @@ void GetRotationBetweenVectors(nlQuaternion& quat, const nlVector3& v3Vec1, cons
             axis.f.z = axis.f.y;
         }
 
-        float nax = -axis.f.x;
-        float cz = axis.f.x * v3Vec1.f.y - axis.f.y * v3Vec1.f.x;
-        float cy = axis.f.z * v3Vec1.f.x + nax * v3Vec1.f.z;
         float cx = axis.f.y * v3Vec1.f.z - axis.f.z * v3Vec1.f.y;
+        float cy = -axis.f.x * v3Vec1.f.z + axis.f.z * v3Vec1.f.x;
+        float cz = axis.f.x * v3Vec1.f.y - axis.f.y * v3Vec1.f.x;
 
         float invLen = nlRecipSqrt(cx * cx + cy * cy + cz * cz, true);
 
@@ -477,20 +478,12 @@ void GetRotationBetweenVectors(nlQuaternion& quat, const nlVector3& v3Vec1, cons
         float fMagic = nlSqrt((float)(0.5 * (1.0 + fCosAngle)), true);
         float fMultiplier = fInvR1R2 / fMagic;
 
-        float cx_init = v3Vec1.f.z * v3Vec2.f.y;
-        float cz_init = v3Vec1.f.y * v3Vec2.f.x;
-        float negX = -v3Vec1.f.x;
-
+        nlVector3 axis;
+        nlVec3Cross(axis, v3Vec1, v3Vec2);
         quat.f.w = 0.5f * fMagic;
-
-        float cy_init = v3Vec1.f.z * v3Vec2.f.x;
-        float cx = v3Vec1.f.y * v3Vec2.f.z - cx_init;
-        float cz = v3Vec1.f.x * v3Vec2.f.y - cz_init;
-        float cy = negX * v3Vec2.f.z + cy_init;
-
-        quat.f.x = cx * fMultiplier;
-        quat.f.y = cy * fMultiplier;
-        quat.f.z = cz * fMultiplier;
+        quat.f.x = axis.f.x * fMultiplier;
+        quat.f.y = axis.f.y * fMultiplier;
+        quat.f.z = axis.f.z * fMultiplier;
     }
 }
 

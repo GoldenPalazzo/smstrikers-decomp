@@ -1,3 +1,4 @@
+#define NL_SINGLETON_NO_DEFINE
 #include "NL/plat/plataudio.h"
 #include "NL/nlMemory.h"
 #include "NL/nlFile.h"
@@ -16,6 +17,22 @@ extern "C" u32 sndStackGetSize(void);
 extern "C" unsigned long sndStackAdd(void* buffer, u32 aramAddr, u32 size);
 extern "C" u32 sndStackGetARAMAddressRange(u32 id, u32* start, u32* end);
 
+namespace PlatAudio
+{
+static u32 gPrimaryStackSize = 0x44C000U - (u32)ARGetBaseAddress();
+bool gUsingDolbyProLogic2 = false;
+} // namespace PlatAudio
+
+static u32 aramMemArray[2];
+static s32 gAuxAEffectSettings;
+static s32 gAuxBEffectSettings;
+static s32 gDPL2AuxAEffectSettings;
+static s32 gDPL2AuxBEffectSettings;
+static s32 gAuxAEffect;
+static s32 gAuxBEffect;
+static s32 gDPL2AuxAEffect;
+static s32 gDPL2AuxBEffect;
+static bool gAreSoundBuffersSetup;
 static void* gpEntireSampleFileBufferFirstHalf;
 static void* gpEntireSampleFileBufferSecondHalf;
 static unsigned long gEntireSampleFileFirstHalfAllocSize;
@@ -23,18 +40,6 @@ static unsigned long gEntireSampleFileSecondHalfAllocSize;
 static void* gpEntireSampleFileMRAMXferBuffer;
 static u64 gEntireSampleMarker;
 static u8 gAllowSyncReadsPastLoadedData;
-
-// ARAMTransferHelperLoadEntireFile static members
-// static u32 m_uFileSize__32ARAMTransferHelperLoadEntireFile;
-// static nlFile* s_pFile__32ARAMTransferHelperLoadEntireFile;
-const char* m_szFileName__32ARAMTransferHelperLoadEntireFile;
-ARAMTransferHelperLoadEntireFile* ARAMTransferHelperLoadEntireFile::m_pARAMHelper;
-
-// ARAMTransferHelper static members
-ARAMTransferHelper* ARAMTransferHelper::m_pARAMHelper;
-unsigned char ARAMTransferHelper::m_bFileOpened;
-nlFile* ARAMTransferHelper::m_pFile;
-const char* ARAMTransferHelper::m_szFileName;
 
 #include <dolphin/ai.h>
 #include <dolphin/arq.h>
@@ -50,50 +55,20 @@ struct _struct_stack_list_0x10
 };
 
 static struct _struct_stack_list_0x10 stack_list[2] = {
-    { NULL, 0xFFFFFFFEU, 0, 0U },
+    { NULL, 0xFFFFFFFEU, (s32)PlatAudio::gPrimaryStackSize, 0U },
     { NULL, 0xFFFFFFFFU, 0x2B4000, 0U },
 };
 
-namespace PlatAudio
-{
-static u32 gPrimaryStackSize;
-}
-
-struct PlatAudioInit
-{
-    PlatAudioInit()
-    {
-        u32 sz = 0x44C000U - (u32)ARGetBaseAddress();
-        PlatAudio::gPrimaryStackSize = sz;
-        stack_list[0].unk8 = (s32)sz;
-    }
-};
-static PlatAudioInit s_platAudioInit;
+static void* (*const sndHookMalloc)(size_t) = musyXAlloc;
+static void (*const sndHookFree)(void*) = musyXFree;
 
 struct EffectSettings
 {
     // todo: implement
 };
 
-static s32 gDPL2AuxAEffect;
-static s32 gDPL2AuxBEffect;
-static s32 gDPL2AuxAEffectSettings;
-static s32 gDPL2AuxBEffectSettings;
-static s32 gAuxAEffect;
-static s32 gAuxBEffect;
-static s32 gAuxAEffectSettings;
-static s32 gAuxBEffectSettings;
-
-static u32 aramMemArray[2];
-static void* (*const sndHookMalloc)(size_t) = musyXAlloc;
-static void (*const sndHookFree)(void*) = musyXFree;
-
-static bool gAreSoundBuffersSetup;
-
 namespace PlatAudio
 {
-
-bool gUsingDolbyProLogic2 = false;
 
 /**
  * Offset/Address/Size: 0x0 | 0x801C47FC | size: 0x8
@@ -1059,7 +1034,7 @@ bool LoadSoundGroup(AudioFileData& fileData, unsigned long groupEnum, unsigned l
         {
             const char* szFile = fileData.szSampleFile;
             pTransferHelperLoadEntireFile->m_pARAMXferBlockBaseAddress = NULL;
-            m_szFileName__32ARAMTransferHelperLoadEntireFile = szFile;
+            ARAMTransferHelperLoadEntireFile::m_szFileName = szFile;
             pTransferHelperLoadEntireFile->m_pARAMXferBlockBaseAddress = (unsigned char*)nlMalloc(0x20000, 0x20, true);
             ARAMTransferHelperLoadEntireFile::m_pARAMHelper = pTransferHelperLoadEntireFile;
         }
@@ -1616,6 +1591,7 @@ static inline void (*InitAuxEffect(MusyXEffectType type, void* data))(u8 reason,
         break;
     default:
         nlPrintf("InitAuxEffect: Unaccounted-for case.\n");
+        callback = NULL;
         break;
     }
 
@@ -1940,3 +1916,13 @@ void* musyXAlloc(u32 size)
 // void 0x8028D524..0x8028D528 | size: 0x4
 // {
 // }
+
+ARAMTransferHelper* ARAMTransferHelper::m_pARAMHelper;
+unsigned char ARAMTransferHelper::m_bFileOpened;
+nlFile* ARAMTransferHelper::m_pFile;
+const char* ARAMTransferHelper::m_szFileName;
+
+ARAMTransferHelperLoadEntireFile* ARAMTransferHelperLoadEntireFile::m_pARAMHelper;
+const char* ARAMTransferHelperLoadEntireFile::m_szFileName;
+u32 ARAMTransferHelperLoadEntireFile::m_uFileSize;
+nlFile* ARAMTransferHelperLoadEntireFile::s_pFile;

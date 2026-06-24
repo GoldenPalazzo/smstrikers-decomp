@@ -324,8 +324,8 @@ void EmitHemisphericalPosition(nlVector3& vPosition, nlVector3& vDirection, Effe
 
 /**
  * Offset/Address/Size: 0x1C90 | 0x801F6DE8 | size: 0x34C
- * TODO: 94.83% match - register allocation diffs in tilt rotation and
- * hackyFacingAngle blocks due to -inline deferred flag mismatch on decomp.me
+ * TODO: 97.91% match - register allocation diffs in tilt rotation and
+ * hackyFacingAngle rotation blocks; one length-square instruction order diff remains.
  */
 void EmitSpindularPosition(nlVector3& vPosition, nlVector3& vDirection, EffectsTemplate* pTemplate, EffectsSpec* pSpec, const nlMatrix4& mLocalToWorld)
 {
@@ -379,7 +379,7 @@ void EmitSpindularPosition(nlVector3& vPosition, nlVector3& vDirection, EffectsT
 
         nlVec3Set(localPos,
             (posX * cos) + (localPos.f.z * sin),
-            localPos.f.y,
+            (localPos.f.y = localPos.f.y),
             (-posX * sin) + (localPos.f.z * cos));
     }
 

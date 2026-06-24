@@ -13,16 +13,12 @@ enum AnimatedModelExplodableCategory
     NUM_ANIMATED_MODEL_EXPLODABLE_CATEGORIES = 2,
 };
 
-// void nlListRemoveStart<SidelineExplodableNode>(SidelineExplodableNode**, SidelineExplodableNode**);
-// void nlListAddEnd<SidelineExplodableNode>(SidelineExplodableNode**, SidelineExplodableNode**, SidelineExplodableNode*);
-// void 0x8028D2FC..0x8028D300 | size: 0x4;
-
 class AnimatedModelExplodable : public SidelineExplodable
 {
 public:
     static nlList<SidelineExplodableNode> sAnimatedModelExplodableList;
     static ExplodableCategoryData sCategoryData[NUM_ANIMATED_MODEL_EXPLODABLE_CATEGORIES];
-    static u8 bIsModelLoaded[2];
+    static bool bIsModelLoaded[2];
     static void CleanUp();
     AnimatedModelExplodable(AnimatedModelExplodableCategory, SkinAnimatedNPC*);
     ~AnimatedModelExplodable();

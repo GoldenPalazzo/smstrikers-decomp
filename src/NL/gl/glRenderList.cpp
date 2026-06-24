@@ -203,25 +203,30 @@ void gl_ViewAttachPacket(eGLView view, unsigned long layer, const glModelPacket*
     }
 }
 
+typedef WalkHelper<const glModelPacket*, DLListEntry<const glModelPacket*>, PacketCallbackManager> GLRenderPacketWalkHelper;
+typedef void (GLRenderPacketWalkHelper::*GLRenderPacketWalkCallback)(DLListEntry<const glModelPacket*>*);
+
+static inline void WalkPacketList(GLPacketList* list, PacketCallbackManager& pkCallback)
+{
+    GLRenderPacketWalkHelper helper;
+    GLRenderPacketWalkCallback walkCb;
+    helper.m_CBClass = &pkCallback;
+    helper.m_CB = &PacketCallbackManager::ListCallback;
+    walkCb = &GLRenderPacketWalkHelper::Callback;
+    nlWalkDLRing(list->m_Head, &helper, walkCb);
+}
+
 /**
  * Offset/Address/Size: 0x440 | 0x801D9700 | size: 0x290
- * TODO: 99.84% match - callback/member-pointer temporaries still land in different
- * stack slots than target in texture/depth and list-walk branches.
  */
 void GLRenderList::Iterate(eGLView view, void (*cb)(eGLView, unsigned long, const glModelPacket*))
 {
-    typedef WalkHelper<const glModelPacket*, DLListEntry<const glModelPacket*>, PacketCallbackManager> PacketWalkHelper;
     typedef void (PacketCallbackManager::*TexCallbackType)(const glModelPacket* const&, unsigned int*);
     typedef void (PacketCallbackManager::*DepthCallbackType)(const DepthPacketPair&, unsigned int*);
-    typedef void (PacketWalkHelper::*WalkCallbackType)(DLListEntry<const glModelPacket*>*);
 
     PacketCallbackManager pkCallback;
     TexCallbackType texCb;
     DepthCallbackType depthCb;
-    WalkCallbackType walkCb;
-    PacketWalkHelper helper;
-    WalkCallbackType walkCb2;
-    PacketWalkHelper helper2;
 
     pkCallback.m_View = view;
     pkCallback.m_Cb = cb;
@@ -268,11 +273,7 @@ void GLRenderList::Iterate(eGLView view, void (*cb)(eGLView, unsigned long, cons
         if (packetList->m_Head != NULL)
         {
             cb(view, 1, NULL);
-            GLPacketList* pList = packetList;
-            helper.m_CBClass = &pkCallback;
-            helper.m_CB = &PacketCallbackManager::ListCallback;
-            walkCb = &PacketWalkHelper::Callback;
-            nlWalkDLRing(pList->m_Head, &helper, walkCb);
+            WalkPacketList(packetList, pkCallback);
         }
     }
     else
@@ -280,11 +281,7 @@ void GLRenderList::Iterate(eGLView view, void (*cb)(eGLView, unsigned long, cons
         if (packetList->m_Head != NULL)
         {
             cb(view, 1, NULL);
-            GLPacketList* pList2 = packetList;
-            helper2.m_CBClass = &pkCallback;
-            helper2.m_CB = &PacketCallbackManager::ListCallback;
-            walkCb2 = &PacketWalkHelper::Callback;
-            nlWalkDLRing(pList2->m_Head, &helper2, walkCb2);
+            WalkPacketList(packetList, pkCallback);
         }
     }
 }
@@ -427,8 +424,7 @@ void PacketCallbackManager::DoCallback(const glModelPacket* p, unsigned int coun
         int i;
         for (i = 0; i < 6; i++)
         {
-            texture = p->state.texture[i];
-            if (m_LastTexture[i] != texture)
+            if (m_LastTexture[i] != (texture = p->state.texture[i]))
             {
                 m_LastTexture[i] = texture;
                 flags |= textureChanged;

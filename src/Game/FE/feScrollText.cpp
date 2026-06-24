@@ -191,15 +191,38 @@ static inline const unsigned short* LookupLocTextChar(nlLocalization* loc, unsig
 
 /**
  * Offset/Address/Size: 0x1C8 | 0x800C8B9C | size: 0x198
- * TODO: 96.9% match - this uses r31 while target uses r29; lookup text uses r29 while target uses r31
+ * TODO: 97.5% match - localized text pointer and temporary string data use swapped saved registers
  */
 void FEScrollText::SetDisplayMessage(const char* locMessage)
 {
     nlLocalization* loc = (nlLocalization*)g_pLocalization;
     unsigned long hash = nlStringLowerHash(locMessage);
     const unsigned short* text = LookupLocTextChar(loc, hash);
-    BasicString<unsigned short, Detail::TempStringAllocator> message(text);
-    SetDisplayMessage(message);
+    BasicStringInternal* data = BuildScrollString(text);
+
+    {
+        BasicStringInternal* localMsgData = data;
+        SetDisplayMessage(*(const BasicString<unsigned short, Detail::TempStringAllocator>*)&localMsgData);
+    }
+
+    BasicStringInternal* msgData = data;
+    if (msgData != 0)
+    {
+        if (--msgData->mRefCount == 0)
+        {
+            if (msgData != 0)
+            {
+                if (msgData != 0)
+                {
+                    delete[] msgData->mData;
+                }
+                if (msgData != 0)
+                {
+                    nlFree(msgData);
+                }
+            }
+        }
+    }
 }
 
 static inline const unsigned short* LookupLocText(unsigned long hash)

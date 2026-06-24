@@ -45,6 +45,11 @@ static int sCurrentRow;
 
 typedef void FnTLComponentInstanceCb(TLComponentInstance*);
 
+static inline MenuItem<TLComponentInstance>* LessonSelectItemAt(MenuList<TLComponentInstance>& menu, int idx)
+{
+    return &menu.mMenuItems[idx];
+}
+
 namespace DoubleHighlite
 {
 static const char* SLIDE_IN = "in";
@@ -196,8 +201,6 @@ LessonSelectScene::~LessonSelectScene()
 
 /**
  * Offset/Address/Size: 0xE98 | 0x8010BCE8 | size: 0x838
- * TODO: 99.61% match - menu item base pointer computation is scheduled later
- * than target in the slide-in callback setup.
  */
 void LessonSelectScene::SceneCreated()
 {
@@ -222,8 +225,8 @@ void LessonSelectScene::SceneCreated()
         if (mDoSlideIn)
         {
             int numItemsAdded = mMenuItems.mNumItemsAdded;
+            menuItem = LessonSelectItemAt(mMenuItems, numItemsAdded);
             mMenuItems.mMenuItems[numItemsAdded].mType = compinstance;
-            menuItem = &mMenuItems.mMenuItems[numItemsAdded];
             mMenuItems.mNumItemsAdded++;
 
             {

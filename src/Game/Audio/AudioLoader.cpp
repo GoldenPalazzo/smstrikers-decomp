@@ -266,90 +266,6 @@ nlAVLTreeSlotPool<int, SoundStrToIDNode*, DefaultKeyCompare<int> > AudioLoader::
 nlAVLTreeSlotPool<int, SoundStrToIDNode*, DefaultKeyCompare<int> > AudioLoader::gCharSoundDefineMap(0xAF, 0);
 nlAVLTreeSlotPool<int, SoundStrToIDNode*, DefaultKeyCompare<int> > AudioLoader::gWorldSoundDefineMap(0xDC, 0);
 
-//  /**
-//   * Offset/Address/Size: 0x38 | 0x801490B0 | size: 0x44
-//   */
-//  void nlDLRingRemove<DLListEntry<GCAudioStreaming::StereoAudioStream*>>(DLListEntry<GCAudioStreaming::StereoAudioStream*>**, DLListEntry<GCAudioStreaming::StereoAudioStream*>*)
-//  {
-//  }
-
-//  /**
-//   * Offset/Address/Size: 0x20 | 0x80149098 | size: 0x18
-//   */
-//  void nlDLRingGetStart<DLListEntry<GCAudioStreaming::StereoAudioStream*>>(DLListEntry<GCAudioStreaming::StereoAudioStream*>*)
-//  {
-//  }
-
-//  /**
-//   * Offset/Address/Size: 0x0 | 0x80149078 | size: 0x20
-//   */
-//  void nlDLRingIsEnd<DLListEntry<GCAudioStreaming::StereoAudioStream*>>(DLListEntry<GCAudioStreaming::StereoAudioStream*>*, DLListEntry<GCAudioStreaming::StereoAudioStream*>*)
-//  {
-//  }
-
-//  /**
-//   * Offset/Address/Size: 0x0 | 0x80148C6C | size: 0x40C
-//   */
-//  void 0x80149078..0x801490F4 | size: 0x7C
-//  {
-//  }
-
-//  /**
-//   * Offset/Address/Size: 0x900 | 0x80148BCC | size: 0xA0
-//   */
-//  void AVLTreeBase<int, SoundStrToIDNode*, BasicSlotPool<AVLTreeEntry<int, SoundStrToIDNode*>>, DefaultKeyCompare<int>>::AllocateEntry(void*, void*)
-//  {
-//  }
-
-//  /**
-//   * Offset/Address/Size: 0x8D4 | 0x80148BA0 | size: 0x2C
-//   */
-//  void AVLTreeBase<int, SoundStrToIDNode*, BasicSlotPool<AVLTreeEntry<int, SoundStrToIDNode*>>, DefaultKeyCompare<int>>::CompareKey(void*, AVLTreeNode*)
-//  {
-//  }
-
-//  /**
-//   * Offset/Address/Size: 0x8A8 | 0x80148B74 | size: 0x2C
-//   */
-//  void AVLTreeBase<int, SoundStrToIDNode*, BasicSlotPool<AVLTreeEntry<int, SoundStrToIDNode*>>, DefaultKeyCompare<int>>::CompareNodes(AVLTreeNode*, AVLTreeNode*)
-//  {
-//  }
-
-//  /**
-//   * Offset/Address/Size: 0x82C | 0x80148AF8 | size: 0x7C
-//   */
-//  void AVLTreeBase<int, SoundStrToIDNode*, BasicSlotPool<AVLTreeEntry<int, SoundStrToIDNode*>>, DefaultKeyCompare<int>>::~AVLTreeBase()
-//  {
-//  }
-
-//  /**
-//   * Offset/Address/Size: 0x81C | 0x80148AE8 | size: 0x10
-//   */
-//  void AVLTreeBase<int, SoundStrToIDNode*, BasicSlotPool<AVLTreeEntry<int, SoundStrToIDNode*>>, DefaultKeyCompare<int>>::DeleteEntry(AVLTreeEntry<int, SoundStrToIDNode*>*)
-//  {
-//  }
-
-//  /**
-//   * Offset/Address/Size: 0x814 | 0x80148AE0 | size: 0x8
-//   */
-//  void AVLTreeBase<int, SoundStrToIDNode*, BasicSlotPool<AVLTreeEntry<int, SoundStrToIDNode*>>, DefaultKeyCompare<int>>::CastUp(AVLTreeNode*) const
-//  {
-//  }
-
-//  /**
-//   * Offset/Address/Size: 0xBC | 0x80148388 | size: 0x758
-//   */
-//  void AVLTreeBase<int, SoundStrToIDNode*, BasicSlotPool<AVLTreeEntry<int, SoundStrToIDNode*>>, DefaultKeyCompare<int>>::PostorderTraversal(AVLTreeEntry<int, SoundStrToIDNode*>*, void (AVLTreeBase<int, SoundStrToIDNode*, BasicSlotPool<AVLTreeEntry<int, SoundStrToIDNode*>>, DefaultKeyCompare<int>>::*)(AVLTreeEntry<int, SoundStrToIDNode*>*))
-//  {
-//  }
-
-//  /**
-//   * Offset/Address/Size: 0x58 | 0x80148324 | size: 0x64
-//   */
-//  void AVLTreeBase<int, SoundStrToIDNode*, BasicSlotPool<AVLTreeEntry<int, SoundStrToIDNode*>>, DefaultKeyCompare<int>>::DestroyTree(void (AVLTreeBase<int, SoundStrToIDNode*, BasicSlotPool<AVLTreeEntry<int, SoundStrToIDNode*>>, DefaultKeyCompare<int>>::*)(AVLTreeEntry<int, SoundStrToIDNode*>*))
-//  {
-//  }
-
 // AVLTreeBase<int, SoundStrToIDNode*, ...> methods are instantiated implicitly
 // (weak) through the map ctors/dtors and vtable below -- matching the target,
 // where every method is weak. Do NOT add an explicit `template class ...`
@@ -357,7 +273,7 @@ nlAVLTreeSlotPool<int, SoundStrToIDNode*, DefaultKeyCompare<int> > AudioLoader::
 // (DeleteValue/DeleteValues) the target object does not contain.
 
 /**
- * Offset/Address/Size: 0x398 | 0x801481F8 | size: 0xD4
+ * Offset/Address/Size: 0x442C | 0x801481F8 | size: 0xD4
  * TODO: 96.23% match - ble- vs beq- branch for m_BufferCount > 0 check (MWCC
  * emits beq for wrapping-if structure, target has ble; functionally equivalent)
  */
@@ -405,15 +321,8 @@ void GCAudioStreaming::AudioStream::WarmReadDone(GCAudioStreaming::AudioStreamBu
     m_State = SS_Playing;
 }
 
-// /**
-//  * Offset/Address/Size: 0x350 | 0x801481B0 | size: 0x48
-//  */
-// void GCAudioStreaming::AudioStream::~AudioStream()
-// {
-// }
-
 /**
- * Offset/Address/Size: 0x344 | 0x801481A4 | size: 0xC
+ * Offset/Address/Size: 0x43D8 | 0x801481A4 | size: 0xC
  */
 void GCAudioStreaming::AudioStream::Purge()
 {
@@ -421,7 +330,7 @@ void GCAudioStreaming::AudioStream::Purge()
 }
 
 /**
- * Offset/Address/Size: 0x70 | 0x80147ED0 | size: 0x2D4
+ * Offset/Address/Size: 0x4104 | 0x80147ED0 | size: 0x2D4
  * TODO: 99.92% match - 3x ble vs beq after cmplwi m_BufferCount, 0
  */
 void GCAudioStreaming::AudioStream::Destructor()
@@ -564,13 +473,16 @@ void GCAudioStreaming::AudioStream::Destructor()
 }
 
 /**
- * Offset/Address/Size: 0x0 | 0x80147E60 | size: 0x70
+ * Offset/Address/Size: 0x4094 | 0x80147E60 | size: 0x70
  */
 GCAudioStreaming::StereoAudioStream::~StereoAudioStream()
 {
     Destructor();
 }
 
+/**
+ * Offset/Address/Size: 0x3F48 | 0x80147D14 | size: 0x14C
+ */
 void AudioLoader::SetupSoundDefinesAVLTree()
 {
     unsigned long numSoundDefines = GetNumSoundDefines();
@@ -2819,27 +2731,10 @@ void AudioLoader::ResetForRematch()
 
 /**
  * Offset/Address/Size: 0x0 | 0x80143DCC | size: 0x68
- * TODO: 95.6% match - bne+b vs beq branch optimization difference
  */
 void AudioLoader::InitCrowdFromStateTransition()
 {
-    bool isInited;
-
-    if (gbDisableAudio)
-    {
-        return;
-    }
-
-    if (gbDisableAudio)
-    {
-        isInited = false;
-    }
-    else
-    {
-        isInited = Audio::IsInited();
-    }
-
-    if (isInited == 0)
+    if (gbDisableAudio || !(gbDisableAudio ? false : Audio::IsInited()))
     {
         return;
     }

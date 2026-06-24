@@ -275,6 +275,8 @@ void InGameTextOverlay::DisplayFinalScore()
     WideString unformatted(formatLocString);
     WideString formatted(Format(unformatted, scoreLeftWideString, scoreRightWideString));
 
+    long winningSide;
+
     FEPresentation* presentation = this->m_pFEScene->m_pFEPackage->GetPresentation();
     TLTextInstance* pTextInstance;
     const char* WINNER_SLIDE_NAME = IGTTable[SLIDE_NAME_TEXT_WINNER].mSlideName;
@@ -318,7 +320,7 @@ void InGameTextOverlay::DisplayFinalScore()
             (InlineHasher&)h3,
             (InlineHasher&)h1);
 
-        long winningSide = (scoreLeft > scoreRight) ? 0 : 1;
+        winningSide = (scoreLeft > scoreRight) ? 0 : 1;
 
         eTeamID winningTeam = nlSingleton<GameInfoManager>::s_pInstance->GetTeam((short)winningSide);
 

@@ -243,7 +243,7 @@ bool cFielder::InitDesire(const sDesireParams* pParams, float fConfidence)
 
 /**
  * Offset/Address/Size: 0x54DC | 0x80036260 | size: 0xD30
- * TODO: 99.64% match - remaining register swaps in WINDUP_PASS, USE_POWERUP, and queued fvNotSet copies.
+ * TODO: 99.86% match - remaining queued fvNotSet base register and windup reaction multiply operand order.
  */
 bool cFielder::InitDesire(eFielderDesireState eDesireType, float fConfidence, float fDuration, FuzzyVariant opt1, FuzzyVariant opt2)
 {
@@ -372,10 +372,11 @@ bool cFielder::InitDesire(eFielderDesireState eDesireType, float fConfidence, fl
     {
         if (g_pGame->IsThoughtAllowed(mThoughtHashInitWindupPass))
         {
+            bool bHighPass;
             cPlayer* pTarget = (cPlayer*)opt1.mData.pPlayer;
             if (pTarget != NULL)
             {
-                bool bHighPass = opt2.mData.b;
+                bHighPass = opt2.mData.b;
                 bool bResult;
                 if (m_pBall == NULL)
                 {
@@ -549,7 +550,7 @@ bool cFielder::InitDesire(eFielderDesireState eDesireType, float fConfidence, fl
         {
             mActionPassingVars.pPassTarget = pTarget;
             mActionPassingVars.bVolleyPass = opt2.mData.b;
-            m_fDesiredSpeed = (((FielderTweaks*)m_pTweaks)->fRunningWBSpeed < m_fActualSpeed) ? ((FielderTweaks*)m_pTweaks)->fRunningWBSpeed : m_fActualSpeed;
+            m_fDesiredSpeed = (m_fActualSpeed <= ((FielderTweaks*)m_pTweaks)->fRunningWBSpeed) ? m_fActualSpeed : ((FielderTweaks*)m_pTweaks)->fRunningWBSpeed;
             m_pAvoidance->SetThingsToAvoid(0);
         }
         else
@@ -596,10 +597,11 @@ bool cFielder::InitDesire(eFielderDesireState eDesireType, float fConfidence, fl
     }
     case FIELDERDESIRE_USE_POWERUP:
     {
+        ePowerUpType powerupType;
         cFielder* pTarget = (cFielder*)opt2.mData.pPlayer;
         if (pTarget == NULL || pTarget->m_eClassType == FIELDER)
         {
-            ePowerUpType powerupType = (ePowerUpType)opt1.mData.i;
+            powerupType = (ePowerUpType)opt1.mData.i;
             if (powerupType == m_pTeam->GetCurrentPowerUp().eType && !IsPlayingPowerupAnim())
             {
                 UseTeamPowerup(pTarget);
@@ -1291,7 +1293,6 @@ void cFielder::DesireMark(float fDeltaT)
     float fTimeDelay;
     nlVector3 v3NetPosition;
     nlVector3 vAccumulated_v3;
-    float fTotalWeight_v3;
     float fMarkingNetPassBalance;
     float fMarkingDistance;
     float fMarkFormationBalance;
@@ -1340,7 +1341,6 @@ void cFielder::DesireMark(float fDeltaT)
                 fTimeDelay + (nlRandomf(fTimeDelayRange, &nlDefaultSeed) - (0.5f * fTimeDelayRange)));
         }
 
-        fTotalWeight_v3 = 0.0f;
         v3NetPosition = m_pTeam->m_pNet->m_baseLocation;
 
         float fMarkY = m_pMark->m_v3Position.f.y + (0.1f * m_pMark->m_v3Velocity.f.y);
@@ -1352,11 +1352,16 @@ void cFielder::DesireMark(float fDeltaT)
         float dirZ = v3NetPosition.f.z - fMarkZ;
 
         {
-            float fInvLength = nlRecipSqrt((dirY * dirY) + (dirX * dirX) + (dirZ * dirZ), true);
-            dirY = fInvLength * dirY;
-            dirX = fInvLength * dirX;
-            dirZ = fInvLength * dirZ;
+            nlVector3 v3Dir;
+            nlVec3Set(v3Dir, dirX, dirY, dirZ);
+            float fInvLength = nlRecipSqrt(nlVec3LengthSquared(v3Dir), true);
+            nlVec3Scale(v3Dir, fInvLength);
+            dirY = v3Dir.f.y;
+            dirX = v3Dir.f.x;
+            dirZ = v3Dir.f.z;
         }
+
+        float fTotalWeight_v3 = 0.0f;
 
         vAccumulated_v3 = v3Zero;
 
@@ -1398,19 +1403,22 @@ void cFielder::DesireMark(float fDeltaT)
 
             if (pSBC != NULL && pSBC != m_pMark)
             {
+                float fSBCZ = pSBC->m_v3Position.f.z + (0.1f * pSBC->m_v3Velocity.f.z);
                 float fSBCY = pSBC->m_v3Position.f.y + (0.1f * pSBC->m_v3Velocity.f.y);
                 float fSBCX = pSBC->m_v3Position.f.x + (0.1f * pSBC->m_v3Velocity.f.x);
-                float fSBCZ = pSBC->m_v3Position.f.z + (0.1f * pSBC->m_v3Velocity.f.z);
 
                 float sbcDirY = fSBCY - fMarkY;
                 float sbcDirX = fSBCX - fMarkX;
                 float sbcDirZ = fSBCZ - fMarkZ;
 
                 {
-                    float fSBCInvLength = nlRecipSqrt((sbcDirY * sbcDirY) + (sbcDirX * sbcDirX) + (sbcDirZ * sbcDirZ), true);
-                    sbcDirY = fSBCInvLength * sbcDirY;
-                    sbcDirX = fSBCInvLength * sbcDirX;
-                    sbcDirZ = fSBCInvLength * sbcDirZ;
+                    nlVector3 v3SBCDir;
+                    nlVec3Set(v3SBCDir, sbcDirX, sbcDirY, sbcDirZ);
+                    float fSBCInvLength = nlRecipSqrt(nlVec3LengthSquared(v3SBCDir), true);
+                    nlVec3Scale(v3SBCDir, fSBCInvLength);
+                    sbcDirY = v3SBCDir.f.y;
+                    sbcDirX = v3SBCDir.f.x;
+                    sbcDirZ = v3SBCDir.f.z;
                 }
 
                 if (((sbcDirY * dirY) + (sbcDirX * dirX) + (sbcDirZ * dirZ)) >= 0.0f)
@@ -1425,19 +1433,25 @@ void cFielder::DesireMark(float fDeltaT)
                 float fToNetX = v3NetPosition.f.x - fSBCX;
                 float fToNetZ = v3NetPosition.f.z - fSBCZ;
 
-                float fToNetInvLength = nlRecipSqrt((fToNetY * fToNetY) + (fToNetX * fToNetX) + (fToNetZ * fToNetZ), true);
+                nlVector3 v3ToNet;
+                nlVec3Set(v3ToNet, fToNetX, fToNetY, fToNetZ);
+                float fToNetInvLength = nlRecipSqrt(nlVec3LengthSquared(v3ToNet), true);
+                nlVec3Scale(v3ToNet, fToNetInvLength);
 
-                float fThreatTargetZ = (fMarkingDistance * (fToNetInvLength * fToNetZ)) + fSBCZ;
-                float fThreatTargetY = (fMarkingDistance * (fToNetInvLength * fToNetY)) + fSBCY;
-                float fThreatTargetX = (fMarkingDistance * (fToNetInvLength * fToNetX)) + fSBCX;
+                float fThreatTargetX = (fMarkingDistance * v3ToNet.f.x) + fSBCX;
+                float fThreatTargetZ = (fMarkingDistance * v3ToNet.f.z) + fSBCZ;
+                float fThreatTargetY = (fMarkingDistance * v3ToNet.f.y) + fSBCY;
 
                 float fMarkBallOwner = Fuzzy::ShouldIMarkBallOwner(this).mData.f;
                 if (fMarkBallOwner > 0.0f)
                 {
                     float fWeight = fMarkBallOwner * fMarkBallOwnerBalance;
-                    vAccumulated_v3.f.z = (fWeight * fThreatTargetZ) + vAccumulated_v3.f.z;
-                    vAccumulated_v3.f.x = (fWeight * fThreatTargetX) + vAccumulated_v3.f.x;
-                    vAccumulated_v3.f.y = (fWeight * fThreatTargetY) + vAccumulated_v3.f.y;
+                    float fWeightedX = (fWeight * fThreatTargetX) + vAccumulated_v3.f.x;
+                    float fWeightedZ = (fWeight * fThreatTargetZ) + vAccumulated_v3.f.z;
+                    float fWeightedY = (fWeight * fThreatTargetY) + vAccumulated_v3.f.y;
+                    vAccumulated_v3.f.x = fWeightedX;
+                    vAccumulated_v3.f.y = fWeightedY;
+                    vAccumulated_v3.f.z = fWeightedZ;
                     fTotalWeight_v3 = fTotalWeight_v3 + fWeight;
                 }
             }
@@ -1448,9 +1462,12 @@ void cFielder::DesireMark(float fDeltaT)
             float fMarkTargetX = (fMarkingDistance * dirX) + fMarkX;
             float fMarkTargetZ = (fMarkingDistance * dirZ) + fMarkZ;
 
-            vAccumulated_v3.f.y = (fMarkFormationBalance * fMarkTargetY) + vAccumulated_v3.f.y;
-            vAccumulated_v3.f.x = (fMarkFormationBalance * fMarkTargetX) + vAccumulated_v3.f.x;
-            vAccumulated_v3.f.z = (fMarkFormationBalance * fMarkTargetZ) + vAccumulated_v3.f.z;
+            float fMarkWeightedX = (fMarkFormationBalance * fMarkTargetX) + vAccumulated_v3.f.x;
+            float fMarkWeightedZ = (fMarkFormationBalance * fMarkTargetZ) + vAccumulated_v3.f.z;
+            float fMarkWeightedY = (fMarkFormationBalance * fMarkTargetY) + vAccumulated_v3.f.y;
+            vAccumulated_v3.f.x = fMarkWeightedX;
+            vAccumulated_v3.f.z = fMarkWeightedZ;
+            vAccumulated_v3.f.y = fMarkWeightedY;
             fTotalWeight_v3 = fTotalWeight_v3 + fMarkFormationBalance;
         }
 
@@ -1463,16 +1480,19 @@ void cFielder::DesireMark(float fDeltaT)
         {
             float fFormationWeight = 1.0f - fMarkFormationBalance;
             fTotalWeight_v3 = fTotalWeight_v3 + fFormationWeight;
-            vAccumulated_v3.f.z = (fFormationWeight * v3FormationPosition.f.z) + vAccumulated_v3.f.z;
-            vAccumulated_v3.f.x = (fFormationWeight * v3FormationPosition.f.x) + vAccumulated_v3.f.x;
-            vAccumulated_v3.f.y = (fFormationWeight * v3FormationPosition.f.y) + vAccumulated_v3.f.y;
+            float fFormationWeightedX = (fFormationWeight * v3FormationPosition.f.x) + vAccumulated_v3.f.x;
+            float fFormationWeightedZ = (fFormationWeight * v3FormationPosition.f.z) + vAccumulated_v3.f.z;
+            float fFormationWeightedY = (fFormationWeight * v3FormationPosition.f.y) + vAccumulated_v3.f.y;
+            vAccumulated_v3.f.x = fFormationWeightedX;
+            vAccumulated_v3.f.y = fFormationWeightedY;
+            vAccumulated_v3.f.z = fFormationWeightedZ;
         }
 
         if (fTotalWeight_v3 > 0.0f)
         {
             float fInvTotalWeight = 1.0f / fTotalWeight_v3;
-            v3DesiredPos.f.y = fInvTotalWeight * vAccumulated_v3.f.y;
             v3DesiredPos.f.x = fInvTotalWeight * vAccumulated_v3.f.x;
+            v3DesiredPos.f.y = fInvTotalWeight * vAccumulated_v3.f.y;
             v3DesiredPos.f.z = fInvTotalWeight * vAccumulated_v3.f.z;
         }
         else
@@ -1802,27 +1822,28 @@ bool cFielder::InitDesireOneTimerFromRun(unsigned short aFutureFacingDirection, 
 
 /**
  * Offset/Address/Size: 0x2E60 | 0x80033BE4 | size: 0x254
- * TODO: 99.6% match - initial ball position/velocity load order and f28/f29/f30 usage differ in the dot-product precheck path.
  */
 void cFielder::DesireOneTimer(float fDeltaT)
 {
     cFielder* fp = this;
 
-    float yDiff = fp->m_DesireOneTimerVars.v3BallPosition.f.y - g_pBall->m_v3Position.f.y;
-    float xDiff = fp->m_DesireOneTimerVars.v3BallPosition.f.x - g_pBall->m_v3Position.f.x;
-    float invLen = nlRecipSqrt(yDiff * yDiff + xDiff * xDiff, true);
-    float targetDirY = invLen * yDiff;
-    yDiff = invLen * xDiff;
+    nlVector3 vBallDir;
+    vBallDir.Sub2D(fp->m_DesireOneTimerVars.v3BallPosition, g_pBall->m_v3Position);
+    float invLen = nlRecipSqrt(vBallDir.GetLengthSq2D(), true);
+    float targetDirY = invLen * vBallDir.f.y;
+    vBallDir.f.y = invLen * vBallDir.f.x;
 
     cBall* pBall = g_pBall;
     invLen = nlRecipSqrt(pBall->m_v3Velocity.f.x * pBall->m_v3Velocity.f.x + pBall->m_v3Velocity.f.y * pBall->m_v3Velocity.f.y, true);
 
-    float ballDirY = invLen * pBall->m_v3Velocity.f.y;
-    float ballDirX = invLen * pBall->m_v3Velocity.f.x;
+    float ballDirX;
+    float ballDirY;
+    ballDirY = invLen * pBall->m_v3Velocity.f.y;
+    ballDirX = invLen * pBall->m_v3Velocity.f.x;
 
     if (fp->m_pBall == NULL && fp->m_eDesireSubState != 1)
     {
-        invLen = targetDirY * ballDirY + yDiff * ballDirX;
+        invLen = vBallDir.f.y * ballDirX + targetDirY * ballDirY;
         if (invLen < 0.98f)
         {
             fp->ClearPassTargetIfAmThePassTarget();
@@ -3006,7 +3027,7 @@ void cFielder::DesireUsePowerup(float)
 
 /**
  * Offset/Address/Size: 0x0 | 0x80030D84 | size: 0x41C
- * TODO: 99.28% match - r3/r4 register swap for m_pShotMeter ptr vs shotMeterState, instruction scheduling in FuzzyVariant construction
+ * TODO: 99.43% match - instruction scheduling in FuzzyVariant construction
  */
 void cFielder::DesireWindupShot(float)
 {
@@ -3057,7 +3078,10 @@ void cFielder::DesireWindupShot(float)
     }
 
     bool bMeterWindupState = false;
-    eShotMeterState shotMeterState = m_pShotMeter->m_eShotMeterState;
+    eShotMeterState shotMeterState;
+    ShotMeter* pShotMeter = m_pShotMeter;
+
+    shotMeterState = pShotMeter->m_eShotMeterState;
     if (shotMeterState == SHOT_METER_ACTIVE || shotMeterState == SHOT_METER_STS_ACTIVE || shotMeterState == SHOT_METER_STS_TRANSISTION)
     {
         bMeterWindupState = true;
@@ -3065,7 +3089,7 @@ void cFielder::DesireWindupShot(float)
 
     if (bMeterWindupState)
     {
-        if (m_pShotMeter->m_eShotMeterState == SHOT_METER_STS_TRANSISTION)
+        if (pShotMeter->m_eShotMeterState == SHOT_METER_STS_TRANSISTION)
         {
             static FilteredRandomChance s2sChanceGen;
             bool bS2SChance = s2sChanceGen.genrand(SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide)->Off_CaptainS2SChance);
@@ -3087,11 +3111,11 @@ void cFielder::DesireWindupShot(float)
     }
     else
     {
-        if (m_pShotMeter->m_eShotMeterState == SHOT_METER_RELEASED)
+        if (pShotMeter->m_eShotMeterState == SHOT_METER_RELEASED)
         {
             bSwitchToShootDesire = 1;
         }
-        else if (m_pShotMeter->m_eShotMeterState == SHOT_METER_STS_RELEASED)
+        else if (pShotMeter->m_eShotMeterState == SHOT_METER_STS_RELEASED)
         {
             bShootToScore = true;
             bSwitchToShootDesire = 1;

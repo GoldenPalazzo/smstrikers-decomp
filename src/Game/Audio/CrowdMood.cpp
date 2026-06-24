@@ -1279,7 +1279,7 @@ void CrowdMood::Purge(bool bJustStopSFX)
 
 /**
  * Offset/Address/Size: 0x9F8 | 0x8014E10C | size: 0x554
- * TODO: 98.87% match - DestMoodLevel clamp still has one extra stack store and a register mismatch in clamped assignment
+ * TODO: 99.11% match - DestMoodLevel clamp keeps one extra stack store; normalized interpolant keeps temp register swaps.
  */
 void CrowdMood::Update(float dt)
 {
@@ -1462,7 +1462,7 @@ void CrowdMood::Update(float dt)
         CROWD_MOOD mood2 = CM_Positive;
         while (mood2 < (CROWD_MOOD)4)
         {
-            g_CrowdState.CurrentMoodBlend[mood2] = normalizedInterp * targetArray[mood2] + complement * baseArray[mood2];
+            g_CrowdState.CurrentMoodBlend[mood2] = complement * baseArray[mood2] + normalizedInterp * targetArray[mood2];
             if (g_CrowdState.CurrentMoodBlend[mood2] > g_CrowdState.SinceMoodDest)
             {
                 g_CrowdState.SinceMoodDest = g_CrowdState.CurrentMoodBlend[mood2];

@@ -779,57 +779,17 @@ void GoalOverlay::UpdateGoalInfo(int homeAway, int playerIndex, bool isCaptainS2
 
 /**
  * Offset/Address/Size: 0x1590 | 0x80101600 | size: 0x418
- * TODO: 98.69% match - +0x0C hasher stack slot offset and loc-string/data pointer register swaps remain.
+ * TODO: 99.56% match - loc-string/data pointer saved-register swaps remain.
  */
 void GoalOverlay::SetHighlightNumber(int highlightNumber)
 {
-    typedef TLTextInstance* (*FindCompByValue)(FEPresentation*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-    typedef TLTextInstance* (*FindCompByRef)(FEPresentation*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
-
-    union
-    {
-        FindCompByValue byValue;
-        FindCompByRef byRef;
-    } findComp;
-
-    volatile InlineHasher hSlideB, hSlideA;
-    volatile InlineHasher hLayerB, hLayerA;
-    volatile InlineHasher hDescB, hDescA;
-    volatile InlineHasher h5, h4, h3, h2, h1, h0;
-
-    unsigned long hash;
-
     SetWinnerTitle();
 
-    findComp.byValue = FEFinder<TLTextInstance, 3>::Find<FEPresentation>;
-
-    h0.m_Hash = 0;
-    h1.m_Hash = 0;
-    h2.m_Hash = 0;
-    h3.m_Hash = 0;
-    h4.m_Hash = 0;
-    h5.m_Hash = 0;
-
-    hash = nlStringLowerHash("Description");
-    hDescA.m_Hash = hash;
-    hDescB.m_Hash = hash;
-
-    hash = nlStringLowerHash("Layer");
-    hLayerA.m_Hash = hash;
-    hLayerB.m_Hash = hash;
-
-    hash = nlStringLowerHash("Slide1");
-    hSlideA.m_Hash = hash;
-    hSlideB.m_Hash = hash;
-
-    TLTextInstance* text = findComp.byRef(
+    TLTextInstance* text = FEFinder<TLTextInstance, 3>::Find<FEPresentation>(
         m_pFEPresentation,
-        (InlineHasher&)hSlideB,
-        (InlineHasher&)hLayerB,
-        (InlineHasher&)hDescB,
-        (InlineHasher&)h5,
-        (InlineHasher&)h3,
-        (InlineHasher&)h1);
+        InlineHasher(nlStringLowerHash("Slide1")),
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("Description")));
 
     MakeTextBoxReallyWide(*text);
 
@@ -839,12 +799,10 @@ void GoalOverlay::SetHighlightNumber(int highlightNumber)
         return;
     }
 
-    const unsigned short* locString = LookupLocHash(0xF3DDE99C);
-    BasicString<unsigned short, Detail::TempStringAllocator> unformatted(locString);
+    BasicString<unsigned short, Detail::TempStringAllocator> unformatted(LookupLocHash(0xF3DDE99C));
 
-    int highlight = highlightNumber + 1;
     BasicString<char, Detail::TempStringAllocator> highlightString(
-        LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(highlight));
+        LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(highlightNumber + 1));
     unsigned short highlightWideString[16];
     nlStrToWcs(highlightString.c_str(), highlightWideString, 16);
 

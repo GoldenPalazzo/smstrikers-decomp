@@ -967,7 +967,7 @@ config.libs = [
             Object(Matching, "Game/Render/NPCLoader.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/Render/RenderShadow.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/Render/StaticModelExplodable.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(NonMatching, "Game/Render/AnimatedModelExplodable.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(Matching, "Game/Render/AnimatedModelExplodable.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/GameObjectLighting.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/Font/fontmanager.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             

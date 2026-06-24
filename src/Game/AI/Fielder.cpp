@@ -568,7 +568,7 @@ static inline void DoPenaltyCardBookingInline(cFielder* pFouler, cFielder* pFoul
 
 /**
  * Offset/Address/Size: 0xAEBC | 0x800241F8 | size: 0x151C
- * TODO: 99.59% match - remaining diffs are pData/hitter register assignment
+ * TODO: 99.64% match - remaining diffs are pData/hitter register assignment
  * and the anim-controller reload in the simultaneous-hit compare.
  */
 void cFielder::CollideWithCharacterCallback(CollisionPlayerPlayerData* pData)
@@ -611,11 +611,7 @@ void cFielder::CollideWithCharacterCallback(CollisionPlayerPlayerData* pData)
             if (hitter->CanPickupBall(g_pBall))
                 hitter->PickupBall(g_pBall);
 
-            u8 bGameplayOrOvertime = 0;
-            if (g_pGame->m_eGameState == GS_GAMEPLAY || g_pGame->m_eGameState == GS_OVERTIME)
-                bGameplayOrOvertime = 1;
-
-            if (bGameplayOrOvertime)
+            if (g_pGame->IsGameplayOrOvertime())
                 StatsTracker::Track(STATS_POWERUPS_HIT, hittee->m_pTeam->m_nSide, hittee->m_ID, 0, 0, 0, 0);
         }
     }
@@ -627,14 +623,9 @@ done:
     if (IsFallenDown(0.0f))
         return;
 
-    u8 gotHit = 0;
     cPN_SAnimController* pAnimCtrl = pFielderCollidedWith->m_pCurrentAnimController;
     float hitIntensity = (30.0f * pAnimCtrl->m_fTime) * ((float)(unsigned int)pAnimCtrl->m_pSAnim->m_nNumKeys / 30.0f);
-
-    if (pFielderCollidedWith->m_tFrozenTimer.m_uPackedTime == 0 && pFielderCollidedWith->m_eActionState == ACTION_HIT && hitIntensity >= 4.0f && hitIntensity <= 14.0f)
-    {
-        gotHit = 1;
-    }
+    u8 gotHit = pFielderCollidedWith->m_tFrozenTimer.m_uPackedTime == 0 && pFielderCollidedWith->m_eActionState == ACTION_HIT && hitIntensity >= 4.0f && hitIntensity <= 14.0f;
 
     if (gotHit)
     {
@@ -1776,10 +1767,9 @@ void cFielder::CalcShootToScoreShot(nlVector3& v3BallVelocity, nlVector3& v3Ball
             float sdy = v3IntceptPos.f.y - v3BallTarget.f.y;
             float sdx = v3IntceptPos.f.x - v3BallTarget.f.x;
             float sdz = v3IntceptPos.f.z - v3BallTarget.f.z;
-            if (sdx * sdx + sdy * sdy + sdz * sdz <= 4.0f)
+            if (!(sdx * sdx + sdy * sdy + sdz * sdz > 4.0f))
             {
-                fDesiredTime = fTime2Goalie;
-                goto yellow_final;
+                goto yellow_use_goalie_time;
             }
         }
         {
@@ -1803,6 +1793,9 @@ void cFielder::CalcShootToScoreShot(nlVector3& v3BallVelocity, nlVector3& v3Ball
             v3IntceptPos.f.z = (1.0f - fPercent) * ballPos->f.z + fPercent * v3BallTarget.f.z;
             pGoalie->CalcBestSave(0.5f, *ballPos, v3IntceptPos, 0xFFFC, true);
         }
+        goto yellow_final;
+    yellow_use_goalie_time:
+        fDesiredTime = fTime2Goalie;
     yellow_final:
         pGoalie->mbShouldMiss = false;
         g_pBall->ShootAtFast(v3BallVelocity, v3BallTarget, fDesiredTime);

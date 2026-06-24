@@ -243,7 +243,7 @@ void OptionsScene::SceneCreated()
         } findInst;
         findInst.byValue = FEFinder<TLInstance, 4>::Find<TLSlide>;
 
-        volatile InlineHasher hB, hA, h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
+        volatile InlineHasher h7, h5, h3, h1, hB, hA, h9, h8, h6, h4, h2, h0;
 
         h0.m_Hash = 0;
         h1.m_Hash = 0;
@@ -356,7 +356,19 @@ void OptionsScene::SceneCreated()
 
     {
         int selIdx = mMenuItems.mCurrentIndex;
-        mMenuItems.mMenuItems[selIdx].mCallbacks[1](mMenuItems.mMenuItems[selIdx].mType);
+        int tag = mMenuItems.mMenuItems[selIdx].mCallbacks[1].mTag;
+        if (((u32)((-tag) | tag) >> 31) > 0)
+        {
+            TLComponentInstance* type = mMenuItems.mMenuItems[selIdx].mType;
+            if (tag == FREE_FUNCTION)
+            {
+                mMenuItems.mMenuItems[selIdx].mCallbacks[1].mFreeFunction(type);
+            }
+            else
+            {
+                (*mMenuItems.mMenuItems[selIdx].mCallbacks[1].mFunctor)(type);
+            }
+        }
     }
 
     m_pFEScene->m_pFEPackage->GetPresentation();
@@ -370,7 +382,19 @@ void OptionsScene::SceneCreated()
     mMenuItems.mCurrentIndex = mLastSelectedIndex;
     {
         int selIdx = mMenuItems.mCurrentIndex;
-        mMenuItems.mMenuItems[selIdx].mCallbacks[1](mMenuItems.mMenuItems[selIdx].mType);
+        int tag = mMenuItems.mMenuItems[selIdx].mCallbacks[1].mTag;
+        if (((u32)((-tag) | tag) >> 31) > 0)
+        {
+            TLComponentInstance* type = mMenuItems.mMenuItems[selIdx].mType;
+            if (tag == FREE_FUNCTION)
+            {
+                mMenuItems.mMenuItems[selIdx].mCallbacks[1].mFreeFunction(type);
+            }
+            else
+            {
+                (*mMenuItems.mMenuItems[selIdx].mCallbacks[1].mFunctor)(type);
+            }
+        }
     }
 
     {
@@ -381,7 +405,7 @@ void OptionsScene::SceneCreated()
         } findComp;
         findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
 
-        volatile InlineHasher hB, hA, h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
+        volatile InlineHasher h7, h5, h3, h1, hB, hA, h9, h8, h6, h4, h2, h0;
 
         m_curMenuState = MS_MAIN;
 

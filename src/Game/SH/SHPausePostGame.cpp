@@ -210,9 +210,8 @@ void PausePostGameScene::SceneCreated()
         InlineHasher(nlStringLowerHash("Layer")),
         InlineHasher(nlStringLowerHash("MESSAGE 1")));
 
-    BasicGameInfo* game = nlSingleton<GameInfoManager>::s_pInstance->mGameInfo[nlSingleton<GameInfoManager>::s_pInstance->mCurrentMode];
-
     u8 hasHome = 0;
+    BasicGameInfo* game = nlSingleton<GameInfoManager>::s_pInstance->mGameInfo[nlSingleton<GameInfoManager>::s_pInstance->mCurrentMode];
     if (game->mPadSides[0] == 0)
     {
         hasHome = 1;

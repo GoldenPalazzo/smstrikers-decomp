@@ -74,7 +74,7 @@ Format<BasicString<char, Detail::TempStringAllocator>, char[64], int>(
 
 /**
  * Offset/Address/Size: 0x1658 | 0x8012CA68 | size: 0x53C
- * TODO: 97.18% match - remaining diffs are an r26/r27 swap between the
+ * TODO: 98.22% match - remaining diffs are an r26/r27 swap between the
  * animation index and SAnim slot pool, plus extra zero setup at LoadCameraAnimation.
  */
 Nis::Nis(NisHeader& header, char* data, int size)
@@ -114,7 +114,8 @@ Nis::Nis(NisHeader& header, char* data, int size)
                 mMainCharacterIndex = goalScorer;
                 i = goalScorer;
             }
-            NisPlayer::Instance()->mGoalScorerCharIndex = -1;
+            NisPlayer* player = NisPlayer::Instance();
+            player->mGoalScorerCharIndex = -1;
             if (mCharacterControllers[i] != NULL)
             {
                 i = NisPlayer::Instance()->TargetToIndex(NIS_TARGET_HOME_CAPTAIN, numAnimations, mWinnerType);
@@ -489,7 +490,7 @@ void Nis::Trigger::Fire(Nis& nis) const
         {
             if (strlen(target) > 0)
             {
-                World* pWorld = WorldManager::s_World;
+                World* const pWorld = WorldManager::s_World;
                 HelperObject* helper = pWorld->FindHelperObject(pWorld->GetHashIdForGenericName(target));
                 if (helper == NULL)
                     return;

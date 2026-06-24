@@ -30,6 +30,42 @@ ContactType FakePhysicsBall::Contact(PhysicsObject* object, dContact* contact, i
     return PhysicsBall::Contact(object, contact, arg);
 }
 
+static inline BallCacheInfo* AddCacheEntry(PhysicsBall* pPhysicsBall)
+{
+    DLListEntry<BallCacheInfo*>* pNewEntry;
+    BallCacheInfo* pNewInfo = NULL;
+    if (BallCacheInfo::mBallCacheInfoSlotPool.m_FreeList == NULL)
+    {
+        SlotPoolBase::BaseAddNewBlock((SlotPoolBase*)&BallCacheInfo::mBallCacheInfoSlotPool, sizeof(BallCacheInfo));
+    }
+    if (BallCacheInfo::mBallCacheInfoSlotPool.m_FreeList != NULL)
+    {
+        pNewInfo = (BallCacheInfo*)BallCacheInfo::mBallCacheInfoSlotPool.m_FreeList;
+        BallCacheInfo::mBallCacheInfoSlotPool.m_FreeList = BallCacheInfo::mBallCacheInfoSlotPool.m_FreeList->m_next;
+    }
+    pNewInfo->mfTime = FakeBallWorld::mfLastCacheTime;
+    pNewInfo->mv3Position = ((PhysicsObject*)pPhysicsBall)->GetPosition();
+    pNewInfo->mv3LinearVelocity = ((PhysicsObject*)pPhysicsBall)->GetLinearVelocity();
+    pNewEntry = NULL;
+    if (FakeBallWorld::mBallCacheList.m_Allocator.m_FreeList == NULL)
+    {
+        SlotPoolBase::BaseAddNewBlock((SlotPoolBase*)&FakeBallWorld::mBallCacheList.m_Allocator, sizeof(DLListEntry<BallCacheInfo*>));
+    }
+    if (FakeBallWorld::mBallCacheList.m_Allocator.m_FreeList != NULL)
+    {
+        pNewEntry = (DLListEntry<BallCacheInfo*>*)FakeBallWorld::mBallCacheList.m_Allocator.m_FreeList;
+        FakeBallWorld::mBallCacheList.m_Allocator.m_FreeList = FakeBallWorld::mBallCacheList.m_Allocator.m_FreeList->m_next;
+    }
+    if (pNewEntry != NULL)
+    {
+        pNewEntry->m_next = NULL;
+        pNewEntry->m_prev = NULL;
+        pNewEntry->m_data = pNewInfo;
+    }
+    nlDLRingAddEnd(&FakeBallWorld::mBallCacheList.m_Head, pNewEntry);
+    return pNewInfo;
+}
+
 static inline void GetNextBallPosVelInline(nlVector3& v3BallPos, nlVector3& v3BallVel)
 {
     nlDLListIterator<DLListEntry<BallCacheInfo*> >* cacheIter = FakeBallWorld::mpCacheIterator;
@@ -55,42 +91,7 @@ static inline void GetNextBallPosVelInline(nlVector3& v3BallPos, nlVector3& v3Ba
     PhysicsUpdate(FakeBallWorld::mpPredictWorld->mpPhysicsWorld, tick);
     FakeBallWorld::mfLastCacheTime += tick;
 
-    FakePhysicsBall* physicsBall = FakeBallWorld::mpPredictWorld->mpPhysicsBall;
-
-    BallCacheInfo* newInfo = NULL;
-    if (BallCacheInfo::mBallCacheInfoSlotPool.m_FreeList == NULL)
-    {
-        SlotPoolBase::BaseAddNewBlock((SlotPoolBase*)&BallCacheInfo::mBallCacheInfoSlotPool, sizeof(BallCacheInfo));
-    }
-    if (BallCacheInfo::mBallCacheInfoSlotPool.m_FreeList != NULL)
-    {
-        newInfo = (BallCacheInfo*)BallCacheInfo::mBallCacheInfoSlotPool.m_FreeList;
-        BallCacheInfo::mBallCacheInfoSlotPool.m_FreeList = BallCacheInfo::mBallCacheInfoSlotPool.m_FreeList->m_next;
-    }
-
-    newInfo->mfTime = FakeBallWorld::mfLastCacheTime;
-    newInfo->mv3Position = physicsBall->GetPosition();
-    newInfo->mv3LinearVelocity = physicsBall->GetLinearVelocity();
-
-    DLListEntry<BallCacheInfo*>* newEntry = NULL;
-    if (FakeBallWorld::mBallCacheList.m_Allocator.m_FreeList == NULL)
-    {
-        SlotPoolBase::BaseAddNewBlock((SlotPoolBase*)&FakeBallWorld::mBallCacheList.m_Allocator, sizeof(DLListEntry<BallCacheInfo*>));
-    }
-    if (FakeBallWorld::mBallCacheList.m_Allocator.m_FreeList != NULL)
-    {
-        newEntry = (DLListEntry<BallCacheInfo*>*)FakeBallWorld::mBallCacheList.m_Allocator.m_FreeList;
-        FakeBallWorld::mBallCacheList.m_Allocator.m_FreeList = FakeBallWorld::mBallCacheList.m_Allocator.m_FreeList->m_next;
-    }
-
-    if (newEntry != NULL)
-    {
-        newEntry->m_next = NULL;
-        newEntry->m_prev = NULL;
-        newEntry->m_data = newInfo;
-    }
-
-    nlDLRingAddEnd(&FakeBallWorld::mBallCacheList.m_Head, newEntry);
+    BallCacheInfo* newInfo = AddCacheEntry((PhysicsBall*)FakeBallWorld::mpPredictWorld->mpPhysicsBall);
 
     v3BallPos = newInfo->mv3Position;
     v3BallVel = newInfo->mv3LinearVelocity;
@@ -98,8 +99,6 @@ static inline void GetNextBallPosVelInline(nlVector3& v3BallPos, nlVector3& v3Ba
 
 /**
  * Offset/Address/Size: 0x98 | 0x80137484 | size: 0x3EC
- * TODO: 99.48% match - remaining diffs are static-local label numbering
- *       (iter/init symbols) and float literal label selection.
  */
 bool FakeBallWorld::FindBallIntercept(const nlVector3& v3PlayerPos, float fPlayerReach, float fPlayerSpeed, nlVector3& v3InterceptPos, nlVector3& v3InterceptVel, float& fInterceptTime, float& fClosestDist, float fMaxTime)
 {
@@ -177,41 +176,6 @@ bool FakeBallWorld::FindBallIntercept(const nlVector3& v3PlayerPos, float fPlaye
     }
 
     return fInterceptTime < fMaxTime;
-}
-
-static inline BallCacheInfo* AddCacheEntry(PhysicsBall* pPhysicsBall)
-{
-    BallCacheInfo* pNewInfo = NULL;
-    if (BallCacheInfo::mBallCacheInfoSlotPool.m_FreeList == NULL)
-    {
-        SlotPoolBase::BaseAddNewBlock((SlotPoolBase*)&BallCacheInfo::mBallCacheInfoSlotPool, sizeof(BallCacheInfo));
-    }
-    if (BallCacheInfo::mBallCacheInfoSlotPool.m_FreeList != NULL)
-    {
-        pNewInfo = (BallCacheInfo*)BallCacheInfo::mBallCacheInfoSlotPool.m_FreeList;
-        BallCacheInfo::mBallCacheInfoSlotPool.m_FreeList = BallCacheInfo::mBallCacheInfoSlotPool.m_FreeList->m_next;
-    }
-    pNewInfo->mfTime = FakeBallWorld::mfLastCacheTime;
-    pNewInfo->mv3Position = ((PhysicsObject*)pPhysicsBall)->GetPosition();
-    pNewInfo->mv3LinearVelocity = ((PhysicsObject*)pPhysicsBall)->GetLinearVelocity();
-    DLListEntry<BallCacheInfo*>* pNewEntry = NULL;
-    if (FakeBallWorld::mBallCacheList.m_Allocator.m_FreeList == NULL)
-    {
-        SlotPoolBase::BaseAddNewBlock((SlotPoolBase*)&FakeBallWorld::mBallCacheList.m_Allocator, sizeof(DLListEntry<BallCacheInfo*>));
-    }
-    if (FakeBallWorld::mBallCacheList.m_Allocator.m_FreeList != NULL)
-    {
-        pNewEntry = (DLListEntry<BallCacheInfo*>*)FakeBallWorld::mBallCacheList.m_Allocator.m_FreeList;
-        FakeBallWorld::mBallCacheList.m_Allocator.m_FreeList = FakeBallWorld::mBallCacheList.m_Allocator.m_FreeList->m_next;
-    }
-    if (pNewEntry != NULL)
-    {
-        pNewEntry->m_next = NULL;
-        pNewEntry->m_prev = NULL;
-        pNewEntry->m_data = pNewInfo;
-    }
-    nlDLRingAddEnd(&FakeBallWorld::mBallCacheList.m_Head, pNewEntry);
-    return pNewInfo;
 }
 
 /**

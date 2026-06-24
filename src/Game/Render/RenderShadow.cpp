@@ -630,7 +630,7 @@ static void CastPoint(nlVector3& p, const nlVector3& vLight)
 
 /**
  * Offset/Address/Size: 0x0 | 0x80123034 | size: 0x750
- * TODO: 92.07% match - register allocation and scheduling still differ in corner setup
+ * TODO: 92.21% match - register allocation and scheduling still differ in corner setup
  *       and directional/point cast paths.
  */
 void RenderProjectedShadow(const ProjectedShadowParams& params)
@@ -670,7 +670,6 @@ void RenderProjectedShadow(const ProjectedShadowParams& params)
 
     {
         nlVector3 vDir;
-        nlVector3 vCross;
         float dx = vTemp.f.x - vLight.f.x;
         float dy = vTemp.f.y - vLight.f.y;
         float dz = 0.0f;
@@ -682,9 +681,9 @@ void RenderProjectedShadow(const ProjectedShadowParams& params)
         vDir.f.y = dy;
         vDir.f.z = dz;
         nlVec3Scale(vDir, invLen);
-        vCross.f.x = (vDir.f.y * vUp.f.z) - (vDir.f.z * vUp.f.y);
-        vCross.f.y = (-vDir.f.x * vUp.f.z) + (vDir.f.z * vUp.f.x);
-        vCross.f.z = (vDir.f.x * vUp.f.y) - (vDir.f.y * vUp.f.x);
+        float crossX = (vDir.f.y * vUp.f.z) - (vDir.f.z * vUp.f.y);
+        float crossY = (-vDir.f.x * vUp.f.z) + (vDir.f.z * vUp.f.x);
+        float crossZ = (vDir.f.x * vUp.f.y) - (vDir.f.y * vUp.f.x);
 
         float halfW = 0.5f * width;
         float negHalfW = -0.5f * width;
@@ -693,12 +692,12 @@ void RenderProjectedShadow(const ProjectedShadowParams& params)
         vTemp.f.y = params.vPosition.f.y;
         vTemp.f.z = params.vPosition.f.z + 0.5f * height;
 
-        float halfCrossX = halfW * vCross.f.x;
-        float halfCrossY = halfW * vCross.f.y;
-        float halfCrossZ = halfW * vCross.f.z;
-        float negCrossX = negHalfW * vCross.f.x;
-        float negCrossY = negHalfW * vCross.f.y;
-        float negCrossZ = negHalfW * vCross.f.z;
+        float halfCrossX = halfW * crossX;
+        float halfCrossY = halfW * crossY;
+        float halfCrossZ = halfW * crossZ;
+        float negCrossX = negHalfW * crossX;
+        float negCrossY = negHalfW * crossY;
+        float negCrossZ = negHalfW * crossZ;
 
         p[0].f.x = vTemp.f.x + halfCrossX;
         p[0].f.y = vTemp.f.y + halfCrossY;

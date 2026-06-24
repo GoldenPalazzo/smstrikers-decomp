@@ -158,12 +158,6 @@ void Bowser::Update(float fDeltaT)
                 float animTime = mpAnimController->m_fTime;
                 switch (meBowserState)
                 {
-                case BOWSER_STATE_FALL:
-                    if (animTime > 0.34920636f)
-                    {
-                        ActionLeave();
-                    }
-                    break;
                 case BOWSER_STATE_IDLE:
                 case BOWSER_STATE_THROW:
                 case BOWSER_STATE_ROAR:
@@ -171,6 +165,12 @@ void Bowser::Update(float fDeltaT)
                     break;
                 case BOWSER_STATE_ROLL:
                     if (animTime > 0.58536583f)
+                    {
+                        ActionLeave();
+                    }
+                    break;
+                case BOWSER_STATE_FALL:
+                    if (animTime > 0.34920636f)
                     {
                         ActionLeave();
                     }

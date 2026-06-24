@@ -399,8 +399,9 @@ static inline void ComputeAscendingJointPosition(nlVector3& out, const cPoseAccu
 
         if (dist >= fsetDistance)
         {
+            float invRatio;
             float ratio = fsetDistance / dist;
-            float invRatio = 1.0f - ratio;
+            invRatio = 1.0f - ratio;
             float x = ratio * parentMat.m[3][0];
             float y = ratio * parentMat.m[3][1];
             float z = ratio * parentMat.m[3][2];
@@ -426,7 +427,7 @@ static inline void ComputeAscendingJointPosition(nlVector3& out, const cPoseAccu
 
 /**
  * Offset/Address/Size: 0x32C | 0x801F7C1C | size: 0x5EC
- * TODO: 99.08% match - remaining register allocation diffs in joint helper pose/hierarchy locals and user effect loop.
+ * TODO: 99.22% match - remaining register allocation diffs in joint helper pose/hierarchy locals, isFinished setup, and user effect loop.
  */
 bool EmissionController::Update(float dt)
 {

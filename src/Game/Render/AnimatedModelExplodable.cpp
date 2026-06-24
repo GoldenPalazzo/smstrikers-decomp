@@ -1,7 +1,7 @@
 #include "Game/Render/AnimatedModelExplodable.h"
 
-nlList<SidelineExplodableNode> AnimatedModelExplodable::sAnimatedModelExplodableList(
-    (SidelineExplodableNode*)NULL, (SidelineExplodableNode*)NULL);
+nlList<SidelineExplodableNode> AnimatedModelExplodable::sAnimatedModelExplodableList((SidelineExplodableNode*)NULL, (SidelineExplodableNode*)NULL);
+
 ExplodableCategoryData AnimatedModelExplodable::sCategoryData[NUM_ANIMATED_MODEL_EXPLODABLE_CATEGORIES] = {
     ExplodableCategoryData(
         "environment/Sideline_Objects/camera_base",
@@ -12,19 +12,8 @@ ExplodableCategoryData AnimatedModelExplodable::sCategoryData[NUM_ANIMATED_MODEL
         "environment/Sideline_Objects/standupcamera_d",
         NULL),
 };
-u8 AnimatedModelExplodable::bIsModelLoaded[2];
 
-/**
- * Offset/Address/Size: 0x44 | 0x80158C20 | size: 0x2C
- * nlListAddEnd<SidelineExplodableNode> -- defined in NL/nlList.h; instantiated by AnimatedModelExplodable_stub below.
- */
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x80158BDC | size: 0x44
-//  */
-// void nlListRemoveStart<SidelineExplodableNode>(SidelineExplodableNode**, SidelineExplodableNode**)
-// {
-// }
+bool AnimatedModelExplodable::bIsModelLoaded[2];
 
 /**
  * Offset/Address/Size: 0x1C4 | 0x80158B30 | size: 0xAC
@@ -52,7 +41,6 @@ void AnimatedModelExplodable::CleanUp()
 
 /**
  * Offset/Address/Size: 0xA8 | 0x80158A14 | size: 0x11C
- * TODO: 98.80% match - r29/r30 register swap for pAnimatedNPC and bIsModelLoaded accesses
  */
 AnimatedModelExplodable::AnimatedModelExplodable(AnimatedModelExplodableCategory category, SkinAnimatedNPC* pAnimatedNPC)
 {
@@ -67,19 +55,7 @@ AnimatedModelExplodable::AnimatedModelExplodable(AnimatedModelExplodableCategory
 
     Initialize(GetCategoryData().mNumFragmentModels);
 
-    SidelineExplodableNode* node = NULL;
-
-    if (SidelineExplodableNode::sSidelineExplodableNodeSlotPool.m_FreeList == NULL)
-    {
-        SlotPoolBase::BaseAddNewBlock(&SidelineExplodableNode::sSidelineExplodableNodeSlotPool, 8);
-    }
-
-    SlotPoolEntry* entry = SidelineExplodableNode::sSidelineExplodableNodeSlotPool.m_FreeList;
-    if (entry != NULL)
-    {
-        node = (SidelineExplodableNode*)entry;
-        SidelineExplodableNode::sSidelineExplodableNodeSlotPool.m_FreeList = entry->m_next;
-    }
+    SidelineExplodableNode* node = SidelineExplodableNode::sSidelineExplodableNodeSlotPool.Allocate();
 
     if (node != NULL)
     {
@@ -127,13 +103,7 @@ void AnimatedModelExplodable::SetUnexplodedModelVisibility(bool isVisible)
  */
 bool AnimatedModelExplodable::LoadGeometry()
 {
-    bIsModelLoaded[0] = 0;
-    bIsModelLoaded[1] = 0;
+    bIsModelLoaded[0] = false;
+    bIsModelLoaded[1] = false;
     return true;
-}
-
-// Force template instantiation -- REMOVE once real callers exist.
-void AnimatedModelExplodable_stub()
-{
-    nlListAddEnd<SidelineExplodableNode>((SidelineExplodableNode**)0, (SidelineExplodableNode**)0, (SidelineExplodableNode*)0);
 }

@@ -16,7 +16,7 @@ static unsigned char g_bLit;
 
 /**
  * Offset/Address/Size: 0x149C | 0x801FC72C | size: 0x418
- * TODO: 97.92% match - ring and segment temporaries still use different saved registers.
+ * TODO: 98.15% match - ring and segment temporaries still use different saved registers.
  */
 void ShapeRender::CreateHemisphereGeometry(PrimitiveShape& prim)
 {
@@ -100,11 +100,9 @@ void ShapeRender::CreateHemisphereGeometry(PrimitiveShape& prim)
             invLen = nlRecipSqrt(z0Sq + (x0Sq + y0Sq), true);
 
             pdst->f.x = x0;
-            vNormal.f.x = invLen * vNormal.f.x;
+            nlVec3Scale(vNormal, invLen);
             pdst->f.y = y0;
-            vNormal.f.y = invLen * vNormal.f.y;
             pdst->f.z = z0;
-            vNormal.f.z = invLen * vNormal.f.z;
             *ndst = vNormal;
 
             tdst->f.x = (float)nSegment / 15.0f;
@@ -124,11 +122,9 @@ void ShapeRender::CreateHemisphereGeometry(PrimitiveShape& prim)
             invLen = nlRecipSqrt(z1Sq + (x1Sq + y1Sq), true);
 
             pdst->f.x = x1;
-            vNormal.f.x = invLen * vNormal.f.x;
+            nlVec3Scale(vNormal, invLen);
             pdst->f.y = y1;
-            vNormal.f.y = invLen * vNormal.f.y;
             pdst->f.z = z1;
-            vNormal.f.z = invLen * vNormal.f.z;
             *ndst = vNormal;
 
             tdst->f.x = (float)nSegment / 15.0f;

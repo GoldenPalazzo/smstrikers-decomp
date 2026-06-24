@@ -127,10 +127,6 @@ void GoalieSave::InitData(Goalie* pGoalie)
     };
 
     extern nlVector3 v3Zero;
-    extern unsigned int muNumSaveEntries__10GoalieSave;
-    extern unsigned int muSTSMissCount__10GoalieSave;
-    extern unsigned int muMissChipCount__10GoalieSave;
-    extern unsigned int muNumPositionEntries__10GoalieSave;
     extern int gPositionAnimID[];
     extern SaveInfo gSaveInfo[];
     extern SlotPoolLite m_SAnimControllerSlotPool__19cPN_SAnimController;
@@ -156,18 +152,18 @@ void GoalieSave::InitData(Goalie* pGoalie)
         return;
     }
 
-    muNumSaveEntries__10GoalieSave = 0x45;
+    muNumSaveEntries = 0x45;
     void* mem = nlMalloc__FUlUib(0x2290, 8, false);
     mpSaveTable = (SaveData*)__construct_new_array(mem, NULL, NULL, 0x80, 0x45);
 
     muSTSGoalIndexStart = 0;
     muSTSGoalCount = 0;
     muSTSMissIndexStart = 0;
-    muSTSMissCount__10GoalieSave = 0;
+    muSTSMissCount = 0;
     muSTSSaveIndexStart = 0;
     muSTSSaveCount = 0;
     muMissChipIndexStart = 0;
-    muMissChipCount__10GoalieSave = 0;
+    muMissChipCount = 0;
 
     void* pAnimInventory = *(void**)((unsigned char*)pGoalie + 0x80);
     SAnimLite* pAnim = GetAnim__14cAnimInventoryFi(pAnimInventory, 0x2E);
@@ -184,13 +180,13 @@ void GoalieSave::InitData(Goalie* pGoalie)
     u32 v3ZeroY = pv3Zero->as_u32[1];
     u32 v3ZeroZ = pv3Zero->as_u32[2];
 
-    while (i < muNumSaveEntries__10GoalieSave)
+    while (i < muNumSaveEntries)
     {
-        SaveData* pSD = &mpSaveTable[i];
+        pSaveData = &mpSaveTable[i];
 
-        pSD->mnAnimID = pSaveInfo->mnAnimID;
-        pSD->mnRecoverAnimID = pSaveInfo->mnRecoverAnimID;
-        pSD->muSaveType = pSaveInfo->muSaveType;
+        pSaveData->mnAnimID = pSaveInfo->mnAnimID;
+        pSaveData->mnRecoverAnimID = pSaveInfo->mnRecoverAnimID;
+        pSaveData->muSaveType = pSaveInfo->muSaveType;
 
         GoalieTweaksLite* pTweaks = *(GoalieTweaksLite**)((unsigned char*)pGoalie + 0x1C4);
         unsigned int uSaveType = pSaveInfo->muSaveType;
@@ -232,35 +228,35 @@ void GoalieSave::InitData(Goalie* pGoalie)
         {
             fFatigueValue = pTweaks->fShotFatigueDefault;
         }
-        pSD->mfFatigueValue = fFatigueValue;
+        pSaveData->mfFatigueValue = fFatigueValue;
 
-        pSD->mv3SavePos.as_u32[0] = v3ZeroX;
-        pSD->mv3SavePos.as_u32[1] = v3ZeroY;
-        pSD->mv3SavePos.as_u32[2] = v3ZeroZ;
+        pSaveData->mv3SavePos.as_u32[0] = v3ZeroX;
+        pSaveData->mv3SavePos.as_u32[1] = v3ZeroY;
+        pSaveData->mv3SavePos.as_u32[2] = v3ZeroZ;
 
-        pSD->mfMilestonePercent[0] = 0.0f;
-        pSD->mfMilestonePercent[1] = 0.0f;
-        pSD->mfMilestonePercent[2] = 0.0f;
-        pSD->mfMilestonePercent[3] = 0.0f;
-        pSD->mfMilestonePercent[4] = 0.0f;
+        pSaveData->mfMilestonePercent[0] = 0.0f;
+        pSaveData->mfMilestonePercent[1] = 0.0f;
+        pSaveData->mfMilestonePercent[2] = 0.0f;
+        pSaveData->mfMilestonePercent[3] = 0.0f;
+        pSaveData->mfMilestonePercent[4] = 0.0f;
 
-        pSD->mv3TakeoffPos.as_u32[0] = v3ZeroX;
-        pSD->mv3TakeoffPos.as_u32[1] = v3ZeroY;
-        pSD->mv3TakeoffPos.as_u32[2] = v3ZeroZ;
+        pSaveData->mv3TakeoffPos.as_u32[0] = v3ZeroX;
+        pSaveData->mv3TakeoffPos.as_u32[1] = v3ZeroY;
+        pSaveData->mv3TakeoffPos.as_u32[2] = v3ZeroZ;
 
-        pSD->mv3GroupMinCoords.as_u32[0] = v3ZeroX;
-        pSD->mv3GroupMinCoords.as_u32[1] = v3ZeroY;
-        pSD->mv3GroupMinCoords.as_u32[2] = v3ZeroZ;
+        pSaveData->mv3GroupMinCoords.as_u32[0] = v3ZeroX;
+        pSaveData->mv3GroupMinCoords.as_u32[1] = v3ZeroY;
+        pSaveData->mv3GroupMinCoords.as_u32[2] = v3ZeroZ;
 
-        pSD->mv3GroupMaxCoords.as_u32[0] = v3ZeroX;
-        pSD->mv3GroupMaxCoords.as_u32[1] = v3ZeroY;
-        pSD->mv3GroupMaxCoords.as_u32[2] = v3ZeroZ;
+        pSaveData->mv3GroupMaxCoords.as_u32[0] = v3ZeroX;
+        pSaveData->mv3GroupMaxCoords.as_u32[1] = v3ZeroY;
+        pSaveData->mv3GroupMaxCoords.as_u32[2] = v3ZeroZ;
 
-        nlStrNCpy__FPcPCcUl(pSD->mszName, pSaveInfo->mszName, 16);
-        pSD->muIndex = i;
+        nlStrNCpy__FPcPCcUl(pSaveData->mszName, pSaveInfo->mszName, 16);
+        pSaveData->muIndex = i;
 
-        SaveData* pReload = &mpSaveTable[i];
-        unsigned int st = pReload->muSaveType;
+        pSaveData = &mpSaveTable[i];
+        unsigned int st = pSaveData->muSaveType;
         if (st & 0x00020000)
         {
             muSTSGoalCount++;
@@ -271,8 +267,8 @@ void GoalieSave::InitData(Goalie* pGoalie)
         }
         else if (st & 0x00040000)
         {
-            muSTSMissCount__10GoalieSave++;
-            if (muSTSMissCount__10GoalieSave == 1)
+            muSTSMissCount++;
+            if (muSTSMissCount == 1)
             {
                 muSTSMissIndexStart = i;
             }
@@ -287,15 +283,15 @@ void GoalieSave::InitData(Goalie* pGoalie)
         }
         else if (st & 0x00100000)
         {
-            muMissChipCount__10GoalieSave++;
-            if (muMissChipCount__10GoalieSave == 1)
+            muMissChipCount++;
+            if (muMissChipCount == 1)
             {
                 muMissChipIndexStart = i;
             }
         }
 
-        int animKey = pReload->mnAnimID;
-        SaveData* pValue = pReload;
+        int animKey = pSaveData->mnAnimID;
+        SaveData* pValue = pSaveData;
         AVLTreeNode* pExistingNode = NULL;
         gSaveMap.AddAVLNode((AVLTreeNode**)&gSaveMap.m_Root, &animKey, &pValue, &pExistingNode, gSaveMap.m_NumElements);
         if (pExistingNode == NULL)
@@ -308,7 +304,7 @@ void GoalieSave::InitData(Goalie* pGoalie)
     }
 
     pSaveInfo = pSaveInfoBase;
-    for (unsigned int j = 0; j < muNumSaveEntries__10GoalieSave; j++)
+    for (unsigned int j = 0; j < muNumSaveEntries; j++)
     {
         int failID = pSaveInfo->mnFailAnimID;
         SaveData* pEntry = &mpSaveTable[j];
@@ -340,11 +336,11 @@ void GoalieSave::InitData(Goalie* pGoalie)
         pSaveInfo++;
     }
 
-    muNumPositionEntries__10GoalieSave = 6;
+    muNumPositionEntries = 6;
     void* mem2 = nlMalloc__FUlUib(0x70, 8, false);
     mpPositionTable = (SavePositionData*)__construct_new_array(mem2, NULL, NULL, 0x10, 6);
 
-    for (count = 0; count < muNumPositionEntries__10GoalieSave; count++)
+    for (count = 0; count < muNumPositionEntries; count++)
     {
         SavePositionData* pPos = &mpPositionTable[count];
         int animID = gPositionAnimID[count];
@@ -411,7 +407,7 @@ void GoalieSave::InitData(Goalie* pGoalie)
 
     int nBallJointIndex = *(int*)((unsigned char*)pGoalie + 0x1AC);
 
-    for (i = 0; i < muNumSaveEntries__10GoalieSave; i++)
+    for (i = 0; i < muNumSaveEntries; i++)
     {
         pSaveData = &mpSaveTable[i];
         GetAnimTriggerInfo__FP10cCharacteriPFffUlfPv_bPv(pGoalie, pSaveData->mnAnimID, TriggerCallback, pSaveData);
@@ -423,7 +419,7 @@ void GoalieSave::InitData(Goalie* pGoalie)
         }
     }
 
-    nCount = (int)muNumSaveEntries__10GoalieSave - 1;
+    nCount = (int)muNumSaveEntries - 1;
     while (nCount >= 0)
     {
         SaveData* pSD = &mpSaveTable[nCount];
