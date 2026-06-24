@@ -90,8 +90,92 @@ nlVector3& AvoidController::GetLastRepulsionVector(eAvoidableThings things)
 {
     return m_LastRepulsionVector[AvoidableEnumToIndex(things)];
 }
+
+static inline bool CalcGoalieRepulsionVector(AvoidController* controller, nlVector3& v3OutRepulsion)
+{
+    extern cTeam* g_pCurrentlyUpdatingTeam;
+
+    bool bAvoidedSomething = false;
+    v3OutRepulsion.f.x = 0.0f;
+    v3OutRepulsion.f.y = 0.0f;
+    v3OutRepulsion.f.z = 0.0f;
+
+    for (int i_team = 0; i_team < 2; i_team++)
+    {
+        Goalie* pGoalie = g_pTeams[i_team]->GetGoalie();
+
+        float fDeltaY = controller->m_pFielder->m_v3Position.f.y - pGoalie->m_v3Position.f.y;
+        float fDeltaX = controller->m_pFielder->m_v3Position.f.x - pGoalie->m_v3Position.f.x;
+        float fDeltaZ = controller->m_pFielder->m_v3Position.f.z - pGoalie->m_v3Position.f.z;
+
+        float fDistanceSq = fDeltaY * fDeltaY;
+        fDistanceSq += fDeltaX * fDeltaX;
+        fDistanceSq += fDeltaZ * fDeltaZ;
+        if (fDistanceSq > 16.0f)
+        {
+            continue;
+        }
+
+        float fDistance = nlSqrt(fDistanceSq, true);
+        float fInvDistance = 1.0f / fDistance;
+        fDeltaX = fInvDistance * fDeltaX;
+        fDeltaY = fInvDistance * fDeltaY;
+        fDeltaZ = fInvDistance * fDeltaZ;
+
+        fDistance -= pGoalie->m_pTweaks->fPhysCapsuleRadius + controller->m_pFTweaks->fPhysCapsuleRadius;
+
+        float fClosingSpeed = GetClosingSpeed2D(
+            controller->m_pFielder->m_v3Position,
+            controller->m_pFielder->m_v3Velocity,
+            pGoalie->m_v3Position,
+            pGoalie->m_v3Velocity);
+
+        float fMagnitude = 10.0f * NormalizeVal(fDistance, 4.0f, 0.5f);
+        fMagnitude += 3.0f * NormalizeVal(fClosingSpeed, 0.0f, 3.0f);
+
+        if (!controller->m_pFielder->IsOnSameTeam(pGoalie))
+        {
+            fMagnitude *= 1.5f;
+        }
+
+        if (controller->m_pFielder->m_pBall != NULL)
+        {
+            SkillTweaks* pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide);
+            fMagnitude *= 1.5f * pSkillTweaks->Off_Avoidance;
+        }
+
+        if (controller->m_UseMinimumAvoidance)
+        {
+            fMagnitude *= 0.3f;
+        }
+
+        if (fMagnitude > 0.0f)
+        {
+            if (!(fMagnitude <= 10.0f))
+            {
+                fMagnitude = 10.0f;
+            }
+
+            float fOutY = v3OutRepulsion.f.y;
+            float fOutX = v3OutRepulsion.f.x;
+            fOutY = fMagnitude * fDeltaY + fOutY;
+            float fOutZ = v3OutRepulsion.f.z;
+            fOutX = fMagnitude * fDeltaX + fOutX;
+            fOutZ = fMagnitude * fDeltaZ + fOutZ;
+            v3OutRepulsion.f.z = fOutZ;
+            v3OutRepulsion.f.x = fOutX;
+            v3OutRepulsion.f.y = fOutY;
+            bAvoidedSomething = true;
+        }
+    }
+
+    return bAvoidedSomething;
+}
+
 /**
  * Offset/Address/Size: 0x12BC | 0x80008910 | size: 0xECC
+ * TODO: 95.54% match - remaining diffs are early boolean register allocation
+ * and f4/f5 weight register swaps.
  */
 void AvoidController::Update(float)
 {
@@ -208,80 +292,7 @@ void AvoidController::Update(float)
     if (bCanAvoid)
     {
         nlVector3 v3Repulsion = v3Zero;
-        v3Repulsion.f.x = 0.0f;
-        v3Repulsion.f.y = 0.0f;
-        v3Repulsion.f.z = 0.0f;
-        bool bAvoidedSomething = false;
-
-        for (int i_team = 0; i_team < 2; i_team++)
-        {
-            Goalie* pGoalie = g_pTeams[i_team]->GetGoalie();
-
-            float fDeltaY = m_pFielder->m_v3Position.f.y - pGoalie->m_v3Position.f.y;
-            float fDeltaX = m_pFielder->m_v3Position.f.x - pGoalie->m_v3Position.f.x;
-            float fDeltaZ = m_pFielder->m_v3Position.f.z - pGoalie->m_v3Position.f.z;
-
-            float fDistanceSq = fDeltaY * fDeltaY;
-            fDistanceSq += fDeltaX * fDeltaX;
-            fDistanceSq += fDeltaZ * fDeltaZ;
-            if (fDistanceSq > 16.0f)
-            {
-                continue;
-            }
-
-            float fDistance = nlSqrt(fDistanceSq, true);
-
-            float fInvDistance = 1.0f / fDistance;
-            fDeltaX = fInvDistance * fDeltaX;
-            fDeltaY = fInvDistance * fDeltaY;
-            fDeltaZ = fInvDistance * fDeltaZ;
-
-            fDistance -= pGoalie->m_pTweaks->fPhysCapsuleRadius + m_pFTweaks->fPhysCapsuleRadius;
-
-            float fClosingSpeed = GetClosingSpeed2D(
-                m_pFielder->m_v3Position,
-                m_pFielder->m_v3Velocity,
-                pGoalie->m_v3Position,
-                pGoalie->m_v3Velocity);
-
-            float fMagnitude = 10.0f * NormalizeVal(fDistance, 4.0f, 0.5f);
-            fMagnitude += 3.0f * NormalizeVal(fClosingSpeed, 0.0f, 3.0f);
-
-            if (!m_pFielder->IsOnSameTeam(pGoalie))
-            {
-                fMagnitude *= 1.5f;
-            }
-
-            if (m_pFielder->m_pBall != NULL)
-            {
-                SkillTweaks* pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide);
-                fMagnitude *= 1.5f * pSkillTweaks->Off_Avoidance;
-            }
-
-            if (m_UseMinimumAvoidance)
-            {
-                fMagnitude *= 0.3f;
-            }
-
-            if (fMagnitude > 0.0f)
-            {
-                if (!(fMagnitude <= 10.0f))
-                {
-                    fMagnitude = 10.0f;
-                }
-
-                float fOutY = v3Repulsion.f.y;
-                float fOutX = v3Repulsion.f.x;
-                fOutY = fMagnitude * fDeltaY + fOutY;
-                float fOutZ = v3Repulsion.f.z;
-                fOutX = fMagnitude * fDeltaX + fOutX;
-                fOutZ = fMagnitude * fDeltaZ + fOutZ;
-                v3Repulsion.f.z = fOutZ;
-                v3Repulsion.f.x = fOutX;
-                v3Repulsion.f.y = fOutY;
-                bAvoidedSomething = true;
-            }
-        }
+        bool bAvoidedSomething = CalcGoalieRepulsionVector(this, v3Repulsion);
 
         if (bAvoidedSomething)
         {

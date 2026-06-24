@@ -70,14 +70,6 @@ static inline const unsigned short* LookupLocHash(unsigned long key)
 
     return MissingLocString;
 }
-struct StatsTrackerOvertimeAccessor
-{
-    char _pad[0x4C1];
-    unsigned char mIsOvertime;
-};
-
-class StatsTracker;
-
 extern "C" double ceil(double);
 extern "C" double floor(double);
 
@@ -374,6 +366,8 @@ void GoalOverlay::UpdateGoalInfo(int homeAway, int playerIndex, bool isCaptainS2
     hSlideA.m_Hash = hash;
     hSlideB.m_Hash = hash;
 
+    bool isSuperTeam;
+
     TLTextInstance* pText;
     {
         union
@@ -398,7 +392,7 @@ void GoalOverlay::UpdateGoalInfo(int homeAway, int playerIndex, bool isCaptainS2
     nlSingleton<GameInfoManager>::s_pInstance->GetTeam(1);
 
     float gameTime = g_pGame->GetGameTime();
-    StatsTrackerOvertimeAccessor* stats = (StatsTrackerOvertimeAccessor*)nlSingleton<StatsTracker>::s_pInstance;
+    StatsTracker* stats = nlSingleton<StatsTracker>::s_pInstance;
     if (!stats->mIsOvertime)
     {
         float fGameDuration = g_pGame->m_pGameTweaks->fGameDuration;
@@ -440,7 +434,7 @@ void GoalOverlay::UpdateGoalInfo(int homeAway, int playerIndex, bool isCaptainS2
     oldScore[0] = mCaptainGoals[0] + mSidekickGoals[0];
     oldScore[1] = mCaptainGoals[1] + mSidekickGoals[1];
 
-    bool isSuperTeam = (nlSingleton<GameInfoManager>::s_pInstance->GetTeam((short)homeAway) == 8);
+    isSuperTeam = (nlSingleton<GameInfoManager>::s_pInstance->GetTeam((short)homeAway) == 8);
     if (isSuperTeam)
     {
         playerIndex = 0;

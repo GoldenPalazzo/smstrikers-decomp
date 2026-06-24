@@ -138,7 +138,7 @@ void FEAudio::ResetRandomVoiceToggleSFX()
 
 /**
  * Offset/Address/Size: 0x290 | 0x8009F03C | size: 0x360
- * TODO: 99.75% match - pGIM and fallback event pointers use different registers
+ * TODO: 99.93% match - pGIM uses a different register
  */
 void FEAudio::PlayRandomVoiceToggleSFX()
 {
@@ -232,11 +232,7 @@ void FEAudio::PlayRandomVoiceToggleSFX()
             {
                 unsigned long stackHash = hash;
                 AnimAudioEventLookup* result = nlBSearch<AnimAudioEventLookup, unsigned long>(stackHash, gp_AnimAudioEventTable, gNumAnimAudioEvents);
-                AnimAudioEventLookup* event;
-                if (result)
-                    event = result;
-                else
-                    event = NULL;
+                AnimAudioEventLookup* event = result ? result : NULL;
 
                 if (nlStrCmp<char>(event->szSFXType, "") != 0)
                 {
@@ -252,11 +248,7 @@ void FEAudio::PlayRandomVoiceToggleSFX()
             {
                 unsigned long stackHash = hash;
                 AnimAudioEventLookup* result = nlBSearch<AnimAudioEventLookup, unsigned long>(stackHash, gp_AnimAudioEventTable, gNumAnimAudioEvents);
-                AnimAudioEventLookup* event;
-                if (result)
-                    event = result;
-                else
-                    event = NULL;
+                AnimAudioEventLookup* event = result ? result : NULL;
 
                 if (nlStrICmp<char>(event->szSFXType, "") != 0)
                 {

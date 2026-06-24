@@ -68,12 +68,15 @@ void FEInGameMessengerManager::Update(float fDeltaT)
 
 /**
  * Offset/Address/Size: 0x140 | 0x800FFA5C | size: 0x414
- * TODO: 97.52% match - remaining diffs are this/timeState register swap
+ * TODO: 97.60% match - remaining diffs are this/timeState register swap
  * (r30/r31) and ListEntry constructor temporary register ordering.
  */
 #pragma opt_common_subs off
 void FEInGameMessengerManager::EnterNewTimeState(FEInGameMessengerManager::eTimeStates timeState)
 {
+    ListEntry<eInGameMessages>** pTail;
+    ListEntry<eInGameMessages>** pHead;
+
     switch (timeState)
     {
     case TS_GAME_BEGINNING:
@@ -81,8 +84,8 @@ void FEInGameMessengerManager::EnterNewTimeState(FEInGameMessengerManager::eTime
 
     case TS_GAME_EARLYMID:
     {
-        ListEntry<eInGameMessages>** pTail = &m_messageQueue.m_Tail;
-        ListEntry<eInGameMessages>** pHead = &m_messageQueue.m_Head;
+        pTail = &m_messageQueue.m_Tail;
+        pHead = &m_messageQueue.m_Head;
 
         for (int i = 0; i < m_numWatchGames; i++)
         {
@@ -118,8 +121,8 @@ void FEInGameMessengerManager::EnterNewTimeState(FEInGameMessengerManager::eTime
 
     case TS_GAME_MIDLATE:
     {
-        ListEntry<eInGameMessages>** pTail = &m_messageQueue.m_Tail;
-        ListEntry<eInGameMessages>** pHead = &m_messageQueue.m_Head;
+        pTail = &m_messageQueue.m_Tail;
+        pHead = &m_messageQueue.m_Head;
 
         for (int i = 0; i < m_numWatchGames; i++)
         {
@@ -165,8 +168,8 @@ void FEInGameMessengerManager::EnterNewTimeState(FEInGameMessengerManager::eTime
             sequence[swapInd] = temp;
         }
 
-        ListEntry<eInGameMessages>** pTail = &m_messageQueue.m_Tail;
-        ListEntry<eInGameMessages>** pHead = &m_messageQueue.m_Head;
+        pTail = &m_messageQueue.m_Tail;
+        pHead = &m_messageQueue.m_Head;
 
         int numDisplayed = 0;
         for (int i = 0; i < 4; i++)

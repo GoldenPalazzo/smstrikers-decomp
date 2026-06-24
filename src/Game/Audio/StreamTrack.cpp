@@ -732,7 +732,7 @@ inline GCAudioStreaming::StereoAudioStream::StereoAudioStream(
 
 /**
  * Offset/Address/Size: 0x10BC | 0x80155E14 | size: 0x418
- * TODO: 96.1% match - saved-register rotation for stream arguments and queued-entry temp stack offsets remain
+ * TODO: 98.4% match - stream argument saved-register rotation and stream pointer register selection remain
  */
 void AudioStreamTrack::StreamTrack::QueueStream(
     unsigned long StreamId, float Volume, bool Looping,
@@ -740,6 +740,7 @@ void AudioStreamTrack::StreamTrack::QueueStream(
     Audio::MasterVolume::VOLUME_GROUP OverrideVolGroup)
 {
     char FileName[256];
+    GCAudioStreaming::StereoAudioStream* pStream;
 
     if (GetConfigBool(Config::Global(), "no_stream", false) == true)
     {
@@ -747,7 +748,7 @@ void AudioStreamTrack::StreamTrack::QueueStream(
     }
 
     const QUEUED_STREAM& qs = QUEUED_STREAM();
-    QUEUED_STREAM localData = qs;
+    DLListEntry<QUEUED_STREAM> localEntry(qs);
     DLListEntry<QUEUED_STREAM>* entry = m_QueuedStreams.m_Allocator.m_pFree;
     if (entry == NULL)
     {
@@ -761,13 +762,13 @@ void AudioStreamTrack::StreamTrack::QueueStream(
     {
         entry->m_next = NULL;
         entry->m_prev = NULL;
-        entry->m_data = localData;
+        entry->m_data = localEntry.m_data;
     }
     nlDLRingAddEnd(&m_QueuedStreams.m_Head, entry);
 
     entry->m_data.StreamId = StreamId;
 
-    GCAudioStreaming::StereoAudioStream* pStream = NULL;
+    pStream = NULL;
     TrackManagerBase& mgr = m_TrackMgr;
     mgr.m_StreamPool.Allocate(pStream);
     new (pStream) GCAudioStreaming::StereoAudioStream(g_BufferMgr);
@@ -792,7 +793,7 @@ void AudioStreamTrack::StreamTrack::QueueStream(
     nlStrNCpy<char>(FileName, "audio/data/streams/", 0x100);
     unsigned long lookupKey = StreamId;
     TrackManagerBase::StreamFileLookup::STREAM_FILE_LOOKUP* lookup = nlBSearch<TrackManagerBase::StreamFileLookup::STREAM_FILE_LOOKUP, unsigned long>(
-        lookupKey, mgr.m_FileLookup.m_pLookup, mgr.m_FileLookup.m_StreamCount);
+        lookupKey, m_TrackMgr.m_FileLookup.m_pLookup, m_TrackMgr.m_FileLookup.m_StreamCount);
 
     char* percentPos = strchr(lookup->value, '%');
     if (percentPos != NULL)
@@ -820,13 +821,14 @@ void AudioStreamTrack::StreamTrack::QueueStream(
     }
 
     GCAudioStreaming::StereoAudioStream* stream = entry->m_data.pStream;
-    stream->m_StreamLength = 0;
-    stream->m_OldLength = 0;
-    stream->m_StreamPos = 0;
+    unsigned long zero = 0;
+    stream->m_StreamLength = zero;
+    stream->m_OldLength = zero;
+    stream->m_StreamPos = zero;
 
-    volatile unsigned long bufIdx = 0;
+    volatile unsigned long bufIdx = zero;
     GCAudioStreaming::AudioStreamBuffer* buf = NULL;
-    if (stream->m_BufferCount > 0)
+    if (stream->m_BufferCount > zero)
     {
         buf = stream->m_Buffers[0];
     }
@@ -846,10 +848,10 @@ void AudioStreamTrack::StreamTrack::QueueStream(
         }
     }
 
-    stream->m_LastPlayable = 0;
-    stream->m_Flags = 0;
+    stream->m_LastPlayable = zero;
+    stream->m_Flags = zero;
     stream->m_Volume = 64;
-    stream->m_LPFOn = 0;
+    stream->m_LPFOn = zero;
     stream->m_LPFFreq = 0x3FFF;
     nlFile* file = nlOpen(FileName);
     stream->m_pFile = file;
@@ -1329,7 +1331,7 @@ void AudioStreamTrack::StreamTrack::FadeOutDoneStartNext(AudioStreamTrack::Strea
 
 /**
  * Offset/Address/Size: 0x1E8 | 0x80154F40 | size: 0x374
- * TODO: 98.33% match - second fade search manager/stream/head register rotation and buffer iterator register differences remain
+ * TODO: 99.48% match - second fade search manager/stream/head registers and first buffer pointer register differ
  */
 void AudioStreamTrack::StreamTrack::Pause(unsigned long Fadeout, bool bPause)
 {
@@ -1466,8 +1468,8 @@ fade2_found:
     if (stream->m_State == GCAudioStreaming::SS_Playing)
     {
         unsigned long zero = 0;
-        GCAudioStreaming::AudioStreamBuffer* buf = NULL;
-        volatile unsigned long bufCounter = zero;
+        GCAudioStreaming::AudioStreamBuffer* buf;
+        volatile unsigned long bufCounter = (unsigned long)(buf = NULL);
         if (stream->m_BufferCount > zero)
         {
             buf = stream->m_Buffers[0];
@@ -1506,8 +1508,8 @@ fade2_found:
         {
             unsigned long fl = stream->m_Flags;
             unsigned long zero2 = 0;
-            GCAudioStreaming::AudioStreamBuffer* buf2 = NULL;
-            volatile unsigned long bufCounter2 = (unsigned long)buf2;
+            GCAudioStreaming::AudioStreamBuffer* buf2;
+            volatile unsigned long bufCounter2 = (unsigned long)(buf2 = NULL);
             stream->m_Flags = (fl & ~0x10) | 0x10;
             if (stream->m_BufferCount > zero2)
             {
@@ -1517,13 +1519,13 @@ fade2_found:
             while (buf2 != NULL)
             {
                 stream->m_BuffMgr.FreeBuffer(buf2);
-                unsigned long ci = bufCounter2;
-                unsigned long nextCI = ci + 1;
-                bufCounter2 = nextCI;
-                stream->m_Buffers[ci] = NULL;
-                if (nextCI < stream->m_BufferCount)
+                unsigned long idx = bufCounter2;
+                stream->m_Buffers[idx] = NULL;
+                idx = idx + 1;
+                bufCounter2 = idx;
+                if (idx < stream->m_BufferCount)
                 {
-                    buf2 = stream->m_Buffers[nextCI];
+                    buf2 = stream->m_Buffers[idx];
                 }
                 else
                 {
@@ -1547,7 +1549,7 @@ void AudioStreamTrack::StreamTrack::Resume()
 
 /**
  * Offset/Address/Size: 0x0 | 0x80154D58 | size: 0x1B8
- * TODO: 97.8% match - stack temp offset and callee-saved register rotation remain
+ * TODO: 99.0% match - argument values are assigned to different saved registers
  */
 void AudioStreamTrack::StreamTrack::AttachStream(
     GCAudioStreaming::StereoAudioStream* pStream,
@@ -1568,7 +1570,7 @@ void AudioStreamTrack::StreamTrack::AttachStream(
     }
 
     const QUEUED_STREAM& qs = QUEUED_STREAM();
-    QUEUED_STREAM localData = qs;
+    DLListEntry<QUEUED_STREAM> localEntry(qs);
     DLListEntry<QUEUED_STREAM>* entry = m_QueuedStreams.m_Allocator.m_pFree;
     if (entry == NULL)
     {
@@ -1582,7 +1584,7 @@ void AudioStreamTrack::StreamTrack::AttachStream(
     {
         entry->m_next = NULL;
         entry->m_prev = NULL;
-        entry->m_data = localData;
+        entry->m_data = localEntry.m_data;
     }
     nlDLRingAddEnd(&m_QueuedStreams.m_Head, entry);
 

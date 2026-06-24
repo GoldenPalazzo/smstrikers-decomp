@@ -952,11 +952,15 @@ unsigned long SaveCallbacks::CreateFileCB(unsigned long Slot, long Result, void*
             IconCfg.BannerFormat = 2;
             int iconFormat = IconCfg.IconFormat;
             int iconCount = IconCfg.IconCount;
-            int iconSize = (iconFormat << 10) * iconCount;
-            int temp = ~(iconCount | -1);
-            int bannerClut = (temp >> 31) & 0x200;
+            int iconPixelSize = iconFormat << 10;
+            int iconSize = iconCount * iconPixelSize;
+            int negOne = ~(iconCount | -1);
+            int clutSize = 0x200;
+            int bannerClutMask = negOne >> 31;
+            int iconClutMask = negOne >> 31;
+            int bannerClut = clutSize & bannerClutMask;
             int bannerSize = iconFormat * 0xC00;
-            int iconClut = (temp >> 31) & 0x200;
+            int iconClut = clutSize & iconClutMask;
             int total = bannerClut + bannerSize;
             total += iconSize;
             total += iconClut;
@@ -1046,7 +1050,7 @@ unsigned long SaveCallbacks::CreateFileCB(unsigned long Slot, long Result, void*
     cb = &SaveCallbacks::FileWriteIconCB;
     MemCardFunctor functor;
     new (functor.m_FunctorMem) MemCardFunctor::MCMemberFunctor<SaveCallbacks>(this, cb, headerData);
-    Result = g_MemCards[m_Slot]->WriteFileIconData(m_pSaveFile, headerData, functor);
+    Result = g_MemCards[m_Slot]->WriteFileIconData(m_pSaveFile, cache->mIconDataInfo.pHeaderData, functor);
     if (Result != 0)
     {
         errorCode = Result;
@@ -1089,11 +1093,15 @@ unsigned long SaveCallbacks::CreateFileCB(unsigned long Slot, long Result, void*
             IconCfg2.BannerFormat = 2;
             int iconFormat2 = IconCfg2.IconFormat;
             int iconCount3 = IconCfg2.IconCount;
-            int iconSize3 = (iconFormat2 << 10) * iconCount3;
-            int temp2 = ~(iconCount3 | -1);
-            int bannerClut2 = (temp2 >> 31) & 0x200;
+            int iconPixelSize2 = iconFormat2 << 10;
+            int iconSize3 = iconCount3 * iconPixelSize2;
+            int negOne2 = ~(iconCount3 | -1);
+            int clutSize2 = 0x200;
+            int bannerClutMask2 = negOne2 >> 31;
+            int iconClutMask2 = negOne2 >> 31;
+            int bannerClut2 = clutSize2 & bannerClutMask2;
             int bannerSize2 = iconFormat2 * 0xC00;
-            int iconClut2 = (temp2 >> 31) & 0x200;
+            int iconClut2 = clutSize2 & iconClutMask2;
             int total2 = bannerClut2 + bannerSize2;
             total2 += iconSize3;
             total2 += iconClut2;

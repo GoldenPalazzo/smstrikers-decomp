@@ -929,7 +929,7 @@ FuzzyVariant Fuzzy::ShouldIAttemptOneTimer(cFielder* TheFielder)
 
 /**
  * Offset/Address/Size: 0xB89C | 0x80075A6C | size: 0x8A8
- * TODO: 98.14% match - remaining register allocation differs in cache
+ * TODO: 98.27% match - remaining register allocation differs in cache
  * pointer/hash/sret paths and second confidence gate temporaries.
  */
 FuzzyVariant Fuzzy::GetBestLooseBallPassTarget(cFielder* TheFielder)
@@ -966,18 +966,18 @@ FuzzyVariant Fuzzy::GetBestLooseBallPassTarget(cFielder* TheFielder)
 
         FuzzyVariant theBestPassTarget = GetBestPassTarget((cPlayer*)TheFielder);
 
-        fTrueConfidence = (theBestPassTarget.Confidence <= fConfidence) ? theBestPassTarget.Confidence : fConfidence;
-        fFalseConfidence = 1.0f - fTrueConfidence;
-        fMinVal = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
-        fMaxVal = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
-        fBranchRatio = fMinVal / fMaxVal;
+        float fPassConfidence = (theBestPassTarget.Confidence <= fConfidence) ? theBestPassTarget.Confidence : fConfidence;
+        float fPassFalseConfidence = 1.0f - fPassConfidence;
+        float fPassMinVal = (fPassConfidence <= fPassFalseConfidence) ? fPassConfidence : fPassFalseConfidence;
+        float fPassMaxVal = (fPassConfidence >= fPassFalseConfidence) ? fPassConfidence : fPassFalseConfidence;
+        float fPassBranchRatio = fPassMinVal / fPassMaxVal;
 
-        if (fTrueConfidence > 0.0f)
+        if (fPassConfidence > 0.0f)
         {
             SaveConfidence PushDOM(&fConfidence);
-            fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
-            if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
-                fConfidence = (float)(double)fConfidence * fBranchRatio;
+            fConfidence = (fConfidence <= fPassConfidence) ? fConfidence : fPassConfidence;
+            if (fConfidence < fPassConfidence && fPassConfidence < 0.5f)
+                fConfidence = (float)(double)fConfidence * fPassBranchRatio;
             if (fConfidence > 0.0f)
             {
                 fBestConfidence = fConfidence;
@@ -1264,9 +1264,9 @@ FuzzyVariant Fuzzy::GetBestPassTarget(cPlayer* ThePlayer)
 
 /**
  * Offset/Address/Size: 0xA138 | 0x80074308 | size: 0xAFC
- * TODO: 98.61% match - residual diffs are branch-ratio transient registers,
- *       weighted-score expression registers, FuzzyVariant temporary
- *       stack-slot ordering, and sda21 pool-label numbering.
+ * TODO: 99.61% match - remaining diffs are weighted-score expression
+ *       registers, FuzzyVariant temporary stack-slot ordering, and sda21
+ *       pool-label numbering.
  */
 FuzzyVariant Fuzzy::GoodPassTargetFrom(cFielder* TheTargetFielder, cFielder* TheBallOwner)
 {
@@ -1278,8 +1278,9 @@ FuzzyVariant Fuzzy::GoodPassTargetFrom(cFielder* TheTargetFielder, cFielder* The
 
     float fTrueConfidence = Incapacitated((cPlayer*)TheTargetFielder);
     fFalseConfidence = 1.0f - fTrueConfidence;
-    float fBranchRatio = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
-    fBranchRatio = fBranchRatio / ((fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence);
+    float fMinVal = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+    float fMaxVal = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+    float fBranchRatio = fMinVal / fMaxVal;
 
     if (fTrueConfidence > 0.0f)
     {
@@ -1311,8 +1312,9 @@ FuzzyVariant Fuzzy::GoodPassTargetFrom(cFielder* TheTargetFielder, cFielder* The
 
         float fTrueConfidenceNear = 1.0f - NearTo((cPlayer*)TheTargetFielder, (cPlayer*)TheBallOwner);
         float fFalseConfidenceNear = 1.0f - fTrueConfidenceNear;
-        float fBranchRatioNear = (fTrueConfidenceNear <= fFalseConfidenceNear) ? fTrueConfidenceNear : fFalseConfidenceNear;
-        fBranchRatioNear = fBranchRatioNear / ((fTrueConfidenceNear >= fFalseConfidenceNear) ? fTrueConfidenceNear : fFalseConfidenceNear);
+        float fMinValNear = (fTrueConfidenceNear <= fFalseConfidenceNear) ? fTrueConfidenceNear : fFalseConfidenceNear;
+        float fMaxValNear = (fTrueConfidenceNear >= fFalseConfidenceNear) ? fTrueConfidenceNear : fFalseConfidenceNear;
+        float fBranchRatioNear = fMinValNear / fMaxValNear;
 
         if (fTrueConfidenceNear > 0.0f)
         {
@@ -1343,8 +1345,9 @@ FuzzyVariant Fuzzy::GoodPassTargetFrom(cFielder* TheTargetFielder, cFielder* The
                                    + fTotalSum * 0.2f;
 
             float fFalseConfidence2 = 1.0f - fTrueConfidence2;
-            float fBranchRatio2 = (fTrueConfidence2 <= fFalseConfidence2) ? fTrueConfidence2 : fFalseConfidence2;
-            fBranchRatio2 = fBranchRatio2 / ((fTrueConfidence2 >= fFalseConfidence2) ? fTrueConfidence2 : fFalseConfidence2);
+            float fMinVal2 = (fTrueConfidence2 <= fFalseConfidence2) ? fTrueConfidence2 : fFalseConfidence2;
+            float fMaxVal2 = (fTrueConfidence2 >= fFalseConfidence2) ? fTrueConfidence2 : fFalseConfidence2;
+            float fBranchRatio2 = fMinVal2 / fMaxVal2;
 
             if (fTrueConfidence2 > 0.0f)
             {
@@ -1362,91 +1365,94 @@ FuzzyVariant Fuzzy::GoodPassTargetFrom(cFielder* TheTargetFielder, cFielder* The
                     FuzzyVariant fvResult(fConfidence * fCaptainBonus);
                     bestValue = fvResult;
                 }
+            }
 
-                float fTrueConfidence3 = NearToTheirNet((cPlayer*)TheTargetFielder);
-                float fFalseConfidence3 = 1.0f - fTrueConfidence3;
-                float fBranchRatio3 = (fTrueConfidence3 <= fFalseConfidence3) ? fTrueConfidence3 : fFalseConfidence3;
-                fBranchRatio3 = fBranchRatio3 / ((fTrueConfidence3 >= fFalseConfidence3) ? fTrueConfidence3 : fFalseConfidence3);
+            float fTrueConfidence3 = NearToTheirNet((cPlayer*)TheTargetFielder);
+            float fFalseConfidence3 = 1.0f - fTrueConfidence3;
+            float fMinVal3 = (fTrueConfidence3 <= fFalseConfidence3) ? fTrueConfidence3 : fFalseConfidence3;
+            float fMaxVal3 = (fTrueConfidence3 >= fFalseConfidence3) ? fTrueConfidence3 : fFalseConfidence3;
+            float fBranchRatio3 = fMinVal3 / fMaxVal3;
 
-                if (fTrueConfidence3 > 0.0f)
+            if (fTrueConfidence3 > 0.0f)
+            {
+                SaveConfidence PushDOM(&fConfidence);
+
+                fConfidence = (fConfidence <= fTrueConfidence3) ? fConfidence : fTrueConfidence3;
+                if ((fConfidence < fTrueConfidence3) && (fTrueConfidence3 < 0.5f))
                 {
-                    SaveConfidence PushDOM(&fConfidence);
-
-                    fConfidence = (fConfidence <= fTrueConfidence3) ? fConfidence : fTrueConfidence3;
-                    if ((fConfidence < fTrueConfidence3) && (fTrueConfidence3 < 0.5f))
-                    {
-                        fConfidence = (float)(double)fConfidence * fBranchRatio3;
-                    }
-
-                    float fLastBallOwner = LastBallOwner((cPlayer*)TheTargetFielder);
-                    float fOpenToBallOwner = OpenTo((cPlayer*)TheBallOwner, (cPlayer*)TheTargetFielder);
-                    float fDownfield = DownfieldFrom((cPlayer*)TheBallOwner, (cPlayer*)TheTargetFielder);
-
-                    float fTrueConfidence4 = (fDownfield * 0.2f)
-                                           + (fTotalSum * 0.425f)
-                                           + (fOpenToBallOwner * 0.2f)
-                                           + ((1.0f - fLastBallOwner) * 0.175f);
-                    float fFalseConfidence4 = 1.0f - fTrueConfidence4;
-                    float fBranchRatio4 = (fTrueConfidence4 <= fFalseConfidence4) ? fTrueConfidence4 : fFalseConfidence4;
-                    fBranchRatio4 = fBranchRatio4 / ((fTrueConfidence4 >= fFalseConfidence4) ? fTrueConfidence4 : fFalseConfidence4);
-
-                    if (fTrueConfidence4 > 0.0f)
-                    {
-                        SaveConfidence PushDOM(&fConfidence);
-
-                        fConfidence = (fConfidence <= fTrueConfidence4) ? fConfidence : fTrueConfidence4;
-                        if ((fConfidence < fTrueConfidence4) && (fTrueConfidence4 < 0.5f))
-                        {
-                            fConfidence = (float)(double)fConfidence * fBranchRatio4;
-                        }
-
-                        if (fConfidence > fBestConfidence)
-                        {
-                            fBestConfidence = fConfidence;
-                            FuzzyVariant fvResult(fConfidence * fCaptainBonus);
-                            bestValue = fvResult;
-                        }
-                    }
+                    fConfidence = (float)(double)fConfidence * fBranchRatio3;
                 }
 
-                if (fFalseConfidence3 > 0.0f)
+                float fLastBallOwner = LastBallOwner((cPlayer*)TheTargetFielder);
+                float fOpenToBallOwner = OpenTo((cPlayer*)TheBallOwner, (cPlayer*)TheTargetFielder);
+                float fDownfield = DownfieldFrom((cPlayer*)TheBallOwner, (cPlayer*)TheTargetFielder);
+
+                float fTrueConfidence4 = (fDownfield * 0.2f)
+                                       + (fTotalSum * 0.425f)
+                                       + (fOpenToBallOwner * 0.2f)
+                                       + ((1.0f - fLastBallOwner) * 0.175f);
+                float fFalseConfidence4 = 1.0f - fTrueConfidence4;
+                float fMinVal4 = (fTrueConfidence4 <= fFalseConfidence4) ? fTrueConfidence4 : fFalseConfidence4;
+                float fMaxVal4 = (fTrueConfidence4 >= fFalseConfidence4) ? fTrueConfidence4 : fFalseConfidence4;
+                float fBranchRatio4 = fMinVal4 / fMaxVal4;
+
+                if (fTrueConfidence4 > 0.0f)
                 {
                     SaveConfidence PushDOM(&fConfidence);
 
-                    fConfidence = (fConfidence <= fFalseConfidence3) ? fConfidence : fFalseConfidence3;
-                    if ((fConfidence < fFalseConfidence3) && (fFalseConfidence3 < 0.5f))
+                    fConfidence = (fConfidence <= fTrueConfidence4) ? fConfidence : fTrueConfidence4;
+                    if ((fConfidence < fTrueConfidence4) && (fTrueConfidence4 < 0.5f))
                     {
-                        fConfidence = (float)(double)fConfidence * fBranchRatio3;
+                        fConfidence = (float)(double)fConfidence * fBranchRatio4;
                     }
 
-                    float fLastBallOwner = LastBallOwner((cPlayer*)TheTargetFielder);
-                    float fOpenToBallOwner = OpenTo((cPlayer*)TheBallOwner, (cPlayer*)TheTargetFielder);
-                    float fDownfield = DownfieldFrom((cPlayer*)TheBallOwner, (cPlayer*)TheTargetFielder);
-
-                    float fTrueConfidence4 = (fDownfield * 0.35f)
-                                           + (fTotalSum * 0.3f)
-                                           + (fOpenToBallOwner * 0.2f)
-                                           + ((1.0f - fLastBallOwner) * 0.15f);
-                    float fFalseConfidence4 = 1.0f - fTrueConfidence4;
-                    float fBranchRatio4 = (fTrueConfidence4 <= fFalseConfidence4) ? fTrueConfidence4 : fFalseConfidence4;
-                    fBranchRatio4 = fBranchRatio4 / ((fTrueConfidence4 >= fFalseConfidence4) ? fTrueConfidence4 : fFalseConfidence4);
-
-                    if (fTrueConfidence4 > 0.0f)
+                    if (fConfidence > fBestConfidence)
                     {
-                        SaveConfidence PushDOM(&fConfidence);
+                        fBestConfidence = fConfidence;
+                        FuzzyVariant fvResult(fConfidence * fCaptainBonus);
+                        bestValue = fvResult;
+                    }
+                }
+            }
 
-                        fConfidence = (fConfidence <= fTrueConfidence4) ? fConfidence : fTrueConfidence4;
-                        if ((fConfidence < fTrueConfidence4) && (fTrueConfidence4 < 0.5f))
-                        {
-                            fConfidence = (float)(double)fConfidence * fBranchRatio4;
-                        }
+            if (fFalseConfidence3 > 0.0f)
+            {
+                SaveConfidence PushDOM(&fConfidence);
 
-                        if (fConfidence > fBestConfidence)
-                        {
-                            fBestConfidence = fConfidence;
-                            FuzzyVariant fvResult(fConfidence * fCaptainBonus);
-                            bestValue = fvResult;
-                        }
+                fConfidence = (fConfidence <= fFalseConfidence3) ? fConfidence : fFalseConfidence3;
+                if ((fConfidence < fFalseConfidence3) && (fFalseConfidence3 < 0.5f))
+                {
+                    fConfidence = (float)(double)fConfidence * fBranchRatio3;
+                }
+
+                float fLastBallOwner = LastBallOwner((cPlayer*)TheTargetFielder);
+                float fOpenToBallOwner = OpenTo((cPlayer*)TheBallOwner, (cPlayer*)TheTargetFielder);
+                float fDownfield = DownfieldFrom((cPlayer*)TheBallOwner, (cPlayer*)TheTargetFielder);
+
+                float fTrueConfidence4 = (fDownfield * 0.35f)
+                                       + (fTotalSum * 0.3f)
+                                       + (fOpenToBallOwner * 0.2f)
+                                       + ((1.0f - fLastBallOwner) * 0.15f);
+                float fFalseConfidence4 = 1.0f - fTrueConfidence4;
+                float fMinVal4 = (fTrueConfidence4 <= fFalseConfidence4) ? fTrueConfidence4 : fFalseConfidence4;
+                float fMaxVal4 = (fTrueConfidence4 >= fFalseConfidence4) ? fTrueConfidence4 : fFalseConfidence4;
+                float fBranchRatio4 = fMinVal4 / fMaxVal4;
+
+                if (fTrueConfidence4 > 0.0f)
+                {
+                    SaveConfidence PushDOM(&fConfidence);
+
+                    fConfidence = (fConfidence <= fTrueConfidence4) ? fConfidence : fTrueConfidence4;
+                    if ((fConfidence < fTrueConfidence4) && (fTrueConfidence4 < 0.5f))
+                    {
+                        fConfidence = (float)(double)fConfidence * fBranchRatio4;
+                    }
+
+                    if (fConfidence > fBestConfidence)
+                    {
+                        fBestConfidence = fConfidence;
+                        FuzzyVariant fvResult(fConfidence * fCaptainBonus);
+                        bestValue = fvResult;
                     }
                 }
             }

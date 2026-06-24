@@ -517,8 +517,7 @@ void EmissionManager::AddError(const char*, ...)
 
 /**
  * Offset/Address/Size: 0x24C | 0x801F8B6C | size: 0x284
- * TODO: 99.04% match - remaining register allocation diffs in the inner replay/new path
- * (r28/r29 role swap) plus cmpw operand order in initial recording cleanup
+ * TODO: 99.32% match - remaining r28/r29 allocation diffs in the inner replay/new path
  */
 void EmissionManager::Replay(LoadFrame& frame)
 {
@@ -534,7 +533,8 @@ void EmissionManager::Replay(LoadFrame& frame)
             while (current != nullptr)
             {
                 next = (EmissionController*)current->m_nextNode;
-                if ((current->m_GlView == defaultView) && (current->m_uUserData + 0x21530000 != 0x0000BEEF))
+                eGLView glView = (eGLView)current->m_GlView;
+                if ((defaultView == glView) && (current->m_uUserData + 0x21530000 != 0x0000BEEF))
                 {
                     controllers->Remove(current);
                     delete current;

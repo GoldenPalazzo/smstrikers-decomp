@@ -609,8 +609,6 @@ bool ReplayChoreo::Done() const
 
 /**
  * Offset/Address/Size: 0x108 | 0x80127774 | size: 0x23C
- * TODO: 99.86% match - remaining diffs are register swaps when storing GoalScoredData
- * word pairs (+0x8/+0xC and +0x1C/+0x20) into the highlight copy.
  */
 void ReplayChoreo::SaveHighlight(ReplayChoreo::HighlightQuality quality)
 {
@@ -689,19 +687,8 @@ void ReplayChoreo::SaveHighlight(ReplayChoreo::HighlightQuality quality)
 
             *(int*)(highlight + 0x230) = quality;
             *(float*)(highlight + 0x234) = mReplayManager->mTime;
-            *(int*)(highlight + 0x240) = *(int*)((char*)&mGoalScoredData + 4);
-            int x214 = *(int*)((char*)&mGoalScoredData + 8);
-            int x210 = *(int*)((char*)&mGoalScoredData + 0xC);
-            *(int*)(highlight + 0x244) = x210;
-            *(int*)(highlight + 0x248) = x214;
-            *(int*)(highlight + 0x24C) = *(int*)((char*)&mGoalScoredData + 0x10);
-            *(int*)(highlight + 0x250) = *(int*)((char*)&mGoalScoredData + 0x14);
-            *(int*)(highlight + 0x254) = *(int*)((char*)&mGoalScoredData + 0x18);
-            int x228 = *(int*)((char*)&mGoalScoredData + 0x1C);
-            int x224 = *(int*)((char*)&mGoalScoredData + 0x20);
-            *(int*)(highlight + 0x258) = x224;
-            *(int*)(highlight + 0x25C) = x228;
-            *(int*)(highlight + 0x260) = *(int*)((char*)&mGoalScoredData + 0x24);
+            *(GoalScoredData*)(highlight + 0x23C) = mGoalScoredData;
+            *(int*)(highlight + 0x260) = mReplayPad;
             *(int*)(highlight + 0x238) = mCamera.mSideOfInterest;
         }
     }

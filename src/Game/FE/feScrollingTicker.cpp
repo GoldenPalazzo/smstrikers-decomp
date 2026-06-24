@@ -130,7 +130,7 @@ void ScrollingTickerScene::OpenMessengerNow()
 
 /**
  * Offset/Address/Size: 0x3C4 | 0x800A001C | size: 0x20C
- * TODO: 99.47% match - remaining f28/f31 swap in scale values (z component path)
+ * TODO: 99.50% match - remaining closedY f31/f28 swap, x/z scale register swap,
  *       and SDA vs stack loads for interpolation factor in right/gray interpolation.
  */
 void ScrollingTickerScene::OpenMessenger()
@@ -158,14 +158,12 @@ void ScrollingTickerScene::OpenMessenger()
     m_backRectangle->SetAssetScale(x, m_grayOpenScale.f.y, 1.0f);
 
     f32 val = from;
-    f32 sy;
-    f32 sx;
-    f32 sz;
-    sx = m_ballClosedScale.f.x * val;
-    sy = m_ballClosedScale.f.y * val;
-    sz = m_ballClosedScale.f.z * val;
-    m_leftBall->SetAssetScale(sx, sy, sz);
-    m_rightBall->SetAssetScale(sx, sy, sz);
+    feVector3 scale;
+    scale.f.x = m_ballClosedScale.f.x * val;
+    scale.f.y = m_ballClosedScale.f.y * val;
+    scale.f.z = m_ballClosedScale.f.z * val;
+    m_leftBall->SetAssetScale(scale.f.x, scale.f.y, scale.f.z);
+    m_rightBall->SetAssetScale(scale.f.x, scale.f.y, scale.f.z);
 
     m_backRectangle->SetAssetScale(
         m_grayClosedScale.f.x * val,

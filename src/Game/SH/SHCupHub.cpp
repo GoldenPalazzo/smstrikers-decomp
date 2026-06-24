@@ -1697,26 +1697,28 @@ void CupHubScene::CreateKnockout()
             colour = mTextColour;
         }
 
+        volatile InlineHasher hB, hA, h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
+        volatile InlineHasher g5;
+        unsigned long hash;
+
+        h0.m_Hash = 0;
+        h1.m_Hash = 0;
+        h2.m_Hash = 0;
+        h3.m_Hash = 0;
+        h4.m_Hash = 0;
+        h5.m_Hash = 0;
+        h6.m_Hash = 0;
+        h7.m_Hash = 0;
+
+        hash = nlStringLowerHash(TEAM_NAMES[i]);
+        h8.m_Hash = hash;
+        h9.m_Hash = hash;
+
+        hash = nlStringLowerHash(CUP_HUB_LAYER_NAME);
+        hA.m_Hash = hash;
+        hB.m_Hash = hash;
+
         {
-            volatile InlineHasher hB, hA, h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
-
-            h0.m_Hash = 0;
-            h1.m_Hash = 0;
-            h2.m_Hash = 0;
-            h3.m_Hash = 0;
-            h4.m_Hash = 0;
-            h5.m_Hash = 0;
-            h6.m_Hash = 0;
-            h7.m_Hash = 0;
-
-            unsigned long hash = nlStringLowerHash(TEAM_NAMES[i]);
-            h8.m_Hash = hash;
-            h9.m_Hash = hash;
-
-            hash = nlStringLowerHash(CUP_HUB_LAYER_NAME);
-            hA.m_Hash = hash;
-            hB.m_Hash = hash;
-
             union
             {
                 FindCompByValue byValue;
@@ -1739,18 +1741,22 @@ void CupHubScene::CreateKnockout()
         pComp->Update(0.0f);
 
         {
-            volatile InlineHasher h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
+            volatile InlineHasher g7, g6, g4, g3, g2, g1, g0;
 
-            h0.m_Hash = 0;
+            g0.m_Hash = 0;
             h1.m_Hash = 0;
-            h2.m_Hash = 0;
+            g1.m_Hash = 0;
             h3.m_Hash = 0;
-            h4.m_Hash = 0;
+            g2.m_Hash = 0;
             h5.m_Hash = 0;
+            g3.m_Hash = 0;
+            h7.m_Hash = 0;
+            g4.m_Hash = 0;
+            g5.m_Hash = 0;
 
-            unsigned long hash = nlStringLowerHash("team");
-            h6.m_Hash = hash;
-            h7.m_Hash = hash;
+            hash = nlStringLowerHash("team");
+            g6.m_Hash = hash;
+            g7.m_Hash = hash;
 
             union
             {
@@ -1761,12 +1767,12 @@ void CupHubScene::CreateKnockout()
             findText.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
             pTextInstance = findText.byRef(
                 pComp->GetActiveSlide(),
+                (InlineHasher&)g7,
+                (InlineHasher&)g5,
                 (InlineHasher&)h7,
                 (InlineHasher&)h5,
                 (InlineHasher&)h3,
-                (InlineHasher&)h1,
-                (InlineHasher&)h2,
-                (InlineHasher&)h0);
+                (InlineHasher&)h1);
         }
 
         pTextInstance->m_LocStrId = GetLOCTeamName(currentTeam);
@@ -1774,18 +1780,22 @@ void CupHubScene::CreateKnockout()
         pTextInstance->SetAssetColour(colour);
 
         {
-            volatile InlineHasher h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
+            volatile InlineHasher g7, g6, g4, g3, g2, g1, g0;
 
-            h0.m_Hash = 0;
+            g0.m_Hash = 0;
             h1.m_Hash = 0;
-            h2.m_Hash = 0;
+            g1.m_Hash = 0;
             h3.m_Hash = 0;
-            h4.m_Hash = 0;
+            g2.m_Hash = 0;
             h5.m_Hash = 0;
+            g3.m_Hash = 0;
+            h7.m_Hash = 0;
+            g4.m_Hash = 0;
+            g5.m_Hash = 0;
 
-            unsigned long hash = nlStringLowerHash("theXfactor");
-            h6.m_Hash = hash;
-            h7.m_Hash = hash;
+            hash = nlStringLowerHash("theXfactor");
+            g6.m_Hash = hash;
+            g7.m_Hash = hash;
 
             union
             {
@@ -1796,12 +1806,12 @@ void CupHubScene::CreateKnockout()
             findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
             pXComponent = findComp.byRef(
                 pComp->GetActiveSlide(),
+                (InlineHasher&)g7,
+                (InlineHasher&)g5,
                 (InlineHasher&)h7,
                 (InlineHasher&)h5,
                 (InlineHasher&)h3,
-                (InlineHasher&)h1,
-                (InlineHasher&)h2,
-                (InlineHasher&)h0);
+                (InlineHasher&)h1);
         }
 
         if ((loserTeams[i / 2] == currentTeam) && mHasHumanTeamPlayed)
@@ -1817,18 +1827,22 @@ void CupHubScene::CreateKnockout()
         pComp->Update(0.0f);
 
         {
-            volatile InlineHasher h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
+            volatile InlineHasher g7, g6, g4, g3, g2, g1, g0;
 
-            h0.m_Hash = 0;
+            g0.m_Hash = 0;
             h1.m_Hash = 0;
-            h2.m_Hash = 0;
+            g1.m_Hash = 0;
             h3.m_Hash = 0;
-            h4.m_Hash = 0;
+            g2.m_Hash = 0;
             h5.m_Hash = 0;
+            g3.m_Hash = 0;
+            h7.m_Hash = 0;
+            g4.m_Hash = 0;
+            g5.m_Hash = 0;
 
-            unsigned long hash = nlStringLowerHash("team");
-            h6.m_Hash = hash;
-            h7.m_Hash = hash;
+            hash = nlStringLowerHash("team");
+            g6.m_Hash = hash;
+            g7.m_Hash = hash;
 
             union
             {
@@ -1839,12 +1853,12 @@ void CupHubScene::CreateKnockout()
             findText.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
             pTextInstance = findText.byRef(
                 pComp->GetActiveSlide(),
+                (InlineHasher&)g7,
+                (InlineHasher&)g5,
                 (InlineHasher&)h7,
                 (InlineHasher&)h5,
                 (InlineHasher&)h3,
-                (InlineHasher&)h1,
-                (InlineHasher&)h2,
-                (InlineHasher&)h0);
+                (InlineHasher&)h1);
         }
 
         pTextInstance->m_LocStrId = GetLOCTeamName(currentTeam);
@@ -1852,18 +1866,22 @@ void CupHubScene::CreateKnockout()
         pTextInstance->SetAssetColour(colour);
 
         {
-            volatile InlineHasher h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
+            volatile InlineHasher g7, g6, g4, g3, g2, g1, g0;
 
-            h0.m_Hash = 0;
+            g0.m_Hash = 0;
             h1.m_Hash = 0;
-            h2.m_Hash = 0;
+            g1.m_Hash = 0;
             h3.m_Hash = 0;
-            h4.m_Hash = 0;
+            g2.m_Hash = 0;
             h5.m_Hash = 0;
+            g3.m_Hash = 0;
+            h7.m_Hash = 0;
+            g4.m_Hash = 0;
+            g5.m_Hash = 0;
 
-            unsigned long hash = nlStringLowerHash("theXfactor");
-            h6.m_Hash = hash;
-            h7.m_Hash = hash;
+            hash = nlStringLowerHash("theXfactor");
+            g6.m_Hash = hash;
+            g7.m_Hash = hash;
 
             union
             {
@@ -1874,12 +1892,12 @@ void CupHubScene::CreateKnockout()
             findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
             pXComponent = findComp.byRef(
                 pComp->GetActiveSlide(),
+                (InlineHasher&)g7,
+                (InlineHasher&)g5,
                 (InlineHasher&)h7,
                 (InlineHasher&)h5,
                 (InlineHasher&)h3,
-                (InlineHasher&)h1,
-                (InlineHasher&)h2,
-                (InlineHasher&)h0);
+                (InlineHasher&)h1);
         }
 
         pXComponent->m_bVisible = false;
@@ -1888,18 +1906,22 @@ void CupHubScene::CreateKnockout()
         pComp->Update(0.0f);
 
         {
-            volatile InlineHasher h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
+            volatile InlineHasher g7, g6, g4, g3, g2, g1, g0;
 
-            h0.m_Hash = 0;
+            g0.m_Hash = 0;
             h1.m_Hash = 0;
-            h2.m_Hash = 0;
+            g1.m_Hash = 0;
             h3.m_Hash = 0;
-            h4.m_Hash = 0;
+            g2.m_Hash = 0;
             h5.m_Hash = 0;
+            g3.m_Hash = 0;
+            h7.m_Hash = 0;
+            g4.m_Hash = 0;
+            g5.m_Hash = 0;
 
-            unsigned long hash = nlStringLowerHash("team");
-            h6.m_Hash = hash;
-            h7.m_Hash = hash;
+            hash = nlStringLowerHash("team");
+            g6.m_Hash = hash;
+            g7.m_Hash = hash;
 
             union
             {
@@ -1910,12 +1932,12 @@ void CupHubScene::CreateKnockout()
             findText.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
             pTextInstance = findText.byRef(
                 pComp->GetActiveSlide(),
+                (InlineHasher&)g7,
+                (InlineHasher&)g5,
                 (InlineHasher&)h7,
                 (InlineHasher&)h5,
                 (InlineHasher&)h3,
-                (InlineHasher&)h1,
-                (InlineHasher&)h2,
-                (InlineHasher&)h0);
+                (InlineHasher&)h1);
         }
 
         pTextInstance->m_LocStrId = GetLOCTeamName(currentTeam);
@@ -1923,18 +1945,22 @@ void CupHubScene::CreateKnockout()
         pTextInstance->SetAssetColour(colour);
 
         {
-            volatile InlineHasher h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
+            volatile InlineHasher g7, g6, g4, g3, g2, g1, g0;
 
-            h0.m_Hash = 0;
+            g0.m_Hash = 0;
             h1.m_Hash = 0;
-            h2.m_Hash = 0;
+            g1.m_Hash = 0;
             h3.m_Hash = 0;
-            h4.m_Hash = 0;
+            g2.m_Hash = 0;
             h5.m_Hash = 0;
+            g3.m_Hash = 0;
+            h7.m_Hash = 0;
+            g4.m_Hash = 0;
+            g5.m_Hash = 0;
 
-            unsigned long hash = nlStringLowerHash("theXfactor");
-            h6.m_Hash = hash;
-            h7.m_Hash = hash;
+            hash = nlStringLowerHash("theXfactor");
+            g6.m_Hash = hash;
+            g7.m_Hash = hash;
 
             union
             {
@@ -1945,12 +1971,12 @@ void CupHubScene::CreateKnockout()
             findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
             pXComponent = findComp.byRef(
                 pComp->GetActiveSlide(),
+                (InlineHasher&)g7,
+                (InlineHasher&)g5,
                 (InlineHasher&)h7,
                 (InlineHasher&)h5,
                 (InlineHasher&)h3,
-                (InlineHasher&)h1,
-                (InlineHasher&)h2,
-                (InlineHasher&)h0);
+                (InlineHasher&)h1);
         }
 
         if ((loserTeams[i / 2] == currentTeam) && mHasHumanTeamPlayed)

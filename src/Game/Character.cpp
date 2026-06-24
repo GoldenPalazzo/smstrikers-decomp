@@ -1690,10 +1690,8 @@ void AIEventHandler(Event* pEvent, void*)
                 cPlayer* pPrevOwner = g_pBall->m_pPrevOwner;
                 if (pPrevOwner->m_eClassType == FIELDER)
                 {
-                    s16 teamID = pPrevOwner->m_pTeam->m_nSide;
-                    eTeamID eTeam = nlSingleton<GameInfoManager>::s_pInstance->GetTeam(teamID);
-                    const char* teamName = GetTeamName(eTeam);
-                    BasicString<char, Detail::TempStringAllocator> effectName(teamName);
+                    BasicString<char, Detail::TempStringAllocator> effectName(
+                        GetTeamName(nlSingleton<GameInfoManager>::s_pInstance->GetTeam((s16)pPrevOwner->m_pTeam->m_nSide)));
                     effectName.AppendInPlace("_shoot_to_score_catch");
                     pGroup = fxGetGroup(effectName.c_str());
                 }
@@ -1845,9 +1843,9 @@ void AIEventHandler(Event* pEvent, void*)
         {
             nlVector3 v3AngVel;
             pPhysicsBall->GetAngularVelocity(&v3AngVel);
+            v3AngVel.f.z = 0.6f * v3AngVel.f.z;
             v3AngVel.f.x = 0.6f * v3AngVel.f.x;
             v3AngVel.f.y = 0.6f * v3AngVel.f.y;
-            v3AngVel.f.z = 0.6f * v3AngVel.f.z;
             pPhysicsBall->SetAngularVelocity(v3AngVel);
         }
 
@@ -2267,8 +2265,8 @@ void AIEventHandler(Event* pEvent, void*)
         if (g_pGame == 0)
             break;
 
-        int state = g_pGame->m_eGameState;
         bool bShouldStart = false;
+        int state = g_pGame->m_eGameState;
         if (state == 4 || state == 5)
         {
             bShouldStart = true;
@@ -2285,8 +2283,8 @@ void AIEventHandler(Event* pEvent, void*)
         if (g_pGame == 0)
             break;
 
-        int state = g_pGame->m_eGameState;
         bool bIsGameplay = false;
+        int state = g_pGame->m_eGameState;
         if (state == 4 || state == 5)
         {
             bIsGameplay = true;

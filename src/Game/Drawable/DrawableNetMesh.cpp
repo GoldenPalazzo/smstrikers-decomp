@@ -3,6 +3,7 @@
 #include "Game/Replay.h"
 #include "Game/Field.h"
 #include "Game/Net.h"
+#include "Game/World.h"
 #include "NL/gl/gl.h"
 #include "NL/gl/glDraw3.h"
 #include "NL/gl/glMatrix.h"
@@ -215,7 +216,6 @@ void DrawableNetMesh::Render() const
     extern unsigned char sbCopyVertices;
     extern unsigned char sbUseCheckerTexture;
     extern unsigned char sbUseDisplayLists;
-    extern unsigned char sbShowPositiveXNetDuringHyperStrike__5World;
 
     if (!sbRenderAnimatedNetMesh || !mbInitialized || !NetMesh::s_bAnimatedNetMeshEnabled)
     {
@@ -225,7 +225,7 @@ void DrawableNetMesh::Render() const
     if (World::sbIsHyperShootToScoreRenderingEnabled)
     {
         int netIndex = miNetIndex;
-        if ((netIndex == 1 && sbShowPositiveXNetDuringHyperStrike__5World) || (netIndex == 0 && !sbShowPositiveXNetDuringHyperStrike__5World))
+        if ((netIndex == 1 && World::sbShowPositiveXNetDuringHyperStrike) || (netIndex == 0 && !World::sbShowPositiveXNetDuringHyperStrike))
         {
             return;
         }
@@ -321,7 +321,7 @@ void DrawableNetMesh::Render() const
         {
             int i;
             unsigned short* pIndex = pTriIndices;
-            for (i = 0; i < m_unk18; pIndex++, i++)
+            for (i = 0; i < ((const volatile DrawableNetMesh*)this)->m_unk18; pIndex++, i++)
             {
                 unsigned short index = *pIndex;
                 float darkPos = WorldDarkening::Instance().mPos;

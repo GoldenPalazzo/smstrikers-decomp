@@ -660,10 +660,7 @@ bool StopSFX(unsigned long handle)
 
 /**
  * Offset/Address/Size: 0xD18 | 0x801C5514 | size: 0x244
- * TODO: 99.10% match - remaining differences are register allocation in the
- * pitch/filter parameter writes (r5/r0 compare and r3/r0, r3/r4 swaps).
  */
-#pragma opt_common_subs off
 unsigned long PlaySFX(const SFXStartInfo& info)
 {
     const SFXStartInfo* pInfo = &info;
@@ -801,7 +798,6 @@ unsigned long PlaySFX(const SFXStartInfo& info)
 
     return sndFXStartParaInfo((u16)pInfo->uSFXID, uVolume, uPan, 0, &tempParaInfo);
 }
-#pragma opt_common_subs on
 
 /**
  * Offset/Address/Size: 0xF5C | 0x801C5758 | size: 0x120

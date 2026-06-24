@@ -251,31 +251,13 @@ void FEScrollText::SetDisplayMessage(unsigned long hash)
     SetDisplayMessage(message);
 }
 
-/**
- * Offset/Address/Size: 0x4F0 | 0x800C8EC4 | size: 0x578
- * TODO: 90.9% match - this pointer and loop locals use different saved registers; escape sequence locals use different stack slots
- */
-void FEScrollText::SetDisplayMessage(const BasicString<unsigned short, Detail::TempStringAllocator>& theMessage)
+static inline void BuildFontCharStringForScroll(FontCharString& fontcharstring, FEScrollText* self)
 {
-    m_message = theMessage;
-    m_msgTime = 0.0f;
-
-    if (m_textFont == NULL)
-    {
-        m_textFont = ((FEFontResource*)m_controlText->m_component->pChildren)->m_font;
-    }
-
-    if (m_textFont == NULL)
-    {
-        return;
-    }
-
-    FontCharString fontcharstring;
-    fontcharstring.m_pString = m_textBuffer;
+    fontcharstring.m_pString = self->m_textBuffer;
     fontcharstring.m_InternalBuffer = 0;
 
-    const unsigned short* src = m_message.c_str();
-    nlFont* font = m_textFont;
+    const unsigned short* src = self->m_message.c_str();
+    nlFont* font = self->m_textFont;
     unsigned short* dest = fontcharstring.m_pString;
     unsigned short escBegin = nlEscapeSequence::ESCAPE_BEGIN;
 
@@ -298,25 +280,24 @@ void FEScrollText::SetDisplayMessage(const BasicString<unsigned short, Detail::T
             {
                 nlFont::GlyphInfo key;
                 key.UnicodeChar = ch;
-                if (font->m_pExtendedGlyphs != NULL && font->m_ExtendedGlyphCount != 0)
+                nlFont::GlyphInfo* result;
+                if (font->m_pExtendedGlyphs != NULL && font->m_ExtendedGlyphCount != 0 && (result = nlBSearch<nlFont::GlyphInfo, nlFont::GlyphInfo>(key, font->m_pExtendedGlyphs, font->m_ExtendedGlyphCount)) != NULL)
                 {
-                    nlFont::GlyphInfo* result = nlBSearch<nlFont::GlyphInfo, nlFont::GlyphInfo>(key, font->m_pExtendedGlyphs, font->m_ExtendedGlyphCount);
-                    if (result != NULL)
-                        ch = (unsigned short)((result - font->m_pExtendedGlyphs) + 0x80);
-                    else
+                    ch = (unsigned short)((result - font->m_pExtendedGlyphs) + 0x80);
+                }
+                else
+                {
+                    ch = 0x30;
+                    while (true)
                     {
-                        ch = 0x30;
-                        while (true)
-                        {
-                            nlFont::GlyphInfo* glyph;
-                            if ((unsigned short)ch > 0x7F)
-                                glyph = &font->m_pExtendedGlyphs[(unsigned short)ch - 0x80];
-                            else
-                                glyph = &font->m_GlyphLookup[(unsigned short)ch - 0x20];
-                            if (glyph->UnicodeChar != 0xFFFF)
-                                break;
-                            ch++;
-                        }
+                        nlFont::GlyphInfo* glyph;
+                        if ((unsigned short)ch > 0x7F)
+                            glyph = &font->m_pExtendedGlyphs[(unsigned short)ch - 0x80];
+                        else
+                            glyph = &font->m_GlyphLookup[(unsigned short)ch - 0x20];
+                        if (glyph->UnicodeChar != 0xFFFF)
+                            break;
+                        ch++;
                     }
                 }
             }
@@ -326,9 +307,32 @@ void FEScrollText::SetDisplayMessage(const BasicString<unsigned short, Detail::T
     }
 
     *dest = 0;
+}
+
+/**
+ * Offset/Address/Size: 0x4F0 | 0x800C8EC4 | size: 0x578
+ * TODO: 97.0% match - escape-copy guard and temporary glyph key stack slot differ
+ */
+void FEScrollText::SetDisplayMessage(const BasicString<unsigned short, Detail::TempStringAllocator>& theMessage)
+{
+    m_message = theMessage;
+    m_msgTime = 0.0f;
+
+    if (m_textFont == NULL)
+    {
+        m_textFont = ((FEFontResource*)m_controlText->m_component->pChildren)->m_font;
+    }
+
+    if (m_textFont == NULL)
+    {
+        return;
+    }
+
+    FontCharString fontcharstring;
+    BuildFontCharStringForScroll(fontcharstring, this);
     m_messageWidth = 0;
 
-    escBegin = nlEscapeSequence::ESCAPE_BEGIN;
+    unsigned short escBegin = nlEscapeSequence::ESCAPE_BEGIN;
     int i = 0;
     while (i < (int)m_message.size() - 1)
     {
@@ -349,7 +353,8 @@ void FEScrollText::SetDisplayMessage(const BasicString<unsigned short, Detail::T
             int charWidth;
             if (i != 0)
             {
-                unsigned short prevChar = fontBuffer[i - 1];
+                int prev = i - 1;
+                unsigned short prevChar = fontBuffer[prev];
                 charWidth = (int)m_textFont->GetCharWidth(mappedCh, prevChar);
             }
             else

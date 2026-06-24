@@ -7,10 +7,8 @@
 #include "Game/Field.h"
 #include "Game/MathHelpers.h"
 
-// static bool init$541;
-// static f32 fDir;
-static bool gbCamFreeze;
 static s32 gnCamType;
+static bool gbCamFreeze;
 
 static f32 gfDistance = 10.0f;
 static f32 gfHeight = 3.0f;
@@ -40,7 +38,7 @@ GoalCamera::~GoalCamera()
 
 /**
  * Offset/Address/Size: 0x0 | 0x801AA59C | size: 0x670
- * TODO: 95.5% match - register allocation in IsPressed gnCamType!=1 section
+ *
  */
 void GoalCamera::Update(float /*dt*/)
 {
@@ -118,8 +116,8 @@ void GoalCamera::Update(float /*dt*/)
         {
             f32 invLen = nlRecipSqrt((dirvec.f.x * dirvec.f.x) + (dirvec.f.y * dirvec.f.y) + (dirvec.f.z * dirvec.f.z), 1);
             nlVec3Scale(dirvec, invLen);
-            dirvec.f.x = dirvec.f.x * -1.0f;
-            dirvec.f.y = dirvec.f.y * -1.0f;
+            dirvec.f.x *= -1.0f;
+            dirvec.f.y *= -1.0f;
         }
 
         nlVec3ScaleAdd(m_vecCamera, gfDistance, dirvec, m_vecTarget);
@@ -160,31 +158,15 @@ void GoalCamera::Update(float /*dt*/)
     {
         if (gnCamType != 1)
         {
-            float dx = m_vecTarget.f.x - ballpos.f.x;
-            float dz = m_vecTarget.f.z - ballpos.f.z;
-            float k = gfSideBias;
-            float kz = k * ballpos.f.z;
-            float k1 = 1.0f - k;
-            float tx = m_vecTarget.f.y;
-            float by = ballpos.f.y;
-            float dy = tx - by;
-            float mx = k1 * m_vecTarget.f.x + k * ballpos.f.x;
-            float my = k1 * tx + k * by;
-            float mz = k1 * m_vecTarget.f.z + kz;
+            nlVec3Sub(dirvec, m_vecTarget, ballpos);
 
-            dirvec.f.x = dx;
-            dirvec.f.z = dz;
-            dirvec.f.y = dy;
-            dirvec.f.z = dx;
-            dirvec.f.x = dy;
-            dirvec.f.y = -dx;
+            nlVec3WeightedSum(midvec, 1.0f - gfSideBias, m_vecTarget, gfSideBias, ballpos);
 
-            midvec.f.x = mx;
-            midvec.f.y = my;
-            midvec.f.z = mz;
+            dirvec.f.z = dirvec.f.x;
+            dirvec.f.x = dirvec.f.y;
+            dirvec.f.y = -dirvec.f.z;
 
-            dirvec.f.x = gfSideMult * dirvec.f.x + mx;
-            dirvec.f.y = gfSideMult * dirvec.f.y + my;
+            nlVec3ScaleAdd(dirvec, gfSideMult, dirvec, midvec);
             dirvec.f.z = gfHeight;
         }
         else if (gnCamType == 1)
@@ -194,8 +176,9 @@ void GoalCamera::Update(float /*dt*/)
             float nx = -y;
 
             dirvec.f.z = x;
+            float x2 = dirvec.f.z;
             dirvec.f.x = nx;
-            dirvec.f.y = x;
+            dirvec.f.y = x2;
 
             nlVec3ScaleAdd(dirvec, gfDistance, dirvec, m_vecTarget);
             dirvec.f.z = m_vecTarget.f.z + gfHeight;

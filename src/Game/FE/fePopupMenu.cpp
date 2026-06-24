@@ -263,7 +263,8 @@ void FEPopupMenu::SetPositions()
     };
     *(Copy88*)&drawInfo = *(Copy88*)&pText->m_DrawInfo;
     messageHeight = (float)(drawInfo.RowCount * pFont->m_Metrics.Height);
-    prevOptionHeight = messageHeight * 0.5f;
+    prevOptionHeight = messageHeight;
+    prevOptionHeight *= 0.5f;
     totalHeight += messageHeight;
     topOfMessage = messagePosition.e[1] + prevOptionHeight;
 

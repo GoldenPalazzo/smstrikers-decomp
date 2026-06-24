@@ -53,6 +53,7 @@ class World
 public:
     static u32 m_uCurrentFrameCount;
     static bool sbIsHyperShootToScoreRenderingEnabled;
+    static bool sbShowPositiveXNetDuringHyperStrike;
 
     World(const char*);
     /* 0x04 */ virtual ~World();

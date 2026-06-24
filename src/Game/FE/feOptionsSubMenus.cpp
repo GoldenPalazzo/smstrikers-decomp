@@ -117,7 +117,7 @@ void TempDisableSound();
 
 /**
  * Offset/Address/Size: 0x210 | 0x800B5254 | size: 0x410
- * TODO: 98.20% match - callback/menu-item loop still uses r24/r26/r27 register coloring instead of target r29/r29/r26.
+ * TODO: 98.41% match - buttonstate/base still use r24/r27 instead of r27/r28; menu item pointer uses r27 instead of r29.
  */
 OptionsSaveLoad::OptionsSaveLoad(FEPresentation* presentation, ButtonComponent::ButtonState buttonstate)
     : OptionsSubMenu(presentation, buttonstate)
@@ -134,6 +134,7 @@ OptionsSaveLoad::OptionsSaveLoad(FEPresentation* presentation, ButtonComponent::
 
     void (*openItem)(TLComponentInstance*) = DoubleHighlite::OpenItem;
     void (*closeItem)(TLComponentInstance*) = DoubleHighlite::CloseItem;
+    MenuItem<TLComponentInstance>* menuItem;
 
     for (int i = 0; i < 2; i++)
     {
@@ -149,7 +150,7 @@ OptionsSaveLoad::OptionsSaveLoad(FEPresentation* presentation, ButtonComponent::
         instance->SetActiveSlide((i == 0) ? DoubleHighlite::SLIDE_IN : DoubleHighlite::SLIDE_OUT);
         instance->Update(0.0f);
 
-        MenuItem<TLComponentInstance>* menuItem = &mMenuItems.mMenuItems[mMenuItems.mNumItemsAdded];
+        menuItem = &mMenuItems.mMenuItems[mMenuItems.mNumItemsAdded];
         menuItem->mType = instance;
         mMenuItems.mNumItemsAdded++;
 
@@ -1577,19 +1578,25 @@ OptionsAudioMenuV2::OptionsAudioMenuV2(FEPresentation* presentation, ButtonCompo
     SlideMenuList* slideMenuList = (SlideMenuList*)mSlideMenuLists[mMenuItems.mCurrentIndex];
     if (slideMenuList != NULL)
     {
-        compinstance = slideMenuList->mComponentInstance;
-        if (compinstance != NULL)
+        TLInstance* inst;
+        TLInstance* firstChild;
+        TLSlide* currentMenuSlide;
+        TLSlide* startSlide;
+        TLComponentInstance* activeCompinstance;
+
+        activeCompinstance = slideMenuList->mComponentInstance;
+        if (activeCompinstance != NULL)
         {
-            if (compinstance->GetActiveSlide() != NULL)
+            if (activeCompinstance->GetActiveSlide() != NULL)
             {
-                TLSlide* startSlide = compinstance->GetActiveSlide();
-                TLSlide* currentMenuSlide = startSlide;
+                startSlide = activeCompinstance->GetActiveSlide();
+                currentMenuSlide = startSlide;
 
                 do
                 {
-                    compinstance->SetActiveSlide(currentMenuSlide);
-                    TLInstance* firstChild = compinstance->GetActiveSlide()->m_instances;
-                    TLInstance* inst = firstChild;
+                    activeCompinstance->SetActiveSlide(currentMenuSlide);
+                    firstChild = activeCompinstance->GetActiveSlide()->m_instances;
+                    inst = firstChild;
                     if (firstChild != NULL)
                     {
                         do
@@ -1614,7 +1621,7 @@ OptionsAudioMenuV2::OptionsAudioMenuV2(FEPresentation* presentation, ButtonCompo
                     currentMenuSlide = currentMenuSlide->m_next;
                 } while (currentMenuSlide != startSlide);
 
-                compinstance->SetActiveSlide(startSlide);
+                activeCompinstance->SetActiveSlide(startSlide);
             }
         }
     }

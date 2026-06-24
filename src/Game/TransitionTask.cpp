@@ -300,7 +300,7 @@ static inline void ClearCharacterEffectsAndResetPowerups()
 
 /**
  * Offset/Address/Size: 0x10B8 | 0x80172688 | size: 0x920
- * TODO: 99.79% match - branch target offsets in progressive-scan check and register allocation in character cleanup loops.
+ * TODO: 99.80% match - register allocation in character cleanup loops.
  */
 void TransitionTask::StateTransition(unsigned int from, unsigned int to)
 {
@@ -429,18 +429,24 @@ void TransitionTask::StateTransition(unsigned int from, unsigned int to)
                 glx_SetPal50Mode();
             }
 
-            if (VIGetTvFormat() == 0 && VIGetDTVStatus() != 0 && (OSGetProgressiveMode() == 1 || isPressed))
+            do
             {
-                nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_PROGRESSIVE_SCAN, (ScreenMovement)0, false);
-            }
-            else if (VIGetTvFormat() == 1)
-            {
-                nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_EURO_RGB60, (ScreenMovement)0, false);
-            }
-            else
-            {
+                if (VIGetTvFormat() == 0)
+                {
+                    if (VIGetDTVStatus() != 0 && (OSGetProgressiveMode() == 1 || isPressed))
+                    {
+                        nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_PROGRESSIVE_SCAN, (ScreenMovement)0, false);
+                        break;
+                    }
+                }
+                else if (VIGetTvFormat() == 1)
+                {
+                    nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_EURO_RGB60, (ScreenMovement)0, false);
+                    break;
+                }
+
                 nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_HEALTH_WARNING, (ScreenMovement)0, false);
-            }
+            } while (false);
 
             tDebugPrintManager::Print(DC_MEMORY, "-- Memory upon Exiting InitializeFEFast\n");
             tDebugPrintManager::Print(DC_MEMORY, "Free Memory: %u\n", StandardAllocator.TotalFreeMemory());

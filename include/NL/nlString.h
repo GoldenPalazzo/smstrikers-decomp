@@ -162,13 +162,13 @@ CharT* nlToLower(CharT* str)
 
 /**
  * Offset/Address/Size: 0x0 | 0x8000DEFC | size: 0x40
- * TODO: 98.75% match - lbz/extsb r0/r7 register swap (3 register-only diffs)
+ * CharT* nlStrNCpy<CharT>(CharT*, const CharT*, unsigned long)
  */
 template <typename CharT>
 CharT* nlStrNCpy(CharT* str1, const CharT* str2, unsigned long len)
 {
     CharT* p;
-    CharT c;
+    unsigned long c;
     unsigned long n;
     n = len;
     p = str1;
@@ -187,9 +187,12 @@ loop:
 test:
     if (n-- == 0)
         goto done;
-    c = *str2;
+    if (sizeof(CharT) == 1)
+        c = *(const unsigned char*)str2;
+    else
+        c = *str2;
     *p = c;
-    if (c)
+    if ((CharT)c)
         goto loop;
 done:
     str1[len - 1] = '\0';

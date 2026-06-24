@@ -800,7 +800,7 @@ config.libs = [
             Object(Matching, "Game/CameraLoader.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/Camera/CameraMan.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Camera/FaceCam.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(NonMatching, "Game/Camera/GoalCam.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(Matching, "Game/Camera/GoalCam.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Camera/ShootToScoreCam.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Camera/TopDownCamera.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Camera/kickoffcam.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
@@ -1388,7 +1388,7 @@ config.libs = [
             Object(Matching, "ode/util.cpp", extra_cflags=["-inline auto"]),
 
             Object(NonMatching, "ode/ext/dColumn.cpp", extra_cflags=["-inline auto", "-inline off"]),
-            Object(NonMatching, "ode/ext/dFinitePlane.cpp", extra_cflags=["-inline auto"]),
+            Object(Matching, "ode/ext/dFinitePlane.cpp", extra_cflags=["-inline auto"]),
             Object(NonMatching, "ode/ext/dRoundedCorner.cpp", extra_cflags=["-inline auto"]),
 
             Object(NonMatching, "ode/odemath.cpp", extra_cflags=["-inline auto", "-inline deferred"]),

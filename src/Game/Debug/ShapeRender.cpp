@@ -724,12 +724,11 @@ void ShapeRender::Initialize()
         nlVector3* norm = m_Box.normal;
         nlVector2* uv = m_Box.texcoord;
 
-        for (int i = 0; i < 6; i++)
+        for (int base = 0; base < 24; base += 4)
         {
-            int base = i * 4;
-            nlVector3* faceVerts[4];
             nlVector2* faceUVs[4];
             nlVector3* faceNorms[4];
+            nlVector3* faceVerts[4];
 
             int idx;
 

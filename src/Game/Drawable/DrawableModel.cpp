@@ -882,17 +882,17 @@ void DrawableModel::DrawPlanarShadow()
 
 /**
  * Offset/Address/Size: 0x964 | 0x80120770 | size: 0x290
- * TODO: 87.04% match - float register allocation/scheduling still differs in
- *       AABB corner initialization and projected matrix coefficient setup.
+ * TODO: 88.54% match - FPR allocation still differs in AABB corner
+ *       initialization and projected matrix coefficient setup.
  */
-void GetShadowBoundingSquare(const glModel* model, const nlMatrix4& matrix, float& x0, float& x1, float& y0, float& y1, unsigned long userData)
+static void GetShadowBoundingSquare(const glModel* model, const nlMatrix4& matrix, float& x0, float& x1, float& y0, float& y1, unsigned long userData)
 {
 
     AABBDimensions dimensions;
     GetAABBDimensions(model, dimensions, userData);
 
     register float maxZ = dimensions.mMax.f.z;
-    register float zero = 0.0f;
+    register float one = 1.0f;
     register float maxY = dimensions.mMax.f.y;
     register float minY = dimensions.mMin.f.y;
     register float minZ = dimensions.mMin.f.z;
@@ -906,7 +906,7 @@ void GetShadowBoundingSquare(const glModel* model, const nlMatrix4& matrix, floa
     register float m13 = matrix.f.m13;
     points[0].f.z = minZ;
     register float m11 = matrix.f.m11;
-    points[0].f.w = zero;
+    points[0].f.w = one;
     register float m23 = matrix.f.m23;
 
     points[1].f.x = dimensions.mMin.f.x;
@@ -915,7 +915,7 @@ void GetShadowBoundingSquare(const glModel* model, const nlMatrix4& matrix, floa
     register float m33 = matrix.f.m33;
     points[1].f.z = maxZ;
     register float m31 = matrix.f.m31;
-    points[1].f.w = zero;
+    points[1].f.w = one;
     register float m43 = matrix.f.m43;
 
     points[2].f.x = dimensions.mMin.f.x;
@@ -924,33 +924,33 @@ void GetShadowBoundingSquare(const glModel* model, const nlMatrix4& matrix, floa
     register float m12 = matrix.f.m12;
     points[2].f.z = minZ;
     register float m22 = matrix.f.m22;
-    points[2].f.w = zero;
+    points[2].f.w = one;
     register float m32 = matrix.f.m32;
 
     points[3].f.x = dimensions.mMin.f.x;
     points[3].f.y = maxY;
     points[3].f.z = maxZ;
-    points[3].f.w = zero;
+    points[3].f.w = one;
 
     points[4].f.x = dimensions.mMax.f.x;
     points[4].f.y = minY;
     points[4].f.z = minZ;
-    points[4].f.w = zero;
+    points[4].f.w = one;
 
     points[5].f.x = dimensions.mMax.f.x;
     points[5].f.y = minY;
     points[5].f.z = maxZ;
-    points[5].f.w = zero;
+    points[5].f.w = one;
 
     points[6].f.x = dimensions.mMax.f.x;
     points[6].f.y = maxY;
     points[6].f.z = minZ;
-    points[6].f.w = zero;
+    points[6].f.w = one;
 
     points[7].f.x = dimensions.mMax.f.x;
     points[7].f.y = maxY;
     points[7].f.z = maxZ;
-    points[7].f.w = zero;
+    points[7].f.w = one;
 
     u32 lightPtr = *(u32*)((u8*)WorldManager::s_World + 0x138);
     float lightX = *(float*)(lightPtr + 4);
@@ -960,27 +960,27 @@ void GetShadowBoundingSquare(const glModel* model, const nlMatrix4& matrix, floa
     lightX = -lightX;
     lightY = -lightY;
 
-    float one = 1.0f;
+    float zero = 0.0f;
     nlMatrix4 projected;
-    projected.f.m13 = one;
+    projected.f.m13 = zero;
     float xOverZ = lightX / lightZ;
-    projected.f.m23 = one;
-    projected.f.m33 = one;
-    projected.f.m43 = one;
-    projected.f.m14 = one;
-    projected.f.m24 = one;
+    projected.f.m23 = zero;
+    projected.f.m33 = zero;
+    projected.f.m43 = zero;
+    projected.f.m14 = zero;
+    projected.f.m24 = zero;
     float yOverZ = lightY / lightZ;
-    projected.f.m34 = one;
-    projected.f.m44 = zero;
+    projected.f.m34 = zero;
+    projected.f.m44 = one;
 
     projected.f.m11 = m11 + xOverZ * m13;
+    projected.f.m22 = m22 + yOverZ * m23;
+    projected.f.m12 = m12 + yOverZ * m13;
+    projected.f.m42 = matrix.f.m42 + yOverZ * m43;
+    projected.f.m32 = m32 + yOverZ * m33;
     projected.f.m21 = m21 + xOverZ * m23;
     projected.f.m31 = m31 + xOverZ * m33;
     projected.f.m41 = m41 + xOverZ * m43;
-    projected.f.m12 = m12 + yOverZ * m13;
-    projected.f.m22 = m22 + yOverZ * m23;
-    projected.f.m32 = m32 + yOverZ * m33;
-    projected.f.m42 = matrix.f.m42 + yOverZ * m43;
 
     for (; i < 8; i++, point++)
     {

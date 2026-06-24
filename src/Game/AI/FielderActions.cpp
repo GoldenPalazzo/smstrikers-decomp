@@ -3236,7 +3236,7 @@ static float FindSTSDistanceAffectedPercentage(cFielder* pFielder, float fMinAmo
  */
 /**
  * Offset/Address/Size: 0x16D0 | 0x80028308 | size: 0x1480
- * TODO: 98.38% match - remaining f0/f1 swaps in meter timing comparisons and
+ * TODO: 98.44% match - remaining f0/f1 swaps in meter timing comparisons and
  * r26/r30 swaps in camera/effect string setup
  */
 void cFielder::ActionShootToScore(float)
@@ -3361,12 +3361,15 @@ void cFielder::ActionShootToScore(float)
     {
         if (mActionShootToScoreVars.fFrameButtonDownTime1 < 0.0f)
         {
+            float fDiff;
+            float fGreenWidth;
+            float fSweetSpotOffset;
             float fMeterPos = mActionShootToScoreVars.fMeterFractionTime;
             if (fMeterPos > g_pGame->m_pGameTweaks->unk298)
             {
-                float fSweetSpotOffset = g_pGame->m_pGameTweaks->unk294;
-                float fGreenWidth = g_pGame->m_pGameTweaks->unk29C;
-                float fDiff = fSweetSpotOffset - fMeterPos;
+                fSweetSpotOffset = g_pGame->m_pGameTweaks->unk294;
+                fGreenWidth = g_pGame->m_pGameTweaks->unk29C;
+                fDiff = fSweetSpotOffset - fMeterPos;
                 fDiff = fabs(fDiff);
                 fDiff = (float)fDiff;
 
@@ -3387,14 +3390,17 @@ void cFielder::ActionShootToScore(float)
         }
         else if (mActionShootToScoreVars.fFrameButtonDownTime2 < 0.0f)
         {
+            float fYellowWidth;
+            float fCenter;
+            float fDiffFromCenter;
             float fMeterPos2 = mActionShootToScoreVars.fMeterFractionTime;
             if (fMeterPos2 < 0.6f)
             {
                 if (m_pCurrentAnimController->m_fTime >= fSweetSpotCenter && m_pCurrentAnimController->m_fTime < fCaptainPercentage)
                 {
-                    float fYellowWidth = mActionShootToScoreVars.fGreenRegionWidth;
-                    float fCenter = g_pGame->m_pGameTweaks->unk298;
-                    float fDiffFromCenter = fCenter - fMeterPos2;
+                    fYellowWidth = mActionShootToScoreVars.fGreenRegionWidth;
+                    fCenter = g_pGame->m_pGameTweaks->unk298;
+                    fDiffFromCenter = fCenter - fMeterPos2;
                     fDiffFromCenter = fabs(fDiffFromCenter);
                     fDiffFromCenter = (float)fDiffFromCenter;
 

@@ -528,9 +528,8 @@ static void InsertSorted(nlDLListContainer<MyMiniData*>& list, MyMiniData* data)
  * Offset/Address/Size: 0x1FC0 | 0x800553E0 | size: 0x2BC
  */
 /**
- * TODO: 98.97% match - r20-r24 cyclic register shift in nested loop
- * (dist/gSaveGrid/griddata base pointers). MWCC -inline deferred register
- * allocation quirk.
+ * TODO: 99.51% match - traversal after near-search list construction still
+ * uses lower current/head registers and the final cleanup call target differs.
  */
 SaveData* GoalieSave::FindBestSave(SaveBlendInfo& blendInfo, const nlVector3& v3LocalPos, float fTime, bool bDoNearSearch, unsigned int uSaveType, bool bFromTakeoff)
 {
@@ -539,7 +538,6 @@ SaveData* GoalieSave::FindBestSave(SaveBlendInfo& blendInfo, const nlVector3& v3
     SaveData* pSaveData;
     MyMiniListShim mylist;
     MyMiniData griddata[7][5];
-    int dz;
     int across;
     int up;
 
@@ -582,11 +580,10 @@ SaveData* GoalieSave::FindBestSave(SaveBlendInfo& blendInfo, const nlVector3& v3
         {
             MyMiniData* gridRow = griddata[across];
             nlListContainer<SaveData*>* saveRow = gSaveGrid[across];
-            dz = i - across;
-
             for (up = 0; up < 5; up++)
             {
                 int du = j - up;
+                int dz = i - across;
                 int testDist = dz * dz + du * du;
 
                 if (testDist <= 8)
@@ -644,6 +641,7 @@ SaveData* GoalieSave::FindBestSave(SaveBlendInfo& blendInfo, const nlVector3& v3
 
 /**
  * Offset/Address/Size: 0x1A1C | 0x80054E3C | size: 0x5A4
+ * TODO: 97.05% match - list cursor and milestone-scale loop registers still differ.
  */
 SaveData* GoalieSave::FindBestInList(SaveBlendInfo& blendInfo, nlListContainer<SaveData*>& SaveList, const nlVector3& v3LocalPos, float fTime, unsigned int uSaveType, bool bFromTakeoff)
 {
@@ -743,7 +741,7 @@ SaveData* GoalieSave::FindBestInList(SaveBlendInfo& blendInfo, nlListContainer<S
                     {
                         float fStartAdj = blendInfo.mfMilestoneTime[2] - fTime;
                         float fStartResult;
-                        if (0.0f >= fStartAdj)
+                        if (fStartAdj <= 0.0f)
                             fStartResult = 0.0f;
                         else
                             fStartResult = fStartAdj;
@@ -781,66 +779,21 @@ SaveData* GoalieSave::FindBestInList(SaveBlendInfo& blendInfo, nlListContainer<S
 
                 {
                     float fRunning = 0.0f;
-                    float fDefault = -1.0f;
-                    float fCompare = fRunning;
+                    int segment;
 
-                    fThisTime = pConnected->mfMilestonePercent[0] * pConnected->mfDuration;
-                    if (fThisTime > fRunning)
+                    for (segment = 0; segment < 5; segment++)
                     {
-                        blendInfo.mfMilestoneScale[i][0] = fThisTime - fRunning;
-                        fRunning = fThisTime;
-                    }
-                    else
-                    {
-                        blendInfo.mfMilestoneScale[i][0] = fDefault;
-                        bEmptySpot = 1;
-                    }
-
-                    fThisTime = pConnected->mfMilestonePercent[1] * pConnected->mfDuration;
-                    if (fThisTime > fCompare)
-                    {
-                        blendInfo.mfMilestoneScale[i][1] = fThisTime - fRunning;
-                        fRunning = fThisTime;
-                    }
-                    else
-                    {
-                        blendInfo.mfMilestoneScale[i][1] = fDefault;
-                        bEmptySpot = 1;
-                    }
-
-                    fThisTime = pConnected->mfMilestonePercent[2] * pConnected->mfDuration;
-                    if (fThisTime > fCompare)
-                    {
-                        blendInfo.mfMilestoneScale[i][2] = fThisTime - fRunning;
-                        fRunning = fThisTime;
-                    }
-                    else
-                    {
-                        blendInfo.mfMilestoneScale[i][2] = fDefault;
-                        bEmptySpot = 1;
-                    }
-
-                    fThisTime = pConnected->mfMilestonePercent[3] * pConnected->mfDuration;
-                    if (fThisTime > fCompare)
-                    {
-                        blendInfo.mfMilestoneScale[i][3] = fThisTime - fRunning;
-                        fRunning = fThisTime;
-                    }
-                    else
-                    {
-                        blendInfo.mfMilestoneScale[i][3] = fDefault;
-                        bEmptySpot = 1;
-                    }
-
-                    fThisTime = pConnected->mfMilestonePercent[4] * pConnected->mfDuration;
-                    if (fThisTime > fCompare)
-                    {
-                        blendInfo.mfMilestoneScale[i][4] = fThisTime - fRunning;
-                    }
-                    else
-                    {
-                        blendInfo.mfMilestoneScale[i][4] = fDefault;
-                        bEmptySpot = 1;
+                        fThisTime = pConnected->mfMilestonePercent[segment] * pConnected->mfDuration;
+                        if (fThisTime > 0.0f)
+                        {
+                            blendInfo.mfMilestoneScale[i][segment] = fThisTime - fRunning;
+                            fRunning = fThisTime;
+                        }
+                        else
+                        {
+                            blendInfo.mfMilestoneScale[i][segment] = -1.0f;
+                            bEmptySpot = 1;
+                        }
                     }
                 }
             }

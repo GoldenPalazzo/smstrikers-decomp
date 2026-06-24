@@ -11,6 +11,7 @@
 #include "Game/Physics/PhysicsBanana.h"
 #include "Game/Sys/eventman.h"
 #include "Game/ReplayManager.h"
+#include "NL/nlTask.h"
 #include "NL/nlString.h"
 #include "Game/PoseAccumulator.h"
 #include "Game/Camera/CameraMan.h"
@@ -747,19 +748,21 @@ void Bowser::Update(float fDeltaT)
 
     SkinAnimatedNPC::Update(fDeltaT);
 
-    if (meBowserState == BOWSER_STATE_IDLE || meBowserState == BOWSER_STATE_THROW)
+    switch (meBowserState)
     {
+    case BOWSER_STATE_IDLE:
+    case BOWSER_STATE_THROW:
         mpHeadTrack->m_bTrackOOI = true;
-    }
-    else
-    {
+        break;
+    default:
         mpHeadTrack->m_bTrackOOI = false;
+        break;
     }
 
     if (ReplayManager::Instance()->mRender != NULL)
     {
         mpHeadTrack->m_v3OOI = ReplayManager::Instance()->mRender->mBall.mPosition;
-        mpHeadTrack->Update(mLastHeadMatrix, mLastHeadMatrix, fDeltaT, 0x8000, 0x3555, 0x0AAA, 0.4f);
+        mpHeadTrack->Update(mLastHeadMatrix, mLastHeadMatrix, nlTaskManager::m_pInstance->m_fCurrentTimeDelta, 0x8000, 0x3555, 0x0AAA, 0.4f);
     }
 }
 
@@ -2062,26 +2065,7 @@ bool Bowser::CheckForAbort()
         if (!(mAttackType == BOWSER_ATTACK_STOMP && mStompStage != 2))
         {
             eBowserAttackType savedAttackType = mAttackType;
-            mfYAxisTilt = 0.0f;
-            cCameraManager::SetWorldUpVectorTilt(0.0f, 0.0f);
-            if (g_pBall != NULL)
-            {
-                PhysicsAIBall* pPhys = g_pBall->m_pPhysicsBall;
-                if (pPhys != NULL)
-                {
-                    if (fabsf(mfYAxisTilt) > 0.01f)
-                    {
-                        nlVector3 tiltForce = { 0.0f, 0.0f, 0.0f };
-                        tiltForce.f.x = -mfYAxisTilt * g_pGame->m_pGameTweaks->unk338;
-                        pPhys->m_v3TiltForce = tiltForce;
-                        g_pBall->m_pPhysicsBall->m_bUseTiltForce = true;
-                    }
-                    else
-                    {
-                        pPhys->m_bUseTiltForce = false;
-                    }
-                }
-            }
+            SetTiltParameters(0.0f);
             mAttackType = BOWSER_ATTACK_ROLL;
             if (g_pGame->m_pGameTweaks->unk310 < 0.0f)
                 g_pGame->ResetBowser();

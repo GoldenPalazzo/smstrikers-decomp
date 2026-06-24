@@ -246,7 +246,7 @@ static glModel* glxLoadModelFromMemory(char* data, int size, unsigned long* pNum
                 }
                 case BMD_CHUNK_PACKETS:
                 {
-                    numPacketEntries = (int)Div67(chunkSize);
+                    numPacketEntries = (int)(chunkSize / sizeof(glModelPacket));
                     pPackets = (glModelPacket*)glResourceAlloc(chunkSize, GLM_Header);
                     memcpy(pPackets, chunkData, chunkSize);
                     break;
@@ -375,10 +375,12 @@ static glModel* glxLoadModelFromMemory(char* data, int size, unsigned long* pNum
             if ((s32)numModels > 0)
             {
                 glModel* pM = pModels;
-                for (u32 i = 0; i < numModels; i++)
+                u32 count = numModels;
+                while (count > 0)
                 {
                     pM->packets = (glModelPacket*)((u32)pM->packets + (u32)pPackets);
                     pM++;
+                    count--;
                 }
             }
 
@@ -418,10 +420,12 @@ static glModel* glxLoadModelFromMemory(char* data, int size, unsigned long* pNum
             if ((s32)numStreamEntries > 0)
             {
                 u8* p = pStreamData;
-                for (int i = 0; i < numStreamEntries; i++)
+                int count = numStreamEntries;
+                while (count > 0)
                 {
                     *(u32*)p += (u32)pDisplayListData;
                     p += 6;
+                    count--;
                 }
             }
 

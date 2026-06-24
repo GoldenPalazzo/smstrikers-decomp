@@ -147,8 +147,8 @@ bool cPlayer::CanPickupBallFromPass(cBall* pBall)
 
 /**
  * Offset/Address/Size: 0x284 | 0x800577D4 | size: 0x1B0
- * TODO: 98.1% match - li r30,0 (bDoPickUp=false) at 0x174 after
- * extsh r0,r3 instead of at 0x158 before the TestCollision beq.
+ * TODO: 99.1% match - missing li r30,0 between the TestCollision
+ * clrlwi. and the collision-fail beq.
  */
 bool cPlayer::CanPickupBall(cBall* pBall)
 {
@@ -189,7 +189,6 @@ bool cPlayer::CanPickupBall(cBall* pBall)
                 {
                     s16 delta;
                     delta = self->GetFacingDeltaToPosition(g_pBall->m_v3Position);
-                    bDoPickUp = false;
                     u16 absDelta = (u16)((delta < 0) ? -delta : delta);
                     if (absDelta < 0x4000)
                     {

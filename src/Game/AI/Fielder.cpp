@@ -4700,7 +4700,7 @@ void cFielder::SetPosition(const nlVector3& v3Position)
 
 /**
  * Offset/Address/Size: 0x3F70 | 0x8001D2AC | size: 0x5A8
- * TODO: 90.23% match - f3/f4 register swap in delta computation (5 instruction diffs)
+ * TODO: 96.52% match - remaining f3/f4 delta register swap and compact speed-state branch layout.
  */
 void cFielder::SetDesiredSpeedAndDirectionToPosition(float fDeltaT, const nlVector3& v3Pos, eTurboRequest turboRequest, float fInRadiusMult, float fOutRadiusMult)
 {
@@ -4715,8 +4715,9 @@ void cFielder::SetDesiredSpeedAndDirectionToPosition(float fDeltaT, const nlVect
     float fDeltaZFromDesired = v3FixedPos.f.z - m_v3DesiredPosition.f.z;
 
     float fDesiredPositionRateOfChange = 0.0f;
-    float bAtTarget = (float)(fabsf(fDistSq - fDesiredPositionRateOfChange) <= 0.0001f);
-    if (bAtTarget != fDesiredPositionRateOfChange)
+    float fZero = fDesiredPositionRateOfChange;
+    float bAtTarget = (float)(fabsf(fDistSq - fZero) <= 0.0001f);
+    if (bAtTarget != fZero)
     {
     }
     else
@@ -4747,8 +4748,8 @@ void cFielder::SetDesiredSpeedAndDirectionToPosition(float fDeltaT, const nlVect
     }
     case PSS_NEAR_SEEKING:
     {
-        float fInRad = fInRadiusMult * g_pGame->m_pGameTweaks->fArrivalInRadius;
         float fOutRad = fOutRadiusMult * g_pGame->m_pGameTweaks->fNearSeekOutRadius;
+        float fInRad = fInRadiusMult * g_pGame->m_pGameTweaks->fArrivalInRadius;
         fSpeedPercent = NormalizeVal(fDistSq, fInRad * fInRad, fOutRad * fOutRad);
         float fNearSeekOut = fOutRadiusMult * g_pGame->m_pGameTweaks->fNearSeekOutRadius;
         if (fDistSq >= fNearSeekOut * fNearSeekOut)
@@ -4763,8 +4764,8 @@ void cFielder::SetDesiredSpeedAndDirectionToPosition(float fDeltaT, const nlVect
     }
     case PSS_FAR_SEEKING:
     {
-        float fInRad = fInRadiusMult * g_pGame->m_pGameTweaks->fNearSeekInRadius;
         float fOutRad = fOutRadiusMult * g_pGame->m_pGameTweaks->fNearSeekOutRadius;
+        float fInRad = fInRadiusMult * g_pGame->m_pGameTweaks->fNearSeekInRadius;
         fSpeedPercent = NormalizeVal(fDistSq, fInRad * fInRad, fOutRad * fOutRad);
         float fNearSeekIn = fInRadiusMult * g_pGame->m_pGameTweaks->fNearSeekInRadius;
         if (fDistSq < fNearSeekIn * fNearSeekIn)
@@ -4785,6 +4786,8 @@ void cFielder::SetDesiredSpeedAndDirectionToPosition(float fDeltaT, const nlVect
     {
         switch (m_ePositionSeekState)
         {
+        case PSS_ARRIVED:
+            break;
         case PSS_NEAR_SEEKING:
             fMinSpeed = m_pTweaks->fJoggingSpeed;
             fMaxSpeed = m_pTweaks->fRunningSpeed;
@@ -4792,6 +4795,8 @@ void cFielder::SetDesiredSpeedAndDirectionToPosition(float fDeltaT, const nlVect
         case PSS_FAR_SEEKING:
             fMinSpeed = m_pTweaks->fRunningSpeed;
             fMaxSpeed = ((FielderTweaks*)m_pTweaks)->fRunningTurboSpeed;
+            break;
+        default:
             break;
         }
         if (turboRequest == TR_FORCED_OFF)
@@ -4804,24 +4809,17 @@ void cFielder::SetDesiredSpeedAndDirectionToPosition(float fDeltaT, const nlVect
                 fMaxSpeed = m_pTweaks->fRunningSpeed;
             }
         }
-        else if (turboRequest == TR_FORCED_ON)
+        else if (turboRequest == TR_FORCED_ON || (turboRequest == TR_MOVING_TARGET && (float)(fabsf(fDesiredPositionRateOfChange - fZero) <= 0.0001f) == 0.0f))
         {
             fMinSpeed = ((FielderTweaks*)m_pTweaks)->fRunningTurboSpeed;
-        }
-        else if (turboRequest == TR_MOVING_TARGET)
-        {
-            float bRateZero = (float)(fabsf(fDesiredPositionRateOfChange - 0.0f) <= 0.0001f);
-            if (bRateZero != 0.0f)
-            {
-            }
-            else
-                fMinSpeed = ((FielderTweaks*)m_pTweaks)->fRunningTurboSpeed;
         }
     }
     else
     {
         switch (m_ePositionSeekState)
         {
+        case PSS_ARRIVED:
+            break;
         case PSS_NEAR_SEEKING:
             fMinSpeed = m_pTweaks->fJoggingSpeed;
             fMaxSpeed = ((FielderTweaks*)m_pTweaks)->fRunningWBSpeed;
@@ -4829,6 +4827,8 @@ void cFielder::SetDesiredSpeedAndDirectionToPosition(float fDeltaT, const nlVect
         case PSS_FAR_SEEKING:
             fMinSpeed = ((FielderTweaks*)m_pTweaks)->fRunningWBSpeed;
             fMaxSpeed = ((FielderTweaks*)m_pTweaks)->fRunningWBTurboSpeedLevel1;
+            break;
+        default:
             break;
         }
         if (turboRequest == TR_FORCED_OFF)
@@ -4841,22 +4841,13 @@ void cFielder::SetDesiredSpeedAndDirectionToPosition(float fDeltaT, const nlVect
                 fMaxSpeed = ((FielderTweaks*)m_pTweaks)->fRunningWBSpeed;
             }
         }
-        else if (turboRequest == TR_FORCED_ON)
+        else if (turboRequest == TR_FORCED_ON || (turboRequest == TR_MOVING_TARGET && (float)(fabsf(fDesiredPositionRateOfChange - fZero) <= 0.0001f) == 0.0f))
         {
             fMinSpeed = ((FielderTweaks*)m_pTweaks)->fRunningWBTurboSpeedLevel1;
         }
-        else if (turboRequest == TR_MOVING_TARGET)
-        {
-            float bRateZero = (float)(fabsf(fDesiredPositionRateOfChange - 0.0f) <= 0.0001f);
-            if (bRateZero != 0.0f)
-            {
-            }
-            else
-                fMinSpeed = ((FielderTweaks*)m_pTweaks)->fRunningWBTurboSpeedLevel1;
-        }
     }
 
-    float bDistZero = (float)(fabsf(fDistSq - 0.0f) <= 0.0001f);
+    float bDistZero = (float)(fabsf(fDistSq - fZero) <= 0.0001f);
     if (bDistZero != 0.0f)
     {
         fMinSpeed = 0.0f;
@@ -5768,7 +5759,6 @@ void cFielder::Update(float fDeltaT)
 
 /**
  * Offset/Address/Size: 0x21D8 | 0x8001B514 | size: 0x174
- * TODO: 94.9% match - progress made, but not complete
  */
 void cFielder::ThrowPowerup()
 {
@@ -5776,8 +5766,6 @@ void cFielder::ThrowPowerup()
 
     if (!g_pGame->mbCaptainShotToScoreOn)
     {
-        pTarget = m_pPowerupTarget;
-
         switch (m_ePowerup)
         {
         case POWER_UP_STAR:
@@ -5787,9 +5775,14 @@ void cFielder::ThrowPowerup()
         case POWER_UP_MUSHROOM:
         {
             f32 fMushroomTime = g_pGame->m_pGameTweaks->fMushroomEffectTime;
-            if (m_eCharacterClass < PEACH && m_eCharacterClass >= LUIGI)
+            switch (m_eCharacterClass)
             {
+            case LUIGI:
+            case MARIO:
                 fMushroomTime *= 1.33f;
+                break;
+            default:
+                break;
             }
             m_tPowerupEffectTime.SetSeconds(fMushroomTime);
             EmitMushroom(this);
@@ -5806,8 +5799,12 @@ void cFielder::ThrowPowerup()
             PowerupCreateAndThrow(this, m_ePowerup, mnNumPowerups, NULL);
             break;
         case POWER_UP_CHAIN_CHOMP:
-            BasicStadium::GetCurrentStadium()->mpNPCManager->mpChainChomp->Fall(this, pTarget);
+        {
+            pTarget = m_pPowerupTarget;
+            BasicStadium* pStadium = BasicStadium::GetCurrentStadium();
+            pStadium->mpNPCManager->mpChainChomp->Fall(this, pTarget);
             break;
+        }
         case POWER_UP_NONE:
             return;
         }
@@ -5876,8 +5873,7 @@ inline void ExecutePowerupEffect(cFielder* pFielder)
 
 /**
  * Offset/Address/Size: 0x1D18 | 0x8001B054 | size: 0x4C0
- * TODO: 98.49% match - remaining cached powerup dispatch register diffs
- * and initial POWER_UP_NONE validation branch shape.
+ * TODO: 99.19% match - remaining cached powerup dispatch reload diffs.
  */
 void cFielder::SetPowerup(ePowerUpType eNewPowerup, int nnumOfPowerups, cFielder* pTarget)
 {
@@ -5911,6 +5907,9 @@ void cFielder::SetPowerup(ePowerUpType eNewPowerup, int nnumOfPowerups, cFielder
             pTarget = FindPowerupTarget(this, NULL);
         }
         break;
+    case POWER_UP_MUSHROOM:
+    case POWER_UP_STAR:
+    case POWER_UP_NONE:
     default:
         pTarget = NULL;
         break;

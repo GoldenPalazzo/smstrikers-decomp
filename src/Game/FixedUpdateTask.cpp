@@ -49,9 +49,9 @@ const char* FixedUpdateTask::GetName()
 
 /**
  * Offset/Address/Size: 0x0 | 0x8016E330 | size: 0x280
- * TODO: 97.88% match - register allocation: g_pCharacters r31 vs target r28,
- * g_pTeams r30 vs target r31, loop counter r28 vs target r30,
- * fixedTick f30/f1 load order swap.
+ * TODO: 98.62% match - register allocation: g_pCharacters r31 vs target r28,
+ * g_pTeams r30 vs target r31, loop/bool r28 vs target r30,
+ * fixedTick f30/f1 load order and second NetMesh sphere load order.
  */
 void FixedUpdateTask::Run(float dt)
 {
@@ -124,8 +124,12 @@ void FixedUpdateTask::Run(float dt)
                     }
                 }
 
-                NetMesh::spPositiveXNetMesh->Update(g_fSimulationTick, g_pBall->m_v3Position, g_pBall->m_v3PrevPosition, doGoalieNetTestPosX, g_pBall->m_pPhysicsBall);
-                NetMesh::spNegativeXNetMesh->Update(g_fSimulationTick, g_pBall->m_v3Position, g_pBall->m_v3PrevPosition, doGoalieNetTestPosX, g_pBall->m_pPhysicsBall);
+                cBall* pBall = g_pBall;
+                PhysicsAIBall* pPhysicsBall = pBall->m_pPhysicsBall;
+                NetMesh::spPositiveXNetMesh->Update(g_fSimulationTick, pBall->m_v3Position, pBall->m_v3PrevPosition, doGoalieNetTestPosX, pPhysicsBall);
+                pBall = g_pBall;
+                pPhysicsBall = pBall->m_pPhysicsBall;
+                NetMesh::spNegativeXNetMesh->Update(g_fSimulationTick, pBall->m_v3Position, pBall->m_v3PrevPosition, doGoalieNetTestPosX, pPhysicsBall);
             }
 
             SidelineExplodableManager::Update(g_fSimulationTick);

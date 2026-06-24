@@ -42,7 +42,7 @@ void glxCopyMatrix(float (&arg0)[4][4], const nlMatrix4& arg1)
 
 /**
  * Offset/Address/Size: 0x88 | 0x801B65F0 | size: 0x1CC
- * TODO: 94.83% match - remaining f-register allocation differs in initial eye delta loads and second-axis translation math.
+ * TODO: 97.26% match - remaining f-register allocation differs in initial eye delta loads and side/up translation math.
  */
 void glplatMatrixLookAt(nlMatrix4& arg0, const nlVector3& arg1, const nlVector3& arg2, const nlVector3& arg3)
 {
@@ -74,59 +74,46 @@ void glplatMatrixLookAt(nlMatrix4& arg0, const nlVector3& arg1, const nlVector3&
     f27 = upx * f30 - fC;
 
     f1 = nlRecipSqrt(f27 * f27 + (f28 * f28 + f26 * f26), true);
-    float f3 = f1 * f28;
-    arg0.m[0][0] = f3;
-
-    float f10 = f1 * f27;
-    float f12 = arg1.f.x;
-    float eyeX = arg1.f.z;
-    float f11 = arg1.f.y;
-    float f2 = f30 * f11;
-    float f9 = f1 * f26;
-    float f00 = f9 * f11;
+    f27 *= f1;
+    float eyeY = arg1.f.y;
+    f26 *= f1;
+    float eyeX = arg1.f.x;
+    float zDot = f30 * eyeY;
+    float eyeZ = arg1.f.z;
+    float sideDot = f27 * eyeY;
+    arg0.m[0][0] = f26;
+    f28 *= f1;
     float zero = 0.0f;
-    float f8 = -f31;
-
-    arg0.m[1][0] = f9;
-
-    float f4 = f29 * f3;
-
-    arg0.m[2][0] = f10;
-
-    float f13 = f3 * f12 + f00;
+    float negZx = -f31;
+    arg0.m[1][0] = f27;
+    float upYBase = f29 * f26;
+    arg0.m[2][0] = f28;
+    sideDot = f26 * eyeX + sideDot;
     float one = 1.0f;
-    float f5 = f29 * f9;
-    float f6 = f8 * f10 + f4;
-    f4 = f10 * eyeX + f13;
-    float f7 = f30 * f3;
-    f5 = f30 * f10 - f5;
-    f13 = f6 * f11;
-    f4 = -f4;
-    f7 = f31 * f9 - f7;
-    f13 = f5 * f12 + f13;
+    float upX = f29 * f27;
+    float upY = negZx * f28 + upYBase;
+    sideDot = f28 * eyeZ + sideDot;
+    float upXBase = f30 * f26;
+    upX = f30 * f28 - upX;
+    float upDot = upY * eyeY;
+    sideDot = -sideDot;
+    float upZ = f31 * f27 - upXBase;
+    upDot = upX * eyeX + upDot;
+    arg0.m[3][0] = sideDot;
+    zDot = f31 * eyeX + zDot;
+    arg0.m[0][1] = upX;
+    upDot = upZ * eyeZ + upDot;
+    zDot = f29 * eyeZ + zDot;
+    arg0.m[1][1] = upY;
+    upDot = -upDot;
+    arg0.m[2][1] = upZ;
+    zDot = -zDot;
 
-    arg0.m[3][0] = f4;
-
-    f2 = f31 * f12 + f2;
-
-    arg0.m[0][1] = f5;
-
-    f13 = f7 * eyeX + f13;
-    f2 = f29 * eyeX + f2;
-
-    arg0.m[1][1] = f6;
-
-    f13 = -f13;
-
-    arg0.m[2][1] = f7;
-
-    f2 = -f2;
-
-    arg0.m[3][1] = f13;
+    arg0.m[3][1] = upDot;
     arg0.m[0][2] = f31;
     arg0.m[1][2] = f30;
     arg0.m[2][2] = f29;
-    arg0.m[3][2] = f2;
+    arg0.m[3][2] = zDot;
     arg0.m[0][3] = zero;
     arg0.m[1][3] = zero;
     arg0.m[2][3] = zero;

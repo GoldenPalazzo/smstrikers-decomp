@@ -455,19 +455,31 @@ void SuperLoadingScene::DisplayCupInfo()
     }
 }
 
+static inline BasicStringData<unsigned short>* CopyWideStringDataNoReread(
+    const BasicString<unsigned short, Detail::TempStringAllocator>& other)
+{
+    BasicStringData<unsigned short>* data = other.m_data;
+    if (data != NULL)
+    {
+        data->mRefCount++;
+    }
+    else
+    {
+        data = NULL;
+    }
+    return data;
+}
+
 /**
  * Offset/Address/Size: 0x0 | 0x800A6770 | size: 0x3C4
- * TODO: 96.74% match - nonvolatile register allocation differs for
- * this/pTextInst/side/checkConnected/i, and BasicString temp stack slots remain
- * 4 bytes lower than target.
- * NOTE: do NOT add #define BASICSTRING_NO_COPY_REREAD - it is TU-wide and lifts
- * this fn to ~98.5% but regresses Format<BasicString>__F... A2/A16 from 100% to
- * 98.43% (net TU regression). The reread macro helps here but not the Format
- * template instances in the same TU.
+ * TODO: 99.40% match - nonvolatile registers are permuted between this,
+ * pTextInst, side, checkConnected, PAD_COLOURS, CONTROLLER_TEXT, and the loop
+ * index.
  */
 void SuperLoadingScene::BuildPlayerStrings(TLTextInstance* pTextInst, int side, bool checkConnected)
 {
-    BasicString<unsigned short, Detail::TempStringAllocator> str;
+    typedef BasicString<unsigned short, Detail::TempStringAllocator> WideString;
+    WideString str;
     char narrowBuf[255] = { };
     unsigned short wideBuf[255] = { };
 
@@ -484,25 +496,9 @@ void SuperLoadingScene::BuildPlayerStrings(TLTextInstance* pTextInst, int side, 
 
         nlSNPrintf(narrowBuf, 255, "{clr:%2x%2x%2x}", PAD_COLOURS[i][0], PAD_COLOURS[i][1], PAD_COLOURS[i][2]);
         nlStrToWcs(narrowBuf, wideBuf, 255);
-        str = str.AppendInPlace(wideBuf);
-
-        unsigned long key = CONTROLLER_TEXT[i];
-        nlLocalization* loc = g_pLocalization;
-        const unsigned short* locText;
-
-        if (loc->m_LookupTable == NULL)
-            locText = LocalizationTableNotFound;
-        else
-        {
-            nlLocalization::StringLookup* result = nlBSearch<nlLocalization::StringLookup, unsigned long>(key, loc->m_LookupTable, loc->m_pFile->StringCount);
-            if (result != NULL)
-                locText = loc->m_FirstString + result->StringOffset;
-            else
-                locText = MissingLocString;
-        }
-
-        str = str.AppendInPlace(locText);
-        str = str.AppendInPlace((const unsigned short*)L"{clr:pop} ");
+        str = WideString(CopyWideStringDataNoReread(str.AppendInPlace(wideBuf)));
+        str = WideString(CopyWideStringDataNoReread(str.AppendInPlace(LookupLocHash(CONTROLLER_TEXT[i]))));
+        str = WideString(CopyWideStringDataNoReread(str.AppendInPlace((const unsigned short*)L"{clr:pop} ")));
     }
 
     memcpy(side == 0 ? mPlayerStrings[0] : mPlayerStrings[1], str.c_str(), 255);

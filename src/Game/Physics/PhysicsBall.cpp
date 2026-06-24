@@ -77,9 +77,7 @@ inline void PhysicsBall::CalcSurfaceVelocity(nlVector3& v3VelocityOut)
     nlVector3 v3Up = { 0.0f, 0.0f, 0.0f };
     v3Up.f.z = GetRadius();
 
-    v3VelocityOut.f.z = v3AngVelocity.f.x * v3Up.f.y - v3AngVelocity.f.y * v3Up.f.x;
-    v3VelocityOut.f.y = -v3AngVelocity.f.x * v3Up.f.z + v3AngVelocity.f.z * v3Up.f.x;
-    v3VelocityOut.f.x = v3AngVelocity.f.y * v3Up.f.z - v3AngVelocity.f.z * v3Up.f.y;
+    nlVec3Cross(v3VelocityOut, v3AngVelocity, v3Up);
 }
 
 // const uint vec_zero[3] __attribute__((section(".rodata"))) = {0, 0, 0};
@@ -87,6 +85,7 @@ inline void PhysicsBall::CalcSurfaceVelocity(nlVector3& v3VelocityOut)
 
 /**
  * Offset/Address/Size: 0x17C | 0x80134E90 | size: 0x51C
+ * TODO: 95.2% match - angular velocity torque block still has extra stores/reloads before dBodyAddTorque
  */
 void PhysicsBall::AddResistanceForces()
 {
@@ -173,9 +172,7 @@ void PhysicsBall::AddResistanceForces()
                 GetAngularVelocity(&v3CurAngVel);
                 if (v3CurAngVel.f.x * v3CurAngVel.f.x + v3CurAngVel.f.y * v3CurAngVel.f.y + v3CurAngVel.f.z * v3CurAngVel.f.z > 1.f)
                 {
-                    v3MagnusForce.f.z = v3CurAngVel.f.x * v3CurLinVel.f.y - v3CurAngVel.f.y * v3CurLinVel.f.x;
-                    v3MagnusForce.f.x = v3CurAngVel.f.y * v3CurLinVel.f.z - v3CurAngVel.f.z * v3CurLinVel.f.y;
-                    v3MagnusForce.f.y = -v3CurAngVel.f.x * v3CurLinVel.f.z + v3CurAngVel.f.z * v3CurLinVel.f.x;
+                    nlVec3Cross(v3MagnusForce, v3CurAngVel, v3CurLinVel);
                     v3MagnusForce.f.x *= 0.075f;
                     v3MagnusForce.f.y *= 0.075f;
                     v3MagnusForce.f.z *= 0.04f;

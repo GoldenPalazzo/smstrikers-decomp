@@ -255,8 +255,7 @@ void Fuzzy::DefaultOffensivePlay(cDecisionEntity* pDecision)
         if (fConfidence < fFalseConfidence && fFalseConfidence < 0.5f)
             fConfidence = fConfidence * fBranchRatio;
 
-        FuzzyVariant cutAndBreak = CutAndBreak(g_pScriptCurrentFielder);
-        float fCutAndBreak = cutAndBreak.mData.f;
+        float fCutAndBreak = CutAndBreak(g_pScriptCurrentFielder).mData.f;
 
         fTrueConfidence = Striker(g_pScriptCurrentFielder);
         fTrueConfidence = (fTrueConfidence <= fCutAndBreak) ? fTrueConfidence : fCutAndBreak;
@@ -946,8 +945,8 @@ FuzzyVariant Fuzzy::CutAndBreak(cFielder* TheFielder)
 
 /**
  * Offset/Address/Size: 0x22A0 | 0x8008ED2C | size: 0x88C
- * TODO: 98.75% match - GoodToChipShot return register, InDanger/FurthestBack
- * temporary stack slots, and final return construction differ.
+ * TODO: 99.08% match - chip-shot confidence register and defensive temporary
+ * register/stack allocation differ.
  */
 void Fuzzy::DoShooting(float fConfidence, cDecisionEntity* pDecision)
 {
@@ -1019,8 +1018,9 @@ void Fuzzy::DoShooting(float fConfidence, cDecisionEntity* pDecision)
         float fTimeNearlyOver = TimeNearlyOver(g_pGame);
         fTrueConfidence = (fTimeNearlyOver <= fTrueConfidence) ? fTimeNearlyOver : fTrueConfidence;
 
+        float fStunnedGoalie;
         float fInDanger = InDanger(g_pScriptCurrentFielder).mData.f;
-        float fStunnedGoalie = Stunned(g_pScriptCurrentTeam->GetGoalie());
+        fStunnedGoalie = Stunned(g_pScriptCurrentTeam->GetGoalie());
         float fCloseToNet = CloseToMyNet(g_pScriptCurrentFielder);
 
         fStunnedGoalie = (fStunnedGoalie <= fInDanger) ? fStunnedGoalie : fInDanger;
@@ -1028,7 +1028,7 @@ void Fuzzy::DoShooting(float fConfidence, cDecisionEntity* pDecision)
 
         float fFurthestBack = FGREATER(FurthestBackOnMyTeam(g_pScriptCurrentFielder).mData.f, 0.5f);
         fStunnedGoalie = (fStunnedGoalie >= fTrueConfidence) ? fStunnedGoalie : fTrueConfidence;
-        fStunnedGoalie = (fFurthestBack >= fStunnedGoalie) ? fStunnedGoalie : fFurthestBack;
+        fStunnedGoalie = (fFurthestBack >= fStunnedGoalie) ? fFurthestBack : fStunnedGoalie;
 
         fTrueConfidence = InDefensiveZone(g_pScriptCurrentFielder);
         fTrueConfidence = (fTrueConfidence <= fStunnedGoalie) ? fTrueConfidence : fStunnedGoalie;
@@ -1432,6 +1432,7 @@ FuzzyVariant Fuzzy::UsePowerupOffensive(float fConfidence, cDecisionEntity* pDec
 
 /**
  * Offset/Address/Size: 0x0 | 0x8008CA8C | size: 0x560
+ * TODO: 99.29% match - extra move in first confidence clamp and weighted score register diffs.
  */
 FuzzyVariant Fuzzy::GetPowerupTargetOffensive(cTeam* TheTeam)
 {
@@ -1449,7 +1450,14 @@ FuzzyVariant Fuzzy::GetPowerupTargetOffensive(cTeam* TheTeam)
         cFielder* theOpponent = g_pScriptOtherTeam->GetFielder(i);
         float fNotInvincible = 1.0f - Invincible(theOpponent);
         float fTrueConfidence = 1.0f - Incapacitated((cPlayer*)theOpponent);
-        fTrueConfidence = (fTrueConfidence <= fNotInvincible) ? fTrueConfidence : fNotInvincible;
+        if (fTrueConfidence <= fNotInvincible)
+        {
+            fTrueConfidence = fTrueConfidence;
+        }
+        else
+        {
+            fTrueConfidence = fNotInvincible;
+        }
         float fFalseConfidence = 1.0f - fTrueConfidence;
         float fMin = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
         float fMax = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;

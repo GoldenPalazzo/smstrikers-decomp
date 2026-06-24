@@ -488,11 +488,11 @@ inline void glud_DirectionalLight(void* pData)
     glx_ReloadPointLights = true;
     if (numLights != 0)
     {
-        u32 lightMask = 0;
-        int index = 0;
         GLDirectionalLightUserData* pLight = (GLDirectionalLightUserData*)((u8*)pData + 4);
         GLDirectionalLightUserData* pEndLight = pLight + numLights;
         u32* pGXLight = gxLights;
+        u32 lightMask = 0;
+        int index = 0;
 
         while (pLight < pEndLight)
         {

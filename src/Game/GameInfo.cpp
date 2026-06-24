@@ -3545,8 +3545,6 @@ signed char GameInfoManager::DetermineUserPlacement(Spoil* pSpoil)
 
 /**
  * Offset/Address/Size: 0x196C | 0x80177010 | size: 0x43C
- * TODO: 98.99% match - r6/r8 register swap between the index and destination
- * pointer in the CupHistory shift loop.
  */
 void GameInfoManager::TimeStampCupEnd()
 {
@@ -3594,8 +3592,6 @@ void GameInfoManager::TimeStampCupEnd()
     Spoil* pSpoil = &userInfo->mSpoils[trophy];
     CupRecord record;
     CupRecordRaw copyRecord;
-    CupRecord* dest;
-    CupRecord* src;
 
     OSTicksToCalendarTime(OSGetTime(), &record.mDate);
 
@@ -3610,9 +3606,11 @@ void GameInfoManager::TimeStampCupEnd()
         pSpoil->mNumRecords++;
     }
 
-    for (int i = pSpoil->mNumRecords - 1; i > 0; --i)
+    int i = pSpoil->mNumRecords - 1;
+    CupRecord* src;
+    CupRecord* dest = &pSpoil->mCupHistory[i];
+    for (; i > 0; --i, --dest)
     {
-        dest = &pSpoil->mCupHistory[i];
         src = &pSpoil->mCupHistory[i - 1];
         *dest = *src;
     }

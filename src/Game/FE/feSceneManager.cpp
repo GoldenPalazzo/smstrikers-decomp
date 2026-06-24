@@ -74,6 +74,30 @@ static inline bool IsObjectQueuedForPop(BaseSceneHandler* pSceneHandler)
     return false;
 }
 
+static inline void FindSceneForPop(
+    PackagePushPopMessage* msg, DLListEntry<BaseSceneHandler*>* sceneEntry, DLListEntry<BaseSceneHandler*>* headEntry)
+{
+    while (sceneEntry != NULL)
+    {
+        BaseSceneHandler* pSceneHandler = sceneEntry->m_data;
+
+        if (!IsObjectQueuedForPop(pSceneHandler))
+        {
+            msg->m_pSceneHandler = sceneEntry->m_data;
+            break;
+        }
+
+        if (nlDLRingIsEnd(headEntry, sceneEntry) || sceneEntry == NULL)
+        {
+            sceneEntry = NULL;
+        }
+        else
+        {
+            sceneEntry = sceneEntry->m_next;
+        }
+    }
+}
+
 /**
  * Offset/Address/Size: 0xC0 | 0x8020D70C | size: 0x1C4
  * TODO: 98.63% match - register allocation differences only (r diffs).
@@ -126,9 +150,8 @@ void FESceneManager::RenderActiveScenes()
 
 /**
  * Offset/Address/Size: 0x284 | 0x8020D8D0 | size: 0x1A8
- * TODO: 99.34% match - register allocation differences only (r diffs).
- * headEntry remains in r26 instead of r28; inlined IsObjectQueuedForPop locals rotate
- * (pSceneHandler r25/r29, msgHead r29/r26, msgEntry r28/r25).
+ * TODO: 99.48% match - remaining register diffs in scene search.
+ * headEntry and pSceneHandler are r29/r28 instead of r28/r29; queued entry uses r25 instead of r28.
  */
 void FESceneManager::QueueScenePop()
 {
@@ -157,25 +180,7 @@ void FESceneManager::QueueScenePop()
     DLListEntry<BaseSceneHandler*>* headEntry = m_sceneHandlerStack.m_Head;
     queueHead = &m_pushPopMessageQueue.m_Head;
 
-    while (sceneEntry != NULL)
-    {
-        BaseSceneHandler* pSceneHandler = sceneEntry->m_data;
-
-        if (!IsObjectQueuedForPop(pSceneHandler))
-        {
-            msg->m_pSceneHandler = sceneEntry->m_data;
-            break;
-        }
-
-        if (nlDLRingIsEnd(headEntry, sceneEntry) || sceneEntry == NULL)
-        {
-            sceneEntry = NULL;
-        }
-        else
-        {
-            sceneEntry = sceneEntry->m_next;
-        }
-    }
+    FindSceneForPop(msg, sceneEntry, headEntry);
 
     entry = NULL;
 

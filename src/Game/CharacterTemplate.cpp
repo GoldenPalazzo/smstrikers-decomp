@@ -83,9 +83,9 @@ tGoalieTemplateInfo g_GoalieTextureInfo[9] = {
 static inline u32 GetHashFromTextureFile(const char* szTextureFileName)
 {
     char name[200];
-    int count = 0;
-    const char* pSrc = NULL;
     char* pDest = name;
+    const char* pSrc = NULL;
+    int count = 0;
     const char* szPath = szTextureFileName;
 
     for (int j = 0; j < 10; j++)
@@ -589,7 +589,7 @@ cPlayer* CreateSidekick(int nPlayerID, int nTeamID, eCharacterClass cc, eCharact
 
 /**
  * Offset/Address/Size: 0xE70 | 0x80013158 | size: 0x634
- * TODO: 93.35% match - hierarchy inventory load uses r26 vs r29; the two
+ * TODO: 93.80% match - hierarchy inventory load uses r26 vs r29; the two
  * inlined GetHashFromTextureFile scan loops fold the running count into the
  * found-offset immediate instead of keeping it in a register (extra addi per
  * char in target), and the copy loop reloads *pSrc instead of reusing it.

@@ -549,11 +549,12 @@ void cTeam::UpdateControllers()
 
 /**
  * Offset/Address/Size: 0x3DC | 0x80065044 | size: 0x468
- * TODO: 97.19% match - register allocation still differs in controller assignment
+ * TODO: 97.50% match - register allocation still differs in controller assignment
  * and kickoff setup blocks.
  */
 void cTeam::ResetCharacters()
 {
+    unsigned short aNewFacingDirection;
     u16 j;
     int nAssignedControllers;
     int nAssignmentOrder[5];
@@ -561,7 +562,6 @@ void cTeam::ResetCharacters()
     const FormationSpec* pFormation;
     unsigned char bFlipPositions;
     int* pOrder;
-    cFielder* pFielder;
 
     for (int i = 0; i < 5; i++)
     {
@@ -623,10 +623,10 @@ void cTeam::ResetCharacters()
         bFlipPositions = 1;
     }
 
-    for (int i = 0; i < 5; i++, pFacingDirectionTable++, pOrder++)
+    for (int i = 0; i < 5; i++)
     {
-        pFielder = m_pPlayers[*pOrder];
-        unsigned short aNewFacingDirection = *pFacingDirectionTable;
+        aNewFacingDirection = *pFacingDirectionTable;
+        cFielder* pFielder = m_pPlayers[*pOrder];
         nlVector3 v3NewPosition;
 
         if (i < 4)
@@ -692,6 +692,9 @@ void cTeam::ResetCharacters()
                 pFielder->m_pTweaks->fPassVolleySpeedMax = pCaptain->m_pTweaks->fPassVolleySpeedMax;
             }
         }
+
+        pOrder++;
+        pFacingDirectionTable++;
     }
 
     StopGameplayEffectsAndSounds();

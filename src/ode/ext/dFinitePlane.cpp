@@ -15,12 +15,11 @@ struct FinitePlane
 
 /**
  * Offset/Address/Size: 0x314 | 0x8021D718 | size: 0x3B0
- * TODO: 99.49% match - r29/r31 and r30/r31 register swap for sp18 pointer temporaries
  */
 void dFinitePlaneAABB(dxGeom* geomID, float* aabb)
 {
-    dVector3 sp18[4];
-    dVector3 sp8;
+    dVector3 p[4];
+    dVector3 x;
 
     f32 plane_a;
     f32 plane_b;
@@ -31,7 +30,6 @@ void dFinitePlaneAABB(dxGeom* geomID, float* aabb)
     float* rotation;
     float* position;
     FinitePlane* planeData;
-    f32* ptr;
     int i;
 
     planeData = (FinitePlane*)dGeomGetClassData(geomID);
@@ -44,82 +42,78 @@ void dFinitePlaneAABB(dxGeom* geomID, float* aabb)
     rotation = (float*)dGeomGetRotation(geomID);
     position = (float*)dGeomGetPosition(geomID);
 
-    dVector3Set(sp8, plane_a, plane_c, 0.0f);
-    dMultiplyMatrix3Vector3(sp18[0], rotation, sp8, 0);
-    dVector3Add(sp18[0], position);
+    dVector3Set(x, plane_a, plane_c, 0.0f);
+    dMultiplyMatrix3Vector3(p[0], rotation, x, 0);
+    dVector3Add(p[0], position);
 
-    dVector3Set(sp8, plane_a, plane_d, 0.0f);
-    dMultiplyMatrix3Vector3(sp18[1], rotation, sp8, 0);
-    dVector3Add(sp18[1], position);
+    dVector3Set(x, plane_a, plane_d, 0.0f);
+    dMultiplyMatrix3Vector3(p[1], rotation, x, 0);
+    dVector3Add(p[1], position);
 
-    dVector3Set(sp8, plane_b, plane_d, 0.0f);
-    dMultiplyMatrix3Vector3(sp18[2], rotation, sp8, 0);
-    dVector3Add(sp18[2], position);
+    dVector3Set(x, plane_b, plane_d, 0.0f);
+    dMultiplyMatrix3Vector3(p[2], rotation, x, 0);
+    dVector3Add(p[2], position);
 
-    dVector3Set(sp8, plane_b, plane_c, 0.0f);
-    dMultiplyMatrix3Vector3(sp18[3], rotation, sp8, 0);
-    dVector3Add(sp18[3], position);
+    dVector3Set(x, plane_b, plane_c, 0.0f);
+    dMultiplyMatrix3Vector3(p[3], rotation, x, 0);
+    dVector3Add(p[3], position);
 
-    aabb[0] = sp18[0][0];
-    aabb[1] = sp18[0][0];
-    aabb[2] = sp18[0][1];
-    aabb[3] = sp18[0][1];
-    aabb[4] = sp18[0][2];
-    aabb[5] = sp18[0][2];
+    aabb[0] = p[0][0];
+    aabb[1] = p[0][0];
+    aabb[2] = p[0][1];
+    aabb[3] = p[0][1];
+    aabb[4] = p[0][2];
+    aabb[5] = p[0][2];
 
-    ptr = sp18[1];
-    for (i = 3; i != 0; i--)
+    for (i = 1; i < 4; i++)
     {
-        if (ptr[0] < aabb[0])
-            aabb[0] = ptr[0];
-        if (ptr[0] > aabb[1])
-            aabb[1] = ptr[0];
-        if (ptr[1] < aabb[2])
-            aabb[2] = ptr[1];
-        if (ptr[1] > aabb[3])
-            aabb[3] = ptr[1];
-        if (ptr[2] < aabb[4])
-            aabb[4] = ptr[2];
-        if (ptr[2] > aabb[5])
-            aabb[5] = ptr[2];
-        ptr += 4;
+        if (p[i][0] < aabb[0])
+            aabb[0] = p[i][0];
+        if (p[i][0] > aabb[1])
+            aabb[1] = p[i][0];
+        if (p[i][1] < aabb[2])
+            aabb[2] = p[i][1];
+        if (p[i][1] > aabb[3])
+            aabb[3] = p[i][1];
+        if (p[i][2] < aabb[4])
+            aabb[4] = p[i][2];
+        if (p[i][2] > aabb[5])
+            aabb[5] = p[i][2];
     }
 
     if (plane_flag != 0)
     {
         f32 negParam = -plane_param;
-        dVector3Set(sp8, plane_a, plane_c, negParam);
-        dMultiplyMatrix3Vector3(sp18[0], rotation, sp8, 0);
-        dVector3Add(sp18[0], position);
+        dVector3Set(x, plane_a, plane_c, negParam);
+        dMultiplyMatrix3Vector3(p[0], rotation, x, 0);
+        dVector3Add(p[0], position);
 
-        dVector3Set(sp8, plane_a, plane_d, negParam);
-        dMultiplyMatrix3Vector3(sp18[1], rotation, sp8, 0);
-        dVector3Add(sp18[1], position);
+        dVector3Set(x, plane_a, plane_d, negParam);
+        dMultiplyMatrix3Vector3(p[1], rotation, x, 0);
+        dVector3Add(p[1], position);
 
-        dVector3Set(sp8, plane_b, plane_d, negParam);
-        dMultiplyMatrix3Vector3(sp18[2], rotation, sp8, 0);
-        dVector3Add(sp18[2], position);
+        dVector3Set(x, plane_b, plane_d, negParam);
+        dMultiplyMatrix3Vector3(p[2], rotation, x, 0);
+        dVector3Add(p[2], position);
 
-        dVector3Set(sp8, plane_b, plane_c, negParam);
-        dMultiplyMatrix3Vector3(sp18[3], rotation, sp8, 0);
-        dVector3Add(sp18[3], position);
+        dVector3Set(x, plane_b, plane_c, negParam);
+        dMultiplyMatrix3Vector3(p[3], rotation, x, 0);
+        dVector3Add(p[3], position);
 
-        ptr = sp18[1];
-        for (i = 3; i != 0; i--)
+        for (i = 1; i < 4; i++)
         {
-            if (ptr[0] < aabb[0])
-                aabb[0] = ptr[0];
-            if (ptr[0] > aabb[1])
-                aabb[1] = ptr[0];
-            if (ptr[1] < aabb[2])
-                aabb[2] = ptr[1];
-            if (ptr[1] > aabb[3])
-                aabb[3] = ptr[1];
-            if (ptr[2] < aabb[4])
-                aabb[4] = ptr[2];
-            if (ptr[2] > aabb[5])
-                aabb[5] = ptr[2];
-            ptr += 4;
+            if (p[i][0] < aabb[0])
+                aabb[0] = p[i][0];
+            if (p[i][0] > aabb[1])
+                aabb[1] = p[i][0];
+            if (p[i][1] < aabb[2])
+                aabb[2] = p[i][1];
+            if (p[i][1] > aabb[3])
+                aabb[3] = p[i][1];
+            if (p[i][2] < aabb[4])
+                aabb[4] = p[i][2];
+            if (p[i][2] > aabb[5])
+                aabb[5] = p[i][2];
         }
     }
 }
@@ -199,7 +193,7 @@ int dCollideFinitePlaneSphere(dxGeom* planeGeomID, dxGeom* sphereGeomID, int, dC
 /**
  * Offset/Address/Size: 0xE8 | 0x8021D4EC | size: 0x18
  */
-dColliderFn* dFinitePlaneColliderFn(int num)
+static dColliderFn* dFinitePlaneColliderFn(int num)
 {
     if (num == 0)
     {

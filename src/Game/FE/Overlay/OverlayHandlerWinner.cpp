@@ -108,8 +108,8 @@ WinnerOverlay::~WinnerOverlay()
 
 /**
  * Offset/Address/Size: 0x304 | 0x80105970 | size: 0xCE0
- * TODO: 93.64% match - stack/register differences remain in localization
- * lookup/result wiring and final image lookup call-site setup.
+ * TODO: 94.37% match - saved-register differences remain in localization
+ * result wiring and final image lookup call-site setup.
  */
 
 template <typename StringType, typename ValueType>
@@ -121,6 +121,23 @@ StringType Format(const StringType&, const ValueType1&, const ValueType2&);
 extern nlLocalization* g_pLocalization;
 extern const unsigned short LocalizationTableNotFound[];
 extern const unsigned short MissingLocString[];
+
+static inline const unsigned short* LookupWinnerLocHash(unsigned long key)
+{
+    nlLocalization* loc = g_pLocalization;
+    if (loc->m_LookupTable == 0)
+    {
+        return LocalizationTableNotFound;
+    }
+
+    nlLocalization::StringLookup* entry = nlBSearch<nlLocalization::StringLookup, unsigned long>(key, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
+    if (entry)
+    {
+        return loc->m_FirstString + entry->StringOffset;
+    }
+
+    return MissingLocString;
+}
 
 void WinnerOverlay::SceneCreated()
 {
@@ -163,28 +180,7 @@ void WinnerOverlay::SceneCreated()
     nlStrToWcs(scoreLeftString.c_str(), scoreLeftWideString, 32);
     nlStrToWcs(scoreRightString.c_str(), scoreRightWideString, 32);
 
-    const unsigned short* formatLocString;
-    unsigned long key = 0x8C4180A4;
-    nlLocalization* loc = g_pLocalization;
-
-    if (loc->m_LookupTable == 0)
-    {
-        formatLocString = LocalizationTableNotFound;
-    }
-    else
-    {
-        nlLocalization::StringLookup* entry = nlBSearch<nlLocalization::StringLookup, unsigned long>(key, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
-        if (entry)
-        {
-            formatLocString = loc->m_FirstString + entry->StringOffset;
-        }
-        else
-        {
-            formatLocString = MissingLocString;
-        }
-    }
-
-    BasicString<unsigned short, Detail::TempStringAllocator> unformatted(formatLocString);
+    BasicString<unsigned short, Detail::TempStringAllocator> unformatted(LookupWinnerLocHash(0x8C4180A4));
     BasicString<unsigned short, Detail::TempStringAllocator> formatted;
 
     if (scoreLeft > scoreRight)
@@ -205,52 +201,9 @@ void WinnerOverlay::SceneCreated()
     mWinningTeam = (eTeamID)nlSingleton<GameInfoManager>::s_pInstance->GetTeam(winnerSide);
 
     unsigned long winnerLocID = GetLOCTeamName((eTeamID)mWinningTeam);
-    const unsigned short* winnerLocString;
+    BasicString<unsigned short, Detail::TempStringAllocator> winnerNameWideString(LookupWinnerLocHash(winnerLocID));
 
-    loc = g_pLocalization;
-
-    if (loc->m_LookupTable == 0)
-    {
-        winnerLocString = LocalizationTableNotFound;
-    }
-    else
-    {
-        nlLocalization::StringLookup* entry = nlBSearch<nlLocalization::StringLookup, unsigned long>(winnerLocID, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
-        if (entry)
-        {
-            winnerLocString = loc->m_FirstString + entry->StringOffset;
-        }
-        else
-        {
-            winnerLocString = MissingLocString;
-        }
-    }
-
-    BasicString<unsigned short, Detail::TempStringAllocator> winnerNameWideString(winnerLocString);
-
-    key = 0x8610A152;
-    const unsigned short* winnerFormatLocString;
-
-    loc = g_pLocalization;
-
-    if (loc->m_LookupTable == 0)
-    {
-        winnerFormatLocString = LocalizationTableNotFound;
-    }
-    else
-    {
-        nlLocalization::StringLookup* entry = nlBSearch<nlLocalization::StringLookup, unsigned long>(key, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
-        if (entry)
-        {
-            winnerFormatLocString = loc->m_FirstString + entry->StringOffset;
-        }
-        else
-        {
-            winnerFormatLocString = MissingLocString;
-        }
-    }
-
-    BasicString<unsigned short, Detail::TempStringAllocator> unformattedName(winnerFormatLocString);
+    BasicString<unsigned short, Detail::TempStringAllocator> unformattedName(LookupWinnerLocHash(0x8610A152));
     BasicString<unsigned short, Detail::TempStringAllocator> formattedName(Format(unformattedName, winnerNameWideString.c_str()));
 
     memcpy(mWinnerBuffer, formattedName.c_str(), 0x40);

@@ -30,7 +30,6 @@ void SetPlanarShadowOpacity(float);
 float GetPlanarShadowOpacity();
 void DrawPlanarShadow(const glModel*, const nlMatrix4&, float, bool, bool, bool, unsigned long);
 void DrawCoPlanarReference(eGLView, const glModel&, const nlMatrix4&, unsigned long);
-void GetShadowBoundingSquare(const glModel*, const nlMatrix4&, float&, float&, float&, float&, unsigned long);
 void GetAABBDimensions(const glModel*, AABBDimensions&, unsigned long);
 
 class DrawableModel : public DrawableObject

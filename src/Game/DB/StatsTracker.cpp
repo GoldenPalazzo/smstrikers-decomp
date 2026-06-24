@@ -2602,7 +2602,7 @@ extern "C" unsigned long fwrite(const void*, unsigned long, unsigned long, void*
 
 /**
  * Offset/Address/Size: 0x3DC | 0x801816A8 | size: 0x2D0
- * TODO: 95.61% match - remaining r29/r31 allocation in fopen/file and format-template paths
+ * TODO: 98.86% match - remaining r29/r31 allocation for file handle, format cursor, and final string release
  */
 void StatsTracker::WriteCurrentlyPlaying() const
 {
@@ -2641,112 +2641,26 @@ void StatsTracker::WriteCurrentlyPlaying() const
         formatData->mRefCount = 1;
     }
 
-    BasicStringInternal* retainedData;
-    BasicStringInternal* formatDataTmp = formatData;
-    const char* homeTeamName;
-    const char* homeSidekickName;
-    const char* awayTeamName;
-    const char* awaySidekickName;
-    const char* stadiumName;
-    BasicStringInternal* outputData;
-
-    stadiumName = TheWorldLoader.GetStadiumFilename(
-        nlSingleton<GameInfoManager>::s_pInstance->GetStadium());
-    awaySidekickName = GetSidekickName(nlSingleton<GameInfoManager>::s_pInstance->GetSidekick(1));
-    awayTeamName = GetTeamName(nlSingleton<GameInfoManager>::s_pInstance->GetTeam(1));
-    homeSidekickName = GetSidekickName(nlSingleton<GameInfoManager>::s_pInstance->GetSidekick(0));
-    homeTeamName = GetTeamName(nlSingleton<GameInfoManager>::s_pInstance->GetTeam(0));
-
-    Format(*(BasicString<char, Detail::TempStringAllocator>*)&outputData,
-        *(BasicString<char, Detail::TempStringAllocator>*)&formatDataTmp,
-        homeTeamName,
-        homeSidekickName,
-        awayTeamName,
-        awaySidekickName,
-        stadiumName);
-
-    BasicStringInternal* data = outputData;
-    if (data != 0)
-    {
-        data->mRefCount++;
-        data = outputData;
-    }
-    else
-    {
-        data = 0;
-    }
-    BasicStringInternal* toFree = outputData;
-    retainedData = data;
-
-    if (toFree != 0)
-    {
-        if (--toFree->mRefCount == 0)
-        {
-            if (toFree != 0)
-            {
-                if (toFree != 0)
-                {
-                    delete[] toFree->mData;
-                }
-                if (toFree != 0)
-                {
-                    nlFree(toFree);
-                }
-            }
-        }
-    }
-
-    toFree = formatData;
-    if (toFree != 0)
-    {
-        if (--toFree->mRefCount == 0)
-        {
-            if (toFree != 0)
-            {
-                if (toFree != 0)
-                {
-                    delete[] toFree->mData;
-                }
-                if (toFree != 0)
-                {
-                    nlFree(toFree);
-                }
-            }
-        }
-    }
+    BasicString<char, Detail::TempStringAllocator> s = Format(BasicString<char, Detail::TempStringAllocator>(formatData),
+        GetTeamName(nlSingleton<GameInfoManager>::s_pInstance->GetTeam(0)),
+        GetSidekickName(nlSingleton<GameInfoManager>::s_pInstance->GetSidekick(0)),
+        GetTeamName(nlSingleton<GameInfoManager>::s_pInstance->GetTeam(1)),
+        GetSidekickName(nlSingleton<GameInfoManager>::s_pInstance->GetSidekick(1)),
+        TheWorldLoader.GetStadiumFilename(nlSingleton<GameInfoManager>::s_pInstance->GetStadium()));
 
     s32 len;
-    if (retainedData != 0)
+    if (s.m_data != 0)
     {
-        len = retainedData->mSize - 1;
+        len = s.m_data->mSize - 1;
     }
     else
     {
         len = 0;
     }
 
-    const char* str = ((BasicString<char, Detail::TempStringAllocator>*)&retainedData)->c_str();
+    const char* str = s.c_str();
     fwrite(str, 1, len, file);
     fclose(file);
-
-    toFree = retainedData;
-    if (toFree != 0)
-    {
-        if (--toFree->mRefCount == 0)
-        {
-            if (toFree != 0)
-            {
-                if (toFree != 0)
-                {
-                    delete[] toFree->mData;
-                }
-                if (toFree != 0)
-                {
-                    nlFree(toFree);
-                }
-            }
-        }
-    }
 }
 
 /**
