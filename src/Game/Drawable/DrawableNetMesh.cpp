@@ -406,9 +406,9 @@ void DrawableNetMesh::Grab(NetMesh& netMesh)
 
 /**
  * Offset/Address/Size: 0xAC | 0x80114008 | size: 0x214
- * TODO: 99.77% match - init block still swaps lhs m_unk18/mJolt copy order,
- *       first blend loop init emits li r5/r6 instead of li r6/r5, and the
- *       0.0f/1.0f literal slots still resolve to different @sda21 entries.
+ * TODO: 88.68% scratch - init loads lhs fields in swapped order; blend loops
+ *       still use different pointer/index registers, and the 0.0f/1.0f
+ *       literal labels differ.
  */
 void DrawableNetMesh::Blend(float blendFactor, const DrawableNetMesh& lhs, const DrawableNetMesh& rhs)
 {
@@ -450,7 +450,7 @@ void DrawableNetMesh::Blend(float blendFactor, const DrawableNetMesh& lhs, const
 
     float oneMinusBlend = 1.0f - blendFactor;
 
-    for (int offset = 0, i = 0; i < mJolt; offset += sizeof(nlVector3), i++)
+    for (int i = 0, offset = 0; i < mJolt; i++, offset += sizeof(nlVector3))
     {
         pSrc = (nlVector3*)((char*)lhs.mpPosition + offset);
         pDst = (nlVector3*)((char*)mpPosition + offset);

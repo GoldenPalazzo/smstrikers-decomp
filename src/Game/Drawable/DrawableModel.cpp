@@ -61,6 +61,8 @@ static nlAVLTreeSlotPool<unsigned long, AABBDimensions, DefaultKeyCompare<unsign
 
 static unsigned long BallModelID = nlStringHash("gameplay/ball");
 
+static void DrawBallShadow(const nlVector3& vPosition, const BallShadowParams& p, bool bGlow);
+
 /**
  * Offset/Address/Size: 0x81C | 0x80122730 | size: 0x10
  */
@@ -104,7 +106,7 @@ AVLTreeNode* AVLTreeBase<unsigned long, AABBDimensions, BasicSlotPool<AVLTreeEnt
 
 /**
  * Offset/Address/Size: 0x1DD4 | 0x80121BE0 | size: 0x214
- * TODO: 90.88% match - fY0/fY1 register swap (f4 vs f6), prologue scheduling
+ * TODO: 91.07% match - initial constant/prologue scheduling and y load temp order
  */
 static void DrawBallShadow(const nlVector3& vPosition, const BallShadowParams& p, bool bGlow)
 {
@@ -118,7 +120,7 @@ static void DrawBallShadow(const nlVector3& vPosition, const BallShadowParams& p
         frac = 1.0f;
     }
 
-    f32 fY0, fX0, fY1, fX1;
+    f32 fY1, fX0, fY0, fX1;
     f32 half_dim = (1.0f - frac) * p.fRadius0 + frac * p.fRadius1;
     f32 fAlpha = (1.0f - frac) * (f32)p.nAlpha0 + frac * (f32)p.nAlpha1;
     s32 alpha = (s32)fAlpha;
@@ -372,8 +374,6 @@ static void Fresnelify(glModelPacket* pPacket, eGLView view)
 
 /**
  * Offset/Address/Size: 0x12A4 | 0x801210B0 | size: 0x598
- * TODO: 97.61% match - r30/r31 register swap for this/worldMatrix (scratch context),
- *       linker address mode diffs for glInventory/CrowdManager
  */
 void DrawableModel::DrawModel(const nlMatrix4& worldMatrix)
 {
@@ -387,7 +387,7 @@ void DrawableModel::DrawModel(const nlMatrix4& worldMatrix)
     unsigned long bCrowd;
     unsigned long litProgram;
     unsigned long unlitProgram;
-    unsigned char bLight;
+    unsigned int bLight;
     unsigned char bSpec;
     glModel* newModel;
 
@@ -461,14 +461,12 @@ void DrawableModel::DrawModel(const nlMatrix4& worldMatrix)
     }
 
     bLight = ((m_uObjectCreationFlags >> 7) & 1) ^ 1;
-    if (bLight)
+    if ((unsigned char)bLight)
     {
-        unsigned char temp = 1;
-        if (m_uObjectFlags & 0x00000004)
-            temp = g_bLightDynamicObjects;
+        unsigned int temp = (m_uObjectFlags & 0x00000004) ? g_bLightDynamicObjects : 1;
         bLight = temp;
     }
-    if (bLight)
+    if ((unsigned char)bLight)
     {
         if (!g_bDrawLitObjects)
             return;
@@ -525,7 +523,7 @@ void DrawableModel::DrawModel(const nlMatrix4& worldMatrix)
         pEnvData = glUserAlloc(GLUD_EnvDiffuse, 0, false);
     }
 
-    if (bLight)
+    if ((unsigned char)bLight)
     {
         if (m_uObjectFlags & 0x00000100)
         {

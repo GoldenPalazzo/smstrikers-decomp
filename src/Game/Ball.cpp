@@ -626,8 +626,7 @@ void cBall::SetVisible(bool visible)
 
 /**
  * Offset/Address/Size: 0x1104 | 0x8000AAD8 | size: 0x1D4
- * TODO: 99.40% match - FPR register coloring in spin branch: fSpinRand in f5 vs f9 target.
- *       Inline helper improved allocation and reduced diff count, but final float register map differs.
+ * TODO: 99.49% match - spin branch still uses different float registers for spin and velocity temporaries.
  */
 void cBall::SetVelocity(const nlVector3& velocity, eSpinType spin, const nlVector3* pAngularVelocity)
 {
@@ -654,7 +653,7 @@ void cBall::SetVelocity(const nlVector3& velocity, eSpinType spin, const nlVecto
 
         v3AngVel.f.x = (v3Up.f.y * velocity.f.z) - (v3Up.f.z * velY);
         v3AngVel.f.y = (-v3Up.f.x * velocity.f.z) + (v3Up.f.z * velX);
-        v3AngVel.f.z = (v3Up.f.x * velY) - (v3Up.f.y * velX);
+        v3AngVel.f.z = (velY * v3Up.f.x) - (v3Up.f.y * velX);
     }
     else if (spin == SPINTYPE_ROLLING)
     {

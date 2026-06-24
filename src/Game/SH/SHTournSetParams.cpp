@@ -35,6 +35,11 @@ void TempDisableSound();
 extern nlColour SubMenuHighliteColour;
 extern nlColour SubMenuUnhighliteColour;
 
+static inline MenuItem<TLComponentInstance>* TournSetParamsMenuItemAt(MenuList<TLComponentInstance>& menu, int idx)
+{
+    return &menu.mMenuItems[idx];
+}
+
 // /**
 //  * Offset/Address/Size: 0xBC | 0x800E1D48 | size: 0x15C
 //  */
@@ -177,7 +182,7 @@ void TournSetParamsScene::BuildSubMenuList(int menuitem, TLComponentInstance* co
 
 /**
  * Offset/Address/Size: 0x168C | 0x800E1060 | size: 0x644
- * TODO: 99.28% match - menu item mType store shape and first submenu call temporary differ.
+ * TODO: 99.74% match - first submenu call uses a direct instance argument instead of a temporary move.
  */
 void TournSetParamsScene::SceneCreated()
 {
@@ -196,8 +201,9 @@ void TournSetParamsScene::SceneCreated()
             InlineHasher(nlStringLowerHash("Layer")),
             InlineHasher(nlStringLowerHash(menuname)));
 
-        menuItem = &mMenuItems.mMenuItems[mMenuItems.mNumItemsAdded];
-        menuItem->mType = instance;
+        int numAdded = mMenuItems.mNumItemsAdded;
+        menuItem = TournSetParamsMenuItemAt(mMenuItems, numAdded);
+        mMenuItems.mMenuItems[numAdded].mType = instance;
         mMenuItems.mNumItemsAdded++;
 
         {

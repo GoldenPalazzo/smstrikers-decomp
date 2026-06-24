@@ -330,10 +330,12 @@ void Bowser::Update(float fDeltaT)
             g_pEventManager->CreateValidEvent(0x65, 0x14);
             EmissionController* pControl = EmissionManager::Create(fxGetGroup("bowser_fire"), 0);
             pControl->m_uUserData = (unsigned long)this;
-            Function<EmissionController&> update;
-            update.mTag = FREE_FUNCTION;
-            update.mFreeFunction = UpdateFireEmitter;
-            pControl->SetUpdateCallback(update);
+            {
+                Function<EmissionController&> update;
+                update.mTag = FREE_FUNCTION;
+                update.mFreeFunction = UpdateFireEmitter;
+                pControl->SetUpdateCallback(update);
+            }
             g_pEventManager->CreateValidEvent(0x64, 0x14);
         }
 
@@ -364,20 +366,6 @@ void Bowser::Update(float fDeltaT)
         }
     }
     break;
-    case BOWSER_STATE_JUMP:
-        if (mpAnimController->m_fTime > 0.6458333f)
-        {
-            Move(fDeltaT);
-            if (mpAnimController->TestFrameTrigger(16.0f))
-            {
-                mpPhysObj->DisableCollisions();
-            }
-        }
-        if (mpAnimController->m_ePlayMode == PM_HOLD && mpAnimController->m_fTime == 1.0f)
-        {
-            ActionDescend(0.1f);
-        }
-        break;
     case BOWSER_STATE_IDLE:
     {
         if (!CheckForAbort())
@@ -475,6 +463,20 @@ void Bowser::Update(float fDeltaT)
         }
         break;
     }
+    case BOWSER_STATE_JUMP:
+        if (mpAnimController->m_fTime > 0.6458333f)
+        {
+            Move(fDeltaT);
+            if (mpAnimController->TestFrameTrigger(16.0f))
+            {
+                mpPhysObj->DisableCollisions();
+            }
+        }
+        if (mpAnimController->m_ePlayMode == PM_HOLD && mpAnimController->m_fTime == 1.0f)
+        {
+            ActionDescend(0.1f);
+        }
+        break;
     case BOWSER_STATE_THROW:
     {
         if (!CheckForAbort())

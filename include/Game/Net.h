@@ -10,7 +10,7 @@ public:
     ~cNet();
     float GetGoalLineX() const;
     void GetPostLocation(nlVector3&, unsigned int, float) const;
-    void SetNetDimensions(float, float, float, float);
+    static void SetNetDimensions(float, float, float, float);
     static float GetNetHeight()
     {
         FORCE_DONT_INLINE;

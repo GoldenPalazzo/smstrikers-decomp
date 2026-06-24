@@ -70,6 +70,48 @@ static inline const unsigned short* LookupLocHash(unsigned long hash)
 }
 
 /**
+ * Offset/Address/Size: 0x26B8 | 0x801097BC | size: 0xCF0
+ * TODO: 98.21% match - remaining BasicString copy loops use swapped source/index registers.
+ */
+template <>
+template <>
+FormatImpl<BasicString<unsigned short, Detail::TempStringAllocator> >&
+    FormatImpl<BasicString<unsigned short, Detail::TempStringAllocator> >::operator% <const unsigned short*>(
+        const unsigned short* const& t)
+{
+    BasicString<unsigned short, Detail::TempStringAllocator> insert = LexicalCast<BasicString<unsigned short, Detail::TempStringAllocator>, const unsigned short*>(t);
+
+    for (int i = 0; i < (mString.m_data ? mString.m_data->mSize - 1 : 0); i++)
+    {
+        if (mString[i] != (unsigned short)'{')
+            continue;
+
+        if (i + 1 >= (mString.m_data ? mString.m_data->mSize - 1 : 0))
+            continue;
+
+        if (mString[i + 1] - '0' != mCurrentPos)
+            continue;
+
+        if (i + 2 >= (mString.m_data ? mString.m_data->mSize - 1 : 0))
+            continue;
+
+        if (mString[i + 2] != (unsigned short)'}')
+            continue;
+
+        mString.erase(&mString[0] + i, &mString[0] + i + 3);
+        mString[i];
+        unsigned short* mStringData = mString.m_data ? mString.m_data->mData : 0;
+        insert[0];
+        unsigned short* insertBegin = insert.m_data ? insert.m_data->mData : 0;
+        unsigned short* insertEndCow = &insert[(int)(insert.m_data ? insert.m_data->mSize - 1 : 0)];
+        mString.insert(mStringData + i, insertBegin, insert.m_data ? insert.m_data->mData + insert.m_data->mSize - 1 : (unsigned short*)0);
+    }
+
+    mCurrentPos++;
+    return *this;
+}
+
+/**
  * Offset/Address/Size: 0x1F28 | 0x8010902C | size: 0xAC
  */
 PausePostGameScene::PausePostGameScene()

@@ -1131,9 +1131,9 @@ void ChooseCupSceneV2::SetCurrentChamp(eTeamID currentChamp, bool isCPUChamp, TL
 
 /**
  * Offset/Address/Size: 0x0 | 0x800DA284 | size: 0x438
- * TODO: 95.13% match - popup callback Function<FnVoidVoid>/Bind stack-slot layout
- * still differs from target (0x40/0x50/0x60 vs 0x58/0x40 pattern), and FEPopupMenu
- * call sites still resolve to ref-signature symbols instead of by-value symbols.
+ * TODO: 98.76% match - GameInfoManager/isSuperCup registers are swapped, popup
+ * callback Bind temporaries still use different stack slots/copy width, and
+ * FEPopupMenu call sites still resolve to ref-signature symbols.
  */
 void ChooseCupSceneV2::Proceed()
 {
@@ -1236,9 +1236,9 @@ void ChooseCupSceneV2::Proceed()
             FunctorImpl_vfb* yesFunctor = new ((FunctorImpl_vfb*)nlMalloc(sizeof(FunctorImpl_vfb), 8, false)) FunctorImpl_vfb(bindContinue);
             yes.mFunctor = yesFunctor;
 
+            Function<FnVoidVoid> no;
             BindExp1_vfb bindNew = Bind<void, void (*)(bool), bool>(startNewCup, mIsSuperCup);
 
-            Function<FnVoidVoid> no;
             no.mTag = FUNCTOR;
             FunctorImpl_vfb* noFunctor = new ((FunctorImpl_vfb*)nlMalloc(sizeof(FunctorImpl_vfb), 8, false)) FunctorImpl_vfb(bindNew);
             no.mFunctor = noFunctor;

@@ -1924,8 +1924,8 @@ void cFielder::ActionLateOneTimerFromVolley(float)
  * Offset/Address/Size: 0x5DF0 | 0x8002C928 | size: 0x36C
  */
 /**
- * TODO: 99.63% match (scratch WNy4d) - register diffs in fMaxSimulatedTime
- * int-to-float conversion (offsets 60-80): f0/f1/f2 cyclic rotation.
+ * TODO: 99.66% match - register diffs in contact-time conversion and
+ * rotated contact-offset x/y components.
  */
 void cFielder::DoCommonInitActionLooseBall(const nlVector3& rv3OneTimerTarget)
 {
@@ -1938,7 +1938,8 @@ void cFielder::DoCommonInitActionLooseBall(const nlVector3& rv3OneTimerTarget)
     float fSin;
 
     cSAnim* pLeadGroundContactAnim = m_pAnimInventory->GetAnim(GetOneTimerLeadGroundContactAnims()->nAnimID);
-    float fMaxSimulatedTime = 0.6f * (GetOneTimerLeadGroundContactAnims()->fAnimContactFrame / (float)pLeadGroundContactAnim->m_nNumKeys);
+    float fMaxSimulatedTime = GetOneTimerLeadGroundContactAnims()->fAnimContactFrame / (float)pLeadGroundContactAnim->m_nNumKeys;
+    fMaxSimulatedTime *= 0.6f;
 
     float fSimulatedTime = 0.0f;
 
@@ -3075,9 +3076,8 @@ void MatrixCamFinishedCallback(MatrixEffectCam*)
 
 /**
  * Offset/Address/Size: 0x2D08 | 0x80029840 | size: 0x450
- * TODO: 96.38% match - r30/r31 register swap in BasicString temporary setup
+ * TODO: 99.62% match - r30/r31 register swap in BasicString temporary setup
  */
-#pragma opt_dead_assignments off
 void cFielder::SetupCaptainSTSAnimCam(bool arg1)
 {
     mActionShootToScoreVars.captainStsCamera = new ((cAnimCamera*)nlMalloc(sizeof(cAnimCamera), 8, false)) cAnimCamera();
@@ -3140,8 +3140,6 @@ void cFielder::SetupCaptainSTSAnimCam(bool arg1)
         cCameraManager::PushCamera(mActionShootToScoreVars.captainStsCamera);
     }
 }
-
-#pragma opt_dead_assignments reset
 
 /**
  * Offset/Address/Size: 0x2D04 | 0x8002983C | size: 0x4

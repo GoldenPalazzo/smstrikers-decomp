@@ -35,6 +35,8 @@ struct INTERLEAVED_ADPCM_HEADER
 namespace GCAudioStreaming
 {
 
+class AudioStream;
+
 class AudioStreamBuffer
 {
 public:
@@ -62,6 +64,7 @@ public:
     void CreateBuffers(unsigned long);
     void DeleteBuffers();
     void FreeBuffer(GCAudioStreaming::AudioStreamBuffer*);
+    static AudioStreamBuffer* GetFreeBuffer(GCAudioStreaming::AudioStream*);
 
     /* 0x000 */ unsigned long m_PoolSize;         // offset 0x0, size 0x4
     /* 0x004 */ unsigned char* m_MRAMBuffer;      // offset 0x4, size 0x4

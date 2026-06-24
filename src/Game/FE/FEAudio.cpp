@@ -368,7 +368,7 @@ long FEAudio::PlayAnimAudioEvent(const char* eventName, bool)
 
 /**
  * Offset/Address/Size: 0x7F4 | 0x8009F5A0 | size: 0x408
- * TODO: 98.68% match - pEntry and list head/tail use different registers
+ * TODO: 99.03% match - pEntry/list head-tail and copy loop use different registers
  */
 void FEAudio::BuildAnimAudioEventLookup()
 {
@@ -396,8 +396,7 @@ void FEAudio::BuildAnimAudioEventLookup()
             char* equalPos = strchr(pToken, '=');
             if (equalPos != NULL)
             {
-                pEntry = NULL;
-                equalPos[-1] = '\0';
+                equalPos[-1] = (char)(pEntry = NULL);
                 pSFXTypeStr = equalPos + 2;
                 *(LookupBlock*)&temp = *(LookupBlock*)&blankEntry;
                 entry.data = *(LookupBlock*)&temp;

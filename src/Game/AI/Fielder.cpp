@@ -1610,8 +1610,13 @@ void cFielder::CalcRegularShot(nlVector3& rv3Vel, nlVector3& rv3Target)
 
 /**
  * Offset/Address/Size: 0x95C8 | 0x80022904 | size: 0x834
- * TODO: 94.39% match - 6 unavoidable static symbol name diffs (init$/randgenSTS$ numbering)
+ * TODO: 99.39% match - remaining S2S_SCORE call-argument setup scheduling
  */
+static inline float CalcSwatSideProduct(const nlVector3& ballPos)
+{
+    return ballPos.f.y * ballPos.f.x;
+}
+
 void cFielder::CalcShootToScoreShot(nlVector3& v3BallVelocity, nlVector3& v3BallTarget)
 {
     float fShotSpeed;
@@ -1676,7 +1681,7 @@ void cFielder::CalcShootToScoreShot(nlVector3& v3BallVelocity, nlVector3& v3Ball
             int nSide = -1;
             if ((f32)fabs(ballPos->f.x) > 4.0f)
             {
-                if (ballPos->f.x * ballPos->f.y < 0.0f)
+                if (CalcSwatSideProduct(*ballPos) < 0.0f)
                 {
                     nSide = 0;
                 }
@@ -1716,9 +1721,12 @@ void cFielder::CalcShootToScoreShot(nlVector3& v3BallVelocity, nlVector3& v3Ball
             {
                 nlVector3 v3WorldSavePos;
                 GetWorldPoint(v3WorldSavePos, pGoalie->mBlendInfo.mv3BlendedSavePos, *goaliePos, aSaveAngle);
-                float sdy = v3WorldSavePos.f.y - v3IntceptPos.f.y;
-                float sdx = v3WorldSavePos.f.x - v3IntceptPos.f.x;
-                float sdz = v3WorldSavePos.f.z - v3IntceptPos.f.z;
+                float sdx;
+                float sdy;
+                float sdz;
+                sdy = v3WorldSavePos.f.y - v3IntceptPos.f.y;
+                sdx = v3WorldSavePos.f.x - v3IntceptPos.f.x;
+                sdz = v3WorldSavePos.f.z - v3IntceptPos.f.z;
                 if (sdx * sdx + sdy * sdy + sdz * sdz > 1.0f)
                 {
                     pGoalie->mpSaveData = NULL;
@@ -1764,9 +1772,12 @@ void cFielder::CalcShootToScoreShot(nlVector3& v3BallVelocity, nlVector3& v3Ball
         GetWorldPoint(v3BallTarget, pGoalie->mpSaveData->mv3SavePos, *goaliePos, pGoalie->m_aActualFacingDirection);
         if (!(fTime2Goalie < 0.03f))
         {
-            float sdy = v3IntceptPos.f.y - v3BallTarget.f.y;
-            float sdx = v3IntceptPos.f.x - v3BallTarget.f.x;
-            float sdz = v3IntceptPos.f.z - v3BallTarget.f.z;
+            float sdx;
+            float sdy;
+            float sdz;
+            sdy = v3IntceptPos.f.y - v3BallTarget.f.y;
+            sdx = v3IntceptPos.f.x - v3BallTarget.f.x;
+            sdz = v3IntceptPos.f.z - v3BallTarget.f.z;
             if (!(sdx * sdx + sdy * sdy + sdz * sdz > 4.0f))
             {
                 goto yellow_use_goalie_time;
@@ -1807,7 +1818,7 @@ void cFielder::CalcShootToScoreShot(nlVector3& v3BallVelocity, nlVector3& v3Ball
         pGoalie->mbShouldMiss = true;
         if (fTime >= 0.2f)
         {
-            ;
+            fTime = fTime;
         }
         else
         {
@@ -1831,10 +1842,7 @@ void cFielder::CalcShootToScoreShot(nlVector3& v3BallVelocity, nlVector3& v3Ball
             aAngle = (unsigned short)(aAngle + 0x8000);
         }
         short sAngle = (short)aAngle;
-        if (sAngle < 0)
-        {
-            sAngle = -sAngle;
-        }
+        sAngle = (sAngle < 0) ? -sAngle : sAngle;
         if ((unsigned short)sAngle > 0x271a)
         {
             unsigned short uAngle = aAngle;
@@ -1857,9 +1865,12 @@ void cFielder::CalcShootToScoreShot(nlVector3& v3BallVelocity, nlVector3& v3Ball
             {
                 goto spin_data;
             }
-            float sdy = v3IntceptPos.f.y - v3BlastPos.f.y;
-            float sdx = v3IntceptPos.f.x - v3BlastPos.f.x;
-            float sdz = v3IntceptPos.f.z - v3BlastPos.f.z;
+            float sdx;
+            float sdy;
+            float sdz;
+            sdy = v3IntceptPos.f.y - v3BlastPos.f.y;
+            sdx = v3IntceptPos.f.x - v3BlastPos.f.x;
+            sdz = v3IntceptPos.f.z - v3BlastPos.f.z;
             if (sdx * sdx + sdy * sdy + sdz * sdz > 9.0f)
             {
             spin_data:

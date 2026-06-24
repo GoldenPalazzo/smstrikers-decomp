@@ -558,8 +558,8 @@ FuzzyVariant Fuzzy::GoodBallCarrier(cFielder* TheFielder)
 
 /**
  * Offset/Address/Size: 0x3128 | 0x8008FBB4 | size: 0x1368
- * TODO: 77.62% match - stack slot offsets and hash/std::find setup ordering
- * still diverge in cache prologue.
+ * TODO: 94.43% match - cache prologue register allocation and late scoring
+ * temporaries still diverge.
  */
 struct StdMapNodeBase
 {
@@ -609,8 +609,7 @@ FuzzyVariant Fuzzy::InGoodWindupPosition(cFielder* TheFielder)
 
     FuzzyVariant fvFielder((cPlayer*)TheFielder);
     volatile unsigned long funcAddrTemp = (unsigned long)InGoodWindupPosition;
-    unsigned long hash = ((Variant*)&fvFielder)->GetHash();
-    hash += funcAddrTemp;
+    unsigned long hash = funcAddrTemp + ((Variant*)&fvFielder)->GetHash();
     FuzzyVariant fvFielder2((cPlayer*)TheFielder);
 
     if (ScriptQuestionCache::Instance()->Lookup(hash, bestValue, NULL))
@@ -700,175 +699,161 @@ FuzzyVariant Fuzzy::InGoodWindupPosition(cFielder* TheFielder)
             }
 
             float fOpen = FGREATER(WideOpen(g_pScriptCurrentFielder), 0.4f);
-            float fOpenFalse = 1.0f - fOpen;
-            float fOpenMin = (fOpen <= fOpenFalse) ? fOpen : fOpenFalse;
-            float fOpenMax = (fOpen >= fOpenFalse) ? fOpen : fOpenFalse;
-            float fOpenBranchRatio = fOpenMin / fOpenMax;
+            float fOpenInOffensiveZone = InOffensiveZone(g_pScriptCurrentFielder);
+            fOpen = (fOpenInOffensiveZone <= fOpen) ? fOpenInOffensiveZone : fOpen;
 
-            if (fOpen > 0.0f)
+            float fNotInDanger = 1.0f - InDanger(g_pScriptCurrentFielder).mData.f;
+            float fNotFarToTheirNet = 1.0f - FarToTheirNet(g_pScriptCurrentFielder);
+            fNotFarToTheirNet = (fNotFarToTheirNet <= fNotInDanger) ? fNotFarToTheirNet : fNotInDanger;
+
+            float fLosing = Losing(g_pScriptCurrentTeam);
+            float fTimeNearlyOver = TimeNearlyOver(g_pGame);
+            fLosing = (fLosing <= fTimeNearlyOver) ? fLosing : fTimeNearlyOver;
+
+            float fInFront = 1.0f - FLESS(InFrontOfTheirNet(g_pScriptCurrentFielder), 0.4f);
+            float fNotInFront = 1.0f - fInFront;
+            float fInFrontMin = (fInFront <= fNotInFront) ? fInFront : fNotInFront;
+            float fInFrontMax = (fInFront >= fNotInFront) ? fInFront : fNotInFront;
+            float fInFrontBranchRatio = fInFrontMin / fInFrontMax;
+
+            if (fInFront > 0.0f)
             {
-                SaveConfidence PushDOM3(&fConfidence);
+                SaveConfidence PushDOM4(&fConfidence);
 
-                fConfidence = (fConfidence <= fOpen) ? fConfidence : fOpen;
-                if (fConfidence < fOpen && fOpen < 0.5f)
+                fConfidence = (fConfidence <= fInFront) ? fConfidence : fInFront;
+                if (fConfidence < fInFront && fInFront < 0.5f)
                 {
                     double d = fConfidence;
-                    fConfidence = (float)d * fOpenBranchRatio;
+                    fConfidence = (float)d * fInFrontBranchRatio;
                 }
 
-                float fNotInDanger = 1.0f - InDanger(g_pScriptCurrentFielder).mData.f;
-                float fNotFarToTheirNet = 1.0f - FarToTheirNet(g_pScriptCurrentFielder);
-                fNotFarToTheirNet = (fNotFarToTheirNet <= fNotInDanger) ? fNotFarToTheirNet : fNotInDanger;
+                float fLosingFalse = 1.0f - fLosing;
+                float fLosingMin = (fLosing <= fLosingFalse) ? fLosing : fLosingFalse;
+                float fLosingMax = (fLosing >= fLosingFalse) ? fLosing : fLosingFalse;
+                float fLosingBranchRatio = fLosingMin / fLosingMax;
 
-                float fLosing = Losing(g_pScriptCurrentTeam);
-                float fTimeNearlyOver = TimeNearlyOver(g_pGame);
-                fLosing = (fLosing <= fTimeNearlyOver) ? fLosing : fTimeNearlyOver;
-
-                float fInFront = 1.0f - FLESS(InFrontOfTheirNet(g_pScriptCurrentFielder), 0.4f);
-                float fNotInFront = 1.0f - fInFront;
-                float fInFrontMin = (fInFront <= fNotInFront) ? fInFront : fNotInFront;
-                float fInFrontMax = (fInFront >= fNotInFront) ? fInFront : fNotInFront;
-                float fInFrontBranchRatio = fInFrontMin / fInFrontMax;
-
-                if (fInFront > 0.0f)
+                if (fLosing > 0.0f)
                 {
-                    SaveConfidence PushDOM4(&fConfidence);
+                    SaveConfidence PushDOM5(&fConfidence);
 
-                    fConfidence = (fConfidence <= fInFront) ? fConfidence : fInFront;
-                    if (fConfidence < fInFront && fInFront < 0.5f)
+                    fConfidence = (fConfidence <= fLosing) ? fConfidence : fLosing;
+                    if (fConfidence < fLosing && fLosing < 0.5f)
                     {
                         double d = fConfidence;
-                        fConfidence = (float)d * fInFrontBranchRatio;
+                        fConfidence = (float)d * fLosingBranchRatio;
                     }
 
-                    float fLosingFalse = 1.0f - fLosing;
-                    float fLosingMin = (fLosing <= fLosingFalse) ? fLosing : fLosingFalse;
-                    float fLosingMax = (fLosing >= fLosingFalse) ? fLosing : fLosingFalse;
-                    float fLosingBranchRatio = fLosingMin / fLosingMax;
-
-                    if (fLosing > 0.0f)
+                    if (fConfidence > fBestConfidence)
                     {
-                        SaveConfidence PushDOM5(&fConfidence);
-
-                        fConfidence = (fConfidence <= fLosing) ? fConfidence : fLosing;
-                        if (fConfidence < fLosing && fLosing < 0.5f)
-                        {
-                            double d = fConfidence;
-                            fConfidence = (float)d * fLosingBranchRatio;
-                        }
-
-                        if (fConfidence > fBestConfidence)
-                        {
-                            fBestConfidence = fConfidence;
-                            float fGoodToShoot = GoodToShoot(g_pScriptCurrentFielder).mData.f;
-                            FuzzyVariant returnValue(fGoodToShoot * 0.5f + fLosing * 0.5f);
-                            bestValue = returnValue;
-                        }
-                    }
-
-                    if (fLosingFalse > 0.0f)
-                    {
-                        SaveConfidence PushDOM5(&fConfidence);
-
-                        fConfidence = (fConfidence <= fLosingFalse) ? fConfidence : fLosingFalse;
-                        if (fConfidence < fLosingFalse && fLosingFalse < 0.5f)
-                        {
-                            double d = fConfidence;
-                            fConfidence = (float)d * fLosingBranchRatio;
-                        }
-
-                        if (fConfidence > fBestConfidence)
-                        {
-                            fBestConfidence = fConfidence;
-                            bestValue = GoodToShoot(g_pScriptCurrentFielder);
-                        }
+                        fBestConfidence = fConfidence;
+                        float fGoodToShoot = GoodToShoot(g_pScriptCurrentFielder).mData.f;
+                        FuzzyVariant returnValue(fGoodToShoot * 0.5f + fLosing * 0.5f);
+                        bestValue = returnValue;
                     }
                 }
 
-                if (fNotInFront > 0.0f)
+                if (fLosingFalse > 0.0f)
                 {
-                    SaveConfidence PushDOM4(&fConfidence);
+                    SaveConfidence PushDOM5(&fConfidence);
 
-                    fConfidence = (fConfidence <= fNotInFront) ? fConfidence : fNotInFront;
-                    if (fConfidence < fNotInFront && fNotInFront < 0.5f)
+                    fConfidence = (fConfidence <= fLosingFalse) ? fConfidence : fLosingFalse;
+                    if (fConfidence < fLosingFalse && fLosingFalse < 0.5f)
                     {
                         double d = fConfidence;
-                        fConfidence = (float)d * fInFrontBranchRatio;
+                        fConfidence = (float)d * fLosingBranchRatio;
                     }
 
-                    fTrueConfidence = LikelyToScore(g_pScriptCurrentFielder);
-                    fFalseConfidence = 1.0f - fTrueConfidence;
-                    fMinVal = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
-                    fMaxVal = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
-                    fBranchRatio = fMinVal / fMaxVal;
-
-                    if (fTrueConfidence > 0.0f)
+                    if (fConfidence > fBestConfidence)
                     {
-                        SaveConfidence PushDOM5(&fConfidence);
+                        fBestConfidence = fConfidence;
+                        bestValue = GoodToShoot(g_pScriptCurrentFielder);
+                    }
+                }
+            }
 
-                        fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
-                        if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
-                        {
-                            double d = fConfidence;
-                            fConfidence = (float)d * fBranchRatio;
-                        }
+            if (fNotInFront > 0.0f)
+            {
+                SaveConfidence PushDOM4(&fConfidence);
 
-                        if (fConfidence > fBestConfidence)
-                        {
-                            fBestConfidence = fConfidence;
-                            FuzzyVariant returnValue(fConfidence);
-                            bestValue = returnValue;
-                        }
+                fConfidence = (fConfidence <= fNotInFront) ? fConfidence : fNotInFront;
+                if (fConfidence < fNotInFront && fNotInFront < 0.5f)
+                {
+                    double d = fConfidence;
+                    fConfidence = (float)d * fInFrontBranchRatio;
+                }
+
+                fTrueConfidence = LikelyToScore(g_pScriptCurrentFielder);
+                fFalseConfidence = 1.0f - fTrueConfidence;
+                fMinVal = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+                fMaxVal = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+                fBranchRatio = fMinVal / fMaxVal;
+
+                if (fTrueConfidence > 0.0f)
+                {
+                    SaveConfidence PushDOM5(&fConfidence);
+
+                    fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
+                    if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
+                    {
+                        double d = fConfidence;
+                        fConfidence = (float)d * fBranchRatio;
                     }
 
-                    fTrueConfidence = fLosing;
-                    fFalseConfidence = 1.0f - fTrueConfidence;
-                    fMinVal = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
-                    fMaxVal = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
-                    fBranchRatio = fMinVal / fMaxVal;
-
-                    if (fTrueConfidence > 0.0f)
+                    if (fConfidence > fBestConfidence)
                     {
-                        SaveConfidence PushDOM5(&fConfidence);
+                        fBestConfidence = fConfidence;
+                        FuzzyVariant returnValue(fConfidence);
+                        bestValue = returnValue;
+                    }
+                }
 
-                        fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
-                        if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
-                        {
-                            double d = fConfidence;
-                            fConfidence = (float)d * fBranchRatio;
-                        }
+                fTrueConfidence = fLosing;
+                fFalseConfidence = 1.0f - fTrueConfidence;
+                fMinVal = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+                fMaxVal = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+                fBranchRatio = fMinVal / fMaxVal;
 
-                        if (fConfidence > fBestConfidence)
-                        {
-                            fBestConfidence = fConfidence;
-                            float fGoodToShoot = GoodToShoot(g_pScriptCurrentFielder).mData.f;
-                            fGoodToShoot = (fNotFarToTheirNet <= fGoodToShoot) ? fNotFarToTheirNet : fGoodToShoot;
-                            fGoodToShoot = (fOpen <= fGoodToShoot) ? fOpen : fGoodToShoot;
-                            FuzzyVariant returnValue(fLosing * 0.25f + fGoodToShoot * 0.55f + InFrontOfTheirNet(g_pScriptCurrentFielder) * 0.2f);
-                            bestValue = returnValue;
-                        }
+                if (fTrueConfidence > 0.0f)
+                {
+                    SaveConfidence PushDOM5(&fConfidence);
+
+                    fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
+                    if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
+                    {
+                        double d = fConfidence;
+                        fConfidence = (float)d * fBranchRatio;
                     }
 
-                    if (fFalseConfidence > 0.0f)
+                    if (fConfidence > fBestConfidence)
                     {
-                        SaveConfidence PushDOM5(&fConfidence);
+                        fBestConfidence = fConfidence;
+                        float fGoodToShoot = GoodToShoot(g_pScriptCurrentFielder).mData.f;
+                        fGoodToShoot = (fNotFarToTheirNet >= fGoodToShoot) ? fNotFarToTheirNet : fGoodToShoot;
+                        fGoodToShoot = (fOpen >= fGoodToShoot) ? fOpen : fGoodToShoot;
+                        FuzzyVariant returnValue(fLosing * 0.25f + fGoodToShoot * 0.55f + InFrontOfTheirNet(g_pScriptCurrentFielder) * 0.2f);
+                        bestValue = returnValue;
+                    }
+                }
 
-                        fConfidence = (fConfidence <= fFalseConfidence) ? fConfidence : fFalseConfidence;
-                        if (fConfidence < fFalseConfidence && fFalseConfidence < 0.5f)
-                        {
-                            double d = fConfidence;
-                            fConfidence = (float)d * fBranchRatio;
-                        }
+                if (fFalseConfidence > 0.0f)
+                {
+                    SaveConfidence PushDOM5(&fConfidence);
 
-                        if (fConfidence > fBestConfidence)
-                        {
-                            fBestConfidence = fConfidence;
-                            float fGoodToShoot = GoodToShoot(g_pScriptCurrentFielder).mData.f;
-                            fGoodToShoot = (fNotFarToTheirNet <= fGoodToShoot) ? fNotFarToTheirNet : fGoodToShoot;
-                            fGoodToShoot = (fOpen <= fGoodToShoot) ? fOpen : fGoodToShoot;
-                            FuzzyVariant returnValue(fGoodToShoot * 0.7f + InFrontOfTheirNet(g_pScriptCurrentFielder) * 0.3f);
-                            bestValue = returnValue;
-                        }
+                    fConfidence = (fConfidence <= fFalseConfidence) ? fConfidence : fFalseConfidence;
+                    if (fConfidence < fFalseConfidence && fFalseConfidence < 0.5f)
+                    {
+                        double d = fConfidence;
+                        fConfidence = (float)d * fBranchRatio;
+                    }
+
+                    if (fConfidence > fBestConfidence)
+                    {
+                        fBestConfidence = fConfidence;
+                        float fGoodToShoot = GoodToShoot(g_pScriptCurrentFielder).mData.f;
+                        fGoodToShoot = (fNotFarToTheirNet >= fGoodToShoot) ? fNotFarToTheirNet : fGoodToShoot;
+                        fGoodToShoot = (fOpen >= fGoodToShoot) ? fOpen : fGoodToShoot;
+                        FuzzyVariant returnValue(fGoodToShoot * 0.7f + InFrontOfTheirNet(g_pScriptCurrentFielder) * 0.3f);
+                        bestValue = returnValue;
                     }
                 }
             }

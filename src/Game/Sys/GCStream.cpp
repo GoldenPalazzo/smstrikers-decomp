@@ -23,7 +23,47 @@ namespace GCAudioStreaming
 
 nlArrayAllocator<AudioStream::READ_CB_INFO> AudioStream::READ_CB_INFO::s_AllocPool;
 
+inline AudioStreamBuffer* AudioBufferMgr::GetFreeBuffer(AudioStream* pStream)
+{
+    AudioBufferMgr& mgr = pStream->m_BuffMgr;
+    AudioStreamBuffer* pBuf;
+    unsigned long i = 0;
+    unsigned long free;
+    unsigned long mask;
+    unsigned long test;
+
+    for (unsigned long j = 0; j < mgr.m_BufferCount; j++)
+    {
+        free = mgr.m_BuffersFree;
+        mask = 1 << i;
+        test = free & mask;
+        test = (-(long)test | test) >> 31;
+        if ((int)test == 1)
+        {
+            pBuf = &mgr.m_Buffers[i];
+            mgr.m_BuffersFree = free & ~mask;
+            pBuf->m_pStream = pStream;
+            pBuf->m_UpdateOffset = 0;
+            pBuf->m_Volume = 0x7F;
+            pBuf->m_Pan = 0x40;
+
+            unsigned long remaining = mgr.m_BuffersFree;
+            int count = 0;
+            while (remaining)
+            {
+                remaining &= (remaining - 1);
+                count++;
+            }
+            ___blank("After buffer alloc there are %d availible\n", count);
+            return pBuf;
+        }
+        i++;
+    }
+
+    return 0;
 }
+
+} // namespace GCAudioStreaming
 
 unsigned char ARRAY_ALLOCATOR_MEMORY_class_name_s_AllocPool[sizeof(GCAudioStreaming::AudioStream::READ_CB_INFO) * 32];
 
@@ -443,44 +483,7 @@ void GCAudioStreaming::MonoAudioStream::Warm(bool CoolOnStop)
     m_Flags &= ~(1 << SF_SeriousStop);
     m_Flags = (m_Flags & ~(1 << SF_CoolOnStop)) | ((unsigned long)CoolOnStop << SF_CoolOnStop);
 
-    AudioBufferMgr& mgr = m_BuffMgr;
-    AudioStreamBuffer* pBuf;
-    unsigned long i = 0;
-    unsigned long free;
-    unsigned long mask;
-    unsigned long test;
-
-    for (unsigned long j = 0; j < mgr.m_BufferCount; j++)
-    {
-        free = mgr.m_BuffersFree;
-        mask = 1 << i;
-        test = free & mask;
-        test = (-(long)test | test) >> 31;
-        if ((int)test == 1)
-        {
-            pBuf = &mgr.m_Buffers[i];
-            mgr.m_BuffersFree = free & ~mask;
-            pBuf->m_pStream = this;
-            pBuf->m_UpdateOffset = 0;
-            pBuf->m_Volume = 0x7F;
-            pBuf->m_Pan = 0x40;
-
-            unsigned long remaining = mgr.m_BuffersFree;
-            int count = 0;
-            while (remaining)
-            {
-                remaining &= (remaining - 1);
-                count++;
-            }
-            ___blank("After buffer alloc there are %d availible\n", count);
-            goto done_alloc;
-        }
-        i++;
-    }
-
-    pBuf = 0;
-
-done_alloc:
+    AudioStreamBuffer* pBuf = AudioBufferMgr::GetFreeBuffer(this);
     m_Buffers[0] = pBuf;
 
     m_UpdateLen = m_Buffers[0]->m_BufferSize >> 1;

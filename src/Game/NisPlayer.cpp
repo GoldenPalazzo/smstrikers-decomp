@@ -1068,6 +1068,7 @@ BasicString<char, Detail::TempStringAllocator> NisPlayer::GetTargetFilter(NisTar
 
 /**
  * Offset/Address/Size: 0x610 | 0x801152EC | size: 0x99C
+ * TODO: 94.27% match - remaining r30/r31/r28 register rotation and BasicString temporary stack-slot differences
  */
 void NisPlayer::Load(const char* nisType, NisTarget target, NisUseStadiumOffset useStadiumOffset, NisUseFilter useFilter, NisWinnerType winnerType)
 {
@@ -1179,7 +1180,7 @@ void NisPlayer::Load(const char* nisType, NisTarget target, NisUseStadiumOffset 
             nisHeader.stadiumOffset.f.z = 0.0f;
         }
 
-        bool mirrored = false;
+        bool mirrored;
         if (target == NIS_TARGET_LOSER_CAPTAIN || target == NIS_TARGET_WINNER_CAPTAIN || target == NIS_TARGET_WINNER_SIDEKICK || target == NIS_TARGET_LOSER_GOALIE || target == NIS_TARGET_WINNER_GOALIE || target == NIS_TARGET_LOSER_SIDEKICK)
         {
             mirrored = true;
@@ -1190,7 +1191,7 @@ void NisPlayer::Load(const char* nisType, NisTarget target, NisUseStadiumOffset 
 
             if (mWinnerSide[winnerType] != 0)
             {
-                mirrored = !mirrored;
+                mirrored = (mirrored == false);
             }
         }
         else
@@ -1209,6 +1210,14 @@ void NisPlayer::Load(const char* nisType, NisTarget target, NisUseStadiumOffset 
                 {
                     mirrored = true;
                 }
+                else
+                {
+                    mirrored = false;
+                }
+            }
+            else
+            {
+                mirrored = false;
             }
         }
 

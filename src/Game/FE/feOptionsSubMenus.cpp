@@ -34,6 +34,11 @@ static const char* GAMEPLAY_MENU_SLIDE = "Slide3";
 static const char* SAVE_LOAD_SLIDE = "Slide_SaveLoad";
 static const char* CHEATS_MENU_SLIDE = "Slide5";
 
+static inline MenuItem<TLComponentInstance>* AudioOptionsMenuItemAt(MenuList<TLComponentInstance>& menu, int idx)
+{
+    return &menu.mMenuItems[idx];
+}
+
 /**
  * Offset/Address/Size: 0x0 | 0x800B5044 | size: 0x4
  */
@@ -1507,8 +1512,9 @@ OptionsAudioMenuV2::OptionsAudioMenuV2(FEPresentation* presentation, ButtonCompo
             InlineHasher(nlStringLowerHash("Layer")),
             InlineHasher(nlStringLowerHash(menuname)));
 
-        MenuItem<TLComponentInstance>* menuItem = &mMenuItems.mMenuItems[mMenuItems.mNumItemsAdded];
-        menuItem->mType = (TLComponentInstance*)instance;
+        int numAdded = mMenuItems.mNumItemsAdded;
+        MenuItem<TLComponentInstance>* menuItem = AudioOptionsMenuItemAt(mMenuItems, numAdded);
+        mMenuItems.mMenuItems[numAdded].mType = (TLComponentInstance*)instance;
         mMenuItems.mNumItemsAdded++;
 
         {

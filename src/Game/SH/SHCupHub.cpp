@@ -2995,63 +2995,13 @@ unsigned char CupHubScene::UpdateKnockout2(float fDeltaT)
         (InlineHasher&)h3,
         (InlineHasher&)h1);
 
-    nlLocalization* loc = g_pLocalization;
     s16 winnerIndex = (s16)mAnimatingKnockoutTeams[0];
     eTeamID winnerTeam = pGame->mTeamIndex[winnerIndex];
     unsigned long locHash = nlStringLowerHash("STANDINGS_WINNER");
-    const unsigned short* locString;
-
-    if (loc->m_LookupTable == 0)
-    {
-        locString = LocalizationTableNotFound;
-    }
-    else
-    {
-        nlLocalization::StringLookup* entry = nlBSearch(locHash, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
-        locString = (entry != 0) ? (loc->m_FirstString + entry->StringOffset) : MissingLocString;
-    }
-
-    BasicStringData<unsigned short>* data = (BasicStringData<unsigned short>*)nlMalloc(0x10, 8, true);
-    if (data != 0)
-    {
-        data->mData = 0;
-        data->mSize = 0;
-        data->mCapacity = 0;
-
-        const unsigned short* ptr = locString;
-        while (*ptr++ != 0)
-        {
-            data->mSize++;
-        }
-
-        data->mSize++;
-        data->mData = (unsigned short*)nlMalloc((data->mSize + 1) * 2, 8, true);
-        data->mCapacity = data->mSize;
-
-        int i = 0;
-        while (i < data->mSize)
-        {
-            data->mData[i] = *locString;
-            i++;
-            locString++;
-        }
-
-        data->mRefCount = 1;
-    }
-
+    const unsigned short* locString = LookupLocHash(locHash);
+    BasicStringData<unsigned short>* data = BuildWideStringData(locString);
     unsigned long charHash = GetLOCCharacterName(winnerTeam, false, false);
-    loc = g_pLocalization;
-    const unsigned short* charName;
-
-    if (loc->m_LookupTable == 0)
-    {
-        charName = LocalizationTableNotFound;
-    }
-    else
-    {
-        nlLocalization::StringLookup* entry = nlBSearch(charHash, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
-        charName = (entry != 0) ? (loc->m_FirstString + entry->StringOffset) : MissingLocString;
-    }
+    const unsigned short* charName = LookupLocHash(charHash);
 
     BasicString<unsigned short, Detail::TempStringAllocator> winnerString = Format(BasicString<unsigned short, Detail::TempStringAllocator>(data), charName);
 

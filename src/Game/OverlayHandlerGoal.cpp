@@ -949,7 +949,7 @@ void GoalOverlay::DoMatchEndOverlay()
 
 /**
  * Offset/Address/Size: 0x6E8 | 0x80100758 | size: 0x6BC
- * TODO: 99.21% match - remaining saved-register swaps between the object pointer and localization string data.
+ * TODO: 99.54% match - remaining saved-register swaps between object pointer, localization string pointer, and wide string data.
  */
 void GoalOverlay::SetWinnerTitle()
 {

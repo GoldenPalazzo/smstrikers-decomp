@@ -68,7 +68,7 @@ void FEInGameMessengerManager::Update(float fDeltaT)
 
 /**
  * Offset/Address/Size: 0x140 | 0x800FFA5C | size: 0x414
- * TODO: 97.60% match - remaining diffs are this/timeState register swap
+ * TODO: 97.77% match - remaining diffs are this/timeState register swap
  * (r30/r31) and ListEntry constructor temporary register ordering.
  */
 #pragma opt_common_subs off
@@ -159,13 +159,15 @@ void FEInGameMessengerManager::EnterNewTimeState(FEInGameMessengerManager::eTime
     case TS_GAME_LATE:
     {
         int sequence[4] = { 0, 1, 2, 3 };
+        int* cur = sequence;
+        int* base = sequence;
 
-        for (int i = 0; i < 4; i++)
+        for (int i = 0; i < 4; i++, cur++)
         {
             int swapInd = i + nlRandom(4 - i, &nlDefaultSeed);
-            int temp = sequence[i];
-            sequence[i] = sequence[swapInd];
-            sequence[swapInd] = temp;
+            int temp = *cur;
+            *cur = base[swapInd];
+            base[swapInd] = temp;
         }
 
         pTail = &m_messageQueue.m_Tail;

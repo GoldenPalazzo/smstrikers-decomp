@@ -225,9 +225,10 @@ bool BasicStadium::DoInitialize()
     pObject = FindDrawableObject(nlStringLowerHash("gameplay/star"));
     pObject->m_uObjectFlags &= 0xFFFFFFFE;
 
-    glModel* pGlModel;
+    glModelPacket* pPacket;
     int counter = 1;
     u8 keepLooking = 1;
+    glModel* pGlModel;
     while (keepLooking)
     {
         char szTemp1[256];
@@ -239,7 +240,7 @@ bool BasicStadium::DoInitialize()
         {
             DrawableModel* model = pObject->AsDrawableModel();
             pGlModel = model->m_pModel;
-            for (glModelPacket* pPacket = pGlModel->packets; pPacket < pGlModel->packets + pGlModel->numPackets; pPacket++)
+            for (pPacket = pGlModel->packets; pPacket < pGlModel->packets + pGlModel->numPackets; pPacket++)
             {
                 glSetRasterState(pPacket->state.raster, GLS_DepthWrite, 1);
                 glSetRasterState(pPacket->state.raster, GLS_AlphaTest, 0);
@@ -754,7 +755,7 @@ bool BasicStadium::DoInitialize()
         float fNetWidth = GetConfigFloat(gpConfig, szKey, 0.0f);
         nlStrNCat<char>(szKey, m_szBaseName, " net height", 0x100);
         float fNetHeight = GetConfigFloat(gpConfig, szKey, 0.0f);
-        cField::mpNet[0]->SetNetDimensions(fNetWidth, fNetHeight, fGoalpostRadius, fGoalpostOffset);
+        cNet::SetNetDimensions(fNetWidth, fNetHeight, fGoalpostRadius, fGoalpostOffset);
         nlStrNCat<char>(szKey, m_szBaseName, " physics net width", 0x100);
         float fPhysNetWidth = GetConfigFloat(gpConfig, szKey, 0.0f);
         nlStrNCat<char>(szKey, m_szBaseName, " physics net height", 0x100);
@@ -905,7 +906,7 @@ bool BasicStadium::DoInitialize()
             {
                 DrawableObject* extraBall = ball->Clone();
                 extraBall->m_uObjectFlags &= 0xFFFFFFFE;
-                BasicString<char, Detail::TempStringAllocator> name = Format(BasicString<char, Detail::TempStringAllocator>("extra_ball_{0}"), i);
+                BasicString<char, Detail::TempStringAllocator> name = Format(BasicString<char, Detail::TempStringAllocator>(((void)0, "extra_ball_{0}")), i);
                 unsigned long extraHash = nlStringHash(name.c_str());
                 AddDrawableObject(extraHash, extraBall);
             }
@@ -922,8 +923,8 @@ bool BasicStadium::DoInitialize()
         {
             u32* pCur = pData;
             u32 uFlags = eOC_OPTIMIZE_OUT_FROM_GAMEPLAY;
-            unsigned long numEntries = fileSize >> 2;
-            for (unsigned long j = 0; j < numEntries; j++)
+            fileSize = fileSize >> 2;
+            for (unsigned long j = 0; j < fileSize; j++)
             {
                 DrawableObject* pObj = FindDrawableObject(*pCur);
                 if (pObj != NULL)

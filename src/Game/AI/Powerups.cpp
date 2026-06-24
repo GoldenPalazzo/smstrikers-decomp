@@ -1197,6 +1197,21 @@ PowerupBase::PowerupBase(cFielder* pTarget, ePowerUpType eType, float fRadius, e
     m_pPhysicsObject->EnableCollisions();
 }
 
+static inline void ReleasePowerupModel(ePowerUpType type, DrawableObject* pDrawable)
+{
+    int i;
+
+    for (i = 0; i < 25; i++)
+    {
+        if (pDrawable == powerupModelPool.mObjs[type][i])
+        {
+            pDrawable->m_uObjectFlags &= ~1;
+            powerupModelPool.mFree[type][i] = true;
+            break;
+        }
+    }
+}
+
 /**
  * Offset/Address/Size: 0x4540 | 0x8005EE2C | size: 0x11C
  */
@@ -1213,19 +1228,7 @@ PowerupBase::~PowerupBase()
         }
     }
 
-    DrawableObject* pDrawable = m_pDrawableObj;
-    int type = m_eType;
-    int i;
-
-    for (i = 0; i < 25; i++)
-    {
-        if (pDrawable == powerupModelPool.mObjs[type][i])
-        {
-            pDrawable->m_uObjectFlags &= ~1;
-            powerupModelPool.mFree[type][i] = true;
-            break;
-        }
-    }
+    ReleasePowerupModel(m_eType, m_pDrawableObj);
 
     delete m_pPhysicsObject;
 }

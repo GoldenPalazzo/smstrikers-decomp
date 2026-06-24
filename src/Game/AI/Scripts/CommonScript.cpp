@@ -1795,6 +1795,7 @@ FuzzyVariant Fuzzy::GetPassDirection(cPlayer* pFromPlayer, cPlayer* pTargetPlaye
 
 /**
  * Offset/Address/Size: 0x801C | 0x800721EC | size: 0xD64
+ * TODO: 97.68% match - return/hash registers and cache insertion stack slots differ.
  */
 FuzzyVariant Fuzzy::GoodToShoot(cFielder* TheFielder)
 {
@@ -1813,12 +1814,9 @@ FuzzyVariant Fuzzy::GoodToShoot(cFielder* TheFielder)
         return bestValue;
     }
 
-    float fTrueConfidence = FarToTheirNet((cPlayer*)TheFielder);
     float fInFrontOfNet = 1.0f - InFrontOfTheirNet(TheFielder);
-    if (fTrueConfidence > fInFrontOfNet)
-    {
-        fTrueConfidence = fInFrontOfNet;
-    }
+    float fTrueConfidence = FarToTheirNet((cPlayer*)TheFielder);
+    fTrueConfidence = (fTrueConfidence <= fInFrontOfNet) ? fTrueConfidence : fInFrontOfNet;
 
     float fFalseConfidence = 1.0f - fTrueConfidence;
     float fMinVal = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
@@ -1855,13 +1853,17 @@ FuzzyVariant Fuzzy::GoodToShoot(cFielder* TheFielder)
 
         float fNetOpeness = LikelyToScore(TheFielder);
         float fPlayerDistance = PlayerShotDistance(TheFielder);
-        float fPlayerWeighting = g_pGame->m_pGameTweaks->unk2E0;
         float fNetWeighting = g_pGame->m_pGameTweaks->unk2DC;
-        float fTotalSum = 1.0f + fNetOpeness * fNetWeighting + fPlayerDistance * fPlayerWeighting;
-        float fTotalWeight = 1.0f + fNetWeighting + fPlayerWeighting;
-        fNetOpeness = 1.0f;
+        float fPlayerWeighting = g_pGame->m_pGameTweaks->unk2E0;
+        float fTotalWeight = 0.0f;
+        float fTotalSum = 0.0f;
+        fTotalWeight += fNetWeighting;
+        fTotalSum += fNetOpeness * fNetWeighting;
+        fTotalWeight += fPlayerWeighting;
+        fTotalSum += fPlayerDistance * fPlayerWeighting;
+        fNetOpeness = 0.0f;
 
-        if (fTotalWeight > 1.0f)
+        if (fTotalWeight > 0.0f)
         {
             fNetOpeness = fTotalSum / fTotalWeight;
         }
@@ -1875,10 +1877,14 @@ FuzzyVariant Fuzzy::GoodToShoot(cFielder* TheFielder)
             fNetOpeness = 1.0f;
         }
 
-        Goalie* pGoalie = NULL;
+        Goalie* pGoalie;
         if (TheFielder != NULL)
         {
-            pGoalie = TheFielder->m_pTeam->GetOtherTeam()->GetGoalie();
+            pGoalie = (TheFielder != NULL) ? TheFielder->m_pTeam->GetOtherTeam()->GetGoalie() : NULL;
+        }
+        else
+        {
+            pGoalie = NULL;
         }
 
         float fTrueConfidence2 = Stunned(pGoalie);
@@ -1943,7 +1949,7 @@ FuzzyVariant Fuzzy::GoodToShoot(cFielder* TheFielder)
             {
                 fBestConfidence = fConfidence;
                 float fNearToNet = NearToTheirNet((cPlayer*)TheFielder);
-                FuzzyVariant fvResult(fNearToNet * 0.3f + fNetOpeness * 0.7f);
+                FuzzyVariant fvResult(fNetOpeness * 0.7f + fNearToNet * 0.3f);
                 bestValue = fvResult;
             }
         }
@@ -2801,8 +2807,20 @@ FuzzyVariant Fuzzy::GetBestLooseBallAction(cFielder* TheFielder)
         float fNotOpen = 1.0f - Open(TheFielder);
         float fPressured = Pressured(TheFielder);
 
-        fOwnerless = (fOwnerless >= fOnMushrooms) ? fOwnerless : fOnMushrooms;
-        fNotOpen = (fNotOpen >= fOwnerless) ? fNotOpen : fOwnerless;
+        if (fOwnerless >= fOnMushrooms)
+        {
+        }
+        else
+        {
+            fOwnerless = fOnMushrooms;
+        }
+        if (fNotOpen >= fOwnerless)
+        {
+        }
+        else
+        {
+            fNotOpen = fOwnerless;
+        }
         if (fPressured >= fNotOpen)
         {
             fNotOpen = fPressured;
@@ -2925,7 +2943,7 @@ FuzzyVariant Fuzzy::GetBestLooseBallAction(cFielder* TheFielder)
             hitAction.ExtraData = *(Variant*)&otherSBC;
             hitAction.SelectionChance = fSelectChance;
 
-            if (BallOwner(otherSBC.mData.pPlayer) != 0.0f)
+            if (BallOwner(otherSBC.mData.pPlayer))
             {
                 if (fConfidence > fBestConfidence)
                 {
@@ -2935,7 +2953,7 @@ FuzzyVariant Fuzzy::GetBestLooseBallAction(cFielder* TheFielder)
             }
             else
             {
-                if (WindingUpForShot((cFielder*)otherSBC.mData.pPlayer) != 0.0f)
+                if (WindingUpForShot((cFielder*)otherSBC.mData.pPlayer))
                 {
                     cTeam* fielderTeam = TheFielder ? ((cPlayer*)TheFielder)->m_pTeam : NULL;
                     float fLosing = Losing(fielderTeam);
@@ -2975,15 +2993,9 @@ FuzzyVariant Fuzzy::GetBestLooseBallAction(cFielder* TheFielder)
                 {
                     float fRecvPass = ReceivingPassDelayed((cFielder*)otherSBC.mData.pPlayer);
                     float fChasing = ChasingBall(otherSBC.mData.pPlayer);
-                    if (fChasing >= fRecvPass)
-                    {
-                    }
-                    else
-                    {
-                        fChasing = fRecvPass;
-                    }
+                    fChasing = (fChasing >= fRecvPass) ? fChasing : fRecvPass;
 
-                    if (fChasing != 0.0f)
+                    if (fChasing)
                     {
                         cTeam* fielderTeam = TheFielder ? ((cPlayer*)TheFielder)->m_pTeam : NULL;
                         float fLosing = Losing(fielderTeam);
@@ -3003,7 +3015,7 @@ FuzzyVariant Fuzzy::GetBestLooseBallAction(cFielder* TheFielder)
                         cPlayer* pOtherPlayer = otherSBC.mData.pPlayer;
                         float fNearBallFielder = NearToBall((cPlayer*)TheFielder);
                         float fNearBallOther = NearToBall(pOtherPlayer);
-                        float fGreater = FGREATER(fNearBallFielder, fNearBallOther);
+                        float fGreater = FGREATER(fNearBallOther, fNearBallFielder);
 
                         if (fGreater >= fDefZone)
                         {
@@ -3011,7 +3023,8 @@ FuzzyVariant Fuzzy::GetBestLooseBallAction(cFielder* TheFielder)
                         }
 
                         float fAbleToIntercept = AbleToInterceptBall(otherSBC.mData.pPlayer);
-                        fTrueConfidence = fDefZone * 0.3f + fAbleToIntercept * 0.3f + fLosing * 0.4f;
+                        float fWeightedDefZone = fDefZone * 0.3f;
+                        fTrueConfidence = fWeightedDefZone + fAbleToIntercept * 0.3f + fLosing * 0.4f;
                         fFalseConfidence = 1.0f - fTrueConfidence;
                         fMinVal = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
                         fMaxVal = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
@@ -3042,6 +3055,7 @@ FuzzyVariant Fuzzy::GetBestLooseBallAction(cFielder* TheFielder)
 
         FuzzyVariant returnAction2(18);
         returnAction2.ExtraData = *(Variant*)&powerupToUse;
+        float fPowerupConfidence = powerupToUse.Confidence;
 
         SkillTweaks* pSkillTweaks2 = SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide);
         returnAction2.SelectionChance = CalcSelectChance(pSkillTweaks2->Off_PassReceivePowerupChance, Aggressive(TheFielder));
@@ -3054,7 +3068,7 @@ FuzzyVariant Fuzzy::GetBestLooseBallAction(cFielder* TheFielder)
         {
             fTrueConfidence = 0.0f;
         }
-        fTrueConfidence = (fTrueConfidence <= powerupToUse.Confidence) ? fTrueConfidence : powerupToUse.Confidence;
+        fTrueConfidence = (fTrueConfidence <= fPowerupConfidence) ? fTrueConfidence : fPowerupConfidence;
 
         fFalseConfidence = 1.0f - fTrueConfidence;
         fMinVal = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
@@ -3095,7 +3109,7 @@ FuzzyVariant Fuzzy::GetBestLooseBallAction(cFielder* TheFielder)
             fNotCloseTo = (fNotCloseTo <= fNotDefZone) ? fNotCloseTo : fNotDefZone;
 
             fNotBestConf = (fNotBestConf <= fNotCloseTo) ? fNotBestConf : fNotCloseTo;
-            fNotBestConf = (powerupToUse.Confidence <= fNotBestConf) ? fNotBestConf : powerupToUse.Confidence;
+            fNotBestConf = (fPowerupConfidence <= fNotBestConf) ? fNotBestConf : fPowerupConfidence;
 
             fTrueConfidence = fNotBestConf;
             fFalseConfidence = 1.0f - fTrueConfidence;
@@ -3204,15 +3218,10 @@ FuzzyVariant Fuzzy::GetBestLooseBallAction(cFielder* TheFielder)
             }
         }
 
-        fTrueConfidence = Fuzzy::GoodToChipShot(TheFielder).mData.f * 0.5f + oneTimerScore.mData.f * 0.5f;
+        float fGoodToChip = Fuzzy::GoodToChipShot(TheFielder).mData.f;
+        fTrueConfidence = fGoodToChip * 0.5f + oneTimerScore.mData.f * 0.5f;
         float fCanShoot2 = TheFielder->CanLooseBallShoot() ? 1.0f : 0.0f;
-        if (fCanShoot2 <= fTrueConfidence)
-        {
-        }
-        else
-        {
-            fTrueConfidence = fCanShoot2;
-        }
+        fTrueConfidence = (fCanShoot2 <= fTrueConfidence) ? fCanShoot2 : fTrueConfidence;
 
         fFalseConfidence = 1.0f - fTrueConfidence;
         fMinVal = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;

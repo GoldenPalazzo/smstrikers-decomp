@@ -1016,7 +1016,7 @@ static const int EIGHT_TEAM_MATCHUPS[28][2] = {
 };
 
 /**
- * TODO: 94.80% match - target spills numplayingteams to the stack and keeps the
+ * TODO: 94.83% match - target spills numplayingteams to the stack and keeps the
  * round-count value (i == ...) in a callee-saved register; ours keeps
  * numplayingteams in a register, which shifts register coloring across the body.
  */
@@ -1025,7 +1025,7 @@ void GameInfoManager::SetupRoundRobinSchedule(eTeamID* lineup, eSidekickID* skli
     eGameModes gamemode = mCurrentMode;
     int numplayingteams = GetNumPlayingTeams();
     int numRounds = mCurrentCup->GetNumRounds();
-    int numGamesPerRound;
+    int numGamesPerRound = GetNumGamesPerRound(mCurrentCup, 0);
     int home;
     int away;
     unsigned char superRounds;
@@ -1035,19 +1035,6 @@ void GameInfoManager::SetupRoundRobinSchedule(eTeamID* lineup, eSidekickID* skli
     int i;
     int j;
     BasicGameInfo* g;
-
-    {
-        u16 tempNumGamesPerRound;
-        if (mDoingKnockout)
-        {
-            tempNumGamesPerRound = mPreviousCup->GetNumTeams() / 2;
-        }
-        else
-        {
-            tempNumGamesPerRound = GetNumPlayingTeams() / 2;
-        }
-        numGamesPerRound = tempNumGamesPerRound;
-    }
 
     mLastHumanStadium = STAD_INVALID;
     superRounds = 0;

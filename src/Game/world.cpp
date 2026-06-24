@@ -1509,12 +1509,6 @@ void World::CreateLightUserData()
     lightList.m_Tail = NULL;
 }
 
-/**
- * Offset/Address/Size: 0x264C | 0x80197310 | size: 0x9D4
- * TODO: 94.69% match - remaining diffs are in switch-dispatch register/branch shape,
- *       light/helper AddAVLNode temporary stack-slot placement, and physics copy loop register roles.
- */
-extern u32 __vt__20CharacterPhysicsData[];
 static const int LF_NOLIGHT = 4;
 
 static inline void* nlGetChunkData(nlChunk* pChunk)
@@ -1601,6 +1595,11 @@ static inline void World_AssignLightBitmasks(World* world)
     }
 }
 
+/**
+ * Offset/Address/Size: 0x264C | 0x80197310 | size: 0x9D4
+ * TODO: 96.06% match - remaining diffs are in nonvolatile pointer registers,
+ *       switch branch shape, AddAVLNode temporary stack slots, and physics copy loop register roles.
+ */
 bool World::LoadObjectData(const char* szWorldName)
 {
     typedef AVLTreeEntry<unsigned long, LightObject*> LightEntry;
@@ -1669,12 +1668,7 @@ bool World::LoadObjectData(const char* szWorldName)
 
             pLight->m_uHashID = *(u32*)(pData + 0x40);
 
-            u32 worldPosX = *(u32*)(pData + 0x90);
-            u32 worldPosY = *(u32*)(pData + 0x94);
-            pLight->m_worldPosition.as_u32[0] = worldPosX;
-            pLight->m_worldPosition.as_u32[1] = worldPosY;
-            u32 worldPosZ = *(u32*)(pData + 0x98);
-            pLight->m_worldPosition.as_u32[2] = worldPosZ;
+            pLight->m_worldPosition = *(nlVector3*)(pData + 0x90);
 
             pLight->m_fIntensity = *(float*)(pData + 0x44);
             pLight->m_fFarAttenuationStart = *(float*)(pData + 0x48);
@@ -1686,13 +1680,7 @@ bool World::LoadObjectData(const char* szWorldName)
                 pLight->m_emitFlags |= LF_NOLIGHT;
             }
 
-            float colourZ = *(float*)(pData + 0x58);
-            float colourY = *(float*)(pData + 0x54);
-            float colourX = *(float*)(pData + 0x50);
-            pLight->m_colour.c[0] = colourX;
-            pLight->m_colour.c[1] = colourY;
-            pLight->m_colour.c[2] = colourZ;
-            pLight->m_colour.c[3] = 0.0f;
+            nlFloatColourSet(pLight->m_colour, *(float*)(pData + 0x50), *(float*)(pData + 0x54), *(float*)(pData + 0x58), 0.0f);
             pLight->m_bit = 0;
 
             AVLTreeNode* pExistingNode;

@@ -1869,8 +1869,8 @@ long SaveLoad::StartFormat(int slot, void (*callback)(long))
 
 /**
  * Offset/Address/Size: 0x5EC | 0x80189F48 | size: 0x258
- * TODO: 89.93% scratch match - remaining diffs are in the -4 block:
- * register allocation (r29/r31/r30 shuffle), extra cmpwi loop guard,
+ * TODO: 90.26% scratch match - remaining diffs are in the -4 block:
+ * slot/card register allocation, extra cmpwi loop guard,
  * and missing nor/srawi/and clut mask chain under -inline auto.
  */
 unsigned long FileExistsCallbacks::CardMountCB(unsigned long channel, long result, void* data)
@@ -1902,9 +1902,12 @@ unsigned long FileExistsCallbacks::CardMountCB(unsigned long channel, long resul
 
     if (result == -4)
     {
-        MemCard* card = g_MemCards[channel];
-        long dataSize = nlSingleton<GameInfoManager>::s_pInstance->GetMemoryCardDataSize();
-        int numBlocks = 0;
+        int numBlocks;
+        MemCard* card;
+        long dataSize;
+        card = g_MemCards[channel];
+        dataSize = nlSingleton<GameInfoManager>::s_pInstance->GetMemoryCardDataSize();
+        numBlocks = 0;
 
         int origSize = (dataSize += 12);
         dataSize = (u32)(dataSize + 0x1FFF) >> 13;

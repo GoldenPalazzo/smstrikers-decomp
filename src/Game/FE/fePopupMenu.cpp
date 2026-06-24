@@ -643,6 +643,27 @@ void FEPopupMenu::SceneCreated()
 }
 
 /**
+ * Offset/Address/Size: 0x0 | 0x800982AC | size: 0xA8
+ */
+void FEPopupMenu::SetBackButtonCallback(Function<FnVoidVoid> callback)
+{
+    if (mUnknownA64.mTag == FUNCTOR)
+    {
+        delete mUnknownA64.mFunctor;
+    }
+    mUnknownA64.mTag = EMPTY;
+    mUnknownA64.mTag = callback.mTag;
+    if (mUnknownA64.mTag == FREE_FUNCTION)
+    {
+        mUnknownA64.mFreeFunction = callback.mFreeFunction;
+    }
+    else if (mUnknownA64.mTag == FUNCTOR)
+    {
+        mUnknownA64.mFunctor = callback.mFunctor->Clone();
+    }
+}
+
+/**
  * Offset/Address/Size: 0x35DC | 0x8009B888 | size: 0x258
  */
 FEPopupMenu::~FEPopupMenu()
@@ -1174,6 +1195,8 @@ void fePopupMenu_stub()
     FormatImpl<WideBasicString> fi;
     WideBasicString s2 = (WideBasicString)fi;
     WideBasicString s4 = Format<WideBasicString, WideBasicString, WideBasicString, WideBasicString>(s, s, s, s);
+    typedef void (WideBasicString::*EraseFn)(const unsigned short*, const unsigned short*);
+    volatile EraseFn eraseFn = &WideBasicString::erase;
 
     s.erase((const unsigned short*)0, (const unsigned short*)0);
 

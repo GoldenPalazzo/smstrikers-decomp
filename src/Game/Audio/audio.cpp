@@ -3794,7 +3794,7 @@ AudioStreamTrack::TrackManagerBase::~TrackManagerBase()
 
 /**
  * Offset/Address/Size: 0x3F8 | 0x80141ABC | size: 0x1EC
- * TODO: 95.16% match - register allocation differs for track, queued stream, and volume locals
+ * TODO: 97.48% match - this pointer, queued stream, and volume locals still use different registers
  */
 template <>
 void AudioStreamTrack::TrackManager<3>::OnMasterVolumeChange(Audio::MasterVolume::VOLUME_GROUP VolumeGroup)
@@ -3827,7 +3827,7 @@ void AudioStreamTrack::TrackManager<3>::OnMasterVolumeChange(Audio::MasterVolume
 
         if (qs != NULL)
         {
-            GCAudioStreaming::StereoAudioStream* pStream = qs->pStream;
+            GCAudioStreaming::StereoAudioStream* fadeStream = qs->pStream;
             DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>* fadeHead;
             DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>* fadeIter = nlDLRingGetStart(m_FadeMgr.m_Fades.m_Head);
             fadeHead = m_FadeMgr.m_Fades.m_Head;
@@ -3835,7 +3835,7 @@ void AudioStreamTrack::TrackManager<3>::OnMasterVolumeChange(Audio::MasterVolume
 
             while (fadeIter != NULL)
             {
-                if (fadeIter->m_data.pStream == pStream)
+                if (fadeIter->m_data.pStream == fadeStream)
                 {
                     fadeCtrl = &fadeIter->m_data;
                     goto fade_found;
@@ -3857,6 +3857,7 @@ void AudioStreamTrack::TrackManager<3>::OnMasterVolumeChange(Audio::MasterVolume
             {
                 if ((Audio::MasterVolume::VOLUME_GROUP)qs->VolGroup == VolumeGroup)
                 {
+                    GCAudioStreaming::StereoAudioStream* pStream = qs->pStream;
                     unsigned long volume = 0x7F;
                     s32 streamVol = (s32)(vol * (float)qs->StartVolume);
                     if ((unsigned long)(streamVol & 0xff) <= 0x7F)

@@ -1315,7 +1315,7 @@ void SaveLoadScene::UpdateForAboutToSaveSlide()
 
 /**
  * Offset/Address/Size: 0x224 | 0x800B07AC | size: 0x3DC
- * TODO: 99.03% match - scene stack base/current scene register allocation cascade, plus r0/r3 swaps in push-back branches
+ * TODO: 99.19% match - scene stack base/current scene register allocation cascade
  */
 void SaveLoadScene::HandleSaveLoadFinishedResult()
 {
@@ -1337,8 +1337,7 @@ void SaveLoadScene::HandleSaveLoadFinishedResult()
             gSaveLoadFinished = false;
             gSceneTypeStackDepth = stackIndex;
             ResetTask::s_resetPaused = (prevScene == 0);
-            gSceneTypeStackDepth = stackIndex + 1;
-            gSceneTypeStack[stackIndex] = (eSaveLoad)SCENE_CUP_BACKGROUND;
+            gSceneTypeStack[gSceneTypeStackDepth++] = (eSaveLoad)SCENE_CUP_BACKGROUND;
             gSaveLoadStarted = false;
             gSaveLoadFinished = false;
             gCallbackMade = false;
@@ -1502,8 +1501,7 @@ void SaveLoadScene::HandleSaveLoadFinishedResult()
             gSceneTypeStackDepth = stackIndex;
             ResetTask::s_resetPaused = (prevScene == 0);
             gSaveLoadFinished = false;
-            gSceneTypeStackDepth = stackIndex + 1;
-            gSceneTypeStack[stackIndex] = ST_LOAD;
+            gSceneTypeStack[gSceneTypeStackDepth++] = ST_LOAD;
             gSaveLoadStarted = false;
             gCallbackMade = false;
             gSceneTime = 0.0f;

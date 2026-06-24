@@ -1899,8 +1899,34 @@ void Goalie::DoNavigation(float fDeltaT, float fIdleDistance, Goalie::eNaviMode 
     *m_pAILayer = (cPoseNode*)pBlender;
     InitMovementFromAnim(0, v3Zero, 1.0f, true);
 }
+
+static inline float goalie_clamp_min(float x, float min)
+{
+    if (x >= min)
+        return x;
+    else
+        return min;
+}
+
+static inline float goalie_clamp_max(float x, float max)
+{
+    if (x <= max)
+        return x;
+    else
+        return max;
+}
+
+static inline float goalie_clamp_positive(float x)
+{
+    if (0.0f >= x)
+        return 0.0f;
+    else
+        return x;
+}
+
 /**
  * Offset/Address/Size: 0x82F0 | 0x8004ADEC | size: 0x588
+ * TODO: 97.9% match - floating-point register allocation mismatch in breakaway and desired-position calculations
  */
 void Goalie::FindDesiredGoaliePosition(nlVector3& pos, nlVector3& dir, nlVector3& focus, unsigned short& ang, const nlVector3* pThreatPos)
 {
@@ -1990,14 +2016,12 @@ void Goalie::FindDesiredGoaliePosition(nlVector3& pos, nlVector3& dir, nlVector3
                     if (fielder == ownerFielder)
                         continue;
                     cNet* myNet = m_pTeam->m_pNet;
-                    float absX = (float)fabs(fielder->m_v3Position.f.x);
+                    const nlVector3& fielderPos = fielder->m_v3Position;
+                    float absX = (float)fabs(fielderPos.f.x);
                     if (fielder->m_v3Position.f.x * myNet->m_baseLocation.f.x > 0.0 && absX > 2.0f)
                     {
                         float factor = 1.0f - 0.5f * (absX - 2.0f) / 10.0f;
-                        if (0.0f >= factor)
-                        {
-                            factor = 0.0f;
-                        }
+                        factor = goalie_clamp_positive(factor);
                         breakaway *= factor;
                     }
                 }
@@ -2048,20 +2072,8 @@ void Goalie::FindDesiredGoaliePosition(nlVector3& pos, nlVector3& dir, nlVector3
     if ((float)fabs(m_v3Position.f.x) > cField::GetGoalLineX(1U))
     {
         float halfNetMinusOne = 0.5f * cNet::m_fNetWidth - 1.0f;
-        if (desiredY >= -halfNetMinusOne)
-        {
-        }
-        else
-        {
-            desiredY = -halfNetMinusOne;
-        }
-        if (desiredY <= halfNetMinusOne)
-        {
-        }
-        else
-        {
-            desiredY = halfNetMinusOne;
-        }
+        desiredY = goalie_clamp_min(desiredY, -halfNetMinusOne);
+        desiredY = goalie_clamp_max(desiredY, halfNetMinusOne);
         desiredX = goalLine * pNet->m_sideSign;
         desiredVec.f.x = desiredX - m_v3Position.f.x;
         desiredVec.f.y = desiredY - m_v3Position.f.y;
@@ -2070,20 +2082,8 @@ void Goalie::FindDesiredGoaliePosition(nlVector3& pos, nlVector3& dir, nlVector3
 
     ang = (unsigned short)(10430.378f * nlATan2f(desiredVec.f.y, desiredVec.f.x));
 
-    if (desiredX >= -goalLine)
-    {
-    }
-    else
-    {
-        desiredX = -goalLine;
-    }
-    if (desiredX <= goalLine)
-    {
-    }
-    else
-    {
-        desiredX = goalLine;
-    }
+    desiredX = goalie_clamp_min(desiredX, -goalLine);
+    desiredX = goalie_clamp_max(desiredX, goalLine);
 
     pos.f.x = 0.8f * desiredX + 0.2f * m_v3Position.f.x;
     pos.f.y = 0.8f * desiredY + 0.2f * m_v3Position.f.y;
@@ -6053,6 +6053,29 @@ void Goalie::ChooseSwatAnim(int nParam)
     mpSaveData = NULL;
 }
 
+static inline cPlayer* DoGoalieFindOpenPassTarget(Goalie* pGoalie)
+{
+    cPlayer* pPassTarget;
+    if (pGoalie->GetGlobalPad() != NULL)
+    {
+        pPassTarget = pGoalie->DoFindBestPassTarget(false, false);
+    }
+    else
+    {
+        FuzzyVariant vBestPassTarget = Fuzzy::GetBestPassTarget(pGoalie);
+        if (vBestPassTarget.Confidence >= 0.5f)
+        {
+            pPassTarget = vBestPassTarget.mData.pPlayer;
+        }
+        else
+        {
+            pPassTarget = pGoalie->DoFindBestPassTarget(false, false);
+        }
+    }
+
+    return pPassTarget;
+}
+
 /**
  * Offset/Address/Size: 0xF30 | 0x80043A2C | size: 0x8A4
  */
@@ -6092,25 +6115,7 @@ void Goalie::DoPassRelease()
         }
         else
         {
-            cPlayer* pPassTarget;
-            if (GetGlobalPad() != NULL)
-            {
-                pPassTarget = DoFindBestPassTarget(false, false);
-            }
-            else
-            {
-                FuzzyVariant passTarget = Fuzzy::GetBestPassTarget(this);
-                if (passTarget.Confidence >= 0.5f)
-                {
-                    pPassTarget = passTarget.mData.pPlayer;
-                }
-                else
-                {
-                    pPassTarget = DoFindBestPassTarget(false, false);
-                }
-            }
-
-            mpPassTarget = pPassTarget;
+            mpPassTarget = DoGoalieFindOpenPassTarget(this);
 
             if (mpPassTarget != NULL)
             {
@@ -6225,6 +6230,7 @@ void Goalie::DoPassRelease()
         }
     }
 
+    eSpinType spinType;
     bool bIsKick = false;
     if (m_eAnimID < 6 && m_eAnimID >= 2)
     {
@@ -6262,10 +6268,13 @@ void Goalie::DoPassRelease()
 
     GoalieTweaks* pTweaks = (GoalieTweaks*)m_pTweaks;
 
-    eSpinType spinType = SPINTYPE_BACK;
     if (nlRandom(2, &nlDefaultSeed) != 0)
     {
         spinType = SPINTYPE_FORWARD;
+    }
+    else
+    {
+        spinType = SPINTYPE_BACK;
     }
 
     float fPercent = nlRandomf(1.0f, &nlDefaultSeed);
@@ -6323,8 +6332,8 @@ void Goalie::DoPassRelease()
     float fSin;
     float fCos;
     nlSinCos(&fSin, &fCos, aDesired);
-    float fBaseSin = fSin;
     float fBaseCos = fCos;
+    float fBaseSin = fSin;
 
     u16 aShot = (u16)(s32)(10430.378f * ((3.1415927f * fShotAng) / 180.0f));
     nlSinCos(&fSin, &fCos, aShot);

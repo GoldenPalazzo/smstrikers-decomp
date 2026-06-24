@@ -79,7 +79,7 @@ void cRumbleFilter::Update(float dt)
     nlVector2 _dv;
     _dv.f.y = v2Vel0.f.y - v2Vel1.f.y;
     _dv.f.x = v2Vel0.f.x - v2Vel1.f.x;
-    const float proj = (_dv.f.x * _p.f.x) + (_dv.f.y * _p.f.y);
+    float proj = (_dv.f.x * _p.f.x) + (_dv.f.y * _p.f.y);
     if (len == 0.0f)
     {
         fDTerm = 0.0f;
@@ -89,11 +89,11 @@ void cRumbleFilter::Update(float dt)
         fDTerm = (proj * Kd) / len;
     }
 
-    float ux, uy;
-    ux = 0.0f;
+    float uy, ux;
+    uy = 0.0f;
     if (len == 0.f)
     {
-        uy = 0.0f;
+        ux = 0.0f;
     }
     else
     {
@@ -112,9 +112,9 @@ void cRumbleFilter::Update(float dt)
             bIsBouncing = true;
         }
 
-        const float invLen = 1.0f / len;
-        ux = invLen * _p.f.x;
+        float invLen = 1.0f / len;
         uy = invLen * _p.f.y;
+        ux = invLen * _p.f.x;
     }
 
     nlVec2Set(v2Force0, 0.f, 0.f);
@@ -124,8 +124,8 @@ void cRumbleFilter::Update(float dt)
     float fx = total * ux;
     float fy = total * uy;
     nlVec2Set(v2Force0,
-        v2Force0.f.x + fx,
-        v2Force0.f.y + fy);
+        fx + v2Force0.f.x,
+        fy + v2Force0.f.y);
     nlVec2Set(v2Force1,
         v2Force1.f.x - fx,
         v2Force1.f.y - fy);

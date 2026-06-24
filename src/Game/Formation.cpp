@@ -893,8 +893,7 @@ void FormationEval::GetKeyPositions(cFielder* pFielder, nlVector3& v3KeyAIPositi
 
 /**
  * Offset/Address/Size: 0x1330 | 0x80039580 | size: 0x158
- * TODO: 99.05% match - Y clamp f0/f3 register swap (target: f0=minY, f3=clampY;
- * actual: f3=minY, f0=clampY). Remaining diffs are register-only.
+ * TODO: 99.65% match - Y clamp f2/f3 register swap for dy and clampY.
  */
 void FormationEval::CalculateDesiredLocation(nlVector3& destPosition, cFielder* pFielder, bool bExtrapolate)
 {
@@ -910,9 +909,6 @@ void FormationEval::CalculateDesiredLocation(nlVector3& destPosition, cFielder* 
     u32 posIndex = m_iFielderFormationPos[pFielder->m_ID];
     const FormationSpec* pSpec = m_pFormationSpec;
 
-    f32 maxX = v2FormationMax.f.x;
-    f32 minX = v2FormationMin.f.x;
-
     const FormationPos* pPos = &pSpec->m_Positions[posIndex];
 
     f32 locY = v3KeyFormationAIPosition.f.y;
@@ -924,20 +920,13 @@ void FormationEval::CalculateDesiredLocation(nlVector3& destPosition, cFielder* 
     f32 dy = posLocY - locY;
     f32 dx = posLocX - locX;
 
-    f32 clampX = v3KeyAIPosition.f.x;
-    clampX = (minX <= clampX) ? clampX : minX;
-    clampX = (maxX >= clampX) ? clampX : maxX;
+    f32 clampX = nlMinEquals(nlMaxEquals(v3KeyAIPosition.f.x, v2FormationMin.f.x), v2FormationMax.f.x);
 
     destPosition.f.x = dx + clampX;
 
-    f32 maxY = v2FormationMax.f.y;
-    f32 clampY = v3KeyAIPosition.f.y;
-    f32 minY = v2FormationMin.f.y;
+    f32 clampY = nlMinEquals(nlMaxEquals(v3KeyAIPosition.f.y, v2FormationMin.f.y), v2FormationMax.f.y);
 
-    clampY = (minY <= clampY) ? clampY : minY;
-    clampY = (clampY <= maxY) ? clampY : maxY;
-
-    destPosition.f.y = dy + clampY;
+    destPosition.f.y = clampY + dy;
     f32 zero = 0.0f;
     destPosition.f.z = zero;
 

@@ -1224,9 +1224,8 @@ void CupChooseCaptainSceneV2::CreateLineup()
 
 /**
  * Offset/Address/Size: 0x0 | 0x800DCECC | size: 0x15C
- * TODO: 97.6% match - remaining mismatch is the early SidekickImageNames load
- * scheduling (`lis` for the table base before `li r5, 0`) plus local symbol
- * labeling (`SidekickImageNames$3` vs `SidekickImageNames$1112`) in scratch.
+ * TODO: 97.98% match - remaining differences are InlineHasher temporary
+ * stack slots for the FEFinder calls.
  */
 void CupChooseCaptainSceneV2::StartSidekickMiniHead(eSidekickID sidekickId)
 {
@@ -1237,85 +1236,29 @@ void CupChooseCaptainSceneV2::StartSidekickMiniHead(eSidekickID sidekickId)
         "birdo_minihead",
     };
 
-    typedef TLImageInstance* (*FindImageByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-    typedef TLImageInstance* (*FindImageByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
-
-    union
-    {
-        FindImageByValue byValue;
-        FindImageByRef byRef;
-    } findImage;
-
-    volatile InlineHasher hB, hA;
-    volatile InlineHasher h9, h8;
-    volatile InlineHasher h7, h6, h5, h4, h3, h2, h1, h0;
-
     if (sidekickId == SK_MYSTERY)
     {
         mSidekickMiniHead->m_bVisible = false;
         return;
     }
 
-    findImage.byValue = FEFinder<TLImageInstance, 2>::Find<TLSlide>;
     TLComponentInstance* parentComp = mSKGrid->mParentComponent;
+    InlineHasher zero(0);
+    TLImageInstance* sourceimage = FEFinder<TLImageInstance, 2>::Find<TLSlide>(
+        parentComp->GetActiveSlide(),
+        InlineHasher(nlStringLowerHash(SidekickImageNames[sidekickId])),
+        zero);
+    FETextureResource* sourceres = sourceimage->m_pTextureResource;
 
-    h0.m_Hash = 0;
-    h1.m_Hash = 0;
-    h2.m_Hash = 0;
-    h3.m_Hash = 0;
-    h4.m_Hash = 0;
-    h5.m_Hash = 0;
-    h6.m_Hash = 0;
-    h7.m_Hash = 0;
-    h8.m_Hash = 0;
-    h9.m_Hash = 0;
-
-    const char** pNames = SidekickImageNames;
-    unsigned long hash = nlStringLowerHash(pNames[sidekickId]);
-    hA.m_Hash = hash;
-    hB.m_Hash = hash;
-
-    FETextureResource* texRes = findImage.byRef(
-                                             parentComp->GetActiveSlide(),
-                                             (InlineHasher&)hB,
-                                             (InlineHasher&)h9,
-                                             (InlineHasher&)h7,
-                                             (InlineHasher&)h5,
-                                             (InlineHasher&)h3,
-                                             (InlineHasher&)h1)
-                                    ->m_pTextureResource;
-
-    volatile InlineHasher g7, g6;
-    volatile InlineHasher g4, g3, g2, g1, g0;
-
-    g0.m_Hash = 0;
-    h1.m_Hash = 0;
-    g1.m_Hash = 0;
-    h3.m_Hash = 0;
-    g2.m_Hash = 0;
-    h5.m_Hash = 0;
-    g3.m_Hash = 0;
-    h7.m_Hash = 0;
-    g4.m_Hash = 0;
-    h9.m_Hash = 0;
-
-    hash = nlStringLowerHash("sidekick_minihead");
-    g7.m_Hash = hash;
-    g6.m_Hash = hash;
-
-    TLImageInstance* miniHead = findImage.byRef(
+    TLImageInstance* destimage = FEFinder<TLImageInstance, 2>::Find<TLSlide>(
         mSidekickMiniHead->GetActiveSlide(),
-        (InlineHasher&)g7,
-        (InlineHasher&)h9,
-        (InlineHasher&)h7,
-        (InlineHasher&)h5,
-        (InlineHasher&)h3,
-        (InlineHasher&)h1);
+        InlineHasher(nlStringLowerHash("sidekick right")),
+        InlineHasher(0));
 
-    miniHead->m_component->pChildren = (TLSlide*)texRes;
+    destimage->m_component->pChildren = (TLSlide*)sourceres;
 
-    TLSlide* slide = mSidekickMiniHead->GetActiveSlide();
-    mSidekickMiniHead->SetActiveSlide(slide);
+    TLSlide* activeslide = mSidekickMiniHead->GetActiveSlide();
+    mSidekickMiniHead->SetActiveSlide(activeslide);
     mSidekickMiniHead->Update(0.0f);
     mSidekickMiniHead->m_bVisible = true;
 }

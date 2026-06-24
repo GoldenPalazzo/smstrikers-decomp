@@ -104,10 +104,11 @@ public:
         BasicStringData<CharT>* data = (BasicStringData<CharT>*)Allocator::allocate(sizeof(BasicStringData<CharT>));
         if (data != 0)
         {
+            const CharT* src = str;
             data->mData = 0;
             data->mSize = 0;
             data->mCapacity = 0;
-            const CharT* s = str;
+            const CharT* s = src;
             while (*s++ != 0)
             {
                 data->mSize++;
@@ -117,7 +118,7 @@ public:
             data->mCapacity = data->mSize;
             for (int i = 0; i < data->mSize; i++)
             {
-                data->mData[i] = *str++;
+                data->mData[i] = *src++;
             }
             data->mRefCount = 1;
         }

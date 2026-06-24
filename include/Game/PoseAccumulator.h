@@ -81,7 +81,6 @@ public:
 inline cPoseAccumulator& cPoseAccumulator::operator=(const cPoseAccumulator& other)
 {
     m_BaseSHierarchy = other.m_BaseSHierarchy;
-
     if (m_NodeMatrices.mSize >= other.m_NodeMatrices.mSize)
     {
         for (int i = 0; i < other.m_NodeMatrices.mSize; i++)
@@ -102,17 +101,7 @@ inline cPoseAccumulator& cPoseAccumulator::operator=(const cPoseAccumulator& oth
             tmp.mData[i] = other.m_NodeMatrices.mData[i];
         }
 
-        int oldSize = m_NodeMatrices.mSize;
-        int oldCapacity = m_NodeMatrices.mCapacity;
-        nlMatrix4* oldData = m_NodeMatrices.mData;
-
-        m_NodeMatrices.mData = tmp.mData;
-        m_NodeMatrices.mSize = tmp.mSize;
-        m_NodeMatrices.mCapacity = tmp.mCapacity;
-
-        tmp.mData = oldData;
-        tmp.mSize = oldSize;
-        tmp.mCapacity = oldCapacity;
+        m_NodeMatrices.Swap(tmp);
     }
 
     if (m_PrevNodeMatrices.mSize >= other.m_PrevNodeMatrices.mSize)
@@ -135,17 +124,7 @@ inline cPoseAccumulator& cPoseAccumulator::operator=(const cPoseAccumulator& oth
             tmp.mData[i] = other.m_PrevNodeMatrices.mData[i];
         }
 
-        int oldSize = m_PrevNodeMatrices.mSize;
-        int oldCapacity = m_PrevNodeMatrices.mCapacity;
-        nlMatrix4* oldData = m_PrevNodeMatrices.mData;
-
-        m_PrevNodeMatrices.mData = tmp.mData;
-        m_PrevNodeMatrices.mSize = tmp.mSize;
-        m_PrevNodeMatrices.mCapacity = tmp.mCapacity;
-
-        tmp.mData = oldData;
-        tmp.mSize = oldSize;
-        tmp.mCapacity = oldCapacity;
+        m_PrevNodeMatrices.Swap(tmp);
     }
 
     if (m_rot.mSize >= other.m_rot.mSize)
@@ -168,17 +147,7 @@ inline cPoseAccumulator& cPoseAccumulator::operator=(const cPoseAccumulator& oth
             tmp.mData[i] = other.m_rot.mData[i];
         }
 
-        int oldSize = m_rot.mSize;
-        int oldCapacity = m_rot.mCapacity;
-        RotAccum* oldData = m_rot.mData;
-
-        m_rot.mData = tmp.mData;
-        m_rot.mSize = tmp.mSize;
-        m_rot.mCapacity = tmp.mCapacity;
-
-        tmp.mData = oldData;
-        tmp.mSize = oldSize;
-        tmp.mCapacity = oldCapacity;
+        m_rot.Swap(tmp);
     }
 
     if (m_scale.mSize >= other.m_scale.mSize)
@@ -201,17 +170,7 @@ inline cPoseAccumulator& cPoseAccumulator::operator=(const cPoseAccumulator& oth
             tmp.mData[i] = other.m_scale.mData[i];
         }
 
-        int oldSize = m_scale.mSize;
-        int oldCapacity = m_scale.mCapacity;
-        ScaleAccum* oldData = m_scale.mData;
-
-        m_scale.mData = tmp.mData;
-        m_scale.mSize = tmp.mSize;
-        m_scale.mCapacity = tmp.mCapacity;
-
-        tmp.mData = oldData;
-        tmp.mSize = oldSize;
-        tmp.mCapacity = oldCapacity;
+        m_scale.Swap(tmp);
     }
 
     if (m_trans.mSize >= other.m_trans.mSize)
@@ -234,17 +193,7 @@ inline cPoseAccumulator& cPoseAccumulator::operator=(const cPoseAccumulator& oth
             tmp.mData[i] = other.m_trans.mData[i];
         }
 
-        int oldSize = m_trans.mSize;
-        int oldCapacity = m_trans.mCapacity;
-        TransAccum* oldData = m_trans.mData;
-
-        m_trans.mData = tmp.mData;
-        m_trans.mSize = tmp.mSize;
-        m_trans.mCapacity = tmp.mCapacity;
-
-        tmp.mData = oldData;
-        tmp.mSize = oldSize;
-        tmp.mCapacity = oldCapacity;
+        m_trans.Swap(tmp);
     }
 
     if (m_cb.mSize >= other.m_cb.mSize)
@@ -268,17 +217,7 @@ inline cPoseAccumulator& cPoseAccumulator::operator=(const cPoseAccumulator& oth
             tmp.mData[i] = other.m_cb.mData[i];
         }
 
-        int oldSize = m_cb.mSize;
-        int oldCapacity = m_cb.mCapacity;
-        cBuildNodeMatrixCallbackInfo* oldData = m_cb.mData;
-
-        m_cb.mData = tmp.mData;
-        m_cb.mSize = tmp.mSize;
-        m_cb.mCapacity = tmp.mCapacity;
-
-        tmp.mData = oldData;
-        tmp.mSize = oldSize;
-        tmp.mCapacity = oldCapacity;
+        m_cb.Swap(tmp);
     }
 
     if (m_MorphWeights.mSize >= other.m_MorphWeights.mSize)
@@ -301,17 +240,7 @@ inline cPoseAccumulator& cPoseAccumulator::operator=(const cPoseAccumulator& oth
             tmp.mData[i] = other.m_MorphWeights.mData[i];
         }
 
-        int oldSize = m_MorphWeights.mSize;
-        int oldCapacity = m_MorphWeights.mCapacity;
-        float* oldData = m_MorphWeights.mData;
-
-        m_MorphWeights.mData = tmp.mData;
-        m_MorphWeights.mSize = tmp.mSize;
-        m_MorphWeights.mCapacity = tmp.mCapacity;
-
-        tmp.mData = oldData;
-        tmp.mSize = oldSize;
-        tmp.mCapacity = oldCapacity;
+        m_MorphWeights.Swap(tmp);
     }
 
     return *this;

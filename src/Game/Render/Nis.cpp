@@ -166,8 +166,8 @@ char* Nis::Name() const
 
 /**
  * Offset/Address/Size: 0x13C0 | 0x8012C7D0 | size: 0x290
- * TODO: 96.95% match - remaining diffs are the r30/r31 assignment order in the
- * inlined BasicString literal/data path
+ * TODO: 99.36% match - remaining diffs are the r30/r31 data/literal register
+ * swap in the inlined BasicString literal path
  */
 Nis::~Nis()
 {

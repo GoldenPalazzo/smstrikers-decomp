@@ -437,7 +437,6 @@ void IChooseSide::SetReady(int controllerIdx, bool ready)
 
 /**
  * Offset/Address/Size: 0x2A4 | 0x800C36E8 | size: 0x138
- * TODO: 99.7% match - r4/r5 swap in setvisibilities block when loading +0x44/+0x34
  */
 void IChooseSide::PositionController(int padindex, bool usetween, bool setvisibilities)
 {
@@ -483,8 +482,10 @@ void IChooseSide::PositionController(int padindex, bool usetween, bool setvisibi
 
     if (setvisibilities)
     {
-        mInstanceTable[padindex + 12]->m_bVisible = (side == -1);
-        mInstanceTable[padindex + 8]->m_bVisible = (side != -1);
+        inst = mInstanceTable[padindex + 12];
+        inst->m_bVisible = (side == -1);
+        inst = mInstanceTable[padindex + 8];
+        inst->m_bVisible = (side != -1);
     }
 }
 
