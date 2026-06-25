@@ -1,7 +1,5 @@
 #include "NL/platpad.h"
 
-// #include "global.h"
-
 #include "math.h"
 #include "NL/nlMemory.h"
 #include "NL/gl/glPlat.h"
@@ -377,7 +375,7 @@ static inline void InitPadStatus(PadStatus* pad)
 }
 
 /**
-rm * Offset/Address/Size: 0xAEC | 0x801C3A9C | size: 0xB0
+ * Offset/Address/Size: 0xAEC | 0x801C3A9C | size: 0xB0
  */
 void InitPlatPad()
 {

@@ -1142,6 +1142,7 @@ float Pressured(cFielder* pFielder)
 
 /**
  * Offset/Address/Size: 0x4490 | 0x80082F18 | size: 0x4A4
+ * TODO: remaining f30/f31 register swap between accumulated score and per-opponent score.
  */
 float Attacked(cFielder* pFielder)
 {
@@ -1161,21 +1162,23 @@ float Attacked(cFielder* pFielder)
         unsigned char bAttackState = 0;
         if (pOpponent->m_eClassType == GOALIE)
         {
-            eGoalieActionState action = ((Goalie*)pOpponent)->mGoalieActionState;
-            bAttackState = 0;
+            unsigned char bAction = 0;
+            int action = ((Goalie*)pOpponent)->mGoalieActionState;
             if (action == GOALIEACTION_PURSUE_BALL_CARRIER || action == GOALIEACTION_PURSUE_BALL_POUNCE)
             {
-                bAttackState = 1;
+                bAction = 1;
             }
+            bAttackState = bAction;
         }
         else if (pOpponent->m_eClassType == FIELDER)
         {
-            eFielderActionState action = ((cFielder*)pOpponent)->m_eActionState;
-            bAttackState = 0;
+            unsigned char bAction = 0;
+            int action = ((cFielder*)pOpponent)->m_eActionState;
             if (action == ACTION_SLIDE_ATTACK || action == ACTION_HIT)
             {
-                bAttackState = 1;
+                bAction = 1;
             }
+            bAttackState = bAction;
         }
 
         if (!bAttackState)
@@ -1234,8 +1237,8 @@ float Attacked(cFielder* pFielder)
             {
                 pTweaks = &g_pGame->m_pFuzzyTweaks->vNearOpponentConfidenceDistance;
             }
-            float dy = pFielderPos->f.y - pOpponent->m_v3Position.f.y;
             float dx = pFielderPos->f.x - pOpponent->m_v3Position.f.x;
+            float dy = pFielderPos->f.y - pOpponent->m_v3Position.f.y;
             fNearDist = nlSqrt(dx * dx + dy * dy, true);
             fNearDist = NormalizeVal(fNearDist, *pTweaks);
         }
@@ -1281,8 +1284,8 @@ float Attacked(cFielder* pFielder)
             {
                 pTweaks = &g_pGame->m_pFuzzyTweaks->vCloseOpponentConfidenceDistance;
             }
-            float dy = pFielderPos->f.y - pOpponent->m_v3Position.f.y;
             float dx = pFielderPos->f.x - pOpponent->m_v3Position.f.x;
+            float dy = pFielderPos->f.y - pOpponent->m_v3Position.f.y;
             fCloseDist = nlSqrt(dx * dx + dy * dy, true);
             fCloseDist = NormalizeVal(fCloseDist, *pTweaks);
         }
@@ -1304,9 +1307,7 @@ float Attacked(cFielder* pFielder)
         else
         {
             nlVector3 vDiff;
-            vDiff.f.x = pFielderPos->f.x - pOpponent->m_v3Position.f.x;
-            vDiff.f.y = pFielderPos->f.y - pOpponent->m_v3Position.f.y;
-            vDiff.f.z = pFielderPos->f.z - pOpponent->m_v3Position.f.z;
+            nlVec3Set(vDiff, pFielderPos->f.x - pOpponent->m_v3Position.f.x, pFielderPos->f.y - pOpponent->m_v3Position.f.y, pFielderPos->f.z - pOpponent->m_v3Position.f.z);
 
             u16 nOpponentFacing = pOpponent->m_aActualFacingDirection;
 
@@ -1321,25 +1322,26 @@ float Attacked(cFielder* pFielder)
 
             FuzzyTweaks* pFuzzyTweaks = g_pGame->m_pFuzzyTweaks;
             s16 nFacingFull = pFuzzyTweaks->nFacingFullConfidenceAngle;
-            if (nAngleDiff < nFacingFull)
+            s16 nAngle = (u16)nAngleDiff;
+            if (nAngle < nFacingFull)
             {
                 fAngleScore = 1.0f;
             }
             else
             {
                 s16 nFacingNo = pFuzzyTweaks->nFacingNoConfidenceAngle;
-                if (nAngleDiff > nFacingNo)
+                if (nAngle > nFacingNo)
                 {
                     fAngleScore = 0.0f;
                 }
                 else
                 {
-                    fAngleScore = 1.0f - (float)(nAngleDiff - nFacingFull) / (float)(nFacingNo - nFacingFull);
+                    fAngleScore = 1.0f - (float)(nAngle - nFacingFull) / (float)(nFacingNo - nFacingFull);
                 }
             }
         }
 
-        fScore += fAngleScore * 0.2f + fClosingSpeed * 0.8f;
+        fScore += fClosingSpeed * 0.8f + fAngleScore * 0.2f;
     }
 
     float fResult = clampGe0(fScore);

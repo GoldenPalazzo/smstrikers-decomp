@@ -1305,12 +1305,9 @@ config.libs = [
 
             # Ext/Platform
             Object(Matching, "NL/plat/globalpad.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            # Object(NonMatching, "NL/plat/platpad.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(NonMatching, "NL/plat/platpad.cpp", extra_cflags=["-inline auto"]),
-            # Ext/Math
+            Object(Matching, "NL/plat/platpad.cpp", extra_cflags=["-inline auto"]),
             Object(Matching, "NL/plat/platvmath.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "NL/plat/platqmath.cpp", extra_cflags=["-inline auto"]),
-            # Ext/Audio
             Object(NonMatching, "NL/plat/plataudio.cpp", extra_cflags=["-inline auto"]),
 
             # Ext/GC
