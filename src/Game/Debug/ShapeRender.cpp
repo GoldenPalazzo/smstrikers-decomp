@@ -139,7 +139,7 @@ void ShapeRender::CreateHemisphereGeometry(PrimitiveShape& prim)
 
 /**
  * Offset/Address/Size: 0x11C0 | 0x801FC450 | size: 0x2DC
- * TODO: 98.42% match - saved-FPR allocation for pre-loop zero and angle constants still differs.
+ * TODO: 98.47% match - saved-FPR allocation for pre-loop zero and angle constants still differs.
  */
 void ShapeRender::CreateFlatCylinderEndGeometry(PrimitiveShape& prim)
 {
@@ -174,7 +174,7 @@ void ShapeRender::CreateFlatCylinderEndGeometry(PrimitiveShape& prim)
 
     z0 = 0.0f;
     z0Sq = z0;
-    z0Sq *= z0;
+    z0 *= z0Sq;
     angleFactor = 10430.378f;
     segmentFactor = 0.41887903f;
     half = 0.5f;

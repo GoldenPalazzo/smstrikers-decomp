@@ -401,7 +401,7 @@ void PauseMenuScene::SceneCreated()
             hA.m_Hash = hash;
 
             findInst.byValue = FEFinder<TLInstance, 4>::Find<TLSlide>;
-            TLComponentInstance* compinstance = (TLComponentInstance*)findInst.byRef(
+            TLInstance* instance = findInst.byRef(
                 presentation->m_currentSlide,
                 (InlineHasher&)hB,
                 (InlineHasher&)h9,
@@ -409,6 +409,7 @@ void PauseMenuScene::SceneCreated()
                 (InlineHasher&)h5,
                 (InlineHasher&)h3,
                 (InlineHasher&)h1);
+            TLComponentInstance* compinstance = (TLComponentInstance*)instance;
 
             int numAdded = mMenuItems.mNumItemsAdded;
             MenuItem<TLComponentInstance>* menuItem = PauseMenuItemAt(mMenuItems, numAdded);
@@ -537,7 +538,7 @@ void PauseMenuScene::SceneCreated()
             hA.m_Hash = hash;
 
             findInst.byValue = FEFinder<TLInstance, 4>::Find<TLSlide>;
-            TLComponentInstance* compinstance = (TLComponentInstance*)findInst.byRef(
+            TLInstance* instance = findInst.byRef(
                 presentation->m_currentSlide,
                 (InlineHasher&)hB,
                 (InlineHasher&)h9,
@@ -545,6 +546,7 @@ void PauseMenuScene::SceneCreated()
                 (InlineHasher&)h5,
                 (InlineHasher&)h3,
                 (InlineHasher&)h1);
+            TLComponentInstance* compinstance = (TLComponentInstance*)instance;
 
             MenuItem<TLComponentInstance>* menuItem = &mMenuItems.mMenuItems[mMenuItems.mNumItemsAdded];
             menuItem->mType = compinstance;

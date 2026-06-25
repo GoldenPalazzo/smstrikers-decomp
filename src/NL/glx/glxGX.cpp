@@ -42,27 +42,28 @@ bool gxSetCoPlanar(bool coplanar)
     return prev;
 }
 
+static inline void SetGXChanAmbColour(int chan, const nlColour& color)
+{
+    nlColour c;
+    c = color;
+    GXSetChanAmbColor((GXChannelID)chan, *(GXColor*)&c);
+}
+
 /**
  * Offset/Address/Size: 0x48 | 0x801C1530 | size: 0x54
- * TODO: 99.38% match. Stack offset swap 0x8/0xc around GXSetChanAmbColor arg copy.
  */
 nlColour gxSetChanAmbColour(int chan, const nlColour& color)
 {
     nlColour* pAmb = &gx_ambColour[chan];
     nlColour prev = *pAmb;
-    nlColour temp;
     if (prev != color)
     {
         *(volatile u32*)pAmb = *(volatile u32*)&color;
-        temp = color;
-        GXSetChanAmbColor((GXChannelID)chan, *(GXColor*)&temp);
+        SetGXChanAmbColour(chan, color);
     }
     return prev;
 }
 
-/**
- * Offset/Address/Size: 0x9C | 0x801C1584 | size: 0x54
- */
 static inline void SetGXChanMatColour(int chan, const nlColour& color)
 {
     nlColour c;
@@ -70,6 +71,9 @@ static inline void SetGXChanMatColour(int chan, const nlColour& color)
     GXSetChanMatColor((GXChannelID)chan, *(GXColor*)&c);
 }
 
+/**
+ * Offset/Address/Size: 0x9C | 0x801C1584 | size: 0x54
+ */
 nlColour gxSetChanMatColour(int chan, const nlColour& color)
 {
     nlColour* pMat = &gx_matColour[chan];
@@ -85,8 +89,6 @@ nlColour gxSetChanMatColour(int chan, const nlColour& color)
 /**
  * Offset/Address/Size: 0xF0 | 0x801C15D8 | size: 0x28
  */
-// void GXSetTexCoordGen2(GXTexCoordID dst_coord, GXTexGenType func, GXTexGenSrc src_param, u32 mtx, GXBool normalize, u32 pt_texmtx)
-
 void gxSetTexCoordGen(int dst_coord, _GXTexGenType func, _GXTexGenSrc src_param, unsigned long arg)
 {
     GXSetTexCoordGen2((GXTexCoordID)dst_coord, func, src_param, arg, false, 125);
@@ -95,7 +97,6 @@ void gxSetTexCoordGen(int dst_coord, _GXTexGenType func, _GXTexGenSrc src_param,
 /**
  * Offset/Address/Size: 0x118 | 0x801C1600 | size: 0x30
  */
-//  void GXSetTevAlphaOp(GXTevStageID stage, GXTevOp op, GXTevBias bias, GXTevScale scale, GXBool clamp, GXTevRegID out_reg)
 void gxSetTevAlphaOp(int stage, _GXTevOp op, _GXTevBias bias, _GXTevScale scale, bool clamp, _GXTevRegID out_reg)
 {
     GXSetTevAlphaOp((GXTevStageID)stage, op, bias, scale, (u32)(-clamp | clamp) >> 0x1FU, out_reg);

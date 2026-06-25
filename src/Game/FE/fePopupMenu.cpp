@@ -158,7 +158,6 @@ void FEPopupMenu::ResizeHighlight()
 
 /**
  * Offset/Address/Size: 0x460 | 0x8009870C | size: 0x1C0
- * TODO: 99.76% match - remaining differences are InlineHasher argument copy stack slots.
  */
 void FEPopupMenu::CentrePopup(float totalHeight, float topOfMessageBox)
 {
@@ -168,7 +167,6 @@ void FEPopupMenu::CentrePopup(float totalHeight, float topOfMessageBox)
     FEPresentation* presentation;
     TLTextInstance* pText;
     feVector3 position;
-    InlineHasher h[3];
     int i;
 
     half = totalHeight;
@@ -176,34 +174,22 @@ void FEPopupMenu::CentrePopup(float totalHeight, float topOfMessageBox)
     offset = half - topOfMessageBox;
     presentation = m_pFEScene->m_pFEPackage->GetPresentation();
 
-    h[2] = InlineHasher(0);
-    h[1] = InlineHasher(0);
-    h[0] = InlineHasher(0);
     pText = FEFinder<TLTextInstance, 3>::Find<FEPresentation>(
         presentation,
         InlineHasher(nlStringLowerHash("Slide1")),
         InlineHasher(nlStringLowerHash("Layer")),
-        InlineHasher(nlStringLowerHash("Message")),
-        h[0],
-        h[1],
-        h[2]);
+        InlineHasher(nlStringLowerHash("Message")));
 
     position = pText->GetAssetPosition();
     pText->SetAssetPosition(position.e[0], position.e[1] + offset, position.e[2]);
 
     for (i = 0; i < mPopup.numOptions; i++)
     {
-        h[2] = InlineHasher(0);
-        h[1] = InlineHasher(0);
-        h[0] = InlineHasher(0);
         pText = FEFinder<TLTextInstance, 3>::Find<FEPresentation>(
             presentation,
             InlineHasher(nlStringLowerHash("Slide1")),
             InlineHasher(nlStringLowerHash("Layer")),
-            InlineHasher(nlStringLowerHash(optionNames[i])),
-            h[0],
-            h[1],
-            h[2]);
+            InlineHasher(nlStringLowerHash(optionNames[i])));
 
         position = pText->GetAssetPosition();
         pText->SetAssetPosition(position.e[0], position.e[1] + offset, position.e[2]);

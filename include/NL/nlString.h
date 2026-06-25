@@ -114,7 +114,6 @@ int nlStrICmp(const CharT* str1, const CharT* str2)
 
 /**
  * Offset/Address/Size: 0x0 | 0x8014C2B8 | size: 0x98
- * TODO: 89.34% match - extra extsb sign-extension before nlToUpper calls (compiler char signedness behavior)
  */
 template <typename CharT>
 int nlStrNICmp(const CharT* a, const CharT* b, unsigned long maxsize)
@@ -124,8 +123,8 @@ int nlStrNICmp(const CharT* a, const CharT* b, unsigned long maxsize)
 
     do
     {
-        c1 = nlToUpper<CharT>(*a++);
-        c2 = nlToUpper<CharT>(*b++);
+        c1 = nlToUpper<CharT>(const_cast<CharT&>(*a++));
+        c2 = nlToUpper<CharT>(const_cast<CharT&>(*b++));
     } while (--maxsize != 0 && c1 != 0 && c2 != 0 && c1 == c2);
 
     return c1 - c2;

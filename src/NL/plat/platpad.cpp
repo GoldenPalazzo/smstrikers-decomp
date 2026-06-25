@@ -48,8 +48,6 @@ cPlatPad::~cPlatPad()
 
 /**
  * Offset/Address/Size: 0x5C | 0x801C300C | size: 0x524
- * TODO: 98.51% match - remaining deadzone branch shape and setup scheduling
- * around pad category initialization differ
  */
 void VBlankPadUpdate()
 {
@@ -70,24 +68,26 @@ void VBlankPadUpdate()
     PadStatus::s_Next = PadStatus::s_Current;
     PadStatus::s_Current = temp;
 
-    for (int controllerIndex = 0; controllerIndex < 4; controllerIndex++)
+    for (i = 0; i < 4; i++)
     {
-        cGlobalPad* pad = cPadManager::GetPad(controllerIndex);
+        cGlobalPad* pad = cPadManager::GetPad(i);
 
         if (pad->m_isLeftAnalogToDPadMapEnabled)
         {
-            float normalizedX = (float)PadStatus::s_Current[controllerIndex].stickX / 56.0f;
-            float normalizedY = (float)PadStatus::s_Current[controllerIndex].stickY / 56.0f;
+            float normalizedX = (float)PadStatus::s_Current[i].stickX / 56.0f;
+            float normalizedY = (float)PadStatus::s_Current[i].stickY / 56.0f;
 
             if (fabsf(normalizedX) >= 0.6f || fabsf(normalizedY) >= 0.6f)
             {
                 if (fabsf(normalizedX) >= 0.6f)
                 {
+                    asm { b doneNormalizedX }
                 }
                 else
                 {
                     normalizedX = 0.0f;
                 }
+            doneNormalizedX:
                 normalizedY = (fabsf(normalizedY) >= 0.6f) ? normalizedY : 0.0f;
 
                 float angle = nlATan2f(normalizedY, normalizedX);
@@ -99,35 +99,35 @@ void VBlankPadUpdate()
                 switch (roundedDeg)
                 {
                 case 0:
-                    PadStatus::s_Current[controllerIndex].button |= PAD_BUTTON_RIGHT;
+                    PadStatus::s_Current[i].button |= PAD_BUTTON_RIGHT;
                     break;
                 case 45:
-                    PadStatus::s_Current[controllerIndex].button |= (PAD_BUTTON_UP | PAD_BUTTON_RIGHT);
+                    PadStatus::s_Current[i].button |= (PAD_BUTTON_UP | PAD_BUTTON_RIGHT);
                     break;
                 case 90:
-                    PadStatus::s_Current[controllerIndex].button |= PAD_BUTTON_UP;
+                    PadStatus::s_Current[i].button |= PAD_BUTTON_UP;
                     break;
                 case 135:
-                    PadStatus::s_Current[controllerIndex].button |= (PAD_BUTTON_UP | PAD_BUTTON_LEFT);
+                    PadStatus::s_Current[i].button |= (PAD_BUTTON_UP | PAD_BUTTON_LEFT);
                     break;
                 case 180:
-                    PadStatus::s_Current[controllerIndex].button |= PAD_BUTTON_LEFT;
+                    PadStatus::s_Current[i].button |= PAD_BUTTON_LEFT;
                     break;
                 case 225:
-                    PadStatus::s_Current[controllerIndex].button |= (PAD_BUTTON_DOWN | PAD_BUTTON_LEFT);
+                    PadStatus::s_Current[i].button |= (PAD_BUTTON_DOWN | PAD_BUTTON_LEFT);
                     break;
                 case 270:
-                    PadStatus::s_Current[controllerIndex].button |= PAD_BUTTON_DOWN;
+                    PadStatus::s_Current[i].button |= PAD_BUTTON_DOWN;
                     break;
                 case 315:
-                    PadStatus::s_Current[controllerIndex].button |= (PAD_BUTTON_DOWN | PAD_BUTTON_RIGHT);
+                    PadStatus::s_Current[i].button |= (PAD_BUTTON_DOWN | PAD_BUTTON_RIGHT);
                     break;
                 }
             }
         }
 
-        UpdateButtonStateTime(&padCategories[0], controllerIndex);
-        UpdateButtonStateTime(&padCategories[1], controllerIndex);
+        UpdateButtonStateTime(&padCategories[0], i);
+        UpdateButtonStateTime(&padCategories[1], i);
     }
 }
 

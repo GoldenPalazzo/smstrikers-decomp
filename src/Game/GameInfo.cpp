@@ -2495,9 +2495,8 @@ const PowerupSettings& GameInfoManager::GetPowerupOptions() const
 
 /**
  * Offset/Address/Size: 0x5040 | 0x8017A6E4 | size: 0xD98
- * TODO: 99.24% match - fallback string data builders still have r29/r30 swaps,
- *       pad-side loop has r3/r4 swaps, and DifficultyMap writeback stores
- *       before the second load.
+ * TODO: 99.25% match - fallback string constructors still have r29/r30 swaps,
+ *       pad-side loop has r3/r4 swaps, and DifficultyMap writeback stores before the second load.
  */
 void GameInfoManager::OnPreGameState()
 {
@@ -2527,7 +2526,7 @@ void GameInfoManager::OnPreGameState()
     if (Config::Global().Exists("team1"))
     {
         BasicString<char, Detail::TempStringAllocator> teamString = Config::Global().Get<BasicString<char, Detail::TempStringAllocator> >(
-            "team1", BasicString<char, Detail::TempStringAllocator>(BuildMarioStringData()));
+            "team1", BasicString<char, Detail::TempStringAllocator>("mario"));
 
         mGameInfo[mCurrentMode]->mTeamIndex[0] = ConvertToTeamID(teamString.c_str());
     }
@@ -2535,7 +2534,7 @@ void GameInfoManager::OnPreGameState()
     if (Config::Global().Exists("team2"))
     {
         BasicString<char, Detail::TempStringAllocator> teamString = Config::Global().Get<BasicString<char, Detail::TempStringAllocator> >(
-            "team2", BasicString<char, Detail::TempStringAllocator>(BuildLuigiStringData()));
+            "team2", BasicString<char, Detail::TempStringAllocator>("luigi"));
 
         mGameInfo[mCurrentMode]->mTeamIndex[1] = ConvertToTeamID(teamString.c_str());
     }
@@ -2549,7 +2548,7 @@ void GameInfoManager::OnPreGameState()
     {
         BasicString<char, Detail::TempStringAllocator> sidekickString
             = Config::Global().Get<BasicString<char, Detail::TempStringAllocator> >(
-                "sidekick1", BasicString<char, Detail::TempStringAllocator>(BuildToadStringData()));
+                "sidekick1", BasicString<char, Detail::TempStringAllocator>("toad"));
 
         mGameInfo[mCurrentMode]->mSidekickIndex[0] = ConvertToSidekickID(sidekickString.c_str());
     }
@@ -2558,7 +2557,7 @@ void GameInfoManager::OnPreGameState()
     {
         BasicString<char, Detail::TempStringAllocator> sidekickString
             = Config::Global().Get<BasicString<char, Detail::TempStringAllocator> >(
-                "sidekick2", BasicString<char, Detail::TempStringAllocator>(BuildKoopaStringData()));
+                "sidekick2", BasicString<char, Detail::TempStringAllocator>("koopa"));
 
         mGameInfo[mCurrentMode]->mSidekickIndex[1] = ConvertToSidekickID(sidekickString.c_str());
     }

@@ -49,6 +49,7 @@ public:
     static float s_fVelocityDampingCoefficient;
     static float s_fNetStretchLimit;
     static bool s_bUseStretchLimit;
+    static float s_fDampening;
     static float s_fLooseness;
     static float s_fBallRadiusExaggerationFactor;
     static float s_fBallRadiusExaggerationFactor2;

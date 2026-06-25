@@ -223,10 +223,40 @@ bool Replay::DidOccurInLastNumSeconds(unsigned int events, float seconds) const
     return false;
 }
 
+static inline void ReleaseReel(Replay* replay, int idx)
+{
+    Replay::Frame* frame = replay->mReels[0].mBegin;
+
+    while (frame != nullptr)
+    {
+        if (frame->mReelIdx == idx)
+        {
+            frame->mReelIdx = 0;
+        }
+
+        frame = replay->Next(frame, 0);
+    }
+
+    frame = replay->mFree->mNext;
+
+    while (frame != replay->mFree)
+    {
+        if (frame->mReelIdx == idx)
+        {
+            frame->mReelIdx = -1;
+        }
+
+        frame = frame->mNext;
+    }
+
+    replay->mReels[idx].mBegin = nullptr;
+    replay->mReels[idx].mLast = nullptr;
+}
+
 /**
  * Offset/Address/Size: 0x38 | 0x802138E4 | size: 0x39C
- * TODO: 99.37% match. Remaining diffs are register allocation in the
- * first do-while and inner Next(,0) traversals.
+ * TODO: 99.85% match. Remaining diffs are register allocation in the
+ * first do-while traversal.
  */
 bool Replay::LockReel(float numSeconds, int idx, int quality)
 {
@@ -261,39 +291,9 @@ bool Replay::LockReel(float numSeconds, int idx, int quality)
     {
         if (frame->mTime >= beginTime)
         {
-            int reelIdx = frame->mReelIdx;
-            if (reelIdx > 0)
+            if (frame->mReelIdx > 0)
             {
-                {
-                    Frame* frame = mReels[0].mBegin;
-
-                    while (frame != nullptr)
-                    {
-                        if (frame->mReelIdx == reelIdx)
-                        {
-                            frame->mReelIdx = 0;
-                        }
-
-                        frame = Next(frame, 0);
-                    }
-                }
-
-                {
-                    Frame* frame = mFree->mNext;
-
-                    while (frame != mFree)
-                    {
-                        if (frame->mReelIdx == reelIdx)
-                        {
-                            frame->mReelIdx = -1;
-                        }
-
-                        frame = frame->mNext;
-                    }
-                }
-
-                mReels[reelIdx].mBegin = nullptr;
-                mReels[reelIdx].mLast = nullptr;
+                ReleaseReel(this, frame->mReelIdx);
             }
         }
 
@@ -308,36 +308,7 @@ afterLoops:
         return false;
     }
 
-    {
-        Frame* frame = mReels[0].mBegin;
-
-        while (frame != nullptr)
-        {
-            if (frame->mReelIdx == idx)
-            {
-                frame->mReelIdx = 0;
-            }
-
-            frame = Next(frame, 0);
-        }
-    }
-
-    {
-        Frame* frame = mFree->mNext;
-
-        while (frame != mFree)
-        {
-            if (frame->mReelIdx == idx)
-            {
-                frame->mReelIdx = -1;
-            }
-
-            frame = frame->mNext;
-        }
-    }
-
-    mReels[idx].mBegin = nullptr;
-    mReels[idx].mLast = nullptr;
+    ReleaseReel(this, idx);
 
     int size = 0;
     beginTime = mReels[mReelIdx].mLast->mTime - numSeconds;

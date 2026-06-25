@@ -398,8 +398,6 @@ FuzzyVariant Fuzzy::GetSwapControllerScore(cPlayer* ThePlayer)
 
 /**
  * Offset/Address/Size: 0xDC78 | 0x80077E48 | size: 0x794
- * TODO: 98.36% match - context-induced diffs: fcmpu operand order (6x),
- * FuzzyVariant ctor f29/.sdata scheduling (2x), fmuls/fmadds operand order (2x)
  */
 FuzzyVariant Fuzzy::ShouldIStrafeBall(cFielder* TheFielder)
 {
@@ -412,15 +410,15 @@ FuzzyVariant Fuzzy::ShouldIStrafeBall(cFielder* TheFielder)
 
     FuzzyVariant fvFielder2((cPlayer*)TheFielder);
 
-    if (StrategicBallOwner(TheFielder) == 0.0f)
+    if (!((bool)StrategicBallOwner(TheFielder)))
     {
-        if (BallOwner(g_pScriptCurrentTeam->GetGoalie()) != 0.0f || BallOwner(g_pScriptOtherTeam->GetGoalie()) != 0.0f)
+        if (((bool)BallOwner(g_pScriptCurrentTeam->GetGoalie())) || ((bool)BallOwner(g_pScriptOtherTeam->GetGoalie())))
         {
             confidence = 1.0f;
             FuzzyVariant fvResult(1.0f);
             bestValue = fvResult;
         }
-        else if (UserControlled(TheFielder) == 0.0f && TheFielder->m_fDesiredSpeed < 0.1f)
+        else if (!((bool)UserControlled(TheFielder)) && TheFielder->m_fDesiredSpeed < 0.1f)
         {
             confidence = 1.0f;
             FuzzyVariant fvResult(1.0f);
@@ -429,19 +427,19 @@ FuzzyVariant Fuzzy::ShouldIStrafeBall(cFielder* TheFielder)
         else
         {
             cTeam* team = TheFielder != NULL ? TheFielder->m_pTeam : NULL;
-            if (Defensive(team) != 0.0f)
+            if ((bool)Defensive(team))
             {
                 confidence = 1.0f;
                 float farToMyNet = FarToMyNet(TheFielder);
                 float inBetween = InBetweenMyNetAnd(TheFielder, g_pScriptBall);
-                float a = (1.0f - farToMyNet) * 0.5f;
-                FuzzyVariant fvResult(a + inBetween * 0.5f);
+                float a = (1.0f - farToMyNet) / 2.0f;
+                FuzzyVariant fvResult(a + inBetween / 2.0f);
                 bestValue = fvResult;
             }
             else
             {
                 team = TheFielder != NULL ? TheFielder->m_pTeam : NULL;
-                if (Offensive(team) != 0.0f)
+                if ((bool)Offensive(team))
                 {
                     confidence = 1.0f;
                     float farToTheirNet = FarToTheirNet(TheFielder);
@@ -2270,98 +2268,14 @@ FuzzyVariant Fuzzy::GetBestPassReceiveAction(cFielder* TheFielder)
     float fConfidence = 1.0f;
     float fBestConfidence = 0.0f;
 
+    const FuzzyVariant& fvFielder = FuzzyVariant((cPlayer*)TheFielder);
     volatile unsigned long funcAddr = (unsigned long)GetBestPassReceiveAction;
-    unsigned long hash = ((Variant*)&FuzzyVariant((cPlayer*)TheFielder))->GetHash();
-    hash += funcAddr;
+    unsigned long hash = funcAddr + ((Variant*)&fvFielder)->GetHash();
     FuzzyVariant((cPlayer*)TheFielder);
 
-    ScriptQuestionCache* cache = ScriptQuestionCache::Instance();
-    cache->mTotalLookups++;
-
-    unsigned char lookupFound;
-    FuzzyVariant* pValue;
-    cPlayer* pClosestOpponent;
-
-    if (g_bScriptQuestionCachingUseSTD)
+    if (ScriptQuestionCache::Instance()->Lookup(hash, bestValue, NULL))
     {
-        StdMapNode* stdFound = (StdMapNode*)cache->mQuestionCacheMapSTD.find(hash).ptr_;
-        if ((StdMapNodeBase*)stdFound != &((StdMapTree*)&cache->mQuestionCacheMapSTD)->x4)
-        {
-            cache->mCacheHits++;
-            bestValue = stdFound->value;
-            lookupFound = 1;
-        }
-    }
-    else
-    {
-        AVLTreeEntry<unsigned long, FuzzyVariant>* node = cache->mQuestionCacheMap.m_Root;
-        unsigned long key = hash;
-
-        while (node != NULL)
-        {
-            int cmpResult;
-            if (key == node->key)
-            {
-                cmpResult = 0;
-            }
-            else if (key < node->key)
-            {
-                cmpResult = -1;
-            }
-            else
-            {
-                cmpResult = 1;
-            }
-
-            if (cmpResult == 0)
-            {
-                if (&pValue != NULL)
-                {
-                    pValue = &node->value;
-                }
-                lookupFound = 1;
-                goto found_done;
-            }
-
-            if (cmpResult < 0)
-            {
-                node = (AVLTreeEntry<unsigned long, FuzzyVariant>*)node->node.left;
-            }
-            else
-            {
-                node = (AVLTreeEntry<unsigned long, FuzzyVariant>*)node->node.right;
-            }
-        }
-
-        lookupFound = 0;
-
-    found_done:
-
-        if (lookupFound)
-        {
-            cache->mCacheHits++;
-            bestValue = *pValue;
-        }
-    }
-
-    if (lookupFound)
-    {
-        unsigned long hashCopy1 = hash;
-        if (g_bScriptQuestionCachingOn)
-        {
-            if (g_bScriptQuestionCachingUseSTD)
-            {
-                std::pair<const unsigned long, FuzzyVariant>& pair = cache->mQuestionCacheMapSTD.tree_.find_or_insert<unsigned long, FuzzyVariant>(hashCopy1);
-                pair.second = bestValue;
-            }
-            else
-            {
-                AVLTreeNode* existingNode1;
-                cache->mQuestionCacheMap.AddAVLNode((AVLTreeNode**)&cache->mQuestionCacheMap.m_Root, (void*)&hashCopy1, (void*)&bestValue, &existingNode1, cache->mQuestionCacheMap.m_NumElements);
-                if (existingNode1 == NULL)
-                    cache->mQuestionCacheMap.m_NumElements++;
-            }
-        }
+        ScriptQuestionCache::Instance()->AddToCache(hash, bestValue, NULL);
         return bestValue;
     }
 
@@ -2447,7 +2361,7 @@ FuzzyVariant Fuzzy::GetBestPassReceiveAction(cFielder* TheFielder)
             }
         }
 
-        pClosestOpponent = GetClosestOpponentFielder((cPlayer*)TheFielder, NULL);
+        cPlayer* pClosestOpponent = GetClosestOpponentFielder((cPlayer*)TheFielder, NULL);
 
         float fNearBallFielder = NearToBall((cPlayer*)TheFielder);
         float fNearBallOpponent = NearToBall((cPlayer*)pClosestOpponent);
@@ -2740,22 +2654,7 @@ FuzzyVariant Fuzzy::GetBestPassReceiveAction(cFielder* TheFielder)
 
     bestValue.Confidence = fBestConfidence;
 
-    unsigned long hashCopy2 = hash;
-    if (g_bScriptQuestionCachingOn)
-    {
-        if (g_bScriptQuestionCachingUseSTD)
-        {
-            std::pair<const unsigned long, FuzzyVariant>& pair = cache->mQuestionCacheMapSTD.tree_.find_or_insert<unsigned long, FuzzyVariant>(hashCopy2);
-            pair.second = bestValue;
-        }
-        else
-        {
-            AVLTreeNode* existingNode2;
-            cache->mQuestionCacheMap.AddAVLNode((AVLTreeNode**)&cache->mQuestionCacheMap.m_Root, (void*)&hashCopy2, (void*)&bestValue, &existingNode2, cache->mQuestionCacheMap.m_NumElements);
-            if (existingNode2 == NULL)
-                cache->mQuestionCacheMap.m_NumElements++;
-        }
-    }
+    ScriptQuestionCache::Instance()->AddToCache(hash, bestValue, NULL);
 
     return bestValue;
 }
@@ -3314,7 +3213,7 @@ FuzzyVariant Fuzzy::GetBestLooseBallAction(cFielder* TheFielder)
 
 /**
  * Offset/Address/Size: 0x2CB4 | 0x8006CE84 | size: 0x131C
- * TODO: 97.08% match - residual cache hash/cache register coloring and late confidence branch scheduling
+ * TODO: 98.23% match - residual cache lookup register coloring and late confidence branch scheduling
  */
 FuzzyVariant Fuzzy::GetBestWindupShotAction(cFielder* TheFielder)
 {
@@ -3329,7 +3228,9 @@ FuzzyVariant Fuzzy::GetBestWindupShotAction(cFielder* TheFielder)
 
     if (ScriptQuestionCache::Instance()->Lookup(hash, bestValue, NULL))
     {
-        ScriptQuestionCache::Instance()->AddToCache(hash, bestValue, NULL);
+        bestValue.Confidence = bestValue.Confidence;
+        const FuzzyVariant& cacheValue = bestValue;
+        ScriptQuestionCache::Instance()->AddToCache(hash, cacheValue, NULL);
         return bestValue;
     }
 
@@ -3399,7 +3300,9 @@ FuzzyVariant Fuzzy::GetBestWindupShotAction(cFielder* TheFielder)
 
         float fCaptain = Captain(TheFielder);
         float fOpenToTheirNet = OpenToTheirNet(TheFielder);
-        fTrueConfidence = (1.0f - fOpenToTheirNet) * 0.2f + (1.0f - Open(TheFielder)) * 0.6f + fCaptain * 0.2f;
+        float fClosedToTheirNet = 1.0f - fOpenToTheirNet;
+        float fNotOpen = 1.0f - Open(TheFielder);
+        fTrueConfidence = fClosedToTheirNet * 0.2f + fNotOpen * 0.6f + fCaptain * 0.2f;
         fFalseConfidence = 1.0f - fTrueConfidence;
         fMinVal = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
         fMaxVal = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;

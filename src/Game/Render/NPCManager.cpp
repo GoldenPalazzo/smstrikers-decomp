@@ -399,9 +399,8 @@ void NPCManager::UpdateAINPCs(float dt)
 
 /**
  * Offset/Address/Size: 0x0 | 0x80165EC4 | size: 0x3D0
- * TODO: 98.77% match - extra return-value move remains after hierarchy and
- * non-virtual anim file loads, plus animation inventory/end register allocation
- * differences.
+ * TODO: 99.14% match - extra return-value moves remain after hierarchy and
+ * non-virtual animation file loads.
  */
 void NPCManager::CreateNPCTemplate(int templateIndex, bool loadTextures)
 {
@@ -478,6 +477,7 @@ void NPCManager::CreateNPCTemplate(int templateIndex, bool loadTextures)
             NULL,
             AllocateStart);
         int animSize = animSizeVirt;
+        nlChunk* animEnd;
         cInventory<cSAnim>* animInv = mpInventorySAnim;
 
         ListEntry<char*>* animMem = (ListEntry<char*>*)nlMalloc(8, 8, false);
@@ -491,7 +491,7 @@ void NPCManager::CreateNPCTemplate(int templateIndex, bool loadTextures)
             animMem,
             (ListEntry<char*>**)&animInv->m_lMemList.m_Tail);
 
-        nlChunk* animEnd = (nlChunk*)((char*)animData + animSize);
+        animEnd = (nlChunk*)((char*)animData + animSize);
         while (animData != animEnd)
         {
             if ((animData->m_ID & 0x80FFFFFF) == 0x80017000)
@@ -519,6 +519,7 @@ void NPCManager::CreateNPCTemplate(int templateIndex, bool loadTextures)
     else
     {
         nlChunk* animData;
+        nlChunk* animEnd;
         cInventory<cSAnim>* animInv = mpInventorySAnim;
         animData = (nlChunk*)nlLoadEntireFile(
             gNPCTemplateInfo[templateIndex].animFilename,
@@ -537,7 +538,7 @@ void NPCManager::CreateNPCTemplate(int templateIndex, bool loadTextures)
             animMem,
             (ListEntry<char*>**)&animInv->m_lMemList.m_Tail);
 
-        nlChunk* animEnd = (nlChunk*)((char*)animData + animFileSize);
+        animEnd = (nlChunk*)((char*)animData + animFileSize);
         while (animData != animEnd)
         {
             if ((animData->m_ID & 0x80FFFFFF) == 0x80017000)

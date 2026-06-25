@@ -2009,8 +2009,8 @@ static void glx_SwitchTextureState(const glModelPacket* p)
 
 /**
  * Offset/Address/Size: 0x2B1C | 0x801BC61C | size: 0x2154
- * TODO: 99.42% match - gx_vtxfmt setup and texture-attribute loop still use
- * different temp registers and branch shape.
+ * TODO: 99.51% match - gx_vtxfmt setup and texture-attribute loop still use
+ * different temp registers and branch counter shape.
  */
 static unsigned long glx_SwitchTexConfig(const glModelPacket* p)
 {
@@ -2067,14 +2067,17 @@ static unsigned long glx_SwitchTexConfig(const glModelPacket* p)
 
     texnum = 0;
     bit = 0;
-    do
+    while (true)
     {
+        if (bit >= 6)
+            break;
         if (texconfig & (1 << bit))
         {
             gx_texattr[bit] = (GXAttr)(texnum + 13);
             texnum++;
         }
-    } while (++bit < 6);
+        bit++;
+    }
 
     gxSetTevColourOp(0, (_GXTevOp)0, (_GXTevBias)0, (_GXTevScale)0, true, (_GXTevRegID)0);
     gxSetTevColourOp(1, (_GXTevOp)0, (_GXTevBias)0, (_GXTevScale)0, true, (_GXTevRegID)0);

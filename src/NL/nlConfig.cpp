@@ -8,8 +8,8 @@
 
 /**
  * Offset/Address/Size: 0x0 | 0x801D2C64 | size: 0x13EC
- * TODO: 97.01% match - r21/r22 register swap for s parameter and BString data
- * in BString constructor inlining (r24 vs r21), extra mr r23,r21 copy in target
+ * TODO: 98.81% match - r21/r22/r24 register differences in initial BString construction
+ * and extra stack reloads around tokenizer iterator copies
  */
 typedef BasicString<char, Detail::TempStringAllocator> BString;
 typedef Tokenizer<BString> BTokenizer;
@@ -452,10 +452,14 @@ void Config::Set(const char* tag, float value)
 
 /**
  * Offset/Address/Size: 0x1CF4 | 0x801D4958 | size: 0x120
+ * TODO: 98.33% match - hash loop calls nlToUpper<unsigned char>; copy loop capacity branch layout
+ * and final character test register differ
  */
 void Config::Set(const char* tag, bool value)
 {
     const char* p = tag;
+    TagValuePair* tvp;
+    char* dest;
     u32 hash = 0x1505;
     while (*p != 0)
     {
@@ -464,7 +468,6 @@ void Config::Set(const char* tag, bool value)
     }
 
     u32 offset;
-    TagValuePair* tvp;
     for (u32 idx = hash & 0x3FF;;)
     {
         offset = idx * 12;
@@ -482,7 +485,7 @@ void Config::Set(const char* tag, bool value)
 
     if (tvp->tag == 0)
     {
-        char* dest = mStringEnd;
+        dest = mStringEnd;
         s32 ch;
         while ((ch = *tag) != 0)
         {
@@ -503,8 +506,8 @@ void Config::Set(const char* tag, bool value)
 
 /**
  * Offset/Address/Size: 0x1E14 | 0x801D4A78 | size: 0x120
- * TODO: 95.35% match - r28/r29 register swap in probe/copy path (idx/offset/tvp and dest/tvp->tag),
- * hash loop emits pre-call extsb/add scheduling differences
+ * TODO: 96.39% match - selected TagValuePair and tag-copy path still use r28/r29
+ * register swaps; hash loop still has pre-call sign extension
  */
 void Config::Set(const char* tag, int value)
 {
@@ -512,20 +515,18 @@ void Config::Set(const char* tag, int value)
     u32 hash = 0x1505;
     while ((s8)*p != 0)
     {
-        s32 c = nlToUpper(*p++);
-        hash += (hash << 5) + (s8)c;
+        s8 c = nlToUpper(*p++);
+        hash = hash + (hash << 5) + c;
     }
 
-    u32 h = hash;
-    u32 idx = h & 0x3FF;
-
     TagValuePair* tvp;
-    while (true)
+    u32 offset;
+    for (u32 idx = hash & 0x3FF;;)
     {
-        u32 offset = idx * 12;
-        if (mTvpHash[idx].tag == NULL || nlStrICmp(mTvpHash[idx].tag, tag) == 0)
+        offset = idx * 12;
+        if (*(const char**)((u8*)mTvpHash + offset) == 0 || nlStrICmp(*(const char**)((u8*)mTvpHash + offset), tag) == 0)
         {
-            tvp = (TagValuePair*)((char*)mTvpHash + offset);
+            tvp = (TagValuePair*)((u8*)mTvpHash + offset);
             break;
         }
         idx++;

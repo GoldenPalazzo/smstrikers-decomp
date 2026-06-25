@@ -47,8 +47,7 @@ Tokenizer<BasicString<char, Detail::TempStringAllocator> >::iterator& Tokenizer<
 
 /**
  * Offset/Address/Size: 0x88 | 0x80191520 | size: 0x310
- * TODO: 70.7% match - MWCC hoists tok->m_source.m_data and tok->m_delimiter.m_data outside loops,
- *       causing register shifts (r5/r6/r7 vs target r5/r6/r7 allocation)
+ * TODO: 72.4% match - delimiter data/index registers differ in both scan loops.
  */
 void Tokenizer<BasicString<char, Detail::TempStringAllocator> >::iterator::FindNextToken()
 {
@@ -73,6 +72,7 @@ void Tokenizer<BasicString<char, Detail::TempStringAllocator> >::iterator::FindN
             break;
         }
         iter++;
+        mIter = iter;
     }
 
     mIter = iter;
@@ -97,6 +97,7 @@ void Tokenizer<BasicString<char, Detail::TempStringAllocator> >::iterator::FindN
             break;
         }
         iter++;
+        mEnd = iter;
     }
 
     mEnd = iter;

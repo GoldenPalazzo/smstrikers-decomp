@@ -3991,7 +3991,7 @@ void cFielder::InitActionSlideAttack(cFielder* pTarget, float fTime)
 
 /**
  * Offset/Address/Size: 0xE2C | 0x80027964 | size: 0x59C
- * TODO: 99.84% match - star slide block load order and pBall register allocation differ.
+ * TODO: 99.86% match - star slide float constant labels differ.
  */
 void cFielder::ActionSlideAttack(float fDeltaTime)
 {
@@ -4007,8 +4007,8 @@ void cFielder::ActionSlideAttack(float fDeltaTime)
         float newVelY, newVelX;
         nlVector3 v3NewVelocity;
 
-        dy = g_pBall->m_v3Position.f.y - m_v3Position.f.y;
-        dx = g_pBall->m_v3Position.f.x - m_v3Position.f.x;
+        dy = g_pBall->m_v3Position.f.x - m_v3Position.f.x;
+        dx = g_pBall->m_v3Position.f.y - m_v3Position.f.y;
 
         float distSq = dy * dy + dx * dx;
         nlSqrt(distSq, true);
@@ -4023,8 +4023,8 @@ void cFielder::ActionSlideAttack(float fDeltaTime)
         float turnRate = 8.5f;
         float steerY = turnRate * dy;
         float steerX = turnRate * dx;
-        newVelY = steerY + m_v3Velocity.f.y;
-        newVelX = steerX + m_v3Velocity.f.x;
+        newVelY = steerY + m_v3Velocity.f.x;
+        newVelX = steerX + m_v3Velocity.f.y;
 
         float newSpeed = nlSqrt(newVelY * newVelY + newVelX * newVelX, true);
         float invNewSpeed = 1.0f / newSpeed;

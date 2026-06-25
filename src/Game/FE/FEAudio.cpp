@@ -368,7 +368,7 @@ long FEAudio::PlayAnimAudioEvent(const char* eventName, bool)
 
 /**
  * Offset/Address/Size: 0x7F4 | 0x8009F5A0 | size: 0x408
- * TODO: 99.03% match - pEntry/list head-tail and copy loop use different registers
+ * TODO: 99.13% match - pEntry/list head-tail and output pointer/counter use different registers
  */
 void FEAudio::BuildAnimAudioEventLookup()
 {
@@ -433,7 +433,8 @@ void FEAudio::BuildAnimAudioEventLookup()
     ListEntry<AnimAudioEventLookup>* node = LookupList.m_Head;
     while (node != NULL)
     {
-        gp_AnimAudioEventTable[i] = node->data;
+        AnimAudioEventLookup& out = gp_AnimAudioEventTable[i];
+        out = node->data;
         i++;
         node = node->next;
     }

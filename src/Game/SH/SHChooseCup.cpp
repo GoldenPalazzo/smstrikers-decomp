@@ -601,7 +601,7 @@ void ChooseCupSceneV2::Update(float fDeltaT)
         }
     }
 
-    if (!mIsFirstSlide || activeSlide->m_time >= activeSlide->m_start + activeSlide->m_duration)
+    if (!mIsFirstSlide || (mIsFirstSlide && activeSlide->m_time >= activeSlide->m_start + activeSlide->m_duration))
     {
         mTicker->Update(fDeltaT);
     }

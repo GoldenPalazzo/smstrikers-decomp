@@ -92,7 +92,7 @@ bool PhysicsAIBall::DidBallJustEnterNet(const nlVector3& oldPos, nlVector3 newPo
 
 /**
  * Offset/Address/Size: 0x0 | 0x80133C58 | size: 0x310
- * TODO: 98.28% match - FPR allocation diffs in contact offset and reflection math
+ * TODO: 99.64% match - velY/normalY register swap in reflection math and velocitySq compare register differ
  */
 void PhysicsAIBall::CheckIfBallWentThroughGoalPost()
 {
@@ -135,31 +135,30 @@ void PhysicsAIBall::CheckIfBallWentThroughGoalPost()
 
             const nlVector3& v3BallVel = GetLinearVelocity();
             float velY = v3BallVel.f.y;
+            float normalZ = contactNormal.f.z;
+            float velZ = v3BallVel.f.z;
             float normalY = contactNormal.f.y;
             float velX = v3BallVel.f.x;
             float velYSq = velY * velY;
-            float velYNormalY = velY * normalY;
+            float velYNormalY = normalY * velY;
             float normalX = contactNormal.f.x;
             float normalYSq = normalY * normalY;
-            float velZ = v3BallVel.f.z;
             float velXSq = velX * velX;
             float dotXY = (velX * normalX) + velYNormalY;
-            float normalZ = contactNormal.f.z;
             float normalLenXY = (normalX * normalX) + normalYSq;
             float velZSq = velZ * velZ;
             float velDotNormal = (velZ * normalZ) + dotXY;
             float normalLengthSq = (normalZ * normalZ) + normalLenXY;
             float reflectScale = velDotNormal / normalLengthSq;
 
-            v3ExitVel.f.x = (-2.0f * (reflectScale * normalX)) + velX;
-            v3ExitVel.f.y = (-2.0f * (reflectScale * normalY)) + velY;
-            v3ExitVel.f.z = (-2.0f * (reflectScale * normalZ)) + velZ;
+            nlVec3Set(v3ExitVel,
+                (-2.0f * (reflectScale * normalX)) + velX,
+                (-2.0f * (reflectScale * normalY)) + velY,
+                (-2.0f * (reflectScale * normalZ)) + velZ);
 
             float velocitySq = velZSq + (velXSq + velYSq);
 
-            v3ExitVel.f.x = 0.35f * v3ExitVel.f.x;
-            v3ExitVel.f.y = 0.35f * v3ExitVel.f.y;
-            v3ExitVel.f.z = 0.35f * v3ExitVel.f.z;
+            nlVec3Scale(v3ExitVel, 0.35f);
 
             if (velocitySq < 1.0f)
             {

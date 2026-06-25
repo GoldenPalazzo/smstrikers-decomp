@@ -243,12 +243,11 @@ bool cFielder::InitDesire(const sDesireParams* pParams, float fConfidence)
 
 /**
  * Offset/Address/Size: 0x54DC | 0x80036260 | size: 0xD30
- * TODO: 99.86% match - remaining queued fvNotSet base register and windup reaction multiply operand order.
  */
 bool cFielder::InitDesire(eFielderDesireState eDesireType, float fConfidence, float fDuration, FuzzyVariant opt1, FuzzyVariant opt2)
 {
-    unsigned long uQueuedThoughtHash;
     bool bDesireInitSuccess;
+    unsigned long uQueuedThoughtHash;
     if (GetGlobalPad() == NULL && m_pBall != NULL && m_eFielderDesireState == FIELDERDESIRE_WINDUP_SHOT
         && (u32)(eDesireType - FIELDERDESIRE_PASS) > 1 && eDesireType != FIELDERDESIRE_DEKE)
     {
@@ -438,7 +437,8 @@ bool cFielder::InitDesire(eFielderDesireState eDesireType, float fConfidence, fl
         if (g_pBall->m_pPassTarget != NULL)
         {
             float fMultiplier = 0.5f + (nlRandomf(0.15f, &nlDefaultSeed) - 0.075f);
-            m_DesireCommonVars.tMiscTimer.SetSeconds(g_pBall->m_tPassTargetTimer.GetSeconds() * fMultiplier);
+            float fPassTargetSeconds = g_pBall->m_tPassTargetTimer.GetSeconds();
+            m_DesireCommonVars.tMiscTimer.SetSeconds(fPassTargetSeconds * fMultiplier);
         }
         m_pAvoidance->SetThingsToAvoid(0x1F);
         break;
@@ -638,6 +638,38 @@ bool cFielder::InitDesire(eFielderDesireState eDesireType, float fConfidence, fl
 /**
  * Offset/Address/Size: 0x4700 | 0x80035484 | size: 0xDDC
  */
+inline void cFielder::DesireWindupPass(float fDeltaT)
+{
+    if (m_pBall == NULL || Incapacitated(mActionPassingVars.pPassTarget))
+    {
+        SetDesireDuration(0.0f, true);
+        return;
+    }
+    SetDesiredSpeedAndDirectionToPosition(fDeltaT, m_DesireCommonVars.v3DesiredPosition, TR_FORCED_OFF, 1.0f, 1.0f);
+    bool bSwitchToPassDesire = false;
+    if (m_DesireCommonVars.tMiscTimer.m_uPackedTime != 0)
+    {
+        float fInDanger = Fuzzy::InDangerDelayed(g_pScriptCurrentFielder).mData.f;
+        float fNotFarToTheirGoalie = FLESS(FarToTheirGoalie(g_pScriptCurrentFielder), 0.3f);
+        float fDistanceToDesiredPos = GetDistanceToDesiredPos();
+        float fClosingSpeedToDesiredPos = GetClosingSpeed2D(m_DesireCommonVars.v3DesiredPosition, v3Zero, m_v3Position, m_v3Velocity);
+        if (fClosingSpeedToDesiredPos < 0.0f || fDistanceToDesiredPos <= 1.0f
+            || ((fInDanger = (fInDanger >= fNotFarToTheirGoalie) ? fInDanger : fNotFarToTheirGoalie) >= m_DesireCommonVars.fMisc))
+        {
+            bSwitchToPassDesire = true;
+        }
+    }
+    else
+    {
+        bSwitchToPassDesire = true;
+    }
+    if (bSwitchToPassDesire && !IsBallAwayFromCarrier())
+    {
+        SetDesireDuration(0.0f, true);
+        InitDesire(FIELDERDESIRE_PASS, m_fDesireConfidence, -1.0f, FuzzyVariant(mActionPassingVars.pPassTarget), FuzzyVariant(mActionPassingVars.bVolleyPass));
+    }
+}
+
 void cFielder::UpdateDesireState(float fDeltaT)
 {
     switch (m_eFielderDesireState)
@@ -1008,44 +1040,8 @@ void cFielder::UpdateDesireState(float fDeltaT)
         SetDesiredSpeedAndDirectionToPosition(fDeltaT, m_v3Position, TR_FAR_DISTANCE, 1.0f, 1.0f);
         break;
     case FIELDERDESIRE_WINDUP_PASS:
-    {
-        if (m_pBall == NULL || Incapacitated(mActionPassingVars.pPassTarget))
-        {
-            SetDesireDuration(0.0f, true);
-            break;
-        }
-        SetDesiredSpeedAndDirectionToPosition(fDeltaT, m_DesireCommonVars.v3DesiredPosition, TR_FORCED_OFF, 1.0f, 1.0f);
-        bool bInitPass = false;
-        if (m_DesireCommonVars.tMiscTimer.m_uPackedTime != 0)
-        {
-            float fInDanger = Fuzzy::InDangerDelayed(g_pScriptCurrentFielder).mData.f;
-            float fFarToGoalie = FLESS(FarToTheirGoalie(g_pScriptCurrentFielder), 0.3f);
-            float fDistance = GetDistanceToDesiredPos();
-            float fClosingSpeed = GetClosingSpeed2D(m_DesireCommonVars.v3DesiredPosition, v3Zero, m_v3Position, m_v3Velocity);
-            if (fClosingSpeed < 0.0f || fDistance <= 1.0f)
-            {
-                bInitPass = true;
-            }
-            else
-            {
-                fInDanger = (fInDanger >= fFarToGoalie) ? fInDanger : fFarToGoalie;
-                if (fInDanger >= m_DesireCommonVars.fMisc)
-                {
-                    bInitPass = true;
-                }
-            }
-        }
-        else
-        {
-            bInitPass = true;
-        }
-        if (bInitPass && !IsBallAwayFromCarrier())
-        {
-            SetDesireDuration(0.0f, true);
-            InitDesire(FIELDERDESIRE_PASS, m_fDesireConfidence, -1.0f, FuzzyVariant(mActionPassingVars.pPassTarget), FuzzyVariant(mActionPassingVars.bVolleyPass));
-        }
+        DesireWindupPass(fDeltaT);
         break;
-    }
     case FIELDERDESIRE_WINDUP_SHOT:
         DesireWindupShot(fDeltaT);
         break;

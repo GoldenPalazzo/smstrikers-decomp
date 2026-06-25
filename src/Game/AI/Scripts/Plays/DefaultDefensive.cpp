@@ -1105,9 +1105,9 @@ FuzzyVariant Fuzzy::UsePowerupDefensive(float fConfidence, cDecisionEntity* pEnt
 
 /**
  * Offset/Address/Size: 0x0 | 0x800856B8 | size: 0x5C4
- * TODO: 99.09% match - remaining diffs: the fNotInvincible clamp branches with a
- * single ble where the target uses an equivalent two-step compare/branch, and
- * fThreat is held in f28 instead of f27 through the threat/marking branch.
+ * TODO: 99.36% match - remaining diffs: extra move in the fNotInvincible
+ * clamp, and fThreat is held in f28 instead of f27 through the
+ * threat/marking branch.
  */
 FuzzyVariant Fuzzy::GetPowerupTargetDefensive(cTeam* TheTeam)
 {
@@ -1121,8 +1121,14 @@ FuzzyVariant Fuzzy::GetPowerupTargetDefensive(cTeam* TheTeam)
         cFielder* theOpponent = g_pScriptOtherTeam->GetFielder(i);
         float fNotInvincible = 1.0f - Invincible(theOpponent);
         float fTrueConfidence = 1.0f - Incapacitated((cPlayer*)theOpponent);
-        if (fTrueConfidence > fNotInvincible)
+        if (fTrueConfidence <= fNotInvincible)
+        {
+            fTrueConfidence = fTrueConfidence;
+        }
+        else
+        {
             fTrueConfidence = fNotInvincible;
+        }
         float fFalseConfidence = 1.0f - fTrueConfidence;
         float fMin = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
         float fMax = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;

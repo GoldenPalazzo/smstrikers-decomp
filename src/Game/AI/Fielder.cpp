@@ -2498,7 +2498,7 @@ bool cFielder::DoLooseBallContactFromRun(nlVector3& v3AnimStartPosition, float& 
 
 /**
  * Offset/Address/Size: 0x84AC | 0x800217E8 | size: 0x2FC
- * TODO: 99.84% match - remaining temporary register differences in contact-offset rotation block
+ * TODO: 99.95% match - remaining commuted fmadds operands in contact-offset rotation block
  */
 bool cFielder::DoLooseBallContactFromRunVolley(nlVector3& v3AnimStartPosition, float& fAnimStartTime, nlVector3& v3BallContactPosition, float& fBallContactTime,
     const LooseBallContactAnimInfo* pBestBallContactAnimInfo, const nlVector3& v3PassIntercept)
@@ -2518,7 +2518,7 @@ bool cFielder::DoLooseBallContactFromRunVolley(nlVector3& v3AnimStartPosition, f
     float ySin = v3ContactOffsetLocal.f.y * fSin;
     float xSin = v3ContactOffsetLocal.f.x * fSin;
     pContactOffsetWorld->f.x = (v3ContactOffsetLocal.f.x * fCos) - ySin;
-    pContactOffsetWorld->f.y = (v3ContactOffsetLocal.f.y * fCos) + xSin;
+    pContactOffsetWorld->f.y = (fCos * v3ContactOffsetLocal.f.y) + xSin;
     pContactOffsetWorld->f.z = v3ContactOffsetLocal.f.z;
 
     float fContactZ;
@@ -4623,20 +4623,18 @@ bool cFielder::CanISlideAttack(const nlVector3& v3Position, const nlVector3& v3V
     {
         if (fTime != nullptr)
         {
-            float fInterceptY = v3Velocity.f.y * t + v3Position.f.y;
             float fInterceptX = v3Velocity.f.x * t + v3Position.f.x;
-            float fToInterceptY = fInterceptY - m_v3Position.f.y;
+            float fInterceptY = v3Velocity.f.y * t + v3Position.f.y;
             float fToInterceptX = fInterceptX - m_v3Position.f.x;
+            float fToInterceptY = fInterceptY - m_v3Position.f.y;
 
-            float fLenSq = fToInterceptY * fToInterceptY + fToInterceptX * fToInterceptX;
+            float fLenSq = fToInterceptX * fToInterceptX + fToInterceptY * fToInterceptY;
             float fInvLen = nlRecipSqrt(fZero + fLenSq, true);
+            FielderTweaks* pTweaks = (FielderTweaks*)m_pTweaks;
+            float fSpeedX = 1.0f;
+            float fSlideSpeed = pTweaks->fRunningWBTurboSpeedLevel2;
             float fDesiredVelX = fInvLen * fToInterceptX;
             float fDesiredVelY = fInvLen * fToInterceptY;
-
-            FielderTweaks* pTweaks = (FielderTweaks*)m_pTweaks;
-            float fSlideSpeed = pTweaks->fRunningWBTurboSpeedLevel2;
-
-            float fSpeedX = 1.0f;
             if (fSlideSpeed >= 0.0f)
             {
                 switch (m_ePowerup)

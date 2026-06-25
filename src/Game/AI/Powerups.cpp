@@ -2243,7 +2243,7 @@ void PowerupBase::Destroy(bool bSilent)
             Event* pEvent = g_pEventManager->CreateValidEvent(0x2C, 0x34);
             CollisionBobombDataLayout* pEventData = (CollisionBobombDataLayout*)new ((u8*)pEvent + 0x10) CollisionBobombData();
             pEventData->v3ExplosionLocation = m_v3Position;
-            pEventData->fExplosionRadius = ((float)meSize * g_pGame->m_pGameTweaks->fPowerupExplosionRadius)
+            pEventData->fExplosionRadius = (g_pGame->m_pGameTweaks->fPowerupExplosionRadius * (float)meSize)
                                          + g_pGame->m_pGameTweaks->fPowerupExplosionRadius;
             pEventData->pThrower = m_pThrower;
             pEventData->nThrowerPadID = m_nThrowerPadID;

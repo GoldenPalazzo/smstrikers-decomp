@@ -245,11 +245,15 @@ NLString Variant::ToString() const
             if (mData.pTeam != 0)
             {
                 NLString format = "Team={0}";
-                const char* team = "Away";
+                const char* team;
 
                 if (mData.pTeam->m_nSide == 0)
                 {
                     team = "Home";
+                }
+                else
+                {
+                    team = "Away";
                 }
 
                 dataString = Format(format, team);
@@ -257,14 +261,36 @@ NLString Variant::ToString() const
             break;
         }
 
-        toString = dataString;
+        {
+            BasicStringData<char>* data = dataString.m_data;
+            if (data != 0)
+            {
+                data->mRefCount++;
+            }
+            else
+            {
+                data = 0;
+            }
+            toString = NLString(data);
+        }
     }
     else
     {
         toString = "N/A";
     }
 
-    return toString;
+    {
+        BasicStringData<char>* data = toString.m_data;
+        if (data != 0)
+        {
+            data->mRefCount++;
+        }
+        else
+        {
+            data = 0;
+        }
+        return NLString(data);
+    }
 }
 
 /**

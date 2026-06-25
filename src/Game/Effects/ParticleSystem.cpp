@@ -1145,7 +1145,7 @@ static void ParticleConstructor(void* ptr, int)
 static void AllocateParticles()
 {
     int i;
-    int count = MaxNumParticles;
+    const int count = MaxNumParticles;
 
     particleMemory = new (nlMalloc(count * 0x4C + 0x10, 8, false)) Particle[count];
 
@@ -1159,7 +1159,6 @@ static void AllocateParticles()
 
 /**
  * Offset/Address/Size: 0xAC | 0x801F5204 | size: 0xCC
- * TODO: 99.71% match - allocation count uses r29 instead of r31
  */
 bool fxParticleStartup(int maxNumParticles)
 {

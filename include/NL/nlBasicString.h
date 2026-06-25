@@ -490,14 +490,7 @@ void BasicString<CharT, Allocator>::insert(CharT* at, const CharT* begin, const 
 
     if (data->mCapacity < newSize)
     {
-        Vector<CharT> newVec;
-        newVec.mData = (CharT*)Allocator::allocate(newSize * sizeof(CharT));
-        newVec.mSize = newSize;
-        newVec.mCapacity = newSize;
-        for (int i = 0; i < newSize; i++)
-        {
-            newVec.mData[i] = 0;
-        }
+        Vector<CharT> newVec(newSize, 0);
         int i = 0;
         for (; i < data->mSize; i++)
         {

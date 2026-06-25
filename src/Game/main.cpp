@@ -233,7 +233,7 @@ static void SetupViews()
 
 /**
  * Offset/Address/Size: 0x3DC | 0x80173864 | size: 0x1858
- * TODO: 99.08% match - r30/r31 register swap in 3x inlined BasicString(const char*) constructors and 2x GetConfigBool calls
+ * TODO: 99.80% match - r30/r31 register swap in 3x inlined BasicString(const char*) constructors
  */
 static void Initialize()
 {
@@ -260,7 +260,8 @@ static void Initialize()
         dvdClrCB.mTag = EMPTY;
     }
     {
-        Function<FnVoidVoid> resetCB(Bind<void>(MemFun<ResetTask, void>(&ResetTask::FSCheckForReset), &resetTask));
+        Function<FnVoidVoid> resetCB(Bind<void, Detail::MemFunImpl<void, void (ResetTask::*)()>, ResetTask*>(
+            MemFun<ResetTask, void>(&ResetTask::FSCheckForReset), &resetTask));
         nlRegCheckForResetFromFSCB(resetCB);
     }
 
@@ -385,7 +386,30 @@ static void Initialize()
     }
     else
     {
-        BasicString<char, Detail::TempStringAllocator> userlanguage = Config::Global().Get<BasicString<char, Detail::TempStringAllocator> >("Language", BasicString<char, Detail::TempStringAllocator>("eng"));
+        const char* languageSrc;
+        BasicStringData<char>* languageData = (BasicStringData<char>*)Detail::TempStringAllocator::allocate(sizeof(BasicStringData<char>));
+        if (languageData != NULL)
+        {
+            languageSrc = "eng";
+            languageData->mData = NULL;
+            languageData->mSize = 0;
+            languageData->mCapacity = 0;
+            const char* s = languageSrc;
+            while (*s++ != 0)
+            {
+                languageData->mSize++;
+            }
+            languageData->mSize++;
+            languageData->mData = (char*)Detail::TempStringAllocator::allocate((languageData->mSize + 1) * sizeof(char));
+            languageData->mCapacity = languageData->mSize;
+            for (int i = 0; i < languageData->mSize; i++)
+            {
+                languageData->mData[i] = *languageSrc++;
+            }
+            languageData->mRefCount = 1;
+        }
+        BasicString<char, Detail::TempStringAllocator> userlanguage = Config::Global().Get<BasicString<char, Detail::TempStringAllocator> >(
+            "Language", BasicString<char, Detail::TempStringAllocator>(languageData));
 
         if (nlStrICmp(userlanguage.c_str(), "eng") == 0)
         {

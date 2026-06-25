@@ -341,6 +341,7 @@ public:
     void DesireUserControlled(float);
     void DesireUsePowerup(float);
     void DesireWindupShot(float);
+    void DesireWindupPass(float);
 
     // actions
     void asmRunning();

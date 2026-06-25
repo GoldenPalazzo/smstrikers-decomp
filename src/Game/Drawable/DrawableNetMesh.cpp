@@ -53,13 +53,17 @@ DrawableNetMesh::~DrawableNetMesh()
 
 /**
  * Offset/Address/Size: 0x91C | 0x80114878 | size: 0x264
- * TODO: 99.61% match - netHeight and half-height still use swapped floating-point registers.
+ * TODO: 99.64% match - netHeight and half-height still use swapped floating-point registers.
  */
 void DrawableNetMesh::RenderInvisiblePlanes() const
 {
-    float goalLineX = cField::GetGoalLineX(1U);
-    float netWidth = cNet::m_fNetWidth;
-    float netHeight = cNet::m_fNetHeight;
+    float goalLineX;
+    float netWidth;
+    float netHeight;
+
+    goalLineX = cField::GetGoalLineX(1U);
+    netHeight = cNet::m_fNetHeight;
+    netWidth = cNet::m_fNetWidth;
 
     glSetDefaultState(true);
     glSetRasterState(GLS_DepthWrite, 1);

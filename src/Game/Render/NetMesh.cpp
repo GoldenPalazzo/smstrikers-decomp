@@ -141,85 +141,82 @@ void NetMesh::UpdateUntilRelaxed()
     }
 }
 
-static inline nlVector3* VecAt(nlVector3* arr, int i)
+static void AccumForces(NetMesh* self, nlVector3& newPos)
 {
-    return &arr[i];
+    nlVector3* upVector = &cCameraManager::m_UpVectorStack[cCameraManager::m_UpVectorStackSize];
+    float gravityMagnitude = -NetMesh::s_fNetGravityMagnitude;
+
+    newPos.f.x = gravityMagnitude * upVector->f.x;
+    newPos.f.y = gravityMagnitude * upVector->f.y;
+    newPos.f.z = gravityMagnitude * upVector->f.z;
+
+    for (int i = 0; i < self->m_NumParticles; i++)
+    {
+        self->m_v3Accel[i] = newPos;
+    }
+}
+
+static void Integrate(NetMesh* self, float t, nlVector3& v3Temp)
+{
+    for (int i = 0; i < self->m_NumParticles; i++)
+    {
+        nlVector3& v3Pos = self->m_v3Position[i];
+        nlVector3& v3PrevPos = self->m_v3PrevPosition[i];
+        nlVector3& v3Accel = self->m_v3Accel[i];
+
+        v3Temp = v3Pos;
+
+        v3Pos.f.x = v3Pos.f.x + ((NetMesh::s_fDampening * (v3Pos.f.x - v3PrevPos.f.x)) + (t * (v3Accel.f.x * t)));
+        v3Pos.f.y = v3Pos.f.y + ((NetMesh::s_fDampening * (v3Pos.f.y - v3PrevPos.f.y)) + (t * (v3Accel.f.y * t)));
+        v3Pos.f.z = v3Pos.f.z + ((NetMesh::s_fDampening * (v3Pos.f.z - v3PrevPos.f.z)) + (t * (v3Accel.f.z * t)));
+
+        v3PrevPos = v3Temp;
+    }
+}
+
+static void ComputeMotion(NetMesh* self)
+{
+    for (int i = 0; i < self->m_NumParticles; i++)
+    {
+        nlVector3& v3Pos = self->m_v3Position[i];
+        nlVector3& v3PrevPos = self->m_v3PrevPosition[i];
+        float motion = ((float)fabs(v3PrevPos.f.x - v3Pos.f.x) + (float)fabs(v3PrevPos.f.y - v3Pos.f.y)) + (float)fabs(v3PrevPos.f.z - v3Pos.f.z);
+
+        if (motion > self->mfMotion)
+        {
+            self->mfMotion = motion;
+        }
+    }
+}
+
+static bool IsBallMoving(PhysicsSphere* sphere)
+{
+    nlVector3 vel;
+    sphere->GetLinearVelocity(&vel);
+    return ((vel.f.x * vel.f.x) + (vel.f.y * vel.f.y) + (vel.f.z * vel.f.z)) > NetMesh::s_fIsBallMovingThreshold;
 }
 
 /**
  * Offset/Address/Size: 0xAA8 | 0x8012F8C8 | size: 0x398
- * TODO: 98.17% match - loop 2/3 index-register routing still differs
- * (r7/r9 and r4/r6 paths), and the temporary ballPosition copy / velocity stack
- * slots are swapped between r1+0x8 and r1+0x14.
  */
 void NetMesh::Update(float dt, const nlVector3& ballPosition, const nlVector3& ballPrevPosition, bool bExaggerateBallSize, PhysicsSphere* sphere)
 {
-    extern float s_fDampening__7NetMesh;
-
-    struct cAccumForces
-    {
-        static void Run(NetMesh* self, nlVector3& newPos)
-        {
-            nlVector3* upVector = &cCameraManager::m_UpVectorStack[cCameraManager::m_UpVectorStackSize];
-            float gravityMagnitude = -NetMesh::s_fNetGravityMagnitude;
-
-            newPos.f.x = gravityMagnitude * upVector->f.x;
-            newPos.f.y = gravityMagnitude * upVector->f.y;
-            newPos.f.z = gravityMagnitude * upVector->f.z;
-
-            for (int i = 0; i < self->m_NumParticles; i++)
-            {
-                self->m_v3Accel[i] = newPos;
-            }
-        }
-    };
-
     nlVector3 newPos;
     nlVector3 oldPos;
-    nlVector3 velocity;
 
     if (mbIsActive || s_bAlwaysActive)
     {
         AddForcesToBall(ballPosition, sphere);
 
-        cAccumForces::Run(this, newPos);
-
-        int i;
+        AccumForces(this, newPos);
 
         mfMotion = 0.0f;
 
-        for (i = 0; i < m_NumParticles; i++)
-        {
-            nlVector3* accel = VecAt(m_v3Accel, i);
-            nlVector3* position = &m_v3Position[i];
-            nlVector3* prevPosition = VecAt(m_v3PrevPosition, i);
-
-            oldPos = *position;
-
-            position->f.x = position->f.x + ((s_fDampening__7NetMesh * (position->f.x - prevPosition->f.x)) + (dt * (accel->f.x * dt)));
-            position->f.y = position->f.y + ((s_fDampening__7NetMesh * (position->f.y - prevPosition->f.y)) + (dt * (accel->f.y * dt)));
-            position->f.z = position->f.z + ((s_fDampening__7NetMesh * (position->f.z - prevPosition->f.z)) + (dt * (accel->f.z * dt)));
-
-            *prevPosition = oldPos;
-        }
+        Integrate(this, dt, oldPos);
 
         SatisfyConstraints(ballPosition, bExaggerateBallSize);
 
-        for (i = 0; i < m_NumParticles; i++)
-        {
-            nlVector3* position = &m_v3Position[i];
-            nlVector3* prevPosition = VecAt(m_v3PrevPosition, i);
-
-            float motionY = (float)fabs(prevPosition->f.y - position->f.y);
-            float motionX = (float)fabs(prevPosition->f.x - position->f.x);
-            float motionZ = (float)fabs(prevPosition->f.z - position->f.z);
-            float motion = (motionY + motionX) + motionZ;
-
-            if (motion > mfMotion)
-            {
-                mfMotion = motion;
-            }
-        }
+        ComputeMotion(this);
     }
     else
     {
@@ -247,11 +244,7 @@ void NetMesh::Update(float dt, const nlVector3& ballPosition, const nlVector3& b
         if ((mfMotion > s_fInactivityThreshold)
             || (mbBallIsInsideNet
                 && ((sphere == NULL)
-                    || ((sphere->GetLinearVelocity(&velocity),
-                            ((velocity.f.x * velocity.f.x)
-                                + (velocity.f.y * velocity.f.y)
-                                + (velocity.f.z * velocity.f.z)))
-                        > s_fIsBallMovingThreshold)
+                    || IsBallMoving(sphere)
                     || ((m_numAffectedParticles == 0) && mbIsActive))))
         {
             mbIsActive = true;

@@ -18,7 +18,7 @@ class Fuzzy
 {
 public:
     static FuzzyVariant AbortOffensivePlay(cDecisionEntity*);
-    void DefaultOffensivePlay(cDecisionEntity*);
+    static FuzzyVariant DefaultOffensivePlay(cDecisionEntity*);
     static FuzzyVariant DoPassing(float, cDecisionEntity*);
     static FuzzyVariant GetBestPassTarget(cPlayer*);
     static FuzzyVariant GetStrategicBallCarrier(cTeam*);
@@ -28,7 +28,7 @@ public:
     static FuzzyVariant InGoodWindupPosition(cFielder*);
     static FuzzyVariant InDanger(cFielder*);
     static FuzzyVariant CutAndBreak(cFielder*);
-    void DoShooting(float, cDecisionEntity*);
+    static FuzzyVariant DoShooting(float, cDecisionEntity*);
     static FuzzyVariant FurthestBackOnMyTeam(cFielder*);
     static FuzzyVariant UsePowerupOffensive(float, cDecisionEntity*);
     static FuzzyVariant GetPowerupTargetOffensive(cTeam*);

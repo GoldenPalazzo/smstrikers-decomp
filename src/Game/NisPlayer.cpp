@@ -967,45 +967,20 @@ void NisPlayer::AsyncLoad(nlFile* file, void* buffer, unsigned int size, unsigne
 
 /**
  * Offset/Address/Size: 0xFAC | 0x80115C88 | size: 0xA9C
+ * TODO: 97.95% match - remaining r29/r30 register swap in BasicString construction branches
  */
 BasicString<char, Detail::TempStringAllocator> NisPlayer::GetTargetFilter(NisTarget target, NisWinnerType wt) const
 {
     if (target == NIS_TARGET_STADIUM)
     {
-        const char* stadiumName;
         eStadiumID stadium = nlSingleton<GameInfoManager>::s_pInstance->GetStadium();
-        if (stadium == STAD_PEACH_TOAD_STADIUM)
-        {
-            stadiumName = "the_palace";
-        }
-        else if (stadium == STAD_MARIO_STADIUM)
-        {
-            stadiumName = "pipeline_central";
-        }
-        else if (stadium == STAD_WARIO_STADIUM)
-        {
-            stadiumName = "wario_stadium";
-        }
-        else if (stadium == STAD_DK_DAISY)
-        {
-            stadiumName = "dk_daisy";
-        }
-        else if (stadium == STAD_YOSHI_STADIUM)
-        {
-            stadiumName = "yoshi_stadium";
-        }
-        else if (stadium == STAD_SUPER_STADIUM)
-        {
-            stadiumName = "super_stadium";
-        }
-        else if (stadium == STAD_FORBIDDEN_DOME)
-        {
-            stadiumName = "forbidden_dome";
-        }
-        else
-        {
-            stadiumName = "";
-        }
+        const char* stadiumName = (stadium == STAD_PEACH_TOAD_STADIUM) ? "the_palace" : (stadium == STAD_MARIO_STADIUM) ? "pipeline_central"
+                                                                                  : (stadium == STAD_WARIO_STADIUM)     ? "wario_stadium"
+                                                                                  : (stadium == STAD_DK_DAISY)          ? "dk_daisy"
+                                                                                  : (stadium == STAD_YOSHI_STADIUM)     ? "yoshi_stadium"
+                                                                                  : (stadium == STAD_SUPER_STADIUM)     ? "super_stadium"
+                                                                                  : (stadium == STAD_FORBIDDEN_DOME)    ? "forbidden_dome"
+                                                                                                                        : "";
 
         return BasicString<char, Detail::TempStringAllocator>(stadiumName);
     }

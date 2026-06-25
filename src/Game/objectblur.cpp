@@ -17,6 +17,7 @@ BlurHandler* BlurManager::m_activeBlurHandler = NULL;
 SlotPool<BlurHandler> BlurHandler::m_BlurHandlerSlotPool(0x10, 0x10);
 
 static f32 fFlimmerOffset = 0.01f;
+static const nlColour white = { 0xFF, 0xFF, 0xFF, 0xFF };
 
 /**
  * Offset/Address/Size: 0x0 | 0x801627D4 | size: 0x3C
@@ -206,7 +207,6 @@ void BlurHandler::RenderMesh(unsigned long uTexID)
     glSetCurrentTexture(uTexID, GLTT_Diffuse);
     glSetCurrentProgram(glGetProgram("3d unlit"));
 
-    static const nlColour white = { 0xFF, 0xFF, 0xFF, 0xFF };
     colour = white;
     nonAdditiveAlpha = 0.0f;
 
@@ -265,20 +265,23 @@ void BlurHandler::RenderMesh(unsigned long uTexID)
                 }
 
                 f32 blendPct = ReplayManager::Instance()->mRender->mFrameBlendPercent;
-                BlurPointEntry* pA = &m_pointRingBuffer[pointIndexA];
-                BlurPointEntry* pB = &m_pointRingBuffer[pointIndexB];
+                BlurPointEntry* ringBuffer = m_pointRingBuffer;
+                nlVector3* pATop = &ringBuffer[pointIndexA].v3Top;
+                nlVector3* pBTop = &ringBuffer[pointIndexB].v3Top;
+                nlVector3* pABottom = &ringBuffer[pointIndexA].v3Bottom;
+                nlVector3* pBBottom = &ringBuffer[pointIndexB].v3Bottom;
 
                 f32 invBlend = 1.0f - blendPct;
 
                 nlVector3 v3Top;
-                v3Top.f.x = invBlend * pA->v3Top.f.x + blendPct * pB->v3Top.f.x;
-                v3Top.f.y = invBlend * pA->v3Top.f.y + blendPct * pB->v3Top.f.y;
-                v3Top.f.z = invBlend * pA->v3Top.f.z + blendPct * pB->v3Top.f.z;
+                v3Top.f.x = invBlend * pATop->f.x + blendPct * pBTop->f.x;
+                v3Top.f.y = invBlend * pATop->f.y + blendPct * pBTop->f.y;
+                v3Top.f.z = invBlend * pATop->f.z + blendPct * pBTop->f.z;
 
                 nlVector3 v3Bottom;
-                v3Bottom.f.x = invBlend * pA->v3Bottom.f.x + blendPct * pB->v3Bottom.f.x;
-                v3Bottom.f.y = invBlend * pA->v3Bottom.f.y + blendPct * pB->v3Bottom.f.y;
-                v3Bottom.f.z = invBlend * pA->v3Bottom.f.z + blendPct * pB->v3Bottom.f.z;
+                v3Bottom.f.x = invBlend * pABottom->f.x + blendPct * pBBottom->f.x;
+                v3Bottom.f.y = invBlend * pABottom->f.y + blendPct * pBBottom->f.y;
+                v3Bottom.f.z = invBlend * pABottom->f.z + blendPct * pBBottom->f.z;
 
                 mesh.Colour(colour);
                 nlVector2 tc0;

@@ -260,26 +260,26 @@ bool PlatAudio::IsStreamingInited()
 
 /**
  * Offset/Address/Size: 0x0 | 0x801C70C4 | size: 0x1BC
- * TODO: 96.1% match - r28/r29 outer induction-variable roles remain swapped
- * and both m_BufferCount > 0 checks still compile as beq instead of ble.
  */
 void PlatAudio::StopAllStreams()
 {
     using namespace GCAudioStreaming;
+    typedef nlSortedSlot<AudioStream*, 7>::EntryLookup<AudioStream*> EL;
 
     AudioStream* stream;
     AudioStreamBuffer* buffer;
-    unsigned long streamIndex = 0;
-    unsigned long lookupOffset = 0;
+    int streamOffset;
+    unsigned long streamIndex;
+    unsigned long zero = 0;
 
-    while (streamIndex < g_Streams.m_EntryCount)
+    for (streamIndex = 0, streamOffset = 0; streamIndex < g_Streams.m_EntryCount; streamOffset += 8, streamIndex++)
     {
-        stream = *g_Streams.m_pEntryLookup[lookupOffset >> 3].pEntry;
+        stream = *((EL*)((char*)g_Streams.m_pEntryLookup + streamOffset))->pEntry;
         stream->m_Flags &= ~(1 << SF_Play);
         if (stream->m_State == SS_Playing)
         {
             volatile unsigned long j = (unsigned long)(buffer = NULL);
-            if (stream->m_BufferCount > 0)
+            if (zero < stream->m_BufferCount)
                 buffer = stream->m_Buffers[0];
 
             while (buffer != NULL)
@@ -316,7 +316,7 @@ void PlatAudio::StopAllStreams()
 
                 volatile unsigned long k = 0;
                 buffer = NULL;
-                if (stream->m_BufferCount > 0)
+                if (zero < stream->m_BufferCount)
                     buffer = stream->m_Buffers[0];
 
                 while (buffer != NULL)
@@ -338,8 +338,5 @@ void PlatAudio::StopAllStreams()
                 stream->m_State = SS_Initd;
             }
         }
-
-        streamIndex++;
-        lookupOffset += 8;
     }
 }

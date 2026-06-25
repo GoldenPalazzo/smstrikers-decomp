@@ -1316,7 +1316,7 @@ void Goalie::ActionSaveReposition(float deltaTime)
 
 /**
  * Offset/Address/Size: 0x20BC | 0x800505F8 | size: 0x51C
- * TODO: 99.20% match - animation time/reach threshold use f30 instead of target f31, with head-track/catch load-order diffs
+ * TODO: 99.37% match - animation time/reach threshold use f30 instead of target f31, with head-track load-order diffs
  */
 void Goalie::ActionSave(float)
 {
@@ -1461,20 +1461,20 @@ void Goalie::ActionSave(float)
                 const nlVector3& v3LHand = GetJointPosition(m_nLeftHandJointIndex);
                 const nlVector3& v3RHand = GetJointPosition(m_nRightHandJointIndex);
 
-                float dY = g_pBall->m_v3Position.f.y - v3LHand.f.y;
                 float dX = g_pBall->m_v3Position.f.x - v3LHand.f.x;
+                float dY = g_pBall->m_v3Position.f.y - v3LHand.f.y;
                 float dZ = g_pBall->m_v3Position.f.z - v3LHand.f.z;
-                float distSqL = dY * dY + dX * dX + dZ * dZ;
+                float distSqL = dX * dX + dY * dY + dZ * dZ;
 
                 if (distSqL < fReachSq)
                 {
                     goto do_catch;
                 }
 
-                dY = g_pBall->m_v3Position.f.y - v3RHand.f.y;
                 dX = g_pBall->m_v3Position.f.x - v3RHand.f.x;
+                dY = g_pBall->m_v3Position.f.y - v3RHand.f.y;
                 dZ = g_pBall->m_v3Position.f.z - v3RHand.f.z;
-                float distSqR = dY * dY + dX * dX + dZ * dZ;
+                float distSqR = dZ * dZ + dY * dY + dX * dX;
 
                 if (distSqR < fReachSq)
                 {

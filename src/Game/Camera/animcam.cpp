@@ -403,9 +403,9 @@ void cAnimCamera::BuildAnimViewMatrix(nlMatrix4& mView)
         {
             m_Fov = fWeightA * m_pActiveCameraData->fFOV[nIndex] + fWeightB * m_pActiveCameraData->fFOV[nIndex + 1];
             nlVector3& cpIdx = m_pActiveCameraData->cameraPos[nIndex];
+            nlVector3& tpNxt = m_pActiveCameraData->targetPos[nIndex + 1];
             nlVector3& cpNxt = m_pActiveCameraData->cameraPos[nIndex + 1];
             nlVector3& tpIdx = m_pActiveCameraData->targetPos[nIndex];
-            nlVector3& tpNxt = m_pActiveCameraData->targetPos[nIndex + 1];
             cameraPos.f.x = fWeightA * cpIdx.f.x + fWeightB * cpNxt.f.x;
             cameraPos.f.y = fWeightA * cpIdx.f.y + fWeightB * cpNxt.f.y;
             cameraPos.f.z = fWeightA * cpIdx.f.z + fWeightB * cpNxt.f.z;

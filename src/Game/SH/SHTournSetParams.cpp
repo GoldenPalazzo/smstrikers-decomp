@@ -448,8 +448,9 @@ void TournSetParamsScene::Update(float fDeltaT)
 
         MenuResult res = RES_ERROR;
         int flags = mMenuItems.mFlags;
+        int skipDisabled;
         int wrapList = flags & 1;
-        int skipDisabled = flags & 2;
+        skipDisabled = flags & 2;
         int oldIndex = mMenuItems.mCurrentIndex;
         newIndex = oldIndex - 1;
 
@@ -589,8 +590,9 @@ void TournSetParamsScene::Update(float fDeltaT)
 
         MenuResult res = RES_ERROR;
         int flags = mMenuItems.mFlags;
+        int skipDisabled;
         int wrapList = flags & 1;
-        int skipDisabled = flags & 2;
+        skipDisabled = flags & 2;
         int oldIndex = mMenuItems.mCurrentIndex;
         newIndex = oldIndex + 1;
 
@@ -683,8 +685,9 @@ void TournSetParamsScene::Update(float fDeltaT)
             MenuResult res = RES_ERROR;
 
             int flags = slideMenuList->mFlags;
+            int skipDisabled;
             int wrapList = flags & 1;
-            int skipDisabled = flags & 2;
+            skipDisabled = flags & 2;
             int oldIndex = slideMenuList->mCurrentIndex;
             newIndex = oldIndex - 1;
 
@@ -745,8 +748,9 @@ void TournSetParamsScene::Update(float fDeltaT)
             MenuResult res = RES_ERROR;
 
             int flags = slideMenuList->mFlags;
+            int skipDisabled;
             int wrapList = flags & 1;
-            int skipDisabled = flags & 2;
+            skipDisabled = flags & 2;
             int oldIndex = slideMenuList->mCurrentIndex;
             newIndex = oldIndex + 1;
 

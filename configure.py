@@ -551,7 +551,6 @@ def ODELib(lib_name: str, objects: Objects, cflags=cflags_ode) -> Library:
             *system_includes_base,
             "include/PowerPC_EABI_Support/MSL_C++/MSL_Common/",
         ],
-        # mw_version="GC/1.3.2",
         mw_version="GC/2.0",
         cflags=[
             *cflags,
@@ -561,7 +560,7 @@ def ODELib(lib_name: str, objects: Objects, cflags=cflags_ode) -> Library:
             "-DdTHREADING_INTF_DISABLED",
             "-DHAVE_MALLOC_H=1",
         ],        
-        category="third_party",
+        category="ode",
     )
 
 
@@ -661,7 +660,7 @@ def MusyxLib(lib_name: str, objects: Objects, debug=False, major=2, minor=0, pat
             f"-DMUSY_VERSION_MINOR={minor}",
             f"-DMUSY_VERSION_PATCH={patch}",
         ],
-        category="third_party",
+        category="musyx",
     )
 
 
@@ -1330,7 +1329,7 @@ config.libs = [
             Object(NonMatching, "NL/glx/glxTexture.cpp", extra_cflags=["-inline auto"]),
             Object(NonMatching, "NL/glx/glxSend.cpp", extra_cflags=["-inline auto"]),
             Object(NonMatching, "NL/glx/glxLoadModel.cpp", extra_cflags=["-inline auto"]),
-            Object(NonMatching, "NL/glx/glxGX.cpp", extra_cflags=["-inline auto"]),
+            Object(Matching, "NL/glx/glxGX.cpp", extra_cflags=["-inline auto"]),
             Object(NonMatching, "NL/glx/glxDisplayList.cpp", extra_cflags=["-inline auto"]),
             Object(NonMatching, "NL/glx/glxTarget.cpp", extra_cflags=["-inline auto"]),
             
@@ -1394,12 +1393,6 @@ config.libs = [
             Object(NonMatching, "ode/odemath.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
         ],
     ),
-    # ODELib20(
-    #     "Open Dynamics Engine (ODE) MWCC 2.0",
-    #     [
-    #         Object(NonMatching, "ode/odemath.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-    #     ],
-    # ),
     DolphinLib(
         "THP",
         [
@@ -1571,7 +1564,7 @@ config.libs = [
             Object(Matching, "musyx/runtime/synth_ac.c", extra_cflags=["-inline auto"]),
             Object(Matching, "musyx/runtime/synth_dbtab.c", extra_cflags=["-inline auto"]),
             Object(Matching, "musyx/runtime/synth_adsr.c", extra_cflags=["-inline auto"]),
-            Object(NonMatching, "musyx/runtime/synth_vsamples.c", extra_cflags=["-inline auto"]),
+            Object(Matching, "musyx/runtime/synth_vsamples.c", extra_cflags=["-inline auto"]),
             Object(Matching, "musyx/runtime/s_data.c", extra_cflags=["-inline auto"]),
             Object(Matching, "musyx/runtime/hw_dspctrl.c",  extra_cflags=["-inline auto", "-sdatathreshold 8"]),
             Object(Matching, "musyx/runtime/hw_volconv.c", extra_cflags=["-inline auto"]),
@@ -1664,7 +1657,8 @@ def link_order_callback(module_id: int, objects: List[str]) -> List[str]:
 config.progress_categories = [
     ProgressCategory("game", "Game Code"),
     ProgressCategory("sdk", "Dolphin SDK Code"),
-    ProgressCategory("third_party", "Third Party"),
+    ProgressCategory("ode", "ODE (Open Dynamics Engine) (Third Party)"),
+    ProgressCategory("musyx", "Musyx (Third Party)"),
     ProgressCategory("runtime", "Gekko Runtime Code"),
 ]
 config.print_progress_categories = args.verbose

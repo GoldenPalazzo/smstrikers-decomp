@@ -975,10 +975,10 @@ void Presentation::EventHandler(Event* event)
                 CallFunction(nlStringHash(script));
             }
 
-            cAIPad* aiPad = AIPadManager::mAIPads;
             bool foundTeamPad = false;
             for (s32 i = 0; i < 4; i++)
             {
+                cAIPad* aiPad = &AIPadManager::mAIPads[i];
                 cPlayer** character = (cPlayer**)g_pCharacters;
                 for (s32 j = 0; j < 5; j++)
                 {
@@ -1012,7 +1012,6 @@ void Presentation::EventHandler(Event* event)
 
                     character++;
                 }
-                aiPad++;
             }
 
             if (!foundTeamPad)

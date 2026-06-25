@@ -2096,7 +2096,7 @@ OptionsCheatsMenu::~OptionsCheatsMenu()
 
 /**
  * Offset/Address/Size: 0x47AC | 0x800B97F0 | size: 0x720
- * TODO: 98.78% match - loop counter, slide-list offset, and menu item registers differ.
+ * TODO: 99.88% match - GameInfoManager pointer and cheat flag registers differ.
  */
 OptionsCheatsMenu::OptionsCheatsMenu(FEPresentation* pres, ButtonComponent::ButtonState btnState, CheatSettings& settings)
     : OptionsSubMenu(pres, btnState)
@@ -2129,8 +2129,9 @@ OptionsCheatsMenu::OptionsCheatsMenu(FEPresentation* pres, ButtonComponent::Butt
             InlineHasher(nlStringLowerHash("Layer")),
             InlineHasher(nlStringLowerHash(menuname)));
 
-        MenuItem<TLComponentInstance>* menuItem = &mMenuItems.mMenuItems[mMenuItems.mNumItemsAdded];
-        menuItem->mType = (TLComponentInstance*)instance;
+        int numAdded = mMenuItems.mNumItemsAdded;
+        MenuItem<TLComponentInstance>* menuItem = AudioOptionsMenuItemAt(mMenuItems, numAdded);
+        mMenuItems.mMenuItems[numAdded].mType = (TLComponentInstance*)instance;
         mMenuItems.mNumItemsAdded++;
 
         {
@@ -2449,9 +2450,7 @@ void OptionsSubMenu::GoBack()
 
 /**
  * Offset/Address/Size: 0x55A4 | 0x800BA5E8 | size: 0xA30
- * TODO: 96.21% match - this lands in r31 vs target r30, leaving the loop/index
- * temps a register lower; residual lbzx vs lbz and slideMenuList reload follow
- * from the same allocation drift.
+ * TODO: 99.59% match - first unhighlight traversal and slide-menu newIndex temps use lower registers.
  */
 void OptionsSubMenu::Update(float)
 {
@@ -2481,7 +2480,8 @@ void OptionsSubMenu::Update(float)
 
         if (!locked)
         {
-            SlideMenuList* slideMenuList = (SlideMenuList*)mSlideMenuLists[mMenuItems.mCurrentIndex];
+            oldIndex = mMenuItems.mCurrentIndex;
+            SlideMenuList* slideMenuList = (SlideMenuList*)mSlideMenuLists[oldIndex];
             if (slideMenuList != NULL)
             {
                 TLComponentInstance* comp = slideMenuList->mComponentInstance;
@@ -2489,11 +2489,12 @@ void OptionsSubMenu::Update(float)
             }
         }
 
-        oldIndex = mMenuItems.mCurrentIndex;
-        flags = mMenuItems.mFlags;
-        wrapList = flags & 1;
+        int flags = mMenuItems.mFlags;
+        int skipDisabled;
+        int wrapList = flags & 1;
         skipDisabled = flags & 2;
-        newIndex = oldIndex - 1;
+        int oldIndex = mMenuItems.mCurrentIndex;
+        int newIndex = oldIndex - 1;
 
         while (true)
         {
@@ -2564,7 +2565,7 @@ void OptionsSubMenu::Update(float)
 
         if (!locked)
         {
-            SlideMenuList* slideMenuList = (SlideMenuList*)mSlideMenuLists[mMenuItems.mCurrentIndex];
+            SlideMenuList* slideMenuList = (SlideMenuList*)mSlideMenuLists[newIndex];
             if (slideMenuList != NULL)
             {
                 TLComponentInstance* comp = slideMenuList->mComponentInstance;
@@ -2578,9 +2579,10 @@ void OptionsSubMenu::Update(float)
     if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xE, true, NULL))
     {
         bool locked;
-        if (mSlideMenuLists[mMenuItems.mCurrentIndex] != NULL
-            && ((SlideMenuList*)mSlideMenuLists[mMenuItems.mCurrentIndex])
-                ->mMenuItems[((SlideMenuList*)mSlideMenuLists[mMenuItems.mCurrentIndex])->mCurrentIndex]
+        newIndex = mMenuItems.mCurrentIndex;
+        if (mSlideMenuLists[newIndex] != NULL
+            && ((SlideMenuList*)mSlideMenuLists[newIndex])
+                ->mMenuItems[((SlideMenuList*)mSlideMenuLists[newIndex])->mCurrentIndex]
                 .mLocked)
         {
             locked = true;
@@ -2600,11 +2602,12 @@ void OptionsSubMenu::Update(float)
             }
         }
 
-        oldIndex = mMenuItems.mCurrentIndex;
-        flags = mMenuItems.mFlags;
-        wrapList = flags & 1;
+        int flags = mMenuItems.mFlags;
+        int skipDisabled;
+        int wrapList = flags & 1;
         skipDisabled = flags & 2;
-        newIndex = oldIndex + 1;
+        int oldIndex = mMenuItems.mCurrentIndex;
+        int newIndex = oldIndex + 1;
 
         while (true)
         {
@@ -2672,7 +2675,7 @@ void OptionsSubMenu::Update(float)
 
         if (!locked)
         {
-            SlideMenuList* slideMenuList = (SlideMenuList*)mSlideMenuLists[mMenuItems.mCurrentIndex];
+            SlideMenuList* slideMenuList = (SlideMenuList*)mSlideMenuLists[newIndex];
             if (slideMenuList != NULL)
             {
                 TLComponentInstance* comp = slideMenuList->mComponentInstance;
@@ -2685,15 +2688,17 @@ void OptionsSubMenu::Update(float)
 
     if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xB, true, NULL))
     {
-        SlideMenuList* slideMenuList = (SlideMenuList*)mSlideMenuLists[mMenuItems.mCurrentIndex];
+        int menuIndex = mMenuItems.mCurrentIndex;
+        SlideMenuList* slideMenuList = (SlideMenuList*)mSlideMenuLists[menuIndex];
         if (slideMenuList != NULL)
         {
             MenuResult res = RES_ERROR;
 
-            oldIndex = slideMenuList->mCurrentIndex;
-            flags = slideMenuList->mFlags;
-            wrapList = flags & 1;
+            int flags = slideMenuList->mFlags;
+            int skipDisabled;
+            int wrapList = flags & 1;
             skipDisabled = flags & 2;
+            int oldIndex = slideMenuList->mCurrentIndex;
             newIndex = oldIndex - 1;
 
             while (true)
@@ -2720,38 +2725,38 @@ void OptionsSubMenu::Update(float)
                     }
                 }
 
+                MenuItem<SlideMenuItem>* oldSlideItem = &slideMenuList->mMenuItems[oldIndex];
                 {
-                    MenuItem<SlideMenuItem>* item = &slideMenuList->mMenuItems[oldIndex];
-                    tag = item->mCallbacks[2].mTag;
+                    int tag = oldSlideItem->mCallbacks[2].mTag;
                     if (((u32)((-tag) | tag) >> 31) > 0)
                     {
-                        SlideMenuItem* type = item->mType;
+                        SlideMenuItem* type = oldSlideItem->mType;
                         if (tag == FREE_FUNCTION)
                         {
-                            item->mCallbacks[2].mFreeFunction(type);
+                            oldSlideItem->mCallbacks[2].mFreeFunction(type);
                         }
                         else
                         {
-                            (*item->mCallbacks[2].mFunctor)(type);
+                            (*oldSlideItem->mCallbacks[2].mFunctor)(type);
                         }
                     }
                 }
 
                 slideMenuList->mCurrentIndex = newIndex;
 
+                MenuItem<SlideMenuItem>* curSlideItem = &slideMenuList->mMenuItems[slideMenuList->mCurrentIndex];
                 {
-                    MenuItem<SlideMenuItem>* item = &slideMenuList->mMenuItems[slideMenuList->mCurrentIndex];
-                    tag = item->mCallbacks[1].mTag;
+                    int tag = curSlideItem->mCallbacks[1].mTag;
                     if (((u32)((-tag) | tag) >> 31) > 0)
                     {
-                        SlideMenuItem* type = item->mType;
+                        SlideMenuItem* type = curSlideItem->mType;
                         if (tag == FREE_FUNCTION)
                         {
-                            item->mCallbacks[1].mFreeFunction(type);
+                            curSlideItem->mCallbacks[1].mFreeFunction(type);
                         }
                         else
                         {
-                            (*item->mCallbacks[1].mFunctor)(type);
+                            (*curSlideItem->mCallbacks[1].mFunctor)(type);
                         }
                     }
                 }
@@ -2808,38 +2813,38 @@ void OptionsSubMenu::Update(float)
                     }
                 }
 
+                MenuItem<SlideMenuItem>* oldSlideItem = &slideMenuList->mMenuItems[oldIndex];
                 {
-                    MenuItem<SlideMenuItem>* item = &slideMenuList->mMenuItems[oldIndex];
-                    tag = item->mCallbacks[2].mTag;
+                    int tag = oldSlideItem->mCallbacks[2].mTag;
                     if (((u32)((-tag) | tag) >> 31) > 0)
                     {
-                        SlideMenuItem* type = item->mType;
+                        SlideMenuItem* type = oldSlideItem->mType;
                         if (tag == FREE_FUNCTION)
                         {
-                            item->mCallbacks[2].mFreeFunction(type);
+                            oldSlideItem->mCallbacks[2].mFreeFunction(type);
                         }
                         else
                         {
-                            (*item->mCallbacks[2].mFunctor)(type);
+                            (*oldSlideItem->mCallbacks[2].mFunctor)(type);
                         }
                     }
                 }
 
                 slideMenuList->mCurrentIndex = newIndex;
 
+                MenuItem<SlideMenuItem>* curSlideItem = &slideMenuList->mMenuItems[slideMenuList->mCurrentIndex];
                 {
-                    MenuItem<SlideMenuItem>* item = &slideMenuList->mMenuItems[slideMenuList->mCurrentIndex];
-                    tag = item->mCallbacks[1].mTag;
+                    int tag = curSlideItem->mCallbacks[1].mTag;
                     if (((u32)((-tag) | tag) >> 31) > 0)
                     {
-                        SlideMenuItem* type = item->mType;
+                        SlideMenuItem* type = curSlideItem->mType;
                         if (tag == FREE_FUNCTION)
                         {
-                            item->mCallbacks[1].mFreeFunction(type);
+                            curSlideItem->mCallbacks[1].mFreeFunction(type);
                         }
                         else
                         {
-                            (*item->mCallbacks[1].mFunctor)(type);
+                            (*curSlideItem->mCallbacks[1].mFunctor)(type);
                         }
                     }
                 }

@@ -1012,28 +1012,7 @@ void CupTrophyScene::SetWinRecord(Spoil& spoil)
     unsigned short winBuf[16];
     nlStrToWcs(winString.c_str(), winBuf, 16);
 
-    unsigned long locHash = 0x49466bc6;
-    nlLocalization* loc = g_pLocalization;
-    const unsigned short* locString;
-
-    if (loc->m_LookupTable == 0)
-    {
-        locString = LocalizationTableNotFound;
-    }
-    else
-    {
-        nlLocalization::StringLookup* entry = nlBSearch(locHash, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
-        if (entry != 0)
-        {
-            locString = loc->m_FirstString + entry->StringOffset;
-        }
-        else
-        {
-            locString = MissingLocString;
-        }
-    }
-
-    BasicString<unsigned short, Detail::TempStringAllocator> msg(locString);
+    BasicString<unsigned short, Detail::TempStringAllocator> msg(LookupCupTrophyLoc(0x49466bc6));
     BasicString<unsigned short, Detail::TempStringAllocator> formattedResult = Format(msg, winBuf);
 
     memcpy(mFirstWinBuffer, formattedResult.c_str(), 0x100);

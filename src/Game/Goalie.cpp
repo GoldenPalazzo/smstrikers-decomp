@@ -2094,7 +2094,7 @@ void Goalie::FindDesiredGoaliePosition(nlVector3& pos, nlVector3& dir, nlVector3
 
 /**
  * Offset/Address/Size: 0x8024 | 0x8004AB20 | size: 0x2CC
- * TODO: 99.89% match - FP register allocation mismatch in nav-target delta setup (f31/f30 direct load/sub form)
+ * TODO: 99.94% match - remaining f31 nav-target Y delta load/sub order mismatch.
  */
 bool Goalie::ShouldReposition()
 {
@@ -2169,7 +2169,7 @@ bool Goalie::ShouldReposition()
                 fTargetX = mv3NavTarget.f.y;
                 fDropTime = mv3NavTarget.f.x;
                 fTargetX -= m_v3Position.f.y;
-                fDropTime -= m_v3Position.f.x;
+                fDropTime = (f32)(fDropTime - m_v3Position.f.x);
 
                 m_aDesiredFacingDirection = (u16)(s32)(10430.378f * nlATan2f(pBall->m_v3Position.f.y - m_v3Position.f.y, pBall->m_v3Position.f.x - m_v3Position.f.x));
 
