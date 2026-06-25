@@ -274,8 +274,7 @@ nlAVLTreeSlotPool<int, SoundStrToIDNode*, DefaultKeyCompare<int> > AudioLoader::
 
 /**
  * Offset/Address/Size: 0x442C | 0x801481F8 | size: 0xD4
- * TODO: 96.23% match - ble- vs beq- branch for m_BufferCount > 0 check (MWCC
- * emits beq for wrapping-if structure, target has ble; functionally equivalent)
+ * TODO: 99.91% match - entry ble branches to state update instead of shared buf null test
  */
 void GCAudioStreaming::AudioStream::WarmReadDone(GCAudioStreaming::AudioStreamBuffer* pBuffer)
 {
@@ -298,8 +297,9 @@ void GCAudioStreaming::AudioStream::WarmReadDone(GCAudioStreaming::AudioStreamBu
 
     m_Flags &= ~(1 << SF_Play);
 
-    volatile u32 i = 0;
-    if (m_BufferCount > 0)
+    u32 start = 0;
+    volatile u32 i = start;
+    if (start < m_BufferCount)
     {
         AudioStreamBuffer* buf = m_Buffers[0];
         while (buf != NULL)

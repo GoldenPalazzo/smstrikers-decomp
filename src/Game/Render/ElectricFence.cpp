@@ -505,8 +505,8 @@ void FreeElectricFence()
 
 /**
  * Offset/Address/Size: 0x5A0 | 0x8016B5D0 | size: 0x448
- * TODO: 97.12% match - neg flag still uses r30 vs r27, and curved-branch
- *   geometry/index registers plus f24-f27 loop values are still swapped.
+ * TODO: 97.42% match - neg flag still uses r30 vs r27, and curved-branch
+ *   geometry/index registers are still swapped.
  */
 ElectricFenceData::ElectricFenceData(EmissionController* pEmissionController)
 {
@@ -515,7 +515,7 @@ ElectricFenceData::ElectricFenceData(EmissionController* pEmissionController)
     extern float sfAlignmentOffset1;
     extern float AIsgn(float);
 
-    float half, grid, z_val, negHalf, posHalf, zTop, zBottom, step;
+    float zTop, zBottom, step, negHalf, posHalf, z_val, grid, half;
 
     mpEmissionController = pEmissionController;
     mfIntensity = 0.0f;
@@ -641,18 +641,16 @@ ElectricFenceData::ElectricFenceData(EmissionController* pEmissionController)
             nlVector3 wallPoint;
             GetWallPoint(impactPosition, (((float)i) * step) + negHalf, 0.0f, wallPoint);
 
-            float t = (float)i / 15.0f;
-
             outPosition[0].f.x = wallPoint.f.x;
             outPosition[0].f.y = wallPoint.f.y;
             outPosition[0].f.z = zBottom;
-            outTexcoord[0].f.x = t;
+            outTexcoord[0].f.x = (float)i / 15.0f;
             outTexcoord[0].f.y = 0.0f;
 
             outPosition[1].f.x = wallPoint.f.x;
             outPosition[1].f.y = wallPoint.f.y;
             outPosition[1].f.z = zTop;
-            outTexcoord[1].f.x = t;
+            outTexcoord[1].f.x = (float)i / 15.0f;
             outTexcoord[1].f.y = 1.0f;
 
             outPosition += 2;

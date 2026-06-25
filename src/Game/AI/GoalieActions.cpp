@@ -1535,9 +1535,8 @@ public:
 
 /**
  * Offset/Address/Size: 0x1C30 | 0x8005016C | size: 0x48C
- * TODO: 98.0% match -- register allocation in the SetPosition projection block
- *       (mv3NavTarget delta + smoothstep) loads m_v3Position members in a
- *       different order than target; one branch destination is 4 bytes off.
+ * TODO: 99.07% match - remaining register rotation in the projection scale-add
+ *       block and goalie-net clamp compare.
  */
 void Goalie::ActionSTS(float fDeltaT)
 {
@@ -1622,14 +1621,9 @@ void Goalie::ActionSTS(float fDeltaT)
                 v3Root.f.z = dz;
                 v3Root.f.y = dy;
                 v3Root.f.x = dx;
-                f32 posX = m_v3Position.f.x;
-                f32 posY = m_v3Position.f.y;
-                f32 posZ = m_v3Position.f.z;
-                f32 fT = (fAnimTime - mfTargetTime) / (1.0f - mfTargetTime);
-                f32 fSmoothT = fT * fT * (-2.0f * fT + 3.0f);
-                v3Root.f.z = posZ + fSmoothT * dz;
-                v3Root.f.x = posX + fSmoothT * dx;
-                v3Root.f.y = posY + fSmoothT * dy;
+                f32 fPercent = (fAnimTime - mfTargetTime) / (1.0f - mfTargetTime);
+                fPercent = fPercent * fPercent * (-2.0f * fPercent + 3.0f);
+                nlVec3ScaleAdd(v3Root, fPercent, v3Root, m_v3Position);
                 SetPosition(v3Root);
             }
             f32 fGoalieNetYLimit = 0.5f * cNet::m_fNetWidth - 0.7f;

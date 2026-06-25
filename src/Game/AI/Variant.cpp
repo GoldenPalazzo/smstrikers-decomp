@@ -31,8 +31,6 @@ template NLString LexicalCast<NLString, unsigned long>(const unsigned long&);
 // {
 // }
 
-// template NLString LexicalCast<NLString, char>(const char&);
-
 typedef NLString (*Format1FFn)(const NLString&, const float&);
 typedef NLString (*Format3FFn)(const NLString&, const float&, const float&, const float&);
 

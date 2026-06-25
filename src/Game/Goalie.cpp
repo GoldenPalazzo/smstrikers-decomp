@@ -1388,7 +1388,7 @@ void Goalie::InitActionPursueRecover()
 
 /**
  * Offset/Address/Size: 0x8878 | 0x8004B374 | size: 0xC70
- * TODO: 93.53% match - register allocation still diverges in navigation transition branches and blender setup.
+ * TODO: 96.55% match - register allocation still diverges in navigation transition branches and blender setup.
  */
 void Goalie::DoNavigation(float fDeltaT, float fIdleDistance, Goalie::eNaviMode naviMode)
 {
@@ -1397,7 +1397,6 @@ void Goalie::DoNavigation(float fDeltaT, float fIdleDistance, Goalie::eNaviMode 
     int nFinalAnim;
     u16 aFinalDir;
     bool bDoBackward;
-    s16 aGoalie2Ball;
     u16 absBallAngleDiff;
     bool bDoSeek;
     u16 desiredAng;
@@ -1418,7 +1417,7 @@ void Goalie::DoNavigation(float fDeltaT, float fIdleDistance, Goalie::eNaviMode 
         m_aDesiredFacingDirection = (u16)(s32)(10430.378f * nlATan2f(dy, dx));
     }
 
-    aGoalie2Ball = (s16)(m_aDesiredFacingDirection - m_aActualFacingDirection);
+    s16 aGoalie2Ball = (s16)(m_aDesiredFacingDirection - m_aActualFacingDirection);
     absBallAngleDiff = (u16)(aGoalie2Ball < 0 ? -aGoalie2Ball : aGoalie2Ball);
 
     if (distSq < fIdleDistance * fIdleDistance)
@@ -1741,7 +1740,8 @@ void Goalie::DoNavigation(float fDeltaT, float fIdleDistance, Goalie::eNaviMode 
             m_aDesiredFacingDirection = aFinalDir;
         }
 
-        if (nNewAnim != m_eAnimID || (m_pCurrentAnimController->m_ePlayMode == PM_HOLD && m_pCurrentAnimController->m_fTime == 1.0f))
+        bool bShouldChangeRun = false;
+        if (nNewAnim != m_eAnimID || (bShouldChangeRun = (m_pCurrentAnimController->m_ePlayMode == PM_HOLD && m_pCurrentAnimController->m_fTime == 1.0f)))
         {
             SetAnimState(nNewAnim, true, 0.2f, false, false);
         }
@@ -1796,15 +1796,20 @@ void Goalie::DoNavigation(float fDeltaT, float fIdleDistance, Goalie::eNaviMode 
         if (mMoveDirection == GOALIEDIR_SIDE)
         {
             float dy1 = mv3NavTarget.f.y - m_v3PrevPosition.f.y;
-            float dy2 = mv3NavTarget.f.y - m_v3Position.f.y;
             float dx1 = mv3NavTarget.f.x - m_v3PrevPosition.f.x;
-            float dx2 = mv3NavTarget.f.x - m_v3Position.f.x;
             float distOldSq = dx1 * dx1 + dy1 * dy1;
+            float dy2 = mv3NavTarget.f.y - m_v3Position.f.y;
+            float dx2 = mv3NavTarget.f.x - m_v3Position.f.x;
             float distNewSq = dx2 * dx2 + dy2 * dy2;
 
             if (distNewSq <= distOldSq)
             {
-                if (!(m_pCurrentAnimController->m_ePlayMode == PM_HOLD && m_pCurrentAnimController->m_fTime == 1.0f))
+                bool bAnimDone = false;
+                if (m_pCurrentAnimController->m_ePlayMode == PM_HOLD && m_pCurrentAnimController->m_fTime == 1.0f)
+                {
+                    bAnimDone = true;
+                }
+                if (!bAnimDone)
                 {
                     bDoStrafe = false;
                 }
@@ -1844,6 +1849,7 @@ void Goalie::DoNavigation(float fDeltaT, float fIdleDistance, Goalie::eNaviMode 
     cPN_SingleAxisBlender* pSAB_R = CreateSingleAxisBlender(nRightAnims, 3, 1, MoveWeightCB, 0.1f, 0);
 
     cPN_SingleAxisBlender* pSAB = pSAB_L;
+    unsigned int nParam = (unsigned int)this;
     cPN_SAnimController* pPrevCtrlr = 0;
     int j;
 
@@ -1880,15 +1886,15 @@ void Goalie::DoNavigation(float fDeltaT, float fIdleDistance, Goalie::eNaviMode 
     cPN_SingleAxisBlender* pDirBlender = AllocateSingleAxisBlender();
     if (pDirBlender)
     {
-        pDirBlender = new (pDirBlender) cPN_SingleAxisBlender(2, MoveDirectionCB, (unsigned int)this, 0.1f);
+        pDirBlender = new (pDirBlender) cPN_SingleAxisBlender(2, MoveDirectionCB, nParam, 0.1f);
     }
 
     pDirBlender->SetChild(0, pSAB_L);
     pDirBlender->SetChild(1, pSAB_R);
 
-    MoveWeightCB((unsigned int)this, pSAB_L);
-    MoveWeightCB((unsigned int)this, pSAB_R);
-    MoveDirectionCB((unsigned int)this, pDirBlender);
+    MoveWeightCB(nParam, pSAB_L);
+    MoveWeightCB(nParam, pSAB_R);
+    MoveDirectionCB(nParam, pDirBlender);
 
     cPN_Blender* pBlender = AllocateBlender();
     if (pBlender)

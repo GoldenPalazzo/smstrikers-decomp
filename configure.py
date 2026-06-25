@@ -918,7 +918,7 @@ config.libs = [
             Object(Matching, "Game/Physics/PhysicsWorld.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Physics/LoadablePhysicsMesh.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/Physics/CharacterPhysicsElement.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(NonMatching, "Game/Physics/PhysicsNet.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(Matching, "Game/Physics/PhysicsNet.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Physics/PhysicsBanana.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/Physics/PhysicsGoalie.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
 

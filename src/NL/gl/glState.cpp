@@ -700,7 +700,7 @@ void gl_StateStartup()
     SET_RASTER_LOCAL(GLS_SolidOffset, 0);
     SET_RASTER_LOCAL(GLS_FillMode, 0);
 
-    defaultRasterState = _state.m_State;
+    unsigned long rasterDefault = _state.m_State;
 
     setTextureLocal(GLTS_DiffuseWrap, 0);
     setTextureLocal(GLTS_DetailWrap, 0);
@@ -714,6 +714,9 @@ void gl_StateStartup()
     setTextureLocal(GLTS_SelfIllumFilter, 0);
     setTextureLocal(GLTS_GlossFilter, 0);
     setTextureLocal(GLTS_BumpLocalFilter, 0);
+
+    defaultRasterState = rasterDefault;
+
     glSetTextureState(GLTS_DiffuseLevel, 63);
     glSetTextureState(GLTS_DetailLevel, 0);
     glSetTextureState(GLTS_ShadowLevel, 63);

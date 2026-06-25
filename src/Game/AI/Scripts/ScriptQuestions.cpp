@@ -1702,9 +1702,11 @@ float InFrontOfTheirNet(cFielder* pFielder)
     return InterpolateRangeClamped(1.0f, pFuzzyTweaks->fFrontOfNetMidScore, 0.0f, midAngle, angleRad);
 }
 
+static float InBetween(const nlVector3& v3InBetweenPos, const nlVector3& v3A, const nlVector3& v3B);
+
 /**
  * Offset/Address/Size: 0x36FC | 0x80082184 | size: 0x3D0
- * TODO: 99.41% match - saved float registers and closestPt stack slot differ
+ * TODO: 99.63% match - fWeight and fInterceptScore saved float registers differ
  */
 float OnBreakaway(cFielder* pFielder)
 {
@@ -1719,6 +1721,7 @@ float OnBreakaway(cFielder* pFielder)
     for (i = 0; i < 4; i++)
     {
         pOpponent = pFielder->m_pTeam->GetOtherTeam()->GetFielder(i);
+        float fInterceptScore;
         float fUpfieldScore;
         if (pFielder == NULL)
         {
@@ -1738,7 +1741,6 @@ float OnBreakaway(cFielder* pFielder)
             float upfieldDist = v3MyPos.f.x - v3OppPos.f.x;
             fUpfieldScore = NormalizeVal(upfieldDist * sign, 0.0f, g_pGame->m_pFuzzyTweaks->fUpfieldMaxDistance);
         }
-        float fInterceptScore;
         if (pOpponent == NULL)
         {
             fInterceptScore = 0.0f;
@@ -1753,36 +1755,7 @@ float OnBreakaway(cFielder* pFielder)
             const nlVector3* pMyPos = &pFielder->m_v3Position;
             cNet* pOppNet = pOpponent->m_pTeam->m_pNet;
             const nlVector3* pNetPos = &pOppNet->m_baseLocation;
-            nlVector3 closestPt = GetClosestPointOnLineABFromPointC(*pMyPos, *pNetPos, *pOppPos);
-
-            bool isMyPos = (pMyPos->f.x == closestPt.f.x && pMyPos->f.y == closestPt.f.y && pMyPos->f.z == closestPt.f.z);
-            if (isMyPos)
-            {
-                goto OnBreakaway_ReturnZero;
-            }
-
-            {
-                bool isNetPos = (pNetPos->f.x == closestPt.f.x && pNetPos->f.y == closestPt.f.y && pNetPos->f.z == closestPt.f.z);
-                if (!isNetPos)
-                {
-                    goto OnBreakaway_Compute;
-                }
-            }
-
-        OnBreakaway_ReturnZero:
-            fInterceptScore = 0.0f;
-            goto OnBreakaway_Done;
-
-        OnBreakaway_Compute:
-            float dx1 = pMyPos->f.x - closestPt.f.x;
-            float dy1 = pMyPos->f.y - closestPt.f.y;
-            float dist1 = nlSqrt(dx1 * dx1 + dy1 * dy1, true);
-            fInterceptScore = InterpolateRangeClamped(g_pGame->m_pFuzzyTweaks->vInBetweenConeWidth, g_pGame->m_pFuzzyTweaks->vInBetweenInterceptRange, dist1);
-            float dy2 = closestPt.f.y - pOppPos->f.y;
-            float dx2 = closestPt.f.x - pOppPos->f.x;
-            fInterceptScore = InterpolateRangeClamped(fWeight, 0.0f, 0.0f, fInterceptScore, nlSqrt(dx2 * dx2 + dy2 * dy2, true));
-
-        OnBreakaway_Done:;
+            fInterceptScore = InBetween(*pNetPos, *pMyPos, *pOppPos);
         }
         float fProximityScore;
         if (pFielder == NULL)

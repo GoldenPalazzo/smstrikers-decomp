@@ -77,7 +77,6 @@ public:
 extern bool gbTestPrintout;
 extern float gfSilenceTimer;
 extern unsigned long uCurrentSFXVolume;
-extern unsigned long uSFXVolume;
 
 static const nlVector3 sListenerZero = { 0.0f, 0.0f, 0.0f };
 
@@ -2304,14 +2303,49 @@ void UpdateFades(float fDeltaT)
     }
 }
 
+#pragma inline_depth(255)
+static inline void UpdateDelayedAudio(float fDeltaT)
+{
+    register SoundAttributes* delayed;
+    int i;
+
+    delayed = gDelayedSFX;
+    for (i = 0; i < 15; i++, delayed++)
+    {
+        if (delayed->mu_Type != (unsigned long)-1)
+        {
+            if (delayed->mf_DelayTime >= 0.0f && delayed->mf_DelayTime - fDeltaT <= 0.0f)
+            {
+                if (delayed->me_ClassType == CHAR)
+                {
+                    delayed->mf_DelayTime = -1.0f;
+                    delayed->mu_VoiceID = ((cCharacterSFX*)delayed->mp_OwnerSFX)->Play(*delayed);
+                }
+                else
+                {
+                    delayed->mf_DelayTime = -1.0f;
+                    delayed->mu_VoiceID = delayed->mp_OwnerSFX->Play(*delayed);
+                }
+
+                PlatAudio::SetSFXReverbVol(delayed->mu_VoiceID, delayed->mf_VolReverb);
+                delayed->Init();
+            }
+            else
+            {
+                delayed->mf_DelayTime -= fDeltaT;
+            }
+        }
+    }
+}
+#pragma inline_depth
+
 /**
  * Offset/Address/Size: 0x1FD0 | 0x8013E4E4 | size: 0x354
- * TODO: 99.45% match - delayed SFX pointer setup has one extra move; listener camera x/y copy uses swapped temporary registers
+ * TODO: 99.76% match - team loop register coloring and listener camera x/y copy use swapped temporary registers
  */
 void Update(float fDeltaT)
 {
     int i;
-    register SoundAttributes* delayed;
     cTeam* pTeam;
     int j;
     cPlayer* pPlayer;
@@ -2368,33 +2402,7 @@ void Update(float fDeltaT)
 
     if (gbGameIsPaused == false)
     {
-        delayed = gDelayedSFX;
-        for (i = 0; i < 15; i++, delayed++)
-        {
-            if (delayed->mu_Type != (unsigned long)-1)
-            {
-                if (delayed->mf_DelayTime >= 0.0f && delayed->mf_DelayTime - fDeltaT <= 0.0f)
-                {
-                    if (delayed->me_ClassType == CHAR)
-                    {
-                        delayed->mf_DelayTime = -1.0f;
-                        delayed->mu_VoiceID = ((cCharacterSFX*)delayed->mp_OwnerSFX)->Play(*delayed);
-                    }
-                    else
-                    {
-                        delayed->mf_DelayTime = -1.0f;
-                        delayed->mu_VoiceID = delayed->mp_OwnerSFX->Play(*delayed);
-                    }
-
-                    PlatAudio::SetSFXReverbVol(delayed->mu_VoiceID, delayed->mf_VolReverb);
-                    delayed->Init();
-                }
-                else
-                {
-                    delayed->mf_DelayTime -= fDeltaT;
-                }
-            }
-        }
+        UpdateDelayedAudio(fDeltaT);
 
         if (::gbListenerInit)
         {

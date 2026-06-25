@@ -1434,7 +1434,7 @@ void GameInfoManager::SetupTournamentKnockout(eTeamID* lineup, eSidekickID* skli
 
 /**
  * Offset/Address/Size: 0x78D8 | 0x8017CF7C | size: 0x618
- * TODO: 97.84% match - register allocation diffs in cup, gamesPerRound,
+ * TODO: 98.35% match - register allocation diffs in cup, gamesPerRound,
  * round, team, and loop locals
  */
 unsigned char GameInfoManager::SetupKnockoutRound(short round)
@@ -1528,11 +1528,11 @@ unsigned char GameInfoManager::SetupKnockoutRound(short round)
 
     if (round == -1)
     {
-        g = mCurrentCup->GetGameInfo((s16)currentRound, 0);
+        g = mCurrentCup->GetGameInfo(currentRound, 0);
 
         mUserInfo.mBowserCupFinalRound = *g;
 
-        g = mCurrentCup->GetGameInfo((s16)currentRound, 0);
+        g = mCurrentCup->GetGameInfo(currentRound, 0);
         if (g->mFinalScore[0] < g->mFinalScore[1])
         {
             losingTeam = g->mTeamIndex[0];

@@ -1,5 +1,3 @@
-// #pragma pool_data off
-
 #include "Game/Physics/PhysicsNet.h"
 
 #include "NL/nlMemory.h"
@@ -11,7 +9,7 @@
 #include "Game/Field.h"
 #include "Game/Team.h"
 
-extern cTeam* g_pTeams[2] __attribute__((section(".data"))) = { NULL, NULL };
+extern cTeam* g_pTeams[2];
 
 static f32 CANT_COLLIDE = *(f32*)__float_max;
 
@@ -73,7 +71,6 @@ PhysicsNet::PhysicsNet(CollisionSpace* space, bool positive_x)
 
     if (positive_x)
     {
-        // float temp_f28 = goalLineX;
         float t0 = 0.0f;
 
         nlVec3Set(_c,
@@ -200,7 +197,6 @@ PhysicsNet::PhysicsNet(CollisionSpace* space, bool positive_x)
 
     if (!PhysicsNet::sbSweepTestEnabled)
     {
-        // float temp_f27_2 = (float)(goalPostRadius + 0.2);
         double f0 = 0.2;
         goalPostRadius = (float)(goalPostRadius + f0);
 
@@ -288,12 +284,12 @@ bool PhysicsNet::IsAGoalWall(PhysicsObject* obj)
 bool PhysicsNet::SweepTestForBallContact(const nlVector3& startPos, const nlVector3& endPos, const nlVector3& ballVelocity, float ballRadius, nlVector3& contactPos, nlVector3& contactNormal, PhysicsObject** hitObject) const
 {
     nlVector3 leftPostPos, rightPostPos;
-    nlVector3 goalPost0Location;  // r1+0x68
-    nlVector3 goalPost1Location;  // r1+0x5C
-    nlVector3 goalPostSpherePos0; // r1+0x50
-    nlVector3 goalPostSpherePos1; // r1+0x44
+    nlVector3 goalPost0Location;
+    nlVector3 goalPost1Location;
+    nlVector3 goalPostSpherePos0;
+    nlVector3 goalPostSpherePos1;
     float height;
-    nlVector3 ballLinVelocity; // r1+0x38
+    nlVector3 ballLinVelocity;
     CollisionBallGoalpostData* pEventData;
 
     cField::GetGoalLineX((unsigned int)1);
@@ -410,10 +406,8 @@ bool PhysicsNet::SweepTestForBallContact(const nlVector3& startPos, const nlVect
             goalPost1Location.f.z = cNet::m_fNetHeight;
         }
 
-        nlVec3Set(contactPos,
-            (finalSweepResult * (endPos.f.x - startPos.f.x)) + startPos.f.x,
-            (finalSweepResult * (endPos.f.y - startPos.f.y)) + startPos.f.y,
-            (finalSweepResult * (endPos.f.z - startPos.f.z)) + startPos.f.z);
+        nlVec3Sub(goalPostSpherePos0, endPos, startPos);
+        nlVec3ScaleAdd(contactPos, finalSweepResult, goalPostSpherePos0, startPos);
 
         if (hitHorizontalGoalpost != 0)
         {
@@ -428,21 +422,10 @@ bool PhysicsNet::SweepTestForBallContact(const nlVector3& startPos, const nlVect
 
         float normalLength = nlRecipSqrt(contactNormal.f.x * contactNormal.f.x + contactNormal.f.y * contactNormal.f.y + contactNormal.f.z * contactNormal.f.z, true);
 
-        height = ballRadius + netPostRadius;
-
-        // nlVec3Set(contactNormal, normalLength * contactNormal.f.x, normalLength * contactNormal.f.y, normalLength * contactNormal.f.z);
         nlVec3Scale(contactNormal, normalLength);
-
-        const float ty = contactPos.f.y - goalPost0Location.f.y;
-        const float tx = contactPos.f.x - goalPost0Location.f.x;
-        const float tz = contactPos.f.z - goalPost0Location.f.z;
-
-        if (nlGetLengthSquared3D(tx, ty, tz) < (height * height))
+        if (nlGetLengthSquared3D(contactPos.f.x - goalPost0Location.f.x, contactPos.f.y - goalPost0Location.f.y, contactPos.f.z - goalPost0Location.f.z) < ((ballRadius + netPostRadius) * (ballRadius + netPostRadius)))
         {
-            nlVec3Set(contactPos,
-                (height * contactNormal.f.x) + goalPost0Location.f.x,
-                (height * contactNormal.f.y) + goalPost0Location.f.y,
-                (height * contactNormal.f.z) + goalPost0Location.f.z);
+            nlVec3ScaleAdd(contactPos, ballRadius + netPostRadius, contactNormal, goalPost0Location);
         }
 
         cBall* ball = g_pBall;
@@ -472,13 +455,8 @@ bool PhysicsNet::SweepTestForBallContact(const nlVector3& startPos, const nlVect
  */
 void PhysicsNet::StaticInit(CollisionSpace*)
 {
-    PhysicsNet* tmp_netPositiveX = (PhysicsNet*)nlMalloc(sizeof(PhysicsNet), 8, false);
-    tmp_netPositiveX = new (tmp_netPositiveX) PhysicsNet(g_CollisionSpace, true);
-    spPhysNetPositiveX = tmp_netPositiveX;
-
-    PhysicsNet* tmp_netNegativeX = (PhysicsNet*)nlMalloc(sizeof(PhysicsNet), 8, false);
-    tmp_netNegativeX = new (tmp_netNegativeX) PhysicsNet(g_CollisionSpace, false);
-    spPhysNetNegativeX = tmp_netNegativeX;
+    spPhysNetPositiveX = new (nlMalloc(sizeof(PhysicsNet), 8, false)) PhysicsNet(g_CollisionSpace, true);
+    spPhysNetNegativeX = new (nlMalloc(sizeof(PhysicsNet), 8, false)) PhysicsNet(g_CollisionSpace, false);
 }
 
 /**

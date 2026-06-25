@@ -346,6 +346,12 @@ To LexicalCast(const From& f)
 }
 
 template <>
+inline NLString LexicalCast<NLString, char>(const char& f)
+{
+    return Detail::LexicalCastImpl<NLString, char>::Do(const_cast<char&>(f));
+}
+
+template <>
 int LexicalCast<int, float>(const float& value);
 template <>
 int LexicalCast<int, int>(const int& value);

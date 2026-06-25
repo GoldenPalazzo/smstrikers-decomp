@@ -882,8 +882,8 @@ void Bowser::CollisionCallback(PhysicsObject* pPhysObj, PhysicsObject* pObjA, co
 
 /**
  * Offset/Address/Size: 0x2B64 | 0x8015B8D8 | size: 0x4F0
- * TODO: 99.65% match - remaining diff is the Strikers101 gate branch shape
- *       (target beq+b split vs current bne).
+ * TODO: 99.81% match - remaining diff is the Strikers101 switch gate compare
+ *       opcode (target cmplwi vs current cmpwi).
  */
 void Bowser::ActionInit()
 {
@@ -894,8 +894,11 @@ void Bowser::ActionInit()
         return;
     if (!nlSingleton<GameInfoManager>::s_pInstance->IsBowserAttackEnabled())
         return;
-    if (nlSingleton<GameInfoManager>::s_pInstance->mIsInStrikers101Mode != false)
+    switch (nlSingleton<GameInfoManager>::s_pInstance->mIsInStrikers101Mode)
     {
+    case false:
+        break;
+    default:
         return;
     }
 

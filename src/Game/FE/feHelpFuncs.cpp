@@ -1186,7 +1186,7 @@ void TakeGameMemSnapshot::ResetTimers()
 
 /**
  * Offset/Address/Size: 0x130 | 0x800A31EC | size: 0x504
- * TODO: 98.37% match - callee-saved register roles still differ between
+ * TODO: 98.89% match - callee-saved register roles still differ between
  * filename/file handles and string temporaries.
  */
 namespace TakeGameMemSnapshot
@@ -1207,8 +1207,9 @@ void TakeGameMemSnapshot::WriteToDisk()
         "bowser",
     };
 
+    FILE* pFile;
     const char* filename = "gamesnapshot.txt";
-    FILE* pFile = fopen(filename, "r");
+    pFile = fopen(filename, "r");
 
     if (!pFile)
     {

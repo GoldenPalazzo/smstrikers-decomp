@@ -152,6 +152,7 @@ unsigned long Add3DSFXEmitter(const EmitterStartInfo&);
 SFXEmitter* GetFreeEmitter(unsigned long&);
 SFXEmitter* GetEmitter(unsigned long);
 extern SND_LISTENER gListener;
+extern unsigned long uSFXVolume;
 void SetListenerActive(bool);
 bool IsListenerActive();
 void SetOutputMode(MusyXOutputType);

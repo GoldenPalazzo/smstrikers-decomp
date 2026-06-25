@@ -611,6 +611,8 @@ unsigned char nlFont::Load(const char* szFontName, char* pFontDescData, unsigned
                 pInfo->HasKernPairs = 1;
 
                 pToken = nlStrChr(pToken, ' ') + 1;
+                ListEntry<nlFont::KernPair>** pKernTail = &KernList.m_Tail;
+                ListEntry<nlFont::KernPair>** pKernHead = &KernList.m_Head;
                 while ((unsigned long)pToken != 1)
                 {
                     kp.s.A = Base;
@@ -648,7 +650,7 @@ unsigned char nlFont::Load(const char* szFontName, char* pFontDescData, unsigned
                         *pEntry = entryData;
                     }
 
-                    nlListAddStart<ListEntry<nlFont::KernPair> >(&KernList.m_Head, pEntry, &KernList.m_Tail);
+                    nlListAddStart<ListEntry<nlFont::KernPair> >(pKernHead, pEntry, pKernTail);
                     m_KernTableSize++;
 
                     pToken = nlStrChr(pToken, ' ') + 1;
@@ -673,17 +675,18 @@ unsigned char nlFont::Load(const char* szFontName, char* pFontDescData, unsigned
 
             while (KernList.m_Head != NULL)
             {
+                nlFont::KernPair* pCurKP = pKP;
+                pKP++;
                 ListEntry<nlFont::KernPair>* pEntry = nlListRemoveStart<ListEntry<nlFont::KernPair> >(&KernList.m_Head, &KernList.m_Tail);
-                if (pKP != NULL)
+                if (pCurKP != NULL)
                 {
-                    pKP->s.A = pEntry->data.s.A;
-                    pKP->s.B = pEntry->data.s.B;
-                    pKP->Kern = pEntry->data.Kern;
+                    pCurKP->s.A = pEntry->data.s.A;
+                    pCurKP->s.B = pEntry->data.s.B;
+                    pCurKP->Kern = pEntry->data.Kern;
                 }
 
                 pEntry->next = (ListEntry<nlFont::KernPair>*)KernList.m_Allocator.m_FreeList;
                 KernList.m_Allocator.m_FreeList = (SlotPoolEntry*)pEntry;
-                pKP++;
             }
 
             nlQSort<nlFont::KernPair>(m_pKernTable, m_KernTableSize, nlFont::KernPair::SortProc);

@@ -416,6 +416,18 @@ static inline void TrackAwayWinResult()
     gameInfoManager->SetRoundResult(false, 1);
 }
 
+static inline void TrackAwayOTWinResult()
+{
+    GameInfoManager* gameInfoManager = nlSingleton<GameInfoManager>::s_pInstance;
+
+    nlSingleton<StatsTracker>::s_pInstance->SetBasicGameInfoPointer(gameInfoManager->mGameInfo[gameInfoManager->mCurrentMode], true);
+
+    nlSingleton<StatsTracker>::s_pInstance->TrackStat(STATS_GOALS_FOR, 1, nlRandom(4, &nlDefaultSeed), -1, 0, 1, 0);
+    nlSingleton<StatsTracker>::s_pInstance->TrackStat(STATS_OT_WIN, 1, 0, 0, 1, 0, 0);
+
+    gameInfoManager->SetRoundResult(true, 1);
+}
+
 /**
  * Offset/Address/Size: 0xE90 | 0x800E85E0 | size: 0x26C
  */
@@ -571,9 +583,8 @@ void CupCheaterScene::OnSelectHomeOTWin()
 
 void CupCheaterScene::OnSelectAwayOTWin()
 {
-    CupCheaterScene* const self = this;
-    bool homeAway;
-    register GameInfoManager* gameInfoManager = nlSingleton<GameInfoManager>::s_pInstance;
+    GameInfoManager* gameInfoManager = nlSingleton<GameInfoManager>::s_pInstance;
+    CupHubScene* hubScene;
 
     if (gameInfoManager->mCurrentMode >= GameInfoManager::GM_MUSHROOM_CUP
         && gameInfoManager->mCurrentMode <= GameInfoManager::GM_SUPER_BOWSER_CUP)
@@ -586,51 +597,12 @@ void CupCheaterScene::OnSelectAwayOTWin()
         nlSingleton<GameInfoManager>::s_pInstance->OnPreCupGameState();
     }
 
-    gameInfoManager = nlSingleton<GameInfoManager>::s_pInstance;
-    nlSingleton<StatsTracker>::s_pInstance->SetBasicGameInfoPointer(gameInfoManager->mGameInfo[gameInfoManager->mCurrentMode], true);
-
-    nlSingleton<StatsTracker>::s_pInstance->TrackStat(STATS_GOALS_FOR, 1, nlRandom(4, &nlDefaultSeed), -1, 0, 1, 0);
-    nlSingleton<StatsTracker>::s_pInstance->TrackStat(STATS_OT_WIN, 1, 0, 0, 1, 0, 0);
-
-    gameInfoManager->SetRoundResult(true, 1);
+    TrackAwayOTWinResult();
     GameInfoManager* gameInfoManagerPost = nlSingleton<GameInfoManager>::s_pInstance;
 
     nlSingleton<GameSceneManager>::s_pInstance->PopEntireStack();
 
-    BasicGameInfo* gameInfo;
-    GameInfoManager* gameInfoManagerCup = nlSingleton<GameInfoManager>::s_pInstance;
-    gameInfo = gameInfoManagerCup->mGameInfo[gameInfoManagerCup->mCurrentMode];
-
-    if (gameInfoManagerCup->IsInCupMode())
-    {
-        int team0 = gameInfo->mTeamIndex[0];
-        homeAway = team0 != gameInfoManagerCup->GetUserSelectedCupTeam();
-
-        if (self->mSniper > 0)
-        {
-            nlSingleton<StatsTracker>::s_pInstance->AddStat(STATS_GOALS_FOR, homeAway, 0, self->mSniper);
-        }
-
-        if (self->mStriker > 0)
-        {
-            nlSingleton<StatsTracker>::s_pInstance->AddStat(STATS_STS_ATTEMPTS, homeAway, 0, self->mStriker);
-        }
-
-        if (self->mTactician > 0)
-        {
-            nlSingleton<StatsTracker>::s_pInstance->AddStat(STATS_PERFECT_PASSES, homeAway, 0, self->mTactician);
-        }
-
-        if (self->mParamedic > 0)
-        {
-            nlSingleton<StatsTracker>::s_pInstance->AddStat(STATS_HITS_MADE, homeAway, 0, self->mParamedic);
-        }
-
-        if (self->mVeteran > 0)
-        {
-            nlSingleton<StatsTracker>::s_pInstance->AddMilestoneUserStat(STATS_GAMES_PLAYED, self->mVeteran);
-        }
-    }
+    AddMilestoneStats();
 
     nlSingleton<StatsTracker>::s_pInstance->CompileEndOfGameStats();
 
@@ -652,7 +624,7 @@ void CupCheaterScene::OnSelectAwayOTWin()
             gameInfoManagerPost->IncreaseRoundNumber();
         }
 
-        CupHubScene* hubScene = (CupHubScene*)nlSingleton<GameSceneManager>::s_pInstance->Push((SceneList)0x18, SCREEN_NOTHING, false);
+        hubScene = (CupHubScene*)nlSingleton<GameSceneManager>::s_pInstance->Push((SceneList)0x18, SCREEN_NOTHING, false);
         hubScene->mDoAutoSave = true;
     }
 }
