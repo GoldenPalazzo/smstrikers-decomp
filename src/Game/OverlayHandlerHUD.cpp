@@ -556,10 +556,11 @@ void HUDOverlay::SceneCreated()
         m_pTextInstanceClock[1]->m_bVisible = false;
     }
 
+    int i = 0;
     m_pFEScene->m_pFEPackage->GetPresentation()->SetActiveSlide("OUT");
-    mIsHUDSlideIn = false;
+    mIsHUDSlideIn = i;
 
-    for (int i = 0; i < 2; i++)
+    for (; i < 2; i++)
     {
         mScore[i] = 0;
         mNewScore[i] = 0;

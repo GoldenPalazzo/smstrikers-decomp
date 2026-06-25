@@ -328,9 +328,9 @@ void AvoidController::Update(float)
         Bowser* pBowser = BasicStadium::GetCurrentStadium()->mpNPCManager->mpBowser;
         if ((pBowser != NULL) && (pBowser->meBowserState != BOWSER_STATE_HIDDEN))
         {
+            float fDeltaZ = m_pFielder->m_v3Position.f.z - pBowser->mv3Position.f.z;
             float fDeltaY = m_pFielder->m_v3Position.f.y - pBowser->mv3Position.f.y;
             float fDeltaX = m_pFielder->m_v3Position.f.x - pBowser->mv3Position.f.x;
-            float fDeltaZ = m_pFielder->m_v3Position.f.z - pBowser->mv3Position.f.z;
 
             float fDistanceSq = fDeltaY * fDeltaY;
             fDistanceSq += fDeltaX * fDeltaX;
@@ -368,12 +368,12 @@ void AvoidController::Update(float)
                         fMagnitude = 10.0f;
                     }
 
+                    float fOutZ = v3Repulsion.f.z;
                     float fOutY = v3Repulsion.f.y;
                     float fOutX = v3Repulsion.f.x;
-                    fOutY = fMagnitude * fDeltaY + fOutY;
-                    float fOutZ = v3Repulsion.f.z;
-                    fOutX = fMagnitude * fDeltaX + fOutX;
                     fOutZ = fMagnitude * fDeltaZ + fOutZ;
+                    fOutY = fMagnitude * fDeltaY + fOutY;
+                    fOutX = fMagnitude * fDeltaX + fOutX;
                     v3Repulsion.f.z = fOutZ;
                     v3Repulsion.f.x = fOutX;
                     v3Repulsion.f.y = fOutY;
@@ -467,7 +467,7 @@ void AvoidController::Update(float)
 
     m_UseMinimumAvoidance = false;
     m_pIgnoreThisPlayer = 0;
-    m_LastRepulsionVector[5] = v3SmoothedRepulsion;
+    m_LastRepulsionVector[5] = v3FinalRepulsion;
 }
 
 /**

@@ -253,8 +253,7 @@ void FESceneManager::QueueScenePush(BaseSceneHandler* pSceneHandler, const char*
 
 /**
  * Offset/Address/Size: 0x540 | 0x8020DB8C | size: 0x270
- * TODO: 99.62% match - remaining r24/r27 swap for szFilename/pFEScene in push block,
- * and r26/r27 mismatch for pop-block msg pointer
+ * TODO: 99.68% match - remaining r24/r27 swap for szFilename/pFEScene in push block
  */
 void FESceneManager::ProcessPushPopQueue()
 {
@@ -328,15 +327,13 @@ void FESceneManager::ProcessPushPopQueue()
         {
             DLListEntry<BaseSceneHandler*>* headEntry;
             DLListEntry<BaseSceneHandler*>* sceneEntry;
-            PackagePushPopMessage* msg;
 
             sceneEntry = nlDLRingGetStart(pSceneManager->m_sceneHandlerStack.m_Head);
             headEntry = pSceneManager->m_sceneHandlerStack.m_Head;
-            msg = pPackagePushPopMessage;
 
             while (sceneEntry != NULL)
             {
-                if (sceneEntry->m_data == msg->m_pSceneHandler)
+                if (sceneEntry->m_data == pPackagePushPopMessage->m_pSceneHandler)
                 {
                     nlDLRingIsEnd(headEntry, sceneEntry);
                     nlDLRingRemove(&pSceneManager->m_sceneHandlerStack.m_Head, sceneEntry);

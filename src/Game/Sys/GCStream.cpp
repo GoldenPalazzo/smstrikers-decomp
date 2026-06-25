@@ -976,7 +976,7 @@ done_alloc_1:
 
 /**
  * Offset/Address/Size: 0x7E8 | 0x801C7F98 | size: 0x260
- * TODO: 99.57% match - ble/beq branch form for initial buffer-count guard
+ * TODO: 99.61% match - residual non-instruction diff after matching branch form
  */
 void GCAudioStreaming::StereoAudioStream::InterleavedHdrReadCB(nlFile* pFile, void* pData, unsigned int Length)
 {
@@ -1018,8 +1018,9 @@ void GCAudioStreaming::StereoAudioStream::InterleavedHdrReadCB(nlFile* pFile, vo
     unsigned long aramLen;
     AudioStreamBuffer* pBuffer;
     AudioStreamBuffer* init;
+    unsigned long Zero = 0;
     volatile unsigned long BufferIndex = (unsigned long)(init = 0);
-    if (m_BufferCount > 0)
+    if (m_BufferCount > Zero)
     {
         init = m_Buffers[0];
     }

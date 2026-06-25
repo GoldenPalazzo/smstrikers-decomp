@@ -51,51 +51,20 @@ UpdateResult IChooseSide::Update(float dt, eFEINPUT_PAD* pad, int param)
 
 /**
  * Offset/Address/Size: 0xFD4 | 0x800C4418 | size: 0x600
- * TODO: 98.38% match - loop index/base registers are shifted, and the
- * connected destination-index branch still emits an extra immediate load.
  */
 UpdateResult IChooseSide::UpdateForFE(float, eFEINPUT_PAD* pad)
 {
-    for (int i = 0; i < 4; i++)
+    for (int i = 0, offset = 0; i < 4; i++, offset += 4)
     {
         int destPosIndex;
-        TLInstance** readyInstances = &mInstanceTable[4];
         TLInstance* inst = mInstanceTable[i];
         if (g_pFEInput->IsConnected((eFEINPUT_PAD)i))
         {
-            int side;
-            feVector3 localPos;
-
             inst->m_bVisible = true;
-            side = mPlayingSides[i];
-
-            if (side == 0)
-            {
-                destPosIndex = 0;
-            }
-            else
-            {
-                destPosIndex = 2;
-                if (side == 1)
-                {
-                    destPosIndex = 1;
-                }
-            }
-
-            inst = mInstanceTable[i];
-            localPos = inst->GetPosition();
-            mTweenManager.clearTweensOnObj(inst);
-            mInstanceTable[i]->SetAssetPosition(mControllerDestPos[destPosIndex], localPos.e[1], localPos.e[2]);
-
-            mInstanceTable[i + 12]->m_bVisible = (side == -1);
-            mInstanceTable[i + 8]->m_bVisible = (side != -1);
+            PositionController(i, false, true);
         }
         else
         {
-            int side;
-            feVector3 localPos;
-            TLInstance* readyIndicator;
-
             inst->m_bVisible = false;
             mPlayingSides[i] = -1;
 
@@ -109,36 +78,8 @@ UpdateResult IChooseSide::UpdateForFE(float, eFEINPUT_PAD* pad)
                 mInstanceTable[i + 12]->m_bVisible = false;
             }
 
-            side = mPlayingSides[i];
-            if (side == 0)
-            {
-                destPosIndex = 0;
-            }
-            else
-            {
-                destPosIndex = 2;
-                if (side == 1)
-                {
-                    destPosIndex = 1;
-                }
-            }
-
-            inst = mInstanceTable[i];
-            localPos = inst->GetPosition();
-            mTweenManager.clearTweensOnObj(inst);
-            mInstanceTable[i]->SetAssetPosition(mControllerDestPos[destPosIndex], localPos.e[1], localPos.e[2]);
-
-            mPlayerReady[i] = false;
-            readyInstances[i]->m_bVisible = false;
-
-            readyIndicator = mInstanceTable[16];
-            if (readyIndicator != NULL)
-            {
-                if (AllPlayersReady())
-                    readyIndicator->m_bVisible = true;
-                else
-                    readyIndicator->m_bVisible = false;
-            }
+            PositionController(i, false, false);
+            SetReady(i, false);
         }
 
         if (g_pFEInput->JustPressed((eFEINPUT_PAD)i, 0x200, false, NULL))
@@ -146,7 +87,7 @@ UpdateResult IChooseSide::UpdateForFE(float, eFEINPUT_PAD* pad)
             if (mPlayerReady[i])
             {
                 mPlayerReady[i] = false;
-                readyInstances[i]->m_bVisible = false;
+                mInstanceTable[(offset / 4) + 4]->m_bVisible = false;
                 TLInstance* ri2 = mInstanceTable[16];
                 if (ri2 != NULL)
                 {
@@ -157,6 +98,7 @@ UpdateResult IChooseSide::UpdateForFE(float, eFEINPUT_PAD* pad)
                 }
                 FEAudio::PlayAnimAudioEvent("sfx_back", false);
                 FEAudio::PlayAnimAudioEvent("sfx_back_no_screen_change", false);
+                continue;
             }
             else
             {
@@ -179,10 +121,11 @@ UpdateResult IChooseSide::UpdateForFE(float, eFEINPUT_PAD* pad)
                 FEAudio::PlayAnimAudioEvent("sfx_accept_no_screen_change", false);
                 return UPDATE_GO_FORWARD;
             }
-            if (mPlayingSides[i] != -1)
+            int* playingSide = &mPlayingSides[offset / 4];
+            if (*playingSide != -1)
             {
                 mPlayerReady[i] = true;
-                readyInstances[i]->m_bVisible = true;
+                ((TLInstance**)playingSide)[9]->m_bVisible = true;
                 TLInstance* ri3 = mInstanceTable[16];
                 if (ri3 != NULL)
                 {
