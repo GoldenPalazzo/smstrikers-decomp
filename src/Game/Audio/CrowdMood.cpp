@@ -99,18 +99,19 @@ static void WarmRandomStream(const RANDOM_STREAMS& RandomStreams, T* pStream)
     unsigned long randomIndex = nlRandom(RandomStreams.Count, &nlDefaultSeed);
     const char* filename = RandomStreams.Files[randomIndex];
 
-    unsigned long zero = 0;
+    GCAudioStreaming::AudioStreamBuffer* buf;
+    unsigned long zero = (unsigned long)(buf = NULL);
+    unsigned long compareZero = 0;
     pStream->m_StreamLength = zero;
 
     unsigned long iVal;
     unsigned long* i = &iVal;
     *i = zero;
-    GCAudioStreaming::AudioStreamBuffer* buf = NULL;
 
     pStream->m_OldLength = zero;
     pStream->m_StreamPos = zero;
 
-    if (pStream->m_BufferCount > zero)
+    if (pStream->m_BufferCount > compareZero)
     {
         buf = pStream->m_Buffers[0];
     }
@@ -1584,8 +1585,8 @@ void CrowdMood::SetCrowdVolume(unsigned long Volume, unsigned long FadeTime)
 
 /**
  * Offset/Address/Size: 0x490 | 0x8014DBA4 | size: 0x1CC
- * TODO: 97.96% match (decomp.me) - register allocation differs for LPF
- *       flag/state/audio stream pointers (decomp.me compiler version issue).
+ * TODO: 98.00% match - register allocation differs for LPF flag values
+ *       and state/audio stream pointers.
  */
 void CrowdMood::ActivateLPF(bool Activate)
 {
@@ -1661,7 +1662,7 @@ void CrowdMood::ActivateLPF(bool Activate)
             {
                 if (Activate != buf->m_bLPFOn)
                 {
-                    sndStreamLPFParameter(buf->m_StreamId, Activate, buf->m_LPFFreq);
+                    sndStreamLPFParameter(buf->m_StreamId, (unsigned char)Activate, buf->m_LPFFreq);
                     buf->m_bLPFOn = Activate;
                 }
 

@@ -226,7 +226,6 @@ void GCAudioStreaming::StereoAudioStream::CancelPendingReads()
 
 /**
  * Offset/Address/Size: 0x0 | 0x801C9184 | size: 0x20C
- * TODO: 96.15% match - branch form differences around empty buffer checks and one clear-slot zero register
  */
 void GCAudioStreaming::AudioStream::Stop()
 {
@@ -235,13 +234,8 @@ void GCAudioStreaming::AudioStream::Stop()
     {
         AudioStreamBuffer* next;
         volatile unsigned long BufferIndex = (unsigned long)(next = 0);
-        if (m_BufferCount <= 0)
-        {
-        }
-        else
-        {
+        if (m_BufferCount > (unsigned long)next)
             next = m_Buffers[0];
-        }
         AudioStreamBuffer* pBuffer = next;
         while (pBuffer)
         {
@@ -269,13 +263,8 @@ void GCAudioStreaming::AudioStream::Stop()
             AudioStreamBuffer* pBuffer;
             volatile unsigned long BufferIndex = (unsigned long)(pBuffer = 0);
             m_Flags = (m_Flags & ~(1 << SF_SeriousStop)) | (1 << SF_SeriousStop);
-            if (m_BufferCount <= 0)
-            {
-            }
-            else
-            {
+            if (m_BufferCount > (unsigned long)pBuffer)
                 pBuffer = m_Buffers[0];
-            }
             while (pBuffer)
             {
                 AudioBufferMgr& mgr = m_BuffMgr;
@@ -301,8 +290,8 @@ void GCAudioStreaming::AudioStream::Stop()
                 ___blank("After buffer free there are %d availible\n", buff);
 
                 unsigned long idx = BufferIndex;
-                pBuffer = 0;
-                m_Buffers[idx] = 0;
+                AudioStreamBuffer* zero = pBuffer = 0;
+                m_Buffers[idx] = zero;
                 idx++;
                 BufferIndex = idx;
                 if (idx < m_BufferCount)

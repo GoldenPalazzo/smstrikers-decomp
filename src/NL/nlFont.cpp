@@ -402,6 +402,7 @@ unsigned char nlFont::Load(const char* szFontName, char* pFontDescData, unsigned
 
     {
         nlListSlotPoolHigh<nlFont::GlyphInfo> ExtendedGlyphList(0x10, 0x10);
+        ListEntry<nlFont::GlyphInfo>** pExtHead = &ExtendedGlyphList.m_Head;
         m_ExtendedGlyphCount = 0;
 
         CurrentPage = 0;
@@ -545,7 +546,7 @@ unsigned char nlFont::Load(const char* szFontName, char* pFontDescData, unsigned
                         *pEntry = entryData;
                     }
 
-                    nlListAddStart<ListEntry<nlFont::GlyphInfo> >(&ExtendedGlyphList.m_Head, pEntry, &ExtendedGlyphList.m_Tail);
+                    nlListAddStart<ListEntry<nlFont::GlyphInfo> >(pExtHead, pEntry, &ExtendedGlyphList.m_Tail);
                     m_ExtendedGlyphCount++;
                     pInfo = &pEntry->data;
                 }

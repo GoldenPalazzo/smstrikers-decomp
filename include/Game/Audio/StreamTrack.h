@@ -25,6 +25,8 @@ enum VOLUME_GROUP
     VG_Voice = 3,
 };
 }
+
+bool TrackMgrFileNameParamLookup(const char*, char*, unsigned long);
 } // namespace Audio
 
 namespace AudioStreamTrack
@@ -42,6 +44,7 @@ class TrackManagerBase
 {
 public:
     TrackManagerBase();
+    TrackManagerBase(const Function<bool(const char*, char*, unsigned long)>&);
     virtual ~TrackManagerBase();
     /* 0x0C */ virtual void Update(float);
     /* 0x10 */ virtual StreamTrack& CreateTrack(const char*, Audio::MasterVolume::VOLUME_GROUP);
@@ -171,10 +174,23 @@ public:
     /* 0x6C */ Function<FnVoidVoid> m_IdleCallback;
 }; // total size: 0x74
 
+inline TrackManagerBase::TrackManagerBase()
+    : m_FileLookup("audio/data/streams/StreamNames.txt", Audio::TrackMgrFileNameParamLookup)
+    , m_StreamPool(16, 16)
+{
+}
+
+inline TrackManagerBase::TrackManagerBase(const Function<bool(const char*, char*, unsigned long)>& fn)
+    : m_FileLookup("audio/data/streams/StreamNames.txt", fn)
+    , m_StreamPool(16, 16)
+{
+}
+
 template <int N>
 class TrackManager : public TrackManagerBase
 {
 public:
+    TrackManager(const Function<bool(const char*, char*, unsigned long)>&);
     virtual ~TrackManager();
     virtual void Update(float);
     virtual StreamTrack& CreateTrack(const char*, Audio::MasterVolume::VOLUME_GROUP);
@@ -185,6 +201,13 @@ public:
 
     /* 0x6C */ nlStaticSortedSlot<StreamTrack, N> m_Tracks;
 };
+
+template <int N>
+inline TrackManager<N>::TrackManager(const Function<bool(const char*, char*, unsigned long)>& fn)
+    : TrackManagerBase(fn)
+    , m_Tracks()
+{
+}
 
 /**
  * Offset/Address/Size: 0x3E4 | 0x800C6728 | size: 0xF0

@@ -1,5 +1,7 @@
 #define BASICSTRING_OUTLINE_CTOR
 #define BIND_NO_DECL
+#define MEMFUN_NO_DECL
+#define FUNCTION0_SPLIT_BODIES
 #include "Game/SH/SHCupHub.h"
 
 #include "Game/GameSceneManager.h"
@@ -119,12 +121,7 @@ public:
 };
 
 #include "NL/nlMemFunBody.h"
-
-template <typename R, typename F, typename A>
-BindExp1<R, F, A> Bind(F fn, const A& arg)
-{
-    return BindExp1<R, F, A>(fn, arg);
-}
+#include "NL/nlBindBody.h"
 
 enum ePopupMenu
 {
@@ -177,27 +174,6 @@ TeamStats::TeamStats()
     mNumLosses = 0;
     mNumOTLosses = 0;
     mNumPoints = 0;
-}
-
-/**
- * Offset/Address/Size: 0x78 | 0x800F1E84 | size: 0x30
- */
-template <>
-void Function0<void>::FunctorImpl<BindExp1<void, Detail::MemFunImpl<void, void (CupHubScene::*)()>, CupHubScene*> >::operator()()
-{
-    (mBind.mArg->*mBind.mFuncPtr.mMemFun)();
-}
-
-/**
- * Offset/Address/Size: 0x0 | 0x800F1E0C | size: 0x78
- * Explicit Clone spec so it emits alongside operator() (target [Clone, __cl]
- * grouping). Construct from mBind (target has no __ct copy-ctor).
- */
-template <>
-Function0<void>::FunctorBase*
-Function0<void>::FunctorImpl<BindExp1<void, Detail::MemFunImpl<void, void (CupHubScene::*)()>, CupHubScene*> >::Clone() const
-{
-    return new (nlMalloc(sizeof(FunctorImpl), 8, false)) FunctorImpl(mBind);
 }
 
 // /**

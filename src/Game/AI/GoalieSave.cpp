@@ -311,8 +311,15 @@ void GoalieSave::InitData(Goalie* pGoalie)
 
         if (failID >= 0)
         {
-            SaveData** ppFound = gSaveMap.FindGet(failID);
-            pEntry->mpFailAnimData = ppFound ? *ppFound : (SaveData*)NULL;
+            SaveData** ppFound;
+            if (gSaveMap.FindGet(failID, &ppFound))
+            {
+                pEntry->mpFailAnimData = *ppFound;
+            }
+            else
+            {
+                pEntry->mpFailAnimData = NULL;
+            }
         }
         else
         {
@@ -324,8 +331,15 @@ void GoalieSave::InitData(Goalie* pGoalie)
             int connID = pSaveInfo->mConnectedSaveID[k];
             if (connID >= 0)
             {
-                SaveData** ppConn = gSaveMap.FindGet(connID);
-                pEntry->mpConnectedSaveData[k] = ppConn ? *ppConn : (SaveData*)NULL;
+                SaveData** ppConn;
+                if (gSaveMap.FindGet(connID, &ppConn))
+                {
+                    pEntry->mpConnectedSaveData[k] = *ppConn;
+                }
+                else
+                {
+                    pEntry->mpConnectedSaveData[k] = NULL;
+                }
             }
             else
             {
@@ -386,11 +400,11 @@ void GoalieSave::InitData(Goalie* pGoalie)
     {
         typedef ListContainerBase<SaveData*, NewAdapter<ListEntry<SaveData*> > > SaveListBase;
 
-        i = 0;
+        int row = 0;
         do
         {
             int j = 0;
-            nlListContainer<SaveData*>* pEntry = &gSaveGrid[i][0];
+            nlListContainer<SaveData*>* pEntry = &gSaveGrid[row][0];
             ListEntry<SaveData*>* headClr = (ListEntry<SaveData*>*)(u32)j;
             ListEntry<SaveData*>* tailClr = (ListEntry<SaveData*>*)(u32)j;
             do
@@ -401,8 +415,8 @@ void GoalieSave::InitData(Goalie* pGoalie)
                 pEntry->m_Tail = tailClr;
                 pEntry++;
             } while (j < 5);
-            i++;
-        } while (i < 7);
+            row++;
+        } while (row < 7);
     }
 
     int nBallJointIndex = *(int*)((unsigned char*)pGoalie + 0x1AC);
@@ -865,7 +879,7 @@ SaveData* GoalieSave::FindBestInList(SaveBlendInfo& blendInfo, nlListContainer<S
 
 /**
  * Offset/Address/Size: 0xF90 | 0x800543B0 | size: 0xA8C
- * TODO: 97.55% match - pClosest/pEdge register allocation still diverges in
+ * TODO: 97.94% match - pClosest/pEdge register allocation still diverges in
  * edge-selection paths.
  */
 SaveData* GoalieSave::GetClosestBlendedPos(SaveBlendInfo& blendInfo, const nlVector3& v3TargetPos, SaveData* pClosest)
@@ -873,10 +887,10 @@ SaveData* GoalieSave::GetClosestBlendedPos(SaveBlendInfo& blendInfo, const nlVec
     SaveData* const pSaveData = pClosest;
     SaveData* pEdge = NULL;
 
-    SaveData* pLeft = NULL;
-    SaveData* pRight = NULL;
-    SaveData* pLeftUp = NULL;
     SaveData* pRightUp = NULL;
+    SaveData* pLeft = NULL;
+    SaveData* pLeftUp = NULL;
+    SaveData* pRight = NULL;
 
     float fScaleLeft;
     float fScaleRight;
@@ -889,8 +903,8 @@ SaveData* GoalieSave::GetClosestBlendedPos(SaveBlendInfo& blendInfo, const nlVec
     {
         if (pSaveData->mv3GroupMinCoords.f.y < v3TargetPos.f.y)
         {
-            SaveData* pCur = pSaveData;
             SaveData* pPrev = pSaveData;
+            SaveData* pCur = pSaveData;
 
             while (pCur != NULL && v3TargetPos.f.z > pCur->mv3SavePos.f.z)
             {
@@ -1137,8 +1151,8 @@ SaveData* GoalieSave::GetClosestBlendedPos(SaveBlendInfo& blendInfo, const nlVec
 
                     for (milestone = 0; milestone < 5; milestone++)
                     {
-                        float fLeftTime = fTimeLeft[milestone];
                         float fRightTime = fTimeRight[milestone];
+                        float fLeftTime = fTimeLeft[milestone];
                         blendInfo.mfMilestoneTime[milestone] = (fLeftTime <= 0.001f) ? 0.0f : Interpolate(fLeftTime, fRightTime, fComposite);
                     }
 

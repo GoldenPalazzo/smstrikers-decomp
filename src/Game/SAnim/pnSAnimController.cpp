@@ -9,6 +9,7 @@ SlotPool<cPN_SAnimController> cPN_SAnimController::m_SAnimControllerSlotPool(0x1
  */
 cSAnimCallback* cSAnim::GetCallbackList() const
 {
+    FORCE_DONT_INLINE;
     return m_pCallbackList;
 }
 
@@ -545,6 +546,7 @@ void cPN_SAnimController::BlendRootRot(unsigned short* pOutRot, float weight, fl
  */
 void cPN_SAnimController::ProcessCallbacks()
 {
+    FORCE_DONT_INLINE;
     bool shouldTrigger;
 
     if (m_bIgnoreTriggers)
@@ -552,7 +554,7 @@ void cPN_SAnimController::ProcessCallbacks()
         return;
     }
 
-    cSAnimCallback* pCallback = m_pSAnim->GetCallbackList();
+    cSAnimCallback* pCallback = m_pSAnim->m_pCallbackList;
 
     while (pCallback != nullptr)
     {
@@ -598,6 +600,7 @@ void cPN_SAnimController::ProcessCallbacks()
  */
 bool cPN_SAnimController::TestTrigger(float normalizedTime) const
 {
+    FORCE_DONT_INLINE;
     bool isTriggering;
 
     if (normalizedTime == 0.0f)

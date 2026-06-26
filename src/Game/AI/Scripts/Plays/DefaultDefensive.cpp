@@ -1105,9 +1105,8 @@ FuzzyVariant Fuzzy::UsePowerupDefensive(float fConfidence, cDecisionEntity* pEnt
 
 /**
  * Offset/Address/Size: 0x0 | 0x800856B8 | size: 0x5C4
- * TODO: 99.36% match - remaining diffs: extra move in the fNotInvincible
- * clamp, and fThreat is held in f28 instead of f27 through the
- * threat/marking branch.
+ * TODO: 99.61% match - remaining diffs: first confidence clamp computes
+ * through f0 before f2, and threat max still has f27/f28 register swaps.
  */
 FuzzyVariant Fuzzy::GetPowerupTargetDefensive(cTeam* TheTeam)
 {
@@ -1142,9 +1141,9 @@ FuzzyVariant Fuzzy::GetPowerupTargetDefensive(cTeam* TheTeam)
             float fReceivingPass = ReceivingPassDelayed(theOpponent);
             float fBallOwner = BallOwner((cPlayer*)theOpponent);
             float fChasingBall = ChasingBall((cPlayer*)theOpponent);
-            float fThreat = (fBallOwner >= fReceivingPass) ? fBallOwner : fReceivingPass;
-            fThreat = (fChasingBall >= fThreat) ? fChasingBall : fThreat;
-            FuzzyVariant generalThreatConfidence(fThreat);
+            fReceivingPass = (fReceivingPass >= fBallOwner) ? fReceivingPass : fBallOwner;
+            fBallOwner = (fChasingBall >= fReceivingPass) ? fChasingBall : fReceivingPass;
+            FuzzyVariant generalThreatConfidence(fBallOwner);
             float fMarking = Marking(g_pScriptCurrentFielder, (cPlayer*)theOpponent);
             float fTrueConfidence2 = (generalThreatConfidence.mData.f <= fMarking) ? generalThreatConfidence.mData.f : fMarking;
             float fFalseConfidence2 = 1.0f - fTrueConfidence2;

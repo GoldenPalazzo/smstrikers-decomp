@@ -252,7 +252,7 @@ void FEPopupMenu::SetPositions()
     prevOptionHeight = messageHeight;
     prevOptionHeight *= 0.5f;
     totalHeight += messageHeight;
-    topOfMessage = messagePosition.e[1] + prevOptionHeight;
+    topOfMessage = prevOptionHeight + messagePosition.e[1];
 
     if (messageHeight == 0.0)
     {

@@ -36,8 +36,6 @@ int cCameraManager::m_UpVectorStackSize;
 nlVector3 cCameraManager::m_UpVectorStack[2] = { { 0.0f, 0.0f, 1.0f }, { 0.0f, 0.0f, 1.0f } };
 
 cRumbleFilter* pRumbleFilter;
-static const char* gFileFmt_Startup = "art/cameras/{0}_shoottoscorecamera.cam";
-static const char* gCamFmt_Startup = "{0}_ShootToScoreCamera";
 
 /**
  * Offset/Address/Size: 0x1D04 | 0x801A838C | size: 0x68
@@ -71,12 +69,13 @@ extern eCameraType g_eCurrentCameraType;
 
 /**
  * Offset/Address/Size: 0x1768 | 0x801A7DF0 | size: 0x59C
- * TODO: 91.99% match - MWCC hoists BasicString format string addresses before loop
- * into extra callee-saved registers (stmw r27 vs stw r31/r30/r29)
+ * TODO: 99.65% match - second formatted camera-name temporary uses r31/r30 instead of r30/r31
  */
 void cCameraManager::Startup()
 {
     int i;
+    cRumbleFilter* pFilter1;
+    cRumbleFilter* pFilter2;
     cBaseCamera* pBaseCamera = (cBaseCamera*)new ((GameplayCamera*)nlMalloc(sizeof(GameplayCamera), 8, false)) GameplayCamera();
     pBaseCamera->m_pFilter = pRumbleFilter = new (nlMalloc(sizeof(cRumbleFilter), 8, false)) cRumbleFilter();
 
@@ -92,8 +91,8 @@ void cCameraManager::Startup()
     {
         if (nlDLRingGetStart<cBaseCamera>(m_cameraStack)->m_pFilter != NULL)
         {
-            cRumbleFilter* pFilter1 = nlDLRingGetStart<cBaseCamera>(m_cameraStack)->m_pFilter;
-            cRumbleFilter* pFilter2 = nlDLRingGetStart<cBaseCamera>(m_cameraStack)->m_pFilter;
+            pFilter1 = nlDLRingGetStart<cBaseCamera>(m_cameraStack)->m_pFilter;
+            pFilter2 = nlDLRingGetStart<cBaseCamera>(m_cameraStack)->m_pFilter;
             float dy = pFilter2->v2Pos0.f.y - pFilter1->v2Pos1.f.y;
             float dx = pFilter2->v2Pos0.f.x - pFilter1->v2Pos1.f.x;
             if (nlSqrt(dx * dx + dy * dy, true) > 0.0f)
@@ -111,8 +110,8 @@ void cCameraManager::Startup()
 
     for (i = 0; i < NUM_TEAMS; i++)
     {
-        BasicString<char, Detail::TempStringAllocator> fileName = Format(BasicString<char, Detail::TempStringAllocator>(gFileFmt_Startup), GetTeamName((eTeamID)i));
-        BasicString<char, Detail::TempStringAllocator> camName = Format(BasicString<char, Detail::TempStringAllocator>(gCamFmt_Startup), GetTeamName((eTeamID)i));
+        BasicString<char, Detail::TempStringAllocator> fileName = Format(BasicString<char, Detail::TempStringAllocator>("art/cameras/{0}_shoottoscorecamera.cam"), GetTeamName((eTeamID)i));
+        BasicString<char, Detail::TempStringAllocator> camName = Format(BasicString<char, Detail::TempStringAllocator>("{0}_ShootToScoreCamera"), GetTeamName((eTeamID)i));
         cAnimCamera::LoadCameraAnimation(fileName.c_str(), camName.c_str(), true);
     }
 

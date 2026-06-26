@@ -47,9 +47,8 @@ public:
         {
         }
 #ifdef FUNCTION1_SPLIT_BODIES
-#define F1BODY_INCLASS
-#include "NL/nlFunction1Body.h"
-#undef F1BODY_INCLASS
+        virtual ReturnType operator()(ParamType arg);
+        virtual FunctorBase* Clone() const;
 #include "NL/nlFunction1Dtor.h"
 #else
         virtual ~FunctorImpl() { }
@@ -102,9 +101,15 @@ public:
             : mBind(b)
         {
         }
+#ifdef FUNCTION0_SPLIT_BODIES
+        virtual ReturnType operator()();
+        virtual FunctorBase* Clone() const;
+#include "NL/nlFunction0Dtor.h"
+#else
         virtual ~FunctorImpl() { }
         virtual ReturnType operator()() { FORCE_DONT_INLINE; }
         virtual FunctorBase* Clone() const { return new (nlMalloc(sizeof(FunctorImpl), 8, false)) FunctorImpl(*this); }
+#endif
     };
 
     enum Tag mTag; // offset 0x0, size 0x4
@@ -342,6 +347,18 @@ struct MemFunImpl
         : mMemFun(fn)
     {
     }
+
+    template <typename T>
+    R operator()(T* obj) const
+    {
+        return (obj->*mMemFun)();
+    }
+
+    template <typename T, typename P>
+    R operator()(T* obj, P arg) const
+    {
+        return (obj->*mMemFun)(arg);
+    }
 };
 } // namespace Detail
 
@@ -366,6 +383,17 @@ struct BindExp1
         , mArg(a)
     {
     }
+
+    R operator()()
+    {
+        return mFuncPtr(mArg);
+    }
+
+    template <typename P>
+    R operator()(P)
+    {
+        return mFuncPtr(mArg);
+    }
 };
 
 #ifndef BIND_NO_DECL
@@ -378,11 +406,6 @@ BindExp1<R, F, A> Bind(F fn, const A& arg)
     return result;
 }
 
-template <typename R, typename MemPtr, typename A>
-BindExp1<R, Detail::MemFunImpl<R, MemPtr>, A> Bind(Detail::MemFunImpl<R, MemPtr> fn, const A& arg)
-{
-    return BindExp1<R, Detail::MemFunImpl<R, MemPtr>, A>(fn, arg);
-}
 #endif
 
 template <typename R, typename F, typename A, typename B>
@@ -399,6 +422,36 @@ struct BindExp2
         , mT1(t1)
     {
     }
+
+    R operator()()
+    {
+        return mFunction(mT0, mT1);
+    }
+
+    template <typename P>
+    R operator()(P arg)
+    {
+        return DoCall(arg, mT0, mT1);
+    }
+
+private:
+    template <typename P, typename B1>
+    R DoCall(P arg, const Placeholder<0>&, const B1& t1)
+    {
+        return mFunction(arg, t1);
+    }
+
+    template <typename P, typename A1>
+    R DoCall(P arg, const A1& t0, const Placeholder<0>&)
+    {
+        return mFunction(t0, arg);
+    }
+
+    template <typename P, typename A1, typename B1>
+    R DoCall(P, const A1& t0, const B1& t1)
+    {
+        return mFunction(t0, t1);
+    }
 };
 
 #ifndef BIND_NO_DECL
@@ -406,6 +459,39 @@ template <typename R, typename F, typename A, typename B>
 BindExp2<R, F, A, B> Bind(F fn, const A& t0, const B& t1)
 {
     return BindExp2<R, F, A, B>(fn, t0, t1);
+}
+#endif
+
+#ifdef FUNCTION1_SPLIT_BODIES
+template <typename ReturnType, typename ParamType>
+template <typename BindType>
+inline ReturnType Function1<ReturnType, ParamType>::FunctorImpl<BindType>::operator()(ParamType arg)
+{
+    return mBind(arg);
+}
+
+template <typename ReturnType, typename ParamType>
+template <typename BindType>
+inline typename Function1<ReturnType, ParamType>::FunctorBase*
+Function1<ReturnType, ParamType>::FunctorImpl<BindType>::Clone() const
+{
+    return new (nlMalloc(sizeof(FunctorImpl), 8, false)) FunctorImpl(mBind);
+}
+#endif
+
+#ifdef FUNCTION0_SPLIT_BODIES
+template <typename ReturnType>
+template <typename BindType>
+inline ReturnType Function0<ReturnType>::FunctorImpl<BindType>::operator()()
+{
+    return mBind();
+}
+
+template <typename ReturnType>
+template <typename BindType>
+inline typename Function0<ReturnType>::FunctorBase* Function0<ReturnType>::FunctorImpl<BindType>::Clone() const
+{
+    return new (nlMalloc(sizeof(FunctorImpl), 8, false)) FunctorImpl(mBind);
 }
 #endif
 

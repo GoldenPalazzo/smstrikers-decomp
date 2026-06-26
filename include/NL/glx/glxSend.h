@@ -8,7 +8,6 @@ class GLLightUserData;
 
 void glx_SendFrame_cb(eGLView, unsigned long, const glModelPacket*);
 void glud_Skin(void*, const glModelPacket*);
-void glud_Specular(void*);
 void glud_Light(void*);
 void glx_SwitchStreams(const glModelPacket*);
 void glx_SwitchRaster(const glModelPacket*);

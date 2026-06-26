@@ -870,6 +870,7 @@ void NisPlayer::Load(char* buffer, unsigned int size, NisHeader& nisHeader)
 
 /**
  * Offset/Address/Size: 0x1AE0 | 0x801167BC | size: 0xD08
+ * TODO: 95.42% match - remaining register allocation differs in the string rewrite paths.
  */
 void NisPlayer::LoadTriggers(Nis& nis)
 {
@@ -898,15 +899,7 @@ void NisPlayer::LoadTriggers(Nis& nis)
                 name[i];
                 name[i];
                 char* src = &name[i];
-                char* dest;
-                if (name.m_data != NULL)
-                {
-                    dest = name.m_data->mData;
-                }
-                else
-                {
-                    dest = NULL;
-                }
+                char* dest = name.m_data->mData;
 
                 while (src != name.m_data->mData + name.m_data->mSize)
                 {
@@ -940,14 +933,15 @@ void NisPlayer::LoadTriggers(Nis& nis)
         }
 
         nisHash = nlStringHash(name.c_str());
+        if (!FunctionExists(nisHash))
+        {
+            return;
+        }
     }
 
-    if (FunctionExists(nisHash))
-    {
-        mNisForTriggerLoading = &nis;
-        CallFunction(nisHash);
-        mNisForTriggerLoading = NULL;
-    }
+    mNisForTriggerLoading = &nis;
+    CallFunction(nisHash);
+    mNisForTriggerLoading = NULL;
 }
 
 #pragma dont_inline on

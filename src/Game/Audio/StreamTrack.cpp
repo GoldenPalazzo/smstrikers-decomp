@@ -1,3 +1,6 @@
+#define BIND_NO_DECL
+#define MEMFUN_NO_DECL
+#define FUNCTION0_SPLIT_BODIES
 #include "Game/Audio/StreamTrack.h"
 #include "Game/Sys/GCStream.h"
 #include "NL/nlBSearch.h"
@@ -10,11 +13,8 @@
 
 extern GCAudioStreaming::AudioBufferMgr g_BufferMgr;
 
-template <typename Class, typename R, typename P>
-Detail::MemFunImpl<R, void (Class::*)(P)> MemFun(void (Class::*fn)(P))
-{
-    return Detail::MemFunImpl<R, void (Class::*)(P)>(fn);
-}
+#include "NL/nlBindBody.h"
+#include "NL/nlMemFunBody.h"
 
 namespace AudioStreamTrack
 {
@@ -235,26 +235,6 @@ void AudioStreamTrack::TrackManagerBase::FadeManager::AddFade(
 // void Function0<void>::FunctorImpl<BindExp2<void, Detail::MemFunImpl<void, void (AudioStreamTrack::StreamTrack::*)(AudioStreamTrack::StreamTrack::QUEUED_STREAM*)>, AudioStreamTrack::StreamTrack*, AudioStreamTrack::StreamTrack::QUEUED_STREAM*> >::~FunctorImpl()
 // {
 // }
-
-/**
- * Offset/Address/Size: 0x80 | 0x801573BC | size: 0x34
- */
-template <>
-void Function0<void>::FunctorImpl<BindExp2<void, Detail::MemFunImpl<void, void (AudioStreamTrack::StreamTrack::*)(AudioStreamTrack::StreamTrack::QUEUED_STREAM*)>, AudioStreamTrack::StreamTrack*, AudioStreamTrack::StreamTrack::QUEUED_STREAM*> >::operator()()
-{
-    (mBind.mT0->*mBind.mFunction.mMemFun)(mBind.mT1);
-}
-
-/**
- * Offset/Address/Size: 0x0 | 0x8015733C | size: 0x80
- * Construct from mBind (target has no __ct copy-ctor).
- */
-template <>
-Function0<void>::FunctorBase*
-Function0<void>::FunctorImpl<BindExp2<void, Detail::MemFunImpl<void, void (AudioStreamTrack::StreamTrack::*)(AudioStreamTrack::StreamTrack::QUEUED_STREAM*)>, AudioStreamTrack::StreamTrack*, AudioStreamTrack::StreamTrack::QUEUED_STREAM*> >::Clone() const
-{
-    return new (nlMalloc(sizeof(FunctorImpl), 8, false)) FunctorImpl(mBind);
-}
 
 /**
  * Offset/Address/Size: 0x24E4 | 0x8015723C | size: 0x100
@@ -1192,7 +1172,7 @@ void AudioStreamTrack::StreamTrack::StopQStream(QUEUED_STREAM* pQueuedStream)
 
 /**
  * Offset/Address/Size: 0x5B0 | 0x80155308 | size: 0x2D8
- * TODO: 96.58% match - fadeCtrl still uses r25, volatile counter init doesn't reuse buf register, second loop ci/nextCI r3/r4 swap
+ * TODO: 99.40% match - second free-buffer loop ci/nextCI r3/r4 swap and delete-list manager/entry registers differ
  */
 void AudioStreamTrack::StreamTrack::StopStream(GCAudioStreaming::StereoAudioStream* pStream, bool TrackOwns)
 {
@@ -1201,8 +1181,8 @@ void AudioStreamTrack::StreamTrack::StopStream(GCAudioStreaming::StereoAudioStre
     if (pStream->m_State == GCAudioStreaming::SS_Playing)
     {
         unsigned long zero = 0;
-        GCAudioStreaming::AudioStreamBuffer* buf = NULL;
-        volatile unsigned long bufCounter = zero;
+        GCAudioStreaming::AudioStreamBuffer* buf;
+        volatile unsigned long bufCounter = (unsigned long)(buf = NULL);
         if (pStream->m_BufferCount > zero)
             buf = pStream->m_Buffers[0];
 
@@ -1235,8 +1215,8 @@ void AudioStreamTrack::StreamTrack::StopStream(GCAudioStreaming::StereoAudioStre
         {
             unsigned long fl = pStream->m_Flags;
             unsigned long zero2 = 0;
-            GCAudioStreaming::AudioStreamBuffer* buf = NULL;
-            volatile unsigned long bufCounter = (unsigned long)buf;
+            GCAudioStreaming::AudioStreamBuffer* buf;
+            volatile unsigned long bufCounter = (unsigned long)(buf = NULL);
             pStream->m_Flags = (fl & ~0x10) | 0x10;
             if (pStream->m_BufferCount > zero2)
                 buf = pStream->m_Buffers[0];
@@ -1262,17 +1242,18 @@ void AudioStreamTrack::StreamTrack::StopStream(GCAudioStreaming::StereoAudioStre
     typedef DLListEntry<FadeCtrl> FadeEntry;
 
     TrackManagerBase& mgr = m_TrackMgr;
+    FadeEntry* fadeEntry;
     FadeEntry* fadeHead;
     FadeEntry* fadeIter = nlDLRingGetStart(mgr.m_FadeMgr.m_Fades.m_Head);
     fadeHead = mgr.m_FadeMgr.m_Fades.m_Head;
-    FadeCtrl* fadeCtrl = NULL;
+    FadeCtrl* fadeCtrl;
 
     while (fadeIter != NULL)
     {
         if (fadeIter->m_data.pStream == pStream)
         {
             fadeCtrl = &fadeIter->m_data;
-            break;
+            goto fade_found;
         }
 
         if (nlDLRingIsEnd(fadeHead, fadeIter) || fadeIter == NULL)
@@ -1280,10 +1261,12 @@ void AudioStreamTrack::StreamTrack::StopStream(GCAudioStreaming::StereoAudioStre
         else
             fadeIter = fadeIter->m_next;
     }
+    fadeCtrl = NULL;
+fade_found:
 
     if (fadeCtrl != NULL)
     {
-        FadeEntry* fadeEntry = (FadeEntry*)((char*)fadeCtrl - 8);
+        fadeEntry = (FadeEntry*)((char*)fadeCtrl - 8);
         nlDLRingIsEnd(mgr.m_FadeMgr.m_Fades.m_Head, fadeEntry);
         nlDLRingRemove(&mgr.m_FadeMgr.m_Fades.m_Head, fadeEntry);
 

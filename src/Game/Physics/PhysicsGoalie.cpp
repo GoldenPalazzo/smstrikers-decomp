@@ -65,7 +65,7 @@ bool PhysicsGoalie::SweepTestForBallContact(const nlVector3& ballPrevPosition, c
 
 /**
  * Offset/Address/Size: 0x4A8 | 0x80139F28 | size: 0x2D8
- * TODO: 97.13% match - extra loop cursor move and vector scheduling/store order diffs remain.
+ * TODO: 98.74% match - extra loop cursor move and contact-normal scheduling diff remain.
  */
 bool PhysicsGoalie::SweepTestEveryBone(float ballRadius, const nlVector3& ballPrevPosition, const nlVector3& ballCurrentPosition, nlVector3& outContactNormal, nlVector3& outContactPos) const
 {
@@ -122,9 +122,7 @@ bool PhysicsGoalie::SweepTestEveryBone(float ballRadius, const nlVector3& ballPr
             didHitBone = true;
             hitCount += 1;
 
-            accumulatedNormal.f.z = accumulatedNormal.f.z + outContactNormal.f.z;
-            accumulatedNormal.f.y = accumulatedNormal.f.y + outContactNormal.f.y;
-            accumulatedNormal.f.x = accumulatedNormal.f.x + outContactNormal.f.x;
+            nlVec3Add(accumulatedNormal, accumulatedNormal, outContactNormal);
         }
     }
 
@@ -142,7 +140,7 @@ bool PhysicsGoalie::SweepTestEveryBone(float ballRadius, const nlVector3& ballPr
 
 /**
  * Offset/Address/Size: 0x70 | 0x80139AF0 | size: 0x438
- * TODO: 96.81% match - remaining float register and loop cursor differences in the post collision loop.
+ * TODO: 97.06% match - remaining float register allocation in the post collision loop.
  */
 void PhysicsGoalie::CollideGoalieWithPost()
 {
@@ -171,6 +169,7 @@ void PhysicsGoalie::CollideGoalieWithPost()
     if (postToHeadDistSq < 4.0f)
     {
         float postRadius = cNet::m_fNetPostRadius;
+        float onePlusPostRadius;
         float headDistLimitSq = (1.0f + postRadius) * (1.0f + postRadius);
 
         float fJointRadius[3] = { 0.15f, 0.2f, 0.2f };
@@ -184,13 +183,15 @@ void PhysicsGoalie::CollideGoalieWithPost()
         float fCos;
         nlSinCos(&fSin, &fCos, pGoalie->m_aActualFacingDirection);
 
-        float onePlusPostRadius = 1.0f + postRadius;
-
+        nlVector3* pJointPos = v3JointPos;
+        float* pJointRadius = fJointRadius;
         u8 bMoved = 0;
-        for (int i = 0; i < 3; i++)
+        onePlusPostRadius = 1.0f + postRadius;
+
+        for (int i = 0; i < 3; i++, pJointPos++, pJointRadius++)
         {
-            float x = v3JointPos[i].f.x;
-            float y = v3JointPos[i].f.y;
+            float x = pJointPos->f.x;
+            float y = pJointPos->f.y;
 
             nlVector3 v3JointWorldPos;
             v3JointWorldPos.f.x = v3GoaliePos.f.x + ((fCos * x) - (fSin * y));
@@ -200,7 +201,7 @@ void PhysicsGoalie::CollideGoalieWithPost()
             float postToJointX = v3PostPos.f.x - v3JointWorldPos.f.x;
             float postToJointY = v3PostPos.f.y - v3JointWorldPos.f.y;
             float jointDistSq = (postToJointX * postToJointX) + (postToJointY * postToJointY);
-            float fMinDist = postRadius + fJointRadius[i];
+            float fMinDist = postRadius + (*pJointRadius);
 
             if (i == 0)
             {
@@ -208,8 +209,8 @@ void PhysicsGoalie::CollideGoalieWithPost()
                 {
                     nlVector3 v3Norm;
                     v3Norm.f.x = v3JointWorldPos.f.y - v3PrevHeadJointPos.f.y;
-                    v3Norm.f.y = v3PrevHeadJointPos.f.x - v3JointWorldPos.f.x;
                     v3Norm.f.z = 0.0f;
+                    v3Norm.f.y = v3PrevHeadJointPos.f.x - v3JointWorldPos.f.x;
 
                     if ((v3PostPos.f.x * v3Norm.f.x) < 0.0f)
                     {

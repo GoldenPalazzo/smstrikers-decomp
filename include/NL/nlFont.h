@@ -140,7 +140,7 @@ public:
     /* 0x4 */ unsigned char m_InternalBuffer;
 }; // total size: 0x8
 
-// TODO: 95.12% match - remaining diffs are current-character register allocation and escape-copy loop guard shape.
+// TODO: 95.45% match - remaining diffs are escape-copy loop guard shape and extended glyph assignment register.
 template <typename T>
 FontCharString::FontCharString(const T* Source, const nlFont* pFont, T* pBuffer)
 {
@@ -180,22 +180,17 @@ FontCharString::FontCharString(const T* Source, const nlFont* pFont, T* pBuffer)
             {
                 nlFont::GlyphInfo key;
                 key.UnicodeChar = ch;
-                if (pFont->m_pExtendedGlyphs != 0 && pFont->m_ExtendedGlyphCount != 0)
+                nlFont::GlyphInfo* result;
+                if (pFont->m_pExtendedGlyphs != 0 && pFont->m_ExtendedGlyphCount != 0 && (result = nlBSearch<nlFont::GlyphInfo, nlFont::GlyphInfo>(key, pFont->m_pExtendedGlyphs, pFont->m_ExtendedGlyphCount)) != 0)
                 {
-                    nlFont::GlyphInfo* result = nlBSearch<nlFont::GlyphInfo, nlFont::GlyphInfo>(key, pFont->m_pExtendedGlyphs, pFont->m_ExtendedGlyphCount);
-                    if (result != 0)
+                    ch = (unsigned short)((result - pFont->m_pExtendedGlyphs) + 0x80);
+                }
+                else
+                {
+                    ch = 0x30;
+                    while (((unsigned short)ch > 0x7F ? pFont->m_pExtendedGlyphs[(unsigned short)ch - 0x80] : pFont->m_GlyphLookup[(unsigned short)ch - 0x20]).UnicodeChar == 0xFFFF)
                     {
-                        unsigned int glyph = (unsigned int)((result - pFont->m_pExtendedGlyphs) + 0x80);
-                        ch = (unsigned short)glyph;
-                    }
-                    else
-                    {
-                        unsigned int glyph = 0x30;
-                        while (((unsigned short)glyph > 0x7F ? pFont->m_pExtendedGlyphs[(unsigned short)glyph - 0x80] : pFont->m_GlyphLookup[(unsigned short)glyph - 0x20]).UnicodeChar == 0xFFFF)
-                        {
-                            glyph++;
-                        }
-                        ch = glyph;
+                        ch++;
                     }
                 }
             }

@@ -52,8 +52,7 @@ void ShadowStartup()
 
 /**
  * Offset/Address/Size: 0x1558 | 0x8012458C | size: 0x15C
- * TODO: 97.13% match - preview loop pkt register r28 vs target r26,
- *       and MWCC schedules li r3 after conditional li r4 for first glSetRasterState(GLS_Culling, v).
+ * TODO: 99.71% match - preview loop packet iterator uses r28 instead of target r26.
  */
 void RenderShadowModel(unsigned long flags, glModel* model, unsigned long matrix)
 {
@@ -93,10 +92,7 @@ void RenderShadowModel(unsigned long flags, glModel* model, unsigned long matrix
                 dup->state.matrix = matrix;
                 glUnHandleizeRasterState(dup->state.raster);
 
-                u32 v = 1;
-                if (pass == 0)
-                    v = 2;
-                glSetRasterState(GLS_Culling, v);
+                glSetRasterState(GLS_Culling, pass == 0 ? GX_CULL_BACK : GX_CULL_FRONT);
                 glSetRasterState(GLS_DepthWrite, 0);
 
                 glSetRasterState(GLS_AlphaBlend, (pass == 0) ? 2 : 7);

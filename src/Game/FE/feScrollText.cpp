@@ -288,15 +288,8 @@ static inline void BuildFontCharStringForScroll(FontCharString& fontcharstring, 
                 else
                 {
                     ch = 0x30;
-                    while (true)
+                    while (((unsigned short)ch > 0x7F ? font->m_pExtendedGlyphs[(unsigned short)ch - 0x80] : font->m_GlyphLookup[(unsigned short)ch - 0x20]).UnicodeChar == 0xFFFF)
                     {
-                        nlFont::GlyphInfo* glyph;
-                        if ((unsigned short)ch > 0x7F)
-                            glyph = &font->m_pExtendedGlyphs[(unsigned short)ch - 0x80];
-                        else
-                            glyph = &font->m_GlyphLookup[(unsigned short)ch - 0x20];
-                        if (glyph->UnicodeChar != 0xFFFF)
-                            break;
                         ch++;
                     }
                 }
@@ -311,7 +304,7 @@ static inline void BuildFontCharStringForScroll(FontCharString& fontcharstring, 
 
 /**
  * Offset/Address/Size: 0x4F0 | 0x800C8EC4 | size: 0x578
- * TODO: 97.0% match - escape-copy guard and temporary glyph key stack slot differ
+ * TODO: 97.8% match - escape-copy guard and temporary glyph key stack slot differ
  */
 void FEScrollText::SetDisplayMessage(const BasicString<unsigned short, Detail::TempStringAllocator>& theMessage)
 {

@@ -39,17 +39,17 @@ class nlStaticSortedSlot : public nlSortedSlot<T, N>
 public:
     nlStaticSortedSlot()
     {
-        T** p = reinterpret_cast<T**>(m_EntryData);
-        T** q = p + 1;
-        this->m_ArrayAllocator.m_pFree = reinterpret_cast<T*>(p);
-        p[0] = reinterpret_cast<T*>(q);
+        T* p = reinterpret_cast<T*>(m_EntryData);
+        T* q = p + 1;
+        this->m_ArrayAllocator.m_pFree = p;
+        *(T**)p = q;
         ++q;
-        p[1] = reinterpret_cast<T*>(q);
+        *(T**)&p[1] = q;
         for (int i = 2; i < N - 1; ++i)
         {
-            p[i] = reinterpret_cast<T*>(&p[i + 1]);
+            *(T**)&p[i] = &p[i + 1];
         }
-        p[N - 1] = 0;
+        *(T**)&p[N - 1] = 0;
     }
 
     virtual T* GetNewEntry();

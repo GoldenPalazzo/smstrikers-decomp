@@ -86,7 +86,9 @@ public:
 
     void ShutdownPlaySet();
     float GetSFXVol(unsigned long) const;
+    inline float GetSFXVol(const Audio::SoundAttributes&) const;
     float GetSFXVolReverb(unsigned long) const;
+    inline float GetSFXVolReverb(const Audio::SoundAttributes&) const;
     bool IsKeepingTrackOf(unsigned long, SFXPlaySet**);
     bool ActivateFilterOnAllTrackedSFX(bool);
     bool SetFilterFreqOnAllTrackedSFX(unsigned short);

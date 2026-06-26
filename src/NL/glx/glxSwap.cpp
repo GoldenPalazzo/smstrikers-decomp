@@ -126,6 +126,7 @@ static void DrawLoadingIndicator()
 
 /**
  * Offset/Address/Size: 0x118 | 0x801BEE68 | size: 0x2D0
+ * TODO: 97.42% match - remaining register allocation differences in outer loop counters and image row pointers.
  */
 static void BlitImage(int arg0, int arg1, float arg2, float arg3, bool arg4)
 {
@@ -176,8 +177,8 @@ static void BlitImage(int arg0, int arg1, float arg2, float arg3, bool arg4)
 
                 if ((dstX & 1) != 0)
                 {
-                    dst[-1] = (u8)(0.5f * (float)prev0 + 0.25f * (float)older0 + 0.25f * (float)uv0);
-                    dst[1] = (u8)(0.5f * (float)prev1 + 0.25f * (float)older1 + 0.25f * (float)uv1);
+                    dst[-1] = (u8)(0.25f * (float)older0 + 0.5f * (float)prev0 + 0.25f * (float)uv0);
+                    dst[1] = (u8)(0.25f * (float)older1 + 0.5f * (float)prev1 + 0.25f * (float)uv1);
                 }
             }
 

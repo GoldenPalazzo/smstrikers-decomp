@@ -1224,8 +1224,6 @@ void CupChooseCaptainSceneV2::CreateLineup()
 
 /**
  * Offset/Address/Size: 0x0 | 0x800DCECC | size: 0x15C
- * TODO: 97.98% match - remaining differences are InlineHasher temporary
- * stack slots for the FEFinder calls.
  */
 void CupChooseCaptainSceneV2::StartSidekickMiniHead(eSidekickID sidekickId)
 {
@@ -1243,17 +1241,14 @@ void CupChooseCaptainSceneV2::StartSidekickMiniHead(eSidekickID sidekickId)
     }
 
     TLComponentInstance* parentComp = mSKGrid->mParentComponent;
-    InlineHasher zero(0);
     TLImageInstance* sourceimage = FEFinder<TLImageInstance, 2>::Find<TLSlide>(
         parentComp->GetActiveSlide(),
-        InlineHasher(nlStringLowerHash(SidekickImageNames[sidekickId])),
-        zero);
+        InlineHasher(nlStringLowerHash(SidekickImageNames[sidekickId])));
     FETextureResource* sourceres = sourceimage->m_pTextureResource;
 
     TLImageInstance* destimage = FEFinder<TLImageInstance, 2>::Find<TLSlide>(
         mSidekickMiniHead->GetActiveSlide(),
-        InlineHasher(nlStringLowerHash("sidekick right")),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("sidekick right")));
 
     destimage->m_component->pChildren = (TLSlide*)sourceres;
 

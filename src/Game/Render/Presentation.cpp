@@ -949,7 +949,7 @@ void Presentation::EventHandler(Event* event)
                         s32 homeScore = g_pTeams[0]->m_nScore;
                         NisPlayer* nisPlayer = NisPlayer::Instance();
                         script = "GoalSuddenDeath";
-                        nisPlayer->mWinnerSide[0] = (awayScore < homeScore);
+                        nisPlayer->mWinnerSide[0] = (awayScore > homeScore);
                     }
                 }
             }
@@ -987,8 +987,7 @@ void Presentation::EventHandler(Event* event)
                     {
                         if ((s32)gsd->uTeamIndex == c0->m_pTeam->m_nSide)
                         {
-                            mIsAllowedToSkip[i] = true;
-                            foundTeamPad = true;
+                            mIsAllowedToSkip[i] = foundTeamPad = true;
                         }
                         else
                         {
@@ -1001,8 +1000,7 @@ void Presentation::EventHandler(Event* event)
                     {
                         if ((s32)gsd->uTeamIndex == c1->m_pTeam->m_nSide)
                         {
-                            mIsAllowedToSkip[i] = true;
-                            foundTeamPad = true;
+                            mIsAllowedToSkip[i] = foundTeamPad = true;
                         }
                         else
                         {

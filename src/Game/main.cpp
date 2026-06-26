@@ -1,3 +1,6 @@
+#define MEMFUN_NO_DECL
+#define BIND_NO_DECL
+#define FUNCTION0_SPLIT_BODIES
 #include "types.h"
 #include "Game/main.h"
 #include "NL/gl/glView.h"
@@ -66,6 +69,7 @@
 #include "dolphin/si.h"
 #include "dolphin/card.h"
 
+#include "NL/nlBindBody.h"
 #include "NL/nlMemFunBody.h"
 
 extern u8 g_DoStackWatermarkTests;
@@ -118,25 +122,6 @@ FixedUpdateTask fixedUpdateTask;
 
 TestTask testTask;
 ResetTask resetTask;
-
-/**
- * Offset/Address/Size: 0x0 | 0x80175210 | size: 0x30
- */
-template <>
-void Function0<void>::FunctorImpl<BindExp1<void, Detail::MemFunImpl<void, void (ResetTask::*)()>, ResetTask*> >::operator()()
-{
-    (mBind.mArg->*mBind.mFuncPtr.mMemFun)();
-}
-
-// Explicit Clone spec so Clone emits into this TU's .text alongside operator()
-// (matching the target's [Clone, __cl] grouping). Construct from mBind (target
-// has no copy-ctor symbol).
-template <>
-Function0<void>::FunctorBase*
-Function0<void>::FunctorImpl<BindExp1<void, Detail::MemFunImpl<void, void (ResetTask::*)()>, ResetTask*> >::Clone() const
-{
-    return new (nlMalloc(sizeof(FunctorImpl), 8, false)) FunctorImpl(mBind);
-}
 
 static void Initialize();
 

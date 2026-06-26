@@ -663,9 +663,8 @@ DrawableObject* DrawableModel::Clone() const
 
 /**
  * Offset/Address/Size: 0xD18 | 0x80120B24 | size: 0x38C
- * TODO: 99.23% match - saved-register swap: dimensions r22 vs target r23,
- *       numPackets r23 vs target r22. The first indexed display-list cursor
- *       also keeps the +4 base in r4 where target uses r3.
+ * TODO: 99.27% match - saved-register swap: dimensions r22 vs target r23,
+ *       numPackets r23 vs target r22.
  */
 void GetAABBDimensions(const glModel* model, AABBDimensions& dimensions, unsigned long boundingBoxCacheKey)
 {
@@ -740,12 +739,8 @@ void GetAABBDimensions(const glModel* model, AABBDimensions& dimensions, unsigne
                 u16 ns = ((u16*)&list->indices)[0];
                 int stride = (ns - 1) * 2 + 1;
                 int offset = stride * vertexIndex;
-                u8* ptr8 = (u8*)list->list;
-                ptr8 += offset;
-                pVert = (u16*)ptr8;
-                ptr8 = (u8*)pVert;
-                ptr8 += 4;
-                pVert = (u16*)ptr8;
+                pVert = (u16*)((u8*)list->list + offset);
+                pVert += 2;
             }
             else
             {
@@ -1008,10 +1003,8 @@ static void GetShadowBoundingSquare(const glModel* model, const nlMatrix4& matri
 
 /**
  * Offset/Address/Size: 0x730 | 0x8012053C | size: 0x234
- * TODO: 99.29% match - one residual `li r3, 6` inside the visibility branch;
- *       target emits only `li r4, 0` there.
  */
-void DrawCoPlanarReference(eGLView view, const glModel& model, const nlMatrix4& mtx, unsigned long userData)
+static void DrawCoPlanarReference(eGLView view, const glModel& model, const nlMatrix4& mtx, unsigned long userData)
 {
 
     float z;
@@ -1054,15 +1047,7 @@ void DrawCoPlanarReference(eGLView view, const glModel& model, const nlMatrix4& 
 
     glSetDefaultState(false);
 
-    eGLState cullState = GLS_Culling;
-    unsigned long cullMode = 3;
-    if (g_bCoPlanarReferenceVis)
-    {
-        cullMode = 0;
-        cullState = GLS_Culling;
-    }
-
-    glSetRasterState(cullState, cullMode);
+    glSetRasterState(GLS_Culling, g_bCoPlanarReferenceVis ? GX_CULL_NONE : GX_CULL_ALL);
     glSetRasterState(GLS_DepthTest, 0);
     glSetRasterState(GLS_DepthWrite, 0);
 

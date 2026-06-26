@@ -55,7 +55,7 @@ ContactType PhysicsNPC::Contact(PhysicsObject* obj, dContact* info, int what)
         {
             pFielder = (cFielder*)((PhysicsCharacter*)obj->m_parentObject)->m_pAICharacter;
             u8 bDoCallback = 1;
-            if (mpAINPC->GetSkinAnimatedNPC_Type() == SkinAnimatedNPC_CHAIN_CHOMP)
+            if (((SkinAnimatedNPC*)mpAINPC)->GetSkinAnimatedNPC_Type() == SkinAnimatedNPC_CHAIN_CHOMP)
             {
                 if (!((cPlayer*)pFielder)->IsOnSameTeam((cPlayer*)((ChainChomp*)mpAINPC)->mpTarget))
                 {
@@ -76,7 +76,7 @@ ContactType PhysicsNPC::Contact(PhysicsObject* obj, dContact* info, int what)
         }
         else if (((PhysicsCharacter*)obj->m_parentObject)->m_pAICharacter->m_eClassType == GOALIE)
         {
-            if (mpAINPC->GetSkinAnimatedNPC_Type() == SkinAnimatedNPC_BOWSER)
+            if (((SkinAnimatedNPC*)mpAINPC)->GetSkinAnimatedNPC_Type() == SkinAnimatedNPC_BOWSER)
             {
                 return ONE_WAY_CONTACT_OTHER;
             }
@@ -92,7 +92,7 @@ ContactType PhysicsNPC::Contact(PhysicsObject* obj, dContact* info, int what)
         {
             if (ball->m_pOwner->m_eClassType != FIELDER)
                 break;
-            if (mpAINPC->GetSkinAnimatedNPC_Type() != SkinAnimatedNPC_CHAIN_CHOMP)
+            if (((SkinAnimatedNPC*)mpAINPC)->GetSkinAnimatedNPC_Type() != SkinAnimatedNPC_CHAIN_CHOMP)
                 break;
             if (ball->m_pOwner->IsOnSameTeam((cPlayer*)((ChainChomp*)mpAINPC)->mpTarget))
             {
@@ -136,7 +136,7 @@ ContactType PhysicsNPC::Contact(PhysicsObject* obj, dContact* info, int what)
         PhysicsShell* pShell = (PhysicsShell*)obj;
         if (pShell->m_pPowerupObject->mtNoHitTimer.m_uPackedTime != 0)
         {
-            if (mpAINPC->GetSkinAnimatedNPC_Type() == SkinAnimatedNPC_BOWSER)
+            if (((SkinAnimatedNPC*)mpAINPC)->GetSkinAnimatedNPC_Type() == SkinAnimatedNPC_BOWSER)
             {
                 if (pShell->m_pPowerupObject->m_pThrower == NULL)
                 {
@@ -157,7 +157,7 @@ ContactType PhysicsNPC::Contact(PhysicsObject* obj, dContact* info, int what)
         PhysicsBanana* pBanana = (PhysicsBanana*)obj;
         if (pBanana->m_pPowerupObject->mtNoHitTimer.m_uPackedTime != 0)
         {
-            if (mpAINPC->GetSkinAnimatedNPC_Type() == SkinAnimatedNPC_BOWSER)
+            if (((SkinAnimatedNPC*)mpAINPC)->GetSkinAnimatedNPC_Type() == SkinAnimatedNPC_BOWSER)
             {
                 if (pBanana->m_pPowerupObject->m_pThrower == NULL)
                 {
@@ -176,7 +176,7 @@ ContactType PhysicsNPC::Contact(PhysicsObject* obj, dContact* info, int what)
     default:
         break;
     }
-    if (mpAINPC->GetSkinAnimatedNPC_Type() == SkinAnimatedNPC_BOWSER)
+    if (((SkinAnimatedNPC*)mpAINPC)->GetSkinAnimatedNPC_Type() == SkinAnimatedNPC_BOWSER)
     {
         return ONE_WAY_CONTACT_OTHER;
     }

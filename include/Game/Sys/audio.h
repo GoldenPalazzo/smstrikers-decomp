@@ -8,6 +8,8 @@
 #include "Game/Render/Nis.h"
 #include "Game/Audio/StreamTrack.h"
 
+extern AudioStreamTrack::TrackManagerBase* g_pTrackManager;
+
 // void nlDeleteList<FadeAudioData>(FadeAudioData**);
 // void nlListRemoveElement<FadeAudioData>(FadeAudioData**, FadeAudioData*, FadeAudioData**);
 // void nlListAddStart<FadeAudioData>(FadeAudioData**, FadeAudioData*, FadeAudioData**);
@@ -195,8 +197,14 @@ bool Initialize(bool);
 bool ShutdownReverb();
 // void InitializeReverb(eStadiumID, unsigned char);
 
+/**
+ * Offset/Address/Size: 0x0 | 0x80141518 | size: 0x1AC
+ */
 template <int N>
-void CreateTrackMgr();
+void CreateTrackMgr()
+{
+    g_pTrackManager = new (8, false) AudioStreamTrack::TrackManager<N>(Audio::TrackMgrFileNameParamLookup);
+}
 
 // eCharSFX enum is defined in CharacterAudio.h
 

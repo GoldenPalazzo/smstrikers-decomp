@@ -6511,8 +6511,8 @@ void cFielder::StartRunning()
 
 /**
  * Offset/Address/Size: 0xC14 | 0x80019F50 | size: 0x598
- * TODO: 99.87% match - remaining diffs in slide-attack ball argument setup,
- * HIT target temporary register, and USE_POWERUP GetCurrentPowerUp stack slots
+ * TODO: 99.90% match - remaining diffs in slide-attack ball argument setup
+ * and USE_POWERUP GetCurrentPowerUp stack slots
  */
 bool cFielder::DoAILooseBallActionSelection()
 {
@@ -6521,6 +6521,7 @@ bool cFielder::DoAILooseBallActionSelection()
     extern cBall* g_pBall;
 
     eFielderDesireState action;
+    cPlayer* pTarget;
     bool bDidSomething = false;
 
     FuzzyVariant looseBallAction = Fuzzy::GetBestLooseBallAction(this);
@@ -6591,7 +6592,7 @@ bool cFielder::DoAILooseBallActionSelection()
             float fReactionOffset = nlRandomf(fReactionRandom, &nlDefaultSeed) - 0.5f * fReactionRandom;
             if (!(fActionScore > 0.59f + fReactionOffset))
                 break;
-            cPlayer* pTarget = looseBallAction.ExtraData.mData.pPlayer;
+            pTarget = looseBallAction.ExtraData.mData.pPlayer;
             InitDesire(FIELDERDESIRE_HIT, looseBallAction.Confidence, -1.0f, FuzzyVariant(pTarget), fvNotSet);
             bDidSomething = true;
             break;

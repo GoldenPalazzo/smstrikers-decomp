@@ -1,4 +1,6 @@
 #define BIND_NO_DECL
+#define MEMFUN_NO_DECL
+#define FUNCTION0_SPLIT_BODIES
 #define FUNCTION1_SPLIT_BODIES
 #include "Game/SH/SHPause.h"
 #include "Game/OverlayManager.h"
@@ -33,77 +35,15 @@ static inline MenuItem<TLComponentInstance>* PauseMenuItemAt(MenuList<TLComponen
     return &menu.mMenuItems[idx];
 }
 
-#pragma dont_inline on
-template <typename T, typename R>
-Detail::MemFunImpl<R, void (T::*)()> MemFun(void (T::*fn)())
-{
-    FORCE_DONT_INLINE;
-    return Detail::MemFunImpl<R, void (T::*)()>(fn);
-}
-
-template <typename T, typename R, typename A>
-Detail::MemFunImpl<R, void (T::*)(A)> MemFun(void (T::*fn)(A))
-{
-    FORCE_DONT_INLINE;
-    return Detail::MemFunImpl<R, void (T::*)(A)>(fn);
-}
-#pragma dont_inline reset
-
-template <typename R, typename F, typename A>
-BindExp1<R, F, A> Bind(F fn, const A& arg)
-{
-    return BindExp1<R, F, A>(fn, arg);
-}
-
-template <typename R, typename F, typename A, typename B>
-BindExp2<R, F, A, B> Bind(F fn, const A& t0, const B& t1)
-{
-    return BindExp2<R, F, A, B>(fn, t0, t1);
-}
+#include "NL/nlMemFunBody.h"
+#include "NL/nlBindBody.h"
 
 typedef Detail::MemFunImpl<void, void (PauseMenuScene::*)()> MemFunImpl_Pause_v_t;
 typedef Detail::MemFunImpl<void, void (PauseMenuScene::*)(TLComponentInstance*)> MemFunImpl_Pause_p_t;
 typedef BindExp1<void, MemFunImpl_Pause_v_t, PauseMenuScene*> BindExp1_Pause_t;
 typedef BindExp2<void, MemFunImpl_Pause_p_t, PauseMenuScene*, Placeholder<0> > BindExp2_Pause_t;
 
-template <>
-inline void Function0<void>::FunctorImpl<BindExp1_Pause_t>::operator()()
-{
-    FORCE_DONT_INLINE;
-    (mBind.mArg->*mBind.mFuncPtr.mMemFun)();
-}
-
-template <>
-inline Function0<void>::FunctorBase* Function0<void>::FunctorImpl<BindExp1_Pause_t>::Clone() const
-{
-    return new (nlMalloc(sizeof(FunctorImpl), 8, false)) FunctorImpl(mBind);
-}
-
-template <>
-inline void Function1<void, TLComponentInstance*>::FunctorImpl<BindExp2_Pause_t>::operator()(TLComponentInstance* arg)
-{
-    (mBind.mT0->*mBind.mFunction.mMemFun)(arg);
-}
-
-template <>
-inline Function1<void, TLComponentInstance*>::FunctorBase* Function1<void, TLComponentInstance*>::FunctorImpl<BindExp2_Pause_t>::Clone() const
-{
-    return new (nlMalloc(sizeof(FunctorImpl), 8, false)) FunctorImpl(mBind);
-}
-
-/**
- * Offset/Address/Size: 0x1C | 0x800B0160 | size: 0x1C
- * TODO: 69.29% match - r0/r5 register allocation swap and load/store interleaving
- */
-template Detail::MemFunImpl<void, void (PauseMenuScene::*)()>
-MemFun<PauseMenuScene, void>(void (PauseMenuScene::*)());
-
-/**
- * Offset/Address/Size: 0x0 | 0x800B0144 | size: 0x1C
- * TODO: 69.29% match - r0/r5 register allocation swap and load/store interleaving
- */
-template Detail::MemFunImpl<void, void (PauseMenuScene::*)(TLComponentInstance*)>
-MemFun<PauseMenuScene, void, TLComponentInstance*>(void (PauseMenuScene::*)(TLComponentInstance*));
+template class Function1<void, TLComponentInstance*>::FunctorImpl<BindExp2_Pause_t>;
 
 /**
  * Offset/Address/Size: 0x225C | 0x800AF754 | size: 0xDC

@@ -1960,7 +1960,7 @@ FuzzyVariant Fuzzy::GoodToShoot(cFielder* TheFielder)
 
 /**
  * Offset/Address/Size: 0x71F4 | 0x800713C4 | size: 0xE28
- * TODO: 95.55% match - cache key stack slots and weighted-score register order differ.
+ * TODO: repo 97.09% / scratch 97.40% - cache key stack slots and weighted-score register order differ.
  */
 FuzzyVariant Fuzzy::GoodToChipShot(cFielder* TheFielder)
 {
@@ -2074,7 +2074,8 @@ FuzzyVariant Fuzzy::GoodToChipShot(cFielder* TheFielder)
     Goalie* pGoalieOnScreen;
     if (TheFielder != NULL)
     {
-        pGoalieOnScreen = (TheFielder != NULL) ? TheFielder->m_pTeam->GetOtherTeam()->GetGoalie() : NULL;
+        cTeam* pOtherTeam = (TheFielder != NULL) ? TheFielder->m_pTeam->GetOtherTeam() : NULL;
+        pGoalieOnScreen = pOtherTeam->GetGoalie();
     }
     else
     {
@@ -2144,7 +2145,8 @@ FuzzyVariant Fuzzy::GoodToChipShot(cFielder* TheFielder)
         Goalie* pGoalieOutOfNet;
         if (TheFielder != NULL)
         {
-            pGoalieOutOfNet = (TheFielder != NULL) ? TheFielder->m_pTeam->GetOtherTeam()->GetGoalie() : NULL;
+            cTeam* pOtherTeam = (TheFielder != NULL) ? TheFielder->m_pTeam->GetOtherTeam() : NULL;
+            pGoalieOutOfNet = pOtherTeam->GetGoalie();
         }
         else
         {
@@ -2156,7 +2158,8 @@ FuzzyVariant Fuzzy::GoodToChipShot(cFielder* TheFielder)
         Goalie* pGoalieStunned;
         if (TheFielder != NULL)
         {
-            pGoalieStunned = (TheFielder != NULL) ? TheFielder->m_pTeam->GetOtherTeam()->GetGoalie() : NULL;
+            cTeam* pOtherTeam = (TheFielder != NULL) ? TheFielder->m_pTeam->GetOtherTeam() : NULL;
+            pGoalieStunned = pOtherTeam->GetGoalie();
         }
         else
         {
@@ -2308,7 +2311,7 @@ FuzzyVariant Fuzzy::GetBestPassReceiveAction(cFielder* TheFielder)
         float fCaptain = Captain(TheFielder);
         float fOffZone = InOffensiveZone((cPlayer*)TheFielder);
         float fWideOpen = WideOpen(TheFielder);
-        float fThreshold = fCaptain * 0.1f + (1.0f - fWideOpen) * 0.7f + fOffZone * 0.2f;
+        float fThreshold = (1.0f - fWideOpen) * 0.7f + fOffZone * 0.2f + fCaptain * 0.1f;
         fTrueConfidence = ReceivingVolleyPassDelayed((cPlayer*)TheFielder);
         fTrueConfidence = (fTrueConfidence <= fThreshold) ? fTrueConfidence : fThreshold;
 

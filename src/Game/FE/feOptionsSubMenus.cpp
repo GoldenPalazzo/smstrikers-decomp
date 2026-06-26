@@ -1,3 +1,6 @@
+#define BIND_NO_DECL
+#define MEMFUN_NO_DECL
+#define FUNCTION1_SPLIT_BODIES
 #include "Game/FE/feOptionsSubMenus.h"
 
 #include "NL/platpad.h"
@@ -122,7 +125,7 @@ void TempDisableSound();
 
 /**
  * Offset/Address/Size: 0x210 | 0x800B5254 | size: 0x410
- * TODO: 98.41% match - buttonstate/base still use r24/r27 instead of r27/r28; menu item pointer uses r27 instead of r29.
+ * TODO: 99.87% match - slide and menu item name cursor registers are swapped before the FEFinder call.
  */
 OptionsSaveLoad::OptionsSaveLoad(FEPresentation* presentation, ButtonComponent::ButtonState buttonstate)
     : OptionsSubMenu(presentation, buttonstate)
@@ -155,8 +158,9 @@ OptionsSaveLoad::OptionsSaveLoad(FEPresentation* presentation, ButtonComponent::
         instance->SetActiveSlide((i == 0) ? DoubleHighlite::SLIDE_IN : DoubleHighlite::SLIDE_OUT);
         instance->Update(0.0f);
 
-        menuItem = &mMenuItems.mMenuItems[mMenuItems.mNumItemsAdded];
-        menuItem->mType = instance;
+        int numAdded = mMenuItems.mNumItemsAdded;
+        menuItem = AudioOptionsMenuItemAt(mMenuItems, numAdded);
+        mMenuItems.mMenuItems[numAdded].mType = instance;
         mMenuItems.mNumItemsAdded++;
 
         {
@@ -405,17 +409,12 @@ OptionsGameplayMenuV2::~OptionsGameplayMenuV2()
 }
 
 #include "NL/nlMemFunBody.h"
+#include "NL/nlBindBody.h"
 
 extern char __vt__13SlideMenuItem[];
 
 typedef Detail::MemFunImpl<void, void (SlideMenuList::*)()> MemFunImpl_SML_t;
 typedef BindExp1<void, MemFunImpl_SML_t, SlideMenuList*> BindExp1_SML_t;
-
-template <>
-inline void Function1<void, SlideMenuItem*>::FunctorImpl<BindExp1_SML_t>::operator()(SlideMenuItem*)
-{
-    (mBind.mArg->*mBind.mFuncPtr.mMemFun)();
-}
 
 /**
  * Offset/Address/Size: 0xAA8 | 0x800B5AEC | size: 0x438

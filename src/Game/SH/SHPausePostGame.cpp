@@ -19,28 +19,10 @@
 #include "NL/nlString.h"
 
 #include "NL/nlMemFunBody.h"
-
-template <typename R, typename F, typename A>
-BindExp1<R, F, A> Bind(F fn, const A& arg)
-{
-    return BindExp1<R, F, A>(fn, arg);
-}
+#include "NL/nlBindBody.h"
 
 typedef Detail::MemFunImpl<void, void (PausePostGameScene::*)()> MemFunImpl_PausePostGame_t;
 typedef BindExp1<void, MemFunImpl_PausePostGame_t, PausePostGameScene*> BindExp1_PausePostGame_t;
-
-template <>
-inline void Function1<void, TLComponentInstance*>::FunctorImpl<BindExp1_PausePostGame_t>::operator()(TLComponentInstance*)
-{
-    (mBind.mArg->*mBind.mFuncPtr.mMemFun)();
-}
-
-template <>
-inline Function1<void, TLComponentInstance*>::FunctorBase*
-Function1<void, TLComponentInstance*>::FunctorImpl<BindExp1_PausePostGame_t>::Clone() const
-{
-    return new (nlMalloc(sizeof(FunctorImpl), 8, false)) FunctorImpl(mBind);
-}
 
 namespace DoubleHighlite
 {

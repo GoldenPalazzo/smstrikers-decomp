@@ -1,3 +1,6 @@
+#define MEMFUN_NO_DECL
+#define BIND_NO_DECL
+#define FUNCTION1_SPLIT_BODIES
 #include "Game/SH/SHOptions.h"
 #include "Game/FE/FEAudio.h"
 #include "Game/FE/feHelpFuncs.h"
@@ -12,6 +15,7 @@
 #include "NL/nlPrint.h"
 
 #include "NL/nlMemFunBody.h"
+#include "NL/nlBindBody.h"
 
 extern bool DidContinueWithoutOperation();
 extern TLInstance* FindComponent(TLSlide*, const char*);
@@ -197,21 +201,6 @@ OptionsScene::~OptionsScene()
 typedef Detail::MemFunImpl<void, void (OptionsScene::*)(eMenuState)> MemFunImpl_Options_t;
 typedef BindExp2<void, MemFunImpl_Options_t, OptionsScene*, eMenuState> BindExp2_Options_t;
 typedef Function1<void, TLComponentInstance*>::FunctorImpl<BindExp2_Options_t> FunctorImpl_Options_t;
-
-template <>
-void Function1<void, TLComponentInstance*>::FunctorImpl<BindExp2_Options_t>::operator()(TLComponentInstance*)
-{
-    (mBind.mT0->*mBind.mFunction.mMemFun)(mBind.mT1);
-}
-
-// Explicit Clone spec so it emits alongside operator() (target [Clone, __cl]
-// grouping). Construct from mBind (target has no __ct copy-ctor).
-template <>
-Function1<void, TLComponentInstance*>::FunctorBase*
-Function1<void, TLComponentInstance*>::FunctorImpl<BindExp2_Options_t>::Clone() const
-{
-    return new (nlMalloc(sizeof(FunctorImpl_Options_t), 8, false)) FunctorImpl_Options_t(mBind);
-}
 
 typedef TLInstance* (*FindInstByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
 typedef TLComponentInstance* (*FindInstByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);

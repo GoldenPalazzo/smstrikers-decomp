@@ -27,6 +27,8 @@ public:
 
 SlotPool<SFXPlaySet> SFXPlaySet::m_TrackedSFXSlotPool(0x32, 0x10);
 
+static const nlVector3 kZeroVector = { 0.0f, 0.0f, 0.0f };
+
 bool TrackedSFXPitchFreqTypeCheckCallback(unsigned long sfxID, cGameSFX* pGameSFX);
 bool TrackedSFXFilterFreqTypeCheckCallback(unsigned long sfxID, cGameSFX* pGameSFX);
 bool TrackedSFXPriorityCallback(SFXPlaySet* pSFXPlaySet, unsigned long param, cGameSFX* pGameSFX);
@@ -343,6 +345,29 @@ float cGameSFX::GetSFXVol(unsigned long index) const
 float cGameSFX::GetSFXVolReverb(unsigned long index) const
 {
     return mpSFX[index].fVolReverb;
+}
+
+inline float cGameSFX::GetSFXVol(const Audio::SoundAttributes& attributes) const
+{
+    SoundStrToIDNode sfxInfo = mpSFX[attributes.mu_Type];
+    if (attributes.mf_Volume == 100.0f)
+    {
+        return sfxInfo.fVolume;
+    }
+
+    return attributes.mf_Volume;
+}
+
+inline float cGameSFX::GetSFXVolReverb(const Audio::SoundAttributes& attributes) const
+{
+    SoundStrToIDNode* sfxTable = mpSFX;
+    SoundStrToIDNode sfxInfo = sfxTable[attributes.mu_Type];
+    if (attributes.mf_VolReverb == 100.0f)
+    {
+        return sfxInfo.fVolReverb;
+    }
+
+    return attributes.mf_VolReverb;
 }
 
 /**
@@ -874,8 +899,8 @@ static inline bool FindRepeatTrackedSFX(cGameSFX* self, unsigned long type, SFXP
 
 /**
  * Offset/Address/Size: 0x1104 | 0x80152648 | size: 0xACC
- * TODO: 94.87% match - remaining callee-saved register role permutation (this/attributes/pSFXEmitter)
- * and stack-slot offset diffs; one SoundStrToIDNode struct copy vs two in target.
+ * TODO: 97.70% match - remaining this/attributes register-coloring swap and
+ * inlined SoundStrToIDNode copy scheduling differences.
  */
 unsigned long cGameSFX::Play(Audio::SoundAttributes& attributes)
 {
@@ -886,10 +911,8 @@ unsigned long cGameSFX::Play(Audio::SoundAttributes& attributes)
     float currTime;
     float fVolume;
     float fVolReverb;
-    nlVector3 vPos;
-    nlVector3 vDir;
-    EmitterStartInfo info;
     int volGrp;
+    EmitterStartInfo info;
 
     pSFXEmitter = NULL;
     emitterIndex = Audio::GetSndIDError();
@@ -943,24 +966,8 @@ unsigned long cGameSFX::Play(Audio::SoundAttributes& attributes)
     }
 
     {
-        SoundStrToIDNode sfxInfo = mpSFX[attributes.mu_Type];
-        if (attributes.mf_Volume == 100.0f)
-        {
-            fVolume = sfxInfo.fVolume;
-        }
-        else
-        {
-            fVolume = attributes.mf_Volume;
-        }
-
-        if (attributes.mf_VolReverb == 100.0f)
-        {
-            fVolReverb = sfxInfo.fVolReverb;
-        }
-        else
-        {
-            fVolReverb = attributes.mf_VolReverb;
-        }
+        fVolume = GetSFXVol(attributes);
+        fVolReverb = GetSFXVolReverb(attributes);
 
         if (fVolReverb == 0.0f)
         {
@@ -975,29 +982,27 @@ unsigned long cGameSFX::Play(Audio::SoundAttributes& attributes)
             Audio::SetSFXVolumeGroup(sfxID, volGrp);
         }
 
-        int priority = attributes.mi_GroupPriority;
-        if (priority >= 0)
+        if (attributes.mi_GroupPriority >= 0)
         {
-            if (CheckForHigherPrioritySFX(this, priority))
+            if (CheckForHigherPrioritySFX(this, attributes.mi_GroupPriority))
             {
                 return Audio::GetSndIDError();
             }
 
-            KillLowerPrioritySFX(this, priority);
+            KillLowerPrioritySFX(this, attributes.mi_GroupPriority);
         }
 
         attributes.mi_SFXPriority = mpSFX[attributes.mu_Type].sfxPriority;
     }
 
-    int priority = attributes.mi_SFXPriority;
-    if (priority > 0 && attributes.mf_DelayTime < 0.0f)
+    if (attributes.mi_SFXPriority > 0 && attributes.mf_DelayTime < 0.0f)
     {
-        if (CheckForHigherPrioritySFX(this, priority))
+        if (CheckForHigherPrioritySFX(this, attributes.mi_SFXPriority))
         {
             return Audio::GetSndIDError();
         }
 
-        KillLowerPrioritySFX(this, priority);
+        KillLowerPrioritySFX(this, attributes.mi_SFXPriority);
     }
 
     attributes.mp_OwnerSFX = this;
@@ -1026,7 +1031,10 @@ unsigned long cGameSFX::Play(Audio::SoundAttributes& attributes)
         return voiceID;
     }
 
-    vDir = (nlVector3) { 0.0f, 0.0f, 0.0f };
+    nlVector3 vPos;
+    nlVector3 vDir;
+
+    vDir = kZeroVector;
 
     if (attributes.posUpdateMethod == PHYSOBJ)
     {
@@ -1098,11 +1106,13 @@ unsigned long cGameSFX::Play(Audio::SoundAttributes& attributes)
     info.filterFreq = 0;
     info.pitch = 0x2000;
 
+    SFXEmitter* pInfoEmitter = NULL;
     if (attributes.mb_Update3DContinuously)
     {
-        info.pSFXEmitter = pSFXEmitter;
+        pInfoEmitter = pSFXEmitter;
     }
 
+    info.pSFXEmitter = pInfoEmitter;
     info.uSFXID = sfxID;
     info.groupID = attributes.mi_EmitterGroup;
     info.position = vPos;
@@ -1181,8 +1191,8 @@ SFXPlaySet* cGameSFX::KeepTrack(SFXEmitter* pEmitter, const Audio::SoundAttribut
     slot->voiceID = Audio::GetSndIDError();
     slot->bIs3D = 0;
     slot->emitter = NULL;
-    slot->delay = 0.0f;
-    slot->timeStamp = 0.0f;
+    slot->delay = -1.0f;
+    slot->timeStamp = -1.0f;
     slot->sfxPriority = 0;
     slot->groupPriority = -1;
     slot->filterFreq = 0;
@@ -1205,7 +1215,7 @@ SFXPlaySet* cGameSFX::KeepTrack(SFXEmitter* pEmitter, const Audio::SoundAttribut
 
     slot->timeStamp = Audio::GetAudioTimer();
 
-    if (attrs.mb_Is3D && attrs.mb_Update3DContinuously && 0.0f == attrs.mf_DelayTime)
+    if (attrs.mb_Is3D && attrs.mb_Update3DContinuously && -1.0f == attrs.mf_DelayTime)
     {
         slot->emitter = pEmitter;
         pEmitter->bKeepTrack = true;

@@ -50,7 +50,7 @@ inline void GLMeshWriterCore::Position(const nlVector3& v)
 
 /**
  * Offset/Address/Size: 0x0 | 0x8020A288 | size: 0x3BC
- * TODO: 99.87% match - textureHandle/view register allocation plus cosmetic local static/sdata label diffs.
+ * TODO: 99.90% match - matrixHandle/view register allocation plus cosmetic local static/sdata label diffs.
  */
 unsigned char FERender::RenderImageInstance(const TLImageInstance* pTLImageInstance)
 {
@@ -58,6 +58,7 @@ unsigned char FERender::RenderImageInstance(const TLImageInstance* pTLImageInsta
 
     const FEImage* pFEImage = (const FEImage*)pTLImageInstance->m_component;
     FETextureResource* pTexRes = pFEImage->m_pFeTextureResource;
+    unsigned long matrixHandle;
 
     if (!pTexRes->m_bValid)
         return 1;
@@ -72,7 +73,7 @@ unsigned char FERender::RenderImageInstance(const TLImageInstance* pTLImageInsta
     m_pMatrixStack->GetTop(matTM);
     nlMultMatrices(matTM, matTM, m_pRenderScene->m_matView);
 
-    unsigned long matrixHandle = glAllocMatrix();
+    matrixHandle = glAllocMatrix();
     if (matrixHandle != 0xFFFFFFFF)
         glSetMatrix(matrixHandle, matTM);
 

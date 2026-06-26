@@ -3772,21 +3772,6 @@ eClassType cGameSFX::GetClassType() const
 // {
 // }
 
-inline AudioStreamTrack::TrackManagerBase::TrackManagerBase()
-    : m_FileLookup("audio/data/streams/StreamNames.txt", Audio::TrackMgrFileNameParamLookup)
-    , m_StreamPool(16, 16)
-{
-}
-
-/**
- * Offset/Address/Size: 0x0 | 0x80141518 | size: 0x1AC
- */
-template <int N>
-void CreateTrackMgr()
-{
-    g_pTrackManager = new (8, false) AudioStreamTrack::TrackManager<N>();
-}
-
 #pragma inline_depth(255)
 inline AudioStreamTrack::TrackManagerBase::FadeManager::~FadeManager()
 {

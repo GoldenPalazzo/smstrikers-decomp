@@ -15,10 +15,6 @@ typedef Detail::MemFunImpl<void, void (SpoilsScene::*)(SpoilsScene::eSpoils)> Me
 typedef BindExp2<void, MemFunImpl_Spoils_t, SpoilsScene*, SpoilsScene::eSpoils> BindExp2_Spoils_t;
 typedef Function1<void, TLComponentInstance*>::FunctorImpl<BindExp2_Spoils_t> FunctorImpl_Spoils_t;
 
-#define F1BODY_RET   void
-#define F1BODY_PARAM TLComponentInstance*
-#define F1BODY_BIND  BindExp2_Spoils_t
-#include "NL/nlFunction1Body.h"
 #include "NL/nlMemFunBody.h"
 #include "NL/nlBindBody.h"
 

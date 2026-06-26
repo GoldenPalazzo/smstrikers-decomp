@@ -1,4 +1,6 @@
 #define BIND_NO_DECL
+#define MEMFUN_NO_DECL
+#define FUNCTION0_SPLIT_BODIES
 #include "Game/SH/SHCupTrophy.h"
 
 #include "Game/GameInfo.h"
@@ -193,13 +195,13 @@ CupTrophyScene::CupTrophyScene()
     , mCreated(false)
     , mIsNew(false)
     , mFirstSlideChange(true)
-    , mButtonState((ButtonComponent::ButtonState)(*(int*)&unk_gap[121] = 0, *(int*)&unk_gap[123] = 0,
-          *(bool*)&unk_gap[127] = true, 0))
+    , mButtonState((ButtonComponent::ButtonState)(mScrollOffset = 0, mRow = 0,
+          mDoBlockLoad = true, 0))
 {
     CupTrophyScene* self = this;
     const char* asyncPath = "art/fe/TrophiesUI.res";
     AsyncImage* image = new (nlMalloc(0x1C, 0x20, true)) AsyncImage(asyncPath, NULL);
-    *(AsyncImage**)&self->unk_gap[125] = image;
+    self->mAsyncTrophy = image;
 }
 
 /**
@@ -207,7 +209,7 @@ CupTrophyScene::CupTrophyScene()
  */
 CupTrophyScene::~CupTrophyScene()
 {
-    delete *(AsyncImage**)&unk_gap[125];
+    delete mAsyncTrophy;
 }
 
 static const char* CUP_TROPHY_TEXT_NAME = "CUP TITLE";
@@ -305,8 +307,8 @@ void CupTrophyScene::SceneCreated()
     Spoil* pSpoil;
     nlColour trophyColour;
 
-    *(int*)&unk_gap[121] = 0;
-    *(int*)&unk_gap[123] = 0;
+    mScrollOffset = 0;
+    mRow = 0;
 
     FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
     char* gameInfoBase = (char*)nlSingleton<GameInfoManager>::s_pInstance;
@@ -397,9 +399,9 @@ void CupTrophyScene::SceneCreated()
             (InlineHasher&)h1);
     }
 
-    (*(AsyncImage**)&unk_gap[125])->mImageInstance = pTrophyImage;
-    (*(AsyncImage**)&unk_gap[125])->QueueLoad(TROPHY_TEXTURE_FILENAMES[(int)mTrophy], *(bool*)&unk_gap[127]);
-    *(bool*)&unk_gap[127] = false;
+    mAsyncTrophy->mImageInstance = pTrophyImage;
+    mAsyncTrophy->QueueLoad(TROPHY_TEXTURE_FILENAMES[(int)mTrophy], mDoBlockLoad);
+    mDoBlockLoad = false;
 
     {
         union
@@ -710,12 +712,7 @@ enum ePopupMenu
 };
 
 #include "NL/nlMemFunBody.h"
-
-template <typename R, typename F, typename A>
-BindExp1<R, F, A> Bind(F fn, const A& arg)
-{
-    return BindExp1<R, F, A>(fn, arg);
-}
+#include "NL/nlBindBody.h"
 
 class FEPopupMenu
 {
@@ -726,15 +723,6 @@ public:
 typedef Detail::MemFunImpl<void, void (CupTrophyScene::*)()> MemFunImpl_CupTrophyScene_v;
 typedef BindExp1<void, MemFunImpl_CupTrophyScene_v, CupTrophyScene*> BindExp1_vfmfcp;
 typedef Function0<void>::FunctorImpl<BindExp1_vfmfcp> FunctorImpl_vfmfcp;
-
-/**
- * Offset/Address/Size: 0x78 | 0x800CC954 | size: 0x30
- */
-template <>
-void Function0<void>::FunctorImpl<BindExp1_vfmfcp>::operator()()
-{
-    (mBind.mArg->*(mBind.mFuncPtr.mMemFun))();
-}
 
 /**
  * Offset/Address/Size: 0x1D70 | 0x800CB424 | size: 0x1E4
@@ -806,7 +794,7 @@ void CupTrophyScene::Update(float fDeltaT)
     BaseSceneHandler::Update(fDeltaT);
     mButtons.CentreButtons();
     mButtons2.CentreButtons();
-    (*(AsyncImage**)&unk_gap[125])->Update(true);
+    mAsyncTrophy->Update(true);
 
     FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
     char* pBase = (char*)nlSingleton<GameInfoManager>::s_pInstance;
@@ -871,14 +859,14 @@ void CupTrophyScene::Update(float fDeltaT)
 
             if (numRecords > 1)
             {
-                if (*(int*)&unk_gap[123] < 2 && *(int*)&unk_gap[123] < (int)(numRecords - 1))
+                if (mRow < 2 && mRow < (int)(numRecords - 1))
                 {
-                    *(int*)&unk_gap[123] += 1;
+                    mRow += 1;
                     FEAudio::PlayAnimAudioEvent("sfx_option_scroll_down", false);
                 }
-                else if (numRecords > 3 && *(int*)&unk_gap[121] < (int)(numRecords - 3))
+                else if (numRecords > 3 && mScrollOffset < (int)(numRecords - 3))
                 {
-                    *(int*)&unk_gap[121] += 1;
+                    mScrollOffset += 1;
                     FEAudio::PlayAnimAudioEvent("sfx_option_scroll_down", false);
                 }
                 else
@@ -899,14 +887,14 @@ void CupTrophyScene::Update(float fDeltaT)
         {
             if (numRecords > 1)
             {
-                if (*(int*)&unk_gap[123] > 0)
+                if (mRow > 0)
                 {
-                    *(int*)&unk_gap[123] -= 1;
+                    mRow -= 1;
                     FEAudio::PlayAnimAudioEvent("sfx_option_scroll_up", false);
                 }
-                else if (*(int*)&unk_gap[121] > 0)
+                else if (mScrollOffset > 0)
                 {
-                    *(int*)&unk_gap[121] -= 1;
+                    mScrollOffset -= 1;
                     FEAudio::PlayAnimAudioEvent("sfx_option_scroll_up", false);
                 }
                 else
@@ -1065,8 +1053,7 @@ static const char* CUP_FIRST_TEXT_NAME_RIGHT = "FIRST WON TIME2";
 
 /**
  * Offset/Address/Size: 0x112C | 0x800CA7E0 | size: 0x3F8
- * TODO: 93.04% match - register allocation (this=r28/r30, locString=r31/r28) and stack offset
- * shift are -inline deferred artifacts; file compiled with -inline deferred but scratch uses -inline auto
+ * TODO: 98.97% match - remaining nonvolatile register allocation and BasicString return temporary stack slots differ
  */
 void CupTrophyScene::SetLossRecord(Spoil& spoil)
 {
@@ -1074,62 +1061,12 @@ void CupTrophyScene::SetLossRecord(Spoil& spoil)
     typedef TLTextInstance* (*FindCompByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
 
     FEPresentation* pres = m_pFEPresentation;
-    BasicString<char, Detail::TempStringAllocator> lossString = LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(((SpoilNumLossesView&)spoil).mNumLosses);
+    int losses = ((SpoilNumLossesView&)spoil).mNumLosses;
+    BasicString<char, Detail::TempStringAllocator> lossString = LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(losses);
     unsigned short lossBuf[16];
     nlStrToWcs(lossString.c_str(), lossBuf, 16);
 
-    unsigned long locHash = 0x720DF6F9;
-    nlLocalization* loc = g_pLocalization;
-    const unsigned short* locString;
-
-    if (loc->m_LookupTable == 0)
-    {
-        locString = LocalizationTableNotFound;
-    }
-    else
-    {
-        nlLocalization::StringLookup* entry = nlBSearch(locHash, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
-        if (entry != 0)
-        {
-            locString = loc->m_FirstString + entry->StringOffset;
-        }
-        else
-        {
-            locString = MissingLocString;
-        }
-    }
-
-    BasicStringData<unsigned short>* data = (BasicStringData<unsigned short>*)nlMalloc(0x10, 8, true);
-    if (data != 0)
-    {
-        data->mData = 0;
-        data->mSize = 0;
-        data->mCapacity = 0;
-
-        const unsigned short* ptr = locString;
-        while (*ptr++ != 0)
-        {
-            data->mSize++;
-        }
-
-        data->mSize++;
-        data->mData = (unsigned short*)nlMalloc((data->mSize + 1) * 2, 8, true);
-        data->mCapacity = data->mSize;
-
-        int i = 0;
-        int j = i;
-        while (i < data->mSize)
-        {
-            *(unsigned short*)((char*)data->mData + j) = *locString;
-            i++;
-            locString++;
-            j += 2;
-        }
-
-        data->mRefCount = 1;
-    }
-
-    BasicString<unsigned short, Detail::TempStringAllocator> msg(data);
+    BasicString<unsigned short, Detail::TempStringAllocator> msg(LookupCupTrophyLoc(0x720DF6F9));
     BasicString<unsigned short, Detail::TempStringAllocator> formattedResult = Format(msg, lossBuf);
 
     memcpy(mHistoryBuffer, formattedResult.c_str(), 0x100);
@@ -1195,7 +1132,7 @@ void CupTrophyScene::SetHistory(Spoil& spoil)
 
     for (int i = 0; i < 3; i++)
     {
-        int record = i + *(int*)&unk_gap[121];
+        int record = i + mScrollOffset;
         TLSlide* currentSlide = m_pFEScene->m_pFEPackage->GetPresentation()->m_currentSlide;
 
         TLComponentInstance* pComp;
@@ -1274,7 +1211,7 @@ void CupTrophyScene::SetHistory(Spoil& spoil)
         }
         *(unsigned long*)((unsigned char*)pText + 0x90) |= 4;
 
-        if (i == *(int*)&unk_gap[123] && (spoil.mNumRecords == 0 || spoil.mNumRecords > 3))
+        if (i == mRow && (spoil.mNumRecords == 0 || spoil.mNumRecords > 3))
             ((TLInstance*)pText)->SetAssetColour(SPOILS_COLOUR_HIGHLIGHT);
         else
             ((TLInstance*)pText)->SetAssetColour(SPOILS_COLOUR_NORMAL);
@@ -1488,7 +1425,7 @@ void CupTrophyScene::SetHistory(Spoil& spoil)
             (InlineHasher&)h1);
     }
 
-    int currentRecord = *(int*)&unk_gap[123] + *(int*)&unk_gap[121];
+    int currentRecord = mRow + mScrollOffset;
 
     TLImageInstance* pArrowDown;
     {

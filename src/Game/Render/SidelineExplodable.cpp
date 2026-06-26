@@ -1,3 +1,5 @@
+#define BIND_NO_DECL
+#define FUNCTION1_SPLIT_BODIES
 #include "Game/Render/SidelineExplodable.h"
 #include "Game/Render/AnimatedModelExplodable.h"
 #include "Game/Render/StaticModelExplodable.h"
@@ -13,6 +15,8 @@
 #include "NL/nlMath.h"
 #include "NL/nlString.h"
 #include "types.h"
+
+#include "NL/nlBindBody.h"
 
 extern PhysicsWorld* g_PhysicsWorld;
 
@@ -98,6 +102,14 @@ ExplosionFragment::ExplosionFragment()
 // void Function1<void, EmissionController&>::FunctorImpl<BindExp2<void, void (*)(EmissionController&, ExplosionFragment*), Placeholder<0>, ExplosionFragment*> >::~FunctorImpl()
 // {
 // }
+
+typedef BindExp2<void, void (*)(EmissionController&, ExplosionFragment*), Placeholder<0>, ExplosionFragment*> BindExp2_EC_t;
+
+template <>
+inline void Function1<void, EmissionController&>::FunctorImpl<BindExp2_EC_t>::operator()(EmissionController& arg)
+{
+    mBind.mFunction(arg, mBind.mT1);
+}
 
 static void DeactivateExplosionFragment(ExplosionFragment* self)
 {
@@ -209,14 +221,6 @@ void UpdateEmissionControllerPosition(EmissionController& ec, ExplosionFragment*
 void EmissionControllerFinished(EmissionController&, ExplosionFragment* p0)
 {
     p0->mpSmokeEmissionController = NULL;
-}
-
-typedef BindExp2<void, void (*)(EmissionController&, ExplosionFragment*), Placeholder<0>, ExplosionFragment*> BindExp2_EC_t;
-
-template <>
-inline void Function1<void, EmissionController&>::FunctorImpl<BindExp2_EC_t>::operator()(EmissionController& arg)
-{
-    mBind.mFunction(arg, mBind.mT1);
 }
 
 /**
@@ -792,15 +796,6 @@ void SidelineExplodable::Explode()
         pFragment->mpSmokeEmissionController = pSmokeController;
     }
 }
-
-/**
- * Offset/Address/Size: 0x2C24 | 0x8016A0A8 | size: 0x18
- * TODO: 65.83% match - placeholder byte load uses r0 instead of r4, causing
- * sequential load/store instead of interleaved load/load/store/store.
- */
-template BindExp2<void, void (*)(EmissionController&, ExplosionFragment*), Placeholder<0>, ExplosionFragment*>
-Bind<void, void (*)(EmissionController&, ExplosionFragment*), Placeholder<0>, ExplosionFragment*>(
-    void (*fn)(EmissionController&, ExplosionFragment*), const Placeholder<0>& t0, ExplosionFragment* const& t1);
 
 /**
  * Offset/Address/Size: 0xC08 | 0x80167F68 | size: 0x27C

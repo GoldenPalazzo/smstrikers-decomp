@@ -24,26 +24,25 @@ public:
     void SetHistory(Spoil&);
     void ChangeSlides();
 
-    /* 0x1C, */ eTrophyType mTrophy;                  // size 0x4
-    /* 0x20, */ eTrophyType mFirstTrophy;             // size 0x4
-    /* 0x24, */ eTrophyType mLastTrophy;              // size 0x4
-    /* 0x28, */ bool mCreated;                        // size 0x1
-    /* 0x29, */ bool mIsNew;                          // size 0x1
-    /* 0x2A, */ bool mFirstSlideChange;               // size 0x1
-    /* 0x2C, */ unsigned short mFirstWinBuffer[128];  // size 0x100
-    /* 0x12C */ unsigned short mHistoryBuffer[128];   // size 0x100
-    /* 0x22C */ unsigned short mRecordBuffer[3][128]; // size 0x300
-    /* 0x52C */ unsigned short mWonBuffer[128];       // size 0x100
-    /* 0x62C */ int mScrollOffset;                    // size 0x4
-    /* 0x630 */ int mRow;                             // size 0x4
-    /* 0x634 */ AsyncImage* mAsyncTrophy;             // size 0x4
-    /* 0x638 */ bool mDoBlockLoad;                    // size 0x1
-    // TODO: there is a 0x100 offset gap here or before - to be investigated
-    u16 unk_gap[128];                                      // size 0x100
-    /* 0x63C */ ButtonComponent::ButtonState mButtonState; // size 0x4
-    /* 0x640 */ ButtonComponent mButtons;                  // size 0x24
-    /* 0x664 */ ButtonComponent mButtons2;                 // size 0x24
-}; // total size: 0x688
+    /* 0x1C, */ eTrophyType mTrophy;                       // size 0x4
+    /* 0x20, */ eTrophyType mFirstTrophy;                  // size 0x4
+    /* 0x24, */ eTrophyType mLastTrophy;                   // size 0x4
+    /* 0x28, */ bool mCreated;                             // size 0x1
+    /* 0x29, */ bool mIsNew;                               // size 0x1
+    /* 0x2A, */ bool mFirstSlideChange;                    // size 0x1
+    /* 0x02C */ unsigned short mFirstWinBuffer[128];       // size 0x100
+    /* 0x12C */ unsigned short mHistoryBuffer[128];        // size 0x100
+    /* 0x22C */ unsigned short mUnknownBuffer[128];        // size 0x100
+    /* 0x32C */ unsigned short mRecordBuffer[3][128];      // size 0x300
+    /* 0x62C */ unsigned short mWonBuffer[128];            // size 0x100
+    /* 0x72C */ int mScrollOffset;                         // size 0x4
+    /* 0x730 */ int mRow;                                  // size 0x4
+    /* 0x734 */ AsyncImage* mAsyncTrophy;                  // size 0x4
+    /* 0x738 */ bool mDoBlockLoad;                         // size 0x1
+    /* 0x73C */ ButtonComponent::ButtonState mButtonState; // size 0x4
+    /* 0x740 */ ButtonComponent mButtons;                  // size 0x24
+    /* 0x764 */ ButtonComponent mButtons2;                 // size 0x24
+}; // total size: 0x788
 
 // class FEFinder<TLComponentInstance, 4>
 // {

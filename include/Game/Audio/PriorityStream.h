@@ -63,3 +63,40 @@ public:
 }; // total size: 0x7C
 
 #endif // _PRIORITYSTREAM_H_
+
+#ifdef PRIORITYSTREAM_INLINE_BODY
+#ifndef _PRIORITYSTREAM_INLINE_BODY_
+#define _PRIORITYSTREAM_INLINE_BODY_
+
+static inline AudioStreamTrack::StreamTrack& InitPriorityRecord(PriorityStream* stream)
+{
+    AudioStreamTrack::StreamTrack& track = stream->m_Track;
+    stream->m_HasCrowdStream = 0;
+    return track;
+}
+
+static inline AudioStreamTrack::StreamTrack& InitCapChantRecord(PriorityStream* stream)
+{
+    AudioStreamTrack::StreamTrack& track = stream->m_Track;
+    stream->m_PStream.m_OrigStreamId = 0;
+    return track;
+}
+
+static inline void PriorityStreamSetIdleCallback(AudioStreamTrack::StreamTrack* track, const Function0<void>& f0)
+{
+    track->m_IdleCallback = Function<FnVoidVoid>(f0);
+}
+
+inline PriorityStream::PriorityStream(AudioStreamTrack::StreamTrack& track)
+    : m_InPause(false)
+    , m_Track(track)
+    , m_PStream(InitPriorityRecord(this))
+    , m_CapChant(InitCapChantRecord(this))
+{
+    Function0<void> f0(Bind<void>(MemFun<PriorityStream, void>(&PriorityStream::TrackIdleCB), this));
+    AudioStreamTrack::StreamTrack& trackRef = m_Track;
+    PriorityStreamSetIdleCallback(&trackRef, f0);
+}
+
+#endif // _PRIORITYSTREAM_INLINE_BODY_
+#endif // PRIORITYSTREAM_INLINE_BODY

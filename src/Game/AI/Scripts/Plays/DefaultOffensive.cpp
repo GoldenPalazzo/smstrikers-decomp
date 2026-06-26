@@ -486,7 +486,7 @@ FuzzyVariant Fuzzy::DoPassing(float fConfidence, cDecisionEntity* pDecision)
 
 /**
  * Offset/Address/Size: 0x4490 | 0x80090F1C | size: 0x604
- * TODO: 99.25% match - InDangerDelayed and final FuzzyVariant temporary stack slots still differ.
+ * TODO: 99.78% match - false branch min temporaries still use swapped float registers.
  */
 FuzzyVariant Fuzzy::GoodBallCarrier(cFielder* TheFielder)
 {
@@ -540,12 +540,13 @@ FuzzyVariant Fuzzy::GoodBallCarrier(cFielder* TheFielder)
         if (fConfidence > fBestConfidence)
         {
             fBestConfidence = fConfidence;
+            float fNotCloseToNet;
             float fLessWindup = FLESS(fWindupScore, 0.8f);
-            float fNotCloseToNet = 1.0f - CloseToMyNet(g_pScriptCurrentFielder);
-            float fNotInDanger = 1.0f - InDangerDelayed(g_pScriptCurrentFielder).mData.f;
-            fNotCloseToNet = (fNotCloseToNet <= fLessWindup) ? fNotCloseToNet : fLessWindup;
-            fNotInDanger = (fNotCloseToNet <= fNotInDanger) ? fNotCloseToNet : fNotInDanger;
-            bestValue = FuzzyVariant(fNotInDanger);
+            fNotCloseToNet = 1.0f - CloseToMyNet(g_pScriptCurrentFielder);
+            float fNotInDanger;
+            bestValue = FuzzyVariant((fNotInDanger = 1.0f - InDangerDelayed(g_pScriptCurrentFielder).mData.f,
+                fNotCloseToNet = (fLessWindup >= fNotCloseToNet) ? fNotCloseToNet : fLessWindup,
+                fNotInDanger = (fNotCloseToNet <= fNotInDanger) ? fNotCloseToNet : fNotInDanger));
         }
     }
 

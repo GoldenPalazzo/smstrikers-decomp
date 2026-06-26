@@ -696,30 +696,15 @@ static inline eCharacterClass GetGoalieFromCaptain(eCharacterClass captain)
     }
 }
 
-struct PosBlock
-{
-    nlVector3 v[8];
-};
-struct GoaliePosBlock
-{
-    nlVector3 v[2];
-};
-
 /**
  * Offset/Address/Size: 0x3DC | 0x80012C3C | size: 0x51C
- * TODO: 97.39% match - register allocation diffs in both loops, 2 instruction
- * size difference from CSE of comparison values in inner loop
+ * TODO: 98.62% match - register allocation diffs remain in both character creation loops
  */
 void CreateCharacters()
 {
     eCharacterClass captain[2];
     eCharacterClass sidekick[2];
     eCharacterClass goalie[2];
-    PosBlock posBlock;
-    GoaliePosBlock goaliePosBlock;
-    int plrindex;
-    int teami;
-
     captain[0] = ConvertToCharacterClass(nlSingleton<GameInfoManager>::s_pInstance->GetTeam(0));
     captain[1] = ConvertToCharacterClass(nlSingleton<GameInfoManager>::s_pInstance->GetTeam(1));
     sidekick[0] = ConvertToCharacterClass(nlSingleton<GameInfoManager>::s_pInstance->GetSidekick(0));
@@ -772,7 +757,7 @@ void CreateCharacters()
         sidekick[1] = MYSTERY;
     }
 
-    static const PosBlock s_Positions = { {
+    nlVector3 pos[8] = {
         { 1.5f, 1.5f, 0.0f },
         { 1.5f, -1.5f, 0.0f },
         { 1.5f, 0.0f, 0.0f },
@@ -781,23 +766,24 @@ void CreateCharacters()
         { -1.5f, -1.5f, 0.0f },
         { -1.5f, 0.0f, 0.0f },
         { -1.5f, 2.5f, 0.0f },
-    } };
+    };
 
-    static const GoaliePosBlock s_GoaliePositions = { {
+    nlVector3 goaliepos[2] = {
         { 18.0f, 0.0f, 0.0f },
         { -18.0f, 0.0f, 0.0f },
-    } };
-
-    posBlock = s_Positions;
-    goaliePosBlock = s_GoaliePositions;
+    };
 
     SebringAnimTagScriptInterpreter* pInterp = new (nlMalloc(sizeof(SebringAnimTagScriptInterpreter), 8, false)) SebringAnimTagScriptInterpreter();
 
     g_pAnimScriptInterp = pInterp;
 
-    for (teami = 0; teami < 2; teami++)
+    eCharacterClass captain1 = captain[1];
+    eCharacterClass captain0 = captain[0];
+
+    for (int teami = 0; teami < 2; teami++)
     {
-        if (captain[0] > captain[1])
+        int plrindex;
+        if (captain0 > captain1)
         {
             plrindex = !teami;
         }
@@ -808,22 +794,26 @@ void CreateCharacters()
 
         int idx = plrindex * 4;
         g_pCharacters[idx] = CreateCharacter(0, plrindex, captain[plrindex], false);
-        g_pCharacters[idx]->SetPosition(posBlock.v[idx]);
+        g_pCharacters[idx]->SetPosition(pos[idx]);
         ((Audio::cCharacterSFX*)g_pCharacters[idx]->m_pCharacterSFX)->mGroup = idx;
 
         g_pTeams[plrindex]->SetPlayer((cPlayer*)g_pCharacters[idx], 0);
         ((cPlayer*)g_pCharacters[idx])->m_pTeam = g_pTeams[plrindex];
 
         g_pCharacters[plrindex + 8] = CreateGoalie(goalie[plrindex], false);
-        g_pCharacters[plrindex + 8]->SetPosition(goaliePosBlock.v[plrindex]);
+        g_pCharacters[plrindex + 8]->SetPosition(goaliepos[plrindex]);
 
         g_pTeams[plrindex]->SetGoalie((Goalie*)g_pCharacters[plrindex + 8]);
         ((cPlayer*)g_pCharacters[plrindex + 8])->m_pTeam = g_pTeams[plrindex];
     }
 
-    for (teami = 0; teami < 2; teami++)
+    eCharacterClass sidekick0 = sidekick[0];
+    eCharacterClass sidekick1 = sidekick[1];
+
+    for (int teami = 0; teami < 2; teami++)
     {
-        if (sidekick[0] > sidekick[1])
+        int plrindex;
+        if (sidekick0 > sidekick1)
         {
             plrindex = !teami;
         }
@@ -836,7 +826,7 @@ void CreateCharacters()
         volatile eCharacterClass* vpSidekick = sidekick;
         volatile eCharacterClass* vpCaptain = captain;
         cCharacter** pChar = &g_pCharacters[charIdx];
-        nlVector3* pPos = &posBlock.v[charIdx];
+        nlVector3* pPos = &pos[charIdx];
 
         for (int index = 1; index < 4; index++)
         {

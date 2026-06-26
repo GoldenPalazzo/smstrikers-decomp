@@ -39,11 +39,10 @@ NetMeshModelLoader::~NetMeshModelLoader()
 
 /**
  * Offset/Address/Size: 0xE78 | 0x80130FD0 | size: 0x450
+ * TODO: 99.53% match - outer packet loop still swaps packet pointer and packet offset registers.
  */
 void NetMeshModelLoader::LoadGeometryFromModel()
 {
-    extern void* nlMalloc(unsigned long, unsigned int, bool);
-
     m_EdgeList = new (nlMalloc(sizeof(EdgeTree), 8, false)) EdgeTree(0x10, 0x10);
     m_VertexList = new (nlMalloc(sizeof(VertexTree), 8, false)) VertexTree(0x10, 0x10);
 
@@ -99,14 +98,14 @@ void NetMeshModelLoader::LoadGeometryFromModel()
             {
                 u16 ns = ((u16*)&pList->indices)[0];
                 s32 stride = ns * 2;
-                s32 offset = stride * i;
+                s32 offset = i * stride;
                 u8* ptr8 = (u8*)pList->list;
                 ptr8 += offset;
                 ptr = (u16*)ptr8;
                 ptr = (u16*)((u8*)ptr + 3);
             }
 
-            u16 idx = *ptr;
+            s32 idx = *ptr;
             if (idx > maxVertex)
             {
                 maxVertex = idx;

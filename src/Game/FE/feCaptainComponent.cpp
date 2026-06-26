@@ -1595,9 +1595,6 @@ void IChooseCaptain::SceneCreated(FEPresentation* presentation)
 
 /**
  * Offset/Address/Size: 0x890 | 0x800BE22C | size: 0x220
- * TODO: 96.7% match - remaining diffs are prologue r23/r31 register allocation and
- * float register ordering in the slide-duration setup path.
- * File uses -inline deferred but decomp.me tests with -inline auto.
  */
 void IChooseCaptain::SetupCaptainComponent(TLComponentInstance* compinstance, int homeaway)
 {
@@ -1618,114 +1615,17 @@ void IChooseCaptain::SetupCaptainComponent(TLComponentInstance* compinstance, in
     TLSlide* slide = compinstance->GetActiveSlide();
     mCaptainSlideDurations[homeaway] = (slide->m_start + slide->m_duration) / 2.0f;
 
-    {
-        InlineHasher* p1 = (InlineHasher*)&h1;
-        InlineHasher* p3 = (InlineHasher*)&h3;
-        InlineHasher* p5 = (InlineHasher*)&h5;
-        InlineHasher* p7 = (InlineHasher*)&h7;
-        InlineHasher* p9 = (InlineHasher*)&h9;
+    mAsyncImage[homeaway][0]->mImageInstance = FEFinder<TLImageInstance, 2>::Find<TLSlide>(
+        compinstance->GetActiveSlide(),
+        InlineHasher(nlStringLowerHash((homeaway == 0) ? "CAPT_L" : "CAPT_R")));
 
-        h0.m_Hash = 0;
-        h2.m_Hash = 0;
-        h4.m_Hash = 0;
-        h6.m_Hash = 0;
-        h1.m_Hash = 0;
-        h3.m_Hash = 0;
-        h5.m_Hash = 0;
-        h7.m_Hash = 0;
-        h8.m_Hash = 0;
-        h9.m_Hash = 0;
+    mAsyncImage[homeaway][1]->mImageInstance = FEFinder<TLImageInstance, 2>::Find<TLSlide>(
+        compinstance->GetActiveSlide(),
+        InlineHasher(nlStringLowerHash((homeaway == 0) ? "CAPT_L_OUT" : "CAPT_R_OUT")));
 
-        const char* name = (homeaway == 0) ? "CAPT_L" : "CAPT_R";
-
-        unsigned long hash = nlStringLowerHash(name);
-        hA.m_Hash = hash;
-        hB.m_Hash = hash;
-
-        findImage.byValue = FEFinder<TLImageInstance, 2>::Find<TLSlide>;
-        mAsyncImage[homeaway][0]->mImageInstance = findImage.byRef(
-            compinstance->GetActiveSlide(),
-            *(InlineHasher*)&hB,
-            *p9,
-            *p7,
-            *p5,
-            *p3,
-            *p1);
-    }
-
-    {
-        volatile InlineHasher nB, nA, n8, n6, n4, n2, n0;
-
-        InlineHasher* p1 = (InlineHasher*)&h1;
-        InlineHasher* p3 = (InlineHasher*)&h3;
-        InlineHasher* p5 = (InlineHasher*)&h5;
-        InlineHasher* p7 = (InlineHasher*)&h7;
-        InlineHasher* p9 = (InlineHasher*)&h9;
-
-        n0.m_Hash = 0;
-        n2.m_Hash = 0;
-        h1.m_Hash = 0;
-        h3.m_Hash = 0;
-        n4.m_Hash = 0;
-        h5.m_Hash = 0;
-        n6.m_Hash = 0;
-        h7.m_Hash = 0;
-        n8.m_Hash = 0;
-        h9.m_Hash = 0;
-
-        const char* name = (homeaway == 0) ? "CAPT_L_OUT" : "CAPT_R_OUT";
-
-        unsigned long hash = nlStringLowerHash(name);
-        nA.m_Hash = hash;
-        nB.m_Hash = hash;
-
-        findImage.byValue = FEFinder<TLImageInstance, 2>::Find<TLSlide>;
-        mAsyncImage[homeaway][1]->mImageInstance = findImage.byRef(
-            compinstance->GetActiveSlide(),
-            *(InlineHasher*)&nB,
-            *p9,
-            *p7,
-            *p5,
-            *p3,
-            *p1);
-    }
-
-    {
-        volatile InlineHasher mB, mA, m8, m6, m4, m2, m0;
-
-        InlineHasher* p1 = (InlineHasher*)&h1;
-        InlineHasher* p3 = (InlineHasher*)&h3;
-        InlineHasher* p5 = (InlineHasher*)&h5;
-        InlineHasher* p7 = (InlineHasher*)&h7;
-        InlineHasher* p9 = (InlineHasher*)&h9;
-
-        m0.m_Hash = 0;
-        h1.m_Hash = 0;
-        m2.m_Hash = 0;
-        h3.m_Hash = 0;
-        m4.m_Hash = 0;
-        h5.m_Hash = 0;
-        m6.m_Hash = 0;
-        h7.m_Hash = 0;
-        m8.m_Hash = 0;
-        h9.m_Hash = 0;
-
-        const char* name = (homeaway == 0) ? "CAPT_L_WHITE" : "CAPT_R_WHITE";
-
-        unsigned long hash = nlStringLowerHash(name);
-        mA.m_Hash = hash;
-        mB.m_Hash = hash;
-
-        findImage.byValue = FEFinder<TLImageInstance, 2>::Find<TLSlide>;
-        mAsyncImage[homeaway][2]->mImageInstance = findImage.byRef(
-            compinstance->GetActiveSlide(),
-            *(InlineHasher*)&mB,
-            *p9,
-            *p7,
-            *p5,
-            *p3,
-            *p1);
-    }
+    mAsyncImage[homeaway][2]->mImageInstance = FEFinder<TLImageInstance, 2>::Find<TLSlide>(
+        compinstance->GetActiveSlide(),
+        InlineHasher(nlStringLowerHash((homeaway == 0) ? "CAPT_L_WHITE" : "CAPT_R_WHITE")));
 }
 
 /**

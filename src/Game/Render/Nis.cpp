@@ -1,3 +1,5 @@
+#define BIND_NO_DECL
+#define FUNCTION1_SPLIT_BODIES
 #include "Game/Render/Nis.h"
 #include "Game/ReplayManager.h"
 #include "Game/NisPlayer.h"
@@ -16,6 +18,8 @@
 #include "NL/nlFormat.h"
 
 #include "types.h"
+
+#include "NL/nlBindBody.h"
 
 struct NISData : public EventData
 {

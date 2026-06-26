@@ -225,36 +225,41 @@ bool BasicStadium::DoInitialize()
     pObject = FindDrawableObject(nlStringLowerHash("gameplay/star"));
     pObject->m_uObjectFlags &= 0xFFFFFFFE;
 
-    glModelPacket* pPacket;
-    int counter = 1;
-    u8 keepLooking = 1;
-    glModel* pGlModel;
-    while (keepLooking)
+    u32 hash;
+
     {
-        char szTemp1[256];
-        char szTemp2[256];
-        nlSNPrintf(szTemp1, 0x100, "/InvisiblePoly0%d", counter);
-        nlStrNCat<char>(szTemp2, m_szBaseName, szTemp1, 0x100);
-        pObject = FindDrawableObject(nlStringLowerHash(szTemp2));
-        if (pObject != NULL)
+        int counter = 1;
+        u8 keepLooking = 1;
+        DrawableModel* model;
+        glModel* pGlModel;
+        glModelPacket* pPacket;
+        while (keepLooking)
         {
-            DrawableModel* model = pObject->AsDrawableModel();
-            pGlModel = model->m_pModel;
-            for (pPacket = pGlModel->packets; pPacket < pGlModel->packets + pGlModel->numPackets; pPacket++)
+            char szTemp1[256];
+            char szTemp2[256];
+            nlSNPrintf(szTemp1, 0x100, "/InvisiblePoly0%d", counter);
+            nlStrNCat<char>(szTemp2, m_szBaseName, szTemp1, 0x100);
+            pObject = FindDrawableObject(nlStringLowerHash(szTemp2));
+            if (pObject != NULL)
             {
-                glSetRasterState(pPacket->state.raster, GLS_DepthWrite, 1);
-                glSetRasterState(pPacket->state.raster, GLS_AlphaTest, 0);
-                glSetRasterState(pPacket->state.raster, GLS_AlphaBlend, 1);
+                model = pObject->AsDrawableModel();
+                pGlModel = model->m_pModel;
+                for (pPacket = pGlModel->packets; pPacket < pGlModel->packets + pGlModel->numPackets; pPacket++)
+                {
+                    glSetRasterState(pPacket->state.raster, GLS_DepthWrite, 1);
+                    glSetRasterState(pPacket->state.raster, GLS_AlphaTest, 0);
+                    glSetRasterState(pPacket->state.raster, GLS_AlphaBlend, 1);
+                }
+                counter += 1;
             }
-            counter += 1;
-        }
-        else
-        {
-            keepLooking = 0;
+            else
+            {
+                keepLooking = 0;
+            }
         }
     }
 
-    u32 hash = nlStringLowerHash("gameplay/ball");
+    hash = nlStringLowerHash("gameplay/ball");
     pObject = FindDrawableObject(hash);
     if (pObject != NULL)
     {
@@ -922,9 +927,10 @@ bool BasicStadium::DoInitialize()
         if (pData != NULL)
         {
             u32* pCur = pData;
+            unsigned long j;
             u32 uFlags = eOC_OPTIMIZE_OUT_FROM_GAMEPLAY;
             fileSize = fileSize >> 2;
-            for (unsigned long j = 0; j < fileSize; j++)
+            for (j = 0; j < fileSize; j++)
             {
                 DrawableObject* pObj = FindDrawableObject(*pCur);
                 if (pObj != NULL)

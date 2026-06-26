@@ -48,7 +48,7 @@ void Variant_stub()
 
 /**
  * Offset/Address/Size: 0x1E4C | 0x800690A4 | size: 0xD74
- * TODO: 98.96% match - remaining add-order and erase/insert register allocation differences.
+ * TODO: 99.13% match - remaining copy-on-write temp register swaps around insert.
  */
 template <>
 template <>
@@ -82,7 +82,18 @@ FormatImpl<BasicString<char, Detail::TempStringAllocator> >&
         eraseEnd = (mString.m_data ? mString.m_data->mData : (char*)0) + i + 3;
         mString[0];
         eraseBegin = (mString.m_data ? mString.m_data->mData : (char*)0) + i;
-        mString.erase(eraseBegin, eraseEnd);
+        mString[0];
+        BasicStringData<char>* eraseData = mString.m_data;
+        int eraseSize = eraseEnd - eraseBegin;
+        const char* eraseIt = eraseEnd;
+        char* eraseAt = eraseData->mData + (eraseBegin - eraseData->mData);
+        while (eraseIt != eraseData->mData + eraseData->mSize)
+        {
+            *eraseAt = *eraseIt;
+            eraseIt++;
+            eraseAt++;
+        }
+        eraseData->mSize -= eraseSize;
         mString[i];
         char* mStringData = mString.m_data ? mString.m_data->mData : 0;
         insert[0];
@@ -104,7 +115,7 @@ FormatImpl<BasicString<char, Detail::TempStringAllocator> >&
 
 /**
  * Offset/Address/Size: 0xFC4 | 0x8006821C | size: 0xD74
- * TODO: 98.86% match - remaining copy-on-write temp registers and branch offsets around erase/insert.
+ * TODO: 98.96% match - remaining erase/insert register swaps and insert pointer branch offsets.
  */
 template <>
 template <>
@@ -132,10 +143,12 @@ FormatImpl<BasicString<char, Detail::TempStringAllocator> >&
         if (markerEnd[2] != '}')
             continue;
 
+        char* eraseBegin;
+        char* eraseEnd;
         mString[0];
-        char* eraseEnd = (mString.m_data ? mString.m_data->mData : (char*)0) + i + 3;
+        eraseEnd = (mString.m_data ? mString.m_data->mData : (char*)0) + i + 3;
         mString[0];
-        char* eraseBegin = (mString.m_data ? mString.m_data->mData : (char*)0) + i;
+        eraseBegin = (mString.m_data ? mString.m_data->mData : (char*)0) + i;
         mString.erase(eraseBegin, eraseEnd);
         mString[i];
         char* mStringData = mString.m_data ? mString.m_data->mData : 0;

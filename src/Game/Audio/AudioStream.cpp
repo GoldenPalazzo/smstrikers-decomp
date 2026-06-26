@@ -1,4 +1,6 @@
+#define MEMFUN_NO_DECL
 #define BIND_NO_DECL
+#define FUNCTION0_SPLIT_BODIES
 #include "Game/Audio/AudioStream.h"
 #include "Game/Sys/PlatStream.h"
 #include "Game/Audio/AudioLoader.h"
@@ -10,137 +12,28 @@
 #include "NL/nlMath.h"
 #include "Game/GameInfo.h"
 #include "Game/Team.h"
+#include "Game/Player.h"
 #include <stdlib.h>
 
 #include "Game/FE/feHelpFuncs.h"
 
+#include "NL/nlBindBody.h"
 #include "NL/nlMemFunBody.h"
 
-template <typename R, typename F, typename A>
-BindExp1<R, F, A> Bind(F fn, const A& arg)
-{
-    return BindExp1<R, F, A>(fn, arg);
-}
+#define PRIORITYSTREAM_INLINE_BODY
+#include "Game/Audio/PriorityStream.h"
+#undef PRIORITYSTREAM_INLINE_BODY
 
 extern cTeam* g_pTeams[2];
 extern unsigned int nlDefaultSeed;
 
-// namespace AudioStreamTrack
-// {
-
-// class TrackManagerBase
-// {
-// public:
-//     virtual ~TrackManagerBase();
-//     virtual void StopAllTracks(unsigned long);
-
-//     // StreamFileLookup m_FileLookup;       // offset 0x4, size 0x14
-//     // FadeManager m_FadeMgr;               // offset 0x18, size 0x20
-//     // SlotPool m_StreamPool;               // offset 0x38, size 0x18
-//     // nlDLListSlotPool m_StreamDeleteList; // offset 0x50, size 0x1C
-// };
-
-// } // namespace AudioStreamTrack
-
-extern AudioStreamTrack::TrackManagerBase* g_pTrackManager;
-extern PriorityStream* g_pPriorityStream;
-
-// Structure for last scorer info
-struct LastScorerInfo
-{
-    /* 0x00 */ void* unk_0x0;
-    /* 0x04 */ u32 scorerID;
-};
+AudioStreamTrack::TrackManagerBase* g_pTrackManager;
+PriorityStream* g_pPriorityStream;
 
 namespace Audio
 {
-extern LastScorerInfo* g_pLastScorer;
+extern cPlayer* g_pLastScorer;
 } // namespace Audio
-
-// Team name strings
-static const char* s_TeamNames[] = {
-    "Daisy",      // TEAM_DAISY = 0
-    "DonkeyKong", // TEAM_DONKEYKONG = 1
-    "Luigi",      // TEAM_LUIGI = 2
-    "Mario",      // TEAM_MARIO = 3
-    "Peach",      // TEAM_PEACH = 4
-    "Waluigi",    // TEAM_WALUIGI = 5
-    "Wario",      // TEAM_WARIO = 6
-    "Yoshi",      // TEAM_YOSHI = 7
-    "Mystery"     // TEAM_MYSTERY = 8
-};
-
-// static const char* GetTeamNameString(eTeamID team)
-// {
-//     if (team >= 0 && team < NUM_TEAMS)
-//     {
-//         return s_TeamNames[team];
-//     }
-//     return "Unknown";
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x8014C388 | size: 0x1C
-//  */
-// void MemFun<PriorityStream, void>(void (PriorityStream::*)())
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x8014C350 | size: 0x38
-//  */
-// void Bind<void, Detail::MemFunImpl<void, void (PriorityStream::*)()>, PriorityStream*>(Detail::MemFunImpl<void, void (PriorityStream::*)()>, PriorityStream* const&)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x8014C25C | size: 0x5C
-//  */
-// void Function0<void>::FunctorImpl<BindExp1<void, Detail::MemFunImpl<void, void (PriorityStream::*)()>, PriorityStream*> >::~FunctorImpl()
-// {
-// }
-
-static inline void SetIdleCallback(AudioStreamTrack::StreamTrack* track, const Function0<void>& f0)
-{
-    track->m_IdleCallback = Function<FnVoidVoid>(f0);
-}
-
-/**
- * Offset/Address/Size: 0x0 | 0x8014BFE8 | size: 0x274
- * TODO: 98.51% match - m_Track load scheduling and m_OrigStreamId/m_CapChant store order
- */
-PriorityStream::PriorityStream(AudioStreamTrack::StreamTrack& track)
-    : m_InPause(false)
-    , m_Track(track)
-    , m_HasCrowdStream(0)
-    , m_PStream(m_Track)
-    , m_CapChant(m_Track)
-{
-    m_PStream.m_OrigStreamId = 0;
-    Function0<void> f0(Bind<void>(MemFun<PriorityStream, void>(&PriorityStream::TrackIdleCB), this));
-    AudioStreamTrack::StreamTrack& trackRef = m_Track;
-    SetIdleCallback(&trackRef, f0);
-}
-
-/**
- * Offset/Address/Size: 0xE4 | 0x8014BFB8 | size: 0x30
- */
-template <>
-void Function0<void>::FunctorImpl<BindExp1<void, Detail::MemFunImpl<void, void (PriorityStream::*)()>, PriorityStream*> >::operator()()
-{
-    (mBind.mArg->*mBind.mFuncPtr.mMemFun)();
-}
-
-/**
- * Offset/Address/Size: 0x6C | 0x8014BF40 | size: 0x78
- * Construct from mBind (target has no __ct copy-ctor).
- */
-template <>
-Function0<void>::FunctorBase*
-Function0<void>::FunctorImpl<BindExp1<void, Detail::MemFunImpl<void, void (PriorityStream::*)()>, PriorityStream*> >::Clone() const
-{
-    return new (nlMalloc(sizeof(FunctorImpl), 8, false)) FunctorImpl(mBind);
-}
 
 /**
  * Offset/Address/Size: 0x69C | 0x8014BEB4 | size: 0x20
@@ -160,34 +53,6 @@ void Audio::StopStreaming()
         g_pTrackManager->StopAllTracks(0);
     }
 }
-
-// Stadium name strings (based on WorldLoader)
-static const char* s_StadiumNames[] = {
-    "Mario_Stadium", // 0
-    "The_Palace",    // 1
-    "DK_Daisy",      // 2
-    "Wario_Stadium", // 3
-    "Yoshi_Stadium", // 4
-    "Super_Stadium", // 5
-    "Forbidden_Dome" // 6
-};
-
-// Scorer name strings (character names)
-static const char* s_ScorerNames[] = {
-    "Mario",      // 0
-    "Luigi",      // 1
-    "Peach",      // 2
-    "Daisy",      // 3
-    "Yoshi",      // 4
-    "DonkeyKong", // 5
-    "Wario",      // 6
-    "Waluigi",    // 7
-    "Bowser",     // 8
-    "Toad",       // 9
-    "Koopa",      // 10
-    "ShyGuy",     // 11
-    "Birdo"       // 12
-};
 
 /**
  * Offset/Address/Size: 0x2EC | 0x8014BB04 | size: 0x370
@@ -241,7 +106,7 @@ bool Audio::TrackMgrFileNameParamLookup(const char* param, char* out, unsigned l
         break;
 
     case (s32)0xAEDB83D0:
-        switch (Audio::g_pLastScorer->scorerID)
+        switch (Audio::g_pLastScorer->m_eCharacterClass)
         {
         case 0:
         case 3:
@@ -301,11 +166,7 @@ bool Audio::TrackMgrFileNameParamLookup(const char* param, char* out, unsigned l
         if (nlStrNICmp<char>(param, "RAND", 4) == 0)
         {
             u32 num = atoi(param + 4);
-            const char* format = "%02d";
-            if (num < 10)
-            {
-                format = "%d";
-            }
+            const char* format = num < 10 ? "%d" : "%02d";
             nlSNPrintf(out, size, format, nlRandom(num, &nlDefaultSeed) + 1);
             break;
         }
@@ -322,8 +183,7 @@ bool Audio::TrackMgrFileNameParamLookup(const char* param, char* out, unsigned l
  */
 void Audio::CreatePriorityStreams()
 {
-    PriorityStream* stream = (PriorityStream*)nlMalloc(0x78, 8, false);
-    stream = new (stream) PriorityStream(g_pTrackManager->CreateTrack("Priority", MasterVolume::VG_Special));
+    PriorityStream* stream = new (nlMalloc(0x78, 8, false)) PriorityStream(g_pTrackManager->CreateTrack("Priority", MasterVolume::VG_Special));
     g_pPriorityStream = stream;
 }
 
@@ -339,7 +199,7 @@ void Audio::DestroyPriorityStreams()
         {
             Function0<void> f0;
             f0.mTag = EMPTY;
-            SetIdleCallback(&track, f0);
+            PriorityStreamSetIdleCallback(&track, f0);
         }
         delete ps;
     }

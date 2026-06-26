@@ -701,11 +701,13 @@ u8 PowerupCreateAndThrow(cFielder* pThrower, ePowerUpType eType, int nnumOfPower
                     Banana::m_BananaSlotPool.m_FreeList = Banana::m_BananaSlotPool.m_FreeList->m_next;
                 }
 
-                if (pBanana != NULL)
+                if (pBanana == NULL)
                 {
-                    new (pBanana) PowerupBase(pTarget, POWER_UP_BANANA, fBananaRadius, eSize, bExplode, j);
-                    *(void**)pBanana = __vt__6Banana;
+                    break;
                 }
+
+                new (pBanana) PowerupBase(pTarget, POWER_UP_BANANA, fBananaRadius, eSize, bExplode, j);
+                *(void**)pBanana = __vt__6Banana;
 
                 pPowerup = pBanana;
                 break;
@@ -3546,8 +3548,8 @@ void Bobomb::Update(float dt)
 
 /**
  * Offset/Address/Size: 0x80 | 0x8005A96C | size: 0x3A8
- * TODO: 99.89% match - 4 register diffs at 0x29c-0x2b0: frsp dest register f0 vs f1,
- *       cascading to maxZSpeed load/compare/store registers. MWCC ternary compiler state artifact.
+ * TODO: 99.91% match - 4 register diffs at 0x264, 0x284, 0x288, and 0x2A0:
+ *       g_pGame and m_pPhysicsObject loads use r4/r3 in the opposite order.
  */
 void Bobomb::ThrowAt(cFielder*, Bowser*)
 {
@@ -3651,9 +3653,11 @@ skip_anticipation:
         v3BobombVelocity.f.y = (targetY - m_v3Position.f.y) / t;
         v3BobombVelocity.f.z = -(t * (0.5f * m_pPhysicsObject->m_gravity));
 
-        if (v3BobombVelocity.f.z > g_pGame->m_pGameTweaks->fBobombMaxZSpeed)
+        cGame* game = g_pGame;
+
+        if (v3BobombVelocity.f.z > game->m_pGameTweaks->fBobombMaxZSpeed)
         {
-            v3BobombVelocity.f.z = g_pGame->m_pGameTweaks->fBobombMaxZSpeed;
+            v3BobombVelocity.f.z = game->m_pGameTweaks->fBobombMaxZSpeed;
         }
 
         m_v3Velocity = v3BobombVelocity;

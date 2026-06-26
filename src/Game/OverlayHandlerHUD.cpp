@@ -81,6 +81,24 @@ extern cWorldSFX gWorldSFX;
 
 extern int nlSNPrintf(char*, unsigned long, const char*, ...);
 
+static inline const unsigned short* LookupLocHash(unsigned long key)
+{
+    nlLocalization* loc = (nlLocalization*)g_pLocalization;
+    if (loc->m_LookupTable == 0)
+    {
+        return LocalizationTableNotFound;
+    }
+
+    nlLocalization::StringLookup* entry = nlBSearch<nlLocalization::StringLookup, unsigned long>(
+        key, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
+    if (entry)
+    {
+        return loc->m_FirstString + entry->StringOffset;
+    }
+
+    return MissingLocString;
+}
+
 static unsigned char g_hudVisible = 1;
 static char* LEFT_POWER_UP_IMAGE_NAMES[2] = {
     "left_powerup1",
@@ -354,7 +372,6 @@ void HUDOverlay::Update(float fDeltaT)
         unsigned short minutesWideString[8];
         unsigned short secondsWideString[8];
         const unsigned short* formatLocString;
-        nlLocalization* loc;
 
         if (mMinutes == 0 && fRemainingTime < 30.0f && !isOvertime)
         {
@@ -364,24 +381,7 @@ void HUDOverlay::Update(float fDeltaT)
             nlStrToWcs(minutesString, minutesWideString, 8);
             nlStrToWcs(secondsString, secondsWideString, 8);
 
-            unsigned long key = 0xA1D5611D;
-            loc = (nlLocalization*)g_pLocalization;
-            if (loc->m_LookupTable == 0)
-            {
-                formatLocString = LocalizationTableNotFound;
-            }
-            else
-            {
-                nlLocalization::StringLookup* entry = nlBSearch<nlLocalization::StringLookup, unsigned long>(key, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
-                if (entry)
-                {
-                    formatLocString = loc->m_FirstString + entry->StringOffset;
-                }
-                else
-                {
-                    formatLocString = MissingLocString;
-                }
-            }
+            formatLocString = LookupLocHash(0xA1D5611D);
 
             unformatted = WideString(formatLocString);
             formatted = Format(unformatted, minutesWideString, secondsWideString);
@@ -402,24 +402,7 @@ void HUDOverlay::Update(float fDeltaT)
             nlStrToWcs(minutesString, minutesWideString, 8);
             nlStrToWcs(secondsString, secondsWideString, 8);
 
-            unsigned long key = 0x04E76F8B;
-            loc = (nlLocalization*)g_pLocalization;
-            if (loc->m_LookupTable == 0)
-            {
-                formatLocString = LocalizationTableNotFound;
-            }
-            else
-            {
-                nlLocalization::StringLookup* entry = nlBSearch<nlLocalization::StringLookup, unsigned long>(key, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
-                if (entry)
-                {
-                    formatLocString = loc->m_FirstString + entry->StringOffset;
-                }
-                else
-                {
-                    formatLocString = MissingLocString;
-                }
-            }
+            formatLocString = LookupLocHash(0x04E76F8B);
 
             unformatted = WideString(formatLocString);
             formatted = Format(unformatted, minutesWideString, secondsWideString);
@@ -838,16 +821,14 @@ void HUDOverlay::SetTeamIcons()
     mAsyncImage[0] = pImage;
     mAsyncImage[0]->mImageInstance = FEFinder<TLImageInstance, 2>::Find<TLSlide>(
         pCompLeft->GetActiveSlide(),
-        InlineHasher(nlStringLowerHash("CAPTAIN_ICONS_MARIO")),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("CAPTAIN_ICONS_MARIO")));
 
     pImage = (AsyncImage*)nlMalloc(sizeof(AsyncImage), 8, false);
     pImage = new (pImage) AsyncImage(filename, 0);
     mAsyncImage[1] = pImage;
     mAsyncImage[1]->mImageInstance = FEFinder<TLImageInstance, 2>::Find<TLSlide>(
         pCompRight->GetActiveSlide(),
-        InlineHasher(nlStringLowerHash("CAPTAIN_ICONS_DK_r")),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("CAPTAIN_ICONS_DK_r")));
 
     NLString iconfilename[2];
 

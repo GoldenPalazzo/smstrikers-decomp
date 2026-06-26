@@ -16,10 +16,6 @@ typedef Detail::MemFunImpl<void, void (TournTeamSetupSceneV2::*)(int)> MemFunImp
 typedef BindExp2<void, MemFunImpl_Tourn_t, TournTeamSetupSceneV2*, int> BindExp2_Tourn_t;
 typedef Function1<void, TLComponentInstance*>::FunctorImpl<BindExp2_Tourn_t> FunctorImpl_Tourn_t;
 
-#define F1BODY_RET   void
-#define F1BODY_PARAM TLComponentInstance*
-#define F1BODY_BIND  BindExp2_Tourn_t
-#include "NL/nlFunction1Body.h"
 #include "NL/nlMemFunBody.h"
 #include "NL/nlBindBody.h"
 
@@ -169,13 +165,15 @@ void TournTeamSetupSceneV2::SceneCreated()
 
     for (int i = 0; i < 4; i++)
     {
+        MenuItem<TLComponentInstance>* menuItem;
         char menuname[64];
         nlSNPrintf(menuname, 64, "MENU ITEM%d", i + 1);
 
-        TLComponentInstance* compinstance = (TLComponentInstance*)FEFinder<TLInstance, 4>::Find<TLSlide>(
+        TLInstance* instance = FEFinder<TLInstance, 4>::Find<TLSlide>(
             presentation->m_currentSlide,
             InlineHasher(nlStringLowerHash("Layer")),
             InlineHasher(nlStringLowerHash(menuname)));
+        TLComponentInstance* compinstance = (TLComponentInstance*)instance;
 
         if (i < mTournInfo.m_numTeams)
         {
@@ -184,7 +182,7 @@ void TournTeamSetupSceneV2::SceneCreated()
 
             if (mCurrentState == STATE_SCROLLING)
             {
-                MenuItem<TLComponentInstance>* menuItem = &mMenuItems.mMenuItems[mMenuItems.mNumItemsAdded];
+                menuItem = &mMenuItems.mMenuItems[mMenuItems.mNumItemsAdded];
                 menuItem->mType = compinstance;
                 mMenuItems.mNumItemsAdded++;
 

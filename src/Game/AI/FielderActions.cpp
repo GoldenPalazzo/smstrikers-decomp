@@ -3234,8 +3234,8 @@ static float FindSTSDistanceAffectedPercentage(cFielder* pFielder, float fMinAmo
  */
 /**
  * Offset/Address/Size: 0x16D0 | 0x80028308 | size: 0x1480
- * TODO: 98.44% match - remaining f0/f1 swaps in meter timing comparisons and
- * r26/r30 swaps in camera/effect string setup
+ * TODO: 98.94% match - remaining f0/f1 swap in green-region clamp,
+ * camera-stack filter access shape, and camera/effect string register allocation
  */
 void cFielder::ActionShootToScore(float)
 {
@@ -3357,38 +3357,32 @@ void cFielder::ActionShootToScore(float)
 
     if (S2SShootWasPressed())
     {
-        if (mActionShootToScoreVars.fFrameButtonDownTime1 < 0.0f)
+        float fDiff;
+        float fSweetSpotOffset;
+        float fMeterPos;
+        if (mActionShootToScoreVars.fFrameButtonDownTime1 < 0.0f && (fMeterPos = mActionShootToScoreVars.fMeterFractionTime) > g_pGame->m_pGameTweaks->unk298)
         {
-            float fDiff;
-            float fGreenWidth;
-            float fSweetSpotOffset;
-            float fMeterPos = mActionShootToScoreVars.fMeterFractionTime;
-            if (fMeterPos > g_pGame->m_pGameTweaks->unk298)
+            fSweetSpotOffset = g_pGame->m_pGameTweaks->unk294;
+            fDiff = fSweetSpotOffset - fMeterPos;
+            fDiff = fabs(fDiff);
+            fDiff = (float)fDiff;
+
+            if (fDiff < g_pGame->m_pGameTweaks->unk29C)
             {
-                fSweetSpotOffset = g_pGame->m_pGameTweaks->unk294;
-                fGreenWidth = g_pGame->m_pGameTweaks->unk29C;
-                fDiff = fSweetSpotOffset - fMeterPos;
-                fDiff = fabs(fDiff);
-                fDiff = (float)fDiff;
-
-                if (fDiff < fGreenWidth)
-                {
-                    mActionShootToScoreVars.fFrameButtonDownTime1 = fSweetSpotOffset;
-                    BeginRumbleAction((eRumbleActionPreset)3, GetGlobalPad());
-                    ShootToScoreMeter::instance.meHyper = STS_POSSIBLE_HYPER;
-                }
-                else
-                {
-                    mActionShootToScoreVars.fFrameButtonDownTime1 = fMeterPos;
-                    BeginRumbleAction((eRumbleActionPreset)0, GetGlobalPad());
-                }
-
-                Play3DSFX(Audio::eCharSFX(0x15), VECTORS, 100.0f);
+                mActionShootToScoreVars.fFrameButtonDownTime1 = fSweetSpotOffset;
+                BeginRumbleAction((eRumbleActionPreset)3, GetGlobalPad());
+                ShootToScoreMeter::instance.meHyper = STS_POSSIBLE_HYPER;
             }
+            else
+            {
+                mActionShootToScoreVars.fFrameButtonDownTime1 = fMeterPos;
+                BeginRumbleAction((eRumbleActionPreset)0, GetGlobalPad());
+            }
+
+            Play3DSFX(Audio::eCharSFX(0x15), VECTORS, 100.0f);
         }
         else if (mActionShootToScoreVars.fFrameButtonDownTime2 < 0.0f)
         {
-            float fYellowWidth;
             float fCenter;
             float fDiffFromCenter;
             float fMeterPos2 = mActionShootToScoreVars.fMeterFractionTime;
@@ -3396,13 +3390,12 @@ void cFielder::ActionShootToScore(float)
             {
                 if (m_pCurrentAnimController->m_fTime >= fSweetSpotCenter && m_pCurrentAnimController->m_fTime < fCaptainPercentage)
                 {
-                    fYellowWidth = mActionShootToScoreVars.fGreenRegionWidth;
                     fCenter = g_pGame->m_pGameTweaks->unk298;
                     fDiffFromCenter = fCenter - fMeterPos2;
                     fDiffFromCenter = fabs(fDiffFromCenter);
                     fDiffFromCenter = (float)fDiffFromCenter;
 
-                    if (fDiffFromCenter < fYellowWidth)
+                    if (fDiffFromCenter < mActionShootToScoreVars.fGreenRegionWidth)
                     {
                         mActionShootToScoreVars.fFrameButtonDownTime2 = fMeterPos2;
                         if (mActionShootToScoreVars.fFrameButtonDownTime1 == g_pGame->m_pGameTweaks->unk294)
@@ -3444,6 +3437,9 @@ void cFielder::ActionShootToScore(float)
         case MYSTERY:
             fMultiplier = 1.1f;
             break;
+        default:
+            fMultiplier = 1.0f;
+            break;
         case WALUIGI:
         case YOSHI:
             fMultiplier = 0.92f;
@@ -3451,9 +3447,6 @@ void cFielder::ActionShootToScore(float)
         case DAISY:
         case PEACH:
             fMultiplier = 0.84f;
-            break;
-        default:
-            fMultiplier = 1.0f;
             break;
         }
 
@@ -3657,8 +3650,7 @@ void cFielder::ActionShootToScore(float)
         {
             if (m_pCurrentAnimController->TestTrigger(shaolinTime))
             {
-                const char* teamName = GetTeamName(nlSingleton<GameInfoManager>::s_pInstance->GetTeam((s16)m_pTeam->m_nSide));
-                BasicString<char, Detail::TempStringAllocator> effectName(teamName);
+                BasicString<char, Detail::TempStringAllocator> effectName(GetTeamName(nlSingleton<GameInfoManager>::s_pInstance->GetTeam((s16)m_pTeam->m_nSide)));
                 effectName.AppendInPlace("_captain_sts_effect");
 
                 EffectsGroup* pGroup = fxGetGroup(effectName.c_str());
@@ -3671,10 +3663,11 @@ void cFielder::ActionShootToScore(float)
                         callback.mTag = FREE_FUNCTION;
                         callback.mFreeFunction = HyperStrikeEffectUpdate;
                         pEmitCtrl->SetUpdateCallback(callback);
-                        if (callback.mTag == FUNCTOR && callback.mFunctor != NULL)
+                        if (callback.mTag == FUNCTOR)
                         {
-                            callback.mFunctor->~FunctorBase();
+                            delete callback.mFunctor;
                         }
+                        callback.mTag = EMPTY;
                     }
                 }
 
@@ -3788,10 +3781,7 @@ void cFielder::ActionShootToScore(float)
             {
                 cCharacter::m_ModelType = CharModel_Rigid;
                 cCameraManager::Remove(*mActionShootToScoreVars.captainStsCamera);
-                if (mActionShootToScoreVars.captainStsCamera != NULL)
-                {
-                    mActionShootToScoreVars.captainStsCamera->~cAnimCamera();
-                }
+                delete mActionShootToScoreVars.captainStsCamera;
                 mActionShootToScoreVars.captainStsCamera = NULL;
                 m_pCurrentAnimController->m_fPlaybackSpeedScale = mActionShootToScoreVars.preCaptainStsPlaybackSpeed;
             }

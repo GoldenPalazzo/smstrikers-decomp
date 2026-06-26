@@ -1097,7 +1097,7 @@ void ChooseCupSceneV2::DisplayCup()
 
 /**
  * Offset/Address/Size: 0x438 | 0x800DA6BC | size: 0x374
- * TODO: 99.4% match - r30/r31 swap for locString/data
+ * TODO: 99.5% match - r30/r31 swap for localization result/string data
  */
 void ChooseCupSceneV2::SetCurrentChamp(eTeamID currentChamp, bool isCPUChamp, TLComponentInstance* cupInProgressComponent)
 {
@@ -1108,17 +1108,10 @@ void ChooseCupSceneV2::SetCurrentChamp(eTeamID currentChamp, bool isCPUChamp, TL
 
     if (isCPUChamp)
     {
-        const unsigned short* locString = LookupLocString("CUPCHAMP");
-
-        BasicStringData<unsigned short>* data = (BasicStringData<unsigned short>*)nlMalloc(0x10, 8, true);
-        if (data != 0)
-        {
-            CopyWideString(data, locString);
-        }
-
-        BasicString<unsigned short, Detail::TempStringAllocator> formatted = Format(
-            BasicString<unsigned short, Detail::TempStringAllocator>(data),
-            LookupLocHash(GetLOCCharacterName(currentChamp, false, false)));
+        BasicString<unsigned short, Detail::TempStringAllocator> formatted(
+            Format(
+                BasicString<unsigned short, Detail::TempStringAllocator>(LookupLocString("CUPCHAMP")),
+                LookupLocHash(GetLOCCharacterName(currentChamp, false, false))));
 
         memcpy(mChampBuffer, formatted.c_str(), 0x200);
         pText->SetString(mChampBuffer);

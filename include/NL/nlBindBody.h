@@ -4,16 +4,7 @@
 template <typename R, typename F, typename A>
 BindExp1<R, F, A> Bind(F fn, const A& arg)
 {
-    BindExp1<R, F, A> result;
-    result.mFuncPtr = fn;
-    result.mArg = arg;
-    return result;
-}
-
-template <typename R, typename MemPtr, typename A>
-BindExp1<R, Detail::MemFunImpl<R, MemPtr>, A> Bind(Detail::MemFunImpl<R, MemPtr> fn, const A& arg)
-{
-    return BindExp1<R, Detail::MemFunImpl<R, MemPtr>, A>(fn, arg);
+    return BindExp1<R, F, A>(fn, arg);
 }
 
 template <typename R, typename F, typename A, typename B>

@@ -1,4 +1,7 @@
 #define NO_BASICSTRING_IMPL
+#define MEMFUN_NO_DECL
+#define BIND_NO_DECL
+#define FUNCTION0_SPLIT_BODIES
 #include "Game/FE/Cup/CupTickerManager.h"
 
 #include "Game/DB/StatsTracker.h"
@@ -15,6 +18,7 @@
 #include "NL/nlString.h"
 
 #include "NL/nlMemFunBody.h"
+#include "NL/nlBindBody.h"
 
 typedef Detail::MemFunImpl<void, void (CupTickerManager::*)()> MemFunImpl_CupTickerManager_v;
 typedef BindExp1<void, MemFunImpl_CupTickerManager_v, CupTickerManager*> BindExp1_vfmfcp;
@@ -100,15 +104,6 @@ StringType Format(const StringType& fmt, const T1& v1, const T2& v2, const T3& v
 // void Function0<void>::FunctorImpl<BindExp1<void, Detail::MemFunImpl<void, void (CupTickerManager::*)()>, CupTickerManager*>>::~FunctorImpl()
 // {
 // }
-
-/**
- * Offset/Address/Size: 0x78 | 0x800F40A4 | size: 0x30
- */
-template <>
-void Function0<void>::FunctorImpl<BindExp1_vfmfcp>::operator()()
-{
-    (mBind.mArg->*(mBind.mFuncPtr.mMemFun))();
-}
 
 // /**
 //  * Offset/Address/Size: 0x0 | 0x800F402C | size: 0x78

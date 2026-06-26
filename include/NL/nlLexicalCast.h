@@ -101,7 +101,34 @@ inline WideBasicString Detail::LexicalCastImpl<WideBasicString, const unsigned s
 template <>
 inline NLString Detail::LexicalCastImpl<NLString, const char*>::Do(const char* s)
 {
-    return NLString(s);
+    BasicStringData<char>* data = (BasicStringData<char>*)nlMalloc(0x10, 8, true);
+    if (data != 0)
+    {
+        const char* p = s;
+
+        data->mData = 0;
+        data->mSize = 0;
+        data->mCapacity = 0;
+
+        while (*p++ != 0)
+        {
+            data->mSize++;
+        }
+
+        data->mSize++;
+        data->mData = (char*)nlMalloc(data->mSize + 1, 8, true);
+        data->mCapacity = data->mSize;
+
+        for (int i = 0; i < data->mSize; i++)
+        {
+            data->mData[i] = *s;
+            s++;
+        }
+
+        data->mRefCount = 1;
+    }
+
+    return NLString(data);
 }
 
 #ifndef NL_NO_LEXICALCAST_NLSTRING_INT

@@ -74,6 +74,8 @@ static _GXTevScale glx_tevscale;     // .sbss:0x58
 static int glx_aniso;                // .sbss:0x5C
 static u8 glx_InvXposeChar;          // .sbss:0x60
 
+static void glud_Specular(void*);
+
 // Program-handle statics (initialized at __sinit_)
 static u32 prog_2d_unlit = glGetProgram("2d unlit");
 static u32 prog_2d_movie = glGetProgram("2d movie");
@@ -673,9 +675,9 @@ inline void glud_Viewport(void* pData)
 
 /**
  * Offset/Address/Size: 0x538 | 0x801BA038 | size: 0xB20
- * TODO: Structural rewrite in progress. Major blocks: WarbleBlend, texdirty upload,
- * coplanar/fog, env-diffuse matrix setup, mobile-diffuse path, alpha state,
- * viewport setup, draw (primitives or display list), restore.
+ * TODO: 97.91% match - p/bFogWasDisabled/bIndirect registers differ; texture-dirty loop
+ * pointer registers, env stage register, viewport height temp, and display-list pointer
+ * register still differ.
  */
 static void glx_DrawPacket(const glModelPacket* p)
 {
@@ -698,6 +700,10 @@ static void glx_DrawPacket(const glModelPacket* p)
     bool bIndirect = false;
     u32 mask;
     _GXTlut tlutID;
+    s32 vh;
+    s32 vx;
+    s32 vy;
+    s32 vw;
 
     // === Block 1: WarbleBlend indirect-texture setup ===
     if ((prev_view == GLV_WarbleBlend) && (p->state.texture[0] == ColourTargetTexture))
@@ -762,8 +768,8 @@ static void glx_DrawPacket(const glModelPacket* p)
         Mtx invMtx;
         Mtx transMtx;
         Mtx scaleMtx;
-        s32 glossMapStage;
-        s32 glossMapCoord;
+        u32 glossMapStage;
+        u32 glossMapCoord;
 
         PSMTXScale(scaleMtx, 0.5f, -0.5f, 0.0f);
         PSMTXTrans(transMtx, 0.5f, 0.5f, 1.0f);
@@ -850,10 +856,10 @@ static void glx_DrawPacket(const glModelPacket* p)
         Mtx44 proj44;
         nlMatrix4 srcView;
         nlMatrix4 srcProj;
-        s32 vx = g_viewport.x;
-        s32 vy = g_viewport.y;
-        s32 vw = g_viewport.w;
-        s32 vh = g_viewport.h;
+        vx = g_viewport.x;
+        vy = g_viewport.y;
+        vw = g_viewport.w;
+        vh = g_viewport.h;
 
         memcpy(&srcProj, (const void*)g_viewport.projection, sizeof(nlMatrix4));
         memcpy(&srcView, (const void*)g_viewport.view, sizeof(nlMatrix4));
@@ -893,15 +899,11 @@ static void glx_DrawPacket(const glModelPacket* p)
     {
         if (glx_NumIndices == 0)
         {
-            u32 size = dlGetSize(p->indexBuffer);
-            void* dl = dlGetDisplayList(p->indexBuffer);
-            GXCallDisplayList(dl, size);
+            GXCallDisplayList(dlGetDisplayList(p->indexBuffer), dlGetSize(p->indexBuffer));
         }
         else if (glx_CompiledDraw && (glx_NumIndices == p->numStreams) && dlIsDisplayList(p->indexBuffer))
         {
-            u32 size = dlGetSize(p->indexBuffer);
-            void* dl = dlGetDisplayList(p->indexBuffer);
-            GXCallDisplayList(dl, size);
+            GXCallDisplayList(dlGetDisplayList(p->indexBuffer), dlGetSize(p->indexBuffer));
         }
         else if (glx_AllowUncompiledDraws && glGetRasterState(p->state.raster, (eGLState)8) != 1)
         {
@@ -929,11 +931,10 @@ static void glx_DrawPacket(const glModelPacket* p)
                         {
                             u16 ns = ((u16*)&dl->indices)[0];
                             s32 stride = ns * 2;
-                            s32 offset = stride * j;
+                            s32 offset = j * stride;
                             u8* ptr8 = (u8*)dl->list;
                             ptr8 += offset;
-                            ptr = (u16*)ptr8;
-                            ptr = (u16*)((u8*)ptr + 3);
+                            ptr = (u16*)(ptr8 + 3);
                         }
                         GXWGFifo.u16 = *ptr;
                     }
@@ -1275,10 +1276,10 @@ void glud_Skin(void* pData, const glModelPacket* pPacket)
 
 /**
  * Offset/Address/Size: 0x1B8C | 0x801BB68C | size: 0x320
- * TODO: 99.70% match - block 1 FPR allocation still swaps x/z temps,
- *       block 2 store order swap at 0x120/0x124, GXColor stack copy direction
+ * TODO: 99.91% match - viewDir x/y store order at 0x120/0x124 and
+ *       GXColor stack copy direction still differ.
  */
-void glud_Specular(void* pData)
+static void glud_Specular(void* pData)
 {
     static float SpecularFudge;
     static signed char init;
@@ -1325,13 +1326,7 @@ void glud_Specular(void* pData)
                     float recipLength = nlRecipSqrt(
                         pLight->worldDirection.f.x * pLight->worldDirection.f.x + pLight->worldDirection.f.y * pLight->worldDirection.f.y + pLight->worldDirection.f.z * pLight->worldDirection.f.z,
                         false);
-                    float worldX = pLight->worldDirection.f.x;
-                    float worldZ = pLight->worldDirection.f.z;
-                    float worldY = pLight->worldDirection.f.y;
-
-                    worldDir.f.x = recipLength * worldX;
-                    worldDir.f.y = recipLength * worldY;
-                    worldDir.f.z = recipLength * worldZ;
+                    nlVec3Set(worldDir, recipLength * pLight->worldDirection.f.x, recipLength * pLight->worldDirection.f.y, recipLength * pLight->worldDirection.f.z);
                 }
 
                 nlMultDirVectorMatrix(viewDir, worldDir, mview);
@@ -1428,7 +1423,7 @@ void glud_Specular(void* pData)
         }
 
         glx_ReloadSpecLights = 0;
-        if (glx_allowSpecular)
+        if (g_bAllowSpecular)
         {
             glx_prevSpecMask = lightMask;
             gxSetNumChans(2);
