@@ -698,7 +698,7 @@ static inline eCharacterClass GetGoalieFromCaptain(eCharacterClass captain)
 
 /**
  * Offset/Address/Size: 0x3DC | 0x80012C3C | size: 0x51C
- * TODO: 98.62% match - register allocation diffs remain in both character creation loops
+ * TODO: 98.65% match - register allocation diffs remain in both character creation loops
  */
 void CreateCharacters()
 {
@@ -807,13 +807,10 @@ void CreateCharacters()
         ((cPlayer*)g_pCharacters[plrindex + 8])->m_pTeam = g_pTeams[plrindex];
     }
 
-    eCharacterClass sidekick0 = sidekick[0];
-    eCharacterClass sidekick1 = sidekick[1];
-
     for (int teami = 0; teami < 2; teami++)
     {
         int plrindex;
-        if (sidekick0 > sidekick1)
+        if (sidekick[0] > sidekick[1])
         {
             plrindex = !teami;
         }

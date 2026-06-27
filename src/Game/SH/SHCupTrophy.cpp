@@ -1053,7 +1053,7 @@ static const char* CUP_FIRST_TEXT_NAME_RIGHT = "FIRST WON TIME2";
 
 /**
  * Offset/Address/Size: 0x112C | 0x800CA7E0 | size: 0x3F8
- * TODO: 98.97% match - remaining nonvolatile register allocation and BasicString return temporary stack slots differ
+ * TODO: 99.00% match - remaining nonvolatile register allocation and BasicString return temporary stack slots differ
  */
 void CupTrophyScene::SetLossRecord(Spoil& spoil)
 {
@@ -1061,8 +1061,7 @@ void CupTrophyScene::SetLossRecord(Spoil& spoil)
     typedef TLTextInstance* (*FindCompByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
 
     FEPresentation* pres = m_pFEPresentation;
-    int losses = ((SpoilNumLossesView&)spoil).mNumLosses;
-    BasicString<char, Detail::TempStringAllocator> lossString = LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(losses);
+    BasicString<char, Detail::TempStringAllocator> lossString = LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(((SpoilNumLossesView&)spoil).mNumLosses);
     unsigned short lossBuf[16];
     nlStrToWcs(lossString.c_str(), lossBuf, 16);
 

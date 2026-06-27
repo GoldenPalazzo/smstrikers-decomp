@@ -6,6 +6,7 @@
 #include "Game/GameInfo.h"
 #include "Game/World/WorldLoader.h"
 #include "NL/nlFormat.h"
+#include "PowerPC_EABI_Support/MSL_C/MSL_Common/direct_io.h"
 
 // /**
 //  * Offset/Address/Size: 0x2C7C | 0x80189818 | size: 0x144
@@ -25,8 +26,8 @@ typedef FormatImpl<NLString> NLFormatImpl;
 
 /**
  * Offset/Address/Size: 0x1DAC | 0x80188948 | size: 0xD74
- * TODO: 96.56% match - reconstructed-template wall: marker checks emit indexed
- * lbzx vs target base+disp lbz, and insert lacks a null-check branch.
+ * TODO: 97.45% match - remaining diffs are marker add operand order and
+ * missing insert end null-check/data-pointer branch.
  */
 template <>
 NLFormatImpl& NLFormatImpl::operator% <const char*>(const char* const& t)
@@ -41,21 +42,23 @@ NLFormatImpl& NLFormatImpl::operator% <const char*>(const char* const& t)
         if (i + 1 >= (mString.m_data ? mString.m_data->mSize - 1 : 0))
             continue;
 
-        if (mString[i + 1] - '0' != mCurrentPos)
+        char* marker = &mString[i];
+        if (mCurrentPos != marker[1] - '0')
             continue;
 
         if (i + 2 >= (mString.m_data ? mString.m_data->mSize - 1 : 0))
             continue;
 
-        if (mString[i + 2] != (char)'}')
+        char* markerEnd = &mString[i];
+        if (markerEnd[2] != (char)'}')
             continue;
 
-        mString.erase(&mString[i], &mString[i + 3]);
+        mString.erase(&mString[0] + i, &mString[0] + i + 3);
         mString[i];
         char* mStringData = mString.m_data ? mString.m_data->mData : 0;
         char* insertBegin = &insert[0];
         char* insertEndCow = &insert[(int)(insert.m_data ? insert.m_data->mSize - 1 : 0)];
-        mString.insert(mStringData + i, insertBegin, insert.m_data ? &insert.m_data->mData[insert.m_data->mSize - 1] : (char*)0);
+        mString.insert(mStringData + i, insertBegin, insert.m_data ? insert.m_data->mData + insert.m_data->mSize - 1 : (char*)0);
     }
 
     mCurrentPos++;
@@ -1172,7 +1175,7 @@ void StatsTracker::TrackStat(ePlayerStats stat, int homeaway, int playerindex, i
 
 /**
  * Offset/Address/Size: 0x3708 | 0x80184C68 | size: 0x7E8
- * TODO: 95.96% match - r29/r31 swap in unrolled init loop, extra clrlwi after compare assignments, r29/r30 stat value load swaps
+ * TODO: 99.59% match - r29/r31 swap in unrolled init loop, r29/r30 stat value load swaps
  */
 static inline int CompareInt(eSortOrder sortOrder, int a, int b)
 {
@@ -1203,7 +1206,7 @@ void StatsTracker::GetSortedStats(PlayerStats* source, int numsource, int* dest,
             if (nexti >= numsource)
                 break;
 
-            unsigned char doswap = 0;
+            bool doswap = false;
 
             switch (statType)
             {
@@ -2169,13 +2172,12 @@ void StatsTracker::TrackWinner(int forfeitSide)
 /**
  * Offset/Address/Size: 0x540 | 0x80181AA0 | size: 0x15A0
  */
+#pragma inline_max_total_size(0x10000)
 void StatsTracker::WriteStats(float gameTime, float gameDuration, const char* filename)
 {
     unsigned char firstTime = 1;
 
     extern const char* STATS_FILE;
-    extern unsigned long fwrite(const void*, unsigned long, unsigned long, void*);
-
     if (gameDuration <= 0.0f)
     {
         gameDuration = (float)nlSingleton<GameInfoManager>::s_pInstance->GetGameplayOptions().GameTime;
@@ -2211,31 +2213,7 @@ void StatsTracker::WriteStats(float gameTime, float gameDuration, const char* fi
         header.AppendInPlace("Stadium, ");
         header.AppendInPlace("Game Time, ");
         header.AppendInPlace("Actual Time, ");
-        BasicStringInternal* homeAwayData = (BasicStringInternal*)nlMalloc(0x10, 8, true);
-        if (homeAwayData != 0)
-        {
-            const char* homeAwayText = "H ";
-            homeAwayData->mData = 0;
-            homeAwayData->mSize = 0;
-            homeAwayData->mCapacity = 0;
-
-            const char* p = homeAwayText;
-            while ((signed char)*p++ != 0)
-            {
-                homeAwayData->mSize++;
-            }
-
-            homeAwayData->mSize++;
-            homeAwayData->mData = (char*)nlMalloc((homeAwayData->mSize + 1) * sizeof(char), 8, true);
-            homeAwayData->mCapacity = homeAwayData->mSize;
-            for (int copyIndex = 0; copyIndex < homeAwayData->mSize; copyIndex++)
-            {
-                homeAwayData->mData[copyIndex] = *homeAwayText++;
-            }
-            homeAwayData->mRefCount = 1;
-        }
-
-        BasicString<char, Detail::TempStringAllocator> homeAway(homeAwayData);
+        BasicString<char, Detail::TempStringAllocator> homeAway("H ");
         for (i = 0; i < 2; i++)
         {
             header.AppendInPlace(homeAway.Append("Num Players, "));
@@ -2254,31 +2232,7 @@ void StatsTracker::WriteStats(float gameTime, float gameDuration, const char* fi
             header.AppendInPlace(homeAway.Append("Steals, "));
             header.AppendInPlace(homeAway.Append("Hits Made, "));
             header.AppendInPlace(homeAway.Append("Goals One Timers, "));
-            homeAwayData = (BasicStringInternal*)nlMalloc(0x10, 8, true);
-            if (homeAwayData != 0)
-            {
-                const char* awayText = "A ";
-                homeAwayData->mData = 0;
-                homeAwayData->mSize = 0;
-                homeAwayData->mCapacity = 0;
-
-                const char* p = awayText;
-                while ((signed char)*p++ != 0)
-                {
-                    homeAwayData->mSize++;
-                }
-
-                homeAwayData->mSize++;
-                homeAwayData->mData = (char*)nlMalloc((homeAwayData->mSize + 1) * sizeof(char), 8, true);
-                homeAwayData->mCapacity = homeAwayData->mSize;
-                for (int copyIndex = 0; copyIndex < homeAwayData->mSize; copyIndex++)
-                {
-                    homeAwayData->mData[copyIndex] = *awayText++;
-                }
-                homeAwayData->mRefCount = 1;
-            }
-
-            homeAway = BasicString<char, Detail::TempStringAllocator>(homeAwayData);
+            homeAway = BasicString<char, Detail::TempStringAllocator>("A ");
         }
 
         header.AppendInPlace("\n");
@@ -2341,75 +2295,25 @@ void StatsTracker::WriteStats(float gameTime, float gameDuration, const char* fi
 
     if (allCaptains)
     {
-        BasicStringInternal* fmtData = (BasicStringInternal*)nlMalloc(0x10, 8, true);
-        if (fmtData != 0)
-        {
-            const char* fmtText = "{0},{1},{2},{3},{4},{5},{6},";
-            fmtData->mData = 0;
-            fmtData->mSize = 0;
-            fmtData->mCapacity = 0;
-
-            const char* p = fmtText;
-            while ((signed char)*p++ != 0)
-            {
-                fmtData->mSize++;
-            }
-
-            fmtData->mSize++;
-            fmtData->mData = (char*)nlMalloc((fmtData->mSize + 1) * sizeof(char), 8, true);
-            fmtData->mCapacity = fmtData->mSize;
-            for (int copyIndex = 0; copyIndex < fmtData->mSize; copyIndex++)
-            {
-                fmtData->mData[copyIndex] = *fmtText++;
-            }
-            fmtData->mRefCount = 1;
-        }
-        BasicString<char, Detail::TempStringAllocator> formatTemplate(fmtData);
-
-        stats = Format(formatTemplate,
+        stats = Format(BasicString<char, Detail::TempStringAllocator>("{0},{1},{2},{3},{4},{5},{6},"),
             GetTeamName(nlSingleton<GameInfoManager>::s_pInstance->GetTeam(0)),
             GetTeamName(nlSingleton<GameInfoManager>::s_pInstance->GetTeam(0)),
             GetTeamName(nlSingleton<GameInfoManager>::s_pInstance->GetTeam(1)),
             GetTeamName(nlSingleton<GameInfoManager>::s_pInstance->GetTeam(1)),
             TheWorldLoader.GetStadiumFilename(nlSingleton<GameInfoManager>::s_pInstance->GetStadium()),
-            gameTime,
-            gameDuration);
+            gameDuration,
+            gameTime);
     }
     else
     {
-        BasicStringInternal* fmtData2 = (BasicStringInternal*)nlMalloc(0x10, 8, true);
-        if (fmtData2 != 0)
-        {
-            const char* fmtText2 = "{0},{1},{2},{3},{4},{5},{6},";
-            fmtData2->mData = 0;
-            fmtData2->mSize = 0;
-            fmtData2->mCapacity = 0;
-
-            const char* p = fmtText2;
-            while ((signed char)*p++ != 0)
-            {
-                fmtData2->mSize++;
-            }
-
-            fmtData2->mSize++;
-            fmtData2->mData = (char*)nlMalloc((fmtData2->mSize + 1) * sizeof(char), 8, true);
-            fmtData2->mCapacity = fmtData2->mSize;
-            for (int copyIndex = 0; copyIndex < fmtData2->mSize; copyIndex++)
-            {
-                fmtData2->mData[copyIndex] = *fmtText2++;
-            }
-            fmtData2->mRefCount = 1;
-        }
-        BasicString<char, Detail::TempStringAllocator> formatTemplate(fmtData2);
-
-        stats = Format(formatTemplate,
+        stats = Format(BasicString<char, Detail::TempStringAllocator>("{0},{1},{2},{3},{4},{5},{6},"),
             GetTeamName(nlSingleton<GameInfoManager>::s_pInstance->GetTeam(0)),
             GetSidekickName(nlSingleton<GameInfoManager>::s_pInstance->GetSidekick(0)),
             GetTeamName(nlSingleton<GameInfoManager>::s_pInstance->GetTeam(1)),
             GetSidekickName(nlSingleton<GameInfoManager>::s_pInstance->GetSidekick(1)),
             TheWorldLoader.GetStadiumFilename(nlSingleton<GameInfoManager>::s_pInstance->GetStadium()),
-            gameTime,
-            gameDuration);
+            gameDuration,
+            gameTime);
     }
 
     int team;
@@ -2418,92 +2322,24 @@ void StatsTracker::WriteStats(float gameTime, float gameDuration, const char* fi
         int possession = (int)(mCurrentTeamStats[team].mPlayerTotalStats.mBallPossessionTime / 100);
         int difficulty = (int)nlSingleton<GameInfoManager>::s_pInstance->mCurrentDifficulty[team];
 
-        BasicStringInternal* npData = (BasicStringInternal*)nlMalloc(0x10, 8, true);
-        if (npData != 0)
-        {
-            const char* npText = "{0},";
-            npData->mData = 0;
-            npData->mSize = 0;
-            npData->mCapacity = 0;
-            const char* p = npText;
-            while ((signed char)*p++ != 0)
-            {
-                npData->mSize++;
-            }
-            npData->mSize++;
-            npData->mData = (char*)nlMalloc((npData->mSize + 1) * sizeof(char), 8, true);
-            npData->mCapacity = npData->mSize;
-            for (int copyIndex = 0; copyIndex < npData->mSize; copyIndex++)
-            {
-                npData->mData[copyIndex] = *npText++;
-            }
-            npData->mRefCount = 1;
-        }
-        BasicString<char, Detail::TempStringAllocator> numPlayersTemplate(npData);
-        BasicString<char, Detail::TempStringAllocator> statsAfterPlayers = stats.Append(Format(numPlayersTemplate, numHumans[team]));
-
-        BasicStringInternal* fsData = (BasicStringInternal*)nlMalloc(0x10, 8, true);
-        if (fsData != 0)
-        {
-            const char* fsText = "{0},{1},{2},{3},{4},{5},{6},";
-            fsData->mData = 0;
-            fsData->mSize = 0;
-            fsData->mCapacity = 0;
-            const char* p = fsText;
-            while ((signed char)*p++ != 0)
-            {
-                fsData->mSize++;
-            }
-            fsData->mSize++;
-            fsData->mData = (char*)nlMalloc((fsData->mSize + 1) * sizeof(char), 8, true);
-            fsData->mCapacity = fsData->mSize;
-            for (int copyIndex = 0; copyIndex < fsData->mSize; copyIndex++)
-            {
-                fsData->mData[copyIndex] = *fsText++;
-            }
-            fsData->mRefCount = 1;
-        }
-        BasicString<char, Detail::TempStringAllocator> firstStatsTemplate(fsData);
-        BasicString<char, Detail::TempStringAllocator> statsAfterFirst = statsAfterPlayers.Append(Format(firstStatsTemplate,
-            difficulty,
-            (int)mCurrentTeamStats[team].mPlayerTotalStats.mNumShotsOnGoal,
-            (int)mCurrentTeamStats[team].mPlayerTotalStats.mNumGoalsFor,
-            (int)mCurrentTeamStats[team].mPlayerTotalStats.mNumShootToScoreGoals,
-            (int)mCurrentTeamStats[team].mPlayerTotalStats.mNumAssists,
-            (int)mCurrentTeamStats[team].mPlayerTotalStats.mNumFouls,
-            (int)mCurrentTeamStats[team].mPlayerTotalStats.mNumPowerupsUsed));
-
-        BasicStringInternal* ssData = (BasicStringInternal*)nlMalloc(0x10, 8, true);
-        if (ssData != 0)
-        {
-            const char* ssText = "{0},{1},{2},{3},{4},{5},{6},{7}";
-            ssData->mData = 0;
-            ssData->mSize = 0;
-            ssData->mCapacity = 0;
-            const char* p = ssText;
-            while ((signed char)*p++ != 0)
-            {
-                ssData->mSize++;
-            }
-            ssData->mSize++;
-            ssData->mData = (char*)nlMalloc((ssData->mSize + 1) * sizeof(char), 8, true);
-            ssData->mCapacity = ssData->mSize;
-            for (int copyIndex = 0; copyIndex < ssData->mSize; copyIndex++)
-            {
-                ssData->mData[copyIndex] = *ssText++;
-            }
-            ssData->mRefCount = 1;
-        }
-        BasicString<char, Detail::TempStringAllocator> secondStatsTemplate(ssData);
-        stats = statsAfterFirst.Append(Format(secondStatsTemplate,
-            (int)mCurrentTeamStats[team].mPlayerTotalStats.mNumPowerupsHit,
-            (int)mCurrentTeamStats[team].mPlayerTotalStats.mNumPassesMade,
-            (int)mCurrentTeamStats[team].mPlayerTotalStats.mNumPassesReceived,
-            (int)mCurrentTeamStats[team].mPlayerTotalStats.mNumPassesIntercepted,
-            possession,
-            (int)mCurrentTeamStats[team].mPlayerTotalStats.mNumSteals,
-            (int)mCurrentTeamStats[team].mPlayerTotalStats.mNumHitsMade,
-            (int)mCurrentTeamStats[team].mPlayerTotalStats.mNumGoalsOneTimers));
+        stats = stats.Append(Format(BasicString<char, Detail::TempStringAllocator>("{0},"), numHumans[team]))
+                    .Append(Format(BasicString<char, Detail::TempStringAllocator>("{0},{1},{2},{3},{4},{5},{6},"),
+                        difficulty,
+                        (int)mCurrentTeamStats[team].mPlayerTotalStats.mNumShotsOnGoal,
+                        (int)mCurrentTeamStats[team].mPlayerTotalStats.mNumGoalsFor,
+                        (int)mCurrentTeamStats[team].mPlayerTotalStats.mNumShootToScoreGoals,
+                        (int)mCurrentTeamStats[team].mPlayerTotalStats.mNumAssists,
+                        (int)mCurrentTeamStats[team].mPlayerTotalStats.mNumFouls,
+                        (int)mCurrentTeamStats[team].mPlayerTotalStats.mNumPowerupsUsed))
+                    .Append(Format(BasicString<char, Detail::TempStringAllocator>("{0},{1},{2},{3},{4},{5},{6},{7}"),
+                        (int)mCurrentTeamStats[team].mPlayerTotalStats.mNumPowerupsHit,
+                        (int)mCurrentTeamStats[team].mPlayerTotalStats.mNumPassesMade,
+                        (int)mCurrentTeamStats[team].mPlayerTotalStats.mNumPassesReceived,
+                        (int)mCurrentTeamStats[team].mPlayerTotalStats.mNumPassesIntercepted,
+                        possession,
+                        (int)mCurrentTeamStats[team].mPlayerTotalStats.mNumSteals,
+                        (int)mCurrentTeamStats[team].mPlayerTotalStats.mNumHitsMade,
+                        (int)mCurrentTeamStats[team].mPlayerTotalStats.mNumGoalsOneTimers));
 
         if (team == 0)
         {
@@ -2597,8 +2433,6 @@ void Format(StringType& result,
     const Arg2& arg2,
     const Arg3& arg3,
     const Arg4& arg4);
-
-extern "C" unsigned long fwrite(const void*, unsigned long, unsigned long, void*);
 
 /**
  * Offset/Address/Size: 0x3DC | 0x801816A8 | size: 0x2D0

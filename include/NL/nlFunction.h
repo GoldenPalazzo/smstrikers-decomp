@@ -314,7 +314,7 @@ public:
 
     Function& operator=(const Function& other)
     {
-#ifdef FEPOPUPMENU_INTERNAL_BYVAL
+#ifdef FEPOPUPMENU_FUNCTION_ASSIGN_DONT_INLINE
         FORCE_DONT_INLINE;
 #endif
         if (mTag == FUNCTOR)

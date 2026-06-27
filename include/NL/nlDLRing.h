@@ -319,6 +319,9 @@ bool nlRingIsEnd(T* head, T* element)
 template <typename T, typename CallbackType>
 void nlWalkDLRing(T* head, CallbackType* callback, void (CallbackType::*callbackFunc)(T*))
 {
+#ifdef NLDLRING_FORCE_DONT_INLINE
+    FORCE_DONT_INLINE;
+#endif
     void (CallbackType::*func)(T*) = callbackFunc;
     nlWalkRing(head, callback, func);
 }

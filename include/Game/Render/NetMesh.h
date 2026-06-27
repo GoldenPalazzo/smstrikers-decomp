@@ -115,7 +115,7 @@ class BallNetmeshEventData : public EventData
 {
 public:
     BallNetmeshEventData() { }
-    virtual ~BallNetmeshEventData() { }
+    ~BallNetmeshEventData() { }
 
     virtual u32 GetID()
     {

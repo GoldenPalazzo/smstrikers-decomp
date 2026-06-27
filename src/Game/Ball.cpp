@@ -682,7 +682,8 @@ void cBall::SetPerfectPass(bool bFlag, bool bNoEvent)
 
     if ((mbHyperSTS != bFlag) && !bNoEvent)
     {
-        void* data = (u8*)g_pEventManager->CreateValidEvent(bFlag ? 0x45 : 0x47, 0x24) + 0x10;
+        EventManager* mgr = g_pEventManager;
+        void* data = (u8*)mgr->CreateValidEvent(bFlag ? 0x45 : 0x47, 0x24) + 0x10;
         eventdata = new (data) PassBallData();
 
         if (bFlag)

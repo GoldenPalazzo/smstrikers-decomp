@@ -157,10 +157,12 @@ public:
     /* 0x4C2 */ bool mHasGameEnded;
 }; // total size: 0x4C4
 
+#pragma dont_inline on
 inline void StatsTracker::Track(ePlayerStats stat, int homeaway, int playerindex, int param0, int param1, int param2, int param3)
 {
     s_pInstance->TrackStat(stat, homeaway, playerindex, param0, param1, param2, param3);
 }
+#pragma dont_inline reset
 
 // class BasicString < char, Detail
 // {

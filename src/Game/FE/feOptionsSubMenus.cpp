@@ -1637,6 +1637,7 @@ OptionsAudioMenuV2::OptionsAudioMenuV2(FEPresentation* presentation, ButtonCompo
 
 /**
  * Offset/Address/Size: 0x34B0 | 0x800B84F4 | size: 0x88C
+ * TODO: 99.64% match - callback temporary stack slots still differ in slide menu item setup.
  */
 void OptionsCheatsMenu::BuildCustomPowerupsList(TLComponentInstance* compinstance, CustomPowerups startOption, FEPresentation* presentation)
 {
@@ -1648,14 +1649,14 @@ void OptionsCheatsMenu::BuildCustomPowerupsList(TLComponentInstance* compinstanc
     int slidesAdded = 1;
     int startindex = 0;
     char slidename[64];
-    bool unlocked;
     int i;
     TLTextInstance* pText;
     nlColour lockColour;
     TLComponentInstance* pMenuComp;
     TLComponentInstance* pArrowComp;
-    unsigned long slideHash;
     MenuItem<SlideMenuItem>* menuItem;
+    unsigned long slideHash;
+    bool unlocked;
 
     mSlideMenuLists[0] = (MenuList<SlideMenuList>*)(new (nlMalloc(sizeof(SlideMenuList), 8, false)) SlideMenuList(compinstance));
 
@@ -1722,7 +1723,8 @@ void OptionsCheatsMenu::BuildCustomPowerupsList(TLComponentInstance* compinstanc
             }
             item->mSlideMenuHash = slideHash;
 
-            menuItem = &sml->mMenuItems[sml->mNumItemsAdded];
+            MenuItem<SlideMenuItem>* menuItems = sml->mMenuItems;
+            menuItem = &menuItems[sml->mNumItemsAdded];
             menuItem->mType = item;
             sml->mNumItemsAdded++;
 
@@ -1779,17 +1781,21 @@ void OptionsCheatsMenu::BuildCustomPowerupsList(TLComponentInstance* compinstanc
 
             if (((SlideMenuList*)mSlideMenuLists[0]) != NULL)
             {
+                TLInstance* inst;
+                TLInstance* firstChild;
+                TLSlide* currentMenuSlide;
+                TLSlide* startSlide;
                 TLComponentInstance* comp = ((SlideMenuList*)mSlideMenuLists[0])->mComponentInstance;
                 if (comp != NULL && comp->GetActiveSlide() != NULL)
                 {
-                    TLSlide* startSlide = comp->GetActiveSlide();
-                    TLSlide* currentMenuSlide = startSlide;
+                    startSlide = comp->GetActiveSlide();
+                    currentMenuSlide = startSlide;
 
                     do
                     {
                         comp->SetActiveSlide(currentMenuSlide);
-                        TLInstance* firstChild = comp->GetActiveSlide()->m_instances;
-                        TLInstance* inst = firstChild;
+                        firstChild = comp->GetActiveSlide()->m_instances;
+                        inst = firstChild;
                         if (firstChild != NULL)
                         {
                             do

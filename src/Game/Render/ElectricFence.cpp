@@ -503,10 +503,47 @@ void FreeElectricFence()
     SlotPoolBase::BaseFreeBlocks(&ElectricFenceGeometry::sElectricFenceGeometryPool, sizeof(ElectricFenceGeometry));
 }
 
+static inline void CreateElectricFenceGeometry(ElectricFenceGeometry& prim, const nlVector3& impactPosition)
+{
+    extern float sfGridTextureSize;
+
+    prim.vertCount = 32;
+
+    nlVector3* pdst = prim.position;
+    nlVector2* tdst = prim.texcoord;
+
+    float startOffset = 0.5f * -sfGridTextureSize;
+    float endOffset = 0.5f * sfGridTextureSize;
+    float fDeltaSegmentOffset = (endOffset - startOffset) / 15.0f;
+    float z0 = impactPosition.f.z + startOffset;
+    float z1 = impactPosition.f.z + endOffset;
+
+    for (int nSegment = 0; nSegment < 16; nSegment++)
+    {
+        nlVector3 wallPoint;
+        GetWallPoint(impactPosition, (((float)nSegment) * fDeltaSegmentOffset) + startOffset, 0.0f, wallPoint);
+
+        pdst[0].f.x = wallPoint.f.x;
+        pdst[0].f.y = wallPoint.f.y;
+        pdst[0].f.z = z0;
+        tdst[0].f.x = (float)nSegment / 15.0f;
+        tdst[0].f.y = 0.0f;
+
+        pdst[1].f.x = wallPoint.f.x;
+        pdst[1].f.y = wallPoint.f.y;
+        pdst[1].f.z = z1;
+        tdst[1].f.x = (float)nSegment / 15.0f;
+        tdst[1].f.y = 1.0f;
+
+        pdst += 2;
+        tdst += 2;
+    }
+}
+
 /**
  * Offset/Address/Size: 0x5A0 | 0x8016B5D0 | size: 0x448
- * TODO: 97.42% match - neg flag still uses r30 vs r27, and curved-branch
- *   geometry/index registers are still swapped.
+ * TODO: 97.78% match - curved-branch wallPoint and texcoord store scheduling
+ *   still differs.
  */
 ElectricFenceData::ElectricFenceData(EmissionController* pEmissionController)
 {
@@ -622,40 +659,7 @@ ElectricFenceData::ElectricFenceData(EmissionController* pEmissionController)
         cField::GetSidelineY(1U);
         AIsgn(impactPosition.f.y);
 
-        activeGeom->vertCount = 32;
-
-        nlVector3* outPosition = activeGeom->position;
-        nlVector2* outTexcoord = (nlVector2*)&activeGeom->texcoord;
-
-        half = 0.5f;
-        grid = sfGridTextureSize;
-        z_val = impactPosition.f.z;
-        negHalf = half * (-grid);
-        posHalf = half * grid;
-        zTop = z_val + posHalf;
-        zBottom = z_val + negHalf;
-        step = (posHalf - negHalf) / 15.0f;
-
-        for (s32 i = 0; i < 16; i++)
-        {
-            nlVector3 wallPoint;
-            GetWallPoint(impactPosition, (((float)i) * step) + negHalf, 0.0f, wallPoint);
-
-            outPosition[0].f.x = wallPoint.f.x;
-            outPosition[0].f.y = wallPoint.f.y;
-            outPosition[0].f.z = zBottom;
-            outTexcoord[0].f.x = (float)i / 15.0f;
-            outTexcoord[0].f.y = 0.0f;
-
-            outPosition[1].f.x = wallPoint.f.x;
-            outPosition[1].f.y = wallPoint.f.y;
-            outPosition[1].f.z = zTop;
-            outTexcoord[1].f.x = (float)i / 15.0f;
-            outTexcoord[1].f.y = 1.0f;
-
-            outPosition += 2;
-            outTexcoord += 2;
-        }
+        CreateElectricFenceGeometry(*activeGeom, impactPosition);
         return;
     }
 }

@@ -504,11 +504,9 @@ inline void glud_DirectionalLight(void* pData)
             }
 
             GLDirectionalLightUserData* pCurrentLight = pLight;
-            GXLightID lightID = (GXLightID)gxLights[index];
-            lightMask |= *pGXLight;
-            pGXLight++;
+            lightMask |= *pGXLight++;
+            GXLightID lightID = (GXLightID)gxLights[index++];
             pLight++;
-            index += 1;
 
             glx_LoadDirectionalLight(pCurrentLight, lightID);
         }

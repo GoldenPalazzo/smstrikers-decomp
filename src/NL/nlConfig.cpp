@@ -180,11 +180,48 @@ static bool IsFloatValue(const char* str, float& out)
     return seenPeriod;
 }
 
+inline u32 Config::Hash(const char* str)
+{
+    u32 hash = 0x1505;
+    while (*str != 0)
+    {
+        s8 c = (s8)nlToUpper<char>(const_cast<char&>(*str++));
+        hash = hash + (hash << 5) + c;
+    }
+    return hash;
+}
+
+inline char* Config::CopyString(const char* str, unsigned char makeUpperCase)
+{
+    const char* ret = mStringEnd;
+    while (*str != 0)
+    {
+        if (mStringEnd - mStringMemory >= 0x27FF)
+        {
+            return (char*)ret;
+        }
+
+        if (makeUpperCase)
+        {
+            *mStringEnd = nlToUpper((char)*str);
+        }
+        else
+        {
+            *mStringEnd = *str;
+        }
+        str++;
+        mStringEnd++;
+    }
+
+    *mStringEnd = 0;
+    mStringEnd++;
+    return (char*)ret;
+}
+
 /**
  * Offset/Address/Size: 0x165C | 0x801D42C0 | size: 0x56C
- * TODO: 95.95% match - this/tag register allocation still differs through
- * hash/probe/tag-copy paths; hash loops call nlToUpper<unsigned char> where
- * target calls nlToUpper<char>
+ * TODO: 96.93% match - this/tag register allocation still differs through
+ * hash/probe/copy helper paths
  */
 void Config::Set(const char* tag, const char* value)
 {
@@ -195,14 +232,7 @@ void Config::Set(const char* tag, const char* value)
 
     if (IsIntValue(value, i))
     {
-        const char* p = tag;
-        u32 hash = 0x1505;
-        while (*p != 0)
-        {
-            s8 c = (s8)nlToUpper((u8)*p++);
-            hash = hash + (hash << 5) + c;
-        }
-        u32 idx = hash & 0x3FF;
+        u32 idx = Hash(tag) & 0x3FF;
 
         while (true)
         {
@@ -221,34 +251,12 @@ void Config::Set(const char* tag, const char* value)
 
         if (tvp->tag == NULL)
         {
-            char* dest = mStringEnd;
-            s32 c;
-            while ((c = *tag) != 0)
-            {
-                if (mStringEnd - mStringMemory >= 0x27FF)
-                {
-                    tvp->tag = dest;
-                    return;
-                }
-                *mStringEnd = nlToUpper(c);
-                tag++;
-                mStringEnd++;
-            }
-            *mStringEnd = 0;
-            mStringEnd++;
-            tvp->tag = dest;
+            tvp->tag = CopyString(tag, true);
         }
     }
     else if (IsFloatValue(value, f))
     {
-        const char* p = tag;
-        u32 hash = 0x1505;
-        while (*p != 0)
-        {
-            s8 c = (s8)nlToUpper((u8)*p++);
-            hash = hash + (hash << 5) + c;
-        }
-        u32 idx = hash & 0x3FF;
+        u32 idx = Hash(tag) & 0x3FF;
 
         while (true)
         {
@@ -267,35 +275,13 @@ void Config::Set(const char* tag, const char* value)
 
         if (tvp->tag == NULL)
         {
-            char* dest = mStringEnd;
-            s32 c;
-            while ((c = *tag) != 0)
-            {
-                if (mStringEnd - mStringMemory >= 0x27FF)
-                {
-                    tvp->tag = dest;
-                    return;
-                }
-                *mStringEnd = nlToUpper(c);
-                tag++;
-                mStringEnd++;
-            }
-            *mStringEnd = 0;
-            mStringEnd++;
-            tvp->tag = dest;
+            tvp->tag = CopyString(tag, true);
         }
     }
     else if (IsBool(value, b))
     {
         bool boolValue = b;
-        const char* p = tag;
-        u32 hash = 0x1505;
-        while (*p != 0)
-        {
-            s8 c = (s8)nlToUpper((u8)*p++);
-            hash = hash + (hash << 5) + c;
-        }
-        u32 idx = hash & 0x3FF;
+        u32 idx = Hash(tag) & 0x3FF;
 
         while (true)
         {
@@ -314,34 +300,12 @@ void Config::Set(const char* tag, const char* value)
 
         if (tvp->tag == NULL)
         {
-            char* dest = mStringEnd;
-            s32 c;
-            while ((c = *tag) != 0)
-            {
-                if (mStringEnd - mStringMemory >= 0x27FF)
-                {
-                    tvp->tag = dest;
-                    return;
-                }
-                *mStringEnd = nlToUpper(c);
-                tag++;
-                mStringEnd++;
-            }
-            *mStringEnd = 0;
-            mStringEnd++;
-            tvp->tag = dest;
+            tvp->tag = CopyString(tag, true);
         }
     }
     else
     {
-        const char* p = tag;
-        u32 hash = 0x1505;
-        while (*p != 0)
-        {
-            s8 c = (s8)nlToUpper((u8)*p++);
-            hash = hash + (hash << 5) + c;
-        }
-        u32 idx = hash & 0x3FF;
+        u32 idx = Hash(tag) & 0x3FF;
 
         while (true)
         {
@@ -356,51 +320,36 @@ void Config::Set(const char* tag, const char* value)
         }
 
         tvp->type = _STRING;
-
-        const char* valueSrc = value;
-        char* valDest = mStringEnd;
-        while (*valueSrc != 0)
-        {
-            if (mStringEnd - mStringMemory >= 0x27FF)
-            {
-                goto value_done;
-            }
-            *mStringEnd = *valueSrc;
-            valueSrc++;
-            mStringEnd++;
-        }
-        *mStringEnd = 0;
-        mStringEnd++;
-    value_done:
-        tvp->value.s = valDest;
+        tvp->value.s = CopyString(value, false);
 
         if (tvp->tag == NULL)
         {
-            char* dest = mStringEnd;
-            s32 c;
-            while ((c = *tag) != 0)
-            {
-                if (mStringEnd - mStringMemory >= 0x27FF)
-                {
-                    tvp->tag = dest;
-                    return;
-                }
-                *mStringEnd = nlToUpper(c);
-                tag++;
-                mStringEnd++;
-            }
-            *mStringEnd = 0;
-            mStringEnd++;
-            tvp->tag = dest;
+            tvp->tag = CopyString(tag, true);
         }
     }
 }
 
+static inline char* CopyConfigString(Config* config, const char* str)
+{
+    char* dest = config->mStringEnd;
+    while (*str != 0)
+    {
+        if (config->mStringEnd - config->mStringMemory >= 0x27FF)
+        {
+            return dest;
+        }
+        *config->mStringEnd = nlToUpper<char>(const_cast<char&>(*str));
+        str++;
+        config->mStringEnd++;
+    }
+    *config->mStringEnd = 0;
+    config->mStringEnd++;
+    return dest;
+}
+
 /**
  * Offset/Address/Size: 0x1BC8 | 0x801D482C | size: 0x12C
- * TODO: 97.0% match - hash takes r30 vs r28 in probe setup, cascading
- * idx/offset/tvp and dest/src register swaps; nlToUpper<Uc> vs nlToUpper<c>
- * template instantiation; one extra tvp->tag store on the buffer-full path
+ * TODO: 98.47% match - this/tvp register swap through probe and copy helper
  */
 void Config::Set(const char* tag, float value)
 {
@@ -409,8 +358,8 @@ void Config::Set(const char* tag, float value)
     const char* p = tag;
     while (*p != 0)
     {
-        s8 c = (s8)nlToUpper((u8)*p++);
-        hash += (hash << 5) + c;
+        s8 c = (s8)nlToUpper<char>(const_cast<char&>(*p++));
+        hash = (hash << 5) + hash + c;
     }
     u32 idx = hash & 0x3FF;
 
@@ -431,22 +380,7 @@ void Config::Set(const char* tag, float value)
 
     if (tvp->tag == NULL)
     {
-        const char* src = tag;
-        char* dest = mStringEnd;
-        while (*src != 0)
-        {
-            if (mStringEnd - mStringMemory >= 0x27FF)
-            {
-                tvp->tag = dest;
-                return;
-            }
-            *mStringEnd = nlToUpper((u8)*src);
-            src++;
-            mStringEnd++;
-        }
-        *mStringEnd = 0;
-        mStringEnd++;
-        tvp->tag = dest;
+        tvp->tag = CopyConfigString(this, tag);
     }
 }
 

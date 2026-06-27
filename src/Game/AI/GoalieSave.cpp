@@ -7,6 +7,7 @@
 
 static nlAVLTree<int, SaveData*, DefaultKeyCompare<int> > gSaveMap;
 static nlListContainer<SaveData*> gSaveGrid[7][5];
+static float fDefaultMilestoneValues[2] = { 0.4f, 0.7f };
 
 struct MyMiniData;
 
@@ -655,12 +656,10 @@ SaveData* GoalieSave::FindBestSave(SaveBlendInfo& blendInfo, const nlVector3& v3
 
 /**
  * Offset/Address/Size: 0x1A1C | 0x80054E3C | size: 0x5A4
- * TODO: 97.05% match - list cursor and milestone-scale loop registers still differ.
+ * TODO: 97.19% match - list cursor and milestone-scale loop registers still differ.
  */
 SaveData* GoalieSave::FindBestInList(SaveBlendInfo& blendInfo, nlListContainer<SaveData*>& SaveList, const nlVector3& v3LocalPos, float fTime, unsigned int uSaveType, bool bFromTakeoff)
 {
-    static float fDefaultMilestoneValues[2] = { 0.4f, 0.7f };
-
     float fClosest = 10000.0f;
     SaveBlendInfo tempBlendInfo;
     ListEntry<SaveData*>* pEntry;
@@ -727,9 +726,9 @@ SaveData* GoalieSave::FindBestInList(SaveBlendInfo& blendInfo, nlListContainer<S
 
             if (fSaveTime <= fTime)
             {
-                float fDistZ = v3AdjLocalPos.f.z - tempBlendInfo.mv3BlendedSavePos.f.z;
                 float fDistY = v3AdjLocalPos.f.y - tempBlendInfo.mv3BlendedSavePos.f.y;
-                float fDistSq = fDistZ * fDistZ + fDistY * fDistY;
+                float fDistZ = v3AdjLocalPos.f.z - tempBlendInfo.mv3BlendedSavePos.f.z;
+                float fDistSq = fDistY * fDistY + fDistZ * fDistZ;
 
                 if (fDistSq < fClosest)
                 {
@@ -1702,7 +1701,7 @@ static inline void Local2GridCoords(float y, float z, int& i, int& j)
 
 /**
  * Offset/Address/Size: 0x390 | 0x800537B0 | size: 0x3F0
- * TODO: 95.93% match - r27/r28 vs r28/r29 register shift persists in AddPointToGrid inlined path.
+ * TODO: 98.77% match - save-data pointers, loop count, and grid-cell registers remain shifted in the inlined AddPointToGrid path.
  */
 void GoalieSave::AddSegmentToGrid(SaveData* pSaveData1, SaveData* pSaveData2)
 {
@@ -1711,19 +1710,15 @@ void GoalieSave::AddSegmentToGrid(SaveData* pSaveData1, SaveData* pSaveData2)
     int count;
     int i, j, m, n;
     nlVector3 v3CurPos;
+    nlVector3 v3Delta;
 
     Local2GridCoords(pSaveData1->mv3SavePos.f.y, pSaveData1->mv3SavePos.f.z, i, j);
     Local2GridCoords(pSaveData2->mv3SavePos.f.y, pSaveData2->mv3SavePos.f.z, m, n);
-    float dy = pSaveData2->mv3SavePos.f.y - pSaveData1->mv3SavePos.f.y;
-    float dz = pSaveData2->mv3SavePos.f.z - pSaveData1->mv3SavePos.f.z;
-    float dx = pSaveData2->mv3SavePos.f.x - pSaveData1->mv3SavePos.f.x;
+    nlVec3Sub(v3Delta, pSaveData2->mv3SavePos, pSaveData1->mv3SavePos);
     divisions = abs(j - n) + abs(i - m);
     if (divisions > 0)
     {
-        float inv = 1.0f / (float)divisions;
-        dx *= inv;
-        dy *= inv;
-        dz *= inv;
+        nlVec3Scale(v3Delta, v3Delta, 1.0f / (float)divisions);
     }
     v3CurPos = pSaveData1->mv3SavePos;
     for (count = 0; count <= divisions; count++)
@@ -1737,9 +1732,9 @@ void GoalieSave::AddSegmentToGrid(SaveData* pSaveData1, SaveData* pSaveData2)
         else
             pCurSaveData = pSaveData2;
         AddPointToGrid(pCurSaveData, v3CurPos);
-        v3CurPos.f.z += dz;
-        v3CurPos.f.y += dy;
-        v3CurPos.f.x += dx;
+        v3CurPos.f.z += v3Delta.f.z;
+        v3CurPos.f.y += v3Delta.f.y;
+        v3CurPos.f.x += v3Delta.f.x;
     }
 }
 

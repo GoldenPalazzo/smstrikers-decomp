@@ -615,8 +615,8 @@ static inline unsigned long setTextureLocal(eGLTextureState texturestate, unsign
 
 /**
  * Offset/Address/Size: 0x910 | 0x801DC554 | size: 0x1E78
- * TODO: 69.9% match - lwzu scheduling, stmw vs individual stw, register
- * allocation differences across all inlined state-setter sections.
+ * TODO: 74.16% match - register allocation differences across the inlined
+ * raster, texture, and material state-setter sections.
  */
 #define SET_RASTER_LOCAL(idx, val)                                 \
     do                                                             \
@@ -653,6 +653,56 @@ static inline unsigned long setTextureLocal(eGLTextureState texturestate, unsign
                 _state.m_State = _state.m_State & ~(1u << _sr_startBit); \
             _sr_startBit++;                                              \
         }                                                                \
+    } while (0)
+
+#define SET_TEXTURE_LOCAL(texturestate, value)                                                   \
+    do                                                                                           \
+    {                                                                                            \
+        gl_StateBitfield* _st_p = &packed_texture[texturestate];                                 \
+        s32 _st_startBit = _st_p->startBit;                                                      \
+        s32 _st_numBits = _st_p->numBits;                                                        \
+        unsigned long _st_hi = (unsigned long)(_textureState.m_State >> 32);                     \
+        unsigned long _st_lo = (unsigned long)_textureState.m_State;                             \
+        s32 _st_i;                                                                               \
+        for (_st_i = _st_numBits; _st_i > 0; _st_i--)                                            \
+        {                                                                                        \
+        }                                                                                        \
+        for (_st_i = 0; _st_i < _st_numBits; _st_i++)                                            \
+        {                                                                                        \
+            unsigned long _st_bit = 1u << (_st_i + _st_startBit);                                \
+            if ((value) & (1u << _st_i))                                                         \
+            {                                                                                    \
+                _st_lo = _st_lo | _st_bit;                                                       \
+                _st_hi = _st_hi | (unsigned long)((s32)_st_bit >> 31);                           \
+            }                                                                                    \
+            else                                                                                 \
+            {                                                                                    \
+                unsigned long _st_notBit = ~_st_bit;                                             \
+                _st_lo = _st_lo & _st_notBit;                                                    \
+                _st_hi = _st_hi & (unsigned long)((s32)_st_notBit >> 31);                        \
+            }                                                                                    \
+        }                                                                                        \
+        _textureState.m_State = ((unsigned long long)_st_hi << 32) | (unsigned long long)_st_lo; \
+    } while (0)
+
+#define SET_MATERIAL_LOCAL(materialstate, value)                                         \
+    do                                                                                   \
+    {                                                                                    \
+        gl_StateBitfield* _sm_p = &packed_materials[materialstate];                      \
+        s32 _sm_startBit = _sm_p->startBit;                                              \
+        s32 _sm_numBits = _sm_p->numBits;                                                \
+        s32 _sm_i;                                                                       \
+        for (_sm_i = _sm_numBits; _sm_i > 0; _sm_i--)                                    \
+        {                                                                                \
+        }                                                                                \
+        for (_sm_i = 0; _sm_i < _sm_numBits; _sm_i++)                                    \
+        {                                                                                \
+            if ((value) & (1u << _sm_i))                                                 \
+                _materialState.m_State = _materialState.m_State | (1u << _sm_startBit);  \
+            else                                                                         \
+                _materialState.m_State = _materialState.m_State & ~(1u << _sm_startBit); \
+            _sm_startBit++;                                                              \
+        }                                                                                \
     } while (0)
 
 void gl_StateStartup()
@@ -702,18 +752,18 @@ void gl_StateStartup()
 
     unsigned long rasterDefault = _state.m_State;
 
-    setTextureLocal(GLTS_DiffuseWrap, 0);
-    setTextureLocal(GLTS_DetailWrap, 0);
-    setTextureLocal(GLTS_ShadowWrap, 0);
-    setTextureLocal(GLTS_SelfIllumWrap, 0);
-    setTextureLocal(GLTS_GlossWrap, 0);
-    setTextureLocal(GLTS_BumpLocalWrap, 0);
-    setTextureLocal(GLTS_DiffuseFilter, 0);
-    setTextureLocal(GLTS_DetailFilter, 0);
-    setTextureLocal(GLTS_ShadowFilter, 0);
-    setTextureLocal(GLTS_SelfIllumFilter, 0);
-    setTextureLocal(GLTS_GlossFilter, 0);
-    setTextureLocal(GLTS_BumpLocalFilter, 0);
+    SET_TEXTURE_LOCAL(GLTS_DiffuseWrap, 0);
+    SET_TEXTURE_LOCAL(GLTS_DetailWrap, 0);
+    SET_TEXTURE_LOCAL(GLTS_ShadowWrap, 0);
+    SET_TEXTURE_LOCAL(GLTS_SelfIllumWrap, 0);
+    SET_TEXTURE_LOCAL(GLTS_GlossWrap, 0);
+    SET_TEXTURE_LOCAL(GLTS_BumpLocalWrap, 0);
+    SET_TEXTURE_LOCAL(GLTS_DiffuseFilter, 0);
+    SET_TEXTURE_LOCAL(GLTS_DetailFilter, 0);
+    SET_TEXTURE_LOCAL(GLTS_ShadowFilter, 0);
+    SET_TEXTURE_LOCAL(GLTS_SelfIllumFilter, 0);
+    SET_TEXTURE_LOCAL(GLTS_GlossFilter, 0);
+    SET_TEXTURE_LOCAL(GLTS_BumpLocalFilter, 0);
 
     defaultRasterState = rasterDefault;
 
@@ -726,10 +776,12 @@ void gl_StateStartup()
 
     defaultTextureState = _textureState.m_State;
 
-    setMaterialLocal(GLMS_Glossiness, 1);
+    SET_MATERIAL_LOCAL(GLMS_Glossiness, 1);
 
     defaultMaterialState = _materialState.m_State;
 }
 
 #undef SET_RASTER_LOCAL
 #undef SET_RASTER_VAL
+#undef SET_TEXTURE_LOCAL
+#undef SET_MATERIAL_LOCAL

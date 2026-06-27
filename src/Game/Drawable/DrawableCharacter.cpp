@@ -28,9 +28,9 @@
 cCharacter* DrawableCharacter::spRenderOnlyThisCharacter = nullptr;
 bool DrawableCharacter::sbRenderOpposingGoalieToo = false;
 bool DrawableCharacter::sCameraRelativeLighting = false;
+bool DrawableCharacter::sSTSLighting = false;
 
 unsigned char sShadowRenderingDisabled__17DrawableCharacter;
-unsigned char sSTSLighting__17DrawableCharacter;
 
 const u32 GLTT_BumpLocal_bit = 1 << (int)GLTT_BumpLocal;
 static unsigned long GLTT_Detail_bit = 1UL << (int)GLTT_Detail;
@@ -659,7 +659,7 @@ void DrawableCharacter::SendToGl(const cCharacter& character) const
 
     u32 lightTexture;
     World* world = WorldManager::s_World;
-    if (sSTSLighting__17DrawableCharacter != 0)
+    if (DrawableCharacter::sSTSLighting != 0)
     {
         lightTexture = world->m_GlobalLightRampSTSTex;
     }
@@ -670,7 +670,7 @@ void DrawableCharacter::SendToGl(const cCharacter& character) const
 
     void* pSpecularData;
     void* pLightData;
-    if (sSTSLighting__17DrawableCharacter != 0)
+    if (DrawableCharacter::sSTSLighting != 0)
     {
         pLightData = world->m_pSpecularData;
     }

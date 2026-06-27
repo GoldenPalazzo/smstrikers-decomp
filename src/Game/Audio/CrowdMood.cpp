@@ -9,8 +9,16 @@
 #include "NL/nlMath.h"
 #include "NL/nlString.h"
 
+// nlStrNCmp<char>'s weak body is this TU's (matches target); nlStrLen/nlStrNCpy's
+// live elsewhere -- reference them (UND) instead of re-emitting weak COMDAT copies.
+template <>
+unsigned long nlStrLen<char>(const char*);
+template <>
+char* nlStrNCpy<char>(char*, const char*, unsigned long);
+
 extern GCAudioStreaming::AudioBufferMgr g_BufferMgr;
 static void ___blank(const char*, ...);
+static void UpdateTiming(float);
 extern "C" void sndStreamMixParameterEx(unsigned long stid, unsigned char vol, unsigned char pan, unsigned char span, unsigned char auxa, unsigned char auxb);
 extern "C" void sndStreamLPFParameter(unsigned long, unsigned long, unsigned long);
 extern "C" void sndStreamDeactivate(unsigned long stid);
@@ -47,7 +55,8 @@ void Increment(T& Value)
 
 static bool g_DoDecay = true;
 static bool g_CrowdSFXStopped;
-static CROWD_SETTINGS g_Settings;
+static const MOOD_DEFINITION g_MoodDefs[5] = { };
+static const CROWD_SETTINGS g_Settings = { };
 
 CROWD_AUDIO_INIT g_CrowdAudio;
 CROWD_STATE g_CrowdState;
@@ -60,16 +69,14 @@ char* MoodNames[5] = {
     "Neutral",
 };
 
-static MOOD_DEFINITION g_MoodDefs[5];
-
 struct RANDOM_STREAMS
 {
     unsigned long Count;
     char Files[32][256];
 };
 
-static RANDOM_STREAMS g_RandomChants;
-static RANDOM_STREAMS g_RandomHeckles;
+static const RANDOM_STREAMS g_RandomChants = { };
+static const RANDOM_STREAMS g_RandomHeckles = { };
 
 template <int N>
 float NDimDistance(float* A, float* B)
@@ -313,8 +320,7 @@ static inline void ScaleAndAddVocalDef(CROWD_VOCAL_DEFINITION& Dest, const CROWD
         float delayAdd;
         if (Src.Delay)
         {
-            delayAdd = 1.0f / Src.Delay;
-            delayAdd *= Scale;
+            delayAdd = (1.0f / Src.Delay) * Scale;
         }
         else
         {
@@ -377,8 +383,8 @@ static void MoodDefFromBlend(float* MoodBlend, MOOD_DEFINITION& MoodDef)
     ScaleAndAddVocalDef(MoodDef.Chant, SatMoodDef.Chant, remainWeight);
     ScaleAndAddVocalDef(MoodDef.Heckle, SatMoodDef.Heckle, remainWeight);
 
-    MoodDef.Chant.Delay = (MoodDef.Chant.Delay != 0.0f) ? (1.0f / MoodDef.Chant.Delay) : 0.0f;
-    MoodDef.Heckle.Delay = (MoodDef.Heckle.Delay != 0.0f) ? (1.0f / MoodDef.Heckle.Delay) : 0.0f;
+    MoodDef.Chant.Delay = MoodDef.Chant.Delay ? (1.0f / MoodDef.Chant.Delay) : 0.0f;
+    MoodDef.Heckle.Delay = MoodDef.Heckle.Delay ? (1.0f / MoodDef.Heckle.Delay) : 0.0f;
 
     if (*pMaxBlend < remainWeight)
     {
@@ -662,10 +668,9 @@ void PlayMoodDef(MOOD_DEFINITION& MoodDef)
 
 /**
  * Offset/Address/Size: 0x2A0C | 0x80150120 | size: 0x270
- * TODO: 92.37% match - remaining f1/f2 register allocation and clamp control-flow
- *       differences in the dead decay block and volume-fade clamp path.
+ * TODO: 99.23% match - remaining scheduling differences around DestMoodLevel and SkipBlend writes.
  */
-void UpdateTiming(float dtArg)
+static void UpdateTiming(float dtArg)
 {
     float dt = g_pGame->GetGameTime() - g_CrowdState.LastGameTime;
 
@@ -711,7 +716,7 @@ void UpdateTiming(float dtArg)
             if (g_CrowdState._unk78 > g_Settings.MoodDecayDelay)
             {
                 float f2 = g_CrowdState.SinceMoodDest;
-                if (f2 != 0.0f)
+                if (f2)
                 {
                     if (g_DoDecay)
                     {
@@ -721,17 +726,12 @@ void UpdateTiming(float dtArg)
                             f2 = f0;
                         }
 
-                        f2 = g_CrowdState.SinceMoodDest - f2;
-                        g_CrowdState.SinceMoodDest = f2;
-                        f2 = (f2 >= 0.0f) ? f2 : 0.0f;
+                        g_CrowdState.SinceMoodDest -= f2;
+                        g_CrowdState.SinceMoodDest = (g_CrowdState.SinceMoodDest >= 0.0f) ? g_CrowdState.SinceMoodDest : 0.0f;
 
-                        {
-                            float f1 = (float)f2;
-                            g_CrowdState.SinceMoodDest = f2;
-                            g_CrowdState.DestMoodLevel = (unsigned char)(255.0f * f1);
-                            g_CrowdState.CurrentMoodBlend[(s8)g_CrowdState.CurrentMood] = f1;
-                            g_CrowdState.SkipBlend = true;
-                        }
+                        g_CrowdState.DestMoodLevel = (unsigned char)(255.0f * (float)g_CrowdState.SinceMoodDest);
+                        g_CrowdState.CurrentMoodBlend[(s8)g_CrowdState.CurrentMood] = (float)g_CrowdState.SinceMoodDest;
+                        g_CrowdState.SkipBlend = true;
                     }
                 }
             }
@@ -740,13 +740,11 @@ void UpdateTiming(float dtArg)
 
     if (g_CrowdState.VolumeFade.Time > 0.0f)
     {
-        float f3 = g_CrowdState.VolumeFade.Interp + (dtArg / g_CrowdState.VolumeFade.Time);
-        g_CrowdState.VolumeFade.Interp = f3;
-        f3 = (f3 <= 1.0f) ? f3 : 1.0f;
+        g_CrowdState.VolumeFade.Interp += dtArg / g_CrowdState.VolumeFade.Time;
+        g_CrowdState.VolumeFade.Interp = (g_CrowdState.VolumeFade.Interp <= 1.0f) ? g_CrowdState.VolumeFade.Interp : 1.0f;
 
         {
-            float f2 = (float)f3;
-            g_CrowdState.VolumeFade.Interp = f3;
+            float f2 = (float)g_CrowdState.VolumeFade.Interp;
 
             if (fabsf(f2 - 1.0f) <= 0.01f)
             {
@@ -768,7 +766,7 @@ void CrowdMood::ReadConfig()
     Config config(Config::ALLOCATE_HIGH);
     config.LoadFromFile("audio/CrowdMood.ini");
 
-    CROWD_SETTINGS& settings = g_Settings;
+    CROWD_SETTINGS& settings = (CROWD_SETTINGS&)g_Settings;
     char IniTag[256];
     char* TagEnd;
     unsigned long MaxTagLen;
@@ -776,7 +774,7 @@ void CrowdMood::ReadConfig()
 
     for (; mood < CM_END; Increment(mood))
     {
-        MOOD_DEFINITION& MoodDef = g_MoodDefs[mood];
+        MOOD_DEFINITION& MoodDef = (MOOD_DEFINITION&)g_MoodDefs[mood];
         nlStrNCpy(IniTag, MoodNames[mood], 0x100);
 
         TagEnd = IniTag + nlStrLen(IniTag);
@@ -920,7 +918,7 @@ void CrowdMood::ReadConfig()
         nlStrNCpy(IniTag, "RandomChant", 0x100);
         const char* sampleName;
         char* tagEnd = IniTag + nlStrLen(IniTag);
-        RANDOM_STREAMS* pStreams = &g_RandomChants;
+        RANDOM_STREAMS* pStreams = (RANDOM_STREAMS*)&g_RandomChants;
         pStreams->Count = 0;
 
         while (pStreams->Count <= 0x20)
@@ -952,40 +950,38 @@ void CrowdMood::ReadConfig()
         }
     }
 
+    nlStrNCpy(IniTag, "RandomHeckle", 0x100);
+    const char* sampleName;
+    char* tagEnd = IniTag + nlStrLen(IniTag);
+    RANDOM_STREAMS* pStreams = (RANDOM_STREAMS*)&g_RandomHeckles;
+    pStreams->Count = 0;
+
+    while (pStreams->Count <= 0x20)
     {
-        nlStrNCpy(IniTag, "RandomHeckle", 0x100);
-        const char* sampleName;
-        char* tagEnd = IniTag + nlStrLen(IniTag);
-        RANDOM_STREAMS* pStreams = &g_RandomHeckles;
-        pStreams->Count = 0;
+        nlSNPrintf(tagEnd, 4, "%d", pStreams->Count + 1);
 
-        while (pStreams->Count <= 0x20)
+        TagValuePair& tvp = config.FindTvp(IniTag);
+        if (tvp.tag == NULL)
         {
-            nlSNPrintf(tagEnd, 4, "%d", pStreams->Count + 1);
-
-            TagValuePair& tvp = config.FindTvp(IniTag);
-            if (tvp.tag == NULL)
-            {
-                config.Set(IniTag, "none");
-                sampleName = "none";
-            }
-            else
-            {
-                sampleName = (tvp.type == _BOOL)   ? LexicalCast<const char*, bool>(tvp.value.b)
-                           : (tvp.type == _INT)    ? LexicalCast<const char*, int>(tvp.value.i)
-                           : (tvp.type == _FLOAT)  ? LexicalCast<const char*, float>(tvp.value.f)
-                           : (tvp.type == _STRING) ? LexicalCast<const char*, const char*>(tvp.value.s)
-                                                   : NULL;
-            }
-
-            if (nlStrNCmp<char>(sampleName, "none", 4) == 0)
-            {
-                break;
-            }
-
-            nlStrNCpy(pStreams->Files[pStreams->Count], sampleName, 0x100);
-            pStreams->Count++;
+            config.Set(IniTag, "none");
+            sampleName = "none";
         }
+        else
+        {
+            sampleName = (tvp.type == _BOOL)   ? LexicalCast<const char*, bool>(tvp.value.b)
+                       : (tvp.type == _INT)    ? LexicalCast<const char*, int>(tvp.value.i)
+                       : (tvp.type == _FLOAT)  ? LexicalCast<const char*, float>(tvp.value.f)
+                       : (tvp.type == _STRING) ? LexicalCast<const char*, const char*>(tvp.value.s)
+                                               : NULL;
+        }
+
+        if (nlStrNCmp<char>(sampleName, "none", 4) == 0)
+        {
+            break;
+        }
+
+        nlStrNCpy(pStreams->Files[pStreams->Count], sampleName, 0x100);
+        pStreams->Count++;
     }
 
     settings.NoStreaming = GetConfigBool(Config::Global(), "no_stream", false);

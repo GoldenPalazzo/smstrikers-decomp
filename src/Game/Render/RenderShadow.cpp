@@ -575,7 +575,7 @@ static void CastDirectional(nlVector3& p, const nlVector3& lightPos)
     float pz = p.f.z;
     float py = p.f.y;
     float px = p.f.x;
-    float invLen = nlRecipSqrt(ly * ly + lx * lx + lz * lz, false);
+    float invLen = nlRecipSqrt(lx * lx + ly * ly + lz * lz, false);
     nlVector3 vDir;
     vDir.f.x = lx;
     vDir.f.y = ly;
@@ -626,7 +626,7 @@ static void CastPoint(nlVector3& p, const nlVector3& vLight)
 
 /**
  * Offset/Address/Size: 0x0 | 0x80123034 | size: 0x750
- * TODO: 92.21% match - register allocation and scheduling still differ in corner setup
+ * TODO: 92.28% match - register allocation and scheduling still differ in corner setup
  *       and directional/point cast paths.
  */
 void RenderProjectedShadow(const ProjectedShadowParams& params)
@@ -767,7 +767,7 @@ void RenderProjectedShadow(const ProjectedShadowParams& params)
     dir.f.z = 0.0f;
 
     {
-        float invLen = nlRecipSqrt(dir.f.y * dir.f.y + dir.f.x * dir.f.x + dir.f.z * dir.f.z, false);
+        float invLen = nlRecipSqrt(dir.f.x * dir.f.x + dir.f.y * dir.f.y + dir.f.z * dir.f.z, false);
         nlVec3Scale(dir, invLen);
     }
 

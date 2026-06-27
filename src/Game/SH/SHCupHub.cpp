@@ -2973,13 +2973,8 @@ unsigned char CupHubScene::UpdateKnockout2(float fDeltaT)
 
     s16 winnerIndex = (s16)mAnimatingKnockoutTeams[0];
     eTeamID winnerTeam = pGame->mTeamIndex[winnerIndex];
-    unsigned long locHash = nlStringLowerHash("STANDINGS_WINNER");
-    const unsigned short* locString = LookupLocHash(locHash);
-    BasicStringData<unsigned short>* data = BuildWideStringData(locString);
-    unsigned long charHash = GetLOCCharacterName(winnerTeam, false, false);
-    const unsigned short* charName = LookupLocHash(charHash);
-
-    BasicString<unsigned short, Detail::TempStringAllocator> winnerString = Format(BasicString<unsigned short, Detail::TempStringAllocator>(data), charName);
+    BasicStringData<unsigned short>* data = BuildWideStringData(LookupLocHash(nlStringLowerHash("STANDINGS_WINNER")));
+    BasicString<unsigned short, Detail::TempStringAllocator> winnerString = Format(BasicString<unsigned short, Detail::TempStringAllocator>(data), LookupLocHash(GetLOCCharacterName(winnerTeam, false, false)));
 
     memcpy(mColumnsByRowsBuffers[0][0], winnerString.c_str(), 0x40);
     pText->SetString(mColumnsByRowsBuffers[0][0]);
@@ -2998,7 +2993,7 @@ unsigned char CupHubScene::UpdateKnockout2(float fDeltaT)
 
 /**
  * Offset/Address/Size: 0x1860 | 0x800EB5BC | size: 0x70C
- * TODO: 83.92% match - remaining stack/register allocation and finder hasher argument ordering differ from target.
+ * TODO: 97.27% match - remaining singleton/pSlide registers and finder hasher/position stack slots differ from target.
  */
 void CupHubScene::UpdateProgressIndicator()
 {
@@ -3023,7 +3018,6 @@ void CupHubScene::UpdateProgressIndicator()
     eHubColour nodeColours[16];
     TLSlide* pSlide;
     TLComponentInstance* highlight;
-    int i;
     TLImageInstance* nodeImage;
     feVector3 position;
 
@@ -3215,7 +3209,7 @@ void CupHubScene::UpdateProgressIndicator()
         }
     }
 
-    for (i = 0; i < 16; i++)
+    for (int i = 0; i < 16; i++)
     {
         displayRounds[i] = -10;
 
@@ -3338,7 +3332,7 @@ void CupHubScene::UpdateProgressIndicator()
         highlight->m_bVisible = false;
     }
 
-    for (i = 0; i < 16; i++)
+    for (int i = 0; i < 16; i++)
     {
         volatile InlineHasher h7, h6, h5, h4, h3, h2, h1, h0;
 

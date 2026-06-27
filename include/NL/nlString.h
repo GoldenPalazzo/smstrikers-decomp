@@ -69,14 +69,16 @@ int nlStrNCmp(const CharT* a, const CharT* b, unsigned long maxsize)
 {
     int c1;
     int c2;
+    CharT av;
 
     do
     {
         --maxsize;
+        av = *a;
         c2 = (unsigned char)*b;
-        c1 = (unsigned char)*a;
-        a++;
+        c1 = (unsigned char)av;
         b++;
+        a++;
         if (maxsize == 0)
             break;
         if ((CharT)c1 == 0)

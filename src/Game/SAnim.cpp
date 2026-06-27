@@ -26,19 +26,73 @@ void nlListAddStart<cSAnimCallback>(cSAnimCallback** head, cSAnimCallback* entry
     *head = entry;
 }
 
-#define NL_CHUNK_ALIGN(chunk)     ((chunk)->m_ID & 0x7F000000)
-#define NL_CHUNK_ALIGN_POW(chunk) (1u << (NL_CHUNK_ALIGN(chunk) >> 24))
-#define nlGetChunkData(chunk)                                                                            \
-    ((((-NL_CHUNK_ALIGN(chunk)) | NL_CHUNK_ALIGN(chunk)) >> 31)                                          \
-            ? (void*)(((u32)(chunk) + NL_CHUNK_ALIGN_POW(chunk) + 7) & ~(NL_CHUNK_ALIGN_POW(chunk) - 1)) \
-            : (void*)((u8*)(chunk) + 8))
+#define NL_GET_CHUNK_DATA_AS(chunk, out, type)              \
+    do                                                      \
+    {                                                       \
+        u32 alignField = (chunk)->m_ID & 0x7F000000;        \
+        u32 isAligned = ((-alignField) | alignField) >> 31; \
+        if (isAligned != 0)                                 \
+        {                                                   \
+            u32 alignment = 1u << (alignField >> 24);       \
+            u32 ptr = (u32)(chunk) + alignment;             \
+            ptr += 7;                                       \
+            ptr &= ~(alignment - 1);                        \
+            (out) = (type)ptr;                              \
+        }                                                   \
+        else                                                \
+        {                                                   \
+            (out) = (type)((u8*)(chunk) + 8);               \
+        }                                                   \
+    } while (0)
+
+#define GET_ROOT_TRANS_FOR_INITIALIZE(anim, t, out)                                        \
+    do                                                                                     \
+    {                                                                                      \
+        if ((anim)->m_nNumRootKeys != 0)                                                   \
+        {                                                                                  \
+            if ((t) == 1.0f || (anim)->m_nNumRootKeys == 1)                                \
+            {                                                                              \
+                u32 w0;                                                                    \
+                u32 w1;                                                                    \
+                const nlVector3* pSrc = &(anim)->m_pRootTrans[(anim)->m_nNumRootKeys - 1]; \
+                w0 = pSrc->as_u32[0];                                                      \
+                w1 = pSrc->as_u32[1];                                                      \
+                (out)->as_u32[0] = w0;                                                     \
+                (out)->as_u32[1] = w1;                                                     \
+                (out)->as_u32[2] = pSrc->as_u32[2];                                        \
+            }                                                                              \
+            else                                                                           \
+            {                                                                              \
+                float fRealIndex = (t) * ((anim)->m_nNumRootKeys - 1);                     \
+                int nIndex0 = (int)fRealIndex;                                             \
+                int nIndex1 = nIndex0 + 1;                                                 \
+                const nlVector3* pRootTrans = (anim)->m_pRootTrans;                        \
+                const nlVector3* pVal0 = &pRootTrans[nIndex0];                             \
+                const nlVector3* pVal1 = &pRootTrans[nIndex1];                             \
+                float fWeight = fRealIndex - nIndex0;                                      \
+                float fInvWeight = 1.0f - fWeight;                                         \
+                (out)->f.x = (fWeight * pVal1->f.x) + (fInvWeight * pVal0->f.x);           \
+                (out)->f.y = (fWeight * pVal1->f.y) + (fInvWeight * pVal0->f.y);           \
+                (out)->f.z = (fWeight * pVal1->f.z) + (fInvWeight * pVal0->f.z);           \
+            }                                                                              \
+        }                                                                                  \
+        else                                                                               \
+        {                                                                                  \
+            (out)->f.x = 0.0f;                                                             \
+            (out)->f.y = 0.0f;                                                             \
+            (out)->f.z = 0.0f;                                                             \
+        }                                                                                  \
+    } while (0)
 
 #define nlGetNextChunk(chunk) ((nlChunk*)((u8*)(chunk) + (chunk)->m_Size + 8))
 
+#pragma inline_depth(8)
+#pragma inline_max_size(0x10000)
+#pragma inline_max_total_size(0x10000)
 /**
  * Offset/Address/Size: 0xD40 | 0x801E9F54 | size: 0x68C
- * TODO: 79.68% match - chunk walking is closer, but the chunk-data alignment
- * still emits not+and where the target uses andc.
+ * TODO: 86.16% match - chunk-data helper and inlined root translation still
+ * have register-coloring differences in chunk walks and interpolation setup.
  */
 cSAnim* cSAnim::Initialize(nlChunk* pChunk)
 {
@@ -47,26 +101,27 @@ cSAnim* cSAnim::Initialize(nlChunk* pChunk)
     nlChunk* chunkB;
     nlChunk* chunkC;
 
-    cSAnim* pRetval = (cSAnim*)nlGetChunkData(chunkA);
+    cSAnim* pRetval;
+    NL_GET_CHUNK_DATA_AS(chunkA, pRetval, cSAnim*);
     pRetval->m_pCallbackList = NULL;
 
     chunkB = (nlChunk*)((u8*)chunkA + chunkA->m_Size + 8);
-    pRetval->m_szName = (const char*)nlGetChunkData(chunkB);
+    NL_GET_CHUNK_DATA_AS(chunkB, pRetval->m_szName, const char*);
 
     chunkC = (nlChunk*)((u8*)chunkB + chunkB->m_Size + 8);
-    pRetval->m_pRotKeys = nlGetChunkData(chunkC);
+    NL_GET_CHUNK_DATA_AS(chunkC, pRetval->m_pRotKeys, void*);
 
     chunkA = (nlChunk*)((u8*)chunkC + chunkC->m_Size + 8);
-    pRetval->m_pTransKeys = (PackedTrans**)nlGetChunkData(chunkA);
+    NL_GET_CHUNK_DATA_AS(chunkA, pRetval->m_pTransKeys, PackedTrans**);
 
     chunkC = (nlChunk*)((u8*)chunkA + chunkA->m_Size + 8);
-    pRetval->m_pScaleKeys = (PackedScale**)nlGetChunkData(chunkC);
+    NL_GET_CHUNK_DATA_AS(chunkC, pRetval->m_pScaleKeys, PackedScale**);
 
     chunkA = (nlChunk*)((u8*)chunkC + chunkC->m_Size + 8);
-    pRetval->m_pRootRot = (unsigned short*)nlGetChunkData(chunkA);
+    NL_GET_CHUNK_DATA_AS(chunkA, pRetval->m_pRootRot, unsigned short*);
 
     chunkC = (nlChunk*)((u8*)chunkA + chunkA->m_Size + 8);
-    pRetval->m_pRootTrans = (nlVector3*)nlGetChunkData(chunkC);
+    NL_GET_CHUNK_DATA_AS(chunkC, pRetval->m_pRootTrans, nlVector3*);
 
     u32 nodeIndex = 0;
     u32 type;
@@ -83,11 +138,11 @@ cSAnim* cSAnim::Initialize(nlChunk* pChunk)
             {
                 u32 subType = subChunk->m_ID & 0x80FFFFFF;
                 if (subType == 0x17101)
-                    ((void**)pRetval->m_pRotKeys)[nodeIndex] = nlGetChunkData(subChunk);
+                    NL_GET_CHUNK_DATA_AS(subChunk, ((void**)pRetval->m_pRotKeys)[nodeIndex], void*);
                 else if (subType == 0x17102)
-                    pRetval->m_pTransKeys[nodeIndex] = (PackedTrans*)nlGetChunkData(subChunk);
+                    NL_GET_CHUNK_DATA_AS(subChunk, pRetval->m_pTransKeys[nodeIndex], PackedTrans*);
                 else if (subType == 0x17103)
-                    pRetval->m_pScaleKeys[nodeIndex] = (PackedScale*)nlGetChunkData(subChunk);
+                    NL_GET_CHUNK_DATA_AS(subChunk, pRetval->m_pScaleKeys[nodeIndex], PackedScale*);
 
                 subChunk = nlGetNextChunk(subChunk);
             }
@@ -98,61 +153,19 @@ cSAnim* cSAnim::Initialize(nlChunk* pChunk)
         nodeChunk = nlGetNextChunk(nodeChunk);
     }
 
-    u32 numRootKeys;
     nlVector3* rootTrans = pRetval->m_pRootTrans;
     nlVector3 v3PosStart;
     nlVector3 v3PosEnd;
 
     if (rootTrans != NULL)
     {
-        numRootKeys = pRetval->m_nNumRootKeys;
-        if (numRootKeys != 0)
-        {
-            u32 lastIndex = numRootKeys - 1;
+        GET_ROOT_TRANS_FOR_INITIALIZE(pRetval, 0.0f, &v3PosStart);
+        GET_ROOT_TRANS_FOR_INITIALIZE(pRetval, 1.0f, &v3PosEnd);
 
-            if (numRootKeys == 1)
-            {
-                v3PosStart.as_u32[0] = rootTrans[lastIndex].as_u32[0];
-                v3PosStart.as_u32[1] = rootTrans[lastIndex].as_u32[1];
-                v3PosStart.as_u32[2] = rootTrans[lastIndex].as_u32[2];
-            }
-            else
-            {
-                float fRealIndex = 0.0f * lastIndex;
-                int nIndex = (int)fRealIndex;
-                float fFrac = fRealIndex - (float)nIndex;
-                float fInvFrac = 1.0f - fFrac;
-                nlVector3* pVal0 = &rootTrans[nIndex];
-                nlVector3* pVal1 = &rootTrans[nIndex + 1];
-                v3PosStart.f.x = fFrac * pVal1->f.x + fInvFrac * pVal0->f.x;
-                v3PosStart.f.y = fFrac * pVal1->f.y + fInvFrac * pVal0->f.y;
-                v3PosStart.f.z = fFrac * pVal1->f.z + fInvFrac * pVal0->f.z;
-            }
-        }
-        else
-        {
-            v3PosStart.f.x = 0.0f;
-            v3PosStart.f.y = 0.0f;
-            v3PosStart.f.z = 0.0f;
-        }
-
-        if (numRootKeys != 0)
-        {
-            u32 lastIndex = numRootKeys - 1;
-            v3PosEnd.as_u32[0] = rootTrans[lastIndex].as_u32[0];
-            v3PosEnd.as_u32[1] = rootTrans[lastIndex].as_u32[1];
-            v3PosEnd.as_u32[2] = rootTrans[lastIndex].as_u32[2];
-        }
-        else
-        {
-            v3PosEnd.f.x = 0.0f;
-            v3PosEnd.f.y = 0.0f;
-            v3PosEnd.f.z = 0.0f;
-        }
-
-        float dist = nlSqrt(
-            (v3PosEnd.f.y - v3PosStart.f.y) * (v3PosEnd.f.y - v3PosStart.f.y) + (v3PosEnd.f.x - v3PosStart.f.x) * (v3PosEnd.f.x - v3PosStart.f.x) + (v3PosEnd.f.z - v3PosStart.f.z) * (v3PosEnd.f.z - v3PosStart.f.z),
-            true);
+        float dx = v3PosEnd.f.x - v3PosStart.f.x;
+        float dy = v3PosEnd.f.y - v3PosStart.f.y;
+        float dz = v3PosEnd.f.z - v3PosStart.f.z;
+        float dist = nlSqrt(dz * dz + (dx * dx + (dy * dy)), true);
 
         pRetval->m_fLinearSpeed = dist / ((float)pRetval->m_nNumKeys / 30.0f);
     }
@@ -161,16 +174,16 @@ cSAnim* cSAnim::Initialize(nlChunk* pChunk)
         pRetval->m_fLinearSpeed = 0.0f;
     }
 
-    pRetval->m_pNumMorphKeys = (const unsigned int*)nlGetChunkData(nodeChunk);
+    NL_GET_CHUNK_DATA_AS(nodeChunk, pRetval->m_pNumMorphKeys, const unsigned int*);
 
     nodeChunk = nlGetNextChunk(nodeChunk);
-    pRetval->m_nMorphIds = (unsigned long*)nlGetChunkData(nodeChunk);
+    NL_GET_CHUNK_DATA_AS(nodeChunk, pRetval->m_nMorphIds, unsigned long*);
 
     nodeChunk = nlGetNextChunk(nodeChunk);
-    pRetval->m_pMorphKeys = (unsigned char*)nlGetChunkData(nodeChunk);
+    NL_GET_CHUNK_DATA_AS(nodeChunk, pRetval->m_pMorphKeys, unsigned char*);
 
     nodeChunk = nlGetNextChunk(nodeChunk);
-    pRetval->m_pNodeProperties = (const unsigned int*)nlGetChunkData(nodeChunk);
+    NL_GET_CHUNK_DATA_AS(nodeChunk, pRetval->m_pNodeProperties, const unsigned int*);
 
     return pRetval;
 }

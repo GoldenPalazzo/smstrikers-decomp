@@ -1,4 +1,5 @@
-#define FEPOPUPMENU_INTERNAL_BYVAL
+#define FEPOPUPMENU_BYVAL_DECLS
+#define FEPOPUPMENU_FUNCTION_ASSIGN_DONT_INLINE
 #define BASICSTRING_INLINE_ERASE
 #include "Game/FE/fePopupMenu.h"
 
@@ -753,10 +754,9 @@ FEPopupMenu::FEPopupMenu()
  *               formatting. ~1500 bytes of additional codegen.
  *
  * Mangling note: by-value parameter mangling is locked in via the
- * FEPOPUPMENU_INTERNAL_BYVAL header hack at the top of this TU. Other TUs
- * see Function<FnVoidVoid>& and emit R-prefixed unresolved bl references,
- * which objdiff treats as equivalent - so the 100% matches in
- * confirmNewTourn/UpdateForSubOptionMenus/Create(ePopupMenu) are preserved.
+ * FEPOPUPMENU_BYVAL_DECLS header view at the top of this TU. Function
+ * assignment inlining is controlled separately by
+ * FEPOPUPMENU_FUNCTION_ASSIGN_DONT_INLINE.
  */
 void FEPopupMenu::Create(
     ePopupMenu type,

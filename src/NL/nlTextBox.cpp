@@ -33,13 +33,13 @@ void nlTextBox::DrawString(const nlTextBox::StringDrawInfo& DrawInfo, const nlVe
     overridecolour = Color;
     unsigned long hMatrix;
     const nlMatrix4* pMatrix = DrawInfo.pMatrix;
-    bool flipY = (DrawInfo.DrawOptions >> 11) & 1;
+    bool flipY = (DrawInfo.DrawOptions & 0x800) != 0;
     overridecolour.c[3] = 0;
     float startX = DrawAt.f.x;
 
     const unsigned short* pString = DrawInfo.String;
     unsigned long row = 0;
-    unsigned short rowCount = DrawInfo.RowCount;
+    unsigned long rowCount = DrawInfo.RowCount;
     CurrentPos.f.y = yWithOffset + (float)vertOffset;
 
     for (; row < rowCount; row++)
@@ -58,7 +58,6 @@ void nlTextBox::DrawString(const nlTextBox::StringDrawInfo& DrawInfo, const nlVe
         }
 
         unsigned short startIdx = CurrentRow->FirstChar;
-        unsigned long* matArg = pMatrix ? &hMatrix : (unsigned long*)0;
         {
             FontCharString fontCharStr;
             fontCharStr.m_InternalBuffer = 0;
@@ -66,7 +65,7 @@ void nlTextBox::DrawString(const nlTextBox::StringDrawInfo& DrawInfo, const nlVe
 
             int length = (CurrentRow + 1)->FirstChar - startIdx;
 
-            DrawInfo.pFont->DrawString(View, fontCharStr, CurrentPos, Color, Color, length, nlFont::PASS_TextAndEffect, flipY, matArg, &overridecolour);
+            DrawInfo.pFont->DrawString(View, fontCharStr, CurrentPos, Color, Color, length, nlFont::PASS_TextAndEffect, flipY, pMatrix != 0 ? &hMatrix : 0, &overridecolour);
         }
 
         if (overridecolour.c[3] == 0)

@@ -15,6 +15,7 @@ import json
 import math
 import os
 import platform
+import shlex
 import sys
 from pathlib import Path
 from typing import (
@@ -64,6 +65,7 @@ class Object:
             "lib": None,
             "mw_version": None,
             "progress_category": None,
+            "redefine_symbols": [],
             "scratch_preset_id": None,
             "shift_jis": None,
             "source": name,
@@ -740,7 +742,7 @@ def generate_build_ninja(
     n.comment("MWCC build")
     n.rule(
         name="mwcc",
-        command=mwcc_cmd,
+        command=mwcc_cmd + "$postprocess",
         description="MWCC $out",
         depfile="$basefile.d",
         deps="gcc",
@@ -750,7 +752,7 @@ def generate_build_ninja(
     n.comment("MWCC build (with UTF-8 to Shift JIS wrapper)")
     n.rule(
         name="mwcc_sjis",
-        command=mwcc_sjis_cmd,
+        command=mwcc_sjis_cmd + "$postprocess",
         description="MWCC $out",
         depfile="$basefile.d",
         deps="gcc",
@@ -760,7 +762,7 @@ def generate_build_ninja(
     n.comment("MWCC build (with extab post-processing)")
     n.rule(
         name="mwcc_extab",
-        command=mwcc_extab_cmd,
+        command=mwcc_extab_cmd + "$postprocess",
         description="MWCC $out",
         depfile="$basefile.d",
         deps="gcc",
@@ -770,7 +772,7 @@ def generate_build_ninja(
     n.comment("MWCC build (with UTF-8 to Shift JIS wrapper and extab post-processing)")
     n.rule(
         name="mwcc_sjis_extab",
-        command=mwcc_sjis_extab_cmd,
+        command=mwcc_sjis_extab_cmd + "$postprocess",
         description="MWCC $out",
         depfile="$basefile.d",
         deps="gcc",
@@ -1050,6 +1052,19 @@ def generate_build_ninja(
                 variables["extab_padding"] = "".join(
                     f"{i:02x}" for i in obj.options["extab_padding"]
                 )
+
+            redefine_symbols = obj.options["redefine_symbols"]
+            if redefine_symbols:
+                objcopy = binutils / f"powerpc-eabi-objcopy{EXE}"
+                build_implcit = [*build_implcit, binutils_implicit or objcopy]
+                redefine_args = " ".join(
+                    "--redefine-sym " + shlex.quote(f"{old}={new}")
+                    for old, new in redefine_symbols
+                )
+                variables["postprocess"] = (
+                    f" && {objcopy} {redefine_args} {serialize_path(obj.src_obj_path)}"
+                )
+
             n.comment(f"{obj.name}: {lib_name} (linked {obj.completed})")
             n.build(
                 outputs=obj.src_obj_path,

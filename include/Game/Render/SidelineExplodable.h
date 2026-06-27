@@ -80,6 +80,7 @@ public:
     virtual void SetUnexplodedModelVisibility(bool isVisible);
     virtual const nlMatrix4& GetWorldMatrix() const;
     void Explode();
+    void InitializePhysicsObject(PhysicsObject*, const nlMatrix4&, bool);
     void DestroyAllActiveFragments(bool);
     void FindExplosionAngleRange(unsigned short&, unsigned short&) const;
 

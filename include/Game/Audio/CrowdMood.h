@@ -70,7 +70,6 @@ struct MOOD_DEFINITION
 //     bool bFastTransition : 1;
 // };
 
-void UpdateTiming(float);
 void PlayMoodDef(MOOD_DEFINITION&);
 void ChangeCrowdVolume(float);
 // void ___blank(const char*, ...);

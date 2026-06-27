@@ -559,14 +559,12 @@ bool NisPlayer::WorldIsFrozen() const
 
 /**
  * Offset/Address/Size: 0x2F64 | 0x80117C40 | size: 0x318
- * TODO: 97.90% match - register allocation diffs around this, loop, string data, and file temporaries
+ * TODO: 98.51% match - register allocation diffs for this, loop cursor, load buffer, and string/file temporaries
  */
 void NisPlayer::HandleAsyncs()
 {
     char* loadAt;
     nlFile* file;
-    const char* str;
-    BasicStringData<char>* data;
 
     for (int i = 0; i < 4; i++)
     {
@@ -606,29 +604,7 @@ void NisPlayer::HandleAsyncs()
                     nlBreak();
                 }
 
-                data = (BasicStringData<char>*)nlMalloc(sizeof(BasicStringData<char>), 8, true);
-                if (data != 0)
-                {
-                    data->mData = 0;
-                    data->mSize = 0;
-                    data->mCapacity = 0;
-                    str = "art/nis/";
-                    const char* s = str;
-                    while ((signed char)*s++ != 0)
-                    {
-                        data->mSize++;
-                    }
-                    data->mSize++;
-                    data->mData = (char*)nlMalloc(data->mSize + 1, 8, true);
-                    data->mCapacity = data->mSize;
-                    for (int j = 0; j < data->mSize; j++)
-                    {
-                        data->mData[j] = *str++;
-                    }
-                    data->mRefCount = 1;
-                }
-
-                BasicString<char, Detail::TempStringAllocator> fileName(data);
+                BasicString<char, Detail::TempStringAllocator> fileName("art/nis/");
                 fileName.AppendInPlace(mLoadQueue[i]->name);
 
                 if (useAsyncLoading)

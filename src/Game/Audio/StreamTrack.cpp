@@ -29,17 +29,6 @@ TrackManagerBase::StreamFileLookup::StreamFileLookup(
     nlWalkList(container.m_Head, &container, &ContainerT::DeleteEntry);
 }
 
-StreamTrack::StreamTrack(TrackManagerBase& mgr, Audio::MasterVolume::VOLUME_GROUP volumeGroup)
-    : m_TrackMgr(mgr)
-{
-    m_LPFFreq = 32000;
-    m_LPFOn = false;
-    m_InFakePause = false;
-    m_TrackOwnsStreams = true;
-    m_State = TS_Idle;
-    m_VolumeGroup = volumeGroup;
-    m_IdleCallback.mTag = EMPTY;
-}
 } // namespace AudioStreamTrack
 
 typedef AudioStreamTrack::StreamTrack::QUEUED_STREAM QS_T;
@@ -712,7 +701,7 @@ inline GCAudioStreaming::StereoAudioStream::StereoAudioStream(
 
 /**
  * Offset/Address/Size: 0x10BC | 0x80155E14 | size: 0x418
- * TODO: 98.4% match - stream argument saved-register rotation and stream pointer register selection remain
+ * TODO: 99.45% match - saved-register coloring remains around arguments and stream pointer
  */
 void AudioStreamTrack::StreamTrack::QueueStream(
     unsigned long StreamId, float Volume, bool Looping,
@@ -772,25 +761,27 @@ void AudioStreamTrack::StreamTrack::QueueStream(
 
     nlStrNCpy<char>(FileName, "audio/data/streams/", 0x100);
     unsigned long lookupKey = StreamId;
+    unsigned long prefixLen;
+    TrackManagerBase& lookupMgr = m_TrackMgr;
     TrackManagerBase::StreamFileLookup::STREAM_FILE_LOOKUP* lookup = nlBSearch<TrackManagerBase::StreamFileLookup::STREAM_FILE_LOOKUP, unsigned long>(
-        lookupKey, m_TrackMgr.m_FileLookup.m_pLookup, m_TrackMgr.m_FileLookup.m_StreamCount);
+        lookupKey, lookupMgr.m_FileLookup.m_pLookup, lookupMgr.m_FileLookup.m_StreamCount);
 
     char* percentPos = strchr(lookup->value, '%');
     if (percentPos != NULL)
     {
-        unsigned long prefixLen = (unsigned long)(percentPos - lookup->value);
+        prefixLen = (unsigned long)(percentPos - lookup->value);
         char* dest = &FileName[19];
         nlStrNCpy<char>(dest, lookup->value, prefixLen + 1);
         unsigned long remainLen = 0xed - prefixLen;
         dest += prefixLen;
-        Tag tag = mgr.m_FileLookup.m_ParamCB.mTag;
+        Tag tag = lookupMgr.m_FileLookup.m_ParamCB.mTag;
         if (tag == FREE_FUNCTION)
         {
-            ((AudioStreamTrack::TrackManagerBase::StreamFileLookup::ParamCallbackFn)mgr.m_FileLookup.m_ParamCB.mFreeFunction)(StreamParam, dest, remainLen);
+            ((AudioStreamTrack::TrackManagerBase::StreamFileLookup::ParamCallbackFn)lookupMgr.m_FileLookup.m_ParamCB.mFreeFunction)(StreamParam, dest, remainLen);
         }
         else
         {
-            (*(AudioStreamTrack::TrackManagerBase::StreamFileLookup::ParamFunctorBase*)mgr.m_FileLookup.m_ParamCB.mFunctor)(StreamParam, dest, remainLen);
+            (*(AudioStreamTrack::TrackManagerBase::StreamFileLookup::ParamFunctorBase*)lookupMgr.m_FileLookup.m_ParamCB.mFunctor)(StreamParam, dest, remainLen);
         }
         unsigned long cbLen = nlStrLen(dest);
         nlStrNCpy<char>(dest + cbLen, percentPos + 3, remainLen - cbLen);
@@ -801,26 +792,30 @@ void AudioStreamTrack::StreamTrack::QueueStream(
     }
 
     GCAudioStreaming::StereoAudioStream* stream = entry->m_data.pStream;
-    unsigned long zero = 0;
+    GCAudioStreaming::AudioStreamBuffer* buf;
+    unsigned long zero = (unsigned long)(buf = NULL);
+    unsigned long compareZero = 0;
     stream->m_StreamLength = zero;
+
+    unsigned long iVal;
+    unsigned long* i = &iVal;
+    *i = zero;
+
     stream->m_OldLength = zero;
     stream->m_StreamPos = zero;
 
-    volatile unsigned long bufIdx = zero;
-    GCAudioStreaming::AudioStreamBuffer* buf = NULL;
-    if (stream->m_BufferCount > zero)
+    if (stream->m_BufferCount > compareZero)
     {
         buf = stream->m_Buffers[0];
     }
+
     while (buf != NULL)
     {
-        unsigned long i = bufIdx;
-        unsigned long next = i + 1;
-        bufIdx = next;
-        stream->m_Buffers[i] = NULL;
-        if (next < stream->m_BufferCount)
+        stream->m_Buffers[*i] = NULL;
+        (*i)++;
+        if (*i < stream->m_BufferCount)
         {
-            buf = stream->m_Buffers[next];
+            buf = stream->m_Buffers[*i];
         }
         else
         {
@@ -828,10 +823,10 @@ void AudioStreamTrack::StreamTrack::QueueStream(
         }
     }
 
-    stream->m_LastPlayable = zero;
-    stream->m_Flags = zero;
+    stream->m_LastPlayable = 0;
+    stream->m_Flags = 0;
     stream->m_Volume = 64;
-    stream->m_LPFOn = zero;
+    stream->m_LPFOn = 0;
     stream->m_LPFFreq = 0x3FFF;
     nlFile* file = nlOpen(FileName);
     stream->m_pFile = file;

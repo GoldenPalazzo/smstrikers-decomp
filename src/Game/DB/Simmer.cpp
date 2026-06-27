@@ -4,14 +4,25 @@
 #include "NL/nlString.h"
 #include "PowerPC_EABI_Support/MSL_C/MSL_Common/stdio.h"
 
+// nlStrNCmp<char>'s weak body lives in CrowdMood.o; reference it (UND), don't re-emit.
+template <>
+int nlStrNCmp<char>(const char*, const char*, unsigned long);
+
 extern "C" char* fgets(char*, int, FILE*);
 
 static const char* SIM_FILE = "";
 
+// Tokenizer's members are written as proper templated methods (not explicit
+// specializations) so MWCC emits the Tokenizer<BString> instantiation as WEAK
+// linkonce in this TU (matching target). Definitions live here, NOT in Simmer.h:
+// nlConfig.cpp odr-uses begin/end/operator++ and would otherwise emit its own
+// weak copies, whereas target references them as *UND* satisfied by this TU.
+
 /**
  * Offset/Address/Size: 0x3D0 | 0x80191868 | size: 0x38
  */
-Tokenizer<BasicString<char, Detail::TempStringAllocator> >::iterator Tokenizer<BasicString<char, Detail::TempStringAllocator> >::begin() const
+template <typename StringType>
+typename Tokenizer<StringType>::iterator Tokenizer<StringType>::begin() const
 {
     return iterator(*this, m_source.m_data ? m_source.m_data->mData : (char*)0);
 }
@@ -19,7 +30,8 @@ Tokenizer<BasicString<char, Detail::TempStringAllocator> >::iterator Tokenizer<B
 /**
  * Offset/Address/Size: 0x0 | 0x80191498 | size: 0x44
  */
-Tokenizer<BasicString<char, Detail::TempStringAllocator> >::iterator Tokenizer<BasicString<char, Detail::TempStringAllocator> >::end() const
+template <typename StringType>
+typename Tokenizer<StringType>::iterator Tokenizer<StringType>::end() const
 {
     const char* endPtr;
     if (m_source.m_data)
@@ -37,7 +49,8 @@ Tokenizer<BasicString<char, Detail::TempStringAllocator> >::iterator Tokenizer<B
  * Offset/Address/Size: 0x398 | 0x80191830 | size: 0x38
  */
 #pragma dont_inline on
-Tokenizer<BasicString<char, Detail::TempStringAllocator> >::iterator& Tokenizer<BasicString<char, Detail::TempStringAllocator> >::iterator::operator++()
+template <typename StringType>
+typename Tokenizer<StringType>::iterator& Tokenizer<StringType>::iterator::operator++()
 {
     mIter = mEnd;
     FindNextToken();
@@ -47,12 +60,13 @@ Tokenizer<BasicString<char, Detail::TempStringAllocator> >::iterator& Tokenizer<
 
 /**
  * Offset/Address/Size: 0x88 | 0x80191520 | size: 0x310
- * TODO: 72.4% match - delimiter data/index registers differ in both scan loops.
+ * TODO: 84.76% match - delimiter data/index registers differ in both scan loops.
  */
-void Tokenizer<BasicString<char, Detail::TempStringAllocator> >::iterator::FindNextToken()
+template <typename StringType>
+void Tokenizer<StringType>::iterator::FindNextToken()
 {
     const char* iter = mIter;
-    const Tokenizer<BasicString<char, Detail::TempStringAllocator> >* tok = mTokenizer;
+    const Tokenizer<StringType>* tok = mTokenizer;
 
     while (iter != (tok->m_source.m_data != 0 ? tok->m_source.m_data->mData + (tok->m_source.m_data->mSize - 1) : (char*)0))
     {
@@ -122,16 +136,16 @@ void Tokenizer<BasicString<char, Detail::TempStringAllocator> >::iterator::FindN
         }
     }
 
-    BasicString<char, Detail::TempStringAllocator> temp(data);
-    mToken = temp;
+    mToken = StringType(data);
 }
 
 #pragma dont_inline on
 /**
  * Offset/Address/Size: 0x44 | 0x801914DC | size: 0x44
  */
-Tokenizer<BasicString<char, Detail::TempStringAllocator> >::iterator::iterator(
-    const Tokenizer<BasicString<char, Detail::TempStringAllocator> >& tokenizer,
+template <typename StringType>
+Tokenizer<StringType>::iterator::iterator(
+    const Tokenizer<StringType>& tokenizer,
     const char* endPtr)
     : mTokenizer(&tokenizer)
     , mIter(endPtr)

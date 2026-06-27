@@ -461,9 +461,6 @@ void ModeledScreenTransition::Render(eGLView)
  */
 void ModeledScreenTransition::RenderOutline() const
 {
-    static nlVector3 sZeroInit;
-    static nlVector3 sZeroClear;
-
     Vector<nlVector3, DefaultAllocator> outline;
     nlVector3 current;
     outline.mData = NULL;
@@ -472,19 +469,7 @@ void ModeledScreenTransition::RenderOutline() const
 
     if (outline.mCapacity < 8)
     {
-        Vector<nlVector3, DefaultAllocator> other;
-        other.mData = (nlVector3*)nlMalloc(8 * sizeof(nlVector3), 8, false);
-        other.mSize = 8;
-        other.mCapacity = 8;
-
-        other.mData[0] = sZeroInit;
-        other.mData[1] = sZeroInit;
-        other.mData[2] = sZeroInit;
-        other.mData[3] = sZeroInit;
-        other.mData[4] = sZeroInit;
-        other.mData[5] = sZeroInit;
-        other.mData[6] = sZeroInit;
-        other.mData[7] = sZeroInit;
+        Vector<nlVector3, DefaultAllocator> other(8, 0);
 
         for (int i = 0; i < outline.mSize; i++)
         {
@@ -510,12 +495,19 @@ void ModeledScreenTransition::RenderOutline() const
     const nlVector3* end = begin + 1;
     int size = end - begin;
 
-    for (int i = 0; (u32)i < m_nModels; i++)
+    int modelOffset = 0;
+    int modelMapOffset = 0;
+    int* modelMap = m_pModelMap;
+    glModel* models = m_pModels;
+    u32 modelCount = m_nModels;
+
+    for (int i = 0; (u32)i < modelCount; i++)
     {
+        glModel* model = (glModel*)((u8*)models + modelOffset);
         int packetOffset = 0;
-        for (int iPacket = 0; (u32)iPacket < ((glModel*)((u8*)m_pModels + i * sizeof(glModel)))->numPackets; iPacket++)
+        for (int iPacket = 0; (u32)iPacket < model->numPackets; iPacket++)
         {
-            const glModelPacket& packet = *(const glModelPacket*)((u8*)((glModel*)((u8*)m_pModels + i * sizeof(glModel)))->packets + packetOffset);
+            const glModelPacket& packet = *(const glModelPacket*)((u8*)model->packets + packetOffset);
             DisplayList* pList = dlGetStruct(packet.indexBuffer);
 
             for (int iVertex = 0; iVertex < (int)packet.numVertices; iVertex++)
@@ -547,22 +539,14 @@ void ModeledScreenTransition::RenderOutline() const
                     current.f.z = s[2] * 0.0078125f;
                 }
 
-                nlMultPosVectorMatrix(current, current, m_pPoseAccumulator->GetNodeMatrix(m_pModelMap[i]));
+                nlMultPosVectorMatrix(current, current, m_pPoseAccumulator->GetNodeMatrix(*(int*)((u8*)modelMap + modelMapOffset)));
 
                 int offset = (outline.mData + outline.mSize) - outline.mData;
                 int requiredSize = outline.mSize + size;
 
                 if (outline.mCapacity < requiredSize)
                 {
-                    Vector<nlVector3, DefaultAllocator> other;
-                    other.mData = (nlVector3*)nlMalloc(requiredSize * sizeof(nlVector3), 8, false);
-                    other.mSize = requiredSize;
-                    other.mCapacity = requiredSize;
-
-                    for (int i = 0; i < other.mSize; i++)
-                    {
-                        other.mData[i] = sZeroInit;
-                    }
+                    Vector<nlVector3, DefaultAllocator> other(requiredSize, 0);
                     for (int i = 0; i < outline.mSize; i++)
                     {
                         other.mData[i] = outline.mData[i];
@@ -641,12 +625,15 @@ void ModeledScreenTransition::RenderOutline() const
 
             for (int k = 0; k < outline.mSize; k++)
             {
-                outline.mData[k] = sZeroClear;
+                outline.mData[k] = nlVector3();
             }
             outline.mSize = 0;
 
             packetOffset += sizeof(glModelPacket);
         }
+
+        modelOffset += sizeof(glModel);
+        modelMapOffset += sizeof(int);
     }
 }
 /**

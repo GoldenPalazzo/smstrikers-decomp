@@ -64,6 +64,7 @@ int glFontPrintf(eGLView view, int x, int y, const char* format, ...)
 
 /**
  * Offset/Address/Size: 0x1DC | 0x801D8574 | size: 0x3EC
+ * TODO: 99.1% match - r4/r5 character register swap and r4/r6 drop-shadow loop cursor.
  */
 #pragma optimize_for_size on
 int glFontPrint(eGLView view, int virtual_x, int virtual_y, const nlColour& colour, const char* str)
@@ -97,14 +98,16 @@ int glFontPrint(eGLView view, int virtual_x, int virtual_y, const nlColour& colo
             float vs = 0.0078125f;
             float s = (float)j;
             float t = (float)i;
-            pPoly->m_uv[0].f.x = s * us;
-            pPoly->m_uv[0].f.y = t * vs;
-            pPoly->m_uv[1].f.x = s * us;
+            float s0 = s * us;
+            float t0 = t * vs;
+            pPoly->m_uv[0].f.x = s0;
+            pPoly->m_uv[0].f.y = t0;
+            pPoly->m_uv[1].f.x = s0;
             pPoly->m_uv[1].f.y = (t + 8.0f) * vs;
             pPoly->m_uv[2].f.x = (s + 8.0f) * us;
             pPoly->m_uv[2].f.y = (t + 8.0f) * vs;
             pPoly->m_uv[3].f.x = (s + 8.0f) * us;
-            pPoly->m_uv[3].f.y = t * vs;
+            pPoly->m_uv[3].f.y = t0;
             pPoly->m_pos[0].f.x = screen_x;
             pPoly->m_pos[0].f.y = screen_y;
             pPoly->m_pos[1].f.x = screen_x;

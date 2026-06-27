@@ -731,7 +731,6 @@ extern "C" unsigned long THPSimpleCalcNeedMemory(int numReadBuffers, int numAudi
 
 /**
  * Offset/Address/Size: 0x116C | 0x801CCDD0 | size: 0x3CC
- * TODO: 95.2% match - r6/r7/r8 register assignment differs in unrolled read/audio loops and tail setup
  */
 extern "C" int THPSimpleSetBuffer(unsigned char* buffer)
 {
@@ -741,41 +740,41 @@ extern "C" int THPSimpleSetBuffer(unsigned char* buffer)
     unsigned long numAudio;
     PlatTexture* tex;
 
-    if (((THPSimpleControlWork*)&SimpleControl)->open && ((THPSimpleControlWork*)&SimpleControl)->preFetchState == 0)
+    if (SimpleControl.open && SimpleControl.playing == 0)
     {
-        if (((THPSimpleControlWork*)&SimpleControl)->audioState == 1)
+        if (SimpleControl.audioState == 1)
         {
             return 0;
         }
 
         ptr = buffer;
 
-        ((THPSimpleControlWork*)&SimpleControl)->textureSet.mYTexture = (u8*)glx_GetTex(glGetTexture("movie"), 1, 1)->m_SwizzledData;
-        ((THPSimpleControlWork*)&SimpleControl)->textureSet.mUTexture = (u8*)glx_GetTex(glGetTexture("movie_u"), 1, 1)->m_SwizzledData;
+        SimpleControl.textureSet.mYTexture = (u8*)glx_GetTex(glGetTexture("movie"), 1, 1)->m_SwizzledData;
+        SimpleControl.textureSet.mUTexture = (u8*)glx_GetTex(glGetTexture("movie_u"), 1, 1)->m_SwizzledData;
         tex = glx_GetTex(glGetTexture("movie_v"), 1, 1);
         numRead = NumReadBuffers;
-        ((THPSimpleControlWork*)&SimpleControl)->textureSet.mVTexture = (u8*)tex->m_SwizzledData;
+        SimpleControl.textureSet.mVTexture = (u8*)tex->m_SwizzledData;
 
-        for (i = 0; i < numRead; i++)
+        for (i = 0; i < (unsigned long)NumReadBuffers; i++)
         {
-            ((THPSimpleControlWork*)&SimpleControl)->readBuffer[i].mPtr = ptr;
-            ptr += (((THPSimpleControlWork*)&SimpleControl)->bufSize + 31) & ~31;
-            ((THPSimpleControlWork*)&SimpleControl)->readBuffer[i].mIsValid = 0;
+            SimpleControl.readBuffers[i].mPtr = ptr;
+            ptr += (SimpleControl.bufSize + 31) & ~31;
+            SimpleControl.readBuffers[i].mIsValid = 0;
         }
 
-        if (((THPSimpleControlWork*)&SimpleControl)->audioExist)
+        if (SimpleControl.audioExist)
         {
             numAudio = NumAudioBuffers;
-            for (i = 0; i < numAudio; i++)
+            for (i = 0; i < (unsigned long)NumAudioBuffers; i++)
             {
-                ((THPSimpleControlWork*)&SimpleControl)->audioBuffer[i].mBuffer = (s16*)ptr;
-                ((THPSimpleControlWork*)&SimpleControl)->audioBuffer[i].mCurPtr = (s16*)ptr;
-                ((THPSimpleControlWork*)&SimpleControl)->audioBuffer[i].mValidSample = 0;
-                ptr += (((THPSimpleControlWork*)&SimpleControl)->audioMaxSamples * 4 + 31) & ~31;
+                SimpleControl.audioBuffer[i].mBuffer = (s16*)ptr;
+                SimpleControl.audioBuffer[i].mCurPtr = (s16*)ptr;
+                SimpleControl.audioBuffer[i].mValidSample = 0;
+                ptr += (SimpleControl.audioMaxSamples * 4 + 31) & ~31;
             }
         }
 
-        ((THPSimpleControlWork*)&SimpleControl)->thpWork = ptr;
+        SimpleControl.thpWork = ptr;
     }
 
     return 1;

@@ -61,6 +61,7 @@ public:
     /* 0x54 */ unsigned char mDirt;                 // offset 0x54, size 0x1
 
     static bool sCameraRelativeLighting;
+    static bool sSTSLighting;
     static cCharacter* spRenderOnlyThisCharacter;
     static bool sbRenderOpposingGoalieToo;
 

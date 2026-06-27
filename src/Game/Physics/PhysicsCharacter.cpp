@@ -380,7 +380,7 @@ PhysicsBoneID PhysicsCharacter::ResolvePhysicsBoneIDFromName(const char* name)
 
 /**
  * Offset/Address/Size: 0x100 | 0x80136318 | size: 0x608
- * TODO: 98.35% match - register allocation diffs for this/pFldr/pBall and velocity component temporaries remain
+ * TODO: 98.52% match - register allocation diffs for this/pFldr/pBall and BasicString temporaries remain
  */
 void PhysicsCharacter::PostUpdate()
 {
@@ -486,13 +486,13 @@ void PhysicsCharacter::PostUpdate()
                 pBall->m_unk_0xA6 = false;
                 pBall->mpDamageTarget = NULL;
 
-                float dot = dy * pBall->m_v3Velocity.f.y + dx * pBall->m_v3Velocity.f.x + dz * pBall->m_v3Velocity.f.z;
+                float dot = dx * pBall->m_v3Velocity.f.x + dy * pBall->m_v3Velocity.f.y + dz * pBall->m_v3Velocity.f.z;
 
                 if (dot > 0.0f)
                 {
                     v3BallVel.f.z = -0.1f * pBall->m_v3Velocity.f.z;
-                    v3BallVel.f.x = -0.1f * pBall->m_v3Velocity.f.x;
                     v3BallVel.f.y = -0.1f * pBall->m_v3Velocity.f.y;
+                    v3BallVel.f.x = -0.1f * pBall->m_v3Velocity.f.x;
 
                     float dx2 = pBall->m_v3Position.f.x - characterPosition.f.x;
                     float dy2 = pBall->m_v3Position.f.y - characterPosition.f.y;
@@ -507,8 +507,8 @@ void PhysicsCharacter::PostUpdate()
                 else
                 {
                     v3BallVel.f.z = 0.1f * pBall->m_v3Velocity.f.z;
-                    v3BallVel.f.x = 0.1f * pBall->m_v3Velocity.f.x;
                     v3BallVel.f.y = 0.1f * pBall->m_v3Velocity.f.y;
+                    v3BallVel.f.x = 0.1f * pBall->m_v3Velocity.f.x;
                 }
 
                 v3BallVel.f.z += 4.0f + nlRandomf(3.0f, &nlDefaultSeed);

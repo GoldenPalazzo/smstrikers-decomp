@@ -17,6 +17,7 @@
 #include "Game/Render/Bowser.h"
 #include "Game/Render/ChainChomp.h"
 #include "Game/Render/ShootToScoreArrow.h"
+#include "Game/Render/ShootToScoreMeter.h"
 #include "Game/Drawable/DrawableCharacter.h"
 #include "Game/Camera/CameraMan.h"
 #include "Game/ParticleUpdateTask.h"
@@ -29,6 +30,7 @@
 #include "Game/SAnim.h"
 #include "Game/Sys/eventman.h"
 #include "Game/Net.h"
+#include "Game/World.h"
 #include "NL/nlSlotPool.h"
 #include "Game/Physics/PhysicsColumn.h"
 #include "NL/nlPrint.h"
@@ -3982,25 +3984,15 @@ void cFielder::ClearVolleyPass()
 {
 }
 
-struct ShootToScoreMeterScratch
-{
-    u8 pad[0x28];
-    u8 m_bMeterVisible;
-};
-
-extern "C" ShootToScoreMeterScratch instance__17ShootToScoreMeter;
-extern "C" void RumbleMeter__17ShootToScoreMeterFfff(ShootToScoreMeterScratch*, float, float, float);
-
 /**
  * Offset/Address/Size: 0x5B34 | 0x8001EE70 | size: 0x26C
- * TODO: 98.00% match - r29/r31 register ownership remains swapped between
- * this and team-name pointer around BasicString construction/copy.
+ * TODO: 99.32% match - source string and BasicString data registers remain
+ * swapped during effectName construction.
  */
 void cFielder::CleanActionShootToScore()
 {
     FORCE_DONT_INLINE;
-    extern unsigned char sSTSLighting__17DrawableCharacter;
-    extern unsigned char sbIsHyperShootToScoreRenderingEnabled__5World;
+    cCharacter* character = this;
 
     Audio::FadeFilterFromCurrentToZero();
     FixedUpdateTask::mTimeScale = 1.0f;
@@ -4011,9 +4003,9 @@ void cFielder::CleanActionShootToScore()
     this->mActionShootToScoreVars.isInUnbreakablePart = false;
 
     WorldDarkening::Instance().Fade(1.0f, 0.0f);
-    instance__17ShootToScoreMeter.m_bMeterVisible = 0;
+    ShootToScoreMeter::instance.m_bMeterVisible = false;
     DrawableCharacter::RenderAllCharacters();
-    sSTSLighting__17DrawableCharacter = 0;
+    DrawableCharacter::sSTSLighting = false;
     g_pGame->mbCaptainShotToScoreOn = false;
 
     g_pBall->m_pDrawableBall->m_uObjectFlags &= ~0x40;
@@ -4022,8 +4014,8 @@ void cFielder::CleanActionShootToScore()
         GetTeamName(nlSingleton<GameInfoManager>::s_pInstance->GetTeam((s16)this->m_pTeam->m_nSide)));
     effectName.AppendInPlace("shoot_to_score_shot");
     EffectsGroup* pGroup = fxGetGroup(effectName.c_str());
-    this->KillEffect(pGroup);
-    this->KillEffect(fxGetGroup("shoot_to_score_hyper"));
+    character->KillEffect(pGroup);
+    character->KillEffect(fxGetGroup("shoot_to_score_hyper"));
 
     if (this->mActionShootToScoreVars.captainStsCamera != NULL)
     {
@@ -4033,7 +4025,7 @@ void cFielder::CleanActionShootToScore()
     }
 
     ParticleUpdateTask::SetTimeScale(1.0f);
-    sbIsHyperShootToScoreRenderingEnabled__5World = 0;
+    World::sbIsHyperShootToScoreRenderingEnabled = false;
 }
 
 /**
@@ -6338,7 +6330,7 @@ void cFielder::UpdateController(float)
         && !IsOnSameTeam(g_pBall->GetOwnerFielder())
         && (g_pBall->GetOwnerFielder()->m_eActionState == ACTION_SHOOT_TO_SCORE))
     {
-        if (instance__17ShootToScoreMeter.m_bMeterVisible != 0)
+        if (ShootToScoreMeter::instance.m_bMeterVisible != 0)
         {
             nNumUsers = 0;
             i = 0;
@@ -6366,8 +6358,7 @@ void cFielder::UpdateController(float)
 
                             pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide);
                             yPercentage = (float)nlRandom(2, &nlDefaultSeed) - 1.0f;
-                            RumbleMeter__17ShootToScoreMeterFfff(
-                                &instance__17ShootToScoreMeter,
+                            ShootToScoreMeter::instance.RumbleMeter(
                                 pSkillTweaks->Shoot_CaptainS2SSecondButtonChance,
                                 (float)nlRandom(2, &nlDefaultSeed) - 1.0f,
                                 yPercentage);
@@ -6409,8 +6400,7 @@ void cFielder::UpdateController(float)
                     xPercentage = InterpolateRangeClamped(-1.0f, 0.0f, 49152.0f, 65000.0f, mActionRumbleVars.fRumbleDirection);
                 }
 
-                RumbleMeter__17ShootToScoreMeterFfff(
-                    &instance__17ShootToScoreMeter,
+                ShootToScoreMeter::instance.RumbleMeter(
                     m_pController->GetCStickMovementStickMagnitude(),
                     yPercentage,
                     xPercentage);

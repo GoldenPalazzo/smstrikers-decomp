@@ -1077,12 +1077,9 @@ static void DrawCoPlanarReference(eGLView view, const glModel& model, const nlMa
 
 /**
  * Offset/Address/Size: 0x2D0 | 0x801200DC | size: 0x460
- * TODO: 79.67% match - GPR register allocation shifted by 2 (model=r23 vs r25,
- *       worldMatrix=r24 vs r26, ignorePacketMatrices=r29 vs r31), causing:
- *       1) f29 callee-saved (frame 0x1B0 vs 0x1A0) - named float temps needed
- *          for correct fmadds/fdivs scheduling trigger 3rd callee-saved FPR
- *       2) interleaved 2-at-a-time struct copy vs bulk 16-at-once (too few free GPRs)
- *       3) clrlwi. (combined mask+test) inside loop vs hoisted clrlwi + cmplwi
+ * TODO: 82.26% match - extra f29 save/frame growth plus GPR allocation shift
+ *       (model/worldMatrix/ignorePacketMatrices are two saved registers low);
+ *       matrix copies use interleaved two-word chunks instead of one bulk copy.
  */
 static inline void ComputeShadowMtx(nlMatrix4& dst, const nlMatrix4& src, u32 lightPtr)
 {
@@ -1109,15 +1106,15 @@ static inline void ComputeShadowMtx(nlMatrix4& dst, const nlMatrix4& src, u32 li
     float one = 1.0f;
 
     dst.f.m11 = xOverZ * m13 + m11;
+    dst.f.m12 = yOverZ * m13 + m12;
     dst.f.m21 = xOverZ * m23 + m21;
+    dst.f.m22 = yOverZ * m23 + m22;
+    dst.f.m31 = xOverZ * m33 + m31;
+    dst.f.m32 = yOverZ * m33 + m32;
+    dst.f.m41 = xOverZ * m43 + m41;
+    dst.f.m42 = yOverZ * m43 + m42;
     dst.f.m13 = zero;
     dst.f.m23 = zero;
-    dst.f.m31 = xOverZ * m33 + m31;
-    dst.f.m41 = xOverZ * m43 + m41;
-    dst.f.m12 = yOverZ * m13 + m12;
-    dst.f.m22 = yOverZ * m23 + m22;
-    dst.f.m32 = yOverZ * m33 + m32;
-    dst.f.m42 = yOverZ * m43 + m42;
     dst.f.m33 = zero;
     dst.f.m43 = zero;
     dst.f.m14 = zero;

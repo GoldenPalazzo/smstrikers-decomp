@@ -1,4 +1,4 @@
-
+#define NLDLRING_FORCE_DONT_INLINE
 #include "Game/Sys/audio.h"
 #include "Game/Sys/debug.h"
 #include "Game/Game.h"
@@ -79,6 +79,31 @@ extern float gfSilenceTimer;
 extern unsigned long uCurrentSFXVolume;
 
 static const nlVector3 sListenerZero = { 0.0f, 0.0f, 0.0f };
+
+typedef DLListContainerBase<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL, BasicSlotPool<DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL> > > AudioFadeContainer;
+typedef WalkHelper<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL, DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>, AudioStreamTrack::TrackManagerBase::FadeManager> AudioFadeWalkHelper;
+typedef DLListContainerBase<GCAudioStreaming::StereoAudioStream*, BasicSlotPool<DLListEntry<GCAudioStreaming::StereoAudioStream*> > > AudioStreamDeleteContainer;
+typedef DLListContainerBase<AudioStreamTrack::StreamTrack::QUEUED_STREAM, nlStaticArrayAllocator<DLListEntry<AudioStreamTrack::StreamTrack::QUEUED_STREAM>, 4> > AudioQueuedStreamContainer;
+
+template void nlWalkDLRing<DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>, AudioFadeContainer>(
+    DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>*,
+    AudioFadeContainer*,
+    void (AudioFadeContainer::*)(DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>*));
+
+template void nlWalkDLRing<DLListEntry<GCAudioStreaming::StereoAudioStream*>, AudioStreamDeleteContainer>(
+    DLListEntry<GCAudioStreaming::StereoAudioStream*>*,
+    AudioStreamDeleteContainer*,
+    void (AudioStreamDeleteContainer::*)(DLListEntry<GCAudioStreaming::StereoAudioStream*>*));
+
+template void nlWalkDLRing<DLListEntry<AudioStreamTrack::StreamTrack::QUEUED_STREAM>, AudioQueuedStreamContainer>(
+    DLListEntry<AudioStreamTrack::StreamTrack::QUEUED_STREAM>*,
+    AudioQueuedStreamContainer*,
+    void (AudioQueuedStreamContainer::*)(DLListEntry<AudioStreamTrack::StreamTrack::QUEUED_STREAM>*));
+
+template void nlWalkDLRing<DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>, AudioFadeWalkHelper>(
+    DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>*,
+    AudioFadeWalkHelper*,
+    void (AudioFadeWalkHelper::*)(DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL>*));
 
 /**
  * Offset/Address/Size: 0xF0 | 0x801413B0 | size: 0x28
@@ -2302,7 +2327,6 @@ void UpdateFades(float fDeltaT)
         pFadeData = pFadeData->next;
     }
 }
-
 #pragma inline_depth(255)
 static inline void UpdateDelayedAudio(float fDeltaT)
 {
@@ -3778,11 +3802,6 @@ inline AudioStreamTrack::TrackManagerBase::FadeManager::~FadeManager()
     FadeList::DestroyAllEntries(&m_Fades);
     SlotPoolBase::BaseFreeBlocks(&m_Fades.m_Allocator, sizeof(DLListEntry<STREAM_FADE_CTRL>));
 }
-
-AudioStreamTrack::TrackManagerBase::~TrackManagerBase()
-{
-    SlotPoolBase::BaseFreeBlocks(&m_StreamPool, sizeof(GCAudioStreaming::StereoAudioStream));
-}
 #pragma inline_depth(0)
 
 /**
@@ -3978,13 +3997,17 @@ AudioStreamTrack::StreamTrack& AudioStreamTrack::TrackManager<3>::CreateTrack(
     return *entry;
 }
 
+/**
+ * Offset/Address/Size: 0x390 | 0x80141E64 | size: 0x1D0
+ * TODO: 99.40% match - search-loop zero init and lookup pEntry load registers differ
+ */
 template <>
 void AudioStreamTrack::TrackManager<3>::DestroyAllTracks()
 {
     typedef nlSortedSlot<AudioStreamTrack::StreamTrack, 3>::EntryLookup<AudioStreamTrack::StreamTrack> EL;
 
-    unsigned long trackOffset;
     unsigned long i;
+    unsigned long trackOffset;
     EL* entryLookup;
     EL* foundSlot;
     AudioStreamTrack::StreamTrack* track;
@@ -4026,7 +4049,7 @@ void AudioStreamTrack::TrackManager<3>::DestroyAllTracks()
         if (track == NULL)
             continue;
 
-        for (i = 0, trackOffset = 0; i < m_Tracks.m_EntryCount; trackOffset += 8, i++)
+        for (i = 0, trackOffset = i; i < m_Tracks.m_EntryCount; trackOffset += 8, i++)
         {
             entryLookup = m_Tracks.m_pEntryLookup;
             if (((EL*)((char*)entryLookup + trackOffset))->pEntry == track)
@@ -4040,21 +4063,26 @@ void AudioStreamTrack::TrackManager<3>::DestroyAllTracks()
 
         m_Tracks.FreeEntry(track);
 
+        struct LookupShifter
         {
-            unsigned long entryCount = m_Tracks.m_EntryCount;
-            int idx = foundSlot - m_Tracks.m_pEntryLookup;
-            while ((unsigned long)idx != entryCount)
+            static void Shift(AudioStreamTrack::TrackManager<3>* self, EL* foundSlot)
             {
-                int next = idx + 1;
-                EL* src = (EL*)((char*)m_Tracks.m_pEntryLookup + next * 8);
-                EL* dst = (EL*)((char*)m_Tracks.m_pEntryLookup + idx * 8);
-                unsigned long hash = src->hash;
-                AudioStreamTrack::StreamTrack* pEntry = src->pEntry;
-                idx = next;
-                dst->pEntry = pEntry;
-                dst->hash = hash;
+                unsigned long entryCount = self->m_Tracks.m_EntryCount;
+                long idx = foundSlot - self->m_Tracks.m_pEntryLookup;
+                while ((unsigned long)idx != entryCount)
+                {
+                    long next = idx + 1;
+                    EL* src = &self->m_Tracks.m_pEntryLookup[next];
+                    register unsigned long hash = src->hash;
+                    EL* dst = &self->m_Tracks.m_pEntryLookup[idx];
+                    idx = next;
+                    AudioStreamTrack::StreamTrack* pEntry = src->pEntry;
+                    dst->pEntry = pEntry;
+                    dst->hash = hash;
+                }
             }
-        }
+        };
+        LookupShifter::Shift(this, foundSlot);
 
         m_Tracks.m_EntryCount--;
     }
@@ -4177,3 +4205,5 @@ template void nlWalkRing<DLListEntry<AudioStreamTrack::StreamTrack::QUEUED_STREA
     void (DLListContainerBase<AudioStreamTrack::StreamTrack::QUEUED_STREAM,
         nlStaticArrayAllocator<DLListEntry<AudioStreamTrack::StreamTrack::QUEUED_STREAM>, 4> >::*)(
         DLListEntry<AudioStreamTrack::StreamTrack::QUEUED_STREAM>*));
+
+#pragma inline_depth(255)

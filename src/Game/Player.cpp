@@ -445,61 +445,56 @@ static inline float DoCalculatePassSpeed(const nlVector3& teammatePosition, cons
 void cPlayer::DoRegularPassing(cPlayer* pTeammate, bool bVolleyPass, bool bAllowLeadPass, bool bParam3, bool bParam4)
 {
     g_pBall->m_tNoPickupTimer.SetSeconds(0.1f);
-    cFielder* pPasser = (cFielder*)this;
     cFielder* pPassTarget = (cFielder*)pTeammate;
-    float fPassGroundSpeed = 0.0f;
+    cFielder* pPasser = (cFielder*)this;
     g_pBall->mbIsPerfectShot = bVolleyPass;
+    nlVector3 teammateLeadPassVelocity;
     nlVector3 v3PassIntercept = { 0.0f, 0.0f, 0.0f };
     bool calcPassIntercept = false;
-    nlVector3 teammateLeadPassVelocity;
+    float fPassGroundSpeed = 0.0f;
     bool bLeadPass = false;
     if (bAllowLeadPass)
     {
         if (pPassTarget->ShouldILeadPass())
         {
-            int direction = Fuzzy::GetPassDirection(this, pTeammate).mData.i;
-            SSearchBestPass* pNewSearch = new (nlMalloc(sizeof(SSearchBestPass), 8, false)) SSearchBestPass(this, pTeammate, bVolleyPass, bParam3);
-            if (pTeammate->m_pSpaceSearch != NULL)
+            int direction = Fuzzy::GetPassDirection(this, pPassTarget).mData.i;
+            SSearchBestPass* pNewSearch = new (nlMalloc(sizeof(SSearchBestPass), 8, false)) SSearchBestPass(this, pPassTarget, bVolleyPass, bParam3);
+            if (pPassTarget->m_pSpaceSearch != NULL)
             {
-                delete pTeammate->m_pSpaceSearch;
+                delete pPassTarget->m_pSpaceSearch;
             }
-            pTeammate->m_pSpaceSearch = pNewSearch;
-            pTeammate->m_pSpaceSearch->m_bDebugOn = false;
-            nlVector3 suggestedPassTarget;
-            float fSearchScore = pTeammate->m_pSpaceSearch->FindBestPosition(suggestedPassTarget, pTeammate->m_v3Position, (eFieldDirection)direction, &m_v3Position, 6.0f, 0xAAAA);
+            pPassTarget->m_pSpaceSearch = pNewSearch;
+            pPassTarget->m_pSpaceSearch->m_bDebugOn = false;
             nlVector3 suggestedPassDirection;
-            suggestedPassDirection.f.y = suggestedPassTarget.f.y - pTeammate->m_v3Position.f.y;
-            suggestedPassDirection.f.x = suggestedPassTarget.f.x - pTeammate->m_v3Position.f.x;
-            suggestedPassDirection.f.z = suggestedPassTarget.f.z - pTeammate->m_v3Position.f.z;
-            float distSq2D = suggestedPassDirection.f.x * suggestedPassDirection.f.x + suggestedPassDirection.f.y * suggestedPassDirection.f.y;
+            nlVector3 suggestedPassTarget;
+            float fSearchScore = pPassTarget->m_pSpaceSearch->FindBestPosition(suggestedPassTarget, pPassTarget->m_v3Position, (eFieldDirection)direction, &m_v3Position, 6.0f, 0xAAAA);
+            nlVec3Sub(suggestedPassDirection, suggestedPassTarget, pPassTarget->m_v3Position);
+            nlVector3* pSuggestedPassDirection = &suggestedPassDirection;
+            float distSq2D = pSuggestedPassDirection->GetLengthSq2D();
             if (distSq2D > 1.0f)
             {
-                float distSq3D = suggestedPassDirection.f.z * suggestedPassDirection.f.z + distSq2D;
+                float distSq3D = pSuggestedPassDirection->f.z * pSuggestedPassDirection->f.z + distSq2D;
                 float fRecipDist = nlRecipSqrt(distSq3D, true);
                 bLeadPass = false;
-                suggestedPassDirection.f.x = fRecipDist * suggestedPassDirection.f.x;
-                suggestedPassDirection.f.y = fRecipDist * suggestedPassDirection.f.y;
-                float fRunningSpeed = pTeammate->m_pTweaks->fRunningSpeed;
-                suggestedPassDirection.f.x = fRecipDist * suggestedPassDirection.f.x;
-                suggestedPassDirection.f.y = fRecipDist * suggestedPassDirection.f.y;
-                suggestedPassDirection.f.z = fRecipDist * suggestedPassDirection.f.z;
+                float fRunningSpeed = pPassTarget->m_pTweaks->fRunningSpeed;
+                nlVec3Scale(*pSuggestedPassDirection, fRecipDist);
                 if (fSearchScore < 0.3f)
                 {
-                    nlPolarToCartesian(teammateLeadPassVelocity.f.x, teammateLeadPassVelocity.f.y, pTeammate->m_aActualFacingDirection, fRunningSpeed);
+                    nlPolarToCartesian(teammateLeadPassVelocity.f.x, teammateLeadPassVelocity.f.y, pPassTarget->m_aActualFacingDirection, fRunningSpeed);
                     bLeadPass = true;
                     teammateLeadPassVelocity.f.z = 0.0f;
                 }
                 else
                 {
-                    float fLength = nlSqrt(suggestedPassDirection.f.x * suggestedPassDirection.f.x + suggestedPassDirection.f.y * suggestedPassDirection.f.y + suggestedPassDirection.f.z * suggestedPassDirection.f.z, true);
+                    float fLength = nlSqrt(pSuggestedPassDirection->f.x * pSuggestedPassDirection->f.x + pSuggestedPassDirection->f.y * pSuggestedPassDirection->f.y + pSuggestedPassDirection->f.z * pSuggestedPassDirection->f.z, true);
                     float fScale = fRunningSpeed / fLength;
-                    teammateLeadPassVelocity.f.x = fScale * suggestedPassDirection.f.x;
-                    teammateLeadPassVelocity.f.y = fScale * suggestedPassDirection.f.y;
-                    teammateLeadPassVelocity.f.z = fScale * suggestedPassDirection.f.z;
+                    teammateLeadPassVelocity.f.x = fScale * pSuggestedPassDirection->f.x;
+                    teammateLeadPassVelocity.f.y = fScale * pSuggestedPassDirection->f.y;
+                    teammateLeadPassVelocity.f.z = fScale * pSuggestedPassDirection->f.z;
                 }
                 if (bVolleyPass || bParam4)
                 {
-                    float adjustedSpeed = DoCalculatePassSpeed(pTeammate->m_v3Position, teammateLeadPassVelocity, m_pTweaks->fPassVolleySpeedMin, m_pTweaks->fPassVolleySpeedMax, g_pGame->m_pGameTweaks->fPassSpeedMinDist, g_pGame->m_pGameTweaks->fPassSpeedMaxDist);
+                    float adjustedSpeed = DoCalculatePassSpeed(pPassTarget->m_v3Position, teammateLeadPassVelocity, m_pTweaks->fPassVolleySpeedMin, m_pTweaks->fPassVolleySpeedMax, g_pGame->m_pGameTweaks->fPassSpeedMinDist, g_pGame->m_pGameTweaks->fPassSpeedMaxDist);
                     float fMinPassSpeed = m_pTweaks->fPassGroundSpeedMin;
                     float fMaxPassSpeed = m_pTweaks->fPassGroundSpeedMax;
                     adjustedSpeed = (adjustedSpeed >= fMinPassSpeed) ? adjustedSpeed : fMinPassSpeed;
@@ -507,7 +502,7 @@ void cPlayer::DoRegularPassing(cPlayer* pTeammate, bool bVolleyPass, bool bAllow
                 }
                 else
                 {
-                    float adjustedSpeed = DoCalculatePassSpeed(pTeammate->m_v3Position, teammateLeadPassVelocity, m_pTweaks->fPassGroundSpeedMin, m_pTweaks->fPassGroundSpeedMax, g_pGame->m_pGameTweaks->fPassSpeedMinDist, g_pGame->m_pGameTweaks->fPassSpeedMaxDist);
+                    float adjustedSpeed = DoCalculatePassSpeed(pPassTarget->m_v3Position, teammateLeadPassVelocity, m_pTweaks->fPassGroundSpeedMin, m_pTweaks->fPassGroundSpeedMax, g_pGame->m_pGameTweaks->fPassSpeedMinDist, g_pGame->m_pGameTweaks->fPassSpeedMaxDist);
                     float fMinPassSpeed = m_pTweaks->fPassGroundSpeedMin;
                     float fMaxPassSpeed = m_pTweaks->fPassGroundSpeedMax;
                     adjustedSpeed = (adjustedSpeed >= fMinPassSpeed) ? adjustedSpeed : fMinPassSpeed;
@@ -519,12 +514,12 @@ void cPlayer::DoRegularPassing(cPlayer* pTeammate, bool bVolleyPass, bool bAllow
                     float dxBall = g_pBall->m_v3Position.f.x - suggestedPassTarget.f.x;
                     float distBallToTarget = nlSqrt(dyBall * dyBall + dxBall * dxBall, true);
                     float fDistToBallSave = distBallToTarget;
-                    float dyTeam = pTeammate->m_v3Position.f.y - suggestedPassTarget.f.y;
-                    float dxTeam = pTeammate->m_v3Position.f.x - suggestedPassTarget.f.x;
+                    float dyTeam = pPassTarget->m_v3Position.f.y - suggestedPassTarget.f.y;
+                    float dxTeam = pPassTarget->m_v3Position.f.x - suggestedPassTarget.f.x;
                     float distTeammateToTarget = nlSqrt(dyTeam * dyTeam + dxTeam * dxTeam, true);
                     float fTimeBall = distBallToTarget / fPassGroundSpeed;
                     float fRequiredSpeed = distTeammateToTarget / fTimeBall;
-                    float fJoggingSpeed = pTeammate->m_pTweaks->fJoggingSpeed;
+                    float fJoggingSpeed = pPassTarget->m_pTweaks->fJoggingSpeed;
                     if (fRequiredSpeed < fJoggingSpeed)
                     {
                         float fMargin = fJoggingSpeed - fRequiredSpeed;
@@ -545,7 +540,7 @@ void cPlayer::DoRegularPassing(cPlayer* pTeammate, bool bVolleyPass, bool bAllow
                     }
                     if (fRequiredSpeed >= fJoggingSpeed)
                     {
-                        if (fRequiredSpeed <= pTeammate->m_pTweaks->fRunningSpeed)
+                        if (fRequiredSpeed <= pPassTarget->m_pTweaks->fRunningSpeed)
                         {
                             v3PassIntercept = suggestedPassTarget;
                             float fVelLength = nlSqrt(teammateLeadPassVelocity.f.x * teammateLeadPassVelocity.f.x + teammateLeadPassVelocity.f.y * teammateLeadPassVelocity.f.y + teammateLeadPassVelocity.f.z * teammateLeadPassVelocity.f.z, true);
@@ -565,7 +560,7 @@ void cPlayer::DoRegularPassing(cPlayer* pTeammate, bool bVolleyPass, bool bAllow
                 {
                     int interceptResult;
                     float interceptTimes[2];
-                    CalcInterceptXY(g_pBall->m_v3Position, fPassGroundSpeed, 0.0f, pTeammate->m_v3Position, teammateLeadPassVelocity, interceptResult, interceptTimes);
+                    CalcInterceptXY(g_pBall->m_v3Position, fPassGroundSpeed, 0.0f, pPassTarget->m_v3Position, teammateLeadPassVelocity, interceptResult, interceptTimes);
                     if (interceptResult != 0)
                     {
                         float fTime;
@@ -584,9 +579,9 @@ void cPlayer::DoRegularPassing(cPlayer* pTeammate, bool bVolleyPass, bool bAllow
                         {
                             fTime = interceptTimes[0];
                         }
-                        v3PassIntercept.f.x = teammateLeadPassVelocity.f.x * fTime + pTeammate->m_v3Position.f.x;
+                        v3PassIntercept.f.x = teammateLeadPassVelocity.f.x * fTime + pPassTarget->m_v3Position.f.x;
                         v3PassIntercept.f.z = 0.0f;
-                        v3PassIntercept.f.y = teammateLeadPassVelocity.f.y * fTime + pTeammate->m_v3Position.f.y;
+                        v3PassIntercept.f.y = teammateLeadPassVelocity.f.y * fTime + pPassTarget->m_v3Position.f.y;
                         if (!ClipPositionToSidelines(v3PassIntercept, m_pTweaks->fPhysCapsuleRadius))
                         {
                             calcPassIntercept = true;
@@ -598,10 +593,10 @@ void cPlayer::DoRegularPassing(cPlayer* pTeammate, bool bVolleyPass, bool bAllow
     }
     if (!calcPassIntercept)
     {
-        v3PassIntercept = pTeammate->m_v3Position;
+        v3PassIntercept = pPassTarget->m_v3Position;
         if (bVolleyPass)
         {
-            float adjustedSpeed = DoCalculatePassSpeed(pTeammate->m_v3Position, pTeammate->m_v3Velocity, m_pTweaks->fPassVolleySpeedMin, m_pTweaks->fPassVolleySpeedMax, g_pGame->m_pGameTweaks->fPassSpeedMinDist, g_pGame->m_pGameTweaks->fPassSpeedMaxDist);
+            float adjustedSpeed = DoCalculatePassSpeed(pPassTarget->m_v3Position, pPassTarget->m_v3Velocity, m_pTweaks->fPassVolleySpeedMin, m_pTweaks->fPassVolleySpeedMax, g_pGame->m_pGameTweaks->fPassSpeedMinDist, g_pGame->m_pGameTweaks->fPassSpeedMaxDist);
             float fMinPassSpeed = m_pTweaks->fPassGroundSpeedMin;
             float fMaxPassSpeed = m_pTweaks->fPassGroundSpeedMax;
             adjustedSpeed = (adjustedSpeed >= fMinPassSpeed) ? adjustedSpeed : fMinPassSpeed;
@@ -609,7 +604,7 @@ void cPlayer::DoRegularPassing(cPlayer* pTeammate, bool bVolleyPass, bool bAllow
         }
         else
         {
-            float adjustedSpeed = DoCalculatePassSpeed(pTeammate->m_v3Position, pTeammate->m_v3Velocity, m_pTweaks->fPassGroundSpeedMin, m_pTweaks->fPassGroundSpeedMax, g_pGame->m_pGameTweaks->fPassSpeedMinDist, g_pGame->m_pGameTweaks->fPassSpeedMaxDist);
+            float adjustedSpeed = DoCalculatePassSpeed(pPassTarget->m_v3Position, pPassTarget->m_v3Velocity, m_pTweaks->fPassGroundSpeedMin, m_pTweaks->fPassGroundSpeedMax, g_pGame->m_pGameTweaks->fPassSpeedMinDist, g_pGame->m_pGameTweaks->fPassSpeedMaxDist);
             float fMinPassSpeed = m_pTweaks->fPassGroundSpeedMin;
             float fMaxPassSpeed = m_pTweaks->fPassGroundSpeedMax;
             adjustedSpeed = (adjustedSpeed >= fMinPassSpeed) ? adjustedSpeed : fMinPassSpeed;
@@ -643,7 +638,7 @@ void cPlayer::DoRegularPassing(cPlayer* pTeammate, bool bVolleyPass, bool bAllow
     }
     else
     {
-        facingDirection = (unsigned short)(nlATan2f(g_pBall->m_v3Position.f.y - pTeammate->m_v3Position.f.y, g_pBall->m_v3Position.f.x - pTeammate->m_v3Position.f.x) * 10430.378f);
+        facingDirection = (unsigned short)(nlATan2f(g_pBall->m_v3Position.f.y - pPassTarget->m_v3Position.f.y, g_pBall->m_v3Position.f.x - pPassTarget->m_v3Position.f.x) * 10430.378f);
     }
     const LooseBallContactAnimInfo* pAnimInfo = pPassTarget->GetReceivePassBallContactAnimInfo(g_pBall, v3PassIntercept, facingDirection, calcPassIntercept, bVolleyPass);
     nlVector3 ballContactOffset;
@@ -695,7 +690,7 @@ void cPlayer::DoRegularPassing(cPlayer* pTeammate, bool bVolleyPass, bool bAllow
             Event* pEvent = g_pEventManager->CreateValidEvent(14, 0x24);
             PassBallData* pData = new (&pEvent->m_data) PassBallData();
             pData->pPasser = this;
-            pData->pTarget = pTeammate;
+            pData->pTarget = pPassTarget;
             cGlobalPad* pPad = NULL;
             if (m_pController != NULL)
             {
@@ -730,7 +725,7 @@ void cPlayer::DoRegularPassing(cPlayer* pTeammate, bool bVolleyPass, bool bAllow
                 if (pPasser->m_eActionState != ACTION_ONETOUCH_PASS_FROM_VOLLEY && pPasser->DoCalcCanDoPerfectPass(pPassTarget, v3PassIntercept))
                 {
                     g_pBall->SetPerfectPass(true, false);
-                    EmitBallShot(this, BALL_EFFECT_PERFECT_PASS, pTeammate, false);
+                    EmitBallShot(this, BALL_EFFECT_PERFECT_PASS, pPassTarget, false);
                 }
                 else if (bVolleyPass)
                 {
@@ -745,9 +740,9 @@ void cPlayer::DoRegularPassing(cPlayer* pTeammate, bool bVolleyPass, bool bAllow
     }
     if (m_pController != NULL)
     {
-        if (pTeammate->m_pController == NULL)
+        if (pPassTarget->m_pController == NULL)
         {
-            pTeammate->SetAIPad(m_pController);
+            pPassTarget->SetAIPad(m_pController);
             SetAIPad(NULL);
         }
     }

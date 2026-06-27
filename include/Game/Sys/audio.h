@@ -199,6 +199,7 @@ bool ShutdownReverb();
 
 /**
  * Offset/Address/Size: 0x0 | 0x80141518 | size: 0x1AC
+ * TODO: 99.35% match - vtable and free-list setup use different temporary registers.
  */
 template <int N>
 void CreateTrackMgr()

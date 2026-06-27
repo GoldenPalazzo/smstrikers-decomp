@@ -108,7 +108,7 @@ static inline void SetIndicatorPolyColour(glPoly2& poly, unsigned char r, unsign
 
 /**
  * Offset/Address/Size: 0x868 | 0x8015FACC | size: 0x440
- * TODO: 95.82% match - f29/f30 swap (dt vs x callee-saved register allocation),
+ * TODO: 96.12% match - f29/f30 swap (dt vs x callee-saved register allocation),
  * r3/r4 swap (g_pGame/drawIndicator), mr vs li constant propagation for insideXY
  */
 static void UpdateAndRenderOffScreenIndicators(float dt)
@@ -222,7 +222,10 @@ static void UpdateAndRenderOffScreenIndicators(float dt)
                 x = x + 320.0f;
                 y = y + 240.0f;
 
-                if (absX < absY)
+                if (absX >= absY)
+                {
+                }
+                else
                 {
                     absX = absY;
                 }

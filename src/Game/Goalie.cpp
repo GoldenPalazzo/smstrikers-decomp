@@ -481,12 +481,19 @@ void Goalie::CollideWithBallCallback(cBall* pBall)
                         static FilteredRandomReal randgenZVel;
 
                         float fForwardScale = 1.0f + 1.0f * randgenFScale.genrand();
-                        float fVelScale = 0.75f + 0.75f * randgenVScale.genrand();
+                        float fVelScale = 0.75f * randgenVScale.genrand();
+                        fVelScale = 0.75f + fVelScale;
 
                         nlVector3 v3NewVel;
-                        v3NewVel.f.z = fForwardScale * fForwardZ + fVelScale * m_v3Velocity.f.z;
-                        v3NewVel.f.x = fForwardScale * fForwardX + fVelScale * m_v3Velocity.f.x;
-                        v3NewVel.f.y = fForwardScale * fForwardY + fVelScale * m_v3Velocity.f.y;
+                        float fNewZ = fForwardScale * fForwardZ;
+                        float fNewY = fForwardScale * fForwardY;
+                        float fNewX = fForwardScale * fForwardX;
+                        fNewZ += fVelScale * m_v3Velocity.f.z;
+                        fNewY += fVelScale * m_v3Velocity.f.y;
+                        fNewX += fVelScale * m_v3Velocity.f.x;
+                        v3NewVel.f.z = fNewZ;
+                        v3NewVel.f.x = fNewX;
+                        v3NewVel.f.y = fNewY;
 
                         float fZVel = 2.0f * randgenZVel.genrand();
                         v3NewVel.f.z = 3.0f + fZVel;
@@ -2808,7 +2815,7 @@ static inline float clamp_lower(float x, float lo)
 
 /**
  * Offset/Address/Size: 0x69D8 | 0x800494D4 | size: 0x3A8
- * TODO: 98.65% match - FPR allocation in save-margin/goal-distance checks
+ * TODO: 99.08% match - FPR allocation in save-margin/goal-distance checks
  * and final target-time clamp branch.
  */
 bool Goalie::CheckForSTSAttack()
@@ -2859,7 +2866,7 @@ bool Goalie::CheckForSTSAttack()
                 fSaveIgnoreMargin = ((GoalieTweaks*)m_pTweaks)->fSaveIgnoreMargin;
 
                 if (((float)fabsf(pOppFielder->m_v3Position.f.x) > (cField::GetGoalLineX(1U) - 1.0f))
-                    && ((float)fabsf(pOppFielder->m_v3Position.f.y) < (cNet::m_fNetWidth * 0.5f + fSaveIgnoreMargin))
+                    && ((float)fabsf(pOppFielder->m_v3Position.f.y) < (cNet::m_fNetWidth / 2.0f + fSaveIgnoreMargin))
                     && (pOppFielder->m_v3Position.f.z < (fSaveIgnoreMargin + cNet::m_fNetHeight)))
                 {
                     bInNetZone = true;
@@ -2872,13 +2879,7 @@ bool Goalie::CheckForSTSAttack()
                 nlVector3 v3GoalPos = m_pTeam->m_pNet->m_baseLocation;
 
                 f32 halfWidth = 0.5f * cNet::m_fNetWidth;
-                f32 clampedY = -halfWidth;
-
-                if (pOppFielder->m_v3Position.f.y >= clampedY)
-                {
-                    clampedY = pOppFielder->m_v3Position.f.y;
-                }
-
+                f32 clampedY = clamp_lower(pOppFielder->m_v3Position.f.y, -halfWidth);
                 clampedY = clamp_upper(clampedY, halfWidth);
 
                 v3GoalPos.f.y = clampedY;
@@ -2912,13 +2913,16 @@ bool Goalie::CheckForSTSAttack()
                     }
                 }
 
-                f32 fTimeToImpact = fAnimScale * GetCurrentAnimTriggerTime(pOppFielder, 0x2C8DABFA, 0);
-                fTimeToImpact = fTimeToImpact - fCurrentAnimTime;
+                f32 fEndTime = fAnimScale * GetCurrentAnimTriggerTime(pOppFielder, 0x2C8DABFA, 0);
+                f32 fStartTime = fEndTime - fCurrentAnimTime;
                 f32 fPickupDuration2 = LooseBallAnims::mAttackSTSInfo.mfPickupTime * LooseBallAnims::mAttackSTSInfo.mfAnimDuration;
-                fTimeToImpact = fTimeToImpact - fPickupDuration2;
+                f32 fTimeToImpact = fStartTime - fPickupDuration2;
 
                 mfWaitTime = fTimeToImpact;
-                fTimeToImpact = clamp_lower(fTimeToImpact, 0.25f);
+                if (fTimeToImpact <= 0.25f)
+                {
+                    fTimeToImpact = 0.25f;
+                }
 
                 mfTargetTime = fTimeToImpact;
                 mpLooseBallInfo = &LooseBallAnims::mAttackSTSInfo;
@@ -3984,23 +3988,9 @@ void Goalie::InitActionLooseBallSetup()
                 f32 fAnimDuration = mpLooseBallInfo->mfAnimDuration;
                 f32 fAnimTime = fPickupTime * fAnimDuration;
 
-                f32 fGVelX = pBallVelocity->f.x;
-                f32 fGBallX = v3BallPosition.f.x;
-                f32 fGVelY = pBallVelocity->f.y;
-                f32 fGBallY = v3BallPosition.f.y;
-                f32 fGVelZ = pBallVelocity->f.z;
-                f32 fGBallZ = v3BallPosition.f.z;
-
-                f32 fGuessBallX = 0.8f * fAnimTime * fGVelX + fGBallX;
-                f32 fGuessBallY = 0.8f * fAnimTime * fGVelY + fGBallY;
-                f32 fGuessBallZ = 0.8f * fAnimTime * fGVelZ + fGBallZ;
-
                 nlVector3 v3GuessBallPos;
-                v3GuessBallPos.f.x = fGuessBallX;
-                v3GuessBallPos.f.y = fGuessBallY;
-
-                f32 fAbsGuessX = (f32)fabs(fGuessBallX);
-                v3GuessBallPos.f.z = fGuessBallZ;
+                nlVec3ScaleAdd(v3GuessBallPos, 0.8f * fAnimTime, *pBallVelocity, v3BallPosition);
+                f32 fAbsGuessX = (f32)fabs(v3GuessBallPos.f.x);
 
                 if (fAbsGuessX > fPanicLineX)
                 {
@@ -6683,8 +6673,8 @@ void Goalie::SetDesiredSaveFacing(const nlVector3& v3BallPosition)
     if (fBallOffMagSq < 1.44f)
     {
         nlVector3 v3BallToGoal;
-        float fLengthSq = nlVec3LengthSquared(v3Facing);
         nlVec3Sub(v3BallToGoal, v3BallPosition, m_pTeam->m_pNet->m_baseLocation);
+        float fLengthSq = nlVec3LengthSquared(v3Facing);
 
         float fRecip = nlRecipSqrt(fLengthSq, true);
         nlVec3Scale(v3Facing, fRecip);

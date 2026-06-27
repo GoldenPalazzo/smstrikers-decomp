@@ -20,7 +20,6 @@ float g_BallAirResistance = 0.1f;
 
 /**
  * Offset/Address/Size: 0x0 | 0x80134D14 | size: 0xD4
- * TODO: 98.4% match - register allocation difference (f3/f9/f5/f6 vs f9/f5/f3/f4)
  */
 void PhysicsBall::CalcAngularFromLinearVelocity(nlVector3& v3AngularVel)
 {
@@ -28,16 +27,17 @@ void PhysicsBall::CalcAngularFromLinearVelocity(nlVector3& v3AngularVel)
     GetLinearVelocity(&v3Velocity);
 
     nlVector3 v3Up = { 0.0f, 0.0f, 0.0f };
-    f32 invRadius = 1.0f / GetRadius();
+    v3Up.f.z = 1.0f / GetRadius();
     nlVector3 v3Look = { 0.0f, 0.0f, 0.0f };
 
-    v3Up.f.z = invRadius;
     v3Look.f.x = v3Velocity.f.x;
     v3Look.f.y = v3Velocity.f.y;
 
-    v3AngularVel.f.x = v3Up.f.y * v3Look.f.z - v3Look.f.y * v3Up.f.z;
-    v3AngularVel.f.y = -v3Up.f.x * v3Look.f.z + v3Up.f.z * v3Look.f.x;
-    v3AngularVel.f.z = v3Look.f.y * v3Up.f.x - v3Up.f.y * v3Look.f.x;
+    nlVector3 v3Cross;
+    nlVec3CrossProductAlt(v3Cross, v3Up, v3Look);
+    v3AngularVel.f.x = v3Cross.f.z;
+    v3AngularVel.f.y = v3Cross.f.y;
+    v3AngularVel.f.z = v3Cross.f.x;
 }
 
 /**

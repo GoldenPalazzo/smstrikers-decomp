@@ -151,8 +151,8 @@ static inline void ResourceAllocMark()
 
 static inline void ResourceAllocTotal(u32* pTotalAlloc, u32* pTotalTex)
 {
-    u32 totalAlloc = 0;
-    u32 totalTex = totalAlloc;
+    u32 totalTex = 0;
+    u32 totalAlloc = totalTex;
     u32 marker = g_uResourceMarker;
     GLXMemoryInfo* p = g_uResourceAlloc;
     u32 i;
@@ -223,8 +223,12 @@ void glplatResourceRelease(unsigned long long resourceId)
 
 /**
  * Offset/Address/Size: 0x310 | 0x801B6C38 | size: 0x130
+ * TODO: 97.43% match - allocation-total loop keeps base pointer and totals in
+ * different registers.
  */
+#pragma push
 #pragma optimize_for_size on
+#pragma use_lmw_stmw off
 unsigned long long glplatResourceMark()
 {
     int texLevel = glx_GetTexMarkerLevel();
@@ -246,7 +250,7 @@ unsigned long long glplatResourceMark()
 
     return marker;
 }
-#pragma optimize_for_size reset
+#pragma pop
 
 /**
  * Offset/Address/Size: 0x440 | 0x801B6D68 | size: 0xB4

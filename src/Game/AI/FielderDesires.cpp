@@ -1332,7 +1332,8 @@ void cFielder::DesireMark(float fDeltaT)
             SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide)->Def_Marking);
 
         {
-            float fTimeDelayRange = fTimeDelay * 0.8f;
+            float fTimeDelayRange = fTimeDelay;
+            fTimeDelayRange *= 0.8f;
             m_DesireCommonVars.tMiscTimer.SetSeconds(
                 fTimeDelay + (nlRandomf(fTimeDelayRange, &nlDefaultSeed) - (0.5f * fTimeDelayRange)));
         }

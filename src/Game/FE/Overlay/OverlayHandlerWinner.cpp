@@ -108,8 +108,8 @@ WinnerOverlay::~WinnerOverlay()
 
 /**
  * Offset/Address/Size: 0x304 | 0x80105970 | size: 0xCE0
- * TODO: 94.37% match - saved-register differences remain in localization
- * result wiring and final image lookup call-site setup.
+ * TODO: 97.34% match - saved-register differences remain in localization
+ * result wiring and r8/r9 finder call-site setup.
  */
 
 template <typename StringType, typename ValueType>
@@ -320,6 +320,8 @@ void WinnerOverlay::SceneCreated()
     g3.m_Hash = 0;
     h7.m_Hash = 0;
 
+    findImage.byValue = FEFinder<TLImageInstance, 2>::Find<TLSlide>;
+
     hash = nlStringLowerHash("action_OUTLINE");
     g4.m_Hash = hash;
     g5.m_Hash = hash;
@@ -328,7 +330,7 @@ void WinnerOverlay::SceneCreated()
     gA.m_Hash = hash;
     gB.m_Hash = hash;
 
-    pImage = FEFinder<TLImageInstance, 2>::Find<TLSlide>(
+    pImage = findImage.byRef(
         m_pFEPresentation->m_currentSlide,
         (InlineHasher&)gB,
         (InlineHasher&)g5,
@@ -350,6 +352,8 @@ void WinnerOverlay::SceneCreated()
     f3.m_Hash = 0;
     h7.m_Hash = 0;
 
+    findImage.byValue = FEFinder<TLImageInstance, 2>::Find<TLSlide>;
+
     hash = nlStringLowerHash("action_WHITE");
     f4.m_Hash = hash;
     f5.m_Hash = hash;
@@ -358,7 +362,7 @@ void WinnerOverlay::SceneCreated()
     fA.m_Hash = hash;
     fB.m_Hash = hash;
 
-    pImage = FEFinder<TLImageInstance, 2>::Find<TLSlide>(
+    pImage = findImage.byRef(
         m_pFEPresentation->m_currentSlide,
         (InlineHasher&)fB,
         (InlineHasher&)f5,

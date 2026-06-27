@@ -441,20 +441,18 @@ bool FESceneManager::AreAllScenesValid()
 }
 
 /**
- * Offset/Address/Size: 0x90C | 0x8020DF58 | size: 0xB8
- */
-FESceneManager::~FESceneManager()
-{
-    ForceImmediateStackProcessing();
-    FERender::Cleanup();
-}
-
-/**
  * Offset/Address/Size: 0x9C4 | 0x8020E010 | size: 0x70
- * TODO: 92.68% match - r30/r31 register swap in inlined nlDLListSlotPool ctor.
- * Known MWCC quirk: inlined template constructor assigns r31 to subobject this
- * instead of outer this. Same issue as FontManager ctor (91.25%) and
- * FETweenManager ctor (94.62%).
+ * 91.25% match - residual r30/r31 swap: target colors the outer `this` to r31
+ * and the m_Allocator subobject `this` to r30; MWCC GC/2.5 does the reverse.
+ * Same single-pool inlined-ctor coloring wall as FontManager ctor (also 91.25%);
+ * appears irreducible with local source (likely an original-compiler-version
+ * coloring artifact). FETweenManager (two pools) matches 100% via a different
+ * allocation, so it is not a template-shape problem.
+ *
+ * IMPORTANT: this ctor MUST stay defined BEFORE ~FESceneManager. Compiling the
+ * destructor first instantiates nlDLListSlotPool<BaseSceneHandler*> out-of-line,
+ * after which MWCC calls the out-of-line ctor instead of inlining it here,
+ * collapsing the match to ~59%.
  */
 FESceneManager::FESceneManager()
     : m_sceneHandlerStack(0x14, 0)
@@ -462,6 +460,15 @@ FESceneManager::FESceneManager()
     m_uDefaultRenderView = -1;
     m_topMostScene = nullptr;
     FERender::Initialize();
+}
+
+/**
+ * Offset/Address/Size: 0x90C | 0x8020DF58 | size: 0xB8
+ */
+FESceneManager::~FESceneManager()
+{
+    ForceImmediateStackProcessing();
+    FERender::Cleanup();
 }
 
 // /**

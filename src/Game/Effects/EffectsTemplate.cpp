@@ -21,12 +21,6 @@ struct ColourKey
     int value;
 };
 
-struct ColourKeyListShim
-{
-    NewAdapter<DLListEntry<ColourKey> > m_Allocator;
-    DLListEntry<ColourKey>* m_Head;
-};
-
 #pragma inline_depth(0)
 /**
  * Offset/Address/Size: 0x8E4 | 0x801F27A4 | size: 0x58
@@ -76,8 +70,7 @@ float RandomizedValue(float base, float range)
 
 /**
  * Offset/Address/Size: 0xFD4 | 0x801F1B98 | size: 0x28C
- * TODO: 97.79% match - residual temporary key stack slots and span-loop
- * register allocation differ.
+ * TODO: 98.04% match - residual span-loop register allocation differs.
  */
 static void BlendSpan(nlColour* pColour, int cindex, const ColourKey& k0, const ColourKey& k1)
 {
@@ -92,21 +85,19 @@ static void BlendSpan(nlColour* pColour, int cindex, const ColourKey& k0, const 
     while (index < k1.index)
     {
         p->c[cindex] = current + 0.5f;
-        p++;
-        current += step;
         index++;
+        current += step;
+        p++;
     }
 }
 
 static void GetColourComponent(SimpleParser* parser, nlColour* pColour, int cindex)
 {
     typedef DLListContainerBase<ColourKey, NewAdapter<DLListEntry<ColourKey> > > ColourKeyList;
-    ColourKey keyTmp;
     char ind[8];
     char val[8];
     ColourKey key;
-    ColourKeyListShim keys;
-    keys.m_Head = NULL;
+    ColourKeyList keys(0);
     while (true)
     {
         char* token = parser->NextTokenOnLine(true);
@@ -129,14 +120,12 @@ static void GetColourComponent(SimpleParser* parser, nlColour* pColour, int cind
 
         int index = atoi(ind);
         int value = atoi(val);
-        ColourKey* pKey = &key;
-        ColourKey* pKeyTmp = &keyTmp;
-        pKey->index = index;
-        pKey->value = value;
-        *pKeyTmp = *pKey;
+        key.index = index;
+        key.value = value;
 
+        DLListEntry<ColourKey> localEntry(key);
         DLListEntry<ColourKey>* entry = keys.m_Allocator.Allocate();
-        entry = new (entry) DLListEntry<ColourKey>(*pKeyTmp);
+        entry = new (entry) DLListEntry<ColourKey>(localEntry);
         nlDLRingAddEnd<DLListEntry<ColourKey> >(&keys.m_Head, entry);
     }
     DLListEntry<ColourKey>* start = nlDLRingGetStart<DLListEntry<ColourKey> >(keys.m_Head);
@@ -154,9 +143,6 @@ static void GetColourComponent(SimpleParser* parser, nlColour* pColour, int cind
         start->m_data.index = current->m_data.index;
         start->m_data.value = current->m_data.value;
     }
-    nlWalkDLRing<DLListEntry<ColourKey>, ColourKeyList>(
-        keys.m_Head, (ColourKeyList*)&keys, &ColourKeyList::DeleteEntry);
-    keys.m_Head = NULL;
 }
 
 /**

@@ -819,9 +819,8 @@ long SaveCallbacks::DoSave(unsigned long Slot)
 
 /**
  * Offset/Address/Size: 0x24EC | 0x8018BE48 | size: 0x21C
- * TODO: 90.74% match - card2 register allocation, channel offset reuse,
- * extra block-count loop guards, and icon header arithmetic registers still
- * differ.
+ * TODO: 91.81% match - extra block-count loop guards and icon header
+ * arithmetic registers still differ.
  */
 #pragma push
 #pragma opt_propagation off
@@ -829,9 +828,9 @@ inline unsigned long SaveCallbacks::FileWriteIconCB(unsigned long Slot, long Res
 {
     if (Result != 0)
     {
+        MemCard* card2;
         long errorCode;
         int numBlocks;
-        MemCard* card2;
         errorCode = Result;
         if (m_pSaveFile != NULL)
         {
@@ -848,7 +847,8 @@ inline unsigned long SaveCallbacks::FileWriteIconCB(unsigned long Slot, long Res
 
         if (errorCode == -4)
         {
-            card2 = g_MemCards[Slot];
+            unsigned long slotOffset = Slot << 2;
+            card2 = g_MemCards[slotOffset >> 2];
             long dataSize = nlSingleton<GameInfoManager>::s_pInstance->GetMemoryCardDataSize();
             numBlocks = 0;
             int origSize = (dataSize += 12);
@@ -876,8 +876,8 @@ inline unsigned long SaveCallbacks::FileWriteIconCB(unsigned long Slot, long Res
 
             unsigned long sectorSize = card2->m_CardInfo.SectorSize;
             unsigned long bytesToSave = numBlocks * sectorSize;
-            unsigned long alignedSize = g_MemCards[Slot]->AlignBytesToSectorSize(bytesToSave);
-            MemCard* mc = g_MemCards[Slot];
+            unsigned long alignedSize = g_MemCards[slotOffset >> 2]->AlignBytesToSectorSize(bytesToSave);
+            MemCard* mc = g_MemCards[slotOffset >> 2];
             u8 hasSpace;
             if (alignedSize > mc->m_CardInfo.FreeBytes)
                 hasSpace = 0;
@@ -1167,7 +1167,7 @@ unsigned long FormatCallbacks::FormatDoneCB(unsigned long channel, long result, 
 
 /**
  * Offset/Address/Size: 0x11DC | 0x8018AB38 | size: 0xC7C
- * TODO: 86.96% match - Slot/Result register allocation, extra block-count
+ * TODO: 87.28% match - Slot/Result register allocation, extra block-count
  * loop guards, and icon header size register scheduling differ.
  */
 #pragma push

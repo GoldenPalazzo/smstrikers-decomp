@@ -1032,10 +1032,8 @@ int MostDefensivePlayer(const void* a, const void* b)
 
 /**
  * Offset/Address/Size: 0x120 | 0x800644CC | size: 0x3B0
- * TODO: 97.99% match - register allocation diffs (r24-r30 swapped vs target),
- *       fmuls/fmadds commutative operand order, rlwinm mask diff, 1 missing lfs
- *       for fBallOwn2 (compiler reuses f31 instead of reloading 0.0f).
- *       Root cause: context-dependent register allocation in -inline deferred mode.
+ * TODO: 98.16% match - register allocation diffs in the nested scoring loops
+ *       and one missing zero reload before the fBallOwn2 comparison.
  */
 void cTeam::AssignMarks(bool bForceReMark)
 {
@@ -1164,19 +1162,19 @@ void cTeam::AssignMarks(bool bForceReMark)
             pBallOwner = g_pBall->GetOwnerFielder();
             if (pBallOwner->m_pTeam != this)
             {
-                cFielder* pMarker = g_pBall->GetOwnerFielder()->m_pMarker;
-                if (Incapacitated(pMarker))
+                pOppFielder = g_pBall->GetOwnerFielder()->m_pMarker;
+                if (Incapacitated(pOppFielder))
                 {
                     pBallOwner = g_pBall->GetOwnerFielder();
-                    cFielder* pOldMarker = pBallOwner->m_pMarker;
+                    pOppFielder = pBallOwner->m_pMarker;
                     for (int k = 0; k < 4; k++)
                     {
-                        cFielder* pFielder = m_pBallInterceptOrderedFielders[k];
-                        if (pFielder != pOldMarker)
+                        pMyFielder = m_pBallInterceptOrderedFielders[k];
+                        if (pMyFielder != pOppFielder)
                         {
-                            cFielder* pOldMark = pFielder->m_pMark;
-                            pFielder->SetMark(g_pBall->GetOwnerFielder());
-                            pOldMarker->SetMark(pOldMark);
+                            cFielder* pOldMark = pMyFielder->m_pMark;
+                            pMyFielder->SetMark(g_pBall->GetOwnerFielder());
+                            pOppFielder->SetMark(pOldMark);
                             break;
                         }
                     }

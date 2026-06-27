@@ -339,7 +339,12 @@ void Bowser::Update(float fDeltaT)
             g_pEventManager->CreateValidEvent(0x64, 0x14);
         }
 
+        bool bAnimDone = false;
         if (mpAnimController->m_ePlayMode == PM_HOLD && mpAnimController->m_fTime == 1.0f)
+        {
+            bAnimDone = true;
+        }
+        if (bAnimDone)
         {
             if (mtActiveTimer.m_uPackedTime != 0)
             {
@@ -549,7 +554,12 @@ void Bowser::Update(float fDeltaT)
                 PowerupCreateAndThrow(NULL, eType, 1, this);
             }
 
+            bool bFeatherDone = false;
             if (mpFeatherController->m_ePlayMode == PM_HOLD && mpFeatherController->m_fTime == 1.0f)
+            {
+                bFeatherDone = true;
+            }
+            if (bFeatherDone)
             {
                 if (mtActiveTimer.m_uPackedTime == 0)
                 {
@@ -595,7 +605,12 @@ void Bowser::Update(float fDeltaT)
     case BOWSER_STATE_ROAR:
         if (!CheckForAbort())
         {
+            bool bRoarDone = false;
             if (mpAnimController->m_ePlayMode == PM_HOLD && mpAnimController->m_fTime == 1.0f)
+            {
+                bRoarDone = true;
+            }
+            if (bRoarDone)
             {
                 if (mtActiveTimer.m_uPackedTime == 0)
                 {
@@ -685,7 +700,12 @@ void Bowser::Update(float fDeltaT)
             SetPosition(v3Pos);
         }
 
+        bool bRollDone = false;
         if (mpAnimController->m_ePlayMode == PM_HOLD && mpAnimController->m_fTime == 1.0f)
+        {
+            bRollDone = true;
+        }
+        if (bRollDone)
         {
             if (mtActiveTimer.m_uPackedTime == 0)
             {

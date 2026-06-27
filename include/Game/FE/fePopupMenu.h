@@ -9,14 +9,11 @@
 #include "NL/nlColour.h"
 #include "NL/nlFunction.h"
 
-// HACK: fePopupMenu.cpp defines FEPOPUPMENU_INTERNAL_BYVAL before including
-// this header so its Create overload definitions get the by-value MWCC
-// mangling (no R prefix) required to match the target binary. All other TUs
-// see the &-reference declarations, preserving their existing call-site
-// codegen and 100% matches. The two views never link directly: most TUs are
-// matched per-function (unlinked), and objdiff treats both sides' bl-to-
-// unresolved as equivalent.
-#ifdef FEPOPUPMENU_INTERNAL_BYVAL
+// Some target TUs see these callback overloads with by-value C++ mangling.
+// MWCC still passes non-trivial Function objects by address at the ABI level,
+// so call-site codegen can match the reference form while the symbol name
+// changes. Keep this separate from Function assignment inlining controls.
+#if defined(FEPOPUPMENU_BYVAL_DECLS) || defined(FEPOPUPMENU_INTERNAL_BYVAL)
 typedef Function<FnVoidVoid> _FEPopupMenuCB;
 #else
 typedef Function<FnVoidVoid>& _FEPopupMenuCB;

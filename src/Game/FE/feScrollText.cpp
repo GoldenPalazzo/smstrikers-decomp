@@ -111,36 +111,27 @@ static inline const unsigned short* LookupLocTextChar(unsigned long hash)
     return MissingLocString;
 }
 
-static inline BasicStringInternal* BuildScrollString(const unsigned short* text)
+static inline BasicStringData<unsigned short>* BuildScrollString(const unsigned short* str)
 {
-    BasicStringInternal* data = (BasicStringInternal*)nlMalloc(0x10, 8, true);
+    BasicStringData<unsigned short>* data = (BasicStringData<unsigned short>*)Detail::TempStringAllocator::allocate(sizeof(BasicStringData<unsigned short>));
     if (data != 0)
     {
+        const unsigned short* src = str;
         data->mData = 0;
         data->mSize = 0;
         data->mCapacity = 0;
-
-        const unsigned short* ptr = text;
-        while (*ptr++ != 0)
+        const unsigned short* s = src;
+        while (*s++ != 0)
         {
             data->mSize++;
         }
-
         data->mSize++;
-        data->mData = (char*)nlMalloc((data->mSize + 1) * 2, 8, true);
+        data->mData = (unsigned short*)Detail::TempStringAllocator::allocate((data->mSize + 1) * sizeof(unsigned short));
         data->mCapacity = data->mSize;
-
-        int j;
-        int i = 0;
-        j = i;
-        while (i < data->mSize)
+        for (int i = 0; i < data->mSize; i++)
         {
-            *(unsigned short*)(data->mData + j) = *text;
-            i++;
-            text++;
-            j += 2;
+            data->mData[i] = *src++;
         }
-
         data->mRefCount = 1;
     }
     return data;
@@ -191,21 +182,21 @@ static inline const unsigned short* LookupLocTextChar(nlLocalization* loc, unsig
 
 /**
  * Offset/Address/Size: 0x1C8 | 0x800C8B9C | size: 0x198
- * TODO: 97.5% match - localized text pointer and temporary string data use swapped saved registers
+ * TODO: 98.7% match - temporary string cleanup uses data pointer instead of stack-reloaded string data
  */
 void FEScrollText::SetDisplayMessage(const char* locMessage)
 {
     nlLocalization* loc = (nlLocalization*)g_pLocalization;
     unsigned long hash = nlStringLowerHash(locMessage);
     const unsigned short* text = LookupLocTextChar(loc, hash);
-    BasicStringInternal* data = BuildScrollString(text);
+    BasicStringData<unsigned short>* data = BuildScrollString(text);
 
     {
-        BasicStringInternal* localMsgData = data;
+        BasicStringData<unsigned short>* localMsgData = data;
         SetDisplayMessage(*(const BasicString<unsigned short, Detail::TempStringAllocator>*)&localMsgData);
     }
 
-    BasicStringInternal* msgData = data;
+    BasicStringData<unsigned short>* msgData = data;
     if (msgData != 0)
     {
         if (--msgData->mRefCount == 0)
@@ -242,13 +233,36 @@ static inline const unsigned short* LookupLocText(unsigned long hash)
 
 /**
  * Offset/Address/Size: 0x360 | 0x800C8D34 | size: 0x190
- * TODO: 97.6% match - this pointer and localized text pointer use swapped saved registers
+ * TODO: 98.65% match - cleanup uses data pointer instead of stack-reloaded string data
  */
 void FEScrollText::SetDisplayMessage(unsigned long hash)
 {
     const unsigned short* text = LookupLocText(hash);
-    BasicString<unsigned short, Detail::TempStringAllocator> message(text);
-    SetDisplayMessage(message);
+    BasicStringData<unsigned short>* data = BuildScrollString(text);
+
+    {
+        BasicStringData<unsigned short>* localMsgData = data;
+        SetDisplayMessage(*(const BasicString<unsigned short, Detail::TempStringAllocator>*)&localMsgData);
+    }
+
+    BasicStringData<unsigned short>* msgData = data;
+    if (msgData != 0)
+    {
+        if (--msgData->mRefCount == 0)
+        {
+            if (msgData != 0)
+            {
+                if (msgData != 0)
+                {
+                    delete[] msgData->mData;
+                }
+                if (msgData != 0)
+                {
+                    nlFree(msgData);
+                }
+            }
+        }
+    }
 }
 
 static inline void BuildFontCharStringForScroll(FontCharString& fontcharstring, FEScrollText* self)
@@ -304,7 +318,7 @@ static inline void BuildFontCharStringForScroll(FontCharString& fontcharstring, 
 
 /**
  * Offset/Address/Size: 0x4F0 | 0x800C8EC4 | size: 0x578
- * TODO: 97.8% match - escape-copy guard and temporary glyph key stack slot differ
+ * TODO: 98.0% match - escape-copy guard and temporary glyph key stack slot differ
  */
 void FEScrollText::SetDisplayMessage(const BasicString<unsigned short, Detail::TempStringAllocator>& theMessage)
 {
@@ -327,7 +341,7 @@ void FEScrollText::SetDisplayMessage(const BasicString<unsigned short, Detail::T
 
     unsigned short escBegin = nlEscapeSequence::ESCAPE_BEGIN;
     int i = 0;
-    while (i < (int)m_message.size() - 1)
+    while (i < (m_message.m_data != 0 ? m_message.m_data->mSize - 1 : 0))
     {
         const unsigned short* str = m_message.c_str();
         unsigned short* charPtr = (unsigned short*)(str) + i;

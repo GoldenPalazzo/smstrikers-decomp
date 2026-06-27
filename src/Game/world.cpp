@@ -31,6 +31,19 @@
 #include "Game/Physics/CharacterPhysicsElement.h"
 #include "ctype_api.h"
 
+// These template helpers' weak bodies live in other TUs; reference them (UND),
+// don't re-emit a redundant weak COMDAT copy (matches target world.o).
+template <>
+unsigned long nlStrLen<char>(const char*);
+template <>
+int nlStrNCmp<char>(const char*, const char*, unsigned long);
+template <>
+char* nlStrNCpy<char>(char*, const char*, unsigned long);
+template <>
+int nlStrNICmp<char>(const char*, const char*, unsigned long);
+template <>
+char nlToLower<char>(char);
+
 // .sdata (initialized) -- order matches target world.s
 static unsigned char g_bClipToFrustum = 1;
 u32 World::m_uCurrentFrameCount = 0xFFFFFFFF;

@@ -1081,8 +1081,7 @@ void GCAudioStreaming::StereoAudioStream::InterleavedHdrReadCB(nlFile* pFile, vo
 
 /**
  * Offset/Address/Size: 0x2A8 | 0x801C7A58 | size: 0x540
- * TODO: 97.77% match - this/MRAMOffsetB/LengthB three-register coloring rotation (this is r27 vs r31),
- *       plus an m_BufferCount<=0 ble/beq branch difference and one mr scheduling diff in the read-log call
+ * TODO: 98.18% match - this/MRAMOffsetB/LengthB register coloring rotation across member accesses and buffer/read calls
  */
 unsigned long GCAudioStreaming::StereoAudioStream::DoUpdateRead(unsigned long MRAMOffsetA, unsigned long LengthA, unsigned long MRAMOffsetB, unsigned long LengthB, GCAudioStreaming::AudioStreamBuffer* pRequestingBuffer)
 {
@@ -1127,11 +1126,9 @@ unsigned long GCAudioStreaming::StereoAudioStream::DoUpdateRead(unsigned long MR
         }
         AudioStreamBuffer* pBuffer;
         AudioStreamBuffer* init;
+        unsigned long Zero = 0;
         volatile unsigned long BufferIndex = (unsigned long)(init = 0);
-        if (this->m_BufferCount <= 0)
-        {
-        }
-        else
+        if (this->m_BufferCount > Zero)
         {
             init = this->m_Buffers[0];
         }
@@ -1247,11 +1244,9 @@ unsigned long GCAudioStreaming::StereoAudioStream::DoUpdateRead(unsigned long MR
     unsigned long TotalReadLen = LengthA + LengthB;
     AudioStreamBuffer* pBuffer;
     AudioStreamBuffer* init;
+    unsigned long Zero = 0;
     volatile unsigned long BufferIndex = (unsigned long)(init = 0);
-    if (this->m_BufferCount <= 0)
-    {
-    }
-    else
+    if (this->m_BufferCount > Zero)
     {
         init = this->m_Buffers[0];
     }
@@ -1259,8 +1254,7 @@ unsigned long GCAudioStreaming::StereoAudioStream::DoUpdateRead(unsigned long MR
     while (pBuffer)
     {
         unsigned char* pMRAMBuffer = pBuffer->m_MRAMBuffer;
-        unsigned long filePos = nlGetFilePosition(this->m_pFile);
-        ___blank("Reading into %d %d and %d %d from %d\n", MRAMOffsetA, LengthA, MRAMOffsetB, LengthB, filePos);
+        ___blank("Reading into %d %d and %d %d from %d\n", MRAMOffsetA, LengthA, MRAMOffsetB, LengthB, nlGetFilePosition(this->m_pFile));
         bool enabled = OSDisableInterrupts();
         READ_CB_INFO* pCBInfo = READ_CB_INFO::s_AllocPool.Allocate();
         OSRestoreInterrupts(enabled);

@@ -60,6 +60,8 @@ public:
     void Set(const char*, float);
     void Set(const char*, bool);
     void Set(const char*, int);
+    char* CopyString(const char*, unsigned char);
+    static u32 Hash(const char*);
 
     template <typename T>
     void Set(const char* key, T value);

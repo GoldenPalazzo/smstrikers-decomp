@@ -21,6 +21,7 @@
 extern FEInput* g_pFEInput;
 extern nlColour MenuHighliteColour;
 
+static char sPauseOutSlide[] = "out";
 eFEINPUT_PAD PauseMenuScene::mControllingInput = FE_ALL_PADS;
 float mDelayBeforeUnpause__14PauseMenuScene = 0.1f;
 s32 PauseMenuScene::mLastSelectedIndex;
@@ -42,8 +43,6 @@ typedef Detail::MemFunImpl<void, void (PauseMenuScene::*)()> MemFunImpl_Pause_v_
 typedef Detail::MemFunImpl<void, void (PauseMenuScene::*)(TLComponentInstance*)> MemFunImpl_Pause_p_t;
 typedef BindExp1<void, MemFunImpl_Pause_v_t, PauseMenuScene*> BindExp1_Pause_t;
 typedef BindExp2<void, MemFunImpl_Pause_p_t, PauseMenuScene*, Placeholder<0> > BindExp2_Pause_t;
-
-template class Function1<void, TLComponentInstance*>::FunctorImpl<BindExp2_Pause_t>;
 
 /**
  * Offset/Address/Size: 0x225C | 0x800AF754 | size: 0xDC
@@ -297,19 +296,14 @@ void PauseMenuScene::SceneCreated()
     {
         FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
 
-        static void (PauseMenuScene::* PauseMenuCBs[6])(TLComponentInstance*);
-        static signed char init;
-
-        if (!init)
-        {
-            PauseMenuCBs[0] = &PauseMenuScene::OnSelectRESUME;
-            PauseMenuCBs[1] = &PauseMenuScene::OnSelectCHOOSESIDES;
-            PauseMenuCBs[2] = &PauseMenuScene::OnSelectAUDIOOPTIONS;
-            PauseMenuCBs[3] = &PauseMenuScene::OnSelectVISUALOPTIONS;
-            PauseMenuCBs[4] = &PauseMenuScene::OnSelectSTATISTICS;
-            PauseMenuCBs[5] = &PauseMenuScene::OnSelectQUIT;
-            init = 1;
-        }
+        static void (PauseMenuScene::* PauseMenuCBs[6])(TLComponentInstance*) = {
+            &PauseMenuScene::OnSelectRESUME,
+            &PauseMenuScene::OnSelectCHOOSESIDES,
+            &PauseMenuScene::OnSelectAUDIOOPTIONS,
+            &PauseMenuScene::OnSelectVISUALOPTIONS,
+            &PauseMenuScene::OnSelectSTATISTICS,
+            &PauseMenuScene::OnSelectQUIT,
+        };
 
         static char* MENU_NAMES[6]
             = { "MENU ITEM1", "MENU ITEM2", "MENU ITEM3", "MENU ITEM6", "MENU ITEM4", "MENU ITEM5" };
@@ -319,36 +313,10 @@ void PauseMenuScene::SceneCreated()
         int i;
         for (i = 0; i < 6; i++)
         {
-            volatile InlineHasher hB, hA;
-            volatile InlineHasher h9, h8;
-            volatile InlineHasher h7, h6, h5, h4, h3, h2, h1, h0;
-
-            h0.m_Hash = 0;
-            h1.m_Hash = 0;
-            h2.m_Hash = 0;
-            h3.m_Hash = 0;
-            h4.m_Hash = 0;
-            h5.m_Hash = 0;
-            h6.m_Hash = 0;
-            h7.m_Hash = 0;
-
-            unsigned long hash = nlStringLowerHash(MENU_NAMES[i]);
-            h9.m_Hash = hash;
-            h8.m_Hash = hash;
-
-            hash = nlStringLowerHash("Layer");
-            hB.m_Hash = hash;
-            hA.m_Hash = hash;
-
-            findInst.byValue = FEFinder<TLInstance, 4>::Find<TLSlide>;
-            TLInstance* instance = findInst.byRef(
+            TLInstance* instance = FEFinder<TLInstance, 4>::Find<TLSlide>(
                 presentation->m_currentSlide,
-                (InlineHasher&)hB,
-                (InlineHasher&)h9,
-                (InlineHasher&)h7,
-                (InlineHasher&)h5,
-                (InlineHasher&)h3,
-                (InlineHasher&)h1);
+                InlineHasher(nlStringLowerHash("Layer")),
+                InlineHasher(nlStringLowerHash(MENU_NAMES[i])));
             TLComponentInstance* compinstance = (TLComponentInstance*)instance;
 
             int numAdded = mMenuItems.mNumItemsAdded;
@@ -358,7 +326,10 @@ void PauseMenuScene::SceneCreated()
 
             void (PauseMenuScene::*openCB)(TLComponentInstance*) = &PauseMenuScene::OpenItem;
             PauseBind bindOpen = Bind<void>(MemFun<PauseMenuScene, void, TLComponentInstance*>(openCB), this, placeholder0);
-            menuItem->mCallbacks[ON_HIGHLIGHT] = MenuCallback(bindOpen);
+            {
+                MenuCallback openFunc(bindOpen);
+                menuItem->mCallbacks[ON_HIGHLIGHT] = openFunc;
+            }
 
             {
                 MenuCallback closeFunc;
@@ -440,52 +411,21 @@ void PauseMenuScene::SceneCreated()
     {
         FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
 
-        static void (PauseMenuScene::* PauseMenuCBs[3])(TLComponentInstance*);
-        static signed char init;
-
-        if (!init)
-        {
-            PauseMenuCBs[0] = &PauseMenuScene::OnSelectLESSONS;
-            PauseMenuCBs[1] = &PauseMenuScene::OnSelectRESUME;
-            PauseMenuCBs[2] = &PauseMenuScene::OnSelectQUIT;
-            init = 1;
-        }
+        static void (PauseMenuScene::* PauseMenuCBs[3])(TLComponentInstance*) = {
+            &PauseMenuScene::OnSelectLESSONS,
+            &PauseMenuScene::OnSelectRESUME,
+            &PauseMenuScene::OnSelectQUIT,
+        };
 
         static char* MENU_NAMES[3] = { "MENU ITEM1", "MENU ITEM2", "MENU ITEM3" };
 
         int i;
         for (i = 0; i < 3; i++)
         {
-            volatile InlineHasher hB, hA;
-            volatile InlineHasher h9, h8;
-            volatile InlineHasher h7, h6, h5, h4, h3, h2, h1, h0;
-
-            h0.m_Hash = 0;
-            h1.m_Hash = 0;
-            h2.m_Hash = 0;
-            h3.m_Hash = 0;
-            h4.m_Hash = 0;
-            h5.m_Hash = 0;
-            h6.m_Hash = 0;
-            h7.m_Hash = 0;
-
-            unsigned long hash = nlStringLowerHash(MENU_NAMES[i]);
-            h9.m_Hash = hash;
-            h8.m_Hash = hash;
-
-            hash = nlStringLowerHash("Layer");
-            hB.m_Hash = hash;
-            hA.m_Hash = hash;
-
-            findInst.byValue = FEFinder<TLInstance, 4>::Find<TLSlide>;
-            TLInstance* instance = findInst.byRef(
+            TLInstance* instance = FEFinder<TLInstance, 4>::Find<TLSlide>(
                 presentation->m_currentSlide,
-                (InlineHasher&)hB,
-                (InlineHasher&)h9,
-                (InlineHasher&)h7,
-                (InlineHasher&)h5,
-                (InlineHasher&)h3,
-                (InlineHasher&)h1);
+                InlineHasher(nlStringLowerHash("Layer")),
+                InlineHasher(nlStringLowerHash(MENU_NAMES[i])));
             TLComponentInstance* compinstance = (TLComponentInstance*)instance;
 
             MenuItem<TLComponentInstance>* menuItem = &mMenuItems.mMenuItems[mMenuItems.mNumItemsAdded];
@@ -574,72 +514,19 @@ void PauseMenuScene::SceneCreated()
         break;
     }
 
-    volatile InlineHasher bB, bA;
-    volatile InlineHasher b9, b8;
-    volatile InlineHasher b7, b6, b5, b4, b3, b2, b1, b0;
-
-    b0.m_Hash = 0;
-    b1.m_Hash = 0;
-    b2.m_Hash = 0;
-    b3.m_Hash = 0;
-    b4.m_Hash = 0;
-    b5.m_Hash = 0;
-    b6.m_Hash = 0;
-    b7.m_Hash = 0;
-
-    unsigned long hash = nlStringLowerHash("buttons");
-    b9.m_Hash = hash;
-    b8.m_Hash = hash;
-
-    hash = nlStringLowerHash("Layer");
-    bB.m_Hash = hash;
-    bA.m_Hash = hash;
-
-    findCompSlide.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
-    mButtons.mButtonInstance = findCompSlide.byRef(
+    TLComponentInstance* buttonComponent = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
         m_pFEPresentation->m_currentSlide,
-        (InlineHasher&)bB,
-        (InlineHasher&)b9,
-        (InlineHasher&)b7,
-        (InlineHasher&)b5,
-        (InlineHasher&)b3,
-        (InlineHasher&)b1);
-
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("buttons")));
+    mButtons.mButtonInstance = buttonComponent;
     mButtons.SetState(ButtonComponent::BS_A_AND_B);
 
-    volatile InlineHasher cB, cA;
-    volatile InlineHasher c9, c8;
-    volatile InlineHasher c7, c6, c5, c4, c3, c2, c1, c0;
-
-    c0.m_Hash = 0;
-    c1.m_Hash = 0;
-    c2.m_Hash = 0;
-    c3.m_Hash = 0;
-    c4.m_Hash = 0;
-    c5.m_Hash = 0;
-
-    hash = nlStringLowerHash("buttons");
-    c5.m_Hash = hash;
-    c4.m_Hash = hash;
-
-    hash = nlStringLowerHash("Layer");
-    c7.m_Hash = hash;
-    c6.m_Hash = hash;
-
-    hash = nlStringLowerHash("menu in2");
-    c9.m_Hash = hash;
-    c8.m_Hash = hash;
-
-    findCompPres.byValue = FEFinder<TLComponentInstance, 4>::Find<FEPresentation>;
-    mButtons2.mButtonInstance = findCompPres.byRef(
+    buttonComponent = FEFinder<TLComponentInstance, 4>::Find<FEPresentation>(
         m_pFEPresentation,
-        (InlineHasher&)c9,
-        (InlineHasher&)c7,
-        (InlineHasher&)c5,
-        (InlineHasher&)c3,
-        (InlineHasher&)c1,
-        (InlineHasher&)b1);
-
+        InlineHasher(nlStringLowerHash("menu in2")),
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("buttons")));
+    mButtons2.mButtonInstance = buttonComponent;
     mButtons2.SetState(ButtonComponent::BS_A_AND_B);
 
     EnableAutoPressed();
@@ -648,7 +535,6 @@ void PauseMenuScene::SceneCreated()
 
 /**
  * Offset/Address/Size: 0x268 | 0x800AD760 | size: 0x5E4
- * TODO: 96.19% match - this/temp register swap and final resume-call sequence still differ
  */
 void PauseMenuScene::Update(float fDeltaT)
 {
@@ -701,6 +587,7 @@ void PauseMenuScene::Update(float fDeltaT)
         return;
     }
 
+    int newIndex;
     register u8* connState;
     register u8 goToChooseSides = 0;
     register int i = 0;
@@ -746,10 +633,12 @@ void PauseMenuScene::Update(float fDeltaT)
 
     if (g_pFEInput->IsAutoPressed(mControllingInput, 0xd, true, NULL))
     {
+        int flags = mMenuItems.mFlags;
+        int skipDisabled;
+        int wrapBit = flags & 1;
+        skipDisabled = flags & 2;
         int currentIndex = mMenuItems.mCurrentIndex;
-        int wrapBit = mMenuItems.mFlags & 1;
-        int skipDisabled = mMenuItems.mFlags & 2;
-        int newIndex = currentIndex - 1;
+        newIndex = currentIndex - 1;
 
         while (true)
         {
@@ -803,10 +692,12 @@ void PauseMenuScene::Update(float fDeltaT)
 
     if (g_pFEInput->IsAutoPressed(mControllingInput, 0xe, true, NULL))
     {
+        int flags = mMenuItems.mFlags;
+        int skipDisabled;
+        int wrapBit = flags & 1;
+        skipDisabled = flags & 2;
         int currentIndex = mMenuItems.mCurrentIndex;
-        int wrapBit = mMenuItems.mFlags & 1;
-        int skipDisabled = mMenuItems.mFlags & 2;
-        int newIndex = currentIndex + 1;
+        newIndex = currentIndex + 1;
 
         while (true)
         {
@@ -982,17 +873,17 @@ void PauseMenuScene::TransitionOut(PauseMenuScene::TransitionType newtype)
 
             if (i == mMenuItems.mCurrentIndex)
             {
-                compinstance->SetActiveSlide("out");
+                compinstance->SetActiveSlide(sPauseOutSlide);
                 compinstance->Update(0.0f);
 
                 TLComponentInstance* highlite = (TLComponentInstance*)FindComponent(compinstance->GetActiveSlide(), "highlite");
-                highlite->SetActiveSlide("out");
+                highlite->SetActiveSlide(sPauseOutSlide);
                 highlite->Update(0.0f);
                 highlite->SetAssetColour(MenuHighliteColour);
             }
             else
             {
-                compinstance->SetActiveSlide("out");
+                compinstance->SetActiveSlide(sPauseOutSlide);
                 compinstance->Update(0.0f);
 
                 TLComponentInstance* highlite = (TLComponentInstance*)FindComponent(compinstance->GetActiveSlide(), "highlite");
@@ -1013,7 +904,7 @@ void PauseMenuScene::OpenItem(TLComponentInstance* instance)
     {
         TLTextInstance* text = FEFinder<TLTextInstance, 3>::Find(
             instance->GetActiveSlide(),
-            InlineHasher(nlStringLowerHash("disabled_text")),
+            InlineHasher(nlStringLowerHash("pauseresume")),
             InlineHasher(0),
             InlineHasher(0),
             InlineHasher(0),

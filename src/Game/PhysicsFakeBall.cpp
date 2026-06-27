@@ -843,8 +843,9 @@ bool FakeBallWorld::GetPredictedBallPosition(float fDeltaTime, nlVector3& v3Posi
 
         if (fPercent < 1.0f)
         {
+            float fNextTerm = fPercent * pNext->mv3Position.f.x;
             float fInvPercent = 1.0f - fPercent;
-            v3Position.f.x = fPercent * pNext->mv3Position.f.x + fInvPercent * pPrev->mv3Position.f.x;
+            v3Position.f.x = fNextTerm + fInvPercent * pPrev->mv3Position.f.x;
             v3Position.f.y = fPercent * pNext->mv3Position.f.y + fInvPercent * pPrev->mv3Position.f.y;
             v3Position.f.z = fPercent * pNext->mv3Position.f.z + fInvPercent * pPrev->mv3Position.f.z;
             v3Velocity.f.x = fPercent * pNext->mv3LinearVelocity.f.x + fInvPercent * pPrev->mv3LinearVelocity.f.x;

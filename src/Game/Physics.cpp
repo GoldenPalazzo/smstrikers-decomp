@@ -333,17 +333,13 @@ void PhysicsLoader::ConstructStaticPhysicsPrimitives(CharacterPhysicsData* pPhys
 
 /**
  * Offset/Address/Size: 0x728 | 0x80133238 | size: 0x2C0
- * TODO: 96.39% match - stack frame/register window still differ (0x120/r26.. vs 0x130/r24..),
- *       and sideline/corner loops still lower to pointer-advance form instead of base+offset form.
+ * TODO: 98.81% match - list head/tail, sideline, corner, and net mesh ID registers still differ.
  */
 bool PhysicsLoader::StartLoad(LoadingManager*)
 {
     PhysicsLoader* pThis = this;
     int i;
     int sidelineOffset;
-    ListEntry<PhysicsObject*>** pHead;
-    ListEntry<PhysicsObject*>** pTail;
-    int j;
     int cornerOffset;
     unsigned long uPositiveNetMeshID;
     unsigned long uNegativeNetMeshID;
@@ -383,8 +379,8 @@ bool PhysicsLoader::StartLoad(LoadingManager*)
         pEntry->data = pGroundPlane;
     }
 
-    pHead = &g_StaticPhysicsPrimitives.m_Head;
-    pTail = &g_StaticPhysicsPrimitives.m_Tail;
+    ListEntry<PhysicsObject*>** pHead = &g_StaticPhysicsPrimitives.m_Head;
+    ListEntry<PhysicsObject*>** pTail = &g_StaticPhysicsPrimitives.m_Tail;
     nlListAddEnd(pHead, pTail, pEntry);
 
     for (i = 0, sidelineOffset = 0; i < 4; i++, sidelineOffset += 0xC)
@@ -411,7 +407,7 @@ bool PhysicsLoader::StartLoad(LoadingManager*)
         nlListAddEnd(pHead, pTail, pWallEntry);
     }
 
-    for (j = 0, cornerOffset = 0; j < 4; j++, cornerOffset += 0x10)
+    for (int i = 0, cornerOffset = 0; i < 4; i++, cornerOffset += 0x10)
     {
         sCornerSegment* pCornerSegment = (sCornerSegment*)((unsigned long)cField::mCorners + cornerOffset);
         PhysicsRoundedCorner* pCorner = (PhysicsRoundedCorner*)nlMalloc(0x2C, 8, false);
@@ -424,7 +420,7 @@ bool PhysicsLoader::StartLoad(LoadingManager*)
                 pCornerSegment->vCenter.f.x > 0.0f,
                 pCornerSegment->vCenter.f.y > 0.0f);
         }
-        corners[j] = pCorner;
+        corners[i] = pCorner;
     }
 
     PhysicsNet::StaticInit(g_CollisionSpace);

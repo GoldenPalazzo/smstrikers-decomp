@@ -192,8 +192,7 @@ void cCharacter::SetSFX(SoundPropAccessor* pSoundPropAccessor)
 
 /**
  * Offset/Address/Size: 0x40C | 0x8000E358 | size: 0x650
- * TODO: 98.41% match - FROM_ANIM smoothstep/AnimMoveAdjust/RootTrans register cascade,
- * RUNNING abs() r0/r3
+ * TODO: 98.43% match - FROM_ANIM smoothstep/AnimMoveAdjust/RootTrans register cascade.
  */
 void cCharacter::UpdateMovementState(float fDeltaT)
 {
@@ -362,8 +361,9 @@ void cCharacter::UpdateMovementState(float fDeltaT)
         u16 aNewFacingDirection = SeekDirection(m_aActualFacingDirection, m_aDesiredFacingDirection, m_fDirectionSeekSpeed, m_fDirectionSeekFalloff, fDeltaT);
 
         int delta = (s16)(aNewFacingDirection - m_aActualFacingDirection);
-        int absDelta = abs(delta);
         int maxDelta = (int)(fDeltaT * m_fDirectionSeekSpeed);
+        int sign = delta >> 31;
+        int absDelta = (sign ^ delta) - sign;
 
         if (absDelta <= 182)
         {
@@ -1782,6 +1782,7 @@ void AIEventHandler(Event* pEvent, void*)
         }
 
         pEventData->pPlayer->CollideWithWallCallback(pEventData);
+        const nlVector3& normal = pEventData->wallNormal;
 
         if (sbElectricFenceDebug)
         {
@@ -1789,7 +1790,7 @@ void AIEventHandler(Event* pEvent, void*)
             {
                 nlVector3 p2 = pEventData->contactPoint;
                 p2.f.z += sfElectrocutionHeightOffset;
-                CharacterElectrocutionEffect(pEventData->pPlayer, p2, pEventData->wallNormal);
+                CharacterElectrocutionEffect(pEventData->pPlayer, p2, normal);
             }
         }
 
@@ -1843,9 +1844,7 @@ void AIEventHandler(Event* pEvent, void*)
         {
             nlVector3 v3AngVel;
             pPhysicsBall->GetAngularVelocity(&v3AngVel);
-            v3AngVel.f.z = 0.6f * v3AngVel.f.z;
-            v3AngVel.f.x = 0.6f * v3AngVel.f.x;
-            v3AngVel.f.y = 0.6f * v3AngVel.f.y;
+            nlVec3Scale(v3AngVel, 0.6f);
             pPhysicsBall->SetAngularVelocity(v3AngVel);
         }
 
@@ -1973,7 +1972,7 @@ void AIEventHandler(Event* pEvent, void*)
 
         pEventData->pFielder->CollideWithBowserCallback(pEventData->pBowser);
 
-        if (pEventData->pFielder == ((BowserView*)pEventData->pBowser)->mpTarget)
+        if (((BowserView*)pEventData->pBowser)->mpTarget == pEventData->pFielder)
         {
             pEventData->pBowser->FindTarget();
         }
@@ -2238,12 +2237,11 @@ void AIEventHandler(Event* pEvent, void*)
     {
         for (s32 i = 0; i < 2; i++)
         {
-            cTeam* pTeam = g_pTeams[i];
-            if (pTeam != NULL)
+            if (g_pTeams[i] != NULL)
             {
                 for (s32 j = 0; j < 4; j++)
                 {
-                    pTeam->GetFielder(j)->m_pCharacterSFX->StopMovementLoop();
+                    g_pTeams[i]->GetFielder(j)->m_pCharacterSFX->StopMovementLoop();
                 }
             }
         }
@@ -2336,7 +2334,7 @@ void AIEventHandler(Event* pEvent, void*)
                 float dy = pEventData->v3ExplosionLocation.f.y - nodeMatrix.m[3][1];
                 float dx = pEventData->v3ExplosionLocation.f.x - nodeMatrix.m[3][0];
                 float dz = pEventData->v3ExplosionLocation.f.z - nodeMatrix.m[3][2];
-                float dist = nlSqrt(dx * dx + dy * dy + dz * dz, true);
+                float dist = nlSqrt(dy * dy + dx * dx + dz * dz, true);
 
                 if (!(dist < pEventData->fExplosionRadius))
                     continue;
@@ -2350,8 +2348,8 @@ void AIEventHandler(Event* pEvent, void*)
                 }
                 else
                 {
-                    pFielder->SetBombImpactTime(pEventData->v3ExplosionLocation, pEventData->fExplosionRadius / g_pGame->m_pGameTweaks->fPowerupExplosionRadius);
                     bIsWeaponSuccessful = true;
+                    pFielder->SetBombImpactTime(pEventData->v3ExplosionLocation, pEventData->fExplosionRadius / g_pGame->m_pGameTweaks->fPowerupExplosionRadius);
                 }
 
                 if (pEventData->pThrower == 0)

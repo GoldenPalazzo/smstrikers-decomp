@@ -433,8 +433,8 @@ void RotateVectorZAxis(nlVector3& v3Out, const nlVector3& v3In, unsigned short a
 
 /**
  * Offset/Address/Size: 0x814 | 0x800062C0 | size: 0x210
- * TODO: 98.51% match - fInvR1R2 and the antiparallel/final cross-product
- * temporaries use f29/f31 differently from target.
+ * TODO: 98.60% match - fInvR1R2 and the final cross-product temporaries
+ * use different FPRs from target.
  */
 void GetRotationBetweenVectors(nlQuaternion& quat, const nlVector3& v3Vec1, const nlVector3& v3Vec2)
 {
@@ -462,9 +462,9 @@ void GetRotationBetweenVectors(nlQuaternion& quat, const nlVector3& v3Vec1, cons
             axis.f.z = axis.f.y;
         }
 
-        float cx = axis.f.y * v3Vec1.f.z - axis.f.z * v3Vec1.f.y;
-        float cy = -axis.f.x * v3Vec1.f.z + axis.f.z * v3Vec1.f.x;
         float cz = axis.f.x * v3Vec1.f.y - axis.f.y * v3Vec1.f.x;
+        float cy = -axis.f.x * v3Vec1.f.z + axis.f.z * v3Vec1.f.x;
+        float cx = axis.f.y * v3Vec1.f.z - axis.f.z * v3Vec1.f.y;
 
         float invLen = nlRecipSqrt(cx * cx + cy * cy + cz * cz, true);
 

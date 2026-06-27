@@ -288,7 +288,7 @@ TakeGameMemSnapshot::Detail::LexicalCastImpl<BasicString<char, ::Detail::TempStr
 
 /**
  * Offset/Address/Size: 0xED8 | 0x800A579C | size: 0xD74
- * TODO: 94.79% match - operator[] unique-ref branch still emits an extra store in the COW path.
+ * TODO: 99.37% match - r27/r28/r29 register roles differ in the erase and insert COW paths.
  */
 
 // /**
@@ -1098,24 +1098,40 @@ FormatImpl<StringType>& FormatImpl<StringType>::operator%(const T& t)
         if (i + 1 >= (mString.m_data ? mString.m_data->mSize - 1 : 0))
             continue;
 
-        mString[i + 1];
-        typename StringType::value_type* matchString = mString.m_data->mData + i;
+        typename StringType::value_type* matchString = &mString[i];
         if (mCurrentPos != matchString[1] - '0')
             continue;
 
         if (i + 2 >= (mString.m_data ? mString.m_data->mSize - 1 : 0))
             continue;
 
-        mString[i + 2];
-        matchString = mString.m_data->mData + i;
-        if (matchString[2] != '}')
+        typename StringType::value_type* matchStringEnd = &mString[i];
+        if (matchStringEnd[2] != '}')
             continue;
 
-        mString.erase(&mString[i], &mString[i] + 3);
+        typename StringType::value_type* eraseBegin;
+        typename StringType::value_type* eraseEnd;
+        mString[0];
+        eraseEnd = (mString.m_data ? mString.m_data->mData : (typename StringType::value_type*)0) + i + 3;
+        mString[0];
+        eraseBegin = (mString.m_data ? mString.m_data->mData : (typename StringType::value_type*)0) + i;
+        mString[0];
+        BasicStringData<typename StringType::value_type>* eraseData = mString.m_data;
+        int eraseSize = eraseEnd - eraseBegin;
+        int eraseOffset = eraseBegin - eraseData->mData;
+        typename StringType::value_type* eraseAt = eraseData->mData + eraseOffset;
+        while (eraseEnd != eraseData->mData + eraseData->mSize)
+        {
+            *eraseAt = *eraseEnd;
+            eraseEnd++;
+            eraseAt++;
+        }
+        eraseData->mSize -= eraseSize;
         mString[i];
         typename StringType::value_type* mStringData = mString.m_data ? mString.m_data->mData : 0;
-        typename StringType::value_type* insertBegin = &insert[0];
-        typename StringType::value_type* insertEndCow = &insert[(int)(insert.m_data ? insert.m_data->mSize - 1 : 0)];
+        insert[0];
+        typename StringType::value_type* insertBegin = insert.m_data ? insert.m_data->mData : 0;
+        insert[(int)(insert.m_data ? insert.m_data->mSize - 1 : 0)];
         mString.insert(mStringData + i, insertBegin, insert.m_data ? insert.m_data->mData + insert.m_data->mSize - 1 : (typename StringType::value_type*)0);
     }
 
@@ -1186,8 +1202,8 @@ void TakeGameMemSnapshot::ResetTimers()
 
 /**
  * Offset/Address/Size: 0x130 | 0x800A31EC | size: 0x504
- * TODO: 98.89% match - callee-saved register roles still differ between
- * filename/file handles and string temporaries.
+ * TODO: 99.58% match - append file handle and format string cursor use swapped
+ * r29/r31 roles.
  */
 namespace TakeGameMemSnapshot
 {
@@ -1207,9 +1223,8 @@ void TakeGameMemSnapshot::WriteToDisk()
         "bowser",
     };
 
-    FILE* pFile;
     const char* filename = "gamesnapshot.txt";
-    pFile = fopen(filename, "r");
+    FILE* pFile = fopen(filename, "r");
 
     if (!pFile)
     {
@@ -1244,28 +1259,7 @@ void TakeGameMemSnapshot::WriteToDisk()
 
     BasicString<char, ::Detail::TempStringAllocator> stats;
     {
-        BasicStringData<char>* fmtData = (BasicStringData<char>*)nlMalloc(0x10, 8, true);
-        if (fmtData != 0)
-        {
-            const char* fmtString = "{0},{1},{2}\n";
-            fmtData->mData = 0;
-            fmtData->mSize = 0;
-            fmtData->mCapacity = 0;
-            const char* s = fmtString;
-            while (*s++ != 0)
-            {
-                fmtData->mSize++;
-            }
-            fmtData->mSize++;
-            fmtData->mData = (char*)nlMalloc(fmtData->mSize + 1, 8, true);
-            fmtData->mCapacity = fmtData->mSize;
-            for (int i = 0; i < fmtData->mSize; i++)
-            {
-                fmtData->mData[i] = *fmtString++;
-            }
-            fmtData->mRefCount = 1;
-        }
-        BasicString<char, ::Detail::TempStringAllocator> fmt(fmtData);
+        BasicString<char, ::Detail::TempStringAllocator> fmt("{0},{1},{2}\n");
         unsigned long largestFree;
         unsigned int freeVM;
         unsigned int largestFreeVM;

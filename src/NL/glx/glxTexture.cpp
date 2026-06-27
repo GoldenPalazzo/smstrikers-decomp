@@ -754,8 +754,10 @@ static PlatTexture* glx_MakeGridTexture(int w, int h)
     memcpy(pTex->m_Bits, bits, 4);
 
     // Generate checkerboard pattern
-    u16 gridColor = 0xFFFF;
+    const unsigned short gridColorValue = 0xFFFF;
     u16* pData = (u16*)pTex->m_LinearData;
+    const unsigned short* pGridColor = &gridColorValue;
+    u32 gridColor = *pGridColor;
 
     for (int y = 0; y < h; y++)
     {

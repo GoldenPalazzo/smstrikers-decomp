@@ -3234,7 +3234,7 @@ static float FindSTSDistanceAffectedPercentage(cFielder* pFielder, float fMinAmo
  */
 /**
  * Offset/Address/Size: 0x16D0 | 0x80028308 | size: 0x1480
- * TODO: 98.94% match - remaining f0/f1 swap in green-region clamp,
+ * TODO: 99.09% match - remaining f0/f1 swap in green-region clamp,
  * camera-stack filter access shape, and camera/effect string register allocation
  */
 void cFielder::ActionShootToScore(float)
@@ -3523,8 +3523,9 @@ void cFielder::ActionShootToScore(float)
                 SetAnimState(0x5D, false, 0.0f, false, false);
             }
 
-            m_pCurrentAnimController->m_fPrevTime = m_pCurrentAnimController->m_fTime;
-            m_pCurrentAnimController->m_fTime = 0.08f;
+            cPN_SAnimController* pAnimController = m_pCurrentAnimController;
+            pAnimController->m_fPrevTime = pAnimController->m_fTime;
+            pAnimController->m_fTime = 0.08f;
         }
 
         if (mActionShootToScoreVars.captainStsCamera == NULL)
@@ -3562,8 +3563,9 @@ void cFielder::ActionShootToScore(float)
                     if (meS2SResult == S2S_SUPER_SHOT && sbDoShatteredGlassTransition)
                     {
                         Wiper::Instance().DoWipe("break_glass");
-                        m_pCurrentAnimController->m_fPrevTime = m_pCurrentAnimController->m_fTime;
-                        m_pCurrentAnimController->m_fTime = hyperStrikeAnimCamBeginTime;
+                        cPN_SAnimController* pAnimController = m_pCurrentAnimController;
+                        pAnimController->m_fPrevTime = pAnimController->m_fTime;
+                        pAnimController->m_fTime = hyperStrikeAnimCamBeginTime;
                     }
 
                     SetupCaptainSTSAnimCam(false);
