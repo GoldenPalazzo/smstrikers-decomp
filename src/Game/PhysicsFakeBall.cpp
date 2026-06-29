@@ -404,8 +404,8 @@ float FakeBallWorld::GetPredictedPosAtDistance(float fDistance, nlVector3& v3Pos
 
 /**
  * Offset/Address/Size: 0x3DC | 0x8013819C | size: 0x3FC
- * TODO: 97.29% match - remaining diffs are fHeight/fSimulationTime register
- *       placement and early zero-vector copy register allocation.
+ * TODO: 98.17% match - remaining diffs are early zero-vector copy GPRs,
+ *       first-loop fLastZVel reload, and sdata2 literal labels.
  */
 float FakeBallWorld::GetPredictedHeightLimitTime(float fHeight, float fMinTime, nlVector3& v3ContactPoint, nlVector3& v3ContactVelocity, bool bDownOnly)
 {
@@ -449,9 +449,9 @@ float FakeBallWorld::GetPredictedHeightLimitTime(float fHeight, float fMinTime, 
     }
 
     float fPhysicsTick = FixedUpdateTask::GetPhysicsUpdateTick();
-    float fSimulationTime = FixedUpdateTask::mSimulationTime;
-    float fLastZVel = 0.0f;
+    const float fSimulationTime = FixedUpdateTask::mSimulationTime;
     float fTestTime = fSimulationTime + fMinTime;
+    float fLastZVel = 0.0f;
 
     DLListEntry<BallCacheInfo*>** ppHead = &mBallCacheList.m_Head;
     DLListEntry<BallCacheInfo*>* pEntry = nlDLRingGetStart(*ppHead);
@@ -487,9 +487,9 @@ float FakeBallWorld::GetPredictedHeightLimitTime(float fHeight, float fMinTime, 
         }
     }
 
-    float fMaxTime = fSimulationTime + 6.0f;
+    fTestTime = fSimulationTime + 6.0f;
 
-    while (mfLastCacheTime < fMaxTime)
+    while (mfLastCacheTime < fTestTime)
     {
         PhysicsUpdate(mpPredictWorld->mpPhysicsWorld, fPhysicsTick);
         mfLastCacheTime += fPhysicsTick;

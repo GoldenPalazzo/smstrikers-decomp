@@ -434,15 +434,11 @@ void PriorityStream::FakeResume(bool checkActive)
 
 /**
  * Offset/Address/Size: 0x380 | 0x80157E34 | size: 0x1B0
- * TODO: 95.8% match - switch/control-flow mismatch (r3/r4 compare swap),
- *   format literal loads via addi r0 + mr r5, and default-path branch/store placement.
+ * TODO: 99.35% match - queued path loads looping flag through r3 instead of r4;
+ *   play path extracts FadeIn before loading the track pointer.
  */
 void PriorityStream::TrackIdleCB()
 {
-    char StreamName[64];
-    unsigned char* pCounter;
-    const char* Format;
-
     if (m_InPause)
     {
         return;
@@ -456,31 +452,8 @@ void PriorityStream::TrackIdleCB()
         {
             if (m_HasCrowdStream && m_PStream.m_Active)
             {
-                int streamId = m_PStream.m_StreamId;
-                switch (streamId)
-                {
-                case 0x436E3953:
-                    pCounter = &PLAY_RECORD::s_BowserAttackNext;
-                    Format = "bowser_attack_%d";
-                    break;
-                case 0x57CB5A12:
-                    pCounter = &PLAY_RECORD::s_SuddenDeathNext;
-                    Format = "sudden_death_%d";
-                    break;
-                default:
-                    m_HasCrowdStream = streamId;
-                    goto after_switch;
-                }
+                m_HasCrowdStream = GetNextStreamId(m_PStream.m_StreamId);
 
-                nlSNPrintf(StreamName, 64, Format, *pCounter);
-                *pCounter = *pCounter + 1;
-                if (*pCounter == 4)
-                {
-                    *pCounter = 1;
-                }
-                m_HasCrowdStream = nlStringLowerHash(StreamName);
-
-            after_switch:
                 if (m_PStream.m_Queue)
                 {
                     m_PStream.m_Queue = 0;

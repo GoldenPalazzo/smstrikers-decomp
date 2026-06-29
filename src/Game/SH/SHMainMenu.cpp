@@ -437,8 +437,8 @@ static inline MenuItem<TLComponentInstance>* MainMenuItemAt(MenuList<TLComponent
 
 /**
  * Offset/Address/Size: 0xA3C | 0x800AA498 | size: 0x8C0
- * TODO: 98.4% match - callback bind temporary tail uses byte stores instead of
- *       word stores, and menu item setup uses r0/r4/r6 differently
+ * TODO: 99.5% match - bind temporary stack slots and menu item setup use
+ *       r0/r4/r6 differently
  */
 void SHMainMenu::SceneCreated()
 {
@@ -493,10 +493,10 @@ void SHMainMenu::SceneCreated()
             item->mCallbacks[2] = closeFunc;
         }
         {
-            Function<FnCallback> applyFunc;
+            Function<TLComponentInstance*> applyFunc;
             applyFunc.mTag = FREE_FUNCTION;
             applyFunc.mFreeFunction = ApplyFuncTable[i];
-            item->mCallbacks[0] = applyFunc;
+            *(Function<TLComponentInstance*>*)&item->mCallbacks[0] = applyFunc;
         }
         item->mLocked = false;
         if (i == mLastMenuItem)

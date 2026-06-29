@@ -874,14 +874,16 @@ void NisPlayer::LoadTriggers(Nis& nis)
             {
                 name[i];
                 name[i];
+                BasicStringData<char>* data = name.m_data;
                 char* src = &name[i];
-                char* dest = name.m_data->mData;
+                char* dest = data->mData;
+                int removeCount = (int)(src - dest);
 
-                while (src != name.m_data->mData + name.m_data->mSize)
+                while (src != data->mData + data->mSize)
                 {
                     *dest++ = *src++;
                 }
-                name.m_data->mSize -= (int)(src - dest);
+                data->mSize -= removeCount;
 
                 BasicString<char, Detail::TempStringAllocator> all("all");
                 char* at = &name[0];
@@ -935,23 +937,75 @@ void NisPlayer::AsyncLoad(nlFile* file, void* buffer, unsigned int size, unsigne
 }
 #pragma dont_inline reset
 
+static inline const char* GetStadiumFilterName(eStadiumID stadium)
+{
+    if (stadium == STAD_PEACH_TOAD_STADIUM)
+    {
+        return "the_palace";
+    }
+    if (stadium == STAD_MARIO_STADIUM)
+    {
+        return "pipeline_central";
+    }
+    if (stadium == STAD_WARIO_STADIUM)
+    {
+        return "wario_stadium";
+    }
+    if (stadium == STAD_DK_DAISY)
+    {
+        return "dk_daisy";
+    }
+    if (stadium == STAD_YOSHI_STADIUM)
+    {
+        return "yoshi_stadium";
+    }
+    if (stadium == STAD_SUPER_STADIUM)
+    {
+        return "super_stadium";
+    }
+    if (stadium == STAD_FORBIDDEN_DOME)
+    {
+        return "forbidden_dome";
+    }
+    return "";
+}
+
+static inline BasicStringData<char>* MakeTargetFilterStringData(const char* src_str)
+{
+    BasicStringData<char>* data = (BasicStringData<char>*)nlMalloc(0x10, 8, true);
+    if (data != 0)
+    {
+        const char* src = src_str;
+        data->mData = 0;
+        data->mSize = 0;
+        data->mCapacity = 0;
+        const char* p = src;
+        while (*p++ != 0)
+        {
+            data->mSize++;
+        }
+        data->mSize++;
+        data->mData = (char*)nlMalloc(data->mSize + 1, 8, true);
+        data->mCapacity = data->mSize;
+        for (int i = 0; i < data->mSize; i++)
+        {
+            data->mData[i] = *src++;
+        }
+        data->mRefCount = 1;
+    }
+    return data;
+}
+
+#pragma optimization_level 2
 /**
  * Offset/Address/Size: 0xFAC | 0x80115C88 | size: 0xA9C
- * TODO: 97.95% match - remaining r29/r30 register swap in BasicString construction branches
  */
 BasicString<char, Detail::TempStringAllocator> NisPlayer::GetTargetFilter(NisTarget target, NisWinnerType wt) const
 {
     if (target == NIS_TARGET_STADIUM)
     {
         eStadiumID stadium = nlSingleton<GameInfoManager>::s_pInstance->GetStadium();
-        const char* stadiumName = (stadium == STAD_PEACH_TOAD_STADIUM) ? "the_palace" : (stadium == STAD_MARIO_STADIUM) ? "pipeline_central"
-                                                                                  : (stadium == STAD_WARIO_STADIUM)     ? "wario_stadium"
-                                                                                  : (stadium == STAD_DK_DAISY)          ? "dk_daisy"
-                                                                                  : (stadium == STAD_YOSHI_STADIUM)     ? "yoshi_stadium"
-                                                                                  : (stadium == STAD_SUPER_STADIUM)     ? "super_stadium"
-                                                                                  : (stadium == STAD_FORBIDDEN_DOME)    ? "forbidden_dome"
-                                                                                                                        : "";
-
+        const char* stadiumName = GetStadiumFilterName(stadium);
         return BasicString<char, Detail::TempStringAllocator>(stadiumName);
     }
 
@@ -1000,7 +1054,8 @@ BasicString<char, Detail::TempStringAllocator> NisPlayer::GetTargetFilter(NisTar
 
     if (target == NIS_TARGET_HOME_GOALIE || target == NIS_TARGET_AWAY_GOALIE || target == NIS_TARGET_WINNER_GOALIE || target == NIS_TARGET_LOSER_GOALIE)
     {
-        return BasicString<char, Detail::TempStringAllocator>("goalie");
+        BasicStringData<char>* data = MakeTargetFilterStringData("goalie");
+        return BasicString<char, Detail::TempStringAllocator>(data);
     }
 
     if (target == NIS_TARGET_AWAY_SIDEKICK)
@@ -1008,8 +1063,10 @@ BasicString<char, Detail::TempStringAllocator> NisPlayer::GetTargetFilter(NisTar
         return BasicString<char, Detail::TempStringAllocator>(GetSidekickName(nlSingleton<GameInfoManager>::s_pInstance->GetSidekick(1)));
     }
 
-    return BasicString<char, Detail::TempStringAllocator>("");
+    BasicStringData<char>* data = MakeTargetFilterStringData("");
+    return BasicString<char, Detail::TempStringAllocator>(data);
 }
+#pragma optimization_level 4
 
 /**
  * Offset/Address/Size: 0x610 | 0x801152EC | size: 0x99C

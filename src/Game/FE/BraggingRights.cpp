@@ -304,6 +304,7 @@ void BraggingRightsOverlay::TournamentSceneCreated()
     GameInfoManager* info = nlSingleton<GameInfoManager>::s_pInstance;
     PlayerStats stats[8];
     PlayerStats* statsBase = stats;
+    TLTextInstance* pText;
     int highestTieBreaker[5];
     int i;
 
@@ -382,7 +383,7 @@ void BraggingRightsOverlay::TournamentSceneCreated()
             user++;
         }
 
-        TLTextInstance* pText = FEFinder<TLTextInstance, 3>::Find<FEPresentation>(
+        pText = FEFinder<TLTextInstance, 3>::Find<FEPresentation>(
             presentation,
             InlineHasher(nlStringLowerHash("Slide1")),
             InlineHasher(nlStringLowerHash("Layer")),
@@ -403,14 +404,14 @@ void BraggingRightsOverlay::TournamentSceneCreated()
         }
     }
 
-    TLTextInstance* pPlacement = FEFinder<TLTextInstance, 3>::Find<FEPresentation>(
+    pText = FEFinder<TLTextInstance, 3>::Find<FEPresentation>(
         presentation,
         InlineHasher(nlStringLowerHash("Slide1")),
         InlineHasher(nlStringLowerHash("Layer")),
         InlineHasher(nlStringLowerHash("Placement")));
 
     unsigned long winningNameId = GetLOCCharacterName(nlSingleton<GameInfoManager>::s_pInstance->FindWinningTeam(), false, false);
-    pPlacement->SetString(LookupLocHash(winningNameId));
+    pText->SetString(LookupLocHash(winningNameId));
 
     TLComponentInstance* pButtonComp = FEFinder<TLComponentInstance, 4>::Find<FEPresentation>(
         presentation,

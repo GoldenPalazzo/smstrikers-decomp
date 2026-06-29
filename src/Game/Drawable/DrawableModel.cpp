@@ -106,7 +106,7 @@ AVLTreeNode* AVLTreeBase<unsigned long, AABBDimensions, BasicSlotPool<AVLTreeEnt
 
 /**
  * Offset/Address/Size: 0x1DD4 | 0x80121BE0 | size: 0x214
- * TODO: 91.07% match - initial constant/prologue scheduling and y load temp order
+ * TODO: 92.16% match - initial constant/prologue scheduling and remaining quad setup order
  */
 static void DrawBallShadow(const nlVector3& vPosition, const BallShadowParams& p, bool bGlow)
 {
@@ -140,6 +140,7 @@ static void DrawBallShadow(const nlVector3& vPosition, const BallShadowParams& p
     fX1 = vPosition.f.x + half_dim;
 
     glQuad3 quad;
+    quad.m_pos[0].f.z = 1.0f / 64.0f;
     c.c[3] = (u8)alpha;
 
     quad.m_pos[0].f.x = fX0;

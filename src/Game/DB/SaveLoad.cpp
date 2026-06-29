@@ -901,9 +901,9 @@ inline unsigned long SaveCallbacks::FileWriteIconCB(unsigned long Slot, long Res
 
 /**
  * Offset/Address/Size: 0x1F30 | 0x8018B88C | size: 0x5BC
- * TODO: 81.75% match - rlwinm vs and for 0x200 mask (target uses li+and, compiler
- * optimizes to rlwinm). Extra cmpwi loop guards before unrolled while loops (4x).
- * CSE keeps Slot*4 in r30 instead of mutating r27 in error-space checks.
+ * TODO: 86.29% match - remaining Slot*4 register allocation in duplicated
+ * -4 paths, default icon size clut folding, and success-path cache/functor
+ * register allocation differ.
  */
 unsigned long SaveCallbacks::CreateFileCB(unsigned long Slot, long Result, void* pUserData)
 {
@@ -1027,18 +1027,21 @@ unsigned long SaveCallbacks::CreateFileCB(unsigned long Slot, long Result, void*
     u32 iconCopySize = iconFmtS << 10;
     memcpy(destIcon, srcIcon, iconCopySize);
     u8 bannerFmt2 = m_pSaveFile->IconCfg.BannerFormat;
-    s8 iconFmt2 = m_pSaveFile->IconCfg.IconFormat;
+    int iconFmt2 = m_pSaveFile->IconCfg.IconFormat;
     u8 iconCount2 = m_pSaveFile->IconCfg.IconCount;
     int bannerMinus1 = bannerFmt2 - 1;
     int bannerInv = 1 - bannerFmt2;
     int bannerMask2 = ~(bannerMinus1 | bannerInv);
-    int bannerClut2 = (bannerMask2 >> 31) & 0x200;
+    int clutSizeForHeader = 0x200;
+    int bannerClut2 = clutSizeForHeader;
+    bannerClut2 &= (bannerMask2 >> 31);
     int bannerData2 = bannerFmt2 * 0xC00;
     int iconPixels2 = iconCount2 * (iconFmt2 << 10);
     int iconMinus1 = iconFmt2 - 1;
     int iconInv = 1 - iconFmt2;
     int iconMask2 = ~(iconMinus1 | iconInv);
-    int iconClut2 = (iconMask2 >> 31) & 0x200;
+    int iconClut2 = clutSizeForHeader;
+    iconClut2 &= (iconMask2 >> 31);
     int headerTotal = bannerClut2 + bannerData2;
     headerTotal += iconPixels2;
     headerTotal += iconClut2;
@@ -2073,8 +2076,8 @@ long SaveLoad::StartMemoryCardIDCheck(int slot, void (*callback)(long))
 
 /**
  * Offset/Address/Size: 0x264 | 0x80189BC0 | size: 0x12C
- * TODO: 83.51% match - extra cmpwi/ble loop-guard checks in both block-counting
- * loops; CSE merges two srawi into one; mullw scheduled eagerly in inline.
+ * TODO: 92.53% match - inlined icon header still uses different registers and one
+ * fewer CLUT mask shift.
  */
 #pragma push
 #pragma opt_propagation off
@@ -2083,21 +2086,19 @@ int SaveLoad::GetSaveBlockSize(int)
     int dataSize = nlSingleton<GameInfoManager>::s_pInstance->GetMemoryCardDataSize();
     int numBlocks = 0;
 
-    int origSize = (dataSize += 12);
-    dataSize = (u32)(dataSize + 0x1FFF) >> 13;
-    if (origSize > 0)
+    dataSize += 12;
+    while (dataSize > 0)
     {
-        for (; dataSize > 0; dataSize--)
-            numBlocks++;
+        numBlocks++;
+        dataSize -= 0x2000;
     }
 
     MemCard::ICON_CONFIG IconCfg;
-    origSize = BuildDefaultIconHeaderSize(IconCfg);
-    dataSize = (u32)(origSize + 0x1FFF) >> 13;
-    if (origSize > 0)
+    dataSize = BuildDefaultIconHeaderSize(IconCfg);
+    while (dataSize > 0)
     {
-        for (; dataSize > 0; dataSize--)
-            numBlocks++;
+        numBlocks++;
+        dataSize -= 0x2000;
     }
 
     return numBlocks;

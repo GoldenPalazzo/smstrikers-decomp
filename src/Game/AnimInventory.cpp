@@ -117,39 +117,29 @@ cAnimInventory::~cAnimInventory()
 
 /**
  * Offset/Address/Size: 0x88 | 0x80007004 | size: 0x214
- * TODO: 98.27% match - instruction stream is byte-exact; only the callee-saved
- * register assignment differs (this/filename get r27/r28 instead of r30/r31, with
- * pMem/len shifted to r30/r31 instead of r28/r27)
+ * TODO: 99.21% match - r26/r27 swap for file length/end pointer and
+ * r28/r29 swap for property/anims byte offsets.
  */
 void cAnimInventory::AddAnimBundle(const char* szFilename)
 {
     int i;
+    char* end;
     int len;
-    cInventory<cSAnim>* inv;
     char* pMem = (char*)nlLoadEntireFileToVirtualMemory(szFilename, &len, 0x10000, 0, AllocateStart);
     int bundleLen = len;
+    cInventory<cSAnim>* inv;
     inv = m_cont;
 
-    ListEntry<char*>* pFileEntry = (ListEntry<char*>*)nlMalloc(8, 8, 0);
-    if (pFileEntry != 0)
-    {
-        pFileEntry->next = 0;
-        pFileEntry->data = pMem;
-    }
+    ListEntry<char*>* pFileEntry = new (nlMalloc(8, 8, 0)) ListEntry<char*>(pMem);
     nlListAddStart<ListEntry<char*> >(&inv->m_lMemList.m_Head, pFileEntry, &inv->m_lMemList.m_Tail);
 
-    char* end = pMem + bundleLen;
+    end = pMem + bundleLen;
     while (pMem != end)
     {
         if ((((nlChunk*)pMem)->m_ID & 0x80FFFFFF) == 0x80017000)
         {
             cSAnim* pAnim = cSAnim::Initialize((nlChunk*)pMem);
-            ListEntry<cSAnim*>* pAnimEntry = (ListEntry<cSAnim*>*)nlMalloc(8, 8, 0);
-            if (pAnimEntry != 0)
-            {
-                pAnimEntry->next = 0;
-                pAnimEntry->data = pAnim;
-            }
+            ListEntry<cSAnim*>* pAnimEntry = new (nlMalloc(8, 8, 0)) ListEntry<cSAnim*>(pAnim);
             nlListAddStart<ListEntry<cSAnim*> >(&inv->m_lItemList.m_Head, pAnimEntry, &inv->m_lItemList.m_Tail);
             inv->m_nItemCount++;
         }

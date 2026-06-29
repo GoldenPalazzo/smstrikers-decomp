@@ -33,6 +33,14 @@ inline float nlVec3GetX(const nlVector3& v)
     return (float)fabs(v.f.x);
 }
 
+inline void InterpolateVector(nlVector3& out, const nlVector3& oldPos, const nlVector3& newPos, float alpha)
+{
+    float oneMinusAlpha = 1.0f - alpha;
+    out.f.x = (oneMinusAlpha * oldPos.f.x) + (alpha * newPos.f.x);
+    out.f.y = (oneMinusAlpha * oldPos.f.y) + (alpha * newPos.f.y);
+    out.f.z = (oneMinusAlpha * oldPos.f.z) + (alpha * newPos.f.z);
+}
+
 /**
  * Offset/Address/Size: 0x84 | 0x80133AB8 | size: 0x1A0
  * TODO: 96.15% match - instruction scheduling diffs at prologue (lfs/mr interleaving).
@@ -64,12 +72,7 @@ bool PhysicsAIBall::DidBallJustEnterNet(const nlVector3& oldPos, nlVector3 newPo
             }
 
             f32 t = (planeX - oldPos.f.x) / xDelta;
-            f32 oldX = oldPos.f.x;
-            xDelta = 1.0f - t;
-
-            impactPos.f.x = (xDelta * oldX) + (t * newPos.f.x);
-            impactPos.f.y = (xDelta * oldPos.f.y) + (t * newPos.f.y);
-            impactPos.f.z = (xDelta * oldPos.f.z) + (t * newPos.f.z);
+            InterpolateVector(impactPos, oldPos, newPos, t);
         }
         else
         {

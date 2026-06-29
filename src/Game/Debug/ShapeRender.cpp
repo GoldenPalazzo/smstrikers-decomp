@@ -139,7 +139,7 @@ void ShapeRender::CreateHemisphereGeometry(PrimitiveShape& prim)
 
 /**
  * Offset/Address/Size: 0x11C0 | 0x801FC450 | size: 0x2DC
- * TODO: 98.47% match - saved-FPR allocation for pre-loop zero and angle constants still differs.
+ * TODO: 98.52% match - saved-FPR allocation for pre-loop zero and angle constants still differs.
  */
 void ShapeRender::CreateFlatCylinderEndGeometry(PrimitiveShape& prim)
 {
@@ -194,8 +194,8 @@ void ShapeRender::CreateFlatCylinderEndGeometry(PrimitiveShape& prim)
         angle90 = (u16)angle + 0x4000;
         y0 = half * (one * nlSin((u16)angle90));
 
-        x1 = half * (z0 * nlSin((u16)angle));
-        y1 = half * (z0 * nlSin((u16)angle90));
+        x1 = z0 * (half * nlSin((u16)angle));
+        y1 = z0 * (half * nlSin((u16)angle90));
 
         x0Sq = x0 * x0;
         y0Sq = y0 * y0;
@@ -243,8 +243,7 @@ void ShapeRender::CreateFlatCylinderEndGeometry(PrimitiveShape& prim)
 
 /**
  * Offset/Address/Size: 0xE14 | 0x801FC0A4 | size: 0x3AC
- * TODO: 96.28% match - remaining gap is FPR constant-register allocation (+2 shift)
- * and GPR r24-r27 rotation in outer loop setup.
+ * TODO: 98.74% match - constant FPR allocation and r24-r27 loop/conversion register rotation differ.
  */
 void ShapeRender::CreateCylinderGeometry(PrimitiveShape& prim)
 {
@@ -292,8 +291,10 @@ void ShapeRender::CreateCylinderGeometry(PrimitiveShape& prim)
         {
             int angle;
             int angle90;
+            float fSegmentAngle;
 
-            angle = (int)(10430.378f * ((float)nSegment * 0.41887903f));
+            fSegmentAngle = (float)nSegment;
+            angle = (int)((fSegmentAngle *= 0.41887903f) * 10430.378f);
 
             x0 = 0.5f * nlSin((u16)angle);
 
@@ -313,11 +314,9 @@ void ShapeRender::CreateCylinderGeometry(PrimitiveShape& prim)
             invLen = nlRecipSqrt(z0Sq + (x0Sq + y0Sq), true);
 
             pdst->f.x = x0;
-            vNormal.f.x = invLen * vNormal.f.x;
+            nlVec3Scale(vNormal, invLen);
             pdst->f.y = y0;
-            vNormal.f.y = invLen * vNormal.f.y;
             pdst->f.z = z0;
-            vNormal.f.z = invLen * vNormal.f.z;
             *ndst = vNormal;
 
             tdst->f.x = (float)nSegment / 15.0f;
@@ -333,11 +332,9 @@ void ShapeRender::CreateCylinderGeometry(PrimitiveShape& prim)
             invLen = nlRecipSqrt(z1Sq + (x1Sq + y1Sq), true);
 
             pdst[1].f.x = x1;
-            vNormal.f.x = invLen * vNormal.f.x;
+            nlVec3Scale(vNormal, invLen);
             pdst[1].f.y = y1;
-            vNormal.f.y = invLen * vNormal.f.y;
             pdst[1].f.z = z1;
-            vNormal.f.z = invLen * vNormal.f.z;
             ndst[1] = vNormal;
 
             tdst[1].f.x = (float)nSegment / 15.0f;

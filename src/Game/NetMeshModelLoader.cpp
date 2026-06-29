@@ -309,8 +309,8 @@ void NetMeshModelLoader::AddEdge(const glModelPacket& packet, unsigned short idx
 
 /**
  * Offset/Address/Size: 0xA80 | 0x80130BD8 | size: 0x110
- * TODO: 98.46% match - inner-loop destination cursor uses r6 instead of r7,
- * with branch temporaries shifted between r4-r6.
+ * TODO: 99.34% match - colour-stream branch still swaps ns and vertex-offset
+ * temporaries between r4-r5-r0.
  */
 void NetMeshModelLoader::ReadEdgesFromGeometryPacket(const glModelPacket& packet)
 {
@@ -342,9 +342,8 @@ void NetMeshModelLoader::ReadEdgesFromGeometryPacket(const glModelPacket& packet
                 vertOff += j;
                 vertOff -= 2;
                 stride = (ns - 1) * 2 + 1;
-                offset = stride * vertOff;
-                ptr8 = (u8*)pList->list;
-                ptr8 += offset;
+                offset = vertOff * stride;
+                ptr8 = (u8*)pList->list + offset;
                 ptr = (u16*)ptr8;
                 ptr8 = (u8*)ptr;
                 ptr8 += 4;
@@ -357,9 +356,8 @@ void NetMeshModelLoader::ReadEdgesFromGeometryPacket(const glModelPacket& packet
                 vertOff += j;
                 vertOff -= 2;
                 stride = ns * 2;
-                offset = stride * vertOff;
-                ptr8 = (u8*)pList->list;
-                ptr8 += offset;
+                offset = vertOff * stride;
+                ptr8 = (u8*)pList->list + offset;
                 ptr = (u16*)ptr8;
                 ptr8 = (u8*)ptr;
                 ptr8 += 3;

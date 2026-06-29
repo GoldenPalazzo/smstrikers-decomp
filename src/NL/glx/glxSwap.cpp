@@ -1,4 +1,4 @@
-#define BASICSTRING_NO_COPY_REREAD
+#define NLCONFIG_NO_GET_COPY_REREAD
 #include "NL/glx/glxSwap.h"
 #include "NL/nlDebug.h"
 #include "NL/nlPrint.h"
@@ -419,13 +419,8 @@ static inline BasicStringInternal* MakeHitzData()
 
 /**
  * Offset/Address/Size: 0x734 | 0x801BF484 | size: 0x260
- * TODO: 98.59% match - two residual diffs:
- *   1. r30/r31 register swap in the inlined fallback string data construction
- *      (data vs "hitz" source pointer); pre-existing, resists source reordering.
- *   2. one extra reload of the copied string's data pointer that the target keeps
- *      but this TU omits because it defines BASICSTRING_NO_COPY_REREAD (needed to
- *      reach 100% on Config::Get<BasicString>). The target wants the reload here
- *      but not in Get<>, so the two cannot both match under a single TU-wide macro.
+ * TODO: 99.31% match - r30/r31 register swap in the inlined fallback string data
+ * construction (data vs "hitz" source pointer).
  */
 void glxInitSwap(void* arg0, void* arg1)
 {

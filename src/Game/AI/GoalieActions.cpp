@@ -283,9 +283,9 @@ void Goalie::ActionLooseBallDesperate(float fDeltaT)
         float fPickupTimeE = pInfoE->mfPickupTime;
         float fAnimDurE = pInfoE->mfAnimDuration;
         float fTimeProduct = fPickupTimeE * fAnimDurE;
+        float fCatchRadSq = fCatchRadius * fCatchRadius;
         float fGuessY = fTimeProduct * pBallE->m_v3Velocity.f.y + pBall->m_v3Position.f.y;
         float fGuessX = fTimeProduct * pBallE->m_v3Velocity.f.x + pBall->m_v3Position.f.x;
-        float fCatchRadSq = fCatchRadius * fCatchRadius;
         if (mfTargetTime < 0.02f)
             goto doPlayNewAnim;
         {
@@ -297,8 +297,7 @@ void Goalie::ActionLooseBallDesperate(float fDeltaT)
         {
             float dYc = m_v3Position.f.y - pBall->m_v3Position.f.y;
             float dXc = m_v3Position.f.x - pBall->m_v3Position.f.x;
-            float distSqC = dYc * dYc;
-            distSqC = dXc * dXc + distSqC;
+            float distSqC = dYc * dYc + dXc * dXc;
             if (distSqC < fCatchRadSq)
                 goto doPlayNewAnim;
         }

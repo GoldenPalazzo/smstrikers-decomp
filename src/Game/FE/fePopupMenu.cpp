@@ -1,6 +1,7 @@
 #define FEPOPUPMENU_BYVAL_DECLS
 #define FEPOPUPMENU_FUNCTION_ASSIGN_DONT_INLINE
 #define BASICSTRING_INLINE_ERASE
+#define BASICSTRING_OUTLINE_CTOR
 #include "Game/FE/fePopupMenu.h"
 
 #include "Game/BaseGameSceneManager.h"

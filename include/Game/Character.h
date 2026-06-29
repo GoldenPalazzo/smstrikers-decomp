@@ -180,6 +180,16 @@ public:
         return result;
     }
 
+    inline const nlVector3& GetPosition() const
+    {
+        return m_v3Position;
+    }
+
+    inline const nlVector3& GetVelocity() const
+    {
+        return m_v3Velocity;
+    }
+
     virtual void Update(float);
 
     /* 0x04 */ eCharacterClass m_eCharacterClass;

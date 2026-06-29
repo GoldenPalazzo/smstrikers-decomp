@@ -1016,16 +1016,16 @@ static const int EIGHT_TEAM_MATCHUPS[28][2] = {
 };
 
 /**
- * TODO: 94.83% match - target spills numplayingteams to the stack and keeps the
- * round-count value (i == ...) in a callee-saved register; ours keeps
- * numplayingteams in a register, which shifts register coloring across the body.
+ * TODO: 99.69% match - final stats loop uses r17/r19 register assignment order
+ * for teamID and lineup base instead of target r19/r17 order.
  */
 void GameInfoManager::SetupRoundRobinSchedule(eTeamID* lineup, eSidekickID* sklineup)
 {
     eGameModes gamemode = mCurrentMode;
     int numplayingteams = GetNumPlayingTeams();
     int numRounds = mCurrentCup->GetNumRounds();
-    int numGamesPerRound = GetNumGamesPerRound(mCurrentCup, 0);
+    int numGamesPerRound = GetNumGamesPerRound(0);
+    int numNormalRounds;
     int home;
     int away;
     unsigned char superRounds;
@@ -1091,13 +1091,14 @@ void GameInfoManager::SetupRoundRobinSchedule(eTeamID* lineup, eSidekickID* skli
 
     mCurrentCup->mRoundNumber = -6;
     mDoingKnockout = false;
+    numNormalRounds = (numplayingteams % 2 != 0) ? numplayingteams : numplayingteams - 1;
 
     for (i = 0; i < numRounds; i++)
     {
-        if (i == ((numplayingteams % 2 == 0) ? numplayingteams - 1 : numplayingteams))
+        if (i == numNormalRounds)
         {
             superRounds = 1;
-            superOffset = i;
+            superOffset = numNormalRounds;
         }
 
         for (j = 0; j < numGamesPerRound; j++)
@@ -1181,9 +1182,10 @@ void GameInfoManager::SetupRoundRobinSchedule(eTeamID* lineup, eSidekickID* skli
 
     {
         TeamStats* teamstats = mCurrentCup->GetTeamStats(0);
+        eTeamID teamID;
         for (int k = 0; k < numplayingteams; k++)
         {
-            eTeamID teamID = lineup[k];
+            teamID = lineup[k];
             memset(&teamstats->mPlayerTotalStats, 0, sizeof(PlayerStats));
             teamstats->mPlayerTotalStats.mRecordType.mTeamID = teamID;
             teamstats->mPlayerTotalStats.mType = TYPE_TEAM;
@@ -1434,8 +1436,8 @@ void GameInfoManager::SetupTournamentKnockout(eTeamID* lineup, eSidekickID* skli
 
 /**
  * Offset/Address/Size: 0x78D8 | 0x8017CF7C | size: 0x618
- * TODO: 98.35% match - register allocation diffs in cup, gamesPerRound,
- * round, team, and loop locals
+ * TODO: 98.48% match - register allocation diffs in cup, gamesPerRound,
+ * previous/current round, team, and loop locals
  */
 unsigned char GameInfoManager::SetupKnockoutRound(short round)
 {
@@ -1456,44 +1458,7 @@ unsigned char GameInfoManager::SetupKnockoutRound(short round)
     int i2;
     BasicGameInfo* g3;
 
-    if (round == -4)
-    {
-        gamesPerRound = 4;
-    }
-    else if (round == -3)
-    {
-        gamesPerRound = 2;
-    }
-    else if (round == -2 || round == -1)
-    {
-        gamesPerRound = 1;
-    }
-    else if (round == -5 && mDoingKnockout)
-    {
-        gamesPerRound = 1;
-    }
-    else
-    {
-        if (mDoingKnockout)
-        {
-            gamesPerRound = mPreviousCup->GetNumTeams() >> 1;
-        }
-        else
-        {
-            unsigned short temp;
-            if (mCurrentMode == GM_BOWSER_CUP || mCurrentMode == GM_SUPER_BOWSER_CUP)
-            {
-                temp = 8;
-            }
-            else
-            {
-                temp = mCurrentCup->GetNumTeams();
-            }
-            gamesPerRound = temp >> 1;
-        }
-    }
-
-    gamesPerRound = (u16)gamesPerRound;
+    gamesPerRound = GetNumGamesPerRound(round);
     returnValue = 0;
 
     if (mCurrentMode == GM_BOWSER_CUP || mCurrentMode == GM_SUPER_BOWSER_CUP)

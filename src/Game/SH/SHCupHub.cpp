@@ -1447,9 +1447,10 @@ void CupHubScene::CreateKnockout()
     TLComponentInstance* pXComponent;
     TLTextInstance* pText;
     BasicGameInfo* pGame;
+    volatile InlineHasher h7, h5, h3, h1;
 
     {
-        volatile InlineHasher hB, hA, h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
+        volatile InlineHasher hB, hA, h9, h8, h6, h4, h2, h0;
 
         h0.m_Hash = 0;
         h1.m_Hash = 0;
@@ -1537,7 +1538,7 @@ void CupHubScene::CreateKnockout()
     }
 
     {
-        volatile InlineHasher hB, hA, h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
+        volatile InlineHasher hB, hA, h9, h8, h6, h4, h2, h0;
 
         h0.m_Hash = 0;
         h1.m_Hash = 0;
@@ -1620,7 +1621,7 @@ void CupHubScene::CreateKnockout()
     TLSlide* currentSlide = presentation->m_currentSlide;
 
     {
-        volatile InlineHasher hB, hA, h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
+        volatile InlineHasher hB, hA, h9, h8, h6, h4, h2, h0;
 
         h0.m_Hash = 0;
         h1.m_Hash = 0;
@@ -1663,17 +1664,19 @@ void CupHubScene::CreateKnockout()
     {
         eTeamID currentTeam = knockoutTeams[i];
         bool useHighlightColour = IsUserRow(currentTeam);
+        nlColour currentColour;
 
         if (useHighlightColour)
         {
-            colour = HUB_COLOUR_HIGHLIGHT;
+            currentColour = HUB_COLOUR_HIGHLIGHT;
         }
         else
         {
-            colour = mTextColour;
+            currentColour = mTextColour;
         }
+        colour = currentColour;
 
-        volatile InlineHasher hB, hA, h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
+        volatile InlineHasher hB, hA, h9, h8, h6, h4, h2, h0;
         volatile InlineHasher g5;
         unsigned long hash;
 
@@ -1751,7 +1754,7 @@ void CupHubScene::CreateKnockout()
                 (InlineHasher&)h1);
         }
 
-        pTextInstance->m_LocStrId = GetLOCTeamName(currentTeam);
+        pTextInstance->m_LocStrId = GetLOCTeamName(knockoutTeams[i]);
         pTextInstance->m_OverloadFlags |= 8;
         pTextInstance->SetAssetColour(colour);
 
@@ -1790,7 +1793,7 @@ void CupHubScene::CreateKnockout()
                 (InlineHasher&)h1);
         }
 
-        if ((loserTeams[i / 2] == currentTeam) && mHasHumanTeamPlayed)
+        if ((loserTeams[i / 2] == knockoutTeams[i]) && mHasHumanTeamPlayed)
         {
             pXComponent->m_bVisible = true;
         }
@@ -1837,7 +1840,7 @@ void CupHubScene::CreateKnockout()
                 (InlineHasher&)h1);
         }
 
-        pTextInstance->m_LocStrId = GetLOCTeamName(currentTeam);
+        pTextInstance->m_LocStrId = GetLOCTeamName(knockoutTeams[i]);
         pTextInstance->m_OverloadFlags |= 8;
         pTextInstance->SetAssetColour(colour);
 
@@ -1916,7 +1919,7 @@ void CupHubScene::CreateKnockout()
                 (InlineHasher&)h1);
         }
 
-        pTextInstance->m_LocStrId = GetLOCTeamName(currentTeam);
+        pTextInstance->m_LocStrId = GetLOCTeamName(knockoutTeams[i]);
         pTextInstance->m_OverloadFlags |= 8;
         pTextInstance->SetAssetColour(colour);
 
@@ -1955,7 +1958,7 @@ void CupHubScene::CreateKnockout()
                 (InlineHasher&)h1);
         }
 
-        if ((loserTeams[i / 2] == currentTeam) && mHasHumanTeamPlayed)
+        if ((loserTeams[i / 2] == knockoutTeams[i]) && mHasHumanTeamPlayed)
         {
             pXComponent->m_bVisible = true;
         }
@@ -1970,16 +1973,16 @@ void CupHubScene::CreateKnockout()
         if (mHubState == HUB_KNOCKOUT8)
         {
             pGame = gameInfo->GetMatchupInfo(round, 2);
-            mAnimatingKnockoutTeams[2] = (pGame->mFinalScore[0] > pGame->mFinalScore[1]) ? 4 : 5;
+            mAnimatingKnockoutTeams[2] = (pGame->mFinalScore[0] > pGame->mFinalScore[1]) ? 5 : 4;
 
             pGame = gameInfo->GetMatchupInfo(round, 3);
-            mAnimatingKnockoutTeams[3] = (pGame->mFinalScore[0] > pGame->mFinalScore[1]) ? 6 : 7;
+            mAnimatingKnockoutTeams[3] = (pGame->mFinalScore[0] > pGame->mFinalScore[1]) ? 7 : 6;
         }
 
         if (mHubState == HUB_KNOCKOUT8 || mHubState == HUB_KNOCKOUT4)
         {
             pGame = gameInfo->GetMatchupInfo(round, 1);
-            mAnimatingKnockoutTeams[1] = (pGame->mFinalScore[0] > pGame->mFinalScore[1]) ? 2 : 3;
+            mAnimatingKnockoutTeams[1] = (pGame->mFinalScore[0] > pGame->mFinalScore[1]) ? 3 : 2;
         }
 
         if (mHubState == HUB_KNOCKOUT2 && mDoAnimations && gameInfo->GetCurrentRoundNumber() == -1)
@@ -1995,11 +1998,11 @@ void CupHubScene::CreateKnockout()
             pGame = gameInfo->GetMatchupInfo(round, 0);
         }
 
-        mAnimatingKnockoutTeams[0] = (pGame->mFinalScore[0] > pGame->mFinalScore[1]) ? 0 : 1;
+        mAnimatingKnockoutTeams[0] = (pGame->mFinalScore[0] > pGame->mFinalScore[1]) ? 1 : 0;
         mKnockoutLoserAnimations = true;
 
         {
-            volatile InlineHasher hB, hA, h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
+            volatile InlineHasher hB, hA, h9, h8, h6, h4, h2, h0;
 
             h0.m_Hash = 0;
             h1.m_Hash = 0;
@@ -2041,7 +2044,7 @@ void CupHubScene::CreateKnockout()
     else
     {
         {
-            volatile InlineHasher hB, hA, h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
+            volatile InlineHasher hB, hA, h9, h8, h6, h4, h2, h0;
 
             h0.m_Hash = 0;
             h1.m_Hash = 0;
@@ -2078,18 +2081,22 @@ void CupHubScene::CreateKnockout()
         }
 
         {
-            volatile InlineHasher h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
+            volatile InlineHasher g7, g6, g5, g4, g3, g2, g1, g0;
 
-            h0.m_Hash = 0;
+            g0.m_Hash = 0;
             h1.m_Hash = 0;
-            h2.m_Hash = 0;
+            g1.m_Hash = 0;
             h3.m_Hash = 0;
-            h4.m_Hash = 0;
+            g2.m_Hash = 0;
             h5.m_Hash = 0;
+            g3.m_Hash = 0;
+            h7.m_Hash = 0;
+            g4.m_Hash = 0;
+            g5.m_Hash = 0;
 
             unsigned long hash = nlStringLowerHash("Text");
-            h6.m_Hash = hash;
-            h7.m_Hash = hash;
+            g6.m_Hash = hash;
+            g7.m_Hash = hash;
 
             union
             {
@@ -2100,12 +2107,12 @@ void CupHubScene::CreateKnockout()
             findText.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
             pText = findText.byRef(
                 pComp->GetActiveSlide(),
+                (InlineHasher&)g7,
+                (InlineHasher&)g5,
                 (InlineHasher&)h7,
                 (InlineHasher&)h5,
                 (InlineHasher&)h3,
-                (InlineHasher&)h1,
-                (InlineHasher&)h2,
-                (InlineHasher&)h0);
+                (InlineHasher&)h1);
         }
 
         switch (mHubState)
@@ -2132,7 +2139,7 @@ void CupHubScene::CreateKnockout()
     if (round == -2)
     {
         {
-            volatile InlineHasher hB, hA, h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
+            volatile InlineHasher hB, hA, h9, h8, h6, h4, h2, h0;
 
             h0.m_Hash = 0;
             h1.m_Hash = 0;
@@ -2172,7 +2179,7 @@ void CupHubScene::CreateKnockout()
     }
 
     {
-        volatile InlineHasher hB, hA, h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
+        volatile InlineHasher hB, hA, h9, h8, h6, h4, h2, h0;
 
         h0.m_Hash = 0;
         h1.m_Hash = 0;
@@ -2211,22 +2218,24 @@ void CupHubScene::CreateKnockout()
     pSlide = pComp->GetActiveSlide();
 
     {
-        volatile InlineHasher hB, hA, h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
+        volatile InlineHasher g9, g8, g7, g6, g4, g2, g0;
 
-        h0.m_Hash = 0;
+        g0.m_Hash = 0;
         h1.m_Hash = 0;
-        h2.m_Hash = 0;
+        g2.m_Hash = 0;
         h3.m_Hash = 0;
-        h4.m_Hash = 0;
+        g4.m_Hash = 0;
         h5.m_Hash = 0;
+        g6.m_Hash = 0;
+        h7.m_Hash = 0;
 
         unsigned long hash = nlStringLowerHash("TickerText");
-        h6.m_Hash = hash;
-        h7.m_Hash = hash;
+        g6.m_Hash = hash;
+        g7.m_Hash = hash;
 
         hash = nlStringLowerHash("Group");
-        h8.m_Hash = hash;
-        h9.m_Hash = hash;
+        g8.m_Hash = hash;
+        g9.m_Hash = hash;
 
         union
         {
@@ -2237,12 +2246,12 @@ void CupHubScene::CreateKnockout()
         findText.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
         pText = findText.byRef(
             pSlide,
-            (InlineHasher&)h9,
+            (InlineHasher&)g9,
+            (InlineHasher&)g7,
             (InlineHasher&)h7,
             (InlineHasher&)h5,
             (InlineHasher&)h3,
-            (InlineHasher&)h1,
-            (InlineHasher&)h0);
+            (InlineHasher&)h1);
     }
 
     mTickerManager.SetTickerTextInstance(pText);

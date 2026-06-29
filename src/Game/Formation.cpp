@@ -633,7 +633,7 @@ void FormationEval::AssignPositionsToFielders(unsigned int* pFielderPosAssignmen
 
 /**
  * Offset/Address/Size: 0x1798 | 0x800399E8 | size: 0x27C
- * TODO: 98.68% match - remaining diffs are this/v2Center prologue mr order, team/pFielder GPR swap, center branch pointer-register swap, and formation-position f6/f8 temp swap
+ * TODO: 98.96% match - remaining diffs are this/v2Center prologue mr order, team/pFielder GPR swap, and center branch pointer-register swap
  */
 void FormationEval::SortPlayers(const nlVector2* v2Center)
 {
@@ -699,18 +699,12 @@ void FormationEval::SortPlayers(const nlVector2* v2Center)
         v2CenterOfPlayers.f.x -= self->m_pFormationSpec->m_v2Center.f.x;
     }
 
-    nlVec2Set(av2FormationPositions[0],
-        self->m_pFormationSpec->m_Positions[0].m_Location.f.x + v2CenterOfPlayers.f.x,
-        self->m_pFormationSpec->m_Positions[0].m_Location.f.y + v2CenterOfPlayers.f.y);
-    nlVec2Set(av2FormationPositions[1],
-        self->m_pFormationSpec->m_Positions[1].m_Location.f.x + v2CenterOfPlayers.f.x,
-        self->m_pFormationSpec->m_Positions[1].m_Location.f.y + v2CenterOfPlayers.f.y);
-    nlVec2Set(av2FormationPositions[2],
-        self->m_pFormationSpec->m_Positions[2].m_Location.f.x + v2CenterOfPlayers.f.x,
-        self->m_pFormationSpec->m_Positions[2].m_Location.f.y + v2CenterOfPlayers.f.y);
-    nlVec2Set(av2FormationPositions[3],
-        self->m_pFormationSpec->m_Positions[3].m_Location.f.x + v2CenterOfPlayers.f.x,
-        self->m_pFormationSpec->m_Positions[3].m_Location.f.y + v2CenterOfPlayers.f.y);
+    for (i = 0; i < 4; i++)
+    {
+        nlVec2Set(av2FormationPositions[i],
+            self->m_pFormationSpec->m_Positions[i].m_Location.f.x + v2CenterOfPlayers.f.x,
+            self->m_pFormationSpec->m_Positions[i].m_Location.f.y + v2CenterOfPlayers.f.y);
+    }
 
     pFormPositions = av2FormationPositions;
     self->GetKeyPlayer();

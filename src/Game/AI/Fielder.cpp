@@ -1520,8 +1520,7 @@ void cFielder::CalcRegularShot(nlVector3& rv3Vel, nlVector3& rv3Target)
     cBall* pBall = g_pBall;
     float fShotTime;
 
-    extern void DoFindBestShotTarget__8cFielderFR9nlVector3Rfb(cFielder*, nlVector3&, float&, bool);
-    DoFindBestShotTarget__8cFielderFR9nlVector3Rfb(this, rv3Target, fShotTime, false);
+    DoFindBestShotTarget(rv3Target, fShotTime, false);
 
     float fDesiredTime = 1.0f / fShotTime;
     float fDeltaX = pBall->m_v3Position.f.x - rv3Target.f.x;
@@ -2902,6 +2901,8 @@ cFielder* cFielder::DoFindBestHitTarget()
 
 /**
  * Offset/Address/Size: 0x73B8 | 0x800206F4 | size: 0x87C
+ * TODO: 96.53% match - remaining floating-point register allocation differs in
+ * net clamp and post probability blocks.
  */
 void cFielder::DoFindBestShotTarget(nlVector3& v3PositionOut, float& fShotSpeed, bool bIsSTS)
 {
@@ -3016,25 +3017,13 @@ void cFielder::DoFindBestShotTarget(nlVector3& v3PositionOut, float& fShotSpeed,
         u16 aAngPost1 = (u16)(s32)(10430.378f * fAngPost1);
 
         s16 sDiffP1G = (s16)(aAngPost1 - aAngGoalie);
-        if (sDiffP1G < 0)
-        {
-            sDiffP1G = -sDiffP1G;
-        }
-        u16 uAbsP1G = (u16)sDiffP1G;
+        u16 uAbsP1G = (sDiffP1G < 0) ? -sDiffP1G : sDiffP1G;
 
         s16 sDiffP2G = (s16)(aAngPost2 - aAngGoalie);
-        if (sDiffP2G < 0)
-        {
-            sDiffP2G = -sDiffP2G;
-        }
-        u16 uAbsP2G = (u16)sDiffP2G;
+        u16 uAbsP2G = (sDiffP2G < 0) ? -sDiffP2G : sDiffP2G;
 
         s16 sDiffP1P2 = (s16)(aAngPost1 - aAngPost2);
-        if (sDiffP1P2 < 0)
-        {
-            sDiffP1P2 = -sDiffP1P2;
-        }
-        u16 uAbsP1P2 = (u16)sDiffP1P2;
+        u16 uAbsP1P2 = (sDiffP1P2 < 0) ? -sDiffP1P2 : sDiffP1P2;
 
         v3PositionOut.f.x = 1.005f * pNet->m_baseLocation.f.x;
 
@@ -3061,12 +3050,13 @@ void cFielder::DoFindBestShotTarget(nlVector3& v3PositionOut, float& fShotSpeed,
                 angle2Net += 0x8000;
             }
             s16 sAng2Net = (s16)angle2Net;
+            s32 nAbsAng2Net = sAng2Net;
             if (sAng2Net < 0)
             {
-                sAng2Net = -sAng2Net;
+                nAbsAng2Net = -sAng2Net;
             }
 
-            if ((u16)sAng2Net > 0x2000)
+            if ((u16)nAbsAng2Net > 0x2000)
             {
                 float fGD1X = pGoalie->m_v3Position.f.x - v3Post1.f.x;
                 float fGD1Y = pGoalie->m_v3Position.f.y - v3Post1.f.y;
@@ -3093,7 +3083,8 @@ void cFielder::DoFindBestShotTarget(nlVector3& v3PositionOut, float& fShotSpeed,
             }
             else
             {
-                fProbability = InterpolateRangeClamped(0.15f, 0.85f, -8192.0f, 8192.0f, -(float)(s32)sAng2Net);
+                float fAngleLimit = 8192.0f;
+                fProbability = InterpolateRangeClamped(0.15f, 0.85f, -fAngleLimit, fAngleLimit, -(float)(s32)sAng2Net);
             }
         }
 
@@ -4701,7 +4692,7 @@ void cFielder::SetPosition(const nlVector3& v3Position)
 
 /**
  * Offset/Address/Size: 0x3F70 | 0x8001D2AC | size: 0x5A8
- * TODO: 96.52% match - remaining f3/f4 delta register swap and compact speed-state branch layout.
+ * TODO: 99.83% match - remaining f3/f4 delta register swap in the initial distance block.
  */
 void cFielder::SetDesiredSpeedAndDirectionToPosition(float fDeltaT, const nlVector3& v3Pos, eTurboRequest turboRequest, float fInRadiusMult, float fOutRadiusMult)
 {
@@ -4788,6 +4779,8 @@ void cFielder::SetDesiredSpeedAndDirectionToPosition(float fDeltaT, const nlVect
         switch (m_ePositionSeekState)
         {
         case PSS_ARRIVED:
+            fMinSpeed = 0.0f;
+            fMaxSpeed = 0.0f;
             break;
         case PSS_NEAR_SEEKING:
             fMinSpeed = m_pTweaks->fJoggingSpeed;
@@ -4804,13 +4797,14 @@ void cFielder::SetDesiredSpeedAndDirectionToPosition(float fDeltaT, const nlVect
         {
             if (fMaxSpeed <= m_pTweaks->fRunningSpeed)
             {
+                fMaxSpeed = fMaxSpeed;
             }
             else
             {
                 fMaxSpeed = m_pTweaks->fRunningSpeed;
             }
         }
-        else if (turboRequest == TR_FORCED_ON || (turboRequest == TR_MOVING_TARGET && (float)(fabsf(fDesiredPositionRateOfChange - fZero) <= 0.0001f) == 0.0f))
+        else if (turboRequest == TR_FORCED_ON || (turboRequest == TR_MOVING_TARGET && 0.0f == (float)(fabsf(fDesiredPositionRateOfChange - fZero) <= 0.0001f)))
         {
             fMinSpeed = ((FielderTweaks*)m_pTweaks)->fRunningTurboSpeed;
         }
@@ -4820,6 +4814,8 @@ void cFielder::SetDesiredSpeedAndDirectionToPosition(float fDeltaT, const nlVect
         switch (m_ePositionSeekState)
         {
         case PSS_ARRIVED:
+            fMinSpeed = 0.0f;
+            fMaxSpeed = 0.0f;
             break;
         case PSS_NEAR_SEEKING:
             fMinSpeed = m_pTweaks->fJoggingSpeed;
@@ -4836,20 +4832,21 @@ void cFielder::SetDesiredSpeedAndDirectionToPosition(float fDeltaT, const nlVect
         {
             if (fMaxSpeed <= ((FielderTweaks*)m_pTweaks)->fRunningWBSpeed)
             {
+                fMaxSpeed = fMaxSpeed;
             }
             else
             {
                 fMaxSpeed = ((FielderTweaks*)m_pTweaks)->fRunningWBSpeed;
             }
         }
-        else if (turboRequest == TR_FORCED_ON || (turboRequest == TR_MOVING_TARGET && (float)(fabsf(fDesiredPositionRateOfChange - fZero) <= 0.0001f) == 0.0f))
+        else if (turboRequest == TR_FORCED_ON || (turboRequest == TR_MOVING_TARGET && 0.0f == (float)(fabsf(fDesiredPositionRateOfChange - fZero) <= 0.0001f)))
         {
             fMinSpeed = ((FielderTweaks*)m_pTweaks)->fRunningWBTurboSpeedLevel1;
         }
     }
 
     float bDistZero = (float)(fabsf(fDistSq - fZero) <= 0.0001f);
-    if (bDistZero != 0.0f)
+    if (0.0f != bDistZero)
     {
         fMinSpeed = 0.0f;
         fMaxSpeed = 0.0f;

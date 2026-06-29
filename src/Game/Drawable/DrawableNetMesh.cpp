@@ -410,9 +410,8 @@ void DrawableNetMesh::Grab(NetMesh& netMesh)
 
 /**
  * Offset/Address/Size: 0xAC | 0x80114008 | size: 0x214
- * TODO: 88.68% scratch - init loads lhs fields in swapped order; blend loops
- *       still use different pointer/index registers, and the 0.0f/1.0f
- *       literal labels differ.
+ * TODO: 99.29% scratch - init lhs field load order, first-loop zero-init
+ *       order, and 0.0f/1.0f literal labels still differ.
  */
 void DrawableNetMesh::Blend(float blendFactor, const DrawableNetMesh& lhs, const DrawableNetMesh& rhs)
 {
@@ -454,10 +453,10 @@ void DrawableNetMesh::Blend(float blendFactor, const DrawableNetMesh& lhs, const
 
     float oneMinusBlend = 1.0f - blendFactor;
 
-    for (int i = 0, offset = 0; i < mJolt; i++, offset += sizeof(nlVector3))
+    for (int offset = 0, i = 0; i < mJolt; i++, offset += sizeof(nlVector3))
     {
-        pSrc = (nlVector3*)((char*)lhs.mpPosition + offset);
-        pDst = (nlVector3*)((char*)mpPosition + offset);
+        pSrc = (nlVector3*)((char*)((const volatile DrawableNetMesh*)&lhs)->mpPosition + offset);
+        pDst = (nlVector3*)((char*)((volatile DrawableNetMesh*)this)->mpPosition + offset);
         float x = oneMinusBlend * pSrc->f.x;
         float y = pSrc->f.y;
         float z = pSrc->f.z;
@@ -468,10 +467,10 @@ void DrawableNetMesh::Blend(float blendFactor, const DrawableNetMesh& lhs, const
         pDst->f.z = z;
     }
 
-    for (int i = 0; i < mJolt; i++)
+    for (int offset = 0, i = 0; i < mJolt; i++, offset += sizeof(nlVector3))
     {
-        pDst = &mpPosition[i];
-        pSrc = &rhs.mpPosition[i];
+        pDst = (nlVector3*)((char*)((volatile DrawableNetMesh*)this)->mpPosition + offset);
+        pSrc = (nlVector3*)((char*)((const volatile DrawableNetMesh*)&rhs)->mpPosition + offset);
         float x = pDst->f.x + blendFactor * pSrc->f.x;
         float z = pDst->f.z + blendFactor * pSrc->f.z;
         float y = pDst->f.y + blendFactor * pSrc->f.y;

@@ -1,3 +1,4 @@
+#define BASICSTRING_NO_COPY_REREAD
 #include "Game/Render/Presentation.h"
 #include "Game/BeginFrameTask.h"
 #include "Game/FixedUpdateTask.h"
@@ -216,7 +217,7 @@ static const char* GetGimmeCupTrophyName()
 
 /**
  * Offset/Address/Size: 0x1848 | 0x8012602C | size: 0x460
- * TODO: 96.12% match - prefix "Gameplay/" literal materialized before nlMalloc instead of after, shifting r28/r29 coloring
+ * TODO: 99.00% match - BasicString temporary flags still shift constructor data from r29/r30/r31 to r28/r29/r30
  */
 void Presentation::LoadTrophyModel()
 {
@@ -948,8 +949,8 @@ void Presentation::EventHandler(Event* event)
                         s32 awayScore = g_pTeams[1]->m_nScore;
                         s32 homeScore = g_pTeams[0]->m_nScore;
                         NisPlayer* nisPlayer = NisPlayer::Instance();
-                        script = "GoalSuddenDeath";
                         nisPlayer->mWinnerSide[0] = (awayScore > homeScore);
+                        script = "GoalSuddenDeath";
                     }
                 }
             }
@@ -980,35 +981,25 @@ void Presentation::EventHandler(Event* event)
             {
                 cAIPad* aiPad = &AIPadManager::mAIPads[i];
                 cPlayer** character = (cPlayer**)g_pCharacters;
-                for (s32 j = 0; j < 5; j++)
+                for (s32 c = 0; c < 5; c++)
                 {
-                    cPlayer* c0 = *character;
-                    if (c0->m_pController == aiPad)
+                    for (s32 k = 0; k < 2; k++)
                     {
-                        if ((s32)gsd->uTeamIndex == c0->m_pTeam->m_nSide)
+                        cPlayer* ch = *character;
+                        if (ch->m_pController == aiPad)
                         {
-                            mIsAllowedToSkip[i] = foundTeamPad = true;
+                            if ((s32)gsd->uTeamIndex == ch->m_pTeam->m_nSide)
+                            {
+                                mIsAllowedToSkip[i] = true;
+                                foundTeamPad = true;
+                            }
+                            else
+                            {
+                                mIsAllowedToSkip[i] = false;
+                            }
                         }
-                        else
-                        {
-                            mIsAllowedToSkip[i] = false;
-                        }
+                        character++;
                     }
-
-                    cPlayer* c1 = *++character;
-                    if (c1->m_pController == aiPad)
-                    {
-                        if ((s32)gsd->uTeamIndex == c1->m_pTeam->m_nSide)
-                        {
-                            mIsAllowedToSkip[i] = foundTeamPad = true;
-                        }
-                        else
-                        {
-                            mIsAllowedToSkip[i] = false;
-                        }
-                    }
-
-                    character++;
                 }
             }
 

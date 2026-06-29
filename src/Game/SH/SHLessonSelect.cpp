@@ -664,8 +664,7 @@ void LessonSelectScene::Update(float fDeltaT)
 
 /**
  * Offset/Address/Size: 0x334 | 0x8010B184 | size: 0x4AC
- * TODO: 96.1% match - stack frame 0x1B0 vs target 0x160; compiler does not reuse
- * InlineHasher arg copy stack slots across FEFinder::Find calls
+ * TODO: 99.7% match - remaining stack slot offsets around InlineHasher temporaries
  */
 void LessonSelectScene::UpdateRow(int onScreenRow, bool playsound)
 {
@@ -719,8 +718,19 @@ void LessonSelectScene::UpdateRow(int onScreenRow, bool playsound)
         {
             DoubleHighlite::TempDisableSound();
         }
-        mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[ON_HIGHLIGHT](
-            mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mType);
+        int tag = mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[ON_HIGHLIGHT].mTag;
+        if (((unsigned int)((-tag) | tag)) >> 31)
+        {
+            TLComponentInstance* type = mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mType;
+            if (tag == FREE_FUNCTION)
+            {
+                mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[ON_HIGHLIGHT].mFreeFunction(type);
+            }
+            else
+            {
+                (*mMenuItems.mMenuItems[mMenuItems.mCurrentIndex].mCallbacks[ON_HIGHLIGHT].mFunctor)(type);
+            }
+        }
     }
 
     BasicString<char, Detail::TempStringAllocator> rowString = LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(currentRow + 1);

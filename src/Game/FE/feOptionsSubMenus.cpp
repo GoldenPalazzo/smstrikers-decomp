@@ -511,8 +511,6 @@ void OptionsGameplayMenuV2::BuildSkillLevelMenu(TLComponentInstance* compinstanc
 
 /**
  * Offset/Address/Size: 0xEE0 | 0x800B5F24 | size: 0x850
- * TODO: 93.49% match - constructor prologue register/stack layout differs and
- * FEFinder hash temporary stack placement still mismatches.
  */
 OptionsGameplayMenuV2::OptionsGameplayMenuV2(FEPresentation* presentation, ButtonComponent::ButtonState buttonstate, GameplaySettings& settings, int skilltoskip)
     : OptionsSubMenu(presentation, buttonstate)
@@ -545,29 +543,42 @@ OptionsGameplayMenuV2::OptionsGameplayMenuV2(FEPresentation* presentation, Butto
             InlineHasher(nlStringLowerHash("Layer")),
             InlineHasher(nlStringLowerHash(menuname)));
 
-        MenuItem<TLComponentInstance>* menuItem = &mMenuItems.mMenuItems[mMenuItems.mNumItemsAdded];
+        int numAdded = mMenuItems.mNumItemsAdded;
+        MenuItem<TLComponentInstance>* menuItem = AudioOptionsMenuItemAt(mMenuItems, numAdded);
         TLComponentInstance* componentinstance = (TLComponentInstance*)instance;
-        menuItem->mType = componentinstance;
+        mMenuItems.mMenuItems[numAdded].mType = componentinstance;
         mMenuItems.mNumItemsAdded++;
 
         {
-            Function<FnTLComponentInstanceCb> openFunc;
+            Function<TLComponentInstance*> openFunc;
             openFunc.mTag = FREE_FUNCTION;
             openFunc.mFreeFunction = SingleHighlite::OpenItem;
-            menuItem->mCallbacks[1] = openFunc;
+            *(Function<TLComponentInstance*>*)&menuItem->mCallbacks[1] = openFunc;
         }
 
         {
-            Function<FnTLComponentInstanceCb> closeFunc;
+            Function<TLComponentInstance*> closeFunc;
             closeFunc.mTag = FREE_FUNCTION;
             closeFunc.mFreeFunction = SingleHighlite::CloseItem;
-            menuItem->mCallbacks[2] = closeFunc;
+            *(Function<TLComponentInstance*>*)&menuItem->mCallbacks[2] = closeFunc;
         }
 
         if (i == 0)
         {
             SingleHighlite::TempDisableSound();
-            menuItem->mCallbacks[1](componentinstance);
+            int tag = menuItem->mCallbacks[1].mTag;
+            if (((u32)((-tag) | tag) >> 31) > 0)
+            {
+                TLComponentInstance* type = menuItem->mType;
+                if (tag == FREE_FUNCTION)
+                {
+                    menuItem->mCallbacks[1].mFreeFunction(type);
+                }
+                else
+                {
+                    (*menuItem->mCallbacks[1].mFunctor)(type);
+                }
+            }
             menuItem->mDisabled = false;
         }
         else
@@ -642,19 +653,25 @@ OptionsGameplayMenuV2::OptionsGameplayMenuV2(FEPresentation* presentation, Butto
     SlideMenuList* slideMenuList = (SlideMenuList*)mSlideMenuLists[mMenuItems.mCurrentIndex];
     if (slideMenuList != NULL)
     {
-        compinstance = slideMenuList->mComponentInstance;
-        if (compinstance != NULL)
+        TLInstance* inst;
+        TLInstance* firstChild;
+        TLSlide* currentMenuSlide;
+        TLSlide* startSlide;
+        TLComponentInstance* finalCompinstance;
+
+        finalCompinstance = slideMenuList->mComponentInstance;
+        if (finalCompinstance != NULL)
         {
-            if (compinstance->GetActiveSlide() != NULL)
+            if (finalCompinstance->GetActiveSlide() != NULL)
             {
-                TLSlide* startSlide = compinstance->GetActiveSlide();
-                TLSlide* currentMenuSlide = startSlide;
+                startSlide = finalCompinstance->GetActiveSlide();
+                currentMenuSlide = startSlide;
 
                 do
                 {
-                    compinstance->SetActiveSlide(currentMenuSlide);
-                    TLInstance* firstChild = compinstance->GetActiveSlide()->m_instances;
-                    TLInstance* inst = firstChild;
+                    finalCompinstance->SetActiveSlide(currentMenuSlide);
+                    firstChild = finalCompinstance->GetActiveSlide()->m_instances;
+                    inst = firstChild;
                     if (firstChild != NULL)
                     {
                         do
@@ -665,7 +682,8 @@ OptionsGameplayMenuV2::OptionsGameplayMenuV2(FEPresentation* presentation, Butto
                             }
                             else if (inst->m_type == TLAT_IMAGE)
                             {
-                                if (inst->m_hash != nlStringLowerHash("white_box"))
+                                unsigned long hash = inst->m_hash;
+                                if (hash != nlStringLowerHash("white_box"))
                                 {
                                     inst->SetAssetColour(SubMenuHighliteColour);
                                 }
@@ -678,7 +696,7 @@ OptionsGameplayMenuV2::OptionsGameplayMenuV2(FEPresentation* presentation, Butto
                     currentMenuSlide = currentMenuSlide->m_next;
                 } while (currentMenuSlide != startSlide);
 
-                compinstance->SetActiveSlide(startSlide);
+                finalCompinstance->SetActiveSlide(startSlide);
             }
         }
     }
@@ -875,10 +893,8 @@ OptionsVisualMenuV2::OptionsVisualMenuV2(FEPresentation* pres, ButtonComponent::
         SetAButtonLOC(0x9C81A82F);
     }
 
-    TLSlide* currentSlide = pres->m_currentSlide;
-    void (*openItem)(TLComponentInstance*) = SingleHighlite::OpenItem;
-    void (*closeItem)(TLComponentInstance*) = SingleHighlite::CloseItem;
     char** menuItems = MENU_ITEMS;
+    TLSlide* currentSlide = pres->m_currentSlide;
 
     for (int i = 0; i < 3; i++)
     {
@@ -887,21 +903,22 @@ OptionsVisualMenuV2::OptionsVisualMenuV2(FEPresentation* pres, ButtonComponent::
             InlineHasher(nlStringLowerHash("Layer")),
             InlineHasher(nlStringLowerHash(*menuItems)));
 
-        MenuItem<TLComponentInstance>* menuItem = &mMenuItems.mMenuItems[mMenuItems.mNumItemsAdded];
-        menuItem->mType = (TLComponentInstance*)instance;
+        int numAdded = mMenuItems.mNumItemsAdded;
+        MenuItem<TLComponentInstance>* menuItem = AudioOptionsMenuItemAt(mMenuItems, numAdded);
+        mMenuItems.mMenuItems[numAdded].mType = (TLComponentInstance*)instance;
         mMenuItems.mNumItemsAdded++;
 
         {
             Function<TLComponentInstance*> openFunc;
             openFunc.mTag = FREE_FUNCTION;
-            openFunc.mFreeFunction = openItem;
+            openFunc.mFreeFunction = SingleHighlite::OpenItem;
             *(Function<TLComponentInstance*>*)&menuItem->mCallbacks[1] = openFunc;
         }
 
         {
             Function<TLComponentInstance*> closeFunc;
             closeFunc.mTag = FREE_FUNCTION;
-            closeFunc.mFreeFunction = closeItem;
+            closeFunc.mFreeFunction = SingleHighlite::CloseItem;
             *(Function<TLComponentInstance*>*)&menuItem->mCallbacks[2] = closeFunc;
         }
 

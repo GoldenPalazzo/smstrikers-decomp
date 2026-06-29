@@ -549,8 +549,8 @@ void cTeam::UpdateControllers()
 
 /**
  * Offset/Address/Size: 0x3DC | 0x80065044 | size: 0x468
- * TODO: 97.50% match - register allocation still differs in controller assignment
- * and kickoff setup blocks.
+ * TODO: 97.85% match - register allocation still differs in controller assignment,
+ * facing direction, and kickoff setup blocks.
  */
 void cTeam::ResetCharacters()
 {
@@ -559,6 +559,7 @@ void cTeam::ResetCharacters()
     int nAssignedControllers;
     int nAssignmentOrder[5];
     const unsigned short* pFacingDirectionTable;
+    const unsigned short* pNewFacingDirectionTable;
     const FormationSpec* pFormation;
     unsigned char bFlipPositions;
     int* pOrder;
@@ -608,12 +609,12 @@ void cTeam::ResetCharacters()
 
     if (g_pGame->m_nLastTeamToScore == g_pTeams[m_nSide == 0 ? 1 : 0]->m_nSide)
     {
-        pFacingDirectionTable = g_aAdvantagePlayerFacingDirections;
+        pNewFacingDirectionTable = g_aAdvantagePlayerFacingDirections;
         pFormation = FormationManager::GetFormationSpec(FORMATION_OFF_DEF_KICKOFF_ADVANTAGE);
     }
     else
     {
-        pFacingDirectionTable = g_aNeutralPlayerFacingDirections;
+        pNewFacingDirectionTable = g_aNeutralPlayerFacingDirections;
         pFormation = FormationManager::GetFormationSpec(FORMATION_OFF_DEF_KICKOFF_NEUTRAL);
     }
 
@@ -622,6 +623,8 @@ void cTeam::ResetCharacters()
     {
         bFlipPositions = 1;
     }
+
+    pFacingDirectionTable = pNewFacingDirectionTable;
 
     for (int i = 0; i < 5; i++)
     {

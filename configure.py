@@ -860,7 +860,7 @@ config.libs = [
             Object(NonMatching, "Game/SHierarchy.cpp", extra_cflags=["-inline auto"]),
 
             Object(NonMatching, "Game/SAnim.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(NonMatching, "Game/SAnim/AnimRetargeter.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(Matching, "Game/SAnim/AnimRetargeter.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/SAnim/pnSAnimController.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/SAnim/pnBlender.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/SAnim/pnSingleAxisBlender.cpp", extra_cflags=["-inline auto", "-inline deferred"], mw_version="GC/1.3.2"),
@@ -1399,7 +1399,7 @@ config.libs = [
 
             Object(NonMatching, "ode/ext/dColumn.cpp", extra_cflags=["-inline auto", "-inline off"]),
             Object(Matching, "ode/ext/dFinitePlane.cpp", extra_cflags=["-inline auto"]),
-            Object(NonMatching, "ode/ext/dRoundedCorner.cpp", extra_cflags=["-inline auto"]),
+            Object(Matching, "ode/ext/dRoundedCorner.cpp", extra_cflags=["-inline auto"]),
 
             Object(NonMatching, "ode/odemath.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
         ],

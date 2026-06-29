@@ -1,7 +1,14 @@
 #include "Game/AI/GoalieSave.h"
 #include "Game/AI/AiUtil.h"
 #include "Game/AI/FilteredRandom.h"
+#include "Game/AnimInventory.h"
+#include "Game/CharacterTriggers.h"
 #include "Game/Field.h"
+#include "Game/Goalie.h"
+#include "Game/SAnim/pnSAnimController.h"
+#include "NL/nlMemory.h"
+#include "NL/nlString.h"
+#include "PowerPC_EABI_Support/Runtime/MWCPlusLib.h"
 
 #pragma inline_depth(255)
 
@@ -10,6 +17,20 @@ static nlListContainer<SaveData*> gSaveGrid[7][5];
 static float fDefaultMilestoneValues[2] = { 0.4f, 0.7f };
 
 struct MyMiniData;
+
+struct SaveInfo
+{
+    int mnAnimID;
+    int mnFailAnimID;
+    int mnRecoverAnimID;
+    unsigned int muSaveType;
+    int mConnectedSaveID[4];
+    char mszName[16];
+};
+
+extern nlVector3 v3Zero;
+extern int gPositionAnimID[6];
+extern SaveInfo gSaveInfo[70];
 
 /**
  * Offset/Address/Size: 0x0 | 0x80056BC8 | size: 0x3C
@@ -79,70 +100,6 @@ void GoalieSave::ClearData()
  */
 void GoalieSave::InitData(Goalie* pGoalie)
 {
-    struct SaveInfo
-    {
-        int mnAnimID;
-        int mnFailAnimID;
-        int mnRecoverAnimID;
-        unsigned int muSaveType;
-        int mConnectedSaveID[4];
-        char mszName[16];
-    };
-
-    struct GoalieTweaksLite
-    {
-        unsigned char mPad[0xB8];
-        float fShotFatigueDefault;
-        float fShotFatigueStandCatch;
-        float fShotFatigueDiveCatch;
-        float fShotFatigueStandDeflect;
-        float fShotFatigueDiveDeflect;
-        float fShotFatigueStandPunch;
-        float fShotFatigueLegSave;
-        float fShotFatigueSTSSave;
-        float fShotFatigueSTSStun;
-    };
-
-    struct SAnimLite
-    {
-        unsigned char mPad[0x8];
-        unsigned int m_nNumKeys;
-    };
-
-    struct SAnimCtrlLite
-    {
-        void* vtable;
-        void* children[3];
-        int numChildren;
-        SAnimLite* m_pSAnim;
-        float m_fTime;
-        bool m_bMirror;
-        const void* m_pAnimRetarget;
-        float m_fPrevTime;
-    };
-
-    struct SlotPoolLite
-    {
-        unsigned char pad[0xC];
-        void* m_FreeList;
-    };
-
-    extern nlVector3 v3Zero;
-    extern int gPositionAnimID[];
-    extern SaveInfo gSaveInfo[];
-    extern SlotPoolLite m_SAnimControllerSlotPool__19cPN_SAnimController;
-
-    extern SAnimLite* GetAnim__14cAnimInventoryFi(void*, int);
-    extern bool GetMirrored__14cAnimInventoryFi(void*, int);
-    extern void* __ct__19cPN_SAnimControllerFP6cSAnimPC12AnimRetarget9ePlayModePFUiP19cPN_SAnimController_vUib(void*, void*, const void*, int, void*, unsigned int, bool);
-    extern void GetRootTrans__9cPoseNodeFP9nlVector3Us(void*, nlVector3*, unsigned short);
-    extern void BaseAddNewBlock__12SlotPoolBaseFP12SlotPoolBaseUi(void*, unsigned int);
-    extern void GetAnimTriggerInfo__FP10cCharacteriPFffUlfPv_bPv(void*, int, bool (*)(float, float, unsigned long, float, void*), void*);
-    extern void GetJointPositionFuture__10cCharacterFP9nlVector3iifbbb(void*, nlVector3*, int, int, float, bool, bool, bool);
-    extern void* nlMalloc__FUlUib(unsigned long, unsigned int, bool);
-    extern void* __construct_new_array(void*, void*, void*, unsigned long, unsigned long);
-    extern void nlStrNCpy__FPcPCcUl(char*, const char*, unsigned long);
-
     unsigned int i;
     int nCount;
     unsigned int count;
@@ -154,7 +111,7 @@ void GoalieSave::InitData(Goalie* pGoalie)
     }
 
     muNumSaveEntries = 0x45;
-    void* mem = nlMalloc__FUlUib(0x2290, 8, false);
+    void* mem = nlMalloc(0x2290, 8, false);
     mpSaveTable = (SaveData*)__construct_new_array(mem, NULL, NULL, 0x80, 0x45);
 
     muSTSGoalIndexStart = 0;
@@ -166,20 +123,19 @@ void GoalieSave::InitData(Goalie* pGoalie)
     muMissChipIndexStart = 0;
     muMissChipCount = 0;
 
-    void* pAnimInventory = *(void**)((unsigned char*)pGoalie + 0x80);
-    SAnimLite* pAnim = GetAnim__14cAnimInventoryFi(pAnimInventory, 0x2E);
+    cSAnim* pAnim = pGoalie->m_pAnimInventory->GetAnim(0x2E);
     u32 numKeys = pAnim->m_nNumKeys;
 
-    nlVector3* pv3Zero = &v3Zero;
-    u32 v3ZeroX = pv3Zero->as_u32[0];
+    u32* pZeroWords = v3Zero.as_u32;
+    u32 v3ZeroX = pZeroWords[0];
+    u32 v3ZeroY = pZeroWords[1];
+    u32 v3ZeroZ = pZeroWords[2];
 
     mfCrouchDuration = (float)numKeys / 30.0f;
 
     SaveInfo* pSaveInfoBase = gSaveInfo;
     SaveInfo* pSaveInfo = pSaveInfoBase;
     i = 0;
-    u32 v3ZeroY = pv3Zero->as_u32[1];
-    u32 v3ZeroZ = pv3Zero->as_u32[2];
 
     while (i < muNumSaveEntries)
     {
@@ -189,7 +145,7 @@ void GoalieSave::InitData(Goalie* pGoalie)
         pSaveData->mnRecoverAnimID = pSaveInfo->mnRecoverAnimID;
         pSaveData->muSaveType = pSaveInfo->muSaveType;
 
-        GoalieTweaksLite* pTweaks = *(GoalieTweaksLite**)((unsigned char*)pGoalie + 0x1C4);
+        GoalieTweaks* pTweaks = (GoalieTweaks*)pGoalie->m_pTweaks;
         unsigned int uSaveType = pSaveInfo->muSaveType;
 
         float fFatigueValue;
@@ -253,7 +209,7 @@ void GoalieSave::InitData(Goalie* pGoalie)
         pSaveData->mv3GroupMaxCoords.as_u32[1] = v3ZeroY;
         pSaveData->mv3GroupMaxCoords.as_u32[2] = v3ZeroZ;
 
-        nlStrNCpy__FPcPCcUl(pSaveData->mszName, pSaveInfo->mszName, 16);
+        nlStrNCpy<char>(pSaveData->mszName, pSaveInfo->mszName, 16);
         pSaveData->muIndex = i;
 
         pSaveData = &mpSaveTable[i];
@@ -293,7 +249,7 @@ void GoalieSave::InitData(Goalie* pGoalie)
 
         int animKey = pSaveData->mnAnimID;
         SaveData* pValue = pSaveData;
-        AVLTreeNode* pExistingNode = NULL;
+        AVLTreeNode* pExistingNode;
         gSaveMap.AddAVLNode((AVLTreeNode**)&gSaveMap.m_Root, &animKey, &pValue, &pExistingNode, gSaveMap.m_NumElements);
         if (pExistingNode == NULL)
         {
@@ -309,50 +265,54 @@ void GoalieSave::InitData(Goalie* pGoalie)
     {
         int failID = pSaveInfo->mnFailAnimID;
         SaveData* pEntry = &mpSaveTable[j];
+        SaveData* pFound;
 
         if (failID >= 0)
         {
             SaveData** ppFound;
             if (gSaveMap.FindGet(failID, &ppFound))
             {
-                pEntry->mpFailAnimData = *ppFound;
+                pFound = *ppFound;
             }
             else
             {
-                pEntry->mpFailAnimData = NULL;
+                pFound = NULL;
             }
         }
         else
         {
-            pEntry->mpFailAnimData = NULL;
+            pFound = NULL;
         }
+        pEntry->mpFailAnimData = pFound;
 
         for (int k = 0; k < 4; k++)
         {
             int connID = pSaveInfo->mConnectedSaveID[k];
+            SaveData* pConn;
             if (connID >= 0)
             {
                 SaveData** ppConn;
                 if (gSaveMap.FindGet(connID, &ppConn))
                 {
-                    pEntry->mpConnectedSaveData[k] = *ppConn;
+                    pConn = *ppConn;
                 }
                 else
                 {
-                    pEntry->mpConnectedSaveData[k] = NULL;
+                    pConn = NULL;
                 }
             }
             else
             {
-                pEntry->mpConnectedSaveData[k] = NULL;
+                pConn = NULL;
             }
+            pEntry->mpConnectedSaveData[k] = pConn;
         }
 
         pSaveInfo++;
     }
 
     muNumPositionEntries = 6;
-    void* mem2 = nlMalloc__FUlUib(0x70, 8, false);
+    void* mem2 = nlMalloc(0x70, 8, false);
     mpPositionTable = (SavePositionData*)__construct_new_array(mem2, NULL, NULL, 0x10, 6);
 
     for (count = 0; count < muNumPositionEntries; count++)
@@ -361,30 +321,30 @@ void GoalieSave::InitData(Goalie* pGoalie)
         int animID = gPositionAnimID[count];
         pPos->mnAnimID = animID;
 
-        SAnimCtrlLite* pController = NULL;
-        if (m_SAnimControllerSlotPool__19cPN_SAnimController.m_FreeList == NULL)
+        cPN_SAnimController* pController = NULL;
+        if (cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList == NULL)
         {
-            BaseAddNewBlock__12SlotPoolBaseFP12SlotPoolBaseUi(&m_SAnimControllerSlotPool__19cPN_SAnimController, 0x54);
+            SlotPoolBase::BaseAddNewBlock(&cPN_SAnimController::m_SAnimControllerSlotPool, 0x54);
         }
-        if (m_SAnimControllerSlotPool__19cPN_SAnimController.m_FreeList != NULL)
+        if (cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList != NULL)
         {
-            pController = (SAnimCtrlLite*)m_SAnimControllerSlotPool__19cPN_SAnimController.m_FreeList;
-            m_SAnimControllerSlotPool__19cPN_SAnimController.m_FreeList = *(void**)m_SAnimControllerSlotPool__19cPN_SAnimController.m_FreeList;
+            pController = (cPN_SAnimController*)cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList;
+            cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList = cPN_SAnimController::m_SAnimControllerSlotPool.m_FreeList->m_next;
         }
 
         if (pController != NULL)
         {
-            void* pAnimInv = *(void**)((unsigned char*)pGoalie + 0x80);
-            bool bMirrored = GetMirrored__14cAnimInventoryFi(pAnimInv, animID);
-            void* pSAnim = GetAnim__14cAnimInventoryFi(pAnimInv, animID);
-            pController = (SAnimCtrlLite*)__ct__19cPN_SAnimControllerFP6cSAnimPC12AnimRetarget9ePlayModePFUiP19cPN_SAnimController_vUib(pController, pSAnim, NULL, 1, NULL, 0, bMirrored);
+            cAnimInventory* pAnimInv = pGoalie->m_pAnimInventory;
+            bool bMirrored = pAnimInv->GetMirrored(animID);
+            cSAnim* pSAnim = pAnimInv->GetAnim(animID);
+            pController = new (pController) cPN_SAnimController(pSAnim, NULL, PM_HOLD, NULL, 0, bMirrored);
         }
 
         pController->m_fPrevTime = pController->m_fTime;
         pController->m_fTime = 1.0f;
 
         nlVector3 v3RootTrans;
-        GetRootTrans__9cPoseNodeFP9nlVector3Us(pController, &v3RootTrans, 0);
+        pController->GetRootTrans(&v3RootTrans, 0);
 
         pPos->mfAnimDistance = v3RootTrans.f.y;
         pPos->mfAnimTime = (float)pController->m_pSAnim->m_nNumKeys / 30.0f;
@@ -392,9 +352,7 @@ void GoalieSave::InitData(Goalie* pGoalie)
 
         if (pController != NULL)
         {
-            typedef void (*VtableDestructor)(void*, int);
-            VtableDestructor dtor = ((VtableDestructor*)pController->vtable)[2];
-            dtor(pController, 1);
+            delete pController;
         }
     }
 
@@ -420,17 +378,17 @@ void GoalieSave::InitData(Goalie* pGoalie)
         } while (row < 7);
     }
 
-    int nBallJointIndex = *(int*)((unsigned char*)pGoalie + 0x1AC);
+    int nBallJointIndex = pGoalie->m_nBallJointIndex;
 
     for (i = 0; i < muNumSaveEntries; i++)
     {
         pSaveData = &mpSaveTable[i];
-        GetAnimTriggerInfo__FP10cCharacteriPFffUlfPv_bPv(pGoalie, pSaveData->mnAnimID, TriggerCallback, pSaveData);
+        GetAnimTriggerInfo(pGoalie, pSaveData->mnAnimID, TriggerCallback, pSaveData);
         pSaveData->mfMilestonePercent[4] = 1.0f;
-        GetJointPositionFuture__10cCharacterFP9nlVector3iifbbb(pGoalie, &pSaveData->mv3SavePos, pSaveData->mnAnimID, nBallJointIndex, pSaveData->mfMilestonePercent[2], true, true, false);
+        pGoalie->GetJointPositionFuture(&pSaveData->mv3SavePos, pSaveData->mnAnimID, nBallJointIndex, pSaveData->mfMilestonePercent[2], true, true, false);
         if (pSaveData->mfMilestonePercent[1] > 0.0f)
         {
-            GetJointPositionFuture__10cCharacterFP9nlVector3iifbbb(pGoalie, &pSaveData->mv3TakeoffPos, pSaveData->mnAnimID, -1, pSaveData->mfMilestonePercent[1], true, true, false);
+            pGoalie->GetJointPositionFuture(&pSaveData->mv3TakeoffPos, pSaveData->mnAnimID, -1, pSaveData->mfMilestonePercent[1], true, true, false);
         }
     }
 
@@ -878,7 +836,7 @@ SaveData* GoalieSave::FindBestInList(SaveBlendInfo& blendInfo, nlListContainer<S
 
 /**
  * Offset/Address/Size: 0xF90 | 0x800543B0 | size: 0xA8C
- * TODO: 97.94% match - pClosest/pEdge register allocation still diverges in
+ * TODO: 98.04% match - pClosest/pEdge register allocation still diverges in
  * edge-selection paths.
  */
 SaveData* GoalieSave::GetClosestBlendedPos(SaveBlendInfo& blendInfo, const nlVector3& v3TargetPos, SaveData* pClosest)
@@ -929,8 +887,8 @@ SaveData* GoalieSave::GetClosestBlendedPos(SaveBlendInfo& blendInfo, const nlVec
             }
             else
             {
-                pLeft = pPrev;
                 pRight = pCur;
+                pLeft = pPrev;
             }
 
             pLeftUp = pLeft;
@@ -979,8 +937,8 @@ SaveData* GoalieSave::GetClosestBlendedPos(SaveBlendInfo& blendInfo, const nlVec
                         }
                         else
                         {
-                            pLeft = pNextPrev;
                             pRight = pNextCur;
+                            pLeft = pNextPrev;
                         }
                     }
                 }
@@ -1024,8 +982,8 @@ SaveData* GoalieSave::GetClosestBlendedPos(SaveBlendInfo& blendInfo, const nlVec
                         }
                         else
                         {
-                            pLeftUp = pNextPrev;
                             pRightUp = pNextCur;
+                            pLeftUp = pNextPrev;
                         }
                     }
                 }
@@ -1228,8 +1186,8 @@ SaveData* GoalieSave::GetClosestBlendedPos(SaveBlendInfo& blendInfo, const nlVec
         }
         else
         {
-            pDown = pPrev;
             pUp = pCur;
+            pDown = pPrev;
         }
 
         blendInfo.mpSaveData[0] = pDown;
@@ -1443,7 +1401,7 @@ static inline void AddPointToGrid(SaveData* pSaveData, const nlVector3& v3Point)
 
 /**
  * Offset/Address/Size: 0x780 | 0x80053BA0 | size: 0x64C
- * TODO: 98.11% match - root save-data and row pointer registers remain shifted in nested grid traversal.
+ * TODO: 98.46% match - root save-data, closest pointer, and z-distance registers remain shifted in nested grid traversal.
  */
 void GoalieSave::AddAreaToGrid(SaveData* pSaveData)
 {
@@ -1457,12 +1415,12 @@ void GoalieSave::AddAreaToGrid(SaveData* pSaveData)
     SaveData* pCurBot;
     SaveData* pRightCorner;
     SaveData* pNextRight;
+    SaveData* pClosest;
     SaveData* pNextNextRight;
     SaveData* pCurLeft;
     SaveData* pCurRight;
     SaveData* pCurUp;
     SaveData* pCurRightUp;
-    SaveData* pClosest;
     float fCloseDist;
 
     pCur = pSaveData;

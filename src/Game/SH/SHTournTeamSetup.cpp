@@ -2060,12 +2060,15 @@ void TournTeamSetupSceneV2::Proceed()
     {
         BaseCup* pCup = pGameInfo->mCurrentCup;
 
-        pCup->mRoundNumber = -4;
+        u16 numRounds = pCup->GetNumRounds();
+        s16 roundNumber = -4;
 
-        if (pCup->GetNumRounds() == 2)
+        if (numRounds == 2)
         {
-            pCup->mRoundNumber = -3;
+            roundNumber = -3;
         }
+
+        pCup->mRoundNumber = roundNumber;
 
         GameInfoManager* const pTournamentInfo = nlSingleton<GameInfoManager>::s_pInstance;
         u16 numPlayingTeams = pTournamentInfo->GetNumPlayingTeams();

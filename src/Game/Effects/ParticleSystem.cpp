@@ -322,12 +322,22 @@ void EmitHemisphericalPosition(nlVector3& vPosition, nlVector3& vDirection, Effe
     }
 }
 
+static void EmitSpindularPosition(nlVector3& vPosition, nlVector3& vDirection, EffectsTemplate* pTemplate, EffectsSpec* pSpec, const nlMatrix4& mLocalToWorld);
+
+static inline void RotateXYInPlace(nlVector3& v, float sn, float cs)
+{
+    float y = v.f.y;
+    float x = v.f.x;
+    v.f.x = (x * cs) + (-y * sn);
+    v.f.y = (x * sn) + (y * cs);
+}
+
 /**
  * Offset/Address/Size: 0x1C90 | 0x801F6DE8 | size: 0x34C
- * TODO: 97.91% match - register allocation diffs in tilt rotation and
- * hackyFacingAngle rotation blocks; one length-square instruction order diff remains.
+ * TODO: 98.53% match - register allocation diffs in tilt rotation and
+ * facing rotation blocks; one length-square instruction order diff remains.
  */
-void EmitSpindularPosition(nlVector3& vPosition, nlVector3& vDirection, EffectsTemplate* pTemplate, EffectsSpec* pSpec, const nlMatrix4& mLocalToWorld)
+static void EmitSpindularPosition(nlVector3& vPosition, nlVector3& vDirection, EffectsTemplate* pTemplate, EffectsSpec* pSpec, const nlMatrix4& mLocalToWorld)
 {
     nlVector3 localPos;
     nlVector3 localDir;
@@ -406,19 +416,8 @@ void EmitSpindularPosition(nlVector3& vPosition, nlVector3& vDirection, EffectsT
         {
             nlSinCos(&sin, &cos, hackyFacingAngle);
 
-            float dirY = vDirection.f.y;
-            float dirX = vDirection.f.x;
-            float newDirY = (dirX * sin) + (dirY * cos);
-            float newDirX = (dirX * cos) + (-dirY * sin);
-            vDirection.f.x = newDirX;
-            vDirection.f.y = newDirY;
-
-            float posY = vPosition.f.y;
-            float posX = vPosition.f.x;
-            float newPosY = (posX * sin) + (posY * cos);
-            float newPosX = (posX * cos) + (-posY * sin);
-            vPosition.f.x = newPosX;
-            vPosition.f.y = newPosY;
+            RotateXYInPlace(vDirection, sin, cos);
+            RotateXYInPlace(vPosition, sin, cos);
         }
 
         nlVec3Set(vPosition,
@@ -466,8 +465,8 @@ void ParticleSystem::CreateNewParticles(int numParticles)
     case Emitter_Spindle:
     {
         extern unsigned short hackyFacingAngle;
-        hackyFacingAngle = m_aFacing;
         emit = EmitSpindularPosition;
+        hackyFacingAngle = m_aFacing;
         break;
     }
     case Emitter_Hemisphere:

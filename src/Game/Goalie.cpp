@@ -1395,7 +1395,7 @@ void Goalie::InitActionPursueRecover()
 
 /**
  * Offset/Address/Size: 0x8878 | 0x8004B374 | size: 0xC70
- * TODO: 96.55% match - register allocation still diverges in navigation transition branches and blender setup.
+ * TODO: 96.92% match - register allocation still diverges in navigation transition branches and blender setup.
  */
 void Goalie::DoNavigation(float fDeltaT, float fIdleDistance, Goalie::eNaviMode naviMode)
 {
@@ -1933,7 +1933,7 @@ static inline float goalie_clamp_positive(float x)
 
 /**
  * Offset/Address/Size: 0x82F0 | 0x8004ADEC | size: 0x588
- * TODO: 97.9% match - floating-point register allocation mismatch in breakaway and desired-position calculations
+ * TODO: 98.2% match - floating-point register allocation mismatch in breakaway and desired-position calculations
  */
 void Goalie::FindDesiredGoaliePosition(nlVector3& pos, nlVector3& dir, nlVector3& focus, unsigned short& ang, const nlVector3* pThreatPos)
 {
@@ -1972,7 +1972,8 @@ void Goalie::FindDesiredGoaliePosition(nlVector3& pos, nlVector3& dir, nlVector3
     float goalLineX = cField::GetGoalLineX(1U);
     float absTargetY = (float)fabs(targetPos.f.y);
     float fNetY = cField::GetSidelineY(1U);
-    float limit = goalLineX - 3.0f * absTargetY / fNetY;
+    float three = 3.0f;
+    float limit = goalLineX - absTargetY * three / fNetY;
 
     if (targetPos.f.x > limit)
     {
@@ -2047,7 +2048,10 @@ void Goalie::FindDesiredGoaliePosition(nlVector3& pos, nlVector3& dir, nlVector3
     }
     else if (targetDist > 19.0f)
     {
-        goalieDist = 5.5f * (targetDist - 19.0f) * 0.25f + 2.5f;
+        float delta = targetDist - 19.0f;
+        float scaled = delta * 5.5f;
+        float quarter = 0.25f;
+        goalieDist = scaled * quarter + 2.5f;
     }
     else if (targetDist > 12.0f)
     {
@@ -2071,7 +2075,9 @@ void Goalie::FindDesiredGoaliePosition(nlVector3& pos, nlVector3& dir, nlVector3
         goalieDist = 0.5f;
     }
 
-    float ratio = (goalieDist + 0.5f) / (targetDist + 0.5f);
+    goalieDist += 0.5f;
+    targetDist += 0.5f;
+    float ratio = goalieDist / targetDist;
     float desiredZ = ratio * desiredVec.f.z + goalY;
     float desiredY = ratio * desiredVec.f.y + goalY;
     float desiredX = ratio * desiredVec.f.x + goalX;

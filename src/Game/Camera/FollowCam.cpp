@@ -51,6 +51,7 @@ void cFollowCamera::Update(float dt)
     cGlobalPad* pad;        // r29
     cCharacter* pCharacter; // r0
     float rx, ry;
+    float fScalar;
     nlMatrix4 m4Orient; // r1+0x14
 
     pad = cPadManager::GetPad(0);
@@ -161,12 +162,13 @@ void cFollowCamera::Update(float dt)
     const float dx = (m_v3OOIDampened.f.x - m_v3OOIDampenedPrev.f.x);
     const float dy = (m_v3OOIDampened.f.y - m_v3OOIDampenedPrev.f.y);
 
-    const float denom = nlSqrt(vx * vx + vy * vy, true);
-    const float t = (vx * dy + vy * dx) / (denom * denom);
+    fScalar = 0.0f;
+    const float denom = nlSqrt(fScalar + (vx * vx + vy * vy), true);
+    const float t = (fScalar + (vx * dy + vy * dx)) / (denom * denom);
 
     rx = dy - t * vx;
     ry = dx - t * vy;
-    const float len = nlSqrt(rx * rx + ry * ry, true);
+    const float len = nlSqrt(fScalar + (rx * rx + ry * ry), true);
 
     const float invDist = len / m_fOOIDistance;
     const float angleShortF = 10430.378f * invDist;

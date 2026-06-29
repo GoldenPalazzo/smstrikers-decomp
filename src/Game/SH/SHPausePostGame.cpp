@@ -112,6 +112,11 @@ PausePostGameScene::~PausePostGameScene()
     // EMPTY
 }
 
+static inline MenuItem<TLComponentInstance>* PausePostGameItemAt(MenuList<TLComponentInstance>& menu, int idx)
+{
+    return &menu.mMenuItems[idx];
+}
+
 /**
  * Offset/Address/Size: 0x608 | 0x8010770C | size: 0x187C
  */
@@ -141,6 +146,8 @@ void PausePostGameScene::SceneCreated()
     mButtons.mButtonInstance = pButtonComp;
     mButtons.SetState(ButtonComponent::BS_A_AND_B);
 
+    MenuItem<TLComponentInstance>* menuItem;
+
     for (int i = 0; i < 3; i++)
     {
         char menuname[64];
@@ -153,8 +160,9 @@ void PausePostGameScene::SceneCreated()
 
         instance->SetActiveSlide((i == 0) ? DoubleHighlite::SLIDE_IN : DoubleHighlite::SLIDE_OUT);
 
-        MenuItem<TLComponentInstance>* menuItem = &mMenuItems.mMenuItems[mMenuItems.mNumItemsAdded];
-        menuItem->mType = instance;
+        int idx = mMenuItems.mNumItemsAdded;
+        menuItem = PausePostGameItemAt(mMenuItems, idx);
+        mMenuItems.mMenuItems[idx].mType = instance;
         mMenuItems.mNumItemsAdded++;
 
         {

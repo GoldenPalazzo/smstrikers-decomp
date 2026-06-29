@@ -18,8 +18,7 @@ s32 g_pPadRemapArray[38] = {
 
 /**
  * Offset/Address/Size: 0x128 | 0x80193720 | size: 0xD74
- * TODO: 97.45% match - erase/insert setup still has swapped preserved registers
- * and the erase end pointer omits a null-check/data-pointer branch.
+ * TODO: 99.25% match - marker address add operands and loop branch target still differ.
  */
 template <>
 template <>
@@ -47,11 +46,30 @@ FormatImpl<BasicString<char, Detail::TempStringAllocator> >&
         if (markerEnd[2] != '}')
             continue;
 
-        mString.erase(&mString[0] + i, &mString[0] + i + 3);
+        char* eraseBegin;
+        char* eraseEnd;
+        mString[0];
+        eraseEnd = (mString.m_data ? mString.m_data->mData : (char*)0) + i + 3;
+        mString[0];
+        eraseBegin = (mString.m_data ? mString.m_data->mData : (char*)0) + i;
+        mString[0];
+        BasicStringData<char>* eraseData = mString.m_data;
+        int eraseSize = eraseEnd - eraseBegin;
+        int eraseOffset = eraseBegin - eraseData->mData;
+        const char* eraseIt = eraseEnd;
+        char* eraseAt = eraseData->mData + eraseOffset;
+        while (eraseIt != eraseData->mData + eraseData->mSize)
+        {
+            *eraseAt = *eraseIt;
+            eraseIt++;
+            eraseAt++;
+        }
+        eraseData->mSize -= eraseSize;
         mString[i];
         char* mStringData = mString.m_data ? mString.m_data->mData : 0;
-        char* insertBegin = &insert[0];
-        char* insertEndCow = &insert[(int)(insert.m_data ? insert.m_data->mSize - 1 : 0)];
+        insert[0];
+        char* insertBegin = insert.m_data ? insert.m_data->mData : 0;
+        insert[(int)(insert.m_data ? insert.m_data->mSize - 1 : 0)];
         mString.insert(mStringData + i, insertBegin, insert.m_data ? insert.m_data->mData + insert.m_data->mSize - 1 : (char*)0);
     }
 

@@ -1278,7 +1278,7 @@ void PowerupBase::Update(float dt)
 
 /**
  * Offset/Address/Size: 0x3DFC | 0x8005E6E8 | size: 0x608
- * TODO: 98.82% match - remaining second-loop index and chance accumulator register allocation diffs
+ * TODO: 98.90% match - remaining chance accumulator register allocation diffs
  */
 int PowerupBase::AwardPowerup(cTeam* pTeam)
 {
@@ -1287,6 +1287,7 @@ int PowerupBase::AwardPowerup(cTeam* pTeam)
     int nDifference;
     int nChanceForChainChomp;
     cTeam* pOtherTeam;
+    int j;
     cFielder* pCaptain;
     cFielder* pSideKick;
     int nChanceForStar;
@@ -1360,13 +1361,13 @@ int PowerupBase::AwardPowerup(cTeam* pTeam)
     nChanceForChainChomp = g_pGame->m_pGameTweaks->nChanceForChainChomp - nDifference;
 
     pOtherTeam = pTeam->GetOtherTeam();
-    for (int i = 0; i < 2; i++)
+    for (j = 0; j < 2; j++)
     {
-        if (pOtherTeam->GetPowerUpByIndex(i).eType == POWER_UP_CHAIN_CHOMP)
+        if (pOtherTeam->GetPowerUpByIndex(j).eType == POWER_UP_CHAIN_CHOMP)
         {
             nChanceForChainChomp = 0;
         }
-        if (pTeam->GetPowerUpByIndex(i).eType == POWER_UP_CHAIN_CHOMP)
+        if (pTeam->GetPowerUpByIndex(j).eType == POWER_UP_CHAIN_CHOMP)
         {
             nChanceForChainChomp = 0;
         }

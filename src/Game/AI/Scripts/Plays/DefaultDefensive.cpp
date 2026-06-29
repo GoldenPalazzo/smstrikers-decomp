@@ -810,8 +810,9 @@ FuzzyVariant Fuzzy::AttackBallOwner(float fConfidence, cDecisionEntity* pEntity)
     float fFacing1 = Facing(g_pScriptCurrentFielder, g_pScriptBallOwner);
     float fFacing2 = Facing(g_pScriptBallOwner, g_pScriptCurrentFielder);
 
-    float fW1 = fFacing1 * 0.5f;
-    float fTrueConfidence = fW1 + fFacing2 * 0.3f + fDist * 0.2f;
+    float k5 = 0.5f, k3 = 0.3f, k2 = 0.2f;
+    float fW1 = fFacing1 * k5;
+    float fTrueConfidence = fW1 + fFacing2 * k3 + fDist * k2;
     float fFalseConfidence = 1.0f - fTrueConfidence;
 
     float fMin = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
@@ -828,8 +829,15 @@ FuzzyVariant Fuzzy::AttackBallOwner(float fConfidence, cDecisionEntity* pEntity)
         float fNotFacingSideline = 1.0f - FacingSideline(g_pScriptCurrentFielder);
         float fTrueConfidence2 = 1.0f - RepeatingLastDesire(g_pScriptCurrentFielder, edSlideAttack);
 
-        if (fTrueConfidence2 > fNotFacingSideline)
+        if (fTrueConfidence2 <= fNotFacingSideline)
+        {
+            asm { b _abo_keep2 }
+        }
+        else
+        {
             fTrueConfidence2 = fNotFacingSideline;
+        }
+    _abo_keep2:;
 
         float fFalseConfidence2 = 1.0f - fTrueConfidence2;
         float fMin2 = (fTrueConfidence2 <= fFalseConfidence2) ? fTrueConfidence2 : fFalseConfidence2;
@@ -843,10 +851,11 @@ FuzzyVariant Fuzzy::AttackBallOwner(float fConfidence, cDecisionEntity* pEntity)
             if (fConfidence < fTrueConfidence2 && fTrueConfidence2 < 0.2f)
                 fConfidence = fConfidence * fRatio2;
 
-            if (0.0f >= fConfidence)
+            float fQ = fConfidence;
+            if (0.0f >= fQ)
                 fBestConfidence = 0.0f;
             else
-                fBestConfidence = fConfidence;
+                fBestConfidence = fQ;
 
             pEntity->QueueActionSetDesire(15, fConfidence, 0.0f, FuzzyVariant(g_pScriptBallOwner), fvNotSet);
 
@@ -857,8 +866,15 @@ FuzzyVariant Fuzzy::AttackBallOwner(float fConfidence, cDecisionEntity* pEntity)
         float fNotSeparating = 1.0f - SeparatingFrom(g_pScriptCurrentFielder, g_pScriptBallOwner);
         float fTrueConfidence3 = 1.0f - RepeatingLastDesire(g_pScriptCurrentFielder, edHeavyAttack);
 
-        if (fTrueConfidence3 > fNotSeparating)
+        if (fTrueConfidence3 <= fNotSeparating)
+        {
+            asm { b _abo_keep3 }
+        }
+        else
+        {
             fTrueConfidence3 = fNotSeparating;
+        }
+    _abo_keep3:;
 
         float fFalseConfidence3 = 1.0f - fTrueConfidence3;
         float fMin3 = (fTrueConfidence3 <= fFalseConfidence3) ? fTrueConfidence3 : fFalseConfidence3;

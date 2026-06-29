@@ -67,7 +67,7 @@ FuzzyVariant Fuzzy::AbortLoosePlay(cDecisionEntity*)
 
 /**
  * Offset/Address/Size: 0x0 | 0x8008B084 | size: 0x15CC
- * TODO: 98.65% match - remaining diffs include f-register allocation in
+ * TODO: 98.89% match - remaining diffs include f-register allocation in
  * opponent and zone min/max temporaries.
  */
 FuzzyVariant Fuzzy::DefaultLoosePlay(cDecisionEntity* pDecision)
@@ -140,7 +140,10 @@ FuzzyVariant Fuzzy::DefaultLoosePlay(cDecisionEntity* pDecision)
     }
 
     FuzzyVariant bestBallInterceptor = GetBestBallInterceptor(g_pScriptCurrentTeam);
-    fTrueConfidence = (bestBallInterceptor.mData.u == (unsigned long)g_pScriptCurrentFielder) ? 1.0f : 0.0f;
+    if (bestBallInterceptor.mData.u == (unsigned long)g_pScriptCurrentFielder)
+        fTrueConfidence = 1.0f;
+    else
+        fTrueConfidence = 0.0f;
     fFalseConfidence = 1.0f - fTrueConfidence;
     fMin = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
     fMax = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
@@ -459,9 +462,9 @@ FuzzyVariant Fuzzy::DefaultLoosePlay(cDecisionEntity* pDecision)
     }
 
     fNearBall = 1.0f - fBestConfidence;
-    fNotNearBall = 1.0f - fNearBall;
-    fMin10 = (fNearBall <= fNotNearBall) ? fNearBall : fNotNearBall;
-    fMax10 = (fNearBall >= fNotNearBall) ? fNearBall : fNotNearBall;
+    float fFallbackNotNearBall = 1.0f - fNearBall;
+    fMin10 = (fNearBall <= fFallbackNotNearBall) ? fNearBall : fFallbackNotNearBall;
+    fMax10 = (fNearBall >= fFallbackNotNearBall) ? fNearBall : fFallbackNotNearBall;
     fBranchRatio10 = fMin10 / fMax10;
 
     if (fNearBall > 0.0f)

@@ -724,7 +724,7 @@ void RecordExcitingEvent()
 
 /**
  * Offset/Address/Size: 0x0 | 0x80149154 | size: 0xFF8
- * TODO: 94.57% match - stack frame is 0x50 instead of 0x30 and case 63/NIS event data uses r29 instead of r31.
+ * TODO: 99.98% match - goalpost timer static-local relocations still differ.
  */
 static void AudioScriptEventHandler(Event* pEvent, void*)
 {
@@ -876,6 +876,7 @@ static void AudioScriptEventHandler(Event* pEvent, void*)
         GET_EVENT_DATA(ShotAtGoalData, pData, 0x14A);
         AudioScriptEventMgr::FireEvent(AudioScriptEventMgr::AE_Shot,
             (unsigned int)pData->pShooter->m_pTeam->m_nSide != 0 ? AudioScriptEventMgr::AET_Away : AudioScriptEventMgr::AET_Home);
+        void RecordExcitingEvent();
         RecordExcitingEvent();
         return;
     }

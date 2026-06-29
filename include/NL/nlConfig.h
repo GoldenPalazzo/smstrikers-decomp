@@ -217,7 +217,20 @@ inline BasicString<char, Detail::TempStringAllocator> Config::Get<BasicString<ch
     if (tvp.tag == NULL)
     {
         Set(key, defaultValue);
+#ifdef NLCONFIG_NO_GET_COPY_REREAD
+        BasicStringData<char>* data = defaultValue.m_data;
+        if (data != 0)
+        {
+            data->mRefCount++;
+        }
+        else
+        {
+            data = 0;
+        }
+        return BasicString<char, Detail::TempStringAllocator>(data);
+#else
         return defaultValue;
+#endif
     }
     return tvp.Get<BasicString<char, Detail::TempStringAllocator> >();
 }

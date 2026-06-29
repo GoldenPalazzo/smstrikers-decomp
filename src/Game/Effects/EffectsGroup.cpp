@@ -356,41 +356,36 @@ bool parse_spec(SimpleParser* parser, EffectsSpec& spec)
 
 /**
  * Offset/Address/Size: 0x80C | 0x801F3254 | size: 0x224
- * TODO: 94.05% match - still blocked by MWCC register/induction choices:
- * parser stays in r31 with pointer walk (`stw` + pointer increment) instead of target's r28 parser + `stwx` with byte offset,
- * plus AVL search keeps hash/cmp/found in r4/r0/r28 with an extra post-loop `node != nullptr` check.
+ * TODO: 99.71% match - AVL lookup keeps hash key and compare result in swapped registers.
  */
 EffectsTerrainSpec* parse_terrain_spec(SimpleParser* parser)
 {
     unsigned long terrainIDs[256];
-    unsigned long offset = 0;
-    int numTerrains = 0;
-    SimpleParser* p = parser;
+    unsigned long numTerrains = 0;
+    char* token;
 
     while (true)
     {
-        char* token = p->NextTokenOnLine(true);
+        token = parser->NextTokenOnLine(true);
         if (token == nullptr)
         {
             break;
         }
 
-        terrainIDs[offset >> 2] = nlStringLowerHash(token);
-        numTerrains++;
-        offset += 4;
+        terrainIDs[numTerrains++] = nlStringLowerHash(token);
     }
 
-    void* specMem = nlMalloc(8, 8, false);
+    void* specMem = nlMalloc(sizeof(EffectsTerrainSpec), 8, false);
     EffectsTerrainSpec* pSpec = (EffectsTerrainSpec*)specMem;
     if (specMem != nullptr)
     {
-        pSpec->m_pTerrainIDs = nullptr;
-        pSpec->m_uNumTerrains = 0;
+        ((EffectsTerrainSpec*)specMem)->m_pTerrainIDs = nullptr;
+        ((EffectsTerrainSpec*)specMem)->m_uNumTerrains = 0;
     }
 
     pSpec->m_uNumTerrains = numTerrains;
-    pSpec->m_pTerrainIDs = (unsigned long*)nlMalloc(numTerrains * 4, 8, false);
-    memcpy(pSpec->m_pTerrainIDs, terrainIDs, pSpec->m_uNumTerrains * 4);
+    pSpec->m_pTerrainIDs = (unsigned long*)nlMalloc(numTerrains * sizeof(unsigned long), 8, false);
+    memcpy(pSpec->m_pTerrainIDs, terrainIDs, numTerrains << 2);
 
     RunningChecksum checksum;
     checksum.ChecksumInt(pSpec->m_uNumTerrains);
@@ -430,7 +425,7 @@ EffectsTerrainSpec* parse_terrain_spec(SimpleParser* parser)
             pSpec->m_pTerrainIDs = nullptr;
         }
 
-        delete pSpec;
+        ::operator delete(pSpec);
     }
 
     return existingSpec;

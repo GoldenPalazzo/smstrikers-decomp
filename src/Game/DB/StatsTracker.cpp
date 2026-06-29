@@ -67,8 +67,8 @@ NLFormatImpl& NLFormatImpl::operator% <const char*>(const char* const& t)
 
 /**
  * Offset/Address/Size: 0x1038 | 0x80187BD4 | size: 0xD74
- * TODO: 96.56% match - reconstructed-template wall: marker checks emit indexed
- * lbzx vs target base+disp lbz, and insert lacks a null-check branch.
+ * TODO: 97.45% match - remaining diffs are add operand order, insert end
+ * null-check branches, and r26/r27 allocation in insert/copy paths.
  */
 template <>
 NLFormatImpl& NLFormatImpl::operator% <float>(const float& t)
@@ -83,21 +83,23 @@ NLFormatImpl& NLFormatImpl::operator% <float>(const float& t)
         if (i + 1 >= (mString.m_data ? mString.m_data->mSize - 1 : 0))
             continue;
 
-        if (mString[i + 1] - '0' != mCurrentPos)
+        char* marker = &mString[i];
+        if (mCurrentPos != marker[1] - '0')
             continue;
 
         if (i + 2 >= (mString.m_data ? mString.m_data->mSize - 1 : 0))
             continue;
 
-        if (mString[i + 2] != (char)'}')
+        char* markerEnd = &mString[i];
+        if (markerEnd[2] != (char)'}')
             continue;
 
-        mString.erase(&mString[i], &mString[i + 3]);
+        mString.erase(&mString[0] + i, &mString[0] + i + 3);
         mString[i];
         char* mStringData = mString.m_data ? mString.m_data->mData : 0;
         char* insertBegin = &insert[0];
         char* insertEndCow = &insert[(int)(insert.m_data ? insert.m_data->mSize - 1 : 0)];
-        mString.insert(mStringData + i, insertBegin, insert.m_data ? &insert.m_data->mData[insert.m_data->mSize - 1] : (char*)0);
+        mString.insert(mStringData + i, insertBegin, insert.m_data ? insert.m_data->mData + insert.m_data->mSize - 1 : (char*)0);
     }
 
     mCurrentPos++;
@@ -2436,46 +2438,17 @@ void Format(StringType& result,
 
 /**
  * Offset/Address/Size: 0x3DC | 0x801816A8 | size: 0x2D0
- * TODO: 98.86% match - remaining r29/r31 allocation for file handle, format cursor, and final string release
+ * TODO: 99.22% match - remaining r29/r31 allocation for file handle and format cursor
  */
 void StatsTracker::WriteCurrentlyPlaying() const
 {
-    const char* formatTemplate;
-    FILE* file = fopen("currently_playing.txt", "wt");
-    if (file == 0)
+    FILE* f = fopen("currently_playing.txt", "wt");
+    if (f == 0)
     {
         return;
     }
 
-    BasicStringInternal* formatData = (BasicStringInternal*)nlMalloc(0x10, 8, true);
-    if (formatData != 0)
-    {
-        formatTemplate = "Home: {0} with {1}\nAway: {2} with {3}\nStadium: {4}\n";
-        formatData->mData = 0;
-        formatData->mSize = 0;
-        formatData->mCapacity = 0;
-
-        const char* p = formatTemplate;
-        while ((s8)*p++ != 0)
-        {
-            formatData->mSize++;
-        }
-
-        formatData->mSize++;
-        formatData->mData = (char*)nlMalloc(formatData->mSize + 1, 8, true);
-        formatData->mCapacity = formatData->mSize;
-
-        int i = 0;
-        while (i < formatData->mSize)
-        {
-            formatData->mData[i] = *formatTemplate++;
-            i++;
-        }
-
-        formatData->mRefCount = 1;
-    }
-
-    BasicString<char, Detail::TempStringAllocator> s = Format(BasicString<char, Detail::TempStringAllocator>(formatData),
+    BasicString<char, Detail::TempStringAllocator> s = Format(BasicString<char, Detail::TempStringAllocator>("Home: {0} with {1}\nAway: {2} with {3}\nStadium: {4}\n"),
         GetTeamName(nlSingleton<GameInfoManager>::s_pInstance->GetTeam(0)),
         GetSidekickName(nlSingleton<GameInfoManager>::s_pInstance->GetSidekick(0)),
         GetTeamName(nlSingleton<GameInfoManager>::s_pInstance->GetTeam(1)),
@@ -2492,9 +2465,8 @@ void StatsTracker::WriteCurrentlyPlaying() const
         len = 0;
     }
 
-    const char* str = s.c_str();
-    fwrite(str, 1, len, file);
-    fclose(file);
+    fwrite(s.c_str(), 1, len, f);
+    fclose(f);
 }
 
 /**

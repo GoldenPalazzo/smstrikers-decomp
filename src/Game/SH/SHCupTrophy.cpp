@@ -1263,31 +1263,7 @@ void CupTrophyScene::SetHistory(Spoil& spoil)
 
         ((TLInstance*)pText)->m_bVisible = true;
 
-        BasicStringData<char>* zeroData = (BasicStringData<char>*)nlMalloc(0x10, 8, true);
-        if (zeroData != 0)
-        {
-            zeroData->mData = 0;
-            zeroData->mSize = 0;
-            zeroData->mCapacity = 0;
-            const char* str = "0";
-            const char* ptr = str;
-            while ((signed char)*ptr++ != 0)
-            {
-                zeroData->mSize++;
-            }
-            zeroData->mSize++;
-            zeroData->mData = (char*)nlMalloc(zeroData->mSize + 1, 8, true);
-            zeroData->mCapacity = zeroData->mSize;
-            int idx = 0;
-            while (idx < zeroData->mSize)
-            {
-                zeroData->mData[idx] = *str;
-                idx++;
-                str++;
-            }
-            zeroData->mRefCount = 1;
-        }
-        BasicString<char, Detail::TempStringAllocator> zero(zeroData);
+        BasicString<char, Detail::TempStringAllocator> zero("0");
 
         CupRecord* pRecord = &spoil.mCupHistory[record];
 
@@ -1313,32 +1289,7 @@ void CupTrophyScene::SetHistory(Spoil& spoil)
         {
             unsigned long locHash = 0x4EEF03CB;
             const unsigned short* locString = LookupCupTrophyLoc(locHash);
-            BasicStringData<unsigned short>* data = (BasicStringData<unsigned short>*)nlMalloc(0x10, 8, true);
-            if (data != 0)
-            {
-                data->mData = 0;
-                data->mSize = 0;
-                data->mCapacity = 0;
-                const unsigned short* p = locString;
-                while (*p++ != 0)
-                {
-                    data->mSize++;
-                }
-                data->mSize++;
-                data->mData = (unsigned short*)nlMalloc((data->mSize + 1) * 2, 8, true);
-                data->mCapacity = data->mSize;
-                int j = 0;
-                int k = j;
-                while (j < data->mSize)
-                {
-                    *(unsigned short*)((char*)data->mData + k) = *locString;
-                    j++;
-                    locString++;
-                    k += 2;
-                }
-                data->mRefCount = 1;
-            }
-            BasicString<unsigned short, Detail::TempStringAllocator> unformatted(data);
+            BasicString<unsigned short, Detail::TempStringAllocator> unformatted(locString);
 
             unsigned long charNameHash = GetLOCCharacterName((eTeamID)pRecord->mTeam, true, false);
             const unsigned short* charNameStr = LookupCupTrophyLoc(charNameHash);
@@ -1352,32 +1303,7 @@ void CupTrophyScene::SetHistory(Spoil& spoil)
         {
             unsigned long locHash = 0xB4B37E9E;
             const unsigned short* locString = LookupCupTrophyLoc(locHash);
-            BasicStringData<unsigned short>* data = (BasicStringData<unsigned short>*)nlMalloc(0x10, 8, true);
-            if (data != 0)
-            {
-                data->mData = 0;
-                data->mSize = 0;
-                data->mCapacity = 0;
-                const unsigned short* p = locString;
-                while (*p++ != 0)
-                {
-                    data->mSize++;
-                }
-                data->mSize++;
-                data->mData = (unsigned short*)nlMalloc((data->mSize + 1) * 2, 8, true);
-                data->mCapacity = data->mSize;
-                int j = 0;
-                int k = j;
-                while (j < data->mSize)
-                {
-                    *(unsigned short*)((char*)data->mData + k) = *locString;
-                    j++;
-                    locString++;
-                    k += 2;
-                }
-                data->mRefCount = 1;
-            }
-            BasicString<unsigned short, Detail::TempStringAllocator> unformatted(data);
+            BasicString<unsigned short, Detail::TempStringAllocator> unformatted(locString);
 
             unsigned long charNameHash = GetLOCCharacterName((eTeamID)pRecord->mTeam, true, false);
             const unsigned short* charNameStr = LookupCupTrophyLoc(charNameHash);

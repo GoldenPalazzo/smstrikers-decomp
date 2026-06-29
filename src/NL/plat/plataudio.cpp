@@ -145,11 +145,13 @@ SFXEmitter* GetSFXEmitter(unsigned long id)
 
 /**
  * Offset/Address/Size: 0x15C | 0x801C4958 | size: 0x35C
- * TODO: 94.37% match - remaining reset-block register allocation around emitter pointer and debug print
+ * TODO: 96.81% match - remaining reset-block register allocation around emitter pointer and debug print
  */
 SFXEmitter* GetFreeEmitter(unsigned long& index)
 {
     int i;
+    int emitterOffset;
+    SND_PARAMETER_INFO** ppInfo;
 
     index = 0;
     for (i = 0; i < 64; i++)
@@ -157,7 +159,8 @@ SFXEmitter* GetFreeEmitter(unsigned long& index)
         if (!sndCheckEmitter((SND_EMITTER*)&gEmitters[i]) && sndFXCheck(sndEmitterVoiceID((SND_EMITTER*)&gEmitters[i])) == -1
             && !gEmitters[i].bIsStopping && !gEmitters[i].bInUse)
         {
-            sndRemoveEmitter((SND_EMITTER*)&gEmitters[i]);
+            emitterOffset = i * sizeof(SFXEmitter);
+            sndRemoveEmitter((SND_EMITTER*)((u8*)gEmitters + emitterOffset));
             gEmitters[i].bInUse = true;
             index = i;
             InitEmitter(i);
@@ -182,7 +185,7 @@ SFXEmitter* GetFreeEmitter(unsigned long& index)
             i++;
         }
 
-        int emitterOffset = minIndex * sizeof(SFXEmitter);
+        emitterOffset = minIndex * sizeof(SFXEmitter);
         sndRemoveEmitter((SND_EMITTER*)((u8*)gEmitters + emitterOffset));
         gEmitters[minIndex].bInUse = true;
         index = minIndex;
@@ -204,13 +207,14 @@ SFXEmitter* GetFreeEmitter(unsigned long& index)
         gEmitters[minIndex].dir.vDir.f.y = 0.0f;
         gEmitters[minIndex].dir.vDir.f.z = 0.0f;
         gEmitters[minIndex].posUpdateMethod = NONE;
-        if (gEmitters[minIndex].pMIDIControllerInfo != NULL)
+        ppInfo = &gEmitters[minIndex].pMIDIControllerInfo;
+        if (*ppInfo != NULL)
         {
-            if (gEmitters[minIndex].pMIDIControllerInfo->paraArray != NULL)
-                delete[] (char*)gEmitters[minIndex].pMIDIControllerInfo->paraArray;
-            delete gEmitters[minIndex].pMIDIControllerInfo;
+            if ((*ppInfo)->paraArray != NULL)
+                delete[] (char*)(*ppInfo)->paraArray;
+            delete *ppInfo;
         }
-        gEmitters[minIndex].pMIDIControllerInfo = NULL;
+        *ppInfo = NULL;
         tDebugPrintManager::Print(DC_SOUND, "Audio::GetFreeEmitter(): Ran out of free emitters, killing oldest one...\n");
     }
 
@@ -1596,7 +1600,7 @@ static inline void (*InitAuxEffect(MusyXEffectType type, void* data))(u8 reason,
 
 /**
  * Offset/Address/Size: 0x2028 | 0x801C6824 | size: 0x244
- * TODO: 98.69% match - callback occupies r31 instead of r25, shifting the type/data/arg2/arg3 params and the settings pointer up one register.
+ * TODO: 99.31% match - default InitAuxEffect path still clears callback before the final NULL check.
  */
 static bool AddAuxEffect(MusyXEffectType type, void* data, bool arg2, unsigned char arg3)
 {
@@ -1606,8 +1610,8 @@ static bool AddAuxEffect(MusyXEffectType type, void* data, bool arg2, unsigned c
         return false;
     }
 
-    MusyXEffectType* pAuxEffect;
     void* pAuxEffectSettings;
+    MusyXEffectType* pAuxEffect;
     void (*callback)(u8 reason, SND_AUX_INFO* info, void* user);
 
     if (PlatAudio::gUsingDolbyProLogic2)

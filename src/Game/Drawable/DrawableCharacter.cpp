@@ -616,7 +616,7 @@ static void FindBoundingSphereAccurate(nlVector3* pOutSphere, float* pOutRadius,
 
 /**
  * Offset/Address/Size: 0x1AE4 | 0x8011A994 | size: 0x808
- * TODO: 94.90% match - remaining this/model register swap and debug/shadow register ordering.
+ * TODO: 99.10% match - detail texture load order, debug sphere model save, and shadow light Y/Z register coloring.
  */
 void DrawableCharacter::SendToGl(const cCharacter& character) const
 {
@@ -843,10 +843,10 @@ void DrawableCharacter::SendToGl(const cCharacter& character) const
 
                 for (int i = 0; i < numBoneVolumePoints; i++)
                 {
-                    float dx = points[i].f.x - vCenter.f.x;
-                    float dy = points[i].f.y - vCenter.f.y;
-                    float dz = points[i].f.z - vCenter.f.z;
-                    float distSq = dx * dx + dy * dy + dz * dz;
+                    float distSq = nlGetLengthSquared3D(
+                        points[i].f.x - vCenter.f.x,
+                        points[i].f.y - vCenter.f.y,
+                        points[i].f.z - vCenter.f.z);
                     maxDistSq = (maxDistSq >= distSq) ? maxDistSq : distSq;
                 }
 
@@ -860,9 +860,8 @@ void DrawableCharacter::SendToGl(const cCharacter& character) const
             u32 endTick = nlGetTicker();
             u32 tickDiff = nlSubtractTicks(startTick, endTick);
 
-            counter++;
             tDiff += tickDiff;
-            if (counter >= 0x1E0)
+            if (++counter >= 0x1E0)
             {
                 float ms = nlGetTickerDifference(0, tDiff);
                 ms = ms / (float)counter;
@@ -878,7 +877,8 @@ void DrawableCharacter::SendToGl(const cCharacter& character) const
             u32 debugColour = debugColourValue;
             void* pConstantColour;
             glModelPacket* pSpherePacket;
-            glModel* pSphereModel = glModelDup(glInventory.GetModel(nlStringHash("debug/sphere")), true);
+            unsigned long sphereHash = nlStringHash("debug/sphere");
+            glModel* pSphereModel = glModelDup(glInventory.GetModel(sphereHash), true);
 
             sphereWorldMatrix.SetIdentity();
             sphereWorldMatrix.f.m41 = vCenter.f.x;
@@ -951,20 +951,18 @@ void DrawableCharacter::SendToGl(const cCharacter& character) const
                 characterSizeIndex = charSizes[NUM_FIELDER_CLASSES];
             }
 
-            fRadius *= g_fRadiusScale;
-            fHeight *= s_fHeightFudge;
-            float lightX = pLight->m_worldPosition.f.x;
-            float lightY = pLight->m_worldPosition.f.y;
             float lightZ = pLight->m_worldPosition.f.z;
+            float lightY = pLight->m_worldPosition.f.y;
+            float lightX = pLight->m_worldPosition.f.x;
 
             params.vLight.f.x = lightX;
             params.vLight.f.y = lightY;
             params.vLight.f.z = lightZ;
             params.vLight.f.w = 1.0f;
             params.vPosition = mBip01Position;
-            params.fRadius = fRadius;
-            params.fHeight = fHeight;
-            params.fWidth = fHeight;
+            params.fRadius = g_fRadiusScale * fRadius;
+            params.fHeight = s_fHeightFudge * fHeight;
+            params.fWidth = params.fHeight;
             params.pModel = pModel;
             params.nPartitionIndex = ((int (*)())GetShadowPartitionIndex)();
             params.nVisibleInterval = g_nOnscreenUpdate[characterSizeIndex];
@@ -1083,27 +1081,27 @@ void DrawableCharacter::Blend(const float* blendFactors, const DrawableCharacter
     const float one = 1.0f;
     const float rhsWeight = *blendFactors;
     float oneMinusT = one - rhsWeight;
-    cPoseAccumulator* lhsPoseAccum = lhs.mPoseAccumulator;
-    cPoseAccumulator* rhsPoseAccum = rhs.mPoseAccumulator;
+    RotAccum* lhsRot;
+    RotAccum* rhsRot;
     for (int i = 0; i < mPoseAccumulator->GetNumNodes(); i++)
     {
-        RotAccum* lhsRot = &lhsPoseAccum->m_rot.mData[i];
-        RotAccum* rhsRot = &rhsPoseAccum->m_rot.mData[i];
+        lhsRot = &lhs.mPoseAccumulator->m_rot.mData[i];
+        rhsRot = &rhs.mPoseAccumulator->m_rot.mData[i];
         float rhsRotAroundZWeight = rhsRot->rotAroundZAccumulatedWeight * rhsWeight;
         mPoseAccumulator->BlendRotAroundZ(i, lhsRot->rotAroundZ, lhsRot->rotAroundZAccumulatedWeight * oneMinusT);
         mPoseAccumulator->BlendRotAroundZ(i, rhsRot->rotAroundZ, rhsRotAroundZWeight);
         float rhsQuatWeight = rhsRot->quatAccumulatedWeight * rhsWeight;
         mPoseAccumulator->BlendRot(i, &lhsRot->q, lhsRot->quatAccumulatedWeight * oneMinusT, false);
         mPoseAccumulator->BlendRot(i, &rhsRot->q, rhsQuatWeight, false);
-        mPoseAccumulator->BlendTrans(i, &lhsPoseAccum->m_trans.mData[i].t, 1.0f - *blendFactors, false);
-        mPoseAccumulator->BlendTrans(i, &rhsPoseAccum->m_trans.mData[i].t, *blendFactors, false);
-        mPoseAccumulator->BlendScale(i, &lhsPoseAccum->m_scale.mData[i].s, 1.0f - *blendFactors, false);
-        mPoseAccumulator->BlendScale(i, &rhsPoseAccum->m_scale.mData[i].s, *blendFactors, false);
+        mPoseAccumulator->BlendTrans(i, &lhs.mPoseAccumulator->m_trans.mData[i].t, 1.0f - *blendFactors, false);
+        mPoseAccumulator->BlendTrans(i, &rhs.mPoseAccumulator->m_trans.mData[i].t, *blendFactors, false);
+        mPoseAccumulator->BlendScale(i, &lhs.mPoseAccumulator->m_scale.mData[i].s, 1.0f - *blendFactors, false);
+        mPoseAccumulator->BlendScale(i, &rhs.mPoseAccumulator->m_scale.mData[i].s, *blendFactors, false);
     }
     oneMinusT = one - *blendFactors;
     t = *blendFactors;
-    lhsPoseAccum = lhs.mPoseAccumulator;
-    rhsPoseAccum = rhs.mPoseAccumulator;
+    cPoseAccumulator* lhsPoseAccum = lhs.mPoseAccumulator;
+    cPoseAccumulator* rhsPoseAccum = rhs.mPoseAccumulator;
     int j = 0;
     for (int i = 0; i < 2; i++)
     {

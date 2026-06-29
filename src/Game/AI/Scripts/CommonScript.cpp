@@ -600,6 +600,8 @@ FuzzyVariant Fuzzy::ShouldIMarkBallOwner(cFielder* pFielder)
 
 /**
  * Offset/Address/Size: 0xC144 | 0x80076314 | size: 0x1044
+ * TODO: 96.72% match - remaining cache pointer/fielder register allocation
+ * and best-confidence temporary registers differ.
  */
 FuzzyVariant Fuzzy::ShouldIAttemptOneTimer(cFielder* TheFielder)
 {
@@ -608,102 +610,16 @@ FuzzyVariant Fuzzy::ShouldIAttemptOneTimer(cFielder* TheFielder)
     float fConfidence = 1.0f;
     float fBestConfidence = 0.0f;
 
-    FuzzyVariant fvFielder((cPlayer*)TheFielder);
-    unsigned long hash = (unsigned long)ShouldIAttemptOneTimer;
-    hash += ((Variant*)&fvFielder)->GetHash();
-    FuzzyVariant fvFielder2((cPlayer*)TheFielder);
+    const FuzzyVariant& fvFielder = FuzzyVariant((cPlayer*)TheFielder);
+    volatile unsigned long funcAddr = (unsigned long)ShouldIAttemptOneTimer;
+    unsigned long hash = funcAddr + ((Variant*)&fvFielder)->GetHash();
+    FuzzyVariant((cPlayer*)TheFielder);
 
-    ScriptQuestionCache* cache = nlSingleton<ScriptQuestionCache>::s_pInstance;
-    cache->mTotalLookups++;
-
-    unsigned char lookupFound;
-    FuzzyVariant* pValue;
-
-    if (g_bScriptQuestionCachingUseSTD)
+    if (ScriptQuestionCache::Instance()->Lookup(hash, bestValue, NULL))
     {
-        std::map<unsigned long, FuzzyVariant>::iterator stdIt = cache->mQuestionCacheMapSTD.find(hash);
-        if (*(StdMapNodeBase**)&stdIt != &((StdMapTree*)&cache->mQuestionCacheMapSTD)->x4)
-        {
-            StdMapNode* stdFound = *(StdMapNode**)&stdIt;
-            cache->mCacheHits++;
-            bestValue = stdFound->value;
-            lookupFound = 1;
-        }
-        else
-        {
-            lookupFound = 0;
-        }
-    }
-    else
-    {
-        AVLTreeEntry<unsigned long, FuzzyVariant>* node = cache->mQuestionCacheMap.m_Root;
-        unsigned long key = hash;
-
-        while (node != NULL)
-        {
-            int cmpResult;
-            if (key == node->key)
-            {
-                cmpResult = 0;
-            }
-            else if (key < node->key)
-            {
-                cmpResult = -1;
-            }
-            else
-            {
-                cmpResult = 1;
-            }
-
-            if (cmpResult == 0)
-            {
-                if (&pValue != NULL)
-                {
-                    pValue = &node->value;
-                }
-                lookupFound = 1;
-                goto found_done;
-            }
-
-            if (cmpResult < 0)
-            {
-                node = (AVLTreeEntry<unsigned long, FuzzyVariant>*)node->node.left;
-            }
-            else
-            {
-                node = (AVLTreeEntry<unsigned long, FuzzyVariant>*)node->node.right;
-            }
-        }
-
-        lookupFound = 0;
-
-    found_done:
-
-        if (lookupFound)
-        {
-            cache->mCacheHits++;
-            bestValue = *pValue;
-        }
-    }
-
-    if (lookupFound)
-    {
-        unsigned long hashCopy1 = hash;
-        if (g_bScriptQuestionCachingOn)
-        {
-            if (g_bScriptQuestionCachingUseSTD)
-            {
-                std::pair<const unsigned long, FuzzyVariant>& pair = cache->mQuestionCacheMapSTD.tree_.find_or_insert<unsigned long, FuzzyVariant>(hashCopy1);
-                pair.second = bestValue;
-            }
-            else
-            {
-                AVLTreeNode* existingNode1;
-                cache->mQuestionCacheMap.AddAVLNode((AVLTreeNode**)&cache->mQuestionCacheMap.m_Root, (void*)&hashCopy1, (void*)&bestValue, &existingNode1, cache->mQuestionCacheMap.m_NumElements);
-                if (existingNode1 == NULL)
-                    cache->mQuestionCacheMap.m_NumElements++;
-            }
-        }
+        bestValue.Confidence = bestValue.Confidence;
+        const FuzzyVariant& cacheValue = bestValue;
+        ScriptQuestionCache::Instance()->AddToCache(hash, cacheValue, NULL);
         return bestValue;
     }
 
@@ -905,23 +821,8 @@ FuzzyVariant Fuzzy::ShouldIAttemptOneTimer(cFielder* TheFielder)
 
     bestValue.Confidence = fBestConfidence;
 
-    unsigned long hashCopy2 = hash;
-    if (g_bScriptQuestionCachingOn)
-    {
-        if (g_bScriptQuestionCachingUseSTD)
-        {
-            std::pair<const unsigned long, FuzzyVariant>& pair = cache->mQuestionCacheMapSTD.tree_.find_or_insert<unsigned long, FuzzyVariant>(hashCopy2);
-            pair.second = bestValue;
-        }
-        else
-        {
-            AVLTreeNode* existingNode2;
-            cache->mQuestionCacheMap.AddAVLNode((AVLTreeNode**)&cache->mQuestionCacheMap.m_Root, (void*)&hashCopy2, (void*)&bestValue, &existingNode2, cache->mQuestionCacheMap.m_NumElements);
-            if (existingNode2 == NULL)
-                cache->mQuestionCacheMap.m_NumElements++;
-        }
-    }
-
+    const FuzzyVariant& cacheValue = bestValue;
+    ScriptQuestionCache::Instance()->AddToCache(hash, cacheValue, NULL);
     return bestValue;
 }
 
@@ -2664,7 +2565,7 @@ FuzzyVariant Fuzzy::GetBestPassReceiveAction(cFielder* TheFielder)
 
 /**
  * Offset/Address/Size: 0x3FD0 | 0x8006E1A0 | size: 0x17F4
- * TODO: 96.97% match - remaining diffs are register/branch ordering in confidence gates.
+ * TODO: 98.45% match - remaining diffs are register/branch ordering in confidence gates.
  */
 FuzzyVariant Fuzzy::GetBestLooseBallAction(cFielder* TheFielder)
 {
@@ -2868,7 +2769,8 @@ FuzzyVariant Fuzzy::GetBestLooseBallAction(cFielder* TheFielder)
                     float fRandom = RandomChance(0.5f);
                     fRandom = (fRandom >= fLosing) ? fRandom : fLosing;
 
-                    fTrueConfidence = fRandom * 0.5f + 0.5f;
+                    float fHalf = 0.5f;
+                    fTrueConfidence = fRandom * fHalf + fHalf;
                     fFalseConfidence = 1.0f - fTrueConfidence;
                     fMinVal = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
                     fMaxVal = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
@@ -2925,8 +2827,10 @@ FuzzyVariant Fuzzy::GetBestLooseBallAction(cFielder* TheFielder)
                         }
 
                         float fAbleToIntercept = AbleToInterceptBall(otherSBC.mData.pPlayer);
-                        float fWeightedDefZone = fDefZone * 0.3f;
-                        fTrueConfidence = fWeightedDefZone + fAbleToIntercept * 0.3f + fLosing * 0.4f;
+                        float fDefWeight = 0.3f;
+                        float fLoseWeight = 0.4f;
+                        float fWeightedDefZone = fDefZone * fDefWeight;
+                        fTrueConfidence = fWeightedDefZone + fAbleToIntercept * fDefWeight + fLosing * fLoseWeight;
                         fFalseConfidence = 1.0f - fTrueConfidence;
                         fMinVal = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
                         fMaxVal = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
@@ -3121,7 +3025,8 @@ FuzzyVariant Fuzzy::GetBestLooseBallAction(cFielder* TheFielder)
         }
 
         float fGoodToChip = Fuzzy::GoodToChipShot(TheFielder).mData.f;
-        fTrueConfidence = fGoodToChip * 0.5f + oneTimerScore.mData.f * 0.5f;
+        float fChipHalf = 0.5f;
+        fTrueConfidence = fGoodToChip * fChipHalf + oneTimerScore.mData.f * fChipHalf;
         float fCanShoot2 = TheFielder->CanLooseBallShoot() ? 1.0f : 0.0f;
         fTrueConfidence = (fCanShoot2 <= fTrueConfidence) ? fCanShoot2 : fTrueConfidence;
 
@@ -3970,7 +3875,9 @@ FuzzyVariant Fuzzy::InDangerDelayed(cFielder* TheFielder)
 
     if (ScriptQuestionCache::Instance()->Lookup(hash, bestValue, NULL))
     {
-        ScriptQuestionCache::Instance()->AddToCache(hash, bestValue, NULL);
+        bestValue.Confidence = bestValue.Confidence;
+        const FuzzyVariant& cacheValue = bestValue;
+        ScriptQuestionCache::Instance()->AddToCache(hash, cacheValue, NULL);
         return bestValue;
     }
 
@@ -4050,7 +3957,8 @@ FuzzyVariant Fuzzy::InDangerDelayed(cFielder* TheFielder)
     }
 
     bestValue.Confidence = fBestConfidence;
-    ScriptQuestionCache::Instance()->AddToCache(hash, bestValue, NULL);
+    const FuzzyVariant& cacheValue = bestValue;
+    ScriptQuestionCache::Instance()->AddToCache(hash, cacheValue, NULL);
     return bestValue;
 }
 

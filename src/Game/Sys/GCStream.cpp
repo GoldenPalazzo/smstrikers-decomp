@@ -586,8 +586,8 @@ void GCAudioStreaming::MonoAudioStream::Warm(bool CoolOnStop)
 
 /**
  * Offset/Address/Size: 0xDCC | 0x801C857C | size: 0x598
- * TODO: 97.81% match - r20/r23 register choice for the pMRAMBuffer+MRAMOffsetA sum,
- *       plus loop-counter/MRAMOffset r27/r28 swap and m_StreamPos reload scheduling in the wrap path.
+ * TODO: 99.71% match - r20/r23 register choice for the pMRAMBuffer+MRAMOffsetA sum,
+ *       plus loop-counter/MRAMOffset r27/r28 swap in the wrap path.
  */
 unsigned long GCAudioStreaming::MonoAudioStream::DoUpdateRead(unsigned long MRAMOffsetA, unsigned long LengthA, unsigned long MRAMOffsetB, unsigned long LengthB, GCAudioStreaming::AudioStreamBuffer* pRequestingBuffer)
 {
@@ -716,8 +716,7 @@ unsigned long GCAudioStreaming::MonoAudioStream::DoUpdateRead(unsigned long MRAM
         if (m_StreamPos >= m_StreamLength)
         {
             ___blank("Stream wrap\n");
-            m_StreamPos = m_StreamPos - m_StreamLength;
-            ReadASize = ReadLen - m_StreamPos;
+            ReadASize = ReadLen - (m_StreamPos = m_StreamPos - m_StreamLength);
             unsigned long AlignOff = 32 - (ReadASize & 31);
             AlignOff = (AlignOff == 32) ? 0 : AlignOff;
             ReadASize += AlignOff;

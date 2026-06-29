@@ -15,7 +15,7 @@ void dGeomColumnGetParams(dxGeom* geomID, float* radius)
 /**
  * Offset/Address/Size: 0x514 | 0x8021D340 | size: 0x90
  */
-void dColumnAABB(dxGeom* geomID, float* aabb)
+static void dColumnAABB(dxGeom* geomID, float* aabb)
 {
     f32 radius;
     float* position;
@@ -215,7 +215,7 @@ int dCollideColumnPlane(dxGeom* o1, dxGeom* o2, int flags, dContactGeom* contact
 /**
  * Offset/Address/Size: 0xB0 | 0x8021CEDC | size: 0x30
  */
-dColliderFn* dColumnColliderFn(int num)
+static dColliderFn* dColumnColliderFn(int num)
 {
     if (num == (s32)dColumnClassUser)
     {
