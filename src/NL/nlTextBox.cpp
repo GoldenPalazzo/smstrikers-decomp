@@ -7,9 +7,7 @@ void nlTextBox::DrawString(const nlTextBox::StringDrawInfo& DrawInfo, const nlVe
 {
     const nlFont* pFont = DrawInfo.pFont;
     int yDir = 1;
-    nlVector2 CurrentPos;
-    CurrentPos.as_u32[0] = DrawAt.as_u32[0];
-    CurrentPos.as_u32[1] = DrawAt.as_u32[1];
+    nlVector2 CurrentPos = DrawAt;
     if (DrawInfo.DrawOptions & 0x800)
     {
         yDir = -1;

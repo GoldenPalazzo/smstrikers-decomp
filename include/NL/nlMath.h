@@ -38,6 +38,7 @@ public:
     };
 };
 
+// todo: maybe nicer something like class union nlVector3 ...
 class nlVector3
 {
 public:

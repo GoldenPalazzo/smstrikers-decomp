@@ -20,6 +20,8 @@ public:
     /* 0x2C */ virtual bool DoLoad();
     /* 0x30 */ virtual bool DoInitialize();
 
+    void HyperStrikeModelAddHelper(unsigned long);
+
     static void BasicStadiumEventHandler(Event*, void*);
     static BasicStadium* GetCurrentStadium();
 

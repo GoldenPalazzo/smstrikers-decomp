@@ -3597,14 +3597,16 @@ void SoundAttributes::UseStationaryPosVector(const nlVector3& position)
 /**
  * Offset/Address/Size: 0x4B98 | 0x801410AC | size: 0x44
  */
-void SoundAttributes::UseVectors(const nlVector3& v1, const nlVector3& v2)
+void SoundAttributes::UseVectors(const nlVector3& p, const nlVector3& d)
 {
-    pos.vPos.as_u32[0] = v1.as_u32[0];
-    pos.vPos.as_u32[1] = v1.as_u32[1];
-    pos.vPos.as_u32[2] = v1.as_u32[2];
-    dir.vDir.as_u32[0] = v2.as_u32[0];
-    dir.vDir.as_u32[1] = v2.as_u32[1];
-    dir.vDir.as_u32[2] = v2.as_u32[2];
+    // pos.vPos.as_u32[0] = v1.as_u32[0];
+    // pos.vPos.as_u32[1] = v1.as_u32[1];
+    // pos.vPos.as_u32[2] = v1.as_u32[2];
+    // dir.vDir.as_u32[0] = v2.as_u32[0];
+    // dir.vDir.as_u32[1] = v2.as_u32[1];
+    // dir.vDir.as_u32[2] = v2.as_u32[2];
+    pos.vPos = p;
+    dir.vDir = d;
     posUpdateMethod = VECTORS;
     mb_Update3DContinuously = true;
 }

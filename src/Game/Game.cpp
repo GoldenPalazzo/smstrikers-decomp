@@ -1215,12 +1215,15 @@ static inline void UpdatePowerUpObjects(float fDeltaT)
 
 /**
  * Offset/Address/Size: 0x5A4 | 0x8003CB18 | size: 0x47C
- * TODO: 99.60% match - tilt conversion f-register shift (f1/f2/f3 rotated),
- *       goalie state/pointer r3/r4 swap, and score-temp r27/r28 vs r29/r30.
+ * TODO: 99.84% match - tilt conversion f-register shift (f1/f2/f3 rotated),
+ *       and home-score temp r28 vs r30.
  */
 void cGame::Update(float deltaTime)
 {
     mThoughtsAllowedThisUpdate = 1;
+
+    int homeScore;
+    int awayScore;
 
     if (m_pGameClock->m_fTimer >= m_fGameDuration)
     {
@@ -1338,7 +1341,7 @@ void cGame::Update(float deltaTime)
         }
 
         eGoalieActionState goalieState = (eGoalieActionState)((Goalie*)g_pCharacters[8])->mGoalieActionState;
-        cCharacter* pAwayGoalie = g_pCharacters[9];
+        Goalie* pAwayGoalie = (Goalie*)g_pCharacters[9];
 
         for (int goalie = 0; !bSTSActive && goalie < 2; goalie++)
         {
@@ -1352,7 +1355,7 @@ void cGame::Update(float deltaTime)
                 bSTSActive = true;
                 break;
             }
-            goalieState = (eGoalieActionState)((Goalie*)pAwayGoalie)->mGoalieActionState;
+            goalieState = pAwayGoalie->mGoalieActionState;
         }
 
         if (!bSTSActive)
@@ -1384,8 +1387,8 @@ void cGame::Update(float deltaTime)
         m_pPostGameDoneClock->Reset(0.0f, 1.4f, 1.0f);
         SidelineExplodableManager::DestroyAllActiveFragments(false);
 
-        int awayScore = g_pTeams[1]->m_nScore;
-        int homeScore = g_pTeams[0]->m_nScore;
+        awayScore = g_pTeams[1]->m_nScore;
+        homeScore = g_pTeams[0]->m_nScore;
         NisPlayer* pNisPlayer = NisPlayer::Instance();
         pNisPlayer->mWinnerSide[0] = awayScore > homeScore;
 

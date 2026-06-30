@@ -173,9 +173,7 @@ void cBall::SetPassTargetTimer(float seconds)
 void cBall::SetPassTarget(cPlayer* passTargetPlayer, const nlVector3& pos, bool)
 {
     m_pPassTarget = passTargetPlayer;
-    m_v3PassIntercept.as_u32[0] = pos.as_u32[0];
-    m_v3PassIntercept.as_u32[1] = pos.as_u32[1];
-    m_v3PassIntercept.as_u32[2] = pos.as_u32[2];
+    m_v3PassIntercept = pos;
 }
 
 /**
@@ -1935,9 +1933,6 @@ cBall::cBall()
     , m_tPassTargetTimer(0.f)
     , m_tBuzzerBeaterTimer(0.f)
 {
-    u32 t0, t1, t2;
-    nlVector3* pz;
-
     m_pBlurHandler = NULL;
     m_pOwner = NULL;
     m_pPrevOwner = NULL;
@@ -1977,24 +1972,17 @@ cBall::cBall()
 
     m_pPhysicsBall->SetPosition(m_v3Position, PhysicsObject::WORLD_COORDINATES);
 
-    pz = &v3Zero;
-
     m_qOrientation.f.z = 0.f;
-    t0 = pz->as_u32[0];
     m_qOrientation.f.y = 0.f;
-    t1 = pz->as_u32[1];
     m_qOrientation.f.x = 0.f;
-    t2 = pz->as_u32[2];
     m_qOrientation.f.w = 1.f;
 
     m_v3ShotOrigin = m_v3Position;
 
-    m_v3Velocity.as_u32[0] = t0;
-    m_v3Velocity.as_u32[1] = t1;
-    m_v3Velocity.as_u32[2] = t2;
+    m_v3Velocity = v3Zero;
 
     m_pPhysicsBall->SetLinearVelocity(m_v3Velocity);
-    m_pPhysicsBall->SetAngularVelocity(*pz);
+    m_pPhysicsBall->SetAngularVelocity(v3Zero);
 
     m_fTotalPassTime = 0.f;
     m_tBuzzerBeaterTimer.SetSeconds(0.f);
@@ -2008,34 +1996,6 @@ cBall::cBall()
         gfPerfectPassSFXVol = Audio::gStadGenSFX.GetSFXVol(0xBA);
     }
 }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x8000D53C | size: 0x1B4
-//  */
-// void BasicString<char, Detail::TempStringAllocator>::AppendInPlace(const char*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x830 | 0x8000DD6C | size: 0x94
-//  */
-// void BasicString<char, Detail::TempStringAllocator>::~BasicString()
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x8000DE00 | size: 0x64
-//  */
-// void FuzzyVariant::Reset()
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x8000DE64 | size: 0x1C
-//  */
-// void Variant::Reset()
-// {
-// }
 
 /**
  * Stub only for field order; unreferenced so the linker drops it.
@@ -2052,29 +2012,6 @@ void Ball_stub()
 }
 #pragma dont_inline reset
 
-// // /**
-// //  * Offset/Address/Size: 0x0 | 0x8000DE80 | size: 0x8
-// //  */
-// int PhysicsSphere::GetObjectType() const
-// {
-//     return 0x0A;
-// }
-
-// // /**
-// //  * Offset/Address/Size: 0x8 | 0x8000DE88 | size: 0x60
-// //  */
-// PhysicsSphere::~PhysicsSphere()
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x8000DEE8 | size: 0x4
-//  */
-// int PhysicsObject::PreCollide()
-// {
-//     return 0;
-// }
-
 /**
  * Offset/Address/Size: 0x0 | 0x8000DEEC | size: 0x8
  */
@@ -2082,24 +2019,3 @@ u32 PassBallData::GetID()
 {
     return 0x131;
 }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x8000DEF4 | size: 0x8
-//  */
-// void EventData::GetID()
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x8000DEFC | size: 0x40
-//  */
-// void nlStrNCpy<char>(char*, const char*, unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x40 | 0x8000DF3C | size: 0x10
-//  */
-// void 0x8028D270..0x8028D274 | size: 0x4
-// {
-// }

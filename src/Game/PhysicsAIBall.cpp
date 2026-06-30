@@ -24,7 +24,7 @@ bool PhysicsAIBall::IsBallOutsideNet(const nlVector3& v3Pos)
     f32 fAbsX;
     sum = radius + threshold;
     fAbsX = (f32)absX;
-    threshold = sum - 0.2f;
+    threshold = sum - 0.08f;
     return fAbsX < threshold;
 }
 
@@ -52,14 +52,61 @@ bool PhysicsAIBall::DidBallJustEnterNet(const nlVector3& oldPos, nlVector3 newPo
     f32 absNewX = nlVec3GetX(newPos);
     f32 radius = g_pBall->m_pPhysicsBall->GetRadius();
     f32 goalLineX = cField::GetGoalLineX((unsigned int)1);
-    f32 threshold = (goalLineX + radius) - 0.2f;
+    f32 threshold = (goalLineX + radius) - 0.08f;
     nlVector3 impactPos;
 
     if ((absOldX < threshold) && (absNewX >= threshold))
     {
         f32 xDelta = newPos.f.x - oldPos.f.x;
 
-        if ((float)fabs(xDelta) > 0.001f)
+        if ((float)fabs(xDelta) > 0.0001f)
+        {
+            f32 planeX;
+            if (newPos.f.x > 0.0f)
+            {
+                planeX = threshold;
+            }
+            else
+            {
+                planeX = -threshold;
+            }
+
+            f32 t = (planeX - oldPos.f.x) / xDelta;
+            InterpolateVector(impactPos, oldPos, newPos, t);
+        }
+        else
+        {
+            impactPos = newPos;
+        }
+
+        if ((impactPos.f.z > 0.0f) && (impactPos.f.z < cNet::m_fNetHeight))
+        {
+            f32 netWidth = cNet::m_fNetWidth;
+            f32 halfScale = 0.5f;
+            if ((impactPos.f.y > (halfScale * -netWidth)) && (impactPos.f.y < (halfScale * netWidth)))
+            {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+static inline bool DidBallJustEnterNetWithBall(cBall* pGlobalBall, const nlVector3& oldPos, nlVector3 newPos)
+{
+    f32 absOldX = nlVec3GetX(oldPos);
+    f32 absNewX = nlVec3GetX(newPos);
+    f32 radius = pGlobalBall->m_pPhysicsBall->GetRadius();
+    f32 goalLineX = cField::GetGoalLineX((unsigned int)1);
+    f32 threshold = (goalLineX + radius) - 0.08f;
+    nlVector3 impactPos;
+
+    if ((absOldX < threshold) && (absNewX >= threshold))
+    {
+        f32 xDelta = newPos.f.x - oldPos.f.x;
+
+        if ((float)fabs(xDelta) > 0.0001f)
         {
             f32 planeX;
             if (newPos.f.x > 0.0f)
@@ -372,8 +419,8 @@ void PhysicsAIBall::CheckIfBallWentThroughGoalie()
 
 /**
  * Offset/Address/Size: 0x994 | 0x801343C8 | size: 0x3A4
- * TODO: 99.15% match - remaining diffs are in the inlined net-entry block
- * (old/new position load ordering and f29/f30 assignment around threshold tests).
+ * TODO: 98.51% match - remaining diffs are in the inlined net-entry block
+ * (global ball load scheduling and new/old position store order).
  */
 void PhysicsAIBall::PostUpdate()
 {
@@ -479,7 +526,7 @@ void PhysicsAIBall::PostUpdate()
         GetPosition(&newPosition);
         oldPosition = m_pAIBall->m_v3PrevPosition;
 
-        if (DidBallJustEnterNet(oldPosition, newPosition))
+        if (DidBallJustEnterNetWithBall(g_pBall, oldPosition, newPosition))
         {
             m_unk_0x58 = true;
         }

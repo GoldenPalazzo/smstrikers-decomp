@@ -329,6 +329,33 @@ void Config::Set(const char* tag, const char* value)
     }
 }
 
+static inline u32 ConfigHashFloat(const char* tag)
+{
+    const char* p = tag;
+    u32 hash = 0x1505;
+    while (*p != 0)
+    {
+        s8 c = (s8)nlToUpper<char>(const_cast<char&>(*p++));
+        hash = (hash << 5) + hash + c;
+    }
+    return hash;
+}
+
+static inline TagValuePair& FindTvpFloat(Config* config, const char* tag)
+{
+    u32 idx = ConfigHashFloat(tag) & 0x3FF;
+    while (true)
+    {
+        u32 offset = idx * 12;
+        if (config->mTvpHash[idx].tag == NULL || nlStrICmp(config->mTvpHash[idx].tag, tag) == 0)
+        {
+            return *(TagValuePair*)((char*)config->mTvpHash + offset);
+        }
+        idx++;
+        idx &= 0x3FF;
+    }
+}
+
 static inline char* CopyConfigString(Config* config, const char* str)
 {
     char* dest = config->mStringEnd;
@@ -349,38 +376,16 @@ static inline char* CopyConfigString(Config* config, const char* str)
 
 /**
  * Offset/Address/Size: 0x1BC8 | 0x801D482C | size: 0x12C
- * TODO: 98.47% match - this/tvp register swap through probe and copy helper
  */
 void Config::Set(const char* tag, float value)
 {
-    TagValuePair* tvp;
-    u32 hash = 0x1505;
-    const char* p = tag;
-    while (*p != 0)
-    {
-        s8 c = (s8)nlToUpper<char>(const_cast<char&>(*p++));
-        hash = (hash << 5) + hash + c;
-    }
-    u32 idx = hash & 0x3FF;
+    TagValuePair& tvp = FindTvpFloat(this, tag);
+    tvp.type = _FLOAT;
+    tvp.value.f = value;
 
-    while (true)
+    if (tvp.tag == NULL)
     {
-        u32 offset = idx * 12;
-        if (mTvpHash[idx].tag == NULL || nlStrICmp(mTvpHash[idx].tag, tag) == 0)
-        {
-            tvp = (TagValuePair*)((u8*)mTvpHash + offset);
-            break;
-        }
-        idx++;
-        idx &= 0x3FF;
-    }
-
-    tvp->type = _FLOAT;
-    tvp->value.f = value;
-
-    if (tvp->tag == NULL)
-    {
-        tvp->tag = CopyConfigString(this, tag);
+        tvp.tag = CopyConfigString(this, tag);
     }
 }
 

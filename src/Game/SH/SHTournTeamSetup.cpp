@@ -155,13 +155,14 @@ TournTeamSetupSceneV2::~TournTeamSetupSceneV2()
 
 /**
  * Offset/Address/Size: 0x3ED4 | 0x800E5D78 | size: 0xD44
+ * TODO: 99.76% match - menu item pointer calculation is scheduled differently in the callback setup block.
  */
 void TournTeamSetupSceneV2::SceneCreated()
 {
     FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
     FEAudio::EnableSounds(false);
 
-    typedef void FnTLComponentInstanceCb(TLComponentInstance*);
+    typedef Function<TLComponentInstance*> MenuCallback;
 
     for (int i = 0; i < 4; i++)
     {
@@ -182,22 +183,23 @@ void TournTeamSetupSceneV2::SceneCreated()
 
             if (mCurrentState == STATE_SCROLLING)
             {
-                menuItem = &mMenuItems.mMenuItems[mMenuItems.mNumItemsAdded];
-                menuItem->mType = compinstance;
+                int numItemsAdded = mMenuItems.mNumItemsAdded;
+                mMenuItems.mMenuItems[numItemsAdded].mType = compinstance;
+                menuItem = &mMenuItems.mMenuItems[numItemsAdded];
                 mMenuItems.mNumItemsAdded++;
 
                 {
-                    Function<FnTLComponentInstanceCb> openFunction;
+                    MenuCallback openFunction;
                     openFunction.mTag = FREE_FUNCTION;
                     openFunction.mFreeFunction = DoubleHighlite::OpenItem;
-                    menuItem->mCallbacks[ON_HIGHLIGHT] = openFunction;
+                    *(MenuCallback*)&menuItem->mCallbacks[ON_HIGHLIGHT] = openFunction;
                 }
 
                 {
-                    Function<FnTLComponentInstanceCb> closeFunction;
+                    MenuCallback closeFunction;
                     closeFunction.mTag = FREE_FUNCTION;
                     closeFunction.mFreeFunction = DoubleHighlite::CloseItem;
-                    menuItem->mCallbacks[ON_UNHIGHLIGHT] = closeFunction;
+                    *(MenuCallback*)&menuItem->mCallbacks[ON_UNHIGHLIGHT] = closeFunction;
                 }
 
                 {
@@ -206,11 +208,29 @@ void TournTeamSetupSceneV2::SceneCreated()
                         this,
                         i);
 
-                    Function<FnTLComponentInstanceCb> applyFunction(bind);
-                    menuItem->mCallbacks[ON_APPLY] = applyFunction;
+                    MenuCallback applyFunction(bind);
+                    *(MenuCallback*)&menuItem->mCallbacks[ON_APPLY] = applyFunction;
                 }
 
-                menuItem->ApplyAction((i == 0) ? ON_HIGHLIGHT : ON_UNHIGHLIGHT);
+                {
+                    MenuAction action = (i == 0) ? ON_HIGHLIGHT : ON_UNHIGHLIGHT;
+                    int tag = menuItem->mCallbacks[action].mTag;
+                    if (((u32)((-tag) | tag) >> 31) > 0)
+                    {
+                        if (!(action == ON_APPLY && menuItem->mDisabled))
+                        {
+                            TLComponentInstance* type = menuItem->mType;
+                            if (tag == FREE_FUNCTION)
+                            {
+                                menuItem->mCallbacks[action].mFreeFunction(type);
+                            }
+                            else
+                            {
+                                (*menuItem->mCallbacks[action].mFunctor)(type);
+                            }
+                        }
+                    }
+                }
 
                 TLSlide* slide = compinstance->GetActiveSlide();
                 compinstance->Update(slide->m_start + slide->m_duration);
@@ -265,14 +285,12 @@ void TournTeamSetupSceneV2::SceneCreated()
 
         TLComponentInstance* chooserComp = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
             mComponents[1]->GetActiveSlide(),
-            InlineHasher(nlStringLowerHash("HIGHLIGHT")),
-            InlineHasher(0));
+            InlineHasher(nlStringLowerHash("HIGHLIGHT")));
         chooserComp->m_bVisible = false;
 
         chooserComp = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
             mComponents[2]->GetActiveSlide(),
-            InlineHasher(nlStringLowerHash("HIGHLIGHT")),
-            InlineHasher(0));
+            InlineHasher(nlStringLowerHash("HIGHLIGHT")));
         chooserComp->m_bVisible = false;
 
         UpdateCaptainName();
@@ -334,13 +352,11 @@ void TournTeamSetupSceneV2::SceneCreated()
 
     mUpArrow = FEFinder<TLImageInstance, 2>::Find<TLSlide>(
         tempComponent->GetActiveSlide(),
-        InlineHasher(nlStringLowerHash("arrow2")),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("arrow2")));
 
     mDownArrow = FEFinder<TLImageInstance, 2>::Find<TLSlide>(
         tempComponent->GetActiveSlide(),
-        InlineHasher(nlStringLowerHash("arrow")),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("arrow")));
 
     if (mCurrentRow == 0)
     {

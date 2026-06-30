@@ -56,6 +56,7 @@ void cRumbleFilter::Reset()
 
 /**
  * Offset/Address/Size: 0x0 | 0x801A621C | size: 0x284
+ * TODO: 99.39% match - FP register allocation differs for delta and unit-vector temporaries
  */
 void cRumbleFilter::Update(float dt)
 {
@@ -79,7 +80,7 @@ void cRumbleFilter::Update(float dt)
     nlVector2 _dv;
     _dv.f.y = v2Vel0.f.y - v2Vel1.f.y;
     _dv.f.x = v2Vel0.f.x - v2Vel1.f.x;
-    float proj = (_dv.f.x * _p.f.x) + (_dv.f.y * _p.f.y);
+    float proj = (_dv.f.y * _p.f.y) + (_dv.f.x * _p.f.x);
     if (len == 0.0f)
     {
         fDTerm = 0.0f;

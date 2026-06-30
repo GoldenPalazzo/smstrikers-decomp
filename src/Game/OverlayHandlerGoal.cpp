@@ -389,7 +389,7 @@ void GoalOverlay::UpdateGoalInfo(int homeAway, int playerIndex, bool isCaptainS2
             (InlineHasher&)h1);
     }
 
-    GameInfoManager* gameInfo = nlSingleton<GameInfoManager>::s_pInstance;
+    GameInfoManager* const gameInfo = nlSingleton<GameInfoManager>::s_pInstance;
     eTeamID team = (eTeamID)gameInfo->GetTeam((short)homeAway);
     nlSingleton<GameInfoManager>::s_pInstance->GetTeam(0);
     nlSingleton<GameInfoManager>::s_pInstance->GetTeam(1);

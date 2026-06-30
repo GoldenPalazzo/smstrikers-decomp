@@ -391,7 +391,6 @@ FuzzyVariant Fuzzy::DefaultOffensivePlay(cDecisionEntity* pDecision)
 
 /**
  * Offset/Address/Size: 0x4A94 | 0x80091520 | size: 0x744
- * TODO: 99.80% match - fBestConfidence and late false-confidence registers are rotated.
  */
 FuzzyVariant Fuzzy::DoPassing(float fConfidence, cDecisionEntity* pDecision)
 {
@@ -438,49 +437,51 @@ FuzzyVariant Fuzzy::DoPassing(float fConfidence, cDecisionEntity* pDecision)
                 if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
                     fConfidence = fConfidence * fBranchRatio;
 
-                fTrueConfidence = OpenTo(g_pScriptCurrentFielder, theBestPassTarget.mData.pPlayer);
-                fFalseConfidence = 1.0f - fTrueConfidence;
-                fMin = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
-                fMax = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
-                fBranchRatio = fMin / fMax;
-
-                if (fTrueConfidence > 0.0f)
                 {
-                    SaveConfidence PushDOM(&fConfidence);
-                    fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
+                    float fOpenConfidence = OpenTo(g_pScriptCurrentFielder, theBestPassTarget.mData.pPlayer);
+                    float fOpenFalseConfidence = 1.0f - fOpenConfidence;
+                    float fOpenMin = (fOpenConfidence <= fOpenFalseConfidence) ? fOpenConfidence : fOpenFalseConfidence;
+                    float fOpenMax = (fOpenConfidence >= fOpenFalseConfidence) ? fOpenConfidence : fOpenFalseConfidence;
+                    float fOpenBranchRatio = fOpenMin / fOpenMax;
 
-                    if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
-                        fConfidence = fConfidence * fBranchRatio;
+                    if (fOpenConfidence > 0.0f)
+                    {
+                        SaveConfidence PushDOM(&fConfidence);
+                        fConfidence = (fConfidence <= fOpenConfidence) ? fConfidence : fOpenConfidence;
 
-                    float fCurrentConfidence = fConfidence;
-                    if (0.0f >= fCurrentConfidence)
-                        fBestConfidence = 0.0f;
-                    else
-                        fBestConfidence = fCurrentConfidence;
+                        if (fConfidence < fOpenConfidence && fOpenConfidence < 0.5f)
+                            fConfidence = fConfidence * fOpenBranchRatio;
 
-                    pDecision->QueueActionSetDesire(19, fConfidence, 0.0f, theBestPassTarget, FuzzyVariant(false));
+                        float fCurrentConfidence = fConfidence;
+                        if (0.0f >= fCurrentConfidence)
+                            fBestConfidence = 0.0f;
+                        else
+                            fBestConfidence = fCurrentConfidence;
 
-                    SkillTweaks* pTweaks = SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide);
-                    pDecision->m_pLastQueuedAction->m_fSelectionChance = CalcSelectChance(pTweaks->Off_GroundPassChance, Passer(g_pScriptCurrentFielder));
-                }
+                        pDecision->QueueActionSetDesire(19, fConfidence, 0.0f, theBestPassTarget, FuzzyVariant(false));
 
-                if (fFalseConfidence > 0.0f)
-                {
-                    SaveConfidence PushDOM(&fConfidence);
-                    fConfidence = (fConfidence <= fFalseConfidence) ? fConfidence : fFalseConfidence;
+                        SkillTweaks* pTweaks = SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide);
+                        pDecision->m_pLastQueuedAction->m_fSelectionChance = CalcSelectChance(pTweaks->Off_GroundPassChance, Passer(g_pScriptCurrentFielder));
+                    }
 
-                    if (fConfidence < fFalseConfidence && fFalseConfidence < 0.5f)
-                        fConfidence = fConfidence * fBranchRatio;
+                    if (fOpenFalseConfidence > 0.0f)
+                    {
+                        SaveConfidence PushDOM(&fConfidence);
+                        fConfidence = (fConfidence <= fOpenFalseConfidence) ? fConfidence : fOpenFalseConfidence;
 
-                    if (fBestConfidence >= fConfidence)
-                        fBestConfidence = fBestConfidence;
-                    else
-                        fBestConfidence = fConfidence;
+                        if (fConfidence < fOpenFalseConfidence && fOpenFalseConfidence < 0.5f)
+                            fConfidence = fConfidence * fOpenBranchRatio;
 
-                    pDecision->QueueActionSetDesire(19, fConfidence, 0.0f, theBestPassTarget, FuzzyVariant(true));
+                        if (fBestConfidence >= fConfidence)
+                            fBestConfidence = fBestConfidence;
+                        else
+                            fBestConfidence = fConfidence;
 
-                    SkillTweaks* pTweaks = SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide);
-                    pDecision->m_pLastQueuedAction->m_fSelectionChance = CalcSelectChance(pTweaks->Off_VolleyPassChance, Passer(g_pScriptCurrentFielder));
+                        pDecision->QueueActionSetDesire(19, fConfidence, 0.0f, theBestPassTarget, FuzzyVariant(true));
+
+                        SkillTweaks* pTweaks = SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide);
+                        pDecision->m_pLastQueuedAction->m_fSelectionChance = CalcSelectChance(pTweaks->Off_VolleyPassChance, Passer(g_pScriptCurrentFielder));
+                    }
                 }
             }
         }

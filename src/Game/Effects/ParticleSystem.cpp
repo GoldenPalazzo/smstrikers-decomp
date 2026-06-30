@@ -334,8 +334,8 @@ static inline void RotateXYInPlace(nlVector3& v, float sn, float cs)
 
 /**
  * Offset/Address/Size: 0x1C90 | 0x801F6DE8 | size: 0x34C
- * TODO: 98.53% match - register allocation diffs in tilt rotation and
- * facing rotation blocks; one length-square instruction order diff remains.
+ * TODO: 98.84% match - remaining diffs are length-square instruction order
+ * and tilt/facing rotation register allocation.
  */
 static void EmitSpindularPosition(nlVector3& vPosition, nlVector3& vDirection, EffectsTemplate* pTemplate, EffectsSpec* pSpec, const nlMatrix4& mLocalToWorld)
 {
@@ -381,16 +381,15 @@ static void EmitSpindularPosition(nlVector3& vPosition, nlVector3& vDirection, E
     {
         nlSinCos(&sin, &cos, (unsigned short)(int)(10430.378f * tiltRotation));
 
-        float dirX = localDir.f.x;
-        float posX = localPos.f.x;
-
-        localDir.f.x = (dirX * cos) + (localDir.f.z * sin);
-        localDir.f.z = (-dirX * sin) + (localDir.f.z * cos);
+        nlVec3Set(localDir,
+            (localDir.f.x * cos) + (localDir.f.z * sin),
+            localDir.f.y,
+            (-localDir.f.x * sin) + (localDir.f.z * cos));
 
         nlVec3Set(localPos,
-            (posX * cos) + (localPos.f.z * sin),
-            (localPos.f.y = localPos.f.y),
-            (-posX * sin) + (localPos.f.z * cos));
+            (localPos.f.x * cos) + (localPos.f.z * sin),
+            localPos.f.y,
+            (-localPos.f.x * sin) + (localPos.f.z * cos));
     }
 
     if (pSpec != nullptr)
