@@ -254,20 +254,17 @@ void CupChooseCaptainSceneV2::SceneCreated()
 
         TLImageInstance* image = FEFinder<TLImageInstance, 2>::Find<TLSlide>(
             active,
-            InlineHasher(nlStringLowerHash("CAPT_L")),
-            InlineHasher(0));
+            InlineHasher(nlStringLowerHash("CAPT_L")));
         mCaptainImageMain->mImageInstance = image;
 
         image = FEFinder<TLImageInstance, 2>::Find<TLSlide>(
             active,
-            InlineHasher(nlStringLowerHash("CAPT_L_WHITE")),
-            InlineHasher(0));
+            InlineHasher(nlStringLowerHash("CAPT_L_WHITE")));
         mCaptainImageFlash->mImageInstance = image;
 
         image = FEFinder<TLImageInstance, 2>::Find<TLSlide>(
             active,
-            InlineHasher(nlStringLowerHash("CAPT_L_OUT")),
-            InlineHasher(0));
+            InlineHasher(nlStringLowerHash("CAPT_L_OUT")));
         mCaptainImageBG->mImageInstance = image;
     }
 
@@ -276,14 +273,12 @@ void CupChooseCaptainSceneV2::SceneCreated()
 
         TLImageInstance* image = FEFinder<TLImageInstance, 2>::Find<TLSlide>(
             active,
-            InlineHasher(nlStringLowerHash("SK_L")),
-            InlineHasher(0));
+            InlineHasher(nlStringLowerHash("SK_L")));
         image->m_bVisible = false;
 
         image = FEFinder<TLImageInstance, 2>::Find<TLSlide>(
             active,
-            InlineHasher(nlStringLowerHash("SK_L_OUT")),
-            InlineHasher(0));
+            InlineHasher(nlStringLowerHash("SK_L_OUT")));
         image->m_bVisible = false;
     }
 

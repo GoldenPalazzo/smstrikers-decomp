@@ -673,9 +673,9 @@ inline void glud_Viewport(void* pData)
 
 /**
  * Offset/Address/Size: 0x538 | 0x801BA038 | size: 0xB20
- * TODO: 97.91% match - p/bFogWasDisabled/bIndirect registers differ; texture-dirty loop
- * pointer registers, env stage register, viewport height temp, and display-list pointer
- * register still differ.
+ * TODO: 98.30% match - p/bFogWasDisabled/bIndirect registers differ; texture-dirty loop
+ * pointer registers, env stage register, display-list pointer, and draw-call scheduling
+ * still differ.
  */
 static void glx_DrawPacket(const glModelPacket* p)
 {
@@ -698,10 +698,10 @@ static void glx_DrawPacket(const glModelPacket* p)
     bool bIndirect = false;
     u32 mask;
     _GXTlut tlutID;
-    s32 vh;
-    s32 vx;
-    s32 vy;
-    s32 vw;
+    u32 vh;
+    u32 vx;
+    u32 vy;
+    u32 vw;
 
     // === Block 1: WarbleBlend indirect-texture setup ===
     if ((prev_view == GLV_WarbleBlend) && (p->state.texture[0] == ColourTargetTexture))
@@ -1845,18 +1845,10 @@ void glx_SwitchRaster(const glModelPacket* p)
     }
 }
 
-static inline GXColor makeKonstColor(f32 level)
-{
-    int val = (int)(255.5f * level);
-    GXColor c = { (u8)val, (u8)val, (u8)val, (u8)val };
-    return c;
-}
-
 /**
  * Offset/Address/Size: 0x2690 | 0x801BC190 | size: 0x48C
- * TODO: 95.8% match - stack offset diffs for GXColor locals (MWCC allocates
- * 2d_movie GXColors at lower offsets than konst GXColor work area, target has
- * them reversed). All instructions and registers correct.
+ * TODO: 99.66% match - anonymous constant loads, one loop-entry branch, and
+ * aniso table relocation still differ.
  */
 static void glx_SwitchTextureState(const glModelPacket* p)
 {
@@ -1889,8 +1881,8 @@ static void glx_SwitchTextureState(const glModelPacket* p)
         level = (f32)raw * (1.0f / 63.0f);
         if (level != glx_konstlevel[0])
         {
-            GXColor c = makeKonstColor(level);
-            GXSetTevKColor(GX_KCOLOR0, c);
+            int val = (int)(255.5f * level);
+            GXSetTevKColor(GX_KCOLOR0, (GXColor) { (u8)val, (u8)val, (u8)val, (u8)val });
             glx_konstlevel[0] = level;
         }
 
@@ -1898,8 +1890,8 @@ static void glx_SwitchTextureState(const glModelPacket* p)
         level = (f32)raw * (1.0f / 63.0f);
         if (level != glx_konstlevel[1])
         {
-            GXColor c = makeKonstColor(level);
-            GXSetTevKColor(GX_KCOLOR1, c);
+            int val = (int)(255.5f * level);
+            GXSetTevKColor(GX_KCOLOR1, (GXColor) { (u8)val, (u8)val, (u8)val, (u8)val });
             glx_konstlevel[1] = level;
         }
 
@@ -1910,8 +1902,8 @@ static void glx_SwitchTextureState(const glModelPacket* p)
         }
         if (level != glx_konstlevel[2])
         {
-            GXColor c = makeKonstColor(level);
-            GXSetTevKColor(GX_KCOLOR2, c);
+            int val = (int)(255.5f * level);
+            GXSetTevKColor(GX_KCOLOR2, (GXColor) { (u8)val, (u8)val, (u8)val, (u8)val });
             glx_konstlevel[2] = level;
         }
 
@@ -1919,8 +1911,8 @@ static void glx_SwitchTextureState(const glModelPacket* p)
         level = (f32)raw * (1.0f / 63.0f);
         if (level != glx_konstlevel[3])
         {
-            GXColor c = makeKonstColor(level);
-            GXSetTevKColor(GX_KCOLOR3, c);
+            int val = (int)(255.5f * level);
+            GXSetTevKColor(GX_KCOLOR3, (GXColor) { (u8)val, (u8)val, (u8)val, (u8)val });
             glx_konstlevel[3] = level;
         }
     }

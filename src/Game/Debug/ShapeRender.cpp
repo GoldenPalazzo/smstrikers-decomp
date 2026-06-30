@@ -85,10 +85,10 @@ void ShapeRender::CreateHemisphereGeometry(PrimitiveShape& prim)
             x0 = 0.5f * (ring0 * nlSin((u16)angle));
 
             angle90 = (u16)angle + 0x4000;
-            y0 = 0.5f * (ring0 * nlSin((u16)angle90));
+            y0 = 0.5f * (ring0 * nlSin((u16)(s32)angle90));
 
             x1 = 0.5f * (ring1 * nlSin((u16)angle));
-            y1 = 0.5f * (ring1 * nlSin((u16)angle90));
+            y1 = 0.5f * (ring1 * nlSin((u16)(s32)angle90));
 
             x0Sq = x0 * x0;
             y0Sq = y0 * y0;

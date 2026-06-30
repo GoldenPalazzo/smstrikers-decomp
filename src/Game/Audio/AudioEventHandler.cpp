@@ -652,6 +652,7 @@ void Audio::AudioEventHandler(Event* pEvent, void*)
                 pData = (GoalieSaveData*)&pEvent->m_data;
             }
         }
+        break;
 
     case 17:
         if (Audio::IsWorldSFXLoaded())

@@ -518,21 +518,27 @@ static inline void CreateElectricFenceGeometry(ElectricFenceGeometry& prim, cons
     float z0 = impactPosition.f.z + startOffset;
     float z1 = impactPosition.f.z + endOffset;
 
-    for (int nSegment = 0; nSegment < 16; nSegment++)
+    for (int nSegment = 0; nSegment < 16;)
     {
         nlVector3 wallPoint;
         GetWallPoint(impactPosition, (((float)nSegment) * fDeltaSegmentOffset) + startOffset, 0.0f, wallPoint);
 
-        pdst[0].f.x = wallPoint.f.x;
-        pdst[0].f.y = wallPoint.f.y;
+        int segment = nSegment++;
+        float wallY = wallPoint.f.y;
+        float wallX = wallPoint.f.x;
+
+        pdst[0].f.x = wallX;
+        pdst[0].f.y = wallY;
         pdst[0].f.z = z0;
-        tdst[0].f.x = (float)nSegment / 15.0f;
+        tdst[0].f.x = (float)segment / 15.0f;
         tdst[0].f.y = 0.0f;
 
-        pdst[1].f.x = wallPoint.f.x;
-        pdst[1].f.y = wallPoint.f.y;
+        wallY = wallPoint.f.y;
+        wallX = wallPoint.f.x;
+        pdst[1].f.x = wallX;
+        pdst[1].f.y = wallY;
         pdst[1].f.z = z1;
-        tdst[1].f.x = (float)nSegment / 15.0f;
+        tdst[1].f.x = (float)segment / 15.0f;
         tdst[1].f.y = 1.0f;
 
         pdst += 2;
@@ -542,8 +548,8 @@ static inline void CreateElectricFenceGeometry(ElectricFenceGeometry& prim, cons
 
 /**
  * Offset/Address/Size: 0x5A0 | 0x8016B5D0 | size: 0x448
- * TODO: 97.78% match - curved-branch wallPoint and texcoord store scheduling
- *   still differs.
+ * TODO: 99.84% match - curved-branch texcoord conversion and y-store
+ *   registers still differ.
  */
 ElectricFenceData::ElectricFenceData(EmissionController* pEmissionController)
 {

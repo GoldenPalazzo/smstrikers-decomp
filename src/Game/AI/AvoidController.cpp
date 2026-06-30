@@ -1,5 +1,6 @@
 #include "Game/AI/AvoidController.h"
 #include "Game/AI/AiUtil.h"
+#include "Game/MathHelpers.h"
 #include "Game/AI/Scripts/ScriptQuestions.h"
 #include "Game/BasicStadium.h"
 #include "Game/Team.h"
@@ -107,13 +108,13 @@ static inline bool CalcGoalieRepulsionVector(AvoidController* controller, nlVect
     {
         Goalie* pGoalie = g_pTeams[i_team]->GetGoalie();
 
-        float fDeltaY = controller->m_pFielder->m_v3Position.f.y - pGoalie->m_v3Position.f.y;
-        float fDeltaX = controller->m_pFielder->m_v3Position.f.x - pGoalie->m_v3Position.f.x;
         float fDeltaZ = controller->m_pFielder->m_v3Position.f.z - pGoalie->m_v3Position.f.z;
+        float fDeltaX = controller->m_pFielder->m_v3Position.f.x - pGoalie->m_v3Position.f.x;
+        float fDeltaY = controller->m_pFielder->m_v3Position.f.y - pGoalie->m_v3Position.f.y;
 
-        float fDistanceSq = fDeltaY * fDeltaY;
+        float fDistanceSq = fDeltaZ * fDeltaZ;
         fDistanceSq += fDeltaX * fDeltaX;
-        fDistanceSq += fDeltaZ * fDeltaZ;
+        fDistanceSq += fDeltaY * fDeltaY;
         if (fDistanceSq > 16.0f)
         {
             continue;
@@ -152,12 +153,9 @@ static inline bool CalcGoalieRepulsionVector(AvoidController* controller, nlVect
             fMagnitude *= 0.3f;
         }
 
-        if (fMagnitude > 0.0f)
+        if (!(fMagnitude <= 0.0f))
         {
-            if (!(fMagnitude <= 10.0f))
-            {
-                fMagnitude = 10.0f;
-            }
+            fMagnitude = (fMagnitude <= 10.0f) ? fMagnitude : 10.0f;
 
             float fOutY = v3OutRepulsion.f.y;
             float fOutX = v3OutRepulsion.f.x;
@@ -177,8 +175,8 @@ static inline bool CalcGoalieRepulsionVector(AvoidController* controller, nlVect
 
 /**
  * Offset/Address/Size: 0x12BC | 0x80008910 | size: 0xECC
- * TODO: 96.32% match - remaining diffs are early boolean register allocation
- * and f4/f5 weight register swaps.
+ * TODO: 97.74% match - remaining diffs are early boolean register allocation,
+ * goalie/Bowser FPR coloring, and final fallback slot selection.
  */
 void AvoidController::Update(float)
 {
@@ -201,16 +199,7 @@ void AvoidController::Update(float)
         AvoidSidelines();
     }
 
-    bool bAverageWithLastRepulsion = true;
-    bool bAvoidingOn = false;
-    if ((m_CurrentlyAvoiding & AVOID_FIELDERS) || (m_CurrentlyAvoiding & AVOID_GOALIES))
-    {
-        bAvoidingOn = true;
-    }
-    if (!bAvoidingOn && !(m_CurrentlyAvoiding & AVOID_BOWSER))
-    {
-        bAverageWithLastRepulsion = false;
-    }
+    bool bAverageWithLastRepulsion = (m_CurrentlyAvoiding & AVOID_FIELDERS) || (m_CurrentlyAvoiding & AVOID_GOALIES) || (m_CurrentlyAvoiding & AVOID_BOWSER);
 
     bCanAvoid = false;
     if (m_ThingsToAvoid & AVOID_FIELDERS)
@@ -231,9 +220,7 @@ void AvoidController::Update(float)
         if (bAvoidedSomething)
         {
             float fWeight = 1.0f;
-            vAccumulated_v3.f.z = fWeight * v3Repulsion.f.z + vAccumulated_v3.f.z;
-            vAccumulated_v3.f.y = fWeight * v3Repulsion.f.y + vAccumulated_v3.f.y;
-            vAccumulated_v3.f.x = fWeight * v3Repulsion.f.x + vAccumulated_v3.f.x;
+            nlVec3ScaleAdd(vAccumulated_v3, fWeight, v3Repulsion, vAccumulated_v3);
             fTotalWeight_v3 += fWeight;
 
             m_CurrentlyAvoiding |= AVOID_FIELDERS;
@@ -262,9 +249,7 @@ void AvoidController::Update(float)
         if (bAvoidedSomething)
         {
             float fWeight = 1.0f;
-            vAccumulated_v3.f.z = fWeight * v3Repulsion.f.z + vAccumulated_v3.f.z;
-            vAccumulated_v3.f.y = fWeight * v3Repulsion.f.y + vAccumulated_v3.f.y;
-            vAccumulated_v3.f.x = fWeight * v3Repulsion.f.x + vAccumulated_v3.f.x;
+            nlVec3ScaleAdd(vAccumulated_v3, fWeight, v3Repulsion, vAccumulated_v3);
             fTotalWeight_v3 += fWeight;
 
             m_CurrentlyAvoiding |= AVOID_POWERUPS;
@@ -293,9 +278,7 @@ void AvoidController::Update(float)
         if (bAvoidedSomething)
         {
             float fWeight = 1.0f;
-            vAccumulated_v3.f.z = fWeight * v3Repulsion.f.z + vAccumulated_v3.f.z;
-            vAccumulated_v3.f.y = fWeight * v3Repulsion.f.y + vAccumulated_v3.f.y;
-            vAccumulated_v3.f.x = fWeight * v3Repulsion.f.x + vAccumulated_v3.f.x;
+            nlVec3ScaleAdd(vAccumulated_v3, fWeight, v3Repulsion, vAccumulated_v3);
             fTotalWeight_v3 += fWeight;
 
             m_CurrentlyAvoiding |= AVOID_GOALIES;
@@ -359,10 +342,7 @@ void AvoidController::Update(float)
 
                 if (fMagnitude > 0.0f)
                 {
-                    if (!(fMagnitude <= 10.0f))
-                    {
-                        fMagnitude = 10.0f;
-                    }
+                    fMagnitude = (fMagnitude <= 10.0f) ? fMagnitude : 10.0f;
 
                     float fOutZ = v3Repulsion.f.z;
                     float fOutY = v3Repulsion.f.y;
@@ -382,9 +362,7 @@ void AvoidController::Update(float)
         if (bAvoidedSomething)
         {
             float fWeight = 1.0f;
-            vAccumulated_v3.f.z = fWeight * v3Repulsion.f.z + vAccumulated_v3.f.z;
-            vAccumulated_v3.f.y = fWeight * v3Repulsion.f.y + vAccumulated_v3.f.y;
-            vAccumulated_v3.f.x = fWeight * v3Repulsion.f.x + vAccumulated_v3.f.x;
+            nlVec3ScaleAdd(vAccumulated_v3, fWeight, v3Repulsion, vAccumulated_v3);
             fTotalWeight_v3 += fWeight;
 
             m_CurrentlyAvoiding |= AVOID_BOWSER;
@@ -742,9 +720,6 @@ bool AvoidController::CalcDesiredVelocityToAvoidSideline(
 /**
  * Offset/Address/Size: 0x8C8 | 0x80007F1C | size: 0x368
  */
-/**
- * TODO: 98.49% match - extsh. r4,r0 vs r0,r0 register allocation in first abs block
- */
 bool AvoidController::CalcDesiredVelocityToAvoidCorner(
     nlVector2& vNewDesiredVelDir,
     const sCornerSegment& corner,
@@ -754,9 +729,6 @@ bool AvoidController::CalcDesiredVelocityToAvoidCorner(
     bool bHitSideline = false;
     nlVector2 vSidelinePos;
     nlVector2 vSidelineNormal;
-    s16 startDiff;
-    int absStartI;
-
     nlVector2 vPosition = *(nlVector2*)&m_pFielder->m_v3Position;
     nlVector2 vBallPosition;
 
@@ -783,17 +755,9 @@ bool AvoidController::CalcDesiredVelocityToAvoidCorner(
         f32 fAngle = 10430.378f * nlATan2f(fDeltaY, fDeltaX);
         u16 aCornerToPos = (u16)(s32)fAngle;
 
-        startDiff = (s16)(aCornerToPos - corner.thetaStart);
-        absStartI = startDiff;
-        if (startDiff < 0)
-            absStartI = -startDiff;
-        u16 absStart = (u16)absStartI;
+        u16 absStart = (u16)abs_s16((s16)(aCornerToPos - corner.thetaStart));
 
-        s16 endDiff = (s16)(aCornerToPos - corner.thetaEnd);
-        int absEndI = endDiff;
-        if (endDiff < 0)
-            absEndI = -endDiff;
-        u16 absEnd = (u16)absEndI;
+        u16 absEnd = (u16)abs_s16((s16)(aCornerToPos - corner.thetaEnd));
 
         if (absStart >= absEnd)
             absEnd = absStart;
@@ -807,17 +771,9 @@ bool AvoidController::CalcDesiredVelocityToAvoidCorner(
             f32 fAngle2 = 10430.378f * nlATan2f(fFielderY, fFielderX);
             u16 aCornerToFielder = (u16)(s32)fAngle2;
 
-            startDiff = (s16)(aCornerToFielder - corner.thetaStart);
-            absStartI = startDiff;
-            if (startDiff < 0)
-                absStartI = -startDiff;
-            u16 absStart2 = (u16)absStartI;
+            u16 absStart2 = (u16)abs_s16((s16)(aCornerToFielder - corner.thetaStart));
 
-            s16 endDiff2 = (s16)(aCornerToFielder - corner.thetaEnd);
-            int absEnd2I = endDiff2;
-            if (endDiff2 < 0)
-                absEnd2I = -endDiff2;
-            u16 absEnd2 = (u16)absEnd2I;
+            u16 absEnd2 = (u16)abs_s16((s16)(aCornerToFielder - corner.thetaEnd));
 
             if (absStart2 >= absEnd2)
                 absEnd2 = absStart2;
@@ -828,32 +784,31 @@ bool AvoidController::CalcDesiredVelocityToAvoidCorner(
                 float ny;
                 ny = fInvDistance * fFielderY;
                 nx = fInvDistance * fFielderX;
-                float sidelineNormalY = v2Zero.f.y - ny;
-                float sidelineNormalX = v2Zero.f.x - nx;
-                float sidelinePosY = corner.fRadius * ny + corner.vCenter.f.y;
-                float sidelinePosX = corner.fRadius * nx + corner.vCenter.f.x;
-                vSidelineNormal.f.x = sidelineNormalX;
-                vSidelineNormal.f.y = sidelineNormalY;
-                vSidelinePos.f.x = sidelinePosX;
-                vSidelinePos.f.y = sidelinePosY;
+                nlVec2Set(vSidelineNormal, v2Zero.f.x - nx, v2Zero.f.y - ny);
+                nlVec2Set(vSidelinePos, corner.fRadius * nx + corner.vCenter.f.x, corner.fRadius * ny + corner.vCenter.f.y);
                 bHitSideline = CalcDesiredVelocityToAvoidSideline(
                     vNewDesiredVelDir, vCurrentDesiredVelDir, vCurrentVelDir, vSidelinePos, vSidelineNormal);
             }
             else if (m_pFielder->IsTurboing())
             {
                 float fInvDistance = nlRecipSqrt(fDeltaX * fDeltaX + fDeltaY * fDeltaY, true);
-                float nx;
-                float ny;
-                ny = fInvDistance * fDeltaY;
-                nx = fInvDistance * fDeltaX;
-                float sidelinePosY = corner.fRadius * ny + corner.vCenter.f.y;
+                float ny = fInvDistance * fDeltaY;
                 float sidelineNormalY = v2Zero.f.y - ny;
-                float sidelinePosX = corner.fRadius * nx + corner.vCenter.f.x;
-                float fCornerDistY = vBallPosition.f.y - sidelinePosY;
-                float sidelineNormalX = v2Zero.f.x - nx;
-                float fDotNormalVelY = sidelineNormalY * vCurrentDesiredVelDir.f.y;
-                float fCornerDistX = vBallPosition.f.x - sidelinePosX;
-                float fDotNormalVel = sidelineNormalX * vCurrentDesiredVelDir.f.x + fDotNormalVelY;
+                float nx = fInvDistance * fDeltaX;
+                float sidelinePosX;
+                float sidelinePosY;
+                float sidelineNormalX;
+                float fCornerDistX;
+                float fCornerDistY;
+                float fDotNormalVelY;
+                float fDotNormalVel;
+                sidelinePosY = corner.fRadius * ny + corner.vCenter.f.y;
+                sidelinePosX = corner.fRadius * nx + corner.vCenter.f.x;
+                fCornerDistY = vBallPosition.f.y - sidelinePosY;
+                sidelineNormalX = v2Zero.f.x - nx;
+                fDotNormalVelY = sidelineNormalY * vCurrentDesiredVelDir.f.y;
+                fDotNormalVel = sidelineNormalX * vCurrentDesiredVelDir.f.x + fDotNormalVelY;
+                fCornerDistX = vBallPosition.f.x - sidelinePosX;
                 vSidelineNormal.f.y = sidelineNormalY;
                 vSidelineNormal.f.x = sidelineNormalX;
                 vSidelinePos.f.x = sidelinePosX;

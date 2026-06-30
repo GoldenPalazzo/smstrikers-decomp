@@ -1399,9 +1399,41 @@ static inline void AddPointToGrid(SaveData* pSaveData, const nlVector3& v3Point)
     }
 }
 
+static inline void FindVerticalBoundingPoints(SaveData* pSaveData, const nlVector3& v3TargetPoint, SaveData** pLoPoint, SaveData** pHiPoint)
+{
+    SaveData* pHiSaveData = pSaveData;
+    SaveData* pLoSaveData = pSaveData;
+
+    while (pHiSaveData != NULL && v3TargetPoint.f.z > pHiSaveData->mv3SavePos.f.z)
+    {
+        pLoSaveData = pHiSaveData;
+        pHiSaveData = pHiSaveData->mpConnectedSaveData[0];
+    }
+    while (pLoSaveData != NULL && v3TargetPoint.f.z < pLoSaveData->mv3SavePos.f.z)
+    {
+        pHiSaveData = pLoSaveData;
+        pLoSaveData = pLoSaveData->mpConnectedSaveData[1];
+    }
+    if (pLoSaveData == NULL)
+    {
+        *pLoPoint = pHiSaveData;
+        *pHiPoint = pHiSaveData;
+    }
+    else if (pHiSaveData == NULL)
+    {
+        *pLoPoint = pLoSaveData;
+        *pHiPoint = pLoSaveData;
+    }
+    else
+    {
+        *pHiPoint = pHiSaveData;
+        *pLoPoint = pLoSaveData;
+    }
+}
+
 /**
  * Offset/Address/Size: 0x780 | 0x80053BA0 | size: 0x64C
- * TODO: 98.46% match - root save-data, closest pointer, and z-distance registers remain shifted in nested grid traversal.
+ * TODO: 99.24% match - root save-data, bottom row, and closest pointer registers remain shifted in nested grid traversal.
  */
 void GoalieSave::AddAreaToGrid(SaveData* pSaveData)
 {
@@ -1538,68 +1570,20 @@ void GoalieSave::AddAreaToGrid(SaveData* pSaveData)
 
         while (v3CurColPos.f.z < v3TopRight.f.z)
         {
-            pCurRightUp = pCurLeft;
-            pCur = pCurLeft;
-            for (; pCurRightUp != NULL && v3CurColPos.f.z > pCurRightUp->mv3SavePos.f.z; pCurRightUp = pCurRightUp->mpConnectedSaveData[0])
-            {
-                pCur = pCurRightUp;
-            }
-            for (; pCur != NULL && v3CurColPos.f.z < pCur->mv3SavePos.f.z; pCur = pCur->mpConnectedSaveData[1])
-            {
-                pCurRightUp = pCur;
-            }
-            if (pCur == NULL)
-            {
-                pCurLeft = pCurRightUp;
-                pCurUp = pCurRightUp;
-            }
-            else if (pCurRightUp == NULL)
-            {
-                pCurLeft = pCur;
-                pCurUp = pCur;
-            }
-            else
-            {
-                pCurUp = pCurRightUp;
-                pCurLeft = pCur;
-            }
+            FindVerticalBoundingPoints(pCurLeft, v3CurColPos, &pCurLeft, &pCurUp);
 
-            pCurRightUp = pCurRight;
-            pCur = pCurRight;
-            for (; pCurRightUp != NULL && v3CurColPos.f.z > pCurRightUp->mv3SavePos.f.z; pCurRightUp = pCurRightUp->mpConnectedSaveData[0])
-            {
-                pCur = pCurRightUp;
-            }
-            for (; pCur != NULL && v3CurColPos.f.z < pCur->mv3SavePos.f.z; pCur = pCur->mpConnectedSaveData[1])
-            {
-                pCurRightUp = pCur;
-            }
-            if (pCur == NULL)
-            {
-                pCurRight = pCurRightUp;
-            }
-            else if (pCurRightUp == NULL)
-            {
-                pCurRight = pCur;
-                pCurRightUp = pCur;
-            }
-            else
-            {
-                pCurRight = pCur;
-            }
+            FindVerticalBoundingPoints(pCurRight, v3CurColPos, &pCurRight, &pCurRightUp);
 
             {
-                float z = v3CurColPos.f.z;
-                float y = v3CurColPos.f.y;
-                float dy = pCurLeft->mv3SavePos.f.y - y;
-                float dz = pCurLeft->mv3SavePos.f.z - z;
+                float dy = pCurLeft->mv3SavePos.f.y - v3CurColPos.f.y;
+                float dz = pCurLeft->mv3SavePos.f.z - v3CurColPos.f.z;
                 fCloseDist = dy * dy + dz * dz;
                 pClosest = pCurLeft;
 
                 if (pCurLeft != pCurUp)
                 {
-                    float upDy = pCurUp->mv3SavePos.f.y - y;
-                    float upDz = pCurUp->mv3SavePos.f.z - z;
+                    float upDy = pCurUp->mv3SavePos.f.y - v3CurColPos.f.y;
+                    float upDz = pCurUp->mv3SavePos.f.z - v3CurColPos.f.z;
                     float d = upDy * upDy + upDz * upDz;
                     if (d < fCloseDist)
                     {
@@ -1610,8 +1594,8 @@ void GoalieSave::AddAreaToGrid(SaveData* pSaveData)
 
                 if (pCurLeft != pCurRight)
                 {
-                    float rightDy = pCurRight->mv3SavePos.f.y - y;
-                    float rightDz = pCurRight->mv3SavePos.f.z - z;
+                    float rightDy = pCurRight->mv3SavePos.f.y - v3CurColPos.f.y;
+                    float rightDz = pCurRight->mv3SavePos.f.z - v3CurColPos.f.z;
                     float d = rightDy * rightDy + rightDz * rightDz;
                     if (d < fCloseDist)
                     {
@@ -1620,8 +1604,8 @@ void GoalieSave::AddAreaToGrid(SaveData* pSaveData)
                     }
                     if (pCurRight != pCurRightUp)
                     {
-                        float upRightDy = pCurRightUp->mv3SavePos.f.y - y;
-                        float upRightDz = pCurRightUp->mv3SavePos.f.z - z;
+                        float upRightDy = pCurRightUp->mv3SavePos.f.y - v3CurColPos.f.y;
+                        float upRightDz = pCurRightUp->mv3SavePos.f.z - v3CurColPos.f.z;
                         float d2 = upRightDy * upRightDy + upRightDz * upRightDz;
                         if (d2 < fCloseDist)
                         {

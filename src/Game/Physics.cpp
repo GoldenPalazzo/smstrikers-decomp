@@ -333,7 +333,7 @@ void PhysicsLoader::ConstructStaticPhysicsPrimitives(CharacterPhysicsData* pPhys
 
 /**
  * Offset/Address/Size: 0x728 | 0x80133238 | size: 0x2C0
- * TODO: 98.81% match - list head/tail, sideline, corner, and net mesh ID registers still differ.
+ * TODO: 98.86% match - list head/tail, sideline, corner, and net mesh ID registers still differ.
  */
 bool PhysicsLoader::StartLoad(LoadingManager*)
 {
@@ -400,8 +400,8 @@ bool PhysicsLoader::StartLoad(LoadingManager*)
         ListEntry<PhysicsObject*>* pWallEntry = (ListEntry<PhysicsObject*>*)pMem;
         if (pMem != NULL)
         {
-            pWallEntry->next = NULL;
-            pWallEntry->data = pWall;
+            ((ListEntry<PhysicsObject*>*)pMem)->next = NULL;
+            ((ListEntry<PhysicsObject*>*)pMem)->data = pWall;
         }
 
         nlListAddEnd(pHead, pTail, pWallEntry);

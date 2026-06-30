@@ -474,6 +474,7 @@ BasicString<CharT, Allocator> BasicString<CharT, Allocator>::Trim(const CharT* c
     return BasicString(data);
 }
 
+// TODO: 98.65% match - this/begin register swap and offset/new data register split.
 template <typename CharT, typename Allocator>
 void BasicString<CharT, Allocator>::insert(CharT* at, const CharT* begin, const CharT* end)
 {
@@ -510,18 +511,18 @@ void BasicString<CharT, Allocator>::insert(CharT* at, const CharT* begin, const 
         newVec.mData = oldBuf;
     }
 
-    CharT* pos = data->mData + insertPos;
+    at = data->mData + insertPos;
     CharT* t = data->mData + data->mSize - 1;
-    while (t >= pos)
+    while (t >= at)
     {
         *(t + size) = *t;
         t--;
     }
     while (begin != end)
     {
-        *pos = *begin;
+        *at = *begin;
         begin++;
-        pos++;
+        at++;
     }
     data->mSize += size;
 }

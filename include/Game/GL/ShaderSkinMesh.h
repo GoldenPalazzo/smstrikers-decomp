@@ -71,6 +71,7 @@ public:
     virtual void GetPoseMatrices(GLSkinMeshMatrix*);
     virtual void SetPoseMatrices(int, GLSkinMeshMatrix*);
 
+    void CreateMorphBuffer();
     void SetMorphIDs(const unsigned long*);
     void SetBoneMatrix(unsigned long, const nlMatrix4*);
     void AppendSkinPairList(int, const SkinPair*);

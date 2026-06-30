@@ -171,34 +171,43 @@ float SeekSpeed(float fCurrent, float fDesired, float fSeekAccel, float fSeekDec
 
 /**
  * Offset/Address/Size: 0xFA4 | 0x80006A50 | size: 0x11C
- * TODO: 98.80% match - identical instruction schedule; pure FPR coloring diff
- * in the magnitude block. The pos2.x load lands in f6 instead of target f7,
- * cascading the velocity-component temps up to f9/f10 (target f4/f5) and
- * speed2Sq to f11 (target f9).
+ * TODO: 99.01% match - identical instruction schedule; remaining FPR coloring
+ * diff in the magnitude block. speed2Sq now matches target f9, but the pos2.x
+ * load still lands in f6 instead of target f7, cascading velocity-component
+ * temps to f10/f11 instead of target f4/f5.
  */
 void CalcInterceptXY(const nlVector3& pos1, f32 speed1, f32 speed2, const nlVector3& pos2, const nlVector3& vel, int& count, f32* times)
 {
-    f32 speed2Sq = speed2 * speed2;
-    f32 speed1Sq = speed1 * speed1;
+    struct Terms
+    {
+        f32 limbSq;
+        f32 speedSq;
+        f32 distSq;
+        f32 dot;
+        f32 velSq;
+    };
+    Terms terms;
 
     nlVector3 delta;
     nlVec3Sub2D(delta, pos2, pos1);
 
-    f32 dotVelDelta = nlVec3DotProduct2D(vel, delta);
-    f32 velSq = vel.GetLengthSq2D();
-    f32 distSq = delta.GetLengthSq2D();
+    terms.limbSq = speed2 * speed2;
+    terms.speedSq = speed1 * speed1;
+    terms.dot = nlVec3DotProduct2D(vel, delta);
+    terms.velSq = vel.GetLengthSq2D();
+    terms.distSq = delta.GetLengthSq2D();
 
-    f32 a = velSq - speed1Sq;
+    f32 a = terms.velSq - terms.speedSq;
 
-    if (distSq <= speed2Sq)
+    if (terms.distSq <= terms.limbSq)
     {
         count = 1;
         times[0] = 0.0f;
         return;
     }
 
-    f32 b = 2.0f * (dotVelDelta - speed2 * speed1);
-    f32 c = distSq - speed2Sq;
+    f32 b = 2.0f * (terms.dot - speed2 * speed1);
+    f32 c = terms.distSq - terms.limbSq;
 
     int numRoots;
     f32 t[2];

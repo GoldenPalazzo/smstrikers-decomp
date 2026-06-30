@@ -265,14 +265,12 @@ void PhysicsAIBall::CheckIfBallWentThroughGoalie()
             contactInfo.geom.g1 = m_geomID;
             contactInfo.geom.g2 = NULL;
 
-            float negRadius = -GetRadius();
-            float posZ = (negRadius * contactNormal.f.z) + ballPosition.f.z;
-            float posY = (negRadius * contactNormal.f.y) + ballPosition.f.y;
-            float posX = (negRadius * contactNormal.f.x) + ballPosition.f.x;
+            nlVector3 contactPos;
+            nlVec3ScaleAdd(contactPos, -GetRadius(), contactNormal, ballPosition);
 
-            contactInfo.geom.pos[2] = posZ;
-            contactInfo.geom.pos[1] = posY;
-            contactInfo.geom.pos[0] = posX;
+            contactInfo.geom.pos[1] = contactPos.f.y;
+            contactInfo.geom.pos[2] = contactPos.f.z;
+            contactInfo.geom.pos[0] = contactPos.f.x;
             contactInfo.geom.depth = 0.0f;
 
             if (!pGoalie->PreCollideWithBallCallback(contactInfo))
@@ -302,19 +300,19 @@ void PhysicsAIBall::CheckIfBallWentThroughGoalie()
             pCollisionData->boneID = 0;
             m_unk_0x50 = 0;
 
-            float normalY = contactNormal.f.y;
-            float velY = v3Vel.f.y;
-            float normalYSq = normalY * normalY;
-            float normalX = contactNormal.f.x;
-            float velYNormalY = velY * normalY;
-            float velX = v3Vel.f.x;
-            float velZ = v3Vel.f.z;
-            float normalLenXY = (normalX * normalX) + normalYSq;
-            float normalZ = contactNormal.f.z;
-            float dotXY = (velX * normalX) + velYNormalY;
-            float normalLengthSq = (normalZ * normalZ) + normalLenXY;
-            float velDotNormal = (velZ * normalZ) + dotXY;
-            float reflectScale = velDotNormal / normalLengthSq;
+            const float normalY = contactNormal.f.y;
+            const float velY = v3Vel.f.y;
+            const float normalYSq = normalY * normalY;
+            const float normalX = contactNormal.f.x;
+            const float velYNormalY = velY * normalY;
+            const float velX = v3Vel.f.x;
+            const float velZ = v3Vel.f.z;
+            const float normalLenXY = (normalX * normalX) + normalYSq;
+            const float normalZ = contactNormal.f.z;
+            const float dotXY = (velX * normalX) + velYNormalY;
+            const float normalLengthSq = (normalZ * normalZ) + normalLenXY;
+            const float velDotNormal = (velZ * normalZ) + dotXY;
+            const float reflectScale = velDotNormal / normalLengthSq;
 
             nlVector3 v3ExitVel;
             v3ExitVel.f.x = (-2.0f * (reflectScale * normalX)) + velX;

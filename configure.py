@@ -1131,7 +1131,7 @@ config.libs = [
             Object(Matching, "Game/GL/GLSkinMesh.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/GL/gluMeshWriter.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/GL/gluSkinMesh.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(NonMatching, "Game/GL/ShaderSkinMesh.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(Matching, "Game/GL/ShaderSkinMesh.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
 
             # FX
             Object(NonMatching, "Game/objectblur.cpp", extra_cflags=["-inline auto"]),

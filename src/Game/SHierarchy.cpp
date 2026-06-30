@@ -217,14 +217,28 @@ static inline void* nlGetChunkData(nlChunk* chunk)
     return (void*)((u8*)chunk + 8);
 }
 
+static inline void* nlGetChunkDataAligned(nlChunk* chunk)
+{
+    u32 alignField = chunk->m_ID & 0x7F000000;
+    if (((-alignField) | alignField) >> 31)
+    {
+        u32 alignment = 1u << (alignField >> 24);
+        u32 result = (u32)chunk + alignment;
+        result = (result + 7) & ~(alignment - 1);
+        return (void*)result;
+    }
+    return (void*)((u8*)chunk + 8);
+}
+
 static inline nlChunk* nlGetNextChunk(nlChunk* chunk)
 {
     return (nlChunk*)((u8*)chunk + chunk->m_Size + 8);
 }
 
-// NONMATCHING - regalloc
+// NONMATCHING
 /**
  * Offset/Address/Size: 0x354 | 0x801EE340 | size: 0x3E0
+ * TODO: 99.78% match - first name chunk walk keeps the next chunk in r4 instead of r6.
  */
 cSHierarchy* cSHierarchy::Initialize(nlChunk* chunkData)
 {
@@ -238,16 +252,16 @@ cSHierarchy* cSHierarchy::Initialize(nlChunk* chunkData)
     hier->m_nodeIDs = (u32*)nlGetChunkData(chunk);
 
     chunk = nlGetNextChunk(chunk);
-    hier->m_parentIndices = (s32*)nlGetChunkData(chunk);
+    hier->m_parentIndices = (s32*)nlGetChunkDataAligned(chunk);
 
     chunk = nlGetNextChunk(chunk);
-    hier->m_childCounts = (s32*)nlGetChunkData(chunk);
+    hier->m_childCounts = (s32*)nlGetChunkDataAligned(chunk);
 
     chunk = nlGetNextChunk(chunk);
-    hier->m_childArrays = (s32**)nlGetChunkData(chunk);
+    hier->m_childArrays = (s32**)nlGetChunkDataAligned(chunk);
 
     chunk = nlGetNextChunk(chunk);
-    hier->m_pushPopFlags = (s32*)nlGetChunkData(chunk);
+    hier->m_pushPopFlags = (s32*)nlGetChunkDataAligned(chunk);
 
     nlChunk* childDataChunk = nlGetNextChunk(chunk);
     s32* childData = (s32*)nlGetChunkData(childDataChunk);
@@ -269,13 +283,13 @@ cSHierarchy* cSHierarchy::Initialize(nlChunk* chunkData)
     hier->BuildPushPopFlags(0, 0, stackDepth);
 
     chunk = nlGetNextChunk(childDataChunk);
-    hier->m_mirroredNodeIndices = (s32*)nlGetChunkData(chunk);
+    hier->m_mirroredNodeIndices = (s32*)nlGetChunkDataAligned(chunk);
 
     chunk = nlGetNextChunk(chunk);
-    hier->m_translationOffsets = (nlVector3*)nlGetChunkData(chunk);
+    hier->m_translationOffsets = (nlVector3*)nlGetChunkDataAligned(chunk);
 
     chunk = nlGetNextChunk(chunk);
-    hier->m_boneLengthFlags = (u8*)nlGetChunkData(chunk);
+    hier->m_boneLengthFlags = (u8*)nlGetChunkDataAligned(chunk);
 
     return hier;
 }

@@ -1170,7 +1170,7 @@ unsigned long FormatCallbacks::FormatDoneCB(unsigned long channel, long result, 
 
 /**
  * Offset/Address/Size: 0x11DC | 0x8018AB38 | size: 0xC7C
- * TODO: 87.28% match - Slot/Result register allocation, extra block-count
+ * TODO: 88.11% match - Slot/Result register allocation, extra block-count
  * loop guards, and icon header size register scheduling differ.
  */
 #pragma push
@@ -1237,7 +1237,9 @@ unsigned long SaveCallbacks::CardMountCB(unsigned long Slot, long Result, void* 
     }
     long dataSize = nlSingleton<GameInfoManager>::s_pInstance->GetMemoryCardDataSize() + 12;
     Result = g_MemCards[Slot]->FileExists(MarioSoccerFileName);
-    if (Result == 0)
+    switch (Result)
+    {
+    case 0:
     {
         m_pSaveFile = NULL;
         unsigned long openSize;
@@ -1405,7 +1407,8 @@ unsigned long SaveCallbacks::CardMountCB(unsigned long Slot, long Result, void* 
             return -1;
         }
     }
-    else if (Result == -4)
+    break;
+    case -4:
     {
         IconCfg.BannerFormat = 0;
         IconCfg.IconCount = 0;
@@ -1476,7 +1479,8 @@ unsigned long SaveCallbacks::CardMountCB(unsigned long Slot, long Result, void* 
             return -1;
         }
     }
-    else
+    break;
+    default:
     {
         long errorCode = Result;
         if (m_pSaveFile != NULL)
@@ -1527,6 +1531,8 @@ unsigned long SaveCallbacks::CardMountCB(unsigned long Slot, long Result, void* 
         g_Callback(errorCode);
         ResetTask::s_resetPaused = false;
         return -1;
+    }
+    break;
     }
     return 0;
 }

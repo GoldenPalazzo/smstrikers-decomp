@@ -926,9 +926,9 @@ bool BasicStadium::DoInitialize()
         u32* pData = (u32*)nlLoadEntireFile(szOptBin, &fileSize, 0x20, AllocateEnd);
         if (pData != NULL)
         {
-            u32* pCur = pData;
-            unsigned long j;
             u32 uFlags = eOC_OPTIMIZE_OUT_FROM_GAMEPLAY;
+            unsigned long j;
+            u32* pCur = pData;
             fileSize = fileSize >> 2;
             for (j = 0; j < fileSize; j++)
             {

@@ -1344,19 +1344,9 @@ void cFielder::DesireMark(float fDeltaT)
         float fMarkX = m_pMark->m_v3Position.f.x + (0.1f * m_pMark->m_v3Velocity.f.x);
         float fMarkZ = 0.0f;
 
-        float dirY = v3NetPosition.f.y - fMarkY;
-        float dirX = v3NetPosition.f.x - fMarkX;
-        float dirZ = v3NetPosition.f.z - fMarkZ;
-
-        {
-            nlVector3 v3Dir;
-            nlVec3Set(v3Dir, dirX, dirY, dirZ);
-            float fInvLength = nlRecipSqrt(nlVec3LengthSquared(v3Dir), true);
-            nlVec3Scale(v3Dir, fInvLength);
-            dirY = v3Dir.f.y;
-            dirX = v3Dir.f.x;
-            dirZ = v3Dir.f.z;
-        }
+        nlVector3 v3Dir;
+        nlVec3Set(v3Dir, v3NetPosition.f.x - fMarkX, v3NetPosition.f.y - fMarkY, v3NetPosition.f.z - fMarkZ);
+        nlVec3Scale(v3Dir, nlRecipSqrt(nlVec3LengthSquared(v3Dir), true));
 
         float fTotalWeight_v3 = 0.0f;
 
@@ -1418,12 +1408,12 @@ void cFielder::DesireMark(float fDeltaT)
                     sbcDirZ = v3SBCDir.f.z;
                 }
 
-                if (((sbcDirY * dirY) + (sbcDirX * dirX) + (sbcDirZ * dirZ)) >= 0.0f)
+                if (((sbcDirY * v3Dir.f.y) + (sbcDirX * v3Dir.f.x) + (sbcDirZ * v3Dir.f.z)) >= 0.0f)
                 {
                     float fToMarkNetPassBalance = 1.0f - fMarkingNetPassBalance;
-                    dirY = (fToMarkNetPassBalance * dirY) + (fMarkingNetPassBalance * sbcDirY);
-                    dirX = (fToMarkNetPassBalance * dirX) + (fMarkingNetPassBalance * sbcDirX);
-                    dirZ = (fToMarkNetPassBalance * dirZ) + (fMarkingNetPassBalance * sbcDirZ);
+                    v3Dir.f.y = (fToMarkNetPassBalance * v3Dir.f.y) + (fMarkingNetPassBalance * sbcDirY);
+                    v3Dir.f.x = (fToMarkNetPassBalance * v3Dir.f.x) + (fMarkingNetPassBalance * sbcDirX);
+                    v3Dir.f.z = (fToMarkNetPassBalance * v3Dir.f.z) + (fMarkingNetPassBalance * sbcDirZ);
                 }
 
                 float fToNetY = v3NetPosition.f.y - fSBCY;
@@ -1455,16 +1445,13 @@ void cFielder::DesireMark(float fDeltaT)
         }
 
         {
-            float fMarkTargetY = (fMarkingDistance * dirY) + fMarkY;
-            float fMarkTargetX = (fMarkingDistance * dirX) + fMarkX;
-            float fMarkTargetZ = (fMarkingDistance * dirZ) + fMarkZ;
-
-            float fMarkWeightedX = (fMarkFormationBalance * fMarkTargetX) + vAccumulated_v3.f.x;
-            float fMarkWeightedZ = (fMarkFormationBalance * fMarkTargetZ) + vAccumulated_v3.f.z;
-            float fMarkWeightedY = (fMarkFormationBalance * fMarkTargetY) + vAccumulated_v3.f.y;
-            vAccumulated_v3.f.x = fMarkWeightedX;
-            vAccumulated_v3.f.z = fMarkWeightedZ;
-            vAccumulated_v3.f.y = fMarkWeightedY;
+            nlVector3 v3MarkTarget;
+            nlVec3Set(
+                v3MarkTarget,
+                (fMarkingDistance * v3Dir.f.x) + fMarkX,
+                (fMarkingDistance * v3Dir.f.y) + fMarkY,
+                (fMarkingDistance * v3Dir.f.z) + fMarkZ);
+            nlVec3ScaleAdd(vAccumulated_v3, fMarkFormationBalance, v3MarkTarget, vAccumulated_v3);
             fTotalWeight_v3 = fTotalWeight_v3 + fMarkFormationBalance;
         }
 
@@ -2379,26 +2366,27 @@ void cFielder::InitDesireReceivePassFromRun(const LooseBallContactAnimInfo* pAni
 
 /**
  * Offset/Address/Size: 0x130C | 0x80032090 | size: 0xADC
- * TODO: 98.98% match - opening pass/ball direction dot product has FPR allocation mismatches for normalized direction and velocity terms
+ * TODO: 99.93% match - scratch diff only reports local constant label relocations for 0.98f and 0.0f
  */
 void cFielder::DesireReceivePassFromRun(float fDeltaT)
 {
-    float yDiff = m_DesireReceivePassSharedVars.v3BallPosition.f.x - g_pBall->m_v3Position.f.x;
-    float xDiff = m_DesireReceivePassSharedVars.v3BallPosition.f.y - g_pBall->m_v3Position.f.y;
-
-    float invDist = nlRecipSqrt(yDiff * yDiff + xDiff * xDiff, true);
-    float normY = invDist * yDiff;
-    yDiff = invDist * xDiff;
+    nlVector3 vBallDir;
+    vBallDir.Sub2D(m_DesireReceivePassSharedVars.v3BallPosition, g_pBall->m_v3Position);
+    float invDist = nlRecipSqrt(vBallDir.GetLengthSq2D(), true);
+    float normY = invDist * vBallDir.f.y;
+    vBallDir.f.y = invDist * vBallDir.f.x;
 
     cBall* pBall = g_pBall;
     invDist = nlRecipSqrt(pBall->m_v3Velocity.f.x * pBall->m_v3Velocity.f.x + pBall->m_v3Velocity.f.y * pBall->m_v3Velocity.f.y, true);
 
-    float ballVelNormY = invDist * pBall->m_v3Velocity.f.y;
-    float ballVelNormX = invDist * pBall->m_v3Velocity.f.x;
+    float ballVelNormX;
+    float ballVelNormY;
+    ballVelNormY = invDist * pBall->m_v3Velocity.f.y;
+    ballVelNormX = invDist * pBall->m_v3Velocity.f.x;
 
     if (m_pBall == NULL && m_eDesireSubState != 1)
     {
-        invDist = normY * ballVelNormY + yDiff * ballVelNormX;
+        invDist = vBallDir.f.y * ballVelNormX + normY * ballVelNormY;
         float fDot = invDist;
         if (fDot < 0.98f || g_pBall->m_pOwner != NULL)
         {
@@ -2576,7 +2564,8 @@ void cFielder::DesireReceivePassFromRun(float fDeltaT)
                         }
 
                         DoResetShotMeter(0.0f);
-                        m_pShotMeter->CalcOneTimerValue(this, UsePerfectPass());
+                        ShotMeter* pShotMeter = m_pShotMeter;
+                        pShotMeter->CalcOneTimerValue(this, UsePerfectPass());
                         InitDesire(FIELDERDESIRE_FINISH_ACTION, 0.5f, -1.0f, fvNotSet, fvNotSet);
                         InitActionShot(m_DesireReceivePassSharedVars.iAttemptOneTouchShot == 2);
                         return;
@@ -2604,7 +2593,8 @@ void cFielder::DesireReceivePassFromRun(float fDeltaT)
                     else
                     {
                         DoResetShotMeter(0.0f);
-                        m_pShotMeter->CalcOneTimerValue(this, UsePerfectPass());
+                        ShotMeter* pShotMeter = m_pShotMeter;
+                        pShotMeter->CalcOneTimerValue(this, UsePerfectPass());
                         InitDesire(FIELDERDESIRE_FINISH_ACTION, 0.5f, -1.0f, fvNotSet, fvNotSet);
                         InitActionShot(m_DesireReceivePassSharedVars.iAttemptOneTouchShot == 2);
                     }

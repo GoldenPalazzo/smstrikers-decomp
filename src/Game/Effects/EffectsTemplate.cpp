@@ -70,11 +70,15 @@ float RandomizedValue(float base, float range)
 
 /**
  * Offset/Address/Size: 0xFD4 | 0x801F1B98 | size: 0x28C
- * TODO: 98.04% match - residual span-loop register allocation differs.
  */
+static inline unsigned char& ColourComponent(nlColour* pColour, int index, int cindex)
+{
+    return pColour[index].c[cindex];
+}
+
 static void BlendSpan(nlColour* pColour, int cindex, const ColourKey& k0, const ColourKey& k1)
 {
-    pColour[k1.index].c[cindex] = k1.value;
+    ColourComponent(pColour, k1.index, cindex) = k1.value;
     int index = k0.index;
     int value = k0.value;
     int valueDiff = k1.value - value;
@@ -128,9 +132,10 @@ static void GetColourComponent(SimpleParser* parser, nlColour* pColour, int cind
         entry = new (entry) DLListEntry<ColourKey>(localEntry);
         nlDLRingAddEnd<DLListEntry<ColourKey> >(&keys.m_Head, entry);
     }
+    DLListEntry<ColourKey>* current;
     DLListEntry<ColourKey>* start = nlDLRingGetStart<DLListEntry<ColourKey> >(keys.m_Head);
     DLListEntry<ColourKey>* head = keys.m_Head;
-    DLListEntry<ColourKey>* current = start;
+    current = start;
     while (true)
     {
         if (nlDLRingIsEnd<DLListEntry<ColourKey> >(head, current) || current == NULL)

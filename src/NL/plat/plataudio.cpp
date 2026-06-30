@@ -1591,7 +1591,10 @@ static inline void (*InitAuxEffect(MusyXEffectType type, void* data))(u8 reason,
         break;
     default:
         nlPrintf("InitAuxEffect: Unaccounted-for case.\n");
-        callback = NULL;
+        {
+            void (*defaultCallback)(u8 reason, SND_AUX_INFO* info, void* user);
+            callback = defaultCallback;
+        }
         break;
     }
 
@@ -1600,7 +1603,6 @@ static inline void (*InitAuxEffect(MusyXEffectType type, void* data))(u8 reason,
 
 /**
  * Offset/Address/Size: 0x2028 | 0x801C6824 | size: 0x244
- * TODO: 99.31% match - default InitAuxEffect path still clears callback before the final NULL check.
  */
 static bool AddAuxEffect(MusyXEffectType type, void* data, bool arg2, unsigned char arg3)
 {

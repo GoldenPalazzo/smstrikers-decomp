@@ -330,11 +330,11 @@ FuzzyVariant Fuzzy::GetSwapControllerScore(cPlayer* ThePlayer)
         team = ThePlayer != NULL ? ThePlayer->m_pTeam : NULL;
         if (BallOwnerT(team) && ThePlayer->m_eClassType == FIELDER)
         {
-            float shootScore = Fuzzy::GoodToShoot((cFielder*)ThePlayer).mData.f;
+            const float& shootScore = Fuzzy::GoodToShoot((cFielder*)ThePlayer).mData.f;
             float weight = 0.5f;
             flag = 0;
             totalWeight += weight;
-            weightedSum += shootScore * weight;
+            weightedSum += weight * shootScore;
         }
     }
 
@@ -382,14 +382,16 @@ FuzzyVariant Fuzzy::GetSwapControllerScore(cPlayer* ThePlayer)
     if (totalWeight > 0.0f)
         result = weightedSum / totalWeight;
 
-    unsigned char isIdle = 0;
-    float absVal = (float)fabs((double)ThePlayer->m_v3ScreenPosition.f.x);
-    if (1.0f >= absVal)
+    u8 isIdle;
+    isIdle = 0;
+    if ((float)fabs(ThePlayer->m_v3ScreenPosition.f.x) <= 1.0f)
     {
-        absVal = (float)fabs((double)ThePlayer->m_v3ScreenPosition.f.y);
-        if (1.0f >= absVal)
+        if ((float)fabs(ThePlayer->m_v3ScreenPosition.f.y) <= 1.0f)
             isIdle = 1;
     }
+
+    if (isIdle)
+        result = result;
 
     bestValue = FuzzyVariant(result);
     bestValue.Confidence = 1.0f;

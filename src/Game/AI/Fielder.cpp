@@ -79,13 +79,30 @@ FuzzyVariant GetBestWindupShotAction(cFielder*);
 
 const nlVector3 v3Zero = { 0.0f, 0.0f, 0.0f };
 
-static const float fBallAwayFromCarrierMinTime = 0.0f; // @4959
-static const float fBallAwayFromCarrierMaxTime = 1.0f; // @4960
-
-static LooseBallContactAnimInfo gOneTimerIdleGroundContactAnims[4];
-static LooseBallContactAnimInfo gOneTimerIdleVolleyContactAnims[4];
-static LooseBallContactAnimInfo gOneTimerLeadGroundContactAnims[4];
-static LooseBallContactAnimInfo gOneTimerLeadVolleyContactAnims[4];
+static const LooseBallContactAnimInfo gOneTimerIdleGroundContactAnims[4] = {
+    { 0x40, 7.0f, 0xE000, 0x2000 },
+    { 0x41, 7.0f, 0xA000, 0xE000 },
+    { 0x43, 7.0f, 0x6000, 0xA000 },
+    { 0x42, 7.0f, 0x2000, 0x6000 },
+};
+static const LooseBallContactAnimInfo gOneTimerIdleVolleyContactAnims[4] = {
+    { 0x48, 10.0f, 0xE000, 0x2000 },
+    { 0x49, 9.0f, 0xA000, 0xE000 },
+    { 0x4B, 9.0f, 0x6000, 0xA000 },
+    { 0x4A, 9.0f, 0x2000, 0x6000 },
+};
+static const LooseBallContactAnimInfo gOneTimerLeadGroundContactAnims[4] = {
+    { 0x44, 9.0f, 0xE000, 0x2000 },
+    { 0x45, 9.0f, 0xA000, 0xE000 },
+    { 0x47, 9.0f, 0x6000, 0xA000 },
+    { 0x46, 9.0f, 0x2000, 0x6000 },
+};
+static const LooseBallContactAnimInfo gOneTimerLeadVolleyContactAnims[4] = {
+    { 0x4C, 10.0f, 0xE000, 0x2000 },
+    { 0x4D, 10.0f, 0xA000, 0xE000 },
+    { 0x4F, 10.0f, 0x6000, 0xA000 },
+    { 0x4E, 9.5f, 0x2000, 0x6000 },
+};
 
 // Static arrays for GetReceivePassBallContactAnimInfo
 static LooseBallContactAnimInfo IdleGroundContactAnims[1] = {
@@ -128,14 +145,6 @@ static LooseBallContactAnimInfo LeadVolleyContactAnims[3] = {
 //     }
 //     return result;
 // }
-
-/**
- * Offset/Address/Size: 0x0 | 0x80026B20 | size: 0x8
- */
-u32 PlayerAttackData::GetID()
-{
-    return 0x19a;
-}
 
 // /**
 //  * Offset/Address/Size: 0x8 | 0x80026B18 | size: 0x8
@@ -2405,7 +2414,7 @@ bool cFielder::DoLooseBallContactFromIdle(nlVector3& v3AnimStartPosition, float&
 
 /**
  * Offset/Address/Size: 0x87A8 | 0x80021AE4 | size: 0x270
- * TODO: 99.33% match - remaining temporary register differences in contact-offset rotation block
+ * TODO: 99.94% match - remaining commuted fmadds operands in contact-offset rotation block
  */
 bool cFielder::DoLooseBallContactFromRun(nlVector3& v3AnimStartPosition, float& fAnimStartTime, nlVector3& v3BallContactPosition, float& fBallContactTime,
     const LooseBallContactAnimInfo* pBestBallContactAnimInfo, const nlVector3& v3PassIntercept)
@@ -2472,16 +2481,17 @@ bool cFielder::DoLooseBallContactFromRun(nlVector3& v3AnimStartPosition, float& 
     float ySin = v3ContactOffsetLocal.f.y * fSin;
     float xSin = v3ContactOffsetLocal.f.x * fSin;
     pContactOffsetWorld->f.x = (v3ContactOffsetLocal.f.x * fCos) - ySin;
-    pContactOffsetWorld->f.y = (v3ContactOffsetLocal.f.y * fCos) + xSin;
+    pContactOffsetWorld->f.y = (fCos * v3ContactOffsetLocal.f.y) + xSin;
     pContactOffsetWorld->f.z = v3ContactOffsetLocal.f.z;
 
     float fDesiredSpeedToAnimStart = (float)nNumKeys / 30.0f;
     float fBestSpeedToAnimStartDelta = fAnimTimeToContact * fDesiredSpeedToAnimStart;
 
+    fMaxSimulatedTime = bestIntercept.f.z - pContactOffsetWorld->f.z;
     nlVec3Set(v3AnimStartPosition,
         bestIntercept.f.x - pContactOffsetWorld->f.x,
         bestIntercept.f.y - pContactOffsetWorld->f.y,
-        bestIntercept.f.z - pContactOffsetWorld->f.z);
+        fMaxSimulatedTime);
     v3AnimStartPosition.f.z = 0.0f;
 
     fAnimStartTime = bestTime - fBestSpeedToAnimStartDelta;
@@ -3634,8 +3644,6 @@ bool cFielder::IsFrozen() const
  */
 void cFielder::SetFrozen(float seconds)
 {
-    static const nlVector3 v3Zero = { 0.0f, 0.0f, 0.0f };
-
     m_tFrozenTimer.SetSeconds(seconds);
     m_fDesiredSpeed = 0.0f;
     m_fActualSpeed = m_fDesiredSpeed;
@@ -4087,7 +4095,7 @@ s16 cFielder::GetOneTouchShotDesire()
  */
 void cFielder::SetStartAnimState(int animState)
 {
-    static int RunStartAnims[4] = { 0, 0x10, 0x0F, 0x11 };
+    static int RunStartAnims[4] = { 5, 5, 6, 4 };
 
     if (animState != -1)
     {
@@ -4113,7 +4121,7 @@ void cFielder::SetStartAnimState(int animState)
         }
         else
         {
-            int RunningAnims[3] = { 0x1B, 0x1A, 0x1C };
+            int RunningAnims[3] = { 0x0D, 0x07, 0x0E };
 
             SetRunLeanSAB(RunningAnims, 3, 1);
 
@@ -4164,7 +4172,7 @@ void cFielder::SetWindupWBAnimState()
  */
 void cFielder::SetStartWBAnimState()
 {
-    static int RunWBStartAnims[4] = { 0, 0x37, 0x38, 0x39 };
+    static int RunWBStartAnims[4] = { 0x17, 0x17, 0x18, 0x16 };
 
     int nAnimState = ((m_aDesiredFacingDirection - m_aActualFacingDirection + 0x2000) >> 14) & 3;
 
@@ -4456,9 +4464,9 @@ inline void cFielder::SetRunLeanSAB(const int* pSABAnims, int nNumSABAnims, int 
 void cFielder::SetRunningAnimState(float)
 {
     int RunningAnims[3] = {
-        0x0000001B,
-        0x0000001A,
-        0x0000001C,
+        0x0000000D,
+        0x00000007,
+        0x0000000E,
     };
 
     SetRunLeanSAB(RunningAnims, 3, 1);
@@ -4473,9 +4481,9 @@ void cFielder::SetRunningAnimState(float)
 void cFielder::SetRunningTurboAnimState()
 {
     int RunningTurboAnims[3] = {
-        0x0000001B,
-        0x0000001A,
-        0x0000001C,
+        0x00000010,
+        0x0000000F,
+        0x00000011,
     };
 
     SetRunLeanSAB(RunningTurboAnims, 3, 1);
@@ -6891,5 +6899,5 @@ void cFielder::DoSpeedBoost()
     if (bReturn)
         return;
 
-    m_fActualSpeed = 0.0f;
+    m_fActualSpeed = 12.0f;
 }

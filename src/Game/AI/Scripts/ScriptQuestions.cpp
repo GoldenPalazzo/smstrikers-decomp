@@ -2809,7 +2809,7 @@ float FarToTheirGoalie(cPlayer* pPlayer)
 
 /**
  * Offset/Address/Size: 0x1D08 | 0x80080790 | size: 0x170
- * TODO: 99.51% match - sideline base, invert flag, and byte offset use rotated saved registers.
+ * TODO: 99.57% match - sideline base, invert flag, and byte offset use rotated saved registers.
  */
 float CloseToSideline(const nlVector3& v3Position, const nlVector2* vDistanceConfidence, bool bInvert)
 {
@@ -2835,8 +2835,9 @@ float CloseToSideline(const nlVector3& v3Position, const nlVector2* vDistanceCon
     posU1 = v3Position.as_u32[1];
     posU2 = v3Position.as_u32[2];
     const u8* pBase = (const u8*)cField::mSidelines;
-    s32 offset = 0;
-    s32 i = offset;
+    s32 offset;
+    s32 i = 0;
+    offset = i;
     f32 fZero = 0.0f;
     f32 posX = v3Position.f.x;
     f32 posY = v3Position.f.y;

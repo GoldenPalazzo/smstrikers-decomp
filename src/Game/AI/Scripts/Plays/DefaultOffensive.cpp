@@ -390,12 +390,14 @@ FuzzyVariant Fuzzy::DefaultOffensivePlay(cDecisionEntity* pDecision)
 
 /**
  * Offset/Address/Size: 0x4A94 | 0x80091520 | size: 0x744
+ * TODO: 99.80% match - fBestConfidence and late false-confidence registers are rotated.
  */
 FuzzyVariant Fuzzy::DoPassing(float fConfidence, cDecisionEntity* pDecision)
 {
     extern cFielder* g_pScriptCurrentFielder;
     extern cTeam* g_pCurrentlyUpdatingTeam;
 
+    float fPassTargetFalseConfidence;
     float fBestConfidence = 0.0f;
 
     float fFalseConfidence = 1.0f - Invincible(g_pScriptCurrentFielder);
@@ -421,7 +423,8 @@ FuzzyVariant Fuzzy::DoPassing(float fConfidence, cDecisionEntity* pDecision)
         fTrueConfidence = (fTrueConfidence <= fAdjustedConfidence) ? fTrueConfidence : fAdjustedConfidence;
 
         {
-            float fFalseConfidence = 1.0f - fTrueConfidence;
+            fPassTargetFalseConfidence = 1.0f - fTrueConfidence;
+            float fFalseConfidence = fPassTargetFalseConfidence;
             float fMin = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
             float fMax = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
             float fBranchRatio = fMin / fMax;
@@ -448,10 +451,11 @@ FuzzyVariant Fuzzy::DoPassing(float fConfidence, cDecisionEntity* pDecision)
                     if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
                         fConfidence = fConfidence * fBranchRatio;
 
-                    if (0.0f >= fConfidence)
+                    float fCurrentConfidence = fConfidence;
+                    if (0.0f >= fCurrentConfidence)
                         fBestConfidence = 0.0f;
                     else
-                        fBestConfidence = fConfidence;
+                        fBestConfidence = fCurrentConfidence;
 
                     pDecision->QueueActionSetDesire(19, fConfidence, 0.0f, theBestPassTarget, FuzzyVariant(false));
 

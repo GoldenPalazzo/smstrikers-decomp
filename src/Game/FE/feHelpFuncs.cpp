@@ -1202,8 +1202,8 @@ void TakeGameMemSnapshot::ResetTimers()
 
 /**
  * Offset/Address/Size: 0x130 | 0x800A31EC | size: 0x504
- * TODO: 99.58% match - append file handle and format string cursor use swapped
- * r29/r31 roles.
+ * TODO: 99.64% match - format string allocation and literal cursor use swapped
+ * r30/r31 roles.
  */
 namespace TakeGameMemSnapshot
 {
@@ -1236,6 +1236,7 @@ void TakeGameMemSnapshot::WriteToDisk()
     fclose(pFile);
 
     pFile = fopen(filename, "at");
+    pFile = static_cast<FILE*>(pFile);
 
     BasicString<char, ::Detail::TempStringAllocator> data;
     data.AppendInPlace(NameTeamTable[GameInfoManager::GetInstance()->GetTeam(0)].name);

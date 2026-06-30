@@ -49,9 +49,9 @@ const char* FixedUpdateTask::GetName()
 
 /**
  * Offset/Address/Size: 0x0 | 0x8016E330 | size: 0x280
- * TODO: 98.62% match - register allocation: g_pCharacters r31 vs target r28,
+ * TODO: 98.72% match - register allocation: g_pCharacters r31 vs target r28,
  * g_pTeams r30 vs target r31, loop/bool r28 vs target r30,
- * fixedTick f30/f1 load order and second NetMesh sphere load order.
+ * and second NetMesh sphere load order.
  */
 void FixedUpdateTask::Run(float dt)
 {
@@ -68,8 +68,7 @@ void FixedUpdateTask::Run(float dt)
         {
             UseFixedUpdatePad();
 
-            simulationTick = g_fFixedUpdateTick;
-            UpdatePlatPad(simulationTick);
+            UpdatePlatPad(simulationTick = g_fFixedUpdateTick);
             cPadManager::Update(simulationTick);
             FlickDetection::Update();
 

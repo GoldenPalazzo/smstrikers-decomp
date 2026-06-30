@@ -551,24 +551,11 @@ static FEResourceHandle* FindExistingResourceInResourceList_Inline(FEResourceHan
     FEResourceHandle** pPreExistingResourceHandle;
     unsigned long key = pFEResourceHandle->m_hashID;
     AVLTreeEntry<unsigned long, FEResourceHandle*>* node = s_loadedResourceList.m_Root;
+    DefaultKeyCompare<unsigned long> compare;
 
     while (node != NULL)
     {
-        unsigned long nodeKey = node->key;
-        int cmpResult;
-
-        if (nodeKey == key)
-        {
-            cmpResult = 0;
-        }
-        else if (nodeKey > key)
-        {
-            cmpResult = -1;
-        }
-        else
-        {
-            cmpResult = 1;
-        }
+        int cmpResult = compare(node->key, key);
 
         if (cmpResult == 0)
         {

@@ -387,7 +387,7 @@ static inline float ClampFadeInterp(float x)
 
 /**
  * Offset/Address/Size: 0x1970 | 0x801566C8 | size: 0x3F0
- * TODO: 99.88% match - early fade interpolation f-register and second buffer-volume clampedVol register differ
+ * TODO: 99.92% match - second buffer-volume clampedVol register differs
  */
 void AudioStreamTrack::TrackManagerBase::FadeManager::UpdateFade(STREAM_FADE_CTRL* pFade)
 {
@@ -402,9 +402,8 @@ void AudioStreamTrack::TrackManagerBase::FadeManager::UpdateFade(STREAM_FADE_CTR
         totalTime = m_dT;
     }
 
-    float interp = pFade->Interp;
+    float& interp = pFade->Interp;
     interp = interp + (m_dT / totalTime);
-    pFade->Interp = interp;
 
     float newVal = ClampFadeInterp(pFade->Interp);
     pFade->Interp = newVal;
@@ -842,7 +841,6 @@ extern "C" void sndStreamDeactivate(unsigned long stid);
 
 /**
  * Offset/Address/Size: 0xE20 | 0x80155B78 | size: 0x29C
- * TODO: 99.82% match - activate-loop buffer pointer uses r3 instead of r4 and zero-count path skips null check
  */
 void AudioStreamTrack::StreamTrack::ProcessNewHeadStream()
 {
@@ -894,10 +892,10 @@ void AudioStreamTrack::StreamTrack::ProcessNewHeadStream()
 
     GCAudioStreaming::StereoAudioStream* pStream = pEntry->m_data.pStream;
     unsigned long zero = 0;
+    GCAudioStreaming::AudioStreamBuffer* buf;
 
     if (pStream->m_State >= GCAudioStreaming::SS_Warming)
     {
-        GCAudioStreaming::AudioStreamBuffer* buf;
         volatile unsigned long bufCounter = (unsigned long)(buf = NULL);
         if (pStream->m_BufferCount > zero)
         {
@@ -946,24 +944,24 @@ void AudioStreamTrack::StreamTrack::ProcessNewHeadStream()
     }
     case GCAudioStreaming::SS_Warm:
     {
-        volatile unsigned long bufCounter2 = zero;
+        volatile unsigned long bufCounter2 = (unsigned long)(buf = NULL);
         if (pStreamActive->m_BufferCount > zero)
         {
-            GCAudioStreaming::AudioStreamBuffer* buf = pStreamActive->m_Buffers[0];
+            buf = pStreamActive->m_Buffers[0];
+        }
 
-            while (buf != NULL)
+        while (buf != NULL)
+        {
+            sndStreamActivate(buf->m_StreamId);
+            unsigned long cj = bufCounter2 + 1;
+            bufCounter2 = cj;
+            if (cj < pStreamActive->m_BufferCount)
             {
-                sndStreamActivate(buf->m_StreamId);
-                unsigned long cj = bufCounter2 + 1;
-                bufCounter2 = cj;
-                if (cj < pStreamActive->m_BufferCount)
-                {
-                    buf = pStreamActive->m_Buffers[cj];
-                }
-                else
-                {
-                    buf = NULL;
-                }
+                buf = pStreamActive->m_Buffers[cj];
+            }
+            else
+            {
+                buf = NULL;
             }
         }
         pStreamActive->m_State = GCAudioStreaming::SS_Playing;

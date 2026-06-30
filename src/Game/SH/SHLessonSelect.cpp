@@ -17,6 +17,8 @@
 #include "NL/nlLexicalCast.h"
 #include "NL/nlBasicString.h"
 
+#include "Game/SH/SHPause.h"
+
 #include "NL/nlMemFunBody.h"
 #include "NL/nlBindBody.h"
 
@@ -340,8 +342,6 @@ void LessonSelectScene::SceneCreated()
 
 /**
  * Offset/Address/Size: 0x7E0 | 0x8010B630 | size: 0x6B8
- * TODO: 90.70% match - callback tag checks and up/down navigation branch layout
- * differ; back action scene-start-animation byte store is still missing.
  */
 void LessonSelectScene::Update(float fDeltaT)
 {
@@ -377,7 +377,9 @@ void LessonSelectScene::Update(float fDeltaT)
     }
     else if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x200, false, NULL))
     {
-        nlSingleton<OverlayManager>::s_pInstance->Push(IGSCENE_STRIKERS_101_PAUSE, SCREEN_BACK, true);
+        PauseMenuScene* pauseScene = (PauseMenuScene*)nlSingleton<OverlayManager>::s_pInstance->Push(
+            IGSCENE_STRIKERS_101_PAUSE, SCREEN_BACK, true);
+        pauseScene->mStartAnimAtEnd = true;
         FEAudio::PlayAnimAudioEvent("sfx_back", false);
         sRowOffset = 0;
         sCurrentRow = 0;
@@ -387,9 +389,10 @@ void LessonSelectScene::Update(float fDeltaT)
         FEAudio::EnableSounds(false);
 
         int flags = mMenuItems.mFlags;
-        int currentIndex = mMenuItems.mCurrentIndex;
+        int skipDisabled;
         int wrapBit = flags & 1;
-        int skipDisabled = flags & 2;
+        skipDisabled = flags & 2;
+        int currentIndex = mMenuItems.mCurrentIndex;
         int result = currentIndex - 1;
 
         while (true)
@@ -519,9 +522,10 @@ void LessonSelectScene::Update(float fDeltaT)
         FEAudio::EnableSounds(false);
 
         int flags = mMenuItems.mFlags;
-        int currentIndex = mMenuItems.mCurrentIndex;
+        int skipDisabled;
         int wrapBit = flags & 1;
-        int skipDisabled = flags & 2;
+        skipDisabled = flags & 2;
+        int currentIndex = mMenuItems.mCurrentIndex;
         int result = currentIndex + 1;
 
         while (true)

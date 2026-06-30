@@ -150,9 +150,7 @@ void PhysicsBall::AddResistanceForces()
             v3BallSurfaceSpeed.f.z = v3BallSurfaceSpeed.f.z - v3CurBallSpeed.f.z;
             v3BallSurfaceSpeed.f.y = v3BallSurfaceSpeed.f.y - v3CurBallSpeed.f.y;
             v3BallSurfaceSpeed.f.x = v3BallSurfaceSpeed.f.x - v3CurBallSpeed.f.x;
-            v3BallSurfaceSpeed.f.z = 5.f * v3BallSurfaceSpeed.f.z;
-            v3BallSurfaceSpeed.f.y = 5.f * v3BallSurfaceSpeed.f.y;
-            v3BallSurfaceSpeed.f.x = 5.f * v3BallSurfaceSpeed.f.x;
+            nlVec3Scale(v3BallSurfaceSpeed, 5.f);
             AddForceAtCentreOfMass(v3BallSurfaceSpeed);
             v3BallSurfaceSpeed.f.z = 0.f;
             if (torqueZ * torqueZ + torqueX * torqueX + torqueY * torqueY < 0.0001f

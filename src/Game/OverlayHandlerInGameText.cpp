@@ -38,6 +38,23 @@ extern nlLocalization* g_pLocalization;
 extern const unsigned short LocalizationTableNotFound[];
 extern const unsigned short MissingLocString[];
 
+static inline const unsigned short* LookupLocHash(unsigned long key)
+{
+    nlLocalization* loc = g_pLocalization;
+    if (loc->m_LookupTable == 0)
+    {
+        return LocalizationTableNotFound;
+    }
+
+    nlLocalization::StringLookup* entry = nlBSearch<nlLocalization::StringLookup, unsigned long>(key, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
+    if (entry)
+    {
+        return loc->m_FirstString + entry->StringOffset;
+    }
+
+    return MissingLocString;
+}
+
 static char* TEAM_SLIDE_NAMES[8] = {
     "DAISY",
     "DK",
@@ -220,6 +237,7 @@ void InGameTextOverlay::DisplayFinalScore()
     typedef TLInstance* (*FindInstByRef)(FEPresentation*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
     typedef TLComponentInstance* (*FindCompByValue)(FEPresentation*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
     typedef TLComponentInstance* (*FindCompByRef)(FEPresentation*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
+    typedef void (*TrackStatsFn)(ePlayerStats, int, int, int, int, int, int);
 
     union
     {
@@ -251,35 +269,15 @@ void InGameTextOverlay::DisplayFinalScore()
     nlStrToWcs(scoreLeftString.c_str(), scoreLeftWideString, 32);
     nlStrToWcs(scoreRightString.c_str(), scoreRightWideString, 32);
 
-    const unsigned short* formatLocString;
-    unsigned long scoreFormatKey = 0x8C4180A4;
-    nlLocalization* loc = g_pLocalization;
-
-    if (loc->m_LookupTable == 0)
-    {
-        formatLocString = LocalizationTableNotFound;
-    }
-    else
-    {
-        nlLocalization::StringLookup* entry = nlBSearch<nlLocalization::StringLookup, unsigned long>(scoreFormatKey, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
-        if (entry)
-        {
-            formatLocString = loc->m_FirstString + entry->StringOffset;
-        }
-        else
-        {
-            formatLocString = MissingLocString;
-        }
-    }
+    const unsigned short* formatLocString = LookupLocHash(0x8C4180A4);
 
     WideString unformatted(formatLocString);
     WideString formatted(Format(unformatted, scoreLeftWideString, scoreRightWideString));
 
-    long winningSide;
-
     FEPresentation* presentation = this->m_pFEScene->m_pFEPackage->GetPresentation();
     TLTextInstance* pTextInstance;
     const char* WINNER_SLIDE_NAME = IGTTable[SLIDE_NAME_TEXT_WINNER].mSlideName;
+    long winningSide;
 
     if (this->mCurrentSlideName == SLIDE_NAME_TEXT_WINNER)
     {
@@ -324,29 +322,7 @@ void InGameTextOverlay::DisplayFinalScore()
 
         eTeamID winningTeam = nlSingleton<GameInfoManager>::s_pInstance->GetTeam((short)winningSide);
 
-        unsigned long teamNameStringID = GetLOCTeamName(winningTeam);
-        const unsigned short* winnerLocString;
-
-        loc = g_pLocalization;
-
-        if (loc->m_LookupTable == 0)
-        {
-            winnerLocString = LocalizationTableNotFound;
-        }
-        else
-        {
-            nlLocalization::StringLookup* entry = nlBSearch<nlLocalization::StringLookup, unsigned long>(teamNameStringID, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
-            if (entry)
-            {
-                winnerLocString = loc->m_FirstString + entry->StringOffset;
-            }
-            else
-            {
-                winnerLocString = MissingLocString;
-            }
-        }
-
-        WideString winnerNameWideString(winnerLocString);
+        WideString winnerNameWideString(LookupLocHash(GetLOCTeamName(winningTeam)));
 
         if (winningTeam == 3)
         {
@@ -356,27 +332,9 @@ void InGameTextOverlay::DisplayFinalScore()
             winnerNameWideString = space.Append(winnerNameWideString);
         }
 
-        unsigned long winnerFormatKey = 0x8610A152;
-        loc = g_pLocalization;
+        const unsigned short* winnerFormatLocString = LookupLocHash(0x8610A152);
 
-        if (loc->m_LookupTable == 0)
-        {
-            formatLocString = LocalizationTableNotFound;
-        }
-        else
-        {
-            nlLocalization::StringLookup* entry = nlBSearch<nlLocalization::StringLookup, unsigned long>(winnerFormatKey, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
-            if (entry)
-            {
-                formatLocString = loc->m_FirstString + entry->StringOffset;
-            }
-            else
-            {
-                formatLocString = MissingLocString;
-            }
-        }
-
-        WideString unformattedName(formatLocString);
+        WideString unformattedName(winnerFormatLocString);
         WideString formattedName(Format(unformattedName, winnerNameWideString.c_str()));
 
         volatile InlineHasher hNameSlideB, hNameSlideA;
@@ -499,11 +457,11 @@ void InGameTextOverlay::DisplayFinalScore()
         {
             if (g_pGame->m_eGameState == GS_OVERTIME)
             {
-                StatsTracker::Track(STATS_OT_WIN, winningSide, 0, scoreLeft, scoreRight, 0, 0);
+                ((TrackStatsFn)StatsTracker::Track)(STATS_OT_WIN, winningSide, 0, scoreLeft, scoreRight, 0, 0);
             }
             else
             {
-                StatsTracker::Track(STATS_WIN, winningSide, 0, scoreLeft, scoreRight, 0, 0);
+                ((TrackStatsFn)StatsTracker::Track)(STATS_WIN, winningSide, 0, scoreLeft, scoreRight, 0, 0);
             }
         }
         else

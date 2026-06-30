@@ -1,4 +1,10 @@
+// TODO: Revisit the AVL/ring helper specializations below. The original object
+// emits several of them as weak/linkonce header-style methods, but moving these
+// bodies back to weak header emission currently changes section order and
+// breaks the linked DOL SHA.
+#define NL_AVLTREE_DECLARE_ONLY
 #include "Game/GL/ShaderSkinMesh.h"
+#undef NL_AVLTREE_DECLARE_ONLY
 
 #include "Game/GL/GLSkinMesh.h"
 #include "NL/gl/glModel.h"
@@ -8,20 +14,15 @@
 #include "string.h"
 #include "types.h"
 
-extern nlVector3 sharedMorphBuffer[];
+static nlVector3 sharedMorphBuffer[0x1000];
 
-/**
- * Offset/Address/Size: 0x14C | 0x801E2240 | size: 0x58
- */
-BoneMapList::~BoneMapList()
-{
-    FORCE_DONT_INLINE;
-}
+template <>
+nlAVLTree<unsigned long, unsigned long, DefaultKeyCompare<unsigned long> >::~nlAVLTree();
 
-/**
- * Offset/Address/Size: 0xD8 | 0x801E21CC | size: 0x74
- */
-template void nlDeleteRing<BoneMapList>(BoneMapList** head);
+typedef AVLTreeEntry<unsigned long, unsigned long> BoneIndexEntry;
+typedef AVLTreeBase<unsigned long, unsigned long, NewAdapter<BoneIndexEntry>, DefaultKeyCompare<unsigned long> > BoneIndexBase;
+typedef AVLTreeEntry<unsigned long, SkinMatrix> SkinMatrixEntry;
+typedef AVLTreeBase<unsigned long, SkinMatrix, NewAdapter<SkinMatrixEntry>, DefaultKeyCompare<unsigned long> > SkinMatrixBase;
 
 // /**
 //  * Offset/Address/Size: 0xAC | 0x801E21A0 | size: 0x2C
@@ -36,6 +37,107 @@ template void nlDeleteRing<BoneMapList>(BoneMapList** head);
 // void nlDeleteRing<SkinPairList>(SkinPairList**)
 // {
 // }
+
+/**
+ * Offset/Address/Size: 0x14C | 0x801E2240 | size: 0x58
+ */
+BoneMapList::~BoneMapList()
+{
+    FORCE_DONT_INLINE;
+}
+
+/**
+ * Offset/Address/Size: 0xD8 | 0x801E21CC | size: 0x74
+ */
+template <>
+void nlDeleteRing<BoneMapList>(BoneMapList** head)
+{
+    FORCE_DONT_INLINE;
+    BoneMapList* current;
+    BoneMapList* next;
+
+    BoneMapList* headPtr = *head;
+    if (headPtr != NULL)
+    {
+        current = headPtr->m_next;
+        for (;;)
+        {
+            next = current->m_next;
+            delete current;
+            if (current != *head)
+            {
+                current = next;
+            }
+            else
+            {
+                break;
+            }
+        }
+        *head = NULL;
+    }
+}
+
+/**
+ * Offset/Address/Size: 0xAC | 0x801E21A0 | size: 0x2C
+ */
+template <>
+void nlRingAddStart<SkinPairList>(SkinPairList** list, SkinPairList* item)
+{
+    FORCE_DONT_INLINE;
+    SkinPairList* head = *list;
+    if (head == nullptr)
+    {
+        *list = item;
+        item->m_next = item;
+        return;
+    }
+
+    item->m_next = head->m_next;
+    head = *list;
+    head->m_next = item;
+}
+
+/**
+ * Offset/Address/Size: 0x70 | 0x801E2164 | size: 0x3C
+ */
+template <>
+void nlRingAddEnd<SkinPairList>(SkinPairList** list, SkinPairList* item)
+{
+    FORCE_DONT_INLINE;
+    nlRingAddStart(list, item);
+    *list = item;
+}
+
+/**
+ * Offset/Address/Size: 0x0 | 0x801E20F4 | size: 0x70
+ */
+template <>
+void nlDeleteRing<SkinPairList>(SkinPairList** head)
+{
+    FORCE_DONT_INLINE;
+    SkinPairList* current;
+    SkinPairList* next;
+
+    SkinPairList* headPtr = *head;
+    if (headPtr != NULL)
+    {
+        current = headPtr->m_next;
+        for (;;)
+        {
+            next = current->m_next;
+            delete current;
+            if (current != *head)
+            {
+                current = next;
+            }
+            else
+            {
+                break;
+            }
+        }
+        *head = NULL;
+    }
+}
 
 // /**
 //  * Offset/Address/Size: 0xC9C | 0x801E20D0 | size: 0x24
@@ -106,6 +208,159 @@ template void nlDeleteRing<BoneMapList>(BoneMapList** head);
 // void AVLTreeBase<unsigned long, unsigned long, NewAdapter<AVLTreeEntry<unsigned long, unsigned long> >, DefaultKeyCompare<unsigned long> >::InorderWalk<UserDataBuilder>(AVLTreeEntry<unsigned long, unsigned long>*, UserDataBuilder*, void (UserDataBuilder::*)(const unsigned long&, unsigned long*))
 // {
 // }
+
+/**
+ * Offset/Address/Size: 0xC9C | 0x801E20D0 | size: 0x24
+ */
+template <>
+void SkinMatrixBase::DeleteEntry(SkinMatrixEntry* entry)
+{
+    m_Allocator.Free(entry);
+}
+
+/**
+ * Offset/Address/Size: 0xBE0 | 0x801E2014 | size: 0xBC
+ */
+template <>
+AVLTreeNode* SkinMatrixBase::AllocateEntry(void* key, void* value)
+{
+    SkinMatrixEntry* newNode = NULL;
+
+    m_Allocator.Allocate(newNode);
+
+    newNode->node.left = NULL;
+    newNode->node.right = NULL;
+    newNode->node.heavy = 0;
+    newNode->key = *(unsigned long*)key;
+    newNode->value = *(SkinMatrix*)value;
+
+    return (AVLTreeNode*)newNode;
+}
+
+/**
+ * Offset/Address/Size: 0xBB4 | 0x801E1FE8 | size: 0x2C
+ */
+template <>
+int SkinMatrixBase::CompareKey(void* key, AVLTreeNode* node)
+{
+    int result;
+    unsigned long k = *(unsigned long*)key;
+    SkinMatrixEntry* entry = (SkinMatrixEntry*)node;
+    if (k == entry->key)
+        result = 0;
+    else if (k < entry->key)
+        result = -1;
+    else
+        result = 1;
+    return result;
+}
+
+/**
+ * Offset/Address/Size: 0xB88 | 0x801E1FBC | size: 0x2C
+ */
+template <>
+int SkinMatrixBase::CompareNodes(AVLTreeNode* a, AVLTreeNode* b)
+{
+    const unsigned long& keyA = ((SkinMatrixEntry*)a)->key;
+    const unsigned long& keyB = ((SkinMatrixEntry*)b)->key;
+    int result;
+    if (keyA == keyB)
+        result = 0;
+    else if (keyA < keyB)
+        result = -1;
+    else
+        result = 1;
+    return result;
+}
+
+/**
+ * Offset/Address/Size: 0xB80 | 0x801E1FB4 | size: 0x8
+ */
+template <>
+SkinMatrixEntry* SkinMatrixBase::CastUp(AVLTreeNode* node) const
+{
+    return (SkinMatrixEntry*)node;
+}
+
+/**
+ * Offset/Address/Size: 0x428 | 0x801E185C | size: 0x758
+ */
+template <>
+void SkinMatrixBase::PostorderTraversal(SkinMatrixEntry* curr, void (SkinMatrixBase::*cb)(SkinMatrixEntry*))
+{
+    if (curr->node.left != NULL)
+    {
+        PostorderTraversal(CastUp(curr->node.left), cb);
+    }
+    if (curr->node.right != NULL)
+    {
+        PostorderTraversal(CastUp(curr->node.right), cb);
+    }
+    (this->*cb)(curr);
+}
+
+/**
+ * Offset/Address/Size: 0x3C4 | 0x801E17F8 | size: 0x64
+ */
+template <>
+void SkinMatrixBase::DestroyTree(void (SkinMatrixBase::*deleteFunc)(SkinMatrixEntry*))
+{
+    if (m_Root != NULL)
+    {
+        PostorderTraversal(m_Root, deleteFunc);
+        m_Root = nullptr;
+        m_NumElements = 0;
+    }
+}
+
+/**
+ * Offset/Address/Size: 0x36C | 0x801E17A0 | size: 0x58
+ */
+template <>
+void SkinMatrixBase::Clear()
+{
+    DestroyTree(&SkinMatrixBase::DeleteEntry);
+    m_NumElements = 0;
+}
+
+/**
+ * Offset/Address/Size: 0x310 | 0x801E1744 | size: 0x5C
+ */
+template <>
+SkinMatrixBase::~AVLTreeBase()
+{
+    Clear();
+}
+
+/**
+ * Offset/Address/Size: 0x44 | 0x801E1478 | size: 0x2CC
+ */
+template <>
+template <>
+void BoneIndexBase::InorderWalk<UserDataBuilder>(
+    BoneIndexEntry* curr,
+    UserDataBuilder* cbClass,
+    void (UserDataBuilder::*cb)(const unsigned long&, unsigned long*))
+{
+    while (curr != nullptr)
+    {
+        InorderWalk(CastUp(curr->node.left), cbClass, cb);
+        (cbClass->*cb)(curr->key, &curr->value);
+        curr = CastUp(curr->node.right);
+    }
+}
+
+/**
+ * Offset/Address/Size: 0x0 | 0x801E1434 | size: 0x44
+ */
+template <>
+template <>
+void BoneIndexBase::Walk<UserDataBuilder>(
+    UserDataBuilder* cbClass,
+    void (UserDataBuilder::*cb)(const unsigned long&, unsigned long*))
+{
+    InorderWalk(m_Root, cbClass, cb);
+}
 
 /**
  * Offset/Address/Size: 0xD28 | 0x801E136C | size: 0xC8
@@ -387,10 +642,44 @@ static inline void CopySoftwareVerts(ShaderSkinMesh* mesh)
     }
 }
 
+inline void ShaderSkinMesh::CreateMorphBuffer()
+{
+    morphBuffer = sharedMorphBuffer;
+    CopySoftwareVerts(this);
+
+    MorphDelta* pCurrentMorph = morphData;
+    int morphIndex = 0;
+
+    while (morphIndex < numMorphs)
+    {
+        MorphDelta* pEndMorph = pCurrentMorph + morphNumDeltas[morphIndex];
+
+        if (morphWeights[morphIndex] > 0.0f)
+        {
+            while (pCurrentMorph != pEndMorph)
+            {
+                float w = morphWeights[morphIndex];
+                nlVector3* dst = &morphBuffer[pCurrentMorph->index];
+                float rx = dst->f.x + w * pCurrentMorph->delta.f.x;
+                float rz = dst->f.z + w * pCurrentMorph->delta.f.z;
+                float ry = dst->f.y + w * pCurrentMorph->delta.f.y;
+                dst->f.x = rx;
+                dst->f.y = ry;
+                dst->f.z = rz;
+                pCurrentMorph++;
+            }
+        }
+        else
+        {
+            pCurrentMorph = pEndMorph;
+        }
+
+        morphIndex++;
+    }
+}
+
 /**
  * Offset/Address/Size: 0x58C | 0x801E0BD0 | size: 0x1E0
- * TODO: 97.5% match - remaining differences are in morph loop register
- *       assignment for delta-offset and end cursors.
  */
 void ShaderSkinMesh::PrepareToRender(unsigned long flags, const nlMatrix4* pMatrix)
 {
@@ -402,44 +691,7 @@ void ShaderSkinMesh::PrepareToRender(unsigned long flags, const nlMatrix4* pMatr
     }
     else
     {
-        morphBuffer = sharedMorphBuffer;
-        CopySoftwareVerts(this);
-
-        int m = 0;
-        MorphDelta* pDelta = morphData;
-        MorphDelta* end = pDelta;
-        u32 deltaOffset = (u32)m;
-        ShaderSkinMesh* weightCursor = this;
-
-        while (m < numMorphs)
-        {
-            u32 nDeltas = morphNumDeltas[deltaOffset >> 2];
-            end = pDelta + nDeltas;
-
-            if (weightCursor->morphWeights[0] > 0.0f)
-            {
-                while (pDelta != end)
-                {
-                    float w = weightCursor->morphWeights[0];
-                    nlVector3* dst = &morphBuffer[pDelta->index];
-                    float rx = dst->f.x + w * pDelta->delta.f.x;
-                    float rz = dst->f.z + w * pDelta->delta.f.z;
-                    float ry = dst->f.y + w * pDelta->delta.f.y;
-                    dst->f.x = rx;
-                    dst->f.y = ry;
-                    dst->f.z = rz;
-                    pDelta++;
-                }
-            }
-            else
-            {
-                pDelta = end;
-            }
-
-            deltaOffset += 4;
-            weightCursor = (ShaderSkinMesh*)((char*)weightCursor + 4);
-            m++;
-        }
+        CreateMorphBuffer();
     }
 
     AttachSkinData(flags, pMatrix);
@@ -502,7 +754,7 @@ void ShaderSkinMesh::AppendStitchingInfo(int packetIndex, int _numPackets, int n
 /**
  * Offset/Address/Size: 0x398 | 0x801E09DC | size: 0xC0
  */
-void UserDataBuilder::AddEntry(const unsigned long& boneID, unsigned long* registerIndex)
+inline void UserDataBuilder::AddEntry(const unsigned long& boneID, unsigned long* registerIndex)
 {
     unsigned long id = boneID;
     SkinMatrix* foundMatrix = (SkinMatrix*)m_PoseMatrices->FindGet(id);
@@ -539,6 +791,15 @@ void* ShaderSkinMesh::MakeUserData(nlAVLTree<unsigned long, unsigned long, Defau
     boneMap->Walk(&builder, &UserDataBuilder::AddEntry);
 
     return userData;
+}
+
+/**
+ * Offset/Address/Size: 0xCC8 | 0x801E130C | size: 0x60
+ */
+template <>
+inline nlAVLTree<unsigned long, SkinMatrix, DefaultKeyCompare<unsigned long> >::~nlAVLTree()
+{
+    FORCE_DONT_INLINE;
 }
 
 /**

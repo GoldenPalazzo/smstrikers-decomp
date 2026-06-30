@@ -32,7 +32,7 @@ SpaceSearch::~SpaceSearch()
 
 /**
  * Offset/Address/Size: 0x1284 | 0x80063BD4 | size: 0x5F0
- * TODO: 99.79% match - integer register allocation differs in radial and angle step counters
+ *
  */
 float SpaceSearch::FindBestPosition(nlVector3& v3Dest, const nlVector3& v3CenterPos, eFieldDirection eSearchDir, const nlVector3* pv3TargetOrDirection, float fMaxRadius, unsigned short aSearchCone)
 {
@@ -125,12 +125,8 @@ float SpaceSearch::FindBestPosition(nlVector3& v3Dest, const nlVector3& v3Center
             pLocation.r = fMaxRadius;
         }
 
-        numAngleSteps = 10;
         aAngleDelta = (unsigned short)(int)(65536.0f * (1.5f / (6.2831855f * pLocation.r)));
-        if ((int)(0.5f + (float)(unsigned short)aDelta / (float)aAngleDelta) < 10)
-        {
-            numAngleSteps = (int)(0.5f + (float)(unsigned short)aDelta / (float)aAngleDelta);
-        }
+        numAngleSteps = ((int)(0.5f + (float)(unsigned short)aDelta / (float)aAngleDelta) < 10) ? (int)(0.5f + (float)(unsigned short)aDelta / (float)aAngleDelta) : 10;
 
         aAngleDelta = (unsigned short)((unsigned short)aDelta / numAngleSteps);
 

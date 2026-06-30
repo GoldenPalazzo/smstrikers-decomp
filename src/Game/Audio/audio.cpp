@@ -3806,7 +3806,7 @@ inline AudioStreamTrack::TrackManagerBase::FadeManager::~FadeManager()
 
 /**
  * Offset/Address/Size: 0x3F8 | 0x80141ABC | size: 0x1EC
- * TODO: 97.48% match - this pointer, queued stream, and volume locals still use different registers
+ * TODO: 98.41% match - this pointer, queued stream, stream pointer, and volume locals still use different registers
  */
 template <>
 void AudioStreamTrack::TrackManager<3>::OnMasterVolumeChange(Audio::MasterVolume::VOLUME_GROUP VolumeGroup)
@@ -3879,9 +3879,10 @@ void AudioStreamTrack::TrackManager<3>::OnMasterVolumeChange(Audio::MasterVolume
 
                     if (pStream->m_State >= GCAudioStreaming::SS_Warming)
                     {
-                        volatile unsigned long bufCounter = 0;
-                        GCAudioStreaming::AudioStreamBuffer* buf = NULL;
-                        if (pStream->m_BufferCount != 0)
+                        GCAudioStreaming::AudioStreamBuffer* buf;
+                        unsigned long zero = 0;
+                        volatile unsigned long bufCounter = (unsigned long)(buf = NULL);
+                        if (pStream->m_BufferCount > zero)
                         {
                             buf = pStream->m_Buffers[0];
                         }

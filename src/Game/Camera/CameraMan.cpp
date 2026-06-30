@@ -156,9 +156,13 @@ void cCameraManager::Update(float fDeltaT)
 
     if (m_transition == eCT_NONE)
         goto handle_none;
-    if (m_transition == eCT_EASE_IN)
+    switch (m_transition)
+    {
+    case eCT_EASE_IN:
         goto handle_ease_in;
-    goto handle_end;
+    default:
+        goto handle_end;
+    }
 
 handle_ease_in:
 {

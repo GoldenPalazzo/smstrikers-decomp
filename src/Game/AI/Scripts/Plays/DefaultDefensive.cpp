@@ -222,8 +222,8 @@ FuzzyVariant Fuzzy::DefaultDefencePlay(cDecisionEntity* pDecision)
 
 /**
  * Offset/Address/Size: 0x3A58 | 0x80089110 | size: 0xE5C
- * TODO: 99.55% match - initial InPassingLane clamp still uses temporary `f0`
- * instead of in-place `f28`; final current-mark confidence has f1/f2 register swaps.
+ * TODO: 99.67% match - initial InPassingLane clamp still uses temporary `f0`
+ * instead of updating f28 in place.
  */
 FuzzyVariant Fuzzy::DefendPassInPlay(float fConfidence, cDecisionEntity* pEntity)
 {
@@ -398,7 +398,11 @@ FuzzyVariant Fuzzy::DefendPassInPlay(float fConfidence, cDecisionEntity* pEntity
                     if (fConfidence < fFalseConf4 && fFalseConf4 < 0.2f)
                         fConfidence = fConfidence * fRatio4;
 
-                    float fIsCurrentMark = (pTarget == g_pScriptCurrentMark) ? 1.0f : 0.0f;
+                    float fIsCurrentMark;
+                    if (pTarget == g_pScriptCurrentMark)
+                        fIsCurrentMark = 1.0f;
+                    else
+                        fIsCurrentMark = 0.0f;
                     float fNotCurrentMark = 1.0f - fIsCurrentMark;
 
                     float fMin8 = (fIsCurrentMark <= fNotCurrentMark) ? fIsCurrentMark : fNotCurrentMark;

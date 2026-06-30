@@ -1608,10 +1608,67 @@ static inline void World_AssignLightBitmasks(World* world)
     }
 }
 
+static inline void World_CreateEmitterObjFromChunk(World* self, nlChunk* pChunk, AVLTreeNode** ppHelperRoot)
+{
+    u8* pData = (u8*)nlGetChunkData(pChunk);
+
+    const char* persistentHeader = "fx_persistent_";
+    static int persistentLen = nlStrLen<char>(persistentHeader);
+
+    char* found = strstr((char*)pData, persistentHeader);
+    if (found != NULL)
+    {
+        char szBuffer[256];
+        nlStrNCpy<char>(szBuffer, found + persistentLen, 256);
+
+        int len = strlen(szBuffer);
+        if (__ctype_map[(unsigned char)szBuffer[len - 1]] & __digit)
+        {
+            len = strlen(szBuffer);
+            char* p = szBuffer + len;
+            while (len > 0)
+            {
+                if (*p == '_')
+                {
+                    szBuffer[len] = '\0';
+                    break;
+                }
+                p--;
+                len--;
+            }
+        }
+
+        EffectsGroup* pGroup = fxGetGroup(szBuffer);
+        if (pGroup != NULL)
+        {
+            EmissionController* pEmitter = EmissionManager::Create(pGroup, 0);
+            pEmitter->SetPosition(*(const nlVector3*)(pData + 0x90));
+            pEmitter->m_uUserData = 0xDEADBEEF;
+        }
+    }
+    else
+    {
+        HelperObject* pHelper = (HelperObject*)nlMalloc(sizeof(HelperObject), 8, false);
+
+        pHelper->m_uHashID = *(u32*)(pData + 0x40);
+
+        pHelper->m_worldMatrix = *(nlMatrix4*)(pData + 0x60);
+
+        nlStrNCpy<char>(pHelper->m_szName, (const char*)pData, 64);
+
+        AVLTreeNode* pExistingNode;
+        self->m_helperMap.AddAVLNode(ppHelperRoot, pHelper, &pHelper, &pExistingNode, self->m_helperMap.m_NumElements);
+        if (pExistingNode == NULL)
+        {
+            self->m_helperMap.m_NumElements++;
+        }
+    }
+}
+
 /**
  * Offset/Address/Size: 0x264C | 0x80197310 | size: 0x9D4
- * TODO: 96.06% match - remaining diffs are in nonvolatile pointer registers,
- *       switch branch shape, AddAVLNode temporary stack slots, and physics copy loop register roles.
+ * TODO: 97.17% match - remaining diffs are in nonvolatile pointer registers,
+ *       switch branch shape, light AddAVLNode stack slot, and physics copy loop register roles.
  */
 bool World::LoadObjectData(const char* szWorldName)
 {
@@ -1706,59 +1763,7 @@ bool World::LoadObjectData(const char* szWorldName)
         }
         case 0x19101:
         {
-            u8* pData = (u8*)nlGetChunkData(pChunk);
-
-            const char* persistentHeader = "fx_persistent_";
-            static int persistentLen = nlStrLen<char>(persistentHeader);
-
-            char* found = strstr((char*)pData, persistentHeader);
-            if (found != NULL)
-            {
-                char szBuffer[256];
-                nlStrNCpy<char>(szBuffer, found + persistentLen, 256);
-
-                int len = strlen(szBuffer);
-                if (__ctype_map[(unsigned char)szBuffer[len - 1]] & __digit)
-                {
-                    len = strlen(szBuffer);
-                    char* p = szBuffer + len;
-                    while (len > 0)
-                    {
-                        if (*p == '_')
-                        {
-                            szBuffer[len] = '\0';
-                            break;
-                        }
-                        p--;
-                        len--;
-                    }
-                }
-
-                EffectsGroup* pGroup = fxGetGroup(szBuffer);
-                if (pGroup != NULL)
-                {
-                    EmissionController* pEmitter = EmissionManager::Create(pGroup, 0);
-                    pEmitter->SetPosition(*(const nlVector3*)(pData + 0x90));
-                    pEmitter->m_uUserData = 0xDEADBEEF;
-                }
-            }
-            else
-            {
-                HelperObject* pHelper = (HelperObject*)nlMalloc(sizeof(HelperObject), 8, false);
-
-                pHelper->m_uHashID = *(u32*)(pData + 0x40);
-
-                pHelper->m_worldMatrix = *(nlMatrix4*)(pData + 0x60);
-
-                nlStrNCpy<char>(pHelper->m_szName, (const char*)pData, 64);
-
-                AVLTreeNode* pExistingNode;
-                m_helperMap.AddAVLNode(ppHelperRoot, pHelper, &pHelper, &pExistingNode, m_helperMap.m_NumElements);
-                if (pExistingNode == NULL)
-                {
-                    m_helperMap.m_NumElements++;
-                }
-            }
+            World_CreateEmitterObjFromChunk(this, pChunk, ppHelperRoot);
             break;
         }
         case 0x19100:

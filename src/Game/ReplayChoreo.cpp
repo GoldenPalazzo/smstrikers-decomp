@@ -422,7 +422,7 @@ void ReplayChoreo::Reset()
 
 /**
  * Offset/Address/Size: 0x698 | 0x80127D04 | size: 0x3E0
- * TODO: 95.35% match - register allocation: stmw r26 vs r27 (data/replayType share r30 in target).
+ * TODO: 95.47% match - register allocation: stmw r26 vs r27 (data/replayType share r30 in target).
  */
 BasicString<char, Detail::TempStringAllocator> ReplayChoreo::CalcAutoReplayScriptName(ReplayType) const
 {
@@ -431,8 +431,8 @@ BasicString<char, Detail::TempStringAllocator> ReplayChoreo::CalcAutoReplayScrip
     BasicString<char, Detail::TempStringAllocator> format;
     format.m_data = data;
 
-    int zoneInWidth = 0;
     int zoneDepth = 0;
+    int zoneInWidth = 0;
     int goalType = mGoalScoredData.uGoalType;
 
     f32 fieldDepth = 2.0f * cField::mv3FieldPosition.f.y;
@@ -475,8 +475,8 @@ BasicString<char, Detail::TempStringAllocator> ReplayChoreo::CalcAutoReplayScrip
         }
         if (mNumScripts[0][0][goalType] > 0)
         {
-            zoneDepth = 0;
             zoneInWidth = 0;
+            zoneDepth = 0;
             break;
         }
         goalType = 0;

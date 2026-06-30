@@ -620,21 +620,19 @@ float cGame::GetGameTime()
 
 /**
  * Offset/Address/Size: 0x1720 | 0x8003DC94 | size: 0x3EC
- * TODO: 97.00% match - r27/r28/r31 loop register diffs in player/powerup loops
+ * TODO: 99.14% match - r27/r28/r31 loop register diffs in player/powerup loops
  * and nlVector3 copy store order.
  */
-void cGame::ResetForKickOff()
+static inline void RandomizePlayersForKickOff(cGame* game)
 {
-    cFielder* pBallCarrier;
-    g_pEventManager->CreateValidEvent(9, 0x14);
     int i;
     for (i = 0; i < 5; i++)
     {
-        m_pRandomPlayersArray[i] = g_pTeams[0]->GetPlayer(i);
+        game->m_pRandomPlayersArray[i] = g_pTeams[0]->GetPlayer(i);
     }
     for (i = 0; i < 5; i++)
     {
-        m_pRandomPlayersArray[5 + i] = g_pTeams[1]->GetPlayer(i);
+        game->m_pRandomPlayersArray[5 + i] = g_pTeams[1]->GetPlayer(i);
     }
     static FilteredRandomRange randgen;
     for (i = 0; i < 10; i++)
@@ -642,15 +640,29 @@ void cGame::ResetForKickOff()
         int j = randgen.genrand(10);
         if (j != i)
         {
-            cPlayer* temp = m_pRandomPlayersArray[i];
-            m_pRandomPlayersArray[i] = m_pRandomPlayersArray[j];
-            m_pRandomPlayersArray[j] = temp;
+            cPlayer* temp = game->m_pRandomPlayersArray[i];
+            game->m_pRandomPlayersArray[i] = game->m_pRandomPlayersArray[j];
+            game->m_pRandomPlayersArray[j] = temp;
         }
     }
+}
+
+static inline void ResetCharactersForKickOff()
+{
+    int i;
     for (i = 0; i < 2; i++)
     {
         g_pTeams[i]->ResetCharacters();
     }
+}
+
+void cGame::ResetForKickOff()
+{
+    cFielder* pBallCarrier;
+    g_pEventManager->CreateValidEvent(9, 0x14);
+    int i;
+    RandomizePlayersForKickOff(this);
+    ResetCharactersForKickOff();
     nlVector3 position = { 0.0f, 0.0f, 0.18f };
     nlVector3 velocity = { 0.0f, 0.0f, 0.0f };
     if (g_pBall->m_pOwner != NULL)
