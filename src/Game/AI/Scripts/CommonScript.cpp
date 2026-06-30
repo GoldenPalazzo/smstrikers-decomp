@@ -905,10 +905,10 @@ FuzzyVariant Fuzzy::GetBestPassTarget(cPlayer* ThePlayer)
     float fConfidence = 1.0f;
     float fBestConfidence = 0.0f;
 
-    FuzzyVariant fvPlayer((cPlayer*)ThePlayer);
-    volatile unsigned long funcAddr = (unsigned long)GetBestPassTarget;
-    unsigned long hash = funcAddr + ((Variant*)&fvPlayer)->GetHash();
-    FuzzyVariant fvPlayer2((cPlayer*)ThePlayer);
+    const FuzzyVariant& fvPlayer = FuzzyVariant((cPlayer*)ThePlayer);
+    unsigned long hash = (unsigned long)GetBestPassTarget;
+    hash += ((Variant*)&fvPlayer)->GetHash();
+    const FuzzyVariant& fvPlayer2 = FuzzyVariant((cPlayer*)ThePlayer);
 
     unsigned long hashKey = hash;
     unsigned char lookupFound;
@@ -920,7 +920,7 @@ FuzzyVariant Fuzzy::GetBestPassTarget(cPlayer* ThePlayer)
 
     if (g_bScriptQuestionCachingUseSTD)
     {
-        std::map<unsigned long, FuzzyVariant>::iterator stdIt = cache->mQuestionCacheMapSTD.find(hashKey);
+        std::map<unsigned long, FuzzyVariant>::iterator stdIt = cache->mQuestionCacheMapSTD.find(hash);
         if (*(StdMapNodeBase**)&stdIt != &((StdMapTree*)&cache->mQuestionCacheMapSTD)->x4)
         {
             cache->mCacheHits++;
@@ -931,7 +931,7 @@ FuzzyVariant Fuzzy::GetBestPassTarget(cPlayer* ThePlayer)
     else
     {
         AVLTreeEntry<unsigned long, FuzzyVariant>* node = cache->mQuestionCacheMap.m_Root;
-        unsigned long key = hashKey;
+        unsigned long key = hash;
 
         while (node != NULL)
         {
@@ -983,22 +983,25 @@ FuzzyVariant Fuzzy::GetBestPassTarget(cPlayer* ThePlayer)
 
     if (lookupFound)
     {
+        bestValue.Confidence = bestValue.Confidence;
         unsigned long hashCopy1 = hashKey;
+        ScriptQuestionCache* addCache = nlSingleton<ScriptQuestionCache>::s_pInstance;
 
         if (g_bScriptQuestionCachingOn)
         {
+            const FuzzyVariant& cacheValue1 = bestValue;
             if (g_bScriptQuestionCachingUseSTD)
             {
-                std::pair<const unsigned long, FuzzyVariant>& pair = cache->mQuestionCacheMapSTD.tree_.find_or_insert<unsigned long, FuzzyVariant>(hashCopy1);
-                pair.second = bestValue;
+                std::pair<const unsigned long, FuzzyVariant>& pair = addCache->mQuestionCacheMapSTD.tree_.find_or_insert<unsigned long, FuzzyVariant>(hashCopy1);
+                pair.second = cacheValue1;
             }
             else
             {
                 AVLTreeNode* existingNode1;
-                cache->mQuestionCacheMap.AddAVLNode((AVLTreeNode**)&cache->mQuestionCacheMap.m_Root, (void*)&hashCopy1, (void*)&bestValue, &existingNode1, cache->mQuestionCacheMap.m_NumElements);
+                addCache->mQuestionCacheMap.AddAVLNode((AVLTreeNode**)&addCache->mQuestionCacheMap.m_Root, (void*)&hashCopy1, (void*)&cacheValue1, &existingNode1, addCache->mQuestionCacheMap.m_NumElements);
                 if (existingNode1 == NULL)
                 {
-                    cache->mQuestionCacheMap.m_NumElements++;
+                    addCache->mQuestionCacheMap.m_NumElements++;
                 }
             }
         }
@@ -1142,20 +1145,22 @@ FuzzyVariant Fuzzy::GetBestPassTarget(cPlayer* ThePlayer)
     bestValue.Confidence = fBestConfidence;
 
     unsigned long hashCopy2 = hashKey;
+    ScriptQuestionCache* addCache = nlSingleton<ScriptQuestionCache>::s_pInstance;
     if (g_bScriptQuestionCachingOn)
     {
+        const FuzzyVariant& cacheValue2 = bestValue;
         if (g_bScriptQuestionCachingUseSTD)
         {
-            std::pair<const unsigned long, FuzzyVariant>& pair = cache->mQuestionCacheMapSTD.tree_.find_or_insert<unsigned long, FuzzyVariant>(hashCopy2);
-            pair.second = bestValue;
+            std::pair<const unsigned long, FuzzyVariant>& pair = addCache->mQuestionCacheMapSTD.tree_.find_or_insert<unsigned long, FuzzyVariant>(hashCopy2);
+            pair.second = cacheValue2;
         }
         else
         {
             AVLTreeNode* existingNode2;
-            cache->mQuestionCacheMap.AddAVLNode((AVLTreeNode**)&cache->mQuestionCacheMap.m_Root, (void*)&hashCopy2, (void*)&bestValue, &existingNode2, cache->mQuestionCacheMap.m_NumElements);
+            addCache->mQuestionCacheMap.AddAVLNode((AVLTreeNode**)&addCache->mQuestionCacheMap.m_Root, (void*)&hashCopy2, (void*)&cacheValue2, &existingNode2, addCache->mQuestionCacheMap.m_NumElements);
             if (existingNode2 == NULL)
             {
-                cache->mQuestionCacheMap.m_NumElements++;
+                addCache->mQuestionCacheMap.m_NumElements++;
             }
         }
     }
@@ -1780,7 +1785,8 @@ FuzzyVariant Fuzzy::GoodToShoot(cFielder* TheFielder)
         Goalie* pGoalie;
         if (TheFielder != NULL)
         {
-            pGoalie = (TheFielder != NULL) ? TheFielder->m_pTeam->GetOtherTeam()->GetGoalie() : NULL;
+            cTeam* pOtherTeam = (TheFielder != NULL) ? TheFielder->m_pTeam->GetOtherTeam() : NULL;
+            pGoalie = pOtherTeam->GetGoalie();
         }
         else
         {
@@ -2567,7 +2573,7 @@ FuzzyVariant Fuzzy::GetBestPassReceiveAction(cFielder* TheFielder)
 
 /**
  * Offset/Address/Size: 0x3FD0 | 0x8006E1A0 | size: 0x17F4
- * TODO: 98.45% match - remaining diffs are register/branch ordering in confidence gates.
+ * TODO: 98.54% match - remaining diffs are register/branch ordering in confidence gates.
  */
 FuzzyVariant Fuzzy::GetBestLooseBallAction(cFielder* TheFielder)
 {
@@ -2863,10 +2869,10 @@ FuzzyVariant Fuzzy::GetBestLooseBallAction(cFielder* TheFielder)
 
         FuzzyVariant returnAction2(18);
         returnAction2.ExtraData = *(Variant*)&powerupToUse;
-        float fPowerupConfidence = powerupToUse.Confidence;
 
         SkillTweaks* pSkillTweaks2 = SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide);
         returnAction2.SelectionChance = CalcSelectChance(pSkillTweaks2->Off_PassReceivePowerupChance, Aggressive(TheFielder));
+        float fPowerupConfidence = powerupToUse.Confidence;
 
         if (powerupToUse.mData.i == 7)
         {
@@ -3815,7 +3821,7 @@ FuzzyVariant Fuzzy::GetPowerupToUseForWindupDefence(cFielder* TheFielder)
 
 /**
  * Offset/Address/Size: 0xE64 | 0x8006B034 | size: 0x7BC
- * TODO: 98.18% match - r28/r29/r30/r31 differ in the cache path and final copy.
+ * TODO: 98.19% match - r28/r29/r30/r31 differ in the cache path and final copy.
  */
 FuzzyVariant Fuzzy::InDanger(cFielder* TheFielder)
 {
@@ -3841,7 +3847,7 @@ FuzzyVariant Fuzzy::InDanger(cFielder* TheFielder)
     float fFifth = Attacked(TheFielder);
     float fBestConfidence = fDanger;
 
-    fBestConfidence = (fBestConfidence >= fOther) ? fBestConfidence : fOther;
+    fBestConfidence = (fOther <= fBestConfidence) ? fBestConfidence : fOther;
     fBestConfidence = (fBestConfidence >= fThird) ? fBestConfidence : fThird;
     fBestConfidence = (fBestConfidence >= fFourth) ? fBestConfidence : fFourth;
     fBestConfidence = (fBestConfidence >= fFifth) ? fBestConfidence : fFifth;

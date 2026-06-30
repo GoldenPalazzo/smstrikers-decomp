@@ -409,9 +409,9 @@ static inline int BuildDefaultIconHeaderSize(MemCard::ICON_CONFIG& IconCfg)
 
 /**
  * Offset/Address/Size: 0x2DA8 | 0x8018C704 | size: 0x4AC
- * TODO: 90.62% match - opt_propagation off causes register permutation
- * (this->r31 should be r27, Result->r27 should be r28, Slot->r28 should be r29),
- * extra cmpwi+ble while loop guards, srawi CSE in BuildDefaultIconHeaderSize.
+ * TODO: 90.72% match - this and Result use r31/r27 instead of r27/r28,
+ * extra cmpwi+ble size-loop guards remain, and icon header arithmetic uses
+ * different temporary registers.
  */
 #pragma push
 #pragma opt_propagation off
@@ -419,7 +419,10 @@ inline unsigned long SaveCallbacks::FileWriteCB(unsigned long Slot, long Result,
 {
     if (Result != 0)
     {
-        long errorCode = Result;
+        MemCard* card2;
+        long errorCode;
+        int numBlocks;
+        errorCode = Result;
         if (m_pSaveFile != NULL)
         {
             g_MemCards[Slot]->CloseFile(m_pSaveFile);
@@ -433,9 +436,9 @@ inline unsigned long SaveCallbacks::FileWriteCB(unsigned long Slot, long Result,
 
         if (errorCode == -4)
         {
-            MemCard* card2 = g_MemCards[Slot];
+            card2 = g_MemCards[Slot];
             long dataSize = nlSingleton<GameInfoManager>::s_pInstance->GetMemoryCardDataSize();
-            int numBlocks = 0;
+            numBlocks = 0;
             int origSize = (dataSize += 12);
             dataSize = (u32)(dataSize + 0x1FFF) >> 13;
             if (origSize > 0)
@@ -483,7 +486,10 @@ inline unsigned long SaveCallbacks::FileWriteCB(unsigned long Slot, long Result,
         s64 serialID = g_MemCards[Slot]->GetSerialID();
         if (mRequiredMemoryCardID != serialID)
         {
-            long errorCode = -1001;
+            MemCard* card2;
+            long errorCode;
+            int numBlocks;
+            errorCode = -1001;
             if (m_pSaveFile != NULL)
             {
                 g_MemCards[Slot]->CloseFile(m_pSaveFile);
@@ -497,9 +503,9 @@ inline unsigned long SaveCallbacks::FileWriteCB(unsigned long Slot, long Result,
 
             if (errorCode == -4)
             {
-                MemCard* card2 = g_MemCards[Slot];
+                card2 = g_MemCards[Slot];
                 long dataSize = nlSingleton<GameInfoManager>::s_pInstance->GetMemoryCardDataSize();
-                int numBlocks = 0;
+                numBlocks = 0;
                 int origSize = (dataSize += 12);
                 dataSize = (u32)(dataSize + 0x1FFF) >> 13;
                 if (origSize > 0)

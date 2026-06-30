@@ -698,9 +698,6 @@ struct EmissionControllerUserLocal
 
 static inline void TriggerParticleEffects()
 {
-    extern void __dla__FPv(void*);
-    extern void __dl__FPv(void*);
-
     WorldLocal* world = (WorldLocal*)WorldManager::s_World;
     TreeStackLocal* stack = (TreeStackLocal*)nlMalloc(8, 8, false);
     if (stack != 0)
@@ -776,8 +773,8 @@ static inline void TriggerParticleEffects()
 
     if (stack != 0)
     {
-        __dla__FPv(stack->nodes);
-        __dl__FPv(stack);
+        delete[] stack->nodes;
+        delete stack;
     }
 }
 
@@ -980,25 +977,20 @@ void Presentation::EventHandler(Event* event)
             for (s32 i = 0; i < 4; i++)
             {
                 cAIPad* aiPad = &AIPadManager::mAIPads[i];
-                cPlayer** character = (cPlayer**)g_pCharacters;
-                for (s32 c = 0; c < 5; c++)
+                for (s32 c = 0; c < 10; c++)
                 {
-                    for (s32 k = 0; k < 2; k++)
+                    cPlayer* ch = ((cPlayer**)g_pCharacters)[c];
+                    if (ch->m_pController == aiPad)
                     {
-                        cPlayer* ch = *character;
-                        if (ch->m_pController == aiPad)
+                        if ((s32)gsd->uTeamIndex == ch->m_pTeam->m_nSide)
                         {
-                            if ((s32)gsd->uTeamIndex == ch->m_pTeam->m_nSide)
-                            {
-                                mIsAllowedToSkip[i] = true;
-                                foundTeamPad = true;
-                            }
-                            else
-                            {
-                                mIsAllowedToSkip[i] = false;
-                            }
+                            mIsAllowedToSkip[i] = true;
+                            foundTeamPad = true;
                         }
-                        character++;
+                        else
+                        {
+                            mIsAllowedToSkip[i] = false;
+                        }
                     }
                 }
             }

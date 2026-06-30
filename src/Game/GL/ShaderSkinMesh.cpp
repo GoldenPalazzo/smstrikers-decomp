@@ -1,7 +1,10 @@
-// TODO: Revisit the AVL/ring helper specializations below. The original object
-// emits several of them as weak/linkonce header-style methods, but moving these
-// bodies back to weak header emission currently changes section order and
-// breaks the linked DOL SHA.
+// TODO: Revisit proper header-style emission for the helper templates below.
+// Moving these bodies to private inline headers makes them weak/linkonce, but
+// MWCC then orders the AVL tail after the ring block, or reverses the tail,
+// which breaks the linked DOL SHA. The explicit source definitions below are
+// byte-linkable; WEAKFUNC fixes the ordinary AVL helper bindings, but MWCC
+// still emits the function-template/member-template specializations as strong
+// globals when they are defined in this .cpp.
 #define NL_AVLTREE_DECLARE_ONLY
 #include "Game/GL/ShaderSkinMesh.h"
 #undef NL_AVLTREE_DECLARE_ONLY
@@ -24,24 +27,10 @@ typedef AVLTreeBase<unsigned long, unsigned long, NewAdapter<BoneIndexEntry>, De
 typedef AVLTreeEntry<unsigned long, SkinMatrix> SkinMatrixEntry;
 typedef AVLTreeBase<unsigned long, SkinMatrix, NewAdapter<SkinMatrixEntry>, DefaultKeyCompare<unsigned long> > SkinMatrixBase;
 
-// /**
-//  * Offset/Address/Size: 0xAC | 0x801E21A0 | size: 0x2C
-//  */
-// void nlRingAddStart<SkinPairList>(SkinPairList**, SkinPairList*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x801E20F4 | size: 0x70
-//  */
-// void nlDeleteRing<SkinPairList>(SkinPairList**)
-// {
-// }
-
 /**
  * Offset/Address/Size: 0x14C | 0x801E2240 | size: 0x58
  */
-BoneMapList::~BoneMapList()
+WEAKFUNC BoneMapList::~BoneMapList()
 {
     FORCE_DONT_INLINE;
 }
@@ -50,7 +39,7 @@ BoneMapList::~BoneMapList()
  * Offset/Address/Size: 0xD8 | 0x801E21CC | size: 0x74
  */
 template <>
-void nlDeleteRing<BoneMapList>(BoneMapList** head)
+WEAKFUNC void nlDeleteRing<BoneMapList>(BoneMapList** head)
 {
     FORCE_DONT_INLINE;
     BoneMapList* current;
@@ -81,7 +70,7 @@ void nlDeleteRing<BoneMapList>(BoneMapList** head)
  * Offset/Address/Size: 0xAC | 0x801E21A0 | size: 0x2C
  */
 template <>
-void nlRingAddStart<SkinPairList>(SkinPairList** list, SkinPairList* item)
+WEAKFUNC void nlRingAddStart<SkinPairList>(SkinPairList** list, SkinPairList* item)
 {
     FORCE_DONT_INLINE;
     SkinPairList* head = *list;
@@ -101,7 +90,7 @@ void nlRingAddStart<SkinPairList>(SkinPairList** list, SkinPairList* item)
  * Offset/Address/Size: 0x70 | 0x801E2164 | size: 0x3C
  */
 template <>
-void nlRingAddEnd<SkinPairList>(SkinPairList** list, SkinPairList* item)
+WEAKFUNC void nlRingAddEnd<SkinPairList>(SkinPairList** list, SkinPairList* item)
 {
     FORCE_DONT_INLINE;
     nlRingAddStart(list, item);
@@ -112,7 +101,7 @@ void nlRingAddEnd<SkinPairList>(SkinPairList** list, SkinPairList* item)
  * Offset/Address/Size: 0x0 | 0x801E20F4 | size: 0x70
  */
 template <>
-void nlDeleteRing<SkinPairList>(SkinPairList** head)
+WEAKFUNC void nlDeleteRing<SkinPairList>(SkinPairList** head)
 {
     FORCE_DONT_INLINE;
     SkinPairList* current;
@@ -139,81 +128,11 @@ void nlDeleteRing<SkinPairList>(SkinPairList** head)
     }
 }
 
-// /**
-//  * Offset/Address/Size: 0xC9C | 0x801E20D0 | size: 0x24
-//  */
-// void AVLTreeBase<unsigned long, SkinMatrix, NewAdapter<AVLTreeEntry<unsigned long, SkinMatrix> >, DefaultKeyCompare<unsigned long> >::DeleteEntry(AVLTreeEntry<unsigned long, SkinMatrix>*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0xBE0 | 0x801E2014 | size: 0xBC
-//  */
-// void AVLTreeBase<unsigned long, SkinMatrix, NewAdapter<AVLTreeEntry<unsigned long, SkinMatrix> >, DefaultKeyCompare<unsigned long> >::AllocateEntry(void*, void*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0xBB4 | 0x801E1FE8 | size: 0x2C
-//  */
-// void AVLTreeBase<unsigned long, SkinMatrix, NewAdapter<AVLTreeEntry<unsigned long, SkinMatrix> >, DefaultKeyCompare<unsigned long> >::CompareKey(void*, AVLTreeNode*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0xB88 | 0x801E1FBC | size: 0x2C
-//  */
-// void AVLTreeBase<unsigned long, SkinMatrix, NewAdapter<AVLTreeEntry<unsigned long, SkinMatrix> >, DefaultKeyCompare<unsigned long> >::CompareNodes(AVLTreeNode*, AVLTreeNode*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0xB80 | 0x801E1FB4 | size: 0x8
-//  */
-// void AVLTreeBase<unsigned long, SkinMatrix, NewAdapter<AVLTreeEntry<unsigned long, SkinMatrix> >, DefaultKeyCompare<unsigned long> >::CastUp(AVLTreeNode*) const
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x428 | 0x801E185C | size: 0x758
-//  */
-// void AVLTreeBase<unsigned long, SkinMatrix, NewAdapter<AVLTreeEntry<unsigned long, SkinMatrix> >, DefaultKeyCompare<unsigned long> >::PostorderTraversal(AVLTreeEntry<unsigned long, SkinMatrix>*, void (AVLTreeBase<unsigned long, SkinMatrix, NewAdapter<AVLTreeEntry<unsigned long, SkinMatrix> >, DefaultKeyCompare<unsigned long> >::*)(AVLTreeEntry<unsigned long, SkinMatrix>*))
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x3C4 | 0x801E17F8 | size: 0x64
-//  */
-// void AVLTreeBase<unsigned long, SkinMatrix, NewAdapter<AVLTreeEntry<unsigned long, SkinMatrix> >, DefaultKeyCompare<unsigned long> >::DestroyTree(void (AVLTreeBase<unsigned long, SkinMatrix, NewAdapter<AVLTreeEntry<unsigned long, SkinMatrix> >, DefaultKeyCompare<unsigned long> >::*)(AVLTreeEntry<unsigned long, SkinMatrix>*))
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x36C | 0x801E17A0 | size: 0x58
-//  */
-// void AVLTreeBase<unsigned long, SkinMatrix, NewAdapter<AVLTreeEntry<unsigned long, SkinMatrix> >, DefaultKeyCompare<unsigned long> >::Clear()
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x310 | 0x801E1744 | size: 0x5C
-//  */
-// void AVLTreeBase<unsigned long, SkinMatrix, NewAdapter<AVLTreeEntry<unsigned long, SkinMatrix> >, DefaultKeyCompare<unsigned long> >::~AVLTreeBase()
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x44 | 0x801E1478 | size: 0x2CC
-//  */
-// void AVLTreeBase<unsigned long, unsigned long, NewAdapter<AVLTreeEntry<unsigned long, unsigned long> >, DefaultKeyCompare<unsigned long> >::InorderWalk<UserDataBuilder>(AVLTreeEntry<unsigned long, unsigned long>*, UserDataBuilder*, void (UserDataBuilder::*)(const unsigned long&, unsigned long*))
-// {
-// }
-
 /**
  * Offset/Address/Size: 0xC9C | 0x801E20D0 | size: 0x24
  */
 template <>
-void SkinMatrixBase::DeleteEntry(SkinMatrixEntry* entry)
+WEAKFUNC void SkinMatrixBase::DeleteEntry(SkinMatrixEntry* entry)
 {
     m_Allocator.Free(entry);
 }
@@ -222,7 +141,7 @@ void SkinMatrixBase::DeleteEntry(SkinMatrixEntry* entry)
  * Offset/Address/Size: 0xBE0 | 0x801E2014 | size: 0xBC
  */
 template <>
-AVLTreeNode* SkinMatrixBase::AllocateEntry(void* key, void* value)
+WEAKFUNC AVLTreeNode* SkinMatrixBase::AllocateEntry(void* key, void* value)
 {
     SkinMatrixEntry* newNode = NULL;
 
@@ -241,7 +160,7 @@ AVLTreeNode* SkinMatrixBase::AllocateEntry(void* key, void* value)
  * Offset/Address/Size: 0xBB4 | 0x801E1FE8 | size: 0x2C
  */
 template <>
-int SkinMatrixBase::CompareKey(void* key, AVLTreeNode* node)
+WEAKFUNC int SkinMatrixBase::CompareKey(void* key, AVLTreeNode* node)
 {
     int result;
     unsigned long k = *(unsigned long*)key;
@@ -259,7 +178,7 @@ int SkinMatrixBase::CompareKey(void* key, AVLTreeNode* node)
  * Offset/Address/Size: 0xB88 | 0x801E1FBC | size: 0x2C
  */
 template <>
-int SkinMatrixBase::CompareNodes(AVLTreeNode* a, AVLTreeNode* b)
+WEAKFUNC int SkinMatrixBase::CompareNodes(AVLTreeNode* a, AVLTreeNode* b)
 {
     const unsigned long& keyA = ((SkinMatrixEntry*)a)->key;
     const unsigned long& keyB = ((SkinMatrixEntry*)b)->key;
@@ -277,7 +196,7 @@ int SkinMatrixBase::CompareNodes(AVLTreeNode* a, AVLTreeNode* b)
  * Offset/Address/Size: 0xB80 | 0x801E1FB4 | size: 0x8
  */
 template <>
-SkinMatrixEntry* SkinMatrixBase::CastUp(AVLTreeNode* node) const
+WEAKFUNC SkinMatrixEntry* SkinMatrixBase::CastUp(AVLTreeNode* node) const
 {
     return (SkinMatrixEntry*)node;
 }
@@ -286,7 +205,7 @@ SkinMatrixEntry* SkinMatrixBase::CastUp(AVLTreeNode* node) const
  * Offset/Address/Size: 0x428 | 0x801E185C | size: 0x758
  */
 template <>
-void SkinMatrixBase::PostorderTraversal(SkinMatrixEntry* curr, void (SkinMatrixBase::*cb)(SkinMatrixEntry*))
+WEAKFUNC void SkinMatrixBase::PostorderTraversal(SkinMatrixEntry* curr, void (SkinMatrixBase::*cb)(SkinMatrixEntry*))
 {
     if (curr->node.left != NULL)
     {
@@ -303,7 +222,7 @@ void SkinMatrixBase::PostorderTraversal(SkinMatrixEntry* curr, void (SkinMatrixB
  * Offset/Address/Size: 0x3C4 | 0x801E17F8 | size: 0x64
  */
 template <>
-void SkinMatrixBase::DestroyTree(void (SkinMatrixBase::*deleteFunc)(SkinMatrixEntry*))
+WEAKFUNC void SkinMatrixBase::DestroyTree(void (SkinMatrixBase::*deleteFunc)(SkinMatrixEntry*))
 {
     if (m_Root != NULL)
     {
@@ -317,7 +236,7 @@ void SkinMatrixBase::DestroyTree(void (SkinMatrixBase::*deleteFunc)(SkinMatrixEn
  * Offset/Address/Size: 0x36C | 0x801E17A0 | size: 0x58
  */
 template <>
-void SkinMatrixBase::Clear()
+WEAKFUNC void SkinMatrixBase::Clear()
 {
     DestroyTree(&SkinMatrixBase::DeleteEntry);
     m_NumElements = 0;
@@ -327,7 +246,7 @@ void SkinMatrixBase::Clear()
  * Offset/Address/Size: 0x310 | 0x801E1744 | size: 0x5C
  */
 template <>
-SkinMatrixBase::~AVLTreeBase()
+WEAKFUNC SkinMatrixBase::~AVLTreeBase()
 {
     Clear();
 }
@@ -337,7 +256,7 @@ SkinMatrixBase::~AVLTreeBase()
  */
 template <>
 template <>
-void BoneIndexBase::InorderWalk<UserDataBuilder>(
+WEAKFUNC void BoneIndexBase::InorderWalk<UserDataBuilder>(
     BoneIndexEntry* curr,
     UserDataBuilder* cbClass,
     void (UserDataBuilder::*cb)(const unsigned long&, unsigned long*))
@@ -355,7 +274,7 @@ void BoneIndexBase::InorderWalk<UserDataBuilder>(
  */
 template <>
 template <>
-void BoneIndexBase::Walk<UserDataBuilder>(
+WEAKFUNC void BoneIndexBase::Walk<UserDataBuilder>(
     UserDataBuilder* cbClass,
     void (UserDataBuilder::*cb)(const unsigned long&, unsigned long*))
 {

@@ -29,6 +29,7 @@ public:
     /* 0x20 */ virtual void GetAABBDimensions(AABBDimensions&, bool) const;
 
     nlMatrix4& GetWorldMatrix() const;
+    unsigned long GetHashID() const { return m_uHashID; }
 
     /* 0x04 */ nlMatrix4 m_worldMatrix;
     /* 0x44 */ bool m_worldMatrixUpToDate;

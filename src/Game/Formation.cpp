@@ -313,12 +313,14 @@ void FormationManager::SetNewFormationEval(eFormationType formType, eFormationSe
 
 /**
  * Offset/Address/Size: 0x202C | 0x8003A27C | size: 0x2D4
- * TODO: 98.9% match - r26/r27/r28 circular register allocation swap (offset vs fWeightsBase/formPosBase)
+ * TODO: 99.59% match - f-register allocation in weight scaling and position accumulation
  */
 bool FormationManager::CalculateFielderPosition(nlVector3& v3DestPosition, cFielder* pFielder, bool bInPosition, float fBallPosFormationWeight)
 {
     float fWeights[3];
     nlVector3 v3FormationPosition[2][3];
+    float* weights;
+    nlVector3(*formationPosition)[3];
     nlVector3 v3FutureDesiredPosition;
     float fFielderInPosition;
 
@@ -332,6 +334,9 @@ bool FormationManager::CalculateFielderPosition(nlVector3& v3DestPosition, cFiel
         return cached->bInPosition;
     }
 
+    weights = fWeights;
+    formationPosition = v3FormationPosition;
+
     v3FutureDesiredPosition = v3Zero;
     fFielderInPosition = 0.0f;
 
@@ -340,41 +345,41 @@ bool FormationManager::CalculateFielderPosition(nlVector3& v3DestPosition, cFiel
         FormationEval* pFormation = m_pFormations[i];
         if (pFormation != nullptr && pFormation->m_pFormationSpec != nullptr)
         {
-            fWeights[i] = pFormation->GetWeight();
-            pFormation->CalculateDesiredLocation(v3FormationPosition[1][i], pFielder, true);
-            pFormation->CalculateDesiredLocation(v3FormationPosition[0][i], pFielder, false);
+            weights[i] = pFormation->GetWeight();
+            pFormation->CalculateDesiredLocation(formationPosition[1][i], pFielder, true);
+            pFormation->CalculateDesiredLocation(formationPosition[0][i], pFielder, false);
         }
         else
         {
-            v3FormationPosition[0][i] = v3Zero;
-            fWeights[i] = 0.0f;
-            v3FormationPosition[1][i] = v3Zero;
+            formationPosition[0][i] = v3Zero;
+            weights[i] = 0.0f;
+            formationPosition[1][i] = v3Zero;
         }
     }
 
-    if (fWeights[2] >= 0.5f)
+    if (weights[2] >= 0.5f)
     {
-        fWeights[2] = 1.0f;
+        weights[2] = 1.0f;
     }
 
-    float scaledBallWeight = fWeights[2] * fBallPosFormationWeight;
+    float scaledBallWeight = weights[2] * fBallPosFormationWeight;
     float remainingWeight = 1.0f - scaledBallWeight;
-    fWeights[2] = scaledBallWeight;
-    fWeights[0] *= remainingWeight;
-    fWeights[1] *= remainingWeight;
+    weights[2] = scaledBallWeight;
+    weights[0] *= remainingWeight;
+    weights[1] *= remainingWeight;
 
     for (int i = 0; i < 3; i++)
     {
         FormationEval* pFormation = m_pFormations[i];
         if (pFormation != nullptr && pFormation->m_pFormationSpec != nullptr)
         {
-            nlVector3 pos = v3FormationPosition[0][i];
-            float weight = fWeights[i];
-            v3FutureDesiredPosition.f.z += weight * v3FormationPosition[1][i].f.z;
-            v3FutureDesiredPosition.f.y += weight * v3FormationPosition[1][i].f.y;
-            v3FutureDesiredPosition.f.x += weight * v3FormationPosition[1][i].f.x;
+            nlVector3 pos = formationPosition[0][i];
+            float weight = weights[i];
+            v3FutureDesiredPosition.f.z += weight * formationPosition[1][i].f.z;
+            v3FutureDesiredPosition.f.y += weight * formationPosition[1][i].f.y;
+            v3FutureDesiredPosition.f.x += weight * formationPosition[1][i].f.x;
             float result = pFormation->IsFielderInPosition(pFielder, pos, bInPosition);
-            fFielderInPosition += fWeights[i] * result;
+            fFielderInPosition += weights[i] * result;
         }
     }
 

@@ -1022,7 +1022,7 @@ void PowerupModelPool::Initialize(int type, unsigned long objHashName)
         mObjs[type][i]->m_uHashID = nlStringLowerHash(name.c_str());
         mObjs[type][i]->m_uObjectFlags &= ~1;
 
-        WorldManager::s_World->AddDrawableObject(mObjs[type][i]->m_uHashID, mObjs[type][i]);
+        WorldManager::s_World->AddDrawableObject(mObjs[type][i]->GetHashID(), mObjs[type][i]);
 
         mFree[type][i] = 1;
         mNum++;
@@ -2409,10 +2409,10 @@ cleanup:
     }
 
     int i;
-    unsigned long hashID = m_pDrawableObj->m_uHashID;
+    unsigned long hashID = m_pDrawableObj->GetHashID();
     for (i = 0; i < 25; i++)
     {
-        if (powerupRegistry.registry[i].hashId == hashID)
+        if (hashID == powerupRegistry.registry[i].hashId)
         {
             powerupRegistry.registry[i].hashId = 0;
             goto found;
@@ -2599,7 +2599,7 @@ found1:
     {
         DrawableObject* pD = m_pDrawableObj;
         pD->m_uObjectFlags |= 0x100;
-        unsigned long hashID = m_pDrawableObj->m_uHashID;
+        unsigned long hashID = m_pDrawableObj->GetHashID();
         RegisterPowerup(hashID, this);
     }
 

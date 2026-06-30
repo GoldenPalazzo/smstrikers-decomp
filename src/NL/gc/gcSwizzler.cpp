@@ -43,7 +43,7 @@ u32 GCTextureSize(eGXTextureFormat fmt, int w, int h, int levels, unsigned long 
 
 /**
  * Offset/Address/Size: 0x0 | 0x801C21C4 | size: 0x4A4
- * TODO: 92.48% match - remaining width-derived register swaps and
+ * TODO: 93.76% match - remaining width-derived register swaps and
  *   16-bit swizzle indexed-store shape differences.
  */
 void GCSwizzle(void* dst_, const void* src_, unsigned short w, unsigned short h, eGXTextureFormat fmt, bool swap16)
@@ -69,7 +69,8 @@ void GCSwizzle(void* dst_, const void* src_, unsigned short w, unsigned short h,
         }
     }
 
-    if (pitch_by_fmt == (w << 2))
+    unsigned int pitch4 = w << 2;
+    if (pitch_by_fmt == (int)pitch4)
     {
         unsigned int ww = w;
         unsigned int row_advance_after_strip = ww * 12;
@@ -108,7 +109,7 @@ void GCSwizzle(void* dst_, const void* src_, unsigned short w, unsigned short h,
                     rd[0x27] = rs[0x0E];
 
                     d_off += 8;
-                    rs += (w << 2);
+                    rs += pitch4;
                 }
 
                 s += 16;
@@ -139,7 +140,7 @@ void GCSwizzle(void* dst_, const void* src_, unsigned short w, unsigned short h,
 
                 for (int k = 0; k < 2; ++k)
                 {
-                    *(unsigned short*)(d + off) = *(const unsigned short*)(rs + 0);
+                    *(unsigned short*)(d + (rindex << 1)) = *(const unsigned short*)(rs + 0);
                     *(unsigned short*)(d + ((rindex + 1) << 1)) = *(const unsigned short*)(rs + 2);
                     *(unsigned short*)(d + ((rindex + 2) << 1)) = *(const unsigned short*)(rs + 4);
                     *(unsigned short*)(d + ((rindex + 3) << 1)) = *(const unsigned short*)(rs + 6);
@@ -183,7 +184,7 @@ void GCSwizzle(void* dst_, const void* src_, unsigned short w, unsigned short h,
         return;
     }
 
-    if (pitch_by_fmt != (w >> 1) && pitch_by_fmt == (int)(unsigned int)w)
+    if (pitch_by_fmt != (int)((unsigned int)w >> 1) && pitch_by_fmt == (int)(unsigned int)w)
     {
         unsigned int ww = w;
         unsigned int row_advance_after_strip = ww * 3;

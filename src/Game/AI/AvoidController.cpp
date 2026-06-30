@@ -108,13 +108,13 @@ static inline bool CalcGoalieRepulsionVector(AvoidController* controller, nlVect
     {
         Goalie* pGoalie = g_pTeams[i_team]->GetGoalie();
 
-        float fDeltaZ = controller->m_pFielder->m_v3Position.f.z - pGoalie->m_v3Position.f.z;
-        float fDeltaX = controller->m_pFielder->m_v3Position.f.x - pGoalie->m_v3Position.f.x;
         float fDeltaY = controller->m_pFielder->m_v3Position.f.y - pGoalie->m_v3Position.f.y;
+        float fDeltaX = controller->m_pFielder->m_v3Position.f.x - pGoalie->m_v3Position.f.x;
+        float fDeltaZ = controller->m_pFielder->m_v3Position.f.z - pGoalie->m_v3Position.f.z;
 
-        float fDistanceSq = fDeltaZ * fDeltaZ;
+        float fDistanceSq = fDeltaY * fDeltaY;
         fDistanceSq += fDeltaX * fDeltaX;
-        fDistanceSq += fDeltaY * fDeltaY;
+        fDistanceSq += fDeltaZ * fDeltaZ;
         if (fDistanceSq > 16.0f)
         {
             continue;
@@ -123,8 +123,8 @@ static inline bool CalcGoalieRepulsionVector(AvoidController* controller, nlVect
         float fDistance = nlSqrt(fDistanceSq, true);
         float fInvDistance = 1.0f / fDistance;
         fDeltaX = fInvDistance * fDeltaX;
-        fDeltaY = fInvDistance * fDeltaY;
         fDeltaZ = fInvDistance * fDeltaZ;
+        fDeltaY = fInvDistance * fDeltaY;
 
         fDistance -= pGoalie->m_pTweaks->fPhysCapsuleRadius + controller->m_pFTweaks->fPhysCapsuleRadius;
 
@@ -157,12 +157,12 @@ static inline bool CalcGoalieRepulsionVector(AvoidController* controller, nlVect
         {
             fMagnitude = (fMagnitude <= 10.0f) ? fMagnitude : 10.0f;
 
+            float fOutZ = v3OutRepulsion.f.z;
             float fOutY = v3OutRepulsion.f.y;
             float fOutX = v3OutRepulsion.f.x;
-            fOutY = fMagnitude * fDeltaY + fOutY;
-            float fOutZ = v3OutRepulsion.f.z;
-            fOutX = fMagnitude * fDeltaX + fOutX;
             fOutZ = fMagnitude * fDeltaZ + fOutZ;
+            fOutY = fMagnitude * fDeltaY + fOutY;
+            fOutX = fMagnitude * fDeltaX + fOutX;
             v3OutRepulsion.f.z = fOutZ;
             v3OutRepulsion.f.x = fOutX;
             v3OutRepulsion.f.y = fOutY;
@@ -175,8 +175,8 @@ static inline bool CalcGoalieRepulsionVector(AvoidController* controller, nlVect
 
 /**
  * Offset/Address/Size: 0x12BC | 0x80008910 | size: 0xECC
- * TODO: 97.74% match - remaining diffs are early boolean register allocation,
- * goalie/Bowser FPR coloring, and final fallback slot selection.
+ * TODO: 97.77% match - remaining diffs are early boolean register allocation,
+ * residual goalie/Bowser FPR coloring, and final fallback slot selection.
  */
 void AvoidController::Update(float)
 {
@@ -400,9 +400,9 @@ void AvoidController::Update(float)
             v3SmoothedRepulsion.f.y = fLastRepulsionWeight * v3FinalRepulsion.f.y;
             v3SmoothedRepulsion.f.z = fLastRepulsionWeight * v3FinalRepulsion.f.z;
 
-            v3SmoothedRepulsion.f.x = fLastRepulsionWeight * m_LastRepulsionVector[5].f.x + v3SmoothedRepulsion.f.x;
             v3SmoothedRepulsion.f.y = fLastRepulsionWeight * m_LastRepulsionVector[5].f.y + v3SmoothedRepulsion.f.y;
             v3SmoothedRepulsion.f.z = fLastRepulsionWeight * m_LastRepulsionVector[5].f.z + v3SmoothedRepulsion.f.z;
+            v3SmoothedRepulsion.f.x = fLastRepulsionWeight * m_LastRepulsionVector[5].f.x + v3SmoothedRepulsion.f.x;
         }
         else
         {

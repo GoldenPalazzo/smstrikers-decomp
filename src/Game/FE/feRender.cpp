@@ -455,9 +455,8 @@ void FERender::RenderComponentInstance(TLComponentInstance* componentInstance)
 
 /**
  * Offset/Address/Size: 0x978 | 0x8020AC00 | size: 0x418
- * TODO: 99.75% match - colour loop pointer/index registers differ, and the
- * child colour restore reloads use the previous asset-colour base for offsets
- * 4, 8, and 12. No opcode or control-flow diffs.
+ * TODO: 99.81% match - first colour-loop pointer/index registers differ.
+ * No opcode or control-flow diffs.
  */
 void FERender::RenderSlide(const TLSlide* slide)
 {
@@ -563,10 +562,12 @@ void FERender::RenderSlide(const TLSlide* slide)
 
                 while (true)
                 {
-                    *(u32*)&oldChildColour.c[0] = *(u32*)&s_currentAssetColour.c[0];
-                    *(u32*)&oldChildColour.c[1] = *(u32*)&s_currentAssetColour.c[1];
-                    *(u32*)&oldChildColour.c[2] = *(u32*)&s_currentAssetColour.c[2];
-                    *(u32*)&oldChildColour.c[3] = *(u32*)&s_currentAssetColour.c[3];
+                    u32* saveDst = (u32*)&oldChildColour;
+                    u32* saveSrc = (u32*)&s_currentAssetColour;
+                    saveDst[0] = saveSrc[0];
+                    saveDst[1] = saveSrc[1];
+                    saveDst[2] = saveSrc[2];
+                    saveDst[3] = saveSrc[3];
                     nextChild = child->m_next;
 
                     if (child->IsValidAtTime(time) && child->IsVisible())

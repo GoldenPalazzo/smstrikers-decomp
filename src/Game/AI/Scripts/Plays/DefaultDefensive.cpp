@@ -66,9 +66,8 @@ FuzzyVariant Fuzzy::AbortDefencePlay(cDecisionEntity*)
 
 /**
  * Offset/Address/Size: 0x48B4 | 0x80089F6C | size: 0xCDC
- * TODO: 99.04% match - remaining diffs are register allocation cascades
- * (f29 vs f0 for DefendPassInPlay/TryAttacking return values,
- * f30/f28 vs f0 in position cascade, cascading f1/f2 swaps).
+ * TODO: 99.47% match - remaining diffs are f30/f28 vs f0 in the
+ * position max cascade and one vtable setup register choice.
  */
 FuzzyVariant Fuzzy::DefaultDefencePlay(cDecisionEntity* pDecision)
 {
@@ -120,8 +119,8 @@ FuzzyVariant Fuzzy::DefaultDefencePlay(cDecisionEntity* pDecision)
             fConfidence = fConfidence * fBranchRatio2;
 
         // DefendPassInPlay
-        float fPassConf = DefendPassInPlay(fConfidence, pDecision).mData.f;
-        fPassConf = (fPassConf >= fBestConfidence) ? fPassConf : fBestConfidence;
+        const FuzzyVariant& defendPass = DefendPassInPlay(fConfidence, pDecision);
+        float fPassConf = (defendPass.mData.f >= fBestConfidence) ? defendPass.mData.f : fBestConfidence;
         fBestConfidence = fPassConf;
 
         // TryAttacking sub-branch
@@ -138,8 +137,8 @@ FuzzyVariant Fuzzy::DefaultDefencePlay(cDecisionEntity* pDecision)
             if (fConfidence < fTryConf && fTryConf < 0.2f)
                 fConfidence = fConfidence * fBranchRatio3;
 
-            float fTryResult = TryAttacking(fConfidence, pDecision).mData.f;
-            fBestConfidence = (fTryResult >= fPassConf) ? fTryResult : fPassConf;
+            const FuzzyVariant& tryAttack = TryAttacking(fConfidence, pDecision);
+            fBestConfidence = (tryAttack.mData.f >= fPassConf) ? tryAttack.mData.f : fPassConf;
 
             // Positional sub-branch
             float fCapConf = (0.3f >= (1.0f - fBestConfidence)) ? 0.3f : (1.0f - fBestConfidence);

@@ -614,7 +614,7 @@ SaveData* GoalieSave::FindBestSave(SaveBlendInfo& blendInfo, const nlVector3& v3
 
 /**
  * Offset/Address/Size: 0x1A1C | 0x80054E3C | size: 0x5A4
- * TODO: 97.19% match - list cursor and milestone-scale loop registers still differ.
+ * TODO: 97.38% match - list cursor and milestone-scale loop registers still differ.
  */
 SaveData* GoalieSave::FindBestInList(SaveBlendInfo& blendInfo, nlListContainer<SaveData*>& SaveList, const nlVector3& v3LocalPos, float fTime, unsigned int uSaveType, bool bFromTakeoff)
 {
@@ -685,8 +685,9 @@ SaveData* GoalieSave::FindBestInList(SaveBlendInfo& blendInfo, nlListContainer<S
             if (fSaveTime <= fTime)
             {
                 float fDistY = v3AdjLocalPos.f.y - tempBlendInfo.mv3BlendedSavePos.f.y;
-                float fDistZ = v3AdjLocalPos.f.z - tempBlendInfo.mv3BlendedSavePos.f.z;
-                float fDistSq = fDistY * fDistY + fDistZ * fDistZ;
+                float fDistSq = fDistY * fDistY
+                              + (v3AdjLocalPos.f.z - tempBlendInfo.mv3BlendedSavePos.f.z)
+                                    * (v3AdjLocalPos.f.z - tempBlendInfo.mv3BlendedSavePos.f.z);
 
                 if (fDistSq < fClosest)
                 {
@@ -749,7 +750,7 @@ SaveData* GoalieSave::FindBestInList(SaveBlendInfo& blendInfo, nlListContainer<S
                     continue;
 
                 {
-                    float fRunning = 0.0f;
+                    fLastTime = 0.0f;
                     int segment;
 
                     for (segment = 0; segment < 5; segment++)
@@ -757,8 +758,8 @@ SaveData* GoalieSave::FindBestInList(SaveBlendInfo& blendInfo, nlListContainer<S
                         fThisTime = pConnected->mfMilestonePercent[segment] * pConnected->mfDuration;
                         if (fThisTime > 0.0f)
                         {
-                            blendInfo.mfMilestoneScale[i][segment] = fThisTime - fRunning;
-                            fRunning = fThisTime;
+                            blendInfo.mfMilestoneScale[i][segment] = fThisTime - fLastTime;
+                            fLastTime = fThisTime;
                         }
                         else
                         {
@@ -772,15 +773,15 @@ SaveData* GoalieSave::FindBestInList(SaveBlendInfo& blendInfo, nlListContainer<S
 
         {
             int i;
-            float fPrevTime = 0.0f;
+            fLastTime = 0.0f;
             for (i = 0; i < 5; i++)
             {
                 fThisTime = blendInfo.mfMilestoneTime[i];
                 if (fThisTime > 0.0f)
                 {
-                    float fSegDuration = fThisTime - fPrevTime;
+                    float fSegDuration = fThisTime - fLastTime;
                     fInvSegTime = 1.0f / fSegDuration;
-                    fPrevTime = fThisTime;
+                    fLastTime = fThisTime;
 
                     if (blendInfo.mpSaveData[0])
                         blendInfo.mfMilestoneScale[0][i] *= fInvSegTime;
@@ -1643,7 +1644,7 @@ static inline void Local2GridCoords(float y, float z, int& i, int& j)
 
 /**
  * Offset/Address/Size: 0x390 | 0x800537B0 | size: 0x3F0
- * TODO: 98.77% match - save-data pointers, loop count, and grid-cell registers remain shifted in the inlined AddPointToGrid path.
+ * TODO: 98.99% match - save-data pointers, loop count, and grid-cell registers remain shifted in the inlined AddPointToGrid path.
  */
 void GoalieSave::AddSegmentToGrid(SaveData* pSaveData1, SaveData* pSaveData2)
 {
@@ -1674,9 +1675,7 @@ void GoalieSave::AddSegmentToGrid(SaveData* pSaveData1, SaveData* pSaveData2)
         else
             pCurSaveData = pSaveData2;
         AddPointToGrid(pCurSaveData, v3CurPos);
-        v3CurPos.f.z += v3Delta.f.z;
-        v3CurPos.f.y += v3Delta.f.y;
-        v3CurPos.f.x += v3Delta.f.x;
+        nlVec3Add(v3CurPos, v3CurPos, v3Delta);
     }
 }
 

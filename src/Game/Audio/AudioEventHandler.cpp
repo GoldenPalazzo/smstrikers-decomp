@@ -931,6 +931,8 @@ void Audio::AudioEventHandler(Event* pEvent, void*)
         if (nlTaskManager::m_pInstance->m_CurrState & 0x20110)
             break;
 
+        bool bOnlySlot0;
+        bool bOnlySlot1;
         PowerupAcquireEventData* pData;
         if ((int)pEvent->m_data.GetID() == -1)
         {
@@ -947,14 +949,14 @@ void Audio::AudioEventHandler(Event* pEvent, void*)
             pData = (PowerupAcquireEventData*)&pEvent->m_data;
         }
 
-        bool bOnlySlot0 = false;
+        bOnlySlot0 = false;
         if ((int)g_pTeams[pData->mHomeAway]->GetPowerUpByIndex(0).eType != -1)
         {
             if ((int)g_pTeams[pData->mHomeAway]->GetPowerUpByIndex(1).eType == -1)
                 bOnlySlot0 = true;
         }
 
-        bool bOnlySlot1 = false;
+        bOnlySlot1 = false;
         if ((int)g_pTeams[pData->mHomeAway]->GetPowerUpByIndex(0).eType == -1)
         {
             if ((int)g_pTeams[pData->mHomeAway]->GetPowerUpByIndex(1).eType != -1)
@@ -1039,6 +1041,7 @@ void Audio::AudioEventHandler(Event* pEvent, void*)
 
     case 27:
     {
+        Audio::cCharacterSFX* pCharSFX;
         CollisionPlayerWallData* pData;
         if ((int)pEvent->m_data.GetID() == -1)
         {
@@ -1055,7 +1058,7 @@ void Audio::AudioEventHandler(Event* pEvent, void*)
             pData = (CollisionPlayerWallData*)&pEvent->m_data;
         }
 
-        Audio::cCharacterSFX* pCharSFX = pData->pPlayer->m_pCharacterSFX;
+        pCharSFX = pData->pPlayer->m_pCharacterSFX;
         if (pCharSFX->IsKeepingTrackOf(0x46, NULL))
         {
             pCharSFX->Stop((Audio::eCharSFX)0x46, cGameSFX::SFX_STOP_FIRST);

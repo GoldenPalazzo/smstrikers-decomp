@@ -156,8 +156,8 @@ void cFollowCamera::Update(float dt)
             m_aPitch = g_aFollowCamMinPitch;
     }
 
-    const float vx = -m_matView.m[1][2];
     const float vy = -m_matView.m[0][2];
+    const float vx = -m_matView.m[1][2];
 
     const float dx = (m_v3OOIDampened.f.x - m_v3OOIDampenedPrev.f.x);
     const float dy = (m_v3OOIDampened.f.y - m_v3OOIDampenedPrev.f.y);

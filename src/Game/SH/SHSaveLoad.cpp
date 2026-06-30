@@ -958,8 +958,6 @@ void SaveLoadScene::SceneCreated()
 
 /**
  * Offset/Address/Size: 0x8C8 | 0x800B0E50 | size: 0x644
- * TODO: 99.13% match - remaining diffs are in InlineHasher stack slot ordering
- * and popup callback Function stack slots
  */
 void SaveLoadScene::Update(float fDeltaT)
 {
@@ -998,16 +996,10 @@ void SaveLoadScene::Update(float fDeltaT)
     if (mIsAutoSaving)
     {
         eSaveLoad sceneType = gSceneTypeStack[gSceneTypeStackDepth - 1];
-        InlineHasher zeroHashers[5];
         if (sceneType == (eSaveLoad)11)
         {
-            zeroHashers[0].m_Hash = 0;
-            zeroHashers[1].m_Hash = 0;
-            zeroHashers[2].m_Hash = 0;
-            zeroHashers[3].m_Hash = 0;
-            zeroHashers[4].m_Hash = 0;
             TLSlide* slide = FEFinder<TLSlide, 0>::Find<FEPresentation>(
-                m_pFEPresentation, InlineHasher(nlStringLowerHash("Slide1")), zeroHashers[0], zeroHashers[1], zeroHashers[2], zeroHashers[3], zeroHashers[4]);
+                m_pFEPresentation, InlineHasher(nlStringLowerHash("Slide1")));
             if (m_pFEPresentation->m_currentSlide != slide)
             {
                 m_pFEPresentation->SetActiveSlide(slide);
@@ -1015,13 +1007,8 @@ void SaveLoadScene::Update(float fDeltaT)
         }
         else
         {
-            zeroHashers[0].m_Hash = 0;
-            zeroHashers[1].m_Hash = 0;
-            zeroHashers[2].m_Hash = 0;
-            zeroHashers[3].m_Hash = 0;
-            zeroHashers[4].m_Hash = 0;
             TLSlide* slide = FEFinder<TLSlide, 0>::Find<FEPresentation>(
-                m_pFEPresentation, InlineHasher(nlStringLowerHash("Slide2")), zeroHashers[0], zeroHashers[1], zeroHashers[2], zeroHashers[3], zeroHashers[4]);
+                m_pFEPresentation, InlineHasher(nlStringLowerHash("Slide2")));
             if (m_pFEPresentation->m_currentSlide != slide)
             {
                 m_pFEPresentation->SetActiveSlide(slide);
@@ -1152,17 +1139,17 @@ void SaveLoadScene::Update(float fDeltaT)
             gResult = SaveLoad::StartFileExistsCheck(0, SaveLoadCallback);
             break;
         }
-    }
 
-    if (gResult == -1)
-    {
-        gSaveLoadStarted = false;
-        return;
-    }
+        if (gResult == -1)
+        {
+            gSaveLoadStarted = false;
+            return;
+        }
 
-    if (gResult != 0)
-    {
-        CheckResults();
+        if (gResult != 0)
+        {
+            CheckResults();
+        }
     }
 
     if (gCallbackMade)
@@ -1177,13 +1164,15 @@ void SaveLoadScene::Update(float fDeltaT)
                 {
                     FEPopupMenu* pPopup = (FEPopupMenu*)nlSingleton<GameSceneManager>::s_pInstance
                                               ->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
-                    Function<FnVoidVoid> retryCB;
-                    retryCB.mTag = FREE_FUNCTION;
-                    retryCB.mFreeFunction = RetryCB;
-                    Function<FnVoidVoid> continueCB;
-                    continueCB.mTag = FREE_FUNCTION;
-                    continueCB.mFreeFunction = ContinueWithoutSavingCB;
-                    pPopup->Create(POPUP_NOTSAMECARD, retryCB, continueCB);
+                    {
+                        Function<FnVoidVoid> retryCB;
+                        retryCB.mTag = FREE_FUNCTION;
+                        retryCB.mFreeFunction = RetryCB;
+                        Function<FnVoidVoid> continueCB;
+                        continueCB.mTag = FREE_FUNCTION;
+                        continueCB.mFreeFunction = ContinueWithoutSavingCB;
+                        pPopup->Create(POPUP_NOTSAMECARD, retryCB, continueCB);
+                    }
                     gSaveLoadFinished = false;
                 }
             }

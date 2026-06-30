@@ -49,7 +49,7 @@ void NetMeshModelLoader::LoadGeometryFromModel()
     DrawableModel* pDrawable = (DrawableModel*)WorldManager::s_World->FindDrawableObject(m_NetMeshDrawableObjectID);
     u16 maxVertex = 0;
     u16 vertexOffset = 0;
-    glModelPacket* pPacket = NULL;
+    s32 packetOffset;
     u16 numPackets = (u16)pDrawable->m_pModel->numPackets;
     s32 packetCount = 0;
     s32 packetSumIndex = 0;
@@ -69,12 +69,12 @@ void NetMeshModelLoader::LoadGeometryFromModel()
     }
 
     s32 packetIndex = 0;
-    s32 packetOffset = 0;
+    packetOffset = 0;
     while (packetIndex < numPackets)
     {
         maxVertex = 0;
+        glModelPacket* pPacket = (glModelPacket*)((u8*)pDrawable->m_pModel->packets + packetOffset);
         vertexOffset = (u16)m_NumParticles;
-        pPacket = (glModelPacket*)((u8*)pDrawable->m_pModel->packets + packetOffset);
 
         DisplayList* pList = dlGetStruct(pPacket->indexBuffer);
         s32 i = 0;
@@ -515,7 +515,7 @@ void NetMeshModelLoader::ProcessEdges(const glModelPacket& packet, int maxVertex
 
 /**
  * Offset/Address/Size: 0x0 | 0x80130158 | size: 0x780
- * TODO: 99.28% match - register allocation still differs for iterator/tree
+ * TODO: 99.30% match - register allocation still differs for iterator/tree
  * pointers and vertex writeback temporaries.
  */
 void NetMeshModelLoader::CreateNetMeshFromVertexList()
@@ -537,11 +537,12 @@ void NetMeshModelLoader::CreateNetMeshFromVertexList()
 
     VertexIter* vertexIter;
     VertexTree* vertexTree;
-    int numConstrainedVertices = 0;
+    int numConstrainedVertices;
     int numEdges = 0;
     int numVertices = 0;
 
     vertexTree = m_VertexList;
+    numConstrainedVertices = 0;
     vertexIter = (VertexIter*)nlMalloc(sizeof(VertexIter), 8, false);
     if (vertexIter != NULL)
     {

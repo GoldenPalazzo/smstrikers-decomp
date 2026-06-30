@@ -206,14 +206,8 @@ bool nlAsyncReadsPending(nlFile* file)
     return s_pAsyncManager->m_activeEntryList != nullptr;
 }
 
-/**
- * Offset/Address/Size: 0x2F8 | 0x801CF04C | size: 0x2D0
- * TODO: 97.3% match - remaining callee-saved register permutation in prologue
- * and TDEV file-path setup
- */
-void* nlLoadEntireFileToVirtualMemory(const char* fileName, int* size, unsigned int transferSize, void* target, eAllocType allocType)
+static inline nlFile* nlLoadEntireFileOpen(const char* fileName)
 {
-    void* buffer = NULL;
     nlFile* pGCFile;
 
     if (fileSystem == eGC_TDEV)
@@ -258,6 +252,19 @@ void* nlLoadEntireFileToVirtualMemory(const char* fileName, int* size, unsigned 
             }
         }
     }
+
+    return pGCFile;
+}
+
+/**
+ * Offset/Address/Size: 0x2F8 | 0x801CF04C | size: 0x2D0
+ * TODO: 97.8% match - remaining saved-register cycle between file,
+ * buffer, size, target, and open-path temporaries
+ */
+void* nlLoadEntireFileToVirtualMemory(const char* fileName, int* size, unsigned int transferSize, void* target, eAllocType allocType)
+{
+    void* buffer = NULL;
+    nlFile* pGCFile = nlLoadEntireFileOpen(fileName);
 
     if (pGCFile != NULL)
     {

@@ -2322,7 +2322,7 @@ void StatsTracker::WriteStats(float gameTime, float gameDuration, const char* fi
     for (team = 0; team < 2; team++)
     {
         int possession = (int)(mCurrentTeamStats[team].mPlayerTotalStats.mBallPossessionTime / 100);
-        int difficulty = (int)nlSingleton<GameInfoManager>::s_pInstance->mCurrentDifficulty[team];
+        int difficulty = (int)nlSingleton<GameInfoManager>::s_pInstance->mCurrentDifficulty[(short)team];
 
         stats = stats.Append(Format(BasicString<char, Detail::TempStringAllocator>("{0},"), numHumans[team]))
                     .Append(Format(BasicString<char, Detail::TempStringAllocator>("{0},{1},{2},{3},{4},{5},{6},"),

@@ -10,7 +10,7 @@
 #include "NL/nlPrint.h"
 #include "types.h"
 
-eStadiumID STADIUM_ORDER[7] = {
+static const eStadiumID STADIUM_ORDER[7] = {
     STAD_MARIO_STADIUM,
     STAD_PEACH_TOAD_STADIUM,
     STAD_WARIO_STADIUM,
@@ -20,7 +20,7 @@ eStadiumID STADIUM_ORDER[7] = {
     STAD_SUPER_STADIUM,
 };
 
-StadiumEntry StadiumEntries[8] = {
+static const StadiumEntry StadiumEntries[8] = {
     { STAD_PEACH_TOAD_STADIUM, "fe/mainv2/targas/stadium_peach" },
     { STAD_MARIO_STADIUM, "fe/mainv2/targas/stadium_mario" },
     { STAD_WARIO_STADIUM, "fe/mainv2/targas/stadium_wario" },
@@ -31,7 +31,7 @@ StadiumEntry StadiumEntries[8] = {
     { (eStadiumID)7, "fe/mainv2/targas/stadium_LOCKED" },
 };
 
-unsigned long StadiumDescriptions[7] = {
+static unsigned long StadiumDescriptions[7] = {
     0xE2FCB05C,
     0x065E30EC,
     0xEF23A6A3,

@@ -383,10 +383,53 @@ void FEResourceManager::UnloadResource(FEResourceHandle* pFeResourceHandle)
     }
 }
 
+static inline bool FindLoadedResourceByRoot(
+    AVLTreeNode** root, const unsigned long& key, FEResourceHandle*** foundValue)
+{
+    AVLTreeEntry<unsigned long, FEResourceHandle*>* node = (AVLTreeEntry<unsigned long, FEResourceHandle*>*)*root;
+
+    while (node != NULL)
+    {
+        int cmpResult;
+        if (key == node->key)
+        {
+            cmpResult = 0;
+        }
+        else if (key < node->key)
+        {
+            cmpResult = -1;
+        }
+        else
+        {
+            cmpResult = 1;
+        }
+
+        if (cmpResult == 0)
+        {
+            if (foundValue != NULL)
+            {
+                *foundValue = (FEResourceHandle**)&node->value;
+            }
+            return true;
+        }
+        else
+        {
+            if (cmpResult < 0)
+            {
+                node = (AVLTreeEntry<unsigned long, FEResourceHandle*>*)node->node.left;
+            }
+            else
+            {
+                node = (AVLTreeEntry<unsigned long, FEResourceHandle*>*)node->node.right;
+            }
+        }
+    }
+
+    return false;
+}
+
 /**
  * Offset/Address/Size: 0x344 | 0x8020BE84 | size: 0x2B0
- * TODO: 99.85% match - remaining r30/r31 register swap for fileCount vs
- * loaded-resource root pointer in the permanent-bundle cleanup loop.
  */
 void FEResourceManager::UnloadPermanentResourceBundle()
 {
@@ -396,8 +439,8 @@ void FEResourceManager::UnloadPermanentResourceBundle()
     FESceneResource* pPermanentSceneResource = s_pPermanentBundleSceneResource;
     unsigned long fileCount = s_pPermanentBundle->m_pHeader->nNumFiles;
     BundleFileDirectoryEntry fileDirectoryEntry;
-    unsigned long fileIndex;
     AVLTreeNode** pRoot;
+    unsigned long fileIndex;
     FEResourceHandle** pLoadedResourceHandle;
     u32 hashtodelete;
 
@@ -482,7 +525,7 @@ void FEResourceManager::UnloadPermanentResourceBundle()
     {
         s_pPermanentBundle->GetFileInfoByIndex(fileIndex, &fileDirectoryEntry);
 
-        bool found = s_loadedResourceList.FindGet(fileDirectoryEntry.m_hash, &pLoadedResourceHandle);
+        bool found = FindLoadedResourceByRoot(pRoot, fileDirectoryEntry.m_hash, &pLoadedResourceHandle);
         if (found)
         {
             hashtodelete = (*pLoadedResourceHandle)->m_hashID;

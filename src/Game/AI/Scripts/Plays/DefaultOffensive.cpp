@@ -8,10 +8,6 @@ class cTeam;
 
 #include "Game/AI/Scripts/SaveConfidence.h"
 
-// static bool sFalse = false;
-// static float sZeroCutAndBreak = 0.0f;
-// static bool sTrue = true;
-
 extern cFielder* g_pScriptCurrentFielder;
 extern cTeam* g_pScriptCurrentTeam;
 extern cTeam* g_pCurrentlyUpdatingTeam;
@@ -22,8 +18,6 @@ extern FuzzyVariant fvNotSet;
  */
 FuzzyVariant Fuzzy::AbortOffensivePlay(cDecisionEntity*)
 {
-    extern cTeam* g_pScriptCurrentTeam;
-
     FuzzyVariant bestValue;
     float fConfidence = 1.0f;
     float fBestConfidence = 0.0f;
@@ -145,6 +139,13 @@ FuzzyVariant Fuzzy::DefaultOffensivePlay(cDecisionEntity* pDecision)
                     if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
                         fConfidence = fConfidence * fBranchRatio;
 
+                    // if (fBestConfidence >= fConfidence)
+                    // {
+                    // }
+                    // else
+                    // {
+                    //     fBestConfidence = fConfidence;
+                    // }
                     fBestConfidence = (fBestConfidence >= fConfidence) ? fBestConfidence : fConfidence;
 
                     pDecision->QueueActionSetDesire(2, fConfidence, -1.0f, fvNotSet, fvNotSet);

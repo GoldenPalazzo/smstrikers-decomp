@@ -98,37 +98,18 @@ static inline void FindSceneForPop(
     }
 }
 
-/**
- * Offset/Address/Size: 0xC0 | 0x8020D70C | size: 0x1C4
- * TODO: 98.63% match - register allocation differences only (r diffs).
- * this=r31(target)/r29(current), sceneEntry=r28/r31, queueAddr=r30/r28, msgEntry=r29/r30.
- * Known MWCC issue: inlined IsObjectQueuedForPop accesses static m_pushPopMessageQueue,
- * causing hoisted static address register to shift caller variable allocation.
- * Same issue as QueueScenePop (98.82%).
- */
-void FESceneManager::RenderActiveScenes()
+static inline void RenderSceneStack(FESceneManager* pSceneManager)
 {
-    if (m_topMostScene != NULL)
-    {
-        if (!IsObjectQueuedForPop(m_topMostScene))
-        {
-            if (m_topMostScene->m_pFEScene->m_bValid && m_topMostScene->m_bVisible)
-            {
-                FERender::RenderScene(m_topMostScene->m_pFEScene);
-            }
-        }
-    }
-
-    DLListEntry<BaseSceneHandler*>* sceneEntry = nlDLRingGetStart(m_sceneHandlerStack.m_Head);
-    DLListEntry<BaseSceneHandler*>* sceneHead = m_sceneHandlerStack.m_Head;
+    DLListEntry<BaseSceneHandler*>* sceneEntry = nlDLRingGetStart(pSceneManager->m_sceneHandlerStack.m_Head);
+    DLListEntry<BaseSceneHandler*>* sceneHead = pSceneManager->m_sceneHandlerStack.m_Head;
 
     while (sceneEntry != NULL)
     {
         BaseSceneHandler* pSceneHandler = sceneEntry->m_data;
 
-        if (pSceneHandler != m_topMostScene)
+        if (pSceneHandler != pSceneManager->m_topMostScene)
         {
-            if (!IsObjectQueuedForPop(pSceneHandler))
+            if (!IsObjectQueuedForPop(sceneEntry->m_data))
             {
                 if (pSceneHandler->m_pFEScene->m_bValid && pSceneHandler->m_bVisible)
                 {
@@ -146,6 +127,25 @@ void FESceneManager::RenderActiveScenes()
             sceneEntry = sceneEntry->m_next;
         }
     }
+}
+
+/**
+ * Offset/Address/Size: 0xC0 | 0x8020D70C | size: 0x1C4
+ */
+void FESceneManager::RenderActiveScenes()
+{
+    if (m_topMostScene != NULL)
+    {
+        if (!IsObjectQueuedForPop(m_topMostScene))
+        {
+            if (m_topMostScene->m_pFEScene->m_bValid && m_topMostScene->m_bVisible)
+            {
+                FERender::RenderScene(m_topMostScene->m_pFEScene);
+            }
+        }
+    }
+
+    RenderSceneStack(this);
 }
 
 /**

@@ -616,7 +616,7 @@ static void FindBoundingSphereAccurate(nlVector3* pOutSphere, float* pOutRadius,
 
 /**
  * Offset/Address/Size: 0x1AE4 | 0x8011A994 | size: 0x808
- * TODO: 99.10% match - detail texture load order, debug sphere model save, and shadow light Y/Z register coloring.
+ * TODO: 99.40% match - detail texture load order and debug sphere model save.
  */
 void DrawableCharacter::SendToGl(const cCharacter& character) const
 {
@@ -951,14 +951,7 @@ void DrawableCharacter::SendToGl(const cCharacter& character) const
                 characterSizeIndex = charSizes[NUM_FIELDER_CLASSES];
             }
 
-            float lightZ = pLight->m_worldPosition.f.z;
-            float lightY = pLight->m_worldPosition.f.y;
-            float lightX = pLight->m_worldPosition.f.x;
-
-            params.vLight.f.x = lightX;
-            params.vLight.f.y = lightY;
-            params.vLight.f.z = lightZ;
-            params.vLight.f.w = 1.0f;
+            nlVec4Set(params.vLight, pLight->m_worldPosition.f.x, pLight->m_worldPosition.f.y, pLight->m_worldPosition.f.z, 1.0f);
             params.vPosition = mBip01Position;
             params.fRadius = g_fRadiusScale * fRadius;
             params.fHeight = s_fHeightFudge * fHeight;

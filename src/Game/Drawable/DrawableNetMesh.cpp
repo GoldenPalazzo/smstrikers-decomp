@@ -410,8 +410,8 @@ void DrawableNetMesh::Grab(NetMesh& netMesh)
 
 /**
  * Offset/Address/Size: 0xAC | 0x80114008 | size: 0x214
- * TODO: 99.29% scratch - init lhs field load order, first-loop zero-init
- *       order, and 0.0f/1.0f literal labels still differ.
+ * TODO: 99.44% scratch - first-loop zero-init order, second-loop offset/dest
+ *       register coloring, and 0.0f/1.0f literal labels still differ.
  */
 void DrawableNetMesh::Blend(float blendFactor, const DrawableNetMesh& lhs, const DrawableNetMesh& rhs)
 {
@@ -423,8 +423,8 @@ void DrawableNetMesh::Blend(float blendFactor, const DrawableNetMesh& lhs, const
 
     if (!mbInitialized)
     {
-        int numTriIdx = lhs.m_unk18;
-        mJolt = lhs.mJolt;
+        int numTriIdx = ((const volatile DrawableNetMesh*)&lhs)->m_unk18;
+        mJolt = ((const volatile DrawableNetMesh*)&lhs)->mJolt;
         m_unk18 = numTriIdx;
 
         int numVerts = mJolt;

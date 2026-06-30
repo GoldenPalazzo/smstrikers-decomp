@@ -384,64 +384,41 @@ void Config::Set(const char* tag, float value)
     }
 }
 
+static inline TagValuePair& FindTvpChar(Config* config, const char* tag)
+{
+    unsigned int i = Config::Hash(tag) & 0x3FF;
+
+    while (true)
+    {
+        u32 offset = i * 12;
+        if (config->mTvpHash[i].tag == NULL || nlStrICmp(config->mTvpHash[i].tag, tag) == 0)
+        {
+            return *(TagValuePair*)((char*)config->mTvpHash + offset);
+        }
+        i++;
+        i &= 0x3FF;
+    }
+}
+
 /**
  * Offset/Address/Size: 0x1CF4 | 0x801D4958 | size: 0x120
- * TODO: 98.33% match - hash loop calls nlToUpper<unsigned char>; copy loop capacity branch layout
- * and final character test register differ
  */
 void Config::Set(const char* tag, bool value)
 {
-    const char* p = tag;
-    TagValuePair* tvp;
-    char* dest;
-    u32 hash = 0x1505;
-    while (*p != 0)
-    {
-        s8 c = (s8)nlToUpper((u8)*p++);
-        hash = (hash << 5) + hash + c;
-    }
+    TagValuePair& tvp = FindTvpChar(this, tag);
+    tvp.type = _BOOL;
+    tvp.value.b = value;
 
-    u32 offset;
-    for (u32 idx = hash & 0x3FF;;)
+    if (tvp.tag == 0)
     {
-        offset = idx * 12;
-        if (*(const char**)((u8*)mTvpHash + offset) == 0 || nlStrICmp(*(const char**)((u8*)mTvpHash + offset), tag) == 0)
-        {
-            tvp = (TagValuePair*)((u8*)mTvpHash + offset);
-            break;
-        }
-        idx++;
-        idx &= 0x3FF;
-    }
-
-    tvp->type = _BOOL;
-    tvp->value.b = value;
-
-    if (tvp->tag == 0)
-    {
-        dest = mStringEnd;
-        s32 ch;
-        while ((ch = *tag) != 0)
-        {
-            if (mStringEnd - mStringMemory >= 0x27FF)
-            {
-                goto done;
-            }
-            *mStringEnd = nlToUpper((char)ch);
-            tag++;
-            mStringEnd++;
-        }
-        *mStringEnd = 0;
-        mStringEnd++;
-    done:
-        tvp->tag = dest;
+        tvp.tag = CopyConfigString(this, tag);
     }
 }
 
 /**
  * Offset/Address/Size: 0x1E14 | 0x801D4A78 | size: 0x120
- * TODO: 96.39% match - selected TagValuePair and tag-copy path still use r28/r29
- * register swaps; hash loop still has pre-call sign extension
+ * TODO: 97.85% match - selected TagValuePair and tag-copy path still use r28/r29
+ * register swaps
  */
 void Config::Set(const char* tag, int value)
 {
@@ -449,7 +426,7 @@ void Config::Set(const char* tag, int value)
     u32 hash = 0x1505;
     while ((s8)*p != 0)
     {
-        s8 c = nlToUpper(*p++);
+        s8 c = (s8)nlToUpper<char>(const_cast<char&>(*p++));
         hash = hash + (hash << 5) + c;
     }
 

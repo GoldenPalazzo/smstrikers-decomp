@@ -292,10 +292,7 @@ void HUDOverlay::Update(float fDeltaT)
     float fRemainingTime = g_pGame->mGameSettings->mClockStart - fTime;
     fTime -= g_pGame->mGameSettings->mClockStart;
 
-    if (fTime < 59999.0f)
-    {
-        overtimeTime = fTime;
-    }
+    overtimeTime = (fTime > overtimeTime) ? overtimeTime : fTime;
 
     time = (unsigned long)fRemainingTime;
     unsigned long remainingTime = (unsigned long)(isOvertime ? overtimeTime : (float)time);

@@ -1076,7 +1076,7 @@ config.libs = [
             Object(NonMatching, "Game/SH/SHCupTrophy.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/SH/SHHealthWarning.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/SH/SHLesson.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(NonMatching, "Game/SH/SHLessonSelect.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(Matching, "Game/SH/SHLessonSelect.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/SH/SHLoading.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/SH/SHLoadingTransition.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/SH/SHMainMenu.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
@@ -1401,7 +1401,7 @@ config.libs = [
             Object(Matching, "ode/ext/dFinitePlane.cpp", extra_cflags=["-inline auto"]),
             Object(Matching, "ode/ext/dRoundedCorner.cpp", extra_cflags=["-inline auto"]),
 
-            Object(NonMatching, "ode/odemath.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(Matching, "ode/odemath.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
         ],
     ),
     DolphinLib(

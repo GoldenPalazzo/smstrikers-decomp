@@ -1007,46 +1007,15 @@ void GoalOverlay::SetWinnerTitle()
 
 /**
  * Offset/Address/Size: 0x20 | 0x80100090 | size: 0x6C8
+ * TODO: 99.47% match - remaining r29/r30 register swap in temporary wide string construction.
  */
 void GoalOverlay::DoCupWinOverlay()
 {
     eTeamID winners = (eTeamID)nlSingleton<GameInfoManager>::s_pInstance->GetUserSelectedCupTeam();
 
-    BasicStringData<unsigned short>* data;
-    const unsigned short* formatLocString = LookupLocHash(0xB49CF8B5);
-
-    data = (BasicStringData<unsigned short>*)nlMalloc(0x10, 8, true);
-    if (data)
-    {
-        data->mData = 0;
-        data->mSize = 0;
-        data->mCapacity = 0;
-
-        const unsigned short* ptr = formatLocString;
-        while (*ptr++)
-        {
-            data->mSize++;
-        }
-
-        data->mSize++;
-        data->mData = (unsigned short*)nlMalloc((data->mSize + 1) * 2, 8, true);
-        data->mCapacity = data->mSize;
-
-        int i = 0;
-        int j = 0;
-        while (i < data->mSize)
-        {
-            *(unsigned short*)((char*)data->mData + j) = *formatLocString;
-            i++;
-            formatLocString++;
-            j += 2;
-        }
-
-        data->mRefCount = 1;
-    }
-
     BasicString<unsigned short, Detail::TempStringAllocator> formatted(
-        Format(BasicString<unsigned short, Detail::TempStringAllocator>(data), LookupLocHash(GetLOCCharacterName(winners, true, false))));
+        Format(BasicString<unsigned short, Detail::TempStringAllocator>(LookupLocHash(0xB49CF8B5)),
+            LookupLocHash(GetLOCCharacterName(winners, true, false))));
 
     memcpy(mScoresBuffer, formatted.c_str(), 0x100);
 
@@ -1062,39 +1031,8 @@ void GoalOverlay::DoCupWinOverlay()
 
     eTrophyType cup = (eTrophyType)nlSingleton<GameInfoManager>::s_pInstance->GetTrophyTypeByCurrentMode();
 
-    formatLocString = LookupLocHash(0x4E704897);
-
-    data = (BasicStringData<unsigned short>*)nlMalloc(0x10, 8, true);
-    if (data)
-    {
-        data->mData = 0;
-        data->mSize = 0;
-        data->mCapacity = 0;
-
-        const unsigned short* ptr = formatLocString;
-        while (*ptr++)
-        {
-            data->mSize++;
-        }
-
-        data->mSize++;
-        data->mData = (unsigned short*)nlMalloc((data->mSize + 1) * 2, 8, true);
-        data->mCapacity = data->mSize;
-
-        int i = 0;
-        int j = 0;
-        while (i < data->mSize)
-        {
-            *(unsigned short*)((char*)data->mData + j) = *formatLocString;
-            i++;
-            formatLocString++;
-            j += 2;
-        }
-
-        data->mRefCount = 1;
-    }
-
-    formatted = Format(BasicString<unsigned short, Detail::TempStringAllocator>(data), LookupLocHash(GetLOCTrophyName(cup)));
+    formatted = Format(BasicString<unsigned short, Detail::TempStringAllocator>(LookupLocHash(0x4E704897)),
+        LookupLocHash(GetLOCTrophyName(cup)));
 
     memcpy(mDescriptionBuffer, formatted.c_str(), 0x100);
 

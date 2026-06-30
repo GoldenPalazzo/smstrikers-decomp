@@ -862,9 +862,52 @@ static inline void HighliteSlideComponent(TLComponentInstance* comp, const nlCol
     }
 }
 
+static inline void HighliteSlideComponentAlt(const nlColour& colour, TLComponentInstance* comp)
+{
+    unsigned long hash;
+
+    if (comp != NULL && comp->GetActiveSlide() != NULL)
+    {
+        TLSlide* startSlide = comp->GetActiveSlide();
+        TLSlide* currentSlide = startSlide;
+
+        do
+        {
+            comp->SetActiveSlide(currentSlide);
+            TLInstance* firstChild = comp->GetActiveSlide()->m_instances;
+            TLInstance* inst = firstChild;
+
+            if (firstChild != NULL)
+            {
+                do
+                {
+                    if (inst->m_type == TLAT_TEXT)
+                    {
+                        inst->SetAssetColour(colour);
+                    }
+                    else if (inst->m_type == TLAT_IMAGE)
+                    {
+                        hash = inst->m_hash;
+                        if (hash != nlStringLowerHash("white_box"))
+                        {
+                            inst->SetAssetColour(colour);
+                        }
+                    }
+
+                    inst = inst->m_next;
+                } while (inst != firstChild);
+            }
+
+            currentSlide = currentSlide->m_next;
+        } while (currentSlide != startSlide);
+
+        comp->SetActiveSlide(startSlide);
+    }
+}
+
 /**
  * Offset/Address/Size: 0x19E0 | 0x800B6A24 | size: 0x6E8
- * TODO: 97.31% match - menu item callback base and final highlight helper register drift.
+ * TODO: 99.85% match - menu item index/current slide register rotation.
  */
 OptionsVisualMenuV2::OptionsVisualMenuV2(FEPresentation* pres, ButtonComponent::ButtonState btnState, VisualSettings& settings)
     : OptionsSubMenu(pres, btnState)
@@ -893,7 +936,7 @@ OptionsVisualMenuV2::OptionsVisualMenuV2(FEPresentation* pres, ButtonComponent::
         SetAButtonLOC(0x9C81A82F);
     }
 
-    char** menuItems = MENU_ITEMS;
+    int slideMenuIndex = 0;
     TLSlide* currentSlide = pres->m_currentSlide;
 
     for (int i = 0; i < 3; i++)
@@ -901,7 +944,7 @@ OptionsVisualMenuV2::OptionsVisualMenuV2(FEPresentation* pres, ButtonComponent::
         TLInstance* instance = FEFinder<TLInstance, 4>::Find<TLSlide>(
             currentSlide,
             InlineHasher(nlStringLowerHash("Layer")),
-            InlineHasher(nlStringLowerHash(*menuItems)));
+            InlineHasher(nlStringLowerHash(MENU_ITEMS[i])));
 
         int numAdded = mMenuItems.mNumItemsAdded;
         MenuItem<TLComponentInstance>* menuItem = AudioOptionsMenuItemAt(mMenuItems, numAdded);
@@ -925,15 +968,39 @@ OptionsVisualMenuV2::OptionsVisualMenuV2(FEPresentation* pres, ButtonComponent::
         if (i == 0)
         {
             SingleHighlite::TempDisableSound();
-            menuItem->mCallbacks[1](menuItem->mType);
+            int tag = menuItem->mCallbacks[1].mTag;
+            if (((u32)((-tag) | tag) >> 31) > 0)
+            {
+                TLComponentInstance* type = menuItem->mType;
+                if (tag == FREE_FUNCTION)
+                {
+                    menuItem->mCallbacks[1].mFreeFunction(type);
+                }
+                else
+                {
+                    (*menuItem->mCallbacks[1].mFunctor)(type);
+                }
+            }
         }
         else
         {
-            menuItem->mCallbacks[2](menuItem->mType);
+            int tag = menuItem->mCallbacks[2].mTag;
+            if (((u32)((-tag) | tag) >> 31) > 0)
+            {
+                TLComponentInstance* type = menuItem->mType;
+                if (tag == FREE_FUNCTION)
+                {
+                    menuItem->mCallbacks[2].mFreeFunction(type);
+                }
+                else
+                {
+                    (*menuItem->mCallbacks[2].mFunctor)(type);
+                }
+            }
         }
 
-        mSlideMenuLists[i] = NULL;
-        menuItems++;
+        mSlideMenuLists[slideMenuIndex] = NULL;
+        slideMenuIndex++;
     }
 
     mMenuItems.mFlags = 3;
@@ -970,8 +1037,52 @@ OptionsVisualMenuV2::OptionsVisualMenuV2(FEPresentation* pres, ButtonComponent::
     SlideMenuList* slideMenuList = (SlideMenuList*)mSlideMenuLists[mMenuItems.mCurrentIndex];
     if (slideMenuList != NULL)
     {
-        compinstance = slideMenuList->mComponentInstance;
-        HighliteSlideComponent(compinstance, SubMenuHighliteColour);
+        TLInstance* inst;
+        TLInstance* firstChild;
+        TLSlide* currentMenuSlide;
+        TLSlide* startSlide;
+        TLComponentInstance* finalCompinstance;
+
+        finalCompinstance = slideMenuList->mComponentInstance;
+        if (finalCompinstance != NULL)
+        {
+            if (finalCompinstance->GetActiveSlide() != NULL)
+            {
+                startSlide = finalCompinstance->GetActiveSlide();
+                currentMenuSlide = startSlide;
+
+                do
+                {
+                    finalCompinstance->SetActiveSlide(currentMenuSlide);
+                    firstChild = finalCompinstance->GetActiveSlide()->m_instances;
+                    inst = firstChild;
+                    if (firstChild != NULL)
+                    {
+                        do
+                        {
+                            if (inst->m_type == TLAT_TEXT)
+                            {
+                                inst->SetAssetColour(SubMenuHighliteColour);
+                            }
+                            else if (inst->m_type == TLAT_IMAGE)
+                            {
+                                unsigned long hash = inst->m_hash;
+                                if (hash != nlStringLowerHash("white_box"))
+                                {
+                                    inst->SetAssetColour(SubMenuHighliteColour);
+                                }
+                            }
+
+                            inst = inst->m_next;
+                        } while (inst != firstChild);
+                    }
+
+                    currentMenuSlide = currentMenuSlide->m_next;
+                } while (currentMenuSlide != startSlide);
+
+                finalCompinstance->SetActiveSlide(startSlide);
+            }
+        }
     }
 
     memcpy(&mBackupSettings, &mSettings, sizeof(VisualSettings));
@@ -2330,7 +2441,7 @@ void OptionsSubMenu::SetButtonState(ButtonComponent::ButtonState buttonState)
 
 /**
  * Offset/Address/Size: 0x504C | 0x800BA090 | size: 0x434
- * TODO: 99.60% match - r28/r29 register swap for this+menuitem offset and bind/callback temporary stack layout
+ * TODO: 99.63% match - r28/r29 register swap for this+menuitem offset and bind/callback temporary stack layout
  */
 void OptionsSubMenu::BuildSubMenuList(int menuitem, TLComponentInstance* compinstance, bool wraps, int startindex)
 {
@@ -2370,7 +2481,8 @@ void OptionsSubMenu::BuildSubMenuList(int menuitem, TLComponentInstance* compins
         }
         item->mSlideMenuHash = slideHash;
 
-        menuItem = ((MenuItem<SlideMenuItem>*)sml) + sml->mNumItemsAdded;
+        MenuItem<SlideMenuItem>* menuItems = sml->mMenuItems;
+        menuItem = &menuItems[sml->mNumItemsAdded];
         menuItem->mType = item;
         sml->mNumItemsAdded++;
 
@@ -2472,7 +2584,7 @@ void OptionsSubMenu::GoBack()
 
 /**
  * Offset/Address/Size: 0x55A4 | 0x800BA5E8 | size: 0xA30
- * TODO: 99.59% match - first unhighlight traversal and slide-menu newIndex temps use lower registers.
+ * TODO: 99.75% match - first unhighlight component/hash registers and slide-menu newIndex temps differ.
  */
 void OptionsSubMenu::Update(float)
 {
@@ -2507,7 +2619,7 @@ void OptionsSubMenu::Update(float)
             if (slideMenuList != NULL)
             {
                 TLComponentInstance* comp = slideMenuList->mComponentInstance;
-                HighliteSlideComponent(comp, SubMenuUnhighliteColour);
+                HighliteSlideComponentAlt(SubMenuUnhighliteColour, comp);
             }
         }
 

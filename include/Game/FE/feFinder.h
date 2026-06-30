@@ -26,10 +26,12 @@ static inline TLSlide* FEGetChildren(FEPresentation* p)
 {
     return p->m_slides;
 }
+
 static inline TLInstance* FEGetChildren(TLSlide* p)
 {
     return p->m_instances;
 }
+
 static inline TLInstance* FEGetChildren(TLInstance* p)
 {
     return p->pChildren;

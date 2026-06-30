@@ -15,10 +15,6 @@ struct StadiumEntry
     /* 0x4 */ const char* imagePath;
 }; // total size: 0x8
 
-extern eStadiumID STADIUM_ORDER[7];
-extern StadiumEntry StadiumEntries[8];
-extern unsigned long StadiumDescriptions[7];
-
 enum Direction
 {
     DIR_LEFT = 0,

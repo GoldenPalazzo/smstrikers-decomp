@@ -705,6 +705,7 @@ void GameInfoManager::SetStadium(eStadiumID stadiumID)
 
 /**
  * Offset/Address/Size: 0x8C28 | 0x8017E2CC | size: 0x460
+ * TODO: 99.77% match - this pointer and forbiddenUnlocked use swapped r29/r30 registers.
  */
 eStadiumID GameInfoManager::PickStadium(bool isLastRound, eStadiumID excludeStadium) const
 {
@@ -771,38 +772,32 @@ eStadiumID GameInfoManager::PickStadium(bool isLastRound, eStadiumID excludeStad
             bool shouldRepick;
             eGameModes mode2 = mCurrentMode;
 
-            if (mode2 < GM_SUPER_MUSHROOM_CUP)
+            switch (mode2)
             {
-                if (mode2 < GM_MUSHROOM_CUP)
-                {
-                    shouldRepick = false;
-                }
-                else
-                {
-                    shouldRepick = true;
-                }
-            }
-            else
-            {
+            case GM_MUSHROOM_CUP:
+            case GM_FLOWER_CUP:
+            case GM_STAR_CUP:
+            case GM_BOWSER_CUP:
+                shouldRepick = true;
+                break;
+            default:
                 shouldRepick = false;
+                break;
             }
 
             if (shouldRepick == false)
             {
-                if (mode2 < GM_TOURNAMENT)
+                switch (mode2)
                 {
-                    if (mode2 < GM_SUPER_MUSHROOM_CUP)
-                    {
-                        shouldRepick = false;
-                    }
-                    else
-                    {
-                        shouldRepick = true;
-                    }
-                }
-                else
-                {
+                case GM_SUPER_MUSHROOM_CUP:
+                case GM_SUPER_FLOWER_CUP:
+                case GM_SUPER_STAR_CUP:
+                case GM_SUPER_BOWSER_CUP:
+                    shouldRepick = true;
+                    break;
+                default:
                     shouldRepick = false;
+                    break;
                 }
             }
 
@@ -2632,12 +2627,17 @@ void GameInfoManager::OnPostGameState()
 
 /**
  * Offset/Address/Size: 0x4E7C | 0x8017A520 | size: 0x190
- * TODO: 95.75% match - persistent r4/r5 register swap in the unrolled pad-side loop,
- *       plus one remaining lwzx/stw ordering difference in the DifficultyMap writeback.
+ * TODO: 96.35% match - persistent r4/r5 register swap in the unrolled pad-side loop.
  */
 void GameInfoManager::ApplyDifficultySettings()
 {
-    static eDifficultyID DifficultyMap[5][2];
+    static const eDifficultyID DifficultyMap[5][2] = {
+        { DIFF_HUMAN, DIFF_BRAINDEAD },
+        { DIFF_HUMAN, DIFF_EASY },
+        { DIFF_HUMAN, DIFF_MEDIUM },
+        { DIFF_HUMAN, DIFF_HARD },
+        { DIFF_HUMAN, DIFF_VERYHARD },
+    };
     unsigned char humansOnSide[2] = { 0, 0 };
     int i;
     GameplaySettings::eSkillLevel skillLevel;

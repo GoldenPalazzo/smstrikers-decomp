@@ -698,7 +698,7 @@ static inline eCharacterClass GetGoalieFromCaptain(eCharacterClass captain)
 
 /**
  * Offset/Address/Size: 0x3DC | 0x80012C3C | size: 0x51C
- * TODO: 98.65% match - register allocation diffs remain in both character creation loops
+ * TODO: 98.84% match - loop index and pointer-walker register allocation diffs remain
  */
 void CreateCharacters()
 {
@@ -782,15 +782,7 @@ void CreateCharacters()
 
     for (int teami = 0; teami < 2; teami++)
     {
-        int plrindex;
-        if (captain0 > captain1)
-        {
-            plrindex = !teami;
-        }
-        else
-        {
-            plrindex = teami;
-        }
+        int plrindex = (captain0 > captain1) ? !teami : teami;
 
         int idx = plrindex * 4;
         g_pCharacters[idx] = CreateCharacter(0, plrindex, captain[plrindex], false);
@@ -807,21 +799,14 @@ void CreateCharacters()
         ((cPlayer*)g_pCharacters[plrindex + 8])->m_pTeam = g_pTeams[plrindex];
     }
 
+    volatile eCharacterClass* vpSidekick = sidekick;
+    volatile eCharacterClass* vpCaptain = captain;
+
     for (int teami = 0; teami < 2; teami++)
     {
-        int plrindex;
-        if (sidekick[0] > sidekick[1])
-        {
-            plrindex = !teami;
-        }
-        else
-        {
-            plrindex = teami;
-        }
+        int plrindex = (sidekick[0] > sidekick[1]) ? !teami : teami;
 
         int charIdx = plrindex * 4 + 1;
-        volatile eCharacterClass* vpSidekick = sidekick;
-        volatile eCharacterClass* vpCaptain = captain;
         cCharacter** pChar = &g_pCharacters[charIdx];
         nlVector3* pPos = &pos[charIdx];
 

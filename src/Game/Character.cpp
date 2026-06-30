@@ -192,7 +192,7 @@ void cCharacter::SetSFX(SoundPropAccessor* pSoundPropAccessor)
 
 /**
  * Offset/Address/Size: 0x40C | 0x8000E358 | size: 0x650
- * TODO: 98.43% match - FROM_ANIM smoothstep/AnimMoveAdjust/RootTrans register cascade.
+ * TODO: 99.66% match - FROM_ANIM adjustTime, AnimMoveAdjust, and RootTrans register swaps.
  */
 void cCharacter::UpdateMovementState(float fDeltaT)
 {
@@ -276,12 +276,12 @@ void cCharacter::UpdateMovementState(float fDeltaT)
 
         if (adjustTime > 0.0f)
         {
-            float t = (m_pCurrentAnimController->m_fTime - m_fAnimAdjustBeginTime) / adjustTime;
-            float smoothStep1 = (t * (t * t)) * (t * (6.0f * t + (-15.0f)) + 10.0f);
+            float smoothStep1 = ((m_pCurrentAnimController->m_fTime - m_fAnimAdjustBeginTime) / adjustTime);
+            smoothStep1 = (smoothStep1 * (smoothStep1 * smoothStep1)) * (smoothStep1 * (6.0f * smoothStep1 + (-15.0f)) + 10.0f);
             smoothStep1 = (smoothStep1 <= 1.0f) ? smoothStep1 : 1.0f;
 
-            float t2 = (m_pCurrentAnimController->m_fPrevTime - m_fAnimAdjustBeginTime) / adjustTime;
-            float smoothStep2 = (t2 * (t2 * t2)) * (t2 * (6.0f * t2 + (-15.0f)) + 10.0f);
+            float smoothStep2 = ((m_pCurrentAnimController->m_fPrevTime - m_fAnimAdjustBeginTime) / adjustTime);
+            smoothStep2 = (smoothStep2 * (smoothStep2 * smoothStep2)) * (smoothStep2 * (6.0f * smoothStep2 + (-15.0f)) + 10.0f);
             smoothStep2 = (smoothStep2 <= 1.0f) ? smoothStep2 : 1.0f;
 
             if (smoothStep2 < 1.0f)
@@ -293,15 +293,12 @@ void cCharacter::UpdateMovementState(float fDeltaT)
                 float adjX = m_v3AnimMoveAdjust.f.x;
                 float adjY = m_v3AnimMoveAdjust.f.y;
                 float adjZ = m_v3AnimMoveAdjust.f.z;
-                consumedMoveX = fAdjustPercent * adjX;
-                consumedMoveY = fAdjustPercent * adjY;
-                consumedMoveZ = fAdjustPercent * adjZ;
-                adjX -= consumedMoveX;
-                adjY -= consumedMoveY;
-                adjZ -= consumedMoveZ;
-                m_v3AnimMoveAdjust.f.x = adjX;
-                m_v3AnimMoveAdjust.f.y = adjY;
-                m_v3AnimMoveAdjust.f.z = adjZ;
+                consumedMoveX = adjX * fAdjustPercent;
+                consumedMoveY = adjY * fAdjustPercent;
+                consumedMoveZ = adjZ * fAdjustPercent;
+                m_v3AnimMoveAdjust.f.x = adjX - consumedMoveX;
+                m_v3AnimMoveAdjust.f.y = adjY - consumedMoveY;
+                m_v3AnimMoveAdjust.f.z = adjZ - consumedMoveZ;
             }
         }
 

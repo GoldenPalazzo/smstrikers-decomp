@@ -1242,17 +1242,6 @@ void* World::GetCustomSpecularData(glModelPacket* pPacket, bool bPerm)
  */
 void World::CreateLightUserData()
 {
-    struct WorldLightUserDataFields
-    {
-        char _pad0[0x30];
-        void* m_pLightData;
-        void* m_pPlayerNISLightData;
-        void* m_pIntensityPerm;
-        void* m_pIntensityData;
-        void* m_pSTSIntensity;
-    };
-
-    WorldLightUserDataFields* fields = (WorldLightUserDataFields*)this;
     ListContainerBase<LightObject*, NewAdapter<ListEntry<LightObject*> > > lightList;
     ListContainerBase<LightObject*, NewAdapter<ListEntry<LightObject*> > > specList;
     int numSpecLights = 0;
@@ -1359,16 +1348,16 @@ void World::CreateLightUserData()
 
     if (numLights == 0)
     {
-        fields->m_pLightData = NULL;
-        fields->m_pIntensityPerm = NULL;
+        m_pLightData = NULL;
+        m_pIntensityPerm = NULL;
     }
     else
     {
         int totalLights = numLights + numExtra;
         unsigned long size = totalLights * sizeof(GLLightUserData) + 4;
-        fields->m_pLightData = glUserAlloc(GLUD_Light, size, false);
+        m_pLightData = glUserAlloc(GLUD_Light, size, false);
 
-        u32* p32 = (u32*)glUserGetData(fields->m_pLightData);
+        u32* p32 = (u32*)glUserGetData(m_pLightData);
         *p32 = totalLights;
         GLLightUserData* glLight = (GLLightUserData*)(p32 + 1);
 
@@ -1404,8 +1393,8 @@ void World::CreateLightUserData()
             glLight++;
         }
 
-        fields->m_pIntensityPerm = glUserAlloc(GLUD_Light, size, false);
-        p32 = (u32*)glUserGetData(fields->m_pIntensityPerm);
+        m_pIntensityPerm = glUserAlloc(GLUD_Light, size, false);
+        p32 = (u32*)glUserGetData(m_pIntensityPerm);
         *p32 = totalLights;
         void* pIntensityPermData = p32;
         glLight = (GLLightUserData*)(p32 + 1);
@@ -1458,25 +1447,25 @@ void World::CreateLightUserData()
             glLight++;
         }
 
-        if (fields->m_pPlayerNISLightData == NULL)
+        if (m_pPlayerNISLightData == NULL)
         {
             size = numLights * sizeof(GLLightUserData) + 4;
-            fields->m_pPlayerNISLightData = glUserAlloc(GLUD_Light, size, true);
-            void* pPlayerNISData = glUserGetData(fields->m_pPlayerNISLightData);
+            m_pPlayerNISLightData = glUserAlloc(GLUD_Light, size, true);
+            void* pPlayerNISData = glUserGetData(m_pPlayerNISLightData);
             memcpy(pPlayerNISData, pIntensityPermData, size);
         }
     }
 
     if (numSpecLights == 0)
     {
-        fields->m_pSTSIntensity = NULL;
+        m_pSTSIntensity = NULL;
     }
     else
     {
         const nlVector3 origin = { { 0.0f, 0.0f, 0.0f } };
-        unsigned long size = numSpecLights * sizeof(GLSpecularUserData) + 4;
-        fields->m_pSTSIntensity = glUserAlloc(GLUD_Specular, size, false);
-        u32* p32 = (u32*)glUserGetData(fields->m_pSTSIntensity);
+        unsigned long size = numLights * sizeof(GLSpecularUserData) + 4;
+        m_pSTSIntensity = glUserAlloc(GLUD_Specular, size, false);
+        u32* p32 = (u32*)glUserGetData(m_pSTSIntensity);
         *p32 = numSpecLights;
         GLSpecularUserData* pSpec = (GLSpecularUserData*)(p32 + 1);
         ListEntry<LightObject*>* entry = specList.m_Head;
@@ -1497,9 +1486,9 @@ void World::CreateLightUserData()
         }
     }
 
-    fields->m_pIntensityData = glUserAlloc(GLUD_Light, 0x2C, false);
+    m_pSpecularData = glUserAlloc(GLUD_Light, 0x2C, false);
     {
-        u32* p32 = (u32*)glUserGetData(fields->m_pIntensityData);
+        u32* p32 = (u32*)glUserGetData(m_pSpecularData);
         *p32 = 1;
         GLLightUserData* glLight = (GLLightUserData*)(p32 + 1);
         nlZeroMemory(glLight, sizeof(GLLightUserData));

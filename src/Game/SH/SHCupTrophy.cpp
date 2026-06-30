@@ -641,7 +641,7 @@ void CupTrophyScene::SceneCreated()
     BasicString<unsigned short, Detail::TempStringAllocator> unformatted(data);
     BasicString<unsigned short, Detail::TempStringAllocator> formatted = Format(unformatted, timesWonWide);
 
-    memcpy(&mScrollOffset, formatted.c_str(), 0x100);
+    memcpy(mWonBuffer, formatted.c_str(), 0x100);
 
     {
         union
@@ -681,7 +681,7 @@ void CupTrophyScene::SceneCreated()
             (InlineHasher&)h5,
             (InlineHasher&)h3,
             (InlineHasher&)h1);
-        pTotal->SetString((unsigned short*)&mScrollOffset);
+        pTotal->SetString(mWonBuffer);
     }
 }
 
@@ -1127,7 +1127,7 @@ void CupTrophyScene::SetHistory(Spoil& spoil)
     typedef TLImageInstance* (*FindImageByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
 
     FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
-    volatile InlineHasher h7, h5, h3, h1;
+    volatile InlineHasher arrowH7, arrowH5, arrowH3, arrowH1;
 
     for (int i = 0; i < 3; i++)
     {
@@ -1136,6 +1136,7 @@ void CupTrophyScene::SetHistory(Spoil& spoil)
 
         TLComponentInstance* pComp;
         {
+            volatile InlineHasher h7, h5, h3, h1;
             union
             {
                 FindCompByValue byValue;
@@ -1170,6 +1171,7 @@ void CupTrophyScene::SetHistory(Spoil& spoil)
 
         TLTextInstance* pText;
         {
+            volatile InlineHasher h7, h5, h3, h1;
             union
             {
                 FindTextByValue byValue;
@@ -1219,6 +1221,7 @@ void CupTrophyScene::SetHistory(Spoil& spoil)
         {
             TLTextInstance* pEmptyText;
             {
+                volatile InlineHasher h7, h5, h3, h1;
                 union
                 {
                     FindTextByValue byValue;
@@ -1328,13 +1331,13 @@ void CupTrophyScene::SetHistory(Spoil& spoil)
         volatile InlineHasher h6, h4, h2, h0;
         findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
         h0.m_Hash = 0;
-        h1.m_Hash = 0;
+        arrowH1.m_Hash = 0;
         h2.m_Hash = 0;
-        h3.m_Hash = 0;
+        arrowH3.m_Hash = 0;
         h4.m_Hash = 0;
-        h5.m_Hash = 0;
+        arrowH5.m_Hash = 0;
         h6.m_Hash = 0;
-        h7.m_Hash = 0;
+        arrowH7.m_Hash = 0;
         unsigned long hash = nlStringLowerHash("ARROWS2");
         hNameA.m_Hash = hash;
         hNameB.m_Hash = hash;
@@ -1344,10 +1347,10 @@ void CupTrophyScene::SetHistory(Spoil& spoil)
         arrowsComp = findComp.byRef(presentation->m_currentSlide,
             (InlineHasher&)hLayerB,
             (InlineHasher&)hNameB,
-            (InlineHasher&)h7,
-            (InlineHasher&)h5,
-            (InlineHasher&)h3,
-            (InlineHasher&)h1);
+            (InlineHasher&)arrowH7,
+            (InlineHasher&)arrowH5,
+            (InlineHasher&)arrowH3,
+            (InlineHasher&)arrowH1);
     }
 
     int currentRecord = mRow + mScrollOffset;
@@ -1364,13 +1367,13 @@ void CupTrophyScene::SetHistory(Spoil& spoil)
         volatile InlineHasher h6, h4, h2, h0;
         findImage.byValue = FEFinder<TLImageInstance, 2>::Find<TLSlide>;
         h0.m_Hash = 0;
-        h1.m_Hash = 0;
+        arrowH1.m_Hash = 0;
         h2.m_Hash = 0;
-        h3.m_Hash = 0;
+        arrowH3.m_Hash = 0;
         h4.m_Hash = 0;
-        h5.m_Hash = 0;
+        arrowH5.m_Hash = 0;
         h6.m_Hash = 0;
-        h7.m_Hash = 0;
+        arrowH7.m_Hash = 0;
         hLayerB.m_Hash = 0;
         hLayerA.m_Hash = 0;
         unsigned long hash = nlStringLowerHash("arrow");
@@ -1379,10 +1382,10 @@ void CupTrophyScene::SetHistory(Spoil& spoil)
         pArrowDown = findImage.byRef(arrowsComp->GetActiveSlide(),
             (InlineHasher&)hNameB,
             (InlineHasher&)hLayerB,
-            (InlineHasher&)h7,
-            (InlineHasher&)h5,
-            (InlineHasher&)h3,
-            (InlineHasher&)h1);
+            (InlineHasher&)arrowH7,
+            (InlineHasher&)arrowH5,
+            (InlineHasher&)arrowH3,
+            (InlineHasher&)arrowH1);
     }
     if (currentRecord < (int)spoil.mNumRecords - 1)
         pArrowDown->m_bVisible = true;
@@ -1401,13 +1404,13 @@ void CupTrophyScene::SetHistory(Spoil& spoil)
         volatile InlineHasher h6, h4, h2, h0;
         findImage.byValue = FEFinder<TLImageInstance, 2>::Find<TLSlide>;
         h0.m_Hash = 0;
-        h1.m_Hash = 0;
+        arrowH1.m_Hash = 0;
         h2.m_Hash = 0;
-        h3.m_Hash = 0;
+        arrowH3.m_Hash = 0;
         h4.m_Hash = 0;
-        h5.m_Hash = 0;
+        arrowH5.m_Hash = 0;
         h6.m_Hash = 0;
-        h7.m_Hash = 0;
+        arrowH7.m_Hash = 0;
         hLayerB.m_Hash = 0;
         hLayerA.m_Hash = 0;
         unsigned long hash = nlStringLowerHash("arrow2");
@@ -1416,10 +1419,10 @@ void CupTrophyScene::SetHistory(Spoil& spoil)
         pArrowUp = findImage.byRef(arrowsComp->GetActiveSlide(),
             (InlineHasher&)hNameB,
             (InlineHasher&)hLayerB,
-            (InlineHasher&)h7,
-            (InlineHasher&)h5,
-            (InlineHasher&)h3,
-            (InlineHasher&)h1);
+            (InlineHasher&)arrowH7,
+            (InlineHasher&)arrowH5,
+            (InlineHasher&)arrowH3,
+            (InlineHasher&)arrowH1);
     }
     if (currentRecord > 0)
         pArrowUp->m_bVisible = true;
