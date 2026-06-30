@@ -419,9 +419,7 @@ static inline void ComputeAscendingJointPosition(nlVector3& out, const cPoseAccu
     if (parentIndex == -1)
     {
         const nlMatrix4& jointMat = pPose->GetNodeMatrix(jointIndex);
-        out.as_u32[0] = ((u32*)&jointMat.m[3][0])[0];
-        out.as_u32[1] = ((u32*)&jointMat.m[3][0])[1];
-        out.as_u32[2] = ((u32*)&jointMat.m[3][0])[2];
+        out = jointMat.GetTranslation();
     }
 }
 
@@ -536,9 +534,7 @@ bool EmissionController::Update(float dt)
                 }
 
                 const nlMatrix4& mat = m_pPose->GetNodeMatrixByHashID(finalJointID);
-                pos.as_u32[0] = ((u32*)&mat.m[3][0])[0];
-                pos.as_u32[1] = ((u32*)&mat.m[3][0])[1];
-                pos.as_u32[2] = ((u32*)&mat.m[3][0])[2];
+                pos = mat.GetTranslation();
             }
             else
             {

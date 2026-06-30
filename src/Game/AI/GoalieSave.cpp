@@ -28,7 +28,7 @@ struct SaveInfo
     char mszName[16];
 };
 
-extern nlVector3 v3Zero;
+static const nlVector3 v3Zero = { 0.0f, 0.0f, 0.0f };
 extern int gPositionAnimID[6];
 extern SaveInfo gSaveInfo[70];
 
@@ -126,18 +126,10 @@ void GoalieSave::InitData(Goalie* pGoalie)
     cSAnim* pAnim = pGoalie->m_pAnimInventory->GetAnim(0x2E);
     u32 numKeys = pAnim->m_nNumKeys;
 
-    u32* pZeroWords = v3Zero.as_u32;
-    u32 v3ZeroX = pZeroWords[0];
-    u32 v3ZeroY = pZeroWords[1];
-    u32 v3ZeroZ = pZeroWords[2];
-
     mfCrouchDuration = (float)numKeys / 30.0f;
 
-    SaveInfo* pSaveInfoBase = gSaveInfo;
-    SaveInfo* pSaveInfo = pSaveInfoBase;
-    i = 0;
-
-    while (i < muNumSaveEntries)
+    SaveInfo* pSaveInfo = gSaveInfo;
+    for (i = 0; i < muNumSaveEntries; i++)
     {
         pSaveData = &mpSaveTable[i];
 
@@ -187,9 +179,7 @@ void GoalieSave::InitData(Goalie* pGoalie)
         }
         pSaveData->mfFatigueValue = fFatigueValue;
 
-        pSaveData->mv3SavePos.as_u32[0] = v3ZeroX;
-        pSaveData->mv3SavePos.as_u32[1] = v3ZeroY;
-        pSaveData->mv3SavePos.as_u32[2] = v3ZeroZ;
+        pSaveData->mv3SavePos = v3Zero;
 
         pSaveData->mfMilestonePercent[0] = 0.0f;
         pSaveData->mfMilestonePercent[1] = 0.0f;
@@ -197,17 +187,11 @@ void GoalieSave::InitData(Goalie* pGoalie)
         pSaveData->mfMilestonePercent[3] = 0.0f;
         pSaveData->mfMilestonePercent[4] = 0.0f;
 
-        pSaveData->mv3TakeoffPos.as_u32[0] = v3ZeroX;
-        pSaveData->mv3TakeoffPos.as_u32[1] = v3ZeroY;
-        pSaveData->mv3TakeoffPos.as_u32[2] = v3ZeroZ;
+        pSaveData->mv3TakeoffPos = v3Zero;
 
-        pSaveData->mv3GroupMinCoords.as_u32[0] = v3ZeroX;
-        pSaveData->mv3GroupMinCoords.as_u32[1] = v3ZeroY;
-        pSaveData->mv3GroupMinCoords.as_u32[2] = v3ZeroZ;
+        pSaveData->mv3GroupMinCoords = v3Zero;
 
-        pSaveData->mv3GroupMaxCoords.as_u32[0] = v3ZeroX;
-        pSaveData->mv3GroupMaxCoords.as_u32[1] = v3ZeroY;
-        pSaveData->mv3GroupMaxCoords.as_u32[2] = v3ZeroZ;
+        pSaveData->mv3GroupMaxCoords = v3Zero;
 
         nlStrNCpy<char>(pSaveData->mszName, pSaveInfo->mszName, 16);
         pSaveData->muIndex = i;
@@ -257,10 +241,9 @@ void GoalieSave::InitData(Goalie* pGoalie)
         }
 
         pSaveInfo++;
-        i++;
     }
 
-    pSaveInfo = pSaveInfoBase;
+    pSaveInfo = gSaveInfo;
     for (unsigned int j = 0; j < muNumSaveEntries; j++)
     {
         int failID = pSaveInfo->mnFailAnimID;

@@ -1203,14 +1203,11 @@ void CupTrophyScene::SetHistory(Spoil& spoil)
                 (InlineHasher&)h1);
         }
 
-        {
-            nlVector2 hackboxsize;
-            hackboxsize.f.x = 999.9f;
-            hackboxsize.f.y = *(float*)((unsigned char*)pText + 0x8c);
-            *(unsigned long*)((unsigned char*)pText + 0x88) = hackboxsize.as_u32[0];
-            *(unsigned long*)((unsigned char*)pText + 0x8c) = hackboxsize.as_u32[1];
-        }
-        *(unsigned long*)((unsigned char*)pText + 0x90) |= 4;
+        nlVector2 boxSize;
+        boxSize.f.x = 999.9f;
+        boxSize.f.y = pText->m_OverloadedAttributes.BoxSize.f.y;
+        pText->m_OverloadedAttributes.BoxSize = boxSize;
+        pText->m_OverloadFlags |= 0x4;
 
         if (i == mRow && (spoil.mNumRecords == 0 || spoil.mNumRecords > 3))
             ((TLInstance*)pText)->SetAssetColour(SPOILS_COLOUR_HIGHLIGHT);

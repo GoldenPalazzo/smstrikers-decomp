@@ -152,9 +152,7 @@ bool parse_spec(SimpleParser* parser, EffectsSpec& spec)
     spec.m_bGround = false;
     spec.m_bLight = false;
     spec.m_fOffset = 0.0f;
-    spec.m_vLocalOffset.as_u32[0] = init.m_vLocalOffset.as_u32[0];
-    spec.m_vLocalOffset.as_u32[1] = init.m_vLocalOffset.as_u32[1];
-    spec.m_vLocalOffset.as_u32[2] = init.m_vLocalOffset.as_u32[2];
+    spec.m_vLocalOffset = init.m_vLocalOffset;
     spec.m_pTerrainSpec = nullptr;
     spec.m_fLingerStart = -1.0f;
 

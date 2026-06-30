@@ -358,10 +358,7 @@ static void World_DrawCullingInfo(int nDrawn, int nSubmitted);
 
 static inline u8 World_IsSphereInFrustum(const nlVector4* pPlanes, const nlMatrix4& mWorld, f32 fRadius)
 {
-    nlVector3 v3Position;
-    v3Position.as_u32[0] = *(u32*)&mWorld.m[3][0];
-    v3Position.as_u32[1] = *(u32*)&mWorld.m[3][1];
-    v3Position.as_u32[2] = *(u32*)&mWorld.m[3][2];
+    nlVector3 v3Position = mWorld.GetTranslation();
     f32 negRadius = -fRadius;
     for (int i = 0; i < 6; i++)
     {
@@ -400,7 +397,7 @@ static inline void RenderBoundingSphere(const nlMatrix4& matWorld, f32 fRadius)
 
 /**
  * Offset/Address/Size: 0x434 | 0x801950F8 | size: 0xB20
- * TODO: 97.8% match - remaining this/pObject register rotation and iterator branch offset diffs.
+ * TODO: 91.78% match - remaining this/pObject register rotation and iterator branch offset diffs.
  */
 void World::Render()
 {
@@ -411,8 +408,10 @@ void World::Render()
         u32 count;
     };
 
-    int nDrawn = 0;
-    int nSubmitted = 0;
+    int nDrawn;
+    int nSubmitted;
+    nSubmitted = 0;
+    nDrawn = 0;
     u8 bFreezeSide = g_bFreezeSideCam;
     if (bFreezeSide && g_bFreezeEndCam)
         g_bFreezeEndCam = 0;
@@ -427,13 +426,14 @@ void World::Render()
     CreateLightUserData();
 
     NodeStack* iter;
+    register World* pWorld = this;
     if (!sbIsHyperShootToScoreRenderingEnabled)
     {
         iter = (NodeStack*)nlMalloc(sizeof(NodeStack), 8, false);
         if (iter != NULL)
         {
-            Entry* node = m_drawableMap.m_Root;
-            iter->data = (Entry**)nlMalloc((m_drawableMap.m_NumElements + 1) * sizeof(Entry*), 8, false);
+            Entry* node = pWorld->m_drawableMap.m_Root;
+            iter->data = (Entry**)nlMalloc((pWorld->m_drawableMap.m_NumElements + 1) * sizeof(Entry*), 8, false);
             iter->count = 0;
             if (node != NULL)
             {
@@ -453,8 +453,8 @@ void World::Render()
         iter = (NodeStack*)nlMalloc(sizeof(NodeStack), 8, false);
         if (iter != NULL)
         {
-            Entry* node = m_hyperSTSDrawableMap.m_Root;
-            iter->data = (Entry**)nlMalloc((m_hyperSTSDrawableMap.m_NumElements + 1) * sizeof(Entry*), 8, false);
+            Entry* node = pWorld->m_hyperSTSDrawableMap.m_Root;
+            iter->data = (Entry**)nlMalloc((pWorld->m_hyperSTSDrawableMap.m_NumElements + 1) * sizeof(Entry*), 8, false);
             iter->count = 0;
             if (node != NULL)
             {
@@ -510,15 +510,16 @@ void World::Render()
             hyperNoCull:;
             }
             {
-                u8 bHammer = 0;
-                u8 bBall = 0;
+                bool bHammer = false;
+                DrawableObject* ballDrawable;
+                bool bBall = false;
                 if (pObject->IsDrawableModel())
                 {
                     bHammer = (pObject->AsDrawableModel()->m_pModel->id == HammerModelID);
                     bBall = (pObject->AsDrawableModel()->m_pModel->id == BallModelID);
                 }
                 {
-                    DrawableObject* ballDrawable = ((DrawableObject**)g_pBall)[8];
+                    ballDrawable = ((DrawableObject**)g_pBall)[8];
                     if ((DrawableObject*)pObject->AsDrawableModel() == ballDrawable)
                     {
                         iter->count--;
@@ -584,14 +585,7 @@ void World::Render()
                     }
                     if (objectFlags & 0x1)
                     {
-                        u8 visible = 1;
-                        if (!(objectFlags & 0x10))
-                        {
-                            f32 fBoundingRadius = pObject->m_fBoundingRadius;
-                            const nlMatrix4& mat = pObject->GetWorldMatrix();
-                            visible = World_IsSphereInFrustum(m_frustumPlane, mat, fBoundingRadius);
-                        }
-                        if (visible)
+                        if ((objectFlags & 0x10) || World_IsSphereInFrustum(pWorld->m_frustumPlane, pObject->GetWorldMatrix(), pObject->m_fBoundingRadius))
                         {
                             if (pObject->m_uObjectCreationFlags & 0xF000)
                                 DoTranslucency(pObject);
@@ -942,10 +936,7 @@ void DoTranslucency(DrawableObject* pObject)
  */
 bool World::IsSphereInFrustum(const nlMatrix4& mat, float radius)
 {
-    nlVector3 v3Position;
-    v3Position.as_u32[0] = *(u32*)&mat.m[3][0];
-    v3Position.as_u32[1] = *(u32*)&mat.m[3][1];
-    v3Position.as_u32[2] = *(u32*)&mat.m[3][2];
+    nlVector3 v3Position = mat.GetTranslation();
 
     f32 posX = v3Position.f.x;
     f32 posY = v3Position.f.y;

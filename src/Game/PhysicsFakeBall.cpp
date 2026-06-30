@@ -419,18 +419,6 @@ float FakeBallWorld::GetPredictedHeightLimitTime(float fHeight, float fMinTime, 
 
     if (speedSq < 0.0001f)
     {
-        // u32 posX = pBall->m_v3Position.as_u32[0];
-        // u32 posY = pBall->m_v3Position.as_u32[1];
-        // u32 zeroX = v3Zero.as_u32[0];
-        // v3ContactPoint.as_u32[0] = posX;
-        // u32 zeroY = v3Zero.as_u32[1];
-        // v3ContactPoint.as_u32[1] = posY;
-        // u32 zeroZ = v3Zero.as_u32[2];
-        // u32 posZ = pBall->m_v3Position.as_u32[2];
-        // v3ContactPoint.as_u32[2] = posZ;
-        // v3ContactVelocity.as_u32[0] = zeroX;
-        // v3ContactVelocity.as_u32[1] = zeroY;
-        // v3ContactVelocity.as_u32[2] = zeroZ;
         v3ContactPoint = pBall->m_v3Position;
         v3ContactVelocity = v3Zero;
         return fMinTime;

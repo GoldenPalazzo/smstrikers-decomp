@@ -29,7 +29,6 @@ public:
     union
     {
         float e[2];
-        u32 as_u32[2];
         struct
         {
             float x;
@@ -38,19 +37,18 @@ public:
     };
 };
 
-// todo: maybe nicer something like class union nlVector3 ...
 class nlVector3
 {
 public:
     union
     {
+        float e[3];
         struct
         {
             float x;
             float y;
             float z;
         } f;
-        u32 as_u32[3];
     };
 
     void Set(float x, float y, float z)

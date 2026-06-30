@@ -2828,12 +2828,6 @@ float CloseToSideline(const nlVector3& v3Position, const nlVector2* vDistanceCon
         fScore = 0.0f;
     }
 
-    u32 posU2;
-    u32 posU1;
-    u32 posU0;
-    posU0 = v3Position.as_u32[0];
-    posU1 = v3Position.as_u32[1];
-    posU2 = v3Position.as_u32[2];
     const u8* pBase = (const u8*)cField::mSidelines;
     s32 offset;
     s32 i = 0;
@@ -2845,11 +2839,7 @@ float CloseToSideline(const nlVector3& v3Position, const nlVector2* vDistanceCon
     for (; i < 4; i++, offset += 0xC)
     {
         const sSideLinePlane* sideline = (const sSideLinePlane*)(pBase + offset);
-        nlVector3 v3SidelinePos;
-
-        v3SidelinePos.as_u32[2] = posU2;
-        v3SidelinePos.as_u32[0] = posU0;
-        v3SidelinePos.as_u32[1] = posU1;
+        nlVector3 v3SidelinePos = v3Position;
         v3SidelinePos.f.z = fZero;
 
         if (fZero == sideline->vNormal.f.x)
@@ -2904,19 +2894,12 @@ static inline float NearToSidelineImpl(const nlVector3& v3Position, const nlVect
     int i = 0;
     const u8* pBase = (const u8*)cField::mSidelines;
     s32 offset = i;
-    u32 posU0 = v3Position.as_u32[0];
-    u32 posU1 = v3Position.as_u32[1];
-    u32 posU2 = v3Position.as_u32[2];
     f32 fZero = fScore;
 
     for (; i < 4; i++, offset += 0xC)
     {
         const sSideLinePlane* sideline = (const sSideLinePlane*)(pBase + offset);
-        nlVector3 v3Pt;
-
-        v3Pt.as_u32[2] = posU2;
-        v3Pt.as_u32[0] = posU0;
-        v3Pt.as_u32[1] = posU1;
+        nlVector3 v3Pt = v3Position;
         v3Pt.f.z = fZero;
 
         if (fZero == sideline->vNormal.f.x)
@@ -2979,11 +2962,7 @@ float CloseToSideline(cFielder* pFielder)
     for (; i < 4; i++, offset += 0xC)
     {
         const sSideLinePlane* sideline = (const sSideLinePlane*)(pBase + offset);
-        nlVector3 v3SidelinePos;
-
-        v3SidelinePos.as_u32[2] = pFielder->m_v3Position.as_u32[2];
-        v3SidelinePos.as_u32[0] = pFielder->m_v3Position.as_u32[0];
-        v3SidelinePos.as_u32[1] = pFielder->m_v3Position.as_u32[1];
+        nlVector3 v3SidelinePos = pFielder->m_v3Position;
         v3SidelinePos.f.z = fZero;
 
         if (fZero == sideline->vNormal.f.x)

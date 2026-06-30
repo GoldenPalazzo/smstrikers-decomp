@@ -2890,8 +2890,7 @@ void GreenShell::Update(float dt)
         }
         else if (polar2.r > 20.0f)
         {
-            vel.as_u32[0] = m_v3Velocity.as_u32[0];
-            vel.as_u32[1] = m_v3Velocity.as_u32[1];
+            vel = *(const nlVector2*)&m_v3Velocity;
             f32 velX = vel.f.x;
             f32 velY = vel.f.y;
             f32 sqX = velX * velX;
@@ -3003,8 +3002,7 @@ void RedShell::Update(float dt)
         }
         else if (polar2.r > 20.0f)
         {
-            vel.as_u32[0] = m_v3Velocity.as_u32[0];
-            vel.as_u32[1] = m_v3Velocity.as_u32[1];
+            vel = *(const nlVector2*)&m_v3Velocity;
             f32 velX = vel.f.x;
             f32 velY = vel.f.y;
             f32 sqX = velX * velX;
@@ -3267,8 +3265,7 @@ void SpinyShell::Update(float dt)
         }
         else if (polar2.r > 5.0f)
         {
-            vel.as_u32[0] = m_v3Velocity.as_u32[0];
-            vel.as_u32[1] = m_v3Velocity.as_u32[1];
+            vel = *(const nlVector2*)&m_v3Velocity;
             f32 velX = vel.f.x;
             f32 velY = vel.f.y;
             f32 sqX = velX * velX;
@@ -3375,8 +3372,7 @@ void FreezeShell::Update(float fDeltaT)
         }
         else if (polar2.r > 20.0f)
         {
-            vel.as_u32[0] = m_v3Velocity.as_u32[0];
-            vel.as_u32[1] = m_v3Velocity.as_u32[1];
+            vel = *(const nlVector2*)&m_v3Velocity;
             f32 velX = vel.f.x;
             f32 velY = vel.f.y;
             f32 sqX = velX * velX;

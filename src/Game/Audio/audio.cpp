@@ -20,18 +20,6 @@
 // The namespace PlatAudio and class PlatAudio can coexist
 #include "Game/Sys/PlatStream.h"
 
-struct FadeAudioData // TODO: this should be a ListEntry<T>
-{
-    /* 0x00 */ char padding[0x28];
-    /* 0x28 */ FadeAudioData* next; // Pointer to next node for nlDeleteList
-};
-
-struct DelayTimer
-{
-    float _unk_0x0;
-    // todo: implement
-};
-
 FadeAudioData* g_pFadeList;
 
 static bool gbFilterOn = false;
@@ -1269,9 +1257,9 @@ foundExisting:
     }
 
     newFade->next = NULL;
-#pragma inline_depth(0)
+    // #pragma inline_depth(0)
     nlListAddStart<FadeAudioData>(&g_pFadeList, newFade, NULL);
-#pragma inline_depth
+    // #pragma inline_depth
 }
 
 /**
@@ -1473,9 +1461,9 @@ foundExisting:
     }
 
     newFade->next = NULL;
-#pragma inline_depth(0)
+    // #pragma inline_depth(0)
     nlListAddStart<FadeAudioData>(&g_pFadeList, newFade, NULL);
-#pragma inline_depth
+    // #pragma inline_depth
 }
 
 /**
@@ -1832,11 +1820,9 @@ void Update3DSFXEmitters()
                 if (emitter->pPhysObj->m_bodyID)
                 {
                     nlVector3& linVel = emitter->pPhysObj->GetLinearVelocity();
-                    u32 b = linVel.as_u32[1];
-                    u32 a = linVel.as_u32[0];
-                    vel.as_u32[1] = b;
-                    vel.as_u32[0] = a;
-                    vel.as_u32[2] = linVel.as_u32[2];
+#pragma inline_depth(255)
+                    vel = linVel;
+#pragma inline_depth
                 }
                 PlatAudio::Update3DSFXEmitter(emitter, emitter->pPhysObj->GetPosition(), vel, fVol);
             }
@@ -1963,11 +1949,9 @@ void UpdateFades(float fDeltaT)
                         if (((SFXEmitter*)*(u32*)((char*)pFadeData + 0x4))->pPhysObj->m_bodyID)
                         {
                             nlVector3& linVel = ((SFXEmitter*)*(u32*)((char*)pFadeData + 0x4))->pPhysObj->GetLinearVelocity();
-                            u32 velX = linVel.as_u32[0];
-                            u32 velY = linVel.as_u32[1];
-                            vel.as_u32[0] = velX;
-                            vel.as_u32[1] = velY;
-                            vel.as_u32[2] = linVel.as_u32[2];
+#pragma inline_depth(255)
+                            vel = linVel;
+#pragma inline_depth
                         }
                         PlatAudio::Update3DSFXEmitter(
                             (SFXEmitter*)*(u32*)((char*)pFadeData + 0x4),
@@ -2010,11 +1994,9 @@ void UpdateFades(float fDeltaT)
                         if (((SFXEmitter*)*(u32*)((char*)pFadeData + 0x4))->pPhysObj->m_bodyID)
                         {
                             nlVector3& linVel = ((SFXEmitter*)*(u32*)((char*)pFadeData + 0x4))->pPhysObj->GetLinearVelocity();
-                            u32 velX = linVel.as_u32[0];
-                            u32 velY = linVel.as_u32[1];
-                            vel.as_u32[0] = velX;
-                            vel.as_u32[1] = velY;
-                            vel.as_u32[2] = linVel.as_u32[2];
+#pragma inline_depth(255)
+                            vel = linVel;
+#pragma inline_depth
                         }
                         PlatAudio::Update3DSFXEmitter(
                             (SFXEmitter*)*(u32*)((char*)pFadeData + 0x4),
@@ -2437,18 +2419,8 @@ void Update(float fDeltaT)
 
             cBaseCamera* pCamera = nlDLRingGetStart<cBaseCamera>(cCameraManager::m_cameraStack);
             const nlVector3& cameraPos = pCamera->GetCameraPosition();
-            u32 cameraX = cameraPos.as_u32[0];
-            u32 cameraY = cameraPos.as_u32[1];
-            u32 zeroX = sListenerZero.as_u32[0];
-            vCameraPos.as_u32[0] = cameraX;
-            u32 zeroY = sListenerZero.as_u32[1];
-            vCameraPos.as_u32[1] = cameraY;
-            u32 zeroZ = sListenerZero.as_u32[2];
-            u32 cameraZ = cameraPos.as_u32[2];
-            vCameraPos.as_u32[2] = cameraZ;
-            vDir.as_u32[0] = zeroX;
-            vDir.as_u32[1] = zeroY;
-            vDir.as_u32[2] = zeroZ;
+            vCameraPos = cameraPos;
+            vDir = sListenerZero;
             cCameraManager::GetViewVector(vHeading);
             cCameraManager::GetUpVector(vUp);
 
@@ -2820,12 +2792,8 @@ int AddDelayedSFX(const SoundAttributes& sfxData, unsigned long uSFXID, float vo
         gDelayedSFX[slot].mf_CutoffTime = sfxData.mf_CutoffTime;
         gDelayedSFX[slot].mp_OwnerSFX = sfxData.mp_OwnerSFX;
         gDelayedSFX[slot].mp_PhysObj = sfxData.mp_PhysObj;
-        gDelayedSFX[slot].pos.vPos.as_u32[0] = sfxData.pos.vPos.as_u32[0];
-        gDelayedSFX[slot].pos.vPos.as_u32[1] = sfxData.pos.vPos.as_u32[1];
-        gDelayedSFX[slot].pos.vPos.as_u32[2] = sfxData.pos.vPos.as_u32[2];
-        gDelayedSFX[slot].dir.vDir.as_u32[0] = sfxData.dir.vDir.as_u32[0];
-        gDelayedSFX[slot].dir.vDir.as_u32[1] = sfxData.dir.vDir.as_u32[1];
-        gDelayedSFX[slot].dir.vDir.as_u32[2] = sfxData.dir.vDir.as_u32[2];
+        gDelayedSFX[slot].pos.vPos = sfxData.pos.vPos;
+        gDelayedSFX[slot].dir.vDir = sfxData.dir.vDir;
         gDelayedSFX[slot].posUpdateMethod = sfxData.posUpdateMethod;
         gDelayedSFX[slot].ms_EventName = sfxData.ms_EventName;
         gDelayedSFX[slot].mi_SFXPriority = sfxData.mi_SFXPriority;
@@ -3587,9 +3555,7 @@ bool Initialize(bool bInit)
  */
 void SoundAttributes::UseStationaryPosVector(const nlVector3& position)
 {
-    pos.vPos.as_u32[0] = position.as_u32[0];
-    pos.vPos.as_u32[1] = position.as_u32[1];
-    pos.vPos.as_u32[2] = position.as_u32[2];
+    pos.vPos = position;
     posUpdateMethod = VECTORS;
     mb_Update3DContinuously = true;
 }
@@ -3599,12 +3565,6 @@ void SoundAttributes::UseStationaryPosVector(const nlVector3& position)
  */
 void SoundAttributes::UseVectors(const nlVector3& p, const nlVector3& d)
 {
-    // pos.vPos.as_u32[0] = v1.as_u32[0];
-    // pos.vPos.as_u32[1] = v1.as_u32[1];
-    // pos.vPos.as_u32[2] = v1.as_u32[2];
-    // dir.vDir.as_u32[0] = v2.as_u32[0];
-    // dir.vDir.as_u32[1] = v2.as_u32[1];
-    // dir.vDir.as_u32[2] = v2.as_u32[2];
     pos.vPos = p;
     dir.vDir = d;
     posUpdateMethod = VECTORS;
