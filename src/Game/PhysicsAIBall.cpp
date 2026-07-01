@@ -419,8 +419,7 @@ void PhysicsAIBall::CheckIfBallWentThroughGoalie()
 
 /**
  * Offset/Address/Size: 0x994 | 0x801343C8 | size: 0x3A4
- * TODO: 98.51% match - remaining diffs are in the inlined net-entry block
- * (global ball load scheduling and new/old position store order).
+ * TODO: 99.08% match - remaining diffs are in net-entry helper register allocation.
  */
 void PhysicsAIBall::PostUpdate()
 {
@@ -428,20 +427,6 @@ void PhysicsAIBall::PostUpdate()
     extern float sfBallGoalieSweepTestVelocityThreshold;
     extern void* __vt__9EventData[];
     extern void* __vt__23CollisionBallGroundData[];
-
-    struct BallOffsetView
-    {
-        u32 x0;
-        u32 x4;
-        u32 x8;
-        u32 xC;
-        u8 pad10[0x94];
-        u8 xA4;
-        u8 xA5;
-        u8 xA6;
-        u8 xA7;
-        cPlayer* xA8;
-    };
 
     nlVector3 v3IncidentVel;
     CollisionBallGroundData* pEventData;
@@ -454,11 +439,11 @@ void PhysicsAIBall::PostUpdate()
 
     if (m_bIsSupportedByGround)
     {
-        BallOffsetView* pBallFields = (BallOffsetView*)m_pAIBall;
-        if (pBallFields->xC == 0)
+        cBall* pBallFields = m_pAIBall;
+        if (pBallFields->m_tNoPickupTimer.m_uPackedTime == 0)
         {
-            pBallFields->xA6 = 0;
-            pBallFields->xA8 = NULL;
+            pBallFields->m_unk_0xA6 = false;
+            pBallFields->mpDamageTarget = NULL;
 
             if (v3IncidentVel.f.z < -1.0f)
             {
@@ -474,10 +459,10 @@ void PhysicsAIBall::PostUpdate()
 
                 pGroundData->pBall = m_pAIBall;
 
-                BallOffsetView* pEventBallFields = (BallOffsetView*)pGroundData->pBall;
-                if (pEventBallFields->x8 != 0)
+                cBall* pEventBallFields = pGroundData->pBall;
+                if (pEventBallFields->m_tShotTimer.m_uPackedTime != 0)
                 {
-                    if (pEventBallFields->xA4 != 0)
+                    if (pEventBallFields->m_unk_0xA4 != 0)
                     {
                         bIsShot = 1;
                     }
@@ -517,18 +502,30 @@ void PhysicsAIBall::PostUpdate()
     GetRadius();
     GetPosition(&ballPosition);
 
-    if (IsBallOutsideNet(ballPosition))
     {
-        m_unk_0x58 = false;
-    }
-    else
-    {
-        GetPosition(&newPosition);
-        oldPosition = m_pAIBall->m_v3PrevPosition;
+        f32 radius = g_pBall->m_pPhysicsBall->GetRadius();
+        f64 absX = (float)fabs(ballPosition.f.x);
+        f32 threshold = cField::GetGoalLineX((unsigned int)1);
+        f32 sum;
+        f32 fAbsX;
+        sum = radius + threshold;
+        fAbsX = (f32)absX;
+        threshold = sum - 0.08f;
 
-        if (DidBallJustEnterNetWithBall(g_pBall, oldPosition, newPosition))
+        if (fAbsX < threshold)
         {
-            m_unk_0x58 = true;
+            m_unk_0x58 = false;
+        }
+        else
+        {
+            GetPosition(&newPosition);
+            cBall* pGlobalBall = g_pBall;
+            oldPosition = m_pAIBall->m_v3PrevPosition;
+
+            if (DidBallJustEnterNetWithBall(pGlobalBall, oldPosition, newPosition))
+            {
+                m_unk_0x58 = true;
+            }
         }
     }
 

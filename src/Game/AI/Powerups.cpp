@@ -132,12 +132,6 @@ const char* uBOBOMB_STREAK_TEXTURE;
 static const nlVector3 v3Zero = { 0.0f, 0.0f, 0.0f };
 static u8 gbAlwaysSurround;
 
-extern void* __vt__6Banana[];
-extern void* __vt__6Bobomb[];
-extern void* __vt__10GreenShell[];
-extern void* __vt__11FreezeShell[];
-extern void* __vt__8RedShell[];
-extern void* __vt__10SpinyShell[];
 extern void* __vt__9EventData[];
 extern void* __vt__20PowerupUsedEventData[];
 
@@ -149,6 +143,46 @@ SlotPool<SpinyShell> SpinyShell::m_SpinyShellSlotPool(16, 16);
 SlotPool<RedShell> RedShell::m_RedShellSlotPool(16, 16);
 SlotPool<Banana> Banana::m_BananaSlotPool(16, 16);
 SlotPool<Bobomb> Bobomb::m_BobombSlotPool(16, 16);
+
+inline Banana::Banana(cFielder* pTarget, int nIndex, float fRadius, ePowerupSize eSize, bool bExplode)
+    : PowerupBase(pTarget, POWER_UP_BANANA, fRadius, eSize, bExplode, nIndex)
+{
+}
+
+inline Bobomb::Bobomb(cFielder* pTarget, int nIndex, float fRadius, ePowerupSize eSize, bool bExplode)
+    : PowerupBase(pTarget, POWER_UP_BOBOMB, fRadius, eSize, bExplode, nIndex)
+{
+    pMovementEmitter = NULL;
+
+    if (nlRandomf(1.0f, &nlDefaultSeed) < g_pGame->m_pGameTweaks->fBobombMineChance)
+    {
+        mbIsMine = true;
+    }
+    else
+    {
+        mbIsMine = false;
+    }
+}
+
+inline GreenShell::GreenShell(cFielder* pTarget, int nIndex, float fRadius, ePowerupSize eSize, bool bExplode)
+    : PowerupBase(pTarget, POWER_UP_GREEN_SHELL, fRadius, eSize, bExplode, nIndex)
+{
+}
+
+inline FreezeShell::FreezeShell(cFielder* pTarget, int nIndex, float fRadius, ePowerupSize eSize, bool bExplode)
+    : PowerupBase(pTarget, POWER_UP_FREEZE_SHELL, fRadius, eSize, bExplode, nIndex)
+{
+}
+
+inline RedShell::RedShell(cFielder* pTarget, int nIndex, float fRadius, ePowerupSize eSize, bool bExplode)
+    : PowerupBase(pTarget, POWER_UP_RED_SHELL, fRadius, eSize, bExplode, nIndex)
+{
+}
+
+inline SpinyShell::SpinyShell(cFielder* pTarget, int nIndex, float fRadius, ePowerupSize eSize, bool bExplode)
+    : PowerupBase(pTarget, POWER_UP_SPINY_SHELL, fRadius, eSize, bExplode, nIndex)
+{
+}
 
 namespace
 {
@@ -442,7 +476,7 @@ void PowerupThrowPosition(int nThrowOrder, eThrowStyle eStyle, PowerupBase* pNew
  */
 u8 PowerupCreateAndThrow(cFielder* pThrower, ePowerUpType eType, int nnumOfPowerups, Bowser* pBowser)
 {
-    volatile eThrowStyle eStyle;
+    eThrowStyle eStyle;
     float fMediumChance;
     float fBigChance;
     float fExplodeChance;
@@ -660,8 +694,6 @@ u8 PowerupCreateAndThrow(cFielder* pThrower, ePowerUpType eType, int nnumOfPower
             {
                 continue;
             }
-            pPowerup = NULL;
-
             switch (eType)
             {
             case POWER_UP_BANANA:
@@ -705,8 +737,7 @@ u8 PowerupCreateAndThrow(cFielder* pThrower, ePowerUpType eType, int nnumOfPower
                     break;
                 }
 
-                new (pBanana) PowerupBase(pTarget, POWER_UP_BANANA, fBananaRadius, eSize, bExplode, j);
-                *(void**)pBanana = __vt__6Banana;
+                new (pBanana) Banana(pTarget, j, fBananaRadius, eSize, bExplode);
 
                 pPowerup = pBanana;
                 break;
@@ -740,18 +771,7 @@ u8 PowerupCreateAndThrow(cFielder* pThrower, ePowerUpType eType, int nnumOfPower
 
                 if (pBobomb != NULL)
                 {
-                    new (pBobomb) PowerupBase(pTarget, POWER_UP_BOBOMB, fBobombRadius, eSize, true, j);
-                    *(void**)pBobomb = __vt__6Bobomb;
-                    pBobomb->pMovementEmitter = NULL;
-
-                    if (nlRandomf(1.0f, &nlDefaultSeed) < g_pGame->m_pGameTweaks->fBobombMineChance)
-                    {
-                        pBobomb->mbIsMine = true;
-                    }
-                    else
-                    {
-                        pBobomb->mbIsMine = false;
-                    }
+                    new (pBobomb) Bobomb(pTarget, j, fBobombRadius, eSize, true);
                 }
 
                 pPowerup = pBobomb;
@@ -786,8 +806,7 @@ u8 PowerupCreateAndThrow(cFielder* pThrower, ePowerUpType eType, int nnumOfPower
 
                 if (pPowerup != NULL)
                 {
-                    new (pPowerup) PowerupBase(pTarget, POWER_UP_GREEN_SHELL, fGreenShellRadius, eSize, bExplode, j);
-                    *(void**)pPowerup = __vt__10GreenShell;
+                    new (pPowerup) GreenShell(pTarget, j, fGreenShellRadius, eSize, bExplode);
                 }
 
                 break;
@@ -821,8 +840,7 @@ u8 PowerupCreateAndThrow(cFielder* pThrower, ePowerUpType eType, int nnumOfPower
 
                 if (pPowerup != NULL)
                 {
-                    new (pPowerup) PowerupBase(pTarget, POWER_UP_FREEZE_SHELL, fFreezeShellRadius, eSize, bExplode, j);
-                    *(void**)pPowerup = __vt__11FreezeShell;
+                    new (pPowerup) FreezeShell(pTarget, j, fFreezeShellRadius, eSize, bExplode);
                 }
 
                 break;
@@ -856,8 +874,7 @@ u8 PowerupCreateAndThrow(cFielder* pThrower, ePowerUpType eType, int nnumOfPower
 
                 if (pPowerup != NULL)
                 {
-                    new (pPowerup) PowerupBase(pTarget, POWER_UP_RED_SHELL, fRedShellRadius, eSize, bExplode, j);
-                    *(void**)pPowerup = __vt__8RedShell;
+                    new (pPowerup) RedShell(pTarget, j, fRedShellRadius, eSize, bExplode);
                 }
 
                 break;
@@ -891,8 +908,7 @@ u8 PowerupCreateAndThrow(cFielder* pThrower, ePowerUpType eType, int nnumOfPower
 
                 if (pPowerup != NULL)
                 {
-                    new (pPowerup) PowerupBase(pTarget, POWER_UP_SPINY_SHELL, fSpinyShellRadius, eSize, bExplode, j);
-                    *(void**)pPowerup = __vt__10SpinyShell;
+                    new (pPowerup) SpinyShell(pTarget, j, fSpinyShellRadius, eSize, bExplode);
                 }
 
                 break;
@@ -981,12 +997,13 @@ PowerupBase* FindPowerUp(unsigned long hashOfDrawable)
 //  */
 /**
  * Offset/Address/Size: 0x4C00 | 0x8005F4EC | size: 0x2B4
- * TODO: 97.4% match - type, loop, row pointer, and string temporary registers remain rotated.
+ * TODO: 99.4% match - BasicString data and source string registers remain swapped.
  */
 void PowerupModelPool::Initialize(int type, unsigned long objHashName)
 {
+    DrawableObject* obj;
     int i;
-    DrawableObject* obj = WorldManager::s_World->FindDrawableObject(objHashName);
+    obj = WorldManager::s_World->FindDrawableObject(objHashName);
     i = 0;
 
     obj->m_uObjectFlags &= ~1;
@@ -996,28 +1013,7 @@ void PowerupModelPool::Initialize(int type, unsigned long objHashName)
     {
         mObjs[type][i] = obj->Clone();
 
-        BasicStringData<char>* data = (BasicStringData<char>*)Detail::TempStringAllocator::allocate(sizeof(BasicStringData<char>));
-        if (data != 0)
-        {
-            data->mData = 0;
-            data->mSize = 0;
-            data->mCapacity = 0;
-            const char* str = "powerup_generated_{0}";
-            const char* s = str;
-            while (*s++ != 0)
-            {
-                data->mSize++;
-            }
-            data->mSize++;
-            data->mData = (char*)Detail::TempStringAllocator::allocate((data->mSize + 1) * sizeof(char));
-            data->mCapacity = data->mSize;
-            for (int j = 0; j < data->mSize; j++)
-            {
-                data->mData[j] = *str++;
-            }
-            data->mRefCount = 1;
-        }
-        BasicString<char, Detail::TempStringAllocator> name = Format(BasicString<char, Detail::TempStringAllocator>(data), mNum);
+        BasicString<char, Detail::TempStringAllocator> name = Format(BasicString<char, Detail::TempStringAllocator>("powerup_generated_{0}"), mNum);
 
         mObjs[type][i]->m_uHashID = nlStringLowerHash(name.c_str());
         mObjs[type][i]->m_uObjectFlags &= ~1;

@@ -2182,8 +2182,6 @@ static inline bool IsShotMeterActive(eShotMeterState state)
 
 /**
  * Offset/Address/Size: 0x8CA8 | 0x80021FE4 | size: 0x2B4
- * TODO: 99.36% match - remaining gap is an extra early branch around the
- * ACTION_SHOOT_TO_SCORE return path.
  */
 void cFielder::DoHandleActiveShotMeter()
 {
@@ -2192,7 +2190,9 @@ void cFielder::DoHandleActiveShotMeter()
         return;
     }
 
-    switch ((u32)m_eActionState)
+    register u32 actionState = m_eActionState;
+
+    switch (actionState)
     {
     case ACTION_ELECTROCUTION:
     case ACTION_HIT_REACT:
@@ -2232,12 +2232,14 @@ void cFielder::DoHandleActiveShotMeter()
         return;
     }
 
-    if (m_eActionState == ACTION_DEKE)
-    {
-        return;
+    // Match target's explicit ACTION_DEKE exit branch.
+    asm {
+        cmpwi actionState, 0
+        bne handle_active_shot_meter
+        b done_active_shot_meter
     }
 
-    ShotMeter* pShotMeter = m_pShotMeter;
+    handle_active_shot_meter : ShotMeter* pShotMeter = m_pShotMeter;
     bool bIsActive = IsShotMeterActive(pShotMeter->m_eShotMeterState);
     if (bIsActive)
     {
@@ -2305,6 +2307,8 @@ void cFielder::DoHandleActiveShotMeter()
             InitActionShootToScore();
         }
     }
+
+done_active_shot_meter:;
 }
 
 /**
@@ -3027,10 +3031,18 @@ void cFielder::DoFindBestShotTarget(nlVector3& v3PositionOut, float& fShotSpeed,
         u16 aAngPost1 = (u16)(s32)(10430.378f * fAngPost1);
 
         s16 sDiffP1G = (s16)(aAngPost1 - aAngGoalie);
-        u16 uAbsP1G = (sDiffP1G < 0) ? -sDiffP1G : sDiffP1G;
+        if (sDiffP1G < 0)
+        {
+            sDiffP1G = -sDiffP1G;
+        }
+        u16 uAbsP1G = (u16)sDiffP1G;
 
         s16 sDiffP2G = (s16)(aAngPost2 - aAngGoalie);
-        u16 uAbsP2G = (sDiffP2G < 0) ? -sDiffP2G : sDiffP2G;
+        if (sDiffP2G < 0)
+        {
+            sDiffP2G = -sDiffP2G;
+        }
+        u16 uAbsP2G = (u16)sDiffP2G;
 
         s16 sDiffP1P2 = (s16)(aAngPost1 - aAngPost2);
         u16 uAbsP1P2 = (sDiffP1P2 < 0) ? -sDiffP1P2 : sDiffP1P2;

@@ -464,7 +464,7 @@ void GCAudioStreaming::AudioStream::_UpdateReadCB(nlFile*, void* pData, unsigned
 
 /**
  * Offset/Address/Size: 0x1364 | 0x801C8B14 | size: 0x3A0
- * TODO: 95.04% match - object pointer and allocation-loop registers still differ
+ * TODO: 95.88% match - object pointer and allocation-loop registers still differ
  */
 void GCAudioStreaming::MonoAudioStream::Warm(bool CoolOnStop)
 {
@@ -543,7 +543,7 @@ void GCAudioStreaming::MonoAudioStream::Warm(bool CoolOnStop)
         if (numSamples != 0)
         {
             unsigned long availLen = pBuffer->m_pStream->GetUpdateReadLength();
-            unsigned long encSize = (numSamples / 7) & ~7;
+            unsigned long encSize = (numSamples / 14) * 8;
 
             if (encSize >= availLen)
             {
@@ -558,7 +558,7 @@ void GCAudioStreaming::MonoAudioStream::Warm(bool CoolOnStop)
                     updateOffset -= pBuffer->m_BufferSize;
                     pBuffer->m_UpdateOffset = updateOffset;
                     ReadLen = availLen - updateOffset;
-                    MRAMOffsetB = updateOffset & ~0x1F;
+                    MRAMOffsetB = pBuffer->m_UpdateOffset & ~0x1F;
                 }
                 else
                 {

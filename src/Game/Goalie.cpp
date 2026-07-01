@@ -2821,8 +2821,8 @@ static inline float clamp_lower(float x, float lo)
 
 /**
  * Offset/Address/Size: 0x69D8 | 0x800494D4 | size: 0x3A8
- * TODO: 99.08% match - FPR allocation in save-margin/goal-distance checks
- * and final target-time clamp branch.
+ * TODO: 99.44% match - FPR allocation in save-margin/goal-distance checks
+ * and final target-time clamp result register.
  */
 bool Goalie::CheckForSTSAttack()
 {
@@ -2925,12 +2925,17 @@ bool Goalie::CheckForSTSAttack()
                 f32 fTimeToImpact = fStartTime - fPickupDuration2;
 
                 mfWaitTime = fTimeToImpact;
+                f32 fTargetTime;
                 if (fTimeToImpact <= 0.25f)
                 {
-                    fTimeToImpact = 0.25f;
+                    fTargetTime = 0.25f;
+                }
+                else
+                {
+                    fTargetTime = fTimeToImpact;
                 }
 
-                mfTargetTime = fTimeToImpact;
+                mfTargetTime = fTargetTime;
                 mpLooseBallInfo = &LooseBallAnims::mAttackSTSInfo;
                 CleanGoalieAction();
 
@@ -3460,12 +3465,15 @@ cPoseNode* Goalie::SetupBlender(bool bPrimary, const float* fStartPercent, int n
 
 /**
  * Offset/Address/Size: 0x58E4 | 0x800483E0 | size: 0x458
- * TODO: 99.15% match - default-percent block has r3/r5 swapped, and interpolation reuses the milestone offset before NormalizeVal.
+ * TODO: 99.26% match - default-percent block has r3/r5 swapped, and interpolation reuses the milestone offset before NormalizeVal.
  */
 void Goalie::PlayBlendedAnims(float fStartTime, int nMilestone)
 {
     static float fDefaultStartPercent[] = { 0.4f, 0.7f };
 
+    cPoseNode* pMainNode;
+    cPoseNode* pNode1;
+    cPoseNode* pNode2;
     float fStartPercent[4];
     int nMainAnimID;
     int milestone;
@@ -3580,12 +3588,12 @@ void Goalie::PlayBlendedAnims(float fStartTime, int nMilestone)
             milestone = 0;
         }
 
-        cPoseNode* pNode1 = SetupBlender(true, fStartPercent, nMainAnimID, milestone);
-        cPoseNode* pMainNode = pNode1;
+        pNode1 = SetupBlender(true, fStartPercent, nMainAnimID, milestone);
+        pMainNode = pNode1;
 
         if (mBlendInfo.mfSaveBlendComposite >= 0.001f)
         {
-            cPoseNode* pNode2 = SetupBlender(false, fStartPercent, nMainAnimID, milestone);
+            pNode2 = SetupBlender(false, fStartPercent, nMainAnimID, milestone);
             cPN_SingleAxisBlender* pBlend = new (AllocateSingleAxisBlender()) cPN_SingleAxisBlender(2, NULL, 0, 0.1f);
 
             pBlend->m_fDesiredWeight = mBlendInfo.mfSaveBlendComposite;

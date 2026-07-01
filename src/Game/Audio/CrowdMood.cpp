@@ -358,10 +358,17 @@ static void MoodDefFromBlend(float* MoodBlend, MOOD_DEFINITION& MoodDef)
 
         float blendVal = MoodBlend[mood];
 
+        float* pBlend;
+
         if (blendVal > *pMaxBlend)
         {
-            pMaxBlend = &MoodBlend[mood];
+            pBlend = &MoodBlend[mood];
         }
+        else
+        {
+            pBlend = pMaxBlend;
+        }
+        pMaxBlend = pBlend;
 
         AccountedFor += g_CrowdState.CurrentMoodBlend[mood];
         MoodDef.NeutralVol += g_MoodDefs[mood].NeutralVol * blendVal;
@@ -1276,7 +1283,7 @@ void CrowdMood::Purge(bool bJustStopSFX)
 
 /**
  * Offset/Address/Size: 0x9F8 | 0x8014E10C | size: 0x554
- * TODO: 99.11% match - DestMoodLevel clamp keeps one extra stack store; normalized interpolant keeps temp register swaps.
+ * TODO: 99.18% match - DestMoodLevel clamp keeps one extra stack store; normalized interpolant keeps temp register swaps.
  */
 void CrowdMood::Update(float dt)
 {
@@ -1325,9 +1332,9 @@ void CrowdMood::Update(float dt)
     {
         u8 level = g_CrowdState.DestMoodLevel;
         s32 mask = -1;
-        u8 clampedLevel = CM_END;
+        u32 clampedLevel = CM_END;
         if (((u32)level & *(u32*)&mask) <= (u32)CM_END)
-            clampedLevel = level;
+            clampedLevel = ((u32)level & *(u32*)&mask);
         g_CrowdState.DestMoodLevel = clampedLevel;
 
         f32 halfFactor = 0.5f;
@@ -1454,8 +1461,8 @@ void CrowdMood::Update(float dt)
             }
         }
 
-        f32 complement = 1.0f - normalizedInterp;
         g_CrowdState.SinceMoodDest = 0.0f;
+        f32 complement = 1.0f - normalizedInterp;
         CROWD_MOOD mood2 = CM_Positive;
         while (mood2 < (CROWD_MOOD)4)
         {

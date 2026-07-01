@@ -136,6 +136,8 @@ static inline u32 Div67(u32 n)
 
 /**
  * Offset/Address/Size: 0x1D0 | 0x801BFDF0 | size: 0xA38
+ * TODO: 94.4% match - remaining stack-slot and register allocation diffs in
+ * chunk parsing and animation cases
  */
 static glModel* glxLoadModelFromMemory(char* data, int size, unsigned long* pNumModels, bool bLoadTextures)
 {
@@ -372,15 +374,17 @@ static glModel* glxLoadModelFromMemory(char* data, int size, unsigned long* pNum
 
             outerChunkPtr = (nlChunk*)((u8*)outerChunkPtr + outerChunkPtr->m_Size + 8);
 
-            if ((s32)numModels > 0)
             {
                 glModel* pM = pModels;
-                u32 count = numModels;
-                while (count > 0)
+                int count = numModels;
+                if ((s32)numModels > 0)
                 {
-                    pM->packets = (glModelPacket*)((u32)pM->packets + (u32)pPackets);
-                    pM++;
-                    count--;
+                    while (count > 0)
+                    {
+                        pM->packets = (glModelPacket*)((u32)pM->packets + (u32)pPackets);
+                        pM++;
+                        count--;
+                    }
                 }
             }
 
@@ -417,15 +421,17 @@ static glModel* glxLoadModelFromMemory(char* data, int size, unsigned long* pNum
                 }
             }
 
-            if ((s32)numStreamEntries > 0)
             {
                 u8* p = pStreamData;
                 int count = numStreamEntries;
-                while (count > 0)
+                if ((s32)numStreamEntries > 0)
                 {
-                    *(u32*)p += (u32)pDisplayListData;
-                    p += 6;
-                    count--;
+                    while (count > 0)
+                    {
+                        *(u32*)p += (u32)pDisplayListData;
+                        p += 6;
+                        count--;
+                    }
                 }
             }
 

@@ -175,17 +175,16 @@ static inline bool CalcGoalieRepulsionVector(AvoidController* controller, nlVect
 
 /**
  * Offset/Address/Size: 0x12BC | 0x80008910 | size: 0xECC
- * TODO: 97.77% match - remaining diffs are early boolean register allocation,
- * residual goalie/Bowser FPR coloring, and final fallback slot selection.
+ * TODO: 97.95% match - remaining diffs are bCanAvoid register choice,
+ * goalie/Bowser FPR assignments, and final fallback stack slot selection.
  */
 void AvoidController::Update(float)
 {
     nlVector3 vAccumulated_v3 = v3Zero;
     float fTotalWeight_v3 = 0.0f;
 
-    bool bCanAvoid = false;
-    m_SidelineUnavoidable = false;
-    m_VeryCloseToSideline = false;
+    bool bCanAvoid;
+    m_SidelineUnavoidable = m_VeryCloseToSideline = bCanAvoid = false;
 
     if (m_ThingsToAvoid & AVOID_SIDELINES)
     {
@@ -396,13 +395,8 @@ void AvoidController::Update(float)
         {
             float fLastRepulsionWeight = 0.5f;
 
-            v3SmoothedRepulsion.f.x = fLastRepulsionWeight * v3FinalRepulsion.f.x;
-            v3SmoothedRepulsion.f.y = fLastRepulsionWeight * v3FinalRepulsion.f.y;
-            v3SmoothedRepulsion.f.z = fLastRepulsionWeight * v3FinalRepulsion.f.z;
-
-            v3SmoothedRepulsion.f.y = fLastRepulsionWeight * m_LastRepulsionVector[5].f.y + v3SmoothedRepulsion.f.y;
-            v3SmoothedRepulsion.f.z = fLastRepulsionWeight * m_LastRepulsionVector[5].f.z + v3SmoothedRepulsion.f.z;
-            v3SmoothedRepulsion.f.x = fLastRepulsionWeight * m_LastRepulsionVector[5].f.x + v3SmoothedRepulsion.f.x;
+            nlVec3Scale(v3SmoothedRepulsion, v3FinalRepulsion, fLastRepulsionWeight);
+            nlVec3ScaleAdd(v3SmoothedRepulsion, fLastRepulsionWeight, m_LastRepulsionVector[5], v3SmoothedRepulsion);
         }
         else
         {
@@ -420,9 +414,7 @@ void AvoidController::Update(float)
 
         if (m_ThingsToAvoid != 0)
         {
-            float fRepulsionSq = v3SmoothedRepulsion.f.x * v3SmoothedRepulsion.f.x;
-            fRepulsionSq += v3SmoothedRepulsion.f.y * v3SmoothedRepulsion.f.y;
-            fRepulsionSq += v3SmoothedRepulsion.f.z * v3SmoothedRepulsion.f.z;
+            float fRepulsionSq = nlVec3LengthSquared(v3SmoothedRepulsion);
 
             if (fRepulsionSq > 0.1f)
             {

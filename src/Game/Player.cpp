@@ -147,12 +147,10 @@ bool cPlayer::CanPickupBallFromPass(cBall* pBall)
 
 /**
  * Offset/Address/Size: 0x284 | 0x800577D4 | size: 0x1B0
- * TODO: 99.1% match - missing li r30,0 between the TestCollision
- * clrlwi. and the collision-fail beq.
  */
 bool cPlayer::CanPickupBall(cBall* pBall)
 {
-    cPlayer* const self = this;
+    cPlayer* self = this;
 
     if (sbNoBallPickups)
     {
@@ -185,7 +183,9 @@ bool cPlayer::CanPickupBall(cBall* pBall)
                 v3PlayerPos.f.z = 0.0f;
                 v3PrevPlayerPos.f.z = 0.0f;
 
-                if (TestCollision(fPhysicsRadius, v3PrevPlayerPos, v3PlayerPos, 0.0f, pBall->m_v3PrevPosition, pBall->m_v3Position))
+                u8 bCollision = TestCollision(fPhysicsRadius, v3PrevPlayerPos, v3PlayerPos, 0.0f, pBall->m_v3PrevPosition, pBall->m_v3Position);
+                bDoPickUp = false;
+                if (bCollision)
                 {
                     s16 delta;
                     delta = self->GetFacingDeltaToPosition(g_pBall->m_v3Position);

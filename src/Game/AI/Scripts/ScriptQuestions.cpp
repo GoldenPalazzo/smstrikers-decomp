@@ -1706,7 +1706,7 @@ static float InBetween(const nlVector3& v3InBetweenPos, const nlVector3& v3A, co
 
 /**
  * Offset/Address/Size: 0x36FC | 0x80082184 | size: 0x3D0
- * TODO: 99.63% match - fWeight and fInterceptScore saved float registers differ
+ * TODO: 99.77% match - fWeight and fInterceptScore saved float registers differ
  */
 float OnBreakaway(cFielder* pFielder)
 {
@@ -2530,8 +2530,8 @@ Compute:
     FuzzyTweaks* pFuzzyTweaks = g_pGame->m_pFuzzyTweaks;
     float fMaxConeWidth = InterpolateRangeClamped(pFuzzyTweaks->vInBetweenConeWidth, pFuzzyTweaks->vInBetweenInterceptRange, distA);
 
-    float dy2 = v3Intercept.f.y - v3B.f.y;
     float dx2 = v3Intercept.f.x - v3B.f.x;
+    float dy2 = v3Intercept.f.y - v3B.f.y;
 
     return InterpolateRangeClamped(1.0f, 0.0f, 0.0f, fMaxConeWidth, nlSqrt(dx2 * dx2 + dy2 * dy2, true));
 }

@@ -67,8 +67,8 @@ FuzzyVariant Fuzzy::AbortLoosePlay(cDecisionEntity*)
 
 /**
  * Offset/Address/Size: 0x0 | 0x8008B084 | size: 0x15CC
- * TODO: 98.89% match - remaining diffs include f-register allocation in
- * opponent and zone min/max temporaries.
+ * TODO: 99.61% match - remaining diffs include f-register allocation in
+ * opponent loop, goalie pickup, and zone min/max temporaries.
  */
 FuzzyVariant Fuzzy::DefaultLoosePlay(cDecisionEntity* pDecision)
 {
@@ -221,11 +221,11 @@ FuzzyVariant Fuzzy::DefaultLoosePlay(cDecisionEntity* pDecision)
 
             float fNotCanGetBall = 1.0f - GonnaGetBall(g_pScriptCurrentTeam);
             float fNotInOffZone = 1.0f - InOffensiveZoneOfPlayer(g_pScriptBall, (cPlayer*)g_pScriptCurrentFielder);
-            fNotCanGetBall = (fNotCanGetBall <= fNotInOffZone) ? fNotCanGetBall : fNotInOffZone;
+            fNotInOffZone = (fNotInOffZone <= fNotCanGetBall) ? fNotInOffZone : fNotCanGetBall;
             float fInDefZone = InDefensiveZoneOfPlayer(g_pScriptBall, (cPlayer*)g_pScriptCurrentFielder);
-            fNotCanGetBall = (fNotCanGetBall >= fInDefZone) ? fNotCanGetBall : fInDefZone;
-            float fCanGetBall = 1.0f - fNotCanGetBall;
-            float fCannotGetBall = fNotCanGetBall;
+            fInDefZone = (fInDefZone >= fNotInOffZone) ? fInDefZone : fNotInOffZone;
+            float fCanGetBall = fInDefZone;
+            float fCannotGetBall = 1.0f - fInDefZone;
             float fMin4 = (fCanGetBall <= fCannotGetBall) ? fCanGetBall : fCannotGetBall;
             float fMax4 = (fCanGetBall >= fCannotGetBall) ? fCanGetBall : fCannotGetBall;
             float fBranchRatio4 = fMin4 / fMax4;
@@ -294,6 +294,8 @@ FuzzyVariant Fuzzy::DefaultLoosePlay(cDecisionEntity* pDecision)
                         else
                             fBestConfidence = fConfidence;
                         pDecision->QueueActionSetDesire(1, fConfidence, -1.0f, fvNotSet, fvNotSet);
+                        SkillTweaks* pTweaks = SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide);
+                        pDecision->m_pLastQueuedAction->m_fSelectionChance = pTweaks->Off_CutAndBreakChance;
                     }
 
                     if (fNotOffensive > 0.0f)
@@ -329,11 +331,11 @@ FuzzyVariant Fuzzy::DefaultLoosePlay(cDecisionEntity* pDecision)
 
             float fNotCanGetBall2 = 1.0f - GonnaGetBall(g_pScriptCurrentTeam);
             float fNotInOffZone2 = 1.0f - InOffensiveZoneOfPlayer(g_pScriptBall, (cPlayer*)g_pScriptCurrentFielder);
-            fNotCanGetBall2 = (fNotCanGetBall2 <= fNotInOffZone2) ? fNotCanGetBall2 : fNotInOffZone2;
+            fNotInOffZone2 = (fNotInOffZone2 <= fNotCanGetBall2) ? fNotInOffZone2 : fNotCanGetBall2;
             float fInDefZone2 = InDefensiveZoneOfPlayer(g_pScriptBall, (cPlayer*)g_pScriptCurrentFielder);
-            fNotCanGetBall2 = (fNotCanGetBall2 >= fInDefZone2) ? fNotCanGetBall2 : fInDefZone2;
-            float fCanGetBall2 = 1.0f - fNotCanGetBall2;
-            float fCannotGetBall2 = fNotCanGetBall2;
+            fInDefZone2 = (fInDefZone2 >= fNotInOffZone2) ? fInDefZone2 : fNotInOffZone2;
+            float fCanGetBall2 = fInDefZone2;
+            float fCannotGetBall2 = 1.0f - fInDefZone2;
             float fMin8 = (fCanGetBall2 <= fCannotGetBall2) ? fCanGetBall2 : fCannotGetBall2;
             float fMax8 = (fCanGetBall2 >= fCannotGetBall2) ? fCanGetBall2 : fCannotGetBall2;
             float fBranchRatio8 = fMin8 / fMax8;

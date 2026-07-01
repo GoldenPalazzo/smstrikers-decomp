@@ -238,6 +238,7 @@ void SetupMatrices()
 /**
  * Offset/Address/Size: 0x1068 | 0x8016F748 | size: 0x450
  */
+#pragma optimization_level 2
 static inline BasicStringInternal* BuildDefaultStringData()
 {
     BasicStringInternal* data = (BasicStringInternal*)nlMalloc(0x10, 8, true);
@@ -413,6 +414,7 @@ static void SetupRenderInfo()
 
     glConstantSet("glxswap/vwait", vwait);
 }
+#pragma optimization_level 4
 
 /**
  * Offset/Address/Size: 0x950 | 0x8016F030 | size: 0x718

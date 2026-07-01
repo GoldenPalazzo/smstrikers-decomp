@@ -318,7 +318,7 @@ static inline void BuildFontCharStringForScroll(FontCharString& fontcharstring, 
 
 /**
  * Offset/Address/Size: 0x4F0 | 0x800C8EC4 | size: 0x578
- * TODO: 98.0% match - escape-copy guard and temporary glyph key stack slot differ
+ * TODO: 98.97% match - escape-copy guard and temporary glyph key stack slot differ
  */
 void FEScrollText::SetDisplayMessage(const BasicString<unsigned short, Detail::TempStringAllocator>& theMessage)
 {
@@ -339,7 +339,6 @@ void FEScrollText::SetDisplayMessage(const BasicString<unsigned short, Detail::T
     BuildFontCharStringForScroll(fontcharstring, this);
     m_messageWidth = 0;
 
-    unsigned short escBegin = nlEscapeSequence::ESCAPE_BEGIN;
     int i = 0;
     while (i < (m_message.m_data != 0 ? m_message.m_data->mSize - 1 : 0))
     {
@@ -347,7 +346,7 @@ void FEScrollText::SetDisplayMessage(const BasicString<unsigned short, Detail::T
         unsigned short* charPtr = (unsigned short*)(str) + i;
         unsigned short origCh = *charPtr;
 
-        if (origCh == escBegin)
+        if (origCh == nlEscapeSequence::ESCAPE_BEGIN)
         {
             nlEscapeSequence esc2(charPtr);
             int skipCount = ((int)esc2.m_pEnd - (int)charPtr) / 2;
@@ -378,7 +377,7 @@ void FEScrollText::SetDisplayMessage(const BasicString<unsigned short, Detail::T
     m_controlText->SetString(m_textBuffer);
 
     const feVector3& scale = m_controlText->GetScale();
-    m_messageWidth = (int)((float)m_messageWidth * scale.f.x);
+    m_messageWidth = (int)(scale.f.x * (float)m_messageWidth);
 
     Update(0.0f);
 }

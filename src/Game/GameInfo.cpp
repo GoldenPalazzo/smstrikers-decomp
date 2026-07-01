@@ -1647,8 +1647,8 @@ lbl_end:
 
 /**
  * Offset/Address/Size: 0x7534 | 0x8017CBD8 | size: 0x3A4
- * TODO: 99.68% match - dnmflags r29 vs r27 register allocation diff cascades
- * to flag extraction regs and inner temp regs (away/cup r6/r8 swap).
+ * TODO: 99.79% match - dnmflags is saved in r29 instead of r27, swapping the
+ * extracted 0x2 and 0x8 flag registers.
  */
 unsigned char GameInfoManager::DetermineNextMatchups(int dnmflags)
 {
@@ -1698,12 +1698,13 @@ unsigned char GameInfoManager::DetermineNextMatchups(int dnmflags)
 
         BasicGameInfo* gameinfo = mCurrentCup->GetGameInfo(round, mCurrentCup->mGameNumber);
         eTeamID home = gameinfo->mTeamIndex[0];
+        BaseCup* cup;
         eTeamID away = gameinfo->mTeamIndex[1];
         mGameInfo[mCurrentMode] = gameinfo;
 
         if (dnmflags & 0x1)
         {
-            BaseCup* cup = mCurrentCup;
+            cup = mCurrentCup;
             if ((cup->mHumanTeams & (1 << home)) || (cup->mHumanTeams & (1 << away)))
             {
                 mGameInfo[mCurrentMode]->mPadSides[(u16)userPad] = (home != cup->mUserSelectedTeam);

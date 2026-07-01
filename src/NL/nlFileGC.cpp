@@ -256,9 +256,34 @@ static inline nlFile* nlLoadEntireFileOpen(const char* fileName)
     return pGCFile;
 }
 
+static inline void* nlReadToVirtualMemoryInline(nlFile* file, void* buffer, unsigned int size, unsigned int chunkSize)
+{
+    unsigned int readSize;
+    void* tempBuffer;
+    unsigned int offset;
+
+    tempBuffer = nlMalloc(chunkSize, 0x20, false);
+    offset = 0;
+
+    while (offset < size)
+    {
+        readSize = chunkSize;
+        if (size - offset <= chunkSize)
+        {
+            readSize = size - offset;
+        }
+        nlRead(file, tempBuffer, readSize);
+        memcpy((u8*)buffer + offset, tempBuffer, readSize);
+        offset += readSize;
+    }
+
+    nlFree(tempBuffer);
+    return buffer;
+}
+
 /**
  * Offset/Address/Size: 0x2F8 | 0x801CF04C | size: 0x2D0
- * TODO: 97.8% match - remaining saved-register cycle between file,
+ * TODO: 97.9% match - remaining saved-register cycle between file,
  * buffer, size, target, and open-path temporaries
  */
 void* nlLoadEntireFileToVirtualMemory(const char* fileName, int* size, unsigned int transferSize, void* target, eAllocType allocType)
@@ -296,29 +321,7 @@ void* nlLoadEntireFileToVirtualMemory(const char* fileName, int* size, unsigned 
             buffer = target;
         }
 
-        {
-            unsigned int totalSize = fileSize;
-            void* tempBuffer = nlMalloc(transferSize, 0x20, false);
-            unsigned int offset = 0;
-
-            while (offset < totalSize)
-            {
-                unsigned int amount;
-                if (totalSize - offset <= transferSize)
-                {
-                    amount = totalSize - offset;
-                }
-                else
-                {
-                    amount = transferSize;
-                }
-                nlRead(pGCFile, tempBuffer, amount);
-                memcpy((char*)buffer + offset, tempBuffer, amount);
-                offset += amount;
-            }
-
-            nlFree(tempBuffer);
-        }
+        nlReadToVirtualMemoryInline(pGCFile, buffer, fileSize, transferSize);
         goto alloc_done;
 
     alloc_fallback:

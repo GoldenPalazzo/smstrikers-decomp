@@ -16,7 +16,7 @@ static unsigned char g_bLit;
 
 /**
  * Offset/Address/Size: 0x149C | 0x801FC72C | size: 0x418
- * TODO: 98.15% match - ring and segment temporaries still use different saved registers.
+ * TODO: 98.74% match - constant and angle temporaries still use different saved registers.
  */
 void ShapeRender::CreateHemisphereGeometry(PrimitiveShape& prim)
 {
@@ -25,22 +25,22 @@ void ShapeRender::CreateHemisphereGeometry(PrimitiveShape& prim)
     nlVector3* ndst;
     nlVector2* tdst;
     int nRing;
-    float z0;
-    float z1;
-    int nSegment;
-    float x0;
-    float y0;
-    float x1;
     float y1;
     float ring0;
     float ring1;
     float z0Sq;
     float z1Sq;
+    float z0;
+    float z1;
+    float x0;
+    float y0;
+    float x1;
     float x0Sq;
     float y0Sq;
     float x1Sq;
     float y1Sq;
     float invLen;
+    int nSegment;
 
     prim.vertCount = 0xA0;
     prim.position = (nlVector3*)glResourceAlloc(0x780, GLM_VertexData);
@@ -243,7 +243,7 @@ void ShapeRender::CreateFlatCylinderEndGeometry(PrimitiveShape& prim)
 
 /**
  * Offset/Address/Size: 0xE14 | 0x801FC0A4 | size: 0x3AC
- * TODO: 98.74% match - constant FPR allocation and r24-r27 loop/conversion register rotation differ.
+ * TODO: 99.11% match - saved-FPR allocation for constants and ring-square temporaries still differs.
  */
 void ShapeRender::CreateCylinderGeometry(PrimitiveShape& prim)
 {
@@ -252,11 +252,12 @@ void ShapeRender::CreateCylinderGeometry(PrimitiveShape& prim)
     nlVector3* ndst;
     nlVector2* tdst;
     int nRing;
+    int angle;
+    int angle90;
     float z0Sq;
     float z1Sq;
     float z0;
     float z1;
-    int nSegment;
     float x0;
     float y0;
     float x1;
@@ -287,10 +288,8 @@ void ShapeRender::CreateCylinderGeometry(PrimitiveShape& prim)
         z0Sq = z0 * z0;
         z1Sq = z1 * z1;
 
-        for (nSegment = 0; nSegment < 0x10; nSegment++)
+        for (int nSegment = 0; nSegment < 0x10; nSegment++)
         {
-            int angle;
-            int angle90;
             float fSegmentAngle;
 
             fSegmentAngle = (float)nSegment;

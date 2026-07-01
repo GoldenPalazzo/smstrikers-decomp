@@ -5,7 +5,6 @@
 #include "NL/nlColour.h"
 
 void DrawBrow(const nlVector3&, const nlVector3&, float, float, float);
-void DrawSmile(nlVector3, float, float, nlColour, float);
 void DrawCircle(nlVector3, float, float, nlColour);
 
 class FrameCounter

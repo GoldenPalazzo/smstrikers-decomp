@@ -139,14 +139,13 @@ FuzzyVariant Fuzzy::DefaultOffensivePlay(cDecisionEntity* pDecision)
                     if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
                         fConfidence = fConfidence * fBranchRatio;
 
-                    // if (fBestConfidence >= fConfidence)
-                    // {
-                    // }
-                    // else
-                    // {
-                    //     fBestConfidence = fConfidence;
-                    // }
-                    fBestConfidence = (fBestConfidence >= fConfidence) ? fBestConfidence : fConfidence;
+                    if (fBestConfidence >= fConfidence)
+                    {
+                    }
+                    else
+                    {
+                        fBestConfidence = fConfidence;
+                    }
 
                     pDecision->QueueActionSetDesire(2, fConfidence, -1.0f, fvNotSet, fvNotSet);
 
@@ -163,10 +162,10 @@ FuzzyVariant Fuzzy::DefaultOffensivePlay(cDecisionEntity* pDecision)
                         fConfidence = fConfidence * fBranchRatio;
 
                     fTrueConfidence = FLESS(Open(g_pScriptCurrentFielder), 0.5f);
-                    fFalseConfidence = 1.0f - fTrueConfidence;
+                    float fOpenFalseConfidence = 1.0f - fTrueConfidence;
 
-                    fMin = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
-                    fMax = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+                    fMin = (fTrueConfidence <= fOpenFalseConfidence) ? fTrueConfidence : fOpenFalseConfidence;
+                    fMax = (fTrueConfidence >= fOpenFalseConfidence) ? fTrueConfidence : fOpenFalseConfidence;
                     fBranchRatio = fMin / fMax;
 
                     if (fTrueConfidence > 0.0f)
@@ -257,9 +256,9 @@ FuzzyVariant Fuzzy::DefaultOffensivePlay(cDecisionEntity* pDecision)
         fTrueConfidence = Striker(g_pScriptCurrentFielder);
         fTrueConfidence = (fTrueConfidence <= fCutAndBreak) ? fTrueConfidence : fCutAndBreak;
 
-        fFalseConfidence = 1.0f - fTrueConfidence;
-        fMin = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
-        fMax = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+        float fCutFalseConfidence = 1.0f - fTrueConfidence;
+        fMin = (fTrueConfidence <= fCutFalseConfidence) ? fTrueConfidence : fCutFalseConfidence;
+        fMax = (fTrueConfidence >= fCutFalseConfidence) ? fTrueConfidence : fCutFalseConfidence;
         fBranchRatio = fMin / fMax;
 
         if (fTrueConfidence > 0.0f)
@@ -281,8 +280,9 @@ FuzzyVariant Fuzzy::DefaultOffensivePlay(cDecisionEntity* pDecision)
         FuzzyVariant strategicBallOwner = GetStrategicBallCarrier(g_pScriptCurrentTeam);
 
         {
+            float fStriker;
             float fBallOwnerGoalie = BallOwner(g_pScriptCurrentTeam->GetGoalie());
-            float fStriker = Striker(g_pScriptCurrentFielder);
+            fStriker = Striker(g_pScriptCurrentFielder);
             float fWinger = Winger(g_pScriptCurrentFielder);
 
             fStriker = (fStriker >= fBallOwnerGoalie) ? fStriker : fBallOwnerGoalie;
@@ -1133,10 +1133,11 @@ FuzzyVariant Fuzzy::UsePowerupOffensive(float fConfidence, cDecisionEntity* pDec
                 if (fConfidence < fLikely && fLikely < 0.5f)
                     fConfidence = fConfidence * fLRatio;
 
-                if (0.0f >= fConfidence)
+                float fCurrentConfidence = fConfidence;
+                if (0.0f >= fCurrentConfidence)
                     fBestConfidence = 0.0f;
                 else
-                    fBestConfidence = fConfidence;
+                    fBestConfidence = fCurrentConfidence;
                 pDecision->QueueActionSetDesire(18, fConfidence, 0.0f, FuzzyVariant(0), theTarget);
             }
         }
@@ -1210,80 +1211,84 @@ FuzzyVariant Fuzzy::UsePowerupOffensive(float fConfidence, cDecisionEntity* pDec
             }
         }
 
-        float fClosing = ClosingTo(g_pScriptCurrentFielder, theTarget.mData.pPlayer);
-        float fNear = NearTo(g_pScriptCurrentFielder, theTarget.mData.pPlayer);
-        fFalseConfidence = (fNear + fClosing) * 0.5f;
-        fTrueConfidence = 1.0f - fFalseConfidence;
-        fMin = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
-        fMax = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
-        fBranchRatio = fMin / fMax;
-
-        if (fTrueConfidence > 0.0f)
         {
-            SaveConfidence PushDOM(&fConfidence);
-            fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
+            float fClosing = ClosingTo(g_pScriptCurrentFielder, theTarget.mData.pPlayer);
+            float fNear = NearTo(g_pScriptCurrentFielder, theTarget.mData.pPlayer);
+            float fTrueConfidence = (fNear + fClosing) * 0.5f;
+            float fFalseConfidence = 1.0f - fTrueConfidence;
+            float fMin = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+            float fMax = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+            float fBranchRatio = fMin / fMax;
 
-            if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
-                fConfidence = fConfidence * fBranchRatio;
-
+            if (fTrueConfidence > 0.0f)
             {
-                float fLikely = LikelyToUsePowerup(g_pScriptCurrentFielder, 4);
-                float fLFalse = 1.0f - fLikely;
-                float fLMin = (fLikely <= fLFalse) ? fLikely : fLFalse;
-                float fLMax = (fLikely >= fLFalse) ? fLikely : fLFalse;
-                float fLRatio = fLMin / fLMax;
+                SaveConfidence PushDOM(&fConfidence);
+                fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
 
-                if (fLikely > 0.0f)
+                if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
+                    fConfidence = fConfidence * fBranchRatio;
+
                 {
-                    SaveConfidence PushDOM2(&fConfidence);
-                    fConfidence = (fConfidence <= fLikely) ? fConfidence : fLikely;
+                    float fLikely = LikelyToUsePowerup(g_pScriptCurrentFielder, 4);
+                    float fLFalse = 1.0f - fLikely;
+                    float fLMin = (fLikely <= fLFalse) ? fLikely : fLFalse;
+                    float fLMax = (fLikely >= fLFalse) ? fLikely : fLFalse;
+                    float fLRatio = fLMin / fLMax;
 
-                    if (fConfidence < fLikely && fLikely < 0.5f)
-                        fConfidence = fConfidence * fLRatio;
+                    if (fLikely > 0.0f)
+                    {
+                        SaveConfidence PushDOM2(&fConfidence);
+                        fConfidence = (fConfidence <= fLikely) ? fConfidence : fLikely;
 
-                    if (fBestConfidence >= fConfidence)
-                        fBestConfidence = fBestConfidence;
-                    else
-                        fBestConfidence = fConfidence;
-                    pDecision->QueueActionSetDesire(18, fConfidence, 0.0f, FuzzyVariant(4), theTarget);
+                        if (fConfidence < fLikely && fLikely < 0.5f)
+                            fConfidence = fConfidence * fLRatio;
+
+                        if (fBestConfidence >= fConfidence)
+                            fBestConfidence = fBestConfidence;
+                        else
+                            fBestConfidence = fConfidence;
+                        pDecision->QueueActionSetDesire(18, fConfidence, 0.0f, FuzzyVariant(4), theTarget);
+                    }
                 }
             }
         }
 
-        fTrueConfidence = FGREATER(InGoodWindupPosition(g_pScriptCurrentFielder).mData.f, 0.3f);
-        fFalseConfidence = 1.0f - fTrueConfidence;
-        fMin = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
-        fMax = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
-        fBranchRatio = fMin / fMax;
-
-        if (fTrueConfidence > 0.0f)
         {
-            SaveConfidence PushDOM(&fConfidence);
-            fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
+            float fTrueConfidence = FGREATER(InGoodWindupPosition(g_pScriptCurrentFielder).mData.f, 0.3f);
+            float fFalseConfidence = 1.0f - fTrueConfidence;
+            float fMin = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+            float fMax = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+            float fBranchRatio = fMin / fMax;
 
-            if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
-                fConfidence = fConfidence * fBranchRatio;
-
+            if (fTrueConfidence > 0.0f)
             {
-                float fLikely = LikelyToUsePowerup(g_pScriptCurrentFielder, 5);
-                float fLFalse = 1.0f - fLikely;
-                float fLMin = (fLikely <= fLFalse) ? fLikely : fLFalse;
-                float fLMax = (fLikely >= fLFalse) ? fLikely : fLFalse;
-                float fLRatio = fLMin / fLMax;
+                SaveConfidence PushDOM(&fConfidence);
+                fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
 
-                if (fLikely > 0.0f)
+                if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
+                    fConfidence = fConfidence * fBranchRatio;
+
                 {
-                    SaveConfidence PushDOM2(&fConfidence);
-                    fConfidence = (fConfidence <= fLikely) ? fConfidence : fLikely;
+                    float fLikely = LikelyToUsePowerup(g_pScriptCurrentFielder, 5);
+                    float fLFalse = 1.0f - fLikely;
+                    float fLMin = (fLikely <= fLFalse) ? fLikely : fLFalse;
+                    float fLMax = (fLikely >= fLFalse) ? fLikely : fLFalse;
+                    float fLRatio = fLMin / fLMax;
 
-                    if (fConfidence < fLikely && fLikely < 0.5f)
-                        fConfidence = fConfidence * fLRatio;
+                    if (fLikely > 0.0f)
+                    {
+                        SaveConfidence PushDOM2(&fConfidence);
+                        fConfidence = (fConfidence <= fLikely) ? fConfidence : fLikely;
 
-                    if (fBestConfidence >= fConfidence)
-                        fBestConfidence = fBestConfidence;
-                    else
-                        fBestConfidence = fConfidence;
-                    pDecision->QueueActionSetDesire(18, fConfidence, 0.0f, FuzzyVariant(5), theTarget);
+                        if (fConfidence < fLikely && fLikely < 0.5f)
+                            fConfidence = fConfidence * fLRatio;
+
+                        if (fBestConfidence >= fConfidence)
+                            fBestConfidence = fBestConfidence;
+                        else
+                            fBestConfidence = fConfidence;
+                        pDecision->QueueActionSetDesire(18, fConfidence, 0.0f, FuzzyVariant(5), theTarget);
+                    }
                 }
             }
         }
@@ -1325,9 +1330,7 @@ FuzzyVariant Fuzzy::UsePowerupOffensive(float fConfidence, cDecisionEntity* pDec
                 const FuzzyVariant& goodBallCarrier = GoodBallCarrier(g_pScriptCurrentFielder);
                 float fGoodBallCarrier = goodBallCarrier.mData.f;
 
-                float fOpenScore = fOpenToNet * 0.3f;
-                fOpenScore += fGoodBallCarrier * 0.55f;
-                fOpen = fOpen * 0.15f + fOpenScore;
+                fOpen = fOpen * 0.15f + (fGoodBallCarrier * 0.55f + fOpenToNet * 0.3f);
                 fTrueConfidence = OnBreakaway(g_pScriptCurrentFielder);
                 fTrueConfidence = (fTrueConfidence >= fOpen) ? fTrueConfidence : fOpen;
 
@@ -1461,7 +1464,7 @@ FuzzyVariant Fuzzy::UsePowerupOffensive(float fConfidence, cDecisionEntity* pDec
 
 /**
  * Offset/Address/Size: 0x0 | 0x8008CA8C | size: 0x560
- * TODO: 99.29% match - extra move in first confidence clamp and weighted score register diffs.
+ * TODO: 99.68% match - extra move in first confidence clamp.
  */
 FuzzyVariant Fuzzy::GetPowerupTargetOffensive(cTeam* TheTeam)
 {
@@ -1501,7 +1504,9 @@ FuzzyVariant Fuzzy::GetPowerupTargetOffensive(cTeam* TheTeam)
             float fDownfield = DownfieldFrom((cPlayer*)g_pScriptCurrentFielder, (cPlayer*)theOpponent);
             float fClosing = ClosingTo((cPlayer*)g_pScriptCurrentFielder, (cPlayer*)theOpponent);
             float fFar = FarTo((cPlayer*)g_pScriptCurrentFielder, (cPlayer*)theOpponent);
-            float fTrueConfidence2 = fClosing * 0.2f + (1.0f - fFar) * 0.2f + fDownfield * 0.3f + fMarking * 0.3f;
+            float fLowWeight = 0.2f;
+            float fHighWeight = 0.3f;
+            float fTrueConfidence2 = fMarking * fHighWeight + (fDownfield * fHighWeight + ((1.0f - fFar) * fLowWeight + fClosing * fLowWeight));
             float fFalseConfidence2 = 1.0f - fTrueConfidence2;
             float fMin2 = (fTrueConfidence2 <= fFalseConfidence2) ? fTrueConfidence2 : fFalseConfidence2;
             float fMax2 = (fTrueConfidence2 >= fFalseConfidence2) ? fTrueConfidence2 : fFalseConfidence2;

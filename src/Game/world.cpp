@@ -368,6 +368,27 @@ static inline u8 World_IsSphereInFrustum(const nlVector4* pPlanes, const nlMatri
     return true;
 }
 
+static inline u8 World_IsSphereInFrustumInline(World* pWorld, const nlMatrix4& mat, f32 radius)
+{
+    nlVector3 v3Position = mat.GetTranslation();
+
+    f32 posX = v3Position.f.x;
+    f32 negRadius = -radius;
+    f32 posZ = v3Position.f.z;
+    f32 posY = v3Position.f.y;
+
+    nlVector4* pPlanes = pWorld->m_frustumPlane;
+    World* self = pWorld;
+
+    for (int i = 0; i < 6; i++)
+    {
+        f32 dot = posX * pPlanes[i].f.x + posY * pPlanes[i].f.y + posZ * pPlanes[i].f.z + self->m_frustumPlane[i].f.w;
+        if (dot < negRadius)
+            return false;
+    }
+    return true;
+}
+
 static inline void RenderBoundingSphere(const nlMatrix4& matWorld, f32 fRadius)
 {
     glModel* pSphere = glModelDup(glInventory.GetModel(nlStringHash("debug/sphere")), true);
@@ -585,7 +606,7 @@ void World::Render()
                     }
                     if (objectFlags & 0x1)
                     {
-                        if ((objectFlags & 0x10) || World_IsSphereInFrustum(pWorld->m_frustumPlane, pObject->GetWorldMatrix(), pObject->m_fBoundingRadius))
+                        if ((objectFlags & 0x10) || World_IsSphereInFrustumInline(pWorld, pObject->GetWorldMatrix(), pObject->m_fBoundingRadius))
                         {
                             if (pObject->m_uObjectCreationFlags & 0xF000)
                                 DoTranslucency(pObject);

@@ -1,4 +1,5 @@
 #include "NL/gc/gcSwizzler.h"
+#include "NL/nlColour.h"
 
 /**
  * Offset/Address/Size: 0x4A4 | 0x801C2668 | size: 0x74
@@ -43,7 +44,7 @@ u32 GCTextureSize(eGXTextureFormat fmt, int w, int h, int levels, unsigned long 
 
 /**
  * Offset/Address/Size: 0x0 | 0x801C21C4 | size: 0x4A4
- * TODO: 93.76% match - remaining width-derived register swaps and
+ * TODO: 93.98% match - remaining RGBA8 temp-register swaps and
  *   16-bit swizzle indexed-store shape differences.
  */
 void GCSwizzle(void* dst_, const void* src_, unsigned short w, unsigned short h, eGXTextureFormat fmt, bool swap16)
@@ -74,49 +75,49 @@ void GCSwizzle(void* dst_, const void* src_, unsigned short w, unsigned short h,
     {
         unsigned int ww = w;
         unsigned int row_advance_after_strip = ww * 12;
+        nlColour* s = (nlColour*)src_;
         unsigned char* d = (unsigned char*)dst_;
-        const unsigned char* s = (const unsigned char*)src_;
         int y = 0;
         while (y < h)
         {
             int x = 0;
             while (x < (int)ww)
             {
+                nlColour* rs = s;
                 unsigned int d_off = 0;
-                const unsigned char* rs = s;
                 for (int i = 0; i < 4; ++i)
                 {
                     unsigned char* rd = d + d_off;
 
-                    rd[0x00] = rs[0x03];
-                    rd[0x01] = rs[0x00];
-                    rd[0x20] = rs[0x01];
-                    rd[0x21] = rs[0x02];
+                    rd[0x00] = rs[0].c[0x03];
+                    rd[0x01] = rs[0].c[0x00];
+                    rd[0x20] = rs[0].c[0x01];
+                    rd[0x21] = rs[0].c[0x02];
 
-                    rd[0x02] = rs[0x07];
-                    rd[0x03] = rs[0x04];
-                    rd[0x22] = rs[0x05];
-                    rd[0x23] = rs[0x06];
+                    rd[0x02] = rs[1].c[0x03];
+                    rd[0x03] = rs[1].c[0x00];
+                    rd[0x22] = rs[1].c[0x01];
+                    rd[0x23] = rs[1].c[0x02];
 
-                    rd[0x04] = rs[0x0B];
-                    rd[0x05] = rs[0x08];
-                    rd[0x24] = rs[0x09];
-                    rd[0x25] = rs[0x0A];
+                    rd[0x04] = rs[2].c[0x03];
+                    rd[0x05] = rs[2].c[0x00];
+                    rd[0x24] = rs[2].c[0x01];
+                    rd[0x25] = rs[2].c[0x02];
 
-                    rd[0x06] = rs[0x0F];
-                    rd[0x07] = rs[0x0C];
-                    rd[0x26] = rs[0x0D];
-                    rd[0x27] = rs[0x0E];
+                    rd[0x06] = rs[3].c[0x03];
+                    rd[0x07] = rs[3].c[0x00];
+                    rd[0x26] = rs[3].c[0x01];
+                    rd[0x27] = rs[3].c[0x02];
 
                     d_off += 8;
-                    rs += pitch4;
+                    rs += ww;
                 }
 
-                s += 16;
+                s += 4;
                 d += 0x40;
                 x += 4;
             }
-            s += row_advance_after_strip;
+            s += ww * 3;
             y += 4;
         }
         return;

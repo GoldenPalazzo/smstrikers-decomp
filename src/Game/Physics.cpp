@@ -154,8 +154,8 @@ void PhysicsUpdate(PhysicsWorld* pWorld, float fDeltaT)
 
 /**
  * Offset/Address/Size: 0x14C | 0x80132C5C | size: 0x244
- * TODO: 98.31% match - mesh-list iterator uses r29 instead of r31 around
- *       g_NetPhysicsObjects clear; member-function pointer constants differ.
+ * TODO: 99.86% match - s_PhysicsMeshes and g_NetPhysicsObjects base
+ *       registers are swapped before mesh cleanup.
  */
 void PhysicsLoader::DestroyPhysics()
 {
@@ -179,10 +179,13 @@ void PhysicsLoader::DestroyPhysics()
     g_StaticPhysicsPrimitives.m_Tail = NULL;
 
     nlWalkList(g_NetPhysicsObjects.m_Head, (PhysListBase*)&g_NetPhysicsObjects, &PhysListBase::DeleteEntry);
-    ListEntry<LoadablePhysicsMesh*>* meshEntry = s_PhysicsMeshes.m_lItemList.m_Head;
+    volatile nlListContainer<LoadablePhysicsMesh*>* itemList = &s_PhysicsMeshes.m_lItemList;
+    volatile nlListContainer<PhysicsObject*>* netObjects = &g_NetPhysicsObjects;
+    ListEntry<PhysicsObject*>** netTail = &g_NetPhysicsObjects.m_Tail;
+    ListEntry<LoadablePhysicsMesh*>* meshEntry = (ListEntry<LoadablePhysicsMesh*>*)itemList->m_Head;
 
-    g_NetPhysicsObjects.m_Head = NULL;
-    g_NetPhysicsObjects.m_Tail = NULL;
+    netObjects->m_Head = NULL;
+    *netTail = NULL;
 
     while (meshEntry != NULL)
     {

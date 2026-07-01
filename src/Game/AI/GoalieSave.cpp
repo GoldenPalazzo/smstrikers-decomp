@@ -1417,7 +1417,7 @@ static inline void FindVerticalBoundingPoints(SaveData* pSaveData, const nlVecto
 
 /**
  * Offset/Address/Size: 0x780 | 0x80053BA0 | size: 0x64C
- * TODO: 99.24% match - root save-data, bottom row, and closest pointer registers remain shifted in nested grid traversal.
+ * TODO: 99.65% match - root save-data and closest pointer registers remain swapped in nested grid traversal.
  */
 void GoalieSave::AddAreaToGrid(SaveData* pSaveData)
 {
@@ -1428,10 +1428,10 @@ void GoalieSave::AddAreaToGrid(SaveData* pSaveData)
     float zInc;
     nlVector3 v3CurColPos;
     nlVector3 v3CurRowPos;
+    SaveData* pClosest;
+    SaveData* pNextRight;
     SaveData* pCurBot;
     SaveData* pRightCorner;
-    SaveData* pNextRight;
-    SaveData* pClosest;
     SaveData* pNextNextRight;
     SaveData* pCurLeft;
     SaveData* pCurRight;
@@ -1561,14 +1561,14 @@ void GoalieSave::AddAreaToGrid(SaveData* pSaveData)
             {
                 float dy = pCurLeft->mv3SavePos.f.y - v3CurColPos.f.y;
                 float dz = pCurLeft->mv3SavePos.f.z - v3CurColPos.f.z;
-                fCloseDist = dy * dy + dz * dz;
+                fCloseDist = nlGetLengthSquared2D(dy, dz);
                 pClosest = pCurLeft;
 
                 if (pCurLeft != pCurUp)
                 {
                     float upDy = pCurUp->mv3SavePos.f.y - v3CurColPos.f.y;
                     float upDz = pCurUp->mv3SavePos.f.z - v3CurColPos.f.z;
-                    float d = upDy * upDy + upDz * upDz;
+                    float d = nlGetLengthSquared2D(upDy, upDz);
                     if (d < fCloseDist)
                     {
                         fCloseDist = d;
@@ -1580,7 +1580,7 @@ void GoalieSave::AddAreaToGrid(SaveData* pSaveData)
                 {
                     float rightDy = pCurRight->mv3SavePos.f.y - v3CurColPos.f.y;
                     float rightDz = pCurRight->mv3SavePos.f.z - v3CurColPos.f.z;
-                    float d = rightDy * rightDy + rightDz * rightDz;
+                    float d = nlGetLengthSquared2D(rightDy, rightDz);
                     if (d < fCloseDist)
                     {
                         fCloseDist = d;
@@ -1590,7 +1590,7 @@ void GoalieSave::AddAreaToGrid(SaveData* pSaveData)
                     {
                         float upRightDy = pCurRightUp->mv3SavePos.f.y - v3CurColPos.f.y;
                         float upRightDz = pCurRightUp->mv3SavePos.f.z - v3CurColPos.f.z;
-                        float d2 = upRightDy * upRightDy + upRightDz * upRightDz;
+                        float d2 = nlGetLengthSquared2D(upRightDy, upRightDz);
                         if (d2 < fCloseDist)
                         {
                             fCloseDist = d2;

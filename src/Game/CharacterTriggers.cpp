@@ -1314,10 +1314,10 @@ void EmitBallShot(cPlayer* pCharacter, eBallShotEffectType eNewBallEffect, cPlay
 
         const nlVector3& ballPos = g_pBall->m_v3Position;
         const nlVector3& targetPos = g_pBall->m_pPassTarget->m_v3Position;
-        const float dx = ballPos.f.x - targetPos.f.x;
         const float dy = ballPos.f.y - targetPos.f.y;
+        const float dx = ballPos.f.x - targetPos.f.x;
         const float dz = ballPos.f.z - targetPos.f.z;
-        const float distSq = dy * dy + dx * dx + dz * dz;
+        const float distSq = dx * dx + dy * dy + dz * dz;
         if (distSq > g_pGame->m_pGameTweaks->unk22C)
         {
             Audio::SoundAttributes attrs;

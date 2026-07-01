@@ -99,6 +99,7 @@ CharT nlToUpper(CharT c)
     return c;
 }
 
+#pragma dont_inline on
 template <typename CharT>
 int nlStrICmp(const CharT* str1, const CharT* str2)
 {
@@ -107,12 +108,13 @@ int nlStrICmp(const CharT* str1, const CharT* str2)
 
     do
     {
-        c1 = nlToUpper<CharT>(*str1++);
-        c2 = nlToUpper<CharT>(*str2++);
+        c1 = nlToUpper<CharT>(const_cast<CharT&>(*str1++));
+        c2 = nlToUpper<CharT>(const_cast<CharT&>(*str2++));
     } while (c1 != 0 && c2 != 0 && c1 == c2);
 
     return c1 - c2;
 }
+#pragma dont_inline reset
 
 /**
  * Offset/Address/Size: 0x0 | 0x8014C2B8 | size: 0x98

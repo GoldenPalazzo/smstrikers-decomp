@@ -363,9 +363,7 @@ void NetMesh::SatisfyConstraints(const nlVector3& ballPosition, bool bExaggerate
                     if (perpDistSq < (4.0f * radiusSq))
                     {
                         nlVector3 pointOnOutsideOfBall = ballPosition;
-                        pointOnOutsideOfBall.f.z += radius * particleNormal.f.z;
-                        pointOnOutsideOfBall.f.y += radius * particleNormal.f.y;
-                        pointOnOutsideOfBall.f.x += radius * particleNormal.f.x;
+                        nlVec3ScaleAdd(pointOnOutsideOfBall, radius, particleNormal, pointOnOutsideOfBall);
 
                         nlVec3Sub(disp, pointOnOutsideOfBall, particlePosition);
 

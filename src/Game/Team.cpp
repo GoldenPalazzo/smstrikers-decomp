@@ -430,7 +430,7 @@ void cTeam::PreUpdate(float dt)
 static inline void CalculateInterceptTimes(cTeam* pTeam);
 /**
  * Offset/Address/Size: 0x132C | 0x800656D8 | size: 0x2CC
- * TODO: 99.72% match - landing-distance float temps and final UpdatePlay loop counter differ
+ * TODO: 99.89% match - final UpdatePlay loop counter differs
  */
 void cTeam::Update(float dt)
 {
@@ -773,8 +773,7 @@ static inline void CalculateInterceptTimes(cTeam* pTeam)
         if (landingTime > 0.0f)
         {
             float dx = v3PredictedLandingSpot.f.x - pPlayer->m_v3Position.f.x;
-            float dy = v3PredictedLandingSpot.f.y - pPlayer->m_v3Position.f.y;
-            interceptTime = nlSqrt(dx * dx + dy * dy, true) / speed;
+            interceptTime = nlSqrt(nlGetLengthSquared2D(dx, v3PredictedLandingSpot.f.y - pPlayer->m_v3Position.f.y), true) / speed;
         }
         else
         {
@@ -1035,14 +1034,14 @@ int MostDefensivePlayer(const void* a, const void* b)
 
 /**
  * Offset/Address/Size: 0x120 | 0x800644CC | size: 0x3B0
- * TODO: 98.16% match - register allocation diffs in the nested scoring loops
- *       and one missing zero reload before the fBallOwn2 comparison.
+ * TODO: 98.43% match - register allocation diffs in the nested scoring loops.
  */
 void cTeam::AssignMarks(bool bForceReMark)
 {
     cTeam* pOpponentTeam;
     cFielder* pMyFielder;
     cFielder* pOppFielder;
+    float fDistanceScore;
 
     if (mtMarkTimer.m_uPackedTime != 0 && !bForceReMark)
     {
@@ -1077,7 +1076,7 @@ void cTeam::AssignMarks(bool bForceReMark)
                 float dx = pMyFielder->m_v3Position.f.x - pOppFielder->m_v3Position.f.x;
                 float dy = pMyFielder->m_v3Position.f.y - pOppFielder->m_v3Position.f.y;
                 float fDist = nlSqrt(dx * dx + dy * dy, true);
-                float fNormDist = NormalizeVal(fDist, g_vMarkDistanceConfidence);
+                fDistanceScore = NormalizeVal(fDist, g_vMarkDistanceConfidence);
 
                 float fConfidence = 0.0f;
                 bool bNeedsMark = true;
@@ -1089,9 +1088,9 @@ void cTeam::AssignMarks(bool bForceReMark)
                     if (fBreakaway > 0.5f)
                     {
                         float fDF = DownfieldFrom(pMyFielder, pOppFielder);
-                        if (fNormDist >= fDF)
+                        if (fDistanceScore >= fDF)
                         {
-                            fConfidence = fNormDist;
+                            fConfidence = fDistanceScore;
                         }
                         else
                         {
@@ -1116,7 +1115,7 @@ void cTeam::AssignMarks(bool bForceReMark)
                         if (fMax)
                         {
                             bNeedsMark = false;
-                            fConfidence = fNormDist * 0.5f + fDownfieldMax * 0.5f;
+                            fConfidence = fDistanceScore * 0.5f + fDownfieldMax * 0.5f;
                         }
                         else
                         {
@@ -1129,17 +1128,17 @@ void cTeam::AssignMarks(bool bForceReMark)
                             }
                         }
                     }
-                }
 
-                float fBallOwn2 = BallOwner(pOppFielder);
-                if (fBallOwn2)
-                {
-                    fConfidence *= 2.0f;
+                    float fBallOwn2 = BallOwner(pOppFielder);
+                    if (fBallOwn2)
+                    {
+                        fConfidence *= 2.0f;
+                    }
                 }
 
                 if (bNeedsMark)
                 {
-                    fConfidence = fNormDist * 0.7f + fDownfieldMax * 0.3f;
+                    fConfidence = fDistanceScore * 0.7f + fDownfieldMax * 0.3f;
                 }
 
                 if (Incapacitated(pMyFielder))

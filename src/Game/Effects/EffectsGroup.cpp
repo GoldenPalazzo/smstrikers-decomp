@@ -431,12 +431,12 @@ EffectsTerrainSpec* parse_terrain_spec(SimpleParser* parser)
 
 /**
  * Offset/Address/Size: 0x338 | 0x801F2D80 | size: 0x4D4
- * TODO: 99.14% match - pGroup register r26 vs target r30, pSpecEntry stores
- * via r4 vs r3, user-spec copy loop pNode/pWalk register diffs.
+ * TODO: 99.43% match - pGroup register r29 vs target r30 in final assignments.
  */
 static EffectsGroup* parse_group(SimpleParser* parser)
 {
     unsigned long hashID;
+    EffectsGroup* pGroup;
     EffectsSpec specs[64];
     unsigned long specCount;
     EffectsSpecRaw spec;
@@ -527,9 +527,9 @@ static EffectsGroup* parse_group(SimpleParser* parser)
                 DLListEntry<UserEffectSpec*>* pSpecEntry = (DLListEntry<UserEffectSpec*>*)mem;
                 if (mem != nullptr)
                 {
-                    pSpecEntry->m_next = nullptr;
-                    pSpecEntry->m_prev = nullptr;
-                    pSpecEntry->m_data = pUserSpec;
+                    ((DLListEntry<UserEffectSpec*>*)mem)->m_next = nullptr;
+                    ((DLListEntry<UserEffectSpec*>*)mem)->m_prev = nullptr;
+                    ((DLListEntry<UserEffectSpec*>*)mem)->m_data = pUserSpec;
                 }
 
                 nlDLRingAddEnd(&userSpecs.m_Head, pSpecEntry);
@@ -554,15 +554,15 @@ static EffectsGroup* parse_group(SimpleParser* parser)
     }
 
     void* groupMem = nlMalloc(sizeof(EffectsGroup), 8, false);
-    EffectsGroup* pGroup = (EffectsGroup*)groupMem;
+    pGroup = (EffectsGroup*)groupMem;
     if (groupMem != nullptr)
     {
-        pGroup->m_hashID = 0;
-        pGroup->m_specs = nullptr;
-        pGroup->m_numSpecs = 0;
-        pGroup->m_userSpecsPtr = nullptr;
-        pGroup->m_userSpecs = 0;
-        pGroup->m_isLingering = false;
+        ((EffectsGroup*)groupMem)->m_hashID = 0;
+        ((EffectsGroup*)groupMem)->m_specs = nullptr;
+        ((EffectsGroup*)groupMem)->m_numSpecs = 0;
+        ((EffectsGroup*)groupMem)->m_userSpecsPtr = nullptr;
+        ((EffectsGroup*)groupMem)->m_userSpecs = 0;
+        ((EffectsGroup*)groupMem)->m_isLingering = false;
     }
 
     pGroup->m_hashID = hashID;

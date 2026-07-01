@@ -550,31 +550,6 @@ AnimAudioEventLookup* nlBSearch(const unsigned long& key, AnimAudioEventLookup* 
 // {
 // }
 
-/**
- * Offset/Address/Size: 0x0 | 0x8009FB74 | size: 0x84
- * TODO: 87.7% match - MWCC emits extsb r3,r0 before each bl nlToUpper<c>__Fc
- * (sign-extending char arg), target loads directly into r3 with lbz.
- * Target has weak scope but specialization produces global. Tested: both
- * GC/2.0 and GC/2.5, unsigned char casts, int locals, auto_inline pragma,
- * FORCE_DONT_INLINE, explicit instantiation. All produce same extsb.
- */
-#pragma dont_inline on
-template <>
-int nlStrICmp(const char* a, const char* b)
-{
-    char c1;
-    char c2;
-
-    do
-    {
-        c1 = nlToUpper<char>(*a++);
-        c2 = nlToUpper<char>(*b++);
-    } while (c1 != 0 && c2 != 0 && c1 == c2);
-
-    return c1 - c2;
-}
-#pragma dont_inline reset
-
 // /**
 //  * Offset/Address/Size: 0x84 | 0x8009FBF8 | size: 0x40
 //  */
@@ -585,4 +560,5 @@ int nlStrICmp(const char* a, const char* b)
 /**
  * Offset/Address/Size: 0xC4 | 0x8009FC38 | size: 0x20
  */
+template int nlStrICmp<char>(const char*, const char*);
 template char nlToUpper<char>(char);

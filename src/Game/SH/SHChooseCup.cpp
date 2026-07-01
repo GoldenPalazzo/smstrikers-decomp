@@ -1122,11 +1122,31 @@ void ChooseCupSceneV2::SetCurrentChamp(eTeamID currentChamp, bool isCPUChamp, TL
     }
 }
 
+static inline bool ProceedCupMode(bool isSuperCup)
+{
+    GameInfoManager* gim = nlSingleton<GameInfoManager>::s_pInstance;
+
+    if (gim->mCurrentMode == GameInfoManager::GM_BOWSER_CUP)
+    {
+        gim->mCurrentCup = (BaseCup*)&gim->mBowserCupSeries;
+        gim->mDoingKnockout = false;
+        gim->mBowserCupKnockout.mRoundNumber = -5;
+    }
+    else if (gim->mCurrentMode == GameInfoManager::GM_SUPER_BOWSER_CUP)
+    {
+        gim->mCurrentCup = (BaseCup*)&gim->mSuperBowserCupSeries;
+        gim->mDoingKnockout = false;
+        gim->mSuperBowserCupKnockout.mRoundNumber = -5;
+    }
+
+    return isSuperCup;
+}
+
 /**
  * Offset/Address/Size: 0x0 | 0x800DA284 | size: 0x438
- * TODO: 98.76% match - GameInfoManager/isSuperCup registers are swapped, popup
- * callback Bind temporaries still use different stack slots/copy width, and
- * FEPopupMenu call sites still resolve to ref-signature symbols.
+ * TODO: 99.00% match - popup callback Bind temporaries still use different
+ * stack slots/copy width, and FEPopupMenu call sites still resolve to
+ * ref-signature symbols.
  */
 void ChooseCupSceneV2::Proceed()
 {
@@ -1165,20 +1185,7 @@ void ChooseCupSceneV2::Proceed()
 
     if (!cup->mCupStarted)
     {
-        bool isSuperCup = mIsSuperCup;
-
-        if (gim->mCurrentMode == GameInfoManager::GM_BOWSER_CUP)
-        {
-            gim->mCurrentCup = (BaseCup*)&gim->mBowserCupSeries;
-            gim->mDoingKnockout = false;
-            gim->mBowserCupKnockout.mRoundNumber = -5;
-        }
-        else if (gim->mCurrentMode == GameInfoManager::GM_SUPER_BOWSER_CUP)
-        {
-            gim->mCurrentCup = (BaseCup*)&gim->mSuperBowserCupSeries;
-            gim->mDoingKnockout = false;
-            gim->mSuperBowserCupKnockout.mRoundNumber = -5;
-        }
+        bool isSuperCup = ProceedCupMode(mIsSuperCup);
 
         cup = nlSingleton<GameInfoManager>::s_pInstance->mCurrentCup;
         cup->mCupStarted = false;

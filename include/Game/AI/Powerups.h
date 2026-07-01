@@ -134,6 +134,7 @@ public:
 class Bobomb : public PowerupBase
 {
 public:
+    Bobomb(cFielder*, int, float, ePowerupSize, bool);
     virtual ~Bobomb();
     static void operator delete(void* ptr);
     virtual void Update(float);
@@ -149,6 +150,7 @@ public:
 class FreezeShell : public PowerupBase
 {
 public:
+    FreezeShell(cFielder*, int, float, ePowerupSize, bool);
     virtual ~FreezeShell();
     static void operator delete(void* ptr);
     virtual void Update(float);
@@ -160,6 +162,7 @@ public:
 class SpinyShell : public PowerupBase
 {
 public:
+    SpinyShell(cFielder*, int, float, ePowerupSize, bool);
     virtual ~SpinyShell();
     static void operator delete(void* ptr);
     virtual void Update(float);
@@ -171,6 +174,7 @@ public:
 class Banana : public PowerupBase
 {
 public:
+    Banana(cFielder*, int, float, ePowerupSize, bool);
     virtual ~Banana();
     static void operator delete(void* ptr);
     virtual void Update(float);
@@ -182,6 +186,7 @@ public:
 class RedShell : public PowerupBase
 {
 public:
+    RedShell(cFielder*, int, float, ePowerupSize, bool);
     virtual ~RedShell();
     static void operator delete(void* ptr);
     virtual void Update(float);
@@ -194,6 +199,7 @@ public:
 class GreenShell : public PowerupBase
 {
 public:
+    GreenShell(cFielder*, int, float, ePowerupSize, bool);
     virtual ~GreenShell();
     static void operator delete(void* ptr);
     virtual void Update(float);

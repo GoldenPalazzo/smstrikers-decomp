@@ -1276,18 +1276,22 @@ cCharacter::~cCharacter()
 
 /**
  * Offset/Address/Size: 0x2238 | 0x80010184 | size: 0x468
- * TODO: 99.73% match - r29/r30/r28 register allocation mismatch in inlined blinker setup
+ * TODO: 99.91% match - pHierarchy/pPhysicsData register allocation mismatch remains
  */
 static Blinker* MakeBlinker(eCharacterClass cc, unsigned long modelID)
 {
     char matsName[64];
     char eyesName[80];
-    unsigned long eyesHash;
-    const char* szBaseName = GetCharacterName(cc);
+    const char* szBaseName;
+    unsigned long matsHash;
     GLMaterialList* mats0;
+    unsigned long eyesHash;
+    GLMaterialList* mats1;
 
+    szBaseName = GetCharacterName(cc);
     nlSNPrintf(matsName, 64, "%s/%s", szBaseName, szBaseName);
-    mats0 = glInventory.GetMaterialList(nlStringHash(matsName));
+    matsHash = nlStringHash(matsName);
+    mats0 = glInventory.GetMaterialList(matsHash);
 
     if (mats0 == NULL)
     {
@@ -1305,7 +1309,8 @@ static Blinker* MakeBlinker(eCharacterClass cc, unsigned long modelID)
     }
 
     nlSNPrintf(matsName, 64, "%s/%s_blend", szBaseName, szBaseName);
-    GLMaterialList* mats1 = glInventory.GetMaterialList(nlStringHash(matsName));
+    matsHash = nlStringHash(matsName);
+    mats1 = glInventory.GetMaterialList(matsHash);
 
     Blinker* blinker = new (nlMalloc(sizeof(Blinker), 8, false)) Blinker(szBaseName, modelID, mats0, mats1, eyesHash);
     return blinker;

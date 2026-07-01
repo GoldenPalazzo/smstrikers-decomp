@@ -546,9 +546,9 @@ void FEPopupMenu::SceneCreated()
         InlineHasher(nlStringLowerHash("Layer")),
         InlineHasher(nlStringLowerHash("Message")));
 
-    WStr& pMessage = *mPopup.pMessage;
-    pMessage[0];
-    pText->SetString(pMessage.m_data ? pMessage.m_data->mData : NULL);
+    WStr* pMessage = mPopup.pMessage;
+    (*mPopup.pMessage)[0];
+    pText->SetString(pMessage->m_data ? pMessage->m_data->mData : NULL);
 
     if (mUnknownAA5)
     {
@@ -566,8 +566,9 @@ void FEPopupMenu::SceneCreated()
             InlineHasher(nlStringLowerHash("Layer")),
             InlineHasher(nlStringLowerHash(optionNames[i])));
 
+        WStr* optionLabel = mPopup.pOptionLabels[i];
         (*mPopup.pOptionLabels[i])[0];
-        pText->SetString(mPopup.pOptionLabels[i]->m_data ? mPopup.pOptionLabels[i]->m_data->mData : NULL);
+        pText->SetString(optionLabel->m_data ? optionLabel->m_data->mData : NULL);
 
         if (i == 0)
         {

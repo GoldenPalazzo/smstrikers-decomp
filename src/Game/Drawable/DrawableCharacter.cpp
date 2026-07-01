@@ -1071,9 +1071,10 @@ void DrawableCharacter::Blend(const float* blendFactors, const DrawableCharacter
         mPoseAccumulator = new (nlMalloc(sizeof(cPoseAccumulator), 8, false)) cPoseAccumulator(lhs.mPoseAccumulator->m_BaseSHierarchy, false);
     }
     mPoseAccumulator->InitAccumulators();
-    const float one = 1.0f;
+    float oneMinusT;
     const float rhsWeight = *blendFactors;
-    float oneMinusT = one - rhsWeight;
+    const float one = 1.0f;
+    oneMinusT = one - rhsWeight;
     RotAccum* lhsRot;
     RotAccum* rhsRot;
     for (int i = 0; i < mPoseAccumulator->GetNumNodes(); i++)

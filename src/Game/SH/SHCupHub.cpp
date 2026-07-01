@@ -3029,6 +3029,8 @@ void CupHubScene::UpdateProgressIndicator()
     TLComponentInstance* highlight;
     TLImageInstance* nodeImage;
     feVector3 position;
+    volatile InlineHasher hB, hA;
+    volatile InlineHasher h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
 
     numRounds = gameInfo->GetNumRounds();
     if (gameInfo->mDidRoundJustEnd && mDoAnimations && gameInfo->GetCurrentRoundNumber() != -5)
@@ -3049,8 +3051,6 @@ void CupHubScene::UpdateProgressIndicator()
     pSlide = m_pFEScene->m_pFEPackage->GetPresentation()->m_currentSlide;
 
     {
-        volatile InlineHasher hB, hA, h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
-
         h0.m_Hash = 0;
         h1.m_Hash = 0;
         h2.m_Hash = 0;
@@ -3088,20 +3088,23 @@ void CupHubScene::UpdateProgressIndicator()
     }
 
     {
-        volatile InlineHasher h7, h6, h5, h4, h3, h2, h1, h0;
+        volatile InlineHasher g7, g6;
+        volatile InlineHasher g4, g3, g2, g1, g0;
 
-        h0.m_Hash = 0;
+        g0.m_Hash = 0;
         h1.m_Hash = 0;
-        h2.m_Hash = 0;
+        g1.m_Hash = 0;
         h3.m_Hash = 0;
-        h4.m_Hash = 0;
+        g2.m_Hash = 0;
         h5.m_Hash = 0;
-        h6.m_Hash = 0;
+        g3.m_Hash = 0;
         h7.m_Hash = 0;
+        g4.m_Hash = 0;
+        h9.m_Hash = 0;
 
         unsigned long hash = nlStringLowerHash(CUP_HIGHLIGHT_NAME);
-        h6.m_Hash = hash;
-        h7.m_Hash = hash;
+        g6.m_Hash = hash;
+        g7.m_Hash = hash;
 
         union
         {
@@ -3112,12 +3115,12 @@ void CupHubScene::UpdateProgressIndicator()
         findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
         highlight = findComp.byRef(
             pSlide,
+            (InlineHasher&)g7,
+            (InlineHasher&)h9,
             (InlineHasher&)h7,
-            (InlineHasher&)h6,
             (InlineHasher&)h5,
-            (InlineHasher&)h4,
             (InlineHasher&)h3,
-            (InlineHasher&)h2);
+            (InlineHasher&)h1);
     }
 
     highlight->GetActiveSlide()->m_uPlayMode = TLPM_LOOPING;
@@ -3172,20 +3175,23 @@ void CupHubScene::UpdateProgressIndicator()
 
     if (numRounds == 5 || numRounds == 7 || numRounds == 10 || numRounds == 14)
     {
-        volatile InlineHasher h7, h6, h5, h4, h3, h2, h1, h0;
+        volatile InlineHasher g7, g6;
+        volatile InlineHasher g4, g3, g2, g1, g0;
 
-        h0.m_Hash = 0;
+        g0.m_Hash = 0;
         h1.m_Hash = 0;
-        h2.m_Hash = 0;
+        g1.m_Hash = 0;
         h3.m_Hash = 0;
-        h4.m_Hash = 0;
+        g2.m_Hash = 0;
         h5.m_Hash = 0;
-        h6.m_Hash = 0;
+        g3.m_Hash = 0;
         h7.m_Hash = 0;
+        g4.m_Hash = 0;
+        h9.m_Hash = 0;
 
         unsigned long hash = nlStringLowerHash("progress_joiner");
-        h6.m_Hash = hash;
-        h7.m_Hash = hash;
+        g6.m_Hash = hash;
+        g7.m_Hash = hash;
 
         union
         {
@@ -3196,12 +3202,12 @@ void CupHubScene::UpdateProgressIndicator()
         findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
         TLComponentInstance* joiner = findComp.byRef(
             pSlide,
+            (InlineHasher&)g7,
+            (InlineHasher&)h9,
             (InlineHasher&)h7,
-            (InlineHasher&)h6,
             (InlineHasher&)h5,
-            (InlineHasher&)h4,
             (InlineHasher&)h3,
-            (InlineHasher&)h2);
+            (InlineHasher&)h1);
 
         switch (numRounds)
         {
@@ -3343,20 +3349,23 @@ void CupHubScene::UpdateProgressIndicator()
 
     for (int i = 0; i < 16; i++)
     {
-        volatile InlineHasher h7, h6, h5, h4, h3, h2, h1, h0;
+        volatile InlineHasher g7, g6;
+        volatile InlineHasher g4, g3, g2, g1, g0;
 
-        h0.m_Hash = 0;
+        g0.m_Hash = 0;
         h1.m_Hash = 0;
-        h2.m_Hash = 0;
+        g1.m_Hash = 0;
         h3.m_Hash = 0;
-        h4.m_Hash = 0;
+        g2.m_Hash = 0;
         h5.m_Hash = 0;
-        h6.m_Hash = 0;
+        g3.m_Hash = 0;
         h7.m_Hash = 0;
+        g4.m_Hash = 0;
+        h9.m_Hash = 0;
 
         unsigned long hash = nlStringLowerHash(PROGRESS_IMAGE_NAMES[i]);
-        h6.m_Hash = hash;
-        h7.m_Hash = hash;
+        g6.m_Hash = hash;
+        g7.m_Hash = hash;
 
         union
         {
@@ -3367,12 +3376,12 @@ void CupHubScene::UpdateProgressIndicator()
         findImage.byValue = FEFinder<TLImageInstance, 2>::Find<TLSlide>;
         nodeImage = findImage.byRef(
             pSlide,
+            (InlineHasher&)g7,
+            (InlineHasher&)h9,
             (InlineHasher&)h7,
-            (InlineHasher&)h6,
             (InlineHasher&)h5,
-            (InlineHasher&)h4,
             (InlineHasher&)h3,
-            (InlineHasher&)h2);
+            (InlineHasher&)h1);
 
         if (displayRounds[i] != -10)
         {

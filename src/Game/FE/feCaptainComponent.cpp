@@ -779,37 +779,7 @@ UpdateResult IChooseCaptain::Update(float)
     CheckForDisconnectedHumanPlayers();
     FindAliveHumanPlayers();
 
-    int numSide1;
-    mIsSinglePlayerInput = numSide1 = 0;
-
-    if (mNumTotalPushedPlayers == 1)
-    {
-        mIsSinglePlayerInput = true;
-    }
-    else
-    {
-        int numSide0 = numSide1;
-        IChooseCaptain* p = this;
-
-        for (int i = 0; i < mNumTotalPushedPlayers; i++)
-        {
-            if (p->mAllPushedPlayerSides[0] == 0)
-            {
-                numSide0++;
-            }
-            else if (p->mAllPushedPlayerSides[0] == 1)
-            {
-                numSide1++;
-            }
-
-            p = (IChooseCaptain*)((u8*)p + 4);
-        }
-
-        if (numSide0 == 0 || numSide1 == 0)
-        {
-            mIsSinglePlayerInput = true;
-        }
-    }
+    UpdateSinglePlayerState();
 
     for (int i = 0; i < 4; i++)
     {
@@ -944,6 +914,7 @@ UpdateResult IChooseCaptain::Update(float)
             if (isdoneanimating)
             {
                 int side2;
+                int pad = inputpad;
 
                 if (mIsSinglePlayerInput)
                 {
@@ -958,24 +929,9 @@ UpdateResult IChooseCaptain::Update(float)
                 }
                 else
                 {
-                    int j = 0;
-                    IChooseCaptain* p = this;
-
-                    for (; j < mNumTotalPushedPlayers; j++)
-                    {
-                        if (p->mAllPushedPlayers[0] == inputpad)
-                        {
-                            side2 = mAllPushedPlayerSides[j];
-                            goto found_side2;
-                        }
-
-                        p = (IChooseCaptain*)((u8*)p + 4);
-                    }
-
-                    side2 = -1;
+                    side2 = GetSide(pad);
                 }
 
-            found_side2:
                 mComponentState[side2].GotoNextPhase();
 
                 if (mIsSinglePlayerInput && mComponentState[0].mCurrentPhase == PHASE_READY && mComponentState[1].mCurrentPhase == PHASE_IDLE)
@@ -1033,41 +989,7 @@ UpdateResult IChooseCaptain::Update(float)
         return UPDATE_GO_FORWARD;
     }
 
-    for (int j = 0; j < 3; j++)
-    {
-        mAsyncImage[0][j]->Update(false);
-        mAsyncImage[1][j]->Update(false);
-    }
-
-    for (int i = 0; i < 2; i++)
-    {
-        if (mComponentState[i].mCurrentPhase != PHASE_READY)
-        {
-            mCaptainSoundDelay[i] = 0.0f;
-        }
-        else
-        {
-            bool canswapcaptains = false;
-            if (!mDidSwapCaptains[i])
-            {
-                if (mAsyncImage[i][0]->CanSwapTextures() && mAsyncImage[i][1]->CanSwapTextures() && mAsyncImage[i][2]->CanSwapTextures())
-                {
-                    canswapcaptains = true;
-                }
-            }
-
-            if (canswapcaptains)
-            {
-                mCaptainComponents[i]->SetActiveSlide("Slide1");
-                mCaptainComponents[i]->m_bVisible = true;
-                mAsyncImage[i][0]->Update(true);
-                mAsyncImage[i][1]->Update(true);
-                mAsyncImage[i][2]->Update(true);
-                mDidSwapCaptains[i] = true;
-                mCaptainSoundDelay[i] = mCaptainSlideDurations[0];
-            }
-        }
-    }
+    UpdateAsyncImages();
 
     return UPDATE_OK;
 }
@@ -1735,6 +1657,18 @@ void IChooseCaptain::FindAliveHumanPlayers()
             }
         }
     }
+}
+
+inline int IChooseCaptain::GetSide(int padid)
+{
+    for (int i = 0; i < mNumTotalPushedPlayers; i++)
+    {
+        if (mAllPushedPlayers[i] == padid)
+        {
+            return mAllPushedPlayerSides[i];
+        }
+    }
+    return -1;
 }
 
 inline void IChooseCaptain::UpdateSinglePlayerState()

@@ -535,7 +535,7 @@ void CupTickerManager_stub()
 
 /**
  * Offset/Address/Size: 0x3DC | 0x800F23A4 | size: 0x654
- * TODO: 97.73% match - remaining register allocation and stack-slot diffs in the formatting loop.
+ * TODO: 99.65% match - r23/r25/r26 allocation differs in format-string lookup and temporary wide string construction.
  */
 void CupTickerManager::BuildGoalTotalTickerMessage(
     BasicString<unsigned short, Detail::TempStringAllocator>& result, bool bIsHuman)
@@ -596,8 +596,7 @@ void CupTickerManager::BuildGoalTotalTickerMessage(
             formatHash = 0x1DB17A6DUL;
         }
 
-        int goals = (int)pStats[pSorted[0]].mNumGoalsFor;
-        NLString goalsStr = LexicalCast<NLString, int>(goals);
+        NLString goalsStr = LexicalCast<NLString, int>((int)pStats[pSorted[0]].mNumGoalsFor);
 
         unsigned short wideGoals[16];
         nlStrToWcs(goalsStr.c_str(), wideGoals, 16);

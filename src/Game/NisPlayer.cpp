@@ -846,7 +846,7 @@ void NisPlayer::Load(char* buffer, unsigned int size, NisHeader& nisHeader)
 
 /**
  * Offset/Address/Size: 0x1AE0 | 0x801167BC | size: 0xD08
- * TODO: 95.42% match - remaining register allocation differs in the string rewrite paths.
+ * TODO: 96.00% match - remaining register allocation differs in the BasicString construction and hash call paths.
  */
 void NisPlayer::LoadTriggers(Nis& nis)
 {
@@ -886,7 +886,8 @@ void NisPlayer::LoadTriggers(Nis& nis)
                 data->mSize -= removeCount;
 
                 BasicString<char, Detail::TempStringAllocator> all("all");
-                char* at = &name[0];
+                name[0];
+                char* at = name.m_data ? name.m_data->mData : (char*)0;
                 const char* begin;
                 if (all.m_data != NULL)
                 {

@@ -208,10 +208,15 @@ typedef TLComponentInstance* (*FindInstByRef)(TLSlide*, InlineHasher&, InlineHas
 typedef TLComponentInstance* (*FindCompByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
 typedef TLComponentInstance* (*FindCompByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
 
+static inline MenuItem<TLComponentInstance>* OptionsItemAt(MenuList<TLComponentInstance>& menu, int idx)
+{
+    return &menu.mMenuItems[idx];
+}
+
 /**
  * Offset/Address/Size: 0xB5C | 0x800B4118 | size: 0x6E0
- * TODO: 98.08% match - stack frame 0x130 vs 0x120 and shifted
- * presentation/menu map/item registers
+ * TODO: 99.32% match - stack frame 0x130 vs 0x120 and shifted
+ * presentation/string/item registers
  */
 void OptionsScene::SceneCreated()
 {
@@ -271,8 +276,9 @@ void OptionsScene::SceneCreated()
 
         instance->SetActiveSlide(i == mLastSelectedIndex ? DoubleHighlite::SLIDE_IN : DoubleHighlite::SLIDE_OUT);
 
-        item = &mMenuItems.mMenuItems[mMenuItems.mNumItemsAdded];
-        item->mType = instance;
+        int numItemsAdded = mMenuItems.mNumItemsAdded;
+        item = OptionsItemAt(mMenuItems, numItemsAdded);
+        mMenuItems.mMenuItems[numItemsAdded].mType = instance;
         mMenuItems.mNumItemsAdded++;
 
         {

@@ -100,13 +100,18 @@ void Goalie::ActionLooseBallCatch(float deltaTime)
 
 /**
  * Offset/Address/Size: 0x3E6C | 0x800523A8 | size: 0x6AC
- * TODO: 98.49% match - remaining pickup-time load order and register/stack allocation diffs
+ * TODO: 98.59% match - remaining pickup-time load order and register/stack allocation diffs
  */
 void Goalie::ActionLooseBallDesperate(float fDeltaT)
 {
     cBall* pBall = g_pBall;
     int animID = m_eAnimID;
     const LooseBallInfo* pInfo = mpLooseBallInfo;
+    nlVector3 v3GuessBallPos;
+    nlVector3 v3AdjPos;
+    nlVector3 v3HeadCopy;
+    nlVector3 v3AdjPosElse;
+    nlVector3 v3HeadCopyElse;
     if (pInfo->mnAnimID == animID)
     {
         cPN_SAnimController* pAnim = m_pCurrentAnimController;
@@ -138,7 +143,6 @@ void Goalie::ActionLooseBallDesperate(float fDeltaT)
             float fTimeScale = 0.25f * fTimeRemaining;
             float fLimit = fGoalLineX - 0.2f;
 
-            nlVector3 v3GuessBallPos;
             nlVec3Set(v3GuessBallPos,
                 fTimeScale * g_pBall->m_v3Velocity.f.x + pBall->m_v3Position.f.x,
                 fTimeScale * g_pBall->m_v3Velocity.f.y + pBall->m_v3Position.f.y,
@@ -166,8 +170,8 @@ void Goalie::ActionLooseBallDesperate(float fDeltaT)
                 v3GuessBallPos.f.x = fClampedX;
             }
             TrackTarget(v3GuessBallPos, fRatio);
-            nlVector3 v3AdjPos;
-            nlVector3 v3HeadCopy = GetJointPosition(m_nHeadJointIndex);
+            const nlVector3& v3HeadPos = GetJointPosition(m_nHeadJointIndex);
+            v3HeadCopy = v3HeadPos;
             float fDX2 = 0.0f;
             float fAbsX = (float)fabs(v3HeadCopy.f.x);
             float fLimitH = cField::GetGoalLineX(1U) - 0.5f;
@@ -178,7 +182,9 @@ void Goalie::ActionLooseBallDesperate(float fDeltaT)
                     fDX2 = fAbsX - fLimitH;
             }
             nlVector3 v3LHandCopy;
-            nlVector3 v3RHandCopy = GetJointPosition(m_nRightHandJointIndex);
+            nlVector3 v3RHandCopy;
+            const nlVector3& v3RHandPos = GetJointPosition(m_nRightHandJointIndex);
+            v3RHandCopy = v3RHandPos;
             fAbsX = (float)fabs(v3RHandCopy.f.x);
             float fLimitR = cField::GetGoalLineX(1U) - 0.4f;
             if (fAbsX > fLimitR)
@@ -190,7 +196,8 @@ void Goalie::ActionLooseBallDesperate(float fDeltaT)
                         fDX2 = fDiff;
                 }
             }
-            v3LHandCopy = GetJointPosition(m_nLeftHandJointIndex);
+            const nlVector3& v3LHandPos = GetJointPosition(m_nLeftHandJointIndex);
+            v3LHandCopy = v3LHandPos;
             fAbsX = (float)fabs(v3LHandCopy.f.x);
             if (fAbsX > fLimitR)
             {
@@ -234,19 +241,21 @@ void Goalie::ActionLooseBallDesperate(float fDeltaT)
         }
         mfTargetTime = mfTargetTime - fDeltaT;
         DoNavigation(fDeltaT, 0.0f, NAVI_FOLLOW_TARGET);
-        nlVector3 v3AdjPos;
-        nlVector3 v3HeadCopy = GetJointPosition(m_nHeadJointIndex);
+        const nlVector3& v3HeadPos = GetJointPosition(m_nHeadJointIndex);
+        v3HeadCopyElse = v3HeadPos;
         float fDX = 0.0f;
-        float fAbsX = (float)fabs(v3HeadCopy.f.x);
+        float fAbsX = (float)fabs(v3HeadCopyElse.f.x);
         float fLimitH = cField::GetGoalLineX(1U) - 0.5f;
         float fNetY = 0.5f * cNet::m_fNetWidth;
         if (fAbsX > fLimitH)
         {
-            if ((float)fabs(v3HeadCopy.f.y) > fNetY)
+            if ((float)fabs(v3HeadCopyElse.f.y) > fNetY)
                 fDX = fAbsX - fLimitH;
         }
         nlVector3 v3LHandCopy;
-        nlVector3 v3RHandCopy = GetJointPosition(m_nRightHandJointIndex);
+        nlVector3 v3RHandCopy;
+        const nlVector3& v3RHandPos = GetJointPosition(m_nRightHandJointIndex);
+        v3RHandCopy = v3RHandPos;
         fAbsX = (float)fabs(v3RHandCopy.f.x);
         float fLimitR = cField::GetGoalLineX(1U) - 0.4f;
         if (fAbsX > fLimitR)
@@ -258,7 +267,8 @@ void Goalie::ActionLooseBallDesperate(float fDeltaT)
                     fDX = fDiff;
             }
         }
-        v3LHandCopy = GetJointPosition(m_nLeftHandJointIndex);
+        const nlVector3& v3LHandPos = GetJointPosition(m_nLeftHandJointIndex);
+        v3LHandCopy = v3LHandPos;
         fAbsX = (float)fabs(v3LHandCopy.f.x);
         if (fAbsX > fLimitR)
         {
@@ -271,11 +281,11 @@ void Goalie::ActionLooseBallDesperate(float fDeltaT)
         }
         if (fDX > 0.0f)
         {
-            v3AdjPos = m_v3Position;
-            if (v3AdjPos.f.x > 0.0f)
+            v3AdjPosElse = m_v3Position;
+            if (v3AdjPosElse.f.x > 0.0f)
                 fDX *= -1.0f;
-            v3AdjPos.f.x += fDX;
-            SetPosition(v3AdjPos);
+            v3AdjPosElse.f.x += fDX;
+            SetPosition(v3AdjPosElse);
         }
         const LooseBallInfo* pInfoE = mpLooseBallInfo;
         cBall* pBallE = g_pBall;

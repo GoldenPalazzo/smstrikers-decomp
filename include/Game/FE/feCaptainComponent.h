@@ -69,6 +69,7 @@ public:
     void CheckForDisconnectedHumanPlayers();
     void FindAliveHumanPlayers();
     void UpdateSinglePlayerState();
+    int GetSide(int);
     void SetupForLastPhase(eFEINPUT_PAD);
     void PushPlayer(eFEINPUT_PAD, int);
     void PopPlayer(eFEINPUT_PAD);

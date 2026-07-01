@@ -8,109 +8,19 @@ static const nlQuaternion qRotIdentity = { 0, 0, 0, 1 };
 static nlVector3 v3ScaleIdentity = { 1.0f, 1.0f, 1.0f };
 static nlVector3 v3TransIdentity = { 0.0f, 0.0f, 0.0f };
 
-/**
- * Offset/Address/Size: 0xCD8 | 0x801EC278 | size: 0x1D74
- * TODO: 99.18% match. Remaining differences are constructor initialization
- *       loop register allocation around matrix and accumulator setup.
- */
 cPoseAccumulator::cPoseAccumulator(cSHierarchy* pSHierarchy, bool bStorePrevNodeMatrices)
+    : m_BaseSHierarchy(pSHierarchy)
+    , m_NodeMatrices(pSHierarchy->m_nodeCount + 1, 0)
+    , m_PrevNodeMatrices(bStorePrevNodeMatrices ? pSHierarchy->m_nodeCount + 1 : 0, 0)
+    , m_rot(pSHierarchy->m_nodeCount, 0)
+    , m_scale(pSHierarchy->m_nodeCount, 0)
+    , m_trans(pSHierarchy->m_nodeCount, 0)
+    , m_cb(pSHierarchy->m_nodeCount, 0)
+    , m_MorphWeights(8, 0)
 {
     FORCE_DONT_INLINE;
 
-    m_BaseSHierarchy = pSHierarchy;
-
     int i;
-
-    {
-        const int count = pSHierarchy->m_nodeCount + 1;
-        m_NodeMatrices.mData = (nlMatrix4*)nlMalloc(count * sizeof(nlMatrix4), 8, 0);
-        m_NodeMatrices.mSize = count;
-        m_NodeMatrices.mCapacity = count;
-
-        for (i = 0; i < count; ++i)
-        {
-            m_NodeMatrices.mData[i] = nlMatrix4();
-        }
-    }
-
-    {
-        int countB;
-        if (bStorePrevNodeMatrices)
-        {
-            countB = pSHierarchy->m_nodeCount + 1;
-        }
-        else
-        {
-            countB = 0;
-        }
-        m_PrevNodeMatrices.mData = (nlMatrix4*)nlMalloc(countB * sizeof(nlMatrix4), 8, 0);
-        m_PrevNodeMatrices.mSize = countB;
-        m_PrevNodeMatrices.mCapacity = countB;
-
-        for (i = 0; i < countB; ++i)
-        {
-            m_PrevNodeMatrices.mData[i] = nlMatrix4();
-        }
-    }
-
-    {
-        int n = pSHierarchy->m_nodeCount;
-        m_rot.mData = (RotAccum*)nlMalloc(n * sizeof(RotAccum), 8, 0);
-        m_rot.mSize = n;
-        m_rot.mCapacity = n;
-
-        for (i = 0; i < n; ++i)
-        {
-            m_rot.mData[i] = RotAccum();
-        }
-    }
-
-    {
-        int n = pSHierarchy->m_nodeCount;
-        m_scale.mData = (ScaleAccum*)nlMalloc(n * sizeof(ScaleAccum), 8, 0);
-        m_scale.mSize = n;
-        m_scale.mCapacity = n;
-
-        for (i = 0; i < n; ++i)
-        {
-            m_scale.mData[i] = ScaleAccum();
-        }
-    }
-
-    {
-        int n = pSHierarchy->m_nodeCount;
-        m_trans.mData = (TransAccum*)nlMalloc(n * sizeof(TransAccum), 8, 0);
-        m_trans.mSize = n;
-        m_trans.mCapacity = n;
-
-        for (i = 0; i < n; ++i)
-        {
-            m_trans.mData[i] = TransAccum();
-        }
-    }
-
-    {
-        int n = pSHierarchy->m_nodeCount;
-        m_cb.mData = new (nlMalloc(n * 0xC + 0x10, 8, 0)) cBuildNodeMatrixCallbackInfo[n];
-        m_cb.mSize = n;
-        m_cb.mCapacity = n;
-
-        for (i = 0; i < n; ++i)
-        {
-            m_cb.mData[i] = cBuildNodeMatrixCallbackInfo();
-        }
-    }
-
-    {
-        m_MorphWeights.mData = (float*)nlMalloc(8 * sizeof(float), 8, 0);
-        m_MorphWeights.mSize = 8;
-        m_MorphWeights.mCapacity = 8;
-
-        for (i = 0; i < 8; ++i)
-        {
-            m_MorphWeights.mData[i] = 0.0f;
-        }
-    }
 
     for (i = 0; i < m_BaseSHierarchy->m_nodeCount; ++i)
     {

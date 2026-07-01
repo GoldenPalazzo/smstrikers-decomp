@@ -183,7 +183,7 @@ FontCharString::FontCharString(const T* Source, const nlFont* pFont, T* pBuffer)
                 nlFont::GlyphInfo* result;
                 if (pFont->m_pExtendedGlyphs != 0 && pFont->m_ExtendedGlyphCount != 0 && (result = nlBSearch<nlFont::GlyphInfo, nlFont::GlyphInfo>(key, pFont->m_pExtendedGlyphs, pFont->m_ExtendedGlyphCount)) != 0)
                 {
-                    ch = (unsigned short)((result - pFont->m_pExtendedGlyphs) + 0x80);
+                    ch = ((result - pFont->m_pExtendedGlyphs) + 0x80) & 0xFFFF;
                 }
                 else
                 {

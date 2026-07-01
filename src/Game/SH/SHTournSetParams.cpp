@@ -354,6 +354,7 @@ void TournSetParamsScene::Update(float fDeltaT)
     mButtons.CentreButtons();
 
     int newIndex;
+    SlideMenuList* slideMenuList;
 
     if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x100, false, NULL))
     {
@@ -397,11 +398,11 @@ void TournSetParamsScene::Update(float fDeltaT)
     }
     else if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xD, true, NULL))
     {
-        SlideMenuList* slideMenuList = mSlideMenuLists[mMenuItems.mCurrentIndex];
+        slideMenuList = mSlideMenuLists[mMenuItems.mCurrentIndex];
         if (slideMenuList != NULL)
         {
-            TLInstance* firstChild;
             TLInstance* inst;
+            TLInstance* firstChild;
             TLSlide* currentSlide;
             TLSlide* startSlide;
             TLComponentInstance* comp;
@@ -539,7 +540,7 @@ void TournSetParamsScene::Update(float fDeltaT)
     }
     else if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xE, true, NULL))
     {
-        SlideMenuList* slideMenuList = mSlideMenuLists[mMenuItems.mCurrentIndex];
+        slideMenuList = mSlideMenuLists[mMenuItems.mCurrentIndex];
         if (slideMenuList != NULL)
         {
             TLComponentInstance* comp;
@@ -679,7 +680,7 @@ void TournSetParamsScene::Update(float fDeltaT)
     else if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xB, true, NULL))
     {
         int menuIndex = mMenuItems.mCurrentIndex;
-        SlideMenuList* slideMenuList = mSlideMenuLists[menuIndex];
+        slideMenuList = mSlideMenuLists[menuIndex];
         if (slideMenuList != NULL)
         {
             MenuResult res = RES_ERROR;
@@ -742,7 +743,7 @@ void TournSetParamsScene::Update(float fDeltaT)
     else if (g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xC, true, NULL))
     {
         int menuIndex = mMenuItems.mCurrentIndex;
-        SlideMenuList* slideMenuList = mSlideMenuLists[menuIndex];
+        slideMenuList = mSlideMenuLists[menuIndex];
         if (slideMenuList != NULL)
         {
             MenuResult res = RES_ERROR;

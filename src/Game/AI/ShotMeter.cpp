@@ -94,9 +94,8 @@ void ShotMeter::Abort(cFielder* pFielder)
 
 /**
  * Offset/Address/Size: 0x258 | 0x80062378 | size: 0x42C
- * TODO: 98.63% match - remaining allocator diffs are concentrated in the two
- * vector-normalization blocks (f30/f28 swap) and in the inlined score/weight
- * accumulation register ordering.
+ * TODO: 99.36% match - remaining diffs are in the two normalization blocks
+ * (f30/f28), the distance-length temp (f1/f5), and score-weight accumulation.
  */
 void ShotMeter::CalcOneTimerValue(cFielder* pFielder, bool bWasPerfectPass)
 {
@@ -124,8 +123,8 @@ void ShotMeter::CalcOneTimerValue(cFielder* pFielder, bool bWasPerfectPass)
         if (nlSqrt(fBallDirectionLengthSq, true) > 0.0001f)
         {
             float fBallDirectionInvLength = nlRecipSqrt(fBallDirectionLengthSq, true);
-            v3BallDirection.f.y = fBallDirectionInvLength * fBallDirectionY;
             v3BallDirection.f.x = fBallDirectionInvLength * v3BallDirection.f.x;
+            v3BallDirection.f.y = fBallDirectionInvLength * fBallDirectionY;
             v3BallDirection.f.z = fBallDirectionInvLength * fBallDirectionZ;
         }
         else
@@ -153,8 +152,8 @@ void ShotMeter::CalcOneTimerValue(cFielder* pFielder, bool bWasPerfectPass)
         if (nlSqrt(fFielderToNetLengthSq, true) > 0.0001f)
         {
             float fFielderToNetInvLength = nlRecipSqrt(fFielderToNetLengthSq, true);
-            v3FielderToNet.f.y = fFielderToNetInvLength * fFielderToNetY;
             v3FielderToNet.f.x = fFielderToNetInvLength * v3FielderToNet.f.x;
+            v3FielderToNet.f.y = fFielderToNetInvLength * fFielderToNetY;
             v3FielderToNet.f.z = fFielderToNetInvLength * fFielderToNetZ;
         }
         else
@@ -164,8 +163,8 @@ void ShotMeter::CalcOneTimerValue(cFielder* pFielder, bool bWasPerfectPass)
 
         const nlVector3& v3OffNetLocation2 = pFielder->GetAIOffNetLocation(NULL);
         float fDistY = g_pBall->m_v3Position.f.y - v3OffNetLocation2.f.y;
-        float fDistX = g_pBall->m_v3Position.f.x - v3OffNetLocation2.f.x;
         float fDistZ = g_pBall->m_v3Position.f.z - v3OffNetLocation2.f.z;
+        float fDistX = g_pBall->m_v3Position.f.x - v3OffNetLocation2.f.x;
         float fDistanceValue = InterpolateRangeClamped(0.0f, 1.0f, 20.0f, 7.5f, nlSqrt((fDistX * fDistX) + (fDistY * fDistY) + (fDistZ * fDistZ), true));
         float fDot = (v3FielderToNet.f.x * v3BallDirection.f.x) + (v3FielderToNet.f.y * v3BallDirection.f.y) + (v3FielderToNet.f.z * v3BallDirection.f.z);
         float fDirectionValue = InterpolateRangeClamped(0.0f, 1.0f, 1.0f, 0.0f, fDot);

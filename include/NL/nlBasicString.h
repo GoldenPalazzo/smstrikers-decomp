@@ -474,6 +474,18 @@ BasicString<CharT, Allocator> BasicString<CharT, Allocator>::Trim(const CharT* c
     return BasicString(data);
 }
 
+template <typename CharT>
+static inline void InitBasicStringVector(Vector<CharT>& vec, int count)
+{
+    vec.mData = new (8, true) CharT[count];
+    vec.mSize = count;
+    vec.mCapacity = count;
+    for (int i = 0; i < count; i++)
+    {
+        vec.mData[i] = CharT();
+    }
+}
+
 // TODO: 98.65% match - this/begin register swap and offset/new data register split.
 template <typename CharT, typename Allocator>
 void BasicString<CharT, Allocator>::insert(CharT* at, const CharT* begin, const CharT* end)
@@ -491,7 +503,8 @@ void BasicString<CharT, Allocator>::insert(CharT* at, const CharT* begin, const 
 
     if (data->mCapacity < newSize)
     {
-        Vector<CharT> newVec(newSize, 0);
+        Vector<CharT> newVec;
+        InitBasicStringVector(newVec, newSize);
         int i = 0;
         for (; i < data->mSize; i++)
         {

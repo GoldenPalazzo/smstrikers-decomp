@@ -191,47 +191,20 @@ inline NLString Detail::LexicalCastImpl<NLString, unsigned long>::Do(unsigned lo
     return NLString(data);
 }
 
+#pragma optimization_level 2
 /**
  * Offset/Address/Size: 0x34 | 0x80069F60 | size: 0x104
- * TODO: 94.69% match - return-slot/data pointer register roles are swapped
- * (r30/r31), and prologue setup order differs before the snprintf call.
+ * TODO: 97.31% match - return-slot/data/source pointer register roles are
+ * rotated across r29/r30/r31.
  */
 template <>
 inline NLString Detail::LexicalCastImpl<NLString, char>::Do(char t)
 {
     char string[0x40];
     nlSNPrintf(string, 0x40, "%c", t);
-
-    BasicStringData<char>* data = (BasicStringData<char>*)nlMalloc(0x10, 8, true);
-    if (data != 0)
-    {
-        char* start = string;
-        char* p = start;
-
-        data->mData = 0;
-        data->mSize = 0;
-        data->mCapacity = 0;
-
-        while (*p++ != 0)
-        {
-            data->mSize++;
-        }
-
-        data->mSize++;
-        data->mData = (char*)nlMalloc(data->mSize + 1, 8, true);
-        data->mCapacity = data->mSize;
-
-        for (int i = 0; i < data->mSize; i++)
-        {
-            data->mData[i] = *start;
-            start++;
-        }
-
-        data->mRefCount = 1;
-    }
-
-    return (NLString)data;
+    return NLString(string);
 }
+#pragma optimization_level 4
 
 /**
  * Offset/Address/Size: 0x390F4 | 0x8003C1B4 | size: 0xFC

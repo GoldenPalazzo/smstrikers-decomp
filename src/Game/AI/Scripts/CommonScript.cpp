@@ -895,8 +895,8 @@ FuzzyVariant Fuzzy::GetBestLooseBallPassTarget(cFielder* TheFielder)
 
 /**
  * Offset/Address/Size: 0xAC34 | 0x80074E04 | size: 0xC68
- * TODO: 71.76% match - stack layout/register allocation drift in FuzzyVariant
- * ctor temps and hash setup scheduling around GetHash/funcAddr.
+ * TODO: 97.73% match - cache hash stack slots/register rotation around
+ *       lookup/add and first-branch min temp registers.
  */
 FuzzyVariant Fuzzy::GetBestPassTarget(cPlayer* ThePlayer)
 {
@@ -1035,13 +1035,11 @@ FuzzyVariant Fuzzy::GetBestPassTarget(cPlayer* ThePlayer)
                 float fUpfield = UpfieldFrom((cPlayer*)TeamMate, ThePlayer);
                 float fNearTo = 1.0f - NearTo(ThePlayer, (cPlayer*)TeamMate);
                 float fFarTo = 1.0f - FarTo(ThePlayer, (cPlayer*)TeamMate);
-                float fIncapacitated = 1.0f - Incapacitated((cPlayer*)TeamMate);
+                fTrueConfidence = 1.0f - Incapacitated((cPlayer*)TeamMate);
 
                 fNearTo = (fNearTo <= fUpfield) ? fNearTo : fUpfield;
                 fFarTo = (fFarTo <= fNearTo) ? fFarTo : fNearTo;
-                fIncapacitated = (fIncapacitated <= fFarTo) ? fIncapacitated : fFarTo;
-
-                fTrueConfidence = fIncapacitated;
+                fTrueConfidence = (fTrueConfidence <= fFarTo) ? fTrueConfidence : fFarTo;
                 {
                     float fFalseConfidence = 1.0f - fTrueConfidence;
                     float fMinVal = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
@@ -1062,7 +1060,9 @@ FuzzyVariant Fuzzy::GetBestPassTarget(cPlayer* ThePlayer)
 
                         float fOpen = Open(TeamMate);
                         float fOpenTo = OpenTo(ThePlayer, (cPlayer*)TeamMate);
-                        fTrueConfidence = fOpen * 0.5f + fOpenTo * 0.5f;
+                        float fHalf = 0.5f;
+                        float fOpenWeighted = fOpen * fHalf;
+                        fTrueConfidence = fOpenTo * fHalf + fOpenWeighted;
 
                         {
                             float fFalseConfidence = 1.0f - fTrueConfidence;
@@ -1113,7 +1113,7 @@ FuzzyVariant Fuzzy::GetBestPassTarget(cPlayer* ThePlayer)
             cFielder* TeamMate = TheFielder.mData.pPlayer->m_pTeam->GetFielder(i);
             if (TeamMate != (cFielder*)TheFielder.mData.pPlayer)
             {
-                fTrueConfidence = GoodPassTargetFrom(TeamMate, (cFielder*)TheFielder.mData.pPlayer).Confidence;
+                fTrueConfidence = GoodPassTargetFrom(TeamMate, (cFielder*)TheFielder.mData.pPlayer).mData.f;
                 {
                     float fFalseConfidence = 1.0f - fTrueConfidence;
                     float fMinVal = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
@@ -2187,7 +2187,9 @@ FuzzyVariant Fuzzy::GetBestPassReceiveAction(cFielder* TheFielder)
 
     if (ScriptQuestionCache::Instance()->Lookup(hash, bestValue, NULL))
     {
-        ScriptQuestionCache::Instance()->AddToCache(hash, bestValue, NULL);
+        bestValue.Confidence = bestValue.Confidence;
+        const FuzzyVariant& cacheValue = bestValue;
+        ScriptQuestionCache::Instance()->AddToCache(hash, cacheValue, NULL);
         return bestValue;
     }
 
@@ -2565,8 +2567,9 @@ FuzzyVariant Fuzzy::GetBestPassReceiveAction(cFielder* TheFielder)
     }
 
     bestValue.Confidence = fBestConfidence;
+    const FuzzyVariant& cacheValue2 = bestValue;
 
-    ScriptQuestionCache::Instance()->AddToCache(hash, bestValue, NULL);
+    ScriptQuestionCache::Instance()->AddToCache(hash, cacheValue2, NULL);
 
     return bestValue;
 }

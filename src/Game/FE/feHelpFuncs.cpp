@@ -1116,10 +1116,12 @@ FormatImpl<StringType>& FormatImpl<StringType>::operator%(const T& t)
         mString[0];
         eraseBegin = (mString.m_data ? mString.m_data->mData : (typename StringType::value_type*)0) + i;
         mString[0];
+        typename StringType::value_type* eraseAt;
+        int eraseSize;
         BasicStringData<typename StringType::value_type>* eraseData = mString.m_data;
-        int eraseSize = eraseEnd - eraseBegin;
+        eraseSize = eraseEnd - eraseBegin;
         int eraseOffset = eraseBegin - eraseData->mData;
-        typename StringType::value_type* eraseAt = eraseData->mData + eraseOffset;
+        eraseAt = eraseData->mData + eraseOffset;
         while (eraseEnd != eraseData->mData + eraseData->mSize)
         {
             *eraseAt = *eraseEnd;

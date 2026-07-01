@@ -757,7 +757,7 @@ void cGame::PostResetCallback(unsigned long, unsigned long)
 
 /**
  * Offset/Address/Size: 0x113C | 0x8003D6B0 | size: 0x5A0
- * TODO: 97.74% match - saved-register mismatch still starts at r25 instead of r24,
+ * TODO: 97.76% match - saved-register mismatch still starts at r25 instead of r24,
  * with remaining cascading r-diffs in early loops and vector stack-slot ordering.
  */
 void cGame::BeginGame(bool bRematch, bool bStraightToKickoff)
@@ -855,7 +855,8 @@ void cGame::BeginGame(bool bRematch, bool bStraightToKickoff)
     }
     else
     {
-        if (GetConfigBool(Config::Global(), "bowser_repeat", false))
+        Config& cfg = Config::Global();
+        if (GetConfigBool(cfg, "bowser_repeat", false))
         {
             g_pGame->m_pGameTweaks->unk308 = 1.0f;
             g_pGame->m_pGameTweaks->unk30C = 4.0f;

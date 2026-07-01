@@ -673,11 +673,11 @@ inline void glud_Viewport(void* pData)
 
 /**
  * Offset/Address/Size: 0x538 | 0x801BA038 | size: 0xB20
- * TODO: 98.30% match - p/bFogWasDisabled/bIndirect registers differ; texture-dirty loop
+ * TODO: 98.97% match - p/bFogWasDisabled/bIndirect registers differ; texture-dirty loop
  * pointer registers, env stage register, display-list pointer, and draw-call scheduling
  * still differ.
  */
-static void glx_DrawPacket(const glModelPacket* p)
+static void glx_DrawPacket(const glModelPacket* packet)
 {
     static float indMtx[2][3] = {
         { 1.0f, 0.0f, 0.0f },
@@ -702,6 +702,7 @@ static void glx_DrawPacket(const glModelPacket* p)
     u32 vx;
     u32 vy;
     u32 vw;
+    glModelPacket* p = (glModelPacket*)packet;
 
     // === Block 1: WarbleBlend indirect-texture setup ===
     if ((prev_view == GLV_WarbleBlend) && (p->state.texture[0] == ColourTargetTexture))

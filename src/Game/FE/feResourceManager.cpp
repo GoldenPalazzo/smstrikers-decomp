@@ -644,10 +644,11 @@ static ResourceResult IssueTextureLoadRequest_Inline(FETextureResource* pFeTextu
 
     if (s_pOnDemandBundle->GetFileInfo(pFeTextureResource->m_hashID, &fileDirectoryEntry, true))
     {
-        s_pResourceLoadBuffer = (unsigned char*)nlMalloc(fileDirectoryEntry.m_length, 0x20, true);
+        unsigned char* pResourceLoadBuffer = (unsigned char*)nlMalloc(fileDirectoryEntry.m_length, 0x20, true);
+        s_pResourceLoadBuffer = pResourceLoadBuffer;
         s_pOnDemandBundle->ReadFileAsync(
             pFeTextureResource->m_hashID,
-            s_pResourceLoadBuffer,
+            pResourceLoadBuffer,
             fileDirectoryEntry.m_length,
             FEResourceManager::TextureResourceLoadComplete,
             (unsigned long)pFeTextureResource);

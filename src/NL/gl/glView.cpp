@@ -176,21 +176,12 @@ bool glViewGetDepthClear(eGLView view)
 
 /**
  * Offset/Address/Size: 0x30C | 0x801DE7B0 | size: 0x164
- * NonMatching 98.71% - irreducible MWCC coupled register-coloring wall.
- * Instructions are byte-exact; only callee-saved r28-r31 are permuted.
- *   target: enable=r28, width=r29, height=r30, views=r31
- *   here:   width=r28,  height=r29, views=r30,  enable=r31
- * The shared offset/4 index ties the upper block (enable/width/height/views)
- * to the lower IV block (offset r24 / identity r25 / i r26 / viewSlot r27):
- * indexing gl_ViewEnable[i] fixes the upper four but rotates the lower four
- * (-> 96.07%); an explicit bool* cursor gives a third coloring (-> 97.02%);
- * decl-order only nudges (<= 98.15%). The coupling is through the IV /
- * strength-reduction structure, not nameable-local coloring, so no source
- * form satisfies enable=r28 AND offset=r24 at once. Exhausted via /decomp2
- * (27 forms x 2 rounds + decl-order/State-B sweeps). Keep this form.
+ * NonMatching 99.55% - remaining callee-saved register rotation for
+ * enable/screenWidth/screenHeight.
  */
 void gl_ViewStartup()
 {
+    bool* enable;
     u32 screenWidth;
     u32 screenHeight;
     glView* view;
@@ -206,10 +197,11 @@ void gl_ViewStartup()
 
     i = 0;
     offset = 0;
+    enable = gl_ViewEnable;
     viewSlot = views;
     do
     {
-        gl_ViewEnable[offset / 4] = TRUE;
+        enable[offset / 4] = TRUE;
 
         view = (glView*)nlMalloc(0xFC, 8, FALSE);
         if (view != NULL)
