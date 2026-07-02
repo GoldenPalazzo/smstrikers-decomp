@@ -1116,12 +1116,10 @@ FormatImpl<StringType>& FormatImpl<StringType>::operator%(const T& t)
         mString[0];
         eraseBegin = (mString.m_data ? mString.m_data->mData : (typename StringType::value_type*)0) + i;
         mString[0];
-        typename StringType::value_type* eraseAt;
-        int eraseSize;
         BasicStringData<typename StringType::value_type>* eraseData = mString.m_data;
-        eraseSize = eraseEnd - eraseBegin;
+        int eraseSize = eraseEnd - eraseBegin;
         int eraseOffset = eraseBegin - eraseData->mData;
-        eraseAt = eraseData->mData + eraseOffset;
+        typename StringType::value_type* eraseAt = eraseData->mData + eraseOffset;
         while (eraseEnd != eraseData->mData + eraseData->mSize)
         {
             *eraseAt = *eraseEnd;
@@ -1129,12 +1127,13 @@ FormatImpl<StringType>& FormatImpl<StringType>::operator%(const T& t)
             eraseAt++;
         }
         eraseData->mSize -= eraseSize;
+        StringType& insertRef = insert;
         mString[i];
         typename StringType::value_type* mStringData = mString.m_data ? mString.m_data->mData : 0;
-        insert[0];
-        typename StringType::value_type* insertBegin = insert.m_data ? insert.m_data->mData : 0;
-        insert[(int)(insert.m_data ? insert.m_data->mSize - 1 : 0)];
-        mString.insert(mStringData + i, insertBegin, insert.m_data ? insert.m_data->mData + insert.m_data->mSize - 1 : (typename StringType::value_type*)0);
+        insertRef[0];
+        typename StringType::value_type* insertBegin = insertRef.m_data ? insertRef.m_data->mData : 0;
+        insertRef[(int)(insertRef.m_data ? insertRef.m_data->mSize - 1 : 0)];
+        mString.insert(mStringData + i, insertBegin, insertRef.m_data ? insertRef.m_data->mData + insertRef.m_data->mSize - 1 : (typename StringType::value_type*)0);
     }
 
     mCurrentPos++;

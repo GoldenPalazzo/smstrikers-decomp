@@ -423,8 +423,7 @@ void BraggingRightsOverlay::TournamentSceneCreated()
 
     TLTextInstance* pAwardText = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
         pButtonComp->GetActiveSlide(),
-        InlineHasher(nlStringLowerHash("R JUST")),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("R JUST")));
     pAwardText->m_LocStrId = 0xB6940BE2;
     pAwardText->m_OverloadFlags |= 0x8;
 
@@ -432,8 +431,7 @@ void BraggingRightsOverlay::TournamentSceneCreated()
 
     pAwardText = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
         pButtonComp->GetActiveSlide(),
-        InlineHasher(nlStringLowerHash("R JUST")),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("R JUST")));
     pAwardText->m_LocStrId = 0xB6940BE2;
     pAwardText->m_OverloadFlags |= 0x8;
 }

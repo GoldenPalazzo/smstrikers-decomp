@@ -2235,7 +2235,8 @@ void StatsTracker::WriteStats(float gameTime, float gameDuration, const char* fi
         header.AppendInPlace("Game Time, ");
         header.AppendInPlace("Actual Time, ");
         BasicString<char, Detail::TempStringAllocator> homeAway("H ");
-        for (i = 0; i < 2; i++)
+        i = 0;
+        do
         {
             header.AppendInPlace(homeAway.Append("Num Players, "));
             header.AppendInPlace(homeAway.Append("Difficulty, "));
@@ -2254,7 +2255,8 @@ void StatsTracker::WriteStats(float gameTime, float gameDuration, const char* fi
             header.AppendInPlace(homeAway.Append("Hits Made, "));
             header.AppendInPlace(homeAway.Append("Goals One Timers, "));
             homeAway = BasicString<char, Detail::TempStringAllocator>("A ");
-        }
+            i++;
+        } while (i < 2);
 
         header.AppendInPlace("\n");
 

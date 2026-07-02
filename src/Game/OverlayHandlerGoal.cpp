@@ -812,21 +812,13 @@ void GoalOverlay::SetHighlightNumber(int highlightNumber)
 
 /**
  * Offset/Address/Size: 0xDA4 | 0x80100E14 | size: 0x7EC
+ * TODO: 99.07% match - remaining gameInfo/winner saved-register swaps and Format stack-slot shifts.
  */
 void GoalOverlay::DoMatchEndOverlay()
 {
-    typedef TLTextInstance* (*FindCompByValue)(FEPresentation*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-    typedef TLTextInstance* (*FindCompByRef)(FEPresentation*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
-
-    union
-    {
-        FindCompByValue byValue;
-        FindCompByRef byRef;
-    } findComp;
-
     SetWinnerTitle();
 
-    GameInfoManager* gameInfo = nlSingleton<GameInfoManager>::s_pInstance;
+    GameInfoManager* const gameInfo = nlSingleton<GameInfoManager>::s_pInstance;
     BasicString<unsigned short, Detail::TempStringAllocator> formatted;
     eTeamID winner = TEAM_INVALID;
     unsigned char isFinalGame = false;
@@ -906,42 +898,11 @@ void GoalOverlay::DoMatchEndOverlay()
         formatted = Format(unformatted, winnerLocString, loserLocString);
     }
 
-    volatile InlineHasher hSlideB, hSlideA;
-    volatile InlineHasher hLayerB, hLayerA;
-    volatile InlineHasher hDescB, hDescA;
-    volatile InlineHasher h5, h4, h3, h2, h1, h0;
-
-    unsigned long hash;
-
-    findComp.byValue = FEFinder<TLTextInstance, 3>::Find<FEPresentation>;
-
-    h0.m_Hash = 0;
-    h1.m_Hash = 0;
-    h2.m_Hash = 0;
-    h3.m_Hash = 0;
-    h4.m_Hash = 0;
-    h5.m_Hash = 0;
-
-    hash = nlStringLowerHash("Description");
-    hDescA.m_Hash = hash;
-    hDescB.m_Hash = hash;
-
-    hash = nlStringLowerHash("Layer");
-    hLayerA.m_Hash = hash;
-    hLayerB.m_Hash = hash;
-
-    hash = nlStringLowerHash("Slide1");
-    hSlideA.m_Hash = hash;
-    hSlideB.m_Hash = hash;
-
-    TLTextInstance* pText = findComp.byRef(
+    TLTextInstance* pText = FEFinder<TLTextInstance, 3>::Find<FEPresentation>(
         m_pFEPresentation,
-        (InlineHasher&)hSlideB,
-        (InlineHasher&)hLayerB,
-        (InlineHasher&)hDescB,
-        (InlineHasher&)h5,
-        (InlineHasher&)h3,
-        (InlineHasher&)h1);
+        InlineHasher(nlStringLowerHash("Slide1")),
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("Description")));
 
     MakeTextBoxReallyWide(*pText);
 

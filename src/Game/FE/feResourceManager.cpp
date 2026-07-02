@@ -630,15 +630,21 @@ check_found:
     return NULL;
 }
 
+static inline eFEResourceType GetResourceType_Inline(FEResourceHandle* pFeResourceHandle)
+{
+    return pFeResourceHandle->m_type;
+}
+
 static ResourceResult IssueTextureLoadRequest_Inline(FETextureResource* pFeTextureResource)
 {
     BundleFileDirectoryEntry fileDirectoryEntry;
-    FEResourceHandle* pFeExistingResource = FindExistingResourceInResourceList_Inline((FEResourceHandle*)pFeTextureResource);
+    FETextureResource* pFeExistingTextureResource = (FETextureResource*)FindExistingResourceInResourceList_Inline((FEResourceHandle*)pFeTextureResource);
 
-    if ((pFeExistingResource != NULL) && (pFeExistingResource->m_type == pFeTextureResource->m_type))
+    if ((pFeExistingTextureResource != NULL)
+        && (GetResourceType_Inline(pFeExistingTextureResource) == GetResourceType_Inline(pFeTextureResource)))
     {
-        pFeTextureResource->m_glTextureHandle = ((FETextureResource*)pFeExistingResource)->m_glTextureHandle;
-        pFeTextureResource->m_bValid = pFeExistingResource->m_bValid;
+        pFeTextureResource->m_glTextureHandle = pFeExistingTextureResource->m_glTextureHandle;
+        pFeTextureResource->m_bValid = pFeExistingTextureResource->m_bValid;
         return FERR_AlreadyLoaded;
     }
 

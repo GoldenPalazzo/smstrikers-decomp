@@ -202,7 +202,6 @@ inline void BasicStadium::HyperStrikeModelAddHelper(unsigned long hash)
 bool BasicStadium::DoInitialize()
 {
     DrawableObject* pObject;
-    HelperObject* pHelper;
     AVLTreeNode* pNode;
     AVLTreeNode* pPopped;
     AVLTreeNode* pRight;
@@ -500,6 +499,7 @@ bool BasicStadium::DoInitialize()
         }
     }
     const char* flashString = "fx_camera_flash";
+    HelperObject* pHelper;
     while (pIterStack[1] > 0)
     {
         pHelper = ((AVLTreeEntry<unsigned long, HelperObject*>*)((AVLTreeNode**)pIterStack[0])[pIterStack[1] - 1])->value;

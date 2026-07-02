@@ -3,6 +3,11 @@
 #include "NL/nlTextEscape.h"
 #include "NL/nlString.h"
 
+/**
+ * Offset/Address/Size: 0x0 | 0x80211F28 | size: 0x244
+ * TODO: 95.10% match - remaining register diffs around DrawInfo, row metadata,
+ * pString, and font/matrix locals.
+ */
 void nlTextBox::DrawString(const nlTextBox::StringDrawInfo& DrawInfo, const nlVector2& DrawAt, const nlColour& Color, eGLView View)
 {
     const nlFont* pFont = DrawInfo.pFont;
@@ -25,25 +30,25 @@ void nlTextBox::DrawString(const nlTextBox::StringDrawInfo& DrawInfo, const nlVe
         ascentAdj = 0;
     }
 
+    const nlMatrix4* pMatrix = DrawInfo.pMatrix;
     char* pIter = (char*)&DrawInfo;
     int vertOffset = yDir * (int)pFont->m_Metrics.Ascent - ascentAdj;
     nlColour overridecolour;
     overridecolour = Color;
     unsigned long hMatrix;
-    const nlMatrix4* pMatrix = DrawInfo.pMatrix;
     bool flipY = (DrawInfo.DrawOptions & 0x800) != 0;
     overridecolour.c[3] = 0;
     float startX = DrawAt.f.x;
 
-    const unsigned short* pString = DrawInfo.String;
     unsigned long row = 0;
-    unsigned long rowCount = DrawInfo.RowCount;
+    const unsigned short* pString = DrawInfo.String;
+    unsigned short rowCount = DrawInfo.RowCount;
     CurrentPos.f.y = yWithOffset + (float)vertOffset;
 
-    for (; row < rowCount; row++)
+    while (row < rowCount)
     {
-        Row* CurrentRow = (Row*)(pIter + 0x14);
-        CurrentPos.f.x = startX + (float)CurrentRow->XOffset;
+        const Row& CurrentRow = *(Row*)(pIter + 0x14);
+        CurrentPos.f.x = startX + (float)CurrentRow.XOffset;
 
         if (pMatrix)
         {
@@ -55,15 +60,16 @@ void nlTextBox::DrawString(const nlTextBox::StringDrawInfo& DrawInfo, const nlVe
             hMatrix = h;
         }
 
-        unsigned short startIdx = CurrentRow->FirstChar;
+        unsigned short startIdx = CurrentRow.FirstChar;
+        unsigned long* matArg = pMatrix != 0 ? &hMatrix : 0;
         {
             FontCharString fontCharStr;
             fontCharStr.m_InternalBuffer = 0;
             fontCharStr.m_pString = (unsigned short*)(pString + startIdx);
 
-            int length = (CurrentRow + 1)->FirstChar - startIdx;
+            int length = (&CurrentRow + 1)->FirstChar - startIdx;
 
-            DrawInfo.pFont->DrawString(View, fontCharStr, CurrentPos, Color, Color, length, nlFont::PASS_TextAndEffect, flipY, pMatrix != 0 ? &hMatrix : 0, &overridecolour);
+            DrawInfo.pFont->DrawString(View, fontCharStr, CurrentPos, Color, Color, length, nlFont::PASS_TextAndEffect, flipY, matArg, &overridecolour);
         }
 
         if (overridecolour.c[3] == 0)
@@ -72,6 +78,7 @@ void nlTextBox::DrawString(const nlTextBox::StringDrawInfo& DrawInfo, const nlVe
         }
 
         pIter += 4;
+        row++;
         CurrentPos.f.y += (float)(yDir * pFont->m_Metrics.Height);
     }
 }

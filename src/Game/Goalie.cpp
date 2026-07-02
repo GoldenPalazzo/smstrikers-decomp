@@ -1100,8 +1100,10 @@ void Goalie::ExecutePounce(cPlayer* pPlayer, bool bCheckHitDistance)
 
 /**
  * Offset/Address/Size: 0x99F0 | 0x8004C4EC | size: 0x328
- * TODO: 93.94% match - FuzzyVariant copy ctor stack layout: named local vs return temp at swapped offsets (sp+0x08 vs sp+0x38). Compiler-internal allocation order issue. fOpenTo threshold uses 0.65f (separate SDA entry from GetPressure's 0.5f).
+ * TODO: 99.98% match - remaining branch target around pass target fallback.
  */
+static inline cPlayer* DoGoalieFindOpenPassTarget(Goalie* pGoalie);
+
 void Goalie::InitActionPass(bool useTarget)
 {
     int animID;
@@ -1115,24 +1117,7 @@ void Goalie::InitActionPass(bool useTarget)
 
     if (useTarget)
     {
-        cPlayer* pPassTarget;
-
-        if (GetGlobalPad() != NULL)
-        {
-            pPassTarget = DoFindBestPassTarget(false, false);
-        }
-        else
-        {
-            FuzzyVariant passTarget = Fuzzy::GetBestPassTarget(this);
-            if (passTarget.Confidence >= 0.0f)
-            {
-                pPassTarget = passTarget.mData.pPlayer;
-            }
-            else
-            {
-                pPassTarget = DoFindBestPassTarget(false, false);
-            }
-        }
+        cPlayer* pPassTarget = DoGoalieFindOpenPassTarget(this);
 
         mpPassTarget = pPassTarget;
 
@@ -1395,7 +1380,7 @@ void Goalie::InitActionPursueRecover()
 
 /**
  * Offset/Address/Size: 0x8878 | 0x8004B374 | size: 0xC70
- * TODO: 96.92% match - register allocation still diverges in navigation transition branches and blender setup.
+ * TODO: 97.57% match - register allocation still diverges in navigation transition branches and blender setup.
  */
 void Goalie::DoNavigation(float fDeltaT, float fIdleDistance, Goalie::eNaviMode naviMode)
 {
@@ -1646,9 +1631,10 @@ void Goalie::DoNavigation(float fDeltaT, float fIdleDistance, Goalie::eNaviMode 
                 break;
 
             case GOALIEDIR_FRONT2BACK:
-                bDoSeek = false;
                 if (fTime > mfSwitchTime)
                     bDoSeek = true;
+                else
+                    bDoSeek = false;
                 if (fTime < mfSwitchTime)
                     mMoveDirection = GOALIEDIR_FORWARD;
                 else
@@ -1732,9 +1718,10 @@ void Goalie::DoNavigation(float fDeltaT, float fIdleDistance, Goalie::eNaviMode 
                 break;
 
             case GOALIEDIR_FRONT2BACK:
-                bDoSeek = false;
                 if (fTime > mfSwitchTime)
                     bDoSeek = true;
+                else
+                    bDoSeek = false;
                 if (fTime > mfSwitchTime)
                     mMoveDirection = GOALIEDIR_BACKWARD;
                 break;
@@ -1933,7 +1920,7 @@ static inline float goalie_clamp_positive(float x)
 
 /**
  * Offset/Address/Size: 0x82F0 | 0x8004ADEC | size: 0x588
- * TODO: 98.2% match - floating-point register allocation mismatch in breakaway and desired-position calculations
+ * TODO: 98.28% match - floating-point register allocation mismatch in breakaway and desired-position calculations
  */
 void Goalie::FindDesiredGoaliePosition(nlVector3& pos, nlVector3& dir, nlVector3& focus, unsigned short& ang, const nlVector3* pThreatPos)
 {
@@ -2085,7 +2072,8 @@ void Goalie::FindDesiredGoaliePosition(nlVector3& pos, nlVector3& dir, nlVector3
     if ((float)fabs(m_v3Position.f.x) > cField::GetGoalLineX(1U))
     {
         float halfNetMinusOne = 0.5f * cNet::m_fNetWidth - 1.0f;
-        desiredY = goalie_clamp_min(desiredY, -halfNetMinusOne);
+        float negHalfNetMinusOne = -halfNetMinusOne;
+        desiredY = goalie_clamp_min(desiredY, negHalfNetMinusOne);
         desiredY = goalie_clamp_max(desiredY, halfNetMinusOne);
         desiredX = goalLine * pNet->m_sideSign;
         desiredVec.f.x = desiredX - m_v3Position.f.x;
@@ -2095,7 +2083,8 @@ void Goalie::FindDesiredGoaliePosition(nlVector3& pos, nlVector3& dir, nlVector3
 
     ang = (unsigned short)(10430.378f * nlATan2f(desiredVec.f.y, desiredVec.f.x));
 
-    desiredX = goalie_clamp_min(desiredX, -goalLine);
+    float negGoalLine = -goalLine;
+    desiredX = goalie_clamp_min(desiredX, negGoalLine);
     desiredX = goalie_clamp_max(desiredX, goalLine);
 
     pos.f.x = 0.8f * desiredX + 0.2f * m_v3Position.f.x;
@@ -3465,7 +3454,7 @@ cPoseNode* Goalie::SetupBlender(bool bPrimary, const float* fStartPercent, int n
 
 /**
  * Offset/Address/Size: 0x58E4 | 0x800483E0 | size: 0x458
- * TODO: 99.26% match - default-percent block has r3/r5 swapped, and interpolation reuses the milestone offset before NormalizeVal.
+ * TODO: 99.57% match - interpolation reuses the milestone offset across NormalizeVal instead of recomputing it after the call.
  */
 void Goalie::PlayBlendedAnims(float fStartTime, int nMilestone)
 {
@@ -3524,25 +3513,29 @@ void Goalie::PlayBlendedAnims(float fStartTime, int nMilestone)
             {
                 float* pDefaultStartPercent = fDefaultStartPercent;
 
-                if (mBlendInfo.mpSaveData[0] != NULL)
+                SaveData* pData0 = mBlendInfo.mpSaveData[0];
+                if (pData0 != NULL)
                 {
                     float fDefaultStart = pDefaultStartPercent[nMilestone];
-                    fStartPercent[0] = fDefaultStart * mBlendInfo.mpSaveData[0]->mfMilestonePercent[2];
+                    fStartPercent[0] = fDefaultStart * pData0->mfMilestonePercent[2];
                 }
-                if (mBlendInfo.mpSaveData[1] != NULL)
+                SaveData* pData1 = mBlendInfo.mpSaveData[1];
+                if (pData1 != NULL)
                 {
                     float fDefaultStart = pDefaultStartPercent[nMilestone];
-                    fStartPercent[1] = fDefaultStart * mBlendInfo.mpSaveData[1]->mfMilestonePercent[2];
+                    fStartPercent[1] = fDefaultStart * pData1->mfMilestonePercent[2];
                 }
-                if (mBlendInfo.mpSaveData[2] != NULL)
+                SaveData* pData2 = mBlendInfo.mpSaveData[2];
+                if (pData2 != NULL)
                 {
                     float fDefaultStart = pDefaultStartPercent[nMilestone];
-                    fStartPercent[2] = fDefaultStart * mBlendInfo.mpSaveData[2]->mfMilestonePercent[2];
+                    fStartPercent[2] = fDefaultStart * pData2->mfMilestonePercent[2];
                 }
-                if (mBlendInfo.mpSaveData[3] != NULL)
+                SaveData* pData3 = mBlendInfo.mpSaveData[3];
+                if (pData3 != NULL)
                 {
                     float fDefaultStart = pDefaultStartPercent[nMilestone];
-                    fStartPercent[3] = fDefaultStart * mBlendInfo.mpSaveData[3]->mfMilestonePercent[2];
+                    fStartPercent[3] = fDefaultStart * pData3->mfMilestonePercent[2];
                 }
             }
         }
@@ -4794,7 +4787,7 @@ void Goalie::InitActionMoveWB()
 
 /**
  * Offset/Address/Size: 0x32E8 | 0x80045DE4 | size: 0x70C
- * TODO: 99.30% match - remaining blend-store and reposition distance f-register coloring.
+ * TODO: 99.35% match - remaining first blend-store f-register coloring.
  */
 void Goalie::InitActionSaveSetup(bool bCanReposition)
 {
@@ -5039,9 +5032,9 @@ void Goalie::InitActionSaveSetup(bool bCanReposition)
             mGoalieActionState = GOALIEACTION_SAVE_REPOSITION;
             mnSubstate = 0;
 
-            float dY = m_v3Position.f.y - mv3NavTarget.f.y;
             float dX = m_v3Position.f.x - mv3NavTarget.f.x;
-            mfTargetDist = dY * dY + dX * dX;
+            float dY = m_v3Position.f.y - mv3NavTarget.f.y;
+            mfTargetDist = dX * dX + dY * dY;
 
             mUrgency = URGENCY_HIGH;
 
@@ -5829,8 +5822,8 @@ float Goalie::CalcTimeToPlane()
  * Offset/Address/Size: 0x18C8 | 0x800443C4 | size: 0x4AC
  */
 /**
- * TODO: 99.16% match - pBall/pass target register swap in first distance
- * section, blended save distance f-register coloring, start-time branch layout
+ * TODO: 99.30% match - first distance f-register coloring, blended save
+ * distance f-register coloring, start-time branch layout
  */
 bool Goalie::CanInterceptPass()
 {
@@ -5854,8 +5847,9 @@ bool Goalie::CanInterceptPass()
             break;
         }
 
-        cBall* pBall = g_pBall;
-        if (pBall->m_bBallDeflectCount != muBallDeflectCount)
+        cBall* pBall;
+        u32 ballDeflectCount = (pBall = g_pBall)->m_bBallDeflectCount;
+        if (muBallDeflectCount != ballDeflectCount)
         {
             break;
         }

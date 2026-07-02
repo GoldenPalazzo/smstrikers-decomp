@@ -14,9 +14,28 @@ public:
     {
     }
 
+    typedef void (ListContainerBase::*ENTRY_FUNC)(ListEntry<T>*);
+
+    // Single mint site for the DeleteEntry PTMF const (.data): every caller
+    // (dtor, DestroyAllEntries, WalkDeleteEntries) materializes the anon
+    // const here, so MWCC pools one copy per TU.
+    static ENTRY_FUNC DeleteEntryFunc()
+    {
+        return &ListContainerBase::DeleteEntry;
+    }
+
+    // Head is a separate arg so a caller can evaluate it straight off a
+    // global (keeps the container address in one register lifetime at the
+    // call site).
+    static void WalkDeleteEntries(ListEntry<T>* head, ListContainerBase* container)
+    {
+        ENTRY_FUNC func = DeleteEntryFunc();
+        nlWalkList(head, container, func);
+    }
+
     static void DestroyAllEntries(ListContainerBase* container)
     {
-        void (ListContainerBase::*func)(ListEntry<T>*) = &ListContainerBase::DeleteEntry;
+        ENTRY_FUNC func = DeleteEntryFunc();
         nlWalkList(container->m_Head, container, func);
         container->m_Head = NULL;
         container->m_Tail = NULL;

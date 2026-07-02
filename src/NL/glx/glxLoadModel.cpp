@@ -136,7 +136,7 @@ static inline u32 Div67(u32 n)
 
 /**
  * Offset/Address/Size: 0x1D0 | 0x801BFDF0 | size: 0xA38
- * TODO: 94.4% match - remaining stack-slot and register allocation diffs in
+ * TODO: 95.7% match - remaining stack-slot and register allocation diffs in
  * chunk parsing and animation cases
  */
 static glModel* glxLoadModelFromMemory(char* data, int size, unsigned long* pNumModels, bool bLoadTextures)
@@ -145,22 +145,22 @@ static glModel* glxLoadModelFromMemory(char* data, int size, unsigned long* pNum
 
     bool hasBmdHeader = false;
     nlChunk* innerEnd;
-    nlChunk* chunk;
     nlChunk* outerChunkPtr;
     nlChunk* outerEnd;
     nlChunk* chunkStart;
     nlChunk* chunkEnd;
-    u8* pStreamData;
     int numPacketEntries;
     GLAnimTex animTex;
-    u8* pIndexData;
-    glModel* pModels;
-    int numStreamEntries;
     u32 refDataPtr;
-    glModelPacket* pPackets;
-    u32 numModels;
     bool hasSkinData;
+    u8* pStreamData;
+    u32 numModels;
+    u8* pIndexData;
+    int numStreamEntries;
+    glModelPacket* pPackets;
+    glModel* pModels;
     u8* pDisplayListData;
+    nlChunk* chunk;
 
     outerChunkPtr = (nlChunk*)data;
     outerEnd = (nlChunk*)(data + size);
@@ -287,15 +287,14 @@ static glModel* glxLoadModelFromMemory(char* data, int size, unsigned long* pNum
                         memcpy(&tempRate, pTexData, 4);
                         pTexData++;
                         pAnim = (GLTextureAnim*)nlMalloc(0x20, 8, false);
-                        new (pAnim) GLTextureAnim();
+                        pAnim = new (pAnim) GLTextureAnim();
                         pAnim->m_unk_0x00 = (s32)animId;
                         pAnim->SetNumTextures(numTextures);
                         pAnim->m_mode = mode;
                         pAnim->SetFrame((int)tempRate);
                         for (u32 t = 0; t < (u32)numTextures; t++)
                         {
-                            animTex.textureHandle = *(u32*)pTexData;
-                            pTexData++;
+                            animTex.textureHandle = *pTexData++;
                             f32 timeVal;
                             memcpy(&timeVal, pTexData, 4);
                             animTex.time = timeVal;
@@ -318,7 +317,7 @@ static glModel* glxLoadModelFromMemory(char* data, int size, unsigned long* pNum
                     int numVerts = *(int*)(chunkData + 8);
                     u32 frameRateU = *(u32*)(chunkData + 12);
                     GLVertexAnim* pAnim = (GLVertexAnim*)nlMalloc(0x28, 8, false);
-                    new (pAnim) GLVertexAnim();
+                    pAnim = new (pAnim) GLVertexAnim();
                     int dataSize = numFrames * 12 * numVerts;
                     pAnim->m_uHashID = modelId;
                     pAnim->m_nNumFrames = numFrames;

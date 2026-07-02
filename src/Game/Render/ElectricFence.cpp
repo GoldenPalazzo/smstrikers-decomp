@@ -523,7 +523,7 @@ static inline void CreateElectricFenceGeometry(ElectricFenceGeometry& prim, cons
         nlVector3 wallPoint;
         GetWallPoint(impactPosition, (((float)nSegment) * fDeltaSegmentOffset) + startOffset, 0.0f, wallPoint);
 
-        int segment = nSegment++;
+        int segment = nSegment;
         float wallY = wallPoint.f.y;
         float wallX = wallPoint.f.x;
 
@@ -533,13 +533,14 @@ static inline void CreateElectricFenceGeometry(ElectricFenceGeometry& prim, cons
         tdst[0].f.x = (float)segment / 15.0f;
         tdst[0].f.y = 0.0f;
 
-        wallY = wallPoint.f.y;
-        wallX = wallPoint.f.x;
-        pdst[1].f.x = wallX;
-        pdst[1].f.y = wallY;
+        float wY2 = wallPoint.f.y;
+        float wX2 = wallPoint.f.x;
+        pdst[1].f.x = wX2;
+        pdst[1].f.y = wY2;
         pdst[1].f.z = z1;
         tdst[1].f.x = (float)segment / 15.0f;
         tdst[1].f.y = 1.0f;
+        nSegment++;
 
         pdst += 2;
         tdst += 2;
@@ -548,8 +549,7 @@ static inline void CreateElectricFenceGeometry(ElectricFenceGeometry& prim, cons
 
 /**
  * Offset/Address/Size: 0x5A0 | 0x8016B5D0 | size: 0x448
- * TODO: 99.84% match - curved-branch texcoord conversion and y-store
- *   registers still differ.
+ * 100% match.
  */
 ElectricFenceData::ElectricFenceData(EmissionController* pEmissionController)
 {

@@ -524,18 +524,18 @@ void BasicString<CharT, Allocator>::insert(CharT* at, const CharT* begin, const 
         newVec.mData = oldBuf;
     }
 
-    at = data->mData + insertPos;
+    CharT* insertAt = data->mData + insertPos;
     CharT* t = data->mData + data->mSize - 1;
-    while (t >= at)
+    while (t >= insertAt)
     {
         *(t + size) = *t;
         t--;
     }
     while (begin != end)
     {
-        *at = *begin;
+        *insertAt = *begin;
         begin++;
-        at++;
+        insertAt++;
     }
     data->mSize += size;
 }

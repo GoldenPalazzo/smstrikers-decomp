@@ -697,7 +697,7 @@ config.libs = [
         "MSL_C.PPCEABI.bare.H",
         [
             Object(Matching, "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/extras.c", extra_cflags=["-inline auto"]),
-            Object(NonMatching, "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/alloc.c", extra_cflags=["-inline auto"]),
+            Object(Matching, "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/alloc.c", extra_cflags=["-inline auto"]),
             Object(Matching, "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/ansi_files.c", extra_cflags=["-inline auto"]),
             Object(Matching, "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/abort_exit.c", extra_cflags=["-inline auto"]),
             Object(Matching, "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/errno.c", extra_cflags=["-inline auto"]),
@@ -762,7 +762,7 @@ config.libs = [
             Object(NonMatching, "Game/main.cpp", extra_cflags=["-inline auto"]),
             Object(Matching, "Game/ComUpdateTask.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/FrontEndTask.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(NonMatching, "Game/GameRenderTask.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(Matching, "Game/GameRenderTask.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
 
             Object(Matching, "Game/Sys/clock.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Sys/debug.cpp", extra_cflags=["-inline auto"]),
@@ -967,7 +967,7 @@ config.libs = [
             Object(NonMatching, "Game/Render/RenderShadow.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/Render/StaticModelExplodable.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Render/AnimatedModelExplodable.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(NonMatching, "Game/GameObjectLighting.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(Matching, "Game/GameObjectLighting.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/Font/fontmanager.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             
             # AI
@@ -1393,7 +1393,7 @@ config.libs = [
             Object(Matching, "ode/matrix.cpp", extra_cflags=["-inline auto"]),
             Object(Matching, "ode/mass.cpp", extra_cflags=["-inline auto"]),
             Object(Matching, "ode/obstack.cpp", extra_cflags=["-inline auto"]),
-            Object(NonMatching, "ode/quickstep.cpp", extra_cflags=["-inline auto"]),
+            Object(Matching, "ode/quickstep.cpp", extra_cflags=["-inline auto"]),
             Object(Matching, "ode/rotation.cpp", extra_cflags=["-inline auto", "-inline off"]),
             Object(Matching, "ode/util.cpp", extra_cflags=["-inline auto"]),
 

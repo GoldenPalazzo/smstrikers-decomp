@@ -957,9 +957,8 @@ bool AvoidController::AvoidSidelines()
 
 /**
  * Offset/Address/Size: 0x0 | 0x80007654 | size: 0x41C
- * TODO: 95.42% match - FPR f7 vs f5 for repulsionY cascading through function,
- * addic. r0 vs r4 CSE in v3Zero section, rotation fmadds/fmsubs ordering,
- * speed section register allocation.
+ * TODO: 96.32% match - residual FP register coloring in the rotation and
+ * speed sections.
  */
 void AvoidController::ApplyRepulsionVector(nlVector3 v3Repulsion)
 {
@@ -986,7 +985,7 @@ void AvoidController::ApplyRepulsionVector(nlVector3 v3Repulsion)
         return;
     }
 
-    v.desiredVelDir = (nlVector3) { 0.0f, 0.0f, 0.0f };
+    v.desiredVelDir = v3Zero;
     if (&v.desiredVelDir != NULL)
     {
         nlSinCos(&v.desiredVelDir.f.y, &v.desiredVelDir.f.x, m_pFielder->m_aDesiredMovementDirection);
@@ -998,17 +997,15 @@ void AvoidController::ApplyRepulsionVector(nlVector3 v3Repulsion)
         v3Repulsion.f.x * v3Repulsion.f.x + v3Repulsion.f.y * v3Repulsion.f.y + v3Repulsion.f.z * v3Repulsion.f.z,
         true);
 
-    f32 fRepulsionY = fInvRepulsionMag * v3Repulsion.f.y;
     f32 fRepulsionX = fInvRepulsionMag * v3Repulsion.f.x;
     f32 fRepulsionZ = fInvRepulsionMag * v3Repulsion.f.z;
+    f32 fRepulsionY = fInvRepulsionMag * v3Repulsion.f.y;
 
     v.repulsionDir.f.x = fRepulsionX;
     v.repulsionDir.f.y = fRepulsionY;
     v.repulsionDir.f.z = fRepulsionZ;
 
-    f32 fDot = v.desiredVelDir.f.y * fRepulsionY;
-    fDot = v.desiredVelDir.f.x * fRepulsionX + fDot;
-    fDot = v.desiredVelDir.f.z * fRepulsionZ + fDot;
+    f32 fDot = nlVec3DotProduct(v.desiredVelDir, v.repulsionDir);
 
     if (fDot <= -0.75f || fDot >= 0.7f)
     {
@@ -1031,10 +1028,8 @@ void AvoidController::ApplyRepulsionVector(nlVector3 v3Repulsion)
 
         nlSinCos(&fSin, &fCos, (u16)aAdjust);
 
-        f32 fDesX = v.desiredVelDir.f.x;
-        f32 fDesY = v.desiredVelDir.f.y;
-        f32 fParallelX = fDesX * fCos - fDesY * fSin;
-        f32 fParallelY = fDesX * fSin + fDesY * fCos;
+        f32 fParallelX = v.desiredVelDir.f.x * fCos - v.desiredVelDir.f.y * fSin;
+        f32 fParallelY = v.desiredVelDir.f.y * fCos + v.desiredVelDir.f.x * fSin;
 
         v.repulsionDir.f.y = fParallelY;
         v.repulsionDir.f.x = fParallelX;
@@ -1046,27 +1041,31 @@ void AvoidController::ApplyRepulsionVector(nlVector3 v3Repulsion)
 
     if (m_VeryCloseToSideline)
     {
-        f32 fDotNormalVel = v.repulsionDir.f.y * m_SidelineNormal.f.y;
-        fDotNormalVel = v.repulsionDir.f.x * m_SidelineNormal.f.x + fDotNormalVel;
+        f32 fRepulsionDirY = v.repulsionDir.f.y;
+        f32 fNormalY = m_SidelineNormal.f.y;
+        f32 fRepulsionDirX = v.repulsionDir.f.x;
+        f32 fDotNormalVel = fRepulsionDirY * fNormalY;
+        f32 fNormalX = m_SidelineNormal.f.x;
+        fDotNormalVel = fRepulsionDirX * fNormalX + fDotNormalVel;
 
         if (fDotNormalVel < -0.1f)
         {
-            f32 fSidelineDirX = m_SidelineDirection.f.x;
             f32 fSidelineDirY = m_SidelineDirection.f.y;
-            f32 fSidelineLenSq = fSidelineDirX * fSidelineDirX;
-            fSidelineLenSq = fSidelineLenSq + fSidelineDirY * fSidelineDirY;
+            f32 fSidelineDirX = m_SidelineDirection.f.x;
+            f32 fSidelineLenSq = fSidelineDirY * fSidelineDirY;
+            fSidelineLenSq = fSidelineDirX * fSidelineDirX + fSidelineLenSq;
 
             if (fSidelineLenSq > 0.0f)
             {
-                f32 fDotDirVel = v.repulsionDir.f.y * fSidelineDirY;
+                f32 fDotDirVel = fRepulsionDirY * fSidelineDirY;
                 f32 fRepulsionDirZ = v.repulsionDir.f.z;
                 f32 fSidelineDirZ = 0.0f;
                 f32 fMinusOne = -1.0f;
 
-                fDotDirVel = v.repulsionDir.f.x * fSidelineDirX + fDotDirVel;
+                fDotDirVel = fRepulsionDirX * fSidelineDirX + fDotDirVel;
                 v3Repulsion.f.z = fRepulsionMag * fSidelineDirZ;
 
-                fSidelineLenSq = fSidelineDirX * fSidelineDirX + fSidelineDirY * fSidelineDirY + fSidelineDirZ * fSidelineDirZ;
+                fSidelineLenSq = 0.0f + (fSidelineDirX * fSidelineDirX + fSidelineDirY * fSidelineDirY);
                 fDotDirVel = fRepulsionDirZ * fSidelineDirZ + fDotDirVel;
 
                 f32 fScale = fDotDirVel / fSidelineLenSq;
@@ -1078,8 +1077,8 @@ void AvoidController::ApplyRepulsionVector(nlVector3 v3Repulsion)
                 f32 fPerpX = v.repulsionDir.f.x - fParallelX;
                 f32 fPerpZ = fRepulsionDirZ - fParallelZ;
 
-                fParallelY = fMinusOne * fPerpY + fParallelY;
                 fParallelX = fMinusOne * fPerpX + fParallelX;
+                fParallelY = fMinusOne * fPerpY + fParallelY;
                 fParallelZ = fMinusOne * fPerpZ + fParallelZ;
 
                 v.repulsionDir.f.y = fParallelY;
@@ -1092,8 +1091,8 @@ void AvoidController::ApplyRepulsionVector(nlVector3 v3Repulsion)
             }
             else
             {
-                v3Repulsion.f.x = fRepulsionMag * m_SidelineNormal.f.x;
-                v3Repulsion.f.y = fRepulsionMag * m_SidelineNormal.f.y;
+                v3Repulsion.f.x = fRepulsionMag * fNormalX;
+                v3Repulsion.f.y = fRepulsionMag * fNormalY;
             }
         }
     }

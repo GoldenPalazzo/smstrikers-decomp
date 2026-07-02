@@ -1,3 +1,4 @@
+#include "Game/Audio/AudioLoader.h"
 #include "Game/Audio/AudioScriptEventMgr.h"
 #include "Game/Audio/SoundEventScript.h"
 #include "Game/EventDataTypes.h"
@@ -5,93 +6,29 @@
 #include "Game/Goalie.h"
 #include "Game/Physics/PhysicsNet.h"
 #include "Game/Sys/eventman.h"
+#include "Game/Team.h"
+
+#include "Game/AI/FielderActions.h"
+#include "Game/AI/FuzzyVariant.h"
+#include "Game/AI/Powerups.h"
+#include "Game/AI/Variant.h"
+#include "Game/AI/Scripts/CommonScript.h"
+#include "Game/AI/Scripts/ScriptQuestions.h"
+#include "Game/Render/Presentation.h"
 
 #include "NL/nlBSearch.h"
 #include "NL/nlConfig.h"
 #include "NL/nlList.h"
 #include "NL/nlListSlotPool.h"
-#include "NL/nlQSort.h"
 #include "NL/nlSlotPool.h"
 #include "NL/nlString.h"
 
-class cTeam
-{
-public:
-    /* 0x00 */ int m_nSide;
-    /* 0x04 */ cPlayer* m_pPlayers[5];
-    /* 0x18 */ cFielder* m_pAIOrderedFielders[4];
-    /* 0x28 */ cFielder* m_pBallInterceptOrderedFielders[4];
-    /* 0x38 */ void* m_pNet;
-    /* 0x3C */ int m_nScore;
-};
-
-enum eVariantType
-{
-    FT_UNSPECIFIED = -1,
-    FT_BOOL = 0,
-    FT_CHAR = 1,
-    FT_SHORT = 2,
-    FT_INT = 3,
-    FT_U32 = 4,
-    FT_FLOAT = 5,
-    FT_PLAYER = 6,
-    FT_TEAM = 7,
-    FT_VECTOR = 8,
-    NUM_V_TYPES = 9,
-};
-
-class Variant
-{
-public:
-    virtual void Reset()
-    {
-        mType = FT_UNSPECIFIED;
-        mData.vector.f.x = 0.0f;
-        mData.vector.f.y = 0.0f;
-        mData.vector.f.z = 0.0f;
-    }
-
-    /* 0x04 */ eVariantType mType;
-    /* 0x08 */ union
-    {
-        bool b;
-        char c;
-        signed short s;
-        float f;
-        int i;
-        unsigned long u;
-        cPlayer* pPlayer;
-        cTeam* pTeam;
-        nlVector3 vector;
-    } mData;
-};
-
-class FuzzyVariant : public Variant
-{
-public:
-    virtual void Reset()
-    {
-        mType = FT_UNSPECIFIED;
-        mData.vector.f.x = 0.0f;
-        mData.vector.f.y = 0.0f;
-        mData.vector.f.z = 0.0f;
-        ExtraData.Reset();
-        Confidence = 0.0f;
-        SelectionChance = 1.0f;
-    }
-
-    /* 0x14 */ float Confidence;
-    /* 0x18 */ float SelectionChance;
-    /* 0x1C */ Variant ExtraData;
-};
-
-namespace Fuzzy
-{
-FuzzyVariant GoodToShoot(cFielder*);
-}
-
-extern cTeam* g_pTeams[];
-float OnBreakaway(cFielder*);
+template <>
+int nlStrCmp<char>(const char*, const char*);
+template <>
+char* nlStrNCpy<char>(char*, const char*, unsigned long);
+template <>
+char* nlStrNCat<char>(char*, const char*, const char*, unsigned long);
 
 struct AUDIO_SCRIPT_POLL_STATE
 {
@@ -201,99 +138,13 @@ char* AUDIO_EVENT_FUNC_NAMES[] = {
 typedef ListContainerBase<AUDIO_EVENT_RECORD, BasicSlotPool<ListEntry<AUDIO_EVENT_RECORD> > > AudioEventList;
 
 template class ListContainerBase<AUDIO_EVENT_RECORD, BasicSlotPool<ListEntry<AUDIO_EVENT_RECORD> > >;
-template class nlListSlotPool<AUDIO_EVENT_RECORD>;
 
 EventHandler* g_pAudioEventHandler;
-_AudioEventRaiser g_AudioEventRaiser;
+extern nlListSlotPool<AUDIO_EVENT_RECORD> g_PendingEvents;
 
-namespace
-{
-// Dummy ctor: precompute hashes for g_NisEventLookup, then sort the table.
-// Declared BEFORE g_PendingEvents so MWCC emits the hash/qsort sequence at the
-// start of __sinit_AudioScriptEventMgr_cpp.
-struct AudioScriptEventMgrLookupInit
-{
-    AudioScriptEventMgrLookupInit()
-    {
-        for (unsigned int i = 0; i < 4; i++)
-        {
-            g_NisEventLookup[i].hash = nlStringLowerHash(g_NisEventLookup[i].Name);
-        }
-        nlQSort<NIS_EVENT_LOOKUP>(g_NisEventLookup, 4, &nlDefaultQSortComparer<NIS_EVENT_LOOKUP>);
-    }
-};
-AudioScriptEventMgrLookupInit s_audioScriptEventMgrLookupInit;
-} // namespace
+#include "Game/Audio/AudioScriptEventMgrInit.h"
 
-// g_PendingEvents uses the (initial, delta) ctor which inlines:
-//   __ct__12SlotPoolBaseFv, m_Head/m_Tail=0, m_Initial=16, BaseAddNewBlock, m_Delta=16.
-// MWCC also automatically emits a __register_global_object call for the dtor.
-nlListSlotPool<AUDIO_EVENT_RECORD> g_PendingEvents(0x10, 0x10);
-
-class AudioLoader
-{
-public:
-    static bool IsInited();
-};
-
-struct PlayerAttackData : public EventData
-{
-    /* 0x04 */ const cFielder* pAttacker;
-    /* 0x08 */ int nAttackerPadID;
-    /* 0x0C */ cFielder* pTarget;
-    /* 0x10 */ float fAttackIntensity;
-};
-
-struct PowerupUsedEventData : public EventData
-{
-    /* 0x04 */ int Type;
-    /* 0x08 */ cPlayer* Thrower;
-    /* 0x0C */ cPlayer* Target;
-};
-
-struct PowerupHitPlayerEventData : public EventData
-{
-    /* 0x04 */ int Type;
-    /* 0x08 */ cPlayer* Thrower;
-    /* 0x0C */ cPlayer* Target;
-};
-
-struct NISData : public EventData
-{
-    /* 0x04 */ const char* Type;
-    /* 0x08 */ const char* Param;
-};
-
-namespace Audio
-{
-enum eWorldSFX
-{
-    STADSFX_GEN_FIREWORKS_FLOOR = 198,
-};
-
-bool IsWorldSFXLoaded();
-float GetAudioTimer();
-
-struct SoundStrToIDNode
-{
-    /* 0x00 */ char _pad00[0x10];
-    /* 0x10 */ float fVolume;
-    /* 0x14 */ char _pad14[0x30];
-}; // total size: 0x44
-
-class cWorldSFX
-{
-public:
-    unsigned long Play(Audio::eWorldSFX, float, float, bool, float);
-
-    /* 0x00 */ char _pad00[0x10];
-    /* 0x10 */ SoundStrToIDNode* mpSFX;
-};
-
-extern cWorldSFX gStadGenSFX;
-} // namespace Audio
-
-static AudioScriptEventMgr::AUDIO_EVENT_TEAM GetPlayerTeam(cPlayer* pPlayer)
+static inline AudioScriptEventMgr::AUDIO_EVENT_TEAM GetPlayerTeam(cPlayer* pPlayer)
 {
     AudioScriptEventMgr::AUDIO_EVENT_TEAM team = AudioScriptEventMgr::AET_Home;
     if (pPlayer->m_pTeam->m_nSide != 0)
@@ -322,11 +173,13 @@ static AudioScriptEventMgr::AUDIO_EVENT_TEAM GetPlayerTeam(cPlayer* pPlayer)
 
 static unsigned char g_InBowserAttack;
 static unsigned char g_InGoal;
+_AudioEventRaiser g_AudioEventRaiser;
 
 static void AudioScriptEventHandler(Event*, void*);
 static void Poll();
 
 typedef WalkHelper<AUDIO_EVENT_RECORD, ListEntry<AUDIO_EVENT_RECORD>, _AudioEventRaiser> AudioEventWalkHelper;
+#include "Game/Audio/AudioScriptEventMgrWalkCallback.h"
 
 // /**
 //  * Offset/Address/Size: 0xD0 | 0x8014B7EC | size: 0x2C
@@ -367,12 +220,11 @@ typedef WalkHelper<AUDIO_EVENT_RECORD, ListEntry<AUDIO_EVENT_RECORD>, _AudioEven
  * Offset/Address/Size: 0x8C | 0x8014B53C | size: 0x28
  */
 // void nlQSort<NIS_EVENT_LOOKUP>(NIS_EVENT_LOOKUP*, int, int (*)(const NIS_EVENT_LOOKUP*, const NIS_EVENT_LOOKUP*))
-// instantiated via AudioScriptEventMgr_stub below
 
 /**
  * Offset/Address/Size: 0x0 | 0x8014B4B0 | size: 0x8C
  */
-// nlBSearch<NIS_EVENT_LOOKUP, unsigned long> instantiated via AudioScriptEventMgr_stub below
+// nlBSearch<NIS_EVENT_LOOKUP, unsigned long> instantiated by the NIS handler
 
 // /**
 //  * Offset/Address/Size: 0x0 | 0x8014B4A0 | size: 0x10
@@ -380,14 +232,6 @@ typedef WalkHelper<AUDIO_EVENT_RECORD, ListEntry<AUDIO_EVENT_RECORD>, _AudioEven
 // void ListContainerBase<AUDIO_EVENT_RECORD, BasicSlotPool<ListEntry<AUDIO_EVENT_RECORD> > >::DeleteEntry(ListEntry<AUDIO_EVENT_RECORD>*)
 // {
 // }
-
-/**
- * Offset/Address/Size: 0x0 | 0x8014B46C | size: 0x34
- */
-void WalkHelper<AUDIO_EVENT_RECORD, ListEntry<AUDIO_EVENT_RECORD>, _AudioEventRaiser>::Callback(ListEntry<AUDIO_EVENT_RECORD>* listEntry)
-{
-    (m_CBClass->*m_CB)(&listEntry->data);
-}
 
 /**
  * Offset/Address/Size: 0x2248 | 0x8014B39C | size: 0xD0
@@ -459,7 +303,7 @@ void AudioScriptEventMgr::Init()
  */
 void AudioScriptEventMgr::Purge()
 {
-    nlWalkList(g_PendingEvents.m_Head, static_cast<AudioEventList*>(&g_PendingEvents), &AudioEventList::DeleteEntry);
+    AudioEventList::WalkDeleteEntries(g_PendingEvents.m_Head, static_cast<AudioEventList*>(&g_PendingEvents));
     g_PendingEvents.m_Head = NULL;
     g_PendingEvents.m_Tail = NULL;
     SlotPoolBase::BaseFreeBlocks(&g_PendingEvents.m_Allocator, sizeof(ListEntry<AUDIO_EVENT_RECORD>));
@@ -473,37 +317,37 @@ void AudioScriptEventMgr::Purge()
 
 /**
  * Offset/Address/Size: 0x1A48 | 0x8014AB9C | size: 0xD0
- * TODO: 97.96% match - WalkHelper and Callback method pointer stack offsets swapped
  */
+static inline void RaiseEvents();
+
 void AudioScriptEventMgr::Update()
 {
     Poll();
+    RaiseEvents();
+    AudioEventList::WalkDeleteEntries(g_PendingEvents.m_Head, static_cast<AudioEventList*>(&g_PendingEvents));
+    g_PendingEvents.m_Head = NULL;
+    g_PendingEvents.m_Tail = NULL;
+}
 
+static inline void RaiseEvents()
+{
     AudioEventWalkHelper helper;
     helper.m_CBClass = &g_AudioEventRaiser;
     helper.m_CB = &_AudioEventRaiser::RaiseEvent;
-
     nlWalkList(g_PendingEvents.m_Head, &helper, &AudioEventWalkHelper::Callback);
-    nlWalkList(g_PendingEvents.m_Head, static_cast<AudioEventList*>(&g_PendingEvents), &AudioEventList::DeleteEntry);
-    g_PendingEvents.m_Head = NULL;
-    g_PendingEvents.m_Tail = NULL;
 }
 
 /**
  * Offset/Address/Size: 0x19B8 | 0x8014AB0C | size: 0x90
  */
-void _AudioEventRaiser::RaiseEvent(AUDIO_EVENT_RECORD* pEvent)
+WEAKFUNC void _AudioEventRaiser::RaiseEvent(AUDIO_EVENT_RECORD* pEvent)
 {
     char FuncName[64];
     memcpy(FuncName, "Crowd", 5);
     nlStrNCpy(FuncName + 5, AUDIO_EVENT_FUNC_NAMES[pEvent->Event], 0x3b);
     if (pEvent->Team != 0)
     {
-        const char* suffix = "Away";
-        if (pEvent->Team == 1)
-        {
-            suffix = "Home";
-        }
+        const char* suffix = pEvent->Team == 1 ? "Home" : "Away";
         nlStrNCat(FuncName, FuncName, suffix, 0x40);
     }
     SoundEventScript::Instance().Call(FuncName);
@@ -512,14 +356,31 @@ void _AudioEventRaiser::RaiseEvent(AUDIO_EVENT_RECORD* pEvent)
 /**
  * Offset/Address/Size: 0x1904 | 0x8014AA58 | size: 0xB4
  */
+static inline void FireEventInline(AudioScriptEventMgr::AUDIO_EVENT Event, AudioScriptEventMgr::AUDIO_EVENT_TEAM Team);
+
 void AudioScriptEventMgr::FireEvent(AudioScriptEventMgr::AUDIO_EVENT Event, AudioScriptEventMgr::AUDIO_EVENT_TEAM Team)
 {
     FORCE_DONT_INLINE;
+    FireEventInline(Event, Team);
+}
+
+// Single mint site for the AUDIO_EVENT_RECORD zero-template const (.sbss2):
+// FireEvent above and the inline expansions in Poll/RecordExcitingEvent all
+// share this body, so MWCC pools one anon const across every site.
+static inline void FireEventInline(AudioScriptEventMgr::AUDIO_EVENT Event, AudioScriptEventMgr::AUDIO_EVENT_TEAM Team)
+{
     AUDIO_EVENT_RECORD aer = { Event, Team };
-    union
+    // The record round-trips through an 8-byte align-4 temp with the live
+    // word at +4: MWCC packs these at 0x24+8k, so every access lands on an
+    // 8-aligned slot (0x28..0x58 in Poll) and the region ends at 0x5b,
+    // letting Poll's GoodToShoot FuzzyVariant sret temp pack at sp+0x5c.
+    // (A u64-aligned union reserves 8 bytes at the region top and pushes it
+    // to 0x60; a bare 4-byte temp gets register-promoted and loses the
+    // stw/lwz round-trip.)
+    struct
     {
+        u32 _pad;
         AUDIO_EVENT_RECORD val;
-        u64 _align;
     } temp;
     temp.val = aer;
 
@@ -535,34 +396,20 @@ void AudioScriptEventMgr::FireEvent(AudioScriptEventMgr::AUDIO_EVENT Event, Audi
     nlListAddEnd(&g_PendingEvents.m_Head, &g_PendingEvents.m_Tail, entry);
 }
 
-// Inline twin of FireEvent for callers whose target inlines the body
-// (Poll, RecordExcitingEvent). The standalone FireEvent above carries
-// FORCE_DONT_INLINE so AudioScriptEventHandler calls it out-of-line.
-static inline void FireEventInline(AudioScriptEventMgr::AUDIO_EVENT Event, AudioScriptEventMgr::AUDIO_EVENT_TEAM Team)
+static inline void RecordExcitingEventInline()
 {
-    AUDIO_EVENT_RECORD aer = { Event, Team };
-    union
-    {
-        AUDIO_EVENT_RECORD val;
-        u64 _align;
-    } temp;
-    temp.val = aer;
+    g_ScriptPollState.LastExcitementTime = g_pGame->GetGameTime();
 
-    ListEntry<AUDIO_EVENT_RECORD>* entry = NULL;
-    g_PendingEvents.m_Allocator.Allocate(entry);
-
-    if (entry != NULL)
+    if (g_ScriptPollState.AmBored)
     {
-        entry->next = NULL;
-        entry->data = temp.val;
+        nlPrintf("END bored\n");
+        g_ScriptPollState.AmBored = 0;
+        FireEventInline(AudioScriptEventMgr::AE_BoredEnd, AudioScriptEventMgr::AET_Neutral);
     }
-
-    nlListAddEnd(&g_PendingEvents.m_Head, &g_PendingEvents.m_Tail, entry);
 }
 
 /**
  * Offset/Address/Size: 0x10F8 | 0x8014A24C | size: 0x80C
- * TODO: 98.72% match - FuzzyVariant stack slot and inlined FireEvent stack/register layout still differ.
  */
 static void Poll()
 {
@@ -646,14 +493,7 @@ static void Poll()
                 }
 
                 FireEventInline(AudioScriptEventMgr::AE_GoodPosition, eventTeam);
-                g_ScriptPollState.LastExcitementTime = g_pGame->GetGameTime();
-
-                if (g_ScriptPollState.AmBored)
-                {
-                    nlPrintf("END bored\n");
-                    g_ScriptPollState.AmBored = 0;
-                    FireEventInline(AudioScriptEventMgr::AE_BoredEnd, AudioScriptEventMgr::AET_Neutral);
-                }
+                RecordExcitingEventInline();
             }
         }
     }
@@ -662,14 +502,7 @@ static void Poll()
     {
         if (g_pBall->m_pOwner->m_pTeam != g_ScriptPollState.LastOwningTeam)
         {
-            g_ScriptPollState.LastExcitementTime = g_pGame->GetGameTime();
-
-            if (g_ScriptPollState.AmBored)
-            {
-                nlPrintf("END bored\n");
-                g_ScriptPollState.AmBored = 0;
-                FireEventInline(AudioScriptEventMgr::AE_BoredEnd, AudioScriptEventMgr::AET_Neutral);
-            }
+            RecordExcitingEventInline();
 
             g_ScriptPollState.LastOwningTeam = g_pBall->m_pOwner->m_pTeam;
 
@@ -710,7 +543,7 @@ static void Poll()
 /**
  * Offset/Address/Size: 0xFF8 | 0x8014A14C | size: 0x100
  */
-void RecordExcitingEvent()
+WEAKFUNC void RecordExcitingEvent()
 {
     g_ScriptPollState.LastExcitementTime = g_pGame->GetGameTime();
 
@@ -722,9 +555,18 @@ void RecordExcitingEvent()
     }
 }
 
+static inline bool IsGameplayOrOvertime(cGame* pGame)
+{
+    bool inGameplay = false;
+    if (pGame->m_eGameState == GS_GAMEPLAY || pGame->m_eGameState == GS_OVERTIME)
+    {
+        inGameplay = true;
+    }
+    return inGameplay;
+}
+
 /**
  * Offset/Address/Size: 0x0 | 0x80149154 | size: 0xFF8
- * TODO: 99.98% match - goalpost timer static-local relocations still differ.
  */
 static void AudioScriptEventHandler(Event* pEvent, void*)
 {
@@ -944,12 +786,7 @@ static void AudioScriptEventHandler(Event* pEvent, void*)
         {
             return;
         }
-        bool inGameplay = false;
-        if (g_pGame->m_eGameState == GS_GAMEPLAY || g_pGame->m_eGameState == GS_OVERTIME)
-        {
-            inGameplay = true;
-        }
-        if (!inGameplay)
+        if (!IsGameplayOrOvertime(g_pGame))
         {
             return;
         }
@@ -1062,13 +899,4 @@ static void AudioScriptEventHandler(Event* pEvent, void*)
     default:
         return;
     }
-}
-
-// Force instantiation of the bsearch template (used by the lookup table at runtime).
-// The qsort/sort and nlListSlotPool template instantiations are now driven by the
-// real lookup table init and g_PendingEvents definition above.
-void AudioScriptEventMgr_stub()
-{
-    unsigned long k = 0;
-    nlBSearch<NIS_EVENT_LOOKUP, unsigned long>(k, g_NisEventLookup, 4);
 }

@@ -478,9 +478,8 @@ void SHMainMenu::SceneCreated()
             InlineHasher(nlStringLowerHash("Layer")),
             InlineHasher(nlStringLowerHash(MenuNameTable[i])));
         TLComponentInstance* compinstance = (TLComponentInstance*)instance;
-        int numAdded = mMenuItems.mNumItemsAdded;
-        item = MainMenuItemAt(mMenuItems, numAdded);
-        mMenuItems.mMenuItems[numAdded].mType = compinstance;
+        item = MainMenuItemAt(mMenuItems, mMenuItems.mNumItemsAdded);
+        mMenuItems.mMenuItems[mMenuItems.mNumItemsAdded].mType = compinstance;
         mMenuItems.mNumItemsAdded++;
         {
             MainMenuBind bindOpen = Bind<void>(MemFun<SHMainMenu, void, TLComponentInstance*>(&SHMainMenu::OpenItem), this, placeholder0);

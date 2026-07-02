@@ -16,6 +16,9 @@ static nlAVLTree<int, SaveData*, DefaultKeyCompare<int> > gSaveMap;
 static nlListContainer<SaveData*> gSaveGrid[7][5];
 static float fDefaultMilestoneValues[2] = { 0.4f, 0.7f };
 
+template class nlListContainer<SaveData*>;
+template class nlListContainer<int>;
+
 struct MyMiniData;
 
 struct SaveInfo
@@ -29,8 +32,79 @@ struct SaveInfo
 };
 
 static const nlVector3 v3Zero = { 0.0f, 0.0f, 0.0f };
-extern int gPositionAnimID[6];
-extern SaveInfo gSaveInfo[70];
+int gPositionAnimID[6] = { 25, 28, 20, 23, 34, 35 };
+SaveInfo gSaveInfo[70] = {
+    { 47, 88, -1, 0x00000001, { -1, 48, 52, 57 }, "Ctch Ctr XHiJmp" },
+    { 48, 89, -1, 0x00000001, { 47, 49, 53, 58 }, "Ctch Ctr Hi Jmp" },
+    { 49, 90, -1, 0x00000001, { 48, 50, 54, 59 }, "Catch Ctr Hi" },
+    { 50, 91, -1, 0x00000001, { 49, 51, 55, 60 }, "Catch Ctr Med" },
+    { 51, 92, -1, 0x00000001, { 50, -1, 56, 61 }, "Catch Ctr Lo" },
+    { 52, 93, -1, 0x00000001, { -1, 53, -1, 47 }, "Catch Rt XHiJmp" },
+    { 53, 94, -1, 0x00000001, { 52, 54, -1, 48 }, "Catch Rt Hi Jmp" },
+    { 54, 95, -1, 0x00000001, { 53, 55, -1, 49 }, "Catch Rt Hi" },
+    { 55, 96, -1, 0x00000001, { 54, 56, -1, 50 }, "Catch Rt Med" },
+    { 56, 97, -1, 0x00000001, { 55, -1, -1, 51 }, "Catch Rt Lo" },
+    { 57, 98, -1, 0x00000001, { -1, 58, 47, -1 }, "Catch Lf XHiJmp" },
+    { 58, 99, -1, 0x00000001, { 57, 59, 48, -1 }, "Catch Lft HiJmp" },
+    { 59, 100, -1, 0x00000001, { 58, 60, 49, -1 }, "Catch Lft Hi" },
+    { 60, 101, -1, 0x00000001, { 59, 61, 50, -1 }, "Catch Lft Med" },
+    { 61, 101, -1, 0x00000001, { 60, -1, 51, -1 }, "Catch Lft Lo" },
+    { 106, 79, -1, 0x00000002, { -1, -1, -1, -1 }, "DiveCatchRHiSpc" },
+    { 107, 85, -1, 0x00000002, { -1, -1, -1, -1 }, "DiveCatchLHiSpc" },
+    { 62, 76, 132, 0x00000002, { -1, 63, 68, -1 }, "Dive Catch R Hi" },
+    { 63, 75, 132, 0x00000002, { 62, 64, 69, -1 }, "Dive Catch R Md" },
+    { 64, 74, 132, 0x00000002, { 63, -1, 70, -1 }, "Dive Catch R Lo" },
+    { 65, 82, 133, 0x00000002, { -1, 66, -1, 71 }, "Dive Catch L Hi" },
+    { 66, 81, 133, 0x00000002, { 65, 67, -1, 72 }, "Dive Catch L Md" },
+    { 67, 80, 133, 0x00000002, { 66, -1, -1, 73 }, "Dive Catch L Lo" },
+    { 68, 79, 132, 0x00000002, { -1, 69, -1, 62 }, "DiveCtch RHiFar" },
+    { 69, 78, 132, 0x00000002, { 68, 70, -1, 63 }, "DiveCtch RMdFar" },
+    { 70, 77, 132, 0x00000002, { 69, -1, -1, 64 }, "DiveCtch RLoFar" },
+    { 71, 85, 133, 0x00000002, { -1, 72, 65, -1 }, "DiveCtch LHiFar" },
+    { 72, 84, 133, 0x00000002, { 71, 73, 66, -1 }, "DiveCtch LMdFar" },
+    { 73, 83, 133, 0x00000002, { 72, -1, 67, -1 }, "DiveCtch LLoFar" },
+    { 88, -1, -1, 0x00000004, { -1, 89, 93, 98 }, "Deflect XHi Jmp" },
+    { 89, -1, -1, 0x00000004, { 88, 90, 94, 99 }, "Deflect Hi Jmp" },
+    { 90, -1, -1, 0x00000004, { 89, 91, 95, 100 }, "Deflect Hi" },
+    { 91, -1, -1, 0x00000004, { 90, 92, 96, 101 }, "Deflect Med" },
+    { 92, -1, -1, 0x00000004, { 91, -1, 97, 102 }, "Deflect Lo" },
+    { 93, -1, -1, 0x00000004, { -1, 94, -1, 88 }, "Defl R XHi Jmp" },
+    { 94, -1, -1, 0x00000004, { 93, 95, -1, 89 }, "Defl R Hi Jmp" },
+    { 95, -1, -1, 0x00000004, { 94, 96, -1, 90 }, "Deflect R Hi" },
+    { 96, -1, -1, 0x00000004, { 95, 97, -1, 91 }, "Deflect R Med" },
+    { 97, -1, -1, 0x00000004, { 96, -1, -1, 92 }, "Deflect R Lo" },
+    { 98, -1, -1, 0x00000004, { -1, 99, 88, -1 }, "Defl L XHi Jmp" },
+    { 99, -1, -1, 0x00000004, { 98, 100, 89, -1 }, "Defl L Hi Jmp" },
+    { 100, -1, -1, 0x00000004, { 99, 101, 90, -1 }, "Deflect L Hi" },
+    { 101, -1, -1, 0x00000004, { 100, 102, 91, -1 }, "Deflect L Med" },
+    { 102, -1, -1, 0x00000004, { 101, -1, 92, -1 }, "Deflect L Lo" },
+    { 76, -1, 134, 0x00000008, { -1, 75, 79, -1 }, "Dive Dfl R Hi" },
+    { 75, -1, 134, 0x00000008, { 76, 74, 78, -1 }, "Dive Dfl R Med" },
+    { 74, -1, 134, 0x00000008, { 75, -1, 77, -1 }, "Dive Dfl R Lo" },
+    { 79, -1, 134, 0x00000008, { -1, 78, -1, 76 }, "DiveDfl R HiFar" },
+    { 78, -1, 134, 0x00000008, { 79, 77, -1, 75 }, "DiveDfl R MdFar" },
+    { 77, -1, 134, 0x00000008, { 78, -1, -1, 74 }, "DiveDfl R LoFar" },
+    { 82, -1, 135, 0x00000008, { -1, 81, -1, 85 }, "Dive Dfl L Hi" },
+    { 81, -1, 135, 0x00000008, { 82, 80, -1, 84 }, "Dive Dfl L Med" },
+    { 80, -1, 135, 0x00000008, { 81, -1, -1, 83 }, "Dive Dfl L Lo" },
+    { 85, -1, 135, 0x00000008, { -1, 84, 82, -1 }, "DiveDfl L HiFar" },
+    { 84, -1, 135, 0x00000008, { 85, 83, 81, -1 }, "DiveDfl L MdFar" },
+    { 83, -1, 135, 0x00000008, { 84, -1, 80, -1 }, "DiveDfl L LoFar" },
+    { 86, -1, -1, 0x00000020, { -1, -1, -1, -1 }, "Leg R Lo" },
+    { 87, -1, -1, 0x00000020, { -1, -1, -1, -1 }, "Leg L Lo" },
+    { 103, -1, -1, 0x00000010, { -1, -1, 104, 105 }, "Punch Hi" },
+    { 104, -1, -1, 0x00000010, { -1, -1, -1, 103 }, "Punch R Hi" },
+    { 105, -1, -1, 0x00000010, { -1, -1, 103, -1 }, "Punch L Hi" },
+    { 108, -1, -1, 0x00020000, { -1, -1, -1, -1 }, "S2S Blast Net" },
+    { 114, -1, 116, 0x00040000, { -1, -1, -1, -1 }, "S2S Spin L" },
+    { 115, -1, 117, 0x00040000, { -1, -1, -1, -1 }, "S2S Spin R" },
+    { 110, -1, 111, 0x00010000, { -1, -1, -1, -1 }, "S2S Save Stun" },
+    { 128, -1, 134, 0x00100000, { -1, -1, -1, -1 }, "Miss Chip R" },
+    { 129, -1, 135, 0x00100000, { -1, -1, -1, -1 }, "Miss Chip L" },
+    { 130, -1, 134, 0x00100000, { -1, -1, -1, -1 }, "MissChipShort R" },
+    { 131, -1, 135, 0x00100000, { -1, -1, -1, -1 }, "MissChipShort L" },
+    { -1, 0, 0, 0x00000000, { -1, -1, -1, -1 }, "Empty" },
+};
 
 /**
  * Offset/Address/Size: 0x0 | 0x80056BC8 | size: 0x3C
@@ -42,15 +116,23 @@ template void nlWalkDLRing<DLListEntry<MyMiniData*>, DLListContainerBase<MyMiniD
     DLListContainerBase<MyMiniData*, NewAdapter<DLListEntry<MyMiniData*> > >* callback,
     void (DLListContainerBase<MyMiniData*, NewAdapter<DLListEntry<MyMiniData*> > >::*callbackFunc)(DLListEntry<MyMiniData*>*));
 
+typedef ListContainerBase<SaveData*, NewAdapter<ListEntry<SaveData*> > > SaveListBase;
+
+static inline void ClearSaveGrid()
+{
+    for (int i = 0; i < 7; ++i)
+    {
+        for (int j = 0; j < 5; ++j)
+        {
+            nlWalkList(gSaveGrid[i][j].m_Head, (SaveListBase*)&gSaveGrid[i][j], &SaveListBase::DeleteEntry);
+            gSaveGrid[i][j].m_Head = NULL;
+            gSaveGrid[i][j].m_Tail = NULL;
+        }
+    }
+}
+
 /**
  * Offset/Address/Size: 0x2B44 | 0x80055F64 | size: 0xE0
- * TODO: 91.39% match - register allocation/stack frame differs: compiler uses r26-r31 with 0x30 frame, target uses r25-r31 with 0x40 frame; merged NULL store still emits r31 for both head/tail
- */
-/**
- * Offset/Address/Size: 0x3DC | 0x80055F64 | size: 0xE0
- * TODO: 91.4% match - MWCC coalesces headClr/tailClr into one register (6 callee-saved regs
- * instead of 7). Target uses r30=headClr, r31=tailClr separately. This shifts all register
- * assignments by +4 and reduces stack frame from 0x40 to 0x30 (stmw r25 vs stmw r26).
  */
 void GoalieSave::ClearData()
 {
@@ -61,26 +143,7 @@ void GoalieSave::ClearData()
 
     gSaveMap.Clear();
 
-    typedef ListContainerBase<SaveData*, NewAdapter<ListEntry<SaveData*> > > SaveListBase;
-
-    int i = 0;
-
-    do
-    {
-        int j = 0;
-        nlListContainer<SaveData*>* pEntry = &gSaveGrid[i][0];
-        ListEntry<SaveData*>* headClr = (ListEntry<SaveData*>*)(u32)j;
-        ListEntry<SaveData*>* tailClr = (ListEntry<SaveData*>*)(u32)j;
-        do
-        {
-            nlWalkList(pEntry->m_Head, (SaveListBase*)pEntry, &SaveListBase::DeleteEntry);
-            pEntry->m_Head = headClr;
-            j++;
-            pEntry->m_Tail = tailClr;
-            pEntry++;
-        } while (j < 5);
-        i++;
-    } while (i < 7);
+    ClearSaveGrid();
 
     if (mpSaveTable != NULL)
     {
@@ -339,27 +402,7 @@ void GoalieSave::InitData(Goalie* pGoalie)
         }
     }
 
-    {
-        typedef ListContainerBase<SaveData*, NewAdapter<ListEntry<SaveData*> > > SaveListBase;
-
-        int row = 0;
-        do
-        {
-            int j = 0;
-            nlListContainer<SaveData*>* pEntry = &gSaveGrid[row][0];
-            ListEntry<SaveData*>* headClr = (ListEntry<SaveData*>*)(u32)j;
-            ListEntry<SaveData*>* tailClr = (ListEntry<SaveData*>*)(u32)j;
-            do
-            {
-                nlWalkList(pEntry->m_Head, (SaveListBase*)pEntry, &SaveListBase::DeleteEntry);
-                pEntry->m_Head = headClr;
-                j++;
-                pEntry->m_Tail = tailClr;
-                pEntry++;
-            } while (j < 5);
-            row++;
-        } while (row < 7);
-    }
+    ClearSaveGrid();
 
     int nBallJointIndex = pGoalie->m_nBallJointIndex;
 

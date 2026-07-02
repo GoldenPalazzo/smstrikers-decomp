@@ -1094,7 +1094,7 @@ long MemCard::InternalReadFile(MC_FILE* pFile, void* Buffer, unsigned long Lengt
 
 /**
  * Offset/Address/Size: 0x740 | 0x801C9EB0 | size: 0x120
- * TODO: 99.17% match - stw r5/li r0 scheduling swap at 0x8c in MemCardFunctor copy block
+ * TODO: 99.72% match - first two MemCardFunctor word stores remain swapped
  */
 long MemCard::InternalWriteFile(MC_FILE* pFile, void* Buffer, unsigned long Length, unsigned long StartAt, const MemCardFunctor& Callback, bool ResetTransfer)
 {
@@ -1131,8 +1131,8 @@ long MemCard::InternalWriteFile(MC_FILE* pFile, void* Buffer, unsigned long Leng
 
     a = src->w0;
     b = src->w1;
-    dst->w0 = a;
     dst->w1 = b;
+    dst->w0 = a;
 
     d = src->w2;
     e = src->w3;

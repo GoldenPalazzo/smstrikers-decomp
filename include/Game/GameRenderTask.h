@@ -8,6 +8,9 @@ class GameRenderTask : public nlTask
 public:
     virtual void Run(float);
     virtual const char* GetName() { return "Game Render"; }
+
+private:
+    static void SetupConstants();
 };
 
 extern bool g_bRenderWorld;

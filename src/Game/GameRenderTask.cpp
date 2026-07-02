@@ -122,10 +122,42 @@ static void inline MemoryOnScreen(unsigned int cutoff)
     glFontEnd();
 }
 
+#pragma inline_max_size(0x10000)
+#pragma inline_max_total_size(0x10000)
+inline void GameRenderTask::SetupConstants()
+{
+    nlVector4 vMult = { 0.0f, 0.0f, 0.0f, 0.0f };
+    Config& cfg = Config::Global();
+    vMult.f.x = GetConfigFloat(cfg, "shadow_volumes/colour_r", 255.0f) / 255.0f;
+
+    Config& cfg2 = Config::Global();
+    vMult.f.y = GetConfigFloat(cfg2, "shadow_volumes/colour_g", 255.0f) / 255.0f;
+
+    Config& cfg3 = Config::Global();
+    vMult.f.z = GetConfigFloat(cfg3, "shadow_volumes/colour_b", 255.0f) / 255.0f;
+
+    Config& cfg4 = Config::Global();
+    vMult.f.w = GetConfigFloat(cfg4, "shadow_volumes/colour_a", 64.0f) / 255.0f;
+
+    glConstantSet("shadow/pass0_colour", vMult);
+    glConstantSet("shadow/pass1_colour", vMult);
+    glConstantSet("lighting/ambient_colour", world_ambient);
+
+    nlVector4 svolColour = { 0.0f, 0.0f, 0.0f, 0.0f };
+    svolColour.f.x = (float)g_LightMult;
+    glConstantSet("lighting/range", svolColour);
+
+    nlVector4 vWarble = { 0.0f, 0.0f, 0.0f, 0.0f };
+    vWarble.f.x = g_WarbleDivisor;
+    glConstantSet("warble/divisor", vWarble);
+
+    nlVector4 vTexel = { 0.0f, 0.0f, 0.0f, 0.0f };
+    vTexel.f.x = g_bTexelDensity ? 1.0f : 0.0f;
+    glConstantSet("texture/density", vTexel);
+}
+
 /**
  * Offset/Address/Size: 0x0 | 0x80170BAC | size: 0x9E8
- * TODO: 98.30% match - remaining diffs are stack/register allocation differences
- * around inlined MemoryOnScreen/WarbleTest locals and task-state branching.
  */
 void GameRenderTask::Run(float fDeltaT)
 {
@@ -138,7 +170,6 @@ void GameRenderTask::Run(float fDeltaT)
     glPoly2 p;
     float w;
     float h;
-    u32 tick;
     u32 mask;
 
     if (g_bMemoryOnScreen)
@@ -174,34 +205,7 @@ void GameRenderTask::Run(float fDeltaT)
 
     whiteTexture = glGetTexture("global/white");
 
-    nlVector4 vMult = { 0.0f, 0.0f, 0.0f, 0.0f };
-    Config& cfg = Config::Global();
-    vMult.f.x = GetConfigFloat(cfg, "shadow_volumes/colour_r", 255.0f) / 255.0f;
-
-    Config& cfg2 = Config::Global();
-    vMult.f.y = GetConfigFloat(cfg2, "shadow_volumes/colour_g", 255.0f) / 255.0f;
-
-    Config& cfg3 = Config::Global();
-    vMult.f.z = GetConfigFloat(cfg3, "shadow_volumes/colour_b", 255.0f) / 255.0f;
-
-    Config& cfg4 = Config::Global();
-    vMult.f.w = GetConfigFloat(cfg4, "shadow_volumes/colour_a", 64.0f) / 255.0f;
-
-    glConstantSet("shadow/pass0_colour", vMult);
-    glConstantSet("shadow/pass1_colour", vMult);
-    glConstantSet("lighting/ambient_colour", world_ambient);
-
-    nlVector4 svolColour = { 0.0f, 0.0f, 0.0f, 0.0f };
-    svolColour.f.x = (float)g_LightMult;
-    glConstantSet("lighting/range", svolColour);
-
-    nlVector4 vWarble = { 0.0f, 0.0f, 0.0f, 0.0f };
-    vWarble.f.x = g_WarbleDivisor;
-    glConstantSet("warble/divisor", vWarble);
-
-    nlVector4 vTexel = { 0.0f, 0.0f, 0.0f, 0.0f };
-    vTexel.f.x = g_bTexelDensity ? 1.0f : 0.0f;
-    glConstantSet("texture/density", vTexel);
+    SetupConstants();
 
     float dt = (nlTaskManager::m_pInstance->m_CurrState == 1) ? 0.0f : fDeltaT;
 
@@ -230,12 +234,7 @@ void GameRenderTask::Run(float fDeltaT)
             h = (float)(s32)glTextureGetHeight();
             p.SetupRectangle(24.0f, 24.0f, w, h, 0.0f);
 
-            nlColour white = { 0, 0, 0, 0 };
-            white.c[0] = 0xFF;
-            white.c[1] = 0xFF;
-            white.c[2] = 0xFF;
-            white.c[3] = 0xFF;
-            p.SetColour(white);
+            WorldDarkening::SetPolyColour(p, 0xFF, 0xFF, 0xFF, 0xFF);
 
             glSetDefaultState(false);
             glSetCurrentTexture(whiteTexture, GLTT_Diffuse);
@@ -307,7 +306,7 @@ void GameRenderTask::Run(float fDeltaT)
             init = 1;
         }
 
-        tick = nlGetTicker();
+        u32 tick = nlGetTicker();
         glInventory.Update(0.001f * nlGetTickerDifference(lastTick, tick));
         lastTick = tick;
     }
@@ -315,7 +314,7 @@ void GameRenderTask::Run(float fDeltaT)
     {
         float replayTime = ReplayManager::Instance()->mTime;
         float delta = replayTime - prevTime;
-        delta = __fabs(delta);
+        delta = fabsf(delta);
         glInventory.Update(delta);
         prevTime = ReplayManager::Instance()->mTime;
     }

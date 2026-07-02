@@ -25,6 +25,7 @@
 SoundPropAccessor* gpBOWSERSoundPropAccessor;
 
 static const nlVector3 v3Zero = { 0.0f, 0.0f, 0.0f };
+static const nlVector3 v3BowserLeaveVelocity = { 25.0f, 0.0f, 25.0f };
 
 float Bowser::mfYAxisTilt = 0.0f;
 
@@ -1999,7 +2000,7 @@ void Bowser::SetTiltParameters(float fYAxisTilt)
 
 /**
  * Offset/Address/Size: 0x954 | 0x801596C8 | size: 0x6F0
- * TODO: 96.28% match - r29/r31 register swap with stack-slot placement diffs in duplicated leave/setup paths
+ * TODO: 99.79% match - r28/r30 controller and blender register swap in second leave/setup path
  */
 bool Bowser::CheckForAbort()
 {
@@ -2047,8 +2048,9 @@ bool Bowser::CheckForAbort()
             pBowser->mpFeatherBlender->SetChild(0, blender);
             pBowser->mpAnimController = controller;
             cBaseCamera* camera = nlDLRingGetStart<cBaseCamera>(cCameraManager::m_cameraStack);
+            nlVector3 v3Velocity;
             nlVector3 v3CameraTarget = camera->GetTargetPosition();
-            nlVector3 v3Velocity = { 25.0f, 0.0f, 25.0f };
+            v3Velocity = v3BowserLeaveVelocity;
             unsigned short aDesired = 0;
             if (v3CameraTarget.f.x > pBowser->mv3Position.f.x)
             {
@@ -2136,8 +2138,9 @@ bool Bowser::CheckForAbort()
             pBowser->mpFeatherBlender->SetChild(0, blender);
             pBowser->mpAnimController = controller;
             cBaseCamera* camera = nlDLRingGetStart<cBaseCamera>(cCameraManager::m_cameraStack);
+            nlVector3 v3Velocity;
             nlVector3 v3CameraTarget = camera->GetTargetPosition();
-            nlVector3 v3Velocity = { 25.0f, 0.0f, 25.0f };
+            v3Velocity = v3BowserLeaveVelocity;
             unsigned short aDesired = 0;
             if (v3CameraTarget.f.x > pBowser->mv3Position.f.x)
             {

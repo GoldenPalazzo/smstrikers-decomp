@@ -469,11 +469,28 @@ void SummaryOverlay::DisplayMatchSummary(eSummaryType matchSummaryType)
 /**
  * Offset/Address/Size: 0x0 | 0x800FCBA0 | size: 0xA74
  */
+static inline const unsigned short* LookupSummaryLocHash(nlLocalization* loc, unsigned long key)
+{
+    extern const unsigned short LocalizationTableNotFound[];
+    extern const unsigned short MissingLocString[];
+
+    if (loc->m_LookupTable == 0)
+    {
+        return LocalizationTableNotFound;
+    }
+
+    nlLocalization::StringLookup* entry = nlBSearch<nlLocalization::StringLookup, unsigned long>(key, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
+    if (entry)
+    {
+        return loc->m_FirstString + entry->StringOffset;
+    }
+
+    return MissingLocString;
+}
+
 void SummaryOverlay::DisplayUserSummary(eSummaryType matchSummaryType)
 {
     extern nlLocalization* g_pLocalization;
-    extern const unsigned short LocalizationTableNotFound[];
-    extern const unsigned short MissingLocString[];
 
     static char* SUMMARY_ROW_NAMES[6] = {
         "LINE_0",
@@ -516,33 +533,13 @@ void SummaryOverlay::DisplayUserSummary(eSummaryType matchSummaryType)
         }
         else
         {
-            unsigned long key;
             nlLocalization* loc;
-            nlLocalization::StringLookup* entry;
 
             displayedStats[j] = &mCumulativeUserStats[j];
 
             loc = g_pLocalization;
-            key = nlStringLowerHash("TOTAL_USER_STATS");
 
-            if (loc->m_LookupTable == 0)
-            {
-                loc = (nlLocalization*)LocalizationTableNotFound;
-            }
-            else
-            {
-                entry = nlBSearch<nlLocalization::StringLookup, unsigned long>(key, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
-                if (entry)
-                {
-                    loc = (nlLocalization*)(loc->m_FirstString + entry->StringOffset);
-                }
-                else
-                {
-                    loc = (nlLocalization*)MissingLocString;
-                }
-            }
-
-            WideBasicString unformatted((const unsigned short*)loc);
+            WideBasicString unformatted(LookupSummaryLocHash(loc, nlStringLowerHash("TOTAL_USER_STATS")));
             NLString numGamesString(LexicalCast<NLString, int>((int)nlSingleton<StatsTracker>::s_pInstance->mNumConsecutiveGamesPlayed));
             unsigned short tempBuffer[32];
             nlStrToWcs(numGamesString.c_str(), tempBuffer, 0x40);
@@ -551,8 +548,7 @@ void SummaryOverlay::DisplayUserSummary(eSummaryType matchSummaryType)
 
             pTitleText = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
                 pSlide,
-                InlineHasher(nlStringLowerHash("Title")),
-                InlineHasher(0));
+                InlineHasher(nlStringLowerHash("Title")));
             pTitleText->SetString(mTitleBuffer);
         }
     }
@@ -571,8 +567,7 @@ void SummaryOverlay::DisplayUserSummary(eSummaryType matchSummaryType)
         pSlide = mSlideMenu->m_pMenuComp->GetActiveSlide();
         pComponentInstances[user] = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
             pSlide,
-            InlineHasher(nlStringLowerHash(SUMMARY_COL_NAMES[user])),
-            InlineHasher(0));
+            InlineHasher(nlStringLowerHash(SUMMARY_COL_NAMES[user])));
 
         if (nlSingleton<GameInfoManager>::s_pInstance->GetPlayingSide((unsigned short)user) == -1)
         {
@@ -589,8 +584,7 @@ void SummaryOverlay::DisplayUserSummary(eSummaryType matchSummaryType)
         {
             pTextInstanceRows[k] = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
                 pSlide,
-                InlineHasher(nlStringLowerHash(SUMMARY_ROW_NAMES[k])),
-                InlineHasher(0));
+                InlineHasher(nlStringLowerHash(SUMMARY_ROW_NAMES[k])));
 
             nlStrToWcs(statsStrings[k].c_str(), mBuffersColByUser[user][k], 0x20);
             pTextInstanceRows[k]->SetString(mBuffersColByUser[user][k]);

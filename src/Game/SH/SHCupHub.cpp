@@ -2117,15 +2117,15 @@ void CupHubScene::CreateKnockout()
 
         switch (mHubState)
         {
+        case HUB_KNOCKOUT8:
+            pText->SetStringId("STANDINGS_QUARTER");
+            starComp->m_bVisible = false;
+            break;
         case HUB_KNOCKOUT4:
             pText->SetStringId("STANDINGS_SEMI");
             break;
         case HUB_KNOCKOUT2:
             pText->SetStringId("STANDINGS_FINAL");
-            break;
-        case HUB_KNOCKOUT8:
-            pText->SetStringId("STANDINGS_QUARTER");
-            starComp->m_bVisible = false;
             break;
         }
 

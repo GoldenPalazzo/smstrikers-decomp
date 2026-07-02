@@ -380,30 +380,32 @@ PhysicsBoneID PhysicsCharacter::ResolvePhysicsBoneIDFromName(const char* name)
 
 /**
  * Offset/Address/Size: 0x100 | 0x80136318 | size: 0x608
- * TODO: 98.52% match - register allocation diffs for this/pFldr/pBall and BasicString temporaries remain
+ * TODO: 99.01% match - register allocation diffs for self/pFldr and BasicString temporaries remain
  */
 void PhysicsCharacter::PostUpdate()
 {
+    PhysicsCharacter* self = this;
+    u16 angle;
     cFielder* pFldr;
     nlVector3 characterPosition;
     nlVector3 v3BallVel;
     nlVector3 v3BallSpin;
 
-    PhysicsObject::PostUpdate();
-    GetPosition(&characterPosition);
+    self->PhysicsObject::PostUpdate();
+    self->GetPosition(&characterPosition);
 
     nlVector3 charPos;
     charPos.f.x = characterPosition.f.x;
     charPos.f.y = characterPosition.f.y;
     charPos.f.z = 0.0f;
-    SetCharacterPosition(charPos);
+    self->SetCharacterPosition(charPos);
 
-    if (m_HasCollidedWithBall)
+    if (self->m_HasCollidedWithBall)
     {
         cBall* const pBall = g_pBall;
         if (pBall->m_unk_0xA6)
         {
-            cCharacter* pCharacter = m_pAICharacter;
+            cCharacter* pCharacter = self->m_pAICharacter;
             if (pCharacter->m_eClassType == FIELDER)
             {
                 pFldr = (cFielder*)pCharacter;
@@ -412,7 +414,7 @@ void PhysicsCharacter::PostUpdate()
                 dx = pBall->m_v3Position.f.x - pBall->m_pPrevOwner->m_v3Position.f.x;
                 dz = pBall->m_v3Position.f.z - pBall->m_pPrevOwner->m_v3Position.f.z;
                 s32 rawAngle = (s32)(10430.378f * nlATan2f(dy, dx));
-                u16 angle = (u16)rawAngle;
+                angle = (u16)rawAngle;
 
                 if (!pFldr->IsInvincible())
                 {
@@ -520,13 +522,13 @@ void PhysicsCharacter::PostUpdate()
         }
     }
 
-    if (m_unk88)
+    if (self->m_unk88)
     {
-        m_nDKBallStuckHackCounter++;
+        self->m_nDKBallStuckHackCounter++;
     }
     else
     {
-        m_nDKBallStuckHackCounter = 0;
+        self->m_nDKBallStuckHackCounter = 0;
     }
 }
 

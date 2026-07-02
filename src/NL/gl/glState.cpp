@@ -25,10 +25,26 @@ static gl_StateBitfield packed_materials[GLMS_Num + 1] = { 0, 7, 0, 0 };
 static glMaterialState _materialState;
 static unsigned long defaultMaterialState = 0;
 
+static inline unsigned long glSetCurrentTextureInline(unsigned long texture, eGLTextureType type)
+{
+    unsigned long prev = _bundle.texture[type];
+    unsigned long mask = 1u << type;
+
+    if (texture == 0xFFFFFFFFu)
+    {
+        _bundle.texconfig = _bundle.texconfig & ~mask;
+    }
+    else
+    {
+        _bundle.texconfig = _bundle.texconfig | mask;
+    }
+
+    _bundle.texture[type] = texture;
+    return prev;
+}
+
 /**
  * Offset/Address/Size: 0x0 | 0x801DBC44 | size: 0x184
- * TODO: 99.43% match - remaining register allocation differences in the final
- * _bundle setup block (r4/r5/r6 around bundle base, invalid, and 0xF0 mask).
  */
 void glSetDefaultState(bool setRasterDefaults)
 {
@@ -86,28 +102,12 @@ void glSetDefaultState(bool setRasterDefaults)
     _bundle.program = (u32)-1;
     _bundle.matrix = glGetIdentityMatrix();
 
-    {
-        volatile glStateBundle* p = &_bundle;
-        u32 invalid = (u32)-1;
-        u8 texconfig = p->texconfig;
-        u8 mF8 = texconfig & 0xF8;
-        u8 mF0 = texconfig & 0xF0;
-
-        p->texconfig = texconfig & 0xFE;
-        p->texconfig = texconfig & 0xFC;
-        p->texconfig = mF8;
-        p->texconfig = mF0;
-        p->texconfig = (u8)(mF0 & 0xE0);
-
-        p->texture[0] = invalid;
-        p->texture[1] = invalid;
-        p->texture[2] = invalid;
-        p->texture[3] = invalid;
-        p->texture[4] = invalid;
-
-        p->texconfig = (u8)(mF0 & 0xC0);
-        p->texture[5] = invalid;
-    }
+    glSetCurrentTextureInline((u32)-1, GLTT_Diffuse);
+    glSetCurrentTextureInline((u32)-1, GLTT_Detail);
+    glSetCurrentTextureInline((u32)-1, GLTT_Shadow);
+    glSetCurrentTextureInline((u32)-1, GLTT_SelfIllum);
+    glSetCurrentTextureInline((u32)-1, GLTT_Gloss);
+    glSetCurrentTextureInline((u32)-1, GLTT_BumpLocal);
 }
 
 /**

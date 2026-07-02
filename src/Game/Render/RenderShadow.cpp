@@ -709,10 +709,10 @@ void RenderProjectedShadow(const ProjectedShadowParams& params)
         p[3].f.z = vTemp.f.z + halfCrossZ;
 
         float negHeightX = (-0.5f * height) * vUp.f.x;
-        float negHeightY = (-0.5f * height) * vUp.f.y;
-        float negHeightZ = (-0.5f * height) * vUp.f.z;
         float heightX = (0.5f * height) * vUp.f.x;
         float heightY = (0.5f * height) * vUp.f.y;
+        float negHeightY = (-0.5f * height) * vUp.f.y;
+        float negHeightZ = (-0.5f * height) * vUp.f.z;
         float heightZ = (0.5f * height) * vUp.f.z;
 
         p[0].f.x += negHeightX;

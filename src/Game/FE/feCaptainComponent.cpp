@@ -772,7 +772,7 @@ void IChooseCaptain::UpdateSound(float dt)
 
 /**
  * Offset/Address/Size: 0x141C | 0x800BEDB8 | size: 0x694
- * TODO: 98.25% match - r3/r4 side-count setup and temp register allocation still differ.
+ * TODO: 99.49% match - side temp and final update loop registers still differ.
  */
 UpdateResult IChooseCaptain::Update(float)
 {
@@ -781,10 +781,13 @@ UpdateResult IChooseCaptain::Update(float)
 
     UpdateSinglePlayerState();
 
+    unsigned char goback;
+    unsigned char isdoneanimating;
+    int side;
+
     for (int i = 0; i < 4; i++)
     {
         eFEINPUT_PAD inputpad = (eFEINPUT_PAD)i;
-        int side;
 
         if (mIsSinglePlayerInput)
         {
@@ -824,7 +827,7 @@ UpdateResult IChooseCaptain::Update(float)
 
         if (g_pFEInput->JustPressed(inputpad, 0x200, false, NULL))
         {
-            unsigned char goback = 0;
+            goback = 0;
 
             switch (mComponentState[side].mCurrentPhase)
             {
@@ -864,7 +867,7 @@ UpdateResult IChooseCaptain::Update(float)
         }
         else if (g_pFEInput->JustPressed(inputpad, 0x100, false, &inputpad))
         {
-            unsigned char isdoneanimating = 1;
+            isdoneanimating = 1;
 
             switch (mComponentState[side].mCurrentPhase)
             {

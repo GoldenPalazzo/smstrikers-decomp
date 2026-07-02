@@ -1924,8 +1924,7 @@ void cFielder::ActionLateOneTimerFromVolley(float)
  * Offset/Address/Size: 0x5DF0 | 0x8002C928 | size: 0x36C
  */
 /**
- * TODO: 99.66% match - register diffs in contact-time conversion and
- * rotated contact-offset x/y components.
+ * TODO: 99.86% match - register diffs in rotated contact-offset x/y components.
  */
 void cFielder::DoCommonInitActionLooseBall(const nlVector3& rv3OneTimerTarget)
 {
@@ -1938,8 +1937,9 @@ void cFielder::DoCommonInitActionLooseBall(const nlVector3& rv3OneTimerTarget)
     float fSin;
 
     cSAnim* pLeadGroundContactAnim = m_pAnimInventory->GetAnim(GetOneTimerLeadGroundContactAnims()->nAnimID);
-    float fMaxSimulatedTime = GetOneTimerLeadGroundContactAnims()->fAnimContactFrame / (float)pLeadGroundContactAnim->m_nNumKeys;
-    fMaxSimulatedTime *= 0.6f;
+    float fContactFrame = GetOneTimerLeadGroundContactAnims()->fAnimContactFrame;
+    float fMaxSimulatedTime = fContactFrame / (float)pLeadGroundContactAnim->m_nNumKeys;
+    fMaxSimulatedTime = 0.6f * fMaxSimulatedTime;
 
     float fSimulatedTime = 0.0f;
 
@@ -2924,8 +2924,9 @@ void cFielder::ActionShot(float)
 
 /**
  * Offset/Address/Size: 0x3180 | 0x80029CB8 | size: 0x538
- * TODO: 99.76% match - f30/f31 callee-saved FP register allocation swap for fAbsPosX
  */
+static float FindSTSDistanceAffectedPercentage(cFielder* pFielder, float fMinAmount, float fMaxAmount);
+
 void cFielder::InitActionShootToScore()
 {
     ActionShootToScoreVars stsVars;
@@ -2954,8 +2955,7 @@ void cFielder::InitActionShootToScore()
 
     bool bCloseToGoalLine = false;
     f32 fAbsPosX = fabs(m_v3Position.f.x);
-    f32 fGoalLineX = cField::GetGoalLineX(1U);
-    if (fAbsPosX > fGoalLineX - 2.0f)
+    if (fAbsPosX > cField::GetGoalLineX(1U) - 2.0f)
     {
         f32 fAbsPosY = fabs(m_v3Position.f.y);
         if (fAbsPosY < 0.5f * cNet::m_fNetWidth + 1.0f)
@@ -3049,13 +3049,7 @@ void cFielder::InitActionShootToScore()
 
     ShootToScoreMeter::instance.TurnOnMeter(ShootToScoreMeter::REGULAR_SHOOT_TO_SCORE_PHASE1, mActionShootToScoreVars.fCaptainYellowWidth);
 
-    f32 fMinAmount = g_pGame->m_pGameTweaks->unk1E8;
-    f32 fMaxAmount = g_pGame->m_pGameTweaks->unk1EC;
-    const nlVector3& v3OffNet = GetAIOffNetLocation(NULL);
-    f32 dx = m_v3Position.f.x - v3OffNet.f.x;
-    f32 dy = m_v3Position.f.y - v3OffNet.f.y;
-    f32 dz = m_v3Position.f.z - v3OffNet.f.z;
-    f32 fTimeScale = InterpolateRangeClamped(fMinAmount, fMaxAmount, 9.0f, 18.0f, nlSqrt(dx * dx + dy * dy + dz * dz, true));
+    f32 fTimeScale = FindSTSDistanceAffectedPercentage(this, g_pGame->m_pGameTweaks->unk1E8, g_pGame->m_pGameTweaks->unk1EC);
     FixedUpdateTask::mTimeScale = fTimeScale;
     ParticleUpdateTask::SetTimeScale(fTimeScale);
 

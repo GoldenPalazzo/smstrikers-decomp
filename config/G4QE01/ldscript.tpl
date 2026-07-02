@@ -27,5 +27,6 @@ SECTIONS
 
 FORCEACTIVE
 {
+    _MetroTRK_Has_Framing
     $FORCEACTIVE
 }

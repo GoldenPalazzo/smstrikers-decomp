@@ -1019,15 +1019,15 @@ static unsigned char GameCubeReadAsync(GCFile* pFile, ReadAsyncCallback callback
 
 /**
  * Offset/Address/Size: 0x1308 | 0x801D005C | size: 0x6E0
- * TODO: 98.30% match - CheckDVDStatus saved-register order differs in DVD error paths.
+ * TODO: 98.91% match - DVD error path callback/status registers still differ.
  */
 static inline unsigned char CheckDVDStatus()
 {
-    long Status;
     unsigned char WasAProblem = 0;
-    Function<void(int)>* handleDVDMessageCallback = &g_HandleDVDMessageCallback;
-    Function<FnVoidVoid>* checkForResetCB = &g_CheckForResetCB;
     Function<void(int)>* handleDVDRetryCB = &g_HandleDVDRetryCB;
+    long Status;
+    Function<FnVoidVoid>* checkForResetCB = &g_CheckForResetCB;
+    Function<void(int)>* handleDVDMessageCallback = &g_HandleDVDMessageCallback;
 
     while (true)
     {
@@ -1217,7 +1217,7 @@ static unsigned char UpdateReadState(AsyncEntry* pEntry)
 
             default:
                 HandleGCIOErrors(pFile);
-                return 0;
+                goto return_false;
             }
 
         case eRS_ISSUE_TAIL_READ:
@@ -1250,16 +1250,19 @@ static unsigned char UpdateReadState(AsyncEntry* pEntry)
 
             default:
                 HandleGCIOErrors(pFile);
-                return 0;
+                goto return_false;
             }
 
         case eRS_READ_COMPLETE:
             return 1;
 
         default:
-            return 0;
+            goto return_false;
         }
     }
+
+return_false:
+    return 0;
 }
 
 /**

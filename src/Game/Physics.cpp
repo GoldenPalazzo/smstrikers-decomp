@@ -344,9 +344,8 @@ bool PhysicsLoader::StartLoad(LoadingManager*)
     int i;
     int sidelineOffset;
     int cornerOffset;
-    unsigned long uPositiveNetMeshID;
-    unsigned long uNegativeNetMeshID;
     char szTemp[0x104];
+    const char* pBaseName;
 
     dSetAllocHandler(ODEAlloc);
     dSetReallocHandler(ODERealloc);
@@ -430,7 +429,9 @@ bool PhysicsLoader::StartLoad(LoadingManager*)
 
     if (NetMesh::s_bAnimatedNetMeshEnabled)
     {
-        const char* pBaseName = BasicStadium::GetCurrentStadium()->m_szBaseName;
+        pBaseName = BasicStadium::GetCurrentStadium()->m_szBaseName;
+        unsigned long uPositiveNetMeshID;
+        unsigned long uNegativeNetMeshID;
 
         nlStrNCat<char>(szTemp, pBaseName, "/NetMesh", 0x100);
         uPositiveNetMeshID = nlStringLowerHash(szTemp);

@@ -1342,8 +1342,6 @@ done:
 
 /**
  * Offset/Address/Size: 0x2C0 | 0x80038510 | size: 0x358
- * TODO: 99.34% match - remaining diffs are MWCC floating-point register allocation in clamp blocks:
- * X clamp: f4/f6 swap for clampX/maxX + cror flag direction; Y clamp: f0/f3 swap + stack offset swap.
  */
 void FormationBallPosition::CalculateDesiredLocation(nlVector3& destPosition, cFielder* pFielder, bool bExtrapolate)
 {
@@ -1368,35 +1366,18 @@ void FormationBallPosition::CalculateDesiredLocation(nlVector3& destPosition, cF
         u32 posIndex = m_iFielderFormationPos[pFielder->m_ID];
         const FormationSpec* pSpec = m_pFormationSpec;
 
-        f32 maxX = v2FormationMax.f.x;
-        f32 minX = v2FormationMin.f.x;
-
         const FormationPos* pPos = &pSpec->m_Positions[posIndex];
+        nlVector2 offset;
+        nlVec2Sub(offset, pPos->m_Location, *(nlVector2*)&v3KeyFormationAIPosition);
 
-        f32 locY = v3KeyFormationAIPosition.f.y;
-        f32 locX = v3KeyFormationAIPosition.f.x;
+        f32 clampX = nlMinEquals(nlMaxEquals(v3KeyAIPosition.f.x, v2FormationMin.f.x), v2FormationMax.f.x);
 
-        f32 posLocY = pPos->m_Location.f.y;
-        f32 posLocX = pPos->m_Location.f.x;
+        destPosition.f.x = offset.f.x + clampX;
 
-        f32 dy = posLocY - locY;
-        f32 dx = posLocX - locX;
-
-        f32 clampX = v3KeyAIPosition.f.x;
-        clampX = (minX <= clampX) ? clampX : minX;
-        clampX = (maxX >= clampX) ? clampX : maxX;
-
-        destPosition.f.x = dx + clampX;
-
-        f32 maxY = v2FormationMax.f.y;
-        f32 clampY = v3KeyAIPosition.f.y;
-        f32 minY = v2FormationMin.f.y;
-
-        clampY = (clampY >= minY) ? clampY : minY;
-        clampY = (clampY <= maxY) ? clampY : maxY;
+        f32 clampY = nlMinEquals(nlMaxEquals(v3KeyAIPosition.f.y, v2FormationMin.f.y), v2FormationMax.f.y);
 
         f32 zero = 0.0f;
-        destPosition.f.y = dy + clampY;
+        destPosition.f.y = offset.f.y + clampY;
         destPosition.f.z = zero;
 
         if (pFielder->m_pTeam->m_nSide != 0)

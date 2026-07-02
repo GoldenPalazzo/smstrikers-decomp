@@ -1264,8 +1264,8 @@ foundExisting:
 
 /**
  * Offset/Address/Size: 0x7C8 | 0x8013CCDC | size: 0x510
- * TODO: 97.99% match - register allocation in team/player loops (r28-r31 swapped),
- *       while loop beq vs bne+b branch pattern
+ * TODO: 98.73% match - register allocation in team/player loops (r28-r31 swapped),
+ *       fade-list search register allocation and beq vs bne+b branch pattern
  */
 void FadeFilter(float currentVal, float fadeToVal, float fadeDuration, float fadeTimeStart)
 {
@@ -1461,9 +1461,9 @@ foundExisting:
     }
 
     newFade->next = NULL;
-    // #pragma inline_depth(0)
+#pragma inline_depth(0)
     nlListAddStart<FadeAudioData>(&g_pFadeList, newFade, NULL);
-    // #pragma inline_depth
+#pragma inline_depth
 }
 
 /**
@@ -1866,7 +1866,7 @@ void Update3DSFXEmitters()
 
 /**
  * Offset/Address/Size: 0x159C | 0x8013DAB0 | size: 0xA34
- * TODO: 98.85% match - remaining delete-next registers, velocity-copy word order, and team-loop register allocation differences.
+ * TODO: 99.33% match - remaining delete-next registers, filter rounding, and team-loop register allocation differences.
  */
 void UpdateFades(float fDeltaT)
 {
@@ -1998,11 +1998,13 @@ void UpdateFades(float fDeltaT)
                             vel = linVel;
 #pragma inline_depth
                         }
+                        float targetVol = *(float*)((char*)pFadeData + 0x14);
+                        const nlVector3& pos = ((SFXEmitter*)*(u32*)((char*)pFadeData + 0x4))->pPhysObj->GetPosition();
                         PlatAudio::Update3DSFXEmitter(
                             (SFXEmitter*)*(u32*)((char*)pFadeData + 0x4),
-                            ((SFXEmitter*)*(u32*)((char*)pFadeData + 0x4))->pPhysObj->GetPosition(),
+                            pos,
                             vel,
-                            *(float*)((char*)pFadeData + 0x14));
+                            targetVol);
                     }
                     else if (((SFXEmitter*)*(u32*)((char*)pFadeData + 0x4))->posUpdateMethod == PTRS_TO_VECTORS)
                     {

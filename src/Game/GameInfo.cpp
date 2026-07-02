@@ -1413,19 +1413,17 @@ void GameInfoManager::SetupTournamentKnockout(eTeamID* lineup, eSidekickID* skli
 
     for (int i = 0; i < numplayingteams; i++)
     {
-        eTeamID team = *lineup;
+        eTeamID team = lineup[i];
+        TeamStats* stat = &teamstats[i];
 
-        memset(&teamstats->mPlayerTotalStats, 0, 0x34);
-        teamstats->mPlayerTotalStats.mRecordType.mTeamID = team;
-        teamstats->mPlayerTotalStats.mType = TYPE_TEAM;
-        teamstats->mTeamIndex = team;
-        teamstats->mNumWins = 0;
-        teamstats->mNumLosses = 0;
-        teamstats->mNumOTLosses = 0;
-        teamstats->mNumPoints = 0;
-
-        lineup++;
-        teamstats++;
+        memset(&stat->mPlayerTotalStats, 0, 0x34);
+        stat->mPlayerTotalStats.mRecordType.mTeamID = team;
+        stat->mPlayerTotalStats.mType = TYPE_TEAM;
+        stat->mTeamIndex = team;
+        stat->mNumWins = 0;
+        stat->mNumLosses = 0;
+        stat->mNumOTLosses = 0;
+        stat->mNumPoints = 0;
     }
 }
 

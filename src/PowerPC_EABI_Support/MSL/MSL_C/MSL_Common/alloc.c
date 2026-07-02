@@ -98,9 +98,6 @@ typedef struct mem_pool_obj
 
 } mem_pool_obj;
 
-mem_pool_obj __malloc_pool;
-static int initialized = 0;
-
 static SubBlock* SubBlock_merge_prev(SubBlock*, SubBlock**);
 static void SubBlock_merge_next(SubBlock*, SubBlock**);
 void Block_link(Block*, SubBlock*);
@@ -141,11 +138,16 @@ static const u32 fix_pool_sizes[] = { 4, 12, 20, 36, 52, 68 };
 #define fix_var_flag    0x01
 #define this_alloc_flag 0x02
 
-static inline void FixBlock_fill_subblocks(FixBlock* b, char* p, u32 msize, u32 index)
+static inline void FixBlock_fill_subblocks(FixBlock* b, FixBlock* tail, FixBlock* head, char* p, u32 msize, u32 index)
 {
     u32 sub_size = fix_pool_sizes[index] + 4;
     u32 num_subblocks = (msize - 0x14) / sub_size;
     u32 k;
+    b->prev_ = tail;
+    b->next_ = head;
+    tail->next_ = b;
+    head->prev_ = b;
+    b->client_size_ = fix_pool_sizes[index];
     for (k = 0; k < num_subblocks - 1; ++k)
     {
         char* np;
@@ -643,17 +645,9 @@ static __mem_pool* get_malloc_pool(void)
 /**
  * @note Address: N/A
  * @note Size: 0x2D0
- * TODO: 99.61% match. Extracting the subblock fill into FixBlock_fill_subblocks (computing
- * sub_size from the index) fixed the head/k/sub_size coloring. Remaining 14 diffs are a single
- * p<->tail volatile swap: the loop-carried subblock cursor 'p' wants r10 (target) but MWCC 2.5
- * gives it r8 (ours); 'tail' and the intra-iteration scratch then take the complementary reg.
- * Proven irreducible to source form across THREE parallel compile-test searches + ~40 manual
- * variants. Confirmed dead ends (do not retry): register/volatile hints on cursor/scratch (no
- * effect on volatile selection), ping-pong/two-cursor forms, scratch-born-first, typed (FixSubBlock*)
- * cursor, np=(char*)sb+sub_size, precomputed end-pointer bound, count-down loop, and all caller
- * outer-block register-pressure perturbations. Anything that keeps the instruction stream
- * byte-identical holds at exactly 99.611115 with the cursor stuck on r8; anything that moves it
- * restructures the unrolled loop and regresses to 72-91%. MWCC 2.5 coloring tiebreak; NonMatching.
+ * 100% match. The list wiring (prev_/next_/client_size_) must live INSIDE
+ * FixBlock_fill_subblocks (params ordered b, tail, head, p, msize, index) so the
+ * loop-carried subblock cursor 'p' colors to r10 and 'tail' to r8 as in target.
  */
 void* allocate_from_fixed_pools(__mem_pool_obj* pool_obj, u32 size)
 {
@@ -676,8 +670,6 @@ void* allocate_from_fixed_pools(__mem_pool_obj* pool_obj, u32 size)
         u32 max_free_size;
         u32 msize;
         FixBlock* b;
-        FixBlock* head;
-        FixBlock* tail;
         char* p;
 
         if (n > 0x100)
@@ -723,17 +715,9 @@ void* allocate_from_fixed_pools(__mem_pool_obj* pool_obj, u32 size)
         }
 
         b = (FixBlock*)block;
-        head = fs->head_;
-        tail = fs->tail_;
         p = (char*)b + 0x14;
 
-        b->prev_ = tail;
-        b->next_ = head;
-        tail->next_ = b;
-        head->prev_ = b;
-        b->client_size_ = pool_sizes[i];
-
-        FixBlock_fill_subblocks(b, p, msize, i);
+        FixBlock_fill_subblocks(b, fs->tail_, fs->head_, p, msize, i);
 
         b->start_ = (FixSubBlock*)((char*)block + 0x14);
         b->n_allocated_ = 0;

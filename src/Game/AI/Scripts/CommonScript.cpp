@@ -3872,6 +3872,7 @@ const nlVector2 g_vInDangerDelayedMax = { 1.0f, 1.0f };
 
 /**
  * Offset/Address/Size: 0x3B4 | 0x8006A584 | size: 0xAB0
+ * TODO: 98.74% match - cache key stack slots and return-copy registers differ.
  */
 FuzzyVariant Fuzzy::InDangerDelayed(cFielder* TheFielder)
 {
@@ -3933,10 +3934,10 @@ FuzzyVariant Fuzzy::InDangerDelayed(cFielder* TheFielder)
         fPressure = (fPressure >= fTrueConfidence) ? fPressure : fTrueConfidence;
         fTrueConfidence = (fAttack >= fPressure) ? fAttack : fPressure;
 
-        fFalseConfidence = 1.0f - fTrueConfidence;
-        fMinVal = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
-        fMaxVal = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
-        fBranchRatio = fMinVal / fMaxVal;
+        float fFalseConfidence2 = 1.0f - fTrueConfidence;
+        float fMinVal2 = (fTrueConfidence <= fFalseConfidence2) ? fTrueConfidence : fFalseConfidence2;
+        float fMaxVal2 = (fTrueConfidence >= fFalseConfidence2) ? fTrueConfidence : fFalseConfidence2;
+        float fBranchRatio2 = fMinVal2 / fMaxVal2;
 
         if (fTrueConfidence > 0.0f)
         {
@@ -3944,7 +3945,7 @@ FuzzyVariant Fuzzy::InDangerDelayed(cFielder* TheFielder)
             fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
             if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
             {
-                fConfidence = (float)(double)fConfidence * fBranchRatio;
+                fConfidence = (float)(double)fConfidence * fBranchRatio2;
             }
             SkillTweaks* pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide);
             float fMin = Interpolate(g_vInDangerDelayedMin.f.x, g_vInDangerDelayedMin.f.y, pSkillTweaks->Off_Reaction);
@@ -3994,7 +3995,7 @@ FuzzyVariant Fuzzy::GoalieAndGonnaPickupBall(cPlayer* ThePlayer)
     float closeToBall = CloseToBall(ThePlayer);
     float goalieType = GoalieType(ThePlayer);
 
-    closingTo = (closingTo <= ableToIntercept) ? closingTo : ableToIntercept;
+    closeToBall = (closeToBall <= ableToIntercept) ? closeToBall : ableToIntercept;
     closeToBall = (closeToBall <= closingTo) ? closeToBall : closingTo;
     if (goalieType <= closeToBall)
         closeToBall = goalieType;

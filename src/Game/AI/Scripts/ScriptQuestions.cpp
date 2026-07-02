@@ -983,9 +983,7 @@ float FarToTheirNet(cPlayer* pPlayer)
 
 /**
  * Offset/Address/Size: 0x4934 | 0x800833BC | size: 0x394
- * TODO: 96.66% match - remaining diffs are f30/f31 accumulator/check register swap,
- *       extra fmr assignment in goalie near-distance branches, and
- *       minor register selection differences in goalie action-state checks.
+ * TODO: 99.93% match - initial f30/f31 zero load and copy are reversed.
  */
 float Pressured(cFielder* pFielder)
 {
@@ -1009,11 +1007,11 @@ float Pressured(cFielder* pFielder)
         float fNearScore;
         if (pFielder == NULL)
         {
-            fNearScore = fCheck;
+            fNearScore = 0.0f;
         }
         else if (pOpponent == NULL)
         {
-            fNearScore = fCheck;
+            fNearScore = 0.0f;
         }
         else
         {
@@ -1050,6 +1048,8 @@ float Pressured(cFielder* pFielder)
             }
             fNearScore = dist;
         }
+
+        fCheck = fCheck;
 
         float fOpponentScore;
         if (pOpponent == NULL)
@@ -1115,7 +1115,7 @@ float Pressured(cFielder* pFielder)
             else
             {
                 float fClosingSpeed = GetClosingSpeed2D(*pFielderPos, *pFielderVel, pOpponent->m_v3Position, pOpponent->m_v3Velocity);
-                fClosingScore = NormalizeVal(fClosingSpeed, fCheck, g_pGame->m_pFuzzyTweaks->fClosingSpeedMax);
+                fClosingScore = NormalizeVal(fClosingSpeed, 0.0f, g_pGame->m_pFuzzyTweaks->fClosingSpeedMax);
             }
 
             fScore += (fNearScore * g_pGame->m_pFuzzyTweaks->fPressuredNearWeight) + (fClosingScore * fClosingWeight);
@@ -1126,8 +1126,8 @@ float Pressured(cFielder* pFielder)
 
     fScore *= 0.25f;
 
-    float fResult = fCheck;
-    if (fScore >= fCheck)
+    float fResult = 0.0f;
+    if (fScore >= 0.0f)
     {
         fResult = fScore;
     }

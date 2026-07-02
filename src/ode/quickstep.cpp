@@ -768,14 +768,17 @@ void dxQuickStepper(dxWorld* world, dxBody* const* body, int nb,
         // they should not be used again.
 
         // add stepsize * cforce to the body velocity
-        for (i = 0; i < nb; i++)
         {
-            dReal* lvel = body[i]->lvel;
-            for (j = 0; j < 3; j++)
-                lvel[j] += stepsize * cforce[i * 6 + j];
-            dReal* avel = lvel + 4;
-            for (j = 0; j < 3; j++)
-                avel[j] += stepsize * cforce[i * 6 + 3 + j];
+            int k;
+            for (i = 0, k = 0; i < nb; k++, i++)
+            {
+                dReal* lvel = body[i]->lvel;
+                for (j = 0; j < 3; j++)
+                    lvel[j] += stepsize * cforce[k * 6 + j];
+                dReal* avel = lvel + 4;
+                for (j = 0; j < 3; j++)
+                    avel[j] += stepsize * cforce[i * 6 + 3 + j];
+            }
         }
 
         // if joint feedback is requested, compute the constraint force.

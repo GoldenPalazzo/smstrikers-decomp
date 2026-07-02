@@ -911,7 +911,7 @@ inline void Goalie::StartRunBlend()
 
 /**
  * Offset/Address/Size: 0x27FC | 0x80050D38 | size: 0x874
- * TODO: 99.70% match - remaining clamp direction register swaps and extra sign-extension in no-pad turn check.
+ * TODO: 99.94% match - remaining fabs temporary register swaps.
  */
 void Goalie::ActionMoveWB(float fDeltaT)
 {
@@ -1081,8 +1081,10 @@ void Goalie::ActionMoveWB(float fDeltaT)
 
                 if (bClamped)
                 {
-                    s16 diff = (s16)(yDir - m_aDesiredFacingDirection);
-                    m_aDesiredFacingDirection = (u16)(m_aDesiredFacingDirection + (s16)(diff * 0.5f));
+                    u16 currentDir = m_aDesiredFacingDirection;
+                    s16 diff = (s16)(yDir - currentDir);
+                    currentDir = (u16)(currentDir + (s16)(diff * 0.5f));
+                    m_aDesiredFacingDirection = currentDir;
                 }
                 else
                 {
@@ -1207,12 +1209,8 @@ no_pad:
             }
             else
             {
-                s16 diff = (s16)(m_aDesiredFacingDirection - m_aActualFacingDirection);
-                if (diff < 0)
-                {
-                    diff = -diff;
-                }
-                if ((u16)diff <= 0xDAC)
+                u16 diff = (u16)abs_s16((s16)(m_aDesiredFacingDirection - m_aActualFacingDirection));
+                if (diff <= 0xDAC)
                 {
                     break;
                 }

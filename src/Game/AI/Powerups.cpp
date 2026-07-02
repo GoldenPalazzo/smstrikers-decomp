@@ -1274,7 +1274,7 @@ void PowerupBase::Update(float dt)
 
 /**
  * Offset/Address/Size: 0x3DFC | 0x8005E6E8 | size: 0x608
- * TODO: 98.90% match - remaining chance accumulator register allocation diffs
+ * TODO: 98.91% match - remaining chance accumulator register allocation diffs
  */
 int PowerupBase::AwardPowerup(cTeam* pTeam)
 {
@@ -1397,8 +1397,8 @@ int PowerupBase::AwardPowerup(cTeam* pTeam)
 
     nChanceForMushroom = ((FielderTweaks*)pSideKick->m_pTweaks)->nChanceForMushroom + ((FielderTweaks*)pCaptain->m_pTweaks)->nChanceForMushroom;
     nChanceForMushroom += nChanceForBoBomb > 0 ? nChanceForBoBomb : 0;
-    nChanceForMushroom += g_pGame->m_pGameTweaks->nChanceForMushroom;
     nChanceForMushroom += nDifference;
+    nChanceForMushroom += g_pGame->m_pGameTweaks->nChanceForMushroom;
 
     nChanceForGreenShell = g_pGame->m_pGameTweaks->nChanceForGreenShell + ((FielderTweaks*)pCaptain->m_pTweaks)->nChanceForGreenShell + ((FielderTweaks*)pSideKick->m_pTweaks)->nChanceForGreenShell + (nChanceForMushroom > 0 ? nChanceForMushroom : 0) + nDifference;
 

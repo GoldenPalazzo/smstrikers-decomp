@@ -3,6 +3,8 @@
 
 #include "NL/gl/glDraw2.h"
 
+class GameRenderTask;
+
 class WorldDarkening
 {
 public:
@@ -24,6 +26,8 @@ public:
     /* 0xC */ bool mActive;
 
 private:
+    friend class GameRenderTask;
+
     static inline void SetPolyColour(glPoly2& poly, u8 r, u8 g, u8 b, u8 a)
     {
         nlColour color = { 0, 0, 0, 0 };
