@@ -74,8 +74,8 @@
 
 extern u8 g_DoStackWatermarkTests;
 extern u8 g_StackWatermarkFiller;
-extern u8 g_bFrameSmiler;
-extern u8 g_bFrameStatsOnScreen;
+extern bool g_bFrameSmiler;
+extern bool g_bFrameStatsOnScreen;
 extern u8 g_bFrameStatsOnDisk;
 extern bool g_bRunSimAndRenderInLockStep;
 extern ResetTask resetTask;

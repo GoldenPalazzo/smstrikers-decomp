@@ -160,6 +160,10 @@ public:
 
     BasicString(const BasicString& other)
     {
+#ifdef BASICSTRING_COPY_REREAD_TEMP
+        BasicStringData<CharT>* data = other.m_data;
+        m_data = (data != 0) ? (data->mRefCount++, other.m_data) : 0;
+#else
         BasicStringData<CharT>* data = other.m_data;
         if (data != 0)
         {
@@ -173,6 +177,7 @@ public:
             data = 0;
         }
         m_data = data;
+#endif
     }
 
     ~BasicString()

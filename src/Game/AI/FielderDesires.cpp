@@ -156,6 +156,16 @@ static inline void CalcDeltaToTarget(nlVector3& outDelta, const nlVector3& targe
     outDelta.f.z = target.f.z - origin.f.z;
 }
 
+static inline const nlVector3& GetBallPosition(cBall* pBall)
+{
+    return pBall->m_v3Position;
+}
+
+static inline const nlVector3& GetBallVelocity(cBall* pBall)
+{
+    return pBall->m_v3Velocity;
+}
+
 /**
  * Offset/Address/Size: 0x668C | 0x80037410 | size: 0x3C
  */
@@ -1130,7 +1140,6 @@ void cFielder::CleanUpDesire(eFielderDesireState eNewDesireState)
 
 /**
  * Offset/Address/Size: 0x4204 | 0x80034F88 | size: 0x3C4
- * TODO: 99.85% match - CanISlideAttack r4/r5 arg eval order (scratch-only compiler register allocation artifact)
  */
 void cFielder::DesireInterceptBall(float fDeltaT)
 {
@@ -1184,7 +1193,7 @@ void cFielder::DesireInterceptBall(float fDeltaT)
                 SkillTweaks* pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide);
                 if (pSkillTweaks->Def_SlideAttackChance > 0.0f)
                 {
-                    if (CanISlideAttack(g_pBall->m_v3Position, g_pBall->m_v3Velocity, &fTime))
+                    if (CanISlideAttack(GetBallPosition(g_pBall), GetBallVelocity(g_pBall), &fTime))
                     {
                         InitActionSlideAttack(NULL, fTime);
                         m_eDesireSubState = 1;

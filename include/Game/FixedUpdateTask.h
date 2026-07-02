@@ -14,6 +14,11 @@ public:
     static void DecrementFrameLock(float);
     static float GetPhysicsUpdateTick();
 
+    static void CallFixedUpdateTasks();
+    static void PostPhysicsAITask(float);
+    static void PrePhysicsAITask(float);
+    static void AIUpdateTask(float);
+
     FixedUpdateTask();
 
     static float mAccumulatedDeltaT;

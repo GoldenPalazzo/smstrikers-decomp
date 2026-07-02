@@ -4,10 +4,7 @@
 #include "NL/nlTask.h"
 #include "NL/gl/glModel.h"
 
-void DrawGrid(int);
-void DrawSafeFrame();
 void SetupMatrices();
-glModel* cb_ParticleLighting(glModel* pModel);
 
 enum eModelSkinMethod
 {
@@ -23,16 +20,9 @@ public:
     virtual const char* GetName() { return "Begin Frame"; };
     virtual void Run(float dt);
 
-    static u8 s_FramerateLocked;
+    static bool s_FramerateLocked;
     static eModelSkinMethod s_GameplaySkin;
     static eModelSkinMethod s_ReplaySkin;
 };
-
-// class Config
-// {
-// public:
-//     void TagValuePair::Get<BasicString<char, Detail::TempStringAllocator> >() const;
-//     void Get<BasicString<char, Detail::TempStringAllocator> >(const char*, BasicString<char, Detail::TempStringAllocator>);
-// };
 
 #endif // _BEGINFRAMETASK_H_

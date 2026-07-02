@@ -1,3 +1,4 @@
+#define BASICSTRING_COPY_REREAD_TEMP
 #include "Game/BeginFrameTask.h"
 
 #include "Game/Debug/FrameCounter.h"
@@ -21,25 +22,17 @@
 #include "NL/glx/glxTexture.h"
 #include "Game/GL/gluMeshWriter.h"
 
-#include "Game/Camera/BaseCamera.h"
+#include "Game/Camera/CameraMan.h"
+#include "Game/Character.h"
+#include "Game/Game.h"
 #include "Game/GameInfo.h"
-
-class cCameraManager
-{
-public:
-    static void Update(float);
-
-    static cBaseCamera* m_cameraStack;
-    static nlMatrix4 m_matView;
-    static float m_fFOV;
-    static int m_pBeginFrameCameraType;
-};
+#include "Game/WorldManager.h"
 
 extern glModel* (*m_LightingCallback__14ParticleSystem)(glModel*);
 
 static inline float GetAspectRatio()
 {
-    if (GameInfoManager::s_pInstance->mUserInfo.mVisualOptions.mIsWidescreen)
+    if (GameInfoManager::Instance()->mUserInfo.mVisualOptions.mIsWidescreen)
     {
         return 1.666f;
     }
@@ -57,40 +50,31 @@ static inline float GetAspectRatio()
 }
 
 const u32 GLTT_BumpLocal_bit = 1 << (int)GLTT_BumpLocal;
+
 static float dimx = 48.0f;
 static float dimy = 28.0f;
-static float offx;
-static float offy;
 
-u8 g_bCoPlanarRefVisible;
-u8 g_bCoPlanarDepthTest;
-u8 g_bCoPlanarDepthWrite;
-u8 g_bFrameSmiler;
-u8 g_bFrameStatsOnScreen;
-u8 BeginFrameTask::s_FramerateLocked;
 eModelSkinMethod BeginFrameTask::s_GameplaySkin;
 eModelSkinMethod BeginFrameTask::s_ReplaySkin;
-static u8 g_bDrawSafeFrame;
-static s32 g_nGridDisplaySpacing;
-static s32 g_eWaitMode;
-// /**
-//  * Offset/Address/Size: 0xA8 | 0x80170214 | size: 0x84
-//  */
-// void Config::TagValuePair::Get<BasicString<char, Detail::TempStringAllocator>>() const
-// {
-// }
+bool BeginFrameTask::s_FramerateLocked;
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x8017016C | size: 0xA8
-//  */
-// void Config::Get<BasicString<char, Detail::TempStringAllocator>>(const char*, BasicString<char, Detail::TempStringAllocator>)
-// {
-// }
+static float offx;
+static float offy;
+static s32 g_eWaitMode;
+
+bool g_bCoPlanarRefVisible;
+bool g_bCoPlanarDepthTest;
+bool g_bCoPlanarDepthWrite;
+bool g_bFrameSmiler;
+bool g_bFrameStatsOnScreen;
+
+static bool g_bDrawSafeFrame;
+static s32 g_nGridDisplaySpacing;
 
 /**
  * Offset/Address/Size: 0x19E8 | 0x801700C8 | size: 0x98
  */
-glModel* cb_ParticleLighting(glModel* pModel)
+static glModel* cb_ParticleLighting(glModel* pModel)
 {
     glModelPacket* pPacket; // r27
     u32 LitProgram = glGetProgram("3d pointlit");
@@ -267,21 +251,20 @@ static inline BasicStringInternal* BuildDefaultStringData()
 
 static void SetupRenderInfo()
 {
-    extern s32 m_ModelType__10cCharacter;
-    extern void* s_World__12WorldManager;
-    extern u8* g_pGame;
-    static u8 bGotWait;
+    static bool bGotWait;
     static s8 init;
+
+    s32 state;
 
     if (BeginFrameTask::s_GameplaySkin != 2)
     {
-        m_ModelType__10cCharacter = (BeginFrameTask::s_GameplaySkin != 0);
+        cCharacter::m_ModelType = (eCharacterModelType)(BeginFrameTask::s_GameplaySkin != 0);
     }
     else
     {
-        if (s_World__12WorldManager != NULL)
+        if (WorldManager::s_World != NULL)
         {
-            s32 state = nlTaskManager::m_pInstance->m_CurrState;
+            state = nlTaskManager::m_pInstance->m_CurrState;
             if (state == 1)
             {
                 state = nlTaskManager::m_pInstance->m_PrevState;
@@ -291,40 +274,40 @@ static void SetupRenderInfo()
             {
             case 0x10:
             case 0x100:
-                m_ModelType__10cCharacter = 1;
+                cCharacter::m_ModelType = CharModel_Blend;
                 break;
             case 0x20000:
                 if (BeginFrameTask::s_ReplaySkin == 0)
                 {
-                    m_ModelType__10cCharacter = 0;
+                    cCharacter::m_ModelType = CharModel_Rigid;
                 }
                 else
                 {
-                    m_ModelType__10cCharacter = 1;
+                    cCharacter::m_ModelType = CharModel_Blend;
                 }
                 break;
             default:
-                m_ModelType__10cCharacter = 0;
+                cCharacter::m_ModelType = CharModel_Rigid;
                 break;
             }
         }
         else
         {
-            m_ModelType__10cCharacter = 0;
+            cCharacter::m_ModelType = CharModel_Rigid;
         }
     }
 
     if (g_pGame != NULL)
     {
-        if (g_pGame[0x40] != 0)
+        if (g_pGame->mbCaptainShotToScoreOn)
         {
-            m_ModelType__10cCharacter = 1;
+            cCharacter::m_ModelType = CharModel_Blend;
         }
     }
 
     if (!init)
     {
-        bGotWait = 0;
+        bGotWait = false;
         init = 1;
     }
 
@@ -352,7 +335,7 @@ static void SetupRenderInfo()
             g_eWaitMode = 0;
         }
 
-        bGotWait = 1;
+        bGotWait = true;
     }
 
     nlVector4 vwait;
@@ -424,12 +407,23 @@ static inline void meshTexcoord(GLMeshWriterCore& w, const nlVector2& tc)
     w.Texcoord(tc);
 }
 
-static inline void meshVertex(GLMeshWriterCore& w, const nlVector3& v)
+static inline void meshVertex(GLMeshWriterCore& w, float x, float y, float z)
 {
+    nlVector3 v;
+    v.f.x = x;
+    v.f.y = y;
+    v.f.z = z;
     w.Vertex(v);
 }
 
-void DrawSafeFrame()
+struct LineStreams
+{
+    eGLStream e[3];
+};
+
+static inline LineStreams MakeLineStreams();
+
+static void DrawSafeFrame()
 {
     extern u32 glx_GetScaledXFBWidth();
 
@@ -440,12 +434,12 @@ void DrawSafeFrame()
 
     {
         GLMeshWriter mesh;
-        eGLStream streams[] = { GLStream_Position, GLStream_Colour, GLStream_Diffuse };
+        LineStreams streams = MakeLineStreams();
         glSetDefaultState(false);
         glSetCurrentTexture(glGetTexture("global/white"), GLTT_Diffuse);
         glSetCurrentProgram(glGetProgram("2d unlit"));
 
-        if (mesh.Begin(2, GLP_LineList, 3, streams, false))
+        if (mesh.Begin(2, GLP_LineList, 3, streams.e, false))
         {
             nlVector2 tc;
             tc.f.x = 0.0f;
@@ -453,11 +447,7 @@ void DrawSafeFrame()
             meshTexcoord(mesh, tc);
             mesh.Colour(safeFrameColour);
 
-            nlVector3 v;
-            v.f.x = (float)leftEdge;
-            v.f.y = 30.0f;
-            v.f.z = 0.0f;
-            meshVertex(mesh, v);
+            meshVertex(mesh, (float)leftEdge, 30.0f, 0.0f);
 
             nlVector2 tc2;
             tc2.f.x = 0.0f;
@@ -465,11 +455,7 @@ void DrawSafeFrame()
             meshTexcoord(mesh, tc2);
             mesh.Colour(safeFrameColour);
 
-            nlVector3 v2;
-            v2.f.x = (float)rightEdge;
-            v2.f.y = 30.0f;
-            v2.f.z = 0.0f;
-            meshVertex(mesh, v2);
+            meshVertex(mesh, (float)rightEdge, 30.0f, 0.0f);
 
             if (mesh.End())
             {
@@ -480,12 +466,12 @@ void DrawSafeFrame()
 
     {
         GLMeshWriter mesh;
-        eGLStream streams[] = { GLStream_Position, GLStream_Colour, GLStream_Diffuse };
+        LineStreams streams = MakeLineStreams();
         glSetDefaultState(false);
         glSetCurrentTexture(glGetTexture("global/white"), GLTT_Diffuse);
         glSetCurrentProgram(glGetProgram("2d unlit"));
 
-        if (mesh.Begin(2, GLP_LineList, 3, streams, false))
+        if (mesh.Begin(2, GLP_LineList, 3, streams.e, false))
         {
             nlVector2 tc;
             tc.f.x = 0.0f;
@@ -493,11 +479,7 @@ void DrawSafeFrame()
             meshTexcoord(mesh, tc);
             mesh.Colour(safeFrameColour);
 
-            nlVector3 v;
-            v.f.x = (float)leftEdge;
-            v.f.y = 450.0f;
-            v.f.z = 0.0f;
-            meshVertex(mesh, v);
+            meshVertex(mesh, (float)leftEdge, 450.0f, 0.0f);
 
             nlVector2 tc2;
             tc2.f.x = 0.0f;
@@ -505,11 +487,7 @@ void DrawSafeFrame()
             meshTexcoord(mesh, tc2);
             mesh.Colour(safeFrameColour);
 
-            nlVector3 v2;
-            v2.f.x = (float)rightEdge;
-            v2.f.y = 450.0f;
-            v2.f.z = 0.0f;
-            meshVertex(mesh, v2);
+            meshVertex(mesh, (float)rightEdge, 450.0f, 0.0f);
 
             if (mesh.End())
             {
@@ -520,12 +498,12 @@ void DrawSafeFrame()
 
     {
         GLMeshWriter mesh;
-        eGLStream streams[] = { GLStream_Position, GLStream_Colour, GLStream_Diffuse };
+        LineStreams streams = MakeLineStreams();
         glSetDefaultState(false);
         glSetCurrentTexture(glGetTexture("global/white"), GLTT_Diffuse);
         glSetCurrentProgram(glGetProgram("2d unlit"));
 
-        if (mesh.Begin(2, GLP_LineList, 3, streams, false))
+        if (mesh.Begin(2, GLP_LineList, 3, streams.e, false))
         {
             nlVector2 tc;
             tc.f.x = 0.0f;
@@ -533,11 +511,7 @@ void DrawSafeFrame()
             meshTexcoord(mesh, tc);
             mesh.Colour(safeFrameColour);
 
-            nlVector3 v;
-            v.f.x = (float)leftEdge;
-            v.f.y = 30.0f;
-            v.f.z = 0.0f;
-            meshVertex(mesh, v);
+            meshVertex(mesh, (float)leftEdge, 30.0f, 0.0f);
 
             nlVector2 tc2;
             tc2.f.x = 0.0f;
@@ -545,11 +519,7 @@ void DrawSafeFrame()
             meshTexcoord(mesh, tc2);
             mesh.Colour(safeFrameColour);
 
-            nlVector3 v2;
-            v2.f.x = (float)leftEdge;
-            v2.f.y = 450.0f;
-            v2.f.z = 0.0f;
-            meshVertex(mesh, v2);
+            meshVertex(mesh, (float)leftEdge, 450.0f, 0.0f);
 
             if (mesh.End())
             {
@@ -560,12 +530,12 @@ void DrawSafeFrame()
 
     {
         GLMeshWriter mesh;
-        eGLStream streams[] = { GLStream_Position, GLStream_Colour, GLStream_Diffuse };
+        LineStreams streams = MakeLineStreams();
         glSetDefaultState(false);
         glSetCurrentTexture(glGetTexture("global/white"), GLTT_Diffuse);
         glSetCurrentProgram(glGetProgram("2d unlit"));
 
-        if (mesh.Begin(2, GLP_LineList, 3, streams, false))
+        if (mesh.Begin(2, GLP_LineList, 3, streams.e, false))
         {
             nlVector2 tc;
             tc.f.x = 0.0f;
@@ -573,11 +543,7 @@ void DrawSafeFrame()
             meshTexcoord(mesh, tc);
             mesh.Colour(safeFrameColour);
 
-            nlVector3 v;
-            v.f.x = (float)rightEdge;
-            v.f.y = 30.0f;
-            v.f.z = 0.0f;
-            meshVertex(mesh, v);
+            meshVertex(mesh, (float)rightEdge, 30.0f, 0.0f);
 
             nlVector2 tc2;
             tc2.f.x = 0.0f;
@@ -585,11 +551,7 @@ void DrawSafeFrame()
             meshTexcoord(mesh, tc2);
             mesh.Colour(safeFrameColour);
 
-            nlVector3 v2;
-            v2.f.x = (float)rightEdge;
-            v2.f.y = 450.0f;
-            v2.f.z = 0.0f;
-            meshVertex(mesh, v2);
+            meshVertex(mesh, (float)rightEdge, 450.0f, 0.0f);
 
             if (mesh.End())
             {
@@ -601,11 +563,8 @@ void DrawSafeFrame()
 
 /**
  * Offset/Address/Size: 0x410 | 0x8016EAF0 | size: 0x540
- * TODO: 98.62% match - stack offset diffs (0x18) on nlVector3 vars; MWCC not
- * generating ~GLMeshWriterCore() destructor cleanup, causing stack slot reuse
- * where target has 3 separate mesh/streams allocations
  */
-void DrawGrid(int spacing)
+static void DrawGrid(int spacing)
 {
     nlColour gridColour = { 0x40, 0x40, 0xFF, 0xFF };
     nlColour centerColour = { 0xFF, 0x40, 0x40, 0xFF };
@@ -613,34 +572,26 @@ void DrawGrid(int spacing)
     for (int y = 0; y < 480; y += spacing)
     {
         GLMeshWriter mesh;
-        eGLStream streams[] = { GLStream_Position, GLStream_Colour, GLStream_Diffuse };
+        LineStreams streams = MakeLineStreams();
         glSetDefaultState(false);
         glSetCurrentTexture(glGetTexture("global/white"), GLTT_Diffuse);
         glSetCurrentProgram(glGetProgram("2d unlit"));
 
-        if (mesh.Begin(2, GLP_LineList, 3, streams, false))
+        if (mesh.Begin(2, GLP_LineList, 3, streams.e, false))
         {
             nlVector2 tc;
             tc.f.x = 0.0f;
             tc.f.y = 0.0f;
             meshTexcoord(mesh, tc);
             mesh.Colour(gridColour);
-            nlVector3 v;
-            v.f.x = 0.0f;
-            v.f.y = (float)y;
-            v.f.z = 0.0f;
-            meshVertex(mesh, v);
+            meshVertex(mesh, 0.0f, (float)y, 0.0f);
 
             nlVector2 tc2;
             tc2.f.x = 0.0f;
             tc2.f.y = 0.0f;
             meshTexcoord(mesh, tc2);
             mesh.Colour(gridColour);
-            nlVector3 v2;
-            v2.f.x = 640.0f;
-            v2.f.y = (float)y;
-            v2.f.z = 0.0f;
-            meshVertex(mesh, v2);
+            meshVertex(mesh, 640.0f, (float)y, 0.0f);
 
             if (mesh.End())
             {
@@ -652,34 +603,26 @@ void DrawGrid(int spacing)
     for (int x = 0; x < 640; x += spacing)
     {
         GLMeshWriter mesh;
-        eGLStream streams[] = { GLStream_Position, GLStream_Colour, GLStream_Diffuse };
+        LineStreams streams = MakeLineStreams();
         glSetDefaultState(false);
         glSetCurrentTexture(glGetTexture("global/white"), GLTT_Diffuse);
         glSetCurrentProgram(glGetProgram("2d unlit"));
 
-        if (mesh.Begin(2, GLP_LineList, 3, streams, false))
+        if (mesh.Begin(2, GLP_LineList, 3, streams.e, false))
         {
             nlVector2 tc;
             tc.f.x = 0.0f;
             tc.f.y = 0.0f;
             meshTexcoord(mesh, tc);
             mesh.Colour(gridColour);
-            nlVector3 v;
-            v.f.x = (float)x;
-            v.f.y = 0.0f;
-            v.f.z = 0.0f;
-            meshVertex(mesh, v);
+            meshVertex(mesh, (float)x, 0.0f, 0.0f);
 
             nlVector2 tc2;
             tc2.f.x = 0.0f;
             tc2.f.y = 0.0f;
             meshTexcoord(mesh, tc2);
             mesh.Colour(gridColour);
-            nlVector3 v2;
-            v2.f.x = (float)x;
-            v2.f.y = 480.0f;
-            v2.f.z = 0.0f;
-            meshVertex(mesh, v2);
+            meshVertex(mesh, (float)x, 480.0f, 0.0f);
 
             if (mesh.End())
             {
@@ -690,34 +633,26 @@ void DrawGrid(int spacing)
 
     {
         GLMeshWriter mesh;
-        eGLStream streams[] = { GLStream_Position, GLStream_Colour, GLStream_Diffuse };
+        LineStreams streams = MakeLineStreams();
         glSetDefaultState(false);
         glSetCurrentTexture(glGetTexture("global/white"), GLTT_Diffuse);
         glSetCurrentProgram(glGetProgram("2d unlit"));
 
-        if (mesh.Begin(2, GLP_LineList, 3, streams, false))
+        if (mesh.Begin(2, GLP_LineList, 3, streams.e, false))
         {
             nlVector2 tc;
             tc.f.x = 0.0f;
             tc.f.y = 0.0f;
             meshTexcoord(mesh, tc);
             mesh.Colour(centerColour);
-            nlVector3 v;
-            v.f.x = 320.0f;
-            v.f.y = 0.0f;
-            v.f.z = 0.0f;
-            meshVertex(mesh, v);
+            meshVertex(mesh, 320.0f, 0.0f, 0.0f);
 
             nlVector2 tc2;
             tc2.f.x = 0.0f;
             tc2.f.y = 0.0f;
             meshTexcoord(mesh, tc2);
             mesh.Colour(centerColour);
-            nlVector3 v2;
-            v2.f.x = 320.0f;
-            v2.f.y = 480.0f;
-            v2.f.z = 0.0f;
-            meshVertex(mesh, v2);
+            meshVertex(mesh, 320.0f, 480.0f, 0.0f);
 
             if (mesh.End())
             {
@@ -729,12 +664,10 @@ void DrawGrid(int spacing)
 
 /**
  * Offset/Address/Size: 0x0 | 0x8016E6E0 | size: 0x410
- * TODO: 99.85% match - remaining diffs are i-only symbol/offset immediates for
- * function-local statics in this file.
  */
 void BeginFrameTask::Run(float dt)
 {
-    extern u8 g_bCoPlanarPerObject;
+    extern bool g_bCoPlanarPerObject;
     extern volatile u8 m_AllowInFront__14ParticleSystem;
 
     g_FrameCounter.StartTimer(0);
@@ -853,7 +786,7 @@ void BeginFrameTask::Run(float dt)
         DrawGrid(g_nGridDisplaySpacing);
     }
 
-    static u8 showRegion;
+    static bool showRegion;
     static s8 init;
 
     if (!init)
@@ -899,4 +832,10 @@ void BeginFrameTask::Run(float dt)
         glFontPrintf((eGLView)0x21, 1, 1, white, "Region %d", *(int*)GetRegion());
         glFontEnd();
     }
+}
+
+static inline LineStreams MakeLineStreams()
+{
+    LineStreams s = { GLStream_Position, GLStream_Colour, GLStream_Diffuse };
+    return s;
 }

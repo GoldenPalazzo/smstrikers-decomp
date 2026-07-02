@@ -1314,8 +1314,8 @@ float Attacked(cFielder* pFielder)
             nlPolar polar;
             nlCartesianToPolar(polar, vDiff);
 
-            s16 nAngleDiff = (s16)(nOpponentFacing - polar.a);
-            if (nAngleDiff < 0)
+            int nAngleDiff = nOpponentFacing - polar.a;
+            if ((s16)nAngleDiff < 0)
             {
                 nAngleDiff = -nAngleDiff;
             }

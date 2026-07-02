@@ -141,7 +141,7 @@ class SidelineExplodableManager
 {
 public:
     static void CleanUp();
-    void Update(float);
+    static void Update(float);
     static int GetNumExplodables();
     static void GetVisibilityOfExplodableModels(bool* visibility, int numExplodables);
     static void SetVisibilityOfUnexplodedModels(bool* visibility, int numExplodables);

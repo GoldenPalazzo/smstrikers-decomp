@@ -810,7 +810,7 @@ unsigned long GCAudioStreaming::MonoAudioStream::DoUpdateRead(unsigned long MRAM
 
 /**
  * Offset/Address/Size: 0xA48 | 0x801C81F8 | size: 0x384
- * TODO: 94.00% match - buffer allocation loops still use different registers for the index, manager, and buffer pointer
+ * TODO: 94.89% match - remaining register allocation differs in buffer update and header read loops
  */
 void GCAudioStreaming::StereoAudioStream::Warm(bool CoolOnStop)
 {
@@ -818,81 +818,10 @@ void GCAudioStreaming::StereoAudioStream::Warm(bool CoolOnStop)
     m_Flags &= ~(1 << SF_SeriousStop);
     m_Flags = (m_Flags & ~(1 << SF_CoolOnStop)) | ((unsigned long)CoolOnStop << SF_CoolOnStop);
 
-    AudioStreamBuffer* pBuf;
-    unsigned long i = 0;
-    unsigned long freeBuffer;
-    unsigned long mask;
-    unsigned long test;
-
-    {
-        AudioBufferMgr& mgr = m_BuffMgr;
-        for (unsigned long j = 0; j < mgr.m_BufferCount; j++)
-        {
-            freeBuffer = mgr.m_BuffersFree;
-            mask = 1 << i;
-            test = freeBuffer & mask;
-            test = (-(long)test | test) >> 31;
-            if ((int)test == 1)
-            {
-                pBuf = &mgr.m_Buffers[i];
-                mgr.m_BuffersFree = freeBuffer & ~mask;
-                pBuf->m_pStream = this;
-                pBuf->m_UpdateOffset = 0;
-                pBuf->m_Volume = 0x7F;
-                pBuf->m_Pan = 0x40;
-
-                unsigned long remaining = mgr.m_BuffersFree;
-                int count = 0;
-                while (remaining)
-                {
-                    remaining &= (remaining - 1);
-                    count++;
-                }
-                ___blank("After buffer alloc there are %d availible\n", count);
-                goto done_alloc_0;
-            }
-            i++;
-        }
-        pBuf = 0;
-    }
-
-done_alloc_0:
+    AudioStreamBuffer* pBuf = AudioBufferMgr::GetFreeBuffer(this);
     m_Buffers[0] = pBuf;
 
-    i = 0;
-    {
-        AudioBufferMgr& mgr = m_BuffMgr;
-        for (unsigned long j = 0; j < mgr.m_BufferCount; j++)
-        {
-            freeBuffer = mgr.m_BuffersFree;
-            mask = 1 << i;
-            test = freeBuffer & mask;
-            test = (-(long)test | test) >> 31;
-            if ((int)test == 1)
-            {
-                pBuf = &mgr.m_Buffers[i];
-                mgr.m_BuffersFree = freeBuffer & ~mask;
-                pBuf->m_pStream = this;
-                pBuf->m_UpdateOffset = 0;
-                pBuf->m_Volume = 0x7F;
-                pBuf->m_Pan = 0x40;
-
-                unsigned long remaining = mgr.m_BuffersFree;
-                int count = 0;
-                while (remaining)
-                {
-                    remaining &= (remaining - 1);
-                    count++;
-                }
-                ___blank("After buffer alloc there are %d availible\n", count);
-                goto done_alloc_1;
-            }
-            i++;
-        }
-        pBuf = 0;
-    }
-
-done_alloc_1:
+    pBuf = AudioBufferMgr::GetFreeBuffer(this);
     m_Buffers[1] = pBuf;
 
     {

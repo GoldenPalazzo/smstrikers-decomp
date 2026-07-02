@@ -93,11 +93,11 @@ bool PhysicsAIBall::DidBallJustEnterNet(const nlVector3& oldPos, nlVector3 newPo
     return false;
 }
 
-static inline bool DidBallJustEnterNetWithBall(cBall* pGlobalBall, const nlVector3& oldPos, nlVector3 newPos)
+static inline bool DidBallJustEnterNetWithPhysicsBall(PhysicsAIBall* pPhysicsBall, const nlVector3& oldPos, nlVector3 newPos)
 {
     f32 absOldX = nlVec3GetX(oldPos);
     f32 absNewX = nlVec3GetX(newPos);
-    f32 radius = pGlobalBall->m_pPhysicsBall->GetRadius();
+    f32 radius = pPhysicsBall->GetRadius();
     f32 goalLineX = cField::GetGoalLineX((unsigned int)1);
     f32 threshold = (goalLineX + radius) - 0.08f;
     nlVector3 impactPos;
@@ -519,10 +519,9 @@ void PhysicsAIBall::PostUpdate()
         else
         {
             GetPosition(&newPosition);
-            cBall* pGlobalBall = g_pBall;
             oldPosition = m_pAIBall->m_v3PrevPosition;
 
-            if (DidBallJustEnterNetWithBall(pGlobalBall, oldPosition, newPosition))
+            if (DidBallJustEnterNetWithPhysicsBall(g_pBall->m_pPhysicsBall, oldPosition, newPosition))
             {
                 m_unk_0x58 = true;
             }

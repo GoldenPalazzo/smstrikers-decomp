@@ -8,30 +8,25 @@
 #include "Game/Game.h"
 #include "Game/Physics/Physics.h"
 #include "Game/Render/NetMesh.h"
+#include "Game/Render/SidelineExplodable.h"
 #include "Game/ReplayManager.h"
 #include "Game/Team.h"
 #include "NL/platpad.h"
 
-extern float g_fFixedUpdateTick;
+float g_fFixedUpdateTick = 0.02f;
 extern PhysicsWorld* g_PhysicsWorld;
 
-class SidelineExplodableManager
-{
-public:
-    static void Update(float);
-};
-
-static bool g_bRunSimAndRenderInLockStep;
-static float g_fSimulationTick = g_fFixedUpdateTick;
+bool g_bRunSimAndRenderInLockStep;
+float g_fSimulationTick = g_fFixedUpdateTick;
 
 float FixedUpdateTask::mAccumulatedDeltaT;
 float FixedUpdateTask::mSimulationTime;
 float FixedUpdateTask::mfFrameLockTime;
+float FixedUpdateTask::mTimeScale = 1.0f;
 
 /**
  * Offset/Address/Size: 0x2D8 | 0x8016E608 | size: 0x30
  */
-#pragma inline_depth(255)
 FixedUpdateTask::FixedUpdateTask()
 {
     mAccumulatedDeltaT = g_fFixedUpdateTick;
@@ -45,106 +40,6 @@ FixedUpdateTask::FixedUpdateTask()
 const char* FixedUpdateTask::GetName()
 {
     return "Game Fixed Update";
-}
-
-/**
- * Offset/Address/Size: 0x0 | 0x8016E330 | size: 0x280
- * TODO: 98.72% match - register allocation: g_pCharacters r31 vs target r28,
- * g_pTeams r30 vs target r31, loop/bool r28 vs target r30,
- * and second NetMesh sphere load order.
- */
-void FixedUpdateTask::Run(float dt)
-{
-    if (nlTaskManager::m_pInstance->m_CurrState == 2)
-    {
-        cTeam** pTeams = g_pTeams;
-        int i;
-        cCharacter** pCharacter;
-        float simulationTick;
-
-        mAccumulatedDeltaT += dt * mTimeScale;
-
-        while (g_bRunSimAndRenderInLockStep || mAccumulatedDeltaT >= g_fFixedUpdateTick)
-        {
-            UseFixedUpdatePad();
-
-            UpdatePlatPad(simulationTick = g_fFixedUpdateTick);
-            cPadManager::Update(simulationTick);
-            FlickDetection::Update();
-
-            mAccumulatedDeltaT -= g_fFixedUpdateTick;
-            if (g_bRunSimAndRenderInLockStep)
-            {
-                mAccumulatedDeltaT = 0.0f;
-            }
-
-            simulationTick = g_fSimulationTick;
-            mSimulationTime += simulationTick;
-            g_pGame->PreUpdate(simulationTick);
-            g_pGame->Update(simulationTick);
-            BasicStadium::GetCurrentStadium()->mpNPCManager->UpdateAINPCs(g_fSimulationTick);
-
-            simulationTick = g_fSimulationTick;
-            pCharacter = g_pCharacters;
-            for (i = 0; i < 10; i++)
-            {
-                (*pCharacter)->PrePhysicsUpdate(simulationTick);
-                pCharacter++;
-            }
-
-            PhysicsUpdate(g_PhysicsWorld, g_fSimulationTick);
-
-            simulationTick = g_fSimulationTick;
-            pCharacter = g_pCharacters;
-            for (i = 0; i < 10; i++)
-            {
-                (*pCharacter)->PostPhysicsUpdate();
-                pCharacter++;
-            }
-
-            g_pBall->PostPhysicsUpdate(simulationTick);
-
-            if (NetMesh::s_bAnimatedNetMeshEnabled)
-            {
-                bool doGoalieNetTestPosX = true;
-                float goalieX = (float)fabs(g_pTeams[0]->GetGoalie()->m_v3Position.f.x);
-                if (goalieX > cField::GetGoalLineX(1U))
-                {
-                }
-                else
-                {
-                    goalieX = (float)fabs(pTeams[1]->GetGoalie()->m_v3Position.f.x);
-                    if (goalieX > cField::GetGoalLineX(1U))
-                    {
-                    }
-                    else
-                    {
-                        doGoalieNetTestPosX = false;
-                    }
-                }
-
-                cBall* pBall = g_pBall;
-                PhysicsAIBall* pPhysicsBall = pBall->m_pPhysicsBall;
-                NetMesh::spPositiveXNetMesh->Update(g_fSimulationTick, pBall->m_v3Position, pBall->m_v3PrevPosition, doGoalieNetTestPosX, pPhysicsBall);
-                pBall = g_pBall;
-                pPhysicsBall = pBall->m_pPhysicsBall;
-                NetMesh::spNegativeXNetMesh->Update(g_fSimulationTick, pBall->m_v3Position, pBall->m_v3PrevPosition, doGoalieNetTestPosX, pPhysicsBall);
-            }
-
-            SidelineExplodableManager::Update(g_fSimulationTick);
-            ReplayManager::Instance()->GrabSnapshot();
-
-            if (g_bRunSimAndRenderInLockStep)
-            {
-                break;
-            }
-        }
-    }
-
-    UseDefaultPad();
-    UpdatePlatPad(dt);
-    cPadManager::Update(dt);
-    FlickDetection::Update();
 }
 
 /**
@@ -167,4 +62,108 @@ void FixedUpdateTask::DecrementFrameLock(float f)
         nlTaskManager::SetNextState(2);
         mfFrameLockTime = 0.f;
     }
+}
+
+/**
+ * Offset/Address/Size: 0x0 | 0x8016E330 | size: 0x280
+ */
+void FixedUpdateTask::Run(float dt)
+{
+    if (nlTaskManager::m_pInstance->m_CurrState == 2)
+    {
+        float simulationTick;
+
+        mAccumulatedDeltaT += dt * mTimeScale;
+
+        while (g_bRunSimAndRenderInLockStep || mAccumulatedDeltaT >= g_fFixedUpdateTick)
+        {
+            UseFixedUpdatePad();
+
+            UpdatePlatPad(simulationTick = g_fFixedUpdateTick);
+            cPadManager::Update(simulationTick);
+            FlickDetection::Update();
+
+            mAccumulatedDeltaT -= g_fFixedUpdateTick;
+            if (g_bRunSimAndRenderInLockStep)
+            {
+                mAccumulatedDeltaT = 0.0f;
+            }
+
+            CallFixedUpdateTasks();
+
+            if (g_bRunSimAndRenderInLockStep)
+            {
+                break;
+            }
+        }
+    }
+
+    UseDefaultPad();
+    UpdatePlatPad(dt);
+    cPadManager::Update(dt);
+    FlickDetection::Update();
+}
+
+inline void FixedUpdateTask::AIUpdateTask(float fDeltaT)
+{
+    g_pGame->PreUpdate(fDeltaT);
+    g_pGame->Update(fDeltaT);
+}
+
+inline void FixedUpdateTask::PrePhysicsAITask(float fDeltaT)
+{
+    int i;
+    for (i = 0; i < 10; i++)
+    {
+        g_pCharacters[i]->PrePhysicsUpdate(fDeltaT);
+    }
+}
+
+inline void FixedUpdateTask::PostPhysicsAITask(float fDeltaT)
+{
+    int i;
+    for (i = 0; i < 10; i++)
+    {
+        g_pCharacters[i]->PostPhysicsUpdate();
+    }
+    g_pBall->PostPhysicsUpdate(fDeltaT);
+}
+
+inline void FixedUpdateTask::CallFixedUpdateTasks()
+{
+    mSimulationTime += g_fSimulationTick;
+    AIUpdateTask(g_fSimulationTick);
+    BasicStadium::GetCurrentStadium()->mpNPCManager->UpdateAINPCs(g_fSimulationTick);
+    PrePhysicsAITask(g_fSimulationTick);
+    PhysicsUpdate(g_PhysicsWorld, g_fSimulationTick);
+    PostPhysicsAITask(g_fSimulationTick);
+
+    if (NetMesh::s_bAnimatedNetMeshEnabled)
+    {
+        bool i = true;
+        float goalieX = (float)fabs(g_pTeams[0]->GetGoalie()->m_v3Position.f.x);
+        if (goalieX > cField::GetGoalLineX(1U))
+        {
+        }
+        else
+        {
+            goalieX = (float)fabs(g_pTeams[1]->GetGoalie()->m_v3Position.f.x);
+            if (goalieX > cField::GetGoalLineX(1U))
+            {
+            }
+            else
+            {
+                i = false;
+            }
+        }
+
+        cBall* pBall = g_pBall;
+        PhysicsAIBall* pPhysicsBall = pBall->m_pPhysicsBall;
+        NetMesh::spPositiveXNetMesh->Update(g_fSimulationTick, pBall->m_v3Position, pBall->m_v3PrevPosition, i, pPhysicsBall);
+        pPhysicsBall = (pBall = g_pBall)->m_pPhysicsBall;
+        NetMesh::spNegativeXNetMesh->Update(g_fSimulationTick, pBall->m_v3Position, pBall->m_v3PrevPosition, i, pPhysicsBall);
+    }
+
+    SidelineExplodableManager::Update(g_fSimulationTick);
+    ReplayManager::Instance()->GrabSnapshot();
 }

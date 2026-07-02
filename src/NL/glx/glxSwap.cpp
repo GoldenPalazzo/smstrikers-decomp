@@ -1,4 +1,3 @@
-#define NLCONFIG_NO_GET_COPY_REREAD
 #include "NL/glx/glxSwap.h"
 #include "NL/nlDebug.h"
 #include "NL/nlPrint.h"

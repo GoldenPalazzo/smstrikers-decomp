@@ -939,11 +939,11 @@ config.libs = [
             Object(NonMatching, "Game/TestTask.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/ProfileTask.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/PlatPadUpdateTask.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(NonMatching, "Game/FixedUpdateTask.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(Matching, "Game/FixedUpdateTask.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/DispatchEventsTask.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/ResetTask.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/TransitionTask.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(NonMatching, "Game/BeginFrameTask.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(Matching, "Game/BeginFrameTask.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/EndFrameTask.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
 
             # Triggers
