@@ -181,58 +181,6 @@ static void Poll();
 typedef WalkHelper<AUDIO_EVENT_RECORD, ListEntry<AUDIO_EVENT_RECORD>, _AudioEventRaiser> AudioEventWalkHelper;
 #include "Game/Audio/AudioScriptEventMgrWalkCallback.h"
 
-// /**
-//  * Offset/Address/Size: 0xD0 | 0x8014B7EC | size: 0x2C
-//  */
-// void nlListAddEnd<ListEntry<AUDIO_EVENT_RECORD> >(ListEntry<AUDIO_EVENT_RECORD>**, ListEntry<AUDIO_EVENT_RECORD>**, ListEntry<AUDIO_EVENT_RECORD>*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x68 | 0x8014B784 | size: 0x68
-//  */
-// void nlWalkList<ListEntry<AUDIO_EVENT_RECORD>, ListContainerBase<AUDIO_EVENT_RECORD, BasicSlotPool<ListEntry<AUDIO_EVENT_RECORD> > > >(ListEntry<AUDIO_EVENT_RECORD>*, ListContainerBase<AUDIO_EVENT_RECORD, BasicSlotPool<ListEntry<AUDIO_EVENT_RECORD> > >*, void (ListContainerBase<AUDIO_EVENT_RECORD, BasicSlotPool<ListEntry<AUDIO_EVENT_RECORD> > >::*)(ListEntry<AUDIO_EVENT_RECORD>*))
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x8014B71C | size: 0x68
-//  */
-// void nlWalkList<ListEntry<AUDIO_EVENT_RECORD>, WalkHelper<AUDIO_EVENT_RECORD, ListEntry<AUDIO_EVENT_RECORD>, _AudioEventRaiser> >(ListEntry<AUDIO_EVENT_RECORD>*, WalkHelper<AUDIO_EVENT_RECORD, ListEntry<AUDIO_EVENT_RECORD>, _AudioEventRaiser>*, void (WalkHelper<AUDIO_EVENT_RECORD, ListEntry<AUDIO_EVENT_RECORD>, _AudioEventRaiser>::*)(ListEntry<AUDIO_EVENT_RECORD>*))
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x8014B65C | size: 0xC0
-//  */
-// void 0x8014B71C..0x8014B818 | size : 0xFC
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0xB4 | 0x8014B564 | size: 0x2C
-//  */
-// void nlDefaultQSortComparer<NIS_EVENT_LOOKUP>(const NIS_EVENT_LOOKUP*, const NIS_EVENT_LOOKUP*)
-// {
-// }
-
-/**
- * Offset/Address/Size: 0x8C | 0x8014B53C | size: 0x28
- */
-// void nlQSort<NIS_EVENT_LOOKUP>(NIS_EVENT_LOOKUP*, int, int (*)(const NIS_EVENT_LOOKUP*, const NIS_EVENT_LOOKUP*))
-
-/**
- * Offset/Address/Size: 0x0 | 0x8014B4B0 | size: 0x8C
- */
-// nlBSearch<NIS_EVENT_LOOKUP, unsigned long> instantiated by the NIS handler
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x8014B4A0 | size: 0x10
-//  */
-// void ListContainerBase<AUDIO_EVENT_RECORD, BasicSlotPool<ListEntry<AUDIO_EVENT_RECORD> > >::DeleteEntry(ListEntry<AUDIO_EVENT_RECORD>*)
-// {
-// }
-
 /**
  * Offset/Address/Size: 0x2248 | 0x8014B39C | size: 0xD0
  */

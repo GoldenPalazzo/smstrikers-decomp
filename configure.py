@@ -1492,7 +1492,6 @@ config.libs = [
             Object(Matching, "Dolphin/dvd/fstload.c", extra_cflags=["-inline auto"]),         
 
             # Dolphin/EXI
-            # Object(NonMatching, "Dolphin/exi/EXIBios.c", extra_cflags=["-inline auto", "-O3,p"]),
             Object(Matching, "Dolphin/exi/EXIUart.c", extra_cflags=["-inline auto"]),
 
             # Dolphin/GX
