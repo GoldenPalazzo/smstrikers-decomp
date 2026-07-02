@@ -85,7 +85,7 @@ void PhysicsCharacterBase::GetBoneVolumePoints(nlVector3* points, bool includeEn
 {
     for (ListEntry<PhysicsBoneVolume*>* entry = m_BoneVolumes.m_Head; entry != NULL; entry = entry->next)
     {
-        PhysicsBoneVolume* boneVolume = entry->data;
+        PhysicsBoneVolume* boneVolume = entry->entry;
         nlVector3 pos;
         boneVolume->m_pObject->GetPosition(&pos);
 
@@ -142,7 +142,7 @@ PhysicsCharacterBase::~PhysicsCharacterBase()
     ListEntry<PhysicsBoneVolume*>* entry = m_BoneVolumes.m_Head;
     while (entry != NULL)
     {
-        delete entry->data;
+        delete entry->entry;
         entry = entry->next;
     }
 }
@@ -256,7 +256,7 @@ void PhysicsCharacterBase::UpdatePose(cPoseAccumulator* pose, float heightOffset
 {
     for (ListEntry<PhysicsBoneVolume*>* entry = m_BoneVolumes.m_Head; entry != NULL; entry = entry->next)
     {
-        PhysicsBoneVolume* boneVolume = entry->data;
+        PhysicsBoneVolume* boneVolume = entry->entry;
 
         // Store previous position
         nlVector3& pos = boneVolume->m_pObject->GetPosition();
@@ -371,7 +371,7 @@ void PhysicsCharacterBase::AddBoneVolumes(PhysicsWorld* physicsWorld, CollisionS
         if (p != NULL)
         {
             ((ListEntry<PhysicsBoneVolume*>*)p)->next = NULL;
-            ((ListEntry<PhysicsBoneVolume*>*)p)->data = boneVolume;
+            ((ListEntry<PhysicsBoneVolume*>*)p)->entry = boneVolume;
         }
 
         nlListAddStart<ListEntry<PhysicsBoneVolume*> >(pHead, listNode, pTail);

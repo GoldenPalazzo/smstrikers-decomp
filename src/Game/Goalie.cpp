@@ -6300,11 +6300,13 @@ void Goalie::DoPassRelease()
     {
         if (aDiff > 0)
         {
-            aDesired = m_aActualFacingDirection + 0x1554;
+            aDesired = m_aActualFacingDirection;
+            aDesired += 0x1554;
         }
         else
         {
-            aDesired = m_aActualFacingDirection - 0x1554;
+            aDesired = m_aActualFacingDirection;
+            aDesired -= 0x1554;
         }
     }
 

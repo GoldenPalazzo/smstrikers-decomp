@@ -125,7 +125,7 @@ s32 GLRenderList::AttachModel(const glModel* pModel, unsigned long layer)
             {
                 p->m_next = NULL;
                 p->m_prev = NULL;
-                p->m_data = modified;
+                p->entry = modified;
             }
 
             nlDLRingAddStart(&pList->m_Head, p);
@@ -158,7 +158,7 @@ s32 GLRenderList::AttachModel(const glModel* pModel, unsigned long layer)
             {
                 p->m_next = NULL;
                 p->m_prev = NULL;
-                p->m_data = modified;
+                p->entry = modified;
             }
 
             nlDLRingAddEnd(&pList->m_Head, p);

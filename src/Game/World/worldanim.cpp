@@ -77,7 +77,7 @@ WorldAnimManager::~WorldAnimManager()
                 ListEntry<cSAnim*>* animEntry = animSet->m_animInventory.m_lItemList.m_Head;
                 while (animEntry != NULL)
                 {
-                    animEntry->data->Destroy();
+                    animEntry->entry->Destroy();
                     animEntry = animEntry->next;
                 }
                 void (SAnimListBase::*cbSAnim)(ListEntry<cSAnim*>*) = &SAnimListBase::DeleteEntry;
@@ -92,7 +92,7 @@ WorldAnimManager::~WorldAnimManager()
                     void* mesh;
                     if (&mesh != NULL)
                     {
-                        mesh = first->data;
+                        mesh = first->entry;
                     }
                     ::operator delete(first);
                     ::operator delete(mesh);
@@ -143,7 +143,7 @@ WorldAnimManager::~WorldAnimManager()
             void* mesh;
             if (&mesh != NULL)
             {
-                mesh = first->data;
+                mesh = first->entry;
             }
             ::operator delete(first);
             ::operator delete(mesh);

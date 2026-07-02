@@ -529,7 +529,7 @@ static EffectsGroup* parse_group(SimpleParser* parser)
                 {
                     ((DLListEntry<UserEffectSpec*>*)mem)->m_next = nullptr;
                     ((DLListEntry<UserEffectSpec*>*)mem)->m_prev = nullptr;
-                    ((DLListEntry<UserEffectSpec*>*)mem)->m_data = pUserSpec;
+                    ((DLListEntry<UserEffectSpec*>*)mem)->entry = pUserSpec;
                 }
 
                 nlDLRingAddEnd(&userSpecs.m_Head, pSpecEntry);
@@ -592,7 +592,7 @@ static EffectsGroup* parse_group(SimpleParser* parser)
 
         while (pNode != nullptr)
         {
-            *pWalk = pNode->m_data;
+            *pWalk = pNode->entry;
             pWalk++;
 
             if (nlDLRingIsEnd(pHead, pNode) || pNode == nullptr)

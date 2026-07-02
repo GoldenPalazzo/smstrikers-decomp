@@ -246,9 +246,9 @@ void AudioStreamTrack::TrackManagerBase::Update(float)
 
     while (entry != NULL)
     {
-        if (entry->m_data->SafeToPurge())
+        if (entry->entry->SafeToPurge())
         {
-            pStream = entry->m_data;
+            pStream = entry->entry;
             pStream->~StereoAudioStream();
             m_StreamPool.Free(pStream);
 
@@ -308,9 +308,9 @@ bool AudioStreamTrack::TrackManagerBase::FadeManager::ChangeFade(
 
     while (fadeIter != NULL)
     {
-        if (fadeIter->m_data.pStream == pStream)
+        if (fadeIter->entry.pStream == pStream)
         {
-            fadeCtrl = &fadeIter->m_data;
+            fadeCtrl = &fadeIter->entry;
             goto fade_found;
         }
         if (nlDLRingIsEnd(fadeHead, fadeIter) || fadeIter == NULL)
@@ -547,7 +547,7 @@ void AudioStreamTrack::StreamTrack::Update(float)
     Iter iter;
     iter.m_head = m_QueuedStreams.m_Head;
     iter.m_current = entry;
-    QUEUED_STREAM* qs = &entry->m_data;
+    QUEUED_STREAM* qs = &entry->entry;
 
     if (m_InFakePause)
     {
@@ -619,7 +619,7 @@ void AudioStreamTrack::StreamTrack::PlayStream(
     {
         newHead->m_next = NULL;
         newHead->m_prev = NULL;
-        newHead->m_data = *pAllocHead;
+        newHead->entry = *pAllocHead;
     }
     nlDLRingAddStart(&m_QueuedStreams.m_Head, newHead);
 
@@ -637,7 +637,7 @@ void AudioStreamTrack::StreamTrack::PlayStream(
     {
         newTail->m_next = NULL;
         newTail->m_prev = NULL;
-        newTail->m_data = *pAllocTail;
+        newTail->entry = *pAllocTail;
     }
     nlDLRingAddEnd(&m_QueuedStreams.m_Head, newTail);
 
@@ -651,7 +651,7 @@ void AudioStreamTrack::StreamTrack::PlayStream(
     Iter iter;
     iter.m_head = m_QueuedStreams.m_Head;
     iter.m_current = startEntry;
-    QUEUED_STREAM* qs = &startEntry->m_data;
+    QUEUED_STREAM* qs = &startEntry->entry;
 
     BindExp2_T bind = Bind<void>(
         MemFun<StreamTrack, void, QUEUED_STREAM*>(&StreamTrack::FadeOutDoneStartNext), this, qs);
@@ -730,20 +730,20 @@ void AudioStreamTrack::StreamTrack::QueueStream(
     {
         entry->m_next = NULL;
         entry->m_prev = NULL;
-        entry->m_data = localEntry.m_data;
+        entry->entry = localEntry.entry;
     }
     nlDLRingAddEnd(&m_QueuedStreams.m_Head, entry);
 
-    entry->m_data.StreamId = StreamId;
+    entry->entry.StreamId = StreamId;
 
     pStream = NULL;
     TrackManagerBase& mgr = m_TrackMgr;
     mgr.m_StreamPool.Allocate(pStream);
     new (pStream) GCAudioStreaming::StereoAudioStream(g_BufferMgr);
 
-    entry->m_data.pStream = pStream;
-    entry->m_data.FadeIn = FadeIn;
-    entry->m_data.StartVolume = (int)(127.0f * Volume);
+    entry->entry.pStream = pStream;
+    entry->entry.FadeIn = FadeIn;
+    entry->entry.StartVolume = (int)(127.0f * Volume);
 
     Audio::MasterVolume::VOLUME_GROUP volGroup;
     if (OverrideVolGroup == 0)
@@ -754,9 +754,9 @@ void AudioStreamTrack::StreamTrack::QueueStream(
     {
         volGroup = OverrideVolGroup;
     }
-    entry->m_data.VolGroup = volGroup;
-    entry->m_data.Loop = Looping;
-    entry->m_data.TrackOwnsStream = m_TrackOwnsStreams;
+    entry->entry.VolGroup = volGroup;
+    entry->entry.Loop = Looping;
+    entry->entry.TrackOwnsStream = m_TrackOwnsStreams;
 
     nlStrNCpy<char>(FileName, "audio/data/streams/", 0x100);
     unsigned long lookupKey = StreamId;
@@ -790,7 +790,7 @@ void AudioStreamTrack::StreamTrack::QueueStream(
         nlStrNCpy<char>(&FileName[19], lookup->value, 0xed);
     }
 
-    GCAudioStreaming::StereoAudioStream* stream = entry->m_data.pStream;
+    GCAudioStreaming::StereoAudioStream* stream = entry->entry.pStream;
     GCAudioStreaming::AudioStreamBuffer* buf;
     unsigned long zero = (unsigned long)(buf = NULL);
     unsigned long compareZero = 0;
@@ -876,21 +876,21 @@ void AudioStreamTrack::StreamTrack::ProcessNewHeadStream()
     iter.m_current = pEntry;
     iter.m_head = m_QueuedStreams.m_Head;
 
-    if (pEntry->m_data.StartVolume != 0)
+    if (pEntry->entry.StartVolume != 0)
     {
         Function<FnVoidVoid> callback;
         callback.mTag = EMPTY;
 
         m_TrackMgr.m_FadeMgr.AddFade(
-            pEntry->m_data.pStream,
+            pEntry->entry.pStream,
             0,
-            pEntry->m_data.StartVolume,
-            (Audio::MasterVolume::VOLUME_GROUP)pEntry->m_data.VolGroup,
-            pEntry->m_data.FadeIn,
+            pEntry->entry.StartVolume,
+            (Audio::MasterVolume::VOLUME_GROUP)pEntry->entry.VolGroup,
+            pEntry->entry.FadeIn,
             callback);
     }
 
-    GCAudioStreaming::StereoAudioStream* pStream = pEntry->m_data.pStream;
+    GCAudioStreaming::StereoAudioStream* pStream = pEntry->entry.pStream;
     unsigned long zero = 0;
     GCAudioStreaming::AudioStreamBuffer* buf;
 
@@ -920,9 +920,9 @@ void AudioStreamTrack::StreamTrack::ProcessNewHeadStream()
     }
 
     pStream->m_Volume = zero;
-    GCAudioStreaming::StereoAudioStream* pStreamActive = pEntry->m_data.pStream;
+    GCAudioStreaming::StereoAudioStream* pStreamActive = pEntry->entry.pStream;
 
-    pStreamActive->m_Flags = (pStreamActive->m_Flags & ~(1 << 1)) | (pEntry->m_data.Loop << 1);
+    pStreamActive->m_Flags = (pStreamActive->m_Flags & ~(1 << 1)) | (pEntry->entry.Loop << 1);
     pStreamActive->m_Flags = (pStreamActive->m_Flags & ~(1 << 2)) | (1 << 2);
 
     switch (pStreamActive->m_State)
@@ -985,11 +985,11 @@ void AudioStreamTrack::StreamTrack::StopHead(unsigned long Fadeout)
 
     if (Fadeout == 0)
     {
-        pTrack->StopQStream(&entry->m_data);
+        pTrack->StopQStream(&entry->entry);
     }
     else
     {
-        QUEUED_STREAM* qs = &entry->m_data;
+        QUEUED_STREAM* qs = &entry->entry;
         BindExp2_T bind = Bind<void>(
             MemFun<StreamTrack, void, QUEUED_STREAM*>(&StreamTrack::FadeOutDoneStartNext), this, qs);
 
@@ -1004,7 +1004,7 @@ void AudioStreamTrack::StreamTrack::StopHead(unsigned long Fadeout)
             FunctorImpl_T(bind);
         callback.mFunctor = functor;
 
-        StartQStreamFadeout(&entry->m_data, Fadeout, *(Function<FnVoidVoid>*)&callback);
+        StartQStreamFadeout(&entry->entry, Fadeout, *(Function<FnVoidVoid>*)&callback);
 
         if (callback.mTag == FUNCTOR)
         {
@@ -1038,7 +1038,7 @@ void AudioStreamTrack::StreamTrack::Stop(unsigned long Fadeout)
         {
             iter.m_current = nlDLRingGetStart(m_QueuedStreams.m_Head);
             iter.m_head = m_QueuedStreams.m_Head;
-            StopQStream(&iter.m_current->m_data);
+            StopQStream(&iter.m_current->entry);
         }
         return;
     }
@@ -1047,11 +1047,11 @@ void AudioStreamTrack::StreamTrack::Stop(unsigned long Fadeout)
         return;
 
     entry = nlDLRingGetStart(m_QueuedStreams.m_Head);
-    QUEUED_STREAM* qs = &entry->m_data;
+    QUEUED_STREAM* qs = &entry->entry;
 
     {
         BindExp2_T bind = Bind<void>(
-            MemFun<StreamTrack, void, QUEUED_STREAM*>(&StreamTrack::FadeOutDone), this, &entry->m_data);
+            MemFun<StreamTrack, void, QUEUED_STREAM*>(&StreamTrack::FadeOutDone), this, &entry->entry);
 
         Function<FnVoidVoid> callback;
         callback.mTag = FUNCTOR;
@@ -1059,14 +1059,14 @@ void AudioStreamTrack::StreamTrack::Stop(unsigned long Fadeout)
             FunctorImpl_T(bind);
         callback.mFunctor = functor;
 
-        StartQStreamFadeout(&entry->m_data, Fadeout, callback);
+        StartQStreamFadeout(&entry->entry, Fadeout, callback);
     }
 
     QUEUED_STREAM* curQs;
     DLListEntry<QUEUED_STREAM>* iter = nlDLRingGetStart(m_QueuedStreams.m_Head);
     DLListEntry<QUEUED_STREAM>* head = m_QueuedStreams.m_Head;
 
-    if (&iter->m_data == qs)
+    if (&iter->entry == qs)
     {
         if (nlDLRingIsEnd(head, iter) || iter == NULL)
         {
@@ -1080,7 +1080,7 @@ void AudioStreamTrack::StreamTrack::Stop(unsigned long Fadeout)
 
     while (iter != NULL)
     {
-        curQs = &iter->m_data;
+        curQs = &iter->entry;
 
         if (nlDLRingIsEnd(head, iter) || iter == NULL)
         {
@@ -1243,9 +1243,9 @@ void AudioStreamTrack::StreamTrack::StopStream(GCAudioStreaming::StereoAudioStre
 
     while (fadeIter != NULL)
     {
-        if (fadeIter->m_data.pStream == pStream)
+        if (fadeIter->entry.pStream == pStream)
         {
-            fadeCtrl = &fadeIter->m_data;
+            fadeCtrl = &fadeIter->entry;
             goto fade_found;
         }
 
@@ -1265,7 +1265,7 @@ fade_found:
 
         if (fadeEntry != NULL)
         {
-            fadeEntry->m_data.~FadeCtrl();
+            fadeEntry->entry.~FadeCtrl();
         }
 
         mgr.m_FadeMgr.m_Fades.m_Allocator.Free(fadeEntry);
@@ -1281,7 +1281,7 @@ fade_found:
         {
             entry->m_next = NULL;
             entry->m_prev = NULL;
-            entry->m_data = pStream;
+            entry->entry = pStream;
         }
         nlDLRingAddEnd(&delMgr.m_StreamDeleteList.m_Head, entry);
     }
@@ -1334,7 +1334,7 @@ void AudioStreamTrack::StreamTrack::Pause(unsigned long Fadeout, bool bPause)
     else
     {
         pEntry = nlDLRingGetStart(m_QueuedStreams.m_Head);
-        qs = &pEntry->m_data;
+        qs = &pEntry->entry;
         iter.m_current = pEntry;
         iter.m_head = m_QueuedStreams.m_Head;
     }
@@ -1354,9 +1354,9 @@ void AudioStreamTrack::StreamTrack::Pause(unsigned long Fadeout, bool bPause)
     FadeCtrl* fadeCtrl;
     while (fadeIter != NULL)
     {
-        if (fadeIter->m_data.pStream == pStream)
+        if (fadeIter->entry.pStream == pStream)
         {
-            fadeCtrl = &fadeIter->m_data;
+            fadeCtrl = &fadeIter->entry;
             goto fade_found;
         }
         if (nlDLRingIsEnd(fadeHead, fadeIter) || fadeIter == NULL)
@@ -1401,9 +1401,9 @@ fade_found:
 
     while (fadeIter2 != NULL)
     {
-        if (fadeIter2->m_data.pStream == pStream)
+        if (fadeIter2->entry.pStream == pStream)
         {
-            fadeCtrl2 = &fadeIter2->m_data;
+            fadeCtrl2 = &fadeIter2->entry;
             goto fade2_found;
         }
         if (nlDLRingIsEnd(fadeHead2, fadeIter2) || fadeIter2 == NULL)
@@ -1426,7 +1426,7 @@ fade2_found:
 
         if (fadeEntry2 != NULL)
         {
-            fadeEntry2->m_data.~FadeCtrl();
+            fadeEntry2->entry.~FadeCtrl();
         }
 
         pMgr.m_FadeMgr.m_Fades.m_Allocator.Free(fadeEntry2);
@@ -1560,17 +1560,17 @@ void AudioStreamTrack::StreamTrack::AttachStream(
     {
         entry->m_next = NULL;
         entry->m_prev = NULL;
-        entry->m_data = localEntry.m_data;
+        entry->entry = localEntry.entry;
     }
     nlDLRingAddEnd(&m_QueuedStreams.m_Head, entry);
 
-    entry->m_data.StreamId = StreamId;
-    entry->m_data.pStream = pStream;
-    entry->m_data.FadeIn = FadeIn;
-    entry->m_data.StartVolume = (u8)pStream->m_Volume;
-    entry->m_data.Loop = Looping;
-    entry->m_data.VolGroup = VolGroup;
-    entry->m_data.TrackOwnsStream = TrackOwnsStream;
+    entry->entry.StreamId = StreamId;
+    entry->entry.pStream = pStream;
+    entry->entry.FadeIn = FadeIn;
+    entry->entry.StartVolume = (u8)pStream->m_Volume;
+    entry->entry.Loop = Looping;
+    entry->entry.VolGroup = VolGroup;
+    entry->entry.TrackOwnsStream = TrackOwnsStream;
 
     m_State = TS_Playing;
 }

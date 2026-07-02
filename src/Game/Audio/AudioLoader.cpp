@@ -762,7 +762,7 @@ state_change:
 
     while (pCur != NULL)
     {
-        pStream = pCur->m_data;
+        pStream = pCur->entry;
         pStream->~StereoAudioStream();
 
         ((SlotPoolEntry*)pStream)->m_next = pTM->m_StreamPool.m_FreeList;
@@ -1810,7 +1810,7 @@ void AudioLoader::UnloadInGame()
 
     while (pCur != NULL)
     {
-        pStream = pCur->m_data;
+        pStream = pCur->entry;
         pStream->~StereoAudioStream();
 
         ((SlotPoolEntry*)pStream)->m_next = pTM->m_StreamPool.m_FreeList;

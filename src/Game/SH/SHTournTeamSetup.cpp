@@ -2032,8 +2032,45 @@ void TournTeamSetupSceneV2::UpdateSKName()
     teamComp->SetActiveSlide(GetTeamName(mCurrentCaptain));
 }
 
+static inline void CreateLeagueLineupForTournament(TournTeamSetupSceneV2* scene)
+{
+    GameInfoManager* const pTournamentInfo = nlSingleton<GameInfoManager>::s_pInstance;
+    int numPlayingTeams = pTournamentInfo->GetNumPlayingTeams();
+
+    eTeamID lineup[8];
+    eSidekickID sklineup[8];
+
+    int i;
+    for (i = 0; i < numPlayingTeams; i++)
+    {
+        lineup[i] = scene->mTeamData[i].captain;
+        sklineup[i] = scene->mTeamData[i].sidekick;
+    }
+
+    pTournamentInfo->SetupRoundRobinSchedule(lineup, sklineup);
+}
+
+static inline void CreateKnockoutForTournament(TournTeamSetupSceneV2* scene)
+{
+    GameInfoManager* const pTournamentInfo = nlSingleton<GameInfoManager>::s_pInstance;
+    int numPlayingTeams = pTournamentInfo->GetNumPlayingTeams();
+
+    eTeamID lineup[8];
+    eSidekickID sklineup[8];
+
+    int i;
+    for (i = 0; i < numPlayingTeams; i++)
+    {
+        lineup[i] = scene->mTeamData[i].captain;
+        sklineup[i] = scene->mTeamData[i].sidekick;
+    }
+
+    pTournamentInfo->SetupTournamentKnockout(lineup, sklineup);
+}
+
 /**
  * Offset/Address/Size: 0x15F4 | 0x800E3498 | size: 0x454
+ * TODO: 99.62% match - outer GameInfoManager pointer and branch-local lineup helper pointer use r30/r31 opposite target.
  */
 void TournTeamSetupSceneV2::Proceed()
 {
@@ -2055,20 +2092,7 @@ void TournTeamSetupSceneV2::Proceed()
 
     if (mTournInfo.m_tournMode == TM_LEAGUE)
     {
-        GameInfoManager* const pTournamentInfo = nlSingleton<GameInfoManager>::s_pInstance;
-        u16 numPlayingTeams = pTournamentInfo->GetNumPlayingTeams();
-
-        eSidekickID sklineup[8];
-        eTeamID lineup[8];
-
-        int idx = 0;
-        for (; idx < numPlayingTeams; idx++)
-        {
-            lineup[idx] = mTeamData[idx].captain;
-            sklineup[idx] = mTeamData[idx].sidekick;
-        }
-
-        pTournamentInfo->SetupRoundRobinSchedule(lineup, sklineup);
+        CreateLeagueLineupForTournament(this);
         pGameInfo->SetPreviousTeamStats();
         pGameInfo->IncreaseRoundNumber();
     }
@@ -2086,20 +2110,7 @@ void TournTeamSetupSceneV2::Proceed()
 
         pCup->mRoundNumber = roundNumber;
 
-        GameInfoManager* const pTournamentInfo = nlSingleton<GameInfoManager>::s_pInstance;
-        u16 numPlayingTeams = pTournamentInfo->GetNumPlayingTeams();
-
-        eSidekickID sklineup[8];
-        eTeamID lineup[8];
-
-        int idx = 0;
-        for (; idx < numPlayingTeams; idx++)
-        {
-            lineup[idx] = mTeamData[idx].captain;
-            sklineup[idx] = mTeamData[idx].sidekick;
-        }
-
-        pTournamentInfo->SetupTournamentKnockout(lineup, sklineup);
+        CreateKnockoutForTournament(this);
     }
 
     while (pGameInfo->GetCurrentRoundNumber() != -5)

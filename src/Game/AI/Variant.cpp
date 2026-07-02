@@ -186,6 +186,7 @@ FormatImpl<BasicString<char, Detail::TempStringAllocator> >&
 /**
  * Offset/Address/Size: 0xC4 | 0x8006632C | size: 0xF2C
  */
+#pragma optimization_level 2
 NLString Variant::ToString() const
 {
     NLString toString;
@@ -217,57 +218,39 @@ NLString Variant::ToString() const
 
         case FT_INT:
         {
-            NLString format = "{0}";
-            dataString = Format(format, mData.i);
+            dataString = Format(NLString("{0}"), mData.i);
             break;
         }
 
         case FT_U32:
         {
-            NLString format = "{0}";
-            dataString = Format(format, mData.u);
+            dataString = Format(NLString("{0}"), mData.u);
             break;
         }
 
         case FT_FLOAT:
         {
-            NLString format = "{0}";
-            dataString = Format(format, mData.f);
+            dataString = Format(NLString("{0}"), mData.f);
             break;
         }
 
         case FT_VECTOR:
         {
-            NLString format = "({0},{1},{2})";
-            dataString = Format(format, mData.vector.f.x, mData.vector.f.y, mData.vector.f.z);
+            dataString = Format(NLString("({0},{1},{2})"), mData.vector.f.x, mData.vector.f.y, mData.vector.f.z);
             break;
         }
 
         case FT_PLAYER:
             if (mData.pPlayer != 0)
             {
-                NLString format = "UPID={0}";
-                int value = mData.pPlayer->GetUniqueID(-1);
-                dataString = Format(format, value);
+                dataString = Format(NLString("UPID={0}"), mData.pPlayer->GetUniqueID(-1));
             }
             break;
 
         case FT_TEAM:
             if (mData.pTeam != 0)
             {
-                NLString format = "Team={0}";
-                const char* team;
-
-                if (mData.pTeam->m_nSide == 0)
-                {
-                    team = "Home";
-                }
-                else
-                {
-                    team = "Away";
-                }
-
-                dataString = Format(format, team);
+                dataString = Format(NLString("Team={0}"), mData.pTeam->m_nSide == 0 ? "Home" : "Away");
             }
             break;
         }
@@ -303,6 +286,7 @@ NLString Variant::ToString() const
         return NLString(data);
     }
 }
+#pragma optimization_level 4
 
 /**
  * Offset/Address/Size: 0x0 | 0x80066268 | size: 0xC4

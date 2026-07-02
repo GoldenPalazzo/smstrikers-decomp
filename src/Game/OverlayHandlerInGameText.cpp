@@ -231,31 +231,7 @@ void InGameTextOverlay::DisplayFinalScore()
     typedef BasicString<char, Detail::TempStringAllocator> NarrowString;
     typedef BasicString<unsigned short, Detail::TempStringAllocator> WideString;
 
-    typedef TLTextInstance* (*FindTextByValue)(FEPresentation*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-    typedef TLTextInstance* (*FindTextByRef)(FEPresentation*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
-    typedef TLInstance* (*FindInstByValue)(FEPresentation*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-    typedef TLInstance* (*FindInstByRef)(FEPresentation*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
-    typedef TLComponentInstance* (*FindCompByValue)(FEPresentation*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-    typedef TLComponentInstance* (*FindCompByRef)(FEPresentation*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
     typedef void (*TrackStatsFn)(ePlayerStats, int, int, int, int, int, int);
-
-    union
-    {
-        FindTextByValue byValue;
-        FindTextByRef byRef;
-    } findText;
-
-    union
-    {
-        FindInstByValue byValue;
-        FindInstByRef byRef;
-    } findInst;
-
-    union
-    {
-        FindCompByValue byValue;
-        FindCompByRef byRef;
-    } findComp;
 
     int scoreLeft = g_pTeams[0]->m_nScore;
     int scoreRight = g_pTeams[1]->m_nScore;
@@ -281,42 +257,11 @@ void InGameTextOverlay::DisplayFinalScore()
 
     if (this->mCurrentSlideName == SLIDE_NAME_TEXT_WINNER)
     {
-        volatile InlineHasher hSlideB, hSlideA;
-        volatile InlineHasher hLayerB, hLayerA;
-        volatile InlineHasher hScoreB, hScoreA;
-        volatile InlineHasher h5, h4, h3, h2, h1, h0;
-
-        unsigned long hash;
-
-        findText.byValue = FEFinder<TLTextInstance, 3>::Find<FEPresentation>;
-
-        h0.m_Hash = 0;
-        h1.m_Hash = 0;
-        h2.m_Hash = 0;
-        h3.m_Hash = 0;
-        h4.m_Hash = 0;
-        h5.m_Hash = 0;
-
-        hash = nlStringLowerHash("Score");
-        hScoreA.m_Hash = hash;
-        hScoreB.m_Hash = hash;
-
-        hash = nlStringLowerHash(OVERLAY_HANDLER_LAYER_NAME);
-        hLayerA.m_Hash = hash;
-        hLayerB.m_Hash = hash;
-
-        hash = nlStringLowerHash(WINNER_SLIDE_NAME);
-        hSlideA.m_Hash = hash;
-        hSlideB.m_Hash = hash;
-
-        pTextInstance = findText.byRef(
+        pTextInstance = FEFinder<TLTextInstance, 3>::Find<FEPresentation>(
             presentation,
-            (InlineHasher&)hSlideB,
-            (InlineHasher&)hLayerB,
-            (InlineHasher&)hScoreB,
-            (InlineHasher&)h5,
-            (InlineHasher&)h3,
-            (InlineHasher&)h1);
+            InlineHasher(nlStringLowerHash(WINNER_SLIDE_NAME)),
+            InlineHasher(nlStringLowerHash(OVERLAY_HANDLER_LAYER_NAME)),
+            InlineHasher(nlStringLowerHash("Score")));
 
         winningSide = (scoreLeft > scoreRight) ? 0 : 1;
 
@@ -337,40 +282,11 @@ void InGameTextOverlay::DisplayFinalScore()
         WideString unformattedName(winnerFormatLocString);
         WideString formattedName(Format(unformattedName, winnerNameWideString.c_str()));
 
-        volatile InlineHasher hNameSlideB, hNameSlideA;
-        volatile InlineHasher hNameLayerB, hNameLayerA;
-        volatile InlineHasher hNameB, hNameA;
-        volatile InlineHasher n5, n3, n1;
-
-        findInst.byValue = FEFinder<TLInstance, 3>::Find<FEPresentation>;
-
-        n1.m_Hash = 0;
-        h1.m_Hash = 0;
-        n3.m_Hash = 0;
-        h3.m_Hash = 0;
-        n5.m_Hash = 0;
-        h5.m_Hash = 0;
-
-        hash = nlStringLowerHash("name");
-        hNameA.m_Hash = hash;
-        hNameB.m_Hash = hash;
-
-        hash = nlStringLowerHash(OVERLAY_HANDLER_LAYER_NAME);
-        hNameLayerA.m_Hash = hash;
-        hNameLayerB.m_Hash = hash;
-
-        hash = nlStringLowerHash(WINNER_SLIDE_NAME);
-        hNameSlideA.m_Hash = hash;
-        hNameSlideB.m_Hash = hash;
-
-        TLInstance* winnerNameInstance = findInst.byRef(
+        TLInstance* winnerNameInstance = FEFinder<TLInstance, 3>::Find<FEPresentation>(
             presentation,
-            (InlineHasher&)hNameSlideB,
-            (InlineHasher&)hNameLayerB,
-            (InlineHasher&)hNameB,
-            (InlineHasher&)h5,
-            (InlineHasher&)h3,
-            (InlineHasher&)h1);
+            InlineHasher(nlStringLowerHash(WINNER_SLIDE_NAME)),
+            InlineHasher(nlStringLowerHash(OVERLAY_HANDLER_LAYER_NAME)),
+            InlineHasher(nlStringLowerHash("name")));
 
         TLTextInstance* winnerNameTextInstance = (TLTextInstance*)winnerNameInstance;
 
@@ -379,77 +295,21 @@ void InGameTextOverlay::DisplayFinalScore()
 
         eTeamID team = nlSingleton<GameInfoManager>::s_pInstance->GetTeam(0);
 
-        volatile InlineHasher hFaceSlideB, hFaceSlideA;
-        volatile InlineHasher hFaceLayerB, hFaceLayerA;
-        volatile InlineHasher hFaceB, hFaceA;
-        volatile InlineHasher f5, f3, f1;
-
-        findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<FEPresentation>;
-
-        f1.m_Hash = 0;
-        h1.m_Hash = 0;
-        f3.m_Hash = 0;
-        h3.m_Hash = 0;
-        f5.m_Hash = 0;
-        h5.m_Hash = 0;
-
-        hash = nlStringLowerHash("left_face");
-        hFaceA.m_Hash = hash;
-        hFaceB.m_Hash = hash;
-
-        hash = nlStringLowerHash(OVERLAY_HANDLER_LAYER_NAME);
-        hFaceLayerA.m_Hash = hash;
-        hFaceLayerB.m_Hash = hash;
-
-        hash = nlStringLowerHash(WINNER_SLIDE_NAME);
-        hFaceSlideA.m_Hash = hash;
-        hFaceSlideB.m_Hash = hash;
-
-        TLComponentInstance* pComponentInstance = findComp.byRef(
+        TLComponentInstance* pComponentInstance = FEFinder<TLComponentInstance, 4>::Find<FEPresentation>(
             presentation,
-            (InlineHasher&)hFaceSlideB,
-            (InlineHasher&)hFaceLayerB,
-            (InlineHasher&)hFaceB,
-            (InlineHasher&)h5,
-            (InlineHasher&)h3,
-            (InlineHasher&)h1);
+            InlineHasher(nlStringLowerHash(WINNER_SLIDE_NAME)),
+            InlineHasher(nlStringLowerHash(OVERLAY_HANDLER_LAYER_NAME)),
+            InlineHasher(nlStringLowerHash("left_face")));
 
         pComponentInstance->SetActiveSlide(TEAM_SLIDE_NAMES[team]);
 
         team = nlSingleton<GameInfoManager>::s_pInstance->GetTeam(1);
 
-        volatile InlineHasher hRFaceSlideB, hRFaceSlideA;
-        volatile InlineHasher hRFaceLayerB, hRFaceLayerA;
-        volatile InlineHasher hRFaceB, hRFaceA;
-        volatile InlineHasher rf5, rf3, rf1;
-
-        rf1.m_Hash = 0;
-        h1.m_Hash = 0;
-        rf3.m_Hash = 0;
-        h3.m_Hash = 0;
-        rf5.m_Hash = 0;
-        h5.m_Hash = 0;
-
-        hash = nlStringLowerHash("right_face");
-        hRFaceA.m_Hash = hash;
-        hRFaceB.m_Hash = hash;
-
-        hash = nlStringLowerHash(OVERLAY_HANDLER_LAYER_NAME);
-        hRFaceLayerA.m_Hash = hash;
-        hRFaceLayerB.m_Hash = hash;
-
-        hash = nlStringLowerHash(WINNER_SLIDE_NAME);
-        hRFaceSlideA.m_Hash = hash;
-        hRFaceSlideB.m_Hash = hash;
-
-        pComponentInstance = findComp.byRef(
+        pComponentInstance = FEFinder<TLComponentInstance, 4>::Find<FEPresentation>(
             presentation,
-            (InlineHasher&)hRFaceSlideB,
-            (InlineHasher&)hRFaceLayerB,
-            (InlineHasher&)hRFaceB,
-            (InlineHasher&)h5,
-            (InlineHasher&)h3,
-            (InlineHasher&)h1);
+            InlineHasher(nlStringLowerHash(WINNER_SLIDE_NAME)),
+            InlineHasher(nlStringLowerHash(OVERLAY_HANDLER_LAYER_NAME)),
+            InlineHasher(nlStringLowerHash("right_face")));
 
         pComponentInstance->SetActiveSlide(TEAM_SLIDE_NAMES[team]);
 

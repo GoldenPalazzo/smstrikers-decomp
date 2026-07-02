@@ -684,7 +684,7 @@ PlatTexture* glx_GetGridTexture(int width, int height)
     ListEntry<PlatTexture*>* current = gridTextures.m_Head;
     while (current != nullptr)
     {
-        PlatTexture* texture = current->data;
+        PlatTexture* texture = current->entry;
         if (width == texture->m_Width && height == texture->m_Height)
         {
             return texture;
@@ -696,7 +696,7 @@ PlatTexture* glx_GetGridTexture(int width, int height)
     ListEntry<PlatTexture*>* listEntry = new (nlMalloc(8, 8, false)) ListEntry<PlatTexture*>(newTexture);
 
     nlListAddStart<ListEntry<PlatTexture*> >(&gridTextures.m_Head, listEntry, &gridTextures.m_Tail);
-    return gridTextures.m_Head->data;
+    return gridTextures.m_Head->entry;
 }
 
 /**

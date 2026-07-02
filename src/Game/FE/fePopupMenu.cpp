@@ -202,7 +202,7 @@ void FEPopupMenu::CentrePopup(float totalHeight, float topOfMessageBox)
  * Offset/Address/Size: 0x620 | 0x800988CC | size: 0x8A0
  */
 /**
- * TODO: 98.89% match - target allocates one extra callee-saved FP register
+ * TODO: 98.98% match - target allocates one extra callee-saved FP register
  * (f22), so every callee-saved float is one register lower than ours; the
  * resulting frame-size delta shifts all save/restore and stack offsets.
  */
@@ -312,12 +312,12 @@ void FEPopupMenu::SetPositions()
         if (i2 == 0)
         {
             totalHeight += firstOptionSpacing;
-            optionY = (messagePosition.e[1] - prevOptionHeight) - (optionHeight * 0.5f) - firstOptionSpacing;
+            optionY = (messagePosition.e[1] - prevOptionHeight) - (optionHeight / 2.0f) - firstOptionSpacing;
         }
         else
         {
             totalHeight += otherOptionSpacing;
-            optionY = optionPosition.e[1] - (prevOptionHeight * 0.5f) - (optionHeight * 0.5f) - otherOptionSpacing;
+            optionY = optionPosition.e[1] - (prevOptionHeight / 2.0f) - (optionHeight / 2.0f) - otherOptionSpacing;
         }
 
         prevOptionHeight = optionHeight;

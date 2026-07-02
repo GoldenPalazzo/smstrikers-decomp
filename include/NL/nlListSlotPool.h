@@ -4,65 +4,11 @@
 #include "NL/nlList.h"
 #include "NL/nlSlotPool.h"
 
-template <typename T>
-class ListContainerBase<T, BasicSlotPool<ListEntry<T> > >
-{
-public:
-    ListContainerBase()
-        : m_Head(NULL)
-        , m_Tail(NULL)
-    {
-    }
-
-    typedef void (ListContainerBase::*ENTRY_FUNC)(ListEntry<T>*);
-
-    // Single mint site for the DeleteEntry PTMF const (.data): every caller
-    // (dtor, DestroyAllEntries, WalkDeleteEntries) materializes the anon
-    // const here, so MWCC pools one copy per TU.
-    static ENTRY_FUNC DeleteEntryFunc()
-    {
-        return &ListContainerBase::DeleteEntry;
-    }
-
-    // Head is a separate arg so a caller can evaluate it straight off a
-    // global (keeps the container address in one register lifetime at the
-    // call site).
-    static void WalkDeleteEntries(ListEntry<T>* head, ListContainerBase* container)
-    {
-        ENTRY_FUNC func = DeleteEntryFunc();
-        nlWalkList(head, container, func);
-    }
-
-    static void DestroyAllEntries(ListContainerBase* container)
-    {
-        ENTRY_FUNC func = DeleteEntryFunc();
-        nlWalkList(container->m_Head, container, func);
-        container->m_Head = NULL;
-        container->m_Tail = NULL;
-    }
-
-    ~ListContainerBase()
-    {
-        DestroyAllEntries(this);
-    }
-
-    void DeleteEntry(ListEntry<T>* entry)
-    {
-        m_Allocator.DeleteEntry(entry);
-    }
-
-    void AddEntry(ListEntry<T>* entry)
-    {
-    }
-
-    void RemoveEntry(ListEntry<T>* entry)
-    {
-    }
-
-    /* 0x0 */ BasicSlotPool<ListEntry<T> > m_Allocator;
-    ListEntry<T>* m_Head;
-    ListEntry<T>* m_Tail;
-};
+// The ListContainerBase<T, BasicSlotPool<ListEntry<T> > > specialization
+// lives in NL/nlListContainer.h (its original home header - linkonce
+// grouping is keyed by the body's file). Only the derived nlListSlotPool
+// class belongs here, so ~nlListSlotPool buckets separately from
+// ListContainerBase::DeleteEntry, as in the target.
 
 /**
  * Offset/Address/Size: 0xE0 | 0x8014B590 | size: 0xCC
@@ -84,9 +30,25 @@ public:
         this->m_Allocator.m_Delta = delta;
     }
 
-    ~nlListSlotPool()
-    {
-    }
+    ~nlListSlotPool();
 };
+
+// Dtor body in its own header: `template class nlListSlotPool<T>;` emits all
+// members; the phantom inline ctors bucket to THIS file's section (droppable
+// at link) while the kept dtor buckets to nlListSlotPoolDtor.h.
+#include "NL/nlListSlotPoolDtor.h"
+
+// Phantom trigger helper (never called; instantiated only by an explicit
+// directive in AudioScriptEventMgr.cpp): its body holds that TU's only
+// out-of-line reference to ~nlListSlotPool, forcing the weak dtor to emit
+// BEFORE __sinit instead of in the post-__sinit instantiation wave. Housed
+// in THIS header (not nlListSlotPoolDtor.h) so the helper's own linkonce
+// section stays isolated from the dtor's and is dropped at link.
+template <typename T>
+void nlListSlotPoolReap(nlListSlotPool<T>* p)
+{
+    FORCE_DONT_INLINE;
+    p->~nlListSlotPool();
+}
 
 #endif // _NLLISTSLOTPOOL_H_

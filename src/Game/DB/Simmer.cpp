@@ -165,7 +165,7 @@ Simulator::Simulator()
 
 /**
  * Offset/Address/Size: 0x0 | 0x8019087C | size: 0xC18
- * TODO: 98.52% match - this/flag registers still differ around the tokenizer loop.
+ * TODO: 99.04% match - this pointer and found-flag registers still differ around the tokenizer loop.
  */
 void Simulator::InitializeStats()
 {
@@ -173,9 +173,12 @@ void Simulator::InitializeStats()
     GameplaySettings::eSkillLevel skillLevel = GameInfoManager::s_pInstance->GetGameplayOptions().SkillLevel;
     int length = GameInfoManager::s_pInstance->GetGameplayOptions().GameTime;
     FILE* pFile;
-    unsigned char doMean = 1;
-    unsigned char isMeanFound = 0;
-    unsigned char isSDFound = 0;
+    unsigned char doMean;
+    unsigned char isMeanFound;
+    unsigned char isSDFound;
+    isMeanFound = 0;
+    isSDFound = 0;
+    doMean = 1;
     if (skillLevel == GameplaySettings::ROOKIE)
     {
         diff = (eDifficultyID)1;

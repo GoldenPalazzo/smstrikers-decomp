@@ -5,10 +5,10 @@ namespace PlatAudio
 {
 
 void InitStreaming();
-static void ShutdownStreaming();
+void ShutdownStreaming();
 void ConfigureStreamBuffers(unsigned long);
-static bool IsStreamingInited();
-static void StopAllStreams();
+bool IsStreamingInited();
+void StopAllStreams();
 
 }; // namespace PlatAudio
 

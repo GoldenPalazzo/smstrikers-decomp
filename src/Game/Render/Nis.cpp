@@ -282,9 +282,12 @@ bool Nis::SelectRandomCamera(cAnimCamera& camera)
 
 /**
  * Offset/Address/Size: 0xD18 | 0x8012C128 | size: 0x200
- * TODO: 99.26% match - remaining diffs are r29/r30/r31 role rotation
- * for this/snapshot/current drawable.
  */
+static inline DrawableCharacter* GetNisDrawableCharacter(RenderSnapshot& snapshot, int i)
+{
+    return &snapshot.mCharacters[i];
+}
+
 void Nis::Render()
 {
     DrawableCharacter* pDC;
@@ -294,7 +297,7 @@ void Nis::Render()
 
     for (int i = 0; i < 10; i++)
     {
-        pDC = &snapshot.mCharacters[i];
+        pDC = GetNisDrawableCharacter(snapshot, i);
         if (mCharacterControllers[i] == NULL)
             continue;
         pDC->mVisible = true;

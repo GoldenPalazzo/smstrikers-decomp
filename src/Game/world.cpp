@@ -1096,7 +1096,7 @@ void World::Update(float fDeltaT)
 
     while (current != NULL)
     {
-        current->m_data->Update(fDeltaT);
+        current->entry->Update(fDeltaT);
 
         if ((nlDLRingIsEnd(head, current) != 0) || (current == NULL))
         {
@@ -1293,7 +1293,7 @@ void World::CreateLightUserData()
             if (entryMem != NULL)
             {
                 entry->next = NULL;
-                entry->data = pLight;
+                entry->entry = pLight;
             }
             nlListAddStart(&lightList.m_Head, entry, &lightList.m_Tail);
         }
@@ -1306,7 +1306,7 @@ void World::CreateLightUserData()
             if (entryMem != NULL)
             {
                 entry->next = NULL;
-                entry->data = pLight;
+                entry->entry = pLight;
             }
             nlListAddStart(&specList.m_Head, entry, &specList.m_Tail);
         }
@@ -1376,7 +1376,7 @@ void World::CreateLightUserData()
         ListEntry<LightObject*>* entry = lightList.m_Head;
         while (entry != NULL)
         {
-            LightObject* pLight = entry->data;
+            LightObject* pLight = entry->entry;
             glLight->colour = pLight->m_colour;
             glLight->worldPosition = pLight->m_worldPosition;
             glLight->intensity = pLight->m_fIntensity;
@@ -1419,7 +1419,7 @@ void World::CreateLightUserData()
         entry = lightList.m_Head;
         while (entry != NULL)
         {
-            LightObject* pLight = entry->data;
+            LightObject* pLight = entry->entry;
             float fIntensity = fGreenWeight * pLight->m_colour.c[1];
             fIntensity = fRedWeight * pLight->m_colour.c[0] + fIntensity;
             fIntensity = fBlueWeight * pLight->m_colour.c[2] + fIntensity;
@@ -1483,7 +1483,7 @@ void World::CreateLightUserData()
         ListEntry<LightObject*>* entry = specList.m_Head;
         while (entry != NULL)
         {
-            LightObject* pLight = entry->data;
+            LightObject* pLight = entry->entry;
             pSpec->colour = pLight->m_colour;
             pSpec->exponent = 64.0f;
             pSpec->intensity = pLight->m_fIntensity;
@@ -2246,7 +2246,7 @@ World::~World()
     DLListEntry<WorldAnimController*>* pHead = m_animControllerList.m_Head;
     while (pCurrent != NULL)
     {
-        delete pCurrent->m_data;
+        delete pCurrent->entry;
         if ((nlDLRingIsEnd(pHead, pCurrent) != 0) || (pCurrent == NULL))
         {
             pCurrent = NULL;

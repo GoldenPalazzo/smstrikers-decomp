@@ -57,7 +57,7 @@ void FEInGameMessengerManager::Update(float fDeltaT)
     eInGameMessages* pMsg = &msg;
     if (pMsg != NULL)
     {
-        msg = entry->data;
+        msg = entry->entry;
     }
     delete entry;
 

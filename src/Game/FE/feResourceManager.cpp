@@ -296,7 +296,7 @@ void FEResourceManager::QueueResourceLoad(FEResourceHandle* pHandle)
     {
         entry->m_next = NULL;
         entry->m_prev = NULL;
-        entry->m_data = pHandle;
+        entry->entry = pHandle;
     }
 
     nlDLRingAddEnd(&pendingResourceQueue.m_Head, entry);
@@ -759,7 +759,7 @@ void FEResourceManager::Update(float)
             return;
         }
         DLListEntry<FEResourceHandle*>* pQueueEntry = nlDLRingGetStart(pQueueHead);
-        pFeResourceHandle = pQueueEntry->m_data;
+        pFeResourceHandle = pQueueEntry->entry;
         s_pCurrentResourceBeingLoaded = pFeResourceHandle;
         result = IssueResourceLoadRequest_Inline(pFeResourceHandle, pQueueEntry, *pPendingHead);
         bQueueNextResource = (result == FERR_AlreadyLoaded);

@@ -1022,17 +1022,25 @@ inline GCAudioStreaming::MonoAudioStream::MonoAudioStream(GCAudioStreaming::Audi
 
 /**
  * Offset/Address/Size: 0x1300 | 0x8014EA14 | size: 0x3E4
- * TODO: 92.23% match - residual beq/b vs bne branch form and register swaps
- *       for Config, gCrowdSFX, loop counter, and stream pointers.
+ * TODO: 93.47% match - residual Ready stores and register swaps for
+ *       gCrowdSFX, loop counter, and stream pointers.
  */
 void CrowdMood::Init()
 {
+    u32 i;
+
     if (g_Initd)
         return;
 
-    bool crowdOff = GetConfigBool(Config::Global(), "no_crowd", false);
-    if (crowdOff)
+    Config& config = Config::Global();
+    bool crowdOff = GetConfigBool(config, "no_crowd", false);
+    switch (crowdOff)
+    {
+    case false:
+        break;
+    default:
         return;
+    }
 
     memset(&g_CrowdState, 0, sizeof(g_CrowdState));
 
@@ -1057,7 +1065,7 @@ void CrowdMood::Init()
         { g_Settings.NegativeSampleName, Audio::CROWDSFX_EVENT_YEAH_SMALL2, &g_CrowdAudio.NegativeVoiceId },
     };
 
-    for (u32 i = 0; i < 3; i++)
+    for (i = 0; i < 3; i++)
     {
         Audio::SoundAttributes sndAtr;
         sndAtr.Init();

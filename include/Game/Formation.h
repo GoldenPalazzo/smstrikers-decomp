@@ -108,6 +108,8 @@ public:
     ~FormationBallPosition();
     void CalculateDesiredLocation(nlVector3&, cFielder*, bool);
     float GetWeight();
+    float GetBlendFactor();
+    void CalcBallPosition(nlVector2&);
     void Update(float);
     bool SelectClosestBallFormations(const nlVector2&);
 

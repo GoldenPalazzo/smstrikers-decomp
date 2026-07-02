@@ -28,8 +28,8 @@ static inline cSAnim* FindAnim(ListEntry<cSAnim*>* pEntry, unsigned int hash)
 {
     for (; pEntry != 0; pEntry = pEntry->next)
     {
-        if (hash == pEntry->data->m_uHashID)
-            return pEntry->data;
+        if (hash == pEntry->entry->m_uHashID)
+            return pEntry->entry;
     }
     return 0;
 }
@@ -72,7 +72,7 @@ cAnimInventory::~cAnimInventory()
         ListEntry<cSAnim*>* anim = c->m_lItemList.m_Head;
         while (anim != 0)
         {
-            anim->data->Destroy();
+            anim->entry->Destroy();
             anim = anim->next;
         }
 
@@ -86,7 +86,7 @@ cAnimInventory::~cAnimInventory()
             char* filename;
             if (&filename != 0)
             {
-                filename = entry->data;
+                filename = entry->entry;
             }
             delete entry;
             delete filename;

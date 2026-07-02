@@ -1446,9 +1446,8 @@ void FormationBallPosition::CalculateDesiredLocation(nlVector3& destPosition, cF
 
 /**
  * Offset/Address/Size: 0x0 | 0x80038250 | size: 0x2C0
- * TODO: 99.89% match - f29/f30 swap for fBlend register allocation in inner blend computation
  */
-float FormationBallPosition::GetWeight()
+inline void FormationBallPosition::CalcBallPosition(nlVector2& v2DestAIBallPos)
 {
     nlVector3 v3AIBallLoc;
 
@@ -1474,10 +1473,47 @@ float FormationBallPosition::GetWeight()
         v3AIBallLoc.f.y = negY;
     }
 
-    nlVector2 vAIBallLoc = *(const nlVector2*)&v3AIBallLoc;
+    v2DestAIBallPos = *(const nlVector2*)&v3AIBallLoc;
+}
+
+inline float FormationBallPosition::GetBlendFactor()
+{
+    float fBlendFactor = 1.0f;
+
+    if (m_pNextClosestFormation != NULL)
+    {
+        const FormationSpec* pNextSpec = m_pNextClosestFormation->m_pFormationSpec;
+        if (pNextSpec != NULL)
+        {
+            const FormationSpec* pSpec = m_pFormationSpec;
+            nlVector2 vAIBallPos;
+            CalcBallPosition(vAIBallPos);
+
+            nlVector2& keyLoc = pSpec->GetKeyLocation();
+            float dy = vAIBallPos.f.y - keyLoc.f.y;
+            float dx = vAIBallPos.f.x - keyLoc.f.x;
+            float dist = nlSqrt(dx * dx + dy * dy, true);
+
+            nlVector2& nextKeyLoc = pNextSpec->GetKeyLocation();
+            float nextDy = vAIBallPos.f.y - nextKeyLoc.f.y;
+            float nextDx = vAIBallPos.f.x - nextKeyLoc.f.x;
+            float nextDist = nlSqrt(nextDx * nextDx + nextDy * nextDy, true);
+
+            fBlendFactor = nextDist / (dist + nextDist);
+        }
+    }
+
+    return fBlendFactor;
+}
+
+float FormationBallPosition::GetWeight()
+{
+    nlVector2 vAIBallPos;
+    CalcBallPosition(vAIBallPos);
+
     nlVector2& keyLoc = m_pFormationSpec->GetKeyLocation();
-    float dy = vAIBallLoc.f.y - keyLoc.f.y;
-    float dx = vAIBallLoc.f.x - keyLoc.f.x;
+    float dy = vAIBallPos.f.y - keyLoc.f.y;
+    float dx = vAIBallPos.f.x - keyLoc.f.x;
     float dist = nlSqrt(dx * dx + dy * dy, true);
     float fWeight = NormalizeVal(dist, m_pFormationSpec->m_OutRadius, 0.0f);
 
@@ -1486,54 +1522,9 @@ float FormationBallPosition::GetWeight()
         const FormationSpec* pNextSpec = m_pNextClosestFormation->m_pFormationSpec;
         if (pNextSpec != NULL)
         {
-            float fBlend = 1.0f;
-
-            if (m_pNextClosestFormation != NULL)
-            {
-                if (pNextSpec != NULL)
-                {
-                    const FormationSpec* pSpec = m_pFormationSpec;
-                    nlVector3 v3AIBallLoc2;
-
-                    if (g_pBall->m_pOwner != NULL)
-                    {
-                        v3AIBallLoc2 = g_pBall->m_pOwner->m_v3Position;
-                    }
-                    else if (g_pBall->m_pPassTarget != NULL)
-                    {
-                        v3AIBallLoc2 = g_pBall->m_pPassTarget->m_v3Position;
-                    }
-                    else
-                    {
-                        v3AIBallLoc2 = g_pBall->m_v3Position;
-                    }
-
-                    if (m_pFormationManager->m_pTeam->m_nSide != 0)
-                    {
-                        float negY = -v3AIBallLoc2.f.y;
-                        float negX = -v3AIBallLoc2.f.x;
-                        v3AIBallLoc2.f.z = 0.0f;
-                        v3AIBallLoc2.f.x = negX;
-                        v3AIBallLoc2.f.y = negY;
-                    }
-
-                    nlVector2 vAIBallLoc2 = *(const nlVector2*)&v3AIBallLoc2;
-                    nlVector2& keyLoc2 = pSpec->GetKeyLocation();
-                    float dy2 = vAIBallLoc2.f.y - keyLoc2.f.y;
-                    float dx2 = vAIBallLoc2.f.x - keyLoc2.f.x;
-                    fBlend = nlSqrt(dx2 * dx2 + dy2 * dy2, true);
-
-                    nlVector2& nextKeyLoc = pNextSpec->GetKeyLocation();
-                    float dy3 = vAIBallLoc2.f.y - nextKeyLoc.f.y;
-                    float dx3 = vAIBallLoc2.f.x - nextKeyLoc.f.x;
-                    float fDist2 = nlSqrt(dx3 * dx3 + dy3 * dy3, true);
-
-                    fBlend = fDist2 / (fBlend + fDist2);
-                }
-            }
-
-            float fNextWeight = m_pNextClosestFormation->GetWeight();
-            fWeight = fWeight * fBlend + fNextWeight * (1.0f - fBlend);
+            float fBlendFactor = GetBlendFactor();
+            float fNextClosestWeight = m_pNextClosestFormation->GetWeight();
+            fWeight = fWeight * fBlendFactor + fNextClosestWeight * (1.0f - fBlendFactor);
         }
     }
 

@@ -98,7 +98,7 @@ void Audio::AudioEventHandler(Event* pEvent, void*)
             Iter iter;
             iter.m_current = qentry;
             iter.m_head = pTrack->m_QueuedStreams.m_Head;
-            qs = &iter.m_current->m_data;
+            qs = &iter.m_current->entry;
         }
         g_MusicTrackPrePauseStreamId = qs ? qs->StreamId : 0;
 

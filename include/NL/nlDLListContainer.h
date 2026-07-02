@@ -47,7 +47,7 @@ public:
         {
             entry->m_next = NULL;
             entry->m_prev = NULL;
-            entry->m_data = localData;
+            entry->entry = localData;
         }
         return entry;
     }
@@ -56,7 +56,7 @@ public:
     {
         if (outData)
         {
-            *outData = entry->m_data;
+            *outData = entry->entry;
         }
         entry->m_next = m_Allocator.m_pFree;
         m_Allocator.m_pFree = entry;
@@ -88,7 +88,7 @@ T* DLListContainerBase<T, Adapter>::AllocateAtEnd(unsigned long* outEntry)
         *outEntry = (unsigned long)result;
     }
 
-    return &result->m_data;
+    return &result->entry;
 }
 
 template <typename T, typename Adapter>
@@ -96,7 +96,7 @@ void DLListContainerBase<T, Adapter>::DeleteEntry(DLListEntry<T>* entry)
 {
     if (entry)
     {
-        entry->m_data.~T();
+        entry->entry.~T();
     }
     m_Allocator.DeleteEntry(entry);
 }

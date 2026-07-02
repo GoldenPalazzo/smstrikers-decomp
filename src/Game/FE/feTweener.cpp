@@ -28,7 +28,7 @@ void FETweenManager::startTween(FETweener* pTweener)
     {
         pEntry->m_next = NULL;
         pEntry->m_prev = NULL;
-        pEntry->m_data = pTweener;
+        pEntry->entry = pTweener;
     }
 
     // Add to active tween list
@@ -46,7 +46,7 @@ void FETweenManager::clearTweensOnObj(void* obj)
 
     while (entry != NULL)
     {
-        FETweener* tweener = entry->m_data;
+        FETweener* tweener = entry->entry;
         if (obj == tweener->m_applyObj)
         {
             tweener->m_tweenActive = 1;
@@ -88,7 +88,7 @@ void FETweenManager::clearTweens()
 
     while (entry != NULL)
     {
-        FETweener* tweener = entry->m_data;
+        FETweener* tweener = entry->entry;
         tweener->m_tweenActive = 1;
 
         float accumulated = tweener->m_delay + (tweener->m_startTime + tweener->m_duration);
@@ -138,7 +138,7 @@ void FETweenManager::Update(float fDeltaT)
 
     while (entry != NULL)
     {
-        curTween = entry->m_data;
+        curTween = entry->entry;
 
         unsigned char active = curTween->m_tweenActive;
         unsigned char done;
@@ -224,7 +224,7 @@ void FETweenManager::Update(float fDeltaT)
                 {
                     pEntry->m_next = NULL;
                     pEntry->m_prev = NULL;
-                    pEntry->m_data = nextTween;
+                    pEntry->entry = nextTween;
                 }
                 nlDLRingAddEnd(activeListHead, pEntry);
             }
@@ -259,7 +259,7 @@ void FETweenManager::Update(float fDeltaT)
 
             while (tweenEntry != NULL)
             {
-                if (tweenEntry->m_data == curTween)
+                if (tweenEntry->entry == curTween)
                 {
                     savedEntry = tweenEntry;
                     pEntry = tweenEntry;
@@ -376,7 +376,7 @@ FETweener* FETweenManager::createTween(float* startVals, float* endVals, float d
     {
         pEntry->m_next = NULL;
         pEntry->m_prev = NULL;
-        pEntry->m_data = retTweener;
+        pEntry->entry = retTweener;
     }
 
     nlDLRingAddEnd(&m_tweenList.m_Head, pEntry);
@@ -395,7 +395,7 @@ FETweenManager::~FETweenManager()
 
     while (entry != NULL)
     {
-        FETweener* tweener = entry->m_data;
+        FETweener* tweener = entry->entry;
         delete tweener;
 
         if (nlDLRingIsEnd(head, entry) || entry == NULL)

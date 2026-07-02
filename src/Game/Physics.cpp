@@ -122,7 +122,7 @@ void PhysicsUpdate(PhysicsWorld* pWorld, float fDeltaT)
             ListEntry<PhysicsObject*>* entry = g_NetPhysicsObjects.m_Head;
             while (entry != NULL)
             {
-                dGeomComputeAABB(entry->data->m_geomID);
+                dGeomComputeAABB(entry->entry->m_geomID);
                 entry = entry->next;
             }
             sbNonMovingAABBsInitialized = true;
@@ -132,7 +132,7 @@ void PhysicsUpdate(PhysicsWorld* pWorld, float fDeltaT)
             ListEntry<PhysicsObject*>* entry = g_NetPhysicsObjects.m_Head;
             while (entry != NULL)
             {
-                dGeomMarkAABBAsValid(entry->data->m_geomID);
+                dGeomMarkAABBAsValid(entry->entry->m_geomID);
                 entry = entry->next;
             }
         }
@@ -169,7 +169,7 @@ void PhysicsLoader::DestroyPhysics()
     ListEntry<PhysicsObject*>* entry = g_StaticPhysicsPrimitives.m_Head;
     while (entry != NULL)
     {
-        delete entry->data;
+        delete entry->entry;
         entry = entry->next;
     }
 
@@ -189,7 +189,7 @@ void PhysicsLoader::DestroyPhysics()
 
     while (meshEntry != NULL)
     {
-        meshEntry->data->Destroy();
+        meshEntry->entry->Destroy();
         meshEntry = meshEntry->next;
     }
 
@@ -207,7 +207,7 @@ void PhysicsLoader::DestroyPhysics()
         void* mesh;
         if (&mesh != NULL)
         {
-            mesh = removed->data;
+            mesh = removed->entry;
         }
         ::operator delete(removed);
         ::operator delete(mesh);
@@ -259,7 +259,7 @@ void PhysicsLoader::ConstructStaticPhysicsPrimitives(CharacterPhysicsData* pPhys
                 if (p != NULL)
                 {
                     ((ListEntry<PhysicsObject*>*)p)->next = NULL;
-                    ((ListEntry<PhysicsObject*>*)p)->data = obj;
+                    ((ListEntry<PhysicsObject*>*)p)->entry = obj;
                 }
                 nlListAddEnd(pStaticHead, pStaticTail, entry);
             }
@@ -274,7 +274,7 @@ void PhysicsLoader::ConstructStaticPhysicsPrimitives(CharacterPhysicsData* pPhys
                 if (p != NULL)
                 {
                     ((ListEntry<PhysicsObject*>*)p)->next = NULL;
-                    ((ListEntry<PhysicsObject*>*)p)->data = obj;
+                    ((ListEntry<PhysicsObject*>*)p)->entry = obj;
                 }
                 nlListAddEnd(pStaticHead, pStaticTail, entry);
             }
@@ -308,7 +308,7 @@ void PhysicsLoader::ConstructStaticPhysicsPrimitives(CharacterPhysicsData* pPhys
                 if (p != NULL)
                 {
                     ((ListEntry<PhysicsObject*>*)p)->next = NULL;
-                    ((ListEntry<PhysicsObject*>*)p)->data = obj;
+                    ((ListEntry<PhysicsObject*>*)p)->entry = obj;
                 }
                 nlListAddEnd(pStaticHead, pStaticTail, entry);
             }
@@ -324,7 +324,7 @@ void PhysicsLoader::ConstructStaticPhysicsPrimitives(CharacterPhysicsData* pPhys
             if (p != NULL)
             {
                 ((ListEntry<PhysicsObject*>*)p)->next = NULL;
-                ((ListEntry<PhysicsObject*>*)p)->data = obj;
+                ((ListEntry<PhysicsObject*>*)p)->entry = obj;
             }
             nlListAddEnd(pNetHead, pNetTail, entry);
         }
@@ -378,7 +378,7 @@ bool PhysicsLoader::StartLoad(LoadingManager*)
     if (pEntry != NULL)
     {
         pEntry->next = NULL;
-        pEntry->data = pGroundPlane;
+        pEntry->entry = pGroundPlane;
     }
 
     ListEntry<PhysicsObject*>** pHead = &g_StaticPhysicsPrimitives.m_Head;
@@ -403,7 +403,7 @@ bool PhysicsLoader::StartLoad(LoadingManager*)
         if (pMem != NULL)
         {
             ((ListEntry<PhysicsObject*>*)pMem)->next = NULL;
-            ((ListEntry<PhysicsObject*>*)pMem)->data = pWall;
+            ((ListEntry<PhysicsObject*>*)pMem)->entry = pWall;
         }
 
         nlListAddEnd(pHead, pTail, pWallEntry);
@@ -543,7 +543,7 @@ cInventory<LoadablePhysicsMesh>::~cInventory()
     ListEntry<LoadablePhysicsMesh*>* meshEntry = m_lItemList.m_Head;
     while (meshEntry != NULL)
     {
-        meshEntry->data->Destroy();
+        meshEntry->entry->Destroy();
         meshEntry = meshEntry->next;
     }
 
@@ -578,7 +578,7 @@ cInventory<LoadablePhysicsMesh>::~cInventory()
         void* mesh;
         if (&mesh != NULL)
         {
-            mesh = first->data;
+            mesh = first->entry;
         }
         ::operator delete(first);
         ::operator delete(mesh);

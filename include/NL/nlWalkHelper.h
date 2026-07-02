@@ -13,7 +13,7 @@ public:
 template <typename KeyType, typename EntryType, typename CallbackType>
 void WalkHelper<KeyType, EntryType, CallbackType>::Callback(EntryType* listEntry)
 {
-    (m_CBClass->*m_CB)(&listEntry->m_data);
+    (m_CBClass->*m_CB)(&listEntry->entry);
 }
 
 #endif // _NLWALKHELPER_H_

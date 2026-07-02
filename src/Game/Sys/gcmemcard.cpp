@@ -547,8 +547,8 @@ s32 MemCard::BeginCardAccess(const MemCardFunctor& Callback)
 
 /**
  * Offset/Address/Size: 0xF28 | 0x801CA698 | size: 0x3B4
- * TODO: 98.61% match - shift-up loop and header-size calculation keep
- * different temp registers; icon-speed copy uses reversed source temp regs.
+ * TODO: 98.73% match - shift-up loop, header-size calculation, and icon-speed
+ * copy still keep different temp registers.
  */
 long MemCard::CreateFile(const char* FileName, unsigned long FileSize, MemCard::ICON_CONFIG* pIconConfig, MemCard::MC_FILE*& pFile, const MemCardFunctor& Callback)
 {
@@ -620,6 +620,8 @@ long MemCard::CreateFile(const char* FileName, unsigned long FileSize, MemCard::
     long middle;
     long low = -1;
     long high;
+    unsigned long id;
+    MC_FILE* entry;
     unsigned long count = m_OpenFiles.m_EntryCount;
     high = count;
 
@@ -636,20 +638,20 @@ long MemCard::CreateFile(const char* FileName, unsigned long FileSize, MemCard::
         }
     }
 
-    high = low + 1;
-    while (count != (unsigned long)high)
+    long insertPos = high = low + 1;
+    while (count != (unsigned long)insertPos)
     {
         unsigned long prev = count - 1;
         nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>* lookup = m_OpenFiles.m_pEntryLookup;
-        unsigned long id = lookup[prev].hash;
-        MC_FILE* entry = lookup[prev].pEntry;
+        id = lookup[prev].hash;
+        entry = lookup[prev].pEntry;
         lookup[count].pEntry = entry;
         lookup[count].hash = id;
         count = prev;
     }
 
-    m_OpenFiles.m_pEntryLookup[high].hash = hash;
-    m_OpenFiles.m_pEntryLookup[high].pEntry = pNewFile;
+    m_OpenFiles.m_pEntryLookup[insertPos].hash = hash;
+    m_OpenFiles.m_pEntryLookup[insertPos].pEntry = pNewFile;
     m_OpenFiles.m_EntryCount = m_OpenFiles.m_EntryCount + 1;
 
     m_pFileCB = pNewFile;

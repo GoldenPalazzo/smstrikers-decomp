@@ -886,7 +886,7 @@ config.libs = [
             Object(Matching, "Game/Audio/WorldAudio.cpp", extra_cflags=["-inline auto", "-inline deferred"]),   
             Object(NonMatching, "Game/Audio/AudioEventHandler.cpp", extra_cflags=["-inline auto", "-inline deferred"]),   
             Object(NonMatching, "Game/Audio/AudioLoader.cpp", extra_cflags=["-inline auto", "-inline deferred"]),   
-            Object(NonMatching, "Game/Audio/AudioScriptEventMgr.cpp", extra_cflags=["-inline auto", "-inline deferred"]),  
+            Object(Matching, "Game/Audio/AudioScriptEventMgr.cpp", extra_cflags=["-inline auto", "-inline deferred"]),  
             Object(Matching, "Game/Audio/AudioStream.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/Audio/CrowdMood.cpp", extra_cflags=["-inline auto", "-inline deferred"]),  
             Object(NonMatching, "Game/Audio/StreamTrack.cpp", extra_cflags=["-inline auto", "-inline deferred"]),   
@@ -942,7 +942,7 @@ config.libs = [
             Object(NonMatching, "Game/FixedUpdateTask.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/DispatchEventsTask.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/ResetTask.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(NonMatching, "Game/TransitionTask.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(Matching, "Game/TransitionTask.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/BeginFrameTask.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/EndFrameTask.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
 

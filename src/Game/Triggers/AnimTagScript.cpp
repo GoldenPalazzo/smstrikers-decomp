@@ -48,7 +48,7 @@ u8 AnimTagScriptInterpreter::SetupAnimationTriggers(const char* TriggerFileName,
     ListEntry<cSAnim*>* node = (ListEntry<cSAnim*>*)pAnimInventory->m_lItemList.m_Head;
     while (node != NULL)
     {
-        u32 key = ((cSAnim*)node->data)->m_uHashID;
+        u32 key = ((cSAnim*)node->entry)->m_uHashID;
         file.m_pCurrentAnim = nlBSearch<BinaryTriggerFile::ANIM_RECORD, unsigned long>(key, file.m_pFirstAnim, file.m_pFileData->AnimCount);
 
         if (file.m_pCurrentAnim != NULL)
@@ -74,7 +74,7 @@ u8 AnimTagScriptInterpreter::SetupAnimationTriggers(const char* TriggerFileName,
                 pSlot->ScriptInfo.Trigger = pTriggerRecord->Trigger;
                 pSlot->ScriptInfo.ScriptFuncOffset = pTriggerRecord->ScriptFuncOffset;
 
-                ((cSAnim*)node->data)->CreateCallback(pTriggerRecord->Frame / (float)((cSAnim*)node->data)->m_nNumKeys, (unsigned int)pSlot, AnimTagScriptInterpreter::AnimControllerCB);
+                ((cSAnim*)node->entry)->CreateCallback(pTriggerRecord->Frame / (float)((cSAnim*)node->entry)->m_nNumKeys, (unsigned int)pSlot, AnimTagScriptInterpreter::AnimControllerCB);
 
                 file.m_CurrentTrigger++;
             }

@@ -37,7 +37,7 @@ static inline cSAnim* FindAnimByHash(cInventory<cSAnim>* animInv, u32 hash)
     cSAnim* foundAnim;
     while (animEntry != NULL)
     {
-        foundAnim = animEntry->data;
+        foundAnim = animEntry->entry;
         if (hash == foundAnim->m_uHashID)
             return foundAnim;
         animEntry = animEntry->next;
@@ -49,9 +49,9 @@ static inline cSHierarchy* FindHierarchy(ListEntry<cSHierarchy*>* hEntry, u32 ha
 {
     while (hEntry != NULL)
     {
-        if (hash == hEntry->data->m_uHashID)
+        if (hash == hEntry->entry->m_uHashID)
         {
-            return hEntry->data;
+            return hEntry->entry;
         }
         hEntry = hEntry->next;
     }
@@ -136,7 +136,7 @@ NPCManager::NPCManager()
             if (listEntry != NULL)
             {
                 listEntry->next = NULL;
-                listEntry->data = guy;
+                listEntry->entry = guy;
             }
             nlListAddStart<ListEntry<SkinAnimatedNPC*> >(&mNPCList.m_Head, listEntry, &mNPCList.m_Tail);
             new (nlMalloc(sizeof(AnimatedModelExplodable), 8, false)) AnimatedModelExplodable(EXPLODABLE_CAMERAGUY, guy);
@@ -155,7 +155,7 @@ NPCManager::NPCManager()
             if (listEntry != NULL)
             {
                 listEntry->next = NULL;
-                listEntry->data = guy;
+                listEntry->entry = guy;
             }
             nlListAddStart<ListEntry<SkinAnimatedNPC*> >(&mNPCList.m_Head, listEntry, &mNPCList.m_Tail);
             new (nlMalloc(sizeof(AnimatedModelExplodable), 8, false)) AnimatedModelExplodable(EXPLODABLE_STANDUPCAMERA, guy);
@@ -173,7 +173,7 @@ NPCManager::NPCManager()
             if (listEntry != NULL)
             {
                 listEntry->next = NULL;
-                listEntry->data = npc;
+                listEntry->entry = npc;
             }
             nlListAddStart<ListEntry<SkinAnimatedNPC*> >(&mNPCList.m_Head, listEntry, &mNPCList.m_Tail);
         }
@@ -190,7 +190,7 @@ NPCManager::NPCManager()
             if (listEntry != NULL)
             {
                 listEntry->next = NULL;
-                listEntry->data = npc;
+                listEntry->entry = npc;
             }
             nlListAddStart<ListEntry<SkinAnimatedNPC*> >(&mNPCList.m_Head, listEntry, &mNPCList.m_Tail);
         }
@@ -207,7 +207,7 @@ NPCManager::NPCManager()
             if (listEntry != NULL)
             {
                 listEntry->next = NULL;
-                listEntry->data = npc;
+                listEntry->entry = npc;
             }
             nlListAddStart<ListEntry<SkinAnimatedNPC*> >(&mNPCList.m_Head, listEntry, &mNPCList.m_Tail);
         }
@@ -260,7 +260,7 @@ static inline void DestroyNPCList(nlListContainer<SkinAnimatedNPC*>* npcList)
     ListEntry<SkinAnimatedNPC*>* npcEntry = npcList->m_Head;
     while (npcEntry != NULL)
     {
-        delete npcEntry->data;
+        delete npcEntry->entry;
         npcEntry = npcEntry->next;
     }
 
@@ -291,7 +291,7 @@ static inline void DestroyHierarchyInventory(cInventory<cSHierarchy>* pHierInv)
         void* mesh;
         if (&mesh != NULL)
         {
-            mesh = first->data;
+            mesh = first->entry;
         }
         ::operator delete(first);
         ::operator delete(mesh);
@@ -308,7 +308,7 @@ static inline void DestroySAnimInventory(cInventory<cSAnim>* pSAnimInv)
     ListEntry<cSAnim*>* animEntry = pSAnimInv->m_lItemList.m_Head;
     while (animEntry != NULL)
     {
-        animEntry->data->Destroy();
+        animEntry->entry->Destroy();
         animEntry = animEntry->next;
     }
 
@@ -326,7 +326,7 @@ static inline void DestroySAnimInventory(cInventory<cSAnim>* pSAnimInv)
         void* mesh;
         if (&mesh != NULL)
         {
-            mesh = first->data;
+            mesh = first->entry;
         }
         ::operator delete(first);
         ::operator delete(mesh);
@@ -370,7 +370,7 @@ void NPCManager::UpdateNPCs(float dt)
     ListEntry<SkinAnimatedNPC*>* current = mNPCList.m_Head;
     while (current != nullptr)
     {
-        current->data->Update(dt);
+        current->entry->Update(dt);
         current = current->next;
     }
 }
@@ -383,7 +383,7 @@ void NPCManager::RenderNPCs()
     ListEntry<SkinAnimatedNPC*>* current = mNPCList.m_Head;
     while (current != nullptr)
     {
-        current->data->Render();
+        current->entry->Render();
         current = current->next;
     }
 }
@@ -435,7 +435,7 @@ void NPCManager::CreateNPCTemplate(int templateIndex, bool loadTextures)
     if (memEntry != NULL)
     {
         memEntry->next = NULL;
-        memEntry->data = (char*)hierData;
+        memEntry->entry = (char*)hierData;
     }
     nlListAddStart<ListEntry<char*> >(
         (ListEntry<char*>**)&hierInv->m_lMemList.m_Head,
@@ -453,7 +453,7 @@ void NPCManager::CreateNPCTemplate(int templateIndex, bool loadTextures)
             if (itemEntry != NULL)
             {
                 itemEntry->next = NULL;
-                itemEntry->data = hier;
+                itemEntry->entry = hier;
             }
             nlListAddStart<ListEntry<cSHierarchy*> >(
                 (ListEntry<cSHierarchy*>**)&hierInv->m_lItemList.m_Head,
@@ -484,7 +484,7 @@ void NPCManager::CreateNPCTemplate(int templateIndex, bool loadTextures)
         if (animMem != NULL)
         {
             animMem->next = NULL;
-            animMem->data = (char*)animData;
+            animMem->entry = (char*)animData;
         }
         nlListAddStart<ListEntry<char*> >(
             (ListEntry<char*>**)&animInv->m_lMemList.m_Head,
@@ -501,7 +501,7 @@ void NPCManager::CreateNPCTemplate(int templateIndex, bool loadTextures)
                 if (animItem != NULL)
                 {
                     animItem->next = NULL;
-                    animItem->data = anim;
+                    animItem->entry = anim;
                 }
                 nlListAddStart<ListEntry<cSAnim*> >(
                     (ListEntry<cSAnim*>**)&animInv->m_lItemList.m_Head,
@@ -531,7 +531,7 @@ void NPCManager::CreateNPCTemplate(int templateIndex, bool loadTextures)
         if (animMem != NULL)
         {
             animMem->next = NULL;
-            animMem->data = (char*)animData;
+            animMem->entry = (char*)animData;
         }
         nlListAddStart<ListEntry<char*> >(
             (ListEntry<char*>**)&animInv->m_lMemList.m_Head,
@@ -548,7 +548,7 @@ void NPCManager::CreateNPCTemplate(int templateIndex, bool loadTextures)
                 if (animItem != NULL)
                 {
                     animItem->next = NULL;
-                    animItem->data = anim;
+                    animItem->entry = anim;
                 }
                 nlListAddStart<ListEntry<cSAnim*> >(
                     (ListEntry<cSAnim*>**)&animInv->m_lItemList.m_Head,

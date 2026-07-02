@@ -548,7 +548,7 @@ unsigned char nlFont::Load(const char* szFontName, char* pFontDescData, unsigned
 
                     nlListAddStart<ListEntry<nlFont::GlyphInfo> >(pExtHead, pEntry, &ExtendedGlyphList.m_Tail);
                     m_ExtendedGlyphCount++;
-                    pInfo = &pEntry->data;
+                    pInfo = &pEntry->entry;
                 }
 
                 pInfo->UnicodeChar = Character;
@@ -681,9 +681,9 @@ unsigned char nlFont::Load(const char* szFontName, char* pFontDescData, unsigned
                 ListEntry<nlFont::KernPair>* pEntry = nlListRemoveStart<ListEntry<nlFont::KernPair> >(&KernList.m_Head, &KernList.m_Tail);
                 if (pCurKP != NULL)
                 {
-                    pCurKP->s.A = pEntry->data.s.A;
-                    pCurKP->s.B = pEntry->data.s.B;
-                    pCurKP->Kern = pEntry->data.Kern;
+                    pCurKP->s.A = pEntry->entry.s.A;
+                    pCurKP->s.B = pEntry->entry.s.B;
+                    pCurKP->Kern = pEntry->entry.Kern;
                 }
 
                 pEntry->next = (ListEntry<nlFont::KernPair>*)KernList.m_Allocator.m_FreeList;
@@ -707,7 +707,7 @@ unsigned char nlFont::Load(const char* szFontName, char* pFontDescData, unsigned
                 ListEntry<nlFont::GlyphInfo>* pEntry = nlListRemoveStart<ListEntry<nlFont::GlyphInfo> >(&ExtendedGlyphList.m_Head, &ExtendedGlyphList.m_Tail);
                 if (pInfo != NULL)
                 {
-                    *pInfo = pEntry->data;
+                    *pInfo = pEntry->entry;
                 }
 
                 pEntry->next = (ListEntry<nlFont::GlyphInfo>*)ExtendedGlyphList.m_Allocator.m_FreeList;

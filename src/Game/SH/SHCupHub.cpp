@@ -2982,8 +2982,9 @@ unsigned char CupHubScene::UpdateKnockout2(float fDeltaT)
 
     s16 winnerIndex = (s16)mAnimatingKnockoutTeams[0];
     eTeamID winnerTeam = pGame->mTeamIndex[winnerIndex];
-    BasicStringData<unsigned short>* data = BuildWideStringData(LookupLocHash(nlStringLowerHash("STANDINGS_WINNER")));
-    BasicString<unsigned short, Detail::TempStringAllocator> winnerString = Format(BasicString<unsigned short, Detail::TempStringAllocator>(data), LookupLocHash(GetLOCCharacterName(winnerTeam, false, false)));
+    BasicString<unsigned short, Detail::TempStringAllocator> winnerString = Format(
+        BasicString<unsigned short, Detail::TempStringAllocator>(BuildWideStringData(LookupLocHash(nlStringLowerHash("STANDINGS_WINNER")))),
+        LookupLocHash(GetLOCCharacterName(winnerTeam, false, false)));
 
     memcpy(mColumnsByRowsBuffers[0][0], winnerString.c_str(), 0x40);
     pText->SetString(mColumnsByRowsBuffers[0][0]);

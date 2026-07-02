@@ -468,7 +468,7 @@ static void InsertSorted(nlDLListContainer<MyMiniData*>& list, MyMiniData* data)
 
     while (current != NULL)
     {
-        if (current->m_data->dist > data->dist)
+        if (current->entry->dist > data->dist)
         {
             if (nlDLRingIsStart(head, current))
             {
@@ -477,7 +477,7 @@ static void InsertSorted(nlDLListContainer<MyMiniData*>& list, MyMiniData* data)
                 {
                     entry->m_next = NULL;
                     entry->m_prev = NULL;
-                    entry->m_data = data;
+                    entry->entry = data;
                 }
                 nlDLRingAddStart(&list.m_Head, entry);
                 return;
@@ -497,7 +497,7 @@ static void InsertSorted(nlDLListContainer<MyMiniData*>& list, MyMiniData* data)
             {
                 entry->m_next = NULL;
                 entry->m_prev = NULL;
-                entry->m_data = data;
+                entry->entry = data;
             }
             nlDLRingInsert(&list.m_Head, head, entry);
             return;
@@ -518,7 +518,7 @@ static void InsertSorted(nlDLListContainer<MyMiniData*>& list, MyMiniData* data)
     {
         entry->m_next = NULL;
         entry->m_prev = NULL;
-        entry->m_data = data;
+        entry->entry = data;
     }
     nlDLRingAddEnd(&list.m_Head, entry);
 }
@@ -604,7 +604,7 @@ SaveData* GoalieSave::FindBestSave(SaveBlendInfo& blendInfo, const nlVector3& v3
 
         while (current != NULL)
         {
-            MyMiniData* data = current->m_data;
+            MyMiniData* data = current->entry;
             nlListContainer<SaveData*>* cellList = data->list;
 
             if (cellList != NULL)
@@ -661,7 +661,7 @@ SaveData* GoalieSave::FindBestInList(SaveBlendInfo& blendInfo, nlListContainer<S
     pEntry = SaveList.m_Head;
     while (pEntry != NULL)
     {
-        SaveData* pCur = pEntry->data;
+        SaveData* pCur = pEntry->entry;
 
         if (!(uSaveType & pCur->muSaveType))
             goto advance;
@@ -1409,7 +1409,7 @@ static inline void AddPointToGrid(SaveData* pSaveData, const nlVector3& v3Point)
     {
         while (entry != NULL)
         {
-            if (entry->data == pSaveData)
+            if (entry->entry == pSaveData)
                 return;
             entry = entry->next;
         }
@@ -1420,7 +1420,7 @@ static inline void AddPointToGrid(SaveData* pSaveData, const nlVector3& v3Point)
         if (newEntry != NULL)
         {
             newEntry->next = NULL;
-            newEntry->data = pSaveData;
+            newEntry->entry = pSaveData;
         }
         nlListAddStart<ListEntry<SaveData*> >(&cell.m_Head, newEntry, &cell.m_Tail);
     }

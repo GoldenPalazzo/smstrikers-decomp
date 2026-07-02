@@ -196,8 +196,8 @@ static inline cSHierarchy* FindHierarchy(ListEntry<cSHierarchy*>* hEntry, u32 ha
     cSHierarchy* pHierarchy;
     while (hEntry != NULL)
     {
-        pHierarchy = hEntry->data;
-        if (hash == hEntry->data->m_uHashID)
+        pHierarchy = hEntry->entry;
+        if (hash == hEntry->entry->m_uHashID)
         {
             return pHierarchy;
         }
@@ -213,7 +213,7 @@ static inline nlChunk* AddLoadedInventoryMemory(cInventory<T>* inv, nlChunk* dat
     if (entry != NULL)
     {
         entry->next = NULL;
-        entry->data = (char*)data;
+        entry->entry = (char*)data;
     }
     nlListAddStart<ListEntry<char*> >(
         (ListEntry<char*>**)&inv->m_lMemList.m_Head,
@@ -275,7 +275,7 @@ void CharacterLoadingGuts(tCharacterTemplate* pCharacterTemplate, const tCharact
     if (memEntry != NULL)
     {
         memEntry->next = NULL;
-        memEntry->data = (char*)hierData;
+        memEntry->entry = (char*)hierData;
     }
     nlListAddStart<ListEntry<char*> >(
         (ListEntry<char*>**)&pHierInv2->m_lMemList.m_Head,
@@ -293,7 +293,7 @@ void CharacterLoadingGuts(tCharacterTemplate* pCharacterTemplate, const tCharact
             if (itemEntry != NULL)
             {
                 itemEntry->next = NULL;
-                itemEntry->data = hier;
+                itemEntry->entry = hier;
             }
             nlListAddStart<ListEntry<cSHierarchy*> >(
                 &pHierInv2->m_lItemList.m_Head,
@@ -373,7 +373,7 @@ void CharacterLoadingGuts(tCharacterTemplate* pCharacterTemplate, const tCharact
                 if (retItemEntry != NULL)
                 {
                     retItemEntry->next = NULL;
-                    retItemEntry->data = retarget;
+                    retItemEntry->entry = retarget;
                 }
                 nlListAddStart<ListEntry<AnimRetargetList*> >(
                     &pRetInv->m_lItemList.m_Head,
@@ -452,7 +452,7 @@ cPlayer* CreateCharacter(int nPlayerID, int nTeamID, eCharacterClass cc, bool bF
         {
             if (idx == 0)
             {
-                retData = (u32)retEntry->data;
+                retData = (u32)retEntry->entry;
                 goto retFound;
             }
             retEntry = retEntry->next;
@@ -624,7 +624,7 @@ cPlayer* CreateGoalie(eCharacterClass gcc, bool bForViewer)
         {
             if (idx == 0)
             {
-                retResult = retEntry->data;
+                retResult = retEntry->entry;
                 goto retDone;
             }
             retEntry = retEntry->next;
@@ -886,7 +886,7 @@ void DestroyCharacters()
                     void* mesh;
                     if (&mesh != NULL)
                     {
-                        mesh = first->data;
+                        mesh = first->entry;
                     }
                     ::operator delete(first);
                     ::operator delete(mesh);
@@ -928,7 +928,7 @@ void DestroyCharacters()
                     void* mesh;
                     if (&mesh != NULL)
                     {
-                        mesh = first->data;
+                        mesh = first->entry;
                     }
                     ::operator delete(first);
                     ::operator delete(mesh);
@@ -970,7 +970,7 @@ void DestroyCharacters()
                 void* mesh;
                 if (&mesh != NULL)
                 {
-                    mesh = first->data;
+                    mesh = first->entry;
                 }
                 ::operator delete(first);
                 ::operator delete(mesh);
@@ -1012,7 +1012,7 @@ void DestroyCharacters()
                 void* mesh;
                 if (&mesh != NULL)
                 {
-                    mesh = first->data;
+                    mesh = first->entry;
                 }
                 ::operator delete(first);
                 ::operator delete(mesh);

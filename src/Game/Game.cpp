@@ -1520,13 +1520,13 @@ bool cGame::IsThoughtAllowed(unsigned long thought_id)
         {
             bAllowedToThink = true;
         }
-        else if (thought_id == head->data)
+        else if (thought_id == head->entry)
         {
             ListEntry<unsigned long>* removed = nlListRemoveStart<ListEntry<unsigned long> >(&mThoughtsQueue.m_Head, &mThoughtsQueue.m_Tail);
             unsigned long temp;
             if (&temp != NULL)
             {
-                temp = removed->data;
+                temp = removed->entry;
             }
             ::operator delete(removed);
             bAllowedToThink = true;
@@ -1539,7 +1539,7 @@ bool cGame::IsThoughtAllowed(unsigned long thought_id)
         bool bFound = false;
         while (node != NULL)
         {
-            if (thought_id == node->data)
+            if (thought_id == node->entry)
             {
                 bFound = true;
                 break;
@@ -1553,7 +1553,7 @@ bool cGame::IsThoughtAllowed(unsigned long thought_id)
             if (newEntry != NULL)
             {
                 newEntry->next = NULL;
-                newEntry->data = thought_id;
+                newEntry->entry = thought_id;
             }
             nlListAddEnd(&mThoughtsQueue.m_Head, &mThoughtsQueue.m_Tail, newEntry);
         }

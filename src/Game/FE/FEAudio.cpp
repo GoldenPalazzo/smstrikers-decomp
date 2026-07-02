@@ -414,12 +414,12 @@ void FEAudio::BuildAnimAudioEventLookup()
                 if (pEntry != NULL)
                 {
                     pEntry->next = NULL;
-                    *(LookupBlock*)&pEntry->data = entry.data;
+                    *(LookupBlock*)&pEntry->entry = entry.data;
                 }
 
                 nlListAddEnd(&LookupList.m_Head, &LookupList.m_Tail, pEntry);
-                pEntry->data.hash = nlStringHash(pToken);
-                nlStrNCpy(pEntry->data.szSFXType, pSFXTypeStr, 0x32);
+                pEntry->entry.hash = nlStringHash(pToken);
+                nlStrNCpy(pEntry->entry.szSFXType, pSFXTypeStr, 0x32);
                 gNumAnimAudioEvents++;
             }
 
@@ -434,7 +434,7 @@ void FEAudio::BuildAnimAudioEventLookup()
     while (node != NULL)
     {
         AnimAudioEventLookup& out = gp_AnimAudioEventTable[i];
-        out = node->data;
+        out = node->entry;
         i++;
         node = node->next;
     }

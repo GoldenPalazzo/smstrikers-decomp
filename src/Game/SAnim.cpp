@@ -30,51 +30,56 @@ void nlListAddStart<cSAnimCallback>(cSAnimCallback** head, cSAnimCallback* entry
     do                                                      \
     {                                                       \
         u32 alignField = (chunk)->m_ID & 0x7F000000;        \
+        u32 ptr;                                            \
         u32 isAligned = ((-alignField) | alignField) >> 31; \
         if (isAligned != 0)                                 \
         {                                                   \
             u32 alignment = 1u << (alignField >> 24);       \
-            u32 ptr = (u32)(chunk) + alignment;             \
+            ptr = (u32)(chunk) + alignment;                 \
             ptr += 7;                                       \
             ptr &= ~(alignment - 1);                        \
-            (out) = (type)ptr;                              \
         }                                                   \
         else                                                \
         {                                                   \
-            (out) = (type)((u8*)(chunk) + 8);               \
+            ptr = (u32)(chunk) + 8;                         \
         }                                                   \
+        (out) = (type)ptr;                                  \
     } while (0)
 
-#define GET_ROOT_TRANS_FOR_INITIALIZE(anim, t, out)                              \
-    do                                                                           \
-    {                                                                            \
-        if ((anim)->m_nNumRootKeys != 0)                                         \
-        {                                                                        \
-            if ((t) == 1.0f || (anim)->m_nNumRootKeys == 1)                      \
-            {                                                                    \
-                *(out) = (anim)->m_pRootTrans[(anim)->m_nNumRootKeys - 1];       \
-            }                                                                    \
-            else                                                                 \
-            {                                                                    \
-                float fRealIndex = (t) * ((anim)->m_nNumRootKeys - 1);           \
-                int nIndex0 = (int)fRealIndex;                                   \
-                int nIndex1 = nIndex0 + 1;                                       \
-                const nlVector3* pRootTrans = (anim)->m_pRootTrans;              \
-                const nlVector3* pVal0 = &pRootTrans[nIndex0];                   \
-                const nlVector3* pVal1 = &pRootTrans[nIndex1];                   \
-                float fWeight = fRealIndex - nIndex0;                            \
-                float fInvWeight = 1.0f - fWeight;                               \
-                (out)->f.x = (fWeight * pVal1->f.x) + (fInvWeight * pVal0->f.x); \
-                (out)->f.y = (fWeight * pVal1->f.y) + (fInvWeight * pVal0->f.y); \
-                (out)->f.z = (fWeight * pVal1->f.z) + (fInvWeight * pVal0->f.z); \
-            }                                                                    \
-        }                                                                        \
-        else                                                                     \
-        {                                                                        \
-            (out)->f.x = 0.0f;                                                   \
-            (out)->f.y = 0.0f;                                                   \
-            (out)->f.z = 0.0f;                                                   \
-        }                                                                        \
+#define GET_ROOT_TRANS_FOR_INITIALIZE(anim, numRootKeys, t, out)                  \
+    do                                                                            \
+    {                                                                             \
+        if ((numRootKeys) != 0)                                                   \
+        {                                                                         \
+            if ((t) == 1.0f || (numRootKeys) == 1)                                \
+            {                                                                     \
+                const nlVector3* pSrc = &(anim)->m_pRootTrans[(numRootKeys) - 1]; \
+                ((u32*)(out))[0] = ((const u32*)pSrc)[0];                         \
+                ((u32*)(out))[1] = ((const u32*)pSrc)[1];                         \
+                ((u32*)(out))[2] = ((const u32*)pSrc)[2];                         \
+            }                                                                     \
+            else                                                                  \
+            {                                                                     \
+                float fRealIndex = (numRootKeys) - 1;                             \
+                fRealIndex *= (t);                                                \
+                int nIndex0 = (int)fRealIndex;                                    \
+                int nIndex1 = nIndex0 + 1;                                        \
+                const nlVector3* pRootTrans = (anim)->m_pRootTrans;               \
+                const nlVector3* pVal0 = &pRootTrans[nIndex0];                    \
+                const nlVector3* pVal1 = &pRootTrans[nIndex1];                    \
+                float fWeight = fRealIndex - nIndex0;                             \
+                float fInvWeight = 1.0f - fWeight;                                \
+                (out)->f.x = (fWeight * pVal1->f.x) + (fInvWeight * pVal0->f.x);  \
+                (out)->f.y = (fWeight * pVal1->f.y) + (fInvWeight * pVal0->f.y);  \
+                (out)->f.z = (fWeight * pVal1->f.z) + (fInvWeight * pVal0->f.z);  \
+            }                                                                     \
+        }                                                                         \
+        else                                                                      \
+        {                                                                         \
+            (out)->f.x = 0.0f;                                                    \
+            (out)->f.y = 0.0f;                                                    \
+            (out)->f.z = 0.0f;                                                    \
+        }                                                                         \
     } while (0)
 
 #define nlGetNextChunk(chunk) ((nlChunk*)((u8*)(chunk) + (chunk)->m_Size + 8))
@@ -152,8 +157,9 @@ cSAnim* cSAnim::Initialize(nlChunk* pChunk)
 
     if (rootTrans != NULL)
     {
-        GET_ROOT_TRANS_FOR_INITIALIZE(pRetval, 0.0f, &v3PosStart);
-        GET_ROOT_TRANS_FOR_INITIALIZE(pRetval, 1.0f, &v3PosEnd);
+        u32 numRootKeys = pRetval->m_nNumRootKeys;
+        GET_ROOT_TRANS_FOR_INITIALIZE(pRetval, numRootKeys, 0.0f, &v3PosStart);
+        GET_ROOT_TRANS_FOR_INITIALIZE(pRetval, numRootKeys, 1.0f, &v3PosEnd);
 
         float dx = v3PosEnd.f.x - v3PosStart.f.x;
         float dy = v3PosEnd.f.y - v3PosStart.f.y;

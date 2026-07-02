@@ -21,7 +21,7 @@ FontManager::~FontManager()
 
     while (current != NULL)
     {
-        delete current->m_data;
+        delete current->entry;
 
         if (nlDLRingIsEnd(head, current) || current == NULL)
         {
@@ -48,7 +48,7 @@ nlFont* FontManager::GetFontByHashID(unsigned long hashID)
 
     while (entry != NULL)
     {
-        nlFont* font = entry->m_data;
+        nlFont* font = entry->entry;
         if (hashID == font->m_Metrics.FontName)
         {
             return font;
@@ -71,7 +71,7 @@ nlFont* FontManager::GetFontByHashID(unsigned long hashID)
     {
         return NULL;
     }
-    return start->m_data;
+    return start->entry;
 }
 
 /**
@@ -125,7 +125,7 @@ static inline void AddFontEntry(BasicSlotPool<DLListEntry<nlFont*> >& alloc, DLL
     {
         entry->m_next = NULL;
         entry->m_prev = NULL;
-        entry->m_data = newFont;
+        entry->entry = newFont;
     }
 
     nlDLRingAddEnd(head, entry);

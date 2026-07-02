@@ -228,26 +228,34 @@ inline TrackManager<N>::TrackManager(const Function<bool(const char*, char*, uns
 
 /**
  * Offset/Address/Size: 0x3E4 | 0x800C6728 | size: 0xF0
- * TODO: 99.85% match - helper/cb stack layout order swapped (i/s offset diffs)
  */
 template <int N>
 void TrackManager<N>::Update(float dT)
 {
-    typedef WalkHelper<TrackManagerBase::FadeManager::STREAM_FADE_CTRL, DLListEntry<TrackManagerBase::FadeManager::STREAM_FADE_CTRL>, TrackManagerBase::FadeManager> FadeWalkHelper;
-    typedef void (FadeWalkHelper::*WalkCBType)(DLListEntry<TrackManagerBase::FadeManager::STREAM_FADE_CTRL>*);
+    struct FadeWalker
+    {
+        static void Walk(TrackManagerBase::FadeManager* fadeMgr)
+        {
+            typedef WalkHelper<TrackManagerBase::FadeManager::STREAM_FADE_CTRL, DLListEntry<TrackManagerBase::FadeManager::STREAM_FADE_CTRL>, TrackManagerBase::FadeManager> FadeWalkHelper;
+            typedef void (FadeWalkHelper::*WalkCBType)(DLListEntry<TrackManagerBase::FadeManager::STREAM_FADE_CTRL>*);
+
+            FadeWalkHelper helper;
+            WalkCBType cb;
+
+            helper.m_CBClass = fadeMgr;
+            helper.m_CB = &TrackManagerBase::FadeManager::UpdateFade;
+            cb = &FadeWalkHelper::Callback;
+
+            nlWalkDLRing(fadeMgr->m_Fades.m_Head, &helper, cb);
+        }
+    };
 
     int trackOffset;
     unsigned long track;
-    FadeWalkHelper helper;
-    WalkCBType cb;
 
     m_FadeMgr.m_dT = dT * 1000.0f;
 
-    helper.m_CBClass = &m_FadeMgr;
-    helper.m_CB = &TrackManagerBase::FadeManager::UpdateFade;
-    cb = &FadeWalkHelper::Callback;
-
-    nlWalkDLRing(m_FadeMgr.m_Fades.m_Head, &helper, cb);
+    FadeWalker::Walk(&m_FadeMgr);
 
     for (track = 0, trackOffset = 0; track < m_Tracks.m_EntryCount; track++, trackOffset += 8)
     {

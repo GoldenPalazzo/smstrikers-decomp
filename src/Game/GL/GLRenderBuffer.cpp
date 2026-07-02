@@ -17,7 +17,7 @@ GLRenderBuffer::~GLRenderBuffer()
 
     while (current != 0)
     {
-        nlFree(current->m_data);
+        nlFree(current->entry);
 
         if (nlDLRingIsEnd<DLListEntry<GLDrawableData*> >(head, current) || current == 0)
         {

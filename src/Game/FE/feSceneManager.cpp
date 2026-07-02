@@ -31,10 +31,10 @@ void FESceneManager::Update(float dt)
 
     while (currentEntry != nullptr)
     {
-        if (currentEntry->m_data->m_pFEScene->m_bValid != false)
+        if (currentEntry->entry->m_pFEScene->m_bValid != false)
         {
-            g_pFEInput->EnableInputIfSceneHasFocus(currentEntry->m_data);
-            currentEntry->m_data->Update(dt);
+            g_pFEInput->EnableInputIfSceneHasFocus(currentEntry->entry);
+            currentEntry->entry->Update(dt);
         }
 
         if (nlDLRingIsEnd(headEntry, currentEntry) || currentEntry == nullptr)
@@ -55,7 +55,7 @@ static inline bool IsObjectQueuedForPop(BaseSceneHandler* pSceneHandler)
 
     while (msgEntry != NULL)
     {
-        PackagePushPopMessage* pMsg = msgEntry->m_data;
+        PackagePushPopMessage* pMsg = msgEntry->entry;
         if (pMsg->m_pSceneHandler == pSceneHandler && pMsg->m_bPush == false)
         {
             return true;
@@ -79,11 +79,11 @@ static inline void FindSceneForPop(
 {
     while (sceneEntry != NULL)
     {
-        BaseSceneHandler* pSceneHandler = sceneEntry->m_data;
+        BaseSceneHandler* pSceneHandler = sceneEntry->entry;
 
         if (!IsObjectQueuedForPop(pSceneHandler))
         {
-            msg->m_pSceneHandler = sceneEntry->m_data;
+            msg->m_pSceneHandler = sceneEntry->entry;
             break;
         }
 
@@ -105,11 +105,11 @@ static inline void RenderSceneStack(FESceneManager* pSceneManager)
 
     while (sceneEntry != NULL)
     {
-        BaseSceneHandler* pSceneHandler = sceneEntry->m_data;
+        BaseSceneHandler* pSceneHandler = sceneEntry->entry;
 
         if (pSceneHandler != pSceneManager->m_topMostScene)
         {
-            if (!IsObjectQueuedForPop(sceneEntry->m_data))
+            if (!IsObjectQueuedForPop(sceneEntry->entry))
             {
                 if (pSceneHandler->m_pFEScene->m_bValid && pSceneHandler->m_bVisible)
                 {
@@ -199,7 +199,7 @@ void FESceneManager::QueueScenePop()
     {
         entry->m_next = NULL;
         entry->m_prev = NULL;
-        entry->m_data = msg;
+        entry->entry = msg;
     }
 
     nlDLRingAddEnd(queueHead, entry);
@@ -245,7 +245,7 @@ void FESceneManager::QueueScenePush(BaseSceneHandler* pSceneHandler, const char*
     {
         entry->m_next = NULL;
         entry->m_prev = NULL;
-        entry->m_data = msg;
+        entry->entry = msg;
     }
 
     nlDLRingAddEnd(&m_pushPopMessageQueue.m_Head, entry);
@@ -267,7 +267,7 @@ void FESceneManager::ProcessPushPopQueue()
 
         if (&pPackagePushPopMessage != NULL)
         {
-            pPackagePushPopMessage = msgEntry->m_data;
+            pPackagePushPopMessage = msgEntry->entry;
         }
 
         msgEntry->m_next = (DLListEntry<PackagePushPopMessage*>*)m_pushPopMessageQueue.m_Allocator.m_FreeList;
@@ -296,7 +296,7 @@ void FESceneManager::ProcessPushPopQueue()
             {
                 sceneEntry->m_next = NULL;
                 sceneEntry->m_prev = NULL;
-                sceneEntry->m_data = pSceneHandler;
+                sceneEntry->entry = pSceneHandler;
             }
 
             nlDLRingAddStart(&pSceneManager->m_sceneHandlerStack.m_Head, sceneEntry);
@@ -333,7 +333,7 @@ void FESceneManager::ProcessPushPopQueue()
 
             while (sceneEntry != NULL)
             {
-                if (sceneEntry->m_data == pPackagePushPopMessage->m_pSceneHandler)
+                if (sceneEntry->entry == pPackagePushPopMessage->m_pSceneHandler)
                 {
                     nlDLRingIsEnd(headEntry, sceneEntry);
                     nlDLRingRemove(&pSceneManager->m_sceneHandlerStack.m_Head, sceneEntry);
@@ -381,9 +381,9 @@ BaseSceneHandler* FESceneManager::GetSceneHandler(unsigned long hashID)
 
     while (currentEntry != nullptr)
     {
-        if (hashID == currentEntry->m_data->m_uHashID)
+        if (hashID == currentEntry->entry->m_uHashID)
         {
-            return currentEntry->m_data;
+            return currentEntry->entry;
         }
 
         if (nlDLRingIsEnd(headEntry, currentEntry) || currentEntry == nullptr)
@@ -421,7 +421,7 @@ bool FESceneManager::AreAllScenesValid()
 
     while (currentEntry != nullptr)
     {
-        BaseSceneHandler* sceneHandler = currentEntry->m_data;
+        BaseSceneHandler* sceneHandler = currentEntry->entry;
         if (sceneHandler->m_pFEScene->m_bValid == false)
         {
             return false;

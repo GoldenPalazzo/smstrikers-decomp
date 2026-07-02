@@ -37,7 +37,7 @@ PhysicsCompositeObject::~PhysicsCompositeObject()
 
     while (current != NULL)
     {
-        PhysicsTransform* physObj = (PhysicsTransform*)current->m_data;
+        PhysicsTransform* physObj = (PhysicsTransform*)current->entry;
 
         physObj->m_bodyID = NULL;
         delete physObj;
@@ -69,7 +69,7 @@ int PhysicsCompositeObject::AddObject(PhysicsObject* object)
     {
         entry->m_next = nullptr;
         entry->m_prev = nullptr;
-        entry->m_data = transform;
+        entry->entry = transform;
     }
 
     nlDLRingAddEnd<DLListEntry<PhysicsTransform*> >(&m_Components.m_Head, entry);
@@ -112,7 +112,7 @@ void PhysicsCompositeObject::AdjustTransform(int i, nlMatrix4& m)
         }
     }
 
-    transformObj = (PhysicsTransform*)current->m_data;
+    transformObj = (PhysicsTransform*)current->entry;
 call_transform:
     transformObj->SetSubObjectTransform(m, PhysicsObject::RELATIVE_TO_PARENT);
 }

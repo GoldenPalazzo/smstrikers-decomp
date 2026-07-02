@@ -17,7 +17,7 @@ public:
         ListEntry<T*>* meshEntry = m_lItemList.m_Head;
         while (meshEntry != NULL)
         {
-            meshEntry->data->Destroy();
+            meshEntry->entry->Destroy();
             meshEntry = meshEntry->next;
         }
 
@@ -37,7 +37,7 @@ public:
             void* mesh;
             if (&mesh != NULL)
             {
-                mesh = first->data;
+                mesh = first->entry;
             }
             ::operator delete(first);
             ::operator delete(mesh);

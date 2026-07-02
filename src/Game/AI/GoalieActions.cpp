@@ -1542,8 +1542,7 @@ public:
 
 /**
  * Offset/Address/Size: 0x1C30 | 0x8005016C | size: 0x48C
- * TODO: 99.07% match - remaining register rotation in the projection scale-add
- *       block and goalie-net clamp compare.
+ * TODO: 99.38% match - remaining goalie-net clamp compare/register mismatch.
  */
 void Goalie::ActionSTS(float fDeltaT)
 {
@@ -1622,15 +1621,12 @@ void Goalie::ActionSTS(float fDeltaT)
             if (mfTargetTime < fAnimTime && fAnimTime < 1.0f)
             {
                 GetCurrentAnimFuture(-1, 1.0f, v3Root, v3Projected, aRoot);
-                f32 dz = mv3NavTarget.f.z - v3Projected.f.z;
-                f32 dy = mv3NavTarget.f.y - v3Projected.f.y;
-                f32 dx = mv3NavTarget.f.x - v3Projected.f.x;
-                v3Root.f.z = dz;
-                v3Root.f.y = dy;
-                v3Root.f.x = dx;
+                nlVec3Sub(v3Root, mv3NavTarget, v3Projected);
                 f32 fPercent = (fAnimTime - mfTargetTime) / (1.0f - mfTargetTime);
-                fPercent = fPercent * fPercent * (-2.0f * fPercent + 3.0f);
-                nlVec3ScaleAdd(v3Root, fPercent, v3Root, m_v3Position);
+                f32 fSmooth = -2.0f * fPercent + 3.0f;
+                fSmooth = fPercent * fSmooth;
+                fSmooth = fPercent * fSmooth;
+                nlVec3ScaleAdd(v3Root, fSmooth, v3Root, m_v3Position);
                 SetPosition(v3Root);
             }
             f32 fGoalieNetYLimit = 0.5f * cNet::m_fNetWidth - 0.7f;

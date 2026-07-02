@@ -12,70 +12,20 @@ class ListEntry
 {
 public:
     /* 0x00 */ ListEntry<T>* next;
-    /* 0x04 */ T data;
+    /* 0x04 */ T entry;
 
     ListEntry()
         : next(nullptr)
-        , data(nullptr)
+        , entry(nullptr)
     {
     }
 
     ListEntry(T data)
         : next(nullptr)
-        , data(data)
+        , entry(data)
     {
     }
 };
-
-template <typename T, typename Adapter>
-class ListContainerBase
-{
-public:
-    ListContainerBase()
-        : m_Head(NULL)
-        , m_Tail(NULL)
-    {
-    }
-
-    void DeleteEntry(ListEntry<T>* entry);
-
-    // Add more list operations as needed
-    void AddEntry(ListEntry<T>* entry)
-    {
-        // Implementation for adding entries
-    }
-
-    void RemoveEntry(ListEntry<T>* entry)
-    {
-        // Implementation for removing entries
-    }
-
-    // offsets and sizes are dependent on the adapter
-    /* 0x0 */ Adapter m_Allocator;
-    ListEntry<T>* m_Head;
-    ListEntry<T>* m_Tail;
-};
-
-template <typename T, typename Adapter>
-void ListContainerBase<T, Adapter>::DeleteEntry(ListEntry<T>* entry)
-{
-    m_Allocator.DeleteEntry(entry);
-}
-
-template <typename T>
-class nlListContainer : public ListContainerBase<T, NewAdapter<ListEntry<T> > >
-{
-public:
-    ~nlListContainer()
-    {
-        if (this != NULL)
-        {
-            nlWalkList(this->m_Head, static_cast<ListContainerBase<T, NewAdapter<ListEntry<T> > >*>(this), &ListContainerBase<T, NewAdapter<ListEntry<T> > >::DeleteEntry);
-            this->m_Head = NULL;
-            this->m_Tail = NULL;
-        }
-    }
-}; // total size: 0xC
 
 template <typename T>
 ListEntry<T>* nlListRemoveStart(ListEntry<T>** head, ListEntry<T>** tail)
@@ -230,5 +180,10 @@ void nlWalkList(EntryT* list, ContainerT* cbClass, void (ContainerT::*cb)(EntryT
         list = next;
     }
 }
+
+// ListContainerBase / nlListContainer bodies live in their original home
+// header (linkonce grouping is keyed by the body's file).
+#include "NL/nlListContainer.h"
+#include "NL/nlListContainerDtor.h"
 
 #endif

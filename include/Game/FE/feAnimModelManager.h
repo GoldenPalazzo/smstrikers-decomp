@@ -41,8 +41,8 @@ public:
         ListEntry<cSAnim*>* entry = mAnimInventory.m_lItemList.m_Head;
         while (entry != NULL)
         {
-            if (entry->data->m_uHashID == animHashID)
-                return entry->data;
+            if (entry->entry->m_uHashID == animHashID)
+                return entry->entry;
             entry = entry->next;
         }
         return NULL;

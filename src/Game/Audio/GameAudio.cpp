@@ -80,7 +80,7 @@ static inline void ResetTrackedPlaySet(SFXPlaySet* pPlaySet)
 
 static inline SFXPlaySet* RemoveFromTrackedList(DLListEntry<SFXPlaySet*>** pHeadPtr, DLListEntry<SFXPlaySet*>* head, DLListEntry<SFXPlaySet*>* pEntry)
 {
-    SFXPlaySet* pPlaySet = pEntry->m_data;
+    SFXPlaySet* pPlaySet = pEntry->entry;
     nlDLRingIsEnd(head, pEntry);
     nlDLRingRemove(pHeadPtr, pEntry);
     delete pEntry;
@@ -391,7 +391,7 @@ bool cGameSFX::IsKeepingTrackOf(unsigned long type, SFXPlaySet** pGrabTrackedSFX
 
     while (current != NULL)
     {
-        SFXPlaySet* pTrackedSFX = current->m_data;
+        SFXPlaySet* pTrackedSFX = current->entry;
 
         if (pTrackedSFX->type == type)
         {
@@ -485,7 +485,7 @@ bool cGameSFX::ActivateFilterOnAllTrackedSFX(bool bActivate)
 
         while (current != NULL)
         {
-            pPlaySet = current->m_data;
+            pPlaySet = current->entry;
 
             if (nlDLRingIsEnd(head, current) || current == NULL)
             {
@@ -570,7 +570,7 @@ bool cGameSFX::SetFilterFreqOnAllTrackedSFX(unsigned short freq)
 
         while (current != NULL)
         {
-            pPlaySet = current->m_data;
+            pPlaySet = current->entry;
 
             if (nlDLRingIsEnd(head, current) || current == NULL)
             {
@@ -676,7 +676,7 @@ bool cGameSFX::SetPitchBendOnAllDialogueSFX(unsigned short pitch)
 
         while (current != NULL)
         {
-            pPlaySet = current->m_data;
+            pPlaySet = current->entry;
 
             if (nlDLRingIsEnd(head, current) || current == NULL)
             {
@@ -772,7 +772,7 @@ static inline bool CheckForHigherPrioritySFX(cGameSFX* pGameSFX, int priority)
     head = pGameSFX->mpCurPlaySet.m_Head;
     while (current != NULL)
     {
-        SFXPlaySet* tracked = current->m_data;
+        SFXPlaySet* tracked = current->entry;
         if (tracked->type != (unsigned long)-1)
         {
             int trackedPriority = pGameSFX->mpSFX[tracked->type].sfxPriority;
@@ -818,7 +818,7 @@ static inline void KillLowerPrioritySFX(cGameSFX* pGameSFX, int priority)
     head = pGameSFX->mpCurPlaySet.m_Head;
     while (current != NULL)
     {
-        SFXPlaySet* tracked = current->m_data;
+        SFXPlaySet* tracked = current->entry;
 
         if (nlDLRingIsEnd(head, current) || current == NULL)
         {
@@ -856,7 +856,7 @@ static inline bool FindRepeatTrackedSFX(cGameSFX* self, unsigned long type, SFXP
 
     while (current != NULL)
     {
-        SFXPlaySet* pTrackedSFX = current->m_data;
+        SFXPlaySet* pTrackedSFX = current->entry;
 
         if (pTrackedSFX->type == type)
         {
@@ -1240,7 +1240,7 @@ SFXPlaySet* cGameSFX::KeepTrack(SFXEmitter* pEmitter, const Audio::SoundAttribut
     {
         entry->m_next = NULL;
         entry->m_prev = NULL;
-        entry->m_data = slot;
+        entry->entry = slot;
     }
     nlDLRingAddStart(&mpCurPlaySet.m_Head, entry);
 
@@ -1281,7 +1281,7 @@ void cGameSFX::Stop(unsigned long soundID, cGameSFX::StopFlag stopFlag)
 
     while (current != NULL)
     {
-        SFXPlaySet* playSet = current->m_data;
+        SFXPlaySet* playSet = current->entry;
 
         iter.m_head = loopHead;
         iter.m_current = current;
@@ -1413,7 +1413,7 @@ bool cGameSFX::StopTrackedSFX(SFXPlaySet* pPlaySet)
 
     while (iter.m_current != NULL)
     {
-        if (pPlaySet == iter.m_current->m_data)
+        if (pPlaySet == iter.m_current->entry)
         {
             return StopTrackedSFX(reinterpret_cast<nlDLListIterator<SFXPlaySet*>*>(&iter));
         }
@@ -1444,7 +1444,7 @@ bool cGameSFX::StopTrackedSFX(nlDLListIterator<SFXPlaySet*>* pIterator)
     EntryIterator* pIter = reinterpret_cast<EntryIterator*>(pIterator);
 
     SFXEmitter* pEmitter;
-    SFXPlaySet* pPlaySet = pIter->m_current->m_data;
+    SFXPlaySet* pPlaySet = pIter->m_current->entry;
 
     if (pPlaySet->delay >= 0.0f)
     {
@@ -1521,7 +1521,7 @@ bool cGameSFX::StopTrackedSFX(nlDLListIterator<SFXPlaySet*>* pIterator)
 
 cleanup_list:
     DLListEntry<SFXPlaySet*>* pNextEntry = pIter->m_current;
-    pPlaySet = pNextEntry->m_data;
+    pPlaySet = pNextEntry->entry;
 
     if (nlDLRingIsEnd(pIter->m_head, pNextEntry) || pIter->m_current == NULL)
     {
@@ -1622,7 +1622,7 @@ void cGameSFX::UpdateAllTrackedSFX(float)
     while (current != NULL)
     {
         iter = current;
-        SFXPlaySet* pTrackedSFX = current->m_data;
+        SFXPlaySet* pTrackedSFX = current->entry;
 
         if (nlDLRingIsEnd(headRef.m_head, current) || current == NULL)
         {

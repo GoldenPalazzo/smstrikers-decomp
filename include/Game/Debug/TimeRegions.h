@@ -25,7 +25,7 @@ public:
         if (entry != nullptr)
         {
             entry->next = nullptr;
-            entry->data = this;
+            entry->entry = this;
         }
         nlListAddEnd<ListEntry<TimeRegion*> >(&sTimeRegionList.m_Head, &sTimeRegionList.m_Tail, entry);
     }
@@ -39,7 +39,7 @@ public:
         ListEntry<TimeRegion*>* currentEntry = TimeRegion::sTimeRegionList.m_Head;
         if (currentEntry != NULL)
         {
-            if (currentEntry->data == this)
+            if (currentEntry->entry == this)
             {
                 ListEntry<TimeRegion*>* newHead = NULL;
                 if (currentEntry == TimeRegion::sTimeRegionList.m_Tail)
@@ -60,7 +60,7 @@ public:
                 ListEntry<TimeRegion*>* nextEntry = currentEntry->next;
                 while (nextEntry != NULL)
                 {
-                    if (nextEntry->data == this)
+                    if (nextEntry->entry == this)
                     {
                         previousEntry->next = nextEntry->next;
                         if (nextEntry == TimeRegion::sTimeRegionList.m_Tail)

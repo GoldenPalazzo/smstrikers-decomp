@@ -6,7 +6,6 @@
 #include "Game/Loader.h"
 #include "Game/FE/feManager.h"
 
-void LoadFonts();
 // void 0x8028D338..0x8028D33C | size: 0x4;
 
 enum TRANSITION_STATE
@@ -28,6 +27,12 @@ public:
     virtual const char* GetName() { return "Transition Manager"; };
     virtual void Run(float) { };
 
+    static void DestroyFEFast();
+
+    static void InitializeFEFast();
+
+    static void DestroyFEState();
+
     void Initialize(LoadingManager&);
     void StateTransition(unsigned int, unsigned int);
     void InitializeGameState();
@@ -42,20 +47,5 @@ public:
 
     static TransitionTask* sm_pGlobalTask;
 }; // total size: 0x30
-
-namespace Detail
-{
-class SwitchToStartScreenLoader : public Loader
-{
-public:
-    virtual bool StartLoad(LoadingManager*)
-    {
-        FrontEnd::EnterStartScreen(false);
-        return true;
-    }
-    virtual bool Update() { return false; }
-    virtual const char* GetName() { return "SwitchToStartScreenLoader"; }
-};
-} // namespace Detail
 
 #endif // _TRANSITIONTASK_H_

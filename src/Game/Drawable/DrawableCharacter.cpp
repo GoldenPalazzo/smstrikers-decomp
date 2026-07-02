@@ -616,7 +616,7 @@ static void FindBoundingSphereAccurate(nlVector3* pOutSphere, float* pOutRadius,
 
 /**
  * Offset/Address/Size: 0x1AE4 | 0x8011A994 | size: 0x808
- * TODO: 99.40% match - detail texture load order and debug sphere model save.
+ * TODO: 99.42% match - detail texture load/register order and debug sphere model save.
  */
 void DrawableCharacter::SendToGl(const cCharacter& character) const
 {
@@ -761,7 +761,7 @@ void DrawableCharacter::SendToGl(const cCharacter& character) const
                         u32 detailTexture = fxtex->m_uTexture;
                         u32 detailBit = GLTT_Detail_bit;
                         pPacket->state.texture[GLTT_Detail] = detailTexture;
-                        pPacket->state.texconfig |= detailBit;
+                        pPacket->state.texconfig = detailBit | pPacket->state.texconfig;
                         glSetTextureState(pPacket->state.texturestate, (eGLTextureState)0xC, 0xF);
                     }
                 }

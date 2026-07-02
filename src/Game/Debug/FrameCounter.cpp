@@ -105,7 +105,7 @@ void FrameCounter::FinishTiming()
     ListEntry<TimeRegion*>* entry = TimeRegion::sTimeRegionList.m_Head;
     while (entry != NULL)
     {
-        TimeRegion* region = entry->data;
+        TimeRegion* region = entry->entry;
         if (region->m_pConditionFunc())
         {
             region->m_unk14++;
@@ -140,7 +140,7 @@ void FrameCounter::WriteFrameRateStatsToFile(const char* fileName)
     ListEntry<TimeRegion*>* entry = TimeRegion::sTimeRegionList.m_Head;
     while (entry != NULL)
     {
-        TimeRegion* region = entry->data;
+        TimeRegion* region = entry->entry;
         float ratio = (float)region->m_unk10 / (float)region->m_unk14;
         float avgTime = region->m_fThreshold / (float)region->m_unk14;
         float pct = 100.0f * (1.0f - ratio);

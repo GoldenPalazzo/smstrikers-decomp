@@ -62,7 +62,7 @@ static inline BallCacheInfo* AddCacheEntry(PhysicsBall* pPhysicsBall)
     {
         pNewEntry->m_next = NULL;
         pNewEntry->m_prev = NULL;
-        pNewEntry->m_data = pNewInfo;
+        pNewEntry->entry = pNewInfo;
     }
     nlDLRingAddEnd(&FakeBallWorld::mBallCacheList.m_Head, pNewEntry);
     return pNewInfo;
@@ -74,7 +74,7 @@ static inline void GetNextBallPosVelInline(nlVector3& v3BallPos, nlVector3& v3Ba
 
     if (cacheIter->m_current != NULL)
     {
-        BallCacheInfo* info = cacheIter->m_current->m_data;
+        BallCacheInfo* info = cacheIter->m_current->entry;
         v3BallPos = info->mv3Position;
         v3BallVel = info->mv3LinearVelocity;
 
@@ -188,7 +188,7 @@ void FakeBallWorld::GetNextBallPosition(nlVector3& v3BallPos)
     if (mpCacheIterator->m_current != NULL)
     {
         DLListEntry<BallCacheInfo*>* entry = mpCacheIterator->m_current;
-        BallCacheInfo* info = entry->m_data;
+        BallCacheInfo* info = entry->entry;
         v3BallPos = info->mv3Position;
 
         nlDLListIterator<DLListEntry<BallCacheInfo*> >* iter = mpCacheIterator;
@@ -306,7 +306,7 @@ float FakeBallWorld::GetPredictedPosAtDistance(float fDistance, nlVector3& v3Pos
         DLListEntry<BallCacheInfo*>* pListEntry = nlDLRingGetStart(pHead);
         DLListEntry<BallCacheInfo*>* pHeadRef = *ppHead;
         BallCacheInfo* pPrev;
-        BallCacheInfo* pNext = pListEntry->m_data;
+        BallCacheInfo* pNext = pListEntry->entry;
 
         float fDistanceNextSq = nlGetLengthSquared3D(pNext->mv3Position.f.x - pBall->m_v3Position.f.x, pNext->mv3Position.f.y - pBall->m_v3Position.f.y, pNext->mv3Position.f.z - pBall->m_v3Position.f.z);
 
@@ -318,7 +318,7 @@ float FakeBallWorld::GetPredictedPosAtDistance(float fDistance, nlVector3& v3Pos
                 pListEntry = pListEntry->m_next;
 
             pPrev = pNext;
-            pNext = pListEntry->m_data;
+            pNext = pListEntry->entry;
             float fDistancePrevSq = fDistanceNextSq;
 
             fDistanceNextSq = nlGetLengthSquared3D(pNext->mv3Position.f.x - pBall->m_v3Position.f.x, pNext->mv3Position.f.y - pBall->m_v3Position.f.y, pNext->mv3Position.f.z - pBall->m_v3Position.f.z);
@@ -351,7 +351,7 @@ float FakeBallWorld::GetPredictedPosAtDistance(float fDistance, nlVector3& v3Pos
     }
 
     DLListEntry<BallCacheInfo*>* pLastEntry = nlDLRingGetEnd(*ppHead);
-    BallCacheInfo* pCurCache = pLastEntry->m_data;
+    BallCacheInfo* pCurCache = pLastEntry->entry;
 
     fMaxTime = 6.0f + fSimulationTime;
 
@@ -404,8 +404,8 @@ float FakeBallWorld::GetPredictedPosAtDistance(float fDistance, nlVector3& v3Pos
 
 /**
  * Offset/Address/Size: 0x3DC | 0x8013819C | size: 0x3FC
- * TODO: 98.17% match - remaining diffs are early zero-vector copy GPRs,
- *       first-loop fLastZVel reload, and sdata2 literal labels.
+ * TODO: 98.60% match - remaining diffs are early zero-vector copy GPRs
+ *       and sdata2 literal labels.
  */
 float FakeBallWorld::GetPredictedHeightLimitTime(float fHeight, float fMinTime, nlVector3& v3ContactPoint, nlVector3& v3ContactVelocity, bool bDownOnly)
 {
@@ -450,7 +450,7 @@ float FakeBallWorld::GetPredictedHeightLimitTime(float fHeight, float fMinTime, 
 
     while (pListEntry)
     {
-        BallCacheInfo* pCur = pListEntry->m_data;
+        BallCacheInfo* pCur = pListEntry->entry;
 
         if (pCur->mfTime >= fTestTime)
         {
@@ -463,9 +463,9 @@ float FakeBallWorld::GetPredictedHeightLimitTime(float fHeight, float fMinTime, 
                 v3ContactVelocity = pCur->mv3LinearVelocity;
                 return pCur->mfTime - fSimulationTime;
             }
-
-            fLastZVel = zVel;
         }
+
+        fLastZVel = pCur->mv3LinearVelocity.f.z;
 
         if (nlDLRingIsEnd(pHeadRef, pListEntry) || pListEntry == NULL)
         {
@@ -547,7 +547,7 @@ float FakeBallWorld::GetPredictedPlaneIntersectTime(const nlVector4& v4Plane, nl
         DLListEntry<BallCacheInfo*>* pHeadRef = *ppHead;
         DLListEntry<BallCacheInfo*>* pListEntry = pEntry;
         BallCacheInfo* pPrev;
-        BallCacheInfo* pNext = pEntry->m_data;
+        BallCacheInfo* pNext = pEntry->entry;
 
         fDistanceNext = pNext->mv3Position.f.x * v4Plane.f.x
                       + pNext->mv3Position.f.y * v4Plane.f.y
@@ -566,7 +566,7 @@ float FakeBallWorld::GetPredictedPlaneIntersectTime(const nlVector4& v4Plane, nl
             }
 
             pPrev = pNext;
-            pNext = pListEntry->m_data;
+            pNext = pListEntry->entry;
             float fDistancePrev = fDistanceNext;
 
             float fDistanceNew = pNext->mv3Position.f.x * v4Plane.f.x
@@ -601,7 +601,7 @@ float FakeBallWorld::GetPredictedPlaneIntersectTime(const nlVector4& v4Plane, nl
     }
 
     DLListEntry<BallCacheInfo*>* pLastEntry = nlDLRingGetEnd(*ppHead);
-    BallCacheInfo* pCurCache = pLastEntry->m_data;
+    BallCacheInfo* pCurCache = pLastEntry->entry;
 
     float fDistanceCur = pCurCache->mv3Position.f.x * v4Plane.f.x
                        + pCurCache->mv3Position.f.y * v4Plane.f.y
@@ -668,7 +668,7 @@ static inline void ClearBallCacheInline(SlotPool<BallCacheInfo>* pBCIPool)
         DLListEntry<BallCacheInfo*>* current = start;
         while (current != NULL)
         {
-            BallCacheInfo* data = current->m_data;
+            BallCacheInfo* data = current->entry;
             ((SlotPoolEntry*)data)->m_next = pBCIPool->m_FreeList;
             pBCIPool->m_FreeList = (SlotPoolEntry*)data;
             if (nlDLRingIsEnd(end, current) || current == NULL)
@@ -716,7 +716,7 @@ bool FakeBallWorld::GetPredictedBallPosition(float fDeltaTime, nlVector3& v3Posi
         SlotPool<BallCacheInfo>* pBCIPool = &BallCacheInfo::mBallCacheInfoSlotPool;
         while (pEntry != NULL)
         {
-            BallCacheInfo* pCur = pEntry->m_data;
+            BallCacheInfo* pCur = pEntry->entry;
             if (fSimTime >= pCur->mfTime)
             {
                 if (pLast != NULL)
@@ -725,7 +725,7 @@ bool FakeBallWorld::GetPredictedBallPosition(float fDeltaTime, nlVector3& v3Posi
                     BallCacheInfo** ppLast = &pLast;
                     if (ppLast != NULL)
                     {
-                        *ppLast = removed->m_data;
+                        *ppLast = removed->entry;
                     }
                     ((SlotPoolEntry*)removed)->m_next = pCacheList->m_Allocator.m_FreeList;
                     pCacheList->m_Allocator.m_FreeList = (SlotPoolEntry*)removed;
@@ -787,7 +787,7 @@ bool FakeBallWorld::GetPredictedBallPosition(float fDeltaTime, nlVector3& v3Posi
     if (fDeltaTime < overshoot)
     {
         DLListEntry<BallCacheInfo*>* pStartEntry = nlDLRingGetStart(*pHeadRef);
-        pNext = pStartEntry->m_data;
+        pNext = pStartEntry->entry;
         DLListEntry<BallCacheInfo*>* pListEntry = pStartEntry;
         DLListEntry<BallCacheInfo*>* pHead = *pHeadRef;
         pPrev = pNext;
@@ -802,13 +802,13 @@ bool FakeBallWorld::GetPredictedBallPosition(float fDeltaTime, nlVector3& v3Posi
             {
                 pListEntry = pListEntry->m_next;
             }
-            pNext = pListEntry->m_data;
+            pNext = pListEntry->entry;
         }
     }
     else
     {
         DLListEntry<BallCacheInfo*>* pEndEntry = nlDLRingGetEnd(*pHeadRef);
-        pNext = pEndEntry->m_data;
+        pNext = pEndEntry->entry;
         DLListEntry<BallCacheInfo*>* pListEntry = pEndEntry;
         DLListEntry<BallCacheInfo*>* pHead = *pHeadRef;
         pPrev = pNext;
@@ -823,7 +823,7 @@ bool FakeBallWorld::GetPredictedBallPosition(float fDeltaTime, nlVector3& v3Posi
             {
                 pListEntry = pListEntry->m_prev;
             }
-            pPrev = pListEntry->m_data;
+            pPrev = pListEntry->entry;
         }
     }
 
@@ -869,7 +869,7 @@ void FakeBallWorld::InvalidateBallCache()
 
         while (current != NULL)
         {
-            BallCacheInfo* data = current->m_data;
+            BallCacheInfo* data = current->entry;
             ((SlotPoolEntry*)data)->m_next = BallCacheInfo::mBallCacheInfoSlotPool.m_FreeList;
             BallCacheInfo::mBallCacheInfoSlotPool.m_FreeList = (SlotPoolEntry*)data;
 
@@ -920,7 +920,7 @@ void FakeBallWorld::Destroy()
 
         while (current != NULL)
         {
-            BallCacheInfo* data = current->m_data;
+            BallCacheInfo* data = current->entry;
             ((SlotPoolEntry*)data)->m_next = BallCacheInfo::mBallCacheInfoSlotPool.m_FreeList;
             BallCacheInfo::mBallCacheInfoSlotPool.m_FreeList = (SlotPoolEntry*)data;
 
@@ -979,7 +979,7 @@ void FakeBallWorld::Init(cBall* pBall)
 
         while (current != NULL)
         {
-            BallCacheInfo* data = current->m_data;
+            BallCacheInfo* data = current->entry;
             ((SlotPoolEntry*)data)->m_next = BallCacheInfo::mBallCacheInfoSlotPool.m_FreeList;
             BallCacheInfo::mBallCacheInfoSlotPool.m_FreeList = (SlotPoolEntry*)data;
 

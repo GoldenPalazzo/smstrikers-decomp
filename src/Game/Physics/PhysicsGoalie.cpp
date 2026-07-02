@@ -86,7 +86,7 @@ bool PhysicsGoalie::SweepTestEveryBone(float ballRadius, const nlVector3& ballPr
     cantCollide = CANT_COLLIDE;
     for (boneVolumeEntry = m_BoneVolumes.m_Head; boneVolumeEntry != NULL; boneVolumeEntry = boneVolumeEntry->next)
     {
-        boneVolume = boneVolumeEntry->data;
+        boneVolume = boneVolumeEntry->entry;
         PhysicsObject* object = boneVolume->m_pObject;
         nlVector3& currentBonePos = object->GetPosition();
         nlVector3& prevBonePos = boneVolume->m_PrevPosition;

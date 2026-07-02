@@ -144,9 +144,9 @@ static void GetColourComponent(SimpleParser* parser, nlColour* pColour, int cind
             current = current->m_next;
         if (current == NULL)
             break;
-        BlendSpan(pColour, cindex, start->m_data, current->m_data);
-        start->m_data.index = current->m_data.index;
-        start->m_data.value = current->m_data.value;
+        BlendSpan(pColour, cindex, start->entry, current->entry);
+        start->entry.index = current->entry.index;
+        start->entry.value = current->entry.value;
     }
 }
 

@@ -1,3 +1,7 @@
+// Enables the TU-scoped weak-emission-order machinery in NL/nlAlgorithm.h,
+// NL/nlListSlotPool.h and NL/nlListSlotPoolDtor.h (must precede all includes).
+#define NL_POOL_DTOR_HOST 1
+
 #include "Game/Audio/AudioLoader.h"
 #include "Game/Audio/AudioScriptEventMgr.h"
 #include "Game/Audio/SoundEventScript.h"
@@ -22,6 +26,12 @@
 #include "NL/nlListSlotPool.h"
 #include "NL/nlSlotPool.h"
 #include "NL/nlString.h"
+
+// Second include on purpose: the block outside nlAlgorithm.h's include guard
+// hosts ~nlListSlotPool for this TU (NL_POOL_DTOR_HOST), now that
+// NL/nlListSlotPool.h has been seen. This keys the dtor's linkonce bucket to
+// nlAlgorithm.h so it fuses right after nlQSort/nlDefaultQSortComparer.
+#include "NL/nlAlgorithm.h"
 
 template <>
 int nlStrCmp<char>(const char*, const char*);
@@ -137,8 +147,6 @@ char* AUDIO_EVENT_FUNC_NAMES[] = {
 
 typedef ListContainerBase<AUDIO_EVENT_RECORD, BasicSlotPool<ListEntry<AUDIO_EVENT_RECORD> > > AudioEventList;
 
-template class ListContainerBase<AUDIO_EVENT_RECORD, BasicSlotPool<ListEntry<AUDIO_EVENT_RECORD> > >;
-
 EventHandler* g_pAudioEventHandler;
 extern nlListSlotPool<AUDIO_EVENT_RECORD> g_PendingEvents;
 
@@ -179,7 +187,6 @@ static void AudioScriptEventHandler(Event*, void*);
 static void Poll();
 
 typedef WalkHelper<AUDIO_EVENT_RECORD, ListEntry<AUDIO_EVENT_RECORD>, _AudioEventRaiser> AudioEventWalkHelper;
-#include "Game/Audio/AudioScriptEventMgrWalkCallback.h"
 
 /**
  * Offset/Address/Size: 0x2248 | 0x8014B39C | size: 0xD0
@@ -338,7 +345,7 @@ static inline void FireEventInline(AudioScriptEventMgr::AUDIO_EVENT Event, Audio
     if (entry != NULL)
     {
         entry->next = NULL;
-        entry->data = temp.val;
+        entry->entry = temp.val;
     }
 
     nlListAddEnd(&g_PendingEvents.m_Head, &g_PendingEvents.m_Tail, entry);
@@ -541,7 +548,7 @@ static void AudioScriptEventHandler(Event* pEvent, void*)
             pData->position.f.x > 0.0f ? AudioScriptEventMgr::AET_Home : AudioScriptEventMgr::AET_Away);
         return;
     }
-    case 45:
+    case 46:
     {
         if (!Audio::IsWorldSFXLoaded())
         {
@@ -848,3 +855,16 @@ static void AudioScriptEventHandler(Event* pEvent, void*)
         return;
     }
 }
+
+// Weak-emission-order directives (process bottom-most first, before all
+// function bodies): nlBSearch emits first, then nlQSort+comparer fuse into
+// the next section; the Reap phantom (isolated, dropped at link) holds the
+// TU's only out-of-line ~nlListSlotPool reference, pulling __dt__36 out of
+// the post-__sinit wave; its nlAlgorithm.h-hosted body then joins the
+// nlQSort/comparer section right after comparer, __sinit appends directly
+// after it, and the nlList.h walk/AddEnd bucket emits after __sinit -
+// reproducing the target DOL byte order 0x8014B46C-0x8014B818.
+template void nlListSlotPoolReap<AUDIO_EVENT_RECORD>(nlListSlotPool<AUDIO_EVENT_RECORD>*);
+template int nlDefaultQSortComparer<NIS_EVENT_LOOKUP>(const NIS_EVENT_LOOKUP*, const NIS_EVENT_LOOKUP*);
+template void nlQSort<NIS_EVENT_LOOKUP>(NIS_EVENT_LOOKUP*, int, int (*)(const NIS_EVENT_LOOKUP*, const NIS_EVENT_LOOKUP*));
+template NIS_EVENT_LOOKUP* nlBSearch<NIS_EVENT_LOOKUP, unsigned long>(const unsigned long&, NIS_EVENT_LOOKUP*, int);

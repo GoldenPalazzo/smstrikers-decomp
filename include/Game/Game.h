@@ -8,9 +8,9 @@
 #include "Game/GameTweaks.h"
 #include "Game/ScriptTuning.h"
 
-static void DestroyPowerups();
-static void DestroyGame();
-static void CreateGame();
+void DestroyPowerups();
+void DestroyGame();
+void CreateGame();
 
 class Clock;
 class BaseTarget

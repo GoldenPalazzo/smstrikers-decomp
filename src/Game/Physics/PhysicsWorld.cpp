@@ -265,7 +265,7 @@ void PhysicsWorld::DoCollisions(PhysicsObject* obj, nlListContainer<PhysicsObjec
 
     for (ListEntry<PhysicsObject*>* entry = container.m_Head; entry != NULL; entry = entry->next)
     {
-        PhysicsObject* otherObj = entry->data;
+        PhysicsObject* otherObj = entry->entry;
         dGeomID otherGeom = otherObj->m_geomID;
         dGeomCollideAABBs(geom, otherGeom, this, SpaceCollideCallback);
     }

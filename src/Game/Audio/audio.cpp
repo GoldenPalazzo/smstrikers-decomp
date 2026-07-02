@@ -3798,7 +3798,7 @@ void AudioStreamTrack::TrackManager<3>::OnMasterVolumeChange(Audio::MasterVolume
             volatile Iter iter;
             iter.m_current = qentry;
             iter.m_head = pTrack->m_QueuedStreams.m_Head;
-            qs = &qentry->m_data;
+            qs = &qentry->entry;
         }
 
         if (qs != NULL)
@@ -3811,9 +3811,9 @@ void AudioStreamTrack::TrackManager<3>::OnMasterVolumeChange(Audio::MasterVolume
 
             while (fadeIter != NULL)
             {
-                if (fadeIter->m_data.pStream == fadeStream)
+                if (fadeIter->entry.pStream == fadeStream)
                 {
-                    fadeCtrl = &fadeIter->m_data;
+                    fadeCtrl = &fadeIter->entry;
                     goto fade_found;
                 }
 

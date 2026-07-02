@@ -442,11 +442,12 @@ void RotateVectorZAxis(nlVector3& v3Out, const nlVector3& v3In, unsigned short a
 
 /**
  * Offset/Address/Size: 0x814 | 0x800062C0 | size: 0x210
- * TODO: 98.60% match - fInvR1R2 and the final cross-product temporaries
- * use different FPRs from target.
  */
 void GetRotationBetweenVectors(nlQuaternion& quat, const nlVector3& v3Vec1, const nlVector3& v3Vec2)
 {
+    float cz;
+    float cy;
+    float cx;
     float fInvR1R2 = 1.0f / nlSqrt(v3Vec1.GetLengthSq3D() * v3Vec2.GetLengthSq3D(), true);
     float fCosAngle = fInvR1R2 * nlVec3DotProduct(v3Vec1, v3Vec2);
 
@@ -471,9 +472,9 @@ void GetRotationBetweenVectors(nlQuaternion& quat, const nlVector3& v3Vec1, cons
             axis.f.z = axis.f.y;
         }
 
-        float cz = axis.f.x * v3Vec1.f.y - axis.f.y * v3Vec1.f.x;
-        float cy = -axis.f.x * v3Vec1.f.z + axis.f.z * v3Vec1.f.x;
-        float cx = axis.f.y * v3Vec1.f.z - axis.f.z * v3Vec1.f.y;
+        cx = axis.f.y * v3Vec1.f.z - axis.f.z * v3Vec1.f.y;
+        cy = -axis.f.x * v3Vec1.f.z + axis.f.z * v3Vec1.f.x;
+        cz = axis.f.x * v3Vec1.f.y - axis.f.y * v3Vec1.f.x;
 
         float invLen = nlRecipSqrt(cx * cx + cy * cy + cz * cz, true);
 
@@ -487,12 +488,13 @@ void GetRotationBetweenVectors(nlQuaternion& quat, const nlVector3& v3Vec1, cons
         float fMagic = nlSqrt((float)(0.5 * (1.0 + fCosAngle)), true);
         float fMultiplier = fInvR1R2 / fMagic;
 
-        nlVector3 axis;
-        nlVec3Cross(axis, v3Vec1, v3Vec2);
+        cx = v3Vec1.f.y * v3Vec2.f.z - v3Vec1.f.z * v3Vec2.f.y;
+        cy = -v3Vec1.f.x * v3Vec2.f.z + v3Vec1.f.z * v3Vec2.f.x;
+        cz = v3Vec1.f.x * v3Vec2.f.y - v3Vec1.f.y * v3Vec2.f.x;
         quat.f.w = 0.5f * fMagic;
-        quat.f.x = axis.f.x * fMultiplier;
-        quat.f.y = axis.f.y * fMultiplier;
-        quat.f.z = axis.f.z * fMultiplier;
+        quat.f.x = cx * fMultiplier;
+        quat.f.y = cy * fMultiplier;
+        quat.f.z = cz * fMultiplier;
     }
 }
 

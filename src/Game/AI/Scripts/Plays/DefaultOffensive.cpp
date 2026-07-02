@@ -492,7 +492,7 @@ FuzzyVariant Fuzzy::DoPassing(float fConfidence, cDecisionEntity* pDecision)
 
 /**
  * Offset/Address/Size: 0x4490 | 0x80090F1C | size: 0x604
- * TODO: 99.78% match - false branch min temporaries still use swapped float registers.
+ * TODO: 99.83% match - false branch less-windup and danger temporaries still use swapped float registers.
  */
 FuzzyVariant Fuzzy::GoodBallCarrier(cFielder* TheFielder)
 {
@@ -546,13 +546,11 @@ FuzzyVariant Fuzzy::GoodBallCarrier(cFielder* TheFielder)
         if (fConfidence > fBestConfidence)
         {
             fBestConfidence = fConfidence;
-            float fNotCloseToNet;
             float fLessWindup = FLESS(fWindupScore, 0.8f);
-            fNotCloseToNet = 1.0f - CloseToMyNet(g_pScriptCurrentFielder);
-            float fNotInDanger;
-            bestValue = FuzzyVariant((fNotInDanger = 1.0f - InDangerDelayed(g_pScriptCurrentFielder).mData.f,
-                fNotCloseToNet = (fLessWindup >= fNotCloseToNet) ? fNotCloseToNet : fLessWindup,
-                fNotInDanger = (fNotCloseToNet <= fNotInDanger) ? fNotCloseToNet : fNotInDanger));
+            fBranchRatio = 1.0f - CloseToMyNet(g_pScriptCurrentFielder);
+            bestValue = FuzzyVariant((fFalseConfidence = 1.0f - InDangerDelayed(g_pScriptCurrentFielder).mData.f,
+                fBranchRatio = (fBranchRatio <= fLessWindup) ? fBranchRatio : fLessWindup,
+                fFalseConfidence = (fFalseConfidence <= fBranchRatio) ? fFalseConfidence : fBranchRatio));
         }
     }
 

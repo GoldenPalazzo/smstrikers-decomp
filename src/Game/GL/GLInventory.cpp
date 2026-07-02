@@ -155,7 +155,7 @@ static inline void DeleteFileEntries(ListEntry<void*>* current)
 {
     while (current != NULL)
     {
-        delete current->data;
+        delete current->entry;
         current = current->next;
     }
 }
