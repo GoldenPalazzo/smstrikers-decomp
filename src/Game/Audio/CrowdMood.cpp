@@ -1291,7 +1291,7 @@ void CrowdMood::Purge(bool bJustStopSFX)
 
 /**
  * Offset/Address/Size: 0x9F8 | 0x8014E10C | size: 0x554
- * TODO: 99.18% match - DestMoodLevel clamp keeps one extra stack store; normalized interpolant keeps temp register swaps.
+ * TODO: 99.37% match - extra mood-slot store; normalized interpolant constant uses a temp register copy.
  */
 void CrowdMood::Update(float dt)
 {
@@ -1339,14 +1339,14 @@ void CrowdMood::Update(float dt)
     if (g_CrowdState.HasChanged)
     {
         u8 level = g_CrowdState.DestMoodLevel;
-        s32 mask = -1;
+        CROWD_MOOD mood = (CROWD_MOOD)-1;
         u32 clampedLevel = CM_END;
-        if (((u32)level & *(u32*)&mask) <= (u32)CM_END)
-            clampedLevel = ((u32)level & *(u32*)&mask);
+        if (((u32)level & mood) <= (u32)CM_END)
+            clampedLevel = ((u32)level & mood);
         g_CrowdState.DestMoodLevel = clampedLevel;
 
         f32 halfFactor = 0.5f;
-        CROWD_MOOD mood = CM_Positive;
+        mood = CM_Positive;
         f32 zero = 0.0f;
         while (mood < (CROWD_MOOD)4)
         {
@@ -1365,7 +1365,8 @@ void CrowdMood::Update(float dt)
             g_CrowdState.DestinationMood[mood] = dest;
 
             bool bothNonZero = false;
-            f32 midpoint = (g_CrowdState.DestinationMood[mood] + g_CrowdState.StartingMood[mood]) * halfFactor;
+            f32 midpoint = g_CrowdState.DestinationMood[mood] + g_CrowdState.StartingMood[mood];
+            midpoint *= halfFactor;
             g_CrowdState.MidpointMood[mood] = midpoint;
 
             if (g_CrowdState.CurrentMoodBlend[mood] != zero)
@@ -1447,25 +1448,21 @@ void CrowdMood::Update(float dt)
             targetArray = g_CrowdState.DestinationMood;
         }
 
-        f32 one = 1.0f;
+        f32 normalizedInterp = 1.0f;
         f32 epsilon2 = 0.0001f;
-        f32 normalizedInterp;
-        if (fabsf(interpVal - one) <= epsilon2)
+        if (fabsf(g_CrowdState.Interpolant - normalizedInterp) <= epsilon2)
         {
-            normalizedInterp = one;
+            normalizedInterp = 1.0f;
         }
         else
         {
-            interpVal = g_CrowdState.Interpolant;
-            interpMidVal = g_CrowdState.InterpolantMidpoint;
-
-            if (interpVal >= interpMidVal)
+            if (g_CrowdState.Interpolant >= g_CrowdState.InterpolantMidpoint)
             {
-                normalizedInterp = (interpVal - interpMidVal) / (one - interpMidVal);
+                normalizedInterp = (g_CrowdState.Interpolant - g_CrowdState.InterpolantMidpoint) / (normalizedInterp - g_CrowdState.InterpolantMidpoint);
             }
             else
             {
-                normalizedInterp = interpVal / interpMidVal;
+                normalizedInterp = g_CrowdState.Interpolant / g_CrowdState.InterpolantMidpoint;
             }
         }
 
@@ -1698,7 +1695,7 @@ void CrowdMood::ActivateLPF(bool Activate)
 
 /**
  * Offset/Address/Size: 0x2D4 | 0x8014D9E8 | size: 0x1BC
- * TODO: 98.38% match - register allocation differs for frequency/state/audio stream pointers across both stream loops.
+ * TODO: 98.42% match - register allocation differs for frequency/state/audio stream pointers across both stream loops.
  */
 void CrowdMood::SetLPF(unsigned short Frequency)
 {
@@ -1771,7 +1768,7 @@ void CrowdMood::SetLPF(unsigned short Frequency)
                 {
                     sndStreamLPFParameter(buf->m_StreamId, buf->m_bLPFOn, maskedFreq);
                 }
-                buf->m_LPFFreq = Frequency;
+                buf->m_LPFFreq = maskedFreq;
 
                 unsigned long ci = i + 1;
                 i = ci;

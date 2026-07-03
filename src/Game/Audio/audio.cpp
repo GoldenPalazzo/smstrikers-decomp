@@ -1257,9 +1257,9 @@ foundExisting:
     }
 
     newFade->next = NULL;
-    // #pragma inline_depth(0)
+#pragma inline_depth(0)
     nlListAddStart<FadeAudioData>(&g_pFadeList, newFade, NULL);
-    // #pragma inline_depth
+#pragma inline_depth
 }
 
 /**
@@ -1866,7 +1866,7 @@ void Update3DSFXEmitters()
 
 /**
  * Offset/Address/Size: 0x159C | 0x8013DAB0 | size: 0xA34
- * TODO: 99.33% match - remaining delete-next registers, filter rounding, and team-loop register allocation differences.
+ * TODO: 99.38% match - remaining delete-next and team-loop register differences.
  */
 void UpdateFades(float fDeltaT)
 {
@@ -2143,16 +2143,7 @@ void UpdateFades(float fDeltaT)
             if (*(float*)((char*)pFadeData + 0x10) <= 0.0f)
             {
                 float targetFreqFloat = 16383.0f * *(float*)((char*)pFadeData + 0x14);
-                float roundOffset;
-                if (targetFreqFloat < 0.0f)
-                {
-                    roundOffset = -0.5f;
-                }
-                else
-                {
-                    roundOffset = 0.5f;
-                }
-                targetFreqFloat += roundOffset;
+                targetFreqFloat += (targetFreqFloat < 0.0f) ? -0.5f : 0.5f;
 
                 unsigned short targetFreq = (unsigned short)(s32)targetFreqFloat;
                 if (targetFreq > 0x3FFF)

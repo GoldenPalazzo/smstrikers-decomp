@@ -1489,7 +1489,6 @@ void Bowser::ActionFall()
 
 /**
  * Offset/Address/Size: 0x1CE4 | 0x8015AA58 | size: 0x39C
- * TODO: 99.76% match - f3/f4/f5 differ in the velocity scale/store block after nlSqrt.
  */
 void Bowser::ActionJump()
 {
@@ -1611,8 +1610,8 @@ void Bowser::ActionJump()
     float vy = v3JumpVel.f.y;
     float speed = nlGetLength3D(v3JumpVel.f.x, vy, vz);
 
-    v3JumpVel.f.y = vy * 0.5f;
     mfDesiredSpeed = 2.2f * speed;
+    v3JumpVel.f.y = vy * 0.5f;
     v3JumpVel.f.x = v3JumpVel.f.x * 0.5f;
     v3JumpVel.f.z = vz * 0.5f;
 

@@ -810,7 +810,7 @@ unsigned long GCAudioStreaming::MonoAudioStream::DoUpdateRead(unsigned long MRAM
 
 /**
  * Offset/Address/Size: 0xA48 | 0x801C81F8 | size: 0x384
- * TODO: 94.89% match - remaining register allocation differs in buffer update and header read loops
+ * TODO: 95.82% match - remaining register allocation differs in allocation and header read loops
  */
 void GCAudioStreaming::StereoAudioStream::Warm(bool CoolOnStop)
 {
@@ -835,11 +835,15 @@ void GCAudioStreaming::StereoAudioStream::Warm(bool CoolOnStop)
         sndStreamMixParameterEx(pBuf1->m_StreamId, pBuf1->m_Volume, pBuf1->m_Pan, pBuf1->m_SurroundPan, 0, 0);
     }
 
-    AudioStreamBuffer* pTemp = 0;
-    volatile unsigned long BufferIndex = (unsigned long)pTemp;
-    if (m_BufferCount > 0)
-        pTemp = m_Buffers[0];
-    AudioStreamBuffer* pBuffer = pTemp;
+    AudioStreamBuffer* pBuffer;
+    AudioStreamBuffer* init;
+    unsigned long Zero = 0;
+    volatile unsigned long BufferIndex = (unsigned long)(init = 0);
+    if (m_BufferCount > Zero)
+    {
+        init = m_Buffers[0];
+    }
+    pBuffer = init;
     while (pBuffer)
     {
         pBuffer->m_Volume = (unsigned char)m_Volume;
@@ -861,10 +865,12 @@ void GCAudioStreaming::StereoAudioStream::Warm(bool CoolOnStop)
 
         unsigned long idx = BufferIndex + 1;
         BufferIndex = idx;
+        AudioStreamBuffer* pNext;
         if (idx < m_BufferCount)
-            pBuffer = m_Buffers[idx];
+            pNext = m_Buffers[idx];
         else
-            pBuffer = 0;
+            pNext = 0;
+        pBuffer = pNext;
     }
 
     m_StreamLength = (unsigned long)-1;
@@ -1009,9 +1015,9 @@ void GCAudioStreaming::StereoAudioStream::InterleavedHdrReadCB(nlFile* pFile, vo
 
 /**
  * Offset/Address/Size: 0x2A8 | 0x801C7A58 | size: 0x540
- * TODO: 98.18% match - this/MRAMOffsetB/LengthB register coloring rotation across member accesses and buffer/read calls
+ * TODO: 98.39% match - receiver and MRAMOffsetB register coloring across member accesses and buffer/read calls
  */
-unsigned long GCAudioStreaming::StereoAudioStream::DoUpdateRead(unsigned long MRAMOffsetA, unsigned long LengthA, unsigned long MRAMOffsetB, unsigned long LengthB, GCAudioStreaming::AudioStreamBuffer* pRequestingBuffer)
+unsigned long GCAudioStreaming::StereoAudioStream::DoUpdateRead(unsigned long MRAMOffsetA, unsigned long LengthA, unsigned long LengthB, unsigned long MRAMOffsetB, GCAudioStreaming::AudioStreamBuffer* pRequestingBuffer)
 {
     bool serious;
     if (this->m_Flags & (1 << SF_SeriousStop))

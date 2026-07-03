@@ -698,7 +698,7 @@ static inline eCharacterClass GetGoalieFromCaptain(eCharacterClass captain)
 
 /**
  * Offset/Address/Size: 0x3DC | 0x80012C3C | size: 0x51C
- * TODO: 98.84% match - loop index and pointer-walker register allocation diffs remain
+ * TODO: 98.98% match - loop index and character array register allocation diffs remain
  */
 void CreateCharacters()
 {
@@ -807,28 +807,24 @@ void CreateCharacters()
         int plrindex = (sidekick[0] > sidekick[1]) ? !teami : teami;
 
         int charIdx = plrindex * 4 + 1;
-        cCharacter** pChar = &g_pCharacters[charIdx];
-        nlVector3* pPos = &pos[charIdx];
 
         for (int index = 1; index < 4; index++)
         {
             if (vpSidekick[plrindex] == vpCaptain[plrindex])
             {
-                *pChar = CreateCharacter(index, plrindex, captain[plrindex], false);
+                g_pCharacters[charIdx] = CreateCharacter(index, plrindex, captain[plrindex], false);
             }
             else
             {
-                *pChar = (cCharacter*)CreateSidekick(index, plrindex, sidekick[plrindex], captain[plrindex], false);
+                g_pCharacters[charIdx] = (cCharacter*)CreateSidekick(index, plrindex, sidekick[plrindex], captain[plrindex], false);
             }
 
-            (*pChar)->SetPosition(*pPos);
-            ((Audio::cCharacterSFX*)(*pChar)->m_pCharacterSFX)->mGroup = charIdx;
+            g_pCharacters[charIdx]->SetPosition(pos[charIdx]);
+            ((Audio::cCharacterSFX*)g_pCharacters[charIdx]->m_pCharacterSFX)->mGroup = charIdx;
 
-            g_pTeams[plrindex]->SetPlayer((cPlayer*)*pChar, index);
-            ((cPlayer*)*pChar)->m_pTeam = g_pTeams[plrindex];
+            g_pTeams[plrindex]->SetPlayer((cPlayer*)g_pCharacters[charIdx], index);
+            ((cPlayer*)g_pCharacters[charIdx])->m_pTeam = g_pTeams[plrindex];
 
-            pChar++;
-            pPos++;
             charIdx++;
         }
 

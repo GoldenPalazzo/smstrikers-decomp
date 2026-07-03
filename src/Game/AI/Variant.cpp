@@ -169,12 +169,64 @@ FormatImpl<BasicString<char, Detail::TempStringAllocator> >&
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0x13C | 0x80067394 | size: 0xD74
-//  */
-// void FormatImpl<BasicString<char, Detail::TempStringAllocator>>::operator%<float>(const float&)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x13C | 0x80067394 | size: 0xD74
+ * TODO: 99.59% match - copy-on-write temp register swap (r26 vs r27) and marker add operand order.
+ */
+typedef FormatImpl<NLString> NLFormatImpl;
+
+static inline void EraseRange(NLString& s, const char* begin, const char* end)
+{
+    s[0];
+    BasicStringData<char>* data = s.m_data;
+    int size = end - begin;
+    int offset = begin - data->mData;
+    char* at = data->mData + offset;
+    while (end != data->mData + data->mSize)
+    {
+        *at = *end;
+        end++;
+        at++;
+    }
+    data->mSize -= size;
+}
+
+template <>
+NLFormatImpl& NLFormatImpl::operator% <float>(const float& t)
+{
+    NLString insert = LexicalCast<NLString, float>(t);
+
+    for (int i = 0; i < (mString.m_data ? mString.m_data->mSize - 1 : 0); i++)
+    {
+        if (mString[i] != (char)'{')
+            continue;
+
+        if (i + 1 >= (mString.m_data ? mString.m_data->mSize - 1 : 0))
+            continue;
+
+        char* marker = &mString[i];
+        if (mCurrentPos != marker[1] - '0')
+            continue;
+
+        if (i + 2 >= (mString.m_data ? mString.m_data->mSize - 1 : 0))
+            continue;
+
+        char* markerEnd = &mString[i];
+        if (markerEnd[2] != (char)'}')
+            continue;
+
+        mString[0];
+        EraseRange(mString, ((void)mString[0], (mString.m_data ? mString.m_data->mData : (char*)0) + i), (mString.m_data ? mString.m_data->mData : (char*)0) + i + 3);
+        mString[i];
+        char* mStringData = mString.m_data ? mString.m_data->mData : 0;
+        char* insertBegin = ((void)insert[0], insert.m_data ? insert.m_data->mData : 0);
+        insert[(int)(insert.m_data ? insert.m_data->mSize - 1 : 0)];
+        mString.insert(mStringData + i, insertBegin, insert.m_data ? insert.m_data->mData + insert.m_data->mSize - 1 : (char*)0);
+    }
+
+    mCurrentPos++;
+    return *this;
+}
 
 // /**
 //  * Offset/Address/Size: 0x0 | 0x80067258 | size: 0x13C

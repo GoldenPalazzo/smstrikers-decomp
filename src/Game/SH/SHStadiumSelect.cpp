@@ -551,7 +551,7 @@ void StadiumSelectSceneV2::SceneCreated()
 
 /**
  * Offset/Address/Size: 0x210 | 0x800D8790 | size: 0x5C4
- * TODO: 98.55% match - stadium entry lookup and stadium name finder setup scheduling
+ * TODO: 98.63% match - stadium name finder table lookup and zero-store scheduling
  */
 void StadiumSelectSceneV2::Update(float dt)
 {
@@ -660,7 +660,8 @@ void StadiumSelectSceneV2::Update(float dt)
         mLastDirection = (Direction)(rightPressed == 0 ? 1 : 0);
         FEAudio::PlayAnimAudioEvent("sfx_toggle_stadium", false);
 
-        eStadiumID sid = StadiumEntries[mStadiumIndex].stadiumID;
+        volatile int stadiumIndex = mStadiumIndex;
+        eStadiumID sid = StadiumEntries[stadiumIndex].stadiumID;
 
         TLTextInstance* nameText;
         {

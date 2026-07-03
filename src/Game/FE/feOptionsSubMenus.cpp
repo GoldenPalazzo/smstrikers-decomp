@@ -1765,7 +1765,7 @@ OptionsAudioMenuV2::OptionsAudioMenuV2(FEPresentation* presentation, ButtonCompo
 
 /**
  * Offset/Address/Size: 0x34B0 | 0x800B84F4 | size: 0x88C
- * TODO: 99.64% match - callback temporary stack slots still differ in slide menu item setup.
+ * TODO: 99.69% match - callback temporary stack slots still differ in slide menu item setup.
  */
 void OptionsCheatsMenu::BuildCustomPowerupsList(TLComponentInstance* compinstance, CustomPowerups startOption, FEPresentation* presentation)
 {
@@ -1785,13 +1785,14 @@ void OptionsCheatsMenu::BuildCustomPowerupsList(TLComponentInstance* compinstanc
     MenuItem<SlideMenuItem>* menuItem;
     unsigned long slideHash;
     bool unlocked;
+    SlideMenuList* sml;
 
     mSlideMenuLists[0] = (MenuList<SlideMenuList>*)(new (nlMalloc(sizeof(SlideMenuList), 8, false)) SlideMenuList(compinstance));
 
     compinstance->SetActiveSlide("Slide1");
     {
         slideHash = compinstance->GetActiveSlide()->m_hash;
-        SlideMenuList* sml = (SlideMenuList*)mSlideMenuLists[0];
+        sml = (SlideMenuList*)mSlideMenuLists[0];
         SlideMenuItem* item = (SlideMenuItem*)nlMalloc(sizeof(SlideMenuItem), 8, true);
         if (item != NULL)
         {
@@ -1839,7 +1840,7 @@ void OptionsCheatsMenu::BuildCustomPowerupsList(TLComponentInstance* compinstanc
             compinstance->SetActiveSlide(slidename);
 
             slideHash = compinstance->GetActiveSlide()->m_hash;
-            SlideMenuList* sml = (SlideMenuList*)mSlideMenuLists[0];
+            sml = (SlideMenuList*)mSlideMenuLists[0];
             SlideMenuItem* item = (SlideMenuItem*)nlMalloc(sizeof(SlideMenuItem), 8, true);
             if (item != NULL)
             {

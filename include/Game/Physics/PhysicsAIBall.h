@@ -32,6 +32,7 @@ public:
     /* 0x54 */ u32 m_unk_0x54;
     /* 0x58 */ bool m_unk_0x58;
     /* 0x59 */ bool m_unk_0x59;
+    /* 0x5A */ bool m_unk_0x5A;
 
     // differs from DWARF debug infos..
 

@@ -3731,8 +3731,8 @@ void Goalie::InitActionLooseBallCatch()
 
 /**
  * Offset/Address/Size: 0x3BD0 | 0x800466CC | size: 0x1B04
- * TODO: 95.33% match - remaining stack-slot and register-order differences in
- * loose-ball intercept, desperation, and pickup branches.
+ * TODO: 96.06% match - remaining stack-slot and register-order differences in
+ * loose-ball save, desperation, pickup, and pursuit branches.
  */
 void Goalie::InitActionLooseBallSetup()
 {
@@ -4582,11 +4582,11 @@ void Goalie::InitActionLooseBallSetup()
                         mfTargetTime = fHeightTime;
                         mfTargetDist = 1.4f;
 
-                        f32 fDy = v3IntPos.f.y - m_v3Position.f.y;
-                        f32 fDx = v3IntPos.f.x - m_v3Position.f.x;
-                        m_aDesiredFacingDirection = (s16)(nlATan2f(fDy, fDx) * 10430.378f);
+                        m_aDesiredFacingDirection = (s16)(nlATan2f(v3IntPos.f.y - m_v3Position.f.y, v3IntPos.f.x - m_v3Position.f.x) * 10430.378f);
 
-                        f32 fDistSq = fDy * fDy + fDx * fDx;
+                        f32 fDistY = v3IntPos.f.y - m_v3Position.f.y;
+                        f32 fDistX = v3IntPos.f.x - m_v3Position.f.x;
+                        f32 fDistSq = fDistY * fDistY + fDistX * fDistX;
                         s16 nAngDiff = m_aDesiredFacingDirection - m_aActualFacingDirection;
                         s32 nAnimID = m_eAnimID;
 

@@ -175,8 +175,8 @@ static inline bool CalcGoalieRepulsionVector(AvoidController* controller, nlVect
 
 /**
  * Offset/Address/Size: 0x12BC | 0x80008910 | size: 0xECC
- * TODO: 97.95% match - remaining diffs are bCanAvoid register choice,
- * goalie/Bowser FPR assignments, and final fallback stack slot selection.
+ * TODO: 98.09% match - remaining diffs are bCanAvoid register choice,
+ * Bowser FPR assignments, and final fallback stack slot selection.
  */
 void AvoidController::Update(float)
 {
@@ -343,15 +343,7 @@ void AvoidController::Update(float)
                 {
                     fMagnitude = (fMagnitude <= 10.0f) ? fMagnitude : 10.0f;
 
-                    float fOutZ = v3Repulsion.f.z;
-                    float fOutY = v3Repulsion.f.y;
-                    float fOutX = v3Repulsion.f.x;
-                    fOutZ = fMagnitude * fDeltaZ + fOutZ;
-                    fOutY = fMagnitude * fDeltaY + fOutY;
-                    fOutX = fMagnitude * fDeltaX + fOutX;
-                    v3Repulsion.f.z = fOutZ;
-                    v3Repulsion.f.x = fOutX;
-                    v3Repulsion.f.y = fOutY;
+                    nlVec3Add(v3Repulsion, fMagnitude * fDeltaX, fMagnitude * fDeltaY, fMagnitude * fDeltaZ);
 
                     bAvoidedSomething = true;
                 }

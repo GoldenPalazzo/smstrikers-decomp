@@ -700,13 +700,14 @@ inline GCAudioStreaming::StereoAudioStream::StereoAudioStream(
 
 /**
  * Offset/Address/Size: 0x10BC | 0x80155E14 | size: 0x418
- * TODO: 99.45% match - saved-register coloring remains around arguments and stream pointer
+ * TODO: 99.50% match - saved-register coloring remains around arguments and stream pointer
  */
 void AudioStreamTrack::StreamTrack::QueueStream(
     unsigned long StreamId, float Volume, bool Looping,
     unsigned long FadeIn, const char* StreamParam,
     Audio::MasterVolume::VOLUME_GROUP OverrideVolGroup)
 {
+    Audio::MasterVolume::VOLUME_GROUP overrideVolGroup = (Audio::MasterVolume::VOLUME_GROUP)((unsigned long)OverrideVolGroup + 0);
     char FileName[256];
     GCAudioStreaming::StereoAudioStream* pStream;
 
@@ -746,13 +747,13 @@ void AudioStreamTrack::StreamTrack::QueueStream(
     entry->entry.StartVolume = (int)(127.0f * Volume);
 
     Audio::MasterVolume::VOLUME_GROUP volGroup;
-    if (OverrideVolGroup == 0)
+    if (overrideVolGroup == 0)
     {
         volGroup = m_VolumeGroup;
     }
     else
     {
-        volGroup = OverrideVolGroup;
+        volGroup = overrideVolGroup;
     }
     entry->entry.VolGroup = volGroup;
     entry->entry.Loop = Looping;

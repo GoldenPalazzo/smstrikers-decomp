@@ -933,7 +933,7 @@ FuzzyVariant Fuzzy::CutAndBreak(cFielder* TheFielder)
 
 /**
  * Offset/Address/Size: 0x22A0 | 0x8008ED2C | size: 0x88C
- * TODO: 99.08% match - chip-shot confidence register and defensive temporary
+ * TODO: 99.84% match - chip-shot confidence register and defensive temporary
  * register/stack allocation differ.
  */
 FuzzyVariant Fuzzy::DoShooting(float fConfidence, cDecisionEntity* pDecision)
@@ -991,7 +991,9 @@ FuzzyVariant Fuzzy::DoShooting(float fConfidence, cDecisionEntity* pDecision)
             if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
                 fConfidence = fConfidence * fBranchRatio;
 
-            if (fBestConfidence <= fConfidence)
+            if (fBestConfidence >= fConfidence)
+                fBestConfidence = fBestConfidence;
+            else
                 fBestConfidence = fConfidence;
 
             pDecision->QueueActionSetDesire(14, fConfidence, 0.0f, FuzzyVariant(false), FuzzyVariant(true));
@@ -1034,7 +1036,9 @@ FuzzyVariant Fuzzy::DoShooting(float fConfidence, cDecisionEntity* pDecision)
             if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
                 fConfidence = fConfidence * fBranchRatio;
 
-            if (fBestConfidence <= fConfidence)
+            if (fBestConfidence >= fConfidence)
+                fBestConfidence = fBestConfidence;
+            else
                 fBestConfidence = fConfidence;
 
             pDecision->QueueActionSetDesire(14, fConfidence, -1.0f, fvNotSet, fvNotSet);

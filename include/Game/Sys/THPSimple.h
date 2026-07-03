@@ -47,12 +47,5 @@ struct THPSimpleControl
     /* 0x1B8 */ s32 audioOutputIndex;
 }; // total size: 0x1BC
 
-extern THPSimpleControl SimpleControl;
-extern s32 NumReadBuffers;
-
 extern "C" int THPSimpleSetBuffer(unsigned char* buffer);
-void THPAudioMixCallback();
-void MixAudio(short*, short*, unsigned long);
-void __THPSimpleDVDCallback(nlFile*, void*, unsigned int, unsigned long);
-void __THPAsyncCancelCB(nlFile*, void*, unsigned int, unsigned long, void (*)(nlFile*, void*, unsigned int, unsigned long));
 #endif // _THPSIMPLE_H_

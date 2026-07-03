@@ -2190,8 +2190,6 @@ float WideOpenPosition(const nlVector3& v3Position, cTeam* pOpponentTeam, cPlaye
 
 /**
  * Offset/Address/Size: 0x2B10 | 0x80081598 | size: 0x274
- * TODO: 97.52% match - remaining blockers are inner-loop prologue ordering at pPlayers[1]
- * init and fcmpu operand ordering in the fIncapacitated zero-check.
  */
 static inline float check_goalie_local(const Goalie* pGoalie, const eGoalieActionState actionState)
 {
@@ -2255,10 +2253,10 @@ float Open(cFielder* pFielder)
     {
         cPlayer* pPlayers[2] = { NULL, NULL };
         pPlayers[0] = pOtherTeam->GetPlayer(i);
-        pPlayers[1] = NULL;
         cPlayer** ppPlayer = pPlayers;
+        pPlayers[1] = (cPlayer*)(i_player = 0);
 
-        for (i_player = 0; i_player < 2; i_player++, ppPlayer++)
+        for (; i_player < 2; i_player++, ppPlayer++)
         {
             u8 isIncap;
             cPlayer* pPlayer = *ppPlayer;
@@ -2894,12 +2892,18 @@ static inline float NearToSidelineImpl(const nlVector3& v3Position, const nlVect
     int i = 0;
     const u8* pBase = (const u8*)cField::mSidelines;
     s32 offset = i;
+    u32 posU0 = ((const u32*)&v3Position)[0];
+    u32 posU1 = ((const u32*)&v3Position)[1];
+    u32 posU2 = ((const u32*)&v3Position)[2];
     f32 fZero = fScore;
 
     for (; i < 4; i++, offset += 0xC)
     {
         const sSideLinePlane* sideline = (const sSideLinePlane*)(pBase + offset);
-        nlVector3 v3Pt = v3Position;
+        nlVector3 v3Pt;
+        ((u32*)&v3Pt)[2] = posU2;
+        ((u32*)&v3Pt)[0] = posU0;
+        ((u32*)&v3Pt)[1] = posU1;
         v3Pt.f.z = fZero;
 
         if (fZero == sideline->vNormal.f.x)
@@ -2942,22 +2946,15 @@ float NearToSideline(const nlVector3& v3Position)
 
 /**
  * Offset/Address/Size: 0x1AB8 | 0x80080540 | size: 0x11C
- * TODO: 92.25% match - pre-loop callee-saved register allocation still differs
- *       for sideline base/offset setup and g_pGame->m_pFuzzyTweaks load register.
+ * TODO: 99.15% match - sideline base/offset and distance delta registers differ.
  */
-float CloseToSideline(cFielder* pFielder)
+static inline float CloseToSidelineFielderImpl(cFielder* pFielder, const nlVector2* pConfidence)
 {
-    if (pFielder == NULL)
-    {
-        return 0.0f;
-    }
-
-    s32 offset = 0;
-    s32 i = 0;
-    const nlVector2* pConfidence = &g_pGame->m_pFuzzyTweaks->vCloseToSidelineDistanceConfidence;
-    const u8* pBase = (const u8*)cField::mSidelines;
     float fScore = 0.0f;
     f32 fZero = fScore;
+    s32 i = 0;
+    s32 offset = i;
+    const u8* pBase = (const u8*)cField::mSidelines;
 
     for (; i < 4; i++, offset += 0xC)
     {
@@ -2991,6 +2988,16 @@ float CloseToSideline(cFielder* pFielder)
     }
 
     return fScore;
+}
+
+float CloseToSideline(cFielder* pFielder)
+{
+    if (pFielder == NULL)
+    {
+        return 0.0f;
+    }
+
+    return CloseToSidelineFielderImpl(pFielder, &g_pGame->m_pFuzzyTweaks->vCloseToSidelineDistanceConfidence);
 }
 
 /**

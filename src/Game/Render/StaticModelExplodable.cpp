@@ -184,7 +184,7 @@ void StaticModelExplodable::CleanUp()
 
 /**
  * Offset/Address/Size: 0xC4 | 0x80165588 | size: 0x43C
- * TODO: 95.9% match - r30/r31 register swap for worldMatrix and bIsModelLoaded
+ * TODO: 98.8% match - BasicString data and source string registers remain swapped.
  */
 StaticModelExplodable::StaticModelExplodable(StaticModelExplodableCategory category, const nlMatrix4& worldMatrix)
 {
@@ -216,6 +216,7 @@ StaticModelExplodable::StaticModelExplodable(StaticModelExplodableCategory categ
     m_pUnexplodedModel->m_uObjectFlags |= 1;
 
     cloneCount++;
+    mCategory = category;
 }
 
 /**

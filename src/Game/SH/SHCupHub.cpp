@@ -1447,7 +1447,7 @@ void CupHubScene::CreateKnockout()
     TLComponentInstance* pXComponent;
     TLTextInstance* pText;
     BasicGameInfo* pGame;
-    volatile InlineHasher h7, h5, h3, h1;
+    volatile InlineHasher h1, h3, h7, h5;
 
     {
         volatile InlineHasher hB, hA, h9, h8, h6, h4, h2, h0;
@@ -3003,7 +3003,7 @@ unsigned char CupHubScene::UpdateKnockout2(float fDeltaT)
 
 /**
  * Offset/Address/Size: 0x1860 | 0x800EB5BC | size: 0x70C
- * TODO: 97.27% match - remaining singleton/pSlide registers and finder hasher/position stack slots differ from target.
+ * TODO: 99.22% match - singleton, slide, and display buffer registers differ in later progress indicator loops.
  */
 void CupHubScene::UpdateProgressIndicator()
 {
@@ -3089,7 +3089,7 @@ void CupHubScene::UpdateProgressIndicator()
     }
 
     {
-        volatile InlineHasher g7, g6;
+        volatile InlineHasher g7, g6, g5;
         volatile InlineHasher g4, g3, g2, g1, g0;
 
         g0.m_Hash = 0;
@@ -3101,7 +3101,7 @@ void CupHubScene::UpdateProgressIndicator()
         g3.m_Hash = 0;
         h7.m_Hash = 0;
         g4.m_Hash = 0;
-        h9.m_Hash = 0;
+        g5.m_Hash = 0;
 
         unsigned long hash = nlStringLowerHash(CUP_HIGHLIGHT_NAME);
         g6.m_Hash = hash;
@@ -3117,14 +3117,15 @@ void CupHubScene::UpdateProgressIndicator()
         highlight = findComp.byRef(
             pSlide,
             (InlineHasher&)g7,
-            (InlineHasher&)h9,
+            (InlineHasher&)g5,
             (InlineHasher&)h7,
             (InlineHasher&)h5,
             (InlineHasher&)h3,
             (InlineHasher&)h1);
     }
 
-    highlight->GetActiveSlide()->m_uPlayMode = TLPM_LOOPING;
+    TLSlide* highlightSlide = highlight->GetActiveSlide();
+    highlightSlide->m_uPlayMode = TLPM_LOOPING;
 
     if (gameInfo->mCurrentMode == GameInfoManager::GM_BOWSER_CUP)
     {

@@ -128,7 +128,6 @@ void CupCheaterScene::SceneCreated()
 {
     typedef Detail::MemFunImpl<void, void (CupCheaterScene::*)()> MemFunImpl_CupCheaterScene_v;
     typedef BindExp1<void, MemFunImpl_CupCheaterScene_v, CupCheaterScene*> BindExp1_vfmfcp;
-    typedef Function0<void>::FunctorImpl<BindExp1_vfmfcp> FunctorImpl_vfmfcp;
 
     void* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
 
@@ -144,62 +143,32 @@ void CupCheaterScene::SceneCreated()
     m_SlideMenu = new ((FESlideMenu*)nlMalloc(sizeof(FESlideMenu), 8, false)) FESlideMenu(comp);
 
     {
-        BindExp1_vfmfcp bind = Bind<void, MemFunImpl_CupCheaterScene_v, CupCheaterScene*>(
-            MemFun<CupCheaterScene, void>(&CupCheaterScene::OnSelectGameplay), this);
-
-        Function<FnVoidVoid> callback;
-        callback.mTag = FUNCTOR;
-        FunctorImpl_vfmfcp* functor = new ((FunctorImpl_vfmfcp*)nlMalloc(sizeof(FunctorImpl_vfmfcp), 8, false)) FunctorImpl_vfmfcp(bind);
-        callback.mFunctor = functor;
-
+        Function<FnVoidVoid> callback(Bind<void, MemFunImpl_CupCheaterScene_v, CupCheaterScene*>(
+            MemFun<CupCheaterScene, void>(&CupCheaterScene::OnSelectGameplay), this));
         m_SlideMenu->AddMenuItem("Slide1", callback);
     }
 
     {
-        BindExp1_vfmfcp bind = Bind<void, MemFunImpl_CupCheaterScene_v, CupCheaterScene*>(
-            MemFun<CupCheaterScene, void>(&CupCheaterScene::OnSelectHomeWin), this);
-
-        Function<FnVoidVoid> callback;
-        callback.mTag = FUNCTOR;
-        FunctorImpl_vfmfcp* functor = new ((FunctorImpl_vfmfcp*)nlMalloc(sizeof(FunctorImpl_vfmfcp), 8, false)) FunctorImpl_vfmfcp(bind);
-        callback.mFunctor = functor;
-
+        Function<FnVoidVoid> callback(Bind<void, MemFunImpl_CupCheaterScene_v, CupCheaterScene*>(
+            MemFun<CupCheaterScene, void>(&CupCheaterScene::OnSelectHomeWin), this));
         m_SlideMenu->AddMenuItem("Slide2", callback);
     }
 
     {
-        BindExp1_vfmfcp bind = Bind<void, MemFunImpl_CupCheaterScene_v, CupCheaterScene*>(
-            MemFun<CupCheaterScene, void>(&CupCheaterScene::OnSelectAwayWin), this);
-
-        Function<FnVoidVoid> callback;
-        callback.mTag = FUNCTOR;
-        FunctorImpl_vfmfcp* functor = new ((FunctorImpl_vfmfcp*)nlMalloc(sizeof(FunctorImpl_vfmfcp), 8, false)) FunctorImpl_vfmfcp(bind);
-        callback.mFunctor = functor;
-
+        Function<FnVoidVoid> callback(Bind<void, MemFunImpl_CupCheaterScene_v, CupCheaterScene*>(
+            MemFun<CupCheaterScene, void>(&CupCheaterScene::OnSelectAwayWin), this));
         m_SlideMenu->AddMenuItem("Slide3", callback);
     }
 
     {
-        BindExp1_vfmfcp bind = Bind<void, MemFunImpl_CupCheaterScene_v, CupCheaterScene*>(
-            MemFun<CupCheaterScene, void>(&CupCheaterScene::OnSelectHomeOTWin), this);
-
-        Function<FnVoidVoid> callback;
-        callback.mTag = FUNCTOR;
-        FunctorImpl_vfmfcp* functor = new ((FunctorImpl_vfmfcp*)nlMalloc(sizeof(FunctorImpl_vfmfcp), 8, false)) FunctorImpl_vfmfcp(bind);
-        callback.mFunctor = functor;
-
+        Function<FnVoidVoid> callback(Bind<void, MemFunImpl_CupCheaterScene_v, CupCheaterScene*>(
+            MemFun<CupCheaterScene, void>(&CupCheaterScene::OnSelectHomeOTWin), this));
         m_SlideMenu->AddMenuItem("Slide4", callback);
     }
 
     {
-        BindExp1_vfmfcp bind = Bind<void, MemFunImpl_CupCheaterScene_v, CupCheaterScene*>(
-            MemFun<CupCheaterScene, void>(&CupCheaterScene::OnSelectAwayOTWin), this);
-
-        Function<FnVoidVoid> callback;
-        callback.mTag = FUNCTOR;
-        FunctorImpl_vfmfcp* functor = new ((FunctorImpl_vfmfcp*)nlMalloc(sizeof(FunctorImpl_vfmfcp), 8, false)) FunctorImpl_vfmfcp(bind);
-        callback.mFunctor = functor;
-
+        Function<FnVoidVoid> callback(Bind<void, MemFunImpl_CupCheaterScene_v, CupCheaterScene*>(
+            MemFun<CupCheaterScene, void>(&CupCheaterScene::OnSelectAwayOTWin), this));
         m_SlideMenu->AddMenuItem("Slide5", callback);
     }
 

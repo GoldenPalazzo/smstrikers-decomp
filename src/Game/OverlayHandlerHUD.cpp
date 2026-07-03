@@ -536,23 +536,9 @@ void HUDOverlay::SceneCreated()
         m_pTextInstanceClock[1]->m_bVisible = false;
     }
 
-    int i = 0;
     m_pFEScene->m_pFEPackage->GetPresentation()->SetActiveSlide("OUT");
-    mIsHUDSlideIn = i;
-
-    for (; i < 2; i++)
-    {
-        mScore[i] = 0;
-        mNewScore[i] = 0;
-
-        BasicString<char, Detail::TempStringAllocator> scoreStr = LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(mScore[i]);
-
-        nlStrToWcs(scoreStr.c_str(), mScoreBuffer[i], 0x20);
-        m_pTextInstanceScore[0][i]->SetString(mScoreBuffer[i]);
-        m_pTextInstanceScore[1][i]->SetString(mScoreBuffer[i]);
-    }
-
-    mStartScoreAnimation = false;
+    mIsHUDSlideIn = false;
+    ResetScores();
 }
 
 /**

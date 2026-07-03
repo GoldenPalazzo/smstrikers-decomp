@@ -838,11 +838,12 @@ FuzzyVariant Fuzzy::GetBestLooseBallPassTarget(cFielder* TheFielder)
     FuzzyVariant bestValue;
     float fConfidence = 1.0f;
     float fBestConfidence = 0.0f;
+    cFielder* const fielder = TheFielder;
 
-    const FuzzyVariant& fvFielder = FuzzyVariant((cPlayer*)TheFielder);
+    const FuzzyVariant& fvFielder = FuzzyVariant((cPlayer*)fielder);
     volatile unsigned long funcAddr = (unsigned long)GetBestLooseBallPassTarget;
     unsigned long hash = funcAddr + ((Variant*)&fvFielder)->GetHash();
-    FuzzyVariant((cPlayer*)TheFielder);
+    FuzzyVariant((cPlayer*)fielder);
 
     if (ScriptQuestionCache::Instance()->Lookup(hash, bestValue, NULL))
     {
@@ -870,7 +871,7 @@ FuzzyVariant Fuzzy::GetBestLooseBallPassTarget(cFielder* TheFielder)
         return bestValue;
     }
 
-    float fTrueConfidence = InDanger(TheFielder).mData.f;
+    float fTrueConfidence = InDanger(fielder).mData.f;
     float fFalseConfidence = 1.0f - fTrueConfidence;
     float fMinVal = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
     float fMaxVal = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
@@ -883,7 +884,7 @@ FuzzyVariant Fuzzy::GetBestLooseBallPassTarget(cFielder* TheFielder)
         if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
             fConfidence = (float)(double)fConfidence * fBranchRatio;
 
-        FuzzyVariant theBestPassTarget = GetBestPassTarget((cPlayer*)TheFielder);
+        FuzzyVariant theBestPassTarget = GetBestPassTarget((cPlayer*)fielder);
 
         float fPassConfidence = (theBestPassTarget.Confidence <= fConfidence) ? theBestPassTarget.Confidence : fConfidence;
         float fPassFalseConfidence = 1.0f - fPassConfidence;

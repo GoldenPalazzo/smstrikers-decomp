@@ -354,6 +354,7 @@ cAnimCamera::~cAnimCamera()
 
 /**
  * Offset/Address/Size: 0x41C | 0x801A5010 | size: 0x5DC
+ * TODO: 97.6% match - residual register allocation differences in interpolation alias setup
  */
 void cAnimCamera::BuildAnimViewMatrix(nlMatrix4& mView)
 {
@@ -377,11 +378,9 @@ void cAnimCamera::BuildAnimViewMatrix(nlMatrix4& mView)
     {
         nlVector3& cpN = m_pActiveCameraData->cameraPos[nIndex + 1];
         nlVector3& cpK = m_pActiveCameraData->cameraPos[nIndex];
-        float dz = cpK.f.z - cpN.f.z;
-        float dy = cpK.f.y - cpN.f.y;
-        float dx = cpK.f.x - cpN.f.x;
-        float dyy = dy * dy;
-        float distSq = dyy + dx * dx + dz * dz;
+        nlVector3 delta;
+        nlVec3Sub(delta, cpK, cpN);
+        float distSq = delta.GetLengthSq3D();
         if (distSq > 16.0f)
         {
             if (fWeightB < 0.5f)
@@ -416,11 +415,9 @@ void cAnimCamera::BuildAnimViewMatrix(nlMatrix4& mView)
         }
     }
 
-    float dx = m_vecCamera.f.x - m_vecTarget.f.x;
-    float dy = m_vecCamera.f.y - m_vecTarget.f.y;
-    float dz = m_vecCamera.f.z - m_vecTarget.f.z;
-    float dyy2 = dy * dy;
-    float dist = nlSqrt(dyy2 + dx * dx + dz * dz, true);
+    nlVector3 dofDelta;
+    nlVec3Sub(dofDelta, m_vecCamera, m_vecTarget);
+    float dist = nlSqrt(dofDelta.GetLengthSq3D(), true);
     DepthOfFieldManager::instance.m_fDistanceFromCamera = dofBehindTarget + dist;
     cameraPos.f.x *= m_Mirror.f.x;
     cameraPos.f.y *= m_Mirror.f.y;

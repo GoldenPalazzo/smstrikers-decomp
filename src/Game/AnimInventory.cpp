@@ -117,7 +117,7 @@ cAnimInventory::~cAnimInventory()
 
 /**
  * Offset/Address/Size: 0x88 | 0x80007004 | size: 0x214
- * TODO: 99.21% match - r26/r27 swap for file length/end pointer and
+ * TODO: 99.35% match - r26/r27 swap for file length/end pointer and
  * r28/r29 swap for property/anims byte offsets.
  */
 void cAnimInventory::AddAnimBundle(const char* szFilename)
@@ -151,6 +151,7 @@ void cAnimInventory::AddAnimBundle(const char* szFilename)
         pMem = (char*)(((nlChunk*)pMem)->m_Size + pMem + 8);
     }
 
+    int animIndex = 0;
     i = 0;
     while (i < m_count)
     {
@@ -158,8 +159,8 @@ void cAnimInventory::AddAnimBundle(const char* szFilename)
         unsigned int hash = nlStringHash(m_props[i].name);
         cSAnim* pFound = FindAnim(pInv->m_lItemList.m_Head, hash);
 
-        m_anims[i] = pFound;
-        if (m_anims[i] == 0)
+        m_anims[animIndex] = pFound;
+        if (m_anims[animIndex] == 0)
         {
             nlPrintf("Warning! Could not find \"%s\" in bundle \"%s\"\n",
                 m_props[i].name,
@@ -168,13 +169,14 @@ void cAnimInventory::AddAnimBundle(const char* szFilename)
             hash = nlStringHash(m_props[i].name);
             pFound = FindAnim(pDefaultInv->m_lItemList.m_Head, hash);
 
-            m_anims[i] = pFound;
-            if (m_anims[i] == 0)
+            m_anims[animIndex] = pFound;
+            if (m_anims[animIndex] == 0)
             {
-                m_anims[i] = m_anims[0];
+                m_anims[animIndex] = m_anims[0];
             }
         }
 
+        animIndex++;
         i++;
     }
 }

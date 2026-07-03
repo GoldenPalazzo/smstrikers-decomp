@@ -318,14 +318,12 @@ void CupTickerManager::CreateNewMessage()
             if (gameInfoMem->mDoingKnockout)
             {
                 LOC_LOOKUP(0x474DA1D4UL, locString);
-                WideBasicString msg(locString);
-                tickerMessage = msg;
+                tickerMessage = WideBasicString(locString);
             }
             else
             {
                 LOC_LOOKUP(0x67493499UL, locString);
-                WideBasicString msg(locString);
-                tickerMessage = msg;
+                tickerMessage = WideBasicString(locString);
             }
             messageDisplayed = true;
         }
@@ -339,8 +337,7 @@ void CupTickerManager::CreateNewMessage()
             else
             {
                 LOC_LOOKUP(0xA81870D8UL, locString);
-                WideBasicString msg(locString);
-                tickerMessage = msg;
+                tickerMessage = WideBasicString(locString);
                 messageDisplayed = true;
             }
         }

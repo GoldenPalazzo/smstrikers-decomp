@@ -192,7 +192,7 @@ void cCharacter::SetSFX(SoundPropAccessor* pSoundPropAccessor)
 
 /**
  * Offset/Address/Size: 0x40C | 0x8000E358 | size: 0x650
- * TODO: 99.66% match - FROM_ANIM adjustTime, AnimMoveAdjust, and RootTrans register swaps.
+ * TODO: 99.70% match - FROM_ANIM adjustTime and AnimMoveAdjust register swaps.
  */
 void cCharacter::UpdateMovementState(float fDeltaT)
 {
@@ -312,12 +312,7 @@ void cCharacter::UpdateMovementState(float fDeltaT)
 
         nlVector3 v3RootTrans;
         pSourceNode->GetRootTrans(&v3RootTrans, m_aPrevFacingDirection);
-        float adjustedRootX = v3RootTrans.f.x + consumedMoveX;
-        float adjustedRootZ = v3RootTrans.f.z + consumedMoveZ;
-        float adjustedRootY = v3RootTrans.f.y + consumedMoveY;
-        v3RootTrans.f.x = adjustedRootX;
-        v3RootTrans.f.z = adjustedRootZ;
-        v3RootTrans.f.y = adjustedRootY;
+        nlVec3Set(v3RootTrans, v3RootTrans.f.x + consumedMoveX, v3RootTrans.f.y + consumedMoveY, v3RootTrans.f.z + consumedMoveZ);
         m_v3Velocity.f.x = v3RootTrans.f.x / fDeltaT;
         m_v3Velocity.f.y = v3RootTrans.f.y / fDeltaT;
 

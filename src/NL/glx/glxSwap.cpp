@@ -418,9 +418,10 @@ static inline BasicStringInternal* MakeHitzData()
 
 /**
  * Offset/Address/Size: 0x734 | 0x801BF484 | size: 0x260
- * TODO: 99.31% match - r30/r31 register swap in the inlined fallback string data
- * construction (data vs "hitz" source pointer).
+ * TODO: 99.90% match - returned swap string copy uses r4 instead of r0 for the
+ * m_data copy.
  */
+#pragma optimization_level 2
 void glxInitSwap(void* arg0, void* arg1)
 {
     glx_FrameBuffer[0] = arg0;
@@ -450,6 +451,7 @@ void glxInitSwap(void* arg0, void* arg1)
         break;
     }
 }
+#pragma optimization_level 4
 
 /**
  * Offset/Address/Size: 0x994 | 0x801BF6E4 | size: 0x28

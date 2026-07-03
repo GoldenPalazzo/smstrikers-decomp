@@ -1011,8 +1011,8 @@ static const int EIGHT_TEAM_MATCHUPS[28][2] = {
 };
 
 /**
- * TODO: 99.69% match - final stats loop uses r17/r19 register assignment order
- * for teamID and lineup base instead of target r19/r17 order.
+ * TODO: 99.81% match - final stats loop saves teamstats before initializing
+ * the loop counter.
  */
 void GameInfoManager::SetupRoundRobinSchedule(eTeamID* lineup, eSidekickID* sklineup)
 {
@@ -1176,11 +1176,12 @@ void GameInfoManager::SetupRoundRobinSchedule(eTeamID* lineup, eSidekickID* skli
     }
 
     {
-        TeamStats* teamstats = mCurrentCup->GetTeamStats(0);
         eTeamID teamID;
+        TeamStats* teamstats = mCurrentCup->GetTeamStats(0);
+        eTeamID* lineupPtr = lineup;
         for (int k = 0; k < numplayingteams; k++)
         {
-            teamID = lineup[k];
+            teamID = *lineupPtr;
             memset(&teamstats->mPlayerTotalStats, 0, sizeof(PlayerStats));
             teamstats->mPlayerTotalStats.mRecordType.mTeamID = teamID;
             teamstats->mPlayerTotalStats.mType = TYPE_TEAM;
@@ -1189,6 +1190,7 @@ void GameInfoManager::SetupRoundRobinSchedule(eTeamID* lineup, eSidekickID* skli
             teamstats->mNumLosses = 0;
             teamstats->mNumOTLosses = 0;
             teamstats->mNumPoints = 0;
+            lineupPtr++;
             teamstats++;
         }
     }

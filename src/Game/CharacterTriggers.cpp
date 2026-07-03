@@ -710,20 +710,15 @@ void CharacterTriggerHandler(unsigned int uParam)
         int headJointIndex = pHeadCharacter->m_nHeadJointIndex;
         nlMatrix4& nodeMatrix = pHeadCharacter->m_pPoseAccumulator->GetNodeMatrix(headJointIndex);
         nlVector3 nodePos = *(nlVector3*)&nodeMatrix.m[3][0];
-        {
-            Audio::SoundAttributes attrs;
-            attrs.Init();
-            attrs.SetSoundType(0x4E, true);
-            attrs.UseStationaryPosVector(nodePos);
-            g_pCurrentlyUpdatingCharacter->PlaySFX(attrs);
-        }
-        {
-            Audio::SoundAttributes attrs;
-            attrs.Init();
-            attrs.SetSoundType(0x3A, true);
-            attrs.UseStationaryPosVector(nodePos);
-            g_pCurrentlyUpdatingCharacter->PlaySFX(attrs);
-        }
+        Audio::SoundAttributes attrs;
+        attrs.Init();
+        attrs.SetSoundType(0x4E, true);
+        attrs.UseStationaryPosVector(nodePos);
+        g_pCurrentlyUpdatingCharacter->PlaySFX(attrs);
+        attrs.Init();
+        attrs.SetSoundType(0x3A, true);
+        attrs.UseStationaryPosVector(nodePos);
+        g_pCurrentlyUpdatingCharacter->PlaySFX(attrs);
         cCharacter* pChar2 = g_pCurrentlyUpdatingCharacter;
         EmissionController* pController = EmissionManager::Create(fxGetGroup("shoot_to_score_jump"), 0);
         SetDefaultVelocity(pController);
@@ -1183,9 +1178,24 @@ void EmitBallPass(cPlayer* pPlayer)
     }
 }
 
+static inline EmissionController* CreateChipShotDivotEffect(cPlayer* pCharacter)
+{
+    EmissionController* pController = EmissionManager::Create(fxGetGroup("divot"), 0);
+    SetDefaultVelocity(pController);
+    pController->m_fGround = 0.0f;
+    {
+        Function<EmissionController&> update;
+        update.mTag = FREE_FUNCTION;
+        update.mFreeFunction = UpdateEmitterPoseFromCharacter;
+        pController->SetUpdateCallback(update);
+    }
+    pCharacter->AttachEffect(pController);
+    return pController;
+}
+
 /**
  * Offset/Address/Size: 0x1B10 | 0x801A08C0 | size: 0xB48
- * TODO: 99.77% match - BasicString constructor register swap and chip/default callback stack slot swaps remain.
+ * TODO: 99.81% match - BasicString constructor r25/r29 swap, perfect-pass f3/f4 distance swap, and glow callback destructor branch remain.
  */
 void EmitBallShot(cPlayer* pCharacter, eBallShotEffectType eNewBallEffect, cPlayer*, bool bSilent)
 {
@@ -1348,16 +1358,7 @@ void EmitBallShot(cPlayer* pCharacter, eBallShotEffectType eNewBallEffect, cPlay
     }
     case BALL_EFFECT_CHIP_SHOT:
     {
-        EmissionController* pController = EmissionManager::Create(fxGetGroup("divot"), 0);
-        SetDefaultVelocity(pController);
-        pController->m_fGround = 0.0f;
-        {
-            Function<EmissionController&> update;
-            update.mTag = FREE_FUNCTION;
-            update.mFreeFunction = UpdateEmitterPoseFromCharacter;
-            pController->SetUpdateCallback(update);
-        }
-        pCharacter->AttachEffect(pController);
+        EmissionController* pController = CreateChipShotDivotEffect(pCharacter);
         pController->SetPosition(g_pBall->m_v3Position);
         pController->SetVelocity(pCharacter->m_v3Velocity);
         g_pBall->InitiateBallBlur(eNewBallEffect, NULL);

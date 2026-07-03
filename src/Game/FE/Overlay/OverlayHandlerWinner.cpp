@@ -108,8 +108,8 @@ WinnerOverlay::~WinnerOverlay()
 
 /**
  * Offset/Address/Size: 0x304 | 0x80105970 | size: 0xCE0
- * TODO: 99.65% match - saved-register differences remain in localization
- * result wiring and stack-slot placement.
+ * TODO: 99.70% match - later localization wide-string construction still
+ * swaps the result pointer and string data registers.
  */
 
 template <typename StringType, typename ValueType>
@@ -127,16 +127,22 @@ static inline const unsigned short* LookupWinnerLocHash(unsigned long key)
     nlLocalization* loc = g_pLocalization;
     if (loc->m_LookupTable == 0)
     {
-        return LocalizationTableNotFound;
+        loc = (nlLocalization*)LocalizationTableNotFound;
     }
-
-    nlLocalization::StringLookup* entry = nlBSearch<nlLocalization::StringLookup, unsigned long>(key, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
-    if (entry)
+    else
     {
-        return loc->m_FirstString + entry->StringOffset;
+        nlLocalization::StringLookup* entry = nlBSearch<nlLocalization::StringLookup, unsigned long>(key, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
+        if (entry != 0)
+        {
+            loc = (nlLocalization*)(loc->m_FirstString + entry->StringOffset);
+        }
+        else
+        {
+            loc = (nlLocalization*)MissingLocString;
+        }
     }
 
-    return MissingLocString;
+    return (const unsigned short*)loc;
 }
 
 void WinnerOverlay::SceneCreated()

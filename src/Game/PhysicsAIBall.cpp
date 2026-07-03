@@ -2,6 +2,7 @@
 #include "Game/AI/AiUtil.h"
 #include "Game/AI/Fielder.h"
 #include "Game/Ball.h"
+#include "Game/CharacterTemplate.h"
 #include "Game/Field.h"
 #include "Game/FixedUpdateTask.h"
 #include "Game/Goalie.h"
@@ -142,7 +143,7 @@ static inline bool DidBallJustEnterNetWithPhysicsBall(PhysicsAIBall* pPhysicsBal
 
 /**
  * Offset/Address/Size: 0x0 | 0x80133C58 | size: 0x310
- * TODO: 99.64% match - velY/normalY register swap in reflection math and velocitySq compare register differ
+ * TODO: 99.69% match - velY/normalY register swap in reflection math and velocitySq compare register differ
  */
 void PhysicsAIBall::CheckIfBallWentThroughGoalPost()
 {
@@ -218,7 +219,7 @@ void PhysicsAIBall::CheckIfBallWentThroughGoalPost()
                 }
                 else
                 {
-                    v3ExitVel.f.x = v3ExitVel.f.x + 0.3f;
+                    v3ExitVel.f.x += 0.3f;
                 }
 
                 float physicsTick = FixedUpdateTask::GetPhysicsUpdateTick();
@@ -254,21 +255,10 @@ void PhysicsAIBall::CheckIfBallWentThroughGoalPost()
 
 /**
  * Offset/Address/Size: 0x534 | 0x80133F68 | size: 0x460
- * TODO: 99.42% match - f5/f6 negRadius register swap cascades to ~20 reg diffs; likely context/MWCC quirk
  */
 void PhysicsAIBall::CheckIfBallWentThroughGoalie()
 {
-    extern cCharacter* g_pCharacters[10];
-    extern void* __vt__9EventData[];
-    extern void* __vt__23CollisionPlayerBallData[];
-
-    struct PhysicsAIBallOffsetView
-    {
-        u8 pad[0x5A];
-        u8 unk_0x5A;
-    };
-
-    if (((PhysicsAIBallOffsetView*)this)->unk_0x5A != 0)
+    if (m_unk_0x5A != 0)
     {
         return;
     }
@@ -287,131 +277,135 @@ void PhysicsAIBall::CheckIfBallWentThroughGoalie()
         pGoalie = (Goalie*)g_pCharacters[9];
     }
 
-    if (pGoalie->m_pBall == NULL && pGoalie->m_tNoPickupTimer.m_uPackedTime == 0)
+    if (pGoalie->m_pBall != NULL)
     {
-        nlVector3 ballPosition = { 0.0f, 0.0f, 0.0f };
-        nlVector3 contactNormal = { 0.0f, 0.0f, 0.0f };
-        bool contact = false;
+        return;
+    }
 
-        if ((s32)m_unk_0x50 > 3)
+    if (pGoalie->m_tNoPickupTimer.m_uPackedTime != 0)
+    {
+        return;
+    }
+
+    nlVector3 ballPosition = { 0.0f, 0.0f, 0.0f };
+    nlVector3 contactNormal = { 0.0f, 0.0f, 0.0f };
+    bool contact = false;
+
+    if ((s32)m_unk_0x50 > 3)
+    {
+        float radius = GetRadius();
+        contact = pGoalie->GetPhysicsGoalie()->SweepTestForBallContact(oldPosition, newPosition, GetLinearVelocity(), radius, ballPosition, contactNormal);
+    }
+
+    if (contact)
+    {
+        SetPosition(ballPosition, PhysicsObject::WORLD_COORDINATES);
+
+        dContact contactInfo;
+        SetContactInfo(&contactInfo, pGoalie->m_pPhysicsCharacter, true);
+
+        contactInfo.geom.normal[0] = contactNormal.f.x;
+        contactInfo.geom.normal[1] = contactNormal.f.y;
+        contactInfo.geom.normal[2] = contactNormal.f.z;
+        contactInfo.geom.g1 = m_geomID;
+        contactInfo.geom.g2 = NULL;
+
+        nlVector3 contactPos;
+        nlVec3ScaleAdd(contactPos, -GetRadius(), contactNormal, ballPosition);
+
+        contactInfo.geom.pos[1] = contactPos.f.y;
+        contactInfo.geom.pos[2] = contactPos.f.z;
+        contactInfo.geom.pos[0] = contactPos.f.x;
+        contactInfo.geom.depth = 0.0f;
+
+        if (!pGoalie->PreCollideWithBallCallback(contactInfo))
         {
-            float radius = GetRadius();
-            contact = pGoalie->GetPhysicsGoalie()->SweepTestForBallContact(oldPosition, newPosition, GetLinearVelocity(), radius, ballPosition, contactNormal);
+            return;
         }
 
-        if (contact)
+        FakeBallWorld::InvalidateBallCache();
+        m_bUseMagnusEffect = false;
+
+        nlVector3 v3Vel;
+        GetLinearVelocity(&v3Vel);
+
+        Event* event = g_pEventManager->CreateValidEvent(0x27, 0x30);
+        CollisionPlayerBallData* pEventData = new (&event->m_data) CollisionPlayerBallData();
+
+        m_pAIBall->ClearBallBlur();
+
+        CollisionPlayerBallData* pCollisionData = (CollisionPlayerBallData*)pEventData;
+        pCollisionData->pPlayer = pGoalie;
+        pCollisionData->pBall = m_pAIBall;
+        pCollisionData->velocity = v3Vel;
+        pCollisionData->boneID = 0;
+        m_unk_0x50 = 0;
+
+        const float normalY = contactNormal.f.y;
+        const float normalX = contactNormal.f.x;
+        float normalZ;
+        const float velX = v3Vel.f.x;
+        const float velY = v3Vel.f.y;
+        const float velZ = v3Vel.f.z;
+        const float normalYSq = normalY * normalY;
+        const float velYNormalY = velY * normalY;
+        const float normalLenXY = (normalX * normalX) + normalYSq;
+        normalZ = contactNormal.f.z;
+        const float dotXY = (velX * normalX) + velYNormalY;
+        const float normalLengthSq = (normalZ * normalZ) + normalLenXY;
+        const float velDotNormal = (velZ * normalZ) + dotXY;
+        const float reflectScale = velDotNormal / normalLengthSq;
+
+        nlVector3 v3ExitVel;
+        v3ExitVel.f.x = (-2.0f * (reflectScale * normalX)) + velX;
+        v3ExitVel.f.y = (-2.0f * (reflectScale * normalY)) + velY;
+        v3ExitVel.f.z = (-2.0f * (reflectScale * normalZ)) + velZ;
+
+        SaveData* pSaveData = pGoalie->mpSaveData;
+        if (pSaveData != NULL && (pSaveData->muSaveType & 0x38) != 0)
         {
-            SetPosition(ballPosition, PhysicsObject::WORLD_COORDINATES);
+            nlVector3 v3DeflectFudge;
+            RotateVectorZAxis(v3DeflectFudge, v3ExitVel, (u16)-pGoalie->m_aActualFacingDirection);
 
-            dContact contactInfo;
-            SetContactInfo(&contactInfo, pGoalie->m_pPhysicsCharacter, true);
+            float exitSpeed = nlSqrt(
+                (v3ExitVel.f.x * v3ExitVel.f.x) + (v3ExitVel.f.y * v3ExitVel.f.y) + (v3ExitVel.f.z * v3ExitVel.f.z),
+                true);
 
-            contactInfo.geom.normal[0] = contactNormal.f.x;
-            contactInfo.geom.normal[1] = contactNormal.f.y;
-            contactInfo.geom.normal[2] = contactNormal.f.z;
-            contactInfo.geom.g1 = m_geomID;
-            contactInfo.geom.g2 = NULL;
+            v3DeflectFudge.f.x += 0.5f;
 
-            nlVector3 contactPos;
-            nlVec3ScaleAdd(contactPos, -GetRadius(), contactNormal, ballPosition);
+            float saveY = pSaveData->mv3SavePos.f.y;
+            v3DeflectFudge.f.y = saveY;
 
-            contactInfo.geom.pos[1] = contactPos.f.y;
-            contactInfo.geom.pos[2] = contactPos.f.z;
-            contactInfo.geom.pos[0] = contactPos.f.x;
-            contactInfo.geom.depth = 0.0f;
-
-            if (!pGoalie->PreCollideWithBallCallback(contactInfo))
+            if (saveY > 0.0f)
             {
-                return;
+                v3DeflectFudge.f.y += 2.0f;
+            }
+            else
+            {
+                v3DeflectFudge.f.y -= 2.0f;
             }
 
-            FakeBallWorld::InvalidateBallCache();
-            m_bUseMagnusEffect = false;
+            v3DeflectFudge.f.z = 0.5f + pSaveData->mv3SavePos.f.z;
+            v3DeflectFudge.f.y = v3DeflectFudge.f.y * (exitSpeed * (0.2f + nlRandomf(0.1f, &nlDefaultSeed)));
+            v3DeflectFudge.f.z = v3DeflectFudge.f.z * (exitSpeed * (0.15f + nlRandomf(0.05f, &nlDefaultSeed)));
 
-            nlVector3 v3Vel;
-            GetLinearVelocity(&v3Vel);
+            RotateVectorZAxis(v3DeflectFudge, v3DeflectFudge, pGoalie->m_aActualFacingDirection);
 
-            CollisionPlayerBallData* pEventData = (CollisionPlayerBallData*)((u8*)g_pEventManager->CreateValidEvent(0x27, 0x30) + 0x10);
-            if (pEventData != NULL)
-            {
-                *(void**)pEventData = __vt__9EventData;
-                *(void**)pEventData = __vt__23CollisionPlayerBallData;
-            }
-
-            m_pAIBall->ClearBallBlur();
-
-            CollisionPlayerBallData* pCollisionData = (CollisionPlayerBallData*)pEventData;
-            pCollisionData->pPlayer = pGoalie;
-            pCollisionData->pBall = m_pAIBall;
-            pCollisionData->velocity = v3Vel;
-            pCollisionData->boneID = 0;
-            m_unk_0x50 = 0;
-
-            const float normalY = contactNormal.f.y;
-            const float velY = v3Vel.f.y;
-            const float normalYSq = normalY * normalY;
-            const float normalX = contactNormal.f.x;
-            const float velYNormalY = velY * normalY;
-            const float velX = v3Vel.f.x;
-            const float velZ = v3Vel.f.z;
-            const float normalLenXY = (normalX * normalX) + normalYSq;
-            const float normalZ = contactNormal.f.z;
-            const float dotXY = (velX * normalX) + velYNormalY;
-            const float normalLengthSq = (normalZ * normalZ) + normalLenXY;
-            const float velDotNormal = (velZ * normalZ) + dotXY;
-            const float reflectScale = velDotNormal / normalLengthSq;
-
-            nlVector3 v3ExitVel;
-            v3ExitVel.f.x = (-2.0f * (reflectScale * normalX)) + velX;
-            v3ExitVel.f.y = (-2.0f * (reflectScale * normalY)) + velY;
-            v3ExitVel.f.z = (-2.0f * (reflectScale * normalZ)) + velZ;
-
-            SaveData* pSaveData = pGoalie->mpSaveData;
-            if (pSaveData != NULL && (pSaveData->muSaveType & 0x38) != 0)
-            {
-                nlVector3 v3DeflectFudge;
-                RotateVectorZAxis(v3DeflectFudge, v3ExitVel, (u16)-pGoalie->m_aActualFacingDirection);
-
-                float exitSpeed = nlSqrt(
-                    (v3ExitVel.f.x * v3ExitVel.f.x) + (v3ExitVel.f.y * v3ExitVel.f.y) + (v3ExitVel.f.z * v3ExitVel.f.z),
-                    true);
-
-                v3DeflectFudge.f.x += 0.5f;
-
-                float saveY = pSaveData->mv3SavePos.f.y;
-                v3DeflectFudge.f.y = saveY;
-
-                if (saveY > 0.0f)
-                {
-                    v3DeflectFudge.f.y += 2.0f;
-                }
-                else
-                {
-                    v3DeflectFudge.f.y -= 2.0f;
-                }
-
-                v3DeflectFudge.f.z = 0.5f + pSaveData->mv3SavePos.f.z;
-                v3DeflectFudge.f.y = v3DeflectFudge.f.y * (exitSpeed * (0.2f + nlRandomf(0.1f, &nlDefaultSeed)));
-                v3DeflectFudge.f.z = v3DeflectFudge.f.z * (exitSpeed * (0.15f + nlRandomf(0.05f, &nlDefaultSeed)));
-
-                RotateVectorZAxis(v3DeflectFudge, v3DeflectFudge, pGoalie->m_aActualFacingDirection);
-
-                float zero = 0.0f;
-                float one = 1.0f;
-                v3ExitVel.f.x = (zero * v3ExitVel.f.x) + (one * v3DeflectFudge.f.x);
-                v3ExitVel.f.y = (zero * v3ExitVel.f.y) + (one * v3DeflectFudge.f.y);
-                v3ExitVel.f.z = (zero * v3ExitVel.f.z) + (one * v3DeflectFudge.f.z);
-            }
-
-            float scale = 0.175f;
-            v3ExitVel.f.z = scale * v3ExitVel.f.z;
-            float scaledY = scale * v3ExitVel.f.y;
-            float scaledX = scale * v3ExitVel.f.x;
-            v3ExitVel.f.x = scaledX;
-            v3ExitVel.f.y = scaledY;
-
-            SetLinearVelocity(v3ExitVel);
+            float zero = 0.0f;
+            float one = 1.0f;
+            v3ExitVel.f.x = (zero * v3ExitVel.f.x) + (one * v3DeflectFudge.f.x);
+            v3ExitVel.f.y = (zero * v3ExitVel.f.y) + (one * v3DeflectFudge.f.y);
+            v3ExitVel.f.z = (zero * v3ExitVel.f.z) + (one * v3DeflectFudge.f.z);
         }
+
+        float scale = 0.175f;
+        v3ExitVel.f.z = scale * v3ExitVel.f.z;
+        float scaledY = scale * v3ExitVel.f.y;
+        float scaledX = scale * v3ExitVel.f.x;
+        v3ExitVel.f.x = scaledX;
+        v3ExitVel.f.y = scaledY;
+
+        SetLinearVelocity(v3ExitVel);
     }
 
     m_unk_0x50 += 1;
@@ -530,7 +524,7 @@ void PhysicsAIBall::PostUpdate()
 
     const nlVector3& v3Vel = GetLinearVelocity();
     const float velocitySq = (v3Vel.f.x * v3Vel.f.x) + (v3Vel.f.y * v3Vel.f.y) + (v3Vel.f.z * v3Vel.f.z);
-    bool& bSpeedBelowThreshold = *(bool*)((u8*)this + 0x5A);
+    bool& bSpeedBelowThreshold = m_unk_0x5A;
     bSpeedBelowThreshold = velocitySq < (sfBallGoalieSweepTestVelocityThreshold * sfBallGoalieSweepTestVelocityThreshold);
 }
 
@@ -578,7 +572,7 @@ ContactType PhysicsAIBall::Contact(PhysicsObject* obj, dContact* info, int numCo
 
             if (pFielder->m_eClassType == 3)
             {
-                if (*(u8*)((u8*)this + 0x5A) == 0)
+                if (m_unk_0x5A == 0)
                 {
                     return NO_CONTACT;
                 }
@@ -653,14 +647,12 @@ ContactType PhysicsAIBall::Contact(PhysicsObject* obj, dContact* info, int numCo
             GetPosition(&ballPosition);
             radius = GetRadius();
 
-            f64 absX = fabs(ballPosition.f.x);
-            float goalLineX = cField::GetGoalLineX(1u);
-
-            if ((float)absX > goalLineX - 2.0f * radius)
+            if ((float)fabs(ballPosition.f.x) > cField::GetGoalLineX(1u) - 2.0f * radius)
             {
-                if ((float)fabs(ballPosition.f.y) < 0.5f * cNet::m_fNetWidth - radius)
+                if ((float)fabs(ballPosition.f.y) < cNet::m_fNetWidth / 2.0f - radius)
                 {
-                    if ((float)fabs(ballPosition.f.z) < cNet::m_fNetHeight - radius)
+                    float netHeight = cNet::m_fNetHeight;
+                    if ((float)fabs(ballPosition.f.z) < netHeight - radius)
                     {
                         return NO_CONTACT;
                     }

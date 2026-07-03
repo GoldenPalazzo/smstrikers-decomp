@@ -3977,7 +3977,6 @@ void cFielder::InitActionSlideAttack(cFielder* pTarget, float fTime)
 
 /**
  * Offset/Address/Size: 0xE2C | 0x80027964 | size: 0x59C
- * TODO: 99.86% match - star slide float constant labels differ.
  */
 void cFielder::ActionSlideAttack(float fDeltaTime)
 {
@@ -4037,10 +4036,7 @@ void cFielder::ActionSlideAttack(float fDeltaTime)
     {
         if (pBall->m_tNoPickupTimer.m_uPackedTime == 0 || pBall->m_pPrevOwner == NULL || pBall->m_pPrevOwner->m_eClassType != GOALIE)
         {
-            nlVector3& jointPos = GetJointPosition(m_nBallJointIndex);
-            nlVector3& prevJointPos = GetPrevJointPosition(m_nBallJointIndex);
-
-            mActionSlideAttackVars.bAttackSucceeded = TestCollision(0.05f, prevJointPos, jointPos, 0.18f, pBall->m_v3PrevPosition, pBall->m_v3Position);
+            mActionSlideAttackVars.bAttackSucceeded = TestCollision(0.05f, GetPrevJointPosition(m_nBallJointIndex), GetJointPosition(m_nBallJointIndex), 0.18f, pBall->m_v3PrevPosition, pBall->m_v3Position);
             if (mActionSlideAttackVars.bAttackSucceeded)
             {
                 cPlayer* pPrevOwner = g_pBall->m_pPrevOwner;

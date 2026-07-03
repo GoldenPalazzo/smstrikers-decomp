@@ -812,7 +812,7 @@ void GoalOverlay::SetHighlightNumber(int highlightNumber)
 
 /**
  * Offset/Address/Size: 0xDA4 | 0x80100E14 | size: 0x7EC
- * TODO: 99.07% match - remaining gameInfo/winner saved-register swaps and Format stack-slot shifts.
+ * TODO: 99.10% match - remaining gameInfo/winner saved-register swaps.
  */
 void GoalOverlay::DoMatchEndOverlay()
 {
@@ -860,10 +860,8 @@ void GoalOverlay::DoMatchEndOverlay()
     {
         BasicString<unsigned short, Detail::TempStringAllocator> unformatted(LookupLocHash(0x736E7F17));
         eTrophyType cup = nlSingleton<GameInfoManager>::s_pInstance->GetTrophyTypeByCurrentMode();
-        const unsigned short* winnerLocString = LookupLocHash(GetLOCTeamName(winner));
-        const unsigned short* trophyLocString = LookupLocHash(GetLOCTrophyName(cup));
 
-        formatted = Format(unformatted, winnerLocString, trophyLocString);
+        formatted = Format(unformatted, LookupLocHash(GetLOCTeamName(winner)), LookupLocHash(GetLOCTrophyName(cup)));
     }
     else
     {
@@ -892,10 +890,8 @@ void GoalOverlay::DoMatchEndOverlay()
         }
 
         BasicString<unsigned short, Detail::TempStringAllocator> unformatted(LookupLocHash(0x09B4BC7C));
-        const unsigned short* winnerLocString = LookupLocHash(GetLOCCharacterName((eTeamID)winnerID, true, false));
-        const unsigned short* loserLocString = LookupLocHash(GetLOCCharacterName((eTeamID)loserID, true, false));
 
-        formatted = Format(unformatted, winnerLocString, loserLocString);
+        formatted = Format(unformatted, LookupLocHash(GetLOCCharacterName((eTeamID)winnerID, true, false)), LookupLocHash(GetLOCCharacterName((eTeamID)loserID, true, false)));
     }
 
     TLTextInstance* pText = FEFinder<TLTextInstance, 3>::Find<FEPresentation>(

@@ -86,8 +86,8 @@ NLFormatImpl& NLFormatImpl::operator% <const char*>(const char* const& t)
 
 /**
  * Offset/Address/Size: 0x1038 | 0x80187BD4 | size: 0xD74
- * TODO: 97.45% match - remaining diffs are add operand order, insert end
- * null-check branches, and r26/r27 allocation in insert/copy paths.
+ * TODO: 99.37% match - remaining diffs are marker add operand order and
+ * r27/r28/r29 allocation in erase/insert copy paths.
  */
 template <>
 NLFormatImpl& NLFormatImpl::operator% <float>(const float& t)
@@ -113,11 +113,29 @@ NLFormatImpl& NLFormatImpl::operator% <float>(const float& t)
         if (markerEnd[2] != (char)'}')
             continue;
 
-        mString.erase(&mString[0] + i, &mString[0] + i + 3);
+        char* eraseBegin;
+        char* eraseEnd;
+        mString[0];
+        eraseEnd = (mString.m_data ? mString.m_data->mData : (char*)0) + i + 3;
+        mString[0];
+        eraseBegin = (mString.m_data ? mString.m_data->mData : (char*)0) + i;
+        mString[0];
+        BasicStringData<char>* eraseData = mString.m_data;
+        int eraseSize = eraseEnd - eraseBegin;
+        int eraseOffset = eraseBegin - eraseData->mData;
+        char* eraseAt = eraseData->mData + eraseOffset;
+        while (eraseEnd != eraseData->mData + eraseData->mSize)
+        {
+            *eraseAt = *eraseEnd;
+            eraseEnd++;
+            eraseAt++;
+        }
+        eraseData->mSize -= eraseSize;
         mString[i];
         char* mStringData = mString.m_data ? mString.m_data->mData : 0;
-        char* insertBegin = &insert[0];
-        char* insertEndCow = &insert[(int)(insert.m_data ? insert.m_data->mSize - 1 : 0)];
+        insert[0];
+        char* insertBegin = insert.m_data ? insert.m_data->mData : 0;
+        insert[(int)(insert.m_data ? insert.m_data->mSize - 1 : 0)];
         mString.insert(mStringData + i, insertBegin, insert.m_data ? insert.m_data->mData + insert.m_data->mSize - 1 : (char*)0);
     }
 

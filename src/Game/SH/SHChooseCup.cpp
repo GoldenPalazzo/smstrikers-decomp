@@ -738,30 +738,30 @@ void ChooseCupSceneV2::Update(float fDeltaT)
             mTicker->ApplyNewTextInstancePointer(scrollText, 8000.0f, 100.0f);
 
             mTicker->Update(fDeltaT);
+
+            findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
+
+            y0 = 0;
+            h1 = 0;
+            y2 = 0;
+            h3 = 0;
+            y4 = 0;
+            h5 = 0;
+            y6 = 0;
+            h7 = 0;
+
+            hash = nlStringLowerHash("star rotation");
+            y8 = hash;
+            y9 = hash;
+
+            hash = nlStringLowerHash("Layer");
+            yA = hash;
+            yB = hash;
+
+            starComp = findComp.byRef(presentation->m_currentSlide, (InlineHasher&)yA, (InlineHasher&)y9, (InlineHasher&)h7, (InlineHasher&)h5, (InlineHasher&)h3, (InlineHasher&)h1);
+
+            starComp->Update(starTime);
         }
-
-        findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
-
-        y0 = 0;
-        h1 = 0;
-        y2 = 0;
-        h3 = 0;
-        y4 = 0;
-        h5 = 0;
-        y6 = 0;
-        h7 = 0;
-
-        hash = nlStringLowerHash("star rotation");
-        y8 = hash;
-        y9 = hash;
-
-        hash = nlStringLowerHash("Layer");
-        yA = hash;
-        yB = hash;
-
-        starComp = findComp.byRef(presentation->m_currentSlide, (InlineHasher&)yA, (InlineHasher&)y9, (InlineHasher&)h7, (InlineHasher&)h5, (InlineHasher&)h3, (InlineHasher&)h1);
-
-        starComp->Update(starTime);
 
         return;
     }
@@ -839,30 +839,30 @@ void ChooseCupSceneV2::Update(float fDeltaT)
             mTicker->ApplyNewTextInstancePointer(scrollText, 8000.0f, 100.0f);
 
             mTicker->Update(fDeltaT);
+
+            findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
+
+            x0 = 0;
+            h1 = 0;
+            x2 = 0;
+            h3 = 0;
+            x4 = 0;
+            h5 = 0;
+            x6 = 0;
+            h7 = 0;
+
+            hash = nlStringLowerHash("star rotation");
+            x8 = hash;
+            x9 = hash;
+
+            hash = nlStringLowerHash("Layer");
+            xA = hash;
+            xB = hash;
+
+            starComp = findComp.byRef(presentation->m_currentSlide, (InlineHasher&)xA, (InlineHasher&)x9, (InlineHasher&)h7, (InlineHasher&)h5, (InlineHasher&)h3, (InlineHasher&)h1);
+
+            starComp->Update(starTime);
         }
-
-        findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
-
-        x0 = 0;
-        h1 = 0;
-        x2 = 0;
-        h3 = 0;
-        x4 = 0;
-        h5 = 0;
-        x6 = 0;
-        h7 = 0;
-
-        hash = nlStringLowerHash("star rotation");
-        x8 = hash;
-        x9 = hash;
-
-        hash = nlStringLowerHash("Layer");
-        xA = hash;
-        xB = hash;
-
-        starComp = findComp.byRef(presentation->m_currentSlide, (InlineHasher&)xA, (InlineHasher&)x9, (InlineHasher&)h7, (InlineHasher&)h5, (InlineHasher&)h3, (InlineHasher&)h1);
-
-        starComp->Update(starTime);
     }
 }
 
@@ -1142,6 +1142,14 @@ static inline bool ProceedCupMode(bool isSuperCup)
     return isSuperCup;
 }
 
+static inline void SetupStartNewCupBackCallback(FEPopupMenu* menu)
+{
+    Function<FnVoidVoid> back;
+    back.mTag = FREE_FUNCTION;
+    back.mFreeFunction = FEPopupMenu::Nothing;
+    menu->SetBackButtonCallback(back);
+}
+
 /**
  * Offset/Address/Size: 0x0 | 0x800DA284 | size: 0x438
  * TODO: 99.00% match - popup callback Bind temporaries still use different
@@ -1229,16 +1237,17 @@ void ChooseCupSceneV2::Proceed()
         FEPopupMenu* menu = (FEPopupMenu*)nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
 
         {
-            BindExp1_vfb bindContinue = Bind<void, void (*)(bool), bool>(continueCup, mIsSuperCup);
-
+            BindExp1_vfb bindContinue;
+            BindExp1_vfb bindNew;
             Function<FnVoidVoid> yes;
+            Function<FnVoidVoid> no;
+
+            bindContinue = Bind<void, void (*)(bool), bool>(continueCup, mIsSuperCup);
             yes.mTag = FUNCTOR;
             FunctorImpl_vfb* yesFunctor = new ((FunctorImpl_vfb*)nlMalloc(sizeof(FunctorImpl_vfb), 8, false)) FunctorImpl_vfb(bindContinue);
             yes.mFunctor = yesFunctor;
 
-            Function<FnVoidVoid> no;
-            BindExp1_vfb bindNew = Bind<void, void (*)(bool), bool>(startNewCup, mIsSuperCup);
-
+            bindNew = Bind<void, void (*)(bool), bool>(startNewCup, mIsSuperCup);
             no.mTag = FUNCTOR;
             FunctorImpl_vfb* noFunctor = new ((FunctorImpl_vfb*)nlMalloc(sizeof(FunctorImpl_vfb), 8, false)) FunctorImpl_vfb(bindNew);
             no.mFunctor = noFunctor;
@@ -1246,12 +1255,7 @@ void ChooseCupSceneV2::Proceed()
             menu->Create(POPUP_START_NEW_CUP, yes, no);
         }
 
-        {
-            Function<FnVoidVoid> back;
-            back.mTag = FREE_FUNCTION;
-            back.mFreeFunction = FEPopupMenu::Nothing;
-            menu->SetBackButtonCallback(back);
-        }
+        SetupStartNewCupBackCallback(menu);
 
         findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
 

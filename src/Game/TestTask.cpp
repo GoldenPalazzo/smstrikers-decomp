@@ -1,3 +1,4 @@
+#define BASICSTRING_INLINE_ERASE
 #pragma pool_data off
 
 #include "Game/TestTask.h"
@@ -25,10 +26,9 @@ void TestTask_stub()
 namespace
 {
 const char* testLog = "test.log";
-}
-
 static const char* smokeTestSuccessOutput = "smoke_test.success";
 static const char* frameRateTestSuccessOutput = "frame_rate.success";
+} // namespace
 
 /**
  * Offset/Address/Size: 0xB4C | 0x8016D448 | size: 0x44
@@ -83,126 +83,52 @@ void TestTask::Run(float dt)
     }
 }
 
+static inline void CreateSuccessFile(const char* filename)
+{
+    void* file = nlOpenFileDebug(filename, false, false);
+    if (file)
+    {
+        nlWriteLineDebug(file, filename, false);
+        nlFlushFileDebug(file);
+        nlCloseFileDebug(file);
+    }
+}
+
+static inline void WriteToTestLog(TestTask* self, const char* msg)
+{
+    if (self->mTestLog)
+    {
+        nlWriteLineDebug(self->mTestLog, msg, false);
+        nlWriteLineDebug(self->mTestLog, "\n", false);
+        nlFlushFileDebug(self->mTestLog);
+    }
+}
+
 /**
  * Offset/Address/Size: 0x424 | 0x8016CD20 | size: 0x2CC
- * TODO: 98.55% match - remaining diff is a r29/r31 register swap
- * (this-pointer held in r31 vs target r29; text string in r29 vs r31).
+ * TODO: 98.49% match - this-pointer vs string-cursor callee-saved swap
+ * (this held in r31 vs target r29; text/filename cursors in r29 vs target r31).
  */
-static inline void RunSmokeTestBody(TestTask* self)
+void TestTask::RunSmokeTest(float)
 {
-    if (self->mRunSmokeTest)
+    if (mRunSmokeTest)
     {
-        if (self->mTestTimeOut <= 0.0f)
+        if (mTestTimeOut <= 0.0f)
         {
-            const char* text = smokeTestSuccessOutput;
-            void* debugFile = nlOpenFileDebug(text, false, false);
-            if (debugFile)
-            {
-                nlWriteLineDebug(debugFile, text, false);
-                nlFlushFileDebug(debugFile);
-                nlCloseFileDebug(debugFile);
-            }
-
-            BasicStringInternal* data = (BasicStringInternal*)nlMalloc(0x10, 8, true);
-            if (data)
-            {
-                text = "SUCCESS: smoke test successful, didn't crash for {0} seconds";
-                data->mData = 0;
-                data->mSize = 0;
-                data->mCapacity = 0;
-
-                const char* p = text;
-                while (*p++ != '\0')
-                {
-                    data->mSize++;
-                }
-                data->mSize++;
-
-                data->mData = (char*)nlMalloc(data->mSize + 1, 8, true);
-                data->mCapacity = data->mSize;
-
-                for (int i = 0; i < data->mSize; i++)
-                {
-                    data->mData[i] = *text++;
-                }
-                data->mRefCount = 1;
-            }
-
-            BasicStringInternal* formattedData;
-            float configValue;
-            BasicStringInternal* formatData;
-
-            formatData = data;
-            configValue = GetConfigFloat(Config::Global(), "test/time_out_sec ", 10.0f);
-
-            Format(*(BasicString<char, Detail::TempStringAllocator>*)&formattedData,
-                *(BasicString<char, Detail::TempStringAllocator>*)&formatData,
-                configValue);
-
-            const char* logText = ((BasicString<char, Detail::TempStringAllocator>*)&formattedData)->c_str();
-            if (self->mTestLog)
-            {
-                nlWriteLineDebug(self->mTestLog, logText, false);
-                nlWriteLineDebug(self->mTestLog, "\n", false);
-                nlFlushFileDebug(self->mTestLog);
-            }
-
-            BasicStringInternal* toFree = formattedData;
-            if (toFree)
-            {
-                if (--toFree->mRefCount == 0)
-                {
-                    if (toFree)
-                    {
-                        if (toFree)
-                        {
-                            delete[] toFree->mData;
-                        }
-                        if (toFree)
-                        {
-                            nlFree(toFree);
-                        }
-                    }
-                }
-            }
-
-            toFree = formatData;
-            if (toFree)
-            {
-                if (--toFree->mRefCount == 0)
-                {
-                    if (toFree)
-                    {
-                        if (toFree)
-                        {
-                            delete[] toFree->mData;
-                        }
-                        if (toFree)
-                        {
-                            nlFree(toFree);
-                        }
-                    }
-                }
-            }
+            CreateSuccessFile(smokeTestSuccessOutput);
+            NLString fmt("SUCCES: smoke test successful, didn't crash for {0} seconds");
+            WriteToTestLog(this, Format(fmt, GetConfigFloat(Config::Global(), "test/time_out_sec ", 10.0f)).c_str());
         }
     }
 }
 
-void TestTask::RunSmokeTest(float)
-{
-    RunSmokeTestBody(this);
-    FORCE_DONT_INLINE;
-}
-
 /**
  * Offset/Address/Size: 0x0 | 0x8016C8FC | size: 0x424
- * TODO: 97.9% scratch match; remaining diffs are r29/r31 allocation and
- * cleanup branch-shape drift.
+ * TODO: 99.19% match - same this-pointer vs string-cursor register swap as
+ * RunSmokeTest (r29/r31, plus knock-on r30/r29 in the two cleanup blocks).
  */
 void TestTask::RunFrameRateTest(float dt)
 {
-    const char* text;
-
     if (mRunFrameRateTest)
     {
         float frameRateThreshold = 1.0f / mMinimumFrameRate;
@@ -211,175 +137,82 @@ void TestTask::RunFrameRateTest(float dt)
         {
             mFrameRateTestFailure = true;
 
-            BasicStringInternal* data = (BasicStringInternal*)nlMalloc(0x10, 8, true);
-            if (data)
-            {
-                text = "FAILURE: frame rate dropped below {0}, namely {1}";
-                data->mData = 0;
-                data->mSize = 0;
-                data->mCapacity = 0;
-
-                const char* p = text;
-                while (*p++ != '\0')
-                {
-                    data->mSize++;
-                }
-                data->mSize++;
-
-                data->mData = (char*)nlMalloc(data->mSize + 1, 8, true);
-                data->mCapacity = data->mSize;
-
-                for (int i = 0; i < data->mSize; i++)
-                {
-                    data->mData[i] = *text++;
-                }
-                data->mRefCount = 1;
-            }
-
-            BasicStringInternal* formatData = data;
+            NLString fmt("FAILURE: frame rate dropped below {0}, namely {1}");
             float actualFrameRate = 1.0f / dt;
-            BasicStringInternal* formattedData;
-
-            Format(*(BasicString<char, Detail::TempStringAllocator>*)&formattedData,
-                *(BasicString<char, Detail::TempStringAllocator>*)&formatData,
-                mMinimumFrameRate,
-                actualFrameRate);
-
-            const char* logText = ((BasicString<char, Detail::TempStringAllocator>*)&formattedData)->c_str();
-            if (mTestLog)
-            {
-                nlWriteLineDebug(mTestLog, logText, false);
-                nlWriteLineDebug(mTestLog, "\n", false);
-                nlFlushFileDebug(mTestLog);
-            }
-
-            data = formattedData;
-            if (data)
-            {
-                if (--data->mRefCount == 0)
-                {
-                    if (data)
-                    {
-                        if (data)
-                        {
-                            delete[] data->mData;
-                        }
-                        if (data)
-                        {
-                            nlFree(data);
-                        }
-                    }
-                }
-            }
-
-            data = formatData;
-            if (data)
-            {
-                if (--data->mRefCount == 0)
-                {
-                    if (data)
-                    {
-                        if (data)
-                        {
-                            delete[] data->mData;
-                        }
-                        if (data)
-                        {
-                            nlFree(data);
-                        }
-                    }
-                }
-            }
+            WriteToTestLog(this, Format(fmt, mMinimumFrameRate, actualFrameRate).c_str());
         }
 
         if (mTestTimeOut <= 0.0f && !mFrameRateTestFailure)
         {
-            text = frameRateTestSuccessOutput;
-            void* debugFile = nlOpenFileDebug(text, false, false);
-            if (debugFile)
+            const char* filename = frameRateTestSuccessOutput;
+            void* file = nlOpenFileDebug(filename, false, false);
+            if (file)
             {
-                nlWriteLineDebug(debugFile, text, false);
-                nlFlushFileDebug(debugFile);
-                nlCloseFileDebug(debugFile);
+                nlWriteLineDebug(file, filename, false);
+                nlFlushFileDebug(file);
+                nlCloseFileDebug(file);
             }
-
-            BasicStringInternal* data = (BasicStringInternal*)nlMalloc(0x10, 8, true);
-            if (data)
-            {
-                text = "SUCCES: frame rate test successful, never dropped below {0}";
-                data->mData = 0;
-                data->mSize = 0;
-                data->mCapacity = 0;
-
-                const char* p = text;
-                while (*p++ != '\0')
-                {
-                    data->mSize++;
-                }
-                data->mSize++;
-
-                data->mData = (char*)nlMalloc(data->mSize + 1, 8, true);
-                data->mCapacity = data->mSize;
-
-                for (int i = 0; i < data->mSize; i++)
-                {
-                    data->mData[i] = *text++;
-                }
-                data->mRefCount = 1;
-            }
-
-            BasicStringInternal* formatData = data;
-            BasicStringInternal* formattedData;
-
-            Format(*(BasicString<char, Detail::TempStringAllocator>*)&formattedData,
-                *(BasicString<char, Detail::TempStringAllocator>*)&formatData,
-                mMinimumFrameRate);
-
-            const char* logText = ((BasicString<char, Detail::TempStringAllocator>*)&formattedData)->c_str();
-            if (mTestLog)
-            {
-                nlWriteLineDebug(mTestLog, logText, false);
-                nlWriteLineDebug(mTestLog, "\n", false);
-                nlFlushFileDebug(mTestLog);
-            }
-
-            data = formattedData;
-            if (data)
-            {
-                if (--data->mRefCount == 0)
-                {
-                    if (data)
-                    {
-                        if (data)
-                        {
-                            delete[] data->mData;
-                        }
-                        if (data)
-                        {
-                            nlFree(data);
-                        }
-                    }
-                }
-            }
-
-            data = formatData;
-            if (data)
-            {
-                if (--data->mRefCount == 0)
-                {
-                    if (data)
-                    {
-                        if (data)
-                        {
-                            delete[] data->mData;
-                        }
-                        if (data)
-                        {
-                            nlFree(data);
-                        }
-                    }
-                }
-            }
+            WriteToTestLog(this, Format(NLString("SUCCES: frame rate test successful, never dropped below {0}"), mMinimumFrameRate).c_str());
         }
     }
+}
+
+typedef FormatImpl<NLString> NLFormatImpl;
+
+static inline void EraseRange(NLString& s, const char* begin, const char* end)
+{
+    s[0];
+    BasicStringData<char>* data = s.m_data;
+    int size = end - begin;
+    int offset = begin - data->mData;
+    char* at = data->mData + offset;
+    while (end != data->mData + data->mSize)
+    {
+        *at = *end;
+        end++;
+        at++;
+    }
+    data->mSize -= size;
+}
+
+/**
+ * Offset/Address/Size: 0xCC0 | 0x8016D5BC | size: 0xD74
+ * TODO: 99.59% match - copy-on-write temp register swap (r26 vs r27) in the
+ * insert path and marker add operand order.
+ */
+template <>
+NLFormatImpl& NLFormatImpl::operator% <float>(const float& t)
+{
+    NLString insert = LexicalCast<NLString, float>(t);
+
+    for (int i = 0; i < (mString.m_data ? mString.m_data->mSize - 1 : 0); i++)
+    {
+        if (mString[i] != (char)'{')
+            continue;
+
+        if (i + 1 >= (mString.m_data ? mString.m_data->mSize - 1 : 0))
+            continue;
+
+        char* marker = &mString[i];
+        if (mCurrentPos != marker[1] - '0')
+            continue;
+
+        if (i + 2 >= (mString.m_data ? mString.m_data->mSize - 1 : 0))
+            continue;
+
+        char* markerEnd = &mString[i];
+        if (markerEnd[2] != (char)'}')
+            continue;
+
+        mString[0];
+        EraseRange(mString, ((void)mString[0], (mString.m_data ? mString.m_data->mData : (char*)0) + i), (mString.m_data ? mString.m_data->mData : (char*)0) + i + 3);
+        mString[i];
+        char* mStringData = mString.m_data ? mString.m_data->mData : 0;
+        char* insertBegin = ((void)insert[0], insert.m_data ? insert.m_data->mData : 0);
+        insert[(int)(insert.m_data ? insert.m_data->mSize - 1 : 0)];
+        mString.insert(mStringData + i, insertBegin, insert.m_data ? insert.m_data->mData + insert.m_data->mSize - 1 : (char*)0);
+    }
+
+    mCurrentPos++;
+    return *this;
 }

@@ -1,5 +1,6 @@
 #define NL_AVLTREE_DECLARE_ONLY
 #define NL_AVLTREEBASE_DECLARE_ONLY
+#define NLDLRING_FORCE_DONT_INLINE
 #include "Game/World.h"
 #include "Game/LightObject.h"
 
@@ -2178,16 +2179,16 @@ World::~World()
         DrEntry* topNode = ((DrEntry**)pStack[0])[pStack[1] - 1];
         delete topNode->value;
         pStack[1]--;
-        DrEntry* pRight = (DrEntry*)((DrEntry**)pStack[0])[pStack[1]]->node.right;
+        AVLTreeNode* pRight = ((DrEntry**)pStack[0])[pStack[1]]->node.right;
         if (pRight != NULL)
         {
-            while (pRight->node.left != NULL)
+            while (pRight->left != NULL)
             {
-                ((DrEntry**)pStack[0])[pStack[1]] = pRight;
+                ((DrEntry**)pStack[0])[pStack[1]] = (DrEntry*)pRight;
                 pStack[1]++;
-                pRight = (DrEntry*)pRight->node.left;
+                pRight = pRight->left;
             }
-            ((DrEntry**)pStack[0])[pStack[1]] = pRight;
+            ((DrEntry**)pStack[0])[pStack[1]] = (DrEntry*)pRight;
             pStack[1]++;
         }
     }
@@ -2222,16 +2223,16 @@ World::~World()
         LiEntry* topNode = ((LiEntry**)pStack[0])[pStack[1] - 1];
         delete topNode->value;
         pStack[1]--;
-        LiEntry* pRight = (LiEntry*)((LiEntry**)pStack[0])[pStack[1]]->node.right;
+        AVLTreeNode* pRight = ((LiEntry**)pStack[0])[pStack[1]]->node.right;
         if (pRight != NULL)
         {
-            while (pRight->node.left != NULL)
+            while (pRight->left != NULL)
             {
-                ((LiEntry**)pStack[0])[pStack[1]] = pRight;
+                ((LiEntry**)pStack[0])[pStack[1]] = (LiEntry*)pRight;
                 pStack[1]++;
-                pRight = (LiEntry*)pRight->node.left;
+                pRight = pRight->left;
             }
-            ((LiEntry**)pStack[0])[pStack[1]] = pRight;
+            ((LiEntry**)pStack[0])[pStack[1]] = (LiEntry*)pRight;
             pStack[1]++;
         }
     }
@@ -2280,16 +2281,16 @@ World::~World()
         HeEntry* topNode = ((HeEntry**)pStack[0])[pStack[1] - 1];
         delete topNode->value;
         pStack[1]--;
-        HeEntry* pRight = (HeEntry*)((HeEntry**)pStack[0])[pStack[1]]->node.right;
+        AVLTreeNode* pRight = ((HeEntry**)pStack[0])[pStack[1]]->node.right;
         if (pRight != NULL)
         {
-            while (pRight->node.left != NULL)
+            while (pRight->left != NULL)
             {
-                ((HeEntry**)pStack[0])[pStack[1]] = pRight;
+                ((HeEntry**)pStack[0])[pStack[1]] = (HeEntry*)pRight;
                 pStack[1]++;
-                pRight = (HeEntry*)pRight->node.left;
+                pRight = pRight->left;
             }
-            ((HeEntry**)pStack[0])[pStack[1]] = pRight;
+            ((HeEntry**)pStack[0])[pStack[1]] = (HeEntry*)pRight;
             pStack[1]++;
         }
     }
