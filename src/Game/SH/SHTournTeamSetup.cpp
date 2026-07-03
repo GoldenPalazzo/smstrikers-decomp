@@ -2034,7 +2034,7 @@ void TournTeamSetupSceneV2::UpdateSKName()
 
 static inline void CreateLeagueLineupForTournament(TournTeamSetupSceneV2* scene)
 {
-    GameInfoManager* const pTournamentInfo = nlSingleton<GameInfoManager>::s_pInstance;
+    GameInfoManager* pTournamentInfo = nlSingleton<GameInfoManager>::s_pInstance;
     int numPlayingTeams = pTournamentInfo->GetNumPlayingTeams();
 
     eTeamID lineup[8];
@@ -2052,7 +2052,7 @@ static inline void CreateLeagueLineupForTournament(TournTeamSetupSceneV2* scene)
 
 static inline void CreateKnockoutForTournament(TournTeamSetupSceneV2* scene)
 {
-    GameInfoManager* const pTournamentInfo = nlSingleton<GameInfoManager>::s_pInstance;
+    GameInfoManager* pTournamentInfo = nlSingleton<GameInfoManager>::s_pInstance;
     int numPlayingTeams = pTournamentInfo->GetNumPlayingTeams();
 
     eTeamID lineup[8];
@@ -2070,11 +2070,10 @@ static inline void CreateKnockoutForTournament(TournTeamSetupSceneV2* scene)
 
 /**
  * Offset/Address/Size: 0x15F4 | 0x800E3498 | size: 0x454
- * TODO: 99.62% match - outer GameInfoManager pointer and branch-local lineup helper pointer use r30/r31 opposite target.
  */
 void TournTeamSetupSceneV2::Proceed()
 {
-    GameInfoManager* pGameInfo = nlSingleton<GameInfoManager>::s_pInstance;
+    GameInfoManager* pGameInfo = GameInfoManager::Instance();
     int i = 0;
 
     mTournInfo.m_cup->mHumanTeams = 0;

@@ -1212,6 +1212,18 @@ static inline void* getUserData(void* p)
     return glUserGetData(p);
 }
 
+static inline void AssignFloatColour(nlFloatColour& dst, const nlFloatColour& src)
+{
+    u32 r = *(u32*)&src.c[0];
+    u32 g = *(u32*)&src.c[1];
+    *(u32*)&dst.c[0] = r;
+    *(u32*)&dst.c[1] = g;
+    u32 b = *(u32*)&src.c[2];
+    u32 a = *(u32*)&src.c[3];
+    *(u32*)&dst.c[2] = b;
+    *(u32*)&dst.c[3] = a;
+}
+
 /**
  * Offset/Address/Size: 0x1B7C | 0x80196840 | size: 0x12C
  * TODO: 98.67% match - remaining r29/r31 register swap
@@ -1378,7 +1390,7 @@ void World::CreateLightUserData()
         while (entry != NULL)
         {
             LightObject* pLight = entry->entry;
-            glLight->colour = pLight->m_colour;
+            AssignFloatColour(glLight->colour, pLight->m_colour);
             glLight->worldPosition = pLight->m_worldPosition;
             glLight->intensity = pLight->m_fIntensity;
             if (pLight->m_emitFlags & 0x8)
@@ -1397,7 +1409,7 @@ void World::CreateLightUserData()
         LightObject* pLight2 = pFXBase;
         for (i = numExtra; i > 0; i--)
         {
-            glLight->colour = pLight2->m_colour;
+            AssignFloatColour(glLight->colour, pLight2->m_colour);
             glLight->worldPosition = pLight2->m_worldPosition;
             glLight->intensity = pLight2->m_fIntensity;
             glLight->innerRadius = pLight2->m_fFarAttenuationStart;
@@ -1432,7 +1444,7 @@ void World::CreateLightUserData()
             intensityColour.c[0] = fIntensity;
 
             nlFloatColour copyColour = intensityColour;
-            glLight->colour = copyColour;
+            AssignFloatColour(glLight->colour, copyColour);
             glLight->worldPosition = pLight->m_worldPosition;
             glLight->intensity = pLight->m_fIntensity;
             if (pLight->m_emitFlags & 0x8)
@@ -1451,7 +1463,7 @@ void World::CreateLightUserData()
         LightObject* pLight = pFXBase;
         for (i = numExtra; i > 0; i--)
         {
-            glLight->colour = pLight->m_colour;
+            AssignFloatColour(glLight->colour, pLight->m_colour);
             glLight->worldPosition = pLight->m_worldPosition;
             glLight->intensity = pLight->m_fIntensity;
             glLight->innerRadius = pLight->m_fFarAttenuationStart;
@@ -1485,7 +1497,7 @@ void World::CreateLightUserData()
         while (entry != NULL)
         {
             LightObject* pLight = entry->entry;
-            pSpec->colour = pLight->m_colour;
+            AssignFloatColour(pSpec->colour, pLight->m_colour);
             pSpec->exponent = 64.0f;
             pSpec->intensity = pLight->m_fIntensity;
             float x = origin.f.x - pLight->m_worldPosition.f.x;

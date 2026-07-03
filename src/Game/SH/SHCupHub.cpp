@@ -969,27 +969,27 @@ void CupHubScene::CreateLeague()
     extern char* HUB_ROWS[8];
 
     GameInfoManager* const gameInfo = nlSingleton<GameInfoManager>::s_pInstance;
-    u16 numTeams;
-    GameInfoManager::eGameModes mode;
-    mode = gameInfo->mCurrentMode;
-    numTeams = gameInfo->GetNumPlayingTeams();
+    GameInfoManager::eGameModes mode = gameInfo->mCurrentMode;
+    u16 numTeams = gameInfo->GetNumPlayingTeams();
     FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
     TLTextInstance* pTextInstance;
     TLComponentInstance* pComp;
     TLSlide* pSlide;
+    TLTextInstance* title;
+    int posOffset;
     gameInfo->GetUserSelectedCupTeam();
 
     presentation->SetActiveSlide(nlStringLowerHash(HUB_LEAGUE_SLIDE_NAME));
     UpdateProgressIndicator();
 
-    TLTextInstance* title = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
+    title = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
         presentation->m_currentSlide,
         InlineHasher(nlStringLowerHash(CUP_HUB_LAYER_NAME)),
         InlineHasher(nlStringLowerHash("STANDINGS SCREEN")));
 
     title->m_LocStrId = GetLOCStandingsName(mode);
     numTeams = (u16)numTeams;
-    int posOffset = (8 - numTeams) * 12;
+    posOffset = (8 - numTeams) * 12;
     title->m_OverloadFlags |= 8;
     feVector3 position = title->GetAssetPosition();
     feVector3 rowPosition;
@@ -1003,23 +1003,23 @@ void CupHubScene::CreateLeague()
         title->SetAssetPosition(position.f.x, position.f.y - (float)posOffset, position.f.z);
     }
 
-    TLComponentInstance* ranksComp = FEFinder<TLComponentInstance, 4>::Find<FEPresentation>(
+    pComp = FEFinder<TLComponentInstance, 4>::Find<FEPresentation>(
         presentation,
         InlineHasher(nlStringLowerHash(HUB_LEAGUE_SLIDE_NAME)),
         InlineHasher(nlStringLowerHash(CUP_HUB_LAYER_NAME)),
         InlineHasher(nlStringLowerHash("ranks")));
 
-    rowPosition = ranksComp->GetAssetPosition();
-    ranksComp->SetAssetPosition(rowPosition.f.x, rowPosition.f.y - (float)posOffset, rowPosition.f.z);
+    position = pComp->GetAssetPosition();
+    pComp->SetAssetPosition(position.f.x, position.f.y - (float)posOffset, position.f.z);
 
-    TLComponentInstance* titlesComp = FEFinder<TLComponentInstance, 4>::Find<FEPresentation>(
+    pComp = FEFinder<TLComponentInstance, 4>::Find<FEPresentation>(
         presentation,
         InlineHasher(nlStringLowerHash(HUB_LEAGUE_SLIDE_NAME)),
         InlineHasher(nlStringLowerHash(CUP_HUB_LAYER_NAME)),
         InlineHasher(nlStringLowerHash("titles")));
 
-    rowPosition = titlesComp->GetAssetPosition();
-    titlesComp->SetAssetPosition(rowPosition.f.x, rowPosition.f.y - (float)posOffset, rowPosition.f.z);
+    position = pComp->GetAssetPosition();
+    pComp->SetAssetPosition(position.f.x, position.f.y - (float)posOffset, position.f.z);
 
     nlSingleton<StatsTracker>::s_pInstance->GetSortedTeamStats(mAllTeamStats, numTeams, mStandingsIndices, numTeams);
 
@@ -1030,6 +1030,7 @@ void CupHubScene::CreateLeague()
 
     for (row = 0; row < 8; row++)
     {
+        useHighlight = false;
         pComp = FEFinder<TLComponentInstance, 4>::Find<FEPresentation>(
             presentation,
             InlineHasher(nlStringLowerHash(HUB_LEAGUE_SLIDE_NAME)),
@@ -3738,10 +3739,6 @@ void CupHubScene::UpdateRoundMessage(bool hideMessage)
 
     extern const char* CUP_PROGRESS_NAME;
 
-    static const unsigned short sSpace[] = { ' ', 0 };
-    static const unsigned short sColourOpen[] = { '{', 'c', 'l', 'r', ':', 'F', 'F', 'F', 'F', '0', '0', 'F', 'F', '}', 0 };
-    static const unsigned short sColourClose[] = { '{', 'c', 'l', 'r', ':', 'p', 'o', 'p', '}', 0 };
-
 #define LOOKUP_LOC_STRING(_hashExpr, _locVar) \
     {                                         \
         (_locVar) = LookupLocHash(_hashExpr); \
@@ -3843,8 +3840,8 @@ void CupHubScene::UpdateRoundMessage(bool hideMessage)
 
     pText->m_bVisible = true;
 
-    BasicString<unsigned short, Detail::TempStringAllocator> leftTeam(sSpace);
-    BasicString<unsigned short, Detail::TempStringAllocator> rightTeam(sSpace);
+    BasicString<unsigned short, Detail::TempStringAllocator> leftTeam((const unsigned short*)L" ");
+    BasicString<unsigned short, Detail::TempStringAllocator> rightTeam((const unsigned short*)L" ");
     BasicString<unsigned short, Detail::TempStringAllocator> roundWideString;
     BasicString<unsigned short, Detail::TempStringAllocator> unformatted;
     unsigned short roundWide[32] = { };
@@ -3869,10 +3866,10 @@ void CupHubScene::UpdateRoundMessage(bool hideMessage)
         {
             const unsigned short* locTeamName;
 
-            leftTeam = BasicString<unsigned short, Detail::TempStringAllocator>(sColourOpen);
+            leftTeam = BasicString<unsigned short, Detail::TempStringAllocator>((const unsigned short*)L"{clr:FFFF00FF}");
             LOOKUP_LOC_STRING(GetLOCTeamName(pGame->mTeamIndex[0]), locTeamName);
             leftTeam = leftTeam.AppendInPlace(locTeamName);
-            leftTeam = leftTeam.AppendInPlace(sColourClose);
+            leftTeam = leftTeam.AppendInPlace((const unsigned short*)L"{clr:pop}");
 
             LOOKUP_LOC_STRING(GetLOCTeamName(pGame->mTeamIndex[1]), locTeamName);
             rightTeam = BasicString<unsigned short, Detail::TempStringAllocator>(locTeamName);
@@ -3884,10 +3881,10 @@ void CupHubScene::UpdateRoundMessage(bool hideMessage)
             LOOKUP_LOC_STRING(GetLOCTeamName(pGame->mTeamIndex[0]), locTeamName);
             leftTeam = BasicString<unsigned short, Detail::TempStringAllocator>(locTeamName);
 
-            rightTeam = BasicString<unsigned short, Detail::TempStringAllocator>(sColourOpen);
+            rightTeam = BasicString<unsigned short, Detail::TempStringAllocator>((const unsigned short*)L"{clr:FFFF00FF}");
             LOOKUP_LOC_STRING(GetLOCTeamName(pGame->mTeamIndex[1]), locTeamName);
             rightTeam = rightTeam.AppendInPlace(locTeamName);
-            rightTeam = rightTeam.AppendInPlace(sColourClose);
+            rightTeam = rightTeam.AppendInPlace((const unsigned short*)L"{clr:pop}");
         }
     }
 
@@ -3899,7 +3896,7 @@ void CupHubScene::UpdateRoundMessage(bool hideMessage)
             LOOKUP_LOC_STRING(0xFB611DAD, locString);
             roundWideString = BasicString<unsigned short, Detail::TempStringAllocator>(locString);
 
-            LOOKUP_LOC_STRING(0x81CB8086, locString);
+            LOOKUP_LOC_STRING(0x81CA8086, locString);
             unformatted = BasicString<unsigned short, Detail::TempStringAllocator>(locString);
         }
         else if (roundNumber == -3)
@@ -3907,7 +3904,7 @@ void CupHubScene::UpdateRoundMessage(bool hideMessage)
             LOOKUP_LOC_STRING(0xB70B2037, locString);
             roundWideString = BasicString<unsigned short, Detail::TempStringAllocator>(locString);
 
-            LOOKUP_LOC_STRING(0x81CB8086, locString);
+            LOOKUP_LOC_STRING(0x81CA8086, locString);
             unformatted = BasicString<unsigned short, Detail::TempStringAllocator>(locString);
         }
         else if (roundNumber == -2 || roundNumber == -1)
@@ -3915,13 +3912,12 @@ void CupHubScene::UpdateRoundMessage(bool hideMessage)
             LOOKUP_LOC_STRING(0x97861DB3, locString);
             roundWideString = BasicString<unsigned short, Detail::TempStringAllocator>(locString);
 
-            LOOKUP_LOC_STRING(0x81CB8086, locString);
+            LOOKUP_LOC_STRING(0x81CA8086, locString);
             unformatted = BasicString<unsigned short, Detail::TempStringAllocator>(locString);
         }
         else
         {
-            int round = roundNumber + 1;
-            NarrowString roundString = LexicalCast<NarrowString, int>(round);
+            NarrowString roundString = LexicalCast<NarrowString, int>(roundNumber + 1);
 
             nlStrToWcs(roundString.c_str(), roundWide, 32);
             roundWideString = BasicString<unsigned short, Detail::TempStringAllocator>(roundWide);

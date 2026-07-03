@@ -975,7 +975,7 @@ UpdateResult IChooseCaptain::Update(float)
 
     if (mComponentState[0].mCurrentPhase == PHASE_READY && mComponentState[1].mCurrentPhase == PHASE_READY)
     {
-        GameInfoManager* gim = nlSingleton<GameInfoManager>::s_pInstance;
+        GameInfoManager* const gim = nlSingleton<GameInfoManager>::s_pInstance;
 
         gim->SetTeam(0, (eTeamID)mHomeAwayTeam[0]);
         gim->SetTeam(1, (eTeamID)mHomeAwayTeam[1]);

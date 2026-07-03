@@ -326,7 +326,7 @@ afterLoops:
         }
     }
 
-    if (size <= (int)(0.75f * (float)(mMemorySize / 4)))
+    if (size <= (int)(1.2f * (float)(mMemorySize / 4)))
     {
         mReels[idx].mAge = quality;
         {
@@ -376,4 +376,14 @@ float Replay::EndTime() const
 void Replay::PlayReel(int reelIdx)
 {
     mReelIdx = reelIdx;
+}
+
+// Field-order stub: unreferenced TU-local; forces the .sdata2 float pool
+// consts into target order [0.0, magic, 1.2]. Emitted first under
+// -inline deferred, it numbers 0.0f then the (float)(int) conversion magic
+// before LockReel's 1.2f. The linker drops the unreferenced local.
+static void Replay_stub(float& a, float& b, int n)
+{
+    a = 0.0f;
+    b = (float)(n / 4);
 }

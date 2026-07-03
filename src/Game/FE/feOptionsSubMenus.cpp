@@ -125,7 +125,7 @@ void TempDisableSound();
 
 /**
  * Offset/Address/Size: 0x210 | 0x800B5254 | size: 0x410
- * TODO: 99.87% match - slide and menu item name cursor registers are swapped before the FEFinder call.
+ * Matches: only residual is the TU-wide MENU_ITEMS$NNNN local-static suffix (link-neutral).
  */
 OptionsSaveLoad::OptionsSaveLoad(FEPresentation* presentation, ButtonComponent::ButtonState buttonstate)
     : OptionsSubMenu(presentation, buttonstate)
@@ -139,17 +139,19 @@ OptionsSaveLoad::OptionsSaveLoad(FEPresentation* presentation, ButtonComponent::
     mButtons.CentreButtons();
 
     TLSlide* slide = presentation->m_currentSlide;
+    char** menuName;
 
     void (*openItem)(TLComponentInstance*) = DoubleHighlite::OpenItem;
     void (*closeItem)(TLComponentInstance*) = DoubleHighlite::CloseItem;
     MenuItem<TLComponentInstance>* menuItem;
 
-    for (int i = 0; i < 2; i++)
+    int i;
+    for (i = 0, menuName = MENU_ITEMS; i < 2; i++, menuName++)
     {
         TLComponentInstance* instance = FEFinder<TLComponentInstance, 4>::Find(
             slide,
             InlineHasher(nlStringLowerHash("Layer")),
-            InlineHasher(nlStringLowerHash(MENU_ITEMS[i])),
+            InlineHasher(nlStringLowerHash(*menuName)),
             InlineHasher(0),
             InlineHasher(0),
             InlineHasher(0),
@@ -426,6 +428,7 @@ void OptionsGameplayMenuV2::BuildSkillLevelMenu(TLComponentInstance* compinstanc
     extern int nlSNPrintf(char*, unsigned long, const char*, ...);
     typedef Detail::MemFunImpl<void, void (SlideMenuList::*)()> MemFunImpl_SML;
     typedef BindExp1<void, MemFunImpl_SML, SlideMenuList*> BindExp1_SML;
+    nlColour lockColour;
 
     SlideMenuList* list = new ((SlideMenuList*)nlMalloc(sizeof(SlideMenuList), 8, false)) SlideMenuList(compinstance);
     mSlideMenuLists[0] = (MenuList<SlideMenuList>*)list;
@@ -1091,8 +1094,8 @@ OptionsVisualMenuV2::OptionsVisualMenuV2(FEPresentation* pres, ButtonComponent::
 
 /**
  * Offset/Address/Size: 0x20C8 | 0x800B710C | size: 0xA3C
- * TODO: 99.24% match - menu navigation branches keep ischaractervol in r31
- * instead of target r30.
+ * TODO: 99.27% match - ischaractervol and highlight-loop temporaries use
+ * different registers from target.
  */
 void OptionsAudioMenuV2::Update(float)
 {
@@ -1108,10 +1111,10 @@ void OptionsAudioMenuV2::Update(float)
             HighliteSlideComponent(comp, SubMenuUnhighliteColour);
         }
 
-        int oldIndex = mMenuItems.mCurrentIndex;
         int flags = mMenuItems.mFlags;
         int wrapList = flags & 1;
         int skipDisabled = flags & 2;
+        int oldIndex = mMenuItems.mCurrentIndex;
         int newIndex = oldIndex - 1;
 
         while (true)
@@ -1189,10 +1192,10 @@ void OptionsAudioMenuV2::Update(float)
             HighliteSlideComponent(comp, SubMenuUnhighliteColour);
         }
 
-        int oldIndex = mMenuItems.mCurrentIndex;
         int flags = mMenuItems.mFlags;
         int wrapList = flags & 1;
         int skipDisabled = flags & 2;
+        int oldIndex = mMenuItems.mCurrentIndex;
         int newIndex = oldIndex + 1;
 
         while (true)
@@ -1265,10 +1268,10 @@ void OptionsAudioMenuV2::Update(float)
         {
             MenuResult res = RES_ERROR;
 
-            int oldIndex = slideMenuList->mCurrentIndex;
             int flags = slideMenuList->mFlags;
             int wrapList = flags & 1;
             int skipDisabled = flags & 2;
+            int oldIndex = slideMenuList->mCurrentIndex;
             int newIndex = oldIndex - 1;
 
             while (true)
@@ -1391,10 +1394,10 @@ void OptionsAudioMenuV2::Update(float)
         {
             MenuResult res = RES_ERROR;
 
-            int oldIndex = slideMenuList->mCurrentIndex;
             int flags = slideMenuList->mFlags;
             int wrapList = flags & 1;
             int skipDisabled = flags & 2;
+            int oldIndex = slideMenuList->mCurrentIndex;
             int newIndex = oldIndex + 1;
 
             while (true)
@@ -1986,13 +1989,14 @@ void OptionsCheatsMenu::BuildCustomPowerupsList(TLComponentInstance* compinstanc
 
 /**
  * Offset/Address/Size: 0x3D3C | 0x800B8D80 | size: 0x7D4
- * TODO: 99.76% match - remaining string-label relocation around the Slide2 active-slide call.
+ * TODO: 99.77% match - callback and FEFinder temporaries still use different stack slots.
  */
 void OptionsCheatsMenu::BuildLockableSubMenuList(int menuitem, TLComponentInstance* compinstance, FEPresentation* presentation, bool unlocked, int startindex)
 {
     extern int nlSNPrintf(char*, unsigned long, const char*, ...);
     typedef Detail::MemFunImpl<void, void (SlideMenuList::*)()> MemFunImpl_SML;
     typedef BindExp1<void, MemFunImpl_SML, SlideMenuList*> BindExp1_SML;
+    nlColour lockColour;
 
     SlideMenuList* list = new (nlMalloc(sizeof(SlideMenuList), 8, false)) SlideMenuList(compinstance);
     mSlideMenuLists[menuitem] = (MenuList<SlideMenuList>*)list;
@@ -2036,7 +2040,6 @@ void OptionsCheatsMenu::BuildLockableSubMenuList(int menuitem, TLComponentInstan
 
         pText->SetStringId("CHEAT_LOCKED");
 
-        nlColour lockColour;
         lockColour.c[0] = 0xFE;
         lockColour.c[1] = 0xEE;
         lockColour.c[2] = 0x00;

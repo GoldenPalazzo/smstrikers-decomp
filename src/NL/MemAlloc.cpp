@@ -109,7 +109,7 @@ void MemoryAllocator::Initialize(void* arg0, unsigned int arg1)
 
 /**
  * Offset/Address/Size: 0x1D8 | 0x801CD924 | size: 0x35C
- * TODO: 95.51% match - remaining diffs are register assignments in both
+ * TODO: 95.63% match - remaining diffs are register assignments in both
  * allocation paths (size/offset and current/start-end iterator registers),
  * plus paired address-calculation ordering around suffix metadata writes.
  */
@@ -174,8 +174,8 @@ void* MemoryAllocator::Allocate(unsigned long size, unsigned int alignment, bool
             }
 
             u32 suffixBase = offset - alignedSize;
-            u32 suffixGap = suffixBase - 4;
             u32 header = savedSize;
+            u32 suffixGap = suffixBase - 4;
             void* allocPtr = (char*)(size - alignment) + alignment;
             if (alignment > 4)
             {

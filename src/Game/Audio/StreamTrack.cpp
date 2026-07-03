@@ -1166,7 +1166,7 @@ void AudioStreamTrack::StreamTrack::StopQStream(QUEUED_STREAM* pQueuedStream)
 
 /**
  * Offset/Address/Size: 0x5B0 | 0x80155308 | size: 0x2D8
- * TODO: 99.40% match - second free-buffer loop ci/nextCI r3/r4 swap and delete-list manager/entry registers differ
+ * TODO: 99.64% match - delete-list manager/entry registers differ
  */
 void AudioStreamTrack::StreamTrack::StopStream(GCAudioStreaming::StereoAudioStream* pStream, bool TrackOwns)
 {
@@ -1219,11 +1219,11 @@ void AudioStreamTrack::StreamTrack::StopStream(GCAudioStreaming::StereoAudioStre
             {
                 pStream->m_BuffMgr.FreeBuffer(buf);
                 unsigned long ci = bufCounter;
-                unsigned long nextCI = ci + 1;
-                bufCounter = nextCI;
                 pStream->m_Buffers[ci] = NULL;
-                if (nextCI < pStream->m_BufferCount)
-                    buf = pStream->m_Buffers[nextCI];
+                ci++;
+                bufCounter = ci;
+                if (ci < pStream->m_BufferCount)
+                    buf = pStream->m_Buffers[ci];
                 else
                     buf = NULL;
             }

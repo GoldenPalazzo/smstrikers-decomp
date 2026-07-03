@@ -79,21 +79,22 @@ void PlatAudio::InitStreaming()
 
 /**
  * Offset/Address/Size: 0x208 | 0x801C72CC | size: 0x36C
- * TODO: 95.5% match - teardown-pass induction and slot-pointer registers still differ.
+ * TODO: 97.9% match - initial lookup-offset zero materialization differs.
  */
 void PlatAudio::ShutdownStreaming()
 {
     using namespace GCAudioStreaming;
+    typedef nlSortedSlot<AudioStream*, 7>::EntryLookup<AudioStream*> EL;
 
+    AudioStream* stream;
     unsigned long streamIndex = 0;
     unsigned long lookupOffset = 0;
-    AudioStream* stream;
     AudioStreamBuffer* buffer;
     unsigned long zero = 0;
 
     while (streamIndex < g_Streams.m_EntryCount)
     {
-        stream = *g_Streams.m_pEntryLookup[lookupOffset >> 3].pEntry;
+        stream = *((EL*)((char*)g_Streams.m_pEntryLookup + lookupOffset))->pEntry;
         stream->m_Flags &= ~(1 << SF_Play);
 
         if (stream->m_State == SS_Playing)
@@ -173,10 +174,10 @@ void PlatAudio::ShutdownStreaming()
         unsigned long index;
         unsigned long count;
 
-        stream = *g_Streams.m_pEntryLookup[lookupOffset >> 3].pEntry;
+        stream = *((EL*)((char*)g_Streams.m_pEntryLookup + lookupOffset))->pEntry;
         stream->SafeToPurge();
 
-        pStream = g_Streams.m_pEntryLookup[lookupOffset >> 3].pEntry;
+        pStream = ((EL*)((char*)g_Streams.m_pEntryLookup + lookupOffset))->pEntry;
         delete *pStream;
 
         if (pStream != NULL)
@@ -227,7 +228,7 @@ void PlatAudio::ShutdownStreaming()
     lookupOffset = 0;
     while (streamIndex < g_Streams.m_EntryCount)
     {
-        ((nlSortedSlot<AudioStream*, 7>*)&g_Streams)->FreeEntry(g_Streams.m_pEntryLookup[lookupOffset >> 3].pEntry);
+        ((nlSortedSlot<AudioStream*, 7>*)&g_Streams)->FreeEntry(((EL*)((char*)g_Streams.m_pEntryLookup + lookupOffset))->pEntry);
         lookupOffset += 8;
         streamIndex++;
     }

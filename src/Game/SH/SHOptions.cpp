@@ -202,12 +202,6 @@ typedef Detail::MemFunImpl<void, void (OptionsScene::*)(eMenuState)> MemFunImpl_
 typedef BindExp2<void, MemFunImpl_Options_t, OptionsScene*, eMenuState> BindExp2_Options_t;
 typedef Function1<void, TLComponentInstance*>::FunctorImpl<BindExp2_Options_t> FunctorImpl_Options_t;
 
-typedef TLInstance* (*FindInstByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-typedef TLComponentInstance* (*FindInstByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
-
-typedef TLComponentInstance* (*FindCompByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-typedef TLComponentInstance* (*FindCompByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
-
 static inline MenuItem<TLComponentInstance>* OptionsItemAt(MenuList<TLComponentInstance>& menu, int idx)
 {
     return &menu.mMenuItems[idx];
@@ -215,8 +209,7 @@ static inline MenuItem<TLComponentInstance>* OptionsItemAt(MenuList<TLComponentI
 
 /**
  * Offset/Address/Size: 0xB5C | 0x800B4118 | size: 0x6E0
- * TODO: 99.32% match - stack frame 0x130 vs 0x120 and shifted
- * presentation/string/item registers
+ * TODO: 99.90% match - menu item insertion register order differs
  */
 void OptionsScene::SceneCreated()
 {
@@ -230,40 +223,11 @@ void OptionsScene::SceneCreated()
         char menuname[64];
         nlSNPrintf(menuname, 64, "MENU ITEM%d", i + 1);
 
-        union
-        {
-            FindInstByValue byValue;
-            FindInstByRef byRef;
-        } findInst;
-        findInst.byValue = FEFinder<TLInstance, 4>::Find<TLSlide>;
-
-        volatile InlineHasher h7, h5, h3, h1, hB, hA, h9, h8, h6, h4, h2, h0;
-
-        h0.m_Hash = 0;
-        h1.m_Hash = 0;
-        h2.m_Hash = 0;
-        h3.m_Hash = 0;
-        h4.m_Hash = 0;
-        h5.m_Hash = 0;
-        h6.m_Hash = 0;
-        h7.m_Hash = 0;
-
-        unsigned long nameHash = nlStringLowerHash(menuname);
-        h8.m_Hash = nameHash;
-        h9.m_Hash = nameHash;
-
-        unsigned long layerHash = nlStringLowerHash("Layer");
-        hB.m_Hash = layerHash;
-        hA.m_Hash = layerHash;
-
-        TLComponentInstance* instance = findInst.byRef(
+        TLInstance* foundInstance = FEFinder<TLInstance, 4>::Find<TLSlide>(
             presentation->m_currentSlide,
-            (InlineHasher&)hB,
-            (InlineHasher&)h9,
-            (InlineHasher&)h7,
-            (InlineHasher&)h5,
-            (InlineHasher&)h3,
-            (InlineHasher&)h1);
+            InlineHasher(nlStringLowerHash("Layer")),
+            InlineHasher(nlStringLowerHash(menuname)));
+        TLComponentInstance* instance = (TLComponentInstance*)foundInstance;
 
         if (MenuToMenuStateMap[i] == MS_NUMMENUSTATES)
         {
@@ -393,42 +357,12 @@ void OptionsScene::SceneCreated()
     }
 
     {
-        union
-        {
-            FindCompByValue byValue;
-            FindCompByRef byRef;
-        } findComp;
-        findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
-
-        volatile InlineHasher h7, h5, h3, h1, hB, hA, h9, h8, h6, h4, h2, h0;
-
         m_curMenuState = MS_MAIN;
 
-        h0.m_Hash = 0;
-        h1.m_Hash = 0;
-        h2.m_Hash = 0;
-        h3.m_Hash = 0;
-        h4.m_Hash = 0;
-        h5.m_Hash = 0;
-        h6.m_Hash = 0;
-        h7.m_Hash = 0;
-
-        unsigned long hash1 = nlStringLowerHash("buttons");
-        h8.m_Hash = hash1;
-        h9.m_Hash = hash1;
-
-        unsigned long hash2 = nlStringLowerHash("Layer");
-        hB.m_Hash = hash2;
-        hA.m_Hash = hash2;
-
-        mButtons.mButtonInstance = findComp.byRef(
+        mButtons.mButtonInstance = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
             presentation->m_currentSlide,
-            (InlineHasher&)hB,
-            (InlineHasher&)h9,
-            (InlineHasher&)h7,
-            (InlineHasher&)h5,
-            (InlineHasher&)h3,
-            (InlineHasher&)h1);
+            InlineHasher(nlStringLowerHash("Layer")),
+            InlineHasher(nlStringLowerHash("buttons")));
     }
 
     mButtons.SetState(ButtonComponent::BS_A_AND_B);

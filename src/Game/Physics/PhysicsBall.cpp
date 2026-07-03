@@ -85,7 +85,7 @@ inline void PhysicsBall::CalcSurfaceVelocity(nlVector3& v3VelocityOut)
 
 /**
  * Offset/Address/Size: 0x17C | 0x80134E90 | size: 0x51C
- * TODO: 95.2% match - angular velocity torque block still has extra stores/reloads before dBodyAddTorque
+ * TODO: 99.8% match - CalcSurfaceVelocity cross-product x/y temporary registers differ
  */
 void PhysicsBall::AddResistanceForces()
 {
@@ -139,11 +139,15 @@ void PhysicsBall::AddResistanceForces()
         f32 threshold = 0.02f + GetRadius();
         if (GetPosition().f.z < threshold)
         {
-            CalcAngularFromLinearVelocity(v3BallSurfaceSpeed);
+            nlVector3 v3DesiredAngularVel;
+            CalcAngularFromLinearVelocity(v3DesiredAngularVel);
             GetAngularVelocity(&v3CurAngularVel);
-            f32 torqueZ = 0.25f * (v3BallSurfaceSpeed.f.z - v3CurAngularVel.f.z);
-            f32 torqueX = 0.25f * (v3BallSurfaceSpeed.f.x - v3CurAngularVel.f.x);
-            f32 torqueY = 0.25f * (v3BallSurfaceSpeed.f.y - v3CurAngularVel.f.y);
+            f32 torqueX;
+            f32 torqueY;
+            f32 torqueZ;
+            torqueZ = 0.25f * (v3DesiredAngularVel.f.z - v3CurAngularVel.f.z);
+            torqueY = 0.25f * (v3DesiredAngularVel.f.y - v3CurAngularVel.f.y);
+            torqueX = 0.25f * (v3DesiredAngularVel.f.x - v3CurAngularVel.f.x);
             dBodyAddTorque(m_bodyID, torqueX, torqueY, torqueZ);
             CalcSurfaceVelocity(v3BallSurfaceSpeed);
             GetLinearVelocity(&v3CurBallSpeed);

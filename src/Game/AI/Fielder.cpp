@@ -5840,7 +5840,8 @@ inline void ExecutePowerupEffect(cFielder* pFielder)
     if (g_pGame->mbCaptainShotToScoreOn)
         return;
 
-    switch (pFielder->m_ePowerup)
+    volatile cFielder* pPowerupFielder = pFielder;
+    switch (pPowerupFielder->m_ePowerup)
     {
     case POWER_UP_NONE:
         return;
@@ -6125,8 +6126,6 @@ void cFielder::UpdateActionState(float dt)
 
 /**
  * Offset/Address/Size: 0x17CC | 0x8001AB08 | size: 0x2E8
- * TODO: 98.39% match - branch shape mismatch in ACTION_ONETIMER anim-range gate
- * around 0x8001AB58..0x8001AB70 (bge/b pattern vs blt path).
  */
 void cFielder::UpdateHeadTracking(float)
 {
@@ -6155,13 +6154,20 @@ void cFielder::UpdateHeadTracking(float)
         break;
 
     case ACTION_ONETIMER:
-        if (m_eAnimID < 0x50)
+        switch (m_eAnimID)
         {
-            if (!(m_eAnimID < 0x48))
-            {
-                m_pHeadTrack->m_bTrackOOI = false;
-                break;
-            }
+        case 0x48:
+        case 0x49:
+        case 0x4A:
+        case 0x4B:
+        case 0x4C:
+        case 0x4D:
+        case 0x4E:
+        case 0x4F:
+            m_pHeadTrack->m_bTrackOOI = false;
+            return;
+        default:
+            break;
         }
 
         if (m_pCurrentAnimController->m_fTime > mActionOneTimerVars.fOneTimerAnimTime)

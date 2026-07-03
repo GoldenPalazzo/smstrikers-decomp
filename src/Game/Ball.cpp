@@ -1933,6 +1933,9 @@ cBall::cBall()
     , m_tPassTargetTimer(0.f)
     , m_tBuzzerBeaterTimer(0.f)
 {
+    u32 t0, t1, t2;
+    nlVector3* pz;
+
     m_pBlurHandler = NULL;
     m_pOwner = NULL;
     m_pPrevOwner = NULL;
@@ -1972,17 +1975,24 @@ cBall::cBall()
 
     m_pPhysicsBall->SetPosition(m_v3Position, PhysicsObject::WORLD_COORDINATES);
 
+    pz = &v3Zero;
+
     m_qOrientation.f.z = 0.f;
+    t0 = v3Zero.as_u32[0];
     m_qOrientation.f.y = 0.f;
+    t1 = v3Zero.as_u32[1];
     m_qOrientation.f.x = 0.f;
+    t2 = v3Zero.as_u32[2];
     m_qOrientation.f.w = 1.f;
 
     m_v3ShotOrigin = m_v3Position;
 
-    m_v3Velocity = v3Zero;
+    m_v3Velocity.as_u32[0] = t0;
+    m_v3Velocity.as_u32[1] = t1;
+    m_v3Velocity.as_u32[2] = t2;
 
     m_pPhysicsBall->SetLinearVelocity(m_v3Velocity);
-    m_pPhysicsBall->SetAngularVelocity(v3Zero);
+    m_pPhysicsBall->SetAngularVelocity(*pz);
 
     m_fTotalPassTime = 0.f;
     m_tBuzzerBeaterTimer.SetSeconds(0.f);

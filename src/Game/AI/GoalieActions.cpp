@@ -2342,7 +2342,6 @@ void Goalie::ActionOffplay(float)
 
 /**
  * Offset/Address/Size: 0x860 | 0x8004ED9C | size: 0x21C
- * TODO: 99.78% match - m_v3Position x/y float registers swapped in first distance/angle block
  */
 void Goalie::ActionLooseBallPursueBouncing(float deltaTime)
 {
@@ -2365,34 +2364,34 @@ void Goalie::ActionLooseBallPursueBouncing(float deltaTime)
         return;
     }
 
-    nlVector3 predictedPos;
-    nlVector3 predictedVel;
-    FakeBallWorld::GetPredictedBallPosition(mfTargetTime, predictedPos, predictedVel);
+    nlVector3 v3TargetPos;
+    nlVector3 v3TargetVel;
+    FakeBallWorld::GetPredictedBallPosition(mfTargetTime, v3TargetPos, v3TargetVel);
 
-    if (CalculateDistanceSquared2D(m_v3Position, predictedPos) < mfTargetDist)
+    nlVector3 delta;
+    delta.Sub2D(m_v3Position, v3TargetPos);
+    if (delta.GetLengthSq2D() < mfTargetDist)
     {
         PlayNewAnim(8);
         InitMovementFromAnim(0, v3Zero, 1.0f, false);
 
-        GetLocalPoint(mv3LocalContactPosition, predictedPos, m_v3Position, m_aActualFacingDirection);
-        GetLocalPoint(mv3LocalContactVelocity, predictedVel, m_v3Position, m_aActualFacingDirection);
+        GetLocalPoint(mv3LocalContactPosition, v3TargetPos, m_v3Position, m_aActualFacingDirection);
+        GetLocalPoint(mv3LocalContactVelocity, v3TargetVel, m_v3Position, m_aActualFacingDirection);
 
         InitActionLooseBallCatch();
         return;
     }
 
-    // Calculate angle to predicted position and set facing direction
     const nlVector3& pos = m_v3Position;
-    float angle = nlATan2f(predictedPos.f.y - pos.f.y, predictedPos.f.x - pos.f.x);
+    float angle = nlATan2f(v3TargetPos.f.y - pos.f.y, v3TargetPos.f.x - pos.f.x);
     m_aDesiredFacingDirection = (u16)(s32)(10430.378f * angle);
 
-    if (CalculateDistanceSquared(predictedPos, mv3TargetPosition) > mfTargetDist)
+    if (CalculateDistanceSquared(v3TargetPos, mv3TargetPosition) > mfTargetDist)
     {
         InitActionLooseBallSetup();
         return;
     }
 
-    // Play animation if not already playing
     if (m_eAnimID != 0x26)
     {
         PlayNewAnim(0x26);

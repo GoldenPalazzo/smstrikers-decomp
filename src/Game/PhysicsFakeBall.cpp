@@ -893,6 +893,40 @@ void FakeBallWorld::InvalidateBallCache()
     mfLastCacheTime = -1.0f;
 }
 
+static inline void DestroyBallCacheInline()
+{
+    if (FakeBallWorld::mBallCacheList.m_Head != NULL)
+    {
+        DLListEntry<BallCacheInfo*>* start = nlDLRingGetStart(FakeBallWorld::mBallCacheList.m_Head);
+        DLListEntry<BallCacheInfo*>* current = start;
+        DLListEntry<BallCacheInfo*>* end = FakeBallWorld::mBallCacheList.m_Head;
+
+        while (current != NULL)
+        {
+            BallCacheInfo* data = current->entry;
+            ((SlotPoolEntry*)data)->m_next = BallCacheInfo::mBallCacheInfoSlotPool.m_FreeList;
+            BallCacheInfo::mBallCacheInfoSlotPool.m_FreeList = (SlotPoolEntry*)data;
+
+            if (nlDLRingIsEnd(end, current) || current == NULL)
+            {
+                current = NULL;
+            }
+            else
+            {
+                current = current->m_next;
+            }
+        }
+
+        nlWalkDLRing<DLListEntry<BallCacheInfo*>, BallCacheListBase>(
+            FakeBallWorld::mBallCacheList.m_Head,
+            (BallCacheListBase*)&FakeBallWorld::mBallCacheList,
+            (void (BallCacheListBase::*)(DLListEntry<BallCacheInfo*>*))&BallCacheListBase::DeleteEntry);
+        FakeBallWorld::mBallCacheList.m_Head = NULL;
+    }
+
+    FakeBallWorld::mfLastCacheTime = -1.0f;
+}
+
 /**
  * Offset/Address/Size: 0x1F14 | 0x80139300 | size: 0x198
  */
@@ -912,36 +946,7 @@ void FakeBallWorld::Destroy()
         mpPredictWorld = NULL;
     }
 
-    if (mBallCacheList.m_Head != NULL)
-    {
-        DLListEntry<BallCacheInfo*>* start = nlDLRingGetStart(mBallCacheList.m_Head);
-        DLListEntry<BallCacheInfo*>* end = mBallCacheList.m_Head;
-        DLListEntry<BallCacheInfo*>* current = start;
-
-        while (current != NULL)
-        {
-            BallCacheInfo* data = current->entry;
-            ((SlotPoolEntry*)data)->m_next = BallCacheInfo::mBallCacheInfoSlotPool.m_FreeList;
-            BallCacheInfo::mBallCacheInfoSlotPool.m_FreeList = (SlotPoolEntry*)data;
-
-            if (nlDLRingIsEnd(end, current) || current == NULL)
-            {
-                current = NULL;
-            }
-            else
-            {
-                current = current->m_next;
-            }
-        }
-
-        nlWalkDLRing<DLListEntry<BallCacheInfo*>, BallCacheListBase>(
-            mBallCacheList.m_Head,
-            (BallCacheListBase*)&mBallCacheList,
-            (void (BallCacheListBase::*)(DLListEntry<BallCacheInfo*>*))&BallCacheListBase::DeleteEntry);
-        mBallCacheList.m_Head = NULL;
-    }
-
-    mfLastCacheTime = -1.0f;
+    DestroyBallCacheInline();
     SlotPoolBase::BaseFreeBlocks((SlotPoolBase*)&mBallCacheList, sizeof(DLListEntry<BallCacheInfo*>));
     SlotPoolBase::BaseFreeBlocks((SlotPoolBase*)&BallCacheInfo::mBallCacheInfoSlotPool, sizeof(BallCacheInfo));
 }

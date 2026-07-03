@@ -43,6 +43,7 @@ public:
     union
     {
         float e[3];
+        u32 as_u32[3];
         struct
         {
             float x;

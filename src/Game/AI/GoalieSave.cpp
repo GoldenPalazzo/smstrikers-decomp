@@ -163,6 +163,7 @@ void GoalieSave::ClearData()
  */
 void GoalieSave::InitData(Goalie* pGoalie)
 {
+    SaveInfo* pSaveInfo;
     unsigned int i;
     int nCount;
     unsigned int count;
@@ -191,7 +192,7 @@ void GoalieSave::InitData(Goalie* pGoalie)
 
     mfCrouchDuration = (float)numKeys / 30.0f;
 
-    SaveInfo* pSaveInfo = gSaveInfo;
+    pSaveInfo = gSaveInfo;
     for (i = 0; i < muNumSaveEntries; i++)
     {
         pSaveData = &mpSaveTable[i];

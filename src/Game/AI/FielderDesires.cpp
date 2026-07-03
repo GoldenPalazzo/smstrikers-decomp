@@ -2753,7 +2753,6 @@ bool cFielder::InitDesireRunToNet()
 
 /**
  * Offset/Address/Size: 0xCA8 | 0x80031A2C | size: 0x23C
- * TODO: 99.8% match - r29/r30 swapped for g_pBall and ballVelocity ref around GetClosingSpeed2D call
  */
 void cFielder::DesireSlideAttack(float fDeltaT)
 {
@@ -2806,8 +2805,8 @@ void cFielder::DesireSlideAttack(float fDeltaT)
 
                 if (fBallSpeed > 0.05f)
                 {
-                    const nlVector3& ballVelocity = g_pBall->m_v3Velocity;
-                    fBallClosingSpeed = GetClosingSpeed2D(GetJointPosition(m_nLeftFootJointIndex), m_v3Velocity, g_pBall->m_v3Position, ballVelocity);
+                    const nlVector3& ballVelocity = GetBallVelocity(g_pBall);
+                    fBallClosingSpeed = GetClosingSpeed2D(GetJointPosition(m_nLeftFootJointIndex), m_v3Velocity, GetBallPosition(g_pBall), ballVelocity);
                     if (fBallClosingSpeed < 0.0f)
                     {
                         if (nlRandomf(1.0f, &nlDefaultSeed) > 0.5f)

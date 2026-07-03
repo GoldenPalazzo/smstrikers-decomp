@@ -1264,8 +1264,8 @@ foundExisting:
 
 /**
  * Offset/Address/Size: 0x7C8 | 0x8013CCDC | size: 0x510
- * TODO: 98.73% match - register allocation in team/player loops (r28-r31 swapped),
- *       fade-list search register allocation and beq vs bne+b branch pattern
+ * TODO: 99.03% match - register allocation in team/player loops,
+ *       fade-list node register and beq vs branch pattern
  */
 void FadeFilter(float currentVal, float fadeToVal, float fadeDuration, float fadeTimeStart)
 {
@@ -1324,10 +1324,11 @@ void FadeFilter(float currentVal, float fadeToVal, float fadeDuration, float fad
             gCrowdSFX.SetFilterFreqOnAllTrackedSFX(0);
             if (g_pGame != NULL)
             {
+                cTeam* team;
                 int p;
                 for (int t = 0; t < 2; t++)
                 {
-                    cTeam* team = g_pTeams[t];
+                    team = g_pTeams[t];
                     for (p = 0; p < 5; p++)
                     {
                         team->GetPlayer(p)->m_pCharacterSFX->SetFilterFreqOnAllTrackedSFX(0);
@@ -1349,10 +1350,11 @@ void FadeFilter(float currentVal, float fadeToVal, float fadeDuration, float fad
             gCrowdSFX.ActivateFilterOnAllTrackedSFX(true);
             if (g_pGame != NULL)
             {
+                cTeam* team;
                 int p;
                 for (int t = 0; t < 2; t++)
                 {
-                    cTeam* team = g_pTeams[t];
+                    team = g_pTeams[t];
                     for (p = 0; p < 5; p++)
                     {
                         team->GetPlayer(p)->m_pCharacterSFX->ActivateFilterOnAllTrackedSFX(true);
@@ -1368,10 +1370,11 @@ void FadeFilter(float currentVal, float fadeToVal, float fadeDuration, float fad
             gCrowdSFX.SetFilterFreqOnAllTrackedSFX(0x3FFF);
             if (g_pGame != NULL)
             {
+                cTeam* team;
                 int p;
                 for (int t = 0; t < 2; t++)
                 {
-                    cTeam* team = g_pTeams[t];
+                    team = g_pTeams[t];
                     for (p = 0; p < 5; p++)
                     {
                         team->GetPlayer(p)->m_pCharacterSFX->SetFilterFreqOnAllTrackedSFX(0x3FFF);
@@ -1410,7 +1413,10 @@ createFade:
             {
                 goto nextFade;
             }
-            goto foundExisting;
+            if (*(float*)((char*)existing + 0x14) == fadeToVal)
+            {
+                goto foundExisting;
+            }
         }
     nextFade:
         existing = existing->next;

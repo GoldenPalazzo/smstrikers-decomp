@@ -547,8 +547,8 @@ s32 MemCard::BeginCardAccess(const MemCardFunctor& Callback)
 
 /**
  * Offset/Address/Size: 0xF28 | 0x801CA698 | size: 0x3B4
- * TODO: 98.73% match - shift-up loop, header-size calculation, and icon-speed
- * copy still keep different temp registers.
+ * TODO: 99.01% match - shift-up loop, header-size calculation, and cleanup
+ * pEntry copy still keep different temp registers.
  */
 long MemCard::CreateFile(const char* FileName, unsigned long FileSize, MemCard::ICON_CONFIG* pIconConfig, MemCard::MC_FILE*& pFile, const MemCardFunctor& Callback)
 {
@@ -666,15 +666,7 @@ long MemCard::CreateFile(const char* FileName, unsigned long FileSize, MemCard::
     pIconConfig->HeaderSize = headerSize + 0x40;
 
     MC_FILE* mcFile = m_pFileCB;
-    mcFile->IconCfg.BannerFormat = pIconConfig->BannerFormat;
-    mcFile->IconCfg.IconCount = pIconConfig->IconCount;
-    mcFile->IconCfg.IconFormat = pIconConfig->IconFormat;
-    mcFile->IconCfg.IconAnimType = pIconConfig->IconAnimType;
-    unsigned long iconSpeeds0 = *(unsigned long*)&pIconConfig->IconSpeeds[0];
-    unsigned long iconSpeeds1 = *(unsigned long*)&pIconConfig->IconSpeeds[4];
-    *(unsigned long*)&mcFile->IconCfg.IconSpeeds[0] = iconSpeeds0;
-    *(unsigned long*)&mcFile->IconCfg.IconSpeeds[4] = iconSpeeds1;
-    mcFile->IconCfg.HeaderSize = pIconConfig->HeaderSize;
+    mcFile->IconCfg = *pIconConfig;
 
     m_pFileCB->TotalHeaderSize = AlignBytesToSectorSize(pIconConfig->HeaderSize);
 

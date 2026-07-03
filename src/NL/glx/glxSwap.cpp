@@ -1,3 +1,4 @@
+#define BASICSTRING_COPY_REREAD_TEMP
 #include "NL/glx/glxSwap.h"
 #include "NL/nlDebug.h"
 #include "NL/nlPrint.h"
@@ -418,14 +419,12 @@ static inline BasicStringInternal* MakeHitzData()
 
 /**
  * Offset/Address/Size: 0x734 | 0x801BF484 | size: 0x260
- * TODO: 99.90% match - returned swap string copy uses r4 instead of r0 for the
- * m_data copy.
  */
 #pragma optimization_level 2
-void glxInitSwap(void* arg0, void* arg1)
+void glxInitSwap(void* fb0, void* fb1)
 {
-    glx_FrameBuffer[0] = arg0;
-    glx_FrameBuffer[1] = arg1;
+    glx_FrameBuffer[0] = fb0;
+    glx_FrameBuffer[1] = fb1;
     glx_nBuffer = 0;
     nFirstFrame = 3;
     glx_bAllowDrawSync = 1;

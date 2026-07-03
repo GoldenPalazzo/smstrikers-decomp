@@ -4787,7 +4787,7 @@ void Goalie::InitActionMoveWB()
 
 /**
  * Offset/Address/Size: 0x32E8 | 0x80045DE4 | size: 0x70C
- * TODO: 99.35% match - remaining first blend-store f-register coloring.
+ * TODO: 99.56% match - remaining first blend time update/store register coloring.
  */
 void Goalie::InitActionSaveSetup(bool bCanReposition)
 {
@@ -4909,6 +4909,7 @@ void Goalie::InitActionSaveSetup(bool bCanReposition)
         float fLocalX = mv3LocalContactPosition.f.x;
         fBlendFactor = (mpSaveData->mv3SavePos.f.x - fLocalX) / fLocalVelX;
         fTimeTilSave += fBlendFactor;
+        fTimeTilSave = fTimeTilSave;
 
         nlVec3Set(mv3LocalContactPosition,
             fBlendFactor * fLocalVelX + fLocalX,
@@ -5822,8 +5823,8 @@ float Goalie::CalcTimeToPlane()
  * Offset/Address/Size: 0x18C8 | 0x800443C4 | size: 0x4AC
  */
 /**
- * TODO: 99.30% match - first distance f-register coloring, blended save
- * distance f-register coloring, start-time branch layout
+ * TODO: 99.72% match - first distance f-register coloring and blended save
+ * distance f-register coloring
  */
 bool Goalie::CanInterceptPass()
 {
@@ -5992,14 +5993,15 @@ bool Goalie::CanInterceptPass()
             else
             {
                 f32 diff = milestone2 - mfTimeTilSave;
+                f32 cap = mBlendInfo.mfMilestoneTime[1];
                 f32 startTime;
-                if (diff <= mBlendInfo.mfMilestoneTime[1])
+                if (diff <= cap)
                 {
                     startTime = diff;
                 }
                 else
                 {
-                    startTime = mBlendInfo.mfMilestoneTime[1];
+                    startTime = cap;
                 }
                 mBlendInfo.mfStartTime = startTime;
                 mfWaitTime = 0.0f;

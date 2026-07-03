@@ -570,13 +570,8 @@ inline unsigned long SaveCallbacks::FileWriteCB(unsigned long Slot, long Result,
 
 /**
  * Offset/Address/Size: 0x2708 | 0x8018C064 | size: 0x6A0
- * TODO: 71.37% match - stack/regalloc differences and ICON_CONFIG constant
- * folding remain in the duplicated -4 free-space remap paths.
- *
- * TODO: 83.71% match - remaining diffs:
- * 1. Icon calc ~(iconCount|-1) nor/srawi/and 0x200 block not folded (target folds to 0)
- * 2. CSE of Slot*4 into r27 vs target r30 (register allocation cascade)
- * 3. gIconDataCache load ordering and register assignment differs from target
+ * TODO: 90.34% match - slot-offset registers, default icon-size arithmetic,
+ * and icon-cache/functor load ordering still differ.
  */
 long SaveCallbacks::DoSave(unsigned long Slot)
 {
@@ -617,15 +612,11 @@ long SaveCallbacks::DoSave(unsigned long Slot)
             MemCard* card2 = g_MemCards[slotOffset >> 2];
             long dataSize = nlSingleton<GameInfoManager>::s_pInstance->GetMemoryCardDataSize();
             numBlocks = 0;
-            int origDataSize = (dataSize += 12);
-            dataSize = (unsigned long)(dataSize + 0x1FFF) >> 13;
-            if (origDataSize > 0)
+            dataSize += 12;
+            while (dataSize > 0)
             {
-                while (dataSize > 0)
-                {
-                    numBlocks++;
-                    dataSize--;
-                }
+                numBlocks++;
+                dataSize -= 0x2000;
             }
             MemCard::ICON_CONFIG IconCfg;
             IconCfg.BannerFormat = 0;
@@ -772,15 +763,11 @@ long SaveCallbacks::DoSave(unsigned long Slot)
             MemCard* card2 = g_MemCards[slotOffset >> 2];
             long ds2 = nlSingleton<GameInfoManager>::s_pInstance->GetMemoryCardDataSize();
             numBlocks2 = 0;
-            int origDataSize2 = (ds2 += 12);
-            ds2 = (unsigned long)(ds2 + 0x1FFF) >> 13;
-            if (origDataSize2 > 0)
+            ds2 += 12;
+            while (ds2 > 0)
             {
-                while (ds2 > 0)
-                {
-                    numBlocks2++;
-                    ds2--;
-                }
+                numBlocks2++;
+                ds2 -= 0x2000;
             }
             MemCard::ICON_CONFIG IconCfg2;
             IconCfg2.BannerFormat = 0;
