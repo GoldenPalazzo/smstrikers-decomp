@@ -23,6 +23,22 @@ template <typename StringType, typename T1, typename T2, typename T3>
 StringType Format(const StringType& format, const T1& value1, const T2& value2, const T3& value3);
 
 typedef BasicString<unsigned short, Detail::TempStringAllocator> WideBasicString;
+typedef BasicString<char, Detail::TempStringAllocator> CharBasicString;
+
+static inline BasicStringData<char>* RetainCharStringData(const CharBasicString& string)
+{
+    BasicStringData<char>* data = string.m_data;
+    if (data != 0)
+    {
+        data->mRefCount++;
+        data = string.m_data;
+    }
+    else
+    {
+        data = 0;
+    }
+    return data;
+}
 
 // Force a non-weak (global) emission of FormatImpl<WideBasicString>::operator%<const
 // unsigned short*> in this TU. Target emits __md<PCUs> as a global symbol; the implicit
@@ -638,7 +654,7 @@ void MilestoneTrophyScene::SceneCreated()
 
     if (nlSingleton<GameInfoManager>::s_pInstance->HasTrophy(mTrophy))
     {
-        BasicString<char, Detail::TempStringAllocator> accumulatedString = LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(statAccumulated);
+        BasicString<char, Detail::TempStringAllocator> accumulatedString(RetainCharStringData(LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(statAccumulated)));
 
         unsigned short accumulatedWideString[128];
         nlStrToWcs(accumulatedString.c_str(), accumulatedWideString, 128);
@@ -698,8 +714,8 @@ void MilestoneTrophyScene::SceneCreated()
     }
     else
     {
-        BasicString<char, Detail::TempStringAllocator> accumulatedString = LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(statAccumulated);
-        BasicString<char, Detail::TempStringAllocator> neededString = LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(statNeeded);
+        BasicString<char, Detail::TempStringAllocator> accumulatedString(RetainCharStringData(LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(statAccumulated)));
+        BasicString<char, Detail::TempStringAllocator> neededString(RetainCharStringData(LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(statNeeded)));
 
         unsigned short accumulatedWideString[128];
         unsigned short neededWideString[128];
@@ -751,9 +767,9 @@ void MilestoneTrophyScene::SceneCreated()
             pStat->SetString(mStatBuffer);
         }
 
-        BasicString<char, Detail::TempStringAllocator> bronzeString = LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(bronzeStat);
-        BasicString<char, Detail::TempStringAllocator> silverString = LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(silverStat);
-        BasicString<char, Detail::TempStringAllocator> goldString = LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(goldStat);
+        BasicString<char, Detail::TempStringAllocator> bronzeString(RetainCharStringData(LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(bronzeStat)));
+        BasicString<char, Detail::TempStringAllocator> silverString(RetainCharStringData(LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(silverStat)));
+        BasicString<char, Detail::TempStringAllocator> goldString(RetainCharStringData(LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(goldStat)));
 
         unsigned short bronzeWideString[16];
         unsigned short silverWideString[16];

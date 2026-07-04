@@ -22,16 +22,21 @@ extern float g_fSimulationTick;
 
 static f32 CANT_COLLIDE = *(f32*)__float_max;
 
+eCameraType g_eCurrentCameraType;
+cBaseCamera* cCameraManager::m_cameraStack;
+float cCameraManager::m_fTransitionSpeed;
+float cCameraManager::m_fPrevFOV;
+eCameraTransition cCameraManager::m_transition;
+u16 cCameraManager::m_aJoystickRemap;
+void (*cCameraManager::m_pCallback)(enum eCameraMessage);
+int cCameraManager::m_UpVectorStackSize;
+
 nlMatrix4 cCameraManager::m_matView;
 nlVector3 cCameraManager::m_cameraPosition;
 nlMatrix4 cCameraManager::m_matPrevView;
-float cCameraManager::m_fTransitionSpeed;
-float cCameraManager::m_fTransitionTime;
-float cCameraManager::m_fPrevFOV;
-eCameraTransition cCameraManager::m_transition;
-void (*cCameraManager::m_pCallback)(enum eCameraMessage);
-
-int cCameraManager::m_UpVectorStackSize;
+int cCameraManager::m_pBeginFrameCameraType = 13;
+float cCameraManager::m_fTransitionTime = 1.0f;
+float cCameraManager::m_fFOV = 50.0f;
 
 nlVector3 cCameraManager::m_UpVectorStack[2] = { { 0.0f, 0.0f, 1.0f }, { 0.0f, 0.0f, 1.0f } };
 
@@ -64,8 +69,6 @@ enum eTeamID
     NUM_TEAMS = 9,
 };
 char* GetTeamName(eTeamID);
-
-extern eCameraType g_eCurrentCameraType;
 
 /**
  * Offset/Address/Size: 0x1768 | 0x801A7DF0 | size: 0x59C
@@ -411,7 +414,7 @@ void cCameraManager::UpdateGameCameraType()
             pBaseCamera = (cBaseCamera*)new ((cAnimViewerCamera*)nlMalloc(0xA4, 8, false)) cAnimViewerCamera();
             break;
         case eCameraType_FaceCloseup:
-            pBaseCamera = (cBaseCamera*)new ((FaceCam*)nlMalloc(0x80, 8, false)) FaceCam(0.0f);
+            pBaseCamera = (cBaseCamera*)new ((FaceCam*)nlMalloc(0x80, 8, false)) FaceCam(2.0f);
             break;
         default:
             break;
@@ -783,4 +786,18 @@ void cCameraManager::PushWorldUpVector()
 void cCameraManager::PopWorldUpVector()
 {
     cCameraManager::m_UpVectorStackSize = 0;
+}
+
+// Unreferenced helper; with -inline deferred this seeds the float pool in target order.
+static void CameraMan_sdata2_stub(
+    float& zero, float& angleScale, float& joystickScale, float& one, float& faceDistance, float& easeTen, float& easeNegFifteen, float& easeSix)
+{
+    zero = 0.0f;
+    angleScale = 65536.0f;
+    joystickScale = 10430.378f;
+    one = 1.0f;
+    faceDistance = 2.0f;
+    easeTen = 10.0f;
+    easeNegFifteen = -15.0f;
+    easeSix = 6.0f;
 }

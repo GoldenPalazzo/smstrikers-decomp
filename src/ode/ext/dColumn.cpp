@@ -33,7 +33,6 @@ static void dColumnAABB(dxGeom* geomID, float* aabb)
 
 /**
  * Offset/Address/Size: 0x28C | 0x8021D0B8 | size: 0x288
- * TODO: 99.94% match - f1/f2 register swap at fsubs/lfs for temp_f4_3 computation
  */
 int dCollideColumnColumn(dxGeom* o1, dxGeom* o2, int flags, dContactGeom* contact, int skip)
 {
@@ -126,7 +125,7 @@ int dCollideColumnColumn(dxGeom* o1, dxGeom* o2, int flags, dContactGeom* contac
 
         contact->normal[ax1] = (pos1[ax1] - pos2[ax1]) / x;
         {
-            f32 temp_f4_3 = ((x + radius2) - radius1) * 0.5f;
+            f32 temp_f4_3 = ((x + radius2) - radius1) / 2.0f;
             contact->normal[ax2] = (pos1[ax2] - pos2[ax2]) / x;
 
             contact->normal[lengthwiseAxis] = 0.0f;
