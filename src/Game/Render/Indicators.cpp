@@ -108,8 +108,8 @@ static inline void SetIndicatorPolyColour(glPoly2& poly, unsigned char r, unsign
 
 /**
  * Offset/Address/Size: 0x868 | 0x8015FACC | size: 0x440
- * TODO: 96.12% match - f29/f30 swap (dt vs x callee-saved register allocation),
- * r3/r4 swap (g_pGame/drawIndicator), mr vs li constant propagation for insideXY
+ * TODO: 96.97% match - f29/f30/f28 FP register mismatch in dt, x, and size;
+ * absX/absY max branch shape still differs
  */
 static void UpdateAndRenderOffScreenIndicators(float dt)
 {
@@ -188,9 +188,9 @@ static void UpdateAndRenderOffScreenIndicators(float dt)
                 float absX;
                 float absY;
                 float size;
-                unsigned long texID;
-                int yPixels;
                 int xPixels;
+                int yPixels;
+                unsigned long texID;
 
                 indicatorInfo[i].IncrementOffscreenTimer(dt);
 
@@ -220,7 +220,7 @@ static void UpdateAndRenderOffScreenIndicators(float dt)
                 absY = (float)__fabs(projectedPos.f.y);
 
                 x = x + 320.0f;
-                y = y + 240.0f;
+                y += 240.0f;
 
                 if (absX >= absY)
                 {
@@ -232,12 +232,12 @@ static void UpdateAndRenderOffScreenIndicators(float dt)
 
                 size = InterpolateRangeClamped(1.0f, 0.5f, 0.0f, 2.0f, (float)__fabs(1.0f - absX));
                 texID = uIndicatorTexID[pCharDraw->GetGlobalPad()->m_padIndex];
-                yPixels = (int)y;
-                xPixels = (int)x;
-
-                size = 64.0f * size;
                 {
                     float opacity = indicatorInfo[i].m_fOpacity;
+
+                    size = 64.0f * size;
+                    yPixels = (int)y;
+                    xPixels = (int)x;
 
                     if ((u8)glTextureLoad(texID))
                     {

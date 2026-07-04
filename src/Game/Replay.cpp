@@ -265,11 +265,15 @@ bool Replay::LockReel(float numSeconds, int idx, int quality)
         return false;
     }
 
-    Frame* frame = mFree->mNext;
+    Frame* frame;
+    Frame* iter;
+    Frame* head;
     float beginTime = mReels[mReelIdx].mLast->mTime - numSeconds;
     bool valid;
 
-    Frame* iter = frame;
+    head = mFree;
+    frame = head->mNext;
+    iter = frame;
     do
     {
         if (iter->mTime >= beginTime)
@@ -285,7 +289,7 @@ bool Replay::LockReel(float numSeconds, int idx, int quality)
         }
 
         iter = iter->mNext;
-    } while (mFree != iter);
+    } while (iter != head);
 
     do
     {
