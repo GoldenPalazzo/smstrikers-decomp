@@ -312,7 +312,7 @@ void nlFont::DrawString(eGLView View, const FontCharString& Text, const nlVector
                     }
 
                     int FinalAdvance = (int)pGlyph->Advance;
-                    if (pGlyph->HasKernPairs && pCurrentChar[1] != 0)
+                    if (pGlyph->HasKernPairs && ((volatile const unsigned short*)pCurrentChar)[1] != 0)
                     {
                         KernPair kp = { { pCurrentChar[0], pCurrentChar[1] }, 0 };
                         KernPair* pValidKp = nlBSearch<KernPair, KernPair>(kp, m_pKernTable, m_KernTableSize);

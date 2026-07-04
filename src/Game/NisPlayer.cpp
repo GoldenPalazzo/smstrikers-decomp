@@ -846,7 +846,7 @@ void NisPlayer::Load(char* buffer, unsigned int size, NisHeader& nisHeader)
 
 /**
  * Offset/Address/Size: 0x1AE0 | 0x801167BC | size: 0xD08
- * TODO: 96.00% match - remaining register allocation differs in the BasicString construction and hash call paths.
+ * TODO: 98.53% match - remaining register allocation differs in BasicString construction and copy-on-write paths.
  */
 void NisPlayer::LoadTriggers(Nis& nis)
 {
@@ -872,16 +872,23 @@ void NisPlayer::LoadTriggers(Nis& nis)
         {
             if (name[i] == '_')
             {
-                name[i];
-                name[i];
+                char* eraseEnd;
+                char* eraseBegin;
+                name[0];
+                eraseEnd = (name.m_data ? name.m_data->mData : (char*)0) + i;
+                name[0];
+                eraseBegin = name.m_data ? name.m_data->mData : (char*)0;
+                name[0];
                 BasicStringData<char>* data = name.m_data;
-                char* src = &name[i];
-                char* dest = data->mData;
-                int removeCount = (int)(src - dest);
+                int removeCount = eraseEnd - eraseBegin;
+                int removeOffset = eraseBegin - data->mData;
+                char* dest = data->mData + removeOffset;
 
-                while (src != data->mData + data->mSize)
+                while (eraseEnd != data->mData + data->mSize)
                 {
-                    *dest++ = *src++;
+                    *dest = *eraseEnd;
+                    eraseEnd++;
+                    dest++;
                 }
                 data->mSize -= removeCount;
 

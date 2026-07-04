@@ -336,7 +336,7 @@ void PhysicsLoader::ConstructStaticPhysicsPrimitives(CharacterPhysicsData* pPhys
 
 /**
  * Offset/Address/Size: 0x728 | 0x80133238 | size: 0x2C0
- * TODO: 98.86% match - list head/tail, sideline, corner, and net mesh ID registers still differ.
+ * TODO: 99.06% match - list head/tail, sideline base/wall, corner, and net base-name registers still differ.
  */
 bool PhysicsLoader::StartLoad(LoadingManager*)
 {
@@ -346,6 +346,7 @@ bool PhysicsLoader::StartLoad(LoadingManager*)
     int cornerOffset;
     char szTemp[0x104];
     const char* pBaseName;
+    sSideLinePlane* pSideline;
 
     dSetAllocHandler(ODEAlloc);
     dSetReallocHandler(ODERealloc);
@@ -387,7 +388,7 @@ bool PhysicsLoader::StartLoad(LoadingManager*)
 
     for (i = 0, sidelineOffset = 0; i < 4; i++, sidelineOffset += 0xC)
     {
-        sSideLinePlane* pSideline = (sSideLinePlane*)((unsigned long)cField::mSidelines + sidelineOffset);
+        pSideline = (sSideLinePlane*)((unsigned long)cField::mSidelines + sidelineOffset);
         PhysicsWall* pWall = (PhysicsWall*)nlMalloc(0x2C, 8, false);
         if (pWall != NULL)
         {

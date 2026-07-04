@@ -622,7 +622,7 @@ bool EmissionController::Update(float dt)
         while (i < m_nUserEffects)
         {
             m_pUserEffects[ofs]->Update(dt, &info);
-            isFinished = isFinished & m_pUserEffects[ofs]->IsFinished();
+            isFinished &= m_pUserEffects[ofs]->IsFinished();
             ofs++;
             i++;
         }

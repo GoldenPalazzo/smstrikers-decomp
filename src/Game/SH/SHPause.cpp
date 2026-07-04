@@ -328,24 +328,24 @@ void PauseMenuScene::SceneCreated()
             PauseBind bindOpen = Bind<void>(MemFun<PauseMenuScene, void, TLComponentInstance*>(openCB), this, placeholder0);
             {
                 MenuCallback openFunc(bindOpen);
-                menuItem->mCallbacks[ON_HIGHLIGHT] = openFunc;
+                *(MenuCallback*)&menuItem->mCallbacks[ON_HIGHLIGHT] = openFunc;
             }
 
             {
                 MenuCallback closeFunc;
                 closeFunc.mTag = FREE_FUNCTION;
                 closeFunc.mFreeFunction = DoubleHighlite::CloseItem;
-                menuItem->mCallbacks[ON_UNHIGHLIGHT] = closeFunc;
+                *(MenuCallback*)&menuItem->mCallbacks[ON_UNHIGHLIGHT] = closeFunc;
             }
 
             if (PauseMenuCBs[i])
             {
                 PauseBind bindApply = Bind<void>(MemFun<PauseMenuScene, void, TLComponentInstance*>(PauseMenuCBs[i]), this, placeholder0);
-                menuItem->mCallbacks[ON_APPLY] = MenuCallback(bindApply);
+                MenuCallback applyFunc(bindApply);
+                *(MenuCallback*)&menuItem->mCallbacks[ON_APPLY] = applyFunc;
             }
 
-            TLComponentInstance* highlite = (TLComponentInstance*)FindComponent(compinstance->GetActiveSlide(), "highlite");
-            (void)highlite;
+            (void)FindComponent(compinstance->GetActiveSlide(), "highlite");
 
             if (i == mLastSelectedIndex)
             {
@@ -428,32 +428,33 @@ void PauseMenuScene::SceneCreated()
                 InlineHasher(nlStringLowerHash(MENU_NAMES[i])));
             TLComponentInstance* compinstance = (TLComponentInstance*)instance;
 
-            MenuItem<TLComponentInstance>* menuItem = &mMenuItems.mMenuItems[mMenuItems.mNumItemsAdded];
-            menuItem->mType = compinstance;
+            int numAdded = mMenuItems.mNumItemsAdded;
+            MenuItem<TLComponentInstance>* menuItem = PauseMenuItemAt(mMenuItems, numAdded);
+            mMenuItems.mMenuItems[numAdded].mType = compinstance;
             mMenuItems.mNumItemsAdded++;
 
             {
                 MenuCallback openFunc;
                 openFunc.mTag = FREE_FUNCTION;
                 openFunc.mFreeFunction = DoubleHighlite::OpenItem;
-                menuItem->mCallbacks[ON_HIGHLIGHT] = openFunc;
+                *(MenuCallback*)&menuItem->mCallbacks[ON_HIGHLIGHT] = openFunc;
             }
 
             {
                 MenuCallback closeFunc;
                 closeFunc.mTag = FREE_FUNCTION;
                 closeFunc.mFreeFunction = DoubleHighlite::CloseItem;
-                menuItem->mCallbacks[ON_UNHIGHLIGHT] = closeFunc;
+                *(MenuCallback*)&menuItem->mCallbacks[ON_UNHIGHLIGHT] = closeFunc;
             }
 
             if (PauseMenuCBs[i])
             {
                 PauseBind bindApply = Bind<void>(MemFun<PauseMenuScene, void, TLComponentInstance*>(PauseMenuCBs[i]), this, placeholder0);
-                menuItem->mCallbacks[ON_APPLY] = MenuCallback(bindApply);
+                MenuCallback applyFunc(bindApply);
+                *(MenuCallback*)&menuItem->mCallbacks[ON_APPLY] = applyFunc;
             }
 
-            TLComponentInstance* highlite = (TLComponentInstance*)FindComponent(compinstance->GetActiveSlide(), "highlite");
-            (void)highlite;
+            (void)FindComponent(compinstance->GetActiveSlide(), "highlite");
 
             if (i == mLastSelectedIndex)
             {

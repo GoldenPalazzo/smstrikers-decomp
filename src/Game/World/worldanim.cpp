@@ -28,12 +28,11 @@ nlAVLTree<unsigned long, AnimationSet*, DefaultKeyCompare<unsigned long> >::~nlA
 
 /**
  * Offset/Address/Size: 0x14C | 0x8019AF18 | size: 0x41C
- * TODO: 99.45% match - remaining stack-slot and literal ordering differences in inventory cleanup blocks
+ * TODO: 99.70% match - remaining register differences in animation tree cleanup
  */
 WorldAnimManager::~WorldAnimManager()
 {
     typedef AVLTreeEntry<unsigned long, AnimationSet*> TreeEntry;
-    typedef ListContainerBase<cSAnim*, NewAdapter<ListEntry<cSAnim*> > > SAnimListBase;
     typedef ListContainerBase<cSHierarchy*, NewAdapter<ListEntry<cSHierarchy*> > > HierListBase;
 
     struct NodeStack
@@ -42,6 +41,7 @@ WorldAnimManager::~WorldAnimManager()
         u32 count;
     };
 
+    cInventory<cSHierarchy>* inv;
     AnimationSet* animSet;
     NodeStack* stack;
     TreeEntry* node;
@@ -72,35 +72,7 @@ WorldAnimManager::~WorldAnimManager()
         animSet = entry->value;
         if (animSet != NULL)
         {
-            if (&animSet->m_animInventory != NULL)
-            {
-                ListEntry<cSAnim*>* animEntry = animSet->m_animInventory.m_lItemList.m_Head;
-                while (animEntry != NULL)
-                {
-                    animEntry->entry->Destroy();
-                    animEntry = animEntry->next;
-                }
-                void (SAnimListBase::*cbSAnim)(ListEntry<cSAnim*>*) = &SAnimListBase::DeleteEntry;
-                nlWalkList(animSet->m_animInventory.m_lItemList.m_Head, (SAnimListBase*)animSet, cbSAnim);
-                ListEntry<char*>** pTail = &animSet->m_animInventory.m_lMemList.m_Tail;
-                animSet->m_animInventory.m_lItemList.m_Head = NULL;
-                ListEntry<char*>** pHead = &animSet->m_animInventory.m_lMemList.m_Head;
-                animSet->m_animInventory.m_lItemList.m_Tail = NULL;
-                while (animSet->m_animInventory.m_lMemList.m_Head != NULL)
-                {
-                    ListEntry<char*>* first = nlListRemoveStart<ListEntry<char*> >(pHead, pTail);
-                    void* mesh;
-                    if (&mesh != NULL)
-                    {
-                        mesh = first->entry;
-                    }
-                    ::operator delete(first);
-                    ::operator delete(mesh);
-                }
-                animSet->m_animInventory.m_nItemCount = 0;
-                animSet->m_animInventory.m_lMemList.~nlListContainer();
-                animSet->m_animInventory.m_lItemList.~nlListContainer();
-            }
+            animSet->m_animInventory.~cInventory();
             ::operator delete(animSet);
         }
         stack->count--;
@@ -123,7 +95,7 @@ WorldAnimManager::~WorldAnimManager()
         ::operator delete[](stack->data);
         ::operator delete(stack);
     }
-    cInventory<cSHierarchy>* inv = m_pHierarchyInventory;
+    inv = m_pHierarchyInventory;
     if (inv != NULL)
     {
         ListEntry<cSHierarchy*>* hierEntry = inv->m_lItemList.m_Head;

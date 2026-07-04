@@ -3568,7 +3568,7 @@ void Goalie::PlayBlendedAnims(float fStartTime, int nMilestone)
                         fStart = pData->mfMilestonePercent[prevMilestone];
                     }
 
-                    fStartPercent[i] = Interpolate(fStart, pData->mfMilestonePercent[milestone], fStartTime);
+                    fStartPercent[i] = Interpolate(fStart, pData->mfMilestonePercent[(unsigned int)milestone], fStartTime);
                 }
             }
         }
@@ -5456,8 +5456,8 @@ void Goalie::InitActionSTSRecover()
 
 /**
  * Offset/Address/Size: 0x2600 | 0x800450FC | size: 0x224
- * TODO: 98.07% match - register allocation diffs remain in the ball-target
- * vector delta/scale block and final net-Y clamp temporary flow.
+ * TODO: 99.16% match - x/z register swaps remain in the ball-target
+ * vector delta/scale block.
  */
 void Goalie::InitActionChipShotStumble()
 {
@@ -5482,10 +5482,13 @@ void Goalie::InitActionChipShotStumble()
     m_pPhysicsCharacter->m_CanCollidedWithGoalLine = false;
 
     cBall* pBall = g_pBall;
-    float y = pBall->m_v3ShotTarget.f.y - pBall->m_v3Position.f.y;
-    float x = pBall->m_v3ShotTarget.f.x - pBall->m_v3Position.f.x;
+    float x;
+    float y;
+    float z;
+    y = pBall->m_v3ShotTarget.f.y - pBall->m_v3Position.f.y;
+    x = pBall->m_v3ShotTarget.f.x - pBall->m_v3Position.f.x;
     float yy = y * y;
-    float z = pBall->m_v3ShotTarget.f.z - pBall->m_v3Position.f.z;
+    z = pBall->m_v3ShotTarget.f.z - pBall->m_v3Position.f.z;
     volatile float dirZ, dirY, dirX;
     dirY = y;
     float xx = x * x;
@@ -5516,10 +5519,9 @@ void Goalie::InitActionChipShotStumble()
         mv3NavTarget.f.x += pushX;
     }
 
-    float clampedY = mv3NavTarget.f.y;
     float maxY = 0.5f * cNet::m_fNetWidth - 1.0f;
-    clampedY = (clampedY >= -maxY) ? clampedY : -maxY;
-    clampedY = (clampedY <= maxY) ? clampedY : maxY;
+    float clampedY = goalie_clamp_min(mv3NavTarget.f.y, -maxY);
+    clampedY = goalie_clamp_max(clampedY, maxY);
     mv3NavTarget.f.y = clampedY;
 
     mv3NavTarget.f.z = 0.0f;

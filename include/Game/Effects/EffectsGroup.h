@@ -74,7 +74,7 @@ public:
     virtual ~UserEffectSpec();
     virtual void Update(float dt, UserEffectInfo* info);
     virtual void Render(const nlVector3** pVectors, s32 view);
-    virtual bool IsFinished();
+    virtual u8 IsFinished();
 };
 
 class EffectsGroup

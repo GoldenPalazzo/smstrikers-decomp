@@ -188,8 +188,7 @@ void BraggingRightsOverlay::SceneCreated()
 
 /**
  * Offset/Address/Size: 0x29A8 | 0x800D49A4 | size: 0x494
- * TODO: 98.60% match - stack frame is 0x200 vs 0x1E0 and remaining
- *       callee-saved register assignment drift is in the award/user stat loop
+ * TODO: 99.94% match - remaining colour byte stores are ordered c2/c1/c0 vs c1/c0/c2
  */
 void BraggingRightsOverlay::IngameSceneCreated()
 {
@@ -239,8 +238,9 @@ void BraggingRightsOverlay::IngameSceneCreated()
             case 2:
             {
                 unsigned short steals = userStats[user].mNumSteals;
+                unsigned short passesIntercepted = userStats[user].mNumPassesIntercepted;
                 tieBreaker = steals;
-                mainStat = userStats[user].mNumPassesIntercepted + steals;
+                mainStat = passesIntercepted + steals;
                 break;
             }
             case 3:
@@ -263,7 +263,7 @@ void BraggingRightsOverlay::IngameSceneCreated()
         }
 
         TLTextInstance* pText = FEFinder<TLTextInstance, 3>::Find(
-            presentation, InlineHasher(nlStringLowerHash("Slide1")), InlineHasher(nlStringLowerHash("Layer")), InlineHasher(nlStringLowerHash(TEXT_NAMES[award])), InlineHasher(0), InlineHasher(0), InlineHasher(0));
+            presentation, InlineHasher(nlStringLowerHash("Slide1")), InlineHasher(nlStringLowerHash("Layer")), InlineHasher(nlStringLowerHash(TEXT_NAMES[award])));
 
         if (mHighestStats[award] == 0)
         {
@@ -277,21 +277,21 @@ void BraggingRightsOverlay::IngameSceneCreated()
 
             nlColour colour;
             const unsigned char* padColour = PAD_COLOURS[mAwardWinners[award]];
-            colour.c[0] = padColour[0];
-            colour.c[1] = padColour[1];
-            colour.c[2] = padColour[2];
             colour.c[3] = 0xFF;
+            colour.c[2] = padColour[2];
+            colour.c[1] = padColour[1];
+            colour.c[0] = padColour[0];
 
             pText->SetAssetColour(colour);
         }
     }
 
     TLTextInstance* pPlacement = FEFinder<TLTextInstance, 3>::Find(
-        presentation, InlineHasher(nlStringLowerHash("Slide1")), InlineHasher(nlStringLowerHash("Layer")), InlineHasher(nlStringLowerHash("Placement")), InlineHasher(0), InlineHasher(0), InlineHasher(0));
+        presentation, InlineHasher(nlStringLowerHash("Slide1")), InlineHasher(nlStringLowerHash("Layer")), InlineHasher(nlStringLowerHash("Placement")));
     pPlacement->m_bVisible = 0;
 
     TLTextInstance* pPlacementTitle = FEFinder<TLTextInstance, 3>::Find(
-        presentation, InlineHasher(nlStringLowerHash("Slide1")), InlineHasher(nlStringLowerHash("Layer")), InlineHasher(nlStringLowerHash("Placement_Title")), InlineHasher(0), InlineHasher(0), InlineHasher(0));
+        presentation, InlineHasher(nlStringLowerHash("Slide1")), InlineHasher(nlStringLowerHash("Layer")), InlineHasher(nlStringLowerHash("Placement_Title")));
     pPlacementTitle->m_bVisible = 0;
 }
 

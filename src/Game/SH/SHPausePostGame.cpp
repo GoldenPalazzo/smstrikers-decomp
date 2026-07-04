@@ -53,7 +53,7 @@ static inline const unsigned short* LookupLocHash(unsigned long hash)
 
 /**
  * Offset/Address/Size: 0x26B8 | 0x801097BC | size: 0xCF0
- * TODO: 98.21% match - remaining BasicString copy loops use swapped source/index registers.
+ * TODO: 99.22% match - remaining BasicString copy and insert paths use shifted registers.
  */
 template <>
 template <>
@@ -80,12 +80,18 @@ FormatImpl<BasicString<unsigned short, Detail::TempStringAllocator> >&
         if (mString[i + 2] != (unsigned short)'}')
             continue;
 
-        mString.erase(&mString[0] + i, &mString[0] + i + 3);
+        unsigned short* eraseBegin;
+        unsigned short* eraseEnd;
+        mString[0];
+        eraseBegin = (mString.m_data ? mString.m_data->mData : (unsigned short*)0) + i;
+        mString[0];
+        eraseEnd = (mString.m_data ? mString.m_data->mData : (unsigned short*)0) + i + 3;
+        mString.erase(eraseBegin, eraseEnd);
         mString[i];
         unsigned short* mStringData = mString.m_data ? mString.m_data->mData : 0;
         insert[0];
         unsigned short* insertBegin = insert.m_data ? insert.m_data->mData : 0;
-        unsigned short* insertEndCow = &insert[(int)(insert.m_data ? insert.m_data->mSize - 1 : 0)];
+        insert[(int)(insert.m_data ? insert.m_data->mSize - 1 : 0)];
         mString.insert(mStringData + i, insertBegin, insert.m_data ? insert.m_data->mData + insert.m_data->mSize - 1 : (unsigned short*)0);
     }
 

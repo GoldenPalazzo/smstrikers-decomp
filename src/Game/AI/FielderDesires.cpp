@@ -1944,9 +1944,60 @@ void cFielder::InitDesireReceivePassFromIdle(const LooseBallContactAnimInfo* pAn
     }
 }
 
+static inline bool InitDesireOneTimerFromIdle(cFielder* pFielder, bool bVolleyPass, bool bIsChipShot)
+{
+    float fBallContactTime;
+    const LooseBallContactAnimInfo* pBestBallContactAnimInfo = pFielder->GetOneTimerBallContactAnimInfo(
+        pFielder->m_aActualFacingDirection,
+        pFielder->m_v3Position,
+        pFielder->m_pTeam->GetOtherNet()->m_baseLocation,
+        false,
+        bVolleyPass);
+
+    pFielder->m_DesireOneTimerVars.nOneTimerAnim = pBestBallContactAnimInfo->nAnimID;
+    const cSAnim* contactAnim = pFielder->m_pAnimInventory->GetAnim(pBestBallContactAnimInfo->nAnimID);
+    pFielder->m_DesireOneTimerVars.fOneTimerAnimTime = pBestBallContactAnimInfo->fAnimContactFrame / (float)contactAnim->m_nNumKeys;
+
+    if (!pFielder->DoLooseBallContactFromIdle(
+            pFielder->m_DesireOneTimerVars.v3DesiredPosition,
+            pFielder->m_DesireOneTimerVars.fDesiredTime,
+            pFielder->m_DesireOneTimerVars.v3BallPosition,
+            fBallContactTime,
+            pFielder->m_aActualFacingDirection,
+            pBestBallContactAnimInfo))
+    {
+        return false;
+    }
+
+    pFielder->m_DesireOneTimerVars.aDesiredFacingDirection = pFielder->m_aActualFacingDirection;
+    pFielder->m_DesireOneTimerVars.bIsChipShot = bIsChipShot;
+    pFielder->m_DesireOneTimerVars.bVolleyPassReceive = bVolleyPass;
+
+    if (pFielder->m_DesireOneTimerVars.fDesiredTime < 0.0f)
+    {
+        const cSAnim* pOneTimerAnim = pFielder->m_pAnimInventory->GetAnim(pFielder->m_DesireOneTimerVars.nOneTimerAnim);
+        float fAnimTimeInSecs = pFielder->m_DesireOneTimerVars.fOneTimerAnimTime * ((float)pOneTimerAnim->m_nNumKeys / 30.0f);
+        float fPlaybackScale = fAnimTimeInSecs / (fAnimTimeInSecs + pFielder->m_DesireOneTimerVars.fDesiredTime);
+
+        if (fPlaybackScale > 1.5f)
+        {
+            return false;
+        }
+    }
+
+    pFielder->SetDesire(FIELDERDESIRE_ONETIMER, 0.5f);
+    pFielder->SetDesireDuration(3.0f, false);
+    pFielder->InitActionWait();
+    pFielder->m_eDesireSubState = 0;
+    pFielder->SetNoPickUpTime(3.0f);
+    g_pBall->SetPassTargetTimer(fBallContactTime);
+    pFielder->m_pAvoidance->SetThingsToAvoid(0);
+    return true;
+}
+
 /**
  * Offset/Address/Size: 0x2080 | 0x80032E04 | size: 0xC88
- * TODO: 99.14% match - opening vector normalization and one-timer flag/register allocation still differ.
+ * TODO: 99.71% match - opening normalized-dot register allocation still differs.
  */
 void cFielder::DesireReceivePassFromIdle(float fDeltaT)
 {
@@ -2055,63 +2106,7 @@ void cFielder::DesireReceivePassFromIdle(float fDeltaT)
             bool bIsChipShot = m_DesireReceivePassSharedVars.iAttemptOneTouchShot == 2;
             bool bVolleyPass = m_DesireReceivePassSharedVars.bVolleyPassReceive;
 
-            float fBallContactTime;
-            const LooseBallContactAnimInfo* pBestBallContactAnimInfo = GetOneTimerBallContactAnimInfo(
-                m_aActualFacingDirection,
-                m_v3Position,
-                m_pTeam->GetOtherNet()->m_baseLocation,
-                false,
-                bVolleyPass);
-
-            m_DesireOneTimerVars.nOneTimerAnim = pBestBallContactAnimInfo->nAnimID;
-            const cSAnim* contactAnim = m_pAnimInventory->GetAnim(pBestBallContactAnimInfo->nAnimID);
-            m_DesireOneTimerVars.fOneTimerAnimTime = pBestBallContactAnimInfo->fAnimContactFrame / (float)contactAnim->m_nNumKeys;
-
-            bool bFoundContact;
-            if (!DoLooseBallContactFromIdle(
-                    m_DesireOneTimerVars.v3DesiredPosition,
-                    m_DesireOneTimerVars.fDesiredTime,
-                    m_DesireOneTimerVars.v3BallPosition,
-                    fBallContactTime,
-                    m_aActualFacingDirection,
-                    pBestBallContactAnimInfo))
-            {
-                bFoundContact = false;
-            }
-            else
-            {
-                m_DesireOneTimerVars.aDesiredFacingDirection = m_aActualFacingDirection;
-                m_DesireOneTimerVars.bIsChipShot = bIsChipShot;
-                m_DesireOneTimerVars.bVolleyPassReceive = bVolleyPass;
-
-                bFoundContact = true;
-
-                if (m_DesireOneTimerVars.fDesiredTime < 0.0f)
-                {
-                    const cSAnim* pOneTimerAnim = m_pAnimInventory->GetAnim(m_DesireOneTimerVars.nOneTimerAnim);
-                    float fAnimTimeInSecs = m_DesireOneTimerVars.fOneTimerAnimTime * ((float)pOneTimerAnim->m_nNumKeys / 30.0f);
-                    float fPlaybackScale = fAnimTimeInSecs / (fAnimTimeInSecs + m_DesireOneTimerVars.fDesiredTime);
-
-                    if (fPlaybackScale > 1.5f)
-                    {
-                        bFoundContact = false;
-                    }
-                }
-
-                if (bFoundContact)
-                {
-                    SetDesire(FIELDERDESIRE_ONETIMER, 0.5f);
-                    SetDesireDuration(3.0f, false);
-                    InitActionWait();
-                    m_eDesireSubState = 0;
-                    SetNoPickUpTime(3.0f);
-                    g_pBall->SetPassTargetTimer(fBallContactTime);
-                    m_pAvoidance->SetThingsToAvoid(0);
-                    bFoundContact = true;
-                }
-            }
-
-            if (bFoundContact)
+            if (InitDesireOneTimerFromIdle(this, bVolleyPass, bIsChipShot))
             {
                 return;
             }

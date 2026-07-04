@@ -410,9 +410,8 @@ static inline int BuildDefaultIconHeaderSize(MemCard::ICON_CONFIG& IconCfg)
 
 /**
  * Offset/Address/Size: 0x2DA8 | 0x8018C704 | size: 0x4AC
- * TODO: 90.72% match - this and Result use r31/r27 instead of r27/r28,
- * extra cmpwi+ble size-loop guards remain, and icon header arithmetic uses
- * different temporary registers.
+ * TODO: 95.18% match - Result/errorCode registers are swapped in the first
+ * failure path, and icon header arithmetic uses different temporary registers.
  */
 #pragma push
 #pragma opt_propagation off
@@ -421,12 +420,12 @@ inline unsigned long SaveCallbacks::FileWriteCB(unsigned long Slot, long Result,
     if (Result != 0)
     {
         MemCard* card2;
-        long errorCode;
         int numBlocks;
-        errorCode = Result;
-        if (m_pSaveFile != NULL)
+        MemCard::MC_FILE* saveFile = m_pSaveFile;
+        long errorCode = Result;
+        if (saveFile != NULL)
         {
-            g_MemCards[Slot]->CloseFile(m_pSaveFile);
+            g_MemCards[Slot]->CloseFile(saveFile);
             m_pSaveFile = NULL;
         }
         MemCard* card = g_MemCards[Slot];
@@ -440,26 +439,18 @@ inline unsigned long SaveCallbacks::FileWriteCB(unsigned long Slot, long Result,
             card2 = g_MemCards[Slot];
             long dataSize = nlSingleton<GameInfoManager>::s_pInstance->GetMemoryCardDataSize();
             numBlocks = 0;
-            int origSize = (dataSize += 12);
-            dataSize = (u32)(dataSize + 0x1FFF) >> 13;
-            if (origSize > 0)
+            dataSize += 12;
+            while (dataSize > 0)
             {
-                while (dataSize > 0)
-                {
-                    numBlocks++;
-                    dataSize--;
-                }
+                numBlocks++;
+                dataSize -= 0x2000;
             }
             MemCard::ICON_CONFIG IconCfg;
-            origSize = BuildDefaultIconHeaderSize(IconCfg);
-            dataSize = (u32)(origSize + 0x1FFF) >> 13;
-            if (origSize > 0)
+            dataSize = BuildDefaultIconHeaderSize(IconCfg);
+            while (dataSize > 0)
             {
-                while (dataSize > 0)
-                {
-                    numBlocks++;
-                    dataSize--;
-                }
+                numBlocks++;
+                dataSize -= 0x2000;
             }
             unsigned long sectorSize = card2->m_CardInfo.SectorSize;
             unsigned long bytestosave = numBlocks * sectorSize;
@@ -488,9 +479,8 @@ inline unsigned long SaveCallbacks::FileWriteCB(unsigned long Slot, long Result,
         if (mRequiredMemoryCardID != serialID)
         {
             MemCard* card2;
-            long errorCode;
             int numBlocks;
-            errorCode = -1001;
+            Result = -1001;
             if (m_pSaveFile != NULL)
             {
                 g_MemCards[Slot]->CloseFile(m_pSaveFile);
@@ -502,31 +492,23 @@ inline unsigned long SaveCallbacks::FileWriteCB(unsigned long Slot, long Result,
             CARDUnmount(card->m_Slot);
             InOperation = false;
 
-            if (errorCode == -4)
+            if (Result == -4)
             {
                 card2 = g_MemCards[Slot];
                 long dataSize = nlSingleton<GameInfoManager>::s_pInstance->GetMemoryCardDataSize();
                 numBlocks = 0;
-                int origSize = (dataSize += 12);
-                dataSize = (u32)(dataSize + 0x1FFF) >> 13;
-                if (origSize > 0)
+                dataSize += 12;
+                while (dataSize > 0)
                 {
-                    while (dataSize > 0)
-                    {
-                        numBlocks++;
-                        dataSize--;
-                    }
+                    numBlocks++;
+                    dataSize -= 0x2000;
                 }
                 MemCard::ICON_CONFIG IconCfg;
-                origSize = BuildDefaultIconHeaderSize(IconCfg);
-                dataSize = (u32)(origSize + 0x1FFF) >> 13;
-                if (origSize > 0)
+                dataSize = BuildDefaultIconHeaderSize(IconCfg);
+                while (dataSize > 0)
                 {
-                    while (dataSize > 0)
-                    {
-                        numBlocks++;
-                        dataSize--;
-                    }
+                    numBlocks++;
+                    dataSize -= 0x2000;
                 }
                 unsigned long sectorSize = card2->m_CardInfo.SectorSize;
                 unsigned long bytestosave = numBlocks * sectorSize;
@@ -540,11 +522,11 @@ inline unsigned long SaveCallbacks::FileWriteCB(unsigned long Slot, long Result,
                 else
                     hasSpace = 1;
                 if (!hasSpace)
-                    errorCode = -9;
+                    Result = -9;
             }
 
             m_MustFreeMemory = true;
-            g_Callback(errorCode);
+            g_Callback(Result);
             ResetTask::s_resetPaused = false;
             return -1;
         }

@@ -352,9 +352,53 @@ bool parse_spec(SimpleParser* parser, EffectsSpec& spec)
     return true;
 }
 
+static inline int TerrainSpecKeyCompare(const unsigned long& key2, const unsigned long& key1)
+{
+    int result;
+    if (key2 == key1)
+        result = 0;
+    else if (key2 < key1)
+        result = -1;
+    else
+        result = 1;
+    return result;
+}
+
+static inline bool TerrainSpecFindGet(nlAVLTree<unsigned long, EffectsTerrainSpec*, DefaultKeyCompare<unsigned long> >* tree,
+    unsigned long key, EffectsTerrainSpec*** foundValue)
+{
+    AVLTreeEntry<unsigned long, EffectsTerrainSpec*>* node = tree->m_Root;
+
+    while (node != nullptr)
+    {
+        int cmpResult = TerrainSpecKeyCompare(key, node->key);
+
+        if (cmpResult == 0)
+        {
+            if (foundValue != nullptr)
+            {
+                *foundValue = &node->value;
+            }
+            return true;
+        }
+        else
+        {
+            if (cmpResult < 0)
+            {
+                node = (AVLTreeEntry<unsigned long, EffectsTerrainSpec*>*)node->node.left;
+            }
+            else
+            {
+                node = (AVLTreeEntry<unsigned long, EffectsTerrainSpec*>*)node->node.right;
+            }
+        }
+    }
+
+    return false;
+}
+
 /**
  * Offset/Address/Size: 0x80C | 0x801F3254 | size: 0x224
- * TODO: 99.71% match - AVL lookup keeps hash key and compare result in swapped registers.
  */
 EffectsTerrainSpec* parse_terrain_spec(SimpleParser* parser)
 {
@@ -389,9 +433,8 @@ EffectsTerrainSpec* parse_terrain_spec(SimpleParser* parser)
     checksum.ChecksumInt(pSpec->m_uNumTerrains);
     checksum.ChecksumData(pSpec->m_pTerrainIDs, pSpec->m_uNumTerrains * 4);
 
-    unsigned long hashID = ~checksum.m_nChecksum;
     EffectsTerrainSpec** foundValue;
-    EffectsTerrainSpec* existingSpec = pTerrainSpecMap->FindGet(hashID, &foundValue) ? *foundValue : nullptr;
+    EffectsTerrainSpec* existingSpec = TerrainSpecFindGet(pTerrainSpecMap, ~checksum.m_nChecksum, &foundValue) ? *foundValue : nullptr;
 
     if (existingSpec == nullptr)
     {

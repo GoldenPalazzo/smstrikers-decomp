@@ -59,19 +59,6 @@ void nlListAddStart(T** head, T* newNode, T** prev)
 }
 
 template <typename T>
-void nlDeleteList(T** head)
-{
-    T* next;
-    while (*head != NULL)
-    {
-        next = (*head)->next;
-        delete *head;
-        *head = next;
-    }
-    *head = NULL;
-}
-
-template <typename T>
 void nlListAddEnd(T** head, T** tail, T* node)
 {
     node->next = NULL;
@@ -155,6 +142,22 @@ T* nlListRemoveElement(T** head, T* element, T** tail)
         current = current->next;
     }
     return NULL;
+}
+
+// Defined after nlListRemoveElement: MWCC emits linkonce template
+// instantiations in reverse definition order, and the original DOL has
+// nlDeleteList<T> before nlListRemoveElement<T> in every TU that uses both.
+template <typename T>
+void nlDeleteList(T** head)
+{
+    T* next;
+    while (*head != NULL)
+    {
+        next = (*head)->next;
+        delete *head;
+        *head = next;
+    }
+    *head = NULL;
 }
 
 template <typename T>

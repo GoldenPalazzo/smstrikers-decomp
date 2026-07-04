@@ -32,18 +32,16 @@ public:
     /*  0x20 */ bool ownsKeyData;
 }; // total size: 0x24
 
-void EnableDofDebug();
-
 class cAnimCamera : public cBaseCamera
 {
 public:
     cAnimCamera();
     /* 0x08 */ virtual ~cAnimCamera();
-    /* 0x0C */ virtual eCameraType GetType() { return eCameraType_Animated; };
-    /* 0x14 */ virtual const nlMatrix4& GetViewMatrix() const { return m_matView; };
-    /* 0x18 */ virtual float GetFOV() const { return m_Fov; };
-    /* 0x20 */ virtual const nlVector3& GetCameraPosition() const { return m_vecCamera; };
-    /* 0x24 */ virtual const nlVector3& GetTargetPosition() const { return m_vecTarget; };
+    /* 0x0C */ virtual eCameraType GetType();
+    /* 0x24 */ virtual const nlVector3& GetTargetPosition() const;
+    /* 0x20 */ virtual const nlVector3& GetCameraPosition() const;
+    /* 0x18 */ virtual float GetFOV() const;
+    /* 0x14 */ virtual const nlMatrix4& GetViewMatrix() const;
 
     bool LoadCameraAnimation(nlChunk*, nlChunk*, const char*, bool);
     static bool LoadCameraAnimation(const char*, const char*, bool);
@@ -76,5 +74,30 @@ public:
     /* 0xA4 */ float m_Fov;
     /* 0xA8 */ void (*m_EndOfAnimationCallback)();
 }; // total size: 0xAC
+
+inline eCameraType cAnimCamera::GetType()
+{
+    return eCameraType_Animated;
+}
+
+inline const nlVector3& cAnimCamera::GetTargetPosition() const
+{
+    return m_vecTarget;
+}
+
+inline const nlVector3& cAnimCamera::GetCameraPosition() const
+{
+    return m_vecCamera;
+}
+
+inline float cAnimCamera::GetFOV() const
+{
+    return m_Fov;
+}
+
+inline const nlMatrix4& cAnimCamera::GetViewMatrix() const
+{
+    return m_matView;
+}
 
 #endif // _ANIMCAM_H_

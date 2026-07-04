@@ -810,7 +810,7 @@ config.libs = [
             Object(NonMatching, "Game/Camera/rumblefilter.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Camera/DebugCam.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/Camera/GameplayCam.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(NonMatching, "Game/Camera/animcam.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(Matching, "Game/Camera/animcam.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
 
             Object(NonMatching, "Game/Replay.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/ReplayChoreo.cpp", extra_cflags=["-inline auto", "-inline deferred"]),    

@@ -9,10 +9,12 @@
 
 static float dofBehindTarget = 2.0f;
 
+cCameraData* cAnimCamera::m_cameraDataList;
+
 /**
  * Offset/Address/Size: 0x113C | 0x801A5D30 | size: 0x2C
  */
-void EnableDofDebug()
+static void EnableDofDebug()
 {
     if (DepthOfFieldManager::instance.m_bDebugView)
     {
@@ -354,7 +356,6 @@ cAnimCamera::~cAnimCamera()
 
 /**
  * Offset/Address/Size: 0x41C | 0x801A5010 | size: 0x5DC
- * TODO: 97.6% match - residual register allocation differences in interpolation alias setup
  */
 void cAnimCamera::BuildAnimViewMatrix(nlMatrix4& mView)
 {
@@ -364,7 +365,7 @@ void cAnimCamera::BuildAnimViewMatrix(nlMatrix4& mView)
     float fWeightA = 1.0f - fWeightB;
     nlVector3 cameraPos = { };
     nlVector3 targetPos = { };
-    nlQuaternion cameraRot = { };
+    nlQuaternion cameraRot = { 0.0f, 0.0f, 0.0f, 1.0f };
     nlMatrix4 viewMatrix;
     nlMatrix4 facingAngleMatrix;
     if (m_fAnimationTime >= 1.0f)
@@ -401,16 +402,8 @@ void cAnimCamera::BuildAnimViewMatrix(nlMatrix4& mView)
         else
         {
             m_Fov = fWeightA * m_pActiveCameraData->fFOV[nIndex] + fWeightB * m_pActiveCameraData->fFOV[nIndex + 1];
-            nlVector3& cpIdx = m_pActiveCameraData->cameraPos[nIndex];
-            nlVector3& tpNxt = m_pActiveCameraData->targetPos[nIndex + 1];
-            nlVector3& cpNxt = m_pActiveCameraData->cameraPos[nIndex + 1];
-            nlVector3& tpIdx = m_pActiveCameraData->targetPos[nIndex];
-            cameraPos.f.x = fWeightA * cpIdx.f.x + fWeightB * cpNxt.f.x;
-            cameraPos.f.y = fWeightA * cpIdx.f.y + fWeightB * cpNxt.f.y;
-            cameraPos.f.z = fWeightA * cpIdx.f.z + fWeightB * cpNxt.f.z;
-            targetPos.f.x = fWeightA * tpIdx.f.x + fWeightB * tpNxt.f.x;
-            targetPos.f.y = fWeightA * tpIdx.f.y + fWeightB * tpNxt.f.y;
-            targetPos.f.z = fWeightA * tpIdx.f.z + fWeightB * tpNxt.f.z;
+            nlVec3WeightedSum(cameraPos, fWeightA, m_pActiveCameraData->cameraPos[nIndex], fWeightB, m_pActiveCameraData->cameraPos[nIndex + 1]);
+            nlVec3WeightedSum(targetPos, fWeightA, m_pActiveCameraData->targetPos[nIndex], fWeightB, m_pActiveCameraData->targetPos[nIndex + 1]);
             nlQuatSlerp(cameraRot, m_pActiveCameraData->cameraRot[nIndex], m_pActiveCameraData->cameraRot[nIndex + 1], fWeightB);
         }
     }
@@ -552,7 +545,7 @@ void cAnimCamera::Update(float dt)
     if (m_bUseSimulationTime)
     {
         float lastTime = m_fLastSimulationTime;
-        float duration = 1.0f;
+        float duration = 0.0f;
         if (lastTime < duration)
         {
             m_fLastSimulationTime = FixedUpdateTask::mSimulationTime;
@@ -574,7 +567,7 @@ void cAnimCamera::Update(float dt)
         float duration;
         if (m_pActiveCameraData != NULL)
         {
-            duration = (float)(m_pActiveCameraData->m_uKeyCount - 1) / 60.0f;
+            duration = (float)(m_pActiveCameraData->m_uKeyCount - 1) / 30.0f;
         }
         else
         {
@@ -610,7 +603,7 @@ void cAnimCamera::ManualUpdate(float dt)
     if (m_bUseSimulationTime)
     {
         float lastTime = m_fLastSimulationTime;
-        float duration = 1.0f;
+        float duration = 0.0f;
         if (lastTime < duration)
         {
             m_fLastSimulationTime = FixedUpdateTask::mSimulationTime;
@@ -621,7 +614,7 @@ void cAnimCamera::ManualUpdate(float dt)
             float delta = simTime - lastTime;
             if (m_pActiveCameraData != NULL)
             {
-                duration = (float)(m_pActiveCameraData->m_uKeyCount - 1) / 60.0f;
+                duration = (float)(m_pActiveCameraData->m_uKeyCount - 1) / 30.0f;
             }
             m_fAnimationTime += (delta * m_fAnimationSpeed) / duration;
             m_fLastSimulationTime = simTime;
@@ -632,11 +625,11 @@ void cAnimCamera::ManualUpdate(float dt)
         float duration;
         if (m_pActiveCameraData != NULL)
         {
-            duration = (float)(m_pActiveCameraData->m_uKeyCount - 1) / 60.0f;
+            duration = (float)(m_pActiveCameraData->m_uKeyCount - 1) / 30.0f;
         }
         else
         {
-            duration = 1.0f;
+            duration = 0.0f;
         }
         m_fAnimationTime += (dt * m_fAnimationSpeed) / duration;
     }

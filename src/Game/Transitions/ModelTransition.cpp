@@ -478,17 +478,7 @@ void ModeledScreenTransition::RenderOutline() const
 
         other.mSize = outline.mSize;
 
-        nlVector3* oldData = outline.mData;
-        int oldSize = outline.mSize;
-        int oldCapacity = outline.mCapacity;
-
-        outline.mData = other.mData;
-        outline.mSize = other.mSize;
-        outline.mCapacity = other.mCapacity;
-
-        other.mData = oldData;
-        other.mSize = oldSize;
-        other.mCapacity = oldCapacity;
+        outline.Swap(other);
     }
 
     const nlVector3* begin = &current;
@@ -504,10 +494,9 @@ void ModeledScreenTransition::RenderOutline() const
     for (int i = 0; (u32)i < modelCount; i++)
     {
         glModel* model = (glModel*)((u8*)models + modelOffset);
-        int packetOffset = 0;
         for (int iPacket = 0; (u32)iPacket < model->numPackets; iPacket++)
         {
-            const glModelPacket& packet = *(const glModelPacket*)((u8*)model->packets + packetOffset);
+            const glModelPacket& packet = model->packets[iPacket];
             DisplayList* pList = dlGetStruct(packet.indexBuffer);
 
             for (int iVertex = 0; iVertex < (int)packet.numVertices; iVertex++)
@@ -554,17 +543,7 @@ void ModeledScreenTransition::RenderOutline() const
 
                     other.mSize = outline.mSize;
 
-                    nlVector3* oldData = outline.mData;
-                    int oldSize = outline.mSize;
-                    int oldCapacity = outline.mCapacity;
-
-                    outline.mData = other.mData;
-                    outline.mSize = other.mSize;
-                    outline.mCapacity = other.mCapacity;
-
-                    other.mData = oldData;
-                    other.mSize = oldSize;
-                    other.mCapacity = oldCapacity;
+                    outline.Swap(other);
                 }
 
                 nlVector3* at = outline.mData + offset;
@@ -628,8 +607,6 @@ void ModeledScreenTransition::RenderOutline() const
                 outline.mData[k] = nlVector3();
             }
             outline.mSize = 0;
-
-            packetOffset += sizeof(glModelPacket);
         }
 
         modelOffset += sizeof(glModel);

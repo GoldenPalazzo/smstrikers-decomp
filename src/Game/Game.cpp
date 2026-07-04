@@ -9,6 +9,7 @@
 #include "Game/AI/Scripts/ScriptDefines.h"
 #include "Game/AI/Scripts/ScriptQuestions.h"
 #include "Game/GameInfo.h"
+#include "Game/MathHelpers.h"
 #include "Game/Camera/CameraMan.h"
 #include "Game/Camera/GameplayCam.h"
 #include "Game/BasicStadium.h"
@@ -1216,7 +1217,7 @@ static inline void UpdatePowerUpObjects(float fDeltaT)
 
 /**
  * Offset/Address/Size: 0x5A4 | 0x8003CB18 | size: 0x47C
- * TODO: 99.84% match - tilt conversion f-register shift (f1/f2/f3 rotated),
+ * TODO: 99.97% match - time-scale 1.0f literal reference differs,
  *       and home-score temp r28 vs r30.
  */
 void cGame::Update(float deltaTime)
@@ -1298,32 +1299,8 @@ void cGame::Update(float deltaTime)
 
     if (nlSingleton<GameInfoManager>::s_pInstance->IsTiltingFieldOn())
     {
-        float tilt = (float)(g_pTeams[0]->m_nScore - g_pTeams[1]->m_nScore);
-        tilt *= 2.0f;
-
-        float clampedLower;
-        if (tilt >= -6.0f)
-        {
-            clampedLower = tilt;
-        }
-        else
-        {
-            clampedLower = -6.0f;
-        }
-        tilt = clampedLower;
-
+        float tilt = nlMinEquals(nlMaxEquals(2.0f * (float)(g_pTeams[0]->m_nScore - g_pTeams[1]->m_nScore), -6.0f), 6.0f);
         float currentTilt = mfCheatTilt;
-
-        float clampedUpper;
-        if (tilt <= 6.0f)
-        {
-            clampedUpper = tilt;
-        }
-        else
-        {
-            clampedUpper = 6.0f;
-        }
-        tilt = clampedUpper;
 
         mfCheatTilt = ((cCharacter*)g_pTeams[0])->SeekSpeedExponential(currentTilt, tilt, 2.0f, deltaTime);
         Bowser::SetTiltParameters(mfCheatTilt);

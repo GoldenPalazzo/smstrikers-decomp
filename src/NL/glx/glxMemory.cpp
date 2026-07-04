@@ -224,15 +224,13 @@ void glplatResourceRelease(unsigned long long resourceId)
 
 /**
  * Offset/Address/Size: 0x310 | 0x801B6C38 | size: 0x130
- * TODO: 99.87% match - marker high-word OR operands are reversed.
  */
 #pragma push
 #pragma optimize_for_size on
 #pragma use_lmw_stmw off
 unsigned long long glplatResourceMark()
 {
-    int texLevel = glx_GetTexMarkerLevel();
-    unsigned long long marker = texLevel | ((unsigned long long)n_phys << 32);
+    unsigned long long marker = glx_GetTexMarkerLevel() | ((unsigned long long)n_phys << 32);
 
     glx_AdvanceTexMarkerLevel();
     gl_ConstantMarkerAdvance();
