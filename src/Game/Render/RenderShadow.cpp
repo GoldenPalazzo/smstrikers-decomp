@@ -626,7 +626,7 @@ static void CastPoint(nlVector3& p, const nlVector3& vLight)
 
 /**
  * Offset/Address/Size: 0x0 | 0x80123034 | size: 0x750
- * TODO: 92.28% match - register allocation and scheduling still differ in corner setup
+ * TODO: 92.85% match - register allocation and scheduling still differ in corner setup
  *       and directional/point cast paths.
  */
 void RenderProjectedShadow(const ProjectedShadowParams& params)
@@ -684,9 +684,10 @@ void RenderProjectedShadow(const ProjectedShadowParams& params)
         float halfW = 0.5f * width;
         float negHalfW = -0.5f * width;
 
-        vTemp.f.x = params.vPosition.f.x;
-        vTemp.f.y = params.vPosition.f.y;
-        vTemp.f.z = params.vPosition.f.z + 0.5f * height;
+        vTemp.as_u32[0] = params.vPosition.as_u32[0];
+        vTemp.as_u32[1] = params.vPosition.as_u32[1];
+        vTemp.as_u32[2] = params.vPosition.as_u32[2];
+        vTemp.f.z += 0.5f * height;
 
         float halfCrossX = halfW * crossX;
         float halfCrossY = halfW * crossY;

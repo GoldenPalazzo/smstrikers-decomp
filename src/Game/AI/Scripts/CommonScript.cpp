@@ -2197,8 +2197,6 @@ FuzzyVariant Fuzzy::GetBestPassReceiveAction(cFielder* TheFielder)
 
                 FuzzyVariant returnAction(18);
                 returnAction.ExtraData = (Variant&)powerupToUse;
-                returnAction.Confidence = 0.0f;
-                returnAction.SelectionChance = 1.0f;
 
                 SkillTweaks* pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide);
                 returnAction.SelectionChance = CalcSelectChance(pSkillTweaks->Off_PassReceivePowerupChance, Aggressive(TheFielder));
@@ -2278,8 +2276,6 @@ FuzzyVariant Fuzzy::GetBestPassReceiveAction(cFielder* TheFielder)
 
                 FuzzyVariant returnAction(5);
                 returnAction.ExtraData = Variant(FT_PLAYER, (cPlayer*)pClosestOpponent);
-                returnAction.Confidence = 0.0f;
-                returnAction.SelectionChance = 1.0f;
 
                 SkillTweaks* pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide);
                 returnAction.SelectionChance = CalcSelectChance(pSkillTweaks->Off_PassReceiveHitChance, Aggressive(TheFielder));
@@ -2356,8 +2352,6 @@ FuzzyVariant Fuzzy::GetBestPassReceiveAction(cFielder* TheFielder)
 
             FuzzyVariant shotAction(24);
             shotAction.ExtraData = Variant(FT_BOOL, true);
-            shotAction.Confidence = 0.0f;
-            shotAction.SelectionChance = 1.0f;
 
             SkillTweaks* pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide);
             shotAction.SelectionChance = CalcSelectChance(pSkillTweaks->Off_ChipShotChance, Shooter(TheFielder));
@@ -2389,8 +2383,6 @@ FuzzyVariant Fuzzy::GetBestPassReceiveAction(cFielder* TheFielder)
 
             FuzzyVariant passAction(13);
             passAction.ExtraData = (Variant&)bestPassTargetFielder;
-            passAction.Confidence = 0.0f;
-            passAction.SelectionChance = 1.0f;
 
             SkillTweaks* pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide);
             passAction.SelectionChance = CalcSelectChance(pSkillTweaks->Off_OneTouchGroundPassChance, Passer(TheFielder));

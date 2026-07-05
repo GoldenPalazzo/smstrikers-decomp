@@ -1649,7 +1649,7 @@ void Goalie::ActionSTS(float fDeltaT)
                 && (float)fabs(m_v3Position.f.x) < fGoalLineLimit)
             {
                 v3GoaliePos = m_v3Position;
-                v3GoaliePos.f.y = (m_v3Position.f.y > 0.0f) ? fGoalieNetYLimit : -fGoalieNetYLimit;
+                v3GoaliePos.f.y = (GetPosition().f.y > 0.0f) ? fGoalieNetYLimit : -fGoalieNetYLimit;
                 SetPosition(v3GoaliePos);
             }
         }

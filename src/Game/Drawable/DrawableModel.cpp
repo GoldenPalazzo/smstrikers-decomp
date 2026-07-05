@@ -110,7 +110,7 @@ AVLTreeNode* AVLTreeBase<unsigned long, AABBDimensions, BasicSlotPool<AVLTreeEnt
  */
 static void DrawBallShadow(const nlVector3& vPosition, const BallShadowParams& p, bool bGlow)
 {
-    f32 frac = vPosition.f.z / p.fReferenceHeight;
+    f32 frac = vPosition.f.z * (1.0f / p.fReferenceHeight);
     if (frac < 0.0f)
     {
         frac = 0.0f;

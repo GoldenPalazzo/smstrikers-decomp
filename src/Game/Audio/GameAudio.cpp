@@ -350,24 +350,24 @@ float cGameSFX::GetSFXVolReverb(unsigned long index) const
 inline float cGameSFX::GetSFXVol(const Audio::SoundAttributes& attributes) const
 {
     SoundStrToIDNode sfxInfo = mpSFX[attributes.mu_Type];
-    if (attributes.mf_Volume == 100.0f)
+    if (attributes.mf_Volume != 100.0f)
     {
-        return sfxInfo.fVolume;
+        return attributes.mf_Volume;
     }
 
-    return attributes.mf_Volume;
+    return sfxInfo.fVolume;
 }
 
 inline float cGameSFX::GetSFXVolReverb(const Audio::SoundAttributes& attributes) const
 {
     SoundStrToIDNode* sfxTable = mpSFX;
     SoundStrToIDNode sfxInfo = sfxTable[attributes.mu_Type];
-    if (attributes.mf_VolReverb == 100.0f)
+    if (attributes.mf_VolReverb != 100.0f)
     {
-        return sfxInfo.fVolReverb;
+        return attributes.mf_VolReverb;
     }
 
-    return attributes.mf_VolReverb;
+    return sfxInfo.fVolReverb;
 }
 
 /**
@@ -899,8 +899,8 @@ static inline bool FindRepeatTrackedSFX(cGameSFX* self, unsigned long type, SFXP
 
 /**
  * Offset/Address/Size: 0x1104 | 0x80152648 | size: 0xACC
- * TODO: 97.70% match - remaining this/attributes register-coloring swap and
- * inlined SoundStrToIDNode copy scheduling differences.
+ * TODO: 98.02% match - remaining this/attributes register swap and
+ * pInfoEmitter r5/r6 temp mismatch.
  */
 unsigned long cGameSFX::Play(Audio::SoundAttributes& attributes)
 {

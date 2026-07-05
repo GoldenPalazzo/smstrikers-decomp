@@ -153,9 +153,13 @@ TournTeamSetupSceneV2::~TournTeamSetupSceneV2()
     }
 }
 
+static inline MenuItem<TLComponentInstance>* TournTeamSetupItemAt(MenuList<TLComponentInstance>& menu, int idx)
+{
+    return &menu.mMenuItems[idx] - 1;
+}
+
 /**
  * Offset/Address/Size: 0x3ED4 | 0x800E5D78 | size: 0xD44
- * TODO: 99.76% match - menu item pointer calculation is scheduled differently in the callback setup block.
  */
 void TournTeamSetupSceneV2::SceneCreated()
 {
@@ -184,8 +188,9 @@ void TournTeamSetupSceneV2::SceneCreated()
             if (mCurrentState == STATE_SCROLLING)
             {
                 int numItemsAdded = mMenuItems.mNumItemsAdded;
+                MenuItem<TLComponentInstance>* item = TournTeamSetupItemAt(mMenuItems, numItemsAdded);
                 mMenuItems.mMenuItems[numItemsAdded].mType = compinstance;
-                menuItem = &mMenuItems.mMenuItems[numItemsAdded];
+                menuItem = &item[1];
                 mMenuItems.mNumItemsAdded++;
 
                 {

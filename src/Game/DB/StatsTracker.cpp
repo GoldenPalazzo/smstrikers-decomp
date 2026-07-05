@@ -24,6 +24,22 @@
 
 typedef FormatImpl<NLString> NLFormatImpl;
 
+static inline void EraseRange(NLString& s, const char* begin, const char* end)
+{
+    s[0];
+    BasicStringData<char>* data = s.m_data;
+    int size = end - begin;
+    int offset = begin - data->mData;
+    char* at = data->mData + offset;
+    while (end != data->mData + data->mSize)
+    {
+        *at = *end;
+        end++;
+        at++;
+    }
+    data->mSize -= size;
+}
+
 /**
  * Offset/Address/Size: 0x1DAC | 0x80188948 | size: 0xD74
  * TODO: 99.25% match - remaining diffs are marker add operand order and
@@ -113,30 +129,14 @@ NLFormatImpl& NLFormatImpl::operator% <float>(const float& t)
         if (markerEnd[2] != (char)'}')
             continue;
 
-        char* eraseBegin;
-        char* eraseEnd;
         mString[0];
-        eraseEnd = (mString.m_data ? mString.m_data->mData : (char*)0) + i + 3;
-        mString[0];
-        eraseBegin = (mString.m_data ? mString.m_data->mData : (char*)0) + i;
-        mString[0];
-        BasicStringData<char>* eraseData = mString.m_data;
-        int eraseSize = eraseEnd - eraseBegin;
-        int eraseOffset = eraseBegin - eraseData->mData;
-        char* eraseAt = eraseData->mData + eraseOffset;
-        while (eraseEnd != eraseData->mData + eraseData->mSize)
-        {
-            *eraseAt = *eraseEnd;
-            eraseEnd++;
-            eraseAt++;
-        }
-        eraseData->mSize -= eraseSize;
+        EraseRange(mString, ((void)mString[0], (mString.m_data ? mString.m_data->mData : (char*)0) + i), (mString.m_data ? mString.m_data->mData : (char*)0) + i + 3);
         mString[i];
         char* mStringData = mString.m_data ? mString.m_data->mData : 0;
-        insert[0];
-        char* insertBegin = insert.m_data ? insert.m_data->mData : 0;
+        const char* insertBegin = ((void)insert[0], insert.m_data ? insert.m_data->mData : 0);
         insert[(int)(insert.m_data ? insert.m_data->mSize - 1 : 0)];
-        mString.insert(mStringData + i, insertBegin, insert.m_data ? insert.m_data->mData + insert.m_data->mSize - 1 : (char*)0);
+        const char* insertEnd = insert.m_data ? insert.m_data->mData + insert.m_data->mSize - 1 : (char*)0;
+        mString.insert(mStringData + i, insertBegin, insertEnd);
     }
 
     mCurrentPos++;
@@ -1214,7 +1214,7 @@ void StatsTracker::TrackStat(ePlayerStats stat, int homeaway, int playerindex, i
 
 /**
  * Offset/Address/Size: 0x3708 | 0x80184C68 | size: 0x7E8
- * TODO: 99.59% match - r29/r31 swap in unrolled init loop, r29/r30 stat value load swaps
+ * TODO: 99.89% match - init loop pointer uses r31 instead of r29
  */
 static inline int CompareInt(eSortOrder sortOrder, int a, int b)
 {
@@ -1258,30 +1258,34 @@ void StatsTracker::GetSortedStats(PlayerStats* source, int numsource, int* dest,
             }
             case STATS_GOALS_FOR:
             {
+                unsigned short b;
                 unsigned short a = source[tempsorted[nexti]].mNumGoalsFor;
-                unsigned short b = source[tempsorted[i]].mNumGoalsFor;
-                doswap = sortOrder == SORT_DESCENDING ? (int)a < (int)b : (int)b < (int)a;
+                b = source[tempsorted[i]].mNumGoalsFor;
+                doswap = sortOrder == SORT_DESCENDING ? (int)b < (int)a : (int)a < (int)b;
                 break;
             }
             case STATS_GOALS_AGAINST:
             {
+                unsigned short b;
                 unsigned short a = source[tempsorted[nexti]].mNumGoalsAgainst;
-                unsigned short b = source[tempsorted[i]].mNumGoalsAgainst;
-                doswap = sortOrder == SORT_DESCENDING ? (int)a < (int)b : (int)b < (int)a;
+                b = source[tempsorted[i]].mNumGoalsAgainst;
+                doswap = sortOrder == SORT_DESCENDING ? (int)b < (int)a : (int)a < (int)b;
                 break;
             }
             case STATS_ASSISTS:
             {
+                unsigned short b;
                 unsigned short a = source[tempsorted[nexti]].mNumAssists;
-                unsigned short b = source[tempsorted[i]].mNumAssists;
-                doswap = sortOrder == SORT_DESCENDING ? (int)a < (int)b : (int)b < (int)a;
+                b = source[tempsorted[i]].mNumAssists;
+                doswap = sortOrder == SORT_DESCENDING ? (int)b < (int)a : (int)a < (int)b;
                 break;
             }
             case STATS_FOULS:
             {
+                unsigned short b;
                 unsigned short a = source[tempsorted[nexti]].mNumFouls;
-                unsigned short b = source[tempsorted[i]].mNumFouls;
-                doswap = sortOrder == SORT_DESCENDING ? (int)a < (int)b : (int)b < (int)a;
+                b = source[tempsorted[i]].mNumFouls;
+                doswap = sortOrder == SORT_DESCENDING ? (int)b < (int)a : (int)a < (int)b;
                 break;
             }
             case STATS_WIN:
@@ -1291,79 +1295,90 @@ void StatsTracker::GetSortedStats(PlayerStats* source, int numsource, int* dest,
                 break;
             case STATS_POWERUPS_USED:
             {
+                unsigned short b;
                 unsigned short a = source[tempsorted[nexti]].mNumPowerupsUsed;
-                unsigned short b = source[tempsorted[i]].mNumPowerupsUsed;
-                doswap = sortOrder == SORT_DESCENDING ? (int)a < (int)b : (int)b < (int)a;
+                b = source[tempsorted[i]].mNumPowerupsUsed;
+                doswap = sortOrder == SORT_DESCENDING ? (int)b < (int)a : (int)a < (int)b;
                 break;
             }
             case STATS_POWERUPS_HIT:
             {
+                unsigned short b;
                 unsigned short a = source[tempsorted[nexti]].mNumPowerupsHit;
-                unsigned short b = source[tempsorted[i]].mNumPowerupsHit;
-                doswap = sortOrder == SORT_DESCENDING ? (int)a < (int)b : (int)b < (int)a;
+                b = source[tempsorted[i]].mNumPowerupsHit;
+                doswap = sortOrder == SORT_DESCENDING ? (int)b < (int)a : (int)a < (int)b;
                 break;
             }
             case STATS_GOALS_FOR_STS:
             {
+                unsigned short b;
                 unsigned short a = source[tempsorted[nexti]].mNumShootToScoreGoals;
-                unsigned short b = source[tempsorted[i]].mNumShootToScoreGoals;
-                doswap = sortOrder == SORT_DESCENDING ? (int)a < (int)b : (int)b < (int)a;
+                b = source[tempsorted[i]].mNumShootToScoreGoals;
+                doswap = sortOrder == SORT_DESCENDING ? (int)b < (int)a : (int)a < (int)b;
                 break;
             }
             case STATS_PASSES_MADE:
             {
+                unsigned short b;
                 unsigned short a = source[tempsorted[nexti]].mNumPassesMade;
-                unsigned short b = source[tempsorted[i]].mNumPassesMade;
-                doswap = sortOrder == SORT_DESCENDING ? (int)a < (int)b : (int)b < (int)a;
+                b = source[tempsorted[i]].mNumPassesMade;
+                doswap = sortOrder == SORT_DESCENDING ? (int)b < (int)a : (int)a < (int)b;
                 break;
             }
             case STATS_PASSES_RECEIVED:
             {
+                unsigned short b;
                 unsigned short a = source[tempsorted[nexti]].mNumPassesMade;
-                unsigned short b = source[tempsorted[i]].mNumPassesMade;
-                doswap = sortOrder == SORT_DESCENDING ? (int)a < (int)b : (int)b < (int)a;
+                b = source[tempsorted[i]].mNumPassesMade;
+                doswap = sortOrder == SORT_DESCENDING ? (int)b < (int)a : (int)a < (int)b;
                 break;
             }
             case STATS_PASSES_INTERCEPTED:
             {
+                unsigned short b;
                 unsigned short a = source[tempsorted[nexti]].mNumPassesIntercepted;
-                unsigned short b = source[tempsorted[i]].mNumPassesIntercepted;
-                doswap = sortOrder == SORT_DESCENDING ? (int)a < (int)b : (int)b < (int)a;
+                b = source[tempsorted[i]].mNumPassesIntercepted;
+                doswap = sortOrder == SORT_DESCENDING ? (int)b < (int)a : (int)a < (int)b;
                 break;
             }
             case STATS_POSSESION_TIME:
             {
+                unsigned long b;
                 unsigned long a = source[tempsorted[nexti]].mBallPossessionTime;
-                unsigned long b = source[tempsorted[i]].mBallPossessionTime;
-                doswap = sortOrder == SORT_DESCENDING ? (int)a < (int)b : (int)b < (int)a;
+                b = source[tempsorted[i]].mBallPossessionTime;
+                doswap = sortOrder == SORT_DESCENDING ? (int)b < (int)a : (int)a < (int)b;
                 break;
             }
             case STATS_GAMES_PLAYED:
             {
+                unsigned short b;
                 unsigned short a = source[tempsorted[nexti]].mNumGamesPlayed;
-                unsigned short b = source[tempsorted[i]].mNumGamesPlayed;
-                doswap = sortOrder == SORT_DESCENDING ? (int)a < (int)b : (int)b < (int)a;
+                b = source[tempsorted[i]].mNumGamesPlayed;
+                doswap = sortOrder == SORT_DESCENDING ? (int)b < (int)a : (int)a < (int)b;
                 break;
             }
             case STATS_STEALS:
             {
+                unsigned short b;
                 unsigned short a = source[tempsorted[nexti]].mNumSteals;
-                unsigned short b = source[tempsorted[i]].mNumSteals;
-                doswap = sortOrder == SORT_DESCENDING ? (int)a < (int)b : (int)b < (int)a;
+                b = source[tempsorted[i]].mNumSteals;
+                doswap = sortOrder == SORT_DESCENDING ? (int)b < (int)a : (int)a < (int)b;
                 break;
             }
             case STATS_BUTTON_PRESSES:
             {
+                unsigned long b;
                 unsigned long a = source[tempsorted[nexti]].mNumButtonPresses;
-                unsigned long b = source[tempsorted[i]].mNumButtonPresses;
-                doswap = sortOrder == SORT_DESCENDING ? (int)a < (int)b : (int)b < (int)a;
+                b = source[tempsorted[i]].mNumButtonPresses;
+                doswap = sortOrder == SORT_DESCENDING ? (int)b < (int)a : (int)a < (int)b;
                 break;
             }
             case STATS_HITS_MADE:
             {
+                unsigned short b;
                 unsigned short a = source[tempsorted[nexti]].mNumHitsMade;
-                unsigned short b = source[tempsorted[i]].mNumHitsMade;
-                doswap = sortOrder == SORT_DESCENDING ? (int)a < (int)b : (int)b < (int)a;
+                b = source[tempsorted[i]].mNumHitsMade;
+                doswap = sortOrder == SORT_DESCENDING ? (int)b < (int)a : (int)a < (int)b;
                 break;
             }
             }

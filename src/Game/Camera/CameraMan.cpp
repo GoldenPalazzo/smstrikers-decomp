@@ -527,7 +527,7 @@ void cCameraManager::Remove(eCameraType type, bool bDeleteAfterRemoving)
 
 /**
  * Offset/Address/Size: 0x7F8 | 0x801A6E80 | size: 0x29C
- * TODO: 99.55% match - nlPrintf literal label relocation (@1258 vs @267)
+ * TODO: 99.91% match - nlPrintf/float literal label relocations and filter pointer r23 vs r30
  */
 /* static */ void cCameraManager::PushCameraWithTransition(cBaseCamera* pCamera, float fDuration, eCameraTransition transition, void (*pCallback)(eCameraMessage))
 {
@@ -551,9 +551,9 @@ void cCameraManager::Remove(eCameraType type, bool bDeleteAfterRemoving)
     }
 
     cCameraManager::m_transition = transition;
-    cCameraManager::m_pCallback = pCallback;
     cCameraManager::m_fTransitionSpeed = 1.0f / fDuration;
     cCameraManager::m_fTransitionTime = 0.0f;
+    cCameraManager::m_pCallback = pCallback;
 
     if ((cCameraManager::PeekCamera() != NULL)
         && (cCameraManager::PeekCamera()->m_pFilter != 0))

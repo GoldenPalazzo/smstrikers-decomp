@@ -139,7 +139,8 @@ static void GetConstants();
 
 /**
  * Offset/Address/Size: 0x0 | 0x801B9B00 | size: 0x538
- * TODO: 98.27% match - texture loop register permutation: texnum/i at r25/r24 vs target r29/r28, sliding texture/output pointers shifted.
+ * TODO: 99.61% match - texture loop register permutation keeps texnum/i at r25/r24
+ * vs target r29/r28, sliding texture/output pointers shifted.
  */
 void glx_SendFrame_cb(eGLView view, unsigned long flags, const glModelPacket* p)
 {
@@ -231,9 +232,6 @@ void glx_SendFrame_cb(eGLView view, unsigned long flags, const glModelPacket* p)
 
         if (flags & 0x14)
         {
-            int texnum = 0;
-            int i;
-
             static u32 errorTextures[2] = { 0, 0 };
             static signed char errorTextures_init;
             if (!errorTextures_init)
@@ -243,7 +241,9 @@ void glx_SendFrame_cb(eGLView view, unsigned long flags, const glModelPacket* p)
                 errorTextures_init = 1;
             }
 
-            for (i = 0; i < 6; i++)
+            int texnum;
+            int i;
+            for (i = texnum = 0; i < 6; i++)
             {
                 if (!(glx_texconfig & (1 << i)))
                     continue;
@@ -673,9 +673,8 @@ inline void glud_Viewport(void* pData)
 
 /**
  * Offset/Address/Size: 0x538 | 0x801BA038 | size: 0xB20
- * TODO: 98.97% match - p/bFogWasDisabled/bIndirect registers differ; texture-dirty loop
- * pointer registers, env stage register, display-list pointer, and draw-call scheduling
- * still differ.
+ * TODO: 99.59% match - packet and bFogWasDisabled registers still differ,
+ * causing dependent texture-loop, env-stage, and display-list pointer registers to differ.
  */
 static void glx_DrawPacket(const glModelPacket* packet)
 {
@@ -698,10 +697,10 @@ static void glx_DrawPacket(const glModelPacket* packet)
     bool bIndirect = false;
     u32 mask;
     _GXTlut tlutID;
-    u32 vh;
-    u32 vx;
-    u32 vy;
-    u32 vw;
+    s32 vh;
+    s32 vx;
+    s32 vy;
+    s32 vw;
     glModelPacket* p = (glModelPacket*)packet;
 
     // === Block 1: WarbleBlend indirect-texture setup ===

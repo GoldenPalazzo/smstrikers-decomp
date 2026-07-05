@@ -689,7 +689,8 @@ int dBoxBox(const dVector3 p1, const dMatrix3 R1,
 {
     dReal s, s2, l;
     const dReal fudge_factor = REAL(1.05);
-    dVector3 p, pp, normalC;
+    dVector3 p, pp;
+    dReal normalC0, normalC1, normalC2;
     const dReal* normalR = 0;
     dReal A[3], B[3], R11, R12, R13, R21, R22, R23, R31, R32, R33,
         Q11, Q12, Q13, Q21, Q22, Q23, Q31, Q32, Q33;
@@ -781,9 +782,9 @@ int dBoxBox(const dVector3 p1, const dMatrix3 R1,
         {                                               \
             s = s2;                                     \
             normalR = 0;                                \
-            normalC[0] = (n1) / l;                      \
-            normalC[1] = (n2) / l;                      \
-            normalC[2] = (n3) / l;                      \
+            normalC0 = (n1) / l;                        \
+            normalC1 = (n2) / l;                        \
+            normalC2 = (n3) / l;                        \
             invert_normal = ((expr1) < 0);              \
             code = (cc);                                \
         }                                               \
@@ -819,7 +820,9 @@ int dBoxBox(const dVector3 p1, const dMatrix3 R1,
     }
     else
     {
-        dMULTIPLY0_331(normal, R1, normalC);
+        normal[0] = R1[0] * normalC0 + R1[1] * normalC1 + R1[2] * normalC2;
+        normal[1] = R1[4] * normalC0 + R1[5] * normalC1 + R1[6] * normalC2;
+        normal[2] = R1[8] * normalC0 + R1[9] * normalC1 + R1[10] * normalC2;
     }
     if (invert_normal)
     {
@@ -1037,15 +1040,15 @@ int dBoxBox(const dVector3 p1, const dMatrix3 R1,
     dReal point[3 * 8]; // penetrating contact points
     dReal dep[8];       // depths for those points
     dReal det1 = dRecip(m11 * m22 - m12 * m21);
-    m11 *= det1;
-    m12 *= det1;
-    m21 *= det1;
-    m22 *= det1;
+    dReal sm11 = m11 * det1;
+    dReal sm12 = m12 * det1;
+    dReal sm21 = m21 * det1;
+    dReal sm22 = m22 * det1;
     int cnum = 0; // number of penetrating contact points found
     for (j = 0; j < n; j++)
     {
-        dReal k1 = m22 * (ret[j * 2] - c1) - m12 * (ret[j * 2 + 1] - c2);
-        dReal k2 = -m21 * (ret[j * 2] - c1) + m11 * (ret[j * 2 + 1] - c2);
+        dReal k1 = sm22 * (ret[j * 2] - c1) - sm12 * (ret[j * 2 + 1] - c2);
+        dReal k2 = -sm21 * (ret[j * 2] - c1) + sm11 * (ret[j * 2 + 1] - c2);
         for (i = 0; i < 3; i++)
             point[cnum * 3 + i] = center[i] + k1 * Rb[i * 4 + a1] + k2 * Rb[i * 4 + a2];
         dep[cnum] = Sa[codeN] - dDOT(normal2, point + cnum * 3);

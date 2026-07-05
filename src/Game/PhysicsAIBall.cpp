@@ -719,15 +719,17 @@ ContactType PhysicsAIBall::Contact(PhysicsObject* obj, dContact* info, int numCo
                     u32 shotTimer = m_pAIBall->m_tShotTimer.m_uPackedTime;
                     *(u8*)((u8*)pEventData + 0x9) = (shotTimer != 0);
 
-                    float posY = info->geom.pos[1];
+                    float posY;
                     float posZ = info->geom.pos[2];
+                    posY = info->geom.pos[1];
                     float posX = info->geom.pos[0];
                     *(float*)((u8*)pEventData + 0x0C) = posX;
                     *(float*)((u8*)pEventData + 0x10) = posY;
                     *(float*)((u8*)pEventData + 0x14) = posZ;
 
-                    float normalY = info->geom.normal[1];
+                    float normalY;
                     float normalZ = info->geom.normal[2];
+                    normalY = info->geom.normal[1];
                     float normalX = info->geom.normal[0];
                     *(float*)((u8*)pEventData + 0x18) = normalX;
                     *(float*)((u8*)pEventData + 0x1C) = normalY;

@@ -394,15 +394,13 @@ void SummaryOverlay::DisplayMatchSummary(eSummaryType matchSummaryType)
 
         pTitleText = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
             pSlide,
-            InlineHasher(nlStringLowerHash("Title")),
-            InlineHasher(0));
+            InlineHasher(nlStringLowerHash("Title")));
         pTitleText->SetString(mTitleBuffer);
     }
 
     pTitleText = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
         pSlide,
-        InlineHasher(nlStringLowerHash("Title")),
-        InlineHasher(0));
+        InlineHasher(nlStringLowerHash("Title")));
 
     if (mContext == ENDGAME)
     {
@@ -441,15 +439,13 @@ void SummaryOverlay::DisplayMatchSummary(eSummaryType matchSummaryType)
         pSlide = mSlideMenu->m_pMenuComp->GetActiveSlide();
         pComponentInstances[team] = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
             pSlide,
-            InlineHasher(nlStringLowerHash(SUMMARY_COL_NAMES[team])),
-            InlineHasher(0));
+            InlineHasher(nlStringLowerHash(SUMMARY_COL_NAMES[team])));
 
         pSlide = pComponentInstances[team]->GetActiveSlide();
 
         pTextInstanceRowHeading = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
             pSlide,
-            InlineHasher(nlStringLowerHash("TEAM")),
-            InlineHasher(0));
+            InlineHasher(nlStringLowerHash("TEAM")));
         pTextInstanceRowHeading->m_LocStrId = GetLOCCharacterName((eTeamID)displayedStats[team]->mRecordType.mTeamID, false, false);
         pTextInstanceRowHeading->m_OverloadFlags |= 0x8;
 

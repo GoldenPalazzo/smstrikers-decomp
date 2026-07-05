@@ -425,7 +425,7 @@ static inline void ComputeAscendingJointPosition(nlVector3& out, const cPoseAccu
 
 /**
  * Offset/Address/Size: 0x32C | 0x801F7C1C | size: 0x5EC
- * TODO: 99.22% match - remaining register allocation diffs in joint helper pose/hierarchy locals, isFinished setup, and user effect loop.
+ * TODO: 99.85% match - remaining register allocation diffs in joint helper pose/hierarchy locals.
  */
 bool EmissionController::Update(float dt)
 {
@@ -572,7 +572,15 @@ bool EmissionController::Update(float dt)
         pSys = pNext;
     }
 
-    u8 isFinished = (numSys == numDel) ? 1 : 0;
+    u8 isFinished;
+    if (numSys == numDel)
+    {
+        isFinished = true;
+    }
+    else
+    {
+        isFinished = false;
+    }
 
     if (isFinished && mFinishedCallback.mTag != EMPTY)
     {

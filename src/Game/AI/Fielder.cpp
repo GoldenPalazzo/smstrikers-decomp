@@ -2098,7 +2098,7 @@ void cFielder::ShootBallDueToContact(unsigned short aAngle)
 
 /**
  * Offset/Address/Size: 0x8F5C | 0x80022298 | size: 0x230
- * TODO: 99.43% match - remaining gap is in DoClearBall angle-selection register allocation:
+ * TODO: 99.61% match - remaining angle-selection register allocation:
  *       r6/r7 swap for m_pShotMeter vs pClearingBottomAngle.a, plus r3/r4 and cmplw operand order drift.
  */
 void cFielder::DoClearBall()
@@ -2117,8 +2117,11 @@ void cFielder::DoClearBall()
     nlCartesianToPolar(pClearingBottomAngle, fGoalline - m_v3Position.f.x, fBottomY - m_v3Position.f.y);
 
     ShotMeter* pShotMeter = m_pShotMeter;
-    s16 nBottomDelta = (int)(s16)(m_aActualFacingDirection - pClearingBottomAngle.a);
-    s16 nTopDelta = (int)(s16)(m_aActualFacingDirection - pClearingTopAngle.a);
+    u32 aFacing = m_aActualFacingDirection;
+    u32 aBottom = pClearingBottomAngle.a;
+    u32 aTop = pClearingTopAngle.a;
+    s16 nBottomDelta = (int)(s16)(aFacing - aBottom);
+    s16 nTopDelta = (int)(s16)(aFacing - aTop);
 
     if (pShotMeter->mfSShotAimValue > 0.5f)
     {
@@ -6258,7 +6261,6 @@ void cFielder::UpdateHeadTracking(float)
 
 /**
  * Offset/Address/Size: 0x13C4 | 0x8001A700 | size: 0x408
- * TODO: 98.99% match - MWCC generates blt instead of bge+b for SkillLevel >= SUPERSTAR check (compiler code layout quirk)
  */
 void cFielder::UpdateController(float)
 {
@@ -6369,10 +6371,15 @@ void cFielder::UpdateController(float)
             if (GetGlobalPad() == NULL)
             {
                 const GameplaySettings& gameplayOptions = nlSingleton<GameInfoManager>::s_pInstance->GetGameplayOptions();
-                if (gameplayOptions.SkillLevel >= GameplaySettings::SUPERSTAR)
+                switch (gameplayOptions.SkillLevel)
                 {
-                    if ((gameplayOptions.SkillLevel < (GameplaySettings::eSkillLevel)5)
-                        && (nNumUsers == 0))
+                case GameplaySettings::TRAINING:
+                case GameplaySettings::ROOKIE:
+                case GameplaySettings::PROFESSIONAL:
+                    break;
+                case GameplaySettings::SUPERSTAR:
+                case GameplaySettings::LEGEND:
+                    if (nNumUsers == 0)
                     {
                         SkillTweaks* pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide);
                         if (nlRandomf(1.0f, &nlDefaultSeed) < pSkillTweaks->Shoot_CaptainS2SSecondButtonChance)
@@ -6387,10 +6394,7 @@ void cFielder::UpdateController(float)
                                 yPercentage);
                         }
                     }
-                }
-                else
-                {
-                    return;
+                    break;
                 }
             }
             else if (m_pController->GetCStickMovementStickMagnitude() > 0.0f)

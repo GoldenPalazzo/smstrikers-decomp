@@ -34,17 +34,12 @@ cPoseAccumulator::cPoseAccumulator(cSHierarchy* pSHierarchy, bool bStorePrevNode
     }
 }
 
-/**
- * Offset/Address/Size: 0xB7C | 0x801EC11C | size: 0x15C
- */
-void cPoseAccumulator::Pose(const cPoseNode& node, const nlMatrix4& mat)
+static inline void PoseAccumulatorInitNodeAccumulators(cPoseAccumulator* pose)
 {
     int i;
-    int j;
-
-    for (i = 0, j = i; i < m_BaseSHierarchy->m_nodeCount; i++, j++)
+    for (i = 0; i < pose->m_BaseSHierarchy->m_nodeCount; i++)
     {
-        RotAccum& r = m_rot.mData[j];
+        RotAccum& r = pose->m_rot.mData[i];
         r.q.f.x = 0.0f;
         r.q.f.y = 0.0f;
         r.q.f.z = 0.0f;
@@ -54,16 +49,16 @@ void cPoseAccumulator::Pose(const cPoseNode& node, const nlMatrix4& mat)
         r.rotAroundZAccumulatedWeight = 0.0f;
         r.bIdentity = true;
 
-        ScaleAccum& s = m_scale.mData[i];
+        ScaleAccum& s = pose->m_scale.mData[i];
         s.s.f.x = 1.0f;
         s.s.f.y = 1.0f;
         s.s.f.z = 1.0f;
         s.fAccumulatedWeight = 0.0f;
         s.bIdentity = true;
 
-        if (!m_BaseSHierarchy->PreserveBoneLength(i))
+        if (!pose->m_BaseSHierarchy->PreserveBoneLength(i))
         {
-            TransAccum& t = m_trans.mData[i];
+            TransAccum& t = pose->m_trans.mData[i];
             t.t.f.x = 0.0f;
             t.t.f.y = 0.0f;
             t.t.f.z = 0.0f;
@@ -71,11 +66,24 @@ void cPoseAccumulator::Pose(const cPoseNode& node, const nlMatrix4& mat)
             t.bIdentity = true;
         }
     }
+}
 
-    for (i = 0; i < m_MorphWeights.mSize; i++)
+static inline void PoseAccumulatorClearMorphWeights(cPoseAccumulator* pose)
+{
+    int i;
+    for (i = 0; i < pose->m_MorphWeights.mSize; i++)
     {
-        m_MorphWeights.mData[i] = 0.0f;
+        pose->m_MorphWeights.mData[i] = 0.0f;
     }
+}
+
+/**
+ * Offset/Address/Size: 0xB7C | 0x801EC11C | size: 0x15C
+ */
+void cPoseAccumulator::Pose(const cPoseNode& node, const nlMatrix4& mat)
+{
+    PoseAccumulatorInitNodeAccumulators(this);
+    PoseAccumulatorClearMorphWeights(this);
 
     node.Evaluate(1.0f, this);
 

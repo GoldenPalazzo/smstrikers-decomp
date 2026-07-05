@@ -1433,7 +1433,7 @@ void GameInfoManager::SetupTournamentKnockout(eTeamID* lineup, eSidekickID* skli
 
 /**
  * Offset/Address/Size: 0x78D8 | 0x8017CF7C | size: 0x618
- * TODO: 98.48% match - register allocation diffs in cup, gamesPerRound,
+ * TODO: 99.05% match - register allocation diffs in cup, gamesPerRound,
  * previous/current round, team, and loop locals
  */
 unsigned char GameInfoManager::SetupKnockoutRound(short round)
@@ -1538,9 +1538,7 @@ unsigned char GameInfoManager::SetupKnockoutRound(short round)
         g->mStadiumIndex = PickStadium(true, STAD_INVALID);
         returnValue = 1;
 
-        for (i2 = 0;
-            i2 < (mCurrentMode == GM_BOWSER_CUP ? 8 : (mCurrentMode == GM_SUPER_BOWSER_CUP ? 8 : (u16)mCurrentCup->GetNumTeams()));
-            i2++)
+        for (i2 = 0; i2 < GetNumPlayingTeams(); i2++)
         {
             TeamStats* ts;
             if (mCurrentMode == GM_BOWSER_CUP)

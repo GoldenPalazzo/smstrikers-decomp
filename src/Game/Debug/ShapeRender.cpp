@@ -600,9 +600,8 @@ static inline void BuildShapeMesh(PrimitiveShape& shape)
 
 /**
  * Offset/Address/Size: 0x0 | 0x801FB290 | size: 0x7EC
- * TODO: 91.00% match - face-building loop and the four mesh blocks use different
- * saved registers (this held in r31 vs r28) and a different instruction schedule
- * in the per-face address setup.
+ * TODO: 92.59% match - face-building loop and mesh blocks still use different
+ * saved registers for this and the loop temporaries.
  */
 void ShapeRender::Initialize()
 {
@@ -720,33 +719,34 @@ void ShapeRender::Initialize()
         nlVector3* norm = m_Box.normal;
         nlVector2* uv = m_Box.texcoord;
 
-        for (int base = 0; base < 24; base += 4)
+        for (int iQuad = 0; iQuad < 6; iQuad++)
         {
             nlVector2* faceUVs[4];
             nlVector3* faceNorms[4];
             nlVector3* faceVerts[4];
 
+            int base = iQuad * 4;
             int idx;
 
             idx = base + 0;
             faceVerts[0] = &data_vert[ind_vert[idx]];
-            faceNorms[0] = &data_norm[idx];
             faceUVs[0] = &data_uv[ind_uv[idx]];
+            faceNorms[0] = &data_norm[idx];
 
             idx = base + 1;
             faceVerts[1] = &data_vert[ind_vert[idx]];
-            faceNorms[1] = &data_norm[idx];
             faceUVs[1] = &data_uv[ind_uv[idx]];
+            faceNorms[1] = &data_norm[idx];
 
             idx = base + 2;
             faceVerts[2] = &data_vert[ind_vert[idx]];
-            faceNorms[2] = &data_norm[idx];
             faceUVs[2] = &data_uv[ind_uv[idx]];
+            faceNorms[2] = &data_norm[idx];
 
             idx = base + 3;
             faceVerts[3] = &data_vert[ind_vert[idx]];
-            faceNorms[3] = &data_norm[idx];
             faceUVs[3] = &data_uv[ind_uv[idx]];
+            faceNorms[3] = &data_norm[idx];
 
             for (int j = 0; j < 3; j++)
             {
