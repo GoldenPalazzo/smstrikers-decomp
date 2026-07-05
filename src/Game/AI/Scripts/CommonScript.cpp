@@ -3947,8 +3947,8 @@ FuzzyVariant Fuzzy::GoalieAndGonnaPickupBall(cPlayer* ThePlayer)
     float closeToBall = CloseToBall(ThePlayer);
     float goalieType = GoalieType(ThePlayer);
 
-    closeToBall = (closeToBall <= ableToIntercept) ? closeToBall : ableToIntercept;
-    closeToBall = (closeToBall <= closingTo) ? closeToBall : closingTo;
+    closingTo = (ableToIntercept <= closingTo) ? ableToIntercept : closingTo;
+    closeToBall = (closingTo <= closeToBall) ? closingTo : closeToBall;
     if (goalieType <= closeToBall)
         closeToBall = goalieType;
 

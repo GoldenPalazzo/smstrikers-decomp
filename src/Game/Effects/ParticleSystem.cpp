@@ -125,9 +125,8 @@ void ParticleSystem::UpdateCoordSys()
 
 /**
  * Offset/Address/Size: 0x2404 | 0x801F755C | size: 0x224
- * TODO: 89.9% match - post-nlRecipSqrt forward/mirror load ordering still differs
- * (target loads Y then X; current emits X then Y), cascading into register-allocation
- * differences in cross-product/normalization blocks.
+ * TODO: 92.45% match - post-nlRecipSqrt forward/mirror X/Y load ordering still differs,
+ * cascading into cross-product and up-vector normalization register differences.
  */
 void ParticleSystem::UpdateCoordSys(nlMatrix4& mCoordSys)
 {
@@ -136,8 +135,9 @@ void ParticleSystem::UpdateCoordSys(nlMatrix4& mCoordSys)
     float negGravX;
     float upX;
 
-    float rsqrt = nlRecipSqrt(
-        m_vForward.f.x * m_vForward.f.x + m_vForward.f.y * m_vForward.f.y + m_vForward.f.z * m_vForward.f.z, true);
+    float lenSq = m_vForward.f.x * m_vForward.f.x + m_vForward.f.y * m_vForward.f.y + m_vForward.f.z * m_vForward.f.z;
+    bool doFast = true;
+    float rsqrt = nlRecipSqrt(lenSq, doFast);
 
     gravY = rsqrt * m_vForward.f.y;
     gravX = rsqrt * m_vForward.f.x;
@@ -163,8 +163,8 @@ void ParticleSystem::UpdateCoordSys(nlMatrix4& mCoordSys)
     rightY = negGravX * refZ + gravZ * refX;
     rightZ = gravX * refY - gravY * refX;
 
-    rsqrt = nlRecipSqrt(
-        rightX * rightX + rightY * rightY + rightZ * rightZ, true);
+    lenSq = rightX * rightX + rightY * rightY + rightZ * rightZ;
+    rsqrt = nlRecipSqrt(lenSq, doFast);
     rightZ *= rsqrt;
     rightX = rsqrt * rightX;
     rightY *= rsqrt;
@@ -173,8 +173,8 @@ void ParticleSystem::UpdateCoordSys(nlMatrix4& mCoordSys)
     upX = rightY * gravZ - rightZ * gravY;
     float upZ = rightX * gravY - rightY * gravX;
 
-    rsqrt = nlRecipSqrt(
-        upY * upY + upX * upX + upZ * upZ, true);
+    lenSq = upY * upY + upX * upX + upZ * upZ;
+    rsqrt = nlRecipSqrt(lenSq, doFast);
 
     mCoordSys.e[0] = rightX;
     mCoordSys.e[1] = rightY;
@@ -334,8 +334,8 @@ static inline void RotateXYInPlace(nlVector3& v, float sn, float cs)
 
 /**
  * Offset/Address/Size: 0x1C90 | 0x801F6DE8 | size: 0x34C
- * TODO: 98.84% match - remaining diffs are length-square instruction order
- * and tilt/facing rotation register allocation.
+ * TODO: 98.94% match - remaining diffs are length-square, tilt rotation,
+ * and facing rotation register allocation.
  */
 static void EmitSpindularPosition(nlVector3& vPosition, nlVector3& vDirection, EffectsTemplate* pTemplate, EffectsSpec* pSpec, const nlMatrix4& mLocalToWorld)
 {
@@ -367,7 +367,10 @@ static void EmitSpindularPosition(nlVector3& vPosition, nlVector3& vDirection, E
     localDir.f.x = cos;
     localDir.f.y = -sin;
 
-    float length = nlRecipSqrt((localDir.f.x * localDir.f.x) + (localDir.f.y * localDir.f.y) + (localDir.f.z * localDir.f.z), false);
+    float lengthSq = localDir.f.x * localDir.f.x;
+    lengthSq += localDir.f.y * localDir.f.y;
+    lengthSq += localDir.f.z * localDir.f.z;
+    float length = nlRecipSqrt(lengthSq, false);
 
     nlVec3Set(localDir,
         length * localDir.f.x,
@@ -415,8 +418,8 @@ static void EmitSpindularPosition(nlVector3& vPosition, nlVector3& vDirection, E
         {
             nlSinCos(&sin, &cos, hackyFacingAngle);
 
-            RotateXYInPlace(vDirection, sin, cos);
-            RotateXYInPlace(vPosition, sin, cos);
+            RotateXYInPlace(vDirection, cos, sin);
+            RotateXYInPlace(vPosition, cos, sin);
         }
 
         nlVec3Set(vPosition,

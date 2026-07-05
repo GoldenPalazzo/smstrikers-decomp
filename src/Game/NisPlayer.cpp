@@ -846,7 +846,7 @@ void NisPlayer::Load(char* buffer, unsigned int size, NisHeader& nisHeader)
 
 /**
  * Offset/Address/Size: 0x1AE0 | 0x801167BC | size: 0xD08
- * TODO: 98.53% match - remaining register allocation differs in BasicString construction and copy-on-write paths.
+ * TODO: 99.05% match - remaining register allocation differs in BasicString construction and copy-on-write paths.
  */
 void NisPlayer::LoadTriggers(Nis& nis)
 {
@@ -895,25 +895,17 @@ void NisPlayer::LoadTriggers(Nis& nis)
                 BasicString<char, Detail::TempStringAllocator> all("all");
                 name[0];
                 char* at = name.m_data ? name.m_data->mData : (char*)0;
+                BasicStringData<char>* allData = all.m_data;
                 const char* begin;
-                if (all.m_data != NULL)
+                if (allData != NULL)
                 {
-                    begin = all.m_data->mData;
+                    begin = allData->mData;
                 }
                 else
                 {
                     begin = NULL;
                 }
-                const char* end;
-                if (all.m_data != NULL)
-                {
-                    end = all.m_data->mData + (all.m_data->mSize - 1);
-                }
-                else
-                {
-                    end = NULL;
-                }
-                name.insert(at, begin, end);
+                name.insert(at, begin, allData != NULL ? allData->mData + allData->mSize - 1 : (char*)0);
                 break;
             }
         }

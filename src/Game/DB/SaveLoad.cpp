@@ -552,7 +552,7 @@ inline unsigned long SaveCallbacks::FileWriteCB(unsigned long Slot, long Result,
 
 /**
  * Offset/Address/Size: 0x2708 | 0x8018C064 | size: 0x6A0
- * TODO: 90.34% match - slot-offset registers, default icon-size arithmetic,
+ * TODO: 91.03% match - slot-offset registers, default icon-size arithmetic,
  * and icon-cache/functor load ordering still differ.
  */
 long SaveCallbacks::DoSave(unsigned long Slot)
@@ -680,7 +680,7 @@ long SaveCallbacks::DoSave(unsigned long Slot)
         void* srcIcon = (u8*)iconBuf + idataOfs;
         u32 iconCopySize = iconFmtS << 10;
         memcpy(destIcon, srcIcon, iconCopySize);
-        u8 bannerFmt2 = m_pSaveFile->IconCfg.BannerFormat;
+        int bannerFmt2 = m_pSaveFile->IconCfg.BannerFormat;
         int iconFmt2 = m_pSaveFile->IconCfg.IconFormat;
         u8 iconCount2 = m_pSaveFile->IconCfg.IconCount;
         int bannerMinus1 = bannerFmt2 - 1;

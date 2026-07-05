@@ -1010,10 +1010,6 @@ static const int EIGHT_TEAM_MATCHUPS[28][2] = {
     { 0, 3 },
 };
 
-/**
- * TODO: 99.81% match - final stats loop saves teamstats before initializing
- * the loop counter.
- */
 void GameInfoManager::SetupRoundRobinSchedule(eTeamID* lineup, eSidekickID* sklineup)
 {
     eGameModes gamemode = mCurrentMode;
@@ -1177,9 +1173,15 @@ void GameInfoManager::SetupRoundRobinSchedule(eTeamID* lineup, eSidekickID* skli
 
     {
         eTeamID teamID;
-        TeamStats* teamstats = mCurrentCup->GetTeamStats(0);
-        eTeamID* lineupPtr = lineup;
-        for (int k = 0; k < numplayingteams; k++)
+        TeamStats* returnedStats;
+        TeamStats* teamstats;
+        eTeamID* lineupPtr;
+        int k;
+        returnedStats = mCurrentCup->GetTeamStats(0);
+        lineupPtr = lineup;
+        k = 0;
+        teamstats = returnedStats;
+        for (; k < numplayingteams; k++)
         {
             teamID = *lineupPtr;
             memset(&teamstats->mPlayerTotalStats, 0, sizeof(PlayerStats));

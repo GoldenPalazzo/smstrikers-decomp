@@ -12,10 +12,10 @@ static inline void* nlGetChunkData(nlChunk* chunk)
     if (isAligned != 0)
     {
         u32 alignment = 1u << (alignField >> 24);
-        u32 ptr = (u32)chunk + alignment;
+        u32 ptr = (u32)chunk;
+        ptr += alignment;
         ptr += 7;
-        ptr &= ~(alignment - 1);
-        return (void*)ptr;
+        return (void*)(ptr & ~(alignment - 1));
     }
     return (void*)((u8*)chunk + 8);
 }
@@ -36,8 +36,6 @@ static inline void CopyPhysicsElements(CharacterPhysicsData* pPhysicsData, Chara
 
 /**
  * Offset/Address/Size: 0x0 | 0x801FE13C | size: 0x2AC
- * TODO: 99.80% match - nlGetChunkData alignment/ptr internal register
- * coloring in case 2 (alignment lands in r3 instead of r4).
  */
 bool LoadCharacterPhysicsElements(const char* pFileData, CharacterPhysicsData* pPhysicsData)
 {

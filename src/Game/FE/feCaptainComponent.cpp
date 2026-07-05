@@ -772,7 +772,7 @@ void IChooseCaptain::UpdateSound(float dt)
 
 /**
  * Offset/Address/Size: 0x141C | 0x800BEDB8 | size: 0x694
- * TODO: 99.49% match - side temp and final update loop registers still differ.
+ * TODO: 99.68% match - side temp, GetSide inline, and final image update registers still differ.
  */
 UpdateResult IChooseCaptain::Update(float)
 {
@@ -975,6 +975,7 @@ UpdateResult IChooseCaptain::Update(float)
 
     if (mComponentState[0].mCurrentPhase == PHASE_READY && mComponentState[1].mCurrentPhase == PHASE_READY)
     {
+        int playerIndex;
         GameInfoManager* const gim = nlSingleton<GameInfoManager>::s_pInstance;
 
         gim->SetTeam(0, (eTeamID)mHomeAwayTeam[0]);
@@ -982,11 +983,9 @@ UpdateResult IChooseCaptain::Update(float)
         gim->SetSidekick(0, (eSidekickID)mHomeAwaySidekicks[0]);
         gim->SetSidekick(1, (eSidekickID)mHomeAwaySidekicks[1]);
 
-        IChooseCaptain* p = this;
-        for (int i = 0; i < mNumTotalPushedPlayers; i++)
+        for (playerIndex = 0; playerIndex < mNumTotalPushedPlayers; playerIndex++)
         {
-            gim->SetPlayingSide((unsigned short)p->mAllPushedPlayers[0], (short)p->mAllPushedPlayerSides[0]);
-            p = (IChooseCaptain*)((u8*)p + 4);
+            gim->SetPlayingSide((unsigned short)mAllPushedPlayers[playerIndex], (short)mAllPushedPlayerSides[playerIndex]);
         }
 
         return UPDATE_GO_FORWARD;

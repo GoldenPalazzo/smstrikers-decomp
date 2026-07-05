@@ -109,9 +109,9 @@ void MemoryAllocator::Initialize(void* arg0, unsigned int arg1)
 
 /**
  * Offset/Address/Size: 0x1D8 | 0x801CD924 | size: 0x35C
- * TODO: 95.63% match - remaining diffs are register assignments in both
- * allocation paths (size/offset and current/start-end iterator registers),
- * plus paired address-calculation ordering around suffix metadata writes.
+ * TODO: 96.05% match - remaining diffs are register assignments for the
+ * request size and current/start-end iterators, plus paired metadata
+ * address-calculation ordering around suffix writes.
  */
 void* MemoryAllocator::Allocate(unsigned long size, unsigned int alignment, bool fromEnd)
 {
@@ -142,9 +142,9 @@ void* MemoryAllocator::Allocate(unsigned long size, unsigned int alignment, bool
             if (blockSize > alignedSize)
             {
                 u32 endAddr = (u32)cur + blockSize;
-                size = (endAddr - alignedSize) & alignMask;
-                offset = (endAddr - size) + 4;
-                if (offset <= blockSize)
+                offset = (endAddr - alignedSize) & alignMask;
+                size = (endAddr - offset) + 4;
+                if (size <= blockSize)
                     break;
             }
             cur = cur->m_next;
@@ -161,7 +161,7 @@ void* MemoryAllocator::Allocate(unsigned long size, unsigned int alignment, bool
         } while (true);
 
         {
-            u32 remaining = blockSize - offset;
+            u32 remaining = blockSize - size;
             alignment = 4;
             if (remaining > 0xC)
             {
@@ -173,10 +173,10 @@ void* MemoryAllocator::Allocate(unsigned long size, unsigned int alignment, bool
                 nlDLRingRemove<FreeBlockList>(&m_free_block_list, cur);
             }
 
-            u32 suffixBase = offset - alignedSize;
+            u32 suffixBase = size - alignedSize;
             u32 header = savedSize;
             u32 suffixGap = suffixBase - 4;
-            void* allocPtr = (char*)(size - alignment) + alignment;
+            void* allocPtr = (char*)(offset - alignment) + alignment;
             if (alignment > 4)
             {
                 header = savedSize | 0x80000000;
@@ -207,9 +207,9 @@ void* MemoryAllocator::Allocate(unsigned long size, unsigned int alignment, bool
             if (blockSize > alignedSize)
             {
                 u32 alignedStart = alignMask & ((u32)cur + alignment + 3);
-                offset = alignedStart - (u32)cur;
-                size = offset + alignedSize;
-                if (size <= blockSize)
+                size = alignedStart - (u32)cur;
+                offset = size + alignedSize;
+                if (offset <= blockSize)
                     break;
             }
             cur = cur->m_next;
@@ -228,10 +228,10 @@ void* MemoryAllocator::Allocate(unsigned long size, unsigned int alignment, bool
         {
             FreeBlockList* prev = cur->m_prev;
             nlDLRingRemove<FreeBlockList>(&m_free_block_list, cur);
-            u32 remaining = cur->m_unk_0x08 - size;
+            u32 remaining = cur->m_unk_0x08 - offset;
             if (remaining > 0xC)
             {
-                FreeBlockList* newFree = (FreeBlockList*)((char*)cur + size);
+                FreeBlockList* newFree = (FreeBlockList*)((char*)cur + offset);
                 newFree->m_unk_0x08 = remaining;
                 if (m_free_block_list == NULL || cur == start)
                 {
@@ -241,17 +241,17 @@ void* MemoryAllocator::Allocate(unsigned long size, unsigned int alignment, bool
                 {
                     nlDLRingInsert<FreeBlockList>(&m_free_block_list, prev, newFree);
                 }
-                cur->m_unk_0x08 = size;
+                cur->m_unk_0x08 = offset;
             }
 
             u32 currentBlockSize = cur->m_unk_0x08;
             u32 header = savedSize;
-            void* allocPtr = (void*)((char*)cur + offset);
-            u32 suffixSize = currentBlockSize - size;
-            if (offset > 4)
+            void* allocPtr = (void*)((char*)cur + size);
+            u32 suffixSize = currentBlockSize - offset;
+            if (size > 4)
             {
                 header = savedSize | 0x80000000;
-                *(u32*)((char*)allocPtr - 8) = offset - 4;
+                *(u32*)((char*)allocPtr - 8) = size - 4;
             }
             if (suffixSize != 0)
             {

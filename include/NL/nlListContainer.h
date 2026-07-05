@@ -26,6 +26,16 @@ public:
 
     void DeleteEntry(ListEntry<T>* entry);
 
+    typedef void (ListContainerBase::*ENTRY_FUNC)(ListEntry<T>*);
+
+    // Single mint site for the DeleteEntry PTMF const (.data) -- same trick
+    // as the BasicSlotPool specialization below: every caller materializes
+    // the anon const here, so MWCC pools one copy per TU.
+    static ENTRY_FUNC DeleteEntryFunc()
+    {
+        return &ListContainerBase::DeleteEntry;
+    }
+
     // Add more list operations as needed
     void AddEntry(ListEntry<T>* entry)
     {
@@ -57,7 +67,7 @@ public:
     {
         if (this != NULL)
         {
-            nlWalkList(this->m_Head, static_cast<ListContainerBase<T, NewAdapter<ListEntry<T> > >*>(this), &ListContainerBase<T, NewAdapter<ListEntry<T> > >::DeleteEntry);
+            nlWalkList(this->m_Head, static_cast<ListContainerBase<T, NewAdapter<ListEntry<T> > >*>(this), ListContainerBase<T, NewAdapter<ListEntry<T> > >::DeleteEntryFunc());
             this->m_Head = NULL;
             this->m_Tail = NULL;
         }

@@ -2650,7 +2650,7 @@ void cFielder::DesireReceivePassFromRun(float fDeltaT)
 
 /**
  * Offset/Address/Size: 0xEE4 | 0x80031C68 | size: 0x428
- * TODO: 99.32% match - Open/OpenToPosition f30/f31 and breakaway/reaction f29/f30 register rotation in turbo tail
+ * TODO: 99.38% match - Open/OpenToPosition f30/f31 and breakaway f29/f30 register rotation in turbo tail
  */
 bool cFielder::InitDesireRunToNet()
 {
@@ -2696,6 +2696,8 @@ bool cFielder::InitDesireRunToNet()
     m_DesireCommonVars.v3DesiredPosition = v3DesiredVelDirection;
     m_DesireCommonVars.turboRequest = TR_FAR_DISTANCE;
 
+    float fReactionRandom;
+
     if (fDot >= 0.8f)
     {
         nlVector3 v3ToPosition;
@@ -2738,7 +2740,7 @@ bool cFielder::InitDesireRunToNet()
     }
 
     SkillTweaks* pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pCurrentlyUpdatingTeam->m_nSide);
-    float fReactionRandom = 0.7f * (0.3f * (1.0f - pSkillTweaks->Off_Reaction));
+    fReactionRandom = 0.7f * (0.3f * (1.0f - pSkillTweaks->Off_Reaction));
     float fReactionOffset = nlRandomf(fReactionRandom, &nlDefaultSeed) - (0.5f * fReactionRandom);
     m_DesireCommonVars.fMisc = 0.7f + fReactionOffset;
 

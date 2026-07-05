@@ -1394,8 +1394,9 @@ void CupHubScene::CreateBowserLeague()
 
     pComp->m_bVisible = false;
 
+    TLSlide* tickerSlide = presentation->m_currentSlide;
     pComp = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
-        presentation->m_currentSlide,
+        tickerSlide,
         InlineHasher(nlStringLowerHash(CUP_HUB_LAYER_NAME)),
         InlineHasher(nlStringLowerHash("TICKER2")));
 

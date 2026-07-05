@@ -1015,7 +1015,7 @@ void GCAudioStreaming::StereoAudioStream::InterleavedHdrReadCB(nlFile* pFile, vo
 
 /**
  * Offset/Address/Size: 0x2A8 | 0x801C7A58 | size: 0x540
- * TODO: 98.39% match - receiver and MRAMOffsetB register coloring across member accesses and buffer/read calls
+ * TODO: 98.79% match - receiver and MRAMOffsetB register coloring across member accesses and buffer/read calls
  */
 unsigned long GCAudioStreaming::StereoAudioStream::DoUpdateRead(unsigned long MRAMOffsetA, unsigned long LengthA, unsigned long LengthB, unsigned long MRAMOffsetB, GCAudioStreaming::AudioStreamBuffer* pRequestingBuffer)
 {
@@ -1051,6 +1051,7 @@ unsigned long GCAudioStreaming::StereoAudioStream::DoUpdateRead(unsigned long MR
         this->m_OldLength = this->m_StreamLength;
     if (this->m_Flags & (1 << SF_EndAtUpdate))
     {
+        AudioStream* pStream = this;
         unsigned long EndOffset = MRAMOffsetA + LengthA;
         ___blank("Lookat at stopping, last playable @ %d, currently @ %d for %d (%d) \n", this->m_LastPlayable, MRAMOffsetA, LengthA, EndOffset);
         if (MRAMOffsetA < this->m_LastPlayable && EndOffset >= this->m_LastPlayable)
@@ -1079,7 +1080,7 @@ unsigned long GCAudioStreaming::StereoAudioStream::DoUpdateRead(unsigned long MR
             OSRestoreInterrupts(enabled);
             if (pCBInfo)
             {
-                pCBInfo->m_next = (READ_CB_INFO*)this;
+                pCBInfo->m_next = (READ_CB_INFO*)pStream;
                 pCBInfo->pBuffer = pBuffer;
             }
             AudioStream* pStream = (AudioStream*)pCBInfo->m_next;
@@ -1125,7 +1126,7 @@ unsigned long GCAudioStreaming::StereoAudioStream::DoUpdateRead(unsigned long MR
                 OSRestoreInterrupts(e3);
                 if (pCBInfo2)
                 {
-                    pCBInfo2->m_next = (READ_CB_INFO*)this;
+                    pCBInfo2->m_next = (READ_CB_INFO*)pStream;
                     pCBInfo2->pBuffer = pBuffer;
                 }
                 AudioStream* pStream2 = (AudioStream*)pCBInfo2->m_next;

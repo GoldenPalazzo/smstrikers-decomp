@@ -51,10 +51,12 @@ SlotPool<ElectricFenceGeometry> ElectricFenceGeometry::sElectricFenceGeometryPoo
  */
 template ElectricFenceData* nlListRemoveElement<ElectricFenceData>(ElectricFenceData**, ElectricFenceData*, ElectricFenceData**);
 
+static void GetWallPoint(const nlVector3& impactPosition, float xOffset, float zOffset, nlVector3& outPosition);
+
 /**
  * Offset/Address/Size: 0x1370 | 0x8016C3A0 | size: 0x2B0
  */
-void GetWallPoint(const nlVector3& impactPosition, float xOffset, float zOffset, nlVector3& outPosition)
+static void GetWallPoint(const nlVector3& impactPosition, float xOffset, float zOffset, nlVector3& outPosition)
 {
     /**
      * TODO: 99.71% match - r29/r31 register allocation swap (impactPosition ptr vs yIsPositive).

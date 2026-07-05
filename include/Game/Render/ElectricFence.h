@@ -40,6 +40,5 @@ void FreeElectricFence();
 void InitializeElectricFence();
 void EmitElectricFenceCharacterEffect(const nlVector3&, const nlVector3&, unsigned long);
 void EmitElectricFenceBallEffect(const nlVector3&, const nlVector3&, unsigned long, bool);
-void GetWallPoint(const nlVector3&, float, float, nlVector3&);
 
 #endif // _ELECTRICFENCE_H_

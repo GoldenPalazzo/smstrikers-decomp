@@ -874,6 +874,8 @@ void DrawableModel::DrawPlanarShadow()
     ::DrawPlanarShadow(model, worldMtx, opacity * m_translucency, true, false, true, (unsigned long)this);
 }
 
+static void GetShadowBoundingSquare(const glModel* model, const nlMatrix4& matrix, float& x0, float& x1, float& y0, float& y1, unsigned long userData);
+
 /**
  * Offset/Address/Size: 0x964 | 0x80120770 | size: 0x290
  * TODO: 88.54% match - FPR allocation still differs in AABB corner

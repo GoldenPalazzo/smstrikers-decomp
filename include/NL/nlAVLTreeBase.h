@@ -67,6 +67,16 @@ public:
     ~AVLTreeBase();
 
     void DeleteEntry(AVLTreeEntry<KeyType, ValueType>* entry);
+
+    typedef void (AVLTreeBase::*ENTRY_DELETE_FUNC)(AVLTreeEntry<KeyType, ValueType>*);
+
+    // Single mint site for the DeleteEntry PTMF const (.data): every caller
+    // materializes the anon const here, so MWCC pools one copy per TU.
+    static ENTRY_DELETE_FUNC DeleteEntryFunc()
+    {
+        return &AVLTreeBase::DeleteEntry;
+    }
+
     void Clear();
     void DestroyTree(void (AVLTreeBase::*deleteFunc)(AVLTreeEntry<KeyType, ValueType>*));
     void DeleteValue(AVLTreeEntry<KeyType, ValueType>* entry);
@@ -350,7 +360,7 @@ void AVLTreeBase<KeyType, ValueType, AllocatorType, CompareType>::InorderWalk(AV
 template <typename KeyType, typename ValueType, typename AllocatorType, typename CompareType>
 void AVLTreeBase<KeyType, ValueType, AllocatorType, CompareType>::Clear()
 {
-    DestroyTree(&AVLTreeBase::DeleteEntry);
+    DestroyTree(DeleteEntryFunc());
     m_NumElements = 0;
 }
 

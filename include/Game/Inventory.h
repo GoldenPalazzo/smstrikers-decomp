@@ -22,7 +22,7 @@ public:
         }
 
         typedef ListContainerBase<T*, NewAdapter<ListEntry<T*> > > ItemListBase;
-        void (ItemListBase::*cb)(ListEntry<T*>*) = &ItemListBase::DeleteEntry;
+        void (ItemListBase::*cb)(ListEntry<T*>*) = ItemListBase::DeleteEntryFunc();
         nlWalkList(m_lItemList.m_Head, (ItemListBase*)this, cb);
 
         m_lItemList.m_Head = NULL;

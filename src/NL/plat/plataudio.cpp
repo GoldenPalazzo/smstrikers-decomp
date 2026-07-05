@@ -870,57 +870,45 @@ static inline void ResetSoundGroupsOnStack(AudioFileData& fileData, unsigned lon
     }
 }
 
+static inline bool UnloadTopSoundGroupOnStack(AudioFileData& fileData, unsigned long stackEnum)
+{
+    int i;
+
+    if (!(unsigned char)sndStackSetCurrent(stack_list[stackEnum].id))
+    {
+        tDebugPrintManager::Print(DC_SOUND, "sndStackSetCurrent() failed on sound stack ID %d\n", stack_list[stackEnum].id);
+        return false;
+    }
+
+    for (i = 0; (unsigned long)i < stack_list[stackEnum].unkC; i++)
+    {
+        if (!sndPopGroup())
+        {
+            tDebugPrintManager::Print(DC_SOUND, "Could not unload sound group %d because numGroupsOnStack count is incorrect.\n", stackEnum);
+            return false;
+        }
+        PrintSoundStackInfo();
+    }
+
+    stack_list[stackEnum].unkC = 0;
+    ResetSoundGroupsOnStack(fileData, stackEnum);
+    return true;
+}
+
 /**
  * Offset/Address/Size: 0x107C | 0x801C5878 | size: 0x150
- * TODO: 98.99% match - remaining r29/r30 fileData/offset swap and r5/r7
- * counter/offset swap in the first soundGroups loop
+ * TODO: 99.52% match - r5/r7 counter/offset swap in the first soundGroups loop
  */
 bool UnloadAllSoundGroups(AudioFileData& fileData)
 {
     int i;
-    unsigned long* idPtr;
-    _struct_stack_list_0x10* entry;
 
     sndSilence();
 
-    char* base = (char*)stack_list;
-    int stackEnum = 1;
-    int offset = 0x10;
-
-    do
+    for (i = 1; i >= 0; i--)
     {
-        entry = (_struct_stack_list_0x10*)(base + offset);
-        unsigned long id = entry->id;
-        idPtr = &entry->id;
-        if (!(unsigned char)sndStackSetCurrent(id))
-        {
-            tDebugPrintManager::Print(DC_SOUND, "sndStackSetCurrent() failed on sound stack ID %d\n", *idPtr);
-            goto next;
-        }
-
-        {
-            u32* numPtr = &entry->unkC;
-            i = 0;
-            while ((unsigned long)i < *numPtr)
-            {
-                if (!sndPopGroup())
-                {
-                    tDebugPrintManager::Print(DC_SOUND, "Could not unload sound group %d because numGroupsOnStack count is incorrect.\n", stackEnum);
-                    goto next;
-                }
-                PrintSoundStackInfo();
-                i++;
-            }
-
-            *numPtr = 0;
-        }
-
-        ResetSoundGroupsOnStack(fileData, stackEnum);
-
-    next:
-        stackEnum--;
-        offset -= 0x10;
-    } while (stackEnum >= 0);
+        UnloadTopSoundGroupOnStack(fileData, i);
+    }
 
     {
         SndGroupData* grp;

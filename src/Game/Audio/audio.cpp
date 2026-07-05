@@ -1870,9 +1870,17 @@ void Update3DSFXEmitters()
     }
 }
 
+static inline FadeAudioData* RemoveFadeData(FadeAudioData* pFadeAudioData)
+{
+    nlListRemoveElement<FadeAudioData>(&g_pFadeList, pFadeAudioData, NULL);
+    FadeAudioData* pNextFadeAudioData = pFadeAudioData->next;
+    delete pFadeAudioData;
+    return pNextFadeAudioData;
+}
+
 /**
  * Offset/Address/Size: 0x159C | 0x8013DAB0 | size: 0xA34
- * TODO: 99.38% match - remaining delete-next and team-loop register differences.
+ * TODO: 99.41% match - remaining team-loop register differences.
  */
 void UpdateFades(float fDeltaT)
 {
@@ -1894,10 +1902,7 @@ void UpdateFades(float fDeltaT)
         {
             if (totalEstimatedTime < -10.0f)
             {
-                nlListRemoveElement<FadeAudioData>(&g_pFadeList, pFadeData, NULL);
-                FadeAudioData* next = pFadeData->next;
-                delete pFadeData;
-                pFadeData = next;
+                pFadeData = RemoveFadeData(pFadeData);
                 continue;
             }
             *(float*)((char*)pFadeData + 0x24) = totalEstimatedTime - fDeltaT;
@@ -2050,10 +2055,7 @@ void UpdateFades(float fDeltaT)
                     }
                 }
 
-                nlListRemoveElement<FadeAudioData>(&g_pFadeList, pFadeData, NULL);
-                FadeAudioData* next = pFadeData->next;
-                delete pFadeData;
-                pFadeData = next;
+                pFadeData = RemoveFadeData(pFadeData);
                 continue;
             }
             break;
@@ -2204,10 +2206,7 @@ void UpdateFades(float fDeltaT)
                     *(u8*)((char*)pFadeData + 0x1F) = 0;
                 }
 
-                nlListRemoveElement<FadeAudioData>(&g_pFadeList, pFadeData, NULL);
-                FadeAudioData* next = pFadeData->next;
-                delete pFadeData;
-                pFadeData = next;
+                pFadeData = RemoveFadeData(pFadeData);
                 continue;
             }
             break;
@@ -2293,10 +2292,7 @@ void UpdateFades(float fDeltaT)
                     gbPitchBent = false;
                 }
 
-                nlListRemoveElement<FadeAudioData>(&g_pFadeList, pFadeData, NULL);
-                FadeAudioData* next = pFadeData->next;
-                delete pFadeData;
-                pFadeData = next;
+                pFadeData = RemoveFadeData(pFadeData);
                 continue;
             }
             break;

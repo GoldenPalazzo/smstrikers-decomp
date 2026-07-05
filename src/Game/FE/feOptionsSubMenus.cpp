@@ -1607,7 +1607,6 @@ OptionsAudioMenuV2::OptionsAudioMenuV2(FEPresentation* presentation, ButtonCompo
 
     bool inpausestate;
     char menuname[64];
-    int i;
     TLInstance* instance;
     TLComponentInstance* compinstance;
 
@@ -1633,7 +1632,7 @@ OptionsAudioMenuV2::OptionsAudioMenuV2(FEPresentation* presentation, ButtonCompo
 
     TLSlide* currentSlide = presentation->m_currentSlide;
 
-    for (i = 0; i < 4; i++)
+    for (int i = 0; i < 4; i++)
     {
         nlSNPrintf(menuname, 64, "MENU ITEM%d", i + 1);
 
@@ -1664,12 +1663,36 @@ OptionsAudioMenuV2::OptionsAudioMenuV2(FEPresentation* presentation, ButtonCompo
         if (i == 0)
         {
             SingleHighlite::TempDisableSound();
-            menuItem->mCallbacks[1](menuItem->mType);
+            int tag = menuItem->mCallbacks[1].mTag;
+            if (((u32)((-tag) | tag) >> 31) > 0)
+            {
+                TLComponentInstance* type = menuItem->mType;
+                if (tag == FREE_FUNCTION)
+                {
+                    menuItem->mCallbacks[1].mFreeFunction(type);
+                }
+                else
+                {
+                    (*menuItem->mCallbacks[1].mFunctor)(type);
+                }
+            }
             menuItem->mDisabled = false;
         }
         else
         {
-            menuItem->mCallbacks[2](menuItem->mType);
+            int tag = menuItem->mCallbacks[2].mTag;
+            if (((u32)((-tag) | tag) >> 31) > 0)
+            {
+                TLComponentInstance* type = menuItem->mType;
+                if (tag == FREE_FUNCTION)
+                {
+                    menuItem->mCallbacks[2].mFreeFunction(type);
+                }
+                else
+                {
+                    (*menuItem->mCallbacks[2].mFunctor)(type);
+                }
+            }
         }
 
         if (inpausestate && i == 3)

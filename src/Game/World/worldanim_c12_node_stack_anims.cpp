@@ -56,10 +56,9 @@ WorldAnimManager::~WorldAnimManager()
         u32 count;
     };
 
-    cInventory<cSHierarchy>* inv;
-    AnimationSet* animSet;
-    NodeStack* stack;
     TreeEntry* node;
+    NodeStack* stack;
+    AnimationSet* animSet;
 
     stack = (NodeStack*)nlMalloc(sizeof(NodeStack), 8, false);
     if (stack != NULL)
@@ -110,7 +109,7 @@ WorldAnimManager::~WorldAnimManager()
         ::operator delete[](stack->data);
         ::operator delete(stack);
     }
-    inv = m_pHierarchyInventory;
+    cInventory<cSHierarchy>* inv = m_pHierarchyInventory;
     if (inv != NULL)
     {
         ListEntry<cSHierarchy*>* hierEntry = inv->m_lItemList.m_Head;

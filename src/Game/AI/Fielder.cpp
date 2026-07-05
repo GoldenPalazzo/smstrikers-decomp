@@ -2915,8 +2915,8 @@ cFielder* cFielder::DoFindBestHitTarget()
 
 /**
  * Offset/Address/Size: 0x73B8 | 0x800206F4 | size: 0x87C
- * TODO: 96.72% match - remaining floating-point register allocation differs in
- * net clamp and post probability blocks.
+ * TODO: 97.29% match - remaining saved floating-point register allocation
+ * differs around net clamp and shot probability blocks.
  */
 void cFielder::DoFindBestShotTarget(nlVector3& v3PositionOut, float& fShotSpeed, bool bIsSTS)
 {
@@ -3086,9 +3086,9 @@ void cFielder::DoFindBestShotTarget(nlVector3& v3PositionOut, float& fShotSpeed,
                 float fGD2Y = pGoalie->m_v3Position.f.y - v3Post2.f.y;
                 float fGD1Sq = (fGD1X * fGD1X) + (fGD1Y * fGD1Y);
                 float fGD2Sq = (fGD2X * fGD2X) + (fGD2Y * fGD2Y);
-                float fRatio = fGD1Sq / (fGD2Sq + fGD1Sq);
-                fRatio = (fRatio >= 0.03f) ? fRatio : 0.03f;
-                fProbability = (fRatio <= 0.97f) ? fRatio : 0.97f;
+                fProbability = fGD1Sq / (fGD2Sq + fGD1Sq);
+                fProbability = (fProbability >= 0.03f) ? fProbability : 0.03f;
+                fProbability = (fProbability <= 0.97f) ? fProbability : 0.97f;
             }
             else if (3 * uAbsP1G < uAbsP2G || 3 * uAbsP2G < uAbsP1G)
             {
