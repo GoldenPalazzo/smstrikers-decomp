@@ -37,46 +37,46 @@ static inline void CopyPhysicsElements(CharacterPhysicsData* pPhysicsData, Chara
 /**
  * Offset/Address/Size: 0x0 | 0x801FE13C | size: 0x2AC
  */
-bool LoadCharacterPhysicsElements(const char* pFileData, CharacterPhysicsData* pPhysicsData)
+bool LoadCharacterPhysicsElements(const char* szPhysicsElementsFilename, CharacterPhysicsData* pPhysicsData)
 {
-    nlChunk* var_r30;
-    nlChunk* temp_r29;
+    nlChunk* outerChunk;
+    nlChunk* endChunk;
 
-    u32 dataSize;
-    u8* rawData = (u8*)nlLoadEntireFile(pFileData, &dataSize, 0x20, AllocateStart);
-    if (rawData == 0)
+    u32 nFileSize;
+    u8* pFileData = (u8*)nlLoadEntireFile(szPhysicsElementsFilename, &nFileSize, 0x20, AllocateStart);
+    if (pFileData == 0)
     {
         return false;
     }
 
-    u32 temp_r4 = *((u32*)(rawData + 4));
-    var_r30 = (nlChunk*)(rawData + 8);
-    temp_r29 = (nlChunk*)(rawData + temp_r4 + 8);
+    u32 dataSize = *((u32*)(pFileData + 4));
+    outerChunk = (nlChunk*)(pFileData + 8);
+    endChunk = (nlChunk*)(pFileData + dataSize + 8);
 
-    while (var_r30 < temp_r29)
+    while (outerChunk < endChunk)
     {
-        s32 temp_r5 = (s32)var_r30->m_ID;
-        s32 temp_r4_2 = temp_r5 & 0x80FFFFFF;
+        s32 chunkID = (s32)outerChunk->m_ID;
+        s32 chunkType = chunkID & 0x80FFFFFF;
 
-        switch (temp_r4_2)
+        switch (chunkType)
         {
         case 0x0001D001:
         {
-            pPhysicsData->physicsElementCount = *(u32*)nlGetChunkData(var_r30);
+            pPhysicsData->physicsElementCount = *(u32*)nlGetChunkData(outerChunk);
             pPhysicsData->pPhysicsElements = (CharacterPhysicsElement*)nlMalloc(pPhysicsData->physicsElementCount * sizeof(CharacterPhysicsElement), 8, false);
             break;
         }
 
         case 0x0001D002:
         {
-            CopyPhysicsElements(pPhysicsData, (CharacterPhysicsElement*)nlGetChunkData(var_r30));
+            CopyPhysicsElements(pPhysicsData, (CharacterPhysicsElement*)nlGetChunkData(outerChunk));
             break;
         }
         }
 
-        var_r30 = nlGetNextChunk(var_r30);
+        outerChunk = nlGetNextChunk(outerChunk);
     }
 
-    delete rawData;
+    delete pFileData;
     return true;
 }

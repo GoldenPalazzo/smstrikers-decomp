@@ -184,7 +184,7 @@ void AvoidController::Update(float)
     float fTotalWeight_v3 = 0.0f;
 
     bool bCanAvoid;
-    m_SidelineUnavoidable = m_VeryCloseToSideline = bCanAvoid = false;
+    m_VeryCloseToSideline = m_SidelineUnavoidable = bCanAvoid = false;
 
     if (m_ThingsToAvoid & AVOID_SIDELINES)
     {
