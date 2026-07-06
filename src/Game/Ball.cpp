@@ -1933,7 +1933,8 @@ cBall::cBall()
     , m_tPassTargetTimer(0.f)
     , m_tBuzzerBeaterTimer(0.f)
 {
-    u32 t0, t1, t2;
+    u32 t0, t2;
+    register u32 t1;
     nlVector3* pz;
 
     m_pBlurHandler = NULL;
@@ -1978,11 +1979,11 @@ cBall::cBall()
     pz = &v3Zero;
 
     m_qOrientation.f.z = 0.f;
-    t0 = v3Zero.as_u32[0];
+    t1 = pz->as_u32[1];
     m_qOrientation.f.y = 0.f;
-    t1 = v3Zero.as_u32[1];
+    t0 = pz->as_u32[0];
     m_qOrientation.f.x = 0.f;
-    t2 = v3Zero.as_u32[2];
+    t2 = pz->as_u32[2];
     m_qOrientation.f.w = 1.f;
 
     m_v3ShotOrigin = m_v3Position;

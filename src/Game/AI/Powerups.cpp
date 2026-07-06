@@ -472,7 +472,7 @@ void PowerupThrowPosition(int nThrowOrder, eThrowStyle eStyle, PowerupBase* pNew
 
 /**
  * Offset/Address/Size: 0x4F00 | 0x8005F7EC | size: 0xA98
- * TODO: 97.0% match - eStyle stack slot and powerup/target register allocation still differ.
+ * TODO: 97.9% match - first powerup, target, and loop register allocation still differ.
  */
 u8 PowerupCreateAndThrow(cFielder* pThrower, ePowerUpType eType, int nnumOfPowerups, Bowser* pBowser)
 {
@@ -485,8 +485,8 @@ u8 PowerupCreateAndThrow(cFielder* pThrower, ePowerUpType eType, int nnumOfPower
     float fSpreadChance;
     float fSurroundChance;
     float fHorizChance;
-    PowerupBase* pPowerup;
     PowerupBase* pFirstPowerup;
+    PowerupBase* pPowerup;
     cFielder* pTarget;
     cTeam* pTargetTeam;
     ePowerupSize eSize;

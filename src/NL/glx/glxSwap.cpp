@@ -601,9 +601,6 @@ struct TargaHeader
 
 /**
  * Offset/Address/Size: 0xBAC | 0x801BF8FC | size: 0x1B0
- * TODO: 99.35% match - r27/r28/r29 register allocation cycle (imageData, dead copy,
- * rowPixelOffset). MWCC allocates r27=imageData r28=rowPixelOffset r29=dead_copy
- * instead of target r29=imageData r28=dead_copy r27=rowPixelOffset.
  */
 static void glx_ScreenCapture(bool isMovie)
 {
@@ -650,7 +647,7 @@ static void glx_ScreenCapture(bool isMovie)
         nlSwapEndian(header.width, &(header.width));
         nlSwapEndian(header.height, &(header.height));
 
-        imageData = (u8*)nlMalloc(0xD2000, 8, false);
+        imageData = new (8, false) u8[0xD2000];
         GXDrawDone();
 
         for (y = 0; y < 0x1C0; y++)

@@ -932,8 +932,8 @@ FuzzyVariant Fuzzy::GetBestLooseBallPassTarget(cFielder* TheFielder)
 
 /**
  * Offset/Address/Size: 0xAC34 | 0x80074E04 | size: 0xC68
- * TODO: 97.73% match - cache hash stack slots/register rotation around
- *       lookup/add and first-branch min temp registers.
+ * TODO: 97.86% match - cache hash registers around add and first-branch min
+ *       temp registers.
  */
 FuzzyVariant Fuzzy::GetBestPassTarget(cPlayer* ThePlayer)
 {
@@ -948,6 +948,7 @@ FuzzyVariant Fuzzy::GetBestPassTarget(cPlayer* ThePlayer)
     const FuzzyVariant& fvPlayer2 = FuzzyVariant((cPlayer*)ThePlayer);
 
     unsigned long hashKey = hash;
+    unsigned long key = hash;
     unsigned char lookupFound;
     FuzzyVariant* pValue;
 
@@ -957,7 +958,7 @@ FuzzyVariant Fuzzy::GetBestPassTarget(cPlayer* ThePlayer)
 
     if (g_bScriptQuestionCachingUseSTD)
     {
-        std::map<unsigned long, FuzzyVariant>::iterator stdIt = cache->mQuestionCacheMapSTD.find(hash);
+        std::map<unsigned long, FuzzyVariant>::iterator stdIt = cache->mQuestionCacheMapSTD.find(key);
         if (*(StdMapNodeBase**)&stdIt != &((StdMapTree*)&cache->mQuestionCacheMapSTD)->x4)
         {
             cache->mCacheHits++;
@@ -968,8 +969,6 @@ FuzzyVariant Fuzzy::GetBestPassTarget(cPlayer* ThePlayer)
     else
     {
         AVLTreeEntry<unsigned long, FuzzyVariant>* node = cache->mQuestionCacheMap.m_Root;
-        unsigned long key = hash;
-
         while (node != NULL)
         {
             int cmpResult;
@@ -2549,29 +2548,33 @@ FuzzyVariant Fuzzy::GetBestLooseBallAction(cFielder* TheFielder)
         float fNotOpen = 1.0f - Open(TheFielder);
         float fPressured = Pressured(TheFielder);
 
+        float fOwnerlessMax;
         if (fOwnerless >= fOnMushrooms)
         {
+            fOwnerlessMax = fOwnerless;
         }
         else
         {
-            fOwnerless = fOnMushrooms;
+            fOwnerlessMax = fOnMushrooms;
         }
-        if (fNotOpen >= fOwnerless)
+        float fNotOpenMax;
+        if (fNotOpen >= fOwnerlessMax)
         {
+            fNotOpenMax = fNotOpen;
         }
         else
         {
-            fNotOpen = fOwnerless;
+            fNotOpenMax = fOwnerlessMax;
         }
-        if (fPressured >= fNotOpen)
+        if (fPressured >= fNotOpenMax)
         {
-            fNotOpen = fPressured;
+            fNotOpenMax = fPressured;
         }
 
         float fOnMush2 = OnMushrooms(TheFielder);
         float fNotFacing = 1.0f - FacingSideline(TheFielder);
         fNotFacing = (fNotFacing >= fOnMush2) ? fNotFacing : fOnMush2;
-        fNotFacing = (fNotFacing <= fNotOpen) ? fNotFacing : fNotOpen;
+        fNotFacing = (fNotFacing <= fNotOpenMax) ? fNotFacing : fNotOpenMax;
         fCanSlide = (fCanSlide <= fNotFacing) ? fCanSlide : fNotFacing;
 
         fTrueConfidence = fCanSlide;
@@ -3769,16 +3772,17 @@ FuzzyVariant Fuzzy::GetPowerupToUseForWindupDefence(cFielder* TheFielder)
 
 /**
  * Offset/Address/Size: 0xE64 | 0x8006B034 | size: 0x7BC
- * TODO: 98.19% match - r28/r29/r30/r31 differ in the cache path and final copy.
+ * TODO: 98.27% match - return/hash/temp registers rotate in the cache path and final copy.
  */
 FuzzyVariant Fuzzy::InDanger(cFielder* TheFielder)
 {
+    cFielder* const fielder = TheFielder;
     FuzzyVariant bestValue;
 
-    FuzzyVariant fvFielder((cPlayer*)TheFielder);
+    FuzzyVariant fvFielder((cPlayer*)fielder);
     volatile unsigned long funcAddr = (unsigned long)InDanger;
     unsigned long hash = funcAddr + ((Variant*)&fvFielder)->GetHash();
-    FuzzyVariant fvFielder2((cPlayer*)TheFielder);
+    FuzzyVariant fvFielder2((cPlayer*)fielder);
 
     if (ScriptQuestionCache::Instance()->Lookup(hash, bestValue, NULL))
     {
@@ -3788,11 +3792,11 @@ FuzzyVariant Fuzzy::InDanger(cFielder* TheFielder)
         return bestValue;
     }
 
-    float fDanger = FGREATER(1.0f - Open(TheFielder), 0.35f);
-    float fOther = AvoidingPowerups(TheFielder);
-    float fThird = StuckOnSidelines(TheFielder);
-    float fFourth = Pressured(TheFielder);
-    float fFifth = Attacked(TheFielder);
+    float fDanger = FGREATER(1.0f - Open(fielder), 0.35f);
+    float fOther = AvoidingPowerups(fielder);
+    float fThird = StuckOnSidelines(fielder);
+    float fFourth = Pressured(fielder);
+    float fFifth = Attacked(fielder);
     float fBestConfidence = fDanger;
 
     fBestConfidence = (fOther <= fBestConfidence) ? fBestConfidence : fOther;

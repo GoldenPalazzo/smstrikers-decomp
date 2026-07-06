@@ -515,8 +515,6 @@ void NetMeshModelLoader::ProcessEdges(const glModelPacket& packet, int maxVertex
 
 /**
  * Offset/Address/Size: 0x0 | 0x80130158 | size: 0x780
- * TODO: 99.30% match - register allocation still differs for iterator/tree
- * pointers and vertex writeback temporaries.
  */
 void NetMeshModelLoader::CreateNetMeshFromVertexList()
 {
@@ -537,9 +535,12 @@ void NetMeshModelLoader::CreateNetMeshFromVertexList()
 
     VertexIter* vertexIter;
     VertexTree* vertexTree;
-    int numConstrainedVertices;
+    VertexEntry* node;
+    EdgeEntry* edgeNode;
+    NetMeshVertex* vertex;
     int numEdges = 0;
     int numVertices = 0;
+    int numConstrainedVertices;
 
     vertexTree = m_VertexList;
     numConstrainedVertices = 0;
@@ -547,7 +548,7 @@ void NetMeshModelLoader::CreateNetMeshFromVertexList()
     if (vertexIter != NULL)
     {
         unsigned int numEntries = vertexTree->m_NumElements;
-        VertexEntry* node = vertexTree->m_Root;
+        node = vertexTree->m_Root;
 
         vertexIter->m_Stack = (VertexEntry**)nlMalloc((numEntries + 1) * 4, 8, false);
         vertexIter->m_NumStackEntries = 0;
@@ -605,21 +606,21 @@ void NetMeshModelLoader::CreateNetMeshFromVertexList()
     if (edgeIter != NULL)
     {
         unsigned int numEntries = edgeTree->m_NumElements;
-        EdgeEntry* node = edgeTree->m_Root;
+        edgeNode = edgeTree->m_Root;
 
         edgeIter->m_Stack = (EdgeEntry**)nlMalloc((numEntries + 1) * 4, 8, false);
         edgeIter->m_NumStackEntries = 0;
 
-        if (node != NULL)
+        if (edgeNode != NULL)
         {
-            while (node->node.left != NULL)
+            while (edgeNode->node.left != NULL)
             {
-                edgeIter->m_Stack[edgeIter->m_NumStackEntries] = node;
+                edgeIter->m_Stack[edgeIter->m_NumStackEntries] = edgeNode;
                 edgeIter->m_NumStackEntries++;
-                node = (EdgeEntry*)node->node.left;
+                edgeNode = (EdgeEntry*)edgeNode->node.left;
             }
 
-            edgeIter->m_Stack[edgeIter->m_NumStackEntries] = node;
+            edgeIter->m_Stack[edgeIter->m_NumStackEntries] = edgeNode;
             edgeIter->m_NumStackEntries++;
         }
     }
@@ -661,7 +662,7 @@ void NetMeshModelLoader::CreateNetMeshFromVertexList()
     if (vertexIter != NULL)
     {
         unsigned int numEntries = vertexTree->m_NumElements;
-        VertexEntry* node = vertexTree->m_Root;
+        node = vertexTree->m_Root;
 
         vertexIter->m_Stack = (VertexEntry**)nlMalloc((numEntries + 1) * 4, 8, false);
         vertexIter->m_NumStackEntries = 0;
@@ -686,7 +687,7 @@ void NetMeshModelLoader::CreateNetMeshFromVertexList()
     while (vertexIter->m_NumStackEntries != 0)
     {
         VertexEntry* vertexEntry = vertexIter->m_Stack[vertexIter->m_NumStackEntries - 1];
-        NetMeshVertex* vertex = &vertexEntry->key;
+        vertex = &vertexEntry->key;
 
         nlVector3 position = *vertex->GetPosition();
         nlVector3 normal;
@@ -707,8 +708,8 @@ void NetMeshModelLoader::CreateNetMeshFromVertexList()
         nlMultPosVectorMatrix(position, position, pObject->GetWorldMatrix());
         nlMultDirVectorMatrix(normal, normal, pObject->GetWorldMatrix());
 
+        int particle = m_NetMesh.m_NumParticles;
         NetMesh* pNetMesh = &m_NetMesh;
-        int particle = pNetMesh->m_NumParticles;
         pNetMesh->m_v3Position[particle] = position;
         pNetMesh->m_v3Normal[particle] = normal;
         pNetMesh->m_v2TextureCoords[particle] = shortCoord;
@@ -753,21 +754,21 @@ void NetMeshModelLoader::CreateNetMeshFromVertexList()
     if (edgeIter != NULL)
     {
         unsigned int numEntries = edgeTree->m_NumElements;
-        EdgeEntry* node = edgeTree->m_Root;
+        edgeNode = edgeTree->m_Root;
 
         edgeIter->m_Stack = (EdgeEntry**)nlMalloc((numEntries + 1) * 4, 8, false);
         edgeIter->m_NumStackEntries = 0;
 
-        if (node != NULL)
+        if (edgeNode != NULL)
         {
-            while (node->node.left != NULL)
+            while (edgeNode->node.left != NULL)
             {
-                edgeIter->m_Stack[edgeIter->m_NumStackEntries] = node;
+                edgeIter->m_Stack[edgeIter->m_NumStackEntries] = edgeNode;
                 edgeIter->m_NumStackEntries++;
-                node = (EdgeEntry*)node->node.left;
+                edgeNode = (EdgeEntry*)edgeNode->node.left;
             }
 
-            edgeIter->m_Stack[edgeIter->m_NumStackEntries] = node;
+            edgeIter->m_Stack[edgeIter->m_NumStackEntries] = edgeNode;
             edgeIter->m_NumStackEntries++;
         }
     }

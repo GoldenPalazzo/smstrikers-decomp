@@ -336,7 +336,7 @@ void PhysicsLoader::ConstructStaticPhysicsPrimitives(CharacterPhysicsData* pPhys
 
 /**
  * Offset/Address/Size: 0x728 | 0x80133238 | size: 0x2C0
- * TODO: 99.06% match - list head/tail, sideline base/wall, corner, and net base-name registers still differ.
+ * TODO: 99.26% match - ground plane, list head, sideline base, corner, and net base-name registers still differ.
  */
 bool PhysicsLoader::StartLoad(LoadingManager*)
 {
@@ -346,7 +346,6 @@ bool PhysicsLoader::StartLoad(LoadingManager*)
     int cornerOffset;
     char szTemp[0x104];
     const char* pBaseName;
-    sSideLinePlane* pSideline;
 
     dSetAllocHandler(ODEAlloc);
     dSetReallocHandler(ODERealloc);
@@ -383,13 +382,15 @@ bool PhysicsLoader::StartLoad(LoadingManager*)
     }
 
     ListEntry<PhysicsObject*>** pHead = &g_StaticPhysicsPrimitives.m_Head;
+    sSideLinePlane* pSideline;
+    PhysicsWall* pWall;
     ListEntry<PhysicsObject*>** pTail = &g_StaticPhysicsPrimitives.m_Tail;
     nlListAddEnd(pHead, pTail, pEntry);
 
     for (i = 0, sidelineOffset = 0; i < 4; i++, sidelineOffset += 0xC)
     {
         pSideline = (sSideLinePlane*)((unsigned long)cField::mSidelines + sidelineOffset);
-        PhysicsWall* pWall = (PhysicsWall*)nlMalloc(0x2C, 8, false);
+        pWall = (PhysicsWall*)nlMalloc(0x2C, 8, false);
         if (pWall != NULL)
         {
             pWall = __ct__11PhysicsWallFP14CollisionSpacefff(pWall,

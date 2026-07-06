@@ -31,6 +31,53 @@ struct SaveInfo
     char mszName[16];
 };
 
+inline void SaveData::PostInit(const SaveInfo& info)
+{
+    int failID = info.mnFailAnimID;
+    SaveData* pFound;
+
+    if (failID >= 0)
+    {
+        SaveData** ppFound;
+        if (gSaveMap.FindGet(failID, &ppFound))
+        {
+            pFound = *ppFound;
+        }
+        else
+        {
+            pFound = NULL;
+        }
+    }
+    else
+    {
+        pFound = NULL;
+    }
+    mpFailAnimData = pFound;
+
+    for (int i = 0; i < 4; i++)
+    {
+        int connID = info.mConnectedSaveID[i];
+        SaveData* pConn;
+        if (connID >= 0)
+        {
+            SaveData** ppConn;
+            if (gSaveMap.FindGet(connID, &ppConn))
+            {
+                pConn = *ppConn;
+            }
+            else
+            {
+                pConn = NULL;
+            }
+        }
+        else
+        {
+            pConn = NULL;
+        }
+        mpConnectedSaveData[i] = pConn;
+    }
+}
+
 static const nlVector3 v3Zero = { 0.0f, 0.0f, 0.0f };
 int gPositionAnimID[6] = { 25, 28, 20, 23, 34, 35 };
 SaveInfo gSaveInfo[70] = {
@@ -310,50 +357,8 @@ void GoalieSave::InitData(Goalie* pGoalie)
     pSaveInfo = gSaveInfo;
     for (unsigned int j = 0; j < muNumSaveEntries; j++)
     {
-        int failID = pSaveInfo->mnFailAnimID;
         SaveData* pEntry = &mpSaveTable[j];
-        SaveData* pFound;
-
-        if (failID >= 0)
-        {
-            SaveData** ppFound;
-            if (gSaveMap.FindGet(failID, &ppFound))
-            {
-                pFound = *ppFound;
-            }
-            else
-            {
-                pFound = NULL;
-            }
-        }
-        else
-        {
-            pFound = NULL;
-        }
-        pEntry->mpFailAnimData = pFound;
-
-        for (int k = 0; k < 4; k++)
-        {
-            int connID = pSaveInfo->mConnectedSaveID[k];
-            SaveData* pConn;
-            if (connID >= 0)
-            {
-                SaveData** ppConn;
-                if (gSaveMap.FindGet(connID, &ppConn))
-                {
-                    pConn = *ppConn;
-                }
-                else
-                {
-                    pConn = NULL;
-                }
-            }
-            else
-            {
-                pConn = NULL;
-            }
-            pEntry->mpConnectedSaveData[k] = pConn;
-        }
+        pEntry->PostInit(*pSaveInfo);
 
         pSaveInfo++;
     }

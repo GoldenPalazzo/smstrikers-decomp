@@ -313,7 +313,6 @@ void FormationManager::SetNewFormationEval(eFormationType formType, eFormationSe
 
 /**
  * Offset/Address/Size: 0x202C | 0x8003A27C | size: 0x2D4
- * TODO: 99.81% match - f-register allocation in weight scaling
  */
 bool FormationManager::CalculateFielderPosition(nlVector3& v3DestPosition, cFielder* pFielder, bool bInPosition, float fBallPosFormationWeight)
 {
@@ -362,10 +361,13 @@ bool FormationManager::CalculateFielderPosition(nlVector3& v3DestPosition, cFiel
         weights[2] = 1.0f;
     }
 
+    float remainingWeight;
+    float weight0;
     float scaledBallWeight = weights[2] * fBallPosFormationWeight;
-    float remainingWeight = 1.0f - scaledBallWeight;
+    weight0 = weights[0];
+    remainingWeight = 1.0f - scaledBallWeight;
     weights[2] = scaledBallWeight;
-    weights[0] *= remainingWeight;
+    weights[0] = weight0 * remainingWeight;
     weights[1] *= remainingWeight;
 
     for (int i = 0; i < 3; i++)

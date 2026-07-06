@@ -285,8 +285,7 @@ void PauseMenuScene::SceneCreated()
 
     typedef Detail::MemFunImpl<void, void (PauseMenuScene::*)(TLComponentInstance*)> PauseMemFun;
     typedef BindExp2<void, PauseMemFun, PauseMenuScene*, Placeholder<0> > PauseBind;
-    typedef void MenuCBSig(TLComponentInstance*);
-    typedef Function<MenuCBSig> MenuCallback;
+    typedef Function<TLComponentInstance*> MenuCallback;
 
     FEAudio::EnableSounds(false);
 
@@ -311,6 +310,7 @@ void PauseMenuScene::SceneCreated()
         static const bool E3_BUILD_IS_DISABLED_OPTIONS[6] = { false, false, true, true, false, false };
 
         int i;
+        int numAdded;
         for (i = 0; i < 6; i++)
         {
             TLInstance* instance = FEFinder<TLInstance, 4>::Find<TLSlide>(
@@ -319,7 +319,7 @@ void PauseMenuScene::SceneCreated()
                 InlineHasher(nlStringLowerHash(MENU_NAMES[i])));
             TLComponentInstance* compinstance = (TLComponentInstance*)instance;
 
-            int numAdded = mMenuItems.mNumItemsAdded;
+            numAdded = mMenuItems.mNumItemsAdded;
             MenuItem<TLComponentInstance>* menuItem = PauseMenuItemAt(mMenuItems, numAdded);
             mMenuItems.mMenuItems[numAdded].mType = compinstance;
             mMenuItems.mNumItemsAdded++;
@@ -428,9 +428,8 @@ void PauseMenuScene::SceneCreated()
                 InlineHasher(nlStringLowerHash(MENU_NAMES[i])));
             TLComponentInstance* compinstance = (TLComponentInstance*)instance;
 
-            int numAdded = mMenuItems.mNumItemsAdded;
-            MenuItem<TLComponentInstance>* menuItem = PauseMenuItemAt(mMenuItems, numAdded);
-            mMenuItems.mMenuItems[numAdded].mType = compinstance;
+            MenuItem<TLComponentInstance>* menuItem = PauseMenuItemAt(mMenuItems, mMenuItems.mNumItemsAdded);
+            mMenuItems.mMenuItems[mMenuItems.mNumItemsAdded].mType = compinstance;
             mMenuItems.mNumItemsAdded++;
 
             {

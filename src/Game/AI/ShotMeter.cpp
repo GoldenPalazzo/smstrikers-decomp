@@ -94,8 +94,7 @@ void ShotMeter::Abort(cFielder* pFielder)
 
 /**
  * Offset/Address/Size: 0x258 | 0x80062378 | size: 0x42C
- * TODO: 99.48% match - remaining diffs are in the two normalization blocks
- * (f30/f28) and score-weight accumulation.
+ * TODO: 99.57% match - remaining diffs are in score-weight accumulation.
  */
 void ShotMeter::CalcOneTimerValue(cFielder* pFielder, bool bWasPerfectPass)
 {
@@ -105,27 +104,14 @@ void ShotMeter::CalcOneTimerValue(cFielder* pFielder, bool bWasPerfectPass)
     {
         nlVector3 v3BallDirection;
         float fBallDirectionLengthSq;
-        float a, b, c;
 
-        float fBallDirectionX = g_pBall->m_v3Position.f.x - g_pBall->m_v3PrevPosition.f.x;
-        float fBallDirectionY = g_pBall->m_v3Position.f.y - g_pBall->m_v3PrevPosition.f.y;
-        float fBallDirectionZ = g_pBall->m_v3Position.f.z - g_pBall->m_v3PrevPosition.f.z;
-
-        v3BallDirection.f.x = fBallDirectionX;
-        v3BallDirection.f.y = fBallDirectionY;
-        v3BallDirection.f.z = fBallDirectionZ;
-
-        a = fBallDirectionX * fBallDirectionX;
-        b = fBallDirectionY * fBallDirectionY;
-        c = fBallDirectionZ * fBallDirectionZ;
-        fBallDirectionLengthSq = a + b + c;
+        nlVec3Sub(v3BallDirection, g_pBall->m_v3Position, g_pBall->m_v3PrevPosition);
+        fBallDirectionLengthSq = v3BallDirection.GetLengthSq3D();
 
         if (nlSqrt(fBallDirectionLengthSq, true) > 0.0001f)
         {
             float fBallDirectionInvLength = nlRecipSqrt(fBallDirectionLengthSq, true);
-            v3BallDirection.f.x = fBallDirectionInvLength * v3BallDirection.f.x;
-            v3BallDirection.f.y = fBallDirectionInvLength * fBallDirectionY;
-            v3BallDirection.f.z = fBallDirectionInvLength * fBallDirectionZ;
+            nlVec3Scale(v3BallDirection, fBallDirectionInvLength);
         }
         else
         {
@@ -136,25 +122,13 @@ void ShotMeter::CalcOneTimerValue(cFielder* pFielder, bool bWasPerfectPass)
         float fFielderToNetLengthSq;
         const nlVector3& v3OffNetLocation = pFielder->GetAIOffNetLocation(NULL);
 
-        float fFielderToNetX = v3OffNetLocation.f.x - pFielder->m_v3Position.f.x;
-        float fFielderToNetY = v3OffNetLocation.f.y - pFielder->m_v3Position.f.y;
-        float fFielderToNetZ = v3OffNetLocation.f.z - pFielder->m_v3Position.f.z;
-
-        v3FielderToNet.f.x = fFielderToNetX;
-        v3FielderToNet.f.y = fFielderToNetY;
-        v3FielderToNet.f.z = fFielderToNetZ;
-
-        a = fFielderToNetX * fFielderToNetX;
-        b = fFielderToNetY * fFielderToNetY;
-        c = fFielderToNetZ * fFielderToNetZ;
-        fFielderToNetLengthSq = a + b + c;
+        nlVec3Sub(v3FielderToNet, v3OffNetLocation, pFielder->m_v3Position);
+        fFielderToNetLengthSq = v3FielderToNet.GetLengthSq3D();
 
         if (nlSqrt(fFielderToNetLengthSq, true) > 0.0001f)
         {
             float fFielderToNetInvLength = nlRecipSqrt(fFielderToNetLengthSq, true);
-            v3FielderToNet.f.x = fFielderToNetInvLength * v3FielderToNet.f.x;
-            v3FielderToNet.f.y = fFielderToNetInvLength * fFielderToNetY;
-            v3FielderToNet.f.z = fFielderToNetInvLength * fFielderToNetZ;
+            nlVec3Scale(v3FielderToNet, fFielderToNetInvLength);
         }
         else
         {

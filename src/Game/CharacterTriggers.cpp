@@ -1195,14 +1195,14 @@ static inline EmissionController* CreateChipShotDivotEffect(cPlayer* pCharacter)
 
 /**
  * Offset/Address/Size: 0x1B10 | 0x801A08C0 | size: 0xB48
- * TODO: 99.81% match - BasicString constructor r25/r29 swap, perfect-pass f3/f4 distance swap, and glow callback destructor branch remain.
+ * TODO: 99.81% match - BasicString constructor r25/r29 swap and perfect-pass f3/f4 distance swap remain.
  */
 void EmitBallShot(cPlayer* pCharacter, eBallShotEffectType eNewBallEffect, cPlayer*, bool bSilent)
 {
     EmissionController* pControl = NULL;
     EmissionController* pGlowControl = NULL;
     unsigned long kickSound = (unsigned long)-1;
-    Function<EmissionController&> update2;
+    Function1<void, EmissionController&> update2;
 
     switch (eNewBallEffect)
     {
@@ -1414,6 +1414,11 @@ void EmitBallShot(cPlayer* pCharacter, eBallShotEffectType eNewBallEffect, cPlay
         update2.mTag = FREE_FUNCTION;
         update2.mFreeFunction = UpdateEmitterFromBall;
         pGlowControl->SetUpdateCallback(update2);
+        if (update2.mTag == FUNCTOR)
+        {
+            delete update2.mFunctor;
+        }
+        update2.mTag = EMPTY;
     }
 }
 

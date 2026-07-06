@@ -621,8 +621,8 @@ float cGame::GetGameTime()
 
 /**
  * Offset/Address/Size: 0x1720 | 0x8003DC94 | size: 0x3EC
- * TODO: 99.14% match - r27/r28/r31 loop register diffs in player/powerup loops
- * and nlVector3 copy store order.
+ * TODO: 99.16% match - r27/r28/r31 loop register diffs in player,
+ * powerup, and team-touch loops.
  */
 static inline void RandomizePlayersForKickOff(cGame* game)
 {
@@ -664,8 +664,12 @@ void cGame::ResetForKickOff()
     int i;
     RandomizePlayersForKickOff(this);
     ResetCharactersForKickOff();
-    nlVector3 position = { 0.0f, 0.0f, 0.18f };
-    nlVector3 velocity = { 0.0f, 0.0f, 0.0f };
+    static const nlVector3 kickOffVelocity = { 0.0f, 0.0f, 0.0f };
+    static const nlVector3 kickOffPosition = { 0.0f, 0.0f, 0.18f };
+    nlVector3 position;
+    nlVector3 velocity;
+    velocity = kickOffVelocity;
+    position = kickOffPosition;
     if (g_pBall->m_pOwner != NULL)
     {
         g_pBall->m_pOwner->ReleaseBall();

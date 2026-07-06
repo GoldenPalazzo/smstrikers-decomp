@@ -130,8 +130,7 @@ void ScrollingTickerScene::OpenMessengerNow()
 
 /**
  * Offset/Address/Size: 0x3C4 | 0x800A001C | size: 0x20C
- * TODO: 99.50% match - remaining closedY f31/f28 swap, x/z scale register swap,
- *       and SDA vs stack loads for interpolation factor in right/gray interpolation.
+ * TODO: 99.66% match - remaining closedY f31/f28 swap and x/z scale register swap.
  */
 void ScrollingTickerScene::OpenMessenger()
 {
@@ -139,36 +138,37 @@ void ScrollingTickerScene::OpenMessenger()
 
     f32 from = 0.0f;
     f32 to = 1.0f;
+    f32 val = 0.0f;
 
     f32 closedY = m_leftBallClosedPos.f.y;
     f32 open = m_leftBallOpenPos.f.x;
     f32 x;
 
-    x = from * (open - m_leftBallClosedPos.f.x) + m_leftBallClosedPos.f.x;
-    m_leftBall->SetAssetPosition(x, closedY, from);
+    x = val * (open - m_leftBallClosedPos.f.x) + m_leftBallClosedPos.f.x;
+    m_leftBall->SetAssetPosition(x, closedY, val);
 
     open = m_rightBallOpenPos.f.x;
     x = open - m_rightBallClosedPos.f.x;
-    x = from * x + m_rightBallClosedPos.f.x;
-    m_rightBall->SetAssetPosition(x, closedY, from);
+    x = val * x + m_rightBallClosedPos.f.x;
+    m_rightBall->SetAssetPosition(x, closedY, val);
 
     open = m_grayOpenScale.f.x;
     x = open - m_grayClosedScale.f.x;
-    x = from * x + m_grayClosedScale.f.x;
+    x = val * x + m_grayClosedScale.f.x;
     m_backRectangle->SetAssetScale(x, m_grayOpenScale.f.y, 1.0f);
 
-    f32 val = from;
+    f32 scaleVal = from;
     feVector3 scale;
-    scale.f.x = m_ballClosedScale.f.x * val;
-    scale.f.y = m_ballClosedScale.f.y * val;
-    scale.f.z = m_ballClosedScale.f.z * val;
+    scale.f.x = m_ballClosedScale.f.x * scaleVal;
+    scale.f.y = m_ballClosedScale.f.y * scaleVal;
+    scale.f.z = m_ballClosedScale.f.z * scaleVal;
     m_leftBall->SetAssetScale(scale.f.x, scale.f.y, scale.f.z);
     m_rightBall->SetAssetScale(scale.f.x, scale.f.y, scale.f.z);
 
     m_backRectangle->SetAssetScale(
-        m_grayClosedScale.f.x * val,
-        m_grayClosedScale.f.y * val,
-        m_grayClosedScale.f.z * val);
+        m_grayClosedScale.f.x * scaleVal,
+        m_grayClosedScale.f.y * scaleVal,
+        m_grayClosedScale.f.z * scaleVal);
 
     m_textBox->m_bVisible = false;
 

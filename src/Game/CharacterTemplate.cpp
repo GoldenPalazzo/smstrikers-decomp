@@ -253,7 +253,7 @@ bool IsCaptain(eCharacterClass cc)
 
 /**
  * Offset/Address/Size: 0x1CFC | 0x80013FE4 | size: 0x3F0
- * TODO: 99.23% match - hierarchy file load keeps an extra return-value move; retarget load loop keeps inventory/data register differences
+ * TODO: 99.37% match - hierarchy file load keeps an extra return-value move; retarget chunk/end registers are swapped
  */
 void CharacterLoadingGuts(tCharacterTemplate* pCharacterTemplate, const tCharacterTemplateInfo& charTemplateInfo, eCharacterClass cc, bool bForViewer)
 {
@@ -264,11 +264,11 @@ void CharacterLoadingGuts(tCharacterTemplate* pCharacterTemplate, const tCharact
     pCharacterTemplate->nCharacterModelID[1] = pBlendCharacterModel->id;
 
     cInventory<cSHierarchy>* pHierInv = new (nlMalloc(sizeof(cInventory<cSHierarchy>), 8, false)) cInventory<cSHierarchy>();
-    cInventory<AnimRetargetList>* pRetInv;
     pCharacterTemplate->pHierarchyInventory = pHierInv;
 
     u32 hierFileSize;
     cInventory<cSHierarchy>* pHierInv2 = pCharacterTemplate->pHierarchyInventory;
+    cInventory<AnimRetargetList>* pRetInv;
     nlChunk* hierData = (nlChunk*)nlLoadEntireFile(charTemplateInfo.szHierarchyFilename, &hierFileSize, 0x20, AllocateStart);
 
     ListEntry<char*>* memEntry = (ListEntry<char*>*)nlMalloc(8, 8, false);

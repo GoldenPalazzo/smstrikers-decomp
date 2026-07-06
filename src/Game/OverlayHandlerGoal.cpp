@@ -75,7 +75,7 @@ extern "C" double floor(double);
 
 /**
  * Offset/Address/Size: 0x106C | 0x80104868 | size: 0xCF0
- * TODO: 98.21% match - remaining register allocation diffs in BasicString copy and insert pointer paths.
+ * TODO: 99.22% match - remaining register diffs in BasicString copy and insert pointer paths.
  */
 template <>
 template <>
@@ -102,7 +102,13 @@ FormatImpl<BasicString<unsigned short, Detail::TempStringAllocator> >&
         if (mString[i + 2] != (unsigned short)'}')
             continue;
 
-        mString.erase(&mString[0] + i, &mString[0] + i + 3);
+        unsigned short* eraseBegin;
+        unsigned short* eraseEnd;
+        mString[0];
+        eraseBegin = (mString.m_data ? mString.m_data->mData : (unsigned short*)0) + i;
+        mString[0];
+        eraseEnd = (mString.m_data ? mString.m_data->mData : (unsigned short*)0) + i + 3;
+        mString.erase(eraseBegin, eraseEnd);
         mString[i];
         BasicStringData<unsigned short>* mStringDataPtr = mString.m_data;
         unsigned short* mStringData = mStringDataPtr ? mStringDataPtr->mData : 0;

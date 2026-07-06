@@ -107,21 +107,19 @@ inline NLString Detail::LexicalCastImpl<NLString, const char*>::Do(const char* s
 #ifndef NL_NO_LEXICALCAST_NLSTRING_INT
 /**
  * Offset/Address/Size: 0x39064 | 0x8003C084 | size: 0x100
- * TODO: 97.66% match - return-buffer/data-pointer register roles remain
- * swapped (r30/r31).
  */
+#pragma optimization_level 2
 template <>
 inline NLString Detail::LexicalCastImpl<NLString, int>::Do(int t)
 {
-    BasicStringData<char>* data;
-    char string[0x40];
-    nlSNPrintf(string, 0x40, "%i", t);
+    char s[0x40];
+    nlSNPrintf(s, 0x40, "%i", t);
 
-    data = (BasicStringData<char>*)nlMalloc(0x10, 8, true);
+    BasicStringData<char>* data = (BasicStringData<char>*)Detail::TempStringAllocator::allocate(0x10);
     if (data != 0)
     {
-        char* start = string;
-        char* p = start;
+        const char* str = s;
+        const char* p = str;
 
         data->mData = 0;
         data->mSize = 0;
@@ -133,20 +131,20 @@ inline NLString Detail::LexicalCastImpl<NLString, int>::Do(int t)
         }
 
         data->mSize++;
-        data->mData = (char*)nlMalloc(data->mSize + 1, 8, true);
+        data->mData = (char*)Detail::TempStringAllocator::allocate(data->mSize + 1);
         data->mCapacity = data->mSize;
 
         for (int i = 0; i < data->mSize; i++)
         {
-            data->mData[i] = *start;
-            start++;
+            data->mData[i] = *str++;
         }
 
         data->mRefCount = 1;
     }
 
-    return NLString(data);
+    return (NLString)data;
 }
+#pragma optimization_level 4
 #endif
 
 /**
@@ -191,18 +189,48 @@ inline NLString Detail::LexicalCastImpl<NLString, unsigned long>::Do(unsigned lo
     return NLString(data);
 }
 
+static inline BasicStringData<char>* BuildLexicalCastStringData(char* string)
+{
+    BasicStringData<char>* data = (BasicStringData<char>*)nlMalloc(0x10, 8, true);
+    if (data != 0)
+    {
+        char* start = string;
+        char* p = start;
+
+        data->mData = 0;
+        data->mSize = 0;
+        data->mCapacity = 0;
+
+        while (*p++ != 0)
+        {
+            data->mSize++;
+        }
+
+        data->mSize++;
+        data->mData = (char*)nlMalloc(data->mSize + 1, 8, true);
+        data->mCapacity = data->mSize;
+
+        for (int i = 0; i < data->mSize; i++)
+        {
+            data->mData[i] = *start;
+            start++;
+        }
+
+        data->mRefCount = 1;
+    }
+    return data;
+}
+
 #pragma optimization_level 2
 /**
  * Offset/Address/Size: 0x34 | 0x80069F60 | size: 0x104
- * TODO: 97.31% match - return-slot/data/source pointer register roles are
- * rotated across r29/r30/r31.
  */
 template <>
 inline NLString Detail::LexicalCastImpl<NLString, char>::Do(char t)
 {
     char string[0x40];
     nlSNPrintf(string, 0x40, "%c", t);
-    return NLString(string);
+    return NLString(BuildLexicalCastStringData(string));
 }
 #pragma optimization_level 4
 

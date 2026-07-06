@@ -529,18 +529,18 @@ void BasicString<CharT, Allocator>::insert(CharT* at, const CharT* begin, const 
         newVec.mData = oldBuf;
     }
 
-    CharT* insertAt = data->mData + insertPos;
+    at = data->mData + insertPos;
     CharT* t = data->mData + data->mSize - 1;
-    while (t >= insertAt)
+    while (t >= at)
     {
         *(t + size) = *t;
         t--;
     }
     while (begin != end)
     {
-        *insertAt = *begin;
+        *at = *begin;
         begin++;
-        insertAt++;
+        at++;
     }
     data->mSize += size;
 }
@@ -564,6 +564,7 @@ void BasicString<CharT, Allocator>::erase(const CharT* begin, const CharT* end)
 }
 #endif
 
+// TODO: 98.84% match - scan cursor and copy-on-write temporary register swaps remain.
 template <typename CharT, typename Allocator>
 void BasicString<CharT, Allocator>::TrimInPlace(const CharT* chars)
 {
@@ -590,10 +591,11 @@ void BasicString<CharT, Allocator>::TrimInPlace(const CharT* chars)
 
     {
         (*this)[0];
-        BasicStringData<CharT>* data = m_data;
+        CharT* at;
         int size = eraseEnd - eraseBegin;
+        BasicStringData<CharT>* data = m_data;
         int offset = eraseBegin - data->mData;
-        CharT* at = data->mData + offset;
+        at = data->mData + offset;
         while (eraseEnd != data->mData + data->mSize)
         {
             *at = *eraseEnd;
@@ -629,10 +631,11 @@ void BasicString<CharT, Allocator>::TrimInPlace(const CharT* chars)
 
     {
         (*this)[0];
-        BasicStringData<CharT>* data = m_data;
+        CharT* at;
         int size = trailEnd - trailBegin;
+        BasicStringData<CharT>* data = m_data;
         int offset = trailBegin - data->mData;
-        CharT* at = data->mData + offset;
+        at = data->mData + offset;
         while (trailEnd != data->mData + data->mSize)
         {
             *at = *trailEnd;

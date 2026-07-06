@@ -613,7 +613,6 @@ void AudioLoader::SetupWorldSoundTypesAVLTree()
 
 /**
  * Offset/Address/Size: 0x39F4 | 0x801477C0 | size: 0x104
- * TODO: 96.23% match - r29/r30/r31 callee-saved rotation: map in r31 instead of r30
  */
 void AudioLoader::SetupSoundGroups()
 {
@@ -622,16 +621,7 @@ void AudioLoader::SetupSoundGroups()
 
     while ((u32)nlStrLen(szGroup) != 0)
     {
-        SoundStrToIDNode** foundValue = NULL;
-        int hash = (int)nlStringLowerHash(sebringAudioGroups[i].szGroupName);
-
-        bool found = ((SoundDefineMapType*)&AudioLoader::gMusyXSoundDefineMap)->FindGet(hash, &foundValue);
-
-        s32 musyxID;
-        if (found)
-            musyxID = (*foundValue)->musyxID;
-        else
-            musyxID = -1;
+        unsigned long musyxID = AudioLoader::GetSFXIDFromStr(sebringAudioGroups[i].szGroupName, NULL);
 
         if ((u32)(musyxID + 0x10000) == 0xFFFF)
             break;

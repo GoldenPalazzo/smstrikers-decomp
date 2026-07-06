@@ -15,6 +15,8 @@
 // void nlDLRingInsert<DLListEntry<MyMiniData*>>(DLListEntry<MyMiniData*>**, DLListEntry<MyMiniData*>*, DLListEntry<MyMiniData*>*);
 // void 0x8028D298..0x8028D29C | size: 0x4;
 
+struct SaveInfo;
+
 class SavePositionData
 {
 public:
@@ -27,6 +29,8 @@ public:
 class SaveData
 {
 public:
+    void PostInit(const SaveInfo&);
+
     /* 0x00 */ int mnAnimID;
     /* 0x04 */ SaveData* mpFailAnimData;
     /* 0x08 */ int mnRecoverAnimID;

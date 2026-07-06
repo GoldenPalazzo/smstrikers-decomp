@@ -16,7 +16,7 @@ static unsigned char g_bLit;
 
 /**
  * Offset/Address/Size: 0x149C | 0x801FC72C | size: 0x418
- * TODO: 98.78% match - constant and angle temporaries still use different saved registers.
+ * TODO: 98.84% match - constant and angle temporaries still use different saved registers.
  */
 void ShapeRender::CreateHemisphereGeometry(PrimitiveShape& prim)
 {
@@ -53,8 +53,8 @@ void ShapeRender::CreateHemisphereGeometry(PrimitiveShape& prim)
 
     for (nRing = 0; nRing < 5; nRing++)
     {
-        int angle0;
         int angle1;
+        int angle0;
         float fAngle;
 
         fAngle = (float)nRing;

@@ -701,9 +701,8 @@ PlatTexture* glx_GetGridTexture(int width, int height)
 
 /**
  * Offset/Address/Size: 0x12EC | 0x801B85A8 | size: 0x53C
- * TODO: ~90% match - kDefaultBits load scheduling (context-dependent),
- *       gridColor 0xFFFF not materialized as lis+addi (compiler folds u16 constant),
- *       loop register allocation shifted by missing gridColor register
+ * TODO: 95.28% match - target materializes gridColor in r6 and keeps pData/y/x
+ *       in r12/r11/r10; current loads gridColor and shifts loop registers.
  */
 static PlatTexture* glx_MakeGridTexture(int w, int h)
 {
@@ -754,12 +753,13 @@ static PlatTexture* glx_MakeGridTexture(int w, int h)
     memcpy(pTex->m_Bits, bits, 4);
 
     // Generate checkerboard pattern
+    int y;
     const unsigned short gridColorValue = 0xFFFF;
     u16* pData = (u16*)pTex->m_LinearData;
     const unsigned short* pGridColor = &gridColorValue;
     u32 gridColor = *pGridColor;
 
-    for (int y = 0; y < h; y++)
+    for (y = 0; y < h; y++)
     {
         if ((y / 4) & 1)
         {

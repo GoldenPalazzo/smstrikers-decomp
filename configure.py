@@ -856,7 +856,7 @@ config.libs = [
 
             # related to character (should probably be in Game/Render)
             Object(Matching, "Game/PoseNode.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(NonMatching, "Game/PoseAccumulator.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(Matching, "Game/PoseAccumulator.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/SHierarchy.cpp", extra_cflags=["-inline auto"]),
 
             Object(NonMatching, "Game/SAnim.cpp", extra_cflags=["-inline auto", "-inline deferred"]),

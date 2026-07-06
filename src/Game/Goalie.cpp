@@ -4673,11 +4673,11 @@ void Goalie::InitActionLooseBallSetup()
         f32 fDxFace = v3BallPosition.f.x - m_v3Position.f.x;
         m_aDesiredFacingDirection = (s16)(nlATan2f(fDyFace, fDxFace) * 10430.378f);
 
-        f32 fDyRun = v3BallPosition.f.y - m_v3Position.f.y;
         f32 fDxRun = v3BallPosition.f.x - m_v3Position.f.x;
+        f32 fDyRun = v3BallPosition.f.y - m_v3Position.f.y;
         s16 nAngDiff = m_aDesiredFacingDirection - m_aActualFacingDirection;
         s32 nAnimID = m_eAnimID;
-        f32 fDistSq = fDyRun * fDyRun + fDxRun * fDxRun;
+        f32 fDistSq = fDxRun * fDxRun + fDyRun * fDyRun;
 
         if (fDistSq < 1.0f)
         {
@@ -6215,9 +6215,9 @@ void Goalie::DoPassRelease()
             nlVector3 v3BallVel;
             nlVector3 v3BallTarget = mpShooter->m_v3Position;
 
-            float dy = m_v3Position.f.y - v3BallTarget.f.y;
             float dx = m_v3Position.f.x - v3BallTarget.f.x;
-            float fDistance = nlSqrt((dy * dy) + (dx * dx), true);
+            float dy = m_v3Position.f.y - v3BallTarget.f.y;
+            float fDistance = nlSqrt((dx * dx) + (dy * dy), true);
             float fShotSpeed = InterpolateRangeClamped(22.0f, 28.0f, 5.0f, 15.0f, fDistance);
             v3BallTarget.f.z += 0.5f;
 
@@ -6294,7 +6294,7 @@ void Goalie::DoPassRelease()
     float fDesiredY = (m_v3Position.f.y > 0.0f) ? fYPos : -fYPos;
     v3Desired.f.y = fDesiredY;
 
-    float dy = fDesiredY - m_v3Position.f.y;
+    float dy = v3Desired.f.y - m_v3Position.f.y;
     float dx = v3Desired.f.x - m_v3Position.f.x;
     u16 aDesired = (u16)(s32)(10430.378f * nlATan2f(dy, dx));
 

@@ -42,8 +42,8 @@ static inline void EraseRange(NLString& s, const char* begin, const char* end)
 
 /**
  * Offset/Address/Size: 0x1DAC | 0x80188948 | size: 0xD74
- * TODO: 99.25% match - remaining diffs are marker add operand order and
- * r27/r28/r29 allocation in erase/insert copy paths.
+ * TODO: 99.59% match - remaining diffs are marker add operand order and
+ * r26/r27/r28 allocation in copy-on-write paths.
  */
 template <>
 NLFormatImpl& NLFormatImpl::operator% <const char*>(const char* const& t)
@@ -69,31 +69,14 @@ NLFormatImpl& NLFormatImpl::operator% <const char*>(const char* const& t)
         if (markerEnd[2] != (char)'}')
             continue;
 
-        char* eraseBegin;
-        char* eraseEnd;
         mString[0];
-        eraseEnd = (mString.m_data ? mString.m_data->mData : (char*)0) + i + 3;
-        mString[0];
-        eraseBegin = (mString.m_data ? mString.m_data->mData : (char*)0) + i;
-        mString[0];
-        BasicStringData<char>* eraseData = mString.m_data;
-        int eraseSize = eraseEnd - eraseBegin;
-        const char* eraseIt = eraseEnd;
-        int eraseOffset = eraseBegin - eraseData->mData;
-        char* eraseAt = eraseData->mData + eraseOffset;
-        while (eraseIt != eraseData->mData + eraseData->mSize)
-        {
-            *eraseAt = *eraseIt;
-            eraseIt++;
-            eraseAt++;
-        }
-        eraseData->mSize -= eraseSize;
+        EraseRange(mString, ((void)mString[0], (mString.m_data ? mString.m_data->mData : (char*)0) + i), (mString.m_data ? mString.m_data->mData : (char*)0) + i + 3);
         mString[i];
         char* mStringData = mString.m_data ? mString.m_data->mData : 0;
-        insert[0];
-        char* insertBegin = insert.m_data ? insert.m_data->mData : 0;
+        const char* insertBegin = ((void)insert[0], insert.m_data ? insert.m_data->mData : 0);
         insert[(int)(insert.m_data ? insert.m_data->mSize - 1 : 0)];
-        mString.insert(mStringData + i, insertBegin, insert.m_data ? insert.m_data->mData + insert.m_data->mSize - 1 : (char*)0);
+        const char* insertEnd = insert.m_data ? insert.m_data->mData + insert.m_data->mSize - 1 : (char*)0;
+        mString.insert(mStringData + i, insertBegin, insertEnd);
     }
 
     mCurrentPos++;

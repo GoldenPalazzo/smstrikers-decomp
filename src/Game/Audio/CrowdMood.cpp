@@ -1291,7 +1291,7 @@ void CrowdMood::Purge(bool bJustStopSFX)
 
 /**
  * Offset/Address/Size: 0x9F8 | 0x8014E10C | size: 0x554
- * TODO: 99.37% match - extra mood-slot store; normalized interpolant constant uses a temp register copy.
+ * TODO: 99.60% match - mask register allocation; normalized interpolant constant uses a temp register copy.
  */
 void CrowdMood::Update(float dt)
 {
@@ -1339,14 +1339,14 @@ void CrowdMood::Update(float dt)
     if (g_CrowdState.HasChanged)
     {
         u8 level = g_CrowdState.DestMoodLevel;
-        CROWD_MOOD mood = (CROWD_MOOD)-1;
+        CROWD_MOOD mask = (CROWD_MOOD)-1;
         u32 clampedLevel = CM_END;
-        if (((u32)level & mood) <= (u32)CM_END)
-            clampedLevel = ((u32)level & mood);
+        if (((u32)level & mask) <= (u32)CM_END)
+            clampedLevel = ((u32)level & mask);
         g_CrowdState.DestMoodLevel = clampedLevel;
 
         f32 halfFactor = 0.5f;
-        mood = CM_Positive;
+        CROWD_MOOD mood = CM_Positive;
         f32 zero = 0.0f;
         while (mood < (CROWD_MOOD)4)
         {

@@ -206,11 +206,10 @@ inline cPoseAccumulator& cPoseAccumulator::operator=(const cPoseAccumulator& oth
     }
     else
     {
-        int n = other.m_cb.mSize;
         Vector<cBuildNodeMatrixCallbackInfo, DefaultAllocator> tmp;
-        tmp.mData = new (nlMalloc(n * sizeof(cBuildNodeMatrixCallbackInfo) + 0x10, 8, false)) cBuildNodeMatrixCallbackInfo[n];
-        tmp.mSize = n;
-        tmp.mCapacity = n;
+        tmp.mData = new (nlMalloc(other.m_cb.mSize * sizeof(cBuildNodeMatrixCallbackInfo) + 0x10, 8, false)) cBuildNodeMatrixCallbackInfo[other.m_cb.mSize];
+        tmp.mSize = other.m_cb.mSize;
+        tmp.mCapacity = other.m_cb.mSize;
 
         for (int i = 0; i < other.m_cb.mSize; i++)
         {

@@ -400,12 +400,12 @@ void NetMesh::SatisfyConstraints(const nlVector3& ballPosition, bool bExaggerate
             {
                 float centerY = 0.5f * (mfMinY + mfMaxY);
                 float centerX = 0.5f * (mfMinX + mfMaxX);
-                float dy = ballPosition.f.y - centerY;
-                float dyy = dy * dy;
-                float dx = ballPosition.f.x - centerX;
                 float zero = 0.0f;
                 float dz = ballPosition.f.z;
                 dz -= zero;
+                float dy = ballPosition.f.y - centerY;
+                float dyy = dy * dy;
+                float dx = ballPosition.f.x - centerX;
                 m_fBallPenetrationDepth = nlSqrt(dyy + (dx * dx) + (dz * dz), true);
             }
         }

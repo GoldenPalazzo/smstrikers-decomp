@@ -382,7 +382,7 @@ bool EmissionController::IsLingering() const
 
 static inline void ComputeAscendingJointPosition(nlVector3& out, const cPoseAccumulator* pPose, u32 uJointID, float fVelocity, float fcurrentTime)
 {
-    float fsetDistance = fcurrentTime * fVelocity;
+    float fsetDistance = fVelocity * fcurrentTime;
     cSHierarchy* pHier = pPose->m_BaseSHierarchy;
     int jointIndex = pHier->GetNodeIndexByID(uJointID);
     int parentIndex = pHier->GetParent(jointIndex);
@@ -425,7 +425,7 @@ static inline void ComputeAscendingJointPosition(nlVector3& out, const cPoseAccu
 
 /**
  * Offset/Address/Size: 0x32C | 0x801F7C1C | size: 0x5EC
- * TODO: 99.85% match - remaining register allocation diffs in joint helper pose/hierarchy locals.
+ * TODO: 99.88% match - remaining register allocation diffs in joint helper pose/hierarchy locals.
  */
 bool EmissionController::Update(float dt)
 {
@@ -503,9 +503,10 @@ bool EmissionController::Update(float dt)
             if (pSpec->m_eJointBinding == JB_Ascend && m_pPose != NULL)
             {
                 u32 jointID = m_uJointIDOverride;
+                float fJointVelocity;
                 float fAge = m_Age;
                 vel.f.x = 0.0f;
-                float fJointVelocity = pSpec->m_fJointVelocity;
+                fJointVelocity = pSpec->m_fJointVelocity;
                 vel.f.y = 0.0f;
                 vel.f.z = 0.0f;
 

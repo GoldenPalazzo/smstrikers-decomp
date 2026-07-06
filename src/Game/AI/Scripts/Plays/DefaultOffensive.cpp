@@ -492,7 +492,7 @@ FuzzyVariant Fuzzy::DoPassing(float fConfidence, cDecisionEntity* pDecision)
 
 /**
  * Offset/Address/Size: 0x4490 | 0x80090F1C | size: 0x604
- * TODO: 99.83% match - false branch less-windup and danger temporaries still use swapped float registers.
+ * TODO: 99.92% match - false branch danger subtract load order still differs.
  */
 FuzzyVariant Fuzzy::GoodBallCarrier(cFielder* TheFielder)
 {
@@ -546,11 +546,11 @@ FuzzyVariant Fuzzy::GoodBallCarrier(cFielder* TheFielder)
         if (fConfidence > fBestConfidence)
         {
             fBestConfidence = fConfidence;
-            float fLessWindup = FLESS(fWindupScore, 0.8f);
-            fBranchRatio = 1.0f - CloseToMyNet(g_pScriptCurrentFielder);
+            fOnMushrooms = FLESS(fWindupScore, 0.8f);
+            fInvincible = 1.0f - CloseToMyNet(g_pScriptCurrentFielder);
             bestValue = FuzzyVariant((fFalseConfidence = 1.0f - InDangerDelayed(g_pScriptCurrentFielder).mData.f,
-                fBranchRatio = (fBranchRatio <= fLessWindup) ? fBranchRatio : fLessWindup,
-                fFalseConfidence = (fFalseConfidence <= fBranchRatio) ? fFalseConfidence : fBranchRatio));
+                fInvincible = (fInvincible <= fOnMushrooms) ? fInvincible : fOnMushrooms,
+                fFalseConfidence = (fFalseConfidence <= fInvincible) ? fFalseConfidence : fInvincible));
         }
     }
 
@@ -933,7 +933,7 @@ FuzzyVariant Fuzzy::CutAndBreak(cFielder* TheFielder)
 
 /**
  * Offset/Address/Size: 0x22A0 | 0x8008ED2C | size: 0x88C
- * TODO: 99.84% match - chip-shot confidence register and defensive temporary
+ * TODO: 99.85% match - chip-shot confidence register and defensive temporary
  * register/stack allocation differ.
  */
 FuzzyVariant Fuzzy::DoShooting(float fConfidence, cDecisionEntity* pDecision)
@@ -1013,7 +1013,7 @@ FuzzyVariant Fuzzy::DoShooting(float fConfidence, cDecisionEntity* pDecision)
         fStunnedGoalie = Stunned(g_pScriptCurrentTeam->GetGoalie());
         float fCloseToNet = CloseToMyNet(g_pScriptCurrentFielder);
 
-        fStunnedGoalie = (fStunnedGoalie <= fInDanger) ? fStunnedGoalie : fInDanger;
+        fStunnedGoalie = (fInDanger >= fStunnedGoalie) ? fStunnedGoalie : fInDanger;
         fStunnedGoalie = (fCloseToNet <= fStunnedGoalie) ? fCloseToNet : fStunnedGoalie;
 
         float fFurthestBack = FGREATER(FurthestBackOnMyTeam(g_pScriptCurrentFielder).mData.f, 0.5f);

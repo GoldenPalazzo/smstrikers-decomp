@@ -972,12 +972,6 @@ void CupTrophyScene::CreateTrophyScene(eTrophyType trophy, ButtonComponent::Butt
     mButtonState = buttonState;
 }
 
-struct SpoilNumWinsView
-{
-    unsigned char mPad[0x20A];
-    unsigned short mNumWins;
-};
-
 struct SpoilNumLossesView
 {
     unsigned char mPad[0x20C];
@@ -988,15 +982,12 @@ static const char* CUP_FIRST_TEXT_NAME_LEFT = "FIRST WON TIME";
 
 /**
  * Offset/Address/Size: 0x1524 | 0x800CABD8 | size: 0x3F8
- * TODO: 97.50% match - remaining register and stack-slot layout differs in BasicString temporary paths
+ * TODO: 99.11% match - remaining r29/r30/r31 roles differ in BasicString and localization temporary paths
  */
 void CupTrophyScene::SetWinRecord(Spoil& spoil)
 {
-    typedef TLTextInstance* (*FindCompByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-    typedef TLTextInstance* (*FindCompByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
-
     FEPresentation* pres = m_pFEPresentation;
-    BasicString<char, Detail::TempStringAllocator> winString = LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(((SpoilNumWinsView&)spoil).mNumWins);
+    BasicString<char, Detail::TempStringAllocator> winString = LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(spoil.mNumWins);
     unsigned short winBuf[16];
     nlStrToWcs(winString.c_str(), winBuf, 16);
 
@@ -1005,46 +996,10 @@ void CupTrophyScene::SetWinRecord(Spoil& spoil)
 
     memcpy(mFirstWinBuffer, formattedResult.c_str(), 0x100);
 
-    union
-    {
-        FindCompByValue byValue;
-        FindCompByRef byRef;
-    } findComp;
-
-    volatile InlineHasher hLayerA, hLayerB;
-    volatile InlineHasher hNameB, hNameA;
-    volatile InlineHasher h7, h6;
-    volatile InlineHasher h5, h4, h3, h2, h1, h0;
-
-    unsigned long hash;
-
-    findComp.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
-
-    h0.m_Hash = 0;
-    h1.m_Hash = 0;
-    h2.m_Hash = 0;
-    h3.m_Hash = 0;
-    h4.m_Hash = 0;
-    h5.m_Hash = 0;
-    h6.m_Hash = 0;
-    h7.m_Hash = 0;
-
-    hash = nlStringLowerHash(CUP_FIRST_TEXT_NAME_LEFT);
-    hNameA.m_Hash = hash;
-    hNameB.m_Hash = hash;
-
-    hash = nlStringLowerHash("Layer");
-    hLayerB.m_Hash = hash;
-    hLayerA.m_Hash = hash;
-
-    TLTextInstance* text = findComp.byRef(
+    TLTextInstance* text = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
         pres->m_currentSlide,
-        (InlineHasher&)hLayerB,
-        (InlineHasher&)hNameB,
-        (InlineHasher&)h7,
-        (InlineHasher&)h5,
-        (InlineHasher&)h3,
-        (InlineHasher&)h1);
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash(CUP_FIRST_TEXT_NAME_LEFT)));
 
     text->SetString(mFirstWinBuffer);
 }

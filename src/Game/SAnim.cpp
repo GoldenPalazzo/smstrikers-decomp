@@ -442,16 +442,19 @@ void cSAnim::GetRootTrans(float t, nlVector3* out) const
     {
         if (t == 1.0f || m_nNumRootKeys == 1)
         {
+            u32 w0;
+            u32 w1;
             const nlVector3* pSrc = &m_pRootTrans[m_nNumRootKeys - 1];
-            out->e[0] = pSrc->e[0];
-            out->e[1] = pSrc->e[1];
-            out->e[2] = pSrc->e[2];
-            // *out = *(nlVector3*)&m_pRootTrans[m_nNumRootKeys - 1];
+            w0 = pSrc->as_u32[0];
+            w1 = pSrc->as_u32[1];
+            out->as_u32[0] = w0;
+            out->as_u32[1] = w1;
+            out->as_u32[2] = pSrc->as_u32[2];
             return;
         }
 
         float fRealIndex = t * (m_nNumRootKeys - 1);
-        int nIndex0 = (int)fRealIndex;
+        register int nIndex0 = (int)fRealIndex;
         int nIndex1 = nIndex0 + 1;
         const nlVector3* pRootTrans = m_pRootTrans;
         const nlVector3* pVal0 = &pRootTrans[nIndex0];

@@ -1880,15 +1880,15 @@ static inline FadeAudioData* RemoveFadeData(FadeAudioData* pFadeAudioData)
 
 /**
  * Offset/Address/Size: 0x159C | 0x8013DAB0 | size: 0xA34
- * TODO: 99.41% match - remaining team-loop register differences.
+ * TODO: 99.52% match - remaining team-loop register differences.
  */
 void UpdateFades(float fDeltaT)
 {
     FadeAudioData* pFadeData;
     float newVol;
-    cTeam* team;
-    int p;
     int t;
+    int p;
+    cTeam* team;
 
     pFadeData = g_pFadeList;
     while (pFadeData != NULL)
@@ -2079,10 +2079,10 @@ void UpdateFades(float fDeltaT)
 
                     if (g_pGame != NULL)
                     {
-                        for (t = 0; t < 2; t++)
+                        for (int t = 0; t < 2; t++)
                         {
-                            team = g_pTeams[t];
-                            for (p = 0; p < 5; p++)
+                            cTeam* team = g_pTeams[t];
+                            for (int p = 0; p < 5; p++)
                             {
                                 team->GetPlayer(p)->m_pCharacterSFX->ActivateFilterOnAllTrackedSFX(true);
                             }
@@ -2166,7 +2166,7 @@ void UpdateFades(float fDeltaT)
 
                 if (g_pGame != NULL)
                 {
-                    for (t = 0; t < 2; t++)
+                    for (int t = 0; t < 2; t++)
                     {
                         team = g_pTeams[t];
                         for (p = 0; p < 5; p++)

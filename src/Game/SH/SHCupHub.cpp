@@ -962,6 +962,7 @@ unsigned char CupHubScene::UpdateDisplayedStat()
 
 /**
  * Offset/Address/Size: 0x4E34 | 0x800EEB90 | size: 0x10D4
+ * TODO: 99.5% match - r16/r17/r18 register swap among mode, title, and position offset
  */
 void CupHubScene::CreateLeague()
 {
@@ -988,7 +989,6 @@ void CupHubScene::CreateLeague()
         InlineHasher(nlStringLowerHash("STANDINGS SCREEN")));
 
     title->m_LocStrId = GetLOCStandingsName(mode);
-    numTeams = (u16)numTeams;
     posOffset = (8 - numTeams) * 12;
     title->m_OverloadFlags |= 8;
     feVector3 position = title->GetAssetPosition();
@@ -3089,8 +3089,9 @@ void CupHubScene::UpdateProgressIndicator()
         pSlide = progress->GetActiveSlide();
     }
 
+    volatile InlineHasher g7, g6, g5;
+
     {
-        volatile InlineHasher g7, g6, g5;
         volatile InlineHasher g4, g3, g2, g1, g0;
 
         g0.m_Hash = 0;
@@ -3190,7 +3191,7 @@ void CupHubScene::UpdateProgressIndicator()
         g3.m_Hash = 0;
         h7.m_Hash = 0;
         g4.m_Hash = 0;
-        h9.m_Hash = 0;
+        g5.m_Hash = 0;
 
         unsigned long hash = nlStringLowerHash("progress_joiner");
         g6.m_Hash = hash;
@@ -3206,7 +3207,7 @@ void CupHubScene::UpdateProgressIndicator()
         TLComponentInstance* joiner = findComp.byRef(
             pSlide,
             (InlineHasher&)g7,
-            (InlineHasher&)h9,
+            (InlineHasher&)g5,
             (InlineHasher&)h7,
             (InlineHasher&)h5,
             (InlineHasher&)h3,
@@ -3350,6 +3351,8 @@ void CupHubScene::UpdateProgressIndicator()
         highlight->m_bVisible = false;
     }
 
+    eHubColour* nodeColour = nodeColours;
+
     for (int i = 0; i < 16; i++)
     {
         volatile InlineHasher g7, g6;
@@ -3364,7 +3367,7 @@ void CupHubScene::UpdateProgressIndicator()
         g3.m_Hash = 0;
         h7.m_Hash = 0;
         g4.m_Hash = 0;
-        h9.m_Hash = 0;
+        g5.m_Hash = 0;
 
         unsigned long hash = nlStringLowerHash(PROGRESS_IMAGE_NAMES[i]);
         g6.m_Hash = hash;
@@ -3380,7 +3383,7 @@ void CupHubScene::UpdateProgressIndicator()
         nodeImage = findImage.byRef(
             pSlide,
             (InlineHasher&)g7,
-            (InlineHasher&)h9,
+            (InlineHasher&)g5,
             (InlineHasher&)h7,
             (InlineHasher&)h5,
             (InlineHasher&)h3,
@@ -3390,22 +3393,24 @@ void CupHubScene::UpdateProgressIndicator()
         {
             if ((displayRounds[i] >= 0 && displayRounds[i] < currentRound) || (round == -5 && currentRound == displayRounds[i]))
             {
-                if (nodeColours[i] == (eHubColour)0)
+                if (*nodeColour == (eHubColour)0)
                 {
                     nodeImage->SetAssetColour(HIGHLIGHT_COLOUR_RED);
                 }
-                else if (nodeColours[i] == (eHubColour)1)
+                else if (*nodeColour == (eHubColour)1)
                 {
                     nodeImage->SetAssetColour(HIGHLIGHT_COLOUR_GREEN);
                 }
-                else if (nodeColours[i] == (eHubColour)2)
+                else if (*nodeColour == (eHubColour)2)
                 {
                     nodeImage->SetAssetColour(HIGHLIGHT_COLOUR_BLUE);
                 }
-                else if (nodeColours[i] == (eHubColour)3)
+                else if (*nodeColour == (eHubColour)3)
                 {
                     nodeImage->SetAssetColour(HIGHLIGHT_COLOUR_YELLOW);
                 }
+
+                nodeColour++;
             }
 
             if (currentRound == displayRounds[i])

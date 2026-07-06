@@ -1060,12 +1060,40 @@ BasicString<unsigned short, Detail::TempStringAllocator>::operator=(BasicString<
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0xA8 | 0x8009C4A4 | size: 0xF8
-//  */
-// void BasicString<unsigned short, Detail::TempStringAllocator>::BasicString(const unsigned short*)
-// {
-// }
+/**
+ * Offset/Address/Size: 0xA8 | 0x8009C4A4 | size: 0xF8
+ */
+template <>
+BasicString<unsigned short, Detail::TempStringAllocator>::BasicString(const unsigned short* str)
+{
+    const unsigned short* src = str;
+    BasicStringData<unsigned short>* data = (BasicStringData<unsigned short>*)Detail::TempStringAllocator::allocate(sizeof(BasicStringData<unsigned short>));
+    if (data != 0)
+    {
+        data->mData = 0;
+        data->mSize = 0;
+        data->mCapacity = 0;
+        const unsigned short* s = str;
+        while (*s++ != 0)
+        {
+            data->mSize++;
+        }
+        data->mSize++;
+        data->mData = (unsigned short*)Detail::TempStringAllocator::allocate((data->mSize + 1) * sizeof(unsigned short));
+        data->mCapacity = data->mSize;
+        int i = 0;
+        int j = i;
+        while (i < data->mSize)
+        {
+            *(unsigned short*)((char*)data->mData + j) = *src;
+            i++;
+            src++;
+            j += sizeof(unsigned short);
+        }
+        data->mRefCount = 1;
+    }
+    m_data = data;
+}
 
 // /**
 //  * Offset/Address/Size: 0x1A0 | 0x8009C59C | size: 0x6B4

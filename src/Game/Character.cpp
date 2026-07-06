@@ -1,10 +1,17 @@
 #include "Game/Character.h"
 #include "Game/CharacterTemplate.h"
+#include "Game/CharacterTriggers.h"
 #include "Game/Effects/EmissionManager.h"
+#include "Game/FE/feHelpFuncs.h"
+#include "Game/Game.h"
+#include "Game/GameInfo.h"
 #include "Game/Physics/PhysicsBanana.h"
 #include "Game/Physics/PhysicsGoalie.h"
 #include "Game/Physics/PhysicsNet.h"
 #include "Game/Physics/CollisionSpace.h"
+#include "Game/Render/ElectricFence.h"
+#include "Game/Render/SidelineExplodable.h"
+#include "Game/Sys/clock.h"
 
 #include "NL/nlString.h"
 #include "NL/nlPrint.h"
@@ -1418,17 +1425,6 @@ inline eVariantType VariantTypeOf(const nlVector3&)
     return FT_VECTOR;
 }
 
-struct GameInfoManager
-{
-    eTeamID GetTeam(s16 teamIndex) const;
-};
-
-template <class T>
-struct nlSingleton
-{
-    static T* s_pInstance;
-};
-
 void AIEventHandler(Event* pEvent, void*)
 {
     struct CollisionBallGroundDataFields
@@ -1480,37 +1476,6 @@ void AIEventHandler(Event* pEvent, void*)
         char _pad0[0x8C];
         cFielder* mpTarget;
     };
-
-    struct Clock
-    {
-        void Stop();
-        void Start();
-    };
-
-    struct cGame
-    {
-        char _pad0[4];
-        GameTweaks* m_pGameTweaks;
-        char _pad1[4];
-        Clock* m_pGameClock;
-        char _pad2[0x14];
-        int m_eGameState;
-
-        void ChangeGameState(int);
-        void BlowUpPowerups(const nlVector3&, float);
-    };
-
-    struct SidelineExplodableManager
-    {
-        static void TriggerExplosions(const nlVector3&, float);
-    };
-
-    extern cGame* g_pGame;
-    extern const char* GetTeamName(eTeamID);
-
-    extern void EmitBallWallHit(const char*);
-    extern void EmitElectricFenceBallEffect(const nlVector3&, const nlVector3&, unsigned long, bool);
-    extern void CharacterElectrocutionEffect(cCharacter*, const nlVector3&, const nlVector3&);
 
     switch (pEvent->m_uEventID)
     {
@@ -2021,7 +1986,7 @@ void AIEventHandler(Event* pEvent, void*)
     {
         if (g_pGame == 0)
             break;
-        g_pGame->ChangeGameState(4);
+        g_pGame->ChangeGameState(GS_GAMEPLAY);
         break;
     }
 
@@ -2329,9 +2294,9 @@ void AIEventHandler(Event* pEvent, void*)
                 nlMatrix4& nodeMatrix = pFielder->m_pPoseAccumulator->GetNodeMatrix(pFielder->m_nBip01JointIndex_0xA4);
 
                 float dy = pEventData->v3ExplosionLocation.f.y - nodeMatrix.m[3][1];
-                float dx = pEventData->v3ExplosionLocation.f.x - nodeMatrix.m[3][0];
                 float dz = pEventData->v3ExplosionLocation.f.z - nodeMatrix.m[3][2];
-                float dist = nlSqrt(dy * dy + dx * dx + dz * dz, true);
+                float dx = pEventData->v3ExplosionLocation.f.x - nodeMatrix.m[3][0];
+                float dist = nlSqrt(dx * dx + dy * dy + dz * dz, true);
 
                 if (!(dist < pEventData->fExplosionRadius))
                     continue;

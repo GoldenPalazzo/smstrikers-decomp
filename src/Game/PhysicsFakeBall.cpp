@@ -7,7 +7,7 @@
 #include "NL/nlDLRing.h"
 #include "NL/nlDLListSlotPool.h"
 
-static nlVector3 v3Zero = { 0.f, 0.f, 0.f };
+static const nlVector3 v3Zero = { 0.f, 0.f, 0.f };
 
 SlotPool<BallCacheInfo> BallCacheInfo::mBallCacheInfoSlotPool;
 nlDLListSlotPool<BallCacheInfo*> FakeBallWorld::mBallCacheList;
@@ -409,8 +409,6 @@ float FakeBallWorld::GetPredictedPosAtDistance(float fDistance, nlVector3& v3Pos
  */
 float FakeBallWorld::GetPredictedHeightLimitTime(float fHeight, float fMinTime, nlVector3& v3ContactPoint, nlVector3& v3ContactVelocity, bool bDownOnly)
 {
-    extern nlVector3 v3Zero;
-
     cBall* pBall = mpPredictWorld->mpBall;
 
     float speedSq = pBall->m_v3Velocity.f.x * pBall->m_v3Velocity.f.x

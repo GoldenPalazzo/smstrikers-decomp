@@ -1393,16 +1393,18 @@ fade_found:
     }
 
     TrackManagerBase& pMgr = m_TrackMgr;
-    pStream = qs->pStream;
-
+    GCAudioStreaming::StereoAudioStream* pStream2;
+    FadeEntry* fadeIter2;
     FadeEntry* fadeHead2;
-    FadeEntry* fadeIter2 = nlDLRingGetStart(pMgr.m_FadeMgr.m_Fades.m_Head);
-    fadeHead2 = pMgr.m_FadeMgr.m_Fades.m_Head;
     FadeCtrl* fadeCtrl2;
+    pStream2 = qs->pStream;
+
+    fadeIter2 = nlDLRingGetStart(pMgr.m_FadeMgr.m_Fades.m_Head);
+    fadeHead2 = pMgr.m_FadeMgr.m_Fades.m_Head;
 
     while (fadeIter2 != NULL)
     {
-        if (fadeIter2->entry.pStream == pStream)
+        if (fadeIter2->entry.pStream == pStream2)
         {
             fadeCtrl2 = &fadeIter2->entry;
             goto fade2_found;

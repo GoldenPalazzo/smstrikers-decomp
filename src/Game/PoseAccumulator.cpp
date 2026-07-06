@@ -4,7 +4,7 @@
 #include "math.h"
 #include "types.h"
 
-static const nlQuaternion qRotIdentity = { 0, 0, 0, 1 };
+static nlQuaternion qRotIdentity = { 0.0f, 0.0f, 0.0f, 1.0f };
 static nlVector3 v3ScaleIdentity = { 1.0f, 1.0f, 1.0f };
 static nlVector3 v3TransIdentity = { 0.0f, 0.0f, 0.0f };
 
@@ -133,7 +133,6 @@ void cPoseAccumulator::InitAccumulators()
 
 /**
  * Offset/Address/Size: 0x644 | 0x801EBBE4 | size: 0x3F4
- * TODO: 99.86% match - parent branch computes output/parent matrix addresses in different order
  */
 void cPoseAccumulator::BuildNodeMatrices(const nlMatrix4& world)
 {
@@ -178,12 +177,14 @@ void cPoseAccumulator::BuildNodeMatrices(const nlMatrix4& world)
         }
         else
             pLocalMatrix->SetIdentity();
+
         if (!m_trans.mData[i].bIdentity)
         {
             pLocalMatrix->f.m41 = m_trans.mData[i].t.f.x;
             pLocalMatrix->f.m42 = m_trans.mData[i].t.f.y;
             pLocalMatrix->f.m43 = m_trans.mData[i].t.f.z;
         }
+
         if (i > 0)
         {
             int parentIdx = ParentStack[nStackIndex];
@@ -191,22 +192,29 @@ void cPoseAccumulator::BuildNodeMatrices(const nlMatrix4& world)
             pLocalMatrix->f.m42 *= m_scale.mData[parentIdx].s.f.y;
             pLocalMatrix->f.m43 *= m_scale.mData[parentIdx].s.f.z;
         }
+
         int nParentIndex = -1;
         if (i > 0)
         {
             nParentIndex = ParentStack[nStackIndex];
-            nlMultMatrices(m_NodeMatrices.mData[i], *pLocalMatrix, m_NodeMatrices.mData[nParentIndex]);
+            nlMatrix4* pNodeMatrices;
+            nlMatrix4* pParentMatrix = (pNodeMatrices = m_NodeMatrices.mData) + nParentIndex;
+            nlMultMatrices(pNodeMatrices[i], *pLocalMatrix, *pParentMatrix);
         }
         else
             nlMultMatrices(m_NodeMatrices.mData[i], *pLocalMatrix, world);
         int nPushPop = m_BaseSHierarchy->GetPushPop(i);
         nStackIndex += nPushPop;
+
         if (nPushPop > 0)
             ParentStack[nStackIndex] = i;
+
         cBuildNodeMatrixCallbackInfo* pCallback = &m_cb.mData[i];
+
         if (pCallback->funcCallback)
             pCallback->funcCallback(pCallback->nParam1, pCallback->nParam2, this, i, nParentIndex);
     }
+
     for (int i = 0; i < m_BaseSHierarchy->m_nodeCount; i++)
     {
         if (!m_scale.mData[i].bIdentity)

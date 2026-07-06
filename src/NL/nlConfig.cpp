@@ -1,3 +1,4 @@
+#define BASICSTRING_NO_COPY_REREAD
 #include "NL/nlConfig.h"
 #include "Game/DB/Simmer.h"
 #include "Game/Sys/debug.h"
@@ -8,8 +9,7 @@
 
 /**
  * Offset/Address/Size: 0x0 | 0x801D2C64 | size: 0x13EC
- * TODO: 98.81% match - r21/r22/r24 register differences in initial BString construction
- * and extra stack reloads around tokenizer iterator copies
+ * TODO: 99.13% match - r21/r22/r24 register differences in initial BString construction
  */
 typedef BasicString<char, Detail::TempStringAllocator> BString;
 typedef Tokenizer<BString> BTokenizer;

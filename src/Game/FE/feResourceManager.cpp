@@ -302,81 +302,70 @@ void FEResourceManager::QueueResourceLoad(FEResourceHandle* pHandle)
     nlDLRingAddEnd(&pendingResourceQueue.m_Head, entry);
 }
 
+static inline void RemoveResourceFromResourceList_Inline(FEResourceHandle* pFeResourceHandle)
+{
+    FEResourceHandle** foundValue;
+    u32 searchKey = pFeResourceHandle->m_hashID;
+    u32 key;
+    AVLTreeEntry<unsigned long, FEResourceHandle*>* node = s_loadedResourceList.m_Root;
+
+    while (node != nullptr)
+    {
+        int cmpResult = DefaultKeyCompare<unsigned long>()(node->key, searchKey);
+
+        if (cmpResult == 0)
+        {
+            if (&foundValue != nullptr)
+            {
+                foundValue = (FEResourceHandle**)&node->value;
+            }
+            searchKey = 1;
+            goto check_found;
+        }
+        else
+        {
+            if (cmpResult < 0)
+            {
+                node = (AVLTreeEntry<unsigned long, FEResourceHandle*>*)node->node.left;
+            }
+            else
+            {
+                node = (AVLTreeEntry<unsigned long, FEResourceHandle*>*)node->node.right;
+            }
+        }
+    }
+
+    searchKey = 0;
+check_found:
+    if (!(u8)searchKey)
+        return;
+    if (*foundValue != pFeResourceHandle)
+        return;
+
+    key = pFeResourceHandle->m_hashID;
+    {
+        AVLTreeNode* removedNode = s_loadedResourceList.RemoveAVLNode(
+            (AVLTreeNode**)&s_loadedResourceList.m_Root, &key, s_loadedResourceList.m_NumElements);
+
+        if (removedNode != NULL)
+        {
+            removedNode->left = (AVLTreeNode*)s_loadedResourceList.m_Allocator.m_FreeList;
+            s_loadedResourceList.m_Allocator.m_FreeList = (SlotPoolEntry*)removedNode;
+            s_loadedResourceList.m_NumElements--;
+        }
+    }
+}
+
 /**
  * Offset/Address/Size: 0x5F4 | 0x8020C134 | size: 0x138
- * TODO: 99.49% match - r5/r6 register swap for rootAddr vs nodeKey/cmpResult
  */
 void FEResourceManager::UnloadResource(FEResourceHandle* pFeResourceHandle)
 {
     switch (pFeResourceHandle->m_type)
     {
     case FERT_TEXTURE:
-    {
-        u32 key;
-        FEResourceHandle** foundValue;
-        u32 searchKey = pFeResourceHandle->m_hashID;
-        AVLTreeEntry<unsigned long, FEResourceHandle*>* node = s_loadedResourceList.m_Root;
-
-        while (node != nullptr)
-        {
-            unsigned long nodeKey = node->key;
-            int cmpResult;
-            if (searchKey == nodeKey)
-            {
-                cmpResult = 0;
-            }
-            else if (searchKey < nodeKey)
-            {
-                cmpResult = -1;
-            }
-            else
-            {
-                cmpResult = 1;
-            }
-
-            if (cmpResult == 0)
-            {
-                if (&foundValue != nullptr)
-                {
-                    foundValue = (FEResourceHandle**)&node->value;
-                }
-                searchKey = 1;
-                goto check_found;
-            }
-            else
-            {
-                if (cmpResult < 0)
-                {
-                    node = (AVLTreeEntry<unsigned long, FEResourceHandle*>*)node->node.left;
-                }
-                else
-                {
-                    node = (AVLTreeEntry<unsigned long, FEResourceHandle*>*)node->node.right;
-                }
-            }
-        }
-
-        searchKey = 0;
-    check_found:
-        if (!(u8)searchKey)
-            break;
-        if (*foundValue != pFeResourceHandle)
-            break;
-
-        key = pFeResourceHandle->m_hashID;
-        {
-            AVLTreeNode* removedNode = s_loadedResourceList.RemoveAVLNode(
-                (AVLTreeNode**)&s_loadedResourceList.m_Root, &key, s_loadedResourceList.m_NumElements);
-
-            if (removedNode != NULL)
-            {
-                removedNode->left = (AVLTreeNode*)s_loadedResourceList.m_Allocator.m_FreeList;
-                s_loadedResourceList.m_Allocator.m_FreeList = (SlotPoolEntry*)removedNode;
-                s_loadedResourceList.m_NumElements--;
-            }
-        }
+        RemoveResourceFromResourceList_Inline(pFeResourceHandle);
         break;
-    }
     case FERT_SCENE:
         glplatResourceRelease(*(unsigned long long*)((u8*)pFeResourceHandle + 0x18));
         break;

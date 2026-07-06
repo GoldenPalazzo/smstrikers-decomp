@@ -5,13 +5,13 @@
 
 /**
  * Offset/Address/Size: 0x0 | 0x80211F28 | size: 0x244
- * TODO: 95.10% match - remaining register diffs around DrawInfo, row metadata,
- * pString, and font/matrix locals.
+ * TODO: 99.41% match - remaining register diffs around conversion/startX,
+ * matrix mask, and string pointer locals.
  */
 void nlTextBox::DrawString(const nlTextBox::StringDrawInfo& DrawInfo, const nlVector2& DrawAt, const nlColour& Color, eGLView View)
 {
-    const nlFont* pFont = DrawInfo.pFont;
     int yDir = 1;
+    const nlFont* pFont = DrawInfo.pFont;
     nlVector2 CurrentPos = DrawAt;
     if (DrawInfo.DrawOptions & 0x800)
     {
@@ -30,22 +30,19 @@ void nlTextBox::DrawString(const nlTextBox::StringDrawInfo& DrawInfo, const nlVe
         ascentAdj = 0;
     }
 
-    const nlMatrix4* pMatrix = DrawInfo.pMatrix;
     char* pIter = (char*)&DrawInfo;
+    const nlMatrix4* pMatrix = DrawInfo.pMatrix;
     int vertOffset = yDir * (int)pFont->m_Metrics.Ascent - ascentAdj;
     nlColour overridecolour;
     overridecolour = Color;
     unsigned long hMatrix;
-    bool flipY = (DrawInfo.DrawOptions & 0x800) != 0;
-    overridecolour.c[3] = 0;
     float startX = DrawAt.f.x;
 
     unsigned long row = 0;
-    const unsigned short* pString = DrawInfo.String;
-    unsigned short rowCount = DrawInfo.RowCount;
     CurrentPos.f.y = yWithOffset + (float)vertOffset;
+    overridecolour.c[3] = 0;
 
-    while (row < rowCount)
+    while (row < DrawInfo.RowCount)
     {
         const Row& CurrentRow = *(Row*)(pIter + 0x14);
         CurrentPos.f.x = startX + (float)CurrentRow.XOffset;
@@ -65,11 +62,11 @@ void nlTextBox::DrawString(const nlTextBox::StringDrawInfo& DrawInfo, const nlVe
         {
             FontCharString fontCharStr;
             fontCharStr.m_InternalBuffer = 0;
-            fontCharStr.m_pString = (unsigned short*)(pString + startIdx);
+            fontCharStr.m_pString = (unsigned short*)(DrawInfo.String + startIdx);
 
             int length = (&CurrentRow + 1)->FirstChar - startIdx;
 
-            DrawInfo.pFont->DrawString(View, fontCharStr, CurrentPos, Color, Color, length, nlFont::PASS_TextAndEffect, flipY, matArg, &overridecolour);
+            DrawInfo.pFont->DrawString(View, fontCharStr, CurrentPos, Color, Color, length, nlFont::PASS_TextAndEffect, (DrawInfo.DrawOptions & 0x800) != 0, matArg, &overridecolour);
         }
 
         if (overridecolour.c[3] == 0)

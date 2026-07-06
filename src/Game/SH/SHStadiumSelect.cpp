@@ -551,7 +551,7 @@ void StadiumSelectSceneV2::SceneCreated()
 
 /**
  * Offset/Address/Size: 0x210 | 0x800D8790 | size: 0x5C4
- * TODO: 98.63% match - stadium name finder table lookup and zero-store scheduling
+ * TODO: 98.90% match - stadium entry lookup high-slot store/load scheduling
  */
 void StadiumSelectSceneV2::Update(float dt)
 {
@@ -570,6 +570,7 @@ void StadiumSelectSceneV2::Update(float dt)
         bool rightPressed = g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xC, true, NULL);
         bool leftPressed = g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xB, true, NULL);
 
+        volatile int stadiumIndex;
         volatile InlineHasher hA_1, hB_1, h9_1, h8_1, hz7, h6_1, hz5, h4_1, hz3, h2_1, hz1, h0_1;
 
         if (!rightPressed && !leftPressed)
@@ -660,7 +661,7 @@ void StadiumSelectSceneV2::Update(float dt)
         mLastDirection = (Direction)(rightPressed == 0 ? 1 : 0);
         FEAudio::PlayAnimAudioEvent("sfx_toggle_stadium", false);
 
-        volatile int stadiumIndex = mStadiumIndex;
+        stadiumIndex = mStadiumIndex;
         eStadiumID sid = StadiumEntries[stadiumIndex].stadiumID;
 
         TLTextInstance* nameText;

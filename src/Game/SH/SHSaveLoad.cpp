@@ -59,6 +59,32 @@ static enum eSaveLoad gSceneTypeStack[4];        // .bss:0x0
 
 static void CheckResults();
 
+static inline void PopSceneType()
+{
+    int stackIndex = --gSceneTypeStackDepth;
+    gSaveLoadStarted = false;
+    eSaveLoad prevScene = gSceneTypeStack[stackIndex];
+    gSaveLoadFinished = false;
+    if (prevScene == 0)
+    {
+        ResetTask::s_resetPaused = true;
+    }
+    else
+    {
+        ResetTask::s_resetPaused = false;
+    }
+}
+
+static inline void PushSceneType(eSaveLoad type)
+{
+    gSceneTypeStack[gSceneTypeStackDepth++] = type;
+    gSaveLoadStarted = false;
+    gSaveLoadFinished = false;
+    gCallbackMade = false;
+    gSceneTime = 0.0f;
+    ResetTask::s_resetPaused = false;
+}
+
 #pragma dont_inline on
 
 /**
@@ -1304,7 +1330,6 @@ void SaveLoadScene::UpdateForAboutToSaveSlide()
 
 /**
  * Offset/Address/Size: 0x224 | 0x800B07AC | size: 0x3DC
- * TODO: 99.19% match - scene stack base/current scene register allocation cascade
  */
 void SaveLoadScene::HandleSaveLoadFinishedResult()
 {
@@ -1482,19 +1507,9 @@ void SaveLoadScene::HandleSaveLoadFinishedResult()
     {
         if (gResult == 0)
         {
-            int depth = gSceneTypeStackDepth;
-            gSaveLoadStarted = false;
-            int stackIndex = depth - 1;
-            eSaveLoad prevScene = gSceneTypeStack[stackIndex];
+            PopSceneType();
             gSaveLoadFinished = false;
-            gSceneTypeStackDepth = stackIndex;
-            ResetTask::s_resetPaused = (prevScene == 0);
-            gSaveLoadFinished = false;
-            gSceneTypeStack[gSceneTypeStackDepth++] = ST_LOAD;
-            gSaveLoadStarted = false;
-            gCallbackMade = false;
-            gSceneTime = 0.0f;
-            ResetTask::s_resetPaused = false;
+            PushSceneType(ST_LOAD);
         }
         else
         {

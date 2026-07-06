@@ -1620,7 +1620,6 @@ void cFielder::CalcRegularShot(nlVector3& rv3Vel, nlVector3& rv3Target)
 
 /**
  * Offset/Address/Size: 0x95C8 | 0x80022904 | size: 0x834
- * TODO: 99.39% match - remaining S2S_SCORE call-argument setup scheduling
  */
 static inline float CalcSwatSideProduct(const nlVector3& ballPos)
 {
@@ -1824,17 +1823,9 @@ void cFielder::CalcShootToScoreShot(nlVector3& v3BallVelocity, nlVector3& v3Ball
     }
     case S2S_SCORE:
     {
-        float fTime = 0.05f + fTime2Goalie;
         pGoalie->mbShouldMiss = true;
-        if (fTime >= 0.2f)
-        {
-            fTime = fTime;
-        }
-        else
-        {
-            fTime = 0.2f;
-        }
-        pGoalie->CalcSaveParameters(fTime, 0xFFFC, false, true);
+        pGoalie->CalcSaveParameters(
+            ((0.05f + fTime2Goalie) >= 0.2f) ? (0.05f + fTime2Goalie) : 0.2f, 0xFFFC, false, true);
         break;
     }
     case S2S_SUPER_SHOT:

@@ -1182,50 +1182,12 @@ void NisPlayer::Load(const char* nisType, NisTarget target, NisUseStadiumOffset 
             nisHeader.stadiumOffset.f.z = 0.0f;
         }
 
-        bool mirrored;
-        if (target == NIS_TARGET_LOSER_CAPTAIN || target == NIS_TARGET_WINNER_CAPTAIN || target == NIS_TARGET_WINNER_SIDEKICK || target == NIS_TARGET_LOSER_GOALIE || target == NIS_TARGET_WINNER_GOALIE || target == NIS_TARGET_LOSER_SIDEKICK)
-        {
-            mirrored = true;
-            if (strstr(nisHeader.name, "_goal_") == NULL && strstr(nisHeader.name, "goalie_loser") == NULL)
-            {
-                mirrored = false;
-            }
+        bool mirrored = IsMirrored(target, nisHeader.name, winnerType);
 
-            if (mWinnerSide[winnerType] != 0)
-            {
-                mirrored = (mirrored == false);
-            }
-        }
-        else
-        {
-            if (strstr(nisHeader.name, "home") != NULL || strstr(nisHeader.name, "run_to_center") != NULL)
-            {
-                if (target == NIS_TARGET_AWAY_CAPTAIN)
-                {
-                    mirrored = true;
-                }
-                else if (target == NIS_TARGET_AWAY_SIDEKICK)
-                {
-                    mirrored = true;
-                }
-                else if (target == NIS_TARGET_NONE)
-                {
-                    mirrored = true;
-                }
-                else
-                {
-                    mirrored = false;
-                }
-            }
-            else
-            {
-                mirrored = false;
-            }
-        }
-
+        int j = 0;
         if (mirrored)
         {
-            for (int j = 0; j < nisHeader.numAnimations; j++)
+            for (; j < nisHeader.numAnimations; j++)
             {
                 mBeginPositions[j] = nisHeader.beginPositions[j];
                 mBeginPositions[j].f.x *= -1.0f;
@@ -1233,7 +1195,7 @@ void NisPlayer::Load(const char* nisType, NisTarget target, NisUseStadiumOffset 
         }
         else
         {
-            for (int j = 0; j < nisHeader.numAnimations; j++)
+            for (; j < nisHeader.numAnimations; j++)
             {
                 mBeginPositions[j] = nisHeader.beginPositions[j];
             }

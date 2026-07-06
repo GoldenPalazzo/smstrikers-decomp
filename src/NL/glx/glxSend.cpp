@@ -1994,14 +1994,14 @@ static void glx_SwitchTextureState(const glModelPacket* p)
 
 /**
  * Offset/Address/Size: 0x2B1C | 0x801BC61C | size: 0x2154
- * TODO: 99.51% match - gx_vtxfmt setup and texture-attribute loop still use
- * different temp registers and branch counter shape.
+ * TODO: 99.55% match - texture-attribute loop still differs in temporary
+ * registers and branch counter shape.
  */
 static unsigned long glx_SwitchTexConfig(const glModelPacket* p)
 {
     int texnum;
     unsigned long texconfig;
-    int bit;
+    int i;
     unsigned long extra;
 
 #define SET_TEV_ORDER(stage, coord, map, chan) \
@@ -2035,33 +2035,30 @@ static unsigned long glx_SwitchTexConfig(const glModelPacket* p)
         glx_allowSpecular = 0;
     }
 
-    {
-        int newVtxFmt = (int)gx_vtxfmt + 1;
-        gx_texattr[0] = GX_VA_NULL;
-        gx_texattr[1] = GX_VA_NULL;
-        gx_texattr[2] = GX_VA_NULL;
-        gx_texattr[3] = GX_VA_NULL;
-        gx_texattr[4] = GX_VA_NULL;
-        gx_texattr[5] = GX_VA_NULL;
-        if (newVtxFmt >= 1)
-            newVtxFmt = 0;
-        gx_vtxfmt = (_GXVtxFmt)newVtxFmt;
-    }
-
-    glx_NumIndices = 0;
+    i = (int)gx_vtxfmt + 1;
+    gx_texattr[0] = GX_VA_NULL;
+    gx_texattr[1] = GX_VA_NULL;
+    gx_texattr[2] = GX_VA_NULL;
+    gx_texattr[3] = GX_VA_NULL;
+    gx_texattr[4] = GX_VA_NULL;
+    gx_texattr[5] = GX_VA_NULL;
+    if (i >= 1)
+        i = 0;
 
     texnum = 0;
-    bit = 0;
+    gx_vtxfmt = (_GXVtxFmt)i;
+    glx_NumIndices = 0;
+    i = 0;
     while (true)
     {
-        if (bit >= 6)
+        if (i >= 6)
             break;
-        if (texconfig & (1 << bit))
+        if (texconfig & (1 << i))
         {
-            gx_texattr[bit] = (GXAttr)(texnum + 13);
+            gx_texattr[i] = (GXAttr)(texnum + 13);
             texnum++;
         }
-        bit++;
+        i++;
     }
 
     gxSetTevColourOp(0, (_GXTevOp)0, (_GXTevBias)0, (_GXTevScale)0, true, (_GXTevRegID)0);

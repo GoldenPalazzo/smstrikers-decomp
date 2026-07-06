@@ -250,19 +250,19 @@ void PausePostGameScene::SceneCreated()
 
     u8 hasHome = 0;
     BasicGameInfo* game = nlSingleton<GameInfoManager>::s_pInstance->mGameInfo[nlSingleton<GameInfoManager>::s_pInstance->mCurrentMode];
-    if (game->mPadSides[0] == 0)
+    if ((int)game->mPadSides[0] == 0)
     {
         hasHome = 1;
     }
-    else if (game->mPadSides[1] == 0)
+    else if ((int)game->mPadSides[1] == 0)
     {
         hasHome = 1;
     }
-    else if (game->mPadSides[2] == 0)
+    else if ((int)game->mPadSides[2] == 0)
     {
         hasHome = 1;
     }
-    else if (game->mPadSides[3] == 0)
+    else if ((int)game->mPadSides[3] == 0)
     {
         hasHome = 1;
     }
@@ -270,19 +270,19 @@ void PausePostGameScene::SceneCreated()
     u8 hasAway = 0;
     if (hasHome)
     {
-        if (game->mPadSides[0] == 1)
+        if ((int)game->mPadSides[0] == 1)
         {
             hasAway = 1;
         }
-        else if (game->mPadSides[1] == 1)
+        else if ((int)game->mPadSides[1] == 1)
         {
             hasAway = 1;
         }
-        else if (game->mPadSides[2] == 1)
+        else if ((int)game->mPadSides[2] == 1)
         {
             hasAway = 1;
         }
-        else if (game->mPadSides[3] == 1)
+        else if ((int)game->mPadSides[3] == 1)
         {
             hasAway = 1;
         }
@@ -308,7 +308,7 @@ void PausePostGameScene::SceneCreated()
             const unsigned short* formatLoc;
             formatLoc = LookupLocHash(0x291A9065);
 
-            eTeamID winningteam = nlSingleton<GameInfoManager>::s_pInstance->GetTeam((short)(!(pointdiff > 0)));
+            eTeamID winningteam = nlSingleton<GameInfoManager>::s_pInstance->GetTeam((short)((pointdiff > 0) ? 0 : 1));
 
             BasicString<unsigned short, Detail::TempStringAllocator> formatted = Format(BasicString<unsigned short, Detail::TempStringAllocator>(formatLoc), LookupLocHash(GetLOCCharacterName(winningteam, true, false)));
             SetText(*message, formatted);
@@ -337,19 +337,19 @@ void PausePostGameScene::SceneCreated()
     else
     {
         u8 newHasHome = 0;
-        if (game->mPadSides[0] == 0)
+        if ((int)game->mPadSides[0] == 0)
         {
             newHasHome = 1;
         }
-        else if (game->mPadSides[1] == 0)
+        else if ((int)game->mPadSides[1] == 0)
         {
             newHasHome = 1;
         }
-        else if (game->mPadSides[2] == 0)
+        else if ((int)game->mPadSides[2] == 0)
         {
             newHasHome = 1;
         }
-        else if (game->mPadSides[3] == 0)
+        else if ((int)game->mPadSides[3] == 0)
         {
             newHasHome = 1;
         }
@@ -379,7 +379,7 @@ void PausePostGameScene::SceneCreated()
                 const unsigned short* formatLoc;
                 formatLoc = LookupLocHash(0xDBBFA4DE);
 
-                eTeamID otherteam = nlSingleton<GameInfoManager>::s_pInstance->GetTeam((short)(!humanside));
+                eTeamID otherteam = nlSingleton<GameInfoManager>::s_pInstance->GetTeam((short)(humanside ? 0 : 1));
 
                 BasicString<unsigned short, Detail::TempStringAllocator> formatted = Format(BasicString<unsigned short, Detail::TempStringAllocator>(formatLoc), LookupLocHash(GetLOCCharacterName(otherteam, true, false)));
                 SetText(*message, formatted);
