@@ -43,7 +43,7 @@ cFollowCamera::cFollowCamera(FollowTarget followTarget)
 
 /**
  * Offset/Address/Size: 0x0 | 0x801A8F18 | size: 0x668
- * TODO: 96.8% match - GPR r28-r31 allocation rotated; remaining diffs are vector math float scheduling
+ * TODO: 97.5% match - r28-r31 and f27-f31 register allocation differs in camera update math
  */
 void cFollowCamera::Update(float dt)
 {
@@ -159,8 +159,8 @@ void cFollowCamera::Update(float dt)
     const float vy = -m_matView.m[0][2];
     const float vx = -m_matView.m[1][2];
 
-    const float dx = (m_v3OOIDampened.f.x - m_v3OOIDampenedPrev.f.x);
     const float dy = (m_v3OOIDampened.f.y - m_v3OOIDampenedPrev.f.y);
+    const float dx = (m_v3OOIDampened.f.x - m_v3OOIDampenedPrev.f.x);
 
     fScalar = 0.0f;
     const float denom = nlSqrt(fScalar + (vx * vx + vy * vy), true);

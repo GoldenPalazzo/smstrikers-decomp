@@ -157,10 +157,37 @@ SuperLoadingScene::~SuperLoadingScene()
 {
 }
 
+inline unsigned long SuperLoadingScene::LoadImage(BundleFile& bundlefile, eTeamID captain, int playingside, TextureType texturetype)
+{
+    BundleFileDirectoryEntry fileentry;
+    char filename[128] = { };
+    CaptainSidekickFilename::Build((CaptainSidekickFilename::Type)texturetype, filename, 0x80, captain, playingside);
+    bundlefile.GetFileInfo(filename, &fileentry, true);
+    u8* fileData = (u8*)nlMalloc(fileentry.m_length, 0x20, true);
+    bundlefile.ReadFile(filename, fileData, fileentry.m_length);
+    u32 hash = nlStringHash(filename);
+    glTextureAdd(hash, fileData, fileentry.m_length);
+    u32 texturehandle = glGetTexture(filename);
+    delete[] fileData;
+    return texturehandle;
+}
+
+inline void SuperLoadingScene::BuildAndLoadPortraits(eTeamID homecaptain, eTeamID awaycaptain)
+{
+    BundleFile* bundleFile;
+
+    bundleFile = new (nlMalloc(sizeof(BundleFile), 0x20, true)) BundleFile();
+    bundleFile->Open("art/fe/LoadingScreensUI.Res");
+
+    mTextureHandles[0][TT_MAIN] = LoadImage(*bundleFile, homecaptain, 0, TT_MAIN);
+    mTextureHandles[1][TT_MAIN] = LoadImage(*bundleFile, awaycaptain, 1, TT_MAIN);
+
+    bundleFile->Close();
+    delete bundleFile;
+}
+
 /**
  * Offset/Address/Size: 0x1428 | 0x800A7B98 | size: 0x520
- * TODO: 99.18% match - remaining diffs swap team1 and bundleFile
- * nonvolatile registers through the texture loading blocks.
  */
 void SuperLoadingScene::SceneCreated()
 {
@@ -174,42 +201,9 @@ void SuperLoadingScene::SceneCreated()
         pres->SetActiveSlide("disappear");
     }
 
-    eTeamID team1 = nlSingleton<GameInfoManager>::s_pInstance->GetTeam(1);
-    BundleFile* bundleFile;
-    eTeamID team0 = nlSingleton<GameInfoManager>::s_pInstance->GetTeam(0);
-
-    bundleFile = new (nlMalloc(sizeof(BundleFile), 0x20, true)) BundleFile();
-    bundleFile->Open("art/fe/LoadingScreensUI.Res");
-
-    {
-        char filename[128] = { };
-        BundleFileDirectoryEntry dirEntry;
-        CaptainSidekickFilename::Build((CaptainSidekickFilename::Type)0, filename, 0x80, team0, 0);
-        bundleFile->GetFileInfo(filename, &dirEntry, true);
-        u8* fileData = (u8*)nlMalloc(dirEntry.m_length, 0x20, true);
-        bundleFile->ReadFile(filename, fileData, dirEntry.m_length);
-        u32 hash = nlStringHash(filename);
-        glTextureAdd(hash, fileData, dirEntry.m_length);
-        u32 texHandle = glGetTexture(filename);
-        delete[] fileData;
-        mTextureHandles[0][0] = texHandle;
-    }
-    {
-        char filename[128] = { };
-        BundleFileDirectoryEntry dirEntry;
-        CaptainSidekickFilename::Build((CaptainSidekickFilename::Type)0, filename, 0x80, team1, 1);
-        bundleFile->GetFileInfo(filename, &dirEntry, true);
-        u8* fileData = (u8*)nlMalloc(dirEntry.m_length, 0x20, true);
-        bundleFile->ReadFile(filename, fileData, dirEntry.m_length);
-        u32 hash = nlStringHash(filename);
-        glTextureAdd(hash, fileData, dirEntry.m_length);
-        u32 texHandle = glGetTexture(filename);
-        delete[] fileData;
-        mTextureHandles[1][0] = texHandle;
-    }
-
-    bundleFile->Close();
-    delete bundleFile;
+    BuildAndLoadPortraits(
+        nlSingleton<GameInfoManager>::s_pInstance->GetTeam(0),
+        nlSingleton<GameInfoManager>::s_pInstance->GetTeam(1));
 
     TLSlide* slide = pres->m_currentSlide;
 

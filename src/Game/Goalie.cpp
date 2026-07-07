@@ -3889,7 +3889,7 @@ void Goalie::InitActionLooseBallSetup()
                     }
                     else
                     {
-                        mpSaveData = GoalieSave::FindBestSave(mBlendInfo, mv3LocalContactPosition, 5.0f, true, uSaveType & 0x3FFF, false);
+                        mpSaveData = GoalieSave::FindBestSave(mBlendInfo, mv3LocalContactPosition, 5.0f, true, uSaveType & 0xFFFC, false);
                         mbPlayMiss = true;
                     }
                 }
@@ -3902,10 +3902,13 @@ void Goalie::InitActionLooseBallSetup()
                     f32 fLocalY = mv3LocalContactPosition.f.y;
                     f32 fLocalVelZ = mv3LocalContactVelocity.f.z;
                     f32 fLocalZ = mv3LocalContactPosition.f.z;
-                    mv3LocalContactPosition.f.x = fRatio * fLocalVelX + fLocalX;
-                    mv3LocalContactPosition.f.y = fRatio * fLocalVelY + fLocalY;
+                    f32 fNewLocalX = fRatio * fLocalVelX + fLocalX;
+                    f32 fNewLocalY = fRatio * fLocalVelY + fLocalY;
                     fTimeTilSave = fTimeTilSave + fRatio;
-                    mv3LocalContactPosition.f.z = fRatio * fLocalVelZ + fLocalZ;
+                    mv3LocalContactPosition.f.x = fNewLocalX;
+                    f32 fNewLocalZ = fRatio * fLocalVelZ + fLocalZ;
+                    mv3LocalContactPosition.f.y = fNewLocalY;
+                    mv3LocalContactPosition.f.z = fNewLocalZ;
                 }
 
             skip_save_adjust:
@@ -5456,8 +5459,6 @@ void Goalie::InitActionSTSRecover()
 
 /**
  * Offset/Address/Size: 0x2600 | 0x800450FC | size: 0x224
- * TODO: 99.16% match - x/z register swaps remain in the ball-target
- * vector delta/scale block.
  */
 void Goalie::InitActionChipShotStumble()
 {
@@ -5482,31 +5483,19 @@ void Goalie::InitActionChipShotStumble()
     m_pPhysicsCharacter->m_CanCollidedWithGoalLine = false;
 
     cBall* pBall = g_pBall;
-    float x;
-    float y;
-    float z;
-    y = pBall->m_v3ShotTarget.f.y - pBall->m_v3Position.f.y;
-    x = pBall->m_v3ShotTarget.f.x - pBall->m_v3Position.f.x;
-    float yy = y * y;
-    z = pBall->m_v3ShotTarget.f.z - pBall->m_v3Position.f.z;
-    volatile float dirZ, dirY, dirX;
-    dirY = y;
-    float xx = x * x;
-    dirX = x;
-    dirZ = z;
+    nlVector3 v3Ball2Targ;
+    nlVector3* const pV = &v3Ball2Targ;
+    pV->f.y = pBall->m_v3ShotTarget.f.y - pBall->m_v3Position.f.y;
+    pV->f.z = pBall->m_v3ShotTarget.f.z - pBall->m_v3Position.f.z;
+    pV->f.x = pBall->m_v3ShotTarget.f.x - pBall->m_v3Position.f.x;
+    float yy = pV->f.y * pV->f.y;
+    float xx = pV->f.x * pV->f.x;
     float dist = nlSqrt(xx + yy, true);
 
     if (dist > 0.5f)
     {
-        float distPlusOne = 1.5f + dist;
-        float sx = dirX;
-        float sy = dirY;
-        float sz = dirZ;
-        float scale = distPlusOne / dist;
-        nlVec3Set(mv3NavTarget,
-            pBall->m_v3ShotTarget.f.x + scale * sx,
-            pBall->m_v3ShotTarget.f.y + scale * sy,
-            pBall->m_v3ShotTarget.f.z + scale * sz);
+        float scale = (1.5f + dist) / dist;
+        nlVec3ScaleAdd(mv3NavTarget, scale, *pV, pBall->m_v3ShotTarget);
     }
     else
     {

@@ -1,4 +1,5 @@
 #define NO_BASICSTRING_IMPL
+#define BASICSTRING_OUTLINE_CTOR
 #define MEMFUN_NO_DECL
 #define BIND_NO_DECL
 #define FUNCTION0_SPLIT_BODIES
@@ -255,6 +256,32 @@ static inline unsigned short* CupTickerLookupLocString(unsigned long hash)
     return MissingLocString;
 }
 
+static inline BasicStringData<unsigned short>* BuildWideBasicStringData(const unsigned short* str)
+{
+    const unsigned short* src = str;
+    BasicStringData<unsigned short>* data = (BasicStringData<unsigned short>*)Detail::TempStringAllocator::allocate(sizeof(BasicStringData<unsigned short>));
+    if (data != 0)
+    {
+        data->mData = 0;
+        data->mSize = 0;
+        data->mCapacity = 0;
+        const unsigned short* s = str;
+        while (*s++ != 0)
+        {
+            data->mSize++;
+        }
+        data->mSize++;
+        data->mData = (unsigned short*)Detail::TempStringAllocator::allocate((data->mSize + 1) * sizeof(unsigned short));
+        data->mCapacity = data->mSize;
+        for (int i = 0; i < data->mSize; i++)
+        {
+            data->mData[i] = *src++;
+        }
+        data->mRefCount = 1;
+    }
+    return data;
+}
+
 /**
  * Offset/Address/Size: 0x680 | 0x800F2648 | size: 0x12E8
  */
@@ -391,8 +418,7 @@ void CupTickerManager::CreateNewMessage()
                     && !gameInfo->IsUserQualified(GameInfoManager::GM_STAR_CUP)))
             {
                 LOC_LOOKUP(0x751FA62FUL, locString);
-                WideBasicString msg(locString);
-                tickerMessage = msg;
+                tickerMessage = WideBasicString(locString);
                 messageDisplayed = true;
             }
             else if (gameInfo->IsUserQualified(GameInfoManager::GM_FLOWER_CUP)
@@ -401,16 +427,14 @@ void CupTickerManager::CreateNewMessage()
                      && gameInfo->IsInCupMode())
             {
                 LOC_LOOKUP(0xEEC22902UL, locString);
-                WideBasicString msg(locString);
-                tickerMessage = msg;
+                tickerMessage = WideBasicString(locString);
                 messageDisplayed = true;
             }
             else if ((mode == GameInfoManager::GM_BOWSER_CUP || mode == GameInfoManager::GM_SUPER_BOWSER_CUP)
                      && !gameInfoMem->mDoingKnockout)
             {
                 LOC_LOOKUP(0x4B50DF6AUL, locString);
-                WideBasicString msg(locString);
-                tickerMessage = msg;
+                tickerMessage = WideBasicString(locString);
                 messageDisplayed = true;
             }
             else
@@ -599,6 +623,6 @@ void CupTickerManager::BuildGoalTotalTickerMessage(
         nlStrToWcs(goalsStr.c_str(), wideGoals, 16);
 
         result = result.Append(Format<WideBasicString, const unsigned short*, unsigned short[16]>(
-            WideBasicString(CupTickerLookupLocString(formatHash)), CupTickerLookupLocString(teamNameHash), wideGoals));
+            WideBasicString(BuildWideBasicStringData(CupTickerLookupLocString(formatHash))), CupTickerLookupLocString(teamNameHash), wideGoals));
     }
 }

@@ -18,7 +18,7 @@ s32 g_pPadRemapArray[38] = {
 
 /**
  * Offset/Address/Size: 0x128 | 0x80193720 | size: 0xD74
- * TODO: 99.37% match - remaining register allocation diffs in marker address and erase/insert pointer paths.
+ * TODO: 99.42% match - remaining register allocation diffs in marker address and erase/insert pointer paths.
  */
 template <>
 template <>
@@ -48,15 +48,19 @@ FormatImpl<BasicString<char, Detail::TempStringAllocator> >&
 
         char* eraseBegin;
         char* eraseEnd;
+        char* eraseAt;
+        int eraseSize;
+        int eraseOffset;
+        BasicStringData<char>* eraseData;
         mString[0];
         eraseEnd = (mString.m_data ? mString.m_data->mData : (char*)0) + i + 3;
         mString[0];
         eraseBegin = (mString.m_data ? mString.m_data->mData : (char*)0) + i;
         mString[0];
-        BasicStringData<char>* eraseData = mString.m_data;
-        int eraseSize = eraseEnd - eraseBegin;
-        int eraseOffset = eraseBegin - eraseData->mData;
-        char* eraseAt = eraseData->mData + eraseOffset;
+        eraseData = mString.m_data;
+        eraseSize = eraseEnd - eraseBegin;
+        eraseOffset = eraseBegin - eraseData->mData;
+        eraseAt = eraseData->mData + eraseOffset;
         while (eraseEnd != eraseData->mData + eraseData->mSize)
         {
             *eraseAt = *eraseEnd;

@@ -84,15 +84,16 @@ inline WideBasicString Detail::LexicalCastImpl<WideBasicString, WideBasicString>
 
 /**
  * Offset/Address/Size: 0x80 | 0x8009CF48 | size: 0xF4
- * TODO: 97.43% match - return-buffer/source-pointer register roles are
- * swapped (r29/r31).
+ * TODO: 98.28% match - loop terminator compare and copy-loop index registers differ.
  */
+#pragma optimization_level 2
 template <>
 inline WideBasicString Detail::LexicalCastImpl<WideBasicString, const unsigned short*>::Do(
     const unsigned short* const& f)
 {
     return WideBasicString(f);
 }
+#pragma optimization_level 4
 
 /**
  * Offset/Address/Size: 0x0 | 0x800BDB88 | size: 0xE8
@@ -149,20 +150,19 @@ inline NLString Detail::LexicalCastImpl<NLString, int>::Do(int t)
 
 /**
  * Offset/Address/Size: 0x168 | 0x8006A094 | size: 0x100
- * TODO: 97.66% match - r30/r31 register roles are swapped between return
- * slot and the allocated BasicStringData pointer.
  */
+#pragma optimization_level 2
 template <>
 inline NLString Detail::LexicalCastImpl<NLString, unsigned long>::Do(unsigned long t)
 {
-    char string[0x40];
-    nlSNPrintf(string, 0x40, "%u", t);
+    char s[0x40];
+    nlSNPrintf(s, 0x40, "%u", t);
 
-    BasicStringData<char>* data = (BasicStringData<char>*)nlMalloc(0x10, 8, true);
+    BasicStringData<char>* data = (BasicStringData<char>*)Detail::TempStringAllocator::allocate(0x10);
     if (data != 0)
     {
-        char* start = string;
-        char* p = start;
+        const char* str = s;
+        const char* p = str;
 
         data->mData = 0;
         data->mSize = 0;
@@ -174,20 +174,20 @@ inline NLString Detail::LexicalCastImpl<NLString, unsigned long>::Do(unsigned lo
         }
 
         data->mSize++;
-        data->mData = (char*)nlMalloc(data->mSize + 1, 8, true);
+        data->mData = (char*)Detail::TempStringAllocator::allocate(data->mSize + 1);
         data->mCapacity = data->mSize;
 
         for (int i = 0; i < data->mSize; i++)
         {
-            data->mData[i] = *start;
-            start++;
+            data->mData[i] = *str++;
         }
 
         data->mRefCount = 1;
     }
 
-    return NLString(data);
+    return (NLString)data;
 }
+#pragma optimization_level 4
 
 static inline BasicStringData<char>* BuildLexicalCastStringData(char* string)
 {
@@ -236,21 +236,19 @@ inline NLString Detail::LexicalCastImpl<NLString, char>::Do(char t)
 
 /**
  * Offset/Address/Size: 0x390F4 | 0x8003C1B4 | size: 0xFC
- * TODO: 97.62% match - return-slot/data pointer register roles are swapped
- * (r30/r31) in the inlined string construction path.
  */
+#pragma optimization_level 2
 template <>
 inline NLString Detail::LexicalCastImpl<NLString, float>::Do(float f)
 {
-    BasicStringData<char>* data;
-    char string[0x40];
-    nlSNPrintf(string, 0x40, "%f", f);
+    char s[0x40];
+    nlSNPrintf(s, 0x40, "%f", f);
 
-    data = (BasicStringData<char>*)nlMalloc(0x10, 8, true);
+    BasicStringData<char>* data = (BasicStringData<char>*)Detail::TempStringAllocator::allocate(0x10);
     if (data != 0)
     {
-        char* start = string;
-        char* p = start;
+        const char* str = s;
+        const char* p = str;
 
         data->mData = 0;
         data->mSize = 0;
@@ -262,20 +260,20 @@ inline NLString Detail::LexicalCastImpl<NLString, float>::Do(float f)
         }
 
         data->mSize++;
-        data->mData = (char*)nlMalloc(data->mSize + 1, 8, true);
+        data->mData = (char*)Detail::TempStringAllocator::allocate(data->mSize + 1);
         data->mCapacity = data->mSize;
 
         for (int i = 0; i < data->mSize; i++)
         {
-            data->mData[i] = *start;
-            start++;
+            data->mData[i] = *str++;
         }
 
         data->mRefCount = 1;
     }
 
-    return NLString(data);
+    return (NLString)data;
 }
+#pragma optimization_level 4
 
 template <>
 inline NLString Detail::LexicalCastImpl<NLString, bool>::Do(bool t)

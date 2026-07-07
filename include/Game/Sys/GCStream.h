@@ -3,6 +3,13 @@
 
 #include "NL/nlArrayAllocator.h"
 #include "NL/nlFile.h"
+#include "musyx/musyx.h"
+#include "dolphin/os.h"
+
+// Declarations needed by the inline (weak) AudioStream methods defined below,
+// so this header compiles standalone in every includer.
+void nlServiceFileSystem();
+extern int nlPrintf(const char*, ...);
 
 struct sDSPADPCM
 {
@@ -100,13 +107,203 @@ public:
     virtual ~AudioStream() { };
     virtual void Warm(bool) { };
     virtual bool SafeToPurge() { return false; };
-    virtual void Purge();
+    virtual void Purge()
+    {
+        FORCE_DONT_INLINE;
+        m_State = SS_New;
+    }
     virtual unsigned long DoUpdateRead(unsigned long, unsigned long, unsigned long, unsigned long, AudioStreamBuffer*) { return 0; };
     virtual unsigned long GetUpdateReadLength() { return 0; };
     virtual void CancelPendingReads() { };
-    virtual void WarmReadDone(AudioStreamBuffer*);
+    virtual void WarmReadDone(AudioStreamBuffer* pBuffer)
+    {
+        FORCE_DONT_INLINE;
+        if (m_Buffers[m_BufferCount - 1] != pBuffer)
+        {
+            return;
+        }
+
+        m_State = SS_Warm;
+
+        if (!(m_Flags & (1 << SF_Play)))
+        {
+            return;
+        }
+
+        if (pBuffer != m_Buffers[m_BufferCount - 1])
+        {
+            return;
+        }
+
+        m_Flags &= ~(1 << SF_Play);
+
+        unsigned long start = 0;
+        AudioStreamBuffer* buf;
+        volatile unsigned long i = (unsigned long)(buf = NULL);
+        if (start < m_BufferCount)
+        {
+            buf = m_Buffers[0];
+        }
+        while (buf != NULL)
+        {
+            sndStreamActivate(buf->m_StreamId);
+            unsigned long ci = i + 1;
+            i = ci;
+            if (ci < m_BufferCount)
+            {
+                buf = m_Buffers[ci];
+            }
+            else
+            {
+                buf = NULL;
+            }
+        }
+
+        m_State = SS_Playing;
+    }
     void Stop();
-    void Destructor();
+    void Destructor()
+    {
+        FORCE_DONT_INLINE;
+        m_Flags = (m_Flags & ~(1 << SF_SeriousStop)) | (1 << SF_SeriousStop);
+        m_Flags &= ~(1 << SF_Play);
+
+        if (m_State == SS_Playing)
+        {
+            AudioStreamBuffer* pBuffer;
+            volatile unsigned long i = (unsigned long)(pBuffer = NULL);
+            unsigned long start = 0;
+
+            if (start < m_BufferCount)
+            {
+                pBuffer = m_Buffers[0];
+            }
+
+            while (pBuffer != NULL)
+            {
+                pBuffer->m_Volume = 0;
+                sndStreamMixParameterEx(pBuffer->m_StreamId, pBuffer->m_Volume, pBuffer->m_Pan, pBuffer->m_SurroundPan, 0, 0);
+                sndStreamDeactivate(pBuffer->m_StreamId);
+                m_State = SS_Warm;
+
+                {
+                    unsigned long ci = i + 1;
+                    i = ci;
+                    if (ci < m_BufferCount)
+                    {
+                        pBuffer = m_Buffers[ci];
+                    }
+                    else
+                    {
+                        pBuffer = NULL;
+                    }
+                }
+            }
+
+            m_StreamPos = 0;
+            m_State = SS_Warm;
+        }
+
+        CancelPendingReads();
+
+        {
+            volatile unsigned long main_i;
+            volatile unsigned long cool_i;
+
+            if (m_Flags & (1 << SF_CoolOnStop))
+            {
+                m_Flags &= ~(1 << SF_CoolOnStop);
+
+                if (m_State > SS_Initd)
+                {
+                    AudioStreamBuffer* pBuffer;
+                    cool_i = (unsigned long)(pBuffer = NULL);
+
+                    m_Flags = (m_Flags & ~(1 << SF_SeriousStop)) | (1 << SF_SeriousStop);
+                    unsigned long start = 0;
+
+                    if (start < m_BufferCount)
+                    {
+                        pBuffer = m_Buffers[0];
+                    }
+
+                    while (pBuffer != NULL)
+                    {
+                        m_BuffMgr.FreeBuffer(pBuffer);
+
+                        {
+                            unsigned long idx = cool_i;
+                            m_Buffers[idx] = NULL;
+                            idx = idx + 1;
+                            cool_i = idx;
+                            if (idx < m_BufferCount)
+                            {
+                                pBuffer = m_Buffers[idx];
+                            }
+                            else
+                            {
+                                pBuffer = NULL;
+                            }
+                        }
+                    }
+
+                    m_State = SS_Initd;
+                }
+            }
+
+            if (m_State > SS_Initd)
+            {
+                AudioStreamBuffer* pBuffer;
+                main_i = (unsigned long)(pBuffer = NULL);
+
+                m_Flags = (m_Flags & ~(1 << SF_SeriousStop)) | (1 << SF_SeriousStop);
+                unsigned long start = 0;
+
+                if (start < m_BufferCount)
+                {
+                    pBuffer = m_Buffers[0];
+                }
+
+                while (pBuffer != NULL)
+                {
+                    m_BuffMgr.FreeBuffer(pBuffer);
+
+                    {
+                        unsigned long idx = main_i;
+                        m_Buffers[idx] = NULL;
+                        idx = idx + 1;
+                        main_i = idx;
+                        if (idx < m_BufferCount)
+                        {
+                            pBuffer = m_Buffers[idx];
+                        }
+                        else
+                        {
+                            pBuffer = NULL;
+                        }
+                    }
+                }
+
+                m_State = SS_Initd;
+            }
+        }
+
+        long long startTime = OSGetTime();
+
+        while (!SafeToPurge())
+        {
+            nlServiceFileSystem();
+            OSYieldThread();
+            long long elapsed = OSGetTime() - startTime;
+            if (OSTicksToMilliseconds(elapsed) > 250)
+            {
+                nlPrintf("WARNING! Breaking out of audio stream d'tor early!\n");
+                break;
+            }
+        }
+
+        Purge();
+    }
 
     static void _HdrReadCB(nlFile*, void*, unsigned int, unsigned long);
     static void _WarmReadCB(nlFile*, void*, unsigned int, unsigned long);
@@ -157,7 +354,11 @@ class StereoAudioStream : public AudioStream
 {
 public:
     StereoAudioStream(AudioBufferMgr& mgr);
-    virtual ~StereoAudioStream();
+    virtual ~StereoAudioStream()
+    {
+        FORCE_DONT_INLINE;
+        Destructor();
+    }
     virtual unsigned long GetUpdateReadLength();
     static void _InterleavedHdrReadCB(nlFile*, void*, unsigned int, unsigned long);
     static void _AsyncCancelCB(nlFile*, void*, unsigned int, unsigned long, void (*)(nlFile*, void*, unsigned int, unsigned long));

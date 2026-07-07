@@ -43,6 +43,23 @@ bool inline CheckUnlockStatus(const bool& globalFlag, const unsigned char& troph
     return globalFlag;
 }
 
+static inline bool CheckUnlockStatusPickStadium(const bool& globalFlag, const unsigned char& trophyValue, const unsigned int bit)
+{
+    bool returnValue = globalFlag;
+    if (!returnValue)
+    {
+        if (GetConfigBool(Config::Global(), "givealltrophies", false))
+        {
+            returnValue = true;
+        }
+        else
+        {
+            returnValue = (trophyValue >> bit) & 0x01;
+        }
+    }
+    return returnValue;
+}
+
 static inline bool CheckUnlockStatusNoGlobal(const unsigned char& trophyValue, const unsigned int bit)
 {
     if (GetConfigBool(Config::Global(), "givealltrophies", false))
@@ -705,7 +722,6 @@ void GameInfoManager::SetStadium(eStadiumID stadiumID)
 
 /**
  * Offset/Address/Size: 0x8C28 | 0x8017E2CC | size: 0x460
- * TODO: 99.77% match - this pointer and forbiddenUnlocked use swapped r29/r30 registers.
  */
 eStadiumID GameInfoManager::PickStadium(bool isLastRound, eStadiumID excludeStadium) const
 {
@@ -719,7 +735,7 @@ eStadiumID GameInfoManager::PickStadium(bool isLastRound, eStadiumID excludeStad
 
     lastRoundStadium = STAD_INVALID;
 
-    bool kongaUnlocked = CheckUnlockStatus(isKongaUnlocked, mUserInfo.mTrophies[0], 0);
+    bool kongaUnlocked = CheckUnlockStatusPickStadium(isKongaUnlocked, mUserInfo.mTrophies[0], 0);
     bool yoshiUnlocked = CheckUnlockStatus(isYoshiUnlocked, mUserInfo.mTrophies[0], 1);
     bool forbiddenUnlocked = CheckUnlockStatus(isForbiddenUnlocked, mUserInfo.mTrophies[0], 2);
     bool superStadiumUnlocked = CheckUnlockStatus(isSuperStadUnlocked, mUserInfo.mTrophies[0], 3);

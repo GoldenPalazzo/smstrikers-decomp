@@ -837,7 +837,7 @@ void AudioStreamTrack::StreamTrack::QueueStream(
     }
 }
 
-extern "C" void sndStreamActivate(unsigned long stid);
+extern "C" bool sndStreamActivate(unsigned long stid);
 extern "C" void sndStreamDeactivate(unsigned long stid);
 
 /**

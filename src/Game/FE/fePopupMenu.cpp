@@ -9,6 +9,7 @@
 #include "Game/OverlayManager.h"
 #include "Game/FE/feFinder.h"
 #include "Game/FE/tlTextInstance.h"
+#include "Game/FE/tlImageInstance.h"
 #include "Game/FE/feText.h"
 #include "Game/FE/feTemplates.h"
 #include "NL/nlBSearch.h"
@@ -202,9 +203,8 @@ void FEPopupMenu::CentrePopup(float totalHeight, float topOfMessageBox)
  * Offset/Address/Size: 0x620 | 0x800988CC | size: 0x8A0
  */
 /**
- * TODO: 99.04% match - remaining differences are in option placement
- * arithmetic/register scheduling after matching the target f22 callee-saved
- * allocation.
+ * TODO: 99.09% match - remaining differences are in option placement
+ * float register allocation.
  */
 void FEPopupMenu::SetPositions()
 {
@@ -227,7 +227,8 @@ void FEPopupMenu::SetPositions()
     float optionY;
     nlColour optionColour;
     feVector3 highlightPosition;
-    TLInstance* pImage;
+    TLImageInstance* pImage;
+    TLComponentInstance* pFinalHighlight;
 
     presentation = m_pFEScene->m_pFEPackage->GetPresentation();
 
@@ -337,16 +338,16 @@ void FEPopupMenu::SetPositions()
         InlineHasher(nlStringLowerHash("Layer")),
         InlineHasher(nlStringLowerHash(optionNames[mHighlightedOption])));
 
-    pHighlight = FEFinder<TLComponentInstance, 4>::Find<FEPresentation>(
+    pFinalHighlight = FEFinder<TLComponentInstance, 4>::Find<FEPresentation>(
         presentation,
         InlineHasher(nlStringLowerHash("Slide1")),
         InlineHasher(nlStringLowerHash("Layer")),
         InlineHasher(nlStringLowerHash("highlite")));
 
-    highlightPosition = pHighlight->GetAssetPosition();
+    highlightPosition = pFinalHighlight->GetAssetPosition();
 
-    pImage = (TLInstance*)FEFinder<TLImageInstance, 2>::Find<TLSlide>(
-        pHighlight->GetActiveSlide(),
+    pImage = FEFinder<TLImageInstance, 2>::Find<TLSlide>(
+        pFinalHighlight->GetActiveSlide(),
         InlineHasher(nlStringLowerHash("Highlight")),
         InlineHasher(0));
 
@@ -355,11 +356,11 @@ void FEPopupMenu::SetPositions()
     CentrePopup(totalHeight, topOfMessage);
 
     optionPosition = pText->GetAssetPosition();
-    pHighlight->SetAssetPosition(highlightPosition.e[0], optionPosition.e[1], highlightPosition.e[2]);
+    pFinalHighlight->SetAssetPosition(highlightPosition.e[0], optionPosition.e[1], highlightPosition.e[2]);
 
     pImage->SetAssetScale(mHighlightSize.e[0], mHighlightSize.e[1] * highlightScale, mHighlightSize.e[2]);
 
-    pHighlight->m_bVisible = true;
+    pFinalHighlight->m_bVisible = true;
     mMenuDisplayed = true;
 }
 

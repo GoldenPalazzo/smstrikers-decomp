@@ -514,6 +514,8 @@ void ChooseCupSceneV2::SceneCreated()
     mButtons2.SetState(ButtonComponent::BS_A_AND_B);
 }
 
+static inline bool DisplayCupCanProceed(ChooseCupSceneV2* scene);
+
 /**
  * Offset/Address/Size: 0x132C | 0x800DB5B0 | size: 0x700
  */
@@ -618,32 +620,7 @@ void ChooseCupSceneV2::Update(float fDeltaT)
 
     if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x100, false, NULL))
     {
-        bool canProceed;
-
-        if (mIsSuperCup)
-        {
-            canProceed = true;
-        }
-        else
-        {
-            switch (mCupToDisplay)
-            {
-            case TROPHY_MUSHROOM_CUP:
-                canProceed = true;
-                break;
-            case TROPHY_FLOWER_CUP:
-                canProceed = nlSingleton<GameInfoManager>::s_pInstance->IsUserQualified(GameInfoManager::GM_FLOWER_CUP);
-                break;
-            case TROPHY_STAR_CUP:
-                canProceed = nlSingleton<GameInfoManager>::s_pInstance->IsUserQualified(GameInfoManager::GM_STAR_CUP);
-                break;
-            case TROPHY_BOWSER_CUP:
-                canProceed = nlSingleton<GameInfoManager>::s_pInstance->IsUserQualified(GameInfoManager::GM_BOWSER_CUP);
-                break;
-            default:
-                break;
-            }
-        }
+        bool canProceed = DisplayCupCanProceed(this);
 
         if (canProceed)
         {
@@ -711,7 +688,7 @@ void ChooseCupSceneV2::Update(float fDeltaT)
         {
             mIsFirstSlide = false;
 
-            activeSlide = presentation->m_currentSlide;
+            TLSlide* activeSlide = presentation->m_currentSlide;
 
             findText.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
 
@@ -812,7 +789,7 @@ void ChooseCupSceneV2::Update(float fDeltaT)
         {
             mIsFirstSlide = false;
 
-            activeSlide = presentation->m_currentSlide;
+            TLSlide* activeSlide = presentation->m_currentSlide;
 
             findText.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
 
@@ -896,9 +873,37 @@ static unsigned long CUP_EXPLANATIONS[8] = {
 static unsigned short CUP_SEPARATOR[] = { ' ', 0 };
 static const nlColour CHOOSE_CUP_BLACK = { 0x00, 0x00, 0x00, 0xFF };
 
+static inline bool DisplayCupCanProceed(ChooseCupSceneV2* scene)
+{
+    bool returnValue;
+    if (scene->mIsSuperCup)
+    {
+        returnValue = true;
+    }
+    else
+    {
+        switch (scene->mCupToDisplay)
+        {
+        case TROPHY_MUSHROOM_CUP:
+            returnValue = true;
+            break;
+        case TROPHY_FLOWER_CUP:
+            returnValue = nlSingleton<GameInfoManager>::s_pInstance->IsUserQualified(GameInfoManager::GM_FLOWER_CUP);
+            break;
+        case TROPHY_STAR_CUP:
+            returnValue = nlSingleton<GameInfoManager>::s_pInstance->IsUserQualified(GameInfoManager::GM_STAR_CUP);
+            break;
+        case TROPHY_BOWSER_CUP:
+            returnValue = nlSingleton<GameInfoManager>::s_pInstance->IsUserQualified(GameInfoManager::GM_BOWSER_CUP);
+            break;
+        }
+    }
+    return returnValue;
+}
+
 /**
  * Offset/Address/Size: 0x7AC | 0x800DAA30 | size: 0xB80
- * TODO: 99.44% match - pText/canProceed and localized string temps use opposite r26/r27 allocation.
+ * TODO: localized string temps use opposite r26/r27 allocation.
  */
 void ChooseCupSceneV2::DisplayCup()
 {
@@ -925,29 +930,7 @@ void ChooseCupSceneV2::DisplayCup()
         InlineHasher(nlStringLowerHash("Layer")),
         InlineHasher(nlStringLowerHash("TROPHY")));
 
-    bool canProceed;
-    if (mIsSuperCup)
-    {
-        canProceed = true;
-    }
-    else
-    {
-        switch (mCupToDisplay)
-        {
-        case TROPHY_MUSHROOM_CUP:
-            canProceed = true;
-            break;
-        case TROPHY_FLOWER_CUP:
-            canProceed = nlSingleton<GameInfoManager>::s_pInstance->IsUserQualified(GameInfoManager::GM_FLOWER_CUP);
-            break;
-        case TROPHY_STAR_CUP:
-            canProceed = nlSingleton<GameInfoManager>::s_pInstance->IsUserQualified(GameInfoManager::GM_STAR_CUP);
-            break;
-        case TROPHY_BOWSER_CUP:
-            canProceed = nlSingleton<GameInfoManager>::s_pInstance->IsUserQualified(GameInfoManager::GM_BOWSER_CUP);
-            break;
-        }
-    }
+    bool canProceed = DisplayCupCanProceed(this);
 
     if (canProceed)
     {
@@ -1152,7 +1135,7 @@ static inline void SetupStartNewCupBackCallback(FEPopupMenu* menu)
 
 /**
  * Offset/Address/Size: 0x0 | 0x800DA284 | size: 0x438
- * TODO: 99.00% match - popup callback Bind temporaries still use different
+ * TODO: 99.05% match - popup callback Bind temporaries still use different
  * stack slots/copy width, and FEPopupMenu call sites still resolve to
  * ref-signature symbols.
  */
@@ -1259,6 +1242,7 @@ void ChooseCupSceneV2::Proceed()
 
         findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
 
+        h7 = 0;
         h0 = 0;
         h1 = 0;
         h2 = 0;
@@ -1266,7 +1250,6 @@ void ChooseCupSceneV2::Proceed()
         h4 = 0;
         h5 = 0;
         h6 = 0;
-        h7 = 0;
 
         hash = nlStringLowerHash("cup in progress");
         h8 = hash;

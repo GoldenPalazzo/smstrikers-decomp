@@ -6,6 +6,9 @@
 #include "Game/BaseSceneHandler.h"
 #include "Game/FE/tlTextInstance.h"
 #include "Game/FE/feAsyncImage.h"
+#include "Game/Team.h"
+
+class BundleFile;
 
 class SuperLoadingScene : public BaseSceneHandler
 {
@@ -23,6 +26,14 @@ public:
     virtual void Update(float);
     void DisplayCupInfo();
     void BuildPlayerStrings(TLTextInstance*, int, bool);
+    void BuildAndLoadPortraits(eTeamID, eTeamID);
+
+    enum TextureType
+    {
+        TT_MAIN = 0,
+        TT_NUM_TYPES = 1,
+    };
+    static unsigned long LoadImage(BundleFile&, eTeamID, int, TextureType);
 
     /* 0x01C */ TransitionType mType;                   // size 0x4
     /* 0x020 */ float mElapsedTime;                     // size 0x4

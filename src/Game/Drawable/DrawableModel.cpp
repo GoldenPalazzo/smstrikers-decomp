@@ -106,7 +106,7 @@ AVLTreeNode* AVLTreeBase<unsigned long, AABBDimensions, BasicSlotPool<AVLTreeEnt
 
 /**
  * Offset/Address/Size: 0x1DD4 | 0x80121BE0 | size: 0x214
- * TODO: 92.16% match - initial constant/prologue scheduling and remaining quad setup order
+ * TODO: 92.22% match - initial constant/prologue scheduling and remaining quad setup order
  */
 static void DrawBallShadow(const nlVector3& vPosition, const BallShadowParams& p, bool bGlow)
 {
@@ -1126,6 +1126,48 @@ static inline void ComputeShadowMtx(nlMatrix4& dst, const nlMatrix4& src, u32 li
     dst.f.m44 = one;
 }
 
+static inline void ComputeShadowMtxWorld(nlMatrix4& dst, const nlMatrix4& src, u32 lightPtr)
+{
+    float m13 = src.f.m13;
+    float m11 = src.f.m11;
+    float lightX = *(float*)(lightPtr + 4);
+    float lightY = *(float*)(lightPtr + 8);
+    float xRatioNeg = -lightX;
+    float lightZ = *(float*)(lightPtr + 0xC);
+    float yRatioNeg = -lightY;
+    float xOverZ = xRatioNeg / lightZ;
+    float m23 = src.f.m23;
+    float m21 = src.f.m21;
+    float m33 = src.f.m33;
+    float m31 = src.f.m31;
+    float m43 = src.f.m43;
+    float m41 = src.f.m41;
+    float m12 = src.f.m12;
+    float yOverZ = yRatioNeg / lightZ;
+    float m22 = src.f.m22;
+    float m32 = src.f.m32;
+    float m42 = src.f.m42;
+    float zero = 0.0f;
+    float one = 1.0f;
+
+    dst.f.m11 = xOverZ * m13 + m11;
+    dst.f.m21 = xOverZ * m23 + m21;
+    dst.f.m31 = xOverZ * m33 + m31;
+    dst.f.m41 = xOverZ * m43 + m41;
+    dst.f.m12 = yOverZ * m13 + m12;
+    dst.f.m22 = yOverZ * m23 + m22;
+    dst.f.m32 = yOverZ * m33 + m32;
+    dst.f.m42 = yOverZ * m43 + m42;
+    dst.f.m13 = zero;
+    dst.f.m23 = zero;
+    dst.f.m33 = zero;
+    dst.f.m43 = zero;
+    dst.f.m14 = zero;
+    dst.f.m24 = zero;
+    dst.f.m34 = zero;
+    dst.f.m44 = one;
+}
+
 void DrawPlanarShadow(const glModel* model, const nlMatrix4& worldMatrix, float shadowTranslucency, bool ignorePacketMatrices, bool isModelPosed, bool bFieldOnlyShadow, unsigned long boundingBoxCacheKey)
 {
 
@@ -1134,8 +1176,9 @@ void DrawPlanarShadow(const glModel* model, const nlMatrix4& worldMatrix, float 
     nlMatrix4 transformedPacketMatrix;
     nlMatrix4 packetMat;
     nlMatrix4 mat;
-    glModelPacket* pPacketEnd;
+    eGLView view;
     glModelPacket* pPacket;
+    glModelPacket* pPacketEnd;
     void* pTransData;
     unsigned long program;
 
@@ -1149,7 +1192,7 @@ void DrawPlanarShadow(const glModel* model, const nlMatrix4& worldMatrix, float 
         return;
     }
 
-    eGLView view = GLV_CoPlanar;
+    view = GLV_CoPlanar;
     if (bFieldOnlyShadow)
     {
         view = GLV_CoPlanar0;
@@ -1201,7 +1244,7 @@ void DrawPlanarShadow(const glModel* model, const nlMatrix4& worldMatrix, float 
         }
         else
         {
-            ComputeShadowMtx(packetShadowMatrix, worldMatrix, *(u32*)((u8*)WorldManager::s_World + 0x138));
+            ComputeShadowMtxWorld(packetShadowMatrix, worldMatrix, *(u32*)((u8*)WorldManager::s_World + 0x138));
         }
 
         unsigned long shadowMatrix = glAllocMatrix();

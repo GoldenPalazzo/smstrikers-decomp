@@ -32,7 +32,14 @@ public:
 
     ~DLListContainerBase()
     {
+#ifdef NLDLLISTCONTAINER_DESTRUCTOR_NULL_CHECK
+        if (this != NULL)
+        {
+            DestroyAllEntries(this);
+        }
+#else
         DestroyAllEntries(this);
+#endif
     }
 
     DLListEntry<T>* Allocate(const T& data)

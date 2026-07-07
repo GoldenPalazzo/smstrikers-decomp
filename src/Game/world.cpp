@@ -1,5 +1,6 @@
 #define NL_AVLTREE_DECLARE_ONLY
 #define NL_AVLTREEBASE_DECLARE_ONLY
+#define NLDLLISTCONTAINER_DESTRUCTOR_NULL_CHECK
 #define NLDLRING_FORCE_DONT_INLINE
 #include "Game/World.h"
 #include "Game/LightObject.h"
@@ -402,8 +403,8 @@ static inline void RenderBoundingSphere(const nlMatrix4& matWorld, f32 fRadius)
     m.m[0][0] = fRadius;
     m.m[1][1] = fRadius;
     m.m[2][2] = fRadius;
-    u32 whiteTex = WhiteTexture;
     glModelPacket* pPacket = pSphere->packets;
+    u32 whiteTex = WhiteTexture;
     while (pPacket < (glModelPacket*)((u8*)pSphere->packets + pSphere->numPackets * 0x4A))
     {
         glSetRasterState(pPacket->state.raster, (eGLState)5, 1);
@@ -419,7 +420,7 @@ static inline void RenderBoundingSphere(const nlMatrix4& matWorld, f32 fRadius)
 
 /**
  * Offset/Address/Size: 0x434 | 0x801950F8 | size: 0xB20
- * TODO: 91.78% match - remaining this/pObject register rotation and iterator branch offset diffs.
+ * TODO: 99.73% match - remaining bounding-sphere helper register allocation and debug culling local-label diffs.
  */
 void World::Render()
 {

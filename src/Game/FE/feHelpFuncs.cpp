@@ -196,21 +196,20 @@ LexicalCast<BasicString<char, ::Detail::TempStringAllocator>, unsigned long>(con
 
 /**
  * Offset/Address/Size: 0x160 | 0x800A6670 | size: 0x100
- * TODO: 97.66% match - r30/r31 register roles are swapped between the return
- * object slot and the allocated BasicStringData pointer.
  */
+#pragma optimization_level 2
 template <>
 BasicString<char, ::Detail::TempStringAllocator>
 TakeGameMemSnapshot::Detail::LexicalCastImpl<BasicString<char, ::Detail::TempStringAllocator>, unsigned int>::Do(unsigned int t)
 {
-    char string[0x40];
-    nlSNPrintf(string, 0x40, "%u", t);
+    char s[0x40];
+    nlSNPrintf(s, 0x40, "%u", t);
 
-    BasicStringData<char>* data = (BasicStringData<char>*)nlMalloc(0x10, 8, true);
+    BasicStringData<char>* data = (BasicStringData<char>*)::Detail::TempStringAllocator::allocate(0x10);
     if (data != 0)
     {
-        char* start = string;
-        char* p = start;
+        const char* str = s;
+        const char* p = str;
 
         data->mData = 0;
         data->mSize = 0;
@@ -222,13 +221,12 @@ TakeGameMemSnapshot::Detail::LexicalCastImpl<BasicString<char, ::Detail::TempStr
         }
 
         data->mSize++;
-        data->mData = (char*)nlMalloc(data->mSize + 1, 8, true);
+        data->mData = (char*)::Detail::TempStringAllocator::allocate(data->mSize + 1);
         data->mCapacity = data->mSize;
 
         for (int i = 0; i < data->mSize; i++)
         {
-            data->mData[i] = *start;
-            start++;
+            data->mData[i] = *str++;
         }
 
         data->mRefCount = 1;
@@ -236,6 +234,7 @@ TakeGameMemSnapshot::Detail::LexicalCastImpl<BasicString<char, ::Detail::TempStr
 
     return (BasicString<char, ::Detail::TempStringAllocator>)data;
 }
+#pragma optimization_level 4
 
 /**
  * Offset/Address/Size: 0x30 | 0x800A6540 | size: 0x100

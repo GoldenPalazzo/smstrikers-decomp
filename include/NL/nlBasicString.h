@@ -234,10 +234,21 @@ public:
                 data->mCapacity = sz;
                 data->mData[0] = 0;
                 data->mRefCount = 1;
+#ifdef BASICSTRING_INDEX_EMPTY_COPY_BYTE_OFFSET
+                CharT* src = 0;
+                int offset = 0;
+                for (int j = 0; j < data->mSize - 1; j++)
+                {
+                    *(CharT*)((char*)data->mData + offset) = *src;
+                    src++;
+                    offset += sizeof(CharT);
+                }
+#else
                 for (int j = 0; j < data->mSize - 1; j++)
                 {
                     data->mData[j] = ((CharT*)0)[j];
                 }
+#endif
             }
             m_data = data;
         }

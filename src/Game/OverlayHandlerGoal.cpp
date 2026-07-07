@@ -341,6 +341,7 @@ void GoalOverlay::eventHandler(Event* event, void* param)
 
 /**
  * Offset/Address/Size: 0x19A8 | 0x80101A18 | size: 0x159C
+ * TODO: 98.36% match - remaining stack-slot offsets and pText/gameInfo saved-register swaps.
  */
 void GoalOverlay::UpdateGoalInfo(int homeAway, int playerIndex, bool isCaptainS2S, int numGoals)
 {
@@ -549,7 +550,7 @@ void GoalOverlay::UpdateGoalInfo(int homeAway, int playerIndex, bool isCaptainS2
         {
             unformatted = BasicString<unsigned short, Detail::TempStringAllocator>(LookupLocHash(0x43AB49F3));
         }
-        else if ((oldScore[0] < oldScore[1] || scoreLeft < scoreRight) && !(oldScore[1] < oldScore[0] && scoreRight >= scoreLeft))
+        else if ((oldScore[0] >= oldScore[1] && scoreLeft < scoreRight) || (oldScore[1] >= oldScore[0] && scoreRight < scoreLeft))
         {
             unformatted = BasicString<unsigned short, Detail::TempStringAllocator>(LookupLocHash(0x78446837));
 

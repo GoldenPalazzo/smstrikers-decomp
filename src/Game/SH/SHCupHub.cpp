@@ -3004,7 +3004,7 @@ unsigned char CupHubScene::UpdateKnockout2(float fDeltaT)
 
 /**
  * Offset/Address/Size: 0x1860 | 0x800EB5BC | size: 0x70C
- * TODO: 99.22% match - singleton, slide, and display buffer registers differ in later progress indicator loops.
+ * TODO: 99.67% match - singleton, slide, and display/node cursor registers differ in progress indicator loops.
  */
 void CupHubScene::UpdateProgressIndicator()
 {
@@ -3030,6 +3030,7 @@ void CupHubScene::UpdateProgressIndicator()
     TLSlide* pSlide;
     TLComponentInstance* highlight;
     TLImageInstance* nodeImage;
+    eHubColour* nodeColour;
     feVector3 position;
     volatile InlineHasher hB, hA;
     volatile InlineHasher h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
@@ -3351,7 +3352,7 @@ void CupHubScene::UpdateProgressIndicator()
         highlight->m_bVisible = false;
     }
 
-    eHubColour* nodeColour = nodeColours;
+    nodeColour = nodeColours;
 
     for (int i = 0; i < 16; i++)
     {

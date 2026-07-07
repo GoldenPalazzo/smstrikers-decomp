@@ -1302,10 +1302,8 @@ void SaveLoadScene::UpdateForAboutToSaveSlide()
     if (PushNoCardMessage())
     {
         SceneCreated();
-        return;
     }
-
-    if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x100, false, NULL))
+    else if (g_pFEInput->JustPressed(FE_ALL_PADS, 0x100, false, NULL))
     {
         SceneCreated();
 
@@ -1337,10 +1335,8 @@ void SaveLoadScene::HandleSaveLoadFinishedResult()
 
     switch (sceneType)
     {
-    case ST_SAVE:
-    case ST_FORMAT:
     case ST_DELETE:
-    case ST_CONFIRM_FORMAT:
+    case ST_FORMAT:
     {
         if (sceneType == ST_FORMAT)
         {
@@ -1376,7 +1372,7 @@ void SaveLoadScene::HandleSaveLoadFinishedResult()
         break;
     }
 
-    case ST_LOAD:
+    case (eSaveLoad)11:
     {
         int stackIndex = --gSceneTypeStackDepth;
         gSaveLoadStarted = false;
@@ -1410,6 +1406,8 @@ void SaveLoadScene::HandleSaveLoadFinishedResult()
         break;
     }
 
+    case ST_SAVE:
+    case ST_LOAD:
     case ST_ASK_SAVE:
     case ST_ASK_LOAD:
     {
@@ -1479,7 +1477,7 @@ void SaveLoadScene::HandleSaveLoadFinishedResult()
         break;
     }
 
-    case ST_ABOUT_AUTOSAVE:
+    case ST_CHECKING:
     {
         int stackIndex = --gSceneTypeStackDepth;
         eSaveLoad prevScene = gSceneTypeStack[stackIndex];
@@ -1491,7 +1489,7 @@ void SaveLoadScene::HandleSaveLoadFinishedResult()
         break;
     }
 
-    case ST_CHECKING:
+    case ST_CONFIRM_FORMAT:
     {
         int stackIndex = --gSceneTypeStackDepth;
         gSaveLoadFinished = false;
@@ -1519,7 +1517,7 @@ void SaveLoadScene::HandleSaveLoadFinishedResult()
         break;
     }
 
-    case (eSaveLoad)11:
+    case ST_ABOUT_AUTOSAVE:
     default:
         break;
     }
@@ -1580,16 +1578,16 @@ void SaveLoadScene::StartSaveNow()
     case ST_ASK_LOAD:
         gResult = SaveLoad::StartLoad(0, SaveLoadCallback, false, false);
         break;
-    case ST_CHECKING:
+    case ST_CONFIRM_FORMAT:
         gSaveLoadFinished = true;
         gCallbackMade = false;
         break;
-    case ST_ABOUT_AUTOSAVE:
+    case ST_SHOULD_LOAD_OR_SAVE:
         gResult = SaveLoad::StartFileExistsCheck(0, SaveLoadCallback);
         break;
-    case ST_CONFIRM_FORMAT:
+    case ST_CHECKING:
         break;
-    case ST_SHOULD_LOAD_OR_SAVE:
+    case ST_ABOUT_AUTOSAVE:
         break;
     }
 }

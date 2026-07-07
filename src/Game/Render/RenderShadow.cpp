@@ -161,15 +161,11 @@ u8 ShouldShadowBeUpdated(const ProjectedShadowParams& params)
 
 /**
  * Offset/Address/Size: 0xF9C | 0x80123FD0 | size: 0x470
- * TODO: 99.00% match - remaining diffs are local/static symbol labels
- *       (e.g. @343/init$345 numbering) and associated address-label references.
+ * TODO: 99.75% match - remaining diffs are FP register swaps in directional light setup
+ *       and eye-distance/far-plane math, plus local static label numbering.
  */
 void RenderCharacterIntoTexture(const ProjectedShadowParams& params)
 {
-    extern u8 g_bShadowBlobs;
-    extern u8 g_bShadowPositionOverride;
-    extern nlVector3 g_vShadowPosition;
-
     struct ShadowTextureUserData
     {
         s16 x;
@@ -223,9 +219,8 @@ void RenderCharacterIntoTexture(const ProjectedShadowParams& params)
     }
     else
     {
-        float scale = s_fLightDist * radius;
         nlVec3Sub(eyePos, targetPos, shadowPos);
-        nlVec3ScaleAdd(eyePos, scale, eyePos, targetPos);
+        nlVec3ScaleAdd(eyePos, s_fLightDist * radius, eyePos, targetPos);
     }
 
     float dx = targetPos.f.x - eyePos.f.x;
@@ -626,7 +621,7 @@ static void CastPoint(nlVector3& p, const nlVector3& vLight)
 
 /**
  * Offset/Address/Size: 0x0 | 0x80123034 | size: 0x750
- * TODO: 92.85% match - register allocation and scheduling still differ in corner setup
+ * TODO: 93.34% match - register allocation and scheduling still differ in corner setup
  *       and directional/point cast paths.
  */
 void RenderProjectedShadow(const ProjectedShadowParams& params)
@@ -681,13 +676,12 @@ void RenderProjectedShadow(const ProjectedShadowParams& params)
         float crossY = (-vDir.f.x * vUp.f.z) + (vDir.f.z * vUp.f.x);
         float crossZ = (vDir.f.x * vUp.f.y) - (vDir.f.y * vUp.f.x);
 
-        float halfW = 0.5f * width;
         float negHalfW = -0.5f * width;
+        float halfW = 0.5f * width;
 
         vTemp.as_u32[0] = params.vPosition.as_u32[0];
         vTemp.as_u32[1] = params.vPosition.as_u32[1];
         vTemp.as_u32[2] = params.vPosition.as_u32[2];
-        vTemp.f.z += 0.5f * height;
 
         float halfCrossX = halfW * crossX;
         float halfCrossY = halfW * crossY;

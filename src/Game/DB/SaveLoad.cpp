@@ -1147,8 +1147,8 @@ unsigned long FormatCallbacks::FormatDoneCB(unsigned long channel, long result, 
 
 /**
  * Offset/Address/Size: 0x11DC | 0x8018AB38 | size: 0xC7C
- * TODO: 95.59% match - Slot/Result register allocation and icon header
- * copy scheduling differ.
+ * TODO: 96.24% match - Slot/Result register allocation and icon copy
+ * register flow differ.
  */
 #pragma push
 #pragma opt_propagation off
@@ -1308,13 +1308,14 @@ unsigned long SaveCallbacks::CardMountCB(unsigned long Slot, long Result, void* 
         int bannerMinus1 = bannerFmt2 - 1;
         int bannerInv = 1 - bannerFmt2;
         int bannerMask2 = ~(bannerMinus1 | bannerInv);
-        int bannerClut2 = (bannerMask2 >> 31) & 0x200;
+        int clutSize2 = 0x200;
+        int bannerClut2 = clutSize2 & (bannerMask2 >> 31);
         int bannerData2 = bannerFmt2 * 0xC00;
         int iconPixels2 = iconCount2 * (iconFmt2 << 10);
         int iconMinus1 = iconFmt2 - 1;
         int iconInv = 1 - iconFmt2;
         int iconMask2 = ~(iconMinus1 | iconInv);
-        int iconClut2 = (iconMask2 >> 31) & 0x200;
+        int iconClut2 = clutSize2 & (iconMask2 >> 31);
         int headerTotal = bannerClut2 + bannerData2;
         headerTotal += iconPixels2;
         headerTotal += iconClut2;
@@ -1327,7 +1328,7 @@ unsigned long SaveCallbacks::CardMountCB(unsigned long Slot, long Result, void* 
         cb2 = &SaveCallbacks::FileWriteIconCB;
         MemCardFunctor functor;
         new (functor.m_FunctorMem) MemCardFunctor::MCMemberFunctor<SaveCallbacks>(this, cb2, headerData);
-        long writeResult = g_MemCards[Slot]->WriteFileIconData(m_pSaveFile, headerData, functor);
+        long writeResult = g_MemCards[Slot]->WriteFileIconData(m_pSaveFile, gIconDataCache.mIconDataInfo.pHeaderData, functor);
         if (writeResult != 0)
         {
             errorCode = writeResult;

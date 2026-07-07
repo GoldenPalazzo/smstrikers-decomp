@@ -1,3 +1,4 @@
+#define NL_SINGLETON_NO_DEFINE
 #include "Game/Audio/AudioLoader.h"
 #include "Game/Audio/SebringSoundDefines.h"
 #include "Game/Audio/SoundEventScript.h"
@@ -273,214 +274,6 @@ nlAVLTreeSlotPool<int, SoundStrToIDNode*, DefaultKeyCompare<int> > AudioLoader::
 // (DeleteValue/DeleteValues) the target object does not contain.
 
 /**
- * Offset/Address/Size: 0x442C | 0x801481F8 | size: 0xD4
- * TODO: 99.91% match - entry ble branches to state update instead of shared buf null test
- */
-void GCAudioStreaming::AudioStream::WarmReadDone(GCAudioStreaming::AudioStreamBuffer* pBuffer)
-{
-    if (m_Buffers[m_BufferCount - 1] != pBuffer)
-    {
-        return;
-    }
-
-    m_State = SS_Warm;
-
-    if (!(m_Flags & (1 << SF_Play)))
-    {
-        return;
-    }
-
-    if (pBuffer != m_Buffers[m_BufferCount - 1])
-    {
-        return;
-    }
-
-    m_Flags &= ~(1 << SF_Play);
-
-    u32 start = 0;
-    volatile u32 i = start;
-    if (start < m_BufferCount)
-    {
-        AudioStreamBuffer* buf = m_Buffers[0];
-        while (buf != NULL)
-        {
-            sndStreamActivate(buf->m_StreamId);
-            u32 ci = i + 1;
-            i = ci;
-            if (ci < m_BufferCount)
-            {
-                buf = m_Buffers[ci];
-            }
-            else
-            {
-                buf = NULL;
-            }
-        }
-    }
-
-    m_State = SS_Playing;
-}
-
-/**
- * Offset/Address/Size: 0x43D8 | 0x801481A4 | size: 0xC
- */
-void GCAudioStreaming::AudioStream::Purge()
-{
-    m_State = SS_New;
-}
-
-/**
- * Offset/Address/Size: 0x4104 | 0x80147ED0 | size: 0x2D4
- * TODO: 99.92% match - 3x ble vs beq after cmplwi m_BufferCount, 0
- */
-void GCAudioStreaming::AudioStream::Destructor()
-{
-    m_Flags = (m_Flags & ~(1 << SF_SeriousStop)) | (1 << SF_SeriousStop);
-    m_Flags &= ~(1 << SF_Play);
-
-    if (m_State == SS_Playing)
-    {
-        AudioStreamBuffer* pBuffer;
-        volatile unsigned long i = (unsigned long)(pBuffer = NULL);
-
-        if (m_BufferCount > 0)
-        {
-            pBuffer = m_Buffers[0];
-        }
-
-        while (pBuffer != NULL)
-        {
-            pBuffer->m_Volume = 0;
-            sndStreamMixParameterEx(pBuffer->m_StreamId, pBuffer->m_Volume, pBuffer->m_Pan, pBuffer->m_SurroundPan, 0, 0);
-            sndStreamDeactivate(pBuffer->m_StreamId);
-            m_State = SS_Warm;
-
-            {
-                unsigned long ci = i + 1;
-                i = ci;
-                if (ci < m_BufferCount)
-                {
-                    pBuffer = m_Buffers[ci];
-                }
-                else
-                {
-                    pBuffer = NULL;
-                }
-            }
-        }
-
-        m_StreamPos = 0;
-        m_State = SS_Warm;
-    }
-
-    CancelPendingReads();
-
-    {
-        volatile unsigned long main_i;
-        volatile unsigned long cool_i;
-
-        if (m_Flags & (1 << SF_CoolOnStop))
-        {
-            m_Flags &= ~(1 << SF_CoolOnStop);
-
-            if (m_State > SS_Initd)
-            {
-                AudioStreamBuffer* pBuffer;
-                cool_i = (unsigned long)(pBuffer = NULL);
-
-                m_Flags = (m_Flags & ~(1 << SF_SeriousStop)) | (1 << SF_SeriousStop);
-
-                if (m_BufferCount > 0)
-                {
-                    pBuffer = m_Buffers[0];
-                }
-
-                while (pBuffer != NULL)
-                {
-                    m_BuffMgr.FreeBuffer(pBuffer);
-
-                    {
-                        unsigned long idx = cool_i;
-                        m_Buffers[idx] = NULL;
-                        idx = idx + 1;
-                        cool_i = idx;
-                        if (idx < m_BufferCount)
-                        {
-                            pBuffer = m_Buffers[idx];
-                        }
-                        else
-                        {
-                            pBuffer = NULL;
-                        }
-                    }
-                }
-
-                m_State = SS_Initd;
-            }
-        }
-
-        if (m_State > SS_Initd)
-        {
-            AudioStreamBuffer* pBuffer;
-            main_i = (unsigned long)(pBuffer = NULL);
-
-            m_Flags = (m_Flags & ~(1 << SF_SeriousStop)) | (1 << SF_SeriousStop);
-
-            if (m_BufferCount > 0)
-            {
-                pBuffer = m_Buffers[0];
-            }
-
-            while (pBuffer != NULL)
-            {
-                m_BuffMgr.FreeBuffer(pBuffer);
-
-                {
-                    unsigned long idx = main_i;
-                    m_Buffers[idx] = NULL;
-                    idx = idx + 1;
-                    main_i = idx;
-                    if (idx < m_BufferCount)
-                    {
-                        pBuffer = m_Buffers[idx];
-                    }
-                    else
-                    {
-                        pBuffer = NULL;
-                    }
-                }
-            }
-
-            m_State = SS_Initd;
-        }
-    }
-
-    long long startTime = OSGetTime();
-
-    while (!SafeToPurge())
-    {
-        nlServiceFileSystem();
-        OSYieldThread();
-        long long elapsed = OSGetTime() - startTime;
-        if (OSTicksToMilliseconds(elapsed) > 250)
-        {
-            nlPrintf("WARNING! Breaking out of audio stream d'tor early!\n");
-            break;
-        }
-    }
-
-    Purge();
-}
-
-/**
- * Offset/Address/Size: 0x4094 | 0x80147E60 | size: 0x70
- */
-GCAudioStreaming::StereoAudioStream::~StereoAudioStream()
-{
-    Destructor();
-}
-
-/**
  * Offset/Address/Size: 0x3F48 | 0x80147D14 | size: 0x14C
  */
 void AudioLoader::SetupSoundDefinesAVLTree()
@@ -611,53 +404,10 @@ void AudioLoader::SetupWorldSoundTypesAVLTree()
     }
 }
 
-/**
- * Offset/Address/Size: 0x39F4 | 0x801477C0 | size: 0x104
- */
-void AudioLoader::SetupSoundGroups()
-{
-    const char* szGroup = sebringAudioGroups[0].szGroupName;
-    int i = 0;
-
-    while ((u32)nlStrLen(szGroup) != 0)
-    {
-        unsigned long musyxID = AudioLoader::GetSFXIDFromStr(sebringAudioGroups[i].szGroupName, NULL);
-
-        if ((u32)(musyxID + 0x10000) == 0xFFFF)
-            break;
-
-        sebringAudioGroups[i].groupID = (u16)musyxID;
-        i++;
-    }
-}
-
-/**
- * Offset/Address/Size: 0x3AF8 | 0x801478C4 | size: 0xB4
- */
-unsigned long AudioLoader::GetWorldSFXTypeFromStr(const char* str)
-{
-    SoundStrToIDNode** ppNode = NULL;
-    unsigned long key = nlStringLowerHash(str);
-    bool found = ((SoundDefineMapType*)&AudioLoader::gWorldSoundDefineMap)->FindGet(key, &ppNode);
-    if (found)
-        return (*ppNode)->typeID;
-    else
-        return -1;
-}
-
-/**
- * Offset/Address/Size: 0x3BAC | 0x80147978 | size: 0xB4
- */
-unsigned long AudioLoader::GetCharSFXTypeFromStr(const char* str)
-{
-    SoundStrToIDNode** ppNode = NULL;
-    unsigned long key = nlStringLowerHash(str);
-    bool found = ((SoundDefineMapType*)&AudioLoader::gCharSoundDefineMap)->FindGet(key, &ppNode);
-    if (found)
-        return (*ppNode)->typeID;
-    else
-        return -1;
-}
+// NOTE: These four functions are emitted in reverse source order under
+// `-inline deferred`, so the source is laid out GetSFXIDFromStr ->
+// GetCharSFXTypeFromStr -> GetWorldSFXTypeFromStr -> SetupSoundGroups to
+// reproduce the target .text emission order (SetupSoundGroups lowest addr).
 
 /**
  * Offset/Address/Size: 0x3C60 | 0x80147A2C | size: 0xE0
@@ -682,6 +432,54 @@ unsigned long AudioLoader::GetSFXIDFromStr(const char* str, SoundStrToIDNode** p
         return (*foundValue)->musyxID;
     }
     return -1;
+}
+
+/**
+ * Offset/Address/Size: 0x3BAC | 0x80147978 | size: 0xB4
+ */
+unsigned long AudioLoader::GetCharSFXTypeFromStr(const char* str)
+{
+    SoundStrToIDNode** ppNode = NULL;
+    unsigned long key = nlStringLowerHash(str);
+    bool found = ((SoundDefineMapType*)&AudioLoader::gCharSoundDefineMap)->FindGet(key, &ppNode);
+    if (found)
+        return (*ppNode)->typeID;
+    else
+        return -1;
+}
+
+/**
+ * Offset/Address/Size: 0x3AF8 | 0x801478C4 | size: 0xB4
+ */
+unsigned long AudioLoader::GetWorldSFXTypeFromStr(const char* str)
+{
+    SoundStrToIDNode** ppNode = NULL;
+    unsigned long key = nlStringLowerHash(str);
+    bool found = ((SoundDefineMapType*)&AudioLoader::gWorldSoundDefineMap)->FindGet(key, &ppNode);
+    if (found)
+        return (*ppNode)->typeID;
+    else
+        return -1;
+}
+
+/**
+ * Offset/Address/Size: 0x39F4 | 0x801477C0 | size: 0x104
+ */
+void AudioLoader::SetupSoundGroups()
+{
+    const char* szGroup = sebringAudioGroups[0].szGroupName;
+    int i = 0;
+
+    while ((u32)nlStrLen(szGroup) != 0)
+    {
+        unsigned long musyxID = AudioLoader::GetSFXIDFromStr(sebringAudioGroups[i].szGroupName, NULL);
+
+        if ((u32)(musyxID + 0x10000) == 0xFFFF)
+            break;
+
+        sebringAudioGroups[i].groupID = (u16)musyxID;
+        i++;
+    }
 }
 
 /**
@@ -962,7 +760,7 @@ bool AudioLoader::StartLoad(LoadingManager*)
     }
 
     FEAudio::BuildAnimAudioEventLookup();
-    g_FEStreamConfig.LoadFromFile("Audio/FEStreams.ssc");
+    g_FEStreamConfig.LoadFromFile("audio/data/streams/FEStreams.txt");
     Audio::Initialize(false);
     return true;
 }
@@ -993,7 +791,7 @@ bool AudioLoader::Initialize()
     }
 
     FEAudio::BuildAnimAudioEventLookup();
-    g_FEStreamConfig.LoadFromFile("Audio/FEStreams.ssc");
+    g_FEStreamConfig.LoadFromFile("audio/data/streams/FEStreams.txt");
     Audio::Initialize(false);
     return true;
 }
@@ -1012,8 +810,6 @@ bool AudioLoader::IsInited()
 
 /**
  * Offset/Address/Size: 0x31D4 | 0x80146FA0 | size: 0x2F0
- * TODO: 99.44% match - `gbStream` guard still compares against `1` instead of
- * the target's non-zero branch form.
  */
 static inline AudioStreamTrack::StreamTrack* GetTrackByName(const char* pTrackName)
 {
@@ -1023,32 +819,29 @@ static inline AudioStreamTrack::StreamTrack* GetTrackByName(const char* pTrackNa
 
 void AudioLoader::StartFEStream(const char* pSoundName, bool bLoop, const char* pTrackName)
 {
-    if (gbDisableAudio)
+    if (gbDisableAudio || !gbStream)
     {
         return;
     }
 
-    if (gbStream == 1)
+    char var_68[64];
+    nlSNPrintf(var_68, 64, "%s/%s", pSoundName, "Volume");
+    float volume = GetConfigFloat(g_FEStreamConfig, var_68, 0.0f);
+    volume /= 100.0f;
+
+    nlSNPrintf(var_68, 64, "%s/%s", pSoundName, "FadeIn");
+    unsigned long fadeIn = GetConfigInt(g_FEStreamConfig, var_68, 0);
+    unsigned long interruptFadeOut = GetConfigInt(g_FEStreamConfig, "InterruptFadeOut", 0);
+
+    if (volume > 0.0f)
     {
-        char var_68[64];
-        nlSNPrintf(var_68, 64, "%s/%s", pSoundName, "Volume");
-        float volume = GetConfigFloat(g_FEStreamConfig, var_68, 0.0f);
-        volume /= 100.0f;
-
-        nlSNPrintf(var_68, 64, "%s/%s", pSoundName, "FadeIn");
-        unsigned long fadeIn = GetConfigInt(g_FEStreamConfig, var_68, 0);
-        unsigned long interruptFadeOut = GetConfigInt(g_FEStreamConfig, "InterruptFadeOut", 0);
-
-        if (volume > 0.0f)
-        {
-            AudioStreamTrack::StreamTrack* track = GetTrackByName(pTrackName);
-            track->PlayStream(nlStringLowerHash(pSoundName), volume, bLoop, fadeIn, interruptFadeOut, "", Audio::MasterVolume::VG_Music);
-        }
-        else
-        {
-            AudioStreamTrack::StreamTrack* track = GetTrackByName(pTrackName);
-            track->Stop(interruptFadeOut);
-        }
+        AudioStreamTrack::StreamTrack* track = GetTrackByName(pTrackName);
+        track->PlayStream(nlStringLowerHash(pSoundName), volume, bLoop, fadeIn, interruptFadeOut, "", Audio::MasterVolume::VG_Music);
+    }
+    else
+    {
+        AudioStreamTrack::StreamTrack* track = GetTrackByName(pTrackName);
+        track->Stop(interruptFadeOut);
     }
 }
 
@@ -1106,11 +899,11 @@ void AudioLoader::PlayFEMenuMusic()
     }
 
     char var_68[64];
-    nlSNPrintf(var_68, 64, "%s/%s", "FEMenuMusic", "Volume");
+    nlSNPrintf(var_68, 64, "%s/%s", "FE_Main_Options", "Volume");
     float volume = GetConfigFloat(g_FEStreamConfig, var_68, 0.0f);
     volume /= 100.0f;
 
-    nlSNPrintf(var_68, 64, "%s/%s", "FEMenuMusic", "FadeIn");
+    nlSNPrintf(var_68, 64, "%s/%s", "FE_Main_Options", "FadeIn");
     unsigned long fadeIn = GetConfigInt(g_FEStreamConfig, var_68, 0);
     unsigned long interruptFadeOut = GetConfigInt(g_FEStreamConfig, "InterruptFadeOut", 0);
 
@@ -1118,7 +911,7 @@ void AudioLoader::PlayFEMenuMusic()
     {
         AudioStreamTrack::TrackManagerBase* pTrackMgr = g_pTrackManager;
         AudioStreamTrack::StreamTrack* track = pTrackMgr->GetTrack(nlStringLowerHash("FE"));
-        track->PlayStream(nlStringLowerHash("FEMenuMusic"), volume, true, fadeIn, interruptFadeOut, "", Audio::MasterVolume::VG_Music);
+        track->PlayStream(nlStringLowerHash("FE_Main_Options"), volume, true, fadeIn, interruptFadeOut, "", Audio::MasterVolume::VG_Music);
     }
     else
     {
@@ -1142,7 +935,7 @@ void AudioLoader::PlayLoadLoopMusic()
     AudioStreamTrack::StreamTrack* track = pTrackMgr->GetTrack(nlStringLowerHash("FE"));
     track->Stop(0);
 
-    if (GetConfigBool(Config::Global(), "LoadLoopMusicDisable", false))
+    if (GetConfigBool(Config::Global(), "NoLoadLoop", false))
     {
         return;
     }
@@ -1158,11 +951,11 @@ void AudioLoader::PlayLoadLoopMusic()
     }
 
     char var_68[64];
-    nlSNPrintf(var_68, 64, "%s/%s", "FE_Load_Loop", "Volume");
+    nlSNPrintf(var_68, 64, "%s/%s", "FE_Load_Loop_01", "Volume");
     float volume = GetConfigFloat(g_FEStreamConfig, var_68, 0.0f);
     volume /= 100.0f;
 
-    nlSNPrintf(var_68, 64, "%s/%s", "FE_Load_Loop", "FadeIn");
+    nlSNPrintf(var_68, 64, "%s/%s", "FE_Load_Loop_01", "FadeIn");
     unsigned long fadeIn = GetConfigInt(g_FEStreamConfig, var_68, 0);
     unsigned long interruptFadeOut = GetConfigInt(g_FEStreamConfig, "InterruptFadeOut", 0);
 
@@ -1170,7 +963,7 @@ void AudioLoader::PlayLoadLoopMusic()
     {
         AudioStreamTrack::TrackManagerBase* pTrackMgr = g_pTrackManager;
         AudioStreamTrack::StreamTrack* track = pTrackMgr->GetTrack(nlStringLowerHash("FE"));
-        track->PlayStream(nlStringLowerHash("FE_Load_Loop"), volume, true, fadeIn, interruptFadeOut, "", Audio::MasterVolume::VG_Music);
+        track->PlayStream(nlStringLowerHash("FE_Load_Loop_01"), volume, true, fadeIn, interruptFadeOut, "", Audio::MasterVolume::VG_Music);
     }
     else
     {
@@ -1196,11 +989,11 @@ void AudioLoader::PlayPauseMenuMusic()
     }
 
     char var_68[64];
-    nlSNPrintf(var_68, 64, "%s/%s", "PauseMenuMusic", "Volume");
+    nlSNPrintf(var_68, 64, "%s/%s", "FE_Pause", "Volume");
     float volume = GetConfigFloat(g_FEStreamConfig, var_68, 0.0f);
     volume /= 100.0f;
 
-    nlSNPrintf(var_68, 64, "%s/%s", "PauseMenuMusic", "FadeIn");
+    nlSNPrintf(var_68, 64, "%s/%s", "FE_Pause", "FadeIn");
     unsigned long fadeIn = GetConfigInt(g_FEStreamConfig, var_68, 0);
     unsigned long interruptFadeOut = GetConfigInt(g_FEStreamConfig, "InterruptFadeOut", 0);
 
@@ -1208,7 +1001,7 @@ void AudioLoader::PlayPauseMenuMusic()
     {
         AudioStreamTrack::TrackManagerBase* pTrackMgr = g_pTrackManager;
         AudioStreamTrack::StreamTrack* track = pTrackMgr->GetTrack(nlStringLowerHash("Announcer"));
-        track->PlayStream(nlStringLowerHash("PauseMenuMusic"), volume, true, fadeIn, interruptFadeOut, "", Audio::MasterVolume::VG_Music);
+        track->PlayStream(nlStringLowerHash("FE_Pause"), volume, true, fadeIn, interruptFadeOut, "", Audio::MasterVolume::VG_Music);
     }
     else
     {
@@ -1723,7 +1516,7 @@ void AudioLoader::LoadInGame()
     {
         if (!PlatAudio::UnloadSoundGroup(sebringAudioFileData, 1))
         {
-            tDebugPrintManager::Print(DC_SOUND, "LoadInGame: Failed to unload sound group 1\n");
+            tDebugPrintManager::Print(DC_SOUND, "Could not unload SND_GROUP_FE_CHAR sound group from secondary sound stack.\n");
         }
     }
 
@@ -1737,7 +1530,7 @@ void AudioLoader::LoadInGame()
     {
         if (!PlatAudio::UnloadSoundGroup(sebringAudioFileData, 0))
         {
-            tDebugPrintManager::Print(DC_SOUND, "LoadInGame: Failed to unload sound group 0\n");
+            tDebugPrintManager::Print(DC_SOUND, "Could not unload SND_GROUP_FE_MAIN sound group from secondary sound stack.\n");
         }
     }
 
@@ -1840,7 +1633,7 @@ void AudioLoader::UnloadInGame()
     {
         if (!Audio::ShutdownReverb())
         {
-            nlPrintf("AudioLoader::UnloadInGame - ShutdownReverb failed\n");
+            nlPrintf("AudioLoader::UnloadInGameAudioData(), Audio::UpdateReverbSettingsToOff() returned false.\n");
         }
     }
 
@@ -1943,7 +1736,7 @@ extern eCharacterClass ConvertToCharacterClass(eSidekickID);
  */
 #pragma push
 #pragma dont_inline on
-SoundPropAccessor* GetSoundPropTableFromPlayerStadium(eStadiumID stadiumId, eCharacterClass charClass)
+static SoundPropAccessor* GetSoundPropTableFromPlayerStadium(eStadiumID stadiumId, eCharacterClass charClass)
 {
     switch (stadiumId)
     {
@@ -2261,7 +2054,7 @@ bool AudioLoader::LoadInGameAudioData()
 
         if (loaded == false)
         {
-            tDebugPrintManager::Print(DC_SOUND, "Could not load crash sound group onto secondary sound stack.\n");
+            tDebugPrintManager::Print(DC_SOUND, "Could not load SND_GROUP_HUD_IN_GAME_FE sound group onto secondary sound stack.\n");
             return false;
         }
     }
@@ -2272,7 +2065,7 @@ bool AudioLoader::LoadInGameAudioData()
     {
         if (Audio::InitializeReverb(nlSingleton<GameInfoManager>::s_pInstance->GetStadium(), 0) == false)
         {
-            nlPrintf("Audio::InitializeReverb() failed.\n");
+            nlPrintf("AudioLoader::LoadInGameAudioData(), could not initialize reverb!\n");
         }
         else
         {
@@ -2381,7 +2174,7 @@ bool AudioLoader::LoadInGameAudioData()
 
     if (homeCaptainGroup < 0 || awayCaptainGroup < 0)
     {
-        tDebugPrintManager::Print(DC_SOUND, "Invalid captain character class in LoadInGameAudioData.\n");
+        tDebugPrintManager::Print(DC_SOUND, "A new captain needs to be added to GetCharacterSoundGroupFromCharClass()\n");
         return false;
     }
 
@@ -2544,7 +2337,7 @@ bool AudioLoader::LoadInGameAudioData()
 
     if (homeSidekickGroup < 0 || awaySidekickGroup < 0)
     {
-        tDebugPrintManager::Print(DC_SOUND, "Invalid sidekick character class in LoadInGameAudioData.\n");
+        tDebugPrintManager::Print(DC_SOUND, "A new sidekick needs to be added to GetCharacterSoundGroupFromCharClass()\n");
         return false;
     }
 

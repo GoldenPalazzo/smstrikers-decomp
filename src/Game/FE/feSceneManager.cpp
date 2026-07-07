@@ -75,7 +75,7 @@ static inline bool IsObjectQueuedForPop(BaseSceneHandler* pSceneHandler)
 }
 
 static inline void FindSceneForPop(
-    PackagePushPopMessage* msg, DLListEntry<BaseSceneHandler*>* sceneEntry, DLListEntry<BaseSceneHandler*>* headEntry)
+    PackagePushPopMessage* msg, DLListEntry<BaseSceneHandler*>* headEntry, DLListEntry<BaseSceneHandler*>* sceneEntry)
 {
     while (sceneEntry != NULL)
     {
@@ -150,8 +150,7 @@ void FESceneManager::RenderActiveScenes()
 
 /**
  * Offset/Address/Size: 0x284 | 0x8020D8D0 | size: 0x1A8
- * TODO: 99.48% match - remaining register diffs in scene search.
- * headEntry and pSceneHandler are r29/r28 instead of r28/r29; queued entry uses r25 instead of r28.
+ * TODO: 99.67% match - queued entry uses r25 instead of r28.
  */
 void FESceneManager::QueueScenePop()
 {
@@ -177,10 +176,9 @@ void FESceneManager::QueueScenePop()
     msg->m_bPush = false;
 
     DLListEntry<BaseSceneHandler*>* sceneEntry = nlDLRingGetStart(m_sceneHandlerStack.m_Head);
-    DLListEntry<BaseSceneHandler*>* headEntry = m_sceneHandlerStack.m_Head;
     queueHead = &m_pushPopMessageQueue.m_Head;
 
-    FindSceneForPop(msg, sceneEntry, headEntry);
+    FindSceneForPop(msg, m_sceneHandlerStack.m_Head, sceneEntry);
 
     entry = NULL;
 

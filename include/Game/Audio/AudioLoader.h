@@ -19,7 +19,8 @@ extern Config g_FEStreamConfig;
 extern AudioStreamTrack::TrackManagerBase* g_pTrackManager;
 
 class SoundPropAccessor;
-SoundPropAccessor* GetSoundPropTableFromPlayerStadium(eStadiumID, eCharacterClass);
+// GetSoundPropTableFromPlayerStadium is defined file-local (static) in
+// AudioLoader.cpp; target binding is LOCAL, so no external declaration here.
 // void 0x80149078..0x801490F4 | size: 0x7C;
 
 enum LoadType

@@ -8,9 +8,64 @@
 #include "Game/Sys/audio.h"
 #include "NL/nlDebug.h"
 
+static inline unsigned long PriorityStreamToStreamId(int stream)
+{
+    switch (stream)
+    {
+    case 0:
+        return 0xE38B5407;
+    case 1:
+        return 0x436E3953;
+    case 2:
+        return 0x57CB5A12;
+    case 3:
+        return 0x09451A58;
+    case 4:
+        return 0xA207B1AE;
+    default:
+        return 0xFFFFFFFF;
+    }
+}
+
+static inline void PlayPriorityStreamParam(int stream, float volume, unsigned long looping, unsigned long fadeIn, unsigned long existingFadeOut, const char* param)
+{
+    Audio::GetPriorityStream()->PlayStream(PriorityStreamToStreamId(stream), volume, (bool)looping, existingFadeOut, fadeIn, param);
+}
+
+static inline void PlayStreamParam(unsigned long TrackName, unsigned long StreamId, float Volume, unsigned long Looping, unsigned long FadeIn, unsigned long ExistingFadeOut, const char* StreamParam)
+{
+    Audio::MasterVolume::VOLUME_GROUP volGroup;
+    AudioStreamTrack::StreamTrack* track = g_pTrackManager->GetTrack(TrackName);
+
+    switch (TrackName)
+    {
+    case 0x05A165C0:
+        Audio::MasterVolume::GetVolume(Audio::MasterVolume::VG_Music);
+        volGroup = Audio::MasterVolume::VG_Music;
+        break;
+    case 0xC25BA8E8:
+        Audio::MasterVolume::GetVoiceVolume();
+        volGroup = Audio::MasterVolume::VG_Voice;
+        break;
+    case 0x78ABFED1:
+        Audio::MasterVolume::GetVolume(Audio::MasterVolume::VG_SFX);
+        AudioStreamTrack::TrackManagerBase* mgr = g_pTrackManager;
+        track = mgr->GetTrack(nlStringLowerHash("Music"));
+        volGroup = Audio::MasterVolume::VG_SFX;
+        break;
+    }
+
+    track->PlayStream(StreamId, Volume, Looping == 1, ExistingFadeOut, FadeIn, StreamParam, volGroup);
+}
+
+static inline void PlayStream(unsigned long TrackName, unsigned long StreamId, float Volume, unsigned long Looping, unsigned long FadeIn, unsigned long ExistingFadeOut)
+{
+    PlayStreamParam(TrackName, StreamId, Volume, Looping, FadeIn, ExistingFadeOut, NULL);
+}
+
 /**
  * Offset/Address/Size: 0x0 | 0x80153FD8 | size: 0x96C
- * TODO: 98.67% match - register allocation differences in cases 4, 5, 13, 14, 16
+ * TODO: 99.93% match - register allocation differences in cases 4, 5, 14
  */
 void SoundEventScript::DoFunctionCall(unsigned int func)
 {
@@ -56,30 +111,7 @@ void SoundEventScript::DoFunctionCall(unsigned int func)
         m_SP--;
         int streamSelect = *m_SP;
 
-        unsigned long streamId;
-        switch (streamSelect)
-        {
-        case 0:
-            streamId = 0xE38B5407;
-            break;
-        case 1:
-            streamId = 0x436E3953;
-            break;
-        case 2:
-            streamId = 0x57CB5A12;
-            break;
-        case 3:
-            streamId = 0x09451A58;
-            break;
-        case 4:
-            streamId = 0xA207B1AE;
-            break;
-        default:
-            streamId = 0xFFFFFFFF;
-            break;
-        }
-
-        Audio::GetPriorityStream()->PlayStream(streamId, vol, loop != 0, fadeOut, fadeIn, NULL);
+        PlayPriorityStreamParam(streamSelect, vol, loop, fadeIn, fadeOut, NULL);
         break;
     }
     case 5:
@@ -97,30 +129,7 @@ void SoundEventScript::DoFunctionCall(unsigned int func)
         m_SP--;
         int streamSelect = *m_SP;
 
-        unsigned long streamId;
-        switch (streamSelect)
-        {
-        case 0:
-            streamId = 0xE38B5407;
-            break;
-        case 1:
-            streamId = 0x436E3953;
-            break;
-        case 2:
-            streamId = 0x57CB5A12;
-            break;
-        case 3:
-            streamId = 0x09451A58;
-            break;
-        case 4:
-            streamId = 0xA207B1AE;
-            break;
-        default:
-            streamId = 0xFFFFFFFF;
-            break;
-        }
-
-        Audio::GetPriorityStream()->PlayStream(streamId, vol, loop != 0, fadeOut, fadeIn, name);
+        PlayPriorityStreamParam(streamSelect, vol, loop, fadeIn, fadeOut, name);
         break;
     }
     case 6:
@@ -260,82 +269,55 @@ void SoundEventScript::DoFunctionCall(unsigned int func)
     }
     case 13:
     {
-        m_SP--;
-        unsigned long fadeIn = *m_SP;
-        m_SP--;
-        unsigned long fadeOut = *m_SP;
-        m_SP--;
-        unsigned long loop = *m_SP;
-        m_SP--;
-        float vol = *(float*)m_SP;
-        m_SP--;
-        unsigned long streamId = *m_SP;
-        m_SP--;
-        unsigned long trackHash = *m_SP;
+        unsigned long trackHash;
+        unsigned long fadeIn;
+        unsigned long fadeOut;
+        unsigned long streamId;
+        unsigned long loop;
+        float vol;
 
-        Audio::MasterVolume::VOLUME_GROUP volGroup;
-        AudioStreamTrack::StreamTrack* track = g_pTrackManager->GetTrack(trackHash);
+        m_SP--;
+        fadeIn = *m_SP;
+        m_SP--;
+        fadeOut = *m_SP;
+        m_SP--;
+        loop = *m_SP;
+        m_SP--;
+        vol = *(float*)m_SP;
+        m_SP--;
+        streamId = *m_SP;
+        m_SP--;
+        trackHash = *m_SP;
 
-        switch (trackHash)
-        {
-        case 0x05A165C0:
-            Audio::MasterVolume::GetVolume(Audio::MasterVolume::VG_Music);
-            volGroup = Audio::MasterVolume::VG_Music;
-            break;
-        case 0xC25BA8E8:
-            Audio::MasterVolume::GetVoiceVolume();
-            volGroup = Audio::MasterVolume::VG_Voice;
-            break;
-        case 0x78ABFED1:
-            Audio::MasterVolume::GetVolume(Audio::MasterVolume::VG_SFX);
-            AudioStreamTrack::TrackManagerBase* mgr = g_pTrackManager;
-            track = mgr->GetTrack(nlStringLowerHash("Music"));
-            volGroup = Audio::MasterVolume::VG_SFX;
-            break;
-        }
-
-        track->PlayStream(streamId, vol, loop == 1, fadeOut, fadeIn, NULL, volGroup);
+        PlayStream(trackHash, streamId, vol, loop, fadeIn, fadeOut);
         break;
     }
     case 14:
     {
-        m_SP--;
-        const char* name = (const char*)*m_SP;
-        m_SP--;
-        unsigned long fadeIn = *m_SP;
-        m_SP--;
-        unsigned long fadeOut = *m_SP;
-        m_SP--;
-        unsigned long loop = *m_SP;
-        m_SP--;
-        float vol = *(float*)m_SP;
-        m_SP--;
-        unsigned long streamId = *m_SP;
-        m_SP--;
-        unsigned long trackHash = *m_SP;
+        unsigned long trackHash;
+        unsigned long streamId;
+        const char* name;
+        unsigned long fadeIn;
+        unsigned long fadeOut;
+        unsigned long loop;
+        float vol;
 
-        Audio::MasterVolume::VOLUME_GROUP volGroup;
-        AudioStreamTrack::StreamTrack* track = g_pTrackManager->GetTrack(trackHash);
+        m_SP--;
+        name = (const char*)*m_SP;
+        m_SP--;
+        fadeIn = *m_SP;
+        m_SP--;
+        fadeOut = *m_SP;
+        m_SP--;
+        loop = *m_SP;
+        m_SP--;
+        vol = *(float*)m_SP;
+        m_SP--;
+        streamId = *m_SP;
+        m_SP--;
+        trackHash = *m_SP;
 
-        switch (trackHash)
-        {
-        case 0x05A165C0:
-            Audio::MasterVolume::GetVolume(Audio::MasterVolume::VG_Music);
-            volGroup = Audio::MasterVolume::VG_Music;
-            break;
-        case 0xC25BA8E8:
-            Audio::MasterVolume::GetVoiceVolume();
-            volGroup = Audio::MasterVolume::VG_Voice;
-            break;
-        case 0x78ABFED1:
-            Audio::MasterVolume::GetVolume(Audio::MasterVolume::VG_SFX);
-            AudioStreamTrack::TrackManagerBase* mgr = g_pTrackManager;
-            track = mgr->GetTrack(nlStringLowerHash("Music"));
-            volGroup = Audio::MasterVolume::VG_SFX;
-            break;
-        }
-
-        track->PlayStream(streamId, vol, loop == 1, fadeOut, fadeIn, name, volGroup);
+        PlayStreamParam(trackHash, streamId, vol, loop, fadeIn, fadeOut, name);
         break;
     }
     case 15:

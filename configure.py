@@ -885,7 +885,7 @@ config.libs = [
             Object(NonMatching, "Game/Audio/SoundEventScript.cpp" , extra_cflags=["-inline auto", "-inline deferred"]),   
             Object(Matching, "Game/Audio/WorldAudio.cpp", extra_cflags=["-inline auto", "-inline deferred"]),   
             Object(NonMatching, "Game/Audio/AudioEventHandler.cpp", extra_cflags=["-inline auto", "-inline deferred"]),   
-            Object(NonMatching, "Game/Audio/AudioLoader.cpp", extra_cflags=["-inline auto", "-inline deferred"]),   
+            Object(NonMatching, "Game/Audio/AudioLoader.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Audio/AudioScriptEventMgr.cpp", extra_cflags=["-inline auto", "-inline deferred"]),  
             Object(Matching, "Game/Audio/AudioStream.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/Audio/CrowdMood.cpp", extra_cflags=["-inline auto", "-inline deferred"]),  
@@ -1102,7 +1102,21 @@ config.libs = [
             Object(NonMatching, "Game/SH/SHPausePostGame.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/SH/SHProgressiveScan.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/SH/SHQuickGameplayOptions.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(NonMatching, "Game/SH/SHSaveLoad.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(
+                Matching,
+                "Game/SH/SHSaveLoad.cpp",
+                extra_cflags=["-inline auto", "-inline deferred"],
+                redefine_symbols=[
+                    (
+                        "Create__11FEPopupMenuF10ePopupMenuR14Function<Fv_v>R14Function<Fv_v>",
+                        "Create__11FEPopupMenuF10ePopupMenu14Function<Fv_v>14Function<Fv_v>",
+                    ),
+                    (
+                        "Create__11FEPopupMenuF10ePopupMenuR14Function<Fv_v>R14Function<Fv_v>R14Function<Fv_v>",
+                        "Create__11FEPopupMenuF10ePopupMenu14Function<Fv_v>14Function<Fv_v>14Function<Fv_v>",
+                    ),
+                ],
+            ),
             Object(Matching, "Game/SH/SHSkillSelect.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/SH/SHSpoils.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/SH/SHStadiumSelect.cpp", extra_cflags=["-inline auto", "-inline deferred"]),

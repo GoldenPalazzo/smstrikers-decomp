@@ -1091,7 +1091,6 @@ void CupTrophyScene::SetHistory(Spoil& spoil)
 
         TLComponentInstance* pComp;
         {
-            volatile InlineHasher h7, h5, h3, h1;
             union
             {
                 FindCompByValue byValue;
@@ -1102,13 +1101,13 @@ void CupTrophyScene::SetHistory(Spoil& spoil)
             volatile InlineHasher h6, h4, h2, h0;
             findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
             h0.m_Hash = 0;
-            h1.m_Hash = 0;
+            arrowH1.m_Hash = 0;
             h2.m_Hash = 0;
-            h3.m_Hash = 0;
+            arrowH3.m_Hash = 0;
             h4.m_Hash = 0;
-            h5.m_Hash = 0;
+            arrowH5.m_Hash = 0;
             h6.m_Hash = 0;
-            h7.m_Hash = 0;
+            arrowH7.m_Hash = 0;
             unsigned long hash = nlStringLowerHash("HISTORY");
             hHistoryA.m_Hash = hash;
             hHistoryB.m_Hash = hash;
@@ -1118,15 +1117,14 @@ void CupTrophyScene::SetHistory(Spoil& spoil)
             pComp = findComp.byRef(currentSlide,
                 (InlineHasher&)hLayerB,
                 (InlineHasher&)hHistoryB,
-                (InlineHasher&)h7,
-                (InlineHasher&)h5,
-                (InlineHasher&)h3,
-                (InlineHasher&)h1);
+                (InlineHasher&)arrowH7,
+                (InlineHasher&)arrowH5,
+                (InlineHasher&)arrowH3,
+                (InlineHasher&)arrowH1);
         }
 
         TLTextInstance* pText;
         {
-            volatile InlineHasher h7, h5, h3, h1;
             union
             {
                 FindTextByValue byValue;
@@ -1137,13 +1135,13 @@ void CupTrophyScene::SetHistory(Spoil& spoil)
             volatile InlineHasher h6, h4, h2, h0;
             findText.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
             h0.m_Hash = 0;
-            h1.m_Hash = 0;
+            arrowH1.m_Hash = 0;
             h2.m_Hash = 0;
-            h3.m_Hash = 0;
+            arrowH3.m_Hash = 0;
             h4.m_Hash = 0;
-            h5.m_Hash = 0;
+            arrowH5.m_Hash = 0;
             h6.m_Hash = 0;
-            h7.m_Hash = 0;
+            arrowH7.m_Hash = 0;
             hLayerB2.m_Hash = 0;
             hLayerA2.m_Hash = 0;
             unsigned long hash = nlStringLowerHash(TROPHY_RECORD_ROW_NAMES[i]);
@@ -1152,10 +1150,10 @@ void CupTrophyScene::SetHistory(Spoil& spoil)
             pText = findText.byRef(pComp->GetActiveSlide(),
                 (InlineHasher&)hNameB,
                 (InlineHasher&)hLayerB2,
-                (InlineHasher&)h7,
-                (InlineHasher&)h5,
-                (InlineHasher&)h3,
-                (InlineHasher&)h1);
+                (InlineHasher&)arrowH7,
+                (InlineHasher&)arrowH5,
+                (InlineHasher&)arrowH3,
+                (InlineHasher&)arrowH1);
         }
 
         nlVector2 boxSize;
@@ -1173,7 +1171,6 @@ void CupTrophyScene::SetHistory(Spoil& spoil)
         {
             TLTextInstance* pEmptyText;
             {
-                volatile InlineHasher h7, h5, h3, h1;
                 union
                 {
                     FindTextByValue byValue;
@@ -1184,13 +1181,13 @@ void CupTrophyScene::SetHistory(Spoil& spoil)
                 volatile InlineHasher h6, h4, h2, h0;
                 findText2.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
                 h0.m_Hash = 0;
-                h1.m_Hash = 0;
+                arrowH1.m_Hash = 0;
                 h2.m_Hash = 0;
-                h3.m_Hash = 0;
+                arrowH3.m_Hash = 0;
                 h4.m_Hash = 0;
-                h5.m_Hash = 0;
+                arrowH5.m_Hash = 0;
                 h6.m_Hash = 0;
-                h7.m_Hash = 0;
+                arrowH7.m_Hash = 0;
                 hLayerB3.m_Hash = 0;
                 hLayerA3.m_Hash = 0;
                 unsigned long hash = nlStringLowerHash(TROPHY_RECORD_ROW_NAMES[i]);
@@ -1199,10 +1196,10 @@ void CupTrophyScene::SetHistory(Spoil& spoil)
                 pEmptyText = findText2.byRef(pComp->GetActiveSlide(),
                     (InlineHasher&)hNameB2,
                     (InlineHasher&)hLayerB3,
-                    (InlineHasher&)h7,
-                    (InlineHasher&)h5,
-                    (InlineHasher&)h3,
-                    (InlineHasher&)h1);
+                    (InlineHasher&)arrowH7,
+                    (InlineHasher&)arrowH5,
+                    (InlineHasher&)arrowH3,
+                    (InlineHasher&)arrowH1);
             }
             pEmptyText->m_LocStrId = 0x745863BC;
             pEmptyText->m_OverloadFlags |= 0x8;
@@ -1242,9 +1239,7 @@ void CupTrophyScene::SetHistory(Spoil& spoil)
 
         if ((signed char)pRecord->mPlace != -2)
         {
-            unsigned long locHash = 0x4EEF03CB;
-            const unsigned short* locString = LookupCupTrophyLoc(locHash);
-            BasicString<unsigned short, Detail::TempStringAllocator> unformatted(locString);
+            BasicString<unsigned short, Detail::TempStringAllocator> unformatted(LookupCupTrophyLoc(0x4EEF03CB));
 
             unsigned long charNameHash = GetLOCCharacterName((eTeamID)pRecord->mTeam, true, false);
             const unsigned short* charNameStr = LookupCupTrophyLoc(charNameHash);
@@ -1256,9 +1251,7 @@ void CupTrophyScene::SetHistory(Spoil& spoil)
         }
         else
         {
-            unsigned long locHash = 0xB4B37E9E;
-            const unsigned short* locString = LookupCupTrophyLoc(locHash);
-            BasicString<unsigned short, Detail::TempStringAllocator> unformatted(locString);
+            BasicString<unsigned short, Detail::TempStringAllocator> unformatted(LookupCupTrophyLoc(0xB4B37E9E));
 
             unsigned long charNameHash = GetLOCCharacterName((eTeamID)pRecord->mTeam, true, false);
             const unsigned short* charNameStr = LookupCupTrophyLoc(charNameHash);

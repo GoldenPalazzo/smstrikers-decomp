@@ -327,7 +327,8 @@ void BraggingRightsOverlay::TournamentSceneCreated()
 
         while (user < (int)info->GetNumPlayingTeams())
         {
-            if (info->mCurrentCup->mHumanTeams & (1 << (int)info->GetTeamStatsByIndex((unsigned short)user).mTeamIndex))
+            int teamIndex = (int)info->GetTeamStatsByIndex((unsigned short)user).mTeamIndex;
+            if (info->mCurrentCup->mHumanTeams & (1 << teamIndex))
             {
                 switch (award)
                 {

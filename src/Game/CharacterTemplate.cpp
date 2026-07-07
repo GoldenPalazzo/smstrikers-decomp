@@ -698,7 +698,7 @@ static inline eCharacterClass GetGoalieFromCaptain(eCharacterClass captain)
 
 /**
  * Offset/Address/Size: 0x3DC | 0x80012C3C | size: 0x51C
- * TODO: 98.98% match - loop index and character array register allocation diffs remain
+ * TODO: 99.16% match - first-loop register allocation and sidekick offset register diffs remain
  */
 void CreateCharacters()
 {
@@ -801,12 +801,13 @@ void CreateCharacters()
 
     volatile eCharacterClass* vpSidekick = sidekick;
     volatile eCharacterClass* vpCaptain = captain;
+    int charIdx;
 
     for (int teami = 0; teami < 2; teami++)
     {
         int plrindex = (sidekick[0] > sidekick[1]) ? !teami : teami;
 
-        int charIdx = plrindex * 4 + 1;
+        charIdx = plrindex * 4 + 1;
 
         for (int index = 1; index < 4; index++)
         {

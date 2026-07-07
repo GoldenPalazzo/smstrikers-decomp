@@ -77,7 +77,10 @@ inline void PhysicsBall::CalcSurfaceVelocity(nlVector3& v3VelocityOut)
     nlVector3 v3Up = { 0.0f, 0.0f, 0.0f };
     v3Up.f.z = GetRadius();
 
-    nlVec3Cross(v3VelocityOut, v3AngVelocity, v3Up);
+    f32 x = (v3AngVelocity.f.y * v3Up.f.z) - (v3AngVelocity.f.z * v3Up.f.y);
+    f32 y = (-v3AngVelocity.f.x * v3Up.f.z) + (v3AngVelocity.f.z * v3Up.f.x);
+    f32 z = (v3AngVelocity.f.x * v3Up.f.y) - (v3AngVelocity.f.y * v3Up.f.x);
+    nlVec3Set(v3VelocityOut, x, y, z);
 }
 
 // const uint vec_zero[3] __attribute__((section(".rodata"))) = {0, 0, 0};
@@ -85,7 +88,6 @@ inline void PhysicsBall::CalcSurfaceVelocity(nlVector3& v3VelocityOut)
 
 /**
  * Offset/Address/Size: 0x17C | 0x80134E90 | size: 0x51C
- * TODO: 99.8% match - CalcSurfaceVelocity cross-product x/y temporary registers differ
  */
 void PhysicsBall::AddResistanceForces()
 {
@@ -157,7 +159,7 @@ void PhysicsBall::AddResistanceForces()
             nlVec3Scale(v3BallSurfaceSpeed, 5.f);
             AddForceAtCentreOfMass(v3BallSurfaceSpeed);
             v3BallSurfaceSpeed.f.z = 0.f;
-            if (torqueZ * torqueZ + torqueX * torqueX + torqueY * torqueY < 0.0001f
+            if (torqueX * torqueX + torqueY * torqueY + torqueZ * torqueZ < 0.0001f
                 && v3BallSurfaceSpeed.f.x * v3BallSurfaceSpeed.f.x + v3BallSurfaceSpeed.f.y * v3BallSurfaceSpeed.f.y + v3BallSurfaceSpeed.f.z * v3BallSurfaceSpeed.f.z < 0.00003f)
                 m_bUseAngularVel = 0;
         }

@@ -1,5 +1,6 @@
 #define NL_NO_LEXICALCAST_NLSTRING_INT
 #define BASICSTRING_OUTLINE_CTOR
+#define BASICSTRING_INDEX_EMPTY_COPY_BYTE_OFFSET
 #define BIND_NO_DECL
 #define FUNCTION1_SPLIT_BODIES
 #define MEMFUN_NO_DECL
@@ -80,13 +81,13 @@ FormatImpl<BasicString<unsigned short, Detail::TempStringAllocator> >&
         if (mString[i + 2] != (unsigned short)'}')
             continue;
 
-        unsigned short* eraseBegin;
+        unsigned short* eraseBeginData;
         unsigned short* eraseEnd;
         mString[0];
-        eraseBegin = (mString.m_data ? mString.m_data->mData : (unsigned short*)0) + i;
+        eraseBeginData = mString.m_data ? mString.m_data->mData : (unsigned short*)0;
         mString[0];
         eraseEnd = (mString.m_data ? mString.m_data->mData : (unsigned short*)0) + i + 3;
-        mString.erase(eraseBegin, eraseEnd);
+        mString.erase(eraseBeginData + i, eraseEnd);
         mString[i];
         unsigned short* mStringData = mString.m_data ? mString.m_data->mData : 0;
         insert[0];
@@ -232,8 +233,7 @@ void PausePostGameScene::SceneCreated()
         unsigned short wscore[8];
         nlStrToWcs(score.c_str(), wscore, 8);
         memcpy(mScoreBuffer[i], wscore, sizeof(wscore));
-        int scoreLen = score.size();
-        mScoreBuffer[i][scoreLen - 1] = 0;
+        mScoreBuffer[i][score.m_data ? score.m_data->mSize - 1 : 0] = 0;
         text->SetString(mScoreBuffer[i]);
     }
 

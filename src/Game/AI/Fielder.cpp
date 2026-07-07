@@ -2909,7 +2909,7 @@ cFielder* cFielder::DoFindBestHitTarget()
 
 /**
  * Offset/Address/Size: 0x73B8 | 0x800206F4 | size: 0x87C
- * TODO: 97.29% match - remaining saved floating-point register allocation
+ * TODO: 97.47% match - remaining saved floating-point register allocation
  * differs around net clamp and shot probability blocks.
  */
 void cFielder::DoFindBestShotTarget(nlVector3& v3PositionOut, float& fShotSpeed, bool bIsSTS)
@@ -2917,6 +2917,7 @@ void cFielder::DoFindBestShotTarget(nlVector3& v3PositionOut, float& fShotSpeed,
     cBall* pBall = g_pBall;
     Goalie* pGoalie = m_pTeam->GetOtherTeam()->GetGoalie();
 
+    float fShotDist;
     float kBallAllowance = 0.18f + cNet::m_fNetPostRadius;
     bool bIsChipShot = false;
     if (mActionShotVars.bIsChipShot || mActionLooseBallShotVars.bIsChipShot)
@@ -2957,7 +2958,7 @@ void cFielder::DoFindBestShotTarget(nlVector3& v3PositionOut, float& fShotSpeed,
 
     fBallY -= fBallYClamped;
     float fDX = pBall->m_v3Position.f.x - fNetBaseX;
-    float fShotDist = nlSqrt((fDX * fDX) + (fBallY * fBallY), true);
+    fShotDist = nlSqrt((fDX * fDX) + (fBallY * fBallY), true);
 
     bool bIsChipShot2 = false;
     if (mActionShotVars.bIsChipShot || mActionLooseBallShotVars.bIsChipShot)

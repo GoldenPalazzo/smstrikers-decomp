@@ -689,8 +689,8 @@ int dBoxBox(const dVector3 p1, const dMatrix3 R1,
 {
     dReal s, s2, l;
     const dReal fudge_factor = REAL(1.05);
-    dVector3 p, pp;
-    dReal normalC0, normalC1, normalC2;
+    dVector3 p, normalC;
+    dReal pp0, pp1, pp2;
     const dReal* normalR = 0;
     dReal A[3], B[3], R11, R12, R13, R21, R22, R23, R31, R32, R33,
         Q11, Q12, Q13, Q21, Q22, Q23, Q31, Q32, Q33;
@@ -700,7 +700,9 @@ int dBoxBox(const dVector3 p1, const dMatrix3 R1,
     p[0] = p2[0] - p1[0];
     p[1] = p2[1] - p1[1];
     p[2] = p2[2] - p1[2];
-    dMULTIPLY1_331(pp, R1, p); // get pp = p relative to body 1
+    pp0 = R1[0] * p[0] + R1[4] * p[1] + R1[8] * p[2]; // get pp = p relative to body 1
+    pp1 = R1[1] * p[0] + R1[5] * p[1] + R1[9] * p[2];
+    pp2 = R1[2] * p[0] + R1[6] * p[1] + R1[10] * p[2];
 
     // get side lengths / 2
     A[0] = side1[0] * REAL(0.5);
@@ -758,9 +760,9 @@ int dBoxBox(const dVector3 p1, const dMatrix3 R1,
     code = 0;
 
     // separating axis = u1,u2,u3
-    TST(pp[0], (A[0] + B[0] * Q11 + B[1] * Q12 + B[2] * Q13), R1 + 0, 1);
-    TST(pp[1], (A[1] + B[0] * Q21 + B[1] * Q22 + B[2] * Q23), R1 + 1, 2);
-    TST(pp[2], (A[2] + B[0] * Q31 + B[1] * Q32 + B[2] * Q33), R1 + 2, 3);
+    TST(pp0, (A[0] + B[0] * Q11 + B[1] * Q12 + B[2] * Q13), R1 + 0, 1);
+    TST(pp1, (A[1] + B[0] * Q21 + B[1] * Q22 + B[2] * Q23), R1 + 1, 2);
+    TST(pp2, (A[2] + B[0] * Q31 + B[1] * Q32 + B[2] * Q33), R1 + 2, 3);
 
     // separating axis = v1,v2,v3
     TST(dDOT41(R2 + 0, p), (A[0] * Q11 + A[1] * Q21 + A[2] * Q31 + B[0]), R2 + 0, 4);
@@ -782,28 +784,28 @@ int dBoxBox(const dVector3 p1, const dMatrix3 R1,
         {                                               \
             s = s2;                                     \
             normalR = 0;                                \
-            normalC0 = (n1) / l;                        \
-            normalC1 = (n2) / l;                        \
-            normalC2 = (n3) / l;                        \
+            normalC[0] = (n1) / l;                      \
+            normalC[1] = (n2) / l;                      \
+            normalC[2] = (n3) / l;                      \
             invert_normal = ((expr1) < 0);              \
             code = (cc);                                \
         }                                               \
     }
 
     // separating axis = u1 x (v1,v2,v3)
-    TST(pp[2] * R21 - pp[1] * R31, (A[1] * Q31 + A[2] * Q21 + B[1] * Q13 + B[2] * Q12), 0, -R31, R21, 7);
-    TST(pp[2] * R22 - pp[1] * R32, (A[1] * Q32 + A[2] * Q22 + B[0] * Q13 + B[2] * Q11), 0, -R32, R22, 8);
-    TST(pp[2] * R23 - pp[1] * R33, (A[1] * Q33 + A[2] * Q23 + B[0] * Q12 + B[1] * Q11), 0, -R33, R23, 9);
+    TST(pp2 * R21 - pp1 * R31, (A[1] * Q31 + A[2] * Q21 + B[1] * Q13 + B[2] * Q12), 0, -R31, R21, 7);
+    TST(pp2 * R22 - pp1 * R32, (A[1] * Q32 + A[2] * Q22 + B[0] * Q13 + B[2] * Q11), 0, -R32, R22, 8);
+    TST(pp2 * R23 - pp1 * R33, (A[1] * Q33 + A[2] * Q23 + B[0] * Q12 + B[1] * Q11), 0, -R33, R23, 9);
 
     // separating axis = u2 x (v1,v2,v3)
-    TST(pp[0] * R31 - pp[2] * R11, (A[0] * Q31 + A[2] * Q11 + B[1] * Q23 + B[2] * Q22), R31, 0, -R11, 10);
-    TST(pp[0] * R32 - pp[2] * R12, (A[0] * Q32 + A[2] * Q12 + B[0] * Q23 + B[2] * Q21), R32, 0, -R12, 11);
-    TST(pp[0] * R33 - pp[2] * R13, (A[0] * Q33 + A[2] * Q13 + B[0] * Q22 + B[1] * Q21), R33, 0, -R13, 12);
+    TST(pp0 * R31 - pp2 * R11, (A[0] * Q31 + A[2] * Q11 + B[1] * Q23 + B[2] * Q22), R31, 0, -R11, 10);
+    TST(pp0 * R32 - pp2 * R12, (A[0] * Q32 + A[2] * Q12 + B[0] * Q23 + B[2] * Q21), R32, 0, -R12, 11);
+    TST(pp0 * R33 - pp2 * R13, (A[0] * Q33 + A[2] * Q13 + B[0] * Q22 + B[1] * Q21), R33, 0, -R13, 12);
 
     // separating axis = u3 x (v1,v2,v3)
-    TST(pp[1] * R11 - pp[0] * R21, (A[0] * Q21 + A[1] * Q11 + B[1] * Q33 + B[2] * Q32), -R21, R11, 0, 13);
-    TST(pp[1] * R12 - pp[0] * R22, (A[0] * Q22 + A[1] * Q12 + B[0] * Q33 + B[2] * Q31), -R22, R12, 0, 14);
-    TST(pp[1] * R13 - pp[0] * R23, (A[0] * Q23 + A[1] * Q13 + B[0] * Q32 + B[1] * Q31), -R23, R13, 0, 15);
+    TST(pp1 * R11 - pp0 * R21, (A[0] * Q21 + A[1] * Q11 + B[1] * Q33 + B[2] * Q32), -R21, R11, 0, 13);
+    TST(pp1 * R12 - pp0 * R22, (A[0] * Q22 + A[1] * Q12 + B[0] * Q33 + B[2] * Q31), -R22, R12, 0, 14);
+    TST(pp1 * R13 - pp0 * R23, (A[0] * Q23 + A[1] * Q13 + B[0] * Q32 + B[1] * Q31), -R23, R13, 0, 15);
 
 #undef TST
 
@@ -820,9 +822,7 @@ int dBoxBox(const dVector3 p1, const dMatrix3 R1,
     }
     else
     {
-        normal[0] = R1[0] * normalC0 + R1[1] * normalC1 + R1[2] * normalC2;
-        normal[1] = R1[4] * normalC0 + R1[5] * normalC1 + R1[6] * normalC2;
-        normal[2] = R1[8] * normalC0 + R1[9] * normalC1 + R1[10] * normalC2;
+        dMULTIPLY0_331(normal, R1, normalC);
     }
     if (invert_normal)
     {

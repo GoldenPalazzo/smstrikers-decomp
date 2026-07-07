@@ -67,7 +67,7 @@ FuzzyVariant Fuzzy::AbortLoosePlay(cDecisionEntity*)
 
 /**
  * Offset/Address/Size: 0x0 | 0x8008B084 | size: 0x15CC
- * TODO: 99.61% match - remaining diffs include f-register allocation in
+ * TODO: 99.65% match - remaining diffs include f-register allocation in
  * opponent loop, goalie pickup, and zone min/max temporaries.
  */
 FuzzyVariant Fuzzy::DefaultLoosePlay(cDecisionEntity* pDecision)
@@ -106,25 +106,24 @@ FuzzyVariant Fuzzy::DefaultLoosePlay(cDecisionEntity* pDecision)
             {
                 cFielder* theOpponent = g_pScriptOtherTeam->GetFielder(i);
 
-                float fNotRepeating = 1.0f - RepeatingLastDesire(g_pScriptCurrentFielder, edHeavyAttack);
-                float fChasing = ChasingBall((cPlayer*)theOpponent);
+                fFalseConfidence = 1.0f - RepeatingLastDesire(g_pScriptCurrentFielder, edHeavyAttack);
+                fTrueConfidence = ChasingBall((cPlayer*)theOpponent);
                 float fIdealTackle = AtIdealDistanceForTackling((cPlayer*)g_pScriptCurrentFielder, (cPlayer*)theOpponent);
-                float fNotChasing;
 
-                fChasing = (fChasing <= fNotRepeating) ? fChasing : fNotRepeating;
-                fChasing = (fIdealTackle <= fChasing) ? fIdealTackle : fChasing;
-                fNotChasing = 1.0f - fChasing;
+                fTrueConfidence = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+                fTrueConfidence = (fIdealTackle <= fTrueConfidence) ? fIdealTackle : fTrueConfidence;
+                fFalseConfidence = 1.0f - fTrueConfidence;
 
-                float fMin2 = (fChasing <= fNotChasing) ? fChasing : fNotChasing;
-                float fMax2 = (fChasing >= fNotChasing) ? fChasing : fNotChasing;
-                float fBranchRatio2 = fMin2 / fMax2;
+                fMin = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+                fMax = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+                fBranchRatio = fMin / fMax;
 
-                if (fChasing > 0.0f)
+                if (fTrueConfidence > 0.0f)
                 {
                     SaveConfidence PushDOM3(&fConfidence);
-                    fConfidence = (fConfidence <= fChasing) ? fConfidence : fChasing;
-                    if (fConfidence < fChasing && fChasing < 0.5f)
-                        fConfidence = fConfidence * fBranchRatio2;
+                    fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
+                    if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
+                        fConfidence = fConfidence * fBranchRatio;
 
                     if (fBestConfidence >= fConfidence)
                         fBestConfidence = fBestConfidence;

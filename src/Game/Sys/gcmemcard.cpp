@@ -711,8 +711,8 @@ long MemCard::CreateFile(const char* FileName, unsigned long FileSize, MemCard::
 
 /**
  * Offset/Address/Size: 0xBE8 | 0x801CA358 | size: 0x340
- * TODO: 96.78% match - insert shift loop copy still keeps source/destination
- * pointers and copied fields in different registers from target.
+ * TODO: 96.97% match - insert shift loop pEntry load/store still uses r0
+ * instead of target r5.
  */
 extern "C" void* memset(void*, int, unsigned long);
 
@@ -737,6 +737,7 @@ long MemCard::OpenFile(const char* FileName, MemCard::MC_FILE*& pFile, unsigned 
     long low = -1;
     long high;
     unsigned long id;
+    nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>* src;
     MC_FILE* entry;
     unsigned long count = m_OpenFiles.m_EntryCount;
     high = count;
@@ -759,8 +760,9 @@ long MemCard::OpenFile(const char* FileName, MemCard::MC_FILE*& pFile, unsigned 
     {
         unsigned long prev = count - 1;
         nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>* lookup = m_OpenFiles.m_pEntryLookup;
-        id = lookup[prev].hash;
-        entry = lookup[prev].pEntry;
+        src = lookup + prev;
+        id = src->hash;
+        entry = src->pEntry;
         lookup[count].pEntry = entry;
         lookup[count].hash = id;
         count = prev;

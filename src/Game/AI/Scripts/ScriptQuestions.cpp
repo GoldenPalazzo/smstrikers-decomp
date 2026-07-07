@@ -424,19 +424,22 @@ float UserControlled(cFielder* pFielder)
 
 /**
  * Offset/Address/Size: 0x5838 | 0x800842C0 | size: 0x168
- * TODO: 99.89% match - remaining diff is fmuls operand order on fScaledDistance.
  */
+static inline float ScaleByRunningSpeed(float fDistance, cFielder* pFielder)
+{
+    return fDistance * pFielder->m_pTweaks->fRunningSpeed;
+}
+
 static float InPassingLane(cFielder* pFielder, cPlayer* pPassTarget, float fPotentialBallSpeed)
 {
     nlVector3 v3BetweenIntercept = GetClosestPointOnLineABFromPointC(g_pScriptBall->m_v3Position, pPassTarget->m_v3Position, pFielder->m_v3Position);
 
     float dy1 = g_pScriptBall->m_v3Position.f.y - v3BetweenIntercept.f.y;
     float dx1 = g_pScriptBall->m_v3Position.f.x - v3BetweenIntercept.f.x;
-    float fPossibleFielderDistance = (nlSqrt(dx1 * dx1 + dy1 * dy1, true) / fPotentialBallSpeed) * pFielder->m_pTweaks->fRunningSpeed;
+    float fPossibleFielderDistance = ScaleByRunningSpeed(nlSqrt(dx1 * dx1 + dy1 * dy1, true) / fPotentialBallSpeed, pFielder);
 
     float dx2 = pFielder->m_v3Position.f.x - v3BetweenIntercept.f.x;
-    float dy2 = pFielder->m_v3Position.f.y - v3BetweenIntercept.f.y;
-    return NormalizeVal(nlSqrt(dx2 * dx2 + dy2 * dy2, true), fPossibleFielderDistance + ((GameTweaks*)g_pGame->m_pFuzzyTweaks)->fShellExplodeChance, fPossibleFielderDistance);
+    return NormalizeVal(nlSqrt(dx2 * dx2 + (pFielder->m_v3Position.f.y - v3BetweenIntercept.f.y) * (pFielder->m_v3Position.f.y - v3BetweenIntercept.f.y), true), fPossibleFielderDistance + ((GameTweaks*)g_pGame->m_pFuzzyTweaks)->fShellExplodeChance, fPossibleFielderDistance);
 }
 
 float InPassingLane(cFielder* pFielder)
@@ -1142,7 +1145,7 @@ float Pressured(cFielder* pFielder)
 
 /**
  * Offset/Address/Size: 0x4490 | 0x80082F18 | size: 0x4A4
- * TODO: remaining f30/f31 register swap between accumulated score and per-opponent score.
+ * TODO: 99.73% match - remaining f30/f31 register swap between accumulated score and per-opponent score.
  */
 float Attacked(cFielder* pFielder)
 {
@@ -1309,12 +1312,12 @@ float Attacked(cFielder* pFielder)
             nlVector3 vDiff;
             nlVec3Set(vDiff, pFielderPos->f.x - pOpponent->m_v3Position.f.x, pFielderPos->f.y - pOpponent->m_v3Position.f.y, pFielderPos->f.z - pOpponent->m_v3Position.f.z);
 
-            u16 nOpponentFacing = pOpponent->m_aActualFacingDirection;
+            const int nOpponentFacing = (u16)pOpponent->m_aActualFacingDirection;
 
             nlPolar polar;
             nlCartesianToPolar(polar, vDiff);
 
-            int nAngleDiff = nOpponentFacing - polar.a;
+            int nAngleDiff = (s16)(nOpponentFacing - polar.a);
             if ((s16)nAngleDiff < 0)
             {
                 nAngleDiff = -nAngleDiff;
@@ -1341,7 +1344,7 @@ float Attacked(cFielder* pFielder)
             }
         }
 
-        fScore += fClosingSpeed * 0.8f + fAngleScore * 0.2f;
+        fScore += fAngleScore * 0.2f + fClosingSpeed * 0.8f;
     }
 
     float fResult = clampGe0(fScore);
@@ -1935,32 +1938,16 @@ float OpenToPosition(const nlVector3& v3From, const nlVector3& v3To, const cTeam
     return 1.0f - fScore;
 }
 
-/**
- * Offset/Address/Size: 0x3030 | 0x80081AB8 | size: 0x2AC
- * TODO: 99.91% match - remaining 1 scored diff is SDA label ordering (offset 60 i diff)
- */
-float OpenPosition(const nlVector3& v3Position, cTeam* pOpponentTeam, cPlayer* pCurrentPlayer, const nlVector2* pOpenRadius)
+#pragma inline_depth(255)
+#pragma inline_max_size(0x10000)
+#pragma inline_max_total_size(0x10000)
+static inline void ScoreOpenPlayerPair(bool CheckMyTeam, cTeam* pOpponentTeam, cTeam* pMyTeam, cPlayer* pCurrentPlayer, int i, const nlVector3& v3Position, const nlVector2& openRadius, f32& fTotalScore, f32& fWeight, cPlayer**& ppPlayer, int& i_player)
 {
-    f32 fTotalScore;
-    f32 fWeight;
-    cTeam* pMyTeam;
-    int i;
+    cPlayer* pPlayers[2] = { NULL, NULL };
+    pPlayers[0] = pOpponentTeam->GetPlayer(i);
 
-    fTotalScore = 0.0f;
-    fWeight = 1.0f;
-
-    if (pOpenRadius == NULL)
+    if (CheckMyTeam)
     {
-        pOpenRadius = &g_pGame->m_pFuzzyTweaks->vOpenRadius;
-    }
-
-    pMyTeam = pOpponentTeam->GetOtherTeam();
-
-    for (i = 0; i < 5; i++)
-    {
-        cPlayer* pPlayers[2] = { NULL, NULL };
-        pPlayers[0] = pOpponentTeam->GetPlayer(i);
-
         u8 bCheckMyTeam = 0;
         if (pCurrentPlayer != NULL)
         {
@@ -1981,10 +1968,11 @@ float OpenPosition(const nlVector3& v3Position, cTeam* pOpponentTeam, cPlayer* p
         }
         pPlayers[1] = pMyTeamPlayer;
 
-        for (int i_player = 0; i_player < 2; i_player++)
+        ppPlayer = pPlayers;
+        for (i_player = 0; i_player < 2; i_player++, ppPlayer++)
         {
+            cPlayer* pPlayer = *ppPlayer;
             u8 isIncap;
-            cPlayer* pPlayer = pPlayers[i_player];
             if (pPlayer == NULL)
             {
                 continue;
@@ -2001,8 +1989,8 @@ float OpenPosition(const nlVector3& v3Position, cTeam* pOpponentTeam, cPlayer* p
                 if (pPlayer->m_eClassType == GOALIE)
                 {
                     Goalie* pGoalie = (Goalie*)pPlayer;
-                    bool result = true;
                     eGoalieActionState actionState = pGoalie->mGoalieActionState;
+                    bool result = true;
                     int isRecover = (((int)GOALIEACTION_STS_RECOVER - (int)actionState) == 0);
 
                     if ((isRecover & 0xFF) == 0)
@@ -2042,10 +2030,10 @@ float OpenPosition(const nlVector3& v3Position, cTeam* pOpponentTeam, cPlayer* p
 
             if (!fIncapacitated)
             {
-                f32 dx = v3Position.f.x - pPlayers[i_player]->m_v3Position.f.x;
-                f32 dy = v3Position.f.y - pPlayers[i_player]->m_v3Position.f.y;
-                f32 dist = nlSqrt(dx * dx + dy * dy, true);
-                f32 normalized = NormalizeVal(dist, *pOpenRadius);
+                f32 dx = v3Position.f.x - (*ppPlayer)->m_v3Position.f.x;
+                f32 dy = v3Position.f.y - (*ppPlayer)->m_v3Position.f.y;
+                f32 dist = nlSqrt(dx * dx + (dy *= dy), true);
+                f32 normalized = NormalizeVal(dist, openRadius);
                 if (normalized > 0.0f)
                 {
                     fTotalScore += fWeight * normalized;
@@ -2054,67 +2042,14 @@ float OpenPosition(const nlVector3& v3Position, cTeam* pOpponentTeam, cPlayer* p
             }
         }
     }
-
-    return min_float(max_float(1.0f - fTotalScore, 0.0f), 1.0f);
-}
-
-/**
- * Offset/Address/Size: 0x2D84 | 0x8008180C | size: 0x2AC
- * TODO: 96.23% match - remaining diffs are register allocation/layout around
- * pOpenRadius/i_player/pPlayer and final clamp/load order scheduling.
- */
-/**
- * Offset/Address/Size: 0x3DC | 0x800C3820 | size: 0x2AC
- * TODO: 99.97% match - remaining 1 scored diff is SDA label ordering (offset 60 i diff), unfixable in scratch
- */
-float WideOpenPosition(const nlVector3& v3Position, cTeam* pOpponentTeam, cPlayer* pCurrentPlayer)
-{
-    f32 fWeight;
-    f32 fTotalScore;
-    fTotalScore = 0.0f;
-    fWeight = 1.0f;
-    int i_player;
-    int i;
-    cTeam* pMyTeam;
-    const nlVector2* pOpenRadius = &g_pGame->m_pFuzzyTweaks->vWideOpenRadius;
-
-    if (pOpenRadius == NULL)
+    else
     {
-        pOpenRadius = &g_pGame->m_pFuzzyTweaks->vOpenRadius;
-    }
-
-    pMyTeam = pOpponentTeam->GetOtherTeam();
-
-    for (i = 0; i < 5; i++)
-    {
-        cPlayer* pPlayers[2] = { NULL, NULL };
-        pPlayers[0] = pOpponentTeam->GetPlayer(i);
-
-        u8 bCheckMyTeam = 0;
-        if (pCurrentPlayer != NULL)
+        pPlayers[1] = (cPlayer*)(i_player = 0);
+        ppPlayer = pPlayers;
+        for (; i_player < 2; i_player++, ppPlayer++)
         {
-            if (i != pCurrentPlayer->m_ID)
-            {
-                bCheckMyTeam = 1;
-            }
-        }
-
-        cPlayer* pMyTeamPlayer;
-        if (bCheckMyTeam)
-        {
-            pMyTeamPlayer = pMyTeam->GetPlayer(i);
-        }
-        else
-        {
-            pMyTeamPlayer = NULL;
-        }
-        pPlayers[1] = pMyTeamPlayer;
-
-        cPlayer** ppPlayer = pPlayers;
-        for (i_player = 0; i_player < 2; i_player++, ppPlayer++)
-        {
-            u8 isIncap;
             cPlayer* pPlayer = *ppPlayer;
+            u8 isIncap;
             if (pPlayer == NULL)
             {
                 continue;
@@ -2131,8 +2066,8 @@ float WideOpenPosition(const nlVector3& v3Position, cTeam* pOpponentTeam, cPlaye
                 if (pPlayer->m_eClassType == GOALIE)
                 {
                     Goalie* pGoalie = (Goalie*)pPlayer;
-                    bool result = true;
                     eGoalieActionState actionState = pGoalie->mGoalieActionState;
+                    bool result = true;
                     int isRecover = (((int)GOALIEACTION_STS_RECOVER - (int)actionState) == 0);
 
                     if ((isRecover & 0xFF) == 0)
@@ -2170,12 +2105,12 @@ float WideOpenPosition(const nlVector3& v3Position, cTeam* pOpponentTeam, cPlaye
                 }
             }
 
-            if (fIncapacitated == 0.0f)
+            if (!fIncapacitated)
             {
                 f32 dx = v3Position.f.x - (*ppPlayer)->m_v3Position.f.x;
                 f32 dy = v3Position.f.y - (*ppPlayer)->m_v3Position.f.y;
-                f32 dist = nlSqrt(dx * dx + dy * dy, true);
-                f32 normalized = NormalizeVal(dist, *pOpenRadius);
+                f32 dist = nlSqrt(dx * dx + (dy *= dy), true);
+                f32 normalized = NormalizeVal(dist, openRadius);
                 if (normalized > 0.0f)
                 {
                     fTotalScore += fWeight * normalized;
@@ -2183,6 +2118,73 @@ float WideOpenPosition(const nlVector3& v3Position, cTeam* pOpponentTeam, cPlaye
                 }
             }
         }
+    }
+}
+
+#pragma inline_depth()
+
+/**
+ * Offset/Address/Size: 0x3030 | 0x80081AB8 | size: 0x2AC
+ * TODO: 99.91% match - remaining 1 scored diff is SDA label ordering (offset 60 i diff)
+ */
+float OpenPosition(const nlVector3& v3Position, cTeam* pOpponentTeam, cPlayer* pCurrentPlayer, const nlVector2* pOpenRadius)
+{
+    f32 fTotalScore;
+    f32 fWeight;
+    cPlayer** ppPlayer;
+    cTeam* pMyTeam;
+    int i;
+    int i_player;
+
+    fTotalScore = 0.0f;
+    fWeight = 1.0f;
+
+    if (pOpenRadius == NULL)
+    {
+        pOpenRadius = &g_pGame->m_pFuzzyTweaks->vOpenRadius;
+    }
+
+    pMyTeam = pOpponentTeam->GetOtherTeam();
+
+    for (i = 0; i < 5; i++)
+    {
+        ScoreOpenPlayerPair(true, pOpponentTeam, pMyTeam, pCurrentPlayer, i, v3Position, *pOpenRadius, fTotalScore, fWeight, ppPlayer, i_player);
+    }
+
+    return min_float(max_float(1.0f - fTotalScore, 0.0f), 1.0f);
+}
+
+/**
+ * Offset/Address/Size: 0x2D84 | 0x8008180C | size: 0x2AC
+ * TODO: 96.23% match - remaining diffs are register allocation/layout around
+ * pOpenRadius/i_player/pPlayer and final clamp/load order scheduling.
+ */
+/**
+ * Offset/Address/Size: 0x3DC | 0x800C3820 | size: 0x2AC
+ * TODO: 99.97% match - remaining 1 scored diff is SDA label ordering (offset 60 i diff), unfixable in scratch
+ */
+float WideOpenPosition(const nlVector3& v3Position, cTeam* pOpponentTeam, cPlayer* pCurrentPlayer)
+{
+    f32 fWeight;
+    f32 fTotalScore;
+    fTotalScore = 0.0f;
+    fWeight = 1.0f;
+    int i_player;
+    int i;
+    cTeam* pMyTeam;
+    const nlVector2* pOpenRadius = &g_pGame->m_pFuzzyTweaks->vWideOpenRadius;
+    cPlayer** ppPlayer;
+
+    if (pOpenRadius == NULL)
+    {
+        pOpenRadius = &g_pGame->m_pFuzzyTweaks->vOpenRadius;
+    }
+
+    pMyTeam = pOpponentTeam->GetOtherTeam();
+
+    for (i = 0; i < 5; i++)
+    {
+        ScoreOpenPlayerPair(true, pOpponentTeam, pMyTeam, pCurrentPlayer, i, v3Position, *pOpenRadius, fTotalScore, fWeight, ppPlayer, i_player);
     }
 
     return min_float(max_float(1.0f - fTotalScore, 0.0f), 1.0f);
@@ -2236,6 +2238,7 @@ float Open(cFielder* pFielder)
     f32 fWeight;
     f32 fTotal;
     const nlVector2* pOpenRadius;
+    cPlayer** ppPlayer;
 
     if (pFielder == NULL)
     {
@@ -2251,83 +2254,7 @@ float Open(cFielder* pFielder)
 
     for (i = 0; i < 5; i++)
     {
-        cPlayer* pPlayers[2] = { NULL, NULL };
-        pPlayers[0] = pOtherTeam->GetPlayer(i);
-        cPlayer** ppPlayer = pPlayers;
-        pPlayers[1] = (cPlayer*)(i_player = 0);
-
-        for (; i_player < 2; i_player++, ppPlayer++)
-        {
-            u8 isIncap;
-            cPlayer* pPlayer = *ppPlayer;
-            if (pPlayer == NULL)
-            {
-                continue;
-            }
-
-            f32 fIncapacitated;
-            if (pPlayer == NULL)
-            {
-                fIncapacitated = 0.0f;
-            }
-            else
-            {
-                fIncapacitated = 0.0f;
-                if (pPlayer->m_eClassType == GOALIE)
-                {
-                    Goalie* pGoalie = (Goalie*)pPlayer;
-                    bool result = true;
-                    eGoalieActionState actionState = pGoalie->mGoalieActionState;
-                    int isRecover = (((int)GOALIEACTION_STS_RECOVER - (int)actionState) == 0);
-
-                    if ((isRecover & 0xFF) == 0)
-                    {
-                        bool isBusy = (pGoalie->m_pBall != NULL)
-                                   || (actionState == GOALIEACTION_PASS)
-                                   || (actionState == GOALIEACTION_PASS_INTERCEPT)
-                                   || (actionState == GOALIEACTION_MOVE)
-                                   || (actionState == GOALIEACTION_MOVE_WB)
-                                   || (actionState == GOALIEACTION_PASS_INTERCEPT)
-                                   || (actionState == GOALIEACTION_PURSUE_BALL_CARRIER)
-                                   || (actionState == GOALIEACTION_PURSUE_BALL_POUNCE)
-                                   || (actionState == GOALIEACTION_LOOSEBALL_SETUP)
-                                   || (actionState == GOALIEACTION_LOOSEBALL_CATCH)
-                                   || (actionState == GOALIEACTION_LOOSEBALL_PICKUP)
-                                   || (actionState == GOALIEACTION_LOOSEBALL_PURSUE_BOUNCING)
-                                   || (actionState == GOALIEACTION_LOOSEBALL_PURSUE_ROLLING);
-                        if (isBusy)
-                        {
-                            result = false;
-                        }
-                    }
-
-                    fIncapacitated = result ? 1.0f : 0.0f;
-                }
-                else if (pPlayer->m_eClassType == FIELDER)
-                {
-                    isIncap = 0;
-                    if (((cFielder*)pPlayer)->IsFrozen() || ((cFielder*)pPlayer)->IsFallenDown(25.0f))
-                    {
-                        isIncap = 1;
-                    }
-
-                    fIncapacitated = isIncap ? 1.0f : 0.0f;
-                }
-            }
-
-            if (!fIncapacitated)
-            {
-                f32 dx = pFielder->m_v3Position.f.x - (*ppPlayer)->m_v3Position.f.x;
-                f32 dy = pFielder->m_v3Position.f.y - (*ppPlayer)->m_v3Position.f.y;
-                f32 dist = nlSqrt(dx * dx + dy * dy, true);
-                f32 normalized = NormalizeVal(dist, *pOpenRadius);
-                if (normalized > 0.0f)
-                {
-                    fTotal += fWeight * normalized;
-                    fWeight *= 0.5f;
-                }
-            }
-        }
+        ScoreOpenPlayerPair(false, pOtherTeam, NULL, NULL, i, pFielder->m_v3Position, *pOpenRadius, fTotal, fWeight, ppPlayer, i_player);
     }
 
     return min_float(max_float(1.0f - fTotal, 0.0f), 1.0f);
@@ -2346,6 +2273,7 @@ float WideOpen(cFielder* pFielder)
     int i;
     cTeam* pMyTeam;
     const nlVector2* pOpenRadius;
+    cPlayer** ppPlayer;
 
     if (pFielder == NULL)
     {
@@ -2366,105 +2294,7 @@ float WideOpen(cFielder* pFielder)
 
     for (i = 0; i < 5; i++)
     {
-        cPlayer* pPlayers[2] = { NULL, NULL };
-        pPlayers[0] = pOtherTeam->GetPlayer(i);
-
-        u8 bCheckMyTeam = 0;
-        if (pFielder != NULL)
-        {
-            if (i != pFielder->m_ID)
-            {
-                bCheckMyTeam = 1;
-            }
-        }
-
-        cPlayer* pMyTeamPlayer;
-        if (bCheckMyTeam)
-        {
-            pMyTeamPlayer = pMyTeam->GetPlayer(i);
-        }
-        else
-        {
-            pMyTeamPlayer = NULL;
-        }
-        pPlayers[1] = pMyTeamPlayer;
-
-        cPlayer** ppPlayer = pPlayers;
-        for (i_player = 0; i_player < 2; i_player++, ppPlayer++)
-        {
-            u8 isIncap;
-            cPlayer* pPlayer = *ppPlayer;
-            if (pPlayer == NULL)
-            {
-                continue;
-            }
-
-            f32 fIncapacitated;
-            if (pPlayer == NULL)
-            {
-                fIncapacitated = 0.0f;
-            }
-            else
-            {
-                fIncapacitated = 0.0f;
-                if (pPlayer->m_eClassType == GOALIE)
-                {
-                    Goalie* pGoalie = (Goalie*)pPlayer;
-                    bool result = true;
-                    eGoalieActionState actionState = pGoalie->mGoalieActionState;
-                    int isRecover = (((int)GOALIEACTION_STS_RECOVER - (int)actionState) == 0);
-
-                    if ((isRecover & 0xFF) == 0)
-                    {
-                        bool isBusy = (pGoalie->m_pBall != NULL)
-                                   || (actionState == GOALIEACTION_PASS)
-                                   || (actionState == GOALIEACTION_PASS_INTERCEPT)
-                                   || (actionState == GOALIEACTION_MOVE)
-                                   || (actionState == GOALIEACTION_MOVE_WB)
-                                   || (actionState == GOALIEACTION_PASS_INTERCEPT)
-                                   || (actionState == GOALIEACTION_PURSUE_BALL_CARRIER)
-                                   || (actionState == GOALIEACTION_PURSUE_BALL_POUNCE)
-                                   || (actionState == GOALIEACTION_LOOSEBALL_SETUP)
-                                   || (actionState == GOALIEACTION_LOOSEBALL_CATCH)
-                                   || (actionState == GOALIEACTION_LOOSEBALL_PICKUP)
-                                   || (actionState == GOALIEACTION_LOOSEBALL_PURSUE_BOUNCING)
-                                   || (actionState == GOALIEACTION_LOOSEBALL_PURSUE_ROLLING);
-                        if (isBusy)
-                        {
-                            result = false;
-                        }
-                    }
-
-                    fIncapacitated = result ? 1.0f : 0.0f;
-                }
-                else if (pPlayer->m_eClassType == FIELDER)
-                {
-                    isIncap = 0;
-                    if (((cFielder*)pPlayer)->IsFrozen() || ((cFielder*)pPlayer)->IsFallenDown(25.0f))
-                    {
-                        isIncap = 1;
-                    }
-
-                    fIncapacitated = isIncap ? 1.0f : 0.0f;
-                }
-            }
-
-            if (!fIncapacitated)
-            {
-                f32 ySelf = pFielder->m_v3Position.f.x;
-                f32 yOther = (*ppPlayer)->m_v3Position.f.x;
-                f32 xSelf = pFielder->m_v3Position.f.y;
-                f32 dy = ySelf - yOther;
-                f32 dx = xSelf - (*ppPlayer)->m_v3Position.f.y;
-                f32 dist = nlSqrt(dy * dy + dx * dx, true);
-                f32 normalized = NormalizeVal(dist, *pOpenRadius);
-                if (normalized > 0.0f)
-                {
-                    fTotal += fWeight * normalized;
-                    fWeight *= 0.5f;
-                }
-            }
-        }
+        ScoreOpenPlayerPair(true, pOtherTeam, pMyTeam, pFielder, i, pFielder->m_v3Position, *pOpenRadius, fTotal, fWeight, ppPlayer, i_player);
     }
 
     return min_float(max_float(1.0f - fTotal, 0.0f), 1.0f);
