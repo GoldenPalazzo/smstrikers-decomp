@@ -36,8 +36,8 @@ static inline char* PowerupLookupString(int idx)
 
 /**
  * Offset/Address/Size: 0x0 | 0x8011EC74 | size: 0xF8
- * TODO: 93.1% match - FPR registers still differ around blend factor
- * temporaries used for scale and position interpolation.
+ * TODO: 95.3% match - FPR registers still differ around blend factor
+ * temporaries and the mScale store schedule.
  */
 void DrawablePowerup::Blend(const float* blendFactors, const DrawablePowerup& lhs, const DrawablePowerup& rhs)
 {

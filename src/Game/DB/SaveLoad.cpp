@@ -2056,47 +2056,39 @@ static inline MemCard* GetCardBySlot(int slot)
 
 /**
  * Offset/Address/Size: 0xD8 | 0x80189A34 | size: 0x18C
- * TODO: 86.57% match - slot/card register swap, extra block-count loop
- * guards, and icon header register allocation.
  */
 #pragma push
 #pragma opt_propagation off
 u8 SaveLoad::HasEnoughFreeSpace(int Slot)
 {
-    int dataSize;
-    int numBlocks;
     MemCard* card;
+    int numBlocks;
+    long dataSize;
+    unsigned long slotOffset = Slot << 2;
 
-    card = g_MemCards[Slot];
+    card = g_MemCards[slotOffset >> 2];
     dataSize = nlSingleton<GameInfoManager>::s_pInstance->GetMemoryCardDataSize();
     numBlocks = 0;
 
-    int origSize = (dataSize += 12);
-    dataSize = (u32)(dataSize + 0x1FFF) >> 13;
-    if (origSize > 0)
+    dataSize += 12;
+    while (dataSize > 0)
     {
-        while (dataSize > 0)
-        {
-            numBlocks++;
-            dataSize--;
-        }
+        numBlocks++;
+        dataSize -= 0x2000;
     }
 
     MemCard::ICON_CONFIG IconCfg;
-    origSize = BuildDefaultIconHeaderSize(IconCfg);
-    dataSize = (u32)(origSize + 0x1FFF) >> 13;
-    if (origSize > 0)
+    dataSize = BuildDefaultIconHeaderSize(IconCfg);
+    while (dataSize > 0)
     {
-        while (dataSize > 0)
-        {
-            numBlocks++;
-            dataSize--;
-        }
+        numBlocks++;
+        dataSize -= 0x2000;
     }
 
-    unsigned long bytestosave = numBlocks * card->m_CardInfo.SectorSize;
-    unsigned long alignedSize = g_MemCards[Slot]->AlignBytesToSectorSize(bytestosave);
-    MemCard* mc = g_MemCards[Slot];
+    unsigned long sectorSize = card->m_CardInfo.SectorSize;
+    unsigned long bytestosave = numBlocks * sectorSize;
+    unsigned long alignedSize = g_MemCards[slotOffset >> 2]->AlignBytesToSectorSize(bytestosave);
+    MemCard* mc = g_MemCards[slotOffset >> 2];
     if (alignedSize > (unsigned long)mc->m_CardInfo.FreeBytes)
         return 0;
 

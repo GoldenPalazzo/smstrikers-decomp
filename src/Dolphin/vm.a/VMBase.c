@@ -253,17 +253,20 @@ void __VMBASEInvalidatePageTable(void)
     OSRestoreInterrupts(oldInterrupts);
 }
 
-#pragma scheduling off
 void __VMBASEInvalidateLockedPageTable(void)
 {
     u32 offset;
 
+    /* The integer-cast pointer arithmetic `(u32)base + offset` (rather than
+     * base[offset]) makes MWCC fold each unrolled byte's constant into the
+     * store DISPLACEMENT (add base+offset; stb k(ptr)) instead of a
+     * strength-reduced index (addi offset+k; stbx) -- matching the target.
+     * Scheduling stays ON (no pragma) so the setup + in-loop li ordering match. */
     for (offset = 0; offset < 0x1000; offset++)
     {
-        g_vmBaseLockedPageTable[offset] = 0;
+        *(u8*)((u32)g_vmBaseLockedPageTable + offset) = 0;
     }
 }
-#pragma scheduling reset
 
 void __VMBASEInvalidateReversePageTable(void)
 {
@@ -353,7 +356,7 @@ static asm void __VMBASESetupSDR1(register u32 srr1, register u32 sdr1, register
     mtsrr0 unused
     rfi
 
-__VMBASESetupVMRegisters_SetSDR1:
+entry __VMBASESetupVMRegisters_SetSDR1
     sync
     mtsdr1 sdr1
     sync
@@ -365,7 +368,7 @@ __VMBASESetupVMRegisters_SetSDR1:
     mtsrr0 unused
     rfi
 
-__VMBASESetupVMRegisters_End:
+entry __VMBASESetupVMRegisters_End
     nop
     blr
     // clang-format on
@@ -380,7 +383,10 @@ void __VMBASESetupExceptionHandlers(void)
     u32 branchInstr;
     volatile u32* patchAddr;
 
-    branchInstr = 0x48000000 | ((u32)__VMBASEDSIExceptionHandler - 0x80000300);
+    {
+        u32 dsiOff = (u32)__VMBASEDSIExceptionHandler - 0x80000300;
+        branchInstr = 0x48000000 | dsiOff;
+    }
     origInstr = *(volatile u32*)0x80000300;
     *(volatile u32*)0x80000300 = branchInstr;
     DCFlushRangeNoSync((void*)0x80000300, 4);
@@ -418,7 +424,10 @@ void __VMBASESetupExceptionHandlers(void)
         icbi icbiAddr, icbiZero
     }
 
-    branchInstr = 0x48000000 | ((u32)__VMBASEISIExceptionHandler - 0x80000400);
+    {
+        u32 isiOff = (u32)__VMBASEISIExceptionHandler - 0x80000400;
+        branchInstr = 0x48000000 | isiOff;
+    }
     origInstr = *(volatile u32*)0x80000400;
     *(volatile u32*)0x80000400 = branchInstr;
     DCFlushRangeNoSync((void*)0x80000400, 4);

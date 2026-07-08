@@ -1242,8 +1242,8 @@ FuzzyVariant Fuzzy::GetBestPassTarget(cPlayer* ThePlayer)
 
 /**
  * Offset/Address/Size: 0xA138 | 0x80074308 | size: 0xAFC
- * TODO: 99.61% match - remaining diffs are weighted-score expression
- *       registers, FuzzyVariant temporary stack-slot ordering, and sda21
+ * TODO: 99.64% match - remaining diffs are weighted-score register
+ *       allocation, FuzzyVariant temporary stack-slot ordering, and sda21
  *       pool-label numbering.
  */
 FuzzyVariant Fuzzy::GoodPassTargetFrom(cFielder* TheTargetFielder, cFielder* TheBallOwner)
@@ -1317,10 +1317,11 @@ FuzzyVariant Fuzzy::GoodPassTargetFrom(cFielder* TheTargetFielder, cFielder* The
 
             float fPlayerWeighting = PerfectPassCandidateFrom(TheTargetFielder, TheBallOwner);
             float fNetWeighting = OpenTo((cPlayer*)TheBallOwner, (cPlayer*)TheTargetFielder);
-            float fTrueConfidence2 = OnScreen((cPlayer*)TheTargetFielder) * 0.15f
+            float fOnScreen = OnScreen((cPlayer*)TheTargetFielder);
+            float fTrueConfidence2 = fTotalSum * 0.2f
+                                   + fOnScreen * 0.15f
                                    + fNetWeighting * 0.15f
-                                   + fPlayerWeighting * 0.5f
-                                   + fTotalSum * 0.2f;
+                                   + fPlayerWeighting * 0.5f;
 
             float fFalseConfidence2 = 1.0f - fTrueConfidence2;
             float fMinVal2 = (fTrueConfidence2 <= fFalseConfidence2) ? fTrueConfidence2 : fFalseConfidence2;

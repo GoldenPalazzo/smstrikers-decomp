@@ -402,10 +402,7 @@ void GoalieSave::InitData(Goalie* pGoalie)
         pPos->mfAnimTime = (float)pController->m_pSAnim->m_nNumKeys / 30.0f;
         pPos->mfAnimVelocity = pPos->mfAnimDistance / pPos->mfAnimTime;
 
-        if (pController != NULL)
-        {
-            delete pController;
-        }
+        delete pController;
     }
 
     ClearSaveGrid();

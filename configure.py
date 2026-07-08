@@ -1558,8 +1558,8 @@ config.libs = [
             # Dolphin/vm.a
             Object(Matching, "Dolphin/vm.a/VM.c", extra_cflags=["-inline auto"]),
             Object(Matching, "Dolphin/vm.a/VMPageReplacement.c", extra_cflags=["-inline auto"]),
-            Object(NonMatching, "Dolphin/vm.a/VMMapping.c", extra_cflags=["-inline auto", "-O4,s"]),
-            Object(NonMatching, "Dolphin/vm.a/VMBase.c", extra_cflags=["-inline auto"]),
+            Object(Matching, "Dolphin/vm.a/VMMapping.c", extra_cflags=["-inline auto", "-O4,s"]),
+            Object(Matching, "Dolphin/vm.a/VMBase.c", extra_cflags=["-inline auto"]),
         ],
     ),    
 

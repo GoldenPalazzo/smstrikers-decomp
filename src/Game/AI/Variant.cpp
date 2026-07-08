@@ -48,7 +48,7 @@ void Variant_stub()
 
 /**
  * Offset/Address/Size: 0x1E4C | 0x800690A4 | size: 0xD74
- * TODO: 99.13% match - remaining copy-on-write temp register swaps around insert.
+ * TODO: 99.42% match - remaining copy-on-write temp register swaps around insert.
  */
 template <>
 template <>
@@ -78,19 +78,23 @@ FormatImpl<BasicString<char, Detail::TempStringAllocator> >&
 
         char* eraseBegin;
         char* eraseEnd;
+        char* eraseAt;
+        int eraseSize;
+        int eraseOffset;
+        BasicStringData<char>* eraseData;
         mString[0];
         eraseEnd = (mString.m_data ? mString.m_data->mData : (char*)0) + i + 3;
         mString[0];
         eraseBegin = (mString.m_data ? mString.m_data->mData : (char*)0) + i;
         mString[0];
-        BasicStringData<char>* eraseData = mString.m_data;
-        int eraseSize = eraseEnd - eraseBegin;
-        const char* eraseIt = eraseEnd;
-        char* eraseAt = eraseData->mData + (eraseBegin - eraseData->mData);
-        while (eraseIt != eraseData->mData + eraseData->mSize)
+        eraseData = mString.m_data;
+        eraseSize = eraseEnd - eraseBegin;
+        eraseOffset = eraseBegin - eraseData->mData;
+        eraseAt = eraseData->mData + eraseOffset;
+        while (eraseEnd != eraseData->mData + eraseData->mSize)
         {
-            *eraseAt = *eraseIt;
-            eraseIt++;
+            *eraseAt = *eraseEnd;
+            eraseEnd++;
             eraseAt++;
         }
         eraseData->mSize -= eraseSize;
