@@ -6251,8 +6251,9 @@ void Goalie::DoPassRelease()
         float fIsOpen = OpenTo(this, mpPassTarget);
 
         if ((bIsKick
-                && (m_v3Position.f.y - mpPassTarget->m_v3Position.f.y) * (m_v3Position.f.y - mpPassTarget->m_v3Position.f.y)
-                           + (m_v3Position.f.x - mpPassTarget->m_v3Position.f.x) * (m_v3Position.f.x - mpPassTarget->m_v3Position.f.x)
+                && DistSq(
+                       m_v3Position.f.y - mpPassTarget->m_v3Position.f.y,
+                       m_v3Position.f.x - mpPassTarget->m_v3Position.f.x)
                        > 64.0f)
             || (fIsOpen < 0.85f && m_eAnimID != 1))
         {

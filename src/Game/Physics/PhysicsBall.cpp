@@ -17,6 +17,7 @@ float g_BallBounceGround = 0.375f;
 float g_BallBounceWall = 0.45f;
 float g_BallRollingResistance = 5.f;
 float g_BallAirResistance = 0.1f;
+static const float kZeroF[1] = { 0.0f };
 
 /**
  * Offset/Address/Size: 0x0 | 0x80134D14 | size: 0xD4
@@ -51,7 +52,7 @@ void PhysicsBall::SetUseAngularVelocity(bool param_1)
         m_fSpinTimer = 0.08f;
         return;
     }
-    m_fSpinTimer = 0.f;
+    m_fSpinTimer = kZeroF[0];
 }
 
 /**
@@ -72,7 +73,7 @@ inline void PhysicsBall::CalcSurfaceVelocity(nlVector3& v3VelocityOut)
 {
     nlVector3 v3AngVelocity;
     GetAngularVelocity(&v3AngVelocity);
-    v3AngVelocity.f.z = 0.0f;
+    v3AngVelocity.f.z = kZeroF[0];
 
     nlVector3 v3Up = { 0.0f, 0.0f, 0.0f };
     v3Up.f.z = GetRadius();
@@ -130,10 +131,10 @@ void PhysicsBall::AddResistanceForces()
         if (bApply == 0)
             AddForceAtCentreOfMass(m_v3TiltForce);
     }
-    if (m_fSpinTimer > 0.f)
+    if (m_fSpinTimer > kZeroF[0])
     {
         m_fSpinTimer = m_fSpinTimer - FixedUpdateTask::GetPhysicsUpdateTick();
-        if (m_fSpinTimer <= 0.f)
+        if (m_fSpinTimer <= kZeroF[0])
             m_bUseAngularVel = 1;
     }
     if (m_parentObject == NULL && m_bUseAngularVel != 0)
@@ -158,7 +159,7 @@ void PhysicsBall::AddResistanceForces()
             v3BallSurfaceSpeed.f.x = v3BallSurfaceSpeed.f.x - v3CurBallSpeed.f.x;
             nlVec3Scale(v3BallSurfaceSpeed, 5.f);
             AddForceAtCentreOfMass(v3BallSurfaceSpeed);
-            v3BallSurfaceSpeed.f.z = 0.f;
+            v3BallSurfaceSpeed.f.z = kZeroF[0];
             if (torqueX * torqueX + torqueY * torqueY + torqueZ * torqueZ < 0.0001f
                 && v3BallSurfaceSpeed.f.x * v3BallSurfaceSpeed.f.x + v3BallSurfaceSpeed.f.y * v3BallSurfaceSpeed.f.y + v3BallSurfaceSpeed.f.z * v3BallSurfaceSpeed.f.z < 0.00003f)
                 m_bUseAngularVel = 0;
@@ -228,7 +229,7 @@ ContactType PhysicsBall::Contact(PhysicsObject* other, dContact* contact, int pa
         if (objType == 0x11)
         {
             GetPosition(&pos);
-            if ((contact->geom.normal[2] > 0.f) && ((contact->geom.pos[2] + GetRadius()) < pos.f.z))
+            if ((contact->geom.normal[2] > kZeroF[0]) && ((contact->geom.pos[2] + GetRadius()) < pos.f.z))
             {
                 _pos = GetPosition();
 
@@ -245,14 +246,14 @@ ContactType PhysicsBall::Contact(PhysicsObject* other, dContact* contact, int pa
 
                 temp_f30 = contact->geom.normal[1];
                 temp_f29 = contact->geom.normal[0];
-                temp_f1 = 0.f;
+                temp_f1 = kZeroF[0];
                 temp_f0 = temp_f30 * temp_f30;
                 temp_f0 = (temp_f29 * temp_f29) + temp_f0;
                 temp_f1 = temp_f1 + temp_f0;
                 temp_f1_2 = nlRecipSqrt(temp_f1, true);
                 contact->geom.normal[0] = (f32)(temp_f1_2 * temp_f29);
                 contact->geom.normal[1] = (f32)(temp_f1_2 * temp_f30);
-                temp_f0 = 0.f;
+                temp_f0 = kZeroF[0];
                 contact->geom.normal[2] = (f32)(temp_f1_2 * temp_f0);
                 contact->geom.depth = (f32)(contact->geom.depth - temp_f31);
             }
@@ -316,7 +317,7 @@ void PhysicsBall::PostUpdate()
         SetLinearVelocity(linVel);
     }
 
-    if ((GetPosition().f.z > 20.f) && (linVel.f.z > 0.f))
+    if ((GetPosition().f.z > 20.f) && (linVel.f.z > kZeroF[0]))
     {
         linVel.f.z *= 0.9f;
         SetLinearVelocity(linVel);
@@ -392,7 +393,7 @@ bool PhysicsBall::SetContactInfo(dContact* contact, PhysicsObject* other, bool p
             contact->surface.bounce = (f32)g_BallBounce;
         }
 
-        contact->surface.bounce_vel = 0.f;
+        contact->surface.bounce_vel = kZeroF[0];
         if (other->GetObjectType() == 0x19)
         {
             contact->surface.mu = (f32)g_BallFrictionWall;
@@ -424,15 +425,14 @@ PhysicsBall::PhysicsBall(CollisionSpace* space, PhysicsWorld* world, float radiu
     m_bIsSupportedByGround = 0;
     m_bUseAngularVel = 0;
     m_bUseMagnusEffect = 0;
-    m_fSpinTimer = 0.f;
+    m_fSpinTimer = kZeroF[0];
 
     SetCategory(0x20);
     SetCollide(0xaf);
 
     m_gravity = -14.f;
 
-    float temp = 0.f;
-    m_v3TiltForce.f.x = temp;
-    m_v3TiltForce.f.y = temp;
-    m_v3TiltForce.f.z = temp;
+    m_v3TiltForce.f.x = kZeroF[0];
+    m_v3TiltForce.f.y = kZeroF[0];
+    m_v3TiltForce.f.z = kZeroF[0];
 }
