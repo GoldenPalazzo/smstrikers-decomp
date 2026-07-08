@@ -474,7 +474,7 @@ EffectsTerrainSpec* parse_terrain_spec(SimpleParser* parser)
 
 /**
  * Offset/Address/Size: 0x338 | 0x801F2D80 | size: 0x4D4
- * TODO: 99.43% match - pGroup register r29 vs target r30 in final assignments.
+ * TODO: 99.60% match - user-spec array allocation move ordering.
  */
 static EffectsGroup* parse_group(SimpleParser* parser)
 {
@@ -596,17 +596,7 @@ static EffectsGroup* parse_group(SimpleParser* parser)
         memcpy(pSpecs, specs, specCount << 6);
     }
 
-    void* groupMem = nlMalloc(sizeof(EffectsGroup), 8, false);
-    pGroup = (EffectsGroup*)groupMem;
-    if (groupMem != nullptr)
-    {
-        ((EffectsGroup*)groupMem)->m_hashID = 0;
-        ((EffectsGroup*)groupMem)->m_specs = nullptr;
-        ((EffectsGroup*)groupMem)->m_numSpecs = 0;
-        ((EffectsGroup*)groupMem)->m_userSpecsPtr = nullptr;
-        ((EffectsGroup*)groupMem)->m_userSpecs = 0;
-        ((EffectsGroup*)groupMem)->m_isLingering = false;
-    }
+    pGroup = new (nlMalloc(sizeof(EffectsGroup), 8, false)) EffectsGroup;
 
     pGroup->m_hashID = hashID;
     pGroup->m_specs = pSpecs;

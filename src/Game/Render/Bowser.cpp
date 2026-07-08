@@ -478,9 +478,16 @@ void Bowser::Update(float fDeltaT)
                 mpPhysObj->DisableCollisions();
             }
         }
-        if (mpAnimController->m_ePlayMode == PM_HOLD && mpAnimController->m_fTime == 1.0f)
         {
-            ActionDescend(0.1f);
+            bool bAnimDone = false;
+            if (mpAnimController->m_ePlayMode == PM_HOLD && mpAnimController->m_fTime == 1.0f)
+            {
+                bAnimDone = true;
+            }
+            if (bAnimDone)
+            {
+                ActionDescend(0.1f);
+            }
         }
         break;
     case BOWSER_STATE_THROW:
@@ -575,27 +582,30 @@ void Bowser::Update(float fDeltaT)
                     mpFeatherController = NULL;
                     ActionJump();
                 }
-                else if ((mv3Position.f.x - mpTarget->m_v3Position.f.x) * (mv3Position.f.x - mpTarget->m_v3Position.f.x)
-                             + (mv3Position.f.y - mpTarget->m_v3Position.f.y) * (mv3Position.f.y - mpTarget->m_v3Position.f.y)
-                         < 64.0f)
+                else
                 {
-                    if (nlRandom(100, &nlDefaultSeed) < 50)
+                    float fDeltaY = mv3Position.f.y - mpTarget->m_v3Position.f.y;
+                    float fDeltaX = mv3Position.f.x - mpTarget->m_v3Position.f.x;
+                    if ((fDeltaY * fDeltaY) + (fDeltaX * fDeltaX) < 64.0f)
                     {
-                        ActionThrow();
+                        if (nlRandom(100, &nlDefaultSeed) < 50)
+                        {
+                            ActionThrow();
+                        }
+                        else
+                        {
+                            ActionIdle();
+                        }
                     }
                     else
                     {
-                        ActionIdle();
+                        if (mpFeatherBlender->GetChild(1) != NULL)
+                        {
+                            mpFeatherBlender->BeginBlendOut(0.1f);
+                        }
+                        mpFeatherController = NULL;
+                        ActionRoll();
                     }
-                }
-                else
-                {
-                    if (mpFeatherBlender->GetChild(1) != NULL)
-                    {
-                        mpFeatherBlender->BeginBlendOut(0.1f);
-                    }
-                    mpFeatherController = NULL;
-                    ActionRoll();
                 }
             }
 
@@ -1331,6 +1341,8 @@ void Bowser::ActionStomp()
  */
 void Bowser::ActionDescend(float fBlendTime)
 {
+    FORCE_DONT_INLINE;
+
     cPN_SAnimController* controller = NULL;
 
     mAnimID = 1;
@@ -2278,6 +2290,8 @@ void Bowser::PlaySFX(Audio::eCharSFX type, PosUpdateMethod posUpdateMethod, floa
  */
 void Bowser::CheckFootSteps()
 {
+    FORCE_DONT_INLINE;
+
     if (mAnimID != 3)
         return;
 

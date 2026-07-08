@@ -80,6 +80,16 @@ public:
 class EffectsGroup
 {
 public:
+    EffectsGroup()
+    {
+        m_hashID = 0;
+        m_specs = NULL;
+        m_numSpecs = 0;
+        m_userSpecsPtr = NULL;
+        m_userSpecs = 0;
+        m_isLingering = false;
+    }
+
     ~EffectsGroup()
     {
         if (m_specs != NULL)

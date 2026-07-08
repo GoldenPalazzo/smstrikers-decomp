@@ -43,19 +43,21 @@ cFollowCamera::cFollowCamera(FollowTarget followTarget)
 
 /**
  * Offset/Address/Size: 0x0 | 0x801A8F18 | size: 0x668
- * TODO: 97.5% match - r28-r31 and f27-f31 register allocation differs in camera update math
+ * TODO: 98.6% match - r28-r31 register allocation differs in camera update math
  */
-void cFollowCamera::Update(float dt)
+void cFollowCamera::Update(float fDeltaT)
 {
-    int i;                  // r31
-    cGlobalPad* pad;        // r29
-    cCharacter* pCharacter; // r0
-    float rx, ry;
+    int i;
+    cGlobalPad* pController;
+    cCharacter* pCharacter;
+    int numAvailableObjs;
+    float xPressure;
+    float yPressure;
     float fScalar;
-    nlMatrix4 m4Orient; // r1+0x14
+    nlMatrix4 m4Orient;
 
-    pad = cPadManager::GetPad(0);
-    if (!pad->IsConnected())
+    pController = cPadManager::GetPad(0);
+    if (!pController->IsConnected())
     {
         m_matView.SetIdentity();
         return;
@@ -66,7 +68,7 @@ void cFollowCamera::Update(float dt)
         pCharacter = NULL;
         for (i = 0; i < 2; i++)
         {
-            pCharacter = g_pTeams[i]->GetControlledPlayer(pad);
+            pCharacter = g_pTeams[i]->GetControlledPlayer(pController);
             if (pCharacter != NULL)
             {
                 break;
@@ -93,20 +95,20 @@ void cFollowCamera::Update(float dt)
         RenderSnapshot* snap = ReplayManager::Instance()->mRender;
         static s32 currentlySelectedTarget = 0;
 
-        const int count = snap->NumDrawableObjects();
+        numAvailableObjs = snap->NumDrawableObjects();
 
-        if (!g_bTweaking && dt > 0.0f)
+        if (!g_bTweaking && fDeltaT > 0.0f)
         {
             if (cPadManager::GetPad(0)->JustPressed(1, false) && !g_bTweaking)
             {
-                int v = currentlySelectedTarget + count;
+                int v = currentlySelectedTarget + numAvailableObjs;
                 v -= 1;
-                currentlySelectedTarget = v - (v / count) * count; // mod
+                currentlySelectedTarget = v - (v / numAvailableObjs) * numAvailableObjs;
             }
             if (cPadManager::GetPad(0)->JustPressed(2, false) && !g_bTweaking)
             {
                 int v = currentlySelectedTarget + 1;
-                currentlySelectedTarget = v - (v / count) * count; // mod
+                currentlySelectedTarget = v - (v / numAvailableObjs) * numAvailableObjs;
             }
         }
 
@@ -126,18 +128,17 @@ void cFollowCamera::Update(float dt)
     m_v3OOIDampened.f.y = (1.0f - g_fFollowCamOOISeek) * m_v3OOIDampened.f.y + g_fFollowCamOOISeek * m_v3OOI.f.y;
     m_v3OOIDampened.f.z = (1.0f - g_fFollowCamOOIZSeek) * m_v3OOIDampened.f.z + g_fFollowCamOOIZSeek * m_v3OOI.f.z;
 
-    const float aL = cPadManager::GetPad(0)->GetPressure(0x400, false);
-    const float aR = cPadManager::GetPad(0)->GetPressure(0x800, false);
-    if ((aL > 0.0f && cPadManager::GetPad(0)->JustPressed(0x800, false))
-        || (aR > 0.0f && cPadManager::GetPad(0)->JustPressed(0x400, false)))
+    xPressure = cPadManager::GetPad(0)->GetPressure(0x400, false);
+    yPressure = cPadManager::GetPad(0)->GetPressure(0x800, false);
+    if ((xPressure > 0.0f && cPadManager::GetPad(0)->JustPressed(0x800, false))
+        || (yPressure > 0.0f && cPadManager::GetPad(0)->JustPressed(0x400, false)))
     {
         m_bControlsLocked = !m_bControlsLocked;
     }
 
     if (!g_bTweaking && !g_bProfiling && !m_bControlsLocked)
     {
-        const float scroll = pad->AnalogLeftY();
-        m_fOOIDistance -= g_fDistanceSeek * scroll;
+        m_fOOIDistance -= g_fDistanceSeek * pController->AnalogLeftY();
     }
 
     if (m_fOOIDistance > g_fMaxDistance)
@@ -145,8 +146,8 @@ void cFollowCamera::Update(float dt)
     else if (m_fOOIDistance < g_fMinDistance)
         m_fOOIDistance = g_fMinDistance;
 
-    m_aFacingDirection = m_aFacingDirection + (int)(g_fFollowCamMaxRotPerFrame * pad->AnalogRightX());
-    m_aPitch = m_aPitch + (int)(g_fFollowCamMaxRotPerFrame * pad->AnalogRightY());
+    m_aFacingDirection = m_aFacingDirection + (int)(g_fFollowCamMaxRotPerFrame * pController->AnalogRightX());
+    m_aPitch = m_aPitch + (int)(g_fFollowCamMaxRotPerFrame * pController->AnalogRightY());
 
     if (m_bPitchLimits)
     {
@@ -156,8 +157,8 @@ void cFollowCamera::Update(float dt)
             m_aPitch = g_aFollowCamMinPitch;
     }
 
-    const float vy = -m_matView.m[0][2];
     const float vx = -m_matView.m[1][2];
+    const float vy = -m_matView.m[0][2];
 
     const float dy = (m_v3OOIDampened.f.y - m_v3OOIDampenedPrev.f.y);
     const float dx = (m_v3OOIDampened.f.x - m_v3OOIDampenedPrev.f.x);
@@ -166,8 +167,8 @@ void cFollowCamera::Update(float dt)
     const float denom = nlSqrt(fScalar + (vx * vx + vy * vy), true);
     const float t = (fScalar + (vx * dy + vy * dx)) / (denom * denom);
 
-    rx = dy - t * vx;
-    ry = dx - t * vy;
+    float rx = dy - t * vx;
+    float ry = dx - t * vy;
     const float len = nlSqrt(fScalar + (rx * rx + ry * ry), true);
 
     const float invDist = len / m_fOOIDistance;

@@ -9,7 +9,7 @@ extern cTeam* g_pCurrentlyUpdatingTeam;
 extern PowerupBase* g_pPowerups[];
 
 static const nlVector3 v3Zero = { 0.0f, 0.0f, 0.0f };
-// static const nlVector3 v3ApplyRepulsionZero = { 0.0f, 0.0f, 0.0f };
+static const nlVector3 v3ApplyRepulsionZero = { 0.0f, 0.0f, 0.0f };
 static const nlVector2 v2Zero = { 0.0f, 0.0f };
 
 /**
@@ -949,8 +949,8 @@ bool AvoidController::AvoidSidelines()
 
 /**
  * Offset/Address/Size: 0x0 | 0x80007654 | size: 0x41C
- * TODO: 96.32% match - residual FP register coloring in the rotation and
- * speed sections.
+ * TODO: 96.36% match - residual FP register coloring in the rotation and
+ * sideline sections.
  */
 void AvoidController::ApplyRepulsionVector(nlVector3 v3Repulsion)
 {
@@ -977,7 +977,7 @@ void AvoidController::ApplyRepulsionVector(nlVector3 v3Repulsion)
         return;
     }
 
-    v.desiredVelDir = v3Zero;
+    v.desiredVelDir = v3ApplyRepulsionZero;
     if (&v.desiredVelDir != NULL)
     {
         nlSinCos(&v.desiredVelDir.f.y, &v.desiredVelDir.f.x, m_pFielder->m_aDesiredMovementDirection);
@@ -1108,15 +1108,17 @@ void AvoidController::ApplyRepulsionVector(nlVector3 v3Repulsion)
     }
     else
     {
-        f32 fRunningDiff = (float)fabs(fResultantMag - m_pFTweaks->fRunningSpeed);
-        f32 fJoggingDiff = (float)fabs(fResultantMag - m_pFTweaks->fJoggingSpeed);
+        f32 fRunningSpeed = m_pFTweaks->fRunningSpeed;
+        f32 fJoggingSpeed = m_pFTweaks->fJoggingSpeed;
+        f32 fRunningDiff = (float)fabs(fResultantMag - fRunningSpeed);
+        f32 fJoggingDiff = (float)fabs(fResultantMag - fJoggingSpeed);
         if (fJoggingDiff < fRunningDiff)
         {
-            fDesiredSpeed = m_pFTweaks->fJoggingSpeed;
+            fDesiredSpeed = fJoggingSpeed;
         }
         else
         {
-            fDesiredSpeed = m_pFTweaks->fRunningSpeed;
+            fDesiredSpeed = fRunningSpeed;
         }
     }
 

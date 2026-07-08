@@ -1,3 +1,5 @@
+#define BASICSTRING_INDEX_EMPTY_COPY_BYTE_OFFSET
+
 #include "Game/OverlayHandlerInGameText.h"
 #include "Game/BaseSceneHandler.h"
 #include "Game/DB/StatsTracker.h"
