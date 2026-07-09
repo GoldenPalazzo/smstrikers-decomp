@@ -135,7 +135,7 @@ void Goalie::ActionLooseBallDesperate(float fDeltaT)
         }
         if (pBall->m_pOwner != NULL)
             goto handleOwner;
-        if (pAnim->m_fTime < pInfo->mfPickupTime)
+        if (pInfo->mfPickupTime > pAnim->m_fTime)
         {
             float fRatio = pAnim->m_fTime / pInfo->mfPickupTime;
             float fTimeRemaining = pInfo->mfAnimDuration * pInfo->mfPickupTime - pAnim->m_fTime * pInfo->mfAnimDuration;
@@ -162,9 +162,7 @@ void Goalie::ActionLooseBallDesperate(float fDeltaT)
                     float fDX = fBallX - fClampedX;
                     float fDY = fBallY - v3GuessBallPos.f.y;
                     float fDXOrig = fBallX - v3GuessBallPos.f.x;
-                    float fNewY = fDX * fDY;
-                    fNewY = fNewY / fDXOrig;
-                    fNewY = fBallY - fNewY;
+                    float fNewY = fBallY - (fDX * fDY) / fDXOrig;
                     v3GuessBallPos.f.y = fNewY;
                 }
                 v3GuessBallPos.f.x = fClampedX;

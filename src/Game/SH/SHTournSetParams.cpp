@@ -40,6 +40,12 @@ static inline MenuItem<TLComponentInstance>* TournSetParamsMenuItemAt(MenuList<T
     return &menu.mMenuItems[idx];
 }
 
+static inline MenuItem<SlideMenuItem>* TournSetParamsSlideMenuItemAt(SlideMenuList* menu, int idx)
+{
+    MenuItem<SlideMenuItem>* items = menu->mMenuItems;
+    return &items[idx];
+}
+
 // /**
 //  * Offset/Address/Size: 0xBC | 0x800E1D48 | size: 0x15C
 //  */
@@ -94,7 +100,7 @@ TournSetParamsScene::~TournSetParamsScene()
 
 /**
  * Offset/Address/Size: 0x1CD0 | 0x800E16A4 | size: 0x434
- * TODO: 99.60% match - r28/r29 register swap for this+offset vs
+ * TODO: 99.67% match - r28/r29 register swap for this+offset vs
  * memcpy-temp/menuItem, stack layout inversion for bind/callback intermediates.
  */
 void TournSetParamsScene::BuildSubMenuList(int menuitem, TLComponentInstance* compinstance, bool wraps, int startindex)
@@ -136,8 +142,7 @@ void TournSetParamsScene::BuildSubMenuList(int menuitem, TLComponentInstance* co
         }
         item->mSlideMenuHash = slideHash;
 
-        MenuItem<SlideMenuItem>* menuItems = sml->mMenuItems;
-        menuItem = &menuItems[sml->mNumItemsAdded];
+        menuItem = TournSetParamsSlideMenuItemAt(sml, sml->mNumItemsAdded);
         menuItem->mType = item;
         sml->mNumItemsAdded++;
 

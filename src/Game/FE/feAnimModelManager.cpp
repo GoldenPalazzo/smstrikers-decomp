@@ -12,6 +12,23 @@ void DrawTextRectangle(int, float, float, float, float, float, const nlColour&, 
 
 FEAnimModelManager* nlSingleton<FEAnimModelManager>::s_pInstance = NULL;
 
+// Layout-only stub (unreferenced -> mwld drops it). The ~cInventory<cSAnim>
+// dtor mints the two DeleteEntry PTMF consts in the wrong .data order
+// (cSAnim*-list before char*-list) because its body walks the item list first.
+// Minting them here in target order -- char* (mem) list first, then cSAnim*
+// (item) list -- fixes the .data anon sequence; the real uses pool to these
+// slots. Same trick as CharacterTemplate_stub.
+typedef ListContainerBase<char*, NewAdapter<ListEntry<char*> > > FEMemListBase;
+typedef ListContainerBase<cSAnim*, NewAdapter<ListEntry<cSAnim*> > > FEItemListBase;
+
+void feAnimModelManager_stub()
+{
+    void (FEMemListBase::*forceMemDelete)(ListEntry<char*>*) = FEMemListBase::DeleteEntryFunc();
+    void (FEItemListBase::*forceItemDelete)(ListEntry<cSAnim*>*) = FEItemListBase::DeleteEntryFunc();
+    (void)forceMemDelete;
+    (void)forceItemDelete;
+}
+
 /**
  * Offset/Address/Size: 0x3E8 | 0x80094B94 | size: 0xB0
  */

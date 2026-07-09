@@ -66,8 +66,8 @@ FuzzyVariant Fuzzy::AbortDefencePlay(cDecisionEntity*)
 
 /**
  * Offset/Address/Size: 0x48B4 | 0x80089F6C | size: 0xCDC
- * TODO: 99.47% match - remaining diffs are f30/f28 vs f0 in the
- * position max cascade and one vtable setup register choice.
+ * TODO: 99.59% match - remaining diffs are f1/f2 in the TryAttacking
+ * branch confidence and f30/f28 vs f0 in the position max cascade.
  */
 FuzzyVariant Fuzzy::DefaultDefencePlay(cDecisionEntity* pDecision)
 {
@@ -174,7 +174,10 @@ FuzzyVariant Fuzzy::DefaultDefencePlay(cDecisionEntity* pDecision)
                     fConfidence = (fConfidence <= fMarkBO) ? fConfidence : fMarkBO;
                     if (fConfidence < fMarkBO && fMarkBO < 0.2f)
                         fConfidence = fConfidence * fBranchRatio5;
-                    fBestConfidence = (fBestConfidence >= fConfidence) ? fBestConfidence : fConfidence;
+                    if (fBestConfidence >= fConfidence)
+                        fBestConfidence = fBestConfidence;
+                    else
+                        fBestConfidence = fConfidence;
                     pDecision->QueueActionSetDesire(7, fConfidence, 0.5f, fvNotSet, fvNotSet);
                 }
 

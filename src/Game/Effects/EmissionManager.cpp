@@ -517,7 +517,7 @@ void EmissionManager::AddError(const char*, ...)
 
 /**
  * Offset/Address/Size: 0x24C | 0x801F8B6C | size: 0x284
- * TODO: 99.32% match - remaining r28/r29 allocation diffs in the inner replay/new path
+ * TODO: 99.38% match - remaining r28/r29 allocation diffs in the new-controller path
  */
 void EmissionManager::Replay(LoadFrame& frame)
 {
@@ -579,23 +579,25 @@ void EmissionManager::Replay(LoadFrame& frame)
         unsigned long group = 0;
         Replayable<0>(frame, group);
 
-        current = (EmissionController*)oldControllers.m_headNode;
-        while (current != nullptr)
+        unsigned short idToUse;
+        EmissionController* iter = (EmissionController*)oldControllers.m_headNode;
+        unsigned short idCheck = id;
+        while (iter != nullptr)
         {
-            next = (EmissionController*)current->m_nextNode;
-            if (id == current->m_Id)
+            next = (EmissionController*)iter->m_nextNode;
+            if (idCheck == iter->m_Id)
             {
-                Replayable<0>(frame, *current);
-                oldControllers.Remove(current);
-                controllers->Insert(current);
+                Replayable<0>(frame, *iter);
+                oldControllers.Remove(iter);
+                controllers->Insert(iter);
                 break;
             }
-            current = next;
+            iter = next;
         }
 
-        if (current == nullptr)
+        if (iter == nullptr)
         {
-            unsigned short idToUse = id;
+            idToUse = id;
             static u16 globalIdCounter = 1;
 
             if (idToUse == 0)
@@ -609,9 +611,9 @@ void EmissionManager::Replay(LoadFrame& frame)
                 globalIdCounter = 0;
             }
 
-            current = new (nlMalloc(sizeof(EmissionController), 8, false)) EmissionController((EffectsGroup*)group, idToUse, defaultView);
-            controllers->Append(current);
-            Replayable<0>(frame, *current);
+            iter = new (nlMalloc(sizeof(EmissionController), 8, false)) EmissionController((EffectsGroup*)group, idToUse, defaultView);
+            controllers->Append(iter);
+            Replayable<0>(frame, *iter);
         }
 
         i++;

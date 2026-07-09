@@ -1380,15 +1380,14 @@ void Goalie::InitActionPursueRecover()
 
 /**
  * Offset/Address/Size: 0x8878 | 0x8004B374 | size: 0xC70
- * TODO: 97.57% match - register allocation still diverges in navigation transition branches and blender setup.
+ * TODO: 98.14% match - register allocation still diverges in navigation transition branches and blender setup.
  */
 void Goalie::DoNavigation(float fDeltaT, float fIdleDistance, Goalie::eNaviMode naviMode)
 {
     int nNewAnim;
     u16 aNavDir;
     int nFinalAnim;
-    u16 aFinalDir;
-    bool bDoBackward;
+    int aFinalDir;
     u16 absBallAngleDiff;
     bool bDoSeek;
     u16 desiredAng;
@@ -1466,7 +1465,7 @@ void Goalie::DoNavigation(float fDeltaT, float fIdleDistance, Goalie::eNaviMode 
         mnSubstate = 4;
 
         s16 ballDiff = (s16)(desiredAng - (u16)aGoalie2Ball);
-        aFinalDir = (u16)(desiredAng + m_aActualFacingDirection);
+        aFinalDir = desiredAng + m_aActualFacingDirection;
         u16 deltaToBall = (u16)(ballDiff < 0 ? -ballDiff : ballDiff);
         nFinalAnim = 0x26;
         bDoSeek = true;
@@ -1477,19 +1476,19 @@ void Goalie::DoNavigation(float fDeltaT, float fIdleDistance, Goalie::eNaviMode 
             {
                 if (deltaToBall > 0x4E34)
                 {
-                    aFinalDir = (u16)(aFinalDir + 0x8000);
+                    aFinalDir = aFinalDir + 0x8000;
                     nFinalAnim = 0x27;
                 }
                 else if (deltaToBall > 0x31C4)
                 {
                     if (mv3LocalNavTarget.f.y > 0.0f)
                     {
-                        aFinalDir = (u16)(aFinalDir - 0x4000);
+                        aFinalDir = aFinalDir - 0x4000;
                         nFinalAnim = 0x23;
                     }
                     else
                     {
-                        aFinalDir = (u16)(aFinalDir + 0x4000);
+                        aFinalDir = aFinalDir + 0x4000;
                         nFinalAnim = 0x22;
                     }
                 }
@@ -1497,7 +1496,7 @@ void Goalie::DoNavigation(float fDeltaT, float fIdleDistance, Goalie::eNaviMode 
         }
         else if (naviMode == NAVI_FACE_BALL)
         {
-            bDoBackward = false;
+            bool bDoBackward = false;
 
             if (mMoveDirection == GOALIEDIR_IDLE || mMoveDirection == GOALIEDIR_BACKWARD)
             {
@@ -1507,8 +1506,8 @@ void Goalie::DoNavigation(float fDeltaT, float fIdleDistance, Goalie::eNaviMode 
 
                 if (distSq < ballToNavDistSq)
                 {
-                    u16 ballAng = (u16)(s32)(10430.378f * nlATan2f(dy, dx));
-                    s16 diff = (s16)(aFinalDir + (u16)(ballAng + 0x8000));
+                    int ballAng = (u16)(s32)(10430.378f * nlATan2f(dy, dx));
+                    s16 diff = (s16)(aFinalDir + ballAng + 0x8000);
                     if ((u16)(diff < 0 ? -diff : diff) < 0x1554)
                     {
                         bDoBackward = true;
@@ -1535,7 +1534,7 @@ void Goalie::DoNavigation(float fDeltaT, float fIdleDistance, Goalie::eNaviMode 
             {
                 if (!mbDoIntercept || (mMoveDirection != GOALIEDIR_FORWARD && mMoveDirection != GOALIEDIR_BACK2FRONT))
                 {
-                    aFinalDir = (u16)(aFinalDir + 0x8000);
+                    aFinalDir = aFinalDir + 0x8000;
                     nFinalAnim = 0x27;
                 }
             }

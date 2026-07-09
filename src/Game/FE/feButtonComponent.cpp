@@ -33,6 +33,21 @@ static inline int GetRenderedStringLength(const unsigned short* pString, const n
     return returnValue;
 }
 
+// Layout stub: forces the FontCharString templated-ctor weak COMDAT to be emitted
+// ahead of the FEFinder local linkonce section (target .o order). MWCC flushes each
+// linkonce section right after the first OUT-OF-LINE function that really references
+// it; FontCharString's only real consumer (GetRenderedStringLength) inlines into
+// CentreButtons, the same function that first pulls FEFinder, and MWCC flushes the
+// local (FEFinder) before the weak (FontCharString) there. This stub gives the ctor
+// its own earlier out-of-line consumer (the returned m_pString keeps the ctor from
+// inlining away), so its weak section flushes before CentreButtons. Unreferenced;
+// mwld dead-strips it from main .text at link.
+unsigned short* feButtonComponent_early_stub(const unsigned short* s, const nlFont* f)
+{
+    FontCharString fcs(s, f, (unsigned short*)0);
+    return fcs.m_pString;
+}
+
 /**
  * Offset/Address/Size: 0x0 | 0x8010DC04 | size: 0x3F8
  */

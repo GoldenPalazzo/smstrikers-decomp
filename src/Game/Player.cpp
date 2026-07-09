@@ -640,11 +640,13 @@ void cPlayer::DoRegularPassing(cPlayer* pTeammate, bool bVolleyPass, bool bAllow
     unsigned short facingDirection;
     if (calcPassIntercept)
     {
-        facingDirection = (unsigned short)(nlATan2f(teammateLeadPassVelocity.f.y, teammateLeadPassVelocity.f.x) * 10430.378f);
+        s32 facingDirectionTemp = (s32)(nlATan2f(teammateLeadPassVelocity.f.y, teammateLeadPassVelocity.f.x) * 10430.378f);
+        facingDirection = (u16)facingDirectionTemp;
     }
     else
     {
-        facingDirection = (unsigned short)(nlATan2f(g_pBall->m_v3Position.f.y - pPassTarget->m_v3Position.f.y, g_pBall->m_v3Position.f.x - pPassTarget->m_v3Position.f.x) * 10430.378f);
+        s32 facingDirectionTemp = (s32)(nlATan2f(g_pBall->m_v3Position.f.y - pPassTarget->m_v3Position.f.y, g_pBall->m_v3Position.f.x - pPassTarget->m_v3Position.f.x) * 10430.378f);
+        facingDirection = (u16)facingDirectionTemp;
     }
     const LooseBallContactAnimInfo* pAnimInfo = pPassTarget->GetReceivePassBallContactAnimInfo(g_pBall, v3PassIntercept, facingDirection, calcPassIntercept, bVolleyPass);
     nlVector3 velocity;

@@ -228,41 +228,44 @@ static inline void CalcScoreValue(cFielder* pFielder, ShotMeter* pMeter)
         float fPlayerWeighting = pGameTweaks->unk2E0;
         fShooting *= fPositionWeighting;
         float fNetWeighting = pGameTweaks->unk2DC;
-        fNetOpeness = fRatingsValue * fNetWeighting;
+        fNetOpeness = fRatingsValue;
+        fNetOpeness *= fNetWeighting;
         fPlayerDistance *= fPlayerWeighting;
         float fSumWeighting = fPlayerWeighting + fNetWeighting;
         float fTotalWeighting = fPositionWeighting + fSumWeighting;
         float fScore = fNetOpeness + fPlayerDistance;
         float fRemainder = 1.0f - fTotalWeighting;
         fChargedValue *= fRemainder;
-        fScore = fChargedValue + fScore;
-        pMeter->m_fScoreValue = fShooting + fScore;
+        pMeter->m_fScoreValue = fShooting + (fChargedValue + fScore);
     }
     else
     {
         float fChipWeight = pGameTweaks->unk2E4;
         float fGoalieOut = GoalieOutOfPosition(pFielder);
         pGameTweaks = g_pGame->m_pGameTweaks;
-        float fGoalieVal = fGoalieOut;
+        float fOpenVal;
+        float fGoalieVal;
+        float fSum;
+        float fSumWeights;
+        float fRemainder;
+        fGoalieVal = fGoalieOut;
         fGoalieVal *= fChipWeight;
         fShooting *= fPositionWeighting;
         float fChipOpenWeight = pGameTweaks->unk2E8;
-        float fOpenVal = fRatingsValue * fChipOpenWeight;
-        float fSum = fChipWeight + fChipOpenWeight;
-        float fSumWeights = fPositionWeighting + fSum;
-        float fResult = fGoalieVal + fOpenVal;
-        float fRemainder = 1.0f - fSumWeights;
+        fOpenVal = fRatingsValue;
+        fOpenVal *= fChipOpenWeight;
+        fSum = fChipWeight + fChipOpenWeight;
+        fSumWeights = fPositionWeighting + fSum;
+        fRemainder = 1.0f - fSumWeights;
         fChargedValue *= fRemainder;
-        fResult = fChargedValue + fResult;
-        pMeter->m_fScoreValue = fShooting + fResult;
+        pMeter->m_fScoreValue = fShooting + (fChargedValue + (fGoalieVal + fOpenVal));
     }
 }
 
 /**
  * Offset/Address/Size: 0x0 | 0x80062120 | size: 0x1FC
- * TODO: 99.37% match - the net-openness term (fRatingsValue * net weight) lands
- * in f1 where the target uses f5; this cascades through the score accumulation
- * (f0/f1 instead of f1/f0) in both the chip and non-chip shot branches.
+ * TODO: 99.84% match - the weighted-openess product lands in f3/f4 where the
+ * target uses f5 in the normal and chip shot branches.
  */
 void ShotMeter::ShotReleased(cFielder* pFielder)
 {
