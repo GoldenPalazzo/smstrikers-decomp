@@ -472,7 +472,7 @@ void PowerupThrowPosition(int nThrowOrder, eThrowStyle eStyle, PowerupBase* pNew
 
 /**
  * Offset/Address/Size: 0x4F00 | 0x8005F7EC | size: 0xA98
- * TODO: 97.9% match - first powerup, target, and loop register allocation still differ.
+ * TODO: 98.8% match - first powerup, target, and loop register allocation still differ.
  */
 u8 PowerupCreateAndThrow(cFielder* pThrower, ePowerUpType eType, int nnumOfPowerups, Bowser* pBowser)
 {
@@ -664,8 +664,9 @@ u8 PowerupCreateAndThrow(cFielder* pThrower, ePowerUpType eType, int nnumOfPower
     }
     else
     {
-        pTarget = pBowser->mpTarget;
-        pTargetTeam = pTarget->m_pTeam;
+        cFielder* pBowserTarget = pBowser->mpTarget;
+        pTargetTeam = pBowserTarget->m_pTeam;
+        pTarget = pBowserTarget;
 
         if ((eSize == POWERUPSIZE_SMALL) && (nnumOfPowerups == 1))
         {
@@ -769,10 +770,7 @@ u8 PowerupCreateAndThrow(cFielder* pThrower, ePowerUpType eType, int nnumOfPower
                     Bobomb::m_BobombSlotPool.m_FreeList = Bobomb::m_BobombSlotPool.m_FreeList->m_next;
                 }
 
-                if (pBobomb != NULL)
-                {
-                    new (pBobomb) Bobomb(pTarget, j, fBobombRadius, eSize, true);
-                }
+                new (pBobomb) Bobomb(pTarget, j, fBobombRadius, eSize, true);
 
                 pPowerup = pBobomb;
                 break;
@@ -804,10 +802,7 @@ u8 PowerupCreateAndThrow(cFielder* pThrower, ePowerUpType eType, int nnumOfPower
                     GreenShell::m_GreenShellSlotPool.m_FreeList = GreenShell::m_GreenShellSlotPool.m_FreeList->m_next;
                 }
 
-                if (pPowerup != NULL)
-                {
-                    new (pPowerup) GreenShell(pTarget, j, fGreenShellRadius, eSize, bExplode);
-                }
+                new (pPowerup) GreenShell(pTarget, j, fGreenShellRadius, eSize, bExplode);
 
                 break;
             }
@@ -838,10 +833,7 @@ u8 PowerupCreateAndThrow(cFielder* pThrower, ePowerUpType eType, int nnumOfPower
                     FreezeShell::m_FreezeShellSlotPool.m_FreeList = FreezeShell::m_FreezeShellSlotPool.m_FreeList->m_next;
                 }
 
-                if (pPowerup != NULL)
-                {
-                    new (pPowerup) FreezeShell(pTarget, j, fFreezeShellRadius, eSize, bExplode);
-                }
+                new (pPowerup) FreezeShell(pTarget, j, fFreezeShellRadius, eSize, bExplode);
 
                 break;
             }
@@ -872,10 +864,7 @@ u8 PowerupCreateAndThrow(cFielder* pThrower, ePowerUpType eType, int nnumOfPower
                     RedShell::m_RedShellSlotPool.m_FreeList = RedShell::m_RedShellSlotPool.m_FreeList->m_next;
                 }
 
-                if (pPowerup != NULL)
-                {
-                    new (pPowerup) RedShell(pTarget, j, fRedShellRadius, eSize, bExplode);
-                }
+                new (pPowerup) RedShell(pTarget, j, fRedShellRadius, eSize, bExplode);
 
                 break;
             }
@@ -906,10 +895,7 @@ u8 PowerupCreateAndThrow(cFielder* pThrower, ePowerUpType eType, int nnumOfPower
                     SpinyShell::m_SpinyShellSlotPool.m_FreeList = SpinyShell::m_SpinyShellSlotPool.m_FreeList->m_next;
                 }
 
-                if (pPowerup != NULL)
-                {
-                    new (pPowerup) SpinyShell(pTarget, j, fSpinyShellRadius, eSize, bExplode);
-                }
+                new (pPowerup) SpinyShell(pTarget, j, fSpinyShellRadius, eSize, bExplode);
 
                 break;
             }

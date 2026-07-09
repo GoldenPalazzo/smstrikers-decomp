@@ -428,16 +428,16 @@ TagValuePair& Config::FindTvp(const char* tag)
 
 /**
  * Offset/Address/Size: 0x1FEC | 0x801D4C50 | size: 0x534
- * TODO: 98.45% match - b param r28 vs target r31 register permutation,
- * operator[] inlined COW check differs in branch layout
+ * TODO: 99.08% match - b param r28 vs target r31 and loop index/base register permutation
  */
 bool Config::IsBool(const char* str, bool& b) const
 {
     BasicString<char, Detail::TempStringAllocator> s(str);
     for (int i = 0; i < (s.m_data ? s.m_data->mSize - 1 : 0); i++)
     {
-        char& r = s[i];
-        r = _tolower(s[i]);
+        (void)s[i];
+        char* data = s.m_data->mData;
+        data[i] = _tolower(s[i]);
     }
     if (s == "true" || s == "yes" || s == "on" || s == "enable")
     {

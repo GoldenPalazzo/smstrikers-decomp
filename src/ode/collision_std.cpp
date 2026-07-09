@@ -681,6 +681,11 @@ void cullPoints(int n, dReal p[], int m, int i0, int iret[])
 #define dDOT41(a, b) dDOTpq(a, b, 4, 1)
 #define dDOT44(a, b) dDOTpq(a, b, 4, 4)
 
+static inline dReal dFabsInline(dReal x)
+{
+    return dFabs(x);
+}
+
 int dBoxBox(const dVector3 p1, const dMatrix3 R1,
     const dVector3 side1, const dVector3 p2,
     const dMatrix3 R2, const dVector3 side2,
@@ -723,13 +728,13 @@ int dBoxBox(const dVector3 p1, const dMatrix3 R1,
     R32 = dDOT44(R1 + 2, R2 + 1);
     R33 = dDOT44(R1 + 2, R2 + 2);
 
-    Q11 = dFabs(R11);
-    Q12 = dFabs(R12);
-    Q13 = dFabs(R13);
-    Q21 = dFabs(R21);
-    Q22 = dFabs(R22);
-    Q23 = dFabs(R23);
-    Q31 = dFabs(R31);
+    Q11 = dFabsInline(R11);
+    Q12 = dFabsInline(R12);
+    Q13 = dFabsInline(R13);
+    Q21 = dFabsInline(R21);
+    Q22 = dFabsInline(R22);
+    Q23 = dFabsInline(R23);
+    Q31 = dFabsInline(R31);
     Q32 = dFabs(R32);
     Q33 = dFabs(R33);
 
@@ -907,23 +912,26 @@ int dBoxBox(const dVector3 p1, const dMatrix3 R1,
 
     // nr = normal vector of reference face dotted with axes of incident box.
     // anr = absolute values of nr.
-    dVector3 normal2, nr, anr;
+    dReal c1, c2, m11, m12, m21, m22, n2_0, n2_1, n2_2;
+    dVector3 nr, anr;
     if (code <= 3)
     {
-        normal2[0] = normal[0];
-        normal2[1] = normal[1];
-        normal2[2] = normal[2];
+        n2_0 = normal[0];
+        n2_1 = normal[1];
+        n2_2 = normal[2];
     }
     else
     {
-        normal2[0] = -normal[0];
-        normal2[1] = -normal[1];
-        normal2[2] = -normal[2];
+        n2_0 = -normal[0];
+        n2_1 = -normal[1];
+        n2_2 = -normal[2];
     }
-    dMULTIPLY1_331(nr, Rb, normal2);
-    anr[0] = dFabs(nr[0]);
-    anr[1] = dFabs(nr[1]);
-    anr[2] = dFabs(nr[2]);
+    nr[0] = Rb[0] * n2_0 + Rb[4] * n2_1 + Rb[8] * n2_2;
+    nr[1] = Rb[1] * n2_0 + Rb[5] * n2_1 + Rb[9] * n2_2;
+    nr[2] = Rb[2] * n2_0 + Rb[6] * n2_1 + Rb[10] * n2_2;
+    anr[0] = dFabsInline(nr[0]);
+    anr[1] = dFabsInline(nr[1]);
+    anr[2] = dFabsInline(nr[2]);
 
     // find the largest compontent of anr: this corresponds to the normal
     // for the indident face. the other axis numbers of the indicent face
@@ -997,7 +1005,6 @@ int dBoxBox(const dVector3 p1, const dMatrix3 R1,
 
     // find the four corners of the incident face, in reference-face coordinates
     dReal quad[8]; // 2D coordinate of incident face (x,y pairs)
-    dReal m12, m21, m22, m11, c1, c2;
     c1 = dDOT14(center, Ra + code1);
     c2 = dDOT14(center, Ra + code2);
     // optimize this? - we have already computed this data above, but it is not
@@ -1051,7 +1058,7 @@ int dBoxBox(const dVector3 p1, const dMatrix3 R1,
         dReal k2 = -sm21 * (ret[j * 2] - c1) + sm11 * (ret[j * 2 + 1] - c2);
         for (i = 0; i < 3; i++)
             point[cnum * 3 + i] = center[i] + k1 * Rb[i * 4 + a1] + k2 * Rb[i * 4 + a2];
-        dep[cnum] = Sa[codeN] - dDOT(normal2, point + cnum * 3);
+        dep[cnum] = Sa[codeN] - (n2_0 * (point + cnum * 3)[0] + n2_1 * (point + cnum * 3)[1] + n2_2 * (point + cnum * 3)[2]);
         if (dep[cnum] >= 0)
         {
             ret[cnum * 2] = ret[j * 2];

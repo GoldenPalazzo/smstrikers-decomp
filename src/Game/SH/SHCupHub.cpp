@@ -1432,6 +1432,7 @@ void CupHubScene::CreateKnockout()
     u16 numTeams;
     FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
     eTeamID knockoutTeams[8];
+    nlColour currentColour;
     eTeamID loserTeams[4] = {
         TEAM_INVALID,
         TEAM_INVALID,
@@ -1449,11 +1450,9 @@ void CupHubScene::CreateKnockout()
     TLComponentInstance* pXComponent;
     TLTextInstance* pText;
     BasicGameInfo* pGame;
-    volatile InlineHasher h1, h3, h7, h5;
+    volatile InlineHasher hB, hA, h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
 
     {
-        volatile InlineHasher hB, hA, h9, h8, h6, h4, h2, h0;
-
         h0.m_Hash = 0;
         h1.m_Hash = 0;
         h2.m_Hash = 0;
@@ -1468,8 +1467,8 @@ void CupHubScene::CreateKnockout()
         h9.m_Hash = hash;
 
         hash = nlStringLowerHash(CUP_HUB_LAYER_NAME);
-        hA.m_Hash = hash;
         hB.m_Hash = hash;
+        hA.m_Hash = hash;
 
         union
         {
@@ -1556,8 +1555,8 @@ void CupHubScene::CreateKnockout()
         h9.m_Hash = hash;
 
         hash = nlStringLowerHash(CUP_HUB_LAYER_NAME);
-        hA.m_Hash = hash;
         hB.m_Hash = hash;
+        hA.m_Hash = hash;
 
         union
         {
@@ -1639,8 +1638,8 @@ void CupHubScene::CreateKnockout()
         h9.m_Hash = hash;
 
         hash = nlStringLowerHash(CUP_HUB_LAYER_NAME);
-        hA.m_Hash = hash;
         hB.m_Hash = hash;
+        hA.m_Hash = hash;
 
         union
         {
@@ -1666,7 +1665,6 @@ void CupHubScene::CreateKnockout()
     {
         eTeamID currentTeam = knockoutTeams[i];
         bool useHighlightColour = IsUserRow(currentTeam);
-        nlColour currentColour;
 
         if (useHighlightColour)
         {
@@ -1696,8 +1694,8 @@ void CupHubScene::CreateKnockout()
         h9.m_Hash = hash;
 
         hash = nlStringLowerHash(CUP_HUB_LAYER_NAME);
-        hA.m_Hash = hash;
         hB.m_Hash = hash;
+        hA.m_Hash = hash;
 
         {
             union
@@ -2020,8 +2018,8 @@ void CupHubScene::CreateKnockout()
             h9.m_Hash = hash;
 
             hash = nlStringLowerHash(CUP_HUB_LAYER_NAME);
-            hA.m_Hash = hash;
             hB.m_Hash = hash;
+            hA.m_Hash = hash;
 
             union
             {
@@ -2062,8 +2060,8 @@ void CupHubScene::CreateKnockout()
             h9.m_Hash = hash;
 
             hash = nlStringLowerHash(CUP_HUB_LAYER_NAME);
-            hA.m_Hash = hash;
             hB.m_Hash = hash;
+            hA.m_Hash = hash;
 
             union
             {
@@ -2157,8 +2155,8 @@ void CupHubScene::CreateKnockout()
             h9.m_Hash = hash;
 
             hash = nlStringLowerHash(CUP_HUB_LAYER_NAME);
-            hA.m_Hash = hash;
             hB.m_Hash = hash;
+            hA.m_Hash = hash;
 
             union
             {
@@ -2197,8 +2195,8 @@ void CupHubScene::CreateKnockout()
         h9.m_Hash = hash;
 
         hash = nlStringLowerHash(CUP_HUB_LAYER_NAME);
-        hA.m_Hash = hash;
         hB.m_Hash = hash;
+        hA.m_Hash = hash;
 
         union
         {
@@ -2947,6 +2945,8 @@ unsigned char CupHubScene::UpdateKnockout2(float fDeltaT)
 
     FEAudio::PlayAnimAudioEvent("sfx_message_wins", false);
 
+    eTeamID winnerTeam;
+
     volatile InlineHasher g7, g6, g5, g4, g3, g2, g1, g0;
 
     g0.m_Hash = 0;
@@ -2982,7 +2982,7 @@ unsigned char CupHubScene::UpdateKnockout2(float fDeltaT)
         (InlineHasher&)h1);
 
     s16 winnerIndex = (s16)mAnimatingKnockoutTeams[0];
-    eTeamID winnerTeam = pGame->mTeamIndex[winnerIndex];
+    winnerTeam = pGame->mTeamIndex[winnerIndex];
     BasicString<unsigned short, Detail::TempStringAllocator> winnerString = Format(
         BasicString<unsigned short, Detail::TempStringAllocator>(BuildWideStringData(LookupLocHash(nlStringLowerHash("STANDINGS_WINNER")))),
         LookupLocHash(GetLOCCharacterName(winnerTeam, false, false)));

@@ -211,38 +211,10 @@ void ReplayCamera::CutTo(ReplayCameraPosition camPos)
     mFov = GetFov(mCamPos);
 }
 
-static inline void InitReplayCameraStringData(BasicStringData<char>* data, const char* src_str)
-{
-    if (data != 0)
-    {
-        const char* src = src_str;
-        data->mData = 0;
-        data->mSize = 0;
-        data->mCapacity = 0;
-
-        const char* p = src;
-        while ((signed char)*p++ != 0)
-        {
-            data->mSize++;
-        }
-
-        data->mSize++;
-        data->mData = (char*)nlMalloc(data->mSize + 1, 8, true);
-        data->mCapacity = data->mSize;
-
-        for (int i = 0; i < data->mSize; i++)
-        {
-            data->mData[i] = *src++;
-        }
-
-        data->mRefCount = 1;
-    }
-}
-
 /**
  * Offset/Address/Size: 0x11AC | 0x801ABEB0 | size: 0x4BC
- * TODO: 99.21% match - saved-register rotation remains in generic camera string construction.
  */
+#pragma optimization_level 2
 float ReplayCamera::GetFov(ReplayCameraPosition position) const
 {
     switch (position)
@@ -260,13 +232,9 @@ float ReplayCamera::GetFov(ReplayCameraPosition position) const
     default:
         if (position >= REPLAY_CAMERA_POSITION_GENERIC_0 && position <= REPLAY_CAMERA_POSITION_GENERIC_LAST)
         {
-            BasicStringData<char>* prefixData = (BasicStringData<char>*)nlMalloc(sizeof(BasicStringData<char>), 8, true);
-            InitReplayCameraStringData(prefixData, "replay/camera_");
-            BasicString<char, Detail::TempStringAllocator> prefix(prefixData);
+            BasicString<char, Detail::TempStringAllocator> prefix("replay/camera_");
             {
-                BasicStringData<char>* formatData = (BasicStringData<char>*)nlMalloc(sizeof(BasicStringData<char>), 8, true);
-                InitReplayCameraStringData(formatData, "generic_{0}_fov");
-                BasicString<char, Detail::TempStringAllocator> formatStr(formatData);
+                BasicString<char, Detail::TempStringAllocator> formatStr("generic_{0}_fov");
                 int idx = position - REPLAY_CAMERA_POSITION_GENERIC_0;
                 prefix.AppendInPlace(Format(formatStr, idx));
             }
@@ -276,6 +244,7 @@ float ReplayCamera::GetFov(ReplayCameraPosition position) const
         return 27.0f;
     }
 }
+#pragma optimization_level 4
 
 /**
  * Offset/Address/Size: 0x0 | 0x801AAD04 | size: 0x11AC

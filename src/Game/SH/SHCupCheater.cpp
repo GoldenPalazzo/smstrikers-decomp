@@ -582,7 +582,7 @@ void CupCheaterScene::UpdateSlides()
 {
     CupCheaterScene* const self = this;
     TLComponentInstance* pComp;
-    int currentSlide = self->m_SlideMenu->m_currentSlide;
+    const unsigned char currentSlide = self->m_SlideMenu->m_currentSlide;
     pComp = self->m_SlideMenu->m_pMenuComp;
     TLTextInstance* pText;
     TLSlide* pSlide;
@@ -594,8 +594,7 @@ void CupCheaterScene::UpdateSlides()
 
         pText = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
             pSlide,
-            InlineHasher(nlStringLowerHash("number1")),
-            InlineHasher(0));
+            InlineHasher(nlStringLowerHash("number1")));
 
         BasicString<char, Detail::TempStringAllocator> Sniper(
             LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(self->mSniper));
@@ -604,8 +603,7 @@ void CupCheaterScene::UpdateSlides()
 
         pText = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
             pSlide,
-            InlineHasher(nlStringLowerHash("number2")),
-            InlineHasher(0));
+            InlineHasher(nlStringLowerHash("number2")));
 
         BasicString<char, Detail::TempStringAllocator> Striker(
             LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(self->mStriker));
@@ -614,8 +612,7 @@ void CupCheaterScene::UpdateSlides()
 
         pText = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
             pSlide,
-            InlineHasher(nlStringLowerHash("number3")),
-            InlineHasher(0));
+            InlineHasher(nlStringLowerHash("number3")));
 
         BasicString<char, Detail::TempStringAllocator> Tactician(
             LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(self->mTactician));
@@ -624,8 +621,7 @@ void CupCheaterScene::UpdateSlides()
 
         pText = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
             pSlide,
-            InlineHasher(nlStringLowerHash("number4")),
-            InlineHasher(0));
+            InlineHasher(nlStringLowerHash("number4")));
 
         BasicString<char, Detail::TempStringAllocator> Paramedic(
             LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(self->mParamedic));
@@ -634,8 +630,7 @@ void CupCheaterScene::UpdateSlides()
 
         pText = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
             pSlide,
-            InlineHasher(nlStringLowerHash("number5")),
-            InlineHasher(0));
+            InlineHasher(nlStringLowerHash("number5")));
 
         BasicString<char, Detail::TempStringAllocator> Veteran(
             LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(self->mVeteran));

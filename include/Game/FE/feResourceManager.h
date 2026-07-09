@@ -40,12 +40,9 @@ public:
     FEResourceManager();
     ~FEResourceManager();
 
-    void Run(float dt)
-    {
-        Update(dt);
-    }
+    inline void Run(float dt);
 
-    virtual const char* GetName() { return "FEResource Manager"; };
+    virtual const char* GetName();
 
     void Cleanup();
     void LoadPermanentResourceBundle(const char*);
@@ -64,6 +61,24 @@ protected:
     /* 0x18 */ char m_szPermanentBundleFileName[32];
     /* 0x38 */ char m_szOnDemandBundleFileName[32];
 }; // total size: 0x58
+
+// Defined out-of-class so it queues for weak emission at first use (vtable
+// emission) instead of at class parse -- keeps its linkonce section after the
+// AVLTreeBase group like the original object layout.
+inline const char* FEResourceManager::GetName()
+{
+    return "FEResource Manager";
+}
+
+// feResourceManager.cpp must not emit the weak Run body (the linked DOL
+// attributes it to SHCrossFader.o, which links later), so it hides this
+// definition behind the guard and keeps only the declaration visible.
+#ifndef FERESOURCEMANAGER_NO_RUN_INLINE
+inline void FEResourceManager::Run(float dt)
+{
+    Update(dt);
+}
+#endif
 
 // class AVLTreeBase<unsigned long, FEResourceHandle*, BasicSlotPool<AVLTreeEntry<unsigned long, FEResourceHandle*>>,
 // DefaultKeyCompare<unsigned long>>

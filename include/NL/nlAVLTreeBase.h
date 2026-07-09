@@ -66,7 +66,22 @@ public:
 
     ~AVLTreeBase();
 
+#ifdef NL_AVLTREEBASE_DELETEENTRY_INCLASS
+    // In-class variant (feResourceManager.cpp only): an in-class-defined
+    // member codegens eagerly when called from a dont_inline stub, which
+    // anchors DeleteEntry at the head of the TU's AVLTreeBase linkonce
+    // section like the original object. The Free logic is spelled out
+    // because the eager codegen runs while dont_inline is active, which
+    // would otherwise keep m_Allocator.Free() as an out-of-line call.
+    void DeleteEntry(AVLTreeEntry<KeyType, ValueType>* entry)
+    {
+        SlotPoolEntry* e = (SlotPoolEntry*)entry;
+        e->m_next = this->m_Allocator.m_FreeList;
+        this->m_Allocator.m_FreeList = e;
+    }
+#else
     void DeleteEntry(AVLTreeEntry<KeyType, ValueType>* entry);
+#endif
 
     typedef void (AVLTreeBase::*ENTRY_DELETE_FUNC)(AVLTreeEntry<KeyType, ValueType>*);
 
@@ -241,11 +256,13 @@ inline AVLTreeEntry<KeyType, ValueType>* AVLTreeBase<KeyType, ValueType, Allocat
     return (AVLTreeEntry<KeyType, ValueType>*)node;
 }
 
+#ifndef NL_AVLTREEBASE_DELETEENTRY_INCLASS
 template <typename KeyType, typename ValueType, typename AllocatorType, typename CompareType>
 void AVLTreeBase<KeyType, ValueType, AllocatorType, CompareType>::DeleteEntry(AVLTreeEntry<KeyType, ValueType>* entry)
 {
     m_Allocator.Free(entry);
 }
+#endif
 
 template <typename KeyType, typename ValueType, typename AllocatorType, typename CompareType>
 void AVLTreeBase<KeyType, ValueType, AllocatorType, CompareType>::DeleteValue(AVLTreeEntry<KeyType, ValueType>* entry)

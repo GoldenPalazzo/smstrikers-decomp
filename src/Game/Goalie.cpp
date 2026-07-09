@@ -6350,9 +6350,6 @@ void Goalie::DoPassRelease()
 
 /**
  * Offset/Address/Size: 0xAD0 | 0x800435CC | size: 0x460
- * TODO: 99.46% match - case 3 keeps owner pointer in r31 instead of r30 and uses
- * local float labels (@1320/@1321/@1322) instead of target SDA labels
- * (@3669/@3289/@3290).
  */
 void Goalie::EventHandler(Event* event, void*)
 {
@@ -6362,7 +6359,8 @@ void Goalie::EventHandler(Event* event, void*)
     {
     case 3:
     {
-        register cPlayer* pPlayer = g_pBall->m_pOwner;
+        event = (Event*)g_pBall->m_pOwner;
+        cPlayer* pPlayer = (cPlayer*)event;
         g_pBall->m_tNoPickupTimer.SetSeconds(3.0f);
 
         if (pPlayer != NULL)

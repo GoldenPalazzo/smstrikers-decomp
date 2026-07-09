@@ -326,6 +326,13 @@ void nlWalkDLRing(T* head, CallbackType* callback, void (CallbackType::*callback
     nlWalkRing(head, callback, func);
 }
 
+#ifdef NLDLRING_WALKRING_SEPARATE
+// feResourceManager.cpp only: the definition comes from NL/nlRingWalk.h so
+// the instantiation gets its own linkonce section (separate from
+// nlWalkDLRing), matching the original object layout.
+template <typename T, typename CallbackType>
+void nlWalkRing(T* head, CallbackType* callback, void (CallbackType::*callbackFunc)(T*));
+#else
 template <typename T, typename CallbackType>
 void nlWalkRing(T* head, CallbackType* callback, void (CallbackType::*callbackFunc)(T*))
 {
@@ -346,6 +353,7 @@ void nlWalkRing(T* head, CallbackType* callback, void (CallbackType::*callbackFu
         current = next;
     }
 }
+#endif
 
 // =======================================================
 // Iterator for nlDLRing

@@ -2450,8 +2450,7 @@ void Goalie::ActionSTSAttackSetup(float deltaTime)
 
 /**
  * Offset/Address/Size: 0x2B8 | 0x8004E7F4 | size: 0x414
- * TODO: 99.80% match - remaining diff: 0.306f compare/subtract f0/f2 register swap
- *   at offset 0x10c (context-dependent MWCC register allocation quirk, not fixable at source level)
+ * TODO: 99.90% match - remaining diff: 0.306f compare/subtract f0/f2 register swap at offset 0x10c
  */
 void Goalie::ActionSTSAttack(float deltaTime)
 {
@@ -2535,10 +2534,12 @@ void Goalie::ActionSTSAttack(float deltaTime)
             RotateVectorZAxis(pushVec, pushVec, m_aActualFacingDirection);
 
             float radius;
+            double shooterAbsX;
             mpShooter->m_pPhysicsCharacter->GetRadius(&radius);
             radius += 0.2f;
+            shooterAbsX = __fabs(pShooter->m_v3Position.f.x);
 
-            if ((float)fabs(pShooter->m_v3Position.f.x) > (cField::GetGoalLineX(1U) - radius))
+            if ((float)shooterAbsX > (cField::GetGoalLineX(1U) - radius))
             {
                 float posX = m_v3Position.f.x - pushVec.f.x;
                 float posZ = m_v3Position.f.z - pushVec.f.z;

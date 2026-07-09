@@ -14,6 +14,8 @@ public:
 
     ~cInventory()
     {
+        ListEntry<char*>** pTail;
+        ListEntry<char*>** pHead;
         ListEntry<T*>* meshEntry = m_lItemList.m_Head;
         while (meshEntry != NULL)
         {
@@ -29,8 +31,8 @@ public:
         m_lItemList.m_Tail = NULL;
 
         nlListContainer<char*>* memList = &m_lMemList;
-        ListEntry<char*>** pTail = &memList->m_Tail;
-        ListEntry<char*>** pHead = &memList->m_Head;
+        pTail = &memList->m_Tail;
+        pHead = &memList->m_Head;
         while (m_lMemList.m_Head != NULL)
         {
             ListEntry<char*>* first = nlListRemoveStart<ListEntry<char*> >(pHead, pTail);

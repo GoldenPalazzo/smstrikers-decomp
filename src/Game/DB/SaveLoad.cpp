@@ -203,22 +203,23 @@ void LoadMemoryCardIconData()
 
 /**
  * Offset/Address/Size: 0x355C | 0x8018CEB8 | size: 0x1C4
- * TODO: 98.41% match - Slot/Result move order, early li r6, and
- * header-term register flow still differ.
+ * TODO: 98.67% match - Slot/Result move order, early li r6, and
+ * header-size register flow still differ.
  */
 unsigned long LoadCallbacks::LoadIconDataDoneCB(unsigned long Slot, long Result, void* pUserData)
 {
     void* pReadBuf = m_pReadBuffer;
     MemCard::MC_FILE* pFile = (MemCard::MC_FILE*)pUserData;
-    int iconCount = pFile->IconCfg.IconCount;
-    s8 iconFmt = pFile->IconCfg.IconFormat;
     int bannerFmt = pFile->IconCfg.BannerFormat;
+    s8 iconFmt = pFile->IconCfg.IconFormat;
+    u8 iconCount = pFile->IconCfg.IconCount;
 
     u32 headerSize = 0;
-    int bannerTerm = ((bannerFmt == 1) ? 0x200 : 0) + bannerFmt * 0xC00;
-    int iconTerm = ((iconFmt == 1) ? 0x200 : 0) + iconCount * (iconFmt << 10);
-    headerSize += bannerTerm;
-    headerSize += iconTerm;
+    headerSize += ((bannerFmt == 1) ? 0x200 : 0);
+    headerSize += bannerFmt * 0xC00;
+    u32 iconClut = ((iconFmt == 1) ? 0x200 : 0);
+    headerSize = ((iconFmt << 10) * iconCount) + headerSize;
+    headerSize = iconClut + headerSize;
     headerSize += 0x40;
     pFile->IconCfg.HeaderSize = headerSize;
 

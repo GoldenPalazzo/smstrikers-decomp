@@ -1170,45 +1170,50 @@ void cPlayer::PickupBall(cBall* pBall)
 
 /**
  * Offset/Address/Size: 0x2298 | 0x800597E8 | size: 0x138
- * TODO: 99.23% match - r28/r30 register swap: compiler assigns r30 to pOtherTeam (longer live range) instead of pPosition (DWARF confirms pPosition should be r30). Likely compiler version difference.
  */
-cFielder* cPlayer::GetClosestOpponentFielder(nlVector3* pPosition)
+static inline cPlayer* GetClosestPlayerOnTeam(cPlayer* pSelf, cTeam* pTeam, int nNumPlayers, nlVector3* pPosition)
 {
-    cTeam* pOtherTeam = m_pTeam->GetOtherTeam();
-    f32 fMinDist = HUGE_VALF;
-    cPlayer* pClosest = NULL;
+    cPlayer* pClosestPlayer = NULL;
+    f32 refX;
+    f32 refY;
+    f32 fClosestDistSquared = HUGE_VALF;
 
-    nlVector3 refPos;
+    nlVector3 v3RefPos;
     if (pPosition == NULL)
     {
-        refPos = m_v3Position;
+        v3RefPos = pSelf->m_v3Position;
     }
     else
     {
-        refPos = *pPosition;
+        v3RefPos = *pPosition;
     }
 
-    f32 refX = refPos.f.x;
-    f32 refY = refPos.f.y;
+    refX = v3RefPos.f.x;
+    refY = v3RefPos.f.y;
 
-    for (int i = 0; i < 4; i++)
+    for (int i = 0; i < nNumPlayers; i++)
     {
-        cPlayer* pPlayer = pOtherTeam->GetPlayer(i);
-        if (pPlayer == this)
+        cPlayer* pPlayer = pTeam->GetPlayer(i);
+        if (pPlayer == pSelf)
         {
             continue;
         }
         f32 dx = refX - pPlayer->m_v3Position.f.x;
         f32 dy = refY - pPlayer->m_v3Position.f.y;
         f32 dist = dx * dx + dy * dy;
-        if (dist < fMinDist)
+        if (dist < fClosestDistSquared)
         {
-            pClosest = pPlayer;
-            fMinDist = dist;
+            pClosestPlayer = pPlayer;
+            fClosestDistSquared = dist;
         }
     }
 
-    return (cFielder*)pClosest;
+    return pClosestPlayer;
+}
+
+cFielder* cPlayer::GetClosestOpponentFielder(nlVector3* pPosition)
+{
+    return (cFielder*)GetClosestPlayerOnTeam(this, m_pTeam->GetOtherTeam(), 4, pPosition);
 }
 
 /**

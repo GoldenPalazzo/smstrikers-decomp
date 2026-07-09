@@ -165,18 +165,19 @@ FontCharString::FontCharString(const T* Source, const nlFont* pFont, T* pBuffer)
         if (ch == escBegin)
         {
             nlEscapeSequence EscSeq(src);
-            int count = (int)((unsigned int)((int)EscSeq.m_pEnd + 1 - (int)src) >> 1);
-            if (src < EscSeq.m_pEnd)
+            const T* end = EscSeq.m_pEnd;
+            while (src < end)
             {
-                for (int k = count - 1; k >= 0; k--)
-                {
-                    *dest++ = *src++;
-                }
+                *dest++ = *src++;
             }
         }
         else
         {
-            if (ch > 0x7F)
+            if (ch <= 0x7F)
+            {
+                ch &= 0xFFFF;
+            }
+            else
             {
                 nlFont::GlyphInfo key;
                 key.UnicodeChar = ch;

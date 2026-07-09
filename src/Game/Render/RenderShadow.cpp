@@ -161,8 +161,8 @@ u8 ShouldShadowBeUpdated(const ProjectedShadowParams& params)
 
 /**
  * Offset/Address/Size: 0xF9C | 0x80123FD0 | size: 0x470
- * TODO: 99.75% match - remaining diffs are FP register swaps in directional light setup
- *       and eye-distance/far-plane math, plus local static label numbering.
+ * TODO: 99.82% match - remaining diffs are FP register swaps in directional light setup
+ *       and far-plane math, plus local static label numbering.
  */
 void RenderCharacterIntoTexture(const ProjectedShadowParams& params)
 {
@@ -223,10 +223,11 @@ void RenderCharacterIntoTexture(const ProjectedShadowParams& params)
         nlVec3ScaleAdd(eyePos, s_fLightDist * radius, eyePos, targetPos);
     }
 
-    float dx = targetPos.f.x - eyePos.f.x;
-    float dy = targetPos.f.y - eyePos.f.y;
-    float dz = targetPos.f.z - eyePos.f.z;
-    float eyeDistance = nlSqrt(dx * dx + dy * dy + dz * dz, true);
+    float eyeDistance = nlSqrt(nlGetLengthSquared3D(
+                                   targetPos.f.x - eyePos.f.x,
+                                   targetPos.f.y - eyePos.f.y,
+                                   targetPos.f.z - eyePos.f.z),
+        true);
 
     float ratio = radius / eyeDistance;
     float nearPlane = eyeDistance - radius;

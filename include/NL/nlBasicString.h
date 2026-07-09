@@ -299,10 +299,18 @@ public:
 #ifdef BASICSTRING_INLINE_ERASE
     {
         (*this)[0];
+#ifdef BASICSTRING_ERASE_AT_FIRST
+        CharT* at;
+        int size = end - begin;
+        const CharT* eraseEnd = end;
+        BasicStringData<CharT>* data = m_data;
+        at = data->mData + (begin - data->mData);
+#else
         BasicStringData<CharT>* data = m_data;
         int size = end - begin;
         const CharT* eraseEnd = end;
         CharT* at = data->mData + (begin - data->mData);
+#endif
         while (eraseEnd != data->mData + data->mSize)
         {
             *at = *eraseEnd;
@@ -561,10 +569,18 @@ template <typename CharT, typename Allocator>
 void BasicString<CharT, Allocator>::erase(const CharT* begin, const CharT* end)
 {
     (*this)[0];
+#ifdef BASICSTRING_ERASE_AT_FIRST
+    CharT* at;
+    int size = end - begin;
+    const CharT* eraseEnd = end;
+    BasicStringData<CharT>* data = m_data;
+    at = data->mData + (begin - data->mData);
+#else
     BasicStringData<CharT>* data = m_data;
     int size = end - begin;
     const CharT* eraseEnd = end;
     CharT* at = data->mData + (begin - data->mData);
+#endif
     while (eraseEnd != data->mData + data->mSize)
     {
         *at = *eraseEnd;

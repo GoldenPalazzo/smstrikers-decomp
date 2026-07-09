@@ -1463,10 +1463,10 @@ static inline void FindVerticalBoundingPoints(SaveData* pSaveData, const nlVecto
 
 /**
  * Offset/Address/Size: 0x780 | 0x80053BA0 | size: 0x64C
- * TODO: 99.65% match - root save-data and closest pointer registers remain swapped in nested grid traversal.
  */
 void GoalieSave::AddAreaToGrid(SaveData* pSaveData)
 {
+    SaveData* const pRoot = pSaveData;
     SaveData* pCur;
     nlVector3 v3TopRight;
     nlVector3 v3BotLeft;
@@ -1474,7 +1474,6 @@ void GoalieSave::AddAreaToGrid(SaveData* pSaveData)
     float zInc;
     nlVector3 v3CurColPos;
     nlVector3 v3CurRowPos;
-    SaveData* pClosest;
     SaveData* pNextRight;
     SaveData* pCurBot;
     SaveData* pRightCorner;
@@ -1483,9 +1482,10 @@ void GoalieSave::AddAreaToGrid(SaveData* pSaveData)
     SaveData* pCurRight;
     SaveData* pCurUp;
     SaveData* pCurRightUp;
+    SaveData* pClosest;
     float fCloseDist;
 
-    pCur = pSaveData;
+    pCur = pRoot;
     while (pCur != NULL)
     {
         pCurRightUp = pCur;
@@ -1496,7 +1496,7 @@ void GoalieSave::AddAreaToGrid(SaveData* pSaveData)
         pCurRightUp = pCurRightUp->mpConnectedSaveData[0];
     }
 
-    pCur = pSaveData;
+    pCur = pRoot;
     while (pCur != NULL)
     {
         pCurUp = pCur;
@@ -1510,7 +1510,7 @@ void GoalieSave::AddAreaToGrid(SaveData* pSaveData)
 
     {
         SaveData* end;
-        pCur = pSaveData;
+        pCur = pRoot;
         while (pCur != NULL)
         {
             end = pCur;
@@ -1525,7 +1525,7 @@ void GoalieSave::AddAreaToGrid(SaveData* pSaveData)
 
     {
         SaveData* end;
-        pCur = pSaveData;
+        pCur = pRoot;
         while (pCur != NULL)
         {
             end = pCur;
@@ -1555,7 +1555,7 @@ void GoalieSave::AddAreaToGrid(SaveData* pSaveData)
         pCurBot = pCurBot->mpConnectedSaveData[3];
     }
 
-    pSaveData->mv3GroupMaxCoords = v3TopRight;
+    pRoot->mv3GroupMaxCoords = v3TopRight;
     float halfYInc = 0.51f * yInc;
     float halfZInc = 0.51f * zInc;
     v3TopRight.f.y += halfYInc;
@@ -1577,7 +1577,7 @@ void GoalieSave::AddAreaToGrid(SaveData* pSaveData)
         pCur = pCur->mpConnectedSaveData[2];
     }
 
-    pSaveData->mv3GroupMinCoords = v3BotLeft;
+    pRoot->mv3GroupMinCoords = v3BotLeft;
     v3BotLeft.f.y -= halfYInc;
     v3BotLeft.f.z -= halfZInc;
 
@@ -1646,8 +1646,8 @@ void GoalieSave::AddAreaToGrid(SaveData* pSaveData)
                 }
             }
 
-            pClosest->mv3GroupMinCoords = pSaveData->mv3GroupMinCoords;
-            pClosest->mv3GroupMaxCoords = pSaveData->mv3GroupMaxCoords;
+            pClosest->mv3GroupMinCoords = pRoot->mv3GroupMinCoords;
+            pClosest->mv3GroupMaxCoords = pRoot->mv3GroupMaxCoords;
             AddPointToGrid(pClosest, v3CurColPos);
             v3CurColPos.f.z += zInc;
         }

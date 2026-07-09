@@ -2089,8 +2089,8 @@ void cFielder::ShootBallDueToContact(unsigned short aAngle)
 
 /**
  * Offset/Address/Size: 0x8F5C | 0x80022298 | size: 0x230
- * TODO: 99.61% match - remaining angle-selection register allocation:
- *       r6/r7 swap for m_pShotMeter vs pClearingBottomAngle.a, plus r3/r4 and cmplw operand order drift.
+ * TODO: 99.86% match - remaining angle-selection register allocation:
+ *       r3/r4 signed delta swap and cmplw operand order drift.
  */
 void cFielder::DoClearBall()
 {
@@ -2118,7 +2118,7 @@ void cFielder::DoClearBall()
     {
         aClearingAngle = pClearingTopAngle.a;
     }
-    else if (pShotMeter->mfSShotAimValue < -0.5f)
+    else if (m_pShotMeter->mfSShotAimValue < -0.5f)
     {
         aClearingAngle = pClearingBottomAngle.a;
     }

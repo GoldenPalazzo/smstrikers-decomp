@@ -26,9 +26,45 @@ nlAVLTree<unsigned long, AnimationSet*, DefaultKeyCompare<unsigned long> >::~nlA
     FORCE_DONT_INLINE;
 }
 
+template <>
+cInventory<cSAnim>::~cInventory()
+{
+    ListEntry<char*>** pHead;
+    ListEntry<cSAnim*>* meshEntry = m_lItemList.m_Head;
+    while (meshEntry != NULL)
+    {
+        meshEntry->entry->Destroy();
+        meshEntry = meshEntry->next;
+    }
+
+    typedef ListContainerBase<cSAnim*, NewAdapter<ListEntry<cSAnim*> > > ItemListBase;
+    void (ItemListBase::*cb)(ListEntry<cSAnim*>*) = ItemListBase::DeleteEntryFunc();
+    nlWalkList(m_lItemList.m_Head, (ItemListBase*)this, cb);
+
+    m_lItemList.m_Head = NULL;
+    m_lItemList.m_Tail = NULL;
+
+    nlListContainer<char*>* memList = &m_lMemList;
+    ListEntry<char*>** pTail = &memList->m_Tail;
+    pHead = &memList->m_Head;
+    while (m_lMemList.m_Head != NULL)
+    {
+        ListEntry<char*>* first = nlListRemoveStart<ListEntry<char*> >(pHead, pTail);
+        void* mesh;
+        if (&mesh != NULL)
+        {
+            mesh = first->entry;
+        }
+        ::operator delete(first);
+        ::operator delete(mesh);
+    }
+
+    m_nItemCount = 0;
+}
+
 /**
  * Offset/Address/Size: 0x14C | 0x8019AF18 | size: 0x41C
- * TODO: 99.70% match - remaining register differences in animation tree cleanup
+ * TODO: 99.87% match - remaining r26/r31 cursor differences in animation tree traversal
  */
 WorldAnimManager::~WorldAnimManager()
 {
