@@ -23,6 +23,11 @@ inline float AngUnitsToRad_fromUnsignedShort(unsigned short sUnits)
     return (float)sUnits * 0.0000958738f;
 }
 
+inline int DegreesToAngle(float degrees)
+{
+    return (int)(65536.0f * degrees / 360.0f);
+}
+
 class nlVector2
 {
 public:

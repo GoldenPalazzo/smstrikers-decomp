@@ -823,7 +823,7 @@ config.libs = [
             Object(NonMatching, "Game/Character.cpp", extra_cflags=["-inline auto"]),
             Object(NonMatching, "Game/CharacterTemplate.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/CharacterEffects.cpp", extra_cflags=["-inline auto"]),
-            Object(NonMatching, "Game/Player.cpp", extra_cflags=["-inline auto"]),
+            Object(Matching, "Game/Player.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
 
             Object(NonMatching, "Game/Goalie.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/GoalieFatigue.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
