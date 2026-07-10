@@ -37,9 +37,9 @@ public:
     /* 0x0C */ virtual eCameraType GetType() { return eCameraType_Replay; };
     /* 0x10 */ virtual void Update(float);
     /* 0x14 */ virtual const nlMatrix4& GetViewMatrix() const;
-    /* 0x18 */ virtual float GetFOV() const { return mFov; };
     /* 0x20 */ virtual const nlVector3& GetTargetPosition() const { return mLookAt; };
     /* 0x24 */ virtual const nlVector3& GetCameraPosition() const { return mPosition; };
+    /* 0x18 */ virtual float GetFOV() const { return mFov; };
 
     static void UpdateTweakMode();
     void ManualUpdate(float);

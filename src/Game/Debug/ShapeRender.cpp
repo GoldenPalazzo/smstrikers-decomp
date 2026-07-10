@@ -243,7 +243,7 @@ void ShapeRender::CreateFlatCylinderEndGeometry(PrimitiveShape& prim)
 
 /**
  * Offset/Address/Size: 0xE14 | 0x801FC0A4 | size: 0x3AC
- * TODO: 99.11% match - saved-FPR allocation for constants and ring-square temporaries still differs.
+ * TODO: 99.30% match - remaining saved-FPR allocation for constants differs.
  */
 void ShapeRender::CreateCylinderGeometry(PrimitiveShape& prim)
 {
@@ -254,8 +254,6 @@ void ShapeRender::CreateCylinderGeometry(PrimitiveShape& prim)
     int nRing;
     int angle;
     int angle90;
-    float z0Sq;
-    float z1Sq;
     float z0;
     float z1;
     float x0;
@@ -285,9 +283,6 @@ void ShapeRender::CreateCylinderGeometry(PrimitiveShape& prim)
         nlSin((u16)((u16)(int)(10430.378f * ((float)nRing * 0.5f)) + 0x4000));
         nlSin((u16)((u16)(int)(10430.378f * ((float)(nRing + 1) * 0.5f)) + 0x4000));
 
-        z0Sq = z0 * z0;
-        z1Sq = z1 * z1;
-
         for (int nSegment = 0; nSegment < 0x10; nSegment++)
         {
             float fSegmentAngle;
@@ -310,7 +305,7 @@ void ShapeRender::CreateCylinderGeometry(PrimitiveShape& prim)
             vNormal.f.y = y0;
             vNormal.f.z = z0;
 
-            invLen = nlRecipSqrt(z0Sq + (x0Sq + y0Sq), true);
+            invLen = nlRecipSqrt((z0 * z0) + (x0Sq + y0Sq), true);
 
             pdst->f.x = x0;
             nlVec3Scale(vNormal, invLen);
@@ -328,7 +323,7 @@ void ShapeRender::CreateCylinderGeometry(PrimitiveShape& prim)
             vNormal.f.y = y1;
             vNormal.f.z = z1;
 
-            invLen = nlRecipSqrt(z1Sq + (x1Sq + y1Sq), true);
+            invLen = nlRecipSqrt((z1 * z1) + (x1Sq + y1Sq), true);
 
             pdst[1].f.x = x1;
             nlVec3Scale(vNormal, invLen);

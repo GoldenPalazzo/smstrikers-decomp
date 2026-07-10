@@ -1145,7 +1145,6 @@ float Pressured(cFielder* pFielder)
 
 /**
  * Offset/Address/Size: 0x4490 | 0x80082F18 | size: 0x4A4
- * TODO: 99.73% match - remaining f30/f31 register swap between accumulated score and per-opponent score.
  */
 float Attacked(cFielder* pFielder)
 {
@@ -1189,19 +1188,19 @@ float Attacked(cFielder* pFielder)
             continue;
         }
 
-        float fClosingSpeed;
+        float fClosingScore;
         if (!pFielder)
         {
-            fClosingSpeed = 0.0f;
+            fClosingScore = 0.0f;
         }
         else if (!pOpponent)
         {
-            fClosingSpeed = 0.0f;
+            fClosingScore = 0.0f;
         }
         else
         {
-            fClosingSpeed = GetClosingSpeed2D(*pFielderPos, *pFielderVel, pOpponent->m_v3Position, pOpponent->m_v3Velocity);
-            fClosingSpeed = NormalizeVal(fClosingSpeed, 0.0f, g_pGame->m_pFuzzyTweaks->fClosingSpeedMax);
+            float fClosingSpeed = GetClosingSpeed2D(*pFielderPos, *pFielderVel, pOpponent->m_v3Position, pOpponent->m_v3Velocity);
+            fClosingScore = NormalizeVal(fClosingSpeed, 0.0f, g_pGame->m_pFuzzyTweaks->fClosingSpeedMax);
         }
 
         float fNearDist;
@@ -1246,9 +1245,9 @@ float Attacked(cFielder* pFielder)
             fNearDist = NormalizeVal(fNearDist, *pTweaks);
         }
 
-        if (fNearDist <= fClosingSpeed)
+        if (fNearDist <= fClosingScore)
         {
-            fClosingSpeed = fNearDist;
+            fClosingScore = fNearDist;
         }
 
         float fCloseDist;
@@ -1293,9 +1292,9 @@ float Attacked(cFielder* pFielder)
             fCloseDist = NormalizeVal(fCloseDist, *pTweaks);
         }
 
-        if (fCloseDist >= fClosingSpeed)
+        if (fCloseDist >= fClosingScore)
         {
-            fClosingSpeed = fCloseDist;
+            fClosingScore = fCloseDist;
         }
 
         float fAngleScore;
@@ -1344,7 +1343,9 @@ float Attacked(cFielder* pFielder)
             }
         }
 
-        fScore += fAngleScore * 0.2f + fClosingSpeed * 0.8f;
+        float fAngleWeight = 0.2f;
+        float fClosingWeight = 0.8f;
+        fScore += fAngleScore * fAngleWeight + fClosingScore * fClosingWeight;
     }
 
     float fResult = clampGe0(fScore);

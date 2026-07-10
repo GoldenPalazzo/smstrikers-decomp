@@ -1367,8 +1367,6 @@ nlFile* nlOpen(const char* fileName)
 
 /**
  * Offset/Address/Size: 0x1B78 | 0x801D08CC | size: 0xB0
- * TODO: 98.6% match - epilogue restores r31 after bool-to-int conversion
- *   instead of before it.
  */
 s32 TDEVChunkFile::GetReadStatus()
 {
@@ -1387,8 +1385,14 @@ s32 TDEVChunkFile::GetReadStatus()
     u32 currentAmount = m_CurrentRead.AmountRead;
     currentLength = m_CurrentRead.Length;
     bool isComplete = (currentAmount == currentLength) || ((currentLength == 0x20U) && (currentAmount != 0U));
+    enum ReadStatusEnum
+    {
+        ReadStatusDone = 0,
+        ReadStatusBusy = 1
+    };
+    ReadStatusEnum status = isComplete ? ReadStatusDone : ReadStatusBusy;
 
-    return isComplete ? 0 : 1;
+    return status;
 }
 
 /**

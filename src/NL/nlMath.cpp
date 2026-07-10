@@ -95,10 +95,10 @@ static inline float nlATanHigh(float x)
     temp_r25 = 8.0f * temp_f5;
     var_r0 = temp_r25 <= 7 ? temp_r25 : 7;
 
-    f32 c1 = ((float*)&sp48)[var_r0];
-    f32 c2 = ((float*)&sp68)[var_r0];
-    c2 = temp_f5 * c2 + c1;
-    return 1.5707964f - c2;
+    f32* table = (f32*)&sp68;
+    f32 high = table[var_r0];
+    table = (f32*)&sp48;
+    return 1.5707964f - (temp_f5 * high + table[var_r0]);
 }
 
 static inline float nlATanLow(float x)

@@ -1449,8 +1449,8 @@ void GameInfoManager::SetupTournamentKnockout(eTeamID* lineup, eSidekickID* skli
 
 /**
  * Offset/Address/Size: 0x78D8 | 0x8017CF7C | size: 0x618
- * TODO: 99.05% match - register allocation diffs in cup, gamesPerRound,
- * previous/current round, team, and loop locals
+ * TODO: 99.27% match - register allocation diffs in cup, gamesPerRound,
+ * previous/current round, losingTeam, and non-final loop locals
  */
 unsigned char GameInfoManager::SetupKnockoutRound(short round)
 {
@@ -1468,6 +1468,7 @@ unsigned char GameInfoManager::SetupKnockoutRound(short round)
     eTeamID index;
     BasicGameInfo* g2;
     eTeamID losingTeam;
+    TeamStats* ts;
     int i2;
     BasicGameInfo* g3;
 
@@ -1556,7 +1557,6 @@ unsigned char GameInfoManager::SetupKnockoutRound(short round)
 
         for (i2 = 0; i2 < GetNumPlayingTeams(); i2++)
         {
-            TeamStats* ts;
             if (mCurrentMode == GM_BOWSER_CUP)
             {
                 ts = mBowserCupSeries.GetTeamStats((u16)i2);

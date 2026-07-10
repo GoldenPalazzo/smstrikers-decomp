@@ -1034,7 +1034,7 @@ int MostDefensivePlayer(const void* a, const void* b)
 
 /**
  * Offset/Address/Size: 0x120 | 0x800644CC | size: 0x3B0
- * TODO: 98.43% match - register allocation diffs in the nested scoring loops.
+ * TODO: 99.45% match - remaining float register allocation diffs in the scoring loop and marker reassignment tail.
  */
 void cTeam::AssignMarks(bool bForceReMark)
 {
@@ -1055,7 +1055,7 @@ void cTeam::AssignMarks(bool bForceReMark)
 
     if (mpCurrentSituation != SITUATION_OFFENSE)
     {
-        pOpponentTeam = g_pTeams[m_nSide ? 0 : 1];
+        pOpponentTeam = GetOtherTeam();
 
         float matrix[4][4];
 
@@ -1063,8 +1063,8 @@ void cTeam::AssignMarks(bool bForceReMark)
         {
             for (int j = 0; j < 4; j++)
             {
-                pMyFielder = (cFielder*)m_pPlayers[i];
-                pOppFielder = (cFielder*)pOpponentTeam->m_pPlayers[j];
+                pMyFielder = GetFielder(i);
+                pOppFielder = pOpponentTeam->GetFielder(j);
 
                 float fDownfieldMax = FGREATER(DownfieldFrom(pMyFielder, pOppFielder), 0.5f);
                 float fInBetween = InBetweenMyNetAnd(pMyFielder, pOppFielder);

@@ -7,6 +7,7 @@
 #include "Game/ReplayManager.h"
 #include "Game/CharacterTemplate.h"
 #include "Game/Render/depthoffield.h"
+#include "NL/nlFormat.h"
 
 // /**
 //  * Offset/Address/Size: 0x18 | 0x801ACB7C | size: 0x8
@@ -36,12 +37,44 @@
 // {
 // }
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x801AC980 | size: 0x1E4
-//  */
-// void BasicString<char, Detail::TempStringAllocator>::AppendInPlace<Detail::TempStringAllocator>(const BasicString<char, Detail::TempStringAllocator>&)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x0 | 0x801AC980 | size: 0x1E4
+ */
+#pragma dont_inline on
+template <>
+template <>
+BasicString<char, Detail::TempStringAllocator>&
+BasicString<char, Detail::TempStringAllocator>::AppendInPlace<Detail::TempStringAllocator>(
+    const BasicString<char, Detail::TempStringAllocator>& rhs)
+{
+    (*this)[0];
+
+    char* at;
+    BasicStringData<char>* currentData = m_data;
+    if (currentData != 0)
+    {
+        at = currentData->mData + currentData->mSize - 1;
+    }
+    else
+    {
+        at = 0;
+    }
+
+    BasicStringData<char>* rhsData = rhs.m_data;
+    const char* begin;
+    if (rhsData != 0)
+    {
+        begin = rhsData->mData;
+    }
+    else
+    {
+        begin = 0;
+    }
+
+    insert(at, begin, rhsData != 0 ? rhsData->mData + rhsData->mSize - 1 : 0);
+    return *this;
+}
+#pragma dont_inline reset
 
 /**
  * Offset/Address/Size: 0x1C78 | 0x801AC97C | size: 0x4
@@ -220,15 +253,9 @@ float ReplayCamera::GetFov(ReplayCameraPosition position) const
     switch (position)
     {
     case REPLAY_CAMERA_POSITION_INSIDE_NET:
-    {
-        Config& g = Config::Global();
-        return GetConfigFloat(g, "replay/camera_inside_net_fov", 50.0f);
-    }
+        return GetConfigFloat(Config::Global(), "replay/camera_inside_net_fov", 50.0f);
     case REPLAY_CAMERA_POSITION_HIGH_UP:
-    {
-        Config& g = Config::Global();
-        return GetConfigFloat(g, "replay/camera_high_up_fov", 50.0f);
-    }
+        return GetConfigFloat(Config::Global(), "replay/camera_high_up_fov", 50.0f);
     default:
         if (position >= REPLAY_CAMERA_POSITION_GENERIC_0 && position <= REPLAY_CAMERA_POSITION_GENERIC_LAST)
         {
@@ -317,15 +344,13 @@ nlVector3 ReplayCamera::GetPosition(ReplayCameraPosition position, float directi
         float highZ = GetConfigFloat(Config::Global(), "replay/camera_high_up_z", 8.0f);
         float minDistBehind = GetConfigFloat(Config::Global(), "replay/camera_high_up_min_dist_behind", 8.0f);
 
-        float side = (mSideOfInterest == 0) ? -1.0f : 1.0f;
-        result.f.x = highX * side;
+        result.f.x = highX * ((mSideOfInterest == 0) ? -1.0f : 1.0f);
         result.f.y = highY;
         result.f.z = highZ;
 
         if ((float)fabs(result.f.x - mLookAt.f.x) < minDistBehind)
         {
-            float side2 = (mSideOfInterest == 0) ? -1.0f : 1.0f;
-            result.f.x = mLookAt.f.x - minDistBehind * side2;
+            result.f.x = mLookAt.f.x - minDistBehind * ((mSideOfInterest == 0) ? -1.0f : 1.0f);
         }
         break;
     }

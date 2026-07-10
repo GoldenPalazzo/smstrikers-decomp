@@ -26,7 +26,7 @@ struct DisplayListEx
 
 /**
  * Offset/Address/Size: 0x0 | 0x801C1E5C | size: 0x2A8
- * TODO: 98.12% match - primType/numVertices setup register allocation and loop branch forms still differ.
+ * TODO: 98.15% match - primType/numVertices setup register allocation and inner loop branch forms still differ.
  */
 DisplayList* dlMakeDisplayList(const glModelPacket* packet, bool permanent)
 {
@@ -42,14 +42,13 @@ DisplayList* dlMakeDisplayList(const glModelPacket* packet, bool permanent)
 
     bStitch = 0;
     i = 0;
-    for (j = numStreams; j > 0; j--)
+    for (j = 0; j < numStreams; j++, i += 6)
     {
         if (((u8*)packet->streams)[i + 4] == 0x0C)
         {
             bStitch = 1;
             break;
         }
-        i += 6;
     }
 
     if (bStitch)

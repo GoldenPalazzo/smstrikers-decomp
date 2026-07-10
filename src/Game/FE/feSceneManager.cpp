@@ -98,6 +98,39 @@ static inline void FindSceneForPop(
     }
 }
 
+static inline void FindSceneAndQueuePop(
+    PackagePushPopMessage* msg,
+    DLListEntry<BaseSceneHandler*>* headEntry,
+    DLListEntry<BaseSceneHandler*>* sceneEntry,
+    DLListEntry<PackagePushPopMessage*>** queueHead)
+{
+    DLListEntry<PackagePushPopMessage*>* entry;
+
+    FindSceneForPop(msg, headEntry, sceneEntry);
+
+    entry = NULL;
+
+    if (m_pushPopMessageQueue.m_Allocator.m_FreeList == NULL)
+    {
+        SlotPoolBase::BaseAddNewBlock(&m_pushPopMessageQueue.m_Allocator, sizeof(DLListEntry<PackagePushPopMessage*>));
+    }
+
+    if (m_pushPopMessageQueue.m_Allocator.m_FreeList != NULL)
+    {
+        entry = (DLListEntry<PackagePushPopMessage*>*)m_pushPopMessageQueue.m_Allocator.m_FreeList;
+        m_pushPopMessageQueue.m_Allocator.m_FreeList = m_pushPopMessageQueue.m_Allocator.m_FreeList->m_next;
+    }
+
+    if (entry != NULL)
+    {
+        entry->m_next = NULL;
+        entry->m_prev = NULL;
+        entry->entry = msg;
+    }
+
+    nlDLRingAddEnd(queueHead, entry);
+}
+
 static inline void RenderSceneStack(FESceneManager* pSceneManager)
 {
     DLListEntry<BaseSceneHandler*>* sceneEntry = nlDLRingGetStart(pSceneManager->m_sceneHandlerStack.m_Head);
@@ -150,12 +183,10 @@ void FESceneManager::RenderActiveScenes()
 
 /**
  * Offset/Address/Size: 0x284 | 0x8020D8D0 | size: 0x1A8
- * TODO: 99.67% match - queued entry uses r25 instead of r28.
  */
 void FESceneManager::QueueScenePop()
 {
     PackagePushPopMessage* msg;
-    DLListEntry<PackagePushPopMessage*>* entry;
     DLListEntry<PackagePushPopMessage*>** queueHead;
 
     msg = NULL;
@@ -178,29 +209,7 @@ void FESceneManager::QueueScenePop()
     DLListEntry<BaseSceneHandler*>* sceneEntry = nlDLRingGetStart(m_sceneHandlerStack.m_Head);
     queueHead = &m_pushPopMessageQueue.m_Head;
 
-    FindSceneForPop(msg, m_sceneHandlerStack.m_Head, sceneEntry);
-
-    entry = NULL;
-
-    if (m_pushPopMessageQueue.m_Allocator.m_FreeList == NULL)
-    {
-        SlotPoolBase::BaseAddNewBlock(&m_pushPopMessageQueue.m_Allocator, sizeof(DLListEntry<PackagePushPopMessage*>));
-    }
-
-    if (m_pushPopMessageQueue.m_Allocator.m_FreeList != NULL)
-    {
-        entry = (DLListEntry<PackagePushPopMessage*>*)m_pushPopMessageQueue.m_Allocator.m_FreeList;
-        m_pushPopMessageQueue.m_Allocator.m_FreeList = m_pushPopMessageQueue.m_Allocator.m_FreeList->m_next;
-    }
-
-    if (entry != NULL)
-    {
-        entry->m_next = NULL;
-        entry->m_prev = NULL;
-        entry->entry = msg;
-    }
-
-    nlDLRingAddEnd(queueHead, entry);
+    FindSceneAndQueuePop(msg, m_sceneHandlerStack.m_Head, sceneEntry, queueHead);
 }
 
 /**

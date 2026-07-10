@@ -142,6 +142,7 @@ struct Cup : public BaseCup
     virtual u16 GetNumTeams() { return Teams; };
     virtual u16 GetNumRounds() { return Rounds; };
     virtual signed char* GetRoundResults(int round) { return &mRoundResults[round]; };
+    virtual int GetSaveDataSize() const { return 0x1B + sizeof(mGameInfo) + sizeof(mTeamStats) + sizeof(mRoundResults); };
     virtual void* SerializeData(void* dst) const
     {
         memcpy(dst, &mUserSelectedTeam, 4);
@@ -190,7 +191,6 @@ struct Cup : public BaseCup
         src = (u8*)src + sizeof(mRoundResults);
         return src;
     }
-    virtual int GetSaveDataSize() const { return 0x1B + sizeof(mGameInfo) + sizeof(mTeamStats) + sizeof(mRoundResults); };
 
     BasicGameInfo mGameInfo[Rounds][Teams / 2];
     TeamStats mTeamStats[Teams];
@@ -203,8 +203,9 @@ struct Knockout : public BaseCup
     virtual BasicGameInfo* GetGameInfo(int team, int round);
     virtual TeamStats* GetTeamStats(int team) { return &mTeamStats[team]; };
     virtual u16 GetNumTeams() { return Teams; };
-    virtual u16 GetNumRounds() { return 2; };
+    virtual u16 GetNumRounds() { return Teams == 8 ? 3 : 2; };
     virtual signed char* GetRoundResults(int round) { return &mRoundResults[round]; };
+    virtual int GetSaveDataSize() const { return 0x1B + sizeof(mGameInfo) + sizeof(mTeamStats) + sizeof(mRoundResults); };
     virtual void* SerializeData(void* dst) const
     {
         memcpy(dst, &mUserSelectedTeam, 4);
@@ -253,7 +254,6 @@ struct Knockout : public BaseCup
         src = (u8*)src + sizeof(mRoundResults);
         return src;
     }
-    virtual int GetSaveDataSize() const { return 0x1B + sizeof(mGameInfo) + sizeof(mTeamStats) + sizeof(mRoundResults); };
 
     BasicGameInfo mGameInfo[Teams - 1];
     TeamStats mTeamStats[Teams];
@@ -268,7 +268,7 @@ BasicGameInfo* Knockout<Teams>::GetGameInfo(int i, int j)
 
     for (k = 1; k <= i; k++)
     {
-        offset += 4 / (k * 2);
+        offset += Teams / (k * 2);
     }
 
     offset = j + offset;

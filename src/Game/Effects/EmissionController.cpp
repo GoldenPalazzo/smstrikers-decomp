@@ -380,10 +380,21 @@ bool EmissionController::IsLingering() const
     return m_pGroup->m_isLingering;
 }
 
-static inline void ComputeAscendingJointPosition(nlVector3& out, const cPoseAccumulator* pPose, u32 uJointID, float fVelocity, float fcurrentTime)
+static inline const cPoseAccumulator* GetEmissionPose(const EmissionController* controller)
+{
+    return controller->m_pPose;
+}
+
+static inline cSHierarchy* GetPoseHierarchy(const cPoseAccumulator* pPose)
+{
+    return pPose->m_BaseSHierarchy;
+}
+
+static inline void ComputeAscendingJointPosition(nlVector3& out, const EmissionController* controller, u32 uJointID, float fVelocity, float fcurrentTime)
 {
     float fsetDistance = fVelocity * fcurrentTime;
-    cSHierarchy* pHier = pPose->m_BaseSHierarchy;
+    const cPoseAccumulator* pPose = GetEmissionPose(controller);
+    cSHierarchy* pHier = GetPoseHierarchy(pPose);
     int jointIndex = pHier->GetNodeIndexByID(uJointID);
     int parentIndex = pHier->GetParent(jointIndex);
 
@@ -425,7 +436,6 @@ static inline void ComputeAscendingJointPosition(nlVector3& out, const cPoseAccu
 
 /**
  * Offset/Address/Size: 0x32C | 0x801F7C1C | size: 0x5EC
- * TODO: 99.88% match - remaining register allocation diffs in joint helper pose/hierarchy locals.
  */
 bool EmissionController::Update(float dt)
 {
@@ -515,7 +525,7 @@ bool EmissionController::Update(float dt)
                     jointID = pSpec->m_uJointID;
                 }
 
-                ComputeAscendingJointPosition(pos, m_pPose, jointID, fJointVelocity, fAge);
+                ComputeAscendingJointPosition(pos, this, jointID, fJointVelocity, fAge);
             }
             else if (m_pPose != NULL)
             {

@@ -106,11 +106,11 @@ AVLTreeNode* AVLTreeBase<unsigned long, AABBDimensions, BasicSlotPool<AVLTreeEnt
 
 /**
  * Offset/Address/Size: 0x1DD4 | 0x80121BE0 | size: 0x214
- * TODO: 92.22% match - initial constant/prologue scheduling and remaining quad setup order
+ * TODO: 92.29% match - initial prologue save timing and remaining quad setup order
  */
 static void DrawBallShadow(const nlVector3& vPosition, const BallShadowParams& p, bool bGlow)
 {
-    f32 frac = vPosition.f.z * (1.0f / p.fReferenceHeight);
+    f32 frac = (1.0f / p.fReferenceHeight) * vPosition.f.z;
     if (frac < 0.0f)
     {
         frac = 0.0f;
@@ -1080,7 +1080,7 @@ static void DrawCoPlanarReference(eGLView view, const glModel& model, const nlMa
 
 /**
  * Offset/Address/Size: 0x2D0 | 0x801200DC | size: 0x460
- * TODO: 82.26% match - extra f29 save/frame growth plus GPR allocation shift
+ * TODO: 82.56% match - extra f29 save/frame growth plus GPR allocation shift
  *       (model/worldMatrix/ignorePacketMatrices are two saved registers low);
  *       matrix copies use interleaved two-word chunks instead of one bulk copy.
  */
@@ -1178,9 +1178,7 @@ void DrawPlanarShadow(const glModel* model, const nlMatrix4& worldMatrix, float 
     nlMatrix4 mat;
     eGLView view;
     glModelPacket* pPacket;
-    glModelPacket* pPacketEnd;
     void* pTransData;
-    unsigned long program;
 
     if (g_bDrawBoundingBoxes)
     {
@@ -1222,8 +1220,8 @@ void DrawPlanarShadow(const glModel* model, const nlMatrix4& worldMatrix, float 
     }
 
     pPacket = model->packets;
-    pPacketEnd = pPacket + model->numPackets;
-    program = UnlitProgram;
+    glModelPacket* pPacketEnd = pPacket + model->numPackets;
+    unsigned long program = UnlitProgram;
 
     while (pPacket < pPacketEnd)
     {

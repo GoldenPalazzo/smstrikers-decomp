@@ -404,9 +404,10 @@ void Audio::AudioEventHandler(Event* pEvent, void*)
         float satDist = tweaks->unk27C;
         float minRatio = tweaks->unk280;
         float throttleInterval = tweaks->unk284;
-        float len = nlSqrt(
+        float rawLen = nlSqrt(
             ballNetVel.f.x * ballNetVel.f.x + ballNetVel.f.y * ballNetVel.f.y + ballNetVel.f.z * ballNetVel.f.z, true);
-        if (len > maxDist)
+        float len = rawLen;
+        if (rawLen > maxDist)
             len = maxDist;
         if (len < satDist)
             break;

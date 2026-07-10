@@ -2,14 +2,6 @@
 #include "Game/Sys/debug.h"
 
 /**
- * Offset/Address/Size: 0x144 | 0x8018E74C | size: 0x8
- */
-u16 Knockout<8>::GetNumRounds()
-{
-    return 3;
-}
-
-/**
  * Offset/Address/Size: 0xA3C | 0x8018DEEC | size: 0x60
  * TODO: 99.79% match - remaining i-diff is helper ctor symbol name in the
  * branch target (`@class$264CustomTournament_cpp` vs generated `@class$319code_c`).

@@ -4789,7 +4789,7 @@ void Goalie::InitActionMoveWB()
 
 /**
  * Offset/Address/Size: 0x32E8 | 0x80045DE4 | size: 0x70C
- * TODO: 99.56% match - remaining first blend time update/store register coloring.
+ * TODO: 99.87% match - remaining first blend factor/time register coloring.
  */
 void Goalie::InitActionSaveSetup(bool bCanReposition)
 {
@@ -4910,7 +4910,7 @@ void Goalie::InitActionSaveSetup(bool bCanReposition)
         float fLocalVelX = mv3LocalContactVelocity.f.x;
         float fLocalX = mv3LocalContactPosition.f.x;
         fBlendFactor = (mpSaveData->mv3SavePos.f.x - fLocalX) / fLocalVelX;
-        fTimeTilSave += fBlendFactor;
+        fTimeTilSave = fBlendFactor + fTimeTilSave;
         fTimeTilSave = fTimeTilSave;
 
         nlVec3Set(mv3LocalContactPosition,

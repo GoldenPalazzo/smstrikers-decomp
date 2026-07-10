@@ -191,26 +191,29 @@ FuzzyVariant Fuzzy::GetStrategicBallCarrier(cTeam* TheTeam)
     FuzzyVariant fvTeam(TheTeam);
     volatile unsigned long funcAddr = (unsigned long)GetStrategicBallCarrier;
     unsigned long hash = funcAddr + ((Variant*)&fvTeam)->GetHash();
+    AVLTreeNode* existingNode2;
+    AVLTreeNode* existingNode1;
+    unsigned long hashCopy2;
+    unsigned long hashCopy1;
     FuzzyVariant fvTeam2(TheTeam);
 
     if (ScriptQuestionCache::Instance()->Lookup(hash, bestValue, NULL))
     {
         bestValue.Confidence = bestValue.Confidence;
-        unsigned long hashCopy = hash;
+        hashCopy1 = hash;
         ScriptQuestionCache* addCache = ScriptQuestionCache::Instance();
         if (g_bScriptQuestionCachingOn)
         {
             const FuzzyVariant& cacheValue = bestValue;
             if (g_bScriptQuestionCachingUseSTD)
             {
-                std::pair<const unsigned long, FuzzyVariant>& pair = addCache->mQuestionCacheMapSTD.tree_.find_or_insert<unsigned long, FuzzyVariant>(hashCopy);
+                std::pair<const unsigned long, FuzzyVariant>& pair = addCache->mQuestionCacheMapSTD.tree_.find_or_insert<unsigned long, FuzzyVariant>(hashCopy1);
                 pair.second = cacheValue;
             }
             else
             {
-                AVLTreeNode* existingNode;
-                addCache->mQuestionCacheMap.AddAVLNode((AVLTreeNode**)&addCache->mQuestionCacheMap.m_Root, (void*)&hashCopy, (void*)&cacheValue, &existingNode, addCache->mQuestionCacheMap.m_NumElements);
-                if (existingNode == NULL)
+                addCache->mQuestionCacheMap.AddAVLNode((AVLTreeNode**)&addCache->mQuestionCacheMap.m_Root, (void*)&hashCopy1, (void*)&cacheValue, &existingNode1, addCache->mQuestionCacheMap.m_NumElements);
+                if (existingNode1 == NULL)
                 {
                     addCache->mQuestionCacheMap.m_NumElements++;
                 }
@@ -242,21 +245,20 @@ FuzzyVariant Fuzzy::GetStrategicBallCarrier(cTeam* TheTeam)
     }
 
     bestValue.Confidence = fBestConfidence;
-    unsigned long hashCopy = hash;
+    hashCopy2 = hash;
     ScriptQuestionCache* addCache = ScriptQuestionCache::Instance();
     if (g_bScriptQuestionCachingOn)
     {
         const FuzzyVariant& cacheValue = bestValue;
         if (g_bScriptQuestionCachingUseSTD)
         {
-            std::pair<const unsigned long, FuzzyVariant>& pair = addCache->mQuestionCacheMapSTD.tree_.find_or_insert<unsigned long, FuzzyVariant>(hashCopy);
+            std::pair<const unsigned long, FuzzyVariant>& pair = addCache->mQuestionCacheMapSTD.tree_.find_or_insert<unsigned long, FuzzyVariant>(hashCopy2);
             pair.second = cacheValue;
         }
         else
         {
-            AVLTreeNode* existingNode;
-            addCache->mQuestionCacheMap.AddAVLNode((AVLTreeNode**)&addCache->mQuestionCacheMap.m_Root, (void*)&hashCopy, (void*)&cacheValue, &existingNode, addCache->mQuestionCacheMap.m_NumElements);
-            if (existingNode == NULL)
+            addCache->mQuestionCacheMap.AddAVLNode((AVLTreeNode**)&addCache->mQuestionCacheMap.m_Root, (void*)&hashCopy2, (void*)&cacheValue, &existingNode2, addCache->mQuestionCacheMap.m_NumElements);
+            if (existingNode2 == NULL)
             {
                 addCache->mQuestionCacheMap.m_NumElements++;
             }
@@ -674,8 +676,8 @@ FuzzyVariant Fuzzy::ShouldIMarkBallOwner(cFielder* pFielder)
 
 /**
  * Offset/Address/Size: 0xC144 | 0x80076314 | size: 0x1044
- * TODO: 96.72% match - remaining cache pointer/fielder register allocation
- * and best-confidence temporary registers differ.
+ * TODO: 97.52% match - remaining fielder/cache register allocation and
+ * late result temporary registers differ.
  */
 FuzzyVariant Fuzzy::ShouldIAttemptOneTimer(cFielder* TheFielder)
 {
@@ -765,10 +767,11 @@ FuzzyVariant Fuzzy::ShouldIAttemptOneTimer(cFielder* TheFielder)
         }
 
         float fTrueConfidence3 = 1.0f - FarToTheirNet((cPlayer*)TheFielder);
+        float fBranchRatio3;
         float fFalseConfidence3 = 1.0f - fTrueConfidence3;
         float fMinVal3 = (fTrueConfidence3 <= fFalseConfidence3) ? fTrueConfidence3 : fFalseConfidence3;
         float fMaxVal3 = (fTrueConfidence3 >= fFalseConfidence3) ? fTrueConfidence3 : fFalseConfidence3;
-        float fBranchRatio3 = fMinVal3 / fMaxVal3;
+        fBranchRatio3 = fMinVal3 / fMaxVal3;
 
         if (fTrueConfidence3 > 0.0f)
         {
@@ -846,6 +849,7 @@ FuzzyVariant Fuzzy::ShouldIAttemptOneTimer(cFielder* TheFielder)
                     fConfidence = (float)(double)fConfidence * fBranchRatio4;
                 }
 
+                float fDanger;
                 Goalie* pGoalie = NULL;
                 if (TheFielder != NULL)
                 {
@@ -853,7 +857,7 @@ FuzzyVariant Fuzzy::ShouldIAttemptOneTimer(cFielder* TheFielder)
                 }
 
                 float fGoalieStunned = Stunned(pGoalie);
-                float fDanger = InDanger(TheFielder).Confidence;
+                fDanger = InDanger(TheFielder).Confidence;
                 if (fGoalieStunned >= fDanger)
                 {
                     fDanger = fGoalieStunned;
@@ -874,22 +878,22 @@ FuzzyVariant Fuzzy::ShouldIAttemptOneTimer(cFielder* TheFielder)
                 }
             }
         }
-    }
 
-    if (fFalseConfidence > 0.0f)
-    {
-        SaveConfidence PushDOM(&fConfidence);
-
-        fConfidence = (fConfidence <= fFalseConfidence) ? fConfidence : fFalseConfidence;
-        if (fConfidence < fFalseConfidence && fFalseConfidence < 0.5f)
+        if (fFalseConfidence3 > 0.0f)
         {
-            fConfidence = (float)(double)fConfidence * fBranchRatio;
-        }
+            SaveConfidence PushDOM2(&fConfidence);
 
-        if (fConfidence > fBestConfidence)
-        {
-            fBestConfidence = fConfidence;
-            bestValue = FuzzyVariant(0.0f);
+            fConfidence = (fConfidence <= fFalseConfidence3) ? fConfidence : fFalseConfidence3;
+            if (fConfidence < fFalseConfidence3 && fFalseConfidence3 < 0.5f)
+            {
+                fConfidence = (float)(double)fConfidence * fBranchRatio3;
+            }
+
+            if (fConfidence > fBestConfidence)
+            {
+                fBestConfidence = fConfidence;
+                bestValue = FuzzyVariant(0.0f);
+            }
         }
     }
 

@@ -126,7 +126,7 @@ static void DrawLoadingIndicator()
 
 /**
  * Offset/Address/Size: 0x118 | 0x801BEE68 | size: 0x2D0
- * TODO: 97.42% match - remaining register allocation differences in outer loop counters and image row pointers.
+ * TODO: 97.47% match - remaining register allocation differences in x2, row bases, and loop counters.
  */
 static void BlitImage(int arg0, int arg1, float arg2, float arg3, bool arg4)
 {
@@ -134,11 +134,17 @@ static void BlitImage(int arg0, int arg1, float arg2, float arg3, bool arg4)
     float xStep = limit / (float)(int)(limit * arg2);
     float yStep = limit / (float)(int)(limit * arg3);
     float ySample = 0.0f;
-    int x2 = arg0 << 1;
-    u8 useSelected = arg4;
-    const u16* selectedBase = (const u16*)_SelectedImageData;
-    const u16* imageBase = (const u16*)_ImageData;
-    int yOffset = 0;
+    u8 useSelected;
+    int x2;
+    const u16* selectedBase;
+    const u16* imageBase;
+    int yOffset;
+
+    x2 = arg0 << 1;
+    useSelected = arg4;
+    selectedBase = (const u16*)_SelectedImageData;
+    imageBase = (const u16*)_ImageData;
+    yOffset = 0;
 
     while (ySample < limit)
     {

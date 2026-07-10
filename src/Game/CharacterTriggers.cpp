@@ -1195,7 +1195,7 @@ static inline EmissionController* CreateChipShotDivotEffect(cPlayer* pCharacter)
 
 /**
  * Offset/Address/Size: 0x1B10 | 0x801A08C0 | size: 0xB48
- * TODO: 99.81% match - BasicString constructor r25/r29 swap and perfect-pass f3/f4 distance swap remain.
+ * TODO: 99.85% match - BasicString constructor r25/r29 swap remains.
  */
 void EmitBallShot(cPlayer* pCharacter, eBallShotEffectType eNewBallEffect, cPlayer*, bool bSilent)
 {
@@ -1324,10 +1324,9 @@ void EmitBallShot(cPlayer* pCharacter, eBallShotEffectType eNewBallEffect, cPlay
 
         const nlVector3& ballPos = g_pBall->m_v3Position;
         const nlVector3& targetPos = g_pBall->m_pPassTarget->m_v3Position;
-        const float dy = ballPos.f.y - targetPos.f.y;
-        const float dx = ballPos.f.x - targetPos.f.x;
-        const float dz = ballPos.f.z - targetPos.f.z;
-        const float distSq = dx * dx + dy * dy + dz * dz;
+        nlVector3 delta;
+        nlVec3Sub(delta, ballPos, targetPos);
+        const float distSq = delta.GetLengthSq3D();
         if (distSq > g_pGame->m_pGameTweaks->unk22C)
         {
             Audio::SoundAttributes attrs;

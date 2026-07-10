@@ -1098,12 +1098,64 @@ BasicString<unsigned short, Detail::TempStringAllocator>::BasicString(const unsi
     m_data = data;
 }
 
-// /**
-//  * Offset/Address/Size: 0x1A0 | 0x8009C59C | size: 0x6B4
-//  */
-// void BasicString<unsigned short, Detail::TempStringAllocator>::insert(unsigned short*, const unsigned short*, const unsigned short*)
-// {
-// }
+/**
+ * Offset/Address/Size: 0x1A0 | 0x8009C59C | size: 0x6B4
+ */
+template <>
+void BasicString<unsigned short, Detail::TempStringAllocator>::insert(
+    unsigned short* at,
+    const unsigned short* begin,
+    const unsigned short* end)
+{
+    (*this)[0];
+    int offset = at - (m_data ? m_data->mData : (unsigned short*)0);
+    (*this)[0];
+    (*this)[0];
+
+    BasicStringData<unsigned short>* data = m_data;
+    unsigned short* dataPtr = data ? data->mData : (unsigned short*)0;
+    int size = end - begin;
+    int insertPos = (dataPtr + offset) - data->mData;
+    int newSize = data->mSize + size;
+
+    if (data->mCapacity < newSize)
+    {
+        Vector<unsigned short> newVec;
+        InitBasicStringVector(newVec, newSize);
+        int i = 0;
+        for (; i < data->mSize; i++)
+        {
+            newVec.mData[i] = data->mData[i];
+        }
+        newVec.mSize = data->mSize;
+        int newVecSize = newVec.mSize;
+        data->mSize = newVecSize;
+        newVec.mSize = newVecSize;
+
+        int oldCapacity = data->mCapacity;
+        data->mCapacity = newVec.mCapacity;
+        newVec.mCapacity = oldCapacity;
+
+        unsigned short* oldBuf = data->mData;
+        data->mData = newVec.mData;
+        newVec.mData = oldBuf;
+    }
+
+    unsigned short* insertAt = data->mData + insertPos;
+    unsigned short* t = data->mData + data->mSize - 1;
+    while (t >= insertAt)
+    {
+        *(t + size) = *t;
+        t--;
+    }
+    while (begin != end)
+    {
+        *insertAt = *begin;
+        begin++;
+        insertAt++;
+    }
+    data->mSize += size;
+}
 
 // /**
 //  * Offset/Address/Size: 0x854 | 0x8009CC50 | size: 0x1EC

@@ -64,7 +64,7 @@ int glFontPrintf(eGLView view, int x, int y, const char* format, ...)
 
 /**
  * Offset/Address/Size: 0x1DC | 0x801D8574 | size: 0x3EC
- * TODO: 99.1% match - r4/r5 character register swap and r4/r6 drop-shadow loop cursor.
+ * TODO: 99.3% match - r4/r6 drop-shadow loop cursor.
  */
 #pragma optimize_for_size on
 int glFontPrint(eGLView view, int virtual_x, int virtual_y, const nlColour& colour, const char* str)
@@ -90,10 +90,10 @@ int glFontPrint(eGLView view, int virtual_x, int virtual_y, const nlColour& colo
     const char* cp = str;
     while (*cp != '\0')
     {
-        if (((s8)*cp >= 0x20) && ((s8)*cp <= 0x7E))
+        if ((*cp >= 0x20) && (*cp <= 0x7E))
         {
-            int j = (((s8)*cp - 0x20) % 8) * 8;
-            int i = (((s8)*cp - 0x20) / 8) * 8;
+            int j = ((*cp - 0x20) % 8) * 8;
+            int i = ((*cp - 0x20) / 8) * 8;
             float us = 0.015625f;
             float vs = 0.0078125f;
             float s = (float)j;
@@ -124,7 +124,7 @@ int glFontPrint(eGLView view, int virtual_x, int virtual_y, const nlColour& colo
             pPoly++;
             numChars++;
         }
-        else if ((s8)*cp == '\n')
+        else if (*cp == '\n')
         {
             screen_x = 30;
             screen_y += 11;
