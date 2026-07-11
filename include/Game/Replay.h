@@ -54,61 +54,7 @@ struct NotReplayablePod
 {
 }; // total size: 0x1
 
-class LoadFrame
-{
-public:
-    template <int N, typename T>
-    void Replayable(T& current);
-
-    template <int N, typename T>
-    void Replayable(T& current, NotReplayablePod);
-
-    template <int N, typename T>
-    void ReplayablePolymorphicPtr(T*& ptr);
-
-    /* 0x0 */ int mInterval;
-    /* 0x4 */ ReadByteStream mStream;
-    /* 0xC */ ReplayNonBlendables mReplayNonBlendables;
-    /* 0x10 */ float mNonBlendableAheadOfFrame;
-}; // total size: 0x14
-
-template <int N, typename T>
-void LoadFrame::Replayable(T& current)
-{
-    NotReplayablePod pod;
-    Replayable<N>(current, pod);
-}
-
-template <int N>
-void Replayable(LoadFrame& frame, char typeId, cPoseNode*& poseNode);
-
-template <int N, typename T>
-void LoadFrame::ReplayablePolymorphicPtr(T*& current)
-{
-    FORCE_DONT_INLINE;
-    if (N == 0 || mInterval == N)
-    {
-        unsigned char notNull = 1;
-        memcpy(&notNull, mStream.mStorage, 1);
-        mStream.mStorage++;
-
-        if (notNull)
-        {
-            char typeId = 0;
-            memcpy(&typeId, mStream.mStorage, 1);
-            mStream.mStorage++;
-
-            if (typeId < 0 || typeId > 4)
-                nlBreak();
-
-            ::Replayable<N>(*this, typeId, current);
-        }
-        else
-        {
-            current = 0;
-        }
-    }
-}
+#include "Game/LoadFrame.h"
 
 template <int MIN, int MAX, int BITS>
 class FloatCompressor
@@ -172,12 +118,9 @@ inline void FloatCompressor<MIN, MAX, BITS>::Transfer(LoadFrame& frame, unsigned
     else if ((MAX - MIN) * (1 << BITS) <= 65535)
     {
         const char* cursor = frame.mStream.mStorage;
-        unsigned char hi = (unsigned char)cursor[1];
-        unsigned char lo = (unsigned char)cursor[0];
-        cursor += 2;
-        value = (unsigned int)hi << 8;
+        unsigned char lo = (unsigned char)*cursor++;
+        value = (unsigned int)lo | ((unsigned int)(unsigned char)*cursor++ << 8);
         frame.mStream.mStorage = cursor;
-        value |= (unsigned int)lo;
     }
     else
     {
@@ -681,3 +624,83 @@ public:
 }; // total size: 0x64
 
 #endif // _REPLAY_H_
+
+// Reinclude this header from the target owner after EmissionController is
+// complete. Ordinary Replay.h consumers see only the declarations above.
+#ifdef REPLAY_EMISSION_FREE_SPECIALIZATIONS
+
+template <>
+inline void Replayable<0, LoadFrame, unsigned short>(LoadFrame& frame, unsigned short& value)
+{
+    FORCE_DONT_INLINE;
+    memcpy(&value, frame.mStream.mStorage, sizeof(unsigned short));
+    frame.mStream.mStorage += sizeof(unsigned short);
+}
+
+template <>
+inline void Replayable<0, LoadFrame, unsigned long>(LoadFrame& frame, unsigned long& value)
+{
+    FORCE_DONT_INLINE;
+    memcpy(&value, frame.mStream.mStorage, sizeof(unsigned long));
+    frame.mStream.mStorage += sizeof(unsigned long);
+}
+
+template <>
+inline void Replayable<0, LoadFrame, EmissionController>(LoadFrame& frame, EmissionController& controller)
+{
+    FORCE_DONT_INLINE;
+    frame.Replayable<0>(controller);
+}
+
+template <>
+inline void Replayable<0, SaveFrame, unsigned short>(SaveFrame& frame, unsigned short& value)
+{
+    FORCE_DONT_INLINE;
+    memcpy(frame.mStream.mStorage, &value, sizeof(unsigned short));
+    frame.mStream.mStorage += sizeof(unsigned short);
+}
+
+template <>
+inline void Replayable<0, SaveFrame, unsigned long>(SaveFrame& frame, unsigned long& value)
+{
+    FORCE_DONT_INLINE;
+    memcpy(frame.mStream.mStorage, &value, sizeof(unsigned long));
+    frame.mStream.mStorage += sizeof(unsigned long);
+}
+
+template <>
+inline void Replayable<0, SaveFrame, EmissionController>(SaveFrame& frame, EmissionController& controller)
+{
+    FORCE_DONT_INLINE;
+    Replayable<0>(frame, (unsigned int&)controller.m_pPose);
+    Replayable<0>(frame, (unsigned int&)controller.m_pAnimController);
+    memcpy(frame.mStream.mStorage, &controller.m_uUserData, sizeof(unsigned long));
+    frame.mStream.mStorage += sizeof(unsigned long);
+    Replayable<0>(frame, controller.m_fGround);
+    memcpy(frame.mStream.mStorage, &controller.m_aFacing, sizeof(unsigned short));
+    frame.mStream.mStorage += sizeof(unsigned short);
+    Replayable<0>(frame, (char&)controller.m_GlView);
+    ReplayControllerFloats(frame, controller);
+    controller.m_Replaying = false;
+    controller.m_ReplayDeltaTime = 0.0f;
+    Replayable<0>(frame, controller.m_Age);
+    ReplayControllerCallbacks(frame, controller);
+}
+
+template <>
+inline void Replayable<0, LoadFrame, char>(LoadFrame& frame, char& value)
+{
+    FORCE_DONT_INLINE;
+    memcpy(&value, frame.mStream.mStorage, sizeof(char));
+    frame.mStream.mStorage += sizeof(char);
+}
+
+template <>
+inline void Replayable<0, SaveFrame, char>(SaveFrame& frame, char& value)
+{
+    FORCE_DONT_INLINE;
+    memcpy(frame.mStream.mStorage, &value, sizeof(char));
+    frame.mStream.mStorage += sizeof(char);
+}
+
+#endif

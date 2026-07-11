@@ -1673,7 +1673,7 @@ static inline void Local2GridCoords(float y, float z, int& i, int& j)
 
 /**
  * Offset/Address/Size: 0x390 | 0x800537B0 | size: 0x3F0
- * TODO: 98.99% match - save-data pointers, loop count, and grid-cell registers remain shifted in the inlined AddPointToGrid path.
+ * TODO: 99.19% match - save-data pointers, loop count, and grid-cell registers remain shifted in the inlined AddPointToGrid path.
  */
 void GoalieSave::AddSegmentToGrid(SaveData* pSaveData1, SaveData* pSaveData2)
 {
@@ -1686,8 +1686,8 @@ void GoalieSave::AddSegmentToGrid(SaveData* pSaveData1, SaveData* pSaveData2)
 
     Local2GridCoords(pSaveData1->mv3SavePos.f.y, pSaveData1->mv3SavePos.f.z, i, j);
     Local2GridCoords(pSaveData2->mv3SavePos.f.y, pSaveData2->mv3SavePos.f.z, m, n);
-    nlVec3Sub(v3Delta, pSaveData2->mv3SavePos, pSaveData1->mv3SavePos);
     divisions = abs(j - n) + abs(i - m);
+    nlVec3Sub(v3Delta, pSaveData2->mv3SavePos, pSaveData1->mv3SavePos);
     if (divisions > 0)
     {
         nlVec3Scale(v3Delta, v3Delta, 1.0f / (float)divisions);
@@ -1695,11 +1695,10 @@ void GoalieSave::AddSegmentToGrid(SaveData* pSaveData1, SaveData* pSaveData2)
     v3CurPos = pSaveData1->mv3SavePos;
     for (count = 0; count <= divisions; count++)
     {
-        float d2z = pSaveData2->mv3SavePos.f.z - v3CurPos.f.z;
-        float d2y = pSaveData2->mv3SavePos.f.y - v3CurPos.f.y;
-        float d1y = pSaveData1->mv3SavePos.f.y - v3CurPos.f.y;
-        float d1z = pSaveData1->mv3SavePos.f.z - v3CurPos.f.z;
-        if (d1z * d1z + d1y * d1y < d2z * d2z + d2y * d2y)
+        if (nlGetLengthSquared2D(pSaveData1->mv3SavePos.f.y - v3CurPos.f.y,
+                pSaveData1->mv3SavePos.f.z - v3CurPos.f.z)
+            < nlGetLengthSquared2D(pSaveData2->mv3SavePos.f.y - v3CurPos.f.y,
+                pSaveData2->mv3SavePos.f.z - v3CurPos.f.z))
             pCurSaveData = pSaveData1;
         else
             pCurSaveData = pSaveData2;

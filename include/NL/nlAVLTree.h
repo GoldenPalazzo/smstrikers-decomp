@@ -8,12 +8,14 @@ template <typename KeyType, typename ValueType, typename CompareType>
 class nlAVLTree : public AVLTreeBase<KeyType, ValueType, NewAdapter<AVLTreeEntry<KeyType, ValueType> >, CompareType>
 {
 public:
+#ifndef NL_AVLTREE_GLINVENTORY_LINK_ORDER
     nlAVLTree()
         : AVLTreeBase<KeyType, ValueType, NewAdapter<AVLTreeEntry<KeyType, ValueType> >, CompareType>() { };
     ~nlAVLTree();
+#endif
 };
 
-#ifndef NL_AVLTREE_DECLARE_ONLY
+#if !defined(NL_AVLTREE_DECLARE_ONLY) && !defined(NL_AVLTREE_GLINVENTORY_LINK_ORDER)
 template <typename KeyType, typename ValueType, typename CompareType>
 nlAVLTree<KeyType, ValueType, CompareType>::~nlAVLTree()
 {

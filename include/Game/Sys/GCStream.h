@@ -105,16 +105,27 @@ class AudioStream
 public:
     AudioStream(AudioBufferMgr& mgr, unsigned long bufCount);
     virtual ~AudioStream() { };
+#ifdef GCSTREAM_AUDIOSTREAM_TRIVIAL_METHODS_PURE_VIRTUAL
+    virtual void Warm(bool) = 0;
+    virtual bool SafeToPurge() = 0;
+#else
     virtual void Warm(bool) { };
     virtual bool SafeToPurge() { return false; };
+#endif
     virtual void Purge()
     {
         FORCE_DONT_INLINE;
         m_State = SS_New;
     }
+#ifdef GCSTREAM_AUDIOSTREAM_TRIVIAL_METHODS_PURE_VIRTUAL
+    virtual unsigned long DoUpdateRead(unsigned long, unsigned long, unsigned long, unsigned long, AudioStreamBuffer*) = 0;
+    virtual unsigned long GetUpdateReadLength() = 0;
+    virtual void CancelPendingReads() = 0;
+#else
     virtual unsigned long DoUpdateRead(unsigned long, unsigned long, unsigned long, unsigned long, AudioStreamBuffer*) { return 0; };
     virtual unsigned long GetUpdateReadLength() { return 0; };
     virtual void CancelPendingReads() { };
+#endif
     virtual void WarmReadDone(AudioStreamBuffer* pBuffer)
     {
         FORCE_DONT_INLINE;

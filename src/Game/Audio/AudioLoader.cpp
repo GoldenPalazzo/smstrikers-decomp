@@ -1,4 +1,9 @@
+#define GCSTREAM_AUDIOSTREAM_TRIVIAL_METHODS_PURE_VIRTUAL
+#define LOADER_METHODS_DECLARE_ONLY
+#define NL_AVLTREEBASE_AUDIOLOADER_LINK_ORDER
+#define NLDLRING_SIMPLE_SEPARATE
 #define NL_SINGLETON_NO_DEFINE
+#include "NL/nlDLRingSimple.h"
 #include "Game/Audio/AudioLoader.h"
 #include "Game/Audio/SebringSoundDefines.h"
 #include "Game/Audio/SoundEventScript.h"
@@ -56,9 +61,6 @@ struct SoundDefineMapType
     }
 };
 
-// .sdata: gbStream (global, =1) first, then the six group-load cursors
-// (local, =-1). Initializing them to -1 places them in .sdata (initialized
-// small data) rather than .sbss, matching the target.
 bool AudioLoader::gbStream = true;
 
 static int gLoadedStadiumGroup = -1;
@@ -71,6 +73,13 @@ static int gLoadedSurfaceGroup = -1;
 typedef DLListEntry<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL> FadeDLListEntry;
 typedef DLListContainerBase<AudioStreamTrack::TrackManagerBase::FadeManager::STREAM_FADE_CTRL, BasicSlotPool<FadeDLListEntry> > FadeDLListContainer;
 typedef DLListEntry<GCAudioStreaming::StereoAudioStream*> StreamDLListEntry;
+typedef void (FadeDLListContainer::*FadeDeleteEntryFunc)(FadeDLListEntry*);
+typedef AVLTreeBase<int, SoundStrToIDNode*, BasicSlotPool<AVLTreeEntry<int, SoundStrToIDNode*> >, DefaultKeyCompare<int> > SoundDefineAVLTreeBase;
+
+static inline FadeDeleteEntryFunc GetFadeDeleteEntryFunc()
+{
+    return &FadeDLListContainer::DeleteEntry;
+}
 
 class BaseSceneHandler;
 
@@ -86,16 +95,8 @@ public:
 
 class GameSceneManager;
 
-// Definitions for AudioLoader globals that drive __sinit_AudioLoader_cpp.
-// Order matters: TheAudioLoader must be emitted first (only a 4-byte vtable
-// store), then g_FEStreamConfig (Config ctor), then surfaceSoundPropTables
-// (filled at runtime from gp*SoundPropAccessor globals via a dummy-ctor
-// struct), then the three AVL maps with explicit (initial, delta) ctors.
 AudioLoader TheAudioLoader;
 
-// .sbss (uninitialized small data), in this exact source order:
-//   TheAudioLoader, gbDisableAudio, g_BGM_Off, gbDisableCrowd,
-//   gbDisableReverb, gReverbOn, gbAsyncLoadEntireSampleFileIntoMemRequestMade.
 bool AudioLoader::gbDisableAudio;
 bool AudioLoader::g_BGM_Off;
 bool AudioLoader::gbDisableCrowd;
@@ -262,6 +263,12 @@ AudioFileData AudioLoader::sebringAudioFileData = {
     sebringAudioGroups,
     0x2E,
 };
+
+template <>
+inline SoundDefineAVLTreeBase::ENTRY_DELETE_FUNC SoundDefineAVLTreeBase::DeleteEntryFunc()
+{
+    return &SoundDefineAVLTreeBase::DeleteEntry;
+}
 
 nlAVLTreeSlotPool<int, SoundStrToIDNode*, DefaultKeyCompare<int> > AudioLoader::gMusyXSoundDefineMap(0x438, 0);
 nlAVLTreeSlotPool<int, SoundStrToIDNode*, DefaultKeyCompare<int> > AudioLoader::gCharSoundDefineMap(0xAF, 0);
@@ -539,7 +546,7 @@ state_change:
 
     nlWalkDLRing(((FadeDLListContainer*)&pTM->m_FadeMgr)->m_Head,
         (FadeDLListContainer*)&pTM->m_FadeMgr,
-        &FadeDLListContainer::DeleteEntry);
+        GetFadeDeleteEntryFunc());
     ((FadeDLListContainer*)&pTM->m_FadeMgr)->m_Head = NULL;
     SlotPoolBase::BaseFreeBlocks(&((FadeDLListContainer*)&pTM->m_FadeMgr)->m_Allocator, sizeof(FadeDLListEntry));
 
@@ -1582,7 +1589,7 @@ void AudioLoader::UnloadInGame()
 
     nlWalkDLRing(((FadeDLListContainer*)&pTM->m_FadeMgr)->m_Head,
         (FadeDLListContainer*)&pTM->m_FadeMgr,
-        &FadeDLListContainer::DeleteEntry);
+        GetFadeDeleteEntryFunc());
     ((FadeDLListContainer*)&pTM->m_FadeMgr)->m_Head = NULL;
     SlotPoolBase::BaseFreeBlocks(&((FadeDLListContainer*)&pTM->m_FadeMgr)->m_Allocator, sizeof(FadeDLListEntry));
 
@@ -1662,7 +1669,7 @@ void AudioLoader::SetupPostPhysicsCameraLoad()
     nlVector3 heading;
     nlVector3 cameraPos;
     nlVector3 targetPos;
-    nlVector3 vel = { { 0.0f, 0.0f, 0.0f } };
+    nlVector3 vel = { { 0.0f, 0.0f, 1.0f } };
 
     cBaseCamera* camera = nlDLRingGetStart(cCameraManager::m_cameraStack);
     targetPos = camera->GetTargetPosition();
@@ -1681,7 +1688,7 @@ void AudioLoader::SetupPostPhysicsCameraLoad()
     heading.f.y = recipLen * dy;
     heading.f.z = recipLen * dz;
 
-    static const nlVector3 kUpVec = { { 0.0f, 0.0f, 1.0f } };
+    static const nlVector3 kUpVec = { { 0.0f, 0.0f, 0.0f } };
     up = kUpVec;
 
     GameTweaks* tweaks = g_pGame->m_pGameTweaks;
@@ -1694,7 +1701,7 @@ void AudioLoader::SetupPostPhysicsCameraLoad()
         vel,
         tweaks->unk1F0,
         tweaks->unk1F4,
-        0.0f,
+        1.0f,
         tweaks->unk1FC,
         false,
         tweaks->unk1F8);
@@ -1740,19 +1747,19 @@ static SoundPropAccessor* GetSoundPropTableFromPlayerStadium(eStadiumID stadiumI
 {
     switch (stadiumId)
     {
-    case STAD_MARIO_STADIUM:
+    case STAD_DK_DAISY:
         if (charClass >= NUM_FIELDER_CLASSES && charClass < NUM_CHARACTER_CLASSES)
             return gpCRITTERWOODSoundPropAccessor;
         if (charClass == NUM_CHARACTER_CLASSES)
             return gpBOWSERWOODSoundPropAccessor;
         return surfaceSoundPropTables[charClass][4];
-    case STAD_PEACH_TOAD_STADIUM:
+    case STAD_MARIO_STADIUM:
         if (charClass >= NUM_FIELDER_CLASSES && charClass < NUM_CHARACTER_CLASSES)
             return gpCRITTERCONCRETESoundPropAccessor;
         if (charClass == NUM_CHARACTER_CLASSES)
             return gpBOWSERCONCRETESoundPropAccessor;
         return surfaceSoundPropTables[charClass][2];
-    case STAD_DK_DAISY:
+    case STAD_PEACH_TOAD_STADIUM:
         if (charClass >= NUM_FIELDER_CLASSES && charClass < NUM_CHARACTER_CLASSES)
             return gpCRITTERGRASSSoundPropAccessor;
         if (charClass == NUM_CHARACTER_CLASSES)
@@ -1903,19 +1910,19 @@ unsigned char AudioLoader::LoadStadiumSpecificSoundGroups(eStadiumID stadiumID)
 {
     switch (stadiumID)
     {
-    case STAD_MARIO_STADIUM:
+    case STAD_DK_DAISY:
         gLoadedSurfaceGroup = 18;
         gLoadedStadiumGroup = 10;
         Audio::gStadGenSFX.SetSFX(gpSTADWOODSoundPropAccessor);
         Audio::gStadGenSFX.SetSFX(gpSTADKONGASoundPropAccessor);
         break;
-    case STAD_PEACH_TOAD_STADIUM:
+    case STAD_MARIO_STADIUM:
         gLoadedSurfaceGroup = 16;
         gLoadedStadiumGroup = 8;
         Audio::gStadGenSFX.SetSFX(gpSTADCONCRETESoundPropAccessor);
         Audio::gStadGenSFX.SetSFX(gpSTADPIPESoundPropAccessor);
         break;
-    case STAD_DK_DAISY:
+    case STAD_PEACH_TOAD_STADIUM:
         gLoadedSurfaceGroup = 14;
         gLoadedStadiumGroup = 7;
         Audio::gStadGenSFX.SetSFX(gpSTADGRASSSoundPropAccessor);
@@ -2079,40 +2086,40 @@ bool AudioLoader::LoadInGameAudioData()
     int homeCaptainGroup;
     switch (homeCaptainClass)
     {
-    case BIRDO:
+    case MARIO:
         homeCaptainGroup = 0x18;
         break;
-    case DAISY:
+    case DONKEYKONG:
         homeCaptainGroup = 0x16;
         break;
-    case DONKEYKONG:
+    case DAISY:
         homeCaptainGroup = 0x15;
         break;
-    case HAMMERBROS:
+    case LUIGI:
         homeCaptainGroup = 0x17;
         break;
-    case KOOPA:
+    case WALUIGI:
         homeCaptainGroup = 0x1a;
         break;
-    case LUIGI:
+    case PEACH:
         homeCaptainGroup = 0x19;
         break;
-    case MARIO:
+    case WARIO:
         homeCaptainGroup = 0x1b;
         break;
-    case PEACH:
+    case YOSHI:
         homeCaptainGroup = 0x1c;
         break;
-    case TOAD:
+    case HAMMERBROS:
         homeCaptainGroup = 0x21;
         break;
-    case WALUIGI:
+    case TOAD:
         homeCaptainGroup = 0x20;
         break;
-    case WARIO:
+    case BIRDO:
         homeCaptainGroup = 0x1e;
         break;
-    case YOSHI:
+    case KOOPA:
         homeCaptainGroup = 0x1f;
         break;
     case MYSTERY:
@@ -2127,40 +2134,40 @@ bool AudioLoader::LoadInGameAudioData()
     int awayCaptainGroup;
     switch (awayCaptainClass)
     {
-    case BIRDO:
+    case MARIO:
         awayCaptainGroup = 0x18;
         break;
-    case DAISY:
+    case DONKEYKONG:
         awayCaptainGroup = 0x16;
         break;
-    case DONKEYKONG:
+    case DAISY:
         awayCaptainGroup = 0x15;
         break;
-    case HAMMERBROS:
+    case LUIGI:
         awayCaptainGroup = 0x17;
         break;
-    case KOOPA:
+    case WALUIGI:
         awayCaptainGroup = 0x1a;
         break;
-    case LUIGI:
+    case PEACH:
         awayCaptainGroup = 0x19;
         break;
-    case MARIO:
+    case WARIO:
         awayCaptainGroup = 0x1b;
         break;
-    case PEACH:
+    case YOSHI:
         awayCaptainGroup = 0x1c;
         break;
-    case TOAD:
+    case HAMMERBROS:
         awayCaptainGroup = 0x21;
         break;
-    case WALUIGI:
+    case TOAD:
         awayCaptainGroup = 0x20;
         break;
-    case WARIO:
+    case BIRDO:
         awayCaptainGroup = 0x1e;
         break;
-    case YOSHI:
+    case KOOPA:
         awayCaptainGroup = 0x1f;
         break;
     case MYSTERY:
@@ -2242,40 +2249,40 @@ bool AudioLoader::LoadInGameAudioData()
     int homeSidekickGroup;
     switch (homeSidekickClass)
     {
-    case BIRDO:
+    case MARIO:
         homeSidekickGroup = 0x18;
         break;
-    case DAISY:
+    case DONKEYKONG:
         homeSidekickGroup = 0x16;
         break;
-    case DONKEYKONG:
+    case DAISY:
         homeSidekickGroup = 0x15;
         break;
-    case HAMMERBROS:
+    case LUIGI:
         homeSidekickGroup = 0x17;
         break;
-    case KOOPA:
+    case WALUIGI:
         homeSidekickGroup = 0x1a;
         break;
-    case LUIGI:
+    case PEACH:
         homeSidekickGroup = 0x19;
         break;
-    case MARIO:
+    case WARIO:
         homeSidekickGroup = 0x1b;
         break;
-    case PEACH:
+    case YOSHI:
         homeSidekickGroup = 0x1c;
         break;
-    case TOAD:
+    case HAMMERBROS:
         homeSidekickGroup = 0x21;
         break;
-    case WALUIGI:
+    case TOAD:
         homeSidekickGroup = 0x20;
         break;
-    case WARIO:
+    case BIRDO:
         homeSidekickGroup = 0x1e;
         break;
-    case YOSHI:
+    case KOOPA:
         homeSidekickGroup = 0x1f;
         break;
     case MYSTERY:
@@ -2290,40 +2297,40 @@ bool AudioLoader::LoadInGameAudioData()
     int awaySidekickGroup;
     switch (awaySidekickClass)
     {
-    case BIRDO:
+    case MARIO:
         awaySidekickGroup = 0x18;
         break;
-    case DAISY:
+    case DONKEYKONG:
         awaySidekickGroup = 0x16;
         break;
-    case DONKEYKONG:
+    case DAISY:
         awaySidekickGroup = 0x15;
         break;
-    case HAMMERBROS:
+    case LUIGI:
         awaySidekickGroup = 0x17;
         break;
-    case KOOPA:
+    case WALUIGI:
         awaySidekickGroup = 0x1a;
         break;
-    case LUIGI:
+    case PEACH:
         awaySidekickGroup = 0x19;
         break;
-    case MARIO:
+    case WARIO:
         awaySidekickGroup = 0x1b;
         break;
-    case PEACH:
+    case YOSHI:
         awaySidekickGroup = 0x1c;
         break;
-    case TOAD:
+    case HAMMERBROS:
         awaySidekickGroup = 0x21;
         break;
-    case WALUIGI:
+    case TOAD:
         awaySidekickGroup = 0x20;
         break;
-    case WARIO:
+    case BIRDO:
         awaySidekickGroup = 0x1e;
         break;
-    case YOSHI:
+    case KOOPA:
         awaySidekickGroup = 0x1f;
         break;
     case MYSTERY:
@@ -2530,4 +2537,15 @@ void AudioLoader::InitCrowdFromStateTransition()
     Audio::ResetPauseStatus();
     nlSingleton<GameInfoManager>::s_pInstance->GetAudioOptions();
     CrowdMood::SetCrowdVolume(0x7f, 0);
+}
+
+void AudioLoader_avl_stub()
+{
+    SoundDefineAVLTreeBase* tree = (SoundDefineAVLTreeBase*)&AudioLoader::gMusyXSoundDefineMap;
+    tree->Clear();
+}
+
+void AudioLoader_string_stub()
+{
+    nlPrintf("AudioLoader::UnloadInGameAudioData(), Audio::UpdateReverbSettingsToOff() returned false.\n");
 }

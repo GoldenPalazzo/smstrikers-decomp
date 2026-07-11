@@ -1,24 +1,31 @@
-#include "types.h"
+#include "NL/nlMath.h"
+#include "Game/Core/mtRandom.h"
 
 #include "math.h"
 
-void* memcpy(void* dest, const void* src, size_t num);
-
-float nlDefaultSeed = 0.00000000000000000000000000056904566f;
+unsigned int nlDefaultSeed = 0x12345678;
 
 struct coeffs
 {
-    s32 coeffs0;
-    s32 coeffs1;
-    s32 coeffs2;
-    s32 coeffs3;
-    s32 coeffs4;
-    s32 coeffs5;
-    s32 coeffs6;
-    s32 coeffs7;
+    float values[8];
 };
 
-extern void seedMT(u32 p);
+struct nlACosConstants
+{
+    float radicandScale;
+};
+
+struct nlAngleConstants
+{
+    float unitsToRadians;
+};
+
+namespace
+{
+extern const nlAngleConstants nlAngleConstantsData;
+}
+
+static const volatile float nlHalfPi = M_PI / 2.0f;
 
 /**
  * Offset/Address/Size: 0x0 | 0x801D1474 | size: 0x1D4
@@ -81,80 +88,77 @@ float nlBezier(float* controlPoints, int degree, float t)
     return result;
 }
 
-static inline float nlATanHigh(float x)
+static inline void nlATanLookup(float value, float& result)
 {
-    register f32 temp_f4 = x;
-    register f32 temp_f5;
-    s32 temp_r25;
-    s32 var_r0;
-    coeffs sp48 = { 0, 0x3b85739f, 0x3c92a2f4, 0x3d3741dd, 0x3dad0097, 0x3e09f123, 0x3e44b6ba, 0x3e81b9e9 };
-    coeffs sp68 = { 0x3f7f567a, 0x3f77098b, 0x3f690bc9, 0x3f56c9b8, 0x3f42760a, 0x3f2de0fe, 0x3f1a4609, 0x3f0854e4 };
+    coeffs low = {
+        0.0f, 0.004072621f, 0.0178999677f, 0.0447405465f,
+        0.0844737813f, 0.134708926f, 0.192103297f, 0.253371507f
+    };
+    coeffs high = {
+        0.997413278f, 0.964989364f, 0.910336077f, 0.839015484f,
+        0.759613633f, 0.679214358f, 0.602631152f, 0.532545328f
+    };
 
-    register f32 tmp = 1.0f / temp_f4;
-    temp_f5 = tmp;
-    temp_r25 = 8.0f * temp_f5;
-    var_r0 = temp_r25 <= 7 ? temp_r25 : 7;
-
-    f32* table = (f32*)&sp68;
-    f32 high = table[var_r0];
-    table = (f32*)&sp48;
-    return 1.5707964f - (temp_f5 * high + table[var_r0]);
-}
-
-static inline float nlATanLow(float x)
-{
-    register f32 temp_f4 = x;
-    s32 var_r0_2 = 7;
-    s32 temp_r25_2 = 8.0f * temp_f4;
-    coeffs sp8 = { 0, 0x3b85739f, 0x3c92a2f4, 0x3d3741dd, 0x3dad0097, 0x3e09f123, 0x3e44b6ba, 0x3e81b9e9 };
-    coeffs sp28 = { 0x3f7f567a, 0x3f77098b, 0x3f690bc9, 0x3f56c9b8, 0x3f42760a, 0x3f2de0fe, 0x3f1a4609, 0x3f0854e4 };
-
-    var_r0_2 = temp_r25_2 <= 7 ? temp_r25_2 : var_r0_2;
-    return (temp_f4 * ((float*)&sp28)[var_r0_2]) + ((float*)&sp8)[var_r0_2];
+    int index = (int)(8.0f * value);
+    index = index <= 7 ? index : 7;
+    result = value * high.values[index] + low.values[index];
 }
 
 static inline float nlATan(float x)
 {
-    register f32 temp_f4 = x;
+    float value = x;
+    float sign;
 
-    if (temp_f4 > 1.0f)
+    if (value > 1.0f)
     {
-        return nlATanHigh(temp_f4);
+        sign = 1.0f / value;
+        float result;
+        nlATanLookup(sign, result);
+        return nlHalfPi - result;
     }
-    return nlATanLow(temp_f4);
+    float result;
+    nlATanLookup(value, result);
+    return result;
 }
 
 /**
  * Offset/Address/Size: 0x1D4 | 0x801D1648 | size: 0x244
  */
-float nlATan2f(float arg0, float arg1)
+float nlATan2f(float y, float x)
 {
-    f32 var_f3;
+    f32 angle;
 
-    if ((float)fabs(arg1) > 0.00001f)
+    if ((float)fabs(x) > 0.00001f)
     {
-        var_f3 = nlATan((float)fabs(arg0 / arg1));
-        if (arg0 >= 0.0f)
+        angle = nlATan((float)fabs(y / x));
+        if (y >= 0.0f)
         {
-            if (arg1 >= 0.0f)
-                return var_f3;
-            return 3.1415927f - var_f3;
+            if (x >= 0.0f)
+                return angle;
+            return 3.1415927f - angle;
         }
-        if (arg1 < 0.0f)
-            return 3.1415927f + var_f3;
-        return 6.2831855f - var_f3;
+        if (x < 0.0f)
+            return 3.1415927f + angle;
+        return 6.2831855f - angle;
     }
-    if (arg0 > 0.0f)
+    if (y > 0.0f)
         return 1.5707964f;
     return 4.712389f;
 }
+
+DECL_SECT(".sdata2") static const nlACosConstants nlACosConstantsData = { 2.0f };
 
 /**
  * Offset/Address/Size: 0x418 | 0x801D188C | size: 0x48
  */
 float nlTan(unsigned short angle)
 {
-    return (float)tan(angle * 0.0000958738f);
+    return (float)tan(nlAngleConstantsData.unitsToRadians * angle);
+}
+
+namespace
+{
+DECL_SECT(".sdata2") const nlAngleConstants nlAngleConstantsData = { 0.0000958738f };
 }
 
 static inline f32 nlACosMax(f32 a, f32 b)
@@ -168,17 +172,14 @@ static inline f32 nlACosMax(f32 a, f32 b)
 int nlACos(float x)
 {
     u8 complement = (x < 0.0f);
-    f32 y, temp, sqrtVal, rad;
+    f32 y, sqrtVal, rad;
 
     x = 1.0f - (f32)fabs(x);
 
-    temp = 0.015098966f * x + 0.005516444f;
-    y = x * temp + 0.047654245f;
-    y = x * y + 0.16391061f;
-    y = x * y + 2.0002916f;
-    y = x * y + -0.000007239284f;
+    y = x * (x * (x * (x * (0.015098966f * x + 0.005516444f) + 0.047654245f) + 0.16391061f) + 2.0002916f)
+      + -0.000007239284f;
 
-    rad = nlACosMax(2.0f * x, 0.00001f);
+    rad = nlACosMax(nlACosConstantsData.radicandScale * x, 0.00001f);
 
     if (rad > 0.0f)
     {
@@ -214,7 +215,7 @@ int nlACos(float x)
  */
 void nlSinCos(float* presult_sin, float* presult_cos, unsigned short angle)
 {
-    float angle_rad = (6.2831855f / 65536.0f) * (float)angle;
+    float angle_rad = nlAngleConstantsData.unitsToRadians * (float)angle;
     float octants = 1.2732395f * angle_rad;
     int k = (int)octants;
     float oct_f = (float)k;
@@ -230,13 +231,8 @@ void nlSinCos(float* presult_sin, float* presult_cos, unsigned short angle)
     float c2 = -0.49999395f;
     float c3 = 0.9999998f;
 
-    float sin_poly = s0 * y_squared + s1;
-    float cos_poly = c0 * y_squared + c1;
-    float sin_tmp = y_squared * sin_poly + s2;
-    float cos_tmp = y_squared * cos_poly + c2;
-    sin_poly = y_squared * sin_tmp + s3;
-    cos_poly = y_squared * cos_tmp + c3;
-    sin_poly = y * sin_poly;
+    float sin_poly = y * (y_squared * (y_squared * (s0 * y_squared + s1) + s2) + s3);
+    float cos_poly = y_squared * (y_squared * (c0 * y_squared + c1) + c2) + c3;
 
     float result_cos;
     float result_sin;
@@ -305,7 +301,7 @@ void nlSinCos(float* presult_sin, float* presult_cos, unsigned short angle)
 
 float nlSin(unsigned short angle)
 {
-    float a = (float)angle * (6.2831855f / 65536.0f);
+    float a = nlAngleConstantsData.unitsToRadians * (float)angle;
     float working_a = a;
     float flip_sign = 1.0f;
 
@@ -328,7 +324,6 @@ float nlSin(unsigned short angle)
 
 /**
  * Offset/Address/Size: 0x790 | 0x801D1C04 | size: 0x70
- * TODO: 96.79% match - register allocation diffs in Newton-Raphson iterations
  */
 float nlRecipSqrt(float x, bool)
 {

@@ -1,3 +1,5 @@
+#define BASICSTRING_COPY_REREAD_TEMP
+
 #include "Game/AI/FielderActions.h"
 #include "Game/Camera/CameraMan.h"
 #include "Game/Camera/animcam.h"
@@ -3070,13 +3072,13 @@ void MatrixCamFinishedCallback(MatrixEffectCam*)
 
 /**
  * Offset/Address/Size: 0x2D08 | 0x80029840 | size: 0x450
- * TODO: 99.62% match - r30/r31 register swap in BasicString temporary setup
  */
+#pragma optimization_level 2
 void cFielder::SetupCaptainSTSAnimCam(bool arg1)
 {
     mActionShootToScoreVars.captainStsCamera = new ((cAnimCamera*)nlMalloc(sizeof(cAnimCamera), 8, false)) cAnimCamera();
 
-    BasicString<char, Detail::TempStringAllocator> cameraName = Format(BasicString<char, Detail::TempStringAllocator>("{0}_ShootToScoreCamera"),
+    BasicString<char, Detail::TempStringAllocator> cameraName = Format(((void)0, BasicString<char, Detail::TempStringAllocator>("{0}_ShootToScoreCamera")),
         (const char*)GetTeamName(nlSingleton<GameInfoManager>::s_pInstance
                 ->mGameInfo[nlSingleton<GameInfoManager>::s_pInstance->mCurrentMode]
                 ->mTeamIndex[(s16)m_pTeam->m_nSide]));
@@ -3134,6 +3136,7 @@ void cFielder::SetupCaptainSTSAnimCam(bool arg1)
         cCameraManager::PushCamera(mActionShootToScoreVars.captainStsCamera);
     }
 }
+#pragma optimization_level 4
 
 /**
  * Offset/Address/Size: 0x2D04 | 0x8002983C | size: 0x4

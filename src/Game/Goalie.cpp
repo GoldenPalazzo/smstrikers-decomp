@@ -6080,6 +6080,7 @@ static inline cPlayer* DoGoalieFindOpenPassTarget(Goalie* pGoalie)
 
 /**
  * Offset/Address/Size: 0xF30 | 0x80043A2C | size: 0x8A4
+ * TODO: 99.64% - pass-target angle conversion and shooter-distance FP scheduling remain.
  */
 void Goalie::DoPassRelease()
 {
@@ -6156,7 +6157,7 @@ void Goalie::DoPassRelease()
                     aAbsDiff = -aDiff;
                 }
 
-                bool bValidPassTarget = false;
+                bool bValidPassTarget;
                 if ((u16)aAbsDiff <= 0x2AA8)
                 {
                     if ((float)fabs(m_v3Position.f.x) < (float)fabs(mpPassTarget->m_v3Position.f.x)
@@ -6235,14 +6236,19 @@ void Goalie::DoPassRelease()
     }
 
     bool bIsKick = false;
-    if (m_eAnimID < 6 && m_eAnimID >= 2)
+    switch (m_eAnimID)
     {
+    case 2:
+    case 3:
+    case 4:
+    case 5:
         bIsKick = true;
         Event* pEvent = g_pEventManager->CreateValidEvent(0x10, 0x38);
         GoalieSaveData* pSaveData = new ((u8*)pEvent + 0x10) GoalieSaveData();
         pSaveData->saveType = g_pBall->m_uGoalType;
         pSaveData->pShooter = g_pBall->m_pShooter;
         pSaveData->pGoalie = this;
+        break;
     }
 
     if (mpPassTarget != NULL)

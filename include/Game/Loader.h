@@ -9,8 +9,13 @@ class Loader
 {
 public:
     virtual bool StartLoad(LoadingManager*) = 0;
+#ifdef LOADER_METHODS_DECLARE_ONLY
+    virtual bool Update();
+    virtual const char* GetName();
+#else
     virtual bool Update() { return false; };
     virtual const char* GetName() { return "Loader"; };
+#endif
 };
 
 #endif // _LOADER_H_

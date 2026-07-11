@@ -1,8 +1,8 @@
 #ifndef _GLINVENTORY_H_
 #define _GLINVENTORY_H_
 
-#include "NL/nlList.h"
 #include "NL/nlAVLTree.h"
+#include "NL/nlList.h"
 
 #include "Game/SAnim.h"
 #include "Game/GL/GLMaterial.h"

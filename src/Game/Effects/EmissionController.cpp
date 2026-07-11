@@ -7,7 +7,7 @@
 #include "NL/nlMemory.h"
 #include "types.h"
 
-extern int numLingeringSystems;
+static int numLingeringSystems;
 
 struct EmissionFunctor
 {
@@ -20,6 +20,11 @@ struct UserEffectSpecClone : public UserEffectSpec
 {
     virtual UserEffectSpec* Clone() = 0;
 };
+
+static inline UserEffectSpec** GetUserSpecs(EffectsGroup* pGroup)
+{
+    return pGroup->m_userSpecsPtr;
+}
 
 struct EmptyCallback
 {
@@ -87,14 +92,11 @@ EmissionController::EmissionController(EffectsGroup* pEffectsGroup, unsigned sho
 
 /**
  * Offset/Address/Size: 0xD84 | 0x801F8674 | size: 0x1A8
- * TODO: 99.62% match - remaining register allocation differences in user effect clone loop (r29/r30 swap for pUserSpecs/ofs).
- * Target: r30=pUserSpecs, r29=ofs, r27=i. Current: r28=pUserSpecs, r30=ofs, r27=i.
- * Likely `-inline deferred` environment difference; exhaustive permutations tested.
  */
 void EmissionController::InitializeSystemsFromGroup()
 {
-    EffectsSpec* pEndSpec;
     EffectsSpec* pSpec;
+    EffectsSpec* pEndSpec;
     EffectsSpec* pSpecs;
     pSpecs = m_pGroup->m_specs;
     pSpec = pSpecs;
@@ -148,19 +150,12 @@ void EmissionController::InitializeSystemsFromGroup()
 
     if (m_nUserEffects > 0)
     {
-        int i;
-        int ofs;
-        UserEffectSpec** pUserSpecs = m_pGroup->m_userSpecsPtr;
+        UserEffectSpec** pUserSpecs = GetUserSpecs(m_pGroup);
         m_pUserEffects = (UserEffectSpec**)nlMalloc(m_nUserEffects * sizeof(UserEffectSpec*), 8, false);
 
-        i = 0;
-        ofs = 0;
-        while (i < m_nUserEffects)
+        for (int i = 0; i < m_nUserEffects; i++)
         {
-            m_pUserEffects[ofs] = ((UserEffectSpecClone*)pUserSpecs[0])->Clone();
-            pUserSpecs++;
-            i++;
-            ofs++;
+            m_pUserEffects[i] = ((UserEffectSpecClone*)pUserSpecs[i])->Clone();
         }
     }
 }

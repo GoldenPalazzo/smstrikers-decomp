@@ -1,5 +1,13 @@
+#define NL_AVLTREE_GLINVENTORY_LINK_ORDER
 #include "Game/GL/GLInventory.h"
+#undef NL_AVLTREE_GLINVENTORY_LINK_ORDER
 #include "NL/glx/glxLoadModel.h"
+
+template <typename TreeType, typename EntryType>
+inline void (TreeType::* GLInventoryDeleteEntryFunc())(EntryType*)
+{
+    return &TreeType::DeleteEntry;
+}
 
 typedef ListContainerBase<void*, NewAdapter<ListEntry<void*> > > FileDataListBase;
 

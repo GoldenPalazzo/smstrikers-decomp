@@ -3,6 +3,12 @@
 
 #include "NL/nlMemory.h"
 
+#ifdef NL_NEWADAPTER_EXPLICIT_LINK_ORDER
+#define NL_NEWADAPTER_DELETE_DECL WEAKFUNC void
+#else
+#define NL_NEWADAPTER_DELETE_DECL void
+#endif
+
 template <typename T>
 class NewAdapter
 {
@@ -11,7 +17,7 @@ public:
     T* Allocate() { return (T*)nlMalloc(sizeof(T), 8, false); }
     void Allocate(T*& out) { out = (T*)nlMalloc(sizeof(T), 8, false); }
     void Free(T* ptr) { delete ptr; }
-    void Delete(T* ptr);
+    NL_NEWADAPTER_DELETE_DECL Delete(T* ptr);
 
     // For List interface
     typedef T EntryType;
@@ -19,9 +25,11 @@ public:
 };
 
 template <typename T>
-void NewAdapter<T>::Delete(T* ptr)
+NL_NEWADAPTER_DELETE_DECL NewAdapter<T>::Delete(T* ptr)
 {
     delete ptr;
 }
+
+#undef NL_NEWADAPTER_DELETE_DECL
 
 #endif // NL_ADAPTER_H

@@ -54,7 +54,7 @@ static inline const unsigned short* LookupLocHash(unsigned long hash)
 
 /**
  * Offset/Address/Size: 0x26B8 | 0x801097BC | size: 0xCF0
- * TODO: 99.22% match - remaining BasicString copy and insert paths use shifted registers.
+ * TODO: 99.75% match - post-erase BasicString data and copy-on-write temporaries use shifted registers.
  */
 template <>
 template <>

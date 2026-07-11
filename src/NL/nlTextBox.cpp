@@ -5,8 +5,6 @@
 
 /**
  * Offset/Address/Size: 0x0 | 0x80211F28 | size: 0x244
- * TODO: 99.41% match - remaining register diffs around conversion/startX,
- * matrix mask, and string pointer locals.
  */
 void nlTextBox::DrawString(const nlTextBox::StringDrawInfo& DrawInfo, const nlVector2& DrawAt, const nlColour& Color, eGLView View)
 {
@@ -36,7 +34,6 @@ void nlTextBox::DrawString(const nlTextBox::StringDrawInfo& DrawInfo, const nlVe
     nlColour overridecolour;
     overridecolour = Color;
     unsigned long hMatrix;
-    float startX = DrawAt.f.x;
 
     unsigned long row = 0;
     CurrentPos.f.y = yWithOffset + (float)vertOffset;
@@ -45,7 +42,7 @@ void nlTextBox::DrawString(const nlTextBox::StringDrawInfo& DrawInfo, const nlVe
     while (row < DrawInfo.RowCount)
     {
         const Row& CurrentRow = *(Row*)(pIter + 0x14);
-        CurrentPos.f.x = startX + (float)CurrentRow.XOffset;
+        CurrentPos.f.x = DrawAt.f.x + (float)CurrentRow.XOffset;
 
         if (pMatrix)
         {
@@ -58,11 +55,11 @@ void nlTextBox::DrawString(const nlTextBox::StringDrawInfo& DrawInfo, const nlVe
         }
 
         unsigned short startIdx = CurrentRow.FirstChar;
-        unsigned long* matArg = pMatrix != 0 ? &hMatrix : 0;
         {
             FontCharString fontCharStr;
-            fontCharStr.m_InternalBuffer = 0;
             fontCharStr.m_pString = (unsigned short*)(DrawInfo.String + startIdx);
+            fontCharStr.m_InternalBuffer = 0;
+            unsigned long* matArg = pMatrix ? &hMatrix : 0;
 
             int length = (&CurrentRow + 1)->FirstChar - startIdx;
 
@@ -82,36 +79,27 @@ void nlTextBox::DrawString(const nlTextBox::StringDrawInfo& DrawInfo, const nlVe
 
 /**
  * Offset/Address/Size: 0x244 | 0x8021216C | size: 0x3B0
- * TODO: 96.93% match - remaining blocker: entry setup/store scheduling around
- * DrawInfo initialization.
  */
 void nlTextBox::ProcessString(const FontCharString* pString, const nlFont* pFont, const nlVector2& BoxSize, unsigned long DrawOptions, const nlMatrix4* pMatrix, nlTextBox::StringDrawInfo& DrawInfo)
 {
-    DrawInfo.pFont = pFont;
-    const unsigned short* str = pString->m_pString;
-    DrawInfo.DrawOptions = DrawOptions;
-    DrawInfo.String = str;
-    DrawInfo.pMatrix = pMatrix;
-    DrawInfo.RowCount = 0;
-
-    const unsigned short* pCurrentChar = str;
-
-    unsigned short escapeBegin = nlEscapeSequence::ESCAPE_BEGIN;
-    unsigned long wordWrapDisabled = DrawOptions & 0x400;
-    unsigned long alignment = DrawOptions & 0x3;
-    unsigned long centerAlign = DrawOptions & 0x1;
     unsigned long CurrentRowWidth = 0;
-    float maxWidth = BoxSize.f.x;
     const unsigned short* pLastSpace = 0;
     const unsigned short* pLastNonEsc = 0;
     unsigned long WidthAtLastSpace = 0;
     unsigned char FirstChar = 1;
     unsigned char IsNewParagraph = 0;
+    const unsigned short* pCurrentChar;
     unsigned long CharWidth;
+
+    DrawInfo.pFont = pFont;
+    pCurrentChar = DrawInfo.String = pString->m_pString;
+    DrawInfo.DrawOptions = DrawOptions;
+    DrawInfo.RowCount = 0;
+    DrawInfo.pMatrix = pMatrix;
 
     while (*pCurrentChar != 0)
     {
-        if (*pCurrentChar == escapeBegin)
+        if (*pCurrentChar == nlEscapeSequence::ESCAPE_BEGIN)
         {
             nlEscapeSequence esc(pCurrentChar);
 
@@ -122,7 +110,7 @@ void nlTextBox::ProcessString(const FontCharString* pString, const nlFont* pFont
             }
             else if (esc.m_Type == ESC_PARAGRAPH)
             {
-                CharWidth = (unsigned long)(0.5f + BoxSize.f.x);
+                CharWidth = (unsigned long)(1.0f + BoxSize.f.x);
                 WidthAtLastSpace = CurrentRowWidth;
                 IsNewParagraph = 1;
                 pLastSpace = esc.m_pEnd - 1;
@@ -147,9 +135,9 @@ void nlTextBox::ProcessString(const FontCharString* pString, const nlFont* pFont
 
         FirstChar = 0;
 
-        if ((float)(CurrentRowWidth + CharWidth) > maxWidth)
+        if ((float)(CurrentRowWidth + CharWidth) > BoxSize.f.x)
         {
-            if (!wordWrapDisabled && pLastSpace != 0)
+            if (!(DrawOptions & 0x400) && pLastSpace != 0)
             {
                 CurrentRowWidth = WidthAtLastSpace;
                 pCurrentChar = pLastSpace + 1;
@@ -158,10 +146,10 @@ void nlTextBox::ProcessString(const FontCharString* pString, const nlFont* pFont
             }
 
             int xOffset;
-            if (alignment)
+            if (DrawOptions & 0x3)
             {
-                int remaining = (int)(maxWidth - (float)CurrentRowWidth);
-                xOffset = remaining >> (centerAlign ? 1u : 0u);
+                int remaining = (int)(BoxSize.f.x - (float)CurrentRowWidth);
+                xOffset = remaining >> ((DrawOptions & 0x1) ? 1u : 0u);
             }
             else
             {
@@ -197,10 +185,10 @@ void nlTextBox::ProcessString(const FontCharString* pString, const nlFont* pFont
 
     // Final row
     int xOffset;
-    if (alignment)
+    if (DrawOptions & 0x3)
     {
         int remaining = (int)(BoxSize.f.x - (float)CurrentRowWidth);
-        xOffset = remaining >> (centerAlign ? 1u : 0u);
+        xOffset = remaining >> ((DrawOptions & 0x1) ? 1u : 0u);
     }
     else
     {

@@ -80,6 +80,28 @@ struct BasicStringData
     int mSize;     // offset 0x4
     int mCapacity; // offset 0x8
     int mRefCount; // offset 0xC
+
+#ifdef BASICSTRING_DELEGATING_CTOR
+    BasicStringData(const CharT* text)
+    {
+        mData = 0;
+        mSize = 0;
+        mCapacity = 0;
+        const CharT* scan = text;
+        while (*scan++ != 0)
+        {
+            mSize++;
+        }
+        mSize++;
+        mData = (CharT*)nlMalloc((mSize + 1) * sizeof(CharT), 8, true);
+        mCapacity = mSize;
+        for (int i = 0; i < mSize; i++)
+        {
+            mData[i] = *text++;
+        }
+        mRefCount = 1;
+    }
+#endif
 };
 
 // Backward-compatible typedef for char specialization
@@ -101,6 +123,9 @@ public:
     BasicString(const CharT* str)
 #ifndef BASICSTRING_OUTLINE_CTOR
     {
+#ifdef BASICSTRING_DELEGATING_CTOR
+        m_data = new (8, true) BasicStringData<CharT>(str);
+#else
         BasicStringData<CharT>* data = (BasicStringData<CharT>*)Allocator::allocate(sizeof(BasicStringData<CharT>));
         if (data != 0)
         {
@@ -123,6 +148,7 @@ public:
             data->mRefCount = 1;
         }
         m_data = data;
+#endif
     }
 #endif
     ;
@@ -235,9 +261,13 @@ public:
                 data->mData[0] = 0;
                 data->mRefCount = 1;
 #ifdef BASICSTRING_INDEX_EMPTY_COPY_BYTE_OFFSET
-                CharT* src = 0;
-                int offset = 0;
-                for (int j = 0; j < data->mSize - 1; j++)
+                CharT* src;
+                int offset;
+                int j;
+                j = 0;
+                offset = 0;
+                src = 0;
+                for (; j < data->mSize - 1; j++)
                 {
                     *(CharT*)((char*)data->mData + offset) = *src;
                     src++;

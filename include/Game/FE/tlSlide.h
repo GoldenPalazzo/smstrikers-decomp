@@ -15,7 +15,17 @@ enum eTimeLinePlayMode
 class TLSlide
 {
 public:
+#ifdef FERENDER_INLINE_ACCESSOR_IMPLS
+    // Plain body (no FORCE_DONT_INLINE): the call site uses inline_depth(0),
+    // so the weak copy defers to the end-of-TU flush and its bucket becomes
+    // the LAST linkonce section, with __sinit right behind it.
+    f32 GetCurrentTime() const
+    {
+        return m_time;
+    }
+#else
     f32 GetCurrentTime() const;
+#endif
     void Update(float);
     void UpdateAsset(TLInstance*, float);
 
@@ -30,5 +40,14 @@ public:
     /* 0x20 */ char m_szName[32];
     /* 0x40 */ u32 m_hash;
 };
+
+#ifdef FERENDER_INLINE_ACCESSOR_IMPLS
+// Phantom referenced only by feRender_stub: appends to this header's linkonce
+// bucket at end of TU so __sinit lands after GetCurrentTime; both the stub and
+// this weak copy are stripped by mwld.
+inline void feRenderTlSlideStub()
+{
+}
+#endif
 
 #endif // _TLSLIDE_H_

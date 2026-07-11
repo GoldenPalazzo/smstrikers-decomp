@@ -11,7 +11,15 @@ class TLSlide;
 class TLComponent : public FELibObject
 {
 public:
+#ifdef FERENDER_INLINE_ACCESSOR_IMPLS
+    TLSlide* GetActiveSlide()
+    {
+        FORCE_DONT_INLINE;
+        return m_pActiveSlide;
+    }
+#else
     TLSlide* GetActiveSlide();
+#endif
     void SetActiveSlide(unsigned long);
     void SetActiveSlide(const char*);
 

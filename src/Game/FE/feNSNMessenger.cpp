@@ -32,7 +32,6 @@ extern const unsigned short LocalizationTableNotFound[];
 extern const unsigned short MissingLocString[];
 
 static float MESSAGE_DISPLAY_TIME;
-extern "C" FEScrollText* __ct__12FEScrollTextFP14TLTextInstanceii(FEScrollText*, TLTextInstance*, int, int);
 
 /**
  * Offset/Address/Size: 0x0 | 0x800A131C | size: 0x1C0
@@ -87,11 +86,7 @@ void NSNMessengerScene::EnableScrolling(bool state)
         if (m_scrollText == NULL)
         {
             gl_ScreenInfo* screeninfo = glGetScreenInfo();
-            FEScrollText* scrolltext;
-            if ((scrolltext = (FEScrollText*)nlMalloc(0x22C, 8, false)) != NULL)
-            {
-                scrolltext = __ct__12FEScrollTextFP14TLTextInstanceii(scrolltext, textinstance, 0, screeninfo->ScreenWidth);
-            }
+            FEScrollText* scrolltext = new (nlMalloc(0x22C, 8, false)) FEScrollText(textinstance, 0, screeninfo->ScreenWidth);
             m_scrollText = scrolltext;
         }
         else

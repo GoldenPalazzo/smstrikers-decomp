@@ -1,3 +1,4 @@
+#define BASICSTRING_DELEGATING_CTOR
 #include "Game/SH/SHProgressiveScan.h"
 
 #include "Game/FE/feInput.h"
@@ -369,51 +370,9 @@ void ProgressiveScanScene::Update(float fDeltaT)
 }
 #pragma inline_depth()
 
-/**
- * TODO: 99.31% match - r31/r29 register swap (this vs language literal)
- *       across 8 switch cases
- */
-static inline void InitProgressiveScanLanguageStringData(BasicStringData<char>* data, const char* text)
-{
-    data->mData = 0;
-    data->mSize = 0;
-    data->mCapacity = 0;
-
-    const char* scan = text;
-    while (*scan++ != 0)
-    {
-        data->mSize++;
-    }
-
-    data->mSize++;
-    data->mData = (char*)nlMalloc((data->mSize + 1) * sizeof(char), 8, true);
-    data->mCapacity = data->mSize;
-
-    for (int i = 0; i < data->mSize; i++)
-    {
-        data->mData[i] = *text++;
-    }
-
-    data->mRefCount = 1;
-}
-
-#define ASSIGN_LANG(langLiteral)                                                                                \
-    {                                                                                                           \
-        BasicStringData<char>* data = (BasicStringData<char>*)nlMalloc(sizeof(BasicStringData<char>), 8, true); \
-        if (data != 0)                                                                                          \
-        {                                                                                                       \
-            InitProgressiveScanLanguageStringData(data, langLiteral);                                           \
-        }                                                                                                       \
-        languageString = BasicString<char, Detail::TempStringAllocator>(data);                                  \
-    }
-
 void ProgressiveScanScene::SwitchMessageImage()
 {
-    const char* confirmationText = "No";
-    if (mUseProgressiveMode)
-    {
-        confirmationText = "Yes";
-    }
+    const char* confirmationText = mUseProgressiveMode ? "Yes" : "No";
 
     BasicString<char, Detail::TempStringAllocator> languageString;
     FEPresentation* presentation = m_pFEPresentation;
@@ -424,28 +383,28 @@ void ProgressiveScanScene::SwitchMessageImage()
     switch (g_Language)
     {
     case 0:
-        ASSIGN_LANG("eng");
+        languageString = "eng";
         break;
     case 1:
-        ASSIGN_LANG("fre");
+        languageString = "fre";
         break;
     case 2:
-        ASSIGN_LANG("deu");
+        languageString = "deu";
         break;
     case 3:
-        ASSIGN_LANG("spa");
+        languageString = "spa";
         break;
     case 4:
-        ASSIGN_LANG("ita");
+        languageString = "ita";
         break;
     case 5:
-        ASSIGN_LANG("jpn");
+        languageString = "jpn";
         break;
     case 6:
-        ASSIGN_LANG("uke");
+        languageString = "uke";
         break;
     default:
-        ASSIGN_LANG("eng");
+        languageString = "eng";
         break;
     }
 
@@ -455,4 +414,3 @@ void ProgressiveScanScene::SwitchMessageImage()
 
     mConfirmationImage->QueueLoad(textureName, true);
 }
-#undef ASSIGN_LANG

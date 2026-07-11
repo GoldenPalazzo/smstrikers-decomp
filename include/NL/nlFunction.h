@@ -32,7 +32,11 @@ class Function1
 public:
     struct FunctorBase
     {
+#ifdef FUNCTION1_BASE_DTOR_DECLARE_ONLY
+        virtual ~FunctorBase();
+#else
         virtual ~FunctorBase() { };
+#endif
         virtual ReturnType operator()(ParamType) = 0;
         virtual FunctorBase* Clone() const = 0;
     };

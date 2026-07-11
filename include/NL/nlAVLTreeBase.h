@@ -18,7 +18,11 @@ struct AVLTreeNode
 class AVLTreeUntemplated
 {
 public:
+#ifdef NL_AVLTREEBASE_REVERSE_LINK_ORDER
+    virtual int CompareNodes(AVLTreeNode* node1, AVLTreeNode* node2);
+#else
     virtual int CompareNodes(AVLTreeNode* node1, AVLTreeNode* node2) = 0;
+#endif
     virtual int CompareKey(void* key, AVLTreeNode* n) = 0;
     virtual AVLTreeNode* AllocateEntry(void* key, void* value) = 0;
 
@@ -53,6 +57,11 @@ public:
     }
 };
 
+#ifdef NL_AVLTREE_GLINVENTORY_LINK_ORDER
+template <typename TreeType, typename EntryType>
+void (TreeType::* GLInventoryDeleteEntryFunc())(EntryType*);
+#endif
+
 template <typename KeyType, typename ValueType, typename AllocatorType, typename CompareType>
 class AVLTreeBase : public AVLTreeUntemplated
 {
@@ -64,15 +73,28 @@ public:
         m_Compare = nullptr;
     };
 
+#ifdef NL_AVLTREEBASE_REVERSE_LINK_ORDER
+    WEAKFUNC virtual int CompareNodes(AVLTreeNode* a, AVLTreeNode* b);
+    WEAKFUNC virtual int CompareKey(void* key, AVLTreeNode* node);
+    WEAKFUNC virtual AVLTreeNode* AllocateEntry(void* key, void* value);
+
+    WEAKFUNC void Clear();
+    WEAKFUNC ~AVLTreeBase();
+    AVLTreeEntry<KeyType, ValueType>* CastUp(AVLTreeNode* node) const;
+    WEAKFUNC void PostorderTraversal(AVLTreeEntry<KeyType, ValueType>* curr,
+        void (AVLTreeBase::*cb)(AVLTreeEntry<KeyType, ValueType>*));
+#else
+#ifdef NL_AVLTREE_GLINVENTORY_LINK_ORDER
+    ~AVLTreeBase()
+    {
+        FORCE_DONT_INLINE;
+        Clear();
+    }
+#else
     ~AVLTreeBase();
+#endif
 
 #ifdef NL_AVLTREEBASE_DELETEENTRY_INCLASS
-    // In-class variant (feResourceManager.cpp only): an in-class-defined
-    // member codegens eagerly when called from a dont_inline stub, which
-    // anchors DeleteEntry at the head of the TU's AVLTreeBase linkonce
-    // section like the original object. The Free logic is spelled out
-    // because the eager codegen runs while dont_inline is active, which
-    // would otherwise keep m_Allocator.Free() as an out-of-line call.
     void DeleteEntry(AVLTreeEntry<KeyType, ValueType>* entry)
     {
         SlotPoolEntry* e = (SlotPoolEntry*)entry;
@@ -85,8 +107,6 @@ public:
 
     typedef void (AVLTreeBase::*ENTRY_DELETE_FUNC)(AVLTreeEntry<KeyType, ValueType>*);
 
-    // Single mint site for the DeleteEntry PTMF const (.data): every caller
-    // materializes the anon const here, so MWCC pools one copy per TU.
     static ENTRY_DELETE_FUNC DeleteEntryFunc()
     {
         return &AVLTreeBase::DeleteEntry;
@@ -98,6 +118,7 @@ public:
     void DeleteValues();
 
     void PostorderTraversal(AVLTreeEntry<KeyType, ValueType>* curr, void (AVLTreeBase::*cb)(AVLTreeEntry<KeyType, ValueType>*));
+#endif
 
     template <typename CallbackType>
     void Walk(CallbackType* cbClass, void (CallbackType::*cb)(const KeyType&, ValueType*));
@@ -235,13 +256,30 @@ public:
         return false;
     }
 
+#ifdef NL_AVLTREEBASE_REVERSE_LINK_ORDER
+    WEAKFUNC void DestroyTree(void (AVLTreeBase::*deleteFunc)(AVLTreeEntry<KeyType, ValueType>*));
+    WEAKFUNC void DeleteValues();
+    WEAKFUNC void DeleteEntry(AVLTreeEntry<KeyType, ValueType>* entry);
+    WEAKFUNC void DeleteValue(AVLTreeEntry<KeyType, ValueType>* entry);
+
+    typedef void (AVLTreeBase::*ENTRY_DELETE_FUNC)(AVLTreeEntry<KeyType, ValueType>*);
+
+    static ENTRY_DELETE_FUNC DeleteEntryFunc()
+    {
+        return &AVLTreeBase::DeleteEntry;
+    }
+#else
+#ifdef NL_AVLTREE_GLINVENTORY_LINK_ORDER
+    virtual inline int CompareNodes(AVLTreeNode* a, AVLTreeNode* b);
+    virtual inline int CompareKey(void* key, AVLTreeNode* node);
+#else
     virtual int CompareNodes(AVLTreeNode* a, AVLTreeNode* b);
-
     virtual int CompareKey(void* key, AVLTreeNode* node);
-
+#endif
     virtual AVLTreeNode* AllocateEntry(void* key, void* value);
 
     AVLTreeEntry<KeyType, ValueType>* CastUp(AVLTreeNode* node) const;
+#endif
 
 public:
     /* 0x04 */ AllocatorType m_Allocator;
@@ -264,6 +302,12 @@ void AVLTreeBase<KeyType, ValueType, AllocatorType, CompareType>::DeleteEntry(AV
 }
 #endif
 
+#ifdef NL_AVLTREE_GLINVENTORY_LINK_ORDER
+#define NL_AVLTREE_GLINVENTORY_INLINE inline
+#else
+#define NL_AVLTREE_GLINVENTORY_INLINE
+#endif
+
 template <typename KeyType, typename ValueType, typename AllocatorType, typename CompareType>
 void AVLTreeBase<KeyType, ValueType, AllocatorType, CompareType>::DeleteValue(AVLTreeEntry<KeyType, ValueType>* entry)
 {
@@ -271,16 +315,8 @@ void AVLTreeBase<KeyType, ValueType, AllocatorType, CompareType>::DeleteValue(AV
     m_Allocator.Delete(entry);
 }
 
-#ifndef NL_AVLTREEBASE_DECLARE_ONLY
 template <typename KeyType, typename ValueType, typename AllocatorType, typename CompareType>
-AVLTreeBase<KeyType, ValueType, AllocatorType, CompareType>::~AVLTreeBase()
-{
-    Clear();
-}
-#endif
-
-template <typename KeyType, typename ValueType, typename AllocatorType, typename CompareType>
-void AVLTreeBase<KeyType, ValueType, AllocatorType, CompareType>::DestroyTree(void (AVLTreeBase::*deleteFunc)(AVLTreeEntry<KeyType, ValueType>*))
+NL_AVLTREE_GLINVENTORY_INLINE void AVLTreeBase<KeyType, ValueType, AllocatorType, CompareType>::DestroyTree(void (AVLTreeBase::*deleteFunc)(AVLTreeEntry<KeyType, ValueType>*))
 {
     if (m_Root != NULL)
     {
@@ -291,7 +327,7 @@ void AVLTreeBase<KeyType, ValueType, AllocatorType, CompareType>::DestroyTree(vo
 }
 
 template <typename KeyType, typename ValueType, typename AllocatorType, typename CompareType>
-void AVLTreeBase<KeyType, ValueType, AllocatorType, CompareType>::PostorderTraversal(AVLTreeEntry<KeyType, ValueType>* curr,
+NL_AVLTREE_GLINVENTORY_INLINE void AVLTreeBase<KeyType, ValueType, AllocatorType, CompareType>::PostorderTraversal(AVLTreeEntry<KeyType, ValueType>* curr,
     void (AVLTreeBase::*cb)(AVLTreeEntry<KeyType, ValueType>*))
 {
     if (curr->node.left != NULL)
@@ -306,8 +342,11 @@ void AVLTreeBase<KeyType, ValueType, AllocatorType, CompareType>::PostorderTrave
 }
 
 template <typename KeyType, typename ValueType, typename AllocatorType, typename CompareType>
-int AVLTreeBase<KeyType, ValueType, AllocatorType, CompareType>::CompareNodes(AVLTreeNode* a, AVLTreeNode* b)
+NL_AVLTREE_GLINVENTORY_INLINE int AVLTreeBase<KeyType, ValueType, AllocatorType, CompareType>::CompareNodes(AVLTreeNode* a, AVLTreeNode* b)
 {
+#if defined(NL_AVLTREEBASE_AUDIOLOADER_LINK_ORDER) || defined(NL_AVLTREE_GLINVENTORY_LINK_ORDER)
+    FORCE_DONT_INLINE;
+#endif
     const KeyType& keyA = ((AVLTreeEntry<KeyType, ValueType>*)a)->key;
     const KeyType& keyB = ((AVLTreeEntry<KeyType, ValueType>*)b)->key;
     int result;
@@ -321,8 +360,11 @@ int AVLTreeBase<KeyType, ValueType, AllocatorType, CompareType>::CompareNodes(AV
 }
 
 template <typename KeyType, typename ValueType, typename AllocatorType, typename CompareType>
-int AVLTreeBase<KeyType, ValueType, AllocatorType, CompareType>::CompareKey(void* key, AVLTreeNode* node)
+NL_AVLTREE_GLINVENTORY_INLINE int AVLTreeBase<KeyType, ValueType, AllocatorType, CompareType>::CompareKey(void* key, AVLTreeNode* node)
 {
+#if defined(NL_AVLTREEBASE_AUDIOLOADER_LINK_ORDER) || defined(NL_AVLTREE_GLINVENTORY_LINK_ORDER)
+    FORCE_DONT_INLINE;
+#endif
     int result;
     KeyType k = *(KeyType*)key;
     AVLTreeEntry<KeyType, ValueType>* entry = (AVLTreeEntry<KeyType, ValueType>*)node;
@@ -335,11 +377,14 @@ int AVLTreeBase<KeyType, ValueType, AllocatorType, CompareType>::CompareKey(void
     return result;
 }
 
+#ifndef NL_AVLTREE_GLINVENTORY_LINK_ORDER
 template <typename KeyType, typename ValueType, typename AllocatorType, typename CompareType>
 AVLTreeNode* AVLTreeBase<KeyType, ValueType, AllocatorType, CompareType>::AllocateEntry(void* key, void* value)
 {
+#ifdef NL_AVLTREEBASE_AUDIOLOADER_LINK_ORDER
+    FORCE_DONT_INLINE;
+#endif
     AVLTreeEntry<KeyType, ValueType>* newNode = NULL;
-
     m_Allocator.Allocate(newNode);
 
     newNode->node.left = NULL;
@@ -350,6 +395,7 @@ AVLTreeNode* AVLTreeBase<KeyType, ValueType, AllocatorType, CompareType>::Alloca
 
     return (AVLTreeNode*)newNode;
 }
+#endif
 
 template <typename KeyType, typename ValueType, typename AllocatorType, typename CompareType>
 template <typename CallbackType>
@@ -374,10 +420,28 @@ void AVLTreeBase<KeyType, ValueType, AllocatorType, CompareType>::InorderWalk(AV
     }
 }
 
+#if !defined(NL_AVLTREEBASE_DECLARE_ONLY) && !defined(NL_AVLTREE_GLINVENTORY_LINK_ORDER)
 template <typename KeyType, typename ValueType, typename AllocatorType, typename CompareType>
-void AVLTreeBase<KeyType, ValueType, AllocatorType, CompareType>::Clear()
+AVLTreeBase<KeyType, ValueType, AllocatorType, CompareType>::~AVLTreeBase()
 {
+#ifdef NL_AVLTREEBASE_AUDIOLOADER_LINK_ORDER
+    FORCE_DONT_INLINE;
+#endif
+    Clear();
+}
+#endif
+
+template <typename KeyType, typename ValueType, typename AllocatorType, typename CompareType>
+NL_AVLTREE_GLINVENTORY_INLINE void AVLTreeBase<KeyType, ValueType, AllocatorType, CompareType>::Clear()
+{
+#ifdef NL_AVLTREEBASE_AUDIOLOADER_LINK_ORDER
+    FORCE_DONT_INLINE;
+#endif
+#ifdef NL_AVLTREE_GLINVENTORY_LINK_ORDER
+    DestroyTree(GLInventoryDeleteEntryFunc<AVLTreeBase, AVLTreeEntry<KeyType, ValueType> >());
+#else
     DestroyTree(DeleteEntryFunc());
+#endif
     m_NumElements = 0;
 }
 
@@ -387,5 +451,26 @@ void AVLTreeBase<KeyType, ValueType, AllocatorType, CompareType>::DeleteValues()
     DestroyTree(&AVLTreeBase::DeleteValue);
     m_NumElements = 0;
 }
+
+#ifdef NL_AVLTREE_GLINVENTORY_LINK_ORDER
+template <typename KeyType, typename ValueType, typename AllocatorType, typename CompareType>
+AVLTreeNode* AVLTreeBase<KeyType, ValueType, AllocatorType, CompareType>::AllocateEntry(void* key, void* value)
+{
+    FORCE_DONT_INLINE;
+    AVLTreeEntry<KeyType, ValueType>* newNode = NULL;
+
+    m_Allocator.Allocate(newNode);
+
+    newNode->node.left = NULL;
+    newNode->node.right = NULL;
+    newNode->node.heavy = 0;
+    newNode->key = *(KeyType*)key;
+    newNode->value = *(ValueType*)value;
+
+    return (AVLTreeNode*)newNode;
+}
+#endif
+
+#undef NL_AVLTREE_GLINVENTORY_INLINE
 
 #endif // _AVLTREEBASE_H_

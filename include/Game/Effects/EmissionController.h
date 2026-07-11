@@ -10,34 +10,7 @@
 #include "Game/Effects/efList.h"
 
 class cPN_SAnimController;
-
-// enum Tag
-// {
-//     EMPTY = 0,
-//     FREE_FUNCTION = 1,
-//     FUNCTOR = 2,
-// };
-
 class EmissionController;
-
-// struct FunctorBase
-// {
-//     virtual ~FunctorBase() { };
-//     virtual FunctorBase* fnc_0x8() = 0;
-//     virtual FunctorBase* fnc_0x10() = 0;
-// };
-
-// template <typename ReturnType, typename ParamType>
-// class Function1
-// {
-// public:
-//     enum Tag mTag; // offset 0x0, size 0x4
-//     union
-//     {                                           // inferred
-//         ReturnType (*mFreeFunction)(ParamType); // offset 0x4, size 0x4
-//         FunctorBase* mFunctor;                  // offset 0x4, size 0x4
-//     };
-// }; // total size: 0x8
 
 void* fxLoadEntireFileHigh(const char* filename, unsigned long* fileSize);
 

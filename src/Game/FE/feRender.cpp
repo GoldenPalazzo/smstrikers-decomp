@@ -1,3 +1,7 @@
+#define NL_SINGLETON_NO_DEFINE
+#define NL_FLOATCOLOUR_ASSIGN_OUT_OF_LINE
+#define FERENDER_INLINE_ACCESSOR_IMPLS
+
 #include "Game/FE/feRender.h"
 #include "Game/FE/tlInstance.h"
 #include "Game/FE/tlImageInstance.h"
@@ -16,12 +20,16 @@
 #include "NL/platvmath.h"
 #include "NL/gl/gl.h"
 
-GLMatrixStack* FERender::m_pMatrixStack = nullptr;
-FEScene* FERender::m_pRenderScene = nullptr;
+static inline unsigned long feKeepU(unsigned long x)
+{
+    return x;
+}
 
 static nlFloatColour s_currentAssetColour;
 static unsigned long drawQuadProgram = glGetProgram("2d unlit");
-static unsigned long grabTex = nlStringLowerHash("target/grab_texture");
+FEScene* FERender::m_pRenderScene = nullptr;
+GLMatrixStack* FERender::m_pMatrixStack = nullptr;
+static const unsigned long grabTex = nlStringLowerHash("target/grab_texture");
 
 inline void ConvertFloatColourToColour(nlColour& out, const nlFloatColour& in)
 {
@@ -41,7 +49,6 @@ inline void ConvertFloatColourToColour_(nlColour& out, const float r, const floa
 
 /**
  * Offset/Address/Size: 0x0 | 0x8020A288 | size: 0x3BC
- * TODO: 95.73% match - 3-way register cycle (texconfig r28/r29, program r29/r31, pMap r31/r28), Begin-fail destructor inlined instead of separate block, 4 cosmetic static var index diffs
  */
 inline void GLMeshWriterCore::Position(const nlVector3& v)
 {
@@ -50,22 +57,22 @@ inline void GLMeshWriterCore::Position(const nlVector3& v)
 
 /**
  * Offset/Address/Size: 0x0 | 0x8020A288 | size: 0x3BC
- * TODO: 99.90% match - matrixHandle/view register allocation plus cosmetic local static/sdata label diffs.
  */
 unsigned char FERender::RenderImageInstance(const TLImageInstance* pTLImageInstance)
 {
+    unsigned long textureHandle;
+
     nlColour colour = pTLImageInstance->GetAssetColour();
 
     const FEImage* pFEImage = (const FEImage*)pTLImageInstance->m_component;
     FETextureResource* pTexRes = pFEImage->m_pFeTextureResource;
-    unsigned long matrixHandle;
 
     if (!pTexRes->m_bValid)
         return 1;
 
     ConvertFloatColourToColour(colour, s_currentAssetColour);
 
-    unsigned long textureHandle = pTexRes->m_glTextureHandle;
+    textureHandle = feKeepU(pTexRes->m_glTextureHandle);
     if (!textureHandle)
         return 1;
 
@@ -73,30 +80,30 @@ unsigned char FERender::RenderImageInstance(const TLImageInstance* pTLImageInsta
     m_pMatrixStack->GetTop(matTM);
     nlMultMatrices(matTM, matTM, m_pRenderScene->m_matView);
 
-    matrixHandle = glAllocMatrix();
+    unsigned long matrixHandle = feKeepU(glAllocMatrix());
     if (matrixHandle != 0xFFFFFFFF)
         glSetMatrix(matrixHandle, matTM);
 
     nlVector2 pos[4];
     nlVector2 uv[4];
 
-    uv[0].e[0] = 0.0f;
-    uv[0].e[1] = 0.0f;
-    uv[1].e[0] = 0.0f;
-    uv[1].e[1] = 1.0f;
-    uv[2].e[0] = 1.0f;
-    uv[2].e[1] = 1.0f;
-    uv[3].e[0] = 1.0f;
-    uv[3].e[1] = 0.0f;
+    uv[0].e[0] = 0.0078125f;
+    uv[0].e[1] = 0.0078125f;
+    uv[1].e[0] = 0.0078125f;
+    uv[1].e[1] = 0.9921875f;
+    uv[2].e[0] = 0.9921875f;
+    uv[2].e[1] = 0.9921875f;
+    uv[3].e[0] = 0.9921875f;
+    uv[3].e[1] = 0.0078125f;
 
-    pos[0].e[0] = -0.5f;
-    pos[0].e[1] = 0.5f;
-    pos[1].e[0] = -0.5f;
-    pos[1].e[1] = -0.5f;
-    pos[2].e[0] = 0.5f;
-    pos[2].e[1] = -0.5f;
-    pos[3].e[0] = 0.5f;
-    pos[3].e[1] = 0.5f;
+    pos[0].e[0] = -50.0f;
+    pos[0].e[1] = 50.0f;
+    pos[1].e[0] = -50.0f;
+    pos[1].e[1] = -50.0f;
+    pos[2].e[0] = 50.0f;
+    pos[2].e[1] = -50.0f;
+    pos[3].e[0] = 50.0f;
+    pos[3].e[1] = 50.0f;
 
     glSetDefaultState(false);
 
@@ -170,7 +177,7 @@ unsigned char FERender::RenderImageInstance(const TLImageInstance* pTLImageInsta
         if (!meshWriter.End())
             return 0;
 
-        eGLView view = (eGLView)m_pRenderScene->m_uRenderView;
+        eGLView view = (eGLView)feKeepU(m_pRenderScene->m_uRenderView);
         glViewAttachModel(view, 0, meshWriter.GetModel());
     }
     else
@@ -454,6 +461,19 @@ void FERender::RenderComponentInstance(TLComponentInstance* componentInstance)
 }
 
 /**
+ * Offset/Address/Size: 0x954 | 0x8020ABDC | size: 0x24
+ * Weak __as__ copy emitted here in main .text (body guarded out of nlColour.h
+ * via NL_FLOATCOLOUR_ASSIGN_OUT_OF_LINE).
+ */
+inline void nlFloatColour::operator=(const nlFloatColour& other)
+{
+    *(u32*)&c[0] = *(u32*)&other.c[0];
+    *(u32*)&c[1] = *(u32*)&other.c[1];
+    *(u32*)&c[2] = *(u32*)&other.c[2];
+    *(u32*)&c[3] = *(u32*)&other.c[3];
+}
+
+/**
  * Offset/Address/Size: 0x978 | 0x8020AC00 | size: 0x418
  * TODO: 99.81% match - first colour-loop pointer/index registers differ.
  * No opcode or control-flow diffs.
@@ -670,6 +690,9 @@ void FERender::RenderTimeLineAsset(TLInstance* pTLInstance, float fCurrentTime)
     nlMatrix4 rotationMatrix;
     nlMatrix4 scaleMatrix;
     nlMatrix4 combinedMatrix;
+    nlFloatColour colour;
+    nlFloatColour oldSlideColour;
+    nlFloatColour oldGrandColour;
     TLInstance* curr;
     TLInstance* next;
 
@@ -749,10 +772,19 @@ void FERender::RenderTimeLineAsset(TLInstance* pTLInstance, float fCurrentTime)
 
                     while (true)
                     {
-                        nlFloatColour oldSlideColour = s_currentAssetColour;
+                        {
+                            u32* slideSaveDst = (u32*)&oldSlideColour;
+                            u32* slideSaveSrc = (u32*)&s_currentAssetColour;
+                            slideSaveDst[0] = slideSaveSrc[0];
+                            slideSaveDst[1] = slideSaveSrc[1];
+                            slideSaveDst[2] = slideSaveSrc[2];
+                            slideSaveDst[3] = slideSaveSrc[3];
+                        }
                         next = curr->m_next;
 
+#pragma inline_depth(0)
                         float slideTime = slide->GetCurrentTime();
+#pragma inline_depth()
                         if (curr->IsValidAtTime(slideTime) && curr->IsVisible())
                         {
                             PushTransformMatrix(curr);
@@ -835,7 +867,14 @@ void FERender::RenderTimeLineAsset(TLInstance* pTLInstance, float fCurrentTime)
 
         while (true)
         {
-            nlFloatColour colour = s_currentAssetColour;
+            {
+                u32* colSaveDst = (u32*)&colour;
+                u32* colSaveSrc = (u32*)&s_currentAssetColour;
+                colSaveDst[0] = colSaveSrc[0];
+                colSaveDst[1] = colSaveSrc[1];
+                colSaveDst[2] = colSaveSrc[2];
+                colSaveDst[3] = colSaveSrc[3];
+            }
             next = curr->m_next;
 
             if (curr->IsValidAtTime(fCurrentTime) && curr->m_bVisible)
@@ -917,7 +956,14 @@ void FERender::RenderTimeLineAsset(TLInstance* pTLInstance, float fCurrentTime)
 
                     while (true)
                     {
-                        nlFloatColour oldGrandColour = s_currentAssetColour;
+                        {
+                            u32* grandSaveDst = (u32*)&oldGrandColour;
+                            u32* grandSaveSrc = (u32*)&s_currentAssetColour;
+                            grandSaveDst[0] = grandSaveSrc[0];
+                            grandSaveDst[1] = grandSaveSrc[1];
+                            grandSaveDst[2] = grandSaveSrc[2];
+                            grandSaveDst[3] = grandSaveSrc[3];
+                        }
                         TLInstance* nextGrand = grandchild->m_next;
 
                         if (grandchild->IsValidAtTime(fCurrentTime) && grandchild->IsVisible())
@@ -1102,121 +1148,13 @@ void FERender::CalculateCurrentAssetColour(const TLInstance* instance)
     }
 }
 
-// {
-//     const nlColour& colour = instance->GetColour();
-
-//     for (int i = 0; i < 4; i++)
-//     {
-//         float component = (float)colour.c[i];
-//         s_currentAssetColour.c[i] = (s_currentAssetColour.c[i] * component) / 255.0f;
-//     }
-// }
-
 /**
- * Offset/Address/Size: 0x0 | 0x8020BA14 | size: 0x8
- */
-eTimeLineAssetType TLInstance::GetType() const
-{
-    return m_type;
-}
-
-/**
- * Offset/Address/Size: 0x8 | 0x8020BA1C | size: 0x8
- */
-bool TLInstance::IsVisible() const
-{
-    return m_bVisible;
-}
-
-/**
- * Offset/Address/Size: 0x10 | 0x8020BA24 | size: 0x8
- */
-FELibObject* TLInstance::GetLibRefObject() const
-{
-    return m_component;
-}
-
-/**
- * Offset/Address/Size: 0x0 | 0x8020BA2C | size: 0x8
- */
-TLSlide* TLComponent::GetActiveSlide()
-{
-    return m_pActiveSlide;
-}
-
-/**
- * Offset/Address/Size: 0x0 | 0x8020BA34 | size: 0x8
- */
-eGLView FEScene::GetRenderView() const
-{
-    return (eGLView)m_uRenderView;
-}
-
-/**
- * Offset/Address/Size: 0x8 | 0x8020BA3C | size: 0x8
- */
-const nlMatrix4& FEScene::GetCameraMatrix() const
-{
-    return m_matView;
-}
-
-/**
- * Offset/Address/Size: 0x0 | 0x8020BA44 | size: 0x70
- */
-
-/**
- * Offset/Address/Size: 0x0 | 0x8020BAB4 | size: 0x8
- */
-void TLTextInstance::SetMatrix(nlMatrix4* pMatrix)
-{
-    m_DrawInfo.pMatrix = pMatrix;
-}
-
-/**
- * Offset/Address/Size: 0x0 | 0x8020BABC | size: 0x24
- */
-void nlMatrix4::SetTranslation(const nlVector3& v)
-{
-    f.m41 = v.f.x;
-    f.m42 = v.f.y;
-    f.m43 = v.f.z;
-    f.m44 = 1.0f;
-}
-
-/**
- * Offset/Address/Size: 0x0 | 0x8020BAE0 | size: 0x1C
- */
-void feVector3::GetNLVector3(nlVector3& out) const
-{
-    out.f.x = f.x;
-    out.f.y = f.y;
-    out.f.z = f.z;
-}
-
-/**
- * Offset/Address/Size: 0x0 | 0x8020BAFC | size: 0x8
- */
-f32 TLSlide::GetCurrentTime() const
-{
-    return m_time;
-}
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x8020BB04 | size: 0x3C
-//  */
-// void 0x8028D570..0x8028D574 | size: 0x4
-// {
-// }
-
-/**
- * Stub only for field order; unreferenced so the linker drops it.
- * Forces emission of specific constants/operations so the compiler
- * lays out the related fields to match the original binary.
+ * Unreferenced (mwld strips it). Forces the deferred weak-body flush to happen
+ * before __sinit synthesis so __sinit lands in its own section AFTER the
+ * linkonce buckets, as in the original object.
  */
 void feRender_stub()
 {
-    void (nlFloatColour::* volatile forceAssign)(const nlFloatColour&) = &nlFloatColour::operator=;
-    void (*volatile forceConvertColour)(nlColour&, const nlFloatColour&) = &ConvertColour;
-    (void)forceAssign;
-    (void)forceConvertColour;
+    void (*volatile forceTlSlideBucket)() = &feRenderTlSlideStub;
+    (void)forceTlSlideBucket;
 }

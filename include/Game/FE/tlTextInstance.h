@@ -23,7 +23,15 @@ public:
     void SetString(const unsigned short* utf16);
     void SetStringId(const char* name);
     const unsigned short* GetString() const;
+#ifdef FERENDER_INLINE_ACCESSOR_IMPLS
+    void SetMatrix(nlMatrix4* pMatrix)
+    {
+        FORCE_DONT_INLINE;
+        m_DrawInfo.pMatrix = pMatrix;
+    }
+#else
     void SetMatrix(nlMatrix4*);
+#endif
     void Render(eGLView, const nlColour&) const;
 
     /* 0x80 */ unsigned long m_LocStrId;

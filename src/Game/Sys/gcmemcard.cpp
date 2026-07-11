@@ -711,8 +711,7 @@ long MemCard::CreateFile(const char* FileName, unsigned long FileSize, MemCard::
 
 /**
  * Offset/Address/Size: 0xBE8 | 0x801CA358 | size: 0x340
- * TODO: 96.97% match - insert shift loop pEntry load/store still uses r0
- * instead of target r5.
+ * TODO: 99.06% match - both lookup pEntry copies use r0 instead of target r5.
  */
 extern "C" void* memset(void*, int, unsigned long);
 
@@ -820,7 +819,14 @@ long MemCard::OpenFile(const char* FileName, MemCard::MC_FILE*& pFile, unsigned 
             pFile->IconCfg.IconCount = pFile->IconCfg.IconCount + 1;
         }
 
-        pFile->IconCfg.HeaderSize = pFile->IconCfg.BannerFormat * 0xC00 + ((pFile->IconCfg.BannerFormat == CARD_STAT_BANNER_C8) ? 0x200 : 0) + (pFile->IconCfg.IconCount * ((s8)pFile->IconCfg.IconFormat << 10)) + (((s8)pFile->IconCfg.IconFormat == CARD_STAT_ICON_C8) ? 0x200 : 0) + 0x40;
+        ICON_CONFIG* config = &pFile->IconCfg;
+        unsigned long paletteSize = 0x200;
+        s8 iconFormat = config->IconFormat;
+        unsigned long headerSize = ((config->BannerFormat == 1) ? paletteSize : 0);
+        headerSize = headerSize + (config->BannerFormat * 0xC00);
+        headerSize = headerSize + (config->IconCount * (iconFormat << 10));
+        headerSize = headerSize + ((iconFormat == 1) ? paletteSize : 0);
+        config->HeaderSize = headerSize + 0x40;
 
         unsigned long sectorMask = m_CardInfo.SectorSize - 1;
         pFile->TotalHeaderSize = (pFile->IconCfg.HeaderSize + sectorMask) & ~sectorMask;

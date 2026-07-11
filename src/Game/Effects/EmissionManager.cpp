@@ -1,3 +1,7 @@
+#define NL_AVLTREEBASE_REVERSE_LINK_ORDER
+#define NL_NEWADAPTER_EXPLICIT_LINK_ORDER
+// The retained weak Function1 base destructor is owned by an earlier TU.
+#define FUNCTION1_BASE_DTOR_DECLARE_ONLY
 #include "Game/Effects/EmissionManager.h"
 #include "dolphin/types.h"
 #include "NL/nlAVLTree.h"
@@ -6,54 +10,120 @@
 #include "Game/Sys/debug.h"
 #include "Game/Replay.h"
 
-// ---- Replayable specs OWNED by EmissionManager ----
-// Eight `template <>` definitions emit in this TU's .o. Note: bodies for
-// `<0, *, char>` and `<0, *, EmissionController>` use plain `template <>`
-// (not inline) because their bodies are too small -- MWCC inlines them away
-// even with FORCE_DONT_INLINE when marked inline. They emit as global
-// instead of weak; the rest use inline-weak. See Replay.h for rationale.
-//   <0, Load, EmissionController> (top)   <0, Save, char>
-//   <0, Load, char>   <0, Save, unsigned long>   <0, Save, unsigned short>
-//   <0, Load, unsigned long>   <0, Load, unsigned short>
-//
-template <>
-void Replayable<0, LoadFrame, EmissionController>(LoadFrame& frame, EmissionController& controller)
+template <typename FrameType>
+static inline void ReplayControllerFloats(FrameType& frame, EmissionController& controller)
 {
-    frame.Replayable<0>(controller);
+    const FloatCompressor<-255, 255, 6> positionX(controller.m_vPosition.f.x);
+    ::Replayable<0>(frame, positionX);
+    const FloatCompressor<-255, 255, 6> positionY(controller.m_vPosition.f.y);
+    ::Replayable<0>(frame, positionY);
+    const FloatCompressor<-255, 255, 6> positionZ(controller.m_vPosition.f.z);
+    ::Replayable<0>(frame, positionZ);
+    const FloatCompressor<-255, 255, 6> directionX(controller.m_vDirection.f.x);
+    ::Replayable<0>(frame, directionX);
+    const FloatCompressor<-255, 255, 6> directionY(controller.m_vDirection.f.y);
+    ::Replayable<0>(frame, directionY);
+    const FloatCompressor<-255, 255, 6> directionZ(controller.m_vDirection.f.z);
+    ::Replayable<0>(frame, directionZ);
+    const FloatCompressor<-255, 255, 6> velocityX(controller.m_vVelocity.f.x);
+    ::Replayable<0>(frame, velocityX);
+    const FloatCompressor<-255, 255, 6> velocityY(controller.m_vVelocity.f.y);
+    ::Replayable<0>(frame, velocityY);
+    const FloatCompressor<-255, 255, 6> velocityZ(controller.m_vVelocity.f.z);
+    ::Replayable<0>(frame, velocityZ);
 }
 
-extern "C"
+static inline void ReplayControllerState(LoadFrame& frame, EmissionController& controller)
 {
-    void __vt__18AVLTreeUntemplated(void);
-    void vtAVLTreeBaseLingerers(void);
-    void vtNlAVLTreeLingerers(void);
+    float age = 0.0f;
+    ::Replayable<0>(frame, age);
+    age += frame.mNonBlendableAheadOfFrame;
+    controller.m_ReplayDeltaTime = age - controller.m_Age;
+    controller.m_Age = age;
+
+    unsigned int updateCb = 0;
+    ::Replayable<0>(frame, updateCb);
+    register unsigned int callback = updateCb;
+    if (callback != 0)
+    {
+        if (controller.mUpdateCallback.mTag == FUNCTOR)
+        {
+            delete controller.mUpdateCallback.mFunctor;
+        }
+        controller.mUpdateCallback.mTag = EMPTY;
+        controller.mUpdateCallback.mTag = FREE_FUNCTION;
+        controller.mUpdateCallback.mFreeFunction = (void (*)(EmissionController&))callback;
+    }
+
+    unsigned int finishedCb = 0;
+    ::Replayable<0>(frame, finishedCb);
+    callback = finishedCb;
+    if (callback != 0)
+    {
+        if (controller.mFinishedCallback.mTag == FUNCTOR)
+        {
+            delete controller.mFinishedCallback.mFunctor;
+        }
+        controller.mFinishedCallback.mTag = EMPTY;
+        controller.mFinishedCallback.mTag = FREE_FUNCTION;
+        controller.mFinishedCallback.mFreeFunction = (void (*)(EmissionController&))callback;
+    }
 }
 
-#pragma alias vtAVLTreeBaseLingerers "__vt__106AVLTreeBase<Ul,P13LingerMessage,47NewAdapter<33AVLTreeEntry<Ul,P13LingerMessage>>,21DefaultKeyCompare<Ul>>"
-#pragma alias vtNlAVLTreeLingerers "__vt__54nlAVLTree<Ul,P13LingerMessage,21DefaultKeyCompare<Ul>>"
+static inline void ReplayControllerCallbacks(SaveFrame& frame, EmissionController& controller)
+{
+    unsigned int updateCb = (controller.mUpdateCallback.mTag == FREE_FUNCTION)
+                              ? (unsigned int)controller.mUpdateCallback.mFreeFunction
+                              : 0;
+    Replayable<0>(frame, updateCb);
+
+    unsigned int finishedCb = (controller.mFinishedCallback.mTag == FREE_FUNCTION)
+                                ? (unsigned int)controller.mFinishedCallback.mFreeFunction
+                                : 0;
+    Replayable<0>(frame, finishedCb);
+}
 
 template <>
-nlAVLTree<unsigned long, LingerMessage*, DefaultKeyCompare<unsigned long> >::~nlAVLTree();
+WEAKFUNC nlAVLTree<unsigned long, LingerMessage*, DefaultKeyCompare<unsigned long> >::~nlAVLTree();
 
 static class efList* controllers = nullptr;
 static class efList* errors = nullptr;
 static nlAVLTree<unsigned long, LingerMessage*, DefaultKeyCompare<unsigned long> >* lingerers = nullptr;
-static int g_nNumLights = 0;
 static EffectsLight g_EffectsLights[3];
 
-extern eGLView defaultView;
-
-static unsigned long fx_sTerrain;
+static eGLView defaultView = GLV_Particles;
 
 typedef AVLTreeEntry<unsigned long, LingerMessage*> LMEntry;
+typedef AVLTreeBase<unsigned long, LingerMessage*, NewAdapter<LMEntry>, DefaultKeyCompare<unsigned long> > LingerTreeBase;
+
+template <>
+inline LingerTreeBase::ENTRY_DELETE_FUNC LingerTreeBase::DeleteEntryFunc()
+{
+    return &LingerTreeBase::DeleteEntry;
+}
+
+template class AVLTreeBase<unsigned long, LingerMessage*, NewAdapter<LMEntry>, DefaultKeyCompare<unsigned long> >;
+#pragma defer_codegen off
+
+static char lingerMessageFormat[] = "%s lingers (%d .. %d)";
+static char nonEmptyEmissionManagerMessage[] = "EmissionManager being deleted non-empty\n";
+
+template class NewAdapter<LMEntry>;
+#define REPLAY_EMISSION_FREE_SPECIALIZATIONS
+#include "Game/Replay.h"
+#undef REPLAY_EMISSION_FREE_SPECIALIZATIONS
+
+#define LOADFRAME_EMISSIONCONTROLLER_SPECIALIZATIONS
+#include "Game/LoadFrame.h"
+#undef LOADFRAME_EMISSIONCONTROLLER_SPECIALIZATIONS
+
+#pragma defer_codegen reset
 
 struct nlAVLTreeIter
 {
     LMEntry** m_Stack;
     unsigned int m_NumStackEntries;
 };
-
-static const nlColour kLingerColour = { 0xFF, 0xFF, 0x40, 0xFF };
 
 /**
  * Offset/Address/Size: 0xE38 | 0x801F9758 | size: 0x20
@@ -63,6 +133,10 @@ EmissionManager& EmissionManager::InstanceForReplayOnly()
     static EmissionManager instance(true);
     return instance;
 }
+
+static int g_nNumLights = 0;
+static unsigned short globalIdCounter;
+static signed char globalIdCounterInit;
 
 /**
  * Offset/Address/Size: 0xD6C | 0x801F968C | size: 0xCC
@@ -91,19 +165,16 @@ bool EmissionManager::Startup(eGLView view)
 
     nlAVLTree<unsigned long, LingerMessage*, DefaultKeyCompare<unsigned long> >* tmp_lingerers = (nlAVLTree<unsigned long, LingerMessage*, DefaultKeyCompare<unsigned long> >*)nlMalloc(
         sizeof(nlAVLTree<unsigned long, LingerMessage*, DefaultKeyCompare<unsigned long> >), 8, false);
-    if (tmp_lingerers != nullptr)
-    {
-        u32* map = (u32*)tmp_lingerers;
-        map[0] = (u32)__vt__18AVLTreeUntemplated;
-        map[0] = (u32)vtAVLTreeBaseLingerers;
-        map[4] = 0;
-        map[2] = 0;
-        map[3] = 0;
-        map[0] = (u32)vtNlAVLTreeLingerers;
-    }
+    new (tmp_lingerers) nlAVLTree<unsigned long, LingerMessage*, DefaultKeyCompare<unsigned long> >();
     lingerers = tmp_lingerers;
 
     return true;
+}
+
+template <>
+WEAKFUNC nlAVLTree<unsigned long, LingerMessage*, DefaultKeyCompare<unsigned long> >::~nlAVLTree()
+{
+    FORCE_DONT_INLINE;
 }
 
 /**
@@ -113,7 +184,7 @@ bool EmissionManager::Shutdown()
 {
     if (controllers->m_headNode != nullptr)
     {
-        tDebugPrintManager::Print(DC_RENDER, "EmissionManager being deleted non-empty\n");
+        tDebugPrintManager::Print(DC_RENDER, nonEmptyEmissionManagerMessage);
     }
 
     EmissionController* next;
@@ -253,7 +324,7 @@ void EmissionManager::Update(float dt)
             LMEntry* entry = iter->m_Stack[iter->m_NumStackEntries - 1];
             LingerMessage* l = entry->value;
 
-            glFontPrintf((eGLView)0x21, 0, y, colour, "%s: %d (%d)", l->szMessage, l->nLingers, l->nParticles);
+            glFontPrintf((eGLView)0x21, 0, y, colour, lingerMessageFormat, l->szMessage, l->nLingers, l->nParticles);
 
             iter->m_NumStackEntries--;
 
@@ -347,14 +418,18 @@ EmissionController* EmissionManager::Create(EffectsGroup* pEffectsGroup, unsigne
 {
     EmissionController* pController;
 
-    static u16 globalIdCounter = 1;
+    if (!globalIdCounterInit)
+    {
+        globalIdCounter = 1;
+        globalIdCounterInit = 1;
+    }
 
     if (id == 0)
     {
         id = globalIdCounter++;
     }
 
-    if (globalIdCounter > 0x7E16) // 32278
+    if (globalIdCounter > 0x7E16)
     {
         globalIdCounter = 0;
     }
@@ -363,6 +438,8 @@ EmissionController* EmissionManager::Create(EffectsGroup* pEffectsGroup, unsigne
     controllers->Append(pController);
     return pController;
 }
+
+static unsigned long fx_sTerrain;
 
 /**
  * Offset/Address/Size: 0x768 | 0x801F9088 | size: 0x30
@@ -515,33 +592,59 @@ void EmissionManager::AddError(const char*, ...)
 {
 }
 
+static inline EmissionController* ReplayCreateController(EffectsGroup*& group, unsigned short id)
+{
+    if (!globalIdCounterInit)
+    {
+        globalIdCounter = 1;
+        globalIdCounterInit = 1;
+    }
+
+    if (id == 0)
+    {
+        id = globalIdCounter++;
+    }
+
+    if (globalIdCounter > 0x7E16)
+    {
+        globalIdCounter = 0;
+    }
+
+    EmissionController* controller = new (nlMalloc(sizeof(EmissionController), 8, false)) EmissionController(group, id, defaultView);
+    controllers->Append(controller);
+    return controller;
+}
+
+static inline void ReplayRemoveAllNonPersistent()
+{
+    if (controllers != nullptr)
+    {
+        EmissionController* next;
+        EmissionController* current = (EmissionController*)controllers->m_headNode;
+        while (current != nullptr)
+        {
+            next = (EmissionController*)current->m_nextNode;
+            eGLView glView = (eGLView)current->m_GlView;
+            if ((defaultView == glView) && (current->m_uUserData + 0x21530000 != 0x0000BEEF))
+            {
+                controllers->Remove(current);
+                delete current;
+            }
+            current = next;
+        }
+    }
+}
+
 /**
  * Offset/Address/Size: 0x24C | 0x801F8B6C | size: 0x284
- * TODO: 99.38% match - remaining r28/r29 allocation diffs in the new-controller path
  */
 void EmissionManager::Replay(LoadFrame& frame)
 {
     int i;
-    EmissionController* next;
-    EmissionController* current;
 
     if (m_bRecording)
     {
-        if (controllers != nullptr)
-        {
-            current = (EmissionController*)controllers->m_headNode;
-            while (current != nullptr)
-            {
-                next = (EmissionController*)current->m_nextNode;
-                eGLView glView = (eGLView)current->m_GlView;
-                if ((defaultView == glView) && (current->m_uUserData + 0x21530000 != 0x0000BEEF))
-                {
-                    controllers->Remove(current);
-                    delete current;
-                }
-                current = next;
-            }
-        }
+        ReplayRemoveAllNonPersistent();
         m_bRecording = false;
     }
 
@@ -576,18 +679,18 @@ void EmissionManager::Replay(LoadFrame& frame)
         unsigned short id;
         Replayable<0>(frame, id);
 
-        unsigned long group = 0;
-        Replayable<0>(frame, group);
+        EffectsGroup* group = 0;
+        Replayable<0>(frame, (unsigned long&)group);
 
-        unsigned short idToUse;
         EmissionController* iter = (EmissionController*)oldControllers.m_headNode;
+        EmissionController* next;
         unsigned short idCheck = id;
         while (iter != nullptr)
         {
             next = (EmissionController*)iter->m_nextNode;
             if (idCheck == iter->m_Id)
             {
-                Replayable<0>(frame, *iter);
+                ::Replayable<0>(frame, *iter);
                 oldControllers.Remove(iter);
                 controllers->Insert(iter);
                 break;
@@ -597,43 +700,29 @@ void EmissionManager::Replay(LoadFrame& frame)
 
         if (iter == nullptr)
         {
-            idToUse = id;
-            static u16 globalIdCounter = 1;
-
-            if (idToUse == 0)
-            {
-                idToUse = globalIdCounter;
-                globalIdCounter++;
-            }
-
-            if (globalIdCounter > 0x7E16)
-            {
-                globalIdCounter = 0;
-            }
-
-            iter = new (nlMalloc(sizeof(EmissionController), 8, false)) EmissionController((EffectsGroup*)group, idToUse, defaultView);
-            controllers->Append(iter);
-            Replayable<0>(frame, *iter);
+            iter = ReplayCreateController(group, id);
+            ::Replayable<0>(frame, *iter);
         }
 
         i++;
     }
 
-    current = (EmissionController*)oldControllers.m_headNode;
-    while (current != nullptr)
+    EmissionController* next;
+    EmissionController* iter = (EmissionController*)oldControllers.m_headNode;
+    while (iter != nullptr)
     {
-        EmissionController* loopNext = (EmissionController*)current->m_nextNode;
-        if (defaultView != current->m_GlView)
+        next = (EmissionController*)iter->m_nextNode;
+        if (defaultView != iter->m_GlView)
         {
-            oldControllers.Remove(current);
-            controllers->Insert(current);
+            oldControllers.Remove(iter);
+            controllers->Insert(iter);
         }
         else
         {
-            oldControllers.Remove(current);
-            delete current;
+            oldControllers.Remove(iter);
+            delete iter;
         }
-        current = loopNext;
+        iter = next;
     }
 }
 
@@ -737,290 +826,30 @@ void EmissionManager::KillOldest(int num, bool lingeringOnly)
     }
 }
 
-// REMOVE once real callers exist.
-void EmissionManager_stub()
+// MWCC flushes these deferred inline specializations in reverse reference
+// order. This discarded anchor reproduces the target linkonce order.
+#pragma section ".dead"
+DECL_SECT(".dead")
+void EmissionManagerReplayOrder_stub()
 {
-    NewAdapter<AVLTreeEntry<unsigned long, LingerMessage*> > adapter;
-    adapter.Delete((AVLTreeEntry<unsigned long, LingerMessage*>*)0);
-
-    float f = 0.0f;
-    FloatCompressor<-255, 255, 6> fc(f);
-    Replayable<0>(*(SaveFrame*)0, (const FloatCompressor<-255, 255, 6>&)fc);
-    Replayable<0>(*(LoadFrame*)0, (const FloatCompressor<-255, 255, 6>&)fc);
+    void (*saveFloat)(SaveFrame&, const FloatCompressor<-255, 255, 6>&) = Replayable<0, SaveFrame, FloatCompressor<-255, 255, 6> >;
+    void (*loadFloat)(LoadFrame&, const FloatCompressor<-255, 255, 6>&) = Replayable<0, LoadFrame, FloatCompressor<-255, 255, 6> >;
+    void (*saveChar)(SaveFrame&, char&) = Replayable<0, SaveFrame, char>;
+    void (*loadChar)(LoadFrame&, char&) = Replayable<0, LoadFrame, char>;
+    void (*saveController)(SaveFrame&, EmissionController&) = Replayable<0, SaveFrame, EmissionController>;
+    void (*saveLong)(SaveFrame&, unsigned long&) = Replayable<0, SaveFrame, unsigned long>;
+    void (*saveShort)(SaveFrame&, unsigned short&) = Replayable<0, SaveFrame, unsigned short>;
+    void (*loadController)(LoadFrame&, EmissionController&) = Replayable<0, LoadFrame, EmissionController>;
+    void (*loadLong)(LoadFrame&, unsigned long&) = Replayable<0, LoadFrame, unsigned long>;
+    void (*loadShort)(LoadFrame&, unsigned short&) = Replayable<0, LoadFrame, unsigned short>;
+    (void)saveFloat;
+    (void)loadFloat;
+    (void)saveChar;
+    (void)loadChar;
+    (void)saveController;
+    (void)saveLong;
+    (void)saveShort;
+    (void)loadController;
+    (void)loadLong;
+    (void)loadShort;
 }
-
-/**
- * Offset/Address/Size: 0x2C | 0x801FA600 | size: 0x254
- */
-template <>
-void LoadFrame::Replayable<0, EmissionController>(EmissionController& current, NotReplayablePod)
-{
-    FORCE_DONT_INLINE;
-    ::Replayable<0>(*this, (unsigned int&)current.m_pPose);
-    ::Replayable<0>(*this, (unsigned int&)current.m_pAnimController);
-    memcpy(&current.m_uUserData, mStream.mStorage, sizeof(unsigned long));
-    mStream.mStorage += sizeof(unsigned long);
-    ::Replayable<0>(*this, current.m_fGround);
-    memcpy(&current.m_aFacing, mStream.mStorage, sizeof(unsigned short));
-    mStream.mStorage += sizeof(unsigned short);
-    ::Replayable<0>(*this, (char&)current.m_GlView);
-    ::Replayable<0>(*this, FloatCompressor<-255, 255, 6>(current.m_vPosition.f.x));
-    ::Replayable<0>(*this, FloatCompressor<-255, 255, 6>(current.m_vPosition.f.y));
-    ::Replayable<0>(*this, FloatCompressor<-255, 255, 6>(current.m_vPosition.f.z));
-    ::Replayable<0>(*this, FloatCompressor<-255, 255, 6>(current.m_vDirection.f.x));
-    ::Replayable<0>(*this, FloatCompressor<-255, 255, 6>(current.m_vDirection.f.y));
-    ::Replayable<0>(*this, FloatCompressor<-255, 255, 6>(current.m_vDirection.f.z));
-    ::Replayable<0>(*this, FloatCompressor<-255, 255, 6>(current.m_vVelocity.f.x));
-    ::Replayable<0>(*this, FloatCompressor<-255, 255, 6>(current.m_vVelocity.f.y));
-    ::Replayable<0>(*this, FloatCompressor<-255, 255, 6>(current.m_vVelocity.f.z));
-    current.m_Replaying = true;
-    float age = 0.0f;
-    ::Replayable<0>(*this, age);
-    age += mNonBlendableAheadOfFrame;
-    current.m_ReplayDeltaTime = age - current.m_Age;
-    current.m_Age = age;
-    unsigned int updateCb;
-    ::Replayable<0>(*this, updateCb);
-    if (updateCb != 0)
-    {
-        if (current.mUpdateCallback.mTag == FUNCTOR && current.mUpdateCallback.mFunctor != 0)
-        {
-            delete current.mUpdateCallback.mFunctor;
-        }
-        current.mUpdateCallback.mTag = FREE_FUNCTION;
-        current.mUpdateCallback.mFreeFunction = (void (*)(EmissionController&))updateCb;
-    }
-    unsigned int finishedCb;
-    ::Replayable<0>(*this, finishedCb);
-    if (finishedCb != 0)
-    {
-        if (current.mFinishedCallback.mTag == FUNCTOR && current.mFinishedCallback.mFunctor != 0)
-        {
-            delete current.mFinishedCallback.mFunctor;
-        }
-        current.mFinishedCallback.mTag = FREE_FUNCTION;
-        current.mFinishedCallback.mFreeFunction = (void (*)(EmissionController&))finishedCb;
-    }
-}
-
-/**
- * Offset/Address/Size: 0x0 | 0x801FA5D4 | size: 0x2C
- * TODO: 99.73% match - stack offset swap (0x8/0xc) for NotReplayablePod local vs argument copy
- * Implemented in include/Game/Replay.h as LoadFrame::Replayable<N, T> template body.
- */
-
-//  /**
-//   * Offset/Address/Size: 0x3C4 | 0x801FA558 | size: 0x7C
-//   */
-//  void Replayable<0, SaveFrame, FloatCompressor<-255, 255, 6>>(SaveFrame&, const FloatCompressor<-255, 255, 6>&)
-//  {
-//  }
-
-//  /**
-//   * Offset/Address/Size: 0x364 | 0x801FA4F8 | size: 0x60
-//   */
-//  void Replayable<0, LoadFrame, FloatCompressor<-255, 255, 6>>(LoadFrame&, const FloatCompressor<-255, 255, 6>&)
-//  {
-//  }
-
-/**
- * Offset/Address/Size: 0x324 | 0x801FA4B8 | size: 0x40
- */
-#pragma dont_inline on
-template <>
-void Replayable<0, SaveFrame, char>(SaveFrame& frame, char& value)
-{
-    memcpy(frame.mStream.mStorage, &value, sizeof(char));
-    frame.mStream.mStorage += sizeof(char);
-}
-#pragma dont_inline reset
-
-/**
- * Offset/Address/Size: 0x2E0 | 0x801FA474 | size: 0x44
- */
-#pragma dont_inline on
-template <>
-void Replayable<0, LoadFrame, char>(LoadFrame& frame, char& value)
-{
-    memcpy(&value, frame.mStream.mStorage, sizeof(char));
-    frame.mStream.mStorage += sizeof(char);
-}
-#pragma dont_inline reset
-
-/**
- * Offset/Address/Size: 0x128 | 0x801FA2BC | size: 0x1B8
- */
-template <>
-void Replayable<0, SaveFrame, EmissionController>(SaveFrame& frame, EmissionController& controller)
-{
-    FORCE_DONT_INLINE;
-    Replayable<0>(frame, (unsigned int&)controller.m_pPose);
-    Replayable<0>(frame, (unsigned int&)controller.m_pAnimController);
-    memcpy(frame.mStream.mStorage, &controller.m_uUserData, sizeof(unsigned long));
-    frame.mStream.mStorage += sizeof(unsigned long);
-    Replayable<0>(frame, controller.m_fGround);
-    memcpy(frame.mStream.mStorage, &controller.m_aFacing, sizeof(unsigned short));
-    frame.mStream.mStorage += sizeof(unsigned short);
-    Replayable<0>(frame, (char&)controller.m_GlView);
-    Replayable<0>(frame, FloatCompressor<-255, 255, 6>(controller.m_vPosition.f.x));
-    Replayable<0>(frame, FloatCompressor<-255, 255, 6>(controller.m_vPosition.f.y));
-    Replayable<0>(frame, FloatCompressor<-255, 255, 6>(controller.m_vPosition.f.z));
-    Replayable<0>(frame, FloatCompressor<-255, 255, 6>(controller.m_vDirection.f.x));
-    Replayable<0>(frame, FloatCompressor<-255, 255, 6>(controller.m_vDirection.f.y));
-    Replayable<0>(frame, FloatCompressor<-255, 255, 6>(controller.m_vDirection.f.z));
-    Replayable<0>(frame, FloatCompressor<-255, 255, 6>(controller.m_vVelocity.f.x));
-    Replayable<0>(frame, FloatCompressor<-255, 255, 6>(controller.m_vVelocity.f.y));
-    Replayable<0>(frame, FloatCompressor<-255, 255, 6>(controller.m_vVelocity.f.z));
-    controller.m_Replaying = false;
-    controller.m_ReplayDeltaTime = 0.0f;
-    Replayable<0>(frame, controller.m_Age);
-    unsigned int updateCb = (controller.mUpdateCallback.mTag == FREE_FUNCTION)
-                              ? (unsigned int)controller.mUpdateCallback.mFreeFunction
-                              : 0;
-    Replayable<0>(frame, updateCb);
-    unsigned int finishedCb = (controller.mFinishedCallback.mTag == FREE_FUNCTION)
-                                ? (unsigned int)controller.mFinishedCallback.mFreeFunction
-                                : 0;
-    Replayable<0>(frame, finishedCb);
-}
-
-/**
- * Offset/Address/Size: 0xE8 | 0x801FA27C | size: 0x40
- */
-template <>
-inline void Replayable<0, SaveFrame, unsigned long>(SaveFrame& frame, unsigned long& value)
-{
-    FORCE_DONT_INLINE;
-    memcpy(frame.mStream.mStorage, &value, sizeof(unsigned long));
-    frame.mStream.mStorage += sizeof(unsigned long);
-}
-
-/**
- * Offset/Address/Size: 0xA8 | 0x801FA23C | size: 0x40
- */
-template <>
-inline void Replayable<0, SaveFrame, unsigned short>(SaveFrame& frame, unsigned short& value)
-{
-    FORCE_DONT_INLINE;
-    memcpy(frame.mStream.mStorage, &value, sizeof(unsigned short));
-    frame.mStream.mStorage += sizeof(unsigned short);
-}
-
-/**
- * Offset/Address/Size: 0x44 | 0x801FA1D8 | size: 0x44
- */
-template <>
-inline void Replayable<0, LoadFrame, unsigned long>(LoadFrame& frame, unsigned long& value)
-{
-    FORCE_DONT_INLINE;
-    memcpy(&value, frame.mStream.mStorage, sizeof(unsigned long));
-    frame.mStream.mStorage += sizeof(unsigned long);
-}
-
-/**
- * Offset/Address/Size: 0x0 | 0x801FA194 | size: 0x44
- */
-template <>
-inline void Replayable<0, LoadFrame, unsigned short>(LoadFrame& frame, unsigned short& value)
-{
-    FORCE_DONT_INLINE;
-    memcpy(&value, frame.mStream.mStorage, sizeof(unsigned short));
-    frame.mStream.mStorage += sizeof(unsigned short);
-}
-
-//  /**
-//   * Offset/Address/Size: 0x0 | 0x801FA170 | size: 0x24
-//   */
-//  void NewAdapter<AVLTreeEntry<unsigned long, LingerMessage*>>::Delete(AVLTreeEntry<unsigned long, LingerMessage*>*)
-//  {
-//  }
-
-//  /**
-//   * Offset/Address/Size: 0x9CC | 0x801FA144 | size: 0x2C
-//   */
-//  void AVLTreeBase<unsigned long, LingerMessage*, NewAdapter<AVLTreeEntry<unsigned long, LingerMessage*>>, DefaultKeyCompare<unsigned long>>::CompareNodes(AVLTreeNode*, AVLTreeNode*)
-//  {
-//  }
-
-//  /**
-//   * Offset/Address/Size: 0x9A0 | 0x801FA118 | size: 0x2C
-//   */
-//  void AVLTreeBase<unsigned long, LingerMessage*, NewAdapter<AVLTreeEntry<unsigned long, LingerMessage*>>, DefaultKeyCompare<unsigned long>>::CompareKey(void*, AVLTreeNode*)
-//  {
-//  }
-
-//  /**
-//   * Offset/Address/Size: 0x93C | 0x801FA0B4 | size: 0x64
-//   */
-//  void AVLTreeBase<unsigned long, LingerMessage*, NewAdapter<AVLTreeEntry<unsigned long, LingerMessage*>>, DefaultKeyCompare<unsigned long>>::AllocateEntry(void*, void*)
-//  {
-//  }
-
-//  /**
-//   * Offset/Address/Size: 0x8E4 | 0x801FA05C | size: 0x58
-//   */
-//  void AVLTreeBase<unsigned long, LingerMessage*, NewAdapter<AVLTreeEntry<unsigned long, LingerMessage*>>, DefaultKeyCompare<unsigned long>>::Clear()
-//  {
-//  }
-
-//  /**
-//   * Offset/Address/Size: 0x888 | 0x801FA000 | size: 0x5C
-//   */
-//  void AVLTreeBase<unsigned long, LingerMessage*, NewAdapter<AVLTreeEntry<unsigned long, LingerMessage*>>, DefaultKeyCompare<unsigned long>>::~AVLTreeBase()
-//  {
-//  }
-
-//  /**
-//   * Offset/Address/Size: 0x880 | 0x801F9FF8 | size: 0x8
-//   */
-//  void AVLTreeBase<unsigned long, LingerMessage*, NewAdapter<AVLTreeEntry<unsigned long, LingerMessage*>>, DefaultKeyCompare<unsigned long>>::CastUp(AVLTreeNode*) const
-//  {
-//  }
-
-//  /**
-//   * Offset/Address/Size: 0x128 | 0x801F98A0 | size: 0x758
-//   */
-//  void AVLTreeBase<unsigned long, LingerMessage*, NewAdapter<AVLTreeEntry<unsigned long, LingerMessage*>>, DefaultKeyCompare<unsigned long>>::PostorderTraversal(AVLTreeEntry<unsigned long, LingerMessage*>*, void (AVLTreeBase<unsigned long, LingerMessage*, NewAdapter<AVLTreeEntry<unsigned long, LingerMessage*>>, DefaultKeyCompare<unsigned long>>::*)(AVLTreeEntry<unsigned long, LingerMessage*>*))
-//  {
-//  }
-
-//  /**
-//   * Offset/Address/Size: 0xC4 | 0x801F983C | size: 0x64
-//   */
-//  void AVLTreeBase<unsigned long, LingerMessage*, NewAdapter<AVLTreeEntry<unsigned long, LingerMessage*>>, DefaultKeyCompare<unsigned long>>::DestroyTree(void (AVLTreeBase<unsigned long, LingerMessage*, NewAdapter<AVLTreeEntry<unsigned long, LingerMessage*>>, DefaultKeyCompare<unsigned long>>::*)(AVLTreeEntry<unsigned long, LingerMessage*>*))
-//  {
-//  }
-
-/**
- * Offset/Address/Size: 0x6C | 0x801F97E4 | size: 0x58
- */
-#pragma dont_inline on
-void AVLTreeBase<unsigned long, LingerMessage*, NewAdapter<AVLTreeEntry<unsigned long, LingerMessage*> >, DefaultKeyCompare<unsigned long> >::DeleteValues()
-{
-    DestroyTree(&AVLTreeBase::DeleteValue);
-    m_NumElements = 0;
-}
-#pragma dont_inline reset
-
-//  /**
-//   * Offset/Address/Size: 0x48 | 0x801F97C0 | size: 0x24
-//   */
-//  void AVLTreeBase<unsigned long, LingerMessage*, NewAdapter<AVLTreeEntry<unsigned long, LingerMessage*>>, DefaultKeyCompare<unsigned long>>::DeleteEntry(AVLTreeEntry<unsigned long, LingerMessage*>*)
-//  {
-//  }
-
-/**
- * Offset/Address/Size: 0x0 | 0x801F9778 | size: 0x48
- */
-void AVLTreeBase<unsigned long, LingerMessage*, NewAdapter<AVLTreeEntry<unsigned long, LingerMessage*> >, DefaultKeyCompare<unsigned long> >::DeleteValue(AVLTreeEntry<unsigned long, LingerMessage*>* entry)
-{
-    delete entry->value;
-    m_Allocator.Delete(entry);
-}
-
-//  /**
-//   * Offset/Address/Size: 0xD0C | 0x801F962C | size: 0x60
-//   */
-//  void nlAVLTree<unsigned long, LingerMessage*, DefaultKeyCompare<unsigned long>>::~nlAVLTree()
-//  {
-//  }

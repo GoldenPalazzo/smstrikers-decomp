@@ -19,9 +19,6 @@ extern Config g_FEStreamConfig;
 extern AudioStreamTrack::TrackManagerBase* g_pTrackManager;
 
 class SoundPropAccessor;
-// GetSoundPropTableFromPlayerStadium is defined file-local (static) in
-// AudioLoader.cpp; target binding is LOCAL, so no external declaration here.
-// void 0x80149078..0x801490F4 | size: 0x7C;
 
 enum LoadType
 {
@@ -63,8 +60,6 @@ class AudioLoader : public Loader
 {
 public:
     virtual bool StartLoad(LoadingManager*);
-    // virtual bool Update() { return false; };
-    virtual const char* GetName() { return "Audio Loader"; };
 
     static void InitCrowdFromStateTransition();
     static void ResetForRematch();
@@ -134,53 +129,5 @@ inline unsigned char AudioLoader::IsSoundGroupLoaded(int groupEnum, unsigned lon
 
     return bAlreadyLoaded;
 }
-
-// class GCAudioStreaming
-// {
-// public:
-//     void StereoAudioStream::~StereoAudioStream();
-//     void AudioStream::Destructor();
-//     void AudioStream::Purge();
-//     void AudioStream::~AudioStream();
-//     void AudioStream::WarmReadDone(GCAudioStreaming::AudioStreamBuffer*);
-// };
-
-// class AVLTreeBase<int, SoundStrToIDNode*, BasicSlotPool<AVLTreeEntry<int, SoundStrToIDNode*>>, DefaultKeyCompare<int>>
-// {
-// public:
-//     void Clear();
-//     void DestroyTree(void (AVLTreeBase<int, SoundStrToIDNode*, BasicSlotPool<AVLTreeEntry<int, SoundStrToIDNode*>>, DefaultKeyCompare<int>>::*)(AVLTreeEntry<int, SoundStrToIDNode*>*));
-//     void PostorderTraversal(AVLTreeEntry<int, SoundStrToIDNode*>*, void (AVLTreeBase<int, SoundStrToIDNode*, BasicSlotPool<AVLTreeEntry<int, SoundStrToIDNode*>>, DefaultKeyCompare<int>>::*)(AVLTreeEntry<int, SoundStrToIDNode*>*));
-//     void CastUp(AVLTreeNode*) const;
-//     void DeleteEntry(AVLTreeEntry<int, SoundStrToIDNode*>*);
-//     void ~AVLTreeBase();
-//     void CompareNodes(AVLTreeNode*, AVLTreeNode*);
-//     void CompareKey(void*, AVLTreeNode*);
-//     void AllocateEntry(void*, void*);
-// };
-
-// class nlDLRingIsEnd<DLListEntry<GCAudioStreaming
-// {
-// public:
-//     void StereoAudioStream*>>(DLListEntry<GCAudioStreaming::StereoAudioStream*>*, DLListEntry<GCAudioStreaming::StereoAudioStream*>*);
-// };
-
-// class nlDLRingGetStart<DLListEntry<GCAudioStreaming
-// {
-// public:
-//     void StereoAudioStream*>>(DLListEntry<GCAudioStreaming::StereoAudioStream*>*);
-// };
-
-// class nlDLRingRemove<DLListEntry<GCAudioStreaming
-// {
-// public:
-//     void StereoAudioStream*>>(DLListEntry<GCAudioStreaming::StereoAudioStream*>**, DLListEntry<GCAudioStreaming::StereoAudioStream*>*);
-// };
-
-// class nlAVLTreeSlotPool<int, SoundStrToIDNode*, DefaultKeyCompare<int>>
-// {
-// public:
-//     void ~nlAVLTreeSlotPool();
-// };
 
 #endif // _AUDIOLOADER_H_

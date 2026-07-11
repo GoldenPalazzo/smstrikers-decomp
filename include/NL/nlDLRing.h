@@ -77,6 +77,10 @@ void nlDLRingAddEnd(T** head, T* newNode)
     *head = newNode;
 }
 
+#ifdef NLDLRING_SIMPLE_SEPARATE
+template <typename T>
+void nlDLRingRemove(T** head, T* current);
+#else
 template <typename T>
 void nlDLRingRemove(T** head, T* current)
 {
@@ -96,7 +100,12 @@ void nlDLRingRemove(T** head, T* current)
         *head = current->m_prev;
     }
 }
+#endif
 
+#ifdef NLDLRING_SIMPLE_SEPARATE
+template <typename T>
+T* nlDLRingGetStart(T* current);
+#else
 template <typename T>
 T* nlDLRingGetStart(T* current)
 {
@@ -106,6 +115,7 @@ T* nlDLRingGetStart(T* current)
     }
     return current->m_next;
 }
+#endif
 
 template <typename T>
 T* nlDLRingGetEnd(T* current)
@@ -117,6 +127,10 @@ T* nlDLRingGetEnd(T* current)
     return NULL;
 }
 
+#ifdef NLDLRING_SIMPLE_SEPARATE
+template <typename T>
+bool nlDLRingIsEnd(T* head, T* current);
+#else
 template <typename T>
 bool nlDLRingIsEnd(T* head, T* current)
 {
@@ -126,6 +140,7 @@ bool nlDLRingIsEnd(T* head, T* current)
     }
     return head == current;
 }
+#endif
 
 template <typename T>
 u32 nlRingCountElements(T* head)

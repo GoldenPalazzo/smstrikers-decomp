@@ -397,7 +397,18 @@ struct nlMatrix4
         return *(nlVector3*)&f.m41;
     }
 
+#ifdef FERENDER_INLINE_ACCESSOR_IMPLS
+    void SetTranslation(const nlVector3& v)
+    {
+        FORCE_DONT_INLINE;
+        f.m41 = v.f.x;
+        f.m42 = v.f.y;
+        f.m43 = v.f.z;
+        f.m44 = 1.0f;
+    }
+#else
     void SetTranslation(const nlVector3&);
+#endif
 
     inline nlVector4 operator*(const nlVector4& v_in) const
     {

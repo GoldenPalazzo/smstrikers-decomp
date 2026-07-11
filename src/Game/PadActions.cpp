@@ -16,16 +16,34 @@ s32 g_pPadRemapArray[38] = {
     0x00000020, 0x00000040, 0x00000008, 0x00000004, 0x00000004, 0x00000040, 0x00000020, 0x00000100, 0x00000010, 0x00000100, 0x00000200, 0x00000001, 0x00000002, 0x00000008, 0x00000004, 0x00000100, 0x00000200, 0x00000400, 0x00000800, 0x00001000, 0x00000020, 0x00000040, 0x00000400, 0x00000010, 0x00000800, 0x00000200, 0x00000100, 0x00000100, 0x00000200, 0x00000800, 0x00000800, 0x00000800, 0x00000020, 0x00001000, 0x00000010, 0x00000010, 0x00001000, 0x00001000
 };
 
+typedef BasicString<char, Detail::TempStringAllocator> PadActionsFormatString;
+
+static inline void PadActionsEraseRange(PadActionsFormatString& s, const char* begin, const char* end)
+{
+    s[0];
+    BasicStringData<char>* data = s.m_data;
+    int size = end - begin;
+    int offset = begin - data->mData;
+    char* at = data->mData + offset;
+    while (end != data->mData + data->mSize)
+    {
+        *at = *end;
+        end++;
+        at++;
+    }
+    data->mSize -= size;
+}
+
 /**
  * Offset/Address/Size: 0x128 | 0x80193720 | size: 0xD74
- * TODO: 99.42% match - remaining register allocation diffs in marker address and erase/insert pointer paths.
+ * TODO: 99.59% match - copy-on-write temporary register swaps and marker add operand order remain.
  */
 template <>
 template <>
-FormatImpl<BasicString<char, Detail::TempStringAllocator> >&
-    FormatImpl<BasicString<char, Detail::TempStringAllocator> >::operator% <int>(const int& t)
+FormatImpl<PadActionsFormatString>&
+    FormatImpl<PadActionsFormatString>::operator% <int>(const int& t)
 {
-    BasicString<char, Detail::TempStringAllocator> insert = LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(t);
+    PadActionsFormatString insert = LexicalCast<PadActionsFormatString, int>(t);
 
     for (int i = 0; i < (mString.m_data ? mString.m_data->mSize - 1 : 0); i++)
     {
@@ -46,34 +64,16 @@ FormatImpl<BasicString<char, Detail::TempStringAllocator> >&
         if (markerEnd[2] != '}')
             continue;
 
-        char* eraseBegin;
-        char* eraseEnd;
-        char* eraseAt;
-        int eraseSize;
-        int eraseOffset;
-        BasicStringData<char>* eraseData;
         mString[0];
-        eraseEnd = (mString.m_data ? mString.m_data->mData : (char*)0) + i + 3;
-        mString[0];
-        eraseBegin = (mString.m_data ? mString.m_data->mData : (char*)0) + i;
-        mString[0];
-        eraseData = mString.m_data;
-        eraseSize = eraseEnd - eraseBegin;
-        eraseOffset = eraseBegin - eraseData->mData;
-        eraseAt = eraseData->mData + eraseOffset;
-        while (eraseEnd != eraseData->mData + eraseData->mSize)
-        {
-            *eraseAt = *eraseEnd;
-            eraseEnd++;
-            eraseAt++;
-        }
-        eraseData->mSize -= eraseSize;
+        PadActionsEraseRange(mString,
+            ((void)mString[0], (mString.m_data ? mString.m_data->mData : (char*)0) + i),
+            (mString.m_data ? mString.m_data->mData : (char*)0) + i + 3);
         mString[i];
         char* mStringData = mString.m_data ? mString.m_data->mData : 0;
-        insert[0];
-        char* insertBegin = insert.m_data ? insert.m_data->mData : 0;
+        const char* insertBegin = ((void)insert[0], insert.m_data ? insert.m_data->mData : 0);
         insert[(int)(insert.m_data ? insert.m_data->mSize - 1 : 0)];
-        mString.insert(mStringData + i, insertBegin, insert.m_data ? insert.m_data->mData + insert.m_data->mSize - 1 : (char*)0);
+        const char* insertEnd = insert.m_data ? insert.m_data->mData + insert.m_data->mSize - 1 : (char*)0;
+        mString.insert(mStringData + i, insertBegin, insertEnd);
     }
 
     mCurrentPos++;
