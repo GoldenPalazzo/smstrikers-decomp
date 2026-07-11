@@ -223,8 +223,6 @@ StadiumSelectSceneV2::~StadiumSelectSceneV2()
 
 /**
  * Offset/Address/Size: 0x7D4 | 0x800D8D54 | size: 0xA5C
- * TODO: 99.90% match - first wrapped stadium index uses r28 instead of r29;
- * stadium name slide pointer uses r26 instead of r28.
  */
 void StadiumSelectSceneV2::SceneCreated()
 {
@@ -309,76 +307,92 @@ void StadiumSelectSceneV2::SceneCreated()
 
     m_pTicker->SetDisplayMessage(StadiumDescriptions[mStadiumIndex]);
 
-    int idx = mStadiumIndex;
-    idx -= 4;
-    if (idx < 0)
-    {
-        idx += 7;
-    }
-    idx = idx % 7;
-    eStadiumID sid = STADIUM_ORDER[idx];
-    int loadIdx = IsStadiumUnlocked(sid) ? idx : 7;
-    mImages[6]->QueueLoad(StadiumEntries[loadIdx].imagePath, true);
+    eStadiumID sid;
+    int loadIdx;
 
-    idx = mStadiumIndex - 3;
-    if (idx < 0)
     {
-        idx += 7;
+        int idx;
+        if ((idx = mStadiumIndex - 4) < 0)
+        {
+            idx += 7;
+        }
+        idx = idx % 7;
+        sid = STADIUM_ORDER[idx];
+        loadIdx = IsStadiumUnlocked(sid) ? idx : 7;
+        mImages[6]->QueueLoad(StadiumEntries[loadIdx].imagePath, true);
     }
-    idx = idx % 7;
-    sid = STADIUM_ORDER[idx];
-    loadIdx = IsStadiumUnlocked(sid) ? idx : 7;
-    mImages[3]->QueueLoad(StadiumEntries[loadIdx].imagePath, true);
 
-    idx = mStadiumIndex - 2;
-    if (idx < 0)
     {
-        idx += 7;
+        int idx;
+        if ((idx = mStadiumIndex - 3) < 0)
+        {
+            idx += 7;
+        }
+        idx = idx % 7;
+        sid = STADIUM_ORDER[idx];
+        loadIdx = IsStadiumUnlocked(sid) ? idx : 7;
+        mImages[3]->QueueLoad(StadiumEntries[loadIdx].imagePath, true);
     }
-    idx = idx % 7;
-    sid = STADIUM_ORDER[idx];
-    loadIdx = IsStadiumUnlocked(sid) ? idx : 7;
-    mImages[2]->QueueLoad(StadiumEntries[loadIdx].imagePath, true);
 
-    idx = mStadiumIndex - 1;
-    if (idx < 0)
     {
-        idx += 7;
+        int idx;
+        if ((idx = mStadiumIndex - 2) < 0)
+        {
+            idx += 7;
+        }
+        idx = idx % 7;
+        sid = STADIUM_ORDER[idx];
+        loadIdx = IsStadiumUnlocked(sid) ? idx : 7;
+        mImages[2]->QueueLoad(StadiumEntries[loadIdx].imagePath, true);
     }
-    idx = idx % 7;
-    sid = STADIUM_ORDER[idx];
-    loadIdx = IsStadiumUnlocked(sid) ? idx : 7;
-    mImages[0]->QueueLoad(StadiumEntries[loadIdx].imagePath, true);
 
-    idx = mStadiumIndex;
-    if (idx < 0)
     {
-        idx += 7;
+        int idx;
+        if ((idx = mStadiumIndex - 1) < 0)
+        {
+            idx += 7;
+        }
+        idx = idx % 7;
+        sid = STADIUM_ORDER[idx];
+        loadIdx = IsStadiumUnlocked(sid) ? idx : 7;
+        mImages[0]->QueueLoad(StadiumEntries[loadIdx].imagePath, true);
     }
-    idx = idx % 7;
-    sid = STADIUM_ORDER[idx];
-    loadIdx = IsStadiumUnlocked(sid) ? idx : 7;
-    mImages[1]->QueueLoad(StadiumEntries[loadIdx].imagePath, true);
 
-    idx = mStadiumIndex + 1;
-    if (idx < 0)
     {
-        idx += 7;
+        int idx;
+        if ((idx = mStadiumIndex) < 0)
+        {
+            idx += 7;
+        }
+        idx = idx % 7;
+        sid = STADIUM_ORDER[idx];
+        loadIdx = IsStadiumUnlocked(sid) ? idx : 7;
+        mImages[1]->QueueLoad(StadiumEntries[loadIdx].imagePath, true);
     }
-    idx = idx % 7;
-    sid = STADIUM_ORDER[idx];
-    loadIdx = IsStadiumUnlocked(sid) ? idx : 7;
-    mImages[4]->QueueLoad(StadiumEntries[loadIdx].imagePath, true);
 
-    idx = mStadiumIndex + 2;
-    if (idx < 0)
     {
-        idx += 7;
+        int idx;
+        if ((idx = mStadiumIndex + 1) < 0)
+        {
+            idx += 7;
+        }
+        idx = idx % 7;
+        sid = STADIUM_ORDER[idx];
+        loadIdx = IsStadiumUnlocked(sid) ? idx : 7;
+        mImages[4]->QueueLoad(StadiumEntries[loadIdx].imagePath, true);
     }
-    idx = idx % 7;
-    sid = STADIUM_ORDER[idx];
-    loadIdx = IsStadiumUnlocked(sid) ? idx : 7;
-    mImages[5]->QueueLoad(StadiumEntries[loadIdx].imagePath, true);
+
+    {
+        int idx;
+        if ((idx = mStadiumIndex + 2) < 0)
+        {
+            idx += 7;
+        }
+        idx = idx % 7;
+        sid = STADIUM_ORDER[idx];
+        loadIdx = IsStadiumUnlocked(sid) ? idx : 7;
+        mImages[5]->QueueLoad(StadiumEntries[loadIdx].imagePath, true);
+    }
 
     mLastDirection = DIR_LEFT;
     mTempTextureBuffer = NULL;
@@ -394,7 +408,11 @@ void StadiumSelectSceneV2::SceneCreated()
         } findTxt;
         findTxt.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
 
-        TLSlide* currentSlide = m_pFEPresentation->m_currentSlide;
+        struct SlideHolder
+        {
+            TLSlide* p;
+        } holder;
+        holder.p = m_pFEPresentation->m_currentSlide;
         volatile InlineHasher hA, hB;
         volatile InlineHasher h9, h8;
         volatile InlineHasher h6, h4, h2, h0;
@@ -414,7 +432,7 @@ void StadiumSelectSceneV2::SceneCreated()
         hB.m_Hash = hash;
         hA.m_Hash = hash;
         TLTextInstance* nameText = findTxt.byRef(
-            currentSlide, (InlineHasher&)hA, (InlineHasher&)h9, (InlineHasher&)h7, (InlineHasher&)h5, (InlineHasher&)h3, (InlineHasher&)h1);
+            holder.p, (InlineHasher&)hA, (InlineHasher&)h9, (InlineHasher&)h7, (InlineHasher&)h5, (InlineHasher&)h3, (InlineHasher&)h1);
 
         eStadiumID currentStadium = StadiumEntries[mStadiumIndex].stadiumID;
         bool isUnlocked = true;

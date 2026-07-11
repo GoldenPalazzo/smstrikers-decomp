@@ -1,6 +1,8 @@
 #define MEMFUN_NO_DECL
 #define BIND_NO_DECL
 #define FUNCTION1_SPLIT_BODIES
+#define FUNCTION1_OWNER_DTOR
+#define FEPOPUPMENU_BYVAL_DECLS
 #include "Game/SH/SHMainMenu.h"
 #include "Game/GameInfo.h"
 #include "Game/GameSceneManager.h"
@@ -80,10 +82,7 @@ static unsigned long sLockedTickerMessages[7] = {
 #pragma dont_inline on
 void FEPopupMenu::Create(ePopupMenu type)
 {
-    Function<FnVoidVoid> nothing;
-    nothing.mTag = FREE_FUNCTION;
-    nothing.mFreeFunction = Nothing;
-    Create(type, nothing);
+    Create(type, Function<FnVoidVoid>(Nothing));
 }
 #pragma dont_inline reset
 
@@ -314,19 +313,11 @@ static void continueTourn()
 static void confirmNewTourn()
 {
     FEPopupMenu* menu = (FEPopupMenu*)nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
-
-    {
-        Function<FnVoidVoid> yes;
-        yes.mTag = FREE_FUNCTION;
-        yes.mFreeFunction = newTourn;
-
-        Function<FnVoidVoid> no;
-        no.mTag = FREE_FUNCTION;
-        no.mFreeFunction = FEPopupMenu::Nothing;
-
-        menu->Create(POPUP_REALLY_OVERWRITE, yes, no);
-    }
-    *(u8*)((u8*)menu + 0xAA4) = 0;
+    menu->Create(
+        POPUP_REALLY_OVERWRITE,
+        Function<FnVoidVoid>(newTourn),
+        Function<FnVoidVoid>(FEPopupMenu::Nothing));
+    menu->mUnknownAA4 = false;
 }
 
 /**
@@ -340,27 +331,11 @@ static void onSelectTournament(TLComponentInstance*)
         && GameInfoManager::s_pInstance->mCustomTournamentInfo.m_cup->mCupStarted)
     {
         FEPopupMenu* menu = (FEPopupMenu*)nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
-
-        {
-            Function<FnVoidVoid> yes;
-            yes.mTag = FREE_FUNCTION;
-            yes.mFreeFunction = continueTourn;
-
-            Function<FnVoidVoid> no;
-            no.mTag = FREE_FUNCTION;
-            no.mFreeFunction = confirmNewTourn;
-
-            menu->Create(POPUP_START_NEW_TOURNAMENT, yes, no);
-        }
-
-        {
-            Function<FnVoidVoid> back;
-            back.mTag = FREE_FUNCTION;
-            back.mFreeFunction = FEPopupMenu::Nothing;
-
-            menu->SetBackButtonCallback(back);
-        }
-
+        menu->Create(
+            POPUP_START_NEW_TOURNAMENT,
+            Function<FnVoidVoid>(continueTourn),
+            Function<FnVoidVoid>(confirmNewTourn));
+        menu->SetBackButtonCallback(Function<FnVoidVoid>(FEPopupMenu::Nothing));
         GameInfoManager::s_pInstance->SetMode(GameInfoManager::GM_TOURNAMENT);
     }
     else

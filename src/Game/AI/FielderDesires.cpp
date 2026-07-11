@@ -3025,7 +3025,6 @@ void cFielder::DesireUsePowerup(float)
 
 /**
  * Offset/Address/Size: 0x0 | 0x80030D84 | size: 0x41C
- * TODO: 99.43% match - instruction scheduling in FuzzyVariant construction
  */
 void cFielder::DesireWindupShot(float)
 {

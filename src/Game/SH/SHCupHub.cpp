@@ -962,7 +962,7 @@ unsigned char CupHubScene::UpdateDisplayedStat()
 
 /**
  * Offset/Address/Size: 0x4E34 | 0x800EEB90 | size: 0x10D4
- * TODO: 99.5% match - r16/r17/r18 register swap among mode, title, and position offset
+ * TODO: 99.52% match - r16/r17/r18 register swap among mode, title, and position offset
  */
 void CupHubScene::CreateLeague()
 {
@@ -989,8 +989,8 @@ void CupHubScene::CreateLeague()
         InlineHasher(nlStringLowerHash("STANDINGS SCREEN")));
 
     title->m_LocStrId = GetLOCStandingsName(mode);
-    posOffset = (8 - numTeams) * 12;
     title->m_OverloadFlags |= 8;
+    posOffset = (8 - numTeams) * 12;
     feVector3 position = title->GetAssetPosition();
     feVector3 rowPosition;
 
@@ -2401,7 +2401,7 @@ unsigned char CupHubScene::UpdateKnockout8(float fDeltaT)
     TLSlide* pSlide4 = mAnimComponents[mAnimatingKnockoutTeams[3]]->GetActiveSlide();
     GameInfoManager* gameInfo = nlSingleton<GameInfoManager>::s_pInstance;
 
-    volatile InlineHasher h7, h5, h3, h1;
+    volatile InlineHasher hB, hA, h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
 
     if (mKnockoutLoserAnimations && mSlideSwitchDelay > 0.0f)
     {
@@ -2445,8 +2445,6 @@ unsigned char CupHubScene::UpdateKnockout8(float fDeltaT)
         mAnimComponents[mAnimatingKnockoutTeams[3]]->GetActiveSlide()->Update(0.0f);
 
         FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
-
-        volatile InlineHasher hB, hA, h9, h8, h6, h4, h2, h0;
 
         h0.m_Hash = 0;
         h1.m_Hash = 0;
@@ -2494,6 +2492,7 @@ unsigned char CupHubScene::UpdateKnockout8(float fDeltaT)
         return 0;
     }
 
+    {
     mDoAnimations = false;
     UpdateProgressIndicator();
 
@@ -2589,6 +2588,7 @@ unsigned char CupHubScene::UpdateKnockout8(float fDeltaT)
         mPlayPopSound = false;
     }
     return 1;
+    }
 }
 
 /**
@@ -3024,34 +3024,38 @@ void CupHubScene::UpdateProgressIndicator()
     int numRounds;
     int round;
     int currentRound;
-    GameInfoManager* const gameInfo = nlSingleton<GameInfoManager>::s_pInstance;
+    union ProgressCursor
+    {
+        GameInfoManager* gameInfo;
+        eHubColour* nodeColour;
+    } cursor;
+    cursor.gameInfo = nlSingleton<GameInfoManager>::s_pInstance;
     int displayRounds[16];
     eHubColour nodeColours[16];
     TLSlide* pSlide;
     TLComponentInstance* highlight;
     TLImageInstance* nodeImage;
-    eHubColour* nodeColour;
     feVector3 position;
     volatile InlineHasher hB, hA;
     volatile InlineHasher h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
 
-    numRounds = gameInfo->GetNumRounds();
-    if (gameInfo->mDidRoundJustEnd && mDoAnimations && gameInfo->GetCurrentRoundNumber() != -5)
+    numRounds = cursor.gameInfo->GetNumRounds();
+    if (cursor.gameInfo->mDidRoundJustEnd && mDoAnimations && cursor.gameInfo->GetCurrentRoundNumber() != -5)
     {
-        round = gameInfo->GetPreviousRoundNumber(-7);
-        gameInfo->mDidRoundJustEnd = false;
+        round = cursor.gameInfo->GetPreviousRoundNumber(-7);
+        cursor.gameInfo->mDidRoundJustEnd = false;
         UpdateRoundMessage(true);
     }
     else
     {
-        round = gameInfo->GetCurrentRoundNumber();
+        round = cursor.gameInfo->GetCurrentRoundNumber();
         UpdateRoundMessage(false);
     }
 
     currentRound = round;
     SetRoundColours(nodeColours, 16);
 
-    pSlide = m_pFEScene->m_pFEPackage->GetPresentation()->m_currentSlide;
+    TLSlide* initialSlide = m_pFEScene->m_pFEPackage->GetPresentation()->m_currentSlide;
 
     {
         h0.m_Hash = 0;
@@ -3079,7 +3083,7 @@ void CupHubScene::UpdateProgressIndicator()
 
         findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
         TLComponentInstance* progress = findComp.byRef(
-            pSlide,
+            initialSlide,
             (InlineHasher&)hB,
             (InlineHasher&)h9,
             (InlineHasher&)h7,
@@ -3130,7 +3134,7 @@ void CupHubScene::UpdateProgressIndicator()
     TLSlide* highlightSlide = highlight->GetActiveSlide();
     highlightSlide->m_uPlayMode = TLPM_LOOPING;
 
-    if (gameInfo->mCurrentMode == GameInfoManager::GM_BOWSER_CUP)
+    if (cursor.gameInfo->mCurrentMode == GameInfoManager::GM_BOWSER_CUP)
     {
         numRounds = 9;
         if (round == -3)
@@ -3142,7 +3146,7 @@ void CupHubScene::UpdateProgressIndicator()
             currentRound = 15;
         }
     }
-    else if (gameInfo->mCurrentMode == GameInfoManager::GM_SUPER_BOWSER_CUP)
+    else if (cursor.gameInfo->mCurrentMode == GameInfoManager::GM_SUPER_BOWSER_CUP)
     {
         numRounds = 16;
         if (round == -3)
@@ -3154,7 +3158,7 @@ void CupHubScene::UpdateProgressIndicator()
             currentRound = 15;
         }
     }
-    else if (gameInfo->IsInTournamentMode() && gameInfo->mCustomTournamentInfo.m_tournMode == TM_KNOCKOUT)
+    else if (cursor.gameInfo->IsInTournamentMode() && cursor.gameInfo->mCustomTournamentInfo.m_tournMode == TM_KNOCKOUT)
     {
         if (numRounds == 2 && round == -3)
         {
@@ -3246,7 +3250,7 @@ void CupHubScene::UpdateProgressIndicator()
         }
         else if (numRounds == 3)
         {
-            if (gameInfo->IsInTournamentMode() && gameInfo->mCustomTournamentInfo.m_tournMode == TM_KNOCKOUT)
+            if (cursor.gameInfo->IsInTournamentMode() && cursor.gameInfo->mCustomTournamentInfo.m_tournMode == TM_KNOCKOUT)
             {
                 if (i == 0)
                 {
@@ -3316,12 +3320,9 @@ void CupHubScene::UpdateProgressIndicator()
         }
         else if (numRounds == 9)
         {
-            if (i <= 12)
+            if (i <= 12 && (i % 2) == 0)
             {
-                if ((i % 2) == 0)
-                {
-                    displayRounds[i] = i / 2;
-                }
+                displayRounds[i] = i / 2;
             }
             else if (i == 14 || i == 15)
             {
@@ -3336,11 +3337,11 @@ void CupHubScene::UpdateProgressIndicator()
 
     if (round == -5)
     {
-        if (gameInfo->IsInTournamentMode() && gameInfo->mCustomTournamentInfo.m_tournMode == TM_KNOCKOUT)
+        if (cursor.gameInfo->IsInTournamentMode() && cursor.gameInfo->mCustomTournamentInfo.m_tournMode == TM_KNOCKOUT)
         {
             currentRound = 15;
         }
-        else if (gameInfo->mCurrentMode == GameInfoManager::GM_BOWSER_CUP)
+        else if (cursor.gameInfo->mCurrentMode == GameInfoManager::GM_BOWSER_CUP)
         {
             currentRound = 15;
         }
@@ -3352,7 +3353,7 @@ void CupHubScene::UpdateProgressIndicator()
         highlight->m_bVisible = false;
     }
 
-    nodeColour = nodeColours;
+    cursor.nodeColour = nodeColours;
 
     for (int i = 0; i < 16; i++)
     {
@@ -3394,24 +3395,24 @@ void CupHubScene::UpdateProgressIndicator()
         {
             if ((displayRounds[i] >= 0 && displayRounds[i] < currentRound) || (round == -5 && currentRound == displayRounds[i]))
             {
-                if (*nodeColour == (eHubColour)0)
+                if (*cursor.nodeColour == (eHubColour)0)
                 {
                     nodeImage->SetAssetColour(HIGHLIGHT_COLOUR_RED);
                 }
-                else if (*nodeColour == (eHubColour)1)
+                else if (*cursor.nodeColour == (eHubColour)1)
                 {
                     nodeImage->SetAssetColour(HIGHLIGHT_COLOUR_GREEN);
                 }
-                else if (*nodeColour == (eHubColour)2)
+                else if (*cursor.nodeColour == (eHubColour)2)
                 {
                     nodeImage->SetAssetColour(HIGHLIGHT_COLOUR_BLUE);
                 }
-                else if (*nodeColour == (eHubColour)3)
+                else if (*cursor.nodeColour == (eHubColour)3)
                 {
                     nodeImage->SetAssetColour(HIGHLIGHT_COLOUR_YELLOW);
                 }
 
-                nodeColour++;
+                cursor.nodeColour++;
             }
 
             if (currentRound == displayRounds[i])
@@ -3455,9 +3456,13 @@ void CupHubScene::ColourUserRow()
     typedef TLTextInstance* (*FindTextByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
     typedef TLTextInstance* (*FindTextByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
 
-    FEPresentation* pres = m_pFEPresentation;
+    struct PointerState
+    {
+        FEPresentation* pres;
+        char** row;
+    } state;
+    state.pres = m_pFEPresentation;
     int standingsIndices[8];
-    char** pRowName;
     int* pStandingsIndices;
     TLTextInstance* pTextInstance;
     int numTeams = nlSingleton<GameInfoManager>::s_pInstance->GetNumPlayingTeams();
@@ -3466,7 +3471,7 @@ void CupHubScene::ColourUserRow()
     nlSingleton<StatsTracker>::s_pInstance->GetSortedTeamStats(mAllTeamStats, numTeams, standingsIndices, numTeams);
 
     pStandingsIndices = standingsIndices;
-    pRowName = HUBstandingsRowNames;
+    state.row = HUBstandingsRowNames;
 
     for (row = 0; row < numTeams; row++)
     {
@@ -3499,7 +3504,7 @@ void CupHubScene::ColourUserRow()
 
             findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
             pComp = findComp.byRef(
-                pres->m_currentSlide,
+                state.pres->m_currentSlide,
                 (InlineHasher&)hB,
                 (InlineHasher&)h9,
                 (InlineHasher&)h7,
@@ -3523,7 +3528,7 @@ void CupHubScene::ColourUserRow()
         g4.m_Hash = 0;
         g5.m_Hash = 0;
 
-        hash = nlStringLowerHash(HUBstandingsRowNames[row]);
+        hash = nlStringLowerHash(*state.row);
         g6.m_Hash = hash;
         g7.m_Hash = hash;
 
@@ -3555,6 +3560,7 @@ void CupHubScene::ColourUserRow()
             }
         }
 
+        state.row++;
         pStandingsIndices++;
     }
 }

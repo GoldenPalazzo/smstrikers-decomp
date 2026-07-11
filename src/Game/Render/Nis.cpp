@@ -472,8 +472,8 @@ void Nis::Trigger::FireEffect(const Nis& nis) const
 
 /**
  * Offset/Address/Size: 0x2D0 | 0x8012B6E0 | size: 0x564
- * TODO: 98.25% match - remaining diffs are register allocation in the audio
- * trigger setup and an extra branch around the volume fallback.
+ * TODO: 98.97% match - remaining differences are nonvolatile register
+ * assignments in the audio trigger setup.
  */
 void Nis::Trigger::Fire(Nis& nis) const
 {
@@ -490,8 +490,7 @@ void Nis::Trigger::Fire(Nis& nis) const
         bIsEmitter = false;
         bStopAtNisEnd = true;
 
-        if (volume != -1.0f)
-            volume = 100.0f;
+        volume = params.float1 != -1.0f ? params.float1 : 100.0f;
 
         if (params.param1 == (unsigned long)-1)
         {
@@ -512,9 +511,11 @@ void Nis::Trigger::Fire(Nis& nis) const
         }
         else
         {
-            int charIdx = nis.mUnk_0x738;
+            int charIdx2;
+            int charIdx;
+            charIdx = nis.mUnk_0x738;
             RenderSnapshot& snap = ReplayManager::Instance()->GetMutableRenderSnapshot();
-            int charIdx2 = nis.mUnk_0x738;
+            charIdx2 = nis.mUnk_0x738;
             RenderSnapshot& snap2 = ReplayManager::Instance()->GetMutableRenderSnapshot();
             sfxHandle = (unsigned long)Audio::PlayCharSFXbyStr(name, (NisCharacterClass)params.param1, volume, -1.0f, true, false, &snap2.mCharacters[charIdx2].mBip01Position, &snap.mCharacters[charIdx].mVelocity, &trackingId);
             bIsEmitter = true;
@@ -525,9 +526,10 @@ void Nis::Trigger::Fire(Nis& nis) const
         if (sfxHandle == (unsigned long)-1)
             break;
 
+        NisAudioData* pAudioData;
         unsigned long trackingVal = trackingId;
         const char* sfxName = name;
-        NisAudioData* pAudioData = (NisAudioData*)nlMalloc(sizeof(NisAudioData), 8, false);
+        pAudioData = (NisAudioData*)nlMalloc(sizeof(NisAudioData), 8, false);
         pAudioData->audioType = NIS_AUDIO_TYPE_NONE;
         pAudioData->identifier.index = (unsigned long)-1;
         memset(pAudioData->str, 0, 0x80);
@@ -551,9 +553,11 @@ void Nis::Trigger::Fire(Nis& nis) const
     case NIS_TRIGGER_TYPE_PLAY_RANDOM_DIALOGUE:
     {
         unsigned long trackingId = (unsigned long)-1;
-        int charIdx = nis.mUnk_0x738;
+        int charIdx2;
+        int charIdx;
+        charIdx = nis.mUnk_0x738;
         RenderSnapshot& snap = ReplayManager::Instance()->GetMutableRenderSnapshot();
-        int charIdx2 = nis.mUnk_0x738;
+        charIdx2 = nis.mUnk_0x738;
         RenderSnapshot& snap2 = ReplayManager::Instance()->GetMutableRenderSnapshot();
         sfxHandle = Audio::cCharacterSFX::PlayNISRandomCharDialogue((CharDialogueType)params.param2, (NisCharacterClass)params.param1, 100.0f, -1.0f, true, &snap2.mCharacters[charIdx2].mBip01Position, &snap.mCharacters[charIdx].mVelocity, &trackingId);
         bStopAtNisEnd = true;

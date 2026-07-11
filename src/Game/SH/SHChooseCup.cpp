@@ -1,4 +1,8 @@
+#define FEPOPUPMENU_BYVAL_DECLS
+#define FUNCTION0_VOLATILE_TAG_DTOR
+#define BASICSTRING_INDEX_EMPTY_COPY_BYTE_OFFSET
 #include "Game/SH/SHChooseCup.h"
+#undef FUNCTION0_VOLATILE_TAG_DTOR
 #include "Game/GameInfo.h"
 #include "Game/GameSceneManager.h"
 #include "Game/FE/fePopupMenu.h"
@@ -231,10 +235,6 @@ void confirmedNewCup(bool isSuperCup)
 typedef BindExp1<void, void (*)(bool), bool> BindExp1_vfb;
 typedef Function0<void>::FunctorImpl<BindExp1_vfb> FunctorImpl_vfb;
 
-/**
- * Offset/Address/Size: 0x1F64 | 0x800DC1E8 | size: 0x154
- * TODO: FEPopupMenu::Create call site remains ref-vs-value ABI-mangled.
- */
 template <>
 struct BindExp1<void, void (*)(bool), bool>
 {
@@ -242,28 +242,19 @@ struct BindExp1<void, void (*)(bool), bool>
     bool mArg;
 
     BindExp1() { }
-    ~BindExp1() { }
 };
 
+/**
+ * Offset/Address/Size: 0x1F64 | 0x800DC1E8 | size: 0x154
+ */
 void startNewCup(bool isSuperCup)
 {
     FEPopupMenu* pPopup = (FEPopupMenu*)nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
 
-    {
-        BindExp1_vfb bindResult = Bind<void, void (*)(bool), bool>(confirmedNewCup, isSuperCup);
-
-        Function<FnVoidVoid> no;
-        Function<FnVoidVoid> yes;
-
-        yes.mTag = FUNCTOR;
-        FunctorImpl_vfb* functor = new ((FunctorImpl_vfb*)nlMalloc(sizeof(FunctorImpl_vfb), 8, false)) FunctorImpl_vfb(bindResult);
-        yes.mFunctor = functor;
-
-        no.mTag = FREE_FUNCTION;
-        no.mFreeFunction = FEPopupMenu::Nothing;
-
-        pPopup->Create(POPUP_REALLY_OVERWRITE, yes, no);
-    }
+    pPopup->Create(
+        POPUP_REALLY_OVERWRITE,
+        Function<FnVoidVoid>(Bind<void, void (*)(bool), bool>(confirmedNewCup, isSuperCup)),
+        Function<FnVoidVoid>(FEPopupMenu::Nothing));
 
     pPopup->mUnknownAA4 = false;
 }
@@ -1219,30 +1210,15 @@ void ChooseCupSceneV2::Proceed()
 
         FEPopupMenu* menu = (FEPopupMenu*)nlSingleton<GameSceneManager>::s_pInstance->Push(SCENE_POPUP_MENU, SCREEN_NOTHING, false);
 
-        {
-            BindExp1_vfb bindContinue;
-            BindExp1_vfb bindNew;
-            Function<FnVoidVoid> yes;
-            Function<FnVoidVoid> no;
+        menu->Create(
+            POPUP_START_NEW_CUP,
+            Function<FnVoidVoid>(Bind<void, void (*)(bool), bool>(continueCup, mIsSuperCup)),
+            Function<FnVoidVoid>(Bind<void, void (*)(bool), bool>(startNewCup, mIsSuperCup)));
 
-            bindContinue = Bind<void, void (*)(bool), bool>(continueCup, mIsSuperCup);
-            yes.mTag = FUNCTOR;
-            FunctorImpl_vfb* yesFunctor = new ((FunctorImpl_vfb*)nlMalloc(sizeof(FunctorImpl_vfb), 8, false)) FunctorImpl_vfb(bindContinue);
-            yes.mFunctor = yesFunctor;
-
-            bindNew = Bind<void, void (*)(bool), bool>(startNewCup, mIsSuperCup);
-            no.mTag = FUNCTOR;
-            FunctorImpl_vfb* noFunctor = new ((FunctorImpl_vfb*)nlMalloc(sizeof(FunctorImpl_vfb), 8, false)) FunctorImpl_vfb(bindNew);
-            no.mFunctor = noFunctor;
-
-            menu->Create(POPUP_START_NEW_CUP, yes, no);
-        }
-
-        SetupStartNewCupBackCallback(menu);
+        menu->SetBackButtonCallback(Function<FnVoidVoid>(FEPopupMenu::Nothing));
 
         findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
 
-        h7 = 0;
         h0 = 0;
         h1 = 0;
         h2 = 0;
@@ -1250,6 +1226,7 @@ void ChooseCupSceneV2::Proceed()
         h4 = 0;
         h5 = 0;
         h6 = 0;
+        h7 = 0;
 
         hash = nlStringLowerHash("cup in progress");
         h8 = hash;

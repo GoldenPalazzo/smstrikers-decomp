@@ -844,9 +844,34 @@ void NisPlayer::Load(char* buffer, unsigned int size, NisHeader& nisHeader)
     }
 }
 
+typedef BasicString<char, Detail::TempStringAllocator> TriggerString;
+
+static inline void EraseTriggerPrefix(TriggerString& s, const char* begin, const char* end)
+{
+    s[0];
+    BasicStringData<char>* data = s.m_data;
+    int size = end - begin;
+    const char* eraseEnd = end;
+    int offset = begin - data->mData;
+    char* at = data->mData + offset;
+    while (eraseEnd != data->mData + data->mSize)
+    {
+        *at = *eraseEnd;
+        eraseEnd++;
+        at++;
+    }
+    data->mSize -= size;
+}
+
+static inline char* TriggerMutableBegin(TriggerString& s)
+{
+    s[0];
+    return s.m_data ? s.m_data->mData : (char*)0;
+}
+
 /**
  * Offset/Address/Size: 0x1AE0 | 0x801167BC | size: 0xD08
- * TODO: 99.05% match - remaining register allocation differs in BasicString construction and copy-on-write paths.
+ * TODO: 99.42% match - remaining register allocation differs in BasicString construction and copy-on-write paths.
  */
 void NisPlayer::LoadTriggers(Nis& nis)
 {
@@ -872,29 +897,10 @@ void NisPlayer::LoadTriggers(Nis& nis)
         {
             if (name[i] == '_')
             {
-                char* eraseEnd;
-                char* eraseBegin;
-                name[0];
-                eraseEnd = (name.m_data ? name.m_data->mData : (char*)0) + i;
-                name[0];
-                eraseBegin = name.m_data ? name.m_data->mData : (char*)0;
-                name[0];
-                BasicStringData<char>* data = name.m_data;
-                int removeCount = eraseEnd - eraseBegin;
-                int removeOffset = eraseBegin - data->mData;
-                char* dest = data->mData + removeOffset;
-
-                while (eraseEnd != data->mData + data->mSize)
-                {
-                    *dest = *eraseEnd;
-                    eraseEnd++;
-                    dest++;
-                }
-                data->mSize -= removeCount;
+                EraseTriggerPrefix(name, ((void)name[0], name.m_data ? name.m_data->mData : (char*)0), ((void)name[0], (name.m_data ? name.m_data->mData : (char*)0) + i));
 
                 BasicString<char, Detail::TempStringAllocator> all("all");
-                name[0];
-                char* at = name.m_data ? name.m_data->mData : (char*)0;
+                char* at = TriggerMutableBegin(name);
                 BasicStringData<char>* allData = all.m_data;
                 const char* begin;
                 if (allData != NULL)

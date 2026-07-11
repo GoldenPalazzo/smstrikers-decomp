@@ -1133,7 +1133,7 @@ config.libs = [
             Object(Matching, "Game/SH/SHSuperTeam.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/SH/SHTitleScreen.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/SH/SHTournSetParams.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(NonMatching, "Game/SH/SHTournTeamSetup.cpp", extra_cflags=["-inline auto", "-inline deferred"]),            
+            Object(Matching, "Game/SH/SHTournTeamSetup.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
 
             # GFX
             Object(NonMatching, "Game/Drawable/DrawableNetMesh.cpp", extra_cflags=["-inline auto", "-inline deferred"]),

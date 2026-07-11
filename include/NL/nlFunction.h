@@ -83,6 +83,17 @@ public:
             }
         }
     }
+
+#ifdef FUNCTION1_OWNER_DTOR
+    ~Function1()
+    {
+        if (mTag == FUNCTOR)
+        {
+            delete mFunctor;
+        }
+        mTag = EMPTY;
+    }
+#endif
 }; // total size: 0x8
 
 template <typename ReturnType>
@@ -154,7 +165,11 @@ public:
         {
             delete mFunctor;
         }
+#ifdef FUNCTION0_VOLATILE_TAG_DTOR
+        *(volatile Tag*)&mTag = EMPTY;
+#else
         mTag = EMPTY;
+#endif
     }
 
 }; // total size: 0x8
@@ -178,11 +193,13 @@ public:
 
     ~Function()
     {
+#ifndef FUNCTION1_OWNER_DTOR
         if (mTag == FUNCTOR)
         {
             delete mFunctor;
         }
         mTag = EMPTY;
+#endif
     }
 
     Function& operator=(const Function& other)
@@ -225,11 +242,13 @@ public:
 
     ~Function()
     {
+#ifndef FUNCTION1_OWNER_DTOR
         if (mTag == FUNCTOR)
         {
             delete mFunctor;
         }
         mTag = EMPTY;
+#endif
     }
 
     Function& operator=(const Function& other)
@@ -308,6 +327,12 @@ public:
     Function(Tag t)
     {
         mTag = t;
+    }
+
+    Function(void (*function)())
+    {
+        mTag = FREE_FUNCTION;
+        mFreeFunction = function;
     }
 
     template <typename T>

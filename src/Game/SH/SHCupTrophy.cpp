@@ -839,26 +839,28 @@ void CupTrophyScene::Update(float fDeltaT)
             Spoil* pSpoil = (Spoil*)(pBase2 + 0x2F24);
             unsigned char numRecords = pSpoil->mNumRecords;
 
-            if (numRecords > 1)
+            if (numRecords <= 1)
             {
-                if (mRow < 2 && mRow < (int)(numRecords - 1))
-                {
-                    mRow += 1;
-                    FEAudio::PlayAnimAudioEvent("sfx_option_scroll_down", false);
-                }
-                else if (numRecords > 3 && mScrollOffset < (int)(numRecords - 3))
-                {
-                    mScrollOffset += 1;
-                    FEAudio::PlayAnimAudioEvent("sfx_option_scroll_down", false);
-                }
-                else
-                {
-                    FEAudio::PlayAnimAudioEvent("sfx_deny", false);
-                }
-
-                SetHistory(*pSpoil);
                 return;
             }
+
+            if (mRow < 2 && mRow < (int)(numRecords - 1))
+            {
+                mRow += 1;
+                FEAudio::PlayAnimAudioEvent("sfx_option_scroll_down", false);
+            }
+            else if (numRecords > 3 && mScrollOffset < (int)(numRecords - 3))
+            {
+                mScrollOffset += 1;
+                FEAudio::PlayAnimAudioEvent("sfx_option_scroll_down", false);
+            }
+            else
+            {
+                FEAudio::PlayAnimAudioEvent("sfx_deny", false);
+            }
+
+            SetHistory(*pSpoil);
+            return;
         }
     }
 
@@ -867,26 +869,28 @@ void CupTrophyScene::Update(float fDeltaT)
         unsigned char numRecords = pSpoil->mNumRecords;
         if (numRecords > 3)
         {
-            if (numRecords > 1)
+            if (numRecords <= 1)
             {
-                if (mRow > 0)
-                {
-                    mRow -= 1;
-                    FEAudio::PlayAnimAudioEvent("sfx_option_scroll_up", false);
-                }
-                else if (mScrollOffset > 0)
-                {
-                    mScrollOffset -= 1;
-                    FEAudio::PlayAnimAudioEvent("sfx_option_scroll_up", false);
-                }
-                else
-                {
-                    FEAudio::PlayAnimAudioEvent("sfx_deny", false);
-                }
-
-                SetHistory(*pSpoil);
                 return;
             }
+
+            if (mRow > 0)
+            {
+                mRow -= 1;
+                FEAudio::PlayAnimAudioEvent("sfx_option_scroll_up", false);
+            }
+            else if (mScrollOffset > 0)
+            {
+                mScrollOffset -= 1;
+                FEAudio::PlayAnimAudioEvent("sfx_option_scroll_up", false);
+            }
+            else
+            {
+                FEAudio::PlayAnimAudioEvent("sfx_deny", false);
+            }
+
+            SetHistory(*pSpoil);
+            return;
         }
     }
 

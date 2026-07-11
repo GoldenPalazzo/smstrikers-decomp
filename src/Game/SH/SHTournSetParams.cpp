@@ -21,8 +21,6 @@ BindExp1<R, F, A> Bind(F fn, const A& arg)
 template <typename T, typename R>
 Detail::MemFunImpl<R, void (T::*)()> MemFun(void (T::*fn)());
 
-extern char __vt__13SlideMenuItem[];
-
 typedef void FnTLComponentInstanceCb(TLComponentInstance*);
 
 namespace SingleHighlite
@@ -44,6 +42,17 @@ static inline MenuItem<SlideMenuItem>* TournSetParamsSlideMenuItemAt(SlideMenuLi
 {
     MenuItem<SlideMenuItem>* items = menu->mMenuItems;
     return &items[idx];
+}
+
+static inline void TournSetParamsInstallSlideCallback(MenuItem<SlideMenuItem>* menuItem, SlideMenuList* const& sml)
+{
+    typedef Detail::MemFunImpl<void, void (SlideMenuList::*)()> MemFunImpl_SML;
+    typedef BindExp1<void, MemFunImpl_SML, SlideMenuList*> BindExp1_SML;
+    typedef void FnSlideMenuItemCb(SlideMenuItem*);
+
+    BindExp1_SML bind = Bind<void>(MemFun<SlideMenuList, void>(&SlideMenuList::SetSlide), sml);
+    Function<FnSlideMenuItemCb> callback(bind);
+    menuItem->mCallbacks[1] = callback;
 }
 
 // /**
@@ -100,16 +109,10 @@ TournSetParamsScene::~TournSetParamsScene()
 
 /**
  * Offset/Address/Size: 0x1CD0 | 0x800E16A4 | size: 0x434
- * TODO: 99.67% match - r28/r29 register swap for this+offset vs
- * memcpy-temp/menuItem, stack layout inversion for bind/callback intermediates.
+ * TODO: 99.76% match - r29/r30 register swap for this+offset vs memcpy-temp/menuItem.
  */
 void TournSetParamsScene::BuildSubMenuList(int menuitem, TLComponentInstance* compinstance, bool wraps, int startindex)
 {
-    extern int nlSNPrintf(char*, unsigned long, const char*, ...);
-    typedef Detail::MemFunImpl<void, void (SlideMenuList::*)()> MemFunImpl_SML;
-    typedef BindExp1<void, MemFunImpl_SML, SlideMenuList*> BindExp1_SML;
-    typedef void FnSlideMenuItemCb(SlideMenuItem*);
-
     SlideMenuList* list = new (nlMalloc(sizeof(SlideMenuList), 8, false)) SlideMenuList(compinstance);
     mSlideMenuLists[menuitem] = list;
 
@@ -131,27 +134,14 @@ void TournSetParamsScene::BuildSubMenuList(int menuitem, TLComponentInstance* co
 
         SlideMenuList* sml = mSlideMenuLists[menuitem];
 
-        SlideMenuItem* item = (SlideMenuItem*)nlMalloc(sizeof(SlideMenuItem), 8, true);
-        if (item != NULL)
-        {
-            TLComponentInstance* comp = sml->mComponentInstance;
-            *(char**)item = __vt__13SlideMenuItem;
-            item->mSlideMenuHash = (unsigned long)-1;
-            item->mComponentInstance = comp;
-            item->mUserEnumType = slidenum;
-        }
+        SlideMenuItem* item = new (nlMalloc(sizeof(SlideMenuItem), 8, true)) SlideMenuItem(sml->mComponentInstance, slidenum);
         item->mSlideMenuHash = slideHash;
 
         menuItem = TournSetParamsSlideMenuItemAt(sml, sml->mNumItemsAdded);
         menuItem->mType = item;
         sml->mNumItemsAdded++;
 
-        {
-            BindExp1_SML bind = Bind<void>(
-                MemFun<SlideMenuList, void>(&SlideMenuList::SetSlide), sml);
-            Function<FnSlideMenuItemCb> callback(bind);
-            menuItem->mCallbacks[1] = callback;
-        }
+        TournSetParamsInstallSlideCallback(menuItem, sml);
     } while (++slidenum);
 
     list = mSlideMenuLists[menuitem];
@@ -874,18 +864,23 @@ void TournSetParamsScene::ApplyMenuDefaults()
         unsigned char activestatetable[6] = { 1, 0, 1, 1, 1, 0 };
         for (int i = 0; i < 6; i++)
         {
-            unsigned char active = activestatetable[i];
-            SlideMenuList* list = mSlideMenuLists[1];
-            MenuItem<SlideMenuItem>* item;
+            struct LoopState
+            {
+                SlideMenuList* list;
+                MenuItem<SlideMenuItem>* item;
+                unsigned char active;
+            } state;
+            state.active = activestatetable[i];
+            state.list = mSlideMenuLists[1];
             if (i == ON_INVALID)
             {
-                item = &list->mMenuItems[list->mCurrentIndex];
+                state.item = &state.list->mMenuItems[state.list->mCurrentIndex];
             }
             else
             {
-                item = &list->mMenuItems[i];
+                state.item = &state.list->mMenuItems[i];
             }
-            ((unsigned char&)item->mDisabled) = active;
+            ((unsigned char&)state.item->mDisabled) = state.active;
         }
     }
     else
@@ -907,21 +902,29 @@ void TournSetParamsScene::ApplyMenuDefaults()
         cur = &menu->mMenuItems[menu->mCurrentIndex];
         CALL_MENU_CB_APPLY(cur, 1);
 
-        ((unsigned char&)mSlideMenuLists[2]->mMenuItems[mSlideMenuLists[2]->mCurrentIndex].mDisabled) = false;
+        struct LeagueState
+        {
+            SlideMenuList* list;
+            MenuItem<SlideMenuItem>* item;
+            unsigned char active;
+        } state;
+        state.active = false;
+        state.list = mSlideMenuLists[2];
+        ((unsigned char&)state.list->mMenuItems[state.list->mCurrentIndex].mDisabled) = state.active;
         mSlideMenuLists[2]->mComponentInstance->m_bVisible = true;
 
         for (int i = 0; i < mSlideMenuLists[1]->mNumItemsAdded; i++)
         {
-            MenuItem<SlideMenuItem>* item;
+            state.list = mSlideMenuLists[1];
             if (i == ON_INVALID)
             {
-                item = &mSlideMenuLists[1]->mMenuItems[mSlideMenuLists[1]->mCurrentIndex];
+                state.item = &state.list->mMenuItems[state.list->mCurrentIndex];
             }
             else
             {
-                item = &mSlideMenuLists[1]->mMenuItems[i];
+                state.item = &state.list->mMenuItems[i];
             }
-            item->mDisabled = false;
+            state.item->mDisabled = state.active;
         }
     }
 }
@@ -1035,18 +1038,23 @@ void TournSetParamsScene::InitializeMenu()
         unsigned char activestatetable[6] = { 1, 0, 1, 1, 1, 0 };
         for (int i = 0; i < 6; i++)
         {
-            unsigned char active = activestatetable[i];
-            SlideMenuList* list = mSlideMenuLists[1];
-            MenuItem<SlideMenuItem>* item;
+            struct LoopState
+            {
+                SlideMenuList* list;
+                MenuItem<SlideMenuItem>* item;
+                unsigned char active;
+            } state;
+            state.active = activestatetable[i];
+            state.list = mSlideMenuLists[1];
             if (i == ON_INVALID)
             {
-                item = &list->mMenuItems[list->mCurrentIndex];
+                state.item = &state.list->mMenuItems[state.list->mCurrentIndex];
             }
             else
             {
-                item = &list->mMenuItems[i];
+                state.item = &state.list->mMenuItems[i];
             }
-            ((unsigned char&)item->mDisabled) = active;
+            ((unsigned char&)state.item->mDisabled) = state.active;
         }
     }
     else
@@ -1072,21 +1080,29 @@ void TournSetParamsScene::InitializeMenu()
             CALL_MENU_CB(cur, 1);
         }
 
-        ((unsigned char&)mSlideMenuLists[2]->mMenuItems[mSlideMenuLists[2]->mCurrentIndex].mDisabled) = false;
+        struct LeagueState
+        {
+            SlideMenuList* list;
+            MenuItem<SlideMenuItem>* item;
+            unsigned char active;
+        } state;
+        state.active = false;
+        state.list = mSlideMenuLists[2];
+        ((unsigned char&)state.list->mMenuItems[state.list->mCurrentIndex].mDisabled) = state.active;
         mSlideMenuLists[2]->mComponentInstance->m_bVisible = true;
 
         for (int i = 0; i < mSlideMenuLists[1]->mNumItemsAdded; i++)
         {
-            MenuItem<SlideMenuItem>* item;
+            state.list = mSlideMenuLists[1];
             if (i == ON_INVALID)
             {
-                item = &mSlideMenuLists[1]->mMenuItems[mSlideMenuLists[1]->mCurrentIndex];
+                state.item = &state.list->mMenuItems[state.list->mCurrentIndex];
             }
             else
             {
-                item = &mSlideMenuLists[1]->mMenuItems[i];
+                state.item = &state.list->mMenuItems[i];
             }
-            item->mDisabled = false;
+            state.item->mDisabled = state.active;
         }
     }
 

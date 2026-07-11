@@ -79,10 +79,38 @@ public:
     void SetPositions();
 
     void Create(ePopupMenu);
+#if defined(FEPOPUPMENU_BYVAL_DECLS) || defined(FEPOPUPMENU_INTERNAL_BYVAL)
+    void Create(ePopupMenu type, Function<FnVoidVoid> option1)
+    {
+        Create(type, option1, Function<FnVoidVoid>(Nothing));
+    }
+
+    void Create(ePopupMenu type, Function<FnVoidVoid> option1, Function<FnVoidVoid> option2)
+    {
+        Create(type, option1, option2, Function<FnVoidVoid>(Nothing));
+    }
+
+    void Create(
+        ePopupMenu type,
+        Function<FnVoidVoid> option1,
+        Function<FnVoidVoid> option2,
+        Function<FnVoidVoid> option3)
+    {
+        Create(type, option1, option2, option3, Function<FnVoidVoid>(Nothing));
+    }
+
+    void Create(
+        ePopupMenu,
+        Function<FnVoidVoid>,
+        Function<FnVoidVoid>,
+        Function<FnVoidVoid>,
+        Function<FnVoidVoid>);
+#else
     void Create(ePopupMenu, _FEPopupMenuCB);
     void Create(ePopupMenu, _FEPopupMenuCB, _FEPopupMenuCB);
     void Create(ePopupMenu, _FEPopupMenuCB, _FEPopupMenuCB, _FEPopupMenuCB);
     void Create(ePopupMenu, _FEPopupMenuCB, _FEPopupMenuCB, _FEPopupMenuCB, _FEPopupMenuCB);
+#endif
     void SetBackButtonCallback(_FEPopupMenuCB);
     static void Nothing() { }
 

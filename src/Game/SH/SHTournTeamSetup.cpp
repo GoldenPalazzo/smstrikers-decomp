@@ -25,9 +25,6 @@ static const char* SLIDE_IN = "in";
 static const char* SLIDE_OUT = "out";
 } // namespace DoubleHighlite
 
-// Temporary dummy object for reference member initialization
-static CustomTournament s_dummyTourn;
-
 static unsigned long TOURN_CAPTAIN_DESCRIPTIONS[] = {
     0xFF68ABBA, 0xE2D37C19, 0x000465BA, 0x000BAD38, 0x0043DF21, 0x330C3072, 0x00C0A242, 0x00EC84AC, 0x69BFAF9D
 };
@@ -934,34 +931,9 @@ void TournTeamSetupSceneV2::UpdateControllerIcon(int arg)
 
 /**
  * Offset/Address/Size: 0x2500 | 0x800E43A4 | size: 0xAB4
- * TODO: 91.76% match - remaining diffs are in InlineHasher stack-slot ordering
- * and literal symbol placement across repeated finder setup blocks.
  */
 void TournTeamSetupSceneV2::UpdateRow(int onScreenRow)
 {
-    typedef TLTextInstance* (*FindTextByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-    typedef TLTextInstance* (*FindTextByRef)(
-        TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
-
-    typedef TLComponentInstance* (*FindCompByValue)(
-        TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-    typedef TLComponentInstance* (*FindCompByRef)(
-        TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
-
-    union
-    {
-        FindTextByValue byValue;
-        FindTextByRef byRef;
-    } findText;
-
-    union
-    {
-        FindCompByValue byValue;
-        FindCompByRef byRef;
-    } findComp;
-
-    int nlSNPrintf(char*, unsigned long, const char*, ...);
-
     FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
     int currentRow = onScreenRow + mRowOffset;
 
@@ -983,333 +955,60 @@ void TournTeamSetupSceneV2::UpdateRow(int onScreenRow)
     TLComponentInstance* arrow1;
     TLComponentInstance* arrow2;
 
-    volatile InlineHasher hA, hB;
-    volatile InlineHasher h9, h8;
-    volatile InlineHasher h7, h6, h5, h4, h3, h2, h1, h0;
-
-    volatile InlineHasher gB, gA;
-    volatile InlineHasher innerHash;
-    volatile InlineHasher g4, g3, g2, g1, g0;
-
-    volatile InlineHasher fB, fA;
-    volatile InlineHasher f4, f3, f2, f1, f0;
-
-    volatile InlineHasher eB, eA;
-    volatile InlineHasher e4, e3, e2, e1, e0;
-
-    volatile InlineHasher dB, dA;
-    volatile InlineHasher d4, d3, d2, d1, d0;
-
-    volatile InlineHasher cB, cA;
-    volatile InlineHasher c4, c3, c2, c1, c0;
-
-    volatile InlineHasher bB, bA;
-    volatile InlineHasher b4, b3, b2, b1, b0;
-
-    volatile InlineHasher aB, aA;
-    volatile InlineHasher a4, a3, a2, a1, a0;
-
-    volatile InlineHasher zB, zA;
-    volatile InlineHasher z4, z3, z2, z1, z0;
-
-    volatile InlineHasher yB, yA;
-    volatile InlineHasher y4, y3, y2, y1, y0;
-
-    volatile InlineHasher xB, xA;
-    volatile InlineHasher x4, x3, x2, x1, x0;
-
-    volatile InlineHasher wB, wA;
-    volatile InlineHasher w4, w3, w2, w1, w0;
-
-    volatile InlineHasher vB, vA;
-    volatile InlineHasher v4, v3, v2, v1, v0;
-
     nlSNPrintf(menuName, 64, "MENU ITEM%d", onScreenRow + 1);
 
-    h0.m_Hash = 0;
-    h1.m_Hash = 0;
-    h2.m_Hash = 0;
-    h3.m_Hash = 0;
-    h4.m_Hash = 0;
-    h5.m_Hash = 0;
-    h6.m_Hash = 0;
-    h7.m_Hash = 0;
-
-    unsigned long hash = nlStringLowerHash(menuName);
-    h8.m_Hash = hash;
-    h9.m_Hash = hash;
-
-    hash = nlStringLowerHash("Layer");
-    hA.m_Hash = hash;
-    hB.m_Hash = hash;
-
-    findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
-    pComp = findComp.byRef(
+    pComp = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
         presentation->m_currentSlide,
-        (InlineHasher&)hA,
-        (InlineHasher&)h9,
-        (InlineHasher&)h7,
-        (InlineHasher&)h5,
-        (InlineHasher&)h3,
-        (InlineHasher&)h1);
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash(menuName)));
 
     pComp->SetActiveSlide("IN");
     TLSlide* active = pComp->GetActiveSlide();
     pComp->Update(active->m_start + active->m_duration);
 
-    g0.m_Hash = 0;
-    h1.m_Hash = 0;
-    g1.m_Hash = 0;
-    h3.m_Hash = 0;
-    g2.m_Hash = 0;
-    h5.m_Hash = 0;
-    g3.m_Hash = 0;
-    h7.m_Hash = 0;
-    g4.m_Hash = 0;
-    innerHash.m_Hash = 0;
-
-    hash = nlStringLowerHash("NUMBER");
-    gA.m_Hash = hash;
-    gB.m_Hash = hash;
-
-    findText.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
-    pText1 = findText.byRef(
+    pText1 = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
         pComp->GetActiveSlide(),
-        (InlineHasher&)gB,
-        (InlineHasher&)innerHash,
-        (InlineHasher&)h7,
-        (InlineHasher&)h5,
-        (InlineHasher&)h3,
-        (InlineHasher&)h1);
+        InlineHasher(nlStringLowerHash("NUMBER")));
 
-    f0.m_Hash = 0;
-    h1.m_Hash = 0;
-    f1.m_Hash = 0;
-    h3.m_Hash = 0;
-    f2.m_Hash = 0;
-    h5.m_Hash = 0;
-    f3.m_Hash = 0;
-    h7.m_Hash = 0;
-    f4.m_Hash = 0;
-    innerHash.m_Hash = 0;
-
-    hash = nlStringLowerHash("captain heads");
-    fA.m_Hash = hash;
-    fB.m_Hash = hash;
-
-    findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
-    pCaptainComp1 = findComp.byRef(
+    pCaptainComp1 = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
         pComp->GetActiveSlide(),
-        (InlineHasher&)fB,
-        (InlineHasher&)innerHash,
-        (InlineHasher&)h7,
-        (InlineHasher&)h5,
-        (InlineHasher&)h3,
-        (InlineHasher&)h1);
+        InlineHasher(nlStringLowerHash("captain heads")));
 
-    e0.m_Hash = 0;
-    h1.m_Hash = 0;
-    e1.m_Hash = 0;
-    h3.m_Hash = 0;
-    e2.m_Hash = 0;
-    h5.m_Hash = 0;
-    e3.m_Hash = 0;
-    h7.m_Hash = 0;
-    e4.m_Hash = 0;
-    innerHash.m_Hash = 0;
-
-    hash = nlStringLowerHash("sidekick heads");
-    eA.m_Hash = hash;
-    eB.m_Hash = hash;
-
-    findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
-    pSidekickComp1 = findComp.byRef(
+    pSidekickComp1 = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
         pComp->GetActiveSlide(),
-        (InlineHasher&)eB,
-        (InlineHasher&)innerHash,
-        (InlineHasher&)h7,
-        (InlineHasher&)h5,
-        (InlineHasher&)h3,
-        (InlineHasher&)h1);
+        InlineHasher(nlStringLowerHash("sidekick heads")));
 
-    d0.m_Hash = 0;
-    h1.m_Hash = 0;
-    d1.m_Hash = 0;
-    h3.m_Hash = 0;
-    d2.m_Hash = 0;
-    h5.m_Hash = 0;
-    d3.m_Hash = 0;
-    h7.m_Hash = 0;
-    d4.m_Hash = 0;
-    innerHash.m_Hash = 0;
-
-    hash = nlStringLowerHash("CONTROLLER");
-    dA.m_Hash = hash;
-    dB.m_Hash = hash;
-
-    findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
-    controller1 = findComp.byRef(
+    controller1 = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
         pComp->GetActiveSlide(),
-        (InlineHasher&)dB,
-        (InlineHasher&)innerHash,
-        (InlineHasher&)h7,
-        (InlineHasher&)h5,
-        (InlineHasher&)h3,
-        (InlineHasher&)h1);
+        InlineHasher(nlStringLowerHash("CONTROLLER")));
 
-    c0.m_Hash = 0;
-    h1.m_Hash = 0;
-    c1.m_Hash = 0;
-    h3.m_Hash = 0;
-    c2.m_Hash = 0;
-    h5.m_Hash = 0;
-    c3.m_Hash = 0;
-    h7.m_Hash = 0;
-    c4.m_Hash = 0;
-    innerHash.m_Hash = 0;
-
-    hash = nlStringLowerHash("pauseresume");
-    cA.m_Hash = hash;
-    cB.m_Hash = hash;
-
-    findText.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
-    pNameText1 = findText.byRef(
+    pNameText1 = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
         pComp->GetActiveSlide(),
-        (InlineHasher&)cB,
-        (InlineHasher&)innerHash,
-        (InlineHasher&)h7,
-        (InlineHasher&)h5,
-        (InlineHasher&)h3,
-        (InlineHasher&)h1);
+        InlineHasher(nlStringLowerHash("pauseresume")));
 
     pComp->SetActiveSlide("OUT");
     active = pComp->GetActiveSlide();
     pComp->Update(active->m_start + active->m_duration);
 
-    b0.m_Hash = 0;
-    h1.m_Hash = 0;
-    b1.m_Hash = 0;
-    h3.m_Hash = 0;
-    b2.m_Hash = 0;
-    h5.m_Hash = 0;
-    b3.m_Hash = 0;
-    h7.m_Hash = 0;
-    b4.m_Hash = 0;
-    innerHash.m_Hash = 0;
-
-    hash = nlStringLowerHash("NUMBER");
-    bA.m_Hash = hash;
-    bB.m_Hash = hash;
-
-    findText.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
-    pText2 = findText.byRef(
+    pText2 = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
         pComp->GetActiveSlide(),
-        (InlineHasher&)bB,
-        (InlineHasher&)innerHash,
-        (InlineHasher&)h7,
-        (InlineHasher&)h5,
-        (InlineHasher&)h3,
-        (InlineHasher&)h1);
+        InlineHasher(nlStringLowerHash("NUMBER")));
 
-    a0.m_Hash = 0;
-    h1.m_Hash = 0;
-    a1.m_Hash = 0;
-    h3.m_Hash = 0;
-    a2.m_Hash = 0;
-    h5.m_Hash = 0;
-    a3.m_Hash = 0;
-    h7.m_Hash = 0;
-    a4.m_Hash = 0;
-    innerHash.m_Hash = 0;
-
-    hash = nlStringLowerHash("captain heads");
-    aA.m_Hash = hash;
-    aB.m_Hash = hash;
-
-    findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
-    pCaptainComp2 = findComp.byRef(
+    pCaptainComp2 = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
         pComp->GetActiveSlide(),
-        (InlineHasher&)aB,
-        (InlineHasher&)innerHash,
-        (InlineHasher&)h7,
-        (InlineHasher&)h5,
-        (InlineHasher&)h3,
-        (InlineHasher&)h1);
+        InlineHasher(nlStringLowerHash("captain heads")));
 
-    z0.m_Hash = 0;
-    h1.m_Hash = 0;
-    z1.m_Hash = 0;
-    h3.m_Hash = 0;
-    z2.m_Hash = 0;
-    h5.m_Hash = 0;
-    z3.m_Hash = 0;
-    h7.m_Hash = 0;
-    z4.m_Hash = 0;
-    innerHash.m_Hash = 0;
-
-    hash = nlStringLowerHash("sidekick heads");
-    zA.m_Hash = hash;
-    zB.m_Hash = hash;
-
-    findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
-    pSidekickComp2 = findComp.byRef(
+    pSidekickComp2 = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
         pComp->GetActiveSlide(),
-        (InlineHasher&)zB,
-        (InlineHasher&)innerHash,
-        (InlineHasher&)h7,
-        (InlineHasher&)h5,
-        (InlineHasher&)h3,
-        (InlineHasher&)h1);
+        InlineHasher(nlStringLowerHash("sidekick heads")));
 
-    y0.m_Hash = 0;
-    h1.m_Hash = 0;
-    y1.m_Hash = 0;
-    h3.m_Hash = 0;
-    y2.m_Hash = 0;
-    h5.m_Hash = 0;
-    y3.m_Hash = 0;
-    h7.m_Hash = 0;
-    y4.m_Hash = 0;
-    innerHash.m_Hash = 0;
-
-    hash = nlStringLowerHash("CONTROLLER");
-    yA.m_Hash = hash;
-    yB.m_Hash = hash;
-
-    findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
-    controller2 = findComp.byRef(
+    controller2 = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
         pComp->GetActiveSlide(),
-        (InlineHasher&)yB,
-        (InlineHasher&)innerHash,
-        (InlineHasher&)h7,
-        (InlineHasher&)h5,
-        (InlineHasher&)h3,
-        (InlineHasher&)h1);
+        InlineHasher(nlStringLowerHash("CONTROLLER")));
 
-    x0.m_Hash = 0;
-    h1.m_Hash = 0;
-    x1.m_Hash = 0;
-    h3.m_Hash = 0;
-    x2.m_Hash = 0;
-    h5.m_Hash = 0;
-    x3.m_Hash = 0;
-    h7.m_Hash = 0;
-    x4.m_Hash = 0;
-    innerHash.m_Hash = 0;
-
-    hash = nlStringLowerHash("pauseresume");
-    xA.m_Hash = hash;
-    xB.m_Hash = hash;
-
-    findText.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
-    pNameText2 = findText.byRef(
+    pNameText2 = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
         pComp->GetActiveSlide(),
-        (InlineHasher&)xB,
-        (InlineHasher&)innerHash,
-        (InlineHasher&)h7,
-        (InlineHasher&)h5,
-        (InlineHasher&)h3,
-        (InlineHasher&)h1);
+        InlineHasher(nlStringLowerHash("pauseresume")));
 
     if (mTeamData[currentRow].isHumanPlayer)
     {
@@ -1322,55 +1021,13 @@ void TournTeamSetupSceneV2::UpdateRow(int onScreenRow)
         controller2->SetActiveSlide("CPU");
     }
 
-    w0.m_Hash = 0;
-    h1.m_Hash = 0;
-    w1.m_Hash = 0;
-    h3.m_Hash = 0;
-    w2.m_Hash = 0;
-    h5.m_Hash = 0;
-    w3.m_Hash = 0;
-    h7.m_Hash = 0;
-    w4.m_Hash = 0;
-    innerHash.m_Hash = 0;
-
-    hash = nlStringLowerHash("arrows");
-    wA.m_Hash = hash;
-    wB.m_Hash = hash;
-
-    findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
-    arrow1 = findComp.byRef(
+    arrow1 = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
         controller1->GetActiveSlide(),
-        (InlineHasher&)wB,
-        (InlineHasher&)innerHash,
-        (InlineHasher&)h7,
-        (InlineHasher&)h5,
-        (InlineHasher&)h3,
-        (InlineHasher&)h1);
+        InlineHasher(nlStringLowerHash("arrows")));
 
-    v0.m_Hash = 0;
-    h1.m_Hash = 0;
-    v1.m_Hash = 0;
-    h3.m_Hash = 0;
-    v2.m_Hash = 0;
-    h5.m_Hash = 0;
-    v3.m_Hash = 0;
-    h7.m_Hash = 0;
-    v4.m_Hash = 0;
-    innerHash.m_Hash = 0;
-
-    hash = nlStringLowerHash("arrows");
-    vA.m_Hash = hash;
-    vB.m_Hash = hash;
-
-    findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
-    arrow2 = findComp.byRef(
+    arrow2 = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
         controller2->GetActiveSlide(),
-        (InlineHasher&)vB,
-        (InlineHasher&)innerHash,
-        (InlineHasher&)h7,
-        (InlineHasher&)h5,
-        (InlineHasher&)h3,
-        (InlineHasher&)h1);
+        InlineHasher(nlStringLowerHash("arrows")));
 
     if (onScreenRow == (mCurrentRow - mRowOffset))
     {
@@ -2748,6 +2405,12 @@ check_update:
 
 void SHTournTeamSetup_stub()
 {
-    TLInstance* (*volatile forceFind)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher) = &FEFinder<TLInstance, 4>::Find<TLSlide>;
-    (void)forceFind;
+    TLInstance* (*volatile forceInstance)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher) = &FEFinder<TLInstance, 4>::Find<TLSlide>;
+    TLImageInstance* (*volatile forceImage)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher) = &FEFinder<TLImageInstance, 2>::Find<TLSlide>;
+    TLTextInstance* (*volatile forceText)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher) = &FEFinder<TLTextInstance, 3>::Find<TLSlide>;
+    TLComponentInstance* (*volatile forceComponent)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher) = &FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
+    (void)forceInstance;
+    (void)forceImage;
+    (void)forceText;
+    (void)forceComponent;
 }

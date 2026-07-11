@@ -27,6 +27,16 @@ enum eGLUserData
     GLUD_Num = 18,
 };
 
+struct GLViewportUserData
+{
+    /* 0x00 */ u16 x;
+    /* 0x02 */ u16 y;
+    /* 0x04 */ u16 w;
+    /* 0x06 */ u16 h;
+    /* 0x08 */ u32 view;
+    /* 0x0C */ u32 projection;
+}; // total size: 0x10
+
 #pragma push
 #pragma pack(1)
 struct glModelStream

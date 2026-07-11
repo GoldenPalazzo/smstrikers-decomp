@@ -225,6 +225,31 @@ void InGameTextOverlay::SceneCreated()
 {
 }
 
+static inline BasicStringData<unsigned short>* BuildWideStringData(const unsigned short* str)
+{
+    BasicStringData<unsigned short>* data = (BasicStringData<unsigned short>*)Detail::TempStringAllocator::allocate(sizeof(BasicStringData<unsigned short>));
+    if (data != 0)
+    {
+        data->mData = 0;
+        data->mSize = 0;
+        data->mCapacity = 0;
+        const unsigned short* scan = str;
+        while (*scan++ != 0)
+        {
+            data->mSize++;
+        }
+        data->mSize++;
+        data->mData = (unsigned short*)Detail::TempStringAllocator::allocate((data->mSize + 1) * sizeof(unsigned short));
+        data->mCapacity = data->mSize;
+        for (int i = 0; i < data->mSize; i++)
+        {
+            data->mData[i] = *str++;
+        }
+        data->mRefCount = 1;
+    }
+    return data;
+}
+
 /**
  * Offset/Address/Size: 0x0 | 0x800FB0AC | size: 0xCAC
  */
@@ -232,8 +257,6 @@ void InGameTextOverlay::DisplayFinalScore()
 {
     typedef BasicString<char, Detail::TempStringAllocator> NarrowString;
     typedef BasicString<unsigned short, Detail::TempStringAllocator> WideString;
-
-    typedef void (*TrackStatsFn)(ePlayerStats, int, int, int, int, int, int);
 
     int scoreLeft = g_pTeams[0]->m_nScore;
     int scoreRight = g_pTeams[1]->m_nScore;
@@ -269,13 +292,12 @@ void InGameTextOverlay::DisplayFinalScore()
 
         eTeamID winningTeam = nlSingleton<GameInfoManager>::s_pInstance->GetTeam((short)winningSide);
 
-        WideString winnerNameWideString(LookupLocHash(GetLOCTeamName(winningTeam)));
+        const unsigned short* winnerNameLookup = LookupLocHash(GetLOCTeamName(winningTeam));
+        WideString winnerNameWideString(BuildWideStringData(winnerNameLookup));
 
         if (winningTeam == 3)
         {
-            static const unsigned short SPACE_WCS[2] = { 0x20, 0x0 };
-
-            WideString space(SPACE_WCS);
+            WideString space((const unsigned short*)L" ");
             winnerNameWideString = space.Append(winnerNameWideString);
         }
 
@@ -319,11 +341,11 @@ void InGameTextOverlay::DisplayFinalScore()
         {
             if (g_pGame->m_eGameState == GS_OVERTIME)
             {
-                ((TrackStatsFn)StatsTracker::Track)(STATS_OT_WIN, winningSide, 0, scoreLeft, scoreRight, 0, 0);
+                ((void (*)(ePlayerStats, int, int, int, int, int, int))StatsTracker::Track)(STATS_OT_WIN, winningSide, 0, scoreLeft, scoreRight, 0, 0);
             }
             else
             {
-                ((TrackStatsFn)StatsTracker::Track)(STATS_WIN, winningSide, 0, scoreLeft, scoreRight, 0, 0);
+                ((void (*)(ePlayerStats, int, int, int, int, int, int))StatsTracker::Track)(STATS_WIN, winningSide, 0, scoreLeft, scoreRight, 0, 0);
             }
         }
         else

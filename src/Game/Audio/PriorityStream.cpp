@@ -1,5 +1,7 @@
 #include "Game/Audio/PriorityStream.h"
 #include "Game/Audio/CrowdMood.h"
+#include "Game/Game.h"
+#include "NL/nlConfig.h"
 #include "NL/nlPrint.h"
 #include "NL/nlString.h"
 
@@ -46,86 +48,13 @@ inline unsigned long PriorityStream::GetNextStreamId(unsigned long SimpleStreamI
 
 /**
  * Offset/Address/Size: 0xA34 | 0x801584E8 | size: 0x474
- * TODO: 99.09% match - register allocation drift remains in PLAY_RECORD setup
- *   (pSlot r5->r9, volGroup r6->r8) and inlined crowd-id path
- *   (counter pointer and looping-byte loads use shifted registers).
+ * TODO: 99.21% match - selected PLAY_RECORD base uses r9 instead of r5,
+ *   volume group uses r8 instead of r6, two looping-bit reloads use r3
+ *   instead of r4, and one track load follows the FadeIn extract.
  */
-enum Type
-{
-    _BOOL = 0,
-    _INT = 1,
-    _FLOAT = 2,
-    _STRING = 3,
-};
-
-union Value
-{
-    const char* s;
-    int i;
-    bool b;
-    float f;
-};
-
-class Config
-{
-public:
-    struct TagValuePair
-    {
-        const char* tag;
-        Type type;
-        Value value;
-    };
-
-    static Config& Global();
-    TagValuePair& FindTvp(const char*);
-    void Set(const char*, bool);
-};
-
-template <typename To, typename From>
-To LexicalCast(const From&);
-
-class cGame
-{
-public:
-    unsigned char _pad[0x42];
-    bool mInSuddenDeath;
-};
-
-extern cGame* g_pGame;
-
 void PriorityStream::PlayStream(unsigned long StreamId, float Volume, bool Looping, unsigned long FadeIn, unsigned long ExistingFadeOut, const char* StreamParam)
 {
-    Config& cfg = Config::Global();
-    Config::TagValuePair& tvp = cfg.FindTvp("no_stream");
-    bool noStream;
-
-    if (tvp.tag == NULL)
-    {
-        cfg.Set("no_stream", false);
-        noStream = false;
-    }
-    else if (tvp.type == _BOOL)
-    {
-        noStream = LexicalCast<bool, bool>(tvp.value.b);
-    }
-    else if (tvp.type == _INT)
-    {
-        noStream = LexicalCast<bool, int>(tvp.value.i);
-    }
-    else if (tvp.type == _FLOAT)
-    {
-        noStream = LexicalCast<bool, float>(tvp.value.f);
-    }
-    else if (tvp.type == _STRING)
-    {
-        noStream = LexicalCast<bool, const char*>(tvp.value.s);
-    }
-    else
-    {
-        noStream = false;
-    }
-
-    if (noStream == true)
+    if (GetConfigBool(Config::Global(), "no_stream", false) == true)
     {
         return;
     }
@@ -204,31 +133,30 @@ void PriorityStream::PlayStream(unsigned long StreamId, float Volume, bool Loopi
 
     if (m_PStream.m_OrigStreamId)
     {
-        if (!m_PStream.m_OrigStreamId)
+        if (m_PStream.m_OrigStreamId)
         {
-            goto end_playstream;
-        }
-        if (m_CapChant.m_Queue)
-        {
-            m_CapChant.m_Queue = 0;
-            m_CapChant.m_Track.QueueStream(
-                m_PStream.m_OrigStreamId,
-                m_CapChant.m_Volume,
-                (m_CapChant.m_Looping & 1),
-                m_CapChant.m_FadeIn,
-                m_CapChant.m_StreamParam[0] ? m_CapChant.m_StreamParam : (const char*)0,
-                (Audio::MasterVolume::VOLUME_GROUP)m_CapChant.m_VolGroup);
-        }
-        else
-        {
-            m_CapChant.m_Track.PlayStream(
-                m_PStream.m_OrigStreamId,
-                m_CapChant.m_Volume,
-                (m_CapChant.m_Looping & 1),
-                m_CapChant.m_FadeIn,
-                m_CapChant.m_ExistingFadeOut,
-                m_CapChant.m_StreamParam[0] ? m_CapChant.m_StreamParam : (const char*)0,
-                (Audio::MasterVolume::VOLUME_GROUP)m_CapChant.m_VolGroup);
+            if (m_CapChant.m_Queue)
+            {
+                m_CapChant.m_Queue = 0;
+                m_CapChant.m_Track.QueueStream(
+                    m_PStream.m_OrigStreamId,
+                    m_CapChant.m_Volume,
+                    (m_CapChant.m_Looping & 1),
+                    m_CapChant.m_FadeIn,
+                    m_CapChant.m_StreamParam[0] ? m_CapChant.m_StreamParam : (const char*)0,
+                    (Audio::MasterVolume::VOLUME_GROUP)m_CapChant.m_VolGroup);
+            }
+            else
+            {
+                m_CapChant.m_Track.PlayStream(
+                    m_PStream.m_OrigStreamId,
+                    m_CapChant.m_Volume,
+                    (m_CapChant.m_Looping & 1),
+                    m_CapChant.m_FadeIn,
+                    m_CapChant.m_ExistingFadeOut,
+                    m_CapChant.m_StreamParam[0] ? m_CapChant.m_StreamParam : (const char*)0,
+                    (Audio::MasterVolume::VOLUME_GROUP)m_CapChant.m_VolGroup);
+            }
         }
     }
     else if (m_HasCrowdStream)
@@ -259,7 +187,6 @@ void PriorityStream::PlayStream(unsigned long StreamId, float Volume, bool Loopi
         }
     }
 
-end_playstream:
     m_InPause = false;
 }
 

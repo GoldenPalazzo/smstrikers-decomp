@@ -19,6 +19,14 @@ public:
     }
 #endif
 
+    FuzzyVariant(bool& value)
+        : Variant(VariantTypeOf(value), value)
+    {
+        ExtraData.Reset();
+        Confidence = 0.0f;
+        SelectionChance = 1.0f;
+    }
+
     template <typename T>
     FuzzyVariant(const T& value)
         : Variant(VariantTypeOf(value), value)

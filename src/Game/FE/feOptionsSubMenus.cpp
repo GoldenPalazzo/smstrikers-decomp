@@ -1,6 +1,7 @@
 #define BIND_NO_DECL
 #define MEMFUN_NO_DECL
 #define FUNCTION1_SPLIT_BODIES
+#define FUNCTION1_OWNER_DTOR
 #include "Game/FE/feOptionsSubMenus.h"
 
 #include "NL/platpad.h"

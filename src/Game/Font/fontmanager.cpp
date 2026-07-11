@@ -5,8 +5,12 @@
 #include "NL/gl/glTexture.h"
 #include "NL/nlBundleFile.h"
 
+/**
+ * Offset/Address/Size: 0x4CC | 0x80209B60 | size: 0x70
+ * TODO: 96.25% match - r30/r31 are swapped across the list-pool initialization.
+ */
 FontManager::FontManager()
-    : m_fonts(8, 0)
+    : m_fonts(8)
 {
 }
 

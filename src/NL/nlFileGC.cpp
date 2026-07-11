@@ -1019,15 +1019,11 @@ static unsigned char GameCubeReadAsync(GCFile* pFile, ReadAsyncCallback callback
 
 /**
  * Offset/Address/Size: 0x1308 | 0x801D005C | size: 0x6E0
- * TODO: 98.91% match - DVD error path callback/status registers still differ.
  */
 static inline unsigned char CheckDVDStatus()
 {
-    unsigned char WasAProblem = 0;
-    Function<void(int)>* handleDVDRetryCB = &g_HandleDVDRetryCB;
     long Status;
-    Function<FnVoidVoid>* checkForResetCB = &g_CheckForResetCB;
-    Function<void(int)>* handleDVDMessageCallback = &g_HandleDVDMessageCallback;
+    unsigned char WasAProblem = 0;
 
     while (true)
     {
@@ -1048,11 +1044,11 @@ static inline unsigned char CheckDVDStatus()
 
             if (g_HandleDVDMessageCallback.mTag == 1)
             {
-                handleDVDMessageCallback->mFreeFunction(Status);
+                g_HandleDVDMessageCallback.mFreeFunction(Status);
             }
             else
             {
-                (*handleDVDMessageCallback->mFunctor)(Status);
+                (*g_HandleDVDMessageCallback.mFunctor)(Status);
             }
 
             WasAProblem = 1;
@@ -1065,11 +1061,11 @@ static inline unsigned char CheckDVDStatus()
                 {
                     if (g_CheckForResetCB.mTag == 1)
                     {
-                        checkForResetCB->mFreeFunction();
+                        g_CheckForResetCB.mFreeFunction();
                     }
                     else
                     {
-                        checkForResetCB->mFunctor->operator()();
+                        g_CheckForResetCB.mFunctor->operator()();
                     }
                 }
             }
@@ -1082,11 +1078,11 @@ static inline unsigned char CheckDVDStatus()
                 {
                     if (g_HandleDVDRetryCB.mTag == 1)
                     {
-                        handleDVDRetryCB->mFreeFunction(1);
+                        g_HandleDVDRetryCB.mFreeFunction(1);
                     }
                     else
                     {
-                        (*handleDVDRetryCB->mFunctor)(1);
+                        (*g_HandleDVDRetryCB.mFunctor)(1);
                     }
                 }
 
@@ -1098,11 +1094,11 @@ static inline unsigned char CheckDVDStatus()
                     {
                         if (g_CheckForResetCB.mTag == 1)
                         {
-                            checkForResetCB->mFreeFunction();
+                            g_CheckForResetCB.mFreeFunction();
                         }
                         else
                         {
-                            checkForResetCB->mFunctor->operator()();
+                            g_CheckForResetCB.mFunctor->operator()();
                         }
                     }
                 }
@@ -1126,7 +1122,6 @@ static inline void HandleGCIOErrors(GCFile* pFile)
 {
     long Status;
     unsigned char WasAProblem = CheckDVDStatus();
-    Function<FnVoidVoid>* checkForResetCB = &g_CheckForResetCB;
 
     if (WasAProblem)
     {
@@ -1151,11 +1146,11 @@ static inline void HandleGCIOErrors(GCFile* pFile)
         {
             if (g_CheckForResetCB.mTag == 1)
             {
-                checkForResetCB->mFreeFunction();
+                g_CheckForResetCB.mFreeFunction();
             }
             else
             {
-                checkForResetCB->mFunctor->operator()();
+                g_CheckForResetCB.mFunctor->operator()();
             }
         }
 
@@ -1221,8 +1216,8 @@ static unsigned char UpdateReadState(AsyncEntry* pEntry)
             }
 
         case eRS_ISSUE_TAIL_READ:
-            uNumRead = pEntry->ReadNumBytes & ~31;
-            if ((pEntry->ReadNumBytes - uNumRead) != 0)
+            readSize = pEntry->ReadNumBytes - (pEntry->ReadNumBytes & ~31);
+            if (readSize != 0)
             {
                 pFile->ReadAsync(readBuffer32ByteLength, 0x20, pEntry->m_uPosition);
                 pEntry->Phase = eRS_WAIT_TAIL_READ;

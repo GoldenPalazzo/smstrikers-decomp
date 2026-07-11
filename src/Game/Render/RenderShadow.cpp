@@ -1,5 +1,7 @@
 #include "Game/Render/RenderShadow.h"
 
+#include "math.h"
+
 #include "Game/Debug/ShapeRender.h"
 #include "Game/Drawable/DrawableModel.h"
 #include "Game/GL/GLInventory.h"
@@ -161,21 +163,9 @@ u8 ShouldShadowBeUpdated(const ProjectedShadowParams& params)
 
 /**
  * Offset/Address/Size: 0xF9C | 0x80123FD0 | size: 0x470
- * TODO: 99.82% match - remaining diffs are FP register swaps in directional light setup
- *       and far-plane math, plus local static label numbering.
  */
 void RenderCharacterIntoTexture(const ProjectedShadowParams& params)
 {
-    struct ShadowTextureUserData
-    {
-        s16 x;
-        s16 y;
-        s16 width;
-        s16 height;
-        u32 viewMatrix;
-        u32 projectionMatrix;
-    };
-
     nlVector3 targetPos;
     nlVector3 eyePos;
     nlVector3 shadowPos;
@@ -205,9 +195,12 @@ void RenderCharacterIntoTexture(const ProjectedShadowParams& params)
 
     if (g_bProjectDirectional)
     {
-        float lx = -shadowPos.f.x;
-        float ly = -shadowPos.f.y;
-        float lz = -shadowPos.f.z;
+        float lx;
+        float ly;
+        float lz;
+        lz = -shadowPos.f.z;
+        ly = -shadowPos.f.y;
+        lx = -shadowPos.f.x;
         float lenSq = lx * lx + ly * ly + lz * lz;
         float len = nlSqrt(lenSq, true);
         float invLen = nlRecipSqrt(lenSq, false);
@@ -234,7 +227,7 @@ void RenderCharacterIntoTexture(const ProjectedShadowParams& params)
     float farPlane = nearPlane + s_fFarPlane;
 
     float fovY;
-    if ((float)__fabs(ratio) < 0.01f)
+    if ((float)fabs(ratio) < 0.01f)
     {
         fovY = 1.0f;
     }
@@ -262,14 +255,14 @@ void RenderCharacterIntoTexture(const ProjectedShadowParams& params)
         glSetMatrix(projectionMatrix, projection);
     }
 
-    void* userData = glUserAlloc(GLUD_Viewport, sizeof(ShadowTextureUserData), false);
-    ShadowTextureUserData* pViewportData = (ShadowTextureUserData*)glUserGetData(userData);
-    pViewportData->viewMatrix = viewMatrix;
-    pViewportData->projectionMatrix = projectionMatrix;
+    void* userData = glUserAlloc(GLUD_Viewport, sizeof(GLViewportUserData), false);
+    GLViewportUserData* pViewportData = (GLViewportUserData*)glUserGetData(userData);
+    pViewportData->view = viewMatrix;
+    pViewportData->projection = projectionMatrix;
     pViewportData->x = (s16)((params.nPartitionIndex % 4) * 0xA0);
     pViewportData->y = (s16)((params.nPartitionIndex / 4) * 0x94);
-    pViewportData->width = 0xA0;
-    pViewportData->height = 0x94;
+    pViewportData->w = 0xA0;
+    pViewportData->h = 0x94;
 
     glModel* pModel = glModelDup(params.pModel, true);
     glModelPacket* pPacket = pModel->packets;

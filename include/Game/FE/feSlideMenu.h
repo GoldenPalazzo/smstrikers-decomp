@@ -8,7 +8,12 @@
 class SlideMenuItem
 {
 public:
-    SlideMenuItem();
+    SlideMenuItem(TLComponentInstance* componentInstance, int userEnumType)
+        : mSlideMenuHash((unsigned long)-1)
+        , mComponentInstance(componentInstance)
+        , mUserEnumType(userEnumType)
+    {
+    }
     virtual ~SlideMenuItem();
 
     /* 0x4 */ unsigned long mSlideMenuHash;

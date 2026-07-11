@@ -291,9 +291,58 @@ void ScriptQuestionCache::Clear()
 // {
 // }
 
+static inline void ApplyDifficulty(eDifficultyID diff0, eDifficultyID diff1, eDifficultyID diff2)
+{
+    if (diff0 != DIFF_DEFAULT)
+    {
+        g_pTeams[0]->SetDifficulty(diff0);
+    }
+
+    if (diff1 != DIFF_DEFAULT)
+    {
+        g_pTeams[1]->SetDifficulty(diff1);
+    }
+
+    if (diff2 != DIFF_DEFAULT)
+    {
+        SkillTweaks skillTweaks;
+        SkillTweaks* pSkillTweaks;
+
+        skillTweaks.Init(diff2, false);
+
+        for (int i = 0; i < 2; i++)
+        {
+            pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pTeams[i]->m_nSide);
+            pSkillTweaks->fShotValue1 = skillTweaks.fShotValue1;
+            pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pTeams[i]->m_nSide);
+            pSkillTweaks->fShotValue2 = skillTweaks.fShotValue2;
+            pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pTeams[i]->m_nSide);
+            pSkillTweaks->fShotValue3 = skillTweaks.fShotValue3;
+            pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pTeams[i]->m_nSide);
+            pSkillTweaks->fShotChance0 = skillTweaks.fShotChance0;
+            pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pTeams[i]->m_nSide);
+            pSkillTweaks->fShotChance1 = skillTweaks.fShotChance1;
+            pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pTeams[i]->m_nSide);
+            pSkillTweaks->fShotChance2 = skillTweaks.fShotChance2;
+            pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pTeams[i]->m_nSide);
+            pSkillTweaks->fShotChance3 = skillTweaks.fShotChance3;
+            pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pTeams[i]->m_nSide);
+            pSkillTweaks->fShotChance4 = skillTweaks.fShotChance4;
+            pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pTeams[i]->m_nSide);
+            pSkillTweaks->fSTSWindupTime = skillTweaks.fSTSWindupTime;
+            pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pTeams[i]->m_nSide);
+            pSkillTweaks->fAttackCarrierDistance = skillTweaks.fAttackCarrierDistance;
+            pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pTeams[i]->m_nSide);
+            pSkillTweaks->fLooseBallChaseDistance = skillTweaks.fLooseBallChaseDistance;
+            pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pTeams[i]->m_nSide);
+            pSkillTweaks->fGoalieCanInterceptPass = skillTweaks.fGoalieCanInterceptPass;
+        }
+    }
+}
+
 /**
  * Offset/Address/Size: 0x1FC4 | 0x8003E7E8 | size: 0x6E0
- * TODO: 97.9% match - r28/r29 register allocation in ScriptQuestionCache/default-string setup and difficulty loops
+ * TODO: 99.6% match - register allocation in team, ScriptQuestionCache, and default-string setup
  */
 void CreateGame()
 {
@@ -339,98 +388,14 @@ void CreateGame()
         {
             diff = DIFF_VERYHARD;
         }
-        if (diff != DIFF_DEFAULT)
-        {
-            g_pTeams[0]->SetDifficulty(diff);
-        }
-        if (diff != DIFF_DEFAULT)
-        {
-            g_pTeams[1]->SetDifficulty(diff);
-        }
-        if (diff != DIFF_DEFAULT)
-        {
-            SkillTweaks localTweaks;
-            SkillTweaks* pSkillTweaks;
-
-            localTweaks.Init(diff, false);
-
-            for (int i = 0; i < 2; i++)
-            {
-                pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pTeams[i]->m_nSide);
-                pSkillTweaks->fShotValue1 = localTweaks.fShotValue1;
-                pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pTeams[i]->m_nSide);
-                pSkillTweaks->fShotValue2 = localTweaks.fShotValue2;
-                pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pTeams[i]->m_nSide);
-                pSkillTweaks->fShotValue3 = localTweaks.fShotValue3;
-                pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pTeams[i]->m_nSide);
-                pSkillTweaks->fShotChance0 = localTweaks.fShotChance0;
-                pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pTeams[i]->m_nSide);
-                pSkillTweaks->fShotChance1 = localTweaks.fShotChance1;
-                pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pTeams[i]->m_nSide);
-                pSkillTweaks->fShotChance2 = localTweaks.fShotChance2;
-                pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pTeams[i]->m_nSide);
-                pSkillTweaks->fShotChance3 = localTweaks.fShotChance3;
-                pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pTeams[i]->m_nSide);
-                pSkillTweaks->fShotChance4 = localTweaks.fShotChance4;
-                pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pTeams[i]->m_nSide);
-                pSkillTweaks->fSTSWindupTime = localTweaks.fSTSWindupTime;
-                pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pTeams[i]->m_nSide);
-                pSkillTweaks->fAttackCarrierDistance = localTweaks.fAttackCarrierDistance;
-                pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pTeams[i]->m_nSide);
-                pSkillTweaks->fLooseBallChaseDistance = localTweaks.fLooseBallChaseDistance;
-                pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pTeams[i]->m_nSide);
-                pSkillTweaks->fGoalieCanInterceptPass = localTweaks.fGoalieCanInterceptPass;
-            }
-        }
+        ApplyDifficulty(diff, diff, diff);
     }
     else
     {
         eDifficultyID retVal = nlSingleton<GameInfoManager>::s_pInstance->GetSkillLevelAsDifficultyID();
         eDifficultyID diff0 = nlSingleton<GameInfoManager>::s_pInstance->mCurrentDifficulty[0];
         eDifficultyID diff1 = nlSingleton<GameInfoManager>::s_pInstance->mCurrentDifficulty[1];
-        if (diff0 != DIFF_DEFAULT)
-        {
-            g_pTeams[0]->SetDifficulty(diff0);
-        }
-        if (diff1 != DIFF_DEFAULT)
-        {
-            g_pTeams[1]->SetDifficulty(diff1);
-        }
-        if (retVal != DIFF_DEFAULT)
-        {
-            SkillTweaks localTweaks;
-            SkillTweaks* pSkillTweaks;
-
-            localTweaks.Init(retVal, false);
-
-            for (int i = 0; i < 2; i++)
-            {
-                pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pTeams[i]->m_nSide);
-                pSkillTweaks->fShotValue1 = localTweaks.fShotValue1;
-                pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pTeams[i]->m_nSide);
-                pSkillTweaks->fShotValue2 = localTweaks.fShotValue2;
-                pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pTeams[i]->m_nSide);
-                pSkillTweaks->fShotValue3 = localTweaks.fShotValue3;
-                pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pTeams[i]->m_nSide);
-                pSkillTweaks->fShotChance0 = localTweaks.fShotChance0;
-                pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pTeams[i]->m_nSide);
-                pSkillTweaks->fShotChance1 = localTweaks.fShotChance1;
-                pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pTeams[i]->m_nSide);
-                pSkillTweaks->fShotChance2 = localTweaks.fShotChance2;
-                pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pTeams[i]->m_nSide);
-                pSkillTweaks->fShotChance3 = localTweaks.fShotChance3;
-                pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pTeams[i]->m_nSide);
-                pSkillTweaks->fShotChance4 = localTweaks.fShotChance4;
-                pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pTeams[i]->m_nSide);
-                pSkillTweaks->fSTSWindupTime = localTweaks.fSTSWindupTime;
-                pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pTeams[i]->m_nSide);
-                pSkillTweaks->fAttackCarrierDistance = localTweaks.fAttackCarrierDistance;
-                pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pTeams[i]->m_nSide);
-                pSkillTweaks->fLooseBallChaseDistance = localTweaks.fLooseBallChaseDistance;
-                pSkillTweaks = SkillTweaks::GetSkillTweaks(g_pTeams[i]->m_nSide);
-                pSkillTweaks->fGoalieCanInterceptPass = localTweaks.fGoalieCanInterceptPass;
-            }
-        }
+        ApplyDifficulty(diff0, diff1, retVal);
     }
 }
 

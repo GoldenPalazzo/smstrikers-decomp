@@ -531,8 +531,8 @@ void FEPopupMenu::Update(float fDeltaT)
 
 /**
  * Offset/Address/Size: 0x2F24 | 0x8009B1D0 | size: 0x6B8
- * TODO: 99.1% match - remaining register permutation in the BasicString
- *       copy-on-write blocks and literal/label relocation numbering.
+ * TODO: 99.57% match - remaining register permutation in the option-label
+ *       copy-on-write block and literal/label relocation numbering.
  */
 void FEPopupMenu::SceneCreated()
 {
@@ -548,9 +548,7 @@ void FEPopupMenu::SceneCreated()
         InlineHasher(nlStringLowerHash("Layer")),
         InlineHasher(nlStringLowerHash("Message")));
 
-    WStr* pMessage = mPopup.pMessage;
-    (*mPopup.pMessage)[0];
-    pText->SetString(pMessage->m_data ? pMessage->m_data->mData : NULL);
+    pText->SetString(mPopup.pMessage->begin());
 
     if (mUnknownAA5)
     {

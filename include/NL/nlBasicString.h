@@ -246,6 +246,12 @@ public:
         return m_data ? m_data->mSize : 0;
     }
 
+    CharT* begin()
+    {
+        (*this)[0];
+        return m_data ? m_data->mData : (CharT*)0;
+    }
+
     CharT& operator[](int index)
     {
         BasicStringData<CharT>* oldData = m_data;

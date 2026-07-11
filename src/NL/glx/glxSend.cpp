@@ -108,16 +108,6 @@ static GXTexObj glx_texobj[6];
 static GXTlutObj glx_tlutobj[6];
 static u32 glx_texture[6];
 
-struct GLViewportUserData
-{
-    u16 x;
-    u16 y;
-    u16 w;
-    u16 h;
-    u32 view;
-    u32 projection;
-};
-
 struct GLScissorUserData
 {
     u16 xOrig;
