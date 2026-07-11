@@ -15,6 +15,16 @@ extern FuzzyVariant fvNotSet;
 
 extern float Loose(cTeam*);
 
+static inline const FuzzyVariant& KeepFirst(const FuzzyVariant& value, float)
+{
+    return value;
+}
+
+static inline float NotGoaliePickup(const FuzzyVariant& value)
+{
+    return 1.0f - value.mData.f;
+}
+
 /**
  * Offset/Address/Size: 0x15CC | 0x8008C650 | size: 0x43C
  */
@@ -67,8 +77,6 @@ FuzzyVariant Fuzzy::AbortLoosePlay(cDecisionEntity*)
 
 /**
  * Offset/Address/Size: 0x0 | 0x8008B084 | size: 0x15CC
- * TODO: 99.65% match - remaining diffs include f-register allocation in
- * opponent loop, goalie pickup, and zone min/max temporaries.
  */
 FuzzyVariant Fuzzy::DefaultLoosePlay(cDecisionEntity* pDecision)
 {
@@ -106,13 +114,13 @@ FuzzyVariant Fuzzy::DefaultLoosePlay(cDecisionEntity* pDecision)
             {
                 cFielder* theOpponent = g_pScriptOtherTeam->GetFielder(i);
 
-                fFalseConfidence = 1.0f - RepeatingLastDesire(g_pScriptCurrentFielder, edHeavyAttack);
-                fTrueConfidence = ChasingBall((cPlayer*)theOpponent);
+                fTrueConfidence = 1.0f - RepeatingLastDesire(g_pScriptCurrentFielder, edHeavyAttack);
+                fFalseConfidence = ChasingBall((cPlayer*)theOpponent);
                 float fIdealTackle = AtIdealDistanceForTackling((cPlayer*)g_pScriptCurrentFielder, (cPlayer*)theOpponent);
 
-                fTrueConfidence = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
-                fTrueConfidence = (fIdealTackle <= fTrueConfidence) ? fIdealTackle : fTrueConfidence;
-                fFalseConfidence = 1.0f - fTrueConfidence;
+                fFalseConfidence = (fFalseConfidence <= fTrueConfidence) ? fFalseConfidence : fTrueConfidence;
+                fTrueConfidence = (fIdealTackle <= fFalseConfidence) ? fIdealTackle : fFalseConfidence;
+                float fFalseConfidence = 1.0f - fTrueConfidence;
 
                 fMin = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
                 fMax = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
@@ -155,46 +163,47 @@ FuzzyVariant Fuzzy::DefaultLoosePlay(cDecisionEntity* pDecision)
         if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
             fConfidence = fConfidence * fBranchRatio;
 
-        float fOtherGoaliePickup = GoalieAndGonnaPickupBall((cPlayer*)(g_pScriptCurrentFielder ? (g_pScriptCurrentFielder ? g_pScriptCurrentFielder->m_pTeam->GetOtherTeam() : (cTeam*)0)->GetGoalie() : (Goalie*)0)).Confidence;
-        float fNotOtherGoaliePickup = 1.0f - fOtherGoaliePickup;
-        float fGoaliePickup = GoalieAndGonnaPickupBall((cPlayer*)(g_pScriptCurrentFielder ? (g_pScriptCurrentFielder ? g_pScriptCurrentFielder->m_pTeam : (cTeam*)0)->GetGoalie() : (Goalie*)0)).Confidence;
-        fFalseConfidence = 1.0f - fGoaliePickup;
-
-        fFalseConfidence = (fFalseConfidence <= fNotOtherGoaliePickup) ? fFalseConfidence : fNotOtherGoaliePickup;
-        fTrueConfidence = fFalseConfidence;
-        fFalseConfidence = 1.0f - fTrueConfidence;
-        fMin = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
-        fMax = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
-        fBranchRatio = fMin / fMax;
-
-        if (fTrueConfidence > 0.0f)
         {
-            SaveConfidence PushDOM4(&fConfidence);
-            fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
-            if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
-                fConfidence = fConfidence * fBranchRatio;
+            float fNotOtherGoaliePickup;
+            fTrueConfidence = 1.0f - KeepFirst(
+                GoalieAndGonnaPickupBall((cPlayer*)(g_pScriptCurrentFielder ? (g_pScriptCurrentFielder ? g_pScriptCurrentFielder->m_pTeam : (cTeam*)0)->GetGoalie() : (Goalie*)0)),
+                fNotOtherGoaliePickup = NotGoaliePickup(GoalieAndGonnaPickupBall((cPlayer*)(g_pScriptCurrentFielder ? (g_pScriptCurrentFielder ? g_pScriptCurrentFielder->m_pTeam->GetOtherTeam() : (cTeam*)0)->GetGoalie() : (Goalie*)0)))).mData.f;
 
-            if (fBestConfidence >= fConfidence)
-                fBestConfidence = fBestConfidence;
-            else
-                fBestConfidence = fConfidence;
+            fTrueConfidence = (fTrueConfidence <= fNotOtherGoaliePickup) ? fTrueConfidence : fNotOtherGoaliePickup;
+            float fFalseConfidence = 1.0f - fTrueConfidence;
+            float fMin = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+            float fMax = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+            float fBranchRatio = fMin / fMax;
 
-            pDecision->QueueActionSetDesire(6, fConfidence, -1.0f, fvNotSet, fvNotSet);
-        }
+            if (fTrueConfidence > 0.0f)
+            {
+                SaveConfidence PushDOM4(&fConfidence);
+                fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
+                if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
+                    fConfidence = fConfidence * fBranchRatio;
 
-        if (fFalseConfidence > 0.0f)
-        {
-            SaveConfidence PushDOM5(&fConfidence);
-            fConfidence = (fConfidence <= fFalseConfidence) ? fConfidence : fFalseConfidence;
-            if (fConfidence < fFalseConfidence && fFalseConfidence < 0.5f)
-                fConfidence = fConfidence * fBranchRatio;
+                if (fBestConfidence >= fConfidence)
+                    fBestConfidence = fBestConfidence;
+                else
+                    fBestConfidence = fConfidence;
 
-            if (fBestConfidence >= fConfidence)
-                fBestConfidence = fBestConfidence;
-            else
-                fBestConfidence = fConfidence;
+                pDecision->QueueActionSetDesire(6, fConfidence, -1.0f, fvNotSet, fvNotSet);
+            }
 
-            pDecision->QueueActionSetDesire(10, fConfidence, -1.0f, fvNotSet, fvNotSet);
+            if (fFalseConfidence > 0.0f)
+            {
+                SaveConfidence PushDOM5(&fConfidence);
+                fConfidence = (fConfidence <= fFalseConfidence) ? fConfidence : fFalseConfidence;
+                if (fConfidence < fFalseConfidence && fFalseConfidence < 0.5f)
+                    fConfidence = fConfidence * fBranchRatio;
+
+                if (fBestConfidence >= fConfidence)
+                    fBestConfidence = fBestConfidence;
+                else
+                    fBestConfidence = fConfidence;
+
+                pDecision->QueueActionSetDesire(10, fConfidence, -1.0f, fvNotSet, fvNotSet);
+            }
         }
     }
 
@@ -218,23 +227,22 @@ FuzzyVariant Fuzzy::DefaultLoosePlay(cDecisionEntity* pDecision)
             if (fConfidence < fWinger && fWinger < 0.5f)
                 fConfidence = fConfidence * fBranchRatio3;
 
-            float fNotCanGetBall = 1.0f - GonnaGetBall(g_pScriptCurrentTeam);
-            float fNotInOffZone = 1.0f - InOffensiveZoneOfPlayer(g_pScriptBall, (cPlayer*)g_pScriptCurrentFielder);
-            fNotInOffZone = (fNotInOffZone <= fNotCanGetBall) ? fNotInOffZone : fNotCanGetBall;
-            float fInDefZone = InDefensiveZoneOfPlayer(g_pScriptBall, (cPlayer*)g_pScriptCurrentFielder);
-            fInDefZone = (fInDefZone >= fNotInOffZone) ? fInDefZone : fNotInOffZone;
-            float fCanGetBall = fInDefZone;
-            float fCannotGetBall = 1.0f - fInDefZone;
-            float fMin4 = (fCanGetBall <= fCannotGetBall) ? fCanGetBall : fCannotGetBall;
-            float fMax4 = (fCanGetBall >= fCannotGetBall) ? fCanGetBall : fCannotGetBall;
-            float fBranchRatio4 = fMin4 / fMax4;
+            fTrueConfidence = 1.0f - GonnaGetBall(g_pScriptCurrentTeam);
+            fFalseConfidence = 1.0f - InOffensiveZoneOfPlayer(g_pScriptBall, (cPlayer*)g_pScriptCurrentFielder);
+            fFalseConfidence = (fFalseConfidence <= fTrueConfidence) ? fFalseConfidence : fTrueConfidence;
+            fTrueConfidence = InDefensiveZoneOfPlayer(g_pScriptBall, (cPlayer*)g_pScriptCurrentFielder);
+            fTrueConfidence = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+            fFalseConfidence = 1.0f - fTrueConfidence;
+            fMin = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+            fMax = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+            fBranchRatio = fMin / fMax;
 
-            if (fCanGetBall > 0.0f)
+            if (fTrueConfidence > 0.0f)
             {
                 SaveConfidence PushDOM7(&fConfidence);
-                fConfidence = (fConfidence <= fCanGetBall) ? fConfidence : fCanGetBall;
-                if (fConfidence < fCanGetBall && fCanGetBall < 0.5f)
-                    fConfidence = fConfidence * fBranchRatio4;
+                fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
+                if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
+                    fConfidence = fConfidence * fBranchRatio;
 
                 if (fBestConfidence >= fConfidence)
                     fBestConfidence = fBestConfidence;
@@ -243,12 +251,12 @@ FuzzyVariant Fuzzy::DefaultLoosePlay(cDecisionEntity* pDecision)
                 pDecision->QueueActionSetDesire(7, fConfidence, -1.0f, fvNotSet, fvNotSet);
             }
 
-            if (fCannotGetBall > 0.0f)
+            if (fFalseConfidence > 0.0f)
             {
                 SaveConfidence PushDOM8(&fConfidence);
-                fConfidence = (fConfidence <= fCannotGetBall) ? fConfidence : fCannotGetBall;
-                if (fConfidence < fCannotGetBall && fCannotGetBall < 0.5f)
-                    fConfidence = fConfidence * fBranchRatio4;
+                fConfidence = (fConfidence <= fFalseConfidence) ? fConfidence : fFalseConfidence;
+                if (fConfidence < fFalseConfidence && fFalseConfidence < 0.5f)
+                    fConfidence = fConfidence * fBranchRatio;
 
                 float fInDefensive = InDefensiveZone((cPlayer*)g_pScriptCurrentFielder);
                 float fNotDef = 1.0f - fInDefensive;
@@ -328,23 +336,22 @@ FuzzyVariant Fuzzy::DefaultLoosePlay(cDecisionEntity* pDecision)
             if (fConfidence < fRole && fRole < 0.5f)
                 fConfidence = fConfidence * fBranchRatio7;
 
-            float fNotCanGetBall2 = 1.0f - GonnaGetBall(g_pScriptCurrentTeam);
-            float fNotInOffZone2 = 1.0f - InOffensiveZoneOfPlayer(g_pScriptBall, (cPlayer*)g_pScriptCurrentFielder);
-            fNotInOffZone2 = (fNotInOffZone2 <= fNotCanGetBall2) ? fNotInOffZone2 : fNotCanGetBall2;
-            float fInDefZone2 = InDefensiveZoneOfPlayer(g_pScriptBall, (cPlayer*)g_pScriptCurrentFielder);
-            fInDefZone2 = (fInDefZone2 >= fNotInOffZone2) ? fInDefZone2 : fNotInOffZone2;
-            float fCanGetBall2 = fInDefZone2;
-            float fCannotGetBall2 = 1.0f - fInDefZone2;
-            float fMin8 = (fCanGetBall2 <= fCannotGetBall2) ? fCanGetBall2 : fCannotGetBall2;
-            float fMax8 = (fCanGetBall2 >= fCannotGetBall2) ? fCanGetBall2 : fCannotGetBall2;
-            float fBranchRatio8 = fMin8 / fMax8;
+            fTrueConfidence = 1.0f - GonnaGetBall(g_pScriptCurrentTeam);
+            fFalseConfidence = 1.0f - InOffensiveZoneOfPlayer(g_pScriptBall, (cPlayer*)g_pScriptCurrentFielder);
+            fFalseConfidence = (fFalseConfidence <= fTrueConfidence) ? fFalseConfidence : fTrueConfidence;
+            fTrueConfidence = InDefensiveZoneOfPlayer(g_pScriptBall, (cPlayer*)g_pScriptCurrentFielder);
+            fTrueConfidence = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+            fFalseConfidence = 1.0f - fTrueConfidence;
+            fMin = (fTrueConfidence <= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+            fMax = (fTrueConfidence >= fFalseConfidence) ? fTrueConfidence : fFalseConfidence;
+            fBranchRatio = fMin / fMax;
 
-            if (fCanGetBall2 > 0.0f)
+            if (fTrueConfidence > 0.0f)
             {
                 SaveConfidence PushDOM14(&fConfidence);
-                fConfidence = (fConfidence <= fCanGetBall2) ? fConfidence : fCanGetBall2;
-                if (fConfidence < fCanGetBall2 && fCanGetBall2 < 0.5f)
-                    fConfidence = fConfidence * fBranchRatio8;
+                fConfidence = (fConfidence <= fTrueConfidence) ? fConfidence : fTrueConfidence;
+                if (fConfidence < fTrueConfidence && fTrueConfidence < 0.5f)
+                    fConfidence = fConfidence * fBranchRatio;
 
                 if (fBestConfidence >= fConfidence)
                     fBestConfidence = fBestConfidence;
@@ -353,12 +360,12 @@ FuzzyVariant Fuzzy::DefaultLoosePlay(cDecisionEntity* pDecision)
                 pDecision->QueueActionSetDesire(7, fConfidence, -1.0f, fvNotSet, fvNotSet);
             }
 
-            if (fCannotGetBall2 > 0.0f)
+            if (fFalseConfidence > 0.0f)
             {
                 SaveConfidence PushDOM15(&fConfidence);
-                fConfidence = (fConfidence <= fCannotGetBall2) ? fConfidence : fCannotGetBall2;
-                if (fConfidence < fCannotGetBall2 && fCannotGetBall2 < 0.5f)
-                    fConfidence = fConfidence * fBranchRatio8;
+                fConfidence = (fConfidence <= fFalseConfidence) ? fConfidence : fFalseConfidence;
+                if (fConfidence < fFalseConfidence && fFalseConfidence < 0.5f)
+                    fConfidence = fConfidence * fBranchRatio;
 
                 float fNearMyNet = NearToMyNet((cPlayer*)g_pScriptCurrentFielder);
                 float fNotNearMyNet = 1.0f - fNearMyNet;
