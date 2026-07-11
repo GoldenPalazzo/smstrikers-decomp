@@ -197,9 +197,13 @@ void cCharacter::SetSFX(SoundPropAccessor* pSoundPropAccessor)
     }
 }
 
+static inline float CharacterAnimSmoothStep(float x)
+{
+    return (x * (x * x)) * (x * (6.0f * x + (-15.0f)) + 10.0f);
+}
+
 /**
  * Offset/Address/Size: 0x40C | 0x8000E358 | size: 0x650
- * TODO: 99.70% match - FROM_ANIM adjustTime and AnimMoveAdjust register swaps.
  */
 void cCharacter::UpdateMovementState(float fDeltaT)
 {
@@ -277,18 +281,15 @@ void cCharacter::UpdateMovementState(float fDeltaT)
 
         s16 nAdjust = 0;
         float adjustTime = m_fAnimAdjustEndTime - m_fAnimAdjustBeginTime;
-        float consumedMoveX = 0.0f;
-        float consumedMoveY = 0.0f;
-        float consumedMoveZ = 0.0f;
+        nlVector3 v3ConsumedMove;
+        nlVec3Set(v3ConsumedMove, 0.0f, 0.0f, 0.0f);
 
         if (adjustTime > 0.0f)
         {
-            float smoothStep1 = ((m_pCurrentAnimController->m_fTime - m_fAnimAdjustBeginTime) / adjustTime);
-            smoothStep1 = (smoothStep1 * (smoothStep1 * smoothStep1)) * (smoothStep1 * (6.0f * smoothStep1 + (-15.0f)) + 10.0f);
+            float smoothStep1 = CharacterAnimSmoothStep((m_pCurrentAnimController->m_fTime - m_fAnimAdjustBeginTime) / adjustTime);
             smoothStep1 = (smoothStep1 <= 1.0f) ? smoothStep1 : 1.0f;
 
-            float smoothStep2 = ((m_pCurrentAnimController->m_fPrevTime - m_fAnimAdjustBeginTime) / adjustTime);
-            smoothStep2 = (smoothStep2 * (smoothStep2 * smoothStep2)) * (smoothStep2 * (6.0f * smoothStep2 + (-15.0f)) + 10.0f);
+            float smoothStep2 = CharacterAnimSmoothStep((m_pCurrentAnimController->m_fPrevTime - m_fAnimAdjustBeginTime) / adjustTime);
             smoothStep2 = (smoothStep2 <= 1.0f) ? smoothStep2 : 1.0f;
 
             if (smoothStep2 < 1.0f)
@@ -297,15 +298,8 @@ void cCharacter::UpdateMovementState(float fDeltaT)
                 nAdjust = (s16)((float)m_nAnimTurnAdjust * fAdjustPercent);
                 m_nAnimTurnAdjust -= nAdjust;
 
-                float adjX = m_v3AnimMoveAdjust.f.x;
-                float adjY = m_v3AnimMoveAdjust.f.y;
-                float adjZ = m_v3AnimMoveAdjust.f.z;
-                consumedMoveX = adjX * fAdjustPercent;
-                consumedMoveY = adjY * fAdjustPercent;
-                consumedMoveZ = adjZ * fAdjustPercent;
-                m_v3AnimMoveAdjust.f.x = adjX - consumedMoveX;
-                m_v3AnimMoveAdjust.f.y = adjY - consumedMoveY;
-                m_v3AnimMoveAdjust.f.z = adjZ - consumedMoveZ;
+                nlVec3Scale(v3ConsumedMove, m_v3AnimMoveAdjust, fAdjustPercent);
+                nlVec3Sub(m_v3AnimMoveAdjust, m_v3AnimMoveAdjust, v3ConsumedMove);
             }
         }
 
@@ -319,7 +313,7 @@ void cCharacter::UpdateMovementState(float fDeltaT)
 
         nlVector3 v3RootTrans;
         pSourceNode->GetRootTrans(&v3RootTrans, m_aPrevFacingDirection);
-        nlVec3Set(v3RootTrans, v3RootTrans.f.x + consumedMoveX, v3RootTrans.f.y + consumedMoveY, v3RootTrans.f.z + consumedMoveZ);
+        nlVec3Add(v3RootTrans, v3RootTrans, v3ConsumedMove);
         m_v3Velocity.f.x = v3RootTrans.f.x / fDeltaT;
         m_v3Velocity.f.y = v3RootTrans.f.y / fDeltaT;
 
@@ -1322,7 +1316,6 @@ cCharacter::cCharacter(eCharacterClass cc, const int* nModelID, cSHierarchy* pHi
     const CharacterPhysicsData* pPhysicsData, float fPhysicsCapsuleHeight, float fPhysicsCapsuleWidth,
     AnimRetargetList* pAnimRetargetList, eClassTypes eNewClassType)
 {
-    volatile cSHierarchy* pHierarchyVol = pHierarchy;
     m_eCharacterClass = cc;
     m_pPhysicsData = pPhysicsData;
     m_pPhysicsCharacter = NULL;
@@ -1380,7 +1373,7 @@ cCharacter::cCharacter(eCharacterClass cc, const int* nModelID, cSHierarchy* pHi
         m_pSkinMesh[1] = glInventory.MakeSkinMesh(nModelID[1]);
     }
 
-    m_pPoseAccumulator = new (nlMalloc(sizeof(cPoseAccumulator), 8, false)) cPoseAccumulator((cSHierarchy*)pHierarchyVol, true);
+    m_pPoseAccumulator = new (nlMalloc(sizeof(cPoseAccumulator), 8, false)) cPoseAccumulator(pHierarchy, true);
 
     if (pPhysicsData != NULL)
     {
