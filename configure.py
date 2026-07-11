@@ -869,7 +869,7 @@ config.libs = [
             Object(Matching, "Game/Blinker.cpp", extra_cflags=["-inline auto"]),   
 
             # Net 
-            Object(NonMatching, "Game/Render/NetMesh.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(Matching, "Game/Render/NetMesh.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/NetMeshEdge.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/NetMeshModelLoader.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
 
@@ -997,7 +997,7 @@ config.libs = [
             Object(Matching, "Game/AI/Scripts/FormationScript.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/AI/ScriptCaching.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/AI/Scripts/ScriptQuestions.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(NonMatching, "Game/AI/Scripts/Plays/DefaultDefensive.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(Matching, "Game/AI/Scripts/Plays/DefaultDefensive.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/AI/Scripts/Plays/DefaultOffensive.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/AI/Scripts/Plays/DefaultLoose.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/AI/Scripts/RootScript.cpp", extra_cflags=["-inline deferred"]),

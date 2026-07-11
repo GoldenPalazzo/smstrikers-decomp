@@ -282,7 +282,7 @@ void NetMesh::JoltNet(float zDisplacement)
 }
 
 /**
- * TODO: 99.82% match - remaining point stack-store and center-distance register swaps.
+ * Offset/Address/Size: 0x550 | 0x8012F370 | size: 0x510
  */
 void NetMesh::SatisfyConstraints(const nlVector3& ballPosition, bool bExaggerateBallSize)
 {
@@ -401,9 +401,10 @@ void NetMesh::SatisfyConstraints(const nlVector3& ballPosition, bool bExaggerate
                 float centerY = 0.5f * (mfMinY + mfMaxY);
                 float centerX = 0.5f * (mfMinX + mfMaxX);
                 float zero = 0.0f;
-                float dz = ballPosition.f.z;
-                dz -= zero;
-                float dy = ballPosition.f.y - centerY;
+                float dy;
+                float dz;
+                dz = ballPosition.f.z - zero;
+                dy = ballPosition.f.y - centerY;
                 float dyy = dy * dy;
                 float dx = ballPosition.f.x - centerX;
                 m_fBallPenetrationDepth = nlSqrt(dyy + (dx * dx) + (dz * dz), true);
@@ -442,7 +443,6 @@ void NetMesh::SatisfyConstraints(const nlVector3& ballPosition, bool bExaggerate
 
 /**
  * Offset/Address/Size: 0x220 | 0x8012F040 | size: 0x330
- * TODO: 99.61% match - 1 SDA label difference (@885 vs @467 for 0.0f constant, linker artifact)
  */
 void NetMesh::AddForcesToBall(const nlVector3& position, PhysicsSphere* sphere)
 {

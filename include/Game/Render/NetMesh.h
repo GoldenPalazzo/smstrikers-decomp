@@ -12,16 +12,16 @@ struct nlAVLTreeSlotPoolOpaque;
 class cDistanceConstraint
 {
 public:
-    int nParticleA;  // offset 0x0, size 0x4
-    int nParticleB;  // offset 0x4, size 0x4
-    float fDistance; // offset 0x8, size 0x4
+    /* 0x0 */ int nParticleA;
+    /* 0x4 */ int nParticleB;
+    /* 0x8 */ float fDistance;
 }; // total size: 0xC
 
 class cPositionConstraint
 {
 public:
-    int nParticle;              // offset 0x0, size 0x4
-    class nlVector3 v3Position; // offset 0x4, size 0xC
+    /* 0x0 */ int nParticle;
+    /* 0x4 */ nlVector3 v3Position;
 }; // total size: 0x10
 
 struct shortVector2
