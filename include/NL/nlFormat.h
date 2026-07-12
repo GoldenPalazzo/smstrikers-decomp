@@ -34,6 +34,22 @@ template <typename StringType>
 template <typename T>
 FormatImpl<StringType>& FormatImpl<StringType>::operator%(const T& t)
 {
+#ifdef NL_FORMAT_EXPLICIT_WIDE_POINTER_BODY
+    BasicString<unsigned short, Detail::TempStringAllocator> insert = LexicalCast<BasicString<unsigned short, Detail::TempStringAllocator>, const unsigned short*>(t);
+
+    for (int i = 0; i < (mString.m_data ? mString.m_data->mSize - 1 : 0); i++)
+    {
+        if (!(mString[i] == (unsigned short)'{'
+              && i + 1 < (mString.m_data ? mString.m_data->mSize - 1 : 0)
+              && mString[i + 1] - '0' == mCurrentPos
+              && i + 2 < (mString.m_data ? mString.m_data->mSize - 1 : 0)
+              && mString[i + 2] == (unsigned short)'}'))
+            continue;
+
+        mString.erase(mString.begin() + i, mString.begin() + i + 3);
+        mString.insert(mString.begin() + i, insert.begin(), insert.end());
+    }
+#else
     StringType insert = LexicalCast<StringType, T>(t);
 
     for (int i = 0; i < (mString.m_data ? mString.m_data->mSize - 1 : 0); i++)
@@ -60,6 +76,7 @@ FormatImpl<StringType>& FormatImpl<StringType>::operator%(const T& t)
         typename StringType::value_type* insertEndCow = &insert[(int)(insert.m_data ? insert.m_data->mSize - 1 : 0)];
         mString.insert(mStringData + i, insertBegin, insert.m_data ? &insert.m_data->mData[insert.m_data->mSize - 1] : (typename StringType::value_type*)0);
     }
+#endif
 
     mCurrentPos++;
     return *this;

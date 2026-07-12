@@ -23,18 +23,27 @@ Detail::MemFunImpl<R, void (T::*)(P)> MemFun(void (T::*fn)(P))
 template <typename T, typename R>
 Detail::MemFunImpl<R, void (T::*)()> MemFun(void (T::*fn)())
 {
+#ifdef MEMFUN_FORCE_DONT_INLINE
+    FORCE_DONT_INLINE;
+#endif
     return Detail::MemFunImpl<R, void (T::*)()>(fn);
 }
 #else
 template <typename T, typename R>
 Detail::MemFunImpl<R, void (T::*)()> MemFun(void (T::*fn)())
 {
+#ifdef MEMFUN_FORCE_DONT_INLINE
+    FORCE_DONT_INLINE;
+#endif
     return Detail::MemFunImpl<R, void (T::*)()>(fn);
 }
 
 template <typename T, typename R, typename P>
 Detail::MemFunImpl<R, void (T::*)(P)> MemFun(void (T::*fn)(P))
 {
+#ifdef MEMFUN_FORCE_DONT_INLINE
+    FORCE_DONT_INLINE;
+#endif
     return Detail::MemFunImpl<R, void (T::*)(P)>(fn);
 }
 #endif

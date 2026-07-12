@@ -11,7 +11,7 @@
 #include "types.h"
 #include <dolphin/ar.h>
 
-extern u32 sndStackGetAvailableSampleMemory(unsigned long id);
+extern "C" u32 sndStackGetAvailableSampleMemory(unsigned long id);
 extern "C" u32 sndStackSetCurrent(u32 id);
 extern "C" u32 sndStackGetSize(void);
 extern "C" unsigned long sndStackAdd(void* buffer, u32 aramAddr, u32 size);

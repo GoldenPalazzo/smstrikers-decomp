@@ -4,11 +4,17 @@
 template <typename R, typename F, typename A>
 BindExp1<R, F, A> Bind(F fn, const A& arg)
 {
+#ifdef BIND_FORCE_DONT_INLINE
+    FORCE_DONT_INLINE;
+#endif
     return BindExp1<R, F, A>(fn, arg);
 }
 
 template <typename R, typename F, typename A, typename B>
 BindExp2<R, F, A, B> Bind(F fn, const A& t0, const B& t1)
 {
+#ifdef BIND_FORCE_DONT_INLINE
+    FORCE_DONT_INLINE;
+#endif
     return BindExp2<R, F, A, B>(fn, t0, t1);
 }

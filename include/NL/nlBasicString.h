@@ -107,6 +107,14 @@ struct BasicStringData
 // Backward-compatible typedef for char specialization
 typedef BasicStringData<char> BasicStringInternal;
 
+#ifdef BASICSTRING_INDEX_ALLOC_HELPER
+template <typename CharT, typename Allocator>
+static inline BasicStringData<CharT>* BasicStringIndexAlloc()
+{
+    return (BasicStringData<CharT>*)Allocator::allocate(sizeof(BasicStringData<CharT>));
+}
+#endif
+
 // BasicString template class - total size: 0x4 (pointer to BasicStringData)
 template <typename CharT, typename Allocator>
 class BasicString
@@ -252,6 +260,14 @@ public:
         return m_data ? m_data->mData : (CharT*)0;
     }
 
+#ifdef BASICSTRING_INDEX_ALLOC_HELPER
+    CharT* end()
+    {
+        (*this)[(int)(m_data ? m_data->mSize - 1 : 0)];
+        return m_data ? m_data->mData + m_data->mSize - 1 : (CharT*)0;
+    }
+#endif
+
     CharT& operator[](int index)
     {
         BasicStringData<CharT>* oldData = m_data;
@@ -296,7 +312,11 @@ public:
             }
             else
             {
+#ifdef BASICSTRING_INDEX_ALLOC_HELPER
+                BasicStringData<CharT>* newData = BasicStringIndexAlloc<CharT, Allocator>();
+#else
                 BasicStringData<CharT>* newData = (BasicStringData<CharT>*)Allocator::allocate(sizeof(BasicStringData<CharT>));
+#endif
                 if (newData != 0)
                 {
                     newData->mData = (CharT*)Allocator::allocate(oldData->mSize * sizeof(CharT));

@@ -401,7 +401,7 @@ static inline u32 ConfigHash(const char* str)
     u32 hash = 0x1505;
     while (*str != 0)
     {
-        s8 c = (s8)nlToUpper((u8)*str++);
+        s8 c = (s8)nlToUpper<char>(const_cast<char&>(*str++));
         hash = hash + (hash << 5) + c;
     }
     return hash;
@@ -454,8 +454,6 @@ bool Config::IsBool(const char* str, bool& b) const
 
 /**
  * Offset/Address/Size: 0x2520 | 0x801D5184 | size: 0xC8
- * TODO: 99.9% match - nlToUpper<Uc> call site (from (u8)*p++) vs target nlToUpper<c>
- * template instantiation (i diff only)
  */
 bool Config::Exists(const char* tag) const
 {
@@ -463,7 +461,7 @@ bool Config::Exists(const char* tag) const
     u32 hash = 0x1505;
     while (*p != 0)
     {
-        s32 c = (s8)nlToUpper((u8)*p++);
+        s32 c = (s8)nlToUpper<char>(const_cast<char&>(*p++));
         u32 h = hash;
         hash = h + (h << 5) + c;
     }

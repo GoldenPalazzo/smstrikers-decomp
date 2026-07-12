@@ -170,6 +170,9 @@ CharT* nlToLower(CharT* str)
 template <typename CharT>
 CharT* nlStrNCpy(CharT* str1, const CharT* str2, unsigned long len)
 {
+#ifdef NLSTRNCPY_FORCE_DONT_INLINE
+    FORCE_DONT_INLINE;
+#endif
     CharT* p;
     unsigned long c;
     unsigned long n;

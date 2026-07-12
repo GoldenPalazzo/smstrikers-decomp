@@ -1,9 +1,14 @@
 #define NL_NO_LEXICALCAST_NLSTRING_INT
 #define BASICSTRING_OUTLINE_CTOR
 #define BASICSTRING_INDEX_EMPTY_COPY_BYTE_OFFSET
+#define BASICSTRING_INDEX_ALLOC_HELPER
 #define BIND_NO_DECL
+#define BIND_FORCE_DONT_INLINE
 #define FUNCTION1_SPLIT_BODIES
+#define FUNCTION1_BIND_BY_VALUE
 #define MEMFUN_NO_DECL
+#define MEMFUN_FORCE_DONT_INLINE
+#define NLSTRNCPY_FORCE_DONT_INLINE
 #include "Game/SH/SHPausePostGame.h"
 
 #include "Game/Audio/AudioLoader.h"
@@ -15,7 +20,6 @@
 #include "Game/Game.h"
 #include "Game/GameInfo.h"
 #include "Game/OverlayManager.h"
-#include "NL/nlFormat.h"
 #include "NL/nlLocalization.h"
 #include "NL/nlString.h"
 
@@ -24,6 +28,27 @@
 
 typedef Detail::MemFunImpl<void, void (PausePostGameScene::*)()> MemFunImpl_PausePostGame_t;
 typedef BindExp1<void, MemFunImpl_PausePostGame_t, PausePostGameScene*> BindExp1_PausePostGame_t;
+typedef Function1<void, TLComponentInstance*>::FunctorImpl<BindExp1_PausePostGame_t> PausePostGameFunctor_t;
+
+#define NL_FORMAT_EXPLICIT_WIDE_POINTER_BODY
+#include "NL/nlFormat.h"
+#undef NL_FORMAT_EXPLICIT_WIDE_POINTER_BODY
+
+typedef BasicString<unsigned short, Detail::TempStringAllocator> (*PausePostGameFormat_t)(
+    const BasicString<unsigned short, Detail::TempStringAllocator>&,
+    const unsigned short (&)[8]);
+static PausePostGameFormat_t ForcePausePostGameFormat
+    = &Format<BasicString<unsigned short, Detail::TempStringAllocator>, unsigned short[8]>;
+
+template WEAKFUNC BindExp1_PausePostGame_t Bind<void, MemFunImpl_PausePostGame_t, PausePostGameScene*>(
+    MemFunImpl_PausePostGame_t,
+    PausePostGameScene* const&);
+template WEAKFUNC MemFunImpl_PausePostGame_t MemFun<PausePostGameScene, void>(void (PausePostGameScene::*)());
+template WEAKFUNC unsigned short* nlStrNCpy<unsigned short>(unsigned short*, const unsigned short*, unsigned long);
+
+#include "NL/nlFunctionReap.h"
+
+template void nlFunctionReap<PausePostGameFunctor_t>(PausePostGameFunctor_t*);
 
 namespace DoubleHighlite
 {
@@ -53,54 +78,6 @@ static inline const unsigned short* LookupLocHash(unsigned long hash)
 }
 
 /**
- * Offset/Address/Size: 0x26B8 | 0x801097BC | size: 0xCF0
- * TODO: 99.75% match - post-erase BasicString data and copy-on-write temporaries use shifted registers.
- */
-template <>
-template <>
-FormatImpl<BasicString<unsigned short, Detail::TempStringAllocator> >&
-    FormatImpl<BasicString<unsigned short, Detail::TempStringAllocator> >::operator% <const unsigned short*>(
-        const unsigned short* const& t)
-{
-    BasicString<unsigned short, Detail::TempStringAllocator> insert = LexicalCast<BasicString<unsigned short, Detail::TempStringAllocator>, const unsigned short*>(t);
-
-    for (int i = 0; i < (mString.m_data ? mString.m_data->mSize - 1 : 0); i++)
-    {
-        if (mString[i] != (unsigned short)'{')
-            continue;
-
-        if (i + 1 >= (mString.m_data ? mString.m_data->mSize - 1 : 0))
-            continue;
-
-        if (mString[i + 1] - '0' != mCurrentPos)
-            continue;
-
-        if (i + 2 >= (mString.m_data ? mString.m_data->mSize - 1 : 0))
-            continue;
-
-        if (mString[i + 2] != (unsigned short)'}')
-            continue;
-
-        unsigned short* eraseBeginData;
-        unsigned short* eraseEnd;
-        mString[0];
-        eraseBeginData = mString.m_data ? mString.m_data->mData : (unsigned short*)0;
-        mString[0];
-        eraseEnd = (mString.m_data ? mString.m_data->mData : (unsigned short*)0) + i + 3;
-        mString.erase(eraseBeginData + i, eraseEnd);
-        mString[i];
-        unsigned short* mStringData = mString.m_data ? mString.m_data->mData : 0;
-        insert[0];
-        unsigned short* insertBegin = insert.m_data ? insert.m_data->mData : 0;
-        insert[(int)(insert.m_data ? insert.m_data->mSize - 1 : 0)];
-        mString.insert(mStringData + i, insertBegin, insert.m_data ? insert.m_data->mData + insert.m_data->mSize - 1 : (unsigned short*)0);
-    }
-
-    mCurrentPos++;
-    return *this;
-}
-
-/**
  * Offset/Address/Size: 0x1F28 | 0x8010902C | size: 0xAC
  */
 PausePostGameScene::PausePostGameScene()
@@ -124,6 +101,28 @@ static inline MenuItem<TLComponentInstance>* PausePostGameItemAt(MenuList<TLComp
     return &menu.mMenuItems[idx];
 }
 
+static inline u8 PausePostGameHasSide(BasicGameInfo* game, int side)
+{
+    for (int i = 0; i < 4; i++)
+    {
+        if ((int)game->mPadSides[i] == side)
+        {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+static inline int PausePostGameGetWin(StatsTracker* tracker, int index)
+{
+    return tracker->mNumGamesWon[index];
+}
+
+static inline unsigned int PausePostGameAbsDiff(int value)
+{
+    return (value < 0) ? -value : value;
+}
+
 /**
  * Offset/Address/Size: 0x608 | 0x8010770C | size: 0x187C
  */
@@ -135,21 +134,16 @@ void PausePostGameScene::SceneCreated()
 
     EnableAutoPressed();
 
-    static void (PausePostGameScene::* FunctionTable[3])() = { };
-    static signed char init;
-
-    if (!init)
-    {
-        FunctionTable[0] = &PausePostGameScene::OnSelectRematch;
-        FunctionTable[1] = &PausePostGameScene::OnSelectChangeTeams;
-        FunctionTable[2] = &PausePostGameScene::OnSelectQuit;
-        init = 1;
-    }
+    static void (PausePostGameScene::* FunctionTable[3])() = {
+        &PausePostGameScene::OnSelectRematch,
+        &PausePostGameScene::OnSelectChangeTeams,
+        &PausePostGameScene::OnSelectQuit,
+    };
 
     TLComponentInstance* pButtonComp = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
         m_pFEPresentation->m_currentSlide,
-        InlineHasher(nlStringLowerHash("buttons")),
-        InlineHasher(nlStringLowerHash("Layer")));
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("buttons")));
     mButtons.mButtonInstance = pButtonComp;
     mButtons.SetState(ButtonComponent::BS_A_AND_B);
 
@@ -187,9 +181,8 @@ void PausePostGameScene::SceneCreated()
         }
 
         {
-            PauseBind bind = Bind<void, MemFunImpl_PausePostGame_t, PausePostGameScene*>(
-                MemFun<PausePostGameScene, void>(FunctionTable[i]), this);
-            Function<TLComponentInstance*> applyFunction(bind);
+            Function<TLComponentInstance*> applyFunction(Bind<void, MemFunImpl_PausePostGame_t, PausePostGameScene*>(
+                MemFun<PausePostGameScene, void>(FunctionTable[i]), this));
             *(Function<TLComponentInstance*>*)&menuItem->mCallbacks[ON_APPLY] = applyFunction;
         }
 
@@ -217,19 +210,17 @@ void PausePostGameScene::SceneCreated()
 
         TLTextInstance* text = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
             instance->GetActiveSlide(),
-            InlineHasher(nlStringLowerHash("TEAM")),
-            InlineHasher(0));
+            InlineHasher(nlStringLowerHash("TEAM")));
 
         text->m_LocStrId = GetLOCTeamName(nlSingleton<GameInfoManager>::s_pInstance->GetTeam((short)i));
         text->m_OverloadFlags |= 8;
 
         text = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
             instance->GetActiveSlide(),
-            InlineHasher(nlStringLowerHash("LINE_0")),
-            InlineHasher(0));
+            InlineHasher(nlStringLowerHash("LINE_0")));
 
-        int numWins = nlSingleton<StatsTracker>::s_pInstance->mNumGamesWon[i];
-        BasicString<char, Detail::TempStringAllocator> score = LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(numWins);
+        BasicString<char, Detail::TempStringAllocator> score = LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(
+            (int)nlSingleton<StatsTracker>::s_pInstance->mNumGamesWon[i]);
         unsigned short wscore[8];
         nlStrToWcs(score.c_str(), wscore, 8);
         memcpy(mScoreBuffer[i], wscore, sizeof(wscore));
@@ -237,59 +228,23 @@ void PausePostGameScene::SceneCreated()
         text->SetString(mScoreBuffer[i]);
     }
 
-    StatsTracker* tracker = nlSingleton<StatsTracker>::s_pInstance;
-    int wins0 = tracker->mNumGamesWon[0];
-    int wins1 = tracker->mNumGamesWon[1];
+    int wins0 = PausePostGameGetWin(nlSingleton<StatsTracker>::s_pInstance, 0);
+    int wins1 = PausePostGameGetWin(nlSingleton<StatsTracker>::s_pInstance, 1);
     int pointdiff = wins0 - wins1;
-    unsigned int absdiff = (pointdiff < 0) ? -pointdiff : pointdiff;
+    unsigned int absdiff = PausePostGameAbsDiff(pointdiff);
 
     TLTextInstance* message = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
         m_pFEPresentation->m_currentSlide,
         InlineHasher(nlStringLowerHash("Layer")),
         InlineHasher(nlStringLowerHash("MESSAGE 1")));
 
-    u8 hasHome = 0;
     BasicGameInfo* game = nlSingleton<GameInfoManager>::s_pInstance->mGameInfo[nlSingleton<GameInfoManager>::s_pInstance->mCurrentMode];
-    if ((int)game->mPadSides[0] == 0)
-    {
-        hasHome = 1;
-    }
-    else if ((int)game->mPadSides[1] == 0)
-    {
-        hasHome = 1;
-    }
-    else if ((int)game->mPadSides[2] == 0)
-    {
-        hasHome = 1;
-    }
-    else if ((int)game->mPadSides[3] == 0)
-    {
-        hasHome = 1;
-    }
-
-    u8 hasAway = 0;
+    u8 hasHome = PausePostGameHasSide(game, 0);
     if (hasHome)
     {
-        if ((int)game->mPadSides[0] == 1)
+        u8 hasAway = PausePostGameHasSide(game, 1);
+        if (hasAway)
         {
-            hasAway = 1;
-        }
-        else if ((int)game->mPadSides[1] == 1)
-        {
-            hasAway = 1;
-        }
-        else if ((int)game->mPadSides[2] == 1)
-        {
-            hasAway = 1;
-        }
-        else if ((int)game->mPadSides[3] == 1)
-        {
-            hasAway = 1;
-        }
-    }
-
-    if (hasAway)
-    {
         if (absdiff == 0)
         {
             const unsigned short* formatLoc;
@@ -306,7 +261,7 @@ void PausePostGameScene::SceneCreated()
         else if (absdiff <= 2)
         {
             const unsigned short* formatLoc;
-            formatLoc = LookupLocHash(0x291A9065);
+            formatLoc = LookupLocHash(0x29199065);
 
             eTeamID winningteam = nlSingleton<GameInfoManager>::s_pInstance->GetTeam((short)((pointdiff > 0) ? 0 : 1));
 
@@ -333,34 +288,20 @@ void PausePostGameScene::SceneCreated()
             BasicString<unsigned short, Detail::TempStringAllocator> formatted = Format(BasicString<unsigned short, Detail::TempStringAllocator>(formatLoc), LookupLocHash(GetLOCCharacterName(loosingteam, true, false)));
             SetText(*message, formatted);
         }
+        return;
+        }
     }
-    else
     {
-        u8 newHasHome = 0;
-        if ((int)game->mPadSides[0] == 0)
-        {
-            newHasHome = 1;
-        }
-        else if ((int)game->mPadSides[1] == 0)
-        {
-            newHasHome = 1;
-        }
-        else if ((int)game->mPadSides[2] == 0)
-        {
-            newHasHome = 1;
-        }
-        else if ((int)game->mPadSides[3] == 0)
-        {
-            newHasHome = 1;
-        }
-        int humanside = (newHasHome == 0);
+        u8 newHasHome = PausePostGameHasSide(game, 0);
+        int humanside = (int)(newHasHome ? 0 : 1);
 
-        if (absdiff == 0)
+        if (pointdiff == 0)
         {
             const unsigned short* formatLoc;
             formatLoc = LookupLocHash(0xFF559E6A);
 
-            BasicString<char, Detail::TempStringAllocator> score = LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(absdiff + 1);
+            BasicString<char, Detail::TempStringAllocator> score = LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(
+                wins0 + wins1 + 1);
             unsigned short wscore[8];
             nlStrToWcs(score.c_str(), wscore, 8);
 

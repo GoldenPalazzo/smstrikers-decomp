@@ -61,9 +61,15 @@ struct AsyncToVirMemBufferLoad
 }; // total size: 0x14
 } // namespace
 
-static AsyncToVirMemBufferLoad asyncToVirMemBufferLoad[4];
+namespace
+{
+AsyncToVirMemBufferLoad asyncToVirMemBufferLoad[4];
+}
 static char readBuffer32ByteLength[32];
-static u8 asyncToVirMemBuffer[0x4000];
+namespace
+{
+u8 asyncToVirMemBuffer[0x4000];
+}
 
 /**
  * Offset/Address/Size: 0x0 | 0x801CED54 | size: 0xEC
