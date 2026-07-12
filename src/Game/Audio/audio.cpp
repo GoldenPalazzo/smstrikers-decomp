@@ -1559,7 +1559,7 @@ void SetOutputMode(MusyXOutputType outputType)
 bool SetPitchBendOnSFX(unsigned long uVoiceID, unsigned short pitch)
 {
     bool isPlaying;
-    if (g_bAudioInitialized)
+    if (::g_bAudioInitialized)
     {
         isPlaying = PlatAudio::IsSFXPlaying(uVoiceID);
     }
@@ -1584,7 +1584,7 @@ bool SetPitchBendOnSFX(unsigned long uVoiceID, unsigned short pitch)
 bool SetFilterFreqOnSFX(unsigned long uVoiceID, unsigned short freq)
 {
     bool isPlaying;
-    if (g_bAudioInitialized)
+    if (::g_bAudioInitialized)
     {
         isPlaying = PlatAudio::IsSFXPlaying(uVoiceID);
     }
@@ -1922,7 +1922,7 @@ void UpdateFades(float fDeltaT)
 
             bool isPlaying;
             u32 sfxID = *(u32*)((char*)pFadeData + 0x4);
-            if (g_bAudioInitialized)
+            if (::g_bAudioInitialized)
             {
                 isPlaying = PlatAudio::IsSFXPlaying(sfxID);
             }
@@ -2048,7 +2048,7 @@ void UpdateFades(float fDeltaT)
                     else
                     {
                         u32 sfxID = *(u32*)((char*)pFadeData + 0x4);
-                        if (g_bAudioInitialized)
+                        if (::g_bAudioInitialized)
                         {
                             PlatAudio::StopSFX(sfxID);
                         }
@@ -2456,7 +2456,7 @@ int GetSndIDError()
  */
 bool IsSFXPlaying(unsigned long sfxID)
 {
-    if (g_bAudioInitialized)
+    if (::g_bAudioInitialized)
     {
         return PlatAudio::IsSFXPlaying(sfxID);
     }
@@ -2468,7 +2468,7 @@ bool IsSFXPlaying(unsigned long sfxID)
  */
 bool StopSFX(unsigned long sfxID)
 {
-    if (g_bAudioInitialized)
+    if (::g_bAudioInitialized)
     {
         return PlatAudio::StopSFX(sfxID);
     }
@@ -2480,7 +2480,7 @@ bool StopSFX(unsigned long sfxID)
  */
 unsigned long PlaySFXEventFromScript(const SoundEventData& sfxEventData, const char* szSFXType, float fVol, float fDelay)
 {
-    if (!g_bAudioInitialized || !g_bWorldSFXInitialized)
+    if (!::g_bAudioInitialized || !::g_bWorldSFXInitialized)
     {
         return -1;
     }
@@ -2550,7 +2550,7 @@ unsigned long PlaySFXEventFromScript(const SoundEventData& sfxEventData, const c
  */
 void StopCharSFXbyStr(const char* szSFXType, NisCharacterClass charIdentifier)
 {
-    if (!g_bAudioInitialized)
+    if (!::g_bAudioInitialized)
         return;
     Audio::eCharSFX sfxType = (Audio::eCharSFX)AudioLoader::GetCharSFXTypeFromStr(szSFXType);
     if (g_pGame == NULL)
@@ -2566,10 +2566,10 @@ void StopCharSFXbyStr(const char* szSFXType, NisCharacterClass charIdentifier)
  */
 void StopWorldSFXbyStr(const char* szSFXType)
 {
-    if (!g_bAudioInitialized)
+    if (!::g_bAudioInitialized)
         return;
     unsigned long type = AudioLoader::GetWorldSFXTypeFromStr(szSFXType);
-    if (!g_bWorldSFXInitialized)
+    if (!::g_bWorldSFXInitialized)
         return;
 
     if ((int)type < 94)
@@ -2595,7 +2595,7 @@ void StopWorldSFXbyStr(const char* szSFXType)
  */
 int PlayCharSFXbyStr(const char* szSFXType, NisCharacterClass charIdentifier, float fVol, float fDelay, bool bIs3D, bool bKeepTrack, const nlVector3* pInitialPosVector, const nlVector3* pInitialDirVector, unsigned long* unkPtr)
 {
-    if (!g_bAudioInitialized)
+    if (!::g_bAudioInitialized)
     {
         return -1;
     }
@@ -2645,7 +2645,7 @@ int PlayCharSFXbyStr(const char* szSFXType, NisCharacterClass charIdentifier, fl
 
 unsigned long PlayWorldSFXbyStr(const char* szSFXType, float fVol, float fDelay, bool bIs3D, bool bKeepTrack, const nlVector3* pInitialPosVector, const nlVector3* pInitialDirVector, unsigned long* pType)
 {
-    if (!g_bAudioInitialized)
+    if (!::g_bAudioInitialized)
     {
         return (unsigned long)-1;
     }
@@ -2657,7 +2657,7 @@ unsigned long PlayWorldSFXbyStr(const char* szSFXType, float fVol, float fDelay,
         *pType = type;
     }
 
-    if (!g_bWorldSFXInitialized)
+    if (!::g_bWorldSFXInitialized)
     {
         return (unsigned long)-1;
     }
@@ -2728,7 +2728,7 @@ int IsDelayedCharSFX(unsigned long sfxType, cGameSFX* pOwner)
  */
 int AddDelayedSFX(const SoundAttributes& sfxData, unsigned long uSFXID, float volume, float delay, cGameSFX* pOwnerSFX)
 {
-    if (!g_bAudioInitialized)
+    if (!::g_bAudioInitialized)
     {
         return -1;
     }
@@ -2836,7 +2836,7 @@ error:
  */
 unsigned long PlaySFXbyID(const SoundAttributes& attrs, unsigned long sfxID, float fVol, float fRevVol, int volGroup)
 {
-    if (!g_bAudioInitialized)
+    if (!::g_bAudioInitialized)
     {
         return (unsigned long)-1;
     }
@@ -2918,7 +2918,7 @@ float GetAudioTimer()
  */
 void Shutdown()
 {
-    if (g_bAudioInitialized)
+    if (::g_bAudioInitialized)
     {
         if (PlatAudio::IsStreamingInited())
         {
@@ -2926,7 +2926,7 @@ void Shutdown()
         }
 
         PlatAudio::Shutdown();
-        g_bAudioInitialized = false;
+        ::g_bAudioInitialized = false;
     }
 }
 
@@ -2964,7 +2964,7 @@ void ResetPauseStatus()
  */
 void UnloadWorldSFX()
 {
-    if (!g_bWorldSFXInitialized)
+    if (!::g_bWorldSFXInitialized)
         return;
 
     gWorldSFX.ShutdownPlaySet();
@@ -2972,7 +2972,7 @@ void UnloadWorldSFX()
     gStadGenSFX.ShutdownPlaySet();
     gCrowdSFX.ShutdownPlaySet();
     gbGameIsPaused = false;
-    g_bWorldSFXInitialized = false;
+    ::g_bWorldSFXInitialized = false;
 }
 
 /**
@@ -2980,7 +2980,7 @@ void UnloadWorldSFX()
  */
 bool IsWorldSFXLoaded()
 {
-    return g_bWorldSFXInitialized;
+    return ::g_bWorldSFXInitialized;
 }
 
 /**
@@ -2988,7 +2988,7 @@ bool IsWorldSFXLoaded()
  */
 void LoadWorldSFX()
 {
-    if (g_bWorldSFXInitialized)
+    if (::g_bWorldSFXInitialized)
         return;
 
     gWorldSFX.Init();
@@ -3063,7 +3063,7 @@ void LoadInGameSFX()
  */
 bool IsInited()
 {
-    return g_bAudioInitialized;
+    return ::g_bAudioInitialized;
 }
 
 /**
@@ -3544,7 +3544,7 @@ bool Initialize(bool bInit)
 
     ReadVolGroupSettings();
     Config::Global().LoadFromFile("audio/CrowdScript.ini");
-    g_bAudioInitialized = true;
+    ::g_bAudioInitialized = true;
     return true;
 }
 

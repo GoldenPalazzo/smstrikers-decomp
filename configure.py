@@ -1069,7 +1069,7 @@ config.libs = [
             Object(NonMatching, "Game/SH/SHChooseSides.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/SH/SHCredits.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/SH/SHCrossFader.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(NonMatching, "Game/SH/SHCupCheater.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(Matching, "Game/SH/SHCupCheater.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/SH/SHCupChooseCaptain.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/SH/SHCupHub.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/SH/SHCupOptions.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
@@ -1094,7 +1094,7 @@ config.libs = [
                 ],
             ),
             Object(
-                NonMatching,
+                Matching,
                 "Game/SH/SHPause.cpp",
                 extra_cflags=["-inline auto", "-inline deferred"],
                 redefine_symbols=[

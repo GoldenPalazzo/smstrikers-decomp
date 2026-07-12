@@ -18,85 +18,6 @@
 #include "NL/nlMemFunBody.h"
 #include "NL/nlBindBody.h"
 
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800E9970 | size: 0x38
-//  */
-// void Bind<void, Detail::MemFunImpl<void, void (CupCheaterScene::*)()>, CupCheaterScene*>(Detail::MemFunImpl<void, void
-// (CupCheaterScene::*)()>, CupCheaterScene* const&)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800E9954 | size: 0x1C
-//  */
-// void MemFun<CupCheaterScene, void>(void (CupCheaterScene::*)())
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800E98F8 | size: 0x5C
-//  */
-// void Function0<void>::FunctorImpl<BindExp1<void, Detail::MemFunImpl<void, void (CupCheaterScene::*)()>,
-// CupCheaterScene*>>::~FunctorImpl()
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x358 | 0x800E96F4 | size: 0x15C
-//  */
-// void FEFinder<TLComponentInstance, 4>::_Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long,
-// unsigned long, unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x2D4 | 0x800E9670 | size: 0x84
-//  */
-// void FEFinder<TLComponentInstance, 4>::_Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned
-// long, unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x250 | 0x800E95EC | size: 0x84
-//  */
-// void FEFinder<TLComponentInstance, 4>::_Find<FEPresentation>(FEPresentation*, unsigned long, unsigned long, unsigned long, unsigned long,
-// unsigned long, unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x218 | 0x800E95B4 | size: 0x38
-//  */
-// void FEFinder<TLComponentInstance, 4>::Find<FEPresentation>(FEPresentation*, InlineHasher, InlineHasher, InlineHasher, InlineHasher,
-// InlineHasher, InlineHasher)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0xBC | 0x800E9458 | size: 0x15C
-//  */
-// void FEFinder<TLTextInstance, 3>::_Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned
-// long, unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x38 | 0x800E93D4 | size: 0x84
-//  */
-// void FEFinder<TLTextInstance, 3>::_Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long,
-// unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800E939C | size: 0x38
-//  */
-// void FEFinder<TLTextInstance, 3>::Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher,
-// InlineHasher)
-// {
-// }
-
 /**
  * Offset/Address/Size: 0x1C00 | 0x800E9350 | size: 0x4C
  */
@@ -581,61 +502,67 @@ void CupCheaterScene::OnSelectAwayOTWin()
 void CupCheaterScene::UpdateSlides()
 {
     CupCheaterScene* const self = this;
-    TLComponentInstance* pComp;
+    struct Locals
+    {
+        TLTextInstance* text;
+        TLComponentInstance* comp;
+    };
     const unsigned char currentSlide = self->m_SlideMenu->m_currentSlide;
-    pComp = self->m_SlideMenu->m_pMenuComp;
-    TLTextInstance* pText;
+    Locals locals;
+    locals.comp = self->m_SlideMenu->m_pMenuComp;
     TLSlide* pSlide;
 
     for (int i = 0; i < 9; i++)
     {
         self->m_SlideMenu->SetSlideByIndex((unsigned char)i);
-        pSlide = pComp->GetActiveSlide();
+        pSlide = locals.comp->GetActiveSlide();
 
-        pText = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
+        TLTextInstance* foundText;
+        foundText = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
             pSlide,
             InlineHasher(nlStringLowerHash("number1")));
+        locals.text = foundText;
 
         BasicString<char, Detail::TempStringAllocator> Sniper(
             LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(self->mSniper));
         nlStrToWcs(Sniper.c_str(), self->mSniperBuffer, 10);
-        pText->SetString(self->mSniperBuffer);
+        locals.text->SetString(self->mSniperBuffer);
 
-        pText = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
+        locals.text = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
             pSlide,
             InlineHasher(nlStringLowerHash("number2")));
 
         BasicString<char, Detail::TempStringAllocator> Striker(
             LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(self->mStriker));
         nlStrToWcs(Striker.c_str(), self->mStrikerBuffer, 10);
-        pText->SetString(self->mStrikerBuffer);
+        locals.text->SetString(self->mStrikerBuffer);
 
-        pText = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
+        locals.text = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
             pSlide,
             InlineHasher(nlStringLowerHash("number3")));
 
         BasicString<char, Detail::TempStringAllocator> Tactician(
             LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(self->mTactician));
         nlStrToWcs(Tactician.c_str(), self->mTacticianBuffer, 10);
-        pText->SetString(self->mTacticianBuffer);
+        locals.text->SetString(self->mTacticianBuffer);
 
-        pText = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
+        locals.text = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
             pSlide,
             InlineHasher(nlStringLowerHash("number4")));
 
         BasicString<char, Detail::TempStringAllocator> Paramedic(
             LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(self->mParamedic));
         nlStrToWcs(Paramedic.c_str(), self->mParamedicBuffer, 10);
-        pText->SetString(self->mParamedicBuffer);
+        locals.text->SetString(self->mParamedicBuffer);
 
-        pText = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
+        locals.text = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
             pSlide,
             InlineHasher(nlStringLowerHash("number5")));
 
         BasicString<char, Detail::TempStringAllocator> Veteran(
             LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(self->mVeteran));
         nlStrToWcs(Veteran.c_str(), self->mVeteranBuffer, 10);
-        pText->SetString(self->mVeteranBuffer);
+        locals.text->SetString(self->mVeteranBuffer);
     }
 
     self->m_SlideMenu->SetSlideByIndex((unsigned char)currentSlide);

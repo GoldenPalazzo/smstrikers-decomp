@@ -494,7 +494,7 @@ FuzzyVariant Fuzzy::ShouldIStrafeBall(cFielder* TheFielder)
             FuzzyVariant fvResult(1.0f);
             bestValue = fvResult;
         }
-        else if (!((bool)UserControlled(TheFielder)) && TheFielder->m_fDesiredSpeed < 0.1f)
+        else if (!((bool)UserControlled(TheFielder)) && TheFielder->m_fDesiredSpeed < 2.0f)
         {
             confidence = 1.0f;
             FuzzyVariant fvResult(1.0f);

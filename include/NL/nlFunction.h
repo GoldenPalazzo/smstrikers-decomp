@@ -119,7 +119,11 @@ public:
 #ifdef FUNCTION0_SPLIT_BODIES
         virtual ReturnType operator()();
         virtual FunctorBase* Clone() const;
+#ifdef FUNCTION0_USE_FUNCTION1_DTOR_BODY
+#include "NL/nlFunction1Dtor.h"
+#else
 #include "NL/nlFunction0Dtor.h"
+#endif
 #else
         virtual ~FunctorImpl() { }
         virtual ReturnType operator()() { FORCE_DONT_INLINE; }
@@ -184,7 +188,11 @@ public:
     }
 
     template <typename BindType>
+#ifdef FUNCTION1_BIND_BY_VALUE
+    Function(BindType bind)
+#else
     Function(const BindType& bind)
+#endif
     {
         typedef typename Function1<void, T>::template FunctorImpl<BindType> ImplType;
         mTag = FUNCTOR;
@@ -496,7 +504,11 @@ template <typename ReturnType, typename ParamType>
 template <typename BindType>
 inline ReturnType Function1<ReturnType, ParamType>::FunctorImpl<BindType>::operator()(ParamType arg)
 {
+#ifdef FUNCTION1_DIRECT_MEMFUN_CALL
+    (mBind.mT0->*mBind.mFunction.mMemFun)(arg);
+#else
     return mBind(arg);
+#endif
 }
 
 template <typename ReturnType, typename ParamType>

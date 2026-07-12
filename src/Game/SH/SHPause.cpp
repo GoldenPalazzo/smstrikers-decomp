@@ -2,6 +2,10 @@
 #define MEMFUN_NO_DECL
 #define FUNCTION0_SPLIT_BODIES
 #define FUNCTION1_SPLIT_BODIES
+#define FUNCTION1_BIND_BY_VALUE
+#define FUNCTION0_USE_FUNCTION1_DTOR_BODY
+#define FUNCTION1_DIRECT_MEMFUN_CALL
+#define MEMFUN_PARAM_OVERLOAD_FIRST
 #include "Game/SH/SHPause.h"
 #include "Game/OverlayManager.h"
 
@@ -43,6 +47,21 @@ typedef Detail::MemFunImpl<void, void (PauseMenuScene::*)()> MemFunImpl_Pause_v_
 typedef Detail::MemFunImpl<void, void (PauseMenuScene::*)(TLComponentInstance*)> MemFunImpl_Pause_p_t;
 typedef BindExp1<void, MemFunImpl_Pause_v_t, PauseMenuScene*> BindExp1_Pause_t;
 typedef BindExp2<void, MemFunImpl_Pause_p_t, PauseMenuScene*, Placeholder<0> > BindExp2_Pause_t;
+
+#include "NL/nlFunctionReap.h"
+#define FUNCTION0_DIRECT_BODY_BIND BindExp1_Pause_t
+#include "NL/nlFunction0DirectBody.h"
+#undef FUNCTION0_DIRECT_BODY_BIND
+
+template void nlFunction1Emit<
+    Function1<void, TLComponentInstance*>::FunctorImpl<BindExp2_Pause_t>,
+    TLComponentInstance*>(
+    Function1<void, TLComponentInstance*>::FunctorImpl<BindExp2_Pause_t>*,
+    TLComponentInstance*);
+template void nlFunctionReap<Function0<void>::FunctorImpl<BindExp1_Pause_t> >(
+    Function0<void>::FunctorImpl<BindExp1_Pause_t>*);
+template void nlFunction0Emit<Function0<void>::FunctorImpl<BindExp1_Pause_t> >(
+    Function0<void>::FunctorImpl<BindExp1_Pause_t>*);
 
 /**
  * Offset/Address/Size: 0x225C | 0x800AF754 | size: 0xDC
@@ -325,9 +344,8 @@ void PauseMenuScene::SceneCreated()
             mMenuItems.mNumItemsAdded++;
 
             void (PauseMenuScene::*openCB)(TLComponentInstance*) = &PauseMenuScene::OpenItem;
-            PauseBind bindOpen = Bind<void>(MemFun<PauseMenuScene, void, TLComponentInstance*>(openCB), this, placeholder0);
             {
-                MenuCallback openFunc(bindOpen);
+                MenuCallback openFunc(Bind<void>(MemFun<PauseMenuScene, void, TLComponentInstance*>(openCB), this, placeholder0));
                 *(MenuCallback*)&menuItem->mCallbacks[ON_HIGHLIGHT] = openFunc;
             }
 
@@ -340,8 +358,7 @@ void PauseMenuScene::SceneCreated()
 
             if (PauseMenuCBs[i])
             {
-                PauseBind bindApply = Bind<void>(MemFun<PauseMenuScene, void, TLComponentInstance*>(PauseMenuCBs[i]), this, placeholder0);
-                MenuCallback applyFunc(bindApply);
+                MenuCallback applyFunc(Bind<void>(MemFun<PauseMenuScene, void, TLComponentInstance*>(PauseMenuCBs[i]), this, placeholder0));
                 *(MenuCallback*)&menuItem->mCallbacks[ON_APPLY] = applyFunc;
             }
 
@@ -448,8 +465,7 @@ void PauseMenuScene::SceneCreated()
 
             if (PauseMenuCBs[i])
             {
-                PauseBind bindApply = Bind<void>(MemFun<PauseMenuScene, void, TLComponentInstance*>(PauseMenuCBs[i]), this, placeholder0);
-                MenuCallback applyFunc(bindApply);
+                MenuCallback applyFunc(Bind<void>(MemFun<PauseMenuScene, void, TLComponentInstance*>(PauseMenuCBs[i]), this, placeholder0));
                 *(MenuCallback*)&menuItem->mCallbacks[ON_APPLY] = applyFunc;
             }
 
