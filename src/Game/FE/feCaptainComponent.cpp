@@ -151,7 +151,7 @@ void IChooseCaptain::ComponentState::GotoNextPhase()
 
             if (g_e3_Build)
             {
-                mParent->mSidekickGridComponents[mHomeAway]->MoveHighlightToTarget((eSidekickID)(mHomeAway != 0));
+                mParent->mSidekickGridComponents[mHomeAway]->MoveHighlightToTarget((eSidekickID)(mHomeAway ? 1 : 0));
                 mParent->mNameComponents[mHomeAway].SetSidekickName(GetLOCSidekickName(sidekickgrid->GetSelectedItem()));
                 GotoNextPhase();
             }

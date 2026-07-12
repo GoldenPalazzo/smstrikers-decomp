@@ -21,7 +21,14 @@ public:
     void OpenMessengerNow();
     void OpenMessenger();
     void SetDisplayMessage(const BasicString<unsigned short, Detail::TempStringAllocator>&);
-    void SetMessageFinishedCB(const Function<FnVoidVoid>& cb) { };
+    void SetMessageFinishedCB(const Function<FnVoidVoid>& cb)
+    {
+        m_cbFunc = cb;
+        if (m_textScroller != NULL)
+        {
+            m_textScroller->m_messageFinishedCB = cb;
+        }
+    }
     virtual ~ScrollingTickerScene();
     virtual void SceneCreated();
     virtual void Update(float);

@@ -311,9 +311,6 @@ void NSNMessengerScene::OpenMessenger()
 
 /**
  * Offset/Address/Size: 0x7B4 | 0x800A1AD0 | size: 0x160
- * TODO: 99.94% match - scratch emits BaseSceneHandler inline virtual stubs
- * (InitializeSubHandlers/SetPresentation/SetVisible) before this symbol, so
- * Update starts at +0x14 and only branch displacements differ.
  */
 void NSNMessengerScene::Update(float fDeltaT)
 {
@@ -335,11 +332,11 @@ void NSNMessengerScene::Update(float fDeltaT)
                 (*((FunctorBase*)m_messageFinishedCB.mFunctor))();
             }
         }
-    }
 
-    if (m_scrollText != NULL)
-    {
-        m_scrollText->Update(fDeltaT);
+        if (m_scrollText != NULL)
+        {
+            m_scrollText->Update(fDeltaT);
+        }
     }
 
     FEPresentation* pres = m_pFEScene->m_pFEPackage->GetPresentation();
@@ -357,7 +354,7 @@ void NSNMessengerScene::Update(float fDeltaT)
             case MS_OPEN:
                 break;
             case MS_CLOSING:
-                CloseMessenger();
+                CloseMessengerNow();
                 break;
             default:
                 break;
@@ -368,11 +365,10 @@ void NSNMessengerScene::Update(float fDeltaT)
 
 /**
  * Offset/Address/Size: 0x914 | 0x800A1C30 | size: 0x2C
- * TODO: 99.55% match - vtable offset 0x3C instead of 0x1C (multiple inheritance layout difference)
  */
 void NSNMessengerScene::SceneCreated()
 {
-    SceneCreated();
+    CloseMessengerNow();
 }
 
 /**
