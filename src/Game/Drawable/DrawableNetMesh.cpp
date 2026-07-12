@@ -14,9 +14,22 @@ static unsigned long LitProgram = glGetProgram("3d pointlit");
 static unsigned long LightTexture = glGetTexture("global/lightramp");
 static unsigned long BlackTexture = glGetTexture("global/black");
 static unsigned long WhiteTexture = glGetTexture("global/white");
-static unsigned long NetMeshTexture = glGetTexture("global/netmesh");
-static unsigned long CheckerTexture = glGetTexture("global/checker");
+
+shortVector2* DrawableNetMesh::spTexcoord[2];
+unsigned long* DrawableNetMesh::spColour[2];
+unsigned short* DrawableNetMesh::spTriIndices[2];
+bool DrawableNetMesh::sbStaticInitialized[2] = {};
+int DrawableNetMesh::sNumVertices[2];
+
+static unsigned char sbRenderAnimatedNetMesh = 1;
+static unsigned char sbAccelerateMeshWriter = 1;
+static unsigned char sbCopyVertices = 1;
+static unsigned char sbUseCheckerTexture = 0;
+static unsigned char sbUseDisplayLists = 0;
+
 static int siInvisiblePlaneAlpha;
+static unsigned long NetMeshTexture = glGetTexture("global/netmesh");
+static unsigned long CheckerTexture = glGetTexture("global/checkers");
 /**
  * Offset/Address/Size: 0xC4C | 0x80114BA8 | size: 0x24
  */
@@ -80,7 +93,7 @@ void DrawableNetMesh::RenderInvisiblePlanes() const
 
     float netPlaneX;
 
-    nlColour c = { 0xFF, 0xFF, 0xFF, 0x00 };
+    nlColour c = { 0xFF, 0xFF, 0x00, 0x00 };
     c.c[3] = (u8)siInvisiblePlaneAlpha;
 
     glQuad3 quad;
@@ -215,12 +228,6 @@ static const int gl_stream_stride[15] = {
  */
 void DrawableNetMesh::Render() const
 {
-    extern unsigned char sbRenderAnimatedNetMesh;
-    extern unsigned char sbAccelerateMeshWriter;
-    extern unsigned char sbCopyVertices;
-    extern unsigned char sbUseCheckerTexture;
-    extern unsigned char sbUseDisplayLists;
-
     if (!sbRenderAnimatedNetMesh || !mbInitialized || !NetMesh::s_bAnimatedNetMeshEnabled)
     {
         return;

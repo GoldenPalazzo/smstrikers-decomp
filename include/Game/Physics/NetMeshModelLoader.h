@@ -64,10 +64,17 @@ public:
         /* 0x08 */ NetMeshVertex* mpVertex2;
     };
 
+#ifdef NETMESHMODELLOADER_VERTEX_TREE_FIRST
+    typedef nlAVLTreeSlotPool<NetMeshVertex, int, DefaultKeyCompare<NetMeshVertex> > VertexTree;
+    typedef nlAVLTreeSlotPool<NetMeshEdge, int, DefaultKeyCompare<NetMeshEdge> > EdgeTree;
+    typedef AVLTreeEntry<NetMeshVertex, int> VertexEntry;
+    typedef AVLTreeEntry<NetMeshEdge, int> EdgeEntry;
+#else
     typedef nlAVLTreeSlotPool<NetMeshEdge, int, DefaultKeyCompare<NetMeshEdge> > EdgeTree;
     typedef nlAVLTreeSlotPool<NetMeshVertex, int, DefaultKeyCompare<NetMeshVertex> > VertexTree;
     typedef AVLTreeEntry<NetMeshEdge, int> EdgeEntry;
     typedef AVLTreeEntry<NetMeshVertex, int> VertexEntry;
+#endif
 
     NetMeshModelLoader(NetMesh&, unsigned long);
     virtual ~NetMeshModelLoader();
@@ -118,6 +125,8 @@ public:
 //     void NetMeshVertex, int, BasicSlotPool<AVLTreeEntry<NetMeshModelLoader::NetMeshVertex, int>>, DefaultKeyCompare<NetMeshModelLoader::NetMeshVertex>>::~AVLTreeBase();
 // };
 
+#ifndef NETMESHMODELLOADER_EXPLICIT_AVL_SPECIALIZATIONS
+
 template <>
 inline int AVLTreeBase<NetMeshModelLoader::NetMeshVertex, int, BasicSlotPool<AVLTreeEntry<NetMeshModelLoader::NetMeshVertex, int> >, DefaultKeyCompare<NetMeshModelLoader::NetMeshVertex> >::CompareKey(void* key, AVLTreeNode* node)
 {
@@ -154,5 +163,7 @@ inline int AVLTreeBase<NetMeshModelLoader::NetMeshEdge, int, BasicSlotPool<AVLTr
         result = 1;
     return result;
 }
+
+#endif // NETMESHMODELLOADER_EXPLICIT_AVL_SPECIALIZATIONS
 
 #endif // _NETMESHMODELLOADER_H_

@@ -288,6 +288,8 @@ public:
     /* 0x10 */ unsigned int m_NumElements;
 }; // total size: 0x14
 
+#ifndef NL_AVLTREEBASE_EXPLICIT_SPECIALIZATIONS
+
 template <typename KeyType, typename ValueType, typename AllocatorType, typename CompareType>
 inline AVLTreeEntry<KeyType, ValueType>* AVLTreeBase<KeyType, ValueType, AllocatorType, CompareType>::CastUp(AVLTreeNode* node) const
 {
@@ -472,5 +474,7 @@ AVLTreeNode* AVLTreeBase<KeyType, ValueType, AllocatorType, CompareType>::Alloca
 #endif
 
 #undef NL_AVLTREE_GLINVENTORY_INLINE
+
+#endif // NL_AVLTREEBASE_EXPLICIT_SPECIALIZATIONS
 
 #endif // _AVLTREEBASE_H_

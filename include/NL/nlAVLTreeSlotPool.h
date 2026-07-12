@@ -17,10 +17,14 @@ public:
         SlotPoolBase::BaseAddNewBlock(&this->m_Allocator, sizeof(AVLTreeEntry<KeyType, ValueType>));
         this->m_Allocator.m_Delta = delta;
     };
+#ifdef NL_AVL_TREE_SLOT_POOL_OUT_OF_LINE_DTOR
+    ~nlAVLTreeSlotPool();
+#else
     ~nlAVLTreeSlotPool()
     {
         FORCE_DONT_INLINE;
     };
+#endif
 };
 
 #endif // _NLAVLTREESLOTPOOL_H_

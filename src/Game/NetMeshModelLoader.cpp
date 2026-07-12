@@ -1,3 +1,6 @@
+#define NL_AVL_TREE_SLOT_POOL_OUT_OF_LINE_DTOR
+#define NL_AVLTREEBASE_EXPLICIT_SPECIALIZATIONS
+#define NETMESHMODELLOADER_EXPLICIT_AVL_SPECIALIZATIONS
 #include "Game/Physics/NetMeshModelLoader.h"
 #include "Game/WorldManager.h"
 #include "Game/Drawable/DrawableModel.h"
@@ -13,6 +16,241 @@ typedef NetMeshModelLoader::EdgeEntry EdgeEntry;
 
 static int s_initialEdgeCount = 1;
 static int s_initialVertexCount = 1;
+static unsigned char sbPullGoalsOut;
+
+typedef AVLTreeEntry<NetMeshVertex, int> VEnt;
+typedef AVLTreeEntry<NetMeshEdge, int> EEnt;
+typedef AVLTreeBase<NetMeshVertex, int, BasicSlotPool<VEnt>, DefaultKeyCompare<NetMeshVertex> > VBase;
+typedef AVLTreeBase<NetMeshEdge, int, BasicSlotPool<EEnt>, DefaultKeyCompare<NetMeshEdge> > EBase;
+
+// ---- DeleteEntryFunc explicit specs (fix .data ptmf position) ----
+// Edge spec FIRST so its &DeleteEntry ptmf constant mints before Vertex's,
+// matching the target .data order (Edge ptmf precedes Vertex ptmf).
+template <>
+EBase::ENTRY_DELETE_FUNC EBase::DeleteEntryFunc()
+{
+    return &EBase::DeleteEntry;
+}
+
+template <>
+VBase::ENTRY_DELETE_FUNC VBase::DeleteEntryFunc()
+{
+    return &VBase::DeleteEntry;
+}
+
+// ---- Explicit specializations in DWARF-DIE source order ----
+// (deferred emission should invert this to the target linkonce order)
+
+// 1. DeleteEntry<V>
+template <>
+void VBase::DeleteEntry(VEnt* entry)
+{
+    m_Allocator.Free(entry);
+}
+
+// 2. AllocateEntry<V>
+template <>
+AVLTreeNode* VBase::AllocateEntry(void* key, void* value)
+{
+    VEnt* newNode = NULL;
+    m_Allocator.Allocate(newNode);
+    newNode->node.left = NULL;
+    newNode->node.right = NULL;
+    newNode->node.heavy = 0;
+    newNode->key = *(NetMeshVertex*)key;
+    newNode->value = *(int*)value;
+    return (AVLTreeNode*)newNode;
+}
+
+// 3. DeleteEntry<E>
+template <>
+void EBase::DeleteEntry(EEnt* entry)
+{
+    m_Allocator.Free(entry);
+}
+
+// 4. CompareNodes<E>
+template <>
+int EBase::CompareNodes(AVLTreeNode* a, AVLTreeNode* b)
+{
+    const NetMeshEdge& keyA = ((EEnt*)a)->key;
+    const NetMeshEdge& keyB = ((EEnt*)b)->key;
+    int result;
+    if (keyA == keyB)
+        result = 0;
+    else if (keyA < keyB)
+        result = -1;
+    else
+        result = 1;
+    return result;
+}
+
+// 5. CompareKey<E>
+template <>
+int EBase::CompareKey(void* key, AVLTreeNode* node)
+{
+    const NetMeshEdge& k = *(NetMeshEdge*)key;
+    EEnt* entry = (EEnt*)node;
+    int result;
+    if (k == entry->key)
+        result = 0;
+    else if (k < entry->key)
+        result = -1;
+    else
+        result = 1;
+    return result;
+}
+
+// 6. AllocateEntry<E>
+template <>
+AVLTreeNode* EBase::AllocateEntry(void* key, void* value)
+{
+    EEnt* newNode = NULL;
+    m_Allocator.Allocate(newNode);
+    newNode->node.left = NULL;
+    newNode->node.right = NULL;
+    newNode->node.heavy = 0;
+    newNode->key = *(NetMeshEdge*)key;
+    newNode->value = *(int*)value;
+    return (AVLTreeNode*)newNode;
+}
+
+// 7. CompareKey<V>
+template <>
+int VBase::CompareKey(void* key, AVLTreeNode* node)
+{
+    NetMeshVertex* k = (NetMeshVertex*)key;
+    VEnt* entry = (VEnt*)node;
+    int result;
+    bool equal = (k->mpPacket == entry->key.mpPacket && k->mIndex == entry->key.mIndex);
+    if (equal)
+    {
+        result = 0;
+    }
+    else
+    {
+        bool less = (k->mpPacket < entry->key.mpPacket || (k->mpPacket == entry->key.mpPacket && k->mIndex < entry->key.mIndex));
+        if (less)
+            result = -1;
+        else
+            result = 1;
+    }
+    return result;
+}
+
+// 8. CompareNodes<V>
+template <>
+int VBase::CompareNodes(AVLTreeNode* a, AVLTreeNode* b)
+{
+    const NetMeshVertex& keyA = ((VEnt*)a)->key;
+    const NetMeshVertex& keyB = ((VEnt*)b)->key;
+    int result;
+    if (keyA == keyB)
+        result = 0;
+    else if (keyA < keyB)
+        result = -1;
+    else
+        result = 1;
+    return result;
+}
+
+// 9. CastUp<E>
+template <>
+EEnt* EBase::CastUp(AVLTreeNode* node) const
+{
+    return (EEnt*)node;
+}
+
+// 10. PostorderTraversal<E>
+template <>
+void EBase::PostorderTraversal(EEnt* curr, void (EBase::*cb)(EEnt*))
+{
+    if (curr->node.left != NULL)
+    {
+        PostorderTraversal(CastUp(curr->node.left), cb);
+    }
+    if (curr->node.right != NULL)
+    {
+        PostorderTraversal(CastUp(curr->node.right), cb);
+    }
+    (this->*cb)(curr);
+}
+
+// 11. DestroyTree<E>
+template <>
+void EBase::DestroyTree(void (EBase::*deleteFunc)(EEnt*))
+{
+    if (m_Root != NULL)
+    {
+        PostorderTraversal(m_Root, deleteFunc);
+        m_Root = nullptr;
+        m_NumElements = 0;
+    }
+}
+
+// 12. Clear<E>
+template <>
+void EBase::Clear()
+{
+    DestroyTree(DeleteEntryFunc());
+    m_NumElements = 0;
+}
+
+// 13. __dt<E>
+template <>
+EBase::~AVLTreeBase()
+{
+    Clear();
+}
+
+// 14. CastUp<V>
+template <>
+VEnt* VBase::CastUp(AVLTreeNode* node) const
+{
+    return (VEnt*)node;
+}
+
+// 15. PostorderTraversal<V>
+template <>
+void VBase::PostorderTraversal(VEnt* curr, void (VBase::*cb)(VEnt*))
+{
+    if (curr->node.left != NULL)
+    {
+        PostorderTraversal(CastUp(curr->node.left), cb);
+    }
+    if (curr->node.right != NULL)
+    {
+        PostorderTraversal(CastUp(curr->node.right), cb);
+    }
+    (this->*cb)(curr);
+}
+
+// 16. DestroyTree<V>
+template <>
+void VBase::DestroyTree(void (VBase::*deleteFunc)(VEnt*))
+{
+    if (m_Root != NULL)
+    {
+        PostorderTraversal(m_Root, deleteFunc);
+        m_Root = nullptr;
+        m_NumElements = 0;
+    }
+}
+
+// 17. Clear<V>
+template <>
+void VBase::Clear()
+{
+    DestroyTree(DeleteEntryFunc());
+    m_NumElements = 0;
+}
+
+// 18. __dt<V>
+template <>
+VBase::~AVLTreeBase()
+{
+    Clear();
+}
 
 /**
  * Offset/Address/Size: 0x1400 | 0x80131558 | size: 0x54
@@ -27,6 +265,19 @@ NetMeshModelLoader::NetMeshModelLoader(NetMesh& netMesh, unsigned long netMeshDr
     LoadGeometryFromModel();
 }
 
+// ---- Explicit nlAVLTreeSlotPool dtor specs (source order E then V => addr V<E) ----
+template <>
+EdgeTree::~nlAVLTreeSlotPool()
+{
+    FORCE_DONT_INLINE;
+}
+
+template <>
+VertexTree::~nlAVLTreeSlotPool()
+{
+    FORCE_DONT_INLINE;
+}
+
 /**
  * Offset/Address/Size: 0x12C8 | 0x80131420 | size: 0x78
  */
@@ -39,7 +290,6 @@ NetMeshModelLoader::~NetMeshModelLoader()
 
 /**
  * Offset/Address/Size: 0xE78 | 0x80130FD0 | size: 0x450
- * TODO: 99.53% match - outer packet loop still swaps packet pointer and packet offset registers.
  */
 void NetMeshModelLoader::LoadGeometryFromModel()
 {
@@ -77,17 +327,23 @@ void NetMeshModelLoader::LoadGeometryFromModel()
         vertexOffset = (u16)m_NumParticles;
 
         DisplayList* pList = dlGetStruct(pPacket->indexBuffer);
-        s32 i = 0;
-        s32 triStripOffset = 0;
+        struct TriStripIV
+        {
+            s32 index;
+            s32 offset;
+        };
+        TriStripIV iv;
+        iv.index = 0;
+        iv.offset = iv.index;
 
-        while (i < pPacket->numVertices)
+        while (iv.index < pPacket->numVertices)
         {
             u16* ptr;
             if (((u16*)&pList->indices)[1] != 0)
             {
                 u16 ns = ((u16*)&pList->indices)[0];
                 s32 stride = (ns - 1) * 2 + 1;
-                s32 offset = stride * i;
+                s32 offset = stride * iv.index;
                 u8* ptr8 = (u8*)pList->list + offset;
                 ptr = (u16*)ptr8;
                 ptr8 = (u8*)ptr;
@@ -98,7 +354,7 @@ void NetMeshModelLoader::LoadGeometryFromModel()
             {
                 u16 ns = ((u16*)&pList->indices)[0];
                 s32 stride = ns * 2;
-                s32 offset = i * stride;
+                s32 offset = iv.index * stride;
                 u8* ptr8 = (u8*)pList->list;
                 ptr8 += offset;
                 ptr = (u16*)ptr8;
@@ -111,9 +367,9 @@ void NetMeshModelLoader::LoadGeometryFromModel()
                 maxVertex = idx;
             }
 
-            *(u16*)((u8*)m_TriStripIndices + triStripOffset) = idx + vertexOffset;
-            i++;
-            triStripOffset += 2;
+            *(u16*)((u8*)m_TriStripIndices + iv.offset) = idx + vertexOffset;
+            iv.index++;
+            iv.offset += 2;
             m_CurrentTriStripIndex++;
         }
 
@@ -308,9 +564,30 @@ void NetMeshModelLoader::AddEdge(const glModelPacket& packet, unsigned short idx
 }
 
 /**
+ * Offset/Address/Size: 0xB90 | 0x80130CE8 | size: 0xB4
+ */
+#pragma dont_inline on
+void NetMeshModelLoader::AddTriangleFromGeometry(const glModelPacket& packet, unsigned short* vertexIndices)
+{
+    unsigned char isThin = 0;
+
+    if (vertexIndices[0] == vertexIndices[1] || vertexIndices[1] == vertexIndices[2] || vertexIndices[0] == vertexIndices[2])
+    {
+        isThin = 1;
+    }
+
+    if (!isThin)
+    {
+        for (int j = 0; j < 3; j++)
+        {
+            AddEdge(packet, vertexIndices[j], vertexIndices[(j + 1) % 3]);
+        }
+    }
+}
+#pragma dont_inline reset
+
+/**
  * Offset/Address/Size: 0xA80 | 0x80130BD8 | size: 0x110
- * TODO: 99.34% match - colour-stream branch still swaps ns and vertex-offset
- * temporaries between r4-r5-r0.
  */
 void NetMeshModelLoader::ReadEdgesFromGeometryPacket(const glModelPacket& packet)
 {
@@ -337,12 +614,11 @@ void NetMeshModelLoader::ReadEdgesFromGeometryPacket(const glModelPacket& packet
         {
             if (((u16*)&pList->indices)[1] != 0)
             {
+                s32 base = i - 2;
                 ns = ((u16*)&pList->indices)[0];
-                vertOff = i;
-                vertOff += j;
-                vertOff -= 2;
+                vertOff = base + j;
                 stride = (ns - 1) * 2 + 1;
-                offset = vertOff * stride;
+                offset = stride * vertOff;
                 ptr8 = (u8*)pList->list + offset;
                 ptr = (u16*)ptr8;
                 ptr8 = (u8*)ptr;
@@ -376,29 +652,6 @@ void NetMeshModelLoader::ReadEdgesFromGeometryPacket(const glModelPacket& packet
 
     ProcessEdges(packet, (s32)maxVertex);
 }
-
-/**
- * Offset/Address/Size: 0xB90 | 0x80130CE8 | size: 0xB4
- */
-#pragma dont_inline on
-void NetMeshModelLoader::AddTriangleFromGeometry(const glModelPacket& packet, unsigned short* vertexIndices)
-{
-    unsigned char isThin = 0;
-
-    if (vertexIndices[0] == vertexIndices[1] || vertexIndices[1] == vertexIndices[2] || vertexIndices[0] == vertexIndices[2])
-    {
-        isThin = 1;
-    }
-
-    if (!isThin)
-    {
-        for (int j = 0; j < 3; j++)
-        {
-            AddEdge(packet, vertexIndices[j], vertexIndices[(j + 1) % 3]);
-        }
-    }
-}
-#pragma dont_inline reset
 
 /**
  * Offset/Address/Size: 0x780 | 0x801308D8 | size: 0x300
@@ -519,7 +772,6 @@ void NetMeshModelLoader::ProcessEdges(const glModelPacket& packet, int maxVertex
 void NetMeshModelLoader::CreateNetMeshFromVertexList()
 {
     extern void* nlMalloc(unsigned long, unsigned int, bool);
-    extern unsigned char sbPullGoalsOut;
 
     struct VertexIter
     {

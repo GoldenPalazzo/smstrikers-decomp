@@ -214,7 +214,7 @@ FuzzyVariant Fuzzy::DefaultOffensivePlay(cDecisionEntity* pDecision)
                 float fTrueConfidence = FGREATER(fGoodBallCarrier, (fDoShooting >= fDoPassing) ? fDoShooting : fDoPassing);
                 fGoodBallCarrier = (fGoodBallCarrier >= fTrueConfidence) ? fGoodBallCarrier : fTrueConfidence;
 
-                float fDifficult = FLESS(Difficult(g_pScriptCurrentTeam), 0.8f);
+                float fDifficult = FLESS(Difficult(g_pScriptCurrentTeam), 0.1f);
                 float fFallback = (0.0f == fBestConfidence) ? 1.0f : 0.0f;
 
                 fTrueConfidence = (fDifficult >= fGoodBallCarrier) ? fDifficult : fGoodBallCarrier;
@@ -490,9 +490,13 @@ FuzzyVariant Fuzzy::DoPassing(float fConfidence, cDecisionEntity* pDecision)
     return FuzzyVariant(fBestConfidence);
 }
 
+static inline float OffensiveDanger(const FuzzyVariant& value)
+{
+    return value.mData.f;
+}
+
 /**
  * Offset/Address/Size: 0x4490 | 0x80090F1C | size: 0x604
- * TODO: 99.92% match - false branch danger subtract load order still differs.
  */
 FuzzyVariant Fuzzy::GoodBallCarrier(cFielder* TheFielder)
 {
@@ -548,7 +552,7 @@ FuzzyVariant Fuzzy::GoodBallCarrier(cFielder* TheFielder)
             fBestConfidence = fConfidence;
             fOnMushrooms = FLESS(fWindupScore, 0.8f);
             fInvincible = 1.0f - CloseToMyNet(g_pScriptCurrentFielder);
-            bestValue = FuzzyVariant((fFalseConfidence = 1.0f - InDangerDelayed(g_pScriptCurrentFielder).mData.f,
+            bestValue = FuzzyVariant((fFalseConfidence = 1.0f - OffensiveDanger(InDangerDelayed(g_pScriptCurrentFielder)),
                 fInvincible = (fInvincible <= fOnMushrooms) ? fInvincible : fOnMushrooms,
                 fFalseConfidence = (fFalseConfidence <= fInvincible) ? fFalseConfidence : fInvincible));
         }
@@ -1482,8 +1486,10 @@ FuzzyVariant Fuzzy::GetPowerupTargetOffensive(cTeam* TheTeam)
     for (int i = 0; i < 4; i++)
     {
         cFielder* theOpponent = g_pScriptOtherTeam->GetFielder(i);
-        float fNotInvincible = 1.0f - Invincible(theOpponent);
-        float fTrueConfidence = 1.0f - Incapacitated((cPlayer*)theOpponent);
+        float fNotInvincible = Invincible(theOpponent);
+        fNotInvincible = 1.0f - fNotInvincible;
+        float fTrueConfidence = Incapacitated((cPlayer*)theOpponent);
+        fTrueConfidence = 1.0f - fTrueConfidence;
         if (fTrueConfidence <= fNotInvincible)
         {
             fTrueConfidence = fTrueConfidence;

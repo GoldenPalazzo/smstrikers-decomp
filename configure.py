@@ -871,7 +871,7 @@ config.libs = [
             # Net 
             Object(Matching, "Game/Render/NetMesh.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/NetMeshEdge.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(NonMatching, "Game/NetMeshModelLoader.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(Matching, "Game/NetMeshModelLoader.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
 
             # Terrain / Environment
             Object(Matching, "Game/TrophyInfo.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
