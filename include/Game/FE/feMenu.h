@@ -36,7 +36,9 @@ struct MenuItem
         : mType(0)
         , mDisabled(false)
         , mLocked(false) { };
+#ifndef MENU_ITEM_SYNTHESIZE_DTOR
     ~MenuItem() { };
+#endif
 
     inline void ApplyAction(MenuAction action)
     {

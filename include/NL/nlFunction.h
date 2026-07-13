@@ -248,6 +248,9 @@ public:
         mFunctor = new (nlMalloc(sizeof(ImplType), 8, false)) ImplType(bind);
     }
 
+#ifdef FUNCTION_SIGNATURE_DTOR_DECLARE_ONLY
+    __declspec(weak) ~Function();
+#else
     ~Function()
     {
 #ifndef FUNCTION1_OWNER_DTOR
@@ -258,6 +261,7 @@ public:
         mTag = EMPTY;
 #endif
     }
+#endif
 
     Function& operator=(const Function& other)
     {

@@ -340,6 +340,12 @@ public:
     void DesireSlideAttack(float);
     void DesireUserControlled(float);
     void DesireUsePowerup(float);
+    void DesireDeke();
+    void DesireRunDownField(float);
+    void DesireRunToNet(float);
+    void DesireRunUpField(float);
+    void DesireShoot();
+    void DesirePostWhistle(float);
     void DesireWindupShot(float);
     void DesireWindupPass(float);
 

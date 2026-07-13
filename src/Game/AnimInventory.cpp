@@ -1,4 +1,5 @@
 #include "Game/AnimInventory.h"
+#include "Game/World/worldanim.h"
 
 #include "NL/nlString.h"
 #include "NL/nlMemory.h"

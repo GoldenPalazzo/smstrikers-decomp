@@ -2777,19 +2777,17 @@ float NearToSideline(const nlVector3& v3Position)
 
 /**
  * Offset/Address/Size: 0x1AB8 | 0x80080540 | size: 0x11C
- * TODO: 99.15% match - sideline base/offset and distance delta registers differ.
  */
 static inline float CloseToSidelineFielderImpl(cFielder* pFielder, const nlVector2* pConfidence)
 {
     float fScore = 0.0f;
     f32 fZero = fScore;
     s32 i = 0;
-    s32 offset = i;
     const u8* pBase = (const u8*)cField::mSidelines;
 
-    for (; i < 4; i++, offset += 0xC)
+    for (; i < 4; i++)
     {
-        const sSideLinePlane* sideline = (const sSideLinePlane*)(pBase + offset);
+        const sSideLinePlane* sideline = (const sSideLinePlane*)(pBase + i * sizeof(sSideLinePlane));
         nlVector3 v3SidelinePos = pFielder->m_v3Position;
         v3SidelinePos.f.z = fZero;
 
@@ -2802,9 +2800,10 @@ static inline float CloseToSidelineFielderImpl(cFielder* pFielder, const nlVecto
             v3SidelinePos.f.x = sideline->fDistance * sideline->vNormal.f.x;
         }
 
-        f32 dx = v3SidelinePos.f.x - pFielder->m_v3Position.f.x;
-        f32 dy = v3SidelinePos.f.y - pFielder->m_v3Position.f.y;
-        float fDistance = nlSqrt(dx * dx + dy * dy, true);
+        nlVector2 delta;
+        delta.f.x = v3SidelinePos.f.x - pFielder->m_v3Position.f.x;
+        delta.f.y = v3SidelinePos.f.y - pFielder->m_v3Position.f.y;
+        float fDistance = nlSqrt(delta.f.x * delta.f.x + delta.f.y * delta.f.y, true);
 
         float fNormalized = NormalizeVal(fDistance, *pConfidence);
 

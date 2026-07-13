@@ -78,7 +78,14 @@ public:
     void CentrePopup(float, float);
     void SetPositions();
 
+#ifdef FEPOPUPMENU_INLINE_NOARG_CREATE
+    void Create(ePopupMenu type)
+    {
+        Create(type, Function<FnVoidVoid>(Nothing));
+    }
+#else
     void Create(ePopupMenu);
+#endif
 #if defined(FEPOPUPMENU_BYVAL_DECLS) || defined(FEPOPUPMENU_INTERNAL_BYVAL)
     void Create(ePopupMenu type, Function<FnVoidVoid> option1)
     {

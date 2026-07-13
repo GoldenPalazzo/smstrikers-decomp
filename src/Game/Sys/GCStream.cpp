@@ -899,7 +899,6 @@ void GCAudioStreaming::StereoAudioStream::Warm(bool CoolOnStop)
 
 /**
  * Offset/Address/Size: 0x7E8 | 0x801C7F98 | size: 0x260
- * TODO: 99.87% match - secondLen uses r27 instead of r30 in the final update path
  */
 void GCAudioStreaming::StereoAudioStream::InterleavedHdrReadCB(nlFile* pFile, void* pData, unsigned int Length)
 {
@@ -939,6 +938,9 @@ void GCAudioStreaming::StereoAudioStream::InterleavedHdrReadCB(nlFile* pFile, vo
 
     unsigned char* pMRAMBuffer;
     unsigned long aramLen;
+    unsigned long offset;
+    unsigned long firstLen;
+    unsigned long secondLen;
     AudioStreamBuffer* pBuffer;
     AudioStreamBuffer* init;
     unsigned long Zero = 0;
@@ -988,11 +990,8 @@ void GCAudioStreaming::StereoAudioStream::InterleavedHdrReadCB(nlFile* pFile, vo
     if ((aramLen / 14) * 8 < bufReadLen)
         return;
 
-    unsigned long secondLen;
-    unsigned long offset = pBuf->m_UpdateOffset;
+    offset = pBuf->m_UpdateOffset;
     pBuf->m_UpdateOffset = offset + bufReadLen;
-
-    unsigned long firstLen;
 
     if (pBuf->m_UpdateOffset >= pBuf->m_BufferSize)
     {

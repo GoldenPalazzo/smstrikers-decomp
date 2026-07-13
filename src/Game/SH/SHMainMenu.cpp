@@ -2,7 +2,11 @@
 #define BIND_NO_DECL
 #define FUNCTION1_SPLIT_BODIES
 #define FUNCTION1_OWNER_DTOR
+#define FUNCTION1_BIND_BY_VALUE
+#define FUNCTION_SIGNATURE_DTOR_DECLARE_ONLY
+#define MENU_ITEM_SYNTHESIZE_DTOR
 #define FEPOPUPMENU_BYVAL_DECLS
+#define FEPOPUPMENU_INLINE_NOARG_CREATE
 #include "Game/SH/SHMainMenu.h"
 #include "Game/GameInfo.h"
 #include "Game/GameSceneManager.h"
@@ -26,6 +30,12 @@ typedef BindExp2<void, MainMenuMemFun_t, SHMainMenu*, Placeholder<0> > MainMenuB
 
 extern nlColour MenuHighliteColour;
 
+bool SHMainMenu::mSnapMenuIntoPosition = false;
+int SHMainMenu::mLastMenuItem = 0;
+
+static char sSlideIn[] = "in";
+static char sSlideOut[] = "out";
+
 static unsigned long sUnlockedTickerMessages[7] = {
     0x10B8D08F,
     0xDB24E3FA,
@@ -45,189 +55,6 @@ static unsigned long sLockedTickerMessages[7] = {
     0x268EF6F5,
     0x7B1F3B7E,
 };
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800AC57C | size: 0x40
-//  */
-// void Bind<void, Detail::MemFunImpl<void, void (SHMainMenu::*)(TLComponentInstance*)>, SHMainMenu*, Placeholder<0>>(
-//     Detail::MemFunImpl<void, void (SHMainMenu::*)(TLComponentInstance*)>, SHMainMenu* const&, const Placeholder<0>&)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800AC560 | size: 0x1C
-//  */
-// void MemFun<SHMainMenu, void, TLComponentInstance*>(void (SHMainMenu::*)(TLComponentInstance*))
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800AC504 | size: 0x5C
-//  */
-// void Function1<void, TLComponentInstance*>::FunctorImpl<
-//     BindExp2<void, Detail::MemFunImpl<void, void (SHMainMenu::*)(TLComponentInstance*)>, SHMainMenu*, Placeholder<0>>>::~FunctorImpl()
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x3F0 | 0x800AC404 | size: 0x100
-//  */
-// void 0x800AC504..0x800AC560 | size : 0x5C
-// {
-// }
-
-/**
- * Offset/Address/Size: 0x384 | 0x800AC398 | size: 0x6C
- */
-#pragma dont_inline on
-void FEPopupMenu::Create(ePopupMenu type)
-{
-    Create(type, Function<FnVoidVoid>(Nothing));
-}
-#pragma dont_inline reset
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800AC014 | size: 0x4
-//  */
-// void FEPopupMenu::Nothing()
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x70 | 0x800ABFBC | size: 0x58
-//  */
-// void MenuItem<TLComponentInstance>::MenuItem()
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800ABF4C | size: 0x70
-//  */
-// void MenuList<TLComponentInstance>::~MenuList()
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0xD4 | 0x800ABF1C | size: 0x30
-//  */
-// void Function1<void, TLComponentInstance*>::FunctorImpl<BindExp2<void, Detail::MemFunImpl<void, void
-// (SHMainMenu::*)(TLComponentInstance*)>,
-//                                                                  SHMainMenu*, Placeholder<0>>>::operator()(TLComponentInstance*)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x54 | 0x800ABE9C | size: 0x80
-//  */
-// void Function1<void, TLComponentInstance*>::FunctorImpl<
-//     BindExp2<void, Detail::MemFunImpl<void, void (SHMainMenu::*)(TLComponentInstance*)>, SHMainMenu*, Placeholder<0>>>::Clone() const
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800ABE48 | size: 0x48
-//  */
-// void Function1<void, TLComponentInstance*>::FunctorBase::~FunctorBase()
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x704 | 0x800ABCEC | size: 0x15C
-//  */
-// void FEFinder<TLInstance, 4>::_Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long,
-//                                                 unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x680 | 0x800ABC68 | size: 0x84
-//  */
-// void FEFinder<TLInstance, 4>::_Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long,
-//                                              unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x648 | 0x800ABC30 | size: 0x38
-//  */
-// void FEFinder<TLInstance, 4>::Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x4EC | 0x800ABAD4 | size: 0x15C
-//  */
-// void FEFinder<TLTextInstance, 3>::_Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned
-// long,
-//                                                     unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x468 | 0x800ABA50 | size: 0x84
-//  */
-// void FEFinder<TLTextInstance, 3>::_Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long,
-//                                                  unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x430 | 0x800ABA18 | size: 0x38
-//  */
-// void FEFinder<TLTextInstance, 3>::Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher,
-//                                                 InlineHasher)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x2D4 | 0x800AB8BC | size: 0x15C
-//  */
-// void FEFinder<TLComponentInstance, 4>::_Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long,
-//                                                          unsigned long, unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x250 | 0x800AB838 | size: 0x84
-//  */
-// void FEFinder<TLComponentInstance, 4>::_Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned
-// long,
-//                                                       unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x218 | 0x800AB800 | size: 0x38
-//  */
-// void FEFinder<TLComponentInstance, 4>::Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher,
-//                                                      InlineHasher)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0xBC | 0x800AB6A4 | size: 0x15C
-//  */
-// void FEFinder<TLImageInstance, 2>::_Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned
-// long,
-//                                                      unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x38 | 0x800AB620 | size: 0x84
-//  */
-// void FEFinder<TLImageInstance, 2>::_Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long,
-//                                                   unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800AB5E8 | size: 0x38
-//  */
-// void FEFinder<TLImageInstance, 2>::Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher,
-//                                                  InlineHasher)
-// {
-// }
 
 /**
  * Offset/Address/Size: 0x1B14 | 0x800AB570 | size: 0x78
@@ -308,7 +135,6 @@ static void continueTourn()
 
 /**
  * Offset/Address/Size: 0x182C | 0x800AB288 | size: 0xE8
- * TODO: 99.9% match - i diff on bl Create (branch offset, relocation)
  */
 static void confirmNewTourn()
 {
@@ -322,8 +148,6 @@ static void confirmNewTourn()
 
 /**
  * Offset/Address/Size: 0x1680 | 0x800AB0DC | size: 0x1AC
- * TODO: 92.1% match - Function0 default constructor dead stores not eliminated
- *       with -inline auto (decomp.me). File uses -inline deferred which eliminates them.
  */
 static void onSelectTournament(TLComponentInstance*)
 {
@@ -382,13 +206,6 @@ SHMainMenu::SHMainMenu()
     mHighlightColour = MenuHighliteColour;
 }
 
-// /**
-//  * Offset/Address/Size: 0x14D8 | 0x800AAF34 | size: 0x60
-//  */
-// void MenuItem<TLComponentInstance>::~MenuItem()
-// {
-// }
-
 /**
  * Offset/Address/Size: 0x1380 | 0x800AADDC | size: 0x158
  */
@@ -398,6 +215,12 @@ SHMainMenu::~SHMainMenu()
     {
         delete m_itemDescriptions;
     }
+}
+
+typedef void MainMenuItemCallback(TLComponentInstance*);
+template <>
+Function<MainMenuItemCallback>::~Function()
+{
 }
 
 static inline BackgroundScene* GetMarioBackground()
@@ -412,8 +235,6 @@ static inline MenuItem<TLComponentInstance>* MainMenuItemAt(MenuList<TLComponent
 
 /**
  * Offset/Address/Size: 0xA3C | 0x800AA498 | size: 0x8C0
- * TODO: 99.5% match - bind temporary stack slots and menu item setup use
- *       r0/r4/r6 differently
  */
 void SHMainMenu::SceneCreated()
 {
@@ -423,9 +244,7 @@ void SHMainMenu::SceneCreated()
     typedef TLInstance* (*FindInstByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
     typedef TLComponentInstance* (*FindComponentByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
     typedef TLComponentInstance* (*FindComponentByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
-    typedef void FnCallback(TLComponentInstance*);
-    typedef Detail::MemFunImpl<void, void (SHMainMenu::*)(TLComponentInstance*)> MainMenuMemFun;
-    typedef BindExp2<void, MainMenuMemFun, SHMainMenu*, Placeholder<0> > MainMenuBind;
+    typedef Function<TLComponentInstance*> MenuCallback;
     static const char* MenuNameTable[] = { "MENU ITEM1", "MENU ITEM2", "MENU ITEM3", "MENU ITEM4", "MENU ITEM7", "MENU ITEM5", "MENU ITEM6" };
     static void (*const ApplyFuncTable[])(TLComponentInstance*) = { onSelectFriendly, onSelectCup, onSelectSuperCup, onSelectTournament, onSelect101, onSelectTrophies, onSelectOptions };
     FEMusic::StartStreamIfDifferent(0);
@@ -440,6 +259,7 @@ void SHMainMenu::SceneCreated()
         presentation->m_currentSlide,
         InlineHasher(nlStringLowerHash("Layer")),
         InlineHasher(nlStringLowerHash("TickerText")));
+    
     screenInfo = glGetScreenInfo();
     FEScrollText* feST = new (nlMalloc(sizeof(FEScrollText), 8, false)) FEScrollText(scrollText, 0, screenInfo->ScreenWidth + 50);
     m_itemDescriptions = feST;
@@ -456,22 +276,24 @@ void SHMainMenu::SceneCreated()
         item = MainMenuItemAt(mMenuItems, mMenuItems.mNumItemsAdded);
         mMenuItems.mMenuItems[mMenuItems.mNumItemsAdded].mType = compinstance;
         mMenuItems.mNumItemsAdded++;
+
         {
-            MainMenuBind bindOpen = Bind<void>(MemFun<SHMainMenu, void, TLComponentInstance*>(&SHMainMenu::OpenItem), this, placeholder0);
-            Function<FnCallback> openFunc(bindOpen);
-            item->mCallbacks[1] = openFunc;
+            MenuCallback openFunc(Bind<void>(MemFun<SHMainMenu, void, TLComponentInstance*>(&SHMainMenu::OpenItem), this, placeholder0));
+            *(MenuCallback*)&item->mCallbacks[1] = openFunc;
         }
+        
         {
-            MainMenuBind bindClose = Bind<void>(MemFun<SHMainMenu, void, TLComponentInstance*>(&SHMainMenu::CloseItem), this, placeholder0);
-            Function<FnCallback> closeFunc(bindClose);
-            item->mCallbacks[2] = closeFunc;
+            MenuCallback closeFunc(Bind<void>(MemFun<SHMainMenu, void, TLComponentInstance*>(&SHMainMenu::CloseItem), this, placeholder0));
+            *(MenuCallback*)&item->mCallbacks[2] = closeFunc;
         }
+        
         {
             Function<TLComponentInstance*> applyFunc;
             applyFunc.mTag = FREE_FUNCTION;
             applyFunc.mFreeFunction = ApplyFuncTable[i];
             *(Function<TLComponentInstance*>*)&item->mCallbacks[0] = applyFunc;
         }
+        
         item->mLocked = false;
         if (i == mLastMenuItem)
         {
@@ -561,7 +383,6 @@ void SHMainMenu::SceneCreated()
 
 /**
  * Offset/Address/Size: 0x60C | 0x800AA068 | size: 0x430
- * TODO: 99.7% match - r0/r4/r5 register allocation mismatch around the locked text overload setup
  */
 void SHMainMenu::OpenItem(TLComponentInstance* compinstance)
 {
@@ -575,7 +396,7 @@ void SHMainMenu::OpenItem(TLComponentInstance* compinstance)
     unsigned long hash;
     volatile InlineHasher hC, hB, hA, h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
 
-    compinstance->SetActiveSlide("in");
+    compinstance->SetActiveSlide(sSlideIn);
     compinstance->Update(0.0f);
 
     h0.m_Hash = 0;
@@ -608,7 +429,7 @@ void SHMainMenu::OpenItem(TLComponentInstance* compinstance)
         (InlineHasher&)h3,
         (InlineHasher&)h1);
 
-    highlight->SetActiveSlide("in");
+    highlight->SetActiveSlide(sSlideIn);
     highlight->Update(0.0f);
 
     volatile InlineHasher g9, g8, g7, g6, g5, g4, g3, g2, g1, g0;
@@ -859,7 +680,7 @@ void SHMainMenu::CloseItem(TLComponentInstance* compinstance)
     unsigned long hash;
     volatile InlineHasher hC, hB, hA, h9, h8, h7, h6, h5, h4, h3, h2, h1, h0;
 
-    compinstance->SetActiveSlide("out");
+    compinstance->SetActiveSlide(sSlideOut);
     compinstance->Update(0.0f);
 
     h0.m_Hash = 0;
@@ -892,7 +713,7 @@ void SHMainMenu::CloseItem(TLComponentInstance* compinstance)
         (InlineHasher&)h3,
         (InlineHasher&)h1);
 
-    highlight->SetActiveSlide("out");
+    highlight->SetActiveSlide(sSlideOut);
     highlight->Update(0.0f);
 
     volatile InlineHasher g7, g6, g5, g4, g3, g2, g1, g0;

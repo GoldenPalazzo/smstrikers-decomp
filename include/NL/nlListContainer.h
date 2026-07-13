@@ -39,7 +39,13 @@ public:
     // Add more list operations as needed
     void AddEntry(ListEntry<T>* entry)
     {
-        // Implementation for adding entries
+        nlListAddStart<ListEntry<T> >(&m_Head, entry, &m_Tail);
+    }
+
+    void AddEntry(const T& data)
+    {
+        ListEntry<T>* entry = new (m_Allocator.Allocate()) ListEntry<T>(data);
+        nlListAddStart<ListEntry<T> >(&m_Head, entry, &m_Tail);
     }
 
     void RemoveEntry(ListEntry<T>* entry)
@@ -125,6 +131,7 @@ public:
 
     void AddEntry(ListEntry<T>* entry)
     {
+        nlListAddStart<ListEntry<T> >(&m_Head, entry, &m_Tail);
     }
 
     void RemoveEntry(ListEntry<T>* entry)

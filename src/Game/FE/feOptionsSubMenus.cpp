@@ -909,6 +909,321 @@ static inline void HighliteSlideComponentAlt(const nlColour& colour, TLComponent
     }
 }
 
+static inline void HighliteSlideComponentAltV1(TLComponentInstance* comp, const nlColour& colour)
+{
+    HighliteSlideComponentAlt(colour, comp);
+}
+
+static inline void HighliteSlideComponentAltV2(TLComponentInstance*& comp, const nlColour& colour)
+{
+    HighliteSlideComponentAlt(colour, comp);
+}
+
+static inline void HighliteSlideComponentAltV3(TLComponentInstance& comp, const nlColour& colour)
+{
+    HighliteSlideComponentAlt(colour, &comp);
+}
+
+static inline void HighliteSlideComponentAltV4(TLComponentInstance* const comp, const nlColour& colour)
+{
+    HighliteSlideComponentAlt(colour, comp);
+}
+
+static inline void HighliteSlideComponentAltV5(const nlColour& colour, TLComponentInstance* comp)
+{
+    TLComponentInstance* component = comp;
+    HighliteSlideComponentAlt(colour, component);
+}
+
+static inline void HighliteSlideComponentAltV6(const nlColour& colour, TLComponentInstance* comp)
+{
+    TLComponentInstance* const component = comp;
+    HighliteSlideComponentAlt(colour, component);
+}
+
+static inline void HighliteSlideComponentAltV7(SlideMenuList* list, const nlColour& colour)
+{
+    TLComponentInstance* comp = list->mComponentInstance;
+    HighliteSlideComponentAlt(colour, comp);
+}
+
+static inline void HighliteSlideComponentAltV8(const nlColour* colour, TLComponentInstance* comp)
+{
+    HighliteSlideComponentAlt(*colour, comp);
+}
+
+static inline void HighliteSlideComponentAltV9(nlColour colour, TLComponentInstance* comp)
+{
+    HighliteSlideComponentAlt(colour, comp);
+}
+
+static inline void HighliteSlideComponentAltV10(const nlColour& colour, TLComponentInstance* comp)
+{
+    if (comp != NULL)
+        HighliteSlideComponentAlt(colour, comp);
+}
+
+static inline void HighliteSlideComponentAltF1(const nlColour& colour, TLComponentInstance* comp)
+{
+    TLInstance* inst;
+    TLInstance* firstChild;
+    TLSlide* currentSlide;
+    TLSlide* startSlide;
+    unsigned long hash;
+
+    if (comp != NULL && comp->GetActiveSlide() != NULL)
+    {
+        startSlide = comp->GetActiveSlide();
+        currentSlide = startSlide;
+
+        do
+        {
+            comp->SetActiveSlide(currentSlide);
+            firstChild = comp->GetActiveSlide()->m_instances;
+            inst = firstChild;
+
+            if (firstChild != NULL)
+            {
+                do
+                {
+                    if (inst->m_type == TLAT_TEXT)
+                    {
+                        inst->SetAssetColour(colour);
+                    }
+                    else if (inst->m_type == TLAT_IMAGE)
+                    {
+                        hash = inst->m_hash;
+                        if (hash != nlStringLowerHash("white_box"))
+                            inst->SetAssetColour(colour);
+                    }
+
+                    inst = inst->m_next;
+                } while (inst != firstChild);
+            }
+
+            currentSlide = currentSlide->m_next;
+        } while (currentSlide != startSlide);
+
+        comp->SetActiveSlide(startSlide);
+    }
+}
+
+static inline void HighliteSlideComponentAltF2(TLComponentInstance* comp, const nlColour& colour)
+{
+    TLInstance* inst;
+    TLInstance* firstChild;
+    TLSlide* currentSlide;
+    TLSlide* startSlide;
+    unsigned long hash;
+
+    if (comp != NULL && comp->GetActiveSlide() != NULL)
+    {
+        startSlide = comp->GetActiveSlide();
+        currentSlide = startSlide;
+
+        do
+        {
+            comp->SetActiveSlide(currentSlide);
+            firstChild = comp->GetActiveSlide()->m_instances;
+            inst = firstChild;
+
+            if (firstChild != NULL)
+            {
+                do
+                {
+                    if (inst->m_type == TLAT_TEXT)
+                    {
+                        inst->SetAssetColour(colour);
+                    }
+                    else if (inst->m_type == TLAT_IMAGE)
+                    {
+                        hash = inst->m_hash;
+                        if (hash != nlStringLowerHash("white_box"))
+                            inst->SetAssetColour(colour);
+                    }
+
+                    inst = inst->m_next;
+                } while (inst != firstChild);
+            }
+
+            currentSlide = currentSlide->m_next;
+        } while (currentSlide != startSlide);
+
+        comp->SetActiveSlide(startSlide);
+    }
+}
+
+static inline void HighliteSlideComponentAltF3(const nlColour& colour, TLComponentInstance* comp)
+{
+    unsigned long hash;
+    TLSlide* startSlide;
+    TLSlide* currentSlide;
+    TLInstance* firstChild;
+    TLInstance* inst;
+
+    if (comp != NULL && comp->GetActiveSlide() != NULL)
+    {
+        startSlide = comp->GetActiveSlide();
+        currentSlide = startSlide;
+
+        do
+        {
+            comp->SetActiveSlide(currentSlide);
+            firstChild = comp->GetActiveSlide()->m_instances;
+            inst = firstChild;
+
+            if (firstChild != NULL)
+            {
+                do
+                {
+                    if (inst->m_type == TLAT_TEXT)
+                    {
+                        inst->SetAssetColour(colour);
+                    }
+                    else if (inst->m_type == TLAT_IMAGE)
+                    {
+                        hash = inst->m_hash;
+                        if (hash != nlStringLowerHash("white_box"))
+                            inst->SetAssetColour(colour);
+                    }
+
+                    inst = inst->m_next;
+                } while (inst != firstChild);
+            }
+
+            currentSlide = currentSlide->m_next;
+        } while (currentSlide != startSlide);
+
+        comp->SetActiveSlide(startSlide);
+    }
+}
+
+static inline void HighliteSlideComponentAltG1(SlideMenuList* list, const nlColour& colour)
+{
+    unsigned long hash;
+    TLComponentInstance* comp = list->mComponentInstance;
+
+    if (comp != NULL && comp->GetActiveSlide() != NULL)
+    {
+        TLSlide* startSlide = comp->GetActiveSlide();
+        TLSlide* currentSlide = startSlide;
+
+        do
+        {
+            comp->SetActiveSlide(currentSlide);
+            TLInstance* firstChild = comp->GetActiveSlide()->m_instances;
+            TLInstance* inst = firstChild;
+
+            if (firstChild != NULL)
+            {
+                do
+                {
+                    if (inst->m_type == TLAT_TEXT)
+                    {
+                        inst->SetAssetColour(colour);
+                    }
+                    else if (inst->m_type == TLAT_IMAGE)
+                    {
+                        hash = inst->m_hash;
+                        if (hash != nlStringLowerHash("white_box"))
+                            inst->SetAssetColour(colour);
+                    }
+
+                    inst = inst->m_next;
+                } while (inst != firstChild);
+            }
+
+            currentSlide = currentSlide->m_next;
+        } while (currentSlide != startSlide);
+
+        comp->SetActiveSlide(startSlide);
+    }
+}
+
+static inline void HighliteSlideComponentAltG2(TLComponentInstance*& component, const nlColour& colour)
+{
+    unsigned long hash;
+    TLComponentInstance* comp = component;
+
+    if (comp != NULL && comp->GetActiveSlide() != NULL)
+    {
+        TLSlide* startSlide = comp->GetActiveSlide();
+        TLSlide* currentSlide = startSlide;
+
+        do
+        {
+            comp->SetActiveSlide(currentSlide);
+            TLInstance* firstChild = comp->GetActiveSlide()->m_instances;
+            TLInstance* inst = firstChild;
+
+            if (firstChild != NULL)
+            {
+                do
+                {
+                    if (inst->m_type == TLAT_TEXT)
+                    {
+                        inst->SetAssetColour(colour);
+                    }
+                    else if (inst->m_type == TLAT_IMAGE)
+                    {
+                        hash = inst->m_hash;
+                        if (hash != nlStringLowerHash("white_box"))
+                            inst->SetAssetColour(colour);
+                    }
+
+                    inst = inst->m_next;
+                } while (inst != firstChild);
+            }
+
+            currentSlide = currentSlide->m_next;
+        } while (currentSlide != startSlide);
+
+        comp->SetActiveSlide(startSlide);
+    }
+}
+
+static inline void HighliteSlideComponentAltG3(TLComponentInstance* component, const nlColour& colour)
+{
+    unsigned long hash;
+    TLComponentInstance* comp = component;
+
+    if (comp != NULL && comp->GetActiveSlide() != NULL)
+    {
+        TLSlide* startSlide = comp->GetActiveSlide();
+        TLSlide* currentSlide = startSlide;
+
+        do
+        {
+            comp->SetActiveSlide(currentSlide);
+            TLInstance* firstChild = comp->GetActiveSlide()->m_instances;
+            TLInstance* inst = firstChild;
+
+            if (firstChild != NULL)
+            {
+                do
+                {
+                    if (inst->m_type == TLAT_TEXT)
+                    {
+                        inst->SetAssetColour(colour);
+                    }
+                    else if (inst->m_type == TLAT_IMAGE)
+                    {
+                        hash = inst->m_hash;
+                        if (hash != nlStringLowerHash("white_box"))
+                            inst->SetAssetColour(colour);
+                    }
+
+                    inst = inst->m_next;
+                } while (inst != firstChild);
+            }
+
+            currentSlide = currentSlide->m_next;
+        } while (currentSlide != startSlide);
+
+        comp->SetActiveSlide(startSlide);
+    }
+}
+
 /**
  * Offset/Address/Size: 0x19E0 | 0x800B6A24 | size: 0x6E8
  * TODO: 99.85% match - menu item index/current slide register rotation.
