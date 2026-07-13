@@ -54,18 +54,12 @@ extern cGame* g_pGame;
 
 /**
  * Offset/Address/Size: 0x0 | 0x801423B4 | size: 0x1A18
- * TODO: 99.77% match. Remaining diffs include the initial null-check branch shape,
- * queued-stream iterator stack slot offsets, bowser SFX stack slot offsets, and
- * later branch/register choices in event-data handling.
+ * TODO: 99.92% match. Remaining diffs are queued-stream iterator stack slot
+ * offsets and r29/r30 allocation in the loop, ground, goalie, and Bobomb paths.
  */
 void Audio::AudioEventHandler(Event* pEvent, void*)
 {
-    if (!Audio::IsInited())
-    {
-        return;
-    }
-
-    if (g_pGame == NULL)
+    if (!Audio::IsInited() || g_pGame == NULL)
     {
         return;
     }
@@ -88,17 +82,11 @@ void Audio::AudioEventHandler(Event* pEvent, void*)
         }
         else
         {
-            struct Iter
-            {
-                DLListEntry<AudioStreamTrack::StreamTrack::QUEUED_STREAM>* m_head;
-                DLListEntry<AudioStreamTrack::StreamTrack::QUEUED_STREAM>* m_current;
-                ~Iter() { }
-            };
             qentry = nlDLRingGetStart(pTrack->m_QueuedStreams.m_Head);
-            Iter iter;
-            iter.m_current = qentry;
-            iter.m_head = pTrack->m_QueuedStreams.m_Head;
-            qs = &iter.m_current->entry;
+            nlDLListIterator<AudioStreamTrack::StreamTrack::QUEUED_STREAM> iter;
+            iter.m_Curr = qentry;
+            iter.m_Head = pTrack->m_QueuedStreams.m_Head;
+            qs = &iter.m_Curr->entry;
         }
         g_MusicTrackPrePauseStreamId = qs ? qs->StreamId : 0;
 
@@ -414,7 +402,7 @@ void Audio::AudioEventHandler(Event* pEvent, void*)
         float vol = len / maxDist;
         if (vol < minRatio)
             vol = minRatio;
-        maxDist = (maxDist + satDist) * 0.5f;
+        maxDist = (maxDist + satDist) / 2.0f;
         float fSpreadsheetVol;
         if (len < maxDist)
         {

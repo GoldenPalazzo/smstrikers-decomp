@@ -70,21 +70,21 @@ static inline BallCacheInfo* AddCacheEntry(PhysicsBall* pPhysicsBall)
 
 static inline void GetNextBallPosVelInline(nlVector3& v3BallPos, nlVector3& v3BallVel)
 {
-    nlDLListIterator<DLListEntry<BallCacheInfo*> >* cacheIter = FakeBallWorld::mpCacheIterator;
+    nlDLListIterator<BallCacheInfo*>* cacheIter = FakeBallWorld::mpCacheIterator;
 
-    if (cacheIter->m_current != NULL)
+    if (cacheIter->m_Curr != NULL)
     {
-        BallCacheInfo* info = cacheIter->m_current->entry;
+        BallCacheInfo* info = cacheIter->m_Curr->entry;
         v3BallPos = info->mv3Position;
         v3BallVel = info->mv3LinearVelocity;
 
-        if (nlDLRingIsEnd(cacheIter->m_head, cacheIter->m_current) || cacheIter->m_current == NULL)
+        if (nlDLRingIsEnd(cacheIter->m_Head, cacheIter->m_Curr) || cacheIter->m_Curr == NULL)
         {
-            cacheIter->m_current = NULL;
+            cacheIter->m_Curr = NULL;
         }
         else
         {
-            cacheIter->m_current = cacheIter->m_current->m_next;
+            cacheIter->m_Curr = cacheIter->m_Curr->m_next;
         }
         return;
     }
@@ -131,11 +131,11 @@ bool FakeBallWorld::FindBallIntercept(const nlVector3& v3PlayerPos, float fPlaye
 
     iter.m_current = nlDLRingGetStart(mBallCacheList.m_Head);
     iter.m_head = mBallCacheList.m_Head;
-    mpCacheIterator = reinterpret_cast<nlDLListIterator<DLListEntry<BallCacheInfo*> >*>(&iter);
+    mpCacheIterator = reinterpret_cast<nlDLListIterator<BallCacheInfo*>*>(&iter);
 
-    if (mpCacheIterator->m_current != NULL)
+    if (mpCacheIterator->m_Curr != NULL)
     {
-        if (nlDLRingIsEnd(mpCacheIterator->m_head, mpCacheIterator->m_current) || iter.m_current == NULL)
+        if (nlDLRingIsEnd(mpCacheIterator->m_Head, mpCacheIterator->m_Curr) || iter.m_current == NULL)
         {
             iter.m_current = NULL;
         }
@@ -185,20 +185,20 @@ bool FakeBallWorld::FindBallIntercept(const nlVector3& v3PlayerPos, float fPlaye
  */
 void FakeBallWorld::GetNextBallPosition(nlVector3& v3BallPos)
 {
-    if (mpCacheIterator->m_current != NULL)
+    if (mpCacheIterator->m_Curr != NULL)
     {
-        DLListEntry<BallCacheInfo*>* entry = mpCacheIterator->m_current;
+        DLListEntry<BallCacheInfo*>* entry = mpCacheIterator->m_Curr;
         BallCacheInfo* info = entry->entry;
         v3BallPos = info->mv3Position;
 
-        nlDLListIterator<DLListEntry<BallCacheInfo*> >* iter = mpCacheIterator;
-        if (nlDLRingIsEnd(iter->m_head, iter->m_current) || iter->m_current == NULL)
+        nlDLListIterator<BallCacheInfo*>* iter = mpCacheIterator;
+        if (nlDLRingIsEnd(iter->m_Head, iter->m_Curr) || iter->m_Curr == NULL)
         {
-            iter->m_current = NULL;
+            iter->m_Curr = NULL;
         }
         else
         {
-            iter->m_current = iter->m_current->m_next;
+            iter->m_Curr = iter->m_Curr->m_next;
         }
         return;
     }
@@ -243,11 +243,11 @@ void FakeBallWorld::ResetBallIterator()
 
     iter.m_current = nlDLRingGetStart(mBallCacheList.m_Head);
     iter.m_head = mBallCacheList.m_Head;
-    mpCacheIterator = reinterpret_cast<nlDLListIterator<DLListEntry<BallCacheInfo*> >*>(&iter);
+    mpCacheIterator = reinterpret_cast<nlDLListIterator<BallCacheInfo*>*>(&iter);
 
-    if (mpCacheIterator->m_current != NULL)
+    if (mpCacheIterator->m_Curr != NULL)
     {
-        if (nlDLRingIsEnd(mpCacheIterator->m_head, mpCacheIterator->m_current) || iter.m_current == NULL)
+        if (nlDLRingIsEnd(mpCacheIterator->m_Head, mpCacheIterator->m_Curr) || iter.m_current == NULL)
         {
             iter.m_current = NULL;
         }

@@ -1,3 +1,4 @@
+#define BASICSTRING_DELEGATING_CTOR
 #define BASICSTRING_INLINE_ERASE
 #include "Game/DB/StatsTracker.h"
 #include "Game/AI/FielderActions.h"
@@ -2475,7 +2476,7 @@ void Format(StringType& result,
 
 /**
  * Offset/Address/Size: 0x3DC | 0x801816A8 | size: 0x2D0
- * TODO: 99.22% match - remaining r29/r31 allocation for file handle and format cursor
+ * TODO: 99.42% match - string allocation data and copy cursor use r31/r30 instead of r30/r31
  */
 void StatsTracker::WriteCurrentlyPlaying() const
 {
@@ -2485,7 +2486,7 @@ void StatsTracker::WriteCurrentlyPlaying() const
         return;
     }
 
-    BasicString<char, Detail::TempStringAllocator> s = Format(BasicString<char, Detail::TempStringAllocator>("Home: {0} with {1}\nAway: {2} with {3}\nStadium: {4}\n"),
+    BasicString<char, Detail::TempStringAllocator> s = Format<BasicString<char, Detail::TempStringAllocator>, const char*, const char*, const char*, const char*, const char*>(BasicString<char, Detail::TempStringAllocator>("Home: {0} with {1}\nAway: {2} with {3}\nStadium: {4}\n"),
         GetTeamName(nlSingleton<GameInfoManager>::s_pInstance->GetTeam(0)),
         GetSidekickName(nlSingleton<GameInfoManager>::s_pInstance->GetSidekick(0)),
         GetTeamName(nlSingleton<GameInfoManager>::s_pInstance->GetTeam(1)),

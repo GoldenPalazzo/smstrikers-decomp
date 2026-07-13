@@ -56,7 +56,7 @@ void cRumbleFilter::Reset()
 
 /**
  * Offset/Address/Size: 0x0 | 0x801A621C | size: 0x284
- * TODO: 99.39% match - FP register allocation differs for delta and unit-vector temporaries
+ * TODO: 99.69% match - temporary FP registers differ during delta setup and unit-vector calculation
  */
 void cRumbleFilter::Update(float dt)
 {
@@ -66,13 +66,11 @@ void cRumbleFilter::Update(float dt)
     if (nlTaskManager::m_pInstance->m_CurrState == 1)
         return;
 
-    float step = 0.02f;
-    if (dt <= step)
-        step = dt;
+    float step = dt <= 0.02f ? dt : 0.02f;
 
     nlVector2 _p;
-    _p.f.y = v2Pos0.f.y - v2Pos1.f.y;
     _p.f.x = v2Pos0.f.x - v2Pos1.f.x;
+    _p.f.y = v2Pos0.f.y - v2Pos1.f.y;
     const float temp = (_p.f.x * _p.f.x) + (_p.f.y * _p.f.y);
     const float len = nlSqrt(temp, true);
     fHTerm = len * Ks;
@@ -80,7 +78,7 @@ void cRumbleFilter::Update(float dt)
     nlVector2 _dv;
     _dv.f.y = v2Vel0.f.y - v2Vel1.f.y;
     _dv.f.x = v2Vel0.f.x - v2Vel1.f.x;
-    float proj = (_dv.f.y * _p.f.y) + (_dv.f.x * _p.f.x);
+    float proj = (_dv.f.x * _p.f.x) + (_dv.f.y * _p.f.y);
     if (len == 0.0f)
     {
         fDTerm = 0.0f;
@@ -90,11 +88,11 @@ void cRumbleFilter::Update(float dt)
         fDTerm = (proj * Kd) / len;
     }
 
-    float uy, ux;
-    uy = 0.0f;
+    nlVector2 unit;
     if (len == 0.f)
     {
-        ux = 0.0f;
+        unit.f.y = 0.0f;
+        unit.f.x = 0.0f;
     }
     else
     {
@@ -114,16 +112,16 @@ void cRumbleFilter::Update(float dt)
         }
 
         float invLen = 1.0f / len;
-        uy = invLen * _p.f.y;
-        ux = invLen * _p.f.x;
+        unit.f.y = invLen * _p.f.y;
+        unit.f.x = invLen * _p.f.x;
     }
 
     nlVec2Set(v2Force0, 0.f, 0.f);
     nlVec2Set(v2Force1, 0.f, 0.f);
 
     float total = -(fHTerm + fDTerm);
-    float fx = total * ux;
-    float fy = total * uy;
+    float fx = total * unit.f.x;
+    float fy = total * unit.f.y;
     nlVec2Set(v2Force0,
         fx + v2Force0.f.x,
         fy + v2Force0.f.y);

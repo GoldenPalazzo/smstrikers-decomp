@@ -212,48 +212,34 @@ bool nlAsyncReadsPending(nlFile* file)
     return s_pAsyncManager->m_activeEntryList != nullptr;
 }
 
-static inline nlFile* nlLoadEntireFileOpen(const char* fileName)
+static inline unsigned int TDEVChunkFileSizeInline(_FILE* pFile)
 {
-    nlFile* pGCFile;
+    unsigned long uPos = ftell(pFile);
+    fseek(pFile, 0, 2);
+    unsigned long uSize = ftell(pFile);
+    fseek(pFile, uPos, 0);
+    return uSize;
+}
 
-    if (fileSystem == eGC_TDEV)
+static inline GCFile* TDEVChunkFileOpenInline(const char* fileName)
+{
+    _FILE* pFile = fopen(fileName, "rb");
+    GCFile* pGCFile;
+
+    if (pFile == NULL)
     {
-        FILE* pFile = fopen(fileName, "rb");
-        if (pFile == NULL)
-        {
-            pGCFile = NULL;
-        }
-        else
-        {
-            long uPos = ftell(pFile);
-            fseek(pFile, 0, 2);
-            pGCFile = (nlFile*)ftell(pFile);
-            fseek(pFile, uPos, 0);
-
-            if ((unsigned long)pGCFile == 0xFFFFFFFF)
-            {
-                pGCFile = NULL;
-            }
-            else
-            {
-                pGCFile = new TDEVChunkFile(pFile);
-                while (pFile == NULL)
-                {
-                }
-            }
-        }
+        pGCFile = NULL;
     }
     else
     {
-        s32 fileEntrynum = DVDConvertPathToEntrynum(fileName);
-        if (fileEntrynum == -1)
+        if (TDEVChunkFileSizeInline(pFile) == 0xFFFFFFFF)
         {
             pGCFile = NULL;
         }
         else
         {
-            pGCFile = new DolphinFile(fileEntrynum);
-            while (pGCFile == NULL)
+            pGCFile = new TDEVChunkFile(pFile);
+            while (pFile == NULL)
             {
             }
         }
@@ -262,11 +248,47 @@ static inline nlFile* nlLoadEntireFileOpen(const char* fileName)
     return pGCFile;
 }
 
+static inline GCFile* DolphinFileOpenInline(const char* fileName)
+{
+    long fileEntrynum = DVDConvertPathToEntrynum(fileName);
+    GCFile* pFile;
+
+    if (fileEntrynum == -1)
+    {
+        pFile = NULL;
+    }
+    else
+    {
+        pFile = new DolphinFile(fileEntrynum);
+        while (pFile == NULL)
+        {
+        }
+    }
+
+    return pFile;
+}
+
+static inline nlFile* nlLoadEntireFileOpen(const char* fileName)
+{
+    GCFile* pGCFile;
+
+    if (fileSystem == eGC_TDEV)
+    {
+        pGCFile = TDEVChunkFileOpenInline(fileName);
+    }
+    else
+    {
+        pGCFile = DolphinFileOpenInline(fileName);
+    }
+
+    return pGCFile;
+}
+
 static inline void* nlReadToVirtualMemoryInline(nlFile* file, void* buffer, unsigned int size, unsigned int chunkSize)
 {
-    unsigned int readSize;
     void* tempBuffer;
     unsigned int offset;
+    unsigned int readSize;
 
     tempBuffer = nlMalloc(chunkSize, 0x20, false);
     offset = 0;
@@ -289,13 +311,13 @@ static inline void* nlReadToVirtualMemoryInline(nlFile* file, void* buffer, unsi
 
 /**
  * Offset/Address/Size: 0x2F8 | 0x801CF04C | size: 0x2D0
- * TODO: 97.9% match - remaining saved-register cycle between file,
- * buffer, size, target, and open-path temporaries
+ * TODO: 99.4% match - remaining saved-register cycle between fileName,
+ * size, transferSize, target, and allocType
  */
 void* nlLoadEntireFileToVirtualMemory(const char* fileName, int* size, unsigned int transferSize, void* target, eAllocType allocType)
 {
     void* buffer = NULL;
-    nlFile* pGCFile = nlLoadEntireFileOpen(fileName);
+    nlFile* const pGCFile = nlLoadEntireFileOpen(fileName);
 
     if (pGCFile != NULL)
     {
@@ -421,83 +443,40 @@ AsyncEntry* nlDLRingGetStart<AsyncEntry>(AsyncEntry* current);
 template <>
 AsyncEntry* nlDLRingRemoveStart<AsyncEntry>(AsyncEntry**);
 
-/**
- * Offset/Address/Size: 0x72C | 0x801CF480 | size: 0x27C
- * TODO: 99.87% match - r30 vs r27 register allocation for manager (s_pAsyncManager)
- */
-void nlServiceFileSystem()
+static inline unsigned char CheckDVDStatus()
 {
-    extern void glxLoadSaveState(void);
-    extern void glxLoadRestoreState(void);
-
-    extern Function<void(int)> g_HandleDVDMessageCallback;
-    extern Function<void(int)> g_HandleDVDAllClearCallback;
-    extern Function<void(int)> g_HandleDVDRetryCB;
-    extern Function<FnVoidVoid> g_CheckForResetCB;
-
-    AsyncManager* const manager = s_pAsyncManager;
-    AsyncEntry* entry = manager->m_activeEntryList;
-    s32 driveStatus;
-    u8 loadedSaveState;
-
-    if (entry != NULL)
-    {
-        entry = entry->next;
-
-        if ((OSGetConsoleType() & 0x20000000) != 0)
-        {
-            OSYieldThread();
-        }
-
-        if (UpdateReadState(entry))
-        {
-            nlDLRingRemove<AsyncEntry>(&manager->m_activeEntryList, entry);
-            entry->m_pFile->PendingAsync.m_Count--;
-
-            if (entry->m_pFunc != NULL)
-            {
-                entry->m_pFunc(entry->m_pFile, entry->m_pBuffer, entry->m_uSize, entry->m_uParam);
-            }
-
-            nlDLRingAddEnd<AsyncEntry>(&manager->m_freeEntryList, entry);
-        }
-
-        return;
-    }
-
-    loadedSaveState = 0;
-    Function<void(int)>* handleDVDMessageCallback = &g_HandleDVDMessageCallback;
-    Function<FnVoidVoid>* checkForResetCB = &g_CheckForResetCB;
-    Function<void(int)>* handleDVDRetryCB = &g_HandleDVDRetryCB;
+    long Status;
+    unsigned char WasAProblem = 0;
 
     while (true)
     {
-        driveStatus = DVDGetDriveStatus();
+        Status = DVDGetDriveStatus();
+        u32 statusPlusOne = (u32)(Status + 1);
 
-        switch (driveStatus)
+        switch (statusPlusOne)
         {
-        case DVD_STATE_FATAL_ERROR:
-        case DVD_STATE_NO_DISK:
-        case DVD_STATE_COVER_OPEN:
-        case DVD_STATE_WRONG_DISK:
-        case DVD_STATE_RETRY:
-            if (!loadedSaveState)
+        case DVD_STATE_FATAL_ERROR + 1:
+        case DVD_STATE_NO_DISK + 1:
+        case DVD_STATE_COVER_OPEN + 1:
+        case DVD_STATE_WRONG_DISK + 1:
+        case DVD_STATE_RETRY + 1:
+            if (!WasAProblem)
             {
                 glxLoadSaveState();
             }
 
             if (g_HandleDVDMessageCallback.mTag == 1)
             {
-                handleDVDMessageCallback->mFreeFunction(driveStatus);
+                g_HandleDVDMessageCallback.mFreeFunction(Status);
             }
             else
             {
-                (*handleDVDMessageCallback->mFunctor)(driveStatus);
+                (*g_HandleDVDMessageCallback.mFunctor)(Status);
             }
 
-            loadedSaveState = 1;
+            WasAProblem = 1;
 
-            while (driveStatus == DVDGetDriveStatus())
+            while (Status == DVDGetDriveStatus())
             {
                 OSYieldThread();
 
@@ -505,28 +484,28 @@ void nlServiceFileSystem()
                 {
                     if (g_CheckForResetCB.mTag == 1)
                     {
-                        checkForResetCB->mFreeFunction();
+                        g_CheckForResetCB.mFreeFunction();
                     }
                     else
                     {
-                        checkForResetCB->mFunctor->operator()();
+                        g_CheckForResetCB.mFunctor->operator()();
                     }
                 }
             }
             break;
 
-        case DVD_STATE_BUSY:
-            if (loadedSaveState)
+        case DVD_STATE_BUSY + 1:
+            if (WasAProblem)
             {
                 if (g_HandleDVDRetryCB.mTag != 0)
                 {
                     if (g_HandleDVDRetryCB.mTag == 1)
                     {
-                        handleDVDRetryCB->mFreeFunction(1);
+                        g_HandleDVDRetryCB.mFreeFunction(1);
                     }
                     else
                     {
-                        (*handleDVDRetryCB->mFunctor)(1);
+                        (*g_HandleDVDRetryCB.mFunctor)(1);
                     }
                 }
 
@@ -538,23 +517,58 @@ void nlServiceFileSystem()
                     {
                         if (g_CheckForResetCB.mTag == 1)
                         {
-                            checkForResetCB->mFreeFunction();
+                            g_CheckForResetCB.mFreeFunction();
                         }
                         else
                         {
-                            checkForResetCB->mFunctor->operator()();
+                            g_CheckForResetCB.mFunctor->operator()();
                         }
                     }
                 }
             }
             break;
+
+        default:
+            break;
         }
 
-        if ((driveStatus == DVD_STATE_END) || (driveStatus == DVD_STATE_FATAL_ERROR))
+        if ((Status == DVD_STATE_END) || (Status == DVD_STATE_FATAL_ERROR))
         {
             break;
         }
     }
+
+    return WasAProblem;
+}
+
+inline int AsyncManager::Service()
+{
+    if (m_activeEntryList != NULL)
+    {
+        AsyncEntry* entry = m_activeEntryList->next;
+
+        if ((OSGetConsoleType() & 0x20000000) != 0)
+        {
+            OSYieldThread();
+        }
+
+        if (UpdateReadState(entry))
+        {
+            nlDLRingRemove<AsyncEntry>(&m_activeEntryList, entry);
+            entry->m_pFile->PendingAsync.m_Count--;
+
+            if (entry->m_pFunc != NULL)
+            {
+                entry->m_pFunc(entry->m_pFile, entry->m_pBuffer, entry->m_uSize, entry->m_uParam);
+            }
+
+            nlDLRingAddEnd<AsyncEntry>(&m_freeEntryList, entry);
+        }
+
+        return 1;
+    }
+
+    unsigned char loadedSaveState = CheckDVDStatus();
 
     if (loadedSaveState)
     {
@@ -572,6 +586,16 @@ void nlServiceFileSystem()
             (*g_HandleDVDAllClearCallback.mFunctor)(0);
         }
     }
+
+    return loadedSaveState;
+}
+
+/**
+ * Offset/Address/Size: 0x72C | 0x801CF480 | size: 0x27C
+ */
+void nlServiceFileSystem()
+{
+    s_pAsyncManager->Service();
 }
 
 /**
@@ -1026,103 +1050,6 @@ static unsigned char GameCubeReadAsync(GCFile* pFile, ReadAsyncCallback callback
 /**
  * Offset/Address/Size: 0x1308 | 0x801D005C | size: 0x6E0
  */
-static inline unsigned char CheckDVDStatus()
-{
-    long Status;
-    unsigned char WasAProblem = 0;
-
-    while (true)
-    {
-        Status = DVDGetDriveStatus();
-        u32 statusPlusOne = (u32)(Status + 1);
-
-        switch (statusPlusOne)
-        {
-        case DVD_STATE_FATAL_ERROR + 1:
-        case DVD_STATE_NO_DISK + 1:
-        case DVD_STATE_COVER_OPEN + 1:
-        case DVD_STATE_WRONG_DISK + 1:
-        case DVD_STATE_RETRY + 1:
-            if (!WasAProblem)
-            {
-                glxLoadSaveState();
-            }
-
-            if (g_HandleDVDMessageCallback.mTag == 1)
-            {
-                g_HandleDVDMessageCallback.mFreeFunction(Status);
-            }
-            else
-            {
-                (*g_HandleDVDMessageCallback.mFunctor)(Status);
-            }
-
-            WasAProblem = 1;
-
-            while (Status == DVDGetDriveStatus())
-            {
-                OSYieldThread();
-
-                if (g_CheckForResetCB.mTag != 0)
-                {
-                    if (g_CheckForResetCB.mTag == 1)
-                    {
-                        g_CheckForResetCB.mFreeFunction();
-                    }
-                    else
-                    {
-                        g_CheckForResetCB.mFunctor->operator()();
-                    }
-                }
-            }
-            break;
-
-        case DVD_STATE_BUSY + 1:
-            if (WasAProblem)
-            {
-                if (g_HandleDVDRetryCB.mTag != 0)
-                {
-                    if (g_HandleDVDRetryCB.mTag == 1)
-                    {
-                        g_HandleDVDRetryCB.mFreeFunction(1);
-                    }
-                    else
-                    {
-                        (*g_HandleDVDRetryCB.mFunctor)(1);
-                    }
-                }
-
-                while (DVDGetDriveStatus() == DVD_STATE_BUSY)
-                {
-                    OSYieldThread();
-
-                    if (g_CheckForResetCB.mTag != 0)
-                    {
-                        if (g_CheckForResetCB.mTag == 1)
-                        {
-                            g_CheckForResetCB.mFreeFunction();
-                        }
-                        else
-                        {
-                            g_CheckForResetCB.mFunctor->operator()();
-                        }
-                    }
-                }
-            }
-            break;
-
-        default:
-            break;
-        }
-
-        if ((Status == DVD_STATE_END) || (Status == DVD_STATE_FATAL_ERROR))
-        {
-            break;
-        }
-    }
-
-    return WasAProblem;
-}
 
 static inline void HandleGCIOErrors(GCFile* pFile)
 {

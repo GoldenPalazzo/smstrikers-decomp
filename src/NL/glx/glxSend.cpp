@@ -476,15 +476,22 @@ inline void glud_DirectionalLight(void* pData)
 {
     static u32 gxLights[4] = { 1, 2, 4, 8 };
 
-    u32 numLights = *(u32*)pData;
+    unsigned long* p32 = (unsigned long*)pData;
+    unsigned long numLights = *p32;
+    unsigned long lightMask;
+    int index;
+    GLDirectionalLightUserData* pLight;
+    GLDirectionalLightUserData* pEndLight;
+    u32* pGXLight;
+
     glx_ReloadPointLights = true;
     if (numLights != 0)
     {
-        GLDirectionalLightUserData* pLight = (GLDirectionalLightUserData*)((u8*)pData + 4);
-        GLDirectionalLightUserData* pEndLight = pLight + numLights;
-        u32* pGXLight = gxLights;
-        u32 lightMask = 0;
-        int index = 0;
+        pLight = (GLDirectionalLightUserData*)((u8*)pData + 4);
+        lightMask = 0;
+        index = 0;
+        pEndLight = pLight + numLights;
+        pGXLight = gxLights;
 
         while (pLight < pEndLight)
         {
@@ -493,12 +500,8 @@ inline void glud_DirectionalLight(void* pData)
                 break;
             }
 
-            GLDirectionalLightUserData* pCurrentLight = pLight;
             lightMask |= *pGXLight++;
-            GXLightID lightID = (GXLightID)gxLights[index++];
-            pLight++;
-
-            glx_LoadDirectionalLight(pCurrentLight, lightID);
+            glx_LoadDirectionalLight(pLight++, (GXLightID)gxLights[index++]);
         }
 
         if (g_bAllowLighting != 0)
