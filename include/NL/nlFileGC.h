@@ -42,6 +42,8 @@ public:
 class AsyncManager
 {
 public:
+    int Service();
+
     /* 0x000 */ AsyncEntry m_asyncEntries[64]; // size 0xA00
     /* 0xA00 */ AsyncEntry* m_freeEntryList;   // size 0x4
     /* 0xA04 */ AsyncEntry* m_activeEntryList; // size 0x4

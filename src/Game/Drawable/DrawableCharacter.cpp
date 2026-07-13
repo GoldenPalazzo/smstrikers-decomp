@@ -1045,6 +1045,7 @@ void DrawableCharacter::Render(SkinAnimatedMovableNPC& character) const
 
 /**
  * Offset/Address/Size: 0x2B8 | 0x80119168 | size: 0x5C4
+ * TODO: 96.25% match - pose accumulator/stride register ordering and morph-weight index scheduling remain.
  */
 void DrawableCharacter::Blend(const float* blendFactors, const DrawableCharacter& lhs, const DrawableCharacter& rhs)
 {
@@ -1077,20 +1078,22 @@ void DrawableCharacter::Blend(const float* blendFactors, const DrawableCharacter
     oneMinusT = one - rhsWeight;
     RotAccum* lhsRot;
     RotAccum* rhsRot;
+    cPoseAccumulator* lhsAccumulator = lhs.mPoseAccumulator;
+    cPoseAccumulator* rhsAccumulator = rhs.mPoseAccumulator;
     for (int i = 0; i < mPoseAccumulator->GetNumNodes(); i++)
     {
-        lhsRot = &lhs.mPoseAccumulator->m_rot.mData[i];
-        rhsRot = &rhs.mPoseAccumulator->m_rot.mData[i];
+        lhsRot = &lhsAccumulator->m_rot.mData[i];
+        rhsRot = &rhsAccumulator->m_rot.mData[i];
         float rhsRotAroundZWeight = rhsRot->rotAroundZAccumulatedWeight * rhsWeight;
         mPoseAccumulator->BlendRotAroundZ(i, lhsRot->rotAroundZ, lhsRot->rotAroundZAccumulatedWeight * oneMinusT);
         mPoseAccumulator->BlendRotAroundZ(i, rhsRot->rotAroundZ, rhsRotAroundZWeight);
         float rhsQuatWeight = rhsRot->quatAccumulatedWeight * rhsWeight;
         mPoseAccumulator->BlendRot(i, &lhsRot->q, lhsRot->quatAccumulatedWeight * oneMinusT, false);
         mPoseAccumulator->BlendRot(i, &rhsRot->q, rhsQuatWeight, false);
-        mPoseAccumulator->BlendTrans(i, &lhs.mPoseAccumulator->m_trans.mData[i].t, 1.0f - *blendFactors, false);
-        mPoseAccumulator->BlendTrans(i, &rhs.mPoseAccumulator->m_trans.mData[i].t, *blendFactors, false);
-        mPoseAccumulator->BlendScale(i, &lhs.mPoseAccumulator->m_scale.mData[i].s, 1.0f - *blendFactors, false);
-        mPoseAccumulator->BlendScale(i, &rhs.mPoseAccumulator->m_scale.mData[i].s, *blendFactors, false);
+        mPoseAccumulator->BlendTrans(i, &lhsAccumulator->m_trans.mData[i].t, 1.0f - *blendFactors, false);
+        mPoseAccumulator->BlendTrans(i, &rhsAccumulator->m_trans.mData[i].t, *blendFactors, false);
+        mPoseAccumulator->BlendScale(i, &lhsAccumulator->m_scale.mData[i].s, 1.0f - *blendFactors, false);
+        mPoseAccumulator->BlendScale(i, &rhsAccumulator->m_scale.mData[i].s, *blendFactors, false);
     }
     oneMinusT = one - *blendFactors;
     t = *blendFactors;

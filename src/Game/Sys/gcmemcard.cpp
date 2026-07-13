@@ -547,8 +547,7 @@ s32 MemCard::BeginCardAccess(const MemCardFunctor& Callback)
 
 /**
  * Offset/Address/Size: 0xF28 | 0x801CA698 | size: 0x3B4
- * TODO: 99.01% match - shift-up loop, header-size calculation, and cleanup
- * pEntry copy still keep different temp registers.
+ * TODO: 99.18% match - shift-up loop pEntry copy uses r0 instead of target r5.
  */
 long MemCard::CreateFile(const char* FileName, unsigned long FileSize, MemCard::ICON_CONFIG* pIconConfig, MemCard::MC_FILE*& pFile, const MemCardFunctor& Callback)
 {
@@ -621,6 +620,7 @@ long MemCard::CreateFile(const char* FileName, unsigned long FileSize, MemCard::
     long low = -1;
     long high;
     unsigned long id;
+    nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>* src;
     MC_FILE* entry;
     unsigned long count = m_OpenFiles.m_EntryCount;
     high = count;
@@ -643,8 +643,9 @@ long MemCard::CreateFile(const char* FileName, unsigned long FileSize, MemCard::
     {
         unsigned long prev = count - 1;
         nlSortedSlot<MemCard::MC_FILE, 16>::EntryLookup<MemCard::MC_FILE>* lookup = m_OpenFiles.m_pEntryLookup;
-        id = lookup[prev].hash;
-        entry = lookup[prev].pEntry;
+        src = lookup + prev;
+        id = src->hash;
+        entry = src->pEntry;
         lookup[count].pEntry = entry;
         lookup[count].hash = id;
         count = prev;

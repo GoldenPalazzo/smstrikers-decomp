@@ -1,3 +1,4 @@
+#define BASICSTRING_DELEGATING_CTOR
 #define BASICSTRING_INLINE_ERASE
 #pragma pool_data off
 
@@ -124,8 +125,8 @@ void TestTask::RunSmokeTest(float)
 
 /**
  * Offset/Address/Size: 0x0 | 0x8016C8FC | size: 0x424
- * TODO: 99.19% match - same this-pointer vs string-cursor register swap as
- * RunSmokeTest (r29/r31, plus knock-on r30/r29 in the two cleanup blocks).
+ * TODO: 99.60% match - the failure string's allocation pointer and scan cursor
+ * use r31/r30 instead of r30/r31.
  */
 void TestTask::RunFrameRateTest(float dt)
 {
@@ -144,14 +145,7 @@ void TestTask::RunFrameRateTest(float dt)
 
         if (mTestTimeOut <= 0.0f && !mFrameRateTestFailure)
         {
-            const char* filename = frameRateTestSuccessOutput;
-            void* file = nlOpenFileDebug(filename, false, false);
-            if (file)
-            {
-                nlWriteLineDebug(file, filename, false);
-                nlFlushFileDebug(file);
-                nlCloseFileDebug(file);
-            }
+            CreateSuccessFile(frameRateTestSuccessOutput);
             WriteToTestLog(this, Format(NLString("SUCCES: frame rate test successful, never dropped below {0}"), mMinimumFrameRate).c_str());
         }
     }

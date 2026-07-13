@@ -43,7 +43,7 @@ public:
     /* 0x18 */ bool mbHitSuccess;                // offset 0x18, size 0x1
     /* 0x1C */ dContactGeom mContactInfo;        // offset 0x1C, size 0x2C
 
-    static nlDLListIterator<DLListEntry<BallCacheInfo*> >* mpCacheIterator;
+    static nlDLListIterator<BallCacheInfo*>* mpCacheIterator;
     static nlDLListSlotPool<BallCacheInfo*> mBallCacheList;
     static float mfLastCacheTime;
     static FakeBallWorld* mpPredictWorld;

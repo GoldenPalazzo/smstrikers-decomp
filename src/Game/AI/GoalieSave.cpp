@@ -643,7 +643,7 @@ SaveData* GoalieSave::FindBestSave(SaveBlendInfo& blendInfo, const nlVector3& v3
 
 /**
  * Offset/Address/Size: 0x1A1C | 0x80054E3C | size: 0x5A4
- * TODO: 97.38% match - list cursor and milestone-scale loop registers still differ.
+ * TODO: 99.79% match - list cursor and milestone offsets use r27-r30 in a rotated order.
  */
 SaveData* GoalieSave::FindBestInList(SaveBlendInfo& blendInfo, nlListContainer<SaveData*>& SaveList, const nlVector3& v3LocalPos, float fTime, unsigned int uSaveType, bool bFromTakeoff)
 {
@@ -653,6 +653,8 @@ SaveData* GoalieSave::FindBestInList(SaveBlendInfo& blendInfo, nlListContainer<S
     nlVector3 v3AdjLocalPos;
     float fSaveTime;
     SaveData* pConnected;
+    int segment;
+    int anim;
     float fLastTime;
     float fThisTime;
     unsigned char bEmptySpot;
@@ -729,25 +731,9 @@ SaveData* GoalieSave::FindBestInList(SaveBlendInfo& blendInfo, nlListContainer<S
                     fClosest = fDistSq;
                     pClosest = pCur;
 
-                    blendInfo.mfStartTime = tempBlendInfo.mfStartTime;
-                    __memcpy(blendInfo.mfMilestoneTime, tempBlendInfo.mfMilestoneTime, 20);
+                    blendInfo = tempBlendInfo;
 
-                    __memcpy(&blendInfo.mfMilestoneScale[0][0], &tempBlendInfo.mfMilestoneScale[0][0], 80);
-
-                    blendInfo.mfSaveBlendPrimary = tempBlendInfo.mfSaveBlendPrimary;
-                    blendInfo.mfSaveBlendSecondary = tempBlendInfo.mfSaveBlendSecondary;
-                    blendInfo.mfSaveBlendComposite = tempBlendInfo.mfSaveBlendComposite;
-                    __memcpy(&blendInfo.mpSaveData[0], &tempBlendInfo.mpSaveData[0], 28);
-
-                    {
-                        float fStartAdj = blendInfo.mfMilestoneTime[2] - fTime;
-                        float fStartResult;
-                        if (fStartAdj <= 0.0f)
-                            fStartResult = 0.0f;
-                        else
-                            fStartResult = fStartAdj;
-                        blendInfo.mfStartTime = fStartResult;
-                    }
+                    blendInfo.mfStartTime = (0.0f >= blendInfo.mfMilestoneTime[2] - fTime) ? 0.0f : blendInfo.mfMilestoneTime[2] - fTime;
 
                     if (bFromTakeoff)
                     {
@@ -770,29 +756,26 @@ SaveData* GoalieSave::FindBestInList(SaveBlendInfo& blendInfo, nlListContainer<S
         bEmptySpot = 0;
 
         {
-            int i;
-
-            for (i = 0; i < 4; i++)
+            for (anim = 0; anim < 4; anim++)
             {
-                pConnected = blendInfo.mpSaveData[i];
+                pConnected = blendInfo.mpSaveData[anim];
                 if (pConnected == NULL)
                     continue;
 
                 {
                     fLastTime = 0.0f;
-                    int segment;
 
                     for (segment = 0; segment < 5; segment++)
                     {
                         fThisTime = pConnected->mfMilestonePercent[segment] * pConnected->mfDuration;
                         if (fThisTime > 0.0f)
                         {
-                            blendInfo.mfMilestoneScale[i][segment] = fThisTime - fLastTime;
+                            blendInfo.mfMilestoneScale[anim][segment] = fThisTime - fLastTime;
                             fLastTime = fThisTime;
                         }
                         else
                         {
-                            blendInfo.mfMilestoneScale[i][segment] = -1.0f;
+                            blendInfo.mfMilestoneScale[anim][segment] = -1.0f;
                             bEmptySpot = 1;
                         }
                     }
@@ -801,11 +784,10 @@ SaveData* GoalieSave::FindBestInList(SaveBlendInfo& blendInfo, nlListContainer<S
         }
 
         {
-            int i;
             fLastTime = 0.0f;
-            for (i = 0; i < 5; i++)
+            for (segment = 0; segment < 5; segment++)
             {
-                fThisTime = blendInfo.mfMilestoneTime[i];
+                fThisTime = blendInfo.mfMilestoneTime[segment];
                 if (fThisTime > 0.0f)
                 {
                     float fSegDuration = fThisTime - fLastTime;
@@ -813,49 +795,28 @@ SaveData* GoalieSave::FindBestInList(SaveBlendInfo& blendInfo, nlListContainer<S
                     fLastTime = fThisTime;
 
                     if (blendInfo.mpSaveData[0])
-                        blendInfo.mfMilestoneScale[0][i] *= fInvSegTime;
+                        blendInfo.mfMilestoneScale[0][segment] *= fInvSegTime;
                     if (blendInfo.mpSaveData[1])
-                        blendInfo.mfMilestoneScale[1][i] *= fInvSegTime;
+                        blendInfo.mfMilestoneScale[1][segment] *= fInvSegTime;
                     if (blendInfo.mpSaveData[2])
-                        blendInfo.mfMilestoneScale[2][i] *= fInvSegTime;
+                        blendInfo.mfMilestoneScale[2][segment] *= fInvSegTime;
                     if (blendInfo.mpSaveData[3])
-                        blendInfo.mfMilestoneScale[3][i] *= fInvSegTime;
+                        blendInfo.mfMilestoneScale[3][segment] *= fInvSegTime;
                 }
             }
         }
 
         if ((unsigned char)bEmptySpot)
         {
-            if (blendInfo.mfMilestoneTime[3] <= 0.0f)
+            for (segment = 3; segment >= 0; segment--)
             {
-                blendInfo.mfMilestoneScale[0][3] = blendInfo.mfMilestoneScale[0][4];
-                blendInfo.mfMilestoneScale[1][3] = blendInfo.mfMilestoneScale[1][4];
-                blendInfo.mfMilestoneScale[2][3] = blendInfo.mfMilestoneScale[2][4];
-                blendInfo.mfMilestoneScale[3][3] = blendInfo.mfMilestoneScale[3][4];
-            }
-
-            if (blendInfo.mfMilestoneTime[2] <= 0.0f)
-            {
-                blendInfo.mfMilestoneScale[0][2] = blendInfo.mfMilestoneScale[0][3];
-                blendInfo.mfMilestoneScale[1][2] = blendInfo.mfMilestoneScale[1][3];
-                blendInfo.mfMilestoneScale[2][2] = blendInfo.mfMilestoneScale[2][3];
-                blendInfo.mfMilestoneScale[3][2] = blendInfo.mfMilestoneScale[3][3];
-            }
-
-            if (blendInfo.mfMilestoneTime[1] <= 0.0f)
-            {
-                blendInfo.mfMilestoneScale[0][1] = blendInfo.mfMilestoneScale[0][2];
-                blendInfo.mfMilestoneScale[1][1] = blendInfo.mfMilestoneScale[1][2];
-                blendInfo.mfMilestoneScale[2][1] = blendInfo.mfMilestoneScale[2][2];
-                blendInfo.mfMilestoneScale[3][1] = blendInfo.mfMilestoneScale[3][2];
-            }
-
-            if (blendInfo.mfMilestoneTime[0] <= 0.0f)
-            {
-                blendInfo.mfMilestoneScale[0][0] = blendInfo.mfMilestoneScale[0][1];
-                blendInfo.mfMilestoneScale[1][0] = blendInfo.mfMilestoneScale[1][1];
-                blendInfo.mfMilestoneScale[2][0] = blendInfo.mfMilestoneScale[2][1];
-                blendInfo.mfMilestoneScale[3][0] = blendInfo.mfMilestoneScale[3][1];
+                if (blendInfo.mfMilestoneTime[segment] <= 0.0f)
+                {
+                    for (anim = 0; anim < 4; anim++)
+                    {
+                        blendInfo.mfMilestoneScale[anim][segment] = blendInfo.mfMilestoneScale[anim][segment + 1];
+                    }
+                }
             }
         }
 

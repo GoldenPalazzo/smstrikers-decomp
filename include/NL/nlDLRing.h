@@ -109,6 +109,9 @@ T* nlDLRingGetStart(T* current);
 template <typename T>
 T* nlDLRingGetStart(T* current)
 {
+#ifdef NLDLRING_GETSTART_DONT_INLINE
+    FORCE_DONT_INLINE;
+#endif
     if (current == NULL)
     {
         return NULL;
@@ -379,45 +382,47 @@ class nlDLListIterator
 {
 public:
     typedef T ValueType;
-    typedef T* Pointer;
-    typedef T& Reference;
+    typedef DLListEntry<T>* Pointer;
+    typedef DLListEntry<T>& Reference;
+
+    nlDLListIterator() { }
 
     nlDLListIterator(Pointer head)
     {
-        m_head = head;
-        m_current = (head ? head->m_next : 0);
-        m_first = true;
+        m_Head = head;
+        m_Curr = nlDLRingGetStart(head);
     }
 
     nlDLListIterator(Pointer head, Pointer current)
     {
-        m_head = head;
-        m_current = current;
-        // m_first = true;
+        m_Head = head;
+        m_Curr = current;
     }
 
-    bool hasNext() const { return (m_current != 0) && (m_first || m_current != m_head); }
+    ~nlDLListIterator() { }
+
+    bool hasNext() const { return m_Curr != 0; }
 
     Pointer next()
     {
         if (!hasNext())
             return 0;
 
-        Pointer ret = m_current;
-        m_current = m_current->m_next;
-        m_first = false;
+        Pointer ret = m_Curr;
+        if (ret == m_Head)
+            m_Curr = 0;
+        else
+            m_Curr = m_Curr->m_next;
         return ret;
     }
 
     void reset()
     {
-        m_current = (m_head ? m_head->m_next : 0);
-        m_first = true;
+        m_Curr = nlDLRingGetStart(m_Head);
     }
 
-    Pointer m_head;
-    Pointer m_current;
-    bool m_first;
+    Pointer m_Head;
+    Pointer m_Curr;
 };
 
 #endif // _NLDLRING_H_

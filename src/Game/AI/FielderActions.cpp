@@ -1,4 +1,5 @@
 #define BASICSTRING_COPY_REREAD_TEMP
+#define NLDLRING_GETSTART_DONT_INLINE
 
 #include "Game/AI/FielderActions.h"
 #include "Game/Camera/CameraMan.h"
@@ -3231,8 +3232,8 @@ static float FindSTSDistanceAffectedPercentage(cFielder* pFielder, float fMinAmo
  */
 /**
  * Offset/Address/Size: 0x16D0 | 0x80028308 | size: 0x1480
- * TODO: 99.09% match - remaining f0/f1 swap in green-region clamp,
- * camera-stack filter access shape, and camera/effect string register allocation
+ * TODO: 99.88% match - remaining f0/f1 swap in the green-region clamp
+ * and camera/effect string register allocation
  */
 void cFielder::ActionShootToScore(float)
 {
@@ -3582,7 +3583,7 @@ void cFielder::ActionShootToScore(float)
                     float fSpinRate = sfOtherMatrixCamSpinRate * (bIsSpinMirrored ? -1.0f : 1.0f);
                     pMatrixCam->mfSpinRate = fSpinRate;
 
-                    cBaseCamera* pCurrentCam = cCameraManager::m_cameraStack->m_next;
+                    cBaseCamera* pCurrentCam = nlDLRingGetStart<cBaseCamera>(cCameraManager::m_cameraStack);
                     const nlVector3& cameraPos = pCurrentCam->GetCameraPosition();
 
                     m_pPoseAccumulator->GetNodeMatrix(g_pCurrentlyUpdatingCharacter->m_nHeadJointIndex);
@@ -3619,11 +3620,11 @@ void cFielder::ActionShootToScore(float)
                         FireCameraRumbleFilter(0.0f, fIntensity);
                         sfTimeSinceLastRumbleFilter = 0.0f;
 
-                        cBaseCamera* pTopCam = cCameraManager::m_cameraStack->m_next;
+                        cBaseCamera* pTopCam = nlDLRingGetStart<cBaseCamera>(cCameraManager::m_cameraStack);
                         if (pTopCam->m_pFilter != NULL)
                         {
-                            cCameraManager::m_cameraStack->m_next->m_pFilter->Ks = sfHyperStrikeRumbleSpringConstant;
-                            cCameraManager::m_cameraStack->m_next->m_pFilter->Kd = sfHyperStrikeRumbleDampingConstant;
+                            cCameraManager::PeekCamera()->m_pFilter->Ks = sfHyperStrikeRumbleSpringConstant;
+                            cCameraManager::PeekCamera()->m_pFilter->Kd = sfHyperStrikeRumbleDampingConstant;
                         }
                     }
 
@@ -3683,7 +3684,7 @@ void cFielder::ActionShootToScore(float)
             {
                 if (m_pCurrentAnimController->TestTrigger(matrixCamStartTime))
                 {
-                    cBaseCamera* pCurrentCam = cCameraManager::m_cameraStack->m_next;
+                    cBaseCamera* pCurrentCam = nlDLRingGetStart<cBaseCamera>(cCameraManager::m_cameraStack);
                     const nlVector3& cameraPos = pCurrentCam->GetCameraPosition();
                     nlVector3* pBallPos = &g_pBall->m_v3Position;
 

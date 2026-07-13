@@ -1328,6 +1328,8 @@ unsigned char GameInfoManager::SetupBowserKnockout()
 
 /**
  * Offset/Address/Size: 0x7EF0 | 0x8017D594 | size: 0x2DC
+ * TODO: 97.92% match - register allocation differs for this, lineup,
+ * sidekick lineup, game pointer, loop counters, and final team value.
  */
 void GameInfoManager::SetupTournamentKnockout(eTeamID* lineup, eSidekickID* sklineup)
 {
@@ -1384,8 +1386,8 @@ void GameInfoManager::SetupTournamentKnockout(eTeamID* lineup, eSidekickID* skli
     *mCurrentCup->GetRoundResults(1) = 1;
     *mCurrentCup->GetRoundResults(2) = 1;
 
-    eTeamID* pLineup = lineup;
     eSidekickID* pSkLineup = sklineup;
+    eTeamID* pLineup = lineup;
 
     for (int i = 0; i < numGamesCount; i++)
     {
@@ -1429,21 +1431,30 @@ void GameInfoManager::SetupTournamentKnockout(eTeamID* lineup, eSidekickID* skli
         pSkLineup += 2;
     }
 
-    TeamStats* teamstats = mCurrentCup->GetTeamStats(0);
-
-    for (int i = 0; i < numplayingteams; i++)
     {
-        eTeamID team = lineup[i];
-        TeamStats* stat = &teamstats[i];
-
-        memset(&stat->mPlayerTotalStats, 0, 0x34);
-        stat->mPlayerTotalStats.mRecordType.mTeamID = team;
-        stat->mPlayerTotalStats.mType = TYPE_TEAM;
-        stat->mTeamIndex = team;
-        stat->mNumWins = 0;
-        stat->mNumLosses = 0;
-        stat->mNumOTLosses = 0;
-        stat->mNumPoints = 0;
+        eTeamID teamID;
+        TeamStats* returnedStats;
+        TeamStats* teamstats;
+        int k;
+        eTeamID* lineupPtr;
+        returnedStats = mCurrentCup->GetTeamStats(0);
+        lineupPtr = lineup;
+        k = 0;
+        teamstats = returnedStats;
+        for (; k < numplayingteams; k++)
+        {
+            teamID = *lineupPtr;
+            memset(&teamstats->mPlayerTotalStats, 0, sizeof(PlayerStats));
+            teamstats->mPlayerTotalStats.mRecordType.mTeamID = teamID;
+            teamstats->mPlayerTotalStats.mType = TYPE_TEAM;
+            teamstats->mTeamIndex = teamID;
+            teamstats->mNumWins = 0;
+            teamstats->mNumLosses = 0;
+            teamstats->mNumOTLosses = 0;
+            teamstats->mNumPoints = 0;
+            lineupPtr++;
+            teamstats++;
+        }
     }
 }
 
