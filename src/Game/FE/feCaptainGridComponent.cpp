@@ -437,47 +437,24 @@ ICaptainGridComponent::~ICaptainGridComponent()
 
 /**
  * Offset/Address/Size: 0x950 | 0x800C2044 | size: 0x228
- * TODO: 94.35% match - remaining constructor setup uses different registers for
- * g_e3_Build/item counts and copied CellItem load/store order.
  */
 ICaptainGridComponent::ICaptainGridComponent(TLComponentInstance* parentcomponent, bool ismirrored)
     : IGridComponent<eTeamID>(parentcomponent, "highlight", ismirrored)
 {
-    int numItems = 9;
-    if (g_e3_Build)
-    {
-        numItems = 4;
-    }
+    int numItems = g_e3_Build ? 4 : 9;
+    NUM_CAPTAIN_CELL_ITEMS = g_e3_Build ? 4 : 9;
 
-    int totalItems = 9;
-    if (g_e3_Build)
+    for (int i = 0; i < numItems; i++)
     {
-        totalItems = 4;
-    }
-    NUM_CAPTAIN_CELL_ITEMS = totalItems;
-
-    const CellItem* leipzigSrc = LeipzigCaptainCellItems;
-    CellItem* dst = CaptainCellItems;
-    const CellItem* normalSrc = NormalCaptainCellItems;
-
-    if (g_e3_Build)
-    {
-        for (int i = numItems; i > 0; i--)
+        if (g_e3_Build)
         {
-            dst->mIconName = leipzigSrc->mIconName;
-            dst->mIconType = leipzigSrc->mIconType;
-            dst++;
-            leipzigSrc++;
+            CaptainCellItems[i].mIconName = LeipzigCaptainCellItems[i].mIconName;
+            CaptainCellItems[i].mIconType = LeipzigCaptainCellItems[i].mIconType;
         }
-    }
-    else
-    {
-        for (int i = numItems; i > 0; i--)
+        else
         {
-            dst->mIconName = normalSrc->mIconName;
-            dst->mIconType = normalSrc->mIconType;
-            dst++;
-            normalSrc++;
+            CaptainCellItems[i].mIconName = NormalCaptainCellItems[i].mIconName;
+            CaptainCellItems[i].mIconType = NormalCaptainCellItems[i].mIconType;
         }
     }
 }

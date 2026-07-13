@@ -4,6 +4,13 @@
 #include <dolphin/card.h>
 #include "Game/Sys/gcmemcard.h"
 
+struct MCFILE_HEADER
+{
+    /* 0x0 */ unsigned long Size;
+    /* 0x4 */ unsigned long CRC;
+    /* 0x8 */ unsigned long IconCRC;
+}; // total size: 0xC
+
 void LoadMemoryCardIconData();
 
 class SaveLoad

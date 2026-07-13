@@ -222,6 +222,7 @@ public:
     void ActionSaveSetup(float);
     void ActionSaveReposition(float);
     void ActionSave(float);
+    void CheckForLimbEndZoneCollision();
     void ActionSTS(float);
     void ActionSTSSetup(float);
     void ActionSTSRecover(float);

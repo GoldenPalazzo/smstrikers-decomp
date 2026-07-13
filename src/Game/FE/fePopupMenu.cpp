@@ -204,15 +204,11 @@ void FEPopupMenu::CentrePopup(float totalHeight, float topOfMessageBox)
 /**
  * Offset/Address/Size: 0x620 | 0x800988CC | size: 0x8A0
  */
-/**
- * TODO: 99.09% match - remaining differences are in option placement
- * float register allocation.
- */
 void FEPopupMenu::SetPositions()
 {
     feVector3 optionPosition;
     float optionHeight;
-    float prevOptionHeight;
+    float prevOptionHeight = 0.0f;
     float totalHeight = 0.0f;
     float topOfMessage;
     FEPresentation* presentation;
@@ -254,10 +250,8 @@ void FEPopupMenu::SetPositions()
     };
     *(Copy88*)&drawInfo = *(Copy88*)&pText->m_DrawInfo;
     messageHeight = (float)(drawInfo.RowCount * pFont->m_Metrics.Height);
-    prevOptionHeight = messageHeight;
-    prevOptionHeight *= 0.5f;
     totalHeight += messageHeight;
-    topOfMessage = prevOptionHeight + messagePosition.e[1];
+    topOfMessage = messagePosition.e[1] + (messageHeight / 2.0f);
 
     if (messageHeight == 0.0)
     {
@@ -315,7 +309,7 @@ void FEPopupMenu::SetPositions()
         if (i2 == 0)
         {
             totalHeight += firstOptionSpacing;
-            optionY = (messagePosition.e[1] - prevOptionHeight) - (optionHeight / 2.0f) - firstOptionSpacing;
+            optionY = (messagePosition.e[1] - (messageHeight / 2.0f)) - (optionHeight / 2.0f) - firstOptionSpacing;
         }
         else
         {
@@ -323,8 +317,8 @@ void FEPopupMenu::SetPositions()
             optionY = optionPosition.e[1] - (prevOptionHeight / 2.0f) - (optionHeight / 2.0f) - otherOptionSpacing;
         }
 
-        optionPosition = pText->GetAssetPosition();
         prevOptionHeight = optionHeight;
+        optionPosition = pText->GetAssetPosition();
         optionPosition.e[1] = optionY;
         pText->SetAssetPosition(optionPosition.e[0], optionPosition.e[1], optionPosition.e[2]);
 
@@ -1094,65 +1088,6 @@ BasicString<unsigned short, Detail::TempStringAllocator>::BasicString(const unsi
         data->mRefCount = 1;
     }
     m_data = data;
-}
-
-/**
- * Offset/Address/Size: 0x1A0 | 0x8009C59C | size: 0x6B4
- */
-template <>
-void BasicString<unsigned short, Detail::TempStringAllocator>::insert(
-    unsigned short* at,
-    const unsigned short* begin,
-    const unsigned short* end)
-{
-    (*this)[0];
-    int offset = at - (m_data ? m_data->mData : (unsigned short*)0);
-    (*this)[0];
-    (*this)[0];
-
-    BasicStringData<unsigned short>* data = m_data;
-    unsigned short* dataPtr = data ? data->mData : (unsigned short*)0;
-    int size = end - begin;
-    int insertPos = (dataPtr + offset) - data->mData;
-    int newSize = data->mSize + size;
-
-    if (data->mCapacity < newSize)
-    {
-        Vector<unsigned short> newVec;
-        InitBasicStringVector(newVec, newSize);
-        int i = 0;
-        for (; i < data->mSize; i++)
-        {
-            newVec.mData[i] = data->mData[i];
-        }
-        newVec.mSize = data->mSize;
-        int newVecSize = newVec.mSize;
-        data->mSize = newVecSize;
-        newVec.mSize = newVecSize;
-
-        int oldCapacity = data->mCapacity;
-        data->mCapacity = newVec.mCapacity;
-        newVec.mCapacity = oldCapacity;
-
-        unsigned short* oldBuf = data->mData;
-        data->mData = newVec.mData;
-        newVec.mData = oldBuf;
-    }
-
-    unsigned short* insertAt = data->mData + insertPos;
-    unsigned short* t = data->mData + data->mSize - 1;
-    while (t >= insertAt)
-    {
-        *(t + size) = *t;
-        t--;
-    }
-    while (begin != end)
-    {
-        *insertAt = *begin;
-        begin++;
-        insertAt++;
-    }
-    data->mSize += size;
 }
 
 // /**

@@ -1319,17 +1319,12 @@ void Goalie::ActionSaveReposition(float deltaTime)
     DoNavigation(deltaTime, gfRepositionThreshold, NAVI_FACE_DESIRED);
 }
 
-/**
- * Offset/Address/Size: 0x20BC | 0x800505F8 | size: 0x51C
- * TODO: 99.37% match - animation time/reach threshold use f30 instead of target f31, with head-track load-order diffs
- */
-void Goalie::ActionSave(float)
+inline void Goalie::CheckForLimbEndZoneCollision()
 {
-    Audio::SoundAttributes sndAtr;
-    nlVector3 v3AdjPos;
-    nlVector3 v3HeadCopy;
-    nlVector3 v3LHandCopy;
     nlVector3 v3RHandCopy;
+    nlVector3 v3LHandCopy;
+    nlVector3 v3HeadCopy;
+    nlVector3 v3AdjPos;
 
     const nlVector3& v3LHandPos = GetJointPosition(m_nHeadJointIndex);
     v3HeadCopy = v3LHandPos;
@@ -1349,13 +1344,13 @@ void Goalie::ActionSave(float)
     const nlVector3& v3RHandPos = GetJointPosition(m_nRightHandJointIndex);
     v3RHandCopy = v3RHandPos;
     fAbsX = (float)fabs(v3RHandCopy.f.x);
-    float fLimit2 = cField::GetGoalLineX(1U) - 0.4f;
+    fLimit = cField::GetGoalLineX(1U) - 0.4f;
 
-    if (fAbsX > fLimit2)
+    if (fAbsX > fLimit)
     {
         if ((float)fabs(v3RHandCopy.f.y) > fNetY)
         {
-            float fDiff = fAbsX - fLimit2;
+            float fDiff = fAbsX - fLimit;
             if (fDiff > fDX)
             {
                 fDX = fDiff;
@@ -1367,11 +1362,11 @@ void Goalie::ActionSave(float)
     v3LHandCopy = v3LHandPos2;
     float fAbsX3 = (float)fabs(v3LHandCopy.f.x);
 
-    if (fAbsX3 > fLimit2)
+    if (fAbsX3 > fLimit)
     {
         if ((float)fabs(v3LHandCopy.f.y) > fNetY)
         {
-            float fDiff = fAbsX3 - fLimit2;
+            float fDiff = fAbsX3 - fLimit;
             if (fDiff > fDX)
             {
                 fDX = fDiff;
@@ -1389,10 +1384,19 @@ void Goalie::ActionSave(float)
         v3AdjPos.f.x = v3AdjPos.f.x + fDX;
         SetPosition(v3AdjPos);
     }
+}
+
+/**
+ * Offset/Address/Size: 0x20BC | 0x800505F8 | size: 0x51C
+ */
+void Goalie::ActionSave(float)
+{
+    CheckForLimbEndZoneCollision();
 
     SaveData* pSaveData = mpSaveData;
     float fTakeoffTime = pSaveData->mfMilestonePercent[1];
-    fDX = m_pCurrentAnimController->m_fTime;
+
+    float fDX = m_pCurrentAnimController->m_fTime;
     float fCrouchTime = pSaveData->mfMilestonePercent[0];
 
     if (fTakeoffTime <= 0.0f)
@@ -1402,40 +1406,42 @@ void Goalie::ActionSave(float)
         fCrouchTime = 0.4f * fGoalTime;
     }
 
-    if (fDX <= fTakeoffTime)
+    if (fDX <= fTakeoffTime && m_pBall == NULL)
     {
-        if (m_pBall == NULL)
+        float deflectResult = CheckForDelflectAwayFromNet();
+        if (deflectResult < 0.0f)
         {
-            float deflectResult = CheckForDelflectAwayFromNet();
-            if (deflectResult < 0.0f)
+            return;
+        }
+        if (deflectResult > 0.0f)
+        {
+            if (fDX < fCrouchTime)
             {
-                return;
+                mGoalieActionState = GOALIEACTION_SAVE_REPOSITION;
             }
-            if (deflectResult > 0.0f)
+            else
             {
-                if (fDX < fCrouchTime)
-                {
-                    mGoalieActionState = GOALIEACTION_SAVE_REPOSITION;
-                }
-                else
-                {
-                    mGoalieActionState = GOALIEACTION_PRE_CROUCH;
-                }
-                InitActionSaveSetup(false);
-                return;
+                mGoalieActionState = GOALIEACTION_PRE_CROUCH;
             }
+            InitActionSaveSetup(false);
+            return;
         }
     }
 
     if (mbDoHeadTrack)
     {
-        float dX = g_pBall->m_v3Position.f.x - m_v3Position.f.x;
-        float dZ = g_pBall->m_v3Position.f.y - m_v3Position.f.y;
+        float dX;
+        float dZ;
         float dY = 0.0f;
+        dZ = g_pBall->m_v3Position.f.y - m_v3Position.f.y;
+        dX = g_pBall->m_v3Position.f.x - m_v3Position.f.x;
         float distSq = dX * dX + dZ * dZ + dY;
-        float m00 = m_m4WorldMatrix.m[0][0];
-        float m01 = m_m4WorldMatrix.m[0][1];
-        float m02 = m_m4WorldMatrix.m[0][2];
+        float m00;
+        float m01;
+        float m02;
+        m02 = m_m4WorldMatrix.m[0][2];
+        m01 = m_m4WorldMatrix.m[0][1];
+        m00 = m_m4WorldMatrix.m[0][0];
         if (distSq < 9.0f || dX * m00 + dZ * m01 + dY * m02 < 0.0f)
         {
             mbDoHeadTrack = false;
@@ -1445,13 +1451,9 @@ void Goalie::ActionSave(float)
     if (fDX < mpSaveData->mfMilestonePercent[2])
     {
         float t = fDX / mpSaveData->mfMilestonePercent[2];
-        float smoothstep = -2.0f * t + 3.0f;
-        smoothstep = t * smoothstep;
-        smoothstep = t * smoothstep;
-        smoothstep = 1024.0f * smoothstep;
         s16 delta = (s16)(m_aDesiredFacingDirection - m_aActualFacingDirection);
-        s32 iSmooth = (s32)smoothstep;
-        u16 newFacing = (u16)(m_aActualFacingDirection + (iSmooth * delta) / 1024);
+        s32 adjustedDelta = ((s32)(1024.0f * (t * (t * ((-2.0f * t) + 3.0f)))) * delta) / 1024;
+        u16 newFacing = (u16)(adjustedDelta + m_aActualFacingDirection);
         SetFacingDirection(newFacing);
     }
 
@@ -1462,31 +1464,26 @@ void Goalie::ActionSave(float)
             if ((mpSaveData->muSaveType & 3) != 0)
             {
                 GoalieTweaks* pTweaks = (GoalieTweaks*)m_pTweaks;
-                float fReachSq = pTweaks->fSaveCatchTolerance * pTweaks->fSaveCatchTolerance;
+                fDX = pTweaks->fSaveCatchTolerance * pTweaks->fSaveCatchTolerance;
                 const nlVector3& v3LHand = GetJointPosition(m_nLeftHandJointIndex);
                 const nlVector3& v3RHand = GetJointPosition(m_nRightHandJointIndex);
 
-                float dX = g_pBall->m_v3Position.f.x - v3LHand.f.x;
-                float dY = g_pBall->m_v3Position.f.y - v3LHand.f.y;
-                float dZ = g_pBall->m_v3Position.f.z - v3LHand.f.z;
-                float distSqL = dX * dX + dY * dY + dZ * dZ;
+                float distSqL = CalculateDistanceSquared(g_pBall->m_v3Position, v3LHand);
 
-                if (distSqL < fReachSq)
+                if (distSqL < fDX)
                 {
                     goto do_catch;
                 }
 
-                dX = g_pBall->m_v3Position.f.x - v3RHand.f.x;
-                dY = g_pBall->m_v3Position.f.y - v3RHand.f.y;
-                dZ = g_pBall->m_v3Position.f.z - v3RHand.f.z;
-                float distSqR = dZ * dZ + dY * dY + dX * dX;
+                float distSqR = CalculateDistanceSquared(g_pBall->m_v3Position, v3RHand);
 
-                if (distSqR < fReachSq)
+                if (distSqR < fDX)
                 {
                 do_catch:
                     TacklePlayer(g_pBall->m_pOwner);
                     MakeSaveEvent(false);
 
+                    Audio::SoundAttributes sndAtr;
                     sndAtr.Init();
                     sndAtr.SetSoundType(0xC0, true);
                     sndAtr.UseStationaryPosVector(m_v3Position);

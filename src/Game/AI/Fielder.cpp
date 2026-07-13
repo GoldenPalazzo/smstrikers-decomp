@@ -5381,7 +5381,7 @@ bool cFielder::TestQueuedActions()
 
 /**
  * Offset/Address/Size: 0x2BB0 | 0x8001BEEC | size: 0x8BC
- * TODO: 99.62% match - zero-float literal label differs in ReceivingVolleyPass bool conversion.
+ * TODO: 99.68% match - pooled zero-float literal differs in ReceivingVolleyPass bool conversion.
  */
 void cFielder::TestButtonsRunning()
 {
@@ -5447,7 +5447,23 @@ void cFielder::TestButtonsRunning()
 
         if (bIsVolleyShotToMe)
         {
-            ((cFielder*)g_pBall->GetPassTargetFielder())->SetAttemptOneTouchShot();
+            cFielder* pOneTouchTarget = (cFielder*)g_pBall->GetPassTargetFielder();
+            bool shouldAttempt = false;
+
+            cGlobalPad* pad = pOneTouchTarget->GetGlobalPad();
+            if (pad != NULL)
+            {
+                GameTweaks* tweaks = g_pGame->m_pGameTweaks;
+                float pressure = pOneTouchTarget->GetGlobalPad()->GetPressure(PAD_AIM, true);
+                if (pressure > tweaks->unk2B0)
+                {
+                    shouldAttempt = true;
+                }
+            }
+
+            pOneTouchTarget->m_DesireReceivePassSharedVars.iAttemptOneTouchShot = shouldAttempt ? 2 : 1;
+            pOneTouchTarget->m_DesireReceivePassSharedVars.iAttemptOneTouchPass = 0;
+            pOneTouchTarget->m_DesireReceivePassSharedVars.pOneTouchPassTarget = NULL;
         }
         else if (CanLooseBallShoot())
         {

@@ -81,6 +81,9 @@ struct BasicStringData
     int mCapacity; // offset 0x8
     int mRefCount; // offset 0xC
 
+    void reserve(int capacity);
+    void insertRange(CharT* at, const CharT* begin, const CharT* end);
+
 #ifdef BASICSTRING_DELEGATING_CTOR
     BasicStringData(const CharT* text)
     {
@@ -566,46 +569,42 @@ static inline void InitBasicStringVector(Vector<CharT>& vec, int count)
     }
 }
 
-// TODO: 98.65% match - this/begin register swap and offset/new data register split.
-template <typename CharT, typename Allocator>
-void BasicString<CharT, Allocator>::insert(CharT* at, const CharT* begin, const CharT* end)
+template <typename CharT>
+inline void BasicStringData<CharT>::reserve(int capacity)
 {
-    (*this)[0];
-    int offset = at - (m_data ? m_data->mData : (CharT*)0);
-    (*this)[0];
-    (*this)[0];
-
-    BasicStringData<CharT>* data = m_data;
-    CharT* dataPtr = data ? data->mData : (CharT*)0;
-    int size = end - begin;
-    int insertPos = (dataPtr + offset) - data->mData;
-    int newSize = data->mSize + size;
-
-    if (data->mCapacity < newSize)
+    if (mCapacity < capacity)
     {
         Vector<CharT> newVec;
-        InitBasicStringVector(newVec, newSize);
+        InitBasicStringVector(newVec, capacity);
         int i = 0;
-        for (; i < data->mSize; i++)
+        for (; i < mSize; i++)
         {
-            newVec.mData[i] = data->mData[i];
+            newVec.mData[i] = mData[i];
         }
-        newVec.mSize = data->mSize;
+        newVec.mSize = mSize;
         int newVecSize = newVec.mSize;
-        data->mSize = newVecSize;
+        mSize = newVecSize;
         newVec.mSize = newVecSize;
 
-        int oldCapacity = data->mCapacity;
-        data->mCapacity = newVec.mCapacity;
+        int oldCapacity = mCapacity;
+        mCapacity = newVec.mCapacity;
         newVec.mCapacity = oldCapacity;
 
-        CharT* oldBuf = data->mData;
-        data->mData = newVec.mData;
+        CharT* oldBuf = mData;
+        mData = newVec.mData;
         newVec.mData = oldBuf;
     }
+}
 
-    at = data->mData + insertPos;
-    CharT* t = data->mData + data->mSize - 1;
+template <typename CharT>
+inline void BasicStringData<CharT>::insertRange(CharT* at, const CharT* begin, const CharT* end)
+{
+    int size = end - begin;
+    int offset = at - mData;
+    reserve(mSize + size);
+
+    at = mData + offset;
+    CharT* t = mData + mSize - 1;
     while (t >= at)
     {
         *(t + size) = *t;
@@ -617,7 +616,21 @@ void BasicString<CharT, Allocator>::insert(CharT* at, const CharT* begin, const 
         begin++;
         at++;
     }
-    data->mSize += size;
+    mSize += size;
+}
+
+// TODO: register assignments and stack frame still differ across insert instantiations.
+template <typename CharT, typename Allocator>
+void BasicString<CharT, Allocator>::insert(CharT* at, const CharT* begin, const CharT* end)
+{
+    (*this)[0];
+    int offset = at - (m_data ? m_data->mData : (CharT*)0);
+    (*this)[0];
+    (*this)[0];
+
+    BasicStringData<CharT>* data = m_data;
+    CharT* dataPtr = data ? data->mData : (CharT*)0;
+    data->insertRange(dataPtr + offset, begin, end);
 }
 
 #ifndef BASICSTRING_INLINE_ERASE

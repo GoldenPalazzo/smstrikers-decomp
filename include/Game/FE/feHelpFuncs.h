@@ -81,7 +81,7 @@ public:
     static void Build(Type, char*, int, int, int);
 };
 
-extern unsigned char PAD_COLOURS[4][3];
+extern const unsigned char PAD_COLOURS[4][3];
 
 namespace SingleHighlite
 {

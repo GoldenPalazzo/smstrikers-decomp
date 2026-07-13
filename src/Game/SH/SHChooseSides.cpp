@@ -755,8 +755,6 @@ void SHChooseSides2::UpdateChooseSideComponent(float fDeltaT)
 #pragma inline_depth(8)
 void SHChooseSides2::BindChooseSideInstances()
 {
-    extern unsigned char PAD_COLOURS[4][3];
-
     InlineHasher zH(0);
     FEPresentation* pPres = m_pFEPresentation;
 

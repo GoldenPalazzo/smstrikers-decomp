@@ -48,7 +48,6 @@ static const unsigned long DETAIL_NAMES[6][2] = {
 };
 static const int MILESTONE_GOALS[5] = { 100, 300, 100, 300, 1000 };
 extern u32 CONTROLLER_TEXT[4];
-extern u8 PAD_COLOURS[4][3];
 
 namespace SingleHighlite
 {

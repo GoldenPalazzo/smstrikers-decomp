@@ -435,8 +435,6 @@ static inline FEPresentation* GetScenePresentation(ChooseCaptainsSceneV2* pScene
 
 /**
  * Offset/Address/Size: 0xE4 | 0x800D6B2C | size: 0x47C
- * TODO: 99.79% match - the SetAssetColour argument address materializes one
- *       slot earlier than target, between li 0xff and the first pad colour load
  */
 void ChooseCaptainsSceneV2::BindChooseSideInstances()
 {
@@ -481,10 +479,6 @@ void ChooseCaptainsSceneV2::BindChooseSideInstances()
             InlineHasher(nlStringLowerHash("group")),
             InlineHasher(nlStringLowerHash(tempString)));
 
-        // colour.c[0] = PAD_COLOURS[0][0];
-        // colour.c[1] = PAD_COLOURS[i][1];
-        // colour.c[2] = PAD_COLOURS[i][2];
-        // colour.c[3] = 0xFF;
         nlColourSet(colour, PAD_COLOURS[i][0], PAD_COLOURS[i][1], PAD_COLOURS[i][2], 0xFF);
         mChooseSide.mInstanceTable[i + 8]->SetAssetColour(colour);
     }

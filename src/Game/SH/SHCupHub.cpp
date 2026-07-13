@@ -1414,6 +1414,7 @@ void CupHubScene::CreateBowserLeague()
 
 /**
  * Offset/Address/Size: 0x32FC | 0x800ED058 | size: 0xD1C
+ * TODO: 98.49% match - r14-r28 allocation and the colour temporary stack slot differ.
  */
 void CupHubScene::CreateKnockout()
 {
@@ -1638,8 +1639,8 @@ void CupHubScene::CreateKnockout()
         h9.m_Hash = hash;
 
         hash = nlStringLowerHash(CUP_HUB_LAYER_NAME);
-        hB.m_Hash = hash;
         hA.m_Hash = hash;
+        hB.m_Hash = hash;
 
         union
         {
@@ -1677,7 +1678,7 @@ void CupHubScene::CreateKnockout()
         colour = currentColour;
 
         volatile InlineHasher hB, hA, h9, h8, h6, h4, h2, h0;
-        volatile InlineHasher g5;
+        volatile InlineHasher g7, g6, g5;
         unsigned long hash;
 
         h0.m_Hash = 0;
@@ -1694,8 +1695,8 @@ void CupHubScene::CreateKnockout()
         h9.m_Hash = hash;
 
         hash = nlStringLowerHash(CUP_HUB_LAYER_NAME);
-        hB.m_Hash = hash;
         hA.m_Hash = hash;
+        hB.m_Hash = hash;
 
         {
             union
@@ -1720,7 +1721,7 @@ void CupHubScene::CreateKnockout()
         pComp->Update(0.0f);
 
         {
-            volatile InlineHasher g7, g6, g4, g3, g2, g1, g0;
+            volatile InlineHasher g4, g3, g2, g1, g0;
 
             g0.m_Hash = 0;
             h1.m_Hash = 0;
@@ -1793,7 +1794,9 @@ void CupHubScene::CreateKnockout()
                 (InlineHasher&)h1);
         }
 
-        if ((loserTeams[i / 2] == knockoutTeams[i]) && mHasHumanTeamPlayed)
+        eTeamID loserTeam = loserTeams[i / 2];
+
+        if ((loserTeam == knockoutTeams[i]) && mHasHumanTeamPlayed)
         {
             pXComponent->m_bVisible = true;
         }
@@ -1958,7 +1961,7 @@ void CupHubScene::CreateKnockout()
                 (InlineHasher&)h1);
         }
 
-        if ((loserTeams[i / 2] == knockoutTeams[i]) && mHasHumanTeamPlayed)
+        if ((loserTeam == knockoutTeams[i]) && mHasHumanTeamPlayed)
         {
             pXComponent->m_bVisible = true;
         }
@@ -2018,8 +2021,8 @@ void CupHubScene::CreateKnockout()
             h9.m_Hash = hash;
 
             hash = nlStringLowerHash(CUP_HUB_LAYER_NAME);
-            hB.m_Hash = hash;
             hA.m_Hash = hash;
+            hB.m_Hash = hash;
 
             union
             {
@@ -2060,8 +2063,8 @@ void CupHubScene::CreateKnockout()
             h9.m_Hash = hash;
 
             hash = nlStringLowerHash(CUP_HUB_LAYER_NAME);
-            hB.m_Hash = hash;
             hA.m_Hash = hash;
+            hB.m_Hash = hash;
 
             union
             {
@@ -2155,8 +2158,8 @@ void CupHubScene::CreateKnockout()
             h9.m_Hash = hash;
 
             hash = nlStringLowerHash(CUP_HUB_LAYER_NAME);
-            hB.m_Hash = hash;
             hA.m_Hash = hash;
+            hB.m_Hash = hash;
 
             union
             {
@@ -2195,8 +2198,8 @@ void CupHubScene::CreateKnockout()
         h9.m_Hash = hash;
 
         hash = nlStringLowerHash(CUP_HUB_LAYER_NAME);
-        hB.m_Hash = hash;
         hA.m_Hash = hash;
+        hB.m_Hash = hash;
 
         union
         {
@@ -2493,101 +2496,101 @@ unsigned char CupHubScene::UpdateKnockout8(float fDeltaT)
     }
 
     {
-    mDoAnimations = false;
-    UpdateProgressIndicator();
+        mDoAnimations = false;
+        UpdateProgressIndicator();
 
-    FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
+        FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
 
-    volatile InlineHasher hB, hA, h9, h8, h6, h4, h2, h0;
+        volatile InlineHasher hB, hA, h9, h8, h6, h4, h2, h0;
 
-    h0.m_Hash = 0;
-    h1.m_Hash = 0;
-    h2.m_Hash = 0;
-    h3.m_Hash = 0;
-    h4.m_Hash = 0;
-    h5.m_Hash = 0;
-    h6.m_Hash = 0;
-    h7.m_Hash = 0;
+        h0.m_Hash = 0;
+        h1.m_Hash = 0;
+        h2.m_Hash = 0;
+        h3.m_Hash = 0;
+        h4.m_Hash = 0;
+        h5.m_Hash = 0;
+        h6.m_Hash = 0;
+        h7.m_Hash = 0;
 
-    unsigned long hash = nlStringLowerHash("message");
-    h8.m_Hash = hash;
-    h9.m_Hash = hash;
+        unsigned long hash = nlStringLowerHash("message");
+        h8.m_Hash = hash;
+        h9.m_Hash = hash;
 
-    hash = nlStringLowerHash(CUP_HUB_LAYER_NAME);
-    hB.m_Hash = hash;
-    hA.m_Hash = hash;
+        hash = nlStringLowerHash(CUP_HUB_LAYER_NAME);
+        hB.m_Hash = hash;
+        hA.m_Hash = hash;
 
-    union
-    {
-        FindCompByValue byValue;
-        FindCompByRef byRef;
-    } findComp;
-    findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
+        union
+        {
+            FindCompByValue byValue;
+            FindCompByRef byRef;
+        } findComp;
+        findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
 
-    TLComponentInstance* pComp = findComp.byRef(
-        presentation->m_currentSlide,
-        (InlineHasher&)hB,
-        (InlineHasher&)h9,
-        (InlineHasher&)h7,
-        (InlineHasher&)h5,
-        (InlineHasher&)h3,
-        (InlineHasher&)h1);
+        TLComponentInstance* pComp = findComp.byRef(
+            presentation->m_currentSlide,
+            (InlineHasher&)hB,
+            (InlineHasher&)h9,
+            (InlineHasher&)h7,
+            (InlineHasher&)h5,
+            (InlineHasher&)h3,
+            (InlineHasher&)h1);
 
-    pComp->SetActiveSlide("Slide1");
-    pComp->Update(0.0f);
-    pComp->m_bVisible = true;
+        pComp->SetActiveSlide("Slide1");
+        pComp->Update(0.0f);
+        pComp->m_bVisible = true;
 
-    volatile InlineHasher g7, g6, g5, g4, g3, g2, g1, g0;
+        volatile InlineHasher g7, g6, g5, g4, g3, g2, g1, g0;
 
-    g0.m_Hash = 0;
-    h1.m_Hash = 0;
-    g1.m_Hash = 0;
-    h3.m_Hash = 0;
-    g2.m_Hash = 0;
-    h5.m_Hash = 0;
-    g3.m_Hash = 0;
-    h7.m_Hash = 0;
-    g4.m_Hash = 0;
-    g5.m_Hash = 0;
+        g0.m_Hash = 0;
+        h1.m_Hash = 0;
+        g1.m_Hash = 0;
+        h3.m_Hash = 0;
+        g2.m_Hash = 0;
+        h5.m_Hash = 0;
+        g3.m_Hash = 0;
+        h7.m_Hash = 0;
+        g4.m_Hash = 0;
+        g5.m_Hash = 0;
 
-    hash = nlStringLowerHash("Text");
-    g6.m_Hash = hash;
-    g7.m_Hash = hash;
+        hash = nlStringLowerHash("Text");
+        g6.m_Hash = hash;
+        g7.m_Hash = hash;
 
-    union
-    {
-        FindTextByValue byValue;
-        FindTextByRef byRef;
-    } findText;
-    findText.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
+        union
+        {
+            FindTextByValue byValue;
+            FindTextByRef byRef;
+        } findText;
+        findText.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
 
-    TLTextInstance* pText = findText.byRef(
-        pComp->GetActiveSlide(),
-        (InlineHasher&)g7,
-        (InlineHasher&)g5,
-        (InlineHasher&)h7,
-        (InlineHasher&)h5,
-        (InlineHasher&)h3,
-        (InlineHasher&)h1);
+        TLTextInstance* pText = findText.byRef(
+            pComp->GetActiveSlide(),
+            (InlineHasher&)g7,
+            (InlineHasher&)g5,
+            (InlineHasher&)h7,
+            (InlineHasher&)h5,
+            (InlineHasher&)h3,
+            (InlineHasher&)h1);
 
-    pText->SetStringId("STANDINGS_SEMI");
+        pText->SetStringId("STANDINGS_SEMI");
 
-    mHubState = HUB_KNOCKOUT4;
-    CreateKnockout();
+        mHubState = HUB_KNOCKOUT4;
+        CreateKnockout();
 
-    if (gHubKnockoutMovementSoundIsPlaying)
-    {
-        Audio::gWorldSFX.Stop((Audio::eWorldSFX)0x11, cGameSFX::SFX_STOP_FIRST);
-    }
+        if (gHubKnockoutMovementSoundIsPlaying)
+        {
+            Audio::gWorldSFX.Stop((Audio::eWorldSFX)0x11, cGameSFX::SFX_STOP_FIRST);
+        }
 
-    gHubKnockoutMovementSoundIsPlaying = false;
+        gHubKnockoutMovementSoundIsPlaying = false;
 
-    if (!mAllKnockoutAnimations && mPlayPopSound)
-    {
-        FEAudio::PlayAnimAudioEvent("sfx_standings_round_pop", false);
-        mPlayPopSound = false;
-    }
-    return 1;
+        if (!mAllKnockoutAnimations && mPlayPopSound)
+        {
+            FEAudio::PlayAnimAudioEvent("sfx_standings_round_pop", false);
+            mPlayPopSound = false;
+        }
+        return 1;
     }
 }
 

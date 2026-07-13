@@ -136,8 +136,8 @@ static inline u32 Div67(u32 n)
 
 /**
  * Offset/Address/Size: 0x1D0 | 0x801BFDF0 | size: 0xA38
- * TODO: 95.7% match - remaining stack-slot and register allocation diffs in
- * chunk parsing and animation cases
+ * TODO: 98.2% match - outer chunk stack slots and long-lived loader registers
+ * still differ
  */
 static glModel* glxLoadModelFromMemory(char* data, int size, unsigned long* pNumModels, bool bLoadTextures)
 {
@@ -145,6 +145,7 @@ static glModel* glxLoadModelFromMemory(char* data, int size, unsigned long* pNum
 
     bool hasBmdHeader = false;
     nlChunk* innerEnd;
+    u8* currentOuter;
     nlChunk* outerChunkPtr;
     nlChunk* outerEnd;
     nlChunk* chunkStart;
@@ -188,8 +189,9 @@ static glModel* glxLoadModelFromMemory(char* data, int size, unsigned long* pNum
 
         while (outerChunkPtr < outerEnd)
         {
-            chunk = (nlChunk*)((u8*)outerChunkPtr + 8);
-            innerEnd = (nlChunk*)((u8*)outerChunkPtr + outerChunkPtr->m_Size + 8);
+            currentOuter = (u8*)outerChunkPtr;
+            chunk = (nlChunk*)(currentOuter + 8);
+            innerEnd = (nlChunk*)(currentOuter + outerChunkPtr->m_Size + 8);
 
             while (chunk != innerEnd)
             {
@@ -334,11 +336,11 @@ static glModel* glxLoadModelFromMemory(char* data, int size, unsigned long* pNum
                 }
                 case BMD_CHUNK_MATERIAL_LIST:
                 {
+                    u8* pMatData;
                     u32 listId = *(u32*)chunkData;
-                    u8* pMatData = chunkData + 8;
+                    pMatData = chunkData + 8;
                     int numMats = *(int*)(chunkData + 4);
-                    GLMaterialList* pList = (GLMaterialList*)nlMalloc(0x0C, 8, false);
-                    new (pList) GLMaterialList();
+                    GLMaterialList* pList = new (nlMalloc(0x0C, 8, false)) GLMaterialList();
                     pList->m_uHashID = listId;
                     pList->SetMaterials(numMats, (const GLMaterialEntry*)pMatData);
                     glInventory.AddMaterialList(listId, pList);
@@ -354,9 +356,7 @@ static glModel* glxLoadModelFromMemory(char* data, int size, unsigned long* pNum
                     }
                     else
                     {
-                        u32 totalFree = nlVirtualTotalFree();
-                        u32 largestBlock = nlVirtualLargestBlock();
-                        OSReport("VIRTUAL MEMORY WARNING ~ NLVIRTUALALLOC had to fall back to MRAM\nLargest block: %d Total free: %d\n", largestBlock, totalFree);
+                        OSReport("VIRTUAL MEMORY WARNING ~ NLVIRTUALALLOC had to fall back to MRAM\nLargest block: %d Total free: %d\n", nlVirtualLargestBlock(), nlVirtualTotalFree());
                         pSkinChunk = (nlChunk*)nlMalloc(skinSize, 0x20, false);
                     }
                     memcpy(pSkinChunk, chunk, skinSize);
@@ -371,7 +371,7 @@ static glModel* glxLoadModelFromMemory(char* data, int size, unsigned long* pNum
                 chunk = (nlChunk*)((u8*)chunk + chunk->m_Size + 8);
             }
 
-            outerChunkPtr = (nlChunk*)((u8*)outerChunkPtr + outerChunkPtr->m_Size + 8);
+            outerChunkPtr = (nlChunk*)(currentOuter + outerChunkPtr->m_Size + 8);
 
             {
                 glModel* pM = pModels;
@@ -388,8 +388,9 @@ static glModel* glxLoadModelFromMemory(char* data, int size, unsigned long* pNum
             }
 
             {
+                int i;
                 glModelPacket* pPkt = pPackets;
-                for (int i = 0; i < numPacketEntries; i++)
+                for (i = 0; i < numPacketEntries; i++)
                 {
                     if (glGetRasterState(pPkt->state.raster, (eGLState)5) == 0)
                     {
@@ -446,16 +447,15 @@ static glModel* glxLoadModelFromMemory(char* data, int size, unsigned long* pNum
                         {
                             if (glGetRasterState(pPacket->state.raster, (eGLState)8) == 1)
                             {
-                                u8 numStreams = pPacket->numStreams;
-                                int newNum = numStreams + 1;
-                                glModelStream* pNewStreams = (glModelStream*)glResourceAlloc(newNum * 6, GLM_Header);
-                                memcpy(pNewStreams, pPacket->streams, numStreams * 6);
-                                glModelStream* pExtra = (glModelStream*)((u8*)pNewStreams + numStreams * 6);
-                                pExtra->id = 12;
-                                *(u32*)&pExtra->address = 0;
-                                pExtra->stride = (u8)gl_stream_stride[12];
+                                int oldNumStreams = pPacket->numStreams;
+                                int newNum = oldNumStreams + 1;
+                                glModelStream* streams = (glModelStream*)glResourceAlloc(newNum * sizeof(glModelStream), GLM_Header);
+                                memcpy(streams, pPacket->streams, oldNumStreams * sizeof(glModelStream));
+                                streams[oldNumStreams].id = 12;
+                                streams[oldNumStreams].address = 0;
+                                streams[oldNumStreams].stride = (u8)gl_stream_stride[12];
                                 pPacket->numStreams = (u8)(pPacket->numStreams + 1);
-                                pPacket->streams = pNewStreams;
+                                pPacket->streams = streams;
                             }
                         }
                         if (pPacket->indexBuffer != 0)
@@ -512,13 +512,6 @@ enum SkinChunkType
     SKIN_CHUNK_STITCHING = 0x1B010,
 };
 
-// Node for bone map list during load; layout matches BoneMapList but tree is Ul,Ul for file format.
-struct SkinMeshBoneMapNode
-{
-    SkinMeshBoneMapNode* m_next;
-    nlAVLTree<unsigned long, unsigned long, DefaultKeyCompare<unsigned long> > boneMap;
-};
-
 static u8* GetChunkDataPointer(nlChunk* chunk)
 {
     u32 id = chunk->m_ID;
@@ -533,8 +526,6 @@ static u8* GetChunkDataPointer(nlChunk* chunk)
 
 /**
  * Offset/Address/Size: 0xC08 | 0x801C0828 | size: 0x2A0
- * TODO: 98.7% match - loop counter/root register diffs remain in bone matrix
- * and bone map cases
  */
 GLSkinMesh* glx_MakeSkinMesh(nlChunk* outerChunk, glModel* models)
 {
@@ -543,8 +534,8 @@ GLSkinMesh* glx_MakeSkinMesh(nlChunk* outerChunk, glModel* models)
     mesh->pModel = models;
 
     u32 align;
-    u32 count;
     u32 i;
+    u32 count;
     nlChunk* chunkEnd = (nlChunk*)((u8*)outerChunk + outerChunk->m_Size + 8);
     u32 chunkSize;
     u8* data;
@@ -577,9 +568,8 @@ GLSkinMesh* glx_MakeSkinMesh(nlChunk* outerChunk, glModel* models)
             break;
         case 0x1B00A:
         {
-            i = 0;
             count = chunkSize / 0x44;
-            while (i < count)
+            for (i = 0; i < count; i++)
             {
                 u32 boneID = *(u32*)data;
                 nlMatrix4 src;
@@ -588,32 +578,23 @@ GLSkinMesh* glx_MakeSkinMesh(nlChunk* outerChunk, glModel* models)
                 data += 0x44;
                 nlInvertMatrix(inv, src);
                 mesh->SetBoneMatrix(boneID, &inv);
-                i++;
             }
             break;
         }
         case 0x1B00B:
         {
-            SkinMeshBoneMapNode* node = new (nlMalloc(sizeof(SkinMeshBoneMapNode), 8, false)) SkinMeshBoneMapNode;
+            BoneMapList* node = new (nlMalloc(sizeof(BoneMapList), 8, false)) BoneMapList;
 
-            i = 0;
-            node->m_next = NULL;
             count = chunkSize >> 3;
-            AVLTreeNode** root = (AVLTreeNode**)&node->boneMap.m_Root;
-            while (i < count)
+            node->m_next = NULL;
+            for (i = 0; i < count; i++)
             {
                 unsigned long key = *(u32*)(data + 0);
                 unsigned long value = *(u32*)(data + 4);
                 data += 8;
-                AVLTreeNode* existingNode;
-                node->boneMap.AddAVLNode(root, &key, &value, &existingNode, node->boneMap.m_NumElements);
-                if (existingNode == NULL)
-                {
-                    node->boneMap.m_NumElements++;
-                }
-                i++;
+                node->boneMap.Add(key, value);
             }
-            nlRingAddEnd<BoneMapList>(&mesh->boneMaps, (BoneMapList*)node);
+            nlRingAddEnd<BoneMapList>(&mesh->boneMaps, node);
             break;
         }
         case 0x1B00D:

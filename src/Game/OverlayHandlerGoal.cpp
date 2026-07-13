@@ -339,56 +339,15 @@ void GoalOverlay::eventHandler(Event* event, void* param)
  */
 void GoalOverlay::UpdateGoalInfo(int homeAway, int playerIndex, bool isCaptainS2S, int numGoals)
 {
-    typedef TLTextInstance* (*FindCompByValue)(FEPresentation*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-    typedef TLTextInstance* (*FindCompByRef)(FEPresentation*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
-
-    volatile InlineHasher hSlideB, hSlideA;
-    volatile InlineHasher hLayerB, hLayerA;
-    volatile InlineHasher hNameB, hNameA;
-    volatile InlineHasher h5, h4, h3, h2, h1, h0;
-
-    unsigned long hash;
-
     FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
 
-    h0.m_Hash = 0;
-    h1.m_Hash = 0;
-    h2.m_Hash = 0;
-    h3.m_Hash = 0;
-    h4.m_Hash = 0;
-    h5.m_Hash = 0;
-
-    hash = nlStringLowerHash("Name");
-    hNameA.m_Hash = hash;
-    hNameB.m_Hash = hash;
-
-    hash = nlStringLowerHash("Layer");
-    hLayerA.m_Hash = hash;
-    hLayerB.m_Hash = hash;
-
-    hash = nlStringLowerHash("Slide1");
-    hSlideA.m_Hash = hash;
-    hSlideB.m_Hash = hash;
+    TLTextInstance* pText = FEFinder<TLTextInstance, 3>::Find<FEPresentation>(
+        presentation,
+        InlineHasher(nlStringLowerHash("Slide1")),
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("Name")));
 
     bool isSuperTeam;
-
-    TLTextInstance* pText;
-    {
-        union
-        {
-            FindCompByValue byValue;
-            FindCompByRef byRef;
-        } findComp;
-        findComp.byValue = FEFinder<TLTextInstance, 3>::Find<FEPresentation>;
-        pText = findComp.byRef(
-            presentation,
-            (InlineHasher&)hSlideB,
-            (InlineHasher&)hLayerB,
-            (InlineHasher&)hNameB,
-            (InlineHasher&)h5,
-            (InlineHasher&)h3,
-            (InlineHasher&)h1);
-    }
 
     GameInfoManager* const gameInfo = nlSingleton<GameInfoManager>::s_pInstance;
     eTeamID team = (eTeamID)gameInfo->GetTeam((short)homeAway);
@@ -414,11 +373,15 @@ void GoalOverlay::UpdateGoalInfo(int homeAway, int playerIndex, bool isCaptainS2
 
     if (remainingTime >= 30.0)
     {
-        seconds = (unsigned long)(int)(float)ceil((double)fSeconds);
+        float roundedSeconds = (float)ceil((double)fSeconds);
+        int wholeSeconds = (int)roundedSeconds;
+        seconds = (unsigned long)wholeSeconds;
     }
     else
     {
-        seconds = (unsigned long)(int)(float)floor((double)fSeconds);
+        float roundedSeconds = (float)floor((double)fSeconds);
+        int wholeSeconds = (int)roundedSeconds;
+        seconds = (unsigned long)wholeSeconds;
     }
 
     if (seconds == 60)
@@ -470,41 +433,11 @@ void GoalOverlay::UpdateGoalInfo(int homeAway, int playerIndex, bool isCaptainS2
 
     memcpy(mClockBuffer, formatted.c_str(), 0x40);
 
-    h0.m_Hash = 0;
-    h1.m_Hash = 0;
-    h2.m_Hash = 0;
-    h3.m_Hash = 0;
-    h4.m_Hash = 0;
-    h5.m_Hash = 0;
-
-    hash = nlStringLowerHash("Time");
-    hNameA.m_Hash = hash;
-    hNameB.m_Hash = hash;
-
-    hash = nlStringLowerHash("Layer");
-    hLayerA.m_Hash = hash;
-    hLayerB.m_Hash = hash;
-
-    hash = nlStringLowerHash("Slide1");
-    hSlideA.m_Hash = hash;
-    hSlideB.m_Hash = hash;
-
-    {
-        union
-        {
-            FindCompByValue byValue;
-            FindCompByRef byRef;
-        } findComp;
-        findComp.byValue = FEFinder<TLTextInstance, 3>::Find<FEPresentation>;
-        pText = findComp.byRef(
-            presentation,
-            (InlineHasher&)hSlideB,
-            (InlineHasher&)hLayerB,
-            (InlineHasher&)hNameB,
-            (InlineHasher&)h5,
-            (InlineHasher&)h3,
-            (InlineHasher&)h1);
-    }
+    pText = FEFinder<TLTextInstance, 3>::Find<FEPresentation>(
+        presentation,
+        InlineHasher(nlStringLowerHash("Slide1")),
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("Time")));
 
     pText->SetString(mClockBuffer);
     pText->m_bVisible = true;
@@ -548,28 +481,8 @@ void GoalOverlay::UpdateGoalInfo(int homeAway, int playerIndex, bool isCaptainS2
         {
             unformatted = BasicString<unsigned short, Detail::TempStringAllocator>(LookupLocHash(0x78446837));
 
-            unsigned long teamLocID = GetLOCTeamName((eTeamID)team);
-            const unsigned short* teamLocString;
-
-            loc = g_pLocalization;
-            if (loc->m_LookupTable == 0)
-            {
-                teamLocString = LocalizationTableNotFound;
-            }
-            else
-            {
-                nlLocalization::StringLookup* entry = nlBSearch<nlLocalization::StringLookup, unsigned long>(teamLocID, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
-                if (entry)
-                {
-                    teamLocString = loc->m_FirstString + entry->StringOffset;
-                }
-                else
-                {
-                    teamLocString = MissingLocString;
-                }
-            }
-
-            BasicString<unsigned short, Detail::TempStringAllocator> teamNameStr(teamLocString);
+            BasicString<unsigned short, Detail::TempStringAllocator> teamNameStr(
+                LookupLocHash(GetLOCTeamName((eTeamID)team)));
             formatted = Format(unformatted, teamNameStr);
         }
         else if (playerIndex == 0 && mCaptainGoals[homeAway] == 3 && !isSuperTeam)
@@ -597,28 +510,8 @@ void GoalOverlay::UpdateGoalInfo(int homeAway, int playerIndex, bool isCaptainS2
 
             unformatted = BasicString<unsigned short, Detail::TempStringAllocator>(locString);
 
-            unsigned long teamLocID = GetLOCTeamName((eTeamID)team);
-            const unsigned short* teamLocString;
-
-            loc = g_pLocalization;
-            if (loc->m_LookupTable == 0)
-            {
-                teamLocString = LocalizationTableNotFound;
-            }
-            else
-            {
-                nlLocalization::StringLookup* entry = nlBSearch<nlLocalization::StringLookup, unsigned long>(teamLocID, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
-                if (entry)
-                {
-                    teamLocString = loc->m_FirstString + entry->StringOffset;
-                }
-                else
-                {
-                    teamLocString = MissingLocString;
-                }
-            }
-
-            BasicString<unsigned short, Detail::TempStringAllocator> teamNameStr(teamLocString);
+            BasicString<unsigned short, Detail::TempStringAllocator> teamNameStr(
+                LookupLocHash(GetLOCTeamName((eTeamID)team)));
             formatted = Format(unformatted, teamNameStr);
         }
         else if (playerIndex == 0)
@@ -646,28 +539,8 @@ void GoalOverlay::UpdateGoalInfo(int homeAway, int playerIndex, bool isCaptainS2
 
             unformatted = BasicString<unsigned short, Detail::TempStringAllocator>(locString);
 
-            unsigned long teamLocID = GetLOCTeamName((eTeamID)team);
-            const unsigned short* teamLocString;
-
-            loc = g_pLocalization;
-            if (loc->m_LookupTable == 0)
-            {
-                teamLocString = LocalizationTableNotFound;
-            }
-            else
-            {
-                nlLocalization::StringLookup* entry = nlBSearch<nlLocalization::StringLookup, unsigned long>(teamLocID, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
-                if (entry)
-                {
-                    teamLocString = loc->m_FirstString + entry->StringOffset;
-                }
-                else
-                {
-                    teamLocString = MissingLocString;
-                }
-            }
-
-            BasicString<unsigned short, Detail::TempStringAllocator> teamNameStr(teamLocString);
+            BasicString<unsigned short, Detail::TempStringAllocator> teamNameStr(
+                LookupLocHash(GetLOCTeamName((eTeamID)team)));
 
             BasicString<char, Detail::TempStringAllocator> numGoalsString(
                 LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(mCaptainGoals[homeAway]));
@@ -701,28 +574,8 @@ void GoalOverlay::UpdateGoalInfo(int homeAway, int playerIndex, bool isCaptainS2
 
             unformatted = BasicString<unsigned short, Detail::TempStringAllocator>(locString);
 
-            unsigned long teamLocID = GetLOCTeamName((eTeamID)team);
-            const unsigned short* teamLocString;
-
-            loc = g_pLocalization;
-            if (loc->m_LookupTable == 0)
-            {
-                teamLocString = LocalizationTableNotFound;
-            }
-            else
-            {
-                nlLocalization::StringLookup* entry = nlBSearch<nlLocalization::StringLookup, unsigned long>(teamLocID, loc->m_LookupTable, (int)loc->m_pFile->StringCount);
-                if (entry)
-                {
-                    teamLocString = loc->m_FirstString + entry->StringOffset;
-                }
-                else
-                {
-                    teamLocString = MissingLocString;
-                }
-            }
-
-            BasicString<unsigned short, Detail::TempStringAllocator> teamNameStr(teamLocString);
+            BasicString<unsigned short, Detail::TempStringAllocator> teamNameStr(
+                LookupLocHash(GetLOCTeamName((eTeamID)team)));
 
             BasicString<char, Detail::TempStringAllocator> numGoalsString(
                 LexicalCast<BasicString<char, Detail::TempStringAllocator>, int>(mSidekickGoals[homeAway]));
@@ -735,41 +588,11 @@ void GoalOverlay::UpdateGoalInfo(int homeAway, int playerIndex, bool isCaptainS2
 
     memcpy(mDescriptionBuffer, formatted.c_str(), 0x100);
 
-    h0.m_Hash = 0;
-    h1.m_Hash = 0;
-    h2.m_Hash = 0;
-    h3.m_Hash = 0;
-    h4.m_Hash = 0;
-    h5.m_Hash = 0;
-
-    hash = nlStringLowerHash("Description");
-    hNameA.m_Hash = hash;
-    hNameB.m_Hash = hash;
-
-    hash = nlStringLowerHash("Layer");
-    hLayerA.m_Hash = hash;
-    hLayerB.m_Hash = hash;
-
-    hash = nlStringLowerHash("Slide1");
-    hSlideA.m_Hash = hash;
-    hSlideB.m_Hash = hash;
-
-    {
-        union
-        {
-            FindCompByValue byValue;
-            FindCompByRef byRef;
-        } findComp;
-        findComp.byValue = FEFinder<TLTextInstance, 3>::Find<FEPresentation>;
-        pText = findComp.byRef(
-            presentation,
-            (InlineHasher&)hSlideB,
-            (InlineHasher&)hLayerB,
-            (InlineHasher&)hNameB,
-            (InlineHasher&)h5,
-            (InlineHasher&)h3,
-            (InlineHasher&)h1);
-    }
+    pText = FEFinder<TLTextInstance, 3>::Find<FEPresentation>(
+        presentation,
+        InlineHasher(nlStringLowerHash("Slide1")),
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("Description")));
 
     MakeTextBoxReallyWide(*pText);
     pText->SetString(mDescriptionBuffer);

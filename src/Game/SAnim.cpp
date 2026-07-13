@@ -14,6 +14,8 @@
 template <>
 void nlListAddStart<cSAnimCallback>(cSAnimCallback** head, cSAnimCallback* entry, cSAnimCallback** tail)
 {
+    FORCE_DONT_INLINE;
+
     if (tail != 0)
     {
         if (*head == 0)
@@ -432,39 +434,21 @@ void cSAnim::GetRootRot(float fTime, unsigned short* pRootRot) const
 
 /**
  * Offset/Address/Size: 0x1E0 | 0x801E93F4 | size: 0x10C
- * TODO: 99.00% match - first two word-copy loads are swapped and
- * interpolation setup keeps index in r5 instead of r7.
  */
-// #pragma inline_depth(8)
 void cSAnim::GetRootTrans(float t, nlVector3* out) const
 {
     if (m_nNumRootKeys != 0)
     {
         if (t == 1.0f || m_nNumRootKeys == 1)
         {
-            u32 w0;
-            u32 w1;
-            const nlVector3* pSrc = &m_pRootTrans[m_nNumRootKeys - 1];
-            w0 = pSrc->as_u32[0];
-            w1 = pSrc->as_u32[1];
-            out->as_u32[0] = w0;
-            out->as_u32[1] = w1;
-            out->as_u32[2] = pSrc->as_u32[2];
+            *out = m_pRootTrans[m_nNumRootKeys - 1];
             return;
         }
 
         float fRealIndex = t * (m_nNumRootKeys - 1);
-        register int nIndex0 = (int)fRealIndex;
-        int nIndex1 = nIndex0 + 1;
-        const nlVector3* pRootTrans = m_pRootTrans;
-        const nlVector3* pVal0 = &pRootTrans[nIndex0];
-        const nlVector3* pVal1 = &pRootTrans[nIndex1];
-        float fWeight = fRealIndex - nIndex0;
-        float fInvWeight = 1.0f - fWeight;
-
-        out->f.x = (fWeight * pVal1->f.x) + (fInvWeight * pVal0->f.x);
-        out->f.y = (fWeight * pVal1->f.y) + (fInvWeight * pVal0->f.y);
-        out->f.z = (fWeight * pVal1->f.z) + (fInvWeight * pVal0->f.z);
+        int nIndex = (int)fRealIndex;
+        float fWeight = fRealIndex - nIndex;
+        nlVec3WeightedSum(*out, 1.0f - fWeight, m_pRootTrans[nIndex], fWeight, m_pRootTrans[nIndex + 1]);
 
         return;
     }
@@ -476,7 +460,6 @@ void cSAnim::GetRootTrans(float t, nlVector3* out) const
 /**
  * Offset/Address/Size: 0x160 | 0x801E9374 | size: 0x80
  */
-#pragma inline_depth(0)
 void cSAnim::CreateCallback(float time, unsigned int param1, void (*funcCallback)(unsigned int))
 {
     cSAnimCallback* temp_r3;

@@ -258,9 +258,61 @@ void FESceneManager::QueueScenePush(BaseSceneHandler* pSceneHandler, const char*
     nlDLRingAddEnd(&m_pushPopMessageQueue.m_Head, entry);
 }
 
+static inline void AddSceneHandlerEntry(
+    BasicSlotPool<DLListEntry<BaseSceneHandler*> >& alloc,
+    DLListEntry<BaseSceneHandler*>** head,
+    BaseSceneHandler* const& pHandler)
+{
+    DLListEntry<BaseSceneHandler*>* entry = NULL;
+    BaseSceneHandler* localData = pHandler;
+
+    if (alloc.m_FreeList == NULL)
+    {
+        SlotPoolBase::BaseAddNewBlock(&alloc, sizeof(DLListEntry<BaseSceneHandler*>));
+    }
+
+    if (alloc.m_FreeList != NULL)
+    {
+        entry = (DLListEntry<BaseSceneHandler*>*)alloc.m_FreeList;
+        alloc.m_FreeList = alloc.m_FreeList->m_next;
+    }
+
+    if (entry != NULL)
+    {
+        entry->m_next = NULL;
+        entry->m_prev = NULL;
+        entry->entry = localData;
+    }
+
+    nlDLRingAddStart(head, entry);
+}
+
+static inline void LoadSceneInline(
+    BaseSceneHandler* pHandler,
+    const char* szFilename,
+    FESceneManager* pInstance)
+{
+    FEScene* pFEScene = new (nlMalloc(0x70, 8, false)) FEScene();
+    pFEScene->m_uHashID = nlStringLowerHash(szFilename);
+
+    if (!pFEScene->LoadPackage(szFilename))
+    {
+        nlPrintf("Error: failed to load package!\n");
+        nlBreak();
+    }
+    else
+    {
+        pFEScene->m_uRenderView = pInstance->m_uDefaultRenderView;
+        pHandler->m_pFEScene = pFEScene;
+        pHandler->SetPresentation(pFEScene->m_pFEPackage->GetPresentation());
+        pHandler->SceneCreated();
+        pHandler->InitializeSubHandlers();
+    }
+}
+
 /**
  * Offset/Address/Size: 0x540 | 0x8020DB8C | size: 0x270
- * TODO: 99.68% match - remaining r24/r27 swap for szFilename/pFEScene in push block
+ * TODO: 99.94% match - the scene handler value uses r27 instead of r24 in the push block
  */
 void FESceneManager::ProcessPushPopQueue()
 {
@@ -282,53 +334,15 @@ void FESceneManager::ProcessPushPopQueue()
 
         if (pPackagePushPopMessage->m_bPush != false)
         {
-            BaseSceneHandler* pHandler;
-            DLListEntry<BaseSceneHandler*>* sceneEntry = NULL;
-            FESceneManager* pInstance;
-            char* szFilename;
-            BaseSceneHandler* pSceneHandler = pPackagePushPopMessage->m_pSceneHandler;
+            AddSceneHandlerEntry(
+                pSceneManager->m_sceneHandlerStack.m_Allocator,
+                &pSceneManager->m_sceneHandlerStack.m_Head,
+                pPackagePushPopMessage->m_pSceneHandler);
 
-            if (pSceneManager->m_sceneHandlerStack.m_Allocator.m_FreeList == NULL)
-            {
-                SlotPoolBase::BaseAddNewBlock((SlotPoolBase*)&pSceneManager->m_sceneHandlerStack, sizeof(DLListEntry<BaseSceneHandler*>));
-            }
-
-            if (pSceneManager->m_sceneHandlerStack.m_Allocator.m_FreeList != NULL)
-            {
-                sceneEntry = (DLListEntry<BaseSceneHandler*>*)pSceneManager->m_sceneHandlerStack.m_Allocator.m_FreeList;
-                pSceneManager->m_sceneHandlerStack.m_Allocator.m_FreeList = pSceneManager->m_sceneHandlerStack.m_Allocator.m_FreeList->m_next;
-            }
-
-            if (sceneEntry != NULL)
-            {
-                sceneEntry->m_next = NULL;
-                sceneEntry->m_prev = NULL;
-                sceneEntry->entry = pSceneHandler;
-            }
-
-            nlDLRingAddStart(&pSceneManager->m_sceneHandlerStack.m_Head, sceneEntry);
-
-            pInstance = nlSingleton<FESceneManager>::s_pInstance;
-            pHandler = pPackagePushPopMessage->m_pSceneHandler;
-            szFilename = pPackagePushPopMessage->m_szFilename;
-
-            FEScene* pFEScene = new (nlMalloc(0x70, 8, false)) FEScene();
-
-            pFEScene->m_uHashID = nlStringLowerHash(szFilename);
-
-            if (!pFEScene->LoadPackage(szFilename))
-            {
-                nlPrintf("Error: failed to load package!\n");
-                nlBreak();
-            }
-            else
-            {
-                pFEScene->m_uRenderView = pInstance->m_uDefaultRenderView;
-                pHandler->m_pFEScene = pFEScene;
-                pHandler->SetPresentation(pFEScene->m_pFEPackage->GetPresentation());
-                pHandler->SceneCreated();
-                pHandler->InitializeSubHandlers();
-            }
+            LoadSceneInline(
+                pPackagePushPopMessage->m_pSceneHandler,
+                pPackagePushPopMessage->m_szFilename,
+                nlSingleton<FESceneManager>::s_pInstance);
         }
         else
         {

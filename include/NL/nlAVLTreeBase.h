@@ -256,6 +256,18 @@ public:
         return false;
     }
 
+    inline ValueType* Add(const KeyType& key, const ValueType& value)
+    {
+        AVLTreeNode* existingNode;
+        AddAVLNode((AVLTreeNode**)&m_Root, (void*)&key, (void*)&value, &existingNode, m_NumElements);
+        if (existingNode == NULL)
+        {
+            m_NumElements++;
+            return NULL;
+        }
+        return &CastUp(existingNode)->value;
+    }
+
 #ifdef NL_AVLTREEBASE_REVERSE_LINK_ORDER
     WEAKFUNC void DestroyTree(void (AVLTreeBase::*deleteFunc)(AVLTreeEntry<KeyType, ValueType>*));
     WEAKFUNC void DeleteValues();

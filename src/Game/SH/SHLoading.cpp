@@ -25,7 +25,6 @@
 #include "NL/gl/glTexture.h"
 
 extern nlLocalization* g_pLocalization;
-extern unsigned char PAD_COLOURS[4][3];
 extern unsigned long CONTROLLER_TEXT[4];
 extern const unsigned short LocalizationTableNotFound[];
 extern const unsigned short MissingLocString[];
