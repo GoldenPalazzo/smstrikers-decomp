@@ -9,65 +9,102 @@ struct CellItem
     const char* mIconName;
 };
 
-extern CellItem SidekickCellItems[4];
+static const CellItem SidekickCellItems[4] = {
+    { 0, "choose_sidek_toad" },
+    { 1, "choose_sidek_hammer" },
+    { 2, "choose_sidek_birdo" },
+    { 3, "choose_sidek_koopa" },
+};
 
 /**
- * Offset/Address/Size: 0x0 | 0x800C2810 | size: 0x34
+ * Offset/Address/Size: 0x648 | 0x800C2E58 | size: 0x48
  */
-void ISidekickGridComponent::SetVisibleInstanceTable(bool visible)
+ISidekickGridComponent::ISidekickGridComponent(TLComponentInstance* parentcomponent, bool ismirrored)
+    : IGridComponent<eSidekickID>(parentcomponent, "highlight", ismirrored)
 {
-    mInstanceTable[0]->m_bVisible = visible;
-    mInstanceTable[1]->m_bVisible = visible;
-    mInstanceTable[2]->m_bVisible = visible;
-    mInstanceTable[3]->m_bVisible = visible;
 }
 
 /**
- * Offset/Address/Size: 0x34 | 0x800C2844 | size: 0x70
+ * Offset/Address/Size: 0x5B4 | 0x800C2DC4 | size: 0x94
  */
-void ISidekickGridComponent::MoveHighlightToTarget(eSidekickID id)
+ISidekickGridComponent::~ISidekickGridComponent()
 {
-    int item;
-    switch (id)
+}
+
+/**
+ * Offset/Address/Size: 0x408 | 0x800C2C18 | size: 0x1AC
+ * TODO: 98.5% match - MWCC register allocation differs for this/activeslide
+ * and the second-loop table/index induction variables.
+ */
+void ISidekickGridComponent::BuildMapMenu()
+{
+    TLSlide* activeslide = mParentComponent->GetActiveSlide();
+
+    mInstanceTable = (TLInstance**)nlMalloc(0x10, 8, false);
+
+    for (int i = 0; i < 4; i++)
     {
-    case SK_TOAD:
-        item = 0;
-        break;
-    case SK_HAMMERBROS:
-        item = 1;
-        break;
-    case SK_BIRDO:
-        item = 2;
-        break;
-    case SK_KOOPA:
-        item = 3;
-        break;
-    default:
-        item = 0;
-        break;
+        mInstanceTable[SidekickCellItems[i].mIconType] = FEFinder<TLInstance, 2>::Find(activeslide,
+            InlineHasher(nlStringLowerHash(SidekickCellItems[i].mIconName)),
+            InlineHasher(0),
+            InlineHasher(0),
+            InlineHasher(0),
+            InlineHasher(0),
+            InlineHasher(0));
     }
-    mMapMenu->SetSelectedItem(item);
+
+    int itemIndexBase;
+    int i;
+    for (i = 0, itemIndexBase = 0; i < 2; i++, itemIndexBase += 2)
+    {
+        for (int j = 0, itemIndex = itemIndexBase; j < 2; j++, itemIndex++)
+        {
+            int leftIndex = itemIndex - 1;
+            if (((itemIndex % 2) - 1) < 0)
+            {
+                leftIndex = itemIndex + 1;
+            }
+
+            int rightIndex = itemIndex + 1;
+            if (((itemIndex % 2) + 1) >= 2)
+            {
+                rightIndex = itemIndex - 1;
+            }
+
+            int oppositeIndex = (itemIndex + 2) % 4;
+            int iconType = *(volatile int*)((unsigned char*)SidekickCellItems + itemIndex * sizeof(CellItem));
+
+            mMapMenu->AddItem(
+                iconType,
+                mInstanceTable[iconType],
+                SidekickCellItems[leftIndex].mIconType,
+                SidekickCellItems[rightIndex].mIconType,
+                SidekickCellItems[oppositeIndex].mIconType,
+                SidekickCellItems[oppositeIndex].mIconType,
+                true);
+        }
+    }
+
+    mMapMenu->SetSelectedItem(SidekickCellItems[0].mIconType);
 }
 
 /**
- * Offset/Address/Size: 0xA4 | 0x800C28B4 | size: 0x70
+ * Offset/Address/Size: 0x324 | 0x800C2B34 | size: 0xE4
  */
-eSidekickID ISidekickGridComponent::GetSelectedItem() const
+void ISidekickGridComponent::RebuildInstanceTable()
 {
-    int position = mMapMenu->GetSelectedItem();
+    TLSlide* activeslide = mParentComponent->GetActiveSlide();
 
-    switch (position)
+    for (int i = 0; i < 4; i++)
     {
-    case 0:
-        return SK_TOAD;
-    case 1:
-        return SK_HAMMERBROS;
-    case 2:
-        return SK_BIRDO;
-    case 3:
-        return SK_KOOPA;
-    default:
-        return SK_TOAD;
+        TLInstance* inst = FEFinder<TLInstance, 2>::Find<TLSlide>(
+            activeslide,
+            InlineHasher(nlStringLowerHash(SidekickCellItems[i].mIconName)),
+            InlineHasher(0));
+
+        int iconType = SidekickCellItems[i].mIconType;
+        mInstanceTable[iconType] = inst;
+        mMapMenu->ChangeItem(iconType, mInstanceTable[iconType]);
     }
 }
 
@@ -90,7 +127,7 @@ void ISidekickGridComponent::Update(eFEINPUT_PAD pad)
             mMapMenu->MoveLeft(false);
         }
 
-        FEAudio::PlayAnimAudioEvent("sfx_option_scroll_left", false);
+        FEAudio::PlayAnimAudioEvent("sfx_character_select_left", false);
     }
     else if (g_pFEInput->IsAutoPressed(pad, 0xC, true, NULL))
     {
@@ -103,17 +140,17 @@ void ISidekickGridComponent::Update(eFEINPUT_PAD pad)
             mMapMenu->MoveRight(false);
         }
 
-        FEAudio::PlayAnimAudioEvent("sfx_option_scroll_right", false);
+        FEAudio::PlayAnimAudioEvent("sfx_character_select_right", false);
     }
     else if (g_pFEInput->IsAutoPressed(pad, 0xD, true, NULL))
     {
         mMapMenu->MoveUp(false);
-        FEAudio::PlayAnimAudioEvent("sfx_option_scroll_up", false);
+        FEAudio::PlayAnimAudioEvent("sfx_character_select_up", false);
     }
     else if (g_pFEInput->IsAutoPressed(pad, 0xE, true, NULL))
     {
         mMapMenu->MoveDown(false);
-        FEAudio::PlayAnimAudioEvent("sfx_option_scroll_down", false);
+        FEAudio::PlayAnimAudioEvent("sfx_character_select_down", false);
     }
 
     if (oldSelected != mMapMenu->GetSelectedItem())
@@ -146,105 +183,67 @@ void ISidekickGridComponent::Update(eFEINPUT_PAD pad)
         }
     }
 
-    mMapMenu->Update(0.016666668f);
+    mMapMenu->Update(0.0f);
 }
 
 /**
- * Offset/Address/Size: 0x324 | 0x800C2B34 | size: 0xE4
+ * Offset/Address/Size: 0xA4 | 0x800C28B4 | size: 0x70
  */
-void ISidekickGridComponent::RebuildInstanceTable()
+eSidekickID ISidekickGridComponent::GetSelectedItem() const
 {
-    TLSlide* activeslide = mParentComponent->GetActiveSlide();
+    int position = mMapMenu->GetSelectedItem();
 
-    for (int i = 0; i < 4; i++)
+    switch (position)
     {
-        TLInstance* inst = FEFinder<TLInstance, 2>::Find<TLSlide>(
-            activeslide,
-            InlineHasher(nlStringLowerHash(SidekickCellItems[i].mIconName)),
-            InlineHasher(0));
-
-        int iconType = SidekickCellItems[i].mIconType;
-        mInstanceTable[iconType] = inst;
-        mMapMenu->ChangeItem(iconType, mInstanceTable[iconType]);
+    case 0:
+        return SK_TOAD;
+    case 1:
+        return SK_HAMMERBROS;
+    case 2:
+        return SK_BIRDO;
+    case 3:
+        return SK_KOOPA;
+    default:
+        return SK_TOAD;
     }
 }
 
 /**
- * Offset/Address/Size: 0x408 | 0x800C2C18 | size: 0x1AC
- * TODO: 97.4% match - register allocation: this=r26 instead of r27,
- * activeslide/this swapped, base=r31 instead of r25, itemIndex=r27 instead of
- * r31 in second loop
+ * Offset/Address/Size: 0x34 | 0x800C2844 | size: 0x70
  */
-#pragma opt_strength_reduction off
-void ISidekickGridComponent::BuildMapMenu()
+void ISidekickGridComponent::MoveHighlightToTarget(eSidekickID id)
 {
-    CellItem* pItem;
-    TLSlide* activeslide = mParentComponent->GetActiveSlide();
-
-    mInstanceTable = (TLInstance**)nlMalloc(0x10, 8, false);
-
-    pItem = SidekickCellItems;
-    for (int i = 0; i < 4; i++, pItem++)
+    int item;
+    switch (id)
     {
-        TLInstance* inst = FEFinder<TLInstance, 2>::Find(
-            activeslide,
-            InlineHasher(nlStringLowerHash(pItem->mIconName)),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0),
-            InlineHasher(0));
-
-        mInstanceTable[pItem->mIconType] = inst;
+    case SK_TOAD:
+        item = 0;
+        break;
+    case SK_HAMMERBROS:
+        item = 1;
+        break;
+    case SK_BIRDO:
+        item = 2;
+        break;
+    case SK_KOOPA:
+        item = 3;
+        break;
+    default:
+        item = 0;
+        break;
     }
-
-    for (int itemIndexBase = 0, i = 0; i < 2; i++, itemIndexBase += 2)
-    {
-        for (int j = 0, itemIndex = itemIndexBase; j < 2; j++, itemIndex++)
-        {
-            int leftIndex = itemIndex - 1;
-            if (((itemIndex % 2) - 1) < 0)
-            {
-                leftIndex = itemIndex + 1;
-            }
-
-            int rightIndex = itemIndex + 1;
-            if (((itemIndex % 2) + 1) >= 2)
-            {
-                rightIndex = itemIndex - 1;
-            }
-
-            int oppositeIndex = (itemIndex + 2) % 4;
-            int iconType = SidekickCellItems[itemIndex].mIconType;
-
-            mMapMenu->AddItem(
-                iconType,
-                mInstanceTable[iconType],
-                SidekickCellItems[leftIndex].mIconType,
-                SidekickCellItems[rightIndex].mIconType,
-                SidekickCellItems[oppositeIndex].mIconType,
-                SidekickCellItems[oppositeIndex].mIconType,
-                true);
-        }
-    }
-
-    mMapMenu->SetSelectedItem(SidekickCellItems[0].mIconType);
-}
-#pragma opt_strength_reduction on
-
-/**
- * Offset/Address/Size: 0x5B4 | 0x800C2DC4 | size: 0x94
- */
-ISidekickGridComponent::~ISidekickGridComponent()
-{
+    mMapMenu->SetSelectedItem(item);
 }
 
 /**
- * Offset/Address/Size: 0x648 | 0x800C2E58 | size: 0x48
+ * Offset/Address/Size: 0x0 | 0x800C2810 | size: 0x34
  */
-ISidekickGridComponent::ISidekickGridComponent(TLComponentInstance* parentcomponent, bool ismirrored)
-    : IGridComponent<eSidekickID>(parentcomponent, "highlight", ismirrored)
+void ISidekickGridComponent::SetVisibleInstanceTable(bool visible)
 {
+    mInstanceTable[0]->m_bVisible = visible;
+    mInstanceTable[1]->m_bVisible = visible;
+    mInstanceTable[2]->m_bVisible = visible;
+    mInstanceTable[3]->m_bVisible = visible;
 }
 
 // /**
