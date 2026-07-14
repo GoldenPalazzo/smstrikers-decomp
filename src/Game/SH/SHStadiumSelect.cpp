@@ -73,81 +73,6 @@ static inline int WrapStadiumIndex(int index)
     return index % 7;
 }
 
-// /**
-//  * Offset/Address/Size: 0x4EC | 0x800D9F60 | size: 0x15C
-//  */
-// void FEFinder<TLImageInstance, 2>::_Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned
-// long,
-//                                                      unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x468 | 0x800D9EDC | size: 0x84
-//  */
-// void FEFinder<TLImageInstance, 2>::_Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long,
-//                                                   unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x430 | 0x800D9EA4 | size: 0x38
-//  */
-// void FEFinder<TLImageInstance, 2>::Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher,
-//                                                  InlineHasher)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x2D4 | 0x800D9D48 | size: 0x15C
-//  */
-// void FEFinder<TLComponentInstance, 4>::_Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long,
-//                                                          unsigned long, unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x250 | 0x800D9CC4 | size: 0x84
-//  */
-// void FEFinder<TLComponentInstance, 4>::_Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned
-// long,
-//                                                       unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x218 | 0x800D9C8C | size: 0x38
-//  */
-// void FEFinder<TLComponentInstance, 4>::Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher,
-//                                                      InlineHasher)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0xBC | 0x800D9B30 | size: 0x15C
-//  */
-// void FEFinder<TLTextInstance, 3>::_Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned
-// long,
-//                                                     unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x38 | 0x800D9AAC | size: 0x84
-//  */
-// void FEFinder<TLTextInstance, 3>::_Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long,
-//                                                  unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800D9A74 | size: 0x38
-//  */
-// void FEFinder<TLTextInstance, 3>::Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher,
-//                                                 InlineHasher)
-// {
-// }
-
 /**
  * Offset/Address/Size: 0x1400 | 0x800D9980 | size: 0xF4
  */
@@ -569,7 +494,6 @@ void StadiumSelectSceneV2::SceneCreated()
 
 /**
  * Offset/Address/Size: 0x210 | 0x800D8790 | size: 0x5C4
- * TODO: 98.90% match - stadium entry lookup high-slot store/load scheduling
  */
 void StadiumSelectSceneV2::Update(float dt)
 {
@@ -583,13 +507,9 @@ void StadiumSelectSceneV2::Update(float dt)
     }
 
     m_pTicker->Update(dt);
-
     {
         bool rightPressed = g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xC, true, NULL);
         bool leftPressed = g_pFEInput->IsAutoPressed(FE_ALL_PADS, 0xB, true, NULL);
-
-        volatile int stadiumIndex;
-        volatile InlineHasher hA_1, hB_1, h9_1, h8_1, hz7, h6_1, hz5, h4_1, hz3, h2_1, hz1, h0_1;
 
         if (!rightPressed && !leftPressed)
         {
@@ -618,37 +538,10 @@ void StadiumSelectSceneV2::Update(float dt)
         m_pFEPresentation->SetActiveSlide(rightPressed ? "LEFT" : "RIGHT");
 
         {
-            typedef TLComponentInstance* (*CFindByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-            typedef TLComponentInstance* (*CFindByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
-            union
-            {
-                CFindByValue byValue;
-                CFindByRef byRef;
-            } find;
-            find.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
-            unsigned long hash;
-            h0_1.m_Hash = 0;
-            hz1.m_Hash = 0;
-            h2_1.m_Hash = 0;
-            hz3.m_Hash = 0;
-            h4_1.m_Hash = 0;
-            hz5.m_Hash = 0;
-            h6_1.m_Hash = 0;
-            hz7.m_Hash = 0;
-            hash = nlStringLowerHash("buttons");
-            h8_1.m_Hash = hash;
-            h9_1.m_Hash = hash;
-            hash = nlStringLowerHash("Layer");
-            hA_1.m_Hash = hash;
-            hB_1.m_Hash = hash;
-            TLComponentInstance* buttonsComp = find.byRef(
+            TLComponentInstance* buttonsComp = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
                 m_pFEPresentation->m_currentSlide,
-                (InlineHasher&)hA_1,
-                (InlineHasher&)h9_1,
-                (InlineHasher&)hz7,
-                (InlineHasher&)hz5,
-                (InlineHasher&)hz3,
-                (InlineHasher&)hz1);
+                InlineHasher(nlStringLowerHash("Layer")),
+                InlineHasher(nlStringLowerHash("buttons")));
             mButtons.mButtonInstance = buttonsComp;
             mButtons.SetState(ButtonComponent::BS_A_AND_B);
         }
@@ -679,44 +572,12 @@ void StadiumSelectSceneV2::Update(float dt)
         mLastDirection = (Direction)(rightPressed == 0 ? 1 : 0);
         FEAudio::PlayAnimAudioEvent("sfx_toggle_stadium", false);
 
-        stadiumIndex = mStadiumIndex;
-        eStadiumID sid = StadiumEntries[stadiumIndex].stadiumID;
+        eStadiumID sid = StadiumEntries[mStadiumIndex].stadiumID;
 
-        TLTextInstance* nameText;
-        {
-            typedef TLTextInstance* (*TFindByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-            typedef TLTextInstance* (*TFindByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
-            union
-            {
-                TFindByValue byValue;
-                TFindByRef byRef;
-            } find;
-            find.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
-            volatile InlineHasher hA, hB, h9, h8, h6, h4, h2, h0;
-            unsigned long hash;
-            h0.m_Hash = 0;
-            hz1.m_Hash = 0;
-            h2.m_Hash = 0;
-            hz3.m_Hash = 0;
-            h4.m_Hash = 0;
-            hz5.m_Hash = 0;
-            h6.m_Hash = 0;
-            hz7.m_Hash = 0;
-            hash = nlStringLowerHash("stadiumname");
-            h8.m_Hash = hash;
-            h9.m_Hash = hash;
-            hash = nlStringLowerHash("Layer");
-            hA.m_Hash = hash;
-            hB.m_Hash = hash;
-            nameText = find.byRef(
-                m_pFEPresentation->m_currentSlide,
-                (InlineHasher&)hA,
-                (InlineHasher&)h9,
-                (InlineHasher&)hz7,
-                (InlineHasher&)hz5,
-                (InlineHasher&)hz3,
-                (InlineHasher&)hz1);
-        }
+        TLTextInstance* nameText = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
+            m_pFEPresentation->m_currentSlide,
+            InlineHasher(nlStringLowerHash("Layer")),
+            InlineHasher(nlStringLowerHash("stadiumname")));
 
         {
             bool isUnlocked = true;
@@ -749,38 +610,10 @@ void StadiumSelectSceneV2::Update(float dt)
         }
 
         {
-            typedef TLTextInstance* (*TFindByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-            typedef TLTextInstance* (*TFindByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
-            union
-            {
-                TFindByValue byValue;
-                TFindByRef byRef;
-            } find;
-            find.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
-            volatile InlineHasher hA, hB, h9, h8, h6, h4, h2, h0;
-            unsigned long hash;
-            h0.m_Hash = 0;
-            hz1.m_Hash = 0;
-            h2.m_Hash = 0;
-            hz3.m_Hash = 0;
-            h4.m_Hash = 0;
-            hz5.m_Hash = 0;
-            h6.m_Hash = 0;
-            hz7.m_Hash = 0;
-            hash = nlStringLowerHash("TickerText");
-            h8.m_Hash = hash;
-            h9.m_Hash = hash;
-            hash = nlStringLowerHash("Layer");
-            hA.m_Hash = hash;
-            hB.m_Hash = hash;
-            TLTextInstance* tickerText = find.byRef(
+            TLTextInstance* tickerText = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
                 m_pFEPresentation->m_currentSlide,
-                (InlineHasher&)hA,
-                (InlineHasher&)h9,
-                (InlineHasher&)hz7,
-                (InlineHasher&)hz5,
-                (InlineHasher&)hz3,
-                (InlineHasher&)hz1);
+                InlineHasher(nlStringLowerHash("Layer")),
+                InlineHasher(nlStringLowerHash("TickerText")));
 
             m_pTicker->ApplyNewTextInstancePointer(tickerText, 8000.0f, 100.0f);
         }
@@ -942,3 +775,10 @@ void StadiumSelectSceneV2::ResetFromLeft()
     mImages[2]->SwapTextures();
 }
 #pragma dont_inline reset
+
+// Force the Update string literals into target .data order.
+static void SHStadiumSelect_stub()
+{
+    FEAudio::PlayAnimAudioEvent("sfx_accept_stadium", false);
+    FEAudio::PlayAnimAudioEvent("sfx_deny", false);
+}

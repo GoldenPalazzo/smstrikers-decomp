@@ -1,4 +1,6 @@
 #define BASICSTRING_INDEX_EMPTY_COPY_BYTE_OFFSET
+#define BASICSTRING_INDEX_ALLOC_HELPER
+#define NL_FORMAT_EXPLICIT_WIDE_POINTER_BODY
 #define NL_SINGLETON_NO_DEFINE
 #define NL_NO_LEXICALCAST_NLSTRING_INT
 #include "Game/SH/SHLoading.h"
@@ -452,9 +454,10 @@ void SuperLoadingScene::DisplayCupInfo()
 static inline BasicStringData<unsigned short>* CopyWideStringDataNoReread(
     const BasicString<unsigned short, Detail::TempStringAllocator>& other)
 {
-    BasicStringData<unsigned short>* data = other.m_data;
-    if (data != NULL)
+    BasicStringData<unsigned short>* data;
+    if (other.m_data != NULL)
     {
+        data = other.m_data;
         data->mRefCount++;
     }
     else
@@ -466,9 +469,6 @@ static inline BasicStringData<unsigned short>* CopyWideStringDataNoReread(
 
 /**
  * Offset/Address/Size: 0x0 | 0x800A6770 | size: 0x3C4
- * TODO: 99.40% match - nonvolatile registers are permuted between this,
- * pTextInst, side, checkConnected, PAD_COLOURS, CONTROLLER_TEXT, and the loop
- * index.
  */
 void SuperLoadingScene::BuildPlayerStrings(TLTextInstance* pTextInst, int side, bool checkConnected)
 {
