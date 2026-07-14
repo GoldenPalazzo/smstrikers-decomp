@@ -54,6 +54,10 @@ class cSAnim : public cIdentifier
 {
 public:
     static cSAnim* Initialize(nlChunk*);
+    static bool IsValidChunkID(u32 id)
+    {
+        return (id & 0x80FFFFFF) == 0x80017000;
+    }
 
     void BlendRot(int, int, float, float, cPoseAccumulator*, bool) const;
     void BlendScale(int, int, float, float, cPoseAccumulator*, bool) const;

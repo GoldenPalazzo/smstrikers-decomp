@@ -20,7 +20,13 @@ public:
     {
     }
 
-    ListEntry(T data)
+    ListEntry(const T& data)
+        : next(nullptr)
+        , entry(data)
+    {
+    }
+
+    ListEntry(const volatile T& data)
         : next(nullptr)
         , entry(data)
     {

@@ -67,6 +67,12 @@ public:
         nlListAddStart<ListEntry<T> >(&m_Head, entry, &m_Tail);
     }
 
+    void AddStart(const T& data)
+    {
+        ListEntry<T>* entry = m_Allocator.New(ListEntry<T>(data));
+        nlListAddStart<ListEntry<T> >(&m_Head, entry, &m_Tail);
+    }
+
     void RemoveEntry(ListEntry<T>* entry)
     {
         // Implementation for removing entries

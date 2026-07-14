@@ -1,7 +1,10 @@
 #ifndef GAME_INVENTORY_H
 #define GAME_INVENTORY_H
 
+#include "Game/SAnim.h"
+#include "NL/nlFile.h"
 #include "NL/nlList.h"
+#include "NL/nlString.h"
 
 template <typename T>
 class cInventory
@@ -10,6 +13,38 @@ public:
     cInventory()
         : m_nItemCount(0)
     {
+    }
+
+    void ParseChunks(nlChunk* chunk, nlChunk* end)
+    {
+        while (chunk != end)
+        {
+            if (T::IsValidChunkID(chunk->m_ID))
+            {
+                T* item = T::Initialize(chunk);
+                m_lItemList.AddStart(item);
+                m_nItemCount++;
+            }
+            else
+            {
+                nlPrintf("Warning: inventory encountered an unknown chunk type\n");
+            }
+            chunk = (nlChunk*)((char*)chunk + chunk->m_Size + 8);
+        }
+    }
+
+    void AddFile(char* memory, unsigned long length)
+    {
+        m_lMemList.AddStart(memory);
+        ParseChunks((nlChunk*)memory, (nlChunk*)(memory + length));
+    }
+
+    void AddFile(const char* filename)
+    {
+        unsigned long length;
+        char* memory = (char*)nlLoadEntireFile(filename, &length, 0x20, AllocateStart);
+        m_lMemList.AddStart(memory);
+        ParseChunks((nlChunk*)memory, (nlChunk*)(memory + length));
     }
 
     ~cInventory()

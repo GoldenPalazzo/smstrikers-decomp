@@ -16,6 +16,7 @@ public:
     // For AVL Tree interface
     T* Allocate() { return (T*)nlMalloc(sizeof(T), 8, false); }
     void Allocate(T*& out) { out = (T*)nlMalloc(sizeof(T), 8, false); }
+    T* New(const T& data) { return new (8, false) T(data); }
     void Free(T* ptr) { delete ptr; }
     NL_NEWADAPTER_DELETE_DECL Delete(T* ptr);
 

@@ -135,19 +135,21 @@ config.generate_map = args.map
 config.non_matching = args.non_matching
 config.sjiswrap_path = args.sjiswrap
 config.progress = args.progress
+
 if not is_windows():
     config.wrapper = args.wrapper
+
 # Don't build asm unless we're --non-matching
 if not config.non_matching:
     config.asm_dir = None
 
 # Tool versions
-config.binutils_tag = "2.42-1"
+config.binutils_tag = "2.42-2"
 config.compilers_tag = "20251118"
-config.dtk_tag = "v1.8.0"
-config.objdiff_tag = "v3.5.1"
+config.dtk_tag = "v1.8.3"
+config.objdiff_tag = "v3.6.1"
 config.sjiswrap_tag = "v1.2.2"
-config.wibo_tag = "0.7.0"
+config.wibo_tag = "1.0.3"
 
 # Project
 config.config_path = Path("config") / config.version / "config.yml"
@@ -839,7 +841,7 @@ config.libs = [
             Object(Matching, "Game/Render/FlareHandler.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/Render/Nis.cpp", extra_cflags=["-inline auto"]),
             Object(Matching, "Game/Render/CameraGuy.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(NonMatching, "Game/Render/SkinAnimatedNPC.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(Matching, "Game/Render/SkinAnimatedNPC.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Render/depthoffield.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Render/Wiper.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/Render/Bowser.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
@@ -850,7 +852,7 @@ config.libs = [
             Object(NonMatching, "Game/Render/ShootToScoreMeter.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Render/Jumbotron.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Render/SkinAnimatedMovableNPC.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(NonMatching, "Game/Render/NPCManager.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(Matching, "Game/Render/NPCManager.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/Render/SidelineExplodable.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/Render/ElectricFence.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
 

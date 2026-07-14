@@ -15,7 +15,7 @@ extern GLInventory glInventory;
 extern float GetPlanarShadowOpacity();
 extern void DrawPlanarShadow(const glModel*, const nlMatrix4&, float, bool, bool, bool, unsigned long);
 
-static unsigned long GLTT_BumpLocal_bit = 0x00000020;
+const u32 GLTT_BumpLocal_bit = 1 << (int)GLTT_BumpLocal;
 
 /**
  * Offset/Address/Size: 0x60C | 0x80164FB0 | size: 0xC0
@@ -96,6 +96,7 @@ void SkinAnimatedNPC::RenderFromReplay(const cPoseAccumulator& poseAccumulator, 
  */
 void SkinAnimatedNPC::SendToGL() const
 {
+    FORCE_DONT_INLINE;
     static int index = 0;
     static unsigned long prevFrame = 0;
 
@@ -115,8 +116,6 @@ void SkinAnimatedNPC::SendToGL() const
     skinMesh->PrepareToRender(prog, 0);
 
     glModel* pModel = glModelDup(skinMesh->pModel, true);
-    unsigned long bumpBit = GLTT_BumpLocal_bit;
-
     glModelPacket* pPacket = pModel->packets;
     while (pPacket < pModel->packets + pModel->numPackets)
     {
@@ -132,7 +131,7 @@ void SkinAnimatedNPC::SendToGL() const
         }
 
         pPacket->state.texture[5] = lightRamp;
-        pPacket->state.texconfig |= bumpBit;
+        pPacket->state.texconfig |= GLTT_BumpLocal_bit;
 
         pPacket++;
     }

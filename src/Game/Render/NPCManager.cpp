@@ -1,3 +1,5 @@
+#define NL_SINGLETON_NO_DEFINE
+
 #include "Game/Render/NPCManager.h"
 
 #include "Game/Game.h"
@@ -24,7 +26,15 @@ struct NPCTemplateInfo
     /* 0x18 */ u8 loadAnimsVirtual;
 };
 
-extern NPCTemplateInfo gNPCTemplateInfo[];
+static const NPCTemplateInfo gNPCTemplateInfo[] = {
+    { 0, "characters/cameraguy/cameraguy.glg", "characters/cameraguy/cameraguy.glt", "art/animation/cameraguy.shier", "cameraguy", "art/animation/cameraguy.sanim", false },
+    { 1, "characters/standupcamera/standupcamera.glg", "characters/standupcamera/standupcamera.glt", "art/animation/standupcamera.shier", "standupcamera", "art/animation/standupcamera.sanim", false },
+    { 2, "characters/medic/medic.glg", "characters/medic/medic.glt", "art/animation/medic.shier", "medic", "art/animation/medic.sanim", false },
+    { 3, "characters/securityguard/securityguard.glg", "characters/securityguard/securityguard.glt", "art/animation/securityguard.shier", "securityguard", "art/animation/securityguard.sanim", false },
+    { 4, "characters/blimp/blimp.glg", "characters/blimp/blimp.glt", "art/animation/blimp.shier", "blimp", "art/animation/blimp.sanim", false },
+    { 5, "characters/chainchomp/chainchomp.glg", "characters/chainchomp/chainchomp.glt", "art/animation/chainchomp.shier", "chainchomp", "art/animation/chainchomp.sanim", false },
+    { 6, "characters/bowser/bowser.glg", "characters/bowser/bowser.glt", "art/animation/bowser.shier", "bowser", "art/animation/bowser.sanim", true },
+};
 
 struct glModelData
 {
@@ -45,31 +55,13 @@ static inline cSHierarchy* FindHierarchy(ListEntry<cSHierarchy*>* hEntry, u32 ha
     return NULL;
 }
 
-// /**
-//  * Offset/Address/Size: 0x68 | 0x80167338 | size: 0x28
-//  */
-// void nlListAddStart<ListEntry<SkinAnimatedNPC*>>(ListEntry<SkinAnimatedNPC*>**, ListEntry<SkinAnimatedNPC*>*, ListEntry<SkinAnimatedNPC*>**)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x801672D0 | size: 0x68
-//  */
-// void nlWalkList<ListEntry<SkinAnimatedNPC*>, ListContainerBase<SkinAnimatedNPC*, NewAdapter<ListEntry<SkinAnimatedNPC*>>>>(ListEntry<SkinAnimatedNPC*>*, ListContainerBase<SkinAnimatedNPC*, NewAdapter<ListEntry<SkinAnimatedNPC*>>>*, void (ListContainerBase<SkinAnimatedNPC*, NewAdapter<ListEntry<SkinAnimatedNPC*>>>::*)(ListEntry<SkinAnimatedNPC*>*))
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x801672AC | size: 0x24
-//  */
-// void ListContainerBase<SkinAnimatedNPC*, NewAdapter<ListEntry<SkinAnimatedNPC*>>>::DeleteEntry(ListEntry<SkinAnimatedNPC*>*)
-// {
-// }
+static inline cInventory<cSAnim>* KeepNPCAnimInv(cInventory<cSAnim>* pInventory)
+{
+    return pInventory;
+}
 
 /**
  * Offset/Address/Size: 0x8AC | 0x80166770 | size: 0xB3C
- * TODO: 99.93% match - the five animation inventory receiver loads use r26
- * instead of r27.
  */
 NPCManager::NPCManager()
     : mpInventorySAnim(NULL)
@@ -96,7 +88,7 @@ NPCManager::NPCManager()
         if (world->CompareNameToGenericName(stack->m_Stack[stack->m_NumStackEntries - 1]->value->m_szName, "cameraguy") == 0)
         {
             CreateNPCTemplate(0, true);
-            cInventory<cSAnim>* animInv = mpInventorySAnim;
+            cInventory<cSAnim>* animInv = KeepNPCAnimInv(mpInventorySAnim);
             u32 hash = nlStringHash("camera_idle");
             cSAnim* foundAnim = ((AnimationSet*)animInv)->FindAnimationByHash(hash);
             CameraGuy* guy = new (nlMalloc(sizeof(CameraGuy), 8, false)) CameraGuy(*mNPCTemplate[0].hierarchy, mNPCTemplate[0].modelID);
@@ -115,7 +107,7 @@ NPCManager::NPCManager()
         else if (world->CompareNameToGenericName(stack->m_Stack[stack->m_NumStackEntries - 1]->value->m_szName, "standupcamera") == 0)
         {
             CreateNPCTemplate(1, true);
-            cInventory<cSAnim>* animInv = mpInventorySAnim;
+            cInventory<cSAnim>* animInv = KeepNPCAnimInv(mpInventorySAnim);
             u32 hash = nlStringHash("standupcamera_idle");
             cSAnim* foundAnim = ((AnimationSet*)animInv)->FindAnimationByHash(hash);
             CameraGuy* guy = new (nlMalloc(sizeof(CameraGuy), 8, false)) CameraGuy(*mNPCTemplate[1].hierarchy, mNPCTemplate[1].modelID);
@@ -134,7 +126,7 @@ NPCManager::NPCManager()
         else if (world->CompareNameToGenericName(stack->m_Stack[stack->m_NumStackEntries - 1]->value->m_szName, "medic") == 0)
         {
             CreateNPCTemplate(2, true);
-            cInventory<cSAnim>* animInv = mpInventorySAnim;
+            cInventory<cSAnim>* animInv = KeepNPCAnimInv(mpInventorySAnim);
             u32 hash = nlStringHash("medic_idle");
             cSAnim* foundAnim = ((AnimationSet*)animInv)->FindAnimationByHash(hash);
             SkinAnimatedNPC* npc = new (nlMalloc(sizeof(SkinAnimatedNPC), 8, false)) SkinAnimatedNPC(*mNPCTemplate[2].hierarchy, mNPCTemplate[2].modelID);
@@ -151,7 +143,7 @@ NPCManager::NPCManager()
         else if (world->CompareNameToGenericName(stack->m_Stack[stack->m_NumStackEntries - 1]->value->m_szName, "securityguard") == 0)
         {
             CreateNPCTemplate(3, true);
-            cInventory<cSAnim>* animInv = mpInventorySAnim;
+            cInventory<cSAnim>* animInv = KeepNPCAnimInv(mpInventorySAnim);
             u32 hash = nlStringHash("securityguard_idle");
             cSAnim* foundAnim = ((AnimationSet*)animInv)->FindAnimationByHash(hash);
             SkinAnimatedNPC* npc = new (nlMalloc(sizeof(SkinAnimatedNPC), 8, false)) SkinAnimatedNPC(*mNPCTemplate[3].hierarchy, mNPCTemplate[3].modelID);
@@ -168,7 +160,7 @@ NPCManager::NPCManager()
         else if (world->CompareNameToGenericName(stack->m_Stack[stack->m_NumStackEntries - 1]->value->m_szName, "blimp") == 0)
         {
             CreateNPCTemplate(4, true);
-            cInventory<cSAnim>* animInv = mpInventorySAnim;
+            cInventory<cSAnim>* animInv = KeepNPCAnimInv(mpInventorySAnim);
             u32 hash = nlStringHash("blimp_idle");
             cSAnim* foundAnim = ((AnimationSet*)animInv)->FindAnimationByHash(hash);
             SkinAnimatedNPC* npc = new (nlMalloc(sizeof(SkinAnimatedNPC), 8, false)) SkinAnimatedNPC(*mNPCTemplate[4].hierarchy, mNPCTemplate[4].modelID);
@@ -218,12 +210,15 @@ static inline void DestroyNPCList(nlListContainer<SkinAnimatedNPC*>* npcList)
         npcEntry = npcEntry->next;
     }
 
-    nlWalkList(npcList->m_Head, (NPCListBaseHelper*)npcList, &NPCListBaseHelper::DeleteEntry);
+    nlWalkList(npcList->m_Head, (NPCListBaseHelper*)npcList, NPCListBaseHelper::DeleteEntryFunc());
     npcList->m_Head = NULL;
     npcList->m_Tail = NULL;
 }
 
-static inline void DestroyHierarchyInventory(cInventory<cSHierarchy>* pHierInv)
+static inline void DestroyHierarchyInventoryShared(
+    cInventory<cSHierarchy>* pHierInv,
+    ListEntry<char*>**& workA,
+    ListEntry<char*>**& workB)
 {
     ListEntry<cSHierarchy*>* hierEntry = pHierInv->m_lItemList.m_Head;
     while (hierEntry != NULL)
@@ -231,17 +226,16 @@ static inline void DestroyHierarchyInventory(cInventory<cSHierarchy>* pHierInv)
         hierEntry = hierEntry->next;
     }
 
-    void (HierListBaseHelper::*cbHier)(ListEntry<cSHierarchy*>*) = &HierListBaseHelper::DeleteEntry;
+    void (HierListBaseHelper::*cbHier)(ListEntry<cSHierarchy*>*) = HierListBaseHelper::DeleteEntryFunc();
     nlWalkList(pHierInv->m_lItemList.m_Head, (HierListBaseHelper*)pHierInv, cbHier);
 
-    ListEntry<char*>** pHead;
-    ListEntry<char*>** pTail = &pHierInv->m_lMemList.m_Tail;
+    workA = &pHierInv->m_lMemList.m_Tail;
     pHierInv->m_lItemList.m_Head = NULL;
-    pHead = &pHierInv->m_lMemList.m_Head;
+    workB = &pHierInv->m_lMemList.m_Head;
     pHierInv->m_lItemList.m_Tail = NULL;
     while (pHierInv->m_lMemList.m_Head != NULL)
     {
-        ListEntry<char*>* first = nlListRemoveStart<ListEntry<char*> >(pHead, pTail);
+        ListEntry<char*>* first = nlListRemoveStart<ListEntry<char*> >(workB, workA);
         void* mesh;
         if (&mesh != NULL)
         {
@@ -257,26 +251,28 @@ static inline void DestroyHierarchyInventory(cInventory<cSHierarchy>* pHierInv)
     ::operator delete(pHierInv);
 }
 
-static inline void DestroySAnimInventory(cInventory<cSAnim>* pSAnimInv)
+static inline void DestroySAnimInventoryShared(
+    cInventory<cSAnim>* pSAnimInv,
+    ListEntry<char*>**& workA,
+    ListEntry<char*>**& workB)
 {
-    ListEntry<cSAnim*>* animEntry = pSAnimInv->m_lItemList.m_Head;
-    while (animEntry != NULL)
+    workA = (ListEntry<char*>**)pSAnimInv->m_lItemList.m_Head;
+    while (workA != NULL)
     {
-        animEntry->entry->Destroy();
-        animEntry = animEntry->next;
+        ((ListEntry<cSAnim*>*)workA)->entry->Destroy();
+        workA = (ListEntry<char*>**)((ListEntry<cSAnim*>*)workA)->next;
     }
 
-    void (SAnimListBaseHelper::*cbAnim)(ListEntry<cSAnim*>*) = &SAnimListBaseHelper::DeleteEntry;
+    void (SAnimListBaseHelper::*cbAnim)(ListEntry<cSAnim*>*) = SAnimListBaseHelper::DeleteEntryFunc();
     nlWalkList(pSAnimInv->m_lItemList.m_Head, (SAnimListBaseHelper*)pSAnimInv, cbAnim);
 
-    ListEntry<char*>** pHead2;
-    ListEntry<char*>** pTail2 = &pSAnimInv->m_lMemList.m_Tail;
+    workB = &pSAnimInv->m_lMemList.m_Tail;
     pSAnimInv->m_lItemList.m_Head = NULL;
-    pHead2 = &pSAnimInv->m_lMemList.m_Head;
+    workA = &pSAnimInv->m_lMemList.m_Head;
     pSAnimInv->m_lItemList.m_Tail = NULL;
     while (pSAnimInv->m_lMemList.m_Head != NULL)
     {
-        ListEntry<char*>* first = nlListRemoveStart<ListEntry<char*> >(pHead2, pTail2);
+        ListEntry<char*>* first = nlListRemoveStart<ListEntry<char*> >(workA, workB);
         void* mesh;
         if (&mesh != NULL)
         {
@@ -294,7 +290,7 @@ static inline void DestroySAnimInventory(cInventory<cSAnim>* pSAnimInv)
 
 /**
  * Offset/Address/Size: 0x4D8 | 0x8016639C | size: 0x3D4
- * TODO: 99.90% match - remaining diff is the cSAnim destroy loop register.
+ * TODO: this needs a review - strange stuff going on here...
  */
 NPCManager::~NPCManager()
 {
@@ -303,16 +299,19 @@ NPCManager::~NPCManager()
     delete mpBowser;
     delete mpChainChomp;
 
+    ListEntry<char*>** workB;
+    ListEntry<char*>** workA;
+
     cInventory<cSHierarchy>* pHierInv = mpInventorySHierarchy;
     if (pHierInv != NULL)
     {
-        DestroyHierarchyInventory(pHierInv);
+        DestroyHierarchyInventoryShared(pHierInv, workA, workB);
     }
 
     cInventory<cSAnim>* pSAnimInv = mpInventorySAnim;
     if (pSAnimInv != NULL)
     {
-        DestroySAnimInventory(pSAnimInv);
+        DestroySAnimInventoryShared(pSAnimInv, workA, workB);
     }
 }
 
@@ -353,14 +352,11 @@ void NPCManager::UpdateAINPCs(float dt)
 
 /**
  * Offset/Address/Size: 0x0 | 0x80165EC4 | size: 0x3D0
- * TODO: 99.14% match - extra return-value moves remain after hierarchy and
- * non-virtual animation file loads.
  */
 void NPCManager::CreateNPCTemplate(int templateIndex, bool loadTextures)
 {
-    int animSizeVirt;
-    u32 hierFileSize;
-    u32 animFileSize;
+    int len;
+    void* pMem;
 
     if (mNPCTemplate[templateIndex].loaded)
     {
@@ -378,144 +374,21 @@ void NPCManager::CreateNPCTemplate(int templateIndex, bool loadTextures)
         model = NULL;
     }
 
-    cInventory<cSHierarchy>* hierInv = mpInventorySHierarchy;
-    nlChunk* hierData = (nlChunk*)nlLoadEntireFile(
-        gNPCTemplateInfo[templateIndex].hierarchyFilename,
-        &hierFileSize,
-        0x20,
-        AllocateStart);
-
-    ListEntry<char*>* memEntry = (ListEntry<char*>*)nlMalloc(8, 8, false);
-    if (memEntry != NULL)
-    {
-        memEntry->next = NULL;
-        memEntry->entry = (char*)hierData;
-    }
-    nlListAddStart<ListEntry<char*> >(
-        (ListEntry<char*>**)&hierInv->m_lMemList.m_Head,
-        memEntry,
-        (ListEntry<char*>**)&hierInv->m_lMemList.m_Tail);
-
-    nlChunk* hierEnd = (nlChunk*)((char*)hierData + hierFileSize);
-    while (hierData != hierEnd)
-    {
-        if ((hierData->m_ID & 0x80FFFFFF) == 0x80018000)
-        {
-            cSHierarchy* hier = cSHierarchy::Initialize(hierData);
-
-            ListEntry<cSHierarchy*>* itemEntry = (ListEntry<cSHierarchy*>*)nlMalloc(8, 8, false);
-            if (itemEntry != NULL)
-            {
-                itemEntry->next = NULL;
-                itemEntry->entry = hier;
-            }
-            nlListAddStart<ListEntry<cSHierarchy*> >(
-                (ListEntry<cSHierarchy*>**)&hierInv->m_lItemList.m_Head,
-                itemEntry,
-                (ListEntry<cSHierarchy*>**)&hierInv->m_lItemList.m_Tail);
-            hierInv->m_nItemCount++;
-        }
-        else
-        {
-            nlPrintf("Unknown chunk\n");
-        }
-        hierData = (nlChunk*)((char*)hierData + hierData->m_Size + 8);
-    }
+    mpInventorySHierarchy->AddFile(gNPCTemplateInfo[templateIndex].hierarchyFilename);
 
     if (gNPCTemplateInfo[templateIndex].loadAnimsVirtual)
     {
-        nlChunk* animData = (nlChunk*)nlLoadEntireFileToVirtualMemory(
+        pMem = nlLoadEntireFileToVirtualMemory(
             gNPCTemplateInfo[templateIndex].animFilename,
-            &animSizeVirt,
+            &len,
             0x10000,
             NULL,
             AllocateStart);
-        int animSize = animSizeVirt;
-        nlChunk* animEnd;
-        cInventory<cSAnim>* animInv = mpInventorySAnim;
-
-        ListEntry<char*>* animMem = (ListEntry<char*>*)nlMalloc(8, 8, false);
-        if (animMem != NULL)
-        {
-            animMem->next = NULL;
-            animMem->entry = (char*)animData;
-        }
-        nlListAddStart<ListEntry<char*> >(
-            (ListEntry<char*>**)&animInv->m_lMemList.m_Head,
-            animMem,
-            (ListEntry<char*>**)&animInv->m_lMemList.m_Tail);
-
-        animEnd = (nlChunk*)((char*)animData + animSize);
-        while (animData != animEnd)
-        {
-            if ((animData->m_ID & 0x80FFFFFF) == 0x80017000)
-            {
-                cSAnim* anim = cSAnim::Initialize(animData);
-                ListEntry<cSAnim*>* animItem = (ListEntry<cSAnim*>*)nlMalloc(8, 8, false);
-                if (animItem != NULL)
-                {
-                    animItem->next = NULL;
-                    animItem->entry = anim;
-                }
-                nlListAddStart<ListEntry<cSAnim*> >(
-                    (ListEntry<cSAnim*>**)&animInv->m_lItemList.m_Head,
-                    animItem,
-                    (ListEntry<cSAnim*>**)&animInv->m_lItemList.m_Tail);
-                animInv->m_nItemCount++;
-            }
-            else
-            {
-                nlPrintf("Unknown chunk\n");
-            }
-            animData = (nlChunk*)((char*)animData + animData->m_Size + 8);
-        }
+        mpInventorySAnim->AddFile((char*)pMem, len);
     }
     else
     {
-        nlChunk* animData;
-        nlChunk* animEnd;
-        cInventory<cSAnim>* animInv = mpInventorySAnim;
-        animData = (nlChunk*)nlLoadEntireFile(
-            gNPCTemplateInfo[templateIndex].animFilename,
-            &animFileSize,
-            0x20,
-            AllocateStart);
-
-        ListEntry<char*>* animMem = (ListEntry<char*>*)nlMalloc(8, 8, false);
-        if (animMem != NULL)
-        {
-            animMem->next = NULL;
-            animMem->entry = (char*)animData;
-        }
-        nlListAddStart<ListEntry<char*> >(
-            (ListEntry<char*>**)&animInv->m_lMemList.m_Head,
-            animMem,
-            (ListEntry<char*>**)&animInv->m_lMemList.m_Tail);
-
-        animEnd = (nlChunk*)((char*)animData + animFileSize);
-        while (animData != animEnd)
-        {
-            if ((animData->m_ID & 0x80FFFFFF) == 0x80017000)
-            {
-                cSAnim* anim = cSAnim::Initialize(animData);
-                ListEntry<cSAnim*>* animItem = (ListEntry<cSAnim*>*)nlMalloc(8, 8, false);
-                if (animItem != NULL)
-                {
-                    animItem->next = NULL;
-                    animItem->entry = anim;
-                }
-                nlListAddStart<ListEntry<cSAnim*> >(
-                    (ListEntry<cSAnim*>**)&animInv->m_lItemList.m_Head,
-                    animItem,
-                    (ListEntry<cSAnim*>**)&animInv->m_lItemList.m_Tail);
-                animInv->m_nItemCount++;
-            }
-            else
-            {
-                nlPrintf("Unknown chunk\n");
-            }
-            animData = (nlChunk*)((char*)animData + animData->m_Size + 8);
-        }
+        mpInventorySAnim->AddFile(gNPCTemplateInfo[templateIndex].animFilename);
     }
 
     mNPCTemplate[templateIndex].modelID = model == NULL ? -1 : ((glModelData*)model)->numModels;
