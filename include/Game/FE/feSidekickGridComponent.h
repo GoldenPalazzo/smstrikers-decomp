@@ -155,27 +155,4 @@ public:
     ISidekickGridComponent(TLComponentInstance*, bool);
 };
 
-// class FEFinder<TLInstance, 2>
-// {
-// public:
-//     void Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-//     void _Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long);
-//     void _Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long);
-// };
-
-// class FEFinder<TLComponentInstance, 4>
-// {
-// public:
-//     void Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-//     void _Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long);
-//     void _Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long);
-// };
-
-// class IGridComponent<eSidekickID>
-// {
-// public:
-//     void ~IGridComponent();
-//     void IGridComponent(TLComponentInstance*, const char*, bool);
-// };
-
 #endif // _FESIDEKICKGRIDCOMPONENT_H_

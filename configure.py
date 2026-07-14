@@ -1039,7 +1039,7 @@ config.libs = [
             Object(Matching, "Game/FE/feAnimModelManager.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/FE/feButtonComponent.cpp", extra_cflags=["-inline auto"]),
             Object(
-                NonMatching,
+                Matching,
                 "Game/FE/feSidekickGridComponent.cpp",
                 extra_cflags=["-inline auto", "-inline deferred"],
             ),

@@ -33,8 +33,6 @@ ISidekickGridComponent::~ISidekickGridComponent()
 
 /**
  * Offset/Address/Size: 0x408 | 0x800C2C18 | size: 0x1AC
- * TODO: 98.5% match - MWCC register allocation differs for this/activeslide
- * and the second-loop table/index induction variables.
  */
 void ISidekickGridComponent::BuildMapMenu()
 {
@@ -53,34 +51,23 @@ void ISidekickGridComponent::BuildMapMenu()
             InlineHasher(0));
     }
 
-    int itemIndexBase;
-    int i;
-    for (i = 0, itemIndexBase = 0; i < 2; i++, itemIndexBase += 2)
+    for (int i = 0; i < 2; i++)
     {
-        for (int j = 0, itemIndex = itemIndexBase; j < 2; j++, itemIndex++)
+        for (int j = 0; j < 2; j++)
         {
-            int leftIndex = itemIndex - 1;
-            if (((itemIndex % 2) - 1) < 0)
-            {
-                leftIndex = itemIndex + 1;
-            }
-
-            int rightIndex = itemIndex + 1;
-            if (((itemIndex % 2) + 1) >= 2)
-            {
-                rightIndex = itemIndex - 1;
-            }
-
-            int oppositeIndex = (itemIndex + 2) % 4;
-            int iconType = *(volatile int*)((unsigned char*)SidekickCellItems + itemIndex * sizeof(CellItem));
+            int leftIndex = ((((i * 2 + j) % 2) - 1) < 0) ? (i * 2 + j) + 1 : (i * 2 + j) - 1;
+            int rightIndex = ((((i * 2 + j) % 2) + 1) >= 2) ? (i * 2 + j) - 1 : (i * 2 + j) + 1;
+            int upIndex = ((i * 2 + j) - 2 + 4) % 4;
+            int downIndex = ((i * 2 + j) + 2) % 4;
+            const CellItem& currentItem = SidekickCellItems[(unsigned int)(i * 2 + j)];
 
             mMapMenu->AddItem(
-                iconType,
-                mInstanceTable[iconType],
+                currentItem.mIconType,
+                mInstanceTable[currentItem.mIconType],
                 SidekickCellItems[leftIndex].mIconType,
                 SidekickCellItems[rightIndex].mIconType,
-                SidekickCellItems[oppositeIndex].mIconType,
-                SidekickCellItems[oppositeIndex].mIconType,
+                SidekickCellItems[upIndex].mIconType,
+                SidekickCellItems[downIndex].mIconType,
                 true);
         }
     }
@@ -245,64 +232,3 @@ void ISidekickGridComponent::SetVisibleInstanceTable(bool visible)
     mInstanceTable[2]->m_bVisible = visible;
     mInstanceTable[3]->m_bVisible = visible;
 }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800C2EA0 | size: 0x38
-//  */
-// void FEFinder<TLInstance, 2>::Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x38 | 0x800C2ED8 | size: 0x84
-//  */
-// void FEFinder<TLInstance, 2>::_Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long,
-// unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0xBC | 0x800C2F5C | size: 0x15C
-//  */
-// void FEFinder<TLInstance, 2>::_Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long,
-// unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x218 | 0x800C30B8 | size: 0x38
-//  */
-// void FEFinder<TLComponentInstance, 4>::Find<TLSlide>(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher,
-// InlineHasher)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x250 | 0x800C30F0 | size: 0x84
-//  */
-// void FEFinder<TLComponentInstance, 4>::_Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned
-// long, unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x2D4 | 0x800C3174 | size: 0x15C
-//  */
-// void FEFinder<TLComponentInstance, 4>::_Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long,
-// unsigned long, unsigned long)
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x0 | 0x800C32D0 | size: 0x84
-//  */
-// void IGridComponent<eSidekickID>::~IGridComponent()
-// {
-// }
-
-// /**
-//  * Offset/Address/Size: 0x84 | 0x800C3354 | size: 0xF0
-//  */
-// void IGridComponent<eSidekickID>::IGridComponent(TLComponentInstance*, const char*, bool)
-// {
-// }
