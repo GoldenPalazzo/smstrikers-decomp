@@ -56,34 +56,6 @@ public:
     unsigned long CardMountCB(unsigned long, long, void*);
 };
 
-// struct ICON_DATA_INFO
-// {
-//     unsigned short Comment1Offset;   // offset 0x0, size 0x2
-//     unsigned short Comment2Offset;   // offset 0x2, size 0x2
-//     unsigned short BannerOffset;     // offset 0x4, size 0x2
-//     unsigned short BannerCLUTOffset; // offset 0x6, size 0x2
-//     unsigned long IconOffset[8];     // offset 0x8, size 0x20
-//     unsigned long IconCLUTOffset;    // offset 0x28, size 0x4
-//     unsigned char* pHeaderData;      // offset 0x2C, size 0x4
-// }; // total size: 0x30
-
-// struct ICON_CONFIG
-// {
-//     unsigned char BannerFormat; // offset 0x0, size 0x1
-//     unsigned char IconCount;    // offset 0x1, size 0x1
-//     char IconFormat;            // offset 0x2, size 0x1
-//     char IconAnimType;          // offset 0x3, size 0x1
-//     char IconSpeeds[8];         // offset 0x4, size 0x8
-//     unsigned long HeaderSize;   // offset 0xC, size 0x4
-// }; // total size: 0x10
-
-// struct MC_FILE
-// {
-//     struct CARDFileInfo FileInfo;  // offset 0x0, size 0x14
-//     struct ICON_CONFIG IconCfg;    // offset 0x14, size 0x10
-//     unsigned long TotalHeaderSize; // offset 0x24, size 0x4
-// }; // total size: 0x28
-
 class LoadCallbacks
 {
 public:

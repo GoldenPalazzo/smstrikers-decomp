@@ -24,11 +24,11 @@ public:
         delete mMapMenu;
         mMapMenu = NULL;
     }
-    virtual void BuildMapMenu() { }
-    virtual void RebuildInstanceTable() { }
-    virtual void Update(eFEINPUT_PAD) { }
-    virtual void MoveHighlightToTarget(T target) { }
-    virtual T GetSelectedItem() const { return (T)-1; }
+    virtual void BuildMapMenu() = 0;
+    virtual void RebuildInstanceTable() = 0;
+    virtual void Update(eFEINPUT_PAD) = 0;
+    virtual void MoveHighlightToTarget(T target) = 0;
+    virtual T GetSelectedItem() const = 0;
 
     IGridComponent(TLComponentInstance* parentcomponent, const char* highlitename, bool ismirrored);
     void RebindHighliteComponent(const char* highlitename);
