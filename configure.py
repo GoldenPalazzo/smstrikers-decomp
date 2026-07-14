@@ -1071,7 +1071,17 @@ config.libs = [
             Object(Matching, "Game/SH/SHCrossFader.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/SH/SHCupCheater.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/SH/SHCupChooseCaptain.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(NonMatching, "Game/SH/SHCupHub.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(
+                NonMatching,
+                "Game/SH/SHCupHub.cpp",
+                extra_cflags=["-inline auto", "-inline deferred"],
+                redefine_symbols=[
+                    (
+                        "Create__11FEPopupMenuF10ePopupMenuR14Function<Fv_v>R14Function<Fv_v>",
+                        "Create__11FEPopupMenuF10ePopupMenu14Function<Fv_v>14Function<Fv_v>",
+                    ),
+                ],
+            ),
             Object(Matching, "Game/SH/SHCupOptions.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/SH/SHCupTrophy.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/SH/SHHealthWarning.cpp", extra_cflags=["-inline auto", "-inline deferred"]),

@@ -285,6 +285,7 @@ Format<BasicString<unsigned short, Detail::TempStringAllocator>,
 /**
  * Offset/Address/Size: 0xE30 | 0x800F4F7C | size: 0x128
  */
+#ifndef NL_NO_WIDE_FORMAT_3_STRING_IMPL
 template <>
 inline BasicString<unsigned short, Detail::TempStringAllocator>
 Format<BasicString<unsigned short, Detail::TempStringAllocator>,
@@ -336,6 +337,7 @@ Format<BasicString<unsigned short, Detail::TempStringAllocator>,
     return BasicString<unsigned short, Detail::TempStringAllocator>(
         (BasicString<unsigned short, Detail::TempStringAllocator>)(((((FormatImpl<BasicString<unsigned short, Detail::TempStringAllocator> >&)impl) % value1) % value2) % value3));
 }
+#endif
 
 template <>
 inline BasicString<unsigned short, Detail::TempStringAllocator>
