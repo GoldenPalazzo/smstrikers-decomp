@@ -66,12 +66,16 @@ template <typename KeyType, typename ValueType, typename AllocatorType, typename
 class AVLTreeBase : public AVLTreeUntemplated
 {
 public:
+#ifdef NL_AVLTREEBASE_EXPLICIT_CONSTRUCTORS
+    AVLTreeBase();
+#else
     AVLTreeBase()
     {
         m_NumElements = 0;
         m_Root = nullptr;
         m_Compare = nullptr;
     };
+#endif
 
 #ifdef NL_AVLTREEBASE_REVERSE_LINK_ORDER
     WEAKFUNC virtual int CompareNodes(AVLTreeNode* a, AVLTreeNode* b);

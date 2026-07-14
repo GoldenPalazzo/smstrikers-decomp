@@ -145,6 +145,10 @@ bool nlDLRingIsEnd(T* head, T* current)
 }
 #endif
 
+#ifdef NLDLRING_COUNT_SEPARATE
+template <typename T>
+u32 nlRingCountElements(T* head);
+#else
 template <typename T>
 u32 nlRingCountElements(T* head)
 {
@@ -169,6 +173,7 @@ u32 nlRingCountElements(T* head)
     }
     return count;
 }
+#endif
 
 template <typename T>
 u32 nlDLRingCountElements(T* head)

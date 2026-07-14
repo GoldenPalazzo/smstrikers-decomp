@@ -1,32 +1,108 @@
+#define NL_AVLTREEBASE_EXPLICIT_SPECIALIZATIONS
+#define NL_AVLTREEBASE_REVERSE_LINK_ORDER
+#define NL_AVLTREEBASE_EXPLICIT_CONSTRUCTORS
+#define NL_AVLTREE_EXPLICIT_CONSTRUCTORS
+#define NL_NEWADAPTER_DECLARE_ONLY
+#define NL_NEWADAPTER_EXPLICIT_LINK_ORDER
+#define NLDLLISTCONTAINER_DECLARE_ONLY
+#define NLDLLISTCONTAINER_DELETEENTRY_FUNC
+#define NLDLRING_COUNT_SEPARATE
+#define NLDLRING_WALKRING_SEPARATE
+#include "EffectsGroupRing.inl"
 #include "Game/Effects/EffectsGroup.h"
 #include "Game/Effects/EmissionController.h"
 #include "Game/Effects/EmissionManager.h"
 #include "NL/nlAVLTree.h"
 #include "NL/nlDLListContainer.h"
+
+typedef AVLTreeEntry<unsigned long, EffectsGroup*> EffectsGroupTreeEntry;
+typedef AVLTreeBase<unsigned long, EffectsGroup*, NewAdapter<EffectsGroupTreeEntry>, DefaultKeyCompare<unsigned long> > EffectsGroupTreeBase;
+typedef AVLTreeEntry<unsigned long, EffectsTerrainSpec*> EffectsTerrainTreeEntry;
+typedef AVLTreeBase<unsigned long, EffectsTerrainSpec*, NewAdapter<EffectsTerrainTreeEntry>, DefaultKeyCompare<unsigned long> > EffectsTerrainTreeBase;
+typedef DLListContainerBase<UserEffectSpec*, NewAdapter<DLListEntry<UserEffectSpec*> > > EffectsGroupUserSpecContainer;
+
+#pragma section ".dead"
+#pragma defer_codegen off
+template <>
+DECL_SECT(".dead")
+nlAVLTree<unsigned long, EffectsTerrainSpec*, DefaultKeyCompare<unsigned long> >::nlAVLTree()
+{
+}
+
+template <>
+DECL_SECT(".dead")
+EffectsTerrainTreeBase::AVLTreeBase()
+{
+    m_NumElements = 0;
+    m_Root = nullptr;
+    m_Compare = nullptr;
+}
+
+template <>
+inline nlAVLTree<unsigned long, EffectsGroup*, DefaultKeyCompare<unsigned long> >::nlAVLTree()
+{
+}
+
+template <>
+inline EffectsGroupTreeBase::AVLTreeBase()
+{
+    m_NumElements = 0;
+    m_Root = nullptr;
+    m_Compare = nullptr;
+}
+#pragma defer_codegen reset
+
+template <>
+void EffectsGroupTreeBase::DeleteEntry(EffectsGroupTreeEntry* entry);
+template <>
+void EffectsTerrainTreeBase::DeleteEntry(EffectsTerrainTreeEntry* entry);
+template <>
+void EffectsGroupTreeBase::DeleteValue(EffectsGroupTreeEntry* entry);
+template <>
+void EffectsTerrainTreeBase::DeleteValue(EffectsTerrainTreeEntry* entry);
+template <>
+void EffectsGroupUserSpecContainer::DeleteEntry(DLListEntry<UserEffectSpec*>* entry);
+
+DECL_SECT(".dead")
+void EffectsGroupListOrder_stub(EffectsGroupUserSpecContainer* container, DLListEntry<UserEffectSpec*>* entry)
+{
+    EffectsGroupUserSpecContainer::ENTRY_DELETE_FUNC deleteEntry = EffectsGroupUserSpecContainer::DeleteEntryFunc();
+    (container->*deleteEntry)(entry);
+}
+
+#include "EffectsGroupAVL.inl"
+
+DECL_SECT(".dead")
+void EffectsGroupStringOrder_stub(const char** strings)
+{
+    strings[0] = "EffectsGroup: unrecognized token '%s'\n";
+    strings[1] = "EffectsGroup::parse_group unsupported token '%s'\n";
+    strings[2] = "parse_group couldn't find template '%s'\n";
+    strings[3] = "linger_start";
+    strings[4] = "linger_end";
+    strings[5] = "parse_spec: unknown fx binding '%s'\n";
+    strings[6] = "offsetxyz";
+    strings[7] = "parse_spec has an unrecognized token '%s'\n";
+}
+
+#pragma defer_codegen off
+#include "EffectsGroupAdapter.inl"
+#pragma defer_codegen reset
+#include "EffectsGroupList.inl"
+#pragma defer_codegen off
+#pragma defer_codegen reset
 #include "NL/nlDLRing.h"
 #include "NL/nlMain.h"
 #include "NL/nlString.h"
 
-extern "C"
-{
-    void __vt__18AVLTreeUntemplated(void);
-    void vtAVLTreeBaseEffectsGroup(void);
-    void vtNlAVLTreeEffectsGroup(void);
-    void vtAVLTreeBaseTerrainSpec(void);
-    void vtNlAVLTreeTerrainSpec(void);
-}
-
-#pragma alias vtAVLTreeBaseEffectsGroup "__vt__104AVLTreeBase<Ul,P12EffectsGroup,46NewAdapter<32AVLTreeEntry<Ul,P12EffectsGroup>>,21DefaultKeyCompare<Ul>>"
-#pragma alias vtNlAVLTreeEffectsGroup "__vt__53nlAVLTree<Ul,P12EffectsGroup,21DefaultKeyCompare<Ul>>"
-#pragma alias vtAVLTreeBaseTerrainSpec "__vt__116AVLTreeBase<Ul,P18EffectsTerrainSpec,52NewAdapter<38AVLTreeEntry<Ul,P18EffectsTerrainSpec>>,21DefaultKeyCompare<Ul>>"
-#pragma alias vtNlAVLTreeTerrainSpec "__vt__59nlAVLTree<Ul,P18EffectsTerrainSpec,21DefaultKeyCompare<Ul>>"
-
 static nlAVLTree<unsigned long, EffectsGroup*, DefaultKeyCompare<unsigned long> >* pGroupMap = nullptr;
 static nlAVLTree<unsigned long, EffectsTerrainSpec*, DefaultKeyCompare<unsigned long> >* pTerrainSpecMap = nullptr;
+
 extern "C" int atoi(const char*);
+
+static class UserEffectFactory* gUserEffectTypes[3];
 static char last_spec_name[0x100];
 static s32 gnUserEffectTypes;
-static class UserEffectFactory* gUserEffectTypes[3];
 
 class UserEffectFactory
 {
@@ -61,7 +137,6 @@ struct EffectsSpecRaw
 
 /**
  * Offset/Address/Size: 0xFC8 | 0x801F3A10 | size: 0x38
- * TODO: 98.6% match - r3/r5 register swap for pTerrainIDs pointer (leaf function register allocation artifact)
  */
 bool EffectsTerrainSpec::HasTerrain(unsigned long terrainID) const
 {
@@ -94,19 +169,13 @@ EffectsSpec::EffectsSpec()
     m_bLight = false;
     m_fOffset = 0.0f;
     m_pTerrainSpec = nullptr;
-    m_fLingerStart = 1.0f;
-    m_fLingerEnd = 1.0f;
+    m_fLingerStart = -1.0f;
+    m_fLingerEnd = -1.0f;
     m_vLocalOffset.f.x = 0.0f;
     m_vLocalOffset.f.y = 0.0f;
     m_vLocalOffset.f.z = 0.0f;
 }
 
-/**
- * Offset/Address/Size: 0xA30 | 0x801F3478 | size: 0x540
- * TODO: 94.45% match - the init default struct's per-field stores for m_eAttach
- * through m_fLingerEnd are optimized away (the values are never read); the target
- * retains those stores.
- */
 struct EffectsSpecShadow
 {
     u32 m_uHashID;
@@ -128,6 +197,9 @@ struct EffectsSpecShadow
     f32 m_fLingerEnd;
 };
 
+/**
+ * Offset/Address/Size: 0xA30 | 0x801F3478 | size: 0x540
+ */
 bool parse_spec(SimpleParser* parser, EffectsSpec& spec)
 {
     char* token;
@@ -472,9 +544,20 @@ EffectsTerrainSpec* parse_terrain_spec(SimpleParser* parser)
     return existingSpec;
 }
 
+static inline DLListEntry<UserEffectSpec*>* InitUserSpecWalk(
+    DLListEntry<UserEffectSpec*>* pNode,
+    nlDLListContainer<UserEffectSpec*>& userSpecs,
+    DLListEntry<UserEffectSpec*>*& pHead,
+    UserEffectSpec**& pWalk,
+    UserEffectSpec** pUserSpecs)
+{
+    pHead = userSpecs.m_Head;
+    pWalk = pUserSpecs;
+    return pNode;
+}
+
 /**
  * Offset/Address/Size: 0x338 | 0x801F2D80 | size: 0x4D4
- * TODO: 99.60% match - user-spec array allocation move ordering.
  */
 static EffectsGroup* parse_group(SimpleParser* parser)
 {
@@ -541,7 +624,7 @@ static EffectsGroup* parse_group(SimpleParser* parser)
             continue;
         }
 
-        if (nlStrCmp<char>(token, "spec") == 0)
+        if (nlStrCmp<char>(token, "play") == 0)
         {
             if (!parse_spec(parser, *(EffectsSpec*)&spec))
             {
@@ -582,7 +665,7 @@ static EffectsGroup* parse_group(SimpleParser* parser)
 
         if (i == gnUserEffectTypes)
         {
-            EmissionManager::AddError("parse_group has an unrecognized token '%s'\n", token);
+            EmissionManager::AddError("EffectsGroup::parse_group unsupported token '%s'\n", token);
         }
     }
 
@@ -617,11 +700,12 @@ static EffectsGroup* parse_group(SimpleParser* parser)
     i = nlDLRingCountElements(userSpecs.m_Head);
     if (i > 0)
     {
-        UserEffectSpec** pUserSpecs = (UserEffectSpec**)nlMalloc(i * 4, 8, false);
+        UserEffectSpec** pUserSpecs = new (8, false) UserEffectSpec*[i];
         DLListEntry<UserEffectSpec*>* pHead;
-        DLListEntry<UserEffectSpec*>* pNode = nlDLRingGetStart(userSpecs.m_Head);
-        pHead = userSpecs.m_Head;
-        UserEffectSpec** pWalk = pUserSpecs;
+        DLListEntry<UserEffectSpec*>* pNode;
+        UserEffectSpec** pWalk;
+        pNode = InitUserSpecWalk(
+            nlDLRingGetStart(userSpecs.m_Head), userSpecs, pHead, pWalk, pUserSpecs);
 
         while (pNode != nullptr)
         {
@@ -663,38 +747,15 @@ bool fxLoadGroupBundle(const char* filename)
  */
 bool fxLoadGroupBundle(void* data, unsigned long size)
 {
-    void* raw;
-
     if (data == nullptr)
     {
         return false;
     }
 
-    raw = nlMalloc(0x14, 8, false);
-    if (raw != nullptr)
-    {
-        u32* map = (u32*)raw;
-        map[0] = (u32)__vt__18AVLTreeUntemplated;
-        map[0] = (u32)vtAVLTreeBaseEffectsGroup;
-        map[4] = 0;
-        map[2] = 0;
-        map[3] = 0;
-        map[0] = (u32)vtNlAVLTreeEffectsGroup;
-    }
-    pGroupMap = (nlAVLTree<unsigned long, EffectsGroup*, DefaultKeyCompare<unsigned long> >*)raw;
-
-    raw = nlMalloc(0x14, 8, false);
-    if (raw != nullptr)
-    {
-        u32* map = (u32*)raw;
-        map[0] = (u32)__vt__18AVLTreeUntemplated;
-        map[0] = (u32)vtAVLTreeBaseTerrainSpec;
-        map[4] = 0;
-        map[2] = 0;
-        map[3] = 0;
-        map[0] = (u32)vtNlAVLTreeTerrainSpec;
-    }
-    pTerrainSpecMap = (nlAVLTree<unsigned long, EffectsTerrainSpec*, DefaultKeyCompare<unsigned long> >*)raw;
+    pGroupMap = new (nlMalloc(sizeof(nlAVLTree<unsigned long, EffectsGroup*, DefaultKeyCompare<unsigned long> >), 8, false))
+        nlAVLTree<unsigned long, EffectsGroup*, DefaultKeyCompare<unsigned long> >;
+    pTerrainSpecMap = new (nlMalloc(sizeof(nlAVLTree<unsigned long, EffectsTerrainSpec*, DefaultKeyCompare<unsigned long> >), 8, false))
+        nlAVLTree<unsigned long, EffectsTerrainSpec*, DefaultKeyCompare<unsigned long> >;
 
     SimpleParser parser;
     parser.StartParsing((char*)data, size, true);
@@ -734,6 +795,12 @@ bool fxLoadGroupBundle(void* data, unsigned long size)
 
     nlFree(data);
     return true;
+}
+
+template <>
+WEAKFUNC nlAVLTree<unsigned long, EffectsTerrainSpec*, DefaultKeyCompare<unsigned long> >::~nlAVLTree()
+{
+    FORCE_DONT_INLINE;
 }
 
 /**
@@ -804,23 +871,3 @@ EffectsGroup* fxGetGroup(const char* groupName)
     bool found = ((GroupMapFindHelper*)pGroupMap)->FindGet(hashID, &group);
     return found ? *group : nullptr;
 }
-
-// At the bottom of EffectsGroup.cpp -- REMOVE once real callers exist.
-void EffectsGroup_stub()
-{
-    NewAdapter<AVLTreeEntry<unsigned long, EffectsGroup*> > adapter;
-    adapter.Delete(0);
-}
-
-#pragma dont_inline on
-void AVLTreeBase<unsigned long, EffectsGroup*, NewAdapter<AVLTreeEntry<unsigned long, EffectsGroup*> >, DefaultKeyCompare<unsigned long> >::DeleteValues()
-{
-    DestroyTree(&AVLTreeBase::DeleteValue);
-    m_NumElements = 0;
-}
-void AVLTreeBase<unsigned long, EffectsTerrainSpec*, NewAdapter<AVLTreeEntry<unsigned long, EffectsTerrainSpec*> >, DefaultKeyCompare<unsigned long> >::DeleteValues()
-{
-    DestroyTree(&AVLTreeBase::DeleteValue);
-    m_NumElements = 0;
-}
-#pragma dont_inline reset

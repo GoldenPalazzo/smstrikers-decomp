@@ -24,11 +24,13 @@ public:
     static void DeleteEntry(T* entry) { delete entry; }
 };
 
+#ifndef NL_NEWADAPTER_DECLARE_ONLY
 template <typename T>
 NL_NEWADAPTER_DELETE_DECL NewAdapter<T>::Delete(T* ptr)
 {
     delete ptr;
 }
+#endif
 
 #undef NL_NEWADAPTER_DELETE_DECL
 
