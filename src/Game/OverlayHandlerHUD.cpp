@@ -18,12 +18,6 @@ extern void* g_pLocalization;
 extern const unsigned short LocalizationTableNotFound[];
 extern const unsigned short MissingLocString[];
 
-template <class T>
-T* FindItemByHashID(T* head, unsigned long hash);
-
-template <class T>
-T* CastToSomeType(T*, void* pValue);
-
 class GameInfoManager
 {
 public:

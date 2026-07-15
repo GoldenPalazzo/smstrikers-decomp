@@ -7,7 +7,6 @@
 #include "Game/GameSceneManager.h"
 #include "Game/DB/SaveLoad.h"
 #include "Game/FE/feFinder.h"
-#include "Game/FE/feTemplates.h"
 #include "Game/FE/tlSlide.h"
 #include "Game/FE/feInput.h"
 #include "Game/FE/fePopupMenu.h"

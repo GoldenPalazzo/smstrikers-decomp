@@ -1,7 +1,6 @@
 #include "Game/SH/SHCredits.h"
 #include "Game/FE/tlComponentInstance.h"
 #include "Game/FE/feInput.h"
-#include "Game/FE/feTemplates.h"
 #include "Game/FE/tlImageInstance.h"
 #include "NL/nlMemory.h"
 

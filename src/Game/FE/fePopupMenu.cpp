@@ -14,7 +14,6 @@
 #include "Game/FE/tlTextInstance.h"
 #include "Game/FE/tlImageInstance.h"
 #include "Game/FE/feText.h"
-#include "Game/FE/feTemplates.h"
 #include "NL/nlBSearch.h"
 #include "NL/nlConfig.h"
 #include "NL/nlLexicalCast.h"

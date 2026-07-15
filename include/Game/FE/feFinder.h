@@ -7,7 +7,7 @@
 #include "Game/FE/tlInstance.h"
 
 template <class T>
-T* FindItemByHashID(T* head, unsigned long hash);
+T* FindItemByHashID(T* list, unsigned long hashID);
 
 template <class T>
 T* CastToSomeType(T*, void* pValue);
@@ -38,14 +38,14 @@ static inline TLInstance* FEGetChildren(TLInstance* p)
 }
 
 template <typename T, int N>
-class FEFinder
+struct FEFinder
 {
-public:
     template <typename U>
-    static T* Find(U* pTopLevel, InlineHasher h1, InlineHasher h2 = 0, InlineHasher h3 = 0, InlineHasher h4 = 0, InlineHasher h5 = 0, InlineHasher h6 = 0)
+    static T* Find(U* pTopLevel, InlineHasher Level1, InlineHasher Level2 = 0, InlineHasher Level3 = 0, InlineHasher Level4 = 0, InlineHasher Level5 = 0, InlineHasher Level6 = 0)
     {
-        return _Find(pTopLevel, h1.m_Hash, h2.m_Hash, h3.m_Hash, h4.m_Hash, h5.m_Hash, h6.m_Hash);
+        return _Find(pTopLevel, Level1.m_Hash, Level2.m_Hash, Level3.m_Hash, Level4.m_Hash, Level5.m_Hash, Level6.m_Hash);
     }
+
     template <typename U>
     static T* _Find(U* pTopLevel, const unsigned long Level1, const unsigned long Level2,
         const unsigned long Level3, const unsigned long Level4, const unsigned long Level5, const unsigned long Level6)
@@ -58,5 +58,36 @@ public:
         return _Find(CastToSomeType(FEGetChildren(pTopLevel), pChild), Level2, Level3, Level4, Level5, Level6, 0);
     }
 };
+
+template <class T>
+T* FindItemByHashID(T* list, unsigned long hashID)
+{
+    if (list == 0)
+        return 0;
+
+    T* curr = list->m_next;
+
+    for (;;)
+    {
+        unsigned long id = curr->m_hash;
+        T* next = curr->m_next;
+
+        if (hashID == id)
+            return curr;
+
+        if (curr == list)
+            break;
+
+        curr = next;
+    }
+
+    return 0;
+}
+
+template <class T>
+T* CastToSomeType(T*, void* pValue)
+{
+    return (T*)pValue;
+}
 
 #endif // _FEFINDER_H_

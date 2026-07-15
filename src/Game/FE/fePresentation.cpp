@@ -3,7 +3,7 @@
 #include "NL/nlString.h"
 
 #include "Game/FE/feSoundKeyframeTrigger.h"
-#include "Game/FE/feTemplates.h"
+#include "Game/FE/feFinder.h"
 
 /**
  * Offset/Address/Size: 0x0 | 0x80210644 | size: 0xD0

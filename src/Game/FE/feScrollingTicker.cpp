@@ -1,7 +1,6 @@
 #define NL_SINGLETON_NO_DEFINE
 #include "Game/FE/feScrollingTicker.h"
 #include "Game/FE/feFinder.h"
-#include "Game/FE/feTemplates.h"
 
 /**
  * Offset/Address/Size: 0xF9C | 0x800A0BF4 | size: 0xB0

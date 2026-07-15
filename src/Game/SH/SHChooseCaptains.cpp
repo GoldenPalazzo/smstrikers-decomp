@@ -4,7 +4,6 @@
 #include "Game/FE/feHelpFuncs.h"
 #include "Game/FE/feManager.h"
 #include "Game/FE/fePopupMenu.h"
-#include "Game/FE/feTemplates.h"
 #include "Game/GameSceneManager.h"
 #include "Game/main.h"
 #include "NL/nlConfig.h"

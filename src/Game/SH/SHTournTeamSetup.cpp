@@ -6,7 +6,6 @@
 #include "Game/FE/feFinder.h"
 #include "Game/FE/feHelpFuncs.h"
 #include "Game/FE/fePopupMenu.h"
-#include "Game/FE/feTemplates.h"
 #include "Game/GameSceneManager.h"
 #include "Game/SH/SHCupHub.h"
 #include "NL/gl/glPlat.h"

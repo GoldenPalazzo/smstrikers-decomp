@@ -34,9 +34,6 @@ struct FEInput
     /* 0x28 */ bool m_bInputAllowed;
 
     FEInput();
-    /**
-     * Offset/Address/Size: 0x0 | 0x8020FB20 | size: 0x48
-     */
     virtual ~FEInput() { };
 
     void EnableAnalogToDPadMapping(eFEINPUT_PAD, bool);

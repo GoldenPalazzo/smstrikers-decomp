@@ -2,7 +2,6 @@
 #include "Game/SH/SHProgressiveScan.h"
 
 #include "Game/FE/feInput.h"
-#include "Game/FE/feTemplates.h"
 #include "Game/GameSceneManager.h"
 #include "NL/gl/glPlat.h"
 #include "dolphin/os/OSRtc.h"

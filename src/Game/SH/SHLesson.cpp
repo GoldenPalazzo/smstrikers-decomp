@@ -38,12 +38,6 @@ static inline const unsigned short* LookupLocString(const char* stringId)
     return MissingLocString;
 }
 
-template <class T>
-T* FindItemByHashID(T* head, unsigned long hash);
-
-template <class T>
-T* CastToSomeType(T*, void* pValue);
-
 int LessonScene::mLessonIndex = -1;
 
 /**

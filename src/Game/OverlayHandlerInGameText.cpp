@@ -15,7 +15,6 @@
 
 #include "Game/FE/Overlay/OverlayHandlerSummary.h"
 #include "Game/FE/feFinder.h"
-#include "Game/FE/feTemplates.h"
 
 #include "types.h"
 
