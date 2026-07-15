@@ -36,7 +36,6 @@ PhysicsShell::PhysicsShell(float radius)
 
 /**
  * Offset/Address/Size: 0x10C | 0x8013BA74 | size: 0x898
- * TODO: 99.89% match - net width half-scale operand order and net-height f1/f2 register allocation
  */
 ContactType PhysicsShell::Contact(PhysicsObject* obj, dContact* info, int numContacts)
 {
@@ -224,7 +223,7 @@ ContactType PhysicsShell::Contact(PhysicsObject* obj, dContact* info, int numCon
     {
         if (m_pPowerupObject->mtNoHitTimer.m_uPackedTime != 0)
         {
-            if (((PhysicsNPC*)obj)->mpAINPC->GetSkinAnimatedNPC_Type() == SkinAnimatedNPC_BOWSER)
+            if (((SkinAnimatedNPC*)((PhysicsNPC*)obj)->mpAINPC)->GetSkinAnimatedNPC_Type() == SkinAnimatedNPC_BOWSER)
             {
                 if (m_pPowerupObject->m_pThrower == NULL)
                 {
@@ -272,7 +271,10 @@ ContactType PhysicsShell::Contact(PhysicsObject* obj, dContact* info, int numCon
 
         if (mbIsInNet)
         {
-            if ((float)fabs(v3PowerupPosition.f.y) > cNet::m_fNetWidth / 2.0f - fPowerupRadius)
+            float fNetWidth = cNet::m_fNetWidth;
+            double fAbsPowerupY = __fabs(v3PowerupPosition.f.y);
+            float fNetLimitY = 0.5f * fNetWidth - fPowerupRadius;
+            if ((float)fAbsPowerupY > fNetLimitY)
             {
                 m_pPowerupObject->m_bShouldDestroy = true;
                 return NO_CONTACT;
@@ -310,22 +312,29 @@ ContactType PhysicsShell::Contact(PhysicsObject* obj, dContact* info, int numCon
                 return NO_CONTACT;
             }
 
-            float fPowerupZ = v3PowerupPosition.f.z;
+            double fPowerupZ = v3PowerupPosition.f.z;
             float fNetHeight = cNet::m_fNetHeight;
-            if ((float)fabs(fPowerupZ) > fNetHeight - fPowerupRadius)
+            double fAbsPowerupZ = __fabs(fPowerupZ);
+            float fNetLimit = fNetHeight - fPowerupRadius;
+            if ((float)fAbsPowerupZ > fNetLimit)
             {
                 m_pPowerupObject->m_bShouldDestroy = true;
                 return NO_CONTACT;
             }
         }
 
-        if ((float)fabs(v3PowerupPosition.f.y) < cNet::m_fNetWidth / 2.0f - fPowerupRadius)
+        float fNetWidth = cNet::m_fNetWidth;
+        double fAbsPowerupY = __fabs(v3PowerupPosition.f.y);
+        float fNetLimitY = 0.5f * fNetWidth - fPowerupRadius;
+        if ((float)fAbsPowerupY < fNetLimitY)
         {
             if ((float)fabs(v3PowerupPosition.f.x) > cField::GetGoalLineX(1u) - fPowerupRadius)
             {
-                float fPowerupZ = v3PowerupPosition.f.z;
+                double fPowerupZ = v3PowerupPosition.f.z;
                 float fNetHeight = cNet::m_fNetHeight;
-                if ((float)fabs(fPowerupZ) < fNetHeight - fPowerupRadius)
+                double fAbsPowerupZ = __fabs(fPowerupZ);
+                float fNetLimit = fNetHeight - fPowerupRadius;
+                if ((float)fAbsPowerupZ < fNetLimit)
                 {
                     mbIsInNet = true;
                     return NO_CONTACT;

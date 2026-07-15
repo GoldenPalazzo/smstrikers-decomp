@@ -35,7 +35,11 @@ public:
     /* 0x10 */ virtual bool SetContactInfo(dContact* contact, PhysicsObject* other, bool first);
     /* 0x14 */ virtual void PreUpdate();
     /* 0x18 */ virtual void PostUpdate();
+#ifdef PHYSICSOBJECT_PRECOLLIDE_DECLARE_ONLY
+    /* 0x1c */ virtual void PreCollide();
+#else
     /* 0x1c */ virtual void PreCollide() { }
+#endif
     /* 0x20 */ virtual ContactType Contact(PhysicsObject*, dContact*, int);
     /* 0x24 */ virtual ContactType Contact(PhysicsObject*, dContact*, int, PhysicsObject*);
     void MakeStatic();

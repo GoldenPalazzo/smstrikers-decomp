@@ -47,6 +47,9 @@ public:
         ParseChunks((nlChunk*)memory, (nlChunk*)(memory + length));
     }
 
+#ifdef CINVENTORY_PHYSICS_DTOR_BODY
+    ~cInventory();
+#else
     ~cInventory()
     {
         ListEntry<char*>** pTail;
@@ -82,6 +85,7 @@ public:
 
         m_nItemCount = 0;
     }
+#endif
 
     /* 0x0 */ nlListContainer<T*> m_lItemList;
     /* 0xC */ nlListContainer<char*> m_lMemList;
