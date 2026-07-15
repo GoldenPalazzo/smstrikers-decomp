@@ -9,18 +9,6 @@
 #include "Game/PoseAccumulator.h"
 #include "NL/nlSlotPool.h"
 
-// class SlotPool<cPN_SAnimController>
-// {
-// public:
-//     void ~SlotPool();
-// };
-
-// class cSAnim
-// {
-// public:
-//     void GetCallbackList() const;
-// };
-
 class AnimRetarget;
 
 class cPN_SAnimController : public cPoseNode
@@ -69,11 +57,6 @@ public:
     {
         return m_bMirror;
     }
-
-    // inline cSAnim* get_pSAnim() const
-    // {
-    //     return m_pSAnim;
-    // }
 
     /* 0x14 */ cSAnim* m_pSAnim;
     /* 0x18 */ float m_fTime;

@@ -26,10 +26,13 @@ cPN_SAnimController::cPN_SAnimController(cSAnim* pSAnim, const AnimRetarget* pAn
     m_fSynchronizedWeight = 1.0f;
 }
 
+static inline float Dur(const cPN_SAnimController* p)
+{
+    return (float)p->m_pSAnim->m_nNumKeys / 30.0f;
+}
+
 /**
  * Offset/Address/Size: 0xAF0 | 0x801EB14C | size: 0x2D0
- * TODO: 99.69% match - synchronized ratio block still differs in
- * f0/f2/f4/f7 register allocation.
  */
 cPoseNode* cPN_SAnimController::Update(float t)
 {
@@ -49,14 +52,7 @@ cPoseNode* cPN_SAnimController::Update(float t)
                 m_funcSychronizedWeightCallback(m_nSynchronizedWeightCallbackParam, this);
             }
 
-            cPN_SAnimController* pSyncController = m_pSynchronizedController;
-            float thisDuration = (float)m_pSAnim->m_nNumKeys / 30.0f;
-            float syncRatio = (float)pSyncController->m_pSAnim->m_nNumKeys / 30.0f;
-            syncRatio = syncRatio / pSyncController->m_fPlaybackSpeedScale;
-            float ratio = thisDuration / m_fPlaybackSpeedScale;
-            ratio = ratio / syncRatio;
-
-            fSpeedScale *= m_fSynchronizedWeight * (ratio - 1.0f) + 1.0f;
+            fSpeedScale *= m_fSynchronizedWeight * ((Dur(this) / m_fPlaybackSpeedScale) / (Dur(m_pSynchronizedController) / m_pSynchronizedController->m_fPlaybackSpeedScale) - 1.0f) + 1.0f;
         }
 
         m_fPrevTime = m_fTime;
@@ -190,8 +186,6 @@ void cPN_SAnimController::Evaluate(int nodeIndex, float weight, cPoseAccumulator
 
 /**
  * Offset/Address/Size: 0x35C | 0x801EA9B8 | size: 0x280
- * TODO: 89.98% match - stack/local slot packing differs (0x44..0x4C vs 0x50..0x58),
- * causing a smaller frame and shifted prologue/epilogue offsets.
  */
 static inline void GetRootTransDelta(cPN_SAnimController* pController, nlVector3* pRootTrans, float fStartTime, float fEndTime)
 {
