@@ -8,39 +8,32 @@
 
 class GLRenderList;
 
-// Callback type definitions
 typedef void (*glViewIterateCallback)(eGLView, unsigned long);
 typedef void (*glViewPacketCallback)(eGLView, unsigned long, const glModelPacket*);
 
 struct glView
 {
-    /* 0x00 */ u32 m_unk_0x00;
-    // /* 0x04 */ u8 m_padding_0x04[0x10];
-
-    /* 0x04 */ u32 m_unk_0x04;
-    /* 0x08 */ u32 m_unk_0x08;
-    /* 0x0C */ u32 m_screenWidth;
-    /* 0x10 */ u32 m_screenHeight;
-
-    /* 0x14 */ nlMatrix4* m_unk_0x14;
-    /* 0x18 */ nlMatrix4* m_unk_0x18;
-    /* 0x1C */ eGLTarget m_target;
-    /* 0x20 */ nlMatrix4 m_viewMatrix;
-    /* 0x60 */ nlMatrix4 m_projectionMatrix;
-    /* 0xA0 */ u8 m_padding_0xA0[0x40];
-    /* 0xE0 */ bool m_unk_0xE0;
-    // /* 0xE1 */ bool m_unk_0xE1; // unused, because of alignment?
-    // /* 0xE2 */ bool m_unk_0xE2; // unused, because of alignment?
-    // /* 0xE3 */ bool m_unk_0xE3; // unused, because of alignment?
-    /* 0xE4 */ eGLFilter m_filter;
-    /* 0xE8 */ eGLTarget m_filterSource;
-    /* 0xEC */ bool m_unk_0xEC;
-    /* 0xED */ bool m_depthClear;
-    /* 0xEE */ bool m_unk_0xEE;
-    /* 0xEF */ bool m_unk_0xEF;
+    /* 0x00 */ eGLViewSort sortMode;
+    /* 0x04 */ u32 vpX;
+    /* 0x08 */ u32 vpY;
+    /* 0x0C */ u32 vpWidth;
+    /* 0x10 */ u32 vpHeight;
+    /* 0x14 */ nlMatrix4* viewMatrix;
+    /* 0x18 */ nlMatrix4* projMatrix;
+    /* 0x1C */ eGLTarget target;
+    /* 0x20 */ nlMatrix4 viewm;
+    /* 0x60 */ nlMatrix4 projm;
+    /* 0xA0 */ nlMatrix4 concatm; // projm * viewm, rebuilt when bConcatDirty
+    /* 0xE0 */ bool bConcatDirty;
+    /* 0xE4 */ eGLFilter filter;
+    /* 0xE8 */ eGLTarget filterSource;
+    /* 0xEC */ bool bClearColour;
+    /* 0xED */ bool bClearDepth;
+    /* 0xEE */ bool pad_0xEE;
+    /* 0xEF */ bool pad_0xEF;
     /* 0xF0 */ GLRenderList* renderList;
-    /* 0xF4 */ glViewIterateCallback m_preIterateCallback;
-    /* 0xF8 */ glViewIterateCallback m_postIterateCallback;
+    /* 0xF4 */ glViewIterateCallback preViewCallback;
+    /* 0xF8 */ glViewIterateCallback postViewCallback;
 };
 
 bool glViewSetEnable(eGLView, bool);

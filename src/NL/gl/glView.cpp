@@ -7,6 +7,7 @@
 #include <string.h>
 
 bool gl_ViewEnable[34] = { true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false };
+
 glView* views[34];
 
 /**
@@ -14,9 +15,9 @@ glView* views[34];
  */
 bool glViewSetEnable(eGLView view, bool enable)
 {
-    bool uVar1 = gl_ViewEnable[view];
+    bool bPrev = gl_ViewEnable[view];
     gl_ViewEnable[view] = enable;
-    return uVar1;
+    return bPrev;
 }
 
 /**
@@ -32,13 +33,13 @@ bool glViewGetEnable(eGLView view)
  */
 eGLTarget glViewSetFilterSource(eGLView view, eGLTarget target)
 {
-    eGLTarget temp_r3;
-    glView* temp_r5;
+    eGLTarget prev;
+    glView* v;
 
-    temp_r5 = views[view];
-    temp_r3 = temp_r5->m_filterSource;
-    temp_r5->m_filterSource = target;
-    return temp_r3;
+    v = views[view];
+    prev = v->filterSource;
+    v->filterSource = target;
+    return prev;
 }
 
 /**
@@ -46,7 +47,7 @@ eGLTarget glViewSetFilterSource(eGLView view, eGLTarget target)
  */
 eGLFilter glViewGetFilter(eGLView view)
 {
-    return views[view]->m_filter;
+    return views[view]->filter;
 }
 
 /**
@@ -54,9 +55,9 @@ eGLFilter glViewGetFilter(eGLView view)
  */
 eGLFilter glViewSetFilter(eGLView view, eGLFilter filter)
 {
-    eGLFilter temp_r3 = views[view]->m_filter;
-    views[view]->m_filter = filter;
-    return temp_r3;
+    eGLFilter prev = views[view]->filter;
+    views[view]->filter = filter;
+    return prev;
 }
 
 /**
@@ -64,48 +65,48 @@ eGLFilter glViewSetFilter(eGLView view, eGLFilter filter)
  */
 eGLTarget glViewSetTarget(eGLView view, eGLTarget target)
 {
-    eGLTarget temp_r3 = views[view]->m_target;
-    views[view]->m_target = target;
-    return temp_r3;
+    eGLTarget prev = views[view]->target;
+    views[view]->target = target;
+    return prev;
 }
 
 /**
  * Offset/Address/Size: 0x94 | 0x801DE538 | size: 0x20
  */
-void glViewProjectPoint(eGLView view, const nlVector3& point, nlVector3& result)
+void glViewProjectPoint(eGLView view, const nlVector3& v3world, nlVector3& v3NDC)
 {
-    glplatViewProjectPoint(view, point, result);
+    glplatViewProjectPoint(view, v3world, v3NDC);
 }
 
 /**
  * Offset/Address/Size: 0xB4 | 0x801DE558 | size: 0x94
  */
-void glViewGetProjectionMatrix(eGLView view, nlMatrix4& result)
+void glViewGetProjectionMatrix(eGLView view, nlMatrix4& m)
 {
-    result = views[view]->m_projectionMatrix;
+    m = views[view]->projm;
 }
 
 /**
  * Offset/Address/Size: 0x148 | 0x801DE5EC | size: 0x94
  */
-void glViewGetViewMatrix(eGLView view, nlMatrix4& result)
+void glViewGetViewMatrix(eGLView view, nlMatrix4& m)
 {
-    result = views[view]->m_viewMatrix;
+    m = views[view]->viewm;
 }
 
 /**
  * Offset/Address/Size: 0x1DC | 0x801DE680 | size: 0x54
  */
-nlMatrix4* glViewSetProjectionMatrix(eGLView view, unsigned long value)
+nlMatrix4* glViewSetProjectionMatrix(eGLView view, unsigned long matrix)
 {
-    glView* view_ptr = views[view];
-    nlMatrix4* temp_r31 = view_ptr->m_unk_0x18;
-    view_ptr->m_unk_0x18 = (nlMatrix4*)value;
-    view_ptr->m_unk_0xE0 = 1;
+    glView* v = views[view];
+    nlMatrix4* prev = v->projMatrix;
+    v->projMatrix = (nlMatrix4*)matrix;
+    v->bConcatDirty = 1;
 
-    glGetMatrix(value, view_ptr->m_projectionMatrix);
+    glGetMatrix(matrix, v->projm);
 
-    return temp_r31;
+    return prev;
 }
 
 /**
@@ -113,23 +114,23 @@ nlMatrix4* glViewSetProjectionMatrix(eGLView view, unsigned long value)
  */
 nlMatrix4* glViewGetProjectionMatrix(eGLView view)
 {
-    glView* view_ptr = views[view];
-    return view_ptr->m_unk_0x18;
+    glView* v = views[view];
+    return v->projMatrix;
 }
 
 /**
  * Offset/Address/Size: 0x248 | 0x801DE6EC | size: 0x54
  */
-nlMatrix4* glViewSetViewMatrix(eGLView view, unsigned long value)
+nlMatrix4* glViewSetViewMatrix(eGLView view, unsigned long matrix)
 {
-    glView* view_ptr = views[view];
-    nlMatrix4* temp_r31 = view_ptr->m_unk_0x14;
-    view_ptr->m_unk_0x14 = (nlMatrix4*)value;
-    view_ptr->m_unk_0xE0 = 1;
+    glView* v = views[view];
+    nlMatrix4* prev = v->viewMatrix;
+    v->viewMatrix = (nlMatrix4*)matrix;
+    v->bConcatDirty = 1;
 
-    glGetMatrix(value, view_ptr->m_viewMatrix);
+    glGetMatrix(matrix, v->viewm);
 
-    return temp_r31;
+    return prev;
 }
 
 /**
@@ -137,31 +138,31 @@ nlMatrix4* glViewSetViewMatrix(eGLView view, unsigned long value)
  */
 nlMatrix4* glViewGetViewMatrix(eGLView view)
 {
-    glView* view_ptr = views[view];
-    return view_ptr->m_unk_0x14;
+    glView* v = views[view];
+    return v->viewMatrix;
 }
 
 /**
  * Offset/Address/Size: 0x2B4 | 0x801DE758 | size: 0x24
  */
-eGLViewSort glViewSetSortMode(eGLView view, eGLViewSort value)
+eGLViewSort glViewSetSortMode(eGLView view, eGLViewSort sort)
 {
-    glView* view_ptr = views[view];
-    eGLViewSort temp_r3 = (eGLViewSort)view_ptr->m_unk_0x00;
-    view_ptr->m_unk_0x00 = value;
-    view_ptr->renderList->m_unk_0x04 = value;
-    return temp_r3;
+    glView* v = views[view];
+    eGLViewSort prev = v->sortMode;
+    v->sortMode = sort;
+    v->renderList->m_unk_0x04 = sort;
+    return prev;
 }
 
 /**
  * Offset/Address/Size: 0x2D8 | 0x801DE77C | size: 0x1C
  */
-bool glViewSetDepthClear(eGLView view, bool value)
+bool glViewSetDepthClear(eGLView view, bool bClear)
 {
-    glView* view_ptr = views[view];
-    bool temp_r3 = view_ptr->m_depthClear;
-    view_ptr->m_depthClear = value;
-    return temp_r3;
+    glView* v = views[view];
+    bool bPrev = v->bClearDepth;
+    v->bClearDepth = bClear;
+    return bPrev;
 }
 
 /**
@@ -169,91 +170,80 @@ bool glViewSetDepthClear(eGLView view, bool value)
  */
 bool glViewGetDepthClear(eGLView view)
 {
-    // return (*(&views + (arg0 * 4)))->unkED;
-    glView* view_ptr = views[view];
-    return view_ptr->m_depthClear;
+    glView* v = views[view];
+    return v->bClearDepth;
 }
 
 /**
  * Offset/Address/Size: 0x30C | 0x801DE7B0 | size: 0x164
- * NonMatching 99.55% - remaining callee-saved register rotation for
- * enable/screenWidth/screenHeight.
  */
 void gl_ViewStartup()
 {
-    bool* enable;
+    s32 i;
+    eGLView view;
+    u32 identity;
     u32 screenWidth;
     u32 screenHeight;
-    glView* view;
+    glView* pView;
     GLRenderList* renderList;
-    s32 offset;
-    glView** viewSlot;
-    s32 i;
-    u32 identityMatrix;
 
     screenWidth = glGetScreenWidth();
     screenHeight = glGetScreenHeight();
-    identityMatrix = glGetIdentityMatrix();
+    identity = glGetIdentityMatrix();
 
-    i = 0;
-    offset = 0;
-    enable = gl_ViewEnable;
-    viewSlot = views;
-    do
+    for (i = 0; i < 0x22; i++)
     {
-        enable[offset / 4] = TRUE;
+        view = (eGLView)i;
+        gl_ViewEnable[i] = TRUE;
 
-        view = (glView*)nlMalloc(0xFC, 8, FALSE);
-        if (view != NULL)
+        pView = (glView*)nlMalloc(0xFC, 8, FALSE);
+        if (pView != NULL)
         {
             renderList = new (nlMalloc(0x30, 8, FALSE)) GLRenderList();
-            view->renderList = renderList;
-            view->m_preIterateCallback = NULL;
-            view->m_postIterateCallback = NULL;
-            view->m_unk_0xEC = FALSE;
-            view->m_depthClear = FALSE;
+            pView->renderList = renderList;
+            pView->preViewCallback = NULL;
+            pView->postViewCallback = NULL;
+            pView->bClearColour = FALSE;
+            pView->bClearDepth = FALSE;
         }
 
-        *viewSlot = view;
+        views[i] = pView;
 
-        view = views[offset / 4];
-        view->m_unk_0x00 = 0;
-        renderList = view->renderList;
+        pView = views[view];
+        pView->sortMode = GLVSort_Texture;
+        renderList = pView->renderList;
         renderList->m_unk_0x04 = GLVSort_Texture;
-        view = views[offset / 4];
-        view->m_unk_0x14 = (nlMatrix4*)identityMatrix;
-        view->m_unk_0xE0 = TRUE;
-        glGetMatrix(identityMatrix, view->m_viewMatrix);
 
-        view = views[offset / 4];
-        view->m_unk_0x18 = (nlMatrix4*)identityMatrix;
-        view->m_unk_0xE0 = TRUE;
-        glGetMatrix(identityMatrix, view->m_projectionMatrix);
+        pView = views[view];
+        pView->viewMatrix = (nlMatrix4*)identity;
+        pView->bConcatDirty = TRUE;
+        glGetMatrix(identity, pView->viewm);
 
-        view = views[offset / 4];
-        view->m_target = GLTG_None;
+        pView = views[view];
+        pView->projMatrix = (nlMatrix4*)identity;
+        pView->bConcatDirty = TRUE;
+        glGetMatrix(identity, pView->projm);
 
-        view = views[offset / 4];
-        view->m_unk_0x04 = 0;
-        view->m_unk_0x08 = 0;
-        view->m_screenWidth = screenWidth;
-        view->m_screenHeight = screenHeight;
+        pView = views[view];
+        pView->target = GLTG_None;
 
-        view = views[offset / 4];
-        view->m_filter = GLFilter_None;
-        view = views[offset / 4];
-        view->m_filterSource = GLTG_None;
-        view = views[offset / 4];
-        view->m_unk_0xEC = FALSE;
-        view = views[offset / 4];
-        view->m_depthClear = FALSE;
+        pView = views[view];
+        pView->vpX = 0;
+        pView->vpY = 0;
+        pView->vpWidth = screenWidth;
+        pView->vpHeight = screenHeight;
 
-        (*viewSlot)->renderList->m_unk_0x00 = i;
+        pView = views[view];
+        pView->filter = GLFilter_None;
+        pView = views[view];
+        pView->filterSource = GLTG_None;
+        pView = views[view];
+        pView->bClearColour = FALSE;
+        pView = views[view];
+        pView->bClearDepth = FALSE;
 
-        viewSlot++;
-        offset += 4;
-        i++;
-    } while (i < 0x22);
+        views[i]->renderList->m_unk_0x00 = i;
+    }
 }
 
 /**
@@ -262,16 +252,16 @@ void gl_ViewStartup()
 #pragma opt_common_subs off
 void gl_ViewIterate(eGLView view, glViewPacketCallback cb)
 {
-    if (views[view]->m_preIterateCallback != NULL)
+    if (views[view]->preViewCallback != NULL)
     {
-        views[view]->m_preIterateCallback(view, 1);
+        views[view]->preViewCallback(view, 1);
     }
 
     views[view]->renderList->Iterate(view, cb);
 
-    if (views[view]->m_postIterateCallback != NULL)
+    if (views[view]->postViewCallback != NULL)
     {
-        views[view]->m_postIterateCallback(view, 0);
+        views[view]->postViewCallback(view, 0);
     }
 }
 #pragma opt_common_subs on
@@ -295,7 +285,7 @@ void gl_ViewReset()
     for (int i = 0; i < 0x22; i++)
     {
         views[i]->renderList->Clear();
-        views[i]->m_unk_0xE0 = 1;
+        views[i]->bConcatDirty = 1;
     }
 }
 
@@ -309,8 +299,8 @@ void glViewAttachPacket(eGLView view, const glModelPacket* packet)
     model.numPackets = 1;
     model.packets = (glModelPacket*)packet;
 
-    glView* view_ptr = views[view];
-    view_ptr->renderList->AttachModel(&model, 0);
+    glView* v = views[view];
+    v->renderList->AttachModel(&model, 0);
 }
 
 /**
@@ -318,8 +308,8 @@ void glViewAttachPacket(eGLView view, const glModelPacket* packet)
  */
 void glViewAttachModel(eGLView view, const glModel* model)
 {
-    glView* view_ptr = views[view];
-    view_ptr->renderList->AttachModel(model, 0);
+    glView* v = views[view];
+    v->renderList->AttachModel(model, 0);
 }
 
 /**
@@ -327,8 +317,8 @@ void glViewAttachModel(eGLView view, const glModel* model)
  */
 void glViewAttachModel(eGLView view, unsigned long arg, const glModel* model)
 {
-    glView* view_ptr = views[view];
-    view_ptr->renderList->AttachModel(model, arg);
+    glView* v = views[view];
+    v->renderList->AttachModel(model, arg);
 }
 
 /**

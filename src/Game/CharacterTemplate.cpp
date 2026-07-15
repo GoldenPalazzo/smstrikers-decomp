@@ -86,101 +86,23 @@ static inline u32 GetHashFromTextureFile(const char* szTextureFileName)
     char* pDest = name;
     const char* pSrc = NULL;
     int count = 0;
-    const char* szPath = szTextureFileName;
 
-    for (int j = 0; j < 10; j++)
+    for (count = 0; count < 100; count++)
     {
-        char c;
-        c = szPath[0];
-        if (c == '\\' || c == '/')
+        if (szTextureFileName[count] == '\\' || szTextureFileName[count] == '/')
         {
-            count++;
-            pSrc = szTextureFileName + count;
-            goto foundSlash;
+            pSrc = &szTextureFileName[count + 1];
+            break;
         }
-        count++;
-        c = szPath[1];
-        if (c == '\\' || c == '/')
-        {
-            count++;
-            pSrc = szTextureFileName + count;
-            goto foundSlash;
-        }
-        count++;
-        c = szPath[2];
-        if (c == '\\' || c == '/')
-        {
-            count++;
-            pSrc = szTextureFileName + count;
-            goto foundSlash;
-        }
-        count++;
-        c = szPath[3];
-        if (c == '\\' || c == '/')
-        {
-            count++;
-            pSrc = szTextureFileName + count;
-            goto foundSlash;
-        }
-        count++;
-        c = szPath[4];
-        if (c == '\\' || c == '/')
-        {
-            count++;
-            pSrc = szTextureFileName + count;
-            goto foundSlash;
-        }
-        count++;
-        c = szPath[5];
-        if (c == '\\' || c == '/')
-        {
-            count++;
-            pSrc = szTextureFileName + count;
-            goto foundSlash;
-        }
-        count++;
-        c = szPath[6];
-        if (c == '\\' || c == '/')
-        {
-            count++;
-            pSrc = szTextureFileName + count;
-            goto foundSlash;
-        }
-        count++;
-        c = szPath[7];
-        if (c == '\\' || c == '/')
-        {
-            count++;
-            pSrc = szTextureFileName + count;
-            goto foundSlash;
-        }
-        count++;
-        c = szPath[8];
-        if (c == '\\' || c == '/')
-        {
-            count++;
-            pSrc = szTextureFileName + count;
-            goto foundSlash;
-        }
-        count++;
-        c = szPath[9];
-        if (c == '\\' || c == '/')
-        {
-            count++;
-            pSrc = szTextureFileName + count;
-            goto foundSlash;
-        }
-        count++;
-        szPath += 10;
     }
-foundSlash:
+
     for (int k = 0; k < 100; k++)
     {
         if (*pSrc == '\0')
             goto copyDone;
         if (*pSrc == '.')
             goto copyDone;
-        *pDest = *pSrc;
+        *pDest = *(const volatile char*)pSrc; /* volatile: the original reloads here rather than reusing the guard's load */
         pSrc++;
         pDest++;
         continue;
@@ -189,6 +111,15 @@ foundSlash:
         return nlStringLowerHash(name);
     }
     return 0;
+}
+
+/* Must go through this accessor: taking the inventory pointer straight from
+   g_GoalieTemplate colours it r26 (reusing the just-freed texture-info reg)
+   instead of r29, and folding it into the FindHierarchy call sinks the load
+   past nlStringHash. */
+static inline cInventory<cSHierarchy>* GetHierInv(const tCharacterTemplate* p)
+{
+    return p->pHierarchyInventory;
 }
 
 static inline cSHierarchy* FindHierarchy(ListEntry<cSHierarchy*>* hEntry, u32 hash)
@@ -253,7 +184,6 @@ bool IsCaptain(eCharacterClass cc)
 
 /**
  * Offset/Address/Size: 0x1CFC | 0x80013FE4 | size: 0x3F0
- * TODO: 99.37% match - hierarchy file load keeps an extra return-value move; retarget chunk/end registers are swapped
  */
 void CharacterLoadingGuts(tCharacterTemplate* pCharacterTemplate, const tCharacterTemplateInfo& charTemplateInfo, eCharacterClass cc, bool bForViewer)
 {
@@ -263,50 +193,8 @@ void CharacterLoadingGuts(tCharacterTemplate* pCharacterTemplate, const tCharact
     pCharacterTemplate->nCharacterModelID[0] = pRigidCharacterModel->id;
     pCharacterTemplate->nCharacterModelID[1] = pBlendCharacterModel->id;
 
-    cInventory<cSHierarchy>* pHierInv = new (nlMalloc(sizeof(cInventory<cSHierarchy>), 8, false)) cInventory<cSHierarchy>();
-    pCharacterTemplate->pHierarchyInventory = pHierInv;
-
-    u32 hierFileSize;
-    cInventory<cSHierarchy>* pHierInv2 = pCharacterTemplate->pHierarchyInventory;
-    cInventory<AnimRetargetList>* pRetInv;
-    nlChunk* hierData = (nlChunk*)nlLoadEntireFile(charTemplateInfo.szHierarchyFilename, &hierFileSize, 0x20, AllocateStart);
-
-    ListEntry<char*>* memEntry = (ListEntry<char*>*)nlMalloc(8, 8, false);
-    if (memEntry != NULL)
-    {
-        memEntry->next = NULL;
-        memEntry->entry = (char*)hierData;
-    }
-    nlListAddStart<ListEntry<char*> >(
-        (ListEntry<char*>**)&pHierInv2->m_lMemList.m_Head,
-        memEntry,
-        (ListEntry<char*>**)&pHierInv2->m_lMemList.m_Tail);
-
-    nlChunk* hierEnd = (nlChunk*)((char*)hierData + hierFileSize);
-    while (hierData != hierEnd)
-    {
-        if ((hierData->m_ID & 0x80FFFFFF) == 0x80018000)
-        {
-            cSHierarchy* hier = cSHierarchy::Initialize(hierData);
-
-            ListEntry<cSHierarchy*>* itemEntry = (ListEntry<cSHierarchy*>*)nlMalloc(8, 8, false);
-            if (itemEntry != NULL)
-            {
-                itemEntry->next = NULL;
-                itemEntry->entry = hier;
-            }
-            nlListAddStart<ListEntry<cSHierarchy*> >(
-                &pHierInv2->m_lItemList.m_Head,
-                itemEntry,
-                &pHierInv2->m_lItemList.m_Tail);
-            pHierInv2->m_nItemCount++;
-        }
-        else
-        {
-            nlPrintf("Warning: inventory encountered an unknown chunk type\n");
-        }
-        hierData = (nlChunk*)((char*)hierData + hierData->m_Size + 8);
-    }
+    pCharacterTemplate->pHierarchyInventory = new (nlMalloc(sizeof(cInventory<cSHierarchy>), 8, false)) cInventory<cSHierarchy>();
+    pCharacterTemplate->pHierarchyInventory->AddFile(charTemplateInfo.szHierarchyFilename);
 
     if (!bForViewer)
     {
@@ -336,57 +224,14 @@ void CharacterLoadingGuts(tCharacterTemplate* pCharacterTemplate, const tCharact
         pCharacterTemplate->pAnimInventory->AddAnimBundle(charTemplateInfo.szAnimFilename);
         pCharacterTemplate->bAnimInventoryCopy = false;
 
-        cAnimInventory* pAI = pCharacterTemplate->pAnimInventory;
-        cInventory<cSAnim>* pAnimCont = (cInventory<cSAnim>*)pAI->m_cont;
-        SebringAnimTagScriptInterpreter* pInterp = g_pAnimScriptInterp;
-        const char* triggerFilename;
-        if (cc < NUM_FIELDER_CLASSES)
-        {
-            triggerFilename = g_aCharacterTemplateInfo[cc].szTriggerFilename;
-        }
-        else
-        {
-            triggerFilename = g_GoalieTemplateInfo.szTriggerFilename;
-        }
-        pInterp->SetupAnimationTriggers(triggerFilename, pAnimCont);
+        cInventory<cSAnim>* pAnimCont = (cInventory<cSAnim>*)pCharacterTemplate->pAnimInventory->m_cont;
+        g_pAnimScriptInterp->SetupAnimationTriggers(GetCharacterTriggerFileName(cc), pAnimCont);
     }
 
     if (charTemplateInfo.szAnimRetargetFilename != NULL)
     {
-        cInventory<AnimRetargetList>* pRetargetInv = new (nlMalloc(sizeof(cInventory<AnimRetargetList>), 8, false)) cInventory<AnimRetargetList>();
-        pCharacterTemplate->pAnimRetargetListInventory = pRetargetInv;
-
-        u32 retargetFileSize;
-        pRetInv = pCharacterTemplate->pAnimRetargetListInventory;
-        nlChunk* retargetData = AddLoadedInventoryMemory(
-            pRetInv,
-            (nlChunk*)nlLoadEntireFile(charTemplateInfo.szAnimRetargetFilename, &retargetFileSize, 0x20, AllocateStart));
-
-        nlChunk* retargetEnd = (nlChunk*)((char*)retargetData + retargetFileSize);
-        while (retargetData != retargetEnd)
-        {
-            if ((retargetData->m_ID & 0x80FFFFFF) == 0x80017104)
-            {
-                AnimRetargetList* retarget = AnimRetargetList::Initialize(retargetData);
-
-                ListEntry<AnimRetargetList*>* retItemEntry = (ListEntry<AnimRetargetList*>*)nlMalloc(8, 8, false);
-                if (retItemEntry != NULL)
-                {
-                    retItemEntry->next = NULL;
-                    retItemEntry->entry = retarget;
-                }
-                nlListAddStart<ListEntry<AnimRetargetList*> >(
-                    &pRetInv->m_lItemList.m_Head,
-                    retItemEntry,
-                    &pRetInv->m_lItemList.m_Tail);
-                pRetInv->m_nItemCount++;
-            }
-            else
-            {
-                nlPrintf("Warning: inventory encountered an unknown chunk type\n");
-            }
-            retargetData = (nlChunk*)((char*)retargetData + retargetData->m_Size + 8);
-        }
+        pCharacterTemplate->pAnimRetargetListInventory = new (nlMalloc(sizeof(cInventory<AnimRetargetList>), 8, false)) cInventory<AnimRetargetList>();
+        pCharacterTemplate->pAnimRetargetListInventory->AddFile(charTemplateInfo.szAnimRetargetFilename);
     }
     else
     {
@@ -589,10 +434,6 @@ cPlayer* CreateSidekick(int nPlayerID, int nTeamID, eCharacterClass cc, eCharact
 
 /**
  * Offset/Address/Size: 0xE70 | 0x80013158 | size: 0x634
- * TODO: 93.80% match - hierarchy inventory load uses r26 vs r29; the two
- * inlined GetHashFromTextureFile scan loops fold the running count into the
- * found-offset immediate instead of keeping it in a register (extra addi per
- * char in target), and the copy loop reloads *pSrc instead of reusing it.
  */
 cPlayer* CreateGoalie(eCharacterClass gcc, bool bForViewer)
 {
@@ -609,7 +450,7 @@ cPlayer* CreateGoalie(eCharacterClass gcc, bool bForViewer)
         CharacterLoadingGuts(g_GoalieTemplate, g_GoalieTemplateInfo, gcc, bForViewer);
     }
 
-    cInventory<cSHierarchy>* pHierInv = g_GoalieTemplate->pHierarchyInventory;
+    cInventory<cSHierarchy>* pHierInv = GetHierInv(g_GoalieTemplate);
     u32 hash = nlStringHash(g_GoalieTemplateInfo.szHierarchy);
 
     cSHierarchy* pHierarchy = FindHierarchy(pHierInv->m_lItemList.m_Head, hash);

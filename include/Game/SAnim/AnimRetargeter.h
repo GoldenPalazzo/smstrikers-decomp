@@ -15,6 +15,10 @@ class AnimRetargetList : public cIdentifier
 {
 public:
     static AnimRetargetList* Initialize(nlChunk*);
+    static bool IsValidChunkID(u32 id)
+    {
+        return (id & 0x80FFFFFF) == 0x80017104;
+    }
     AnimRetarget* GetAnimRetargetWithSignature(const cSAnim*);
 
     /* 0x8 */ long m_NumAnimRetargets;
