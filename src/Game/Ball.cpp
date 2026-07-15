@@ -1028,7 +1028,7 @@ bool cBall::GetInNet(int& nSide)
         }
     }
 
-    if (!m_pPhysicsBall->m_unk_0x58)
+    if (!m_pPhysicsBall->mbIsInsideNet)
     {
         goto false_exit;
     }

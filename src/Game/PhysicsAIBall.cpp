@@ -16,125 +16,44 @@ extern PhysicsWorld* g_PhysicsWorld;
 /**
  * Offset/Address/Size: 0x0 | 0x80133A34 | size: 0x84
  */
-bool PhysicsAIBall::IsBallOutsideNet(const nlVector3& v3Pos)
+bool PhysicsAIBall::IsBallOutsideNet(const nlVector3& ballPosition)
 {
-    f32 radius = g_pBall->m_pPhysicsBall->GetRadius();
-    f64 absX = (float)fabs(v3Pos.f.x);
-    f32 threshold = cField::GetGoalLineX((unsigned int)1);
-    f32 sum;
-    f32 fAbsX;
-    sum = radius + threshold;
-    fAbsX = (f32)absX;
-    threshold = sum - 0.08f;
-    return fAbsX < threshold;
-}
-
-inline float nlVec3GetX(const nlVector3& v)
-{
-    return (float)fabs(v.f.x);
-}
-
-inline void InterpolateVector(nlVector3& out, const nlVector3& oldPos, const nlVector3& newPos, float alpha)
-{
-    float oneMinusAlpha = 1.0f - alpha;
-    out.f.x = (oneMinusAlpha * oldPos.f.x) + (alpha * newPos.f.x);
-    out.f.y = (oneMinusAlpha * oldPos.f.y) + (alpha * newPos.f.y);
-    out.f.z = (oneMinusAlpha * oldPos.f.z) + (alpha * newPos.f.z);
+    float radius = g_pBall->GetPhysicsBall()->GetRadius();
+    return nlAbs(ballPosition.f.x) < cField::GetGoalLineX(1U) + radius - 0.08f;
 }
 
 /**
  * Offset/Address/Size: 0x84 | 0x80133AB8 | size: 0x1A0
- * TODO: 96.15% match - instruction scheduling diffs at prologue (lfs/mr interleaving).
- * Caused by -inline deferred (scratch) vs -inline auto (build) scheduler difference.
  */
-bool PhysicsAIBall::DidBallJustEnterNet(const nlVector3& oldPos, nlVector3 newPos)
+bool PhysicsAIBall::DidBallJustEnterNet(const nlVector3& oldPosition, const nlVector3 newPosition)
 {
-    f32 absOldX = nlVec3GetX(oldPos);
-    f32 absNewX = nlVec3GetX(newPos);
-    f32 radius = g_pBall->m_pPhysicsBall->GetRadius();
-    f32 goalLineX = cField::GetGoalLineX((unsigned int)1);
-    f32 threshold = (goalLineX + radius) - 0.08f;
-    nlVector3 impactPos;
+    float absOldX = nlAbs(oldPosition.f.x);
+    float absNewX = nlAbs(newPosition.f.x);
+    float goalLineX = cField::GetGoalLineX(1U) + g_pBall->GetPhysicsBall()->GetRadius() - 0.08f;
 
-    if ((absOldX < threshold) && (absNewX >= threshold))
+    if ((absOldX < goalLineX) && (absNewX >= goalLineX))
     {
-        f32 xDelta = newPos.f.x - oldPos.f.x;
+        nlVector3 interpolatedPosition;
+        float deltaX;
 
-        if ((float)fabs(xDelta) > 0.0001f)
+        deltaX = newPosition.f.x - oldPosition.f.x;
+
+        if (nlAbs(deltaX) > 0.0001f)
         {
-            f32 planeX;
-            if (newPos.f.x > 0.0f)
-            {
-                planeX = threshold;
-            }
-            else
-            {
-                planeX = -threshold;
-            }
-
-            f32 t = (planeX - oldPos.f.x) / xDelta;
-            InterpolateVector(impactPos, oldPos, newPos, t);
+            float alpha = (newPosition.f.x > 0.0f) ? goalLineX : -goalLineX;
+            alpha = (alpha - oldPosition.f.x) / deltaX;
+            nlVecLerp(interpolatedPosition, oldPosition, newPosition, alpha);
         }
         else
         {
-            impactPos = newPos;
+            interpolatedPosition = newPosition;
         }
 
-        if ((impactPos.f.z > 0.0f) && (impactPos.f.z < cNet::m_fNetHeight))
+        if ((interpolatedPosition.f.z > 0.0f) && (interpolatedPosition.f.z < cNet::m_fNetHeight)
+            && (interpolatedPosition.f.y > (0.5f * -cNet::m_fNetWidth))
+            && (interpolatedPosition.f.y < (0.5f * cNet::m_fNetWidth)))
         {
-            f32 netWidth = cNet::m_fNetWidth;
-            f32 halfScale = 0.5f;
-            if ((impactPos.f.y > (halfScale * -netWidth)) && (impactPos.f.y < (halfScale * netWidth)))
-            {
-                return true;
-            }
-        }
-    }
-
-    return false;
-}
-
-static inline bool DidBallJustEnterNetWithPhysicsBall(PhysicsAIBall* pPhysicsBall, const nlVector3& oldPos, nlVector3 newPos)
-{
-    f32 absOldX = nlVec3GetX(oldPos);
-    f32 absNewX = nlVec3GetX(newPos);
-    f32 radius = pPhysicsBall->GetRadius();
-    f32 goalLineX = cField::GetGoalLineX((unsigned int)1);
-    f32 threshold = (goalLineX + radius) - 0.08f;
-    nlVector3 impactPos;
-
-    if ((absOldX < threshold) && (absNewX >= threshold))
-    {
-        f32 xDelta = newPos.f.x - oldPos.f.x;
-
-        if ((float)fabs(xDelta) > 0.0001f)
-        {
-            f32 planeX;
-            if (newPos.f.x > 0.0f)
-            {
-                planeX = threshold;
-            }
-            else
-            {
-                planeX = -threshold;
-            }
-
-            f32 t = (planeX - oldPos.f.x) / xDelta;
-            InterpolateVector(impactPos, oldPos, newPos, t);
-        }
-        else
-        {
-            impactPos = newPos;
-        }
-
-        if ((impactPos.f.z > 0.0f) && (impactPos.f.z < cNet::m_fNetHeight))
-        {
-            f32 netWidth = cNet::m_fNetWidth;
-            f32 halfScale = 0.5f;
-            if ((impactPos.f.y > (halfScale * -netWidth)) && (impactPos.f.y < (halfScale * netWidth)))
-            {
-                return true;
-            }
+            return true;
         }
     }
 
@@ -153,7 +72,7 @@ void PhysicsAIBall::CheckIfBallWentThroughGoalPost()
         nlVector3 newPosition;
 
         GetPosition(&newPosition);
-        oldPosition = m_unk_0x44;
+        oldPosition = m_v3PrevPosition;
 
         nlVector3 ballPosition = { 0.0f, 0.0f, 0.0f };
         nlVector3 contactNormal = { 0.0f, 0.0f, 0.0f };
@@ -175,7 +94,7 @@ void PhysicsAIBall::CheckIfBallWentThroughGoalPost()
             contact = pNet->SweepTestForBallContact(oldPosition, newPosition, GetLinearVelocity(), radius, ballPosition, contactNormal, &physicsObject);
         }
 
-        if ((contact != 0) && (m_unk_0x59 == 0))
+        if ((contact != 0) && (mbGoalPlaneContact == 0))
         {
             float contactZ = (0.005f * contactNormal.f.z) + ballPosition.f.z;
             float contactY = (0.005f * contactNormal.f.y) + ballPosition.f.y;
@@ -185,31 +104,18 @@ void PhysicsAIBall::CheckIfBallWentThroughGoalPost()
             ballPosition.f.z = contactZ;
 
             const nlVector3& v3BallVel = GetLinearVelocity();
-            float velY = v3BallVel.f.y;
-            float normalZ = contactNormal.f.z;
-            float velZ = v3BallVel.f.z;
-            float normalY = contactNormal.f.y;
-            float velX = v3BallVel.f.x;
-            float velYSq = velY * velY;
-            float velYNormalY = normalY * velY;
-            float normalX = contactNormal.f.x;
-            float normalYSq = normalY * normalY;
-            float velXSq = velX * velX;
-            float dotXY = (velX * normalX) + velYNormalY;
-            float normalLenXY = (normalX * normalX) + normalYSq;
-            float velZSq = velZ * velZ;
-            float velDotNormal = (velZ * normalZ) + dotXY;
-            float normalLengthSq = (normalZ * normalZ) + normalLenXY;
+            float velDotNormal = nlVec3DotProduct(v3BallVel, contactNormal);
+            float normalLengthSq = nlVec3DotProduct(contactNormal, contactNormal);
             float reflectScale = velDotNormal / normalLengthSq;
 
             nlVec3Set(v3ExitVel,
-                (-2.0f * (reflectScale * normalX)) + velX,
-                (-2.0f * (reflectScale * normalY)) + velY,
-                (-2.0f * (reflectScale * normalZ)) + velZ);
-
-            float velocitySq = velZSq + (velXSq + velYSq);
+                (-2.0f * (reflectScale * contactNormal.f.x)) + v3BallVel.f.x,
+                (-2.0f * (reflectScale * contactNormal.f.y)) + v3BallVel.f.y,
+                (-2.0f * (reflectScale * contactNormal.f.z)) + v3BallVel.f.z);
 
             nlVec3Scale(v3ExitVel, 0.35f);
+
+            float velocitySq = nlVec3DotProduct(v3BallVel, v3BallVel);
 
             if (velocitySq < 1.0f)
             {
@@ -258,7 +164,7 @@ void PhysicsAIBall::CheckIfBallWentThroughGoalPost()
  */
 void PhysicsAIBall::CheckIfBallWentThroughGoalie()
 {
-    if (m_unk_0x5A != 0)
+    if (mbBallSpeedBelowSweepTestThreshold != 0)
     {
         return;
     }
@@ -267,7 +173,7 @@ void PhysicsAIBall::CheckIfBallWentThroughGoalie()
     nlVector3 newPosition;
 
     GetPosition(&newPosition);
-    oldPosition = m_unk_0x44;
+    oldPosition = m_v3PrevPosition;
 
     cPlayer* pGoaliePlayer = (cPlayer*)g_pCharacters[8];
     Goalie* pGoalie = (Goalie*)pGoaliePlayer;
@@ -291,7 +197,7 @@ void PhysicsAIBall::CheckIfBallWentThroughGoalie()
     nlVector3 contactNormal = { 0.0f, 0.0f, 0.0f };
     bool contact = false;
 
-    if ((s32)m_unk_0x50 > 3)
+    if ((s32)m_goalieContactFramesAgo > 3)
     {
         float radius = GetRadius();
         contact = pGoalie->GetPhysicsGoalie()->SweepTestForBallContact(oldPosition, newPosition, GetLinearVelocity(), radius, ballPosition, contactNormal);
@@ -339,7 +245,7 @@ void PhysicsAIBall::CheckIfBallWentThroughGoalie()
         pCollisionData->pBall = m_pAIBall;
         pCollisionData->velocity = v3Vel;
         pCollisionData->boneID = 0;
-        m_unk_0x50 = 0;
+        m_goalieContactFramesAgo = 0;
 
         const float normalY = contactNormal.f.y;
         const float normalX = contactNormal.f.x;
@@ -408,7 +314,7 @@ void PhysicsAIBall::CheckIfBallWentThroughGoalie()
         SetLinearVelocity(v3ExitVel);
     }
 
-    m_unk_0x50 += 1;
+    m_goalieContactFramesAgo += 1;
 }
 
 /**
@@ -491,7 +397,7 @@ void PhysicsAIBall::PostUpdate()
         CheckIfBallWentThroughGoalPost();
     }
 
-    m_unk_0x59 = false;
+    mbGoalPlaneContact = false;
 
     GetRadius();
     GetPosition(&ballPosition);
@@ -508,23 +414,23 @@ void PhysicsAIBall::PostUpdate()
 
         if (fAbsX < threshold)
         {
-            m_unk_0x58 = false;
+            mbIsInsideNet = false;
         }
         else
         {
             GetPosition(&newPosition);
             oldPosition = m_pAIBall->m_v3PrevPosition;
 
-            if (DidBallJustEnterNetWithPhysicsBall(g_pBall->m_pPhysicsBall, oldPosition, newPosition))
+            if (DidBallJustEnterNet(oldPosition, newPosition))
             {
-                m_unk_0x58 = true;
+                mbIsInsideNet = true;
             }
         }
     }
 
     const nlVector3& v3Vel = GetLinearVelocity();
     const float velocitySq = (v3Vel.f.x * v3Vel.f.x) + (v3Vel.f.y * v3Vel.f.y) + (v3Vel.f.z * v3Vel.f.z);
-    bool& bSpeedBelowThreshold = m_unk_0x5A;
+    bool& bSpeedBelowThreshold = mbBallSpeedBelowSweepTestThreshold;
     bSpeedBelowThreshold = velocitySq < (sfBallGoalieSweepTestVelocityThreshold * sfBallGoalieSweepTestVelocityThreshold);
 }
 
@@ -534,7 +440,7 @@ void PhysicsAIBall::PostUpdate()
 void PhysicsAIBall::PreUpdate()
 {
     PhysicsBall::PreUpdate();
-    m_unk_0x44 = GetPosition();
+    m_v3PrevPosition = GetPosition();
 }
 
 /**
@@ -570,7 +476,7 @@ ContactType PhysicsAIBall::Contact(PhysicsObject* obj, dContact* info, int numCo
 
             if (pFielder->m_eClassType == 3)
             {
-                if (m_unk_0x5A == 0)
+                if (mbBallSpeedBelowSweepTestThreshold == 0)
                 {
                     return NO_CONTACT;
                 }
@@ -624,7 +530,7 @@ ContactType PhysicsAIBall::Contact(PhysicsObject* obj, dContact* info, int numCo
     {
         if (objID == 0x19 || objID == 0x5)
         {
-            if (m_unk_0x58)
+            if (mbIsInsideNet)
             {
                 return NO_CONTACT;
             }
@@ -642,7 +548,7 @@ ContactType PhysicsAIBall::Contact(PhysicsObject* obj, dContact* info, int numCo
                         return NO_CONTACT;
                     }
                 }
-                m_unk_0x59 = true;
+                mbGoalPlaneContact = true;
             }
 
             cBall* pBall = m_pAIBall;
@@ -725,7 +631,7 @@ ContactType PhysicsAIBall::Contact(PhysicsObject* obj, dContact* info, int numCo
         }
         else if (objID == 0x7)
         {
-            if (!m_unk_0x58)
+            if (!mbIsInsideNet)
             {
                 return NO_CONTACT;
             }
@@ -747,9 +653,9 @@ PhysicsAIBall::PhysicsAIBall(float radius)
     : PhysicsBall(g_CollisionSpace, g_PhysicsWorld, radius)
 {
     m_pAIBall = NULL;
-    m_unk_0x50 = 9999;
-    m_unk_0x58 = false;
-    m_unk_0x44.f.x = 0.f;
-    m_unk_0x44.f.y = 0.f;
-    m_unk_0x44.f.z = 0.f;
+    m_goalieContactFramesAgo = 9999;
+    mbIsInsideNet = false;
+    m_v3PrevPosition.f.x = 0.f;
+    m_v3PrevPosition.f.y = 0.f;
+    m_v3PrevPosition.f.z = 0.f;
 }

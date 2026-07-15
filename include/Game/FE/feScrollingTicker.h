@@ -7,7 +7,6 @@
 #include "Game/FE/feTweenFuncs.h"
 #include "Game/FE/feScrollText.h"
 
-// Forward declarations
 class TLTextInstance;
 class TLInstance;
 class feVector3;
@@ -55,23 +54,5 @@ public:
     /* 0x090 */ FEScrollText* m_textScroller;
     /* 0x094 */ FETweenManager m_pFETweenManager;
 }; // total size: 0xCC
-
-// class FEFinder<TLInstance, 3>
-// {
-// public:
-//     void Find<FEPresentation>(FEPresentation*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-//     void _Find<FEPresentation>(FEPresentation*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned
-//     long); void _Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long); void
-//     _Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long);
-// };
-
-// class FEFinder<TLInstance, 2>
-// {
-// public:
-//     void Find<FEPresentation>(FEPresentation*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-//     void _Find<FEPresentation>(FEPresentation*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned
-//     long); void _Find<TLSlide>(TLSlide*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long); void
-//     _Find<TLInstance>(TLInstance*, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long);
-// };
 
 #endif // _FESCROLLINGTICKER_H_

@@ -430,7 +430,7 @@ static inline float ScaleByRunningSpeed(float fDistance, cFielder* pFielder)
     return fDistance * pFielder->m_pTweaks->fRunningSpeed;
 }
 
-static float InPassingLane(cFielder* pFielder, cPlayer* pPassTarget, float fPotentialBallSpeed)
+static inline float InPassingLane(cFielder* pFielder, cPlayer* pPassTarget, float fPotentialBallSpeed)
 {
     nlVector3 v3BetweenIntercept = GetClosestPointOnLineABFromPointC(g_pScriptBall->m_v3Position, pPassTarget->m_v3Position, pFielder->m_v3Position);
 
@@ -1102,7 +1102,7 @@ float Pressured(cFielder* pFielder)
             }
         }
 
-        if ((fOpponentScore == fCheck) && (fNearScore >= 0.5f))
+        if ((fOpponentScore == fCheck) && (fNearScore >= 0.4f))
         {
             float fClosingWeight = 1.0f - g_pGame->m_pFuzzyTweaks->fPressuredNearWeight;
             float fClosingScore;
@@ -1127,7 +1127,7 @@ float Pressured(cFielder* pFielder)
         i++;
     }
 
-    fScore *= 0.25f;
+    fScore *= 0.5f;
 
     float fResult = 0.0f;
     if (fScore >= 0.0f)
@@ -1706,7 +1706,7 @@ float InFrontOfTheirNet(cFielder* pFielder)
     return InterpolateRangeClamped(1.0f, pFuzzyTweaks->fFrontOfNetMidScore, 0.0f, midAngle, angleRad);
 }
 
-static float InBetween(const nlVector3& v3InBetweenPos, const nlVector3& v3A, const nlVector3& v3B);
+static inline float InBetween(const nlVector3& v3InBetweenPos, const nlVector3& v3A, const nlVector3& v3B);
 
 /**
  * Offset/Address/Size: 0x36FC | 0x80082184 | size: 0x3D0
@@ -2330,7 +2330,7 @@ float OpenToMyNet(cFielder* pFielder)
     return OpenToPosition(pFielder->m_v3Position, pFielder->GetAIDefNetLocation(NULL), NULL, pFielder, NULL, true);
 }
 
-static float InBetween(const nlVector3& v3InBetweenPos, const nlVector3& v3A, const nlVector3& v3B)
+static inline float InBetween(const nlVector3& v3InBetweenPos, const nlVector3& v3A, const nlVector3& v3B)
 {
     nlVector3 v3Intercept = GetClosestPointOnLineABFromPointC(v3A, v3InBetweenPos, v3B);
 
@@ -4059,7 +4059,7 @@ float InDefensiveZone(cPlayer* pPlayer)
     }
 
     eTeamSide teamSide = (eTeamSide)(pPlayer->m_pTeam->m_nSide);
-    nlVector3& playerPos = PositionOf(pPlayer);
+    nlVector3& playerPos = PositionOf<cPlayer*>(pPlayer);
     FieldLocToAILoc(aiLoc, playerPos, teamSide);
 
     return NormalizeVal(aiLoc.f.x, g_pGame->m_pFuzzyTweaks->vDefensiveConfidenceDistances);
@@ -4077,21 +4077,11 @@ float InOffensiveZone(cPlayer* pPlayer)
     }
 
     eTeamSide teamSide = (eTeamSide)(pPlayer->m_pTeam->m_nSide);
-    nlVector3& playerPos = PositionOf(pPlayer);
+    nlVector3& playerPos = PositionOf<cPlayer*>(pPlayer);
     FieldLocToAILoc(aiLoc, playerPos, teamSide);
 
     return NormalizeVal(aiLoc.f.x, g_pGame->m_pFuzzyTweaks->vOffensiveConfidenceDistances);
 }
-
-/**
- * Offset/Address/Size: 0x6C | 0x8007EAF4 | size: 0x6C
- */
-template <typename T>
-nlVector3& PositionOf(T pObject)
-{
-    return pObject->m_v3Position;
-}
-template nlVector3& PositionOf<cPlayer*>(cPlayer*);
 
 float InDefensiveZoneOfPlayer(cBall* pBall, cPlayer* pPlayer)
 {
@@ -4120,7 +4110,7 @@ float InOffensiveZoneOfPlayer(cBall* pBall, cPlayer* pPlayer)
     }
 
     eTeamSide teamSide = (eTeamSide)(pPlayer->m_pTeam->m_nSide);
-    nlVector3& ballPos = PositionOf(pBall);
+    nlVector3& ballPos = PositionOf<cBall*>(pBall);
     FieldLocToAILoc(aiLoc, ballPos, teamSide);
 
     return NormalizeVal(aiLoc.f.x, g_pGame->m_pFuzzyTweaks->vOffensiveConfidenceDistances);

@@ -4,7 +4,7 @@
 #include "NL/nlMath.h"
 
 template <typename T>
-nlVector3& PositionOf(T* pObject)
+nlVector3& PositionOf(T pObject)
 {
     return pObject->m_v3Position;
 }

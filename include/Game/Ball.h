@@ -39,6 +39,11 @@ enum eSpinType
 class cBall
 {
 public:
+    PhysicsAIBall* GetPhysicsBall()
+    {
+        return m_pPhysicsBall;
+    }
+
     float PredictLandingSpotAndTime(nlVector3&);
     void KillBlurHandler();
     void ClearPassTarget();

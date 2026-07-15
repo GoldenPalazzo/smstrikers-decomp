@@ -410,7 +410,7 @@ void PhysicsUpdate(PhysicsWorld* pWorld, float fDeltaT)
         }
 
         PhysicsAIBall* pPhysicsBall = g_pBall->m_pPhysicsBall;
-        if (pPhysicsBall->m_unk_0x58)
+        if (pPhysicsBall->mbIsInsideNet)
         {
             dGeomComputeAABB(pPhysicsBall->m_geomID);
             g_PhysicsWorld->DoCollisions(pPhysicsBall, g_NetPhysicsObjects);

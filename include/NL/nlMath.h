@@ -4,6 +4,19 @@
 #include "types.h"
 #include "dolphin/mtx.h"
 
+#ifndef _FAKE_TGMATH_H_
+#include "math.h"
+#include "cmath.h"
+#else
+namespace std
+{
+inline float fabsf(float value)
+{
+    return ::fabsf(value);
+}
+} // namespace std
+#endif
+
 float nlBezier(float*, int, float);
 float nlATan2f(float, float);
 float nlTan(unsigned short);
@@ -17,6 +30,11 @@ float nlRandomf(float, unsigned int*);
 unsigned int nlRandom(unsigned int, unsigned int*);
 void nlSetRandomSeed(unsigned int, unsigned int*);
 void nlInitRandom();
+
+inline float nlAbs(float value)
+{
+    return std::fabsf(value);
+}
 
 inline float AngUnitsToRad_fromUnsignedShort(unsigned short sUnits)
 {
@@ -205,6 +223,14 @@ inline void nlVec3Scale(nlVector3& result, const nlVector3& v, const float scale
 inline void nlVec3Scale(nlVector3& result, float scale)
 {
     nlVec3Set(result, scale * result.f.x, scale * result.f.y, scale * result.f.z);
+}
+
+inline void nlVecLerp(nlVector3& result, const nlVector3& a, const nlVector3& b, float alpha)
+{
+    float oneMinusAlpha = 1.0f - alpha;
+    result.f.x = oneMinusAlpha * a.f.x + alpha * b.f.x;
+    result.f.y = oneMinusAlpha * a.f.y + alpha * b.f.y;
+    result.f.z = oneMinusAlpha * a.f.z + alpha * b.f.z;
 }
 
 inline void nlVec3Cross(nlVector3& result, const nlVector3& a, const nlVector3& b)
