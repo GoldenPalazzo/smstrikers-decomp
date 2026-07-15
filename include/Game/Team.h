@@ -93,6 +93,9 @@ public:
     void StopGameplayEffectsAndSounds();
     bool CalculateFormationPosition(nlVector3&, cFielder*, bool, float);
     void UpdateTeamAI(float);
+    void UpdatePlays(float);
+    void CalculateNewBallInterceptTimes();
+    void UpdateBallInterceptTime();
     void AssignMarks(bool);
     cFielder* GetCaptain();
     cFielder* GetStriker() const;

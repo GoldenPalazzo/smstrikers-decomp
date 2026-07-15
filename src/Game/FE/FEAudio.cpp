@@ -447,11 +447,6 @@ void FEAudio::BuildAnimAudioEventLookup()
     LookupList.m_Head = NULL;
     LookupList.m_Tail = NULL;
     SlotPoolBase::BaseFreeBlocks(&LookupList.m_Allocator, sizeof(ListEntry<AnimAudioEventLookup>));
-
-    nlWalkList(LookupList.m_Head, (FELookupBase*)&LookupList, &FELookupBase::DeleteEntry);
-    LookupList.m_Head = NULL;
-    LookupList.m_Tail = NULL;
-    SlotPoolBase::BaseFreeBlocks(&LookupList.m_Allocator, sizeof(ListEntry<AnimAudioEventLookup>));
 }
 
 // /**

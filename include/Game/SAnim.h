@@ -4,7 +4,6 @@
 #include "types.h"
 
 #include "NL/nlMath.h"
-// #include "NL/nlList.h"
 
 class cPoseAccumulator;
 
@@ -28,21 +27,13 @@ enum ePlayMode
     PM_HOLD = 1,
 };
 
-// typedef struct cSAnimCallback
-// {
-//     /* 0x00 */ f32 time;
-//     /* 0x04 */ u32 mask;
-//     /* 0x08 */ void (*fn)(unsigned int);
-//     /* 0x0C */ cSAnimCallback* next;
-// } cSAnimCallback; // size: 0x10
-
 class cSAnimCallback
 {
 public:
     /* 0x0 */ float m_fTime;
     /* 0x4 */ unsigned int m_nParam1;
     /* 0x8 */ void (*m_funcCallback)(unsigned int);
-    /* 0xC */ class cSAnimCallback* next;
+    /* 0xC */ cSAnimCallback* next;
 }; // total size: 0x10
 
 class nlChunk

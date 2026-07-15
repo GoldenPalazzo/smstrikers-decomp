@@ -859,7 +859,7 @@ config.libs = [
             Object(Matching, "Game/PoseAccumulator.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/SHierarchy.cpp", extra_cflags=["-inline auto"]),
 
-            Object(NonMatching, "Game/SAnim.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(Matching, "Game/SAnim.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/SAnim/AnimRetargeter.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/SAnim/pnSAnimController.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/SAnim/pnBlender.cpp", extra_cflags=["-inline auto", "-inline deferred"]),

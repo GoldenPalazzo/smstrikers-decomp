@@ -324,18 +324,22 @@ void EmitHemisphericalPosition(nlVector3& vPosition, nlVector3& vDirection, Effe
 
 static void EmitSpindularPosition(nlVector3& vPosition, nlVector3& vDirection, EffectsTemplate* pTemplate, EffectsSpec* pSpec, const nlMatrix4& mLocalToWorld);
 
+static inline void RotateXZInPlace(nlVector3& v, float sn, float cs)
+{
+    float x = (v.f.x * cs) + (v.f.z * sn);
+    float z = (-v.f.x * sn) + (v.f.z * cs);
+    nlVec3Set(v, x, v.f.y, z);
+}
+
 static inline void RotateXYInPlace(nlVector3& v, float sn, float cs)
 {
-    float y = v.f.y;
-    float x = v.f.x;
-    v.f.x = (x * cs) + (-y * sn);
-    v.f.y = (x * sn) + (y * cs);
+    float x = (v.f.x * cs) + (-v.f.y * sn);
+    float y = (v.f.x * sn) + (v.f.y * cs);
+    nlVec3Set(v, x, y, v.f.z);
 }
 
 /**
  * Offset/Address/Size: 0x1C90 | 0x801F6DE8 | size: 0x34C
- * TODO: 98.94% match - remaining diffs are length-square, tilt rotation,
- * and facing rotation register allocation.
  */
 static void EmitSpindularPosition(nlVector3& vPosition, nlVector3& vDirection, EffectsTemplate* pTemplate, EffectsSpec* pSpec, const nlMatrix4& mLocalToWorld)
 {
@@ -367,9 +371,7 @@ static void EmitSpindularPosition(nlVector3& vPosition, nlVector3& vDirection, E
     localDir.f.x = cos;
     localDir.f.y = -sin;
 
-    float lengthSq = localDir.f.x * localDir.f.x;
-    lengthSq += localDir.f.y * localDir.f.y;
-    lengthSq += localDir.f.z * localDir.f.z;
+    float lengthSq = nlVec3LengthSquared(localDir);
     float length = nlRecipSqrt(lengthSq, false);
 
     nlVec3Set(localDir,
@@ -384,15 +386,8 @@ static void EmitSpindularPosition(nlVector3& vPosition, nlVector3& vDirection, E
     {
         nlSinCos(&sin, &cos, (unsigned short)(int)(10430.378f * tiltRotation));
 
-        nlVec3Set(localDir,
-            (localDir.f.x * cos) + (localDir.f.z * sin),
-            localDir.f.y,
-            (-localDir.f.x * sin) + (localDir.f.z * cos));
-
-        nlVec3Set(localPos,
-            (localPos.f.x * cos) + (localPos.f.z * sin),
-            localPos.f.y,
-            (-localPos.f.x * sin) + (localPos.f.z * cos));
+        RotateXZInPlace(localDir, sin, cos);
+        RotateXZInPlace(localPos, sin, cos);
     }
 
     if (pSpec != nullptr)
@@ -418,8 +413,8 @@ static void EmitSpindularPosition(nlVector3& vPosition, nlVector3& vDirection, E
         {
             nlSinCos(&sin, &cos, hackyFacingAngle);
 
-            RotateXYInPlace(vDirection, cos, sin);
-            RotateXYInPlace(vPosition, cos, sin);
+            RotateXYInPlace(vDirection, sin, cos);
+            RotateXYInPlace(vPosition, sin, cos);
         }
 
         nlVec3Set(vPosition,

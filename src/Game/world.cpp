@@ -1528,13 +1528,6 @@ void World::CreateLightUserData()
         glLight->innerRadius = 0.0f;
         glLight->outerRadius = 0.0f;
     }
-
-    nlWalkList(specList.m_Head, &specList, &ListContainerBase<LightObject*, NewAdapter<ListEntry<LightObject*> > >::DeleteEntry);
-    specList.m_Head = NULL;
-    specList.m_Tail = NULL;
-    nlWalkList(lightList.m_Head, &lightList, &ListContainerBase<LightObject*, NewAdapter<ListEntry<LightObject*> > >::DeleteEntry);
-    lightList.m_Head = NULL;
-    lightList.m_Tail = NULL;
 }
 
 static const int LF_NOLIGHT = 4;

@@ -1260,7 +1260,7 @@ void PowerupBase::Update(float dt)
 
 /**
  * Offset/Address/Size: 0x3DFC | 0x8005E6E8 | size: 0x608
- * TODO: 98.91% match - remaining chance accumulator register allocation diffs
+ * TODO: 99.04% match - remaining chance accumulator register allocation diffs
  */
 int PowerupBase::AwardPowerup(cTeam* pTeam)
 {
@@ -1287,6 +1287,7 @@ int PowerupBase::AwardPowerup(cTeam* pTeam)
     float fRandom;
     float fFiveChance;
     float fThreeChance;
+    GameTweaks* pGameTweaks;
 
     if (g_pGame->mIsPure)
     {
@@ -1388,7 +1389,7 @@ int PowerupBase::AwardPowerup(cTeam* pTeam)
 
     nChanceForGreenShell = g_pGame->m_pGameTweaks->nChanceForGreenShell + ((FielderTweaks*)pCaptain->m_pTweaks)->nChanceForGreenShell + ((FielderTweaks*)pSideKick->m_pTweaks)->nChanceForGreenShell + (nChanceForMushroom > 0 ? nChanceForMushroom : 0) + nDifference;
 
-    nChanceForFreezeShell = g_pGame->m_pGameTweaks->nChanceForFreezeShell + ((FielderTweaks*)pCaptain->m_pTweaks)->nChanceForFreezeShell + ((FielderTweaks*)pSideKick->m_pTweaks)->nChanceForFreezeShell + (nChanceForGreenShell > 0 ? nChanceForGreenShell : 0) + nDifference;
+    nChanceForFreezeShell = g_pGame->m_pGameTweaks->nChanceForFreezeShell + (((FielderTweaks*)pSideKick->m_pTweaks)->nChanceForFreezeShell + ((FielderTweaks*)pCaptain->m_pTweaks)->nChanceForFreezeShell) + (nChanceForGreenShell > 0 ? nChanceForGreenShell : 0) + nDifference;
 
     nChance = nlRandom(nChanceForFreezeShell, &nlDefaultSeed);
 
@@ -1504,7 +1505,8 @@ int PowerupBase::AwardPowerup(cTeam* pTeam)
         break;
     case POWER_UP_RED_SHELL:
     case POWER_UP_SPINY_SHELL:
-        fThreeChance = g_pGame->m_pGameTweaks->fShellFiveChance + ((FielderTweaks*)pCaptain->m_pTweaks)->fChanceForMultiples + g_pGame->m_pGameTweaks->fShellThreeChance;
+        pGameTweaks = g_pGame->m_pGameTweaks;
+        fThreeChance = ((FielderTweaks*)pCaptain->m_pTweaks)->fChanceForMultiples + (pGameTweaks->fShellFiveChance + pGameTweaks->fShellThreeChance);
         if (fThreeChance > fRandom)
         {
             nNumOfPowerups = 3;

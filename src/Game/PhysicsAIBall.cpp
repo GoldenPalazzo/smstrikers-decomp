@@ -545,12 +545,10 @@ void PhysicsAIBall::PreUpdate()
 ContactType PhysicsAIBall::Contact(PhysicsObject* obj, dContact* info, int numContacts)
 {
     extern bool gbEnableBallGoalieSweepTest;
-    extern void* __vt__9EventData[];
-    extern void* __vt__35CollisionPlayerShootToScoreBallData[];
-    extern void* __vt__21CollisionBallWallData[];
     extern float sfMaxBallBounceSpeed;
 
     int objID;
+    cFielder* pFielder;
     nlVector3 ballPosition;
     float radius;
     unsigned char hitWall;
@@ -560,7 +558,6 @@ ContactType PhysicsAIBall::Contact(PhysicsObject* obj, dContact* info, int numCo
     CollisionBallWallData* pEventData;
     float scale;
     nlVector3 vel;
-    cFielder* pFielder;
 
     objID = obj->GetObjectType();
 
@@ -568,7 +565,8 @@ ContactType PhysicsAIBall::Contact(PhysicsObject* obj, dContact* info, int numCo
     {
         if (gbEnableBallGoalieSweepTest)
         {
-            pFielder = (cFielder*)((PhysicsCharacter*)obj->m_parentObject)->m_pAICharacter;
+            PhysicsCharacter* physicsCharacter = (PhysicsCharacter*)obj->m_parentObject;
+            pFielder = (cFielder*)physicsCharacter->m_pAICharacter;
 
             if (pFielder->m_eClassType == 3)
             {
@@ -579,29 +577,16 @@ ContactType PhysicsAIBall::Contact(PhysicsObject* obj, dContact* info, int numCo
             }
             else if (pFielder->m_eClassType == 2)
             {
-                bool isShootToScore = false;
-                cBall* pBall = m_pAIBall;
-                if (pBall->m_tShotTimer.m_uPackedTime != 0)
-                {
-                    if (pBall->mbCanDamage)
-                    {
-                        isShootToScore = true;
-                    }
-                }
+                bool isShootToScore = m_pAIBall->m_tShotTimer.m_uPackedTime != 0 && m_pAIBall->mbCanDamage;
 
                 if (isShootToScore)
                 {
                     if (((cPlayer*)pFielder)->m_tNoPickupTimer.m_uPackedTime == 0)
                     {
-                        pEventData = (CollisionBallWallData*)((u8*)g_pEventManager->CreateValidEvent(0x28, 0x20) + 0x10);
-                        if (pEventData != NULL)
-                        {
-                            *(void**)pEventData = __vt__9EventData;
-                            *(void**)pEventData = __vt__35CollisionPlayerShootToScoreBallData;
-                        }
-
-                        *(void**)((u8*)pEventData + 0x4) = pFielder;
-                        *(cBall**)((u8*)pEventData + 0x8) = m_pAIBall;
+                        Event* event = g_pEventManager->CreateValidEvent(0x28, 0x20);
+                        CollisionPlayerShootToScoreBallData* shootData = new (&event->m_data) CollisionPlayerShootToScoreBallData();
+                        shootData->pFielder = pFielder;
+                        shootData->pBall = m_pAIBall;
                     }
                     return NO_CONTACT;
                 }
@@ -693,49 +678,36 @@ ContactType PhysicsAIBall::Contact(PhysicsObject* obj, dContact* info, int numCo
 
                 if (aBallSpeed.r > 1.0f)
                 {
-                    pEventData = (CollisionBallWallData*)((u8*)g_pEventManager->CreateValidEvent(0x20, 0x3C) + 0x10);
-                    if (pEventData != NULL)
-                    {
-                        *(void**)pEventData = __vt__9EventData;
-                        *(void**)pEventData = __vt__21CollisionBallWallData;
-                    }
+                    Event* event = g_pEventManager->CreateValidEvent(0x20, 0x3C);
+                    pEventData = new (&event->m_data) CollisionBallWallData();
+                    pEventData->pBall = m_pAIBall;
 
-                    *(cBall**)((u8*)pEventData + 0x4) = m_pAIBall;
+                    bool bIsShot = m_pAIBall->m_tShotTimer.m_uPackedTime != 0 && m_pAIBall->m_unk_0xA4;
 
-                    bool bIsShot = false;
-                    cBall* pBallShot = m_pAIBall;
-                    if (pBallShot->m_tShotTimer.m_uPackedTime != 0)
-                    {
-                        if (pBallShot->m_unk_0xA4)
-                        {
-                            bIsShot = true;
-                        }
-                    }
-
-                    *(u8*)((u8*)pEventData + 0x8) = bIsShot;
+                    pEventData->bIsPerfect = bIsShot;
 
                     float speedSq = (ballVelocity.f.z * ballVelocity.f.z) + ((ballVelocity.f.x * ballVelocity.f.x) + (velY * velY));
 
                     u32 shotTimer = m_pAIBall->m_tShotTimer.m_uPackedTime;
-                    *(u8*)((u8*)pEventData + 0x9) = (shotTimer != 0);
+                    pEventData->bIsShot = (shotTimer != 0);
 
                     float posY;
                     float posZ = info->geom.pos[2];
                     posY = info->geom.pos[1];
                     float posX = info->geom.pos[0];
-                    *(float*)((u8*)pEventData + 0x0C) = posX;
-                    *(float*)((u8*)pEventData + 0x10) = posY;
-                    *(float*)((u8*)pEventData + 0x14) = posZ;
+                    pEventData->position.f.x = posX;
+                    pEventData->position.f.y = posY;
+                    pEventData->position.f.z = posZ;
 
                     float normalY;
                     float normalZ = info->geom.normal[2];
                     normalY = info->geom.normal[1];
                     float normalX = info->geom.normal[0];
-                    *(float*)((u8*)pEventData + 0x18) = normalX;
-                    *(float*)((u8*)pEventData + 0x1C) = normalY;
-                    *(float*)((u8*)pEventData + 0x20) = normalZ;
+                    pEventData->normal.f.x = normalX;
+                    pEventData->normal.f.y = normalY;
+                    pEventData->normal.f.z = normalZ;
 
-                    *(float*)((u8*)pEventData + 0x24) = nlSqrt(speedSq, true);
+                    pEventData->fCollisionVecLen = nlSqrt(speedSq, true);
 
                     ScaleAngularVelocity(0.9f);
                     m_pAIBall->ClearBallBlur();

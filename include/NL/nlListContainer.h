@@ -24,6 +24,13 @@ public:
     {
     }
 
+    ~ListContainerBase()
+    {
+        nlWalkList(m_Head, this, DeleteEntryFunc());
+        m_Head = NULL;
+        m_Tail = NULL;
+    }
+
     void DeleteEntry(ListEntry<T>* entry);
 
     typedef void (ListContainerBase::*ENTRY_FUNC)(ListEntry<T>*);
@@ -40,6 +47,18 @@ public:
     void AddEntry(ListEntry<T>* entry)
     {
         nlListAddStart<ListEntry<T> >(&m_Head, entry, &m_Tail);
+    }
+
+    ListEntry<T>* Allocate(const T& data)
+    {
+        ListEntry<T> localEntry(data);
+        ListEntry<T>* entry = NULL;
+        m_Allocator.Allocate(entry);
+        if (entry != NULL)
+        {
+            *entry = localEntry;
+        }
+        return entry;
     }
 
     void AddEntry(const T& data)
@@ -68,16 +87,6 @@ void ListContainerBase<T, Adapter>::DeleteEntry(ListEntry<T>* entry)
 template <typename T>
 class nlListContainer : public ListContainerBase<T, NewAdapter<ListEntry<T> > >
 {
-public:
-    ~nlListContainer()
-    {
-        if (this != NULL)
-        {
-            nlWalkList(this->m_Head, static_cast<ListContainerBase<T, NewAdapter<ListEntry<T> > >*>(this), ListContainerBase<T, NewAdapter<ListEntry<T> > >::DeleteEntryFunc());
-            this->m_Head = NULL;
-            this->m_Tail = NULL;
-        }
-    }
 }; // total size: 0xC
 
 template <typename T>

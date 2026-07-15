@@ -5,7 +5,7 @@
 #include "NL/nlSlotPool.h"
 
 template <typename T>
-class BasicSlotPoolHigh : public SlotPoolBase
+class BasicSlotPoolHigh : public BasicSlotPool<T>
 {
 public:
     static void* allocFN(unsigned long size)
@@ -19,17 +19,17 @@ public:
     }
 
     BasicSlotPoolHigh()
-        : SlotPoolBase()
+        : BasicSlotPool<T>()
     {
-        m_AllocFn = allocFN;
-        m_FreeFn = freeFN;
+        this->m_AllocFn = allocFN;
+        this->m_FreeFn = freeFN;
     }
 
     void DeleteEntry(T* entry)
     {
         SlotPoolEntry* e = (SlotPoolEntry*)entry;
-        e->m_next = m_FreeList;
-        m_FreeList = e;
+        e->m_next = this->m_FreeList;
+        this->m_FreeList = e;
     }
 }; // total size: 0x18
 

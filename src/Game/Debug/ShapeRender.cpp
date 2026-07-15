@@ -3,6 +3,7 @@
 #include "Game/GL/gluMeshWriter.h"
 
 #include "NL/gl/glDraw2.h"
+#include "NL/gl/glLightUserData.h"
 #include "NL/gl/glMemory.h"
 #include "NL/gl/glMatrix.h"
 #include "NL/gl/glState.h"
@@ -593,12 +594,36 @@ static inline void BuildShapeMesh(PrimitiveShape& shape)
     }
 }
 
-/**
- * Offset/Address/Size: 0x0 | 0x801FB290 | size: 0x7EC
- * TODO: 92.59% match - face-building loop and mesh blocks still use different
- * saved registers for this and the loop temporaries.
- */
-void ShapeRender::Initialize()
+static inline void* CreateLightData2()
+{
+    void* p = glUserAlloc(GLUD_Light, sizeof(unsigned long) + sizeof(GLLightUserData), true);
+    unsigned long* p32 = (unsigned long*)glUserGetData(p);
+    *p32++ = 1;
+    GLLightUserData* pLight = (GLLightUserData*)(p32);
+
+    pLight->worldPosition.f.x = 0.5f;
+    pLight->worldPosition.f.y = 0.5f;
+    pLight->worldPosition.f.z = 10.0f;
+    pLight->colour.c[0] = 0.5f;
+    pLight->colour.c[1] = 0.5f;
+    pLight->colour.c[2] = 1.0f;
+    pLight->colour.c[3] = 0.0f;
+    pLight->intensity = 1.0f;
+    pLight->innerRadius = 0.0f;
+    pLight->outerRadius = 30.0f;
+
+    return p;
+}
+
+static inline void AllocResource2(PrimitiveShape* pPrimitive, int nVerts)
+{
+    pPrimitive->position = (nlVector3*)glResourceAlloc(nVerts * sizeof(nlVector3), GLM_VertexData);
+    pPrimitive->normal = (nlVector3*)glResourceAlloc(nVerts * sizeof(nlVector3), GLM_VertexData);
+    pPrimitive->texcoord = (nlVector2*)glResourceAlloc(nVerts * sizeof(nlVector2), GLM_VertexData);
+    pPrimitive->vertCount = nVerts;
+}
+
+static inline void CreateBoxGeometry2(PrimitiveShape& prim)
 {
     static int ind_vert[24] = {
         0,
@@ -701,99 +726,60 @@ void ShapeRender::Initialize()
     };
     static int tri_map[6] = { 0, 1, 2, 3, 0, 2 };
 
+    int i;
+    int iQuad;
+    nlVector3* pdst = prim.position;
+    nlVector3* ndst = prim.normal;
+    nlVector2* tdst = prim.texcoord;
+    nlVector3* psrc[4];
+    nlVector3* nsrc[4];
+    nlVector2* tsrc[4];
+
+    for (iQuad = 0; iQuad < 6; iQuad++)
+    {
+        for (i = 0; i < 4; i++)
+        {
+            psrc[i] = &data_vert[ind_vert[iQuad * 4 + i]];
+            nsrc[i] = &data_norm[iQuad * 4 + i];
+            tsrc[i] = &data_uv[ind_uv[iQuad * 4 + i]];
+        }
+
+        for (i = 0; i < 6; i += 2)
+        {
+            *pdst = *psrc[tri_map[i]];
+            *ndst = *nsrc[tri_map[i]];
+            *tdst = *tsrc[tri_map[i]];
+
+            pdst[1] = *psrc[tri_map[i + 1]];
+            ndst[1] = *nsrc[tri_map[i + 1]];
+            tdst[1] = *tsrc[tri_map[i + 1]];
+
+            pdst += 2;
+            ndst += 2;
+            tdst += 2;
+        }
+    }
+}
+
+/**
+ * Offset/Address/Size: 0x0 | 0x801FB290 | size: 0x7EC
+ * TODO: 99.72% match - local static array relocation suffixes differ.
+ */
+void ShapeRender::Initialize()
+{
     if (!m_Initialized)
     {
         m_Initialized = true;
-
-        m_Box.position = (nlVector3*)glResourceAlloc(0x1B0, GLM_VertexData);
-        m_Box.normal = (nlVector3*)glResourceAlloc(0x1B0, GLM_VertexData);
-        m_Box.texcoord = (nlVector2*)glResourceAlloc(0x120, GLM_VertexData);
-        m_Box.vertCount = 0x24;
-
-        nlVector3* pos = m_Box.position;
-        nlVector3* norm = m_Box.normal;
-        nlVector2* uv = m_Box.texcoord;
-
-        for (int iQuad = 0; iQuad < 6; iQuad++)
-        {
-            nlVector2* faceUVs[4];
-            nlVector3* faceNorms[4];
-            nlVector3* faceVerts[4];
-
-            int base = iQuad * 4;
-            int idx;
-
-            idx = base + 0;
-            faceVerts[0] = &data_vert[ind_vert[idx]];
-            faceUVs[0] = &data_uv[ind_uv[idx]];
-            faceNorms[0] = &data_norm[idx];
-
-            idx = base + 1;
-            faceVerts[1] = &data_vert[ind_vert[idx]];
-            faceUVs[1] = &data_uv[ind_uv[idx]];
-            faceNorms[1] = &data_norm[idx];
-
-            idx = base + 2;
-            faceVerts[2] = &data_vert[ind_vert[idx]];
-            faceUVs[2] = &data_uv[ind_uv[idx]];
-            faceNorms[2] = &data_norm[idx];
-
-            idx = base + 3;
-            faceVerts[3] = &data_vert[ind_vert[idx]];
-            faceUVs[3] = &data_uv[ind_uv[idx]];
-            faceNorms[3] = &data_norm[idx];
-
-            for (int j = 0; j < 3; j++)
-            {
-                *pos = *faceVerts[tri_map[j * 2 + 0]];
-                *norm = *faceNorms[tri_map[j * 2 + 0]];
-                *uv = *faceUVs[tri_map[j * 2 + 0]];
-
-                pos[1] = *faceVerts[tri_map[j * 2 + 1]];
-                norm[1] = *faceNorms[tri_map[j * 2 + 1]];
-                uv[1] = *faceUVs[tri_map[j * 2 + 1]];
-
-                pos += 2;
-                norm += 2;
-                uv += 2;
-            }
-        }
-
+        AllocResource2(&m_Box, 0x24);
+        CreateBoxGeometry2(m_Box);
         CreateCylinderGeometry(m_Cylinder);
         CreateHemisphereGeometry(m_Hemisphere);
         CreateFlatCylinderEndGeometry(m_FlatCylinderEnd);
-
         BuildShapeMesh(m_Box);
         BuildShapeMesh(m_Cylinder);
         BuildShapeMesh(m_Hemisphere);
         BuildShapeMesh(m_FlatCylinderEnd);
-
-        struct ShapeRenderLightUserData
-        {
-            u32 type;
-            nlVector3 worldPosition;
-            nlFloatColour colour;
-            float intensity;
-            float innerRadius;
-            float outerRadius;
-        };
-
-        void* pUser = glUserAlloc(GLUD_Light, sizeof(ShapeRenderLightUserData), true);
-        ShapeRenderLightUserData* pLight = (ShapeRenderLightUserData*)glUserGetData(pUser);
-
-        pLight->type = 1;
-        pLight->worldPosition.f.x = 0.5f;
-        pLight->worldPosition.f.y = 0.5f;
-        pLight->worldPosition.f.z = 10.0f;
-        pLight->colour.c[0] = 0.5f;
-        pLight->colour.c[1] = 0.5f;
-        pLight->colour.c[2] = 1.0f;
-        pLight->colour.c[3] = 0.0f;
-        pLight->intensity = 1.0f;
-        pLight->innerRadius = 0.0f;
-        pLight->outerRadius = 30.0f;
-
-        m_pLightUserData = pUser;
+        m_pLightUserData = CreateLightData2();
         m_eView = (eGLView)7;
     }
 }

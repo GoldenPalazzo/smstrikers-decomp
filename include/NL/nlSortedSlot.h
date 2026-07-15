@@ -14,6 +14,31 @@ public:
         /* 0x4 */ U* pEntry;
 
         operator unsigned long() const { return hash; }
+
+        void Set(unsigned long id, U* entry)
+        {
+            pEntry = entry;
+            hash = id;
+        }
+
+        void SetEntry(U* entry, unsigned long id)
+        {
+            pEntry = entry;
+            hash = id;
+        }
+
+        void Copy(const EntryLookup& other)
+        {
+            Set(other.hash, other.pEntry);
+        }
+
+        void CopyTo(EntryLookup* other) const
+        {
+            unsigned long id = hash;
+            U* entry = pEntry;
+            other->pEntry = entry;
+            other->hash = id;
+        }
     }; // total size: 0x8
 
     nlSortedSlot()

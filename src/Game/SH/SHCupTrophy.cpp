@@ -272,214 +272,61 @@ static inline BasicStringData<char>* RetainBasicStringDataNoReread(BasicStringDa
 
 /**
  * Offset/Address/Size: 0x1F54 | 0x800CB608 | size: 0x7B8
+ * TODO: 99.77% match - remaining r30/r31 swap in localized BasicString construction
  */
 void CupTrophyScene::SceneCreated()
 {
-    typedef TLTextInstance* (*FindTextByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-    typedef TLTextInstance* (*FindTextByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
-    typedef TLImageInstance* (*FindImageByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-    typedef TLImageInstance* (*FindImageByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
-    typedef TLComponentInstance* (*FindCompSlideByValue)(TLSlide*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-    typedef TLComponentInstance* (*FindCompSlideByRef)(TLSlide*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
-    typedef TLComponentInstance* (*FindCompPresByValue)(FEPresentation*, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher, InlineHasher);
-    typedef TLComponentInstance* (*FindCompPresByRef)(FEPresentation*, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&, InlineHasher&);
-
-    TLTextInstance* pText;
-    TLImageInstance* pTrophyImage;
-    Spoil* pSpoil;
-    nlColour trophyColour;
-
     mScrollOffset = 0;
     mRow = 0;
 
     FEPresentation* presentation = m_pFEScene->m_pFEPackage->GetPresentation();
-    char* gameInfoBase = (char*)nlSingleton<GameInfoManager>::s_pInstance;
-    gameInfoBase += mTrophy * 0x218;
-    pSpoil = (Spoil*)(gameInfoBase + 0x2F24);
+    UserInfo* userInfo = &nlSingleton<GameInfoManager>::s_pInstance->mUserInfo;
+    Spoil* pSpoil = &userInfo->mSpoils[(int)mTrophy];
 
-    volatile InlineHasher h7, h6, h5, h4, h3, h2, h1, h0;
-
-    {
-        union
-        {
-            FindTextByValue byValue;
-            FindTextByRef byRef;
-        } findText;
-
-        volatile InlineHasher hLayerA, hLayerB;
-        volatile InlineHasher hNameB, hNameA;
-
-        findText.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
-
-        h0.m_Hash = 0;
-        h1.m_Hash = 0;
-        h2.m_Hash = 0;
-        h3.m_Hash = 0;
-        h4.m_Hash = 0;
-        h5.m_Hash = 0;
-        h6.m_Hash = 0;
-        h7.m_Hash = 0;
-
-        unsigned long hash = nlStringLowerHash(CUP_TROPHY_TEXT_NAME);
-        hNameA.m_Hash = hash;
-        hNameB.m_Hash = hash;
-
-        hash = nlStringLowerHash("Layer");
-        hLayerA.m_Hash = hash;
-        hLayerB.m_Hash = hash;
-
-        pText = findText.byRef(
-            presentation->m_currentSlide,
-            (InlineHasher&)hLayerA,
-            (InlineHasher&)hNameA,
-            (InlineHasher&)h7,
-            (InlineHasher&)h5,
-            (InlineHasher&)h3,
-            (InlineHasher&)h1);
-    }
+    TLTextInstance* pText = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
+        presentation->m_currentSlide,
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash(CUP_TROPHY_TEXT_NAME)));
 
     pText->m_LocStrId = GetLOCTrophyName(mTrophy);
     pText->m_OverloadFlags |= 0x8;
 
-    {
-        union
-        {
-            FindImageByValue byValue;
-            FindImageByRef byRef;
-        } findImage;
-
-        volatile InlineHasher hLayerA, hLayerB;
-        volatile InlineHasher hNameB, hNameA;
-        volatile InlineHasher h6, h4, h2, h0;
-
-        findImage.byValue = FEFinder<TLImageInstance, 2>::Find<TLSlide>;
-
-        h0.m_Hash = 0;
-        h1.m_Hash = 0;
-        h2.m_Hash = 0;
-        h3.m_Hash = 0;
-        h4.m_Hash = 0;
-        h5.m_Hash = 0;
-        h6.m_Hash = 0;
-        h7.m_Hash = 0;
-
-        unsigned long hash = nlStringLowerHash(CUP_TROPHY_IMAGE_NAME);
-        hNameA.m_Hash = hash;
-        hNameB.m_Hash = hash;
-
-        hash = nlStringLowerHash("Layer");
-        hLayerA.m_Hash = hash;
-        hLayerB.m_Hash = hash;
-
-        pTrophyImage = findImage.byRef(
-            presentation->m_currentSlide,
-            (InlineHasher&)hLayerA,
-            (InlineHasher&)hNameA,
-            (InlineHasher&)h7,
-            (InlineHasher&)h5,
-            (InlineHasher&)h3,
-            (InlineHasher&)h1);
-    }
+    TLImageInstance* pTrophyImage = FEFinder<TLImageInstance, 2>::Find<TLSlide>(
+        presentation->m_currentSlide,
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash(CUP_TROPHY_IMAGE_NAME)));
 
     mAsyncTrophy->mImageInstance = pTrophyImage;
     mAsyncTrophy->QueueLoad(TROPHY_TEXTURE_FILENAMES[(int)mTrophy], mDoBlockLoad);
     mDoBlockLoad = false;
 
+    TLComponentInstance* arrowComp = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
+        presentation->m_currentSlide,
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("ARROWS2")));
+    if (pSpoil->mNumRecords <= 3)
     {
-        union
-        {
-            FindCompSlideByValue byValue;
-            FindCompSlideByRef byRef;
-        } findComp;
-
-        volatile InlineHasher hLayerA, hLayerB;
-        volatile InlineHasher hNameB, hNameA;
-        volatile InlineHasher h6, h4, h2, h0;
-
-        findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
-
-        h0.m_Hash = 0;
-        h1.m_Hash = 0;
-        h2.m_Hash = 0;
-        h3.m_Hash = 0;
-        h4.m_Hash = 0;
-        h5.m_Hash = 0;
-        h6.m_Hash = 0;
-        h7.m_Hash = 0;
-
-        unsigned long hash = nlStringLowerHash("ARROWS2");
-        hNameA.m_Hash = hash;
-        hNameB.m_Hash = hash;
-
-        hash = nlStringLowerHash("Layer");
-        hLayerA.m_Hash = hash;
-        hLayerB.m_Hash = hash;
-
-        TLComponentInstance* arrowComp = findComp.byRef(
-            presentation->m_currentSlide,
-            (InlineHasher&)hLayerA,
-            (InlineHasher&)hNameA,
-            (InlineHasher&)h7,
-            (InlineHasher&)h5,
-            (InlineHasher&)h3,
-            (InlineHasher&)h1);
-        if (pSpoil->mNumRecords <= 3)
-        {
-            arrowComp->m_bVisible = false;
-        }
-        else
-        {
-            arrowComp->m_bVisible = true;
-        }
+        arrowComp->m_bVisible = false;
+    }
+    else
+    {
+        arrowComp->m_bVisible = true;
     }
 
     if (mIsNew)
     {
-        union
-        {
-            FindCompSlideByValue byValue;
-            FindCompSlideByRef byRef;
-        } findComp;
-
-        volatile InlineHasher hLayerA, hLayerB;
-        volatile InlineHasher hNameB, hNameA;
-        volatile InlineHasher h6, h4, h2, h0;
-
-        findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
-
-        h0.m_Hash = 0;
-        h1.m_Hash = 0;
-        h2.m_Hash = 0;
-        h3.m_Hash = 0;
-        h4.m_Hash = 0;
-        h5.m_Hash = 0;
-        h6.m_Hash = 0;
-        h7.m_Hash = 0;
-
-        unsigned long hash = nlStringLowerHash("ARROWS");
-        hNameA.m_Hash = hash;
-        hNameB.m_Hash = hash;
-
-        hash = nlStringLowerHash("Layer");
-        hLayerA.m_Hash = hash;
-        hLayerB.m_Hash = hash;
-
-        TLComponentInstance* pComp = findComp.byRef(
+        TLComponentInstance* pComp = FEFinder<TLComponentInstance, 4>::Find<TLSlide>(
             presentation->m_currentSlide,
-            (InlineHasher&)hLayerA,
-            (InlineHasher&)hNameA,
-            (InlineHasher&)h7,
-            (InlineHasher&)h5,
-            (InlineHasher&)h3,
-            (InlineHasher&)h1);
+            InlineHasher(nlStringLowerHash("Layer")),
+            InlineHasher(nlStringLowerHash("ARROWS")));
 
         pComp->m_bVisible = false;
-        ((unsigned char*)nlSingleton<GameInfoManager>::s_pInstance)[0x4C39] = 0;
+        nlSingleton<GameInfoManager>::s_pInstance->mDisplayTrophy[0] = false;
     }
 
     if (nlSingleton<GameInfoManager>::s_pInstance->HasTrophy(mTrophy))
     {
-        trophyColour = ((FELibObject*)pTrophyImage->m_component)->GetColour();
+        nlColour trophyColour = ((FELibObject*)pTrophyImage->m_component)->GetColour();
         pTrophyImage->SetAssetColour(trophyColour);
     }
     else
@@ -493,92 +340,22 @@ void CupTrophyScene::SceneCreated()
 
     if (!mButtons.mAlreadyCentred)
     {
-        union
-        {
-            FindCompPresByValue byValue;
-            FindCompPresByRef byRef;
-        } findComp;
-
-        volatile InlineHasher hInB, hInA;
-        volatile InlineHasher hLayerB, hLayerA;
-        volatile InlineHasher hButtonsB, hButtonsA;
-        volatile InlineHasher h4, h2, h0;
-
-        findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<FEPresentation>;
-
-        h0.m_Hash = 0;
-        h1.m_Hash = 0;
-        h2.m_Hash = 0;
-        h3.m_Hash = 0;
-        h4.m_Hash = 0;
-        h5.m_Hash = 0;
-
-        unsigned long hash = nlStringLowerHash("buttons");
-        hButtonsA.m_Hash = hash;
-        hButtonsB.m_Hash = hash;
-
-        hash = nlStringLowerHash("Layer");
-        hLayerA.m_Hash = hash;
-        hLayerB.m_Hash = hash;
-
-        hash = nlStringLowerHash("IN");
-        hInA.m_Hash = hash;
-        hInB.m_Hash = hash;
-
-        mButtons.mButtonInstance = findComp.byRef(
+        mButtons.mButtonInstance = FEFinder<TLComponentInstance, 4>::Find<FEPresentation>(
             presentation,
-            (InlineHasher&)hInA,
-            (InlineHasher&)hLayerA,
-            (InlineHasher&)hButtonsA,
-            (InlineHasher&)h5,
-            (InlineHasher&)h3,
-            (InlineHasher&)h1);
+            InlineHasher(nlStringLowerHash("IN")),
+            InlineHasher(nlStringLowerHash("Layer")),
+            InlineHasher(nlStringLowerHash("buttons")));
 
         mButtons.SetState(mButtonState);
     }
 
     if (!mButtons2.mAlreadyCentred)
     {
-        union
-        {
-            FindCompPresByValue byValue;
-            FindCompPresByRef byRef;
-        } findComp;
-
-        volatile InlineHasher hInB, hInA;
-        volatile InlineHasher hLayerB, hLayerA;
-        volatile InlineHasher hButtonsB, hButtonsA;
-        volatile InlineHasher h4, h2, h0;
-
-        findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<FEPresentation>;
-
-        h0.m_Hash = 0;
-        h1.m_Hash = 0;
-        h2.m_Hash = 0;
-        h3.m_Hash = 0;
-        h4.m_Hash = 0;
-        h5.m_Hash = 0;
-
-        unsigned long hash = nlStringLowerHash("buttons");
-        hButtonsA.m_Hash = hash;
-        hButtonsB.m_Hash = hash;
-
-        hash = nlStringLowerHash("Layer");
-        hLayerA.m_Hash = hash;
-        hLayerB.m_Hash = hash;
-
-        hash = nlStringLowerHash("IN2");
-        hInA.m_Hash = hash;
-        hInB.m_Hash = hash;
-
-        mButtons2.mButtonInstance = findComp.byRef(
+        mButtons2.mButtonInstance = FEFinder<TLComponentInstance, 4>::Find<FEPresentation>(
             presentation,
-            (InlineHasher&)hInA,
-            (InlineHasher&)hLayerA,
-            (InlineHasher&)hButtonsA,
-            (InlineHasher&)h5,
-            (InlineHasher&)h3,
-            (InlineHasher&)h1);
+            InlineHasher(nlStringLowerHash("IN2")),
+            InlineHasher(nlStringLowerHash("Layer")),
+            InlineHasher(nlStringLowerHash("buttons")));
 
         mButtons2.SetState(mButtonState);
     }
@@ -588,83 +365,16 @@ void CupTrophyScene::SceneCreated()
     unsigned short timesWonWide[32];
     nlStrToWcs(timesWon.c_str(), timesWonWide, 32);
 
-    const unsigned short* locString = LookupCupTrophyLoc(0x103642ED);
-
-    BasicStringData<unsigned short>* data = (BasicStringData<unsigned short>*)nlMalloc(0x10, 8, true);
-    if (data != 0)
-    {
-        data->mData = 0;
-        data->mSize = 0;
-        data->mCapacity = 0;
-
-        const unsigned short* ptr = locString;
-        while (*ptr++ != 0)
-        {
-            data->mSize++;
-        }
-
-        data->mSize++;
-        data->mData = (unsigned short*)nlMalloc((data->mSize + 1) * 2, 8, true);
-        data->mCapacity = data->mSize;
-
-        int i = 0;
-        int j = i;
-        while (i < data->mSize)
-        {
-            *(unsigned short*)((char*)data->mData + j) = *locString;
-            i++;
-            locString++;
-            j += 2;
-        }
-
-        data->mRefCount = 1;
-    }
-
-    BasicString<unsigned short, Detail::TempStringAllocator> unformatted(data);
+    BasicString<unsigned short, Detail::TempStringAllocator> unformatted(LookupCupTrophyLoc(0x103642ED));
     BasicString<unsigned short, Detail::TempStringAllocator> formatted = Format(unformatted, timesWonWide);
 
     memcpy(mWonBuffer, formatted.c_str(), 0x100);
 
-    {
-        union
-        {
-            FindTextByValue byValue;
-            FindTextByRef byRef;
-        } findText;
-
-        volatile InlineHasher hLayerA, hLayerB;
-        volatile InlineHasher hNameB, hNameA;
-        volatile InlineHasher h6, h4, h2, h0;
-
-        findText.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
-
-        h0.m_Hash = 0;
-        h1.m_Hash = 0;
-        h2.m_Hash = 0;
-        h3.m_Hash = 0;
-        h4.m_Hash = 0;
-        h5.m_Hash = 0;
-        h6.m_Hash = 0;
-        h7.m_Hash = 0;
-
-        unsigned long hash = nlStringLowerHash("TOTAL CUPS");
-        hNameA.m_Hash = hash;
-        hNameB.m_Hash = hash;
-
-        hash = nlStringLowerHash("Layer");
-        hLayerA.m_Hash = hash;
-        hLayerB.m_Hash = hash;
-
-        TLTextInstance* pTotal = findText.byRef(
-            presentation->m_currentSlide,
-            (InlineHasher&)hLayerA,
-            (InlineHasher&)hNameA,
-            (InlineHasher&)h7,
-            (InlineHasher&)h5,
-            (InlineHasher&)h3,
-            (InlineHasher&)h1);
-        pTotal->SetString(mWonBuffer);
-    }
+    TLTextInstance* pTotal = FEFinder<TLTextInstance, 3>::Find<TLSlide>(
+        presentation->m_currentSlide,
+        InlineHasher(nlStringLowerHash("Layer")),
+        InlineHasher(nlStringLowerHash("TOTAL CUPS")));
+    pTotal->SetString(mWonBuffer);
 }
 
 class GameSceneManager

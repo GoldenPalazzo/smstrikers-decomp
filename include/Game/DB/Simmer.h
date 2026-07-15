@@ -34,6 +34,15 @@ public:
         StringType mToken;
 
         iterator(const Tokenizer& tokenizer, const char* endPtr);
+#ifdef BASICSTRING_SELECTIVE_NO_COPY_REREAD
+        iterator(const iterator& other)
+            : mTokenizer(other.mTokenizer)
+            , mIter(other.mIter)
+            , mEnd(other.mEnd)
+            , mToken(other.mToken, false)
+        {
+        }
+#endif
         iterator& operator++();
         void FindNextToken();
 
@@ -44,8 +53,13 @@ public:
     };
 
     Tokenizer(const StringType& source, const StringType& delimiter)
+#ifdef BASICSTRING_SELECTIVE_NO_COPY_REREAD
+        : m_delimiter(delimiter, true)
+        , m_source(source, false)
+#else
         : m_source(source)
         , m_delimiter(delimiter)
+#endif
     {
     }
 

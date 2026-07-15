@@ -54,7 +54,11 @@ void nlListAddStart(T** head, T* newNode, T** prev)
     {
         *prev = newNode;
     }
+#ifdef NLLIST_ADD_START_USE_NEXT_MEMBER
+    newNode->next = *head;
+#else
     *(T**)newNode = *head;
+#endif
     *head = newNode;
 }
 

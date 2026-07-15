@@ -377,6 +377,7 @@ void nlFont::DrawString(eGLView View, const FontCharString& Text, const nlVector
 
 /**
  * Offset/Address/Size: 0x830 | 0x8021116C | size: 0x9C0
+ * TODO: 98.70% match - register assignments differ in glyph and kerning list parsing.
  */
 unsigned char nlFont::Load(const char* szFontName, char* pFontDescData, unsigned long HashId)
 {
@@ -526,26 +527,7 @@ unsigned char nlFont::Load(const char* szFontName, char* pFontDescData, unsigned
                 }
                 else
                 {
-                    ListEntry<nlFont::GlyphInfo>* pEntry = NULL;
-                    nlFont::GlyphInfo glyphInfo = nlFont::GlyphInfo();
-                    ListEntry<nlFont::GlyphInfo> entryData = ListEntry<nlFont::GlyphInfo>(glyphInfo);
-
-                    if (ExtendedGlyphList.m_Allocator.m_FreeList == NULL)
-                    {
-                        SlotPoolBase::BaseAddNewBlock(&ExtendedGlyphList.m_Allocator, sizeof(ListEntry<nlFont::GlyphInfo>));
-                    }
-
-                    if (ExtendedGlyphList.m_Allocator.m_FreeList != NULL)
-                    {
-                        pEntry = (ListEntry<nlFont::GlyphInfo>*)ExtendedGlyphList.m_Allocator.m_FreeList;
-                        ExtendedGlyphList.m_Allocator.m_FreeList = ExtendedGlyphList.m_Allocator.m_FreeList->m_next;
-                    }
-
-                    if (pEntry != NULL)
-                    {
-                        *pEntry = entryData;
-                    }
-
+                    ListEntry<nlFont::GlyphInfo>* pEntry = ExtendedGlyphList.Allocate(nlFont::GlyphInfo());
                     nlListAddStart<ListEntry<nlFont::GlyphInfo> >(pExtHead, pEntry, &ExtendedGlyphList.m_Tail);
                     m_ExtendedGlyphCount++;
                     pInfo = &pEntry->entry;
@@ -632,25 +614,7 @@ unsigned char nlFont::Load(const char* szFontName, char* pFontDescData, unsigned
 
                     pToken = nlStrChr(pToken, ' ') + 1;
                     kp.Kern = atoi(pToken);
-                    ListEntry<nlFont::KernPair> entryData(kp);
-                    ListEntry<nlFont::KernPair>* pEntry = NULL;
-
-                    if (KernList.m_Allocator.m_FreeList == NULL)
-                    {
-                        SlotPoolBase::BaseAddNewBlock(&KernList.m_Allocator, sizeof(ListEntry<nlFont::KernPair>));
-                    }
-
-                    if (KernList.m_Allocator.m_FreeList != NULL)
-                    {
-                        pEntry = (ListEntry<nlFont::KernPair>*)KernList.m_Allocator.m_FreeList;
-                        KernList.m_Allocator.m_FreeList = KernList.m_Allocator.m_FreeList->m_next;
-                    }
-
-                    if (pEntry != NULL)
-                    {
-                        *pEntry = entryData;
-                    }
-
+                    ListEntry<nlFont::KernPair>* pEntry = KernList.Allocate(kp);
                     nlListAddStart<ListEntry<nlFont::KernPair> >(pKernHead, pEntry, pKernTail);
                     m_KernTableSize++;
 
@@ -735,17 +699,8 @@ unsigned char nlFont::Load(const char* szFontName, char* pFontDescData, unsigned
                 m_EffectTextureHandles[page] = nlStringHash(sHashFontName);
             }
         }
-
-        nlWalkList<ListEntry<nlFont::GlyphInfo>, ListContainerBase<nlFont::GlyphInfo, BasicSlotPoolHigh<ListEntry<nlFont::GlyphInfo> > > >(ExtendedGlyphList.m_Head, &ExtendedGlyphList, &ListContainerBase<nlFont::GlyphInfo, BasicSlotPoolHigh<ListEntry<nlFont::GlyphInfo> > >::DeleteEntry);
-        ExtendedGlyphList.m_Head = NULL;
-        ExtendedGlyphList.m_Tail = NULL;
-        SlotPoolBase::BaseFreeBlocks(&ExtendedGlyphList.m_Allocator, sizeof(ListEntry<nlFont::GlyphInfo>));
     }
 
-    nlWalkList<ListEntry<nlFont::KernPair>, ListContainerBase<nlFont::KernPair, BasicSlotPoolHigh<ListEntry<nlFont::KernPair> > > >(KernList.m_Head, &KernList, &ListContainerBase<nlFont::KernPair, BasicSlotPoolHigh<ListEntry<nlFont::KernPair> > >::DeleteEntry);
-    KernList.m_Head = NULL;
-    KernList.m_Tail = NULL;
-    SlotPoolBase::BaseFreeBlocks(&KernList.m_Allocator, sizeof(ListEntry<nlFont::KernPair>));
     return 1;
 }
 

@@ -217,6 +217,26 @@ public:
 #endif
     }
 
+#ifdef BASICSTRING_SELECTIVE_NO_COPY_REREAD
+    BasicString(const BasicString& other, bool reread)
+    {
+        BasicStringData<CharT>* data = other.m_data;
+        if (data != 0)
+        {
+            data->mRefCount++;
+            if (reread)
+            {
+                data = other.m_data;
+            }
+        }
+        else
+        {
+            data = 0;
+        }
+        m_data = data;
+    }
+#endif
+
     ~BasicString()
     {
         if (m_data)

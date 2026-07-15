@@ -31,8 +31,7 @@ static const char* CUP_PROGRESS_NAME = "PROGRESS2";
 static const char* CUP_HIGHLIGHT_NAME = "highlite";
 
 static char* HUBstandingsRowNames[10] = {
-    "LINE_0", "LINE_1", "LINE_2", "LINE_3", "LINE_4",
-    "LINE_5", "LINE_6", "LINE_7", "LINE_8", "LINE_9"
+    "LINE_0", "LINE_1", "LINE_2", "LINE_3", "LINE_4", "LINE_5", "LINE_6", "LINE_7", "LINE_8", "LINE_9"
 };
 static char* HUB_ROWS[8] = {
     "row1", "row2", "row3", "row4", "row5", "row6", "row7", "row8"
@@ -41,10 +40,7 @@ static char* TEAM_NAMES[8] = {
     "Team1", "Team2", "Team3", "Team4", "Team5", "Team6", "Team7", "Team8"
 };
 static char* PROGRESS_IMAGE_NAMES[16] = {
-    "PROGRESS_WHITE", "PROGRESS_WHITE2", "PROGRESS_WHITE3", "PROGRESS_WHITE4",
-    "PROGRESS_WHITE5", "PROGRESS_WHITE6", "PROGRESS_WHITE7", "PROGRESS_WHITE8",
-    "PROGRESS_WHITE9", "PROGRESS_WHITE10", "PROGRESS_WHITE11", "PROGRESS_WHITE12",
-    "PROGRESS_WHITE13", "PROGRESS_WHITE14", "PROGRESS_WHITE15", "PROGRESS_WHITE16"
+    "PROGRESS_WHITE", "PROGRESS_WHITE2", "PROGRESS_WHITE3", "PROGRESS_WHITE4", "PROGRESS_WHITE5", "PROGRESS_WHITE6", "PROGRESS_WHITE7", "PROGRESS_WHITE8", "PROGRESS_WHITE9", "PROGRESS_WHITE10", "PROGRESS_WHITE11", "PROGRESS_WHITE12", "PROGRESS_WHITE13", "PROGRESS_WHITE14", "PROGRESS_WHITE15", "PROGRESS_WHITE16"
 };
 
 static const nlColour HUB_COLOUR_WHITE = { { 0xFF, 0xFF, 0xFF, 0xFF } };
@@ -1011,9 +1007,14 @@ unsigned char CupHubScene::UpdateDisplayedStat()
 
 /**
  * Offset/Address/Size: 0x4E34 | 0x800EEB90 | size: 0x10D4
- * TODO: 99.52% match - r16/r17/r18 register swap among mode, title, and position offset
+ * TODO: 99.54% match - r16/r18 swap between title and the team-count/position-offset live range
  */
 static inline GameInfoManager::eGameModes IdentityLeagueMode(GameInfoManager::eGameModes value)
+{
+    return value;
+}
+
+static inline TLTextInstance* IdentityLeaguePointsText(TLTextInstance* value)
 {
     return value;
 }
@@ -1205,7 +1206,7 @@ void CupHubScene::CreateLeague()
         nlStrToWcs(lossesStr.c_str(), mColumnsByRowsBuffers[3][row], 0x20);
         lossesText->SetString(mColumnsByRowsBuffers[3][row]);
 
-        TLTextInstance* pointsText = FEFinder<TLTextInstance, 3>::Find<TLSlide>(pSlide, InlineHasher(nlStringLowerHash("points")));
+        TLTextInstance* pointsText = IdentityLeaguePointsText(FEFinder<TLTextInstance, 3>::Find<TLSlide>(pSlide, InlineHasher(nlStringLowerHash("points"))));
 
         if (useHighlight)
         {
@@ -1750,359 +1751,33 @@ void CupHubScene::CreateKnockout()
         volatile InlineHasher hB, hA, h9, h8, h6, h4, h2, h0;
         volatile InlineHasher g7, g6, g5;
 
-    for (i = 0; i < numTeams; i++)
-    {
-        eTeamID currentTeam = knockoutLocals.knockoutTeams[i];
-        bool useHighlightColour = IsUserRow(currentTeam);
-
-        if (useHighlightColour)
+        for (i = 0; i < numTeams; i++)
         {
-            knockoutLocals.currentColour = HUB_COLOUR_HIGHLIGHT;
-        }
-        else
-        {
-            knockoutLocals.currentColour = mTextColour;
-        }
-        colour = knockoutLocals.currentColour;
+            eTeamID currentTeam = knockoutLocals.knockoutTeams[i];
+            bool useHighlightColour = IsUserRow(currentTeam);
 
-        unsigned long hash;
-
-        h0.m_Hash = 0;
-        h6.m_Hash = 0;
-        h1.m_Hash = 0;
-        h2.m_Hash = 0;
-        h3.m_Hash = 0;
-        h4.m_Hash = 0;
-        h5.m_Hash = 0;
-        h7.m_Hash = 0;
-
-        hash = nlStringLowerHash(TEAM_NAMES[i]);
-        h8.m_Hash = hash;
-        h9.m_Hash = hash;
-
-        hash = nlStringLowerHash(CUP_HUB_LAYER_NAME);
-        hA.m_Hash = hash;
-        hB.m_Hash = hash;
-
-        {
-            union
+            if (useHighlightColour)
             {
-                FindCompByValue byValue;
-                FindCompByRef byRef;
-            } findComp;
-
-            findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
-            pComp = findComp.byRef(
-                currentSlide,
-                (InlineHasher&)hB,
-                (InlineHasher&)h9,
-                (InlineHasher&)h7,
-                (InlineHasher&)h5,
-                (InlineHasher&)h3,
-                (InlineHasher&)h1);
-        }
-
-        mAnimComponents[i] = pComp;
-        pComp->SetActiveSlide("Eliminated");
-        pComp->Update(0.0f);
-
-        {
-            volatile InlineHasher g4, g3, g2, g1, g0;
-
-            g0.m_Hash = 0;
-            h1.m_Hash = 0;
-            g1.m_Hash = 0;
-            h3.m_Hash = 0;
-            g2.m_Hash = 0;
-            h5.m_Hash = 0;
-            g3.m_Hash = 0;
-            h7.m_Hash = 0;
-            g4.m_Hash = 0;
-            g5.m_Hash = 0;
-
-            hash = nlStringLowerHash("team");
-            g6.m_Hash = hash;
-            g7.m_Hash = hash;
-
-            union
+                knockoutLocals.currentColour = HUB_COLOUR_HIGHLIGHT;
+            }
+            else
             {
-                FindTextByValue byValue;
-                FindTextByRef byRef;
-            } findText;
+                knockoutLocals.currentColour = mTextColour;
+            }
+            colour = knockoutLocals.currentColour;
 
-            findText.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
-            pTextInstance = findText.byRef(
-                pComp->GetActiveSlide(),
-                (InlineHasher&)g7,
-                (InlineHasher&)g5,
-                (InlineHasher&)h7,
-                (InlineHasher&)h5,
-                (InlineHasher&)h3,
-                (InlineHasher&)h1);
-        }
-
-        pTextInstance->m_LocStrId = GetLOCTeamName(knockoutLocals.knockoutTeams[i]);
-        pTextInstance->m_OverloadFlags |= 8;
-        pTextInstance->SetAssetColour(colour);
-
-        {
-            volatile InlineHasher g7, g6, g4, g3, g2, g1, g0;
-
-            g0.m_Hash = 0;
-            h1.m_Hash = 0;
-            g1.m_Hash = 0;
-            h3.m_Hash = 0;
-            g2.m_Hash = 0;
-            h5.m_Hash = 0;
-            g3.m_Hash = 0;
-            h7.m_Hash = 0;
-            g4.m_Hash = 0;
-            g5.m_Hash = 0;
-
-            hash = nlStringLowerHash("theXfactor");
-            g6.m_Hash = hash;
-            g7.m_Hash = hash;
-
-            union
-            {
-                FindCompByValue byValue;
-                FindCompByRef byRef;
-            } findComp;
-
-            findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
-            pXComponent = findComp.byRef(
-                pComp->GetActiveSlide(),
-                (InlineHasher&)g7,
-                (InlineHasher&)g5,
-                (InlineHasher&)h7,
-                (InlineHasher&)h5,
-                (InlineHasher&)h3,
-                (InlineHasher&)h1);
-        }
-
-        eTeamID loserTeam = loserTeams[i / 2];
-
-        if ((loserTeam == knockoutLocals.knockoutTeams[i]) && mHasHumanTeamPlayed)
-        {
-            pXComponent->m_bVisible = true;
-        }
-        else
-        {
-            pXComponent->m_bVisible = false;
-        }
-
-        pComp->SetActiveSlide("Move");
-        pComp->Update(0.0f);
-
-        {
-            volatile InlineHasher g7, g6, g4, g3, g2, g1, g0;
-
-            g0.m_Hash = 0;
-            h1.m_Hash = 0;
-            g1.m_Hash = 0;
-            h3.m_Hash = 0;
-            g2.m_Hash = 0;
-            h5.m_Hash = 0;
-            g3.m_Hash = 0;
-            h7.m_Hash = 0;
-            g4.m_Hash = 0;
-            g5.m_Hash = 0;
-
-            hash = nlStringLowerHash("team");
-            g6.m_Hash = hash;
-            g7.m_Hash = hash;
-
-            union
-            {
-                FindTextByValue byValue;
-                FindTextByRef byRef;
-            } findText;
-
-            findText.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
-            pTextInstance = findText.byRef(
-                pComp->GetActiveSlide(),
-                (InlineHasher&)g7,
-                (InlineHasher&)g5,
-                (InlineHasher&)h7,
-                (InlineHasher&)h5,
-                (InlineHasher&)h3,
-                (InlineHasher&)h1);
-        }
-
-        pTextInstance->m_LocStrId = GetLOCTeamName(knockoutLocals.knockoutTeams[i]);
-        pTextInstance->m_OverloadFlags |= 8;
-        pTextInstance->SetAssetColour(colour);
-
-        {
-            volatile InlineHasher g7, g6, g4, g3, g2, g1, g0;
-
-            g0.m_Hash = 0;
-            h1.m_Hash = 0;
-            g1.m_Hash = 0;
-            h3.m_Hash = 0;
-            g2.m_Hash = 0;
-            h5.m_Hash = 0;
-            g3.m_Hash = 0;
-            h7.m_Hash = 0;
-            g4.m_Hash = 0;
-            g5.m_Hash = 0;
-
-            hash = nlStringLowerHash("theXfactor");
-            g6.m_Hash = hash;
-            g7.m_Hash = hash;
-
-            union
-            {
-                FindCompByValue byValue;
-                FindCompByRef byRef;
-            } findComp;
-
-            findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
-            pXComponent = findComp.byRef(
-                pComp->GetActiveSlide(),
-                (InlineHasher&)g7,
-                (InlineHasher&)g5,
-                (InlineHasher&)h7,
-                (InlineHasher&)h5,
-                (InlineHasher&)h3,
-                (InlineHasher&)h1);
-        }
-
-        pXComponent->m_bVisible = false;
-
-        pComp->SetActiveSlide("Neutral");
-        pComp->Update(0.0f);
-
-        {
-            volatile InlineHasher g7, g6, g4, g3, g2, g1, g0;
-
-            g0.m_Hash = 0;
-            h1.m_Hash = 0;
-            g1.m_Hash = 0;
-            h3.m_Hash = 0;
-            g2.m_Hash = 0;
-            h5.m_Hash = 0;
-            g3.m_Hash = 0;
-            h7.m_Hash = 0;
-            g4.m_Hash = 0;
-            g5.m_Hash = 0;
-
-            hash = nlStringLowerHash("team");
-            g6.m_Hash = hash;
-            g7.m_Hash = hash;
-
-            union
-            {
-                FindTextByValue byValue;
-                FindTextByRef byRef;
-            } findText;
-
-            findText.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
-            pTextInstance = findText.byRef(
-                pComp->GetActiveSlide(),
-                (InlineHasher&)g7,
-                (InlineHasher&)g5,
-                (InlineHasher&)h7,
-                (InlineHasher&)h5,
-                (InlineHasher&)h3,
-                (InlineHasher&)h1);
-        }
-
-        pTextInstance->m_LocStrId = GetLOCTeamName(knockoutLocals.knockoutTeams[i]);
-        pTextInstance->m_OverloadFlags |= 8;
-        pTextInstance->SetAssetColour(colour);
-
-        {
-            volatile InlineHasher g7, g6, g4, g3, g2, g1, g0;
-
-            g0.m_Hash = 0;
-            h1.m_Hash = 0;
-            g1.m_Hash = 0;
-            h3.m_Hash = 0;
-            g2.m_Hash = 0;
-            h5.m_Hash = 0;
-            g3.m_Hash = 0;
-            h7.m_Hash = 0;
-            g4.m_Hash = 0;
-            g5.m_Hash = 0;
-
-            hash = nlStringLowerHash("theXfactor");
-            g6.m_Hash = hash;
-            g7.m_Hash = hash;
-
-            union
-            {
-                FindCompByValue byValue;
-                FindCompByRef byRef;
-            } findComp;
-
-            findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
-            pXComponent = findComp.byRef(
-                pComp->GetActiveSlide(),
-                (InlineHasher&)g7,
-                (InlineHasher&)g5,
-                (InlineHasher&)h7,
-                (InlineHasher&)h5,
-                (InlineHasher&)h3,
-                (InlineHasher&)h1);
-        }
-
-        if ((loserTeam == knockoutLocals.knockoutTeams[i]) && mHasHumanTeamPlayed)
-        {
-            pXComponent->m_bVisible = true;
-        }
-        else
-        {
-            pXComponent->m_bVisible = false;
-        }
-    }
-
-    if (mDoAnimations)
-    {
-        if (mHubState == HUB_KNOCKOUT8)
-        {
-            pGame = gameInfo->GetMatchupInfo(round, 2);
-            mAnimatingKnockoutTeams[2] = (pGame->mFinalScore[0] > pGame->mFinalScore[1]) ? 5 : 4;
-
-            pGame = gameInfo->GetMatchupInfo(round, 3);
-            mAnimatingKnockoutTeams[3] = (pGame->mFinalScore[0] > pGame->mFinalScore[1]) ? 7 : 6;
-        }
-
-        if (mHubState == HUB_KNOCKOUT8 || mHubState == HUB_KNOCKOUT4)
-        {
-            pGame = gameInfo->GetMatchupInfo(round, 1);
-            mAnimatingKnockoutTeams[1] = (pGame->mFinalScore[0] > pGame->mFinalScore[1]) ? 3 : 2;
-        }
-
-        if (mHubState == HUB_KNOCKOUT2 && mDoAnimations && gameInfo->GetCurrentRoundNumber() == -1)
-        {
-            pGame = &gameInfo->mUserInfo.mBowserCupFinalRound;
-        }
-        else if (mSuperTeamAnimation == true)
-        {
-            pGame = &gameInfo->mUserInfo.mBowserCupFinalRound;
-        }
-        else
-        {
-            pGame = gameInfo->GetMatchupInfo(round, 0);
-        }
-
-        mAnimatingKnockoutTeams[0] = (pGame->mFinalScore[0] > pGame->mFinalScore[1]) ? 1 : 0;
-        mKnockoutLoserAnimations = true;
-
-        {
-            volatile InlineHasher hB, hA, h9, h8, h6, h4, h2, h0;
+            unsigned long hash;
 
             h0.m_Hash = 0;
-            h2.m_Hash = 0;
-            h4.m_Hash = 0;
-            h1.m_Hash = 0;
-            h3.m_Hash = 0;
-            h5.m_Hash = 0;
             h6.m_Hash = 0;
+            h1.m_Hash = 0;
+            h2.m_Hash = 0;
+            h3.m_Hash = 0;
+            h4.m_Hash = 0;
+            h5.m_Hash = 0;
             h7.m_Hash = 0;
 
-            unsigned long hash = nlStringLowerHash("message");
+            hash = nlStringLowerHash(TEAM_NAMES[i]);
             h8.m_Hash = hash;
             h9.m_Hash = hash;
 
@@ -2110,120 +1785,446 @@ void CupHubScene::CreateKnockout()
             hA.m_Hash = hash;
             hB.m_Hash = hash;
 
-            union
             {
-                FindCompByValue byValue;
-                FindCompByRef byRef;
-            } findComp;
+                union
+                {
+                    FindCompByValue byValue;
+                    FindCompByRef byRef;
+                } findComp;
 
-            findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
-            pComp = findComp.byRef(
-                currentSlide,
-                (InlineHasher&)hB,
-                (InlineHasher&)h9,
-                (InlineHasher&)h7,
-                (InlineHasher&)h5,
-                (InlineHasher&)h3,
-                (InlineHasher&)h1);
-        }
+                findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
+                pComp = findComp.byRef(
+                    currentSlide,
+                    (InlineHasher&)hB,
+                    (InlineHasher&)h9,
+                    (InlineHasher&)h7,
+                    (InlineHasher&)h5,
+                    (InlineHasher&)h3,
+                    (InlineHasher&)h1);
+            }
 
-        pComp->m_bVisible = false;
-        mSlideSwitchDelay = 2.0f;
-    }
-    else
-    {
-        {
-            volatile InlineHasher hB, hA, h9, h8, h6, h4, h2, h0;
+            mAnimComponents[i] = pComp;
+            pComp->SetActiveSlide("Eliminated");
+            pComp->Update(0.0f);
 
-            h0.m_Hash = 0;
-            h1.m_Hash = 0;
-            h2.m_Hash = 0;
-            h3.m_Hash = 0;
-            h4.m_Hash = 0;
-            h5.m_Hash = 0;
-            h6.m_Hash = 0;
-            h7.m_Hash = 0;
-
-            unsigned long hash = nlStringLowerHash("message");
-            h8.m_Hash = hash;
-            h9.m_Hash = hash;
-
-            hash = nlStringLowerHash(CUP_HUB_LAYER_NAME);
-            hA.m_Hash = hash;
-            hB.m_Hash = hash;
-
-            union
             {
-                FindCompByValue byValue;
-                FindCompByRef byRef;
-            } findComp;
+                volatile InlineHasher g4, g3, g2, g1, g0;
 
-            findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
-            pComp = findComp.byRef(
-                currentSlide,
-                (InlineHasher&)hB,
-                (InlineHasher&)h9,
-                (InlineHasher&)h7,
-                (InlineHasher&)h5,
-                (InlineHasher&)h3,
-                (InlineHasher&)h1);
-        }
+                g0.m_Hash = 0;
+                h1.m_Hash = 0;
+                g1.m_Hash = 0;
+                h3.m_Hash = 0;
+                g2.m_Hash = 0;
+                h5.m_Hash = 0;
+                g3.m_Hash = 0;
+                h7.m_Hash = 0;
+                g4.m_Hash = 0;
+                g5.m_Hash = 0;
 
-        {
-            volatile InlineHasher g7, g6, g4, g3, g2, g1, g0;
+                hash = nlStringLowerHash("team");
+                g6.m_Hash = hash;
+                g7.m_Hash = hash;
 
-            g0.m_Hash = 0;
-            h1.m_Hash = 0;
-            g1.m_Hash = 0;
-            h3.m_Hash = 0;
-            g2.m_Hash = 0;
-            h5.m_Hash = 0;
-            g3.m_Hash = 0;
-            h7.m_Hash = 0;
-            g4.m_Hash = 0;
-            g5.m_Hash = 0;
+                union
+                {
+                    FindTextByValue byValue;
+                    FindTextByRef byRef;
+                } findText;
 
-            unsigned long hash = nlStringLowerHash("Text");
-            g6.m_Hash = hash;
-            g7.m_Hash = hash;
+                findText.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
+                pTextInstance = findText.byRef(
+                    pComp->GetActiveSlide(),
+                    (InlineHasher&)g7,
+                    (InlineHasher&)g5,
+                    (InlineHasher&)h7,
+                    (InlineHasher&)h5,
+                    (InlineHasher&)h3,
+                    (InlineHasher&)h1);
+            }
 
-            union
+            pTextInstance->m_LocStrId = GetLOCTeamName(knockoutLocals.knockoutTeams[i]);
+            pTextInstance->m_OverloadFlags |= 8;
+            pTextInstance->SetAssetColour(colour);
+
             {
-                FindTextByValue byValue;
-                FindTextByRef byRef;
-            } findText;
+                volatile InlineHasher g7, g6, g4, g3, g2, g1, g0;
 
-            findText.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
-            pText = findText.byRef(
-                pComp->GetActiveSlide(),
-                (InlineHasher&)g7,
-                (InlineHasher&)g5,
-                (InlineHasher&)h7,
-                (InlineHasher&)h5,
-                (InlineHasher&)h3,
-                (InlineHasher&)h1);
+                g0.m_Hash = 0;
+                h1.m_Hash = 0;
+                g1.m_Hash = 0;
+                h3.m_Hash = 0;
+                g2.m_Hash = 0;
+                h5.m_Hash = 0;
+                g3.m_Hash = 0;
+                h7.m_Hash = 0;
+                g4.m_Hash = 0;
+                g5.m_Hash = 0;
+
+                hash = nlStringLowerHash("theXfactor");
+                g6.m_Hash = hash;
+                g7.m_Hash = hash;
+
+                union
+                {
+                    FindCompByValue byValue;
+                    FindCompByRef byRef;
+                } findComp;
+
+                findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
+                pXComponent = findComp.byRef(
+                    pComp->GetActiveSlide(),
+                    (InlineHasher&)g7,
+                    (InlineHasher&)g5,
+                    (InlineHasher&)h7,
+                    (InlineHasher&)h5,
+                    (InlineHasher&)h3,
+                    (InlineHasher&)h1);
+            }
+
+            eTeamID loserTeam = loserTeams[i / 2];
+
+            if ((loserTeam == knockoutLocals.knockoutTeams[i]) && mHasHumanTeamPlayed)
+            {
+                pXComponent->m_bVisible = true;
+            }
+            else
+            {
+                pXComponent->m_bVisible = false;
+            }
+
+            pComp->SetActiveSlide("Move");
+            pComp->Update(0.0f);
+
+            {
+                volatile InlineHasher g7, g6, g4, g3, g2, g1, g0;
+
+                g0.m_Hash = 0;
+                h1.m_Hash = 0;
+                g1.m_Hash = 0;
+                h3.m_Hash = 0;
+                g2.m_Hash = 0;
+                h5.m_Hash = 0;
+                g3.m_Hash = 0;
+                h7.m_Hash = 0;
+                g4.m_Hash = 0;
+                g5.m_Hash = 0;
+
+                hash = nlStringLowerHash("team");
+                g6.m_Hash = hash;
+                g7.m_Hash = hash;
+
+                union
+                {
+                    FindTextByValue byValue;
+                    FindTextByRef byRef;
+                } findText;
+
+                findText.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
+                pTextInstance = findText.byRef(
+                    pComp->GetActiveSlide(),
+                    (InlineHasher&)g7,
+                    (InlineHasher&)g5,
+                    (InlineHasher&)h7,
+                    (InlineHasher&)h5,
+                    (InlineHasher&)h3,
+                    (InlineHasher&)h1);
+            }
+
+            pTextInstance->m_LocStrId = GetLOCTeamName(knockoutLocals.knockoutTeams[i]);
+            pTextInstance->m_OverloadFlags |= 8;
+            pTextInstance->SetAssetColour(colour);
+
+            {
+                volatile InlineHasher g7, g6, g4, g3, g2, g1, g0;
+
+                g0.m_Hash = 0;
+                h1.m_Hash = 0;
+                g1.m_Hash = 0;
+                h3.m_Hash = 0;
+                g2.m_Hash = 0;
+                h5.m_Hash = 0;
+                g3.m_Hash = 0;
+                h7.m_Hash = 0;
+                g4.m_Hash = 0;
+                g5.m_Hash = 0;
+
+                hash = nlStringLowerHash("theXfactor");
+                g6.m_Hash = hash;
+                g7.m_Hash = hash;
+
+                union
+                {
+                    FindCompByValue byValue;
+                    FindCompByRef byRef;
+                } findComp;
+
+                findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
+                pXComponent = findComp.byRef(
+                    pComp->GetActiveSlide(),
+                    (InlineHasher&)g7,
+                    (InlineHasher&)g5,
+                    (InlineHasher&)h7,
+                    (InlineHasher&)h5,
+                    (InlineHasher&)h3,
+                    (InlineHasher&)h1);
+            }
+
+            pXComponent->m_bVisible = false;
+
+            pComp->SetActiveSlide("Neutral");
+            pComp->Update(0.0f);
+
+            {
+                volatile InlineHasher g7, g6, g4, g3, g2, g1, g0;
+
+                g0.m_Hash = 0;
+                h1.m_Hash = 0;
+                g1.m_Hash = 0;
+                h3.m_Hash = 0;
+                g2.m_Hash = 0;
+                h5.m_Hash = 0;
+                g3.m_Hash = 0;
+                h7.m_Hash = 0;
+                g4.m_Hash = 0;
+                g5.m_Hash = 0;
+
+                hash = nlStringLowerHash("team");
+                g6.m_Hash = hash;
+                g7.m_Hash = hash;
+
+                union
+                {
+                    FindTextByValue byValue;
+                    FindTextByRef byRef;
+                } findText;
+
+                findText.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
+                pTextInstance = findText.byRef(
+                    pComp->GetActiveSlide(),
+                    (InlineHasher&)g7,
+                    (InlineHasher&)g5,
+                    (InlineHasher&)h7,
+                    (InlineHasher&)h5,
+                    (InlineHasher&)h3,
+                    (InlineHasher&)h1);
+            }
+
+            pTextInstance->m_LocStrId = GetLOCTeamName(knockoutLocals.knockoutTeams[i]);
+            pTextInstance->m_OverloadFlags |= 8;
+            pTextInstance->SetAssetColour(colour);
+
+            {
+                volatile InlineHasher g7, g6, g4, g3, g2, g1, g0;
+
+                g0.m_Hash = 0;
+                h1.m_Hash = 0;
+                g1.m_Hash = 0;
+                h3.m_Hash = 0;
+                g2.m_Hash = 0;
+                h5.m_Hash = 0;
+                g3.m_Hash = 0;
+                h7.m_Hash = 0;
+                g4.m_Hash = 0;
+                g5.m_Hash = 0;
+
+                hash = nlStringLowerHash("theXfactor");
+                g6.m_Hash = hash;
+                g7.m_Hash = hash;
+
+                union
+                {
+                    FindCompByValue byValue;
+                    FindCompByRef byRef;
+                } findComp;
+
+                findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
+                pXComponent = findComp.byRef(
+                    pComp->GetActiveSlide(),
+                    (InlineHasher&)g7,
+                    (InlineHasher&)g5,
+                    (InlineHasher&)h7,
+                    (InlineHasher&)h5,
+                    (InlineHasher&)h3,
+                    (InlineHasher&)h1);
+            }
+
+            if ((loserTeam == knockoutLocals.knockoutTeams[i]) && mHasHumanTeamPlayed)
+            {
+                pXComponent->m_bVisible = true;
+            }
+            else
+            {
+                pXComponent->m_bVisible = false;
+            }
         }
 
-        switch (mHubState)
+        if (mDoAnimations)
         {
-        case HUB_KNOCKOUT8:
-            pText->SetStringId("STANDINGS_QUARTER");
-            title->m_bVisible = false;
-            break;
-        case HUB_KNOCKOUT4:
-            pText->SetStringId("STANDINGS_SEMI");
-            break;
-        case HUB_KNOCKOUT2:
-            pText->SetStringId("STANDINGS_FINAL");
-            break;
-        }
+            if (mHubState == HUB_KNOCKOUT8)
+            {
+                pGame = gameInfo->GetMatchupInfo(round, 2);
+                mAnimatingKnockoutTeams[2] = (pGame->mFinalScore[0] > pGame->mFinalScore[1]) ? 5 : 4;
 
-        if (!mAllKnockoutAnimations && mPlayPopSound)
-        {
-            FEAudio::PlayAnimAudioEvent("sfx_standings_round_pop", false);
-            mPlayPopSound = false;
+                pGame = gameInfo->GetMatchupInfo(round, 3);
+                mAnimatingKnockoutTeams[3] = (pGame->mFinalScore[0] > pGame->mFinalScore[1]) ? 7 : 6;
+            }
+
+            if (mHubState == HUB_KNOCKOUT8 || mHubState == HUB_KNOCKOUT4)
+            {
+                pGame = gameInfo->GetMatchupInfo(round, 1);
+                mAnimatingKnockoutTeams[1] = (pGame->mFinalScore[0] > pGame->mFinalScore[1]) ? 3 : 2;
+            }
+
+            if (mHubState == HUB_KNOCKOUT2 && mDoAnimations && gameInfo->GetCurrentRoundNumber() == -1)
+            {
+                pGame = &gameInfo->mUserInfo.mBowserCupFinalRound;
+            }
+            else if (mSuperTeamAnimation == true)
+            {
+                pGame = &gameInfo->mUserInfo.mBowserCupFinalRound;
+            }
+            else
+            {
+                pGame = gameInfo->GetMatchupInfo(round, 0);
+            }
+
+            mAnimatingKnockoutTeams[0] = (pGame->mFinalScore[0] > pGame->mFinalScore[1]) ? 1 : 0;
+            mKnockoutLoserAnimations = true;
+
+            {
+                volatile InlineHasher hB, hA, h9, h8, h6, h4, h2, h0;
+
+                h0.m_Hash = 0;
+                h2.m_Hash = 0;
+                h4.m_Hash = 0;
+                h1.m_Hash = 0;
+                h3.m_Hash = 0;
+                h5.m_Hash = 0;
+                h6.m_Hash = 0;
+                h7.m_Hash = 0;
+
+                unsigned long hash = nlStringLowerHash("message");
+                h8.m_Hash = hash;
+                h9.m_Hash = hash;
+
+                hash = nlStringLowerHash(CUP_HUB_LAYER_NAME);
+                hA.m_Hash = hash;
+                hB.m_Hash = hash;
+
+                union
+                {
+                    FindCompByValue byValue;
+                    FindCompByRef byRef;
+                } findComp;
+
+                findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
+                pComp = findComp.byRef(
+                    currentSlide,
+                    (InlineHasher&)hB,
+                    (InlineHasher&)h9,
+                    (InlineHasher&)h7,
+                    (InlineHasher&)h5,
+                    (InlineHasher&)h3,
+                    (InlineHasher&)h1);
+            }
+
+            pComp->m_bVisible = false;
+            mSlideSwitchDelay = 2.0f;
         }
-    }
+        else
+        {
+            {
+                volatile InlineHasher hB, hA, h9, h8, h6, h4, h2, h0;
+
+                h0.m_Hash = 0;
+                h1.m_Hash = 0;
+                h2.m_Hash = 0;
+                h3.m_Hash = 0;
+                h4.m_Hash = 0;
+                h5.m_Hash = 0;
+                h6.m_Hash = 0;
+                h7.m_Hash = 0;
+
+                unsigned long hash = nlStringLowerHash("message");
+                h8.m_Hash = hash;
+                h9.m_Hash = hash;
+
+                hash = nlStringLowerHash(CUP_HUB_LAYER_NAME);
+                hA.m_Hash = hash;
+                hB.m_Hash = hash;
+
+                union
+                {
+                    FindCompByValue byValue;
+                    FindCompByRef byRef;
+                } findComp;
+
+                findComp.byValue = FEFinder<TLComponentInstance, 4>::Find<TLSlide>;
+                pComp = findComp.byRef(
+                    currentSlide,
+                    (InlineHasher&)hB,
+                    (InlineHasher&)h9,
+                    (InlineHasher&)h7,
+                    (InlineHasher&)h5,
+                    (InlineHasher&)h3,
+                    (InlineHasher&)h1);
+            }
+
+            {
+                volatile InlineHasher g7, g6, g4, g3, g2, g1, g0;
+
+                g0.m_Hash = 0;
+                h1.m_Hash = 0;
+                g1.m_Hash = 0;
+                h3.m_Hash = 0;
+                g2.m_Hash = 0;
+                h5.m_Hash = 0;
+                g3.m_Hash = 0;
+                h7.m_Hash = 0;
+                g4.m_Hash = 0;
+                g5.m_Hash = 0;
+
+                unsigned long hash = nlStringLowerHash("Text");
+                g6.m_Hash = hash;
+                g7.m_Hash = hash;
+
+                union
+                {
+                    FindTextByValue byValue;
+                    FindTextByRef byRef;
+                } findText;
+
+                findText.byValue = FEFinder<TLTextInstance, 3>::Find<TLSlide>;
+                pText = findText.byRef(
+                    pComp->GetActiveSlide(),
+                    (InlineHasher&)g7,
+                    (InlineHasher&)g5,
+                    (InlineHasher&)h7,
+                    (InlineHasher&)h5,
+                    (InlineHasher&)h3,
+                    (InlineHasher&)h1);
+            }
+
+            switch (mHubState)
+            {
+            case HUB_KNOCKOUT8:
+                pText->SetStringId("STANDINGS_QUARTER");
+                title->m_bVisible = false;
+                break;
+            case HUB_KNOCKOUT4:
+                pText->SetStringId("STANDINGS_SEMI");
+                break;
+            case HUB_KNOCKOUT2:
+                pText->SetStringId("STANDINGS_FINAL");
+                break;
+            }
+
+            if (!mAllKnockoutAnimations && mPlayPopSound)
+            {
+                FEAudio::PlayAnimAudioEvent("sfx_standings_round_pop", false);
+                mPlayPopSound = false;
+            }
+        }
     }
 
     if (round == -2)
@@ -2408,8 +2409,7 @@ unsigned char CupHubScene::UpdateLeague(float fDeltaT)
             *(float*)(cursor + 0x228) -= 1.0f;
 
             feVector3 position = (*(TLComponentInstance**)(cursor + 0xD48))->GetAssetPosition();
-            (*(TLComponentInstance**)(cursor + 0xD48))->SetAssetPosition(
-                position.f.x, AddLeagueY(position.f.y, 1.0f), position.f.z);
+            (*(TLComponentInstance**)(cursor + 0xD48))->SetAssetPosition(position.f.x, AddLeagueY(position.f.y, 1.0f), position.f.z);
 
             shouldBreak = 1;
         }
@@ -2418,8 +2418,7 @@ unsigned char CupHubScene::UpdateLeague(float fDeltaT)
             *(float*)(cursor + 0x228) += 1.0f;
 
             feVector3 position = (*(TLComponentInstance**)(cursor + 0xD48))->GetAssetPosition();
-            (*(TLComponentInstance**)(cursor + 0xD48))->SetAssetPosition(
-                position.f.x, position.f.y - 1.0f, position.f.z);
+            (*(TLComponentInstance**)(cursor + 0xD48))->SetAssetPosition(position.f.x, position.f.y - 1.0f, position.f.z);
 
             shouldBreak = 1;
         }

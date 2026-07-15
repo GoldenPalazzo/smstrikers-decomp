@@ -1,3 +1,4 @@
+#define BASICSTRING_DELEGATING_CTOR
 #define FEPOPUPMENU_BYVAL_DECLS
 #define FUNCTION0_VOLATILE_TAG_DTOR
 #define BASICSTRING_INDEX_EMPTY_COPY_BYTE_OFFSET
@@ -46,34 +47,9 @@ static inline const unsigned short* LookupLocHash(unsigned long hash)
     return MissingLocString;
 }
 
-static inline void CopyWideString(BasicStringData<unsigned short>* data, const unsigned short* text)
+static inline BasicStringData<unsigned short>* BuildCupStringData(const unsigned short* text)
 {
-    data->mData = 0;
-    data->mSize = 0;
-    data->mCapacity = 0;
-
-    const unsigned short* ptr = text;
-    while (*ptr++ != 0)
-    {
-        data->mSize++;
-    }
-
-    data->mSize++;
-    data->mData = (unsigned short*)nlMalloc((data->mSize + 1) * 2, 8, true);
-    data->mCapacity = data->mSize;
-
-    int j;
-    int i = 0;
-    j = i;
-    while (i < data->mSize)
-    {
-        *(unsigned short*)((char*)data->mData + j) = *text;
-        i++;
-        text++;
-        j += 2;
-    }
-
-    data->mRefCount = 1;
+    return new (8, true) BasicStringData<unsigned short>(text);
 }
 
 // At the bottom of SHChooseCup.cpp -- REMOVE once real callers exist.
@@ -861,7 +837,6 @@ static unsigned long CUP_EXPLANATIONS[8] = {
     0xBFDC9213,
 };
 
-static unsigned short CUP_SEPARATOR[] = { ' ', 0 };
 static const nlColour CHOOSE_CUP_BLACK = { 0x00, 0x00, 0x00, 0xFF };
 
 static inline bool DisplayCupCanProceed(ChooseCupSceneV2* scene)
@@ -894,7 +869,6 @@ static inline bool DisplayCupCanProceed(ChooseCupSceneV2* scene)
 
 /**
  * Offset/Address/Size: 0x7AC | 0x800DAA30 | size: 0xB80
- * TODO: localized string temps use opposite r26/r27 allocation.
  */
 void ChooseCupSceneV2::DisplayCup()
 {
@@ -921,49 +895,26 @@ void ChooseCupSceneV2::DisplayCup()
         InlineHasher(nlStringLowerHash("Layer")),
         InlineHasher(nlStringLowerHash("TROPHY")));
 
-    bool canProceed = DisplayCupCanProceed(this);
-
-    if (canProceed)
+    if (DisplayCupCanProceed(this))
     {
-        const unsigned short* firstHalfLoc = LookupLocHash(CUP_EXPLANATIONS[(int)mCupToDisplay]);
-
-        BasicStringData<unsigned short>* firstHalfData = (BasicStringData<unsigned short>*)nlMalloc(0x10, 8, true);
-        if (firstHalfData != 0)
-        {
-            CopyWideString(firstHalfData, firstHalfLoc);
-        }
-
-        BasicString<unsigned short, Detail::TempStringAllocator> firstHalf(firstHalfData);
+        BasicString<unsigned short, Detail::TempStringAllocator> firstHalf(
+            BuildCupStringData(LookupLocHash(CUP_EXPLANATIONS[(int)mCupToDisplay])));
 
         if (((nlLocalization*)g_pLocalization)->m_CurrentLanguage != nlLocalization::LangJapanese)
         {
-            firstHalf = firstHalf.Append(CUP_SEPARATOR);
+            firstHalf = firstHalf.Append((const unsigned short*)L" ");
         }
 
         BasicString<unsigned short, Detail::TempStringAllocator> secondHalf;
         if (mCupToDisplay == TROPHY_BOWSER_CUP || mCupToDisplay == TROPHY_SUPER_BOWSER_CUP)
         {
-            const unsigned short* secondHalfLoc = LookupLocString("CUPEXP_KNOCKOUT");
-
-            BasicStringData<unsigned short>* secondHalfData = (BasicStringData<unsigned short>*)nlMalloc(0x10, 8, true);
-            if (secondHalfData != 0)
-            {
-                CopyWideString(secondHalfData, secondHalfLoc);
-            }
-
-            secondHalf = BasicString<unsigned short, Detail::TempStringAllocator>(secondHalfData);
+            secondHalf = BasicString<unsigned short, Detail::TempStringAllocator>(
+                BuildCupStringData(LookupLocString("CUPEXP_KNOCKOUT")));
         }
         else
         {
-            const unsigned short* secondHalfLoc = LookupLocString("CUPEXP_LEAGUE");
-
-            BasicStringData<unsigned short>* secondHalfData = (BasicStringData<unsigned short>*)nlMalloc(0x10, 8, true);
-            if (secondHalfData != 0)
-            {
-                CopyWideString(secondHalfData, secondHalfLoc);
-            }
-
-            secondHalf = BasicString<unsigned short, Detail::TempStringAllocator>(secondHalfData);
+            secondHalf = BasicString<unsigned short, Detail::TempStringAllocator>(
+                BuildCupStringData(LookupLocString("CUPEXP_LEAGUE")));
         }
 
         BasicString<unsigned short, Detail::TempStringAllocator> descriptor = firstHalf.Append(secondHalf);
@@ -1054,8 +1005,8 @@ void ChooseCupSceneV2::DisplayCup()
     }
     else
     {
-        Spoil* cupSpoils = nlSingleton<GameInfoManager>::s_pInstance->mUserInfo.mSpoils;
-        Spoil cupSpoil = cupSpoils[(int)mCupToDisplay];
+        UserInfo* userInfo = &nlSingleton<GameInfoManager>::s_pInstance->mUserInfo;
+        Spoil cupSpoil = userInfo->mSpoils[(int)mCupToDisplay];
 
         if (cupSpoil.mCurrentChamp == TEAM_INVALID)
         {

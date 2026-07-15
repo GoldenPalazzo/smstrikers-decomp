@@ -54,12 +54,13 @@ void ShadowStartup()
 
 /**
  * Offset/Address/Size: 0x1558 | 0x8012458C | size: 0x15C
- * TODO: 99.71% match - preview loop packet iterator uses r28 instead of target r26.
  */
 void RenderShadowModel(unsigned long flags, glModel* model, unsigned long matrix)
 {
     unsigned long fourTex;
     eGLView view = GLV_Shadow1;
+    glModelPacket* normalPkt;
+    glModelPacket* normalDup;
     if (flags & 1)
         view = GLV_Shadow0;
 
@@ -80,19 +81,17 @@ void RenderShadowModel(unsigned long flags, glModel* model, unsigned long matrix
     }
     else
     {
-        glModelPacket* pkt;
-        glModelPacket* dup;
         s32 pass = 0;
         fourTex = FourTexture;
         do
         {
-            pkt = model->packets;
-            while (pkt < model->packets + model->numPackets)
+            normalPkt = model->packets;
+            while (normalPkt < model->packets + model->numPackets)
             {
-                dup = glModelPacketDup(pkt, true);
-                dup->state.texture[0] = fourTex;
-                dup->state.matrix = matrix;
-                glUnHandleizeRasterState(dup->state.raster);
+                normalDup = glModelPacketDup(normalPkt, true);
+                normalDup->state.texture[0] = fourTex;
+                normalDup->state.matrix = matrix;
+                glUnHandleizeRasterState(normalDup->state.raster);
 
                 glSetRasterState(GLS_Culling, pass == 0 ? GX_CULL_BACK : GX_CULL_FRONT);
                 glSetRasterState(GLS_DepthWrite, 0);
@@ -100,9 +99,9 @@ void RenderShadowModel(unsigned long flags, glModel* model, unsigned long matrix
                 glSetRasterState(GLS_AlphaBlend, (pass == 0) ? 2 : 7);
                 glSetRasterState(GLS_ColourWrite, 2);
 
-                dup->state.raster = glHandleizeRasterState();
-                glViewAttachPacket(view, dup);
-                pkt++;
+                normalDup->state.raster = glHandleizeRasterState();
+                glViewAttachPacket(view, normalDup);
+                normalPkt++;
             }
             pass++;
         } while (pass < 2);

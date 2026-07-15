@@ -1536,7 +1536,6 @@ void cFielder::InitActionElectrocution(const nlVector3& wallPosition, const nlVe
 
 /**
  * Offset/Address/Size: 0x6F6C | 0x8002DAA4 | size: 0x250
- * TODO: 99.80% match - f3/f5 register swap for launchVelocity x/y components.
  */
 void cFielder::ActionElectrocution(float dt)
 {
@@ -1550,13 +1549,17 @@ void cFielder::ActionElectrocution(float dt)
             SetAnimState(0x75, true, 0.2f, false, false);
             InitMovementCoast();
 
-            nlVector3 launchVelocity = { 1.0f, 2.0f, 8.0f };
+            nlVector3 launchVelocity = { -5.0f, 0.0f, 5.0f };
             float cosAngle;
             float sinAngle;
             nlSinCos(&sinAngle, &cosAngle, m_aActualFacingDirection);
 
             nlVector3 velocity;
-            nlVec3SetRotatedXY(velocity, launchVelocity, cosAngle, sinAngle);
+            const float& launchY = launchVelocity.f.y;
+            float xSin = launchVelocity.f.x * sinAngle;
+            velocity.f.x = launchVelocity.f.x * cosAngle - launchY * sinAngle;
+            velocity.f.y = launchY * cosAngle + xSin;
+            velocity.f.z = launchVelocity.f.z;
             SetVelocity(velocity);
 
             EmitElectrocutionExplosion(this);

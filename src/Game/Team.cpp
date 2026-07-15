@@ -427,10 +427,8 @@ void cTeam::PreUpdate(float dt)
     }
 }
 
-static inline void CalculateInterceptTimes(cTeam* pTeam);
 /**
  * Offset/Address/Size: 0x132C | 0x800656D8 | size: 0x2CC
- * TODO: 99.89% match - final UpdatePlay loop counter differs
  */
 void cTeam::Update(float dt)
 {
@@ -458,11 +456,15 @@ void cTeam::Update(float dt)
         else
             mtDefensiveZoneTimer.Countdown(2.0f * dt, 0.0f);
     }
-    CalculateInterceptTimes(this);
-    qsort(m_pBallInterceptOrderedFielders, 4, 4, BestAbleToInterceptBall);
-    mtBallInterceptTimer.SetSeconds(1.0f / 30.0f);
+    UpdateBallInterceptTime();
     UpdateTeamAI(dt);
-    for (int i = 0; i < 4; i++)
+    UpdatePlays(dt);
+}
+
+inline void cTeam::UpdatePlays(float dt)
+{
+    int i;
+    for (i = 0; i < 4; i++)
         m_pAIOrderedFielders[i]->UpdatePlay(dt);
 }
 
@@ -753,7 +755,7 @@ bool cTeam::CalculateFormationPosition(nlVector3& pos, cFielder* pFielder, bool 
     return m_pFormationManager->CalculateFielderPosition(pos, pFielder, bParam, fParam);
 }
 
-static inline void CalculateInterceptTimes(cTeam* pTeam)
+inline void cTeam::CalculateNewBallInterceptTimes()
 {
     nlVector3* pBallPosition;
     cFielder* pPlayer;
@@ -761,7 +763,7 @@ static inline void CalculateInterceptTimes(cTeam* pTeam)
 
     for (i = 0; i < 4; i++)
     {
-        pPlayer = pTeam->m_pPlayers[i];
+        pPlayer = m_pPlayers[i];
         float speed = pPlayer->m_fActualSpeed;
         float runSpeed = pPlayer->m_pTweaks->fRunningSpeed;
         speed = (speed >= runSpeed) ? speed : runSpeed;
@@ -799,8 +801,15 @@ static inline void CalculateInterceptTimes(cTeam* pTeam)
             }
         }
 
-        pTeam->mfBallInterceptTimes[i] = interceptTime;
+        mfBallInterceptTimes[i] = interceptTime;
     }
+}
+
+inline void cTeam::UpdateBallInterceptTime()
+{
+    CalculateNewBallInterceptTimes();
+    qsort(m_pBallInterceptOrderedFielders, 4, 4, BestAbleToInterceptBall);
+    mtBallInterceptTimer.SetSeconds(1.0f / 30.0f);
 }
 /**
  * Offset/Address/Size: 0xA68 | 0x80064E14 | size: 0x68
