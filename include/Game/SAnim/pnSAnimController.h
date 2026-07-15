@@ -52,9 +52,6 @@ public:
     void UpdateSynchronized(float);
     void SetTime(float time)
     {
-        FORCE_DONT_INLINE;
-        FORCE_DONT_INLINE;
-        FORCE_DONT_INLINE;
         m_fPrevTime = m_fTime;
         m_fTime = time;
     };

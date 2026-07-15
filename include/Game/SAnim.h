@@ -64,7 +64,10 @@ public:
     void CreateCallback(float time, unsigned int param1, void (*funcCallback)(unsigned int));
     float GetMorphWeight(int index, float t) const;
 
-    cSAnimCallback* GetCallbackList() const;
+    cSAnimCallback* GetCallbackList() const
+    {
+        return m_pCallbackList;
+    }
 
     /* 0x08 */ unsigned int m_nNumKeys;
     /* 0x0C */ unsigned int m_nNumNodes;
