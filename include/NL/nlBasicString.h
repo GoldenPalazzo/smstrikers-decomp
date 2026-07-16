@@ -118,17 +118,10 @@ struct BasicStringData
 #if defined(BASICSTRING_DELEGATING_CTOR) || defined(BASICSTRING_DATA_CTOR)
     BasicStringData(const CharT* text)
     {
-#ifdef BASICSTRING_DELEGATING_CTOR_SRC_CURSOR
-        const CharT* src = text;
-#endif
         mData = 0;
         mSize = 0;
         mCapacity = 0;
-#ifdef BASICSTRING_DELEGATING_CTOR_SRC_CURSOR
-        const CharT* scan = src;
-#else
         const CharT* scan = text;
-#endif
         while (*scan++ != 0)
         {
             mSize++;
@@ -138,11 +131,7 @@ struct BasicStringData
         mCapacity = mSize;
         for (int i = 0; i < mSize; i++)
         {
-#ifdef BASICSTRING_DELEGATING_CTOR_SRC_CURSOR
-            mData[i] = *src++;
-#else
             mData[i] = *text++;
-#endif
         }
         mRefCount = 1;
     }

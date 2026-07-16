@@ -1,5 +1,4 @@
 #define BASICSTRING_DELEGATING_CTOR
-#define BASICSTRING_DELEGATING_CTOR_SRC_CURSOR
 #include "Game/NisPlayer.h"
 #include "Game/Camera/CameraMan.h"
 #include "Game/Character.h"
@@ -41,7 +40,8 @@ class TempStringAllocator;
 namespace
 {
 static unsigned char useAsyncLoading = true;
-}
+static char kNisEmpty[] = "";
+} // namespace
 
 /**
  * Offset/Address/Size: 0x74 | 0x80118E84 | size: 0x2C
@@ -189,7 +189,7 @@ void NisPlayer::DoFunctionCall(unsigned int func)
             params.param3 = 1;
         }
 
-        mNisForTriggerLoading->AddTrigger(NIS_TRIGGER_TYPE_PLAY_RANDOM_DIALOGUE, frame, "", target, &params);
+        mNisForTriggerLoading->AddTrigger(NIS_TRIGGER_TYPE_PLAY_RANDOM_DIALOGUE, frame, kNisEmpty, target, &params);
         break;
     }
     case 4:
@@ -216,7 +216,7 @@ void NisPlayer::DoFunctionCall(unsigned int func)
         params.param3 = p3;
         params.param4 = p4;
 
-        mNisForTriggerLoading->AddTrigger(NIS_TRIGGER_TYPE_PLAY_STREAM, frame, "", "", &params);
+        mNisForTriggerLoading->AddTrigger(NIS_TRIGGER_TYPE_PLAY_STREAM, frame, kNisEmpty, kNisEmpty, &params);
         break;
     }
     case 5:
@@ -288,7 +288,7 @@ void NisPlayer::DoFunctionCall(unsigned int func)
     {
         m_SP--;
         float frame = *(float*)m_SP;
-        mNisForTriggerLoading->AddTrigger(NIS_TRIGGER_TYPE_REGISTER_GOAL_AUDIO, frame, "", "", NULL);
+        mNisForTriggerLoading->AddTrigger(NIS_TRIGGER_TYPE_REGISTER_GOAL_AUDIO, frame, kNisEmpty, kNisEmpty, NULL);
         break;
     }
     case 9:
@@ -317,14 +317,14 @@ void NisPlayer::DoFunctionCall(unsigned int func)
         }
 
         params.param2 = stopAtNisEnd;
-        mNisForTriggerLoading->AddTrigger(NIS_TRIGGER_TYPE_SET_ACTIVE_STREAM_LOOPING, frame, "", "", &params);
+        mNisForTriggerLoading->AddTrigger(NIS_TRIGGER_TYPE_SET_ACTIVE_STREAM_LOOPING, frame, kNisEmpty, kNisEmpty, &params);
         break;
     }
     case 10:
     {
         m_SP--;
         float frame = *(float*)m_SP;
-        mNisForTriggerLoading->AddTrigger(NIS_TRIGGER_TYPE_STOP_ALL_STREAMS, frame, "", "", NULL);
+        mNisForTriggerLoading->AddTrigger(NIS_TRIGGER_TYPE_STOP_ALL_STREAMS, frame, kNisEmpty, kNisEmpty, NULL);
         break;
     }
     case 11:
@@ -364,7 +364,7 @@ void NisPlayer::DoFunctionCall(unsigned int func)
         params.param4 = -1;
         params.param1 = p1;
 
-        mNisForTriggerLoading->AddTrigger(NIS_TRIGGER_TYPE_STOP_STREAM, frame, "", "", &params);
+        mNisForTriggerLoading->AddTrigger(NIS_TRIGGER_TYPE_STOP_STREAM, frame, kNisEmpty, kNisEmpty, &params);
         break;
     }
     case 13:
@@ -394,7 +394,7 @@ void NisPlayer::DoFunctionCall(unsigned int func)
         params.param4 = -1;
         params.float1 = delta;
 
-        mNisForTriggerLoading->AddTrigger(NIS_TRIGGER_TYPE_TIME_DILATION, frame, "", "", &params);
+        mNisForTriggerLoading->AddTrigger(NIS_TRIGGER_TYPE_TIME_DILATION, frame, kNisEmpty, kNisEmpty, &params);
         break;
     }
     default:
@@ -927,8 +927,7 @@ void NisPlayer::LoadTriggers(Nis& nis)
             {
                 {
                     char* eraseBegin = ((void)name[0], name.m_data ? name.m_data->mData : (char*)0);
-                    EraseTriggerPrefix(name, eraseBegin,
-                        ((void)name[0], (name.m_data ? name.m_data->mData : (char*)0) + i));
+                    EraseTriggerPrefix(name, eraseBegin, ((void)name[0], (name.m_data ? name.m_data->mData : (char*)0) + i));
                 }
 
                 BasicString<char, Detail::TempStringAllocator> all(MakeAllTriggerStringData());
@@ -1005,7 +1004,7 @@ static inline const char* GetStadiumFilterName(eStadiumID stadium)
     {
         return "forbidden_dome";
     }
-    return "";
+    return kNisEmpty;
 }
 
 static inline char* GetNisStadiumName()
@@ -1039,7 +1038,7 @@ static inline char* GetNisStadiumName()
     {
         return "forbidden_dome";
     }
-    return "";
+    return kNisEmpty;
 }
 
 static inline BasicStringData<char>* MakeTargetFilterStringData(const char* src_str)
@@ -1048,6 +1047,33 @@ static inline BasicStringData<char>* MakeTargetFilterStringData(const char* src_
     if (data != 0)
     {
         const char* src = src_str;
+        data->mData = 0;
+        data->mSize = 0;
+        data->mCapacity = 0;
+        const char* p = src;
+        while (*p++ != 0)
+        {
+            data->mSize++;
+        }
+        data->mSize++;
+        data->mData = (char*)nlMalloc(data->mSize + 1, 8, true);
+        data->mCapacity = data->mSize;
+        for (int i = 0; i < data->mSize; i++)
+        {
+            data->mData[i] = *src++;
+        }
+        data->mRefCount = 1;
+    }
+    return data;
+}
+
+static inline BasicStringData<char>* MakeGoalieTargetFilterStringData()
+{
+    const char* src;
+    BasicStringData<char>* data = (BasicStringData<char>*)nlMalloc(0x10, 8, true);
+    if (data != 0)
+    {
+        src = "goalie";
         data->mData = 0;
         data->mSize = 0;
         data->mCapacity = 0;
@@ -1126,7 +1152,7 @@ BasicString<char, Detail::TempStringAllocator> NisPlayer::GetTargetFilter(NisTar
 
     if (target == NIS_TARGET_HOME_GOALIE || target == NIS_TARGET_AWAY_GOALIE || target == NIS_TARGET_WINNER_GOALIE || target == NIS_TARGET_LOSER_GOALIE)
     {
-        BasicStringData<char>* data = MakeTargetFilterStringData("goalie");
+        BasicStringData<char>* data = MakeGoalieTargetFilterStringData();
         return BasicString<char, Detail::TempStringAllocator>(data);
     }
 
@@ -1135,7 +1161,7 @@ BasicString<char, Detail::TempStringAllocator> NisPlayer::GetTargetFilter(NisTar
         return BasicString<char, Detail::TempStringAllocator>(GetSidekickName(nlSingleton<GameInfoManager>::s_pInstance->GetSidekick(1)));
     }
 
-    BasicStringData<char>* data = MakeTargetFilterStringData("");
+    BasicStringData<char>* data = MakeTargetFilterStringData(kNisEmpty);
     return BasicString<char, Detail::TempStringAllocator>(data);
 }
 #pragma optimization_level 4

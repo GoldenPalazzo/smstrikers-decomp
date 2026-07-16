@@ -1040,8 +1040,8 @@ inline GCAudioStreaming::MonoAudioStream::MonoAudioStream(GCAudioStreaming::Audi
 
 /**
  * Offset/Address/Size: 0x1300 | 0x8014EA14 | size: 0x3E4
- * TODO: 93.47% match - residual Ready stores and register swaps for
- *       gCrowdSFX, loop counter, and stream pointers.
+ * TODO: 95.44% match - register assignment differs for the loop counter,
+ *       gCrowdSFX, and stream allocation results.
  */
 void CrowdMood::Init()
 {
@@ -1069,28 +1069,29 @@ void CrowdMood::Init()
 
     g_CrowdState.ChantState.NextAt = (float)nlRandom(1, &nlDefaultSeed);
     g_CrowdState.HeckleState.NextAt = (float)nlRandom(1, &nlDefaultSeed);
+    g_CrowdState.ChantState.Ready = g_CrowdState.HeckleState.Ready = i = 0;
 
     struct LOOP_LOAD
     {
         const char* SampleName;
         unsigned long AudioId;
-        unsigned long* pVoiceId;
+        unsigned long& VoiceId;
     };
 
     LOOP_LOAD LoadData[3] = {
-        { g_Settings.NeutralSampleName, Audio::CROWDSFX_EVENT_YEAH_SMALL1, &g_CrowdAudio.NeutralVoiceId },
-        { g_Settings.PositiveSampleName, Audio::CROWDSFX_EVENT_YEAH_BIG, &g_CrowdAudio.PositiveVoiceId },
-        { g_Settings.NegativeSampleName, Audio::CROWDSFX_EVENT_YEAH_SMALL2, &g_CrowdAudio.NegativeVoiceId },
+        { g_Settings.NeutralSampleName, Audio::CROWDSFX_EVENT_YEAH_SMALL1, g_CrowdAudio.NeutralVoiceId },
+        { g_Settings.PositiveSampleName, Audio::CROWDSFX_EVENT_YEAH_BIG, g_CrowdAudio.PositiveVoiceId },
+        { g_Settings.NegativeSampleName, Audio::CROWDSFX_EVENT_YEAH_SMALL2, g_CrowdAudio.NegativeVoiceId },
     };
 
-    for (i = 0; i < 3; i++)
+    for (; i < 3; i++)
     {
         Audio::SoundAttributes sndAtr;
         sndAtr.Init();
         sndAtr.SetSoundType(LoadData[i].AudioId, false);
         sndAtr.mf_Volume = 0.0f;
-        *LoadData[i].pVoiceId = Audio::gCrowdSFX.Play(sndAtr);
-        PlatAudio::SetSFXVolume(*LoadData[i].pVoiceId, 0.0f);
+        LoadData[i].VoiceId = Audio::gCrowdSFX.Play(sndAtr);
+        PlatAudio::SetSFXVolume(LoadData[i].VoiceId, 0.0f);
     }
 
     g_CrowdSFXStopped = false;

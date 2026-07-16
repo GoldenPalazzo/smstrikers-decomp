@@ -114,7 +114,7 @@ struct CROWD_STATE
     {
         /* 0x00 */ float SinceLast;
         /* 0x04 */ float NextAt;
-        /* 0x08 */ bool Ready;
+        /* 0x08 */ unsigned char Ready;
     }; // total size: 0xC
 
     /* 0x00 */ float StartingMood[4];
