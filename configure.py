@@ -975,7 +975,7 @@ config.libs = [
             # AI
             Object(Matching, "Game/AI/AILoader.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/AI/AIPlay.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(NonMatching, "Game/AI/AiUtil.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(Matching, "Game/AI/AiUtil.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/AI/Powerups.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/AI/AISandbox.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/AI/HeadTrack.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
@@ -1155,7 +1155,7 @@ config.libs = [
             # GFX
             Object(NonMatching, "Game/Drawable/DrawableNetMesh.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/Drawable/DrawableCharacter.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
-            Object(NonMatching, "Game/Drawable/DrawableBall.cpp", extra_cflags=["-inline auto"]),
+            Object(NonMatching, "Game/Drawable/DrawableBall.cpp", extra_cflags=["-inline auto", "-msext on"]),
             Object(NonMatching, "Game/Drawable/DrawablePowerup.cpp", extra_cflags=["-inline auto"]),
             Object(Matching, "Game/Drawable/DrawableExplosionFragment.cpp", extra_cflags=["-inline auto"]),
 

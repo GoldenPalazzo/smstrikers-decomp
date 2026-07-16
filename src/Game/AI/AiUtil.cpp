@@ -170,11 +170,18 @@ float SeekSpeed(float fCurrent, float fDesired, float fSeekAccel, float fSeekDec
 }
 
 /**
+ * Reading the components through a f32* keeps them out of the cross-statement
+ * CSE web they would otherwise share with the dot product below, which is what
+ * holds them in the volatile temp pool (f4/f5) instead of f10/f11.
+ */
+static inline f32 AiVelLenSq2D(const nlVector3& v)
+{
+    const f32* p = (const f32*)&v;
+    return nlGetLengthSquared2D(p[0], p[1]);
+}
+
+/**
  * Offset/Address/Size: 0xFA4 | 0x80006A50 | size: 0x11C
- * TODO: 99.01% match - identical instruction schedule; remaining FPR coloring
- * diff in the magnitude block. speed2Sq now matches target f9, but the pos2.x
- * load still lands in f6 instead of target f7, cascading velocity-component
- * temps to f10/f11 instead of target f4/f5.
  */
 void CalcInterceptXY(const nlVector3& pos1, f32 speed1, f32 speed2, const nlVector3& pos2, const nlVector3& vel, int& count, f32* times)
 {
@@ -193,9 +200,9 @@ void CalcInterceptXY(const nlVector3& pos1, f32 speed1, f32 speed2, const nlVect
 
     terms.limbSq = speed2 * speed2;
     terms.speedSq = speed1 * speed1;
-    terms.dot = nlVec3DotProduct2D(vel, delta);
-    terms.velSq = vel.GetLengthSq2D();
     terms.distSq = delta.GetLengthSq2D();
+    terms.dot = nlVec3DotProduct2D(vel, delta);
+    terms.velSq = AiVelLenSq2D(vel);
 
     f32 a = terms.velSq - terms.speedSq;
 
@@ -485,7 +492,7 @@ void GetRotationBetweenVectors(nlQuaternion& quat, const nlVector3& v3Vec1, cons
     }
     else
     {
-        float fMagic = nlSqrt((float)(0.5 * (1.0 + fCosAngle)), true);
+        float fMagic = nlSqrt((float)(2.0 * (1.0 + fCosAngle)), true);
         float fMultiplier = fInvR1R2 / fMagic;
 
         cx = v3Vec1.f.y * v3Vec2.f.z - v3Vec1.f.z * v3Vec2.f.y;
@@ -761,11 +768,11 @@ void SortToMinOrMaxTotalSum(unsigned int* result, float (*data)[4], bool findMin
 
     if (findMin)
     {
-        bestSum = 100000.0f;
+        bestSum = 10000000000.0f;
     }
     else
     {
-        bestSum = -100000.0f;
+        bestSum = -10000000000.0f;
     }
 
     for (s32 i = 0; i < 4; i++)

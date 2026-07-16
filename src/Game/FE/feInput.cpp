@@ -381,10 +381,6 @@ void FEInput::Update(float dt)
 
 /**
  * Offset/Address/Size: 0x274 | 0x8020EC80 | size: 0x220
- * TODO: 95.1% match - same issue as IsAutoPressed: with -inline deferred,
- *       MWCC hoists g_aFEPadData base into r27 at the first inlining level
- *       in the target but our build uses a separate offset register, shifting
- *       parameter registers by 2. Compiler-internal optimization decision.
  */
 void FEInput::SetAutoRepeatParams(eFEINPUT_PAD pad, int button, float initialdelay, float repeatrate)
 {
