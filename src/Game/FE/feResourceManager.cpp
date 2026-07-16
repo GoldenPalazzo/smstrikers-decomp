@@ -1,6 +1,5 @@
 #define FERESOURCEMANAGER_NO_RUN_INLINE
 #define NL_AVLTREEBASE_DELETEENTRY_INCLASS
-#define NLDLRING_WALKRING_SEPARATE
 #include "NL/nlRingWalk.h"
 #include "Game/FE/FEResourceManager.h"
 #include "Game/FE/feFontResource.h"

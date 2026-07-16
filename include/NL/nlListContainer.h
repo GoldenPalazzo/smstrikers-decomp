@@ -90,6 +90,83 @@ void ListContainerBase<T, Adapter>::DeleteEntry(ListEntry<T>* entry)
     m_Allocator.DeleteEntry(entry);
 }
 
+#ifdef CHARACTERTEMPLATE_LISTCONTAINER_PC_EXTERN
+// Per-TU (CharacterTemplate.cpp only). PARTIAL specialization for T = char*:
+// identical to the generic above except DeleteEntry is DECLARED-not-DEFINED, so
+// its address-take via DeleteEntryFunc() (which mints the .data PTMF) emits a UND
+// import, resolved by AnimInventory.o's weak definition, which links first
+// (0x80007478). It stays a TEMPLATE, so its members instantiate lazily -- the
+// PTMF anon still mints at instantiation time and keeps its .data position (a
+// full explicit class specialization is a non-template: it parses eagerly and
+// mints the PTMF at .data offset 0, shifting the whole section).
+// The generic is untouched, so cSHierarchy*/AnimRetargetList* keep instantiating
+// implicitly, preserving their natural emission order.
+template <typename Adapter>
+class ListContainerBase<char*, Adapter>
+{
+public:
+    ListContainerBase()
+        : m_Head(NULL)
+        , m_Tail(NULL)
+    {
+    }
+
+    ~ListContainerBase()
+    {
+        nlWalkList(m_Head, this, DeleteEntryFunc());
+        m_Head = NULL;
+        m_Tail = NULL;
+    }
+
+    // DECLARED ONLY -- defined by the AnimInventory.cpp TU.
+    void DeleteEntry(ListEntry<char*>* entry);
+
+    typedef void (ListContainerBase::*ENTRY_FUNC)(ListEntry<char*>*);
+
+    static ENTRY_FUNC DeleteEntryFunc()
+    {
+        return &ListContainerBase::DeleteEntry;
+    }
+
+    void AddEntry(ListEntry<char*>* entry)
+    {
+        nlListAddStart<ListEntry<char*> >(&m_Head, entry, &m_Tail);
+    }
+
+    ListEntry<char*>* Allocate(char* const& data)
+    {
+        ListEntry<char*> localEntry(data);
+        ListEntry<char*>* entry = NULL;
+        m_Allocator.Allocate(entry);
+        if (entry != NULL)
+        {
+            *entry = localEntry;
+        }
+        return entry;
+    }
+
+    void AddEntry(char* const& data)
+    {
+        ListEntry<char*>* entry = new (m_Allocator.Allocate()) ListEntry<char*>(data);
+        nlListAddStart<ListEntry<char*> >(&m_Head, entry, &m_Tail);
+    }
+
+    void AddStart(char* const& data)
+    {
+        ListEntry<char*>* entry = m_Allocator.New(ListEntry<char*>(data));
+        nlListAddStart<ListEntry<char*> >(&m_Head, entry, &m_Tail);
+    }
+
+    void RemoveEntry(ListEntry<char*>* entry)
+    {
+    }
+
+    /* 0x0 */ Adapter m_Allocator;
+    ListEntry<char*>* m_Head;
+    ListEntry<char*>* m_Tail;
+};
+#endif
+
 template <typename T>
 class nlListContainer : public ListContainerBase<T, NewAdapter<ListEntry<T> > >
 {

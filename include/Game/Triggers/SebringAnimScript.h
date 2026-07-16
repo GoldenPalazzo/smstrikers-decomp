@@ -12,7 +12,9 @@ public:
         m_FireTriggers = true;
     }
 
+#ifndef CHARACTERTEMPLATE_IMPLICIT_SEBRING_DTOR
     virtual ~SebringAnimTagScriptInterpreter() {}
+#endif
     virtual void DoFunctionCall(unsigned int);
     virtual void TriggerFired(unsigned long);
 

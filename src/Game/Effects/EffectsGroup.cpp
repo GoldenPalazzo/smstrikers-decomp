@@ -1,14 +1,7 @@
-#define NL_AVLTREEBASE_EXPLICIT_SPECIALIZATIONS
-#define NL_AVLTREEBASE_REVERSE_LINK_ORDER
-#define NL_AVLTREEBASE_EXPLICIT_CONSTRUCTORS
-#define NL_AVLTREE_EXPLICIT_CONSTRUCTORS
-#define NL_NEWADAPTER_DECLARE_ONLY
-#define NL_NEWADAPTER_EXPLICIT_LINK_ORDER
-#define NLDLLISTCONTAINER_DECLARE_ONLY
-#define NLDLLISTCONTAINER_DELETEENTRY_FUNC
-#define NLDLRING_COUNT_SEPARATE
-#define NLDLRING_WALKRING_SEPARATE
-#include "EffectsGroupRing.inl"
+// This TU supplies constructor specializations for its two concrete AVL trees.
+#define NL_AVLTREE_CONSTRUCTOR_SPECIALIZATIONS
+#include "NL/nlRingCount.h"
+#include "NL/nlRingWalk.h"
 #include "Game/Effects/EffectsGroup.h"
 #include "Game/Effects/EmissionController.h"
 #include "Game/Effects/EmissionManager.h"
@@ -21,7 +14,9 @@ typedef AVLTreeEntry<unsigned long, EffectsTerrainSpec*> EffectsTerrainTreeEntry
 typedef AVLTreeBase<unsigned long, EffectsTerrainSpec*, NewAdapter<EffectsTerrainTreeEntry>, DefaultKeyCompare<unsigned long> > EffectsTerrainTreeBase;
 typedef DLListContainerBase<UserEffectSpec*, NewAdapter<DLListEntry<UserEffectSpec*> > > EffectsGroupUserSpecContainer;
 
-#pragma section ".dead"
+// This discarded constructor fixes the target vtable emission order. The
+// section contains executable code, so its permissions must include RX.
+#pragma section RX ".dead"
 #pragma defer_codegen off
 template <>
 DECL_SECT(".dead")
@@ -30,8 +25,7 @@ nlAVLTree<unsigned long, EffectsTerrainSpec*, DefaultKeyCompare<unsigned long> >
 }
 
 template <>
-DECL_SECT(".dead")
-EffectsTerrainTreeBase::AVLTreeBase()
+inline EffectsTerrainTreeBase::AVLTreeBase()
 {
     m_NumElements = 0;
     m_Root = nullptr;
@@ -63,27 +57,29 @@ void EffectsTerrainTreeBase::DeleteValue(EffectsTerrainTreeEntry* entry);
 template <>
 void EffectsGroupUserSpecContainer::DeleteEntry(DLListEntry<UserEffectSpec*>* entry);
 
-DECL_SECT(".dead")
-void EffectsGroupListOrder_stub(EffectsGroupUserSpecContainer* container, DLListEntry<UserEffectSpec*>* entry)
+// Define the accessor before the list methods so their real code emits this
+// member-function pointer in the target order.
+template <>
+inline EffectsGroupUserSpecContainer::ENTRY_DELETE_FUNC EffectsGroupUserSpecContainer::DeleteEntryFunc()
 {
-    EffectsGroupUserSpecContainer::ENTRY_DELETE_FUNC deleteEntry = EffectsGroupUserSpecContainer::DeleteEntryFunc();
-    (container->*deleteEntry)(entry);
+    return &EffectsGroupUserSpecContainer::DeleteEntry;
 }
 
 #include "EffectsGroupAVL.inl"
 
+// Keep the literal pool ahead of the deferred vtables without emitting a
+// discarded helper function.
 DECL_SECT(".dead")
-void EffectsGroupStringOrder_stub(const char** strings)
-{
-    strings[0] = "EffectsGroup: unrecognized token '%s'\n";
-    strings[1] = "EffectsGroup::parse_group unsupported token '%s'\n";
-    strings[2] = "parse_group couldn't find template '%s'\n";
-    strings[3] = "linger_start";
-    strings[4] = "linger_end";
-    strings[5] = "parse_spec: unknown fx binding '%s'\n";
-    strings[6] = "offsetxyz";
-    strings[7] = "parse_spec has an unrecognized token '%s'\n";
-}
+const char* const gEffectsGroupStringOrder[] = {
+    "EffectsGroup: unrecognized token '%s'\n",
+    "EffectsGroup::parse_group unsupported token '%s'\n",
+    "parse_group couldn't find template '%s'\n",
+    "linger_start",
+    "linger_end",
+    "parse_spec: unknown fx binding '%s'\n",
+    "offsetxyz",
+    "parse_spec has an unrecognized token '%s'\n",
+};
 
 #pragma defer_codegen off
 #include "EffectsGroupAdapter.inl"

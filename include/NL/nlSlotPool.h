@@ -134,6 +134,10 @@ public:
         SlotPoolBase::BaseAddNewBlock(this, sizeof(T));
         this->m_Delta = delta;
     }
+
+#ifdef CHARACTERTEMPLATE_SLOTPOOL_DTOR
+    ~SlotPool() {}
+#endif
 }; // total size: 0x18
 
 #endif // _NLSLOTPOOL_H_

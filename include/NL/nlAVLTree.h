@@ -10,7 +10,7 @@ class nlAVLTree : public AVLTreeBase<KeyType, ValueType, NewAdapter<AVLTreeEntry
 {
 public:
 #ifndef NL_AVLTREE_GLINVENTORY_LINK_ORDER
-#ifdef NL_AVLTREE_EXPLICIT_CONSTRUCTORS
+#ifdef NL_AVLTREE_CONSTRUCTOR_SPECIALIZATIONS
     nlAVLTree();
 #else
     nlAVLTree()

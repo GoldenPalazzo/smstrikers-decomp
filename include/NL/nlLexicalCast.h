@@ -339,6 +339,20 @@ inline NLString Detail::LexicalCastImpl<NLString, bool>::Do(bool t)
     }
 }
 
+#ifdef CHARACTERTEMPLATE_LEXICALCAST_BOOL_DEFERRED
+// CharacterTemplate.cpp only: give the <To,bool> impl an out-of-line body so
+// LexicalCast<bool,bool> becomes a DEFERRED implicit instantiation (drains after
+// the nlList bucket), which puts __sinit in the nlLexicalCast.h linkonce section.
+namespace Detail
+{
+template <typename To>
+inline To LexicalCastImpl<To, bool>::Do(bool t)
+{
+    return t;
+}
+}
+#endif
+
 template <typename To, typename From>
 To LexicalCast(const From& f)
 {
@@ -369,8 +383,10 @@ float LexicalCast<float, bool>(const bool& value);
 template <>
 float LexicalCast<float, const char*>(const char* const& value);
 
+#ifndef CHARACTERTEMPLATE_LEXICALCAST_BOOL_DEFERRED
 template <>
 bool LexicalCast<bool, bool>(const bool& value);
+#endif
 template <>
 bool LexicalCast<bool, int>(const int& value);
 template <>
@@ -452,20 +468,28 @@ int LexicalCast<int, const char*>(const char* const& s)
 
 #ifdef NL_LEXICALCAST_DEFINE_BOOL
 
+#ifdef CHARACTERTEMPLATE_LEXICALCAST_WEAK
+#define NL_LEXICALCAST_BOOL_LINKAGE inline
+#else
+#define NL_LEXICALCAST_BOOL_LINKAGE
+#endif
+
+#ifndef CHARACTERTEMPLATE_LEXICALCAST_BOOL_DEFERRED
 template <>
-bool LexicalCast<bool, bool>(const bool& v)
+NL_LEXICALCAST_BOOL_LINKAGE bool LexicalCast<bool, bool>(const bool& v)
 {
     FORCE_DONT_INLINE;
     return v;
 }
+#endif
 template <>
-bool LexicalCast<bool, int>(const int& v)
+NL_LEXICALCAST_BOOL_LINKAGE bool LexicalCast<bool, int>(const int& v)
 {
     FORCE_DONT_INLINE;
     return v != 0;
 }
 template <>
-bool LexicalCast<bool, float>(const float& v)
+NL_LEXICALCAST_BOOL_LINKAGE bool LexicalCast<bool, float>(const float& v)
 {
     bool result;
     if (v)
@@ -475,7 +499,7 @@ bool LexicalCast<bool, float>(const float& v)
     return result;
 }
 template <>
-bool LexicalCast<bool, const char*>(const char* const& s)
+NL_LEXICALCAST_BOOL_LINKAGE bool LexicalCast<bool, const char*>(const char* const& s)
 {
     FORCE_DONT_INLINE;
     return strcmp("true", s) == 0;

@@ -144,11 +144,13 @@ bool FEInput::IsPressed(eFEINPUT_PAD pad, int button, bool remap, eFEINPUT_PAD* 
 
 /**
  * Offset/Address/Size: 0x87C | 0x8020F288 | size: 0x36C
- * TODO: 96.5% match - with -inline deferred recursive inlining, MWCC hoists
- *       g_aFEPadData base into r28 at the first inlining level in the target
- *       but our build keeps it as a separate offset register, shifting all
- *       parameter registers by 1 (r22-r25 vs r23-r26). This is a compiler-
- *       internal strength-reduction decision that cannot be controlled from source.
+ * NOTE: this function (and SetAutoRepeatParams) requires "-msext on" in this
+ *       TU's extra_cflags (see configure.py). Without it, MWCC 2.5 keeps a
+ *       convert node for the (eFEINPUT_PAD)i cast at the recursive call, which
+ *       blocks address strength-reduction: the g_aFEPadData base is never fused
+ *       into the depth-1 induction variable and every parameter register shifts
+ *       by one. With -msext on ("ignore casts to the same type", enum==int under
+ *       -enum int) the cast is dropped in the IL and the whole TU matches 100%.
  */
 bool FEInput::IsAutoPressed(eFEINPUT_PAD pad, int button, bool remap, eFEINPUT_PAD* pOutPad)
 {

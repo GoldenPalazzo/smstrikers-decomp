@@ -1,10 +1,7 @@
 #ifndef _NLRINGWALK_H_
 #define _NLRINGWALK_H_
 
-// Out-of-line home for nlWalkRing, used together with
-// NLDLRING_WALKRING_SEPARATE (see nlDLRing.h). A TU that defines that macro
-// gets nlWalkRing's body from this header instead, so the instantiation
-// lands in its own linkonce section like the original objects.
+// Standalone definition for TUs that emit this algorithm before nlDLRing.h.
 
 template <typename T, typename CallbackType>
 void nlWalkRing(T* head, CallbackType* callback, void (CallbackType::*callbackFunc)(T*))

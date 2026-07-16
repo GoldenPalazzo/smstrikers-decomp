@@ -145,10 +145,12 @@ bool nlDLRingIsEnd(T* head, T* current)
 }
 #endif
 
-#ifdef NLDLRING_COUNT_SEPARATE
-template <typename T>
-u32 nlRingCountElements(T* head);
-#else
+// Most TUs define these generic algorithms here so MWCC groups their deferred
+// instantiations with the surrounding list templates. A TU that needs the
+// original earlier placement includes the standalone guarded header first.
+#ifndef _NLRINGCOUNT_H_
+#define _NLRINGCOUNT_H_
+
 template <typename T>
 u32 nlRingCountElements(T* head)
 {
@@ -173,7 +175,8 @@ u32 nlRingCountElements(T* head)
     }
     return count;
 }
-#endif
+
+#endif // _NLRINGCOUNT_H_
 
 template <typename T>
 u32 nlDLRingCountElements(T* head)
@@ -349,13 +352,9 @@ void nlWalkDLRing(T* head, CallbackType* callback, void (CallbackType::*callback
     nlWalkRing(head, callback, func);
 }
 
-#ifdef NLDLRING_WALKRING_SEPARATE
-// feResourceManager.cpp only: the definition comes from NL/nlRingWalk.h so
-// the instantiation gets its own linkonce section (separate from
-// nlWalkDLRing), matching the original object layout.
-template <typename T, typename CallbackType>
-void nlWalkRing(T* head, CallbackType* callback, void (CallbackType::*callbackFunc)(T*));
-#else
+#ifndef _NLRINGWALK_H_
+#define _NLRINGWALK_H_
+
 template <typename T, typename CallbackType>
 void nlWalkRing(T* head, CallbackType* callback, void (CallbackType::*callbackFunc)(T*))
 {
@@ -376,7 +375,8 @@ void nlWalkRing(T* head, CallbackType* callback, void (CallbackType::*callbackFu
         current = next;
     }
 }
-#endif
+
+#endif // _NLRINGWALK_H_
 
 // =======================================================
 // Iterator for nlDLRing

@@ -23,22 +23,16 @@ public:
     {
     }
 
-#ifdef NLDLLISTCONTAINER_DELETEENTRY_FUNC
     typedef void (DLListContainerBase::*ENTRY_DELETE_FUNC)(DLListEntry<T>*);
 
     static ENTRY_DELETE_FUNC DeleteEntryFunc()
     {
         return &DLListContainerBase::DeleteEntry;
     }
-#endif
 
     static void DestroyAllEntries(DLListContainerBase* container)
     {
-#ifdef NLDLLISTCONTAINER_DELETEENTRY_FUNC
         ENTRY_DELETE_FUNC func = DeleteEntryFunc();
-#else
-        void (DLListContainerBase::*func)(DLListEntry<T>*) = &DLListContainerBase::DeleteEntry;
-#endif
         nlWalkDLRing<DLListEntry<T>, DLListContainerBase>(container->m_Head, container, func);
         container->m_Head = NULL;
     }
@@ -84,7 +78,19 @@ public:
 
     T* AllocateAtEnd(unsigned long* outEntry);
 
+#ifdef CHARACTERTEMPLATE_INLINE_DLLIST_DELETEENTRY
+    void DeleteEntry(DLListEntry<T>* entry)
+    {
+        FORCE_DONT_INLINE;
+        if (entry)
+        {
+            entry->entry.~T();
+        }
+        m_Allocator.DeleteEntry(entry);
+    }
+#else
     void DeleteEntry(DLListEntry<T>* entry);
+#endif
 
     /* 0x0 */ Adapter m_Allocator;     // offset 0x0, size 0x18
     /* 0x18 */ DLListEntry<T>* m_Head; // offset 0x18, size 0x4
@@ -111,7 +117,7 @@ T* DLListContainerBase<T, Adapter>::AllocateAtEnd(unsigned long* outEntry)
     return &result->entry;
 }
 
-#ifndef NLDLLISTCONTAINER_DECLARE_ONLY
+#if !defined(NLDLLISTCONTAINER_DECLARE_ONLY) && !defined(CHARACTERTEMPLATE_INLINE_DLLIST_DELETEENTRY)
 template <typename T, typename Adapter>
 void DLListContainerBase<T, Adapter>::DeleteEntry(DLListEntry<T>* entry)
 {

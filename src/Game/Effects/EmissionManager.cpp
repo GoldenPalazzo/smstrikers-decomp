@@ -1,5 +1,4 @@
-#define NL_AVLTREEBASE_REVERSE_LINK_ORDER
-#define NL_NEWADAPTER_EXPLICIT_LINK_ORDER
+#define NL_AVLTREEBASE_EXPLICIT_INSTANTIATION
 // The retained weak Function1 base destructor is owned by an earlier TU.
 #define FUNCTION1_BASE_DTOR_DECLARE_ONLY
 #include "Game/Effects/EmissionManager.h"
@@ -826,30 +825,26 @@ void EmissionManager::KillOldest(int num, bool lingeringOnly)
     }
 }
 
-// MWCC flushes these deferred inline specializations in reverse reference
-// order. This discarded anchor reproduces the target linkonce order.
 #pragma section ".dead"
+// MWCC emits these deferred specializations in reverse reference order. Data
+// references preserve the target linkonce order without discarded code.
 DECL_SECT(".dead")
-void EmissionManagerReplayOrder_stub()
-{
-    void (*saveFloat)(SaveFrame&, const FloatCompressor<-255, 255, 6>&) = Replayable<0, SaveFrame, FloatCompressor<-255, 255, 6> >;
-    void (*loadFloat)(LoadFrame&, const FloatCompressor<-255, 255, 6>&) = Replayable<0, LoadFrame, FloatCompressor<-255, 255, 6> >;
-    void (*saveChar)(SaveFrame&, char&) = Replayable<0, SaveFrame, char>;
-    void (*loadChar)(LoadFrame&, char&) = Replayable<0, LoadFrame, char>;
-    void (*saveController)(SaveFrame&, EmissionController&) = Replayable<0, SaveFrame, EmissionController>;
-    void (*saveLong)(SaveFrame&, unsigned long&) = Replayable<0, SaveFrame, unsigned long>;
-    void (*saveShort)(SaveFrame&, unsigned short&) = Replayable<0, SaveFrame, unsigned short>;
-    void (*loadController)(LoadFrame&, EmissionController&) = Replayable<0, LoadFrame, EmissionController>;
-    void (*loadLong)(LoadFrame&, unsigned long&) = Replayable<0, LoadFrame, unsigned long>;
-    void (*loadShort)(LoadFrame&, unsigned short&) = Replayable<0, LoadFrame, unsigned short>;
-    (void)saveFloat;
-    (void)loadFloat;
-    (void)saveChar;
-    (void)loadChar;
-    (void)saveController;
-    (void)saveLong;
-    (void)saveShort;
-    (void)loadController;
-    (void)loadLong;
-    (void)loadShort;
-}
+void (*const gEmissionReplaySaveFloat)(SaveFrame&, const FloatCompressor<-255, 255, 6>&) = Replayable<0, SaveFrame, FloatCompressor<-255, 255, 6> >;
+DECL_SECT(".dead")
+void (*const gEmissionReplayLoadFloat)(LoadFrame&, const FloatCompressor<-255, 255, 6>&) = Replayable<0, LoadFrame, FloatCompressor<-255, 255, 6> >;
+DECL_SECT(".dead")
+void (*const gEmissionReplaySaveChar)(SaveFrame&, char&) = Replayable<0, SaveFrame, char>;
+DECL_SECT(".dead")
+void (*const gEmissionReplayLoadChar)(LoadFrame&, char&) = Replayable<0, LoadFrame, char>;
+DECL_SECT(".dead")
+void (*const gEmissionReplaySaveController)(SaveFrame&, EmissionController&) = Replayable<0, SaveFrame, EmissionController>;
+DECL_SECT(".dead")
+void (*const gEmissionReplaySaveLong)(SaveFrame&, unsigned long&) = Replayable<0, SaveFrame, unsigned long>;
+DECL_SECT(".dead")
+void (*const gEmissionReplaySaveShort)(SaveFrame&, unsigned short&) = Replayable<0, SaveFrame, unsigned short>;
+DECL_SECT(".dead")
+void (*const gEmissionReplayLoadController)(LoadFrame&, EmissionController&) = Replayable<0, LoadFrame, EmissionController>;
+DECL_SECT(".dead")
+void (*const gEmissionReplayLoadLong)(LoadFrame&, unsigned long&) = Replayable<0, LoadFrame, unsigned long>;
+DECL_SECT(".dead")
+void (*const gEmissionReplayLoadShort)(LoadFrame&, unsigned short&) = Replayable<0, LoadFrame, unsigned short>;

@@ -18,7 +18,10 @@ struct AVLTreeNode
 class AVLTreeUntemplated
 {
 public:
-#ifdef NL_AVLTREEBASE_REVERSE_LINK_ORDER
+// MWCC 2.5 rejects explicit member instantiations and emits a whole-class
+// instantiation in reverse declaration order. This mode gives such a TU the
+// declaration and weak-symbol order used by the original object.
+#ifdef NL_AVLTREEBASE_EXPLICIT_INSTANTIATION
     virtual int CompareNodes(AVLTreeNode* node1, AVLTreeNode* node2);
 #else
     virtual int CompareNodes(AVLTreeNode* node1, AVLTreeNode* node2) = 0;
@@ -66,7 +69,7 @@ template <typename KeyType, typename ValueType, typename AllocatorType, typename
 class AVLTreeBase : public AVLTreeUntemplated
 {
 public:
-#ifdef NL_AVLTREEBASE_EXPLICIT_CONSTRUCTORS
+#ifdef NL_AVLTREE_CONSTRUCTOR_SPECIALIZATIONS
     AVLTreeBase();
 #else
     AVLTreeBase()
@@ -77,7 +80,7 @@ public:
     };
 #endif
 
-#ifdef NL_AVLTREEBASE_REVERSE_LINK_ORDER
+#ifdef NL_AVLTREEBASE_EXPLICIT_INSTANTIATION
     WEAKFUNC virtual int CompareNodes(AVLTreeNode* a, AVLTreeNode* b);
     WEAKFUNC virtual int CompareKey(void* key, AVLTreeNode* node);
     WEAKFUNC virtual AVLTreeNode* AllocateEntry(void* key, void* value);
@@ -272,7 +275,7 @@ public:
         return &CastUp(existingNode)->value;
     }
 
-#ifdef NL_AVLTREEBASE_REVERSE_LINK_ORDER
+#ifdef NL_AVLTREEBASE_EXPLICIT_INSTANTIATION
     WEAKFUNC void DestroyTree(void (AVLTreeBase::*deleteFunc)(AVLTreeEntry<KeyType, ValueType>*));
     WEAKFUNC void DeleteValues();
     WEAKFUNC void DeleteEntry(AVLTreeEntry<KeyType, ValueType>* entry);

@@ -823,7 +823,7 @@ config.libs = [
             Object(Matching, "Game/Net.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/Field.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(NonMatching, "Game/Character.cpp", extra_cflags=["-inline auto"]),
-            Object(NonMatching, "Game/CharacterTemplate.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(Matching, "Game/CharacterTemplate.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/CharacterEffects.cpp", extra_cflags=["-inline auto"]),
             Object(Matching, "Game/Player.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
 
@@ -1051,7 +1051,7 @@ config.libs = [
             Object(Matching, "Game/FE/feMapMenu.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/FE/feResourceManager.cpp", extra_cflags=["-inline auto"]),
             Object(Matching, "Game/FE/feCaptainGridComponent.cpp", extra_cflags=["-inline noauto", "-inline deferred"]),
-            Object(NonMatching, "Game/FE/feInput.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
+            Object(Matching, "Game/FE/feInput.cpp", extra_cflags=["-inline auto", "-inline deferred", "-msext on"]),
             Object(Matching, "Game/FE/feScrollingTicker.cpp", extra_cflags=["-inline auto", "-inline deferred"]),
             Object(Matching, "Game/FE/feMusic.cpp", extra_cflags=["-inline auto"]),
             Object(NonMatching, "Game/FE/feInGameMessengerManager.cpp", extra_cflags=["-inline auto"]),
